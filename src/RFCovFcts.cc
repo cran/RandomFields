@@ -33,8 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MINUSINVLOG005 0.3338082006953340674649
 #define SQRTINVLOG005 0.5777613700268771079749
 #include <math.h>
-//#include "MathlibCC.h"
-#include <R_ext/Mathlib.h>
+#include <Rmath.h>
 #include <assert.h>
 #include "RFsimu.h"
 #include "RFCovFcts.h"

@@ -36,8 +36,7 @@
  **************************************************************************** */
 
 #include <math.h>
-//#include "MathlibCC.h"
-#include <R_ext/Mathlib.h>
+#include <Rmath.h>
 #include <assert.h>
 #include "RFsimu.h"
 #include "MPPFcts.h"

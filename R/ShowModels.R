@@ -79,7 +79,7 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
   bg.save <- par()$bg
   par(bg="white")
   
-  rs <- .Random.seed
+  rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
   screen(scr[4])
   maxrow<- 14
   namen <- GetModelNames()
@@ -325,7 +325,7 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
       if (!isnullX) {
         screen(scr[1])
         if (!is.null(y)) lines(range(x),range(y),col="grey")
-        if (fixed.rs) set.seed(rs)
+        if (fixed.rs) assign(".Random.seed", rs, envir=.GlobalEnv)
         z <- GaussRF(x,y,model=cov,param=currentparam[[covnr]],grid=TRUE,
                      register=register,method=method)
 

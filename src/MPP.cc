@@ -23,8 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <math.h>
-//#include "MathlibCC.h"
-#include <R_ext/Mathlib.h>
+#include <Rmath.h>
 #include <assert.h>
 #include "RFsimu.h"
 #include "MPPFcts.h"
