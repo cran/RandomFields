@@ -1,25 +1,25 @@
 ## R --no-save < RFtest.methods.R
 # source("RFtest.methods.R")
 
-#library(RandomFields,lib="~/TMP")
-library(RandomFields)
-        
+if (file.exists("source.R")) source("source.R")
+       
 ERRORCOVNOTALLOWED <- 4 ## check with RFsimu.h!!!
-
+ERRORCOVFAILED <- 14
+  
 models<- list(list("bessel",1),
               list("cauchy",1),
               list("cauchytbm",1:3),
               list("circular",NULL),
               list("cubic",NULL),
               list("cone",1:3),
+              list("dampedcosine",1),
               list("exponential",NULL),
               ##  "expP", 
               list("gauss",NULL),
               list("gencauchy",1:2),
-              list("gneiting",NULL),
-              list("gneitingdiff",1:2),
               list("gengneiting",1:2),
-              list("holeeffect",1),
+               list("gneiting",NULL),
+              ##list("gneitingdiff",1:2),
               list("hyper",1:3),
               list("nugget",NULL),
               list("penta",NULL),
@@ -28,7 +28,10 @@ models<- list(list("bessel",1),
               list("spherical",NULL),
               list("stable",1),
               list("wave",NULL),
-              list("whittle",1)
+              list("whittle",1),
+              list("2d",1),
+              list("3d",1), ## never successful since 3d simu required
+              list("fract",1)
               )
               
 methods <- c("cir","loc","TBM2","TBM3","sp","dir","add")
@@ -40,16 +43,18 @@ for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
     param <- c(0,1,1,scale, c(kappa1,2,2)[models[[mo]][[2]]])
     param <- c(0,1,1,scale, c(kappa1,2,3)[models[[mo]][[2]]])
     ## cauchytbm : kappa3 >= 3  for tbm2
-    print(models[[mo]][[1]])
+    ##cat("\n", scale, kappa1, models[[mo]][[1]])
     for (me in 1:length(methods)) {
-
-     error <- InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
+      ##cat("\n\nSTART")
+      error <- InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
                              param=param,method=methods[me])
-     if (error==ERRORCOVNOTALLOWED)
-       error <- InitGaussRF(x=1:10,grid=TRUE,model=models[[mo]][[1]],
-                               param=param,method=methods[me])
-     if (error==0)
-       working[mo,me]  <- working[mo,me] +1      
+      ##cat(" E=",error)
+      if (error==ERRORCOVNOTALLOWED || error==ERRORCOVFAILED)
+        error <- InitGaussRF(x=1:10,grid=TRUE,model=models[[mo]][[1]],
+                             param=param,method=methods[me])
+      ##cat(" E1=",error)
+      if (error==0)
+        working[mo,me]  <- working[mo,me] +1      
     } 
   }
 }
@@ -61,7 +66,7 @@ for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
     txt <- ""
     for (me in 1:length(methods)) {
       if (working[mo,me]==0) txt <- paste(txt," . ")
-      else txt <- paste(txt,"  ",sign[min(10,working[mo,me])]," ",sep="")               
+      else txt <- paste(txt,"  ",sign[min(10,working[mo,me])]," ",sep="")
     }
     print(paste(formatC(models[[mo]][[1]],width=15),txt),quote=FALSE)
   }

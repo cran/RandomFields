@@ -1,30 +1,36 @@
 
-
 #ifndef AUXILIARY_H
 #define AUXILIARY_H 1
  
-#include "RFsimu.h"
-
-#ifdef CPP2C 
-#ifdef RF_GSL
-extern "C" void RandomPermutation(double *x,int n,double *y,gsl_rng *RANDOM);
-#else 
-extern "C" void RandomPermutation(double *x,int n,double *y);
-#endif
-extern "C" double quantile(double *X, int lb,double p);
-extern "C" void Rquantile(double *X, int *lb,double *p,double *res);
-extern "C" void pid(int * i);
-extern "C" void hostname(char **h, int *i);
-extern "C" void orderdouble(double *d,int *pos, int start, int end);
-extern "C" void gauss(int *n, double *G);
-extern "C" void onePdist(Real *x,int *dim,  int *n, Real *p, Real *dist);
+#include "GSLvsR.h"
+#ifdef RF_FLOAT
+typedef float Real;
 #else
-extern double quantile(double *X, int lb,double p);
-extern void pid(int * i);
-extern void hostname(char **h, int *i);
-extern void orderdouble(double *d,int *pos, int start, int end);
-extern void gauss(int *n, double *G);
-#endif
+typedef double Real;
+#endif 
+
+
+EXTERN void RandomPermutation(double *x, int n, double *y 
+				  );
+EXTERN double quantile(double *X, int lb, double p);
+EXTERN void Rquantile(double *X, int *lb, double *p, double *res);
+EXTERN void pid(int *i);
+EXTERN void hostname(char **h, int *i);
+EXTERN void orderdouble(double *d,int *pos, int start, int end);
+EXTERN void quicksortdouble(double *d, int start, int end);
+EXTERN void vectordist(Real *v, int *dim, Real *dist, int *diag); 
+
+
+EXTERN void I0ML0(double *x, int *n);
+double I0mL0(double x);
+EXTERN double struve(double x, double nu,  double factor_sign, bool expscaled);
+EXTERN void StruveH(double *x, double *nu);
+EXTERN void StruveL(double *x, double *nu, int * expScaled);
+EXTERN int InitRandom();
+
+EXTERN void ordering(Real *d, int len, int dim, int *pos);
+EXTERN void Ordering(Real *d, int *len, int *dim, int *pos);
+
 #endif /* AUXILIARY_H */
 
 

@@ -6,12 +6,19 @@
   of a random field realisation
 }
 \usage{
-EmpiricalVariogram(x, y=NULL, z=NULL, data, grid, bin, gridtriple=FALSE)}
+EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
+                   gridtriple=FALSE, phi, theta, deltaT)}
 \arguments{
-  \item{x}{vector of coordinates}
-  \item{y}{vector of coordinates}
-  \item{z}{vector of coordinates}
-  \item{data}{vector or matrix of data}
+  \item{x}{vector of x-coordinates, or matrix}
+  \item{y}{vector of y-coordinates}
+  \item{z}{vector of z-coordinates}
+  \item{T}{vector of time components; here T is given in grid
+    format, see \code{\link{GaussRF}}.}    
+  \item{data}{vector or matrix of data; if \code{data} has a multiple
+    number of components as expected by the definition of the
+    coordinates then it is assumed that the data stem from repeated,
+    independent measurements at the given locations; the empirical
+    variogram is calculated for the repeated data.}
   \item{grid}{logical; if \code{TRUE} then
     \code{x}, \code{y}, and \code{z} define a grid; otherwise
     \code{x}, \code{y}, and \code{z} are interpreted as points}
@@ -22,18 +29,41 @@ EmpiricalVariogram(x, y=NULL, z=NULL, data, grid, bin, gridtriple=FALSE)}
     form \code{c(start,end,step)}; if
     \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values}
+  \item{phi}{vector of two components. First component gives the angle
+    for the first line of midpoints of an angular variogram.
+    The second component gives the number of directions (on the half circle). 
+    The spatial dimension must be at least 2.
+  }
+  \item{theta}{vector of two components. First component gives the angle
+    for the first line of midpoints of an angular variogram
+    (angle is zero for the xy-plane).
+    The second component gives the number of directions (on the half circle). 
+    The spatial dimension must be at least 3.
+  }
+  \item{deltaT}{vector of two components.
+    First component gives the largest temporal distance;
+    the second component the grid length, that must be a multiple of
+    \code{T[3]}.
+  }
 }
 \value{
-  The function returns
-  \code{list(centers,emp.vario)} where \code{centers} are the central
-  points of the bins and \code{emp.vario} gives the empirical variogram.
-  Both elements are
-  vectors of length \code{(length(bin)-1)}.
+  The function returns a list:
+  \item{centers}{central points of the bins}
+  \item{emp.vario}{empirical variogram; vector or matrix or array,
+    depending on the anisotropy definitions. The sequence is distances,
+    phi, theta, Tbins. If phi, theta, or Tbins below are not given,
+    the respective dimensions are missing.}
+  \item{sd}{sd of the variogram cloud within each bin}
+  \item{n.bin}{number of points within a bin}
+  \item{phi}{vector of angles in xy plane}
+  \item{theta}{vector of angles in the third dimensions}
+  \item{Tbins}{vector of temporal distances}
+
+  The first four elements are vectors of length \code{(length(bin)-1)}.
 }
 \details{
 %  A version of the algorithm is custom-tailored to large grids with 
-%  constant grid length in each direction), and invoked in such cases.  
-
+%  constant grid length in each direction, and invoked in such cases.
   Comments on specific parameters:
   \itemize{
     \item \code{data}: the number of values must match the number of
@@ -64,10 +94,11 @@ EmpiricalVariogram(x, y=NULL, z=NULL, data, grid, bin, gridtriple=FALSE)}
     Hence, to include zero, \code{bin[1]} must be negative.
   }
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}
 }
-\seealso{\code{\link{GaussRF}} and \code{\link{RandomFields}}}
+\seealso{\code{\link{GaussRF}}, \code{\link{mleRF},
+    and \code{\link{RandomFields}}}}
 \examples{
   #############################################################
   ## this example checks whether a certain simulation method ##
@@ -76,29 +107,23 @@ EmpiricalVariogram(x, y=NULL, z=NULL, data, grid, bin, gridtriple=FALSE)}
   #############################################################
   x <- seq(0, 10, 0.5)
   y <- seq(0, 10, 0.5)
-  grid <- TRUE
-  gridtriple <- FALSE   ## see help("GaussRF")
-  model <- "wh"         ## whittlematern
-  alpha <- 2
-  mean <- 1
-  variance <- 10
-  nugget <- 5
-  scale <- 2
-  method <- "TBM3"
+  gridtriple <- FALSE      ## see help("GaussRF")
+  model <- "whittle"       ## whittlematern
   bins <- seq(0, 5, 0.001)
   repetition <- 20 ## by far too small to get reliable results!!
                    ## It should be of order 500,
                    ## but then it will take some time
                    ## to do the simulations
-  param <- c(mean, variance, nugget, scale, alpha)
-  f <- GaussRF(x=x, y=y, grid=grid, gridtriple=gridtriple,
-                  model=model, param=param, meth=method,
+  param <- c(mean=1, variance=10, nugget=5, scale=2, alpha=2)
+  f <- GaussRF(x=x, y=y, grid=TRUE, gridtriple=gridtriple,
+                  model=model, param=param, method="TBM3",
                   n=repetition)
   binned <- EmpiricalVariogram(x=x, y=y, data=f,
-                 grid=grid, gridtriple=gridtriple, bin=bins)
+                 grid=TRUE, gridtriple=gridtriple, bin=bins)
   truevariogram  <- Variogram(binned$c, model, param)
   matplot(binned$c, cbind(truevariogram,binned$e), pch=c("*","e"))
   ##black curve gives the theoretical values
+
 %  #############################################################
 %  ## this example shows under which conditions the algorithm ##
 %  ## still works reasonably fast (about 15 sec. at 500 MHz), ##

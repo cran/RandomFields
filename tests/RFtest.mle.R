@@ -1,129 +1,247 @@
-# source("RFtest.mle.R")
+# source("RFtest.MLE.R")
 
-library(RandomFields)
+if (file.exists("source.R")) source("source.R")
 
-# source("../R/MLE.R")
-##load("random seeed")
-#runif(1);save(file="random.seed",.Random.seed)
-#load("random.seed")
+note <- readline
+note <- print
+max.le <- Inf
+max.le <- 30
+max.le <- 5
 
+n <- 30
+model <- list(list(model="exp", var=5, aniso=c(1,0,0,2)), "+",
+              list(model="whittle", var=3, kappa=1.5, aniso=c(1/4,0,0,1/2)),
+              mean=2)
+x <- 1:3
+RFparameters(Print=2)
+z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
 
-## this an old function, not programmed very nicely
-## I do not care -- just used for debugging reasons
-XMLEtarget<-function(model,param,coord,data) {
-  covnr <- .C("GetModelNr",as.character(model),nr=integer(1))$nr;
-  storage.mode(covnr) <- "integer"
-  if (covnr<0) stop("model not ok")
-  ip<-.C("GetParameterIndices", MEAN= integer(1), VARIANCE= integer(1),
-          NUGGET= integer(1), SCALE= integer(1), 
-          KAPPA= integer(1), LASTKAPPA= integer(1),integer(1),
-          SILL= integer(1), DUP = FALSE)
-
-  lc <- nrow(coord)
-  storage.mode(lc) <- "integer"
-  dim <- ncol(coord); if (dim!=2) stop("Sorry. dim<>2 not programmed.")
-  storage.mode(dim) <- "integer"
-  x <- dist(coord)
-  storage.mode(x) <- "double"
-  storage.mode(param) <- "double"
-  cov.matrix <- .C("CovarianceMatrix",x,lc,covnr,param,
-     as.integer(length(param)),dim,cov.matrix=double(lc * lc),
-                   DUP=FALSE)$cov.matrix
-  cov.matrix <- .Fortran("chol", x = cov.matrix, lc, lc,
-                         v = matrix(0, nr = lc, nc = lc),
-                         info = integer(1), DUP = FALSE, PACKAGE = "base")
-  if (cov.matrix$info) { 
-      print("trying svd")
-      cov.matrix <- svd(matrix(cov.matrix$v,nrow=lc))
-      det <- prod(cov.matrix$d)
-      if (any(cov.matrix$d<0)) {print("det<0!"); det<-0}
-      cov.matrix <- t(cov.matrix$v %*% (t(cov.matrix$u) /cov.matrix$d))  
+EST <- PrepareModel(model, timespace=2)
+le <- min(max.le, 2^(length(EST$param)) - 1)
+mle <- NULL
+for (i in 1:le) {
+  for (me in FALSE:TRUE) {
+    est <- PrepareModel(model, timespace=2)
+    if (me) est$mean <- NA
+    ii <- i
+    for (j in 1:length(est$param)) {
+      if (ii %% 2 ==1) est$param[j] <- NA
+      ii <- as.integer(ii / 2)
     }
-    else {
-      det <- prod(diag(cov.matrix$v))
-      cov.matrix <- chol2inv(cov.matrix$v); 
+    est <- convert.to.readable(est)
+    cat("\n\n i=", i, "m=", me, "\n")
+    str(est)
+    str(fv <- fitvario(x=expand.grid(x,x), data=z, model=est, nphi=2,
+                       Print=1)$mle)
+    FV <- PrepareModel(fv, timespace=2)
+    mle <- rbind(mle, FV$param)
+    if (any(abs(FV$param - EST$param) > 0.05)) {
+      print(rbind(EST$param, FV$param))
+      note("WARNING -- deviations detected! Press return")
     }
-  logdet <- 2.0*log(det);  if (!is.finite(logdet)) logdet<-sum(abs(variab)+1);
-
-  data <- as.matrix(data)  
-  res <- logdet+(t(data-param[ip$MEAN+1]) %*% cov.matrix %*%
-                 (data-param[ip$MEAN+1]))
-  return(res)
-}
-
-
-model <- "expon"; standardparam <- c(0,1,0,1); factor <- 5; low <- up <- NULL
-model<-"whittle"; standardparam<-c(0,1,0,1,1); factor<-5; low<-0.1; up<-20
-
-use <- TRUE ##use <- FALSE
-PrintLevel <- 0
-points <- 100  
-repet <- 1:20; ## 500 if being serious
-same <-  2;    ## 20
-
-####### for heavy testing, uncomment the following 3 lines
-# repet <- 1:30;  model<-"whittle";param<-c(0,1,0,0.1,3);
-# estparam <- c(NA,NA,0,NA,NA); low<-0.2;up<-10; points <- 300
-# PrintLevel <- 5
-# source("../R/MLE.R") #
-
-param <- 0
-est <- nest <- 1
-
-for (i in repet) {
-########## define model + simulation
-  x <- runif(points,0,3)
-  y <- runif(points,0,3)
-
-  repeat {
-    if (i %% same == 1) {
-      cat(  " true  ",formatC(param,width=5),
-          "\naverage",formatC(est / nest,width=5),"\n")
-      nest <- est <- rep(0,length(standardparam))
-      switch(1+sum(runif(1)>c(0.2,1)),
-             param <- standardparam,
-             param <- runif(length(standardparam)) * factor
-             )
-      cat(" ******* ",format(param)," ***********\n")
-    }
-    if ((!is.null(low) && (low>param[-1:-4])) ||
-        (!is.null(up) && (up<param[-1:-4]))) next;
-
-    f <- GaussRF(x=x,y=y,grid=FALSE,model=model,param=param)
-    if (!is.null(f)) break;
   }
+}
 
-  estparam <- param
-  estparam[runif(length(param))<0.5] <-  NA
-                     ## NA means to be estimated,
-                     ## sequ mean,variance,nugget,scale,further parameters
-                     ## (as usual in RandomFields)
+######################################################################
+######################################################################
 
-  # estparam <- param; estparam[4] <- NA;
-  
-  if (all(is.na(estparam[c(2,3)])) && (runif(1)<0.5)) {
-    sill <- sum(param[c(2,3)])
-  } else sill <- NA
-   
-  cat(formatC(i,width=3),
-      "est:",formatC(round(estparam,dig=2),dig=2,width=4),
-      " sill=",ifelse(is.na(sill),"NA ",formatC(sill,dig=2,width=3)))
-  
-  
-  ut <- unix.time( result <- (mleRF(coord=cbind(x,y),data=f,model=model,
-                                    param=estparam, sill=sill,
-                                    lower.kappa=low,upper.kappa=up,
-                                    PrintLevel=PrintLevel,use=use)))
-  res <- formatC(round(result,dig=2),dig=2,width=5)
-  res[!is.na(estparam)] <- "  .  "
-  cat(" mle:",res,
-      " [",format(XMLEtarget(model,result,cbind(x,y),f),dig=2),
-      "] (time:", format(ut[c(1)]),")\n")
-  est[is.na(estparam)] <- est[is.na(estparam)] + result[is.na(estparam)]
-  nest[is.na(estparam)] <- nest[is.na(estparam)] + 1
-  
+x <- 1:3
+coord <- cbind(c(1, 3, 6, 10),
+           c(0.2, 0.5, 0.9, 0))
+coord <- expand.grid(x,x)
+lc <- nrow(coord)
+distances <- matrix(nrow=ncol(coord), ncol=lc * (lc-1) / 2)
+dd <- 0
+for (i in 1:ncol(coord)) {
+  dx <- outer(coord[,i], coord[, i], "-")
+  print(dx)
+  distances[i, ] <- as.double(dx[lower.tri(dx)])
+  ## x <- c(1,6,0.1)
+  ## outer(x, x, "-
+  ##     [,1] [,2] [,3]
+  ##[1,]  0.0 -5.0  0.9
+  ##[2,]  5.0  0.0  5.9
+  ##[3,] -0.9 -5.9  0.0
+  dd <- dd + distances[i ,]^2
+}
+DD <- as.double(distances)
+
+y <- t(matrix(DD, nrow=2))
+len <- (1 + sqrt(1 + 8 * nrow(y))) / 2 
+m1 <- model
+m1[[1]]$var <- 5.19
+cov <- CovarianceFct(y, model=m1)
+cm <- diag( CovarianceFct(cbind(0,0), model=m1)/2, ncol=len, nrow=len)
+cm[lower.tri(cm)] <- cov
+cm <- cm + t(cm)
+eigen(cm)$val
+
+CovarianceFct(y, model=m1, fct="CovarianceMatrix")
+
+##################################################################
+## dim = 2, old definitions
+##################################################################
+
+n <- 3000
+n <- 30
+model <- list(model="exp", param=c(4, 3 , 1, 5))
+x <- 1:10
+if (!exists("z") || any(dim(z) != c(rep(length(x), 2), n)))
+  z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
+
+est <- PrepareModel(model, timespace=2)
+if (TRUE) {
+  est$param[1 + runif(2, max=length(est$param))] <- NA
+  if (runif(1) < 0.5) est$mean <- NA
+  ## est$param[1] <- NA
+} else {
+  est <- PrepareModel(model, timespace=2)
+  est$param[c(1,2,4)] <- NA
+  est$mean <- NA
+}
+est <- convert.to.readable(est, allowed="standard")
+
+str(est)
+str(xxx <- fitvario(x=expand.grid(x,x), data=z, model=est, Print=1))
+print(xxx$mle.value)
+fitvario(x=expand.grid(x,x), data=z, model=xxx$mle, Print=1)$mle.value
+
+le <- min(max.le, 2^(length(model$param)) - 1)
+mle <- NULL
+for (i in 1:le) {
+  est <- model
+  ii <- i
+  for (j in 1:length(est$param)) {
+    if (ii %% 2 ==1) est$param[j] <- NA
+    ii <- as.integer(ii / 2)
+  }
+  cat("\n\n i=", i, "\n")
+  str(est)
+  str(fv <- fitvario(x=expand.grid(x,x), data=z, model=est, Print=1))
+  mle <- rbind(mle, fv$param)
+  if (any(abs(fv$mle$param-model$param) > 0.05))
+    note("WARNING -- deviations detected! Press return")
+  fv2 <- fitvario(x=expand.grid(x,x), data=z, model=fv$mle)$mle.value
+  if ( abs(fv$mle.value - fv2) > abs(fv2) * 10^(-14)){
+    print(fv$mle.value)
+    print(fv2)
+    print(fv$mle.value - fv2)
+    stop("mle.values unequal")
+  }
+}
+
+
+######################################################################
+######################################################################
+
+if (file.exists("source.R")) source("source.R")
+n <- 3000
+model <- list(model="whittle", param=c(4, 3 , 1, 5, 1.5))
+x <- 1:10
+#if (!exists("z") || any(dim(z) != c(rep(length(x), 2), n)))
+z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
+
+le <- min(max.le, 2^(length(model$param)) - 1) ## -1 wegen scale von nugget
+mle <- NULL
+for (i in 1:le) {
+  est <- model
+  ii <- i
+  for (j in 1:length(est$param)) {
+    if (ii %% 2 ==1) est$param[j] <- NA
+    ii <- as.integer(ii / 2)
+  }
+  cat("\n\n i=", i,  "\n")
+  str(est)
+  str(fv <- fitvario(x=expand.grid(x,x), data=z, model=est, Print=1)$mle)
+  mle <- rbind(mle, fv$mle$param)
+  if (any(abs(fv$mle$param-model$param) > 0.05))
+    note("WARNING -- deviations detected! Press return")
 }
 
 
 
 
+
+##################################################################
+## isotropic, new definition
+##################################################################
+
+if (file.exists("source.R")) source("source.R")
+n <- 3000
+model <- list(list(model="exp", var=5, sc=1), "+",
+              list(model="whittle", var=3, sc=4, kappa=2),
+              mean=2)
+x <- 1:10
+z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
+
+EST <- PrepareModel(model, timespace=2)
+le <- min(max.le, 2^(length(EST$param)) - 1)
+mle <- NULL
+for (i in 1:le) {
+  for (me in FALSE:TRUE) {
+    est <- PrepareModel(model, timespace=2)
+    if (me) est$mean <- NA
+    ii <- i
+    for (j in 1:length(est$param)) {
+      if (ii %% 2 ==1) est$param[j] <- NA
+      ii <- as.integer(ii / 2)
+    }
+    est <- convert.to.readable(est)
+    cat("\n\n i=", i, "m=", me, "\n")
+    str(est)
+    str(fv <- fitvario(x=expand.grid(x,x), data=z, model=est, Print=1)$mle)
+    FV <- PrepareModel(fv, timespace=2)
+    mle <- rbind(mle, FV$param)
+    if (any(abs(FV$param - EST$param) > 0.05)) {
+      print(rbind(EST$param, FV$param))
+      note("WARNING -- deviations detected! Press return")
+    }
+  }
+}
+
+## funktioniert nicht : # 23, var=NA, scale=NA; var=NA, scale=NA
+##                        27, var=NA, scale=NA; kappa=NA, scale=NA
+##                        28                  ; NA, NA, NA
+##                        31  NA, NA; NA, NA, NA
+### das scheint aber eher daran zu liegen, dass das Problem schlecht gestellt
+### ist
+
+
+##################################################################
+## anisotropic
+##################################################################
+if (file.exists("source.R")) source("source.R")
+n <- 3000
+model <- list(list(model="exp", var=5, aniso=c(1,0,0,2)), "+",
+              list(model="whittle", var=3, kappa=1.5, aniso=c(1/4,0,0,1/2)),
+              mean=2)
+x <- 1:10
+z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
+EST <- PrepareModel(model, timespace=2)
+le <- min(max.le, 2^(length(EST$param)) - 1)
+mle <- NULL
+for (i in 1:le) {
+  for (me in FALSE:TRUE) {
+    est <- PrepareModel(model, timespace=2)
+    if (me) est$mean <- NA
+    ii <- i
+    for (j in 1:length(est$param)) {
+      if (ii %% 2 ==1) est$param[j] <- NA
+      ii <- as.integer(ii / 2)
+    }
+    est <- convert.to.readable(est)
+    cat("\n\n i=", i, "m=", me, "\n")
+    str(est)
+    Xfv <- fitvario(x=expand.grid(x,x), data=z, model=est, nphi=2,
+                       Print=3)
+    str(fv <- Xfv[c("mle", "mle.lower", "mle.upper")])
+    FV <- PrepareModel(fv$mle, timespace=2)
+    mle <- rbind(mle, FV$param)
+    if (any(abs(FV$param - EST$param) > 0.05)) {
+      print(rbind(EST$param, FV$param))
+      note("WARNING -- deviations detected! Press return")
+    }
+  }
+}
+
+## i=8

@@ -1,6 +1,8 @@
 ## R --no-save < RFtest.time.R
 # source("RFtest.time.R")
 
+if (file.exists("source.R")) source("source.R")
+
 wait <- TRUE; ##wait <- FALSE;  
 
 RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
@@ -21,7 +23,6 @@ RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
   }
 }
 
-library(RandomFields)
 RFparameters(PrintLevel=4,
              CE.force=FALSE,CE.mmin=0,CE.tolRe=-1e-7,CE.tolIm=1e-3,
              CE.trials=3)

@@ -35,8 +35,8 @@ DeleteAllRegisters()
 \value{
   \code{NULL}.
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de},
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu},
+  \url{http://www.cu.lu/~schlathe}}
 
 \seealso{\code{\link{GaussRF}}, \code{\link{RandomFields}} and \code{\link{RFparameters}}.}
 

@@ -3,24 +3,20 @@
 \title{Simulation and Analysis of Random Fields}
 \description{
   The package \code{RandomFields} allows for simulating various kinds
-  of random fields.  The emphasis is (still) on unconditional simulation
-  of stationary and isotropic
-  Gaussian random fields. Furthermore, algorithms for  
+  of random fields, including anisotropic
+  processes. Furthermore, algorithms for  
   conditional simulation and simulation of
   max-stable random fields are provided.
   
   Additionally, the package includes tools for analysing spatial data:
-  empirical variogram, interactive fitting, and MLE estimation of
-  parameters.
+  Hurst parameter, fractal dimension, empirical variogram,
+  interactive fitting of parameters, LSQ and MLE estimation of parameters.
   Basic kriging procedures are also provided.
 
-  Version 2.0 will contain various extensions of the packages
-  (anisotropic random fields, user defined nested
-  models and multiplicative models). It is is supposed to be
-  released the latest by the end of 2002.
+  Further extensions of the package are planned.
 }
 \details{
-  The following random fields and related functionallities are
+  The following random fields and related functionalities are
   provided by the package.
   \enumerate{
     \item stationary and isotropic Gaussian random fields\cr
@@ -30,12 +26,11 @@
       variogram models
       \item \code{\link{EmpiricalVariogram}} : empirical variogram
       \item \code{\link{GaussRF}} : simulation of Gaussian random
-         fields; nice examples to get familiar with the
-         simulation features of the package
+        fields; nice examples to get familiar with the
+        simulation features of the package
       \item \code{\link{Kriging}} : simple and ordinary kriging
-      \item \code{\link{mleRF}} : maximum likelihood estimator for
+      \item \code{\link{mleRF}} : maximum likelihood estimator and lsq for
       random field parameters
-      \item \code{\link{RFparameters}} : control parameters (advanced settings)
       \item \code{\link{PrintMethodList}} : list of implemented
       simulation methods
       \item \code{\link{ShowModels}} : interactive, graphical choice of
@@ -44,17 +39,16 @@
       the \code{example} gives a simple geostatistical analysis using
       features of the package      
     }
-    \item stationary and isotropic max-stable random fields\cr
+    \item stationary (and isotropic) max-stable random fields\cr
     \itemize{
      \item \code{\link{CovarianceFct}} : covariance models for
      extremal Gaussian random fields
      \item \code{\link{MaxStableRF}} : simulation of max-stable
      random fields
-     \item \code{\link{RFparameters}} : control parameters (advanced)     
     }
     
     \item stationary and isotropic Poisson random fields
-    (convenient access not implemented yet)\cr
+    (not implemented yet)\cr
 %    \itemize{
 %      \item \code{%\link{
 %	PoissonRF%}
@@ -62,32 +56,43 @@
 %    }
   }
 
-  Functions used for diverse simulation methods:
+  Functions used in diverse simulation methods:
   \itemize{
     \item \code{\link{DeleteRegister}} : deleting internal registers
+    \item \code{\link{RFparameters}} : control parameters (advanced settings)
   }
+
+  Functions of general purpose:
+   \itemize{
+    \item \code{\link{eval.parameters}} : provides an interactive menu 
+    \item \code{\link{fractal.dim}} : estimation of the fractal dimension
+    \item \code{\link{hurst}} : estimation of the Hurst parameter
+    \item \code{\link{regression}} : interactive regression plot 
+  }
+ 
 }
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 \references{
-  Schlather, M. (2001) Simulation of stationary and isotropic
-    random fields. \emph{R News} \bold{1} (2), 18-20.
+  This package is announced in:
+
+  Schlather, M. (2001) Simulation of stationary and isotropic random
+  fields. \emph{R-News} \bold{1} (2), 18-20.
   
-  Schlather, M. (1999) \emph{An introduction to positive definite
-    functions and to unconditional simulation of random fields.}
-  Technical report ST 99-10, Dept. of Maths and Statistics,
-  Lancaster University. 
+  Schlather, M. (2004)
+  Simulation of random fields and applications. \emph{In preparation.}
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
 \section{Acknowledgement}{
   Many thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
-  for proof-reading parts of the code and the help text of this
-  package. 
+  for proof-reading parts of the code and the help text for V1.0 of
+  this package. 
 
-  The work has been supported by the EU TMR network ERB-FMRX-CT96-0095 on
+  The coding of V1.0 has been supported by the EU TMR network
+  ERB-FMRX-CT96-0095 on
   ``Computational and statistical methods for the analysis of spatial
   data'' in 1999,
   and by the German Federal Ministry of Research and Technology 
-  (BMFT) grant PT BEO 51-0339476C during 2000--2001.
+  (BMFT) grant PT BEO 51-0339476C during 2000-03.
 }
 \keyword{spatial}
 

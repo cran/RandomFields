@@ -3,51 +3,63 @@
 \alias{InitGaussRF}
 \title{Gaussian Random Fields}
 \description{
-  These functions simulate isotropic Gaussian random fields
-  using turning bands, circulant embedding, direct methods,
-  and the random coin method.
+  These functions simulate stationary spatial and spatio-temporal
+  Gaussian random fields using turning bands/layers, circulant embedding,
+  direct methods, and the random coin method.
 }
 \usage{
-GaussRF(x, y=NULL, z=NULL, grid, model, param, method=NULL,
-          n=1, register=0, gridtriple=FALSE)
+GaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
+        method=NULL, n=1, register=0, gridtriple=FALSE)
 
-InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
-               method=NULL, register=0, gridtriple=FALSE)
+InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
+            method=NULL, register=0, gridtriple=FALSE)
 }
 \arguments{
-\item{x}{matrix of coordinates, or vector of x coordinates}
-\item{y}{vector of y coordinates}
-\item{z}{vector of z coordinates}
-\item{grid}{logical; determines whether the vectors \code{x},
-  \code{y}, and \code{z} should be
-  interpreted as a grid definition, see Details.}
-\item{model}{string; covariance or variogram model,
-  see \code{\link{CovarianceFct}}, or
-  type \code{\link{PrintModelList}()} to get all options}
-\item{param}{parameter vector:
-  \code{param=c(mean, variance, nugget, scale,...)};
-  the parameters must be given
-  in this order; further parameters are to be added in case of a
-  parametrised class of models, see \code{\link{CovarianceFct}}}
-\item{method}{\code{NULL} or string; Method used for simulating,
-  see \code{\link{RFMethods}}, or
-  type \code{\link{PrintMethodList}()} to get all options}
-\item{n}{number of realisations to generate}
-\item{register}{0:9; place where intermediate calculations are stored;
-  the numbers are aliases for 10 internal registers}
-\item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
+  \item{x}{matrix of coordinates, or vector of x coordinates}
+  \item{y}{vector of y coordinates}
+  \item{z}{vector of z coordinates}
+  \item{T}{vector of time coordinates, may only be given if
+    the random field is defined as an anisotropic random field,
+    i.e. if \code{model=list(list(model=,var=,k=,aniso=),...)}.
+    \code{T} must always be given in the \code{gridtriple} format,
+    independently how the spatial part is defined.
+  }
+  \item{grid}{logical; determines whether the vectors \code{x},
+    \code{y}, and \code{z} should be
+    interpreted as a grid definition, see Details.  \code{grid}
+    does not apply for \code{T}.}
+  \item{model}{string or list; covariance or variogram model,
+    see \code{\link{CovarianceFct}}, or
+    type \code{\link{PrintModelList}()} to get the list of all implemented
+    models; see Details.}
+  \item{param}{vector or matrix of parameters or missing, see Details
+    and \code{\link{CovarianceFct}}; 
+    The simplest form is that \code{param} is vector of the form
+    \code{param=c(NA,variance,nugget,scale,...)}, in this order;\cr
+    The dots \code{...} stand for additional parameters of the
+    model.}
+  \item{trend}{Not programmed yet.
+    trend surface: number (mean) or a vector of length
+    \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
+      a_0 +a_1 x_1 + ... + a_d x_d}), or function(x)}
+  \item{method}{\code{NULL} or string; method used for simulating,
+    see \code{\link{RFMethods}}, or
+    type \code{\link{PrintMethodList}()} to get all options.
+    If \code{model} is given as list then \code{method} may not be
+    set if \code{model[[i]]$method}, \eqn{i=1,3,..} is given, and vice
+    versa.}
+  \item{n}{number of realisations to generate}
+  \item{register}{0:9; place where intermediate calculations are stored;
+    the numbers are aliases for 10 internal registers}
+  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
     If \code{gridtriple==TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
     \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values
   }
-}\details{
-  \code{GaussRF} creates an isotropic Gaussian random field with
-  \code{model} as covariance function/variogram model and parameters
-  \code{param=c(mean,variance,nugget,scale,...)}. 
-  The sill of the variogram equals \code{variance + nugget}.
-  
+}
+\details{
   \code{GaussRF} can use different methods for the simulation,
   i.e., circulant embedding, turning bands, direct methods, and random
   coin method. 
@@ -57,8 +69,41 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
   methods. (However it guesses what is a good choice.) 
   Note that some of the methods do not work for all covariance 
   or variogram models.
-  
-  \code{GaussRF} is split up in an initial \code{InitGaussRF},
+
+  \itemize{
+    \item
+    An isotropic random field is created by 
+    \code{GaussRF} where
+    \code{model} is the covariance or variogram model and the
+    parameter is \code{param=c(mean,variance,nugget,scale, ...)}.
+    Alternatively the \code{trend} can be given (not programmed yet); then
+    \code{param=c(variance,nugget,scale, ...)}.
+
+    \item
+    Nested models can be defined in the same way as a nested
+    \code{\link{CovarianceFct}}.  If the \code{trend} is not given
+    it is set to 0.
+
+    \item
+    An anisotropic random field (i.e. zonal anisotropy, geometrical
+    anisotropy, separable models, non-separable space-time models)
+    and a random field based on multiplicative or nested models
+    is defined as in the case of
+    an anisotropic \code{\link{CovarianceFct}}. 
+    If the \code{trend} is not given it is set to 0.
+    The \code{method} may be specified by the global \code{method}
+    or for each model separately, as additional parameter
+    \code{method} for each entry of the list;
+    note that methods can not be mixed within a multiplicative part.
+
+    If \code{model=list(list(model=,var=,k=,aniso=),...)} then a time
+    component might be given.  In case of \code{model="nugget"},
+    \code{aniso} must still be given as a matrix.  Namely if
+    \code{aniso} is a singular matrix then a zonal nugget effect
+    is obtained.
+   }  
+ 
+  \code{GaussRF} calls initially \code{InitGaussRF},
   which does some basic checks on the validity of the parameters.  Then,
   \code{InitGaussRF} performs some first calculations, like the first
   Fourier transform in the circulant embedding method or the matrix
@@ -71,9 +116,6 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
   specification of the random field.  If so (and if
   \code{\link{RFparameters}()$STORING==TRUE}), the stored intermediate
   results are used instead of being recalculated. 
-  
-  Using \code{InitGaussRF} and \code{\link{DoSimulateRF}} in sequence might
-  be slightly faster than \code{GaussRF} (but less convenient). 
   
   Comments on specific parameters:
   \itemize{
@@ -90,19 +132,20 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
   (as given by \code{expand.grid(seq(x$start,x$end,x$step),
                           seq(y$start,y$end,y$step),
                           seq(z$start,z$end,z$step))})
-  \item \code{model="nugget"} is one possibility to create independent
-  Gaussian random variables.  Without loss of efficiency, any
-  covariance function with parameter vector
-  \code{c(mean, 0, nugget, scale, ...)}
-  can also be used.  If \code{model="nugget"} is used
-  the second component of \code{param} must be zero.
+			
+  %\item \code{model="nugget"} is one possibility to create independent
+  %Gaussian random variables.  Without loss of efficiency, any
+  %covariance function with parameter vector
+  %\code{c(mean, 0, nugget, scale, ...)}
+  %can also be used.  If \code{model="nugget"} is used
+  %the second component of \code{param} must be zero.
   %% this has to be changed in later versions; 
 
-  \item The sum of the components variance and nugget in the argument
-  \code{param} equals the sill of the variogram. 
+  %\item The sum of the components variance and nugget in the argument
+  %\code{param} equals the sill of the variogram. 
 
   \item \code{register} is a parameter which may never be
-  used by most users (please let me know if you use it!).  In
+  used by most of the users (please let me know if you use it!).  In
   other words,
   the package will work fine if you ignore this parameter. 
   The parameter \code{register} is of interest in the following
@@ -139,11 +182,12 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
   to check the precision.
 }
 \value{
-  \code{InitGaussRF} returns 0 if no error has occured and a positive value
+
+  \code{InitGaussRF} returns 0 if no error has occurred and a positive value
   if failed.\cr
 
   \code{GaussRF} and \code{\link{DoSimulateRF}} return \code{NULL}
-  if an error has occured; otherwise the returned object
+  if an error has occurred; otherwise the returned object
   depends on the parameters \code{n} and \code{grid}:\cr
     \code{n==1}:\cr
     * \code{grid==FALSE}.  A vector of simulated values is
@@ -160,17 +204,10 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
     dimension contains the repetitions.
 }
 \references{
-  Gneiting, T. and Schlather, M. (2001)
-  Statistical modeling with covariance functions.
-  \emph{In preparation}.
-  
-  Schlather, M. (1999) \emph{An introduction to positive definite
-    functions and to unconditional simulation of random fields.}
-  Technical report ST 99-10, Dept. of Maths and Statistics,
-  Lancaster University. 
+  See \link{RFMethods} for the references.
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 \seealso{
   \code{\link{CovarianceFct}},
   \code{\link{DeleteRegister}},
@@ -182,13 +219,16 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
   \code{\link{RFMethods}},
   \code{\link{RandomFields}},
   \code{\link{RFparameters}},
-  \code{\link{ShowModels}}.
+  \code{\link{ShowModels}},
+  \code{\link{winddata}}.
 }
 
 \examples{
  #############################################################
+ ##                                                         ##
  ## Examples using the symmetric stable model, also called  ##
  ## "powered exponential model"                             ## 
+ ##                                                         ##
  #############################################################
  PrintModelList()    ## the complete list of implemented models
  model <- "stable"   
@@ -220,10 +260,9 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
  x <- runif(100, max=20) 
  y <- runif(100, max=20)
  z <- runif(100, max=20) # 100 points in 3 dimensional space
- f <- GaussRF(grid=FALSE,
+(f <- GaussRF(grid=FALSE,
               x=x, y=y, z=z, model=model, 
-              param=c(mean, variance, nugget, scale, alpha))
- f
+              param=c(mean, variance, nugget, scale, alpha)))
 
 
  #############################################################
@@ -231,10 +270,9 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
  ## -- the complete list can be obtained by PrintMethodList()
  x <- runif(100, max=20) # arbitrary points
  y <- runif(100, max=20)
- f <- GaussRF(method="dir",  # direct matrix decomposition
+ (f <- GaussRF(method="dir",  # direct matrix decomposition
               x=x, y=y, model=model, grid=FALSE, 
-              param=c(mean, variance, nugget, scale, alpha))
- f
+              param=c(mean, variance, nugget, scale, alpha)))
 
 
  #############################################################
@@ -247,6 +285,63 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
  image(x, y, f[,,1])
  image(x, y, f[,,2])
  image(x, y, f[,,3])
+        
+
+ #############################################################
+ ##                                                         ##
+ ##      Examples using the extended definition forms       ##
+ ##                                                         ##
+ ##                                                         ##  
+ #############################################################
+
+## note that the output seems plausible but not checked!!!!
+
+## tbm may also be used for multiplicate models (if they have
+## *exactly* the same anisotropy parameters)
+x <- (0:100)/10
+m <- matrix(c(1,2,3,4),ncol=2)/5
+z <- GaussRF(x=x, y=x, grid=TRUE,
+              model=list(
+                list(m="power",v=1,k=2,a=m),
+                "*", list(m="sph", v=1, a=m)
+                ),
+              me="TBM3", reg=0,n=1)
+print(c(mean(as.double(z)),var(as.double(z))))
+image(z,zlim=c(-3,3))
+
+
+## non-separable space-time model applied for two space dimensions
+## note that tbm method does not work nicely, but at least
+## in some special cases.
+x <- y <- (1:32)/2     ## grid definition, but as a sequence
+T <- c(1,32,1)*10      ## note necessarily gridtriple definition
+aniso <- diag(c(0.5,8,1)) 
+k <- c(1,phi=1,1,1,psi=1,dim=2)
+model <- list(list(m="nsst", v=1, k=k, a=aniso))
+z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model)
+for (i in 1:dim(z)[3]) { image(z[,,i]); readline();}
+for (i in 1:dim(z)[2]) { image(z[,i,]); readline();}
+for (i in 1:dim(z)[1]) { image(z[i,,]); readline();}
+
+
+ #############################################################
+ ##                                                         ##
+ ##                    Brownian motion                      ##
+ ##                  using Stein's method                   ##
+ ##                                                         ##  
+ #############################################################
+ # 2d
+ x <- (0:100)/10
+ kappa <- 1   # in [0,2)
+ z <- GaussRF(x=x, y=x, grid=TRUE, model="2d", param=c(0,1,0,1,kappa))
+ image(z,zlim=c(-3,3))
+
+ # 3d
+ x <- (0:30)/10
+ kappa <- 1   # in [0,2)
+ z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="3d",
+              param=c(0,1,0,1,kappa))
+ for (i in 1:dim(z)[1]) { image(z[i,,]); readline();}
 
 
 
@@ -274,6 +369,15 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
  hist(f)
  c( mean(as.vector(f)), var(as.vector(f)) )
  cat("unix time (second call)", format(ut,dig=3),"\n")
+
+
+
+%##############################################################
+%##       for a further, more complicated example on         ##
+%##        space-time modelling, see data(winddata)          ##
+%##############################################################
+
+
 }
 \keyword{spatial}
 

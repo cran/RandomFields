@@ -1,27 +1,37 @@
+
+## it does not make sense to me at the moment that a space-time model
+## for extremes is defined.
+
 "InitMaxStableRF" <-
 function(x, y = NULL, z = NULL, grid, model, param, maxstable,
          method = NULL, register = 0, gridtriple = FALSE) 
 {
   MaxStableList <- c("extremalGauss","BooleanFunction")
+  stopifnot(length(maxstable)==1)
   MaxStableNr <- pmatch(maxstable,MaxStableList)
   if (is.na(MaxStableNr)) stop(paste("Unknown max-stable random field",
                                      "\nPossible values for `maxstable': \"",
                                      paste(MaxStableList,collapse="\", \""),
                                      "\"",sep=""))
-  if (MaxStableNr==2) {
+    if (MaxStableNr==2) {
     if (is.null(method)) method <- "max.MPP"
     else{
-      if (!is.character(method)) stop("Method must be a string.")
-      if (.C("GetMethodNr",method, nr = integer(1))$nr !=
-          .C("GetMethodNr","max.MPP", nr = integer(1))$nr) { 
+      if (!is.character(method) || (length(method)==0))
+        stop("Method must be a string.")
+      if (.C("GetMethodNr",as.character(method),
+             as.integer(1), nr = integer(1), PACKAGE="RandomFields")$nr
+          !=
+          .C("GetMethodNr",as.character("max.MPP"),
+             as.integer(1), nr = integer(1), PACKAGE="RandomFields")$nr) { 
         warning("Method does not match max-stable random field definition. Set to `max.MPP'.")  
         method <- "max.MPP"
       }
     }
   }
-  return (InitSimulateRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
-                         method=method, register=register, gridtriple=gridtriple,
-                         distribution="MaxStable")
+  return(InitSimulateRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
+                        method=method, register=register,
+                        gridtriple=gridtriple,
+                        distribution="MaxStable")
           )
 }
 
@@ -29,12 +39,21 @@ function(x, y = NULL, z = NULL, grid, model, param, maxstable,
 function (x, y = NULL, z = NULL, grid, model, param,  maxstable,
           method = NULL, n = 1, register = 0, gridtriple = FALSE) 
 {
-    if (InitSimulateRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
-                       method=method, register=register, gridtriple=gridtriple,
-                       distribution="MaxStable") <= 0) {
+    if (InitMaxStableRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
+                        maxstable=maxstable,
+                        method=method, register=register, gridtriple=gridtriple)
+        <= 0) {
         return(DoSimulateRF(n=n, reg=register))
     }
     else {
         return(NULL)
     }
 }
+
+
+
+
+
+
+
+

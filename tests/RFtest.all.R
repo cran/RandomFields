@@ -66,7 +66,7 @@ switch (testlevel,
 #******************************************************************"
 
 
-if (exists("ps")) { ## for author's use only
+if (exists("ps") && !is.null(ps)) { ## for author's use only
   ps <- paste(ps,pid(),sep=".")
   save <- TRUE;
 } else {  ## for users
@@ -79,27 +79,26 @@ if (exists("ps")) { ## for author's use only
 ### minor adjustments ...
 fieldsize<-3 
 endofbins <- 1.3
-numberbins <-30
+numberbins <-31
 if (!is.null(ps))  {histo <- FALSE}  ## Da R CMD check die Variable `ps' nicht
                                     ## definiert hat,
 if (histo) {X11(); X11();}         ## wird X11() nicht mehr aufgerufen
 RFparameters(Storing=TRUE,PrintLevel=PrintLevel,
-  TBM2.lines=6/5*lines,TBM2.linesimufactor=0,TBM2.linesimustep=0.01,
-  TBM3D2.lines=lines,TBM3D2.linesimufactor=0,TBM3D2.linesimustep=0.01,
-  TBM3D3.lines=lines,TBM3D3.linesimufactor=0,TBM3D3.linesimustep=0.01,
-  spectral.lines=lines)
+             TBM2.lines=6/5*lines,TBM2.linesimufactor=0,TBM2.linesimustep=0.01,
+             TBM3D2.lines=lines,TBM3D2.linesimufactor=0,TBM3D2.linesimustep=0.01,
+             TBM3D3.lines=lines,TBM3D3.linesimufactor=0,TBM3D3.linesimustep=0.01,
+             spectral.lines=lines)
 
 ENVIR <- environment()
 randomize <- function(){
   assign("quadraticgrid", runif(1)<0.5, envir=ENVIR) ##quadraticgrid <- FALSE
   assign("Mean", runif(1,0,10), envir=ENVIR)
-  assign("scaling", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+  assign("scaling", if (runif(1)<0.5) runif(1,1,10) else runif(1,0.2,1),
          envir=ENVIR)
-  assign("variance", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+  assign("variance", if (runif(1)<0.5) runif(1,1,10) else runif(1,0.2,1),
          envir=ENVIR)
-  assign("nugget", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+  assign("nugget", if (runif(1)<0.5) runif(1,1,10) else runif(1,0.2,1),
          envir=ENVIR)
-  quadraticgrid <<-  runif(1)<0.5; ##quadraticgrid <- FALSE
 }
 
 simplemodels <- c("circular","cubic",
@@ -108,43 +107,59 @@ simplemodels <- c("circular","cubic",
                   "spherical","wave");
 
 if (random.parameters){
-models <- list(
- list(model="bessel",      kappa1=runif(NP,-1,3),     kappa2=NULL),
- list(model="cauchy",      kappa1=runif(NP,-0.5,3),   kappa2=NULL),
-# list(model="expP",       kappa1=runif(NP,-0.2,1.2), kappa2=runif(NP,-0.5,3)),
- list(model="gencauchy",   kappa1=runif(NP,-0.5,2.5), kappa2=runif(NP,-0.5,3)),
- list(model="gengneiting", kappa1=round(runif(NP,-0.5,4)),kappa2=runif(NP,-0.5,3)),
- list(model="gneitingdiff",kappa1=runif(NP,-0.5,3),   kappa2=runif(NP,-0.5,3)),
- list(model="holeeffect",  kappa1=runif(NP,-0.5,3),   kappa2=NULL),
- list(model="power",       kappa1=runif(NP,-0.5,3),   kappa2=NULL),
- list(model="qexponen",    kappa1=runif(NP,-0.2,1.2), kappa2=NULL),
- list(model="stable",      kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
- list(model="whittle",     kappa1=runif(NP,-0.5,3),   kappa2=NULL)
+models <-
+  list(
+       list(model="bessel",  kappa1=runif(NP,-1,3),      kappa2=NULL),
+       list(model="cauchy",  kappa1=runif(NP,-0.5,3),    kappa2=NULL),
+       list(model="damped",  kappa1=runif(NP,-0.5,2.5),  kappa2=NULL),
+       list(model="FD",      kappa1=runif(NP,-1,1),      kappa2=NULL),
+       list(model="fractg",  kappa1=runif(NP,-0.5,2.5),  kappa2=NULL),
+       list(model="gencau",  kappa1=runif(NP,-0.5,2.5),
+            kappa2=runif(NP,-0.5,3)),
+       list(model="gengn",   kappa1=round(runif(NP,-0.5,4)),
+            kappa2=runif(NP,-0.5,3)),
+       list(model="lgd1",    kappa1=runif(NP,-0.5,3.5),
+            kappa2=runif(NP,-0.5,1.5)),
+       list(model="power",   kappa1=runif(NP,-0.5,3),   kappa2=NULL),
+       list(model="qexpone", kappa1=runif(NP,-0.2,1.2), kappa2=NULL),
+       list(model="stable",  kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
+       list(model="whittle", kappa1=runif(NP,-0.5,3),   kappa2=NULL),
+       list(model="2d",      kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
+       list(model="3d",      kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
 )
 largemodels <-
   list(
-       list(model="cauchytbm", kappa1=runif(NP,-0.5,2.5),
-            kappa2=runif(NP,-0.5,3),  kappa3=round(runif(NP,0,50)/10)),
+       list(model="cone", kappa1=runif(NP,0.5,1),
+            kappa2=runif(NP,0.5,3),  kappa3=runif(NP,0.5,3)),
        list(model="cone", kappa1=runif(NP,-0.5,2.5),
             kappa2=runif(NP,-0.5,3),  kappa3=runif(NP,-0.5,3)),
+       list(model="cauchytbm", kappa1=runif(NP,-0.5,2.5),
+            kappa2=runif(NP,-0.5,3),  kappa3=round(runif(NP,0,50)/10)),
         list(model="hyper",    kappa1=runif(NP,-0.5,3),
             kappa2=runif(NP,-0.5,3), kappa3=runif(NP,-0.5,3))
        )
+
+## very large models are not tested yet:
+##      nsst, nsst2
+
 } else { ## fixed random parameters
 models <-
   list(
-       list(model="bessel",      kappa1=c(-1,-0.5,0,0.5,4),kappa2=NULL),
-       list(model="cauchy",      kappa1=c(-1,0,0.1,5),     kappa2=NULL),
-#       list(model="expP",        kappa1=c(-1,0,0.5,1),     kappa2=c(-1,0,0.1,5)),
-       list(model="gencauchy",         kappa1=c(-1,0,1,2),     kappa2=c(-1,0,0.1,5)),
-       list(model="gengneiting", kappa1=c(-1,0,0.1,1,8),   kappa2=c(-1,0,0.1,4)),
-       list(model="gneitingdiff",kappa1=c(-1,0,0.1,1,8),   kappa2=c(-1,0,0.1,4)),
-       list(model="holeeffect",  kappa1=c(0,1,sqrt(3),3),  kappa2=NULL),
-       list(model="power",       kappa1=c(-1,0.1,1,2),     kappa2=NULL),
-       list(model="qexponen",    kappa1=c(-1,0,0.5,1),     kappa2=NULL),
-       list(model="stable",      kappa1=c(-1,0,0.1,1,2),   kappa2=NULL),
-       list(model="whittle",     kappa1=c(-1,0,0.1,1,8),   kappa2=NULL),
-       )
+       list(model="bessel",  kappa1=c(-1,-0.5,0,0.5,4),kappa2=NULL),
+       list(model="cauchy",  kappa1=c(-1,0,0.1,5),     kappa2=NULL),
+       list(model="damped",  kappa1=c(-1,0,1,2),       kappa2=NULL),
+       list(model="FD",      kappa1=c(-1,-0.5,0,0.5),  kappa2=NULL),
+       list(model="fractg",  kappa1=c(0,1,2,3),        kappa2=NULL),
+       list(model="gencau",  kappa1=c(-1,0,1,2),       kappa2=c(-1,0,0.1,5)),
+       list(model="gengn",   kappa1=c(-1,0,0.1,1,8),   kappa2=c(-1,0,0.1,4)),
+       list(model="lgd1",    kappa1=runif(0,1,2,3,4),  kappa2=c(-1,0,1)),
+       list(model="power",   kappa1=c(-1,0.1,1,2),     kappa2=NULL),
+       list(model="qexpon",  kappa1=c(-1,0,0.5,1),     kappa2=NULL),
+       list(model="stable",  kappa1=c(-1,0,0.1,1,2),   kappa2=NULL),
+       list(model="whittle", kappa1=c(-1,0,0.1,1,8),   kappa2=NULL),
+       list(model="2d",      kappa1=c(-1,0,1,2,3),     kappa2=NULL),
+       list(model="3d",      kappa1=c(-1,0,1,2,3),     kappa2=NULL),
+      )
 largemodels <-
   list(
        list(model="cauchytbm", kappa1=c(-1,0,0.1,1,8), kappa2=c(-1,0,0.1,5),
@@ -154,11 +169,16 @@ largemodels <-
        list(model="hyper",  kappa1=c(-0.1,0,0.1,5), kappa2=c(-5,-0.1,0,0.1,5),
             kappa3=c(-0.1,0,0.1,5))
        )
+
+## very large models are not tested yet:
+##      nsst, nsst2
+
 } 
 
 for (i in 1:repeatscript) {
   randomize()
   print("nugget only simulates the nugget effect. Therefore the value of variance is not taken into account");
+  
   RFcontrol("nugget",pointnumber=pointnumber,valuerepet=valuerepet,
             pointrepet=pointrepet,scal=1,var=0,nug=nugget,mean=Mean,
             field=fieldsize,endof=endofbins,numberb=numberbins,histo=histo,
@@ -166,8 +186,8 @@ for (i in 1:repeatscript) {
     
   for (naturalscaling in FALSE:TRUE) {
     RFparameters(PracticalRange=as.logical(naturalscaling))
-    
-    for (model in models) {
+
+    for (model in models) {##
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
@@ -183,9 +203,9 @@ for (i in 1:repeatscript) {
                 kappa3=model$kappa3,scaling=scaling,var=variance,nug=nugget,
                 mean=Mean,field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
+      print("OK")
     }
 
-    
     for (model in simplemodels) {
       randomize()
       RFcontrol(model,pointnumber=pointnumber,valuerepet=valuerepet,
@@ -196,8 +216,6 @@ for (i in 1:repeatscript) {
         
   }
 }
-
-q()
 
 
 

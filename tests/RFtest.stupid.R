@@ -2,7 +2,6 @@
 ## R --no-save < RFtest.stupid.R
 # source("RFtest.stupid.R")
 
-
 source("./RFtest.R")
 
 if (!exists("testlevel")) testlevel <- 1
@@ -21,7 +20,6 @@ histo <- FALSE;
 save <- FALSE;
 RFparameters(PrintLevel=3)
 
-ENVIR <- environment()
 
 getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
   locations <- list()
@@ -62,12 +60,13 @@ getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
     if ((dim>2) && (runif(1)<0.15)) {locations$z<- NULL; print("Z IS NULL") }
   } else {
     if (runif(1)<0.1) { locations$z <- locations$x; print(" Z=X, Y=NULL")}
-    else if (runif(1)<0.1) {locations$y <- runif(runif(1,0,5),-1,5); print(" NONSENSE Y")}                   
+    else if (runif(1)<0.1) {locations$y <- runif(runif(1,0,5),-1,5); print(" NONSENSE Y")}                 
   }
   print(locations)
   return(locations)
 }
 
+ENVIR <- environment()
 randomize <- function(){
   assign("quadraticgrid", runif(1)<0.5, envir=ENVIR) ##quadraticgrid <- FALSE
   assign("Mean", runif(1,-10,10), envir=ENVIR)
@@ -112,7 +111,8 @@ for (i in 1:repeatscript) {
     print(c("nsc,pn",naturalscaling,pointnumber))
     RFparameters(PracticalRange=naturalscaling)
     
-    for (model in models) {
+      if (FALSE) for (model in models) {
+      cat("\n ********* models "); str(model)
       randomize()
       x <- try(RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
@@ -123,7 +123,8 @@ for (i in 1:repeatscript) {
       if (!is.null(x)) { readline();}
     }
     
-    for (model in simplemodels) {
+   for (model in simplemodels) {
+      cat("\n ********* simplemodels "); str(model)
       randomize()
       x <- try(RFcontrol(model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,scaling=scaling,var=variance,nug=nugget,
@@ -134,6 +135,7 @@ for (i in 1:repeatscript) {
     }
     
     for (model in largemodels) {
+      cat("\n ********* largemodels "); str(model)
       randomize()
       x<-try(RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,

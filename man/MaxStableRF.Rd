@@ -23,15 +23,17 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     interpreted as a grid definition, see Details.}
   \item{model}{string; see \code{\link{CovarianceFct}}, or
     type \code{\link{PrintModelList}()} to get all options;
-    interpretation depends on the value of \code{maxstable}}
+    interpretation depends on the value of \code{maxstable},
+    see Details.}
   \item{param}{parameter vector:
     \code{param=c(mean, variance, nugget, scale,...)};
     the parameters must be given
     in this order; further parameters are to be added in case of a
     parametrised class of covariance functions,
-    see \code{\link{CovarianceFct}}}
-  \item{maxstable}{string. Either \code{"extremalGauss"} or
-    \code{"BooleanFunction"}; see Details.}
+    see \code{\link{CovarianceFct}}, or be given in one of the extended
+    forms, see Details}
+  \item{maxstable}{string. Either 'extremalGauss' or
+    'BooleanFunction'; see Details.}
   \item{method}{\code{NULL} or string; method used for simulating,
     see \code{\link{RFMethods}}, or
     type \code{\link{PrintMethodList}()} to get all options;
@@ -74,7 +76,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     models that are suitable for the random coin method
     are suitable for this technique, see \code{\link{PrintModelList}()}
     for a complete list of suitable covariance models.\cr
-    The only value allowed for \code{method} is \code{"max.MPP"} (and
+    The only value allowed for \code{method} is 'max.MPP' (and
     \code{NULL}),
     see \code{\link{PrintMethodList}()}. In the parameter list
     \code{param} the first two entries, namely \code{mean} and
@@ -83,13 +85,18 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     with scale parameter
     \code{nugget} is involved when building the maximum
     over all functions.
+
+    The model may be defined alternatively in one of the two extended
+    ways as introduced in \code{CovarianceFct} and \code{GaussRF}.
+    However only a single model may be given! The model may be
+    anisotropic.
   }
 } \value{
-  \code{InitMaxStableRF} returns 0 if no error has occured, and
+  \code{InitMaxStableRF} returns 0 if no error has occurred, and
   a positive value if failed.\cr
 
   \code{MaxStableRF} and \code{\link{DoSimulateRF}} return \code{NULL}
-  if an error has occured; otherwise the returned object
+  if an error has occurred; otherwise the returned object
   depends on the parameters:\cr
     \code{n==1}:\cr
     * \code{grid==FALSE}.  A vector of simulated values is
@@ -107,11 +114,11 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
 
 }
 \references{
-  Schlather, M. (2001) Models for stationary max-stable
-  random fields. \emph{Submitted}.
+   Schlather, M. (2002) Models for stationary max-stable
+   random fields. \emph{Extremes} \bold{5}, 33-44.
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 \seealso{
   \code{\link{CovarianceFct}},
   \code{\link{GaussRF}},

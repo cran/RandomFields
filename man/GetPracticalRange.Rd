@@ -19,6 +19,8 @@ GetPracticalRange(model, kappas=NULL)
 \details{
   In case the practical range has to be determined numerically, only a
   rough approximation is provided.
+
+  The function can only be applied to isotropic models
 }
 \value{
   real number (the practical range)
@@ -27,8 +29,8 @@ GetPracticalRange(model, kappas=NULL)
   Goovaerts, P. (1997) \emph{Geostatistics for Natural Resources
     Evaluation.} New York: Oxford University Press.
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 
 \seealso{  \code{\link{CovarianceFct}},
   \code{\link{RandomFields}},

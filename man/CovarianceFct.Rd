@@ -1,50 +1,62 @@
 \name{CovarianceFct}
+\alias{CovarianceFct}
 \alias{Variogram}
 \alias{PrintModelList}
+\alias{GetModelList}
 \alias{GetModelNames}
-\alias{CovarianceFct}
 \title{Covariance And Variogram Models}
 \description{
-  \code{CovarianceFct} returns the values of an isotropic covariance function
+  \code{CovarianceFct} returns the values of a covariance function
   
-  \code{Variogram} returns the values of an isotropic variogram model
+  \code{Variogram} returns the values of a variogram model
 
   \code{PrintModelList} prints the list of currently implemented models
+  including the corresponding simulation methods
+
+  \code{GetModelList} returns a matrix of currently implemented models
+  and their simulation methods
 
   \code{GetModelNames} returns a list of currently implemented models
  }
 \usage{
-CovarianceFct(x,model,param,dim=1)
-Variogram(x,model,param,dim=1)
+CovarianceFct(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1),
+              fctcall="Covariance")
+
+Variogram(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
+
 PrintModelList()
+
+GetModelList(abbr=TRUE)
+
 GetModelNames()
 }
 \arguments{
-  \item{x}{a vector of distances at which the covariance function
-    or variogram should be evaluated}
-  \item{model}{character; name of the covariance function or
-    variogram model; see below,
-    or type \code{PrintModelList()} for all
-    options}
-  \item{param}{vector of parameters; 
+  \item{x}{vector or \eqn{(n \times \code{dim})}{(n x
+      \code{dim})}-matrix.  In particular,
+    if the model is isotropic or \code{dim=1} then \code{x}
+    is a vector.}
+
+  \item{model}{character or list;
+    if character then name of the covariance function or
+    variogram model - see below, or type \code{PrintModelList()} for
+    all options; see Details for the definition of the model by a list. 
+  }
+  \item{param}{vector or matrix of parameters or missing, see Details
+    and Examples; 
+    The simplest form is that \code{param} is vector of the form
     \code{param=c(NA,variance,nugget,scale,...)}, in this order;\cr
     The dots \code{...} stand for additional parameters of the
-    model
+    model. 
   }
   \item{dim}{dimension of the space in which the model is applied}
+  \item{fctcall}{this parameter should not be changed by the user}
+  \item{abbr}{logical or numerical. If \code{TRUE} the names for the methods are
+    abbreviated. If numerical, \code{abbr} gives the number of letters.} 
 }
-\details{
-  The first component of \emph{param} is reserved for the \code{mean}
-  of a random field and thus ignored in the evaluation of the covariance
-  function or variogram.  The parameters mean, variance, nugget, and scale
-  must be given in this order; additional
-  parameters have to be supplied in case of a parametrised class of
-  models (e.g. \code{hyperbolic}, see below),
-  in the order \eqn{\kappa_1}{a}, \eqn{\kappa_2}{b}, \eqn{\kappa_3}{c}.
- 
-  The implemented models are in standard notation of a covariance
-  function (variance 1,
-  nugget 0, scale=1) and for positive real arguments \eqn{x}{x}:
+\details{  
+  The implemented models are in standard notation for a
+  covariance function (variance 1, nugget 0, scale 1) and for positive
+  real arguments \eqn{x} (and \eqn{t}): 
   
   \itemize{
     \item \code{bessel}
@@ -53,6 +65,12 @@ GetModelNames()
     The parameter \eqn{\kappa}{a} is greater than or equal to
     \eqn{\frac{d-2}2}{(d-2)/2}, where \eqn{d}{d} is the
     dimension of the random field.
+
+    \item Brownian motion\cr
+    see \code{2dfractalB} and \code{3dfractalB}
+    
+    \item cardinal sine\cr
+    see \code{wave}
     
     \item \code{cauchy}
     \deqn{C(x)=\left(1+x^2\right)^{-\kappa}}{C(x)=(1+x^2)^(-a)}
@@ -107,27 +125,43 @@ GetModelNames()
     It is a 2 times differentiable covariance functions with compact
     support. %(See Chiles&Delfiner, 1998)
     
+    \item \code{dampedcosine}
+    \deqn{C(x)=e^{-\kappa x} \cos(x),  \quad x\ge0}{C(x)=
+      exp(-a x) cos(x) }
+    This model is valid
+    for dimension 1 iff \eqn{\kappa\ge1}{a>=0},
+    for dimension 2 iff \eqn{\kappa\ge1}{a>=1},
+    and for dimension 3 iff \eqn{\kappa\ge \sqrt{3}}{a >= sqrt(3)}.
+
     \item \code{exponential}
     \deqn{C(x)=e^{-x},  \quad x\ge0}{C(x)=exp(-x)}
     This model is a special case of the \code{whittlematern} model
     (for \eqn{\kappa=\frac12}{a=1/2} there)
     and the \code{stable} class (for \eqn{\kappa=1}{a=1}).
     
-    %%   \item\code{expPLUScirc}
-    %%   \deqn{\kappa_1 e^{-x} +
-    %%     (1-\kappa_1)
-    %%     \left(1-\frac2\pi
-    %%     \left(\frac xb\sqrt{1-(x/\kappa_2)^2}+\arcsin(x/\kappa_2)\right)
-    %%     \right) 1_{[0,1]}(x)}{
-    %%     a exp(-x) +
-    %%     (1-a)(1-2/pi(x/b*sqrt(1-x^2/b^2)+asin(x/b)))   if
-    %%     0<=x<=1, 0 otherwise}
-    %%   The parameter \eqn{\kappa_1}{a} is in \eqn{[0,1]} and
-    %%   \eqn{\kappa_2}{b} is positive. 
-    %%   This isotropic covariance function is valid only for dimensions less
-    %%   than or equal to 2.
-   
-    \item \code{gaussian}
+    \item fractal Brownian motion\cr
+    see \code{2dfractalB} and \code{3dfractalB}
+    
+    \item \code{FD}
+    \deqn{C(k) = \frac{(-1)^k \Gamma(1-\kappa)^2}{\Gamma(1-\kappa+k)
+	\Gamma(1-\kappa-k), 
+      \qquad k \in {\bf N}}}{C(k) = (-1)^k
+      G(1-a)^2/(G(1-a+k)G(1-a-k)) for integer k}
+    and linearly interpolated otherwise.
+    Here, \eqn{\Gamma}{G} is the Gamma function.
+    The fractionally differenced process
+    is a time series model where the grid locations are multiples
+    of the scale parameter.  The parameter \eqn{\kappa}{a} is in
+    \eqn{[-1/2, 1/2)}. 
+    
+    \item \code{fractgauss}
+    \deqn{C(x) = 0.5 (|x+1|^{\kappa_1} - 2|x|^{\kappa_1} +
+      |x-1|^{\kappa_1})}{C(x) = 0.5 (|x+1|^a - 2|x|^a + |x-1|^a)}
+      This model is the covariance function for the fractional Gaussian noise
+      with Hurst parameter \eqn{H=\kappa_1 /2}{H =a/2}, \eqn{\kappa_1 \in
+	(0,2]}{a in (0,2]}
+	
+    \item \code{gauss}
     \deqn{C(x)=e^{-x^2}}{C(x)=exp(-x^2)}
     This model is a special case of the \code{stable} class
     (for \eqn{\kappa=2}{a=2} there).
@@ -169,15 +203,16 @@ GetModelNames()
     The parameter \eqn{\kappa_2}{b} is greater than or equal to
     \eqn{(d + 2\kappa_1 +1)/2}{(d + 2a +1)/2} where \eqn{d} is the
     dimension of the random field.
-    
+
+    % the differentiability is ??
     
     \item \code{gneiting}
     \deqn{C(x)=\left(1 + 8 sx + 25 (sx)^2 + 32
       (sx)^3\right)(1-sx)^8 1_{[0,1]}(sx)}{C(x)=
       (1 + 8 s x + 25 s^2 x^2 + 32
-      s^3 x^3)*(1-s x)^8   if 0<=x<=1, 0 otherwise}
+      s^3 x^3)*(1-s x)^8   if 0<=s x<=1, 0 otherwise}
     where
-    \eqn{s=\frac{10\sqrt2}{47}\approx 0.3}{s = 10 sqrt(2) / 47 ~= 0.3}.
+    \eqn{s=0.301187465825}.
     This isotropic covariance function is valid only for dimensions less
     than or equal to 3. 
     It is a 6 times differentiable covariance functions with compact
@@ -188,8 +223,13 @@ GetModelNames()
     numerical disadvantages of the Gaussian model.\cr
     This model is a special case of \code{gengneiting} (for
     \eqn{\kappa_1=3}{a=3} and \eqn{\kappa_2=5}{b=5} there).
+    Note that, in the original work by Gneiting (1999), 
+    \eqn{s=\frac{10\sqrt2}{47}\approx 0.3}{s = 10 sqrt(2) / 47 ~=
+      .3008965}, a numerical value slightly deviating from the
+    optimal one.
     
-    \item \code{gneitingdiff}
+
+    \item gneitingdiff is obsolete, see example below
     \deqn{C(x)=\left(1 + 8 \frac x{\kappa_2}
       + 25 \frac {x^2}{\kappa_2^2}
       + 32 \frac {x^3}{\kappa_2^3}\right)
@@ -206,15 +246,7 @@ GetModelNames()
     This class of models with compact support
     allows for smooth parametrisation of the differentiability up to
     order 6.     
-    
-    \item \code{holeeffect}
-    \deqn{C(x)=e^{-\kappa x} \cos(x),  \quad x\ge0}{C(x)=
-      exp(-a x) cos(x) }
-    This model is valid
-    for dimension 1 iff \eqn{\kappa\ge1}{a>=0},
-    for dimension 2 iff \eqn{\kappa\ge1}{a>=1},
-    and for dimension 3 iff \eqn{\kappa\ge \sqrt{3}}{a >= sqrt(3)}.
-    
+       
     \item \code{hyperbolic}
     \deqn{C(x)=\frac{1}{\kappa_3^{\kappa_2}
 	K_{\kappa_2}(\kappa_1 \kappa_3)}
@@ -223,7 +255,7 @@ GetModelNames()
       \kappa_1 \left(\kappa_3^2 + x^2\right)^{1/2}\right),  \quad
       x>0}{C(x)=
       c^(-b) (K_b(a*c))^(-1) * (c^2 +x^2)^(0.5 b) *
-      K_b(sqrt(a(c^2 + x^2)))}
+      K_b(a sqrt(c^2 + x^2))}
     The parameters are such that\cr
     \eqn{\kappa_3\ge0}{c>=0},  \eqn{\kappa_1>0}{a>0 }  and 
     \eqn{\kappa_2>0,\quad}{b>0,   }
@@ -236,25 +268,93 @@ GetModelNames()
     Note that this class is over-parametrised; always one
     of the three parameters 
     \eqn{\kappa_1}{a}, \eqn{\kappa_3}{c}, and scale
-    can be eliminiated in the formula. Therefore, one of these
+    can be eliminated in the formula. Therefore, one of these
     parameters should be kept fixed in any simulation study.
     \cr
     The model contains as special cases the \code{whittlematern}
     model and the \code{cauchy} model, for 
     \eqn{\kappa_3=0}{c=0} and \eqn{\kappa_1=0}{a=0}, respectively.
+
+    \item J-Bessel\cr
+    see \code{bessel}
+
+    \item K-Bessel\cr
+    see \code{whittlematern}
     
     \item linear with sill\cr
     See \code{power} (\code{a=1} there).
 
+    \item lgd1 (local-global distinguisher)
+    \deqn{C(x)=
+      1-\frac\beta{\alpha+\beta}|x|^\alpha, |x|\le 1 \qquad \hbox{and} \qquad
+    \frac\alpha{\alpha+\beta}|x|^\beta, |x|> 1
+    }{
+      C(x)=
+      1- b(a+b)^{-1}|x|^a for |x|\le 1   and  
+    a(a+b)^{-1}|x|^b for |x|> 1
+    }
+    Here \eqn{\beta>0}{b>0} and \eqn{\alpha}{a} is in
+    \eqn{(0, \frac12 (3 - d)]}{(0, 1.5-d/2]} for dimension \eqn{d=1,2}.
+    The random field has fractal dimension
+    \eqn{d + 1 - \frac\alpha2}{d + 1 - a/2}
+    and Hurst coefficient \eqn{1 - \frac\beta2}{1 - b/2} for
+    \eqn{\beta\in(0,1]}{b in (0,1]}
+   
     \item matern\cr
     See \code{whittlematern}.
     
+   \item \code{nsst} (Non-Separable Space-Time model)
+    \deqn{C(x,t)= \psi(t)^{-\kappa_6} \phi(x / \psi(t))}{C(x,t)=
+      psi(t)^{-f} \phi(x / psi(t))}
+    This model is used for space-time modelling where the spatial
+    component is isotropic.  Here\cr
+    \eqn{\phi} is the \code{stable} model if \eqn{\kappa_2=1}{b=1}\cr
+    \eqn{\phi} is the \code{whittlematern} model if \eqn{\kappa_2=2}{b=2}\cr
+    \eqn{\phi} is the \code{cauchy} model if \eqn{\kappa_2=3}{b=3}\cr
+    and \eqn{kappa_1}{a} is the respective parameter for the model.
+    The function \eqn{\psi}{psi} satisfies\cr
+    \eqn{\psi^2(t) = (t^{\kappa_3}+1)^{\kappa_4}}{psi^2(t) =
+      (t^c+1)^d} if \eqn{\kappa_5=1}{e=1}\cr
+    \eqn{\psi^2(t) = \frac{\kappa_4^{-1}t^{\kappa_3}+1}{t^{\kappa_3}+1}
+    }{psi^2(t) = (d^{-1} t^c+1)/(t^c+1)} if \eqn{\kappa_5=2}{e=2}\cr
+    \eqn{\psi^2(t)= - \log(t^{\kappa_3}+\kappa_4^{-1})/
+	\log\kappa_4}{psi^2(t)=-\log(t^c+1/d)/log d}
+      if \eqn{\kappa_5=3}{e=3}\cr
+    The parameter \eqn{\kappa_6}{f} must be greater than or equal to
+    the spatial dimension of the field. Furthermore, \eqn{\kappa_3\in
+      (0,2]}{c in (0,2]}  and \eqn{\kappa_4\in
+      (0,1)}{d in (0,1)}.
+     The spatial dimension must be \code{>=1}.
+
+    \item \code{nsst2}
+    \deqn{C(x,t)= \psi(t)^{-\kappa_7} \phi(x /\psi(t))}{C(x,t)=
+      psi(t)^{-g} \phi(x / psi(t))}
+    This model is used for space-time modelling where the spatial
+    component is isotropic.  Here\cr
+    \eqn{\phi} is the \code{gencauchy} model if \eqn{\kappa_3=1}{c=1}\cr
+    The parameters \eqn{kappa_1}{a} and \eqn{kappa_2}{b}
+    are the respective parameters for the model.
+    The function \eqn{\psi}{psi} satisfies\cr
+    \eqn{\psi^2(t) = (t^{\kappa_4}+1)^{\kappa_5}}{psi^2(t) =
+      (t^d+1)^e} if \eqn{\kappa_6=1}{f=1}\cr
+    \eqn{\psi^2(t) = \frac{\kappa_5^{-1}t^{\kappa_4}+1}{t^{\kappa_4}+1}
+    }{psi^2(t) = (e^{-1} t^d+1)/(t^d+1)} if \eqn{\kappa_6=2}{f=2}\cr
+    \eqn{\psi^2(t) =-\log(t^{\kappa_4}+\kappa_5^{-1})/
+	\log\kappa_5}{psi^2(t)=-\log(t^d+1/e)/log e}
+      if \eqn{\kappa_6=3}{f=3}\cr
+    The parameter \eqn{\kappa_7}{g} must be greater than or equal to
+    the spatial dimension of the field. Furthermore, \eqn{\kappa_4\in
+      (0,2]}{d in (0,2]}  and \eqn{\kappa_5\in
+      (0,1]}{e in (0,1]}.
+    Necessarily, \code{dim>=2}.
+    The spatial dimension must be \code{>=1}.
+
     \item \code{nugget}
     \deqn{C(x)=1_{\{0\}}(x)}{1(x==0)}
     Here, either \code{param[2]}, the \code{variance},
     or \code{param[3]}, the \code{nugget}, must be zero.
     
-    \item \code{pentamodel}
+    \item \code{penta}
     \deqn{C(x)= \left(1 - \frac{22}3 x^2 +33 x^4 -
       \frac{77}2 x^5 + \frac{33}2
       x^7 -\frac{11}2 x^9 + \frac 56 x^{11}
@@ -326,15 +426,24 @@ GetModelNames()
     This is the model of choice if the smoothness of a random field is to
     be parametrised. It is a special case of the
     \code{hyperbolic} model (for \eqn{\kappa_3=0}{c=0} there).
+    
+    \item \code{2dfractalB}
+    \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}
+    The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
+    
+    \item \code{3dfractalB}
+     \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}
+     The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
+     The same as \code{2dfractalB} except that this implementation
+     allows for simulating random fields in 3 dimensions.
   }
   
   Let \eqn{\rm cov}{cov} be a model given in standard notation. 
   Then the covariance model
-  applied with arbitrary variance,
-  nugget, and scale equals
-  \deqn{\rm \qquad nugget + variance * \rm cov( (\cdot)/ scale).
-  }{nugget + variance * cov( (.)/scale).}
-  
+  applied with arbitrary variance and scale equals
+  \deqn{\rm \qquad variance * \rm cov( (\cdot)/ scale).
+  }{variance * cov( (.)/scale).}
+
   For a given covariance function \eqn{\rm cov}{cov} the variogram
   \eqn{\gamma}{gamma} equals 
   \deqn{\gamma(x) = {\rm cov}(0) - {\rm cov}(x).}{
@@ -343,14 +452,74 @@ GetModelNames()
   Note that the value of the covariance function or variogram
   depends also on
   \code{\link{RFparameters}()$PracticalRange}.  If the latter is
-  \code{TRUE} then the covariance function is internally
+  \code{TRUE} and the covariance model is isotropic
+  then the covariance function is internally
   rescaled such that cov\eqn{(1)\approx 0.05}{(1)~=0.05} for standard
   parameters (\code{scale==1}).
-  
-  Some models allow certain parameter combinations only for certain
-  dimensions.  As any model in \eqn{d}{d} dimensions is also valid in 1
-  dimension, the default in \code{CovarianceFct} and \code{Variogram}
-  is \code{dim=1}.
+
+  The model and the parameters can be specified by three different
+  forms; the first \sQuote{standard} form allows for the specification of the
+  covariance model as given above for an isotropic random
+  field.  The second form defines isotropic nested models using
+  matrices.  The third
+  form allows for defining anisotropic and/or space-time models
+  using lists;
+  here any basic models can arbitrarily be combined by multiplication and
+  summation.
+  \itemize{
+    \item \code{model} is a string; \code{param} is a vector of the form
+    \code{param=c(mean,variance,nugget,scale,...)}. (These components
+    might be given separately or bound to a simple list passed to
+    \code{model}.)
+    
+    The first component of \emph{param} is reserved for the \code{mean}
+    of a random field and thus ignored in the evaluation of the covariance
+    function or variogram.  The parameters mean, variance, nugget, and scale
+    must be given in this order; additional
+    parameters have to be supplied in case of a parametrised class of
+    models (e.g. \code{hyperbolic}, see below),
+    in the order \eqn{\kappa_1}{a}, \eqn{\kappa_2}{b}, \eqn{\kappa_3}{c}.
+    
+    Let \eqn{\rm cov}{cov} be a model given in standard notation. 
+    Then the covariance model
+    applied with arbitrary variance,
+    nugget, and scale equals
+    \deqn{\rm \qquad nugget + variance * \rm cov( (\cdot)/ scale).
+    }{nugget + variance * cov( (.)/scale).}
+     
+    Some models allow certain parameter combinations only for certain
+    dimensions.  As any model valid in \eqn{d}{d} dimensions is also valid in 1
+    dimension, the default in \code{CovarianceFct} and \code{Variogram}
+    is \code{dim=1}.
+
+    \item \code{model} is a string; \code{param} is a matrix with columns
+    of the form \code{c(variance, scale, ...)}.
+
+    Except that the entries for the \code{mean} and the \code{nugget}
+    are missing all explanations given above also apply here. 
+    Each column defines a summand of the nested model. A nugget effect
+    is indicated by \code{scale=0}; possibly additional parameters
+    are ignored.
+    
+    \item \code{model} is a list as specified below; \code{param} is
+    missing.
+
+    \code{model = list(l.1, OP.1, l.2, OP.2, ..., l.n)}
+    where \eqn{n} is at most 10. The lists \code{l.i}
+    are all either of the  form \code{l.i =
+      list(model=,var=,kappas=,scale=,method=)} 
+    or of the form  \code{l.i = list(model=,var=,kappas=,aniso=,method=)}.
+    \code{model} is a string; \code{var} gives the variance;
+    \code{scale} is a scalar whereas \code{aniso} is a \eqn{d \times
+      d}{d x d} matrix, which is multiplied from the right to the
+    \eqn{(n\times d)}{n x d} matrix of points;
+    at the transformed points the values of the (isotropic)
+    random field (with scale 1) are
+    calculated. The dimension \eqn{d} of matrix must match the
+    number of columns of \code{x}. The models given by \code{l.i}
+    can be combined by \code{OP.i="+"} or \code{OP.i="*"}. 
+    \code{method} is ignored here; it can be set in \code{\link{GaussRF}}.
+  }
 }
 \value{
   \code{CovarianceFct} returns a vector of values of the covariance function.
@@ -370,7 +539,7 @@ GetModelNames()
     \emph{Geostatistics. Modeling Spatial Uncertainty.}
     New York: Wiley.
     
-    \item  Gneiting, T. and Schlather, M. (2001)
+    \item  Gneiting, T. and Schlather, M. (2004)
     Statistical modeling with covariance functions.
     \emph{In preparation.}
     
@@ -379,8 +548,8 @@ GetModelNames()
     Technical report ST 99-10, Dept. of Maths and Statistics,
     Lancaster University.
 
-    \item Schlather, M. (2001) Models for stationary max-stable
-      random fields. \emph{Submitted.}
+    \item Schlather, M. (2002) Models for stationary max-stable
+      random fields. \emph{Extremes} \bold{5}, 33-44.
     
     \item Yaglom, A.M. (1987) \emph{Correlation Theory of Stationary and
       Related Random Functions I, Basic Results.}
@@ -392,22 +561,22 @@ GetModelNames()
 
   Cauchy models, generalisations and extensions
   \itemize{
-    \item Gneiting, T. and Schlather, M. (2001)
+    \item Gneiting, T. and Schlather, M. (2004)
     Stochastic models which separate fractal dimension and Hurst effect.
-    \emph{Submitted.}
+    \emph{SIAM review} To appear.% see also lgd
   }
  
   Gneiting's models
   \itemize{
     \item Gneiting, T. (1999)
-    Correlation functions for atmospheric data analysis
+    Correlation functions for atmospheric data analysis.
     \emph{Q. J. Roy. Meteor. Soc., Part A} \bold{125}, 2449-2464. 
   }
    
   Holeeffect model
   \itemize{
     \item Zastavnyi, V.P. (1993)
-    Positive definite functions depending on a norm,
+    Positive definite functions depending on a norm.
     \emph{Russian Acad. Sci. Dokl. Math.} \bold{46}, 112-114. 
   }
 
@@ -415,9 +584,27 @@ GetModelNames()
   \itemize{
     \item Shkarofsky, I.P. (1968) Generalized turbulence space-correlation and
     wave-number spectrum-function pairs. \emph{Can. J. Phys.} \bold{46},
-    2133--2153.
+    2133-2153.
   }
   
+  lgd
+  \itemize{
+    \item Gneiting, T. and Schlather, M. (2004)
+    Stochastic models which separate fractal dimension and Hurst effect.
+    \emph{SIAM review} % see also cauchy
+  }
+
+  nsst
+  \itemize{
+    \item Gneiting, T. (2001) Nonseparable, stationary covariance
+    functions for space-time data, \emph{JASA} \bold{97}, 590-600.
+    
+    \item Gneiting, T. and  Schlather, M. (2001)
+    Space-time covariance models.
+    In El-Shaarawi, A.H. and Piegorsch, W.W.:
+    \emph{The Encyclopedia of Environmetrics.} Chichester: Wiley.
+    }
+
   Power model
   \itemize{
     \item Golubov, B.I. (1981) On Abel-Poisson type and Riesz means,
@@ -426,17 +613,71 @@ GetModelNames()
     \item  Zastavnyi, V.P. (2000) On positive definiteness of some
     functions, \emph{J. Multiv. Analys.} \bold{73}, 55-81.
   }
+
+  2d/3dfractalB
+  \itemize{
+    \item  Stein, M.L. (2002)
+    Fast and exact simulation of fractional Brownian surfaces.
+    {\emph J. Comput. Graph. Statist.} \bold{11}, 587-599.
+  }
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 \seealso{\code{\link{EmpiricalVariogram}},
+  \code{\link{GetPracticalRange}},
+  \code{\link{parameter.range}},
   \code{\link{RandomFields}},
   \code{\link{RFparameters}},
   \code{\link{ShowModels}}.}
 
 \examples{
  PrintModelList()
- CovarianceFct(0:100, "bessel", c(NA,2,1,5,0.5))
+ x <- 0:100
+
+ # the following five model definitions are the same!
+ ## (1) very traditional form
+ (cv <- CovarianceFct(x, model="bessel", c(NA,2,1,5,0.5)))
+
+ ## (2) traditional form in list notation
+ model <- list(model="bessel", param=c(NA,2,1,5,0.5))
+ cv - CovarianceFct(x, model=model)
+
+ ## (3) nested model definition
+ cv - CovarianceFct(x, model="bessel",
+                    param=cbind(c(2, 5, 0.5), c(1, 0, 0)))
+
+ #### most general notation in form of lists
+ ## (4) isotropic notation 
+ model <- list(list(model="bessel", var=2, kappa=0.5, scale=5),
+               "+",
+               list(model="nugget", var=1))
+ cv - CovarianceFct(x, model=model)
+              
+ ## (5) anisotropic notation
+ model <- list(list(model="bessel", var=2, kappa=0.5, aniso=0.2), 
+               "+",
+               list(model="nugget", var=1, aniso=1))
+ cv - CovarianceFct(as.matrix(x), model=model)
+
+
+ # The model gneitingdiff was defined in RandomFields v1.0.
+ # This isotropic covariance function is valid for dimensions less
+ # than or equal to 3 and has two positive parameters.
+ # It is a class of models with compact support that allows for
+ # smooth parametrisation of the differentiability up to order 6.     
+ # The former model `gneitingdiff' must now be coded as
+ gneitingdiff <-  function(p){
+   list(list(m="gneiting", v=p[2], s=p[6]*p[4]*10*sqrt(2)/47),
+       "*",
+       list(m="whittle", k=p[5], v=1.0, s=p[4]),
+       "+",
+       list(m="nugget", v=p[3]))
+ }
+ # and then 
+ param <- c(NA, runif(5,max=10)) ## as usual, here an example
+ CovarianceFct(x,gneitingdiff(param))
+ ## instead of formerly CovarianceFct(x,"gneitingdiff",param)
+
 }
 \keyword{spatial}
 

@@ -5,17 +5,18 @@
   The function allows for different methods of kriging.
 }
 \usage{
-Kriging(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
-        model, param, given, data, pch=".")
+Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
+        gridtriple=FALSE, model, param, given, data, trend, pch=".")
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
-  \item{krige.method}{kriging method; currently only \code{"S"} (simple
-    kriging) and \code{"O"} (ordinary kriging) implemented.}
+  \item{krige.method}{kriging method; currently only 'S' (simple
+    kriging) and 'O' (ordinary kriging) implemented.}
   \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of \code{x}
     coordinates; coordinates of \eqn{n} points to be kriged}
   \item{y}{vector of \code{y} coordinates.}
   \item{z}{vector of \code{z} coordinates.}
+  \item{T}{vector in grid triple form for the time coordinates.}
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
@@ -40,6 +41,7 @@ Kriging(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
   \item{data}{the data values given at \code{given}; it might be a
     vector or a matrix. If a matrix is given multivariate data are
     assumed which are kriged \emph{separately}.}
+  \item{trend}{not programmed yet (will be used in case of universal kriging)}
   \item{pch}{Kriging procedures are quite time consuming in general. 
     The character \code{pch} is printed after roughly
     each 80th part of calculation.}
@@ -67,14 +69,14 @@ Kriging(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
   specification of \code{x}, \code{y}, \code{z}, and
   \code{grid}, and \code{data}.\cr
   
- \code{data}: a vector or matrix with  \bold{one} column\cr
+ \code{data}: a vector or matrix with \emph{one} column\cr
     * \code{grid==FALSE}.  A vector of simulated values is
     returned (independent of the dimension of the random field)\cr
     * \code{grid==TRUE}.  An array of the dimension of the
     random field is returned (according to the specification
     of \code{x}, \code{y}, and \code{z}).\cr
     
-  \code{data}: a matrix with \bold{at least two} columns\cr
+  \code{data}: a matrix with \emph{at least two} columns\cr
     * \code{grid==FALSE}.  A matrix with the \code{ncol(data)} columns
     is returned.\cr
     * \code{grid==TRUE}.  An array of dimension
@@ -99,8 +101,8 @@ Kriging(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
  Wackernagel, H. (1998) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 2nd edition.  
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 %\note{}
 
 \seealso{

@@ -5,26 +5,37 @@
   the function returns conditional simulations of a random field
 }
 \usage{
-CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
-         method=NULL, n=1, register=0, gridtriple=FALSE, 
+CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
+         gridtriple=FALSE, model, param, method=NULL, given, data,
+         trend, n=1, register=0, 
          err.model=NULL, err.param=NULL, err.method=NULL,
-         err.register=1, given, data, tol=1e-05, pch=".")
+         err.register=1, tol=1E-5, pch=".", na.rm=FALSE)
 }
 \arguments{
   \item{krige.method}{Assumptions on the random field which corresponds to
     the respective kriging method;
-    currently only \code{"S"} (simple
-    kriging) and \code{"O"} (ordinary kriging) possible.}
+    currently 'S' (simple
+    kriging) and  'O' (ordinary kriging) are implemented.}
   \item{x}{matrix or vector of \code{x} coordinates; points to be kriged.}
   \item{y}{vector of \code{y} coordinates.}
   \item{z}{vector of \code{z} coordinates.}
+  \item{T}{vector in grid triple form for the time coordinates.}
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
+  \item{gridtriple}{logical.  Only relevant if \code{grid==TRUE}. 
+    If \code{gridtriple==TRUE}
+    then \code{x}, \code{y}, and \code{z} are of the
+    form \code{c(start,end,step)}; if
+    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    must be vectors of ascending values.}
   \item{model}{string; covariance model of the random field. 
     See \code{\link{CovarianceFct}}, or
     type \code{\link{PrintModelList}()} to get all options for
-    \code{model}.}
+    \code{model}.
+    
+    See \code{\link{CovarianceFct}} for \code{model} being a list.
+  }
   \item{param}{parameter vector:
     \code{param=c(mean, variance, nugget, scale,...)};
     the parameters must be given
@@ -32,46 +43,34 @@ CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
     parametrised class of covariance functions,
     see \code{\link{CovarianceFct}};
     the value of \code{mean} must be finite
-    in the case of simple kriging, and is ignored otherwise.}
+    in the case of simple kriging, and is ignored otherwise.
+
+    See \code{\link{CovarianceFct}} for \code{param} being \code{NULL}
+    or list.
+  }
   \item{method}{\code{NULL} or string; method used for simulating,
     see \code{\link{RFMethods}}, or
     type \code{\link{PrintMethodList}()} to get all options.}
-  \item{n}{number of realisations to generate.}
-  \item{register}{0:9; place where intermediate calculations are stored;
-    the numbers are aliases for 10 internal registers; see
-    \code{\link{GaussRF}} for further details.}
-  \item{gridtriple}{logical.  Only relevant if \code{grid==TRUE}. 
-    If \code{gridtriple==TRUE}
-    then \code{x}, \code{y}, and \code{z} are of the
-    form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
-    must be vectors of ascending values.
-  }
- \item{err.model}{string; covariance model that
-    describes the measurement error.  See \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options for
-    \code{err.model}.  If \code{NULL} no measurement error is assumed.
-    Currently, the only option for \code{err.model} is \code{"nugget"}.
-  }
-  \item{err.param}{parameter vector:
-    \code{err.param=c(mean, variance, nugget, scale,...)};
-    the parameters must be given
-    in this order; further parameters are to be added in case of a
-    parametrised class of covariance functions,
-    see \code{\link{CovarianceFct}};
-    the value of \code{mean} must be finite
-    in the case of simple kriging, and is ignored otherwise. 
-    Since currently the only option for \code{err.model} is
-    \code{"nugget"}, \code{err.param} can only be of the form
-    \code{c(mean,0,nugget,0)}.
-  }
-  \item{err.method}{Currently, only \code{"nugget"} or \code{NULL}
-    is sensible; see \code{method} for further information.}
-  \item{err.register}{see \code{register} for details.}
   \item{given}{matrix or vector of locations where data are available;
     note that it is not possible to give the points in form of a grid
     definition.}
   \item{data}{the values measured.}
+  \item{trend}{Not programmed yet. (used by universal kriging)}
+  \item{n}{number of realisations to generate.}
+  \item{register}{0:9; place where intermediate calculations are stored;
+    the numbers are aliases for 10 internal registers; see
+    \code{\link{GaussRF}} for further details.}
+  \item{err.model}{covariance function for the error model. String or list.
+    See \code{model} for details.
+  }
+  \item{err.param}{parameters for the error model. See also
+    \code{param}.
+  }
+  \item{err.method}{Only relevant if \code{err.model} is not
+    \code{NULL}.
+    Then it must be given if and only if \code{method} is given;
+    see \code{method} for details.}
+  \item{err.register}{see \code{register} for details.}
   \item{tol}{considered only if \code{grid=TRUE};
     tolerated distances of a given point to the nearest grid point to
     be regarded as being zero; see Details.}
@@ -79,6 +78,8 @@ CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
     The included kriging procedure can be quite time consuming. 
     The character \code{pch} is printed after roughly
     each 80th part of calculation.}
+  \item{na.rm}{logical. If \code{TRUE} then \code{NA}s are removed from
+    the given data.}
 }
 \details{
   The same way as \code{GaussRF} the function
@@ -86,7 +87,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
   locations.  However simulation on a grid is sometimes performed
   as if the points were at arbitrary locations, what may
   imply a great reduction in speed.  This happens when the \code{given}
-  locations do not ly on the specified grid, since in an intermediate
+  locations do not lay on the specified grid, since in an intermediate
   step simulation has to be performed simultaneously on both the grid
   defined by \code{x}, \code{y}, \code{z}, and the locations
   of \code{given}.\cr
@@ -108,7 +109,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
       seq(z$start,z$end,z$step))})
   }
 }
-value{
+\value{
   The returned object depends on the parameters \code{n} and
   \code{grid}:\cr
     \code{n==1}:\cr
@@ -140,8 +141,8 @@ value{
  Wackernagel, H. (1998) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 2nd edition.  
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
 %\note{}
 
 
@@ -166,6 +167,10 @@ model <- "exponential"
 RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
+print(get(getOption("device")))
+get(getOption("device"))(height=4,width=4);
+get(getOption("device"))(height=4,width=4);
+get(getOption("device"))(height=4,width=4);
 
 # another grid, where values are to be simulated
 step <- 0.25 # or 0.3
@@ -177,18 +182,30 @@ zlim <- c(-2.6, 2.6)
 colour <- rainbow(100)
 
 ## visualise generated spatial data
+dev.set(2)
 image(p, p, data, xlim=lim, ylim=lim, zlim=zlim, col=colour)
-%X11()
 
 #conditional simulation
 krige.method <- "O" ## random field assumption corresponding to
-                   ## those of ordinary kriging
+                    ## those of ordinary kriging
 cz <- CondSimu(krige.method, x, x,  grid=TRUE,
                model=model, param=param,
                given=expand.grid(p,p),# if data are given on a grid
                                       # then expand the grid first
                data=data)
-
+range(cz)
+dev.set(3)
 image(x, x, cz, col=colour, xlim=lim, ylim=lim, zlim=zlim)
+
+
+#conditional simulation with error term
+cze <- CondSimu(krige.method, x, x,  grid=TRUE,
+                model=model, param=c(0, 1/2, 0, 1),
+                err.model="gauss", err.param=c(0, 1/2, 0, 1),
+                given=expand.grid(p,p),
+                data=data)
+range(cze)
+dev.set(4)
+image(x, x, cze, col=colour, xlim=lim, ylim=lim, zlim=zlim)
 }
 \keyword{spatial}

@@ -21,10 +21,16 @@ GetMethodNames()
 
     \item \code{circulant embedding}. \cr
     Introduced by Dietrich & Newsam (1993) and Wood and Chan (1994). 
-    The way the method is implemented in this package
-    it only allows for quadratic grids with
-    common grid lengths.
-    
+
+    \item \code{local circulant embedding (Stein, 2000)}. \cr
+    Here multiplicative models are not allowed (yet).
+
+    If anisotropy then the given variance is attained as 
+    variogram value at
+    \eqn{max_{u =\hbox{unit vector}} \gamma(M u)}{max_{u =unit vector}
+      gamma(M u)},
+    \eqn{M} the anisotropy matrix
+
     \item \code{direct matrix decomposition}.\cr
     This method is based on the well-known method for simulating
     any multivariate Gaussian distribution, using the square root of the
@@ -54,14 +60,14 @@ GetMethodNames()
       are all indicator functions, we obtain
       a Poisson random field. If the intensity of the Poisson
       process is high we obtain an approximate Gaussian random
-      field by the central limit theorem -- this is the
+      field by the central limit theorem - this is the
       \code{add.mpp} method.
       
       \item \code{max.MPP} (Boolean functions).\cr
       If the random functions are multiplied by suitable,
       independent random values, and then the maximum is
       taken, a max-stable random field with unit Frechet margins
-      is obtained -- this is the \code{max.mpp}
+      is obtained - this is the \code{max.mpp}
       method.
     }
     
@@ -88,17 +94,30 @@ GetMethodNames()
     The implementation allows the simulation of 2-dimensional random
     fields defined on arbitrary points or arbitrary grids.
 
-    \item \code{TBM2}, \code{TBM3} (Turning bands methods).\cr
+    \item \code{TBM2}, \code{TBM3} (Turning bands methods; turning layers).\cr
     It is generally difficult to use the turning bands method
     (\code{TBM2}) directly
     in the 2-dimensional space.
     Instead, 2-dimensional random fields are frequently obtained
     by simulating a 3-dimensional random field (using
-    \code{TBM3}) and taking a 2-dimensional cross-section.\cr
+    \code{TBM3}) and taking a 2-dimensional cross-section.
+    TBM3 allows for multiplicative models; in case of anisotropy the
+    anisotropy matrices must be multiples of the first matrix or the
+    anisotropy matrix consists of a time component only (i.e. all
+    components are zero except the very last one).\cr
     \code{TBM2} and \code{TBM3} allow for arbitrary points, and
     arbitrary grids
     (arbitrary number of points in each direction, arbitrary grid length
-    for each direction)
+    for each direction).    
+
+    The turning layers are used for the simulations with time component.
+    Here, 
+    if the model is a
+    multiplicative covariance function then the
+    product may contain matrices with pure time component.  All
+    the other matrices must be equal up to a factor and the temporal
+    part of the anisotropy matrix (right column) may contain only
+    zeros, except the very last entry.
   }
 }
 \note{Most methods possess additional parameters,
@@ -110,10 +129,13 @@ GetMethodNames()
   shows a way of checking the precision.
 }
 \references{
-  Gneiting, T. and Schlather, M. (2001)
+  Gneiting, T. and Schlather, M. (2004)
   Statistical modeling with covariance functions.
   \emph{In preparation.}
 
+  Lantuejoul, Ch. (2002) \emph{Geostatistical simulation.}
+  \bold{New York:} Springer.
+  
   Schlather, M. (1999) \emph{An introduction to positive definite
     functions and to unconditional simulation of random fields.}
   Technical report ST 99-10, Dept. of Maths and Statistics,
@@ -125,31 +147,40 @@ GetMethodNames()
     
     Chan, G. and Wood, A.T.A. (1997)
     An algorithm for simulating stationary Gaussian random fields.
-    \emph{J. R. Stat. Soc., Ser. C} \bold{46}, 171--181.
+    \emph{J. R. Stat. Soc., Ser. C} \bold{46}, 171-181.
 
     Dietrich, C.R. and Newsam, G.N. (1993)
     A fast and exact method for multidimensional Gaussian
     stochastic simulations.
-    \emph{Water Resour. Res.} \bold{29}, 2861--2869.    
+    \emph{Water Resour. Res.} \bold{29}, 2861-2869.    
         
     Wood, A.T.A. and Chan, G. (1994)
     Simulation of stationary Gaussian processes in \eqn{[0,1]^d}{[0,1]^d}
-    \emph{J. Comput. Graph. Stat.} \bold{3}, 409--432.
+    \emph{J. Comput. Graph. Stat.} \bold{3}, 409-432.
 
+    \item Local Circulant embedding:
+
+    Stein, M.L. (2002)
+    Fast and exact simulation of fractional Brownian surfaces.
+    {\emph J. Comput. Graph. Statist.} \bold{11}, 587--599.
     
-    \item Turning bands method (TBM):
+    \item Turning bands method (TBM), turning layers:
     
     Dietrich, C.R. (1995) A simple and efficient space domain implementation
     of the turning bands method. \emph{Water Resour. Res.} \bold{31},
-    147--156.
+    147-156.
     
     Mantoglou, A. and Wilson, J.L. (1982) The turning bands method for
     simulation of random fields using line generation by a spectral
-    method. \emph{Water. Resour. Res.} \bold{18}, 1379--1394.
+    method. \emph{Water. Resour. Res.} \bold{18}, 1379-1394.
 
     Matheron, G. (1973)
     The intrinsic random functions and their applications.
-    \emph{Adv. Appl. Probab.} \bold{5}, 439--468.
+    \emph{Adv. Appl. Probab.} \bold{5}, 439-468.
+
+    Schlather, M. (2004)
+    Turning layers: A space-time extension of turning bands.
+    \emph{Submitted}
 
     \item Random coins:
     
@@ -157,9 +188,10 @@ GetMethodNames()
       Poreux}. Paris: Masson.
    }
 }
-\author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
-  \url{http://www.geo.uni-bayreuth.de/~martin}}
-\seealso{\code{\link{GaussRF}}, \code{\link{MaxStableRF}}, and
+\author{Martin Schlather, \email{martin.schlather@cu.lu}
+  \url{http://www.cu.lu/~schlathe}}
+\seealso{\code{\link{GaussRF}}, \code{\link{MaxStableRF}},
+  \code{\link{PrintModelList}},
   \code{\link{RandomFields}}.}
 
 \examples{

@@ -1,194 +1,306 @@
 
-## to.do replace pure nugget effect model as error.model by arbitrarz model
 
-Kriging <- function(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
-                    model, param, given, data, pch=".") {
-  krige.methodlist <- c("S","O")
+Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
+                    grid, gridtriple=FALSE,
+                    model, param, given, data, trend,                 
+                    pch=".") {
+
+  krige.methodlist <- c("S", "O")
   if (is.na(krige.method.nr <- pmatch(krige.method,krige.methodlist)))
     stop(paste("kriging method not identifiable from the list.",
-               "Possible values are",paste(krige.methodlist,collapse=",")))
-  ip<-.C("GetParameterIndices", MEAN= integer(1), VARIANCE= integer(1),
-          NUGGET= integer(1), SCALE= integer(1), 
-          KAPPA= integer(1), LASTKAPPA= integer(1),integer(1),
-          SILL= integer(1), DUP = FALSE)
-  ip <- lapply(ip,function(i){i+1})
+               "Possible values are", paste(krige.methodlist, collapse=",")))
 
-  x <- CheckXYZ(x, y, z, grid, gridtriple)
-  x <- cbind(x$x, x$y, x$z)
+  x <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, gridtriple=gridtriple)
   y <- z <- NULL
-  ncol.data <- ncol(data)
-  is.matrix.data <- is.matrix(data) && (ncol.data>1)
-  given <- as.matrix(given)
-  nd <- nrow(given)
-  covmatrix <- diag(nd) * (CovarianceFct(0,model,param) / 2)
-  covmatrix[lower.tri(covmatrix)] <- CovarianceFct(dist(given),model,param)
-  covmatrix <- covmatrix + t(covmatrix)
+  pm <- PrepareModel(model=model, param=param,
+                     timespacedim=x$spacedim + x$Time,
+                     trend=trend)
 
-  tgiven <-  t(as.matrix(given))
-  if (ncol(x)!=nrow(tgiven))
-    stop("dimension of the kriged points and the given points do not match")
+  is.matrix.data <- is.matrix(data) && (ncol(data)>1)
+  data <- as.matrix(data)
+  given <- as.matrix(given)
+  xdim <- ncol(given)
+
+  if (pm$timespacedim!= xdim)
+    stop("dimensions of the kriged points and the given points do not match")  
+  stopifnot(pm$timespacedim == ncol(x$x) + !is.null(x$T)) ## program wrong
+
+  nd <- nrow(given)
+  pos <- integer(nd)
+  ## lexicographical ordering of vectors --- necessary to check
+  ## whether any location is given twice, but with different value of
+  ## the data
+  .C("Ordering", as.double(t(given)), as.integer(nd), as.integer(xdim), pos,
+     PACKAGE="RandomFields", DUP=FALSE)
+  pos <- pos + 1
+
+  given <- given[pos, , drop=FALSE]
+  data <- data[pos, , drop=FALSE]
+  
+  ## are locations given twice with different data values?
+  dup <- c(FALSE, apply(abs(given[-nd, , drop=FALSE] -
+                            given[-1, , drop=FALSE]), 1, sum))
+  if (any(dup <- c(FALSE, apply(abs(given[-1, , drop=FALSE] -
+                                    given[-nd, , drop=FALSE]), 1, sum)==0))) {
+    if (any(data[dup, ] != data[c(dup[-1], FALSE), ]))
+      stop("duplicated conditioning points with different data values")
+    given <- given[!dup, , drop=FALSE]
+    data <- data[!dup, , drop=FALSE]  
+  }
+  
+  tgiven <-  t(given)
+  nd <- nrow(given)
+
+  ## the next passage might be replaced by a direct call of
+  ## covarianceMatrix...
+  covmatrix <- diag(nd) *
+    (CovarianceFct(if (pm$anisotropy) t(rep(0, pm$timespacedim)) else 0,
+                   model, param) / 2)
+  low.tri <- lower.tri(covmatrix, diag=FALSE)
+  covmatrix[low.tri] <-
+    CovarianceFct(if (pm$anisotropy)
+                  matrix(.C("vectordist", as.double(given),
+                            as.integer(dim(given)),
+                            vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
+                            PACKAGE="RandomFields")$vd, ncol=xdim) else 
+                  as.matrix(dist(given))[low.tri],
+                  model, param)
+  covmatrix <- covmatrix + t(covmatrix)
   given <- NULL
 
   if (grid) {
-    dimension <- 1 + floor((x[2,]-x[1,])/x[3,])
-    l <- length(dimension)
-    if (l==1) x <- matrix(seq(x[1],x[2],x[3]),ncol=1)
+    zz <- cbind(x$x, x$T)
+    eval(parse(text=paste("dimension <- c(",
+                 paste(paste("length(seq(",zz[1,],",", zz[2,],",",
+                             zz[3,],"))"), collapse=","),
+                 ")")))
+    ## `x' will be used in apply within kriging
+    if ( (l <- ncol(zz))==1 ) x <- matrix(seq(zz[1],zz[2],zz[3]),ncol=1)
     else {
-     text <- paste("x <- expand.grid(",
-                      paste("seq(x[1,",1:l,
-                            "],x[2,",1:l,
-                            "],x[3,",1:l,"])",collapse=","),
-                      ")")
-     eval(parse(text=text))
-   }
-  } 
+      text <- paste("x <- expand.grid(",
+                    paste("seq(zz[1,",1:l,
+                          "],zz[2,",1:l,
+                          "],zz[3,",1:l,"])",collapse=","),
+                    ")")
+      eval(parse(text=text))
+    }
+  } else x <- x$x
 
-  nd.step <-  ceiling(nrow(x) / 79)
   env <- environment()
-  assign("enu",0,envir=env)
-  
-  covnr <- as.integer(.C("GetModelNr", as.character(model), nr = integer(1))$nr)
-  pp <- param
-  if (RFparameters()$PracticalRange) {
-    pp[ip$SCALE] <- pp[ip$SCALE] / GetPracticalRange(model,pp[-1:(-ip$KAPPA+1)])
-  }
-  
-  storage.mode(pp) <- "double"
+  nd.step <-  ceiling(nrow(x) / 79) ## for the user's entertainment
+  assign("enu", 0, envir=env)       ## ="=
   nn <- as.integer(ncol(tgiven))
-  np <- as.integer(length(pp))
+  error <- integer(1)
+  .C("InitUncheckedCovFct",
+     as.integer(pm$covnr),
+     as.double(pm$param),
+     as.integer(length(pm$param)),
+     as.integer(pm$timespacedim),
+     as.integer(xdim),
+     as.integer(length(pm$covnr)),
+     as.integer(pm$anisotropy),
+     as.integer(pm$op),
+     as.integer(RFparameters()$PracticalRange),
+     error, PACKAGE="RandomFields", DUP=FALSE);
+  if (error) stop(" Error in definition of covariance function")
 
   switch(krige.method.nr,
-         { ## simple kriging
-           data <- as.matrix(solve(covmatrix,data-param[ip$MEAN]))
-           res <- apply(x, 1,
-                        function(z){
-                          if ((enu %% nd.step) == 0) cat(pch);
-                          assign("enu",enu+1,envir=env);
-                          ## to.do replace the following by unchecked !
-                          ## CovFct has been check already !
-                          .C("UncheckedCovFct",
-                             as.double(.C("onePdist",as.double(tgiven),
-                                          as.integer(nrow(tgiven)),
-                                          as.integer(ncol(tgiven)),
-                                          as.double(z),
-                                          dx=double(ncol(tgiven)),DUP=FALSE)$dx),
-                             nn,covnr,pp,np,cov=double(nn),DUP=FALSE)$cov %*%
-                               data}
-                        ) + pp[ip$MEAN]
+         { ## simple kriging#
+           stopifnot(is.null(pm$trend))
+           if (!(is.matrix(try(data <- as.matrix(solve(covmatrix,
+                                                       data-pm$mean)))))) {
+             res <- x * NA
+           } else {
+             ## time consuming "apply" -- to do : replace by c call
+             res <- apply(x, 1,
+                          function(z){
+                            if ((enu %% nd.step) == 0) cat(pch);
+                            assign("enu", enu+1, envir=env);
+                            .C("UncheckedCovFct", tgiven - z, nn, cov=double(nn),
+                               PACKAGE="RandomFields", DUP=FALSE)$cov %*% data}
+                          ) + pm$mean
+           }
          }, {
            ## ordinary kriging
+           stopifnot(is.null(pm$trend))
            covmatrix <- rbind(cbind(covmatrix,1), c(rep(1,nd),0)) 
-           data <- solve(covmatrix,rbind(as.matrix(data),0))
-           res <-
-             apply(x, 1,
-                   function(z){
-                     if ((enu %% nd.step) == 0) cat(pch);
-                     assign("enu",enu+1,envir=env);
-                     c(.C("UncheckedCovFct",
-                          as.double(.C("onePdist",as.double(tgiven),
-                                       as.integer(nrow(tgiven)),
-                                       as.integer(ncol(tgiven)),
-                                       as.double(z),
-                                       dx=double(ncol(tgiven)),DP=FALSE)$dx),
-                          nn,covnr,pp,np,cov=double(nn),DUP=FALSE)$cov,
-                       1) %*% data 
-                   })
+            if (!(is.matrix(try(data <- solve(covmatrix,
+                                              rbind(as.matrix(data),0)))))) {
+              res <- x * NA
+            } else {
+              ## time consuming "apply" -- to do : replace by c call
+              res <-
+                apply(x, 1,
+                      function(z){
+                        if ((enu %% nd.step) == 0) cat(pch);
+                        assign("enu", enu+1, envir=env);
+                        c(.C("UncheckedCovFct", tgiven-z, nn, cov=double(nn),
+                             PACKAGE="RandomFields", DUP=FALSE)$cov,
+                          1) %*% data
+                      })
+            }
+         } , {
+           ## universal kriging
+           stopifnot(!is.null(trend))
+           stop("not programmed yet")
          }
          ) # switch
 
   if (pch!="") cat("\n")
+  ncol.data <- ncol(data)
   x <- data <- NULL
+  
   if (is.matrix.data) {
-    if (grid) return(array(t(res),dim=c(dimension,ncol.data)))
+    if (grid) return(array(t(res), dim=c(dimension, ncol.data)))
     else return(t(res))
   } else {
-    if (grid) return(array(res,dim=dimension))
+    if (grid) return(array(res, dim=dimension))
     else return(res)
   }
 }
 
 
-
-CondSimu <- function(krige.method, x, y=NULL, z=NULL, grid, model, param, 
-                     method=NULL, n=1, register=0, gridtriple=FALSE,
+CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
+                     grid, gridtriple=FALSE,
+                     model, param, method=NULL,
+                     given, data, trend,
+                     n=1, register=0, 
                      err.model=NULL, err.param=NULL, err.method=NULL,
-                     err.register=1,
-                     given, data, tol=1E-5, pch=".") {
-  if (is.character(method) && (is.na(pmatch(method, c("S","O")))))
+                     err.register=1, 
+                     tol=1E-5, pch=".",
+                     na.rm=FALSE
+                     ) {
+  op.list <- c("+","*")
+  
+  if (is.character(method) && (!is.na(pmatch(method, c("S","O")))))
     stop("Sorry. The parameters of the function `CondSimu' as been redefined. Use `krige.method' instead of `method'. See help(CondSimu) for details")
 
-  ip<-.C("GetParameterIndices", MEAN=integer(1), VARIANCE=integer(1),
-          NUGGET=integer(1), SCALE=integer(1), 
-          KAPPA=integer(1), LASTKAPPA=integer(1),integer(1),
-          SILL=integer(1), DUP=FALSE)
-  ip <- lapply(ip,function(i){i+1})
-  
-  if (is.null(err.model)) {
-    krige.model <- model
-    krige.param <- param
-  } else {
-    if (.C("GetModelNr", as.character(err.model), nr=integer(1))$nr !=
-        .C("GetModelNr", as.character("nugget"), nr=integer(1))$nr)
-      stop("currently only pure nugget effect allowed as error.model")
-    krige.model <- model  ## this has to be replaced by an additive model ->to.do
-    krige.param <- param  ## dito
-    krige.param[ip$NUGGET] <- krige.param[ip$NUGGET] +
-      err.param[ip$VARIANCE] + err.param[ip$NUGGET]
-  }
-  
-  x <- CheckXYZ(x, y, z, grid, gridtriple)
-  y <- NULL   
+  x  <- CheckXT(x, y, z, T, grid, gridtriple)
+  pm <- PrepareModel(model, param, x$spacedim + x$Time, trend, method=method)
+  y <- z <- NULL   
   total <- x$total
-  x <-  cbind(x$x, x$y, x$z)
-  
+
+  krige.mean <- 0 ## pm$mean + err$mean ??
+  krige.trend <- pm$trend
+  if (!is.null(krige.trend)) stop("not programmed yet")
+
+  if (!is.null(err.model)) {
+    err <- PrepareModel(err.model, err.param,x$spacedim+x$Time,method=err.method)
+    if (xor(pm$anisotropy, err$anisotropy))
+      stop("both, the data model and the error model must be either istropic or anisotropic")
+
+    if (xor(is.null(pm$method), is.null(err$method)))
+      stop("the simulation method must be defined for the data model and the error model or for none of them")
+    if (((length(err$cov)>1 &&
+          err$cov!=.C("GetModelNr", "nugget", 1, nr=integer(1),
+            PACKAGE="RandomFields")$nr
+          ) || err$timespacedim>1)
+        && (err$timespacedim != pm$timespacedim))
+      stop("time-space dimensions do not match") 
+    if (!is.null(err$trend)) stop("trend for the error term not allowed")
+    
+    krige <- convert.to.readable(list(covnr=c(pm$covnr, err$covnr),
+                                     param=c(pm$param, err$param),
+                                     anisotropy = pm$anisotropy,
+                                     op = c(pm$op, pmatch("+", op.list) - 1,
+                                       err$op),
+                                     mean = krige.mean,  
+                                     trend = krige.trend,
+                                     method = c(pm$method, err$method),
+                                     timespacedim = pm$timespacedim
+                                     )
+                                )
+  } else krige <-convert.to.readable(list(covnr=pm$covnr,
+                                     param=pm$param,
+                                     anisotropy = pm$anisotropy,
+                                     op = pm$op,
+                                     mean = krige.mean,  
+                                     trend = krige.trend, 
+                                     method = pm$method,
+                                     timespacedim = pm$timespacedim
+                                     )
+                                )
+
   simu.grid <- grid
   given <- as.matrix(given)
+  if (nrow(given)!=length(data)) {
+    cat("dimension of 'given' does not match 'data'")
+    return(NA)
+  }
+  if (na.rm && any(data.idx <- is.na(data))) {
+    data <- data[data.idx]
+    given <- given[data.idx, ]
+  }
+  
+  txt <- "kriging in space time dimensions>3 where not all the point ly on a grid is not possible yet"
+  ## if 4 dimensional then the last coordinates should ly on a grid
 
+  ## now check whether and if so, which of the given points belong to the
+  ## points where conditional simulation takes place
   if (grid) {
-    ind <- 1 + (t(given) - x[1,]) / x[3,]
+    zz <-  cbind(x$x, x$T)
+    ind <- 1 + (t(given) - zz[1,]) / zz[3,]
     index <-  round(ind)
-    dimension<- 1 + floor((x[2,]-x[1,])/x[3,])
+    endpoints <- 1 + floor((zz[2,]-zz[1,])/zz[3,])
     outside.grid <- apply((abs(ind-index)>tol) | (index<1) |
-                          (index>dimension),2,any)   
-    if (any(outside.grid))
-      {
+                          (index>endpoints), 2, any)   
+    if (any(outside.grid)) {
       ## at least some data points are not on the grid
-      ## simulate as if there is not grid
+      ## simulate as if there is no grid
       simu.grid <- FALSE
-      l <- length(dimension)
-      if (l==1) xx <- matrix(seq(x[1],x[2],x[3]),nrow=1)
+      l <- ncol(zz)
+      if (l>3) stop(txt)
+      if (l==1) xx <- matrix(seq(x$x[1],x$x[2],x$x[3]),nrow=1)
       else  eval(parse(text=paste("xx <-  t(as.matrix(expand.grid(",
-                         paste("seq(x[1,",1:l,
-                               "],x[2,",1:l,
-                               "],x[3,",1:l,"])",collapse=","),
+                         paste("seq(zz[1,",1:l,
+                               "],zz[2,",1:l,
+                               "],zz[3,",1:l,"])",collapse=","),
                          ")))")))
       eval(parse(text=paste("ll <- c(",
-                   paste("length(seq(x[1,",1:l,"],x[2,",1:l,"],x[3,",1:l,"]))",
+                   paste("length(seq(zz[1,",1:l,"],zz[2,",1:l,"],zz[3,",1:l,
+                         "]))",
                          collapse=","),
                    ")")))
-     # print(ll)
-     # print(outside.grid)
-     # print(index[,!outside.grid,drop=FALSE])
+
       new.index <- rep(0,ncol(index))
+      ## data points that are on the grid, must be registered,
+      ## so that they can be used as conditioning points of the grid
       if (!all(outside.grid)) {
         new.index[!outside.grid] <- 1 +
           apply((index[,!outside.grid,drop=FALSE]-1) *
                 cumprod(c(1,ll[-length(ll)])), 2, sum)
       }
-                                        # print(new.index)
       index <- new.index
       new.index <- NULL
     } else {
-      ## data points are all lying on the grid
-      z <- GaussRF(x, grid=TRUE, model=model, param=param,
+      ## data points are all lying on the grid     
+      z <- GaussRF(x=x$x, T=x$T,  grid=TRUE, model=model, param=param,
                    method=method, n=n, register=register,
                    gridtriple=TRUE)
+      ## for all the other cases of simulation see, below
       index <- t(index)
     }
   } else {
-    xx <- t(as.matrix(x)) ## not a grid
+    xx <- t(as.matrix(x$x)) ## not a grid
+    
+    if (!is.null(x$T)) {
+      if (ncol(xx) > 2) stop(txt)
+      T <- seq(x$T[1], x$T[2], x$T[3])
+      ## multiple the xx structure by length of T,
+      ## then add first component of T to first part ... last component of T
+      ## to last part
+      xx <- rbind(matrix(xx, nrow=nrow(xx), ncol=ncol(xx) * length(T)),
+                  as.vector(t(matrix(T, nrow=length(T),ncol(xx)))))
+    }
+    
     ## the next step can be pretty time consuming!!!
     ## to.do: programme it in C
+    ##
+    ## identification of the points that are given twice, as points to
+    ## be simulated and as data points (up to a tolerance distance !)
+    ## this is important in case of nugget effect, since otherwise
+    ## the user will be surprised not to get the value of the data at
+    ## that point
     one2ncol.xx <- 1:ncol(xx)
     index <- apply(as.matrix(given),1,function(z){
       i <- one2ncol.xx[apply(abs(xx - z),2,sum) < tol]
@@ -196,24 +308,23 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, grid, model, param,
       if (length(i)==1) return(i)
       return(NA)
     })
-  }
-
+  }  
+ 
   if (!simu.grid) {
+    ## otherwise the simulation has already been performed (see above)
     tol <- tol * nrow(xx)
     if (any(is.na(index)))
-      stop("identification of the given data points is not unique -- `tol' too large?")
+      stop("identification of the given data points is not unique - `tol' too large?")
     if (any(notfound <- (index==0))) {
       index[notfound] <- (ncol(xx)+1):(ncol(xx)+sum(notfound))
     }
-
     xx <- rbind(t(xx), given[notfound,,drop=FALSE])
-    z <- GaussRF(xx, grid=FALSE, model=model, param=param,
+    z <- GaussRF(x=xx, grid=FALSE, model=model, param=param,
                  method=method, n=n, register=register)
-
     xx <- NULL
   }
   if (is.null(z)) stop("random fields simulation failed")
-
+  
   if (n==1) {
     ## z values at the `given' locations
     zgiven <- z[index]
@@ -221,10 +332,10 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, grid, model, param,
   } else {
     ## this is a bit more complicated since index is either a vector or
     ## a matrix of dimension dim(z)-1
-    zgiven <- apply(z,length(dim(z)),function(m) m[index])
+    zgiven <- apply(z, length(dim(z)), function(m) m[index])
     z <- as.vector(apply(z,length(dim(z)),function(m) m[1:total]))
   }
-
+  
   if (!is.null(err.model)) {
      error <- GaussRF(given, grid=FALSE, model=err.model, param=err.param,
                      method=err.method, n=n, register=err.register)  
@@ -232,12 +343,11 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, grid, model, param,
      zgiven <- zgiven + as.vector(error)
      error <- NULL
    }
- 
-  param[1] <- 0
-  z + Kriging(krige.method=krige.method,
-              x=x, grid=grid,
-              model=krige.model,param=krige.param,
+  
+  z +  Kriging(krige.method=krige.method,
+              x=x$x, grid=grid,
+              model=krige,
               given=given,data=as.vector(data)-zgiven,
               gridtriple=TRUE, pch=pch)
-}  
+}
   

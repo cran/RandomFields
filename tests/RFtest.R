@@ -1,15 +1,19 @@
+
+# R <  RFtest.all.R && R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R
+
+
 ## R --no-save < RFtest.R
 # source("/home/martin/article/R/RF/RandomFields/tests/RFtest.R")
 
-#library(RandomFields,lib="/home/martin/TMP")
-library(RandomFields)
-        
+if (file.exists("source.R")) source("source.R")
+       
 ## how many simulation methods are available?
-MAXMETHODNUMBER<-.C("GetMethodNr",as.character("nothing"),
-                   method=as.integer(1))$method-1;
+MAXMETHODNUMBER <- length(GetMethodNames())
 
 ENVIR <- environment()
-zaehler <- 0;
+assign("zaehler", 0, envir=ENVIR)
+
+pid <- function() 1
 
 getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
   locations <- list()
@@ -54,7 +58,7 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
                        variance=1,
                        endofbins=1.3, numberbins=30, scaling=1,
                        pointrepet=5,valuerepet=5,pointnumber=100,fieldsize=3,
-                       histo=FALSE, wait=FALSE,clean=FALSE, waitfinally=TRUE,
+                       histo=FALSE, wait=FALSE,clean=FALSE, waitfinally=FALSE,
                        dimensions=1:3,grids=c(FALSE,TRUE),
                        #methods=0:MAXMETHODNUMBER,
                        methods=c(0,2,3,4,5,7),
@@ -75,6 +79,8 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
   ## pointnumber: number of locations in the set of locations (if grid, then
   ##              this is an approximate number)
   ## fieldsize : in units of scaling, in each direction
+  cat("\n", model)
+  MethodNames <- GetMethodNames()
   
   model<-model;kappa1<-kappa1;kappa2<-kappa2;kappa3<-kappa3;
   nugget<-nugget; mean<-mean; variance<-variance;
@@ -100,11 +106,11 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
   else par.index <- 1:(3-isnullpar)
   
   if (!is.numeric(methods)) {
-    methnr <-  rep(0,length(methods))
-    for (i in 1:length(methods)) {
-      methnr[i] <- .C("GetMethodNr",as.character(methods[i]),nr=integer(1))$nr
-      if (methnr[i]<0) stop(paste("Method `",methods[i],
-                                  "' not identifiable..",sep=""))
+    methnr <- pmatch(methods, MethodNames, dup=TRUE) - 1
+    if (any(is.na(methnr))) {
+      stop(paste("Method `", methods[is.na(methnr)],
+                 "' not identifiable...",sep=""))
+      ERR
     }
     methods <- methnr
   }
@@ -123,9 +129,6 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
          )
   }
   
-  methodmaxchar <- .C("GetrfParameters",integer(1),
-                     methodmaxchar=integer(1),
-                      integer(1),integer(1))$methodmaxchar;
   totalrepet <- pointrepet * valuerepet;
   meanvar<-"" ## to avoid an error in the final output in case everything fails
   for (k1 in kappa1) for (k2 in kappa2) for (k3 in kappa3) for (nug in nugget){
@@ -139,28 +142,43 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
     param<-as.double(c(mean=mean,variance=variance,nugget=nug,scaling,
                        c(k1,k2,k3)[par.index] ))
     
-    bin <- seq(0,endofbins,length=numberbins+1)
+    bin <- c(-1, seq(0, endofbins, length=numberbins))
     
     midbin <- as.double(0.5 * (bin[-length(bin)] + bin[-1]))
     midbinP0 <- as.double(c(0,midbin))    
 
     for (dim in dimensions) {
+      print("dim")
+      print(dim)
       for (grid in grids) {
+        print("grids")
+        print(grid)
         print(dimgrid<-paste("dim=",dim,",grid=",grid,", pid=",Pid,
                             ", PR=",RFparameters()$PracticalRange,
                             ", qg=",quadraticgrid,sep=""))
-        v <- matrix(0,nrow=numberbins,ncol=MAXMETHODNUMBER+1)
-        repet <- matrix(0,nrow=numberbins,ncol=MAXMETHODNUMBER+1)
+        v <- matrix(0, nrow=numberbins, ncol=MAXMETHODNUMBER+1)
+        repet <- matrix(0, nrow=numberbins, ncol=MAXMETHODNUMBER+1)
         MethodIgnoreList <- -99
+#
+        MethodIgnoreList <- c(0,2,3,4,5)
         for (i in 1:pointrepet) {
+          print(c("pointrepet", pointrepet, i))
           locations <- getxyz(grid,dim,pointnumber,fieldsize,quadraticgrid)
           for (method in methods) {
+            #print(method); print(methods); print(MethodIgnoreList); readline()
             if (sum(MethodIgnoreList==method)==0) {
-              methodname<-.C("GetMethodName",as.integer(method),
-                             name=paste(seq(1,1,l=methodmaxchar),collapse="")
-                             )$name;              
-              print(methodname,quote=FALSE)
+              methodname <- MethodNames[method + 1]      
+              cat("\n !! ", methodname)
               ##print(date())
+##seed <-  get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)             
+##xx <- list(x=locations$x,y=locations$y,z=locations$z,
+##           grid=grid,model=model,
+##            param=param,meth=methodname,
+##           reg=0,gridtriple=TRUE,
+##           PracticalRange=RFparameters()$PracticalRange,
+##           dim = dim, midbinP0=midbinP0,
+##           seed=seed)
+##save(file="xx", xx)                      
               error <- InitGaussRF(locations$x,y=locations$y,z=locations$z,
                                    grid=grid,model=model,
                                    param=param,meth=methodname,
@@ -176,7 +194,7 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
                   print(paste("error=",error,
                               "; Ignoring further point generations"))
                   MethodIgnoreList <- c(MethodIgnoreList,method)
-                }
+                } else print(error)
               } else {            
                 ##print(date())                  
                 print("do simulate") ##################
@@ -184,25 +202,30 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
                 if (!is.null(allres)) {
                   if (any(is.na(allres))) {
                     print(allres)
-                    stop("some NA in allres")
+                    stop("some NA in allres"); ERR
                   }
                   meanvar<-paste("m=",format(mean(allres),dig=2),
                                  ", sill=",format(var(as.double(allres)),dig=2))
                   print(paste(i,", Method=",method,":",meanvar))
                   if (histo) {dev.set(dev.next()); hist(as.vector(allres))}
                   binresult<-
-                    EmpiricalVariogram(locations$x,locations$y,locations$z,
-                                       allres,grid,bin,gridtriple=TRUE)
+                    EmpiricalVariogram(locations$x, locations$y, locations$z,
+                                       data=allres,
+                                       grid=grid, bin=bin, gridtriple=TRUE)
+                  print("done")
                   index <- is.finite(binresult$e);
-                  v[index,method+1] <- v[index,method+1] + binresult$e[index];
+                  print("Done")
+                  v[index,method+1] <- v[index, method+1] + binresult$e[index];
+                  print("done.")
                   repet[index,method+1] <- repet[index,method+1] + 1;
+                  print("Done.")
                 } else { print(" Simulation failed "); }
               }
             } # method
           } # if method should not be ignored ...
         } # pointrep
-        v <- v / repet;
-        truevariogram  <- Variogram(midbinP0,model,param,dim)
+       v <- v / repet;
+        truevariogram  <- Variogram(midbinP0, model, param, dim)
         delta <- apply(abs(v-truevariogram[-1]),2,sum,na.rm=TRUE)
         delta[apply(is.na(v),2,all)]<-NA;
         assign("zaehler", zaehler + 1, envir=ENVIR)
@@ -264,32 +287,6 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
     if (clean) while (!is.null(dev.list())) dev.off();
   return(NULL);
 }
-
-
-Dev <- function(on=TRUE,dev,ps=NULL,title="",...){
-   # function to handle output device:
-   #   on: T=output device is activated; F=device will be closed
-   #   dev: device number or logical value for postscript
-   #   ps : postscript file name; only needed when dev is logical
-   #   title: title of the postscript file; this title is an internal
-   #          name which appears only in the file, but nowhere else
-   #          (especially not on the printed paper).
-   if (on) {
-      if (is.logical(dev))
-         if (is.null(ps)) ERROR  else {
-             postscript(ps,...);
-	   }
-         else dev.set(dev);}
-   else {
-  if (is.logical(dev)) dev.off() else par(new=FALSE)  
-   }
-};
-
-pid <- function() { .C("pid",i=integer(1))$i}
-
-
-
-
 
 
 

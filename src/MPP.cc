@@ -1,10 +1,10 @@
+
+
 /*
  Authors 
- Martin Schlather, Martin.Schlather@uni-bayreuth.de 
+ Martin Schlather, martin.schlather@cu.lu 
 
- *********** this function is still under construction *********
-
- Copyright (C) 2001 Martin Schlather, 
+ Copyright (C) 2001 -- 2004 Martin Schlather, 
 
 
 This program is free software; you can redistribute it and/or
@@ -22,28 +22,32 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
+/* TO DO
+  * noch fast alles auf key->x programmiert statt s->x
+  * time component: aenderungen siehe TBM !
+*/
+
 #include <math.h>
-#include <Rmath.h>
 #include <assert.h>
 #include "RFsimu.h"
 #include "MPPFcts.h"
-//#include "RFCovFcts.h"
-#include <assert.h>
 
 Real MPP_RADIUS =0.0;
 Real MPP_APPROXZERO  =0.001;
-Real ADDMPP_REALISATIONS = 100.0; /* logically an integer, implementation allows for
-				      positive real ! */
+Real ADDMPP_REALISATIONS = 100.0; // logically an integer, implementation 
+                                  //  allows for positive real ! 
 
 void SetMPP(int *action, Real *approxzero, Real *realisations, Real *radius)
 {
   switch(*action) {
   case 0 :
     if (*approxzero<=0.0) {
-       if (GENERAL_PRINTLEVEL>0) PRINTF("\nERROR! `approx.zero' not a positive number. Ignored.\n");
+       if (GENERAL_PRINTLEVEL>0) 
+	 PRINTF("\nERROR! `approx.zero' not a positive number. Ignored.\n");
     } else  MPP_APPROXZERO = *approxzero;
-    if (*realisations<=0.0) {
-      if (GENERAL_PRINTLEVEL>0) PRINTF("\nERROR! `realisation' not a positive number. Ignored.\n");
+   if (*realisations<=0.0) {
+      if (GENERAL_PRINTLEVEL>0) 
+	PRINTF("\nERROR! `realisation' not a positive number. Ignored.\n");
     } else ADDMPP_REALISATIONS = *realisations;
     MPP_RADIUS = *radius;
     if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>1))
@@ -62,42 +66,6 @@ void SetMPP(int *action, Real *approxzero, Real *realisations, Real *radius)
   }
 }
 
-void printMPPinfo(int *keyNr)
-{    
-   mpp_storage *bs;
-   if (((KEY[*keyNr].method!=AdditiveMpp) && (KEY[*keyNr].method!=MaxMpp))
-       || (!KEY[*keyNr].active)) {
-    PRINTF("no information available\n");
-    return;
-   }
-   assert(KEY[*keyNr].S!=NULL);
-   bs = (mpp_storage*) KEY[*keyNr].S;
-   PRINTF("integral=%e\n",bs->integral);
-   PRINTF("integralsq=%e\n",bs->integralsq);
-   PRINTF("integralpos=%e\n",bs->integralpos);
-   PRINTF("eff.Radius=%e\n",bs->effectiveRadius);
-   PRINTF("eff.area=%e\n",bs->effectivearea);
-   PRINTF("maxheight=%e\n",bs->maxheight);
-   PRINTF("add.Radius=%e\n",bs->addradius);
-}
-
-void GetMPPInfo(int *keyNr, Real *integral, Real *integralsq,
-		  Real *integralpos, Real *maxheight)
-{
-  mpp_storage *bs;
-  if (((KEY[*keyNr].method!=AdditiveMpp) && (KEY[*keyNr].method!=MaxMpp))
-      || (!KEY[*keyNr].active)) {
-    *integral = *integralsq = *integralpos = *maxheight = RF_NAN;
-    return;
-  }
-  assert(KEY[*keyNr].S!=NULL);
-  bs = (mpp_storage*) KEY[*keyNr].S;
-  *integral = bs->integral;
-  *integralsq = bs->integralsq;
-  *integralpos = bs->integralpos;
-  *maxheight = bs->maxheight;
-}
-
 void mpp_destruct(void **S) {
   // mpp_storage in RFsimu.h !!
   if (*S!=NULL) {
@@ -106,173 +74,271 @@ void mpp_destruct(void **S) {
   }
 }
 
-int init_mpp(key_type * key)
+void mpp_destructX(void **SX) {
+  // mpp_storage in RFsimu.h !!
+  if (*SX!=NULL) {
+    free(*SX);
+    *SX = NULL;
+  }
+}
+
+int init_mpp(key_type * key, int m)
 {
-  int error, d, i;
+  int error, d, i, v, start_param[MAXDIM], index_dim[MAXDIM];
+  bool time_exception[MAXCOV], no_last_comp /* , any_time_exception*/;
   Real max[MAXDIM];  
-  mpp_storage *bs;
+  mpp_storage *s;
+  cov_fct *cov;
+  char actcov;
+  int covnr[MAXCOV];
 
-  assert(key->active==false);
-  assert((key->covnr>=0) &&(key->covnr<currentNrCov));
-  //assert(key->cov->cov!=NULL); here is the first !! 
-  //                              where cov is unknown, but should be simulated
-  assert(key->param[VARIANCE]>=0.0);
-  assert(key->param[SILL]>=key->param[VARIANCE]); 
-  assert( fabs(key->param[SCALE]*key->param[INVSCALE]-1.0) < EPSILON);
-  assert((key->S==NULL) && (key->destruct==NULL));
-  assert((key->cov->add_mpp_scl!=NULL) && (key->cov->add_mpp_rnd!=NULL));
-
-  if ((key->S=malloc(sizeof(mpp_storage)))==0){
+  if (key->anisotropy) {
+    error=ERRORNOTPROGRAMMED; goto ErrorHandling; 
+    // RFtest.new.features.1.01.R: MaxStableRF is excluded by if (FALSE)
+    // excludes also any time component
+    //
+    // even in the case of isotropy the method is not checked yet!
+  }
+			 
+  SET_DESTRUCT(mpp_destruct);
+  assert(key->destructX==NULL);
+  assert(key->S[m]==NULL);
+  if ((key->S[m]=malloc(sizeof(mpp_storage)))==0){
     error=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
-  key->destruct = mpp_destruct;
+  s = (mpp_storage*) key->S[m];
+
+  actcov=0;
+  { 
+    int v;
+    for (v=0; v<key->ncov; v++) {
+      if ((key->method[v]==AdditiveMpp) && (key->left[v])
+	  && (key->param[v][VARIANCE]>0)) {
+	key->left[v]=false;
+	assert(key->covnr[v]>=0 && key->covnr[v]<currentNrCov);
+	covnr[actcov] = key->covnr[v];
+	if (CovList[covnr[actcov]].add_mpp_scl==NULL)
+	  {error=ERRORNOTDEFINED; goto ErrorHandling;}
+	memcpy(s->param[actcov], key->param[v], sizeof(Real) * key->totalparam);
+	if ((v<key->ncov-1 && key->op[v]) || (v>0 && key->op[v-1])) { 
+	  // no multiplicative models are allowed
+	  error=ERRORNOMULTIPLICATION; goto ErrorHandling; }
+	actcov++; 
+	break;
+      }
+    }
+  }
+  if (actcov==0) {
+      if (key->traditional) error=ERRORNOTINITIALIZED;
+      else error=NOERROR_ENDOFLIST;
+      goto ErrorHandling;
+  }
   
+  s->actcov = actcov;
+
+  // transform points using anisotropy and get s->timespacedim
+  //if ((param[0][key->totalparam-1]==0.0) && any_time_exception) {
+  //  param[0][key->totalparam-1]=1.0;
+  //} // see tbm
+
+  s->grid = key->grid && !key->anisotropy;
+  GetTrueDim(key->anisotropy, key->timespacedim, s->param[0], 
+	     &s->timespacedim, &no_last_comp, start_param, index_dim);
+  if (error=Transform2NoGrid(key, s->param[0], s->timespacedim, 
+			     start_param, &(s->x))) 
+      goto ErrorHandling; 
+  
+
+  // are methods and parameters fine ?
+  for (v=0; v<actcov; v++) {
+    cov = &(CovList[covnr[v]]);
+    if ((key->Time) && no_last_comp && (cov->isotropic==SPACEISOTROPIC))
+      { error= ERRORWITHOUTTIME;goto ErrorHandling;}
+    else if ((cov->check!=NULL) &&
+	     (error=cov->check(s->param[v], s->timespacedim, AdditiveMpp)))
+      goto ErrorHandling;
+  }
+ 
   // determine the minimum area where random field values are to be generated
-  bs = (mpp_storage*) key->S;
-  if (key->grid) {
-    for (d=0; d<key->dim; d++) {
-      bs->min[d]   = key->x[d][XSTART];
-      bs->length[d]= key->x[d][XSTEP] * (Real) (key->length[d] - 1);
+  if (s->grid) {
+    for (d=0; d<key->timespacedim; d++) {
+      s->min[d]   = key->x[d][XSTART];
+      s->length[d]= key->x[d][XSTEP] * (Real) (key->length[d] - 1);
+      // x[XSTART] and x[XSTEP] are assumed to be precise, but
+      // not x[XEND] 
     }
   } else {
-    for (d=0;d<MAXDIM;d++) {bs->min[d]=RF_INF; max[d]=RF_NEGINF;}
-    for (i=0;i<key->totallength;i++) {
-      for (d=0;d<key->dim;d++) {
-	if (key->x[d][i]<bs->min[d]) bs->min[d]=key->x[d][i];
-	if (key->x[d][i]>max[d]) max[d]=key->x[d][i];
+    int ix;
+    for (d=0;d<MAXDIM;d++) {s->min[d]=RF_INF; max[d]=RF_NEGINF;}
+    for (ix=i=0;i<key->totalpoints;i++,ix+=s->timespacedim) {
+      for (d=0; d<s->timespacedim; d++) {
+	if (s->x[ix+d] < s->min[d]) s->min[d] = s->x[ix+d];
+	if (s->x[ix+d] > max[d]) max[d] = s->x[ix+d];
       }
     }     
-    for (d=0;d<MAXDIM;d++) { bs->length[d] = max[d] - bs->min[d]; }
+    for (d=0;d<MAXDIM;d++) { s->length[d] = max[d] - s->min[d]; }
+    for (v=0; v<actcov; v++) {
+      if (CovList[covnr[v]].isotropic == FULLISOTROPIC)
+	s->param[v][SCALE]=s->param[v][INVSCALE]=1.0;
+      else assert(false); // no anisotropic function programmed yet;
+      //                     neither considered what the extension should
+      //                     look like
+    }
   }
-  bs->dim = key->dim;
-  bs -> addradius = MPP_RADIUS;
+
+  for (i=0; i<actcov; i++) {
+    s->addradius[i] = MPP_RADIUS;  // must be set BEFORE the next command!!
+    CovList[covnr[i]].add_mpp_scl(s, i); 
+    s->MppFct[i] = CovList[covnr[i]].add_mpp_rnd;
+  }
   if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>=2))
-    PRINTF("Note: area has been enlarged by fixed value (%f)",bs->addradius);
-  key->cov->add_mpp_scl(key);
-  return NOERROR;
-  
+    PRINTF("Note: area has been enlarged by fixed value (%f)", s->addradius[0]);
+ 
+  if (key->anisotropy) return NOERROR_REPEAT;
+  else return 0;
+
  ErrorHandling:
-  if (key->destruct!=NULL) key->destruct(&key->S);
-  key->destruct=NULL;
-  key->active = false;
   return error; 
 }
 
 
-void do_addmpp(key_type *key, Real *res END_WITH_GSLRNG)
+void do_addmpp(key_type *key, int m, Real *res )
 { 
-  int i, d, dim;
-  Real lambda, min[MAXDIM], max[MAXDIM], factor, average, poisson;
+  int i, d, dim, v;
+  Real lambda[MAXDIM], min[MAXDIM], max[MAXDIM], 
+    factor, average, poisson;
   long segment[MAXDIM+1];
-  mpp_storage *bs;
+  mpp_storage *s;
   mppmodel model;
-  MPPRandom MppFct;
 
   assert(key->active);
-#ifdef RF_GSL
-  assert(RANDOM!=NULL);
-#endif
+  {
+    register long i,endfor;
+    endfor = key->totalpoints;
+    for (i=0;i<endfor;i++) { res[i]=0.0; }
+  }
 
-  bs = (mpp_storage*) key->S;  
-  MppFct = key->cov->add_mpp_rnd;
-  dim = key->dim;
+  s =  (mpp_storage*) key->S[m];  
+  
   switch (key->distribution) {
   case DISTR_GAUSS : 
-    lambda = ADDMPP_REALISATIONS * bs->effectivearea;
-    factor = 
-      sqrt(key->param[VARIANCE] / (ADDMPP_REALISATIONS * bs->integralsq));
-    average = ADDMPP_REALISATIONS * bs->integral;
+    assert(s->actcov==1);
+    lambda[0] = ADDMPP_REALISATIONS * s->effectivearea[0];
+    factor = sqrt(s->param[0][VARIANCE] / 
+		  (ADDMPP_REALISATIONS *s->integralsq[0]));
+    average = ADDMPP_REALISATIONS * s->integral[0];
     break;
   case DISTR_POISSON :
-    lambda = key->param[VARIANCE] * bs->effectivearea; 
-    factor = average = 0 /* replace by true value !! */;  assert(false);
-    if(key->param[VARIANCE]!=key->param[MEAN]) {
-      //      if (GENERAL_PRINTLEVEL>0)
-      ErrorMessage(AdditiveMpp,ERRORVARMEAN); // print it always
+    // not done yet -- it is only a fragment
+    // on the R level, it is excluded that the program runs 
+    // into this part
+    //
+    // actually, only actcov==1 is possible at the moment!
+    //
+    // maybe nice to switch MPPFcts back to actcov=1
+    assert(s->actcov==1);
+    for (v=0; v<s->actcov; v++) {
+      lambda[v] = s->param[v][VARIANCE] * s->effectivearea[v]; 
+      factor = average = 0.0 /* replace by true value !! */;  
+      assert(false);
+      if(key->mean!=0) {
+	// do not compare mean against VARIANCE since
+        // VARIANCEs may differ with v
+	//      if (GENERAL_PRINTLEVEL>0)
+	ErrorMessage(AdditiveMpp,ERRORVARMEAN); // print it always
 
-      assert(false); // for debugging -- delete this later on
+	assert(false); // for debugging -- delete this later on
 
-      // finally, the value of MEAN is ignored, and that of VARIANCE
-      // is used for simulating the random field
+	// finally, the value of MEAN is ignored, and that of VARIANCE
+	// is used for simulating the random field
+      }
     }
     break;
   default : assert(false);
   }
   
-  segment[0] = 1;
-  for (d=0; d<dim; d++) 
+  segment[0] = 1; // only used for s->grid!
+  for (d=0; d<key->timespacedim; d++) { 
+    assert(d<MAXDIM);
     segment[d+1] = segment[d] * key->length[d];
-  for  (i=0; i<key->totallength; i++) res[i]=0.0;
-  for(poisson = -log(1.0 - UNIFORM_RANDOM); 
-      poisson < lambda;
-      poisson -= log(1.0 - UNIFORM_RANDOM)) 
-    {   
-      MppFct( (mpp_storage*) key->S, min, max, &model);
-      if (key->grid) {
-	int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
-	  segmentdelta[MAXDIM], dimM1;
-	Real coord[MAXDIM], startcoord[MAXDIM];
-	 
-	// determine rectangle of indices, where the mpp function
-	// is different from zero
-	for (d=0; d<dim; d++) {	 
-	  if (min[d]< key->x[d][XSTART]) {start[d]=0;}
-	  else start[d] = (int) ( (min[d] - key->x[d][XSTART]) / key->x[d][XSTEP]);
-	  // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
-	  // not "* <= end[d]" !
-	  end[d] = 1 + (int) ((max[d] - key->x[d][XSTART]) / key->x[d][XSTEP]);
-	  if (end[d] > key->length[d]) end[d] = key->length[d];	  
-	}	
-
-	// prepare coord starting value and the segment vectors for res
-	resindex = 0;
-	for (d=0; d<dim; d++) {
-	  index[d]=start[d];
-	  segmentdelta[d] = segment[d] * (end[d]-start[d]);
-	  resindex += segment[d] * start[d];
-	  coord[d] = startcoord[d] = 
-	    key->x[d][XSTART] + (Real)start[d] * key->x[d][XSTEP];
-	}
-
-	// add mpp function to res
-	dimM1 = dim -1;
-	d = 0; // only needed for assert(d<dim)
-	while (index[dimM1]<end[dimM1]) {
-	  assert(d<dim); 
-	  res[resindex] += model(coord);
-	  d=0;
-	  index[d]++;
-	  coord[d]+=key->x[d][XSTEP];
-	  resindex++;
-	  while (index[d] >= end[d]) { 
-	    if (d>=dimM1) break;  // below not possible
-	    //                       as dim==1 will fail!
+  }
+  for  (i=0; i<key->totalpoints; i++) res[i]=0.0;
+  for (v=0; v<s->actcov; v++) {
+    for(poisson = -log(1.0 - UNIFORM_RANDOM); 
+	poisson < lambda[v];
+	poisson -= log(1.0 - UNIFORM_RANDOM)) 
+      {   
+	(s->MppFct[v])(s, v, min, max, &model );
+	if (s->grid) {
+	  int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
+	    segmentdelta[MAXDIM], dimM1;
+	  Real coord[MAXDIM], startcoord[MAXDIM];
+	  
+	  // determine rectangle of indices, where the mpp function
+	  // is different from zero
+	  for (d=0; d<s->timespacedim; d++) {	 
+	    if (min[d]< key->x[d][XSTART]) {start[d]=0;}
+	    else start[d] = (int) ( (min[d] - key->x[d][XSTART]) / 
+				    key->x[d][XSTEP]);
+	    // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
+	    // not "* <= end[d]" !
+	    end[d] = 1 + (int) ((max[d] - key->x[d][XSTART]) /
+				key->x[d][XSTEP]);
+	    if (end[d] > key->length[d]) end[d] = key->length[d];	  
+	  }	
+	  
+	  // prepare coord starting value and the segment vectors for res
+	  resindex = 0;
+	  for (d=0; d<s->timespacedim; d++) {
 	    index[d]=start[d];
-	    coord[d]=startcoord[d];
-	    resindex -= segmentdelta[d];
-	    d++; // if (d>=dim) break;
+	    segmentdelta[d] = segment[d] * (end[d]-start[d]);
+	    resindex += segment[d] * start[d];
+	    coord[d] = startcoord[d] = 
+	      key->x[d][XSTART] + (Real)start[d] * key->x[d][XSTEP];
+	  }
+	  
+	  // add mpp function to res
+	  dimM1 = s->timespacedim -1;
+	  d = 0; // only needed for assert(d<dim)
+	  while (index[dimM1]<end[dimM1]) {
+	    assert(d<s->timespacedim); 
+	    res[resindex] += model(coord); 
+	    d=0;
 	    index[d]++;
 	    coord[d]+=key->x[d][XSTEP];
-	    resindex += segment[d];
+	    resindex++;
+	    while (index[d] >= end[d]) { 
+	      if (d>=dimM1) break;  // below not possible
+	      //                       as dim==1 will fail!
+	      index[d]=start[d];
+	      coord[d]=startcoord[d];
+	      resindex -= segmentdelta[d];
+	      d++; // if (d>=dim) break;
+	      index[d]++;
+	      coord[d]+=key->x[d][XSTEP];
+	      resindex += segment[d];
+	    }
 	  }
-	}
-      } else {
-	Real y[MAXDIM];
-	// the following algorithm can greatly be improved !
-	// but for ease, just the stupid algorithm
-	for (i=0; i<key->totallength; i++) {
-	  for (d=0; d<dim; d++) { y[d] = key->x[d][i]; }
-	  res[i] += model(y);
-	}
-      }      
-    }
+	} else { // !s->grid
+	  Real y[MAXDIM];
+	  long j;
+	  // the following algorithm can greatly be improved !
+	  // but for ease, just the stupid algorithm
+	  for (j=i=0; i<key->totalpoints; i++) {
+	    for (d=0; d<s->timespacedim; d++,j++) { y[d] = s->x[j]; }
+	    res[i] += model(y); 
+	  }
+	}      
+      }
+  }
   if (key->distribution==DISTR_GAUSS) {
-    for (i=0; i<key->totallength;i++) 
+    for (i=0; i<key->totalpoints;i++) {
       res[i] = factor * (res[i] - average);
-  }    
+    }
+  }
 }
 
-
+  
 
 
 

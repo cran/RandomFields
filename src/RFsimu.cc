@@ -1,11 +1,11 @@
 
-/* 
+/*
  Authors
- Martin Schlather, Martin.Schlather@uni-bayreuth.de
+ Martin Schlather, martin.schlather@cu.lu
 
  library for unconditional simulation of stationary and isotropic random fields
 
- Copyright (C) 2001 Martin Schlather, 
+ Copyright (C) 2001 -- 2004 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -34,6 +34,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+/*
+  calculate the transformation of the points only once and store the result in
+  a register (indexed by ncov) of key, not of s->. Advantages: points have to
+  calculated only once for several tries; if zonal anisotropy then specific 
+  methods may be called;  
+*/
 
 #include <math.h>  
 #include <stdio.h>  
@@ -42,674 +48,32 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 #include <string.h>
 #include "RFsimu.h"
-#include "RFCovFcts.h"
-#include "MPPFcts.h"
-
 #include <unistd.h>
-
-static cov_fct *CovList=NULL;
-#ifdef RF_GSL
-static gsl_rng *RF_RNG_STORED=NULL;
-#endif
-
-key_type KEY[MAXKEYS]; //static key_type KEY[MAXKEYS];
-int currentNrCov=-1;
-char GENERAL_PCH[2]="#"; 
-/*  character printed after each simulation
-    just for entertainment of the user
-*/
-int GENERAL_STORING=true; 
-/* true: intermediate results are stored: might be rather memory consuming,
-         but the simulation can (depending on the method chosen) be much faster
-	 when done the second time with exactly the same parameters
-	 do not forget to call DeleteAllKeys when all the simulation are done.
-   false: intermediate results are not stored if SimulateRF is called or
-         stored only until DoSimulateRF is called.
-	 minimum memory consumption, but might be rather slow if many
-	 simulations are performed with exactly the same parameters
-	 to be safe call DeleteAllKeys when all the simulations are done
-	 Warning! init_foo may depend on GENERAL_STORING! This may cause problems
-	 if GENERAL_STORING is changed between init_foo and do_foo from false to
-	 true and if do_foo is called more than once! (SimulateRF is safe in
-	 this case)
-
-	 indifferent behaviour for the simulation methods if parameters are 
-	 changed after each simulation.
-	 In case, only MAXKEYS different parameter sets are used, but after each 
-	 step the parameter set is changed, use different keynr for each 
-	 parametere set, and STORING==true, to get fast simulation 
-*/
-
-int GENERAL_PRINTLEVEL=1;
-/* 0:no messages; 
-   1:error messages; 
-   2: hints when algorithm is at a forcation; 
-   >=3: more and more debugging information
-*/
-
-int GENERAL_NATURALSCALING=0; 
-/* is called PracticalRange in R (see Chiles&Delfiner?!) 
-   Note: RFparameters() allows only 0 and 1 as values!
-
-   has an effect only if cov (and not only cov.local, e.g. Brownian Motion) is 
-   defined
-   0 : using the covariance function as defined
-   1 : rescaling of cov fctn such that cov(1)~=0.05, if rescaling function 
-       does not exist then failure, e.g. for Bessel model
-   2 : exact or approximate value (e.g. expPLUScirc)
-   3 : MLE (special needs taken into account, long memory covariance functions
-       have too long tails, which are shortened (so threshold 0.05 is changed to
-       higher values in this case))
-  +10: if any of the above fails : numerical evaluation!
-   else : using rescaling if rescaling function exists, otherwise without 
-          rescaling
-*/        
-
-char ERRORSTRING_OK[MAXERRORSTRING],ERRORSTRING_WRONG[MAXERRORSTRING];
-
-char METHODNAMES[][METHODMAXCHAR]={"circulant embedding",
-				   "local CE (not implem.)",
-                                   "TBM2 (2dim. turning bands)", 
-				   "TBM3",
-				   "spectral TBM (2dim)",
-                                   "direct matrix decomposition",
-				   "nugget",
-                                   "add.MPP",
-                                   "hyperplanes (not implem.)",
-                                   "other methods(not implem.)",
-				   "nothing", 
-				   "max.MPP",
-				   "forbidden"};
-
-void GetParameterIndices(int *mean, int *variance, int *nugget, int *scale, 
-			 int *kappa, int *lastkappa, int *invscale, int *sill) 
-{
-  *mean=MEAN; *variance=VARIANCE; *nugget=NUGGET; *scale=SCALE; *kappa=KAPPA;
-  *lastkappa=LASTKAPPA; *invscale=INVSCALE; *sill=SILL;
-}
-
-void GetrfParameters(int *covmaxchar,int *methodmaxchar,
-			    int *covnr, int *methodnr) {
-  if (currentNrCov==-1) InitModelList();
-  *covmaxchar=COVMAXCHAR;
-  *methodmaxchar=METHODMAXCHAR;
-  *covnr=currentNrCov;
-  *methodnr=(int) Nothing;
-}
-
-void GetModelName(int *nr,char **name){
-  if (currentNrCov==-1) InitModelList();
-  if ((*nr<0) ||(*nr>=currentNrCov)) {strncpy(*name,"",COVMAXCHAR); return;}
-  strncpy(*name,CovList[*nr].name,COVMAXCHAR);
-}
-
-void GetNrParameters(int *covnr,int* kappas) {
-  if (currentNrCov==-1) InitModelList();
-  if ((*covnr<0) ||(*covnr>=currentNrCov)) {*kappas=-1;}
-  else *kappas = CovList[*covnr].kappas;
-}
-
-void GetModelNr(char **name, int *nr) 
-{
-  unsigned int ln;
-  // == -1 if no matching function is found
-  // == -2 if multiple matching functions are found, without one matching exactly
-  // if more than one match exactly, the last one is taken (enables overwriting 
-  // standard functions)
-  if (currentNrCov==-1) InitModelList();
-
-  *nr=0;
-  ln=strlen(*name);
-  while ( (*nr<currentNrCov) && strncmp(*name,CovList[*nr].name,ln)) {
-    (*nr)++;
-  }
-  if (*nr<currentNrCov) { 
-    // a matching function is found. Are there other functions that match?
-    int j; 
-    bool exactmatching,multiplematching;
-    exactmatching=(ln==strlen(CovList[*nr].name));
-    multiplematching=false;
-    j=*nr+1; // if two or more covariance functions have the same name the last 
-    //          one is taken 
-    while (j<currentNrCov) {
-      while ( (j<currentNrCov) && strncmp(*name,CovList[j].name,ln)) {j++;}
-      if (j<currentNrCov) {
-	if (ln==strlen(CovList[j].name)) {*nr=j; exactmatching=true;} 
-	else {multiplematching=true;}
-      }
-      j++;
-    } 
-    if (!exactmatching && multiplematching) {*nr=-2;}
-  } else *nr=-1;
-}
-
-void GetMethodNr(char **name, int *nr) 
-{
-  unsigned int ln;
-  // == -1 if no matching method is found
-  // == -2 if multiple matching methods are found, without one matching exactly
-  *nr=0;
-  ln=strlen(*name);
-  while ( (*nr<(int) Forbidden) && strncmp(*name,METHODNAMES[*nr],ln)) {
-    (*nr)++;
-  }
-  if (*nr<(int) Forbidden) { 
-    // a matching method is found. Are there other methods that match?
-    int j; 
-    bool exactmatching,multiplematching;
-    exactmatching=(ln==strlen(METHODNAMES[*nr]));
-    multiplematching=false;
-    j=*nr+1; // if two or more methods have the same name the last one is
-    //          taken; stupid here, but nice in GetCovNr
-    while (j<(int) Forbidden) {
-      while ( (j<(int) Forbidden) && strncmp(*name,METHODNAMES[j],ln)) {j++;}
-      if (j<(int) Forbidden) {
-	if (ln==strlen(METHODNAMES[j])) {*nr=j; exactmatching=true;} 
-	else {multiplematching=true;}
-      }
-      j++;
-    } 
-    if (!exactmatching && multiplematching) {*nr=-2;}
-  } else *nr=-1;
-}
-
-void GetMethodName(int *nr, char **name) 
-{   
-  if ((*nr<0) ||(*nr>=(int) Forbidden)) {
-    strncpy(*name,"",METHODMAXCHAR); 
-    return;
-  }
-  strncpy(*name,METHODNAMES[*nr],METHODMAXCHAR);
-}
-
-void PrintMethods()
-{ 
-  int i;
-  PRINTF("\n\n  Methods for generating Gaussian random fields\n  =============================================\n\n");  
-  for (i=0;i<(int) Nothing;i++) { PRINTF("  * %s\n",METHODNAMES[i]); }
-  PRINTF("\n\n  Methods for non-Gaussian random fields\n  ======================================\n");
-  for (i=1+(int) Nothing;i<(int) Forbidden; i++) { 
-    PRINTF("  * %s\n",METHODNAMES[i]); }
-  PRINTF("\n");
-}
-
-
-void PrintCovDetailed(int i)
-{
-  PRINTF("%5d: %s cov=%d %d %d %d, tbm=%d %d %d, spec=%d,\n        abf=%d hyp=%d, oth=%d %d, f1=%d f2=%d f3=%d\n",
-	 i,CovList[i].name,CovList[i].cov,CovList[i].cov_loc,
-	 CovList[i].extension_factor,CovList[i].square_factor,
-	 CovList[i].cov_tbm2,CovList[i].cov_tbm3,CovList[i].tbm_method,
-	 CovList[i].spectral,CovList[i].add_mpp_scl,CovList[i].hyperplane,
-	 CovList[i].initother,CovList[i].other,
-	 CovList[i].first[0],CovList[i].first[1],CovList[i].first[2]);
-}
-
-void PrintModelListDetailed()
-{
-  int i;
-  if (CovList==NULL) {PRINTF("There are no functions available!\n");} 
-  else {
-    PRINTF("\nList of covariance functions:\n=============================\n");
-    for (i=0;i<currentNrCov;i++) PrintCovDetailed(i);
-  }
-}
-
-void InternalIncludeModel(char **name,  
-			  covfct cov,   
-			  scalefct naturalscale,		   
-			  covfct cov_loc, 
-			  parameterfct extension_factor,
-			  scalefct square_factor,
-			  covfct cov_tbm2, covfct cov_tbm3, 
-			  SimulationType tbm_method,
-			  randommeasure spectral, 
-			  MPPScales add_mpp_scl, 
-			  MPPRandom add_mpp_rnd, 
-			  generalSimuInit initother,
-			  generalSimuMethod other,
-			  int kappas,
-			  SimulationType r1, SimulationType r2,
-			  SimulationType r3,
-			  checkfct check
-			  )
-{  
-  CovList[currentNrCov].cov=cov;
-
-  if (currentNrCov==-1) InitModelList();  assert(CovList!=NULL);
-  if (currentNrCov>=MAXNRCOVFCTS) {PRINTF("Error. List full.\n");return;}
-  strncpy(CovList[currentNrCov].name,*name,COVMAXCHAR-1);
-  CovList[currentNrCov].name[COVMAXCHAR-1]='\0';
-  if (strlen(*name)>=COVMAXCHAR) {
-    PRINTF("Warning! Covariance name is truncated to `%s'",
-	   CovList[currentNrCov].name);
-  }
-  CovList[currentNrCov].cov=cov;
-  CovList[currentNrCov].naturalscale=naturalscale;
-  CovList[currentNrCov].cov_loc=cov_loc;
-  CovList[currentNrCov].cov_tbm2=cov_tbm2;
-  CovList[currentNrCov].cov_tbm3=cov_tbm3;
-  CovList[currentNrCov].spectral=spectral;
-  CovList[currentNrCov].add_mpp_scl=add_mpp_scl;  
-  CovList[currentNrCov].add_mpp_rnd=add_mpp_rnd;  
-  CovList[currentNrCov].hyperplane=NULL;
-  CovList[currentNrCov].initother=initother;
-  CovList[currentNrCov].other=other;
-  CovList[currentNrCov].first[0]=r1;
-  CovList[currentNrCov].first[1]=r2;
-  CovList[currentNrCov].first[2]=r3;
-  CovList[currentNrCov].other=other;
-  CovList[currentNrCov].extension_factor=extension_factor;
-  CovList[currentNrCov].square_factor=square_factor;
-  CovList[currentNrCov].tbm_method      =tbm_method;
-  CovList[currentNrCov].kappas = kappas;
-  CovList[currentNrCov].check = check;
-  currentNrCov++;
-}
-
-void IncludeModel(char *name, covfct cov, scalefct naturalscale,   
-		   covfct cov_loc, parameterfct extension_factor,
-		   scalefct square_factor,
-		   covfct cov_tbm2, covfct cov_tbm3, SimulationType tbm_method,
-		   randommeasure spectral, 
-		   MPPScales add_mpp_scl, 
-		   MPPRandom add_mpp_rnd, 
-		   generalSimuInit initother, generalSimuMethod other,
-		   int kappas,
-		   SimulationType r1,SimulationType r2,SimulationType r3,
-		   checkfct check
-		   )
-{
-  InternalIncludeModel(&name,cov,naturalscale,cov_loc,extension_factor,
-			square_factor,
-			cov_tbm2, cov_tbm3, tbm_method,
-			spectral, 
-			add_mpp_scl, add_mpp_rnd,
-			initother,other, kappas,
-			r1,r2,r3,check
-			);
-}
-
-
-void IncludeModel(char *name, covfct cov, scalefct naturalscale,	
-		   covfct cov_loc, parameterfct extension_factor, 
-		   scalefct square_factor,
-		   covfct cov_tbm2, covfct cov_tbm3, SimulationType tbm_method,
-		   randommeasure spectral, 
-		   int kappas,
-		   SimulationType r1,SimulationType r2,SimulationType r3,
-		   checkfct check
-		   )
-{
-  InternalIncludeModel(&name,cov,naturalscale,cov_loc,extension_factor,
-			square_factor,
-			cov_tbm2,cov_tbm3,tbm_method,spectral, 
-			NULL,NULL,NULL,NULL,kappas,
-			r1,r2,r3,check
-			);
-}
-
-void IncludeModel(char *name, covfct cov,scalefct naturalscale,  
-		   covfct cov_tbm2, covfct cov_tbm3, SimulationType tbm_method,
-		   randommeasure spectral, 
-		   int kappas, // how many additional parameters??
-		   SimulationType r1,SimulationType r2,
-		   SimulationType r3,//if a d dimen. field is to be generated
-		   //                  which method is the prefered one?
-		   checkfct check
-		   )
-{
-  InternalIncludeModel(&name,cov,naturalscale,NULL,NULL,NULL,
-			cov_tbm2,cov_tbm3,tbm_method,spectral, 
-			NULL,NULL,NULL,NULL,kappas,
-			r1,r2,r3,check
-			);
-}
-
-
-
-void InitModelList()
-{
-  int i,d;
-
-#ifdef RF_GSL
-  StoreSeed();
-#endif
-  for (i=0;i<MAXKEYS;i++) {
-    KEY[i].active = false;
-    KEY[i].S=NULL;
-    KEY[i].destruct=NULL;
-    KEY[i].SX=NULL;
-    KEY[i].destructX=NULL;
-    for (d=0; d<MAXDIM; d++) KEY[i].x[d]=NULL;
-    KEY[i].cov = NULL;
-    KEY[i].naturalscaling =-1;
-  }
-  if (CovList!=NULL) {
-    PRINTF("List of covariance functions looks already initiated.\n"); 
-    return;
-  }
-  assert(currentNrCov=-1);
-  CovList = (cov_fct*) malloc(sizeof(cov_fct) * MAXNRCOVFCTS);
-  currentNrCov=0;
-  IncludeModel("bessel",Bessel,NULL,NULL,NULL,Nothing,spectralBessel,
-		1,CircEmbed,SpectralTBM,CircEmbed,checkBessel);
-  IncludeModel("cauchy",Cauchy,ScaleCauchy,TBM2Cauchy,TBM3Cauchy,CircEmbed,NULL,
-		1,CircEmbed,TBM3,TBM3,checkCauchy);
-  IncludeModel("cauchytbm",Cauchytbm,NULL,NULL,TBM3Cauchytbm,CircEmbed,NULL,
-		3,CircEmbed,TBM3,TBM3,checkCauchytbm); 
-  IncludeModel("circular",circular,Scalecircular, 
-		NULL, //covfct cov_loc,    
-		NULL, //     parameterfct extension_factor,   
-		NULL, //     scalefct square_factor,
-		NULL, //covfct cov_tbm2,    
-		NULL, //covfct cov_tbm3,    
-		Nothing, //   SimulationType tbm_method,
-		NULL, //randommeasure spectral, 
-		circular_init, //MPPScales,
-		circularMpp, //MPPRandom, 
-		NULL, //generalSimuInit initother,   
-		NULL, //generalSimuMethod other,
-		0,    //   int kappas,		      
-		CircEmbed, //SimulationType r1,   
-		CircEmbed, //SimulationType r2,   
-		Forbidden, //SimulationType r3,
-		NULL);     
-  IncludeModel("cubic",cubic,Scalecubic,NULL,TBM3cubic,CircEmbed,NULL,
-		0,CircEmbed,CircEmbed,CircEmbed,NULL); 
-  IncludeModel("cone", 
-		NULL, //covfct cov, 
-		NULL, //scalefct naturalscale,   
-		NULL, //covfct cov_loc,    
-		NULL, //     parameterfct extension_factor,   
-		NULL, //     scalefct square_factor,
-		NULL, //covfct cov_tbm2,    
-		NULL, //covfct cov_tbm3,    
-		Nothing, //   SimulationType tbm_method,
-		NULL , //randommeasure spectral, 
-		cone_init, //MPPScale,
-		cone, //MPPRandom, 
-		NULL, //generalSimuInit initother,    
-		NULL, //generalSimuMethod other,
-		3,    //   int kappas,		      
-		AdditiveMpp, //SimulationType r1,   
-		AdditiveMpp, //SimulationType r2,   
-		AdditiveMpp, //SimulationType r3,
-		checkcone //   checkfct check
-		);
-  IncludeModel("exponential", exponential,Scaleexponential,NULL,
-		TBM3exponential,CircEmbed,NULL,
-		0,CircEmbed,CircEmbed,CircEmbed,NULL);
-  // deleted as not of general interest
-  //  IncludeModel("expPLUScirc",expPLUScirc,ScaleexpPLUScirc,
-  //		NULL,NULL,Nothing,NULL,
-  //		2,CircEmbed,CircEmbed,Forbidden,checkexpPLUScirc);  
-  IncludeModel("gauss", 
-		Gauss, //covfct cov, 
-		ScaleGauss, //scalefct naturalscale,   
-		NULL, //covfct cov_loc,    
-		NULL, //     parameterfct extension_factor,   
-		NULL, //     scalefct square_factor,
-		NULL, //covfct cov_tbm2,    
-		TBM3Gauss, //covfct cov_tbm3,    
-		CircEmbed, //   SimulationType tbm_method,
-		spectralGauss, //randommeasure spectral, 
-		gaussmpp_init, //MPPScales,
-		gaussmpp, //MPPRandom, 
-		NULL, //generalSimuInit initother,    
-		NULL, //generalSimuMethod other,
-		0,    //   int kappas,		      
-		CircEmbed, //SimulationType r1,   
-		SpectralTBM, //SimulationType r2,   
-		CircEmbed, //SimulationType r3,
-		NULL //   checkfct check
-		);     
-  IncludeModel("gencauchy",generalisedCauchy, ScalegeneralisedCauchy,
-		NULL,TBM3generalisedCauchy,CircEmbed,NULL,
-		2,CircEmbed,TBM3,TBM3,checkgeneralisedCauchy);
-  IncludeModel("gengneiting",genGneiting,NULL,NULL,
-	       TBM3genGneiting, CircEmbed,NULL,
-		2,CircEmbed,CircEmbed,CircEmbed,checkgenGneiting);
-  IncludeModel("gneiting",Gneiting,ScaleGneiting,NULL,
-		TBM3Gneiting,CircEmbed,NULL,
-		0,CircEmbed,CircEmbed,CircEmbed,NULL);
-  IncludeModel("gneitingdiff",Gneitingdiff,NULL,NULL,
-		 TBM3Gneitingdiff, CircEmbed,NULL,
-		2,CircEmbed,CircEmbed,CircEmbed,checkGneitingdiff);
-  IncludeModel("holeeffect",holeeffect,Scaleholeeffect,NULL,
-		TBM3holeeffect,CircEmbed,NULL,  
-    		1,CircEmbed,CircEmbed,CircEmbed,checkholeeffect);
-  IncludeModel("hyperbolic",hyperbolic,NULL,NULL,
-		TBM3hyperbolic,CircEmbed,NULL,   
-		3,CircEmbed,CircEmbed,CircEmbed,checkhyperbolic);
-  IncludeModel("nugget",nugget,Scalenugget,NULL,NULL,Nothing,NULL,
-		0,Nugget,Nugget,Nugget,checknugget);
-  IncludeModel("penta",penta,Scalepenta,NULL,TBM3penta,CircEmbed,NULL,
-		0,CircEmbed,CircEmbed,CircEmbed,NULL); 
-  IncludeModel("power",power,Scalepower,TBM2power,
-		TBM3power,CircEmbed,NULL,
-		1,CircEmbed,CircEmbed,CircEmbed,checkpower);
-  IncludeModel("qexponential", qexponential,Scaleqexponential,NULL,
-		NULL,Nothing,NULL,
-		1,CircEmbed,CircEmbed,CircEmbed,checkqexponential);
-  IncludeModel("spherical",spherical,Scalespherical,
-		NULL, //covfct cov_loc,    
-		NULL, //     parameterfct extension_factor,   
-		NULL, //     scalefct square_factor,
-		TBM2spherical,//covfct cov_tbm2,
-		TBM3spherical,//covfct cov_tbm3,
-		CircEmbed,//   SimulationType tbm_method,
-		NULL, //randommeasure spectral, 
-		spherical_init, //MPPScales,
-		sphericalMpp, //MPPRandom, 
-		NULL, //generalSimuInit initother,    
-		NULL, //generalSimuMethod other,
-		0,    //   int kappas,		      
-		CircEmbed, //SimulationType r1,   
-		CircEmbed, //SimulationType r2,   
-		CircEmbed, //SimulationType r3,
-		NULL);     
-  IncludeModel("stable",stable,Scalestable,NULL,TBM3stable,CircEmbed,NULL,
-		1,CircEmbed,CircEmbed,CircEmbed,checkstable);
-  IncludeModel("wave",wave,Scalewave,NULL,NULL,Nothing,spectralwave,
-		0,CircEmbed,CircEmbed,CircEmbed,NULL);
-  IncludeModel("whittlematern",WhittleMatern,ScaleWhittleMatern,NULL,
-		TBM3WhittleMatern,CircEmbed,spectralWhittleMatern,
-		1,CircEmbed,SpectralTBM,CircEmbed,checkWhittleMatern);
-
-   // see /home/martin/article/C/RFCovBrownian.cc
-}
-
-void PrintModelList()
-{
-  int i;
-  char percent[]="%";
-  char empty[]="";
-  char header[]="Circ local TBM2 TBM3 sp dir add hyp oth\n";
-  char coded[3][2]={"-","X","+"};
-  char firstcolumn[20],line[80];
-  if (currentNrCov==-1) {
-    InitModelList(); 
-    if (GENERAL_PRINTLEVEL>5) 
-      PRINTF("List of covariance functions initiated.\n"); 
-  }
-  if (CovList==NULL) {PRINTF("There are no functions available!\n");} 
-  else {
-    sprintf(firstcolumn,"%s%ds ",percent,COVMAXCHAR);
-    sprintf(line,"%s3s  %s3s   %s3s  %s3s  %s2s %s2s  %s2s  %s2s  %s2s\n",
-	    percent,percent,percent,percent,percent,percent,percent,percent,
-	    percent);
-    PRINTF("\n\n");
-    PRINTF(firstcolumn,empty); PRINTF("       List of models\n");
-    PRINTF(firstcolumn,empty); PRINTF("       ==============\n");
-    PRINTF(firstcolumn,empty); PRINTF("[See also PrintMethodList()]\n\n");
-    PRINTF(firstcolumn,empty);PRINTF(header,empty);   
-    for (i=0;i<currentNrCov;i++) {
-      PRINTF(firstcolumn,CovList[i].name);
-      if (strcmp(CovList[i].name,"nugget")==0) {
-	PRINTF(line,
-	       coded[2], coded[false], coded[2],     coded[2],     coded[2],
-	       coded[2], coded[2], coded[false], coded[false]);
-      } else {
-	PRINTF(line,
-	       coded[(CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL)],
-	       coded[CovList[i].cov_loc!=NULL],
-	       coded[CovList[i].cov_tbm2!=NULL],
-	       coded[CovList[i].cov_tbm3!=NULL],
-	       coded[CovList[i].spectral!=NULL], 
-	       coded[(CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL)],
-	       coded[CovList[i].add_mpp_scl!=NULL],
-	       coded[CovList[i].hyperplane!=NULL],
-	       coded[CovList[i].initother!=NULL]
-	       );
-      }
-      /*
-      if (i==18) {
-	PRINTF(firstcolumn,empty);PRINTF(header,empty); 
-	PRINTF("\n\
-**** The following functions are part of current research work.       ****\n\ 
-**** Please check with Tilmann Gneiting, tilmann@stat.washington.edu, ****\n\ 
-**** before using them!                                               ****\n");
-      }
-      */
-    }
-    PRINTF(firstcolumn,empty);PRINTF(header,empty);   
-  }
-}
-
-
-int InternalGetGridSize(Real *x[MAXDIM], int *dim, int lx[MAXDIM])
-{
-  int d;
-  for (d=0; d<*dim; d++) {
-    if ((x[d][XEND]<=x[d][XSTART]) || (x[d][XSTEP]<=0))
-      return ERRORCOORDINATES;
-    lx[d] = 1 + (int)((x[d][XEND]-x[d][XSTART])/x[d][XSTEP]); 
-  }
-  for (d=*dim; d<MAXDIM; d++)
-    lx[d]=1;
-  return NOERROR;
-}
-
-void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
-{ 
-  // should now be consistent with `seq' of R
-  // if not, please report!!!!!!!!!!!! 
-  Real *xx[MAXDIM];
-  int lxx[MAXDIM];
-  xx[0]=x; xx[1]=y; xx[2]=z;
-  if (InternalGetGridSize(xx,dim,lxx)) {
-    *lx = *ly = *lz = 0;
-  } else {
-    *lx = lxx[0];  *ly = lxx[1];  *lz=lxx[2];
-  }
-}
-
-void ErrorMessage(SimulationType m, int error) 
-{
-  char MS[50], EM[100+2*MAXERRORSTRING];
-  switch(m) {
-  case CircEmbed : strcpy(MS,"circulant embedding"); break;
-  case CircEmbedLocal : strcpy(MS,"local circulant embedding"); break;
-  case TBM2 : strcpy(MS,"2-dim. TBM"); break;
-  case TBM3: strcpy(MS,"3-dim. TBM"); break;
-  case SpectralTBM: strcpy(MS,"spectral TBM"); break;
-  case Direct : strcpy(MS,"direct Gaussian (decomposition of cov. matrix)");
-    break;
-  case Nugget: strcpy(MS,"nugget effect modelling"); break;
-  case AdditiveMpp: strcpy(MS,"additive MPP (random coins)"); break;
-  case Hyperplane : strcpy(MS,"hyperplane tessellation"); break;
-  case Special: strcpy(MS,"special procedure"); break;
-  case Nothing: 
-    if (error>0) strcpy(MS,"Error");
-    else strcpy(MS,"Message"); 
-    break;
-  case MaxMpp: strcpy(MS,"max. MPP (Boolean functions)"); break;
-  case Forbidden: strcpy(MS,"forbidden"); break;
-  default : assert(false);
-  }
-  switch (error) {
-  case USEOLDINIT : strcpy(EM,"Using stored initialization"); break;
-  case NOERROR : strcpy(EM,"fine"); break;
-
-  case ERRORNOTDEFINED :       
-    strcpy(EM,"undefined for this model");break;
-  case ERRORMETHODNOTALLOWED : 
-    strcpy(EM,"not allowed for the specified parameters or points");break;
-  case ERRORNOTPROGRAMMED :    
-    strcpy(EM,"not programmed yet. Sorry"); break;
-  case ERRORCOVNOTALLOWED :    
-    strcpy(EM,"model not allowed for specified dimension");break;
-  case ERRORFAILED: 
-    strcpy(EM,"algorithm failed");break;
-  case ERRORMEMORYALLOCATION: 
-    strcpy(EM,"memory allocation error");break;
-  case ERRORNOTINITIALIZED: 
-    strcpy(EM,"not initialized or RFparameter()$Storage==FALSE");break;
-  case ERRORKEYNROUTOFRANGE: 
-    strcpy(EM,"wrong key number");break;
-  case ERRORDECOMPOSITION:
-    strcpy(EM,"matrix decomposition failed");break;
-  case ERRORPRECISION: 
-    strcpy(EM,"required precision not attained");break;
-  case ERRORRESCALING:
-    strcpy(EM,"rescaling not defined");break;
-  case ERRORFOURIER: 
-    strcpy(EM,"fft factorization failed");break;
-  case ERRORCOVFAILED: 
-    sprintf(EM,
-	    "model and method only valid for %s. Got %s",
-	    ERRORSTRING_OK,ERRORSTRING_WRONG);
-    break;
-  case ERRORREGISTER: 
-    sprintf(EM,"Register number out of [0,%d]",MAXKEYS-1);break;
-  case ERRORCOORDINATES: 
-    strcpy(EM,"coordinates are not given or invalid grid specification");break;
-  case ERRORNEGATIVEVAR: 
-    strcpy(EM,"Variance or nugget non-positive");break;
-  case ERRORPARAMNUMBER: 
-    strcpy(EM,"number of parameters not correct");break;
-  case ERRORDIM: 
-    sprintf(EM,"dimension specification not in [1,%d]",MAXDIM);break;
-  case ERRORNEGATIVESCALE :  
-    strcpy(EM,"scale parameter must be positive");break;
-  case ERRORWAVING :
-    strcpy(EM,"Rescaling not possible (waving)");break;
-  case ERRORDUMMY : 
-    strcpy(EM,"none"); break;
-   case ERRORWRONGINIT: 
-    strcpy(EM,"Wrong initialisation");break;
-  case ERRORNN:
-    strcpy(EM,"The number of points on the line is too large. Check your parameters and make sure that none of the locations are given twice");break;
-   //
-   // extremes:
-  case ERRORSILLNULL : 
-    strcpy(EM,"Vanishing sill not allowed");break;     
-    //    case : strcpy(EM,"");break;
-   //
-   // Poisson:
-  case ERRORVARMEAN :
-    strcpy(EM,"Variance differs from mean");break;
-  default : assert(false);
-  }
-  if (m!=Nothing)  PRINTF("Method");
-  PRINTF(" %s: %s.\n",MS,EM);
-}
-
 
 void DeleteKey(int *keyNr)
 {  
-  int d;
-  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {return;}
-  if (GENERAL_PRINTLEVEL>=4) { PRINTF("deleting stored parameters...\n");}
-  for (d=0; d<MAXDIM; d++) {
-    if (KEY[*keyNr].x[d]!=NULL) {free(KEY[*keyNr].x[d]);KEY[*keyNr].x[d]=NULL;}
+  key_type *key;
+ 
+  int d, m;
+  if (GENERAL_PRINTLEVEL>=4) { 
+    PRINTF("deleting stored parameters of register %d ...\n", *keyNr);
   }
-  if (KEY[*keyNr].destruct!=NULL) KEY[*keyNr].destruct(&(KEY[*keyNr].S));
-  KEY[*keyNr].destruct=NULL;
-  if (KEY[*keyNr].destructX!=NULL) KEY[*keyNr].destructX(&(KEY[*keyNr].SX));
-  KEY[*keyNr].destructX=NULL;
-  KEY[*keyNr].active=false;
+  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {return;}
+  key = &(KEY[*keyNr]);
+  if (key->x[0]!=NULL) free(key->x[0]);
+  for (d=0; d<MAXDIM; d++) {key->x[d]=NULL;}
+  for (m=0; m<MAXCOV; m++) {
+    if (key->destruct[m]!=NULL) key->destruct[m](&(key->S[m]));
+    key->destruct[m]=NULL;
+  }
+  key->TrendModus = -1;
+  if (key->TrendFunction!=NULL) free(key->TrendFunction); 
+  key->TrendFunction=NULL;
+  if (key->LinearTrend!=NULL) free(key->LinearTrend); 
+  key->LinearTrend=NULL;
+  if (key->destructX!=NULL) key->destructX(&(key->SX));
+  key->destructX=NULL;
+  key->active=false;
 }
 
 void DeleteAllKeys() {
@@ -718,851 +82,1135 @@ void DeleteAllKeys() {
 }
 
 
-void printKEY(int keyNr) {
-  int i,actparam;  
-  if ((keyNr<0) || (keyNr>=MAXKEYS)) {PRINTF("\nkeynr out of range!\n");return;}
-  PRINTF("Nr=%d, grid=%d, active=%d, nug.incl=%d, method=%d tbm_method=%d\n",
-	 keyNr,
-	 KEY[keyNr].grid, KEY[keyNr].active, KEY[keyNr].nuggetincluded,
-	 KEY[keyNr].method, KEY[keyNr].tbm_method);
-  PRINTF("^x=%d ^y=%d ^z=%d ^S=%d ^destruct=%d \n", 
-	 KEY[keyNr].x[0], KEY[keyNr].x[1], KEY[keyNr].x[2],
-	 KEY[keyNr].S,KEY[keyNr].destruct);
-  PRINTF("mean=%f, variance=%f, nugget=%f, scale=%f, sill=%f,  invscale=%f",
-	 KEY[keyNr].param[MEAN],
-	 KEY[keyNr].param[VARIANCE],
-	 KEY[keyNr].param[NUGGET],
-	 KEY[keyNr].param[SCALE],
-	 KEY[keyNr].param[SILL],
-	 KEY[keyNr].param[INVSCALE]);
-  if (KEY[keyNr].cov) {
-    PRINTF(", #kappa=%d",KEY[keyNr].cov->kappas);
-    actparam = KAPPA+KEY[keyNr].cov->kappas;
-    for (i=KAPPA;i<actparam;i++) { 
-      PRINTF(", kappa%d=%f",i-KAPPA,KEY[keyNr].param[i]);
-    }
-  } 
-  PRINTF("\ncovnr=%d, lx=%d, dim=%d, totallength=%d\n",
-	 KEY[keyNr].covnr,KEY[keyNr].lx,KEY[keyNr].dim,KEY[keyNr].totallength);
+void printkey(key_type *key) {
+  int i,actparam,j;  
+  char op_sign[][2]={"+","*"};
+
+  PRINTF("\ngrid=%d, active=%d, anisotropy=%d, tbm_method=%d lx=%d sp_dim=%d,\ntotalpoints=%d, distr=%s Time=%d [%f %f %f]\ntimespacedim=%d traditional=%d compatible=%d mean=%f ncov=%d\n",	
+	 key->grid, key->active, key->anisotropy,
+	 key->tbm_method, key->lx, key->spatialdim, key->totalpoints,
+	 DISTRNAMES[key->distribution], 
+	 key->Time, key->T[0], key->T[1], key->T[2], 
+	 key->timespacedim, key->traditional, key->compatible,
+	 key->mean, key->ncov);
+  PRINTF("\n");
+  for (i=0; i<key->ncov; i++) {
+    PRINTF("%d: meth=%s, cov=%d (%s) ^S=%d ^destruct=%d\n left=%d unimeth=%d (%s) [%d], param=", i,
+	   METHODNAMES[key->method[i]],
+	   key->covnr[i], CovList[key->covnr[i]].name,
+	   key->S[i],key->destruct[i], 
+	   key->left[i], 
+	   key->unimeth[i], METHODNAMES[key->unimeth[i]], key->unimeth_used[i]
+	   );
+    for (j=0; j<key->totalparam; j++) PRINTF("%f,",key->param[i][j]);
+    if (i < key->ncov - 1) PRINTF("\n%s\n",op_sign[key->op[i]]); 
+    else PRINTF("\n\n");
+  }
+  //
+  for (i=0; i<MAXDIM; i++) 
+  PRINTF("%d : len=%d \n", i, key->length[i]);
+
+  PRINTF("^x=%d ^y=%d ^z=%d ^SX=%d ^destructX=%d \n", 
+	 key->x[0], key->x[1], key->x[2], key->SX, key->destructX
+	 );
+
 }
+
+void printKEY(int *keyNr) {
+  key_type *key;
+  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
+    PRINTF("\nkeynr out of range!\n");
+    return;
+  }
+  key = &(KEY[*keyNr]);
+  PRINTF("\nNr=%d", *keyNr);
+  printkey(key);
+}
+
 
 void printAllKeys() {
   int i;
-  for (i=0;i<MAXKEYS;i++) {printKEY(i);PRINTF("\n");}
+  for (i=0;i<MAXKEYS;i++) {printKEY(&i);PRINTF("\n");}
 }
 
+int Transform2NoGrid(key_type *key, Real* param, int TrueDim, 
+		     int *start_param, Real **xx)
+{ 
+  /* 
+     this function transforms the coordinates according to the anisotropy
+     matrix given in param (usually param is the param the first anisotropy
+     matrix of the covariance product -- all the other anisotropy matrices
+     have to multiple of the first, and this parameter is put into the
+     covariance function as scale parameter 
+     
+     
+     input  : key, param, TrueDim (got from GetTrueDim)
+              start_param (vector of places where the parameters start)
+     output : 
+         **xx
+           isotropic   : grid : NULL
+                         arbitrary : x-coordinates multiplied with INVSCALE
+           anisotropic : dim-reduced, x-coordinates multiplied with aniso matrix.
+                         The index for the  temporal component runs the
+                         slowest, if there is any
 
-void GetNaturalScaling(int *covnr, Real *p, int *actparam, int *naturalscaling,
-		       Real *natscale, int *error)
-{
-  // values of naturalscaling:
-  //#define NATSCALE_EXACT 1   
-  //#define NATSCALE_APPROX 2
-  //#define NATSCALE_MLE 3 /* check mleRF when changing !! */
-  // +10 if numerical is allowed
-  static int oldcovnr = -99;
-  static Real oldp[TOTAL_PARAM];
-  static Real OldNatScale;
-  int TEN;
-  bool numeric;  
-  *error = 0;
-  TEN = 10;
-  if (*naturalscaling) {	 
-    if (!(numeric=*naturalscaling>TEN)) {TEN=0;}
-    *natscale=0.0;
-    if (CovList[*covnr].naturalscale!=NULL) { 
-      *natscale = CovList[*covnr].naturalscale(p,*naturalscaling-TEN);
-      if (*natscale!=0.0) return;
-    }
-    if (numeric) {
-      Real x,newx,yold,y,newy;
-      covfct cov;
-      int parami, wave,i;
-      if ((cov=CovList[*covnr].cov)==NULL) {*error=ERRORNOTDEFINED;return;}
-      if ((cov=CovList[*covnr].cov)==nugget) {*error=ERRORRESCALING;return;}
-      
-      //printf("numeric\n");
-      // already calculated ?
-      parami=KAPPA; // do not compare mean,variance, etc.
-      if (oldcovnr==*covnr) {
-	for (; parami<*actparam; parami++) {
-	  if (oldp[parami]!=p[parami]) {
-	    break;
+  */
+  int i,j,k,d,w;
+  unsigned long endfor, startfor, total;
+  int dimM1;
+  Real t, *x;
+  dimM1 = key->timespacedim - 1;
+  assert(xx!=NULL);
+  if (key->anisotropy) {
+    // used: TrueDim, start_param
+    total = TrueDim * key->totalpoints;
+    // total number of coordinates to store
+
+    if ((x = *xx = (Real*) malloc(sizeof(Real) * total))==0)
+      return ERRORMEMORYALLOCATION;
+    /* determine points explicitly */
+    if (key->Time && !key->grid) { // time component, no grid
+      endfor = key->length[key->spatialdim];
+      k=0;
+      for (j=0, t=key->T[XSTART]; j<endfor; j++, t+=key->T[XSTEP])
+	for (i=0; i<key->length[0]; i++)
+	  for (d=0; d<TrueDim; d++, k++) {
+ 	    x[k] = 0.0;
+	    for(w=0; w<key->spatialdim; w++)
+	      x[k] += param[start_param[d]+w] * key->x[w][i];
+	    x[k] += param[start_param[d]+w] * t;
+	  }
+    } else { 
+      if (key->grid) {/* grid; with or without time component */
+	Real y[MAXDIM]; /* current point within grid, but without
+			   anisotropy transformation */
+	int yi[MAXDIM]; /* counter for the current position in the grid */
+	for (w=0; w<key->timespacedim; w++) {y[w]=key->x[w][XSTART]; yi[w]=0;}
+	for (k=0; k<total; ){
+	  for (d=0; d<TrueDim; d++, k++) {
+	    x[k] = 0.0;
+	    for(w=0; w<key->timespacedim; w++)
+	      x[k] += param[start_param[d]+w] * y[w];
+	  }
+	  i = 0;
+	  (yi[i])++;
+	  y[i] += key->x[i][XSTEP];
+	  while(yi[i]>=key->length[i]) {
+	    yi[i]=0;
+	    y[i] = key->x[i][XSTART];
+	    if (i<dimM1) {
+	      i++;
+	      (yi[i])++;
+	      y[i] += key->x[i][XSTEP];
+	    } else {
+	      assert(k==total);
+	    }
 	  }
 	}
-	if (parami==*actparam) {
-	  *natscale=OldNatScale; 
-	  return;
-	}
-      }   
-
-      // the other parameters need not to be copied as checked that 
-      // they are identical to previous ones
-      for (;parami<*actparam;parami++) {oldp[parami]=p[parami];}
-      oldp[VARIANCE] = oldp[SCALE] = oldp[INVSCALE] = 1.0; 
-      oldp[NUGGET] = oldp[MEAN] = 0.0;
-      oldcovnr = -99; /* if error occurs, the next call will realise that 
-			 the previous result cannot be used */
-
-      /* **************************************
-	 Now, find a quick and good solution for NewInvScale --
-      */
-      wave  = 0;
-      x = 1.0; 
-      if ( (yold=cov(x,oldp)) > 0.05) {
-	Real leftx;
-	x *= 2.0;
-	while ( (y=cov(x,oldp)) > 0.05) {  
-	  if (yold<y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
-	  yold = y;
-	  x *= 2.0;
-	  if (x>1E30) {*error=ERRORRESCALING; return;} // or use a separate ERROR
-	} 
-	leftx = x * 0.5;
-	for (i=0; i<3 /* good choice?? */ ;i++) {          
-	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
-	  newx = x + (x-leftx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(newx,oldp)) >0.05) {
-	    leftx = newx;
-	    yold  = newy;
-	  } else {
-	    x = newx;
-	    y = newy;
+      } else {/* no grid, no time component */
+	k = 0;
+	for (i=0; i<key->length[0]; i++)
+	  for (d=0; d<TrueDim; d++, k++) {
+	    x[k] = 0.0;
+	    for(w=0; w<key->spatialdim; w++)
+	      x[k] += param[start_param[d]+w] * key->x[w][i];
 	  }
-	}
-	if (y==yold)  {*error=ERRORWAVING; return;} // should never appear
-	*natscale = 1.0 / ( x + (x-leftx)/(y-yold)*(0.05-y) );
-      } else {
-	Real rightx;
-	x *= 0.5;
-	while ( (y=cov(x,oldp)) < 0.05) {  
-	  if (yold>y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
-	  yold = y;
-	  x *= 0.5;
-	  if (x<1E-30) {*error=ERRORRESCALING; return;} //or use a separate ERROR
-	}    
-	rightx = x * 2.0;
-	for (i=0; i<3 /* good choice?? */ ;i++) {          
-	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
-	  newx = x + (x-rightx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(newx,oldp)) <0.05) {
-	    rightx = newx;
-	    yold   = newy;
-	  } else {
-	    x = newx;
-	    y = newy;
-	  }
-	}
-	if (y==yold)  {*error=ERRORWAVING; return;} // should never appear
-	*natscale = 1.0 / ( x + (x-rightx)/(y-yold)*(0.05-y) );
       }
-      oldcovnr=*covnr;  /* result is reliable -> stored for next call */
-      OldNatScale = *natscale;
-     } else *error=ERRORRESCALING; 
+    }
+  } else { /* isotropic, no time component */
+    assert(fabs(param[INVSCALE] * param[SCALE] - 1.0)<EPSILON);
+    if (key->grid) {    
+      *xx = NULL;
+    } else{
+      if ((x = *xx = (Real*) malloc(sizeof(Real) * TrueDim * key->totalpoints)
+	   )==0)
+	// *xx is returned !!
+	return ERRORMEMORYALLOCATION;      
+      for (k=i=0; i<key->length[0]; i++) {
+	for (j=0; j<key->spatialdim; j++) {
+	  x[k++] = key->x[j][i] * param[INVSCALE];
+	}
+      }
+    }
+  }
+  return 0;
+}
+
+
+int InternalGetGridSize(Real *x[MAXDIM], int *dim, int *lx)
+{  
+  int d;
+  for (d=0; d<*dim; d++) {
+    if ((x[d][XEND]<=x[d][XSTART]) || (x[d][XSTEP]<=0))
+      return ERRORCOORDINATES;
+    lx[d] = 1 + (int)((x[d][XEND]-x[d][XSTART])/x[d][XSTEP]); 
+  }
+  return NOERROR;
+}
+
+
+// obsolete?!
+void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
+{ 
+  // should now be consistent with `seq' of R
+  // if not, please report!!!!!!!!!!!! 
+  Real *xx[MAXDIM];
+  int lxx[MAXDIM], d;
+  xx[0]=x; xx[1]=y; xx[2]=z;
+  if (InternalGetGridSize(xx,dim,lxx)) {
+    *lx = *ly = *lz = 0;
   } else {
-    *natscale = 1.0;
+    *lx = lxx[0];  *ly = lxx[1];  *lz=lxx[2];
   }
 }
 
-int CheckAndRescale(int naturalscaling, int covnr, Real *p, int np, int dim, 
-		    Real *newscale) 
-{
-  int actparam,error;
-  Real natscale;
+#define COV_VARIO(FORMULA,FCT)\
+  int v, aniso, k, j, endfor;\
+  Real  var,  zz, zw, result, d;\
+  cov_fct *cov;\
+  zw = result = 0.0;\
+  if (anisotropy) {\
+    Real z[MAXDIM];\
+    int cov_isotropy, ncovM1;\
+    ncovM1 = ncov - 1;\
+    for (v=0; v<ncov; v++) {\
+      zw = var = 1.0;\
+      for(;v<ncov;v++) {\
+        cov = &(CovList[covnr[v]]);\
+        cov_isotropy=cov->isotropic;\
+	var *= param[v][VARIANCE];\
+	for (k=0; k<dim; k++) z[k]=0.0;\
+	for(aniso=ANISO, k=0; k<dim; k++){\
+	  for (j=0; j<dim; j++, aniso++) {\
+	    z[k] += param[v][aniso] * x[j];\
+            }\
+        }\
+ 	if (cov_isotropy==ANISOTROPIC) zw *= cov->FCT(z,param[v],dim);\
+          /* derzeit is dim in cov->FCT bis auf assert-checks unbenutzt */\
+	else {\
+          /* the following definiton allows for calculating the covariance */\
+          /* funcion for spatialdim=0 and SPACEISOTROPIC model, namely as a */\
+          /* purely temporal model; however, in CheckAndRescale such kind of */\
+          /* calculations are prevend as being TRIVIAL(generally, independent */\
+          /* of being SPACEISOTROPIC or not) -- unclear whether relaxation in */\
+          /* CheckAndRescale possible */\
+	  zz = 0.0;\
+	  endfor = dim - 1;\
+	  for (j=0; j<endfor; j++) zz += z[j] * z[j];\
+	  if (cov_isotropy==FULLISOTROPIC) zz += z[endfor] * z[endfor];\
+	  else z[1]=z[endfor];\
+	  z[0] = sqrt(zz);\
+	  zw *= cov->FCT(z, param[v], 1 + (int) (cov_isotropy==SPACEISOTROPIC));\
+	}\
+	if ( (v<ncovM1) && (op[v]==0)) break;\
+      }\
+      result += FORMULA;\
+    }\
+  } else {\
+    if (dim==1) d=x[0];\
+    else {\
+      for (d=0.0, j=0; j<dim; j++) {d += x[j] * x[j];}\
+      d = sqrt(d);\
+    }\
+    for (v=0; v<ncov; v++) {\
+      zw = var = 1.0;\
+      for(;v<ncov;v++) {\
+	zz = d * param[v][INVSCALE];\
+	var *= param[v][VARIANCE];\
+        cov = &(CovList[covnr[v]]); /* cov needed in FORMULA for Vario */\
+	zw *= cov->FCT(&zz,param[v],1);\
+	if (op[v]==0) break; /* v=ncov does not matter since stopped anyway */\
+      }\
+      result += FORMULA;\
+    }\
+  }\
+ return result;
 
-  if (currentNrCov==-1) InitModelList();assert(CovList!=NULL); 
-  if ((covnr>=currentNrCov) || (covnr<0)) return ERRORNOTDEFINED;
-  if ((dim<1) || (dim>MAXDIM)) return ERRORDIM;
-  if (CovList[covnr].first[dim-1]==Forbidden ) return ERRORCOVNOTALLOWED;
-  actparam = KAPPA + CovList[covnr].kappas;
-  if (np!=actparam) {
-    return ERRORPARAMNUMBER;}
-  if ((p[SCALE] < 0.0)  || ((p[SCALE] == 0.0) && (CovList[covnr].cov!=nugget))) 
-    return ERRORNEGATIVESCALE;
-  if ((p[VARIANCE]<0.0) || (p[NUGGET]<0.0)) return ERRORNEGATIVEVAR;
 
-  if (CovList[covnr].check!=NULL) {    
-    key_type key; int error,i;
-    key.method = Nothing;
-    key.dim = dim; 
-    for (i=0; i<actparam; i++) {key.param[i]=p[i];}
-    if (error=(CovList[covnr].check(&key))) return error;
-  }
-  GetNaturalScaling(&covnr,p,&actparam,&naturalscaling,&natscale,&error);
-  if (error) return  error;
-  *newscale = p[SCALE] * natscale;
-  return 0;
+Real CovFct(Real *x, int dim, int *covnr, int *op,
+  param_type param, int ncov, bool anisotropy) {
+  COV_VARIO(var * zw, cov);
 }
 
-int CheckCovariance(int covnr,int naturalscaling, Real *p, int np, Real *param, 
-		    int dim, covfct *cov, bool *variogram)
-{
-  // called by Covariance and Variogram, only
-  int endfor,i,error;
+Real LocalCovFct(Real *x, int dim, int *covnr, int *op,
+  param_type param, int ncov, bool anisotropy) {
+  COV_VARIO(var * zw, cov_loc);
+}
+
+Real Vario(Real *x, int dim, int *covnr, int *op,
+	    param_type param, int ncov, bool anisotropy){
+  // Vario defines some kind of multiplication (namely as the mulitplication
+  // of the respective covariance functions)
+  // 
+  // make sure that no genuine variogram model are used in multiplication terms
+  //
+  // first part says how to add models
+  // cov.variogram checks whether last model in the block is a variogram
+  // this may allow relaxations towards multiplications of varioagrams in
+  // the sense that the corresponding covariance functions are multiplied
+  // and then 1-block is used as value for variogram (only covariance functions
+  // may appear in this case
+  COV_VARIO(cov->variogram ? var * zw : var * (1.0 - zw), cov); // 30.1.02
+}
+
+
+// checks a *single* basic covariance function
+// p and param must be of the same kind (Real)!!! 
+int CheckAndRescale( int covnr, int naturalscaling, Real *p,
+		    int timespacedim, int anisotropy, Real* param) 
+{ 
+  // IMPORTANT!: p is the parameter vector of the R interface !!
+  // output param : equals p, except naturalscaling
+  int actparam, error, endfor, i, j;
   Real newscale;
-  // must be the very first !!
-  if (error=(CheckAndRescale(naturalscaling,covnr,p,np,dim,&newscale))) 
-    return error; 
-  if ((*cov=CovList[covnr].cov)==NULL) return ERRORNOTDEFINED;
-  endfor = KAPPA + CovList[covnr].kappas;
-  for (i=0; i<endfor; i++) {param[i]=p[i];}
-  param[SILL] = 1.0;
-  *variogram = ( (*cov)(0,param)==0);   
-  param[SILL] = param[NUGGET]+param[VARIANCE]; 
-  param[SCALE] = newscale;
-  param[INVSCALE] =  1.0 / param[SCALE];
-  return 0;
-}
+
+  if ((covnr>=currentNrCov) || (covnr<0)) return ERRORNOTDEFINED;
+  if (p[VARIANCE]<0.0) return ERRORNEGATIVEVAR;
+  
+  actparam = KAPPA + CovList[covnr].kappas;
+  if (anisotropy) {
+    endfor = ANISO + timespacedim * timespacedim;
+    for (j=actparam, i=ANISO; i<endfor; i++, j++) param[i] = p[j];     
+  } else {
+    if (CovList[covnr].isotropic!=FULLISOTROPIC) return ERRORANISOTROPIC;
+    param[SCALE] = p[actparam];	
+  }
+  
+  { // is dimension OK ? 
+    int j, TrueDim, start_param[MAXDIM], index_dim[MAXDIM];
+    bool no_last_comp;
+    switch (CovList[covnr].isotropic) {
+    case FULLISOTROPIC : 
+      GetTrueDim(anisotropy, timespacedim, param,  &TrueDim, &no_last_comp, 
+		 start_param, index_dim);
+      break;
+    case SPACEISOTROPIC :
+      if (anisotropy) {
+	GetTrueDim(anisotropy, timespacedim, param,  &TrueDim, &no_last_comp, 
+		 start_param, index_dim);
+	if (!no_last_comp) TrueDim--;
+      } else {
+	return ERRORNOTANISO;
+      }
+      break;
+    case ANISOTROPIC :
+      if (!anisotropy) return ERRORNOTANISO;
+      TrueDim = timespacedim;
+      break;
+    default : assert(false);
+    } 
+    if (TrueDim==0) return ERRORTRIVIAL;
+    if (CovList[covnr].method(TrueDim, false)==Forbidden)
+      return ERRORCOVNOTALLOWED;
+  }
+
+  // specific parameter check for the covariance function
+  if ((CovList[covnr].check!=NULL) && 
+      ((error=(CovList[covnr].check(p, timespacedim, Nothing))))!=NOERROR)
+    return error;
  
-void CovarianceNatSc(Real *x,int *lx,int *covnr,Real *p, int *np, int *dim,
+  // getnaturalscaling
+  GetNaturalScaling(&covnr,&(p[KAPPA]),&naturalscaling,&newscale,&error);
+  if (error!=NOERROR) return error;
+
+  if (anisotropy) {
+    newscale = 1.0 / newscale;
+    for (j=actparam, i=ANISO; i<endfor; i++, j++) param[i] = p[j] * newscale;
+  } else {
+    param[SCALE] *= newscale;	
+    if (CovList[covnr].cov==nugget && param[SCALE]==0) param[SCALE] = 1;
+    param[INVSCALE] = 1.0 / param[SCALE];
+    if (param[SCALE] <= 0.0) return ERRORNEGATIVESCALE;
+  }
+  for (i=0; i<actparam; i++) param[i] = p[i]; /* variance, kappas */
+
+  return NOERROR;
+}
+
+
+#define FIRST_CHECK_COV_VARIO(ERROR)\
+  if (currentNrCov==-1) InitModelList(); assert(CovList!=NULL);\
+  if ((*logicaldim!=*xdim) && (*anisotropy || (*xdim!=1))) \
+    {ERROR=ERRORDIMMISMATCH; goto ErrorHandling;}\
+  if ((*xdim<1) || (*xdim>MAXDIM)) {ERROR=ERRORDIM; goto ErrorHandling;}\
+  if (*anisotropy) { \
+    pAdd = *xdim * *xdim + 1; /* VARIANCE */\
+  } else {\
+    pAdd = 2;\
+  }\
+  for (i=pAdd * *ncov, v=0; v<*ncov; v++) {\
+    if (CovList[covnr[v]].cov==NULL) {\
+      ERROR=ERRORNOTPROGRAMMED; goto ErrorHandling;}\
+    i += CovList[covnr[v]].kappas;\
+    }\
+  if (i!=*np) {ERROR=ERRORPARAMNUMBER; goto ErrorHandling;}
+
+// note: number of parameters is not checked whether it is correct!!
+// done by R function `PrepareModel'
+void CovarianceNatSc(Real *x, int *lx, int *covnr, Real *p, int *np, 
+		     int *logicaldim, /* timespacedim ! */
+		     int *xdim,
+		     int *ncov, int *anisotropy, int *op,
 		     Real *result, int *naturalscaling)
 {
-  int error,i;
-  bool variogram;
-  Real param[TOTAL_PARAM];
-  covfct cov;
-  if (error=(CheckCovariance(*covnr,*naturalscaling,p,*np,param,
-			    *dim,&cov,&variogram))) {
-    if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error);
-    for (i=0;i<*lx;i++) { result[i] = RF_NAN; }
-    return;	
+  // note: column of x is point !!
+  int error, i,pAdd, v;
+  param_type param;
+
+  error = NOERROR;
+  FIRST_CHECK_COV_VARIO(error);  
+
+  for (v=0; v<*ncov; v++) {
+    if (((error=(CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim,
+				*anisotropy, param[v])))!=NOERROR) ||
+	CovList[covnr[v]].variogram) 
+      goto ErrorHandling;    
+    // increase of address !
+    p += pAdd+CovList[covnr[v]].kappas; // pointer addition!
   }
-  if (variogram) {
-    for (i=0;i<*lx;i++) {  result[i] = RF_NAN;  }
-  } else {
-    for (i=0;i<*lx;i++) {  result[i] = cov(x[i],param);  }
+  
+  for (i=0; i<*lx; i++, x += *xdim) {
+    result[i] = CovFct(x, *xdim, covnr, op, param, *ncov, *anisotropy);
   }
+  return;
+  
+ ErrorHandling:
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error);
+  for (i=0;i<*lx;i++) { result[i] = RF_NAN; }
+  return;	
 }
 
-void Covariance(Real *x,int *lx,int *covnr,Real *p, int *np, int *dim,
+void Covariance(Real *x,int *lx, int *covnr, Real *p, int *np, 
+		int *logicaldim, /* timespacedim ! */
+		int *xdim,
+		int *ncov, int *anisotropy, int *op,
 		Real *result)
 {
-  CovarianceNatSc(x,lx,covnr,p,np,dim,result,&GENERAL_NATURALSCALING);
+  CovarianceNatSc(x,lx,covnr,p,np,logicaldim,xdim,
+		  ncov, anisotropy, op,result, &GENERAL_NATURALSCALING);
 }
 
-void UncheckedCovFct(Real *x, int *n, int *covnr, Real *p, int *np, Real *result)
+static param_type Unchecked_param;
+static int Unchecked_covnr[MAXCOV], Unchecked_DIM, Unchecked_op[MAXDIM],
+  Unchecked_ncov;
+static bool Unchecked_anisotropy;
+
+void InitUncheckedCovFct(int *covnr,Real *p,int *np, 
+			 int *logicaldim, /* timespacedim ! */
+			 int *xdim,
+			 int *ncov, int *anisotropy, int *op,
+			 int *naturalscaling, int *error){
+  int i, j,  pAdd, v;
+  bool variogram;
+ 
+  FIRST_CHECK_COV_VARIO(*error);
+  for (v=0; v<*ncov; v++) {
+    if ((*error=(CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim,
+				 *anisotropy, Unchecked_param[v]))) || 
+	CovList[covnr[v]].variogram) 
+      goto ErrorHandling;
+    p += pAdd+CovList[covnr[v]].kappas;
+  }
+  memcpy(Unchecked_covnr, covnr, sizeof(int) * *ncov);
+  memcpy(Unchecked_op, op, sizeof(int) * *ncov);
+  Unchecked_ncov = *ncov;
+  Unchecked_anisotropy = (bool) *anisotropy;
+  Unchecked_DIM = *xdim;
+  return;
+  
+ ErrorHandling:
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);
+  return;	
+}
+
+void UncheckedCovFct(Real *x, int *lx, Real *result)
 {
+  int i;
   /*
      WARNING:  make sure that CovList is initialised,
                               covnr is correct,
                               p is fine according to covnr (length(p), value)
-                              PracticalRange is included in p[SCALE] if necessary
+                              PracticalRange is included in p[SCALE] if 
+			      necessary
   */
-  int i;
-  covfct cov;
-  Real param[TOTAL_PARAM];
-
-  cov = CovList[*covnr].cov;
-  memcpy(param, p, sizeof(Real) * *np);
-  param[SILL] = param[NUGGET] + param[VARIANCE]; 
-  param[INVSCALE] =  1.0 / param[SCALE];
-  for (i=0; i<*n; i++) { result[i] = cov(x[i], param); }
+  for (i=0; i<*lx; i++, x += Unchecked_DIM) {
+    result[i] = CovFct(x, Unchecked_DIM, Unchecked_covnr, 
+		       Unchecked_op, Unchecked_param, 
+		       Unchecked_ncov, Unchecked_anisotropy);
+  }
 }
 
-void VariogramNatSc(Real *x,int *lx,int *covnr,Real *p,int *np, int *dim,
+void VariogramNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,
+		    int *logicaldim, /* timespacedim ! */
+		    int *xdim,
+		    int *ncov, int *anisotropy, int *op,
 		    Real *result, int *naturalscaling)
 {
-  int error,i;
-  bool variogram;
-  Real param[TOTAL_PARAM];
-  covfct cov;
-  // only if variogram corresponds to covariance matrix !!!
-  if (error=(CheckCovariance(*covnr,*naturalscaling,p,*np,param,
-			    *dim,&cov,&variogram)))  {
-     if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error);    
-    for (i=0;i<*lx;i++) { result[i] = RF_NAN;}
-    return;
+  // note: column of x is point !!
+  int error=NOERROR, i, j, pAdd, v;
+  param_type param;
+
+  FIRST_CHECK_COV_VARIO(error);
+
+  for (v=0; v<*ncov; v++) {
+    if (error=CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim, 
+			      *anisotropy,
+			      param[v])) goto ErrorHandling;
+    if ( (v>0) && (op[v-1]) && 
+	 (CovList[covnr[v]].variogram || CovList[covnr[v-1]].variogram)) {
+      // only covariance functions may be multiplied!
+      error=ERRORNOMULTIPLICATION; goto ErrorHandling;
+    } 
+    p += pAdd+CovList[covnr[v]].kappas;
   }
-  if (variogram) {
-    for (i=0;i<*lx;i++) {result[i] = cov(x[i],param);}
-  }  else {
-    for (i=0;i<*lx;i++) { result[i] = param[SILL]-cov(x[i],param);}
+  for (i=0; i<*lx; i++, x += *xdim) {
+    result[i] = Vario(x, *xdim, covnr, op, param, *ncov, *anisotropy);
   }
+  return;
+   
+ ErrorHandling:
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error);
+  for (i=0;i<*lx;i++) { result[i] = RF_NAN; }
+  return;	 
 }
-void Variogram(Real *x,int *lx,int *covnr,Real *p,int *np, int *dim,
+
+void Variogram(Real *x,int *lx,int *covnr,Real *p,int *np, 
+	       int *logicaldim, /* timespacedim ! */
+	       int *xdim,
+	       int *ncov, int *anisotropy, int *op,
 	       Real *result)
 {
-  VariogramNatSc(x,lx,covnr,p,np,dim,result,&GENERAL_NATURALSCALING);
+  VariogramNatSc(x,lx,covnr,p,np,logicaldim,xdim,ncov,anisotropy,op,
+		 result,&GENERAL_NATURALSCALING);
 }
   
 void CovarianceMatrixNatSc(Real *dist,int *lx,int *covnr,Real *p,int *np, 
-			   int *dim, Real *result, int *naturalscaling)
+			   int *logicaldim, /* timespacedim ! */
+			   int *xdim,
+			   int *ncov, int *anisotropy, int *op,
+			   Real *result, int *naturalscaling)
 {
-  int i,j,zaehler,index,jindex,error;
-   bool variogram;
-   Real param[TOTAL_PARAM];
-   covfct cov;
-    
-   if (error=(CheckCovariance(*covnr,*naturalscaling,p,*np,param,
-			    *dim,&cov,&variogram))) {
-     if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error); 
-     for(i=0,index=0;i<*lx;i++) {  
-       for(j=0;j<*lx;j++) { result[index] = RF_NAN; index++; }
-     }
-     return;
-   }
+  // note: column of x is point !!
+  int error=NOERROR, i, ii, j, pAdd, zaehler, v, endfor, lxP1;
+  long lxq, ve, ho;
+  bool variogram;
+  param_type param;
+  Real var;
  
-   long lxq, lxqhalf;
-   lxq = *lx * *lx;
-   lxqhalf = lxq/2;
-
-  index=zaehler=0;
-  for (i=0;i<*lx;i++) { 
-    for(j=0,jindex=i; j<i; j++,jindex+=*lx) {
-      result[index+j] = result[jindex];
-      assert(index+j<lxq);
-      assert(jindex<lxq);
+ 
+  FIRST_CHECK_COV_VARIO(error);  
+  for (v=0; v<*ncov; v++) {
+    if ( ((error=(CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim, 
+				 *anisotropy, param[v]))) != NOERROR) || 
+	 CovList[covnr[v]].variogram) 
+      goto ErrorHandling;
+    p += pAdd + CovList[covnr[v]].kappas;  // pointer increment!
+  }
+   
+  var = CovFct(ZERO, *xdim, covnr, op, param, *ncov, *anisotropy);
+  lxP1 = *lx + 1;
+  for (ii=*lx, i=0; ii>0; i+=lxP1, ii--) {
+    result[i] = var;
+    endfor = i + ii;
+    for (ve = i + 1, ho = i + *lx; ve < endfor; ve++, ho += *lx, dist += *xdim){
+      result[ve] = result[ho] = 
+	CovFct(dist, *xdim, covnr, op, param, *ncov, *anisotropy);
     }
-    result[index + i] = param[SILL];
-    if (variogram) {
-      for(j=index+i+1,index+=*lx; j<index; j++){ result[j] = RF_NAN;}
-     } else {
-      for(j=index+i+1,index+=*lx; j<index; j++){
-	assert(zaehler<lxqhalf); ////////////////
-	assert(j< lxq); ////////////////
-	result[j] = cov(dist[zaehler++],param);
-      }
-    }
-  } 
+  }
+  return;
+  
+ ErrorHandling:
+  for(i=0; i<lxq; i++) result[i] = RF_NAN;
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error); 
+  return;	
 }
-void CovarianceMatrix(Real *dist,int *lx,int *covnr,Real *p,int *np, int *dim,
+
+void CovarianceMatrix(Real *dist, int *lx,int *covnr, Real *p, int *np,
+		      int *logicaldim, /* timespacedim ! */
+		      int *xdim,
+		      int *ncov, int *anisotropy, int *op,
 		      Real *result)
 {
-  CovarianceMatrixNatSc(dist,lx,covnr,p,np,dim,result,&GENERAL_NATURALSCALING);
+  CovarianceMatrixNatSc(dist, lx, covnr, p, np, logicaldim, xdim, ncov, 
+			anisotropy, op,	result, &GENERAL_NATURALSCALING);
 }
+
 
 void VariogramMatrix(Real *dist,int *lx,int *covnr,Real *p,int *np, Real *result)
-{
+{ 
+  // not programmed yet
+  assert(false);
 }
-  
-void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
-	      char **pch) {
-  switch (*action) {
-  case 0 :
-    GENERAL_STORING= (bool) *storing;
-    GENERAL_PRINTLEVEL=*printlevel;
-    GENERAL_NATURALSCALING=*naturalscaling;
-    if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
-	PRINTF("\n`pch' has more than one character -- first character taken only\n");
-    strncpy(GENERAL_PCH, *pch, 1);
-    break;
-  case 1 :
-    *storing =  GENERAL_STORING;
-    *printlevel = GENERAL_PRINTLEVEL;
-    *naturalscaling = GENERAL_NATURALSCALING;
-    strcpy(*pch, GENERAL_PCH);
-   if (GetNotPrint) break;
- case 2 : 
-    PRINTF("\nGeneral Parameters\n==================\nstoring=%d\nprint level=%d\nnatural scaling=%d\npch=%s\n",
-	   GENERAL_STORING,GENERAL_PRINTLEVEL,GENERAL_NATURALSCALING,*pch);
-    break;
-  default : PRINTF(" unknown action\n"); 
+
+void insert_method(int* last_incompatible, key_type *key,
+			 SimulationType m) {
+//  printf("insert method\n");
+  int idx;
+  assert(key->S[key->n_unimeth]==NULL);
+  assert(key->destruct[key->n_unimeth]==NULL);
+  if (do_incompatiblemethod[m]!=NULL) {
+    // first the non-compatible (i.e. which do not allow direct 
+    // adding to the random field), then those which allow for 
+    // direct adding
+    // --if attention wouldn't be payed to the ordering of the methods,
+    // the simulation algorithm had to create an intermediate field 
+    // more frequently -- sometimes the fields are pretty large,
+    // and then this procedure is quite helpful
+    (*last_incompatible)++;
+
+    key->unimeth_used[key->n_unimeth]=key->unimeth_used[*last_incompatible];
+    key->unimeth[key->n_unimeth]=key->unimeth[*last_incompatible];
+    key->S[key->n_unimeth]=key->S[*last_incompatible]; // necessary
+    // only if traditional and further methods are tried due to
+    // partial failure
+    key->destruct[key->n_unimeth]=key->destruct[*last_incompatible];
+
+    key->S[*last_incompatible] = NULL;
+    key->destruct[*last_incompatible] = NULL;
+    idx = *last_incompatible;
+  } else idx=key->n_unimeth;
+  key->unimeth[idx] = m;
+  key->unimeth_used[idx] = false;
+  key->n_unimeth++;
+//  printf("end insert method\n");
+}
+
+void delete_method(int *M, int *last_incompatible, key_type *key) {
+  // note that key->n_unimeth had been decreased before this function
+  // is called
+  int idx;
+
+//  printf("delete method\n");
+  if (key->destruct[*M]!=NULL) key->destruct[*M](&(key->S[*M]));
+  key->destruct[*M]=NULL;
+  if (do_incompatiblemethod[key->unimeth[*M]]!=NULL) {
+    assert(*last_incompatible>=0);
+    assert(*M<=*last_incompatible);
+    key->unimeth[*M]=key->unimeth[*last_incompatible];
+    key->unimeth_used[*M] = key->unimeth_used[*last_incompatible];
+    key->S[*M] = key->S[*last_incompatible];
+    key->S[*last_incompatible]=NULL;
+    key->destruct[*M]=key->destruct[*last_incompatible];
+    key->destruct[*last_incompatible]=NULL;
+    idx = *last_incompatible;
+    (*last_incompatible)--;
+  } else idx = *M;
+//  printf("idx=%d %d %d %d\n", idx, *M ,*last_incompatible, key->n_unimeth);
+  key->n_unimeth--;
+  if (idx==key->n_unimeth){ // deleting of the very last entry
+    assert(*M==key->n_unimeth); 
+  } else {
+    assert(idx>=0 && idx<key->n_unimeth);
+    key->unimeth[idx] = key->unimeth[key->n_unimeth];
+    key->unimeth_used[idx] = key->unimeth_used[key->n_unimeth];
+    key->S[idx] = key->S[key->n_unimeth];
+    key->S[key->n_unimeth]=NULL;
+    key->destruct[idx] = key->destruct[key->n_unimeth];
+    key->destruct[key->n_unimeth]=NULL;
   }
+  key->unimeth_used[key->n_unimeth] = false;
+  (*M)--;
+//  printf("end delete method\n");
 }
 
-
-#define DIFF_PARAMLIST 1
-#define DIFF_COORDINATES 2
-#define DIFF_OTHERS 3
-#define DIFF_NOTACTIVE 4
-#define DIFF_COVNR 5
-#define DIFF_GRID 6
-#define DIFF_METHOD 7
-void InitSimulateRF(Real *x, Real *y, Real *z, int *dim, int *lx, int *grid, 
+void InitSimulateRF(Real *x, Real *T, 
+		    int *spatialdim, /* spacial dim only ! */
+		    int *lx, int *grid, 
+		    int *Time,
 	            int *covnr, Real *ParamList, int *nParam,
-		    int *method, int *distr,
+		    Real *mean,
+		    int *ncov, int *anisotropy, int *op,
+		    int *method, 
+		    int *distr, /* still unused */
 		    int *keyNr , int *error)
 { // grid  : boolean
   // keyNr : label where intermediate results are to be stored;
   //         can be chosen freely between 0 and MAXKEYS-1
+
+  // NOTE: if grid and Time then the Time component is treated as if
+  //       it was an additional space component
+  //       On the other hand, SPACEISOTROPIC covariance function will
+  //       always assume that the second calling component is a time component!
+
   bool user_defined,finished;
-  int actparam,i,result,act_number,d;
-  long totalBytes;
-  Real newscale, *coord[MAXDIM];
-  
-  coord[0] = x;
-  coord[1] = y;
-  coord[2] = z; 
-
-
+  int i,act_number, last_incompatible, extndd_nr, d, endfor, 
+    pAdd, v, m, M;
+  unsigned long totalBytes;
+  cov_fct *cov;
+  Real newscale, p[TOTAL_PARAM], *PL;
+  bool method_used[(int) Nothing];
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
+  SimulationType Merr;
   SimulationType pg1[]={CircEmbed, CircEmbedLocal, Direct, AdditiveMpp, Nothing}; 
-  SimulationType pg2[]={CircEmbed, CircEmbedLocal, TBM2, SpectralTBM, 
+  SimulationType pg2[]={CircEmbed, CircEmbedLocal, TBM2, SpectralTBM,  
 			 AdditiveMpp, TBM3, Direct, Nothing};
   SimulationType pg3[]={CircEmbed, CircEmbedLocal, TBM3, AdditiveMpp, 
 			Direct, Nothing};
   SimulationType png1[]={Direct, AdditiveMpp, Nothing};
-  SimulationType png2[]={TBM2, SpectralTBM, AdditiveMpp, TBM3,  Direct, 
+  SimulationType png2[]={TBM2, SpectralTBM, AdditiveMpp, TBM3, Direct, 
 			 Nothing};
   SimulationType png3[]={TBM3, AdditiveMpp, Direct, Nothing};
-  SimulationType *preference_list,first_method;
+  SimulationType *preference_list,first_method[MAXCOV];
 
+
+  key_type *key;
+  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
+    *error=ERRORREGISTER; goto ErrorHandling;}
+  key = &(KEY[*keyNr]);
+  key->storing = GENERAL_STORING;
  
   // check parameters
-  // CheckAndRescale must be at the beginning !!
 
-  if (*error=(CheckAndRescale(GENERAL_NATURALSCALING,*covnr,ParamList,*nParam,
-			     *dim,&newscale))) {
-    goto FatalError;
+  key->timespacedim = *spatialdim + (int) (bool) (*Time);
+  if (currentNrCov==-1) InitModelList(); assert(CovList!=NULL); 
+  if ((*spatialdim<1) || (key->timespacedim>MAXDIM) || (*Time>1) || (*Time<0)){
+    *error=ERRORDIM; goto ErrorHandling;}    
+  if (x==NULL) {*error=ERRORCOORDINATES;goto ErrorHandling;}
+  for (i=0; i<*ncov; i++) 
+    if ((covnr[i]<0) | (covnr[i]>=currentNrCov)) {
+      *error=ERRORCOVNROUTOFRANGE; goto ErrorHandling; }
+  if (*anisotropy) {
+   pAdd = 1 + key->timespacedim * key->timespacedim;
+   // not literally "total"param; there might be gaps in the sequence of the 
+   // parameters (if not all seven KAPPA parameters are used)
+   key->totalparam = ANISO + key->timespacedim * key->timespacedim; 
   }
-
-  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {*error=ERRORREGISTER;goto FatalError;}
-  if (coord[0]==NULL) {*error=ERRORCOORDINATES;goto FatalError;}
-
+  else {
+    pAdd = 2;
+    key->totalparam = SCALE + 2; // SCALE, INVSCALE 
+  }
+  
+  // also checked by R function `PrepareModel'
+  for (i=pAdd * *ncov, v=0; v<*ncov; v++) {
+    i += CovList[covnr[v]].kappas;
+  }
+  if (i!=*nParam) {*error=ERRORPARAMNUMBER; goto ErrorHandling;}
   // bytes to be stored for each vector of coordinates:
-  totalBytes=sizeof(Real) * *lx;  
-  actparam = KAPPA+CovList[*covnr].kappas;
 
-  result=0;
-  if (GENERAL_PRINTLEVEL>=3) {PRINTF("comparing with stored parameters...\n");}
+  totalBytes =  sizeof(Real) * *lx * *spatialdim;
+  if (key->active) {   
+    assert(key->x[0]!=NULL);
+    key->active = 
+      (key->lx==*lx) && 
+      (key->spatialdim==*spatialdim) && 
+      (key->grid==(bool)*grid) && 
+      (key->distribution==*distr) &&
+      (key->ncov==*ncov) &&
+      (!memcmp(key->covnr, covnr, sizeof(int) * *ncov)) &&
+      (key->anisotropy==*anisotropy) &&
+      (key->mean==*mean) &&
+      ( (*Time == key->Time) &&
+	(!(*Time) || ! memcmp(key->T, T, sizeof(Real) * 3))) &&
+      (!memcmp(key->op, op, (*ncov>0) ? *ncov-1 : 0)) &&
+      (!memcmp(key->x[0], x, totalBytes)) 
+      ;       
+  }
 
-  if (KEY[*keyNr].active) {// if not active, all the parameters have to be 
+  if (!key->active) {
+    // if not active, all the parameters have to be 
     //                        stored again
- 
-    KEY[*keyNr].active = false;
-    assert(KEY[*keyNr].x[0]!=NULL);
+    // save all the parameters if key has not been active   
+    key->lx=*lx;
+    key->spatialdim = *spatialdim;
+    key->grid=(bool) *grid;
+    key->distribution=*distr; 
+    key->ncov=*ncov;
+    memcpy(key->covnr, covnr, sizeof(int) * *ncov);
+    key->anisotropy = (bool) *anisotropy;    
+    key->mean = *mean;
+    // operators +, *
+    memcpy(key->op, op, (*ncov>0) ? *ncov-1 : 0);
+    // coordinates
+
+    if (key->x[0]!=NULL) free(key->x[0]);
+    if ((key->x[0]=(Real*) malloc(totalBytes))==NULL){
+      *error=ERRORMEMORYALLOCATION;goto ErrorHandling;
+    }
+    memcpy(key->x[0], x, totalBytes);
+
+    for (d=1; d<*spatialdim; d++) key->x[d]= &(key->x[0][d * *lx]);
+    for (; d<MAXDIM; d++)  key->x[d]=NULL;
     
-    // if lx, dim, or grid is different from previous run, there is a severe 
-    // difference; thus everything has to be stored from scratch; i.e., 
-    // act as if active==false
-    if ((KEY[*keyNr].lx==*lx) && 
-	(KEY[*keyNr].dim==*dim) && 
-	(KEY[*keyNr].grid==(bool)*grid) && 
-	(KEY[*keyNr].distribution==*distr)) {
-
-      if (KEY[*keyNr].covnr!=*covnr) {
-	result=DIFF_COVNR; 
-	KEY[*keyNr].covnr=*covnr;
-      }
-      
-     { 
-	Real dummy;
-	dummy = ParamList[SCALE];
-	ParamList[SCALE] = newscale;
-	
-	for (i=0;i<actparam;i++) {
-	  if (KEY[*keyNr].param[i]!=ParamList[i]) {result=DIFF_PARAMLIST; break;}
-	}
-	if (result) {
-	  for (i=0;i<actparam;i++) { KEY[*keyNr].param[i]=ParamList[i]; }
-	}
-	ParamList[SCALE]=dummy;
-      }
-
-      // check coordinates
-      for (d=0; d<*dim; d++) {
-	if ((KEY[*keyNr].x[d]!=NULL) && 
-	    (memcmp(coord[d],KEY[*keyNr].x[d],totalBytes))) {
-	  result=DIFF_COORDINATES;
-	  free(KEY[*keyNr].x[d]); KEY[*keyNr].x[d]=NULL;
-	  if ((KEY[*keyNr].x[d]=(Real*)malloc(totalBytes))==NULL){
-	    *error=ERRORMEMORYALLOCATION;goto FatalError;
-	  }
-	  memcpy(KEY[*keyNr].x[d],coord[d],totalBytes);
-	}
-      }
-      // should be excluded as here it is asserted that the dimensions
-      // *dim and KEY[*keyNr].dim equal
-      for (d=*dim; d<MAXDIM; d++) {assert(KEY[*keyNr].x[d]==NULL);} 
-      goto ende;
-    } else {result=DIFF_OTHERS; } // ...(KEY[*keyNr].grid==(bool)*grid))
-  } else {
-    result=DIFF_NOTACTIVE;
-  }
-
-  // save all the parameters if key has not been active
-
-  KEY[*keyNr].lx=*lx;
-  KEY[*keyNr].dim=*dim;
-  KEY[*keyNr].grid=(bool) *grid;
-  KEY[*keyNr].covnr=*covnr; 
-  KEY[*keyNr].distribution=*distr;
-
-  for (i=0;i<actparam;i++) { KEY[*keyNr].param[i]=ParamList[i]; }
-  KEY[*keyNr].param[SCALE] = newscale;
-
-   for (d=0; d<MAXDIM; d++) {
-    if (KEY[*keyNr].x[d]!=NULL) {
-      free(KEY[*keyNr].x[d]);
-      KEY[*keyNr].x[d]=NULL;
-    }
-  }
-
-  for (d=0; d<KEY[*keyNr].dim; d++) {
-    if ((KEY[*keyNr].x[d] = (Real*) malloc(totalBytes))==NULL) {
-      *error=ERRORMEMORYALLOCATION; goto FatalError;
-    }
-    memcpy(KEY[*keyNr].x[d],coord[d],totalBytes);
-  }
-
-   if (GENERAL_PRINTLEVEL>=5)  PRINTF("before ");
- ende:
-  if (GENERAL_PRINTLEVEL>=5)  PRINTF("label `ende'\n");
-  if (user_defined = (*method>=0)) {
-    if (*method >= (int) Nothing) {*error=ERRORNOTDEFINED; goto FatalError;}
-    if ((KEY[*keyNr].method!=(SimulationType)*method) && 
-	((KEY[*keyNr].method!=Nugget) || (ParamList[VARIANCE]!=0))) {	
-      result=DIFF_METHOD; 
-      if (ParamList[VARIANCE]==0) {
-	KEY[*keyNr].method=Nugget;
-      } else {
-	KEY[*keyNr].method=(SimulationType) *method;
+    //Time
+    if (key->Time = *Time) {
+      if (!key->anisotropy) { *error = ERRORTIMENOTANISO; goto ErrorHandling; }
+      memcpy(key->T, T, sizeof(Real) * 3);
+      if (key->grid) {
+	key->x[key->spatialdim] = key->T;
       }
     }
-  } else {
-    if (result) {
-      assert(CovList[*covnr].first[KEY[*keyNr].dim-1]<Nothing);
-      KEY[*keyNr].method=CovList[*covnr].first[KEY[*keyNr].dim-1];
-    }	
+  } else { // key->active
+    // CHECK:
+    for (d = key->timespacedim; d<MAXDIM; d++) {assert(key->x[d]==NULL);} 
   }
-
-   if (!result) { // detected that all relevant parameters agree, 
-    //              no initialization is necessary
-     KEY[*keyNr].active = true;
-     *error=USEOLDINIT; 
-     if (GENERAL_PRINTLEVEL>=2) ErrorMessage(Nothing,*error);
-     return; 
-  }
-
  
-  if (GENERAL_PRINTLEVEL>=5) { 
-    printf("disagreement at %d\n",result);
-    printKEY(*keyNr);
+  // check the parameter lists -- note that naturalscaling changes the values !
+  for (v=0, PL=ParamList; v<key->ncov; v++){
+    int j;
+    if ((*error=(CheckAndRescale(covnr[v], GENERAL_NATURALSCALING, PL, 
+				 key->timespacedim, *anisotropy, p))) != NOERROR)
+      goto ErrorHandling; 
+    for (j=KAPPA+CovList[covnr[v]].kappas; j<=LASTKAPPA; j++) p[j]=0.0;
+    if (!(key->active &=
+	  (key->covnr[v]==covnr[v]) &&
+	  (!memcmp(key->param[v], p, sizeof(Real) * key->totalparam))
+	  )) {
+      key->covnr[v]=covnr[v];
+      memcpy(key->param[v], p, sizeof(Real) * key->totalparam);
+    }
+   PL+=pAdd+CovList[covnr[v]].kappas;
+  }
+
+  // method list must be treated separately since method is integer coded
+  // when passed to InitSimulate !
+  if (user_defined = (method[0]>=0)) {//either all or none shld be user defined
+    for (v=0; v<key->ncov; v++) {
+      if (method[v] >= (int) Nothing) {
+	*error=ERRORNOTDEFINED; goto ErrorHandling;}
+      if ((key->method[v]!=(SimulationType) method[v])) {	
+	key->active = false;
+	key->method[v]=(SimulationType) method[v];
+      }
+    }
+  } else {
+    // TO DO: not consistent -- unclear which method to choose
+    if (!key->active) {
+      for (v=0; v<key->ncov; v++) {
+	key->method[v]=CovList[covnr[v]].method(key->spatialdim, key->grid);
+      }	
+    }
+  }   
+  
+  if (key->active) { // detected that all relevant parameters agree, 
+    //              no initialization is necessary
+    if (GENERAL_PRINTLEVEL>=2) ErrorMessage(Nothing, USEOLDINIT);
+    *error=NOERROR; 
+   return; /* ***** END ***** */ 
   }
 
   // Delete stored, intermediate result if there is any
-  if (KEY[*keyNr].destruct!=NULL) {
-    KEY[*keyNr].destruct(&(KEY[*keyNr].S));
-    KEY[*keyNr].destruct = NULL;
+  for (v=0; v<MAXCOV; v++) {
+    if (key->destruct[v]!=NULL) {
+      key->destruct[v](&(key->S[v]));
+      key->destruct[v] = NULL;
+    }
   }
-  if (KEY[*keyNr].destructX!=NULL) {
-    KEY[*keyNr].destructX(&(KEY[*keyNr].SX));
-    KEY[*keyNr].destructX = NULL;
+  if (key->destructX!=NULL) {
+    key->destructX(&(key->SX));
+    key->destructX = NULL;
   }
   
+  // Check
+  if (!key->anisotropy)
+    for (v=0; v<*ncov; v++) {
+      assert(fabs(key->param[v][SCALE] * key->param[v][INVSCALE]-1.0) < EPSILON);
+   }
+
   // minor settings, usually overtaken from previous run, if all the 
   // other parameters are identical
-  KEY[*keyNr].param[INVSCALE] = 1.0/KEY[*keyNr].param[SCALE];
-  KEY[*keyNr].param[SILL] = 
-    KEY[*keyNr].param[VARIANCE] + KEY[*keyNr].param[NUGGET];
-  if (TBM_METHOD==Nothing) {KEY[*keyNr].tbm_method=CovList[*covnr].tbm_method;}
-  else {KEY[*keyNr].tbm_method=TBM_METHOD;}
-
-  if (*grid) { 
+  
+  // no further choice of TBM_METHOD !!!!!!!!!!!!! TO BE CHANGED IN FUTURE
+  // if (TBM_METHOD==Nothing) {key->tbm_method=CovList[*covnr].tbm_method;}
+  //else 
+  { key->tbm_method=TBM_METHOD;}
+ 
+  if (key->grid) { 
     if ((*lx!=3) || 
-	(InternalGetGridSize(coord,&KEY[*keyNr].dim,KEY[*keyNr].length))) {
-      *error=ERRORCOORDINATES; goto FatalError;
+	(InternalGetGridSize(key->x,&key->timespacedim,key->length))) {
+      *error=ERRORCOORDINATES; goto ErrorHandling;
     }
-    KEY[*keyNr].totallength = 1;
-    for (d=0; d<*dim; d++) {
-      KEY[*keyNr].totallength *= KEY[*keyNr].length[d];
+    for (d=key->timespacedim; d<MAXDIM; d++) key->length[d] = 1;
+    for (key->spatialtotalpoints=1, d=0; d<key->spatialdim; d++) {
+      key->spatialtotalpoints *= key->length[d];
     }
-    switch (KEY[*keyNr].dim) {
+    key->totalpoints = key->spatialtotalpoints;
+    if (key->Time) key->totalpoints *= key->length[key->spatialdim];
+
+    // preference list
+    switch (key->timespacedim) {
     case 1 : preference_list = pg1; break;
     case 2 : preference_list = pg2; break;
-    case 3 : preference_list = pg3; break;
+    case 3: case 4 : preference_list = pg3; break;
     default : assert(false);
     }
-  } else {
-    KEY[*keyNr].totallength=KEY[*keyNr].length[0]=*lx; 
-    for (d=1; d<*dim; d++) KEY[*keyNr].length[d]=0; 
-    switch (KEY[*keyNr].dim) {
+  } else { // not grid
+    key->totalpoints = key->spatialtotalpoints = key->length[0]= *lx;
+   if (key->Time) {
+      int Tdim; Real *Tx[MAXDIM];
+      Tdim = 1;
+      Tx[0] = key->T;
+      if (InternalGetGridSize(Tx,&Tdim,&(key->length[key->spatialdim]))) {
+	*error=ERRORCOORDINATES; goto ErrorHandling;
+      } 
+      key->totalpoints *= key->length[key->spatialdim];
+    } 
+    // just to say that considering these values does not make sense
+    for (d=1; d<key->spatialdim; d++) key->length[d]=0; 
+    // correct value for higher dimensions (never used)
+    for (d=key->timespacedim; d<MAXDIM; d++) key->length[d] = 1;
+    switch (key->timespacedim) {
     case 1 : preference_list = png1; break;
     case 2 : preference_list = png2; break;
-    case 3 : preference_list = png3; break;
-    default : assert(false);
+    case 3 : case 4 : preference_list = png3; break;
+    default : printkey(key); assert(false);
     }
   }
 
-  KEY[*keyNr].cov=&CovList[KEY[*keyNr].covnr]; // pointer to the complete struct, 
-  //                                              not to `cov' within struct
+  // simple (traditional in the sence of version 1.0 of RandomFields) 
+  // definition of the covariance function?
+  key->traditional = (!key->anisotropy) && ((key->ncov==1) || 
+    ((key->ncov==2) && ( (key->method[0]!=Nugget) &&
+		     key->method[1]==Nugget) ));
 
-  // (hidden) pure nugget effect ??
-  if (KEY[*keyNr].param[VARIANCE]==0) { KEY[*keyNr].method=Nugget;  } 
+  // check (and set) method in case of multiplicative covariance function
+  // here, the internal first prefence might be overwritten
+  endfor = key->ncov - 1;
+  if (user_defined) {
+    for (v=0; v<endfor; v++) {  
+      if (op[v]) { // *
+	if (method[v]!=method[v+1]) {*error=ERRORMETHODMIX; goto ErrorHandling;}
+      }
+    } 
+  } else {
+    for (v=0; v<endfor; v++) {  
+      if (op[v]) { // *
+	key->method[v] = key->method[v+1] = (key->grid) ? CircEmbed : TBM3; 
+      }
+    }
+  }
 
+  for (v=0; v<*ncov; v++) first_method[v] = key->method[v]; 
+  // a first prefered method is tried, before the preference_list
+  // is consulted; first_method ist storred to avoid that 
+  // it is tried a second time when consulting the preference_list
 
-  if (GENERAL_PRINTLEVEL>=5) { printKEY(*keyNr);}
+  finished = false; 
+  assert(*error==NOERROR); 
+  extndd_nr = 0; // used if !traditional; has same role as act_number 
+  //               in the traditional case
 
+  for (v=0; v<*ncov; v++) key->left[v]=true;
+  // indicates which covariance function are left to be initialized
 
-  first_method=KEY[*keyNr].method;
-  finished=false; 
+  key->n_unimeth = 0;
+  act_number = -1;
+  last_incompatible = -1;
+
   while (!finished) {
-   //  PrintCovDetailed(KEY[*keyNr].covnr); 
-    if (GENERAL_PRINTLEVEL>=5) {ErrorMessage(KEY[*keyNr].method,ERRORDUMMY);}
+    int err_occurred;
 
-    assert((KEY[*keyNr].destruct==NULL) && (KEY[*keyNr].S==NULL));
+// printf("\nYY %d %d %d %d %d\n", key->n_unimeth, M, last_incompatible, user_defined, key->traditional); for (v=0; v<MAXCOV; v++) printf(" %d ", key->destruct[v]);
 
-    if ((KEY[*keyNr].cov->check==NULL) ||
-	((*error=KEY[*keyNr].cov->check(&KEY[*keyNr]))==0)) {
- 
-      switch (KEY[*keyNr].method) {
-      case CircEmbed : 
-	if (KEY[*keyNr].cov->cov==NULL) {*error=ERRORNOTDEFINED;} 
-	else  {
-	  *error=init_circulantembedding(&KEY[*keyNr]);
-	  KEY[*keyNr].nuggetincluded = true;
-	}
-	break;
-	
-      case CircEmbedLocal : // not programmed yet
-	if (KEY[*keyNr].cov->cov_loc==NULL) {*error=ERRORNOTDEFINED;} 
-	else {
-	  *error=ERRORNOTPROGRAMMED;
-	  // *error = init_circ_embed_local(&KEY[*keyNr]);
-	  // see /home/martin/article/C/RFce_local.cc
-	  KEY[*keyNr].nuggetincluded = true; 
-	}
-	break;
-	
-      case TBM2 :
-	if (KEY[*keyNr].cov->cov_tbm2==NULL) {*error=ERRORNOTDEFINED;} 
-	else if (KEY[*keyNr].dim==2) { 
-	  *error=init_turningbands(&KEY[*keyNr]);
-	  KEY[*keyNr].nuggetincluded = false;
-	}
-	else if (KEY[*keyNr].dim==1) {
-	  *error=ERRORNOTPROGRAMMED;
-	}
-	else { *error=ERRORMETHODNOTALLOWED; }
-	break;
-	
-      case TBM3 :
-	if (KEY[*keyNr].cov->cov_tbm3==NULL) {*error=ERRORNOTDEFINED;} 
-	else if ((KEY[*keyNr].dim==2) || (KEY[*keyNr].dim==3)) { 
-	  *error=init_turningbands(&KEY[*keyNr]);
-	  KEY[*keyNr].nuggetincluded = false;
-	}
-	else if (KEY[*keyNr].dim==1) {
-	  *error=ERRORNOTPROGRAMMED; 
-	}
-	else { *error=ERRORMETHODNOTALLOWED; }
-	break;
-	
-      case SpectralTBM :
-	if (KEY[*keyNr].cov->spectral==NULL) {*error=ERRORNOTDEFINED;}     
-	else *error=init_simulatespectral(&KEY[*keyNr]);
-	KEY[*keyNr].nuggetincluded = false;
-	break;
-	
-      case Direct :
-	if (KEY[*keyNr].cov->cov==NULL) {*error=ERRORNOTDEFINED;} 
-	else *error=init_directGauss(&KEY[*keyNr]);
-	KEY[*keyNr].nuggetincluded = true;
-	break;
-	
-      case Nugget : 
-	KEY[*keyNr].nuggetincluded = false;       
-	  if ((KEY[*keyNr].cov->cov!=NULL) && (KEY[*keyNr].cov->cov==nugget))
-	    *error=checknugget(&KEY[*keyNr]); 
-	  else 
-	    if (KEY[*keyNr].param[VARIANCE]!=0.0) *error=ERRORMETHODNOTALLOWED; 
-	    else *error=0;
-	break;
-	
-      case AdditiveMpp :// not programmed yet
-	if (KEY[*keyNr].cov->add_mpp_scl==NULL) {*error=ERRORNOTDEFINED;} 
-	else { 	  
-	  init_mpp(&KEY[*keyNr]);
-	  KEY[*keyNr].nuggetincluded = false;
-	}
-	break;
-	
-      case Hyperplane : // not programmed yet
-	if (KEY[*keyNr].cov->hyperplane==NULL) {*error=ERRORNOTDEFINED;} 
-	else {
-	  // Abhaengigkeiten:
-	  //    Funktion, die "stationaeren" punktprozess of [0,2 pi] x RR_+ liefert
-	  //    dichte der punkte [KAPPA]
-	  //    Wahl der Verteilungsfunktion [KAPPAX]
-	  //                   ((0<alpha<2:heavy tailed), 2:z.B.uniform, 
-	  //                   3:exponentiell, 4:gauss, etc.
-	  //    Weiterer Parameter der Verteilungsfunktion [KAPPAXX] 
-	  //                   (stable: schiefe; uniform[0,KAPPAXX], ...)
-	  *error=ERRORNOTPROGRAMMED;
-	  KEY[*keyNr].nuggetincluded = false;
-	  // change preference list once it is programmed !
-	}
-	break;
-	
-      case Special :
-	if (KEY[*keyNr].cov->other==NULL) { *error=ERRORNOTDEFINED; }
-	else {
-	  *error=(KEY[*keyNr].cov->initother)(&KEY[*keyNr]);      
-	  KEY[*keyNr].nuggetincluded = false; // !!
-	  // change preference list once it is programmed !
-	}
-	break;
-	
-      default:
-	if (KEY[*keyNr].method==MaxMpp) ErrorMessage(MaxMpp,ERRORWRONGINIT);
-	else assert(false);
-	break;
+    *error = err_occurred = NOERROR;// necessary in case ncov=0, since then 
+    //                          the following loop is not entered
+
+
+    // create list of methods used
+    for (i=0; i<(int) Nothing; i++) { method_used[i] = false; }
+    for (v=0; v<key->ncov; v++) {
+      if (key->left[v]) { 
+      method_used[key->method[v]] = true;  
+      // if user_defined take over the user_defined one
+      // if !user_defined take specifically preferred one (for 
+      //                     each covariance function)
       }
-    } // if check covariance is ok.
-    finished= user_defined || !(*error);  
+    }
 
-    // the is a first_method given by programmer when defining a cov model;
-    // this method is tried first; afterwards the standard list of methods is 
-    // checked; however the first_method should not be reconsidered!
-    if (!finished) {
-      if (GENERAL_PRINTLEVEL>1) ErrorMessage(KEY[*keyNr].method,*error);
-      if (first_method==KEY[*keyNr].method) { 
-	act_number=0; // now start with the list; nonetheless, first_method 
-	//               could have been the method nr==0, this is corrected 
-	//               in the next step
-      } else {
-	act_number++; // we are in the middle of the standard list, just try 
-	//               the next one
+    for (m=CircEmbed; m<Nothing; m++) 
+      if (method_used[m])
+	insert_method(&last_incompatible, key, (SimulationType) m); 
+        // increments key->n_unimeth
+
+    assert((key->destructX==NULL) && (key->SX==NULL));
+    for (M=0; M<key->n_unimeth; M++) if (!key->unimeth_used[M]) {
+      bool left[MAXCOV];
+      key->unimeth_used[M] = true; // optimistic, corrected by delete_method,
+      //                              if method fails
+      for (v=0; v<key->ncov; v++) left[v] = key->left[v]; // sicherung,
+      // da init_method ueberschreibt und *danach* entscheidet, ob
+      // die methode funktioniert -- ueber key->method ist es zu schwierig
+      // da eine methode mehrmals verwendet werden kann
+      if (GENERAL_PRINTLEVEL>=4)
+	PRINTF("Init %d %s %d %s\n",M,
+	       METHODNAMES[key->unimeth[M]], key->n_unimeth, "--");
+
+// printf("\nXX %d %d %d %d %d\n", key->n_unimeth, M, last_incompatible, user_defined, key->traditional); for (v=0; v<MAXCOV; v++) printf(" %d ", key->destruct[v])
+
+      assert((key->destruct[M]==NULL));
+      assert((key->S[M]==NULL));
+      if (key->unimeth[M]>Special) {
+	err_occurred=ERRORMETHODNOTALLOWED; goto ErrorHandling;}
+      err_occurred = init_method[key->unimeth[M]](key, M);
+      if (GENERAL_PRINTLEVEL>=5) {
+	PRINTF("return code %d :", err_occurred);
+	ErrorMessage(Nothing, err_occurred);
       }
-      KEY[*keyNr].method=preference_list[act_number];
-      if (KEY[*keyNr].method==first_method) {
-	// the new(next or first) method out of the standard list might be 
-	// the first_method
+      if (err_occurred) {
+	if (err_occurred==NOERROR_REPEAT) {
+	  insert_method(&last_incompatible, key, key->unimeth[M]);
+	  err_occurred = NOERROR;
+	  // incompatible here means that partial simulation results
+	  // are not directly added to the final result by the algorithm
+	  // E.g. TBM is incompatible since at the final a division is performed
+	} else if (err_occurred==NOERROR_ENDOFLIST) {
+	  delete_method(&M, &last_incompatible, key);
+	  err_occurred = NOERROR;
+	} else { 
+	  Merr = key->unimeth[M];
+	  *error = err_occurred; // if not traditional, error may occur anywhere
+	  //                     and final *error might be 0
+
+// printf("\n%d %d %d %d %d\n",key->n_unimeth,  M, last_incompatible, user_defined, key->traditional); for (v=0; v<MAXCOV; v++) printf(" %d ", key->destruct[v]);
+
+	  if (user_defined || key->traditional) break;
+	  delete_method(&M, &last_incompatible, key);
+
+// printf("\nZZ %d %d %d %d %d\n",key->n_unimeth,  M, last_incompatible, user_defined, key->traditional); for (v=0; v<MAXCOV; v++) printf(" %d ",key->destruct[v]);
+
+	  for (v=0; v<key->ncov; v++) key->left[v] = left[v];
+	}
+      }
+    }
+    key->compatible = last_incompatible <= 0; // if at most one incompatible
+    // method, then no intermediate results must be stored
+
+    if (!(finished=user_defined || *error==NOERROR)) {
+      if (key->traditional) {
+	// tabula rasa, since the (true) covariance or the nugget may
+	// have failed; just to be sure...
+	for (m=0; m<key->n_unimeth; m++) {
+	  if (key->destruct[m]!=NULL) key->destruct[m](&(key->S[m]));
+	  key->destruct[m]=NULL;
+	}
+	if (key->destructX!=NULL) key->destructX(&(key->SX));
+	key->destructX=NULL;
+	key->n_unimeth = 0;
+
+	for (v=0; v<*ncov; v++) key->left[v]=true;
+	// indicates which covariance function are left to be initialized
+
+	// there is a first_method given by the programmer when defining
+        // a cov model; this method is tried first; afterwards the 
+        // standard list of methods is checked; however the first_method
+	// should not be reconsidered!
+	if (GENERAL_PRINTLEVEL>1) ErrorMessage(key->method[0], *error);
+	act_number++; // within the preference list, act_number is initially -1
+	if (preference_list[act_number]==first_method[0]) {
+	  // the new(next or first) method out of the standard list might be 
+	  // the first_method
+	  act_number++;
+	}
+	key->method[0]=preference_list[act_number];
+	// end of the list?
+	finished=finished || (preference_list[act_number]==Nothing);
+      } else { // not traditional
+	assert(key->S[M]==NULL);
 	act_number++;
-	KEY[*keyNr].method=preference_list[act_number];
+	for (v=0; v<key->ncov; v++) {
+	  if (key->left[v]) key->method[v] = preference_list[act_number];
+	}
+	finished=finished || (preference_list[act_number]==Nothing);
       }
-      // end of the list?
-      finished=finished || (KEY[*keyNr].method==Nothing);
-    } //if !finished
+    } //if !finished || err_occurred
   } // while !finished
 
-  if (*error) { 
-    if (user_defined) {
-      if (GENERAL_PRINTLEVEL>0) ErrorMessage(KEY[*keyNr].method,*error);
-    } else {
-      *error=ERRORFAILED; 
-      if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);      
+  key->active = !*error;
+  if ((*error && (GENERAL_PRINTLEVEL>0)) ||
+      (!user_defined && GENERAL_PRINTLEVEL>1)) { 
+    if (!user_defined && !key->traditional && *error)
+      PRINTF("algorithm failed. Last error has been: ");
+    if (*error && GENERAL_PRINTLEVEL>0) {
+      ErrorMessage(Merr, *error);
+      PRINTF("\n");
     }
-  } else 
-    if (!user_defined && GENERAL_PRINTLEVEL>1) 
-      ErrorMessage(KEY[*keyNr].method,0);
-  KEY[*keyNr].active = !*error;
+  }
+  if (!key->active) goto ErrorHandling;
+
+  if (GENERAL_PRINTLEVEL>=4) PRINTF("Successfully initialised.\n");
   return;
   
-  FatalError:
-  //PRINTF("** Fatal Error occured **\n");
-   if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error); 
+  ErrorHandling:
   DeleteKey(keyNr);  
 }
 
-void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim, int *grid,
-		int *distr)
-{
-  int d;
-  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {*total=-1;} 
-  else if (!KEY[*keyNr].active) {*total=-2;} 
-  else {
-    *total=KEY[*keyNr].totallength;
-    *dim = KEY[*keyNr].dim;
-    for (d=0; d<MAXDIM; d++) lengths[d]=KEY[*keyNr].length[d];
-    *grid = (int) KEY[*keyNr].grid;
-    *distr = (int) KEY[*keyNr].distribution;
-  }
-}
-    
-void RNGtest() {
-  unsigned long  z0,z1;
-  double UU;
-#ifndef RF_GSL
-  GetRNGstate();
-#endif
-  for (z0=z1=0; z1<100;) { 
-    z0++; if (z0==1000000000) {z0=0;z1++; PRINTF("* z1=%d\n",z1);}
-    UU=UNIFORM_RANDOM;
-    if (UU==0.0) PRINTF("NULL: %d %d\n",z1,z0); else
-      if (UU==0.5) PRINTF("0.5: %d %d\n",z1,z0); else
-	if ((UU>0.5) && (UU<=0.500000001)) PRINTF("   ~0.5: %.15f\n",UU);
-  }
-#ifndef RF_GSL
-  PutRNGstate();
-#endif
-  return;
-}
-
+  
 void DoPoissonRF(int *keyNr, Real *res, int *error)
 {
+  // not programmed yet
+  assert(false);
 }
 
 void DoSimulateRF(int *keyNr, Real *res, int *error)
 {
-  Real mean;
-  long nx,endfor;
+  Real  *part_result;
+  long nx, i, endfor, m;
+  key_type *key;
 
-  *error=0; 
+  part_result = NULL;
+  key = &(KEY[*keyNr]);
+  *error=NOERROR; 
 
   if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
     *error=ERRORKEYNROUTOFRANGE; goto ErrorHandling;
   }
-  if (!KEY[*keyNr].active) {*error=ERRORNOTINITIALIZED; goto ErrorHandling;}
-  //  if (KEY[*keyNr].distribution!=DISTR_GAUSS) {
-  //    *error=ERRORWRONGINIT; 
-  //    goto ErrorHandling;
-  //  }
+  if (!key->active) {*error=ERRORNOTINITIALIZED; goto ErrorHandling;}
 
-#ifndef RF_GSL
-     GetRNGstate();
-#endif
-  switch (KEY[*keyNr].method) {
-  case CircEmbed : 
-    do_circulantembedding(&KEY[*keyNr],res END_WITH_RANDOM); break; 
-  case CircEmbedLocal : 
-    do_circ_embed_local(&KEY[*keyNr],res END_WITH_RANDOM); break; 
-  case TBM2 : 
-    do_turningbands(&KEY[*keyNr],res END_WITH_RANDOM); break; 
-  case TBM3 : 
-    do_turningbands(&KEY[*keyNr],res END_WITH_RANDOM); break;   
-  case SpectralTBM : 
-    do_simulatespectral(&KEY[*keyNr],res END_WITH_RANDOM); break;
-  case Direct : 
-    do_directGauss(&KEY[*keyNr],res END_WITH_RANDOM);  break;    
-  case Nugget : 
-    *error=0;{int i;for(i=0;i<KEY[*keyNr].totallength;i++){res[i]=0.0;}}break;
-  case AdditiveMpp: 
-  case MaxMpp: /* **************** */
-    do_addmpp(&KEY[*keyNr],res END_WITH_RANDOM); break;
-  case Hyperplane : 
-    *error=ERRORNOTPROGRAMMED; break;
-  case Special : 
-    KEY[*keyNr].cov->other(&KEY[*keyNr],res END_WITH_RANDOM); break;
-  default: 	
-    assert(false);
+  if (key->n_unimeth==0) {
+    for(i=0; i<key->totalpoints; i++) res[i] = key->mean;
+    return;
+  } 
+  
+  GetRNGstate();
+  if (!key->compatible) {
+    if ((part_result=(Real *) malloc(sizeof(Real) * key->totalpoints))
+	==NULL) {*error=ERRORMEMORYALLOCATION; goto ErrorHandling;}
   }
-  if (*error) goto ErrorHandling;
-  mean =  KEY[*keyNr].param[MEAN];
-  if ((!KEY[*keyNr].nuggetincluded) && (KEY[*keyNr].param[NUGGET]>0)) { //nugget
-    Real sqrttwonugget,UU,VV;
-    sqrttwonugget = sqrt(KEY[*keyNr].param[NUGGET]*2.0);  
-    for (nx=0,endfor=2*(KEY[*keyNr].totallength/2); nx<endfor; nx++) {
-      UU = sqrttwonugget * sqrt(-log(1.0 - UNIFORM_RANDOM));
-      VV = TWOPI * UNIFORM_RANDOM; 
-      res[nx] +=  UU * sin(VV) + mean;
-      nx++;
-      res[nx] += UU * cos(VV)+mean;
+  for(m=0; m<key->n_unimeth; m++) {
+    if (GENERAL_PRINTLEVEL>=7)
+      PRINTF("DoSimu %d %s\n",m, METHODNAMES[key->unimeth[m]]);
+    if (do_compatiblemethod[key->unimeth[m]]!=NULL) {
+      if (GENERAL_PRINTLEVEL>=7) PRINTF("compatible: add=%d\n",m!=0);
+      do_compatiblemethod[key->unimeth[m]] (key, m!=0, m, res ); 
+    } else {
+      if (m==0) {
+	if (GENERAL_PRINTLEVEL>=7) PRINTF("incomp\n");
+	do_incompatiblemethod[key->unimeth[m]](key, m, res );
+      }
+      else {
+	if (GENERAL_PRINTLEVEL>=7) PRINTF("extra %d\n",key->compatible);
+	do_incompatiblemethod[key->unimeth[m]](key, m, part_result
+					       );
+	for (i=0; i<key->totalpoints; i++) {
+	  res[i] += part_result[i];
+	}
+      }
     }
-    if (endfor<KEY[*keyNr].totallength) {
-      do UU=UNIFORM_RANDOM; while (UU==0.0); 
-      UU = sqrttwonugget * sqrt(-log(1.0 - UNIFORM_RANDOM));
-      VV = TWOPI * UNIFORM_RANDOM; 
-      res[endfor] += UU * sin(VV)+ mean;
-    }
-  } else { // no nugget 
-    if (mean!=0.0) {
-      for (nx=0,endfor=KEY[*keyNr].totallength; nx<endfor; nx++) res[nx] += mean;
-    }
-  }
-#ifndef RF_GSL
-    PutRNGstate();
-#endif
+  } // for m
+  
+  if (key->mean!=0.0) {
+    for(i=0; i<key->totalpoints; i++) res[i] += key->mean;
+  }  
+  
+  if (part_result!=NULL) free(part_result);
+  if (! (key->active = GENERAL_STORING && key->storing)) DeleteKey(keyNr);
+  PutRNGstate();
   return;
- ErrorHandling:
-  KEY[*keyNr].active=false;  
-  if (GENERAL_PRINTLEVEL>0) ErrorMessage(KEY[*keyNr].method,*error); 
+  
+ ErrorHandling: 
+  PutRNGstate();
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);
+  if (part_result!=NULL) free(part_result);
+  key->active = false;
+  DeleteKey(keyNr);
   return;
 }
 
-void SimulateRF(Real *x, Real *y, Real *z, int *dim,int *lx, int *grid, 
+void SimulateRF(Real *x, Real *T, int *dim,int *lx, int *grid, 
+		int *Time, 
 		int *covnr, Real *ParamList, int *nParam,
+		Real *mean,
+		int *ncov, int *anisotropy, int *op,
 		int *method, int *distr,
 		int *keyNr,
 		Real *res, int *error)
@@ -1576,7 +1224,7 @@ void SimulateRF(Real *x, Real *y, Real *z, int *dim,int *lx, int *grid,
   //                    if y==z==NULL, the random field is 1 dimensional
   // covnr  : nr of covariance function by getCovFct,
   // ParamList: vector with 5 to 8 elements
-  //          see RFsimu.h, the definition of MEAN..KAPPAXX, for the meaning 
+  //          see RFsimu.h, the definition of MEAN..KAPPAII, for the meaning 
   //          of the components
   // method : if <0 then programme chooses automatically for the method
   //          if ==-1 it starts with the preferred ("first") method for the 
@@ -1586,91 +1234,12 @@ void SimulateRF(Real *x, Real *y, Real *z, int *dim,int *lx, int *grid,
   // keyNR  : label where intermediate results should be stored
   // res : array/grid of simulation results
 
-  InitSimulateRF(x,y,z,dim,lx,grid,covnr,ParamList,nParam,method,
-		 distr,
-		 keyNr,error);
-  if (error<=0) {
+  InitSimulateRF(x, T, dim, lx, grid, Time, covnr, ParamList, nParam,
+                 mean, ncov, anisotropy, op, method, distr, keyNr, error);
+  if (*error==NOERROR) {
     DoSimulateRF(keyNr,res,error);
   } else {    
-    *error=ERRORFAILED;
     if (GENERAL_PRINTLEVEL>0) PRINTF(" ** All methods have failed. **\n");
   } 
 }
-  
-
-void GetRandomSize(int *l)
-{
-#ifdef RF_GSL
-  struct timeb tp;   
-  ftime(&tp);
-  if (RANDOM==NULL) {    
-    gsl_rng_default_seed =  tp.time * 257 + tp.millitm; 
-    RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);      
-  }
-  *l=gsl_rng_size(RANDOM);
-#else 
-  *l = -1;
-#endif
-}
-
-
-#ifdef RF_GSL
-void StoreSeed()
-{ // gsl_library has no getrandomseed-function. so we restart the generator with 
-  //a new seed
-  struct timeb tp;   
-  ftime(&tp);
-  if (RANDOM==NULL) {    
-    gsl_rng_default_seed =  tp.time * 257 + tp.millitm;
-    RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);     
-  }
-  if (RF_RNG_STORED!=NULL) gsl_rng_free(RF_RNG_STORED);
-  RF_RNG_STORED=gsl_rng_clone(RANDOM);
-}
-void RestoreSeed()
-{
-  gsl_rng_free(RANDOM);
-  RANDOM=gsl_rng_clone(RF_RNG_STORED);
-}
-
-void XGetSeed(int *seed,int *l)
-{ // gsl_library has no getrandomseed-function. so we restart the generator
-  // with a new seed
-  struct timeb tp;   
-  ftime(&tp);
-  if (RANDOM==NULL) {    
-    gsl_rng_default_seed =  tp.time * 257 + tp.millitm; 
-    RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);      
-  }
-  *l = gsl_rng_size(RANDOM);
-  if (seed!=NULL) free(seed);
-  seed = (int*) malloc(sizeof(int) * *l);
-  memcpy(seed,RANDOM->state,*l);
-}
-
-void SetSeed(int *seed, int *l, int *error)
-{ // gsl_library has no getrandomseed-function. so we restart the generator 
-  // with a new seed
-  gsl_rng_free(RANDOM);
-  RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);
-  if (*l<gsl_rng_size(RANDOM)) {*error=1; return;}
-  memcpy(RANDOM->state,seed,gsl_rng_size(RANDOM));
-  *error=0;
-}
-
-void GetSeed(int *seed, int *l, int *error)
-{
-  struct timeb tp;   
-  ftime(&tp);
-  if (RANDOM==NULL) {    
-    gsl_rng_default_seed =  tp.time * 257 + tp.millitm; 
-    RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);      
-  }
-  if (*l<gsl_rng_size(RANDOM)) {*error=1; return;}
-  else (*l=gsl_rng_size(RANDOM));
-  //gsl_rng_print_state(RANDOM);
-  memcpy(seed,RANDOM->state,*l);
-  *error=0;
-}
-
-#endif   /* of RF_GSL */
+ 

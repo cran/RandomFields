@@ -1,7 +1,6 @@
-# source("/home/martin/article/R/RF/RandomFields/tests/RFtests.Cond.Simu.R")
+# source("RFtest.Cond.Simu.R")
 
-library(RandomFields)
-#source("/home/martin/article/R/RF/RandomFields/R/rf.R")
+if (file.exists("source.R")) source("source.R")
 
 ## normal checking
 #nn <- c(10,1); step <- 1; #graphics.off(); X11(); X11();

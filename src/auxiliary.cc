@@ -1,53 +1,201 @@
-// Version 27.6.00
 //#define DEBUG 1
-
 #define DD if (0)
 
-#include "math.h" 
-#include "RFsimu.h"
-#include "auxiliary.h"
-#include <sys/timeb.h>
+
+
+/* 
+ Authors
+ Martin Schlather, martin.schlather@cu.lu
+
+ Collection of auxiliary functions
+
+ Copyright (C) 2001 -- 2004 Martin Schlather, 
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+
+
+#include <math.h>
 #include <unistd.h>
-
-
-
-#define TWOPI 6.2831853071795864769252867666
+#include <assert.h>
+#include "auxiliary.h"
  
 void pid(int *i)  {
-#ifdef Unix  
+#ifndef Unix  
   *i = getpid();
 #else
-  PRINTF("pid not programmed yet");
   *i = 0;
 #endif
 }
+
 void hostname(char **h, int *i){
 #ifdef Unix  
-  gethostname(*h,*i);
+  gethostname(*h, *i);
 #else
-  PRINTF("pid not programmed yet");
-  *i = 0;
+  *h[0]=0;
 #endif
 }  
 
+void I0ML0(double *x, int *n) {
+  int i;
+  for (i=0; i<*n; i++) x[i] = I0mL0(x[i]);
+} 
 
-void RandomPermutation(double *x,int n,double *y END_WITH_GSLRNG) {
-  /* calculates a random permutation of the n-ector x and returns it in y */
+double I0mL0(double x){
+  /* Bessel I_0 - Struve L_0 for non-negative arguments x */
+  /* see J. MacLeod, Chebyshev expansions for modified {S}truve and 
+     related functions, Mathematics of Computation, 60, 735-747, 1993 */
+  static double g2[24] = {
+	0.52468736791485599138e0,
+	-0.35612460699650586196e0,
+	0.20487202864009927687e0,
+	-0.10418640520402693629e0,
+	0.4634211095548429228e-1,
+	-0.1790587192403498630e-1,
+	0.597968695481143177e-2,
+	-0.171777547693565429e-2,
+	0.42204654469171422e-3,
+	-0.8796178522094125e-4,
+	0.1535434234869223e-4,
+	-0.219780769584743e-5,
+	0.24820683936666e-6,
+	-0.2032706035607e-7,
+	0.90984198421e-9,
+	0.2561793929e-10,
+	-0.710609790e-11,
+	0.32716960e-12,
+	0.2300215e-13,
+	-0.292109e-14,
+	-0.3566e-16,
+	0.1832e-16,
+	-0.10e-18,
+	-0.11e-18
+  };
+  static double g3[24] = {
+	2.00326510241160643125e0,
+	0.195206851576492081e-2,
+	0.38239523569908328e-3,
+	0.7534280817054436e-4,
+	0.1495957655897078e-4,
+	0.299940531210557e-5,
+	0.60769604822459e-6,
+	0.12399495544506e-6,
+	0.2523262552649e-7,
+	0.504634857332e-8,
+	0.97913236230e-9,
+	0.18389115241e-9,
+	0.3376309278e-10,
+	0.611179703e-11,
+	0.108472972e-11,
+	0.18861271e-12,
+	0.3280345e-13,
+	0.565647e-14,
+	0.93300e-15,
+	0.15881e-15,
+	0.2791e-16,
+	0.389e-17,
+	0.70e-18,
+	0.16e-18
+  };
+  double r, x2, ac;
+  int i;
+  
+  if (x < 0.0) {return RF_NAN;}
+  if (x < 16.0) {
+    r = 0.5 * g2[0];
+    ac = acos((6.0 * x - 40.0) / (x + 40.0));
+    for (i=1; i<24; i++) {
+      r += g2[i] * cos(i * ac);
+    }
+  } else {
+    r = 0.5 * g3[0];
+    x2 = x * x;
+    ac = acos((800.0 - x2) / (288.0 + x2));
+    for (i=1; i<24; i++) {
+      r += g3[i] * cos(i * ac);
+    }
+    r *= T_PI /* 2/pi */ / x;
+  }
+  return r;
+}
+
+void StruveH(double *x, double *nu) {*x=struve(*x, *nu, -1.0, false);}
+void StruveL(double *x, double *nu, int * expScaled) 
+{
+  *x=struve(*x, *nu, 1.0, (bool) *expScaled);
+}
+double struve(double x, double nu, double factor_sign, bool expscaled)
+{ 
+  double sign, res, epsilon=1e-20;
+  double dummy, logx, x1, x2;
+  if ((x==0.0) && (nu>-1.0)) return 0.0;
+  if (x<=0) return RF_NAN; // not programmed yet
+  logx = log(0.5 * x);
+  x1=1.5;   
+  x2=nu+1.5;   
+  sign=1.0;
+  if (x2 > 0.0) { 
+    dummy = (nu + 1.0) * logx - lgammafn(x1) - lgammafn(x2);
+    if (expscaled) dummy -= x;
+    res = exp(dummy);
+  } else {
+    if ( (double) ((int) (x1-0.5)) != x1-0.5 ) return RF_NAN;
+    res=pow(0.5 * x, nu + 1.0) / (gammafn(x1) * gammafn(x2));
+    if (expscaled) res *= exp(-x);
+    if ((dummy= res) <0) {
+      dummy = -dummy;
+      sign = -1.0;
+    }
+    dummy = log(dummy);
+  }
+  logx *= 2.0;
+  do {
+    if (x2<0) { sign = -sign; }    
+    dummy += logx - log(x1) - log(fabs(x2));
+    res +=  sign * exp(dummy);
+    x1 += 1.0;
+    x2 += 1.0;
+    sign = factor_sign * sign; 
+  } while (exp(dummy) > fabs(res) * epsilon);
+  return res;
+}
+
+
+
+void RandomPermutation(double *x, int n, double *y ) {
+  /* calculates a random permutation of the n-vector x and returns it in y */
   double *pos;
   int *sort,j;
   
   sort = (int*) malloc(sizeof(int)*n);
   pos = (double*) malloc(sizeof(double)*n);
+  GetRNGstate();
   for (j=0;j<n;j++) {  
     pos[j]=UNIFORM_RANDOM;
-     sort[j]=j; 
+    sort[j]=j; 
   }
+  PutRNGstate();
   orderdouble(pos,sort,0,n-1);
-  for (j=0;j<n;j++) {  y[j] = x[sort[j]]; }
+  for (j=0;j<n;j++) y[j] = x[sort[j]]; 
+  free(sort);
+  free(pos);
 }
 
 
-void orderdouble(double *d, int *pos, int start, int end END_WITH_GSLRNG)
+void orderdouble(double *d, int *pos, int start, int end)
      /* quicksort algorithm, slightly modified:
         does not sort the data, but d[pos] will be ordered 
 	NOTE: pos must have the values 0,1,2,...,start-end !
@@ -60,7 +208,8 @@ void orderdouble(double *d, int *pos, int start, int end END_WITH_GSLRNG)
 
   if( start < end )
   {   
-    randpos = start + (int) (UNIFORM_RANDOM * (end-start+1));
+    //GetRNGstate();randpos = start + (int) (UNIFORM_RANDOM * (end-start+1)); PutRNGstate();
+    randpos = (int) (0.5 * (start + end));
     pivot = pos[randpos];
     pos[randpos] = pos[start];
     pos[start] = pivot;
@@ -85,76 +234,141 @@ void orderdouble(double *d, int *pos, int start, int end END_WITH_GSLRNG)
   }
 }
 
+
+void quicksortdouble(double *d, int start, int end) {
+  int i=start, j=end;
+  double h, x=d[(start+end)/2];
+  do {    
+    while (d[i]<x) i++; 
+    while (d[j]>x) j--;
+    if (i<=j)
+      {
+	h=d[i]; d[i]=d[j]; d[j]=h;
+	i++; j--;
+      }
+  } while (i<=j);
+  if (start<j) quicksortdouble(d, start, j);
+  if (i<end) quicksortdouble(d, i, end);
+}
+
+
+// the next function should be obsolete (soon)!
 #define EPSILON_QUANTILE 0.00000001
- //  different definition than in R !!!!
-double quantile(double *X,int lb,double p){
-  int *pos,i; 
-  double result;
-  pos = (int *) malloc(sizeof(int) * lb);
-  for (i=0;i<lb;i++) { pos[i] = i; /* needed for orderdouble */  }
-  orderdouble(X,pos,0,lb-1);  
-  while (!(X[pos[lb-1]]<1.8E308) && (lb>0)) {lb--;}
+double quantile(double *X, int lb, double p) 
+{
+  int *pos,i,j; 
+  double result,*Y;
+  assert( (pos = (int *) malloc(sizeof(int) * lb)) != NULL);
+  assert( (Y = (double *) malloc(sizeof(double) * lb)) != NULL);
+  for (j=i=0; i<lb; i++) { 
+    if (!(RF_ISNA(X[i]))) {
+      pos[j] = j; /* needed for orderdouble */  
+      Y[j] = X[i];
+      j++;
+    }
+  }
+  if (j==0) {free(pos); free(Y); return RF_NAN;}
+  orderdouble(Y, pos, 0, j-1);  
   
-  result = X[pos[(int) (p * (double) lb + EPSILON_QUANTILE)]];
-  DD PRINTF("\n pos=%d [%f,%20.20f,%d] ",
-	    (int) (p * (double) lb + EPSILON_QUANTILE),
-	    p,(p * (double) lb+ EPSILON_QUANTILE),lb);
-  DD {for (i=0;i<lb;i++) {PRINTF("X[pos[%d]]=%f  ",i, X[pos[i]]);}}
+  result = Y[pos[(int) (p * (double) j + EPSILON_QUANTILE)]];
   free(pos);
+  free(Y);
   return result;
 } 
-
-void gauss(int *n,double *G) 
-     /* generates n iid standard Gaussinan variables and returns them in G */
-{        
-  double UU,VV,sqrttwo;
-  int halfn,i;
- 
-#ifdef RF_GSL
-  struct timeb tp; 
-  if (RANDOM==NULL) {    
-    ftime(&tp);
-    gsl_rng_default_seed =  tp.time * 257 + tp.millitm; 
-    //gsl_rng_default_seed = 0;    
-    RANDOM = gsl_rng_alloc(RANDOMNUMBERGENERATOR);         
-  }
-#endif
-
-  sqrttwo  = sqrt(2);
-
-  halfn = (*n/2)*2;
-  for (i=0;i<halfn;) {
-    UU= sqrttwo * sqrt(-log(1.0 - UNIFORM_RANDOM));
-    VV = TWOPI * UNIFORM_RANDOM;
-    G[i++] = UU * sin(VV);
-    G[i++] = UU * cos(VV);
-  }
-  if (halfn< *n) {
-    UU= sqrttwo * sqrt(-log(1.0 - UNIFORM_RANDOM));
-    VV = TWOPI * UNIFORM_RANDOM;
-    G[i++] = UU * sin(VV);
-  }
-}
-  
+void Rquantile(double *X,int *lb,double *p, double *res) { *res = quantile(X,*lb,*p); }
 
 
-void onePdist(Real *x, int *dim, int *n, Real *p, Real *dist) {
-  // NOTE: function needs lying matrices (dim x n) !!!
-  short unsigned int i;
-  register short unsigned int  j, k;
-  register Real d, delta;
-  for (k=0, i=0; i<*n; i++) {
-    for (d=0.0, j=0; j<*dim; j++, k++) {
-      delta = x[k] - p[j];
-      d += delta * delta;
+
+void vectordist(Real *v, int *Dim, Real *dist, int *diag){
+  int m, n, d, l, dim, r, lr, dr, add;
+  add = (*diag==0) ? 1 : 0;
+  l = Dim[0];
+  dim = Dim[1] * l;
+  lr = (l * (l + 1 - 2 * add)) / 2;
+  for (r=0, m=0; m<l; m++) { // if add==1 loop is one to large, but
+      // but doesn't matter
+    for (n=m+add; n<l; n++, r++) {
+      for (d=0, dr=0; d<dim; d+=l, dr+=lr) {
+	  dist[r + dr] = v[n + d] - v[m + d];
+      }
     }
-    dist[i] = sqrt(d);
-    //  printf(" %e %e \n",d,dist[i]);
-  }      
+  }
+} 
+
+static int ORDERDIM;
+static Real *ORDERD;
+bool smaller(int i, int j)
+{
+  Real *x, *y;
+  int d;
+  x = ORDERD + i * ORDERDIM;
+  y = ORDERD + j * ORDERDIM;
+  for(d=0; d<ORDERDIM; d++)
+     if (x[d] != y[d]) return x[d] < y[d];
+  return false;
+}
+
+bool greater(int i, int j)
+{
+  Real *x, *y;
+  int d;
+  x = ORDERD + i * ORDERDIM;
+  y = ORDERD + j * ORDERDIM;
+  for(d=0; d<ORDERDIM; d++)
+    if (x[d] != y[d]) return x[d] > y[d];
+  return false;
+}
+
+void order(int *pos, int start, int end) {
+  int randpos, pivot, left, right, pivotpos, swap;
+  
+  if( start < end ) {   
+    //GetRNGstate();randpos = start + (int) (UNIFORM_RANDOM * (end-start+1)); PutRNGstate();
+    randpos = (int) (0.5 * (start + end));
+    pivot = pos[randpos];
+    pos[randpos] = pos[start];
+    pos[start] = pivot;
+    
+    pivotpos=start; 
+    left = start;
+    right=end+1;   
+    while (left < right) {      
+      while (++left < right && smaller(pos[left], pivot)) pivotpos++;
+      while (--right > left && greater(pos[right], pivot));      
+      if (left < right) {
+	swap=pos[left]; pos[left]=pos[right]; pos[right]=swap;
+	pivotpos++;
+      }
+    }
+    pos[start] = pos[pivotpos];
+    pos[pivotpos] = pivot;
+    order(pos, start, pivotpos-1 );
+    order(pos, pivotpos + 1, end );
+  }
+}
+
+void ordering(Real *d, int len, int dim, int *pos) 
+{
+  /* quicksort algorithm, slightly modified:
+     does not sort the data, but d[pos] will be ordered 
+     NOTE: pos must have the values 0,1,2,...,start-end !
+     (orderdouble is a kind of sorting pos according to
+     the variable d)
+  */  
+  int i;
+  for (i=0; i<len;i++) pos[i]=i;
+  ORDERD = d;
+  ORDERDIM = dim;
+  order(pos, 0, len-1);
 }
 
 
-
-
-
+void Ordering(Real *d, int *len, int *dim, int *pos) 
+{
+  int i;
+  for (i=0; i<*len; i++) pos[i]=i;
+  ORDERD = d;
+  ORDERDIM = *dim;
+  order(pos, 0, *len-1 );
+}
 
