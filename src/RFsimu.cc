@@ -680,8 +680,7 @@ void ErrorMessage(SimulationType m, int error)
    case ERRORWRONGINIT: 
     strcpy(EM,"Wrong initialisation");break;
   case ERRORNN:
-    strcpy(EM,"The number of points on the line is too large. Check your
-parameters and make sure that none of the locations are given twice");break;
+    strcpy(EM,"The number of points on the line is too large. Check your parameters and make sure that none of the locations are given twice");break;
    //
    // extremes:
   case ERRORSILLNULL : 
