@@ -1,4 +1,5 @@
 \name{RFMethods}
+\alias{RFMethods}
 \alias{PrintMethodList}
 \alias{GetMethodNames}
 \title{Simulation Techniques}

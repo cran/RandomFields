@@ -14,7 +14,10 @@
   parameters.
   Basic kriging procedures are also provided.
 
-  Diverse extensions of the package are planned.
+  Version 2.0 will contain various extensions of the packages
+  (anisotropic random fields, user defined nested
+  models and multiplicative models). It is is supposed to be
+  released the latest by the end of 2002.
 }
 \details{
   The following random fields and related functionallities are
@@ -63,6 +66,15 @@
   \itemize{
     \item \code{\link{DeleteRegister}} : deleting internal registers
   }
+}
+\references{
+  Schlather, M. (2001) Simulation of stationary and isotropic
+    random fields. \emph{R News} \bold{1} (2), 18-20.
+  
+  Schlather, M. (1999) \emph{An introduction to positive definite
+    functions and to unconditional simulation of random fields.}
+  Technical report ST 99-10, Dept. of Maths and Statistics,
+  Lancaster University. 
 }
 \author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
   \url{http://www.geo.uni-bayreuth.de/~martin}}

@@ -25,10 +25,10 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, grid, gridtriple=FALSE,
   covmatrix <- covmatrix + t(covmatrix)
 
   tgiven <-  t(as.matrix(given))
-  given <- NULL
-
   if (ncol(x)!=nrow(tgiven))
     stop("dimension of the kriged points and the given points do not match")
+  given <- NULL
+
   if (grid) {
     dimension <- 1 + floor((x[2,]-x[1,])/x[3,])
     l <- length(dimension)

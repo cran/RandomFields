@@ -1,4 +1,5 @@
 \name{SimulateRF}
+\alias{SimulateRF}
 \alias{InitSimulateRF}
 \alias{DoSimulateRF}
 \title{Simulation of Random Fields}

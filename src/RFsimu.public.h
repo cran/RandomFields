@@ -170,17 +170,17 @@ EXTERN void GetSeed(int *seed, int *l, int *error);
 EXTERN void empiricalvariogram(Real *x,Real *y,Real *z,int *dim,int *lx,
 			       Real *values,  int *repet,
 			       int *grid, Real *bin, int *nbin,int *charact, 
-			       Real *res);
+			       Real *res, int *n);
 // obsolete soon?
-EXTERN void binnedvariogram(Real *x, Real *y, Real *z, int *lx, Real *step,
-		            Real *res, int *n, int *lr);
+//EXTERN void binnedvariogram(Real *x, Real *y, Real *z, int *lx, Real *step,
+//		            Real *res, int *n, int *lr);
 
 
 // obsolete !
-EXTERN void empiricalXvariogram(Real *x,Real *y,Real *z,int *dim,int *lx,
-				Real *values,  int *repet,
-				int *grid, Real *bin, int *nbin,int *charact, 
-				Real *res); // obsolete !
+//EXTERN void empiricalXvariogram(Real *x,Real *y,Real *z,int *dim,int *lx,
+//				Real *values,  int *repet,
+//				int *grid, Real *bin, int *nbin,int *charact, 
+//				Real *res); // obsolete !
 
 #else
 extern void GetParameterIndices(int *mean, int *variance, int *nugget, 
@@ -255,11 +255,11 @@ extern void GetSeed(int *seed, int *l, int *error);
 #endif
 extern void empiricalvariogram(Real *x,Real *y,Real *z, int *dim,int *lx,
 			       Real *values,  int *repet,int *grid, Real *bin, 
-			       int *nbin,int *charact,Real *res);
+			       int *nbin, int *charact, Real *res), int *n);
 
 // obsolete soon?
-extern void binnedvariogram(Real *x, Real *y, Real *z, int *lx, Real *step,
-		            Real *res, int *n, int *lr);
+//extern void binnedvariogram(Real *x, Real *y, Real *z, int *lx, Real *step,
+//		            Real *res, int *n, int *lr);
 
 //extern void ResetRandom(int *fixed);
 #endif

@@ -11,8 +11,8 @@ CheckXYZ(x, y, z, grid, gridtriple)
   \item{x}{\code{x} coordinates}
   \item{y}{\code{y} coordinates}
   \item{z}{\code{z} coordinates}
-  \item{grid}{see \code{\link{GaussRF}}
-  \item{gridtriple}{see \code{\link{GaussRF}}
+  \item{grid}{see \code{\link{GaussRF}}}
+  \item{gridtriple}{see \code{\link{GaussRF}}}
 }
 \value{
   list of internal parameters

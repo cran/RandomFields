@@ -1,3 +1,11 @@
+
+## to.do: total screen as screen 0 then clicking on one of the windows will let you enter into the respective
+##        window and then change things
+##
+##        starting: according to the values given set the plots, and get into one of the plots
+##        show sign in which window you are , e.g. red bullet
+##        better use Koordinates to jump directly into the other screen!
+
 ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
                        x=NULL, y=NULL,
                        fixed.rs=FALSE,
@@ -97,9 +105,14 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
   globmax <- c(2,2)
   globminsteps <- c(1,1)
   globmaxsteps <- c(1,1)
-  if (is.null(empirical)) glob <- c(2,2-PracticalRange)
-  else {
+  if (is.null(empirical)) {
+    glob <- c(2,2-PracticalRange)
+    maxsteps <- c(1,1,1,1,rep(1,nkappa))
+  } else {
     glob <- c(1,2-PracticalRange)
+    m.vario <- mean(empirical$e)
+    m.lag <- mean(empirical$c)
+    maxsteps <- c( c(sqrt(m.vario), m.vario, m.vario, m.lag)/5, rep(1,nkappa))
     screen(scr[3])
     par(mar=c(2,2,0,0))
     ylim <- range(empirical$e, na.rm=TRUE)
@@ -108,14 +121,15 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
   } 
   nglob <- length(glob)
   mins <- c(-Inf,0,0,0.001,rep(-Inf,nkappa))
-  minsteps <- c(0.0001,0.0001,0.0001,0.0001,rep(0.0001,nkappa))
-  maxsteps <- c(1,1,1,1,rep(1,nkappa))
   maxs <- c(Inf,Inf,Inf,Inf,rep(Inf,nkappa))
+  minsteps <- maxsteps / 10000
   pnames <- c("mean","variance","nugget","scale","a","b","c","d","e")
   
   currentparam <- list()
-  if (unknown.par <- is.null(all.param)) all.param <- c(0,1,0,1)
-  else stopifnot(length(all.param)==4)
+  if (unknown.par <- is.null(all.param)) {
+    if (is.null(empirical)) all.param <- c(0,1,0,1)
+    else all.param <- c(0, m.vario, 0, m.lag/3)
+  } else stopifnot(length(all.param)==4)
 
   
   for (i in 1:n) 

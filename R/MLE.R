@@ -13,7 +13,10 @@ function(coord,data,model,param,
   mleRF.default(coord=coord,data=data,model=model,param=param,
                 lower.kappa=lower.kappa,upper.kappa=upper.kappa,sill=sill,...)
 }
-  
+
+
+## to.do: extension to data measured several times, i.e. data equals matrix!
+
 mleRF.default <-
 function(coord,data,model,param,
          lower.kappa=NULL,upper.kappa=NULL,sill=NA,
@@ -33,6 +36,7 @@ function(coord,data,model,param,
 ) {
   index <- is.na(param)
   if (!any(index)) return(param)
+  coord <- as.matrix(coord)
   
   ENVIR <- environment()
   ip<-.C("GetParameterIndices", MEAN= integer(1), VARIANCE= integer(1),
@@ -49,7 +53,7 @@ function(coord,data,model,param,
 
   stopifnot(is.character(model),
             all(is.na(param)) || is.numeric(param[!is.na(param)]),
-            all(is.finite(as.matrix(coord))),
+            all(is.finite(coord)),
             all(is.finite(as.matrix(data))))
   covnr <- .C("GetModelNr", as.character(model), nr=integer(1))$nr
   if ((covnr==.C("GetModelNr", as.character("nugget"), nr=integer(1))$nr) &&
@@ -57,14 +61,7 @@ function(coord,data,model,param,
     stop("if model=nugget effect then the variance must be zero, and only mean and/or nugget can be NA")   
   if (covnr<0) stop("model not ok")
   storage.mode(covnr) <- "integer"
-  Xcoord <- coord[,1]
-  storage.mode(Xcoord) <-"double"
-  Ycoord <- coord[,2]
-  storage.mode(Ycoord) <-"double"
-  if ( (dim <- ncol(coord))!=2)
-    stop("Dimension differs from 2. Sorry, not programmed yet.")
-  storage.mode(dim) <- "integer"
-  if (length(param)>LASTKAPPA) stop("parameter vector too long!")
+   if (length(param)>LASTKAPPA) stop("parameter vector too long!")
   lower <- -Inf * seq(1, 1, l=length(param))
   lower[NUGGET] <- 0 
   if (!is.null(lower.kappa)) {
@@ -97,27 +94,25 @@ function(coord,data,model,param,
   PARAM <- param ## just to make clear in MLEtarget and LStarget what is global
                  ## and not overwrite param
 
-  step<- as.double(distance.factor * maxdistances / (bins-1)) 
-  storage.mode(bins) <- "integer"
   if (is.na.mean <- is.na(PARAM[MEAN])) { PARAM[MEAN] <- mean(data) }
   MLEtargetV <- data-PARAM[MEAN] ## needed in the  next line
   ##                                and in MLE if !is.na.mean
 
-  dummy <- .C("binnedvariogram",
-              Xcoord,Ycoord,
-              as.double(MLEtargetV),  ## change it if CoVariates!!!
-              ##                         see all the others PARAM[MEAN], too
-              lc,
-              step,
-              binned.variogram=double(bins),
-              binned.n=integer(bins),
-              bins, DUP=FALSE)
-  binned.variogram <- dummy$binned.variogram
-  binned.n <- dummy$binned.n
-  dummy <- NULL
-  bin.centers <- as.double(c(0,step/2 + (1:(bins-1)) * step))
+  ev <- EmpiricalVariogram(coord, data=MLEtargetV, grid=FALSE, 
+                     bin=c(-1,seq(0, distance.factor * maxdistances,
+                       len=bins+1)))
+  bin.centers <-  ev$c
+  binned.variogram <- ev$e
+  binned.n <- ev$n
+  
+  bins <- length(ev$n)
   max.bin.vario <- max(binned.variogram)
+  if ( (dim <- as.integer(ncol(coord))) > 3) {
+    warning("only the first three columns are considered as coordinates")
+    dim <- as.integer(3)
+  }
 
+  
   varnugNA <- FALSE 
   zeronugget <- FALSE
   sillbounded <- !is.na(sill)

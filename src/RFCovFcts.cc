@@ -30,13 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-// delete bessel restriction asap (R-1.3.0) *********************************
-// delete bessel restriction asap (R-1.3.0) *********************************
-// delete bessel restriction asap (R-1.3.0) *********************************
-// delete bessel restriction asap (R-1.3.0) *********************************
-// delete bessel restriction asap (R-1.3.0) *********************************
-
-
 #define MINUSINVLOG005 0.3338082006953340674649
 #define SQRTINVLOG005 0.5777613700268771079749
 #include <math.h>
@@ -786,8 +779,6 @@ int checkBessel(key_type *key){
     sprintf(ERRORSTRING_WRONG,"%f",key->param[KAPPA]);
     return ERRORCOVFAILED;
   }
-  // delete this asap *********************************
-  if (key->param[KAPPA]<0) return ERRORNOTPROGRAMMED;
   return 0;
 }
 

@@ -1,4 +1,5 @@
 \name{DeleteRegister}
+\alias{DeleteRegister}
 \alias{DeleteAllRegisters}
 \title{Deleting Intermediate Results}
 \description{

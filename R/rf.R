@@ -112,15 +112,18 @@ function (x, y = NULL, z = NULL, data, grid, bin, gridtriple = FALSE)
         stop("number of data does not match coordinates")
     
     centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
-    emp.vario <- double(length(bin) - 1)
+    n.bins <- length(bin) - 1 
+    emp.vario <- double(n.bins)
+    n.bin <- integer(n.bins)
+    
     .C("empiricalvariogram",
        as.double(new$x), as.double(new$y), as.double(new$z),
        as.integer(new$dim), as.integer(new$l), 
        as.double(data), as.integer(repet), as.integer(grid), 
-       as.double(bin), as.integer(length(bin) - 1), as.integer(0), 
-       emp.vario, DUP = FALSE)
+       as.double(bin), as.integer(n.bins), as.integer(0), 
+       emp.vario, n.bin, DUP = FALSE)
     emp.vario[is.na(emp.vario) & (centers==0)] <- 0
-    return(list(centers=centers, emp.vario=emp.vario))
+    return(list(centers=centers, emp.vario=emp.vario, n.bin=n.bin))
 }
 ".First.lib" <- function (lib, pkg) 
 {

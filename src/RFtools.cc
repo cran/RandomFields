@@ -1,6 +1,5 @@
 /*
- Authors 
- Martin Schlather, Martin.Schlather@uni-bayreuth.de 
+ Authors  Martin Schlather, Martin.Schlather@uni-bayreuth.de 
 
  Simulation of a random field by circular embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )
@@ -51,9 +50,10 @@ Real kmm(Real a, Real b) {return a * b;}  /* see Stoyan, Kendall, & Mecke,
 
 int LOW = -1;
 
-void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *values, 
-			int *repet, int *grid, Real *bin, int *nbin, int *charact, 
-			Real *res)
+void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, 
+			Real *values, int *repet, int *grid,
+			Real *bin, int *nbin, int *charact, 
+			Real *res, int *n)
 /*    x,y,z  : vector of coordinates, 
  *    dim    : dimension,
  *    lx     : length of x,y, and z
@@ -68,9 +68,10 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
  *               2 : Stoyan's kmm function
  *               default : semivariogram
  *    res    : empirical variogram
+ *    n      : number of pairs for each bein
  */
 { 
-  int i,j,*n,d,halfnbin,gridpoints[MAXDIM],dimM1,EV_METHOD,error;   
+  int i,ii,j,d,halfnbin,gridpoints[MAXDIM],dimM1,EV_METHOD,error;   
   long totallength,totallengthrepet, segment, factor; 
   Real (*characteristic)(Real, Real);
   Real  *xx[MAXDIM],maxdist[MAXDIM],dd,*BinSq; 
@@ -81,20 +82,24 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
   int SPI[100][100][100],SPIX[100][100][100],zaehler,sumzaehler=0;
 #endif  
 
-  n = NULL;
   BinSq = NULL;
   xx[0]=x; xx[1]=y; xx[2]=z;
 
   if (xx[0]==NULL) {error=TOOLS_XERROR; goto ErrorHandling;}
-  for (i=0; i<*nbin;i++) 
+  for (i=0; i<*nbin;i++) {
     if (bin[i]>=bin[i+1])  {error=TOOLS_BIN_ERROR; goto ErrorHandling;}
+  }
 
 
   dimM1 = *dim-1;
   halfnbin = *nbin / 2;
 
   switch (*charact) {
-  case 1  : 
+  case 0 :
+    characteristic = variogram;
+    factor = 2 * *repet;
+    break;
+  case 1 : 
     characteristic = Efunction;
     factor = 2 * *repet;
     break;
@@ -102,18 +107,16 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
     characteristic = kmm;
     factor = *repet;
     break;
-  default : 
-    characteristic = variogram;
-    factor = 2 * *repet;
+  default : assert(false);
   }
    
-  if ((n = (int*) malloc(sizeof(int)* (*nbin + 1)))==NULL) { 
-    error=TOOLS_MEMORYERROR; goto ErrorHandling;
-  }
+  //  if ((n = (int*) malloc(sizeof(int)* (*nbin + 1)))==NULL) { 
+  //    error=TOOLS_MEMORYERROR; goto ErrorHandling;
+  //  }
   if ((BinSq = (Real *) malloc(sizeof(Real)* (*nbin + 1)))==NULL) {
     error=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
-  for (i=0;i<*nbin;i++){res[i]=0.0;n[i]=0; }
+  for (i=0;i<*nbin;i++){res[i]=0.0;n[i]=0;}
   for (i=0;i<=*nbin;i++){if (bin[i]>0) BinSq[i]=bin[i] * bin[i]; 
   else BinSq[i]=bin[i];
   // PRINTF(" %d %f %f \n",i,bin[i],BinSq[i]);
@@ -208,6 +211,7 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
 		characteristic(values[head+segment],values[tail+segment]);
 	    } 	
 	    //for (i=0;i<*nbin;i++){PRINTF("%f ",res[i]);}
+	    assert(low<*nbin);
 	    n[low]++;
 
 #ifdef debug_tools
@@ -382,6 +386,7 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
 		  res[low] += characteristic(values[segtail+segment],
 					     values[seghead+segment]);
 		} 	
+		assert(low<*nbin);
 		n[low]++;
 	      }	
 	    }
@@ -445,7 +450,7 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
 	    if (GENERAL_PRINTLEVEL<8) {
 	      GENERAL_PRINTLEVEL=10;
 	      empiricalvariogram(x,y,z,dim,lx,values,repet,grid,bin,nbin,charact,
-				 res);
+				 res, n);
 	    } else {
 	      PRINTF("\nBin ");
 	      for (i=0;i<=*nbin;i++) PRINTF("%d:%f ",i,BinSq[i]);
@@ -488,51 +493,61 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
 	  for (segment=0;segment<totallengthrepet;segment += totallength) {	  
 	    res[low] += characteristic(values[i+segment],values[j+segment]);
 	  } 	
+	  assert(low<*nbin);
 	  n[low]++;
 	}
 	/* */
       }
     }
   }
+  
+  // ii is used in switch by this value: !!!!
+  ii=0;while( (ii<=*nbin) && (bin[ii]<0) ){ii++;}
+  ii--;
+
   for (i=0;i<*nbin;i++){
-    if (n[i]>0) { res[i]/=( (Real) (factor * n[i])); } else {res[i]= RF_NAN;}
+    if (n[i]>0) { res[i]/= (Real) (factor * n[i]); } 
+    else if (i!=ii) {res[i]= RF_NAN;}
   }
 
+ 
   switch (*charact) {
+  case 0 :
+    if ((ii<*nbin)&&(ii>=0)){
+      res[ii] *= ((Real) (factor * n[ii]));
+      n[ii] += totallength;
+      res[ii] /=  (Real) (factor * n[ii]);
+    }    
+    break;
   case 1 : // E, calculating E(0) correctly, taking into account that the
     //        bin including 0 may include further points
-    i=0;while( (i<=*nbin) && (bin[i]<0) ){i++;}
-    if ((i<=*nbin)&&(i>0)){
-      int pairs;
-      long j; 
-      i--;
-      pairs = n[i] * factor;
-      res[i] *= (Real) pairs;
-     for (j=0;i<totallengthrepet;j++) { res[i] += values[j]; }
-      pairs += totallengthrepet;
-      res[i] /= ((Real) (factor * n[i]));
+    if ((ii<*nbin)&&(ii>=0)){
+      long j; Real sum;
+      res[ii] *= ((Real) (factor * n[ii]));
+      for (sum=0.0, j=0;j<totallengthrepet;j++) { sum += values[j]; }
+      n[ii] += totallength;
+      res[ii] = (res[ii] + 2.0 * sum) / (Real) (factor * n[ii]);
+      printf(" sum=%f %f %d\n", sum,res[ii],ii);
     }
     break;
   case 2 : // kmm, calculating kmm(0} and dividing all the values by mean^2
     register Real mean,square;
-    for (j=0,mean=square=0.0;i<totallengthrepet;j++) { 
-      mean += values[j]; square +=  values[j]*values[j];
+    for (j=0,mean=square=0.0;j<totallengthrepet;j++) { 
+      mean += values[j]; square += values[j]*values[j];
     }
     mean /= (Real) totallengthrepet;
     square /= (Real) totallengthrepet;
 
-    i=0;while( (i<=*nbin) && (bin[i]<0) ){i++;}
-    if ((i<=*nbin)&&(i>0)){
-      i--; 
-      res[i]=(res[i]*(Real) (factor*n[i])+square) / 
-	((Real) (factor*n[i]+totallengthrepet));
-
-    mean *= mean;  for (j=0;j<*nbin;j++) { res[j] /= mean; }   
-    break;
+    if ((ii<*nbin)&&(ii>=0)){
+      res[ii] *= ((Real) (factor * n[ii]));
+      n[ii] += totallength;     
+      res[ii]= (res[ii] + square) / (Real) (factor * n[ii]);
     }
+    mean *= mean;  for (j=0;j<*nbin;j++) { res[j] /= mean; }
+    break;
   }
-  if (n!=NULL) free(n); 
-  if (n!=NULL) free(BinSq);
+  //  if (n!=NULL) free(n); 
+  if (BinSq!=NULL) free(BinSq);
   return;
   
  ErrorHandling:
@@ -546,8 +561,8 @@ void empiricalvariogram(Real *x, Real *y, Real *z, int *dim, int *lx, Real *valu
     PRINTF("Bin components not an increasing sequence.\n"); break;
   default : assert(false);
   }
-  if (n!=NULL) free(n); 
-  if (BinSq!=NULL) free(n);
+  //if (n!=NULL) free(n); 
+  if (BinSq!=NULL) free(BinSq);
 #ifdef RF_GSL
   assert(false); 
 #else

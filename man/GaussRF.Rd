@@ -1,4 +1,5 @@
 \name{GaussRF}
+\alias{GaussRF}
 \alias{InitGaussRF}
 \title{Gaussian Random Fields}
 \description{

@@ -69,9 +69,9 @@ my.legend <- function(lu.x, lu.y, zlim, col, cex=1) {
   cn <- length(col)
   filler <- vector("character", length=(cn-3)/2)
   legend(lu.x, lu.y, y.i=0.03, x.i=0.1, 
-         legend=c(format(zlim[2], d=2), filler,
-         format(mean(zlim), d=2), filler,
-         format(zlim[1], d=2)),
+         legend=c(format(zlim[2], dig=2), filler,
+         format(mean(zlim), dig=2), filler,
+         format(zlim[1], dig=2)),
          lty=1, col=col[length(col):1],cex=cex)
 }
 

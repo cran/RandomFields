@@ -2,6 +2,7 @@
 \alias{Variogram}
 \alias{PrintModelList}
 \alias{GetModelNames}
+\alias{CovarianceFct}
 \title{Covariance And Variogram Models}
 \description{
   \code{CovarianceFct} returns the values of an isotropic covariance function
@@ -242,6 +243,9 @@ GetModelNames()
     model and the \code{cauchy} model, for 
     \eqn{\kappa_3=0}{c=0} and \eqn{\kappa_1=0}{a=0}, respectively.
     
+    \item linear with sill\cr
+    See \code{power} (\code{a=1} there).
+
     \item matern\cr
     See \code{whittlematern}.
     
