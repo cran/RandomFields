@@ -17,6 +17,7 @@ extern "C" void pid(int * i);
 extern "C" void hostname(char **h, int *i);
 extern "C" void orderdouble(double *d,int *pos, int start, int end);
 extern "C" void gauss(int *n, double *G);
+extern "C" void onePdist(Real *x,int *dim,  int *n, Real *p, Real *dist);
 #else
 extern double quantile(double *X, int lb,double p);
 extern void pid(int * i);

@@ -54,6 +54,10 @@ static gsl_rng *RF_RNG_STORED=NULL;
 
 key_type KEY[MAXKEYS]; //static key_type KEY[MAXKEYS];
 int currentNrCov=-1;
+char GENERAL_PCH[2]="#"; 
+/*  character printed after each simulation
+    just for entertainment of the user
+*/
 int GENERAL_STORING=true; 
 /* true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster
@@ -251,28 +255,32 @@ void PrintModelListDetailed()
   }
 }
 
-void InternalIncludeModel(char *name,  
-			   covfct cov,   
-			   scalefct naturalscale,		   
-			   covfct cov_loc, 
-			   parameterfct extension_factor,
-			   scalefct square_factor,
-			   covfct cov_tbm2, covfct cov_tbm3, 
-			   SimulationType tbm_method,
-			   randommeasure spectral, 
-			   MPPScales add_mpp_scl, 
-			   MPPRandom add_mpp_rnd, 
-			   generalSimuInit initother,
-			   generalSimuMethod other,
-			   int kappas,
-			   SimulationType r1,SimulationType r2,SimulationType r3,
-			   checkfct check
-			   )
+void InternalIncludeModel(char **name,  
+			  covfct cov,   
+			  scalefct naturalscale,		   
+			  covfct cov_loc, 
+			  parameterfct extension_factor,
+			  scalefct square_factor,
+			  covfct cov_tbm2, covfct cov_tbm3, 
+			  SimulationType tbm_method,
+			  randommeasure spectral, 
+			  MPPScales add_mpp_scl, 
+			  MPPRandom add_mpp_rnd, 
+			  generalSimuInit initother,
+			  generalSimuMethod other,
+			  int kappas,
+			  SimulationType r1, SimulationType r2,
+			  SimulationType r3,
+			  checkfct check
+			  )
 {  
+  CovList[currentNrCov].cov=cov;
+
   if (currentNrCov==-1) InitModelList();  assert(CovList!=NULL);
   if (currentNrCov>=MAXNRCOVFCTS) {PRINTF("Error. List full.\n");return;}
-  strncpy(CovList[currentNrCov].name,name,COVMAXCHAR-1);
-  if (strlen(name)>=COVMAXCHAR) {
+  strncpy(CovList[currentNrCov].name,*name,COVMAXCHAR-1);
+  CovList[currentNrCov].name[COVMAXCHAR-1]='\0';
+  if (strlen(*name)>=COVMAXCHAR) {
     PRINTF("Warning! Covariance name is truncated to `%s'",
 	   CovList[currentNrCov].name);
   }
@@ -312,7 +320,7 @@ void IncludeModel(char *name, covfct cov, scalefct naturalscale,
 		   checkfct check
 		   )
 {
-  InternalIncludeModel(name,cov,naturalscale,cov_loc,extension_factor,
+  InternalIncludeModel(&name,cov,naturalscale,cov_loc,extension_factor,
 			square_factor,
 			cov_tbm2, cov_tbm3, tbm_method,
 			spectral, 
@@ -333,7 +341,7 @@ void IncludeModel(char *name, covfct cov, scalefct naturalscale,
 		   checkfct check
 		   )
 {
-  InternalIncludeModel(name,cov,naturalscale,cov_loc,extension_factor,
+  InternalIncludeModel(&name,cov,naturalscale,cov_loc,extension_factor,
 			square_factor,
 			cov_tbm2,cov_tbm3,tbm_method,spectral, 
 			NULL,NULL,NULL,NULL,kappas,
@@ -351,7 +359,7 @@ void IncludeModel(char *name, covfct cov,scalefct naturalscale,
 		   checkfct check
 		   )
 {
-  InternalIncludeModel(name,cov,naturalscale,NULL,NULL,NULL,
+  InternalIncludeModel(&name,cov,naturalscale,NULL,NULL,NULL,
 			cov_tbm2,cov_tbm3,tbm_method,spectral, 
 			NULL,NULL,NULL,NULL,kappas,
 			r1,r2,r3,check
@@ -474,8 +482,8 @@ void InitModelList()
   IncludeModel("hyperbolic",hyperbolic,NULL,NULL,
 		TBM3hyperbolic,CircEmbed,NULL,   
 		3,CircEmbed,CircEmbed,CircEmbed,checkhyperbolic);
-  IncludeModel("nugget",nugget,NULL,NULL,NULL,Nothing,NULL,
-		0,Nugget,Nugget,Nugget,NULL);
+  IncludeModel("nugget",nugget,Scalenugget,NULL,NULL,Nothing,NULL,
+		0,Nugget,Nugget,Nugget,checknugget);
   IncludeModel("penta",penta,Scalepenta,NULL,TBM3penta,CircEmbed,NULL,
 		0,CircEmbed,CircEmbed,CircEmbed,NULL); 
   IncludeModel("power",power,Scalepower,TBM2power,
@@ -650,7 +658,7 @@ void ErrorMessage(SimulationType m, int error)
     strcpy(EM,"fft factorization failed");break;
   case ERRORCOVFAILED: 
     sprintf(EM,
-	    "model and method only valid for %s. Got %s.\n",
+	    "model and method only valid for %s. Got %s",
 	    ERRORSTRING_OK,ERRORSTRING_WRONG);
     break;
   case ERRORREGISTER: 
@@ -685,8 +693,8 @@ parameters and make sure that none of the locations are given twice");break;
     strcpy(EM,"Variance differs from mean");break;
   default : assert(false);
   }
-  if (m==Nothing) { PRINTF(" %s: %s.\n",MS,EM); }
-  else  PRINTF("Method `%s': %s.\n",MS,EM);
+  if (m!=Nothing)  PRINTF("Method");
+  PRINTF(" %s: %s.\n",MS,EM);
 }
 
 
@@ -772,6 +780,7 @@ void GetNaturalScaling(int *covnr, Real *p, int *actparam, int *naturalscaling,
       covfct cov;
       int parami, wave,i;
       if ((cov=CovList[*covnr].cov)==NULL) {*error=ERRORNOTDEFINED;return;}
+      if ((cov=CovList[*covnr].cov)==nugget) {*error=ERRORRESCALING;return;}
       
       //printf("numeric\n");
       // already calculated ?
@@ -869,7 +878,8 @@ int CheckAndRescale(int naturalscaling, int covnr, Real *p, int np, int dim,
   actparam = KAPPA + CovList[covnr].kappas;
   if (np!=actparam) {
     return ERRORPARAMNUMBER;}
-  if (p[SCALE] <= 0.0) return ERRORNEGATIVESCALE;
+  if ((p[SCALE] < 0.0)  || ((p[SCALE] == 0.0) && (CovList[covnr].cov!=nugget))) 
+    return ERRORNEGATIVESCALE;
   if ((p[VARIANCE]<0.0) || (p[NUGGET]<0.0)) return ERRORNEGATIVEVAR;
 
   if (CovList[covnr].check!=NULL) {    
@@ -905,8 +915,6 @@ int CheckCovariance(int covnr,int naturalscaling, Real *p, int np, Real *param,
   return 0;
 }
  
-// slow if only a single value is calculated -- due to lots of checks beforehand
-// define an additional parameter CHECK? or an UnCheckedCovariance function?
 void CovarianceNatSc(Real *x,int *lx,int *covnr,Real *p, int *np, int *dim,
 		     Real *result, int *naturalscaling)
 {
@@ -932,7 +940,26 @@ void Covariance(Real *x,int *lx,int *covnr,Real *p, int *np, int *dim,
 {
   CovarianceNatSc(x,lx,covnr,p,np,dim,result,&GENERAL_NATURALSCALING);
 }
-  
+
+void UncheckedCovFct(Real *x, int *n, int *covnr, Real *p, int *np, Real *result)
+{
+  /*
+     WARNING:  make sure that CovList is initialised,
+                              covnr is correct,
+                              p is fine according to covnr (length(p), value)
+                              PracticalRange is included in p[SCALE] if necessary
+  */
+  int i;
+  covfct cov;
+  Real param[TOTAL_PARAM];
+
+  cov = CovList[*covnr].cov;
+  memcpy(param, p, sizeof(Real) * *np);
+  param[SILL] = param[NUGGET] + param[VARIANCE]; 
+  param[INVSCALE] =  1.0 / param[SCALE];
+  for (i=0; i<*n; i++) { result[i] = cov(x[i], param); }
+}
+
 void VariogramNatSc(Real *x,int *lx,int *covnr,Real *p,int *np, int *dim,
 		    Real *result, int *naturalscaling)
 {
@@ -1009,21 +1036,26 @@ void VariogramMatrix(Real *dist,int *lx,int *covnr,Real *p,int *np, Real *result
 {
 }
   
-void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling) {
+void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
+	      char **pch) {
   switch (*action) {
   case 0 :
     GENERAL_STORING= (bool) *storing;
     GENERAL_PRINTLEVEL=*printlevel;
     GENERAL_NATURALSCALING=*naturalscaling;
+    if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
+	PRINTF("\n`pch' has more than one character -- first character taken only\n");
+    strncpy(GENERAL_PCH, *pch, 1);
     break;
   case 1 :
     *storing =  GENERAL_STORING;
     *printlevel = GENERAL_PRINTLEVEL;
     *naturalscaling = GENERAL_NATURALSCALING;
+    strcpy(*pch, GENERAL_PCH);
    if (GetNotPrint) break;
  case 2 : 
-    PRINTF("\nGeneral Parameters\n==================\nstoring=%d\nprint level=%d\nnatural scaling=%d\n",
-	   GENERAL_STORING,GENERAL_PRINTLEVEL,GENERAL_NATURALSCALING);
+    PRINTF("\nGeneral Parameters\n==================\nstoring=%d\nprint level=%d\nnatural scaling=%d\npch=%s\n",
+	   GENERAL_STORING,GENERAL_PRINTLEVEL,GENERAL_NATURALSCALING,*pch);
     break;
   default : PRINTF(" unknown action\n"); 
   }
@@ -1264,6 +1296,7 @@ void InitSimulateRF(Real *x, Real *y, Real *z, int *dim, int *lx, int *grid,
 
     if ((KEY[*keyNr].cov->check==NULL) ||
 	((*error=KEY[*keyNr].cov->check(&KEY[*keyNr]))==0)) {
+ 
       switch (KEY[*keyNr].method) {
       case CircEmbed : 
 	if (KEY[*keyNr].cov->cov==NULL) {*error=ERRORNOTDEFINED;} 
@@ -1320,9 +1353,12 @@ void InitSimulateRF(Real *x, Real *y, Real *z, int *dim, int *lx, int *grid,
 	break;
 	
       case Nugget : 
-	KEY[*keyNr].nuggetincluded = false;
-	if (KEY[*keyNr].param[VARIANCE]==0.0) {*error=0;} 
-	else {*error=ERRORMETHODNOTALLOWED;}
+	KEY[*keyNr].nuggetincluded = false;       
+	  if ((KEY[*keyNr].cov->cov!=NULL) && (KEY[*keyNr].cov->cov==nugget))
+	    *error=checknugget(&KEY[*keyNr]); 
+	  else 
+	    if (KEY[*keyNr].param[VARIANCE]!=0.0) *error=ERRORMETHODNOTALLOWED; 
+	    else *error=0;
 	break;
 	
       case AdditiveMpp :// not programmed yet

@@ -5,15 +5,14 @@
   The package \code{RandomFields} allows for simulating various kinds
   of random fields.  The emphasis is (still) on unconditional simulation
   of stationary and isotropic
-  Gaussian random fields, but the package provides also basics for
-  conditional simulation of Gaussian random fields.  Furthermore,
-  non-Gaussian random fields, i.e.
-  max-stable random fields, can also be simulated.
+  Gaussian random fields. Furthermore, algorithms for  
+  conditional simulation and simulation of
+  max-stable random fields are provided.
   
-  Additionally, the package provides tools for analysing spatial data,
-  namely the calculation of the empirical variogram, interactive
-  fitting of a variogram model, and the MLE estimation of variogram
-  parameters. A very few, basic, kriging procedures are also provided.
+  Additionally, the package includes tools for analysing spatial data:
+  empirical variogram, interactive fitting, and MLE estimation of
+  parameters.
+  Basic kriging procedures are also provided.
 
   Diverse extensions of the package are planned.
 }
@@ -28,7 +27,8 @@
       variogram models
       \item \code{\link{EmpiricalVariogram}} : empirical variogram
       \item \code{\link{GaussRF}} : simulation of Gaussian random
-      fields
+         fields; nice examples to get familiar with the
+         simulation features of the package
       \item \code{\link{Kriging}} : simple and ordinary kriging
       \item \code{\link{mleRF}} : maximum likelihood estimator for
       random field parameters
@@ -37,6 +37,9 @@
       simulation methods
       \item \code{\link{ShowModels}} : interactive, graphical choice of
       models
+      \item \code{\link{soil}} : Soil physical and chemical data;
+      the \code{example} gives a simple geostatistical analysis using
+      features of the package      
     }
     \item stationary and isotropic max-stable random fields\cr
     \itemize{
@@ -64,10 +67,15 @@
 \author{Martin Schlather, \email{Martin.Schlather@uni-bayreuth.de}
   \url{http://www.geo.uni-bayreuth.de/~martin}}
 \section{Acknowledgement}{
-  Thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
+  Many thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
   for proof-reading parts of the code and the help text of this
   package. 
-  
+
+  The work has been supported by the EU TMR network ERB-FMRX-CT96-0095 on
+  ``Computational and statistical methods for the analysis of spatial
+  data'' in 1999,
+  and by the German Federal Ministry of Research and Technology 
+  (BMFT) grant PT BEO 51-0339476C during 2000--2001.
 }
 \keyword{spatial}
 

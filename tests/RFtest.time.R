@@ -24,7 +24,7 @@ RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
 library(RandomFields)
 RFparameters(PrintLevel=4,
              CE.force=FALSE,CE.mmin=0,CE.tolRe=-1e-7,CE.tolIm=1e-3,
-             CE.trials=3)$null
+             CE.trials=3)
 
 #####################
 # Time checks
@@ -35,12 +35,12 @@ if (wait) readline()
 print("",quote=FALSE);
 print("STORING TRUE VS FALSE -- NOTE THE DIFFERENCE IN TIME FOR THE RESPECTIVE SECOND SIMULATION",quote=FALSE)
 print("Storing=false:",quote=FALSE)
-RFparameters(Storing=FALSE)$null
+RFparameters(Storing=FALSE)
 RFsimu("cubic",param=c(0,1,0,2));
 RFsimu("cubic",param=c(0,1,0,2));
 
 print("",quote=FALSE);print("Storing=true:",quote=FALSE)
-RFparameters(Storing=TRUE)$null
+RFparameters(Storing=TRUE)
 RFsimu("cubic",param=c(0,1,0,2));
 RFsimu("cubic",param=c(0,1,0,2));
 
@@ -64,14 +64,14 @@ print("Press RETURN",quote=FALSE);if (wait) readline()
 print("",quote=FALSE);
 print("EXCEPTION HANDLING, 2 EXAMPLES; LOOK AT THE (ENABLED) TRACING",quote=FALSE);
 print("Exapmle 1; Waves, once by circular embedding, once by TBM ",quote=FALSE)
-RFparameters(Storing=TRUE,PrintLevel=2)$null;
+RFparameters(Storing=TRUE,PrintLevel=2)
 RFsimu("wave",param=c(0,1,0,0.01));
 RFsimu("wave",param=c(0,1,0,2));
 print("Press RETURN for second example",quote=FALSE);if (wait) readline()
 
 print("",quote=FALSE);print("",quote=FALSE);
 print("Example 2: Gneiting, 1) working directly 2)enlarging necessay 3)failed",quote=FALSE)
-RFparameters(Storing=TRUE,PrintLevel=2)$null;
+RFparameters(Storing=TRUE,PrintLevel=2)
 RFsimu("gneiting",param=c(0,1,0,10));
 RFsimu("gneiting",param=c(0,1,0,20));
 RFsimu("gneiting",param=c(0,1,0,60));

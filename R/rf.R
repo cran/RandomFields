@@ -53,8 +53,7 @@ function (n = 1, register = 0)
     dimensions <- .C("GetKeyInfo", as.integer(register), 
         total = integer(1), len = integer(MAXDIM), dim = integer(1), 
         grid = integer(1), distr = integer(1), DUP=FALSE)
-    if ((n > 1) && !RFparameters()$Storing) 
-        stop("Use option `RFparameters(Storing=TRUE)' if n>1")
+    param <- RFparameters()
     if (dimensions$total <= 0) {
         stop(paste("register", register, "does not look initialized"))
     }
@@ -68,6 +67,9 @@ function (n = 1, register = 0)
       else return(x$result)
     }
     else {
+        if (!param$Storing) 
+            stop("Use option `RFparameters(Storing=TRUE)' if n>1")
+
         if (dimensions$grid) {
             result <- array(NA, dim = c(dimensions$len[1:dimensions$dim], 
                 n))
@@ -78,13 +80,17 @@ function (n = 1, register = 0)
           s <- ","
         }
         s <- paste("result[", s, "i] <- dummy$res")
+        pch <- param$pch
         for (i in 1:n) {
-           dummy <- .C(DoNameList[1+dimensions$distr], as.integer(register), res=double(dimensions$total),
+           cat(pch)
+           dummy <- .C(DoNameList[1+dimensions$distr], as.integer(register),
+                       res=double(dimensions$total),
                        error=integer(1), DUP = FALSE, NAOK = TRUE)
             if (dummy$error) 
                 break
             eval(parse(text = s))
         }
+        if (pch!="") cat("\n")
         if (dummy$error) 
             return(NULL)
         else return(result)
@@ -118,7 +124,7 @@ function (x, y = NULL, z = NULL, data, grid, bin, gridtriple = FALSE)
 }
 ".First.lib" <- function (lib, pkg) 
 {
-    library.dynam("RandomFields.so", package = pkg, lib.loc = lib)
+    library.dynam("RandomFields", pkg, lib)
     library(mva)
 }
 "InitGaussRF" <-
@@ -297,8 +303,12 @@ function ()
     .C("PrintMethods")
     return(NULL)
 }
-"RFparameters" <-
-function (Storing = storing, PrintLevel = printlevel, PracticalRange = practicalrange, 
+"RFparameters" <-function (...) {
+  RFparameters.default(...)
+}
+"RFparameters.default" <-
+function (Storing = storing, PrintLevel = printlevel,
+          PracticalRange = practicalrange, 
     CE.force = ce.force, CE.mmin = ce.mmin, CE.tolRe = ce.tolRe, 
     CE.tolIm = ce.tolIm, CE.trials = ce.trials,
     direct.checkprecision = directcheckprecision, 
@@ -315,20 +325,25 @@ function (Storing = storing, PrintLevel = printlevel, PracticalRange = practical
     TBM3D3.linesimustep = tbm3D3linesimustep,
     MPP.approxzero=mppapproxzero, add.MPP.realisations=addmpprealisations,
     MPP.radius=mppradius,
-    maxstable.maxGauss=maxstablemaxGauss
- ) 
-{
+    maxstable.maxGauss=maxstablemaxGauss,
+    pch = pchx
+ ) {
     x <- .C("SetParam", as.integer(1), storing = integer(1), 
-        printlevel = integer(1), practicalrange = integer(1))
+            printlevel = integer(1), practicalrange = integer(1),
+            pch="  ")
     storing <- x$storing
     printlevel <- x$printlevel
     practicalrange <- as.logical(x$practicalrange)
     if (!is.finite(Storing + PrintLevel + PracticalRange)) 
         stop("some parameters are not finite")
+    pchx <- x$pch
+    if (!is.character(pch)) stop("pch is not a character")
+   
     ## do not allow integer values for users!
     PracticalRange <- as.logical(PracticalRange)
     .C("SetParam", as.integer(0), as.integer(Storing), as.integer(PrintLevel), 
-        as.integer(PracticalRange))
+        as.integer(PracticalRange), pch)
+    
     x <- .C("SetParamCircEmbed", as.integer(1), force = integer(1), 
         tolRe = double(1), tolIm = double(1), trials = integer(1), 
         mmin = integer(1))
@@ -427,7 +442,8 @@ function (Storing = storing, PrintLevel = printlevel, PracticalRange = practical
     .C("SetExtremes", as.integer(0),
        as.double(maxstable.maxGauss))
      
-    return(list(Storing = as.logical(Storing), PrintLevel = PrintLevel, 
+    if (length(as.list(match.call()))>1) return(NULL)
+    else return(list(Storing = as.logical(Storing), PrintLevel = PrintLevel, 
         PracticalRange = as.logical(PracticalRange),
         CE.force = as.logical(CE.force), CE.mmin = CE.mmin,
         CE.tolRe = CE.tolRe, CE.tolIm = CE.tolIm, CE.trials = CE.trials, 
@@ -447,7 +463,8 @@ function (Storing = storing, PrintLevel = printlevel, PracticalRange = practical
         TBM3D3.linesimustep = TBM3D3.linesimustep,
         MPP.approxzero=MPP.approxzero, add.MPP.realisations=add.MPP.realisations,
         MPP.radius=MPP.radius,
-        maxstable.maxGauss=maxstable.maxGauss
+        maxstable.maxGauss=maxstable.maxGauss,
+        pch=pch
         ))
 }
 "GaussRF" <-

@@ -5,31 +5,26 @@
   the function returns conditional simulations of a random field
 }
 \usage{
-CondSimu(method, x, y=NULL, z=NULL, grid, gridtriple=FALSE, n=1,
-         model, param, given, data, tol=1e-05)
+CondSimu(krige.method, x, y=NULL, z=NULL, grid,  model, param,
+         method=NULL, n=1, register=0, gridtriple=FALSE, 
+         err.model=NULL, err.param=NULL, err.method=NULL,
+         err.register=1, given, data, tol=1e-05, pch=".")
 }
 \arguments{
-  \item{method}{Assumption for the random field which corresponds to
+  \item{krige.method}{Assumptions on the random field which corresponds to
     the respective kriging method;
     currently only \code{"S"} (simple
     kriging) and \code{"O"} (ordinary kriging) possible.}
-  \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of \code{x} coordinates; coordinates of
-    \eqn{n} points to be kriged}
-  \item{y}{vector of \code{y} coordinates}
-  \item{z}{vector of \code{z} coordinates}
+  \item{x}{matrix or vector of \code{x} coordinates; points to be kriged.}
+  \item{y}{vector of \code{y} coordinates.}
+  \item{z}{vector of \code{z} coordinates.}
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
-  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
-    If \code{gridtriple==TRUE}
-    then \code{x}, \code{y}, and \code{z} are of the
-    form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
-    must be vectors of ascending values
-  }
-  \item{n}{number of realisations to generate}
-  \item{model}{string; covariance model, see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options}
+  \item{model}{string; covariance model of the random field. 
+    See \code{\link{CovarianceFct}}, or
+    type \code{\link{PrintModelList}()} to get all options for
+    \code{model}.}
   \item{param}{parameter vector:
     \code{param=c(mean, variance, nugget, scale,...)};
     the parameters must be given
@@ -37,21 +32,60 @@ CondSimu(method, x, y=NULL, z=NULL, grid, gridtriple=FALSE, n=1,
     parametrised class of covariance functions,
     see \code{\link{CovarianceFct}};
     the value of \code{mean} must be finite
-    in the case of simple kriging, and is ignored otherwise}
+    in the case of simple kriging, and is ignored otherwise.}
+  \item{method}{\code{NULL} or string; method used for simulating,
+    see \code{\link{RFMethods}}, or
+    type \code{\link{PrintMethodList}()} to get all options.}
+  \item{n}{number of realisations to generate.}
+  \item{register}{0:9; place where intermediate calculations are stored;
+    the numbers are aliases for 10 internal registers; see
+    \code{\link{GaussRF}} for further details.}
+  \item{gridtriple}{logical.  Only relevant if \code{grid==TRUE}. 
+    If \code{gridtriple==TRUE}
+    then \code{x}, \code{y}, and \code{z} are of the
+    form \code{c(start,end,step)}; if
+    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    must be vectors of ascending values.
+  }
+ \item{err.model}{string; covariance model that
+    describes the measurement error.  See \code{\link{CovarianceFct}}, or
+    type \code{\link{PrintModelList}()} to get all options for
+    \code{err.model}.  If \code{NULL} no measurement error is assumed.
+    Currently, the only option for \code{err.model} is \code{"nugget"}.
+  }
+  \item{err.param}{parameter vector:
+    \code{err.param=c(mean, variance, nugget, scale,...)};
+    the parameters must be given
+    in this order; further parameters are to be added in case of a
+    parametrised class of covariance functions,
+    see \code{\link{CovarianceFct}};
+    the value of \code{mean} must be finite
+    in the case of simple kriging, and is ignored otherwise. 
+    Since currently the only option for \code{err.model} is
+    \code{"nugget"}, \code{err.param} can only be of the form
+    \code{c(mean,0,nugget,0)}.
+  }
+  \item{err.method}{Currently, only \code{"nugget"} or \code{NULL}
+    is sensible; see \code{method} for further information.}
+  \item{err.register}{see \code{register} for details.}
   \item{given}{matrix or vector of locations where data are available;
     note that it is not possible to give the points in form of a grid
-    definition}
-  \item{data}{the values measured}
+    definition.}
+  \item{data}{the values measured.}
   \item{tol}{considered only if \code{grid=TRUE};
     tolerated distances of a given point to the nearest grid point to
-  be regarded as being zero; see Details}
+    be regarded as being zero; see Details.}
+  \item{pch}{character. 
+    The included kriging procedure can be quite time consuming. 
+    The character \code{pch} is printed after roughly
+    each 80th part of calculation.}
 }
 \details{
   The same way as \code{GaussRF} the function
   \code{CondSimu} allows for simulating on grids or arbitrary
-  locations. However simulation on a grid is sometimes performed
+  locations.  However simulation on a grid is sometimes performed
   as if the points were at arbitrary locations, what may
-  imply a great reduction in speed! This happens when the \code{given}
+  imply a great reduction in speed.  This happens when the \code{given}
   locations do not ly on the specified grid, since in an intermediate
   step simulation has to be performed simultaneously on both the grid
   defined by \code{x}, \code{y}, \code{z}, and the locations
@@ -121,7 +155,7 @@ value{
 \examples{
 ## creating random variables first
 ## here, a grid is chosen, but any arbitrary points for which
-## data are given are fine. Indeed if the data are given on a
+## data are given are fine.  Indeed if the data are given on a
 ## grid, the grid has to be expanded before calling `CondSimu',
 ## see below.
 ## However, locations where values are to be simulated,
@@ -129,7 +163,7 @@ value{
 ## possible 
 param <- c(0, 1, 0, 1)
 model <- "exponential"
-RFparameters(PracticalRange=FALSE)$null
+RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
 
@@ -144,14 +178,15 @@ colour <- rainbow(100)
 
 ## visualise generated spatial data
 image(p, p, data, xlim=lim, ylim=lim, zlim=zlim, col=colour)
+%X11()
 
 #conditional simulation
-method <- "O" ## random field assumption corresponding to
-           ## those of ordinary kriging
-cz <- CondSimu(method=method, x, x,  grid=TRUE,
+krige.method <- "O" ## random field assumption corresponding to
+                   ## those of ordinary kriging
+cz <- CondSimu(krige.method, x, x,  grid=TRUE,
                model=model, param=param,
-               given=expand.grid(p,p),## data are given on a grid
-                                      ## expand the grid first
+               given=expand.grid(p,p),# if data are given on a grid
+                                      # then expand the grid first
                data=data)
 
 image(x, x, cz, col=colour, xlim=lim, ylim=lim, zlim=zlim)

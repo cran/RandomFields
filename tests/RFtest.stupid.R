@@ -19,7 +19,7 @@ pointrepet <- 1;
 valuerepet <- 3;
 histo <- FALSE;
 save <- FALSE;
-RFparameters(PrintLevel=3)$null;
+RFparameters(PrintLevel=3)
 
 
 getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
@@ -86,7 +86,7 @@ randomize <- function(){
               " nb=",format(numberbins,dig=3)))
 }
 
-simplemodels <- c("gauss","powered");
+simplemodels <- c("gauss","penta");
 
 models <- list(
  list(model="whittle",     kappa1=runif(NP,-0.5,3),   kappa2=NULL),
@@ -104,7 +104,7 @@ largemodels <-
 for (i in 1:repeatscript) {
   for (naturalscaling in FALSE:TRUE) for (pointnumber in 0:5) {
     print(c("nsc,pn",naturalscaling,pointnumber))
-    RFparameters(PracticalRange=naturalscaling)$null
+    RFparameters(PracticalRange=naturalscaling)
     
     for (model in models) {
       randomize()

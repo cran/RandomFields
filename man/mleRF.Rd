@@ -1,5 +1,6 @@
 \name{mleRF}
 \alias{mleRF}
+\alias{mleRF.default}
 \title{Maximum Likelihood Estimation of Random Field Parameters}
 \description{
   This function estimates arbitrary parts of the parameter vector of
@@ -7,7 +8,18 @@
 }
 \usage{
 mleRF(coord, data, model, param, lower.kappa=NULL, upper.kappa=NULL,
-      sill=NA, ...) }
+      sill=NA, ...) 
+
+mleRF.default(coord, data, model, param, lower.kappa=NULL,
+              upper.kappa=NULL, sill=NA,
+              use.naturalscaling=TRUE, PrintLevel=0, trace.optim=0,
+              bins=20, distance.factor=0.5, upperbound.scale.factor=10,
+              lowerbound.scale.factor=20, lowerbound.scale.LS.factor=5,
+              upperbound.var.factor=10, lowerbound.var.factor=100,
+              lowerbound.sill=1e-10, scale.max.relative.factor=1000,
+              minbounddistance=0.001, minboundreldist=0.02,
+              approximate.functioncalls=50, pch="*")
+}  
 \arguments{
   \item{coord}{(\eqn{n\times2}{n x 2})-matrix of coordinates.}
   \item{data}{vector of values measured at \code{coord}.}
@@ -27,6 +39,8 @@ mleRF(coord, data, model, param, lower.kappa=NULL, upper.kappa=NULL,
   \item{upper.kappa}{upper bounds for additional parameters of a
     parametrised class.}
   \item{sill}{If not \code{NA} the sill is kept fix.  See Details.}
+  \item{...}{arguments as given in \code{mleRF.default} and listed in the
+    following.}
   \item{use.naturalscaling}{
     logical.  If \code{TRUE} then \emph{internally}, rescaled
     covariance functions will be used for which
@@ -57,7 +71,10 @@ mleRF(coord, data, model, param, lower.kappa=NULL, upper.kappa=NULL,
     below which a part of the algorithm is considered as
     having failed.  See Details.}
   \item{approximate.functioncalls}{approximate evaluations
-   of the ML target function on a grid.  See Details.}
+    of the ML target function on a grid.  See Details.}
+  \item{pch}{character shown before each step of calculation;
+    depending on the specification there are two to five steps.
+    Default: "*".}
 }
 \details{
   The maximisation is performed using \code{optim}.  Since \code{optim}

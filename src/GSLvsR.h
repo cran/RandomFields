@@ -32,6 +32,8 @@ extern gsl_rng *RANDOM;
 #include <R.h>
 #include <Rinternals.h>
 
+#define EXTERN extern "C"
+
 #define END_WITH_RANDOM 
 #define END_WITH_GSLRNG
 #define END_WITH_GSL

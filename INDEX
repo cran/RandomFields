@@ -14,3 +14,4 @@ ShowModels               Interactive Choice of Models and Parameters
 SimulateRF               Simulation of Random Fields
 mleRF                    Maximum Likelihood Estimation of Random Field
                          Parameters
+soil                     Soil data of North Bavaria, Germany

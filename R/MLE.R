@@ -9,6 +9,14 @@
 mleRF <-
 function(coord,data,model,param,
          lower.kappa=NULL,upper.kappa=NULL,sill=NA,
+         ...) {
+  mleRF.default(coord=coord,data=data,model=model,param=param,
+                lower.kappa=lower.kappa,upper.kappa=upper.kappa,sill=sill,...)
+}
+  
+mleRF.default <-
+function(coord,data,model,param,
+         lower.kappa=NULL,upper.kappa=NULL,sill=NA,
          use.naturalscaling=TRUE,
          PrintLevel=0, trace.optim=0,
          bins=20,distance.factor=0.5,
@@ -20,9 +28,11 @@ function(coord,data,model,param,
          lowerbound.sill=1E-10,
          scale.max.relative.factor=1000,
          minbounddistance=0.001, minboundreldist=0.02,
-         approximate.functioncalls=50
+         approximate.functioncalls=50,
+         pch="*"
 ) {
-  if (!any(is.na(param))) return(param)
+  index <- is.na(param)
+  if (!any(index)) return(param)
   
   ENVIR <- environment()
   ip<-.C("GetParameterIndices", MEAN= integer(1), VARIANCE= integer(1),
@@ -37,7 +47,14 @@ function(coord,data,model,param,
   LASTKAPPA <- ip$LASTKAPPA+1
   SILL <- ip$SILL+1
 
+  stopifnot(is.character(model),
+            all(is.na(param)) || is.numeric(param[!is.na(param)]),
+            all(is.finite(as.matrix(coord))),
+            all(is.finite(as.matrix(data))))
   covnr <- .C("GetModelNr", as.character(model), nr=integer(1))$nr
+  if ((covnr==.C("GetModelNr", as.character("nugget"), nr=integer(1))$nr) &&
+      (any(index[-c(MEAN,NUGGET)]) || (index[VARIANCE]!=0.0)))
+    stop("if model=nugget effect then the variance must be zero, and only mean and/or nugget can be NA")   
   if (covnr<0) stop("model not ok")
   storage.mode(covnr) <- "integer"
   Xcoord <- coord[,1]
@@ -76,7 +93,6 @@ function(coord,data,model,param,
   mindistances <- min(distances[distances!=0])
   maxdistances <- max(distances)
   vardata <- var(data)
-  index <- is.na(param)
   variables <- c(0,vardata,0,maxdistances,nice.kappa)
   PARAM <- param ## just to make clear in MLEtarget and LStarget what is global
                  ## and not overwrite param
@@ -182,15 +198,20 @@ function(coord,data,model,param,
         }
       }
     }
-    else if (is.na(PARAM[NUGGET])) { ## and !is.na(param[VARIANCE])
-      lower[NUGGET]<-(var(data)-PARAM[VARIANCE])/lowerbound.var.factor
-      if (lower[NUGGET]<lowerbound.sill) {
-        if (PrintLevel>0)
-          cat("\nlow.nug=",lower[NUGGET]," low.sill",lowerbound.sill,"\n")
-        warning("param[VARIANCE] might not be given correctly!")
-        lower[NUGGET]<-lowerbound.sill
+    else {
+      if (PARAM[VARIANCE]==0.0) {
+        
       }
-      upper[NUGGET] <- upperbound.var.factor * max.bin.vario
+      if (is.na(PARAM[NUGGET])) { ## and !is.na(param[VARIANCE])
+        lower[NUGGET]<-(var(data)-PARAM[VARIANCE])/lowerbound.var.factor
+        if (lower[NUGGET]<lowerbound.sill) {
+          if (PrintLevel>0)
+            cat("\nlow.nug=",lower[NUGGET]," low.sill",lowerbound.sill,"\n")
+          warning("param[VARIANCE] might not be given correctly!")
+          lower[NUGGET]<-lowerbound.sill
+        }
+        upper[NUGGET] <- upperbound.var.factor * max.bin.vario
+      }
     }
   }  
 
@@ -428,7 +449,7 @@ function(coord,data,model,param,
   ## so the hope is that for a finite number of points the least squares
   ## find an acceptable initial values  
   assign("MLEMIN",Inf,envir=ENVIR) ## necessary here, as LSoptim calls MLEtarget!
-  
+  cat(pch)
   LSopt <- LSoptimize(index,variab)
   PARAM <- LSopt$param    ## could use also LSPARAM directly...
   variab <- LSopt$variab
@@ -460,7 +481,8 @@ function(coord,data,model,param,
                    scale.max.relative.factor=scale.max.relative.factor,
                    minbounddistance=minbounddistance,
                    minboundreldist=minboundreldist,
-                   approximate.functioncalls=approximate.functioncalls
+                   approximate.functioncalls=approximate.functioncalls,
+                   pch=pch
                    )
              )
     }
@@ -490,8 +512,10 @@ function(coord,data,model,param,
   distances <- as.double(distances)
   options(show.error.messages = FALSE) ##
 
+  cat(pch)
   variab <- try(optim(variab, MLEtarget, method="L-BFGS-B", lower = LB,
                       upper = UB, control=list(trace=trace.optim))$par)
+  
   options(show.error.messages = TRUE) ##
   
   if (!is.numeric(variab) && (PrintLevel>0)) cat("MLEtarget I failed.\n")
@@ -534,12 +558,14 @@ function(coord,data,model,param,
     MLEMIN.old <- MLEMIN
     MLEPARAM.old <- MLEPARAM
     MLEMIN <- Inf
+    cat(pch)
     apply(startingvalues,1,MLEtarget) ## side effect: Minimum is in
     ##                                   MLEMIN !
     PARAM <- MLEPARAM
     variab <- PARAM[index]
     options(show.error.messages = FALSE) ##
 
+    cat(pch)
     variab <- try(optim(variab, MLEtarget,
                         method ="L-BFGS-B",
                         lower = LB, upper = UB,
@@ -570,6 +596,7 @@ function(coord,data,model,param,
   PARAM[SCALE] <- PARAM[SCALE] * GNS$natscale
   if (PrintLevel>2)
     cat("MLE(end)",format(c(PARAM,,MLEMIN),dig=4),"\n")
+  if (pch!="") cat("\n")
   return(PARAM)
 }
 

@@ -147,7 +147,7 @@ GetModelNames()
     fractal dimension and Hurst coefficient can be chosen
     independently.
 
-    \item \code{gengneiting} (generalised \code{gneiting}\cr
+    \item \code{gengneiting} (generalised \code{gneiting})\cr
     if \eqn{\kappa_1=1}{a=1} then
     \deqn{C(x)=\left(1+(\kappa_2+1)x\right) * (1-x)^{\kappa_2+1}
       1_{[0,1]}(x)}{C(x)=[1 + (b+1) * x] * (1-x)^(b+1) if 0<=x<=1,
@@ -163,9 +163,9 @@ GetModelNames()
       1_{[0,1]}(x)}{C(x)=[1 + (b+3) * x +  (2 * (b+3)^2 - 3) * x^2 / 5
       + ((b+3)^2 - 4) * (b+3) * x^3 / 15] * (1-x)^(b+3)
       if 0<=x<=1, 0 otherwise}
-    The parameter \eqn{kappa_1}{a} is a positive integer; here only the
-    cases \eqn{kappa_1=1, 2, 3}{a=1, 2, 3} are implemented.
-    The parameter \eqn{kappa_2}{b} is greater than or equal to
+    The parameter \eqn{\kappa_1}{a} is a positive integer; here only the
+    cases \eqn{\kappa_1=1, 2, 3}{a=1, 2, 3} are implemented.
+    The parameter \eqn{\kappa_2}{b} is greater than or equal to
     \eqn{(d + 2\kappa_1 +1)/2}{(d + 2a +1)/2} where \eqn{d} is the
     dimension of the random field.
     
@@ -186,7 +186,7 @@ GetModelNames()
     the Gaussian model, but possesses neither the mathematical and nor the
     numerical disadvantages of the Gaussian model.\cr
     This model is a special case of \code{gengneiting} (for
-    \eqn{kappa_1=3}{a=3} and \eqn{kappa_2=5}{b=5} there).
+    \eqn{\kappa_1=3}{a=3} and \eqn{\kappa_2=5}{b=5} there).
     
     \item \code{gneitingdiff}
     \deqn{C(x)=\left(1 + 8 \frac x{\kappa_2}
@@ -247,7 +247,8 @@ GetModelNames()
     
     \item \code{nugget}
     \deqn{C(x)=1_{\{0\}}(x)}{1(x==0)}
-    Here \code{param[2]}, the variance,  must be zero!
+    Here, either \code{param[2]}, the \code{variance},
+    or \code{param[3]}, the \code{nugget}, must be zero.
     
     \item \code{pentamodel}
     \deqn{C(x)= \left(1 - \frac{22}3 x^2 +33 x^4 -

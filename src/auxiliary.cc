@@ -136,3 +136,25 @@ void gauss(int *n,double *G)
   }
 }
   
+
+
+void onePdist(Real *x, int *dim, int *n, Real *p, Real *dist) {
+  // NOTE: function needs lying matrices (dim x n) !!!
+  short unsigned int i;
+  register short unsigned int  j, k;
+  register Real d, delta;
+  for (k=0, i=0; i<*n; i++) {
+    for (d=0.0, j=0; j<*dim; j++, k++) {
+      delta = x[k] - p[j];
+      d += delta * delta;
+    }
+    dist[i] = sqrt(d);
+    //  printf(" %e %e \n",d,dist[i]);
+  }      
+}
+
+
+
+
+
+

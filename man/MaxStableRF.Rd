@@ -3,8 +3,8 @@
 \alias{InitMaxStableRF}
 \title{Max-Stable Random Fields}
 \description{
-  These functions simulate isotropic max-stable random fields with
-  unit Frechet margins.
+  These functions simulate stationary and isotropic max-stable
+  random fields with unit Frechet margins.
 }
 \usage{
 MaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,

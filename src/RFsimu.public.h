@@ -12,7 +12,6 @@ typedef double Real;
 
 
 #ifdef CPP2C 
-#define EXTERN extern "C"
 
 EXTERN void testfct();
 
@@ -44,6 +43,8 @@ EXTERN void GetNaturalScaling(int *covnr, Real *p, int *actparam,
 			      int *naturalscaling, Real *natscale, int *error);
 EXTERN void Covariance(Real *x,int *lx,int *covnr,Real *p, int *np, int *dim, 
 		       Real *result); 
+EXTERN void UncheckedCovFct(Real *x, int *n, int *covnr, Real *p, int *np, 
+			    Real *result);
 EXTERN void CovarianceNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,int *dim,
 			    Real *result, int *naturalscaling); 
 EXTERN void CovarianceMatrix(Real *x,int *lx,int *covnr,Real *p,int *np,int *dim,
@@ -127,8 +128,8 @@ EXTERN void SimulateRF(Real *x, Real *y, Real *z, int *dim, int *lx, int *grid,
 // storing : cuurent value
 // printlevel : current value
 // naturalscaling : fixed value
-EXTERN void SetParam( int *action,int *storing, int *printlevel,
-		      int *naturalscaling); 
+EXTERN void SetParam(int *action,int *storing, int *printlevel,
+		     int *naturalscaling, char **pch); 
 /* GENERAL_STORING: 
    true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster

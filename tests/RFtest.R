@@ -102,7 +102,8 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
     methnr <-  rep(0,length(methods))
     for (i in 1:length(methods)) {
       methnr[i] <- .C("GetMethodNr",as.character(methods[i]),nr=integer(1))$nr
-      if (methnr[i]<0) stop(paste("Method `",methods[i],"' not identifiable..",sep=""))
+      if (methnr[i]<0) stop(paste("Method `",methods[i],
+                                  "' not identifiable..",sep=""))
     }
     methods <- methnr
   }
@@ -126,7 +127,7 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
                       integer(1),integer(1))$methodmaxchar;
   totalrepet <- pointrepet * valuerepet;
   meanvar<-"" ## to avoid an error in the final output in case everything fails
-  for (k1 in kappa1) for (k2 in kappa2) for (k3 in kappa3) for (nug in nugget) {
+  for (k1 in kappa1) for (k2 in kappa2) for (k3 in kappa3) for (nug in nugget){
     print(modeletc<-paste(model," m=",format(mean,dig=2),
                           ",v=",format(variance,dig=2),
                           ",ng=", format(nugget,dig=2),
@@ -180,6 +181,10 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
                 print("do simulate") ##################
                 allres <- DoSimulateRF(n=valuerepet,reg=0)
                 if (!is.null(allres)) {
+                  if (any(is.na(allres))) {
+                    print(allres)
+                    stop("some NA in allres")
+                  }
                   meanvar<-paste("m=",format(mean(allres),dig=2),
                                  ", sill=",format(var(as.double(allres)),dig=2))
                   print(paste(i,", Method=",method,":",meanvar))
@@ -207,8 +212,6 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
           Dev(TRUE,TRUE,ps=filename,height=6,width=6,paper="special")
         }
         xlab <- ""
-print(delta)
-print(dim(repet))        
         for (i in 1:length(delta)) {          
           if (!is.na(delta[i])) {
             xlab <-

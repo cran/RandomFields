@@ -1,17 +1,24 @@
-ShowModels <- function(covx=seq(0,4,0.02),
-                       x=NULL,y=NULL,register=0,
-                       ## legend=TRUE,
+ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
+                       x=NULL, y=NULL,
                        fixed.rs=FALSE,
                        method=NULL,
                        empirical=NULL,
                        model=NULL,
                        param=NULL,
-                       PracticalRange=NULL,                       
                        all.param=NULL,
+                       PracticalRange=FALSE,   
+                       legend = TRUE,
+                       register=0,
                        ...){
-  legend <- FALSE
 
-  covx <- c(0,covx[covx>0])
+  stopifnot(all(covx>=0))
+  if (length(covx)>1) {
+    covx <- covx[covx>0]
+    covx <- c(0, sort(c(max(covx)/10000, covx)))
+  } else {
+    covx <- c(0,seq(covx/10000, covx, l=100))
+  }
+  
   scr <- split.screen(figs=rbind(
                         c(0.01,0.60,0.01,0.49),
                         c(0.62,0.99,0.01,0.49),
@@ -19,6 +26,46 @@ ShowModels <- function(covx=seq(0,4,0.02),
                         c(0.62,0.99,0.51,0.99)))
   if (isnullX <- is.null(x)) {
     if (!is.null(y)) stop("x is null, but not y")
+  }
+
+  if (!is.null(y)) {
+    ll <-  list(...)
+    opts <- lapply(names(ll), pmatch,c("col","zlim"),no=0)
+    if (length(opts)==0) opts <- 0 else opts <- as.integer(opts)
+
+    if (sum(index <- (opts==1))==1) col <- ll[index][[1]]
+    else {
+      if (exists("image.default")) ## R-1.3.0 onwards
+        text <- paste("col <-",
+                        paste(as.character(as.list(args(image.default))$col),
+                              collapse="("),")")
+     else  ## R-1.2.3
+       text <- paste("col <-",
+                    paste(as.character(as.list(args(image))$col),
+                          collapse="("),")")         
+      eval(parse(text=text))
+  }
+    if (!(missing.zlim <- (sum(index <- (opts==2))!=1))) zlim <- ll[index][[1]]
+    cn <- length(col)
+    if (cn==1) stop ("more than one colour must be given!")
+    lwd <- 1
+    y.i <-  0.03
+    if (big.legend <- (cn>50)) {
+      filler <- vector("character",length=(cn-3)/2)
+      if (cn>80) y.i <-  2.4 / cn
+    } else {
+      filler <- vector("character",length=cn-2)
+      if (cn==2) {
+        lwd <- 5
+        y.i <- 1
+      }
+      else if (cn<30) {
+        y.i <- 0.9 / (cn-2)
+        lwd <- 1 + 10/(cn-2)
+      }
+    }
+    lu.x <- min(x)
+    lu.y <- max(y)
   }
   runif(1)
   rs <- .Random.seed
@@ -50,9 +97,9 @@ ShowModels <- function(covx=seq(0,4,0.02),
   globmax <- c(2,2)
   globminsteps <- c(1,1)
   globmaxsteps <- c(1,1)
-  if (is.null(empirical)) glob <- c(2,2)
+  if (is.null(empirical)) glob <- c(2,2-PracticalRange)
   else {
-    glob <- c(1,2)
+    glob <- c(1,2-PracticalRange)
     screen(scr[3])
     par(mar=c(2,2,0,0))
     ylim <- range(empirical$e, na.rm=TRUE)
@@ -70,7 +117,6 @@ ShowModels <- function(covx=seq(0,4,0.02),
   if (unknown.par <- is.null(all.param)) all.param <- c(0,1,0,1)
   else stopifnot(length(all.param)==4)
 
-  print(unknown.par)
   
   for (i in 1:n) 
     currentparam[[i]] <-  c(all.param,rep(1,.C("GetNrParameters",
@@ -146,8 +192,7 @@ ShowModels <- function(covx=seq(0,4,0.02),
   DeleteRegister(register)
   
   oldPracticalRange <-  RFparameters()$PracticalRange
-  if (is.null(PracticalRange)) RFparameters(PracticalRange=2-glob[2])
-  else RFparameters(PracticalRange=PracticalRange)
+  RFparameters(PracticalRange=2-glob[2])
 
   first <- TRUE
   repeat {
@@ -240,9 +285,10 @@ ShowModels <- function(covx=seq(0,4,0.02),
       ##erase.screen(scr[3])
       screen(scr[3])
       par(mar=c(2,2,0,0))
+
       eval(parse(text=paste("covvalue <- ",globals[1,glob[1]],
                    "(covx,model=cov,param=currentparam[[covnr]],dim=2-is.null(y))")))
-      if (is.na(covvalue[1])) {
+     if (is.na(covvalue[1])) {
         plot(0,0,col=0,axes=FALSE)
         text(0,0,label="plot not available",adj=c(0.5,0.5))
       }
@@ -250,9 +296,9 @@ ShowModels <- function(covx=seq(0,4,0.02),
         if (!is.null(empirical) && (glob[1]==1))
           ylim <- range(covvalue,empirical$e, na.rm=TRUE)
         else ylim <- range(covvalue, na.rm=TRUE)
-        plot(covx[-1],covvalue[-1],type="l",xlim=range(covx, na.rm=TRUE),
+        plot(covx[1], covvalue[1], type="p", xlim=range(covx, na.rm=TRUE),
              ylim=ylim)
-        points(covx[1],covvalue[1])
+        lines(covx[-1],covvalue[-1])
         if (!is.null(empirical) && (glob[1]==1)) {
           points(empirical$c, empirical$e, pch="*")
         }
@@ -276,7 +322,13 @@ ShowModels <- function(covx=seq(0,4,0.02),
           else {
             image(x,y,z,...)
             if (legend) {
-              cat("Sorry -- legend not programmed yet.\n")
+              if (missing.zlim) zlim <- range(z)
+              if (big.legend) ml <- c(format(mean(zlim),d=2),filler)
+              else ml <- NULL
+              legend(lu.x, lu.y, y.i=y.i, x.i=0.1, 
+                     legend=c(format(zlim[2],d=2),filler,
+                       ml, format(zlim[1],d=2)),
+                     lty=1, lwd=lwd, col=col[length(col):1])
             }
           }
         } # is.null(z)
@@ -292,6 +344,7 @@ ShowModels <- function(covx=seq(0,4,0.02),
       }
     }
   }
+ 
   RFparameters(PracticalRange=oldPracticalRange)
   close.screen(scr)
   if (exists("covnr"))

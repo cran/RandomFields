@@ -14,7 +14,7 @@ GetPracticalRange(model, kappas=NULL)
   \item{model}{string; covariance model, see \code{\link{CovarianceFct}}, or
     type \code{\link{PrintModelList}()} to get all options.}
   \item{kappas}{additional parameters of a parametrised model, see
-    \code{\link{CovarianceFct}}}
+    \code{\link{CovarianceFct}}.}
 }
 \details{
   In case the practical range has to be determined numerically, only a

@@ -256,7 +256,7 @@ InitGaussRF(x, y=NULL, z=NULL, grid, model, param,
  ## simulation.                                             ##  
  #############################################################
  DeleteAllRegisters()
- RFparameters(Storing=TRUE,PrintLevel=1)$null
+ RFparameters(Storing=TRUE,PrintLevel=1)
  y <- x <- seq(0, 50, 0.2)
  (p <- c(runif(3), runif(1)+1))
  ut <- unix.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",

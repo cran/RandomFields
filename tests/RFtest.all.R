@@ -87,8 +87,7 @@ RFparameters(Storing=TRUE,PrintLevel=PrintLevel,
   TBM2.lines=6/5*lines,TBM2.linesimufactor=0,TBM2.linesimustep=0.01,
   TBM3D2.lines=lines,TBM3D2.linesimufactor=0,TBM3D2.linesimustep=0.01,
   TBM3D3.lines=lines,TBM3D3.linesimufactor=0,TBM3D3.linesimustep=0.01,
-  spectral.lines=lines
-  )$null
+  spectral.lines=lines)
 
 randomize <- function(){
   quadraticgrid <<-  runif(1)<0.5; ##quadraticgrid <- FALSE
@@ -161,17 +160,8 @@ for (i in 1:repeatscript) {
             ps=ps,quadraticgrid=quadraticgrid,save=save)
     
   for (naturalscaling in FALSE:TRUE) {
-    RFparameters(PracticalRange=as.logical(naturalscaling))$null
+    RFparameters(PracticalRange=as.logical(naturalscaling))
     
-   for (model in largemodels) {
-      randomize()
-      RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
-                pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
-                kappa3=model$kappa3,scaling=scaling,var=variance,nug=nugget,
-                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
-                histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
-    }
-
     for (model in models) {
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
@@ -180,6 +170,16 @@ for (i in 1:repeatscript) {
                 field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
+
+    for (model in largemodels) {
+      randomize()
+      RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
+                pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
+                kappa3=model$kappa3,scaling=scaling,var=variance,nug=nugget,
+                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
+                histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
+    }
+
     
     for (model in simplemodels) {
       randomize()

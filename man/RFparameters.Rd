@@ -1,5 +1,6 @@
 \name{RFparameters}
 \alias{RFparameters}
+\alias{RFparameters.default}
 \title{Control Parameters}
 \description{
   \code{RFparameters} sets and returns control parameters for the simulation
@@ -7,8 +8,36 @@
 }
 \usage{
   RFparameters(...)
+
+  RFparameters.default(Storing=storing, PrintLevel=printlevel,
+                       PracticalRange=practicalrange, CE.force=ce.force,
+                       CE.mmin=ce.mmin, CE.tolRe=ce.tolRe,
+                       CE.tolIm=ce.tolIm, CE.trials=ce.trials,
+                       direct.checkprecision=directcheckprecision,
+                       direct.maxvariables=directmaxvariables,
+                       direct.method=directmethod,
+                       direct.requiredprecision=directrequiredprecision,
+                       spectral.lines=spectrallines,
+                       spectral.grid=spectralgrid,
+                       TBMCE.force=tbmceforce, TBMCE.mmin=tbmcemmin,
+                       TBMCE.tolRe=tbmcetolre, TBMCE.tolIm=tbmcetolim,
+                       TBMCE.trials=tbmcetrials, TBM2.lines=tbm2lines,
+                       TBM2.linesimufactor=tbm2linesimufactor,
+                       TBM2.linesimustep=tbm2linesimustep,
+                       TBM3D2.lines=tbm3D2lines,
+                       TBM3D2.linesimufactor=tbm3D2linesimufactor,
+                       TBM3D2.linesimustep=tbm3D2linesimustep,
+                       TBM3D3.lines=tbm3D3lines,
+                       TBM3D3.linesimufactor=tbm3D3linesimufactor,
+                       TBM3D3.linesimustep=tbm3D3linesimustep,
+                       MPP.approxzero=mppapproxzero,
+                       add.MPP.realisations=addmpprealisations,
+                       MPP.radius=mppradius,
+                       maxstable.maxGauss=maxstablemaxGauss, pch=pchx)
 }
 \arguments{
+  \item{...}{arguments as given in \code{RFparameters.default} and
+    listed in the following.}
   \item{Storing}{logical.  If \code{TRUE} then intermediate results are kept
     after each simulation; if several simulation are made with the same
     parameters (e.g., by \code{n}\eqn{>1}{>1} in \link{GaussRF} or
@@ -167,6 +196,10 @@
     approximated by \code{maxstable.maxGauss}.
     Default: \code{3.0} [init].
   }
+  \item{pch}{character. The character is printed after each
+    performed simulation if more than one simulation is performed at
+    once.  Default: \code{"#"} [do]. 
+  }
 }
 \details{
   The following refers to the simulation of Gaussian random fields
@@ -216,7 +249,8 @@
   For further details on the implemented methods, see \link{RFMethods}.
  }
 \value{
- returns the list of parameters for the random field simulation.
+  returns \code{NULL} if any parameter has been given,
+  and the list of all parameter values otherwise.
 }
 \references{
   Schlather, M. (1999) \emph{An introduction to positive definite
@@ -234,6 +268,7 @@
   and \code{\link{RFMethods}}.}
 
 \examples{
- str(RFparameters(Storing=TRUE))
+ RFparameters(Storing=TRUE)
+ str(RFparameters())
 }
 \keyword{spatial}

@@ -20,15 +20,14 @@ zlim <- c(-2.6,2.6)
 colour <- rainbow(100)
 param <- c(0,1,0,1)
 model <- "exponential"
-RFparameters(PracticalRange=FALSE)$null
+RFparameters(PracticalRange=FALSE)
 total <- 0; ## total error
 
 
 add.given <- list(NULL,rbind(c(1.1,3.1,3.7),c(2.7,2.9,2.5))) ## null: grid,
                                                      ## arbitrary otherwise
 add <- list(NULL,rbind(c(2.1,2.1,5.3),c(3.7,4.9,4.1)))       ## null: grid
-meth <- c("O", "S")
-
+krige.meth <- c("O", "S")
 
 debug <- FALSE #debug <- TRUE
 if (debug) { ## not for the public
@@ -39,7 +38,7 @@ if (debug) { ## not for the public
   meth <- "O"
 }
 
-for (method in meth) {
+for (krige.method in krige.meth) {
   for (dimension in dims) {
     for (n in nn) {
       for (add.points in add) {
@@ -48,8 +47,9 @@ for (method in meth) {
               " add=",length(add.points),
               " n=",n,
               " dim=",dimension,
-              " method=",method
+              " krige.method=",krige.method
               )
+          nugget <- max(0,runif(1,-1,1))
           switch(dimension,
                  { # 1 dim
             points <- c(p,add.given.points[,1])
@@ -89,10 +89,12 @@ for (method in meth) {
           data <- GaussRF(points, grid=FALSE, model=model, param=param)
           
           ## conditional simulation 
-          cz <- CondSimu(method=method, x=xp, grid=is.null(add.points),
+          cz <- CondSimu(krige.method=krige.method,
+                         x=xp, grid=is.null(add.points),
                          model=model, param=c(0,1,0,1),
-                         given=points, data=data,n=n)
-
+                         given=points, data=data,n=n,
+                         err.model="nugget",
+                         err.param=c(0,0,nugget,0))
          
           dev.set(2)
           indexsum <- 0;
@@ -132,7 +134,7 @@ for (method in meth) {
             }
           })
           cat(" li=",sum(is.finite(index))," error=",indexsum,"\n")
-          total <- total + indexsum
+          if (nugget==0) total <- total + indexsum
         }
       }
     }

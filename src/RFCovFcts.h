@@ -2,7 +2,8 @@
 #define CovFcts_H 1
 
 Real nugget(Real x,Real *p);
-
+Real Scalenugget(Real *p, int scaling);
+int checknugget(key_type *key);
 
 Real stable(Real x,Real *p);
 Real Scalestable(Real *p,int scaling);

@@ -29,6 +29,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
+
+// delete bessel restriction asap (R-1.3.0) *********************************
+// delete bessel restriction asap (R-1.3.0) *********************************
+// delete bessel restriction asap (R-1.3.0) *********************************
+// delete bessel restriction asap (R-1.3.0) *********************************
+// delete bessel restriction asap (R-1.3.0) *********************************
+
+
 #define MINUSINVLOG005 0.3338082006953340674649
 #define SQRTINVLOG005 0.5777613700268771079749
 #include <math.h>
@@ -61,10 +69,23 @@ Real interpolate(Real y, Real *stuetz, int nstuetz, int origin,
 
 /* nugget effect model */
 Real nugget(Real x,Real *p){
-  if (x==0.0) {return(p[SILL]);} 
+  if (x==0.0) {return p[SILL];} 
   return 0.0;
 }
-
+Real Scalenugget(Real *p, int scaling) { return 0.0; } //error!
+int checknugget(key_type *key){
+  if ((key->param[VARIANCE]!=0.0) &&
+      (key->param[NUGGET]!=0.0)) {
+    strcpy(ERRORSTRING_OK,
+	   "either the variance or the nugget being 0");
+    sprintf(ERRORSTRING_WRONG,"variance=%f nugget=%f",
+	    key->param[VARIANCE], key->param[NUGGET]);
+    return ERRORCOVFAILED;
+  }
+  key->param[NUGGET] += key->param[VARIANCE];
+  key->param[VARIANCE] = 0.0;
+  return 0;
+}
 
 /* exponential model */
 Real exponential(Real x,Real *p){
@@ -765,7 +786,9 @@ int checkBessel(key_type *key){
     sprintf(ERRORSTRING_WRONG,"%f",key->param[KAPPA]);
     return ERRORCOVFAILED;
   }
-  return 0;  
+  // delete this asap *********************************
+  if (key->param[KAPPA]<0) return ERRORNOTPROGRAMMED;
+  return 0;
 }
 
 
