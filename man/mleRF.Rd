@@ -481,6 +481,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 \examples{
  % library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/MLE.R");
 
+ RFparameters(Print=10)
+
  model <-"gencauchy"
  param <- c(0, 1, 0, 1, 1, 2)
  estparam <- c(0, NA, 0, NA, NA, 2) ## NA means: "to be estimated"

@@ -993,8 +993,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   tbm_method = key->tbm_method;
   if (s->mtot > DIRECTGAUSS_MAXVARIABLES) {
     tbm_method=CircEmbed;
-    if (GENERAL_PRINTLEVEL>1) 
-      PRINTF("too many points -- using circulant embedding\n");
+    if (GENERAL_PRINTLEVEL>2) 
+      PRINTF("tbm: too many points -- using circulant embedding instead of 'direct'\n");
   }
   switch (tbm_method) {
       case Direct :

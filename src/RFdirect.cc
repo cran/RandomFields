@@ -121,6 +121,7 @@ double *CCOV;
 int nn;
 
 void getCov(int *n, double *COV) {
+  assert(false);
   int i;
   if (*n==0) { *n=nn; return;}
   for (i=0; i<*n * *n; i++) COV[i]=CCOV[i];
@@ -153,10 +154,10 @@ int internal_init_directGauss(direct_storage **S, bool grid,
   }
 
 //////////////////////////
-  if ((CCOV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
-    Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  }
-  nn = totpnts;
+//  if ((CCOV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
+//    Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
+//  }
+//  nn = totpnts;
 //////////////////////////
 
   /* calculate covariance matrix */
@@ -274,12 +275,12 @@ int internal_init_directGauss(direct_storage **S, bool grid,
       case SVD :
 
 ///////////////////////////
- {
-   long t2;
-   double dev, max, UV;
-   t2 = totpnts * totpnts;
-   for (i=0; i<t2; i++) CCOV[i]=COV[i];
- }
+// {
+//   long t2;
+//   double dev, max, UV;
+//   t2 = totpnts * totpnts;
+//   for (i=0; i<t2; i++) CCOV[i]=COV[i];
+// }
 
 	method = SVD; // necessary if the value of method has been Cholesky.
 	//               originally

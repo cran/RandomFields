@@ -55,6 +55,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   save.bins <- bins;
   save.upper <- upper
   save.lower <- lower
+  save.standard.style <- standard.style
+  missing.param <- missing(param)
+  missing.trend <- missing(trend)
   OLD.NUGGET.POSITION <- 3
                 
 ######################################################################
@@ -226,6 +229,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   ## note "global" variables MLEMIN, MLEPARAM
   MLEtarget<-function(variab) {
     if (PrintLevel>3) {cat(LEVEL); print(variab,dig=10)}
+    penalty <- NA
     if (any((variab<LB) | (variab>UB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
@@ -264,9 +268,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     options(show.error.messages = TRUE)
     if (!is.numeric(cov.matrix) || any(is.na(cov.matrix))) {
       if (PrintLevel>1) {
-        cat("\nerror in cholesky decomposition -- matrix pos def?")
-        print(variab, dig=20)
-        str(cov.matrix)
+        cat("\nfitvario: error in cholesky decomposition")
+        if (PrintLevel>2) {
+          print(variab, dig=20)
+          cat(cov.matrix)
+        }
       }
       return(1E300)
     }    
@@ -325,6 +331,75 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     } else {
       res <- sum(logdet + quadratic)
     }   
+    if (is.na(res) || is.na(MLEMIN)) {
+      filename <- "RandomFields.fitvario.bug.rda"
+      txt <- paste("algorithm has failed for unknown reasons -- please contact the author: schlather@cu.lu; please send the data that have been written on the file '", filename, "'.", sep="")
+      if (file.exists(filename)) {
+        cat(txt, "\n")
+        stop("file already exists")
+      }
+      fitvario.bug <-
+        list(fitvario=list(x=x, T=T, data=data, model=ctr, param=NULL,
+               lower=save.lower, upper=save.upper, sill=sill,
+               trend=new$trend,
+               use.naturalscaling=use.naturalscaling,
+               PrintLevel=PrintLevel, trace.optim=trace.optim,
+               bins=save.bins, nphi=nphi, ntheta=ntheta, ntime=ntime,
+               distance.factor=distance.factor,
+               upperbound.scale.factor=upperbound.scale.factor,
+               lowerbound.scale.factor=lowerbound.scale.factor,
+               lowerbound.scale.LS.factor=lowerbound.scale.LS.factor,
+               upperbound.var.factor=upperbound.var.factor,
+               lowerbound.var.factor=lowerbound.var.factor,
+               lowerbound.sill=lowerbound.sill,
+               scale.max.relative.factor=scale.max.relative.factor,
+               minbounddistance=minbounddistance,
+               minboundreldist=minboundreldist,
+               approximate.functioncalls=approximate.functioncalls,
+               pch=pch, var.name=var.name, time.name=time.name,
+               transform=save.transform, standard.style=standard.style),
+             old=list(y=y, z=z, model=model, param= if (!missing.param) param,
+               lower=save.lower,
+               upper=save.upper, trend=if (!missing.trend) trend,
+               transform=save.transform, standard.style=save.standard.style),
+             error=list(res=res, MLEMIN=MLEMIN),
+             variab=variab,
+             LB= LB,
+             UB=UB,
+             PrintLevel=PrintLevel,
+             penalty=penalty,
+             res=res,
+             PARAM=PARAM,
+             param=param,
+             index=index,
+             transform=transform,
+             cov.matrix=cov.matrix,               
+             distances=distances,
+             lc=lc,
+             covnr=covnr,
+             lpar=lpar,
+             logicaldim=logicaldim, 
+             xdim=xdim,
+             pm=pm,
+             lc=lc,
+             scalingmethod=scalingmethod,
+             repet=repet,
+             logdet=logdet,
+             givenCoVariates=givenCoVariates,
+             XC=if (givenCoVariates) XC else NULL,
+             CoVariates= if (givenCoVariates) CoVariates else NULL,
+             m=if (givenCoVariates) m else NULL,
+             meandata=meandata,
+             MLEtargetV=MLEtargetV,
+             quadratic=quadratic,
+             varnugNA=varnugNA,
+             zeronugget=zeronugget,
+             lcrepet=lcrepet,
+             loglcrepet=loglcrepet,
+             )
+      save(file=filename, fitvario.bug)
+      stop(txt)
+    }
     if (res<MLEMIN) {
       if (givenCoVariates) assign("MLETREND", m, envir=ENVIR)
       if (varnugNA) {
