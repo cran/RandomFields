@@ -217,6 +217,7 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
         .newvalue <-
           readline(prompt=paste(.e$name, " (", .evar , ") : ", sep=""))
         if (.newvalue=="") next
+        if (.newvalue=="exit immediately") stop("user forced exit")
         else {
           if (is.logical(.e$val)) .newvalue <- as.logical(.newvalue) else
           if (is.function(.e$val)) .newvalue <- as.numeric(.newvalue) else

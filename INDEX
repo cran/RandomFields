@@ -1,7 +1,10 @@
+CheckXT                 Internal functions -- do not use them directly
 CondSimu                Conditional Simulation
 CovarianceFct           Covariance And Variogram Models
+DeleteRegister          Deleting Intermediate Results
 Dev                     Choosing the device
 EmpiricalVariogram      Empirical (Semi-)Variogram
+FileExists              Files
 GaussRF                 Gaussian Random Fields
 GetPracticalRange       Determination of the practical range
 Kriging                 Kriging methods
@@ -9,17 +12,14 @@ MaxStableRF             Max-Stable Random Fields
 RFMethods               Simulation Techniques
 RFparameters            Control Parameters
 RandomFields            Simulation and Analysis of Random Fields
-DeleteRegister          Deleting Intermediate Results
 ShowModels              Interactive Choice of Models and Parameters
 SimulateRF              Simulation of Random Fields
-CheckXT                 Internal functions -- do not use them directly
 eval.parameters         Interactive menu
-FileExists              Files
-fractal.dim             fractal dimension
-host                    System calls
-hurst                   Hurst coefficient
 fitvario                LSQ and Maximum Likelihood Estimation of
                         Random Field Parameters
+fractal.dim             fractal dimension
+hostname                System calls
+hurst                   Hurst coefficient
 parameter.range         Range of model specific parameters
 parampositions          Position of the parameters
 pokeTBM                 Transfer of initialisation details

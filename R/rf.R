@@ -327,6 +327,7 @@ function (x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
 
 
 pokeTBM <- function(Out, In) {
-  .C("pokeTBM", as.integer(Out), as.integer(In), err=integer(1))$err
+  .C("pokeTBM", as.integer(Out), as.integer(In), err=integer(1),
+     PACKAGE="RandomFields")$err
 }
 

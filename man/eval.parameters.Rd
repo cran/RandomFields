@@ -112,8 +112,11 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 }
 
 \value{
-  The first variable given in \dQuote{\code{...}, which is a list.
-  To this list the entry \code{.history} is added}
+  The first variable given in \dQuote{\code{...}}, which is a list.
+  To this list the entry \code{.history} is added.
+  
+  If the users enters \sQuote{exit immediately} at any point, the program
+  stops with an error message.
 }
 
 \author{Martin Schlather, \email{martin.schlather@cu.lu}

@@ -214,7 +214,7 @@ parampositions <- function(model, param, print=TRUE) {
        TBM3D2.linesimustep, TBM3D2.every, PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM3D3", m, TBM3D3.lines, TBM3D3.linesimufactor,
        TBM3D3.linesimustep, TBM3D3.every, PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamTBM", m, TBM.method, DUP=FALSE)
+    .C("SetParamTBM", m, TBM.method, PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDirectGauss", m, direct.method, direct.checkprecision,
@@ -327,7 +327,7 @@ parampositions <- function(model, param, print=TRUE) {
 
 
 "PrintModelList" <-function () {
-    .C("PrintModelList", PACKAGE="RandomFields",)
+    .C("PrintModelList", PACKAGE="RandomFields")
     invisible()
 }
 
