@@ -44,10 +44,10 @@ cov_fct *CovList=NULL;
 int currentNrCov=-1;
 
 
-char GENERAL_PCH[2]="!"; 
+char GENERAL_PCH[2]="*"; 
 /*  character printed after each simulation
     just for entertainment of the user
-    except for "!", then the numbers are shown
+    except for "!", then current numbers are shown
 */
 int GENERAL_STORING=true; 
 /* true: intermediate results are stored: might be rather memory consuming,

@@ -235,8 +235,11 @@
   }
   \item{\code{pch}}{Character. The character is printed after each
     performed simulation if more than one simulation is performed at
-    once. If pch='!' then counter is shown instead of the character.
-    Default: \code{'!'} [do]. 
+    once. If \code{pch='!'} then a counter is shown instead of the character.
+    Note that also '\eqn{\mbox{\textasciicircum}}{^}H's are printed if the counter (\code{pch='!'}) is shown,
+    which may have undesirable interactions with some few other R functions, e.g.
+    \command{\link[utils]{Sweave}}.
+    Default: \code{'*'} [do]. 
   }
 }
 
