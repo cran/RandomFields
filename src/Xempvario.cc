@@ -106,8 +106,8 @@ void empvarioXT(Real *X, Real *T,
   else BinSq[i]=bin[i];
   }
 
-  assert(atan2(-1, 0) == -PIHALF);
-  assert(atan2(0, 0) == 0);
+//  assert(atan2(-1, 0) == -PIHALF);
+//  assert(atan2(0, 0) == 0);
   maxbinsquare = BinSq[*nbin];
 
 
