@@ -44,7 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <sys/timeb.h>
+//#include <sys/timeb.h>
 #include <assert.h>
 #include <string.h>
 #include "RFsimu.h"
@@ -265,14 +265,14 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
 }
 
 #define COV_VARIO(FORMULA,FCT)\
-  int v, aniso, k, j, endfor;\
+  int v, aniso, k, j, endfor, ncovM1;\
   Real  var,  zz, zw, result, d;\
   cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */ \
   zw = result = 0.0;\
+  ncovM1 = ncov - 1;\
   if (anisotropy) {\
     Real z[MAXDIM];\
-    int cov_isotropy, ncovM1;\
-    ncovM1 = ncov - 1;\
+    int cov_isotropy;\
     for (v=0; v<ncov; v++) {\
       zw = var = 1.0;\
       for(; v<ncov; v++) {\
@@ -319,12 +319,77 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
 	var *= param[v][VARIANCE];\
         cov = &(CovList[covnr[v]]); /* cov needed in FORMULA for Vario */\
 	zw *= cov->FCT(&zz,param[v],1);\
-	if (op[v]==0) break; /* v=ncov does not matter since stopped anyway */\
+	if ((v<ncovM1) && (op[v]==0)) break; \
       }\
       result += FORMULA;\
     }\
   }\
  return result;
+
+
+Real XCovFct(Real *x, int dim, int *covnr, int *op,
+  param_type param, int ncov, bool anisotropy) {
+  int v, aniso, k, j, endfor, ncovM1;
+  Real  var,  zz, zw, result, d;
+  cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */ 
+  zw = result = 0.0;
+  ncovM1 = ncov - 1;
+  if (anisotropy) {
+    Real z[MAXDIM];
+    int cov_isotropy;
+    for (v=0; v<ncov; v++) {
+      zw = var = 1.0;
+      for(; v<ncov; v++) {
+        cov = &(CovList[covnr[v]]);
+        cov_isotropy=cov->isotropic;
+	var *= param[v][VARIANCE];
+	for (k=0; k<dim; k++) z[k]=0.0;
+	for(aniso=ANISO, k=0; k<dim; k++){
+	  for (j=0; j<dim; j++, aniso++) {
+	    z[k] += param[v][aniso] * x[j];
+            }
+        }
+ 	if (cov_isotropy==ANISOTROPIC) zw *= cov->cov(z,param[v],dim);
+          /* derzeit is dim in cov->cov bis auf assert-checks unbenutzt */
+	else {
+          /* the following definiton allows for calculating the covariance */
+          /* funcion for spatialdim=0 and SPACEISOTROPIC model, namely as a */
+          /* purely temporal model; however, in CheckAndRescale such kind of */
+          /* calculations are prevend as being TRIVIAL(generally, independent */
+          /* of being SPACEISOTROPIC or not) -- unclear whether relaxation in */
+          /* CheckAndRescale possible */
+	  zz = 0.0;
+	  endfor = dim - 1;
+	  for (j=0; j<endfor; j++) zz += z[j] * z[j];
+	  if (cov_isotropy==FULLISOTROPIC) zz += z[endfor] * z[endfor];
+	  else z[1]=z[endfor];
+	  z[0] = sqrt(zz);
+	  zw *= cov->cov(z, param[v], 1 + (int) (cov_isotropy==SPACEISOTROPIC));
+	}
+	if ( (v<ncovM1) && (op[v]==0)) break;
+      }
+      result += var * zw;
+    }
+  } else {
+    if (dim==1) d=x[0];
+    else {
+      for (d=0.0, j=0; j<dim; j++) {d += x[j] * x[j];}
+      d = sqrt(d);
+    }
+    for (v=0; v<ncov; v++) {
+      zw = var = 1.0;
+      for(; v<ncov; v++) {
+	zz = d * param[v][INVSCALE];
+	var *= param[v][VARIANCE];
+        cov = &(CovList[covnr[v]]); /* cov needed in var * zw for Vario */
+	zw *= cov->cov(&zz,param[v],1);
+	if ((v<ncovM1) && (op[v]==0)) break;
+      }
+      result += var * zw;
+    }
+  }
+ return result;
+}
 
 
 Real CovFct(Real *x, int dim, int *covnr, int *op,
@@ -739,7 +804,7 @@ void InitSimulateRF(Real *x, Real *T,
   bool method_used[(int) Nothing];
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
-  SimulationType Merr=Forbidden;
+  SimulationType Merr=Nothing;
   SimulationType pg1[]={CircEmbed, CircEmbedLocal, Direct, AdditiveMpp, Nothing}; 
   SimulationType pg2[]={CircEmbed, CircEmbedLocal, TBM2, SpectralTBM,  
 			 AdditiveMpp, TBM3, Direct, Nothing};

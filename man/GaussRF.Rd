@@ -322,9 +322,11 @@ aniso <- diag(c(0.5,8,1))
 k <- c(1,phi=1,1,1,psi=1,dim=2)
 model <- list(list(m="nsst", v=1, k=k, a=aniso))
 z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model)
-for (i in 1:dim(z)[3]) { image(z[,,i]); readline("Press return");}
-for (i in 1:dim(z)[2]) { image(z[,i,]); readline("Press return");}
-for (i in 1:dim(z)[1]) { image(z[i,,]); readline("Press return");}
+rl <- function() if (interactive()) readline("Press return")
+for (i in 1:dim(z)[3]) { image(z[,,i]); rl();}
+for (i in 1:dim(z)[2]) { image(z[,i,]); rl();}
+for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
+
 
 
  #############################################################
@@ -345,7 +347,8 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); readline("Press return");}
  kappa <- 1   # in [0,2)
  z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="3d",
               param=c(0,1,0,1,kappa))
- for (i in 1:dim(z)[1]) { image(z[i,,]); readline("Press return");}
+rl <- function() if (interactive()) readline("Press return")
+for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
 
 

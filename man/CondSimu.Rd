@@ -167,7 +167,6 @@ model <- "exponential"
 RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
-print(get(getOption("device")))
 get(getOption("device"))(height=4,width=4);
 get(getOption("device"))(height=4,width=4);
 get(getOption("device"))(height=4,width=4);

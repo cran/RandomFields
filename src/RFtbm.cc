@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <sys/timeb.h>
+//#include <sys/timeb.h>
 #include <unistd.h>
 #include <assert.h>
 #include "RFsimu.h"
@@ -927,6 +927,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       dist += (max[d]-min[d])*(max[d]-min[d]);
       s->half[d] = 0.5 * (max[d]+min[d]); // s->half only used if not grid
     }
+    for (; d<MAXDIM; d++) s->half[d] = RF_NAN;
     if (tbm->linesimustep==0.0) s->linesimuscale = tbm->linesimufactor/mindelta;
     else s->linesimuscale =  1/tbm->linesimustep;
 
@@ -1322,7 +1323,6 @@ void do_turningbands(key_type *key, int m, Real *res )
       Real linesimusq, dummy, ez, halfz;
       assert(s->method==TBM3);
       linesimusq = linescale * linescale;
-      halfz = s->half[2];
       switch (s->simuspatialdim) {
 	  case 1 : //see Martin's techrep f. details
 	    TBMST({ex = UNIFORM_RANDOM * linescale;},
@@ -1341,6 +1341,7 @@ void do_turningbands(key_type *key, int m, Real *res )
 		  s->x[v+2]);
 	    break;
 	  case 3:
+	    halfz = s->half[2];
 	    TBMST({ez = UNIFORM_RANDOM * linescale;
 	           dummy = sqrt(linesimusq - ez * ez);
 		   ey = UNIFORM_RANDOM * TWOPI;
