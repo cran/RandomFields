@@ -76,6 +76,9 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
     lu.y <- max(y)
   }
   runif(1)
+  bg.save <- par()$bg
+  par(bg="white")
+  
   rs <- .Random.seed
   screen(scr[4])
   maxrow<- 14
@@ -209,6 +212,7 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
   RFparameters(PracticalRange=2-glob[2])
 
   first <- TRUE
+  new.text <- ""
   repeat {
     #screen(scr[4]);title(main=maintitle,col="red")
     screen(scr[4],new=FALSE)
@@ -289,14 +293,14 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
       txt <- globals[cbind(c(1,2),glob)]
       txt[globals[,2]==""] <- globals[globals[,2]=="",1]
       text(0.5, (1:nglob)-1, labels=txt, adj=c(0.5,0))
-      text(0.5, nglob+(1:cp),
-           labels=paste(pnames[1:cp]," (",
-             format(currentparam[[covnr]],d=3),")",sep=""),
-           adj=c(0.5,0))
+      text(0.5, nglob+(1:cp), labels=new.text, adj=c(0.5,0),col="white")
+      new.text <- paste(pnames[1:cp]," (", format(currentparam[[covnr]],dig=3),
+                        ")",sep="")
+      text(0.5, nglob+(1:cp), labels=new.text, adj=c(0.5,0))
 
       if (textcol2=="black") break;
 
-      ##erase.screen(scr[3])
+      erase.screen(scr[3])
       screen(scr[3])
       par(mar=c(2,2,0,0))
 
@@ -319,7 +323,7 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
       }
       
       if (!isnullX) {
-        screen(scr[1],FALSE)
+        screen(scr[1])
         if (!is.null(y)) lines(range(x),range(y),col="grey")
         if (fixed.rs) set.seed(rs)
         z <- GaussRF(x,y,model=cov,param=currentparam[[covnr]],grid=TRUE,
@@ -337,11 +341,11 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
             image(x,y,z,...)
             if (legend) {
               if (missing.zlim) zlim <- range(z)
-              if (big.legend) ml <- c(format(mean(zlim),d=2),filler)
+              if (big.legend) ml <- c(format(mean(zlim),dig=2),filler)
               else ml <- NULL
               legend(lu.x, lu.y, y.i=y.i, x.i=0.1, 
-                     legend=c(format(zlim[2],d=2),filler,
-                       ml, format(zlim[1],d=2)),
+                     legend=c(format(zlim[2],dig=2),filler,
+                       ml, format(zlim[1],dig=2)),
                      lty=1, lwd=lwd, col=col[length(col):1])
             }
           }
@@ -361,6 +365,7 @@ ShowModels <- function(covx=ifelse(is.null(empirical),4,max(empirical$c)),
  
   RFparameters(PracticalRange=oldPracticalRange)
   close.screen(scr)
+  par(bg=bg.save)
   if (exists("covnr"))
     return(list(model=cov,param=currentparam[[covnr]],
                 PracticalRange=as.logical(2-glob[2])))

@@ -1,18 +1,18 @@
-CheckXYZ                Internal function -- do not use it directly
-CondSimu                Conditional Simulation
-CovarianceFct           Covariance And Variogram Models
-EmpiricalVariogram      Empirical (Semi-)Variogram
-GaussRF                 Gaussian Random Fields
-GetPracticalRange       Determination of the practical range
-Kriging                 Kriging methods
-MaxStableRF             Max-Stable Random Fields
-RFMethods               Simulation Techniques
-RFparameters            Control Parameters
-RandomFields            Simulation and Analysis of Random Fields
-DeleteRegister          Deleting Intermediate Results
-ShowModels              Interactive Choice of Models and Parameters
-SimulateRF              Simulation of Random Fields
-legend                  Add Legends to Plots
-mleRF                   Maximum Likelihood Estimation of Random Field
-                        Parameters
-soil                    Soil data of North Bavaria, Germany
+CheckXYZ                 Internal function -- do not use it directly
+CondSimu                 Conditional Simulation
+CovarianceFct            Covariance And Variogram Models
+EmpiricalVariogram       Empirical (Semi-)Variogram
+GaussRF                  Gaussian Random Fields
+GetPracticalRange        Determination of the practical range
+Kriging                  Kriging methods
+MaxStableRF              Max-Stable Random Fields
+RFMethods                Simulation Techniques
+RFparameters             Control Parameters
+RandomFields             Simulation and Analysis of Random Fields
+DeleteRegister           Deleting Intermediate Results
+ShowModels               Interactive Choice of Models and Parameters
+SimulateRF               Simulation of Random Fields
+legend                   Add Legends to Plots
+mleRF                    Maximum Likelihood Estimation of Random Field
+                         Parameters
+soil                     Soil data of North Bavaria, Germany
