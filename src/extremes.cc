@@ -182,7 +182,7 @@ void DoMaxStableRF(int *keyNr, Real *res, int *error)
 
   *error=0; 
   zw = NULL;
-
+  key = NULL;
   if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
     *error=ERRORKEYNROUTOFRANGE; goto ErrorHandling;
   }
@@ -200,7 +200,7 @@ void DoMaxStableRF(int *keyNr, Real *res, int *error)
     // what to do with the mean?? -> ignore it
     // what to do with the variance?? -> ignore it
     
-    int  dim, d, m, v;
+    int  dim, d, v;
     Real  min[MAXDIM], max[MAXDIM], factor;
     long segment[MAXDIM+1];
     mpp_storage *s;
@@ -415,7 +415,7 @@ void DoMaxStableRF(int *keyNr, Real *res, int *error)
   if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);  
  ErrorHandling:
   if (zw!=NULL) free(zw);
-  key->active=false;  
+  if (key!=NULL) key->active=false;  
 }
 
 

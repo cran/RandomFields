@@ -160,7 +160,7 @@ void detrendedfluc(double *dat, // data
 		   double *dfavar,   // repet * ldfa
 		   double *varmethvar// repet * ldfa
   ){
-  int i, j, m, nbox, ex, endfor, r, total, last, truelast, e, k;
+  int i, j, m, nbox, ex, endfor, r, total, last, e, k;
   double var, a, b, residual, Yt, realm, sumt, meanY, t, 
     VarMeth_old, VarMeth_mean, VarMeth_var, delta, realnbox;
 

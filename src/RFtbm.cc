@@ -72,13 +72,192 @@ typedef struct TBM_storage {
 } TBM_storage;
 
 
+double TBM2_INTEGR_PREC=1e-9;
+#define NNN 36 /* immmer gerade !! */
+Real TBM2integr(int covnr, Real h, Real v, Real *param, int dim, int fct) {
+  Real de, ialt, ineu, x, y, z, factor[3] = {0.5, 2.0, 0.5}, 
+    xx[3], b[NNN+1], integral, delta, alpha, f, h2, v2, rest; 
+  unsigned long int n, k;
+  int i, mitte, kk;
+    
+  h2 = h * h;
+  v2 = v * v;
+  b[0] = 0.0;
+  b[NNN] = 1 - 1e-13;
+  mitte = 1;
+  b[mitte] = 0.7;
+  alpha = 0.19;
+  for (i=mitte + 1; i<NNN ; i++) {
+    b[i] = exp(0.5 * log(alpha + (1.0 - alpha) * b[i-1]));
+  }
+  // alpha = 0.7;
+  for (i=mitte - 1; i>0 ; i--) {
+    b[i] = (double) i / (double) mitte * b[mitte];
+  }
+
+  integral = 0.0;
+  for (i=0; i<NNN; i++) {
+//    printf(" i=%d\n ",i);
+    n = 2;
+    delta = b[i+1] - b[i];
+    de = delta / (double) n;
+    ialt = 0.0;
+    for (k=0, x=b[i]; k<=2; k++, x+=de) {
+      switch(fct) {
+	  case 0 : 
+	    z = h * x;
+	    f = CovList[covnr].cov_tbm3(&z, param, dim);
+	    break;
+	  case 1 :
+	    z = fabs(h * x);
+	    f = CovList[covnr].cov(&z, param, dim) +
+	      z * CovList[covnr].ableitung(&z, param, dim);
+	    break;
+	  case 2 :
+	    y = x * x * h2;
+	    z = sqrt(y + v2); 
+	    if (z==0.0) f=1.0; 
+	    else f = CovList[covnr].cov(&z, param, dim) +
+	      y / z * CovList[covnr].ableitung(&z, param, dim);
+	    break;
+	  default : break;
+	}
+      ialt += factor[k]  * x / sqrt(1 - x * x) * f;
+//  printf(" %d x=%f %f \n", n, x, ialt * h);
+      rest = f * sqrt(1 - b[NNN] * b[NNN]);
+    }
+    
+    while (true) {
+      n *= 3;
+      de = delta / (double) n;
+      ineu = 0.0;
+      for (k=1, x=b[i]+de; k<n; k++, x+=de) {
+	kk = k % 6;
+	if (kk == 0 || kk == 3) continue;
+	switch (fct) {
+	  case 0 : 
+	    z = h * x;
+//	    printf(" z=%f\n", z);
+	    f = CovList[covnr].cov_tbm3(&z, param, dim);
+	    break;
+	  case 1 :
+	    z = fabs(h * x);
+	    f = CovList[covnr].cov(&z, param, dim) +
+	      z * CovList[covnr].ableitung(&z, param, dim);
+//	    printf("%d %f zz=%f %f %f %f\n", n, x ,z, f, 
+//		   CovList[covnr].cov(&z, param, dim),
+//		   CovList[covnr].ableitung(&z, param, dim));
+	    break;
+	  case 2 :
+	    y = x * x * h2;
+	    z = sqrt(y + v2); 
+	    if (z==0.0) f=1.0; 
+	    else f = CovList[covnr].cov(&z, param, dim) +
+		   y / z * CovList[covnr].ableitung(&z, param, dim);
+	    break;
+	  default : break;
+	}
+	if (kk==1 || kk==5) f *= 2.0;
+	ineu += x / sqrt(1 - x * x) * f; 
+//	printf(" %f %f %f f=%f %f %f %f i=%f\n", 
+//	       x, y, z , f, CovList[covnr].cov(&z, param, dim),
+//	       y / z,  CovList[covnr].ableitung(&z, param, dim), ineu);
+      }
+      if ((n>6) && (fabs(ineu - 2 * ialt) * de < TBM2_INTEGR_PREC)) break;
+if (n>1000) printf(" %d [%5.3e %5.3e] %e %e %e h=%e v=%e\n",
+		   n, 1-b[i], 1-b[i+1], ineu * de, ialt * de,
+		  fabs(ineu - 2 * ialt) * de, h, v);
+//     assert (n<=10000) ;
+      ialt += ineu;
+//   assert(false);
+    }
+//    printf("\n %d [%5.3e %5.3e] %e; y=%f z=%f %e f=%f",
+//	   n, 1-b[i], 1-b[i+1], ialt * de / 1.5,
+//	   y, z,  fabs(ineu - 2 * ialt) * de, f);
+   ialt += ineu;
+   integral += ialt * de / 1.5;
+  }
+//  assert(false);
+//printf("%d a=%f h=%f S=%f \n", n, aa, aa * c, integral);
+  return integral + rest;
+}
+
+
+double TBM2_INTEGR_TIME_PREC=1e-9;
+Real TBM2integr_time(Real aa, Real c, covfct f, Real *param, int dim) {
+#define NN 26 /* immmer gerade !! */
+  Real h, ialt, ineu, bb=1.0, x, y, z, factor[3]= {0.5, 2.0, 0.5}, 
+    xx[3], b[NN+1], integral, delta, alpha; 
+  unsigned long int n,k;
+  int i, mitte;
+
+  b[NN] = bb;
+  b[0] = aa;
+  mitte = NN / 2 - 3;
+  b[mitte] = 0.5 * aa + 0.5 * bb;
+  alpha = 0.65;
+  for (i=mitte + 1; i<NN ; i++) {
+    b[i] = bb * alpha + (1.0 - alpha) * b[i-1];
+  }
+  alpha = 0.7;
+  for (i=mitte - 1; i>0 ; i--) {
+    b[i] = aa * alpha + (1.0 - alpha) * b[i+1];
+  }
+
+  integral = 0.0;
+  for (i=0; i<NN; i++) {
+    n = 2;
+    delta = b[i+1] - b[i];
+    h = delta / (double) n;
+    ialt = 0.0;
+    for (k=0, x=b[i]; k<=2; k++, x+=h) {
+      y = x * x;
+      z = c * sqrt(1.0 - y); 
+      ialt += factor[k] * f(&z, param, dim) / y;
+//  printf(" %d x=%f %f \n", n, x, ialt * h);
+    }
+    
+    while (true) {
+      n *= 3;
+      h = delta / (double) n;
+      ineu = 0.0;
+      for (k=1, x=b[i]+h; k<n; k++, x+=h) {
+	switch (k % 6) {
+	    case 0: case 3 : break;
+	    case 1: case 5 : 
+	      y = x * x; 
+	      z = c * sqrt(1.0 - y); 
+	      ineu += 2.0 * f(&z, param, dim) / y;
+	      break;
+	    case 2: case 4 : 
+	      y = x * x; 
+	      z = c * sqrt(1.0 - y); 
+	      ineu += f(&z, param, dim) / y;
+	      break;
+	}
+      }
+      if ((n>6) && (fabs(ineu - 2 * ialt) * h < TBM2_INTEGR_TIME_PREC)) break;
+//    printf(" %d %f \n", n, ineu * h);
+      ialt += ineu;
+//    assert(false);
+    }
+//    printf("\n %d [%f %f] %e; %f %f %f", n, b[i], b[i+1], ialt * h / 1.5,
+//	  y, z, f(&z, param, dim));
+    ialt += ineu;
+    integral += ialt * h / 1.5;
+  }
+//printf("%d a=%f h=%f S=%f \n", n, aa, aa * c, integral);
+  return integral;
+}
+
+
 #define ANISOP3 ANISO+3  
 Real CovFctTBM2(Real *x, int dim, int *covnr, int *op,
 	        param_type param, int ncov, bool anisotropy){
 // in dieser und der naechste Funktionen hat $x$ entweder
 // 1 Element (Geradenpunkt der turning bands) oder 2 Elemente
 // (Punkt auf Flaeche der turning layers)
-  int v, vold, w, y;
+  int v, vold, w;
   Real zw, result, r;
   result = 0.0;
   v = 0;
@@ -99,16 +278,40 @@ Real CovFctTBM2(Real *x, int dim, int *covnr, int *op,
 	    zw *= param[w][VARIANCE] *
 	      CovList[covnr[w]].cov(&(z[1]), param[w], dim); 
 	  } else { // called only once in the loop
+	    z[0] = fabs(z[0]);
 	    r = sqrt(z[0] * z[0] + z[1] * z[1]);
-	    zw *=  param[w][VARIANCE] * fabs(z[0]) / r *
-	      CovList[covnr[w]].cov_tbm2(&r, param[w], dim);
+	    zw *= param[w][VARIANCE] * z[0] / r *
+	      ( CovList[covnr[w]].cov_tbm2(&r, param[w], dim) +
+		TBM2integr_time(z[0] / r, r, CovList[covnr[w]].cov,
+				param[w], dim) );
+
+	    printf("\nh=%f v=%f, %f %f, c=%f %e %e\n", z[0], z[1], 
+	     CovList[covnr[w]].cov_tbm2(&r, param[w], dim)
+		   ,
+	     TBM2integr_time(z[0] / r, r, CovList[covnr[w]].cov, param[w], dim)
+		   ,
+	     CovList[covnr[w]].cov_tbm2(&r, param[w], dim) +
+	     TBM2integr_time(z[0] / r, r, CovList[covnr[w]].cov, param[w], dim)
+		   ,
+	     CovList[covnr[w]].cov_tbm2(&r, param[w], dim) +
+	     TBM2integr_time(z[0] / r, r, CovList[covnr[w]].cov, param[w], dim)
+		   - TBM2integr(covnr[w], z[0], z[1], param[w], dim, 2),
+		   TBM2integr(covnr[w], z[0], z[1], param[w], dim, 2)
+	);
+
 	  }
 	} else { 
 	  assert(CovList[covnr[w]].isotropic==SPACEISOTROPIC);
 	  if (z[0]==0.0) 
-	    zw *= param[w][VARIANCE] * CovList[covnr[w]].cov(z, param[w], 2);
-	  else 
-	    zw *= param[w][VARIANCE] * CovList[covnr[w]].cov_tbm2(z, param[w],2);
+	    zw *=  CovList[covnr[w]].cov(z, param[w], 2);
+	  else if (CovList[covnr[w]].cov_tbm2 != NULL) {
+	    zw *= CovList[covnr[w]].cov_tbm2(z, param[w],2);
+	   } else {
+	    assert(CovList[covnr[w]].ableitung != NULL);
+	    zw *= TBM2integr(covnr[w], z[0], 0, param[w], 2,
+			     CovList[covnr[w]].cov_tbm3 == NULL);
+	  }
+	  zw *= param[w][VARIANCE];
 	}
       }
       result += zw;
@@ -121,7 +324,16 @@ Real CovFctTBM2(Real *x, int dim, int *covnr, int *op,
       // multiplication of covariance functions is not allowed,
       // in contrast to 3dim TBM
     z = x[0] * param[v][ANISO];
-    result += param[v][VARIANCE] * CovList[covnr[v]].cov_tbm2(&z, param[v], dim);
+
+    if (z==0.0) zw = 1.0;
+    else if (CovList[covnr[v]].cov_tbm2 != NULL) {
+      zw = CovList[covnr[v]].cov_tbm2(&z, param[v], dim);
+    } else {
+      assert(CovList[covnr[v]].ableitung != NULL);
+      zw = TBM2integr(covnr[v], z, 0, param[v], 2,
+		       CovList[covnr[v]].cov_tbm3 == NULL);
+    }
+    result += param[v][VARIANCE] * zw;
     }
   }
   return result;
@@ -176,7 +388,7 @@ Real CovFctTBM3(Real *x, int dim, int *covnr, int *op,
   } else {
     assert(dim==1);
     z[1] = 0.0; //in case of (CovList[covnr[v]].isotropic==SPACESOTROPIC) 
-    if (ncov==1) {
+     if (ncov==1) {
      z[0] = x[0] * param[0][ANISO];
      return param[v][VARIANCE]*CovList[covnr[0]].cov_tbm3(z, param[0], dim);
     }
@@ -331,14 +543,14 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   bool no_last_comp;
   Real dist, mindelta, aniso_last_save, 
     quotient[MAXCOV], *directx[2];
-  char actcov;
+  unsigned short int actcov;
   int covnr[MAXCOV], multiply[MAXCOV], nonzero_pos;
   tbm_lines * tbm;
   SimulationType tbm_method;
   
 
   GENERAL_STORING = true;
-
+  nonzero_pos = -1;
   SET_DESTRUCT(TBM_destruct);
 
   directx[0] = directx[1] = NULL;
@@ -425,6 +637,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	    // note nonzero_pos is set in the else part of "actcov>0", first
 	    // nonzero_pos gives the position of the first element in the 
             // first matrix of a multiplicative model that is not zero
+	    assert(nonzero_pos > 0);
 	    quotient[actcov] = 
 	      param[actcov][nonzero_pos] / store_param[nonzero_pos];
 	    equal = true;
@@ -552,9 +765,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     cov = &(CovList[covnr[v]]);
     if (((method==TBM3) && (cov->ableitung==NULL)) ||
 	((method==TBM2) && 
-	 ((cov->cov_tbm2==NULL) ||
+	 ((cov->cov_tbm2==NULL && cov->ableitung==NULL && !key->anisotropy) ||
 	  (key->anisotropy && 
-	   (((param[v][nonzero_pos]!=0.0) && cov->cov_tbm2==NULL) ||
+	   (((param[v][nonzero_pos]!=0.0) && cov->cov_tbm2==NULL && 
+	     cov->ableitung==NULL) ||
 	    ((param[v][nonzero_pos]==0.0) && cov->cov==NULL)
 	    )
 	    )
@@ -657,7 +871,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   } else { // not s->grid
     // s->timespacedim, s->x, s->spatialdim,
     Real min[MAXDIM],max[MAXDIM], dummy; 
-    int index,indexx,k,j,d,ix,jx, endfor;
+    int j, d, ix, jx, endfor;
     for (d=0; d<MAXDIM; d++) {min[d]=RF_INF; max[d]=RF_NEGINF;}
     if (key->grid) { // key->grid     
       Real sxx[ZWEIHOCHMAXDIM * MAXDIM];
@@ -779,7 +993,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   if (s->mtot > DIRECTGAUSS_MAXVARIABLES) {
     tbm_method=CircEmbed;
     if (GENERAL_PRINTLEVEL>1) 
-      PRINTF("too many points on the line -- using circulant embedding\n");
+      PRINTF("too many points -- using circulant embedding\n");
   }
   switch (tbm_method) {
       case Direct :
@@ -1051,9 +1265,8 @@ void do_turningbands(key_type *key, int m, Real *res )
   } else { 
     // not grid, could be time-model!
     // both old and new form included
-
-//offset=0;for (i=0; i<s->mtot; i++) offset += simuline[i] * simuline[i];printf("%f ", offset / (double) s->mtot);\
-
+    //offset=0; for (i=0; i<s->mtot; i++) offset += simuline[i] * 
+    //                simuline[i];printf("%f ", offset / (double) s->mtot);
 
 #define TBMLOOP(UNITYVECTOR, OFFSET, INDEX)\
   {\

@@ -110,7 +110,7 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
   gridtriple <- FALSE      ## see help("GaussRF")
   model <- "whittle"       ## whittlematern
   bins <- seq(0, 5, 0.001)
-  repetition <- 20 ## by far too small to get reliable results!!
+  repetition <- 5 ## by far too small to get reliable results!!
                    ## It should be of order 500,
                    ## but then it will take some time
                    ## to do the simulations

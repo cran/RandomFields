@@ -235,7 +235,8 @@
   }
   \item{\code{pch}}{Character. The character is printed after each
     performed simulation if more than one simulation is performed at
-    once.  Default: \code{'#'} [do]. 
+    once. If pch='!' then counter is shown instead of the character.
+    Default: \code{'!'} [do]. 
   }
 }
 

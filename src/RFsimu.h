@@ -595,7 +595,7 @@ extern do_incomp_fct  do_incompatiblemethod[SimulationTypeLength];
   }
 
 #define FIRSTCHECK_COV(METHOD,FCT,PARAM)\
-  char actcov;\
+  unsigned short int actcov;\
   int multiply[MAXCOV];\
   int covnr[MAXCOV];\
   FC1(METHOD,FCT,PARAM)\
@@ -626,6 +626,7 @@ extern do_incomp_fct  do_incompatiblemethod[SimulationTypeLength];
       /* A further goal of this part is the collection of additive blocks */\
       /* that have the same anisotropy matrix structure, in order to minimise */\
       /* the simulation time */\
+      assert(nonzero_pos>0);\
       quotient[actcov] = PARAM[actcov][nonzero_pos] / store_param[nonzero_pos];\
       equal = true;\
       for (w=ANISO; w<endfor; w++) {\

@@ -60,7 +60,7 @@ int is_singular(Real *C, int dim, bool *singular)
 {
   double D[MAXDIM];
   int Xerror, d;
-  if (Xerror=eigenvalues(C, dim, D)) goto ErrorHandling;
+  if ((Xerror=eigenvalues(C, dim, D))!=NOERROR) goto ErrorHandling;
   *singular = false;
   for (d=0; d<dim; d++) 
     if (fabs(D[d])<NUGGET_TOL_SINGULAR) {*singular=true; break;}
@@ -89,17 +89,18 @@ bool equal(int i, int j, Real *ORDERD, int ORDERDIM)
 
 // uses global RANDOM !!!
 int init_nugget(key_type *key, int m){ 
-  int v, Xerror; 
+  int Xerror; 
   nugget_storage *s;
   param_type param;
   Real nugget_effect, quotient[MAXCOV];
-  char actcov;
+  unsigned short int actcov;
   int i,covnr[MAXCOV], nonzero_pos;
   int multiply[MAXCOV], TrueDim;
-  bool time_exception[MAXCOV], singular, no_last_comp;
+  bool singular, no_last_comp;
   Real *xx;
 
   xx=NULL;
+  nonzero_pos = -1;
   SET_DESTRUCT(nugget_destruct);
   FIRSTCHECK_COV_ANISO(Nugget, cov, param, false);
 
@@ -110,14 +111,16 @@ int init_nugget(key_type *key, int m){
   s->pos = NULL;
 
   if (key->anisotropy) {
-    if (Xerror = is_singular(&(param[0][ANISO]), key->timespacedim, &singular)) 
+    if ((Xerror = is_singular(&(param[0][ANISO]), key->timespacedim, &singular))
+	  !=NOERROR) 
       goto ErrorHandling;
     s->simple = !singular;
     if (singular) {
       int *pos, oldpos, start_param[MAXDIM], index_dim[MAXDIM];
       GetTrueDim(key->anisotropy, key->timespacedim, param[0],
 		 &TrueDim, &no_last_comp, start_param, index_dim);
-      if (Xerror=Transform2NoGrid(key, param[0], TrueDim, start_param, &(xx)))
+      if ((Xerror=Transform2NoGrid(key, param[0], TrueDim, start_param, &(xx)))
+	  !=NOERROR)
 	goto ErrorHandling;
 
       if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0){
@@ -164,6 +167,7 @@ void do_nugget(key_type *key, bool add, int m, Real *res ) {
     int p;
     Real dummy;
     assert(s->pos[0]>=0);
+    dummy = RF_NAN;
     for (nx=0; nx<key->totalpoints; nx++) {
       if ((p=s->pos[nx])<0) p= -1 - p; // if p<0 then take old variable
       // and -p-1 is the true index 

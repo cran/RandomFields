@@ -1,5 +1,3 @@
-
-
 ## PrintLevels
 ## 0 : no message
 ## 1 : important error messages
@@ -88,7 +86,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   ## creating "global" variables LSMIN, LSPARAM
   ## using WEIGHTS
   LStarget <- function(variab) {
-    if (PrintLevel>3) {cat(LEVEL); print(variab,dig=20)}
+    if (PrintLevel>3) {cat(LEVEL, "  LSMIN=", LSMIN); print(variab,dig=20)}
+
     if (any((variab<LB) | (variab>UB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
@@ -102,17 +101,18 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       if (res<=0) return(penalty + res * (1-penalty))
       return(penalty + res * (1+penalty)) ## not the best ....
     }
+  
     param <- PARAM
     param[index] <- variab
     param <- transform(param)
-    
+   
     model.values <-
      .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
         logicaldim, xdim,
         as.integer(length(covnr)), as.integer(pm$anisotropy),         
         as.integer(pm$op),model.values=double(bins), scalingmethod,
         PACKAGE="RandomFields", DUP=FALSE)$model.values
-
+    
     if (any(is.na(model.values))) {
       if (PrintLevel>1) {
         cat("\nmissing values!")

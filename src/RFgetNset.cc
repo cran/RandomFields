@@ -65,13 +65,14 @@ void GetDistrName(int *nr,char **name){
 
 void GetDistrNr(char **name, int *n, int *nr) 
 {
-  unsigned int ln,v;
+  unsigned int ln, v, nn;
+  nn = (unsigned int) *n;
   // == -1 if no matching function is found
   // == -2 if multiple matching fnts are found, without one matching exactly
   // if more than one match exactly, the last one is taken (enables overwriting 
   // standard functions)
 
-  for (v=0; v<*n; v++) {
+  for (v=0; v<nn; v++) {
     nr[v]=0;
     ln=strlen(name[v]);
     while ( (nr[v] < DISTRNR) && strncmp(name[v], DISTRNAMES[nr[v]], ln)) {
@@ -184,14 +185,15 @@ void GetNrParameters(int *covnr, int *n, int* kappas) {
 }
 void GetModelNr(char **name, int *n, int *nr) 
 {
-  unsigned int ln,v;
+  unsigned int ln, v, nn;
+  nn = (unsigned int) *n;
   // == -1 if no matching function is found
   // == -2 if multiple matching fnts are found, without one matching exactly
   // if more than one match exactly, the last one is taken (enables overwriting 
   // standard functions)
   if (currentNrCov==-1) InitModelList();
 
-  for (v=0; v<*n; v++) {
+  for (v=0; v<nn; v++) {
     nr[v]=0;
     ln=strlen(name[v]);
     while ( (nr[v]<currentNrCov) && strncmp(name[v],CovList[nr[v]].name,ln)) {
@@ -220,10 +222,11 @@ void GetModelNr(char **name, int *n, int *nr)
 
 void GetMethodNr(char **name, int *n, int *nr) 
 {
-  unsigned int ln, v;
+  unsigned int ln, v, nn;
+  nn = (unsigned int) *n;
   // == -1 if no matching method is found
   // == -2 if multiple matching methods are found, without one matching exactly
-  for (v=0; v<*n; v++) {
+  for (v=0; v<nn; v++) {
     nr[v]=0;
     ln=strlen(name[v]);
     while ( (nr[v]<(int) Forbidden) && strncmp(name[v],METHODNAMES[nr[v]],ln)) {
@@ -399,8 +402,8 @@ extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
   CovList[nr].tbm_method = tbm_method;
   CovList[nr].spectral=spectral;
 
-  if ( (ableitung!=NULL) || (cov_tbm3!=NULL) || (tbm_method!=Nothing)) 
-    assert((ableitung!=NULL) && (cov_tbm3!=NULL) && (CovList[nr].cov!=NULL)
+  if ( (ableitung!=NULL) || (tbm_method!=Nothing)) 
+    assert((ableitung!=NULL) && (CovList[nr].cov!=NULL)
 	   && (tbm_method!=Nothing));
 }
 	
@@ -420,7 +423,7 @@ extern void addOther(int nr, initmppfct add_mpp_scl, MPPRandom add_mpp_rnd,
 
 void PrintModelList()
 {
-  int i;
+  int i, tbm2;
   char percent[]="%";
   char empty[]="";
   char header[]="Circ local TBM2 TBM3 sp dir add hyp oth\n";
@@ -449,10 +452,12 @@ void PrintModelList()
 	       coded[2], coded[false], coded[2],     coded[2],     coded[2],
 	       coded[2], coded[2], coded[false], coded[false]);
       } else {
+	if (!(tbm2 = CovList[i].cov_tbm2!=NULL))
+	  tbm2 = 2 * (CovList[i].ableitung != NULL);
 	PRINTF(line,
 	       coded[(CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL)],
 	       coded[CovList[i].cov_loc!=NULL],
-	       coded[CovList[i].cov_tbm2!=NULL],
+	       coded[tbm2],
 	       coded[CovList[i].cov_tbm3!=NULL],
 	       coded[CovList[i].spectral!=NULL], 
 	       coded[(CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL)],
@@ -476,11 +481,10 @@ void GetModelList(int* idx) {
   }
   if (CovList==NULL) return;
   assert(Nothing==10);
-  methods = Nothing - 2; // nugget and nothing itself
   for (j=i=0; i<currentNrCov; i++) {
     idx[j++] = (CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL);
     idx[j++] = CovList[i].cov_loc!=NULL;
-    idx[j++] = CovList[i].cov_tbm2!=NULL;
+    idx[j++] = CovList[i].cov_tbm2!=NULL ||  CovList[i].ableitung!=NULL;
     idx[j++] = CovList[i].cov_tbm3!=NULL;
     idx[j++] = CovList[i].spectral!=NULL;
     idx[j++] = (CovList[i].cov!=NULL) && (CovList[i].cov_loc==NULL);
@@ -681,8 +685,9 @@ void GetTrueDim(bool anisotropy, int timespacedim, Real* param,
   //                      effectively no time component)
   //         TrueDim     The reduced dimension, including the time direction
 { 
-  int i,j,k;
-  unsigned long endfor, startfor;
+  int i,j;
+  long unsigned int endfor, startfor, k;
+  assert(timespacedim>0);
   if (anisotropy) {
     /* check whether the dimension can be reduced */
     /* TODO:this algorithm only detects zonal anisotropies -- could be improved*/
@@ -891,7 +896,7 @@ int nextn(int n, int *f, int nf) // taken from fourier.c of R
 
 bool HOMEMADE_NICEFFT=true;
 unsigned long NiceFFTNumber(unsigned long n) {
-  unsigned long i,ii,j,jj,k,kk,l,ll,min, m=1, f[4]={2,3,5,7};
+  unsigned long i,ii,j,jj,l,ll,min, m=1, f[4]={2,3,5,7};
   if (HOMEMADE_NICEFFT) {
     if (n<=1) return n;
     for (i=0; i<4; i++) 
@@ -933,7 +938,7 @@ int eigenvalues(Real *C, int dim, double *ev)
 {
   // SVD decomposition
   double *V,*e, *U, *G, *D;
-  long longrow = dim, job=11, Error;
+  long longrow = dim, job=11;
   int error, d;
   error=0;
 

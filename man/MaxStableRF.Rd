@@ -129,7 +129,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
 .
 }
 \examples{
- n <- 100
+ n <- 30 ## nicer, but time consuming if n <- 100
  x <- y <- 1:n
  ms <- MaxStableRF(x, y, grid=TRUE, model="exponen",
                  param=c(0,1,0,40), maxstable="extr")

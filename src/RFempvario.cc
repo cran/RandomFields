@@ -442,7 +442,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
   case 1 : // E, calculating E(0) correctly, taking into account that the
     //        bin including 0 may include further points
     if ((ii<*nbin)&&(ii>=0)){
-      long j; Real sum;
+      long j;
       n[ii] *= factor; // * 2
       for (j=0; j<totalpointsrepet; j++) {
 	res[ii] += values[j]; 

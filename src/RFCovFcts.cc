@@ -107,8 +107,8 @@ Real Scaleexponential(Real *p,int scaling){ return MINUSINVLOG005; }
 Real TBM2exponential(Real *x, Real *p, int effectivedim) 
 {
   double y;
-  if (*x==0.0) {return 1.0;} 
-  y = fabs(*x); 
+  if (*x==0.0) {return 1.0;}
+  y = fabs(*x);
   return 1.0 - PIHALF * y * I0mL0(y);
 }
 Real TBM3exponential(Real *x, Real *p, int effectivedim){
@@ -163,6 +163,12 @@ int checkqexponential(Real *param, int timespacedim, SimulationType method){
     return ERRORCOVFAILED;
   }
   return 0;  
+}
+Real TBM3Dexponential(Real *x, Real *p, int effectivedim){
+   register Real y;
+   y = fabs( *x);
+   return (y * (2.0  - p[KAPPA] * y) + y * (y * (p[KAPPA] * y - 1.0) * 2.0)) / 
+     (2.0 - p[KAPPA]);
 }
 Real Dqexponential(Real *x,Real *p, int effectivedim){
   register Real y;
@@ -272,7 +278,7 @@ Real circular(Real *x, Real *p, int effectivedim)
 {
   Real y;
   if ((y=fabs( *x))>1.0) return 0.0; 
-  return  ( 1.0 - (2.0 * (y * sqrt(1.0- y * y) + asin(y))) / PI);
+  return  1.0 - (2.0 * (y * sqrt(1.0- y * y) + asin(y))) * INVPI;
 }
 Real Scalecircular(Real *p,int scaling) {return 1.138509531721630274603;}
 // spectral measure, see Lantue !! 
@@ -290,6 +296,11 @@ SimulationType methodcircular(int spacedim, bool grid){
     default: return Forbidden;
     }
   }
+}
+Real Dcircular(Real *x, Real *p, int dim){
+  register Real y;
+  if ((y=*x * *x) >= 1.0) {return 0.0;} 
+  return -4 * INVPI * sqrt(1 - y);
 }
 void rangecircular(int dim, int *index, Real* range){
   if (dim<=2) *index=-1; else *index=-2;
@@ -1400,8 +1411,6 @@ void rangepenta(int dim, int *index, Real* range){
 /* following function is unused! -- it has been nsst3*/
 Real spacetime3(Real *x,Real *p, int effectivedim){
   // turning bands modified spacetime1 covariance function
-  Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   return spacetime1(x,p,effectivedim) + fabs(x[0]) * Dspacetime1(x,p,effectivedim);
 }
@@ -1425,7 +1434,6 @@ Real InvSqrtPsi(Real x, Real a, Real b, int c) {
 /* Tilmann Gneiting's space time models, part I */
 Real spacetime1(Real *x, Real *p, int effectivedim){
   Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIII], p[KAPPAIV], (int)p[KAPPAV]);
   y = x[0] * invsqrtpsi; 
@@ -1439,7 +1447,6 @@ Real spacetime1(Real *x, Real *p, int effectivedim){
 }
 Real TBM2spacetime1(Real *x, Real *p, int effectivedim){
   Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIII], p[KAPPAIV], (int)p[KAPPAV]);
   y = x[0] * invsqrtpsi; 
@@ -1458,7 +1465,6 @@ Real TBM3spacetime1(Real *x, Real *p, int effectivedim){
 }
 Real Dspacetime1(Real *x, Real *p, int effectivedim){
   Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIII], p[KAPPAIV], (int)p[KAPPAV]);
   y = x[0] * invsqrtpsi; 
@@ -1552,7 +1558,6 @@ SimulationType methodspacetime1(int spacedim, bool grid){
 }
 void rangespacetime1(int dim, int *index, Real* range){
   //  2 x length(param) x {theor, pract }
-  int b;
   Real *r;
   if ((*index<=0) || (*index>9)) { // see also last line
     int i; for (i=0; i<24; i++) range[i]= RF_NAN; *index=-1; return;
@@ -1591,7 +1596,6 @@ void rangespacetime1(int dim, int *index, Real* range){
 /* Tilmann Gneiting's space time models, part II*/
 Real spacetime2(Real *x,Real *p, int effectivedim){
   Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIV], p[KAPPAV], (int)p[KAPPAVI]);
   y = x[0] * invsqrtpsi; 
@@ -1608,7 +1612,6 @@ Real TBM3spacetime2(Real *x, Real *p, int effectivedim){
 }
 Real Dspacetime2(Real *x, Real *p, int effectivedim){
   Real y, z, invsqrtpsi;
-  int i;
   assert(effectivedim==2);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIV], p[KAPPAV], (int)p[KAPPAVI]);
   y = x[0] * invsqrtpsi; 
@@ -1688,7 +1691,6 @@ SimulationType methodspacetime2(int spacedim, bool grid){
 }
 void rangespacetime2(int dim, int *index, Real* range){
   //  2 x length(param) x {theor, pract }
-  int b;
   Real *r;
   if ((*index<=0) || (*index>3)) { // see also last line
     int i; for (i=0; i<28; i++) range[i]= RF_NAN; *index=-1; return;
@@ -1912,6 +1914,12 @@ Real Scalelgd1(Real *p,int scaling) {
     return exp( log(0.95 * (p[KAPPAI] + p[KAPPAII]) / p[KAPPAII]) / p[KAPPAI]); 
   else return exp(log(0.05 * (p[KAPPAI] + p[KAPPAII]) / p[KAPPAI])/p[KAPPAII]);
 }
+Real Dlgd1(Real *x, Real *p, int dim){
+  Real y, pp;
+  if ( (y=fabs(*x)) == 0) return 0; // falscher Wert, aber sonst gibt NAN-Fehler
+  pp = ( (y < 1) ? p[KAPPAI] : -p[KAPPAII] ) - 1.0;
+  return - p[KAPPAI] * p[KAPPAII] / (p[KAPPAI] + p[KAPPAII]) * exp(pp * y);
+}
 /*
 Real TBM3(Real *x, Real*p, int effectivedim) {
   register Real y;
@@ -1938,7 +1946,7 @@ SimulationType methodlgd1(int spacedim, bool grid){
 }
 int checklgd1(Real *param, int timespacedim, SimulationType method) {
   if ((timespacedim>2) && (method!=Nothing)) {
-    strcpy(ERRORSTRING_OK,"dim<=2");
+    strcpy(ERRORSTRING_OK, "dim<=2");
     sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
     return ERRORCOVFAILED;
   }

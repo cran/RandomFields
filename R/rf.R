@@ -1,4 +1,63 @@
 ## source("rf.R")
+# see getNset.R for the variable .methods
+.onLoad <- function (lib, pkg) {
+  if (RNGkind()[1]!="Mersenne-Twister") {
+    cat("Random number generator changed to 'Mersenne-Twister'\n")
+    RNGkind(kind = "Mersenne-Twister")
+  }
+  if (file.exists("/home/schlather/bef/x")) {
+    ## to do list -- since my surname is rare, the message should 
+    ## appear only on computers I have a login
+    cat("To-Do List\n==========\n")
+    print("include winddata")
+    print("mleRF.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
+    
+    print("")
+    print("check documentation and readability of programs")
+    print("docu of TBM2.linesimustep not understandable")
+    print("entartete Felder")
+    print("fractGauss -- was ist los?")
+    print("2d/3d fractal testen!")
+    print("clean up tbm.cc: trennung circ embed und direct")
+    cat("\n\n")
+    
+    print("MLE: naturalscaling in anisotropic case")
+    print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
+    print("implement trend; implement REML")
+    print("MPP.cc: anisotropies, time")
+    print("MLE:  message innerhalb der Liste, dass irgendwas nicht in Ordnung falls eine Grenze angenommen wurde (error nr und error message, error message auch anzeigen, falls printlevel hoch genug)")
+    cat("individuelle Praeferenzliste:\n",
+        "   1) erste praeferenz\n",
+        "   2) if # pkte < 10 / 50 -> Gauss??\n",
+        "   4) if nugget/variance > 0.01 -> CE (and not spectral, e.g.)\n",
+        "   3) if C(maxh)/C(0) > 0.05  -> TBM else CE\n")
+    cat("spectral and other space sensitive procedure work curently only for",
+        "zonal isotropy of arbitrary dim (if final dim==2) and arbitrary",
+        "transformation in 2dim, but not for arbitrary transformation with",
+        "final dim == 2\n")
+    cat("register inhalt auf platte speichen\n")
+    cat("Aufpassen, dass kein Chaos produziert wird, wenn InitPoissonRF und",
+        "dann DoGaussRF fabriziert wird. dies wird abgefangen auf R-Ebene; ",
+        "aber zu ueberdenken waere, ob man ein 'Mischen' nicht auch zulaesst\n")
+    cat("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
+    cat("interface, such that user can add its own covariance function, written in R\n\n")
+    cat("")
+  }
+.ENV <- .GlobalEnv
+assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+          distrmaxchar=integer(1),
+          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+          maxdim=integer(1), maxmodels=integer(1),
+          PACKAGE="RandomFields"), envir=.ENV)
+assign(".methods", GetMethodNames(), envir=.ENV)
+##  assign(".ENV", ENV, envir=.ENV)
+}
+
+
+.onUnload <- function(lib, pkg){
+  DeleteAllRegisters()
+}
 
 "CovarianceFct" <-
   function (x, model, param, dim = ifelse(is.matrix(x), ncol(x), 1),
@@ -74,17 +133,19 @@ function (n = 1, register = 0)
             length(register) == 1,
             is.finite(register)
             )
+  assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+          distrmaxchar=integer(1),
+          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+          maxdim=integer(1), maxmodels=integer(1),
+          PACKAGE="RandomFields"))
   DoNameList <- c("DoSimulateRF", "DoSimulateRF", "DoMaxStableRF")
-  MAXDIM <- integer(1)
-  .C("GetrfParameters", integer(1), integer(1), integer(1), integer(1),
-     integer(1), integer(1), MAXDIM, integer(1),
-     PACKAGE="RandomFields", DUP=FALSE)
   dimensions <- .C("GetKeyInfo", as.integer(register), 
-                   total = integer(1), len = integer(MAXDIM),
+                   total = integer(1), len = integer(.p$maxdim),
                    spatialdim = integer(1),
                    timespacedim = integer(1),
                    grid = integer(1), distr = integer(1),
-                   MAXDIM = as.integer(MAXDIM),
+                   maxdim = as.integer(.p$maxdim),
                    PACKAGE="RandomFields", DUP=FALSE)
   if (dimensions$total <= 0)
     stop(paste("register", register, "does not look initialized"))
@@ -142,8 +203,17 @@ function (n = 1, register = 0)
     }
     s <- paste("result[", s, "i] <- res")
     res <- double(dimensions$total)
-     for (i in 1:n) {
-      cat(param$pch)
+    digits <- 1 + trunc(log(n) / log(10))
+    
+    if (param$pch=="!") {
+      back <- paste(rep("\b", digits), collapse="")
+      each <- max(1, as.integer(n / 100))
+      cat(formatC(0, width=digits))
+    }
+    for (i in 1:n) {
+      if (param$pch=="!") {
+        if (i %% each ==0) cat(back, formatC(i, width=digits), sep="")
+      } else cat(param$pch)
       .C(DoNameList[1+dimensions$distr], register,
          res, error, PACKAGE="RandomFields", DUP = FALSE, NAOK = TRUE)
       if (error) break   
@@ -153,60 +223,13 @@ function (n = 1, register = 0)
       RFparameters(Storing=FALSE)
       DeleteRegister(register)
     }
-    if (param$pch!="") cat("\n")
+    if (param$pch=="!") cat(back) else cat("\n")
     if (error) return(NULL)
   }
   ## to do: add trend !!
   return(result)
 }
 
-
-".First.lib" <- function (lib, pkg) 
-{
-  if (RNGkind()[1]!="Mersenne-Twister") {
-    cat("Random number generator changed to 'Mersenne-Twister'\n")
-    RNGkind(kind = "Mersenne-Twister")
-  }
-  if (file.exists("/home/schlather/bef/x")) {
-    ## to do list -- since my surname is rare, the message should 
-    ## appear only on computers I have a login
-    cat("To-Do List\n==========\n")
-    print("include winddata")
-    print("mleRF.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
-    
-    print("")
-    print("check documentation and readability of programs")
-    print("docu of TBM2.linesimustep not understandable")
-    print("entartete Felder")
-    print("fractGauss -- was ist los?")
-    print("2d/3d fractal testen!")
-    print("clean up tbm.cc: trennung circ embed und direct")
-    cat("\n\n")
-    
-    print("MLE: naturalscaling in anisotropic case")
-    print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
-    print("implement trend; implement REML")
-    print("MPP.cc: anisotropies, time")
-    print("MLE:  message innerhalb der Liste, dass irgendwas nicht in Ordnung falls eine Grenze angenommen wurde (error nr und error message, error message auch anzeigen, falls printlevel hoch genug)")
-    cat("individuelle Praeferenzliste:\n",
-        "   1) erste praeferenz\n",
-        "   2) if # pkte < 10 / 50 -> Gauss??\n",
-        "   4) if nugget/variance > 0.01 -> CE (and not spectral, e.g.)\n",
-        "   3) if C(maxh)/C(0) > 0.05  -> TBM else CE\n")
-    cat("spectral and other space sensitive procedure work curently only for",
-        "zonal isotropy of arbitrary dim (if final dim==2) and arbitrary",
-        "transformation in 2dim, but not for arbitrary transformation with",
-        "final dim == 2\n")
-    cat("register inhalt auf platte speichen\n")
-    cat("Aufpassen, dass kein Chaos produziert wird, wenn InitPoissonRF und",
-        "dann DoGaussRF fabriziert wird. dies wird abgefangen auf R-Ebene; ",
-        "aber zu ueberdenken waere, ob man ein 'Mischen' nicht auch zulaesst\n")
-    cat("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
-    cat("interface, such that user can add its own covariance function, written in R\n\n")
-
-  }
-  library.dynam("RandomFields", pkg, lib)
-}
 
 
 "InitGaussRF" <-

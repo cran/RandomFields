@@ -83,7 +83,7 @@ void DeleteAllKeys() {
 
 
 void printkey(key_type *key) {
-  int i,actparam,j;  
+  int i,j;  
   char op_sign[][2]={"+","*"};
 
   PRINTF("\ngrid=%d, active=%d, anisotropy=%d, tbm_method=%d lx=%d sp_dim=%d,\ntotalpoints=%d, distr=%s Time=%d [%f %f %f]\ntimespacedim=%d traditional=%d compatible=%d mean=%f ncov=%d\n",	
@@ -156,7 +156,7 @@ int Transform2NoGrid(key_type *key, Real* param, int TrueDim,
 
   */
   int i,j,k,d,w;
-  unsigned long endfor, startfor, total;
+  long endfor, total;
   int dimM1;
   Real t, *x;
   dimM1 = key->timespacedim - 1;
@@ -255,7 +255,7 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
   // should now be consistent with `seq' of R
   // if not, please report!!!!!!!!!!!! 
   Real *xx[MAXDIM];
-  int lxx[MAXDIM], d;
+  int lxx[MAXDIM];
   xx[0]=x; xx[1]=y; xx[2]=z;
   if (InternalGetGridSize(xx,dim,lxx)) {
     *lx = *ly = *lz = 0;
@@ -267,7 +267,7 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
 #define COV_VARIO(FORMULA,FCT)\
   int v, aniso, k, j, endfor;\
   Real  var,  zz, zw, result, d;\
-  cov_fct *cov;\
+  cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */ \
   zw = result = 0.0;\
   if (anisotropy) {\
     Real z[MAXDIM];\
@@ -275,7 +275,7 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
     ncovM1 = ncov - 1;\
     for (v=0; v<ncov; v++) {\
       zw = var = 1.0;\
-      for(;v<ncov;v++) {\
+      for(; v<ncov; v++) {\
         cov = &(CovList[covnr[v]]);\
         cov_isotropy=cov->isotropic;\
 	var *= param[v][VARIANCE];\
@@ -314,7 +314,7 @@ void GetGridSize(Real *x,Real *y,Real *z,int *dim,int *lx,int *ly,int *lz)
     }\
     for (v=0; v<ncov; v++) {\
       zw = var = 1.0;\
-      for(;v<ncov;v++) {\
+      for(; v<ncov; v++) {\
 	zz = d * param[v][INVSCALE];\
 	var *= param[v][VARIANCE];\
         cov = &(CovList[covnr[v]]); /* cov needed in FORMULA for Vario */\
@@ -361,7 +361,7 @@ int CheckAndRescale( int covnr, int naturalscaling, Real *p,
 { 
   // IMPORTANT!: p is the parameter vector of the R interface !!
   // output param : equals p, except naturalscaling
-  int actparam, error, endfor, i, j;
+  int actparam, error, endfor=0 /*no meaning, avoids -Wall warning*/, i, j;
   Real newscale;
 
   if ((covnr>=currentNrCov) || (covnr<0)) return ERRORNOTDEFINED;
@@ -377,7 +377,7 @@ int CheckAndRescale( int covnr, int naturalscaling, Real *p,
   }
   
   { // is dimension OK ? 
-    int j, TrueDim, start_param[MAXDIM], index_dim[MAXDIM];
+    int TrueDim, start_param[MAXDIM], index_dim[MAXDIM];
     bool no_last_comp;
     switch (CovList[covnr].isotropic) {
     case FULLISOTROPIC : 
@@ -500,8 +500,7 @@ void InitUncheckedCovFct(int *covnr,Real *p,int *np,
 			 int *xdim,
 			 int *ncov, int *anisotropy, int *op,
 			 int *naturalscaling, int *error){
-  int i, j,  pAdd, v;
-  bool variogram;
+  int i, pAdd, v;
  
   FIRST_CHECK_COV_VARIO(*error);
   for (v=0; v<*ncov; v++) {
@@ -547,15 +546,15 @@ void VariogramNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,
 		    Real *result, int *naturalscaling)
 {
   // note: column of x is point !!
-  int error=NOERROR, i, j, pAdd, v;
+  int error=NOERROR, i, pAdd, v;
   param_type param;
 
   FIRST_CHECK_COV_VARIO(error);
 
   for (v=0; v<*ncov; v++) {
-    if (error=CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim, 
+    if ((error=CheckAndRescale(covnr[v], *naturalscaling, p, *logicaldim, 
 			      *anisotropy,
-			      param[v])) goto ErrorHandling;
+			      param[v]))!=NOERROR) goto ErrorHandling;
     if ( (v>0) && (op[v-1]) && 
 	 (CovList[covnr[v]].variogram || CovList[covnr[v-1]].variogram)) {
       // only covariance functions may be multiplied!
@@ -584,16 +583,15 @@ void Variogram(Real *x,int *lx,int *covnr,Real *p,int *np,
 		 result,&GENERAL_NATURALSCALING);
 }
   
-void CovarianceMatrixNatSc(Real *dist,int *lx,int *covnr,Real *p,int *np, 
+void CovarianceMatrixNatSc(Real *dist,int *lx, int *covnr,Real *p, int *np, 
 			   int *logicaldim, /* timespacedim ! */
 			   int *xdim,
 			   int *ncov, int *anisotropy, int *op,
 			   Real *result, int *naturalscaling)
 {
   // note: column of x is point !!
-  int error=NOERROR, i, ii, j, pAdd, zaehler, v, endfor, lxP1;
+  int error=NOERROR, i, ii, pAdd, v, endfor, lxP1;
   long lxq, ve, ho;
-  bool variogram;
   param_type param;
   Real var;
  
@@ -620,6 +618,7 @@ void CovarianceMatrixNatSc(Real *dist,int *lx,int *covnr,Real *p,int *np,
   return;
   
  ErrorHandling:
+  lxq = *lx * *lx;
   for(i=0; i<lxq; i++) result[i] = RF_NAN;
   if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,error); 
   return;	
@@ -736,12 +735,11 @@ void InitSimulateRF(Real *x, Real *T,
   int i,act_number, last_incompatible, extndd_nr, d, endfor, 
     pAdd, v, m, M;
   unsigned long totalBytes;
-  cov_fct *cov;
-  Real newscale, p[TOTAL_PARAM], *PL;
+  Real p[TOTAL_PARAM], *PL;
   bool method_used[(int) Nothing];
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
-  SimulationType Merr;
+  SimulationType Merr=Forbidden;
   SimulationType pg1[]={CircEmbed, CircEmbedLocal, Direct, AdditiveMpp, Nothing}; 
   SimulationType pg2[]={CircEmbed, CircEmbedLocal, TBM2, SpectralTBM,  
 			 AdditiveMpp, TBM3, Direct, Nothing};
@@ -1146,7 +1144,7 @@ void DoPoissonRF(int *keyNr, Real *res, int *error)
 void DoSimulateRF(int *keyNr, Real *res, int *error)
 {
   Real  *part_result;
-  long nx, i, endfor, m;
+  long i, m;
   key_type *key;
 
   part_result = NULL;

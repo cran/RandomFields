@@ -117,6 +117,15 @@ int CHOLpreciseenough(double *COV, double *U,long nrow)
 }
 
 
+double *CCOV;
+int nn;
+
+void getCov(int *n, double *COV) {
+  int i;
+  if (*n==0) { *n=nn; return;}
+  for (i=0; i<*n * *n; i++) COV[i]=CCOV[i];
+}
+
 int internal_init_directGauss(direct_storage **S, bool grid,
 			      int spatialdim, bool Time, double** x, int* length,
 			      int totpnts, double *T, CovFctType CovFct,
@@ -142,6 +151,13 @@ int internal_init_directGauss(direct_storage **S, bool grid,
   if ((COV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
     Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
   }
+
+//////////////////////////
+  if ((CCOV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
+    Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
+  }
+  nn = totpnts;
+//////////////////////////
 
   /* calculate covariance matrix */
   if (grid) {
@@ -205,14 +221,24 @@ int internal_init_directGauss(direct_storage **S, bool grid,
     k += i;
     for (segment=i* totpnts+i,j=i;j<totpnts;j++) {
       for (d=0; d<timespacedim; d++) {
-	y[d]=xx[d][i]-xx[d][j];
+	y[d]=xx[d][i] - xx[d][j];
       }
+//      printf(" %d (%d) ", i, totpnts);
+
       COV[k]=COV[segment] = CovFct(y, timespacedim, covnr, op, param, 
 				   actcov, anisotropy);
       k++;
       segment += totpnts;
     }
   }
+
+//  for (k=0; k<totpnts; k++) {
+//    printf(" %d ", k);
+//    for (i=0; i<totpnts; i++)
+//      if (COV[k + i * totpnts] != COV[i + k * totpnts]) 
+//	printf("cov %d %d %f %f\n",
+//	       k, i, COV[k + i * totpnts], COV[i + k * totpnts]);
+//  }
 
   if (freexx) {for (i=0; i<timespacedim; i++) {free(xx[i]); xx[i]=NULL;}}
   if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
@@ -245,7 +271,16 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 
 	// try next method :
 	
-      case SVD :	
+      case SVD :
+
+///////////////////////////
+ {
+   long t2;
+   double dev, max, UV;
+   t2 = totpnts * totpnts;
+   for (i=0; i<t2; i++) CCOV[i]=COV[i];
+ }
+
 	method = SVD; // necessary if the value of method has been Cholesky.
 	//               originally
 	if (GENERAL_PRINTLEVEL>=3) PRINTF("method=SVD\n");
@@ -270,9 +305,23 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 	  goto ErrorHandling;
 	}
 	
-	if (GENERAL_PRINTLEVEL>=6) { 
-	  PRINTF("\n D\n");   
-	  for (i=0; i<totpnts; i++) {PRINTF(" %f ", D[i]);}
+	if (GENERAL_PRINTLEVEL>=2) {
+	  long t2;
+	  double dev, max, UV;
+	  t2 = totpnts * totpnts;
+	  dev = 0.0;
+	  max = 0;
+	  for (i=0; i<t2; i++) {
+	    UV = fabs(U[i] - V[i]);
+	    if (UV>0.01) printf("%d %f %f %f\n", i, UV, U[i], V[i]);
+	    dev += UV;
+	    if (max<UV) max=UV;
+	  }
+	  PRINTF("totpnts %d %d\n", totpnts, t2); 
+	  PRINTF("total asymmetry U/V: sum=%f, max=%f\n", dev, max); 
+	  if (GENERAL_PRINTLEVEL>=6) { 
+	    PRINTF("\n D max=%f, D min=%f \n", D[0], D[totpnts-1]);
+	  }
 	}
 	
 	free(e); e=NULL; free(V); V=NULL; // here free(COV) is already possible; 

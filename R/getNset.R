@@ -25,30 +25,32 @@ GetPracticalRange <- function(model,kappas=NULL) {
 }
 
 GetMethodNames <- function() {
-  p <- .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+  assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
           distrmaxchar=integer(1),
           covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
           maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields")
-  l <- character(p$methodnr)
-  for (i in 1:p$methodnr) {
+          PACKAGE="RandomFields"))
+  l <- character(.p$methodnr)
+  for (i in 1:.p$methodnr) {
     l[i] <- .C("GetMethodName", as.integer(i-1),
-               n=paste(rep(" ",p$methodmaxchar), collapse=""),
+               n=paste(rep(" ", .p$methodmaxchar), collapse=""),
                PACKAGE="RandomFields")$n
   }
   return(l)
 }
 
 GetDistributionNames <- function() {
-  p <- .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+  assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
           distrmaxchar=integer(1),
           covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
           maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields")
-  l <- character(p$distrnr)
-  for (i in 1:p$distrnr) {
+          PACKAGE="RandomFields"))
+  l <- character(.p$distrnr)
+  for (i in 1:.p$distrnr) {
     l[i] <- .C("GetDistrName", as.integer(i-1),
-               n=paste(rep(" ",p$distrmaxchar), collapse=""),
+               n=paste(rep(" ",.p$distrmaxchar), collapse=""),
                PACKAGE="RandomFields")$n
   }
   return(l)
@@ -56,14 +58,16 @@ GetDistributionNames <- function() {
 
 
 GetModelNames <- function() {
-  p <- .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1), covnr=integer(1), methodnr=integer(1),
-          distrnr=integer(1), maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields")
-  l <- character(p$covnr)
-  for (i in 1:p$covnr) {
+  assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+          distrmaxchar=integer(1),
+          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+          maxdim=integer(1), maxmodels=integer(1),
+          PACKAGE="RandomFields"))
+  l <- character(.p$covnr)
+  for (i in 1:.p$covnr) {
     l[i] <- .C("GetModelName",as.integer(i-1),
-               n=paste(rep(" ",p$covmaxchar), collapse=""),
+               n=paste(rep(" ",.p$covmaxchar), collapse=""),
                PACKAGE="RandomFields")$n
   }
   return(l)
@@ -71,9 +75,9 @@ GetModelNames <- function() {
 
 
 GetModelList <- function(abbr=TRUE) {
+  assign(".methods", GetMethodNames())
   names <- GetModelNames()
-  methods <- GetMethodNames()
-  methods <- methods[methods!="nugget"]
+  methods <- .methods[.methods!="nugget"]
   if (abbr) methods <- substr(methods, 1, if (is.logical(abbr)) 5 else abbr)
   idx <- integer(length(names) * length(methods))
   .C("GetModelList", idx, PACKAGE="RandomFields", DUP=FALSE)
@@ -117,18 +121,14 @@ parampositions <- function(model, param, print=TRUE) {
 "RFparameters" <- function (...) {
   ## do not add any temporary variable til ## **
   ## do not remove leading "." from .maxdim
-  .maxdim <- integer(1)
-  .covmaxchar <- integer(1)
-  .methodmaxchar <- integer(1)
-  .distrmaxchar <- integer(1)
-  .covnr <- integer(1)
-  .methodnr <- integer(1)
-  .distrnr <- integer(1)
-  .maxmodels <- integer(1)
-  .C("GetrfParameters", .covmaxchar, .methodmaxchar, .distrmaxchar, .covnr,
-     .methodnr, .distrnr, .maxdim, .maxmodels, PACKAGE="RandomFields", DUP=FALSE)
-  .methods <- GetMethodNames()
   
+  assign(".methods", GetMethodNames())
+  assign(".p",
+       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+          distrmaxchar=integer(1),
+          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+          maxdim=integer(1), maxmodels=integer(1),
+          PACKAGE="RandomFields"))
   Storing <- integer(1)
   PrintLevel <- integer(1)
   PracticalRange <- integer(1)
@@ -145,7 +145,7 @@ parampositions <- function(model, param, print=TRUE) {
   CE.tolRe <- double(1)
   CE.tolIm <- double(1)
   CE.trials <- integer(1)
-  CE.mmin <- integer(.maxdim)
+  CE.mmin <- integer(.p$maxdim)
   CE.userfft <- integer(1)
   CE.strategy <- integer(1)
 
@@ -153,7 +153,7 @@ parampositions <- function(model, param, print=TRUE) {
   TBMCE.tolRe <- double(1)
   TBMCE.tolIm <- double(1)
   TBMCE.trials <- integer(1)
-  TBMCE.mmin <- integer(.maxdim)
+  TBMCE.mmin <- integer(.p$maxdim)
   TBMCE.userfft <- integer(1)
   TBMCE.strategy <- integer(1)
   TBM.method <- integer(1)
@@ -267,14 +267,14 @@ parampositions <- function(model, param, print=TRUE) {
                   MPP.radius=MPP.radius,
                   maxstable.maxGauss=maxstable.maxGauss,
                   pch=pch,
-                  covmaxchar=.covmaxchar,
-                  methodmaxchar=.methodmaxchar,
-                  distrmaxchar=.distrmaxchar,
-                  covnr=.covnr,
-                  methodnr=.methodnr,
-                  distrnr=.distrnr,
-                  maxdim=.maxdim,
-                  maxmodels=.maxmodels,
+                  covmaxchar=.p$covmaxchar,
+                  methodmaxchar=.p$methodmaxchar,
+                  distrmaxchar=.p$distrmaxchar,
+                  covnr=.p$covnr,
+                  methodnr=.p$methodnr,
+                  distrnr=.p$distrnr,
+                  maxdim=.p$maxdim,
+                  maxmodels=.p$maxmodels,
                   )
              )
     if (m==0) return(invisible(parameters))

@@ -85,11 +85,11 @@ void mpp_destructX(void **SX) {
 int init_mpp(key_type * key, int m)
 {
   int error, d, i, v, start_param[MAXDIM], index_dim[MAXDIM];
-  bool time_exception[MAXCOV], no_last_comp /* , any_time_exception*/;
+  bool no_last_comp /* , any_time_exception*/;
   Real max[MAXDIM];  
   mpp_storage *s;
   cov_fct *cov;
-  char actcov;
+  unsigned short int actcov;
   int covnr[MAXCOV];
 
   if (key->anisotropy) {
@@ -144,8 +144,8 @@ int init_mpp(key_type * key, int m)
   s->grid = key->grid && !key->anisotropy;
   GetTrueDim(key->anisotropy, key->timespacedim, s->param[0], 
 	     &s->timespacedim, &no_last_comp, start_param, index_dim);
-  if (error=Transform2NoGrid(key, s->param[0], s->timespacedim, 
-			     start_param, &(s->x))) 
+  if ((error=Transform2NoGrid(key, s->param[0], s->timespacedim, 
+			      start_param, &(s->x)))!=NOERROR)
       goto ErrorHandling; 
   
 
@@ -204,7 +204,7 @@ int init_mpp(key_type * key, int m)
 
 void do_addmpp(key_type *key, int m, Real *res )
 { 
-  int i, d, dim, v;
+  int i, d, v;
   Real lambda[MAXDIM], min[MAXDIM], max[MAXDIM], 
     factor, average, poisson;
   long segment[MAXDIM+1];

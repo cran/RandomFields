@@ -201,18 +201,18 @@ ShowModels(x=x, y=x, empirical=ev)
 # third example: two-dimensional anistropic simulations and
 #                link function
 %  library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");RFparameters(Print=5,CE.trials=1);ShowModels(x=x, y=x, link=function(x) x^2,model=list(list(model="exp", var=1,aniso=c(1,0,0,5)))); 
-x <- seq(1,10,0.05)
+x <- seq(1,10,0.1)
 
 ShowModels(x=x, y=x, link=function(x) x^2,
           model=list(list(model="exp", var=1, aniso=c(1,0,0,5))))
 
-x <-  seq(1,10,0.05)
+x <-  seq(1,10,0.1)
 ShowModels(x=x, link=function(x) x^2,
            model=list(list(model="exp",var=1, scale=1)))
 
 
 %  library(RandomFields, lib="~/TMP");  source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");x <-  seq(1,10,0.05);ShowModels(x=x, link="MaxStable", fixed.rs=TRUE,model=list(list(model="gauss",var=1, scale=1)), type="l")
-x <-  seq(1,10,0.05)
+x <-  seq(1,10,0.1)
 RFparameters(CE.force=TRUE, CE.trials=1, CE.mmin=-4, CE.userfft=FALSE)
 ShowModels(x=x, link="MaxStable", fixed.rs=TRUE,
            model=list(list(model="gauss",var=1, scale=1)), type="l")

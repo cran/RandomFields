@@ -137,7 +137,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
 }
 
 int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
-  fastfourier(data, m, dim, first, !first, FFT);
+  return fastfourier(data, m, dim, first, !first, FFT);
 }
 
 
@@ -153,11 +153,10 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 {
   double *c;
   Real hx[MAXDIM], totalm;
-  int H[MAXDIM];
   int  Xerror,trials,index[MAXDIM],dummy;
   long maxm, MAXM=10000000;  /* the maximum grid size: 
 					      MAXM[dim-1]^dim */
-  long mtot=-1,i,j,k,twoi;
+  long mtot=-1,i,k,twoi;
   bool positivedefinite, cur_crit, critical, Critical[MAXDIM];
 
   c=NULL;
@@ -291,6 +290,7 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 	case 1 :  
 	  Real cc, maxcc, hx[MAXDIM];
 	  int maxi;
+	  maxi = -1;
 	  maxcc = RF_NEGINF;
 	  for (i=0; i<dim; i++) hx[i] = 0.0;
 	  for (i=0; i<dim; i++) {
@@ -302,7 +302,8 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 	      maxi = i; 
 	    }
 	    hx[i] = 0.0;
-	  }	
+	  }
+	  assert(maxi>=0);
 	  m[maxi] <<= 1;
 	  for (i=0;i<dim; i++) totalm *= (Real) m[i];
 	  break;
@@ -377,7 +378,7 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 int init_circ_embed(key_type * key, int m)
 {
   param_type param;
-  int Xerror,i,d, start_param[MAXDIM], index_dim[MAXDIM];
+  int Xerror, d, start_param[MAXDIM], index_dim[MAXDIM];
   long twoRealmtot;
   double *c; 
   Real steps[MAXDIM];
@@ -628,12 +629,12 @@ void do_circ_embed(key_type *key, bool add, int m, Real *res ){
 
 int init_circ_embed_local(key_type *key, int m)
 {
-  int Xerror,i,d, start_param[MAXDIM], index_dim[MAXDIM],timespacedim;
-  Real discretediameter,diameter, steps[MAXDIM], factor;
+  int Xerror,d, start_param[MAXDIM], index_dim[MAXDIM],timespacedim;
+  Real diameter, steps[MAXDIM];
   double *c;
   CE_storage *s;
   long twoRealmtot;
-  char actcov;
+  unsigned short int actcov;
   int covnr[MAXCOV];
   int multiply[MAXCOV];
 
@@ -681,10 +682,9 @@ int init_circ_embed_local(key_type *key, int m)
 		     CircEmbedLocal, METHODNAMES[CircEmbedLocal]);
 	    Xerror=ERRORMETHODMIX; goto ErrorHandling;
 	  }
+	  if (key->op[v]) { Xerror=ERRORNOMULTIPLICATION; goto ErrorHandling; }
 	}
   // end FC1
-	if (key->op[v]) { Xerror=ERRORNOMULTIPLICATION; goto ErrorHandling; }
-	else {actcov++; break;} 
   // FC2;
 	actcov++;
       }
@@ -716,8 +716,7 @@ int init_circ_embed_local(key_type *key, int m)
     }
   }
   if (key->anisotropy) {
-    Real sxx[ZWEIHOCHMAXDIM * MAXDIM], dummy, maxeigenvalue, ev;
-    double D[MAXDIM];
+    Real sxx[ZWEIHOCHMAXDIM * MAXDIM], dummy;
     int d;
      GetCornersOfGrid(key, timespacedim, start_param, s->param[0], sxx);
      GetRangeCornerDistances(key, sxx, timespacedim, timespacedim,

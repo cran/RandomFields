@@ -44,9 +44,10 @@ cov_fct *CovList=NULL;
 int currentNrCov=-1;
 
 
-char GENERAL_PCH[2]="#"; 
+char GENERAL_PCH[2]="!"; 
 /*  character printed after each simulation
     just for entertainment of the user
+    except for "!", then the numbers are shown
 */
 int GENERAL_STORING=true; 
 /* true: intermediate results are stored: might be rather memory consuming,
@@ -131,7 +132,11 @@ void ErrorMessage(SimulationType m, int error) {
 	else strcpy(MS,"Message"); 
 	break;
       case MaxMpp: strcpy(MS,"max. MPP (Boolean functions)"); break;
-      case Forbidden: strcpy(MS,"forbidden"); break;
+      case Forbidden: 
+	PRINTF("m=%d (forbidden call)\n",m);
+//	strcpy(MS,"forbidden function call"); 
+	assert(false);
+	break;
       default : PRINTF("m=%d \n",m); assert(false);
   }
   switch (error) {
@@ -336,6 +341,7 @@ void InitModelList()
 		  methodcircular, rangecircular);
   addCov(nr,circular, Scalecircular, NULL, NULL);
   addOther(nr,circular_init, circularMpp, NULL, NULL);
+  addTBM(nr, NULL, NULL, Dcircular, CircEmbed, NULL);
 
   nr=IncludeModel("cone",3,checkcone,FULLISOTROPIC, false,
 		  methodcone, rangecone);
@@ -395,6 +401,7 @@ void InitModelList()
   nr=IncludeModel("lgd1", 2, checklgd1, FULLISOTROPIC, false,
 		 methodlgd1, rangelgd1);
   addCov(nr, lgd1, Scalelgd1, NULL, NULL);
+  addTBM(nr,NULL, NULL, Dlgd1, CircEmbed, NULL);
 
   nr=IncludeModel("nsst", 6, checkspacetime1, SPACEISOTROPIC, false, 
 		  methodspacetime1, rangespacetime1);
@@ -427,6 +434,7 @@ void InitModelList()
   nr=IncludeModel("qexponential",1,checkqexponential,FULLISOTROPIC, false,
 		  methodqexponential, rangeqexponential);
   addCov(nr,qexponential,Scaleqexponential,NULL,NULL);
+  addTBM(nr, NULL, NULL, Dqexponential, CircEmbed,NULL);
 
   nr=IncludeModel("spherical",0, NULL, FULLISOTROPIC, false, 
 		  methodspherical, rangespherical);

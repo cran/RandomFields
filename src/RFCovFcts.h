@@ -18,6 +18,7 @@ void rangeexponential(int spatialdim, int *index, Real* range);
 // TODO: hier laesst sicherlich noch einiges machen!!
 Real qexponential(Real *x,Real *p, int dim);
 Real Scaleqexponential(Real *p,int scaling);
+Real Dqexponential(Real *x,Real *p, int effectivedim);
 int checkqexponential(Real *param, int timespacedim, SimulationType method);
 SimulationType methodqexponential(int spacedim, bool grid);
 void rangeqexponential(int spatialdim, int *index, Real* range);
@@ -32,6 +33,7 @@ void rangedampedcosine(int spatialdim, int *index, Real* range);
 
 Real circular(Real *x, Real *p, int dim);
 Real Scalecircular(Real *p,int scaling);
+Real Dcircular(Real *x, Real *p, int dim);
 SimulationType methodcircular(int spacedim, bool grid);
 void rangecircular(int spatialdim, int *index, Real* range);
 
@@ -191,6 +193,7 @@ void rangefractGauss(int spatialdim, int *index, Real* range);
 
 Real lgd1(Real *x, Real*p, int effectivedim);
 Real Scalelgd1(Real *p,int scaling);
+Real Dlgd1(Real *x, Real *p, int dim);
 SimulationType methodlgd1(int spacedim, bool grid);
 int checklgd1(Real *param, int timespacedim, SimulationType method);
 void rangelgd1(int spatialdim, int *index, Real* range);

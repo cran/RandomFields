@@ -286,12 +286,12 @@ GetModelNames()
 
     \item lgd1 (local-global distinguisher)
     \deqn{C(x)=
-      1-\frac\beta{\alpha+\beta}|x|^\alpha, |x|\le 1 \qquad \hbox{and} \qquad
-    \frac\alpha{\alpha+\beta}|x|^\beta, |x|> 1
+      1-\frac\beta{\alpha+\beta}|x|^{\alpha}, |x|\le 1 \qquad \hbox{and} \qquad
+    \frac\alpha{\alpha+\beta}|x|^{-\beta}, |x|> 1
     }{
       C(x)=
       1- b(a+b)^{-1}|x|^a for |x|\le 1   and  
-    a(a+b)^{-1}|x|^b for |x|> 1
+    a(a+b)^{-1}|x|^-b for |x|> 1
     }
     Here \eqn{\beta>0}{b>0} and \eqn{\alpha}{a} is in
     \eqn{(0, \frac12 (3 - d)]}{(0, 1.5-d/2]} for dimension \eqn{d=1,2}.

@@ -5,6 +5,8 @@
 
 //#include <f2c.h> /* otherwise false/true not define or conflicting... */
 
+EXTERN void getCov(int *n, double *COV);
+
 EXTERN void test();
 
 EXTERN void niceFFTnumber(int *n);

@@ -238,8 +238,9 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
  scale <- 10
  alpha <- 1   ## see help("CovarianceFct") for additional
               ## parameters of the covariance functions
- x <- seq(0, 20, 0.1) 
- y <- seq(0, 20, 0.1)     
+ step <- 1    ## nicer, but also time consuming if step <- 0.1
+ x <- seq(0, 20, step) 
+ y <- seq(0, 20, step)     
  f <- GaussRF(x=x, y=y, model=model, grid=TRUE,
               param=c(mean, variance, nugget, scale, alpha))
  image(x, y, f)
@@ -247,8 +248,9 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
  #############################################################
  ## ... using gridtriple
- x <- c(0, 20, 0.1)  ## note: vectors of three values, not a 
- y <- c(0, 20, 0.1)  ##       sequence
+ step <- 1    ## nicer, but also time consuming if step <- 0.1
+ x <- c(0, 20, step)  ## note: vectors of three values, not a 
+ y <- c(0, 20, step)  ##       sequence
  f <- GaussRF(grid=TRUE, gridtriple=TRUE,
                x=x ,y=y, model=model,  
                param=c(mean, variance, nugget, scale, alpha))
@@ -277,8 +279,9 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
  #############################################################
  ## simulating several random fields at once
- x <- seq(0, 20, 0.1)  # grid
- y <- seq(0, 20, 0.1)
+ step <- 1    ## nicer, but also time consuming if step <- 0.1
+ x <- seq(0, 20, step)  # grid
+ y <- seq(0, 20, step)
  f <- GaussRF(n=3,  # three simulations at once
               x=x, y=y, model=model, grid=TRUE,  
               param=c(mean, variance, nugget, scale, alpha))
@@ -319,9 +322,9 @@ aniso <- diag(c(0.5,8,1))
 k <- c(1,phi=1,1,1,psi=1,dim=2)
 model <- list(list(m="nsst", v=1, k=k, a=aniso))
 z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model)
-for (i in 1:dim(z)[3]) { image(z[,,i]); readline();}
-for (i in 1:dim(z)[2]) { image(z[,i,]); readline();}
-for (i in 1:dim(z)[1]) { image(z[i,,]); readline();}
+for (i in 1:dim(z)[3]) { image(z[,,i]); readline("Press return");}
+for (i in 1:dim(z)[2]) { image(z[,i,]); readline("Press return");}
+for (i in 1:dim(z)[1]) { image(z[i,,]); readline("Press return");}
 
 
  #############################################################
@@ -331,17 +334,18 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); readline();}
  ##                                                         ##  
  #############################################################
  # 2d
- x <- (0:100)/10
+ step <- 0.3  ## nicer, but also time consuming if step <- 0.1
+ x <- seq(0, 10, step)
  kappa <- 1   # in [0,2)
  z <- GaussRF(x=x, y=x, grid=TRUE, model="2d", param=c(0,1,0,1,kappa))
  image(z,zlim=c(-3,3))
 
  # 3d
- x <- (0:30)/10
+ x <- seq(0, 3, step)
  kappa <- 1   # in [0,2)
  z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="3d",
               param=c(0,1,0,1,kappa))
- for (i in 1:dim(z)[1]) { image(z[i,,]); readline();}
+ for (i in 1:dim(z)[1]) { image(z[i,,]); readline("Press return");}
 
 
 

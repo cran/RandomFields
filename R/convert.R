@@ -267,6 +267,8 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   ## the inverse function for PrepareModel
   ## i.e. transform the coded covariance model into a user readable format
   ## takes always the simplest model out of the 'allowed' list
+
+  assign(".methods", GetMethodNames())
   if (is.null(l$mean)) str(l)
   stopifnot(is.list(l),
             !is.null(l$covnr),
@@ -288,7 +290,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   names(method) <- names(l$param) <-  names(l$mean) <- names(l$trend) <- NULL
   if (method[1]==-1) method <- NULL
   stopifnot(all(method != -1))
-  if (!is.null(method)) method <- GetMethodNames()[1 + method]
+  if (!is.null(method)) method <- .methods[1 + method]
   lc <- length(l$covnr)
   if (!is.null(l$trend)) {
     stopifnot(l$mean==0)

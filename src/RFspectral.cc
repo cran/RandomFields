@@ -74,9 +74,8 @@ void spectral_destruct(void **S)
 int init_simulatespectral(key_type *key, int m)
 {
   spectral_storage *s;
-  int Xerror,  v, start_param[MAXDIM], index_dim[MAXDIM],
-    spectral_dim = 2;
-  bool time_exception[MAXCOV], no_last_comp;
+  int Xerror,  v, start_param[MAXDIM], index_dim[MAXDIM];
+  bool no_last_comp;
   cov_fct *cov;
   
   SET_DESTRUCT(spectral_destruct);
@@ -88,7 +87,7 @@ int init_simulatespectral(key_type *key, int m)
 
   if (key->Time) {Xerror=ERRORTIMENOTALLOWED; goto ErrorHandling;}
 
-  char actcov;
+  unsigned short int actcov;
   int covnr[MAXCOV];
   int multiply[MAXCOV];
   Real store_param[TOTAL_PARAM];
@@ -164,8 +163,8 @@ int init_simulatespectral(key_type *key, int m)
   for (v=0; v<actcov; v++) s->randomAmplitude[v] = CovList[covnr[v]].spectral;
   GetTrueDim(key->anisotropy, key->timespacedim, s->param[0],
 	     &(s->TrueDim), &no_last_comp, start_param, index_dim); 
-  if (Xerror=Transform2NoGrid(key, s->param[0], s->TrueDim, 
-			     start_param, &(s->x))) 
+  if ((Xerror=Transform2NoGrid(key, s->param[0], s->TrueDim, 
+			       start_param, &(s->x))) != NOERROR)
     goto ErrorHandling; 
   if (s->TrueDim > 2) {Xerror=ERRORWRONGDIM; goto ErrorHandling;}
   if (s->TrueDim == 0) {Xerror=ERRORTRIVIAL; goto ErrorHandling;}

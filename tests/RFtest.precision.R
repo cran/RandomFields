@@ -1,5 +1,37 @@
 q()
 # source("RFtest.precision.R")
+
+## file.remove("xx.dat")
+
+if (FALSE) {
+  n <- .C("getCov", integer(1), double(0))[[1]]
+  C <- matrix(.C("getCov", as.integer(n), double(n*n))[[2]], ncol=n) 
+}
+
+
+if (FALSE) {
+  z <- NULL
+  a <- 1.1
+  repeat {
+   z <- c(z, (1-runif(100000))^{-1/a} - a/(a-1))
+   print(c(length(z),mean(z)))
+  }
+}
+
+
+
+if (FALSE) {
+  library(RandomFields, lib="~/TMP")
+  model <- "exp"
+  param <- c(0,1,0,10)
+  x <- seq(0,5,0.1) 
+#plot(x, Variogram(x, model=model, param=param))
+  z <-  GaussRF(x,x, model=model, param=param, grid=TRUE, me="TBM2", n=1000)
+  unix.time(e <- EmpiricalVariogram(x,x,data=z, bin=c(0.05,seq(0.1,3,0.1)), 
+					      grid=TRUE))
+  plot (e$c, e$e, pch=16)
+  lines(x, Variogram(x, model=model, param=param))
+}
  
 #runif(1);save(file="randomseed", .Random.seed)
 #load("randomseed")
@@ -22,24 +54,29 @@ models <- NULL ## if NULL then all models are considered
 #models <- c("exp", "sp")
 #models <- "nnst"
 #models <- "exp"
-jump.models <- c("cone", "bessel", "cauchy", "cauchytbm", "circular", #nochmal!
+jump.models <- c("cone", "bessel", "cauchy",
+                 "cauchytbm", "circular", #nochmal!
                  "cubic", "dampedcosine",
-                 "exponential", #: method=TBM2 T=TRUE; funktioniert nicht !!
-                 "nsst", "nsst2" ## beide nicht ueberprueft!!
+                 # "exponential", #: method=TBM2 T=TRUE; funktioniert nicht !!
+                 "nsst", "nsst2", ## beide nicht ueberprueft!!
 
                  #"cauchy" ## ci-emb funktioniert nicht (gut);
                  ##           run again with grids <- TRUE
+
+                 "2d", "3d"
                  )
 
+models <- "spherical"
 
+jump.models <- c("cone", "bessel", "cauchy", "cauchytbm")
+
+#jump.models <- c("cone")
+                     
 jump.methods <- c("none", "circ", "local", "TBM2", "TBM3", "spectral", "direct",
                   "nugget", "add.MPP", "hyper", "other")
 jump.methods <- "none"
-
-
-jump.methods <- c("none", "circ", "local",  "spectral", "direct","TBM3",
+jump.methods <- c("none", "circ", "local", "TBM3", "spectral", "direct",
                   "nugget", "add.MPP", "hyper", "other")
-
 
 
 if (exists("time.list")) rm("time.list")
@@ -47,24 +84,8 @@ if (exists("time.list")) rm("time.list")
 ##                          components are considered
 #
 #
-T <- runif(1,1,5);T <- c(T/2, 3*T/2, T); time.list <- list(T)
-
-
-
-setparameters <- function(n.sf) {
-  sf <- c(5,20) # linesimufactor
-  prnt <- c(1, 6) # >6 gives too much output
-  trials <- c(3, 6)
-  RFparameters(TBM2.linesimufactor=sf[n.sf],
-               TBM3D2.linesimufactor=sf[n.sf],
-               TBMCE.force=TRUE,
-               TBMCE.trials=trials[n.sf],
-               TBM2.lines=120,
-               CE.trials=trials[n.sf],
-               TBM3D3.linesimufactor=sf[n.sf], pch="", 
-               Print=prnt[n.sf], Storing=TRUE,TBM.method="di",
-               direct.method=0)
-}
+T <- runif(1,1,5); T <- c(T/2, 3*T/2, T); time.list <- list(T)
+#time.list <- list(NULL)
 
 
 p <- 0 # percent of randomly skipped tests
@@ -86,24 +107,47 @@ tol = 0.05 ## tolerate deviation (in %)
 
 #repetitions <- 15; tol <- 100
 
+
+
+setparameters <- function(n.sf, pch="!") {
+  sf <- c(5, 20) # linesimufactor
+  prnt <- c(1, 6) # >6 gives too much output
+  trials <- c(3, 6)
+  RFparameters(TBM2.linesimufactor=sf[n.sf],
+               TBM3D2.linesimufactor=sf[n.sf],
+               TBMCE.force=TRUE,
+               TBMCE.trials=trials[n.sf],
+               TBM2.lines=120,#120,
+               CE.trials=4, #trials[n.sf],
+               CE.force=FALSE,
+               TBM3D3.linesimufactor=sf[n.sf], pch=pch, 
+               Print=prnt[n.sf], Storing=TRUE, #TBM.method="di",
+               direct.method=0)
+}
+
 ENVIR = environment()
 refined.simulation <- function(tol, xx, tt, grid, model, repetitions, method,
-                               v, rep.factor) {              
+                               v, rep.factor, pch="!") {              
   DeleteAllRegisters()
   assign("z", NULL, envir=ENVIR)
   zaehler <- 0
   dev <- Inf
-  setparameters(2)  
+  setparameters(2, pch)  
   while (abs(dev) > tol) {
     zaehler <- zaehler + 1
-    cat(" large deviance ")
+    cat("\nlarge deviance ")
     assign("z", cbind(matrix(GaussRF(xx, T=tt, grid=grid, gridtriple=TRUE,
                               model=model, n=repetitions, method=method)
                       , ncol=repetitions), z), envir=ENVIR)
     RFparameters(Print=1)
     e <- 0.5 * mean((z[1,] - z[nrow(z), ])^2)
     dev <- if (abs(v)>1e-10) (e-v)/v else e * 100000
-    cat("; simu=", e, " (", formatC(dev * 100, dig=2), "%)", sep="")
+    cat("; simu=", e, " (", formatC(dev * 100, dig=2),
+        "%)",
+        #formatC((0.5*(diff(z[c(1,4), 1]))^2-v)/v * 100, dig=2),
+        #"; ", ncol(z),
+        #paste(formatC(z[c(1,4), 1], dig=3), collapse=", "),
+        sep="")
     if (zaehler > rep.factor && abs(dev) > tol) {
       str(model)
       cat("too large deviance:", abs(e-v), ">", tol * v,"\n")
@@ -131,6 +175,9 @@ if (!exists("time.list")) time.list <- list(NULL, T)
 if (file.exists("xx.dat")) {
   e <- NULL
   load("xx.dat") 
+#repetitions <- 1 ## number of simulation the estimation is based on
+#rep.factor <- 100000   ## if deviation then simulation is redone with increased
+#tol <- 0
   vv <- v
   ee <- e
   v <- Variogram(cbind(xx[2,,drop=FALSE]- xx[1,,drop=FALSE], tt[3]),
@@ -140,28 +187,35 @@ if (file.exists("xx.dat")) {
       "; ani=", anisotropy, "; k=", paste(nk, collapse=","),
       "; vario=", v, " ", method, sep="")
   str(model); str(xx); str(tt)
-  print(as.matrix(if (grid)
-                  switch(ncol(xx),
-                         expand.grid(xx[1:2], tt[1:2]),
-                         expand.grid(xx[1:2,1], xx[1:2,2], tt[1:2]),
-                         expand.grid(xx[1:2,1], xx[1:2,2], xx[1:2,3], tt[1:2]),
-                         )
-                  else
-                  switch(ncol(x),
-                         expand.grid(xx, tt[1:2]),
-                         expand.grid(xx[,1], xx[,2], tt[1:2]),
-                         expand.grid(xx[,1], xx[,2], xx[,3], tt[1:2]),
-                         ) %*% model[[1]]$aniso))
-
+  print(ncol(xx))
+  if (FALSE) {
+    print(as.matrix(if (grid) {
+      switch(ncol(xx),
+             expand.grid(xx[1:2], tt[1:2]),
+             expand.grid(xx[1:2,1], xx[1:2,2], tt[1:2]),
+             expand.grid(xx[1:2,1], xx[1:2,2], xx[1:2,3], tt[1:2]),
+             )
+    } else {
+      switch(ncol(xx),
+             expand.grid(xx, tt[1:2]),
+             expand.grid(xx[,1], xx[,2], tt[1:2]),
+             expand.grid(xx[,1], xx[,2], xx[,3], tt[1:2]),
+             )
+    }) %*% model[[1]]$aniso)
+  }
   v <- Variogram(cbind(xx[2,,drop=FALSE]- xx[1,,drop=FALSE], tt[3]),
                  model=model)
    
   if (refined.simulation(tol, xx, tt, grid, model, repetitions, method,
-                         v, rep.factor)) {
-   ## file.remove("xx.dat")
+                         v, rep.factor, pch="!")) {
+   file.remove("xx.dat")
     stop("OK")
   }
-  else stop("recheck failed")
+  else {
+    n <- .C("getCov", integer(1), double(0))[[1]]
+    C <- .C("getCov", integer(n), double(n*n))[[2]]
+    stop("recheck failed")
+  }
 }
 
 for (mi in 1:length(models)) {
@@ -233,6 +287,7 @@ for (mi in 1:length(models)) {
                 save(file="xx.dat", v, xx, tt, model, grid, repetitions,
                        method, d, anisotropy, nk)
                 
+#            RFparameters(Print=5)    
                 ut <- unix.time(z <- GaussRF(xx, T=tt, grid=grid,gridtriple=TRUE,
                                              model=model, n=10,method=method))[1]
                 if (last.failed <- is.null(z)) {

@@ -42,13 +42,19 @@ This data frame contains the following columns:
 % library(RandomFields);
 % source("~/article/R/NEW.RF/RandomFields/R/rf.R")
 % source("~/article/R/NEW.RF/RandomFields/R/modelling.R")
-%if (FALSE) {
+
 ################################################################
 ##                                                            ##
 ##         a geostatistical analysis that demonstrates        ##
 ##         features of the package `RandomFields'             ##
 ##                                                            ##
+##        *** THIS EXAMPLE IS NOT RUN AUTOMATICALLY ***       ##
+##        ***      SINCE IT IS TIME CONSUMING       ***       ##
+##                                                            ##
 ################################################################
+
+\dontrun{
+
 data(soil)
 names(soil)
 pts <- soil[,c(1,2)]
@@ -133,9 +139,16 @@ my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.4)
 %dev.copy2eps(file="condsimu.eps", width=5, height=5)
 mean(apply(cs<=24, 3, all)) ## about 40 percent ...
 
-%}%% FALSE
+}% dontrun
 
-}
+} 
+
+################################################################
+##                                                            ##
+##        *** THIS EXAMPLE IS NOT RUN AUTOMATICALLY ***       ##
+##        ***      SINCE IT IS TIME CONSUMING       ***       ##
+##                                                            ##
+################################################################
 \keyword{datasets}
 
 
