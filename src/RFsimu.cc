@@ -1104,6 +1104,7 @@ void InitSimulateRF(Real *x, Real *T,
 	key->method[0]=preference_list[act_number];
 	// end of the list?
 	finished=finished || (preference_list[act_number]==Nothing);
+	//*error = ERRORFAILED;
       } else { // not traditional
 	assert(key->S[M]==NULL);
 	act_number++;
@@ -1118,7 +1119,8 @@ void InitSimulateRF(Real *x, Real *T,
   key->active = !*error;
   if ((*error && (GENERAL_PRINTLEVEL>0)) ||
       (!user_defined && GENERAL_PRINTLEVEL>1)) { 
-    if (!user_defined && !key->traditional && *error)
+    if (!user_defined // && !key->traditional
+	&& *error)
       PRINTF("algorithm failed. Last error has been: ");
     if (*error && GENERAL_PRINTLEVEL>0) {
       ErrorMessage(Merr, *error);

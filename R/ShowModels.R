@@ -37,7 +37,7 @@ ShowModels <- function(x, y=NULL,
                        ...){
 
   stopifnot(!missing(x))
-  
+  parent.screen <- screen()
   ENVIR <- environment()
   linkfctlist <- c("MaxStable")
   warn.orig <- options()$warn
@@ -169,7 +169,7 @@ ShowModels <- function(x, y=NULL,
   cur.par[[n + 1]] <- NA
   if (unknown.par <- is.null(all.param)) {
     if (is.null(empirical)) all.param <- c(1, 0, diff(range(x))/5)
-    else all.param <- c(Mean, m.vario, m.lag/5)
+    else all.param <- c(Mean, 0.75 * m.vario, m.lag/5)
   } else stopifnot(length(all.param)==3) ## var, nugg, scale
 
   npar <- as.list(.C("GetNrParameters", as.integer(0:(n-1)), as.integer(n),
@@ -219,8 +219,10 @@ ShowModels <- function(x, y=NULL,
   col.choose <- rep(Col.txt, n)  
   choose.model <- function(nr=NA) {
     screen(name.dev)
+    par(mar=name.mar)
     col.choose[nr] <- Col.flash
-    plot(-1, -1, xlim=c(0,ncol), ylim=c(1,top+1), axes=FALSE)
+    plot(-Inf, -Inf, xlim=c(0,ncol), ylim=c(1,top+1), axes=FALSE,
+         xlab="", ylab="")
     title(main=maintitle, col.main="black")
     text(as.integer(((1:n)-1) / maxrow), top - ((1:n)-1) %% maxrow,
          labels=paste(namen), adj=c(0,0), cex=cex.names,
@@ -263,7 +265,7 @@ ShowModels <- function(x, y=NULL,
     
     if (any(param %in% c("field", "simu"))) {
       screen(simu.dev)
-      par(new=screen.new)
+      par(new=screen.new, mar=simu.mar)
       if (!is.null(y)) {
         plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
         text(0.5, 0.5, lab="calculating...", adj=c(0.5, 0.5))
@@ -272,6 +274,7 @@ ShowModels <- function(x, y=NULL,
 
     if (any("vario" == param) || !is.null(link.fct)) { 
       screen(model.dev)
+      par(mar=model.mar)
       if (anisotropy) {
         f <- pi / 180 * cp$angle
         u <- matrix(c(cos(f), sin(f), -sin(f), cos(f)), ncol=2)
@@ -401,6 +404,7 @@ ShowModels <- function(x, y=NULL,
         } else z <- ztrafo
       }
       screen(simu.dev)
+      par(mar=simu.mar)
       if (is.null(z) || all(is.na(z))) {
         plot(0, 0, col=0, axes=FALSE, xlab="", ylab="")
         text(0, 0, label="image not available", adj=c(0.5, 0.5))
@@ -433,29 +437,8 @@ ShowModels <- function(x, y=NULL,
     return(cp) ## return required by function eval.param
   }
 
-  ## modifed close.screen
-  closeScreen <- function (n, all.screens = FALSE) {
-    if (!exists(".split.screens", envir = .GlobalEnv)) return(FALSE)
-    if (missing(n) && missing(all.screens)) return(.split.valid.screens)
-    if (all.screens || all(.split.valid.screens %in% n)) {
-      par(.split.saved.pars)
-      par(mfrow = c(1, 1), new = FALSE)
-      remove(".split.screens", ".split.cur.screen", ".split.saved.pars", 
-             ".split.valid.screens", ".split.par.list", envir = .GlobalEnv)
-      invisible()
-    } else {
-      assign(".split.valid.screens",
-             .split.valid.screens[-sort(match(n, .split.valid.screens))],
-             envir = .GlobalEnv)
-      temp <- .split.cur.screen
-      if (temp > max(.split.valid.screens)) temp <- min(.split.valid.screens)
-      else if (temp %in% n) 
-        temp <- min(.split.valid.screens[.split.valid.screens > temp])
-      screen(temp, new = FALSE)
-      return(.split.valid.screens)
-    }
-  }
 
+ 
   #######################################################################
   ## recognized formulae for covariance functions
   #######################################################################
@@ -570,7 +553,8 @@ ShowModels <- function(x, y=NULL,
 
 
   ## preparation of screens
-  open.screen <- function(){
+  open.screen <- function() {
+    if (is.numeric(parent.screen)) screen(parent.screen)
     assign("scr", split.screen(figs=rbind(
                                  c(0.01,x.fraction,0.01,0.49),
                                  c(x.fraction+0.02,0.99,0.01,1),
@@ -581,21 +565,21 @@ ShowModels <- function(x, y=NULL,
     assign("simu.dev", scr[1], envir=ENVIR)
     assign("model.dev", scr[3], envir=ENVIR)
     assign("par.dev", scr[2], envir=ENVIR)
-    screen(model.dev)
-    par(mar=c(2,2,0,0))
-    screen(name.dev)
-    par(mar=c(0,0,2,0))
-    screen(simu.dev)
-    par(mar=c(2,2,0,0))
+    assign("model.mar", c(2,2,0,0), envir=ENVIR)
+    assign("name.mar", c(0,0,2,0), envir=ENVIR)
+    assign("simu.mar", c(2,2,0,0), envir=ENVIR)
   }
 
   open.screen()
-  on.exit({closeScreen(scr); options(warn=warn.orig);
-           RFparameters(oldRFparameters); par(bg=bg.save)
-         })
+  on.exit({
+    close.screen(scr);
+    options(warn=warn.orig);
+    RFparameters(oldRFparameters); par(bg=bg.save)
+  })
   
 
   screen(name.dev)
+  par(mar=name.mar)
   maxrow <- 20
   ncol <- 1 + as.integer( (n-1) / maxrow)
   top <- min(maxrow+1,n,na.rm=TRUE)
@@ -605,13 +589,14 @@ ShowModels <- function(x, y=NULL,
   if (is.null(model$model[[1]])) {
     if (!is.null(empirical)) {
       screen(model.dev)
+      par(mar=model.mar)
       Ylim <- range(empirical$e, na.rm=TRUE)
       matplot(empirical$c, empirical$e,xlim=range(covx, na.rm=TRUE),
            col=Col.vario, pch=c(16,1))       
     }
     if (is.na(covnr <- choose.model())) return(NULL)
     cur.par[[covnr]] <-
-      list(model=list(model=list(model=namen[covnr], var=all.param[1],
+      list(model=list(model=list(model=namen[covnr], var=all.param[2],
                         kappas=npar[[covnr]]),
              "+",
              model=list(model="nugget", var=all.param[2])))  
@@ -753,6 +738,7 @@ ShowModels <- function(x, y=NULL,
     entry <- entry[!sapply(entry, is.null)]
     
     screen(simu.dev)
+    par(mar=simu.mar)
     simulate(cp=cur.par[[covnr]])
 
     options(warn=-1)
@@ -769,7 +755,6 @@ ShowModels <- function(x, y=NULL,
     if (is.na(covnr <- choose.model(oldnr))) break
     close.screen(scr)
     open.screen()
-
   }
   if (anisotropy && !update) {
     f <- cur.par[[oldnr]]$angle * pi / 180

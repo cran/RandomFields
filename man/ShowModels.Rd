@@ -196,7 +196,7 @@ dz <- GaussRF(x=dx, y=dy, grid=FALSE, model="gaus",
 ev <- EmpiricalVariogram(x=dx, y=dy, data=dz, grid=FALSE,
       bin=(-1:20)/4)
 x <-  seq(1,5,0.1);
-ShowModels(x=x,y=x,empirical=ev)
+ShowModels(x=x, y=x, empirical=ev)
 
 # third example: two-dimensional anistropic simulations and
 #                link function

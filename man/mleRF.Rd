@@ -476,7 +476,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \code{\link{GetPracticalRange}},
   \command{\link{parampositions}}
   \code{\link{RandomFields}},
-  \code{\link{winddata}}.
+ % \code{\link{winddata}}.
 }
 \examples{
  % library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/MLE.R");

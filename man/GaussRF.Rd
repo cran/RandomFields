@@ -220,7 +220,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \code{\link{RandomFields}},
   \code{\link{RFparameters}},
   \code{\link{ShowModels}},
-  \code{\link{winddata}}.
+%  \code{\link{winddata}}.
 }
 
 \examples{

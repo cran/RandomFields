@@ -1,9 +1,9 @@
 Package: RandomFields
-Version: 1.1.8
+Version: 1.1.9
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather <martin.schlather@cu.lu>
 Maintainer: Martin Schlather <martin.schlather@cu.lu>
-Depends: R (>= 1.8.0)
+Depends: R (>= 1.8.1)
 Description:  Simulation of Gaussian and extreme value random fields;
 	      conditional simulation; kriging 
 License: GPL Version 2 or later.
