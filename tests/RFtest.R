@@ -8,7 +8,8 @@ library(RandomFields)
 MAXMETHODNUMBER<-.C("GetMethodNr",as.character("nothing"),
                    method=as.integer(1))$method-1;
 
-zaehler <<- 0;
+ENVIR <- environment()
+zaehler <- 0;
 
 getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
   locations <- list()
@@ -204,7 +205,7 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
         truevariogram  <- Variogram(midbinP0,model,param,dim)
         delta <- apply(abs(v-truevariogram[-1]),2,sum,na.rm=TRUE)
         delta[apply(is.na(v),2,all)]<-NA;
-        zaehler <<- zaehler + 1
+        assign("zaehler", zaehler + 1, envir=ENVIR)
         filename <- paste(ps,".",zaehler,".ps",sep="")
         print(filename)
         print(modeletc)

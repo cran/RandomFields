@@ -21,6 +21,7 @@ histo <- FALSE;
 save <- FALSE;
 RFparameters(PrintLevel=3)
 
+ENVIR <- environment()
 
 getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
   locations <- list()
@@ -68,16 +69,21 @@ getxyz <- function(grid,dim,pointnumber,fieldsize,quadraticgrid) {
 }
 
 randomize <- function(){
-  quadraticgrid <<-  runif(1)<0.5; ##quadraticgrid <- FALSE
-  mean <<- runif(1,-10,10)
-  if (runif(1)<0.5)  scaling <<- runif(1,1,10) else  scaling <<- runif(1,-1,1)
-  if (runif(1)<0.5) variance <<-  runif(1,1,10) else  variance <<-  runif(1,-1,1)
-  if (runif(1)<0.5) nugget <<- runif(1,1,10) else  nugget <<- runif(1,-1,1)
-  if (runif(1)<0.5) fieldsize <<- runif(1,1,10) else fieldsize <<- runif(1,-1,1)
-  if (runif(1)<0.5) endofbins <<- runif(1,1,10) else  endofbins <<- runif(1,-1,1)
-  numberbins <<-  as.integer(runif(1,0,5))
+  assign("quadraticgrid", runif(1)<0.5, envir=ENVIR) ##quadraticgrid <- FALSE
+  assign("Mean", runif(1,-10,10), envir=ENVIR)
+  assign("scaling", if (runif(1)<0.5) runif(1,1,10) else runif(1,-1,1),
+         envir=ENVIR)
+  assign("variance", if (runif(1)<0.5) runif(1,1,10) else runif(1,-1,1),
+         envir=ENVIR)
+  assign("nugget", if (runif(1)<0.5) runif(1,1,10) else runif(1,-1,1),
+         envir=ENVIR)
+  assign("fieldsize", if (runif(1)<0.5) runif(1,1,10) else runif(1,-1,1),
+         envir=ENVIR)
+  assign("endofbins", if (runif(1)<0.5) runif(1,1,10) else runif(1,-1,1),
+         envir=ENVIR)
+  assign("numberbins", as.integer(runif(1,0,5)), envir=ENVIR)
   print(paste("qg=",format(quadraticgrid,dig=3),
-              " m=",format(mean,dig=3),
+              " m=",format(Mean,dig=3),
               " s=",format(scaling,dig=3),
               " v=",format(variance,dig=3),
               " n=",format(nugget,dig=3),
@@ -110,7 +116,7 @@ for (i in 1:repeatscript) {
       randomize()
       x <- try(RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
-                scaling=scaling,var=variance,nug=nugget,mean=mean,
+                scaling=scaling,var=variance,nug=nugget,mean=Mean,
                 field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
           )
@@ -121,7 +127,7 @@ for (i in 1:repeatscript) {
       randomize()
       x <- try(RFcontrol(model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,scaling=scaling,var=variance,nug=nugget,
-                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
+                mean=Mean,field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
           )
       if (!is.null(x)) { readline();}
@@ -132,7 +138,7 @@ for (i in 1:repeatscript) {
       x<-try(RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
                 kappa3=model$kappa3,scaling=scaling,var=variance,nug=nugget,
-                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
+                mean=Mean,field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
           )
         if (!is.null(x)) { readline();}

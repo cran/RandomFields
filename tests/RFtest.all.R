@@ -89,12 +89,17 @@ RFparameters(Storing=TRUE,PrintLevel=PrintLevel,
   TBM3D3.lines=lines,TBM3D3.linesimufactor=0,TBM3D3.linesimustep=0.01,
   spectral.lines=lines)
 
+ENVIR <- environment()
 randomize <- function(){
+  assign("quadraticgrid", runif(1)<0.5, envir=ENVIR) ##quadraticgrid <- FALSE
+  assign("Mean", runif(1,0,10), envir=ENVIR)
+  assign("scaling", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+         envir=ENVIR)
+  assign("variance", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+         envir=ENVIR)
+  assign("nugget", if (runif(1)<0.5) runif(1,1,10) else runif(1,0,1),
+         envir=ENVIR)
   quadraticgrid <<-  runif(1)<0.5; ##quadraticgrid <- FALSE
-  mean <<- runif(1,0,10)
-  if (runif(1)<0.5) scaling <<- runif(1,1,10)  else  scaling <<- runif(1,0,1)
-  if (runif(1)<0.5) variance <<- runif(1,1,10) else  variance <<- runif(1,0,1)
-  if (runif(1)<0.5) nugget <<- runif(1,1,10)   else  nugget <<- runif(1,0,1)
 }
 
 simplemodels <- c("circular","cubic",
@@ -155,7 +160,7 @@ for (i in 1:repeatscript) {
   randomize()
   print("nugget only simulates the nugget effect. Therefore the value of variance is not taken into account");
   RFcontrol("nugget",pointnumber=pointnumber,valuerepet=valuerepet,
-            pointrepet=pointrepet,scal=1,var=0,nug=nugget,mean=mean,
+            pointrepet=pointrepet,scal=1,var=0,nug=nugget,mean=Mean,
             field=fieldsize,endof=endofbins,numberb=numberbins,histo=histo,
             ps=ps,quadraticgrid=quadraticgrid,save=save)
     
@@ -166,7 +171,7 @@ for (i in 1:repeatscript) {
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
-                scaling=scaling,var=variance,nug=nugget,mean=mean,
+                scaling=scaling,var=variance,nug=nugget,mean=Mean,
                 field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
@@ -176,7 +181,7 @@ for (i in 1:repeatscript) {
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
                 kappa3=model$kappa3,scaling=scaling,var=variance,nug=nugget,
-                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
+                mean=Mean,field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
 
@@ -185,7 +190,7 @@ for (i in 1:repeatscript) {
       randomize()
       RFcontrol(model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,scaling=scaling,var=variance,nug=nugget,
-                mean=mean,field=fieldsize,endof=endofbins,numberb=numberbins,
+                mean=Mean,field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
         
