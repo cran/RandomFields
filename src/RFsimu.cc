@@ -800,7 +800,7 @@ void InitSimulateRF(Real *x, Real *T,
       (key->mean==*mean) &&
       ( (*Time == key->Time) &&
 	(!(*Time) || ! memcmp(key->T, T, sizeof(Real) * 3))) &&
-      (!memcmp(key->op, op, (*ncov>0) ? *ncov-1 : 0)) &&
+      (!memcmp(key->op, op, sizeof(int) * (*ncov>0) ? *ncov-1 : 0)) &&
       (!memcmp(key->x[0], x, totalBytes)) 
       ;       
   }
@@ -818,7 +818,7 @@ void InitSimulateRF(Real *x, Real *T,
     key->anisotropy = (bool) *anisotropy;    
     key->mean = *mean;
     // operators +, *
-    memcpy(key->op, op, (*ncov>0) ? *ncov-1 : 0);
+    for (i=*ncov-2; i>=0; i--) key->op[i] = op[i];
     // coordinates
 
     if (key->x[0]!=NULL) free(key->x[0]);
@@ -1107,7 +1107,12 @@ void InitSimulateRF(Real *x, Real *T,
 	assert(key->S[M]==NULL);
 	act_number++;
 	for (v=0; v<key->ncov; v++) {
-	  if (key->left[v]) key->method[v] = preference_list[act_number];
+	  if (key->left[v]) {
+	    if (v>0 && key->op[v-1]) {
+	      finished=true;  *error = ERRORFAILED;
+	    }
+	    key->method[v] = preference_list[act_number];
+	  }
 	}
 	finished=finished || (preference_list[act_number]==Nothing);
       }

@@ -1,5 +1,3 @@
-
-
 # options(warn=0);library(RandomFields);source("~/article/R/NEW.RF/RandomFields/R/getNset.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("RandomFields/R/ShowModels.R"); ShowModels(x=1:100, y=1:100, model=list(list(model="exp", var=1, aniso=c(1,0,0,1))), method="ci");
 
 
@@ -444,7 +442,7 @@ ShowModels <- function(x, y=NULL,
   #######################################################################
   covlist <- c("bessel","cauchy","cauchytbm","circular",
                "cone","cubic","dampedcosine","exponential",
-               "FD", "fractGauss", "gauss",
+               "FD", "fractgauss", "gauss",
                "gencauchy","gengneiting","gneiting",      
                "hyperbolic", "lgd1", "nsst", "nsst2", "nugget",
                "penta","power",
@@ -494,7 +492,9 @@ ShowModels <- function(x, y=NULL,
                 expression(x^a)
                 ) 
   expr <- rep(expression("C(x) unknown"), n)
-  expr[pmatch(covlist, namen)] <- exprlist
+  idx <- pmatch(covlist, namen)
+  if (any(is.na(idx))) stop("programming error -- inform maintainer")
+  expr[idx] <- exprlist
   DeleteRegister(register)
 
  

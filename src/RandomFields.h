@@ -142,7 +142,6 @@ EXTERN void DoMaxStableRF(int *keyNr, Real *res, int *error);
 EXTERN void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim, 
 		       int *timespacedim, int *grid, int *distr, int *maxdim);
 
-
 /* 
    check with InitSimulateRF in case of any changes !!
    both InitSimulateRF and DoSimulateRF

@@ -143,12 +143,6 @@ mean(apply(cs<=24, 3, all)) ## about 40 percent ...
 
 } 
 
-################################################################
-##                                                            ##
-##        *** THIS EXAMPLE IS NOT RUN AUTOMATICALLY ***       ##
-##        ***      SINCE IT IS TIME CONSUMING       ***       ##
-##                                                            ##
-################################################################
 \keyword{datasets}
 
 

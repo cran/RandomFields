@@ -77,12 +77,12 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                              zz[3,],"))"), collapse=","),
                  ")")))
     ## `x' will be used in apply within kriging
-    if ( (l <- ncol(zz))==1 ) x <- matrix(seq(zz[1],zz[2],zz[3]),ncol=1)
+    if ( (l <- ncol(zz))==1 ) x <- matrix(seq(zz[1], zz[2], zz[3]), ncol=1)
     else {
       text <- paste("x <- expand.grid(",
-                    paste("seq(zz[1,",1:l,
-                          "],zz[2,",1:l,
-                          "],zz[3,",1:l,"])",collapse=","),
+                    paste("seq(zz[1,", 1:l,
+                          "],zz[2,", 1:l,
+                          "],zz[3,", 1:l, "])",collapse=","),
                     ")")
       eval(parse(text=text))
     }
@@ -231,7 +231,7 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   }
   if (na.rm && any(data.idx <- is.na(data))) {
     data <- data[data.idx]
-    given <- given[data.idx, ]
+    given <- given[data.idx, , drop=FALSE]
   }
   
   txt <- "kriging in space time dimensions>3 where not all the point ly on a grid is not possible yet"
@@ -334,7 +334,7 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   } else {
     ## this is a bit more complicated since index is either a vector or
     ## a matrix of dimension dim(z)-1
-    zgiven <- apply(z, length(dim(z)), function(m) m[index])
+    zgiven <- matrix(apply(z, length(dim(z)), function(m) m[index]), ncol=n)
     z <- as.vector(apply(z,length(dim(z)),function(m) m[1:total]))
   }
   
