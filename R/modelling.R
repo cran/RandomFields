@@ -56,15 +56,17 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   covmatrix <- diag(nd) *
     (CovarianceFct(if (pm$anisotropy) t(rep(0, pm$timespacedim)) else 0,
                    model, param) / 2)
-  low.tri <- lower.tri(covmatrix, diag=FALSE)
-  covmatrix[low.tri] <-
-    CovarianceFct(if (pm$anisotropy)
-                  matrix(.C("vectordist", as.double(given),
-                            as.integer(dim(given)),
-                            vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
-                            PACKAGE="RandomFields")$vd, ncol=xdim) else 
-                  as.matrix(dist(given))[low.tri],
-                  model, param)
+  if (nd>1) {  
+    low.tri <- lower.tri(covmatrix, diag=FALSE)
+    covmatrix[low.tri] <-
+      CovarianceFct(if (pm$anisotropy)
+                    matrix(.C("vectordist", as.double(given),
+                              as.integer(dim(given)),
+                              vd=double(xdim * nd * (nd-1)/2), as.integer(FALSE),
+                              PACKAGE="RandomFields")$vd, ncol=xdim) else 
+                    as.matrix(dist(given))[low.tri],
+                    model, param)
+  }
   covmatrix <- covmatrix + t(covmatrix)
   given <- NULL
 
