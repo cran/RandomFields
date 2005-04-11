@@ -67,7 +67,7 @@ GetModelNames()
     dimension of the random field.
 
     \item Brownian motion\cr
-    see \code{2dfractalB} and \code{3dfractalB}
+    see \code{fractalB} 
     
     \item cardinal sine\cr
     see \code{wave}
@@ -139,9 +139,11 @@ GetModelNames()
     (for \eqn{\kappa=\frac12}{a=1/2} there)
     and the \code{stable} class (for \eqn{\kappa=1}{a=1}).
     
-    \item fractal Brownian motion\cr
-    see \code{2dfractalB} and \code{3dfractalB}
-    
+    \item \code{fractalB} (fractal Brownian motion)
+      \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}   
+      The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
+      (Implemented for up to three dimensions)   
+      
     \item \code{FD}
     \deqn{C(k) = \frac{(-1)^k \Gamma(1-\kappa)^2}{\Gamma(1-\kappa+k)
 	\Gamma(1-\kappa-k), 
@@ -159,7 +161,8 @@ GetModelNames()
       |x-1|^{\kappa_1})}{C(x) = 0.5 (|x+1|^a - 2|x|^a + |x-1|^a)}
       This model is the covariance function for the fractional Gaussian noise
       with Hurst parameter \eqn{H=\kappa_1 /2}{H =a/2}, \eqn{\kappa_1 \in
-	(0,2]}{a in (0,2]}
+	(0,2]}{a in (0,2].
+      }
 	
     \item \code{gauss}
     \deqn{C(x)=e^{-x^2}}{C(x)=exp(-x^2)}
@@ -308,10 +311,10 @@ GetModelNames()
       psi(t)^{-f} \phi(x / psi(t))}
     This model is used for space-time modelling where the spatial
     component is isotropic.  Here\cr
-    \eqn{\phi} is the \code{stable} model if \eqn{\kappa_2=1}{b=1}\cr
-    \eqn{\phi} is the \code{whittlematern} model if \eqn{\kappa_2=2}{b=2}\cr
-    \eqn{\phi} is the \code{cauchy} model if \eqn{\kappa_2=3}{b=3}\cr
-    and \eqn{kappa_1}{a} is the respective parameter for the model.
+    \eqn{\phi} is the \code{stable} model if \eqn{\kappa_2=1}{b=1};\cr
+    \eqn{\phi} is the \code{whittlematern} model if \eqn{\kappa_2=2}{b=2};\cr
+    \eqn{\phi} is the \code{cauchy} model if \eqn{\kappa_2=3}{b=3};\cr
+    here, \eqn{kappa_1}{a} is the respective parameter for the model.
     The function \eqn{\psi}{psi} satisfies\cr
     \eqn{\psi^2(t) = (t^{\kappa_3}+1)^{\kappa_4}}{psi^2(t) =
       (t^c+1)^d} if \eqn{\kappa_5=1}{e=1}\cr
@@ -331,7 +334,7 @@ GetModelNames()
       psi(t)^{-g} \phi(x / psi(t))}
     This model is used for space-time modelling where the spatial
     component is isotropic.  Here\cr
-    \eqn{\phi} is the \code{gencauchy} model if \eqn{\kappa_3=1}{c=1}\cr
+    \eqn{\phi} is the \code{gencauchy} model if \eqn{\kappa_3=1}{c=1}.\cr
     The parameters \eqn{kappa_1}{a} and \eqn{kappa_2}{b}
     are the respective parameters for the model.
     The function \eqn{\psi}{psi} satisfies\cr
@@ -415,7 +418,7 @@ GetModelNames()
     This isotropic covariance function is valid only for dimensions less
     than or equal to 3.
     It is a special case of the \code{bessel} model
-    (for \eqn{\kappa=2}{a=3}).
+    (for \eqn{\kappa}{a}\eqn{=0.5}).
     
     \item \code{whittlematern}
     \deqn{C(x)=2^{1-\kappa} \Gamma(\kappa)^{-1} x^\kappa
@@ -424,19 +427,13 @@ GetModelNames()
     The parameter \eqn{\kappa}{a} is positive.
     \cr
     This is the model of choice if the smoothness of a random field is to
-    be parametrised. It is a special case of the
+    be parametrised: if \eqn{\kappa\ge}{a>=}\eqn{(2m+1)/2} then the
+    graph is \eqn{m} times differentiable.
+
+    The model is a special case of the
     \code{hyperbolic} model (for \eqn{\kappa_3=0}{c=0} there).
     
-    \item \code{2dfractalB}
-    \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}
-    The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
-    
-    \item \code{3dfractalB}
-     \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}
-     The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
-     The same as \code{2dfractalB} except that this implementation
-     allows for simulating random fields in 3 dimensions.
-  }
+   }
   
   Let \eqn{\rm cov}{cov} be a model given in standard notation. 
   Then the covariance model
@@ -563,7 +560,7 @@ GetModelNames()
   \itemize{
     \item Gneiting, T. and Schlather, M. (2004)
     Stochastic models which separate fractal dimension and Hurst effect.
-    \emph{SIAM review} To appear.% see also lgd
+    \emph{SIAM review} \bold{46}, 269-282.% see also lgd
   }
  
   Gneiting's models
@@ -614,15 +611,18 @@ GetModelNames()
     functions, \emph{J. Multiv. Analys.} \bold{73}, 55-81.
   }
 
-  2d/3dfractalB
+  fractalB
   \itemize{
     \item  Stein, M.L. (2002)
     Fast and exact simulation of fractional Brownian surfaces.
     {\emph J. Comput. Graph. Statist.} \bold{11}, 587-599.
   }
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html};
+  
+  Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
+  methods \sQuote{cutoff} and \sQuote{intrinsic})}
 \seealso{\code{\link{EmpiricalVariogram}},
   \code{\link{GetPracticalRange}},
   \code{\link{parameter.range}},
@@ -677,7 +677,6 @@ GetModelNames()
  param <- c(NA, runif(5,max=10)) ## as usual, here an example
  CovarianceFct(x,gneitingdiff(param))
  ## instead of formerly CovarianceFct(x,"gneitingdiff",param)
-
 }
 \keyword{spatial}
 

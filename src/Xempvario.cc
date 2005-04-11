@@ -1,5 +1,5 @@
 /*
- Authors  Martin Schlather, martin.schlather@cu.lu 
+ Authors  Martin Schlather, schlath@hsu-hh.de 
 
  Simulation of a random field by circular embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )
@@ -36,17 +36,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TOOLS_BIN_ERROR 3
 
 
-void empvarioXT(Real *X, Real *T, 
+void empvarioXT(double *X, double *T, 
 		int *lx, 
-		Real *values, int *repet, int *grid,
-		Real *bin, int *nbin, 
-		Real *phi,    // vector of a real and an integer
-		Real *theta,  // vector of a real and an integer
+		double *values, int *repet, int *grid,
+		double *bin, int *nbin, 
+		double *phi,    // vector of a real and an integer
+		double *theta,  // vector of a real and an integer
 		int *dT,   // in grid units, smallest positive value, for  
 		//            the temporal lag of the emp. variogram
 	        //            stepT * nstepT is the greatest time span
-		Real *sum,   // \sum (a-b)^2 / 2
-		Real *sq,   // \sum (a-b)^4 / 4
+		double *sum,   // \sum (a-b)^2 / 2
+		double *sq,   // \sum (a-b)^4 / 4
 		int *n)
 /*    X      : matrix of coordinates, ### rows define points
  *    lx     : length of x,y, and z
@@ -63,13 +63,13 @@ void empvarioXT(Real *X, Real *T,
 { 
   // int,ii,j,d,;   
   // long segment, factor, ; 
-  //Real *xx[4],maxdist[4],; 
+  //double *xx[4],maxdist[4],; 
   long rep;
   int i, halfnbin,gridpoints[4], error, totalbins, totalspatialbins,
     twoNphi, twoNphiNbin, Ntheta, nbinNphiNtheta, maxi[4], mini[4],
     ix, iy, iz, it, endX, startX, endY, startY, endZ, startZ, endT, low, cur,
     ktheta, kphi, nstepTstepT, vec[4], deltaT, x, y, z, t,  j, stepT, nstepT;
-  Real *xx[4], *BinSq, maxbinsquare, step[4], delta[4], psq[4], dx[4],
+  double *xx[4], *BinSq, maxbinsquare, step[4], delta[4], psq[4], dx[4],
     startphi, invsegphi, starttheta, invsegtheta, thetadata, phidata,
     zylinderradius;
 
@@ -96,7 +96,7 @@ void empvarioXT(Real *X, Real *T,
 
   halfnbin = *nbin / 2;
    
-  if ((BinSq = (Real *) malloc(sizeof(Real)* (*nbin + 1)))==NULL) {
+  if ((BinSq = (double *) malloc(sizeof(double)* (*nbin + 1)))==NULL) {
     error=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
   totalspatialbins =  twoNphiNbin * Ntheta;
@@ -106,8 +106,8 @@ void empvarioXT(Real *X, Real *T,
   else BinSq[i]=bin[i];
   }
 
-//  assert(atan2(-1, 0) == -PIHALF);
-//  assert(atan2(0, 0) == 0);
+  assert(fabs(atan2(-1, 0) + PIHALF) < 1e-14); //assert(atan2(-1, 0) == -M_PI_2);
+  assert(atan2(0, 0) == 0);
   maxbinsquare = BinSq[*nbin];
 
 
@@ -206,7 +206,7 @@ void empvarioXT(Real *X, Real *T,
 		  endT = gridpoints[3] * segmentbase[3] - vec[3];
 		  for (t=z; t<endT; t+=segmentbase[3]) {
 		    for (rep = t; rep < segmentbase[5]; rep += segmentbase[4]) {
-		      Real x;
+		      double x;
 		      int rv;
 		      rv = rep + vec[3];
 		      assert(rv < segmentbase[5] && rv >=0);
@@ -237,7 +237,7 @@ void empvarioXT(Real *X, Real *T,
     for (i=0;i<spatial;i++) { // to have a better performance for large 
       //                   data sets, group the data first into blocks
       for (j=0; j<spatial; j++) {
-	Real distSq;
+	double distSq;
 	dx[0] = xx[0][j] - xx[0][i];
 	dx[1] = xx[1][j] - xx[1][i];
 	dx[2] = xx[2][j] - xx[2][i];
@@ -273,7 +273,7 @@ void empvarioXT(Real *X, Real *T,
 	    endT= totalpoints - deltaT * spatial;
 	    for (t=0; t<endT; t+=spatial) {
 	      for (rep = t; rep < totalpointsrepet; rep += totalpoints){ 
-		Real x;
+		double x;
 		x = values[rep + jj] - values[i + rep];
 		x *= x;
 		sum[low] += x;

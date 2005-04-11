@@ -39,6 +39,7 @@ This data frame contains the following columns:
   Master thesis, University of Bayreuth, Germany.
 }
 \examples{
+% library(RandomFields, lib="~/TMP");
 % library(RandomFields);
 % source("~/article/R/NEW.RF/RandomFields/R/rf.R")
 % source("~/article/R/NEW.RF/RandomFields/R/modelling.R")
@@ -52,8 +53,6 @@ This data frame contains the following columns:
 ##        ***      SINCE IT IS TIME CONSUMING       ***       ##
 ##                                                            ##
 ################################################################
-
-\dontrun{
 
 data(soil)
 names(soil)
@@ -80,13 +79,13 @@ my.legend <- function(lu.x, lu.y, zlim, col, cex=1) {
          legend=c(format(zlim[2], dig=2), filler,
          format(mean(zlim), dig=2), filler,
          format(zlim[1], dig=2)),
-         lty=1, col=col[length(col):1],cex=cex)
+         lty=1, col=rev(col),cex=cex)
 }
 
 ## plot the data first
-plot(pts, col=colour[1+99*((d-min(d))/diff(zlim))], pch=16,
-     xlab="x [cm]", ylab="y [cm]")
-my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.4)
+plot(pts, col=colour[1+(cn-1)*((d-min(d))/diff(zlim))], pch=16,
+     xlab="x [cm]", ylab="y [cm]", cex.axis=1.5, cex.lab=1.5)
+my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.5)
 % dev.copy2eps(file="data.eps", width=5, height=5)
 
 % source("/home/schlather/article/R/NEW.RF/RandomFields/R/rf.R")
@@ -96,53 +95,57 @@ ev <- EmpiricalVariogram(pts, data=d, grid=FALSE,
 
 ## show all models,
 %source("/home/schlather/article/R/NEW.RF/RandomFields/R/ShowModels.R")
-by.eye <- ShowModels(x=x, y=y, emp=ev, col=colour, zlim=zlim,
-                     Mean=mean(d))
+RFparameters(Print=1, CE.force=TRUE, CE.trials=1, CE.userfft=TRUE)
+by.eye <- ShowModels(x=x, y=y, emp=ev, col=colour, Zlim=zlim,
+                     Mean=mean(d), me="ci")
 %by.eye<-list(param=c(13.23566, 6.1301215, 2.1624282, 19.9774468, 0.5268569))
 %dev.copy2eps(file="ShowModels.eps", width=7, height=7)
 
 ## fit parameters of the whittlematern model by MLE
 %source("/home/schlather/article/R/NEW.RF/RandomFields/R/MLE.R")
-mle <- fitvario(x=pts, data=d, model="whittle", par=rep(NA,5))
+fit <- fitvario(x=pts, data=d, model="whittle", par=rep(NA,5),
+                mle.m="ml", cross.m=NULL)$variogram
 
 ## plot the fitted model and the empirical variogram
 plot(ev$c, ev$emp.var, ylim=c(0,11), ylab="variogram", xlab="lag")
 gx <- seq(0.001, max(ev$c), l=100)
 if(!is.null(by.eye)) lines(gx, Variogram(gx, model=by.eye)) 
-lines(gx, Variogram(gx, model=mle$mle), col=2)
-lines(gx, Variogram(gx, model=mle$lsq), col=3)
-lines(gx, Variogram(gx, model=mle$nlsq), col=4)
-lines(gx, Variogram(gx, model=mle$slsq), col=5)
-legend(120, 4, c("empirical", "by eye", "MLE", "lsq", "sqrt(n) lsq",
-               "sd^-0.5 lsq"),
+lines(gx, Variogram(gx, model=fit$ml), col=2)
+lines(gx, Variogram(gx, model=fit$plain), col=3)
+lines(gx, Variogram(gx, model=fit$sqrt.nr), col=4)
+lines(gx, Variogram(gx, model=fit$sd.inv), col=5)
+legend(120, 4, c("empirical", "by eye", "ML", "lsq", "sqrt(n) lsq",
+               "sd^-1 lsq"),
        lty=c(-1, rep(1, 5)), pch=c(1, rep(-1, 5)),
        col=c(1, 1, 2, 3, 4, 5), cex=1.4)
 %dev.copy2eps(file="mle.eps", width=5, height=5)
 
 ## map of expected values
 %source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
-k <- Kriging("O", x=x, y=y, grid=TRUE, model=mle$mle, given=pts, data=d)
+k <- Kriging("O", x=x, y=y, grid=TRUE, model=fit$ml, given=pts, data=d)
+par(mfrow=c(1,2))
+plot(pts, col=colour[1+99*((d-min(d))/diff(zlim))], pch=16, xlab="x [cm]", ylab="y [cm]")
+my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1)
 image(x, y, k, col=colour, zlim=zlim, xlab="x [cm]", ylab="y [cm]")
 par(bg="white")
-my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.4)
 %dev.copy2eps(file="kriging.eps", width=5, height=5)
 
 %source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
 ## what is the probability that at no point of the
 ## grid given by x and y the moisture is greater than 24 percent?
-cs <- CondSimu("O", x=x, y=y, grid=TRUE, model=mle$mle, given=pts,
+% works well since fit$ml:nugget==0!
+RFparameters(Print=1, CE.force=FALSE, CE.trials=3, CE.userfft=TRUE)
+cs <- CondSimu("O", x=x, y=y, grid=TRUE, model=fit$ml, given=pts,
                data=d, n=10) # better n=100 or n=1000
-%!!!!!!!!! cs ist keine MATRIX !!!!!! ?? 1.10.03
-image(x, y, cs[,,1], col=colour, zlim=zlim, xlab="x [cm]",
-      ylab="y [cm]")
-my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.4)
+par(mfrow=c(2,3))
+image(x, y, k, col=colour, zlim=zlim, xlab="x [cm]", ylab="y [cm]")
+my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=0.5)
+for (i in 1:5)
+  image(x, y, cs[, , i], col=colour, zlim=zlim,
+        xlab="x [cm]", ylab="y [cm]") 
 %dev.copy2eps(file="condsimu.eps", width=5, height=5)
 mean(apply(cs<=24, 3, all)) ## about 40 percent ...
-
-}% dontrun
-
 } 
-
 \keyword{datasets}
 
 

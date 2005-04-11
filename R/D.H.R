@@ -42,7 +42,7 @@ regression <- function(x, y, main, scr,
     lines(sm$x, sm$y, col=col.smooth)
     if (mode=="interactive") {
       repeat {
-        if (length(loc <- locator(2))==0) break;
+        if (length(loc <- Locator(2))==0) break;
         r <- range(loc$x)
         x.u <- x[idx <- x >= r[1] & x <= r[2]]
         y.u <- y[idx]

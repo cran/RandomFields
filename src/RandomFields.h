@@ -22,7 +22,7 @@ EXTERN void GetrfParameters(int *covmaxchar, int *methodmaxchar,
 EXTERN void GetModelNr(char **name, int *n, int *nr) ; /* transforms string "covfct" 
 						into covnr of CovList */
 EXTERN void GetModelName(int *nr,char **name) ; /* transforms covnr into string */
-EXTERN void GetRange(int *nr, int *dim, int *index, Real *range, int *lrange);
+EXTERN void GetRange(int *nr, int *dim, int *index, double *range, int *lrange);
 EXTERN void GetNrParameters(int *covnr, int *n, int* kappas);
 EXTERN void GetDistrName(int *nr,char **name);
 EXTERN void GetDistrNr(char **name, int *n, int *nr);
@@ -35,7 +35,7 @@ EXTERN void PrintModelListDetailed();
 EXTERN void PrintMethods();
 EXTERN void GetMethodName(int *nr, char **name);
 EXTERN void GetMethodNr(char **name, int *n, int *nr);
-EXTERN void GetGridSize(Real*,Real *,Real *,int *,int *,int *,int *); 
+EXTERN void GetGridSize(double*,double *,double *,int *,int *,int *,int *); 
 EXTERN void DeleteKey(int *key); // delete intermediate result for specified key
 EXTERN void DeleteAllKeys();
 EXTERN void printKEY(int *keyNr);
@@ -46,50 +46,56 @@ EXTERN void printKEY(int *keyNr);
 #define NATSCALE_EXACT 1
 #define NATSCALE_APPROX 2
 #define NATSCALE_MLE 3 /* check mleRF when changing !! */
-EXTERN void GetNaturalScaling(int *covnr, Real *q,  /* KAPPAS only  !! */
-			      int *naturalscaling, Real *natscale, int *error);
-EXTERN void Covariance(Real *x,int *lx,int *covnr,Real *p, int *np, 
+EXTERN void GetNaturalScaling(int *covnr, double *q,  /* KAPPAS only  !! */
+			      int *naturalscaling, double *natscale, int *error);
+EXTERN void Covariance(double *x,int *lx,int *covnr,double *p, int *np, 
 		       int *logicaldim, int *xdim, 
-		       int *ncov,  int *anisotropy, int *op, Real *result); 
-EXTERN void CovarianceNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,  
+		       int *ncov,  int *anisotropy, int *op, double *result); 
+EXTERN void CovarianceNatSc(double *x,int *lx,int *covnr,double *p,int *np,  
 			    int *logicaldim, int *xdim, 
 			    int *ncov,  int *anisotropy, int *op,
-			    Real *result, int *naturalscaling); 
-EXTERN void InitUncheckedCovFct(int *covnr, Real *p, int *np, 
+			    double *result, int *naturalscaling); 
+EXTERN void InitUncheckedCovFct(int *covnr, double *p, int *np, 
 				int *logicaldim, int *dim, 
 				int *ncov, int *anisotropy, int *op,
 			        int *naturalscaling,
 				int *error); 
-EXTERN void UncheckedCovFct(Real *x, int *n, Real *result);
+EXTERN void UncheckedCovFct(double *x, int *n, double *result);
+EXTERN void UncheckedCovMatrix(double *dist, int *lx, double *result);
 
-EXTERN void CovarianceMatrix(Real *x,int *lx,int *covnr,Real *p,int *np, 
+EXTERN void CovarianceMatrix(double *x,int *lx,int *covnr,double *p,int *np, 
 			     int *logicaldim, int *xdim, 
-			     int *ncov, int *anisotropy, int *op,Real *result); 
-EXTERN void CovarianceMatrixNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,
+			     int *ncov, int *anisotropy, int *op,double *result); 
+EXTERN void CovarianceMatrixNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 				  int *logicaldim, int *xdim, 
 				  int *ncov, int *anisotropy, int *op,
-				  Real *result, int *naturalscaling); 
-EXTERN void Variogram(Real *x,int *lx,int *covnr,Real *p,int *np,
+				  double *result, int *naturalscaling); 
+EXTERN void Variogram(double *x,int *lx,int *covnr,double *p,int *np,
 		      int *logicaldim, int *xdim, 
-		      int *ncov, int *anisotropy, int *op,Real *result);  
-EXTERN void VariogramNatSc(Real *x,int *lx,int *covnr,Real *p,int *np,
+		      int *ncov, int *anisotropy, int *op,double *result);  
+EXTERN void VariogramNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 			   int *logicaldim, int *xdim, 
 			   int *ncov, int *anisotropy, int *op,
-			   Real *result, int *naturalscaling); 
-//EXTERN void VariogramMatrix(Real *x,int *lx,int *covnr,Real *p, Real *result); 
+			   double *result, int *naturalscaling); 
+//EXTERN void VariogramMatrix(double *x,int *lx,int *covnr,double *p, double *result); 
                                  
 
 // SetParam****: 
 //         action: 0:set; 1:get; 2:print
+EXTERN void SetParamDecision( int *action, int *stationary_only, int *exactness);
 EXTERN void SetParamSpectral(int *action,int *nLines, int *grid);
 EXTERN void SetParamDirectGauss(int *action,int *method,int *checkprecision,
-				Real *requiredprecision, int *maxvariables);
+				double *requiredprecision, int *bestvariables,
+				int *maxvariables);
 
 // simulation procedure
-EXTERN void SetParamCircEmbed(int *action, int *force, Real *tolRe, Real *tolIm,
+EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe, double *tolIm,
 			      int *trials, 
 			      int *mmin, /* vector of length MAXDIM */
-			      int *userfft, int *strategy);
+			      int *userfft, int *strategy, double*maxmem);
+
+// for local circulant embedding
+EXTERN void SetParamLocal( int *action, double *cutoff_a, double *intrinsic_r);
 
 // either linesimufactor or linesimustep is used; linesimufactor is used 
 // if linesimustep <= 0.0
@@ -99,48 +105,52 @@ EXTERN void SetParamCircEmbed(int *action, int *force, Real *tolRe, Real *tolIm,
 // in contrast, always the current nLines are used!
 // For further details, also on the other parameter, see library(rf),
 // ?RFparameters, in R, http://www.R-project.org/
-EXTERN void SetParamTBM2(int *action, int *nLines, Real *linesimufactor, 
-			 Real *linesimustep, int *every);
+EXTERN void SetParamTBM2(int *action, int *nLines, double *linesimufactor, 
+			 double *linesimustep, int *every, int *tbm2num);
 // for simulation of 2dim RF by 3dim TBM:
-EXTERN void SetParamTBM3D2(int *action, int *nLines, Real *linesimufactor, 
-			   Real *linesimustep, int *every); 
-EXTERN void SetParamTBM3D3(int *action, int *nLines, Real *linesimufactor, 
-			   Real *linesimustep, int *every);
+EXTERN void SetParamTBM3D2(int *action, int *nLines, double *linesimufactor, 
+			   double *linesimustep, int *every); 
+EXTERN void SetParamTBM3D3(int *action, int *nLines, double *linesimufactor, 
+			   double *linesimustep, int *every);
 // for simulation of line by circular embedding
-EXTERN void SetParamTBMCE(int *action,int *force, Real *tolRe,Real *tolIm,
+EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
 			  int *trials, 
 			  int *mmin, /* vector of length MAXDIM */ 
-			  int *userfft, int *strategy); 
+			  int *userfft, int *strategy, double*maxmem); 
 EXTERN void SetParamTBM(int *action,int *tbm_method);
 EXTERN void pokeTBM(int *out, int *in, int *err);
-
+// hyperplane
+EXTERN void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
+			       int *normalise, int *mar_distr, 
+			       double *mar_param);
 // for  MPP
-EXTERN void SetMPP(int *action, Real *approxzero, 
-			  Real *realisations, Real *radius);
+EXTERN void SetMPP(int *action, double *approxzero, 
+			  double *realisations, double *radius);
 // extremes
-EXTERN void SetExtremes(int *action, Real *standardGausMax);
+EXTERN void SetExtremes(int *action, double *standardGausMax);
 
 // simulation methods, Parameter setting
 EXTERN void StoreTrend(int *keyNr, int *modus, char **trend, 
-		       int *lt, Real *lambda, int *ll, int *error);
+		       int *lt, double *lambda, int *ll, int *error);
 EXTERN void GetTrendLengths(int *keyNr, int *modus, int *lt, int *ll, int *lx);
-EXTERN void GetTrend(int *keyNr, char **trend, Real *lambda, Real *x,int *error);
-EXTERN void GetCoordinates(int *keyNr, Real *x, int *error);
+EXTERN void GetTrend(int *keyNr, char **trend, double *lambda, double *x,int *error);
+EXTERN void GetCoordinates(int *keyNr, double *x, int *error);
 
-EXTERN void InitMaxStableRF(Real *x, Real *T, int *dim, int *lx, int *grid, 
+EXTERN void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid, 
 		     int *Time,
-		     int *covnr, Real *ParamList, int *nParam, 
-		     Real *mean,
+		     int *covnr, double *ParamList, int *nParam, 
 		     int *ncov, int *anisotropy, int *op,
 		     int *method, 
 		     int *distr,
 		     int *keyNr,
 		     int *error);
 
-EXTERN void DoMaxStableRF(int *keyNr, Real *res, int *error); 
+EXTERN void DoMaxStableRF(int *keyNr, int *n, int *pairs,
+			  double *res, int *error); 
 
 EXTERN void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim, 
 		       int *timespacedim, int *grid, int *distr, int *maxdim);
+EXTERN SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive);
 
 /* 
    check with InitSimulateRF in case of any changes !!
@@ -149,12 +159,12 @@ EXTERN void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim,
 #define DISTR_GAUSS 0   
 #define DISTR_POISSON 1
 #define DISTR_MAXSTABLE 2
-EXTERN void InitSimulateRF(Real *x, Real *T, int *dim,
+EXTERN void InitSimulateRF(double *x, double *T, int *dim,
 			   int *lx,  /* lx=length(x) */
 			   int *grid, int *Time,			   
-			   int *covnr, Real *ParamList, 
+			   int *covnr, double *ParamList, 
 			   int *nParam, /* nParam=length(ParamList) */
-			   Real *mean, int *ncov, int *anisotropy, int *op,
+			   int *ncov, int *anisotropy, int *op,
 			   int *method, 
 			   int *distr, /* not used yet */
 			   int *keyNr,
@@ -164,17 +174,10 @@ EXTERN void InitSimulateRF(Real *x, Real *T, int *dim,
 				   <0 message, e.g StoredInitUsed
 			   */
 			   );
-EXTERN void DoSimulateRF(int *keyNr, Real *res, int *error); 
-/* SimulateRF==InitSimulate && DoSimulateRF;
-   SimulateRF is for convenience; it is slightly slower, if STORING==true and 
-   several simulations are made for the same set of parameters, since it will
-   always check whether the parameters have changed ((the fast way is to
-   use InitSimulate only once and then call DoSimulateRF several times)) */
-EXTERN void SimulateRF(Real *x, Real *T, int *dim,int *lx, int *grid, 
-		       int *Time, int *covnr, Real *ParamList, int *nParam,
-		       Real *mean, int *ncov, int *anisotropy, int *op,
-		       int *method, int *distr, int *keyNr,
-		       Real *res, int *error);
+EXTERN void DoSimulateRF(int *keyNr, int *n, int *pairs,
+			 double *res, int *error); 
+EXTERN void AddTrend(int *keyNr, int *n, double *res, int *error);
+
 // storing : current value
 // printlevel : current value
 // naturalscaling : fixed value
@@ -211,23 +214,39 @@ ing information
 */
 
 // for isotropic spatial data
-EXTERN void empiricalvariogram(Real *x, int *dim, int *lx,
-			       Real *values, int *repet,
-			       int *grid, Real *bin, int *nbin, int *charact, 
-			       Real *res, Real *sd, int *n);
+EXTERN void empiricalvariogram(double *x, int *dim, int *lx,
+			       double *values, int *repet,
+			       int *grid, double *bin, int *nbin, int *charact, 
+			       double *res, double *sd, int *n);
 
 // for space-time and anisotropies
-EXTERN void empvarioXT(Real *X, Real *T, 
+EXTERN void empvarioXT(double *X, double *T, 
 		int *lx, 
-		Real *values, int *repet, int *grid,
-		Real *bin, int *nbin, 
-		Real *phi,    // vector of a real and an integer
-		Real *theta,  // vector of a real and an integer
+		double *values, int *repet, int *grid,
+		double *bin, int *nbin, 
+		double *phi,    // vector of a real and an integer
+		double *theta,  // vector of a real and an integer
 		int *dT,   // 
-		Real *sum,   // \sum (a-b)^2 / 2
-		Real *sq,   // \sum (a-b)^4 / 4
+		double *sum,   // \sum (a-b)^2 / 2
+		double *sq,   // \sum (a-b)^4 / 4
 		int *n);
 
+
+// kriging methods
+EXTERN void simpleKriging(double *tgiven, double *x, double *invcov, 
+			  int *Len_x, int *NN,
+			  int *Dim, int *Rep, double *Mean, double *Res);
+EXTERN void simpleKriging2(double *tgiven, double *x, double *data,
+			   double *invcov,
+			   int *Len_x, int *NN, int *Dim, int *Rep, 
+			   double *Mean, double *Res, double *sigma2);
+EXTERN void ordinaryKriging(double *tgiven, double *x, double *data, 
+			    int *Len_x, int *NN,
+			    int *Dim, int *Rep, double *Res);
+EXTERN void ordinaryKriging2(double *tgiven, double *x, double *data, 
+			     double *invcov,
+			     int *Len_x, int *NN, int *Dim, int *Rep, 
+			     double *Res, double *sigma2);
 
 // fractal dimension, 
 EXTERN void boxcounting(double *z, int *lx, int * repet, double *factor,

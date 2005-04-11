@@ -35,8 +35,8 @@ parameter.range(model, dim)
 
 }
 
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
 \seealso{\code{\link{CovarianceFct}}}
 

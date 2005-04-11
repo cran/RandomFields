@@ -7,6 +7,8 @@
 if (file.exists("source.R")) source("source.R")
 
 #if (file.exists("random")) load("random")
+
+model <- "fractalB"
 ## 3d
 RFparameters(pch="")
 kappa <- 2 * runif(1)
@@ -18,26 +20,26 @@ n <- 2; TBM2.lines<-2
 #kappa <- scale <- var <-  1
 
 x <- c(1,5,1)#x <- c(1,4,1)
-z <- GaussRF(x=x, y=x, z=x, grid=TRUE, gridtriple=TRUE, model="3d",
-		me="local", param=c(0,var,0,scale,kappa), n=5 * n)
+z <- GaussRF(x=x, y=x, z=x, grid=TRUE, gridtriple=TRUE, model=model,
+		me="intr", param=c(0,var,0,scale,kappa), n=5 * n)
 
-cat(Variogram(x=cbind(1,1,1), model="3d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(1,1,1), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1,1, ]- z[2,2,2, ])/2,"\n")
 
-cat(Variogram(x=cbind(1,1,0), model="3d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(1,1,0), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1,1, ]- z[2,2,1,])/2,"\n")
 
-cat(Variogram(x=cbind(0,0,1), model="3d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(0,0,1), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1,1, ]- z[1,1,2,])/2,"\n")
 
-cat(Variogram(x=cbind(1,3,4), model="3d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(1,3,4), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1,1, ]- z[2,4,5,])/2,"\n")
 
 # stop("")
 print("A")
 
 
-##2d
+## 2d
 RFparameters(pch="")
 kappa <- 2 * runif(1)
 scale <- 5 * runif(1)
@@ -45,19 +47,19 @@ var   <- 5 * runif(1)
 #scale <- kappa <- var <- 1
 
 x <- c(1,5,1)
-z <- GaussRF(x=x, y=x, grid=TRUE, gridtriple=TRUE, model="2d",
-		me="local", param=c(0,var,0,scale,kappa) ,n=10 * n)
+z <- GaussRF(x=x, y=x, grid=TRUE, gridtriple=TRUE, model=model,
+		me="intr", param=c(0,var,0,scale,kappa) ,n=10 * n)
 
-cat(Variogram(x=cbind(1,1), model="2d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(1,1), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1, ]- z[2,2,])/2,"\n")
 
-cat(Variogram(x=cbind(1,0), model="2d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(1,0), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1, ]- z[2,1,])/2,"\n")
 
-cat(Variogram(x=cbind(0,1), model="2d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(0,1), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1, ]- z[1,2,])/2,"\n")
 
-cat(Variogram(x=cbind(3,4), model="2d", param=c(0,var,0,scale,kappa)),
+cat(Variogram(x=cbind(3,4), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1, ]- z[4,5,])/2,"\n")
 
 # stop("")

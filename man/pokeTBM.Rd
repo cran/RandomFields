@@ -50,7 +50,6 @@ pokeTBM(Out, In)
   \code{\link{GaussRF}},  \code{\link{RFparameters}} \code{\link{RFMethods}}
 }
 \examples{
-
 ###### initialisation
 runif(1)
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
@@ -92,6 +91,6 @@ par(mar=c(2.2, 2.2, 0.1, 0.1))
 image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
 polygon(r2x[c(1,2,2,1)], r2y[c(1,1,2,2)], border=col)
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \keyword{spatial}

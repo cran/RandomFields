@@ -22,15 +22,19 @@ GetMethodNames()
     \item \code{circulant embedding}. \cr
     Introduced by Dietrich & Newsam (1993) and Wood and Chan (1994). 
 
-    \item \code{local circulant embedding (Stein, 2000)}. \cr
+    Circulant embedding is a fast simulation method based on
+    Fourier transformations. It is garantueed to be an exact method
+    for covariance functions with finite support, e.g. the spherical
+    model.
+    
+    
+    \item \code{cutoff embedding}. \cr
+    Modified circulant embedding method so that exact simulation is garantueed
+    for further covariance models, e.g. the whittle matern model.
+
     Here multiplicative models are not allowed (yet).
-
-    If anisotropy then the given variance is attained as 
-    variogram value at
-    \eqn{max_{u =\hbox{unit vector}} \gamma(M u)}{max_{u =unit vector}
-      gamma(M u)},
-    \eqn{M} the anisotropy matrix
-
+  
+     
     \item \code{direct matrix decomposition}.\cr
     This method is based on the well-known method for simulating
     any multivariate Gaussian distribution, using the square root of the
@@ -39,6 +43,19 @@ GetMethodNames()
     This implementation can use the Cholesky decomposition and
     the singular value decomposition. 
     It allows for arbitrary points and arbitrary grids.
+
+    \item \code{hyperplane method}.\cr
+    The method is based on a tessellation of the space by
+    hyperplanes. Each cell takes a spatially constant value
+    of an i.i.d. random variables. The superposition of several
+    such random fields yields approximatively a Gaussian random field.
+    
+    \item \code{intrinsic embedding}. \cr
+    Modified circulant embedding so that exact simulation is garantueed
+    for further \emph{variogram} models, e.g. the fractal brownian one.
+    Note that the simulated random field is always non-stationary.
+
+    Here multiplicative models are not allowed (yet).
 
     \item Marked point processes.\cr
     Some methods are based on marked point process
@@ -118,6 +135,7 @@ GetMethodNames()
     the other matrices must be equal up to a factor and the temporal
     part of the anisotropy matrix (right column) may contain only
     zeros, except the very last entry.
+    
   }
 }
 \note{Most methods possess additional parameters,
@@ -148,7 +166,7 @@ GetMethodNames()
     Chan, G. and Wood, A.T.A. (1997)
     An algorithm for simulating stationary Gaussian random fields.
     \emph{J. R. Stat. Soc., Ser. C} \bold{46}, 171-181.
-
+    
     Dietrich, C.R. and Newsam, G.N. (1993)
     A fast and exact method for multidimensional Gaussian
     stochastic simulations.
@@ -157,13 +175,21 @@ GetMethodNames()
     Wood, A.T.A. and Chan, G. (1994)
     Simulation of stationary Gaussian processes in \eqn{[0,1]^d}{[0,1]^d}
     \emph{J. Comput. Graph. Stat.} \bold{3}, 409-432.
-
-    \item Local Circulant embedding:
-
+    
+    \item Intrinsic embedding and  Cutoff embedding:
+    
     Stein, M.L. (2002)
     Fast and exact simulation of fractional Brownian surfaces.
-    {\emph J. Comput. Graph. Statist.} \bold{11}, 587--599.
+    \emph{J. Comput. Graph. Statist.} \bold{11}, 587--599.
     
+  
+    Gneiting, T., Sevcikova, H., Percival, D.B., Schlather, M. and
+    Jiang, Y. (2005)
+    Fast and Exact Simulation of Large Gaussian Lattice Systems in
+    \eqn{R^2}: Exploring the Limits
+    \emph{J. Comput. Graph. Statist.} Submitted.
+
+
     \item Turning bands method (TBM), turning layers:
     
     Dietrich, C.R. (1995) A simple and efficient space domain implementation
@@ -187,9 +213,16 @@ GetMethodNames()
     Matheron, G. (1967) \emph{Elements pour une Theorie des Milieux
       Poreux}. Paris: Masson.
    }
+ }
+ \section{Automatic selection algorithm}{
+   --- more details coming soon ---
+ }
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}
+  
+  Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
+  methods \sQuote{cutoff} and \sQuote{intrinsic})
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
 \seealso{\code{\link{GaussRF}}, \code{\link{MaxStableRF}},
   \code{\link{PrintModelList}},
   \code{\link{RandomFields}}.}

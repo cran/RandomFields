@@ -13,7 +13,7 @@
 % and some exotic methods, like hyperplane tessellations. 
 }
 \usage{
-DoSimulateRF(n=1, register=0)
+DoSimulateRF(n=1, register=0, paired=FALSE)
 
 InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
                method=NULL, register=0, gridtriple=FALSE, distribution=NA)
@@ -46,7 +46,6 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \item{method}{\code{NULL} or string; Method used for simulating,
     see \code{\link{RFMethods}}, or
     type \code{\link{PrintMethodList}()} to get all options}
-  \item{n}{number of realisations to generate}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers}
   \item{gridtriple}{logical;  if \code{gridtriple==FALSE} ascending
@@ -57,8 +56,13 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     expected; this parameter is used only
     if \code{grid==TRUE}}
   \item{distribution}{marginal distribution:\cr
-    'Gauss', 'Poisson', or 'MaxStable'.
-
+    'Gauss', 'Poisson', or 'MaxStable'}
+  \item{n}{number of realisations to generate; if \code{paired=TRUE}
+    then \code{n} must be even.}
+  \item{paired}{
+    logical. If \code{TRUE} then every second simulation is obtained by
+    only changing the signs of the standard Gaussian random variables, the
+    simulation is based on (\dQuote{antithetic pairs}).
   }
 }
 \value{
@@ -82,8 +86,8 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     the random field, is returned.  The last
     dimension contains the repetitions.    
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
   \code{\link{GaussRF}}, \code{\link{MaxStableRF}}, \code{\link{RandomFields}}
 }

@@ -1,6 +1,6 @@
 /* 
  Authors
- Martin Schlather, martin.schlather@cu.lu
+ Martin Schlather, schlath@hsu-hh.de
 
  all around the nugget effect -- needs special treatment 
 
@@ -29,15 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-int init_hyperplane(key_type *key, int m){ return ERRORNOTPROGRAMMED; }
-void do_hyperplane(key_type *key, int m, Real *res ) {
-  assert(false);
- {
-    register long i,endfor;
-    endfor = key->totalpoints;
-    for (i=0;i<endfor;i++) { res[i]=0.0; }
-  }
-}
 int init_special(key_type *key, int m){ 
   return ERRORNOTPROGRAMMED; 
    //  calls key->initother
@@ -52,7 +43,7 @@ int init_special(key_type *key, int m){
   */
 }
 
-void do_special(key_type *key, int m, Real *res ){
+void do_special(key_type *key, int m, double *res ){
   assert(false);
  {
     register long i,endfor;

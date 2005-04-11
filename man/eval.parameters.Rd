@@ -1,3 +1,5 @@
+%%% stimmt die Beschreibung noch??!!
+
 \name{eval.parameters}
 \alias{eval.parameters}
 
@@ -11,21 +13,25 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 		col.rect = "red", col.bg = "blue", col.sep = "grey", 
                 col.left = "red", col.mid = "white", col.right = "white", 
                 col.line = "red", col.txt = "black",
-                cex=0.8, cex.i=0.8, sep="-----", ...)
+                cex=0.8, cex.i=cex, sep="-----", ...)
 }
 \arguments{
-  \item{variable}{string.  The name of the variable to be changed.  The
-    variable must be a list.}
+  \item{variable}{string.  The name of the variable to be changed.
+    The name consist of \code{$} and  \code{[[]]} expression pointing
+    to sublists of a list. The complete list must be given by
+    name in \code{\dots}}
   \item{entry}{A list of lists.  See Details.}
   \item{update}{logical.  If \code{TRUE} then \code{simulate} is called
     after each interactive input.}
   \item{simulate}{function that is called if simulations are to
     updated. The parameters must equal the variables given by
-    \code{...}; the function must return the first variable.}
+    \code{...}; the function must return the complete list indicated by
+    \code{variable}.}
   \item{dev}{Before calling \code{eval.parameters()} \code{split.screen}
     must have been called.  \code{dev} gives the screen on which the
     interactive menu should be plotted.}
-  \item{create}{logical.  If \code{TRUE} missing list elements are created.}
+  \item{create}{logical.  If \code{TRUE} missing list elements of
+    \code{variable} are created.}
   \item{col.rect}{colour of the button for free input.}
   \item{col.bg}{colour of a interactive bar}
   \item{col.sep}{colour of the separating line}
@@ -38,8 +44,11 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   \item{cex}{font height of headers}
   \item{cex.i}{font height of text for elements}
   \item{sep}{style of added characters in separating line.}
-  \item{\dots}{The input variables; the name may not start with a dot;
-    the first variable must be a list and is finally returned.}
+  \item{\dots}{The input variables given by name;
+    the names may not start with a dot;
+    There the complete list to which \code{variable} refers must be
+    given. Further additional parameters for the function \code{simulate}.
+  }
 }
 \note{
   To the list given by \code{variable} the element \code{.history}
@@ -66,7 +75,9 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   \code{entry} is a list of lists.  Each list may contain the following
   elements:
   \itemize{
-    \item \code{name} : header for menu button if \code{var} is not \code{NULL}
+    \item \code{name} : header for menu button if \code{var} is not
+    \code{NULL}; otherwise printed instead of a menu button
+ 
     \item \code{var} :
     \itemize{
       \item \code{NULL} : if \code{val=NULL} then
@@ -76,8 +87,9 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
       If \code{val} is a string then \code{val} is interpreted as a
       function; a special string is "simulate", which entails the call of
       the function \code{simulate} with the appropriate parameters.
-      \item string : selected element of the list that given
-      by \code{variable}
+      \item string : selected element of the list that is given
+      by \code{variable}. \emph{A special string "undo" will be
+	installed to undo things}.
     }
     \item \code{val} :
     \itemize{
@@ -86,24 +98,26 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
       d=1/2) is expected.  Otherwise, \code{v} is the current value
       of \code{var} and \code{d} is the choice of the user,
       a value in \eqn{[0,1]}
-      \item \code{TRUE} : logical bar.  The value for \code{var} is negated.
-      \item \code{FALSE} : logical bar.  The value for \code{var} is negated.
+      \item \code{TRUE} : logical bar. 
+      \item \code{FALSE} : logical bar.  The value for \code{var} is
+              negated before shown.
       In the menu, the negative value for \code{var} is shown.
-      \item \code{NULL} : Any string expected as value for \code{var}.
-      \item character : if \code{var} is given then
+      \item \code{NULL} : a string is read from the terminal inot \code{var}.
+      \item character (vector): if \code{var} is given then
       this vector of strings is interpreted as belonging to a 
       categorical variable
       \eqn{1,\ldots,\code{length(val)}}{1,...,\code{length(val)}}
-      and \code{var} gives the names of the elements. 
+      and \code{var} gives the number of the selected elements. 
       If \code{var=NULL} then \code{val} is interpreted as a function; a
       special string is "simulate", which entails the call of 
       the function \code{simulate} with the appropriate parameters.
     }
     \item \code{delta} : logical.
-    The bar plots absolute values if \code{FALSE} 
+    In the menu bar absolute values are plotted if \code{delta=FALSE} 
     and increments otherwise.  Only considered if \code{val} is a function.
-    \item \code{cond} : A condition that must be satisfied; otherwise this
-    point is not shown.
+    \item \code{cond} : The menue points is shown only if the given
+    condition is satisfied. The condition must be expressed by named elements
+    of the list variable, see example.
     \item \code{col} : colour that overwrites the standard colour for the
     rectangle or the separating text
     \item \code{...} : additional parameters for \code{simulate} that overwrite
@@ -119,14 +133,15 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   stops with an error message.
 }
 
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-%\seealso{\code{\link{define.horizons}}, \code{\link{SoPhy}}}
+%\seealso{\code{\link[SoPhy]{define.horizons}}, \code{\link[SoPhy]{SoPhy}}}
+\seealso{\code{\link{useraction}}}
 
 \examples{
   ## the following lines define a menu that does not make
-  ## to much sense, but shows the various kinds of buttons
+  ## too much sense, but shows the various kinds of buttons
 
   quadratic <- function(d, v, a, mini=0, maxi=Inf) {
     d <- pmin(1, pmax(0, d)) - 0.5
@@ -158,11 +173,21 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   ## before proceeding make sure that both the screen and the xterm
   ## are completely visible
 
-  H <- list(modify=5, x=list()) 
-  if (.Platform$OS.type=="unix") system("xset b off") ## probably,
-  ##                           you prefer to switch off the sound   
+  H <- list(modify=5, x=list()) # note that in this example eval.parameters 
+  ##          will be called by by H$x, hence modify=5 will be left
+  ##          unchanged.
+  options(locatorBell=FALSE)
+%   source("/home/schlather/article/R/NEW.RF/RandomFields/R/auxiliary.R"); source("/home/schlather/article/R/NEW.RF/RandomFields/R/evalpar.R");
+  useraction("start.register")  ## registring the user's input
   str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
      H=H, par=17)) # do not forget to call by name
+  getactions()
+
+  ## replay the user's input
+  useraction("replay")
+  str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
+     H=H, par=17))
+}
 }
 \keyword{spatial}
 

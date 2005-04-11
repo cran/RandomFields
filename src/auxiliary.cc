@@ -1,11 +1,9 @@
 //#define DEBUG 1
-#define DD if (0)
-
 
 
 /* 
  Authors
- Martin Schlather, martin.schlather@cu.lu
+ Martin Schlather, schlath@hsu-hh.de
 
  Collection of auxiliary functions
 
@@ -32,13 +30,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <unistd.h>
 #include <assert.h>
 #include "auxiliary.h"
+#include <Rgraphics.h>
  
 void pid(int *i)  {
 #ifndef Unix  
   *i = getpid();
 #else
-  *i = 0;
+  *i = 0; 
 #endif
+}
+
+void xyInchToPixels(double *xy, double *Pixels) {
+  DevDesc* dd;
+  dd = CurrentDevice();
+  Pixels[0] = GConvertXUnits(xy[0], INCHES, DEVICE, dd);
+  Pixels[1] = GConvertYUnits(xy[1], INCHES, DEVICE, dd);
 }
 
 void hostname(char **h, int *i){
@@ -279,7 +285,7 @@ void Rquantile(double *X,int *lb,double *p, double *res) { *res = quantile(X,*lb
 
 
 
-void vectordist(Real *v, int *Dim, Real *dist, int *diag){
+void vectordist(double *v, int *Dim, double *dist, int *diag){
   int m, n, d, l, dim, r, lr, dr, add;
   add = (*diag==0) ? 1 : 0;
   l = Dim[0];
@@ -296,10 +302,10 @@ void vectordist(Real *v, int *Dim, Real *dist, int *diag){
 } 
 
 static int ORDERDIM;
-static Real *ORDERD;
+static double *ORDERD;
 bool smaller(int i, int j)
 {
-  Real *x, *y;
+  double *x, *y;
   int d;
   x = ORDERD + i * ORDERDIM;
   y = ORDERD + j * ORDERDIM;
@@ -310,7 +316,7 @@ bool smaller(int i, int j)
 
 bool greater(int i, int j)
 {
-  Real *x, *y;
+  double *x, *y;
   int d;
   x = ORDERD + i * ORDERDIM;
   y = ORDERD + j * ORDERDIM;
@@ -347,7 +353,7 @@ void order(int *pos, int start, int end) {
   }
 }
 
-void ordering(Real *d, int len, int dim, int *pos) 
+void ordering(double *d, int len, int dim, int *pos) 
 {
   /* quicksort algorithm, slightly modified:
      does not sort the data, but d[pos] will be ordered 
@@ -363,7 +369,7 @@ void ordering(Real *d, int len, int dim, int *pos)
 }
 
 
-void Ordering(Real *d, int *len, int *dim, int *pos) 
+void Ordering(double *d, int *len, int *dim, int *pos) 
 {
   int i;
   for (i=0; i<*len; i++) pos[i]=i;

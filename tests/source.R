@@ -1,11 +1,10 @@
 
-library(RandomFields, lib=if (file.exists("/home/schlather/TMP/RandomFields"))
-                       "~/TMP")
-
-q()
+library(RandomFields,
+        lib=if(TRUE && file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
 
 .path <- "/home/schlather/article/R/NEW.RF/RandomFields/R/"
-if (file.exists(paste(.path, "rf.R", sep=""))) {
+if (EXTENDED.TESTING <- file.exists(paste(.path, "rf.R", sep=""))) {
+  EXTENDED.TESTING <- FALSE
   Source <- function(x) {
     cat(x, "...\n")
     x <- paste(.path, x, sep="")
@@ -22,4 +21,4 @@ if (file.exists(paste(.path, "rf.R", sep=""))) {
   Source("getNset.R")
   Source("modelling.R")
   Source("rf.R")
-} else q()
+} 

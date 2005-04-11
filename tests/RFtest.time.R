@@ -8,14 +8,10 @@ wait <- TRUE; ##wait <- FALSE;
 RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
                    y=seq(0,10,0.1),key=0)
 {
-  print(paste("TIME=",paste(format(unix.time(res<-GaussRF(x=x,y=y,z=NULL,
-                                                          grid=TRUE,
-                                                          model=cov,
-                                                          param=param,
-                                                          method=NULL,
-                                                          n=1,reg=key)
-                                             ),dig=3))),quote=FALSE)
-  if (is.null(res)) {
+  ut <- unix.time(res<-try(GaussRF(x=x, y=y, z=NULL, grid=TRUE, model=cov,
+                               param=param, method=NULL, n=1, reg=key)))
+  cat("TIME=",  paste(format(ut, dig=3)), "\n")
+  if (is.null(res) || !is.numeric(res)) {
     print("Simulation has failed",quote=FALSE)
   } else {
     image(x,y,matrix(res,ncol=length(y)),col=grey(0:100 / 100));
@@ -23,7 +19,7 @@ RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
   }
 }
 
-RFparameters(PrintLevel=4,
+RFparameters(PrintLevel=2,
              CE.force=FALSE,CE.mmin=0,CE.tolRe=-1e-7,CE.tolIm=1e-3,
              CE.trials=3)
 
@@ -71,11 +67,11 @@ RFsimu("wave",param=c(0,1,0,2));
 print("Press RETURN for second example",quote=FALSE);if (wait) readline()
 
 print("",quote=FALSE);print("",quote=FALSE);
-print("Example 2: Gneiting, 1) working directly 2)enlarging necessay 3)failed",quote=FALSE)
+print("Example 2: Gneiting, 1) working directly 2)enlarging necessary 3)failed",quote=FALSE)
 RFparameters(Storing=TRUE,PrintLevel=2)
 RFsimu("gneiting",param=c(0,1,0,10));
+RFsimu("gneiting",param=c(0,1,0,15));
 RFsimu("gneiting",param=c(0,1,0,20));
-RFsimu("gneiting",param=c(0,1,0,60));
 
 
 

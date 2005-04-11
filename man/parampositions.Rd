@@ -18,10 +18,10 @@
 
   An error appears if the model can be substantially simplified.
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
-  \command{\link{CovarianceFct}}, \command{\link{mleRF}}
+  \command{\link{CovarianceFct}}, \command{\link{fitvario}}
 }
 \examples{
 parampositions(model="exp", param=c(0,1,0,NA))
@@ -49,6 +49,5 @@ try(parampositions(model="whi",
 parampositions(model=list(list(model="exp", var=3, scale=6), "+",
                            list(model="whittle", var=2, scale=7,
                                 kappa=NA))) ## again the values do not matter
- 
 }
 \keyword{ spatial }%-- one or more ...

@@ -9,7 +9,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
          gridtriple=FALSE, model, param, method=NULL, given, data,
          trend, n=1, register=0, 
          err.model=NULL, err.param=NULL, err.method=NULL,
-         err.register=1, tol=1E-5, pch=".", na.rm=FALSE)
+         err.register=1, tol=1E-5, pch=".", paired=FALSE, na.rm=FALSE)
 }
 \arguments{
   \item{krige.method}{Assumptions on the random field which corresponds to
@@ -56,7 +56,8 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     definition.}
   \item{data}{the values measured.}
   \item{trend}{Not programmed yet. (used by universal kriging)}
-  \item{n}{number of realisations to generate.}
+  \item{n}{number of realisations to generate. If \code{paired=TRUE}
+    then \code{n} must be even.}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers; see
     \code{\link{GaussRF}} for further details.}
@@ -78,6 +79,11 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     The included kriging procedure can be quite time consuming. 
     The character \code{pch} is printed after roughly
     each 80th part of calculation.}
+  \item{paired}{logical.
+    logical. If \code{TRUE} then every second simulation is obtained by
+    only changing the signs of the standard Gaussian random variables, the
+    simulation is based on (\dQuote{antithetic pairs}).
+  }
   \item{na.rm}{logical. If \code{TRUE} then \code{NA}s are removed from
     the given data.}
 }
@@ -101,7 +107,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     are increasing sequences with identical lags for each sequence. 
     A corresponding
     grid is created (as given by \code{expand.grid}). 
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+    \item \code{(grid==TRUE) && (gridtriple==TRUE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid
     (as given by \code{expand.grid(seq(x$start,x$end,x$step),
@@ -141,8 +147,8 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
  Wackernagel, H. (1998) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 2nd edition.  
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 %\note{}
 
 
@@ -164,6 +170,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 ## possible 
 param <- c(0, 1, 0, 1)
 model <- "exponential"
+
 RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
@@ -187,6 +194,8 @@ image(p, p, data, xlim=lim, ylim=lim, zlim=zlim, col=colour)
 #conditional simulation
 krige.method <- "O" ## random field assumption corresponding to
                     ## those of ordinary kriging
+%source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
+%source("/home/schlather/article/R/NEW.RF/RandomFields/R/rf.R")
 cz <- CondSimu(krige.method, x, x,  grid=TRUE,
                model=model, param=param,
                given=expand.grid(p,p),# if data are given on a grid

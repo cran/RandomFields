@@ -9,7 +9,7 @@
 }
 \usage{
 GaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
-        method=NULL, n=1, register=0, gridtriple=FALSE)
+        method=NULL, n=1, register=0, gridtriple=FALSE, paired=FALSE, ...)
 
 InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
             method=NULL, register=0, gridtriple=FALSE)
@@ -47,7 +47,11 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     type \code{\link{PrintMethodList}()} to get all options.
     If \code{model} is given as list then \code{method} may not be
     set if \code{model[[i]]$method}, \eqn{i=1,3,..} is given, and vice
-    versa.}
+    versa. However, a global parameter \code{method} and
+    specific \code{method}s may be given, e.g.
+    \code{list(list(model=..., method="TBM3"), ..., method="ci")};
+    then the specific ones overwrite the global \code{method}.
+    }
   \item{n}{number of realisations to generate}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers}
@@ -58,6 +62,13 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values
   }
+  \item{paired}{
+    logical. If \code{TRUE} then every second simulation is obtained by
+    only changing the signs of the standard Gaussian random variables,
+    on which the
+    simulation is based. (\dQuote{Antithetic pairs}.)
+  }
+  \item{...}{\code{\link{RFparameters}} that are locally used only.}
 }
 \details{
   \code{GaussRF} can use different methods for the simulation,
@@ -66,7 +77,8 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   If \code{method==NULL} then \code{GaussRF} searches for a
   valid method.  \code{GaussRF} may not find the fastest method neither the
   most precise one.  It just finds any method among the available
-  methods. (However it guesses what is a good choice.) 
+  methods. (However it guesses what is a good choice.) See
+  \link{RFMethods} for further information.
   Note that some of the methods do not work for all covariance 
   or variogram models.
 
@@ -206,15 +218,18 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 \references{
   See \link{RFMethods} for the references.
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}
+  
+  Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
+  methods \sQuote{cutoff} and \sQuote{intrinsic})}
 \seealso{
   \code{\link{CovarianceFct}},
   \code{\link{DeleteRegister}},
   \code{\link{DoSimulateRF}},
   \code{\link{GetPracticalRange}},
   \code{\link{EmpiricalVariogram}},
-  \code{\link{mleRF}},
+  \code{\link{fitvario}},
   \code{\link{MaxStableRF}},
   \code{\link{RFMethods}},
   \code{\link{RandomFields}},
@@ -224,6 +239,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 }
 
 \examples{
+% library(RandomFields, lib="~/TMP"); RFparameters(Print=6)
  #############################################################
  ##                                                         ##
  ## Examples using the symmetric stable model, also called  ##
@@ -328,7 +344,6 @@ for (i in 1:dim(z)[2]) { image(z[,i,]); rl();}
 for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
 
-
  #############################################################
  ##                                                         ##
  ##                    Brownian motion                      ##
@@ -339,13 +354,14 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  step <- 0.3  ## nicer, but also time consuming if step <- 0.1
  x <- seq(0, 10, step)
  kappa <- 1   # in [0,2)
- z <- GaussRF(x=x, y=x, grid=TRUE, model="2d", param=c(0,1,0,1,kappa))
+ z <- GaussRF(x=x, y=x, grid=TRUE, model="fractalB",
+              param=c(0,1,0,1,kappa))
  image(z,zlim=c(-3,3))
 
  # 3d
  x <- seq(0, 3, step)
  kappa <- 1   # in [0,2)
- z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="3d",
+ z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="fractalB",
               param=c(0,1,0,1,kappa))
 rl <- function() if (interactive()) readline("Press return")
 for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
@@ -383,9 +399,8 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 %##       for a further, more complicated example on         ##
 %##        space-time modelling, see data(winddata)          ##
 %##############################################################
-
-
 }
+
 \keyword{spatial}
 
 

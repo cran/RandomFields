@@ -1,6 +1,6 @@
 /*
  Authors 
- Martin Schlather, martin.schlather@cu.lu 
+ Martin Schlather, schlath@hsu-hh.de 
 
  *********** this function is still under construction *********
 
@@ -49,17 +49,17 @@
 #include "MPPFcts.h"
 
 static int mpp_dim;
-static Real mpp_x[MAXDIM];
+static double mpp_x[MAXDIM];
 
 
-static Real spherical_Rsq, spherical_adddist;
-Real spherical_model(Real *y) 
+static double spherical_Rsq, spherical_adddist;
+double spherical_model(double *y) 
 {
-  Real distance;
+  double distance;
   int i;
   distance = spherical_adddist;
   for (i=0; i<mpp_dim; i++) {
-    register Real dummy;
+    register double dummy;
     dummy = y[i]-mpp_x[i];
     distance += dummy * dummy;
   }
@@ -68,17 +68,17 @@ Real spherical_model(Real *y)
 }
 
 
-static Real cone_Rsq, /* square of radius */ 
+static double cone_Rsq, /* square of radius */ 
   cone_rsq, /* square of radius */
   cone_height_socle,
   cone_a, cone_b_socle; /* y = ax + b, for the slope */
-Real cone_model(Real *y) 
+double cone_model(double *y) 
 {
-  Real distance;
+  double distance;
   int i;
   distance = 0.0;
   for (i=0; i<mpp_dim; i++) {
-    register Real dummy;
+    register double dummy;
     dummy = y[i]-mpp_x[i];
     distance += dummy * dummy;
   }
@@ -87,14 +87,14 @@ Real cone_model(Real *y)
   return cone_b_socle + cone_a * sqrt(distance);
 }
 
-static Real gauss_invscale, gauss_effectiveradiussq;
-Real gauss_model(Real *y)
+static double gauss_invscale, gauss_effectiveradiussq;
+double gauss_model(double *y)
 {
-  Real distance;
+  double distance;
   int i;
   distance = 0.0;
   for (i=0; i<mpp_dim; i++) {
-    register Real dummy;
+    register double dummy;
     dummy = y[i]-mpp_x[i];
     distance += dummy * dummy;
   } 
@@ -108,7 +108,7 @@ Real gauss_model(Real *y)
 void generalspherical_init(mpp_storage* s, int v, int balldim)
 {
   int d;
-  Real gamma;
+  double gamma;
 
   assert(s!=NULL);
   s -> effectiveRadius[v] = 0.5 *  s->param[v][SCALE];
@@ -132,7 +132,7 @@ void circular_init(mpp_storage *s, int v)
   generalspherical_init(s, v, TRUESPACE);
 }
 
-void circularMpp(mpp_storage *s, int v, Real *min, Real *max,
+void circularMpp(mpp_storage *s, int v, double *min, double *max,
 	  mppmodel *model )
 { 
   int TRUESPACE = 2;  
@@ -152,7 +152,7 @@ void circularMpp(mpp_storage *s, int v, Real *min, Real *max,
 
   spherical_adddist = 0.0;
   for (d=s->timespacedim; d<TRUESPACE; d++) {
-    Real dummy;
+    double dummy;
     dummy = s->effectiveRadius[v] * UNIFORM_RANDOM;
     spherical_adddist += dummy * dummy;
   }
@@ -164,7 +164,7 @@ void spherical_init(mpp_storage *s, int v)
   generalspherical_init(s, v, TRUESPACE);
 }
 
-void sphericalMpp(mpp_storage *s, int v, Real *min, Real *max,
+void sphericalMpp(mpp_storage *s, int v, double *min, double *max,
 	  mppmodel *model )
 { 
   int TRUESPACE = 3;  
@@ -181,7 +181,7 @@ void sphericalMpp(mpp_storage *s, int v, Real *min, Real *max,
   }
   spherical_adddist = 0.0;
   for (d=s->timespacedim; d<TRUESPACE; d++) {
-    Real dummy;
+    double dummy;
     dummy = s->effectiveRadius[v] * UNIFORM_RANDOM;
     spherical_adddist += dummy * dummy;
   }
@@ -204,7 +204,7 @@ void cone_init(mpp_storage *s, int v)
   // standard cone has radius 1/2, height of (potential) top: 1
   //           
   int d;
-  Real cr,cb,CR,socle,height;
+  double cr,cb,CR,socle,height;
   assert(s!=NULL);
   socle = s->param[v][KAPPAII];
   height= s->param[v][KAPPAIII];
@@ -277,7 +277,7 @@ void cone_init(mpp_storage *s, int v)
 // only at the very fist time.
 // Furthermore, the below construction will match with the
 // general construction that randomises parameters (e.g. scale mixtures)
-void cone(mpp_storage *s, int v, Real *min, Real *max,
+void cone(mpp_storage *s, int v, double *min, double *max,
 	  mppmodel *model )
 { 
   int d;
@@ -305,7 +305,7 @@ void cone(mpp_storage *s, int v, Real *min, Real *max,
     max[d] = mpp_x[d] + s->effectiveRadius[v];
   }
 }
-int checkcone(Real *param, int timespacedim, SimulationType method) {
+int checkcone(double *param, int timespacedim, SimulationType method) {
   switch (method) {
   case  AdditiveMpp: 
     if (timespacedim!=2) { 
@@ -338,37 +338,41 @@ SimulationType methodcone(int spacedim, bool grid){
   return AdditiveMpp;
 }
 #define RANGE_EPSILON 1E-20
-void rangecone(int spatialdim, int *index, Real* range){
+void rangecone(int spatialdim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = -1;
-  Real r[12] = {0, 1, 0, 1.0-RANGE_EPSILON,
+  double r[12] = {0, 1, 0, 1.0-RANGE_EPSILON,
 		0, RF_INF, RANGE_EPSILON, 10.0, 
 		0, RF_INF, RANGE_EPSILON, 10.0};
-  memcpy(range, r, sizeof(Real) * 12);
+  memcpy(range, r, sizeof(double) * 12);
+}
+void infocone(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = 3;
+  *CEbadlybehaved = false;
 }
 
 
 #define GAUSSINVSCALE 0
 #define GAUSSRADIUSSQ 1
 
-Real gaussInt(int d, int xi, Real sigma, Real R) {
+double gaussInt(int d, int xi, double sigma, double R) {
   // int_{b(0,R) e^{-a r^2} dr = d b_d int_0^R r^{d-1} e^{-a r^2} dr
   // where a = 2.0 * xi / sigma^2
   // here : 2.0 is a factor so that the mpp function leads to the
   //            gaussian covariance model exp(-x^2)
   //        xi : 1 : integral ()
   //             2 : integral ()^2
-  Real a;
+  double a;
   a = 2.0 * xi / (sigma * sigma);
   switch (d) {
   case 1 : 
-    Real sqrta;
+    double sqrta;
     sqrta = sqrt(a);
     return SQRTPI / sqrta * (2.0 * pnorm(SQRT2 * sqrta * R, 0, 1, 1, 0) - 1.0);
   case 2 :
     return PI / a * (1.0 - exp(- a * R * R));
   case 3 :
-    Real piDa;
+    double piDa;
     piDa = PI / a;
     return -2.0 * piDa * R * exp(- a * R * R )
       + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1,1,0) - 1.0);
@@ -400,7 +404,7 @@ void gaussmpp_init(mpp_storage *s, int v)
   s->maxheight[v]= 1.0;
 }
 
-void gaussmpp(mpp_storage *s, int v,Real *min, Real *max,
+void gaussmpp(mpp_storage *s, int v,double *min, double *max,
 	  mppmodel *model )
 {
   int d;

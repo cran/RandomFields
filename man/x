@@ -1,0 +1,18 @@
+# find . -name "*.Rd" -exec ./x {} \;
+
+sed s/"http:\/\/www.cu.lu\/~schlathe"/"http:\/\/www.unibw-hamburg.de\/WWEB\/math\/schlath\/schlather.html"/ $1 > xx
+mv xx $1
+
+sed s/martin.schlather@cu.lu/schlath@hsu-hh.de/ $1 > xx
+mv xx $1
+
+
+#sed s/ableitung/derivative/ $1 > xx
+#mv xx $1
+
+#sed s/"(Real)"/"(double)"/ $1 > xx
+#mv xx $1
+
+#sed s/"Real "/"double "/ $1 > xx
+#sed s/"Real\*"/"double*"/ xx > $1
+

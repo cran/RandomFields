@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@cu.lu
+ Martin Schlather, schlath@hsu-hh.de
 
  Simulation of a random field by spectral turning bands
 
@@ -36,8 +36,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CHECK if (0)  
 
 InversionMethod DIRECTGAUSS_INVERSIONMETHOD=Cholesky;
-Real DIRECTGAUSS_PRECISION=1E-11;
+double DIRECTGAUSS_PRECISION=1E-11;
 bool DIRECTGAUSS_CHECKPRECISION=false;
+int DIRECTGAUSS_BESTVARIABLES=600; // see RFsimu.h
 int DIRECTGAUSS_MAXVARIABLES=1800; // see RFsimu.h
 
 void direct_destruct(void ** S)
@@ -53,7 +54,8 @@ void direct_destruct(void ** S)
 }
 
 void SetParamDirectGauss(int *action,int *method,int *checkprecision,
-			 Real *requiredprecision, int *maxvariables)
+			 double *requiredprecision, int *bestvariables,
+			 int *maxvariables)
 {
   switch (*action) {
   case 0 :
@@ -73,22 +75,23 @@ void SetParamDirectGauss(int *action,int *method,int *checkprecision,
    DIRECTGAUSS_PRECISION=*requiredprecision;
    if (DIRECTGAUSS_PRECISION<=0) 
      PRINTF("Warning! Non positive value for precision. Algorithm will probably fail.");
+   DIRECTGAUSS_BESTVARIABLES=*bestvariables;
    DIRECTGAUSS_MAXVARIABLES=*maxvariables;
    break;
   case 1 :
     *method = (int) DIRECTGAUSS_INVERSIONMETHOD;
     *checkprecision = (int) DIRECTGAUSS_CHECKPRECISION;
     *requiredprecision = DIRECTGAUSS_PRECISION;
+    *bestvariables = DIRECTGAUSS_BESTVARIABLES;
     *maxvariables = DIRECTGAUSS_MAXVARIABLES;
     if (GetNotPrint) break;
   case 2 : 
-     PRINTF("\nDirect matrix inversion\n=======================\ninversion method=%d\nmaximum number of variables %d\ncheck precision? %d\n",
-	    DIRECTGAUSS_INVERSIONMETHOD,DIRECTGAUSS_MAXVARIABLES,
-	    DIRECTGAUSS_CHECKPRECISION);
+     PRINTF("\nDirect matrix inversion\n=======================\ninversion method=%d\nbest number of variables %d\nmaximum number of variables %d\ncheck precision? %d\n",
+	    DIRECTGAUSS_INVERSIONMETHOD, DIRECTGAUSS_BESTVARIABLES,
+	    DIRECTGAUSS_MAXVARIABLES, DIRECTGAUSS_CHECKPRECISION);
     if (DIRECTGAUSS_CHECKPRECISION) {
       PRINTF("\nprecision=%e(works only with Cholesky up to now)",
 	     DIRECTGAUSS_PRECISION);}
-
    break;
   default : PRINTF(" unknown action\n"); 
   }
@@ -104,7 +107,7 @@ int CHOLpreciseenough(double *COV, double *U,long nrow)
   endfor = nrow * nrow;
   for (segment=i=0; i<nrow; i++,segment+=nrow) {    
     for (j=segment; j<endfor; j+=nrow) {     
-      register Real dummy =0;
+      register double dummy =0;
       for (k=0; k<=i; k++) {
 	dummy += U[segment+k] * U[j+k];
       }
@@ -121,7 +124,7 @@ double *CCOV;
 int nn;
 
 void getCov(int *n, double *COV) {
-  assert(false);
+  assert(false); // for debugging only
   int i;
   if (*n==0) { *n=nn; return;}
   for (i=0; i<*n * *n; i++) COV[i]=CCOV[i];
@@ -133,7 +136,7 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 			      int *covnr, int *op, param_type param,
 			      int actcov, bool anisotropy) {
   double *G,*COV,*U,*V,*e,*D;
-  Real *xx[MAXDIM];
+  double *xx[MAXDIM];
   long d,i,j,k,halfn, Xerror, job=11,segment;
   bool freexx;
   InversionMethod method;
@@ -163,7 +166,7 @@ int internal_init_directGauss(direct_storage **S, bool grid,
   /* calculate covariance matrix */
   if (grid) {
     int index[MAXDIM];
-    Real *yy[MAXDIM];
+    double *yy[MAXDIM];
     double p[MAXDIM];
     for(d=0; d<timespacedim; d++) {
       xx[d]=NULL;
@@ -173,7 +176,7 @@ int internal_init_directGauss(direct_storage **S, bool grid,
     
     // generate all the grid coordinates exlicitely!
     for (i=0; i<timespacedim; i++) { 
-      if ((xx[i]=(Real*) malloc(sizeof(Real)* totpnts))==NULL){
+      if ((xx[i]=(double*) malloc(sizeof(double)* totpnts))==NULL){
 	Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
     }
@@ -197,11 +200,11 @@ int internal_init_directGauss(direct_storage **S, bool grid,
     int t; 
     if (Time) {
       int endfor;
-      Real time;
+      double time;
       for(d=0; d<=timespacedim; d++) xx[d]=NULL;
       freexx = true;
       for (i=0; i<timespacedim; i++) { 
-	if ((xx[i]=(Real*) malloc(sizeof(Real)* totpnts))==NULL){
+	if ((xx[i]=(double*) malloc(sizeof(double)* totpnts))==NULL){
 	  Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
 	}
       }
@@ -218,28 +221,18 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 
   k = 0;
   for (i=0;i<totpnts;i++) {
-    Real y[MAXDIM];
+    double y[MAXDIM];
     k += i;
     for (segment=i* totpnts+i,j=i;j<totpnts;j++) {
       for (d=0; d<timespacedim; d++) {
 	y[d]=xx[d][i] - xx[d][j];
       }
-//      printf(" %d (%d) ", i, totpnts);
-
       COV[k]=COV[segment] = CovFct(y, timespacedim, covnr, op, param, 
 				   actcov, anisotropy);
       k++;
       segment += totpnts;
     }
   }
-
-//  for (k=0; k<totpnts; k++) {
-//    printf(" %d ", k);
-//    for (i=0; i<totpnts; i++)
-//      if (COV[k + i * totpnts] != COV[i + k * totpnts]) 
-//	printf("cov %d %d %f %f\n",
-//	       k, i, COV[k + i * totpnts], COV[i + k * totpnts]);
-//  }
 
   if (freexx) {for (i=0; i<timespacedim; i++) {free(xx[i]); xx[i]=NULL;}}
   if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
@@ -277,7 +270,6 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 ///////////////////////////
 // {
 //   long t2;
-//   double dev, max, UV;
 //   t2 = totpnts * totpnts;
 //   for (i=0; i<t2; i++) CCOV[i]=COV[i];
 // }
@@ -306,23 +298,22 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 	  goto ErrorHandling;
 	}
 	
-	if (GENERAL_PRINTLEVEL>=2) {
+	if (GENERAL_PRINTLEVEL>=10) {
 	  long t2;
 	  double dev, max, UV;
 	  t2 = totpnts * totpnts;
+	  if (t2>99999) t2=99999;
 	  dev = 0.0;
 	  max = 0;
 	  for (i=0; i<t2; i++) {
 	    UV = fabs(U[i] - V[i]);
-	    if (UV>0.01) printf("%d %f %f %f\n", i, UV, U[i], V[i]);
+	    if (UV>0.01) PRINTF("%d %f %f %f\n", (int) i, UV, U[i], V[i]);
 	    dev += UV;
 	    if (max<UV) max=UV;
 	  }
 	  PRINTF("totpnts %d %d\n", totpnts, t2); 
 	  PRINTF("total asymmetry U/V: sum=%f, max=%f\n", dev, max); 
-	  if (GENERAL_PRINTLEVEL>=6) { 
-	    PRINTF("\n D max=%f, D min=%f \n", D[0], D[totpnts-1]);
-	  }
+	  PRINTF("\n D max=%f, D min=%f \n", D[0], D[totpnts-1]);
 	}
 	
 	free(e); e=NULL; free(V); V=NULL; // here free(COV) is already possible; 
@@ -354,6 +345,8 @@ int internal_init_directGauss(direct_storage **S, bool grid,
   return NOERROR;
   
   ErrorHandling:
+  if (*S!=NULL) free(*S);
+  *S = NULL;
   if (COV!=NULL) free(COV);
   if (freexx) 
     for (i=0; i<timespacedim; i++) if (xx[i]!=NULL) free(xx[i]);
@@ -369,10 +362,16 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 int init_directGauss(key_type *key, int m) 
 {
   param_type param;
-  long Xerror;
+  long Xerror=NOERROR;
+  int multiply[MAXCOV], covnr[MAXCOV];
+  unsigned short int actcov;
 
   SET_DESTRUCT(direct_destruct);
-  FIRSTCHECK_COV(Direct,cov,param); // multiply, covnr, actcov defined
+  // FIRSTCHECK_COV(Direct,cov,param); // multiply, covnr, actcov defined
+  if ((Xerror = FirstCheck_Cov(key, Direct, param, false,
+			      covnr, multiply, &actcov)) != NOERROR)
+    goto ErrorHandling;
+  
   { 
     int v, timespacedim, start_param[MAXDIM], index_dim[MAXDIM];
     bool no_last_comp;
@@ -421,7 +420,7 @@ void internal_do_directGauss(direct_storage *S, bool add, long totpnts,
       for (j=0;j<=i;j++){\
 	dummy += G[j] * U[j+k];\
       }\
-      res[i] OP (Real) dummy;\
+      res[i] OP (double) dummy;\
     }\
     break;\
   case SVD :\
@@ -431,7 +430,7 @@ void internal_do_directGauss(direct_storage *S, bool add, long totpnts,
       for (j=0,k=i;j<totpnts;j++,k+=totpnts){\
 	dummy += U[k] * G[j];\
       }\
-      res[i] OP (Real) dummy;\
+      res[i] OP (double) dummy;\
     }\
     break;\
   default : assert(false);\
@@ -441,7 +440,7 @@ void internal_do_directGauss(direct_storage *S, bool add, long totpnts,
 }
 
 
-void do_directGauss(key_type *key, bool add, int m, Real *res) 
+void do_directGauss(key_type *key, bool add, int m, double *res) 
 {  
   assert(key->active);
   internal_do_directGauss(((direct_storage*) key->S[m]), add, key->totalpoints, 
@@ -455,8 +454,7 @@ void XXinternal_do_directGauss(direct_storage *S, bool add, long totpnts,
   double *G,*U;  
 
 
-  printf("XX %d \n", totpnts);
-
+  printf("XX %d \n", (int) totpnts);
 
   U = S->U;// S^{1/2}
   G = S->G;// only the memory space is of interest (stored to avoid 
@@ -476,7 +474,7 @@ void XXinternal_do_directGauss(direct_storage *S, bool add, long totpnts,
       for (j=0;j<=i;j++){\
   	dummy += G[j] * U[j+k];\
       }\
-     res[i] OP (Real) dummy;\
+     res[i] OP (double) dummy;\
     }\
     break;\
   case SVD :\
@@ -486,7 +484,7 @@ void XXinternal_do_directGauss(direct_storage *S, bool add, long totpnts,
       for (j=0,k=i;j<totpnts;j++,k+=totpnts){\
 	dummy += U[k] * G[j];\
       }\
-      res[i] OP (Real) dummy;\
+      res[i] OP (double) dummy;\
     }\
     break;\
   default : assert(false);\

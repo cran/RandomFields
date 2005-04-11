@@ -1,6 +1,6 @@
 /* 
  Authors
- Martin Schlather, martin.schlather@cu.lu
+ Martin Schlather, schlath@hsu-hh.de
 
  library for unconditional simulation of stationary and isotropic random fields
 
@@ -250,5 +250,4 @@ void minmax(double *dat,  // data
       count[cb] = log(count[cb] / (double) epsilon);
     } // b
   } // r
-};
-
+}

@@ -1,5 +1,5 @@
 /*
- Authors  Martin Schlather, martin.schlather@cu.lu 
+ Authors  Martin Schlather, schlath@hsu-hh.de 
 
  Simulation of a random field by circular embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )
@@ -37,15 +37,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 double EV_TIMES_LESS = 2.0; // 0:always new method; inf:always usual method
 int EV_SYSTEM_LARGER = 100; // 0:always new method; inf:always usual method
 
-Real variogram(Real a, Real b) {register Real dummy;dummy=a-b; return dummy*dummy;}
+double variogram(double a, double b) {register double dummy;dummy=a-b; return dummy*dummy;}
 
-Real Efunction(Real a, Real b) {return a + b;} 
+double Efunction(double a, double b) {return a + b;} 
 /*  see Schlather (2001), Bernoulli, 7(1), 99-117
     Schlather (????), Math. Nachr, conditionally accepted
     Schlather, Ribeiro, Diggle (in prep.) 
 */
 
-Real kmm(Real a, Real b) {return a * b;}  /* 
+double kmm(double a, double b) {return a * b;}  /* 
 					     Stoyan's k_mm function
 					     see Stoyan, Kendall, & Mecke, 
 					     or Stoyan & Stoyan (both Wiley) 
@@ -54,11 +54,11 @@ Real kmm(Real a, Real b) {return a * b;}  /*
 int LOW = -1;
 
 
-void empiricalvariogram(Real *x, int *dim, int *lx, 
-			Real *values, int *repet, int *grid,
-			Real *bin, int *nbin, int *charact, 
-			Real *res,
-			Real *sd, // 
+void empiricalvariogram(double *x, int *dim, int *lx, 
+			double *values, int *repet, int *grid,
+			double *bin, int *nbin, int *charact, 
+			double *res,
+			double *sd, // 
 			// note that within the subsequent algorithm
 			// the sd of the Efct ist correctly calculated:
 			//   instead for summing up Efct^2 in sd one should
@@ -85,8 +85,8 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 { 
   int i,ii,j,d,halfnbin,gridpoints[MAXDIM],dimM1,EV_METHOD,error;   
   long totalpoints,totalpointsrepet, segment, factor; 
-  Real (*characteristic)(Real, Real);
-  Real *xx[MAXDIM],maxdist[MAXDIM],dd,*BinSq; 
+  double (*characteristic)(double, double);
+  double *xx[MAXDIM],maxdist[MAXDIM],dd,*BinSq; 
 
   BinSq = NULL;
   for (segment=i=0; i<*dim; i++, segment+=*lx) xx[i]=&(x[segment]);
@@ -116,7 +116,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
   default : assert(false);
   }
    
-  if ((BinSq = (Real *) malloc(sizeof(Real)* (*nbin + 1)))==NULL) {
+  if ((BinSq = (double *) malloc(sizeof(double)* (*nbin + 1)))==NULL) {
     error=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
   for (i=0;i<*nbin;i++){sd[i]=res[i]=0.0;n[i]=0;}
@@ -128,13 +128,13 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
   //////////////////////////////////// GRID ////////////////////////////////////
   if (*grid) {
     int d1,d2,head,tail,swapstart;
-    Real p1[MAXDIM],p2[MAXDIM],distSq,dx[MAXDIM]; 
+    double p1[MAXDIM],p2[MAXDIM],distSq,dx[MAXDIM]; 
     int delta[MAXDIM],deltaTwo[MAXDIM],maxtail,low,cur;    
     long indextail[MAXDIM],indexhead[MAXDIM],valuePtail,valuePointhead,
       segmentbase[MAXDIM],DeltaTwoSegmentbase[MAXDIM],
       DeltaFourSegmentbase[MAXDIM],
       SegmentbaseTwo[MAXDIM],SegmentbaseFour[MAXDIM];
-    Real psq[MAXDIM],p[MAXDIM],maxbinsquare;
+    double psq[MAXDIM],p[MAXDIM],maxbinsquare;
     bool forbid;    
 
     // does not work!! :
@@ -172,7 +172,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 	for (tail=0;tail<head;) {
 	  distSq=0.0;
 	  for (i=0;i<=dimM1;i++) {
-	    Real dx;
+	    double dx;
 	    dx = p1[i]-p2[i];
 	    distSq += dx * dx;
 	  }
@@ -186,7 +186,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 	      cur=(up+low+1)/2; 
 	    }
 	    for (segment=0;segment<totalpointsrepet;segment += totalpoints) {
-	      Real x;
+	      double x;
 	      x = characteristic(values[head+segment],values[tail+segment]);
 	      res[low] += x;
 	      sd[low] += x * x;
@@ -219,7 +219,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
       if(GENERAL_PRINTLEVEL>=8) 
 	{
 	for(i=0;i<*nbin;i++){
-	  PRINTF(" %d:%f(%f,%d)",i,res[i]/(Real)(factor * n[i]),res[i],n[i]);
+	  PRINTF(" %d:%f(%f,%d)",i,res[i]/(double)(factor * n[i]),res[i],n[i]);
 	}
 	PRINTF("  XXXY\n");
 	}      
@@ -313,7 +313,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 		segtail = valuePtail+tail;
 		seghead = valuePointhead+tail;
 		for (segment=0;segment<totalpointsrepet;segment+=totalpoints) {
-		  Real x;
+		  double x;
 		  x = characteristic(values[segtail+segment], 
 				     values[seghead+segment]);
 		  res[low] += x;
@@ -363,7 +363,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
       if(GENERAL_PRINTLEVEL>=8) {
 	PRINTF("\n");
 	for(i=0;i<*nbin;i++){
-	  PRINTF(" %d:%f(%f,%d)  ",i,res[i]/(Real)(factor * n[i]),res[i],n[i]);
+	  PRINTF(" %d:%f(%f,%d)  ",i,res[i]/(double)(factor * n[i]),res[i],n[i]);
 	}
 	PRINTF(" YYY\n");
       }
@@ -377,9 +377,9 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
     for (i=0;i<totalpoints;i++){ // to have a better performance for large 
       //                            data sets, group the data first into blocks
       for (j=0;j<i;j++){
-        Real distSq;
+        double distSq;
       	for (distSq=0.0,d=0; d<=dimM1;d++) {
-	  register Real dx;
+	  register double dx;
 	  dx=xx[d][i]-xx[d][j];
 	  distSq += dx * dx;
 	}		
@@ -393,7 +393,7 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 	    cur=(up+low+1)/2; 
 	  } 	
 	  for (segment=0;segment<totalpointsrepet;segment += totalpoints) { 
-	    Real x;
+	    double x;
 	    x = characteristic(values[i+segment],values[j+segment]);
 	    res[low] += x;
 	    sd[low] += x * x;
@@ -418,10 +418,10 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
   for (i=0; i<ii; i++) {sd[i] = res[i]= RF_NAN;}
   for (i++; i<*nbin; i++){
     if (n[i]>0) { 
-      res[i] /= (Real) (factor * n[i]);
+      res[i] /= (double) (factor * n[i]);
       if (n[i]>1) 
-	sd[i] = sqrt(sd[i]/ (factor * factor * (Real) (n[i]-1))
-		     - (Real) (n[i]) / (Real) (n[i]-1) * res[i] * res[i]);
+	sd[i] = sqrt(sd[i]/ (factor * factor * (double) (n[i]-1))
+		     - (double) (n[i]) / (double) (n[i]-1) * res[i] * res[i]);
       else sd[i] = RF_INF;
     } else { 
       res[i]= RF_NAN;
@@ -434,9 +434,9 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
   case 0 :
     if ((ii<*nbin)&&(ii>=0)){
       n[ii] += totalpointsrepet;
-      res[ii] /=  (Real) (factor * n[ii]);
-      sd[ii] = sqrt(sd[ii] / (factor * factor * (Real) (n[ii]-1))
-		    - (Real) (n[ii]) / (Real) (n[ii]-1) * res[ii] * res[ii]);
+      res[ii] /=  (double) (factor * n[ii]);
+      sd[ii] = sqrt(sd[ii] / (factor * factor * (double) (n[ii]-1))
+		    - (double) (n[ii]) / (double) (n[ii]-1) * res[ii] * res[ii]);
     }    
     break;
   case 1 : // E, calculating E(0) correctly, taking into account that the
@@ -448,26 +448,26 @@ void empiricalvariogram(Real *x, int *dim, int *lx,
 	res[ii] += values[j]; 
       }
       n[ii] += totalpointsrepet;
-      res[ii] = res[ii] / (Real) n[ii];
+      res[ii] = res[ii] / (double) n[ii];
       for (i=0; i<*nbin; i++) sd[i] = RF_NAN; // beste Loesung, da sonst
       // nur Chaos gibt -- da sd falsch berechnet ist.
       // siehe MPP package fuer die richtige Berechnung.
     }
     break;
   case 2 : // kmm, calculating kmm(0} and dividing all the values by mean^2
-    Real mean, square, qu, x2;
+    double mean, square, qu, x2;
     for (j=0,mean=square=qu=0.0;j<totalpointsrepet;j++) { 
       mean += values[j]; 
       square += (x2 = values[j]*values[j]);
       qu += x2 * x2;
     }
-    mean /= (Real) totalpointsrepet;
-    square /= (Real) totalpointsrepet;
+    mean /= (double) totalpointsrepet;
+    square /= (double) totalpointsrepet;
     if ((ii<*nbin)&&(ii>=0)){
       n[ii] += totalpointsrepet;    
-      res[ii]= (res[ii] + square) / (Real) n[ii]; // factor is 1
-      sd[ii] = sqrt((sd[ii] + qu) / ((Real) (n[ii]-1))
-		    - (Real) (n[ii]) / (Real) (n[ii]-1) * res[ii] * res[ii]);
+      res[ii]= (res[ii] + square) / (double) n[ii]; // factor is 1
+      sd[ii] = sqrt((sd[ii] + qu) / ((double) (n[ii]-1))
+		    - (double) (n[ii]) / (double) (n[ii]-1) * res[ii] * res[ii]);
     }
     mean *= mean; 
     for (j=0; j<*nbin; j++) { res[j] /= mean; }

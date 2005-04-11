@@ -1,6 +1,6 @@
 \name{fitvario}
-\alias{mleRF}% obsolete
 \alias{fitvario}
+\alias{mleRF}% obsolete
 \alias{fitvario.default}
 \title{LSQ and Maximum Likelihood Estimation
   of Random Field Parameters}
@@ -15,15 +15,21 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param,
 fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
          lower=NULL, upper=NULL, sill=NA, trend,
          use.naturalscaling=TRUE, PrintLevel=RFparameters()$Print,
-         trace.optim=0, bins=20, nphi=1, ntheta=1, ntime=20,
+         optim.control=NULL, bins=20, nphi=1, ntheta=1, ntime=20,
          distance.factor=0.5,
          upperbound.scale.factor=10, lowerbound.scale.factor=20,
          lowerbound.scale.LS.factor=5,
          upperbound.var.factor=10, lowerbound.var.factor=100,
          lowerbound.sill=1E-10, scale.max.relative.factor=1000,
          minbounddistance=0.001, minboundreldist=0.02,
-         approximate.functioncalls=50, pch="*", var.name="X",
-         time.name="T", transform=NULL, standard.style=NULL)
+         approximate.functioncalls=50, refine.onborder=TRUE,
+          pch=RFparameters()$pch,
+         var.name="X",
+         time.name="T", transform=NULL, standard.style=NULL,
+         lsq.methods=c("self", "plain", "sqrt.nr", "sd.inv", "internal"),
+         mle.methods=c("ml", "reml"),
+         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
+         users.guess=NULL, users.beta=NULL, table.format=FALSE)
 }
 \arguments{
   \item{x}{(\eqn{n\times2}{n x 2})-matrix of coordinates, or vector of
@@ -39,7 +45,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \item{model}{string or list;
     covariance model, see \code{\link{CovarianceFct}}, or
     type \code{\link{PrintModelList}()} to get all options.
-    See also t
+%    See also t
     
     If \code{model} is a list, then the parameters with value \code{NA}
     are estimated. Parameters that have value \code{NaN} should be
@@ -99,7 +105,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     this function (just subtract the mean from your data before calling
     this function)    
   }
-  \item{...}{arguments as given in \code{mleRF.default} and listed in the
+  \item{...}{arguments as given in \code{fitvario.default} and listed in the
     following.}
   \item{use.naturalscaling}{
     logical.  Only used if model is given in standard (simple) way.
@@ -111,7 +117,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     but \code{use.naturalscaling} does not work for all models.
     See Details.}
   \item{PrintLevel}{level to which messages are shown.  See Details.}
-  \item{trace.optim}{tracing of the function \code{\link{optim}}}
+  \item{optim.control}{control list for \code{\link{optim}}, which uses
+    'L-BFGS-B'. However 'parscale' may not be given.}
   \item{bins}{number of bins of the empirical variogram.  See Details.}
   \item{nphi}{scalar or vector of 2 components.
     If it is a vector then the first component gives the first angle
@@ -155,8 +162,16 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     having failed.  See Details.}
   \item{approximate.functioncalls}{approximate evaluations
     of the ML target function on a grid.  See Details.}
-  \item{pch}{character shown before each step of calculation;
-    depending on the specification there are two to five steps.
+  \item{refine.onborder}{logical.
+    If \code{refine.onborder=TRUE} and if the result of
+    any maximum likelihood method or cross validation method
+    is on a borderline, then the optimisation is redone
+    in a modified way (which takes about double extra time)
+  }
+  \item{pch}{character shown before evaluating any method;
+    if \code{pch!=""} then one or two
+    additional steps in the MLE methods are
+    marked by \dQuote{+}.
     Default: "*".}
   \item{var.name}{basic name for the coordinates in the formula of the
     trend.  Default: \sQuote{X}}
@@ -194,28 +209,75 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     to \code{TRUE} by the user. This accelerates the MLE algorithm.
     The responsibility is completely left to the user, then.
 
-    Currently \command{mleRF} is only implemented for the
+    Currently \command{fitvario} is only implemented for the
     \\sQuote{standard} definition of the covariance model.
     Hence \code{standard.style} must always be \code{TRUE} and consequently,
     neither the variance nor the nugget may appear on either side
     of the \code{transform}
   }
+  \item{lsq.methods}{
+    variants of the least squares fit of the variogram. See Details.
+  }
+  \item{mle.methods}{
+    variants of the maximum likelihood fit of the covariance function.
+    See Details.
+  }
+  \item{cross.methods}{
+    Not implemented yet.
+    %variants of the cross validation fit of the covariance function.
+    %See Details.
+  }
+  \item{users.guess}{
+    User's guess of the parameters. All the parameters must be given
+    using the same rules as for either \code{param} (except that no NA's should
+    be contained) or \code{model}.
+  }
+  \item{users.beta}{
+    User's guess of the trend.
+  }
+  \item{table.format}{logical.
+    The parameters controls the output. See Value.
+  }
 }
 
 \details{
-  The maximisation is performed using \code{\link{optim}}.  Since
-  \code{\link{optim}}
-  needs as input parameter an initial vector of parameters, \code{mleRF}
-  takes the initial parameter from the LSQ estimation.
+  The optimisations are performed using \code{\link{optimise}} if one
+  parameter has to be estimated only and \code{\link{optim}}, otherwise.
 
-  If the best parameter vector of the MLE found so far is too close
-  to some given bounds, see the specific parameters below, it is
-  assumed that
-  \code{\link{optim}} ran into a local minimum because of a bad starting
-  value.
-  In this case the MLE target function is calculated on a grid, the
-  best parameter vector is taken, and the optimisation is restarted with
-  this parameter vector.
+  First, by means of various control parameters, see below, the algorithm
+  first tries to estimate the bounds for the parameters to be estimated,
+  if the bounds for the parameters are not given.
+
+  Independently whether \code{users.guess} is given,
+  the algorithm guesses initial values for the parameters.
+  The automatic guess and the user's guess will be called
+  primitive methods in the following.
+
+  Second, the variogram model is fitted by various least squares
+  methods (according to the value of \code{lsq.methods}) using
+  the best parameter set among the primitive methods as initial value
+  if the effective number of parameters is greater than 1.
+
+  [Remarks: (i) \dQuote{best} with respect to the target value of
+  the respective lsq method;
+  (ii) the effective number of parameters in the optimisation algorithm
+  can be smaller than the number of estimated parameters, since in some
+  cases, some parameters can be calculated explicitely;
+  relevant for the choice between
+  \code{\link{optimise}} and \code{\link{optim}} is the
+  effective number of parameters.]
+
+  Third, the model is fitted by various maximum likelihood methods
+  (according to the value of \code{mle.methods}) using
+  the best parameter set among the primitive methods and the lsq methods
+  as initial value (if the effective number of parameters is greater
+  than 1).  
+
+% Forth, the model is fitted by various cross validation methods
+%  (according to the value of \code{mle.methods}) using
+%  the best parameter set among the primitive, lsq and mle methods
+%  as initial value (if the effective number of parameters is greater than 1).
+
   
   Comments on specific parameters:
   \itemize{
@@ -260,16 +322,14 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     and  \code{nugget} and  \code{variance} are set to \code{NA}.
 
     \code{sill} is only used for the standard model. 
-    
-   }\itemize{
-   
+       
     \item \code{use.naturalscaling}\cr
     logical. If \code{TRUE} then internally, rescaled
     covariance functions will be used for which
     cov(1)\eqn{\approx}{~=}0.05. However this parameter
     does not influence
-    the output of \code{mleRF}: the parameter vector
-    returned by \code{mleRF} refers
+    the output of \code{fitvario}: the parameter vector
+    returned by \code{fitvario} refers
     \emph{always} to the standard covariance model as given in
     \code{\link{CovarianceFct}}. (In contrast to \code{PracticalRange}
     in \code{\link{RFparameters}}.)\cr
@@ -288,7 +348,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     \itemize{
       \item For some covariance models with additional parameters, the
       rescaling factor has to be determined numerically.
-      Then, more time is needed to perform \code{mleRF}.
+      Then, more time is needed to perform \code{fitvario}.
     }
     Default: \code{TRUE}.
     
@@ -300,7 +360,6 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     5 : extended debugging information, including graphics\cr
     Default: \code{0}.
     
-   }\itemize{
    \item \code{trace.optim}\cr
     see control parameter \code{trace} of
     \code{\link{optim}}.  Default: \code{0}.
@@ -335,7 +394,6 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     
     Default: \code{20}.\cr
     
-  }\itemize{
     \item \code{lowerbound.scale.LS.factor}\cr
     For the LSQ target function a different lower bound
     for the scale is used. It is determined as
@@ -356,8 +414,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
       var(\code{data}).}
     Default: \code{10}.
     
-  }\itemize{
-    \item \code{lowerbound.var.factor}\cr
+     \item \code{lowerbound.var.factor}\cr
     The lower bound for the variance and the nugget is determined
     as
     \deqn{\hbox{var}(\code{data}) /
@@ -388,19 +445,16 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     between different pairs of points) /
     \code{scale.max.relative.factor}}
     
-    it is assumed that a nugget effect
-    is present.  In case the user set \code{nugget=0},
-    the ML estimation is automatically performed
-    for \code{nugget=NA} instead of \code{nugget=0}. 
+    a warning is given that probably a nugget effect
+    is present.  
     Note: if \code{scale.max.relative.factor} is greater
     than \code{lowerbound.scale.LS.factor} then
-    \code{nugget} is never set to \code{NA} as
+    no warning is given as
     the scale has the lower bound (minimum distance
     between different pairs of points) /
     \code{lowerbound.scale.LS.factor}. 
     Default: \code{1000}.
     
-  }\itemize{
     \item \code{minbounddistance}\cr
     If any value of the parameter vector
     returned from the ML estimation
@@ -425,41 +479,119 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     The number of points of the grid is approximately
     \code{approximate.functioncalls}. 
     Default: \code{50}.
+
+    \item \code{lsq.methods}\cr
+    Variogram fit by least squares methods; first, a preliminary
+    trend is estimated
+    by a simple regression; second, the variogram is fitted; third,
+    the trend is fitted using the estimated covariance structure.
+    \itemize{
+      \item \code{"self"} weighted lsq.  Weights are the values of the
+	fitted variogram to the power of -2
+      \item \code{"plain"} model fitted by least squares; trends are never taken
+	into account
+      \item \code{"sqrt.nr"} weighted lsq.  Weight is the square root
+	of the number 
+	of points in the bin
+      \item \code{"sd.inv"} weighted lsq.  Weight is the inverse the
+	standard deviation of the 
+	variogram cloud within the bin
+    }
+
+    \item \code{mle.methods}\cr
+    Model fit by various maximum likelihood methods
+    (according to the value of \code{mle.methods}) using
+    the best parameter set among the primitive methods and the lsq methods
+    as initial value (if the effective number of parameters is greater
+    than 1).   If the best parameter vector of the MLE found so far is too close
+    to some given bounds, see the specific parameters above, it is
+    assumed that
+    \code{\link{optim}} ran into a local minimum because of a bad starting
+    value.
+    In this case and if \code{refine.onborder=TRUE}
+    the MLE target function is calculated on a grid, the
+    best parameter vector is taken, and the optimisation is restarted with
+    this parameter vector.
+
+    \itemize{
+      \item \code{"ml"} maximum likelihood;
+      since ML and REML give the same result if there are not any
+      covariates, ML is performed in that case, independently whether
+      it is given or not.
+      \item \code{"reml"} restricted maximum likelihood
+    }
+  
+ %   \item \code{cross.methods}\cr
+%    Here, the parameters are chosen so that
+ %   the sum of the distances between the measured and estimated
+%    values in the cross validation are minimised.
+ %   The various methods differ in the distance definition.
+%
+%    The best parameter set among the primitive, lsq and mle methods
+%    are used as initial parameter value in the optimisation
+ %   (if the effective number of parameters is greater
+%    than 1).   If the best parameter vector of the cross validation
+%    algorithm
+%    found so far is too close
+ %   to some given bounds, see the specific parameters above, it is
+ %   assumed that
+%    \code{\link{optim}} ran into a local minimum because of a bad starting
+%    value.
+%    In this case and if \code{refine.onborder=TRUE}
+%    the target function is calculated on a grid, the
+%    best parameter vector is taken, and the optimisation is restarted with
+%    this parameter vector.
+%   
+%    \itemize{
+%      \item \code{"cross.sq"} squared distance
+%      \item \code{"cross.abs"} absolute value
+%      \item \code{"cross.ign"} \sQuote{ignorance} distance, see
+%      Gneiting et al. (2005)
+%      \item \code{"cross.crps"} \sQuote{xxxxxxx} distance, see
+%      Gneiting et al. (2005)
+%    }
   }
-  Another maximum likelihood estimator for random fields
-  exists as part of the package \code{geoR} whose homepage
-  is at \url{http://www.maths.lancs.ac.uk/~ribeiro/geoR.html},
-  with a different philosophy behind.
 }
 \value{
+  If \code{table.format=TRUE} then a matrix is returned where the
+  first rows contain the estimated parameters, followed by 
+  the target values of all methods for the given set of parameters;
+  the last rows give the lower and upper bounds used in the estimations.
+  The columns correspond to the various estimation methods for the parameters.
+
+  If \code{table.format=FALSE} then
   the function returns a list with the following elements
-  \item{mle.value}: the log-likelihood for the fitted parameters
-  \item{trend.coff}{parameters for linear trend (optional)}
-  \item{mle}{fitted model}
   \item{ev}{list returned by \code{\link{EmpiricalVariogram}}}
-  \item{lsq}{model fitted by least squares; trends are never taken into account}
-  \item{nlsq}{weighted lsq.  Weight is the square root of the number
-    of points in the bin}
-  \item{slsq}{weighted lsq.  Weight is the inverse the standard deviation of the
-    variogram cloud within the bin}
-  \item{flsq}{weighted lsq.  Weights are the values of the fitted variogram
-    to the power of -2}
-  \code{mle.lower}{lower bounds for the parameters used in the
-    optimisation algorithm} 
-  \code{mle.upper}{upper bounds for the parameters used in the
-    optimisation algorithm}
+  \item{variogram}{list of fitted models; they include the fixed and the
+    estimated parameters; each list element gives the estimated
+    covariance model}
+  \item{values}{list of optimal target values}
 }
 \references{
-  Ribeiro, P. and Diggle, P. (2001) Software for geostatistical analysis
-  using R and S-PLUS: geoR and geoS, version 0.6.15.
-  \url{http://www.maths.lancs.ac.uk/~ribeiro/geoR.html}.
+  \itemize{
+    \item Least squares and mle methods
+
+    Cressie, N.A.C. (1993)
+    \emph{Statistics for Spatial Data.}
+    New York: Wiley.
+
+ %   \item Cross validation methods
+ %  Gneiting, T., M. Schlather, B. Huwe (2005)
+ %   \emph{}
+ %   In preparation.
+    
+    \item Related software\cr
+    Ribeiro, P. and Diggle, P. (2001) Software for geostatistical analysis
+    using R and S-PLUS: geoR and geoS, version 0.6.15.
+    \url{http://www.maths.lancs.ac.uk/~ribeiro/geoR.html}.
+  }
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
 \note{This function does not depend on the value of
   \code{\link{RFparameters}()$PracticalRange}. 
-  The function \code{mleRF} always uses the standard specification
+  The function \code{fitvario} always uses the standard specification
   of the covariance model as given in \code{\link{CovarianceFct}}.
   
 %  The function is still in an experimental stage (and will probably
@@ -467,7 +599,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 %  only a few components of the parameter vector are to be estimated.
 }
 \section{Acknowledgement}{
-  Thanks to Paulo Ribeiro for hints and comparing \code{mleRF} to
+  Thanks to Paulo Ribeiro for hints and comparing the first versions
+  of \code{fitvario} to
   \code{\link[geoR]{likfit}} of the package \code{geoR} whose homepage is at 
   \url{http://www.est.ufpr.br/geoR/}.
 }
@@ -479,10 +612,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
  % \code{\link{winddata}}.
 }
 \examples{
- % library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/MLE.R");
-
- RFparameters(Print=10)
-
+ % library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/mle.old.R");
  model <-"gencauchy"
  param <- c(0, 1, 0, 1, 1, 2)
  estparam <- c(0, NA, 0, NA, NA, 2) ## NA means: "to be estimated"
@@ -495,14 +625,15 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
  y <- runif(points,0,3) ## 100 random points in square [0, 3]^2
  d <- GaussRF(x=x, y=y, grid=FALSE, model=model, param=param, n=10)
  str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
-              lower=c(0.1, 0.1), upper=c(1.9, 5)))
+              lower=c(0.1, 0.1), upper=c(1.9, 5), cross.me=NULL))
 
 
 ## The next two estimations give about the same result.
 ## For the first the sill is fixed to 1.5. For the second the sill
 ## is reached if the estimated variance is smaller than 1.5
 estparam <-  c(0, NA, NA, NA, NA, NA) 
-str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam, sill=1.5))
+str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
+    sill=1.5, cross.me=NULL))
 
 estparam <-  c(0, NA, NaN, NA, NA, NA) 
 parampositions(model=model, param=estparam)
@@ -511,7 +642,7 @@ f <- function(param) {
    return(param)
 }
 str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam, 
-    sill=1, transform=f))
+    sill=1, transform=f, cross.me=NULL))
 
 ## the next call gives a warning, since the user may programme
 ## strange things in this setup, and the program cannot check it.
@@ -519,13 +650,14 @@ estparam <- c(0, NA, NA, NA, NA, NaN)
 parampositions(model=model, param=estparam)
 f <- function(param) {param[3] <- param[2]; param}
 unix.time(str(fitvario(x=cbind(x,y), data=d, model=model,
-      param=estparam, transform=f, standard.style=TRUE), vec.len=6))
+      param=estparam, transform=f, standard.style=TRUE,
+      cross.me=NULL), vec.len=6))
 
 ## much better programmed, but also much slower:
 estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
                       kappa=list(NA, function(m) m[[1]]$kappa[1])))
-unix.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel),
-              vec.len=6))
+unix.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
+              cross.me=NULL), vec.len=6))
 
 
 %#################################################################
@@ -535,7 +667,6 @@ unix.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel),
 %#################################################################
 %
 % check space time extension in MLE\n add examples\n add test
-
 }
 \keyword{spatial}
 

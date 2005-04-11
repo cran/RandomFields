@@ -75,10 +75,11 @@ GetDistributionNames()
 %\value{
 %  lists of internal parameters
 %}
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{\command{\link{CovarianceFct}}}
 \keyword{ spatial }%-- one or more ...
+\keyword{internal}
 \examples{
 % library(RandomFields)
 
@@ -103,6 +104,6 @@ str(convert.to.readable(PrepareModel(xx, ti=1), allowed="nested"))
 
 ## back to the (correct) list definition
 str(convert.to.readable(PrepareModel(xx, ti=1), allowed="list"))
-
 }
+
 

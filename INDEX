@@ -1,27 +1,31 @@
-CheckXT                 Internal functions -- do not use them directly
 CondSimu                Conditional Simulation
 CovarianceFct           Covariance And Variogram Models
 DeleteRegister          Deleting Intermediate Results
 Dev                     Choosing the device
 EmpiricalVariogram      Empirical (Semi-)Variogram
-FileExists              Files
-GaussRF                 Gaussian Random Fields
-GetPracticalRange       Determination of the practical range
-Kriging                 Kriging methods
-MaxStableRF             Max-Stable Random Fields
-RFMethods               Simulation Techniques
-RFparameters            Control Parameters
-RandomFields            Simulation and Analysis of Random Fields
-ShowModels              Interactive Choice of Models and Parameters
-SimulateRF              Simulation of Random Fields
 eval.parameters         Interactive menu
+FileExists              Files
 fitvario                LSQ and Maximum Likelihood Estimation of
                         Random Field Parameters
 fractal.dim             fractal dimension
+GaussRF                 Gaussian Random Fields
+getactions              Get input behaviour
+GetPracticalRange       Determination of the practical range
+GetRegisterInfo         Internal information
 hostname                System calls
 hurst                   Hurst coefficient
+Kriging                 Kriging methods
+Locator                 Graphical Input
+MaxStableRF             Max-Stable Random Fields
 parameter.range         Range of model specific parameters
 parampositions          Position of the parameters
 pokeTBM                 Transfer of initialisation details
+RandomFields            Simulation and Analysis of Random Fields
+Readline                Read a Line
 regression              Regression plot
+RFMethods               Simulation Techniques
+RFparameters            Control Parameters
+ShowModels              Interactive Choice of Models and Parameters
+SimulateRF              Simulation of Random Fields
 soil                    Soil data of North Bavaria, Germany
+useraction              Set input behaviour

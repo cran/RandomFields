@@ -6,7 +6,8 @@
 }
 \usage{
 Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
-        gridtriple=FALSE, model, param, given, data, trend, pch=".")
+        gridtriple=FALSE, model, param, given, data, trend, pch=".",
+        return.variance=FALSE, internal=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
@@ -45,6 +46,19 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   \item{pch}{Kriging procedures are quite time consuming in general. 
     The character \code{pch} is printed after roughly
     each 80th part of calculation.}
+  \item{return.variance}{logical. If \code{FALSE} the kriged field is
+    returned. If \code{TRUE} a list of two elements, \code{estim} and
+    \code{var}, i.e. the kriged field and the kriging variances,
+    is returned.}
+  \item{internal}{
+    \code{FALSE}. \code{internal} should not be set to \code{TRUE}
+    by the user.
+    (In case \code{internal=TRUE},
+    various consistency checks for the input variables
+    are not performed. Further, \code{grid} must be \code{FALSE},
+    and \code{model} must be given in the output format of
+    \code{\link{PrepareModel}}.)
+  }
 }
 \details{
   \itemize{
@@ -55,7 +69,7 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     are increasing sequences with identical lags for each sequence. 
     A corresponding
     grid is created (as given by \code{expand.grid}). 
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+    \item \code{(grid==TRUE) && (gridtriple==TRUE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid
     (as given by \code{expand.grid(seq(x$start,x$end,x$step),
@@ -64,7 +78,7 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   }
 }
 \value{
-  \code{Kriging} returns a vector or matrix
+  If \code{variance.return=FALSE} \code{Kriging} returns a vector or matrix
   of kriged values corresponding to the
   specification of \code{x}, \code{y}, \code{z}, and
   \code{grid}, and \code{data}.\cr
@@ -84,8 +98,13 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     the random field, is returned (according to the specification
     of \code{x}, \code{y}, and \code{z}).  The last
     dimension contains the repetitions.
- %}
-}
+
+    If \code{variance.return=TRUE} a list of two elements, \code{estim} and
+    \code{var}, i.e. the kriged field and the kriging variances,
+    is returned. The format of \code{estim} is the same as described
+    above.
+    The format of \code{var} is accordingly.
+  }
 \references{
  Chiles, J.-P. and Delfiner, P. (1999)
  \emph{Geostatistics. Modeling Spatial Uncertainty.}
@@ -101,8 +120,8 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
  Wackernagel, H. (1998) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 2nd edition.  
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 %\note{}
 
 \seealso{
@@ -113,7 +132,6 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 }
 
 \examples{
-
 ## creating random variables first
 ## here, a grid is chosen, but does not matter
 step <- 0.25 

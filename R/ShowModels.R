@@ -1,3 +1,5 @@
+
+
 # options(warn=0);library(RandomFields);source("~/article/R/NEW.RF/RandomFields/R/getNset.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("RandomFields/R/ShowModels.R"); ShowModels(x=1:100, y=1:100, model=list(list(model="exp", var=1, aniso=c(1,0,0,1))), method="ci");
 
 
@@ -5,13 +7,12 @@
 ShowModels <- function(x, y=NULL,
                        covx=ifelse(is.null(empirical),diff(range(x))/5,
                          max(empirical$c)),
-                       fixed.rs=FALSE,
+                       fixed.rs=TRUE,
                        method=NULL,
                        empirical=NULL,
                        model=NULL,
                        param=NULL,
                        all.param=NULL,## var, nugg, scale
-                       PracticalRange=FALSE,   
                        legends = TRUE,
                        register=0,
                        Mean=NULL,
@@ -21,20 +22,23 @@ ShowModels <- function(x, y=NULL,
                        covx.default = 100,
                        link.fct=NULL,
                        Zlim=NULL,
-                       maxstable.maxGauss=2,
                        Col.rect="red", Col.bg="blue", Col.sep="grey",
                        Col.line="red", Col.txt="black", Col.flash="red",
                        Col.vario="blue", Col.main="black",
                        Col.model=c("red", "black"), ## rf, transformed,
                        ##                                   vario
                        vario.lty=c(1,2), ## main axis, sec. axis
-                       cex.leg =0.7,
+                       cex.leg =0.7 * cex.names,
+                       cex.eval=0.8 * cex.names,
                        update=TRUE,
                        screen.new=TRUE,
+                       use.outer.RFparameters=FALSE,
                        debug=FALSE,
                        ...){
-
   stopifnot(!missing(x))
+  if (any(diff(x) <= 0)) stop("x should be a sequence of increasing numbers")
+  if (!is.null(y) && any(diff(y) <= 0))
+    stop("y should be a sequence of increasing numbers")    
   parent.screen <- screen()
   ENVIR <- environment()
   linkfctlist <- c("MaxStable")
@@ -42,17 +46,20 @@ ShowModels <- function(x, y=NULL,
   options(warn=2)
   bg.save <- par()$bg
   par(bg="white")
-  oldRFparameters <-
-    RFparameters()[c("PracticalRange", "PrintLevel", "maxstable.maxGauss")]
+  oldRFparameters <- RFparameters(no.readonly=TRUE)
 
-  if (debug) print1 <- print0 <- 5
-  else {
+  if (debug) {
+    print1 <- print0 <- 5
+    RFparameters(Print=print1)
+  } else {
     print1 <- 1
     print0 <- 0
   }
-  
-  RFparameters(PracticalRange=PracticalRange, Print=print1,
-               maxstable.maxGauss=maxstable.maxGauss)
+
+  if (!use.outer.RFparameters)
+  RFparameters(PracticalRange=FALSE, Print=print1, maxstable.maxGauss=2,
+               CE.force=TRUE, CE.trials=1, CE.mmin=-4, CE.userfft=TRUE
+               )
     
   runif(1)
   assign("save.seed", get(".Random.seed", envir=.GlobalEnv, inherits = FALSE),
@@ -226,7 +233,7 @@ ShowModels <- function(x, y=NULL,
          labels=paste(namen), adj=c(0,0), cex=cex.names,
          col=col.choose)
     repeat {
-      if (length(loc <- locator(1))==0) {
+      if (length(loc <- Locator(1))==0) {
         return(NA)
       }
       loc <- floor(unlist(loc))
@@ -255,18 +262,16 @@ ShowModels <- function(x, y=NULL,
     ## "field" : refresh of simulation plot
     ## "simu" : new simulation and recalculation of variogram model
    
-    if (cp$PracticalRange != PracticalRange) {
-      assign("PracticalRange", cp$PracticalRange, envir=ENVIR)
+    if (cp$PracticalRange != RFparameters()$PracticalRange) {
       DeleteRegister(register)
-      RFparameters(PracticalRange=cp$PracticalRange)                     
+      RFparameters(PracticalRange=cp$PracticalRange)                   
     }
     
     if (any(param %in% c("field", "simu"))) {
-      screen(simu.dev)
-      par(new=screen.new, mar=simu.mar)
+      screen(simu.dev, new=screen.new)
       if (!is.null(y)) {
         plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
-        text(0.5, 0.5, lab="calculating...", adj=c(0.5, 0.5))
+        text(0.5, 0.5, lab="calculating...", adj=c(0.5, 0.5), cex=2)
       }
     }
 
@@ -447,7 +452,7 @@ ShowModels <- function(x, y=NULL,
                "hyperbolic", "lgd1", "nsst", "nsst2", "nugget",
                "penta","power",
                "qexponential","spherical","stable","wave",
-               "whittlematern", "2dfractalB", "3dfractalB"
+               "whittlematern", "fractalB"
                )
   see.manual <- "formula see help page of CovarianceFct"
   exprlist <- c(expression(2^a *Gamma(a+1)*x^{-a}* J[a](x)),
@@ -488,7 +493,6 @@ ShowModels <- function(x, y=NULL,
                 expression(sin(x)/x),
                 # "whittlematern",...
                 expression(2^{1-a}* Gamma(a)^{-1}* x^a * K[a](x)),
-                expression(x^a),
                 expression(x^a)
                 ) 
   expr <- rep(expression("C(x) unknown"), n)
@@ -522,7 +526,6 @@ ShowModels <- function(x, y=NULL,
 
     if (sum(index <- (opts==1))==1) col <- ll[index][[1]]
     else {
-      ## only R-1.3.0 onwards !
       eval(parse(text = paste("col <-",
                    paste(as.character(as.list(args(image.default))$col),
                          collapse="("),")")))
@@ -624,7 +627,7 @@ ShowModels <- function(x, y=NULL,
 
   
   cur.par[[covnr]]$varioangle <- NA  ## default: varioangle follows angle
-  cur.par[[covnr]]$PracticalRange <- PracticalRange
+  cur.par[[covnr]]$PracticalRange <- RFparameters()$PracticalRange
   cur.par[[covnr]]$variogram <-  variogram
   cur.par[[covnr]]$mean <- Mean
   cur.par[[covnr]]$link <- FALSE
@@ -634,7 +637,8 @@ ShowModels <- function(x, y=NULL,
   if (anisotropy) {
     model.entry <-
       list(
-           list(name="Anisotropy Parameters", var=NULL),       
+           list(name="Anisotropy Parameters", var=NULL, val="simulate",
+                param=c("simu", "rs")),       
            list(name="first axis scale", var="diag[1]", delta=TRUE,
                 val=function(d, v) {quadratic(d=d, v=v, a=maxstep[4],
                   mini=minscale) }),
@@ -660,7 +664,8 @@ ShowModels <- function(x, y=NULL,
            ),
       model.entry,
       list(
-           list(name="Global Parameters", var=NULL),       
+           list(name="Global Parameters", var=NULL, val="simulate",
+                param=c("simu", "rs")),       
            list(name="mean", var="mean", delta=TRUE,
                 val=function(d, v) {quadratic(d=d, v=v, a=maxstep[1],
                   mini=-Inf)}, param="simu"),
@@ -737,8 +742,11 @@ ShowModels <- function(x, y=NULL,
     ## that NULLs might have been introduced...
     entry <- entry[!sapply(entry, is.null)]
     
-    screen(simu.dev)
-    par(mar=simu.mar)
+    if (!is.null(y)) {
+      screen(simu.dev)
+      par(mar=simu.mar)
+      plot(Inf, Inf, xlim=range(x), ylim=range(y), axes=FALSE)
+    }
     simulate(cp=cur.par[[covnr]])
 
     options(warn=-1)
@@ -748,6 +756,7 @@ ShowModels <- function(x, y=NULL,
                       dev = par.dev, cp=cur.par[[covnr]],
                       col.rect=Col.rect, col.bg=Col.bg, col.sep=Col.sep,
                       col.line = Col.line, col.txt=Col.txt, sep=NULL,
+                      cex=cex.eval, cex.i=cex.eval,
                       param=c("field", "simu", "vario")
                       )
  

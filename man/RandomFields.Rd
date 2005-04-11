@@ -29,8 +29,9 @@
         fields; nice examples to get familiar with the
         simulation features of the package
       \item \code{\link{Kriging}} : simple and ordinary kriging
-      \item \code{\link{mleRF}} : maximum likelihood estimator and lsq for
-      random field parameters
+      \item \code{\link{fitvario}} : variogram/covariance function fit
+      by least squares, maximum likelihood and cross validation
+      techniques
       \item \code{\link{PrintMethodList}} : list of implemented
       simulation methods
       \item \code{\link{ShowModels}} : interactive, graphical choice of
@@ -67,12 +68,23 @@
     \item \code{\link{eval.parameters}} : provides an interactive menu 
     \item \code{\link{fractal.dim}} : estimation of the fractal dimension
     \item \code{\link{hurst}} : estimation of the Hurst parameter
-    \item \code{\link{regression}} : interactive regression plot 
+    \item \code{\link{regression}} : interactive regression plot
+    \item \code{\link{Locator}}, \code{\link{Readline}} :
+    \code{\link[graphics]{locator}} and \code{\link[base]{readline}},
+    respectively, with storage and replay functionality
   }
  
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\note{
+  Version 1.1.21 : Default value of
+  \code{RFparameters()$Storing} is now \code{FALSE}.
+}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html};
+  
+  Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
+  methods \sQuote{cutoff} and \sQuote{intrinsic})
+}
 \references{
   This package is announced in:
 

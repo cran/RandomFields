@@ -5,8 +5,8 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
                             col.rect="red", col.bg="blue", col.sep="grey",
                             col.left="red", col.mid="white", col.right="white",
                             col.line="red", col.txt="black",
-                            cex=0.8, cex.i=0.8, sep="-----",
-                            ...) {
+                            cex=0.8, cex.i=cex, sep="-----",
+                            ...) {  
   ## since the variables are created within the function with names
   ## given by the user, all local variables used in this functions start with
   ## points
@@ -181,11 +181,14 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
   show.parameters()
   .simu.txt <- paste(.namen[1], "<- simulate(",
                     paste(paste(.namen,"=",.namen), collapse=","), ")")
-  
+
   ## .history contains last changed value; it is erased if simulate is called
   .zaehler <- 0
+
+#  print(paste(variable, "$.history <- list()", is.list(action.list)))
+  
   eval(parse(text=paste(variable, "$.history <- list()")))
-  while (!is.null(.loc <- locator(1))){
+  while (!is.null(.loc <- Locator(1, info=variable))){
     .j <- as.integer(.loc$y + 0.2)
     if ((.j>=1) && (.j<=length(entry)) && ((.loc$y+0.2) %% 1<0.8) &&
         (.loc$x>=-0.1) && (.loc$x<=1.15)){
@@ -215,7 +218,8 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
       if ((.loc$x>1.1) || is.null(.e$val)) {
         ## free input on xterm
         .newvalue <-
-          readline(prompt=paste(.e$name, " (", .evar , ") : ", sep=""))
+          Readline(prompt=paste(.e$name, " (", .evar , ") : ", sep=""),
+                   info=paste(variable, .e$name))
         if (.newvalue=="") next
         if (.newvalue=="exit immediately") stop("user forced exit")
         else {
@@ -260,7 +264,9 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
   screen(dev)
   plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
   par(bg=.bg)
-  return(eval(parse(text=names(list(...))[1])))
+  ## new6.4.04. orig:      return(eval(parse(text=names(list(...))[1])))
+  return(eval(parse(text=strsplit(strsplit(variable, "\\$")[[1]][1],
+                      "\\[")[[1]][1])))
 }
 
 

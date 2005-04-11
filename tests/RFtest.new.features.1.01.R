@@ -7,8 +7,9 @@ if (file.exists("source.R")) source("source.R")
 cat("\n landmark -2")
 
 
-RFparameters(Print=5)
+RFparameters(Print=6)
 #RFparameters(Print=1)
+RFparameters(Print=0)
 
 #
 
@@ -34,7 +35,9 @@ DeleteAllRegisters()
 
 RFparameters(CE.trial=3)
 
-cat("\n landmark 0")
+if (FALSE) { #####################
+
+cat("\n landmark 0\n")
 
 m <- matrix(c(0.00134,0,0, 0,0.00134,0, 0,0,0.9347),ncol=3) 
 m <- matrix(c(0.00134,0, 0,0.9347),ncol=2) 
@@ -51,7 +54,7 @@ unix.time(z <- GaussRF(x=x, T=T,
 image(x=seq(x[1],x[2],x[3]),y=seq(T[1],T[2],T[3]),z,zlim=c(-3,3))
 
 #stop("")
-cat("\n landmark 1")
+cat("\n landmark 1\n")
 
 y <-  x <-  1:256
 ff <- 10
@@ -65,13 +68,13 @@ z <- GaussRF(x=x,y=y,grid=TRUE, model=model,me="ci")
 image(z,zlim=c(-3,3))
 
 #stop("")
-cat("\n landmark 2")
+cat("\n landmark 2\n")
 
 xx <- matrix(c(expand.grid(x,y),recursive=TRUE),ncol=2)
 cd <- CovarianceFct(xx,model)
 image(matrix(cd,nrow=length(x)),zlim=c(0,1),col=grey((30:0)/30))
 
-cat("\n landmark 3")
+cat("\n landmark 3\n")
 
 y <- x <- seq(-10,10,0.1)
 xx <- matrix(c(expand.grid(x,y),recursive=TRUE),ncol=2)
@@ -94,7 +97,7 @@ image(z,zlim=c(-3,3))
 
 
 #stop("")
-cat("\n landmark 4")
+cat("\n landmark 4\n")
 
 
 RFparameters(TBMCE.trials=5);
@@ -117,7 +120,7 @@ if (FALSE) {
   for (i in 1:dim(z)[2]) { image(z[,i,]); readline();}
 }  
 
-cat("\n landmark 5")
+cat("\n landmark 5\n")
 
 #stop("")
 
@@ -150,7 +153,7 @@ if (FALSE) {
 print(CovarianceFct(cbind(0:10,0,0),model))
 
 #stop("")
-cat("\n landmark 6")
+cat("\n landmark 6\n")
 
 
 x <- (1:32)/2
@@ -175,7 +178,7 @@ print(CovarianceFct(cbind(0:10,0,0),model))
 
 
 
-cat("\n landmark 7")
+cat("\n landmark 7\n")
 
 ## extremes
 x <- (0:100)/10
@@ -193,7 +196,7 @@ if (FALSE) {
   image(mx,my,sqrt(ms))
 }
 
-cat("\n landmark 8")
+cat("\n landmark 8\n")
 
 ms <- MaxStableRF(mx, my, grid=TRUE,
                   model="gauss", param=c(0, v=1, 0, s=40),
@@ -226,7 +229,7 @@ ms <- MaxStableRF(mx, my, grid=TRUE,
                     me="ci",maxstable="extr")
 image(mx,my,sqrt(ms))
 
-cat("\n landmark 9")
+cat("\n landmark 9\n")
 
 
 
@@ -246,7 +249,7 @@ z <- GaussRF(x=x, y=x, grid=TRUE,model="ci",param=c(0,1,0,1),me="ad");
 dev.set(); image(z,zlim=c(-3,3));dev.set();
 
 ##print(c(mean(as.double(z)),var(as.double(z))))
-cat("\n landmark 10")
+cat("\n landmark 10\n")
 
 if (FALSE) {
 dev.set()
@@ -273,7 +276,7 @@ z2 <- GaussRF(x=x, y=x, grid=TRUE,
 image(z2,zlim=c(-3,3))
 print(c(mean(as.double(z1)),var(as.double(z1))))
 print(c(mean(as.double(z2)),var(as.double(z2))))
-cat("\n landmark 12")
+cat("\n landmark 12\n")
 
 
 ## TBM3
@@ -301,7 +304,7 @@ image(z2,zlim=c(-3,3))
 print(c(mean(as.double(z1)),var(as.double(z1))))
 print(c(mean(as.double(z2)),var(as.double(z2))))
 
-cat("\n landmark 12")
+cat("\n landmark 12\n")
     
 #stop("")
 
@@ -326,11 +329,11 @@ z2 <- GaussRF(x=x, y=x, grid=TRUE,
 image(z2,zlim=c(-3,3))
 print(c(mean(as.double(z1)),var(as.double(z1))))
 print(c(mean(as.double(z2)),var(as.double(z2))))
-cat("\n landmark 13")
+cat("\n landmark 13\n")
 
 
 dev.set()
-z1 <- GaussRF(x=x, y=x, grid=TRUE, model="gauss", p=c(0,1,0,1),
+z1 <- GaussRF(x=x, y=x, grid=TRUE, model="gauss", param=c(0,1,0,1),
               me="TBM3",reg=0)
 image(z1,zlim=c(-3,3))
 
@@ -345,7 +348,7 @@ z1 <- GaussRF(x=x, y=x, grid=TRUE, model=list(list(m="gauss", v=1,s=1)),
 image(z1,zlim=c(-3,3))
 #stop("")
 
-cat("\n landmark 14")
+cat("\n landmark 14\n")
 
 ## TBM2
 z1 <- GaussRF(x=x, y=x, grid=TRUE,
@@ -359,7 +362,7 @@ print(c(mean(as.double(z1)),var(as.double(z1))))
 
 image(z1,zlim=c(-3,3))
 
-cat("\n landmark 15")
+cat("\n landmark 15\n")
 
 z1 <- GaussRF(x=x, y=x, grid=TRUE, model=list(list(m="power", v=1,k=2,s=10)),
               me="TBM2")
@@ -374,7 +377,7 @@ z <- GaussRF(x=x, y=x, grid=TRUE,
                ),me="sp")
 image(z,zlim=c(-3,3)) 
 dev.set()
-cat("\n landmark 16")
+cat("\n landmark 16\n")
 
 z1 <- GaussRF(x=x, y=x, grid=TRUE,
              model=list(list(m="gauss", v=1, a=matrix(c(0.5,0,1,0.5),ncol=2))),
@@ -388,8 +391,9 @@ z2 <- GaussRF(x=x, y=x, grid=TRUE,
 image(z2,zlim=c(-3,3))
 image(z1+z2,zlim=c(-3,3))
 
+} ############
 
-cat("\n landmark 17")
+cat("\n landmark 17\n")
 x <- (0:30)/10
 n <- 100
 
@@ -423,18 +427,17 @@ z <- GaussRF(x=x, y=x, grid=TRUE,
                ), meth="direct")
 image(z) #2
 
-cat("\n landmark 19")
+cat("\n landmark 19\n")
 
 
-RFparameters(Print=5)
 z <- GaussRF(x=x, y=x, grid=TRUE, model="exponen", param=c(0,1,0,4))
 image(z) #3
 
-cat("\n landmark 20")
+cat("\n landmark 20\n")
 
 #} #######################################################################
 
-cat("\n landmark 21-0 ")
+cat("\n landmark 21-0 \n")
 
 x <- (0:100)/10
 x <- (0:30)/10
@@ -446,7 +449,7 @@ z <- GaussRF(x=x, y=x, grid=TRUE,
                )
 image(z) #4
 
-cat("\n landmark 21")
+cat("\n landmark 21\n")
 
 ## unspecified, general testing
 
@@ -462,7 +465,7 @@ z <- GaussRF(x=x, y=x, grid=TRUE,
 image(z) #5
 
 
-cat("\n landmark 22")
+cat("\n landmark 22\n")
 
 
 z <- GaussRF(x=x, y=x, grid=TRUE,
@@ -472,7 +475,7 @@ image(z)
 z <- GaussRF(x=x, y=x, grid=TRUE, model="gneiting", param=c(0,1,0,2))
 image(z) #6
 
-cat("\n landmark 23")
+cat("\n landmark 23\n")
 
 #stop("")
 
@@ -489,7 +492,7 @@ n3 <- CovarianceFct(x,"nugget",param=c(NA,p3[1],0,1))
 n <- CovarianceFct(x,"expo",param=cbind(p1,p2,p3))
 sum(abs(n - n1 - n2 - n3))
 
-cat("\n landmark 24")
+cat("\n landmark 24\n")
 
 ## test on anisotropic model and arbitrary combinations
 dd <- CovarianceFct(x,
@@ -499,7 +502,7 @@ dd <- CovarianceFct(x,
                          "+",
                          list(m="nugget", v=8)
                          ),dim=2)
-cat("\n landmark 24a")
+cat("\n landmark 24a\n")
 
 cc <- CovarianceFct(cbind(x,0),
                     list(list(m="whittle", k=3, v=5, a=diag(2)/4),
@@ -508,7 +511,7 @@ cc <- CovarianceFct(cbind(x,0),
                          "+",
                          list(m="nugget", v=8,  a=diag(2))
                          ))
-cat("\n landmark 25")
+cat("\n landmark 25\n")
 
 w <- CovarianceFct(x, "whittle", param=c(NA,5,0,4,3))
 e <- CovarianceFct(x,"exponen", param=c(NA,4,0,10))

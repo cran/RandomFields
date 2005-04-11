@@ -2,98 +2,100 @@
 
 Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                     grid, gridtriple=FALSE,
-                    model, param, given, data, trend,                 
-                    pch=".") {
-
+                    model, param, given, data, trend,            
+                    pch=".", return.variance=FALSE, internal=FALSE) {
   krige.methodlist <- c("S", "O")
-  if (is.na(krige.method.nr <- pmatch(krige.method,krige.methodlist)))
-    stop(paste("kriging method not identifiable from the list.",
-               "Possible values are", paste(krige.methodlist, collapse=",")))
-
-  x <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, gridtriple=gridtriple)
-  y <- z <- NULL
-  pm <- PrepareModel(model=model, param=param,
-                     timespacedim=x$spacedim + x$Time,
-                     trend=trend)
-
+  krige.method.nr <- pmatch(krige.method, krige.methodlist)
   is.matrix.data <- is.matrix(data) && (ncol(data)>1)
-  data <- as.matrix(data)
-  given <- as.matrix(given)
-  xdim <- ncol(given)
+  if (internal) {
+    ## do not check the user's input
+    ## model must be given in the PrepareModel form
+    ## grid must be false
+    stopifnot(!grid)
+    stopifnot(missing(param))
+    pm <- model
+    xdim <- ncol(x)
+    tgiven <-  t(given)
+    nd <- nrow(given)
+  } else {
+    if (is.na(krige.method.nr))
+      stop(paste("kriging method not identifiable from the list.",
+                 "Possible values are", paste(krige.methodlist, collapse=",")))
+    x <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, gridtriple=gridtriple)
+    y <- z <- NULL
+    pm <- PrepareModel(model=model, param=param,
+                       timespacedim=x$spacedim + x$Time,
+                       trend=trend)
 
-  if (pm$timespacedim!= xdim)
-    stop("dimensions of the kriged points and the given points do not match")  
-  stopifnot(pm$timespacedim == ncol(x$x) + !is.null(x$T)) ## program wrong
+    data <- as.matrix(data)
+    given <- as.matrix(given)
+    xdim <- ncol(given)
 
-  nd <- nrow(given)
-  pos <- integer(nd)
-  ## lexicographical ordering of vectors --- necessary to check
-  ## whether any location is given twice, but with different value of
-  ## the data
-  .C("Ordering", as.double(t(given)), as.integer(nd), as.integer(xdim), pos,
-     PACKAGE="RandomFields", DUP=FALSE)
-  pos <- pos + 1
-
-  given <- given[pos, , drop=FALSE]
-  data <- data[pos, , drop=FALSE]
-  
-  ## are locations given twice with different data values?
-  dup <- c(FALSE, apply(abs(given[-nd, , drop=FALSE] -
-                            given[-1, , drop=FALSE]), 1, sum))
-  if (any(dup <- c(FALSE, apply(abs(given[-1, , drop=FALSE] -
-                                    given[-nd, , drop=FALSE]), 1, sum)==0))) {
-    if (any(data[dup, ] != data[c(dup[-1], FALSE), ]))
-      stop("duplicated conditioning points with different data values")
-    given <- given[!dup, , drop=FALSE]
-    data <- data[!dup, , drop=FALSE]  
-  }
-  
-  tgiven <-  t(given)
-  nd <- nrow(given)
-
-  ## the next passage might be replaced by a direct call of
-  ## covarianceMatrix...
-  covmatrix <- diag(nd) *
-    (CovarianceFct(if (pm$anisotropy) t(rep(0, pm$timespacedim)) else 0,
-                   model, param) / 2)
-  if (nd>1) {  
-    low.tri <- lower.tri(covmatrix, diag=FALSE)
-    covmatrix[low.tri] <-
-      CovarianceFct(if (pm$anisotropy)
-                    matrix(.C("vectordist", as.double(given),
-                              as.integer(dim(given)),
-                              vd=double(xdim * nd * (nd-1)/2), as.integer(FALSE),
-                              PACKAGE="RandomFields")$vd, ncol=xdim) else 
-                    as.matrix(dist(given))[low.tri],
-                    model, param)
-  }
-  covmatrix <- covmatrix + t(covmatrix)
-  given <- NULL
-
-  if (grid) {
-    zz <- cbind(x$x, x$T)
-    eval(parse(text=paste("dimension <- c(",
-                 paste(paste("length(seq(",zz[1,],",", zz[2,],",",
-                             zz[3,],"))"), collapse=","),
-                 ")")))
-    ## `x' will be used in apply within kriging
-    if ( (l <- ncol(zz))==1 ) x <- matrix(seq(zz[1], zz[2], zz[3]), ncol=1)
-    else {
-      text <- paste("x <- expand.grid(",
-                    paste("seq(zz[1,", 1:l,
-                          "],zz[2,", 1:l,
-                          "],zz[3,", 1:l, "])",collapse=","),
-                    ")")
-      eval(parse(text=text))
+    if (pm$timespacedim!= xdim)
+      stop("dimensions of the kriged points and the given points do not match")  
+    stopifnot(pm$timespacedim == ncol(x$x) + !is.null(x$T)) ## program wrong
+    
+    nd <- nrow(given)
+    pos <- integer(nd)
+    ## lexicographical ordering of vectors --- necessary to check
+    ## whether any location is given twice, but with different value of
+    ## the data
+    .C("Ordering", as.double(t(given)), as.integer(nd), as.integer(xdim), pos,
+       PACKAGE="RandomFields", DUP=FALSE)
+    pos <- pos + 1
+    
+    given <- given[pos, , drop=FALSE]
+    data <- data[pos, , drop=FALSE]
+    
+    ## are locations given twice with different data values?
+    dup <- c(FALSE, apply(abs(given[-nd, , drop=FALSE] -
+                              given[-1, , drop=FALSE]), 1, sum))
+    if (any(dup <- c(FALSE, apply(abs(given[-1, , drop=FALSE] -
+                                      given[-nd, , drop=FALSE]), 1, sum)==0))) {
+      if (any(data[dup, ] != data[c(dup[-1], FALSE), ]))
+        stop("duplicated conditioning points with different data values")
+      given <- given[!dup, , drop=FALSE]
+      data <- data[!dup, , drop=FALSE]  
     }
-  } else x <- x$x
 
-  env <- environment()
-  nd.step <-  ceiling(nrow(x) / 79) ## for the user's entertainment
-  assign("enu", 0, envir=env)       ## ="=
-  nn <- as.integer(ncol(tgiven))
+    tgiven <-  t(given)
+    nd <- nrow(given)
+    
+    if (grid) {
+      zz <- cbind(x$x, x$T)
+      eval(parse(text=paste("dimension <- c(",
+                   paste(paste("length(seq(", zz[1,], ",", zz[2,], ",",
+                               zz[3,], "))"), collapse=","),
+                   ")")))
+      ## `x' will be used in apply within kriging
+      if ( (l <- ncol(zz))==1 ) x <- matrix(seq(zz[1], zz[2], zz[3]), ncol=1)
+      else {
+        text <- paste("x <- as.matrix(expand.grid(",
+                      paste("seq(zz[1,", 1:l,
+                            "],zz[2,", 1:l,
+                            "],zz[3,", 1:l, "])", collapse=","),
+                      "))")
+        eval(parse(text=text))
+      }
+    } else x <- x$x
+  } 
+
+ 
   error <- integer(1)
-  .C("InitUncheckedCovFct",
+  
+if (FALSE) if (RFparameters()$Print>3) str(list("InitUncheckedCovFct",
+     as.integer(pm$covnr),
+     as.double(pm$param),
+     as.integer(length(pm$param)),
+     as.integer(pm$timespacedim),
+     as.integer(xdim),
+     as.integer(length(pm$covnr)),
+     as.integer(pm$anisotropy),
+     as.integer(pm$op),
+     as.integer(RFparameters()$PracticalRange),
+     error, PACKAGE="RandomFields", DUP=FALSE))
+  
+   .C("InitUncheckedCovFct",
      as.integer(pm$covnr),
      as.double(pm$param),
      as.integer(length(pm$param)),
@@ -106,59 +108,124 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
      error, PACKAGE="RandomFields", DUP=FALSE);
   if (error) stop(" Error in definition of covariance function")
 
+
+  
+  covmatrix <- double(nd * nd)
+  
+if (FALSE) if (RFparameters()$Print>3){
+  print(t(matrix(.C("vectordist", as.double(given),
+                   as.integer(dim(given)),
+                   vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
+                   PACKAGE="RandomFields")$vd, ncol=xdim)))
+  print(sqrt(apply(t(matrix(.C("vectordist", as.double(given),
+                   as.integer(dim(given)),
+                   vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
+                   PACKAGE="RandomFields")$vd, ncol=xdim))^2, 2, sum)))
+  print(list("UncheckedCovMatrix",
+       t(matrix(.C("vectordist", as.double(given),
+                   as.integer(dim(given)),
+                   vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
+                   PACKAGE="RandomFields")$vd, ncol=xdim)),
+     nd, covmatrix, PACKAGE="RandomFields", DUP=FALSE))
+}
+  
+  .C("UncheckedCovMatrix",
+       t(matrix(.C("vectordist", as.double(given),
+                   as.integer(dim(given)),
+                   vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
+                   PACKAGE="RandomFields")$vd, ncol=xdim)),
+     nd, covmatrix, PACKAGE="RandomFields", DUP=FALSE)
+  dim(covmatrix) <- c(nd, nd)
+  given <- NULL
+    
+  nn <- as.integer(ncol(tgiven))
+
+if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance))
+  
   switch(krige.method.nr,
-         { ## simple kriging#
+         {
+           ## simple kriging
            stopifnot(is.null(pm$trend))
-           if (!(is.matrix(try(data <- as.matrix(solve(covmatrix,
-                                                       data-pm$mean)))))) {
-             res <- x * NA
+           res <- double(nrow(x) * ncol(data))
+           if (return.variance) {
+             if (!(is.matrix(try(invcov <- solve(covmatrix)))))
+               stop("covmatrix is singular")
+             sigma2 <- double(nrow(x))
+             .C("simpleKriging2", as.double(tgiven), as.double(x),
+                as.double(data-pm$mean), as.double(invcov),
+                as.integer(nrow(x)), nn, as.integer(ncol(x)),
+                as.integer(ncol(data)), as.double(pm$mean),
+                res, sigma2,
+                PACKAGE="RandomFields", DUP=FALSE)           
            } else {
-             ## time consuming "apply" -- to do : replace by c call
-             res <- apply(x, 1,
-                          function(z){
-                            if ((enu %% nd.step) == 0) cat(pch);
-                            assign("enu", enu+1, envir=env);
-                            .C("UncheckedCovFct", tgiven - z, nn, cov=double(nn),
-                               PACKAGE="RandomFields", DUP=FALSE)$cov %*% data}
-                          ) + pm$mean
+             if (!(is.matrix(try(invcov <- solve(covmatrix, data-pm$mean))))) 
+               stop("covmatrix is singular")
+             .C("simpleKriging", as.double(tgiven), as.double(x),
+                as.double(invcov), as.integer(nrow(x)), nn, as.integer(ncol(x)),
+                as.integer(ncol(data)), as.double(pm$mean), res,
+                PACKAGE="RandomFields", DUP=FALSE)
            }
+           res <- matrix(res, nrow=ncol(data))
          }, {
            ## ordinary kriging
            stopifnot(is.null(pm$trend))
-           covmatrix <- rbind(cbind(covmatrix,1), c(rep(1,nd),0)) 
-            if (!(is.matrix(try(data <- solve(covmatrix,
-                                              rbind(as.matrix(data),0)))))) {
-              res <- x * NA
-            } else {
-              ## time consuming "apply" -- to do : replace by c call
-              res <-
-                apply(x, 1,
-                      function(z){
-                        if ((enu %% nd.step) == 0) cat(pch);
-                        assign("enu", enu+1, envir=env);
-                        c(.C("UncheckedCovFct", tgiven-z, nn, cov=double(nn),
-                             PACKAGE="RandomFields", DUP=FALSE)$cov,
-                          1) %*% data
-                      })
-            }
-         } , {
+           covmatrix <- rbind(cbind(covmatrix,1), c(rep(1,nd),0))
+           res <- double(nrow(x) * ncol(data))    
+           if (return.variance) {
+             if (!(is.matrix(try(invcov <- solve(covmatrix)))))
+               stop("covmatrix is singular") 
+             sigma2 <- double(nrow(x))
+             .C("ordinaryKriging2", as.double(tgiven), as.double(x),
+                as.double(data), as.double(invcov),
+                as.integer(nrow(x)), nn, as.integer(ncol(x)),
+                as.integer(ncol(data)), res, sigma2,
+                PACKAGE="RandomFields", DUP=FALSE)
+           } else {
+             if (!(is.matrix(try(invcov <- solve(covmatrix,
+                                                 rbind(as.matrix(data), 0)))))) 
+               stop("covmatrix is singular")
+             res <- double(nrow(x) * ncol(data))
+
+if (FALSE) if (RFparameters()$Print>3) {
+   print(list("ordinaryKriging", as.double(tgiven), as.double(x),
+                as.double(invcov),
+                as.integer(nrow(x)), nn, as.integer(ncol(x)),
+                as.integer(ncol(data)), res,
+                PACKAGE="RandomFields", DUP=FALSE))
+   print("eigen(cov)")
+             str(covmatrix)
+   print(covmatrix)
+   print(eigen(covmatrix))
+   print(RFparameters()$Practical)
+ }
+             
+             .C("ordinaryKriging", as.double(tgiven), as.double(x),
+                as.double(invcov),
+                as.integer(nrow(x)), nn, as.integer(ncol(x)),
+                as.integer(ncol(data)), res,
+                PACKAGE="RandomFields", DUP=FALSE)
+           }
+           res <- matrix(res, nrow=ncol(data))
+         }, {
            ## universal kriging
            stopifnot(!is.null(trend))
            stop("not programmed yet")
          }
          ) # switch
-
   if (pch!="") cat("\n")
   ncol.data <- ncol(data)
   x <- data <- NULL
-  
+
   if (is.matrix.data) {
-    if (grid) return(array(t(res), dim=c(dimension, ncol.data)))
-    else return(t(res))
+    if (grid) res <- array(t(res), dim=c(dimension, ncol.data))
+    else res <- t(res)
   } else {
-    if (grid) return(array(res, dim=dimension))
-    else return(res)
+    if (grid) res <- array(res, dim=dimension)
+    ## else res <- res
   }
+  return(if (return.variance) 
+         list(estim=res, var=if (grid) array(sigma2, dim=dimension) else sigma2)
+  else res)
 }
 
 
@@ -170,10 +237,10 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      err.model=NULL, err.param=NULL, err.method=NULL,
                      err.register=1, 
                      tol=1E-5, pch=".",
+                     paired=FALSE,
                      na.rm=FALSE
                      ) {
-  op.list <- c("+","*")
-  
+  op.list <- c("+","*")  
   if (is.character(method) && (!is.na(pmatch(method, c("S","O")))))
     stop("Sorry. The parameters of the function `CondSimu' as been redefined. Use `krige.method' instead of `method'. See help(CondSimu) for details")
 
@@ -241,9 +308,9 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   ## points where conditional simulation takes place
   if (grid) {
     zz <-  cbind(x$x, x$T)
-    ind <- 1 + (t(given) - zz[1,]) / zz[3,]
+    ind <- 1 + (t(given) - zz[1, ]) / zz[3, ]
     index <-  round(ind)
-    endpoints <- 1 + floor((zz[2,]-zz[1,])/zz[3,])
+    endpoints <- 1 + floor((zz[2, ] - zz[1, ]) / zz[3, ])
     outside.grid <- apply((abs(ind-index)>tol) | (index<1) |
                           (index>endpoints), 2, any)   
     if (any(outside.grid)) {
@@ -252,14 +319,14 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
       simu.grid <- FALSE
       l <- ncol(zz)
       if (l>3) stop(txt)
-      if (l==1) xx <- matrix(seq(x$x[1],x$x[2],x$x[3]),nrow=1)
+      if (l==1) xx <- matrix(seq(x$x[1], x$x[2], x$x[3]), nrow=1)
       else  eval(parse(text=paste("xx <-  t(as.matrix(expand.grid(",
-                         paste("seq(zz[1,",1:l,
-                               "],zz[2,",1:l,
-                               "],zz[3,",1:l,"])",collapse=","),
+                         paste("seq(zz[1,", 1:l,
+                               "],zz[2,", 1:l,
+                               "],zz[3,", 1:l, "])", collapse=","),
                          ")))")))
       eval(parse(text=paste("ll <- c(",
-                   paste("length(seq(zz[1,",1:l,"],zz[2,",1:l,"],zz[3,",1:l,
+                   paste("length(seq(zz[1,", 1:l, "],zz[2,", 1:l, "],zz[3,", 1:l,
                          "]))",
                          collapse=","),
                    ")")))
@@ -269,8 +336,8 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
       ## so that they can be used as conditioning points of the grid
       if (!all(outside.grid)) {
         new.index[!outside.grid] <- 1 +
-          apply((index[,!outside.grid,drop=FALSE]-1) *
-                cumprod(c(1,ll[-length(ll)])), 2, sum)
+          apply((index[, !outside.grid, drop=FALSE]-1) *
+                cumprod(c(1, ll[-length(ll)])), 2, sum)
       }
       index <- new.index
       new.index <- NULL
@@ -278,7 +345,7 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
       ## data points are all lying on the grid     
       z <- GaussRF(x=x$x, T=x$T,  grid=TRUE, model=model, param=param,
                    method=method, n=n, register=register,
-                   gridtriple=TRUE)
+                   gridtriple=TRUE, paired=paired)
       ## for all the other cases of simulation see, below
       index <- t(index)
     }
@@ -304,25 +371,25 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     ## the user will be surprised not to get the value of the data at
     ## that point
     one2ncol.xx <- 1:ncol(xx)
-    index <- apply(as.matrix(given),1,function(z){
-      i <- one2ncol.xx[apply(abs(xx - z),2,sum) < tol]
+    index <- apply(as.matrix(given), 1, function(z){
+      i <- one2ncol.xx[apply(abs(xx - z), 2, sum) < tol]
       if (length(i)==0) return(0)
       if (length(i)==1) return(i)
       return(NA)
     })
   }  
- 
+  
   if (!simu.grid) {
     ## otherwise the simulation has already been performed (see above)
     tol <- tol * nrow(xx)
     if (any(is.na(index)))
       stop("identification of the given data points is not unique - `tol' too large?")
     if (any(notfound <- (index==0))) {
-      index[notfound] <- (ncol(xx)+1):(ncol(xx)+sum(notfound))
+      index[notfound] <- (ncol(xx) + 1) : (ncol(xx) + sum(notfound))
     }
-    xx <- rbind(t(xx), given[notfound,,drop=FALSE])
+    xx <- rbind(t(xx), given[notfound, , drop=FALSE])
     z <- GaussRF(x=xx, grid=FALSE, model=model, param=param,
-                 method=method, n=n, register=register)
+                 method=method, n=n, register=register, paired=paired)
     xx <- NULL
   }
   if (is.null(z)) stop("random fields simulation failed")
@@ -335,17 +402,19 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     ## this is a bit more complicated since index is either a vector or
     ## a matrix of dimension dim(z)-1
     zgiven <- matrix(apply(z, length(dim(z)), function(m) m[index]), ncol=n)
-    z <- as.vector(apply(z,length(dim(z)),function(m) m[1:total]))
+    z <- as.vector(apply(z, length(dim(z)), function(m) m[1:total]))
   }
   
   if (!is.null(err.model)) {
      error <- GaussRF(given, grid=FALSE, model=err.model, param=err.param,
-                     method=err.method, n=n, register=err.register)  
+                      method=err.method, n=n, register=err.register,
+                      paired=paired)
      if (is.null(error)) stop("error field simulation failed")
      zgiven <- zgiven + as.vector(error)
      error <- NULL
    }
-  
+
+  # zgiven is matrix  
   z +  Kriging(krige.method=krige.method,
               x=x$x, grid=grid,
               model=krige,

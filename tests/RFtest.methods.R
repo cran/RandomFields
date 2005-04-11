@@ -15,6 +15,8 @@ models<- list(list("bessel",1),
               list("dampedcosine",1),
               list("exponential",NULL),
               ##  "expP", 
+              list("fractgauss",1),
+              list("fractalB",1),
               list("gauss",NULL),
               list("gencauchy",1:2),
               list("gengneiting",1:2),
@@ -29,22 +31,21 @@ models<- list(list("bessel",1),
               list("stable",1),
               list("wave",NULL),
               list("whittle",1),
-              list("2d",1),
-              list("3d",1), ## never successful since 3d simu required
-              list("fract",1)
               )
               
-methods <- c("cir","loc","TBM2","TBM3","sp","dir","add")
+methods <- c("cir", "cutoff", "intrinsic", "TBM2", "TBM3", "sp", "dir", "add",
+             "hyper")
 
 working <- matrix(0, nrow=length(models), ncol=length(methods))
-RFparameters(PrintLevel=0) ## 0
+RFparameters(PrintLevel=6) ## 0
 for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
-  for (mo in 1:length(models)) {
+  for (mo in 18:length(models)) {
     param <- c(0,1,1,scale, c(kappa1,2,2)[models[[mo]][[2]]])
     param <- c(0,1,1,scale, c(kappa1,2,3)[models[[mo]][[2]]])
     ## cauchytbm : kappa3 >= 3  for tbm2
     ##cat("\n", scale, kappa1, models[[mo]][[1]])
     for (me in 1:length(methods)) {
+      cat(scale, kappa1, models[[mo]][[1]], methods[me],"\n")
       ##cat("\n\nSTART")
       error <- InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
                              param=param,method=methods[me])

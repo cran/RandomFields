@@ -2,7 +2,7 @@
 
 /*
  Authors 
- Martin Schlather, martin.schlather@cu.lu 
+ Martin Schlather, schlath@hsu-hh.de 
 
  Copyright (C) 2001 -- 2004 Martin Schlather, 
 
@@ -32,12 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RFsimu.h"
 #include "MPPFcts.h"
 
-Real MPP_RADIUS =0.0;
-Real MPP_APPROXZERO  =0.001;
-Real ADDMPP_REALISATIONS = 100.0; // logically an integer, implementation 
+double MPP_RADIUS =0.0;
+double MPP_APPROXZERO  =0.001;
+double ADDMPP_REALISATIONS = 100.0; // logically an integer, implementation 
                                   //  allows for positive real ! 
 
-void SetMPP(int *action, Real *approxzero, Real *realisations, Real *radius)
+void SetMPP(int *action, double *approxzero, double *realisations, double *radius)
 {
   switch(*action) {
   case 0 :
@@ -74,19 +74,12 @@ void mpp_destruct(void **S) {
   }
 }
 
-void mpp_destructX(void **SX) {
-  // mpp_storage in RFsimu.h !!
-  if (*SX!=NULL) {
-    free(*SX);
-    *SX = NULL;
-  }
-}
 
 int init_mpp(key_type * key, int m)
 {
   int error, d, i, v, start_param[MAXDIM], index_dim[MAXDIM];
   bool no_last_comp /* , any_time_exception*/;
-  Real max[MAXDIM];  
+  double max[MAXDIM];  
   mpp_storage *s;
   cov_fct *cov;
   unsigned short int actcov;
@@ -101,7 +94,6 @@ int init_mpp(key_type * key, int m)
   }
 			 
   SET_DESTRUCT(mpp_destruct);
-  assert(key->destructX==NULL);
   assert(key->S[m]==NULL);
   if ((key->S[m]=malloc(sizeof(mpp_storage)))==0){
     error=ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -119,7 +111,7 @@ int init_mpp(key_type * key, int m)
 	covnr[actcov] = key->covnr[v];
 	if (CovList[covnr[actcov]].add_mpp_scl==NULL)
 	  {error=ERRORNOTDEFINED; goto ErrorHandling;}
-	memcpy(s->param[actcov], key->param[v], sizeof(Real) * key->totalparam);
+	memcpy(s->param[actcov], key->param[v], sizeof(double) * key->totalparam);
 	if ((v<key->ncov-1 && key->op[v]) || (v>0 && key->op[v-1])) { 
 	  // no multiplicative models are allowed
 	  error=ERRORNOMULTIPLICATION; goto ErrorHandling; }
@@ -129,9 +121,8 @@ int init_mpp(key_type * key, int m)
     }
   }
   if (actcov==0) {
-      if (key->traditional) error=ERRORNOTINITIALIZED;
-      else error=NOERROR_ENDOFLIST;
-      goto ErrorHandling;
+    error=NOERROR_ENDOFLIST;
+    goto ErrorHandling;
   }
   
   s->actcov = actcov;
@@ -163,7 +154,7 @@ int init_mpp(key_type * key, int m)
   if (s->grid) {
     for (d=0; d<key->timespacedim; d++) {
       s->min[d]   = key->x[d][XSTART];
-      s->length[d]= key->x[d][XSTEP] * (Real) (key->length[d] - 1);
+      s->length[d]= key->x[d][XSTEP] * (double) (key->length[d] - 1);
       // x[XSTART] and x[XSTEP] are assumed to be precise, but
       // not x[XEND] 
     }
@@ -202,10 +193,10 @@ int init_mpp(key_type * key, int m)
 }
 
 
-void do_addmpp(key_type *key, int m, Real *res )
+void do_addmpp(key_type *key, int m, double *res )
 { 
   int i, d, v;
-  Real lambda[MAXDIM], min[MAXDIM], max[MAXDIM], 
+  double lambda[MAXDIM], min[MAXDIM], max[MAXDIM], 
     factor, average, poisson;
   long segment[MAXDIM+1];
   mpp_storage *s;
@@ -272,7 +263,7 @@ void do_addmpp(key_type *key, int m, Real *res )
 	if (s->grid) {
 	  int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
 	    segmentdelta[MAXDIM], dimM1;
-	  Real coord[MAXDIM], startcoord[MAXDIM];
+	  double coord[MAXDIM], startcoord[MAXDIM];
 	  
 	  // determine rectangle of indices, where the mpp function
 	  // is different from zero
@@ -294,7 +285,7 @@ void do_addmpp(key_type *key, int m, Real *res )
 	    segmentdelta[d] = segment[d] * (end[d]-start[d]);
 	    resindex += segment[d] * start[d];
 	    coord[d] = startcoord[d] = 
-	      key->x[d][XSTART] + (Real)start[d] * key->x[d][XSTEP];
+	      key->x[d][XSTART] + (double)start[d] * key->x[d][XSTEP];
 	  }
 	  
 	  // add mpp function to res
@@ -320,7 +311,7 @@ void do_addmpp(key_type *key, int m, Real *res )
 	    }
 	  }
 	} else { // !s->grid
-	  Real y[MAXDIM];
+	  double y[MAXDIM];
 	  long j;
 	  // the following algorithm can greatly be improved !
 	  // but for ease, just the stupid algorithm

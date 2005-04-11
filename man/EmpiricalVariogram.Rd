@@ -81,7 +81,7 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     are increasing sequences with identical lags for each sequence.
     A corresponding
     grid is created (as given by \code{expand.grid}).
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)}: the vectors
+    \item \code{(grid==TRUE) && (gridtriple==TRUE)}: the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid (as given by
     \code{expand.grid(seq(x$start,x$end,x$step),
@@ -94,12 +94,13 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     Hence, to include zero, \code{bin[1]} must be negative.
   }
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}
 }
-\seealso{\code{\link{GaussRF}}, \code{\link{mleRF},
+\seealso{\code{\link{GaussRF}}, \code{\link{fitvario},
     and \code{\link{RandomFields}}}}
 \examples{
+% library(RandomFields, lib="~/TMP"); RFparameters(Print=6)
   #############################################################
   ## this example checks whether a certain simulation method ##
   ## works well for a specified covariance model and         ##
@@ -116,10 +117,10 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
                    ## to do the simulations
   param <- c(mean=1, variance=10, nugget=5, scale=2, alpha=2)
   f <- GaussRF(x=x, y=y, grid=TRUE, gridtriple=gridtriple,
-                  model=model, param=param, method="TBM3",
-                  n=repetition)
-  binned <- EmpiricalVariogram(x=x, y=y, data=f,
-                 grid=TRUE, gridtriple=gridtriple, bin=bins)
+               model=model, param=param, method="TBM3",
+               n=repetition)
+  binned <- EmpiricalVariogram(x=x, y=y, data=f, grid=TRUE,
+                               gridtriple=gridtriple, bin=bins)
   truevariogram  <- Variogram(binned$c, model, param)
   matplot(binned$c, cbind(truevariogram,binned$e), pch=c("*","e"))
   ##black curve gives the theoretical values

@@ -8,7 +8,7 @@
 }
 \usage{
 MaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
-            method=NULL, n=1, register=0, gridtriple=FALSE)
+            method=NULL, n=1, register=0, gridtriple=FALSE,...)
 
 InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
                method=NULL, register=0, gridtriple=FALSE)
@@ -48,6 +48,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     \code{c(start,end,step)} 
     expected; this parameter is used only
     if \code{grid==TRUE}}
+  \item{...}{\code{\link{RFparameters}} that are locally used only.}
 }
 \details{
   There are two different kinds of models for max-stable processes
@@ -117,8 +118,8 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
    Schlather, M. (2002) Models for stationary max-stable
    random fields. \emph{Extremes} \bold{5}, 33-44.
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
   \code{\link{CovarianceFct}},
   \code{\link{GaussRF}},
@@ -132,7 +133,8 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
  n <- 30 ## nicer, but time consuming if n <- 100
  x <- y <- 1:n
  ms <- MaxStableRF(x, y, grid=TRUE, model="exponen",
-                 param=c(0,1,0,40), maxstable="extr")
+                 param=c(0,1,0,40), maxstable="extr"
+                 ,CE.force = TRUE                 )
  image(x,y,ms)
 }
 \keyword{spatial}%-- one or more ...

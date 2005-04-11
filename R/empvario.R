@@ -149,8 +149,20 @@ function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
     emp.vario[idx] <- emp.vario[idx] / n.bin[idx]
     emp.vario[!idx] <- NaN
     idx <- n.bin > 1
-    emp.vario.sd[idx] <- sqrt(emp.vario.sd[idx] / (n.bin[idx] - 1) -
-                         n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2)
+
+
+    evsd <- emp.vario.sd[idx] / (n.bin[idx] - 1) -
+      n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2
+    if (any(evsd) < -1e-14) {
+      print(idx)
+      print(n.bin[idx] - 1)
+      print(emp.vario.sd[idx])
+      print(emp.vario.sd[idx] / (n.bin[idx] - 1) -
+            n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2)
+      warning(paste(evsd))
+    }
+    evsd[evsd < 0] <- 0
+    emp.vario.sd[idx] <- sqrt(evsd)   
     emp.vario.sd[!idx] <- NaN
     
     return(list(centers=centers, emp.vario=emp.vario, sd=emp.vario.sd,

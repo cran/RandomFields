@@ -1,11 +1,13 @@
 /*
  Authors 
- Martin Schlather, martin.schlather@cu.lu 
+ Yindeng, Jiang, jiangyindeng@gmail.com
+ Martin Schlather, schlath@hsu-hh.de
 
  Simulation of a random field by circulant embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )
 
- Copyright (C) 2001 -- 2004 Martin Schlather, 
+ Copyright (C) 2001 -- 2003 Martin Schlather
+ Copyright (C) 2004 -- 2005 Yindeng Jiang & Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,22 +33,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 #include <R_ext/Applic.h>
 
-#ifdef doubleReal
-ce_param CIRCEMBED={false, false, TRIVIALSTARTEGY, -1e-7, 1e-3, 3, 0, 0, 0, 0}
-#else
-ce_param CIRCEMBED={false, false, TRIVIALSTARTEGY, -1e-5, 1e-3, 3, 0, 0, 0, 0};
-#endif
+ce_param CIRCEMBED={false, false, TRIVIALSTARTEGY, -1e-7, 1e-3, 3, 20000000, 
+		    0, 0, 0, 0};
+local_user_param LOCAL_USER_PARAM={0, 0};
 
 typedef struct CE_storage {
   int m[MAXDIM],halfm[MAXDIM],nn[MAXDIM],cumm[MAXDIM+1]; /* !!!! **** */  
-  param_type param; /* only used in local CE */
   double *c,*d;
-  Real *local, sqrt_var_squarefactor[MAXCOV]; /* only used in local CE */
+  double factor; /* only used in local CE */
   FFT_storage FFT;
   long totalpoints;
 } CE_storage;
 
-void FFT_destruct(FFT_storage *FFT) 
+void FFT_destruct(FFT_storage *FFT)
 {
   if (FFT->iwork!=NULL) {free(FFT->iwork); FFT->iwork=NULL;}
   if (FFT->work!=NULL) {free(FFT->work); FFT->work=NULL;} //?
@@ -65,7 +64,6 @@ void CE_destruct(void **S)
     x = *((CE_storage**)S);
     if (x->c!=NULL) free(x->c);
     if (x->d!=NULL) free(x->d);
-    if (x->local!=NULL) free(x->local);
     FFT_destruct(&(x->FFT));
     free(*S);
     *S = NULL;
@@ -77,14 +75,43 @@ void CE_destruct(void **S)
 /*  (it will always be refered to the paper of Wood & Chan 1994)     */
 /*********************************************************************/
 
-void SetParamCircEmbed( int *action, int *force, Real *tolRe, Real *tolIm,
-			int *trials, int *mmin, int *userfft, int *strategy) 
+void SetParamCircEmbed( int *action, int *force, double *tolRe, double *tolIm,
+			int *trials, int *mmin, int *userfft, int *strategy,
+		        double *maxmem) 
 {
   SetParamCE(action, force, tolRe, tolIm, trials, mmin, userfft, strategy,
-	     &CIRCEMBED, "CIRCEMBED");
+	     maxmem, &CIRCEMBED, "CIRCEMBED");
 }
 
-
+void SetParamLocal( int *action, double *cutoff_a, double *intrinsic_r )
+{
+  switch(*action) {
+  case 0 :
+    LOCAL_USER_PARAM.cutoff_a=*cutoff_a; 
+    if (LOCAL_USER_PARAM.cutoff_a<0) {
+      LOCAL_USER_PARAM.cutoff_a=0; 
+      if (GENERAL_PRINTLEVEL>0) 
+	PRINTF("\nWARNING! cutoff_a had been negative.\n");
+    }
+    LOCAL_USER_PARAM.intrinsic_r=*intrinsic_r; 
+    if (LOCAL_USER_PARAM.intrinsic_r<0 || 
+	(0<LOCAL_USER_PARAM.intrinsic_r && LOCAL_USER_PARAM.intrinsic_r<1)) {
+      LOCAL_USER_PARAM.intrinsic_r=0; 
+      if (GENERAL_PRINTLEVEL>0) 
+	PRINTF("\nWARNING! intrinsic_r had been negative or between 0 and 1\n");
+    }
+    break;
+  case 1 :
+    *cutoff_a=LOCAL_USER_PARAM.cutoff_a;
+    *intrinsic_r=LOCAL_USER_PARAM.intrinsic_r;
+    if (GetNotPrint) break;
+  case 2 :
+    PRINTF("\nLOCAL_USER_PARAM\n===============\ncutoff_a=%f\nintrinsic_r=%f\n",
+	   LOCAL_USER_PARAM.cutoff_a,  LOCAL_USER_PARAM.intrinsic_r);
+    break;
+  default : PRINTF(" unknown action\n");
+  }
+}
 
 
 int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
@@ -140,39 +167,98 @@ int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
   return fastfourier(data, m, dim, first, !first, FFT);
 }
 
-
-int internal_init_circ_embed(Real *steps, bool anisotropy,
-			     int *covnr, int *op, param_type param,
-			     int *nn, int *m, int *cumm, int *halfm, 
-			     int dim, int actcov,
-			     CovFctType CovFct,
-			     ce_param* cepar,
-			     FFT_storage *FFT,
-			     long *twoRealmtot,
-			     double **cc)
+double local_cov(double *t, double *param, double *localparam, int covnr, int dim, EmbedType embed)
 {
-  double *c;
-  Real hx[MAXDIM], totalm;
-  int  Xerror,trials,index[MAXDIM],dummy;
-  long maxm, MAXM=10000000;  /* the maximum grid size: 
-					      MAXM[dim-1]^dim */
-  long mtot=-1,i,k,twoi;
-  bool positivedefinite, cur_crit, critical, Critical[MAXDIM];
+    double x = (*t) * param[DIAMETER];
+    if ((*t) > localparam[LOCAL_R]) return 0.0;
+    if ((*t) <= 1) 
+      switch(embed)
+    {
+      case Cutoff:
+        return CovList[covnr].variogram ? 
+		1.0-CovList[covnr].cov(&x, param, dim) : CovList[covnr].cov(&x, param, dim);
+      case Intrinsic:
+	return localparam[INTRINSIC_A0]  + 
+	    (CovList[covnr].variogram ? 
+		1.0-CovList[covnr].cov(&x, param, dim) : CovList[covnr].cov(&x, param, dim)) + 
+	    localparam[INTRINSIC_A2]*(*t)*(*t);
+      default:
+        assert(false);
+    }
+    else
+      switch(embed)
+    {
+      case Cutoff:
+        return localparam[CUTOFF_B] * pow( pow(localparam[CUTOFF_R], 
+              localparam[CUTOFF_A])-pow(*t, localparam[CUTOFF_A]),
+            2.0 * localparam[CUTOFF_A]);
+      case Intrinsic:
+	return localparam[INTRINSIC_B]*pow(localparam[INTRINSIC_R]-(*t),3.0)/(*t);
+      default:
+        assert(false);
+    }
+}
 
-  c=NULL;
-  if (cepar->userfft) maxm=1000000000;  else maxm=MAXM;
-  if (GENERAL_PRINTLEVEL>=5) PRINTF("calculating the Fourier transform\n");
+double LocalCovFct(double *x, int dim, int *covnr, int *op,
+  param_type param, local_param_type localparam, int ncov, bool anisotropy,
+  EmbedType embed) 
+{
+  assert(!anisotropy);
+  int v, j;
+  double  var,  zz, zw, result, d;
+  zw = result = 0.0;
+  if (dim==1) d=fabs(x[0]);
+  else {
+    for (d=0.0, j=0; j<dim; j++) {d += x[j] * x[j];}
+    d = sqrt(d);
+  }
+  for (v=0; v<ncov; v++) {
+    zw = var = 1.0;
+    for(; v<ncov; v++) {
+  zz = d * param[v][INVSCALE]/param[v][DIAMETER];
+  var *= param[v][VARIANCE];
+  zw *= local_cov(&zz,param[v],localparam[v],covnr[v],dim,embed);
+  if (op[v]==0) break; /* v=ncov does not matter since stopped anyway */
+    }
+    result += var*zw;
+  }
+ return result;
+}
+
+
+int local_get_initial_m(int *nn, int *m, int dim, ce_param *cepar, double Rmax,
+			double inter_scaled_spacing)
+{
+  double totalm;
+  int i;
   
-  /* cumm[i+1]=\prod_{j=0}^i m[j] 
-     cumm is used for fast transforming the matrix indices into an
-       index of the vector (the way the matrix is stored) corresponding
-       to the matrix                   */
-  /* calculate the dimensions of the matrix C, eq. (2.2) in W&C */
-  
-  // ("CE missing strategy for matrix entension in case of anisotropic fields ! %d \n", cepar->userfft); Namely if in case the field is not quadratic or the covariance function does not have the same range in all directions!
+  if (GENERAL_PRINTLEVEL>=5) {
+    PRINTF("calculating initial m...\n");
+    PRINTF("Rmax: %f; Rmax/inter_scaled_spacing: %f\n", Rmax, 
+	   Rmax/inter_scaled_spacing);
+  }
+
+  m[0]= 1 << (1 + (int) ceil(log(Rmax/inter_scaled_spacing) * INVLOG2 - 
+			     EPSILON1000)); 
+  for (i=1;i<dim;i++){
+    m[i]=m[0];
+  }
+  totalm=pow(m[0], dim);
+  if (totalm > cepar->maxmem) {
+    sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
+    sprintf(ERRORSTRING_WRONG,"%f", totalm);
+    return ERRORMAXMEMORY;
+  }
+  else return 0;
+}
+
+int circ_embed_get_initial_m(int *nn, int *m, int dim, ce_param* cepar)
+{
+  double totalm;
+  long i;
 
   totalm = 1.0;  
-  for (i=0;i<dim;i++){ // size of matrix at the beginning
+  for (i=0;i<dim;i++){
     int factor;
     if (cepar->userfft) {
       factor = (cepar->mmin[i] > -2) ? 2 : -cepar->mmin[i];
@@ -180,17 +266,42 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
     } else {
       factor = (cepar->mmin[i] > -1) ? 1 : -cepar->mmin[i];
       m[i]= factor *
-	(1 << (1 + (int) ceil(log((Real) nn[i]) * INVLOG2 - EPSILON1000))); 
+	(1 << (1 + (int) ceil(log((double) nn[i]) * INVLOG2 - EPSILON1000))); 
     }
     if (m[i]<cepar->mmin[i]) {m[i]=cepar->mmin[i];} 
-    totalm *= (Real) m[i];
+    totalm *= (double) m[i];
   }
-  if (totalm>maxm) {
-    if (GENERAL_PRINTLEVEL>=5)
-      PRINTF("totalm=%f > maxm=%d userfft=%d\n",totalm,maxm,cepar->userfft);
-    Xerror=ERRORFAILED;  goto ErrorHandling;
-  } 
-    
+  if (totalm > cepar->maxmem) {
+    sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
+    sprintf(ERRORSTRING_WRONG,"%f", totalm);
+    return ERRORMAXMEMORY;
+  }
+  else return 0;
+}
+
+
+int circ_embed_with_initial_m(double *steps, bool anisotropy,
+			     int *covnr, int *op, param_type param,
+			     int *nn, int *m, int *cumm, int *halfm, 
+			     int dim, int actcov,
+			     CovFctType CovFct,
+			     ce_param* cepar,
+			     FFT_storage *FFT,
+			     long *twoRealmtot,
+			     double **cc,
+                             local_param_type localparam, // these two arguments 
+			      //                             are used in 
+                             EmbedType embed)             // local circ embed
+{
+  double *c;
+  double hx[MAXDIM], totalm;
+  int  Xerror,trials,index[MAXDIM],dummy;
+  long mtot=-1,i,k,twoi;
+  bool positivedefinite, cur_crit, critical, Critical[MAXDIM];
+
+  c=NULL;
+  if (GENERAL_PRINTLEVEL>=5) PRINTF("calculating the Fourier transform\n");
+
   positivedefinite = false;     
     /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
        so only the first two rows of (3.9) (without the taking the
@@ -200,6 +311,21 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
        index[l]=h[l]-m[l]   if m[l]/2+1<=h[l]<=m[l]-1     
        Then h[l]=(index[l]+m[l]) mod m[l] !!
     */
+
+ /* The algorithm below:
+  while (!positivedefinite && (trials<cepar->trials)){
+    trials++;
+    calculate the covariance values "c" according to the given "m"
+    fastfourier(c)
+    if (!cepar->force || (trials<cepar->trials)) {
+      check if positive definite
+      if (!positivedefinite && (trials<cepar->trials)) {
+        enlarge "m"
+      }
+    } else 
+      print "forced"
+  }
+*/
   
   trials=0;
   while (!positivedefinite && (trials<cepar->trials)){ 
@@ -209,7 +335,7 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
       halfm[i]=m[i]/2; 
       index[i]=1-halfm[i]; 
       cumm[i+1]=cumm[i] * m[i]; // only relevant up to i<dim-1 !!
-    } 
+    }
 
     mtot=cumm[dim-1] * m[dim-1]; 
     if (GENERAL_PRINTLEVEL>=2) {
@@ -244,13 +370,20 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
       cur_crit = false;
       for (k=0; k<dim; k++) {
 	hx[k] = steps[k] * 
-	  (Real) ((index[k] <= halfm[k]) ? index[k] : index[k] - m[k]);
+	  (double) ((index[k] <= halfm[k]) ? index[k] : index[k] - m[k]);
 	cur_crit |= (index[k]==halfm[k]);
       }	
       dummy=i << 1;
 
-      c[dummy] = (critical && cur_crit) ?  0.0 :
-	CovFct(hx, dim, covnr, op, param, actcov, anisotropy);
+      if (critical && cur_crit){
+        c[dummy] = 0.0;
+      }else{
+        if (embed==Standard)
+          c[dummy] = CovFct(hx, dim, covnr, op, param, actcov, anisotropy);
+        else
+          c[dummy] = LocalCovFct(hx, dim, covnr, op, param, localparam, 
+				 actcov, anisotropy, embed);
+      }
 
       c[dummy+1] = 0.0;
       k=0; while( (k<dim) && (++(index[k]) >= m[k])) {
@@ -259,21 +392,47 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
       }
       assert( (k<dim) || (i==mtot-1));
     }
-            
+
     if (GENERAL_PRINTLEVEL>6) PRINTF("FFT...");
     if ((Xerror=fastfourier(c, m, dim, true, FFT))!=0) goto ErrorHandling;  
     if (GENERAL_PRINTLEVEL>6) PRINTF("finished\n");
    
     // check if positive definite. If not: enlarge and restart 
-    if (!cepar->force || (trials<cepar->trials)) {
+    if (!cepar->force || (trials<cepar->trials)) { 
+      long int mtot2 = mtot * 2; 
       i=0; twoi=0;
       // 16.9. < cepar.tol.im  changed to <=
-      while ((i<mtot) && (positivedefinite=(c[twoi]>=cepar->tol_re) && 
+      while ((twoi<mtot2) && (positivedefinite=(c[twoi]>=cepar->tol_re) && 
 					  (fabs(c[twoi+1])<=cepar->tol_im)))
-	{i++; twoi+=2;}
-      if (!positivedefinite) {
-	if (GENERAL_PRINTLEVEL>=2)
-	  PRINTF(" nonpos %d  %f %f \n",i,c[twoi],c[twoi+1]);
+	{twoi+=2;}      
+
+      if ( !positivedefinite) {
+        if (GENERAL_PRINTLEVEL>=2)
+	  // 1.1.71: %f changed to %e because c[twoi+1] is usually very small
+	  PRINTF("non-positive eigenvalue: c[%d])=%f + %e i.\n",
+		 (int) (twoi/2), c[twoi], (int) (twoi/2), c[twoi+1]);
+	if (GENERAL_PRINTLEVEL>=4) { // just for printing the smallest 
+	  //                            eigenvalue (min(c))
+	  int index=twoi, sum=0;
+	  double smallest=c[twoi];
+	  char percent[]="%";
+	  for (twoi=0; twoi<mtot2; twoi += 2) {
+	    if (c[twoi] < 0) {
+	      sum++;
+	      if (c[twoi]<smallest) { index=twoi; smallest=c[index]; }
+	    } 
+	  }
+	  PRINTF("   The smallest eigenvalue is c[%d] =  %e.\n",
+		 index / 2, smallest);
+	  PRINTF("   The percentage of negative eigenvalues is %5.3f%s.\n", 
+		 100.0 * (double) sum / (double) mtot, percent);
+	}
+      }
+
+      if (!positivedefinite && (trials<cepar->trials)) { 
+        assert( embed != Cutoff && embed != Intrinsic );// in these two 
+	//                                         embeddings we only do 1 trial
+	
 	FFT_destruct(FFT);
 	free(c); c=NULL;
 
@@ -284,11 +443,11 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 				   this should be modified if the grid has 
 				   different sizes in different directions */
 	    m[i] <<= 1;
-	    totalm *= (Real) m[i];
+	    totalm *= (double) m[i];
 	  }
 	  break;
 	case 1 :  
-	  Real cc, maxcc, hx[MAXDIM];
+	  double cc, maxcc, hx[MAXDIM];
 	  int maxi;
 	  maxi = -1;
 	  maxcc = RF_NEGINF;
@@ -305,39 +464,28 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 	  }
 	  assert(maxi>=0);
 	  m[maxi] <<= 1;
-	  for (i=0;i<dim; i++) totalm *= (Real) m[i];
+	  for (i=0;i<dim; i++) totalm *= (double) m[i];
 	  break;
 	default:
 	  assert(false);
 	}
-	if (totalm>maxm) {Xerror=ERRORFAILED;goto ErrorHandling;}
+	if (totalm>cepar->maxmem) {    
+	  sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
+	  sprintf(ERRORSTRING_WRONG,"%f", totalm);
+	  Xerror=ERRORMAXMEMORY;
+	  goto ErrorHandling;
+	}
 	//	assert(false);
       }
     } else {if (GENERAL_PRINTLEVEL>=2) PRINTF("forced\n");}
   }
   assert(mtot>0);
  
-  if (GENERAL_PRINTLEVEL>4) {  // delete this part later on
-    Real cc, maxcc, hx[MAXDIM];
-    int maxi;
-    maxcc = RF_NEGINF;
-    for (i=0; i<dim; i++) hx[i] = 0.0;
-    for (i=0; i<dim; i++) {
-      hx[i] = steps[i] * m[i]; 
-      cc = fabs(CovFct(hx , dim, covnr, op, param, actcov, anisotropy)); 
-      if (cc>maxcc) {
-	maxcc = cc;
-	maxi = i; 
-      }
-      hx[i] = 0.0;
-    }	
-  } 
-
 
   if (positivedefinite || cepar->force) { 
     // correct theoretically impossible values, that are still within 
     // tolerance CIRCEMBED.tol_re/CIRCEMBED.tol_im 
-    Real r, imag;
+    double r, imag;
     r = imag = 0.0;    
     for(i=0,twoi=0;i<mtot;i++) {
       if (c[twoi] > 0.0) {
@@ -347,7 +495,7 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
 	c[twoi] = 0.0;
       }
       {
-	register Real a;
+	register double a;
 	if ((a=fabs(c[twoi+1])) > imag) imag = a;
       }
       c[twoi+1] = 0.0;
@@ -373,16 +521,42 @@ int internal_init_circ_embed(Real *steps, bool anisotropy,
   return Xerror;
 }
 
+int internal_init_circ_embed(double *steps, bool anisotropy,
+			     int *covnr, int *op, param_type param,
+			     int *nn, int *m, int *cumm, int *halfm, 
+			     int dim, int actcov,
+			     CovFctType CovFct,
+			     ce_param* cepar,
+			     FFT_storage *FFT,
+			     long *twoRealmtot,
+			     double **cc)
+{
+  int  Xerror;
+  if ( (Xerror=circ_embed_get_initial_m(nn, m, dim, cepar)) != 0  ||
+       (Xerror=circ_embed_with_initial_m(steps, anisotropy,
+				       covnr, op, param,
+				       nn, m, cumm, halfm,
+				       dim, actcov,
+				       CovFct,
+				       cepar,
+				       FFT,
+				       twoRealmtot,cc,
+                                       NULL,
+                                       Standard)) != 0 ) return Xerror;
+  return 0;
+}
 
 
 int init_circ_embed(key_type * key, int m)
 {
   param_type param;
-  int Xerror, d, start_param[MAXDIM], index_dim[MAXDIM];
+  int Xerror=NOERROR, d, start_param[MAXDIM], index_dim[MAXDIM];
   long twoRealmtot;
   double *c; 
-  Real steps[MAXDIM];
+  double steps[MAXDIM];
   CE_storage *s;
+  int multiply[MAXCOV], covnr[MAXCOV];
+  unsigned short int actcov;
 
   if (!key->grid) {Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;}
   SET_DESTRUCT(CE_destruct);
@@ -393,11 +567,12 @@ int init_circ_embed(key_type * key, int m)
   s =  (CE_storage*)key->S[m];
   s->c =NULL;
   s->d =NULL;
-  s->local=NULL;
   FFT_NULL(&(s->FFT));
   key->destruct[m] = CE_destruct;
   
-  FIRSTCHECK_COV(CircEmbed,cov,param);
+  if ((Xerror = FirstCheck_Cov(key, CircEmbed, param, false, 
+			      covnr, multiply, &actcov)) != NOERROR)
+    goto ErrorHandling;
   { 
     int timespacedim,v;
     bool no_last_comp;
@@ -439,7 +614,8 @@ int init_circ_embed(key_type * key, int m)
       Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;} //d
   }
   s->c=c; 
-  return 0;
+
+  return NOERROR;
   
  ErrorHandling:
   return Xerror; 
@@ -448,7 +624,7 @@ int init_circ_embed(key_type * key, int m)
 void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
 			    double *c, double *d, int Ntot, int dim,
 			    FFT_storage *FFT_heap, bool add,
-			    Real *res )
+			    double *res )
 /* 
      implemented here only for rotationsinvariant covariance functions
      for arbitrary dimensions;
@@ -463,7 +639,7 @@ void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
   */
 {  
   int  i, j, k, HalfMp1[MAXDIM], HalfMaM[2][MAXDIM], index[MAXDIM];
-  Real XX,YY,invsqrtmtot;
+  double XX,YY,invsqrtmtot;
   bool first, free[MAXDIM+1], noexception;
   long mtot;
 
@@ -481,7 +657,7 @@ void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
   //bool *xx; xx = (bool*) malloc(sizeof(bool) * mtot);
   //for (i=0; i<mtot;i++) xx[i]=true;
   
-  invsqrtmtot = 1/sqrt((Real)mtot);
+  invsqrtmtot = 1/sqrt((double) mtot);
 
   if (GENERAL_PRINTLEVEL>=10) PRINTF("Creating Gaussian variables... \n");
   /* now the Gaussian r.v. have to defined and multiplied with sqrt(FFT(c))*/
@@ -491,6 +667,9 @@ void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
     free[i] = false;
   }
   free[MAXDIM] = false;
+
+//  if MaxStableRF calls Cutofff, c and look uninitialised
+
   for(;;) {      
     i = j = 0;
     noexception = false;
@@ -515,7 +694,7 @@ void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
       d[i]   = c[i] * GAUSS_RANDOM(1.0);
       d[i+1] = 0;
     }
- 
+
     if (GENERAL_PRINTLEVEL>=10) PRINTF("k=%d ", k);
     
     /* 
@@ -593,7 +772,7 @@ void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
 }
 
 
-void do_circ_embed(key_type *key, bool add, int m, Real *res ){
+void do_circ_embed(key_type *key, bool add, int m, double *res ){
   double *d;
   CE_storage *s;
   s = (CE_storage*)key->S[m];
@@ -625,20 +804,97 @@ void do_circ_embed(key_type *key, bool add, int m, Real *res ){
 // make sure that internal_init is called with a quadratic scheme
 // make sure that the relevant part is cut out correctly
 
-
-
-int init_circ_embed_local(key_type *key, int m)
+//begin
+// necessary parameters for cutoff local covariance function
+void set_cutoff_param(double *localparam, double *param, cov_fct *cov,
+		      int timespacedim)
 {
-  int Xerror,d, start_param[MAXDIM], index_dim[MAXDIM],timespacedim;
-  Real diameter, steps[MAXDIM];
+  double firstderiv = 
+    cov->derivative(&param[DIAMETER], param, -1) * param[DIAMETER];
+  double phi = cov->variogram
+    ? (1 - cov->cov(&param[DIAMETER],param,timespacedim))
+    : cov->cov(&param[DIAMETER],param,timespacedim);
+  
+  assert(localparam[CUTOFF_A]>0);
+  localparam[CUTOFF_R] = 
+    pow(1 - 2.0*localparam[CUTOFF_A]*localparam[CUTOFF_A]*phi/firstderiv, 
+	1.0/localparam[CUTOFF_A]);
+  localparam[CUTOFF_B] =
+    pow(-firstderiv/(2.0*localparam[CUTOFF_A]*localparam[CUTOFF_A]*phi), 
+	2.0*localparam[CUTOFF_A]) * phi;
+}
+// necessary parameters for intrinsic local covariance function
+void set_intrinsic_param(double *localparam, double *param, cov_fct *cov, 
+			 int timespacedim)
+{
+  double firstderiv = 
+    cov->derivative(&param[DIAMETER], param, -1) * param[DIAMETER];
+  double secondderiv = cov->secondderivt(&param[DIAMETER], param, -1) * 
+    param[DIAMETER] * param[DIAMETER];
+  double phi = cov->variogram 
+    ? (1 - cov->cov(&param[DIAMETER],param,timespacedim)) 
+    : cov->cov(&param[DIAMETER],param,timespacedim);
+
+  assert(localparam[INTRINSIC_R]>0);
+  localparam[INTRINSIC_A0] = 
+    (localparam[INTRINSIC_R]-1)/(2.0*(localparam[INTRINSIC_R]+1))*secondderiv + 
+    1.0/(localparam[INTRINSIC_R]+1)*firstderiv - phi;
+  if (localparam[INTRINSIC_R] == 1) 
+    localparam[INTRINSIC_B] = 0;
+  else
+    localparam[INTRINSIC_B] = (secondderiv - firstderiv) / 
+      (3.0*localparam[INTRINSIC_R] *
+       (localparam[INTRINSIC_R]*localparam[INTRINSIC_R]-1.0));
+  localparam[INTRINSIC_A2] =
+    -0.5 * (localparam[INTRINSIC_B]*(localparam[INTRINSIC_R]-1.0) *
+	    (localparam[INTRINSIC_R]-1.0)*(localparam[INTRINSIC_R]+2.0)+
+	    firstderiv);
+
+}
+//end
+
+int init_circ_embed_cutoff(key_type *key, int m)
+{
+  int Xerror=NOERROR,d,v;
+  double diameter, steps[MAXDIM];
   double *c;
   CE_storage *s;
   long twoRealmtot;
+  double Rmax;
+  cov_fct *cov;
+  bool sameSpacing=true; 
+  double inter_scaled_spacing;
+  param_type param; 
+  local_strategy_type strategy, overall_strategy;
+  local_param_type localparam; // the extra parameters in local cov fcts  
+  int multiply[MAXCOV], covnr[MAXCOV];
   unsigned short int actcov;
-  int covnr[MAXCOV];
-  int multiply[MAXCOV];
 
-  if (!key->grid) {Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;}
+  ce_param cepar=CIRCEMBED;
+
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("Initiating cutoff...\n");
+
+  // check whether it's square grid
+  if (!key->grid || key->anisotropy)
+  { 
+    // printf("\n\ngrid=%d aniso=%d \n", !key->grid, key->anisotropy);
+    Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;}
+  for (d=1; d<key->timespacedim; d++) 
+  {
+    if( fabs(key->x[d][XSTEP] - key->x[0][XSTEP])>EPSILON )
+    {
+      sameSpacing=false;
+      break;
+    }
+  }
+  if (!sameSpacing)
+  {
+    if (GENERAL_PRINTLEVEL>=2)
+      PRINTF("Currently only grids of same spacing are allowed for local circulant embedding. \n");
+    Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;
+  }
+
   SET_DESTRUCT(CE_destruct);
 
   assert(key->S[m]==NULL);
@@ -648,146 +904,131 @@ int init_circ_embed_local(key_type *key, int m)
   s = (CE_storage*)key->S[m];
   s->c =NULL;
   s->d =NULL;
-  s->local=NULL;
   FFT_NULL(&(s->FFT));
   key->destruct[m] = CE_destruct;
 
-  // FC1(CircEmbedLocal,cov_loc,s->param);
   /* break the for loop directly after first finding of a local circulant 
      embedding method; check whether this function is not part of 
      a multiplicative definition -- probably this can be relaxed in future --
      currently it is unclear whether this makes sense and what the 
      extended programming would look like
   */
-  actcov=0;
-  { 
-    int v;
-    for (v=0; v<key->ncov; v++) {
-      if ((key->method[v]==CircEmbedLocal) && (key->left[v])) {
-      // Variance==0 is not eliminated anymore !! - maybe this could be improved
-	key->left[v] = false;
-	assert((key->covnr[v] >= 0) && (key->covnr[v] < currentNrCov));
-	assert(key->param[v][VARIANCE] >= 0.0);
-	covnr[actcov] = key->covnr[v];
-	if (CovList[covnr[actcov]].cov_loc==NULL) {
-	  Xerror=ERRORNOTDEFINED; goto ErrorHandling;}
-	memcpy(s->param[actcov], key->param[v], sizeof(Real) * key->totalparam);
-	if (actcov>0) {
-	  if ((multiply[actcov-1] = key->op[v-1]) && 
-	      key->method[v-1] != CircEmbedLocal){
-	    if (GENERAL_PRINTLEVEL>0) 
-	      PRINTF("severe error - contact author. %d %d %d %d (%s) %d (%s)\n",
-		     v, key->op[v-1], key->ncov, key->method[v-1],
-		     METHODNAMES[key->method[v-1]],
-		     CircEmbedLocal, METHODNAMES[CircEmbedLocal]);
-	    Xerror=ERRORMETHODMIX; goto ErrorHandling;
-	  }
-	  if (key->op[v]) { Xerror=ERRORNOMULTIPLICATION; goto ErrorHandling; }
-	}
-  // end FC1
-  // FC2;
-	actcov++;
-      }
-    }
-  }
-  if (actcov==0) { /* no covariance for the considered method found */
-    if (key->traditional) Xerror=ERRORNOTINITIALIZED;
-    else Xerror=NOERROR_ENDOFLIST;
+  if ((Xerror = FirstCheck_Cov(key, CircEmbedCutoff, param,  
+		     false, covnr, multiply, &actcov)) != NOERROR)
     goto ErrorHandling;
-  }
-  // end FC2;
 
-  { 
-    int v;
-    bool no_last_comp;
-    cov_fct *cov;
-    // are methods and parameters fine ?
-    GetTrueDim(key->anisotropy, key->timespacedim, s->param[0], 
-	       &timespacedim, &no_last_comp, start_param, index_dim);
-    for (v=0; v<actcov; v++) {
-      cov = &(CovList[covnr[v]]);
-      if ((key->Time) && no_last_comp && (cov->isotropic!=FULLISOTROPIC))
-	{ Xerror= ERRORWITHOUTTIME;goto ErrorHandling;}
-      else {
-	if ((cov->check!=NULL) && 
-	    ((Xerror=cov->check(s->param[v], timespacedim, CircEmbedLocal)))!=0)
-	goto ErrorHandling;
-      }
-    }
-  }
-  if (key->anisotropy) {
-    Real sxx[ZWEIHOCHMAXDIM * MAXDIM], dummy;
-    int d;
-     GetCornersOfGrid(key, timespacedim, start_param, s->param[0], sxx);
-     GetRangeCornerDistances(key, sxx, timespacedim, timespacedim,
-		             &dummy, &diameter);
-    { 
-      Real x;
-      x = 1.0 / diameter;
-      // .cov uses only KAPPA out of s->param[0]
-      s->param[0][VARIANCE] /= CovList[covnr[0]].cov(&x, s->param[0], 1);
-      for (d=ANISO; d<key->totalparam; d++) {
-	s->param[0][d] *= x;
-      }
-    }
-  } else {
-    assert(fabs(s->param[0][SCALE] * s->param[0][INVSCALE]-1.0) < EPSILON);
-    diameter = 0.0;
-    register Real dummy;
-    dummy=0.0;
-    for (d=0; d<key->timespacedim; d++) {
-      dummy = key->x[d][XSTEP] * (Real) (key->length[d]-1);
-      diameter += dummy * dummy; 
-    }
-    diameter = sqrt(diameter);
-
-    { 
-      Real x;
-      x = s->param[0][SCALE] / diameter;
-      s->param[0][VARIANCE] /= CovList[covnr[0]].cov(&x, s->param[0], 1);
-      s->param[0][INVSCALE] = 1.0 / (s->param[0][SCALE]=diameter);
-    }
-  }
-  if (GENERAL_PRINTLEVEL>7) PRINTF("diameter  %f \n",diameter);
-
-  // new scale is chosen such that for the largest grid distance (diameter)
-  // the local covariance function still is in the correct domain for 
-  // simulating the desired variogram or covariance function (next but 
-  // one line)
-  //
-  // The variance of the local covariance has to be chosen by def such that
-  //         c * gamma_0(scale) = variance
-  // if we rescale by `diameter' then 
-  //         c * gamma_0(scale/diameter) != variance, i.e.,
-
-  s->sqrt_var_squarefactor[0] = 
-    // square.factor uses only KAPPA
-    sqrt(4.0 * CovList[covnr[0]].square_factor(s->param[0]) *
-	 s->param[0][VARIANCE]);
-  // 4.0 :: 2 because of stein
-  //        another 2 because sqrt( - 2.0 log(UNIFORM_RANDOM)) gives standard gaussian.
+  assert(!key->anisotropy);
+  
+  diameter = 0.0;
+  register double dummy;
+  dummy=0.0;
   s->totalpoints = 1;
   for (d=0; d<key->timespacedim; d++) {
     s->nn[d] = key->length[d];
     (s->totalpoints) *= s->nn[d];
     steps[d]=key->x[d][XSTEP];
+    dummy = steps[d] * (double) (key->length[d]-1);
+    diameter += dummy * dummy; 
+  }
+  diameter = sqrt(diameter);
+  if (GENERAL_PRINTLEVEL>7) PRINTF("diameter  %f \n",diameter);
+  
+  overall_strategy=TheoGuaranteed;
+  inter_scaled_spacing = steps[0]/diameter;
+  Rmax = 1.0;
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("inter_scaled_spacing: %f\n", inter_scaled_spacing);
+
+  for (v=0; v<actcov; v++) {
+    assert(fabs(param[v][SCALE] * param[v][INVSCALE]-1.0) < EPSILON);
+    cov = &(CovList[covnr[v]]);
+    param[v][DIAMETER] = diameter * param[v][INVSCALE];
+    if ((cov->check!=NULL) &&
+      ((Xerror=cov->check(param[v], key->timespacedim, CircEmbedCutoff)))!=0)
+        goto ErrorHandling;
+    assert(cov->cutoff_strategy!=NULL);
+    if (LOCAL_USER_PARAM.cutoff_a>0) 
+    {
+      strategy = UserSpecified;
+      localparam[v][CUTOFF_A] = LOCAL_USER_PARAM.cutoff_a;
+    } else {
+      strategy =cov->cutoff_strategy(param[v], localparam[v], TellMeTheStrategy);
+      if (strategy == CallMeAgain) {
+	double temp_A, temp_R;
+	set_cutoff_param( localparam[v], param[v], cov, key->timespacedim );
+	temp_A = localparam[v][CUTOFF_A];
+	temp_R = localparam[v][CUTOFF_R];
+
+	strategy =cov->cutoff_strategy(param[v], localparam[v], IncreaseCutoffA);
+	set_cutoff_param( localparam[v], param[v], cov, key->timespacedim );
+	if (temp_R < localparam[v][CUTOFF_R]) 
+	  localparam[v][CUTOFF_A] = temp_A;
+      }
+    }
+    assert(strategy != NumeGuaranteed && strategy != SearchR);
+    if ((int) overall_strategy<(int) strategy) overall_strategy=strategy;
+     
+    set_cutoff_param( localparam[v], param[v], cov, key->timespacedim );
+    if (Rmax<localparam[v][CUTOFF_R]) Rmax=localparam[v][CUTOFF_R];
+  }
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("OverallStrategy: %d; Rmax: %f\n", overall_strategy, Rmax);
+
+  cepar.force=false; 
+  cepar.strategy=TRIVIALSTARTEGY; 
+  cepar.trials=1;
+
+  if ( (Xerror=local_get_initial_m(s->nn, s->m, key->timespacedim,
+        &cepar, Rmax, inter_scaled_spacing)) !=0 )
+  {
+    if (GENERAL_PRINTLEVEL>=2) {
+      PRINTF("The size of the grid or r is too big!\n");
+      for (d=0;d<key->timespacedim;d++) {PRINTF("n[%d]=%d, ",d,s->nn[d]);}
+      PRINTF("\n");
+      PRINTF("r=%f", Rmax);
+      PRINTF("\n");
+      for (d=0;d<key->timespacedim;d++) {PRINTF("m[%d]=%d, ",d,s->m[d]);}
+      PRINTF("\n");
+    }
+    goto ErrorHandling;
+  }
+  if ( (Xerror=circ_embed_with_initial_m(steps, key->anisotropy,
+                     covnr, multiply, param,
+                     s->nn, s->m, s->cumm, s->halfm,
+                     key->timespacedim, actcov,
+                     NULL,
+                     &cepar,
+                     &(s->FFT),
+                     &twoRealmtot,&c,
+                     localparam,
+                     Cutoff)) !=0 )
+  {
+    switch(overall_strategy){
+	case TheoGuaranteed:
+	  if (GENERAL_PRINTLEVEL>=2){
+	    PRINTF("Theoretically impossible error! Please try again or contact author with the following info.\n\n");
+	    printkey(key);
+	  }
+	  break;
+	case JustTry:
+	  if (GENERAL_PRINTLEVEL>=2){
+	    PRINTF("Cutoff embedding does not work for the model specified.\n");
+	  }
+	  break;
+	case UserSpecified:
+	  if (GENERAL_PRINTLEVEL>=2){
+	    PRINTF("The specified a does not work for the given model(s).\n");
+	  }
+	  break;
+	default : assert(false); // the other cases are not considered
+    }
+    goto ErrorHandling;
   }
 
-  if ((s->local=(Real*) malloc(sizeof(Real) * s->totalpoints))==0) 
-    {Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;} 
-
-  if ((Xerror=internal_init_circ_embed(steps, key->anisotropy,
-				       covnr, multiply, s->param,
-				       s->nn, s->m, s->cumm, s->halfm,
-				       key->timespacedim, actcov,
-				       LocalCovFct,
-				       &CIRCEMBED,
-				       &(s->FFT),
-				       &twoRealmtot,&c))!=0)
-    goto ErrorHandling;
+  
   if (GENERAL_STORING) {
     if ((s->d=(double *)malloc(twoRealmtot))==0){
-      Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;} //d
+      Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;}
   }
   s->c=c; 
   return 0;
@@ -796,16 +1037,235 @@ int init_circ_embed_local(key_type *key, int m)
   return Xerror;
 }
 
-void do_circ_embed_local(key_type *key, bool add, int m, Real *res )
+int init_circ_embed_intrinsic(key_type *key, int m)
+{
+  int Xerror=NOERROR, d, v;
+  double diameter, steps[MAXDIM];
+  double *c;
+  CE_storage *s;
+  long twoRealmtot;
+  double Rmax;
+  cov_fct *cov;
+  bool sameSpacing=true, first_iteration_of_R; 
+  double inter_scaled_spacing;
+  param_type param; 
+  local_strategy_type strategy, overall_strategy;
+  int SearchNumber, SearchIndex[MAXCOV]; // which covs need to search for 
+  //                                        different values of r?
+  local_param_type localparam; // the extra parameters in local cov fcts  
+  int multiply[MAXCOV], covnr[MAXCOV];
+  unsigned short int actcov;
+
+  ce_param cepar=CIRCEMBED;
+
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("Initiating intrinsic...\n");
+
+  // check whether it's square grid
+  if (!key->grid || key->anisotropy)
+  { //printf("grid=%d aniso=%d \n\n\n", !key->grid, key->anisotropy);
+       Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;}
+  for (d=1; d<key->timespacedim; d++) 
+  {
+    if( fabs(key->x[d][XSTEP] - key->x[0][XSTEP])>EPSILON )
+    {
+      sameSpacing=false;
+      break;
+    }
+  }
+  if (!sameSpacing)
+  {
+    if (GENERAL_PRINTLEVEL>=2)
+      PRINTF("Currently only grids of same spacing are allowed for local circulant embedding. \n");
+    Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;
+  }
+
+  SET_DESTRUCT(CE_destruct);
+
+  assert(key->S[m]==NULL);
+  if ((key->S[m]=malloc(sizeof(CE_storage)))==0){
+    Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+  } 
+  s = (CE_storage*)key->S[m];
+  s->c =NULL;
+  s->d =NULL;
+  FFT_NULL(&(s->FFT));
+  key->destruct[m] = CE_destruct;
+
+  /* break the for loop directly after first finding of a local circulant 
+     embedding method; check whether this function is not part of 
+     a multiplicative definition -- probably this can be relaxed in future --
+     currently it is unclear whether this makes sense and what the 
+     extended programming would look like
+  */
+  if ((Xerror = FirstCheck_Cov(key, CircEmbedIntrinsic, param, 
+		     true, covnr, multiply, &actcov)) != NOERROR)
+    goto ErrorHandling;
+
+  assert(!key->anisotropy);
+  
+  diameter = 0.0;
+  register double dummy;
+  dummy=0.0;
+  s->totalpoints = 1;
+  for (d=0; d<key->timespacedim; d++) {
+    s->nn[d] = key->length[d];
+    (s->totalpoints) *= s->nn[d];
+    steps[d]=key->x[d][XSTEP];
+    dummy = steps[d] * (double) (key->length[d]-1);
+    diameter += dummy * dummy; 
+  }
+  diameter = sqrt(diameter);
+  if (GENERAL_PRINTLEVEL>7) PRINTF("diameter  %f \n",diameter);
+    
+  overall_strategy=TheoGuaranteed;
+  SearchNumber=0;
+  inter_scaled_spacing = steps[0]/diameter;
+  Rmax = 1.0;
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("inter_scaled_spacing: %f\n", inter_scaled_spacing);
+
+  for (v=0; v<actcov; v++) {
+    assert(fabs(param[v][SCALE] * param[v][INVSCALE]-1.0) < EPSILON);
+    cov = &(CovList[covnr[v]]);
+    param[v][DIAMETER] = diameter * param[v][INVSCALE];
+    if ((cov->check!=NULL) &&
+      ((Xerror=cov->check(param[v], key->timespacedim, CircEmbedIntrinsic)))!=0)
+        goto ErrorHandling;
+    assert(cov->intrinsic_strategy!=NULL);
+    if (LOCAL_USER_PARAM.intrinsic_r>0) 
+    {
+      strategy = UserSpecified;
+      localparam[v][INTRINSIC_R] = LOCAL_USER_PARAM.intrinsic_r;
+    }else{
+      strategy = 
+	cov->intrinsic_strategy(param[v], inter_scaled_spacing, 
+				 key->timespacedim, localparam[v]); 
+    }
+    if ((int) overall_strategy<(int) strategy) overall_strategy=strategy;
+    if (strategy==SearchR) 
+      SearchIndex[SearchNumber++]=v; // In this case we'll change all the R's 
+      //                                to be Rmax later
+    else 
+      set_intrinsic_param( localparam[v], param[v], cov, key->timespacedim );
+    if (Rmax<localparam[v][INTRINSIC_R]) Rmax=localparam[v][INTRINSIC_R];
+  }
+  if (GENERAL_PRINTLEVEL>=5)
+    PRINTF("OverallStrategy: %d; SearchNumber: %d\n",
+	   overall_strategy, SearchNumber);
+
+  cepar.force=false; 
+  cepar.strategy=TRIVIALSTARTEGY; 
+  cepar.trials=1;
+  first_iteration_of_R=true;
+  for (;;)
+  {
+    if ( (Xerror=local_get_initial_m(s->nn, s->m, key->timespacedim, 
+          &cepar, Rmax, inter_scaled_spacing)) !=0 )
+    {
+      // trying greater r will not help in this case
+      if (GENERAL_PRINTLEVEL>=2) {
+        PRINTF("The size of the grid or r is too big!\n");
+        for (d=0;d<key->timespacedim;d++) {PRINTF("n[%d]=%d, ",d,s->nn[d]);}
+        PRINTF("\n");
+        PRINTF("r=%f", Rmax);
+        PRINTF("\n");
+        for (d=0;d<key->timespacedim;d++) {PRINTF("m[%d]=%d, ",d,s->m[d]);}
+        PRINTF("\n");
+      }
+      goto ErrorHandling;
+    }
+    if(SearchNumber>0) { // i.e.OverallStrategy==SearchR
+      Rmax = s->m[0]*inter_scaled_spacing/2.0; // Hana's suggestion
+      if (GENERAL_PRINTLEVEL>=5) {
+        if (first_iteration_of_R)
+	  PRINTF("First iteration: ");
+	else
+	  PRINTF("Second iteration: ");
+	PRINTF("the actual Rmax used was: %f; Rmax/inter_scaled_spacing: %f\n", 
+	       Rmax, Rmax/inter_scaled_spacing);
+      }
+      for (v=0;v<SearchNumber;v++) 
+      {
+        localparam[SearchIndex[v]][INTRINSIC_R]=Rmax;
+        set_intrinsic_param( localparam[SearchIndex[v]], param[SearchIndex[v]], 
+          &(CovList[covnr[SearchIndex[v]]]), key->timespacedim );
+      }
+    }
+    Xerror=circ_embed_with_initial_m(steps, key->anisotropy,
+				       covnr, multiply, param,
+				       s->nn, s->m, s->cumm, s->halfm,
+				       key->timespacedim, actcov,
+				       NULL,
+				       &cepar,
+				       &(s->FFT),
+				       &twoRealmtot,&c,
+                                       localparam,
+                                       Intrinsic);
+    if (Xerror==0) break;
+    else{
+      switch(overall_strategy){
+	  case TheoGuaranteed:
+	    if (first_iteration_of_R){
+	      PRINTF("\nWarning: A theoretically impossible error has occured. Please contact author with the following info.\n\n");
+	      printkey(key);
+	    }
+	    // goto next_iteration;
+            // note no break !!! hence !TheoGuaranteed in the next case
+	  case NumeGuaranteed:
+	    if (first_iteration_of_R && !TheoGuaranteed){ 
+	      PRINTF("\nWarning: A numerical error has occured. Please contact author with the following info.\n\n");
+	      printkey(key);
+	    }
+	    // goto next_iteration;
+	  case SearchR: 
+            // next_iteration:
+	    if (first_iteration_of_R) {
+	      first_iteration_of_R = false;
+	      Rmax *= 2.0;
+	      continue;
+	    }
+	    break;
+	  case UserSpecified:
+	    if (GENERAL_PRINTLEVEL>=2){
+	      PRINTF("The specified r does not work for the given model(s).\n");
+	    }
+	    break;
+	  default : assert(false); // remaining cases my not appear !
+      }
+      goto ErrorHandling;
+    }
+  }
+
+  s->factor = 0.0;
+  for (v=0; v<actcov; v++) {
+    // these steps are necessary, see the two cases in 3dBrownian!
+    s->factor += 2.0 * localparam[v][INTRINSIC_A2] *
+      // 2.0 : see Stein (2002)
+      param[v][VARIANCE];
+  }
+  s->factor = sqrt(s->factor)/diameter;  // standard deviation of the Gaussian 
+  //                                        variables in do_...
+
+  if (GENERAL_STORING) {
+    if ((s->d=(double *)malloc(twoRealmtot))==0){
+      Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;}
+  }
+  s->c=c; 
+  PRINTF("Attention: Intrinsic embedding is to be applied, so the simulated random field will not be stationary.\n");
+  return 0;
+ 
+ ErrorHandling:
+  return Xerror;
+}
+
+void do_circ_embed_intrinsic(key_type *key, bool add, int m, double *res )
 {  
-  Real x[MAXDIM], dx[MAXDIM], factor;
-  long index[MAXDIM];
-  double *d, sum;
-  long k,r;
-  int v=0; // check if this can be relaxed
+  double x[MAXDIM], dx[MAXDIM], *d;
+  long index[MAXDIM], k, r;
   CE_storage *s;
 
-   s =  (CE_storage*)key->S[m];
+  s =  (CE_storage*)key->S[m];
   if (s->d==NULL) {d=s->c;} /* overwrite the intermediate 
 			       result directly (algorithm 
 			       allows for that) */
@@ -814,19 +1274,17 @@ void do_circ_embed_local(key_type *key, bool add, int m, Real *res )
 
   internal_do_circ_embed(s->nn, s->m, s->cumm, s->halfm,
 			 s->c, d, s->totalpoints,
-			 key->timespacedim, &(s->FFT), false,  s->local);
+			 key->timespacedim, &(s->FFT), add,  res);
 
-  factor = INVSQRTTWO * s->sqrt_var_squarefactor[v] * s->param[v][INVSCALE];
   for (k=0; k<key->timespacedim; k++) {
     index[k]=0;
-    dx[k]= GAUSS_RANDOM(factor * key->x[k][XSTEP]);
+    dx[k]= GAUSS_RANDOM(s->factor * key->x[k][XSTEP]);
     x[k]= 0.0;
   }
   
   for(r=0;;) { 
-    sum = s->local[r];
-    for (k=0; k<key->timespacedim; k++)  sum += x[k]; 
-    if (add) res[r++] += sum;  else res[r++] = sum; 
+    for (k=0; k<key->timespacedim; k++)  res[r] += x[k]; 
+    r++;
     k=0;
     while( (k<key->timespacedim) && (++index[k]>=key->length[k])) {
       index[k]=0;
@@ -837,4 +1295,3 @@ void do_circ_embed_local(key_type *key, bool add, int m, Real *res )
     x[k] += dx[k];
   }
 }
-

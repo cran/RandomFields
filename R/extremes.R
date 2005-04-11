@@ -37,17 +37,21 @@ function(x, y = NULL, z = NULL, grid, model, param, maxstable,
 
 "MaxStableRF" <-
 function (x, y = NULL, z = NULL, grid, model, param,  maxstable,
-          method = NULL, n = 1, register = 0, gridtriple = FALSE) 
+          method = NULL, n = 1, register = 0, gridtriple = FALSE, ...) 
 {
-    if (InitMaxStableRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
-                        maxstable=maxstable,
-                        method=method, register=register, gridtriple=gridtriple)
-        <= 0) {
-        return(DoSimulateRF(n=n, reg=register))
-    }
-    else {
-        return(NULL)
-    }
+   old.param <- RFparameters(no.readonly=TRUE)
+  if (n>1 && !old.param$Storing) {
+    RFparameters(Storing=TRUE)
+  }
+  RFpar <- list(...)
+  if (length(RFpar)>0) RFparameters(RFpar)
+  on.exit({RFparameters(old.param);
+           if (!old.param$Storing) DeleteRegister(register)})
+  error <- InitMaxStableRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
+                           maxstable=maxstable, method=method,
+                           register=register, gridtriple=gridtriple)
+  if (error > 0) stop(paste("InitMaxStable: error", error, "occured")) 
+  return(DoSimulateRF(n=n, reg=register, paired=FALSE))
 }
 
 

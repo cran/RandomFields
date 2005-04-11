@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@cu.lu
+ Martin Schlather, schlath@hsu-hh.de
 
  Simulation of a random field by spectral turning bands
 
@@ -54,7 +54,7 @@ void SetParamSpectral(int *action,int *nLines, int *grid) {
 typedef struct spectral_storage {
   param_type param;
   randommeasure randomAmplitude[MAXCOV];
-  Real *x;
+  double *x;
   int actcov;
   bool grid;
   int TrueDim;
@@ -77,6 +77,12 @@ int init_simulatespectral(key_type *key, int m)
   int Xerror,  v, start_param[MAXDIM], index_dim[MAXDIM];
   bool no_last_comp;
   cov_fct *cov;
+  unsigned short int actcov;
+  int covnr[MAXCOV];
+  int multiply[MAXCOV];
+  double store_param[TOTAL_PARAM];
+  long bytes;
+  bool noerror_repeat;
   
   SET_DESTRUCT(spectral_destruct);
   if ((key->S[m]=malloc(sizeof(spectral_storage)))==0){
@@ -86,13 +92,6 @@ int init_simulatespectral(key_type *key, int m)
   s->x = NULL;
 
   if (key->Time) {Xerror=ERRORTIMENOTALLOWED; goto ErrorHandling;}
-
-  unsigned short int actcov;
-  int covnr[MAXCOV];
-  int multiply[MAXCOV];
-  Real store_param[TOTAL_PARAM];
-  long bytes;
-  bool noerror_repeat;
 
   noerror_repeat = key->anisotropy;
   bytes = key->timespacedim * key->timespacedim;
@@ -109,9 +108,9 @@ int init_simulatespectral(key_type *key, int m)
 	assert((key->covnr[v] >= 0) && (key->covnr[v] < currentNrCov));
 	assert(key->param[v][VARIANCE] >= 0.0);
 	covnr[actcov] = key->covnr[v];
-	if (CovList[covnr[actcov]].spectral==NULL)
-        {Xerror=ERRORNOTDEFINED; goto ErrorHandling;}
-	memcpy(s->param[actcov], key->param[v], sizeof(Real) * key->totalparam);
+	if (CovList[covnr[actcov]].implemented[SpectralTBM] <= NOT_IMPLEMENTED) {
+	  Xerror=ERRORNOTDEFINED; goto ErrorHandling;}
+	memcpy(s->param[actcov], key->param[v], sizeof(double) * key->totalparam);
 	if (actcov>0) {
 	  if ((multiply[actcov-1] = key->op[v-1]) && 
 	      key->method[v-1] != SpectralTBM){
@@ -151,10 +150,9 @@ int init_simulatespectral(key_type *key, int m)
       }
     }
   }
-  if (actcov==0) { /* no covariance for the considered method found */\
-    if (key->traditional) Xerror=ERRORNOTINITIALIZED;\
-    else Xerror=NOERROR_ENDOFLIST;\
-    goto ErrorHandling;\
+  if (actcov==0) { /* no covariance for the considered method found */
+    Xerror=NOERROR_ENDOFLIST;
+    goto ErrorHandling;
   }
  //end FC2 
 
@@ -181,11 +179,11 @@ int init_simulatespectral(key_type *key, int m)
   return Xerror;
 }
 
-void do_simulatespectral(key_type *key, int m, Real *res ) 
+void do_simulatespectral(key_type *key, int m, double *res ) 
   // in two dimensions only!
 {  
   int k, nx, ny, v;
-  Real phi=RF_INF, phistep=RF_INF, sqrttwodivbyn, VV;  //initialisation not used
+  double phi=RF_INF, phistep=RF_INF, sqrttwodivbyn, VV;  //initialisation not used
   spectral_storage *s;
   
   assert(key->active);
@@ -213,9 +211,9 @@ void do_simulatespectral(key_type *key, int m, Real *res )
   if (s->TrueDim==1) {
    if (s->grid) {
       long zaehler;
-      Real incx, segx;
+      double incx, segx;
       for(k=0; k<SPECTRAL_LINES; k++){
-	Real cp,Amp;            
+	double cp,Amp;            
 	v = (v+1) % s->actcov;
 	Amp=  s->param[v][INVSCALE] * 
 	  (s->randomAmplitude[v])(s->param[v] ); 
@@ -223,8 +221,8 @@ void do_simulatespectral(key_type *key, int m, Real *res )
 	VV = TWOPI*UNIFORM_RANDOM;
 	cp = Amp * cos(phi);  
 	zaehler=0;      
+	segx = VV + key->x[0][XSTART] * cp;
 	incx=key->x[0][XSTEP]*cp; 
-	segx = VV;
 	for (nx=0; nx<key->length[0]; nx++) {
 	  res[zaehler++] += cos(segx);	  
 	  segx += incx;
@@ -232,7 +230,7 @@ void do_simulatespectral(key_type *key, int m, Real *res )
       }
     } else { // no grid
       for(k=0; k<SPECTRAL_LINES; k++){
-	Real cp,Amp;
+	double cp,Amp;
 	v = (v+1) % s->actcov;
 	Amp= (s->randomAmplitude[v])(s->param[v] ); 
 	if (SPECTRAL_GRID) {phi+=phistep;} else {phi=TWOPI*UNIFORM_RANDOM;}  
@@ -247,9 +245,9 @@ void do_simulatespectral(key_type *key, int m, Real *res )
 
     if (s->grid) {
       long zaehler;
-      Real incx, incy, segx, segy;
+      double incx, incy, segx, segy;
       for(k=0; k<SPECTRAL_LINES; k++){
-	Real cp,sp,Amp;            
+	double cp,sp,Amp;            
 	v = (v+1) % s->actcov;
 	Amp=  s->param[v][INVSCALE] * 
 	  (s->randomAmplitude[v])(s->param[v] ); 
@@ -258,7 +256,7 @@ void do_simulatespectral(key_type *key, int m, Real *res )
 	cp=Amp * cos(phi);   sp=Amp * sin(phi); 
 
 	zaehler=0;      
-	segy=VV;
+	segy=VV + key->x[0][XSTART] * cp + key->x[1][XSTART]*sp;
 	incx=key->x[0][XSTEP]*cp; incy=key->x[1][XSTEP]*sp; 
 	for (ny=0; ny<key->length[1]; ny++) {	
 	  segx = segy;
@@ -272,7 +270,7 @@ void do_simulatespectral(key_type *key, int m, Real *res )
     } else { // no grid
       int twonx;
       for(k=0; k<SPECTRAL_LINES; k++){
-	Real cp,sp,Amp;
+	double cp,sp,Amp;
 	v = (v+1) % s->actcov;
 	Amp= (s->randomAmplitude[v])(s->param[v] ); 
 	if (SPECTRAL_GRID) {phi+=phistep;} else {phi=TWOPI*UNIFORM_RANDOM;}  

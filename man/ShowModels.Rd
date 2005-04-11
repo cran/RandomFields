@@ -11,31 +11,36 @@
 ShowModels(x, y=NULL,
            covx=ifelse(is.null(empirical), diff(range(x))/5,
                        max(empirical$c)), 
-           fixed.rs=FALSE, method=NULL, empirical=NULL,
-           model=NULL, param=NULL, all.param=NULL, PracticalRange=FALSE,   
-           legends = TRUE, register=0, Mean=NULL, erase=TRUE,
+           fixed.rs=TRUE, method=NULL, empirical=NULL,
+           model=NULL, param=NULL, all.param=NULL,  
+           legends = TRUE, 
+           register=0, Mean=NULL, erase=TRUE,
            x.fraction=0.60, cex.names=1, covx.default = 100,
-           link.fct=NULL, Zlim=NULL, maxstable.maxGauss=2,
+           link.fct=NULL, Zlim=NULL,
            Col.rect="red", Col.bg="blue", Col.sep="grey",
            Col.line="red", Col.txt="black", Col.flash="red",
            Col.vario="blue", Col.main="black",
            Col.model=c("red", "black"),  vario.lty=c(1,2), 
-           cex.leg =0.7,  update=TRUE, screen.new=TRUE, debug=FALSE, ...)
+           cex.leg = 0.7 * cex.names,  cex.eval = 0.8 * cex.names,
+           update=TRUE, screen.new=TRUE, use.outer.RFparameters=FALSE,
+           debug=FALSE, ...)
 }
 \arguments{
   \item{x}{if \code{NULL} simulations are not performed; otherwise it gives the
-    \eqn{x}{x} coordinates of a grid.
+    \eqn{x}{x} coordinates of a grid as a sequence of increasing numbers
    }
    \item{y}{if \code{NULL} at most one-dimensional simulations
      are performed (depending on the value of \code{x}); otherwise
      \code{y} gives
-     the \eqn{y}{y} coordinates of a two-dimensional grid.}
+     the \eqn{y}{y} coordinates of a two-dimensional grid (as a sequence
+     of increasing numbers).}
   \item{covx}{if a single value is given, it is the largest distance
     for which the covariance functions or the
     variograms are plotted; otherwise the models are plotted for the given
     values, and the origin.}
   \item{fixed.rs}{if \code{TRUE} then the same random seed is used for
-    all simulations.}
+    all simulations until the user clicks on the formula, the title
+    or the subtitles.}
   \item{method}{simulation method, see \link{RFMethods}; if \code{NULL}
     then a suitable simulation method is chosen automatically.}
   \item{empirical}{empirical variogram; a list as returned by
@@ -72,10 +77,6 @@ ShowModels(x, y=NULL,
     In case of an anisotropic model the anisotropy matrix is by default
     diagonal with both entries equal to \eqn{1/\code{all.param[4]}}.
   }
-  \item{PracticalRange}{logical.  If \code{TRUE} the range of the
-    covariance functions \eqn{C(h)}{C(h)}
-    is adjusted so that the covariance function is about 0.05 for
-    \code{scale==1} and distance \eqn{h=1}{h=1}.}
   \item{legends}{if \code{TRUE} then a legend is added to the
     two-dimensional plot.}
   \item{register}{register where intermediate results of the simulations
@@ -101,20 +102,12 @@ ShowModels(x, y=NULL,
   \item{Zlim}{Vector of two elements or list of two vectors of two
     elements. Graphical limits for the Gaussian random process (and the
     transformed field).}
-  \item{maxstable.maxGauss}{The simulation of the max-stable process
-    based on random fields uses 
-    a stopping rule that necessarily needs a finite upper endpoint
-    of the marginal distribution of the random field.
-    In the case of extremal Gaussian random fields,
-    see \code{\link{MaxStableRF}}, the upper endpoint is
-    approximated by \code{maxstable.maxGauss}. The shown
-    Gaussian random field is multiplied with the largest point
-    of the Poisson point process.
-  }
-  \item{Col.rect}{colour for interactive plot; see \code{\link{eval.parameters}}.}
+  \item{Col.rect}{colour for interactive plot; see
+    \code{\link{eval.parameters}}.} 
   \item{Col.bg}{colour for interactive plot; see \code{\link{eval.parameters}}.}
   \item{Col.sep}{colour for interactive plot; see \code{\link{eval.parameters}}.}
-  \item{Col.line}{colour for interactive plot; see \code{\link{eval.parameters}}.}
+  \item{Col.line}{colour for interactive plot; see
+    \code{\link{eval.parameters}}.} 
   \item{Col.txt}{colour for interactive plot; see \code{\link{eval.parameters}}.}
   \item{Col.flash}{colour for the previously chosen model}
   \item{Col.vario}{colour for the empirical variogram plot}
@@ -124,7 +117,8 @@ ShowModels(x, y=NULL,
   \item{vario.lty}{vector of two line types for primary and secondary
     axis of the variogram}
   \item{cex.leg}{font size used in the legends}
-  \item{update}{logical.  If \code{TRUE} the plots are updated after
+  \item{cex.eval}{font size used in the menue entries}
+ \item{update}{logical.  If \code{TRUE} the plots are updated after
     each interactive change of the values.  Otherwise, the bottom
     'simulate' is added in the menu.}
   \item{screen.new}{logical.  If \code{FALSE} the screen is erased
@@ -132,6 +126,19 @@ ShowModels(x, y=NULL,
     updated.  If \code{FALSE} flickering appears during the update of the
     current screen, otherwise it may happen during the reorganisation of
     any window (and may take quite a lot of time).
+  }
+  \item{use.outer.RFparameters}{logical.
+    If \code{FALSE} the following parameters usually set by
+    \command{\link{RFparameters}} are internally set
+    \itemize{
+      \item \code{PracticalRange=FALSE}
+      \item \code{PrintLevel=1} if \code{debug=FALSE} and \code{5} otherwise.
+      \item \code{maxstable.maxGauss=2}
+      \item \code{CE.force=TRUE}
+      \item \code{CE.trials=1}
+      \item \code{CE.mmin=-4}
+      \item \code{CE.userfft=TRUE}
+    }
   }
   \item{debug}{logical. If \code{TRUE} then internally the
     \code{RFparameter()$PrintLevel} is set to 5.
@@ -172,18 +179,17 @@ ShowModels(x, y=NULL,
 \value{
   list of the last model and its parameters.
 }
-\author{Martin Schlather, \email{martin.schlather@cu.lu}
-  \url{http://www.cu.lu/~schlathe}}
+\author{Martin Schlather, \email{schlath@hsu-hh.de}
+  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{\code{\link{CovarianceFct}}, \code{\link{eval.parameters}},
   \code{\link{GaussRF}},
   \code{\link{RFMethods}}, \code{\link{RandomFields}}.}
 \examples{
-%library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R")
+%library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("~/article/R/NEW.RF/RandomFields/R/auxiliary.R")
 # first example: one-dimensional simulations
 
-# system("xset b off") ## for unix systems
 
-RFparameters(Print=1)
+options(locatorBell=FALSE)
 x <-  seq(1,10,0.1);
 ShowModels(x=x)
 
@@ -202,21 +208,18 @@ ShowModels(x=x, y=x, empirical=ev)
 #                link function
 %  library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");RFparameters(Print=5,CE.trials=1);ShowModels(x=x, y=x, link=function(x) x^2,model=list(list(model="exp", var=1,aniso=c(1,0,0,5)))); 
 x <- seq(1,10,0.1)
-
-ShowModels(x=x, y=x, link=function(x) x^2,
-          model=list(list(model="exp", var=1, aniso=c(1,0,0,5))))
+ShowModels(x=x, y=x, link=function(x) exp(x),
+          model=list(list(model="spheric", var=1, aniso=c(1,0,0,5))))
 
 x <-  seq(1,10,0.1)
-ShowModels(x=x, link=function(x) x^2,
-           model=list(list(model="exp",var=1, scale=1)))
+ShowModels(x=x, link=function(x) exp(x),
+           model=list(list(model="spheric",var=1, scale=1)))
 
 
 %  library(RandomFields, lib="~/TMP");  source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");x <-  seq(1,10,0.05);ShowModels(x=x, link="MaxStable", fixed.rs=TRUE,model=list(list(model="gauss",var=1, scale=1)), type="l")
 x <-  seq(1,10,0.1)
-RFparameters(CE.force=TRUE, CE.trials=1, CE.mmin=-4, CE.userfft=FALSE)
 ShowModels(x=x, link="MaxStable", fixed.rs=TRUE,
            model=list(list(model="gauss",var=1, scale=1)), type="l")
-
 }
 \keyword{spatial}            
 

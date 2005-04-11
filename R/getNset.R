@@ -1,6 +1,11 @@
 
 
-GetPracticalRange <- function(model,kappas=NULL) {
+GetRegisterInfo <- function(register, ignore.active=FALSE)
+  # ignore.active=TRUE only for internal debugging information!
+  .Call("GetExtKeyInfo", as.integer(register), as.logical(ignore.active),
+        PACKAGE="RandomFields")
+
+GetPracticalRange <- function(model, kappas=NULL) {
   covnr <-
     as.integer(.C("GetModelNr", as.character(model), as.integer(1),
                   nr = integer(1), PACKAGE="RandomFields")$nr)
@@ -26,11 +31,11 @@ GetPracticalRange <- function(model,kappas=NULL) {
 
 GetMethodNames <- function() {
   assign(".p",
-       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1),
-          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-          maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields"))
+         .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+            distrmaxchar=integer(1),
+            covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+            maxdim=integer(1), maxmodels=integer(1),
+            PACKAGE="RandomFields"))
   l <- character(.p$methodnr)
   for (i in 1:.p$methodnr) {
     l[i] <- .C("GetMethodName", as.integer(i-1),
@@ -42,11 +47,11 @@ GetMethodNames <- function() {
 
 GetDistributionNames <- function() {
   assign(".p",
-       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1),
-          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-          maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields"))
+         .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+            distrmaxchar=integer(1),
+            covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+            maxdim=integer(1), maxmodels=integer(1),
+            PACKAGE="RandomFields"))
   l <- character(.p$distrnr)
   for (i in 1:.p$distrnr) {
     l[i] <- .C("GetDistrName", as.integer(i-1),
@@ -59,11 +64,11 @@ GetDistributionNames <- function() {
 
 GetModelNames <- function() {
   assign(".p",
-       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1),
-          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-          maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields"))
+         .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+            distrmaxchar=integer(1),
+            covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+            maxdim=integer(1), maxmodels=integer(1),
+            PACKAGE="RandomFields"))
   l <- character(.p$covnr)
   for (i in 1:.p$covnr) {
     l[i] <- .C("GetModelName",as.integer(i-1),
@@ -75,9 +80,8 @@ GetModelNames <- function() {
 
 
 GetModelList <- function(abbr=TRUE) {
-  assign(".methods", GetMethodNames())
   names <- GetModelNames()
-  methods <- .methods[.methods!="nugget"]
+  methods <- GetMethodNames()
   if (abbr) methods <- substr(methods, 1, if (is.logical(abbr)) 5 else abbr)
   idx <- integer(length(names) * length(methods))
   .C("GetModelList", idx, PACKAGE="RandomFields", DUP=FALSE)
@@ -118,17 +122,16 @@ parampositions <- function(model, param, print=TRUE) {
   invisible(model)
 }
 
-"RFparameters" <- function (...) {
+"RFparameters" <- function (..., no.readonly=FALSE) {
+  assign(".p",
+         .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
+            distrmaxchar=integer(1),
+            covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
+            maxdim=integer(1), maxmodels=integer(1),
+            PACKAGE="RandomFields"))
+  assign(".methods", GetMethodNames())
   ## do not add any temporary variable til ## **
   ## do not remove leading "." from .maxdim
-  
-  assign(".methods", GetMethodNames())
-  assign(".p",
-       .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1),
-          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-          maxdim=integer(1), maxmodels=integer(1),
-          PACKAGE="RandomFields"))
   Storing <- integer(1)
   PrintLevel <- integer(1)
   PracticalRange <- integer(1)
@@ -140,6 +143,8 @@ parampositions <- function(model, param, print=TRUE) {
   ##  3,13 : rough guess (good enough for MLE) (if given in RFCovfct.cc)
   ## >10: and if nothing appropriate given in RFCovfct.cc then numerical approx.
   pch <- as.character("  ")
+  stationary.only <- integer(1)
+  exactness <- integer(1)
   
   CE.force <- integer(1)
   CE.tolRe <- double(1)
@@ -148,7 +153,10 @@ parampositions <- function(model, param, print=TRUE) {
   CE.mmin <- integer(.p$maxdim)
   CE.userfft <- integer(1)
   CE.strategy <- integer(1)
-
+  CE.maxmem <- double(1)
+  cutoff.a <- double(1)
+  intrinsic.r <- double(1)
+  
   TBMCE.force <- integer(1)
   TBMCE.tolRe <- double(1)
   TBMCE.tolIm <- double(1)
@@ -156,12 +164,14 @@ parampositions <- function(model, param, print=TRUE) {
   TBMCE.mmin <- integer(.p$maxdim)
   TBMCE.userfft <- integer(1)
   TBMCE.strategy <- integer(1)
+  TBMCE.maxmem <- double(1)
   TBM.method <- integer(1)
 
   TBM2.lines <- integer(1)
   TBM2.linesimufactor <- double(1)
   TBM2.linesimustep <- double(1)
   TBM2.every <- integer(1)
+  TBM2.num <- integer(1)
   
   TBM3D2.lines <- integer(1)
   TBM3D2.linesimufactor <- double(1)
@@ -179,12 +189,18 @@ parampositions <- function(model, param, print=TRUE) {
   direct.method <- integer(1)
   direct.checkprecision <- integer(1)
   direct.requiredprecision <- double(1)
+  direct.bestvariables <- integer(1)
   direct.maxvariables <- integer(1)
 
   MPP.approxzero <- double(1)
   add.MPP.realisations <- double(1)
   MPP.radius <- double(1)
-  
+
+  hyper.superpos <- integer(1)
+  hyper.maxlines <- integer(1)
+  hyper.mar.distr <- integer(1)
+  hyper.mar.param <- double(1)
+ 
   maxstable.maxGauss <- double(1)
 
   arg.list <- ls()
@@ -203,13 +219,19 @@ parampositions <- function(model, param, print=TRUE) {
     PrintLevel <- x$PrintLevel
     PracticalRange <- x$PracticalRange
     pch <- x$pch
+    .C("SetParamDecision", m, stationary.only, exactness,
+       PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 
-       CE.mmin, CE.userfft, CE.strategy, PACKAGE="RandomFields", DUP=FALSE)
+       CE.mmin, CE.userfft, CE.strategy, CE.maxmem,
+       PACKAGE="RandomFields", DUP=FALSE)
+    .C("SetParamLocal", m, cutoff.a, intrinsic.r,
+       PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBMCE", m, TBMCE.force, TBMCE.tolRe, TBMCE.tolIm, TBMCE.trials, 
-       TBMCE.mmin, TBMCE.userfft, TBMCE.strategy,
+       TBMCE.mmin, TBMCE.userfft, TBMCE.strategy, TBMCE.maxmem,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM2", m, TBM2.lines, TBM2.linesimufactor,
-       TBM2.linesimustep, TBM2.every, PACKAGE="RandomFields", DUP=FALSE)
+       TBM2.linesimustep, TBM2.every, TBM2.num,
+       PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM3D2", m, TBM3D2.lines, TBM3D2.linesimufactor,
        TBM3D2.linesimustep, TBM3D2.every, PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM3D3", m, TBM3D3.lines, TBM3D3.linesimufactor,
@@ -218,64 +240,85 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDirectGauss", m, direct.method, direct.checkprecision,
-       direct.requiredprecision, direct.maxvariables,
+       direct.requiredprecision, direct.bestvariables, direct.maxvariables,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetMPP", m, MPP.approxzero, add.MPP.realisations, MPP.radius,
        PACKAGE="RandomFields", DUP=FALSE)
+    .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines, hyper.mar.distr,
+       hyper.mar.param,
+       NA.OK=TRUE, DUP=FALSE)
     .C("SetExtremes", m, maxstable.maxGauss, PACKAGE="RandomFields", DUP=FALSE)
     
     if (length(parameters)==0)
-      return(list(Storing=as.logical(Storing),
-                  PrintLevel=PrintLevel,
-                  PracticalRange=if (PracticalRange<=1)
-                   as.logical(PracticalRange) else PracticalRange, 
-                  CE.force=as.logical(CE.force),
-                  CE.mmin=CE.mmin,
-                  CE.tolRe=CE.tolRe,
-                  CE.tolIm=CE.tolIm,
-                  CE.trials=CE.trials,
-                  CE.userfft=as.logical(CE.userfft),
-                  CE.strategy=CE.strategy,
-                  direct.checkprecision=as.logical(direct.checkprecision),
-                  direct.maxvariables=direct.maxvariables,
-                  direct.method=direct.method,
-                  direct.requiredprecision=direct.requiredprecision,
-                  spectral.lines=spectral.lines,
-                  spectral.grid=as.logical(spectral.grid),
-                  TBMCE.force=as.logical(TBMCE.force),
-                  TBMCE.mmin=TBMCE.mmin,
-                  TBMCE.tolRe=TBMCE.tolRe,
-                  TBMCE.tolIm=TBMCE.tolIm,
-                  TBMCE.trials=TBMCE.trials,
-                  TBMCE.userfft=as.logical(TBMCE.userfft),
-                  TBMCE.strategy=TBMCE.strategy,
-                  TBM2.lines=TBM2.lines,
-                  TBM2.linesimufactor=TBM2.linesimufactor,
-                  TBM2.linesimustep=TBM2.linesimustep,
-                  TBM2.every=TBM2.every,
-                  TBM3D2.lines=TBM3D2.lines,
-                  TBM3D2.linesimufactor=TBM3D2.linesimufactor,
-                  TBM3D2.linesimustep=TBM3D2.linesimustep,
-                  TBM3D2.every=TBM3D2.every,
-                  TBM3D3.lines=TBM3D3.lines,
-                  TBM3D3.linesimufactor=TBM3D3.linesimufactor,
-                  TBM3D3.linesimustep=TBM3D3.linesimustep,
-                  TBM3D3.every=TBM3D3.every,
-                  TBM.method=.methods[TBM.method+1],
-                  MPP.approxzero=MPP.approxzero,
-                  add.MPP.realisations=add.MPP.realisations,
-                  MPP.radius=MPP.radius,
-                  maxstable.maxGauss=maxstable.maxGauss,
-                  pch=pch,
-                  covmaxchar=.p$covmaxchar,
-                  methodmaxchar=.p$methodmaxchar,
-                  distrmaxchar=.p$distrmaxchar,
-                  covnr=.p$covnr,
-                  methodnr=.p$methodnr,
-                  distrnr=.p$distrnr,
-                  maxdim=.p$maxdim,
-                  maxmodels=.p$maxmodels,
-                  )
+      return(c(list(
+                    PracticalRange=if (PracticalRange<=1)
+                    as.logical(PracticalRange) else PracticalRange, 
+                    PrintLevel=PrintLevel,
+                    pch=pch,
+                    Storing=as.logical(Storing),
+                    stationary.only = (if(stationary.only==-1) NA else
+                                       as.logical(stationary.only)),
+                    exactness = if(exactness==-1) NA else as.logical(exactness),
+                    CE.force=as.logical(CE.force),
+                    CE.mmin=CE.mmin,
+                    CE.strategy=CE.strategy,
+                    CE.maxmem=CE.maxmem,
+                    CE.tolIm=CE.tolIm,
+                    CE.tolRe=CE.tolRe,
+                    CE.trials=CE.trials,
+                    CE.userfft=as.logical(CE.userfft),
+                    cutoff.a=cutoff.a,
+                    intrinsic.r=intrinsic.r,
+                    direct.checkprecision=as.logical(direct.checkprecision),
+                    direct.bestvariables=direct.bestvariables,
+                    direct.maxvariables=direct.maxvariables,
+                    direct.method=direct.method,
+                    direct.requiredprecision=direct.requiredprecision,
+                    spectral.grid=as.logical(spectral.grid),
+                    spectral.lines=spectral.lines,
+                    TBM.method=.methods[TBM.method+1],
+                    TBM2.every=TBM2.every,
+                    TBM2.lines=TBM2.lines,
+                    TBM2.linesimufactor=TBM2.linesimufactor,
+                    TBM2.linesimustep=TBM2.linesimustep,
+                    TBM2.num=as.logical(TBM2.num),
+                    TBM3D2.every=TBM3D2.every,
+                    TBM3D2.lines=TBM3D2.lines,
+                    TBM3D2.linesimufactor=TBM3D2.linesimufactor,
+                    TBM3D2.linesimustep=TBM3D2.linesimustep,
+                    TBM3D3.every=TBM3D3.every,
+                    TBM3D3.lines=TBM3D3.lines,
+                    TBM3D3.linesimufactor=TBM3D3.linesimufactor,
+                    TBM3D3.linesimustep=TBM3D3.linesimustep,
+                    TBMCE.force=as.logical(TBMCE.force),
+                    TBMCE.mmin=TBMCE.mmin,
+                    TBMCE.strategy=TBMCE.strategy,
+                    TBMCE.maxmem = TBMCE.maxmem,
+                    TBMCE.tolIm=TBMCE.tolIm,
+                    TBMCE.tolRe=TBMCE.tolRe,
+                    TBMCE.trials=TBMCE.trials,
+                    TBMCE.userfft=as.logical(TBMCE.userfft),
+                    add.MPP.realisations=add.MPP.realisations,
+                    MPP.approxzero=MPP.approxzero,
+                    MPP.radius=MPP.radius,
+                    hyper.superpos=hyper.superpos,
+                    hyper.maxlines=hyper.maxlines,
+                    hyper.mar.distr=hyper.mar.distr,
+                    hyper.mar.param=hyper.mar.param,
+                    maxstable.maxGauss=maxstable.maxGauss,
+                    ),
+               if (!no.readonly)
+               list(
+                    covmaxchar=.p$covmaxchar,
+                    covnr=.p$covnr,
+                    distrmaxchar=.p$distrmaxchar,
+                    distrnr=.p$distrnr,
+                    maxdim=.p$maxdim,
+                    maxmodels=.p$maxmodels,
+                    methodmaxchar=.p$methodmaxchar,
+                    methodnr=.p$methodnr,
+                    )
+               )
              )
     if (m==0) return(invisible(parameters))
 
@@ -310,6 +353,8 @@ parampositions <- function(model, param, print=TRUE) {
       ## which have type "language"
       v <- parameters[[i]]
       if (name[i]=="TBM.method") v <- pmatch(v, .methods) - 1
+      if (name[i]=="stationary.only" && is.na(v)) v <- -1
+      if (name[i]=="exactness" && is.na(v)) v <- -1
       if (switch(type,
                  character = !is.character(v),
                  integer = !is.finite(v) || (v != as.integer(v)),

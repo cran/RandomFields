@@ -6,6 +6,7 @@
 PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
                           named=FALSE)
 {
+  
   ## any of the users model definition (standard, nested, list) for the
   ## covariance function is transformed into a standard format, used
   ## especially in the c programs
@@ -13,7 +14,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
   ## overwrites in some situation the simulation method for nugget.
   ## allows trend to be NA (or any other non finite value  -- is not checked!)
   ## trend has not been implemented yet!
-
+  
   PrintLevel <- RFparameters()$Print
   nugget.nr <- .C("GetModelNr", "nugget", as.integer(1), nr=integer(1),
                   PACKAGE="RandomFields")$nr
@@ -32,6 +33,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
     }
     stop(paste("(in PrepareModel)", txt), call.=FALSE)
   }
+
   
   op.list <- c("+", "*")
   Mean <- 0
@@ -42,7 +44,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
   else timespacedim <- as.integer(timespacedim)
   missing.param <- missing(param) || is.null(param)
   if (length(timespacedim)==0) STOP("length(timespacedim)==0") 
-   
+
   if (full.model <- missing.param && is.null(model$p)) { ## full model
     if (missing.model || (length(model)==0)) model <- list()
     else if (!is.list(model))
@@ -51,19 +53,18 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       STOP("trend/mean is given twice")
     if (!is.null(model$mean)) Mean <- model$mean
     if (!is.null(model$trend)) trend <- model$trend
-    if (!is.null(model$method)) {
+    if (!is.null(model$meth)) {
       if (!is.null(method)) STOP("method is given twice")
-      method <- model$method
+      method <- model$meth
     }
-    model$trend <- model$mean <- model$method <- NULL
+
+    model$trend <- model$mean <- model$meth <- NULL
     ## the definition might be given at a deeper level as element
     ## $model of the list:
     if (is.list(model$model)) {
       if (!is.list(model$model[[1]]))
         STOP("if param is missing, the model$model must be a list of lists")
       model <- model$model
-      if (is.null(model$trend) + is.null(model$mean) + is.null(model$method)!=3)
-        STOP("trend or mean or method are at too deep level")
     }
     if (length(model)==0) ## deterministic 
       return(list(covnr=integer(0), param=double(0), anisotropy=FALSE,
@@ -83,16 +84,19 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
     ## extract the methods first since model and method start
     ## both with lower case m;
     ## model may be abbreviated by m, method by me
-    methodX <- lapply(model, function(x) x$me)
+    methodX <- lapply(model, function(x) x$meth)
     model <- lapply(model, function(x) {
-      if (!(is.na(p <- pmatch("me", names(x), dup=TRUE)))) {
+      if (!(is.na(p <- pmatch("meth", names(x), dup=TRUE)))) {
         if (length(p)!=1) STOP("method may be given only once")
         x[[p]] <- NULL
       }
       x
     })
+
+    if (length(unlist(lapply(model, function(x) x$me))) > 0)
+      STOP("'mean' seems to be given within the inner model definitions"); 
     if (!is.character(covnames <- sapply(model, function(x) x$m)))
-      STOP("'model' was not given extacly once each odd number of list entries")
+      STOP("'model' was not given extacly once each odd number of list entries or additional unused list elements are given.")
     lm <-  as.integer(length(covnames))
     covnr <- .C("GetModelNr", covnames, lm, nr=integer(lm),
                 PACKAGE="RandomFields")$nr
@@ -112,7 +116,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
         method[explicite.method] <- methodX
       }
     }
-      
+
     k <- c(lapply(model, function(x) length(x$k)), recursive=TRUE)  ## used
     ##                                                 for checks later on 
     stopifnot(all(c(lapply(model, function(x) length(x$v)),
@@ -147,8 +151,8 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
     if (missing.param) { ## a simple list of the model and the
       ##                    parameters is also possible
       if (is.null(param <- model$p)) STOP("is.null(model$param)")
-      stopifnot(is.null(method) || is.null(model$method))
-      if (is.null(method)) method <- model$method
+      stopifnot(is.null(method) || is.null(model$meth))
+      if (is.null(method)) method <- model$meth
       stopifnot(is.null(trend) || is.null(model$trend))
       if (is.null(trend)) trend <- model$trend
       if (!is.null(model$mean)) Mean <- model$mean
@@ -163,7 +167,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       k <- rep(nrow(param) - 2, ncol(param))
       if (ncol(param)==1) op <- integer(0)
       else op <- rep(pmatch("+", op.list) - 1, ncol(param) - 1)
-      param <- apply(param, 2, function(x) list(var=x[1], kappa=x[c(-1,-2)],
+      param <- apply(param, 2, function(x) list(var=x[1], kappa=x[-1:-2],
                                                   scale=x[2]))
       for (i in 1:length(param)) if (param[[i]]$scale==0) {
         model[i] <- "nugget"
@@ -180,7 +184,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       k <- length(param) - 3
       
       if (is.na(param[2]) || (param[2]>0)) {## nugget
-        param <- list(c(kappa=param[c(-2, -3)], scale=param[3]),
+        param <- list(c(var=param[1], kappa=param[-1:-3], scale=param[3]),
                       c(nugget=param[2], nugget.scale=1.0))
         model <- c(model, "nugget") ## do not change ordering,
         ##                             since this ordering is used by other
@@ -189,7 +193,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
         ncov <- integer(2)
         k <- c(k, 0)
       } else {
-        param <- list(c(kappa=param[c(-2, -3)], scale=param[3]))
+        param <- list(c(var=param[1], kappa=param[-1:-3], scale=param[3]))
         op <- integer(0)
         ncov <- integer(1)
       }
@@ -223,8 +227,6 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
      PACKAGE="RandomFields", DUP=FALSE)
 
   if ( any(idx <- (sapply(param, length) != n.par + kappas) | (k!=kappas)) ) {
-    ## print(param); print(n.par); print(kappas); print(k);
-    ## print(sapply(param, length))
     STOP(paste("number of parameters in model #", which(idx), 
                " is not correct: ", (n.par + kappas)[idx],"/", kappas[idx],
                " expected; got ", sapply(param,length)[idx],"/", k[idx], sep=""))
@@ -233,6 +235,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
   if (is.null(method)) method <- -1
   else {
     if (any(method=="NULL")) STOP("either all methods must be specified or none")
+    
     method <- .C("GetMethodNr", as.character(method),
                  as.integer(length(method)),
                  nr=integer(length(method)), PACKAGE="RandomFields")$nr
@@ -267,7 +270,6 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   ## the inverse function for PrepareModel
   ## i.e. transform the coded covariance model into a user readable format
   ## takes always the simplest model out of the 'allowed' list
-
   assign(".methods", GetMethodNames())
   if (is.null(l$mean)) str(l)
   stopifnot(is.list(l),
@@ -413,7 +415,10 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     } else stopifnot(is.logical(grid))
     l <- c(length(x), length(y), length(z))[1:spacedim] 
     if (!grid || gridtriple) {
-      if (any(diff(l) != 0)) stop("some of x, y, z differ in length")
+      if (any(diff(l) != 0))
+        stop(if (gridtriple)
+             "some of x, y, z are neither NULL nor have length 3" else
+             "some of x, y, z differ in length")
       x <- cbind(x, y, z)
       ## make a matrix out of the list
       l <- l[1]
@@ -422,6 +427,7 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     }
     y <- z <- NULL
   }
+
 
   if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
   if (grid) {
@@ -437,8 +443,12 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     } else {
       eqdist <- function(x) {
         step <- diff(x)
-        if (max(abs(step - step[1])/step[1]) > 1e-13) {
-          stop("Grid must have equal distances in each direction -- try gridtriple=TRUE.")
+        if (any(step)==0)
+          stop("duplicated values detected: the definition of coordinates does not seem to define a grid of equidistant coordinates")
+        if (max(abs(step / step[1] - 1.0)) > 1e-13) {
+          print(x[1:min(10000, length(x))])
+          print(round(diff(diff(x)), 14))
+          stop("different grid distances detected, but the grid must have equal distances in each direction -- try gridtriple=TRUE that avoids numerical errors.")
         }
         return(c(x[1], x[length(x)]+0.001*step[1], step[1]))
       }
@@ -446,10 +456,17 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
       x <- sapply(x, eqdist)
       l <- 3
     }
+    if (any(x[3, ] <= 0)) {
+      print(x)    
+      stop("step must be postive")
+    }
     ##if (l == 1) stop("Use grid=FALSE if only a single point is simulated")
   } else {
     total <- nrow(x)
-  }
+   if (total < 2000 && any(as.double(dist(x)) == 0))
+     stop("locations must be distinguishable")
+    ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
+ }
   
   if (Time <- !is.null(T)) {
     stopifnot(length(T)==3)
