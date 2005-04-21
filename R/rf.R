@@ -8,6 +8,8 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("chlo2inv in MLE: ")
+    print("kriterium fuer cutoff einbauen: decreasing, nicht negativ")
     print("nsst2 in Showmodels funktioniert nicht")
     print("fractGauss -- was ist los?")
     print("Empirical Variogram: allow for NAs")

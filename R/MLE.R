@@ -47,7 +47,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   ####################################################################
   ##all the following save.* are used for debugging only
   debug <- FALSE
-  ## debug <- TRUE
+  ##
+  debug <- TRUE
   save.bins <- bins;
   save.upper <- upper
   save.lower <- lower
@@ -288,7 +289,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ## korrigiert, s.u. !!
     logdet <- 2 * sum(log(diag(cov.matrix))) * repet #  repet * log(det C)
     if (!is.finite(logdet)) logdet <- 1E300 ## the best ?! 
-    cov.matrix<- chol2inv(cov.matrix) # La.chol2inv, LIN=TRUE
+    cov.matrix <- chol2inv(cov.matrix, LIN = TRUE) # La.chol2inv, LIN=TRUE
     quadratic <- sum(REML.data * (cov.matrix %*% REML.data))
     ##               sum_i (D_i - Xm)^T C^{-1} (D_i - X m)
     if (varnugNA || zeronugget) {
@@ -342,7 +343,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
              lsq.methods=lsq.methods, cross.methods=cross.methods,
              users.guess=users.guess, users.beta=users.beta,
              table.format=table.format,
-             old=list(y=y, z=z, model=model, param=if (!missing.param) param,
+             old=list(y=y, z=z, model=model,
+               param=if (!missing.param) get("param", envir=ENVIR),
                lower=save.lower,
                upper=save.upper, trend=if (!missing.trend) trend,
                transform=transform, standard.style=save.standard.style),
@@ -419,7 +421,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         str(cov.matrix)
       }
       return(1E300)
-    }    
+    }
     if (any(diag(cov.matrix)<0)) {stop("chol det<0!")}
     
     ## der faktor zwei erklaert sich wie folgt:
@@ -441,7 +443,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ## korrigiert, s.u. !!
     logdet <- 2 * sum(log(diag(cov.matrix))) * repet #  repet * log(det C)
     if (!is.finite(logdet)) logdet <- 1E300 ## the best ?! 
-    cov.matrix <- chol2inv(cov.matrix) # La.chol2inv, LIN=TRUE
+    cov.matrix <- chol2inv(cov.matrix, LIN = TRUE) # La.chol2inv, LIN=TRUE
     m <- XC <- NULL
     if (givenCoVariates)  {
     ## m minimimiert, falls
@@ -507,7 +509,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
              lsq.methods=lsq.methods, cross.methods=cross.methods,
              users.guess=users.guess, users.beta=users.beta,
              table.format=table.format,
-             old=list(y=y, z=z, model=model, param=if (!missing.param) param,
+             old=list(y=y, z=z, model=model,
+               param=if (!missing.param) get("param", envir=ENVIR),
                lower=save.lower,
                upper=save.upper, trend=if (!missing.trend) trend,
                transform=transform, standard.style=save.standard.style),
@@ -521,7 +524,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
            lpar, logicaldim, xdim,
            pm, cov.matrix, scalingmethod, repet, logdet, quadratic,
            givenCoVariates, XC, m, meandata, MLtargetV, ML.loglcrepet,
-           ML.lcrepet, ML.twopilcrepet,
+           ML.lcrepet, ML.twopilcrepet, CC,
            varnugNA, zeronugget, res, MLEMAX)
       if (is.na(res) || is.na(MLEMAX)) stop(txt)
     }
