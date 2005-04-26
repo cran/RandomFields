@@ -136,7 +136,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
          logicaldim, xdim,
          as.integer(length(covnr)), as.integer(pm$anisotropy),         
-        as.integer(pm$op),model.values=double(bins), scalingmethod,
+         as.integer(pm$op),model.values=double(bins), scalingmethod,
          PACKAGE="RandomFields", DUP=FALSE)$model.values
     
     if (any(is.na(model.values))) {

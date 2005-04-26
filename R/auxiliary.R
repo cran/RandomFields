@@ -26,6 +26,12 @@ useraction <- function(action=c("none", "start.register",
   ## wait : regulates the blinking speed of the crosses (and of readline)
   ## sleep : sleeping time before the blinking starts
   action <- match.arg(action)
+  if (.Platform$OS.type != "unix" && action != "none") {
+    waring("`useraction' is fully available only on unix systems")
+  }
+  assign(".action.sleepcommand", envir=.RandomFields.env,
+         if (.Platform$OS.type == "unix") "sleep" else "CommandUnknown")
+  
   assign(".action.mismatch", "user input replay mismatch",
          envir=.RandomFields.env)
   assign(".action.mode", action, envir=.RandomFields.env)
@@ -108,8 +114,6 @@ userinput <- function(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
   ## prompt : usual parameter of the function readline
   ## n, type, pch, cex,... : usual parameters of the function `locator'
   
-  if (.Platform$OS.type != "unix")
-    stop("`userinput' currently only available on unix systems")
   mode <- if (exists(".action.mode", envir=.RandomFields.env))
     get(".action.mode", envir=.RandomFields.env) else "none"
   if (mode %in% c("none", "continue.register")) {
@@ -147,12 +151,14 @@ userinput <- function(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
           system(wait)
         }
       }
-        
+      
       switch(fct,
              locator = {
                l <- l[1:2]
-               sleep <- paste("sleep", action.sleep)
-               wait <- paste("sleep", action.wait)
+               sleep <- paste(get(".action.sleepcommand",
+                                  envir=.RandomFields.env), action.sleep)
+               wait <- paste(get(".action.sleepcommand",
+                                 envir=.RandomFields.env), action.wait)
                system(sleep)
                 if (is.null(l$x)) {
                  for (col in rep(c( "black", "white", "red"), 3)) {
