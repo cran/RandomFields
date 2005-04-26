@@ -1390,8 +1390,13 @@ void pokeTBM(int *out, int *in, int *err) {
     {*err=ERRORPOKETBMmeth; goto ErrorHandling;}
   
   for (m=0; m<keyIn->n_unimeth; m++) {
-    if (keyIn->unimeth[m] != keyOut->unimeth[m])
-      {*err=ERRORPOKETBMmeth; goto ErrorHandling;}
+    if (keyIn->unimeth[m] != keyOut->unimeth[m]) {
+      *err=ERRORPOKETBMmeth;
+      if (GENERAL_PRINTLEVEL>3) 
+	PRINTF("\n%d '%s' vs. '%s'\n", m, METHODNAMES[keyIn->unimeth[m]], 
+	       METHODNAMES[keyOut->unimeth[m]]);
+      goto ErrorHandling;
+    }
     if ((keyOut->unimeth[m]==TBM2) || (keyOut->unimeth[m]==TBM3)) {
       bool grid;
       sOut = (TBM_storage*) keyOut->S[m];
@@ -1418,7 +1423,8 @@ void pokeTBM(int *out, int *in, int *err) {
   return;
   
  ErrorHandling:
-  if (GENERAL_PRINTLEVEL>3) PRINTF("error %d %d..\n", *in, *out);
+  if (GENERAL_PRINTLEVEL>3) 
+    PRINTF("error %d in pokeTBM (register %d -> %d).\n", *err, *in, *out);
   keyIn->active = keyOut->active = false;
   return;
 }

@@ -54,13 +54,17 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
   ## first an eps-file test.eps is created, then a jpeg-file,
   ## finally the figure is plotted on the screen
   dir(pattern="test*")
-  for (dev in list(TRUE, "jpeg", 1)) {
+  dev.list <- list(TRUE, 1)
+  if (interactive()) dev.list <- c(dev.list, "jpeg")
+  for (dev in dev.list) {
     print(dev)
     size <- if (dev=="jpeg") 450 else 5
-    Dev(TRUE, dev, ps="test", height=size, width=size)
-    plot(0, 0, main=paste("dev=", dev))
-    # readline("press return")
-    Dev(FALSE)
+    err <- class(try(Dev(TRUE, dev, ps="test", height=size, width=size)))
+    if (err!="try-error") {
+      plot(0, 0, main=paste("dev=", dev))
+      # readline("press return")
+      Dev(FALSE)
+    }
   }
   dir(pattern="test*")
 }
