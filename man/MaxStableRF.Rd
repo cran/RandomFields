@@ -130,11 +130,41 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
 .
 }
 \examples{
- n <- 30 ## nicer, but time consuming if n <- 100
- x <- y <- 1:n
- ms <- MaxStableRF(x, y, grid=TRUE, model="exponen",
+n <- 30 ## nicer, but time consuming if n <- 100
+x <- y <- 1:n
+ms0 <- MaxStableRF(x, y, grid=TRUE, model="exponen",
                  param=c(0,1,0,40), maxstable="extr"
                  ,CE.force = TRUE                 )
- image(x,y,ms)
+image(x,y,ms0)
+
+% library(RandomFields); runif(1)
+## Plots used in M. Schlather, Extremes 5:1, 33-44, 2002
+x <-(1:512)/51.2
+scalegauss <- 1.5
+RFparameters(MPP.radius=2*scalegauss, Print=3)
+runif(1)
+save.seed <- .Random.seed
+ms1 <- MaxStableRF(x, x, model="gauss", param=c(0, 1, 0, scalegauss), 
+                  maxstable="Bool", grid=TRUE)
+image(x, x, sqrt(ms1))
+ 
+scalecone <- 3.7
+.Random.seed <- save.seed
+ms2 <- MaxStableRF(x, x, model="cone", param=c(0, 1, 0, scalecone,
+           0, 0, 1), maxstable="Bool", grid=TRUE)  
+image(x, x, sqrt(ms2))
+   
+.Random.seed <- save.seed  
+ms3 <- MaxStableRF(x, x, model="exponen", param=c(0, 1, 0, 1),
+           maxstable="extr", grid=TRUE, method="ci")
+image(x, x, sqrt(ms3))
+
+.Random.seed <- save.seed 
+ms4 <- MaxStableRF(x, x, model="gauss", param=c(0, 1, 0, 1),
+           maxstable="extr", grid=TRUE, method="ci")
+image(x, x, sqrt(ms4))
+
+% par(mfcol=c(2,2)); for (i in list(ms1,ms2,ms3,ms4)) image(i)
+
 }
 \keyword{spatial}%-- one or more ...

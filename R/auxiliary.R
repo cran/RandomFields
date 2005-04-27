@@ -27,7 +27,7 @@ useraction <- function(action=c("none", "start.register",
   ## sleep : sleeping time before the blinking starts
   action <- match.arg(action)
   if (.Platform$OS.type != "unix" && action != "none") {
-    waring("`useraction' is fully available only on unix systems")
+    warning("`useraction' does not work correctly on non-unix systems")
   }
   assign(".action.sleepcommand", envir=.RandomFields.env,
          if (.Platform$OS.type == "unix") "sleep" else "CommandUnknown")
