@@ -3,7 +3,8 @@
 if (file.exists("source.R")) source("source.R")
 
 ##load("random seed")
-#runif(1);save(file="random.seed",.Random.seed)
+#
+runif(1);save(file="random.seed",.Random.seed)
 #load("random.seed")
 
 model <- "expon"; standardparam <- c(0,1,0,1); factor <- 5; low <- up <- NULL

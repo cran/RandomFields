@@ -8,6 +8,8 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("cross: verbesserungen (geswchwindigkeit)")
+    print("GENERAL_PRECISION: einbinden + ueber .Mschine$precision definieren (mal Faktor 50")
     print("chlo2inv in MLE: ")
     print("kriterium fuer cutoff einbauen: decreasing, nicht negativ")
     print("nsst2 in Showmodels funktioniert nicht")

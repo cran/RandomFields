@@ -825,11 +825,11 @@ Ausnahmen: dimension beschraenkt
 SimulationType ML[MAXCOV][SimulationTypeLength]; // Method List
 int NML[MAXCOV], IML[MAXCOV];
 void init_method_list(key_type *key){
+  unsigned int maxmem=500000000;
   int best_dirct=DIRECTGAUSS_BESTVARIABLES, 
     max_dirct=DIRECTGAUSS_MAXVARIABLES, 
-    maxmem=500000000, 
     i, v, nr, nml;
-  bool anyFirstDirect = false, anyFirstCE = false, CEbadlybehaved;
+  bool anyFirstDirect = false, anyFirstCE = false;
 
 #define nLastDefault 2
   SimulationType LastDefault[nLastDefault] = {AdditiveMpp, Hyperplane}; 
@@ -917,6 +917,7 @@ void init_method_list(key_type *key){
     switch (raw[0]) {
 	case Direct : anyFirstDirect = true; break;
 	case CircEmbed : anyFirstCE = true; break;
+	default: break;
     }
   }
 
@@ -979,15 +980,15 @@ void InitSimulateRF(double *x, double *T,
   //       always assume that the second calling component is a time component!
 
   bool user_defined, simple_definition;
-  int i, last_incompatible, d, endfor, pAdd, v, m, M, err_occurred;
+  int i, last_incompatible, d, pAdd, v, m, M, err_occurred;
   unsigned long totalBytes;
   double p[TOTAL_PARAM], *PL;
   int method_used[(int) Nothing + 1];
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
   SimulationType Merr=Nothing;
+  key_type *key = NULL;
 
-  key_type *key;
   if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
     *error=ERRORREGISTER; 
     goto ErrorHandling;
@@ -1207,6 +1208,7 @@ void InitSimulateRF(double *x, double *T,
   
   while (*error != NOERROR) {
     int error_covnr;
+    error_covnr = NOERROR;
     if (*error != ERRORANYLEFT)
       error_covnr = next_element_of_method_list(key);
     if (error_covnr) {
@@ -1346,7 +1348,7 @@ void InitSimulateRF(double *x, double *T,
   return;
   
   ErrorHandling:
-  key->active = false;
+  if (key != NULL) key->active = false;
   if (GENERAL_PRINTLEVEL>0) {
     ErrorMessage(Merr, *error);
     PRINTF("\n");

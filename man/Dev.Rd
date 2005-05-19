@@ -8,7 +8,7 @@
 }
 \usage{
 Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
-    quiet=FALSE, ...)
+    quiet=FALSE, innerwidth, innerheight, mai, ...)
 }
 \arguments{
   \item{on}{logical. Indicates whether \code{dev} should be switched on
@@ -20,7 +20,14 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
   \item{paper}{kind of paper. Postscript parameter}
   \item{width}{width of figure. Postscript and pdf parameter}
   \item{height}{height of figure. Postscript and pdf parameter}
-  \item{quiet}{logical.  If \code{FALSE} additional information is given.}
+  \item{quiet}{logical.  If \code{FALSE} additional information is
+    given.}
+  \item{innerwidth}{height of graphic without the margins; overwrites
+    \code{height} if given -- experimental state}
+  \item{innerheight}{width of graphic without the margins; overwrites
+    \code{width} if given -- experimental state}
+  \item{mai}{parameters of function \code{\link[graphics]{par}} --
+      experimental state}
   \item{...}{further parameters for pdf or postscript}
 }
 \details{
@@ -35,7 +42,8 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
     \item{numeric}{\code{Dev} switches to the device with number \code{dev};
       if such a device does not exist, a new X11 device is created.
       If \code{dev<2} the device opened by \code{Dev(on=TRUE,...)} is
-      closed by \code{Dev(on=FALSE)}; otherwise only \code{par(new=F)}
+      closed by \code{Dev(on=FALSE)}; otherwise only
+      \code{\link[graphics]{par}(new=F)} 
       is applied to the device.
     }
     The parameters \code{dev}, \code{ps}, \code{cur.cex}, \code{paper},

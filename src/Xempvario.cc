@@ -34,7 +34,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TOOLS_MEMORYERROR 1
 #define TOOLS_XERROR 2
 #define TOOLS_BIN_ERROR 3
+#define NEARBY 1e15
 
+// naechste Zeile nur notwendig, weil atan2 in Windows nicht
+// ordentlich programmiert ist
+#define NEARBYINT(x)  nearbyint((x) * NEARBY) / NEARBY
+// #define NEARBYINT(x)  x
 
 void empvarioXT(double *X, double *T, 
 		int *lx, 
@@ -61,9 +66,6 @@ void empvarioXT(double *X, double *T,
  *    n      : number of pairs for each bin
  */
 { 
-  // int,ii,j,d,;   
-  // long segment, factor, ; 
-  //double *xx[4],maxdist[4],; 
   long rep;
   int i, halfnbin,gridpoints[4], error, totalbins, totalspatialbins,
     twoNphi, twoNphiNbin, Ntheta, nbinNphiNtheta, maxi[4], mini[4],
@@ -106,7 +108,7 @@ void empvarioXT(double *X, double *T,
   else BinSq[i]=bin[i];
   }
 
-  assert(fabs(atan2(-1, 0) + PIHALF) < 1e-14); //assert(atan2(-1, 0) == -M_PI_2);
+  assert(NEARBYINT(atan2(-1, 0) + PIHALF) == 0.0);
   assert(atan2(0, 0) == 0);
   maxbinsquare = BinSq[*nbin];
 
@@ -151,7 +153,7 @@ void empvarioXT(double *X, double *T,
 	vec[1] = vec[0] + iy * segmentbase[1];
 	
         // angles
-	phidata = atan2(delta[1], delta[0]) - startphi;
+	phidata = NEARBYINT(atan2(delta[1], delta[0]) - startphi);
 	while (phidata < 0) phidata += TWOPI;
 	while (phidata >= TWOPI) phidata -= TWOPI;
 	kphi = *nbin * (int) (phidata * invsegphi);
@@ -172,7 +174,7 @@ void empvarioXT(double *X, double *T,
 	  }	// low
 
 	  // angles
-	  thetadata = atan2(delta[2], sqrt(psq[1])) - starttheta;
+	  thetadata = NEARBYINT(atan2(delta[2], sqrt(psq[1])) - starttheta);
 	  while (thetadata < 0) thetadata += PI; 
 	  while (thetadata >= PI) thetadata -= PI;
 	  ktheta = (int) (thetadata * invsegtheta);
@@ -254,12 +256,12 @@ void empvarioXT(double *X, double *T,
 	  }
 
 	  // angles
-	  phidata = atan2(dx[1], dx[0]) - startphi;
+	  phidata = NEARBYINT(atan2(dx[1], dx[0]) - startphi);
 	  while (phidata < 0) phidata += TWOPI;
 	  while (phidata >= TWOPI) phidata -= TWOPI;
 	  kphi = *nbin * (int) (phidata * invsegphi);
 
-	  thetadata = atan2(dx[2], zylinderradius) - starttheta;
+	  thetadata = NEARBYINT(atan2(dx[2], zylinderradius) - starttheta);
 	  while (thetadata < 0) thetadata += PI; 
 	  while (thetadata >= PI) thetadata -= PI;
 	  ktheta = (int) (thetadata * invsegtheta);

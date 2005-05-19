@@ -619,6 +619,7 @@ void do_nugget(key_type *key, bool add, int m, double *res );
 extern int GENERAL_PRINTLEVEL;
 extern int GENERAL_NATURALSCALING;
 extern int GENERAL_STORING;
+extern double GENERAL_PRECISION;
 extern decision_param DECISION_PARAM;
 extern char ERRORSTRING_OK[MAXERRORSTRING];
 extern char ERRORSTRING_WRONG[MAXERRORSTRING];

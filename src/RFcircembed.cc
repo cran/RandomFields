@@ -502,11 +502,12 @@ int circ_embed_with_initial_m(double *steps, bool anisotropy,
       twoi+=2;
     }
     if (GENERAL_PRINTLEVEL>1) {
-      if (r<0.0 || imag>0.0) {
+      if (r < -GENERAL_PRECISION || imag > GENERAL_PRECISION) {
 	PRINTF("using approximating circulant embedding:\n");
-	if (r<0.0) PRINTF("\tsmallest real part has been %e \n", r);
-	if (imag>0.0) 
-	  PRINTF("\tlargest modulus of the imaginary part has been %e \n", imag);
+	if (r < -GENERAL_PRECISION) 
+	  PRINTF("\tsmallest real part has been %e \n", r);
+	if (imag > GENERAL_PRECISION) 
+	  PRINTF("\tlargest modulus of the imaginary part has been %e \n",imag);
       }
     }
   } else {Xerror=ERRORFAILED;goto ErrorHandling;}

@@ -48,7 +48,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   ##all the following save.* are used for debugging only
   debug <- FALSE
   ##
-  debug <- TRUE
+  ## debug <- TRUE
   save.bins <- bins;
   save.upper <- upper
   save.lower <- lower
@@ -144,6 +144,24 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         cat("\nmissing values!")
         print(variab, dig=20)
         print(model.values)
+
+        print(PARAM)
+        print(LSQINDEX)
+
+        param <- PARAM
+        param[LSQINDEX] <- variab
+        print(param)
+        print(LSQTRANSFORM)
+
+        param <- LSQTRANSFORM(param)
+        print(param)
+
+        str(.C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
+               logicaldim, xdim,
+               as.integer(length(covnr)), as.integer(pm$anisotropy),         
+               as.integer(pm$op),model.values=double(bins), scalingmethod,
+               PACKAGE="RandomFields", DUP=FALSE))
+       
         print("end model.values")
       }
       return(1E300)
@@ -1146,7 +1164,7 @@ show <- function(nr, M, OPT, PARAM)
           ##  consequences:
           ## * estimtation space increased only by 1, not 2
           ## * real nugget: NUGGET * SILL
-          ## *  variance  : (1-NUGGET) * SILL
+          ## *     variance: (1-NUGGET) * SILL
           varnugNA <- TRUE
           autostart[NUGGET] <- 0.5
           lower[VARIANCE] <- 0
@@ -1160,9 +1178,11 @@ show <- function(nr, M, OPT, PARAM)
             lower[VARIANCE] <- PARAM[VARIANCE] <- 0 ## dito
           } else { ## not sillbounded, is.na(variance), nugget!=0
             lower[VARIANCE] <- (vardata-nugget)/lowerbound.var.factor
-            if (lower[VARIANCE]<lowerbound.sill) {
+            if (lower[VARIANCE] < lowerbound.sill) {
               if (PrintLevel>0)
-                cat("low.var=",lower[VARIANCE]," low.sill",lowerbound.sill,"\n")
+                cat("low.var=",lower[VARIANCE]," low.sill",lowerbound.sill,
+                    "\ estimated variance from data=", vardata,
+                    "nugget=", nugget, "\n")
               warning("param[NUGGET] might not be given correctly.")
               lower[VARIANCE] <- lowerbound.sill
             }
@@ -1287,13 +1307,15 @@ show <- function(nr, M, OPT, PARAM)
   param.table <- matrix(1 * NA, nrow=maxtblidx, ncol=length(allmethods),
                         dimnames=list(tablenames, allmethods))
   param.table <- data.frame(param.table)
+
   
-##########  Trafo def for LSQ, also used for autostart  ###############
-  LSQTRANSFORM <- users.transform
+##########  Trafo def + bounds for LSQ, also used for autostart  ###############
+  LSQTRANSFORM <- users.transform  ## note: LSQTRANSFORM is used also in MLE
   LSQinvTrafo <- function(param) param
   LSQINDEX <- index
   nLSQINDEX <- sum(LSQINDEX)
-  lsqtrafo <- NULL;
+  lsqtrafo <- NULL
+  lsqlower <- lower
   lsqupper <- upper
   if (varnugNA) {
     lsqupper[NUGGET] <- 1
@@ -1319,6 +1341,9 @@ show <- function(nr, M, OPT, PARAM)
     LSQTRANSFORM <- function(param) lsqtrafoUser(lsqtrafo(param))
   }
   if (is.null(LSQTRANSFORM)) LSQTRANSFORM <- function(x) x
+  LSQLB  <- lsqlower[LSQINDEX]
+  LSQUB  <- lsqupper[LSQINDEX]
+  ixdLSQINDEX <- LSQINDEX[index]
 
   
 ##################################################
@@ -1329,7 +1354,7 @@ show <- function(nr, M, OPT, PARAM)
   M <- "autostart"
   idx <- tblidx[["variab"]]
   autostart <- LSQTRANSFORM(autostart) ## now clear text
-  if (nindex>0) param.table[[M]][idx[1]:idx[2]] <- autostart 
+  if (nLSQINDEX > 0) param.table[[M]][idx[1]:idx[2]] <- autostart 
   idx <- tblidx[["covariab"]]
   param.table[[M]][idx[1]:idx[2]] <- lsq.covariates(autostart)
   default.param <- param.table[["autostart"]]
@@ -1463,14 +1488,7 @@ show <- function(nr, M, OPT, PARAM)
   EVtargetV <- NULL
 
  
-  ##***********   estimation part itself   **********
-  LSQLB  <- lower[LSQINDEX]
-  LSQUB  <- upper[LSQINDEX]
-  if (PrintLevel>3) {
-    cat("lower:", lower, "\nupper:", upper, "\n")
-    if (PrintLevel>6) {print("LSQLB, LSQUB"); print(cbind(LSQLB, LSQUB))}
-  }
-     
+  ##***********   estimation part itself   **********     
   ## find a good initial value for MLE using weighted least squares
   ## and binned variogram
   ##
@@ -1502,9 +1520,9 @@ show <- function(nr, M, OPT, PARAM)
       LStarget(numeric(0))
     } else {
       idx <- tblidx[["lower"]]
-      param.table[[M]][idx[1]:idx[2]][LSQINDEX[index]] <- LSQLB
+      param.table[[M]][idx[1]:idx[2]][ixdLSQINDEX] <- LSQLB
       idx <- tblidx[["upper"]]
-      param.table[[M]][idx[1]:idx[2]][LSQINDEX[index]] <- LSQUB
+      param.table[[M]][idx[1]:idx[2]][ixdLSQINDEX] <- LSQUB
       options(show.error.messages = show.error.message) ##
       if (nLSQINDEX == 1) {
         variab <- try(optimize(LStarget, lower = LSQLB, upper = LSQUB)$minimum)
@@ -1576,10 +1594,30 @@ show <- function(nr, M, OPT, PARAM)
   methods <- (if (is.null(mle.methods)) NULL else
               allmlemeth[pmatch(mle.methods, allmlemeth)])
   if ("reml" %in% methods && !givenCoVariates) methods <- c(methods, "ml")
+  mlelower <- lower
+  mleupper <- lsqupper
   MLEINDEX <- LSQINDEX
   nMLEINDEX <- sum(MLEINDEX)
   MLETRANSFORM <- LSQTRANSFORM 
   MLEinvTrafo <- LSQinvTrafo
+  ## lowerbound.scale.LS.factor <  lowerbound.scale.factor, usually
+  ## LS optimisation should not run to a boundary (what often happens
+  ## for the scale) since a boundary value is usually a bad initial
+  ## value for MLE (heuristic statement). Therefore a small
+  ## lowerbound.scale.LS.factor is used for LS optimisation.
+  ## For MLE estimation we should include the true value of the scale;
+  ## so the bounds must be larger. Here lower[SCALE] is corrected
+    ## to be suitable for MLE estimation
+  if (pm$anisotropy)
+    mleupper[scale.pos>0] <- mleupper[scale.pos>0] *
+      lowerbound.scale.factor / lowerbound.scale.LS.factor
+  else 
+    mlelower[scale.pos>0] <- mlelower[scale.pos>0] *
+      lowerbound.scale.LS.factor / lowerbound.scale.factor
+  MLELB  <- mlelower[MLEINDEX]
+  MLEUB  <- mleupper[MLEINDEX]
+  ixdMLEINDEX <- MLEINDEX[index]
+
   ## fnscale <- -1 : maximisation
   mle.optim.control <-
     c(optim.control, parscale=list(parscale[MLEINDEX]), fnscale=-1)
@@ -1594,32 +1632,13 @@ show <- function(nr, M, OPT, PARAM)
     }
     MLEsettings(M)
     MLEMAX <- -Inf ## must be before next "if (nMLEINDEX==0)"
-    
-    ## lowerbound.scale.LS.factor <  lowerbound.scale.factor, usually
-    ## LS optimisation should not run to a boundary (what often happens
-    ## for the scale) since a boundary value is usually a bad initial
-    ## value for MLE (heuristic statement). Therefore a small
-    ## lowerbound.scale.LS.factor is used for LS optimisation.
-    ## For MLE estimation we should include the true value of the scale;
-    ## so the bounds must be larger. Here lower[SCALE] is corrected
-    ## to be suitable for MLE estimation
-    mlelower <- lower
-    mleupper <- lsqupper
-    if (pm$anisotropy)
-      mleupper[scale.pos>0] <- mleupper[scale.pos>0] *
-        lowerbound.scale.factor / lowerbound.scale.LS.factor
-    else 
-      mlelower[scale.pos>0] <- mlelower[scale.pos>0] *
-        lowerbound.scale.LS.factor / lowerbound.scale.factor
-    MLELB  <- mlelower[MLEINDEX]
-    MLEUB  <- mleupper[MLEINDEX]
     if (nMLEINDEX == 0) {
       MLEtarget(numeric(0))
     } else {
       idx <- tblidx[["lower"]]
-      param.table[[M]][idx[1]:idx[2]][MLEINDEX[index]] <- MLELB
+      param.table[[M]][idx[1]:idx[2]][ixdMLEINDEX] <- MLELB
       idx <- tblidx[["upper"]]
-      param.table[[M]][idx[1]:idx[2]][MLEINDEX[index]] <- MLEUB
+      param.table[[M]][idx[1]:idx[2]][ixdMLEINDEX] <- MLEUB
       options(show.error.messages = show.error.message) ##
       if (nMLEINDEX == 1) {
         variab <- try(optimize(MLEtarget, lower = MLELB,
@@ -1747,6 +1766,11 @@ show <- function(nr, M, OPT, PARAM)
   data <- as.matrix(data)
   CROSSINDEX <- index
   nCROSStotINDEX <- nCROSSINDEX <- sum(CROSSINDEX)
+###############################################################
+##  besser: lsqlower oder mlelower, dann andere Trafo, etc!  ## 
+###############################################################
+  crosslower <- lower
+  crossupper <- upper
   CROSSTRANSFORM <- users.transform
   CROSSinvTrafo <- function(param) param
   crosstrafo <- NULL;
@@ -1764,9 +1788,10 @@ show <- function(nr, M, OPT, PARAM)
     CROSSTRANSFORM <- function(param) crosstrafoUser(crosstrafo(param))
   }
   if (is.null(CROSSTRANSFORM)) CROSSTRANSFORM <- function(x) x
+  CROSSLB <- crosslower[CROSSINDEX] 
+  CROSSUB <- crossupper[CROSSINDEX]
+  ixdCROSSINDEX <- CROSSINDEX[index]
 
-  CROSSLB <- lower[index]
-  CROSSUB <- upper[index]
   methods <- (if (is.null(cross.methods)) NULL else
               allcrossmeth[pmatch(cross.methods, allcrossmeth)])
   CROSS.lcrepet <- lc * repet
@@ -1799,12 +1824,11 @@ show <- function(nr, M, OPT, PARAM)
     if (nCROSStotINDEX == 0) {
       crosstarget(numeric(0))
     } else {
-      ix <- CROSSINDEX[index]
-      if (length(ix) > 0) {
+      if (length(ixdCROSSINDEX) > 0) {
         idx <- tblidx[["lower"]]
-        param.table[[M]][idx[1]:idx[2]][ix] <- CROSSLB[1:nCROSSINDEX]
+        param.table[[M]][idx[1]:idx[2]][ixdCROSSINDEX] <- CROSSLB[1:nCROSSINDEX]
         idx <- tblidx[["upper"]]
-        param.table[[M]][idx[1]:idx[2]][ix] <- CROSSUB[1:nCROSSINDEX]
+        param.table[[M]][idx[1]:idx[2]][ixdCROSSINDEX] <- CROSSUB[1:nCROSSINDEX]
       }
       if (givenCoVariates) {
         idx <- tblidx[["lowbeta"]]
@@ -1815,8 +1839,7 @@ show <- function(nr, M, OPT, PARAM)
       options(show.error.messages = show.error.message) ##  
       if (nCROSStotINDEX==1) {
         variab <-
-          try
-        (optimize(crosstarget, lower = CROSSLB, upper = CROSSUB)$minimum)
+          try(optimize(crosstarget, lower = CROSSLB, upper = CROSSUB)$minimum)
       } else {
         min <- Inf
         for (i in methodprevto$cross) { ## ! -- the parts that change if
@@ -1838,10 +1861,9 @@ show <- function(nr, M, OPT, PARAM)
           }
         }
         stopifnot(length(min.variab) == length(CROSSLB))
-        variab <- try
-        (optim(min.variab, crosstarget, method = "L-BFGS-B",
-                          lower = CROSSLB, upper = CROSSUB,
-               control = cross.optim.control)$par)
+        variab <-
+          try(optim(min.variab, crosstarget, method ="L-BFGS-B", lower = CROSSLB,
+                    upper = CROSSUB, control = cross.optim.control)$par)
       } # nCROSStotINDEX > 1
 
       ## check onborderline

@@ -101,6 +101,8 @@ decision_param DECISION_PARAM={DECISION_CASESPEC, DECISION_CASESPEC};
   a simulation method. Currently only one element is contained.
 */
 
+double GENERAL_PRECISION = 5e-15;
+
 char ERRORSTRING_OK[MAXERRORSTRING], ERRORSTRING_WRONG[MAXERRORSTRING];
 
 char METHODNAMES[][METHODMAXCHAR]={"circulant embedding",

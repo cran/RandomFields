@@ -230,9 +230,15 @@ Readline <- function(prompt="", info=NULL)
   
 
 Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
-                width=5, height=5, quiet=FALSE, ...){
-
+                width=5, height=5, quiet=FALSE, innerwidth, innerheight,
+                mai, ...){
+  
   # print(ls(all=TRUE, envir=.RandomFields.env))
+  if (!missing(innerwidth) || !missing(innerheight)) {
+    stopifnot(!missing(innerwidth), !missing(innerheight), !missing(mai))
+    height <- innerheight + sum(mai[c(1,3)])
+    width <- innerwidth + sum(mai[c(2,4)])
+  }
   
   ## function to handle output device:
   ##   on: T=output device is activated; F=device will be closed
@@ -243,7 +249,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
   ##  Dev takes over the par.options of previous plots
   if (on) {
     par.orig <- if (!is.null(dev.list())) par(no.readonly=TRUE) else NULL
-     if (exists(".dev.orig", envir=.RandomFields.env)) {
+    if (exists(".dev.orig", envir=.RandomFields.env)) {
       warning("Dev has been still open (.dev.orig exists). Closing.")
       if (!is.null(try(Dev(FALSE, get(".dev.orig",
                                       envir=.RandomFields.env)$dev))))  
@@ -255,11 +261,6 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
 
     par.orig$new <- par.orig$fin <- par.orig$mai <- par.orig$pin <-
       par.orig$plt <- NULL
-
-   #  print(length(par.orig))
-    
-    par.orig <- par.orig[1:30]
-    
     
     devPrev <- dev.cur()
     if (is.logical(dev) || is.character(dev)) {
@@ -290,6 +291,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
         }
         if (!quiet) cat("creating", fn, "\n")
        }
+      if (!missing(mai)) par(mai=mai)
     } else {
       if (dev %in% dev.list()) dev.set(dev)
       else {

@@ -16,8 +16,7 @@ x <- 1:3
 RFparameters(Print=2)
 
 # runif(1); save(file="rs", .Random.seed)
-#
-load("rs")
+# if (file.exists("rs")) load("rs")
 
 z <- GaussRF(x, x, grid=TRUE, model=model, n=n)
 
