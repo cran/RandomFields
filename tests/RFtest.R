@@ -2,10 +2,7 @@
 # R <  RFtest.all.R && R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R
 
 
-## R --no-save < RFtest.R
-# source("/home/martin/article/R/RF/RandomFields/tests/RFtest.R")
-
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
        
 ## how many simulation methods are available?
 MAXMETHODNUMBER <- length(GetMethodNames())
@@ -277,8 +274,9 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
             text(0,0,pos=1,"variogramm does not exist!");
           }
         }
-        title(sub=paste("delta=",paste(format(delta,dig=2),collapse=","),sep=""),
-              main=paste(modeletc))
+        if (!interactive())
+          title(sub=paste("delta=",paste(format(delta,dig=2),collapse=","),
+                  sep=""), main=paste(modeletc))
         if (!is.null(ps)) { Dev(FALSE,FALSE) } else if (wait) readline()
       }
     }

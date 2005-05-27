@@ -1,8 +1,7 @@
 
 ##  source("RFtest.Precision.R")
 
-if (file.exists("source.R")) source("source.R") else
-if (file.exists("../source.R")) source("../source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 #RFparameters(Print=2, direct.method=1)
 #GaussRF(x=1:3, model="exp", param=c(0,1,0,1), me="di")

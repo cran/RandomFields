@@ -26,6 +26,9 @@ GetMethodNames()
     Fourier transformations. It is garantueed to be an exact method
     for covariance functions with finite support, e.g. the spherical
     model.
+
+    See also \code{cutoff embedding} and \code{intrinsic embedding} for
+    variants of the method.
     
     
     \item \code{cutoff embedding}. \cr
@@ -139,11 +142,11 @@ GetMethodNames()
   }
 }
 \note{Most methods possess additional parameters,
-  see \code{\link{RFparameters}()}
+  see \command{\link{RFparameters}}\code{()}
   that control the precision of the result.  The default parameters
   are chosen such that the simulations are fine for many models
   and their parameters. 
-  The example in \code{\link{EmpiricalVariogram}()}
+  The example in \command{\link{EmpiricalVariogram}}\code{()}
   shows a way of checking the precision.
 }
 \references{
@@ -215,7 +218,7 @@ GetMethodNames()
    }
  }
  \section{Automatic selection algorithm}{
-   --- more details coming soon ---
+   --- details coming soon ---
  }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}
@@ -223,8 +226,8 @@ GetMethodNames()
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})
 }
-\seealso{\code{\link{GaussRF}}, \code{\link{MaxStableRF}},
-  \code{\link{PrintModelList}},
+\seealso{\command{\link{GaussRF}}, \command{\link{MaxStableRF}},
+  \command{\link{PrintModelList}},
   \code{\link{RandomFields}}.}
 
 \examples{

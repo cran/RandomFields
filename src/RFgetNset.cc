@@ -6,7 +6,7 @@
 
  library for simulation of random fields -- get's, set's, and print's
 
- Copyright (C) 2001 -- 2004 Martin Schlather, 
+ Copyright (C) 2001 -- 2005 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -539,7 +539,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
   // values of naturalscaling:
   //#define NATSCALE_EXACT 1   
   //#define NATSCALE_APPROX 2
-  //#define NATSCALE_MLE 3 /* check mleRF when changing !! */
+  //#define NATSCALE_MLE 3 /* check fitvario when changing !! */
   // +10 if numerical is allowed
   static int oldcovnr = -99;
   static double oldp[TOTAL_PARAM], p[TOTAL_PARAM];

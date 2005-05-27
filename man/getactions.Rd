@@ -3,8 +3,8 @@
 \alias{getactionlist}
 \title{Get input behaviour}
 \description{
-  The functions return values stored by \code{\link{useraction}},
-  \code{\link{Locator}} and \code{\link{Readline}}
+  The functions return values stored by \command{\link{useraction}},
+  \command{\link{Locator}} and \command{\link{Readline}}
 }
 \usage{
   getactions()
@@ -12,16 +12,16 @@
 }
 \value{
   \command{getactionlist} returns a list of stored values
-  created by \code{\link{Locator}} and \code{\link{Readline}}
+  created by \command{\link{Locator}} and \command{\link{Readline}}
   
   \command{getactions} returns a list of all parameters that influence
-  the behaviour of \code{\link{Locator}} and \code{\link{Readline}}.
+  the behaviour of \command{\link{Locator}} and \command{\link{Readline}}.
 }
 \seealso{
-  \code{\link{Locator}},
-  \code{\link{Readline}},
-  \code{\link{useraction}},
-  %\code{\link{userinput}},
+  \command{\link{Locator}},
+  \command{\link{Readline}},
+  \command{\link{useraction}},
+  %\command{\link{userinput}},
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}

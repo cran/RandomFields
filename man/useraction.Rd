@@ -4,7 +4,7 @@
 \title{Set input behaviour}
 \description{
   The functions store values that influence the behaviour
-  of \code{\link{Locator}} and \code{\link{Readline}}
+  of \command{\link{Locator}} and \command{\link{Readline}}
 }
 \usage{
 useraction(action=c("none", "start.register", "continue.register",
@@ -95,16 +95,16 @@ putactions(l)
   blinking characters as side effects.
 }
 \seealso{
-  \code{\link{eval.parameters}},
-  \code{\link{getactions}},
-  \code{\link{Locator}},
-  \code{\link{Readline}},
- % \code{\link{userinput}},
+  \command{\link{eval.parameters}},
+  \command{\link{getactions}},
+  \command{\link{Locator}},
+  \command{\link{Readline}},
+ % \command{\link{userinput}},
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \examples{
-%   library(RandomFields, lib="~/TMP"); source("/home/schlather/article/R/NEW.RF/RandomFields/R/auxiliary.R")
+%   library(RandomFields, lib="~/TMP"); source("/home/schlather/R/RF/RandomFields/R/auxiliary.R")
 sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {
   r1 <- Readline(prompt="first input: ")
   r2 <- if (read.r2) Readline(prompt="second input: ", info="2nd input")
@@ -117,7 +117,7 @@ sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {
   return(list(r1=r1, r2=r2, l=l, r3=r3))
 }
 
-%   source("/home/schlather/article/R/NEW.RF/RandomFields/R/auxiliary.R")
+%   source("/home/schlather/R/RF/RandomFields/R/auxiliary.R")
 
 #########################
 ## user terminal input ##
@@ -131,8 +131,8 @@ sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {
 #################
 ## just replay ##
 #################
-%   source("/home/schlather/article/R/NEW.RF/RandomFields/R/auxiliary.R")
-useraction("replay", sleep=2, wait=interactive() * 0.2,
+%   source("/home/schlather/R/RF/RandomFields/R/auxiliary.R")
+useraction("replay", sleep=2, wait=interactive() * 0.2 * 5,
            PrintLevel=2, actionlist=l)
 str(sample.interaction(type="l"))
 

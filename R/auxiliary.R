@@ -1,12 +1,19 @@
 if (FALSE) {
-  library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("~/article/R/NEW.RF/RandomFields/R/auxiliary.R");source("~/article/R/NEW.RF/RandomFields/R/evalpar.R"); options(locatorBell=FALSE); RFparameters(Print=1); x <- seq(1,10,0.1); user.action("start"); ShowModels(x=x); getactionlist()
+  library(RandomFields, lib="~/TMP"); source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R");source("~/R/RF/RandomFields/R/auxiliary.R");source("~/R/RF/RandomFields/R/evalpar.R"); options(locatorBell=FALSE); RFparameters(Print=1); x <- seq(1,10,0.1); user.action("start"); ShowModels(x=x); getactionlist()
 
-source("~/article/R/NEW.RF/RandomFields/R/ShowModels.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("~/article/R/NEW.RF/RandomFields/R/auxiliary.R");source("~/article/R/NEW.RF/RandomFields/R/evalpar.R"); user.action("replay"); ShowModels(x=x)
+source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R");source("~/R/RF/RandomFields/R/auxiliary.R");source("~/R/RF/RandomFields/R/evalpar.R"); user.action("replay"); ShowModels(x=x)
 }
 
 # putactionlist(getactionlist()[1:(length(getactionlist())-1)])
 
+
 .RandomFields.env <- new.env()
+
+sleep.milli <- function(milli) {
+  .C("sleepMilli", as.integer(milli))
+  invisible(NULL)
+}
+
 useraction <- function(action=c("none", "start.register",
                           "continue.register",
                           "replay", "endless",
@@ -26,12 +33,9 @@ useraction <- function(action=c("none", "start.register",
   ## wait : regulates the blinking speed of the crosses (and of readline)
   ## sleep : sleeping time before the blinking starts
   action <- match.arg(action)
-  if (.Platform$OS.type != "unix" && action != "none") {
-    warning("`useraction' does not work correctly on non-unix systems")
-  }
-  assign(".action.sleepcommand", envir=.RandomFields.env,
-         if (.Platform$OS.type == "unix") "sleep" else "CommandUnknown")
-  
+  if (.Platform$OS.type != "unix" && action %in% c("replay", "endless")) {
+    warning("replay does not work correctly on non-unix systems")
+  } 
   assign(".action.mismatch", "user input replay mismatch",
          envir=.RandomFields.env)
   assign(".action.mode", action, envir=.RandomFields.env)
@@ -130,8 +134,9 @@ userinput <- function(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
   } else { ## endless or replay
     action.n <- get(".action.n", envir=.RandomFields.env)
     action.list <- get(".action.list", envir=.RandomFields.env)
-    action.wait <- get(".action.wait", envir=.RandomFields.env)
-    action.sleep <- get(".action.sleep", envir=.RandomFields.env)
+    action.wait <- get(".action.wait", envir=.RandomFields.env) * 1000
+    action.sleep <- get(".action.sleep", envir=.RandomFields.env) * 1000
+    
     if (action.n <= length(action.list)) {
       l <- action.list[[action.n]]
       if (get(".action.print", envir=.RandomFields.env) > 1) {
@@ -145,28 +150,23 @@ userinput <- function(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
             
       flash <- function(fct, x, y, wait=action.wait,
                         col=rep(c("white", "red"), 4), ...) {
-        wait <- paste("sleep", wait)
         for (c in col) {
           fct(x, y, col=c, ...)
-          system(wait)
+          sleep.milli(wait)
         }
       }
       
       switch(fct,
              locator = {
                l <- l[1:2]
-               sleep <- paste(get(".action.sleepcommand",
-                                  envir=.RandomFields.env), action.sleep)
-               wait <- paste(get(".action.sleepcommand",
-                                 envir=.RandomFields.env), action.wait)
-               system(sleep)
-                if (is.null(l$x)) {
+               sleep.milli(action.sleep)
+               if (is.null(l$x)) {
                  for (col in rep(c( "black", "white", "red"), 3)) {
                    text(mean(axTicks(1)), mean(axTicks(2)), "QUIT", col=col,
                         cex=2) 
-                   system(wait)
+                   sleep.milli(action.wait)
                  }
-                 system(sleep) 
+                 sleep.milli(action.sleep)
                  return(NULL)
                }
 #               if (!is.list(l)) stop(.action.mismatch)
@@ -200,16 +200,16 @@ userinput <- function(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
                        })
              },
              readline = {
-              if (!is.character(l[[1]]))
+               if (!is.character(l[[1]]))
                  stop(get(".action.mismatch", envir=.RandomFields.env))
                l <- l[[1]]
-               wait <- paste("sleep", 3 * action.wait)
+               wait <- 3 * action.wait
                cat(prompt, "")
                for (i in 1:nchar(l)) {
-                 system(wait)
+                 sleep.milli(wait)
                  cat(substring(l[1], i, i))
                }
-               system(wait);
+               sleep.milli(wait)
                cat("\n")
              }
              )
@@ -339,12 +339,12 @@ FileExists <- function(file, PrintLevel=RFparameters()$Print) {
   ##      no process will do the work...(then the lock file will rest.)
   lock.ext <- ".lock";
   if (file.exists(file)) { #1.
-    if (PrintLevel>1) cat("'", file, "' already exists.\n");
+    if (PrintLevel>2) cat("'", file, "' already exists.\n");
     return(1)
   } else { 
     LockFile <- paste(file, lock.ext, sep="")
     if (file.exists(LockFile)) { #2.
-      if (PrintLevel>1) cat("'",file,"' is locked.\n");
+      if (PrintLevel>2) cat("'",file,"' is locked.\n");
       return(2);
     }
     PID<-pid();
@@ -353,7 +353,7 @@ FileExists <- function(file, PrintLevel=RFparameters()$Print) {
     write(file=LockFile,c(PID,hostname()),ncolumns=2,append=TRUE); #3.a.
     Pid <- matrix(scan(LockFile,what=character(0), quiet=TRUE),nrow=2)
     if ((sum(Pid[1,]==PID)!=1) || (sum(Pid[1,]>PID)>0)){ #3.b.
-      if (PrintLevel>1) cat("Lock file of '", file, "' is knocked out.\n");
+      if (PrintLevel>2) cat("Lock file of '", file, "' is knocked out.\n");
       return(3);
     }
   }

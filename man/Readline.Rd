@@ -27,14 +27,14 @@
   
   The prompt string will be truncated to a maximum allowed length,
   normally 256 chars (but can be changed in the source code), since the
-  function is based on \code{\link[base]{readline}}.
+  function is based on \command{\link[base]{readline}}.
 }
 \seealso{
-  \code{\link{getactions}},
-  \code{\link{Locator}},
-  \code{\link[base]{readline}}
-  \code{\link{useraction}},
-  \code{\link{userinput}},
+  \command{\link{getactions}},
+  \command{\link{Locator}},
+  \command{\link[base]{readline}}
+  \command{\link{useraction}},
+  \command{\link{userinput}},
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}

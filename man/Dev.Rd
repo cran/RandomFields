@@ -26,7 +26,7 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
     \code{height} if given -- experimental state}
   \item{innerheight}{width of graphic without the margins; overwrites
     \code{width} if given -- experimental state}
-  \item{mai}{parameters of function \code{\link[graphics]{par}} --
+  \item{mai}{parameters of function \command{\link[graphics]{par}} --
       experimental state}
   \item{...}{further parameters for pdf or postscript}
 }
@@ -43,7 +43,7 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
       if such a device does not exist, a new X11 device is created.
       If \code{dev<2} the device opened by \code{Dev(on=TRUE,...)} is
       closed by \code{Dev(on=FALSE)}; otherwise only
-      \code{\link[graphics]{par}(new=F)} 
+      \command{\link[graphics]{par}}\code{(new=F)} 
       is applied to the device.
     }
     The parameters \code{dev}, \code{ps}, \code{cur.cex}, \code{paper},

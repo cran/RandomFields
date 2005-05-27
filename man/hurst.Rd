@@ -66,7 +66,7 @@ hurst(x, y = NULL, z = NULL, data,
   \item{pch}{vector or scalar; sign by which data are plotted.}
   \item{cex}{vector or scalar; size of \code{pch}.}
   \item{cex.main}{font size for title in regression plot, see
-    \code{\link{regression}}; only used if mode includes 'plot'
+    \command{\link{regression}}; only used if mode includes 'plot'
     or 'interactive'}
   \item{PrintLevel}{integer.  If \code{PrintLevel} is 0 or 1
     nothing is printed. 
@@ -99,7 +99,7 @@ hurst(x, y = NULL, z = NULL, data,
   
   \item{y}{the y-coordinates used for the regression fit}
   
-  \item{regr}{the coefficients of the \code{\link{lsfit}}}
+  \item{regr}{the coefficients of the \command{\link[stats]{lm}}}
   
   \item{sm}{smoothed curve through the (x,y) points}
     
@@ -109,7 +109,7 @@ hurst(x, y = NULL, z = NULL, data,
   \item{y.u}{\code{NULL} or y-coordinates according to \code{x.u}}
 
   \item{regr.u}{\code{NULL} or the coefficients of 
-    \code{\link{lsfit}} for \code{x.u} and \code{y.u}}
+    \command{\link[stats]{lm}} for \code{x.u} and \code{y.u}}
 
   \item{H}{the Hurst coefficient}
 
@@ -160,7 +160,7 @@ hurst(x, y = NULL, z = NULL, data,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
-  \code{\link{CovarianceFct}}, \code{\link{fractal.dim}}
+  \command{\link{CovarianceFct}}, \command{\link{fractal.dim}}
 }
 %\examples{
 %}
@@ -173,4 +173,4 @@ hurst(x, y = NULL, z = NULL, data,
 
 %  LocalWords:  hurst gridtriple sequ exp len fft Inf dfa var pch cex WOSA regr
 %  LocalWords:  PrintLevel RFparameters periodogram nographics itemize varmeth
-%  LocalWords:  lsfit sm Schlather url ealso CovarianceFct
+%  LocalWords:  lm sm Schlather url ealso CovarianceFct

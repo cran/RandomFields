@@ -21,8 +21,8 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
-  \item{model}{string; see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options;
+  \item{model}{string; see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get all options;
     interpretation depends on the value of \code{maxstable},
     see Details.}
   \item{param}{parameter vector:
@@ -30,13 +30,13 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     the parameters must be given
     in this order; further parameters are to be added in case of a
     parametrised class of covariance functions,
-    see \code{\link{CovarianceFct}}, or be given in one of the extended
+    see \command{\link{CovarianceFct}}, or be given in one of the extended
     forms, see Details}
   \item{maxstable}{string. Either 'extremalGauss' or
     'BooleanFunction'; see Details.}
   \item{method}{\code{NULL} or string; method used for simulating,
-    see \code{\link{RFMethods}}, or
-    type \code{\link{PrintMethodList}()} to get all options;
+    see \command{\link{RFMethods}}, or
+    type \command{\link{PrintMethodList}}\code{()} to get all options;
     interpretation depends on the value of \code{maxstable}.}
   \item{n}{number of realisations to generate}
   \item{register}{0:9; place where intermediate calculations are stored;
@@ -48,7 +48,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     \code{c(start,end,step)} 
     expected; this parameter is used only
     if \code{grid==TRUE}}
-  \item{...}{\code{\link{RFparameters}} that are locally used only.}
+  \item{...}{\command{\link{RFparameters}} that are locally used only.}
 }
 \details{
   There are two different kinds of models for max-stable processes
@@ -64,7 +64,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     field. The parameter vector \code{param}, the \code{model},
     and the \code{method} are interpreted
     in the same way as for Gaussian random fields, see
-    \code{\link{GaussRF}}.
+    \command{\link{GaussRF}}.
     
     \item \code{maxstable="BooleanFunction"}\cr
     Deterministic or random, upper semi-continuous
@@ -73,13 +73,13 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
     these functions yields a max-stable random field.
     The simulation technique is related to the random coin
     method for Gaussian random field simulation,
-    see \code{\link{RFMethods}}. Hence, only
+    see \command{\link{RFMethods}}. Hence, only
     models that are suitable for the random coin method
-    are suitable for this technique, see \code{\link{PrintModelList}()}
+    are suitable for this technique, see \command{\link{PrintModelList}}\code{()}
     for a complete list of suitable covariance models.\cr
     The only value allowed for \code{method} is 'max.MPP' (and
     \code{NULL}),
-    see \code{\link{PrintMethodList}()}. In the parameter list
+    see \command{\link{PrintMethodList}()}. In the parameter list
     \code{param} the first two entries, namely \code{mean} and
     \code{variance}, are ignored. If the nugget is positive,
     for each point an additional independent unit Frechet variable
@@ -96,7 +96,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
   \code{InitMaxStableRF} returns 0 if no error has occurred, and
   a positive value if failed.\cr
 
-  \code{MaxStableRF} and \code{\link{DoSimulateRF}} return \code{NULL}
+  \code{MaxStableRF} and \command{\link{DoSimulateRF}} return \code{NULL}
   if an error has occurred; otherwise the returned object
   depends on the parameters:\cr
     \code{n==1}:\cr
@@ -121,12 +121,12 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
-  \code{\link{CovarianceFct}},
-  \code{\link{GaussRF}},
+  \command{\link{CovarianceFct}},
+  \command{\link{GaussRF}},
   \code{\link{RandomFields}},
-  \code{\link{RFMethods}},
-  \code{\link{RFparameters}},
-  \code{\link{DoSimulateRF}},
+  \command{\link{RFMethods}},
+  \command{\link{RFparameters}},
+  \command{\link{DoSimulateRF}},
 .
 }
 \examples{
@@ -138,8 +138,14 @@ ms0 <- MaxStableRF(x, y, grid=TRUE, model="exponen",
 image(x,y,ms0)
 
 % library(RandomFields); runif(1)
-## Plots used in M. Schlather, Extremes 5:1, 33-44, 2002
-x <-(1:512)/51.2
+############################################################
+##                                                        ##
+##  Plots used in M. Schlather, Extremes 5:1, 33-44, 2002 ##
+##                                                        ##
+############################################################
+
+pts <- if (interactive()) 512 else 32
+x <- (1:pts) / pts * 10
 scalegauss <- 1.5
 RFparameters(MPP.radius=2*scalegauss, Print=3)
 runif(1)

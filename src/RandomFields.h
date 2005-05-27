@@ -45,7 +45,7 @@ EXTERN void printKEY(int *keyNr);
 */
 #define NATSCALE_EXACT 1
 #define NATSCALE_APPROX 2
-#define NATSCALE_MLE 3 /* check mleRF when changing !! */
+#define NATSCALE_MLE 3 /* check fitvario when changing !! */
 EXTERN void GetNaturalScaling(int *covnr, double *q,  /* KAPPAS only  !! */
 			      int *naturalscaling, double *natscale, int *error);
 EXTERN void Covariance(double *x,int *lx,int *covnr,double *p, int *np, 

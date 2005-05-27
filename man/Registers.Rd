@@ -19,13 +19,13 @@ DeleteAllRegisters()
   \enumerate{
     \item the simulations are finished and there
     is not enough memory available to continue the R session,
-    and \code{\link{RFparameters}()$Storing} has been
+    and \command{\link{RFparameters}}\code{()$Storing} has been
     \code{TRUE}.
     
     \item one of the parameters
-    \code{\link{RFparameters}()$Storing} or
-    \code{\link{RFparameters}()$PracticalRange}
-    ((or \code{\link{RFparameters}()$TBM.method},
+    \command{\link{RFparameters}}\code{()$Storing} or
+    \command{\link{RFparameters}}\code{()$PracticalRange}
+    ((or \command{\link{RFparameters}}\code{()$TBM.method},
     once this parameter is available)) has been changed by
     the user, and if these options should become
     global.
@@ -38,7 +38,7 @@ DeleteAllRegisters()
 \author{Martin Schlather, \email{schlath@hsu-hh.de},
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-\seealso{\code{\link{GaussRF}}, \code{\link{RandomFields}} and \code{\link{RFparameters}}.}
+\seealso{\command{\link{GaussRF}}, \code{\link{RandomFields}} and \command{\link{RFparameters}}.}
 
 \examples{
  DeleteAllRegisters() ## no effect visible for the user

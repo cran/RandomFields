@@ -136,8 +136,8 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-%\seealso{\code{\link[SoPhy]{define.horizons}}, \code{\link[SoPhy]{SoPhy}}}
-\seealso{\code{\link{useraction}}}
+%\seealso{\command{\link[SoPhy]{define.horizons}}, \command{\link[SoPhy]{SoPhy}}}
+\seealso{\command{\link{useraction}}}
 
 \examples{
   ## the following lines define a menu that does not make
@@ -177,7 +177,7 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   ##          will be called by by H$x, hence modify=5 will be left
   ##          unchanged.
   options(locatorBell=FALSE)
-%   source("/home/schlather/article/R/NEW.RF/RandomFields/R/auxiliary.R"); source("/home/schlather/article/R/NEW.RF/RandomFields/R/evalpar.R");
+%   source("/home/schlather/R/RF/RandomFields/R/auxiliary.R"); source("/home/schlather/R/RF/RandomFields/R/evalpar.R");
   useraction("start.register")  ## registring the user's input
   str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
      H=H, par=17)) # do not forget to call by name

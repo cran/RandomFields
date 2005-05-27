@@ -40,8 +40,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
          ## "internal" : name should not be changed; should always be last
          ##              method!
          mle.methods=c("ml", "reml"),
-         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"
-           ),
+         cross.methods=NULL,
+ #       cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
          users.guess=NULL, users.beta=NULL, table.format=FALSE
 ) {
   ####################################################################
@@ -114,13 +114,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
 
   LStarget <- function(variab) {
-    if (PrintLevel>3) {cat("LSMIN=", LSMIN); print(variab,dig=20)}
+    if (PrintLevel>4) {cat("LSMIN=", LSMIN); print(variab,dig=20)}
     if (any((variab<LSQLB) | (variab>LSQUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
       if (PrintLevel>1) 
-        cat("WARNING! forbidden variab values !", variab, "[", LSQLB, ",",
+        cat("LSQ WARNING! forbidden values !", variab, "[", LSQLB, ",",
             LSQUB, "]\n")
       penalty <- variab 
       variab<-pmax(LSQLB, pmin(LSQUB, variab)) 
@@ -238,13 +238,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
      
   ## note "global" variables REMLMIN, REMLPARAM
   REMLtarget <- function(variab) {
-    if (PrintLevel>3) {print(variab, dig=10)}
+    if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab < MLELB) | (variab > MLEUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
       if (PrintLevel>0)
-        cat("WARNING! forbidden variab values ! -- if there are too many",
+        cat("REML WARNING! forbidden values ! -- if there are too many",
             "warnings try narrower lower and upper bounds for the variables.",
             variab, "[", MLELB, ",", MLEUB, "]\n")
       penalty <- variab 
@@ -252,7 +252,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       penalty <- sum(variab - penalty)^2 ## not the best ....
       res <- REMLtarget(variab)
       if (res<=0) return(penalty + res * (1-penalty))
-      if (PrintLevel>3) {
+      if (PrintLevel>4) {
         cat("penalty", format(c(variab, penalty + res * (1 + penalty))),"\n")
       }
       return(penalty + res * (1+penalty))
@@ -394,13 +394,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
   ## note "global" variables MLEMAX, MLEPARAM
   MLtarget<-function(variab) {
-    if (PrintLevel>3) {print(variab, dig=10)}
+    if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab < MLELB) | (variab > MLEUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
       if (PrintLevel>0)
-        cat("WARNING! forbidden variab values ! -- if there are too many",
+        cat("ML WARNING! forbidden variab values ! -- if there are too many",
             "warnings try narrower lower and upper bounds for the variables.",
             variab, "[", MLELB, ",", MLEUB, "]\n")
       penalty <- variab 
@@ -408,7 +408,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       penalty <- sum(variab - penalty)^2 ## not the best ....
       res <- MLtarget(variab)
       if (res<=0) return(penalty + res * (1-penalty))
-      if (PrintLevel>3) {
+      if (PrintLevel>4) {
         cat("penalty", format(c(variab, penalty + res * (1 + penalty))),"\n")
       }
       return(penalty + res * (1+penalty))
@@ -557,7 +557,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       assign("MLEMAX", res, envir=ENVIR)
       assign("MLEPARAM", param, envir=ENVIR)
     }
-    if (PrintLevel>3) cat("result MLE", res, "\n")
+    if (PrintLevel>5) cat("result MLE", res, "\n")
     return(res)
   }
 
@@ -604,19 +604,19 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
  
   crosstarget <- function(variab) {
-    if (PrintLevel>3) {print(variab, dig=10)}
+    if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab<CROSSLB) | (variab>CROSSUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
       if (PrintLevel>0)
-        cat("WARNING! forbidden variab values ! -- if there are too many warnings try narrower lower and upper bounds for the variables.",variab,"[",CROSSLB,",",CROSSUB,"]\n")
+        cat("CROSS WARNING! forbidden variab values ! -- if there are too many warnings try narrower lower and upper bounds for the variables.",variab,"[",CROSSLB,",",CROSSUB,"]\n")
       penalty <- variab 
       variab <- pmax(CROSSLB, pmin(CROSSUB, variab)) 
       penalty <- sum(variab-penalty)^2 ## not the best ....
       res <- crosstarget(variab)
       if (res<=0) return(penalty + res * (1-penalty))
-      if (PrintLevel>3) {
+      if (PrintLevel>4) {
         cat("penalty",format(c(variab,penalty + res * (1+penalty))),"\n")
       }
       return(penalty + res * (1+penalty))
@@ -650,7 +650,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       assign("CROSSMIN", res, envir=ENVIR)
       assign("CROSSMODEL", model, envir=ENVIR)
     }
-    if (PrintLevel>3) cat("result cross val", res, "\n")
+    if (PrintLevel>6) cat("result cross val", res, "\n")
     return(res)
   }
   
@@ -685,7 +685,7 @@ show <- function(nr, M, OPT, PARAM)
 ######################################################################
 ###                Initial settings                                ###
 ######################################################################
-  if (PrintLevel>2) cat("\ninitial settings...")
+  if (PrintLevel>4) cat("\ninitial settings...")
   new <- CheckXT(x, y, z, T, grid=FALSE)
   new$x <- as.matrix(new$x)
   
@@ -763,7 +763,7 @@ show <- function(nr, M, OPT, PARAM)
 
   
 ##############              Coordinates               #################
-  if (PrintLevel>2) cat("\ncoordinates...")
+  if (PrintLevel>4) cat("\ncoordinates...")
   spacedim <- ncol(new$x) 
   logicaldim <- as.integer(spacedim + !is.null(T))
   if (pm$anisotropy) {
@@ -819,7 +819,7 @@ show <- function(nr, M, OPT, PARAM)
 
 
 ##########   Check consistency of NA, NaN and users.transform  ##########
-  if (PrintLevel>2) cat("\nconsistency of NA, NaN, transform...")
+  if (PrintLevel>4) cat("\nconsistency of NA, NaN, transform...")
   PARAM <- pm$param
   ##PARAM <- param: just to make clear in MLtarget and LStarget what is global,
   ##and do not overwrite param
@@ -855,7 +855,7 @@ show <- function(nr, M, OPT, PARAM)
 
  
 ##############      find upper and lower bounds      #################  
-  if (PrintLevel>2) cat("\nbounds...")
+  if (PrintLevel>4) cat("\nbounds...")
   UnList <- function(l) {
     l <- unlist(l)
     paste(names(l), l, sep="=", collapse="|")
@@ -1070,7 +1070,7 @@ show <- function(nr, M, OPT, PARAM)
   
   
 ##############           Covariates                   #################
-  if (PrintLevel>2) cat("\nCoVariates...")
+  if (PrintLevel>4) cat("\nCoVariates...")
   givenCoVariates <- TRUE
   nCoVariates <- 1
  if (is.null(pm$trend)) {
@@ -1121,7 +1121,7 @@ show <- function(nr, M, OPT, PARAM)
     warning("standard.style must be FALSE for the given model specification.")
   }
   if (standard.style) {
-    if (PrintLevel>2) cat("\nstandard style settings...")
+    if (PrintLevel>4) cat("\nstandard style settings...")
     VARIANCE <- 1
     KAPPA <- 2
     n.kappas <- .C("GetNrParameters", covnr, as.integer(1), k=integer(1),
@@ -1147,8 +1147,11 @@ show <- function(nr, M, OPT, PARAM)
       if ((is.nan(PARAM[VARIANCE]) || is.nan(nugget)) &&
           !is.null(users.transform))
         stop("not sure what to do now: sill fixed, but some transformation is given -- try standard.style=FALSE")
-      if (!is.na(PARAM[VARIANCE]) && (PARAM[VARIANCE] + nugget!=sill))
+      if (!is.na(PARAM[VARIANCE]) && (PARAM[VARIANCE] + nugget!=sill)) {
+        cat("var=", PARAM[VARIANCE] , "nug=", nugget, "sill=", sill,
+            "sill-var-nug=", sill - PARAM[VARIANCE] - nugget,"\n")
         stop("sill !=  variance + nugget")
+      }
       autostart[VARIANCE] <- sill/2
       upper[NUGGET] <- upper[VARIANCE] <- sill
       lower[NUGGET] <- lower[VARIANCE] <-  0
@@ -1179,7 +1182,7 @@ show <- function(nr, M, OPT, PARAM)
           } else { ## not sillbounded, is.na(variance), nugget!=0
             lower[VARIANCE] <- (vardata-nugget)/lowerbound.var.factor
             if (lower[VARIANCE] < lowerbound.sill) {
-              if (PrintLevel>0)
+              if (PrintLevel>1)
                 cat("low.var=",lower[VARIANCE]," low.sill",lowerbound.sill,
                     "\ estimated variance from data=", vardata,
                     "nugget=", nugget, "\n")
@@ -1198,7 +1201,7 @@ show <- function(nr, M, OPT, PARAM)
           lower[NUGGET] <-
             pmax(0, (vardata - PARAM[VARIANCE]) / lowerbound.var.factor)
           if (lower[NUGGET] < lowerbound.sill) {
-            if (PrintLevel>0)
+            if (PrintLevel>1)
               cat("\nlower nugget bound=", lower[NUGGET],
                   " < lower sill bound=", lowerbound.sill,
                   " -- is the variance given correctly?\n",sep="")
@@ -1220,20 +1223,23 @@ show <- function(nr, M, OPT, PARAM)
              PACKAGE="RandomFields", DUP=FALSE)$error)
         {
           scalingmethod <- as.integer(0)
-          if (PrintLevel>0) cat("No natural scaling.")
+          if (PrintLevel>1) cat("No natural scaling.")
         }
       ## used in cross validation method only via kriging
     }
     
     stopifnot(length(index)==length(autostart)) ## simple check
     notidx <- !index & !is.nan(PARAM)
-    if (any((PARAM[notidx] > upper[notidx]) | (PARAM[notidx] < lower[notidx]))){
-       if (PrintLevel>0) {
-        cat("\n")
-        print(rbind(notidx, lower, PARAM, upper))
+    incons.idx <- PARAM[notidx] > upper[notidx] | PARAM[notidx] < lower[notidx]
+    if (any(incons.idx)){
+      inconsist <- rep(NA, length(notidx))
+      inconsist[notidx] <- incons.idx
+      if (PrintLevel>1) {
+        cat("\ninconsistent boundaries\n")
+        print(rbind("fixed"=notidx, "inconsist?"=inconsist, lower, PARAM, upper))
       }
       warning("fixed parameters out of range\n")
-    }     
+    }
     stopifnot( varnugNA + zeronugget + sillbounded <= 1)
   }
   RFparameters(PracticalRange=scalingmethod)
@@ -1405,7 +1411,7 @@ show <- function(nr, M, OPT, PARAM)
   ## iterativer fit des trends: zuerst regressions fit,
   ## dann schaetzung der Parameter, dann lsq.covariates fit
   ##************   Empirical Variogram    ***********
-  if (PrintLevel>2) cat("\nempirical variogram...")
+  if (PrintLevel>4) cat("\nempirical variogram...")
   if (givenCoVariates) { 
     regr <- lsfit(CoVariates, data, intercept=FALSE)
     TREND <- regr$coeff
@@ -1511,7 +1517,7 @@ show <- function(nr, M, OPT, PARAM)
     c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=1)
   for (M in c(alllsqmeth)) {
     if (!(M %in% methods)) next;
-    if (PrintLevel>1) cat("\n", M) else cat(pch)
+    if (PrintLevel>2) cat("\n", M) else cat(pch)
     param.table[[M]] <- default.param
     LSQsettings(M)
     LSMIN <- Inf ## must be before next "if (nLSQINDEX==0)"
@@ -1623,7 +1629,7 @@ show <- function(nr, M, OPT, PARAM)
     c(optim.control, parscale=list(parscale[MLEINDEX]), fnscale=-1)
   for (M in c(allmlemeth)) {
     if (!(M %in% methods)) next;
-    if (PrintLevel>1) cat("\n", M) else cat(pch)
+    if (PrintLevel>2) cat("\n", M) else cat(pch)
     param.table[[M]] <- default.param
     if (M=="reml" && !givenCoVariates) { ## same as MLE
       param.table[[M]] <- param.table[["ml"]]
@@ -1698,7 +1704,7 @@ show <- function(nr, M, OPT, PARAM)
       if (any(is.na(MLEgridmin)) || any(is.na(MLEgridmax))) {
         warning(paste(M, "converged to a boundary value -- better performance might be obtained when allowing for more lsq.methods"))
       } else {
-        if (PrintLevel>2) show(1, M, MLEMAX, MLEPARAM) else cat(detailpch)
+        if (PrintLevel>5) show(1, M, MLEMAX, MLEPARAM) else cat(detailpch)
         MLEgridlength <- max(3, round(approximate.functioncalls ^ (1/nMLEINDEX)))
         ## grid is given by the extremes of the LS results
         ## so, therefore we should examine above at least 4 different sets
@@ -1719,7 +1725,7 @@ show <- function(nr, M, OPT, PARAM)
         startingvalues <- eval(parse(text=zk))
         limit <- 10 * approximate.functioncalls
         if ((rn <- nrow(startingvalues)) > limit) {
-          if (PrintLevel>2)
+          if (PrintLevel>4)
             cat("using only a random subset of the", rn, "grid points")
           rand <- runif(rn)
           startingvalues <- startingvalues[rand < quantile(rand, limit / rn), ]
@@ -1729,9 +1735,9 @@ show <- function(nr, M, OPT, PARAM)
         MLEMAX <- -Inf
         apply(startingvalues, 1, MLEtarget) ## side effect: Maximum is in MLEMAX!
         ##  optimal parameter is in MLEPARAM
-        if (PrintLevel>2) show(2, M, MLEMAX, MLEPARAM)
+        if (PrintLevel>5) show(2, M, MLEMAX, MLEPARAM)
         if (nMLEINDEX > 1) {
-          if (PrintLevel<=2) cat(detailpch)
+          cat(detailpch)
           variab <- MLEinvTrafo(MLEPARAM)[MLEINDEX]
           options(show.error.messages = show.error.message) ##
           variab <-
@@ -1742,7 +1748,7 @@ show <- function(nr, M, OPT, PARAM)
           ## do not check anymore whether there had been convergence or not.
           ## just take the best of the two strategies (initial value given by
           ## LS, initial value given by a grid), and be happy.
-          if (PrintLevel>2) show(3, M, MLEMAX, MLEPARAM)
+          if (PrintLevel>5) show(3, M, MLEMAX, MLEPARAM)
         }
 
         idx <- tblidx[["variab"]]
@@ -1813,7 +1819,7 @@ show <- function(nr, M, OPT, PARAM)
   }
   for (M in c(allcrossmeth)) {
     if (!(M %in% methods)) next;
-    if (PrintLevel>1) cat("\n", M) else cat(pch)
+    if (PrintLevel>2) cat("\n", M) else cat(pch)
     stopifnot(is.null(trend)) ## vuniversal kriging not programmed yet
     crosssettings(M)    
     CROSSMIN <- Inf
@@ -1899,7 +1905,7 @@ show <- function(nr, M, OPT, PARAM)
       if (any(is.na(CROSSgridmin)) || any(is.na(CROSSgridmax))) {
         warning(paste(M, "converged to a boundary value -- better performance might be obtained when allowing for more lsq.methods"))
       } else {
-        if (PrintLevel>2) show(1, M, CROSSMIN, CROSSMODEL$param)
+        if (PrintLevel>5) show(1, M, CROSSMIN, CROSSMODEL$param)
         else cat(detailpch)
         CROSSgridlength <-
           max(3, round(approximate.functioncalls ^
@@ -1919,7 +1925,7 @@ show <- function(nr, M, OPT, PARAM)
         startingvalues <- eval(parse(text=zk))
         limit <- 10 * approximate.functioncalls
         if ((rn <- nrow(startingvalues)) > limit) {
-          if (PrintLevel>2)
+          if (PrintLevel>4)
             cat("using only a random subset of the", rn, "starting values")
           rand <- runif(rn)
           startingvalues <- startingvalues[rand < quantile(rand, limit / rn), ]
@@ -1929,7 +1935,7 @@ show <- function(nr, M, OPT, PARAM)
         apply(startingvalues, 1, crosstarget) ## side effect: Min. in C.-MODEL!
         if (PrintLevel>2) show(2, M, CROSSMIN, CROSSMODEL$param)
         if (nCROSStotINDEX>1) {
-          if (PrintLevel <= 2) cat(detailpch)
+          cat(detailpch)
           variab <- CROSSinvTrafo(CROSSMODEL$param)[CROSSINDEX]
           if (givenCoVariates) {
             variab <- c(variab, param.table[idxCovar[1]:idxCovar[2], i])
@@ -2046,7 +2052,7 @@ show <- function(nr, M, OPT, PARAM)
   if (standard.style && !is.na(nugget)) {
     idx <- tblidx[["variab"]]
     alllsqscales <- param.table[idx[1]:idx[2], cm$lsq][SCALE, ]
-    if (any(alllsqscales < mindistances/scale.max.relative.factor))
+    if (any(alllsqscales < mindistances/scale.max.relative.factor, na.rm=TRUE))
       warning(paste(sep="",
                     "Chosen model does not seem to be appropriate!\n Probably a",
                   if (nugget!=0.0) "larger",

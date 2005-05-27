@@ -11,10 +11,10 @@
 GetPracticalRange(model, kappas=NULL)
 }
 \arguments{
-  \item{model}{string; covariance model, see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options.}
+  \item{model}{string; covariance model, see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get all options.}
   \item{kappas}{additional parameters of a parametrised model, see
-    \code{\link{CovarianceFct}}.}
+    \command{\link{CovarianceFct}}.}
 }
 \details{
   In case the practical range has to be determined numerically, only a
@@ -32,9 +32,9 @@ GetPracticalRange(model, kappas=NULL)
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-\seealso{  \code{\link{CovarianceFct}},
+\seealso{  \command{\link{CovarianceFct}},
   \code{\link{RandomFields}},
-  \code{\link{RFparameters}},
+  \command{\link{RFparameters}},
 }
 
 \examples{

@@ -4,7 +4,7 @@
 ##   Brownian motion, test
 ###############################################################################
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 #if (file.exists("random")) load("random")
 

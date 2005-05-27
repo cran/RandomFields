@@ -3,7 +3,8 @@
 ## R --no-save < RFtest.all.R
 # source("RFtest.all.R")
 
-source("./RFtest.R")
+if (file.exists(f <- "RFtest.R")) source(f) else
+if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
 
 if (!exists("testlevel"))
   testlevel <- 1

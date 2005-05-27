@@ -2,7 +2,11 @@
 ## R --no-save < RFtest.stupid.R
 # source("RFtest.stupid.R")
 
-source("./RFtest.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) {
+  source("source.R")
+  source("RFtest.R")
+} else if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
+
 
 if (!exists("testlevel")) testlevel <- 1
 if (!exists("ps")) ps <- NULL
@@ -147,12 +151,3 @@ for (i in 1:repeatscript) {
     }    
   }
 }
-
-q()
-
-
-
-
-
-
-

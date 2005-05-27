@@ -1,6 +1,8 @@
 ## source("rf.R")
 # see getNset.R for the variable .methods
 
+# readline <- function(...) return("") 
+
 
 .onLoad <- function (lib, pkg) {
   if (file.exists("/home/schlather/bef/x")) {
@@ -16,7 +18,7 @@
     print("fractGauss -- was ist los?")
     print("Empirical Variogram: allow for NAs")
     print("include winddata")
-    print("mleRF.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
+    print("fitvario.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
     
     print("check documentation and readability of programs")
     print("docu of TBM2.linesimustep not understandable")
@@ -33,6 +35,13 @@
     cat("interface, such that user can add its own covariance function, written in R\n\n")
   }
  }
+#Implementierung von Cox & Isham's non-separable model
+
+#individuelle Praeferenzliste:
+#  1) erste praeferenz
+#  2) if # pkte < 10 / 50 -> Gauss??
+#  4) if nugget/variance > 0.01 -> CE (and not spectral, e.g.)
+#  3) if C(maxh)/C(0) > 0.05  -> TBM else CE
 
 
 .onUnload <- function(lib, pkg){

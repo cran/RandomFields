@@ -1,7 +1,7 @@
 
-## since mleRF uses the returned ordering of the parameters by PrepareModel and
-## convert.to.readable for the standard model definition, the ordering nugget/
-## main model should not be changed; 
+## since fitvario uses the returned ordering of the parameters by PrepareModel
+## and convert.to.readable for the standard model definition, the ordering
+## nugget/ main model should not be changed; 
 
 PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
                           named=FALSE)
@@ -188,7 +188,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
                       c(nugget=param[2], nugget.scale=1.0))
         model <- c(model, "nugget") ## do not change ordering,
         ##                             since this ordering is used by other
-        ##                             functions (mleRF)
+        ##                             functions (fitvario)
         op <- pmatch("+", op.list) - 1
         ncov <- integer(2)
         k <- c(k, 0)

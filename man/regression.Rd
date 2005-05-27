@@ -37,7 +37,7 @@ regression(x, y, main, scr, value=function(regr) regr$coeff[2],
     mouse; a right mouse click leaves the plot.
   }
   \item{regr.select}{vector of characters that select elements from the
-    \code{lm} return list; these elements are returned by
+    \command{\link[stats]{lm}} return list; these elements are returned by
     \code{regression}.}
   \item{averaging}{logical. If \code{TRUE} and \code{y} is matrix then
     the values of \code{y} are averaged row-wise beforehand}
@@ -55,10 +55,10 @@ regression(x, y, main, scr, value=function(regr) regr$coeff[2],
 %\details{}
 \value{
   The function returns a list with the following components
-  \item{\code{regr}}{part of the return list of \code{\link{lm}}}
+  \item{\code{regr}}{part of the return list of \command{\link[stats]{lm}}}
   \item{\code{val}}{the calculated value of the variable of interest}
   \item{\code{regr.u}}{\code{NULL} or part of the return list of
-    \code{\link{lm}} for \code{x.u} and \code{y.u}}
+    \command{\link[stats]{lm}} for \code{x.u} and \code{y.u}}
   \item{\code{val.u}}{\code{NULL} or the calculated value of the
     variable of interest for the restricted domain}
   \item{\code{x.u}}{\code{NULL} or the restricted x-coordinates given

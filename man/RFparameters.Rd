@@ -79,7 +79,7 @@
       model parameters then
       \code{Storing=TRUE} accelerates the simulations, but needs additional
       memory. \cr
-      Note that in subsequent calls of \code{\link{GaussRF}}
+      Note that in subsequent calls of \command{\link{GaussRF}}
       intermediate changes of RFparameters with flag "[init]"
       do not have any influence on the algorithm.
       Hence, for studying the effects for
@@ -134,7 +134,7 @@
     \item{\code{CE.maxmem}}{maximum edge length of the ciculant matrix;
       the total amount of memory needed for internal calculation
       is about 16 (=2 * sizeof(double))
-      times as large if \code{\link{RFparameters}()$Storing=FALSE}
+      times as large if \command{\link{RFparameters}}\code{()$Storing=FALSE}
       and 32 (=4 * sizeof(double)) time as large if \code{Storing=TUE}
       \cr Default: \code{20000000} [init].
     }
@@ -144,7 +144,7 @@
       Default: \code{1E-3} [init].}
     \item{\code{CE.tolRe}}{Circulant embedding.
       Threshold above which eigenvalues are considered as
-      non-negative.  Default: \code{-1E-5} [init].}
+      non-negative.  Default: \code{-1E-7} [init].}
     \item{\code{CE.trials}}{Circulant embedding.
       A larger embedding matrix is likely to make more eigenvalues
       non-negative. If at least one of the thresholds \code{CE.tolRe} and
@@ -230,6 +230,7 @@
       The preferred method to simulate on the line. If \code{'direct'}
       then the method is overwritten if the number of points on the grid
       is larger than \code{direct.maxvariables}.
+      Default: \code{"circulant embedding"} [init].
     }
     \item{\code{TBM2.every}}{If \code{TBM2.every>0} then every
       \code{TBM2.every}th iteration is announced.
@@ -255,7 +256,7 @@
       If \code{FALSE} only those models are allowed for the
       2-dimensional simulation that have an analytic representation on
       the line.
-      Default: \code{FALSE} [init].}
+      Default: \code{TRUE} [init].}
     \item{\code{TBM3D2.every}}{If \code{TBM3D2.every>0} then every
       \code{TBM3D2.every}th iteration is announced.
       Default: \code{0} [do].}
@@ -297,15 +298,15 @@
     \item{\code{TBMCE.strategy}}{Ordinary TBM methods.  This parameter
       corresponds to \code{CE.strategy}.  Default: \code{0} [init].}
     \item{\code{TBMCE.maxmem}}{Ordinary TBM methods.  This parameter
-      corresponds to \code{CE.maxmem}.  Default: \code{20000000} [init].}
+      corresponds to \code{CE.maxmem}.  Default: \code{10000000} [init].}
     \item{\code{TBMCE.tolIm}}{Ordinary TBM methods.  This parameter corresponds
       to \code{CE.tolIm}.  Default: \code{1E-3} [init].}
     \item{\code{TBMCE.tolRe}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.tolRe}. Default: \code{-1E-5} [init].}
+      to \code{CE.tolRe}. Default: \code{-1E-7} [init].}
     \item{\code{TBMCE.trials}}{Ordinary TBM methods.  This parameter corresponds
       to \code{CE.trials}.  Default: \code{3} [init].}
     \item{\code{TBMCE.userfft}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.userfft}.  Default: \code{true} [init].}
+      to \code{CE.userfft}.  Default: \code{TRUE} [init].}
   }
   %
 
@@ -336,7 +337,7 @@
   \describe{
     \item{\code{hyper.superpos}}{integer.
       number of superposed hyperplane tessellations.
-      Default: \code{100} [do].
+      Default: \code{300} [do].
     }
     \item{\code{hyper.maxlines}}{integer.
       estimated number of maximal lines.
@@ -357,7 +358,7 @@
     }
     \item{code{hyper.mar.param}}{Parameter used for the marginal
       distribution.
-      Default: \code{NA} [do].
+      Default: \code{0} [do].
     }
   }
   
@@ -368,59 +369,59 @@
       a stopping rule that necessarily needs a finite upper endpoint
       of the marginal distribution of the random field.
       In the case of extremal Gaussian random fields,
-      see \code{\link{MaxStableRF}}, the upper endpoint is
+      see \command{\link{MaxStableRF}}, the upper endpoint is
       approximated by \code{maxstable.maxGauss}.
       Default: \code{3.0} [init].
     }
   }
 
   The following refers to the simulation of Gaussian random fields
-  (\code{\link{InitGaussRF}}, \code{\link{GaussRF}}), but most
+  (\command{\link{InitGaussRF}}, \command{\link{GaussRF}}), but most
   parts also apply
   for the simulation of max-stable random fields
-  (\code{\link{InitMaxStableRF}}, \code{\link{MaxStableRF}}).
+  (\command{\link{InitMaxStableRF}}, \command{\link{MaxStableRF}}).
   
   Some of the global parameters determine the basic settings of a
   simulation, e.g. \code{direct.method} (which chooses a square
   root of a positive definite matrix).  The values of
   such parameters are read by
-  \code{\link{InitGaussRF}} and stored in an internal register.
+  \command{\link{InitGaussRF}} and stored in an internal register.
   Changing
-  such a parameter between calling \code{\link{InitGaussRF}} and calling
-  \code{\link{DoSimulateRF}} or between subsequent calls of
-  \code{\link{GaussRF}} will not have any effect.  These parameters have
+  such a parameter between calling \command{\link{InitGaussRF}} and calling
+  \command{\link{DoSimulateRF}} or between subsequent calls of
+  \command{\link{GaussRF}} will not have any effect.  These parameters have
   the flag "[init]".
   
   Parameters like \code{TBM2.lines} (which determines the number of
   i.i.d. processes to be simulated on the line)
   are only relevant when generating
   random numbers.  These parameters are read by \code{DoSimulateRF}
-  (or by the second part of \code{\link{GaussRF}}), and
+  (or by the second part of \command{\link{GaussRF}}), and
   are marked by "[do]".
   
-  \code{Storing} has an influence on both, \code{\link{InitGaussRF}} and
-  \code{\link{DoSimulateRF}}.  \code{\link{InitGaussRF}} may reserve
-  more memory if \code{Storing==TRUE}.  \code{\link{DoSimulateRF}} will
+  \code{Storing} has an influence on both, \command{\link{InitGaussRF}} and
+  \command{\link{DoSimulateRF}}.  \command{\link{InitGaussRF}} may reserve
+  more memory if \code{Storing==TRUE}.  \command{\link{DoSimulateRF}} will
   free the register
   if \code{Storing==FALSE}, whatever the value of \code{Storing} was
-  when \code{\link{InitGaussRF}} was called. 
+  when \command{\link{InitGaussRF}} was called. 
 
   The distinction between [init] and [do] is also relevant if 
-  \code{\link{GaussRF}} is used and called a second time
+  \command{\link{GaussRF}} is used and called a second time
   with the same parameters for the random field and if
   \code{RFparameters()$Storing==TRUE}.  
-  Then \code{\link{GaussRF}} realises that the second call has the
+  Then \command{\link{GaussRF}} realises that the second call has the
   same random field parameters, and
   takes over the stored intermediate results (that have been calculated
   with the \code{RFparameters()} at that time).  To prevent the use of
   stored intermediate results or to take into account intermediate
   changes of RFparameters
   set \code{RFparameters(Storing==FALSE)} or use
-  \code{\link{DeleteRegister}()} between calls of \code{GaussRF}.
+  \command{\link{DeleteRegister}()} between calls of \code{GaussRF}.
 
   A programme that checks whether the parameters are well
   adapted to a specific simulation problem is given as an example of
-  \code{\link{EmpiricalVariogram}()}.
+  \command{\link{EmpiricalVariogram}()}.
 
   For further details on the implemented methods, see \link{RFMethods}.
 }
@@ -455,11 +456,11 @@
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-\seealso{\code{\link{GaussRF}},
-  \code{\link{GetPracticalRange}}, 
-  \code{\link{MaxStableRF}},
+\seealso{\command{\link{GaussRF}},
+  \command{\link{GetPracticalRange}}, 
+  \command{\link{MaxStableRF}},
   \code{\link{RandomFields}},
-  and \code{\link{RFMethods}}.}
+  and \command{\link{RFMethods}}.}
 
 \examples{
  RFparameters(Storing=TRUE)

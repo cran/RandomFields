@@ -1,6 +1,6 @@
 # source("RFtest.Covariance.R")
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 epsilon <-  0.000000001
 

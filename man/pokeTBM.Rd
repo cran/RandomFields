@@ -47,7 +47,7 @@ pokeTBM(Out, In)
   R may crash.
 }
 \seealso{
-  \code{\link{GaussRF}},  \code{\link{RFparameters}} \code{\link{RFMethods}}
+  \command{\link{GaussRF}},  \command{\link{RFparameters}} \command{\link{RFMethods}}
 }
 \examples{
 ###### initialisation

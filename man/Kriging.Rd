@@ -28,8 +28,8 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values.
   }
-  \item{model}{string; covariance model, see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options.}
+  \item{model}{string; covariance model, see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get all options.}
   \item{param}{parameter vector:
     \code{param=c(mean, variance, nugget, scale,...)};
     the parameters must be given
@@ -57,7 +57,7 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     various consistency checks for the input variables
     are not performed. Further, \code{grid} must be \code{FALSE},
     and \code{model} must be given in the output format of
-    \code{\link{PrepareModel}}.)
+    \command{\link{PrepareModel}}.)
   }
 }
 \details{
@@ -125,9 +125,9 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 %\note{}
 
 \seealso{
-  \code{\link{CondSimu}},
-  \code{\link{CovarianceFct}},
-  \code{\link{EmpiricalVariogram}},
+  \command{\link{CondSimu}},
+  \command{\link{CovarianceFct}},
+  \command{\link{EmpiricalVariogram}},
   \code{\link{RandomFields}},
 }
 

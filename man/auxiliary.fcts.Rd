@@ -36,11 +36,11 @@ GetDistributionNames()
   \item{y}{\code{y} coordinates}
   \item{z}{\code{z} coordinates}
   \item{T}{time instances}
-  \item{grid}{see \code{\link{GaussRF}}}
-  \item{gridtriple}{see \code{\link{GaussRF}}}
+  \item{grid}{see \command{\link{GaussRF}}}
+  \item{gridtriple}{see \command{\link{GaussRF}}}
   \cr 
-  \item{model}{see \code{\link{GaussRF}}}
-  \item{param}{see \code{\link{GaussRF}}}
+  \item{model}{see \command{\link{GaussRF}}}
+  \item{param}{see \command{\link{GaussRF}}}
   \item{timespacedim}{dimension of the random field including the time
     dimension, if there is any}
   \item{trend}{mean or trend of the random field}
@@ -50,13 +50,13 @@ GetDistributionNames()
   \cr
   \item{l}{list as returned by \code{PrepareModel}}
   \item{allowed}{allowed output formats, see
-    \code{\link{CovarianceFct}}}
+    \command{\link{CovarianceFct}}}
   \cr
   \item{data}{matrix of 3 columns; first two columns give the
     coordinates, the third the data}
   \item{factor}{enlargement factor for data}
-  \item{xlim}{see \code{\link{plot}}}
-  \item{ylim}{see \code{\link{plot}}}
+  \item{xlim}{see \command{\link[graphics]{plot}}}
+  \item{ylim}{see \command{\link[graphics]{plot}}}
   \item{col}{border colour of circles}
   \item{fill}{filling colour of circles}
   \item{...}{further graphical parameters}

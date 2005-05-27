@@ -107,7 +107,7 @@ GetModelNames()
     
     \item \code{cone}\cr
     This model is used only for methods based on marked point processes
-    (see \code{\link{RFMethods}}); it is defined only in two dimensions.
+    (see \command{\link{RFMethods}}); it is defined only in two dimensions.
     The corresponding (boolean)
     function is a truncated cone with socle. The base has radius
     \eqn{\frac12}{1/2}. The model has three parameters, \eqn{\kappa_1}{a},
@@ -170,7 +170,7 @@ GetModelNames()
     (for \eqn{\kappa=2}{a=2} there).
     Note that the corresponding function for the random coins
     method (cf. the methods based on marked point processes in
-    \code{\link{RFMethods}}) is
+    \command{\link{RFMethods}}) is
     \deqn{e^{- 2 x^2}.}{exp(-2 x^2).}
     See \code{gneiting} for an alternative model that does not have
     the disadvantages of the Gaussian model.
@@ -448,7 +448,7 @@ GetModelNames()
   
   Note that the value of the covariance function or variogram
   depends also on
-  \code{\link{RFparameters}()$PracticalRange}.  If the latter is
+  \command{\link{RFparameters}}\code{()$PracticalRange}.  If the latter is
   \code{TRUE} and the covariance model is isotropic
   then the covariance function is internally
   rescaled such that cov\eqn{(1)\approx 0.05}{(1)~=0.05} for standard
@@ -515,7 +515,7 @@ GetModelNames()
     calculated. The dimension \eqn{d} of matrix must match the
     number of columns of \code{x}. The models given by \code{l.i}
     can be combined by \code{OP.i="+"} or \code{OP.i="*"}. 
-    \code{method} is ignored here; it can be set in \code{\link{GaussRF}}.
+    \code{method} is ignored here; it can be set in \command{\link{GaussRF}}.
   }
 }
 \value{
@@ -623,12 +623,12 @@ GetModelNames()
   
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})}
-\seealso{\code{\link{EmpiricalVariogram}},
-  \code{\link{GetPracticalRange}},
-  \code{\link{parameter.range}},
+\seealso{\command{\link{EmpiricalVariogram}},
+  \command{\link{GetPracticalRange}},
+  \command{\link{parameter.range}},
   \code{\link{RandomFields}},
-  \code{\link{RFparameters}},
-  \code{\link{ShowModels}}.}
+  \command{\link{RFparameters}},
+  \command{\link{ShowModels}}.}
 
 \examples{
  PrintModelList()

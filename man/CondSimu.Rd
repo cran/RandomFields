@@ -2,7 +2,7 @@
 \alias{CondSimu}
 \title{Conditional Simulation}
 \description{
-  the function returns conditional simulations of a random field
+  the function returns conditional simulations of a Gaussian random field
 }
 \usage{
 CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
@@ -10,7 +10,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
          trend, n=1, register=0, 
          err.model=NULL, err.param=NULL, err.method=NULL,
          err.register=1, tol=1E-5, pch=".", paired=FALSE, na.rm=FALSE)
-}
+} 
 \arguments{
   \item{krige.method}{Assumptions on the random field which corresponds to
     the respective kriging method;
@@ -30,27 +30,27 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values.}
   \item{model}{string; covariance model of the random field. 
-    See \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options for
+    See \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get all options for
     \code{model}.
     
-    See \code{\link{CovarianceFct}} for \code{model} being a list.
+    See \command{\link{CovarianceFct}} for \code{model} being a list.
   }
   \item{param}{parameter vector:
     \code{param=c(mean, variance, nugget, scale,...)};
     the parameters must be given
     in this order; further parameters are to be added in case of a
     parametrised class of covariance functions,
-    see \code{\link{CovarianceFct}};
+    see \command{\link{CovarianceFct}};
     the value of \code{mean} must be finite
     in the case of simple kriging, and is ignored otherwise.
 
-    See \code{\link{CovarianceFct}} for \code{param} being \code{NULL}
+    See \command{\link{CovarianceFct}} for \code{param} being \code{NULL}
     or list.
   }
   \item{method}{\code{NULL} or string; method used for simulating,
-    see \code{\link{RFMethods}}, or
-    type \code{\link{PrintMethodList}()} to get all options.}
+    see \command{\link{RFMethods}}, or
+    type \command{\link{PrintMethodList}()} to get all options.}
   \item{given}{matrix or vector of locations where data are available;
     note that it is not possible to give the points in form of a grid
     definition.}
@@ -60,7 +60,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     then \code{n} must be even.}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers; see
-    \code{\link{GaussRF}} for further details.}
+    \command{\link{GaussRF}} for further details.}
   \item{err.model}{covariance function for the error model. String or list.
     See \code{model} for details.
   }
@@ -153,9 +153,9 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 
 
 \seealso{
-  \code{\link{CovarianceFct}},
-  \code{\link{GaussRF}},
-  \code{\link{Kriging}}
+  \command{\link{CovarianceFct}},
+  \command{\link{GaussRF}},
+  \command{\link{Kriging}}
   \code{\link{RandomFields}},
 }
 
@@ -194,8 +194,8 @@ image(p, p, data, xlim=lim, ylim=lim, zlim=zlim, col=colour)
 #conditional simulation
 krige.method <- "O" ## random field assumption corresponding to
                     ## those of ordinary kriging
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/rf.R")
+%source("/home/schlather/R/RF/RandomFields/R/modelling.R")
+%source("/home/schlather/R/RF/RandomFields/R/rf.R")
 cz <- CondSimu(krige.method, x, x,  grid=TRUE,
                model=model, param=param,
                given=expand.grid(p,p),# if data are given on a grid

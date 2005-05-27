@@ -38,10 +38,10 @@ userinput(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
   see there for more information.  
 }
 \seealso{
-  \code{\link{getactions}},
-  \code{\link{Locator}},
-  \code{\link{Readline}},
-  \code{\link{useraction}}
+  \command{\link{getactions}},
+  \command{\link{Locator}},
+  \command{\link{Readline}},
+  \command{\link{useraction}}
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}

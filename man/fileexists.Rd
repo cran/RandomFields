@@ -36,7 +36,7 @@
   \item{3}{if \code{file}.lock was tried to be created, but another process
     inferred and got priority}
   \item{0}{otherwise, \code{file} and \code{file}.lock did not exist and
-    \code{file}.lock was created}
+    \code{file}.lock has been created}
 }
 
 \author{Martin Schlather, \email{schlath@hsu-hh.de}

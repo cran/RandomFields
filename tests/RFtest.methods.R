@@ -1,11 +1,12 @@
 ## R --no-save < RFtest.methods.R
 # source("RFtest.methods.R")
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
+RFparameters(PrintLevel=6, TBM2.num=EXTENDED.TESTING) ## 0
        
 ERRORCOVNOTALLOWED <- 4 ## check with RFsimu.h!!!
 ERRORCOVFAILED <- 14
-  
+
 models<- list(list("bessel",1),
               list("cauchy",1),
               list("cauchytbm",1:3),
@@ -33,11 +34,10 @@ models<- list(list("bessel",1),
               list("whittle",1),
               )
               
-methods <- c("cir", "cutoff", "intrinsic", "TBM2", "TBM3", "sp", "dir", "add",
-             "hyper")
+methods <- c("cir", "cutoff", "intrinsic",
+             "TBM2", "TBM3", "sp", "dir", "add", "hyper")
 
 working <- matrix(0, nrow=length(models), ncol=length(methods))
-RFparameters(PrintLevel=6) ## 0
 for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
   for (mo in 18:length(models)) {
     param <- c(0,1,1,scale, c(kappa1,2,2)[models[[mo]][[2]]])

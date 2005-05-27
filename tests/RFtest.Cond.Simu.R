@@ -1,6 +1,6 @@
 # source("RFtest.Cond.Simu.R")
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 ## normal checking
 #nn <- c(10,1); step <- 1; #graphics.off(); X11(); X11();

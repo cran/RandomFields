@@ -128,13 +128,13 @@ fractal.dim(x, y = NULL, z = NULL, data,
   following elements.
     \item{x}{the x-coordinates used for the regression fit}
     \item{y}{the y-coordinates used for the regression fit}
-    \item{regr}{the return list of the \code{\link{lsfit}}}
+    \item{regr}{the return list of the \command{\link[stats]{lm}}}
     \item{sm}{smoothed curve through the (x,y) points}
     \item{x.u}{\code{NULL} or the restricted x-coordinates given
       by the user in the interactive plot}
     \item{y.u}{\code{NULL} or y-coordinates according to \code{x.u}}
     \item{regr.u}{\code{NULL} or the return list of
-      \code{\link{lsfit}} for \code{x.u} and \code{y.u}}
+      \command{\link[stats]{lm}} for \code{x.u} and \code{y.u}}
     \item{D}{the fractal dimension}
     \item{D.u}{\code{NULL} or the fractal dimension corresponding to the
       user's regression line}
@@ -172,7 +172,7 @@ fractal.dim(x, y = NULL, z = NULL, data,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
-  \code{\link{CovarianceFct}}, \code{\link{hurst}}
+  \command{\link{CovarianceFct}}, \command{\link{hurst}}
 }
 %\examples{
 %}

@@ -1,6 +1,6 @@
 
 
-# options(warn=0);library(RandomFields);source("~/article/R/NEW.RF/RandomFields/R/getNset.R");source("~/article/R/NEW.RF/RandomFields/R/rf.R");source("RandomFields/R/ShowModels.R"); ShowModels(x=1:100, y=1:100, model=list(list(model="exp", var=1, aniso=c(1,0,0,1))), method="ci");
+# options(warn=0);library(RandomFields);source("~/R/RF/RandomFields/R/getNset.R");source("~/R/RF/RandomFields/R/rf.R");source("RandomFields/R/ShowModels.R"); ShowModels(x=1:100, y=1:100, model=list(list(model="exp", var=1, aniso=c(1,0,0,1))), method="ci");
 
 
 

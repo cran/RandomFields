@@ -13,7 +13,7 @@ GetRegisterInfo(register, ignore.active = FALSE)
 \arguments{
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers, see also
-    \code{\link{GaussRF}}} 
+    \command{\link{GaussRF}}} 
   \item{ignore.active}{logical. If \code{FALSE} and the register has
     non-active flag (because of an error or it is deleted) then a list
     is returned that contains only the element \code{active=FALSE}.
@@ -24,7 +24,7 @@ GetRegisterInfo(register, ignore.active = FALSE)
   \code{GetRegisterInfo(register, ignore.active=TRUE)} can be
   useful if an error of simulation has been occured.
   
-  If \code{\link{RFparameters}()$Storage=FALSE} then values of
+  If \command{\link{RFparameters}}\code{()$Storage=FALSE} then values of
   the internal registers are not kept. Hence \code{GetRegisterInfo} cannot
   provide information.
 }
@@ -34,7 +34,7 @@ GetRegisterInfo(register, ignore.active = FALSE)
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-\seealso{\code{\link{GaussRF}}}
+\seealso{\command{\link{GaussRF}}}
 \examples{
 str(GetRegisterInfo(0))
 try(GaussRF(1:4, grid=TRUE, model="exp", param=c(1,2,3,4)))

@@ -13,7 +13,7 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
   \item{y}{vector of y-coordinates}
   \item{z}{vector of z-coordinates}
   \item{T}{vector of time components; here T is given in grid
-    format, see \code{\link{GaussRF}}.}    
+    format, see \command{\link{GaussRF}}.}    
   \item{data}{vector or matrix of data; if \code{data} has a multiple
     number of components as expected by the definition of the
     coordinates then it is assumed that the data stem from repeated,
@@ -97,7 +97,7 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}
 }
-\seealso{\code{\link{GaussRF}}, \code{\link{fitvario},
+\seealso{\command{\link{GaussRF}}, \command{\link{fitvario},
     and \code{\link{RandomFields}}}}
 \examples{
 % library(RandomFields, lib="~/TMP"); RFparameters(Print=6)

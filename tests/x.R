@@ -1,7 +1,7 @@
 # source("x.R")
 
 
-if (file.exists("source.R")) source("source.R") 
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 
 RFparameters(Print=6)

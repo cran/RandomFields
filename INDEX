@@ -27,5 +27,6 @@ RFMethods               Simulation Techniques
 RFparameters            Control Parameters
 ShowModels              Interactive Choice of Models and Parameters
 SimulateRF              Simulation of Random Fields
+sleep.milli             Sleep
 soil                    Soil data of North Bavaria, Germany
 useraction              Set input behaviour

@@ -2,7 +2,7 @@
 library(RandomFields,
         lib=if(TRUE && file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
 
-.path <- "/home/schlather/article/R/NEW.RF/RandomFields/R/"
+.path <- "/home/schlather/R/RF/RandomFields/R/"
 if (EXTENDED.TESTING <- file.exists(paste(.path, "rf.R", sep=""))) {
   EXTENDED.TESTING <- FALSE
   Source <- function(x) {

@@ -1,6 +1,6 @@
 # source("RFtest.mle.R")
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 ##load("random seed")
 #
@@ -13,7 +13,7 @@ model <- "expon"; standardparam <- c(0,1,0,1); factor <- 5; low <- up <- NULL
 use <- TRUE ##use <- FALSE
 PrintLevel <- 1
 points <- 200 
-repet <- 1:20   ## 500 if being serious
+repet <- if (EXTENDED.TESTING) 1:500 else 1:2  ## 500 if being serious
 same <-  10;    ## 20, 500
 
 ####### for heavy testing, uncomment the following 3 lines

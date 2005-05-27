@@ -6,7 +6,8 @@
  library for unconditional simulation of stationary and isotropic random fields
 
  Copyright (C) 2001 -- 2003 Martin Schlather
- Copyright (C) 2004 -- 2005 Yindeng Jiang & Martin Schlather
+ Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
+ Copyright (C) 2005 -- 2005 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

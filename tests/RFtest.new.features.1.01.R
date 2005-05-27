@@ -2,7 +2,7 @@
 
 
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 cat("\n landmark -2")
 

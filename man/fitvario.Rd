@@ -5,8 +5,8 @@
 \title{LSQ and Maximum Likelihood Estimation
   of Random Field Parameters}
 \description{
-  This function estimates arbitrary parameters of
-  a random field specification.
+  The function estimates arbitrary parameters of
+  a random field specification with various methods.
   }
 \usage{
 fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param,
@@ -28,7 +28,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
          time.name="T", transform=NULL, standard.style=NULL,
          lsq.methods=c("self", "plain", "sqrt.nr", "sd.inv", "internal"),
          mle.methods=c("ml", "reml"),
-         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
+         cross.methods=NULL,
+%         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
          users.guess=NULL, users.beta=NULL, table.format=FALSE)
 }
 \arguments{
@@ -37,14 +38,14 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \item{y}{vector of y coordinates}
   \item{z}{vector of z coordinates}
   \item{T}{vector of T coordinates; these coordinates are given in
-    triple notation, see \code{\link{GaussRF}}}
+    triple notation, see \command{\link{GaussRF}}}
   \item{data}{vector or matrix of values measured at \code{coord};
     If also a time component is given, the in the data the indices for
     the spatial components run the fastest.
   }
   \item{model}{string or list;
-    covariance model, see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options.
+    covariance model, see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}()} to get all options.
 %    See also t
     
     If \code{model} is a list, then the parameters with value \code{NA}
@@ -68,7 +69,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     the parameters must be given
     in this order. Further parameters are to be added in case of a
     parametrised class of covariance functions, see
-    \code{\link{CovarianceFct}}.
+    \command{\link{CovarianceFct}}.
     \emph{Any} components set to \code{NA} are estimated; the others
     are kept fix.
     See also \code{model} above. 
@@ -117,7 +118,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     but \code{use.naturalscaling} does not work for all models.
     See Details.}
   \item{PrintLevel}{level to which messages are shown.  See Details.}
-  \item{optim.control}{control list for \code{\link{optim}}, which uses
+  \item{optim.control}{control list for \command{\link[stats]{optim}}, which uses
     'L-BFGS-B'. However 'parscale' may not be given.}
   \item{bins}{number of bins of the empirical variogram.  See Details.}
   \item{nphi}{scalar or vector of 2 components.
@@ -181,7 +182,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     Essentially, \code{transform} allows for the definition of a parameter as a
     function of other estimated or fixed parameters.
     All the parameters are supposed to be in a vector called \sQuote{param}
-    where the positions are given by \code{\link{parampositions}}.
+    where the positions are given by \command{\link{parampositions}}.
     An example of \code{transform} is
     \code{function(param) \{param[3] <- 5 - param[1]; param\}}.
     Any parameter that is set by \code{transform}, should be \code{NaN}
@@ -241,13 +242,12 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 }
 
 \details{
-  The optimisations are performed using \code{\link{optimise}} if one
-  parameter has to be estimated only and \code{\link{optim}}, otherwise.
+  The optimisations are performed using \command{\link[stats]{optimize}} if one
+  parameter has to be estimated only and \command{\link[stats]{optim}}, otherwise.
 
   First, by means of various control parameters, see below, the algorithm
   first tries to estimate the bounds for the parameters to be estimated,
-  if the bounds for the parameters are not given.
-
+  if the bounds for the parameters are not given.\cr
   Independently whether \code{users.guess} is given,
   the algorithm guesses initial values for the parameters.
   The automatic guess and the user's guess will be called
@@ -264,8 +264,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   can be smaller than the number of estimated parameters, since in some
   cases, some parameters can be calculated explicitely;
   relevant for the choice between
-  \code{\link{optimise}} and \code{\link{optim}} is the
-  effective number of parameters.]
+  \command{\link[stats]{optimize}} and \command{\link[stats]{optim}} is the
+  effective number of parameters; (iii) \command{\link[stats]{optim}} needs]
 
   Third, the model is fitted by various maximum likelihood methods
   (according to the value of \code{mle.methods}) using
@@ -331,8 +331,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     the output of \code{fitvario}: the parameter vector
     returned by \code{fitvario} refers
     \emph{always} to the standard covariance model as given in
-    \code{\link{CovarianceFct}}. (In contrast to \code{PracticalRange}
-    in \code{\link{RFparameters}}.)\cr
+    \command{\link{CovarianceFct}}. (In contrast to \code{PracticalRange}
+    in \command{\link{RFparameters}}.)\cr
     Advantages if \code{use.naturalscaling==TRUE}:
     \itemize{
       \item \code{scale} and the shape parameter of a parameterised
@@ -362,7 +362,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     
    \item \code{trace.optim}\cr
     see control parameter \code{trace} of
-    \code{\link{optim}}.  Default: \code{0}.
+    \command{\link[stats]{optim}}.  Default: \code{0}.
 
     \item \code{bins}\cr
     vector of explicit boundaries for the bins or the
@@ -506,7 +506,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     than 1).   If the best parameter vector of the MLE found so far is too close
     to some given bounds, see the specific parameters above, it is
     assumed that
-    \code{\link{optim}} ran into a local minimum because of a bad starting
+    \command{\link[stats]{optim}} ran into a local minimum because of a bad starting
     value.
     In this case and if \code{refine.onborder=TRUE}
     the MLE target function is calculated on a grid, the
@@ -535,7 +535,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 %    found so far is too close
  %   to some given bounds, see the specific parameters above, it is
  %   assumed that
-%    \code{\link{optim}} ran into a local minimum because of a bad starting
+%    \command{\link[stats]{optim}} ran into a local minimum because of a bad starting
 %    value.
 %    In this case and if \code{refine.onborder=TRUE}
 %    the target function is calculated on a grid, the
@@ -561,7 +561,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
   If \code{table.format=FALSE} then
   the function returns a list with the following elements
-  \item{ev}{list returned by \code{\link{EmpiricalVariogram}}}
+  \item{ev}{list returned by \command{\link{EmpiricalVariogram}}}
   \item{variogram}{list of fitted models; they include the fixed and the
     estimated parameters; each list element gives the estimated
     covariance model}
@@ -590,9 +590,9 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
 \note{This function does not depend on the value of
-  \code{\link{RFparameters}()$PracticalRange}. 
+  \command{\link{RFparameters}}\code{()$PracticalRange}. 
   The function \code{fitvario} always uses the standard specification
-  of the covariance model as given in \code{\link{CovarianceFct}}.
+  of the covariance model as given in \command{\link{CovarianceFct}}.
   
 %  The function is still in an experimental stage (and will probably
 %  never leave it).  The function works well if
@@ -601,18 +601,18 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 \section{Acknowledgement}{
   Thanks to Paulo Ribeiro for hints and comparing the first versions
   of \code{fitvario} to
-  \code{\link[geoR]{likfit}} of the package \code{geoR} whose homepage is at 
+  \command{\link[geoR]{likfit}} of the package \code{geoR} whose homepage is at 
   \url{http://www.est.ufpr.br/geoR/}.
 }
 \seealso{
-  \code{\link{CovarianceFct}},
-  \code{\link{GetPracticalRange}},
+  \command{\link{CovarianceFct}},
+  \command{\link{GetPracticalRange}},
   \command{\link{parampositions}}
   \code{\link{RandomFields}},
- % \code{\link{winddata}}.
+ % \command{\link{winddata}}.
 }
 \examples{
- % library(RandomFields, lib="~/TMP"); source("~/article/R/NEW.RF/RandomFields/R/mle.old.R");
+ % library(RandomFields, lib="~/TMP"); source("~/R/RF/RandomFields/R/mle.old.R");
  model <-"gencauchy"
  param <- c(0, 1, 0, 1, 1, 2)
  estparam <- c(0, NA, 0, NA, NA, 2) ## NA means: "to be estimated"
@@ -649,14 +649,14 @@ str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
 estparam <- c(0, NA, NA, NA, NA, NaN) 
 parampositions(model=model, param=estparam)
 f <- function(param) {param[3] <- param[2]; param}
-unix.time(str(fitvario(x=cbind(x,y), data=d, model=model,
+system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
       param=estparam, transform=f, standard.style=TRUE,
       cross.me=NULL), vec.len=6))
 
 ## much better programmed, but also much slower:
 estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
                       kappa=list(NA, function(m) m[[1]]$kappa[1])))
-unix.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
+system.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
               cross.me=NULL), vec.len=6))
 
 

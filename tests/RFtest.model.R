@@ -1,5 +1,6 @@
 #source("RFtest.model.R")
 
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 if (file.exists("source.R")) source("source.R")
 
 x <- function(...) {

@@ -41,16 +41,13 @@ This data frame contains the following columns:
 \examples{
 % library(RandomFields, lib="~/TMP");
 % library(RandomFields);
-% source("~/article/R/NEW.RF/RandomFields/R/rf.R")
-% source("~/article/R/NEW.RF/RandomFields/R/modelling.R")
+% source("~/R/RF/RandomFields/R/rf.R")
+% source("~/R/RF/RandomFields/R/modelling.R")
 
 ################################################################
 ##                                                            ##
 ##         a geostatistical analysis that demonstrates        ##
 ##         features of the package `RandomFields'             ##
-##                                                            ##
-##        *** THIS EXAMPLE IS NOT RUN AUTOMATICALLY ***       ##
-##        ***      SINCE IT IS TIME CONSUMING       ***       ##
 ##                                                            ##
 ################################################################
 
@@ -88,13 +85,13 @@ plot(pts, col=colour[1+(cn-1)*((d-min(d))/diff(zlim))], pch=16,
 my.legend(lu.x, lu.y, zlim=zlim, col=colour, cex=1.5)
 % dev.copy2eps(file="data.eps", width=5, height=5)
 
-% source("/home/schlather/article/R/NEW.RF/RandomFields/R/rf.R")
+% source("/home/schlather/R/RF/RandomFields/R/rf.R")
 ## empirical variogram
 ev <- EmpiricalVariogram(pts, data=d, grid=FALSE,
                          bin=c(-1,seq(0,maxbin,l=30)))
 
 ## show all models,
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/ShowModels.R")
+%source("/home/schlather/R/RF/RandomFields/R/ShowModels.R")
 RFparameters(Print=1, CE.force=TRUE, CE.trials=1, CE.userfft=TRUE)
 by.eye <- ShowModels(x=x, y=y, emp=ev, col=colour, Zlim=zlim,
                      Mean=mean(d), me="ci")
@@ -102,7 +99,7 @@ by.eye <- ShowModels(x=x, y=y, emp=ev, col=colour, Zlim=zlim,
 %dev.copy2eps(file="ShowModels.eps", width=7, height=7)
 
 ## fit parameters of the whittlematern model by MLE
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/MLE.R")
+%source("/home/schlather/R/RF/RandomFields/R/MLE.R")
 fit <- fitvario(x=pts, data=d, model="whittle", par=rep(NA,5),
                 mle.m="ml", cross.m=NULL)$variogram
 
@@ -121,7 +118,7 @@ legend(120, 4, c("empirical", "by eye", "ML", "lsq", "sqrt(n) lsq",
 %dev.copy2eps(file="mle.eps", width=5, height=5)
 
 ## map of expected values
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
+%source("/home/schlather/R/RF/RandomFields/R/modelling.R")
 k <- Kriging("O", x=x, y=y, grid=TRUE, model=fit$ml, given=pts, data=d)
 par(mfrow=c(1,2))
 plot(pts, col=colour[1+99*((d-min(d))/diff(zlim))], pch=16, xlab="x [cm]", ylab="y [cm]")
@@ -130,7 +127,7 @@ image(x, y, k, col=colour, zlim=zlim, xlab="x [cm]", ylab="y [cm]")
 par(bg="white")
 %dev.copy2eps(file="kriging.eps", width=5, height=5)
 
-%source("/home/schlather/article/R/NEW.RF/RandomFields/R/modelling.R")
+%source("/home/schlather/R/RF/RandomFields/R/modelling.R")
 ## what is the probability that at no point of the
 ## grid given by x and y the moisture is greater than 24 percent?
 % works well since fit$ml:nugget==0!

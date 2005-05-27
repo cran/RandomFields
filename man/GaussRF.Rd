@@ -29,11 +29,11 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     interpreted as a grid definition, see Details.  \code{grid}
     does not apply for \code{T}.}
   \item{model}{string or list; covariance or variogram model,
-    see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get the list of all implemented
+    see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get the list of all implemented
     models; see Details.}
   \item{param}{vector or matrix of parameters or missing, see Details
-    and \code{\link{CovarianceFct}}; 
+    and \command{\link{CovarianceFct}}; 
     The simplest form is that \code{param} is vector of the form
     \code{param=c(NA,variance,nugget,scale,...)}, in this order;\cr
     The dots \code{...} stand for additional parameters of the
@@ -43,8 +43,8 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
       a_0 +a_1 x_1 + ... + a_d x_d}), or function(x)}
   \item{method}{\code{NULL} or string; method used for simulating,
-    see \code{\link{RFMethods}}, or
-    type \code{\link{PrintMethodList}()} to get all options.
+    see \command{\link{RFMethods}}, or
+    type \command{\link{PrintMethodList}}\code{()} to get all options.
     If \code{model} is given as list then \code{method} may not be
     set if \code{model[[i]]$method}, \eqn{i=1,3,..} is given, and vice
     versa. However, a global parameter \code{method} and
@@ -68,7 +68,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     on which the
     simulation is based. (\dQuote{Antithetic pairs}.)
   }
-  \item{...}{\code{\link{RFparameters}} that are locally used only.}
+  \item{...}{\command{\link{RFparameters}} that are locally used only.}
 }
 \details{
   \code{GaussRF} can use different methods for the simulation,
@@ -93,7 +93,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
     \item
     Nested models can be defined in the same way as a nested
-    \code{\link{CovarianceFct}}.  If the \code{trend} is not given
+    \command{\link{CovarianceFct}}.  If the \code{trend} is not given
     it is set to 0.
 
     \item
@@ -101,7 +101,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     anisotropy, separable models, non-separable space-time models)
     and a random field based on multiplicative or nested models
     is defined as in the case of
-    an anisotropic \code{\link{CovarianceFct}}. 
+    an anisotropic \command{\link{CovarianceFct}}. 
     If the \code{trend} is not given it is set to 0.
     The \code{method} may be specified by the global \code{method}
     or for each model separately, as additional parameter
@@ -120,13 +120,13 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \code{InitGaussRF} performs some first calculations, like the first
   Fourier transform in the circulant embedding method or the matrix
   decomposition for the direct methods.  Random numbers are not involved. 
-  \code{GaussRF} then calls \code{\link{DoSimulateRF}} which uses the
+  \code{GaussRF} then calls \command{\link{DoSimulateRF}} which uses the
   intermediate results and random numbers to create a simulation.
 
   When \code{InitGaussRF} checks the validity of the parameters, it
   also checks whether the previous simulation has had the same
   specification of the random field.  If so (and if
-  \code{\link{RFparameters}()$STORING==TRUE}), the stored intermediate
+  \command{\link{RFparameters}}\code{()$STORING==TRUE}), the stored intermediate
   results are used instead of being recalculated. 
   
   Comments on specific parameters:
@@ -175,22 +175,22 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
   \item The strings for \code{model} and \code{method} may
   be abbreviated as long as the abbreviations match only one
-  option.  See also \code{\link{PrintModelList}()} and
-  \code{\link{PrintMethodList}()}
+  option.  See also \command{\link{PrintModelList}}\code{()} and
+  \command{\link{PrintMethodList}}\code{()}
   
   \item Further control parameters for the simulation are set by means of
-  \code{\link{RFparameters}(...)}.
+  \command{\link{RFparameters}}\code{(...)}.
   
   }
 }
 \note{
   The algorithms for all the simulation methods are controlled by
-  additional parameters, see \code{\link{RFparameters}()}.  These
+  additional parameters, see \command{\link{RFparameters}}\code{()}.  These
   parameters have an influence on the speed of the algorithm
   and the precision of the result. 
   The default parameters are chosen such that
   the simulations are fine for many models and their parameters. 
-  If in doubt modify the example in \code{\link{EmpiricalVariogram}()}
+  If in doubt modify the example in \command{\link{EmpiricalVariogram}}\code{()}
   to check the precision.
 }
 \value{
@@ -198,8 +198,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \code{InitGaussRF} returns 0 if no error has occurred and a positive value
   if failed.\cr
 
-  \code{GaussRF} and \code{\link{DoSimulateRF}} return \code{NULL}
-  if an error has occurred; otherwise the returned object
+  The object returned \code{GaussRF} and \command{\link{DoSimulateRF}}
   depends on the parameters \code{n} and \code{grid}:\cr
     \code{n==1}:\cr
     * \code{grid==FALSE}.  A vector of simulated values is
@@ -224,18 +223,18 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})}
 \seealso{
-  \code{\link{CovarianceFct}},
-  \code{\link{DeleteRegister}},
-  \code{\link{DoSimulateRF}},
-  \code{\link{GetPracticalRange}},
-  \code{\link{EmpiricalVariogram}},
-  \code{\link{fitvario}},
-  \code{\link{MaxStableRF}},
-  \code{\link{RFMethods}},
+  \command{\link{CovarianceFct}},
+  \command{\link{DeleteRegister}},
+  \command{\link{DoSimulateRF}},
+  \command{\link{GetPracticalRange}},
+  \command{\link{EmpiricalVariogram}},
+  \command{\link{fitvario}},
+  \command{\link{MaxStableRF}},
+  \command{\link{RFMethods}},
   \code{\link{RandomFields}},
-  \code{\link{RFparameters}},
-  \code{\link{ShowModels}},
-%  \code{\link{winddata}}.
+  \command{\link{RFparameters}},
+  \command{\link{ShowModels}},
+%  \command{\link{winddata}}.
 }
 
 \examples{
@@ -378,20 +377,20 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  RFparameters(Storing=TRUE,PrintLevel=1)
  y <- x <- seq(0, 50, 0.2)
  (p <- c(runif(3), runif(1)+1))
- ut <- unix.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
+ ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
                               method="circ", param=p))
  image(x, y, f)
  hist(f)
  c( mean(as.vector(f)), var(as.vector(f)) )
- cat("unix time (first call)", format(ut,dig=3),"\n")
+ cat("system time (first call)", format(ut,dig=3),"\n")
 
  # second call with the *same* parameters is much faster:
- ut <- unix.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
+ ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
                               method="circ",param=p)) 
  image(x, y, f)
  hist(f)
  c( mean(as.vector(f)), var(as.vector(f)) )
- cat("unix time (second call)", format(ut,dig=3),"\n")
+ cat("system time (second call)", format(ut,dig=3),"\n")
 
 
 

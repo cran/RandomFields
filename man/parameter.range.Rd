@@ -38,7 +38,7 @@ parameter.range(model, dim)
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 
-\seealso{\code{\link{CovarianceFct}}}
+\seealso{\command{\link{CovarianceFct}}}
 
 \examples{
   parameter.range("exponential", 1) # NULL

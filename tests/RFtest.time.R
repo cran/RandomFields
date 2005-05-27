@@ -1,13 +1,18 @@
 ## R --no-save < RFtest.time.R
 # source("RFtest.time.R")
 
-if (file.exists("source.R")) source("source.R")
+#library(RandomFields)
+
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 wait <- TRUE; ##wait <- FALSE;  
 
-RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
-                   y=seq(0,10,0.1),key=0)
+RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),
+                   x=seq(0, 10, 0.2),
+                   y=seq(0, 10, 0.1),
+                   key=0)
 {
+  #str(RFparameters())
   ut <- unix.time(res<-try(GaussRF(x=x, y=y, z=NULL, grid=TRUE, model=cov,
                                param=param, method=NULL, n=1, reg=key)))
   cat("TIME=",  paste(format(ut, dig=3)), "\n")
@@ -15,7 +20,7 @@ RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),x=seq(0,10,0.2),
     print("Simulation has failed",quote=FALSE)
   } else {
     image(x,y,matrix(res,ncol=length(y)),col=grey(0:100 / 100));
-    title(cov);
+    if (!interactive()) title(cov);
   }
 }
 

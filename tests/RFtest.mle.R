@@ -1,6 +1,6 @@
 # source("RFtest.MLE.R")
 
-if (file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 note <- readline
 note <- print
@@ -141,7 +141,7 @@ for (i in 1:le) {
 
 
 ######################################################################
-if (exists("EXTENDED.TESTING") && EXTENDED.TESTING) {
+if (EXTENDED.TESTING) {
 ######################################################################
 
 n <- 3000
@@ -254,5 +254,5 @@ for (i in 1:le) {
 
 ## i=8
 ######################################################################
-} ## end: if (exists("EXTENDED.TESTING") && EXTENDED.TESTING)
+} ## end: if (EXTENDED.TESTING)
 ######################################################################

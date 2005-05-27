@@ -4,7 +4,7 @@
 
  Collection of auxiliary functions
 
- Copyright (C) 2001 -- 2004  Martin Schlather, 
+ Copyright (C) 2001 -- 2005  Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

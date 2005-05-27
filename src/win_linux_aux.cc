@@ -1,8 +1,9 @@
+
 /* 
  Authors
  Martin Schlather, schlath@hsu-hh.de
 
- all around the nugget effect -- needs special treatment 
+ Collection of system specific auxiliary functions
 
  Copyright (C) 2001 -- 2005 Martin Schlather, 
 
@@ -13,7 +14,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -21,35 +22,41 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifdef WIN32
+// #define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#include <windows.h>
+#endif
 
+// achtung! windows.h zusammen mit <Rmath.h oder R.graphics>
+// gibt warnung, da ERROR mehrfach definiert !
+// deshalb auch in auxiliary.h nicht GSLvsR.h einbinden
 #include <math.h>
-#include <stdio.h>
-#include <assert.h>
-#include "RFsimu.h"
-
-
-
-int init_special(key_type *key, int m){ 
-  return ERRORNOTPROGRAMMED; 
-   //  calls key->initother
-
-  // do_special calls key->other      
-  /* 
-     if (m==0) KEY[*keyNr].cov->other(key,res ); 
-      else { 
-	KEY[*keyNr].cov->other(key,part_result ); 
-	for (i=0, i<KEY[*keyNr].totalpoints; i++) res[i] += part_result[i];
-      } 
-  */
-}
-
-void do_special(key_type *key, int m, double *res ){
-  assert(false);
- {
-    register long i,endfor;
-    endfor = key->totalpoints;
-    for (i=0;i<endfor;i++) { res[i]=0.0; }
-  }
-}
+#include <unistd.h>
+#include "win_linux_aux.h"
 
  
+void sleepMilli(int *milli) {
+#ifdef WIN32
+  Sleep((long) *milli);
+#else
+  usleep(1000 * (unsigned long) *milli);
+#endif
+}
+
+void pid(int *i)  {
+#ifndef WIN32 
+  *i = 0; 
+#else
+  *i = getpid();
+#endif
+}
+
+void hostname(char **h, int *i){
+#ifdef WIN32
+  *h[0]=0;
+#else
+  gethostname(*h, *i);
+#endif
+}  
+

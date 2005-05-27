@@ -7,7 +7,7 @@
   \code{DoSimulateRF} performs an already initialised simulation.
   
   \code{InitSimulateRF} internal function;
-  use \code{\link{InitGaussRF}} and \code{\link{InitMaxStableRF}}, instead.
+  use \command{\link{InitGaussRF}} and \command{\link{InitMaxStableRF}}, instead.
 
 
 % and some exotic methods, like hyperplane tessellations. 
@@ -27,8 +27,8 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
   \item{model}{string; covariance or variogram model,
-    see \code{\link{CovarianceFct}}, or
-    type \code{\link{PrintModelList}()} to get all options}
+    see \command{\link{CovarianceFct}}, or
+    type \command{\link{PrintModelList}}\code{()} to get all options}
   \item{param}{vector or list. 
     \code{param=c(mean, variance, nugget, scale, ...)}, 
     \code{param=list(c(variance, scale,
@@ -38,14 +38,14 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
       list(variance, anisotropy, kappa))};
       the parameters must be given
       in this order; further parameters are to be added in case of a
-      parametrised class of models, see \code{\link{CovarianceFct}}}
+      parametrised class of models, see \command{\link{CovarianceFct}}}
     \item{trend}{Not programmed yet.
       trend surface: number (mean),  vector of length
     \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
       a_0 +a_1 x_1 + ... + a_d x_d}), or function}
   \item{method}{\code{NULL} or string; Method used for simulating,
-    see \code{\link{RFMethods}}, or
-    type \code{\link{PrintMethodList}()} to get all options}
+    see \command{\link{RFMethods}}, or
+    type \command{\link{PrintMethodList}}\code{()} to get all options}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers}
   \item{gridtriple}{logical;  if \code{gridtriple==FALSE} ascending
@@ -60,7 +60,9 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \item{n}{number of realisations to generate; if \code{paired=TRUE}
     then \code{n} must be even.}
   \item{paired}{
-    logical. If \code{TRUE} then every second simulation is obtained by
+    logical. \code{paired} may be \code{TRUE} only for the simulation of
+    Gaussian random fields.
+    If \code{TRUE} then every second simulation is obtained by
     only changing the signs of the standard Gaussian random variables, the
     simulation is based on (\dQuote{antithetic pairs}).
   }
@@ -89,7 +91,7 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
 \seealso{
-  \code{\link{GaussRF}}, \code{\link{MaxStableRF}}, \code{\link{RandomFields}}
+  \command{\link{GaussRF}}, \command{\link{MaxStableRF}}, \code{\link{RandomFields}}
 }
 \keyword{spatial}
 

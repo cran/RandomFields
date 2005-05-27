@@ -5,7 +5,7 @@
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands
 
- Copyright (C) 2001 -- 2004 Martin Schlather, 
+ Copyright (C) 2001 -- 2005 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -751,6 +751,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     cov = &(CovList[covnr[v]]);
     if (cov->implemented[method] <= NOT_IMPLEMENTED) { 
       error = ERRORNOTDEFINED; goto ErrorHandling;}
+    if (method==TBM2 && !TBM2NUMERIC &&  cov->implemented[method]>=NUM_APPROX){ 
+      error = ERRORNOTDEFINED; goto ErrorHandling;}
     if ((!key->anisotropy && (CovList[covnr[v]].isotropic!=FULLISOTROPIC)) ||
 	(cov->isotropic==ANISOTROPIC) ||
 	((cov->isotropic==SPACEISOTROPIC) && (s->ce_dim==1))
@@ -758,11 +760,12 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     if ((key->Time) && no_last_comp && (cov->isotropic!=FULLISOTROPIC)) {
       error = ERRORWITHOUTTIME; goto ErrorHandling;} // braucht's net falls
     // GetDim und Trans2nogrid die dimensionen belassen!!
- 
+    
     if (cov->check!=NULL)
       error=cov->check(param[v], s->timespacedim, method);
     if (error && (error!=ERRORCOVNUMERICAL || method!=TBM2 || !TBM2NUMERIC))
       goto ErrorHandling;
+
     param[v][TBM2NUM] =
       (double) ((error && cov->implemented[TBM2] >= IMPLEMENTED) ||
 		(cov->implemented[TBM2]==NUM_APPROX && TBM2NUMERIC));

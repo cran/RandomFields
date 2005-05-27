@@ -31,14 +31,14 @@ Locator(n, type="n", info=NULL, ...)
   the value of \code{action} set by \command{\link{useraction}},
   see there for more information.
 
-  See also \code{\link[graphics]{locator}} for further information on
+  See also \command{\link[graphics]{locator}} for further information on
   the parameters.
 }
 \seealso{
-  \code{\link{getactions}},
-  \code{\link{Readline}},
-  \code{\link{useraction}},
-  \code{\link{userinput}}
+  \command{\link{getactions}},
+  \command{\link{Readline}},
+  \command{\link{useraction}},
+  \command{\link{userinput}}
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}

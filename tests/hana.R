@@ -1,12 +1,8 @@
 ## check, hana
 
-## library(RandomFields, lib="~/TMP")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
-
-if (file.exists("source.R")) source("source.R")
-
-x <- 1:1000
-x <-  c(0, 1, 0.001)
+x <-  c(0, 1, if (EXTENDED.TESTING) 0.001 else 0.05)
 model <- "fractalB"
 param <- c(0,1,0,1, 1.70)
 RFparameters(Storing=FALSE, Print=5)
