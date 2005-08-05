@@ -3,6 +3,7 @@
 ## R --no-save < RFtest.all.R
 # source("RFtest.all.R")
 
+
 if (file.exists(f <- "RFtest.R")) source(f) else
 if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
 
@@ -86,8 +87,7 @@ if (!is.null(ps))  {histo <- FALSE}  ## Da R CMD check die Variable `ps' nicht
 if (histo) {X11(); X11();}         ## wird X11() nicht mehr aufgerufen
 RFparameters(Storing=TRUE,PrintLevel=PrintLevel,
              TBM2.lines=6/5*lines,TBM2.linesimufactor=0,TBM2.linesimustep=0.01,
-             TBM3D2.lines=lines,TBM3D2.linesimufactor=0,TBM3D2.linesimustep=0.01,
-             TBM3D3.lines=lines,TBM3D3.linesimufactor=0,TBM3D3.linesimustep=0.01,
+             TBM3.lines=lines,TBM3.linesimufactor=0,TBM3.linesimustep=0.01,
              spectral.lines=lines)
 
 ENVIR <- environment()
@@ -194,7 +194,7 @@ for (i in 1:repeatscript) {
                 field=fieldsize,endof=endofbins,numberb=numberbins,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
-
+    
     for (model in largemodels) {
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,

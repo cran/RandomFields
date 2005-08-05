@@ -35,7 +35,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
   }
 
   
-  op.list <- c("+", "*")
+  op.list <- c("+", "*", "(")
   Mean <- 0
   if (missing.trend <- missing(trend)) trend <- NULL
   if (missing(method)) method <- NULL
@@ -74,7 +74,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
     else {
       op <- pmatch(c(model[seq(2, length(model), 2)], recursive=TRUE),
                    op.list, dup=TRUE) - 1
-      if (!all(is.finite(op))) STOP("operators are not all know")
+      if (!all(is.finite(op))) STOP("operators are not all known")
     }
     ## note: model is now reduced!
     model <- model[seq(1, length(model), 2)]
@@ -281,7 +281,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
             !is.null(l$timespacedim)
             )
   PrintLevel <-  RFparameters()$Print
-  op.list <- c("+","*")
+  op.list <- c("+", "*", "(")
   Allowed <- rep(FALSE, 3)
   Allowed[pmatch(allowed, c("standard","nested","list"))] <- TRUE 
   nugget.nr <- .C("GetModelNr", "nugget", as.integer(1), nr=integer(1),

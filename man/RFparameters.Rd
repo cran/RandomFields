@@ -86,7 +86,7 @@
       divers values of technical parameters like
       \code{CE.force}, \code{CE.mmin}, etc. the parameter \code{Storing} must be
       \code{FALSE}.  See also last paragraphs in the Details.
-      Default: \code{TRUE} [init, do].
+      Default: \code{FALSE} [init, do].
     }
     \item{\code{stationary.only}}{Logical or NA. Used for the automatic
       choice of methods. See also \link{RFMethods}.
@@ -101,7 +101,22 @@
 	\item \code{NA}: the simulation of the Brownian motion allowed,
 	but intrinsic embedding is not used for stationary random fields.
       }
-      Default: \code{NA} [init].}        
+      Default: \code{NA} [init].}
+    \item{\code{exactness}}{logical or NA.
+      \itemize{
+	\item \code{TRUE}: add.MPP, hyperplanes and
+	all turning bands methods are excluded.
+	If the circulant embedding method is considered as badly
+	behaved, then the matrix decomposition methods are preferred.
+	\item \code{FALSE}: if the circulant embedding method is
+	considered as badly behaved or the number of points to be
+	simulated is large, the turning bands methods are
+	rather preferred.
+	\item \code{NA}: approximative non-exact methods are excluded,
+	i.e. TBM2 if the Abel transform of the covariance function
+	cannot be given explicitely.
+      }
+    }
   }
   %
 
@@ -113,21 +128,23 @@
       (\code{CE.force==TRUE}) after \code{CE.trials} number of trials. 
       Default: \code{FALSE} [init].
     }
-    \item{\code{CE.mmin}}{Scalar or vector. 
+    \item{\code{CE.mmin}}{Scalar or vector, usually integer.
       Circulant embedding usually uses the smallest matrix
       possible; by \code{CE.mmin} the minimum number of rows and columns
-      of the matrix are given.  If \code{CE.mmin>=0} then the minimum
-      absolute size is given.\cr
-      If \code{CE.mmin<0} then the follow holds.
-      If \code{CE.userfft==FALSE} then the matrix
-      has \code{-CE.mmin} times the size of the size of the smallest
-      matrix.  If \code{CE.userfft==TRUE} then the matrix
-      has \code{max(-CE.mmin/2,1)} times the size of the size of the smallest
-      matrix.  Default: \code{0} [init].}    
+      of the matrix are given. If \code{CE.mmin=0} the minimal starting size is
+      determined automatically according to the
+	dimensions of the grid.
+      If \code{CE.mmin>0} then the absolute starting size is given
+      If \code{CE.mmin<0} then the minimal matrix size is is multiplied
+      by \code{CE.mmin}; here \code{CE.mmin} must be smaller than -1; the
+	value -1 takes over the minimal starting size.\cr
+      Note: in any cases, the starting size might be increase according
+      to \code{CE.useprimes}.\cr
+      Default: \code{0} [init].} 
     \item{\code{CE.strategy}}{0 : if matrix has negative eigenvalues then the
       size in each direction is doubled; \cr 1 : the size is enhanced only in
       one direction, namely that where the covariance function has the
-      largest value at the end point of the grid - note that
+      largest value at the end point of the grid --- note that
       the default value of \code{CE.trials} is probably too small
       in that case. \cr Default: \code{0}
       [init].}
@@ -154,11 +171,41 @@
       eigenvalues, the simulation method fails if \code{CE.force==FALSE}. 
       Default: \code{3} [init].
     }
-    \item{\code{CE.userfft}}{Logical.  If \code{FALSE}
+    \item{\code{CE.useprimes}}{Logical.  If \code{FALSE}
       the columns of the circulant matrix
       have length \eqn{2^k} for some \eqn{k}.  Otherwise the algorithm
       tries to find a nicely factorizable number close to the size of the
-      given matrix.  Default: \code{FALSE}  [init].}
+      given matrix.  Default: \code{TRUE}  [init].}
+  }
+
+  \bold{Options for simulating with the local circulant embedding
+    methods (cutoff, intrinsic)}\cr
+  \describe{
+    \item{\code{local.force}}{see CE.force above.
+      Default: \code{FALSE} [init].
+    }
+    \item{\code{local.mmin}}{see CE.mmin above.
+      Here the determination of the minimal starting size for
+      \code{local.mmin=0} is in general
+      larger than the size for circulant embedding and is chosen such
+      that for theotical reasons, the matrix must be positive definite
+      if quadratic grid. So, if quadratic grid,  \code{local.trials=1}
+      should be always fine.
+      If \code{local.mmin==-1} the usual strategy of circulant embedding
+      (doubling the grid sizes) is taken over.
+      Default: \code{0} [init].}    
+    \item{\code{local.strategy}}{see CE.strategy above.
+      Default: \code{0} [init].}
+    \item{\code{local.maxmem}}{see CE.maxmem above.
+      Default: \code{20000000} [init].}
+    \item{\code{local.tolIm}}{see CE.tolIm above.
+      Default: \code{1E-7} [init].}
+    \item{\code{local.tolRe}}{see CE.tolRe above.
+      Default: \code{-1E-9} [init].}
+    \item{\code{local.trials}}{see CE.trials above.  
+      Default: \code{1} [init].}
+    \item{\code{local.useprimes}}{see CE.useprimes above.
+      Default: \code{TRUE} [init].}
   }
   %
   \bold{Options for simulating with the local circulant embedding methods}\cr
@@ -232,16 +279,38 @@
       is larger than \code{direct.maxvariables}.
       Default: \code{"circulant embedding"} [init].
     }
+    \item{\code{TBM.center}}{Scalar or vector.
+      If not \code{NA}, the \code{TBM.center} is used as the center of
+      the turning bands. Otherwise the center is determined
+      automatically such that the line length is minimal.
+      See also \code{TBM.points} and example below.
+      Default: \code{NA}  [init].
+    }
+    \item{\code{TBM.points}}{integer. If greater than 0,
+      it gives the number of points simulated on the TBM line, hence
+      must be greater than the minimal number of points given by
+      the size of the simulated field and the two paramters
+      \code{TBM2/3.linesimufactor} and \code{TBM2/3.linesimustep}.
+      If \code{TBM.points} is not positive the number of points is
+      determined automatically.
+      The use of \code{TBM.center} and \code{TBM.points} is highlighted
+      in an example below.
+      Default: \code{0}  [init].
+      }
     \item{\code{TBM2.every}}{If \code{TBM2.every>0} then every
       \code{TBM2.every}th iteration is announced.
       Default: \code{0} [do].}
     \item{\code{TBM2.lines}}{Ordinary 2-dimensional turning bands method. 
       Number of lines used. 
       Default: \code{60} [do].}
-    \item{\code{TBM2.linesimufactor}}{Either \code{TBM2.linesimufactor} or
-      \code{TBM2.linesimustep} must be greater than zero.  The parameter
-      that is zero is ignored.  The grid on the line is
-      \code{TBM2.linesimufactor}-times
+    \item{\code{TBM2.linesimufactor}}{If \code{TBM2.linesimufactor} and
+      \code{TBM2.linesimustep} must be non-negative; if
+      \code{TBM2.linesimustep}
+      is positive then \code{TBM2.linesimufactor} is ignored.
+      If both
+      parameters are naught then TBM.POINTS is used (and must be
+      positive).
+      The grid on the line is \code{TBM2.linesimufactor}-times
       finer than the smallest distance. 
       See also \code{TBM2.linesimustep}. 
       Default: \code{2.0} [init].}
@@ -257,37 +326,18 @@
       2-dimensional simulation that have an analytic representation on
       the line.
       Default: \code{TRUE} [init].}
-    \item{\code{TBM3D2.every}}{If \code{TBM3D2.every>0} then every
-      \code{TBM3D2.every}th iteration is announced.
+    \item{\code{TBM3.every}}{If \code{TBM3.every>0} then every
+      \code{TBM3.every}th iteration is announced.
       Default: \code{0} [do].}
-    \item{\code{TBM3D2.lines}}{Ordinary 3-dimensional turning bands method,
-      simulation of a \emph{2-dimensional} field. 
-      Number of lines used. 
-      Default: \code{500} [do].}
-    \item{\code{TBM3D2.linesimufactor}}{Either \code{TBM3D2.linesimufactor} or
-      \code{TBM2.linesimustep} must be greater than zero.  The parameter
-      that is zero is ignored.  The grid on the line is
-      \code{TBM3D2.linesimufactor}-times
-      smaller than the smallest distance. See also \code{TBM3D2.linesimustep}. 
-      Default: \code{2.0} [init].}
-    \item{\code{TBM3D2.linesimustep}}{The grid on the line has lag
-      \code{TBM3D2.linesimustep}.  See also \code{TBM3D2.linesimufactor}. 
-      Default: \code{0.0} [init].}
-    \item{\code{TBM3D3.every}}{If \code{TBM3D3.every>0} then every
-      \code{TBM3D3.every}th iteration is announced.
-      Default: \code{0} [do].}
-    \item{\code{TBM3D3.lines}}{Ordinary 3-dimensional turning bands method,
+    \item{\code{TBM3.lines}}{Ordinary 3-dimensional turning bands method,
       simulation of a \emph{3-dimensional field}. 
       Number of lines used. 
       Default: \code{500} [do].}
-    \item{\code{TBM3D3.linesimufactor}}{Either \code{TBM3D3.linesimufactor} or
-      \code{TBM2.linesimustep} must be greater than zero.  The parameter
-      that is zero is ignored.  The grid on the line is
-      \code{TBM3D3.linesimufactor}-times smaller than the smallest
-      distance.  See also \code{TBM3D3.linesimustep}.
+    \item{\code{TBM3.linesimufactor}}{See \code{TBM2.linesimufactor} for
+      the meaning.
       Default: \code{2.0} [init].}
-    \item{\code{TBM3D3.linesimustep}}{The grid on the line has lag
-      \code{TBM3D3.linesimustep}.  See also \code{TBM3D3.linesimufactor}. 
+    \item{\code{TBM3.linesimustep}}{See 
+      \code{TBM2.linesimustep} for the meaning.   
       Default: \code{0.0} [init].}
     \item{\code{TBMCE.force}}{Ordinary TBM methods. This
       parameter corresponds to \code{CE.force} and is used when
@@ -305,8 +355,9 @@
       to \code{CE.tolRe}. Default: \code{-1E-7} [init].}
     \item{\code{TBMCE.trials}}{Ordinary TBM methods.  This parameter corresponds
       to \code{CE.trials}.  Default: \code{3} [init].}
-    \item{\code{TBMCE.userfft}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.userfft}.  Default: \code{TRUE} [init].}
+    \item{\code{TBMCE.useprimes}}{Ordinary TBM methods.  This parameter
+      corresponds
+      to \code{CE.useprimes}.  Default: \code{TRUE} [init].}
   }
   %
 
@@ -465,5 +516,68 @@
 \examples{
  RFparameters(Storing=TRUE)
  str(RFparameters())
+
+
+############################################################
+##                                                        ##
+##       use of TBM.points and TBM.center                 ##
+##                                                        ##
+############################################################
+## The following example shows that the same realisation      
+## can be obtained on different grid geometries (or point     
+## configurations) using TBM3 (or TBM2)
+                                             
+% library(RandomFields, lib="~/TMP")
+
+x1 <- seq(-150,150,1)
+y1 <- seq(-15, 15, 1)
+x2 <- seq(-50, 50, 1)
+model <- "exponential"
+param <- c(0, 1, 0, 10)
+
+meth <- "TBM3"
+###### simulation of a random field on long thing stripe
+runif(1)
+rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
+DeleteAllRegisters()
+z1 <- GaussRF(x1, y1, model=model, param=param, grid=TRUE, register=1,
+              method=meth, TBM.center=0)
+% str(GetRegisterInfo(1))
+get(getOption("device"))(height=1.55, width=12)
+par(mar=c(2.2, 2.2, 0.1, 0.1))
+image(x1, y1, z1, col=rainbow(100))
+polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
+
+
+###### definition of a random field on a square of smaller diagonal
+assign(".Random.seed", rs, envir=.GlobalEnv)
+z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=2,
+              method=meth, TBM.center=0,
+              TBM.points=length(GetRegisterInfo(1)$method[[1]]$mem$l))
+% str(GetRegisterInfo(2))
+get(getOption("device"))(height=4.3, width=4.3)
+par(mar=c(2.2, 2.2, 0.1, 0.1))
+image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
+polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
+
+
+############################################################
+##                                                        ##
+##                   use of exactness                     ##
+##                                                        ##  
+############################################################
+x <- seq(0, 1, 1/24)
+model <- list(list(model="stable", var=1, scale=1, kappa=1.0),
+              "+",
+              list(model="gencauchy", var=1, scale=1, kappa=c(1, 2)),
+              )
+
+for (exactness in c(NA, FALSE, TRUE)) { 
+  readline(paste("\n\nexactness: ", exactness, "; press return"))
+   z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+                model=model, n=1, exactness=exactness,
+                stationary.only=NA, Print=4,
+                TBM2.linesimustep=1)
+ }
 }
 \keyword{spatial}

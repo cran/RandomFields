@@ -25,12 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include <assert.h>
-
 #include "RFsimu.h"
-
-#ifndef MATHLIB_STANDALONE
-#include <R_ext/Applic.h>
-#endif
+#include <R_ext/Linpack.h>
 
 
 #define CHECK if (0)  
@@ -40,6 +36,7 @@ double DIRECTGAUSS_PRECISION=1E-11;
 bool DIRECTGAUSS_CHECKPRECISION=false;
 int DIRECTGAUSS_BESTVARIABLES=600; // see RFsimu.h
 int DIRECTGAUSS_MAXVARIABLES=1800; // see RFsimu.h
+
 
 void direct_destruct(void ** S)
 {
@@ -57,8 +54,7 @@ void SetParamDirectGauss(int *action,int *method,int *checkprecision,
 			 double *requiredprecision, int *bestvariables,
 			 int *maxvariables)
 {
-  switch (*action) {
-  case 0 :
+  if (*action) {
     if ((*method<0) || (*method>=(int) NoFurtherInversionMethod)){
       PRINTF("inversion method out of range; ignored\n");
     }
@@ -77,25 +73,14 @@ void SetParamDirectGauss(int *action,int *method,int *checkprecision,
      PRINTF("Warning! Non positive value for precision. Algorithm will probably fail.");
    DIRECTGAUSS_BESTVARIABLES=*bestvariables;
    DIRECTGAUSS_MAXVARIABLES=*maxvariables;
-   break;
-  case 1 :
+  } else {
     *method = (int) DIRECTGAUSS_INVERSIONMETHOD;
     *checkprecision = (int) DIRECTGAUSS_CHECKPRECISION;
     *requiredprecision = DIRECTGAUSS_PRECISION;
     *bestvariables = DIRECTGAUSS_BESTVARIABLES;
     *maxvariables = DIRECTGAUSS_MAXVARIABLES;
-    if (GetNotPrint) break;
-  case 2 : 
-     PRINTF("\nDirect matrix inversion\n=======================\ninversion method=%d\nbest number of variables %d\nmaximum number of variables %d\ncheck precision? %d\n",
-	    DIRECTGAUSS_INVERSIONMETHOD, DIRECTGAUSS_BESTVARIABLES,
-	    DIRECTGAUSS_MAXVARIABLES, DIRECTGAUSS_CHECKPRECISION);
-    if (DIRECTGAUSS_CHECKPRECISION) {
-      PRINTF("\nprecision=%e(works only with Cholesky up to now)",
-	     DIRECTGAUSS_PRECISION);}
-   break;
-  default : PRINTF(" unknown action\n"); 
   }
-}
+}  
 
 
 int CHOLpreciseenough(double *COV, double *U,long nrow) 
@@ -120,177 +105,172 @@ int CHOLpreciseenough(double *COV, double *U,long nrow)
 }
 
 
-double *CCOV;
-int nn;
 
-void getCov(int *n, double *COV) {
-  assert(false); // for debugging only
-  int i;
-  if (*n==0) { *n=nn; return;}
-  for (i=0; i<*n * *n; i++) COV[i]=CCOV[i];
-}
+int init_directGauss(key_type *key, int m) 
+{
+  long Xerror=NOERROR, totpnts, i;
+  double *xx[MAXDIM], *G, *COV, *U, *V, *e, *D;
+  int d, 
+      dim=key->timespacedim;
+  bool freexx=false;
+  direct_storage* S;
+  methodvalue_type *meth; 
 
-int internal_init_directGauss(direct_storage **S, bool grid,
-			      int spatialdim, bool Time, double** x, int* length,
-			      int totpnts, double *T, CovFctType CovFct,
-			      int *covnr, int *op, param_type param,
-			      int actcov, bool anisotropy) {
-  double *G,*COV,*U,*V,*e,*D;
-  double *xx[MAXDIM];
-  long d,i,j,k,halfn, Xerror, job=11,segment;
-  bool freexx;
-  InversionMethod method;
-  int timespacedim;
-
-  timespacedim = spatialdim + (int) Time;
-  G=COV=U=V=e=D=NULL;// necessary!
-  freexx = false; // should xx[i] be freed (this is the case if key->grid==TRUE 
-  //                 and no eror has occured 
-
-  if ((*S = (direct_storage*) malloc(sizeof(direct_storage)))==0){
-    Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }
-  (*S)->U = (*S)->G = NULL;
-
-  if ((COV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
-    Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
+  G=COV=U=V=e=D=NULL;
+  S=NULL;
+  for (d=0; d<dim; d++) xx[d]=NULL;
+  meth = &(key->meth[m]);
+  SET_DESTRUCT(direct_destruct, m);
+  totpnts = key->totalpoints;
+  if (totpnts>DIRECTGAUSS_MAXVARIABLES) {
+     if (GENERAL_PRINTLEVEL>3)
+	 PRINTF("cur. points=%d, max points=%d", 
+	    (int) totpnts, (int) DIRECTGAUSS_MAXVARIABLES);
+   Xerror=ERRORMETHODNOTALLOWED; goto ErrorHandling;
   }
 
-//////////////////////////
-//  if ((CCOV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
-//    Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
-//  }
-//  nn = totpnts;
-//////////////////////////
+  Xerror=ERRORMEMORYALLOCATION;  
+  if ((COV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+    goto ErrorHandling;
+  if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+      goto ErrorHandling;
+  //for SVD/Chol intermediate results AND  memory space for do_directGauss:
+  if ((G = (double *)  malloc(sizeof(double) * (totpnts + 1)))==NULL)
+      goto ErrorHandling;
+  if ((meth->S = malloc(sizeof(direct_storage))) == NULL)
+    goto ErrorHandling;
+  S = (direct_storage*) meth->S;
+  S->U = S->G = NULL;
 
-  /* calculate covariance matrix */
-  if (grid) {
+  if ((Xerror = FirstCheck_Cov(key, m, true)) !=NOERROR) goto ErrorHandling;
+
+  /* ************************* */
+  /* create matrix of explicit */
+  /*       x-coordinates       */
+  /* ************************* */
+  if (key->grid) {
     int index[MAXDIM];
-    double *yy[MAXDIM];
-    double p[MAXDIM];
-    for(d=0; d<timespacedim; d++) {
-      xx[d]=NULL;
-      yy[d]=x[d];
-    }
-    freexx = true;
-    
+    double step[MAXDIM], p[MAXDIM];
+     
     // generate all the grid coordinates exlicitely!
-    for (i=0; i<timespacedim; i++) { 
-      if ((xx[i]=(double*) malloc(sizeof(double)* totpnts))==NULL){
-	Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+    freexx = true;
+    for (d=0; d<dim; d++) xx[d] = NULL;
+    for (d=0; d<dim; d++) {
+      if ((xx[d]=(double*) malloc(sizeof(double) * totpnts)) == NULL) {
+	  Xerror=ERRORMEMORYALLOCATION;  goto ErrorHandling;
       }
+      xx[d][0] = p[d] = 0.0;
+      index[d]=0;
+      step[d]=key->x[d][XSTEP];
     }
-    for (d=0; d<timespacedim; d++) {index[d]=0; xx[d][0]=p[d]=0.0;} 
     // intialisation of index and p, and defining x[d][i=0]
     // index preciser than the real coordinate values (which are created in p[])
     // index only used to compare with length*
     for (i=1; i<totpnts; i++) {
-      d=0;  //d=timespacedim-1; if x should run the slowest;
-      index[d]++; 
-      p[d]+=yy[d][XSTEP];
-      while (index[d]>=length[d]) { 
-	index[d]=0; p[d]=0.0; 
+      d = 0;  //d=dim-1; if x should run the slowest;
+      (index[d])++; 
+      p[d] += step[d];
+      while (index[d] >= key->length[d]) { 
+	index[d]=0; 
+	p[d]=0.0; 
 	d++;   // d--;
-	assert(d<timespacedim); // assert(d>=0);
-	index[d]++; p[d]+=yy[d][XSTEP];
+	assert(d<dim); // assert(d>=0);
+	(index[d])++; 
+	p[d] += step[d];
       }
-      for (d=0; d<timespacedim; d++) {xx[d][i]=p[d];}
+      for (d=0; d<dim; d++) 
+	xx[d][i] = p[d];
     }
   } else { // no grid
-    int t; 
-    if (Time) {
-      int endfor;
-      double time;
-      for(d=0; d<=timespacedim; d++) xx[d]=NULL;
+    if (key->Time) {
+      int endfor, t, spatialdim, j;
+      double time, step;
       freexx = true;
-      for (i=0; i<timespacedim; i++) { 
-	if ((xx[i]=(double*) malloc(sizeof(double)* totpnts))==NULL){
-	  Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
-	}
+      spatialdim = key->spatialdim;
+      for (d=0; d<dim; d++) { 
+	if ((xx[d]=(double*) malloc(sizeof(double)* totpnts))==NULL)
+	    goto ErrorHandling;
       }
-      endfor = length[spatialdim]; 
-      for (t=0, i=0,time=T[XSTART]; t<endfor; t++, time+=T[XSTEP]) 
-	for (j=0; j<length[0]; j++,i++) {
-	  for (d=0; d<spatialdim; d++) xx[d][i]=x[d][j];
+      endfor = key->length[spatialdim]; 
+      step = key->T[XSTEP];
+      for (t=0, i=0, time=key->T[XSTART]; t<endfor; t++, time += step) 
+	for (j=0; j < key->length[0]; j++, i++) {
+	  for (d=0; d<spatialdim; d++) xx[d][i]=key->x[d][j];
 	  xx[spatialdim][i] = time;
 	}
     } else { 
-      for (d=0; d<spatialdim; d++) xx[d]=x[d];
+      freexx = false;
+      for (i=0; i<dim; i++) xx[i] = key->x[i];
     }
   }
 
+
+  /* ********************* */
+  /* matrix creation part  */
+  /* ********************* */
+  long j, k, segment;
+  int actcov, row, err;
+  InversionMethod method;
+
+  actcov = meth->actcov;
   k = 0;
-  for (i=0;i<totpnts;i++) {
+  for (i=0; i<totpnts; i++) {
     double y[MAXDIM];
     k += i;
-    for (segment=i* totpnts+i,j=i;j<totpnts;j++) {
-      for (d=0; d<timespacedim; d++) {
-	y[d]=xx[d][i] - xx[d][j];
-      }
-      COV[k]=COV[segment] = CovFct(y, timespacedim, covnr, op, param, 
-				   actcov, anisotropy);
-      k++;
+    for (segment=i* totpnts+i, j=i; j<totpnts; j++) {
+      for (d=0; d<dim; d++) 
+	y[d] = xx[d][i] - xx[d][j];
+      COV[k++] = COV[segment] = 
+	  key->covFct(y, dim, key->cov, meth->covlist, actcov, key->anisotropy);
       segment += totpnts;
     }
   }
 
-  if (freexx) {for (i=0; i<timespacedim; i++) {free(xx[i]); xx[i]=NULL;}}
-  if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
-    Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }
+  /* ********************* */
+  /* matrix inversion part */
+  /* ********************* */
   method = DIRECTGAUSS_INVERSIONMETHOD;
-  //for SVD intermediate results, and memory space for do_directGauss:
-  halfn=(totpnts/2)*2;  if (halfn<totpnts) { halfn += 2;}
-  if ((G = (double *)  malloc(sizeof(double) * halfn))==NULL){
-    Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  } 
-
-  Xerror = 1;
   switch (method) {
-      case Cholesky :  
+      case Cholesky :
+	int choljob;
+	choljob = 0;
 	if (GENERAL_PRINTLEVEL>=3) PRINTF("method=Cholesky\n");
-	{ 
-	  int row,err; row=totpnts;
-	  F77_CALL(chol)(COV,&row,&row,U,&err);
-	  Xerror = err;
-	}
+	row=totpnts;
+	// dchdc destroys the input matrix; upper half of U contains result!
+	memcpy(U, COV, sizeof(double) * row * row);
+	F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
+	Xerror = err < row;
 	if (Xerror==NOERROR) {
-	  if ((DIRECTGAUSS_CHECKPRECISION) && !CHOLpreciseenough(COV,U,totpnts)) {
+	  if ((DIRECTGAUSS_CHECKPRECISION) && 
+	      !CHOLpreciseenough(COV, U, totpnts)){
 	    Xerror=ERRORPRECISION;
 	  }
 	} else Xerror=ERRORDECOMPOSITION;
 	if (Xerror==NOERROR) break;
-	else if (GENERAL_PRINTLEVEL>=1)
-	  PRINTF("Error code F77_CALL(chol) = %d\n",Xerror);
+	else if (GENERAL_PRINTLEVEL>=2)
+	  PRINTF("Error code F77_CALL(chol) = %d\n", err);
 
-	// try next method :
+	// try next method : 
+	// most common error: singular matrix 
 	
       case SVD :
-
-///////////////////////////
-// {
-//   long t2;
-//   t2 = totpnts * totpnts;
-//   for (i=0; i<t2; i++) CCOV[i]=COV[i];
-// }
-
+        int jobint; 
+	jobint = 11;
 	method = SVD; // necessary if the value of method has been Cholesky.
 	//               originally
 	if (GENERAL_PRINTLEVEL>=3) PRINTF("method=SVD\n");
-	if ((V =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL){
-	  Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
-	}
-	if ((D =(double *) malloc(sizeof(double) * totpnts))==NULL){
-	  Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
-	}
-	if ((e = (double *) malloc(sizeof(double) * totpnts))==NULL){
-	  Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;
-	}
-	{ 
-	  int row,err,jobint; row=totpnts; jobint=job;
-	  F77_CALL(dsvdc)(COV,&row,&row,&row,D,e,U,&row,V,&row,G,&jobint,&err);
-	  Xerror = err;
-	}
+	Xerror=ERRORMEMORYALLOCATION;
+	if ((V =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+	    goto ErrorHandling;
+	if ((D =(double *) malloc(sizeof(double) * totpnts))==NULL)
+	    goto ErrorHandling;
+	if ((e = (double *) malloc(sizeof(double) * totpnts))==NULL)
+	    goto ErrorHandling;
+	row=totpnts;
+        // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
+	F77_NAME(dsvdc)(COV, &row, &row, &row, D, e ,U, &row, V, &row, G,
+			&jobint, &err);
+	Xerror = err;
 	if (Xerror!=NOERROR) {
 	  if (GENERAL_PRINTLEVEL>1) 
 	    PRINTF("Error code F77_CALL(dsvdc) = %d\n",Xerror); 
@@ -315,10 +295,7 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 	  PRINTF("total asymmetry U/V: sum=%f, max=%f\n", dev, max); 
 	  PRINTF("\n D max=%f, D min=%f \n", D[0], D[totpnts-1]);
 	}
-	
-	free(e); e=NULL; free(V); V=NULL; // here free(COV) is already possible; 
-	//                                  for debugging reasons it is postponed
-	
+		
 	/* calculate SQRT of covariance matrix */
 	for (k=0,j=0;j<totpnts;j++) {
 	  register double dummy;
@@ -327,170 +304,73 @@ int internal_init_directGauss(direct_storage **S, bool grid,
 	    U[k++] *= dummy;
 	  }
 	}
-	
 	break;
+
 	default : assert(false);
   } // switch
 
-  if (Xerror!=NOERROR) { goto ErrorHandling; }  
+  if (Xerror!=NOERROR) { goto ErrorHandling; }
+
+  
+  S->U=U;
+  S->method=method;
+  S->G=G;
   free(COV);
-  ((direct_storage*)*S)->U=U;
-  ((direct_storage*)*S)->method=method;
-  ((direct_storage*)*S)->G=G;
   if (D!=NULL) free(D);
   if (e!=NULL) free(e);
-  if (V!=NULL) free(V);
-  if (freexx) 
-    for (i=0; i<timespacedim; i++) if (xx[i]!=NULL) free(xx[i]);
+  if (V!=NULL) free(V);  
+  if (freexx) for (i=0; i<dim; i++) {free(xx[i]);}
   return NOERROR;
-  
-  ErrorHandling:
-  if (*S!=NULL) free(*S);
-  *S = NULL;
-  if (COV!=NULL) free(COV);
-  if (freexx) 
-    for (i=0; i<timespacedim; i++) if (xx[i]!=NULL) free(xx[i]);
+
+ ErrorHandling: 
+  if (freexx)
+      for (i=0; i<dim; i++) if (xx[i] != NULL) free(xx[i]);
   if (U!=NULL) free(U); 
-  if (D!=NULL) free(D);
   if (G!=NULL) free(G); 
+  if (COV!=NULL) free(COV);
+  if (D!=NULL) free(D);
   if (e!=NULL) free(e);
   if (V!=NULL) free(V);
   return Xerror;
-}  
-
-
-int init_directGauss(key_type *key, int m) 
-{
-  param_type param;
-  long Xerror=NOERROR;
-  int multiply[MAXCOV], covnr[MAXCOV];
-  unsigned short int actcov;
-
-  SET_DESTRUCT(direct_destruct);
-  // FIRSTCHECK_COV(Direct,cov,param); // multiply, covnr, actcov defined
-  if ((Xerror = FirstCheck_Cov(key, Direct, param, false,
-			      covnr, multiply, &actcov)) != NOERROR)
-    goto ErrorHandling;
-  
-  { 
-    int v, timespacedim, start_param[MAXDIM], index_dim[MAXDIM];
-    bool no_last_comp;
-    cov_fct *cov;
-    for (v=0; v<actcov; v++) {
-      GetTrueDim(key->anisotropy, key->timespacedim, param[v],
-		 &timespacedim, &no_last_comp, start_param, index_dim);
-      cov = &(CovList[covnr[v]]);
-      if ((key->Time) && no_last_comp && (cov->isotropic==SPACEISOTROPIC))
-	{ Xerror= ERRORWITHOUTTIME; goto ErrorHandling;}
-      else if ((cov->check!=NULL) &&
-	       ((Xerror=cov->check(param[v], timespacedim, Direct)))!=NOERROR)
-	goto ErrorHandling;
-    }
-  }
-
-  if (key->totalpoints>DIRECTGAUSS_MAXVARIABLES) {
-    Xerror=ERRORMETHODNOTALLOWED; goto ErrorHandling;
-  }
-  return(internal_init_directGauss((direct_storage**) (&(key->S[m])),  
-				   key->grid, key->spatialdim, key->Time, 
-				   key->x, key->length, key->totalpoints,
-				   key->T, CovFct,
-				   covnr, multiply, param, actcov,
-				   key->anisotropy)); 
- ErrorHandling: 
-  return Xerror;
 }
 
-
-void internal_do_directGauss(direct_storage *S, bool add, long totpnts, 
-			     double *res) {
-  long i,j,k;
-  double *G,*U;  
-
-  U = S->U;// S^{1/2}
-  G = S->G;// only the memory space is of interest (stored to avoid 
-  //          allocation errors here)
-  for (i=0; i<totpnts; i++) G[i]=GAUSS_RANDOM(1.0);
-#define RESULT(OP)\
-  switch (S->method) {\
-  case Cholesky :\
-    for (k=0,i=0; i<totpnts; i++,k+=totpnts){\
-      register double dummy;\
-      dummy =0.0;\
-      for (j=0;j<=i;j++){\
-	dummy += G[j] * U[j+k];\
-      }\
-      res[i] OP (double) dummy;\
-    }\
-    break;\
-  case SVD :\
-    for (i=0;i<totpnts;i++){\
-      register double dummy;\
-      dummy =0;\
-      for (j=0,k=i;j<totpnts;j++,k+=totpnts){\
-	dummy += U[k] * G[j];\
-      }\
-      res[i] OP (double) dummy;\
-    }\
-    break;\
-  default : assert(false);\
-  }
-  
-  if (add) {RESULT(+=)} else {RESULT(=)}
-}
-
-
-void do_directGauss(key_type *key, bool add, int m, double *res) 
+void do_directGauss(key_type *key, int m, double *res) 
 {  
-  assert(key->active);
-  internal_do_directGauss(((direct_storage*) key->S[m]), add, key->totalpoints, 
-			  res);
-}
-
-
-void XXinternal_do_directGauss(direct_storage *S, bool add, long totpnts, 
-			     double *res) {
-  long i,j,k;
+  direct_storage *S;
+  long totpnts, i,j,k;
   double *G,*U;  
 
-
-  printf("XX %d \n", (int) totpnts);
+  assert(key->active);
+  S = (direct_storage*) key->meth[m].S;
+  totpnts = key->totalpoints;
 
   U = S->U;// S^{1/2}
   G = S->G;// only the memory space is of interest (stored to avoid 
   //          allocation errors here)
+  for (i=0; i<totpnts; i++) G[i] = GAUSS_RANDOM(1.0);
 
-  printf("X\n");
-  for (i=0; i<totpnts; i++) G[i]=GAUSS_RANDOM(1.0);
-  printf("sXX\n");
-
-#define XRESULT(OP)\
-  switch (S->method) {\
-  case Cholesky :\
-  printf("sXX\n");\
-    for (k=0,i=0; i<totpnts; i++,k+=totpnts){\
-      register double dummy;\
-      dummy =0.0;\
-      for (j=0;j<=i;j++){\
-  	dummy += G[j] * U[j+k];\
-      }\
-     res[i] OP (double) dummy;\
-    }\
-    break;\
-  case SVD :\
-    for (i=0;i<totpnts;i++){\
-      register double dummy;\
-      dummy =0;\
-      for (j=0,k=i;j<totpnts;j++,k+=totpnts){\
-	dummy += U[k] * G[j];\
-      }\
-      res[i] OP (double) dummy;\
-    }\
-    break;\
-  default : assert(false);\
+  switch (S->method) {
+  case Cholesky :
+    for (k=0, i=0; i<totpnts; i++, k+=totpnts){
+      register double dummy;
+      dummy =0.0;
+      for (j=0; j<=i; j++){
+	dummy += G[j] * U[j+k];
+      }
+      res[i] += dummy; 
+    }
+    break;
+  case SVD :
+    for (i=0; i<totpnts; i++){
+      register double dummy;
+      dummy = 0.0;
+      for (j=0, k=i; j<totpnts; j++, k+=totpnts){
+	dummy += U[k] * G[j];
+      }
+      res[i] += dummy; 
+    }
+    break;
+  default : assert(false);
   }
-  
-  if (add) {XRESULT(+=)} else {XRESULT(=)}
 }
-
 

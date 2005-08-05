@@ -207,8 +207,10 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
             eval(parse(text=.set.default))
             eval(parse(text=paste(names(.e), "<- .e$", names(.e))))
             eval(parse(text=.simu.txt), envir=environment())
+          } else {
+            print(.e$val)
+            eval(parse(text=.e$val))
           }
-          else eval(parse(text=.e$val))
         }
         show.parameters()
         next
@@ -226,7 +228,7 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
           if (is.logical(.e$val)) .newvalue <- as.logical(.newvalue) else
           if (is.function(.e$val)) .newvalue <- as.numeric(.newvalue) else
           if (is.character(.e$val)) .newvalue <- as.integer(.newvalue)
-          eval(parse(text=paste(variable, "$", .e$var, "<-.newvalue")))
+          eval(parse(text=paste(variable, "$", .e$var, "<- .newvalue")))
         }
       } else {
         if (is.character(.e$val)) {
@@ -250,8 +252,10 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
       .zaehler <- .zaehler + 1
       eval(parse(text=paste(variable, "$.history[[.zaehler]] <- ",
                    "list(.length -.j, .evar, .newvalue)")))
-      
-      if (update && !.noupdate) {
+
+      str(.e)
+      if ((is.null(.e$update) && update && !.noupdate) ||
+          (!is.null(.e$update) && .e$update)) {
         screen(dev)
         eval(parse(text=.set.default))
         eval(parse(text=paste(names(.e), "<- .e$", names(.e))))

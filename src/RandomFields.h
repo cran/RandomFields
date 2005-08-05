@@ -13,12 +13,15 @@ EXTERN void niceFFTnumber(int *n);
 
 EXTERN void RNGtest();
 
-EXTERN void GetParameterIndices(int *variance, int *scale, int *kappa, 
-				int *lastkappa, int *invscale, int aniso);
 EXTERN void GetrfParameters(int *covmaxchar, int *methodmaxchar,
 			    int *distrmaxchar,
 			    int *covnr, int *methodnr, int *distrnr,
 			    int *maxdim, int *maxmodels);
+EXTERN void GetParamterPos(int *variance, int *kappa, int* lastkappa, 
+		    int *tbm2num, int *hyperinternal, int *lasthyperinternal,
+		    int *scale, int *aniso, int *hypernr, int *localdiameter,
+		    int *local_r, int *cutoff_theo_r, int *hyperkappa,
+		    int *total);
 EXTERN void GetModelNr(char **name, int *n, int *nr) ; /* transforms string "covfct" 
 						into covnr of CovList */
 EXTERN void GetModelName(int *nr,char **name) ; /* transforms covnr into string */
@@ -48,6 +51,10 @@ EXTERN void printKEY(int *keyNr);
 #define NATSCALE_MLE 3 /* check fitvario when changing !! */
 EXTERN void GetNaturalScaling(int *covnr, double *q,  /* KAPPAS only  !! */
 			      int *naturalscaling, double *natscale, int *error);
+EXTERN void CheckAndCompleteParameters(int *covnr, double *p, int *np, 
+				       int *dim, /* timespacedim ! */
+				       int *ncov, int *anisotropy, int *op,
+				       double *q, int* error);
 EXTERN void Covariance(double *x,int *lx,int *covnr,double *p, int *np, 
 		       int *logicaldim, int *xdim, 
 		       int *ncov,  int *anisotropy, int *op, double *result); 
@@ -82,20 +89,26 @@ EXTERN void VariogramNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 
 // SetParam****: 
 //         action: 0:set; 1:get; 2:print
-EXTERN void SetParamDecision( int *action, int *stationary_only, int *exactness);
+EXTERN void SetParamDecision( int *action, int *stationary_only, 
+			      int *exactness);
 EXTERN void SetParamSpectral(int *action,int *nLines, int *grid);
 EXTERN void SetParamDirectGauss(int *action,int *method,int *checkprecision,
 				double *requiredprecision, int *bestvariables,
 				int *maxvariables);
 
 // simulation procedure
-EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe, double *tolIm,
+EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe, 
+			      double *tolIm,
 			      int *trials, 
-			      int *mmin, /* vector of length MAXDIM */
+			      double *mmin, /* vector of length MAXDIM */
 			      int *userfft, int *strategy, double*maxmem);
 
 // for local circulant embedding
-EXTERN void SetParamLocal( int *action, double *cutoff_a, double *intrinsic_r);
+EXTERN void SetParamLocal( int *action, int *force, double *tolRe, 
+			   double *tolIm,
+			   int *trials, double *mmin, int *useprimes, 
+			   int *strategy,
+			   double *maxmem);
 
 // either linesimufactor or linesimustep is used; linesimufactor is used 
 // if linesimustep <= 0.0
@@ -107,19 +120,15 @@ EXTERN void SetParamLocal( int *action, double *cutoff_a, double *intrinsic_r);
 // ?RFparameters, in R, http://www.R-project.org/
 EXTERN void SetParamTBM2(int *action, int *nLines, double *linesimufactor, 
 			 double *linesimustep, int *every, int *tbm2num);
-// for simulation of 2dim RF by 3dim TBM:
-EXTERN void SetParamTBM3D2(int *action, int *nLines, double *linesimufactor, 
-			   double *linesimustep, int *every); 
-EXTERN void SetParamTBM3D3(int *action, int *nLines, double *linesimufactor, 
+EXTERN void SetParamTBM3(int *action, int *nLines, double *linesimufactor, 
 			   double *linesimustep, int *every);
 // for simulation of line by circular embedding
 EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
 			  int *trials, 
-			  int *mmin, /* vector of length MAXDIM */ 
+			  double *mmin, /* vector of length MAXDIM */ 
 			  int *userfft, int *strategy, double*maxmem); 
-EXTERN void SetParamTBM(int *action,int *tbm_method);
-EXTERN void pokeTBM(int *out, int *in, int *err);
-// hyperplane
+EXTERN void SetParamTBM(int *action,int *tbm_method, double *center, 
+			int *points);
 EXTERN void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
 			       int *normalise, int *mar_distr, 
 			       double *mar_param);

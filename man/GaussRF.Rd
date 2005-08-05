@@ -63,10 +63,11 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     must be vectors of ascending values
   }
   \item{paired}{
-    logical. If \code{TRUE} then every second simulation is obtained by
-    only changing the signs of the standard Gaussian random variables,
-    on which the
-    simulation is based. (\dQuote{Antithetic pairs}.)
+    logical. If \code{TRUE} then the second half of the simulations is
+    obtained by
+    only changing the signs of all the standard Gaussian random variables,
+    on which the first half of the 
+    simulations is based. (\dQuote{Antithetic pairs}.)
   }
   \item{...}{\command{\link{RFparameters}} that are locally used only.}
 }
@@ -345,23 +346,76 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
  #############################################################
  ##                                                         ##
+ ##     Example how the cutoff method can be set            ##
+ ##        explicitly using hyper models                    ##
+ ##                                                         ##
+ #############################################################
+
+## NOTE: this feature is still in an experimental stage
+##       which has not been yet tested intensively;
+## further: parameters and algorithms may change in
+##       future.
+
+% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
+## simuation of the stable model using the cutoff method
+RFparameters(Print=8, Storing=FALSE)
+x <- seq(0, 1, 1/24)
+model1 <- list( list(model="stable", var=1, scale=1, kappa=1.0) )
+rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
+z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+             model=model1, n=1, meth="cutoff", Storing=TRUE)
+dim <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$dim
+%str(GetRegisterInfo(), vec=15)
+
+## simulation of the same random field using the circulant
+## embedding method and defining the hypermodel explicitely
+model2 <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, sqrt(2), 1)),
+              "(",
+              list(model="stable", var=1, scale=1, kappa=1.0)
+              )
+assign(".Random.seed", rs, envir=.GlobalEnv)
+z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+             model=model2, n=1, meth="circulant", CE.mmin=dim)
+%str(GetRegisterInfo(), vec=15)
+print(range(z1-z2)) ## essentially no difference between the fields!
+
+
+ #############################################################
+ ##                                                         ##
+ ##      Example of a 2d random field based on              ##
+ ##      covariance functions valid in 1d only              ##
+ ##                                                         ##
+ #############################################################
+
+x <- seq(0, 10, 1/10)
+model <- list(list(model="fractgauss", var=1, kappa=0.5,
+                   aniso=c(1, 0, 0, 0)),
+              "*",
+              list(model="fractgauss", var=1, kappa=0.5,
+                   aniso=c(0, 0, 0, 1)))
+z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE, model=model)
+image(x, x, z)
+
+
+ #############################################################
+ ##                                                         ##
  ##                    Brownian motion                      ##
- ##                  using Stein's method                   ##
+ ##                (using Stein's method)                   ##
  ##                                                         ##  
  #############################################################
- # 2d
- step <- 0.3  ## nicer, but also time consuming if step <- 0.1
- x <- seq(0, 10, step)
- kappa <- 1   # in [0,2)
- z <- GaussRF(x=x, y=x, grid=TRUE, model="fractalB",
-              param=c(0,1,0,1,kappa))
- image(z,zlim=c(-3,3))
+# 2d
+step <- 0.3  ## nicer, but also time consuming if step <- 0.1
+x <- seq(0, 10, step)
+kappa <- 1   # in [0,2)
+z <- GaussRF(x=x, y=x, grid=TRUE, model="fractalB",
+             param=c(0,1,0,1,kappa))
+image(z,zlim=c(-3,3))
 
- # 3d
- x <- seq(0, 3, step)
- kappa <- 1   # in [0,2)
- z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="fractalB",
-              param=c(0,1,0,1,kappa))
+# 3d
+x <- seq(0, 3, step)
+kappa <- 1   # in [0,2)
+z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="fractalB",
+             param=c(0,1,0,1,kappa)) 
 rl <- function() if (interactive()) readline("Press return")
 for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
@@ -373,25 +427,25 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  ## embedding method, the speed is doubled in the second    ##
  ## simulation.                                             ##  
  #############################################################
- DeleteAllRegisters()
- RFparameters(Storing=TRUE,PrintLevel=1)
- y <- x <- seq(0, 50, 0.2)
- (p <- c(runif(3), runif(1)+1))
- ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
+
+DeleteAllRegisters()
+RFparameters(Storing=TRUE,PrintLevel=1)
+y <- x <- seq(0, 50, 0.2)
+(p <- c(runif(3), runif(1)+1))
+ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
                               method="circ", param=p))
- image(x, y, f)
- hist(f)
- c( mean(as.vector(f)), var(as.vector(f)) )
- cat("system time (first call)", format(ut,dig=3),"\n")
+image(x, y, f)
+hist(f)
+c( mean(as.vector(f)), var(as.vector(f)) )
+cat("system time (first call)", format(ut,dig=3),"\n")
 
- # second call with the *same* parameters is much faster:
- ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
+# second call with the *same* parameters is much faster:
+ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
                               method="circ",param=p)) 
- image(x, y, f)
- hist(f)
- c( mean(as.vector(f)), var(as.vector(f)) )
- cat("system time (second call)", format(ut,dig=3),"\n")
-
+image(x, y, f)
+hist(f)
+c( mean(as.vector(f)), var(as.vector(f)) )
+cat("system time (second call)", format(ut,dig=3),"\n")
 
 
 %##############################################################

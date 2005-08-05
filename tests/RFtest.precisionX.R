@@ -29,12 +29,12 @@ setparameters <- function(n.sf) {
   prnt <- c(1, 6) # >6 gives too much output
   trials <- c(3, 6)
   RFparameters(TBM2.linesimufactor=sf[n.sf],
-               TBM3D2.linesimufactor=sf[n.sf],
+               TBM3.linesimufactor=sf[n.sf],
                TBMCE.force=TRUE,
                TBMCE.trials=trials[n.sf],
                TBM2.lines=120,#120,
                CE.trials=trials[n.sf],
-               TBM3D3.linesimufactor=sf[n.sf], pch="#", 
+               TBM3.linesimufactor=sf[n.sf], pch="#", 
                Print=prnt[n.sf], Storing=TRUE, TBM.method="di",
                direct.method=0)
 }

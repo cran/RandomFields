@@ -4,6 +4,7 @@
 \alias{convert.to.readable}
 \alias{plotWithCircles}
 \alias{GetDistributionNames}
+\alias{paramextract}
 \title{Internal functions -- do not use them directly}
 \description{
   \code{CheckXT} checks whether the coordinates of the data and related
@@ -22,6 +23,10 @@
 
   \code{GetDistributionNames} returns the names of the currently
   available marginal distributions of the random fields
+
+  \code{paramextract} extracts for some models some parameters
+  from an internal parameter list
+
 }
 \usage{
 CheckXT(x, y, z, T, grid, gridtriple)
@@ -30,6 +35,7 @@ convert.to.readable(l, allowed=c("standard", "nested", "list"))
 plotWithCircles(data, factor=1.0, xlim=range(data[,1])+c(-maxr,maxr),
                 ylim=range(data[,2])+c(-maxr,maxr),col=1, fill=0, ...)
 GetDistributionNames()
+paramextract(p, model=c("cutoff"))
 }
 \arguments{
   \item{x}{\code{x} coordinates}
@@ -60,6 +66,10 @@ GetDistributionNames()
   \item{col}{border colour of circles}
   \item{fill}{filling colour of circles}
   \item{...}{further graphical parameters}
+  \item{p}{internal parameter list; e.g. the columns of
+    \command{\link{CheckAndComplete}}\code{(...)$param}.
+  }
+  \item{model}{the name of a covariance model.}
 }
 \details{
   \code{convert.to.readable} is roughly speaking the inverse function to

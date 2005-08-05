@@ -7,7 +7,7 @@
   of a random field
 }
 \usage{
-GetRegisterInfo(register, ignore.active = FALSE)
+GetRegisterInfo(register=0, ignore.active = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

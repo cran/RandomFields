@@ -146,7 +146,7 @@ void simpleKriging2(double *tgiven, double *x, double *data, double *invcov,
       sigma2[i] -= lambda[j] * cov[j];
     }
     if (sigma2[i] < 0) {
-      printf("%e", sigma2[i]);
+	// printf("%e", sigma2[i]);
       assert(sigma2[i] > KRIGE_TOLERANCE);
       sigma2[i] = 0.0;
     }
@@ -267,7 +267,7 @@ void ordinaryKriging2(double *tgiven, double *x, double *data, double *invcov,
     sigma2[i] = var;
     for (j=0; j<nnP1; j++) sigma2[i] -= lambda[j] * cov[j];
     if (sigma2[i] < 0) {
-      printf("%e", sigma2[i]);
+	// printf("%e", sigma2[i]);
       assert(sigma2[i] > KRIGE_TOLERANCE);
       sigma2[i] = 0.0;
     }

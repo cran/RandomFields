@@ -1,3 +1,4 @@
 #PKG_CFLAGS = -O2 -Wall -pedantic -g
-#PKG_CXXFLAGS = -O2 -Wall -pedantic -g
+#
+PKG_CXXFLAGS = -g
 #PKG_FFLAGS = -O2 -Wall -pedantic -g

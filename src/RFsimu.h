@@ -1,4 +1,3 @@
-
 #ifndef RFsimu_H
 #define RFsimu_H 1
 
@@ -32,10 +31,10 @@
    3 dim: CircEmbed, TBM3, Direct
    the method actually used is stored in actually_used. 
 */ 
-#define MAXERRORSTRING 100
 #define MAXKEYS 10
 #define MAXNRCOVFCTS 30
-#define GetNotPrint 1 /* if parameters are questionned, then also printed if =0 */
+#define MAXERRORSTRING 100 + MAXNRCOVFCTS * (COVMAXCHAR+1)
+
 // Error codes & messages
 // positive values are error codes
 // negative values are messages
@@ -117,9 +116,20 @@
 #define ERRORMETHODEXCLUDED 43  /* method explicitely excluded by other 
 				   parameter; here: stationary_only=TRUE */
 #define ERROROUTOFMETHODLIST 44 /* no further method we can try is available */
-				 
-#define NOERROR_REPEAT 50
-#define NOERROR_ENDOFLIST 51
+#define ERRORTBMCENTER 45       /* given values for TBM center contain NAs */
+#define ERRORTBMPOINTS 46       /* given number of points is too small */
+#define ERRORHYPERNR 47         /* no of announced submodels invalid */
+#define ERRORHYPERMETHOD 48         /* no of announced submodels invalid */
+#define ERRORHYPERNOTALLOWED 49 /* most methods do not allow for hypermodels 
+				   yet */
+#define ERRORNCOVOUTOFRANGE 50 /* number of cov. functions not in 0/1..MAXDIM*/
+#define ERRORPARENTHESIS 51    /* parenthesis as operator iff isohypermodel */
+#define ERRORMSG 52    /* parenthesis as operator iff isohypermodel */
+#define ERRORTBMPOINTSZERO 53  /* linesimustep and linesimufactor are zero 
+				   and TBM_POINTS<4*/
+
+#define NOERROR_REPEAT 97
+#define NOERROR_ENDOFLIST 98
 
 #define ERRORDUMMY 99            /* no error, only for tracing purposes */
 
@@ -128,14 +138,19 @@
 #define ERRORTREND 103           /* extremes: no trend allowed */
 
 #define ERRORVARMEAN 201         /* Poisson distr.: mean<>variance */
-#define ERRORPOKETBMdim 300     /* mixing of two initialisations for TBM not 
-				    allowed: dimensions differ */
-#define ERRORPOKETBMmeth 301     /* methods differ */
-#define ERRORPOKETBMparam 302     /* model parameters differ -- 
-				     not extensively tested */
-
 /* do not use numbers 800 -- 900 : reserved to MPP package */
 
+// messages and strategies for local methods
+// ENDOFLIST also used for any kind of error appearing in getparam
+// never change order of the message numbers up to ENDOFLIST
+#define MSGLOCAL_OK 300
+#define MSGLOCAL_NUMOK 301
+#define MSGLOCAL_JUSTTRY 302
+#define MSGLOCAL_ENDOFLIST 303
+#define MSGLOCAL_SIGNPHI 304
+#define MSGLOCAL_SIGNPHIFST 305
+#define MSGLOCAL_SIGNPHISND 306
+#define MSGLOCAL_INITINTRINSIC 307
 #define ERRORTRIVIAL 998        /* tbm does not allow that the matrix `a' of 
                                    a product matrix are all zero
 				 */ 
@@ -152,109 +167,94 @@
 #define KAPPAVI    6
 #define KAPPAVII   7
 #define LASTKAPPA  KAPPAVII
-#define SCALE      8
-#define INVSCALE   9 /* always SCALE + 1 */
-#define ANISO      8
-#define TIMEINVSCALE 8 /* used in tbm3, where invscale and timeinvscale 
-			  are used */
-#define DIAMETER ANISO + MAXDIM * MAXDIM /* usually the diameter of the field
-					 in scale units -- used in local
-					 circulant embedding */
-#define TBM2NUM DIAMETER /* numerical evaluation for TBM2 ? */
-#define TOTAL_PARAM 1 + LASTKAPPA + MAXDIM * MAXDIM + 1 /* 25 */
+#define TBM2NUM          LASTKAPPA + 1
+#define HYPERINTERNALI   LASTKAPPA + 2
+#define HYPERINTERNALII  LASTKAPPA + 3
+#define HYPERINTERNALIII LASTKAPPA + 4
+#define HYPERINTERNALIV  LASTKAPPA + 5
+#define LASTHYPERINTERNAL HYPERINTERNALIV
+#define SCALE LASTHYPERINTERNAL + 1
+#define ANISO SCALE
+#define TOTAL_PARAM ANISO + MAXDIM * MAXDIM
 /*  LASTKAPPA + MAXDIM^2 + 1
-    check CheckCovariance, InitSimulateRF (both C & R), 
-    and, hyperbolic, TBM3hyperbolic, twodimfractalbrownian 
+    if major changings check CheckAndBuildCov, InitSimulateRF (both C & R), 
+    hyperbolic, TBM3hyperbolic, twodimfractalbrownian 
     R if changed! */
+// for GetTrueDim and Transform2NoGrid
 
+#define HYPERNR KAPPAI
+#define DIAMETER KAPPAII
+#define HYPERKAPPAI KAPPAIII
+#define HYPERKAPPAII KAPPAIV
+#define HYPERKAPPAIII KAPPAV
+#define LASTHYPERKAPPA LASTKAPPA
 
 // parameters used in local cov fcts
-#define LOCAL_R 0
+#define LOCAL_R HYPERINTERNALI
+#define CUTOFF_B HYPERINTERNALII
+#define CUTOFF_ASQRTR HYPERINTERNALIII
+#define CUTOFF_THEOR HYPERINTERNALIV
+#define INTRINSIC_A0 HYPERINTERNALII
+#define INTRINSIC_A2 HYPERINTERNALIII
+#define INTRINSIC_B HYPERINTERNALIV
 
-#define CUTOFF_R LOCAL_R
-#define CUTOFF_A 1
-#define CUTOFF_B 2
-
-#define INTRINSIC_R LOCAL_R
-#define INTRINSIC_A0 1
-#define INTRINSIC_A2 2
-#define INTRINSIC_B 3
-
-#define TOTAL_LOCALPARAM 3+1 //see INTRINSIC_B
-
-typedef enum local_strategy_type
-{
-  // Do NOT change the ordering as they have relative priorities used in overall_strategy
-  // in RFcircembed.cc
-
-  // TheoGuaranteed, JustTry and UserSpecified are used in cutoff
-  // TheoGuaranteed, NumeGuaranteed, SearchR, and UserSpecified are used in intrinsic
-
-  TheoGuaranteed,       /*  parameters are 
-                            within the range of analytical results, so the
-                            covariance matrix (with the specified R(intrinsic) or a(cutoff)) 
-                            is ensured to be nonnegative definite */
-  JustTry,              /*  used in cutoff, when alpha>1 */
-  NumeGuaranteed,        /*  parameters are 
-                            within the range of numerical results, so the
-                            covariance matrix (with the specified R) 
-                            is believed to be nonnegative definite */
-  SearchR,               /* parameters are 
-                            outside the range of both analytical and numerical results,
-                            so we'll try several possible values of R */
-  UserSpecified,
-
-  // below are only for communications between functions
-  // like in the case of alpha<= 0.5 in cutoff
-
-  TellMeTheStrategy,
-  CallMeAgain,
-  IncreaseCutoffA
-} local_strategy_type;
+#define CUTOFF_A HYPERKAPPAI
+#define INTRINSIC_RAWR HYPERKAPPAI
 
 
-typedef enum EmbedType
-{
-  Standard, 
-  Cutoff, 
-  Intrinsic
-} EmbedType;
+#define INFDIM 9999
 
-typedef local_strategy_type (*IntrinsicStrategyFct)(double *, double, int, 
-						    double *);
-typedef local_strategy_type (*CutoffStrategyFct)(double *, double*, 
-						 local_strategy_type);
 
 #define XSTART 0
 #define XEND   1
 #define XSTEP  2
+#define XSTARTDIM1 XSTART 
+#define XENDDIM1 XEND 
+#define XSTEPDIM1 XSTEP
+#define XSTARTDIM2 XSTART+3
+#define XENDDIM2 XEND+3
+#define XSTEPDIM2 XSTEP+3
+#define XSTARTDIM3 XSTART+6
+#define XENDDIM3 XEND+6
+#define XSTEPDIM3 XSTEP+6
+#define XSTARTDIM4 XSTART+9
+#define XENDDIM4 XEND+9
+#define XSTEPDIM4 XSTEP+9
+extern int XSTARTD[MAXDIM], XENDD[MAXDIM], XSTEPD[MAXDIM];
 
-#define ANISOTROPIC 0
+// type of covariance functions that need distinguished treatment
+#define FULLISOTROPIC 0
 #define SPACEISOTROPIC 1
-#define FULLISOTROPIC 2
+#define ANISOTROPIC 2
+#define ISOHYPERMODEL 3
 
 // way of implementing simulation methods:
 #define NOT_IMPLEMENTED 0 /* do not change this value except to false */
 #define IMPLEMENTED 1     /* do not change this value except to true */
 #define NUM_APPROX 2 
-#define GIVEN_METH_IGNORED -1
+#define GIVEN_METH_IGNORED 3
+#define HYPERIMPLEMENTED 4
 
+#define nErrorLoc 100
 extern int currentNrCov;
-extern char ERRORSTRING_OK[MAXERRORSTRING],ERRORSTRING_WRONG[MAXERRORSTRING];
+extern char ERRORSTRING_OK[MAXERRORSTRING],ERRORSTRING_WRONG[MAXERRORSTRING],
+    ERROR_LOC[nErrorLoc];
 typedef struct cov_fct;
 extern cov_fct *CovList;
+extern int GENERALISEDCAUCHY, STABLE, WHITTLEMATERN, BROWNIAN;
 
 typedef enum InversionMethod { Cholesky, SVD, NoFurtherInversionMethod } 
 InversionMethod;
 
-typedef double param_type[MAXCOV][TOTAL_PARAM];
-typedef double local_param_type[MAXCOV][TOTAL_LOCALPARAM]; 
+typedef double param_type[TOTAL_PARAM];
+typedef double param_type_array[MAXCOV][TOTAL_PARAM];
 
 extern char METHODNAMES[][METHODMAXCHAR];
 extern char DISTRNAMES[][DISTRMAXCHAR];
-extern char OP_SIGN[][2];
+extern char OP_SIGN[][3];
 typedef enum SimulationType {
-  /* never change the ordering -- at least check with "compatible" */
+  /* never change the ordering -- at least check with "compatible" and 
+     InternalGetKeyInfo*/
   CircEmbed,     /* Circulant embedding -- must always be the first one! */
   CircEmbedCutoff,
   CircEmbedIntrinsic,
@@ -270,8 +270,11 @@ typedef enum SimulationType {
 		    simulation Gaussian random fields
 		 */
   MaxMpp,
+  ExtremalGauss,
   Forbidden      /* must always be the last one */
 } SimulationType; 
+typedef SimulationType LocalType;
+
 // #define SimulationTypeLength 13
 #define SimulationTypeLength ((int) Forbidden) - 1
 
@@ -286,72 +289,96 @@ typedef enum action_type{Store,Storing,UseOldOne,NoAction} action_type;
 // by the specific init_procedures is stored
 
 typedef void (*destructor)(void **);
-typedef struct key_type {
-  bool 
-  storing, /* value of GENERAL_STORING at initialisation time */
-    grid,  /* simulation on a grid ? */
-    active,   /* has the init_procedure been called successfully? */
-    anisotropy; /* is it an isotropic covariance function ? */
-  //   nuggetincluded; /* is the method (see below) able to simulate an additive
-  //		       nugget effect? */
-  SimulationType method[MAXCOV], 
-                         /* the current method (out of SimulationsType) which 
-			    is tried at the moment or which has been 
-			    successfully initialized */
-    tbm_method;  /* if method==tbm2/3, then the method for the line is 
-			    specified, this method can only be chosen by the 
-			    programmer of the covariance functions, not by the 
-			    user (except by global settings)!
-			    maybe, a search algorithm among all 1-dim 
-			    simulation methods should be implemented, in case 
-			    the programmers specification fails
-			 */
-  double *x[MAXDIM];       /* the coordinates */
-  param_type param;      /* parameters */
-  int totalparam;
-  void *S[MAXCOV];       /* pointer to intermediate results;
+typedef double aniso_type[MAXDIM * MAXDIM];
+typedef struct covinfo_type {
+  SimulationType method;
+  /* the current method (out of SimulationsType) which 
+     is tried at the moment or which has been 
+     successfully initialized */
+  int truetimespacedim,
+    nr, /* number of the covariance function in CovList; 
+	   obtained by function GetCovFunction */
+    op; /* operator after the specified covariance function */
+  bool genuine_time_component, /* i.e. time component indicated and at least
+				  one component of aniso is different from 0;
+				  extra treating and not within aniso (where
+				  time component is not reduced then) necessary
+				  for SPACEISOTROPIC covriance functions */
+    simugrid, /* can the simulation technically be performed on a grid ?*/
+    left;        /* left to be considered in the simulation
+		    initialisations ! */ 
+    double *x; // this pointer may only be used for the coordinates
+    // transformed by Transform2NoGrid; since this operation is time and 
+    // memory consuming but not needed by all methods, it is performed only
+    // when needed, but then kept for the next method if the calling 
+    // method fails
+  aniso_type aniso;
+  param_type param;
+} covinfo_type;
+typedef covinfo_type covinfo_arraytype[MAXCOV];
+typedef int covlist_type[MAXCOV];
+typedef struct methodvalue_type {
+  void *S;       /* pointer to intermediate results;
 			    delicate : either ==NULL or should be a genuine 
 			               pointer !
 			    no hanging pointers allowed!
 			 */ 
-  destructor destruct[MAXCOV];  
+  destructor destruct;  
                         /* function called to delete intermediate results */
-  void *SExtremes;      /* pointer to intermediate results, second type,
-			   like extremes -- not used yet */
-  destructor destructExtremes;  
-  int op[MAXCOV],
-    covnr[MAXCOV],     /* number of the covariance function in CovList; 
-			    obtained by function GetCovFunction */
-    lx,                  /* number of elements in *x[0][] */
-    length[MAXDIM], /* only if grid==true: number of pixels of each 
-				direction */
-    spatialdim;                 /* spatial dimension of RF */
+  SimulationType unimeth;
+  bool unimeth_alreadyInUse;
+  int actcov;
+  covlist_type covlist;  
+} methodvalue_type;
+typedef methodvalue_type methodvalue_arraytype[MAXCOV];
+typedef double (*CovFctType)(double *, int, covinfo_arraytype,
+			       covlist_type covlist, int, bool);
+typedef struct key_type {
+  bool active,   /* has the init_procedure been called successfully? */
+    anisotropy, /* is it an isotropic covariance function ? */
+    compatible,     // determines whether simulation result must be stored
+    //                 in an intermediate storage since partial results cannot
+    //                 be added directly
+    grid,  /* simulation on a grid required ? */
+    storing, /* value of GENERAL_STORING at initialisation time */
+    Time;             /* is a time component given ? */
+  
+  int distribution,
+    ncov,             /* number of covariance function actually used */
+    timespacedim,      /* total dimension, including time and space */
+    totalparam, 
+    length[MAXDIM], /* grid==true: number of pixels of each direction 
+		       grid==false: length[0]=number of spatial points in total
+		     */
+    spatialdim,
+    NML[MAXCOV], IML[MAXCOV], /* NML: number of considered methods: 
+				 IML: array index for current method */ 
+    lTrendFct, // only used for storing -- used in R
+    lLinTrend, // only used for storing -- used in R
+    TrendModus;                 /* spatial dimension of RF */
+  unsigned char n_unimeth;
+  char *TrendFunction; // only used for storing -- used in R
   long spatialtotalpoints,
     totalpoints;      /* number of pixels in total;
 			    == lx if grid==false
 			    == lengthx * lengthy * lengthz if grid==true
 			 */
-  //  int naturalscaling;
-  int distribution,
-    ncov,             /* number of covariance function actually used */
-    timespacedim;      /* total dimension, including time and space */
-  bool Time,             /* is a time component given ? */
-    left[MAXCOV];        /* left to be considered in the simulation
-			    initialisations ! */
-  double T[3];             /* gridtriple definition for the time components */
+
+  double *x[MAXDIM],       /* the coordinates */
+    mean,         // only used if storagemodus=0 (see rf.R)
+    *LinearTrend, // only used for storing -- used in R
+    T[3];             /* gridtriple definition for the time components --
+			 doubled in last coordinate of *x
+		       */
   // int timelength;        /* number of points in the time direction */
-  bool compatible;     // determines whether simulation result must be stored
-  //                   in an intermediate storage since partial results cannot
-  //                   be added directly
-  SimulationType unimeth[MAXCOV];
-  bool unimeth_alreadyInUse[MAXCOV];
-  unsigned char n_unimeth;
-  double mean;         // only used if storagemodus=0 (see rf.R)
-  double *LinearTrend; // only used for storing -- used in R
-  int lLinTrend;              
-  char *TrendFunction; // only used for storing -- used in R
-  int lTrendFct;
-  int TrendModus;      // dito
+
+  CovFctType covFct; // tbm covariance function or the usual one ?
+  covinfo_arraytype cov;
+  methodvalue_arraytype meth;
+  SimulationType ML[MAXCOV][SimulationTypeLength];/* for storing the sequence 
+						     of considered  methods */ 
+  
+
 } key_type;
 
 // how a covariance function, a spectral measure, a function specifying the
@@ -368,52 +395,40 @@ typedef double (*scalefct)(double *); /* parameters, Brownian motion  */
 typedef double (*natscalefct)(double *, int); /* parameters, ; natural scaling */
 typedef int (*checkfct)(double*, int, SimulationType); /* h,parameters; covariance fct, nr. */
 typedef int (*initfct)(key_type*, int); /* h,parameters */
-typedef double (*CovFctType)(double*, int, int*, int*, param_type, int, bool);
-typedef void (*do_comp_fct)(key_type*, bool, int, double*); /* h,parameters */
+typedef void (*do_comp_fct)(key_type*, int, double*); /* h,parameters */
 typedef void (*do_incomp_fct)(key_type*, int, double*); /* h,parameters */
 typedef double (*randommeasure)(double *);     /* parameters, RANDOM */
+typedef int (*getparamfct)(covinfo_type *, param_type, int);
+typedef bool (*alternativeparamfct)(covinfo_type *, int);
+typedef int (*checkhyper)(covinfo_arraytype, covlist_type, int, SimulationType);
 
 typedef double (*mppmodel)(double *); /* point of random field */
 /* integral, integralOFsq, effectiveRadius */
 typedef struct mpp_storage;
 typedef void (*MPPRandom)(mpp_storage *s,
-			  int v,
 			  double *min, double *max,
 			  mppmodel*  /* the random function/model,
 					returned */
                           );
-typedef void (*initmppfct)(mpp_storage*, int v); /* h,parameters */
+typedef void (*initmppfct)(mpp_storage*, int dim, 
+			   param_type param); /* h,parameters */
 // how any simulation method should look like, they return the error value
-typedef int (*hyper_pp_fct)(double*, double*, int, bool, double**, double**, 
-			    double**);
+typedef int (*hyper_pp_fct)(double, double*, double*, int, bool, 
+			    double**, double**, double**);
 
-typedef struct mpp_storage{
-  // avoid the same names as in addBool_storage, RFbool.h
-  double integral[MAXCOV], integralsq[MAXCOV], integralpos[MAXCOV],
-    effectiveRadius[MAXCOV], effectivearea[MAXCOV], 
-    maxheight[MAXCOV],
-    addradius[MAXCOV];
-  double min[MAXDIM], length[MAXDIM],
-    c[MAXCOV][6]; /* local memory for diverse constants,
-	      depending on the specific model */
-  param_type param;
-  MPPRandom MppFct[MAXCOV];
-  int actcov,simuspatialdim, timespacedim;
-  bool grid;
-  double *x;
-} mpp_storage;
 
-#define TRIVIALSTARTEGY 0
+#define TRIVIALSTRATEGY 0
 #define STRATEGY_PARTIAL 1
 #define LASTSTRATEGY STRATEGY_PARTIAL
 typedef struct ce_param{
-  bool force, userfft;
+  bool force, useprimes;
   char strategy;
   double tol_re, tol_im;
   int trials;
   double maxmem;
-  int mmin[MAXDIM];
+  double mmin[MAXDIM];
 } ce_param;
+extern ce_param CIRCEMBED;
 
 #define DECISION_TRUE 1
 #define DECISION_FALSE 0
@@ -429,43 +444,37 @@ typedef struct local_user_param{
 typedef int (*generalSimuInit)(key_type*);   
 typedef void (*generalSimuMethod)(key_type*,double* ); /* key, RF, 
 								    RANDOM */
-// specification for simulation method on line for TBM2/3:
-typedef void (*simu1dim)(key_type*, int m, double* ); /* h,parameters */
 
 // here all the different method for simulating a RF of a specified covariance
 // function are stored
 typedef struct cov_fct {  
   char name[COVMAXCHAR];
-  covfct cov;                             /* CircEmbed, direct */
-  natscalefct naturalscale;
+  int kappas; /* number of parameters additional to the standard ones, 
+		 MEAN..SCALE */
+  char type;
+  infofct info;
+  bool variogram, even, odd[MAXDIM]; // even and odd not used yet, but set
+  rangefct range;
+  checkfct check;
+  checkhyper checkNinit;             
   int implemented[SimulationTypeLength];
-  // since other methods make use of other information to determine whether they 
-  // are implemented for the cov model, this bool vector is currently only used by 
-  // local circ embeds; but it also can be used by future methods
-  IntrinsicStrategyFct intrinsic_strategy;
-  CutoffStrategyFct cutoff_strategy;
+ 
+  natscalefct naturalscale;
+  covfct cov;                             /* CircEmbed, direct */
+  LocalType localtype;  
+    getparamfct getparam;
+  alternativeparamfct alternative; //getparam: guess for good local 
+    // param (cutoff, intrinsic); alternative gives alternative in a 
+    // second or third try.
 
-  isofct cov_tbm2, cov_tbm3, derivative, secondderivt; 
-  SimulationType tbm_method;
+  isofct derivative, secondderivt, cov_tbm2, cov_tbm3; // local ce and TBM 
   randommeasure spectral;       /* spectral tbm */
+
   initmppfct add_mpp_scl;
   MPPRandom add_mpp_rnd; 
   hyper_pp_fct hyperplane;      /* hyperplane tessellations */        
   generalSimuInit initother;    /* any other exotic way */
   generalSimuMethod other;      /* which may be given by a programmer */
-  infofct info;
-  /// SimulationType first[MAXDIM]; 
-  /* OBSOLETE -- replaced by method
-     the preferred method for a  specific dimension 
-     no distinction between grid/no grid -- lack! 
-  */
-  rangefct range;
-  int kappas; /* number of parameters additional to the standard ones, 
-		 MEAN..SCALE */
-  checkfct check;
-  char isotropic;
-  bool variogram, even, odd[MAXDIM];
-  //
 } cov_fct;
 
 
@@ -474,14 +483,18 @@ typedef struct cov_fct {
 extern int IncludeModel(char *name, int kappas, checkfct check,
 			int isotropic, bool variogram, infofct info,
 			rangefct range);	
+extern int IncludeHyperModel(char *name, int kappas, checkhyper check,
+			     int type, bool variogram, infofct info,
+			     rangefct range);
 extern void addSimu(int nr, 
 		    SimulationType r1,SimulationType r2,SimulationType r3);
 extern void addCov(int nr, covfct cov, isofct derivative,
 		   natscalefct naturalscale);
-extern void addLocal(int nr, IntrinsicStrategyFct intrinsic_strategy, 
-		     CutoffStrategyFct cutoff_strategy, isofct secondderivt);
+extern void addLocal(int nr, bool cutoff, isofct secondderiv, int *variable);
+extern void addInitLocal(int nr, getparamfct getparam,
+			 alternativeparamfct alternative, LocalType type);
 extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
-		   SimulationType tbm_method, randommeasure spectral);
+		   randommeasure spectral);
 extern void addOther(int nr, initmppfct add_mpp_scl, MPPRandom add_mpp_rnd, 
 		     hyper_pp_fct hyper_pp,
 		     generalSimuInit initother, generalSimuMethod other);
@@ -491,9 +504,7 @@ extern void addodd(int nr, int dim);
 */
 
 
-int FirstCheck_Cov(key_type *key, SimulationType Method, param_type param, 
-		   bool No_Multiply, int *covnr, int *multiply, 
-		   unsigned short int *actcov);
+int FirstCheck_Cov(key_type *key, int m, bool MultiplyandHyper);
 
 void ErrorMessage(SimulationType m, int error);
 void printkey(key_type *key);
@@ -504,64 +515,62 @@ extern void InitModelList();
    initiating CovList with a dozen standard covariance models
 */
 
-
-double CovFct(double *x, int dim, int *covnr, int *op, param_type param, 
-	    int ncov, bool anisotropy);
-void GetTrueDim(bool anisotropy, int timespacedim, double* param, 
-	        int *TrueDim, bool *no_last_comp,
-		int *start_param, int *index_dim);
-int Transform2NoGrid(key_type *key, double* param,  int TrueDim, 
-		     int *start_param, double **xx);
-void GetCornersOfGrid(key_type  *key, int Stimespacedim, int* start_param, 
-		      double* param, double *sxx);
-void GetCornersOfElement(key_type  *key, int Stimespacedim, int* start_param, 
-		      double* param, double *sxx);
+bool is_diag(aniso_type aniso, int dim);
+void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
+		char type, bool *Time, int *truetimespacedim, 
+		aniso_type aniso);
+double CovFct(double *x, int dim, covinfo_arraytype keycov,
+		 int covlist[MAXCOV], int ncov, bool anisotropy);
+double DerivCovFct(double *x, int dim, covinfo_arraytype keycov,
+		   covlist_type covlist, int ncov);
+double SndDerivCovFct(double *x, int dim, covinfo_arraytype keycov,
+		      covlist_type covlist, int ncov);
+double CovFctTBM2(double *x, int dim, covinfo_arraytype keycov,
+		  covlist_type covlist, int ncov, bool anisotropy);
+int Transform2NoGrid(key_type *key, int v);
+int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
+		     bool simugrid, double **x);
+void GetCornersOfElement(double *x[MAXDIM], int timespacedim,
+			 covinfo_type *cov, double *sxx);
+void GetCornersOfGrid(key_type *key, int Stimespacedim, double *aniso, 
+		      double *sxx);
 void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
 			  int Ssimuspatialdim, double *min, double *max);
-extern int eigenvalues(double *C, int dim, double *ev);
-// all simulation methods have the following structure
-// int init_foo(key_type *key): 
-//      returns errorcode
-//      This function does the most initialization settings,
-//      often time consuming and errors may occur
-//      intermediate results are stored by means the pointer key->S
-//      the function expects that key->S NULL when called
-//      the function is expected to return  key->S on error
-//      
-// void do_foo(key_type *key, double *res ) 
-//      returns the simulation result in res ;
-//      only basics checks like assert(RANDOM!=NULL);
-//      any other error may not occur, as this should be put into init_foo
-//      key_active is set to GENERAL_STORING; key->S is freed and set to NULL 
-//      if !key_active
+void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
+			  int truetimespacedim, double *x, aniso_type aniso,
+			  double *center, double *lx, double *diameter);
 
 
 // see RFspectral.cc			   
+typedef struct spectral_storage {
+  randommeasure randomAmplitude[MAXCOV];
+} spectral_storage;
 int init_simulatespectral(key_type *key, int m);
 void do_simulatespectral(key_type *key, int m, double *res );
 
 
 // see RFdirect.cc
+extern int DIRECTGAUSS_BESTVARIABLES;
+extern int DIRECTGAUSS_MAXVARIABLES;
 typedef struct direct_storage {
   InversionMethod method;
   double *U,*G;
 } direct_storage;
-extern int DIRECTGAUSS_BESTVARIABLES;
-extern int DIRECTGAUSS_MAXVARIABLES;
 int init_directGauss(key_type *key, int m);
-int internal_init_directGauss(direct_storage **S, bool grid,
-			      int spatialdim, bool Time, double** x, int* length,
-			      int totalpoints, double *T, CovFctType CovFct,
-			      int *covnr, int *op, param_type param,
-			      int actcov, bool anisotropy);
-void do_directGauss(key_type *key,  bool add, int m, double *res);
-void internal_do_directGauss(direct_storage *S, bool add, long totpnts,
-			     double *res);
-void direct_destruct(void ** S);
+void do_directGauss(key_type *key, int m, double *res);
 
 
 // see RFcircembed.cc
 typedef struct FFT_storage { double* work; int *iwork, nseg; } FFT_storage;
+typedef struct CE_storage {
+  int m[MAXDIM],halfm[MAXDIM],nn[MAXDIM],cumm[MAXDIM+1]; /* !!!! **** */  
+  double *c,*d;
+  FFT_storage FFT;
+} CE_storage;
+typedef struct localCE_storage {
+    key_type key;
+    double factor;
+} localCE_storage;
 unsigned long NiceFFTNumber(unsigned long nn);
 int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *S);
 int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
@@ -570,56 +579,83 @@ void FFT_destruct(FFT_storage *S);
 void FFT_NULL(FFT_storage *S);
 void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
 		 int *trials, 
-		 int *mmin, /* vector of length MAXDIM */
-		 int *userfft, int *strategy, double *maxmem,
+		 double *mmin, /* vector of length MAXDIM */
+		 int *useprimes, int *strategy, double *maxmem,
 		 ce_param *CE, char *name);
-int internal_init_circ_embed(double *steps, bool anisotropy, 
-			     int *covnr, int *op,
-			     param_type param, 
-			     int *nn, int *m, int *cumm, int *halfm, 
-			     int dim, int actcov,
-			     CovFctType CovFct,
-			     ce_param *cepar,
-			     FFT_storage *FFT,
-			     long *twoRealmtot,
-			     double **cc); //!
-void internal_do_circ_embed(int *nn, int *m, int *cumm, int *halfm,
-			    double *c, double *d, int Ntot, int dim,
-			    FFT_storage *FFT_heap, bool add,  double *res );
 int init_circ_embed(key_type * key, int m);
-void do_circ_embed(key_type *key, bool add, int m, double *res );
-int init_circ_embed_intrinsic(key_type * key, int m);
-void do_circ_embed_intrinsic(key_type *key, bool add, int m, double *res );
-int init_circ_embed_cutoff(key_type * key, int m);
+void do_circ_embed(key_type *key, int m, double *res);
+int init_circ_embed_local(key_type * key, int m);
+void do_circ_embed_local(key_type *key,  int m, double *res );
+#define nLocalCovList 10
+extern int LocalCovList[nLocalCovList];
+extern int nlocal;
 
 
 // see RFtbm.cc			  
+typedef struct TBM_storage {
+  double *simuline, *x, center[MAXDIM];
+  aniso_type aniso;
+  int simuspatialdim, ce_dim, truetimespacedim;
+  key_type key;
+} TBM_storage;
 int init_turningbands2(key_type *key, int m);
 int init_turningbands3(key_type *key, int m);
 void do_turningbands(key_type *key, int m, double *res );
 extern SimulationType TBM_METHOD;
+extern bool TBM2NUMERIC;
 
 
 // see RFbool.cc		
+typedef struct mpp_storage {
+  // avoid the same names as in addBool_storage, RFbool.h
+  double integral, integralsq, integralpos, effectiveRadius, effectivearea,
+      factor, maxheight, addradius, min[MAXDIM], length[MAXDIM],
+      c[6]; /* local memory for diverse constants,
+		       depending on the specific model */
+    MPPRandom MppFct;
+    int dim;
+} mpp_storage;
 int init_mpp(key_type * key, int m);
 void do_addmpp(key_type *key, int m, double *res );
 
+
 // dummy version, hyperplane
+typedef struct hyper_storage{
+  double rx[MAXDIM], center[MAXDIM], radius;
+  hyper_pp_fct hyperplane;
+} hyper_storage;
 int init_hyperplane(key_type *key, int m);
 void do_hyperplane(key_type *key, int m, double *res);
+
 
 // dummy version, Special Fcts
 int init_special(key_type *key, int m); 
 void do_special(key_type *key, int m, double *res );
 
+
 // nugget
+typedef struct nugget_storage {
+  double sqrtnugget;
+  bool simple;
+  int *pos;
+} nugget_storage;
 int init_nugget(key_type * key, int m);
-void do_nugget(key_type *key, bool add, int m, double *res );
+void do_nugget(key_type *key, int m, double *res );
+
+
+//extremes
+typedef struct extremes_storage{
+  key_type key;
+  double *rf;
+  double inv_mean_pos, assumedmax;
+} extremes_storage;
+
 
 extern int GENERAL_PRINTLEVEL;
 extern int GENERAL_NATURALSCALING;
 extern int GENERAL_STORING;
 extern double GENERAL_PRECISION;
+extern double EIGENVALUE_EPS;
 extern decision_param DECISION_PARAM;
 extern char ERRORSTRING_OK[MAXERRORSTRING];
 extern char ERRORSTRING_WRONG[MAXERRORSTRING];
@@ -633,14 +669,28 @@ extern double UNIT[MAXDIM];
 extern initfct init_method[SimulationTypeLength];
 extern do_comp_fct do_compatiblemethod[SimulationTypeLength];
 extern do_incomp_fct  do_incompatiblemethod[SimulationTypeLength];
+extern int COVLISTALL[MAXCOV];
 
 
-#define SET_DESTRUCT(A)\
+#define SET_DESTRUCT(A, m)\
   assert(key->active==false);\
-  assert((key->S[m]==NULL) && (key->destruct[m]==NULL));\
-  key->destruct[m] = A;
-void DeleteKeyTrend(key_type *key);
+  assert((key->meth[m].S==NULL) && (key->meth[m].destruct==NULL));\
+  key->meth[m].destruct = A;
 
+void DeleteKeyTrend(key_type *key);
+void DeleteKeyNotTrend(key_type *key);
+void KEY_NULL(key_type *key);
+int internal_InitSimulateRF(double *x, double *T, 
+			    int spatialdim, /* spatial dim only ! */
+			    int lx, bool grid, bool Time,
+			    int *covnr, double *ParamList, int nParam,
+			    int ncov, bool anisotropy, int *op,
+			    int *method, 
+			    int distr, /* still unused */
+			    key_type *key,
+			    bool storing, int natural_scaling,
+			    CovFctType covFct);
+int internal_DoSimulateRF(key_type *key, int nn, double *res);
 
 #endif
 

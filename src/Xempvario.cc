@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // naechste Zeile nur notwendig, weil atan2 in Windows nicht
 // ordentlich programmiert ist
-#define NEARBYINT(x)  nearbyint((x) * NEARBY) / NEARBY
+#define NEARBYINT(x)  floor((x) * NEARBY + 0.5) / NEARBY
 // #define NEARBYINT(x)  x
 
 void empvarioXT(double *X, double *T, 

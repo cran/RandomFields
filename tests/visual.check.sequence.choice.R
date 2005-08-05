@@ -8,7 +8,7 @@ RFparameters(Print=6)
 
 x <- seq(0, 1, 1/24)
 model <- list(
-              list(model="stable", var=1, scale=1, kappa=2),
+              list(model="stable", var=1, scale=1, kappa=1.6),
               "+",
               list(model="cauchy", var=1, scale=1, kappa=2)
               )

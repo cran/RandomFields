@@ -56,7 +56,7 @@ GetMethodNames()
     \item \code{intrinsic embedding}. \cr
     Modified circulant embedding so that exact simulation is garantueed
     for further \emph{variogram} models, e.g. the fractal brownian one.
-    Note that the simulated random field is always non-stationary.
+    Note that the simulated random field is always \emph{non-stationary}.
 
     Here multiplicative models are not allowed (yet).
 
@@ -232,6 +232,59 @@ GetMethodNames()
 
 \examples{
  PrintMethodList()
+
+
+############################################################
+##                                                        ##
+##                     Figure 1 in                        ##
+##           Gneiting, T., Sevcikova, H.,                 ##
+##   Percival, D.B., Schlather, M. and Jiang, Y. (2005)   ##
+##                                                        ##
+############################################################
+## the example below shows for which parameter combinations
+## of the stable model, the cutoff method works
+## note the method 'cutoff' itself has an automatic
+## selection algorithm implemented and is called with
+## the stable model only.
+\dontrun{
+
+stabletest <- function(alpha, theta, size=512) {
+  RFparameters(CE.trials=1, CE.tolIm = 1e-8, CE.tolRe=0, CE.force = FALSE,
+               CE.useprimes=TRUE, CE.strategy=0, Print=2)
+  model <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, theta, 1)),
+                "(",
+                list(model="stable", var=1, scale=1, kappa=alpha)
+                )
+  check <- CheckAndComplete(model=model, dim=2)
+  if (check$error != 0) {
+    cat("error", check$error, "\n")
+    return(NA)
+  }
+  r <- paramextract(check$param[ , 1])$cutoffr
+#  x <- c(r/size, r,  r /  size)
+  x <- c(0, r, r / (size - 1)) * theta
+  RFparameters(CE.mmin=rep(2 * size, 2))
+  return(if (InitGaussRF(x, x, grid=TRUE, gridtriple=TRUE,
+                         model=model, meth="circulant") == 0)
+         r else NA)
+}
+
+alphas <- seq(1.52, 2.0, 0.01) # 0.02
+thetas <- seq(0.05, 3.5, 0.05) #0.05( 2x)
+m <- matrix(NA, nrow=length(thetas), ncol=length(alphas))
+for (it in 1:length(thetas)) {
+  theta <- thetas[it]
+  for (ia in 1:length(alphas)) {
+    alpha <- alphas[ia]
+    cat("alpha=", alpha, "theta=", theta,"\n")
+    print(unix.time(m[it, ia] <- stabletest(alpha=alpha, theta=theta)))
+    if (is.na(m[it, ia])) break
+  }
+  if (any(is.finite(m))) image(thetas, alphas, m, col=rainbow(100))
+}
+
+} % dont run
+
 }
 \keyword{spatial}
 

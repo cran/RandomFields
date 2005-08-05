@@ -92,7 +92,6 @@ ev <- EmpiricalVariogram(pts, data=d, grid=FALSE,
 
 ## show all models,
 %source("/home/schlather/R/RF/RandomFields/R/ShowModels.R")
-RFparameters(Print=1, CE.force=TRUE, CE.trials=1, CE.userfft=TRUE)
 by.eye <- ShowModels(x=x, y=y, emp=ev, col=colour, Zlim=zlim,
                      Mean=mean(d), me="ci")
 %by.eye<-list(param=c(13.23566, 6.1301215, 2.1624282, 19.9774468, 0.5268569))
@@ -131,7 +130,7 @@ par(bg="white")
 ## what is the probability that at no point of the
 ## grid given by x and y the moisture is greater than 24 percent?
 % works well since fit$ml:nugget==0!
-RFparameters(Print=1, CE.force=FALSE, CE.trials=3, CE.userfft=TRUE)
+RFparameters(Print=1, CE.force=FALSE, CE.trials=3, CE.useprimes=TRUE)
 cs <- CondSimu("O", x=x, y=y, grid=TRUE, model=fit$ml, given=pts,
                data=d, n=10) # better n=100 or n=1000
 par(mfrow=c(2,3))

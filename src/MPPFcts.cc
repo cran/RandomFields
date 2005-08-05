@@ -48,8 +48,8 @@
 #include "RFsimu.h"
 #include "MPPFcts.h"
 
-static int mpp_dim;
-static double mpp_x[MAXDIM];
+static int MPP_DIM;
+static double MPP_X[MAXDIM];
 
 
 static double spherical_Rsq, spherical_adddist;
@@ -58,9 +58,9 @@ double spherical_model(double *y)
   double distance;
   int i;
   distance = spherical_adddist;
-  for (i=0; i<mpp_dim; i++) {
+  for (i=0; i<MPP_DIM; i++) {
     register double dummy;
-    dummy = y[i]-mpp_x[i];
+    dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   }
   if (distance>=spherical_Rsq) return 0;
@@ -77,9 +77,9 @@ double cone_model(double *y)
   double distance;
   int i;
   distance = 0.0;
-  for (i=0; i<mpp_dim; i++) {
+  for (i=0; i<MPP_DIM; i++) {
     register double dummy;
-    dummy = y[i]-mpp_x[i];
+    dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   }
   if (distance>=cone_Rsq) return 0;
@@ -87,102 +87,99 @@ double cone_model(double *y)
   return cone_b_socle + cone_a * sqrt(distance);
 }
 
-static double gauss_invscale, gauss_effectiveradiussq;
+static double gauss_effectiveradiussq;
 double gauss_model(double *y)
 {
   double distance;
   int i;
   distance = 0.0;
-  for (i=0; i<mpp_dim; i++) {
+  for (i=0; i<MPP_DIM; i++) {
     register double dummy;
-    dummy = y[i]-mpp_x[i];
+    dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   } 
   if (distance > gauss_effectiveradiussq) return 0;
-  return exp(-gauss_invscale * distance);
+  return exp(- 2.0 * distance);
 }
 
 
 #define SPHERICALRsq 1
 #define SPHERICALadddist 2
-void generalspherical_init(mpp_storage* s, int v, int balldim)
+void generalspherical_init(mpp_storage *s, int dim, param_type param,
+			   int balldim) 
 {
   int d;
   double gamma;
 
   assert(s!=NULL);
-  s -> effectiveRadius[v] = 0.5 *  s->param[v][SCALE];
-  if (s->addradius[v]<=0.0) {s->addradius[v] = s->effectiveRadius[v];}
-  s -> effectivearea [v]= 1.0;
-  for (d=0; d<s->timespacedim; d++) 
-    s->effectivearea[v] *= (s->length[d] + 2.0 * s->effectiveRadius[v]);
-  for (d=s->timespacedim; d<balldim; d++) {
-    s->effectivearea[v] *= (2.0 * s->effectiveRadius[v]);
+  s -> dim = dim;
+  s -> effectiveRadius = 0.5;
+  if (s->addradius<=0.0) {s->addradius = s->effectiveRadius;}
+  s -> effectivearea = 1.0;
+  for (d=0; d<dim; d++) 
+    s->effectivearea *= (s->length[d] + 2.0 * s->effectiveRadius);
+  for (d=dim; d<balldim; d++) {
+    s->effectivearea *= (2.0 * s->effectiveRadius);
   }   
-  gamma = gammafn(1.0+0.5*balldim);
-  s->c[v][SPHERICALRsq] = s->effectiveRadius[v] * s->effectiveRadius[v];
-  s->integral[v] = s->integralsq[v] = s->integralpos[v] =
-    pow(SQRTPI * s->effectiveRadius[v], balldim) / gamma;
-  s->maxheight[v] = 1.0;
+  gamma = gammafn(1.0 + 0.5 * balldim);
+  s->c[SPHERICALRsq] = s->effectiveRadius * s->effectiveRadius;
+  s->integral = s->integralsq = s->integralpos =
+    pow(SQRTPI * s->effectiveRadius, balldim) / gamma;
+  s->maxheight = 1.0;
+
 }
 
-void circular_init(mpp_storage *s, int v)
-{
+void circular_init(mpp_storage *s, int dim, param_type param) {
   int TRUESPACE=2;
-  generalspherical_init(s, v, TRUESPACE);
+  generalspherical_init(s, dim, param, TRUESPACE);
 }
 
-void circularMpp(mpp_storage *s, int v, double *min, double *max,
-	  mppmodel *model )
-{ 
+void circularMpp(mpp_storage *s, double *min, double *max, mppmodel *model) { 
   int TRUESPACE = 2;  
   int d;
   assert(s!=NULL);
 
-  mpp_dim = s->timespacedim;
-  spherical_Rsq = s->c[v][SPHERICALRsq];
+  MPP_DIM = s->dim;
+  spherical_Rsq = s->c[SPHERICALRsq];
   *model = spherical_model;
 
-  for (d=0; d<s->timespacedim; d++) {
-    mpp_x[d]= s->min[d] - s->addradius[v] + 
-      (s->length[d] + 2.0 * s->addradius[v]) * UNIFORM_RANDOM;
-    min[d] = mpp_x[d] - s->effectiveRadius[v];
-    max[d] = mpp_x[d] + s->effectiveRadius[v];
+  for (d=0; d<MPP_DIM; d++) {
+    MPP_X[d]= s->min[d] - s->addradius + 
+      (s->length[d] + 2.0 * s->addradius) * UNIFORM_RANDOM;
+    min[d] = MPP_X[d] - s->effectiveRadius;
+    max[d] = MPP_X[d] + s->effectiveRadius;
   }
 
   spherical_adddist = 0.0;
-  for (d=s->timespacedim; d<TRUESPACE; d++) {
+  for (d=MPP_DIM; d<TRUESPACE; d++) {
     double dummy;
-    dummy = s->effectiveRadius[v] * UNIFORM_RANDOM;
+    dummy = s->effectiveRadius * UNIFORM_RANDOM;
     spherical_adddist += dummy * dummy;
   }
 }
 
-void spherical_init(mpp_storage *s, int v)
-{
+void spherical_init(mpp_storage *s, int dim, param_type param) {
   int TRUESPACE = 3;  
-  generalspherical_init(s, v, TRUESPACE);
+  generalspherical_init(s, dim, param, TRUESPACE);
 }
 
-void sphericalMpp(mpp_storage *s, int v, double *min, double *max,
-	  mppmodel *model )
-{ 
+void sphericalMpp(mpp_storage *s, double *min, double *max, mppmodel *model) { 
   int TRUESPACE = 3;  
   int d;
-  mpp_dim = s->timespacedim;
-  spherical_Rsq = s->c[v][SPHERICALRsq];
+  MPP_DIM = s->dim;
+spherical_Rsq = s->c[SPHERICALRsq];
  *model = spherical_model;
 
-  for (d=0; d<s->timespacedim; d++) {
-    mpp_x[d]= s->min[d] - s->addradius[v] + 
-      (s->length[d] + 2.0 * s->addradius[v]) * UNIFORM_RANDOM;
-    min[d] = mpp_x[d] - s->effectiveRadius[v];
-    max[d] = mpp_x[d] + s->effectiveRadius[v];
+  for (d=0; d<MPP_DIM; d++) {
+    MPP_X[d]= s->min[d] - s->addradius + 
+      (s->length[d] + 2.0 * s->addradius) * UNIFORM_RANDOM;
+    min[d] = MPP_X[d] - s->effectiveRadius;
+    max[d] = MPP_X[d] + s->effectiveRadius;
   }
   spherical_adddist = 0.0;
-  for (d=s->timespacedim; d<TRUESPACE; d++) {
+  for (d=MPP_DIM; d<TRUESPACE; d++) {
     double dummy;
-    dummy = s->effectiveRadius[v] * UNIFORM_RANDOM;
+    dummy = s->effectiveRadius * UNIFORM_RANDOM;
     spherical_adddist += dummy * dummy;
   }
 }
@@ -192,11 +189,11 @@ void sphericalMpp(mpp_storage *s, int v, double *min, double *max,
 #define CONEHEIGHTSOCLE 3
 #define CONEA 4
 #define CONEBSOCLE 5
-void cone_init(mpp_storage *s, int v)
+void cone_init(mpp_storage *s, int dim, param_type param)
 {
   // ignoring: p[MEAN], p[NUGGET]
   // note : sqrt(p[VARIANCE]) -> height
-  //        p[SCALE]          -> R
+  //        p[scale]          -> R
   // p[KAPPAI] = r/R \in [0,1]
   // p[KAPPAII]= socle (height)
   // p[KAPPAIII]=height of cone (without socle)
@@ -206,34 +203,35 @@ void cone_init(mpp_storage *s, int v)
   int d;
   double cr,cb,CR,socle,height;
   assert(s!=NULL);
-  socle = s->param[v][KAPPAII];
-  height= s->param[v][KAPPAIII];
-  cr= 0.5 * s->param[v][KAPPAI] * s->param[v][SCALE];
-  s->c[v][CONErsq] = cr * cr;
-  CR  = 0.5 * s->param[v][SCALE];
-  s->c[v][CONERsq] = CR * CR;
-  s->c[v][CONEHEIGHTSOCLE] = socle + height;
-  s->c[v][CONEA] =  /* a = h / (r - R) */
-    height / ((s->param[v][KAPPAI] - 1.0) * 0.5* s->param[v][SCALE]);
-  cb = height / (1.0 - s->param[v][KAPPAI]); /* b = h R / (R - r) */  
-  s->c[v][CONEBSOCLE] = socle + cb;
-  switch (s->timespacedim) {
+  s->dim = dim;
+  socle = param[KAPPAII];
+  height= param[KAPPAIII];
+  cr= 0.5 * param[KAPPAI];
+  s->c[CONErsq] = cr * cr;
+  CR  = 0.5;
+  s->c[CONERsq] = CR * CR;
+  s->c[CONEHEIGHTSOCLE] = socle + height;
+  s->c[CONEA] =  /* a = h / (r - R) */
+    height / ((param[KAPPAI] - 1.0) * 0.5);
+  cb = height / (1.0 - param[KAPPAI]); /* b = h R / (R - r) */  
+  s->c[CONEBSOCLE] = socle + cb;
+  switch (dim) {
   case 2 :
     //
-    s->integral[v] = s->integralpos[v] = 
-      PI * (s->c[v][CONERsq] * socle +
+    s->integral = s->integralpos = 
+      PI * (s->c[CONERsq] * socle +
 	    0.333333333333333333 * height *
-	    (s->c[v][CONErsq] + s->c[v][CONERsq] + cr * CR));
+	    (s->c[CONErsq] + s->c[CONERsq] + cr * CR));
     //
-    s->integralsq[v] 
-      =  PI * (s->c[v][CONERsq] * socle * socle
-	       + s->c[v][CONErsq] * height * height 
-	       + 0.5 * s->c[v][CONEA] * s->c[v][CONEA] *
-	       (s->c[v][CONERsq] *  s->c[v][CONERsq] -
-		s->c[v][CONErsq] * s->c[v][CONErsq])
-	       + 1.33333333333333333 *  s->c[v][CONEA] * cb *
-	       (s->c[v][CONERsq] * CR - s->c[v][CONErsq] * cr)
-	       + cb * cb * (s->c[v][CONERsq] - s->c[v][CONErsq])
+    s->integralsq 
+      =  PI * (s->c[CONERsq] * socle * socle
+	       + s->c[CONErsq] * height * height 
+	       + 0.5 * s->c[CONEA] * s->c[CONEA] *
+	       (s->c[CONERsq] *  s->c[CONERsq] -
+		s->c[CONErsq] * s->c[CONErsq])
+	       + 1.33333333333333333 *  s->c[CONEA] * cb *
+	       (s->c[CONERsq] * CR - s->c[CONErsq] * cr)
+	       + cb * cb * (s->c[CONERsq] - s->c[CONErsq])
 	       );
     //
     break;
@@ -247,8 +245,8 @@ void cone_init(mpp_storage *s, int v)
 
   // here a "mean" effectiveRadius is defined + true radius for simulation;
   // this is important
-  s->effectiveRadius[v] = CR;
-  if (s->addradius[v]<=0.0) {s->addradius[v] = s->effectiveRadius[v];}
+  s->effectiveRadius = CR;
+  if (s->addradius<=0.0) {s->addradius = s->effectiveRadius;}
 
   // the calculation of the effective area can be very complicated
   // if randomised scale is used with upper end point of the
@@ -261,12 +259,12 @@ void cone_init(mpp_storage *s, int v)
   //       (length[1] + 2 scale[1]) *...*(length[dim] + 2 scale[dim])
   //
 
-  s->effectivearea[v] = 1.0;
-  for (d=0; d<s->timespacedim; d++) 
-     s->effectivearea[v]*= (s->length[d] + 2.0 * s->addradius[v]);
+  s->effectivearea = 1.0;
+  for (d=0; d<dim; d++) 
+    s->effectivearea*= (s->length[d] + 2.0 * s->addradius);
 
   //
-  s->maxheight[v] = height + socle; //==s->c[CONEHEIGHTSOCLE]
+  s->maxheight = height + socle; //==s->c[CONEHEIGHTSOCLE]
 }
 
 
@@ -277,32 +275,31 @@ void cone_init(mpp_storage *s, int v)
 // only at the very fist time.
 // Furthermore, the below construction will match with the
 // general construction that randomises parameters (e.g. scale mixtures)
-void cone(mpp_storage *s, int v, double *min, double *max,
-	  mppmodel *model )
+void cone(mpp_storage *s, double *min, double *max, mppmodel *model)
 { 
   int d;
-  mpp_dim = s->timespacedim;
-  cone_Rsq = s->c[v][CONERsq];
-  cone_rsq = s->c[v][CONErsq]; 
+  MPP_DIM = s->dim;
+  cone_Rsq = s->c[CONERsq];
+  cone_rsq = s->c[CONErsq]; 
 
   // note that c[CONEHEIGHT]==1 for Gaussian random fields !!
   // However, for max-stable random fields s->height will have 
   // different values !!
-  cone_height_socle = s->c[v][CONEHEIGHTSOCLE];
-  cone_a            = s->c[v][CONEA];
-  cone_b_socle      = s->c[v][CONEBSOCLE];
+  cone_height_socle = s->c[CONEHEIGHTSOCLE];
+  cone_a            = s->c[CONEA];
+  cone_b_socle      = s->c[CONEBSOCLE];
   *model = cone_model;
   // logically the current effectiveRadius should be set here
   // no need as here constant scale, so 
-  // s -> effectiveRadius = 0.5 * s->param[v][SCALE];
+  // s -> effectiveRadius = 0.5 * s->param[scale];
   // can be used.  
 
   // last: random point
-  for (d=0; d<mpp_dim; d++) {
-    mpp_x[d]= s->min[d] - s->addradius[v] + 
-      (s->length[d] + 2.0 * s->addradius[v]) * UNIFORM_RANDOM;
-    min[d] = mpp_x[d] - s->effectiveRadius[v];
-    max[d] = mpp_x[d] + s->effectiveRadius[v];
+  for (d=0; d<MPP_DIM; d++) {
+    MPP_X[d]= s->min[d] - s->addradius + 
+      (s->length[d] + 2.0 * s->addradius) * UNIFORM_RANDOM;
+    min[d] = MPP_X[d] - s->effectiveRadius;
+    max[d] = MPP_X[d] + s->effectiveRadius;
   }
 }
 int checkcone(double *param, int timespacedim, SimulationType method) {
@@ -352,8 +349,7 @@ void infocone(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 
 
-#define GAUSSINVSCALE 0
-#define GAUSSRADIUSSQ 1
+#define GAUSSRADIUSSQ 0
 
 double gaussInt(int d, int xi, double sigma, double R) {
   // int_{b(0,R) e^{-a r^2} dr = d b_d int_0^R r^{d-1} e^{-a r^2} dr
@@ -375,53 +371,51 @@ double gaussInt(int d, int xi, double sigma, double R) {
     double piDa;
     piDa = PI / a;
     return -2.0 * piDa * R * exp(- a * R * R )
-      + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1,1,0) - 1.0);
+      + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1, 1, 0) - 1.0);
   default : assert(false);
   }
 }
 
-void gaussmpp_init(mpp_storage *s, int v) 
+void gaussmpp_init(mpp_storage *s, int dim, param_type param) 
 {
   int d;
-  s -> c[v][GAUSSINVSCALE] = 2.0 * s->param[v][INVSCALE] *
-    s->param[v][INVSCALE]; 
-  // e^{-2 x^2} !
 
-  s -> c[v][GAUSSRADIUSSQ] =  - 0.5  * log(MPP_APPROXZERO) 
-    * s->param[v][SCALE] * s->param[v][SCALE];
-  s -> effectiveRadius[v] = sqrt(s -> c[v][GAUSSRADIUSSQ]);
-  if (s->addradius[v]<=0.0) {s->addradius[v]=s->effectiveRadius[v];}
+  s -> dim = dim;
+  s -> c[GAUSSRADIUSSQ] = -0.5 * log(MPP_APPROXZERO);
+  s -> effectiveRadius = sqrt(s -> c[GAUSSRADIUSSQ]);
+  if (s->addradius<=0.0) {s->addradius=s->effectiveRadius;}
 
-  s->integral[v]   = gaussInt(s->timespacedim, 1, s->param[v][SCALE],
-			    s->effectiveRadius[v]);
-  s->integralsq[v] = gaussInt(s->timespacedim, 2, s->param[v][SCALE], 
-			    s->effectiveRadius[v]);
+  s->integral   = gaussInt(dim, 1, 1.0, s->effectiveRadius);
+  s->integralsq = gaussInt(dim, 2, 1.0, s->effectiveRadius);
 
-  s->integralpos[v] = s->integral[v];
-  s->effectivearea[v] = 1.0;
-  for (d=0; d<s->timespacedim; d++) 
-     s->effectivearea[v] *= (s->length[d] + 2.0 * s->addradius[v]);
-  s->maxheight[v]= 1.0;
+//  printf("%d %f %f %f\n", dim, s->effectiveRadius, s->integral, s->integralsq);
+//  assert(false);
+
+  s->integralpos = s->integral;
+  s->effectivearea = 1.0;
+  for (d=0; d<dim; d++) 
+    s->effectivearea *= (s->length[d] + 2.0 * s->addradius);
+  s->maxheight= 1.0;
 }
 
-void gaussmpp(mpp_storage *s, int v,double *min, double *max,
-	  mppmodel *model )
+
+void gaussmpp(mpp_storage *s, double *min, double *max, mppmodel *model)
 {
   int d;
 
-  gauss_invscale = s->c[v][GAUSSINVSCALE];
-  gauss_effectiveradiussq =  s -> c[v][GAUSSRADIUSSQ];
+  MPP_DIM = s->dim;
+  gauss_effectiveradiussq =  s -> c[GAUSSRADIUSSQ];
 
   *model = gauss_model;  
-  mpp_dim = s->timespacedim;
 
-  for (d=0; d<mpp_dim; d++) {
-    mpp_x[d]= s->min[d] - s->addradius[v] + 
-      (s->length[d] + 2.0 * s->addradius[v]) * UNIFORM_RANDOM;
-    min[d] = mpp_x[d] - s->effectiveRadius[v];
-    max[d] = mpp_x[d] + s->effectiveRadius[v];
+  for (d=0; d<MPP_DIM; d++) {
+    MPP_X[d]= s->min[d] - s->addradius + 
+      (s->length[d] + 2.0 * s->addradius) * UNIFORM_RANDOM;
+    min[d] = MPP_X[d] - s->effectiveRadius;
+    max[d] = MPP_X[d] + s->effectiveRadius;
   }
 }
+
 
 
 

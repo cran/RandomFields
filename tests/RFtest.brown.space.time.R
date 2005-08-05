@@ -20,6 +20,7 @@ n <- 2; TBM2.lines<-2
 #kappa <- scale <- var <-  1
 
 x <- c(1,5,1)#x <- c(1,4,1)
+RFparameters(Print=8)
 z <- GaussRF(x=x, y=x, z=x, grid=TRUE, gridtriple=TRUE, model=model,
 		me="intr", param=c(0,var,0,scale,kappa), n=5 * n)
 
@@ -49,6 +50,8 @@ var   <- 5 * runif(1)
 x <- c(1,5,1)
 z <- GaussRF(x=x, y=x, grid=TRUE, gridtriple=TRUE, model=model,
 		me="intr", param=c(0,var,0,scale,kappa) ,n=10 * n)
+
+str(z)
 
 cat(Variogram(x=cbind(1,1), model=model, param=c(0,var,0,scale,kappa)),
    "",var(z[1,1, ]- z[2,2,])/2,"\n")
@@ -137,7 +140,7 @@ RFparameters(Print=2, TBMCE.force=TRUE, pch="#",
              TBMCE.mmin=c(-1,-3),
              TBM2.linesimufactor=50,
              CE.mmin=c(-1,-3),
-             CE.userfft=TRUE
+             CE.useprimes=TRUE
              )
 aniso <- matrix(c(0.01,0,0,0.5),ncol=2)
 model <- list(list(model="sph", var=var, aniso=aniso))

@@ -83,9 +83,10 @@ for (krige.method in krige.meth) {
                                                    sum)<0.0001])
           }
                  ) # switch
-
+          
           ##   cat(" generate and visualise spatial data\n")
           data <- GaussRF(points, grid=FALSE, model=model, param=param)
+
           
           ## conditional simulation 
           cz <- CondSimu(krige.method=krige.method,

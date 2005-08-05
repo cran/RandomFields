@@ -5,23 +5,7 @@
 
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 if (EXTENDED.TESTING) {
-
-  if (FALSE) {
-    n <- .C("getCov", integer(1), double(0))[[1]]
-    C <- matrix(.C("getCov", as.integer(n), double(n*n))[[2]], ncol=n) 
-  }
-    
-  
-  if (FALSE) {
-    z <- NULL
-    a <- 1.1
-    repeat {
-      z <- c(z, (1-runif(100000))^{-1/a} - a/(a-1))
-      print(c(length(z),mean(z)))
-    }
-  }
-  
-  
+     
   if (FALSE) {
     model <- "exp"
     param <- c(0,1,0,10)
@@ -118,14 +102,14 @@ if (EXTENDED.TESTING) {
     prnt <- c(1, 6) # >6 gives too much output
     trials <- c(3, 6)
     RFparameters(TBM2.linesimufactor=sf[n.sf],
-                 TBM3D2.linesimufactor=sf[n.sf],
+                 TBM3.linesimufactor=sf[n.sf],
                    TBMCE.force=TRUE,
                  TBMCE.trials=trials[n.sf],
                  TBM2.lines=120,#120,
                  TBM2.num=TRUE,
                  CE.trials=4, #trials[n.sf],
                  CE.force=FALSE,
-                 TBM3D3.linesimufactor=sf[n.sf], pch=pch, 
+                 TBM3.linesimufactor=sf[n.sf], pch=pch, 
                  Print=prnt[n.sf], Storing=TRUE, #TBM.method="di",
                    direct.method=0)
   }
@@ -343,10 +327,5 @@ if (EXTENDED.TESTING) {
     } # for grid yes/no
   } # for models
   
-  if (FALSE) {
-    
-    .C("printKEY", as.integer(0))
-       
-    }
-  
+ 
 } # extended testing

@@ -10,6 +10,7 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("hyper: 'Ma'-Modelle; TBM3/2;");
     print("cross: verbesserungen (geswchwindigkeit)")
     print("GENERAL_PRECISION: einbinden + ueber .Mschine$precision definieren (mal Faktor 50")
     print("chlo2inv in MLE: ")
@@ -22,15 +23,10 @@
     
     print("check documentation and readability of programs")
     print("docu of TBM2.linesimustep not understandable")
-    print("entartete Felder")
     print("MLE: naturalscaling in anisotropic case")
     print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
     print("implement trend")
     print("MPP.cc: anisotropies, time")
-    cat("spectral and other space sensitive procedure work curently only for",
-        "zonal isotropy of arbitrary dim (if final dim==2) and arbitrary",
-        "transformation in 2dim, but not for arbitrary transformation with",
-        "final dim == 2\n")
     cat("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
     cat("interface, such that user can add its own covariance function, written in R\n\n")
   }
@@ -136,19 +132,14 @@ function (n = 1, register = 0, paired=FALSE) {
                 grid = integer(1), distr = integer(1),
                 maxdim = as.integer(.p$maxdim),
                 PACKAGE="RandomFields", DUP=FALSE)
-  simu.n <- n
-  if (paired) {
-    if (simu.n %% 2 != 0) stop("if paired, then n must be an even number")
-    simu.n <- simu.n / 2
-  }
-
+  if (paired && (n %% 2 != 0)) stop("if paired, then n must be an even number")
   if (keyinfo$total <= 0)
     stop(paste("register", register, "does not look initialized"))
   keyinfo$len <- keyinfo$len[1:keyinfo$timespacedim]
   error <- integer(1)
     
   result <- double(keyinfo$total * n)
-  .C(DoNameList[1+keyinfo$distr], register, as.integer(simu.n),
+  .C(DoNameList[1+keyinfo$distr], register, as.integer(n),
      as.integer(paired), result, error, PACKAGE="RandomFields", DUP=FALSE)
   
   if (error) stop(paste("error", error));
@@ -231,7 +222,7 @@ function (x, y = NULL, z = NULL, T=NULL, grid, model, param,
               as.double(lambda), as.integer(length(lambda)),
               err=integer(1), PACKAGE="RandomFields")$err
   if (error) stop(paste("trend not correct -- error nr", error))
-  
+
   error <- .C(InitName, as.double(new$x), as.double(new$T),
                   as.integer(new$spacedim),
                   as.integer(new$l), 
@@ -274,18 +265,18 @@ function (x, y = NULL, z = NULL, T=NULL,
   old.param <- RFparameters(no.readonly=TRUE)
   RFpar <- list(...)
   if (length(RFpar)>0) RFparameters(RFpar)
-  if (n>1 && !old.param$Storing) {
-    RFparameters(Storing=TRUE)
-  }
+  if (delete <- n>1 && !RFparameters()$Storing) RFparameters(Storing=TRUE)
   on.exit({RFparameters(old.param);
-           if (!old.param$Storing) DeleteRegister(register)})
+           if (delete) DeleteRegister(register)})
   error <- InitSimulateRF(x=x, y=y, z=z, T=T, grid=grid, model=model,
                           param=param,
                           trend=trend, method=method, register=register,
                           gridtriple=gridtriple, distribution="Gauss")
+#str(GetRegisterInfo(register))
+  
   if (error > 0)
     stop(paste("Simulation could not be initiated.",
-               if (RFparameters()$PrintLevel <= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information.\n\n")) 
+               if (RFparameters()$PrintLevel >= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n")) 
   return(DoSimulateRF(n=n, reg=register, paired=paired))
 }
 
@@ -293,10 +284,4 @@ function (x, y = NULL, z = NULL, T=NULL,
 "Variogram" <-
 function (x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
   CovarianceFct(x, model, param, dim, fctcall="Variogram")
-
-
-pokeTBM <- function(Out, In) {
-  .C("pokeTBM", as.integer(Out), as.integer(In), err=integer(1),
-     PACKAGE="RandomFields")$err
-}
 

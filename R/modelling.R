@@ -4,6 +4,7 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                     grid, gridtriple=FALSE,
                     model, param, given, data, trend,            
                     pch=".", return.variance=FALSE, internal=FALSE) {
+  silent = TRUE;
   krige.methodlist <- c("S", "O")
   krige.method.nr <- pmatch(krige.method, krige.methodlist)
   is.matrix.data <- is.matrix(data) && (ncol(data)>1)
@@ -148,7 +149,7 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
            stopifnot(is.null(pm$trend))
            res <- double(nrow(x) * ncol(data))
            if (return.variance) {
-             if (!(is.matrix(try(invcov <- solve(covmatrix)))))
+             if (!(is.matrix(try(invcov <- solve(covmatrix), silent=silent))))
                stop("covmatrix is singular")
              sigma2 <- double(nrow(x))
              .C("simpleKriging2", as.double(tgiven), as.double(x),
@@ -158,7 +159,8 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
                 res, sigma2,
                 PACKAGE="RandomFields", DUP=FALSE)           
            } else {
-             if (!(is.matrix(try(invcov <- solve(covmatrix, data-pm$mean))))) 
+             if (!(is.matrix(try(invcov <- solve(covmatrix, data-pm$mean),
+                                 silent=silent)))) 
                stop("covmatrix is singular")
              .C("simpleKriging", as.double(tgiven), as.double(x),
                 as.double(invcov), as.integer(nrow(x)), nn, as.integer(ncol(x)),
@@ -172,7 +174,7 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
            covmatrix <- rbind(cbind(covmatrix,1), c(rep(1,nd),0))
            res <- double(nrow(x) * ncol(data))    
            if (return.variance) {
-             if (!(is.matrix(try(invcov <- solve(covmatrix)))))
+             if (!(is.matrix(try(invcov <- solve(covmatrix), silent=silent))))
                stop("covmatrix is singular") 
              sigma2 <- double(nrow(x))
              .C("ordinaryKriging2", as.double(tgiven), as.double(x),
@@ -182,7 +184,8 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
                 PACKAGE="RandomFields", DUP=FALSE)
            } else {
              if (!(is.matrix(try(invcov <- solve(covmatrix,
-                                                 rbind(as.matrix(data), 0)))))) 
+                                                 rbind(as.matrix(data), 0)),
+                                 silent=silent)))) 
                stop("covmatrix is singular")
              res <- double(nrow(x) * ncol(data))
 

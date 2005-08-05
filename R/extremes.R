@@ -18,12 +18,14 @@ function(x, y = NULL, z = NULL, grid, model, param, maxstable,
     else{
       if (!is.character(method) || (length(method)==0))
         stop("Method must be a string.")
-      if (.C("GetMethodNr",as.character(method),
+      if (.C("GetMethodNr", as.character(method),
              as.integer(1), nr = integer(1), PACKAGE="RandomFields")$nr
           !=
           .C("GetMethodNr",as.character("max.MPP"),
              as.integer(1), nr = integer(1), PACKAGE="RandomFields")$nr) { 
-        warning("Method does not match max-stable random field definition. Set to `max.MPP'.")  
+        warning("Method does not match max-stable random field definition. Set to `max.MPP'.")
+      if (any(method[1] != method))
+        warning("method='max.MPP' cannot be mixed with other methods")
         method <- "max.MPP"
       }
     }
@@ -50,7 +52,10 @@ function (x, y = NULL, z = NULL, grid, model, param,  maxstable,
   error <- InitMaxStableRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
                            maxstable=maxstable, method=method,
                            register=register, gridtriple=gridtriple)
-  if (error > 0) stop(paste("InitMaxStable: error", error, "occured")) 
+  if (error > 0) stop(paste("InitMaxStable: error", error, "occured"))
+
+  str(GetRegisterInfo())
+   
   return(DoSimulateRF(n=n, reg=register, paired=FALSE))
 }
 

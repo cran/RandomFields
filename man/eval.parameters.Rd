@@ -119,7 +119,9 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
     condition is satisfied. The condition must be expressed by named elements
     of the list variable, see example.
     \item \code{col} : colour that overwrites the standard colour for the
-    rectangle or the separating text
+    rectangle or the separating text.
+    \item \code{update} : logical. If not missing, its value overwrites
+    locally the value of the global parameter \code{update}.
     \item \code{...} : additional parameters for \code{simulate} that overwrite
     the values given in \code{...} in the call of \code{eval.parameters}.
   }

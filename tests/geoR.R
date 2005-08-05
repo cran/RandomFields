@@ -21,7 +21,7 @@ if (EXTENDED.TESTING) {
   (emp1 <- EmpiricalVariogram(unique(y), unique(x), data=z, grid=TRUE, bin=bin))
 
   by <- 0.15
-  RFparameters(Print=1, CE.force=TRUE, CE.trials=1, CE.userfft=TRUE)
+  RFparameters(Print=1, CE.force=TRUE, CE.trials=1, CE.useprimes=TRUE)
   ShowModels(seq(min(y), max(y), by=by), seq(min(x), max(x), by=by), emp=emp1,
              me="ci", fixed.rs=TRUE)
 }

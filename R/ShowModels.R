@@ -35,6 +35,9 @@ ShowModels <- function(x, y=NULL,
                        use.outer.RFparameters=FALSE,
                        debug=FALSE,
                        ...){
+
+  print(link.fct)
+  
   stopifnot(!missing(x))
   if (any(diff(x) <= 0)) stop("x should be a sequence of increasing numbers")
   if (!is.null(y) && any(diff(y) <= 0))
@@ -43,7 +46,7 @@ ShowModels <- function(x, y=NULL,
   ENVIR <- environment()
   linkfctlist <- c("MaxStable")
   warn.orig <- options()$warn
-  options(warn=2)
+  options(warn=1)
   bg.save <- par()$bg
   par(bg="white")
   oldRFparameters <- RFparameters(no.readonly=TRUE)
@@ -58,7 +61,7 @@ ShowModels <- function(x, y=NULL,
 
   if (!use.outer.RFparameters)
   RFparameters(PracticalRange=FALSE, Print=print1, maxstable.maxGauss=2,
-               CE.force=TRUE, CE.trials=1, CE.mmin=-4, CE.userfft=TRUE
+               CE.force=TRUE, CE.trials=1, CE.mmin=-4, CE.useprimes=TRUE
                )
     
   runif(1)
@@ -70,7 +73,7 @@ ShowModels <- function(x, y=NULL,
   varioangle <- NA ## if NA, than the varioangle follows the angle of the model
 
   if (!(missing.zlim <- is.null(Zlim)) && !is.list(Zlim))
-    Zlim <- list(Zlim, if (!is.null(link.fct)) link.fct(Zlim))
+    Zlim <- list(range(Zlim), if (!is.null(link.fct)) range(link.fct(Zlim)))
   ## if (!(missing.zlim <- (sum(index <- (opts==2))!=1))) zlim <- ll[index][[1]]
 
   
@@ -386,6 +389,7 @@ ShowModels <- function(x, y=NULL,
           assign("save.seed", get(".Random.seed", envir=.GlobalEnv,
                                   inherits = FALSE), envir=ENVIR)
         else assign(".Random.seed", save.seed, envir=.GlobalEnv)
+
         z <- GaussRF(x, y, model=cp, grid=TRUE, register=register)
         
         assign("zsimu", z, envir=ENVIR)

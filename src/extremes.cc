@@ -29,38 +29,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 
 
-double EXTREMES_STANDARDMAX = 3.0;
-
+double EXTREMES_STANDARDMAX = 3.0; // should be about 3 or 4
 
 void SetExtremes(int *action, double *standardGausMax)
 {
-  switch(*action) {
-  case 0 :
+  if (*action) {
     if (*standardGausMax<=0.0) {
        if (GENERAL_PRINTLEVEL>0) PRINTF("\nERROR! `standardGausMax' not a positive number. Ignored.");
     } else  EXTREMES_STANDARDMAX = *standardGausMax;
-    break;
-  case 1 :
+  } else {
     *standardGausMax= EXTREMES_STANDARDMAX;
-    if (GetNotPrint) break;
-  case 2 :
-    PRINTF("\nMax-stable Random fields\n========================\nstandardGausMax=%e\n",
-	   EXTREMES_STANDARDMAX);
-    break;
-  default : if (GENERAL_PRINTLEVEL>0) PRINTF("unknown action\n");
   }
 }
 
-typedef struct extremes_storage{
-  double *rf;
-  double inv_mean_pos, assumedmax;
-} extremes_storage;
 
 void extremes_destruct(void **SExtremes){
   if (*SExtremes!=NULL) {
     extremes_storage *x;
     x = *((extremes_storage**) SExtremes);
     if (x->rf != NULL) free(x->rf);
+    DeleteKeyNotTrend(&(x->key));
     free(*SExtremes);
     *SExtremes = NULL;
   }
@@ -74,26 +62,17 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
 		     int *distr,
 		     int *keyNr,
 		     int *error)
-/* for all parameters except precision see InitSimulateRF in the 
- * package rf!
- *
- * assumedmax: assumed maximum value of a Gaussian random field;
- *             should be about 3 or 4
- *     
- */
+// for all parameters  see InitSimulateRF in RFsimu.cc
 { 
-  double sigma,meanDsigma;
-  extremes_storage *es;
-  int init_method[MAXCOV] ;
-  int gauss_distr = DISTR_GAUSS;
-  int i;
   key_type *key;
-  bool storing;
 
-  storing = GENERAL_STORING;
-  GENERAL_STORING = true;    
+  strcpy(ERROR_LOC, "MaxStable");
+  key = NULL;
+  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
+    *error=ERRORREGISTER; 
+    goto ErrorHandling;
+  }
   key = &(KEY[*keyNr]);
-  es = NULL;
   // I cannot see why a time component might be useful
   // hence cathegorically do not allow for the use!
   // if you allow for it check if it use is consistent with the
@@ -101,69 +80,109 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
   if (*Time) {*error=ERRORNOTPROGRAMMED; goto ErrorHandling;} 
   if (key->TrendModus != TREND_MEAN) {
     *error=ERRORTREND; goto ErrorHandling;} 
-
   if (method[0] == (int) MaxMpp) {
+    int init_method[MAXCOV], v, n, m;
+    mpp_storage* s; 
+    // MaxMpp may not be mixed with other methods ! 
     /* ***********************************************************
        MPP FUNCTIONS
      * *********************************************************** */    
-    if (*ncov!=1) {*error=ERRORFAILED; goto InternalErrorHandling;}
-    for (i=0; i<*covnr; i++) init_method[i] = (int) AdditiveMpp;
+    for (v=0; v<*ncov; v++) {
+      init_method[v] = (int) AdditiveMpp;
+      if (v<*ncov-1 && op[v]) {
+	  *error=ERRORNOMULTIPLICATION;
+	  goto InternalErrorHandling;
+      }
+    }
+    *error = internal_InitSimulateRF(x, T, *dim, *lx, (bool) *grid,
+				     (bool) *Time, covnr, ParamList, *nParam, 
+				     *ncov, (bool) *anisotropy, op,
+				     init_method, *distr, key, true, 
+				     GENERAL_NATURALSCALING, CovFct);
+    strcpy(ERROR_LOC, "");
+    if (*error!=NOERROR) goto ErrorHandling;
+    for (v=0; v<*ncov; v++) key->cov[v].method = MaxMpp;
+    for (m=0; m<key->n_unimeth; m++) key->meth[m].unimeth = MaxMpp;
 
-    InitSimulateRF(x, T, dim, lx, grid, Time, covnr, ParamList, nParam, 
-		   ncov, anisotropy, op,
-		   init_method, distr, keyNr, error);
-
-    assert(*error>=0);
-    if (*error!=NOERROR) {goto ErrorHandling;}
-    key->method[0] = MaxMpp;
-    assert( (key->SExtremes==NULL) && (key->destructExtremes==NULL));
+    // the basic functions in MPPFcts.cc are kept quite simple (e.g. height 1.0)
+    // hence height must be corrected to "unit volume"; effectiveara is 
+    // involved since below only standard exponential variables are considered;
+    // not that effectivearea is not always the simulation window !
+    // actcov corrects for the max-superposition of the actcov maxstable rf
+    n = key->n_unimeth - 1;
+    s = (mpp_storage*) key->meth[n].S;  
+    s->factor = s->effectivearea / (s->integralpos * (double) (key->n_unimeth));
+    for (v=0; v<n; v++) {
+      mpp_storage* sp1; 
+      s = (mpp_storage*) key->meth[v].S;  
+      sp1 = (mpp_storage*) key->meth[v+1].S;  
+      s->factor = s->effectivearea / s->integralpos / 
+	  (sp1->effectivearea / sp1->integralpos);
+    }
   } else { 
     /* ***********************************************************
        EXTREMAL GAUSSIAN
      * *********************************************************** */
-    InitSimulateRF(x, T, dim, lx, grid, Time, covnr, ParamList, nParam, 
-		   ncov, anisotropy, op,
-		   method,  &gauss_distr, keyNr, error);
-    assert(*error>=0);
-    if (*error!=NOERROR) {goto ErrorHandling;}
-    key->distribution = DISTR_MAXSTABLE;
+    double sigma, meanDsigma, mean;
+    int d;
+    methodvalue_type *meth; 
+    extremes_storage* s;
+  
+    assert(*distr == DISTR_MAXSTABLE);
+    DeleteKeyNotTrend(key); // should be improved ...
+    key->active=false;
+    meth = &(key->meth[0]);      
+    SET_DESTRUCT(extremes_destruct, 0);
+    if ((meth->S = (extremes_storage*) malloc(sizeof(extremes_storage)))==NULL){
+	*error=ERRORMEMORYALLOCATION; goto ErrorHandling;
+    }
+    s = (extremes_storage*) meth->S;
+    KEY_NULL(&(s->key));
+    s->rf = NULL;
+ 
+    *error = internal_InitSimulateRF(x, T, *dim, *lx, (bool) *grid, 
+				     (bool) *Time, covnr, ParamList, *nParam, 
+				     *ncov, (bool) *anisotropy, op, method, 
+				     DISTR_GAUSS, &(s->key), true, 
+				     GENERAL_NATURALSCALING, CovFct);
+    if (*error!=NOERROR) goto ErrorHandling;
 
-    assert( (key->SExtremes==NULL) && (key->destructExtremes==NULL));    
-    key->destructExtremes = extremes_destruct;
-    if ((key->SExtremes=
-	 (extremes_storage*) malloc(sizeof(extremes_storage)))==NULL) {
-      *error=ERRORMEMORYALLOCATION; goto InternalErrorHandling;
-    }
-    es = (extremes_storage*) key->SExtremes;
-    if ((es->rf =
-	 (double*) malloc(sizeof(double) *  key->totalpoints))==NULL) {
-      *error=ERRORMEMORYALLOCATION; goto InternalErrorHandling;
-    }
-    sigma = sqrt(CovFct(ZERO,*dim,covnr,op,key->param,*ncov,*anisotropy));
+    key->distribution = *distr;
+    sigma = sqrt(CovFct(ZERO, *dim, s->key.cov, COVLISTALL, *ncov, *anisotropy));
     if (sigma==0) {*error = ERRORSILLNULL; goto InternalErrorHandling;}
-    meanDsigma = key->mean / sigma;
-    es->inv_mean_pos = 
+    mean = s->key.mean;
+    meanDsigma = mean / sigma;
+    s->inv_mean_pos = 
       1.0 / (sigma * INVSQRTTWOPI * exp(-0.5 * meanDsigma * meanDsigma) 
-	     + key->mean * /* correct next lines the 2nd factor is given */
+	     + mean * /* correct next lines the 2nd factor is given */
 	     // pnorm(meanDsigma, key->mean, sigma,1,0));
-	     pnorm(0.0, key->mean, sigma,1,0) 
+	     pnorm(0.0, mean, sigma, 1, 0) 
 	     );
-  for (i=0;i<key->totalpoints;i++) es->rf[i]=0.0;
-    
-    es->assumedmax = EXTREMES_STANDARDMAX * sigma + 
-      ((key->mean>0) ? key->mean : 0);  
+    s->assumedmax = EXTREMES_STANDARDMAX * sigma + ((mean>0) ? mean : 0);  
     *error=NOERROR;
-  } 
-  GENERAL_STORING = key->storing = storing;  
-
+    key->totalpoints = s->key.totalpoints;// DoSimulateRF regards whether
+    //                                       key->totalpoints is initialised
+    if ((s->rf =
+	 (double*) malloc(sizeof(double) * key->totalpoints))==NULL) {
+	*error=ERRORMEMORYALLOCATION; goto InternalErrorHandling;
+    }   
+    key->totalpoints = s->key.totalpoints;
+    key->spatialdim = s->key.spatialdim;
+    key->timespacedim = s->key.timespacedim;
+    for (d=0; d<key->timespacedim; d++) key->length[d] = s->key.length[d];
+    key->grid = s->key.grid;
+    key->meth[0].unimeth = key->cov[0].method = ExtremalGauss;
+    key->n_unimeth = 1;
+    key->meth[0].actcov = 0; 
+    key->storing = GENERAL_STORING;
+    key->active = true;
+  }
+  strcpy(ERROR_LOC, "");
   return;
 
  InternalErrorHandling:
   ErrorMessage(Nothing,*error); 
  ErrorHandling:
-  if (key->destructExtremes!=NULL) key->destructExtremes(&(key->SExtremes));
-  key->destructExtremes = NULL;
-  GENERAL_STORING = storing;  
   key->active=false;
   return;
 }
@@ -173,19 +192,11 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
 void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 {
   key_type *key;
-  extremes_storage *es;  
-  long totalpoints,i,control;
-  double poisson, invpoisson, threshold, *zw, *RES;
-  long counter=0; // just for printing messages
-  bool next=false, keystoring, storing;
-  int FALSE=0, ONE=1, ni;
+  long totalpoints,control, counter;
+  double poisson, invpoisson, *RES, threshold;
 
 
-
-  storing = GENERAL_STORING;
-  GENERAL_STORING = true;    
- *error=0; 
-  zw = NULL;
+  *error=0; 
   key = NULL;
   if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
     *error=ERRORKEYNROUTOFRANGE; goto ErrorHandling;
@@ -194,213 +205,182 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 
   key = &(KEY[*keyNr]);
   if (!key->active) {*error=ERRORNOTINITIALIZED; goto ErrorHandling;}
-  keystoring = key->storing;
-  key->storing = true;
+  totalpoints = key->totalpoints;
 
-  for (ni=0; ni<*n; ni++, res += key->totalpoints) {
-    if (key->method[0] == (int) MaxMpp) {
-      /* ***********************************************************
-	 MPP FUNCTIONS
-	 * *********************************************************** */
+  counter = 0;
+
+  if (key->cov[0].method == (int) MaxMpp) {
+    /* ***********************************************************
+       MPP FUNCTIONS
+       * *********************************************************** */
       
-      // what to do with the mean?? -> ignore it
+    // what to do with the mean?? -> ignore it
     // what to do with the variance?? -> ignore it
-      
-      int  dim, d, v;
-      double  min[MAXDIM], max[MAXDIM], factor;
-      long segment[MAXDIM+1];
-      mpp_storage *s;
-      mppmodel model;
-      MPPRandom MppFct;
-      
-      GetRNGstate();
-      assert(key->ncov>0);
-      if (key->ncov>1) {
-	// not used
-	if ((zw=(double *)malloc(sizeof(double)*key->totalpoints))==0){
-	  *error=ERRORMEMORYALLOCATION;goto ErrorHandling;}
-	RES = zw;
-	for  (i=0; i<key->totalpoints; i++) res[i]=zw[i]=0.0;
-      } else {
-	for  (i=0; i<key->totalpoints; i++) res[i]=0.0;
-	RES = res;
-      }
-      
-      s = (mpp_storage*) key->S[0];  
-      dim = s->timespacedim;
-      assert(dim>0);
-      
-      segment[0] = 1;
-      for (d=0; d<dim; d++) 
-	segment[d+1] = segment[d] * key->length[d];
-      totalpoints = key->totalpoints;
-      
-      for (v=0; v<s->actcov; v++) {
-	MppFct = s->MppFct[v];
-	
-	factor = s->effectivearea[v] / s->integralpos[v];
+    int  dim, d, actcov, m, ni;
+    double min[MAXDIM], max[MAXDIM], next=false;
+    long segment[MAXDIM+1], i; // just for printing messages;
+
+    mpp_storage *s;
+    mppmodel model;
+    MPPRandom MppFct;
+    methodvalue_type *meth; 
+    covinfo_type *keycov;
+    
+    actcov = key->n_unimeth;
+    assert(actcov == key->ncov);
+
+    for (segment[0] = 1, d = 0; d < key->timespacedim; d++)// used if simugrid
+      segment[d + 1] = segment[d] * key->length[d];
+
+    GetRNGstate();
+    for (RES = res, ni=0; ni<*n; ni++, RES += key->totalpoints) {
+      for  (i=0; i<totalpoints; i++) RES[i]=0.0;      
+      for (m=0; m<actcov; m++) {
+	meth = &(key->meth[m]); 
+	assert(meth->unimeth == MaxMpp);
+	keycov = &(key->cov[meth->covlist[m]]);
+	s = (mpp_storage*) meth->S;  
+	MppFct = s->MppFct;
+	dim = s->dim; 
 	
 	control = 0;
-	poisson = -log(1.0 - UNIFORM_RANDOM); /* it is important to write 1-U
-						 as the random generator returns
-						 0 inclusively; the latter would
-						 lead to an error !
-					      */
+	poisson = rexp(1.0); 
 	invpoisson = 1.0 / poisson;
-	while (control<totalpoints) {   
+	while (control < totalpoints) {   
 	  // the following is essentially the same as the code in MPP.cc!!
 	  // how to reorganise it to get rid of the duplication of the code??
-	  //
-	  
-	  MppFct(s, v, min, max, &model );
-	  
-	  if (s->grid) {
+	  //	  
+	  MppFct(s, min, max, &model); 
+	  if (keycov->simugrid) {
 	    int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
 	      segmentdelta[MAXDIM], dimM1;
 	    double coord[MAXDIM], startcoord[MAXDIM];
 	    
-	    // determine rectangle of indices, where the mpp function
-	    // is different from zero
+	    resindex = 0;
 	    for (d=0; d<dim; d++) {	 
-	      if (next = ((min[d] > key->x[d][XEND]) ||
-			  (max[d] < key->x[d][XSTART]))) { break;}
-	      if (min[d]< key->x[d][XSTART]) {start[d]=0;}
-	      else start[d] = (int) ((min[d] - key->x[d][XSTART]) / 
-				     key->x[d][XSTEP]);
+	      // determine rectangle of indices, where the mpp function
+	      // is different from zero
+	      if ((next = ((min[d] > keycov->x[XENDD[d]]) ||
+			  (max[d] < keycov->x[XSTARTD[d]])))) { break;}
+	      if (min[d]< keycov->x[XSTARTD[d]]) {start[d]=0;}
+	      else start[d] = (int) ((min[d] - keycov->x[XSTARTD[d]]) / 
+				     keycov->x[XSTEPD[d]]);
 	      // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
 	      // not "* <= end[d]" !
-	      end[d] = (int) ((max[d] - key->x[d][XSTART]) / 
-			      key->x[d][XSTEP]);
-	      if (end[d] > key->length[d]) end[d] = key->length[d];	  
-	    }	
-	    if (!next) {
+	      end[d] = (int) ((max[d] - keycov->x[XSTARTD[d]]) / 
+			      keycov->x[XSTEPD[d]]);
+	      if (end[d] > key->length[d]) end[d] = key->length[d];
+	  
 	      // prepare coord starting value and the segment vectors for res
-	      resindex = 0;
-	      for (d=0; d<dim; d++) {
-		index[d]=start[d];
-		segmentdelta[d] = segment[d] * (end[d] - start[d]);
-		resindex += segment[d] * start[d];
-		coord[d] = startcoord[d] = 
-		  key->x[d][XSTART] + (double)start[d] * key->x[d][XSTEP];
-	      }
+	      index[d]=start[d];
+	      segmentdelta[d] = segment[d] * (end[d] - start[d]);
+	      resindex += segment[d] * start[d];
+	      coord[d] = startcoord[d] = 
+		  keycov->x[XSTARTD[d]] +(double)start[d] * keycov->x[XSTEPD[d]];
+	    }	
+	    if (next) continue;
 	      
-	      // "add" mpp function to res
-	      dimM1 = dim - 1;
-	      d = 0; // only needed for assert(d<dim)
-	      while (index[dimM1]<end[dimM1]) {
-		register double dummy;
-		assert(d<dim); 
-		dummy =  model(coord) * invpoisson;
-		if (RES[resindex] < dummy) RES[resindex]=dummy;
-		d=0;
+	    // "add" mpp function to res
+	    dimM1 = dim - 1;
+	    d = 0; // only needed for assert(d<dim)
+	    while (index[dimM1]<end[dimM1]) {
+	      register double dummy;
+	      assert(d<dim); 
+	      dummy =  model(coord) * invpoisson;
+	      if (RES[resindex] < dummy) RES[resindex]=dummy;
+	      d=0;
+	      index[d]++;
+	      coord[d]+=keycov->x[XSTEPD[d]];
+	      resindex++;
+	      while (index[d] >= end[d]) { 
+	        if (d>=dimM1) break;  // below not possible
+		//                       as dim==1 will fail!
+		index[d]=start[d];
+		coord[d]=startcoord[d];
+		resindex -= segmentdelta[d];
+		d++; // if (d>=dim) break;
 		index[d]++;
-		coord[d]+=key->x[d][XSTEP];
-		resindex++;
-		while (index[d] >= end[d]) { 
-		  if (d>=dimM1) break;  // below not possible
-		  //                       as dim==1 will fail!
-		  index[d]=start[d];
-		  coord[d]=startcoord[d];
-		  resindex -= segmentdelta[d];
-		  d++; // if (d>=dim) break;
-		  index[d]++;
-		  coord[d]+=key->x[d][XSTEP];
-		  resindex += segment[d];
-		}
+		coord[d]+=keycov->x[XSTEPD[d]];
+		resindex += segment[d];
 	      }
-	    } /* next */ 
-	  } else {  // not agrid
+	    }
+	  } else {  // not a grid
 	    double y[MAXDIM];
 	    long j;
 	    // the following algorithm can greatly be improved !
 	    // but for ease, just the stupid algorithm
+	    for (d=dim; d<dim; d++) y[d]=0.0;
 	    for (j=i=0; i<totalpoints; i++) {
-	      for (d=0; d<dim; d++,j++) { y[d] = s->x[j]; }
+	      for (d=0; d<dim; d++) y[d] = keycov->x[j++];
 	      register double dummy;
 	      dummy =  model(y) * invpoisson;
 	      if (RES[i] < dummy) RES[i]=dummy;
 	    }
-	  }   
+	  }
 	  
-	  poisson -= log(1.0 - UNIFORM_RANDOM);  
+	  poisson += rexp(1.0);  
 	  invpoisson = 1.0 / poisson;
-	  threshold = s->maxheight[v] * invpoisson;
-	  while ((control<totalpoints) && (RES[control]>=threshold)) {control++;}
+	  threshold = s->maxheight * invpoisson;
+	  while ((control<totalpoints) && (RES[control]>=threshold)) control++;
 	  if (GENERAL_PRINTLEVEL>=3) {
 	    counter++;
 	    if ((counter % 100==0) && (control<totalpoints))
-	      PRINTF("%d: %d %f %f \n",counter,control,RES[control],
+	      PRINTF("%d: %d %f %f \n", counter, control, RES[control],
 		     threshold); 
-	  }      
+	  }   
 	} // while control < totalpoints
-	if (key->ncov>1) {  // void -- maybe for future extensions
-	  assert(false);
-	  register double dummy;
-	  for (i=0; i<totalpoints;i++) {
-	    if (RES[i] < (dummy=RES[i]*factor)) RES[i]=dummy;
-	    RES[i] = 0.0;
-	  }
-	} else {
-	  for (i=0; i<totalpoints;i++) RES[i] *= factor;
-	}
+
+	for (i=0; i<totalpoints; i++) RES[i] *= s->factor;
       } //v
-      
-      //if (key->param[NUGGET]>0) {
-      //  double nugget;
-      //  nugget = key->param[NUGGET];
-      //  for (i=0; i<totalpoints; i++) {
-      //	register double dummy;
-      //	dummy = - nugget / log(1.0 - UNIFORM_RANDOM);
-      //	if (res[i] < dummy) res[i]=dummy;
-      //   }
-      //}
-      PutRNGstate();
-    } else {
+    } // for, n
+    PutRNGstate();
+  } else {
       /* ***********************************************************
 	 EXTREMAL GAUSSIAN
 	 * *********************************************************** */
-      
-      if (key->distribution!=DISTR_MAXSTABLE) {
-	*error=ERRORWRONGINIT; 
-	goto InternalErrorHandling;
-      }
-      es = (extremes_storage*) key->SExtremes;
-      assert(es!=NULL);
-      totalpoints = key->totalpoints;
-      
+    int ni, i;
+    extremes_storage* s;
+
+    if (key->distribution!=DISTR_MAXSTABLE) {
+      *error=ERRORWRONGINIT; 
+      goto InternalErrorHandling;
+    }
+    s = (extremes_storage*) key->meth[0].S;
+    assert(s!=NULL);
+     
+    for (RES = res, ni=0; ni<*n; ni++, RES += key->totalpoints) {
+      for  (i=0; i<totalpoints; i++) RES[i]=0.0;      
+       
       control = 0;
       
-      DoSimulateRF(keyNr, &ONE, &FALSE, es->rf, error);
+      if (!key->active){ *error=ERRORNOTINITIALIZED; goto InternalErrorHandling;}
+     
+      if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
+	  goto ErrorHandling;
       //  to get some consistency with GaussRF concerning Randomseed,
       //  DoSimulate must be called first; afterwards, it is called after 
       //  creation of Poisson variable 
-      if (*error)  {goto ErrorHandling;}
-      if (!key->active){ *error=ERRORNOTINITIALIZED; goto InternalErrorHandling; }
       
       GetRNGstate();
-      poisson = -log(1.0 - UNIFORM_RANDOM); 
-      // it is important to write 1-U as the random generator returns
-      //   0 inclusively; the latter would lead to an error ! 
+      poisson = rexp(1.0); 
       PutRNGstate();
       invpoisson = 1.0 / poisson;
-      
+           
       while (true) {
 	for (i=0; i<totalpoints; i++) {// 0, not control, since we approximate
 	  //                     and 0 as starting control increases precision
-	  es->rf[i] *= invpoisson;
-	  if (res[i] < es->rf[i]) res[i]=es->rf[i];
+	  s->rf[i] *= invpoisson;
+	  if (RES[i] < s->rf[i]) RES[i]=s->rf[i];
 	}
 	GetRNGstate();
-	poisson -= log(1.0 - UNIFORM_RANDOM);  // !! -= !! 
+	poisson += rexp(1.0); 
 	PutRNGstate();
 	invpoisson = 1.0 / poisson;
-	threshold = es->assumedmax * invpoisson;
-	while ((control<totalpoints) && (res[control]>=threshold)) {control++;}
+	threshold = s->assumedmax * invpoisson;
+	while ((control<totalpoints) && (RES[control]>=threshold)) {control++;}
 	if (control>=totalpoints) break;
-	DoSimulateRF(keyNr, &ONE, &FALSE, es->rf, error);
-	// first time no error; no reason to assume that an error occurs now;
-	// so error is not checked 
-	
+	if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
+	   goto ErrorHandling;
 	if (GENERAL_PRINTLEVEL>=3) {
 	  counter++;
 	  if (counter % 10==0) 
@@ -408,22 +388,16 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	}
       } // while
       
-      for (i=0; i<key->totalpoints; i++) 
-	res[i] *= es->inv_mean_pos;
-    }
-  } // for, n
-  key->storing = keystoring;
-  GENERAL_STORING = storing;
+      for (i=0; i<totalpoints; i++) RES[i] *= s->inv_mean_pos;
+    } // for, n
+  }
   key->active=GENERAL_STORING && key->storing;
-  if (zw!=NULL) free(zw);
   return;
   
  InternalErrorHandling:
   if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);  
  ErrorHandling:
-  if (zw!=NULL) free(zw);
   if (key!=NULL) key->active=false;  
-  GENERAL_STORING = storing;
 }
 
 

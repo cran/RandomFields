@@ -120,7 +120,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
       if (PrintLevel>1) 
-        cat("LSQ WARNING! forbidden values !", variab, "[", LSQLB, ",",
+        cat("LSQ WARNING! Forbidden values!", variab, "[", LSQLB, ",",
             LSQUB, "]\n")
       penalty <- variab 
       variab<-pmax(LSQLB, pmin(LSQUB, variab)) 
@@ -244,7 +244,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
       if (PrintLevel>0)
-        cat("REML WARNING! forbidden values ! -- if there are too many",
+        cat("REML WARNING! Forbidden values! -- if there are too many",
             "warnings try narrower lower and upper bounds for the variables.",
             variab, "[", MLELB, ",", MLEUB, "]\n")
       penalty <- variab 
@@ -400,7 +400,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
       if (PrintLevel>0)
-        cat("ML WARNING! forbidden variab values ! -- if there are too many",
+        cat("ML WARNING! Forbidden values! -- if there are too many",
             "warnings try narrower lower and upper bounds for the variables.",
             variab, "[", MLELB, ",", MLEUB, "]\n")
       penalty <- variab 
@@ -430,7 +430,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                          cov.matrix=double(lc * lc),
                          scalingmethod,
                          PACKAGE="RandomFields", DUP=FALSE)$cov.matrix     
-                      ,ncol=lc)))
+                      ,ncol=lc)), silent=!debug)
     options(show.error.messages = TRUE)
     if (!is.numeric(cov.matrix) || any(is.na(cov.matrix))) {
       if (PrintLevel>1) {
@@ -1531,7 +1531,8 @@ show <- function(nr, M, OPT, PARAM)
       param.table[[M]][idx[1]:idx[2]][ixdLSQINDEX] <- LSQUB
       options(show.error.messages = show.error.message) ##
       if (nLSQINDEX == 1) {
-        variab <- try(optimize(LStarget, lower = LSQLB, upper = LSQUB)$minimum)
+        variab <- try(optimize(LStarget, lower = LSQLB, upper = LSQUB)$minimum,
+                      silent=!debug)
       } else {
         min <- Inf
         for (i in methodprevto$lsq) { ## ! -- the parts that change if
@@ -1553,7 +1554,7 @@ show <- function(nr, M, OPT, PARAM)
         
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
-                    upper = LSQUB, control= lsq.optim.control)$par)
+                    upper = LSQUB, control= lsq.optim.control)$par, silent=!debug)
       }
     }
     options(show.error.messages = show.error.message)  
@@ -1648,7 +1649,8 @@ show <- function(nr, M, OPT, PARAM)
       options(show.error.messages = show.error.message) ##
       if (nMLEINDEX == 1) {
         variab <- try(optimize(MLEtarget, lower = MLELB,
-                               upper = MLEUB, maximum=TRUE)$maximum)
+                               upper = MLEUB, maximum=TRUE)$maximum,
+                      silent=!debug)
       } else {
         min <- Inf
         for (i in methodprevto$mle) { ## ! -- the parts that change if
@@ -1669,7 +1671,8 @@ show <- function(nr, M, OPT, PARAM)
         stopifnot(length(min.variab) == length(MLELB))
         variab <-
           try(optim(min.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
-                    upper = MLEUB, control=mle.optim.control)$par)
+                    upper = MLEUB, control=mle.optim.control)$par,
+              silent=!debug)
       }
       options(show.error.messages = TRUE) ##
       variab <- MLEPARAM[MLEINDEX] ## to check onborderline
@@ -1742,7 +1745,8 @@ show <- function(nr, M, OPT, PARAM)
           options(show.error.messages = show.error.message) ##
           variab <-
             try(optim(variab, MLEtarget, method ="L-BFGS-B",lower = MLELB,
-                      upper = MLEUB, control=mle.optim.control)$par)
+                      upper = MLEUB, control=mle.optim.control)$par,
+                silent=!debug)
           options(show.error.messages = TRUE) ##
           if (!is.numeric(variab) && (PrintLevel>0)) cat("MLtarget II failed.\n")
           ## do not check anymore whether there had been convergence or not.
@@ -1845,7 +1849,8 @@ show <- function(nr, M, OPT, PARAM)
       options(show.error.messages = show.error.message) ##  
       if (nCROSStotINDEX==1) {
         variab <-
-          try(optimize(crosstarget, lower = CROSSLB, upper = CROSSUB)$minimum)
+          try(optimize(crosstarget, lower = CROSSLB, upper = CROSSUB)$minimum,
+              silent=!debug)
       } else {
         min <- Inf
         for (i in methodprevto$cross) { ## ! -- the parts that change if
@@ -1869,7 +1874,8 @@ show <- function(nr, M, OPT, PARAM)
         stopifnot(length(min.variab) == length(CROSSLB))
         variab <-
           try(optim(min.variab, crosstarget, method ="L-BFGS-B", lower = CROSSLB,
-                    upper = CROSSUB, control = cross.optim.control)$par)
+                    upper = CROSSUB, control = cross.optim.control)$par,
+              silent=!debug)
       } # nCROSStotINDEX > 1
 
       ## check onborderline
@@ -1943,7 +1949,8 @@ show <- function(nr, M, OPT, PARAM)
           options(show.error.messages = show.error.message) ##
           variab <-
             try(optim(variab, crosstarget, method ="L-BFGS-B",lower = CROSSLB,
-                      upper = CROSSUB, control=cross.optim.control)$par)
+                      upper = CROSSUB, control=cross.optim.control)$par,
+                silent=!debug)
           options(show.error.messages = TRUE) ##
           if (!is.numeric(variab) && (PrintLevel>0))
             cat("cross target II failed.\n")

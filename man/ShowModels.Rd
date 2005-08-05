@@ -137,7 +137,7 @@ ShowModels(x, y=NULL,
       \item \code{CE.force=TRUE}
       \item \code{CE.trials=1}
       \item \code{CE.mmin=-4}
-      \item \code{CE.userfft=TRUE}
+      \item \code{CE.useprimes=TRUE}
     }
   }
   \item{debug}{logical. If \code{TRUE} then internally the

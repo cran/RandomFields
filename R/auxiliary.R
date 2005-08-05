@@ -277,7 +277,8 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
             ext <- exts[l][1]
           }
           if (dev) {
-            fn <- paste(ps,ext,sep=".")
+            fn <- paste(ps, ext, sep=".")
+            if (!file.create(fn)) stop(paste("The file", fn,"cannot be created"))
             postscript(fn, horizontal=FALSE, paper=paper, width=width,
                        height=height, ...)
           } else {
@@ -286,7 +287,8 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
           }
         } else { # character
           fn <-  paste(ps,".", dev, sep="")
-          txt <- paste(dev,"('", fn, "',width=width,height=height,...)", sep="")
+          if (!file.create(fn)) stop(paste("The file", fn, "cannot be created"))
+         txt <- paste(dev,"('", fn, "',width=width,height=height,...)", sep="")
           eval(parse(text=txt))
         }
         if (!quiet) cat("creating", fn, "\n")
@@ -301,7 +303,13 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       }
       keep <- dev < 3
     }
-    if (cur.cex) par(par.orig) # uncommented 12.8.04 + nach unten
+    # if (cur.cex) par(par.orig) # uncommented 12.8.04 + nach unten
+    if (cur.cex) { ## komisches Verhalten !! wenn die beiden Befehle
+      ##              zusammengefasst werden (gekippte eps in Latex)
+      ##              29.5.05
+      par(par.orig[39]) # $mfg
+      par(par.orig[-39])# uncommented 12. 8.04 + nach unten
+    }
     assign(".dev.orig", 
            list(dev.prev=devPrev, dev.cur=dev.cur(), keep=keep),
            envir=.RandomFields.env)
@@ -319,7 +327,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
     rm(.dev.orig, envir=.RandomFields.env) 
   }
   invisible(NULL)
-};
+}
 	
 hostname<-function(){.C("hostname", h=paste(seq(0,0,l=100), collapse=""),
                         as.integer(100), PACKAGE="RandomFields")$h}

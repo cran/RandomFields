@@ -83,8 +83,9 @@
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html};
   
-  Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
-  methods \sQuote{cutoff} and \sQuote{intrinsic})
+  Yindeng Jiang \email{jiangyindeng@gmail.com} implemented the
+  circulant embedding methods \sQuote{cutoff} and \sQuote{intrinsic}
+  in 2004. 
 }
 \references{
   This package is announced in:

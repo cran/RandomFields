@@ -104,6 +104,9 @@ GetModelNames()
       0<=x<=1, 0 otherwise}
     This isotropic covariance function is valid only for dimensions
     less than or equal to 2.
+
+    \item \code{constant}\cr
+    Identically constant. Any scale parameter is ignored.
     
     \item \code{cone}\cr
     This model is used only for methods based on marked point processes
@@ -124,6 +127,32 @@ GetModelNames()
     This model is valid only for dimensions less than or equal to 3. 
     It is a 2 times differentiable covariance functions with compact
     support. %(See Chiles&Delfiner, 1998)
+    
+    \item \code{cutoff} (hypermodel, see also below)
+    \deqn{C(x)=\phi(x), 0\le x \le \kappa_2}{C(x) = phi(x),   0 <= x <= b}
+    
+    \deqn{C(x)=b_1 (r^{\kappa_3} - x)^{2 \kappa_3}, \kappa_2\le x \le
+      \kappa_2\kappa_3}{C(x) = b_0 (r - x)^{2 c},   b <= x <= bc}
+    
+    \deqn{C(x)=0,  \kappa_2\kappa_3\le x}{C(x) = 0,   bc <= x}
+   
+    The cutoff model is a functional of the covariance function
+    \eqn{\phi}{phi};
+    see below for general comments on hypermodels.
+    
+    The first parameter, \eqn{\kappa_1}{a}, gives the number of
+    subsequent models that build \eqn{\phi}{phi};
+    \eqn{\kappa_2\ge0}{b>0}, \eqn{\kappa_3>0}{c>0}.
+    The parameters \eqn{r} and \eqn{b_0}
+    are chosen internally such that \eqn{C} is a smooth function.
+
+    The cutoff-model is not a valid covariance function for any
+    choice of phi and the parameters. Only some few
+    necessary conditions can be checked.
+    
+    For certain models \eqn{\phi}{phi}, i.e. \code{stable},
+    \code{whittle} and \code{gencauchy}, some sufficient conditions
+    are known.
     
     \item \code{dampedcosine}
     \deqn{C(x)=e^{-\kappa x} \cos(x),  \quad x\ge0}{C(x)=
@@ -403,6 +432,34 @@ GetModelNames()
     \deqn{C(x)=\exp\left(-x^\kappa\right)}{C(x)=exp(-x^a)}
     The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}{[0,2]}.
     See \code{exponential} and \code{gaussian} for special cases.
+
+    \item \code{Stein} (hypermodel, see also below)
+    \deqn{C(x)=a_0 + a_2 x^2 + \phi(x), 0\le x \le \kappa_2}{C(x) = a_0 + a_2
+      x^2 + phi(x),   0 <= x <= b}
+    
+    \deqn{C(x)=b_1 (\kappa_3 - x)^3/x, \kappa_2\le x \le
+      \kappa_2\kappa_3}{C(x) = b_0 (c - x)^3/x,   b <= x <= bc}
+    
+    \deqn{C(x)=0,  \kappa_2\kappa_3\le x}{C(x) = 0,   bc <= x}
+   
+    The Stein model is a functional of the covariance function
+    \eqn{\phi}{phi};
+    see below for for general comments on hypermodels.
+    
+    The first parameter, \eqn{\kappa_1}{a}, gives the number of
+    subsequent models that build \eqn{\phi}{phi};
+    \eqn{\kappa_2\ge0}{b>0}, \eqn{\kappa_3\ge1}{c>=1}.
+    The parameters \eqn{a_0}, \eqn{a_2} and \eqn{b_0}
+    are chosen internally such that \eqn{C} is a smooth function.
+
+    The Stein-model is not a valid covariance function for any
+    choice of phi and the parameters. Only some few
+    necessary conditions can be checked.
+    
+    For certain models \eqn{\phi}{phi}, i.e. \code{stable},
+    \code{whittle}, \code{gencauchy}, and the variogram
+    model \code{fractalB}
+    some sufficient conditions are known.
     
     \item symmetric stable\cr
     See \code{stable}.
@@ -515,7 +572,25 @@ GetModelNames()
     calculated. The dimension \eqn{d} of matrix must match the
     number of columns of \code{x}. The models given by \code{l.i}
     can be combined by \code{OP.i="+"} or \code{OP.i="*"}. 
-    \code{method} is ignored here; it can be set in \command{\link{GaussRF}}.
+    \code{method} is ignored here; it can be set in
+    \command{\link{GaussRF}}.
+
+    \item Hypermodels\cr
+    hypermodels are functions or functionals of covariance functions
+    or variograms. The first parameter is always the number of the following
+    covariance models included.
+    
+    The hypermodel inherits the anisotropy parameters (or the scale
+    parameter) from the first submodel. The given anisotropy parameters
+    are ignored.
+    
+    \bold{Important!} Hyper models are in an experimental stage:\cr
+    (i) the (current) algorithm does not allow for a complete
+    check whether the parameters for a hypermodel are well chosen.
+    So, only use parameter combinations for which you are sure they lead to a
+    positive definite function.
+    \cr
+    (ii) behaviour and parameters may change in future version!
   }
 }
 \value{
@@ -659,7 +734,6 @@ GetModelNames()
                list(model="nugget", var=1, aniso=1))
  cv - CovarianceFct(as.matrix(x), model=model)
 
-
  # The model gneitingdiff was defined in RandomFields v1.0.
  # This isotropic covariance function is valid for dimensions less
  # than or equal to 3 and has two positive parameters.
@@ -667,7 +741,7 @@ GetModelNames()
  # smooth parametrisation of the differentiability up to order 6.     
  # The former model `gneitingdiff' must now be coded as
  gneitingdiff <-  function(p){
-   list(list(m="gneiting", v=p[2], s=p[6]*p[4]*10*sqrt(2)/47),
+   list(list(m="gneiting", v=p[2], s=p[6]*p[4]),
        "*",
        list(m="whittle", k=p[5], v=1.0, s=p[4]),
        "+",

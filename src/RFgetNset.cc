@@ -27,7 +27,7 @@ extern "C" {
 #include <R.h>
 #include <Rdefines.h>
 }
-#include <R_ext/Applic.h>
+#include <R_ext/Linpack.h>
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
@@ -36,15 +36,6 @@ extern "C" {
 #include "RFsimu.h"
 #include "RFCovFcts.h"
 #include "MPPFcts.h"
-
-
-void GetParameterIndices(int *variance, int *scale, 
-			 int *kappa, int *lastkappa, int *invscale,
-   			 int *aniso)
-{
-  *variance=VARIANCE; *scale=SCALE; *kappa=KAPPA;
-  *lastkappa=LASTKAPPA; *invscale=INVSCALE; *aniso=ANISO;
-}
 
 
 void GetrfParameters(int *covmaxchar, int *methodmaxchar, 
@@ -107,36 +98,27 @@ void GetDistrNr(char **name, int *n, int *nr)
 void SetParamDecision( int *action, int *stationary_only, int *exactness)
 {
   int NA=-1;
-  switch(*action) {
-  case 0 :
-     DECISION_PARAM.stationary_only = (*stationary_only==NA) ?
+  if (*action) {
+    DECISION_PARAM.stationary_only = (*stationary_only==NA) ?
        DECISION_CASESPEC : *stationary_only ? DECISION_TRUE : DECISION_FALSE;
      DECISION_PARAM.exactness = (*exactness==NA) ?
        DECISION_CASESPEC : *exactness ? DECISION_TRUE : DECISION_FALSE;
-    break;
-  case 1 :
+  } else {
     *stationary_only = DECISION_PARAM.stationary_only==DECISION_TRUE ? true :
       DECISION_PARAM.stationary_only==DECISION_FALSE ? false : NA;
     *exactness = DECISION_PARAM.exactness==DECISION_TRUE ? true :
       DECISION_PARAM.exactness==DECISION_FALSE ? false : NA;
-    if (GetNotPrint) break;
-  case 2 :
-    PRINTF("\nDECISION_PARAM\n==================\nstationary_only=%d\nexactness=%d\n",
-	   DECISION_PARAM.stationary_only, DECISION_PARAM.exactness);
-    break;
-  default : PRINTF(" unknown action\n");
   }
 }
 
 void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
 		 int *trials, 
-		 int *mmin, // mmin must be vector of length MAXDIM!!
-		 int *userfft, int *strategy, double *maxmem,
+		 double *mmin, // mmin must be vector of length MAXDIM!!
+		 int *useprimes, int *strategy, double *maxmem,
 		 ce_param *CE, char *name)
 {
   int d;
-  switch(*action) {
-  case 0 :
+  if (*action) {
     CE->force=(bool)*force;
 
     CE->tol_re=*tolRe;
@@ -162,16 +144,15 @@ void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
 
     for (d=0; d<MAXDIM; d++) {
       CE->mmin[d] = mmin[d];
-      if (CE->mmin[d]>0) {
-	CE->mmin[d] = 
-	  1 << (1+(int) (log(((double) CE->mmin[d])-0.1)/log(2.0))); 
-
-	if ((CE->mmin[d]!=mmin[d]) && (GENERAL_PRINTLEVEL>0))
-	  PRINTF("\nWARNING! %s.mmin[%d] set to %d.\n",name,d,CE->mmin[d]);
+      if (CE->mmin[d]<0.0) {
+	if ((CE->mmin[d]>-1.0) && (GENERAL_PRINTLEVEL>0)) {
+	    CE->mmin[d] = -1.0;
+	    PRINTF("\nWARNING! %s.mmin[%d] set to -1.0.\n");
+	}
       }
     }
  
-    CE->userfft=(bool)*userfft;
+    CE->useprimes=(bool)*useprimes;
 
     if (*strategy>LASTSTRATEGY) {  
       if (GENERAL_PRINTLEVEL>0) 
@@ -179,28 +160,18 @@ void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
     } else CE->strategy=(char) *strategy;     
 
     CE->maxmem = *maxmem;
-
-    break;
-  case 1 :
+  } else {
     *force=CE->force;
     *tolRe=CE->tol_re;
     *tolIm=CE->tol_im;
     *trials=CE->trials;
     for (d=0; d<MAXDIM; d++) {mmin[d]=CE->mmin[d];}   
-    *userfft= CE->userfft;
+    *useprimes= CE->useprimes;
     *strategy = (int) CE->strategy;
     *maxmem = CE->maxmem;
-    if (GetNotPrint) break;
-  case 2 :
-    PRINTF("\n%s\n==========\nforce=%d\ntol_re=%e\ntol_im=%e\ntrials=%d\nuserfft=%d\nstrategy=%d\nmaxmem=%e\n",name,
-	   CE->force,CE->tol_re,CE->tol_im, CE->trials, CE->userfft,
-	   (int) CE->strategy, CE->maxmem);
-    for (d=0; d<MAXDIM; d++) PRINTF("%d ", CE->mmin[d]);
-    PRINTF("\n");
-    break;
-  default : PRINTF(" unknown action\n");
   }
 }
+  
 
 void GetModelName(int *nr,char **name){
   if (currentNrCov==-1) InitModelList();
@@ -309,10 +280,9 @@ void PrintMethods()
 
 void PrintCovDetailed(int i)
 {
-  PRINTF("%5d: %s cov=%d, intr=%d, cut=%d tbm=%d %d %d, spec=%d,\n        abf=%d hyp=%d, oth=%d %d\n",
+  PRINTF("%5d: %s cov=%d, tbm=%d %d, spec=%d,\n abf=%d hyp=%d, oth=%d %d\n",
 	 i,CovList[i].name,CovList[i].cov,
-	 CovList[i].intrinsic_strategy,CovList[i].cutoff_strategy,
-	 CovList[i].cov_tbm2,CovList[i].cov_tbm3,CovList[i].tbm_method,
+	 CovList[i].cov_tbm2,CovList[i].cov_tbm3,
 	 CovList[i].spectral,CovList[i].add_mpp_scl,CovList[i].hyperplane,
 	 CovList[i].initother,CovList[i].other);
 }
@@ -346,54 +316,73 @@ void GetRange(int *nr, int *dim, int *index, double *range, int *lrange){
   //assert(false);
 }
 
-extern int IncludeModel(char *name, int kappas, checkfct check,
-			int isotropic, bool variogram, infofct info,
-			rangefct range) 
-{  
+int createmodel(char *name, int kappas, int type, infofct info, bool variogram, 
+		rangefct range) {
   int i;
   if (currentNrCov==-1) InitModelList(); assert(CovList!=NULL);
   assert(currentNrCov>=0);
   if (currentNrCov>=MAXNRCOVFCTS) 
     {PRINTF("Error. Model list full.\n");return -1;}
-   strncpy(CovList[currentNrCov].name, name, COVMAXCHAR-1);
+
+  strncpy(CovList[currentNrCov].name, name, COVMAXCHAR-1);
   CovList[currentNrCov].name[COVMAXCHAR-1]='\0';
   if (strlen(name)>=COVMAXCHAR) {
     PRINTF("Warning! Covariance name is truncated to `%s'",
 	   CovList[currentNrCov].name);
   }
+
   CovList[currentNrCov].kappas = kappas;
-  CovList[currentNrCov].check = check;
-  CovList[currentNrCov].isotropic = isotropic;
-  CovList[currentNrCov].cov=NULL;
-  CovList[currentNrCov].naturalscale=NULL;
+  CovList[currentNrCov].type = type;
+  assert((CovList[currentNrCov].info=info) != NULL); 
+  CovList[currentNrCov].variogram = variogram;
+  CovList[currentNrCov].even = true; 
+  for (i=0; i<MAXDIM; i++) CovList[currentNrCov].odd[i] = false;
+  assert((CovList[currentNrCov].range= range) != NULL);
+  CovList[currentNrCov].check = NULL;
+  CovList[currentNrCov].checkNinit = NULL; // hyper and local ce
   for (i=0; i<SimulationTypeLength; i++)
     CovList[currentNrCov].implemented[i] = NOT_IMPLEMENTED;
-  CovList[currentNrCov].intrinsic_strategy=NULL;
-  CovList[currentNrCov].cutoff_strategy=NULL;
+
+  CovList[currentNrCov].naturalscale=NULL;
+  CovList[currentNrCov].cov=NULL;
+  CovList[currentNrCov].localtype = Nothing; // local ce
+  CovList[currentNrCov].getparam = NULL;
+
   CovList[currentNrCov].derivative=NULL;
   CovList[currentNrCov].secondderivt=NULL;
 
   CovList[currentNrCov].cov_tbm2=NULL;
   CovList[currentNrCov].cov_tbm3=NULL;
-  CovList[currentNrCov].derivative=NULL,
   CovList[currentNrCov].spectral=NULL;
+
   CovList[currentNrCov].add_mpp_scl=NULL;  
-  CovList[currentNrCov].add_mpp_rnd=NULL;  
+  CovList[currentNrCov].add_mpp_rnd=NULL;
   CovList[currentNrCov].hyperplane=NULL;
   CovList[currentNrCov].initother=NULL;
   CovList[currentNrCov].other=NULL;
-  CovList[currentNrCov].tbm_method = Forbidden;
-  CovList[currentNrCov].isotropic = isotropic;
-  CovList[currentNrCov].variogram = variogram;
-  CovList[currentNrCov].even = true; 
-  CovList[currentNrCov].range= range;
-  assert((CovList[currentNrCov].info=info)!=NULL); 
-   for (i=0; i<MAXDIM; i++) {
-     CovList[currentNrCov].odd[i] = false;
-   }
-  if (kappas>0) assert(check!=NULL);
   currentNrCov++;
   return(currentNrCov-1);
+}
+
+int IncludeHyperModel(char *name, int kappas, checkhyper check,
+			     int type, bool variogram, infofct info,
+			     rangefct range)
+{  
+    int nr;
+    nr = createmodel(name, kappas, type, info, variogram, range);
+    assert((CovList[nr].checkNinit = check) != NULL);
+    return nr;
+}
+
+
+extern int IncludeModel(char *name, int kappas, checkfct check,
+			int type, bool variogram, infofct info,
+			rangefct range) 
+{  
+    int nr;
+    nr = createmodel(name, kappas, type, info, variogram, range);
+    assert((CovList[nr].check = check) != NULL);
+    return nr;
 }
 
 extern void addodd(int nr, int dim) {
@@ -402,7 +391,7 @@ extern void addodd(int nr, int dim) {
 
   assert((dim>=0) && (dim<MAXDIM));
   assert((nr>=0) && (nr<currentNrCov));
-  assert(CovList[nr].isotropic==ANISOTROPIC);
+  assert(CovList[nr].type==ANISOTROPIC);
   CovList[nr].even = false;
   CovList[nr].odd[dim] = true;
 }
@@ -418,7 +407,7 @@ extern void addodd(int nr, int dim) {
 //  for (i=2; i<MAXDIM; i++) CovList[nr].first[i]=r3;
 //}
 
-extern void addCov(int nr, covfct cov, isofct derivative,
+void addCov(int nr, covfct cov, isofct derivative,
 		   natscalefct naturalscale)
 {
   assert((nr>=0) && (nr<currentNrCov) && cov!=NULL);
@@ -429,33 +418,46 @@ extern void addCov(int nr, covfct cov, isofct derivative,
     CovList[nr].implemented[Direct] = !CovList[nr].variogram;
 }
 
-extern void addLocal(int nr, IntrinsicStrategyFct intrinsic_strategy, 
-		     CutoffStrategyFct cutoff_strategy, 
-		     isofct secondderiv)
+void addLocal(int nr, bool cutoff, isofct secondderiv, int*variable)
 {
   assert((nr>=0) && (nr<currentNrCov) && CovList[nr].derivative!=NULL);
-  CovList[nr].intrinsic_strategy=intrinsic_strategy;
-  CovList[nr].cutoff_strategy=cutoff_strategy;
-  CovList[nr].implemented[CircEmbedCutoff] = cutoff_strategy!=NULL;
   CovList[nr].secondderivt=secondderiv;
-  if ((CovList[nr].implemented[CircEmbedIntrinsic] = intrinsic_strategy!=NULL))
-    assert(secondderiv!=NULL);
+  assert(variable != NULL);
+  assert(CovList[nr].derivative != NULL);
+  *variable = nr;
+  CovList[nr].implemented[CircEmbedCutoff] = cutoff;
+  CovList[nr].implemented[CircEmbedIntrinsic] = secondderiv != NULL;
+}
+
+extern void addInitLocal(int nr, getparamfct getparam,
+			 alternativeparamfct alternative, LocalType type)
+{
+  assert((nr>=0) && (nr<currentNrCov));
+  CovList[nr].localtype = type;
+  CovList[nr].getparam = getparam;
+  CovList[nr].alternative = alternative;
+  assert(nlocal < nLocalCovList);
+  LocalCovList[nlocal++] = nr; 
+  switch(type) {
+    case CircEmbed : case CircEmbedCutoff : case CircEmbedIntrinsic : 
+	CovList[nr].implemented[type] = HYPERIMPLEMENTED; 
+	// printf("init %s %d %d %d\n",CovList[nr].name, CovList[nr].implemented[type], type, CircEmbedCutoff);
+	break;
+    default : assert(false);
+  }
 }
 
 extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
-		   SimulationType tbm_method,
 		   randommeasure spectral) {
   // must be called always AFTER addCov !!!!
   assert((nr>=0) && (nr<currentNrCov));
   CovList[nr].cov_tbm2=cov_tbm2;
   CovList[nr].implemented[TBM2] = (cov_tbm2!=NULL) ? IMPLEMENTED : 
-    (CovList[nr].derivative!=NULL) ? NUM_APPROX : NOT_IMPLEMENTED;
+    (CovList[nr].derivative!=NULL) 
+    ? NUM_APPROX 
+    : NOT_IMPLEMENTED;
   CovList[nr].cov_tbm3=cov_tbm3;
-  CovList[nr].tbm_method = tbm_method;
-  if (cov_tbm3!=NULL || cov_tbm2!=NULL || CovList[nr].derivative!=NULL || 
-      tbm_method!=Nothing){
-    assert(CovList[nr].derivative!=NULL && tbm_method!=Nothing);
-  }
+  if (cov_tbm3!=NULL || cov_tbm2!=NULL) assert(CovList[nr].derivative!=NULL);
   CovList[nr].implemented[TBM3] = CovList[nr].cov_tbm3!=NULL;
   CovList[nr].spectral=spectral;
   CovList[nr].implemented[SpectralTBM] = spectral!=NULL;
@@ -483,7 +485,7 @@ void PrintModelList()
   int i, last_method, m;
   char percent[]="%";
   char header[]="Circ cut intr TBM2 TBM3 spec drct nugg add hyp oth\n";
-  char coded[4][2]={"-", "X", "+", "o"};
+  char coded[5][2]={"-", "X", "+", "o", "h"};
   char firstcolumn[20], empty[5][5]={"", " ", "  ", "   ", "    "};
   int empty_idx[(int) Nothing] = {1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0};
 
@@ -514,6 +516,7 @@ void PrintModelList()
     PRINTF("'X': method available for at least some parameters\n");
     PRINTF("'+': parts are evaluated only approximatively\n");
     PRINTF("'o': given method is ignored and an alternative one is used\n");
+    PRINTF("'h': available only as internal model within the method \n");
   }
 }
 
@@ -533,7 +536,8 @@ void GetModelList(int* idx) {
 
 void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 		       double *natscale, int *error)
-{
+{ // called also by R 
+
   //  q: kappas only
 
   // values of naturalscaling:
@@ -542,7 +546,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
   //#define NATSCALE_MLE 3 /* check fitvario when changing !! */
   // +10 if numerical is allowed
   static int oldcovnr = -99;
-  static double oldp[TOTAL_PARAM], p[TOTAL_PARAM];
+  static param_type oldp, p;
   static double OldNatScale;
   int TEN, endfor, k;
   bool numeric;  
@@ -552,7 +556,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
   endfor = KAPPA + CovList[*covnr].kappas;
   for (k=KAPPA; k<endfor; k++) p[k]=q[k-KAPPA];
   if (*naturalscaling) {	 
-    if (CovList[*covnr].isotropic!=FULLISOTROPIC) {
+    if (CovList[*covnr].type!=FULLISOTROPIC) {
       *error=ERRORANISOTROPIC; return;}
     if (!(numeric=*naturalscaling>TEN)) {TEN=0;}
     *natscale=0.0;
@@ -584,7 +588,8 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       // the other parameters need not to be copied as checked that 
       // they are identical to previous ones
       for (;parami<endfor;parami++) {oldp[parami]=p[parami];}
-      oldp[VARIANCE] = oldp[SCALE] = oldp[INVSCALE] = 1.0; 
+      // oldp[VARIANCE] = oldp[ANISO] = 1.0; not necessary to set explicitly, 
+      // but used in this sense in the following
       oldcovnr = -99; /* if error occurs, the next call will realise that 
 			 the previous result cannot be used */
 
@@ -593,10 +598,10 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       */
       wave  = 0;
       x = 1.0; 
-      if ( (yold=cov(&x,oldp,1)) > 0.05) {
+      if ( (yold=cov(&x, oldp, 1)) > 0.05) {
 	double leftx;
 	x *= 2.0;
-	while ( (y=cov(&x,oldp,1)) > 0.05) {  
+	while ( (y=cov(&x, oldp, 1)) > 0.05) {  
 	  if (yold<y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
 	  yold = y;
 	  x *= 2.0;
@@ -606,7 +611,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 	for (i=0; i<3 /* good choice?? */ ;i++) {          
 	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
 	  newx = x + (x-leftx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(&newx,oldp,1)) >0.05) {
+	  if ( (newy=cov(&newx, oldp, 1)) >0.05) {
 	    leftx = newx;
 	    yold  = newy;
 	  } else {
@@ -619,7 +624,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       } else {
 	double rightx;
 	x *= 0.5;
-	while ( (y=cov(&x,oldp,1)) < 0.05) {  
+	while ( (y=cov(&x, oldp, 1)) < 0.05) {  
 	  if (yold>y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
 	  yold = y;
 	  x *= 0.5;
@@ -629,7 +634,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 	for (i=0; i<3 /* good choice?? */ ;i++) {          
 	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
 	  newx = x + (x-rightx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(&newx,oldp,1)) <0.05) {
+	  if ( (newy=cov(&newx, oldp, 1)) <0.05) {
 	    rightx = newx;
 	    yold   = newy;
 	  } else {
@@ -649,28 +654,21 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 }
 void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
 	      char **pch) {
-  switch (*action) {
-  case 0 :
+  if (*action) {
     GENERAL_STORING= (bool) *storing;
     GENERAL_PRINTLEVEL=*printlevel;
     GENERAL_NATURALSCALING=*naturalscaling;
     if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
 	PRINTF("\n`pch' has more than one character -- first character taken only\n");
     strncpy(GENERAL_PCH, *pch, 1);
-    break;
-  case 1 :
+  } else {
     *storing =  GENERAL_STORING;
     *printlevel = GENERAL_PRINTLEVEL;
     *naturalscaling = GENERAL_NATURALSCALING;
     strcpy(*pch, GENERAL_PCH);
-   if (GetNotPrint) break;
- case 2 : 
-    PRINTF("\nGeneral Parameters\n==================\nstoring=%d\nprint level=%d\nnatural scaling=%d\npch=%s\n",
-	   GENERAL_STORING,GENERAL_PRINTLEVEL,GENERAL_NATURALSCALING,*pch);
-    break;
-  default : PRINTF(" unknown action\n"); 
   }
 }
+
 
 void StoreTrend(int *keyNr, int *modus, char **trend, 
 		int *lt, double *lambda, int *ll, int *error)
@@ -707,42 +705,155 @@ void StoreTrend(int *keyNr, int *modus, char **trend,
   return;
 }
 
+bool is_diag(aniso_type aniso, int dim) {
+  int diag = dim + 1, size = dim * dim, i;
+  bool notdiag=false;
+  for (i=0; i<size; i++) {
+    if (i % diag != 0 && (notdiag = aniso[i] != 0.0)) break;
+  }
+  return !notdiag;
+};
 
-void GetTrueDim(bool anisotropy, int timespacedim, double* param, 
-	        int *TrueDim, bool *no_last_comp,
-		int *start_aniso, int *index_dim)
-  // output: start_aniso (where the non-zero positions start, anisotropy)
-  //         index_dim   (dimension nr of the non-zero positions, aniso)
-  //         no_last_comp(last dim of aniso matrix. is identically zero, i.e,
-  //                      effectively no time component)
-  //         TrueDim     The reduced dimension, including the time direction
-{ 
-  int i,j;
-  long unsigned int endfor, startfor, k;
-  endfor = k = (int) RF_NAN;
+
+void GetParamterPos(int *variance, int *kappa, int* lastkappa, 
+		    int *tbm2num, int *hyperinternal, int *lasthyperinternal,
+		    int *scale, int *aniso, int *hypernr, int *localdiameter,
+		    int *local_r, int *cutoff_theo_r, int *hyperkappa,
+		    int *total){
+    *variance = VARIANCE;
+    *kappa = KAPPA;
+    *lastkappa = LASTKAPPA;
+    *tbm2num = TBM2NUM;
+    *hyperinternal = HYPERINTERNALI;
+    * lasthyperinternal = LASTHYPERINTERNAL;
+    *scale = SCALE;
+    *aniso = ANISO;
+    *hypernr = HYPERNR;
+    *localdiameter = DIAMETER;
+    *local_r = LOCAL_R;
+    *cutoff_theo_r = CUTOFF_THEOR;
+    *hyperkappa = HYPERKAPPAI;
+    *total = TOTAL_PARAM;
+}
+
+void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
+		char type, bool *Time, int *truetimespacedim, 
+		aniso_type aniso) {
+  // returns always the a (reduced) matrix; if not anisotropy then diag matrix
+  // of full size with elements 1/SCALE. 
+  int i,j, index[MAXDIM], job=01, err;
+  double *G, *matrix, *e, *D, *V;
+  e=G=matrix=D=V=NULL;// necessary!
+
   assert(timespacedim>0);
   if (anisotropy) {
-    /* check whether the dimension can be reduced */
-    /* TODO:this algorithm only detects zonal anisotropies -- could be improved*/
-    for (j=-1, i=0; i<timespacedim; i++) {
-      startfor = i * timespacedim + ANISO;
-      endfor= startfor + timespacedim;
-      for (k=startfor; k<endfor; k++) {
-	if (param[k]!=0.0) break;
-      }
-      if (k<endfor) {
-	start_aniso[++j]=startfor; /* where the non-zero positions*/
- 	/* of the anisotropy matrix start */
- 	index_dim[j] = i;
-      }
+    int col, row, endfor, TrueDim;
+    // row: rows of aniso matrix and of param
+    // col: number colums of param used for "matrix" (i.e. time is excluded for
+    //                                      space isotropy), see switch below
+    col = row = timespacedim;
+    endfor = ANISO + row * col; 
+    if (*Time) {
+      for (j=endfor - row; j<endfor; j++)
+	if (param[j] != 0.0) break;
+      *Time = j == endfor;
     }
-    *no_last_comp = k>=endfor; // last i is time, if k=endfor then all 
-    //                            components zero
-    *TrueDim = j+1;
+    switch (type) {
+	case ANISOTROPIC :
+	  *truetimespacedim = timespacedim;
+	  for (j=0; j<col; j++)
+	    for (i=0; i<row; i++)
+	      aniso[i + j * row] = param[ANISO + i + j * row];
+	  break;
+	case SPACEISOTROPIC :
+	  col -= 1;
+	  // no break!;
+	case FULLISOTROPIC :
+       	  err=ERRORMEMORYALLOCATION;
+	  if ((D =(double*) calloc(row, sizeof(double)))==NULL) 
+	      goto ErrorHandling;
+	  if ((V = (double *) calloc(row * row, sizeof(double))) == NULL)
+	      goto ErrorHandling;
+	  if (is_diag(&(param[ANISO]), row)) {
+	    int diag = row + 1, size = row * col;
+	    for (j=i=0; i<size; i+=diag, j++) {
+	      D[j] = param[ANISO + i];
+	      V[i] = 1.0;
+	    }
+	  } else {
+	    if ((matrix = (double *) malloc(sizeof(double) * row * row)) == NULL)
+		goto ErrorHandling;
+	    if ((e =(double*) malloc(sizeof(double) * row))==NULL) 
+		goto ErrorHandling;
+	    if ((G =(double*) malloc(sizeof(double) * (row + 1)))==NULL)
+		goto ErrorHandling;
+	    for (j=0; j<col; j++)
+		for (i=0; i<row; i++)
+		    matrix[i * row + j] = param[ANISO + i + j * row];
+	    for (; j<row; j++)
+		for (i=0; i<row; i++) 
+		    matrix[i * row + j] = 0.0;
+
+	    // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
+	    F77_NAME(dsvdc)(matrix, &row, &row, &row, D, e, NULL /* U */,
+			    &row, V, &row, G, &job, &err);
+	    if (err!=NOERROR) { err=-err;  goto ErrorHandling; }
+	  }
+
+	  for (TrueDim=i=j=0; j<row; j++)
+	      if (fabs(D[j]) > EIGENVALUE_EPS) {
+		  index[i++] = j;
+		    TrueDim++;
+	      }
+
+	  for (j=0; j<TrueDim; j++) 
+	      for (i=0; i<row; i++) 
+		  aniso[i + j * row] =//note V, not V^T is returned by dsvdc !
+		      V[i + index[j] * row] * D[index[j]];
+	  *truetimespacedim = TrueDim;
+	  
+	  if (col < row) {
+	      int param_segm = ANISO + row * col;
+	      assert(col + 1 == row && type==SPACEISOTROPIC);
+	      (*truetimespacedim)++;
+	      for (i=0; i<row; i++)
+		  aniso[i + TrueDim * row] = param[param_segm + i];
+	  }
+	  
+	  free(matrix); matrix=NULL; 
+	  free(D); D=NULL;
+	  free(e); e=NULL; 
+	  free(G); G=NULL;
+	  free(V); V=NULL;
+ 	  break;
+	case ISOHYPERMODEL :
+	  err = ERRORNOTPROGRAMMED;
+	  goto ErrorHandling;
+	  break;
+	default: assert(false);
+    }
   } else { 
-    *no_last_comp = true;
-    *TrueDim = timespacedim; // == spatialdim
+    *truetimespacedim = timespacedim; // == spatialdim
+    double invscale;
+    int endfor;
+    invscale = 1.0 / param[SCALE];
+    j = timespacedim + 1;
+    endfor = timespacedim * timespacedim;
+    for (i=0; i<endfor; aniso[i++]=0.0); 
+    for (i=0; i<endfor; i+=j) aniso[i] = invscale; 
   }
+
+//  printf("gettrue aniso %f\n", aniso[0]);
+
+  return;
+
+ ErrorHandling:
+  if (matrix!=NULL) free(matrix);
+  if (D!=NULL) free(D);
+  if (e!=NULL) free(e);
+  if (G!=NULL) free(G);
+  if (V!=NULL) free(V);
+  assert(false);
 }
 
 
@@ -815,6 +926,8 @@ void GetCoordinates(int *keyNr, double *x, int *error)
 void GetKeyInfo(int *keyNr, int *total, int *lengths, int *spatialdim, 
 		int *timespacedim, int *grid, int *distr, int *maxdim)
 {
+    // check with DoSimulateRF and subsequently with extremes.cc, l.170
+    // if any changings !
   int d;
   key_type *key;
   if (*maxdim<MAXDIM) { *total=-3; *maxdim=MAXDIM; return;} 
@@ -832,7 +945,7 @@ void GetKeyInfo(int *keyNr, int *total, int *lengths, int *spatialdim,
    }
 }
 
-SEXP keynum(double* V, int n) {
+SEXP Num(double* V, int n) {
   int i;
   SEXP dummy;
   PROTECT(dummy=allocVector(REALSXP, n));
@@ -841,26 +954,54 @@ SEXP keynum(double* V, int n) {
   return dummy;
 }
 
-SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive) { // extended
-#define ninfo 13
-  char *infonames[ninfo] = 
-    {"active", "grid", "anisotropy", "time.comp",
-     "distrib.", "model",  "mean", "TBMline", "spatial.dim", 
-     "timespacedim", "spatial.pts", "total.pts", "trend.mode", 
-    };
-#define nmodelinfo 5 // mit op
-  char *modelinfo[nmodelinfo] = {"op", "name", "method", "param", "processed"};
-  int knr, ni, i, actninfo, subi, k;
-  bool ignore_active;
-  SEXP info, namevec, model, submodel[MAXCOV], namemodelvec[2]; 
-  key_type *key;
+SEXP Int(int *V, int n) {
+  int i;
+  SEXP dummy;
+  PROTECT(dummy=allocVector(INTSXP, n));
+  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
+  UNPROTECT(1);
+  return dummy;
+}
 
-  knr = INTEGER(keynr)[0];
-  ignore_active = LOGICAL(Ignoreactive)[0];
-  if ((knr<0) || (knr>=MAXKEYS)) {
-    return allocVector(VECSXP, 0);
-  }
-  key = &(KEY[knr]);
+SEXP Mat(double* V, int row, int col) {
+  int i, n;
+  n = row * col;
+  SEXP dummy;
+  PROTECT(dummy=allocMatrix(REALSXP, row, col));
+  for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
+  UNPROTECT(1);
+  return dummy;
+}
+
+SEXP mvcov(int* V, int n) {
+  int i;
+  SEXP dummy;
+  PROTECT(dummy=allocVector(INTSXP, n));
+  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
+  UNPROTECT(1);
+  return dummy;
+}
+
+SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
+{
+#define ninfo 16
+  char *infonames[ninfo] = 
+      {"active" /* must be first */, 
+       "anisotropy", "compatible", "grid",  "storing", "time.comp",
+       "distrib.", "timespacedim", "totalparam", "spatial.dim", "trend.mode", 
+       "spatial.pts", "total.pts", "mean", "model", "method" 
+    };
+#define nmodelinfo 10 // mit op
+  char *modelinfo[nmodelinfo] = 
+      {"method", "truedim", "name", "op" /* must keep name */, "time.comp", 
+       "simugrid", "processed", "param", "aniso", "x"};
+#define nmethodinfo 5 // mit op
+  char *methodinfo[nmethodinfo] = 
+      {"name", "in.use", "actcov", "covnr", "mem"};
+  int ni, i, actninfo, subi, k, nc, exception;
+  SEXP info, namevec, model, method, submodel[MAXCOV],  submethod[MAXCOV], 
+      namemodelvec[2], namemethodvec, nameSvec, S; 
+  covinfo_type *kc;
 
   actninfo = (key->active || ignore_active) ? ninfo : 1;
   PROTECT(info=allocVector(VECSXP, actninfo));
@@ -869,59 +1010,237 @@ SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive) { // extended
   setAttrib(info, R_NamesSymbol, namevec);
   UNPROTECT(1);
 
+
   ni = 0;
   SET_VECTOR_ELT(info, ni++, ScalarLogical(key->active));
   if (!key->active && !ignore_active) {UNPROTECT(1); return info;}
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->grid)); 
   SET_VECTOR_ELT(info, ni++, ScalarLogical(key->anisotropy)); 
+  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->compatible)); 
+  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->grid)); 
+  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->storing)); 
   SET_VECTOR_ELT(info, ni++, ScalarLogical(key->Time)); 
+
   SET_VECTOR_ELT(info, ni++, mkString(DISTRNAMES[key->distribution]));
+  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->timespacedim));
+  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->totalparam));
+  //
+  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->spatialdim));
+  //
+  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->TrendModus));
+  //
+  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->spatialtotalpoints));
+  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->totalpoints));
+  //
+  SET_VECTOR_ELT(info, ni++, ScalarReal(key->mean));
+  //
 
   PROTECT(model = allocVector(VECSXP, key->ncov));
-  for (i=0; i<=1; i++) {
+  for (exception=0; exception <= 1; exception++) {
     int j;
-    PROTECT(namemodelvec[i] = allocVector(STRSXP, nmodelinfo - (i==0)));
-    for (j=0,k=(i==0); k<nmodelinfo; k++, j++) 
-      SET_VECTOR_ELT(namemodelvec[i], j, mkChar(modelinfo[k]));
+    PROTECT(namemodelvec[exception] = allocVector(STRSXP, nmodelinfo-exception));
+    for (j=k=0; k<nmodelinfo; k++) {
+      if (exception && !strcmp("op", modelinfo[k])) continue;
+      SET_VECTOR_ELT(namemodelvec[exception], j++, mkChar(modelinfo[k]));
+    }
   }
-  for (i=0; i<key->ncov; i++) {
-    PROTECT(submodel[i] = allocVector(VECSXP, nmodelinfo - (i==0)));
-    setAttrib(submodel[i], R_NamesSymbol, namemodelvec[i>0]);
+  nc = key->ncov-1;
+  for (i=0; i<=nc; i++) {
+    kc = &(key->cov[i]);
+    exception = i==nc;
+    PROTECT(submodel[i] = allocVector(VECSXP, nmodelinfo - exception));
+    setAttrib(submodel[i], R_NamesSymbol, namemodelvec[exception]);
 
     subi = 0;
-    if (i>0) SET_VECTOR_ELT(submodel[i], subi++,mkString(OP_SIGN[key->op[i-1]]));
-    SET_VECTOR_ELT(submodel[i], subi++, mkString(CovList[key->covnr[i]].name));
-    SET_VECTOR_ELT(submodel[i], subi++, mkString(METHODNAMES[key->method[i]]));
-    SET_VECTOR_ELT(submodel[i], subi++, keynum(key->param[i], key->totalparam));
-    SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(!key->left[i]));
-    assert(subi==nmodelinfo - (i==0));
- 
+    SET_VECTOR_ELT(submodel[i],subi++, mkString(METHODNAMES[kc->method]));
+    SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->truetimespacedim));
+    SET_VECTOR_ELT(submodel[i], subi++, mkString(CovList[kc->nr].name));
+    if (!exception) 
+	SET_VECTOR_ELT(submodel[i], subi++, mkString(OP_SIGN[kc->op]));
+    SET_VECTOR_ELT(submodel[i], subi++, 
+		   ScalarLogical(kc->genuine_time_component));
+    SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(kc->simugrid));
+    SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(!kc->left));
+    SET_VECTOR_ELT(submodel[i], subi++, (key->totalparam < 0)
+		   ? allocVector(VECSXP, 0) 
+		   : Num(kc->param, key->totalparam));
+    SET_VECTOR_ELT(submodel[i], subi++, (key->timespacedim<0) 
+		   ?  allocVector(VECSXP, 0) 
+		   : Mat(kc->aniso, key->timespacedim, kc->truetimespacedim)
+                     // should be matrix
+	);
+    if (kc->x == NULL) 
+	SET_VECTOR_ELT(submodel[i], subi++, allocVector(VECSXP, 0));
+    else
+	SET_VECTOR_ELT(submodel[i], subi++, 
+		       Mat(kc->x, kc->simugrid ? 3 : key->totalpoints, 
+			   kc->truetimespacedim));
+
+    assert(subi==nmodelinfo - (i==nc)); 
     SET_VECTOR_ELT(model, i, submodel[i]);
     UNPROTECT(1);
   }
   SET_VECTOR_ELT(info, ni++, model);
   UNPROTECT(3); // model + namemodelvec
+  kc = &(key->cov[0]);
 
-  SET_VECTOR_ELT(info, ni++, ScalarReal(key->mean));
-  SET_VECTOR_ELT(info, ni++, mkString(METHODNAMES[key->tbm_method]));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->spatialdim));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->timespacedim));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->spatialtotalpoints));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->totalpoints));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->TrendModus));
+
+  PROTECT(method = allocVector(VECSXP, key->n_unimeth));
+  PROTECT(namemethodvec = allocVector(STRSXP, nmethodinfo));
+  for (k=0; k<nmethodinfo; k++)
+       SET_VECTOR_ELT(namemethodvec, k, mkChar(methodinfo[k]));
+  for (i=0; i<key->n_unimeth; i++) {
+    methodvalue_type *meth;
+    meth = &(key->meth[i]);
+    PROTECT(submethod[i] = allocVector(VECSXP, nmethodinfo));
+    setAttrib(submethod[i], R_NamesSymbol, namemethodvec);
+
+    subi = 0;
+    SET_VECTOR_ELT(submethod[i], subi++, mkString(METHODNAMES[meth->unimeth]));
+    SET_VECTOR_ELT(submethod[i], subi++,
+		   ScalarLogical(meth->unimeth_alreadyInUse));
+    SET_VECTOR_ELT(submethod[i], subi++, ScalarInteger(meth->actcov));
+    SET_VECTOR_ELT(submethod[i], subi++, mvcov(meth->covlist, meth->actcov));
+    
+    int nS, nSlist[Forbidden + 1] =
+	{1 /* CE */, 2 /*Cutoff*/ , 2 /* Intr */, 8 /* TBM2 */ , 8 /* TBM3 */, 
+	 1 /*Sp */, 1 /* dir */, 1 /* nug */, 1 /* add */, 1 /* hyp */, 
+	 1 /* spec */, 1 /* noth */, 1 /* maxmpp */, 2 /*extremalGauss */,
+	 1 /* Forbidden */};
+    assert(Forbidden == 14);
+    assert(meth->unimeth < Forbidden);
+    nS = (meth->S!=NULL && depth<=1) ? nSlist[meth->unimeth] : 0;
+    PROTECT(S = allocVector(VECSXP, nS));
+    PROTECT(nameSvec = allocVector(STRSXP, nS));
+    k = 0;
+    if (nS != 0) switch (meth->unimeth) {
+	case CircEmbed : {
+	    CE_storage* s;
+	    s = (CE_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
+	    SET_VECTOR_ELT(S, k++, Int(s->m, key->timespacedim));	
+	    } break;
+	case CircEmbedCutoff : case CircEmbedIntrinsic : {
+	    localCE_storage* s;
+	    s = (localCE_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("factor"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->factor));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
+						      depth + 1));
+	} break;
+	case TBM2: case TBM3 : {
+	    TBM_storage* s;
+	    s = (TBM_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("aniso"));
+	    SET_VECTOR_ELT(S, k++, Mat(s->aniso, key->timespacedim,
+				       s->truetimespacedim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
+	    SET_VECTOR_ELT(S, k++, Num(s->center, s->truetimespacedim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuspatialdim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->simuspatialdim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
+	    if (s->x == NULL) SET_VECTOR_ELT(S, k++, allocVector(VECSXP, 0));
+	    else SET_VECTOR_ELT(S, k++, 
+				Mat(s->x, kc->simugrid ? 3 : key->totalpoints, 
+				    s->truetimespacedim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("l"));
+	    if (s->simuline==NULL) SET_VECTOR_ELT(S, k++, allocVector(VECSXP,0));
+	    else SET_VECTOR_ELT(S, k++, Num(s->simuline, s->key.totalpoints));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimesspacedim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->truetimespacedim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("ce_dim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
+						      depth + 1));
+	} break;
+	case SpectralTBM: {
+	    spectral_storage* s;
+	    s = (spectral_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("Amplitude"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->randomAmplitude[0]!=NULL));
+	} break;
+	case Direct : {
+	    direct_storage* s;
+	    s = (direct_storage*) meth->S;
+	    char *invm[NoFurtherInversionMethod + 1] =
+		{"Cholesky", "SVD", "None"};
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("invmethod"));
+	    SET_VECTOR_ELT(S, k++, (s->method<=NoFurtherInversionMethod) ?
+			   mkString(invm[s->method]) :  ScalarLogical(false));
+	}  break;
+	case Nugget : {
+	    nugget_storage* s;
+	    s = (nugget_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simple"));
+	    SET_VECTOR_ELT(S, k++,  ScalarLogical(s->simple));	
+	  }  break;
+	case AdditiveMpp : {
+	    mpp_storage* s;
+	    s = (mpp_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));	
+	}  break;
+	case Hyperplane : {
+	    hyper_storage* s;
+	    s = (hyper_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("radius"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->radius));	
+	} break;
+	case MaxMpp : {
+	    mpp_storage* s;
+	    s = (mpp_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));	
+	} break;
+	case ExtremalGauss : {
+	    extremes_storage* s;
+	    s = (extremes_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("inv_mean_pos"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->inv_mean_pos));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
+						      depth + 1));
+	
+	} break;
+	default :  
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("calling.method"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(meth->unimeth));
+	    
+    }
+    assert(k==nS);
+    setAttrib(S, R_NamesSymbol, nameSvec);
+    SET_VECTOR_ELT(submethod[i], subi++, S);
+    UNPROTECT(2); // method + namemethodvec
+ 
+    assert(subi==nmethodinfo); 
+    SET_VECTOR_ELT(method, i, submethod[i]);
+    UNPROTECT(1);
+  }
+  SET_VECTOR_ELT(info, ni++, method);
+  UNPROTECT(3); // method + namemethodvec
 
   assert(ni==ninfo);
-  UNPROTECT(1);
   return info;
 }
 
+SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive) 
+{ // extended
+    int knr;   
+    knr = INTEGER(keynr)[0];
+    if ((knr<0) || (knr>=MAXKEYS)) {
+	return allocVector(VECSXP, 0);
+    }
+    return InternalGetKeyInfo(&(KEY[knr]), LOGICAL(Ignoreactive)[0], 0);
+}
 
-void GetCornersOfGrid(key_type  *key, int Stimespacedim, int* start_aniso, 
-		      double *param, double *sxx){
+void GetCornersOfGrid(key_type *key, int Stimespacedim, double *aniso, 
+		      double *sxx)
+{
   // returning sequence (#=2^MAXDIM) vectors of dimension s->simutimespacedim
   double sx[ZWEIHOCHMAXDIM * MAXDIM];
-  int index,i,k,g,endforM1;
-  long endfor,indexx;
+  int index,i,k,g,endforM1,l,n;
+  long endfor;
   char j[MAXDIM];      
   endfor = 1 << key->timespacedim;
   endforM1 = endfor -1;
@@ -930,57 +1249,110 @@ void GetCornersOfGrid(key_type  *key, int Stimespacedim, int* start_aniso,
     for (k=0; k<key->timespacedim; k++) {
       sx[index] = key->x[k][XSTART];
       if (j[k]) 
-	sx[index] += key->x[k][XSTEP] * (double) (key->length[k]-1);
+	sx[index] += key->x[k][XSTEP] * (double) (key->length[k] - 1);
       index++;
     }
     k=0; (j[k])++;
     if (i!=endforM1)
       while(j[k]>=2) { assert(j[k]==2); j[k]=0;  k++; (j[k])++;}	
   }
-  for (index=indexx=i=0; i<endfor; 
-       i++, index+=key->timespacedim, indexx+=Stimespacedim) {
-    for (k=0; k<Stimespacedim; k++) {
+  endfor *= key->timespacedim;
+  for (index=l=0; index<endfor; index+=key->timespacedim) {
+    for (n=k=0; k<Stimespacedim; k++) {
       register double dummy;
       dummy = 0.0;
       for (g=0; g<key->timespacedim; g++) 
-	dummy += param[start_aniso[k]+g] * sx[index+g];
-      sxx[indexx + k] = dummy;
+	dummy += aniso[n++] * sx[index + g];
+      sxx[l++] = dummy;
     }
   }
 }
 
-void GetCornersOfElement(key_type  *key, int Stimespacedim, int* start_aniso, 
-		      double *param, double *sxx){
+void GetCornersOfElement(double *x[MAXDIM], int timespacedim, 
+			 covinfo_type *keycov, double *sxx) {
   double sx[ZWEIHOCHMAXDIM * MAXDIM];
-  int index,i,k,g,endforM1;
-  long endfor,indexx;
+  int index,i,k,g,n,endforM1,l;
+  long endfor;
   char j[MAXDIM];      
-  endfor = 1 << key->timespacedim;
+  endfor = 1 << timespacedim;
   endforM1 = endfor -1;
-  for (i=0; i<key->timespacedim; i++) j[i]=0;
+  for (i=0; i<timespacedim; i++) j[i]=0;
   for (index=i=0; i<endfor; i++) {
-    for (k=0; k<key->timespacedim; k++) {
-      if (j[k]) sx[index] = key->x[k][XSTEP]; else sx[index]=0.0;
+    for (k=0; k<timespacedim; k++) {
+      if (j[k]) sx[index] = x[k][XSTEP]; else sx[index]=0.0;
       index++;
     }
     k=0; (j[k])++;
     if (i!=endforM1)
       while(j[k]>=2) { assert(j[k]==2); j[k]=0;  k++; (j[k])++;}	
   }
-  for (index=indexx=i=0; i<endfor; 
-       i++, index+=key->timespacedim, indexx+=Stimespacedim) {
-    for (k=0; k<Stimespacedim; k++) {
+  endfor *= timespacedim;
+  for (index=l=0; index<endfor; index+=timespacedim) {
+    n = 0;
+    for (k=0; k<keycov->truetimespacedim; k++) {
       register double dummy;
       dummy = 0.0;
-      for (g=0; g<key->timespacedim; g++) 
-	dummy += param[start_aniso[k]+g] * sx[index+g];
-      sxx[indexx + k] = dummy;
+      for (g=0; g<timespacedim; g++) 
+        dummy += keycov->aniso[n++] * sx[index + g];
+      sxx[l++] = dummy;
     }
   }
 }
+
+
+void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
+			  int truetimespacedim, double *x, aniso_type aniso,
+			  double *center, double *lx, double *diameter)
+{
+    // center and length of surrounding rectangle of the simulation area
+    // length of diagonal of the rectangle
+  double distsq;
+  int d;  
+
+  distsq = 0.0; // max distance
+  if (simugrid) {
+    // diameter of the grid
+    for (d=0; d<simuspatialdim; d++) {
+      lx[d] = x[XSTEPD[d]] * (double) (key->length[d] - 1);
+      center[d] = 0.5 * lx[d] + x[XSTARTD[d]];
+      distsq += lx[d] * lx[d];
+    }
+  } else { // not simugrid
+    double min[MAXDIM], max[MAXDIM], *xx, sxx[ZWEIHOCHMAXDIM * MAXDIM]; 
+    int endfor, i;
+    for (d=0; d<MAXDIM; d++) {min[d]=RF_INF; max[d]=RF_NEGINF;}
+    if (key->grid) { // key->grid     
+      GetCornersOfGrid(key, truetimespacedim, aniso, sxx);      
+      endfor = (1 << key->timespacedim) * truetimespacedim;
+      xx = sxx;
+    } else { // not key->grid
+      endfor = key->totalpoints * truetimespacedim;
+      // determine componentwise min and max (for the diameter)
+      xx = x;
+    }
+    // to determine the diameter of the grid determine as approxmation
+    // componentwise min and max corner
+    for (i=0; i<endfor; ) {
+      for (d=0; d<truetimespacedim; d++, i++) {
+        //temporal part need not be considered, but for ease included
+	if (xx[i]<min[d]) min[d] = xx[i];
+	if (xx[i]>max[d]) max[d] = xx[i];
+      }
+    }
+    // max distance, upperbound
+    distsq = 0.0;
+    for (d=0; d< simuspatialdim; d++) { // not here no time component!
+      lx[d] = max[d] - min[d];
+      distsq += lx[d] * lx[d];
+      center[d] = 0.5 * (max[d] + min[d]); 
+    }
+  } // !simugrid
+  *diameter = sqrt(distsq);
+}
+
 
 void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
-			int Ssimuspatialdim, double *min, double *max) {
+			     int Ssimuspatialdim, double *min, double *max) {
   long endfor,indexx,index;
   int d,i,k;
   endfor = 1 << key->timespacedim;
@@ -999,6 +1371,7 @@ void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
   *min = sqrt(*min);
   *max = sqrt(*max);
 }
+
 
 void niceFFTnumber(int *n) {
   *n = (int) NiceFFTNumber( (unsigned long) *n);
@@ -1056,46 +1429,6 @@ unsigned long NiceFFTNumber(unsigned long n) {
   }
 }
 
-int eigenvalues(double *C, int dim, double *ev)
-{
-  // SVD decomposition
-  double *V,*e, *U, *G, *D;
-  long longrow = dim, job=11;
-  int error, d;
-  error=0;
 
-  D = V = e = U = G = NULL;
-  if ((U =(double *) malloc(sizeof(double) * longrow * longrow))==NULL){
-    error=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  }
-  if ((G = (double *)  malloc(sizeof(double) * longrow))==NULL){
-    error=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  } 
-  if ((D = (double *)  malloc(sizeof(double) * longrow  * longrow))==NULL){
-    error=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  } 
-  if ((V =(double *) malloc(sizeof(double) * longrow * longrow))==NULL){
-    error=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  }
-  if ((e = (double *) malloc(sizeof(double) * longrow))==NULL){
-    error=ERRORMEMORYALLOCATION;goto ErrorHandling;
-  }
-  
-  for (d=dim * dim -1; d>=0; d--) D[d]=C[d]; // dsvdc destroys the 
-  // input matrix !!!!!!!!!!!!!!!!!!!!
-  { 
-    int row,jobint; 
-    row=longrow; jobint=job;
-    F77_CALL(dsvdc)(D,&row,&row,&row,ev,e,U,&row,V,&row,G,&jobint,
-		    &error);
-  }
 
- ErrorHandling:
-  if (D!=NULL) free(D);
-  if (V!=NULL) free(V);
-  if (e!=NULL) free(e);
-  if (U!=NULL) free(U);
-  if (G!=NULL) free(G);
-  return error;
-}
 

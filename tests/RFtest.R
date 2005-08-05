@@ -221,7 +221,10 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
             } # method
           } # if method should not be ignored ...
         } # pointrep
-       v <- v / repet;
+        v <- v / repet;
+    print(model)
+    print(param)
+    print(dim)
         truevariogram  <- Variogram(midbinP0, model, param, dim)
         delta <- apply(abs(v-truevariogram[-1]),2,sum,na.rm=TRUE)
         delta[apply(is.na(v),2,all)]<-NA;

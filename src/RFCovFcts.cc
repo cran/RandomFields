@@ -10,7 +10,8 @@
  * when defining your own function, make sure that the covariance function 
    itself allows for an additional nugget effect (spectral measures and tbm 
    operators don't)     
- * VARIANCE, SCALE should not be used
+ * VARIANCE, SCALE may not be used here since these parameters are already 
+   considered elsewhere
 
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
@@ -52,35 +53,7 @@ static double range_stable[4] = {0, 2, 0.06, 2};
 static double range_whittle[4]= {0, RF_INF, 1e-2, 10.0};
 static double range_cauchy[4] = {0, RF_INF, 0.09, 10.0};
 static double range_genCauchy[8] = {0, 2, 0.05, 2, 0, RF_INF, 0.05, 10.0};
-#define infdim 9999
 
-local_strategy_type 
-local_choice(double *param, double inter_scaled_spacing, 
-	     double threshold_theo, double intrinsic_r_theo,
-	     double* threshold_table, int maxidx_maxgridsize,
-	     int maxidx_diameter,
-	     double *localparam) {
-#define MAXGRIDSIZE_INTRINSIC 2048 /* max grid length for 2D simulation */
-#define INVLOGSQRT2 (2 * INVLOG2)
-  int idx_grid, idx_diam;
-  assert(param[DIAMETER]>0);
-  if (param[KAPPA]<=threshold_theo) {
-    localparam[INTRINSIC_R] = intrinsic_r_theo;
-    return TheoGuaranteed;
-  }
-  idx_grid = (int) (log(MAXGRIDSIZE_INTRINSIC * inter_scaled_spacing) *
-			   INVLOGSQRT2);
-  if (idx_grid >= maxidx_maxgridsize) idx_grid=maxidx_maxgridsize - 1;
-  idx_diam = (int) (param[DIAMETER] * INVSQRTTWO);
-  if (idx_diam > maxidx_diameter) idx_diam = maxidx_diameter;
-  if (idx_grid >= 0 && idx_diam >= 1 && 
-      param[KAPPA] <= threshold_table[idx_grid * maxidx_diameter + idx_diam -1])
-  {
-    localparam[INTRINSIC_R] = pow(SQRT2, idx_grid);
-    return NumeGuaranteed;
-  }
-  return SearchR;
-}
 
 double interpolate(double y, double *stuetz, int nstuetz, int origin,
 		 double lambda, int delta)
@@ -101,13 +74,30 @@ double interpolate(double y, double *stuetz, int nstuetz, int origin,
 }
 
 //// NOTE : `*p' may not be changed by any of the functions!
-
-double testCov(double *x,double *p, int effectivedim){
-  double y;
-  y = fabs(*x);  
-  if (y==0) return 1.0;
-  return (y * M_E < 1) ? (1.0 + 1.0 / log(y)) : 0;
+/* constant model */
+double constant(double *x, double *p, int effectivedim){
+  return 1.0;
 }
+double TBM2constant(double *x, double *p, int effectivedim) 
+{
+  return 1.0;
+}
+double TBM3constant(double *x, double *p, int effectivedim){
+   return 1.0;
+}
+double Dconstant(double *x, double *p, int effectivedim){
+  return 0.0;
+}
+void rangeconstant(int dim, int *index, double* range){ 
+  *index = -1; 
+}
+int checkconstant(double *param, int timespacedim, SimulationType method) {
+    return NOERROR;
+}
+void infoconstant(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = INFDIM; *CEbadlybehaved=false;
+}
+
 
 /* exponential model */
 double exponential(double *x, double *p, int effectivedim){
@@ -137,19 +127,24 @@ double spectralexponential(double *p ) { /* see Yaglom ! */
 void rangeexponential(int dim, int *index, double* range){ 
   *index = -1; 
 }
+int checkexponential(double *param, int timespacedim, SimulationType method) {
+    return NOERROR;
+}
 
-int hyperexponential(double *lenx, double *mx, int dim, bool simulate, 
-		     double** Hx, double** Hy, double** Hr){
+int hyperexponential(double radius, double *center, double *rx,
+		     int dim, bool simulate, 
+		     double** Hx, double** Hy, double** Hr)
+{
   // lenx : half the length of the rectangle
-  // mx   : center of the rectangle
+  // center   : center of the rectangle
   // simulate=false: estimated number of lines returned;
   // simulate=true: number of simulated lines returned;
   // hx, hy : direction of line
   // hr     : distance of the line from the origin
-  // rectangular area where mx gives the center and lenx half the side length
+  // rectangular area where center gives the center 
   // 
   // the function expects scale = 1;
-  double lambda, phi, rmax, lx, ly, *hx, *hy, *hr;
+  double lambda, phi, lx, ly, *hx, *hy, *hr;
   long i, p, q;
   int k, error;
   
@@ -157,10 +152,9 @@ int hyperexponential(double *lenx, double *mx, int dim, bool simulate,
     // we should be in two dimensions
     // first, we simulate the lines for a rectangle with center (0,0)
     // and half the side length equal to lenx
-    lx = lenx[0];
-    ly = lenx[1];
-    rmax = sqrt(lx * lx + ly * ly);
-    lambda = TWOPI * rmax * 0.5; /* total, integrated, intensity */
+    lx = rx[0];
+    ly = rx[1];
+    lambda = TWOPI * radius * 0.5; /* total, integrated, intensity */
     //    0.5 in order to get scale 1
     if (!simulate) return (int) lambda;
     assert(*Hx==NULL);
@@ -188,14 +182,14 @@ int hyperexponential(double *lenx, double *mx, int dim, bool simulate,
       phi = UNIFORM_RANDOM * TWOPI;
       hx[q] = cos(phi); 
       hy[q] = sin(phi);    
-      hr[q] = UNIFORM_RANDOM * rmax;
+      hr[q] = UNIFORM_RANDOM * radius;
       k = (hx[q] * (-lx) + hy[q] * (-ly) < hr[q]) +
           (hx[q] * (-lx) + hy[q] * ly < hr[q]) +
           (hx[q] * lx + hy[q] * (-ly) < hr[q]) +
           (hx[q] * lx + hy[q] * ly < hr[q]);
       if (k!=4) { // line inside rectangle, so stored
 	// now the simulated line is shifted into the right position 
-	hr[q] += mx[0] * hx[q] + mx[1] * hy[q]; 
+	hr[q] += center[0] * hx[q] + center[1] * hy[q]; 
 	q++; // set pointer for storing to the next element
       }
     }
@@ -210,7 +204,7 @@ int hyperexponential(double *lenx, double *mx, int dim, bool simulate,
   assert(false);
 }
 void infoexponential(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim; *CEbadlybehaved=false;
+  *maxdim = INFDIM; *CEbadlybehaved=false;
 }
 
 
@@ -236,9 +230,9 @@ int checkqexponential(double *param, int timespacedim, SimulationType method){
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
     return ERRORCOVFAILED;
   }
-  return 0;  
+  return NOERROR;  
 }
-double TBM3Dexponential(double *x, double *p, int effectivedim){
+double TBM3qexponential(double *x, double *p, int effectivedim){
    register double y;
    y = exp(-fabs( *x));
    return (y * (2.0  - p[KAPPA] * y) + 
@@ -253,11 +247,11 @@ double Dqexponential(double *x, double *p, int effectivedim) {
 void rangeqexponential(int dim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = -1; 
-  double r[4] = {0, 1, 0, 1};
+  static double r[4] = {0, 1, 0, 1};
   memcpy(range, r, sizeof(double) * 4);
 }
 void infoqexponential(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = (p[KAPPA]>=0 && p[KAPPA]<=1) ? infdim : 0; 
+  *maxdim = (p[KAPPA]>=0 && p[KAPPA]<=1) ? INFDIM : 0; 
   *CEbadlybehaved=false;
 }
 
@@ -348,6 +342,15 @@ void infocircular(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim= 2;
   *CEbadlybehaved=false;
 }
+int checkcircular(double *param, int timespacedim, SimulationType method){
+  if (timespacedim>2) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 2");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
+}
+
 
 
 /* spherical model */ 
@@ -385,6 +388,14 @@ void rangespherical(int dim, int *index, double* range){
 void infospherical(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
   *CEbadlybehaved=false;
+}
+int checkspherical(double *param, int timespacedim, SimulationType method){
+  if (timespacedim > 3) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
 }
 
 
@@ -489,42 +500,6 @@ double DDstable(double *x, double*p, int effectivedim)
   xkappa = y *z * z;
   return p[KAPPA] * (1.0 - p[KAPPA] + p[KAPPA] * xkappa) * y * exp(-xkappa);
 }
-local_strategy_type 
-stable_intrinsic_strategy(double *param, double inter_scaled_spacing, 
-			  int timespacedim, double *localparam) {
-#define stable_maxidx_maxgridsize 3
-#define stable_maxidx_diameter 3
-  double threshold_theo = 1.0, intrinsic_r_theo = 1.0,
-    threshold_table[stable_maxidx_maxgridsize][stable_maxidx_diameter] =
-    {{1.55, 1.85, 1.99},
-     {1.85, 1.99, 1.99},
-     {1.90, 1.99, 1.99}};
-  return local_choice(param, inter_scaled_spacing, 
-		      threshold_theo, intrinsic_r_theo,
-		      (double*) threshold_table, stable_maxidx_maxgridsize, 
-		      stable_maxidx_diameter, localparam);
-}
-
-local_strategy_type stable_cutoff_strategy( double *param, double* localparam,
-					    local_strategy_type current_strategy) {
-  switch (current_strategy) {
-      case TellMeTheStrategy : 
-	if (param[KAPPA]<=0.5) {
-	  localparam[CUTOFF_A] = 0.5;
-	  return CallMeAgain;
-	} else { //  param[KAPPA] > 0.5
-	  localparam[CUTOFF_A] = 1.0;
-	  return (param[KAPPA] <= 1.0) ? TheoGuaranteed : JustTry;
-	}
-      case IncreaseCutoffA :
-	if (param[KAPPA]<=0.5) {
-	  localparam[CUTOFF_A] = 1.0;
-	  return TheoGuaranteed;
-	} 
-      default : assert(false);
-  }
-  assert(false);
-}
 
 int checkstable(double *param, int timespacedim, SimulationType method) {
   if ((param[KAPPA]<=0) || (param[KAPPA]>2.0)) {
@@ -555,7 +530,7 @@ void rangestable(int dim, int *index, double* range){
   memcpy(range, range_stable, sizeof(double) * 4);
 }
 void infostable(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = p[KAPPA] == 2.0;
 }
 
@@ -655,41 +630,7 @@ double DDWhittleMatern(double *x, double *p, int effectivedim)
 double spectralWhittleMatern(double *p ) { /* see Yaglom ! */
   return sqrt(pow(1.0 - UNIFORM_RANDOM, -1.0 / p[KAPPA]) - 1.0);
 }
-local_strategy_type 
-WhittleMatern_intrinsic_strategy(double *param, double inter_scaled_spacing, 
-				 int timespacedim, double *localparam) {
-#define WM_maxidx_maxgridsize 2
-#define WM_maxidx_diameter 4
-  double threshold_theo = 1.0 / 2.0, intrinsic_r_theo = 1.0,
-    threshold_table[WM_maxidx_maxgridsize][WM_maxidx_diameter] =
-    {{1.65 / 2.0, 1.75 / 2.0, 1.95 / 2.0, 1.99 / 2.0},
-     {1.99 / 2.0, 1.99 / 2.0, 1.99 / 2.0, 1.99 / 2.0}};
-  return local_choice(param, inter_scaled_spacing, 
-		      threshold_theo, intrinsic_r_theo,
-		      (double*) threshold_table, WM_maxidx_maxgridsize, 
-		      WM_maxidx_diameter, localparam);
-}
-local_strategy_type 
-WhittleMatern_cutoff_strategy( double *param, double* localparam,
-					    local_strategy_type current_strategy) {
-  switch (current_strategy) {
-      case TellMeTheStrategy : 
-	if (param[KAPPA] <= 0.5 / 2.0) {
-	  localparam[CUTOFF_A] = 0.5;
-	  return CallMeAgain;
-	} else { //  param[KAPPA] > 0.5
-	  localparam[CUTOFF_A] = 1.0;
-	  return (param[KAPPA] <= 1.0 / 2.0) ? TheoGuaranteed : JustTry;
-	}
-      case IncreaseCutoffA :
-	if (param[KAPPA] <= 0.5 / 2.0) {
-	  localparam[CUTOFF_A] = 1.0;
-	  return TheoGuaranteed;
-	}
-      default : assert(false);
-  }
-  assert(false);
-}
+
 int checkWhittleMatern(double *param, int timespacedim, SimulationType method) { 
   int error;
   error = NOERROR;
@@ -743,7 +684,7 @@ void rangeWhittleMatern(int dim, int *index, double* range){
   memcpy(range, range_whittle, sizeof(double) * 4);
 }
 void infoWhittleMatern(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = p[KAPPA] >= 1.5;
 }
 
@@ -904,7 +845,7 @@ void rangehyperbolic(int dim, int *index, double* range){
   memcpy(range, r, sizeof(double) * 12);
 }
 void infohyperbolic(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = true;
 }
 
@@ -922,17 +863,17 @@ double Gneiting(double *x, double *p, int effectivedim){
 double ScaleGneiting(double *p,int scaling) {return 0.5854160193;}
 double TBM3Gneiting(double *x, double *p, int effectivedim){ 
   register double y,oneMy7;
-  if ((y=fabs( *x*Sqrt2TenD47))>1.0) {return 0.0;}  
+  if ((y=fabs( *x * NumericalScale))>1.0) {return 0.0;}  
   oneMy7 = 1.0-y; oneMy7*=oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
   return 
     (1.0 + y * (7.0  -  y * (5.0 + y * (147.0 + 384.0 * y))))* oneMy7;
 }
 double DGneiting(double *x, double *p, int effectivedim){ 
   register double y,oneMy7;
-  if ((y=fabs( *x*Sqrt2TenD47))>1.0) {return 0.0;}  
+  if ((y=fabs( *x * NumericalScale))>1.0) {return 0.0;}  
   oneMy7 = 1.0-y; oneMy7*=oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
   return 
-    (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7;
+    (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7 * Sqrt2TenD47;
 }
 void rangeGneiting(int dim, int *index, double* range){
   if (dim<=3) *index=-1; else *index=-2;
@@ -940,6 +881,14 @@ void rangeGneiting(int dim, int *index, double* range){
 void infoGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
   *CEbadlybehaved = false;
+}
+int checkGneiting(double *param, int timespacedim, SimulationType method){
+  if (timespacedim > 3) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
 }
 
 
@@ -1080,8 +1029,11 @@ void rangeGauss(int dim, int *index, double* range){
   *index=-1;
 }
 void infoGauss(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = 2;
+}
+int checkGauss(double *param, int timespacedim, SimulationType method) {
+    return NOERROR;
 }
 
 
@@ -1151,7 +1103,7 @@ void rangeCauchy(int dim, int *index, double* range){
   memcpy(range, range_cauchy, sizeof(double) * 4);
 }
 void infoCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = 2;
 }
 
@@ -1191,58 +1143,6 @@ double DDgeneralisedCauchy(double *x, double *p, int effectivedim){
   return p[KAPPAII] * ha / (y * y) * (1.0 - p[KAPPAI] + (1.0 + p[KAPPAII]) * ha)
 	    * pow(1.0 + ha, -p[KAPPAII] / p[KAPPAI] - 2.0);
 }
-local_strategy_type 
-generalisedCauchy_intrinsic_strategy(double *param, double inter_scaled_spacing, 
-				     int timespacedim, double *localparam) {
-#define gC_maxidx_maxgridsize_one 3
-#define gC_maxidx_diameter_one 10
-  double threshold_theo_one = 1.0, intrinsic_r_theo_one = 1.0,
-    threshold_table_one[gC_maxidx_maxgridsize_one][gC_maxidx_diameter_one] =
-    {{1.60, 1.70, 1.85, 1.90, 1.95, 1.95, 1.95, 1.95, 1.95, 1.99},
-     {1.90, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99},
-     {1.95, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99, 1.99}
-    };
-#define gC_maxidx_maxgridsize_two 3
-#define gC_maxidx_diameter_two 4
-  double threshold_theo_two = 1.0, intrinsic_r_theo_two = 1.0,
-    threshold_table_two[gC_maxidx_maxgridsize_two][gC_maxidx_diameter_two] =
-    {{1.65, 1.85, 1.95, 1.99},
-     {1.95, 1.99, 1.99, 1.99},
-     {1.99, 1.99, 1.99, 1.99}
-    };
-  if ((fabs(param[KAPPAI] - param[KAPPAII])<EPSILON) ) {
-    return local_choice(param, inter_scaled_spacing, 
-			threshold_theo_one, intrinsic_r_theo_one,
-			(double*)threshold_table_one, gC_maxidx_maxgridsize_one, 
-			gC_maxidx_diameter_one, localparam);
-  } else if ((fabs(2.0 * param[KAPPAI] - param[KAPPAII])<EPSILON) ) {
-    return local_choice(param, inter_scaled_spacing, 
-			threshold_theo_two, intrinsic_r_theo_two,
-			(double*)threshold_table_two, gC_maxidx_maxgridsize_two, 
-			gC_maxidx_diameter_two, localparam);
-  } else return SearchR;
-}
-local_strategy_type 
-generalisedCauchy_cutoff_strategy(double *param, double* localparam,
-				  local_strategy_type current_strategy) {
-  switch (current_strategy) {
-      case TellMeTheStrategy : 
-	if (param[KAPPA] <= 0.5) {
-	  localparam[CUTOFF_A] = 0.5;
-	  return CallMeAgain;
-	} else { //  param[KAPPA] > 0.5
-	  localparam[CUTOFF_A] = 1.0;
-	  return (param[KAPPA] <= 1.0) ? TheoGuaranteed : JustTry;
-	}
-      case IncreaseCutoffA :
-	if (param[KAPPA] <= 0.5) {
-	  localparam[CUTOFF_A] = 1.0;
-	  return TheoGuaranteed;
-	} 
-      default : assert(false);
-  }
-  assert(false);
-}
 int checkgeneralisedCauchy(double *param, int timespacedim, SimulationType method){
   if ((param[KAPPAI]<=0) || (param[KAPPAI]>2.0)) {
     strcpy(ERRORSTRING_OK,"0<kappa1<=2");
@@ -1278,7 +1178,7 @@ void rangegeneralisedCauchy(int dim, int *index, double* range){
   memcpy(range, range_genCauchy, sizeof(double) * 8);
 }
 void infogeneralisedCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = 2;
 }
 
@@ -1349,7 +1249,7 @@ void rangeCauchytbm(int dim, int *index, double* range){
   range[11] = (double) dim + 10.0;
 }
 void infoCauchytbm(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = 2;
 }
 
@@ -1413,6 +1313,14 @@ void infowave(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = (int) (2.0 * p[KAPPA] + 2.0);
   *CEbadlybehaved = 2;
 }
+int checkwave(double *param, int timespacedim, SimulationType method){
+  if (timespacedim > 3) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
+}
 
 
 double cubic(double *x, double *p, int effectivedim)
@@ -1444,7 +1352,14 @@ void infocubic(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
   *CEbadlybehaved = false;
 }
-
+int checkcubic(double *param, int timespacedim, SimulationType method){
+  if (timespacedim > 3) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
+}
 
 double penta(double *x, double *p, int effectivedim)
 { ///
@@ -1494,7 +1409,14 @@ void infopenta(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
   *CEbadlybehaved = false;
 }
-
+int checkpenta(double *param, int timespacedim, SimulationType method){
+  if (timespacedim > 3) {
+    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
+    return ERRORCOVFAILED;
+  }
+  return 0;  
+}
 
 
 /* Tilmann Gneiting's space time models */
@@ -1623,10 +1545,10 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAV]);
     return ERRORCOVFAILED;
   }
-  if (timespacedim-1 > param[KAPPAVI]) {
-    strcpy(ERRORSTRING_OK,"kappa6>=dim-1");
+  if (timespacedim - 1 > param[KAPPAVI]) {
+    strcpy(ERRORSTRING_OK,"kappa6>=spatial_dim");
     sprintf(ERRORSTRING_WRONG,"%f for spatial dim=%d",
-	    param[KAPPAVI],timespacedim-1);
+	    param[KAPPAVI], timespacedim-1);
     return ERRORCOVFAILED;
   }
   return error;
@@ -1667,7 +1589,7 @@ void rangespacetime1(int dim, int *index, double* range){
   if ( (++(*index)) > 9) *index=-1;
 }
 void infospacetime1(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = p[KAPPAII]==3 || (p[KAPPAII]==2 && p[KAPPAI]>1.5);
 }
 
@@ -1785,14 +1707,15 @@ void rangespacetime2(int dim, int *index, double* range){
   if ( (++(*index)) > 3) *index= -1;
 }
 void infospacetime2(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = true;
 }
 
 /* locally defined functions */
 // Brownian motion 
 double fractalBrownian(double*x, double *p, int effectivdim) {
-  return pow(fabs(*x), p[KAPPA]); // this is the variogram
+  return - pow(fabs(*x), p[KAPPA]);//this is an invalid covariance function!
+  // keep definition such that the value at the origin is 0
 }
 //begin
 /* fractalBrownian: first derivative at t=1 */
@@ -1805,17 +1728,7 @@ double DDfractalBrownian(double *x, double*p, int effectivedim)
 {
     return -p[KAPPA] * (p[KAPPA]-1.0) * pow(fabs(*x), p[KAPPA] - 2.0);
 }
-local_strategy_type
-fractalBrownian_intrinsic_strategy(double *param, 
-				   double inter_scaled_spacing, 
-				   int timespacedim,
-				   double *localparam) {
-  assert(param[DIAMETER]>0);
-  localparam[INTRINSIC_R] = (timespacedim<=2) 
-    ? ((param[KAPPA]<=1.5) ? 1.0 : 2.0)
-    : ((param[KAPPA]<=1.0) ? 1.0 : 2.0);
-  return TheoGuaranteed;
-}
+
 int checkfractalBrownian(double *param, int timespacedim, SimulationType method){
   if ((timespacedim>3) && (method!=Nothing)) {
     strcpy(ERRORSTRING_OK,"total dim<=3");
@@ -1841,7 +1754,7 @@ void rangefractalBrownian(int dim, int *index, double* range){
   memcpy(range, r, sizeof(double*) * 4);
 }
 void infofractalBrownian(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
 
@@ -1855,7 +1768,7 @@ double fractGauss(double *x, double *p, int effectivedim){
 		);
 }
 int checkfractGauss(double *param, int timespacedim, SimulationType method) {
-  if ((timespacedim!=1) && (method!=Nothing)) {
+  if ((timespacedim!=1)) {
     strcpy(ERRORSTRING_OK,"dim=1");
     sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
     return ERRORCOVFAILED;
@@ -1991,10 +1904,14 @@ void rangenugget(int dim, int *index, double* range){
   *index = -1;
 }
 void infonugget(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = infdim;
+  *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-
+int checknugget(double *param, int timespacedim, SimulationType method) {
+  if (method!=Nothing && method!=CircEmbed && method!=Direct && method!=Nugget)
+    return ERRORNOTDEFINED;
+  return NOERROR;
+}
 // ---------------------------------------------------------------------
 
 

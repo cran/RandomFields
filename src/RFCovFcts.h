@@ -2,7 +2,13 @@
 #define CovFcts_H 1
 
 
-double testCov(double *x,double *p, int dim);
+double constant(double *x, double *p, int effectivedim);
+double TBM2constant(double *x, double *p, int effectivedim);
+double TBM3constant(double *x, double *p, int effectivedim);
+double Dconstant(double *x, double *p, int effectivedim);
+void rangeconstant(int dim, int *index, double* range);
+int checkconstant(double *param, int timespacedim, SimulationType method);
+void infoconstant(double *p, int *maxdim, int *CEbadlybehaved);
 
 double exponential(double *x,double *p, int dim);
 double Scaleexponential(double *p,int scaling);
@@ -10,15 +16,17 @@ double TBM2exponential(double *x, double *p, int effectivedim);
 double TBM3exponential(double *x, double *p, int dim);
 double Dexponential(double *x, double *p, int dim);
 double spectralexponential(double *p );
-int hyperexponential(double *lenx, double *mx, int dim, bool simulate, 
+int hyperexponential(double radius, double *center, double *rx,
+		     int dim, bool simulate, 
 		     double** hx, double** hy, double** hr);
 void rangeexponential(int spatialdim, int *index, double* range);
 void infoexponential(double *p, int *maxdim, int *CEbadlybehaved);
+int checkexponential(double *param, int timespacedim, SimulationType method);
 
 // TODO: hier laesst sicherlich noch einiges machen!!
 double qexponential(double *x,double *p, int dim);
 double Scaleqexponential(double *p,int scaling);
-double TBM3Dexponential(double *x, double *p, int effectivedim);
+double TBM3qexponential(double *x, double *p, int effectivedim);
 double Dqexponential(double *x,double *p, int effectivedim);
 int checkqexponential(double *param, int timespacedim, SimulationType method);
 void rangeqexponential(int spatialdim, int *index, double* range);
@@ -35,6 +43,7 @@ void infodampedcosine(double *p, int *maxdim, int *CEbadlybehaved);
 double circular(double *x, double *p, int dim);
 double Scalecircular(double *p,int scaling);
 double Dcircular(double *x, double *p, int dim);
+int checkcircular(double *param, int timespacedim, SimulationType method);
 void rangecircular(int spatialdim, int *index, double* range);
 void infocircular(double *p, int *maxdim, int *CEbadlybehaved);
 
@@ -45,6 +54,7 @@ double TBM3spherical(double *x, double *p, int dim);
 double Dspherical(double *x, double *p, int dim);
 void rangespherical(int spatialdim, int *index, double* range);
 void infospherical(double *p, int *maxdim, int *CEbadlybehaved);
+int checkspherical(double *param, int timespacedim, SimulationType method);
 
 double power(double *x, double *p, int dim);
 double Scalepower(double *p,int scaling);
@@ -60,9 +70,6 @@ double Scalestable(double *p,int scaling);
 double TBM3stable(double *x, double *p, int dim);
 double Dstable(double *x, double *p, int dim);
 double DDstable(double *x, double *p, int effectivedim);
-local_strategy_type stable_intrinsic_strategy(double *, double, int, double *);
-local_strategy_type stable_cutoff_strategy(double*, double*, 
-					   local_strategy_type); 
 int checkstable(double *param, int timespacedim, SimulationType method);
 void rangestable(int spatialdim, int *index, double* range);
 void infostable(double *p, int *maxdim, int *CEbadlybehaved);
@@ -74,10 +81,6 @@ double TBM2WhittleMatern(double *x, double *p, int dim);
 double TBM3WhittleMatern(double *x, double *p, int dim);
 double DWhittleMatern(double *x, double *p, int dim);
 double DDWhittleMatern(double *x, double *p, int effectivedim);
-local_strategy_type WhittleMatern_intrinsic_strategy(double *, double, int,
-						     double*);
-local_strategy_type WhittleMatern_cutoff_strategy(double*, double*,
-						  local_strategy_type); 
 int checkWhittleMatern(double *param, int timespacedim, SimulationType method);
 void rangeWhittleMatern(int spatialdim, int *index, double* range);
 void infoWhittleMatern(double *p, int *maxdim, int *CEbadlybehaved);
@@ -94,6 +97,7 @@ double Gneiting(double *x, double *p, int dim);
 double ScaleGneiting(double *p,int scaling);
 double TBM3Gneiting(double *x, double *p, int dim);
 double DGneiting(double *x, double *p, int dim);
+int checkGneiting(double *param, int timespacedim, SimulationType method);
 void rangeGneiting(int spatialdim, int *index, double* range);
 void infoGneiting(double *p, int *maxdim, int *CEbadlybehaved);
 
@@ -111,6 +115,7 @@ double DGauss(double *x, double*p, int dim);
 double spectralGauss(double *p );
 void rangeGauss(int spatialdim, int *index, double* range);
 void infoGauss(double *p, int *maxdim, int *CEbadlybehaved);
+int checkGauss(double *param, int timespacedim, SimulationType method);
 
 double Cauchy(double *x, double *p, int dim);
 double ScaleCauchy(double *p,int scaling);
@@ -126,11 +131,8 @@ double ScalegeneralisedCauchy(double *p,int scaling);
 double TBM3generalisedCauchy(double *x, double *p, int dim);
 double DgeneralisedCauchy(double *x, double *p, int dim);
 double DDgeneralisedCauchy(double *x, double *p, int effectivedim);
-local_strategy_type generalisedCauchy_intrinsic_strategy(double *, double, int,
-							 double *);
-local_strategy_type generalisedCauchy_cutoff_strategy(double*, double*, 
-						      local_strategy_type); 
-int checkgeneralisedCauchy(double *param, int timespacedim, SimulationType method);
+int checkgeneralisedCauchy(double *param, int timespacedim, 
+			   SimulationType method);
 void rangegeneralisedCauchy(int spatialdim, int *index, double* range);
 void infogeneralisedCauchy(double *p, int *maxdim, int *CEbadlybehaved);
 
@@ -156,11 +158,13 @@ double Scalewave(double *p,int scaling);
 double spectralwave(double *p );
 void rangewave(int spatialdim, int *index, double* range);
 void infowave(double *p, int *maxdim, int *CEbadlybehaved);
+int checkwave(double *param, int timespacedim, SimulationType method);
 
 double cubic(double *x, double *p, int dim);
 double Scalecubic(double *p,int scaling);
 double TBM3cubic(double *x, double *p, int dim);
 double Dcubic(double *x, double *p, int dim);
+int checkcubic(double *param, int timespacedim, SimulationType method);
 void rangecubic(int spatialdim, int *index, double* range);
 void infocubic(double *p, int *maxdim, int *CEbadlybehaved);
 
@@ -170,6 +174,7 @@ double TBM3penta(double *x, double *p, int dim);
 double Dpenta(double *x, double *p, int dim);
 void rangepenta(int spatialdim, int *index, double* range);
 void infopenta(double *p, int *maxdim, int *CEbadlybehaved);
+int checkpenta(double *param, int timespacedim, SimulationType method);
 
 double spacetime1(double *x,double *p, int dim);
 double TBM2spacetime1(double *x, double *p, int dim);
@@ -192,8 +197,6 @@ double spacetime3(double *x,double *p, int dim);
 double fractalBrownian(double*x, double *p, int effectivdim);
 double DfractalBrownian(double *x, double*p, int effectivedim);
 double DDfractalBrownian(double *x, double*p, int effectivedim);
-local_strategy_type fractalBrownian_intrinsic_strategy(double *, double, int,
-						       double *);
 int checkfractalBrownian(double *param, int timespacedim, SimulationType method);
 void rangefractalBrownian(int dim, int *index, double* range);
 void infofractalBrownian(double *p, int *maxdim, int *CEbadlybehaved);
@@ -219,6 +222,7 @@ double nugget(double *x, double *p, int dim);
 double Scalenugget(double *p, int scaling);
 void rangenugget(int dim, int *index, double* range);
 void infonugget(double *p, int *maxdim, int *CEbadlybehaved);
+int checknugget(double *param, int timespacedim, SimulationType method);
 
 #endif /* CovFcts_H*/
 

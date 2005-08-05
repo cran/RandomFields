@@ -25,86 +25,6 @@
 
 */
 
-double XXstablelocal(double *x, double *p, int effectivdim) {
-  // cf. Stein (2002), "K(r)"
-  // and twodimfractalBrownianlocal in RFCovFcts.cc
-
-  assert(false); // to be replaced by the true code
-}
-
-double XXstableS(double *p) {
-  // cf. Stein (2002), "c_2"
-  // and twodimfractalBrownianS in RFCovFcts.cc
-
-  assert(false);  // to be replaced by the true code
-}
-
-double CIRCEMBED_MINDIAMETER=0.0;
-
-void SetMinDiam(double *x) { 
-// to be used for experimental purposes in R by
-// .C("SetMinDiam", as.double( *** ))
-// if the value is less than or equal to zero, CIRCEMBED_MINDIAMETER 
-// will be ignored, see below. Note, that here we have interactions
-// between fields size, scale parameter and CIRCEMBED_MINDIAMETER
-  CIRCEMBED_MINDIAMETER = *x; 
-}
- 
-double stableGetTheta(double *p){
-  double theta;
-  theta = p[DIAMETER]; //p[DIAMETER] ist der Durchmesser des zu simulierenden
-  //                  Feldes in Einheiten des Scalenparameters von 
-  //                  GaussRF(..., param(*,*,*,scale))
-  if (CIRCEMBED_MINDIAMETER > 0.0) {
-    if (theta<CIRCEMBED_MINDIAMETER) theta = CIRCEMBED_MINDIAMETER;
-  } else { 
-    if (p[KAPPA]<1.5) {
-      if (theta<1.0) theta=1.0; // derzeitige Mindestanforderung, wird man
-    //                           vermutlich abmildern koennen
-    } else if (p[KAPPA] <= 1.99) {
-      if (theta<4.0) theta=4.0;
-    } else assert(false); // noch keine Daten vorhanden,
-    // diese Weiche ist in newcheckstable abzufangen!
-  }
-  return theta;
-}
-
-double stablelocal(double *x, double *p, int effectivdim) {
-  double tha, theta, y;
-  theta = stableGetTheta(p);
-  tha = pow(theta, p[KAPPA]);
-  y = fabs(*x);
-  return (y <= theta) ? 
-    (tha * p[KAPPA] * (y * y / theta / theta - 1.0) - 2.0) / (2.0*exp(tha))
-    + exp(-pow(y, p[KAPPA])) 
-    : 0.0; // irgendwie so aehnlich, bitte ueberpruefen
-  // da ich in der Theorie nicht so weit drin bin:
-  // stellt die obige Definition die Varianz 1 des Feldes sicher?
-  //    wenn nein, muss entsprechende korrigiert werden
-}
-
-
-double stableS(double *p) {
-  double tha;
-  // cf. Stein (2002), "c_2"
-  // and twodimfractalBrownianS in RFCovFcts.cc
-  tha = pow(stableGetTheta(p), p[KAPPA]);
-  return p[KAPPA] * tha / (2.0 * exp(tha));
-}
-
-int newcheckstable(double *param, int timespacedim, SimulationType method){
-  if ((param[KAPPA]<=0) || (param[KAPPA]>2.0)) {
-    strcpy(ERRORSTRING_OK,"0<kappa<=2");
-    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
-    return ERRORCOVFAILED; 
-  }
- if (method==CircEmbedIntrinsic && param[KAPPA]>1.1) {
-    strcpy(ERRORSTRING_OK,"0<=kappa<=1.1 if method=local CE");
-    sprintf(ERRORSTRING_WRONG,"%f", param[KAPPA]);
-    return ERRORCOVFAILED;
-  }
-  return 0;  
-}
 
 
 void addownfunctions() {
@@ -118,7 +38,6 @@ void addownfunctions() {
    See RFgetNset.cc or RFsimu.h for the definition of IncludeModel, addCov,
    addTBM, etc.
 */
-  int nr;
   //  NEW !!!  the following line make the call of PrintModelList()
   // unnecessary, so 
   //         library(RandomFields); .C("addownfunctions")
@@ -126,6 +45,8 @@ void addownfunctions() {
   if (currentNrCov==-1) InitModelList(); 
 
   // new stable
+/*
+  int nr;
   nr=IncludeModel("stable", // name that can also be chosen freely
 		  1,
 		  newcheckstable, // NEW
@@ -134,6 +55,7 @@ void addownfunctions() {
   addCov(nr,stable, Dstable, Scalestable);
   // addLocal(...);
   addTBM(nr, NULL,TBM3stable, CircEmbed, NULL);
+*/
 
 /*
   int nr, i=1;

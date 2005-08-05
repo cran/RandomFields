@@ -1,7 +1,6 @@
 # source("RFtest.new.features.1.01.R")
 
 
-
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 cat("\n landmark -2")
@@ -35,7 +34,6 @@ DeleteAllRegisters()
 
 RFparameters(CE.trial=3)
 
-if (FALSE) { #####################
 
 cat("\n landmark 0\n")
 
@@ -45,7 +43,7 @@ k <- c(1,phi=1, 1.544,0.61,psi=1, 2/0.61)
 model <- list(list(m="nsst",v=1,k=k,a=m))
 #m <- matrix(c(1,0.3, 0.2,0.1),ncol=2) / ff; k <- NULL
 #model <- list(list(m="gneiting",v=1,k=k,a=m))
-RFparameters(CE.user=TRUE)
+RFparameters(CE.usep=TRUE)
 x <- c(1,450,5)
 T <- c(1, .C("niceFFTnumber",as.integer(18 * 365))[[1]], 1)
 unix.time(z <- GaussRF(x=x, T=T,
@@ -120,6 +118,9 @@ if (FALSE) {
   for (i in 1:dim(z)[2]) { image(z[,i,]); readline();}
 }  
 
+if (!file.exists("/home/schlather/TMP/RandomFields")) q()
+
+
 cat("\n landmark 5\n")
 
 #stop("")
@@ -152,7 +153,7 @@ if (FALSE) {
 }
 print(CovarianceFct(cbind(0:10,0,0),model))
 
-#stop("")
+                                        #stop("")
 cat("\n landmark 6\n")
 
 
@@ -176,8 +177,6 @@ print(CovarianceFct(cbind(0:10,0,0),model))
 
 #stop("")
 
-
-
 cat("\n landmark 7\n")
 
 ## extremes
@@ -187,14 +186,13 @@ x <- (0:30)/10
 n <- 100
 mx <- my <- 1:n
 
+ms <- MaxStableRF(mx, my, grid=TRUE,
+                  model=list(list(m="gauss", v=1,
+                    a=matrix(c(1,2,3,4),ncol=2)/40)),
+                  maxstable="B")
+image(mx,my,sqrt(ms))
 
-if (FALSE) {
-  ms <- MaxStableRF(mx, my, grid=TRUE,
-                    model=list(list(m="gauss", v=1,
-                      a=matrix(c(1,2,3,4),ncol=2)/40)),
-                    maxstable="B")
-  image(mx,my,sqrt(ms))
-}
+
 
 cat("\n landmark 8\n")
 
@@ -251,7 +249,6 @@ dev.set(); image(z,zlim=c(-3,3));dev.set();
 ##print(c(mean(as.double(z)),var(as.double(z))))
 cat("\n landmark 10\n")
 
-if (FALSE) {
 dev.set()
 m <- matrix(c(1,2,3,4),ncol=2)
 z1 <- GaussRF(x=x, y=x, grid=TRUE,
@@ -263,7 +260,7 @@ z1 <- GaussRF(x=x, y=x, grid=TRUE,
 print(c(mean(as.double(z1)),var(as.double(z1))))
 image(z1,zlim=c(-3,3))
 cat("\n landmark 11")
-}
+#}
 
 dev.set()
 m <- matrix(c(1,2,3,4),ncol=2)
@@ -391,7 +388,6 @@ z2 <- GaussRF(x=x, y=x, grid=TRUE,
 image(z2,zlim=c(-3,3))
 image(z1+z2,zlim=c(-3,3))
 
-} ############
 
 cat("\n landmark 17\n")
 x <- (0:30)/10
@@ -435,7 +431,7 @@ image(z) #3
 
 cat("\n landmark 20\n")
 
-#} #######################################################################
+#######################################################################
 
 cat("\n landmark 21-0 \n")
 

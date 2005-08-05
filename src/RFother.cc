@@ -43,7 +43,7 @@ int init_special(key_type *key, int m){
   */
 }
 
-void do_special(key_type *key, int m, double *res ){
+void do_special(key_type *key, int m, double *res ) {
   assert(false);
  {
     register long i,endfor;

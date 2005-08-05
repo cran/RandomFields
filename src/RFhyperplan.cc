@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 //#include <string.h>
 #include "RFsimu.h"
+#include "avltr.h"
 //#include <unistd.h>
 
 #define HYPER_UNIFORM 0   // without parameter
@@ -53,20 +54,10 @@ double bernoulli() {
 }
 
 
-typedef struct hyper_storage{
-  int timespacedim; 
-  double deltax[MAXDIM], *x, param[TOTAL_PARAM], rmax, lx[MAXDIM], mx[MAXDIM]; 
-  bool grid;
-  hyper_pp_fct hyperplane;
-} hyper_storage;
-
-
 void hyper_destruct(void **S)
 {
   if (*S != NULL) {
-    hyper_storage *s;
-    s = *((hyper_storage**)S);
-    if (s->x != NULL) free(s->x);
+    // hyper_storage *s; s = *((hyper_storage**)S);
     free(*S);
     *S = NULL; 
   }
@@ -75,33 +66,25 @@ void hyper_destruct(void **S)
 void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
 			int *normalise, int *mar_distr, double *mar_param)
 {
-  switch (*action) {
-  case 0 :
+  if (*action) {
     HYPERPLANE_SUPERPOS = *superpos;
     HYPERPLANE_MAXLINES = *maxlines;
     HYPERPLANE_MAR_DISTR = *mar_distr;
     HYPERPLANE_MAR_PARAM = *mar_param;
-   break;
-  case 1 :
+  } else {
     *superpos = HYPERPLANE_SUPERPOS;
     *maxlines = HYPERPLANE_MAXLINES;
     *mar_distr = HYPERPLANE_MAR_DISTR;
     *mar_param = HYPERPLANE_MAR_PARAM; 
-    if (GetNotPrint) break;
-  case 2 : 
-    PRINTF("\nHyperplane tessellation\n=======================\nsuperpositions=%d\nmaxlines=%d\nmarginal distribution=%d\nbmarginal parameter=%d\n",
-	    HYPERPLANE_SUPERPOS, HYPERPLANE_MAXLINES, HYPERPLANE_MAR_DISTR,
-	    HYPERPLANE_MAR_PARAM);
-     break;
-  default : PRINTF(" unknown action\n"); 
   }
 }
 
-
 int init_hyperplane(key_type *key, int m)
 {
+  methodvalue_type *meth; 
+  covinfo_type *kc=NULL;
   hyper_storage *s;
-  int error, start_aniso[MAXDIM];
+  int error, timespacedim, optdim=2;
 
       /* n == number of fields superposed 
         lx+1== grid points on x-axis
@@ -119,121 +102,83 @@ int init_hyperplane(key_type *key, int m)
      hand side or the "right" hand side of a line */
 
   
-  SET_DESTRUCT(hyper_destruct);
-  if ((key->S[m]=malloc(sizeof(hyper_storage)))==0) {
+  meth = &(key->meth[m]);
+  SET_DESTRUCT(hyper_destruct, m);
+  if ((meth->S=malloc(sizeof(hyper_storage)))==0) {
     error=ERRORMEMORYALLOCATION;
     goto ErrorHandling;
   } 
-  s = (hyper_storage*)key->S[m];
-  s->x = NULL;
+  s = (hyper_storage*) meth->S;
     
 
   /****************************************************************/
   /*            Extraction of matching covariances                */
   /****************************************************************/
-  int actcov;
-  for (actcov=0; actcov < key->ncov; actcov++) {
-    if ((key->method[actcov]==Hyperplane) && (key->left[actcov])) {
-      key->left[actcov]=false;
-      assert((key->covnr[actcov]>=0) && (key->covnr[actcov]<currentNrCov));
-      assert(key->param[actcov][VARIANCE] >= 0.0);
-      memcpy(s->param, key->param[actcov], sizeof(double) * key->totalparam);
-      if ((key->ncov>actcov+1 && key->op[actcov]) || 
-	  (actcov>0 && key->op[actcov-1])) {
+  int v, d, actcov;
+  actcov=0;
+  for (v=0; v <key->ncov; v++) {
+    kc = &(key->cov[v]);
+    if (kc->method==Hyperplane && kc->left) {
+      cov_fct *cov;
+      meth->covlist[actcov] = v;
+      cov = &(CovList[kc->nr]);
+      assert(kc->nr>=0 && kc->nr<currentNrCov);
+      assert(kc->param[VARIANCE] >= 0.0);
+      if ((key->ncov>v+1 && kc->op) || 
+	  (v>0 && key->cov[v-1].op)) {
         error=ERRORNOMULTIPLICATION; goto ErrorHandling;
       }
-      break;
+
+     /*    investigation of the param structure and the dimension    */
+     /*             check parameter of covariance function           */
+     timespacedim = kc->truetimespacedim;
+     if (cov->type==ISOHYPERMODEL) {
+	  v += (int) kc->param[HYPERNR];
+	  error=ERRORHYPERNOTALLOWED; 
+	  goto ErrorHandling;
+      }
+      if (cov->implemented[Hyperplane] != IMPLEMENTED) { 
+	error = ERRORNOTDEFINED;
+	goto ErrorHandling;
+     }
+      if ((error = cov->check(kc->param, timespacedim, Hyperplane)) 
+	  != NOERROR) 
+	goto ErrorHandling;
+     if (timespacedim == 1) {
+       error = ERRORNOTPROGRAMMED;
+       goto ErrorHandling;
+     }
+     if (timespacedim > optdim || timespacedim < 1) { 
+       error = ERRORWRONGDIM;
+       goto ErrorHandling;
+     }
+
+     if ((error=Transform2NoGrid(key, v)) != NOERROR) goto ErrorHandling;
+     s->hyperplane = cov->hyperplane;
+     kc->left = false;
+     break;
     }
   } 
-  if (actcov==key->ncov) { /* no covariance for the considered method found */
+  if (v==key->ncov) { /* no covariance for the considered method found */
     error=NOERROR_ENDOFLIST;
     goto ErrorHandling;
-  }
-  // do not change actcov !!! used again later on
+  } else assert(kc!=NULL);
+  meth->actcov = 1;
+  timespacedim = kc->truetimespacedim;
 
-
-
-  /****************************************************************/
-  /*    investigation of the param structure and the dimension    */
-  /*             check parameter of covariance function           */
-  /****************************************************************/
-  // determine the reduced dimension of the space
-  if (GENERAL_PRINTLEVEL>4) PRINTF("\nchecking parameter structure...");
-  bool no_last_comp;
-  int index_dim[MAXDIM];
-  cov_fct *cov;
-  GetTrueDim(key->anisotropy, key->timespacedim, 
-	     s->param, // note param is modified, having as very last component
-	     //           ==1 if any matrix has very last component <>0
-	     &s->timespacedim,
-	     &no_last_comp, // vanishing for *all* v=0..actcov-1 ?! 
-	     start_aniso, index_dim);
-  if (s->timespacedim > 2 || s->timespacedim==1) {
-    error = ERRORWRONGDIM;
-    goto ErrorHandling;
-  } 
-  s->grid = key->grid && !key->anisotropy;
-  if ((error=Transform2NoGrid(key, s->param, s->timespacedim,
-			      start_aniso, &(s->x))) != NOERROR)
-    goto ErrorHandling;
-  cov = &(CovList[key->covnr[actcov]]);
-  if (cov->implemented[Hyperplane] <= NOT_IMPLEMENTED) { 
-    error = ERRORNOTDEFINED;
-    goto ErrorHandling;
-  }
-  if (cov->check!=NULL && 
-      ((error=cov->check(s->param, s->timespacedim, Hyperplane))) != NOERROR) 
-    goto ErrorHandling;
-  
-  
   /****************************************************************/
   /*            determine size of surrounding rectangle           */
   /****************************************************************/
-  int i;
-  if (s->grid) {
-    for (i=0; i < s->timespacedim; i++) {
-      s->mx[i] = s->lx[i] = 0.5 * (key->x[i][XEND] - key->x[i][XSTART]);
-      s->deltax[i] = key->x[i][XSTEP] * s->param[INVSCALE];
-    }
-  } else {
-    double min[MAXDIM],max[MAXDIM]; 
-    int d, ix, endfor;
-    for (d=0; d<MAXDIM; d++) {min[d]=RF_INF; max[d]=RF_NEGINF;}    
-    if (key->grid) { // key->grid     
-      double sxx[ZWEIHOCHMAXDIM * MAXDIM];
-      // unsorted, reduced for param[0...0], #=2^Dim, 
-      endfor = 1 << key->timespacedim;   
-      // to determine the diameter of the grid determine first 
-      // componentwise min and max corner
-      GetCornersOfGrid(key, s->timespacedim, start_aniso, s->param, sxx);      
-      for (ix=i=0; i<endfor; i++, ix+=s->timespacedim) { 
-	for(d=0; d<s->timespacedim; d++) {
-	  if (sxx[ix+d] < min[d]) min[d] = sxx[ix+d];
-	  if (sxx[ix+d] > max[d]) max[d] = sxx[ix+d];
-	}
-      }
-    } else { // not key->grid
-      for (ix=i=0; i<key->totalpoints; i++, ix+=s->timespacedim) {
-	if ((GENERAL_PRINTLEVEL>4) && ((i % 10000)==0))
-	  PRINTF(" %d [%d]\n",i,key->totalpoints);
-	// determine componentwise min and max (for the diameter)
-	for(d=0; d<s->timespacedim; d++){//temporal part need not be considered
-	  if (s->x[ix+d] < min[d]) min[d] = s->x[ix+d];
-	  if (s->x[ix+d] > max[d]) max[d] = s->x[ix+d];
-	}
-      }
-    }
-    for (i=0; i < s->timespacedim; i++) {
-      s->mx[i] = 0.5 * (min[i] + max[i]);
-      s->lx[i] = 0.5 * (max[i] - min[i]);
-    }
-  } // not s->grid
+  
+  GetCenterAndDiameter(key, kc->simugrid, timespacedim, kc->truetimespacedim,
+		       kc->x, kc->aniso, s->center, s->rx, &(s->radius));
+  s->radius *= 0.5;
+  for (d=0; d<kc->truetimespacedim; d++) s->rx[d] *= 0.5;
 
-  s->hyperplane = cov->hyperplane;
-  double*h;
+  double *h;
   h=NULL;
-  if (s->hyperplane(s->lx, s->mx, s->timespacedim, false, &h, &h, &h) >
-      HYPERPLANE_MAXLINES) {
+  if (s->hyperplane(s->radius, s->center, s->rx, timespacedim, false, &h, &h, &h)
+      > HYPERPLANE_MAXLINES) {
     error = ERRORTOOMANYLINES;
     goto ErrorHandling;
   }
@@ -246,177 +191,120 @@ int init_hyperplane(key_type *key, int m)
 }
 
 
-#define UPDATE_RES \
-   if (add) res[resindex] += colour[nrblock][nrelement]; \
-   else if (res[resindex] < colour[nrblock][nrelement]) \
-	    res[resindex] = colour[nrblock][nrelement] \
+typedef struct cell_type {
+    unsigned int *code;
+    double colour;
+} cell_type;
 
-int determine_cell(double gx, double gy, double* hx, double* hy, double* hr,
-               int integers, unsigned int *cd, int *Codenr, code_type code,
-               colour_type colour, int*Currentblock, randomvar_type randomvar,
-	       int resindex, bool add, double *res)
+
+int cmpcells(void *a, void *b, void *param) {
+    cell_type *aa, *bb;
+    int *n;
+    aa = (cell_type*) a;
+    bb = (cell_type*) b;
+    n = (int*) param;
+    return memcmp(aa->code,  bb->code, *n * sizeof(unsigned int));
+}
+
+void delcell(void *a, void *param) {
+    cell_type *aa;
+    aa = (cell_type*) a;
+    free(aa->code);
+    free(aa);
+}
+
+cell_type *determine_cell(double gx, double gy, double* hx, double* hy, 
+			  double* hr, int *integers, avltr_tree **tree, 
+			  randomvar_type randomvar)
 { 
-  int tt, bb, block, element, currentblock, codenr, uppercd, lowercd, blockend,
-      lastelement, error, endfor;
-  static int nr, nrblock, nrelement, index; // index for the code
-  //                                             of the previous point
-  bool found,  cd_before_code;
+    // gx, gy : coordinates
+    // hx, hy, hr: list of line coordinates
+    // tree: tree for storing already detected cells with at least one
+    //       one point in it
+    // randomvar: random constant for each cell
+    // resindex: numbering of the point with the coordinates (gx, gy)
+    // add: maximum or addition of the values for overlaying 
+    //      hyperplane tessellations?
+    // res: result vector (random field)
+  int tt, index, bb;
+  unsigned int *cd;
+  cell_type *cell;
+  static cell_type *lastcell=NULL;
   
-  error = NOERROR;
-  currentblock = *Currentblock;
-  codenr = *Codenr;
-  blockend = (BLOCKSIZE - 1) * integers;
-
+  if ((cell = (cell_type*) malloc(sizeof(cell_type))) == NULL){
+      goto ErrorHandling;
+  }
+  cell->code = NULL;
+  if ((cell->code = (unsigned int*) 
+       malloc(*integers * sizeof(unsigned int))) == NULL) 
+      goto ErrorHandling;
+ 
+  cd = cell->code;
   /* calculate the code; if a grid element with */
   /* this code exists, then take this colour    */
   /* (as the two points are then in the same    */
   /* cell) else create a new colour (new cell!) */
-  for (tt=index=0; tt<integers; tt++){    /* calculate the code... */
-    for (bb=0; bb<32; bb++){
+  for (tt=index=0; tt<*integers; tt++) {    /* calculate the code... */
+    cd[tt] = 0; // of no value
+    for (bb=0; bb<32; bb++, index++) {
       cd[tt] <<= 1;
       cd[tt] |= ((hx[index] * gx + hy[index] * gy) < hr[index]);
-      index++;
-    }	
+    }
   }
-  block = (int) (codenr / BLOCKSIZE);
-  element = codenr % BLOCKSIZE;
-  assert(block < BLOCKS);
-
-  if (block > currentblock) {
-    currentblock++;
-    if ((code[currentblock] = 
-	 (unsigned int*) malloc(integers * sizeof(int) * BLOCKSIZE))
-	== NULL) {error=ERRORMEMORYALLOCATION; goto ErrorHandling;}   
-    /* ORDERED list of the codes for all the CELLS */
-    if ((colour[currentblock] = 
-	 (double*) malloc(sizeof(double) * BLOCKSIZE))
-	== NULL) {error=ERRORMEMORYALLOCATION; goto ErrorHandling;} 
-    /* the colour for all the cells */
-    
-  }
-  if (codenr==0) { /* is it the very first point ? */   
-    for(tt =0; tt<integers; tt++) {code[0][tt]=cd[tt]; }        
-    nr = nrblock = nrelement = 0;
-    colour[nrblock][nrelement] = randomvar();
-    UPDATE_RES;
-    codenr++; 
+  if (*tree==NULL) { /* is it the very first point ? */    
+      *tree = avltr_create((avl_comparison_func) cmpcells, integers);
+      cell->colour = randomvar();
+      avltr_insert(*tree, cell);
+      lastcell = cell;
   } else { /* search if the calculated code has already appeared (makes
 	      sense as it is not the very first point calculated */
-    /* as the grid points are visited successively, there is good
-       chance that the previous (calculated) point belongs to the 
-       same cell. Let us check that first! */
-    found=true; tt=0;
-    while (found & (tt<integers)){ /* directly found: point `nr' alright
-				      then (still pointing on the previous
-				      found cell) */
-      found = (cd[tt]==code[nrblock][nrelement * integers+tt]); 
-      tt++;
-    }
-    if (found) {
-      UPDATE_RES;
-    }
-    else { /* search through the ordered list, by the usual 
-	      "halfening the intervall [0..nr]"-algorithm*/
-      nr=(codenr-1)/2; 
-      nrblock = (int) (nr / BLOCKSIZE);
-      nrelement = nr % BLOCKSIZE;
-      uppercd = codenr - 1;
-      lowercd = 0; 
-      while (true) {
-	for(tt=0; cd[tt]==code[nrblock][nrelement*integers+tt] && 
-	      tt<integers; tt++);
-	if (tt==integers) {
-	  /* here we were successful, the cell already exists */
-	  UPDATE_RES;
-	  break;
-	} 
-	cd_before_code = (cd[tt] < code[nrblock][nrelement * integers + tt]);
-	/* bad luck, it is definitively a new cell which has to 
-	   be created */
-	if (cd_before_code) uppercd=nr-1; else lowercd=nr+1;
-	if (uppercd < lowercd) {
-	  if (!cd_before_code) {
-	    nr++; /* now nr shows the position where 
-		     the new code should be inserted 
-		  */
-	    nrblock = (int) nr / BLOCKSIZE;
-	    nrelement = nr % BLOCKSIZE;
-	  }
-	  /* we have to make space for the new code inserted into
-	     the ordered list of codes ... */	       	       
-	  lastelement = element;
-	  if (nrblock < currentblock) {
-	    for (bb=block; bb>nrblock; bb--) {
-	      for (tt=lastelement * integers - 1; tt>=0; tt--)
-		code[bb][tt + integers] = code[bb][tt];
-	      for (tt=integers - 1; tt>=0; tt--)
-		code[bb][tt] = code[bb-1][blockend + tt];
-	      for(tt=lastelement - 1; tt>=0; tt-- ) 
-		colour[bb][tt+1]=colour[bb][tt];
-	      colour[bb][0] =colour[bb-1][BLOCKSIZE-1];
-	      lastelement = BLOCKSIZE;
-	    }             
-	  }
-	  endfor = nrelement * integers;
-	  for (tt=lastelement * integers - 1; tt>=endfor; tt--)
-	    code[nrblock][tt+integers] = code[nrblock][tt];
-	  for (tt=lastelement - 1; tt>=nrelement; tt--)
-	    colour[nrblock][tt+1]=colour[nrblock][tt];
-	  
-	  for (tt=0; tt<integers; tt++) /* ... inserting ... */
-	    code[nrblock][nrelement * integers + tt] = cd[tt];
-	  colour[nrblock][nrelement] = randomvar();
-
-	  UPDATE_RES;
-	  codenr++;
-
-	  if (false)
-	  { 
-	    int cn, cnblock, cnelement;
-	    for (cn=0; cn<codenr; cn++) {
-	      cnblock = (int) cn / BLOCKSIZE;
-	      cnelement = cn % BLOCKSIZE;
-	      for (tt=0; tt<integers; tt++) {
-		printf("%u ", code[cnblock][cnelement * integers + tt]);
-	      }
-	      printf("%f", colour[cnblock][cnelement]);
-	      printf("\n");
-	    }
-	    printf("\n");
-	  }
-
-	  break;
-	}
-        // not uppercd==lowercd
-	nr = (uppercd + lowercd) / 2; /* neither successful nor */
-	/*          definitely no success, so continuing searching */
-	nrblock = (int) (nr / BLOCKSIZE);
-	nrelement = nr % BLOCKSIZE;
-      } /* while */
-    } /* else not directly found */
-  } /* } else { not the very first one */
-  *Currentblock = currentblock;
-  *Codenr = codenr;
-  return error;
-
+      /* as the grid points are visited successively, there is good
+	 chance that the previous (calculated) point belongs to the 
+	 same cell. Let us check that first! */
+      if (memcmp(lastcell->code, cell->code, 
+		 *integers * sizeof(unsigned int))
+	  && ((lastcell = (cell_type*) *avltr_probe(*tree, cell)) == cell)) {
+//	  printf("here %d %d \n", 
+//		 (int) cell->code[0], (int) lastcell->code[0]);
+	  lastcell->colour = randomvar();
+      } else {
+	  delcell(cell, NULL); 
+      }
+  }
+  return lastcell;
+  
  ErrorHandling:
-  return error;
+  if (cell != NULL) {
+      if (cell->code != NULL) free(cell->code);
+      free(cell);
+  }
+  return NULL;
 }
 
 void do_hyperplane(key_type *key, int m, double *res)
 {
-  double gx, gy, *hx,*hy,*hr, E, sd;
-  int codenr, resindex, integers, bits, q, endfor, i, currentblock,
-    xerror, j;
-  colour_type colour;
-  unsigned int *cd;
-  code_type code; 
+  methodvalue_type *meth; 
+  covinfo_type *kc;
+  double gx, gy, *hx, *hy, *hr, E, sd, variance;
+  int resindex, integers, bits, q, endfor, i,
+    xerror, j, timespacedim;
   randomvar_type randomvar;
   hyper_storage *s;
   bool add;
-  
+  avltr_tree *tree;
+  cell_type *cell;
+
+  hx = hy = hr = NULL;
+  assert(sizeof(unsigned int) == 4);
   assert(key->active);
-  s = (hyper_storage*) key->S[m];
+  meth = &(key->meth[m]);
+  assert(meth->actcov == 1);
+  kc = &(key->cov[meth->covlist[0]]);
+  timespacedim = kc->truetimespacedim;
+  s = (hyper_storage*) meth->S;
+  assert(meth->actcov == 1);
+  variance = key->cov[meth->covlist[0]].param[VARIANCE];
+  tree = NULL;
   
   switch (HYPERPLANE_MAR_DISTR) {
       case HYPER_UNIFORM : randomvar=uniform; break;
@@ -438,73 +326,83 @@ void do_hyperplane(key_type *key, int m, double *res)
       default : assert(false);
   }
 
-  if (add) for (i=0; i<key->totalpoints; res[i++]=0);
-  else for (i=0; i<key->totalpoints; res[i++]=R_NegInf);
+  if (add) for (i=0; i<key->totalpoints; res[i++]=0.0);
+  else // max-stable 
+    for (i=0; i<key->totalpoints; res[i++]=R_NegInf);
   /* how many Poisson Hyperplanes maximal (on circle x [0,rmax]) ?  --> p */
-  
-  switch (s->timespacedim) {
+
+  switch (timespacedim) {
       case 1 :
 	assert(false);
       case 2 :
-	hx = hy = hr = NULL;
 	int nn;
+	double deltax, deltay;
+
+	deltax = kc->x[XSTEPD[0]];
+	deltay = kc->x[XSTEPD[1]];
+
 	for(nn=0; nn<HYPERPLANE_SUPERPOS; nn++){
-	  q = s->hyperplane(s->lx, s->mx, s->timespacedim, true, &hx, &hy, &hr);
+	  q = s->hyperplane(s->radius, s->center, s->rx,
+			    timespacedim, true, &hx, &hy, &hr);
 	  
 	  /* as the length of the codes for the cells are naturally a multiple 
 	     of number of bits of an integer variable, some lines are added to
 	     the simulated ones in order to get a number of lines that is a 
 	     multiple of the number of bits of an integer --- the lines are 
 	     placed in 2*rmax, so outside the rectangle */
-	  bits = 8 * sizeof(int);
+	  bits = 8 * sizeof(unsigned int);
 	  integers = (int) (q / bits);
 	  if (integers * bits < q) {
 	    integers++;
 	    endfor = integers * bits;
 	    for(; q < endfor; q++) {
 	      hx[q] = hy[q] = 0; 
-	      hr[q] = 2.0 * (s->lx[0] + s->lx[1]);
+	      hr[q] = 2.0 * s->radius;
 	    } 
 	  }
-	  if ((cd = (unsigned int*) malloc(integers * sizeof(int))) == NULL){
-	    xerror=ERRORMEMORYALLOCATION;
-	    goto ErrorHandling;
-	  }    
+
 	  /* temporary code */
-	  
-	  codenr = 0;
-	  currentblock = -1;
-	  if (s->grid) {
-	    for (gy=0.0, resindex=j=0; j<key->length[1]; j++) {          
-	      for (gx=0.0, i=0; i<key->length[0]; i++){  
-		if ((xerror=determine_cell(gx, gy, hx, hy, hr, integers, cd, 
-					  &codenr, code, colour, &currentblock, 
-					  randomvar, resindex++, add, 
-					  res)) != NOERROR)
-		goto ErrorHandling;
-		gx += s->deltax[0];
+	  if (kc->simugrid) {
+	    for (gy=kc->x[XSTARTD[1]], resindex=j=0; j<key->length[1]; j++) {
+	      for (gx= kc->x[XSTARTD[0]], i=0; i<key->length[0]; i++,
+		       resindex++) {
+//		  printf("\n%f %f\n", gx, gy);  
+		if ((cell = determine_cell(gx, gy, hx, hy, hr, &integers,
+					   &tree, randomvar)) == NULL) {
+		      xerror = ERRORMEMORYALLOCATION;
+		      goto ErrorHandling;
+		  }
+// 		printf("%d %d %f %d %d %d\n",
+//		       resindex, avltr_count(tree),cell->colour, add, 
+//		       integers, q);
+		  if (add) res[resindex] += cell->colour;
+		  else if (res[resindex] < cell->colour)
+		      res[resindex] = cell->colour;
+		gx += deltax;
 	      }
-	      gy += s->deltax[1];
+	      gy += deltay;
 	    }  
 	  } else {
 	    for (j=resindex=0; resindex<key->totalpoints; resindex++) {
-	      if ((xerror=determine_cell(s->x[j], s->x[j+1], hx, hy, hr, 
-					integers, cd, &codenr, code, colour, 
-					&currentblock, randomvar, 
-					resindex, add, res)) != NOERROR)
-		goto ErrorHandling;
-	      j += s->timespacedim;
-	    }	 
+	      if ((cell=determine_cell(kc->x[j], kc->x[j+1], hx, hy, hr,
+				       &integers, &tree, randomvar))==NULL){
+		  xerror = ERRORMEMORYALLOCATION;
+		  goto ErrorHandling;
+	      }
+	      if (add) res[resindex] += cell->colour;
+	      else if (res[resindex] < cell->colour)
+		  res[resindex] = cell->colour;
+	      j += timespacedim;
+	    }
 	  }
-	  free(hx); free(hy); free(hr); free(cd);
+	  free(hx); free(hy); free(hr); 
 	  hx = hy = hr = NULL;
-	  cd = NULL;
-	  for (q=0; q<=currentblock; q++) {
-	    free(code[q]); code[q] = NULL; 
-	    free(colour[q]); colour[q]=NULL;
-	  }
-	} /* for nn */
-  } // switch  (s->timespacedim)
+	  avltr_destroy(tree, delcell);
+	  tree = NULL;
+	}/* for nn */
+	break;
+      default: assert(false);
+  } // switch  (timespacedim)
   switch (key->distribution) {
     case DISTR_GAUSS :   
       switch (HYPERPLANE_MAR_DISTR) {
@@ -522,7 +420,7 @@ void do_hyperplane(key_type *key, int m, double *res)
           break;
       default : assert(false);
       }
-      sd = sqrt(s->param[VARIANCE] / (HYPERPLANE_SUPERPOS * sd));
+      sd = sqrt(variance / (HYPERPLANE_SUPERPOS * sd));
       for(i=0; i<key->totalpoints; i++) 
 	res[i] = (res[i] - HYPERPLANE_SUPERPOS * E) * sd;    
       break;
@@ -538,8 +436,11 @@ void do_hyperplane(key_type *key, int m, double *res)
 
  ErrorHandling: 
 //  if (GENERAL_PRINTLEVEL>0)
-  ErrorMessage(Hyperplane, xerror);
-  assert(false);
+  if (hx != NULL) free(hx);
+  if (hy != NULL) free(hy);
+  if (hr != NULL) free(hr);
+  if (tree!=NULL) avltr_destroy(tree, delcell);
+  ErrorMessage(Hyperplane, xerror); assert(false);
 }
                       
 		   

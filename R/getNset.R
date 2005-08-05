@@ -1,6 +1,46 @@
 
+paramextract <- function(p, model=c("cutoff")) {
+  i <- .C("GetParamterPos", variance=integer(1), kappa=integer(1),
+          lastkappa=integer(1), tbm2num=integer(1), hyperinternal=integer(1),
+          lasthyperinternal=integer(1), scale=integer(1), aniso=integer(1),
+          hypernr=integer(1), localdiameter=integer(1), localr=integer(1),
+          cutoffr=integer(1),
+          hyperkappa=integer(1), total=integer(1), PACKAGE="RandomFields")
+  i <- lapply(i, function(x) x + 1)
+  model <- match.arg(model)
+  return(switch(model,
+                cutoff = list(hypernr=p[i$hypernr], diameter=p[i$localdiameter],
+                  lcoalr=p[i$localr], cutoffr=p[i$cutoffr])
+                )
+         )
+}
 
-GetRegisterInfo <- function(register, ignore.active=FALSE)
+CheckAndComplete <- function(model, param, dim) {
+    p <- PrepareModel(model, param, dim)
+    i <- .C("GetParamterPos", variance=integer(1), kappa=integer(1),
+            lastkappa=integer(1), tbm2num=integer(1), hyperinternal=integer(1),
+            lasthyperinternal=integer(1), scale=integer(1), aniso=integer(1),
+            hypernr=integer(1), localdiameter=integer(1), localr=integer(1),
+            cutoffr=integer(1),
+            hyperkappa=integer(1), total=integer(1), PACKAGE="RandomFields")
+    error = integer(1)
+    param = double(i$total * length(p$covnr))
+    .C("CheckAndCompleteParameters",
+       as.integer(p$covnr),
+       as.double(p$param), 
+       as.integer(length(p$param)), ## control
+       as.integer(dim), 
+       as.integer(length(p$covnr)),
+       as.integer(p$anisotropy),
+       as.integer(p$op),
+       param,
+       error,
+       PACKAGE="RandomFields", DUP = FALSE)$res
+    dim(param) = c(i$total, length(p$covnr))
+    return(list(error=error, param=param))
+}
+
+GetRegisterInfo <- function(register=0, ignore.active=FALSE)
   # ignore.active=TRUE only for internal debugging information!
   .Call("GetExtKeyInfo", as.integer(register), as.logical(ignore.active),
         PACKAGE="RandomFields")
@@ -150,22 +190,35 @@ parampositions <- function(model, param, print=TRUE) {
   CE.tolRe <- double(1)
   CE.tolIm <- double(1)
   CE.trials <- integer(1)
-  CE.mmin <- integer(.p$maxdim)
-  CE.userfft <- integer(1)
   CE.strategy <- integer(1)
+  CE.mmin <- double(.p$maxdim)
+  CE.enlarge <- integer(1)
   CE.maxmem <- double(1)
-  cutoff.a <- double(1)
-  intrinsic.r <- double(1)
+  CE.useprimes <- integer(1)
+  
+  local.force <- integer(1)
+  local.tolRe <- double(1)
+  local.tolIm <- double(1)
+  local.trials <- integer(1)
+  local.strategy <- integer(1)
+  local.mmin <- double(.p$maxdim)
+  local.enlarge <- integer(1)
+  local.maxmem <- double(1)
+  local.useprimes <- integer(1)
   
   TBMCE.force <- integer(1)
   TBMCE.tolRe <- double(1)
   TBMCE.tolIm <- double(1)
   TBMCE.trials <- integer(1)
-  TBMCE.mmin <- integer(.p$maxdim)
-  TBMCE.userfft <- integer(1)
   TBMCE.strategy <- integer(1)
+  TBMCE.mmin <- double(.p$maxdim)
+  TBMCE.enlarge <- integer(1)
   TBMCE.maxmem <- double(1)
+  TBMCE.useprimes <- integer(1)
+  
   TBM.method <- integer(1)
+  TBM.center <- double(.p$maxdim)
+  TBM.points <- integer(1)
 
   TBM2.lines <- integer(1)
   TBM2.linesimufactor <- double(1)
@@ -173,15 +226,11 @@ parampositions <- function(model, param, print=TRUE) {
   TBM2.every <- integer(1)
   TBM2.num <- integer(1)
   
-  TBM3D2.lines <- integer(1)
-  TBM3D2.linesimufactor <- double(1)
-  TBM3D2.linesimustep <- double(1)
-  TBM3D2.every <- integer(1)
   
-  TBM3D3.lines <- integer(1)
-  TBM3D3.linesimufactor <- double(1)
-  TBM3D3.linesimustep <- double(1)
-  TBM3D3.every <- integer(1)
+  TBM3.lines <- integer(1)
+  TBM3.linesimufactor <- double(1)
+  TBM3.linesimustep <- double(1)
+  TBM3.every <- integer(1)
 
   spectral.lines <- integer(1)
   spectral.grid <- integer(1)
@@ -208,9 +257,9 @@ parampositions <- function(model, param, print=TRUE) {
 
   ## first element is the function name
   parameters <- list(...)
-  for (m in 1:0) {
-    # m = 1 reading parameters
-    # m = 0 storing parameters
+  for (m in 0:1) {
+    # m = 0 reading parameters
+    # m = 1 storing parameters
     storage.mode(m) <- "integer"
     ## "SetParam" more complicated since pch is of character type
     x <- .C("SetParam", m, Storing=Storing, PrintLevel=PrintLevel,
@@ -222,21 +271,21 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetParamDecision", m, stationary.only, exactness,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 
-       CE.mmin, CE.userfft, CE.strategy, CE.maxmem,
+       CE.mmin, CE.useprimes, CE.strategy, CE.maxmem,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamLocal", m, cutoff.a, intrinsic.r,
+    .C("SetParamLocal", m, local.force, local.tolRe, local.tolIm, local.trials,
+       local.mmin, local.useprimes, local.strategy, local.maxmem,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamTBMCE", m, TBMCE.force, TBMCE.tolRe, TBMCE.tolIm, TBMCE.trials, 
-       TBMCE.mmin, TBMCE.userfft, TBMCE.strategy, TBMCE.maxmem,
+    .C("SetParamTBMCE", m, TBMCE.force, TBMCE.tolRe, TBMCE.tolIm, TBMCE.trials,
+       TBMCE.mmin, TBMCE.useprimes, TBMCE.strategy, TBMCE.maxmem,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM2", m, TBM2.lines, TBM2.linesimufactor,
        TBM2.linesimustep, TBM2.every, TBM2.num,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamTBM3D2", m, TBM3D2.lines, TBM3D2.linesimufactor,
-       TBM3D2.linesimustep, TBM3D2.every, PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamTBM3D3", m, TBM3D3.lines, TBM3D3.linesimufactor,
-       TBM3D3.linesimustep, TBM3D3.every, PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamTBM", m, TBM.method, PACKAGE="RandomFields", DUP=FALSE)
+    .C("SetParamTBM3", m, TBM3.lines, TBM3.linesimufactor,
+       TBM3.linesimustep, TBM3.every, PACKAGE="RandomFields", DUP=FALSE)
+   .C("SetParamTBM", m, TBM.method, TBM.center, TBM.points,
+       PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDirectGauss", m, direct.method, direct.checkprecision,
@@ -244,9 +293,8 @@ parampositions <- function(model, param, print=TRUE) {
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetMPP", m, MPP.approxzero, add.MPP.realisations, MPP.radius,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines, hyper.mar.distr,
-       hyper.mar.param,
-       NA.OK=TRUE, DUP=FALSE)
+    .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines,
+       hyper.mar.distr, hyper.mar.param, NA.OK=TRUE, DUP=FALSE)
     .C("SetExtremes", m, maxstable.maxGauss, PACKAGE="RandomFields", DUP=FALSE)
     
     if (length(parameters)==0)
@@ -266,9 +314,15 @@ parampositions <- function(model, param, print=TRUE) {
                     CE.tolIm=CE.tolIm,
                     CE.tolRe=CE.tolRe,
                     CE.trials=CE.trials,
-                    CE.userfft=as.logical(CE.userfft),
-                    cutoff.a=cutoff.a,
-                    intrinsic.r=intrinsic.r,
+                    CE.useprimes=as.logical(CE.useprimes),
+                    local.force=as.logical(local.force),
+                    local.mmin=local.mmin,
+                    local.strategy=local.strategy,
+                    local.maxmem=local.maxmem,
+                    local.tolIm=local.tolIm,
+                    local.tolRe=local.tolRe,
+                    local.trials=local.trials,
+                    local.useprimes=as.logical(local.useprimes),
                     direct.checkprecision=as.logical(direct.checkprecision),
                     direct.bestvariables=direct.bestvariables,
                     direct.maxvariables=direct.maxvariables,
@@ -277,19 +331,17 @@ parampositions <- function(model, param, print=TRUE) {
                     spectral.grid=as.logical(spectral.grid),
                     spectral.lines=spectral.lines,
                     TBM.method=.methods[TBM.method+1],
+                    TBM.center=TBM.center,
+                    TBM.points=TBM.points,
                     TBM2.every=TBM2.every,
                     TBM2.lines=TBM2.lines,
                     TBM2.linesimufactor=TBM2.linesimufactor,
                     TBM2.linesimustep=TBM2.linesimustep,
                     TBM2.num=as.logical(TBM2.num),
-                    TBM3D2.every=TBM3D2.every,
-                    TBM3D2.lines=TBM3D2.lines,
-                    TBM3D2.linesimufactor=TBM3D2.linesimufactor,
-                    TBM3D2.linesimustep=TBM3D2.linesimustep,
-                    TBM3D3.every=TBM3D3.every,
-                    TBM3D3.lines=TBM3D3.lines,
-                    TBM3D3.linesimufactor=TBM3D3.linesimufactor,
-                    TBM3D3.linesimustep=TBM3D3.linesimustep,
+                    TBM3.every=TBM3.every,
+                    TBM3.lines=TBM3.lines,
+                    TBM3.linesimufactor=TBM3.linesimufactor,
+                    TBM3.linesimustep=TBM3.linesimustep,
                     TBMCE.force=as.logical(TBMCE.force),
                     TBMCE.mmin=TBMCE.mmin,
                     TBMCE.strategy=TBMCE.strategy,
@@ -297,7 +349,7 @@ parampositions <- function(model, param, print=TRUE) {
                     TBMCE.tolIm=TBMCE.tolIm,
                     TBMCE.tolRe=TBMCE.tolRe,
                     TBMCE.trials=TBMCE.trials,
-                    TBMCE.userfft=as.logical(TBMCE.userfft),
+                    TBMCE.useprimes=as.logical(TBMCE.useprimes),
                     add.MPP.realisations=add.MPP.realisations,
                     MPP.approxzero=MPP.approxzero,
                     MPP.radius=MPP.radius,
@@ -320,16 +372,7 @@ parampositions <- function(model, param, print=TRUE) {
                     )
                )
              )
-    if (m==0) return(invisible(parameters))
-
-    ## set to 0 since only one part of each pair might be non-zero
-    ## this is then checked in RFtbm.cc, SetParamLines
-    TBM2.linesimufactor <- as.double(0)
-    TBM2.linesimustep <- as.double(0)
-    TBM3D2.linesimufactor <- as.double(0)
-    TBM3D2.linesimustep <- as.double(0)
-    TBM3D3.linesimufactor <- as.double(0)
-    TBM3D3.linesimustep <- as.double(0)
+    if (m==1) return(invisible(parameters))
     
     orig.name <- names(parameters)
     if (is.null(orig.name) || (orig.name[1]=="")) {
