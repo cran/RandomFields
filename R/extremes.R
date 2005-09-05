@@ -53,9 +53,6 @@ function (x, y = NULL, z = NULL, grid, model, param,  maxstable,
                            maxstable=maxstable, method=method,
                            register=register, gridtriple=gridtriple)
   if (error > 0) stop(paste("InitMaxStable: error", error, "occured"))
-
-  str(GetRegisterInfo())
-   
   return(DoSimulateRF(n=n, reg=register, paired=FALSE))
 }
 

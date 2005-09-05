@@ -185,7 +185,7 @@ ShowModels <- function(x, y=NULL,
   npar <- lapply(npar, function(x) x <- rep(1,x))
   type <- lapply(npar, function(x) rep("real", length(x)))
 
-  ## models: models where vaslid starting values of the parameters cannont be
+  ## models: models where valid starting values of the parameters cannot be
   ## easily be guessed
   ## (goal is that at starting point, user always gets a set of valid
   #   parameter values)
@@ -389,8 +389,9 @@ ShowModels <- function(x, y=NULL,
           assign("save.seed", get(".Random.seed", envir=.GlobalEnv,
                                   inherits = FALSE), envir=ENVIR)
         else assign(".Random.seed", save.seed, envir=.GlobalEnv)
-
-        z <- GaussRF(x, y, model=cp, grid=TRUE, register=register)
+        
+        try(z <- GaussRF(x, y, model=cp, grid=TRUE, register=register))
+        if (!is.numeric(z)) z <- NULL
         
         assign("zsimu", z, envir=ENVIR)
         assign("ztrafo", NULL, envir=ENVIR)
@@ -751,20 +752,43 @@ ShowModels <- function(x, y=NULL,
       par(mar=simu.mar)
       plot(Inf, Inf, xlim=range(x), ylim=range(y), axes=FALSE)
     }
-    simulate(cp=cur.par[[covnr]])
-
+    
     options(warn=-1)
-    cur.par[[covnr]] <- ## menu call
-      eval.parameters("cp", entry,
-                      update=update,  simulate=simulate,
-                      dev = par.dev, cp=cur.par[[covnr]],
-                      col.rect=Col.rect, col.bg=Col.bg, col.sep=Col.sep,
-                      col.line = Col.line, col.txt=Col.txt, sep=NULL,
-                      cex=cex.eval, cex.i=cex.eval,
-                      param=c("field", "simu", "vario")
-                      )
+    RFparameters(Print=print0)
+    error <- CheckAndComplete(model=cur.par[[covnr]], dim=dim)$error
+    RFparameters(Print=print1)
+    if (error!=0) {
+      if (debug) print(error)
+      screen(model.dev)
+      plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
+        text(0.5, 0.5, col="red", cex=1,
+             if (error  %in% c(35,  # time-space model
+                               51   # hyper model
+                               ))
+               paste("'Showmodels' does not work\nfor '", namen[covnr], "'.",
+                     sep="")
+             else if(error==4)
+               paste("'", namen[covnr], "' does not match\nspecified dimension.",
+                     sep="")
+             else paste("error #", error, " occurred for '", namen[covnr], "'.",
+                        sep="")
+             )
+             
+    } else {
+     simulate(cp=cur.par[[covnr]])
+
+     cur.par[[covnr]] <- ## menu call
+       eval.parameters("cp", entry,
+                        update=update,  simulate=simulate,
+                        dev = par.dev, cp=cur.par[[covnr]],
+                        col.rect=Col.rect, col.bg=Col.bg, col.sep=Col.sep,
+                        col.line = Col.line, col.txt=Col.txt, sep=NULL,
+                        cex=cex.eval, cex.i=cex.eval,
+                        param=c("field", "simu", "vario")
+                        )
  
-    oldnr <- covnr
+      oldnr <- covnr
+    } 
     if (is.na(covnr <- choose.model(oldnr))) break
     close.screen(scr)
     open.screen()

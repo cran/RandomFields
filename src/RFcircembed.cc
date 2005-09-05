@@ -32,11 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RFsimu.h"
 #include <assert.h>
 #include <R_ext/Applic.h>
+#include <R_ext/Linpack.h>
 
-ce_param CIRCEMBED={false, true, TRIVIALSTRATEGY, -1e-7, 1e-3, 3, 20000000, 
-		    0, 0, 0, 0};
-ce_param LOCAL_CE={false, true, TRIVIALSTRATEGY, -1e-9, 1e-7, 1, 20000000, 
-		    0, 0, 0, 0};
+ce_param CIRCEMBED={false, true, false, TRIVIALSTRATEGY, 3, 20000000, 
+		    -1e-7, 1e-3, 0, 0, 0, 0};
+ce_param LOCAL_CE={false, true, false, TRIVIALSTRATEGY, 1, 20000000, 
+		   -1e-9, 1e-7, 0, 0, 0, 0};
 
 void FFT_destruct(FFT_storage *FFT)
 {
@@ -62,12 +63,21 @@ void CE_destruct(void **S)
     *S = NULL;
   }
 }
+
+void LOCAL_NULL(localCE_storage* x){
+  int i;
+  for (i=0; i<MAXDIM; i++) x->correction[i] = NULL;
+}
  
 void localCE_destruct(void **S) 
 {
+  int i;
   if (*S!=NULL) {
     localCE_storage* x;
     x = *((localCE_storage**) S);
+    for (i=0; i<MAXDIM; i++) 
+      if (x->correction[i] != NULL) free(x->correction[i]);
+    LOCAL_NULL(x);
     DeleteKeyNotTrend(&(x->key)); 
     free(*S);
     *S = NULL;
@@ -82,18 +92,18 @@ void localCE_destruct(void **S)
 
 void SetParamCircEmbed( int *action, int *force, double *tolRe, double *tolIm,
 			int *trials, double *mmin, int *useprimes, int *strategy,
-		        double *maxmem) 
+		        double *maxmem, int *dependent) 
 {
   SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
-	     maxmem, &CIRCEMBED, "CIRCEMBED");
+	     maxmem, dependent, &CIRCEMBED, "CIRCEMBED");
 }
 
 void SetParamLocal( int *action, int *force, double *tolRe, double *tolIm,
 			int *trials, double *mmin, int *useprimes, int *strategy,
-		        double *maxmem) 
+		        double *maxmem, int *dependent) 
 {
   SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
-	     maxmem, &LOCAL_CE, "LOCAL");
+	     maxmem, dependent, &LOCAL_CE, "LOCAL");
 }
 
 int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
@@ -157,7 +167,6 @@ int init_circ_embed(key_type *key, int m)
 {
   methodvalue_type *meth;  
   int Xerror=NOERROR, d, actcov;
-  long twoRealmtot;
   double steps[MAXDIM], *c;
   CE_storage *s;
   ce_param* cepar;
@@ -199,9 +208,9 @@ int init_circ_embed(key_type *key, int m)
   }
 
   int *mm, *cumm, *halfm, dim;
-  double hx[MAXDIM], totalm;
+  double hx[MAXDIM];
   int  trials, index[MAXDIM], dummy;
-  long mtot,i,k,twoi;
+  long mtot,i,k,twoi, twoRealmtot;
   bool positivedefinite, cur_crit;
   
   mtot=-1;
@@ -219,17 +228,17 @@ int init_circ_embed(key_type *key, int m)
   /* calculate the dimensions of the matrix C, eq. (2.2) in W&C */       
                                                                          
  // ("CE missing strategy for matrix entension in case of anisotropic fields %d\n
-  totalm = 1.0;                      
   for (i=0;i<dim;i++){ // size of matrix at the beginning  
     mm[i] = s->nn[i];
     if (cepar->mmin[i]>0.0) {
-	if (mm[i] > ((int) ceil(cepar->mmin[i])) / 2) {
-	    sprintf(ERRORSTRING_OK, "Minimum size in direction %d is %d", 
-		    (int) i, mm[i]);
-	    sprintf(ERRORSTRING_WRONG,"%d", (int) ceil(cepar->mmin[i]));
-	    return ERRORMSG;
-	}
-	mm[i] = ((int) ceil(cepar->mmin[i])) / 2;
+      if (mm[i] > (1 + (int) ceil(cepar->mmin[i])) / 2) { // plus 1 since 
+	// mmin might be odd; so the next even number should be used
+	sprintf(ERRORSTRING_OK, "Minimum size in direction %d is %d", 
+		(int) i, mm[i]);
+	sprintf(ERRORSTRING_WRONG,"%d", (int) ceil(cepar->mmin[i]));
+	return ERRORMSG;
+      }
+      mm[i] = (1 + (int) ceil(cepar->mmin[i])) / 2;
     } else if (cepar->mmin[i] < 0.0) {
 	assert(cepar->mmin[i] <= -1.0);
 	mm[i] = (int) ceil((double) mm[i] * -cepar->mmin[i]);
@@ -242,13 +251,7 @@ int init_circ_embed(key_type *key, int m)
     } else {
       mm[i] = (1 << 1 + (int) ceil(log((double) mm[i]) * INVLOG2 - EPSILON1000));
     }
-    totalm *= (double) mm[i];                          
   }                             
-  if (totalm > cepar->maxmem) {
-    sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
-    sprintf(ERRORSTRING_WRONG,"%f", totalm);
-    return ERRORMAXMEMORY;
-  }
 
   positivedefinite = false;     
     /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
@@ -284,13 +287,21 @@ int init_circ_embed(key_type *key, int m)
       index[i]=1-halfm[i]; 
       cumm[i+1]=cumm[i] * mm[i]; // only relevant up to i<dim-1 !!
     }
+    s->mtot = mtot = cumm[dim-1] * mm[dim-1]; 
 
-    mtot=cumm[dim-1] * mm[dim-1]; 
     if (GENERAL_PRINTLEVEL>=2) {
       for (i=0;i<dim;i++) PRINTF("mm[%d]=%d, ",i,mm[i]);
       PRINTF("mtot=%d\n ",mtot);
     }
-    twoRealmtot = 2 * sizeof(double) * mtot;
+
+    if (mtot > cepar->maxmem) {
+	sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
+	sprintf(ERRORSTRING_WRONG,"%f", mtot);
+	return ERRORMAXMEMORY;
+    }
+
+
+    twoRealmtot = 2 * mtot * sizeof(double);
 
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
@@ -363,14 +374,12 @@ int init_circ_embed(key_type *key, int m)
 	FFT_destruct(&(s->FFT));
 	free(c); c=NULL;
 
-	totalm = 1.0;
 	switch (cepar->strategy) {
 	case 0 :
-	  for (i=0;i<dim;i++) { /* enlarge uniformly in each direction, maybe 
+	  for (i=0; i<dim; i++) { /* enlarge uniformly in each direction, maybe 
 				   this should be modified if the grid has 
 				   different sizes in different directions */
 	    mm[i] <<= 1;
-	    totalm *= (double) mm[i];
 	  }
 	  break;
 	case 1 :  
@@ -392,18 +401,10 @@ int init_circ_embed(key_type *key, int m)
 	  }
 	  assert(maxi>=0);
 	  mm[maxi] <<= 1;
-	  for (i=0;i<dim; i++) totalm *= (double) mm[i];
 	  break;
 	default:
 	  assert(false);
 	}
-	if (totalm>cepar->maxmem) {    
-	  sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
-	  sprintf(ERRORSTRING_WRONG,"%f", totalm);
-	  Xerror=ERRORMAXMEMORY;
-	  goto ErrorHandling;
-	}
-	//	assert(false);
       }
     } else {if (GENERAL_PRINTLEVEL>=2) PRINTF("forced\n");}
   }
@@ -442,6 +443,14 @@ int init_circ_embed(key_type *key, int m)
   if (GENERAL_PRINTLEVEL>=10) {
     for (i=0;i<2*mtot;i++) {PRINTF("%f ",c[i]);} PRINTF("\n");
   }  
+  
+  s->dependent = cepar->dependent; 
+  for(i=0; i<dim; i++) { // set anyway -- does not cost too much
+    s->cur_square[i] = s->max_squares[i] = mm[i] / s->nn[i];
+    s-> square_seg[i] = cumm[i] * (s->nn[i] + (mm[i] - s->max_squares[i] * 
+					       s->nn[i]) / s->max_squares[i]);
+  }
+
 //  s->c = c;
 //  return NOERROR;
   
@@ -464,8 +473,7 @@ void covcpy(covinfo_type *dest, covinfo_type *source){
   memcpy(dest, source, sizeof(covinfo_type));
 }
 
-double GetScaledDiameter(key_type *key, covinfo_type *kc)
-{
+double GetScaledDiameter(key_type *key, covinfo_type *kc) {
 // SCALE and ANISO is considered as space trafo and envolved here
   double diameter; 
   diameter = 0.0;
@@ -477,12 +485,13 @@ double GetScaledDiameter(key_type *key, covinfo_type *kc)
     dim = kc->truetimespacedim;
     ncorner_dim = (1 << key->timespacedim) * dim;
     GetCornersOfGrid(key, dim, kc->aniso, sx);
-    for (i=1; i<ncorner_dim; i+=dim) {
+    for (i=dim; i<ncorner_dim; i+=dim) {
       for (j=0; j<i; j+=dim) {
         distsq = 0.0;
 	for (k=0; k<dim; k++) { 
 	  register double dummy;
-	  dummy = sx[i + k] - sx[j + k];
+	  dummy = fabs(sx[i + k] - sx[j + k]);
+//	  printf("getscale %d %d %d %f\n", i, j, k, dummy);
 	  distsq += dummy * dummy;
 	}
 	if (distsq > diameter) diameter = distsq;
@@ -491,27 +500,82 @@ double GetScaledDiameter(key_type *key, covinfo_type *kc)
   } else { // see above
     int d;
     for (d=0; d<key->timespacedim; d++) {
-      register double dummy;
-      dummy = key->x[d][XSTEP] * (double) (key->length[d] - 1);
+      double dummy;
+      dummy = key->x[d][XSTEP] * (double) (key->length[d] - 1) * kc->aniso[0];
       diameter += dummy * dummy; 
     }
-    diameter *= kc->aniso[0] * kc->aniso[0];
   }
 //  printf("diameter=%f", sqrt(diameter));
   return sqrt(diameter);
 }
 
+
+int GetOrthogonalUnitExtensions(aniso_type aniso, int dim, double *grid_ext) {
+  int k,i,j,l,m, job=01, err, dimsq, ev0, jump, endfor;
+  double s[MAXDIMSQ], G[MAXDIM+1], e[MAXDIM], D[MAXDIM], V[MAXDIMSQ];
+  dimsq = dim * dim;
+  for (k=0; k<dim; k++) {
+    for (i=0; i<dim; i++) {
+      for (l=j=0; j<dimsq; j+=dim) {
+	s[j + i] = 0.0;
+	jump = l + k;
+	endfor = l + dim;
+	for (m=i; l<endfor; l++, m += dim) {
+	  if (l!=jump) s[i + j] += aniso[l] * aniso[m];
+	}
+      }
+    }
+//    for (printf("\n\n s\n"), j=0; j<dim; j++, printf("\n")) 
+//	for (i=0; i<dimsq; i+=dim) printf("%f ", s[i+j]);
+//    for (printf("\n\n aniso\n"), j=0; j<dim; j++, printf("\n")) 
+//	for (i=0; i<dimsq; i+=dim) printf("%f ", aniso[i+j]);	
+    
+    // note! s will be distroyed by dsvdc!
+    F77_NAME(dsvdc)(s, &dim, &dim, &dim, D, e, NULL /* U */,
+		    &dim, V, &dim, G, &job, &err);
+    if (err!=NOERROR) { err=-err;  goto ErrorHandling; }
+    ev0 = -1;
+    for (i=0; i<dim; i++) {
+      if (fabs(D[i]) <= EIGENVALUE_EPS) {
+	if (ev0==-1) ev0=i;
+	else {
+	  err = ERRORFULLRANK; goto ErrorHandling;
+	} 
+      }
+    }
+
+//    for (printf("\n\n V\n"), j=0; j<dim; j++, printf("\n")) 
+//	for (i=0; i<dimsq; i+=dim) printf("%f ", V[i+j]);
+
+    grid_ext[k] = 0.0;
+    ev0 *= dim;
+    for (i=0; i<dim; i++) {
+      grid_ext[k] += V[ev0 + i] * aniso[k + i * dim];
+    }
+    grid_ext[k] = fabs(grid_ext[k]);
+  }
+  return NOERROR;
+
+ ErrorHandling:
+  if (err<0) {
+    PRINTF("F77 error in GetOrthogonalExtensions: %d\n", -err);
+    err = ERRORFAILED;
+  }
+  return err;
+}
+
+
 int init_circ_embed_local(key_type *key, int m)
 {
   methodvalue_type *meth;  
   int Xerror=NOERROR, v, store_msg[MAXDIM], msg, simuactcov, instance,
-      actcov, nc, store_nr;
+      actcov, nc, store_nr, i, dimsq;
   localCE_storage *s;
   cov_fct *hyper;
   covinfo_type *sc;
   bool selectlocal[Forbidden + 1];
   param_type store_param;
-  double rawRmax;
+  double rawRmax[MAXDIM], grid_ext[MAXDIM];
 
   if (key->covFct != CovFct) { Xerror=ERRORNOTPROGRAMMED; goto ErrorHandling;}
   SET_DESTRUCT(localCE_destruct, m);
@@ -522,6 +586,7 @@ int init_circ_embed_local(key_type *key, int m)
     Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
   } 
   s = (localCE_storage*) meth->S;
+  LOCAL_NULL(s);
   KEY_NULL(&(s->key));
 
   // prepared for more sophisticated selections if init_circ_embed_local
@@ -533,7 +598,7 @@ int init_circ_embed_local(key_type *key, int m)
   actcov = meth->actcov;
   if (2 * actcov > MAXCOV) {Xerror=ERRORNCOVOUTOFRANGE; goto ErrorHandling;}
 
-  rawRmax = 0.0;
+  for (i=0; i<key->timespacedim; i++) rawRmax[i] = 0.0;
   for (simuactcov=v=0; v<actcov; v++) {
     covinfo_type *kc;
     store_nr = -1;
@@ -543,8 +608,8 @@ int init_circ_embed_local(key_type *key, int m)
     sc->method = CircEmbed;
     sc->param[VARIANCE] = 1.0; 
     sc->param[HYPERNR] = 1; // as only addition between models allowed
-    sc->param[DIAMETER] = GetScaledDiameter(key, kc); // SCALE is considered 
-    //                                      as space trafo and envolved here
+    sc->param[DIAMETER] = GetScaledDiameter(key, kc);
+    // SCALE is considered as space trafo and envolved here
     if (GENERAL_PRINTLEVEL>7) PRINTF("diameter %f\n", sc->param[DIAMETER]);
     sc->op = 2;
     covcpy(sc + 1, kc);
@@ -600,15 +665,23 @@ int init_circ_embed_local(key_type *key, int m)
 //	      printf("%s %d\n", 
 //		     hyper->name, hyper->implemented[CircEmbedCutoff]);
 	      assert(hyper->implemented[CircEmbedCutoff] == HYPERIMPLEMENTED);
-	      PRINTF("a=%f, sqrt.a=%f, b=%f\n",
+	      PRINTF("a=%f, a_sqrt.r=%f, b=%f\n",
 		     sc->param[CUTOFF_A],
 		     sc->param[CUTOFF_ASQRTR], sc->param[CUTOFF_B]
 		);
 	    }
 	}
       } // while
-      if (rawRmax < sc->param[LOCAL_R] / sc->param[DIAMETER]) 
-	  rawRmax = sc->param[LOCAL_R] /sc->param[DIAMETER];
+      GetOrthogonalUnitExtensions(kc->aniso, key->timespacedim, grid_ext);
+
+      for (i=0; i<key->timespacedim; i++) {
+        register double dummy;   
+	dummy = store_param[LOCAL_R] / 
+	    (grid_ext[i] * (double) (key->length[i] - 1) * key->x[i][XSTEP]);
+//	printf("%d grid_ext=%f dummy=%f, raw=%f local_r=%f\n",
+//	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R]);
+	if (rawRmax[i] < dummy) rawRmax[i] = dummy;
+      }
     } // nc
     if (!R_FINITE(store_param[LOCAL_R])) {
       PRINTF("v=%d nc=%d, inst=%d err=%d hyp.kappa=%f, #=%d, diam=%f\nr=%f curmin_r=%f\n", 
@@ -628,7 +701,7 @@ int init_circ_embed_local(key_type *key, int m)
 
   // prepare for call of internal_InitSimulateRF
   int covnr[MAXCOV], op[MAXCOV], CEMethod[MAXCOV], cum_nParam, 
-      aniso, n_aniso, i;
+      aniso, n_aniso;
   double ParamList[MAXCOV * TOTAL_PARAM];
   char errorloc_save[nErrorLoc];
   if (key->anisotropy) {
@@ -651,18 +724,15 @@ int init_circ_embed_local(key_type *key, int m)
 	ParamList[cum_nParam++] = sc->param[aniso + i];
   }
 
-  //for (i=0; i<cum_nParam; printf("%d %f \n", i, ParamList[i++]));
-  // assert(false);
-
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s%s ", errorloc_save, "cutoff: ");
+  sprintf(ERROR_LOC, "%s%s ", errorloc_save, "local circ. embed.: ");
   ce_param ce_save;
   memcpy(&ce_save, &CIRCEMBED, sizeof(ce_param));
   memcpy(&CIRCEMBED, &LOCAL_CE, sizeof(ce_param));
  
-  rawRmax *= sqrt(key->timespacedim);
   for (i=0; i<key->timespacedim; i++) {
-    if (CIRCEMBED.mmin[i]==0.0)  CIRCEMBED.mmin[i] = - rawRmax;
+    if (CIRCEMBED.mmin[i]==0.0) CIRCEMBED.mmin[i] = - rawRmax[i];
+//    printf("%d %f\n", i, CIRCEMBED.mmin[i]);
   }
 
   instance = 0;
@@ -707,22 +777,41 @@ int init_circ_embed_local(key_type *key, int m)
   strcpy(ERROR_LOC, errorloc_save);
   if (Xerror != NOERROR) goto ErrorHandling;
 
-  s->factor = 0.0;
+  dimsq = key->timespacedim * key->timespacedim;
   for (v=0; v<simuactcov; v++) {
+    double dummy, *stein_aniso;
     sc = &(s->key.cov[v]);
     hyper = &(CovList[sc->nr]);
     if (hyper->localtype == CircEmbedIntrinsic) {
-      static double zero=0.0;
-      // these steps are necessary, see the two cases in 3dBrownian!
-      s->factor += sc->param[INTRINSIC_A2] * 
-	  key->covFct(&zero, 1, sc, COVLISTALL, (int) sc->param[HYPERNR], 
-		      false) / (sc->param[DIAMETER] * sc->param[DIAMETER]);
+      assert((v % 2) == 0); // if the method is generalised to
+	  // multiplicative submodels this assert reminds that
+	  // this part must be changed.
+      dummy = sqrt(2.0 * sc->param[INTRINSIC_A2]); // see Stein (2002)
+      sc = &(s->key.cov[v]);
+      if ((s->correction[v] = malloc(sizeof(double) * dimsq))==NULL){
+        Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+      }
+      stein_aniso = (double*) s->correction[v];
+      if (key->anisotropy) { // distinction necessary,
+	  // and sc->aniso may not be used, but the 
+	  // orginial param[ANISO] -- it did not work otherwise
+	for (i=0; i<dimsq; i++) {
+	  stein_aniso[i] = dummy * sc->param[ANISO + i];
+//    printf("aniso %d %f %f %f\n", i, stein_aniso[i], dummy, 
+//	   sc->param[ANISO + i]);
+	}
+      } else {
+	  int i;
+	for (i=0; i<dimsq; stein_aniso[i++] = 0.0);
+	for (i=0; i<dimsq; i += key->timespacedim + 1) 
+          stein_aniso[i] = dummy / sc->param[SCALE];
+      }
+      v++;
+    } else {
+      assert(hyper->localtype == CircEmbedCutoff);
+      v++;
     }
   }
-  // 2.0 : see Stein (2002)
-  s->factor = sqrt(2.0 * s->factor);  // standard deviation of the Gaussian 
-  //                                        variables in do_...
-
   return NOERROR;
  
  ErrorHandling:
@@ -732,43 +821,73 @@ int init_circ_embed_local(key_type *key, int m)
 
 void do_circ_embed_local(key_type *key, int m, double *res )
 {  
-  double x[MAXDIM], dx[MAXDIM];
-  long index[MAXDIM], k, r;
+  double x[MAXDIM], dx[MAXDIM], *stein_aniso;
+  long index[MAXDIM], r;
+  int v, ncov, dim, dimsq, i, l, k;
   localCE_storage *s;
+  bool stein_correction;
+  covinfo_type *sc;
+  cov_fct *hyper;
 
   assert(key->active);
   s = (localCE_storage*) key->meth[m].S;
-  assert(s->factor >= 0.0);
   internal_DoSimulateRF(&(s->key), 1, res);
-
-  if (s->factor>0) {
-    for (k=0; k<key->timespacedim; k++) {
-      index[k]=0;
-      dx[k]= GAUSS_RANDOM(s->factor * key->x[k][XSTEP]);
-      x[k]= 0.0;
+  
+  dim = key->timespacedim;
+  dimsq = dim * dim;
+  ncov  = s->key.ncov;
+  for (k=0; k<key->timespacedim; k++) {
+    index[k] = 0;
+    dx[k] = x[k] = 0.0;
+  }
+  stein_correction = false;
+  for (v=0; v<ncov; v++) {
+    sc = &(s->key.cov[v]);
+    hyper = &(CovList[sc->nr]);
+    switch(hyper->localtype) {
+	case CircEmbedCutoff : 	    
+	    assert(s->correction[v++] == NULL);
+	    break;
+	case CircEmbedIntrinsic:
+	    stein_correction = true;
+	    stein_aniso = (double*) s->correction[v++];
+	    for (i=0; i<dimsq; ) {
+	      double gauss = GAUSS_RANDOM(1.0);
+	      for (l=0; l<dim; l++)
+	        dx[l] += stein_aniso[i++] * gauss;
+	    }
+	    break;
+	default: assert(false);
     }
+  } // v
+  if (stein_correction) {
+    for (k=0; k<dim; k++) dx[k] *= key->x[k][XSTEP];
     for(r=0;;) { 
-      for (k=0; k<key->timespacedim; k++)  res[r] += x[k]; 
+      for (k=0; k<dim; k++) res[r] += x[k]; 
       r++;
       k=0;
-      while( (k<key->timespacedim) && (++index[k]>=key->length[k])) {
+      while( (k<dim) && (++index[k]>=key->length[k])) {
 	index[k]=0;
 	x[k] = 0.0;
 	k++;
       }
-      if (k>=key->timespacedim) break;
+      if (k>=dim) break;
       x[k] += dx[k];
     }
   }
 }
 
-void do_circ_embed(key_type *key, int m, double *res ){
-  double *d;
+void do_circ_embed(key_type *key, int m, double *res){
+  int  i, j, k, HalfMp1[MAXDIM], HalfMaM[2][MAXDIM], index[MAXDIM], dim,
+    *mm, *cumm, *halfm;
+  double XX,YY,invsqrtmtot, *c, *d;
+  bool first, free[MAXDIM+1], noexception, simulate;
+  long mtot, start[MAXDIM], end[MAXDIM];
   CE_storage *s;
   s = (CE_storage*)key->meth[m].S;
   assert(key->active);
-  if (s->d==NULL) { /* overwrite the intermediate 
-		       result directly (algorithm  allows for that) */
+  if (s->d==NULL) { /* overwrite the intermediate result directly
+		       (algorithm allows for that) */
     d=s->c;
     assert(!key->storing);
   }
@@ -789,20 +908,13 @@ void do_circ_embed(key_type *key, int m, double *res ){
      complete programme will fail, since the initialization depends on
      the value of key->storing
   */  
-  int  i, j, k, HalfMp1[MAXDIM], HalfMaM[2][MAXDIM], index[MAXDIM], dim,
-      *nn, *mm, *cumm, *halfm;
-  double XX,YY,invsqrtmtot, *c;
-  bool first, free[MAXDIM+1], noexception;
-  long mtot;
   
   dim = key->timespacedim;
-  nn = s->nn;
   mm = s->m;
   cumm = s->cumm;
   halfm = s->halfm;
   c = s->c;
-
-  mtot=cumm[dim-1] * mm[dim-1]; 
+  mtot= s->mtot; 
   for (i=0; i<dim; i++) {
     HalfMp1[i] =  ((mm[i] % 2)==1) ? -1 : halfm[i];
     HalfMaM[0][i] = halfm[i];
@@ -827,101 +939,106 @@ void do_circ_embed(key_type *key, int m, double *res ){
   free[MAXDIM] = false;
 
 //  if MaxStableRF calls Cutofff, c and look uninitialised
+  k=0; 
+  while(k<dim && (++s->cur_square[k] >= s->max_squares[k])) {
+      s->cur_square[k++]=0;
+  }
+  simulate = !s->dependent || k==dim;
 
-  for(;;) {      
-    i = j = 0;
-    noexception = false;
-    for (k=0; k<dim; k++) {
-      i += cumm[k] * index[k];
-      if ((index[k]==0) || (index[k]==HalfMp1[k])) {
-	j += cumm[k] * index[k];
-      } else {
-	noexception = true; // not case 2 in prop 3 of W&C
-	j += cumm[k] * (mm[k] - index[k]);
+  if (simulate) {
+    for(;;) {      
+      i = j = 0;
+      noexception = false;
+      for (k=0; k<dim; k++) {
+	i += cumm[k] * index[k];
+	if ((index[k]==0) || (index[k]==HalfMp1[k])) {
+	  j += cumm[k] * index[k];
+	} else {
+	  noexception = true; // not case 2 in prop 3 of W&C
+	  j += cumm[k] * (mm[k] - index[k]);
+	}
       }
-    }
-
+      
 //A 0 0 0 0 0 0.000000 0.000000
 //B 0 0 0 0 0 -26.340334 0.000000
 
 //    if (index[1] ==0) printf("A %d %d %d %d %d %f %f\n", 
 //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);
-    if (GENERAL_PRINTLEVEL>=10) PRINTF("cumm...");
-    i <<= 1; // since we have to index imaginary numbers
-    j <<= 1;
-    if (noexception) { // case 3 in prop 3 of W&C
-      XX = GAUSS_RANDOM(INVSQRTTWO);
-      YY = GAUSS_RANDOM(INVSQRTTWO);
-      d[i] = d[i+1] = c[i];   d[i] *= XX;  d[i+1] *= YY;   
-      d[j] = d[j+1] = c[j];   d[j] *= XX;  d[j+1] *= -YY; 
-    } else { // case 2 in prop 3 of W&C
-      d[i]   = c[i] * GAUSS_RANDOM(1.0);
-      d[i+1] = 0.0;
-    }
-
+      if (GENERAL_PRINTLEVEL>=10) PRINTF("cumm...");
+      i <<= 1; // since we have to index imaginary numbers
+      j <<= 1;
+      if (noexception) { // case 3 in prop 3 of W&C
+	XX = GAUSS_RANDOM(INVSQRTTWO);
+	YY = GAUSS_RANDOM(INVSQRTTWO);
+	d[i] = d[i+1] = c[i];   d[i] *= XX;  d[i+1] *= YY;   
+	d[j] = d[j+1] = c[j];   d[j] *= XX;  d[j+1] *= -YY; 
+      } else { // case 2 in prop 3 of W&C
+	d[i]   = c[i] * GAUSS_RANDOM(1.0);
+	d[i+1] = 0.0;
+      }
+      
 //    if (i==224|| i==226 || i==228) {
 //printf("B %d %d %d %d %d %f %f\n", 
 //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);
 // assert(false); 
 //    }
-
-    if (GENERAL_PRINTLEVEL>=10) PRINTF("k=%d ", k);
-    
+      
+      if (GENERAL_PRINTLEVEL>=10) PRINTF("k=%d ", k);
+      
 //    if (index[1] == 0) printf("B %d %d %d %d %d %f %f\n", 
 //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);
-    /* 
-       this is the difficult part.
-       We have to run over roughly half the points, but we should
-       not run over variables twice (time lost)
-       Due to case 2, we must include halfm.
-       
-       idea is:
-       for (i1=0 to halfm[dim-1])
-         if (i1==0) or (i1==halfm[dim-1]) then endfor2=halfm[dim-2] 
-         else endfor2=mm[dim-2]
+      /* 
+	 this is the difficult part.
+	 We have to run over roughly half the points, but we should
+	 not run over variables twice (time lost)
+	 Due to case 2, we must include halfm.
+	 
+	 idea is:
+	 for (i1=0 to halfm[dim-1])
+           if (i1==0) or (i1==halfm[dim-1]) then endfor2=halfm[dim-2] 
+           else endfor2=mm[dim-2]
          for (i2=0 to endfor2)
-           if ((i1==0) or (i1==halfm[dim-1])) and
-              ((i2==0) or (i2==halfm[dim-2]))
-           then endfor3=halfm[dim-3] 
-           else endfor3=mm[dim-3]
-           for (i3=0 to endfor3)
-           ....
-       
-       i.e. the first one that is not 0 or halfm (regarded from dim-1 to 0)
-       runs over 0..halfm, all the others over 0..m
-       
-       this is realised in the following allowing for arbitrary value of dim
-       
+	   if ((i1==0) or (i1==halfm[dim-1])) and
+	      ((i2==0) or (i2==halfm[dim-2]))
+	    then endfor3=halfm[dim-3] 
+	    else endfor3=mm[dim-3]
+	 for (i3=0 to endfor3)
+	 ....
+	 
+	 i.e. the first one that is not 0 or halfm (regarded from dim-1 to 0)
+	 runs over 0..halfm, all the others over 0..m
+	 
+	 this is realised in the following allowing for arbitrary value of dim
+	 
 	 free==true   <=>   endfor==mm[]	 
-    */
-    k=0; 
-    if (++index[k]>HalfMaM[free[k]][k]) {
-      // in case k increases the number of indices that run over 0..m increases
-      free[k] = true;
-      index[k]= 0; 
-      k++;
-      while((k<dim) && (++index[k]>HalfMaM[free[k]][k])) {
+      */
+      k=0; 
+      if (++index[k]>HalfMaM[free[k]][k]) {
+	// in case k increases the number of indices that run over 0..m increases
 	free[k] = true;
 	index[k]= 0; 
 	k++;
-      }
-      if (k>=dim) break;
-      // except the very last (new) number is halfm and the next index is
-      // restricted to 0..halfm
-      // then k decreases as long as the index[k] is 0 or halfm
-      if (!free[k] && (index[k]==halfm[k])){//index restricted to 0..halfm?
-	// first: index[k] is halfm? (test on ==0 is superfluent)
-	k--;
- 	while ( (k>=0) && ((index[k]==0) || (index[k]==halfm[k]))) {
-	  // second and following: index[k] is 0 or halfm?
-	  free[k] = false;
+	while((k<dim) && (++index[k]>HalfMaM[free[k]][k])) {
+	  free[k] = true;
+	  index[k]= 0; 
+	  k++;
+	}
+	if (k>=dim) break;
+	// except the very last (new) number is halfm and the next index is
+	// restricted to 0..halfm
+	// then k decreases as long as the index[k] is 0 or halfm
+	if (!free[k] && (index[k]==halfm[k])){//index restricted to 0..halfm?
+	  // first: index[k] is halfm? (test on ==0 is superfluent)
 	  k--;
+	  while ( (k>=0) && ((index[k]==0) || (index[k]==halfm[k]))) {
+	    // second and following: index[k] is 0 or halfm?
+	    free[k] = false;
+	  k--;
+	  }
 	}
       }
-    }
   }
-
-
+    
 //  printf("%f\n", d[0]);
 //  printf("%f\n", d[1]);
 //  printf("%f\n", d[2]);
@@ -929,30 +1046,39 @@ void do_circ_embed(key_type *key, int m, double *res ){
 
 //  double zz=0.0;
 //  for (i =0; i<2 * mtot; i++) {
-  //    if (true || i<=100) printf("%d %d\n", i, 2 * mtot);
-  //    zz += d[i];
+//    if (true || i<=100) printf("%d %d\n", i, 2 * mtot);
+//    zz += d[i];
 //     assert(i!=230);
 //     // if (i>100); break;
 //  }
 // printf("%f\n", zz);
 
-  fastfourier(d, mm, dim, false, &(s->FFT));   
-  
+    fastfourier(d, mm, dim, false, &(s->FFT));   
+  } // if simulate
 
   /* now we correct the result of the fastfourier transformation
      by the factor 1/sqrt(mtot) and read the relevant matrix out of 
      the large vector c */
   first = true;
-  for(i=0; i<dim; i++){index[i]=0;}
+  for(i=0; i<dim; i++) {
+    index[i] = start[i] = s->cur_square[i] * s->square_seg[i];
+    end[i] = start[i] + cumm[i] * s->nn[i];
+//    printf("%d start=%d end=%d cur=%d max=%d seq=%d cumm=%d, nn=%d\n",
+//	   i, (int) start[i], (int) end[i],
+//	   s->cur_square[i], s->max_squares[i],
+//	   (int) s->square_seg[i], cumm[i], s->nn[i]);
+  }
   int totpts = key->totalpoints;
   for (i=0; i<totpts; i++){
-    j=0; for (k=0; k<dim; k++) {j+=cumm[k] * index[k];} 
-    res[i] += d[2*j]*invsqrtmtot; 
+    j=0; for (k=0; k<dim; k++) {j+=index[k];} 
+    res[i] += d[2 * j] * invsqrtmtot; 
     if ((fabs(d[2*j+1])>CIRCEMBED.tol_im) && 
         ((GENERAL_PRINTLEVEL>=2 && first) || GENERAL_PRINTLEVEL>=6)){ 
-      PRINTF("IMAGINARY PART <> 0, %e\n",d[2*j+1]);
+      PRINTF("IMAGINARY PART <> 0, %e\n", d[2 * j + 1]);
       first=false; 
     } 
-    k=0; while((k<dim) && (++index[k]>=nn[k])) {index[k++]=0;} 
-  }  
+    for(k=0; (k<dim) && ((index[k] += cumm[k]) >= end[k]); k++) {
+      index[k]=start[k]; 
+    }
+  }
 }

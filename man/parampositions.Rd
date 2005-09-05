@@ -24,12 +24,14 @@
   \command{\link{CovarianceFct}}, \command{\link{fitvario}}
 }
 \examples{
+## compare the output of the following commands
 parampositions(model="exp", param=c(0,1,0,NA))
-## that is, the nugget in the standard model is removed if naught!
-## the values of the other parameters do not matter.
-
 parampositions(model="exp", param=c(0,1,NA,NA)) 
 parampositions(model="exp", param=c(0,0,1,NA)) 
+## that is, the nugget in the standard model is removed if naught!
+## the values of the other parameters do not matter. (First value
+## of the returned vector refers to the mean position.)
+
 
 parampositions(model="whi", param=cbind(c(1, 1, 1), c(2, 2, 2)))
 parampositions(model="whi", param=cbind(c(1, 1, 1), c(2, 0, 2)))

@@ -205,34 +205,34 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
   MLEsettings <- function(M) {
     switch(M,
-           "ml" = {
-             assign("ML.lcrepet", lc * repet, envir=ENVIR)
-             assign("ML.loglcrepet", ML.lcrepet * (1 - log(ML.lcrepet)),
-                    envir=ENVIR)
-             if (!givenCoVariates)
-               assign("MLtargetV", data - pm$mean, envir=ENVIR) #else calculated
-             ##                   in MLtarget itself
-             assign("ML.twopilcrepet", ML.lcrepet * log(2 * pi), envir=ENVIR)
-             assign("MLEtarget", MLtarget, envir=ENVIR)
-           },
-           "reml" = {
-             if (givenCoVariates) { ## same as MLE
-               assign("REML.lc", nrow(CoVariates) - ncol(CoVariates), envir=ENVIR)
-               assign("REML.lcrepet", REML.lc * repet, envir=ENVIR)
+       "ml" = {
+         assign("ML.lcrepet", lc * repet, envir=ENVIR)
+         assign("ML.loglcrepet", ML.lcrepet * (1 - log(ML.lcrepet)),
+                envir=ENVIR)
+         if (!givenCoVariates)
+           assign("MLtargetV", data - pm$mean, envir=ENVIR) #else calculated
+         ##                   in MLtarget itself
+         assign("ML.twopilcrepet", ML.lcrepet * log(2 * pi), envir=ENVIR)
+         assign("MLEtarget", MLtarget, envir=ENVIR)
+       },
+       "reml" = {
+         if (givenCoVariates) { ## same as MLE
+           assign("REML.lc", nrow(CoVariates) - ncol(CoVariates), envir=ENVIR)
+           assign("REML.lcrepet", REML.lc * repet, envir=ENVIR)
                assign("REML.loglcrepet", REML.lcrepet * (1 - log(REML.lcrepet)),
                       envir=ENVIR)
-               assign("REML.twopilcrepet", REML.lcrepet * log(2 * pi), envir=ENVIR)
-               assign("REML.A", eigen(CoVariates %*% t(CoVariates)), envir=ENVIR)
-               assign("REML.A", t(REML.A$vectors[order(abs(REML.A$value))
-                                                 [1:REML.lc], ]), envir=ENVIR)
-               assign("REML.data", crossprod(REML.A, data), envir=ENVIR)
-               assign("MLEtarget", REMLtarget, envir=ENVIR)
-             } else {
-               assign("MLEtarget", REMLtarget, envir=ENVIR) #!
-             } 
-           },
-           stop(paste(M, "unknown"))
-           )
+           assign("REML.twopilcrepet", REML.lcrepet * log(2 * pi), envir=ENVIR)
+           assign("REML.A", eigen(CoVariates %*% t(CoVariates)), envir=ENVIR)
+           assign("REML.A", t(REML.A$vectors[order(abs(REML.A$value))
+                                             [1:REML.lc], ]), envir=ENVIR)
+           assign("REML.data", crossprod(REML.A, data), envir=ENVIR)
+           assign("MLEtarget", REMLtarget, envir=ENVIR)
+         } else {
+           assign("MLEtarget", REMLtarget, envir=ENVIR) #!
+         } 
+       },
+       stop(paste(M, "unknown"))
+      )
   }
     
      
@@ -1152,7 +1152,7 @@ show <- function(nr, M, OPT, PARAM)
             "sill-var-nug=", sill - PARAM[VARIANCE] - nugget,"\n")
         stop("sill !=  variance + nugget")
       }
-      autostart[VARIANCE] <- sill/2
+      autostart[VARIANCE] <- parscale[VARIANCE] <- sill/2
       upper[NUGGET] <- upper[VARIANCE] <- sill
       lower[NUGGET] <- lower[VARIANCE] <-  0
     } else { ## not sill bounded
@@ -1169,7 +1169,8 @@ show <- function(nr, M, OPT, PARAM)
           ## * real nugget: NUGGET * SILL
           ## *     variance: (1-NUGGET) * SILL
           varnugNA <- TRUE
-          autostart[NUGGET] <- 0.5
+          autostart[NUGGET] <- autostart[VARIANCE] <- vardata / 2
+          parscale[NUGGET] <- 0.5
           lower[VARIANCE] <- 0
         } else { ## not sillbounded, is.na(variance), !is.na(nugget)
           if (nugget==0) {
@@ -1179,8 +1180,9 @@ show <- function(nr, M, OPT, PARAM)
             ## more than only the variance has to be estimated
             zeronugget <- TRUE
             lower[VARIANCE] <- PARAM[VARIANCE] <- 0 ## dito
+            autostart[VARIANCE] <- vardata
           } else { ## not sillbounded, is.na(variance), nugget!=0
-            lower[VARIANCE] <- (vardata-nugget)/lowerbound.var.factor
+            lower[VARIANCE] <- pmax(0, (vardata-nugget)/lowerbound.var.factor)
             if (lower[VARIANCE] < lowerbound.sill) {
               if (PrintLevel>1)
                 cat("low.var=",lower[VARIANCE]," low.sill",lowerbound.sill,
@@ -1189,6 +1191,8 @@ show <- function(nr, M, OPT, PARAM)
               warning("param[NUGGET] might not be given correctly.")
               lower[VARIANCE] <- lowerbound.sill
             }
+            parscale[VARIANCE] <- sqrt(lower[VARIANCE] * vardata)
+            autostart[VARIANCE]<- lower[VARIANCE]
           }
         }
       } else { ## not sillbounded, !is.na(variance)
@@ -1208,7 +1212,8 @@ show <- function(nr, M, OPT, PARAM)
             ## warning("Has param[VARIANCE] been given correctly?!")
             lower[NUGGET] <- lowerbound.sill
           }
-          autostart[NUGGET] <- sqrt(lower[NUGGET] * upper[NUGGET])
+          autostart[NUGGET] <- lower[NUGGET]
+          parscale[NUGGET] <- sqrt(lower[VARIANCE] * vardata)
         }
       } ##  else { ## not sillbounded, !is.na(variance)
     } ## else { ## not sill bounded
@@ -1316,6 +1321,7 @@ show <- function(nr, M, OPT, PARAM)
 
   
 ##########  Trafo def + bounds for LSQ, also used for autostart  ###############
+
   LSQTRANSFORM <- users.transform  ## note: LSQTRANSFORM is used also in MLE
   LSQinvTrafo <- function(param) param
   LSQINDEX <- index
@@ -1359,11 +1365,20 @@ show <- function(nr, M, OPT, PARAM)
   ## hence, LSQTRANSFORM must be called to get the true parameter values
   M <- "autostart"
   idx <- tblidx[["variab"]]
-  autostart <- LSQTRANSFORM(autostart) ## now clear text
+#print(autostart)
+  if (!is.null(users.transform)) autostart <- users.transform(autostart)
+#print(autostart)
+
+  
+#  print(LSQTRANSFORM)
+#  print(lsqtrafoUser)
+ # print(lsqtrafo)
+#  xxx
   if (nLSQINDEX > 0) param.table[[M]][idx[1]:idx[2]] <- autostart 
   idx <- tblidx[["covariab"]]
   param.table[[M]][idx[1]:idx[2]] <- lsq.covariates(autostart)
   default.param <- param.table[["autostart"]]
+
 
   ##****************    user's guess    *****************
   ## user's guess is already clear text
@@ -1380,6 +1395,8 @@ show <- function(nr, M, OPT, PARAM)
     ug <- convert.to.readable(ug)
     ug <- PrepareModel(ug$model, ug$param, new$spacedim+new$Time,
                        trend=ug$trend)$param
+    if (!is.null(users.transform) &&  up != users.transform(ug))
+      stop("user's guess does not satisfy the user's transformation function") 
     if (length(ug)!=length(PARAM))
       stop("model given by users.guess does not match 'model'")
     idx <- tblidx[["variab"]]
@@ -1400,6 +1417,23 @@ show <- function(nr, M, OPT, PARAM)
       users.beta <- as.double(users.beta)
       stopifnot(length(users.beta) == ncol(CoVariates))
       param.table[[M]][idx[1]:idx[2]] <- users.beta
+    }
+  }
+
+  if (standard.style && use.naturalscaling && index[SCALE]) {
+      idx <- tblidx[["variab"]]
+      for (i in 1:length(allprimmeth)) if (!is.na(param.table[1, i])) {
+      GNS <- .C("GetNaturalScaling",
+                covnr,
+                as.double(param.table[idx[1]:idx[2], i][-1:-(KAPPA-1)]),
+                scalingmethod,
+                natscale=double(1),
+                error=integer(1),
+                PACKAGE="RandomFields", DUP=FALSE)
+      if (GNS$error)
+        stop(paste("Error", error, "occured whilst rescaling"))
+      param.table[idx[1]:idx[2], i][SCALE] <-
+        param.table[idx[1]:idx[2], i][SCALE] / GNS$natscale
     }
   }
 
@@ -1513,8 +1547,7 @@ show <- function(nr, M, OPT, PARAM)
   if (any(is.na(methods))) stop("not all lsq.methods could be matched")
   if ("internal" %in% methods)
     methods <- c(methods, paste("internal", 1:nlsqinternal, sep=""))
-  lsq.optim.control <-
-    c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=1)
+  
   for (M in c(alllsqmeth)) {
     if (!(M %in% methods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
@@ -1552,6 +1585,12 @@ show <- function(nr, M, OPT, PARAM)
         }
         stopifnot(length(min.variab) == length(LSQLB))
         
+        lsq.optim.control <-
+          c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=min)
+
+#        print(parscale)
+#        print(parscale[LSQINDEX])
+        
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
                     upper = LSQUB, control= lsq.optim.control)$par, silent=!debug)
@@ -1571,7 +1610,6 @@ show <- function(nr, M, OPT, PARAM)
     }
   } # for M
 
-  
 
 ##################################################
 ### optional parameter grid for MLE and CROSS  ###
@@ -1626,8 +1664,6 @@ show <- function(nr, M, OPT, PARAM)
   ixdMLEINDEX <- MLEINDEX[index]
 
   ## fnscale <- -1 : maximisation
-  mle.optim.control <-
-    c(optim.control, parscale=list(parscale[MLEINDEX]), fnscale=-1)
   for (M in c(allmlemeth)) {
     if (!(M %in% methods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
@@ -1668,7 +1704,9 @@ show <- function(nr, M, OPT, PARAM)
             } else param.table[tblidx[[M]][1], i] <- NaN
           }
         }
-        stopifnot(length(min.variab) == length(MLELB))
+        stopifnot(length(min.variab) == length(MLELB))        
+        mle.optim.control <-
+          c(optim.control, parscale=list(parscale[MLEINDEX]), fnscale=-min)
         variab <-
           try(optim(min.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
                     upper = MLEUB, control=mle.optim.control)$par,
@@ -1771,7 +1809,7 @@ show <- function(nr, M, OPT, PARAM)
     }
   } ## M
 
-  
+    
 ########  estimation by cross validation  ########                      
   data <- as.matrix(data)
   CROSSINDEX <- index
@@ -1979,7 +2017,6 @@ show <- function(nr, M, OPT, PARAM)
     }
   } ## for M
 
-
   
 ######################################################################
 ###     calculate all target values for all optimal parameters     ###
@@ -2074,6 +2111,7 @@ show <- function(nr, M, OPT, PARAM)
   if (table.format) return(param.table)
   
   ## else table.format=FALSE :
+
   r <- list(covnr=pm$covnr, anisotropy=pm$anisotropy, op=pm$op, mean=NA,
             trend=pm$trend, method=pm$method, timespacedim=pm$timespacedim)
   idx <- tblidx[["variab"]]

@@ -77,18 +77,14 @@
  
 }
 \note{
-  Version 1.2.15 : Default value of
-  \code{RFparameters()$Storing} is \code{TRUE}.
+  From version 1.3 on: Default value of
+  \code{RFparameters()$Storing} is \code{FALSE}.
 }
 \author{Martin Schlather, \email{schlath@hsu-hh.de}
   \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html};
-  
-  Yindeng Jiang \email{jiangyindeng@gmail.com} implemented the
-  circulant embedding methods \sQuote{cutoff} and \sQuote{intrinsic}
-  in 2004. 
-}
+  }
 \references{
-  This package is announced in:
+  This package is announced in and can be cited by:
 
   Schlather, M. (2001) Simulation of stationary and isotropic random
   fields. \emph{R-News} \bold{1} (2), 18-20.
@@ -98,8 +94,11 @@
 }
 \section{Acknowledgement}{
   Many thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
-  for proof-reading parts of the code and the help text for V1.0 of
-  this package. 
+  for proof-reading parts of the code and the help text for the versions
+  1.0 of this package. 
+  Yindeng Jiang \email{jiangyindeng@gmail.com} implemented the
+  circulant embedding methods \sQuote{cutoff} and \sQuote{intrinsic}
+  in 2004 for the versions 1.2.
 
   The coding of V1.0 has been financially supported by the EU TMR network
   ERB-FMRX-CT96-0095 on

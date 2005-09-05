@@ -16,6 +16,8 @@ EXTERN void StruveL(double *x, double *nu, int * expScaled);
 EXTERN void ordering(double *d, int len, int dim, int *pos);
 EXTERN void Ordering(double *d, int *len, int *dim, int *pos);
 
+bool is_diag(double *aniso, int dim);
+
 #endif /* AUXILIARY_H */
 
 

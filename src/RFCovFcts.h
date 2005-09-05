@@ -224,5 +224,8 @@ void rangenugget(int dim, int *index, double* range);
 void infonugget(double *p, int *maxdim, int *CEbadlybehaved);
 int checknugget(double *param, int timespacedim, SimulationType method);
 
+void infoundefined(double *p, int *maxdim, int *CEbadlybehaved);
+int checkundefined(double *param, int timespacedim, SimulationType method);
+
 #endif /* CovFcts_H*/
 

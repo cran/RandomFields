@@ -30,6 +30,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 #include "auxiliary.h"
 
+bool is_diag(double *aniso, int dim) {
+  int diag = dim + 1, size = dim * dim, i;
+  bool notdiag=false;
+  for (i=0; i<size; i++) {
+    if (i % diag != 0 && (notdiag = aniso[i] != 0.0)) break;
+  }
+  return !notdiag;
+};
 
 void I0ML0(double *x, int *n) {
   int i;

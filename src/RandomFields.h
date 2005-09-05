@@ -101,14 +101,15 @@ EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe,
 			      double *tolIm,
 			      int *trials, 
 			      double *mmin, /* vector of length MAXDIM */
-			      int *userfft, int *strategy, double*maxmem);
+			      int *userfft, int *strategy, double*maxmem,
+			      int *dependent);
 
 // for local circulant embedding
 EXTERN void SetParamLocal( int *action, int *force, double *tolRe, 
 			   double *tolIm,
 			   int *trials, double *mmin, int *useprimes, 
 			   int *strategy,
-			   double *maxmem);
+			   double *maxmem, int *dependent);
 
 // either linesimufactor or linesimustep is used; linesimufactor is used 
 // if linesimustep <= 0.0
@@ -126,7 +127,8 @@ EXTERN void SetParamTBM3(int *action, int *nLines, double *linesimufactor,
 EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
 			  int *trials, 
 			  double *mmin, /* vector of length MAXDIM */ 
-			  int *userfft, int *strategy, double*maxmem); 
+			  int *userfft, int *strategy, double*maxmem,
+			  int *dependent); 
 EXTERN void SetParamTBM(int *action,int *tbm_method, double *center, 
 			int *points);
 EXTERN void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
@@ -137,6 +139,7 @@ EXTERN void SetMPP(int *action, double *approxzero,
 			  double *realisations, double *radius);
 // extremes
 EXTERN void SetExtremes(int *action, double *standardGausMax);
+EXTERN void SetParamNugget(int *action, double *nuggettol);
 
 // simulation methods, Parameter setting
 EXTERN void StoreTrend(int *keyNr, int *modus, char **trend, 
@@ -160,6 +163,7 @@ EXTERN void DoMaxStableRF(int *keyNr, int *n, int *pairs,
 EXTERN void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim, 
 		       int *timespacedim, int *grid, int *distr, int *maxdim);
 EXTERN SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive);
+EXTERN SEXP GetExtModelInfo(SEXP keynr);
 
 /* 
    check with InitSimulateRF in case of any changes !!

@@ -21,30 +21,30 @@
   %
   \cr\cr\bold{General options}\cr
   \describe{
-  \item{\code{PracticalRange}}{logical or 2, 3, 11, 12, 13.
-    If not \code{FALSE} the range of the covariance functions is
-    adjusted so that cov(1) is about 0.05 (for \code{scale==1}).
-    \itemize{
-      \item \code{FALSE} : the practical range ajustment is not used.
-      \item \code{TRUE} : \code{PracticalRange} is applicable only if the value
-      is known exactly.
-      \item \code{2} : \code{PracticalRange} is applicable if the value is
-      known pretty well
-      \item \code{3} : \code{PracticalRange} is applicable if the value is
-      roughly known
-      \item \code{11} : if the practical range is not known exactly it
-      is approximated numerically.
-       \item \code{12} : if the practical range is not known pretty well it
-       is approximated numerically.
-      \item \code{13} : if the practical range is even not known
-      approximately it is approximated numerically.
-    }
-    Note that values beyond \code{FALSE}, \code{TRUE}, and \code{11},
-    are only used for specialists' purposes.
+    \item{\code{PracticalRange}}{logical or 2, 3, 11, 12, 13.
+      If not \code{FALSE} the range of the covariance functions is
+      adjusted so that cov(1) is about 0.05 (for \code{scale==1}).
+      \itemize{
+	\item \code{FALSE} : the practical range ajustment is not used.
+	\item \code{TRUE} : \code{PracticalRange} is applicable only if
+	the value is known exactly.
+	\item \code{2} : \code{PracticalRange} is applicable if the value is
+	known pretty well
+	\item \code{3} : \code{PracticalRange} is applicable if the value is
+	roughly known
+	\item \code{11} : if the practical range is not known exactly it
+	is approximated numerically.
+	\item \code{12} : if the practical range is not known pretty well it
+	is approximated numerically.
+	\item \code{13} : if the practical range is even not known
+	approximately it is approximated numerically.
+      }
+      Note that values beyond \code{FALSE}, \code{TRUE}, and \code{11},
+      are only used for specialists' purposes.
+      
+      Default: \code{FALSE} [init].}
     
-    Default: \code{FALSE} [init].}
-
-  \item{\code{PrintLevel}}{If \code{PrintLevel}\eqn{\le0}{<=0}
+    \item{\code{PrintLevel}}{If \code{PrintLevel}\eqn{\le0}{<=0}
       there is not any output on the screen.  The
       higher the number the more tracing information is given. 
       Default: 1 [init, do].\cr
@@ -116,59 +116,71 @@
 	i.e. TBM2 if the Abel transform of the covariance function
 	cannot be given explicitely.
       }
+      Default: \code{NA} [init].
     }
   }
   %
-
+  
   \bold{Options for simulating with the circulant embedding method}\cr
   \describe{
     \item{\code{CE.force}}{Logical.  Circulant embedding does not work if a
-      certain matrix has negative eigenvalues.  Sometimes it is convenient
+      certain circulant
+      matrix has negative eigenvalues.  Sometimes it is convenient
       to replace all the negative eigenvalues by zero
       (\code{CE.force==TRUE}) after \code{CE.trials} number of trials. 
       Default: \code{FALSE} [init].
     }
-    \item{\code{CE.mmin}}{Scalar or vector, usually integer.
-      Circulant embedding usually uses the smallest matrix
-      possible; by \code{CE.mmin} the minimum number of rows and columns
-      of the matrix are given. If \code{CE.mmin=0} the minimal starting size is
+    \item{\code{CE.mmin}}{Scalar or vector, integer if positive.
+      \code{CE.mmin} determines the initial size of the circulant
+      matrix. If \code{CE.mmin=0} the minimal starting size is
       determined automatically according to the
-	dimensions of the grid.
-      If \code{CE.mmin>0} then the absolute starting size is given
-      If \code{CE.mmin<0} then the minimal matrix size is is multiplied
-      by \code{CE.mmin}; here \code{CE.mmin} must be smaller than -1; the
-	value -1 takes over the minimal starting size.\cr
-      Note: in any cases, the starting size might be increase according
+      dimensions of the grid.
+      If \code{CE.mmin>0} then the absolute starting size is given.
+      If \code{CE.mmin<0} then the automatically determined
+      matrix size is multiplied
+      by \eqn{|\code{CE.mmin}|}; here \code{CE.mmin} must be smaller than -1; the
+      value -1 takes over the minimal starting size.\cr
+      Note: in any cases, the initial size might be increased according
       to \code{CE.useprimes}.\cr
       Default: \code{0} [init].} 
-    \item{\code{CE.strategy}}{0 : if matrix has negative eigenvalues then the
+    \item{\code{CE.strategy}}{0 : if the circulant
+      matrix has negative eigenvalues then the
       size in each direction is doubled; \cr 1 : the size is enhanced only in
-      one direction, namely that where the covariance function has the
+      one direction, namely that one where the covariance function has the
       largest value at the end point of the grid --- note that
       the default value of \code{CE.trials} is probably too small
       in that case. \cr Default: \code{0}
       [init].}
-    \item{\code{CE.maxmem}}{maximum edge length of the ciculant matrix;
-      the total amount of memory needed for internal calculation
+    \item{\code{CE.maxmem}}{
+      maximal total size of the circulant matrix. 
+      The total amount of memory needed for the internal calculations
       is about 16 (=2 * sizeof(double))
-      times as large if \command{\link{RFparameters}}\code{()$Storing=FALSE}
-      and 32 (=4 * sizeof(double)) time as large if \code{Storing=TUE}
+      times as large as \code{CE.maxmem}
+      if \command{\link{RFparameters}}\code{()$Storing=FALSE}
+      and 32 (=4 * sizeof(double)) time as large if \code{Storing=TRUE}.
+
+      Note that \code{CE.maxmem} can be used to control the automatic
+      choice of the simulation algorithm. Namely, in case of huge
+      circulant matrices, other simulation
+      methods (TBM) are faster and might be preferred be the user.
+      
       \cr Default: \code{20000000} [init].
     }
-    \item{\code{CE.tolIm}}{Circulant embedding.
+    \item{\code{CE.tolIm}}{
       If the modulus of the imaginary part is less than
       \code{CE.tolIm} then the eigenvalue is considered as real. 
       Default: \code{1E-3} [init].}
-    \item{\code{CE.tolRe}}{Circulant embedding.
-      Threshold above which eigenvalues are considered as
-      non-negative.  Default: \code{-1E-7} [init].}
-    \item{\code{CE.trials}}{Circulant embedding.
-      A larger embedding matrix is likely to make more eigenvalues
+    \item{\code{CE.tolRe}}{
+      Eigenvalues between \code{CE.tolRe} and 0 are considered as
+      0 and set 0.  Default: \code{-1E-7} [init].}
+    \item{\code{CE.trials}}{
+      A larger circulant matrix is likely to make more eigenvalues
       non-negative. If at least one of the thresholds \code{CE.tolRe} and
-      \code{CE.tolIm} are missed then the matrix size is doubled,
+      \code{CE.tolIm} are missed then the matrix size is doubled
+      according to \code{CE.strategy},
       and the matrix is checked again.  This procedure is repeated
       up to \code{CE.trials-1} times.  If there are still negative
-      eigenvalues, the simulation method fails if \code{CE.force==FALSE}. 
+      eigenvalues, the simulation method fails if \code{CE.force=FALSE}. 
       Default: \code{3} [init].
     }
     \item{\code{CE.useprimes}}{Logical.  If \code{FALSE}
@@ -176,23 +188,37 @@
       have length \eqn{2^k} for some \eqn{k}.  Otherwise the algorithm
       tries to find a nicely factorizable number close to the size of the
       given matrix.  Default: \code{TRUE}  [init].}
+    \item{\code{CE.dependent}}{Logical.  If \code{FALSE}
+      then independent random fields are created. If \code{TRUE}
+      then at least 4 non-overlapping rectangles are taken out of the
+      the expanded grid defined by the circulant matrix.
+      These simulations are dependent.
+      See below for an example.
+      See \code{CE.trials} for some
+      more information on the circulant matrix.
+      Default: \code{FALSE} [init].}
   }
-
-  \bold{Options for simulating with the local circulant embedding
+  
+  
+  \bold{Options for simulating with the local ce
     methods (cutoff, intrinsic)}\cr
   \describe{
     \item{\code{local.force}}{see CE.force above.
       Default: \code{FALSE} [init].
     }
     \item{\code{local.mmin}}{see CE.mmin above.
-      Here the determination of the minimal starting size for
-      \code{local.mmin=0} is in general
-      larger than the size for circulant embedding and is chosen such
-      that for theotical reasons, the matrix must be positive definite
-      if quadratic grid. So, if quadratic grid,  \code{local.trials=1}
-      should be always fine.
-      If \code{local.mmin==-1} the usual strategy of circulant embedding
-      (doubling the grid sizes) is taken over.
+      
+      Difference: if \code{local.mmin=0} the automatic determination
+      of the initial size of the circulant matrix takes into
+      account an expansion factor. This expansion factor is
+      intended to make the circulant matrix positive definite
+      and is either theoretically or numerically known, or guessed.
+
+      If the usual strategy of circulant embedding
+      (doubling the grid sizes) should be taken over then
+      \code{local.mmin} must
+      be set to \code{-1}.
+      
       Default: \code{0} [init].}    
     \item{\code{local.strategy}}{see CE.strategy above.
       Default: \code{0} [init].}
@@ -206,27 +232,12 @@
       Default: \code{1} [init].}
     \item{\code{local.useprimes}}{see CE.useprimes above.
       Default: \code{TRUE} [init].}
+    \item{\code{local.dependent}}{see CE.dependent above.
+      Default: \code{FALSE} [init].}
   }
   %
-  \bold{Options for simulating with the local circulant embedding methods}\cr
-  \describe{
-    \item{\code{cutoff.a}}{Cut-off embedding.
-      The key parameter in the local covariance functions. If
-      \code{cutoff.a==0} then the simulation method will assign
-      an appropriate value to it for each local covariance function;
-      If \code{cutoff.a>0} then the simulation method will use this
-      value for every local covariance function.
-      Default: \code{0} [init].
-    }
-    \item{\code{intrinsic.r}}{Intrinsic embedding.
-      The key parameter in the local covariance functions. If
-      \code{intrinsic.r==0} then the simulation method will assign
-      an appropriate value to it for each local covariance function;
-      If \code{intrinsic.r>0} then the simulation method will use this
-      value for every local covariance function.
-      Default: \code{0} [init].
-    }
-  }                                                                           
+
+  
   \bold{Options for simulating by simple matrix decomposition}\cr
   \describe{
     \item{\code{direct.checkprecision}}{Gaussian
@@ -239,7 +250,9 @@
       If the number of variables to generate is
       greater than \code{direct.maxvariables}, then any matrix decomposition
       method is rejected.  It is important that this option is set
-      conveniently if \code{method==NULL} in  \link{GaussRF}. 
+      conveniently to avoid great losses of time during the automatic
+      search of a simulation method (\code{method=NULL} in
+      \command{\link{GaussRF}}).  
       Default: \code{1800} [init]}
     \item{\code{direct.method}}{Decomposition of the covariance matrix.
       If \code{direct.method==1}, Cholesky
@@ -255,12 +268,47 @@
       Default: \code{1e-11} [init].
     }
   }
-%
+  %
+
+  
+  \bold{Options for simulating nugget effects}\cr
+  Simulating a nugget effect seems trivial. It gets complicated
+  and best methods (including \code{direct} and \code{circulant
+    embedding}!) fail if zonal anisotropies are considered,
+  where sets of points have to be identified that belong to the
+  same subspace of eigenvalue 0 of the anisotropy matrix.
+  \describe{
+    \item{nugget.tol}{
+      points at a distance less than or equal to \code{nugget.tol}
+      are considered as being identical. This strategy applies to
+      the simulation method and the covariance function itself.
+      Hence, the covariance function is only positive definite
+      if \code{nugget.tol=0.0}. The value of \code{nugget.tol}
+      should be of order \eqn{10^{-15}}{1e-15}.
+      Default: \code{0.0} [init].
+    }
+  }
+
 
   \bold{Options for simulating with a turning bands method}\cr
+  Currently, there are 3 variants of the turning bands method
+  implemented:
   \describe{
-    \item{\code{spectral.grid}}{Logical.  Spectral turning bands is implemented
-      for 2 dimensions only.  The angle of the lines is random if
+    \item{\code{spectral}}{The spectral turning bands method
+      is implemented for 2 (and 1)
+      dimensions only.}
+    \item{\code{TBM2}}{It is based on the two dimensional turning bands operator
+      and is applicable for 1 and 2 dimensions. As an additional dimension
+      the time dimension can be added.
+      }
+    \item{\code{TBM3}}{It is based on the three dimensional turning bands operator
+      and is applicable for 1,2,3 dimensions. As an additional dimension
+      the time dimension can be added.
+      }
+    }
+   The following parameters are used. 
+  \describe{
+    \item{\code{spectral.grid}}{Logical.    The angle of the lines is random if
       \code{spectral.grid==FALSE}, 
       and \eqn{k\pi/}{k*pi/}\code{spectral.lines}
       for \eqn{k}{k} in \code{1:spectral.lines},
@@ -273,24 +321,32 @@
     %-- use DeleteKey, to make sure that the current setting is used.
     % [init]}
     \item{\code{TBM.method}}{character.
-      Currently either \code{'circulant embedding'} or \code{'direct'}.
-      The preferred method to simulate on the line. If \code{'direct'}
+      The preferred method to simulate on the line for \code{TBM2} and
+      \code{TBM3};
+      currently either \code{'circulant embedding'} or \code{'direct'}.
+      If \code{'direct'}
       then the method is overwritten if the number of points on the grid
       is larger than \code{direct.maxvariables}.
+      If the circulant embedding method is used, then the \code{TBMCE}
+      parameters below determine the behaviour of the circulant
+      embedding algorithm.
+      
       Default: \code{"circulant embedding"} [init].
     }
     \item{\code{TBM.center}}{Scalar or vector.
       If not \code{NA}, the \code{TBM.center} is used as the center of
-      the turning bands. Otherwise the center is determined
+      the turning bands for \code{TBM2} and \code{TBM3}.
+      Otherwise the center is determined
       automatically such that the line length is minimal.
-      See also \code{TBM.points} and example below.
+      See also \code{TBM.points} and the examples below.
       Default: \code{NA}  [init].
     }
     \item{\code{TBM.points}}{integer. If greater than 0,
-      it gives the number of points simulated on the TBM line, hence
+      \code{TBM.points} gives the number of points simulated on the TBM
+      line, hence 
       must be greater than the minimal number of points given by
       the size of the simulated field and the two paramters
-      \code{TBM2/3.linesimufactor} and \code{TBM2/3.linesimustep}.
+      \code{TBMx.linesimufactor} and \code{TBMx.linesimustep}.
       If \code{TBM.points} is not positive the number of points is
       determined automatically.
       The use of \code{TBM.center} and \code{TBM.points} is highlighted
@@ -300,15 +356,15 @@
     \item{\code{TBM2.every}}{If \code{TBM2.every>0} then every
       \code{TBM2.every}th iteration is announced.
       Default: \code{0} [do].}
-    \item{\code{TBM2.lines}}{Ordinary 2-dimensional turning bands method. 
-      Number of lines used. 
+    \item{\code{TBM2.lines}}{
+      Number of lines used.
       Default: \code{60} [do].}
     \item{\code{TBM2.linesimufactor}}{If \code{TBM2.linesimufactor} and
       \code{TBM2.linesimustep} must be non-negative; if
       \code{TBM2.linesimustep}
       is positive then \code{TBM2.linesimufactor} is ignored.
       If both
-      parameters are naught then TBM.POINTS is used (and must be
+      parameters are naught then \code{TBM.points} is used (and must be
       positive).
       The grid on the line is \code{TBM2.linesimufactor}-times
       finer than the smallest distance. 
@@ -321,16 +377,15 @@
       Default: \code{0.0} [init].}
     \item{\code{TBM2.num}}{
       Logical. If \code{TRUE} then the covariance function on the line
-      for the two-dimensional simulation is approximated numerically.
-      If \code{FALSE} only those models are allowed for the
-      2-dimensional simulation that have an analytic representation on
+      is approximated numerically.
+      If \code{FALSE} only those models are allowed
+      that have an analytic representation on
       the line.
       Default: \code{TRUE} [init].}
     \item{\code{TBM3.every}}{If \code{TBM3.every>0} then every
       \code{TBM3.every}th iteration is announced.
       Default: \code{0} [do].}
-    \item{\code{TBM3.lines}}{Ordinary 3-dimensional turning bands method,
-      simulation of a \emph{3-dimensional field}. 
+    \item{\code{TBM3.lines}}{ 
       Number of lines used. 
       Default: \code{500} [do].}
     \item{\code{TBM3.linesimufactor}}{See \code{TBM2.linesimufactor} for
@@ -339,41 +394,40 @@
     \item{\code{TBM3.linesimustep}}{See 
       \code{TBM2.linesimustep} for the meaning.   
       Default: \code{0.0} [init].}
-    \item{\code{TBMCE.force}}{Ordinary TBM methods. This
-      parameter corresponds to \code{CE.force} and is used when
-      simulating with circulant embedding on line. 
+    \item{\code{TBMCE.force}}{see \code{TBM.method} and \code{CE.force}
       Default: \code{FALSE} [init].}
-    \item{\code{TBMCE.mmin}}{Ordinary TBM methods.  This parameter corresponds to
+    \item{\code{TBMCE.mmin}}{see \code{TBM.method} and 
       \code{CE.mmin}.  Default: \code{0} [init].}
-    \item{\code{TBMCE.strategy}}{Ordinary TBM methods.  This parameter
-      corresponds to \code{CE.strategy}.  Default: \code{0} [init].}
-    \item{\code{TBMCE.maxmem}}{Ordinary TBM methods.  This parameter
-      corresponds to \code{CE.maxmem}.  Default: \code{10000000} [init].}
-    \item{\code{TBMCE.tolIm}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.tolIm}.  Default: \code{1E-3} [init].}
-    \item{\code{TBMCE.tolRe}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.tolRe}. Default: \code{-1E-7} [init].}
-    \item{\code{TBMCE.trials}}{Ordinary TBM methods.  This parameter corresponds
-      to \code{CE.trials}.  Default: \code{3} [init].}
-    \item{\code{TBMCE.useprimes}}{Ordinary TBM methods.  This parameter
-      corresponds
-      to \code{CE.useprimes}.  Default: \code{TRUE} [init].}
+    \item{\code{TBMCE.strategy}}{see \code{TBM.method} and
+      \code{CE.strategy}.  Default: \code{0} [init].} 
+    \item{\code{TBMCE.maxmem}}{see \code{TBM.method} and
+      \code{CE.maxmem}.  Default: \code{10000000} [init].} 
+    \item{\code{TBMCE.tolIm}}{see \code{TBM.method} and
+      \code{CE.tolIm}.  Default: \code{1E-3} [init].} 
+    \item{\code{TBMCE.tolRe}}{see \code{TBM.method} and
+      \code{CE.tolRe}. Default: \code{-1E-7} [init].} 
+    \item{\code{TBMCE.trials}}{see \code{TBM.method} and
+      \code{CE.trials}.  Default: \code{3} [init].} 
+    \item{\code{TBMCE.useprimes}}{see \code{TBM.method} and
+      \code{CE.useprimes}.  Default: \code{TRUE} [init].} 
+    \item{\code{TBMCE.dependent}}{see \code{TBM.method} and \code{CE.dependent}.
+      Default: \code{FALSE} [init].}
   }
   %
 
   \bold{Options for simulating with Poisson point processes}\cr
   \describe{
-    \item{\code{add.MPP.realisations}}{Random coins.
+    \item{\code{add.MPP.realisations}}{
       Number of superposed
       realisations (to approximate the normal distribution; total number
       for all (additive) components with same anisotropy);
       Default: \code{100} [do].}
-    \item{\code{MPP.approxzero}}{Marked point processes. Functions that
+    \item{\code{MPP.approxzero}}{Functions that
       do not have 
-      compact support are set to zero outside the ball outside which the
+      compact support are set to zero outside the ball outside for which the
       function has absolute values less than \code{MPP.approxzero}. 
       Default: \code{0.001} [init].}
-    \item{\code{MPP.radius}}{Marked point processes.
+    \item{\code{MPP.radius}}{
       In order avoid edge effects, the simulation area is enlarged by
       a constant \eqn{r}{r} so that all marks have their
       (supposed) support in the ball with radius \eqn{r}{r} centred at
@@ -391,24 +445,24 @@
       Default: \code{300} [do].
     }
     \item{\code{hyper.maxlines}}{integer.
-      estimated number of maximal lines.
+      Maximum number of allowed lines.
       Default: \code{1000} [init].
     }
     \item{\code{hyper.mar.distr}}{integer.
       code for the marginal distribution used in the
       simulation:
-      \itemize{
-	\item{0}{uniform distribution}
-	\item{1}{Frechet distribution with form parameter
+      \describe{
+	\item{\code{0}}{uniform distribution}
+	\item{\code{1}}{Frechet distribution with form parameter
 	  \code{hyper.mar.param}}
-	\item{2}{Bernoulli distribution (Binomial with \eqn{n=1}) with
+	\item{\code{2}}{Bernoulli distribution (Binomial with \eqn{n=1}) with
 	  parameter \code{hyper.mar.param}}
       }
       The parameter should not be changed yet.
       Default: \code{0} [do].
     }
-    \item{code{hyper.mar.param}}{Parameter used for the marginal
-      distribution.
+    \item{\code{hyper.mar.param}}{Parameter used for the marginal
+      distribution. The parameter should not be changed yet.
       Default: \code{0} [do].
     }
   }
@@ -541,7 +595,7 @@ runif(1)
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
 DeleteAllRegisters()
 z1 <- GaussRF(x1, y1, model=model, param=param, grid=TRUE, register=1,
-              method=meth, TBM.center=0)
+              method=meth, TBM.center=0, Storing=TRUE)
 % str(GetRegisterInfo(1))
 get(getOption("device"))(height=1.55, width=12)
 par(mar=c(2.2, 2.2, 0.1, 0.1))
@@ -549,7 +603,7 @@ image(x1, y1, z1, col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 
 
-###### definition of a random field on a square of smaller diagonal
+###### definition of a random field on a square of shorter diagonal
 assign(".Random.seed", rs, envir=.GlobalEnv)
 z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=2,
               method=meth, TBM.center=0,
@@ -574,10 +628,65 @@ model <- list(list(model="stable", var=1, scale=1, kappa=1.0),
 
 for (exactness in c(NA, FALSE, TRUE)) { 
   readline(paste("\n\nexactness: ", exactness, "; press return"))
-   z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
-                model=model, n=1, exactness=exactness,
-                stationary.only=NA, Print=4,
-                TBM2.linesimustep=1)
+  DeleteRegister()
+  z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+                model=model, exactness=exactness,
+                stationary.only=NA, Print=4, n=1,
+                TBM2.linesimustep=1, Storing=TRUE)
+   str(GetRegisterInfo()$method)
  }
+
+
+ #############################################################
+ ## The following gives a tiny example on the advantage of  ##
+ ## local.dependent=TRUE (and CE.dependent=TRUE) if in a    ##
+ ## study most of the time is spent with simulating the     ##
+ ## Gaussian random fields. Here, the covariance at a pair  ##
+ ## of points is estimated.                                 ##
+ #############################################################
+
+# In the example below, local.dependent speeds up the simulation
+# by about factor 27 at the price of an increased variance of
+# factor 1.5
+
+x <- seq(0, 1, len=10)
+y <- seq(0, 1, len=10)
+grid.size <- c(length(x), length(y))
+model <- list(list(model="exp", var=1.1, aniso=c(2,1,0.5,1)))
+CovarianceFct(matrix(c(1, -1), ncol=2), model=model) ## true value
+
+# determine number of non-overlapping realisations on the torus
+DeleteRegister()
+InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
+blocks <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$simupos
+(n <- prod(blocks))
+
+m <- if (interactive()) 1000 else 2
+
+# using local.dependent=TRUE...
+c1 <- numeric(m)
+DeleteRegister()
+unix.time(
+for (i in 1:m) {
+  cat("\n", i)
+  z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=n,
+               local.dependent=TRUE, pch="")
+  c1[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
+}) # about 35 0.3 35 0  0
+var(c1) # about 0.013
+
+# using local.dependent=FALSE...
+c2 <- numeric(m)
+DeleteRegister()
+unix.time(
+for (i in 1:m) {
+  cat("\n", i)
+  z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=n,
+               local.dependent=FALSE, pch="")
+  c2[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
+})  # about 950  3 950 0 0
+var(c2) # about 0.0087
+
 }
+
 \keyword{spatial}

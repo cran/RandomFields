@@ -40,7 +40,7 @@ int check_submodels(int nr, char **allowed_fct, int nr_allowed_list,
 
   if (nr!=1  // should and will be relaxed in future
       || nr>left) {
-    strcpy(ERRORSTRING_OK, "need 1 further model");
+    strcpy(ERRORSTRING_OK, " further submodels");
 //    strcpy(ERRORSTRING_OK,"number of models included must be at least 1 and less than or equal to the number of remaining models in the list (here %d)", left);
     sprintf(ERRORSTRING_WRONG,"announced=%d available=%d", nr, left);
     return ERRORCOVFAILED;
@@ -80,26 +80,34 @@ int getcutoffparam_co(covinfo_type *kc, param_type q, int instance)
   assert(instance >= 0);
 
   // printf("get: %s %d %f\n", CovList[kc->nr].name, instance, kc->param[KAPPA]);
-
-  if (kc->nr == GENERALISEDCAUCHY || kc->nr==STABLE) {
-        thres[0] = 0.5; thres[1] = 1.0;
-  } else if (kc->nr == WHITTLEMATERN) {
-        thres[0] = 0.25; thres[1] = 0.5; 
-  } else return MSGLOCAL_ENDOFLIST;
-
-  if (kc->param[KAPPA] <= thres[0]) {
+  
+  if (kc->nr == EXPONENTIAL) {
+	q[CUTOFF_A] = 1.0; 
+	if (instance == 0) return MSGLOCAL_OK;
+  } else if (kc->nr == CAUCHY) {
+    q[CUTOFF_A] = 1.0;
+    if (instance==0) return MSGLOCAL_JUSTTRY;
+  } else {
+    if (kc->nr == GENERALISEDCAUCHY || kc->nr==STABLE) {
+      thres[0] = 0.5; thres[1] = 1.0;
+    } else if (kc->nr == WHITTLEMATERN) {
+      thres[0] = 0.25; thres[1] = 0.5; 
+    } else return MSGLOCAL_ENDOFLIST;
+    
+    if (kc->param[KAPPA] <= thres[0]) {
 #define nA 2
       static double A[nA] = {0.5, 1.0};
       if (instance < nA) {
-	  q[CUTOFF_A] = A[instance];
-	  return MSGLOCAL_OK;
+	q[CUTOFF_A] = A[instance];
+	return MSGLOCAL_OK;
       }
-  } else if (kc->param[KAPPA] <= thres[1]) {
+    } else if (kc->param[KAPPA] <= thres[1]) {
       q[CUTOFF_A] = 1.0; 
       if (instance == 0)  return MSGLOCAL_OK;
-  } else {
+    } else {
       q[CUTOFF_A] = 1.0;
       if (instance==0) return MSGLOCAL_JUSTTRY;
+    }
   }
   return MSGLOCAL_ENDOFLIST;
 }
@@ -122,8 +130,9 @@ void info_co(double *p, int *maxdim, int *CEbadlybehaved) {
 
 int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist, 
 		  int remaining_covlistlength, SimulationType method) {
-#define co_nr 3
-  char *allowed_fct[co_nr] = {"stable", "whittle", "gencauchy"};
+#define co_nr 5
+  char *allowed_fct[co_nr] = {"stable", "cauchy",
+			      "whittle", "gencauchy", "exponential"};
   int err, v, nsub; // timespacedim -- needed ?;
   double *param, phi0, phi1, store[MAXCOV], a, a2, d, one=1.0;
   covinfo_type *kc;
@@ -159,7 +168,8 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   param[CUTOFF_B] = //sound constant even if variance of submodel is not 1
       pow(- phi1 / (2.0 * a2 * phi0), 2.0 * a) * phi0 / pow(d, 2.0 * a2);
   param[CUTOFF_THEOR] = pow(1.0 - 2.0 * a2 * phi0 / phi1, 1.0 / a);
-  param[LOCAL_R] = d *  param[CUTOFF_THEOR];
+//  printf("phi0=%f %f\n", phi0, phi1);  
+  param[LOCAL_R] = d * param[CUTOFF_THEOR];
   param[CUTOFF_ASQRTR] = pow(param[LOCAL_R], a);
   for (v=1; v<=nsub; v++) 
       keycov[covlist[v]]. aniso[0] = store[v];
@@ -183,18 +193,20 @@ int getintrinsicparam_Stein(covinfo_type *kc, param_type q, int instance)
   assert(instance >= 0);
   if (instance>0) return MSGLOCAL_ENDOFLIST;
   if ((kc->nr == GENERALISEDCAUCHY && kc->param[KAPPA] <= 1.0) ||
-      (kc->nr == STABLE && kc->param[KAPPA] <= 1.0) ||
+      (kc->nr == STABLE && kc->param[KAPPA] <= 1.0) || 
+      (kc->nr == EXPONENTIAL) || 
       (kc->nr == WHITTLEMATERN && kc->param[KAPPA] <= 0.5)) {
     q[INTRINSIC_RAWR] = 1.0;
     return MSGLOCAL_OK;
   } else if (kc->nr == BROWNIAN) {
       q[INTRINSIC_RAWR] = (kc->truetimespacedim <= 2 
 			    ? ((kc->param[KAPPA] <= 1.5) ? 1.0 : 2.0)
-			    : ((kc->param[KAPPA]<=1.0) ? 1.0 : 2.0));
+			    : ((kc->param[KAPPA] <= 1.0) ? 1.0 : 2.0));
        // for genuine variogram models only
     return MSGLOCAL_OK;
   }
   
+  // also for CAUCHY ...
   q[INTRINSIC_RAWR] = 1.5; // must be replaced by numerical results !
   return MSGLOCAL_JUSTTRY;
 //  return MSGLOCAL_ENDOFLIST;
@@ -225,9 +237,9 @@ void info_Stein(double *p, int *maxdim, int *CEbadlybehaved)
 int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist, 
 		 int remaining_covlistlength, SimulationType method) 
 {
-#define stein_nr 4
+#define stein_nr 6
   char *allowed_fct[stein_nr] = 
-      {"stable", "whittle", "gencauchy", "fractalB"};
+      {"stable", "whittle", "cauchy", "gencauchy", "fractalB", "exponential"};
   int v, nsub, err;
   double *param, C0, phi0, phi1, phi2, store[MAXCOV], d, zero = 0.0, r, 
     one = 1.0;
@@ -276,7 +288,7 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
       0.5 * (r - 1.0) / (r + 1.0) * phi2 + phi1 / (r + 1.0) - phi0;
  
     if ((param[INTRINSIC_B]  < 0.0) || (param[INTRINSIC_A2] < 0.0) ||
-	(param[INTRINSIC_A0] + C0 <= 0.0)) 
+	(param[INTRINSIC_A0] + C0 < 0.0)) 
       return MSGLOCAL_INITINTRINSIC;
 
     for (v=1; v<=nsub; v++) 

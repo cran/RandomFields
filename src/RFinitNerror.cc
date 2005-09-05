@@ -35,9 +35,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Hyperfcts.h"
 #include <unistd.h>
 
-initfct init_method[SimulationTypeLength];
-do_comp_fct do_compatiblemethod[SimulationTypeLength];
-do_incomp_fct  do_incompatiblemethod[SimulationTypeLength];
+initmethod init_method[SimulationTypeLength];
+do_comp_meth do_compatiblemethod[SimulationTypeLength];
+do_incomp_meth  do_incompatiblemethod[SimulationTypeLength];
 key_type KEY[MAXKEYS]; //static key_type KEY[MAXKEYS];
 double ZERO[MAXDIM], UNIT[MAXDIM];
 cov_fct *CovList=NULL;
@@ -128,7 +128,7 @@ int XSTARTD[MAXDIM] = {XSTARTDIM1, XSTARTDIM2, XSTARTDIM3, XSTARTDIM4},
     XSTEPD[MAXDIM]= {XSTEPDIM1, XSTEPDIM2, XSTEPDIM3, XSTEPDIM4};
 int COVLISTALL[MAXCOV] = {0, 1, 2, 3, 4, 5, 6, 7, 8, MAXCOV-1};
 //SEXP ERRORDUMP=NULL;
-int GENERALISEDCAUCHY, STABLE, WHITTLEMATERN, BROWNIAN;
+int GENERALISEDCAUCHY, CAUCHY, STABLE, WHITTLEMATERN, BROWNIAN, EXPONENTIAL;
 //                                          ONLY used in Hyperfct.cc
 //                                          (cutoff embedding and intrinsic)
 int LocalCovList[nLocalCovList], nlocal;
@@ -310,6 +310,9 @@ the anisotropies must be identical"); break;
 	//   strcpy(EM,"isotropic function not allowed"); break;
 	//
 	// extremes:
+      case ERRORFULLRANK: 
+	sprintf(EM, "anisotropy matrix must have full rank");
+	break;
       case ERRORSILLNULL : 
 	strcpy(EM,"Vanishing sill not allowed");break;     
       case ERRORPAIRS : 
@@ -416,7 +419,8 @@ void InitModelList()
     return;
   }
   assert(currentNrCov=-1);
-  CovList = (cov_fct*) malloc(sizeof(cov_fct) * MAXNRCOVFCTS);
+  CovList = (cov_fct*) malloc(sizeof(cov_fct) * (MAXNRCOVFCTS+1));
+  // + 1 is necessary because of COVINFO_NULL that uses the last + 
   currentNrCov=0;
   nlocal=0;
   
@@ -429,6 +433,7 @@ void InitModelList()
 		  infoCauchy, rangeCauchy);
   addCov(nr, Cauchy, DCauchy, ScaleCauchy);
   addTBM(nr, TBM2Cauchy, TBM3Cauchy, NULL);
+  addLocal(nr, true, DDgeneralisedCauchy, &CAUCHY);
 	       
   nr=IncludeModel("cauchytbm",3,checkCauchytbm,FULLISOTROPIC, false,
 		  infoCauchytbm, rangeCauchytbm);
@@ -471,6 +476,7 @@ void InitModelList()
   //addTBM(nr,NULL,TBM3exponential,Dexponential,NULL);
   //addTBM(nr,NULL,TBM3exponential,Dexponential,spectralexponential);
   addTBM(nr, TBM2exponential, TBM3exponential, spectralexponential);
+  addLocal(nr, true, exponential, &EXPONENTIAL);
   addOther(nr, NULL, NULL, hyperexponential, NULL, NULL);
   // numerisches Ergebnis passt nicht !
 
@@ -585,16 +591,21 @@ void InitModelList()
   addCov(nr,WhittleMatern, DWhittleMatern, ScaleWhittleMatern);
   addTBM(nr,NULL,TBM3WhittleMatern, spectralWhittleMatern);
   addLocal(nr, true, DDWhittleMatern, &WHITTLEMATERN);
-
- 
-//  nr = IncludeModel("test", 0, NULL, FULLISOTROPIC, false, infotest, NULL);
-//  addCov(nr, testCov, NULL);
- 
+  
   /* 
      in case of anisotropic models: do not forget to set `addodd',
      i.e. the coordinate dimensions where the covariance function is not
      an even function!
   */
 
+  // must be the very last one!
+  nr = IncludeModel("undefined", 0, checkundefined, FULLISOTROPIC, false, 
+		    infoundefined, rangenugget);
+  assert(nr > 0); // otherwise we have already reached the maximum number
+  //                of models; note that it is planned that further
+  //                functions might be added by users
+  currentNrCov--;
+  for (++nr; nr <= MAXNRCOVFCTS; nr++) 
+    memcpy(&(CovList[nr]), &(CovList[currentNrCov]), sizeof(cov_fct));
 }
 

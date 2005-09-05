@@ -203,18 +203,12 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     \code{TRUE} if the covariance model allows for a \sQuote{standard}
     definition (see \command{\link{convert.to.readable}} and
     \command{\link{CovarianceFct}}) and \code{transform} is \code{NULL}.
-    Otherwise \code{standard.style} will be \code{FALSE}.
+    %Otherwise \code{standard.style} will be \code{FALSE}.
     If a \\sQuote{standard} definition is given and both the variance and the
     nugget are either not estimated or do not appear on the right hand
     side of the \code{transform}, then \code{standard.style} might be set
     to \code{TRUE} by the user. This accelerates the MLE algorithm.
     The responsibility is completely left to the user, then.
-
-    Currently \command{fitvario} is only implemented for the
-    \\sQuote{standard} definition of the covariance model.
-    Hence \code{standard.style} must always be \code{TRUE} and consequently,
-    neither the variance nor the nugget may appear on either side
-    of the \code{transform}
   }
   \item{lsq.methods}{
     variants of the least squares fit of the variogram. See Details.
@@ -599,8 +593,8 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 %  only a few components of the parameter vector are to be estimated.
 }
 \section{Acknowledgement}{
-  Thanks to Paulo Ribeiro for hints and comparing the first versions
-  of \code{fitvario} to
+  Thanks to Paulo Ribeiro for hints and comparing the perliminary versions
+  of \code{fitvario} in RandomFields V1.0 to
   \command{\link[geoR]{likfit}} of the package \code{geoR} whose homepage is at 
   \url{http://www.est.ufpr.br/geoR/}.
 }
@@ -628,6 +622,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
               lower=c(0.1, 0.1), upper=c(1.9, 5), cross.me=NULL))
 
 
+#########################################################
 ## The next two estimations give about the same result.
 ## For the first the sill is fixed to 1.5. For the second the sill
 ## is reached if the estimated variance is smaller than 1.5
@@ -642,22 +637,32 @@ f <- function(param) {
    return(param)
 }
 str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam, 
-    sill=1, transform=f, cross.me=NULL))
+    transform=f, cross.me=NULL))
 
-## the next call gives a warning, since the user may programme
-## strange things in this setup, and the program cannot check it.
+#########################################################
+## esimation of coupled parameters (kappa1 = kappa2, here)
+estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
+                      kappa=list(NA, function(m) m[[1]]$kappa[1])),
+                 "+",
+                 list(model="nugget", var=NA, scale=1))
+system.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
+              cross.me=NULL), vec.len=6))
+
+## much faster implementation, but trickier coding
 estparam <- c(0, NA, NA, NA, NA, NaN) 
 parampositions(model=model, param=estparam)
 f <- function(param) {param[3] <- param[2]; param}
 system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
-      param=estparam, transform=f, standard.style=TRUE,
-      cross.me=NULL), vec.len=6))
+      param=estparam, transform=f, cross.me=NULL), vec.len=6))
 
-## much better programmed, but also much slower:
-estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
-                      kappa=list(NA, function(m) m[[1]]$kappa[1])))
-system.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
-              cross.me=NULL), vec.len=6))
+
+## about as fast as previous coding
+## about the same precision as previous coding, or better
+## But, a warning is given, since the user may programme
+## strange things in this setup, and the programme cannot check it.
+system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
+      param=estparam, transform=f, cross.me=NULL,
+      standard.style=TRUE), vec.len=6))
 
 
 %#################################################################

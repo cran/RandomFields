@@ -29,7 +29,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RFsimu.h"
 #include "RFCovFcts.h"
 
-static double EQUAL_TOL=1e-12;
+double NUGGET_TOL=0.0;
+void SetParamNugget(int *action, double *nuggettol)
+{
+  if (*action) {
+    NUGGET_TOL = *nuggettol;
+    if (NUGGET_TOL < 0) {
+      if (GENERAL_PRINTLEVEL>=1) 
+	PRINTF("negative tolerance for distance in nugget covariance to allowed;set to zero");
+      NUGGET_TOL = 0.0;
+    }
+  } else {
+    *nuggettol = NUGGET_TOL;
+  }
+}
 
 
 void nugget_destruct(void ** S)
@@ -45,19 +58,18 @@ void nugget_destruct(void ** S)
 
 bool equal(int i, int j, double *X, int dim)
 {
+  param_type p;
   double *x, *y;
-  register double ax, ay;
+  register double dummy, dist;
   int d;
   x = X + i * dim;
   y = X + j * dim;
-  for (d=0; d<dim; d++) {
-    ax = fabs(x[d]);
-    ay = fabs(y[d]);
-    if ((ax>ay ? ax : ay) * EQUAL_TOL < fabs(x[d]-y[d])) {
-      return false;
-    }
+  for (dist=0.0, d=0; d<dim; d++) {
+    dummy = x[d]-y[d];
+    dist += dummy * dummy;
   }
-  return true;
+  dist = sqrt(dist);
+  return nugget(&dist, p, 1)==1.0;
 }
 
 // uses global RANDOM !!!
@@ -163,6 +175,8 @@ int init_nugget(key_type *key, int m){
   s->simple = key->timespacedim == kc->truetimespacedim;
   if (key->anisotropy && !s->simple) {
     int *pos, oldpos;
+    if (NUGGET_TOL==0.0 && GENERAL_PRINTLEVEL>=1)
+      PRINTF("\nThe anisotropy matrix does not have full rank and RFparameters()$nugget.tol equals 0. From a theoretical point of view that's fine, but the simulations will probably be odd. Is this really what you want?\n");
     if ((Xerror=Transform2NoGrid(key, meth->covlist[0])) != NOERROR) 
       goto ErrorHandling;
     if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0) {

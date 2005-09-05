@@ -117,6 +117,7 @@ double TBM3exponential(double *x, double *p, int effectivedim){
    return (1.0-y)*exp(-y);
 }
 double Dexponential(double *x, double *p, int effectivedim){
+//  printf("\n ******* dexp %f %f\n", *x, - exp(-fabs( *x)));
   return - exp(-fabs( *x));
 }
 double spectralexponential(double *p ) { /* see Yaglom ! */
@@ -128,7 +129,15 @@ void rangeexponential(int dim, int *index, double* range){
   *index = -1; 
 }
 int checkexponential(double *param, int timespacedim, SimulationType method) {
-    return NOERROR;
+  if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
+    if (timespacedim>2) 
+    {
+      strcpy(ERRORSTRING_OK,"total dim<=2");
+      sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+      return ERRORCOVFAILED;
+    }
+  }
+  return NOERROR;
 }
 
 int hyperexponential(double radius, double *center, double *rx,
@@ -507,15 +516,14 @@ int checkstable(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
     return ERRORCOVFAILED; 
   }
-  if (method==CircEmbedIntrinsic || method==CircEmbedCutoff)
-  {
+  if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
     if (timespacedim>2) 
     {
       strcpy(ERRORSTRING_OK,"total dim<=2");
       sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
       return ERRORCOVFAILED;
     }
-   //  if (method==CircEmbedCutoff)
+//  if (method==CircEmbedCutoff)
 //       if (param[KAPPA]>1.0) {
 // 	strcpy(ERRORSTRING_OK,"0<kappa<=1");
 // 	sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
@@ -1074,7 +1082,13 @@ double TBM3Cauchy(double *x, double *p, int effectivedim){
 double DCauchy(double *x, double *p, int effectivedim){
   register double y;
   y = fabs( *x);
-  return (-2.0 * p[KAPPA] * y) * pow(1.0 + y * y, -p[KAPPA]-1.0);
+  return (-2.0 * p[KAPPA] * y) * pow(1.0 + y * y, -p[KAPPA] - 1.0);
+}
+double DDCauchy(double *x, double *p, int effectivedim){
+  register double ha;
+  ha = *x * *x;
+  return 2.0 * p[KAPPA] * ((2.0 * p[KAPPA] + 1.0) * ha - 1.0) * 
+    pow(1.0 + ha, -p[KAPPA] - 2.0);
 }
 int checkCauchy(double *param, int timespacedim, SimulationType method){
   switch (method) {
@@ -1897,8 +1911,9 @@ void infoFD(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* nugget effect model */
 double nugget(double *x, double *p, int dim){
-  if (*x==0.0) return 1.0;  return 0.0;
+  if (*x <= NUGGET_TOL) return 1.0;  return 0.0;
 }
+
 double Scalenugget(double *p, int scaling) { return 1.0; }//or better 0.0 => error?
 void rangenugget(int dim, int *index, double* range){
   *index = -1;
@@ -1911,6 +1926,15 @@ int checknugget(double *param, int timespacedim, SimulationType method) {
   if (method!=Nothing && method!=CircEmbed && method!=Direct && method!=Nugget)
     return ERRORNOTDEFINED;
   return NOERROR;
+}
+
+
+void infoundefined(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = 0;
+  *CEbadlybehaved = true;
+}
+int checkundefined(double *param, int timespacedim, SimulationType method) {
+    return ERRORNOTDEFINED;
 }
 // ---------------------------------------------------------------------
 

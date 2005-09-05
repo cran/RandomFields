@@ -246,10 +246,12 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
            )
     }
     method <- rep(method, len=length(covnr))
-    if (!missing.param && !full.model)
-      method[covnr==nugget.nr] <-
-          .C("GetMethodNr", "nugget", as.integer(1), nr=integer(1),
-             PACKAGE="RandomFields")$nr
+
+    ## 30.8.05, now set in internal_InitSimulateRF:
+    #if (!full.model)
+    #  method[covnr==nugget.nr] <-
+    #      .C("GetMethodNr", "nugget", as.integer(1), nr=integer(1),
+    #        PACKAGE="RandomFields")$nr
   }
   
   param <- c(param,recursive=TRUE);

@@ -31,6 +31,14 @@
 #define LOG05 -0.69314718055994528623
 #define INFTY 1e9
 
+#define EPSILON     0.00000000001
+#define EPSILON1000 0.000000001
+#define INFDIM 9999
+extern double EIGENVALUE_EPS; // used in GetTrueDim
+
+
+
+
 #endif /* GSL_VS_R_H */
 
 

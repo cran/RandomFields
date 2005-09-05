@@ -112,10 +112,10 @@ void generalspherical_init(mpp_storage *s, int dim, param_type param,
   double gamma;
 
   assert(s!=NULL);
-  s -> dim = dim;
-  s -> effectiveRadius = 0.5;
+  s->dim = dim;
+  s->effectiveRadius = 0.5;
   if (s->addradius<=0.0) {s->addradius = s->effectiveRadius;}
-  s -> effectivearea = 1.0;
+  s->effectivearea = 1.0;
   for (d=0; d<dim; d++) 
     s->effectivearea *= (s->length[d] + 2.0 * s->effectiveRadius);
   for (d=dim; d<balldim; d++) {
@@ -192,8 +192,8 @@ spherical_Rsq = s->c[SPHERICALRsq];
 void cone_init(mpp_storage *s, int dim, param_type param)
 {
   // ignoring: p[MEAN], p[NUGGET]
-  // note : sqrt(p[VARIANCE]) -> height
-  //        p[scale]          -> R
+  // note : sqrt(p[VARIANCE])->height
+  //        p[scale]         ->R
   // p[KAPPAI] = r/R \in [0,1]
   // p[KAPPAII]= socle (height)
   // p[KAPPAIII]=height of cone (without socle)
@@ -235,9 +235,9 @@ void cone_init(mpp_storage *s, int dim, param_type param)
 	       );
     //
     break;
-    // case 3 : s -> integral = 4 PI / 3 * (R^3 * socle + r^3 * height)
+    // case 3 : s->integral = 4 PI / 3 * (R^3 * socle + r^3 * height)
     //                         + 4 PI int_r^R r^2 a x + b) dx
-    //      s -> integralsq = 4 PI / 3 * (R^3 * socle *socle
+    //      s->integralsq = 4 PI / 3 * (R^3 * socle *socle
     //                                    + r^3 * height * height)
     //                     + 4 PI int_r^R r^2 (a x + b)^2 dx
   default : assert(false);
@@ -291,7 +291,7 @@ void cone(mpp_storage *s, double *min, double *max, mppmodel *model)
   *model = cone_model;
   // logically the current effectiveRadius should be set here
   // no need as here constant scale, so 
-  // s -> effectiveRadius = 0.5 * s->param[scale];
+  // s->effectiveRadius = 0.5 * s->param[scale];
   // can be used.  
 
   // last: random point
@@ -380,9 +380,9 @@ void gaussmpp_init(mpp_storage *s, int dim, param_type param)
 {
   int d;
 
-  s -> dim = dim;
-  s -> c[GAUSSRADIUSSQ] = -0.5 * log(MPP_APPROXZERO);
-  s -> effectiveRadius = sqrt(s -> c[GAUSSRADIUSSQ]);
+  s->dim = dim;
+  s->c[GAUSSRADIUSSQ] = -0.5 * log(MPP_APPROXZERO);
+  s->effectiveRadius = sqrt(s->c[GAUSSRADIUSSQ]);
   if (s->addradius<=0.0) {s->addradius=s->effectiveRadius;}
 
   s->integral   = gaussInt(dim, 1, 1.0, s->effectiveRadius);
@@ -404,7 +404,7 @@ void gaussmpp(mpp_storage *s, double *min, double *max, mppmodel *model)
   int d;
 
   MPP_DIM = s->dim;
-  gauss_effectiveradiussq =  s -> c[GAUSSRADIUSSQ];
+  gauss_effectiveradiussq =  s->c[GAUSSRADIUSSQ];
 
   *model = gauss_model;  
 

@@ -346,42 +346,6 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
  #############################################################
  ##                                                         ##
- ##     Example how the cutoff method can be set            ##
- ##        explicitly using hyper models                    ##
- ##                                                         ##
- #############################################################
-
-## NOTE: this feature is still in an experimental stage
-##       which has not been yet tested intensively;
-## further: parameters and algorithms may change in
-##       future.
-
-% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
-## simuation of the stable model using the cutoff method
-RFparameters(Print=8, Storing=FALSE)
-x <- seq(0, 1, 1/24)
-model1 <- list( list(model="stable", var=1, scale=1, kappa=1.0) )
-rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
-z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
-             model=model1, n=1, meth="cutoff", Storing=TRUE)
-dim <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$dim
-%str(GetRegisterInfo(), vec=15)
-
-## simulation of the same random field using the circulant
-## embedding method and defining the hypermodel explicitely
-model2 <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, sqrt(2), 1)),
-              "(",
-              list(model="stable", var=1, scale=1, kappa=1.0)
-              )
-assign(".Random.seed", rs, envir=.GlobalEnv)
-z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
-             model=model2, n=1, meth="circulant", CE.mmin=dim)
-%str(GetRegisterInfo(), vec=15)
-print(range(z1-z2)) ## essentially no difference between the fields!
-
-
- #############################################################
- ##                                                         ##
  ##      Example of a 2d random field based on              ##
  ##      covariance functions valid in 1d only              ##
  ##                                                         ##
@@ -446,6 +410,85 @@ image(x, y, f)
 hist(f)
 c( mean(as.vector(f)), var(as.vector(f)) )
 cat("system time (second call)", format(ut,dig=3),"\n")
+
+
+ #############################################################
+ ##                                                         ##
+ ##     Example how the cutoff method can be set            ##
+ ##        explicitly using hypermodels                     ##
+ ##                                                         ##
+ #############################################################
+
+## NOTE: this feature is still in an experimental stage
+##       which has not been yet tested intensively;
+## further: parameters and algorithms may change in
+##       future.
+
+% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
+## simuation of the stable model using the cutoff method
+RFparameters(Print=8, Storing=FALSE)
+x <- seq(0, 1, 1/24)
+model1 <- list( list(model="stable", var=1, scale=1, kappa=1.0) )
+rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
+z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+             model=model1, n=1, meth="cutoff", Storing=TRUE)
+size <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$size
+str(GetRegisterInfo(), vec=15)
+
+## simulation of the same random field using the circulant
+## embedding method and defining the hypermodel explicitely
+model2 <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, sqrt(2), 1)),
+              "(",
+              list(model="stable", var=1, scale=1, kappa=1.0)
+              )
+assign(".Random.seed", rs, envir=.GlobalEnv)
+z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+             model=model2, n=1, meth="circulant", CE.mmin=size)
+%str(GetRegisterInfo(), vec=15)
+print(range(z1-z2)) ## essentially no difference between the fields!
+
+
+
+ #############################################################
+ ## The cutoff method simulates on a torus and a (small)    ##
+ ## rectangle is taken as the required simulation.          ##
+ ##                                                         ##
+ ## The following code shows a whole such torus.            ##
+ ## The main part of the code sets local.dependent=TRUE and ##
+ ## local.mmin to multiples of the basic rectangle lengths  ##
+ #############################################################
+
+# definition of the realisation
+x <- seq(0, 2, len=20)
+y <- seq(0, 1, len=40)
+grid.size <- c(length(x), length(y))
+model <- list(list(model="exp", var=1.1, aniso=c(2,1,0.5,1)))
+
+# determination of the (minimal) size of the torus
+DeleteRegister()
+InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
+ce.info <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem
+blocks <- ceiling(ce.info$size / grid.size)
+size <- blocks * grid.size
+
+# simulation and plot of the torus
+DeleteRegister()
+z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=prod(blocks),
+             local.dependent=TRUE, local.mmin=size)
+hei <- 8
+get(getOption("device"))(hei=hei, wid=hei / blocks[2] / diff(range(y)) *
+                         blocks[1] * diff(range(x)))
+close.screen(close.screen())
+split.screen(rev(blocks))
+k <- 0
+for (j in 1:blocks[2]) {
+  for (i in 1:blocks[1]) {
+    k <- k + 1
+    screen(k)
+    par(mar=rep(1, 4) * 0.02)
+    image(z[,,(blocks[2]-j) * blocks[1]  + i], zlim=c(-3, 3), axes=FALSE)
+  }
+}
 
 
 %##############################################################

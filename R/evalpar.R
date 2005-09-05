@@ -208,7 +208,7 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
             eval(parse(text=paste(names(.e), "<- .e$", names(.e))))
             eval(parse(text=.simu.txt), envir=environment())
           } else {
-            print(.e$val)
+ #           print(.e$val)
             eval(parse(text=.e$val))
           }
         }
@@ -252,8 +252,6 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
       .zaehler <- .zaehler + 1
       eval(parse(text=paste(variable, "$.history[[.zaehler]] <- ",
                    "list(.length -.j, .evar, .newvalue)")))
-
-      str(.e)
       if ((is.null(.e$update) && update && !.noupdate) ||
           (!is.null(.e$update) && .e$update)) {
         screen(dev)

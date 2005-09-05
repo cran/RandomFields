@@ -111,11 +111,11 @@ void SetParamDecision( int *action, int *stationary_only, int *exactness)
   }
 }
 
-void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
-		 int *trials, 
-		 double *mmin, // mmin must be vector of length MAXDIM!!
-		 int *useprimes, int *strategy, double *maxmem,
-		 ce_param *CE, char *name)
+void SetParamCE(int *action, int *force, double *tolRe, double *tolIm,
+		int *trials, 
+		double *mmin, // mmin must be vector of length MAXDIM!!
+		int *useprimes, int *strategy, double *maxmem,
+		int *dependent, ce_param *CE, char *name)
 {
   int d;
   if (*action) {
@@ -153,6 +153,7 @@ void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
     }
  
     CE->useprimes=(bool)*useprimes;
+    CE->dependent=(bool)*dependent;
 
     if (*strategy>LASTSTRATEGY) {  
       if (GENERAL_PRINTLEVEL>0) 
@@ -167,6 +168,7 @@ void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
     *trials=CE->trials;
     for (d=0; d<MAXDIM; d++) {mmin[d]=CE->mmin[d];}   
     *useprimes= CE->useprimes;
+    *dependent=CE->dependent;
     *strategy = (int) CE->strategy;
     *maxmem = CE->maxmem;
   }
@@ -705,21 +707,13 @@ void StoreTrend(int *keyNr, int *modus, char **trend,
   return;
 }
 
-bool is_diag(aniso_type aniso, int dim) {
-  int diag = dim + 1, size = dim * dim, i;
-  bool notdiag=false;
-  for (i=0; i<size; i++) {
-    if (i % diag != 0 && (notdiag = aniso[i] != 0.0)) break;
-  }
-  return !notdiag;
-};
 
 
 void GetParamterPos(int *variance, int *kappa, int* lastkappa, 
 		    int *tbm2num, int *hyperinternal, int *lasthyperinternal,
 		    int *scale, int *aniso, int *hypernr, int *localdiameter,
 		    int *local_r, int *cutoff_theo_r, int *hyperkappa,
-		    int *total){
+		    int *total) {
     *variance = VARIANCE;
     *kappa = KAPPA;
     *lastkappa = LASTKAPPA;
@@ -736,22 +730,25 @@ void GetParamterPos(int *variance, int *kappa, int* lastkappa,
     *total = TOTAL_PARAM;
 }
 
+
+
+
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 		char type, bool *Time, int *truetimespacedim, 
 		aniso_type aniso) {
   // returns always the a (reduced) matrix; if not anisotropy then diag matrix
   // of full size with elements 1/SCALE. 
   int i,j, index[MAXDIM], job=01, err;
-  double *G, *matrix, *e, *D, *V;
-  e=G=matrix=D=V=NULL;// necessary!
+  double G[MAXDIM+1], matrix[MAXDIMSQ], e[MAXDIM], D[MAXDIM], V[MAXDIMSQ];
 
   assert(timespacedim>0);
   if (anisotropy) {
-    int col, row, endfor, TrueDim;
+    int col, row, endfor, TrueDim, rowsq;
     // row: rows of aniso matrix and of param
     // col: number colums of param used for "matrix" (i.e. time is excluded for
     //                                      space isotropy), see switch below
     col = row = timespacedim;
+    rowsq = row * row;
     endfor = ANISO + row * col; 
     if (*Time) {
       for (j=endfor - row; j<endfor; j++)
@@ -769,11 +766,8 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	  col -= 1;
 	  // no break!;
 	case FULLISOTROPIC :
-       	  err=ERRORMEMORYALLOCATION;
-	  if ((D =(double*) calloc(row, sizeof(double)))==NULL) 
-	      goto ErrorHandling;
-	  if ((V = (double *) calloc(row * row, sizeof(double))) == NULL)
-	      goto ErrorHandling;
+	  for (i=0; i<row; i++) D[i] = V[i] = 0.0;
+	  for (; i<rowsq; V[i++]=0.0);
 	  if (is_diag(&(param[ANISO]), row)) {
 	    int diag = row + 1, size = row * col;
 	    for (j=i=0; i<size; i+=diag, j++) {
@@ -781,12 +775,6 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	      V[i] = 1.0;
 	    }
 	  } else {
-	    if ((matrix = (double *) malloc(sizeof(double) * row * row)) == NULL)
-		goto ErrorHandling;
-	    if ((e =(double*) malloc(sizeof(double) * row))==NULL) 
-		goto ErrorHandling;
-	    if ((G =(double*) malloc(sizeof(double) * (row + 1)))==NULL)
-		goto ErrorHandling;
 	    for (j=0; j<col; j++)
 		for (i=0; i<row; i++)
 		    matrix[i * row + j] = param[ANISO + i + j * row];
@@ -819,13 +807,7 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	      for (i=0; i<row; i++)
 		  aniso[i + TrueDim * row] = param[param_segm + i];
 	  }
-	  
-	  free(matrix); matrix=NULL; 
-	  free(D); D=NULL;
-	  free(e); e=NULL; 
-	  free(G); G=NULL;
-	  free(V); V=NULL;
- 	  break;
+	  break;
 	case ISOHYPERMODEL :
 	  err = ERRORNOTPROGRAMMED;
 	  goto ErrorHandling;
@@ -848,11 +830,7 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
   return;
 
  ErrorHandling:
-  if (matrix!=NULL) free(matrix);
-  if (D!=NULL) free(D);
-  if (e!=NULL) free(e);
-  if (G!=NULL) free(G);
-  if (V!=NULL) free(V);
+  PRINTF("F77 error in GetTrueDim: %d\n", -err);
   assert(false);
 }
 
@@ -982,59 +960,18 @@ SEXP mvcov(int* V, int n) {
   return dummy;
 }
 
-SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
+SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam, 
+		  int timespacedim, long totalpoints)
 {
-#define ninfo 16
-  char *infonames[ninfo] = 
-      {"active" /* must be first */, 
-       "anisotropy", "compatible", "grid",  "storing", "time.comp",
-       "distrib.", "timespacedim", "totalparam", "spatial.dim", "trend.mode", 
-       "spatial.pts", "total.pts", "mean", "model", "method" 
-    };
 #define nmodelinfo 10 // mit op
   char *modelinfo[nmodelinfo] = 
       {"method", "truedim", "name", "op" /* must keep name */, "time.comp", 
        "simugrid", "processed", "param", "aniso", "x"};
-#define nmethodinfo 5 // mit op
-  char *methodinfo[nmethodinfo] = 
-      {"name", "in.use", "actcov", "covnr", "mem"};
-  int ni, i, actninfo, subi, k, nc, exception;
-  SEXP info, namevec, model, method, submodel[MAXCOV],  submethod[MAXCOV], 
-      namemodelvec[2], namemethodvec, nameSvec, S; 
+  SEXP model,  submodel[MAXCOV], namemodelvec[2];
+  int i, exception, k, subi;
   covinfo_type *kc;
 
-  actninfo = (key->active || ignore_active) ? ninfo : 1;
-  PROTECT(info=allocVector(VECSXP, actninfo));
-  PROTECT(namevec = allocVector(STRSXP, actninfo));
-  for (i=0; i<actninfo; i++) SET_VECTOR_ELT(namevec, i, mkChar(infonames[i]));
-  setAttrib(info, R_NamesSymbol, namevec);
-  UNPROTECT(1);
-
-
-  ni = 0;
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->active));
-  if (!key->active && !ignore_active) {UNPROTECT(1); return info;}
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->anisotropy)); 
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->compatible)); 
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->grid)); 
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->storing)); 
-  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->Time)); 
-
-  SET_VECTOR_ELT(info, ni++, mkString(DISTRNAMES[key->distribution]));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->timespacedim));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->totalparam));
-  //
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->spatialdim));
-  //
-  SET_VECTOR_ELT(info, ni++, ScalarInteger(key->TrendModus));
-  //
-  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->spatialtotalpoints));
-  SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->totalpoints));
-  //
-  SET_VECTOR_ELT(info, ni++, ScalarReal(key->mean));
-  //
-
-  PROTECT(model = allocVector(VECSXP, key->ncov));
+  PROTECT(model = allocVector(VECSXP, nc));
   for (exception=0; exception <= 1; exception++) {
     int j;
     PROTECT(namemodelvec[exception] = allocVector(STRSXP, nmodelinfo-exception));
@@ -1043,9 +980,9 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
       SET_VECTOR_ELT(namemodelvec[exception], j++, mkChar(modelinfo[k]));
     }
   }
-  nc = key->ncov-1;
+  nc--;
   for (i=0; i<=nc; i++) {
-    kc = &(key->cov[i]);
+    kc = &(keycov[i]);
     exception = i==nc;
     PROTECT(submodel[i] = allocVector(VECSXP, nmodelinfo - exception));
     setAttrib(submodel[i], R_NamesSymbol, namemodelvec[exception]);
@@ -1060,30 +997,40 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 		   ScalarLogical(kc->genuine_time_component));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(kc->simugrid));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(!kc->left));
-    SET_VECTOR_ELT(submodel[i], subi++, (key->totalparam < 0)
-		   ? allocVector(VECSXP, 0) 
-		   : Num(kc->param, key->totalparam));
-    SET_VECTOR_ELT(submodel[i], subi++, (key->timespacedim<0) 
-		   ?  allocVector(VECSXP, 0) 
-		   : Mat(kc->aniso, key->timespacedim, kc->truetimespacedim)
+    SET_VECTOR_ELT(submodel[i], subi++, (totalparam < 0) ? allocVector(VECSXP, 0)
+		   : Num(kc->param, totalparam));
+    SET_VECTOR_ELT(submodel[i], subi++, (timespacedim<0) ? allocVector(VECSXP, 0)
+		   : Mat(kc->aniso, timespacedim, kc->truetimespacedim)
                      // should be matrix
 	);
     if (kc->x == NULL) 
 	SET_VECTOR_ELT(submodel[i], subi++, allocVector(VECSXP, 0));
     else
 	SET_VECTOR_ELT(submodel[i], subi++, 
-		       Mat(kc->x, kc->simugrid ? 3 : key->totalpoints, 
+		       Mat(kc->x, kc->simugrid ? 3 : totalpoints, 
 			   kc->truetimespacedim));
 
     assert(subi==nmodelinfo - (i==nc)); 
     SET_VECTOR_ELT(model, i, submodel[i]);
     UNPROTECT(1);
   }
-  SET_VECTOR_ELT(info, ni++, model);
   UNPROTECT(3); // model + namemodelvec
-  kc = &(key->cov[0]);
+  return model;
+}
 
 
+SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod, 
+		   bool ignore_active, int depth) 
+{
+#define nmethodinfo 5 // mit op
+  char *methodinfo[nmethodinfo] = 
+    {"name", "in.use", "actcov", "covnr", "mem"};
+  SEXP submethod[MAXCOV], namemethodvec, method, nameSvec, S;
+  int i, k, subi, tsdim;
+  long totpts;
+
+  totpts = key->totalpoints;
+  tsdim = key->timespacedim;
   PROTECT(method = allocVector(VECSXP, key->n_unimeth));
   PROTECT(namemethodvec = allocVector(STRSXP, nmethodinfo));
   for (k=0; k<nmethodinfo; k++)
@@ -1096,15 +1043,15 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 
     subi = 0;
     SET_VECTOR_ELT(submethod[i], subi++, mkString(METHODNAMES[meth->unimeth]));
-    SET_VECTOR_ELT(submethod[i], subi++,
+    SET_VECTOR_ELT(submethod[i], subi++, 
 		   ScalarLogical(meth->unimeth_alreadyInUse));
     SET_VECTOR_ELT(submethod[i], subi++, ScalarInteger(meth->actcov));
     SET_VECTOR_ELT(submethod[i], subi++, mvcov(meth->covlist, meth->actcov));
     
     int nS, nSlist[Forbidden + 1] =
-	{1 /* CE */, 2 /*Cutoff*/ , 2 /* Intr */, 8 /* TBM2 */ , 8 /* TBM3 */, 
-	 1 /*Sp */, 1 /* dir */, 1 /* nug */, 1 /* add */, 1 /* hyp */, 
-	 1 /* spec */, 1 /* noth */, 1 /* maxmpp */, 2 /*extremalGauss */,
+	{8 /* CE */, 2 /*Cutoff*/ , 2 /* Intr */, 9 /* TBM2 */ , 9 /* TBM3 */, 
+	 1 /*Sp */, 3 /* dir */, 3 /* nug */, 10 /* add */, 4 /* hyp */, 
+	 1 /* spec */, 1 /* noth */, 11 /* maxmpp */, 4 /*extremalGauss */,
 	 1 /* Forbidden */};
     assert(Forbidden == 14);
     assert(meth->unimeth < Forbidden);
@@ -1116,14 +1063,51 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 	case CircEmbed : {
 	    CE_storage* s;
 	    s = (CE_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
-	    SET_VECTOR_ELT(S, k++, Int(s->m, key->timespacedim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("size"));
+	    SET_VECTOR_ELT(S, k++, Int(s->m, tsdim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("totalsize"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->mtot));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("dependent"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->dependent));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("curSimuPosition"));
+	    SET_VECTOR_ELT(S, k++, Int(s->cur_square, tsdim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simupositions"));
+	    SET_VECTOR_ELT(S, k++, Int(s->max_squares, tsdim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("segmentLength"));
+	    {
+	      int dummy[MAXDIM], i;
+	      for (i=0; i< tsdim; i++) 
+		  dummy[i] = s-> square_seg[i] / s->cumm[i];
+	      SET_VECTOR_ELT(S, k++, Int(dummy, tsdim));
+	    }
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("fft"));
+	    SET_VECTOR_ELT(S, k++, s->c == NULL ? ScalarLogical(false)
+			   : Mat(s->c, 2, s->mtot));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("invfft"));
+	    SET_VECTOR_ELT(S, k++, s->d == NULL ? ScalarLogical(false)
+			   : Mat(s->d, 2, s->mtot));	    
 	    } break;
 	case CircEmbedCutoff : case CircEmbedIntrinsic : {
 	    localCE_storage* s;
 	    s = (localCE_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("factor"));
-	    SET_VECTOR_ELT(S, k++, ScalarReal(s->factor));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("correctionTerms"));
+	    {
+	      SEXP corr;
+	      int v;
+	      PROTECT(corr=allocVector(VECSXP, s->key.ncov));
+	      for (v=0; v < s->key.ncov; v++) {
+		SET_VECTOR_ELT(corr, v, s->correction[v] == NULL 
+			       ? ScalarLogical(false) 
+			       : (CovList[s->key.cov[v].nr].localtype == 
+				  CircEmbedIntrinsic 
+				  ? Mat((double*)s->correction[v], tsdim, tsdim)
+				  :  mkChar("error")
+				   )
+		    );
+	      }
+	      UNPROTECT(1);
+	      SET_VECTOR_ELT(S, k++, corr);	
+	    }
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
 	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						      depth + 1));
@@ -1132,24 +1116,31 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 	    TBM_storage* s;
 	    s = (TBM_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("aniso"));
-	    SET_VECTOR_ELT(S, k++, Mat(s->aniso, key->timespacedim,
-				       s->truetimespacedim));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
-	    SET_VECTOR_ELT(S, k++, Num(s->center, s->truetimespacedim));	
+	    SET_VECTOR_ELT(S, k++, Mat(s->aniso, tsdim, s->truetimespacedim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuspatialdim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->simuspatialdim));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
-	    if (s->x == NULL) SET_VECTOR_ELT(S, k++, allocVector(VECSXP, 0));
-	    else SET_VECTOR_ELT(S, k++, 
-				Mat(s->x, kc->simugrid ? 3 : key->totalpoints, 
-				    s->truetimespacedim));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("l"));
-	    if (s->simuline==NULL) SET_VECTOR_ELT(S, k++, allocVector(VECSXP,0));
-	    else SET_VECTOR_ELT(S, k++, Num(s->simuline, s->key.totalpoints));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimesspacedim"));
-	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->truetimespacedim));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("ce_dim"));
-	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));	
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimesspacedim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->truetimespacedim));		
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
+	    SET_VECTOR_ELT(S, k++, Num(s->center, s->truetimespacedim));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
+	    SET_VECTOR_ELT(S, k++, (s->x == NULL) 
+			   ? allocVector(VECSXP, 0)
+			   : Mat(s->x, s->simugrid ? 3 : totpts, 
+				 s->truetimespacedim));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("l"));
+	    SET_VECTOR_ELT(S, k++, s->simuline==NULL 
+			   ? allocVector(VECSXP,0) 
+			   : (s->ce_dim==1 
+			      ? Num(s->simuline, s->key.length[0])
+			      : Mat(s->simuline, s->key.length[0], 
+				    s->key.length[1])
+			     )
+	      );
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
 	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						      depth + 1));
@@ -1157,8 +1148,8 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 	case SpectralTBM: {
 	    spectral_storage* s;
 	    s = (spectral_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("Amplitude"));
-	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->randomAmplitude[0]!=NULL));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("AmplitudeOK"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->randomAmplitude[0] != NULL));
 	} break;
 	case Direct : {
 	    direct_storage* s;
@@ -1166,42 +1157,114 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
 	    char *invm[NoFurtherInversionMethod + 1] =
 		{"Cholesky", "SVD", "None"};
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("invmethod"));
-	    SET_VECTOR_ELT(S, k++, (s->method<=NoFurtherInversionMethod) ?
+	    SET_VECTOR_ELT(S, k++, (s->method < NoFurtherInversionMethod) ?
 			   mkString(invm[s->method]) :  ScalarLogical(false));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("sqrtCov"));
+	    SET_VECTOR_ELT(S, k++, s->U == NULL ? ScalarLogical(false)
+			   : Mat(s->U, totpts, totpts));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("dummy"));
+	    SET_VECTOR_ELT(S, k++, s->G == NULL ? ScalarLogical(false)
+			   : Num(s->G,totpts + 1));	    
+	    
 	}  break;
 	case Nugget : {
 	    nugget_storage* s;
 	    s = (nugget_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simple"));
-	    SET_VECTOR_ELT(S, k++,  ScalarLogical(s->simple));	
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simple));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("srqtnugget"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->sqrtnugget));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
+	    SET_VECTOR_ELT(S, k++, s->pos == NULL ? ScalarLogical(false)
+			   : Int(s->pos, totpts));	
 	  }  break;
 	case AdditiveMpp : {
 	    mpp_storage* s;
 	    s = (mpp_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("integral"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integral));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("integralsq"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integralsq));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectiveRadius"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectiveRadius));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectivearea"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectivearea));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
-	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));	
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
+	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
+	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim)); 
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
+	    SET_VECTOR_ELT(S, k++, Num(s->c, 6)); 
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));
 	}  break;
 	case Hyperplane : {
 	    hyper_storage* s;
 	    s = (hyper_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("rx"));
+	    SET_VECTOR_ELT(S, k++, Num(s->rx, tsdim)); 
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
+	    SET_VECTOR_ELT(S, k++, Num(s->center, tsdim)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("radius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->radius));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("HyperplaneFctOK"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->hyperplane != NULL));
 	} break;
 	case MaxMpp : {
 	    mpp_storage* s;
 	    s = (mpp_storage*) meth->S;
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("integralpos")); 
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integralpos));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("factor"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->factor));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("maxheight"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->maxheight));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectiveRadius"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectiveRadius));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectivearea"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectivearea));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
+	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
+	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim)); 
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
+	    SET_VECTOR_ELT(S, k++, Num(s->c, 6)); 
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
-	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));	
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));
 	} break;
 	case ExtremalGauss : {
-	    extremes_storage* s;
-	    s = (extremes_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("inv_mean_pos"));
-	    SET_VECTOR_ELT(S, k++, ScalarReal(s->inv_mean_pos));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
-	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
-						      depth + 1));
-	
+	  SEXP dummy, array;
+	  int i, dim;
+	  extremes_storage* s;
+	  s = (extremes_storage*) meth->S;
+	  SET_VECTOR_ELT(nameSvec, k, mkChar("inv_mean_pos"));
+	  SET_VECTOR_ELT(S, k++, ScalarReal(s->inv_mean_pos));
+	  SET_VECTOR_ELT(nameSvec, k, mkChar("assumedmax"));
+	  SET_VECTOR_ELT(S, k++, ScalarReal(s->assumedmax));
+	  SET_VECTOR_ELT(nameSvec, k, mkChar("field")); 
+	  
+	  dim = key->grid ? tsdim : 1;
+	  if (dim==1) {
+	    SET_VECTOR_ELT(S, k++, Num(s->rf, totpts));	
+	  } else {
+	    PROTECT(dummy=allocVector(INTSXP, dim));
+	    for (i=0; i<dim; i++) INTEGER(dummy)[i] = key->length[i];
+	    PROTECT(array=allocArray(REALSXP, dummy));
+	    for (i=0; i<totpts; i++) REAL(array)[i] = s->rf[i];
+	    SET_VECTOR_ELT(S, k++, array);
+	    UNPROTECT(2);
+	  }
+	  SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	  SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
+						    depth + 1));
 	} break;
 	default :  
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("calling.method"));
@@ -1217,10 +1280,56 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
     SET_VECTOR_ELT(method, i, submethod[i]);
     UNPROTECT(1);
   }
-  SET_VECTOR_ELT(info, ni++, method);
-  UNPROTECT(3); // method + namemethodvec
+  UNPROTECT(2); // method + namemethodvec
+  return method;
+}
 
-  assert(ni==ninfo);
+SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
+{
+#define ninfo 16
+  char *infonames[ninfo] = 
+      {"active" /* must be first */, 
+       "anisotropy", "compatible", "grid",  "storing", "time.comp",
+       "distrib.", "timespacedim", "totalparam", "spatial.dim", "trend.mode", 
+       "spatial.pts", "total.pts", "mean", "model", "method" 
+    };
+  int ni, actninfo, i;
+  SEXP info, namevec; 
+
+  actninfo = (key->active || ignore_active) ? ninfo : 1;
+  PROTECT(info=allocVector(VECSXP, actninfo));
+  PROTECT(namevec = allocVector(STRSXP, actninfo));
+  for (i=0; i<actninfo; i++) SET_VECTOR_ELT(namevec, i, mkChar(infonames[i]));
+  setAttrib(info, R_NamesSymbol, namevec);
+  ni = 0;
+  SET_VECTOR_ELT(info, ni++, ScalarLogical(key->active));
+  if (actninfo > 1) {
+    SET_VECTOR_ELT(info, ni++, ScalarLogical(key->anisotropy)); 
+    SET_VECTOR_ELT(info, ni++, ScalarLogical(key->compatible)); 
+    SET_VECTOR_ELT(info, ni++, ScalarLogical(key->grid)); 
+    SET_VECTOR_ELT(info, ni++, ScalarLogical(key->storing)); 
+    SET_VECTOR_ELT(info, ni++, ScalarLogical(key->Time)); 
+
+    SET_VECTOR_ELT(info, ni++, mkString(DISTRNAMES[key->distribution]));
+    SET_VECTOR_ELT(info, ni++, ScalarInteger(key->timespacedim));
+    SET_VECTOR_ELT(info, ni++, ScalarInteger(key->totalparam));
+    //
+    SET_VECTOR_ELT(info, ni++, ScalarInteger(key->spatialdim));
+    //
+    SET_VECTOR_ELT(info, ni++, ScalarInteger(key->TrendModus));
+    //
+    SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->spatialtotalpoints));
+    SET_VECTOR_ELT(info, ni++, ScalarInteger((int) key->totalpoints));
+    //
+    SET_VECTOR_ELT(info, ni++, ScalarReal(key->mean));
+    //
+    SET_VECTOR_ELT(info, ni++, GetModelInfo(key->cov, key->ncov, key->totalparam,
+					    key->timespacedim,key->totalpoints));
+    SET_VECTOR_ELT(info, ni++, 
+		   GetMethodInfo(key, key->meth, ignore_active, depth));
+  }
+  assert(ni==actninfo);
+  UNPROTECT(2); // info + name
   return info;
 }
 
@@ -1380,21 +1489,23 @@ bool ok_n(int n, int *f, int nf) // taken from fourier.c of R
 {
   int i;
   for (i = 0; i < nf; i++)
-    while(n % f[i] == 0) if ((n = n / f[i]) == 1) return TRUE;
+    while(n % f[i] == 0) if ((n /= f[i]) == 1) return TRUE;
   return n == 1;
 }
 int nextn(int n, int *f, int nf) // taken from fourier.c of R
 {
-  while(!ok_n(n, f, nf)) n++;
+    while(!ok_n(n, f, nf)) { n++; }
   return n;
 }
 
-bool HOMEMADE_NICEFFT=true;
+bool HOMEMADE_NICEFFT=false;
 unsigned long NiceFFTNumber(unsigned long n) {
-  unsigned long i,ii,j,jj,l,ll,min, m=1, f[4]={2,3,5,7};
+#define F_NUMBERS 3
+  int f[F_NUMBERS]={2,3,5}; 
+  unsigned long i,ii,j,jj,l,ll,min, m=1;
   if (HOMEMADE_NICEFFT) {
     if (n<=1) return n;
-    for (i=0; i<4; i++) 
+    for (i=0; i<F_NUMBERS; i++) 
       while ( ((n % f[i])==0) && (n>10000)) { m*=f[i]; n/=f[i]; }
     if (n>10000) {
       while (n>10000) {m*=10; n/=10;}

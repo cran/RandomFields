@@ -48,8 +48,8 @@ bool TBM2NUMERIC = true;
 int TBM_POINTS = 0;
 double TBM_CENTER[MAXDIM] = {NA_REAL, NA_REAL, NA_REAL, NA_REAL};
 
-ce_param TBMCE = {false, true, TRIVIALSTRATEGY, -1e-7, 1e-3, 3, 10000000.0, 
-		  0, 0, 0, 0};
+ce_param TBMCE = {false, true, false, TRIVIALSTRATEGY, 3, 10000000, 
+		  -1e-7, 1e-3, 0, 0, 0, 0};
 
 SimulationType TBM_METHOD=CircEmbed;
 bool TBM_FORCELAYERS=false;
@@ -407,10 +407,10 @@ void TBM_destruct(void **S)
 
 void SetParamTBMCE( int *action, int *force, double *tolRe, double *tolIm,
 			int *trials, double *mmin, int *useprimes, int *strategy,
-			double *maxmem) 
+			double *maxmem, int *dependent) 
 {
   SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
-	      maxmem, &TBMCE,"TBMCE");
+	      maxmem, dependent, &TBMCE,"TBMCE");
 }
 
 
@@ -711,13 +711,14 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     // ******************************
     // diameter of the simulation area 
     assert(s->x == 0);
+    s->simugrid = first->simugrid;
     if ((Xerror=Transform2NoGrid(key, s->aniso,  totaltimespacedim, 
-				first->simugrid, &(s->x))) != NOERROR)
+				s->simugrid, &(s->x))) != NOERROR)
       goto ErrorHandling;
   
 
 //  printf("TRANSF %d %d %d %d  %d %d\n", iloop, key->anisotropy, key->Time,
-//	   key->grid, totaltimespacedim, first->simugrid);
+//	   key->grid, totaltimespacedim, s->simugrid);
 //  printf("s->x %f %f %f\n\n", s->x[0], s->x[1] , s->x[2]);
 //  printf("aniso %f %f %f %f %f %f %f %f %f \n\n", 
 //	 s->aniso[0], s->aniso[1], s->aniso[2], s->aniso[3],
@@ -726,7 +727,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 //  printf("first %f %f %f %f \n\n", 
 //	 first->aniso[0], first->aniso[1], first->aniso[2], first->aniso[3]);
     
-    GetCenterAndDiameter(key, first->simugrid, s->simuspatialdim,  
+    GetCenterAndDiameter(key, s->simugrid, s->simuspatialdim,  
 			 totaltimespacedim, s->x, s->aniso,
 			 s->center, dummylx, &diameter);
 
@@ -755,7 +756,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     } // else printf("ISNA CENTER ** \n");
 // printf("tbm: %d %d %d %f %f %f %d %d\n", 
 //        iloop, loop, TBM_POINTS, diameter, linesimuscale, s->aniso[0],
-//        key->grid, first->simugrid);
+//        key->grid, s->simugrid);
     if (loop==2 && iloop==0) linesimuscale = (TBM_POINTS - 3.0) / diameter;
     else diameter = trunc(3.0 + diameter);
   } // loop
@@ -981,12 +982,10 @@ void do_turningbands(key_type *key, int m, double *res)
   assert(key->active);
   tbm_lines *tbm;
   methodvalue_type *meth; 
-  covinfo_type *kc;
   TBM_storage *s;
 
   meth = &(key->meth[m]);
   s = (TBM_storage*) meth->S;
-  kc = &(key->cov[meth->covlist[0]]);
   nn = s->key.length[0];
   ntot = s->key.totalpoints;
   simutimespacedim = s->truetimespacedim;
@@ -1007,17 +1006,17 @@ void do_turningbands(key_type *key, int m, double *res)
   switch (key->spatialdim) {
       case 3 : 
 	  centerz = s->center[2]; 
-	  if (kc->simugrid) centerz -= s->x[XSTARTDIM3];
+	  if (s->simugrid) centerz -= s->x[XSTARTDIM3];
 	  gridlenz=key->length[2];
 	  stepz = s->x[XSTEPDIM3];	    // no break;
       case 2 : 
 	  centery = s->center[1];
-	  if (kc->simugrid) centery -= s->x[XSTARTDIM2];
+	  if (s->simugrid) centery -= s->x[XSTARTDIM2];
 	  gridleny=key->length[1];
 	  stepy = s->x[XSTEPDIM2];	    // no break;
       case 1 : 
 	  centerx = s->center[0];
-	  if (kc->simugrid) centerx -= s->x[XSTARTDIM1];
+	  if (s->simugrid) centerx -= s->x[XSTARTDIM1];
 	  gridlenx=key->length[0];
 	  stepx = s->x[XSTEPDIM1]; 
 	  break;
@@ -1026,7 +1025,7 @@ void do_turningbands(key_type *key, int m, double *res)
   tbm = (meth->unimeth==TBM2) ?  &tbm2 : &tbm3;
      
   for (n=0; n<key->totalpoints; n++) res[n]=0.0; 
-  if (kc->simugrid) { // old form, isotropic field
+  if (s->simugrid) { // old form, isotropic field
     double xoffset,  yoffset, zoffset,  toffset;
     int nx, ny, nz,  zaehler;
       

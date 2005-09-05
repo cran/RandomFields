@@ -10,7 +10,7 @@ paramextract <- function(p, model=c("cutoff")) {
   model <- match.arg(model)
   return(switch(model,
                 cutoff = list(hypernr=p[i$hypernr], diameter=p[i$localdiameter],
-                  lcoalr=p[i$localr], cutoffr=p[i$cutoffr])
+                  localr=p[i$localr], cutoffr=p[i$cutoffr])
                 )
          )
 }
@@ -44,6 +44,9 @@ GetRegisterInfo <- function(register=0, ignore.active=FALSE)
   # ignore.active=TRUE only for internal debugging information!
   .Call("GetExtKeyInfo", as.integer(register), as.logical(ignore.active),
         PACKAGE="RandomFields")
+
+GetModelInfo <- function(register=0)
+  .Call("GetExtModelInfo", as.integer(register), PACKAGE="RandomFields")
 
 GetPracticalRange <- function(model, kappas=NULL) {
   covnr <-
@@ -195,6 +198,7 @@ parampositions <- function(model, param, print=TRUE) {
   CE.enlarge <- integer(1)
   CE.maxmem <- double(1)
   CE.useprimes <- integer(1)
+  CE.dependent <- integer(1)
   
   local.force <- integer(1)
   local.tolRe <- double(1)
@@ -205,7 +209,8 @@ parampositions <- function(model, param, print=TRUE) {
   local.enlarge <- integer(1)
   local.maxmem <- double(1)
   local.useprimes <- integer(1)
-  
+  local.dependent <- integer(1)
+ 
   TBMCE.force <- integer(1)
   TBMCE.tolRe <- double(1)
   TBMCE.tolIm <- double(1)
@@ -215,6 +220,7 @@ parampositions <- function(model, param, print=TRUE) {
   TBMCE.enlarge <- integer(1)
   TBMCE.maxmem <- double(1)
   TBMCE.useprimes <- integer(1)
+  TBMCE.dependent <- integer(1)
   
   TBM.method <- integer(1)
   TBM.center <- double(.p$maxdim)
@@ -240,6 +246,8 @@ parampositions <- function(model, param, print=TRUE) {
   direct.requiredprecision <- double(1)
   direct.bestvariables <- integer(1)
   direct.maxvariables <- integer(1)
+
+  nugget.tol <- double(1)
 
   MPP.approxzero <- double(1)
   add.MPP.realisations <- double(1)
@@ -271,13 +279,15 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetParamDecision", m, stationary.only, exactness,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 
-       CE.mmin, CE.useprimes, CE.strategy, CE.maxmem,
+       CE.mmin, CE.useprimes, CE.strategy, CE.maxmem, CE.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamLocal", m, local.force, local.tolRe, local.tolIm, local.trials,
        local.mmin, local.useprimes, local.strategy, local.maxmem,
+       local.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBMCE", m, TBMCE.force, TBMCE.tolRe, TBMCE.tolIm, TBMCE.trials,
        TBMCE.mmin, TBMCE.useprimes, TBMCE.strategy, TBMCE.maxmem,
+       TBMCE.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM2", m, TBM2.lines, TBM2.linesimufactor,
        TBM2.linesimustep, TBM2.every, TBM2.num,
@@ -290,6 +300,8 @@ parampositions <- function(model, param, print=TRUE) {
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDirectGauss", m, direct.method, direct.checkprecision,
        direct.requiredprecision, direct.bestvariables, direct.maxvariables,
+       PACKAGE="RandomFields", DUP=FALSE)
+    .C("SetParamNugget", m, nugget.tol,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetMPP", m, MPP.approxzero, add.MPP.realisations, MPP.radius,
        PACKAGE="RandomFields", DUP=FALSE)
@@ -315,6 +327,7 @@ parampositions <- function(model, param, print=TRUE) {
                     CE.tolRe=CE.tolRe,
                     CE.trials=CE.trials,
                     CE.useprimes=as.logical(CE.useprimes),
+                    CE.dependent=as.logical(CE.dependent),
                     local.force=as.logical(local.force),
                     local.mmin=local.mmin,
                     local.strategy=local.strategy,
@@ -323,9 +336,11 @@ parampositions <- function(model, param, print=TRUE) {
                     local.tolRe=local.tolRe,
                     local.trials=local.trials,
                     local.useprimes=as.logical(local.useprimes),
+                    local.dependent=as.logical(local.dependent),
                     direct.checkprecision=as.logical(direct.checkprecision),
                     direct.bestvariables=direct.bestvariables,
                     direct.maxvariables=direct.maxvariables,
+                    nugget.tol=nugget.tol,
                     direct.method=direct.method,
                     direct.requiredprecision=direct.requiredprecision,
                     spectral.grid=as.logical(spectral.grid),
@@ -350,6 +365,7 @@ parampositions <- function(model, param, print=TRUE) {
                     TBMCE.tolRe=TBMCE.tolRe,
                     TBMCE.trials=TBMCE.trials,
                     TBMCE.useprimes=as.logical(TBMCE.useprimes),
+                    TBMCE.dependent=as.logical(TBMCE.dependent),
                     add.MPP.realisations=add.MPP.realisations,
                     MPP.approxzero=MPP.approxzero,
                     MPP.radius=MPP.radius,
@@ -402,7 +418,7 @@ parampositions <- function(model, param, print=TRUE) {
                  character = !is.character(v),
                  integer = !is.finite(v) || (v != as.integer(v)),
                  double = !is.numeric(v)))
-        stop(paste("`", orig.name[i], "' is not ", type, sep=""))
+        stop(paste("`", orig.name[i], "' is not", type, sep=""))
       len <- length(get(name[i]))
       if (length(v) > len)
         stop(paste("`", orig.name[i], "' is a too long vector", sep=""))
