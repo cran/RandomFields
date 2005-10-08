@@ -218,6 +218,25 @@ int checkFD(double *param, int timespacedim, SimulationType method);
 void rangeFD(int spatialdim, int *index, double* range);
 void infoFD(double *p, int *maxdim, int *CEbadlybehaved);
 
+double IacoCesare(double *x, double *p, int dim);
+//double ScaleIacoCesare(double *p, int scaling);
+void rangeIacoCesare(int dim, int *index, double* range);
+void infoIacoCesare(double *p, int *maxdim, int *CEbadlybehaved);
+int checkIacoCesare(double *param, int timespacedim, SimulationType method);
+
+double nugget(double *x, double *p, int dim);
+double Scalenugget(double *p, int scaling);
+void rangenugget(int dim, int *index, double* range);
+void infonugget(double *p, int *maxdim, int *CEbadlybehaved);
+int checknugget(double *param, int timespacedim, SimulationType method);
+
+double SteinST1(double *x, double *p, int dim);
+//double ScaleSteinST1(double *p, int scaling);
+int kappasSteinST1(int dim);
+void rangeSteinST1(int dim, int *index, double* range);
+void infoSteinST1(double *p, int *maxdim, int *CEbadlybehaved);
+int checkSteinST1(double *param, int timespacedim, SimulationType method);
+
 double nugget(double *x, double *p, int dim);
 double Scalenugget(double *p, int scaling);
 void rangenugget(int dim, int *index, double* range);

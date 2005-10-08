@@ -26,9 +26,10 @@ EXTERN void GetModelNr(char **name, int *n, int *nr) ; /* transforms string "cov
 						into covnr of CovList */
 EXTERN void GetModelName(int *nr,char **name) ; /* transforms covnr into string */
 EXTERN void GetRange(int *nr, int *dim, int *index, double *range, int *lrange);
-EXTERN void GetNrParameters(int *covnr, int *n, int* kappas);
+EXTERN void GetNrParameters(int *covnr, int *n, int* dim, int* kappas);
 EXTERN void GetDistrName(int *nr,char **name);
 EXTERN void GetDistrNr(char **name, int *n, int *nr);
+EXTERN void GetModelException(int *nr, int *n, int *scale, int*aniso);
 
 EXTERN void PrintModelList();
 EXTERN void GetModelList(int* idx);

@@ -93,13 +93,13 @@ int init_mpp(key_type * key, int m)
       assert(keycov->nr>=0 && keycov->nr<currentNrCov);
       meth->covlist[actcov] = v;
       cov = &(CovList[keycov->nr]);
-      if (key->Time && !keycov->genuine_time_component && 
-	(cov->type==SPACEISOTROPIC)){// unclear whether this is too cautious
-       error= ERRORWITHOUTTIME; goto ErrorHandling;}
+      if (key->Time && !keycov->genuine_last_dimension && 
+	  (cov->type==SPACEISOTROPIC)) {// unclear whether this is too cautious
+	  error= ERRORWITHOUTTIME; goto ErrorHandling;}
       if ((error=cov->check(keycov->param, keycov->truetimespacedim, 
 			    AdditiveMpp)) != NOERROR) goto ErrorHandling;
       if (cov->add_mpp_scl==NULL) {error=ERRORNOTDEFINED; goto ErrorHandling;}
-      if (cov->type==ISOHYPERMODEL) {
+      if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	error=ERRORHYPERNOTALLOWED; goto ErrorHandling;}
       if ((v<key->ncov-1 &&  keycov->op)) {
 	// no multiplicative models are allowed
@@ -152,7 +152,7 @@ int init_mpp(key_type * key, int m)
   CovList[keycov->nr].add_mpp_scl(s, timespacedim, keycov->param);
   s->MppFct = CovList[keycov->nr].add_mpp_rnd;
   if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>=2))
-    PRINTF("Note: window has been enlarged by fixed value (%f)",s->addradius);
+    PRINTF("Note: window has been enlarged by fixed value (%f)\n",s->addradius);
  
   if (key->anisotropy) return NOERROR_REPEAT;
   else return 0;

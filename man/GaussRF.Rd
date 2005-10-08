@@ -426,20 +426,22 @@ cat("system time (second call)", format(ut,dig=3),"\n")
 
 % library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
 ## simuation of the stable model using the cutoff method
-RFparameters(Print=8, Storing=FALSE)
+#RFparameters(Print=8, Storing=FALSE)
 x <- seq(0, 1, 1/24)
-model1 <- list( list(model="stable", var=1, scale=1, kappa=1.0) )
+scale <- 1.0
+model1 <- list( list(model="stable", var=1, scale=scale, kappa=1.0) )
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
 z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
              model=model1, n=1, meth="cutoff", Storing=TRUE)
 size <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$size
-str(GetRegisterInfo(), vec=15)
+#str(GetRegisterInfo(), vec=15)
 
 ## simulation of the same random field using the circulant
 ## embedding method and defining the hypermodel explicitely
-model2 <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, sqrt(2), 1)),
+model2 <- list(list(model="cutoff", var=1, kappa=c(1, sqrt(2), 1),
+                    scale=scale),
               "(",
-              list(model="stable", var=1, scale=1, kappa=1.0)
+              list(model="stable", var=1, scale=scale, kappa=1.0)
               )
 assign(".Random.seed", rs, envir=.GlobalEnv)
 z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,

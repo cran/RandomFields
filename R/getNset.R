@@ -48,7 +48,7 @@ GetRegisterInfo <- function(register=0, ignore.active=FALSE)
 GetModelInfo <- function(register=0)
   .Call("GetExtModelInfo", as.integer(register), PACKAGE="RandomFields")
 
-GetPracticalRange <- function(model, kappas=NULL) {
+GetPracticalRange <- function(model, kappas=NULL, dim=1) {
   covnr <-
     as.integer(.C("GetModelNr", as.character(model), as.integer(1),
                   nr = integer(1), PACKAGE="RandomFields")$nr)
@@ -56,8 +56,9 @@ GetPracticalRange <- function(model, kappas=NULL) {
     .C("PrintModelList", PACKAGE="RandomFields")
     stop("given model cannot be (uniquely) identified from the above list")
   }
-  if (length(kappas)!=.C("GetNrParameters", covnr, as.integer(1),
-              k = integer(1), PACKAGE="RandomFields", DUP=FALSE)$k)
+  if (length(kappas) !=
+      .C("GetNrParameters", covnr, as.integer(1), as.integer(dim),
+         k = integer(1), PACKAGE="RandomFields", DUP=FALSE)$k)
     stop("incorrect number of parameters!")
   nat.scl <- double(1)
   error <- integer(1)
@@ -443,6 +444,7 @@ parampositions <- function(model, param, print=TRUE) {
 
 
 parameter.range <- function(model, dim){
+  ## dim : space time dimension!
   if (length(model)==0) stop("model not given")
   stopifnot(is.character(model))
   nr <- .C("GetModelNr", as.character(model), as.integer(1), nr=integer(1),
@@ -453,8 +455,8 @@ parameter.range <- function(model, dim){
   }
   storage.mode(nr) = "integer"
   storage.mode(dim) = "integer"
-  l <- as.integer(4 * .C("GetNrParameters", nr, as.integer(1), k=integer(1),
-                         PACKAGE="RandomFields")$k)
+  l <- as.integer(4 * .C("GetNrParameters", nr, as.integer(1), as.integer(dim),
+                         k=integer(1), PACKAGE="RandomFields")$k)
   r <- list()
   r$theoretical <- list()
   r$practical <- list()

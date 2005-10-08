@@ -132,7 +132,7 @@ int init_hyperplane(key_type *key, int m)
      /*    investigation of the param structure and the dimension    */
      /*             check parameter of covariance function           */
      timespacedim = kc->truetimespacedim;
-     if (cov->type==ISOHYPERMODEL) {
+     if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  v += (int) kc->param[HYPERNR];
 	  error=ERRORHYPERNOTALLOWED; 
 	  goto ErrorHandling;

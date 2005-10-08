@@ -69,10 +69,10 @@ typedef int covlist_type[MAXCOV];
     R if changed! */
 
 #define HYPERNR KAPPAI
-#define DIAMETER KAPPAII
-#define HYPERKAPPAI KAPPAIII
-#define HYPERKAPPAII KAPPAIV
-#define HYPERKAPPAIII KAPPAV
+#define HYPERKAPPAI KAPPAII
+#define HYPERKAPPAII KAPPAIII
+#define HYPERKAPPAIIII KAPPAIV
+#define HYPERKAPPAIV KAPPAV
 #define LASTHYPERKAPPA LASTKAPPA
 
 // parameters used in local cov fcts
@@ -84,8 +84,9 @@ typedef int covlist_type[MAXCOV];
 #define INTRINSIC_A2 HYPERINTERNALIII
 #define INTRINSIC_B HYPERINTERNALIV
 
-#define CUTOFF_A HYPERKAPPAI
-#define INTRINSIC_RAWR HYPERKAPPAI
+#define DIAMETER HYPERKAPPAI /* used in local circulant embedding models */
+#define CUTOFF_A HYPERKAPPAII
+#define INTRINSIC_RAWR HYPERKAPPAII
 
 typedef double param_type[TOTAL_PARAM];
 typedef double param_type_array[MAXCOV][TOTAL_PARAM];
@@ -158,6 +159,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 #define SPACEISOTROPIC 1
 #define ANISOTROPIC 2
 #define ISOHYPERMODEL 3
+#define ANISOHYPERMODEL 4
 
 // way of implementing simulation methods:
 #define NOT_IMPLEMENTED 0 /* do not change this value except to false */
@@ -171,15 +173,18 @@ typedef struct covinfo_type {
   /* the current method (out of SimulationsType) which 
      is tried at the moment or which has been 
      successfully initialized */
-  int truetimespacedim,
+  int dim, truetimespacedim,
     nr, /* number of the covariance function in CovList; 
 	   obtained by function GetCovFunction */
     op; /* operator after the specified covariance function */
-  bool genuine_time_component, /* i.e. time component indicated and at least
-				  one component of aniso is different from 0;
-				  extra treating and not within aniso (where
-				  time component is not reduced then) necessary
-				  for SPACEISOTROPIC covriance functions */
+    bool genuine_last_dimension, /* 
+				i.e. time component indicated and at least
+				one component of the last column of 
+				aniso is different from 0;
+				extra treating and not within aniso (where
+				time component is not reduced then) necessary
+				for SPACEISOTROPIC covriance functions,
+				and the MaStein hyper model*/
     simugrid, /* can the simulation technically be performed on a grid ?*/
     left;        /* left to be considered in the simulation
 		    initialisations ! */ 
@@ -224,13 +229,15 @@ typedef int (*hyper_pp_fct)(double, double*, double*, int, bool,
 			    double**, double**, double**);
 typedef int (*generalSimuInit)(key_type*);   
 typedef void (*generalSimuMethod)(key_type*, double*); 
+typedef int (*kappas_type)(int);
 
 // here all the different method for simulating a RF of a specified covariance
 // function are stored
 typedef struct cov_fct {  
   char name[COVMAXCHAR];
-  int kappas; /* number of parameters additional to the standard ones, 
-		 MEAN..SCALE */
+  unsigned int exception;
+  kappas_type kappas; /* number of parameters additional to the standard ones;
+		 standard ones are variance and scale */
   char type;
   infofct info;
   bool variogram, even, odd[MAXDIM]; // even and odd not used yet, but set
@@ -269,9 +276,14 @@ extern int COVLISTALL[MAXCOV];
 int IncludeModel(char *name, int kappas, checkfct check,
 			int isotropic, bool variogram, infofct info,
 			rangefct range);	
+extern int IncludeModel(char *name, kappas_type kappas, checkfct check,
+			int type, bool variogram, infofct info,
+			rangefct range);
 int IncludeHyperModel(char *name, int kappas, checkhyper check,
-			     int type, bool variogram, infofct info,
-			     rangefct range);
+		      int type, bool variogram, infofct info, rangefct range);
+int IncludeHyperModel(char *name, kappas_type kappas, checkhyper check,
+		      int type, bool variogram, infofct info, rangefct range);
+void modelexception(int nr, bool scale, bool aniso);
 void addSimu(int nr, SimulationType r1,SimulationType r2,SimulationType r3);
 void addCov(int nr, covfct cov, isofct derivative, natscalefct naturalscale);
 void addLocal(int nr, bool cutoff, isofct secondderiv, int *variable);
@@ -302,8 +314,18 @@ void InitModelList();
    initiating CovList with a dozen standard covariance models
 */
 SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam, 
-		  int timespacedim, long totalpoints);
+		  long totalpoints);
 
+
+int kappaZero(int dim);
+int kappaOne(int dim); 
+int kappaTwo(int dim); 
+int kappaThree(int dim); 
+int kappaFour(int dim); 
+int kappaFive(int dim);
+int kappaSix(int dim); 
+int kappaSeven(int dim); 
+int kappaFalse(int dim); 
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -488,8 +510,9 @@ void do_directGauss(key_type *key, int m, double *res);
 // nugget
 typedef struct nugget_storage {
   double sqrtnugget;
-  bool simple;
+  bool simple, simugrid;
   int *pos;
+  double diag[MAXDIM];
 } nugget_storage;
 extern double NUGGET_TOL;
 int init_nugget(key_type * key, int m);

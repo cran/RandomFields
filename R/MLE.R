@@ -726,7 +726,7 @@ show <- function(nr, M, OPT, PARAM)
         assign("zaehler", zaehler + 1, envir=ENVIR)
         return(zaehler)
       }
-      return(if (is.numeric(p)) rep(100000, length(p)) else p) # 100000 > anzahl
+      return(if (is.numeric(p)) rep(0, length(p)) else p) # 100000 > anzahl
       ##                                                             parameter
     }
     ## aniso could have been a list, this is corrected by the following command
@@ -737,13 +737,21 @@ show <- function(nr, M, OPT, PARAM)
                                        ), allow="list")
     if (any(sapply(model.nan[-1], function(x) !is.null(x) && is.nan(x))))
       stop("transform functions may not given (yet) for mean and trend")
-    zaehler <- 0
+    zaehler <- -10000
+    ## PrepareModel kann nicht direkt aufgerufen werden, da im Modell
+    ## Funktionen vorhanden sein koennen!
+    ## fct.num hat negative werte, wo funktionen waren;
+    ##         0 (oder 1.0 fuer fehlender scale bei nugget modell
+    ##         an Stellen mit numerischen Werten
     fct.num <- PrepareModel(functionNum(model))$param
+    ## p.transform enthaelt zunaechst alle param-Stellen
     p.transform <- PrepareModel(parampositions(model.nan, print=FALSE))$param
     stopifnot(length(fct.num)==length(p.transform)) ## if so, programming error!
+    ## order schiebt die Positionen aller negativen Werte nach vorne
+    ## somit enthaelt p.transform geordnet die Positionen, wo bisher
+    ## Funktionen standen.
     p.transform <-
-      p.transform[order(fct.num)][1:sum(fct.num <= length(p.transform),
-                                        na.rm=TRUE)]
+      p.transform[order(fct.num)][1:sum(fct.num < 0, na.rm=TRUE)]
     model <- model.nan
     rm("model.nan")
   }
@@ -752,7 +760,9 @@ show <- function(nr, M, OPT, PARAM)
 ############################    model       ##########################
   stopifnot(all(is.finite(as.matrix(data))))
   data <- as.vector(data)
-  pm <- PrepareModel(model, param, new$spacedim+new$Time, trend)
+  spacedim <- new$spacedim
+  logicaldim <- spacedim + new$Time
+  pm <- PrepareModel(model, param, logicaldim, trend)
   ctr <- convert.to.readable(pm)
   if (!is.null(ctr$param))
     ## to make sure that the model is  given in a standardised way
@@ -764,8 +774,6 @@ show <- function(nr, M, OPT, PARAM)
   
 ##############              Coordinates               #################
   if (PrintLevel>4) cat("\ncoordinates...")
-  spacedim <- ncol(new$x) 
-  logicaldim <- as.integer(spacedim + !is.null(T))
   if (pm$anisotropy) {
     xdim <- as.integer(logicaldim)
     dd <- 0
@@ -1124,7 +1132,8 @@ show <- function(nr, M, OPT, PARAM)
     if (PrintLevel>4) cat("\nstandard style settings...")
     VARIANCE <- 1
     KAPPA <- 2
-    n.kappas <- .C("GetNrParameters", covnr, as.integer(1), k=integer(1),
+    n.kappas <- .C("GetNrParameters", covnr, as.integer(1),
+                   as.integer(logicaldim), k=integer(1),
                    PACKAGE="RandomFields", DUP=FALSE)$k
     SCALE  <- KAPPA + n.kappas
     if (SCALE<length(PARAM)) {

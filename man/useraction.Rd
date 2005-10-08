@@ -143,7 +143,7 @@ str(sample.interaction(type="l"))
 l2 <- l[-2]
 l2[[1]] <- list("some other words", info="changed input")
 str(l2)
-useraction("replay", sleep=1, wait=interactive() * 0.1,
+useraction("replay", sleep=1, wait=interactive() * 0.05,
            PrintLevel=0, l2) 
 str(sample.interaction(read.r2=FALSE, type="o")) # input now from l2
 Readline(prompt="new input: ", info="?!") # switch to terminal
@@ -154,7 +154,7 @@ Readline(prompt="new input: ", info="?!") # switch to terminal
 ####################################################
 ## use of the two lists, l and l2, in a mixed way ##
 ####################################################
-useraction("replay", sleep=2, wait=interactive() * 0.2,
+useraction("replay", sleep=2, wait=interactive() * 0.05,
            PrintLevel=0, actionlist=l)
 Readline(prompt="first input of 1: ")
 dump <- getactions()

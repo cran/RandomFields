@@ -644,7 +644,7 @@ str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
 estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
                       kappa=list(NA, function(m) m[[1]]$kappa[1])),
                  "+",
-                 list(model="nugget", var=NA, scale=1))
+                 list(model="nugget", var=NA))
 system.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
               cross.me=NULL), vec.len=6))
 

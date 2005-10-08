@@ -34,6 +34,8 @@ GetMethodNames()
     \item \code{cutoff embedding}. \cr
     Modified circulant embedding method so that exact simulation is garantueed
     for further covariance models, e.g. the whittle matern model.
+    In fact, the circulant embedding is called with the cutoff
+    hypermodel, see \command{\link{CovarianceFct}}, and \eqn{A=B} there.
 
     Here multiplicative models are not allowed (yet).
   
@@ -57,6 +59,8 @@ GetMethodNames()
     Modified circulant embedding so that exact simulation is garantueed
     for further \emph{variogram} models, e.g. the fractal brownian one.
     Note that the simulated random field is always \emph{non-stationary}.
+    In fact, the circulant embedding is called with the Stein
+    hypermodel, see \command{\link{CovarianceFct}}, and \eqn{A=B} there.
 
     Here multiplicative models are not allowed (yet).
 
@@ -251,7 +255,7 @@ GetMethodNames()
 stabletest <- function(alpha, theta, size=512) {
   RFparameters(CE.trials=1, CE.tolIm = 1e-8, CE.tolRe=0, CE.force = FALSE,
                CE.useprimes=TRUE, CE.strategy=0, Print=2)
-  model <- list(list(model="cutoff", var=1, scale=0, kappa=c(1, theta, 1)),
+  model <- list(list(model="cutoff", var=1, kappa=c(1, theta, 1)),
                 "(",
                 list(model="stable", var=1, scale=1, kappa=alpha)
                 )

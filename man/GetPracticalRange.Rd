@@ -8,13 +8,15 @@
   (\code{variance=1}, \code{nugget=0}, \code{scale=1}) values 0.05
 }
 \usage{
-GetPracticalRange(model, kappas=NULL)
+GetPracticalRange(model, kappas=NULL, dim=1)
 }
 \arguments{
   \item{model}{string; covariance model, see \command{\link{CovarianceFct}}, or
     type \command{\link{PrintModelList}}\code{()} to get all options.}
   \item{kappas}{additional parameters of a parametrised model, see
     \command{\link{CovarianceFct}}.}
+  \item{dim}{space-time dimension; except for some few anisotropic
+    models, this parameter does not have an effect}
 }
 \details{
   In case the practical range has to be determined numerically, only a

@@ -7,6 +7,11 @@ RFparameters(PrintLevel=6, TBM2.num=EXTENDED.TESTING) ## 0
 ERRORCOVNOTALLOWED <- 4 ## check with RFsimu.h!!!
 ERRORCOVFAILED <- 14
 
+firstmodel <- if (interactive()) 1 else 18
+#firstmodel <- 23
+firstmethod <- 1
+#firstmethod <- 3
+
 models<- list(list("bessel",1),
               list("cauchy",1),
               list("cauchytbm",1:3),
@@ -39,13 +44,13 @@ methods <- c("cir", "cutoff", "intrinsic",
 
 working <- matrix(0, nrow=length(models), ncol=length(methods))
 for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
-  for (mo in 18:length(models)) {
+  for (mo in firstmodel:length(models)) {
     param <- c(0,1,1,scale, c(kappa1,2,2)[models[[mo]][[2]]])
     param <- c(0,1,1,scale, c(kappa1,2,3)[models[[mo]][[2]]])
     ## cauchytbm : kappa3 >= 3  for tbm2
     ##cat("\n", scale, kappa1, models[[mo]][[1]])
-    for (me in 1:length(methods)) {
-      cat(scale, kappa1, models[[mo]][[1]], methods[me],"\n")
+    for (me in firstmethod:length(methods)) {
+      cat(">>>>", scale, kappa1, models[[mo]][[1]], methods[me],"\n")
       ##cat("\n\nSTART")
       error <- InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
                              param=param,method=methods[me])

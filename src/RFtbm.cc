@@ -416,15 +416,21 @@ void SetParamTBMCE( int *action, int *force, double *tolRe, double *tolIm,
 
 void SetParamLines(int *action,int *nLines, double *linesimufactor, 
 		  double *linesimustep, tbm_lines *tbm, int *every, char *name) {
+  static double linesimustep_old=-1, linesimufactor_old=-1;
   if (*action) {
     tbm->lines=*nLines;
     if (*linesimufactor < 0.0 || *linesimustep < 0.0) 
-      PRINTF("Both linesimustep and linesimufactor and must be non-negative\n"); 
-      tbm->linesimufactor=*linesimufactor<0 ? 0 : *linesimufactor;
-      tbm->linesimustep=*linesimustep<0 ? 0 : *linesimustep;    
-    if (*linesimufactor!=0.0 && *linesimustep!=0.0 && GENERAL_PRINTLEVEL>0) 
-      PRINTF("linesimufactor is ignored\n"); 
+	PRINTF("Both %s.linesimustep and %s.linesimufactor and must be non-negative\n", name, name); 
+    tbm->linesimufactor=*linesimufactor<0 ? 0 : *linesimufactor;
+    tbm->linesimustep=*linesimustep<0 ? 0 : *linesimustep;    
+    if (*linesimufactor!=0.0 && *linesimustep!=0.0 && GENERAL_PRINTLEVEL>0 &&
+	(linesimustep_old != *linesimustep || 
+	 linesimufactor_old != *linesimufactor)) {
+      PRINTF("%s.linesimufactor is ignored!\n", name); 
+      linesimustep_old = *linesimustep;
+      linesimufactor_old = *linesimufactor;
       // else, i.e. both are zero, the old values are kept!
+    }
     tbm->every=*every;
   } else {
     *nLines=tbm->lines;
@@ -556,7 +562,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     if ((kc->method==method) && (kc->left)) {
       first = kc; 
 //  printf("tbm ansio first %f\n", first->aniso[0] );
-      if (CovList[first->nr].type==ISOHYPERMODEL) {
+      if (CovList[first->nr].type==ISOHYPERMODEL || 
+	  CovList[first->nr].type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; 
 	  goto ErrorHandling;
       }
@@ -569,14 +576,16 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       for (nonzero_pos=firstmatching; 
 	   nonzero_pos<=lastmatching && first->param[nonzero_pos]==0.0; 
 	   nonzero_pos++);
-      if (nonzero_pos > lastmatching) {Xerror=ERRORTRIVIAL; goto ErrorHandling;}
+      if (nonzero_pos > lastmatching) {
+	  Xerror=ERRORTRIVIAL; goto ErrorHandling;
+      }
       if (key->Time) {
         ce_dim2=TBM_FORCELAYERS;	
 	lasttimecomponent = lastmatching;
         firsttimecomponent = key->totalparam - key->timespacedim;
         assert(kc->truetimespacedim <= 4);
  	ce_dim2 |= CovList[kc->nr].type==SPACEISOTROPIC ||
-	    kc->truetimespacedim==4;
+	    kc->truetimespacedim == 1 + tbm_dim;
 	while (!ce_dim2 && kc->op && (++v)<key->ncov) {
 	  // here: only check whether within the multiplicative model
 	  // the anisotropy matrices are not multiplicatives of each other.
@@ -586,9 +595,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  double quot;
 	  int w;
 	  kc = &(key->cov[v]);
-	  assert(kc->truetimespacedim<=4);
-          ce_dim2 |= CovList[kc->nr].type==SPACEISOTROPIC ||
-	      kc->truetimespacedim==4;
+          ce_dim2 |= CovList[kc->nr].type==SPACEISOTROPIC;
 	  quot = kc->param[nonzero_pos] / first->param[nonzero_pos];
           for (w=ANISO; w<=lasttimecomponent; w++) {
 	    if (fabs(first->param[w] * quot - kc->param[w]) >= 
@@ -601,7 +608,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	}
       } else {
         ce_dim2 = false;
-	assert(kc->truetimespacedim <= 3); 
+	assert(kc->truetimespacedim <= tbm_dim); 
       }
       s->ce_dim = 1 + (int) ce_dim2;
       if (ce_dim2) {
@@ -731,6 +738,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 			 totaltimespacedim, s->x, s->aniso,
 			 s->center, dummylx, &diameter);
 
+    //   printf("center %f %f %f\n", s->center[0], s->center[1], s->center[2]);
+
     if (!ISNA(TBM_CENTER[0])) {
       double center[MAXDIM], diff;
       int n,k,g;
@@ -776,6 +785,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   if (diameter > MAXNN) {Xerror=ERRORNN; goto ErrorHandling;}
 
 
+//////////////////////////////////////////////////////////////////////
   if (GENERAL_PRINTLEVEL>4) PRINTF("extracting matching covariances...");
   actcov=0;
   cum_nParam[actcov]=0;
@@ -798,7 +808,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  Xerror=ERRORNOMULTIPLICATION; goto ErrorHandling;
 	}
       }
-      if (cov->type==ISOHYPERMODEL) {
+      if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; goto ErrorHandling;}
       if (cov->implemented[method] != IMPLEMENTED &&
 	  cov->implemented[method] != NUM_APPROX) { 
@@ -855,11 +865,15 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	continue;
       }
     
+      int kappas;
+      kappas = cov->kappas(1);
+      assert(kappas == cov->kappas(3)); // kappas should be independent of dim!
+      kappas++;
       cum_nParam[actcov + 1] = 
-	cum_nParam[actcov] + 1 + cov->kappas + 1 + 3 * (int) ce_dim2;
+	cum_nParam[actcov] + kappas + 1 + 3 * (int) ce_dim2;
       memcpy(&(ParamList[cum_nParam[actcov]]), kc->param, 
-	     sizeof(double) * (1 + cov->kappas));
-      Aniso = cum_nParam[actcov] + 1 + cov->kappas;
+	     sizeof(double) * kappas);
+      Aniso = cum_nParam[actcov] + kappas;
 
       ParamList[Aniso] = ((key->anisotropy) ? quot : 1.0 / quot) / linesimuscale;
 
@@ -1003,7 +1017,7 @@ void do_turningbands(key_type *key, int m, double *res)
 
   centery = stepy = deltay = centerz = stepz = deltaz = 0.0;
   gridlenx = gridleny = gridlenz = 1;
-  switch (key->spatialdim) {
+  switch (s->simuspatialdim) {
       case 3 : 
 	  centerz = s->center[2]; 
 	  if (s->simugrid) centerz -= s->x[XSTARTDIM3];
@@ -1104,10 +1118,12 @@ void do_turningbands(key_type *key, int m, double *res)
           for (v = 0, i = 0; i < totpoints; i++) {\
             register long index;\
 	    index = (long) (offset + INDEX);\
-/* if (true || !((index<ntot) && (index>=0))) {\
-//  printf("%d %d %d %d\n",\
- index, nn, ntot, v);\
- } */\
+/* if (!((index<ntot) && (index>=0))) { \
+  printf("%f %f %f (%f %f %f; %f %f %f)\n %d %d %d %d %d : %f %f %f\n",\
+  s->x[v], ex + s->x[v+1] , s->x[v+2], \
+	 ex, ey, ez, centerx, centery, centerz, \
+	 index, nn, ntot, v, nt, OFFSET, INDEX);\
+	 } */ \
             assert((index<ntot) && (index>=0));\
 	    res[i] += simuline[index];\
 	    v += simutimespacedim;\

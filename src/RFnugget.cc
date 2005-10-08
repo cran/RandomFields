@@ -98,7 +98,7 @@ int init_nugget(key_type *key, int m){
 
     if ((kc->method==Nugget) && (kc->left)) {
       meth->covlist[actcov] = v;
-      if (cov->type==ISOHYPERMODEL) {
+      if (cov->type==ISOHYPERMODEL|| cov->type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; goto ErrorHandling; }
       if (cov->implemented[Nugget] != IMPLEMENTED) {
 	  Xerror=ERRORNOTDEFINED; goto ErrorHandling;} // schliesst hyper mit aus
@@ -173,23 +173,30 @@ int init_nugget(key_type *key, int m){
   s->pos = NULL;
   kc = &(key->cov[meth->covlist[0]]);
   s->simple = key->timespacedim == kc->truetimespacedim;
+  s->simugrid = kc->simugrid;
   if (key->anisotropy && !s->simple) {
     int *pos, oldpos;
     if (NUGGET_TOL==0.0 && GENERAL_PRINTLEVEL>=1)
       PRINTF("\nThe anisotropy matrix does not have full rank and RFparameters()$nugget.tol equals 0. From a theoretical point of view that's fine, but the simulations will probably be odd. Is this really what you want?\n");
     if ((Xerror=Transform2NoGrid(key, meth->covlist[0])) != NOERROR) 
       goto ErrorHandling;
-    if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0) {
-      Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
-    }
-    ordering(kc->x, key->totalpoints, kc->truetimespacedim, pos);
-    oldpos = pos[0]; 
-    for (i=1 /* ! */; i<key->totalpoints; i++) {
-      if (equal(oldpos, pos[i], kc->x, kc->truetimespacedim)) 
+    if (kc->simugrid) {
+      int d, dim=key->timespacedim + 1;
+      for (d=i=0; i<key->timespacedim; i++, d+=dim)
+	s->diag[i] = kc->param[ANISO + d];
+    } else {
+      if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0) {
+	Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+      }
+      ordering(kc->x, key->totalpoints, kc->truetimespacedim, pos);
+      oldpos = pos[0];
+      for (i=1 /* ! */; i<key->totalpoints; i++) {
+	if (equal(oldpos, pos[i], kc->x, kc->truetimespacedim)) 
 	  pos[i]= -1 - pos[i];
-      else oldpos=pos[i];
-    }
+	else oldpos=pos[i];
+      }
     s->pos = pos;
+    }
   }
   nugget_effect = CovFct(ZERO, 1, key->cov, key->meth[m].covlist, actcov, false);
   s->sqrtnugget = sqrt(nugget_effect);
@@ -201,12 +208,39 @@ int init_nugget(key_type *key, int m){
   return Xerror;
 }
 
+void nuggetgrid(double *res, bool *zerodiag, int *length, int k,
+		double sqrtnugget, int *p, int *p_ref) {
+//  printf("%d %d %d\n", k, *p, *p_ref);
+  if (k<0) {
+    if (*p_ref < 0) {
+      res[(*p)++] = GAUSS_RANDOM(sqrtnugget);
+//      printf("res[*p=%d]=%f\n", (*p)-1, res[(*p)-1]);
+    } else {
+      res[(*p)++] = res[(*p_ref)++];
+    }
+  } else {
+    int i, p_save;
+    if (*p_ref<0) {
+      p_save = *p;
+      nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref);
+      for (i=1; i<length[k]; i++) {
+	*p_ref = (zerodiag[k]) ? p_save : -1;
+//	printf("k=%d ii=%d %d %d\n", k, i, zerodiag[k], *p_ref);
+	nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref); 
+      }
+    } else {
+      for (i=0; i<length[k]; i++) {
+	nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref);
+      }
+    }
+  }
+}
+
 void do_nugget(key_type *key, int m, double *res) {
   methodvalue_type *meth; 
   double sqrtnugget;
   nugget_storage* s;
   long nx, endfor;
-
 
   meth = &(key->meth[m]);
   assert(meth->S != NULL);
@@ -217,14 +251,25 @@ void do_nugget(key_type *key, int m, double *res) {
     for (nx=0, endfor=key->totalpoints; nx<endfor; nx++)
       res[nx] += GAUSS_RANDOM(sqrtnugget);
   } else {
-    int p;
-    double dummy = RF_NAN; // just to avoid warnings from the compiler
-    assert(s->pos[0]>=0);
-    for (nx=0; nx<key->totalpoints; nx++) {
-      if ((p = s->pos[nx]) < 0) p= -1 - p; // if p<0 then take old variable
-      // and -p-1 is the true index 
-      else dummy = GAUSS_RANDOM(sqrtnugget);
-      res[p] += dummy;
+    if (s->simugrid) {
+      int p_ref, p ,d;
+      bool zerodiag[MAXDIM];
+      for (d=0; d<key->timespacedim; d++) 
+	zerodiag[d] = (s->diag[d] == 0.0);
+      p = 0;
+      p_ref = -1;
+      nuggetgrid(res, zerodiag, key->length, key->timespacedim-1, sqrtnugget, 
+		 &p, &p_ref);
+    } else {
+      int p;
+      double dummy = RF_NAN; // just to avoid warnings from the compiler
+      assert(s->pos[0]>=0);
+      for (nx=0; nx<key->totalpoints; nx++) {
+	if ((p = s->pos[nx]) < 0) p= -1 - p; // if p<0 then take old variable
+	// and -p-1 is the true index 
+	else dummy = GAUSS_RANDOM(sqrtnugget);
+	res[p] += dummy;
+      }
     }
   }
 }

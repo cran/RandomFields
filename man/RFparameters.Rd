@@ -536,21 +536,28 @@
   the given parameters in full name.
 
   Otherwise the complete list of parameters is returned. Further the
-  values of the following internal readonly variables are returned
-  
-  \item{\code{covmaxchar}}{max. name length for variogram/covariance
-  models}
-  \item{\code{covnr}}{number of currently implemented
-    variogram/covariance models}
-  \item{\code{distrmaxchar}}{max. name length for a distribution}
-  \item{\code{distrnr}}{number of currently implemented
-    distributions} 
-  \item{\code{maxdim}}{maximum number of dimensions for a
-    random field}
-  \item{\code{maxmodels}}{maximum number of elementary models in
-    definition of a complex covariance model.}
-  \item{\code{methodmaxchar}}{max. name length for methods}
-  \item{\code{methodnr}}{number of currently implemented simulation methods}
+  values of the following internal readonly variables are returned:
+  \cr
+  * \code{covmaxchar}:  max. name length for variogram/covariance
+  models
+  \cr
+  * \code{covnr}: number of currently implemented
+  variogram/covariance models
+  \cr
+  * \code{distrmaxchar}: max. name length for a distribution
+  \cr
+ * \code{distrnr}: number of currently implemented
+    distributions
+  \cr
+ * \code{maxdim}: maximum number of dimensions for a
+    random field
+  \cr
+  * \code{maxmodels}: maximum number of elementary models in
+    definition of a complex covariance model
+  \cr
+ * \code{methodmaxchar}: max. name length for methods
+  \cr
+ * \code{methodnr}: number of currently implemented simulation methods
 }
 \references{
   Schlather, M. (1999) \emph{An introduction to positive definite

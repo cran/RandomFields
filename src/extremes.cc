@@ -384,7 +384,8 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	if (GENERAL_PRINTLEVEL>=3) {
 	  counter++;
 	  if (counter % 10==0) 
-	    PRINTF("%d: %d %e %e \n",counter,control,invpoisson,threshold); 
+	      PRINTF("%d, %d-th position: value=%f threshold=%f \n",
+		     counter, control, RES[control], threshold); 
 	}
       } // while
       

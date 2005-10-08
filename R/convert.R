@@ -121,27 +121,35 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
     ##                                                 for checks later on 
     stopifnot(all(c(lapply(model, function(x) length(x$v)),
                     recursive=TRUE)==1))
-    AnisoIso <- "do not mix isotropic definitions with anisotropic ones"
-    if (anisotropy <- is.null(model[[1]]$s)) {
+    anull <- sapply(model, function(x) is.null(x$a))
+    snull <- sapply(model, function(x) is.null(x$s))
+    if (!all(anull) && !all(snull))
+      STOP("do not mix isotropic definitions with anisotropic ones")
+    scale.except <- integer(lm)
+    aniso.except <- integer(lm)
+    .C("GetModelException", covnr, lm, scale.except, aniso.except,
+        PACKAGE="RandomFields", DUP=FALSE)
+    if (anisotropy <- !all(anull)) {
       ## here, anisotropy parameter must be given also for nugget
       ## (think of higher dimensions, where nugget is only in one direction)
-      if (sum(sapply(model, function(x) !is.null(x$a)))!=lm)
+      if (any(anull & !aniso.except))
         STOP("anisotropy parameters are not given for all submodels")
-      if (length(unlist(lapply(model, function(x) x$s)))!=0) STOP(AnisoIso)
       if (missing.timespacedim)
-        timespacedim <- as.integer(sqrt(length(model[[1]]$a)))
+        timespacedim <- as.integer(sqrt(length(model[[which(!anull)[1]]]$a)))
+      
+      repl <- function(x) c(x, list(a=diag(rep(1.0, timespacedim))))
+      model[anull] <- lapply(model[anull], repl)
+
       n.par <- 1 + timespacedim^2   
-      param <-
-        lapply(model, function(x) c(var=x$v, kappa=x$k, aniso=as.matrix(x$a),
-                                    recursive=TRUE))
+      param <- lapply(model, function(x) c(var=x$v, kappa=x$k,
+                                           aniso=as.matrix(x$a), recursive=TRUE))
     } else {
       ## in case of isotropy, scale for nugget does not make sense
       ## so, if scale is not given (by default), add scale=1.0
-      index <- (covnr==nugget.nr) & sapply(model, function(x) is.null(x$s))
-      if (sum(sapply(model, function(x) !is.null(x$s))) + sum(index) != lm)
+      if (any(snull & !scale.except))
         STOP("scale parameter is not given for all submodels")
-      model[index] <- lapply(model[index], function(x) c(x, list(s=1.0)))
-      if (length(unlist(lapply(model, function(x) x$a)))!=0) STOP(AnisoIso)
+      model[snull] <- lapply(model[snull],
+                             function(x) c(x, list(s=1.0)))
       n.par <- 2
       param <- lapply(model, function(x) c(var=x$v, kappa=x$k, scale=x$s))
     }
@@ -223,13 +231,15 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
   }
 
   kappas <- integer(lm)
-  .C("GetNrParameters", as.integer(covnr), as.integer(lm), kappas,
-     PACKAGE="RandomFields", DUP=FALSE)
+  .C("GetNrParameters", as.integer(covnr), as.integer(lm),
+     as.integer(timespacedim), kappas, PACKAGE="RandomFields", DUP=FALSE)
 
   if ( any(idx <- (sapply(param, length) != n.par + kappas) | (k!=kappas)) ) {
     STOP(paste("number of parameters in model #", which(idx), 
-               " is not correct: ", (n.par + kappas)[idx],"/", kappas[idx],
-               " expected; got ", sapply(param,length)[idx],"/", k[idx], sep=""))
+               " is not correct: ",
+               kappas[idx], " genuine parameters and ",
+               n.par, " parameters for variance and scale expected; got ",
+               k[idx], " and ", sapply(param,length)[idx] - k[idx] ,  sep=""))
   }
   
   if (is.null(method)) method <- -1
@@ -302,6 +312,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   }
   dim.scale <- if (l$anisotropy) l$timespacedim^2 else 1
   k  <- c(0, cumsum(.C("GetNrParameters", as.integer(l$covnr), as.integer(lc),
+                       as.integer(dim.scale),
                        k=integer(lc), PACKAGE="RandomFields", DUP=FALSE)$k +
                     1 + dim.scale))
   ol <- op.list[l$op + 1] == "+"

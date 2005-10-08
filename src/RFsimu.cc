@@ -77,7 +77,7 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
       if (cov->implemented[Method] != IMPLEMENTED) {
 	return ERRORNOTDEFINED; 
       }
-      if (cov->type==ISOHYPERMODEL) {
+      if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	if (!MultiplyAndHyper) error = ERRORHYPERNOTALLOWED;
 	else {
 	  error = cov->checkNinit(keycov, COVLISTALL, key->ncov - v - 1,
@@ -108,7 +108,8 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
 	if (!MultiplyAndHyper) return ERRORNOMULTIPLICATION;
       } // meth->actcov > 0
       int w, nsub;
-      nsub = cov->type==ISOHYPERMODEL ? (int) keycov->param[HYPERNR] : 0;
+      nsub = (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) ? 
+	  (int) keycov->param[HYPERNR] : 0;
       for (w=0; w<nsub; w++) {
 	keycov->left = false;
 	keycov++;
@@ -136,11 +137,11 @@ void COVINFO_NULL(covinfo_type *cov){
     c->truetimespacedim = c->op = 0;
     c->nr = currentNrCov; // undefined model
     c->method = Forbidden;
-    c->genuine_time_component = c->simugrid = false;
+    c->genuine_last_dimension = c->simugrid = false;
     c->left = true;
     param = c->param;
-    for (d=0; d<MAXDIMSQ; d++) param[d] = c->aniso[d] = 0.0;
-    for (; d<TOTAL_PARAM; param[d++]=0.0);
+    for (d=0; d<MAXDIMSQ; d++) param[d] = c->aniso[d] = RF_NAN;
+    for (; d<TOTAL_PARAM; param[d++]=RF_NAN);
   }
 }
 
@@ -316,7 +317,10 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
     return NOERROR;
   }
   // total number of coordinates to store
-  total = truetimespacedim * (simugrid ? 3 : key->totalpoints);
+  total = simugrid 
+    ? (key->timespacedim * 3)
+    : (truetimespacedim * key->totalpoints);
+//  printf("2nogr %d %d %d %d \n", total, truetimespacedim, simugrid, key->totalpoints);
   if ((x = *xx = (double*) malloc(sizeof(double) * total))==NULL)
     return ERRORMEMORYALLOCATION;
 
@@ -329,7 +333,8 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
 	for (i=0; i<key->length[0]; i++)
 	  for (n=d=0; d<truetimespacedim; d++, k++) {
  	    x[k] = 0.0;
-	    for(w=0; w<key->timespacedim; w++) x[k] += aniso[n++] * key->x[w][i];
+	    for(w=0; w<key->timespacedim; w++)
+	      x[k] += aniso[n++] * key->x[w][i];
 	    x[k] += aniso[n++] * t; //auf keinen Fall nach vorne holen
 	  }
     } else { 
@@ -339,6 +344,7 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
 	    k = i;
 	    for (n=d=0; d<key->timespacedim; d++, k+=3) {
               //not the reduced matrix!!
+//	      printf("2nogrid %d %f\n", k, x[k]);
  	      x[k] = 0.0;
 	      for(w=0; w<key->timespacedim; w++) 
 		x[k] += aniso[n++] * key->x[w][i]; 
@@ -496,9 +502,9 @@ double DerivCovFct(double *x, int dim, covinfo_arraytype keycov,
 //int zaehler = 0;
 double CovFct(double *x, int dim, covinfo_arraytype keycov,
 		 covlist_type covlist, int ncov, bool anisotropy) {
-  int v, ani, k, j, endfor, ncovM1,  nsub, 
-      subdim = 1;
-  double  var,  zz, zw, result, d, z[MAXDIM];
+  int v, ani, k, j, endfor, ncovM1,  nsub, subdim;
+  double  var,  zz, zw, result, d, z[MAXDIM + 2];
+  static double ZERO[MAXDIM] = {0,0,0,0};
   covinfo_type *kc;
   cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */
 
@@ -531,21 +537,31 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
           /* calculations are prevend as being TRIVIAL(generally, independent*/
           /* of being SPACEISOTROPIC or not) -- unclear whether relaxation in*/
           /* CheckAndBuildCov possible */
-          zz = 0.0;
-	  endfor = kc->truetimespacedim - 1;
-	  for (j=0; j<endfor; j++) zz += z[j] * z[j];
-	  if (cov_type==FULLISOTROPIC || cov_type==ISOHYPERMODEL) 
-	      zz += z[endfor] * z[endfor];
-	  else z[1]=z[endfor];
-	  z[0] = sqrt(zz);
-	  if (cov_type==ISOHYPERMODEL) {
-	    nsub = (int) kc->param[HYPERNR];
+	  if (cov_type != ANISOHYPERMODEL) {
+            //FULLISOTROPIC, ISOHYPERMODEL, spaceisotropic
+            zz = 0.0;
+	    endfor = kc->truetimespacedim - 1;
+	    for (j=0; j<endfor; j++) zz += z[j] * z[j];
+	    if (cov_type==FULLISOTROPIC || cov_type==ISOHYPERMODEL) 
+		zz += z[endfor] * z[endfor];
+	    else z[1]=z[endfor]; // spaceisotropic
+	    z[0] = sqrt(zz);
+	  }
+	  if (cov_type==ISOHYPERMODEL || cov_type==ANISOHYPERMODEL) {
+	    nsub = (int) kc->param[HYPERNR]; 
+	    subdim = cov_type==ISOHYPERMODEL ? 1 : dim;
+	    // subdim + 1 : C(0)
+	    // subdim : C(x)
 	    z[subdim] =CovFct(x, dim, keycov, &(covlist[v+1]), nsub, anisotropy);
+	    z[subdim+1] =CovFct(ZERO, dim, keycov, &(covlist[v+1]), nsub, 
+				anisotropy);
+	    // printf("%f %f %f %f %d \n",zw,  z[0], z[1], z[2], subdim);
 	    zw *= cov->cov(z, kc->param, subdim);
+	    assert(zw < 100000000.00);
 	    v += nsub;
 	    kc = &(keycov[covlist[v]]);
 	  } else {
-	    zw *= cov->cov(z, kc->param, 1 +(int)(cov_type==SPACEISOTROPIC));
+	    zw *= cov->cov(z, kc->param, 1 + (int)(cov_type==SPACEISOTROPIC));
 	  }
 	}
 	if ((v<ncovM1) && (kc->op==0)) break;
@@ -558,6 +574,7 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
       for (d=0.0, j=0; j<dim; j++) {d += x[j] * x[j];}
       d = sqrt(d);
     }
+    subdim = 1;
     for (v=0; v<ncov; v++) {
       zw = var = 1.0;
       for(; v<ncov; v++) {
@@ -569,8 +586,12 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 	if (cov->type==ISOHYPERMODEL) {
 	   nsub = (int) kc->param[HYPERNR];
            z[0] = d * kc->aniso[0];
+	   // subdim + 1 : C(0)
+	   // subdim : C(x)
 	   z[subdim] = CovFct(x, dim, keycov, &(covlist[v+1]), nsub,
 			      anisotropy);
+	   z[subdim +1] = CovFct(ZERO, dim, keycov, &(covlist[v+1]), nsub,
+				 anisotropy);
 //	   if (zaehler < 100) printf("-----   %f %f %f %f\n", z[0], z[1],
 //				     d, kc->aniso[0]);
 	   zw *= cov->cov(z, kc->param, subdim);
@@ -632,10 +653,12 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 	      (v<ncov-1) ? op[v] : -1);
 
     // Variance and Kappa
-    *equal &= !memcmp(kc->param, ParamList, sizeof(double)*(cov->kappas+1));
-    memcpy(kc->param, ParamList, sizeof(double)*(cov->kappas+1));
-    ParamList += 1 + cov->kappas;
-    totkappas += cov->kappas;
+    int kappas;
+    kappas = cov->kappas(timespacedim) + 1;
+    *equal &= !memcmp(kc->param, ParamList, sizeof(double) * kappas);
+    memcpy(kc->param, ParamList, sizeof(double)* kappas);
+    ParamList += kappas;
+    totkappas += kappas - 1;
     if (kc->param[VARIANCE]<0.0) return ERRORNEGATIVEVAR;
 
     // op
@@ -644,52 +667,60 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
       kc->op = op[v];
       //     printf(" type %d %d %d %d %d %d %d\n", v, cov->type, ISOHYPERMODEL,
 //	      kc->op, false xor false, false xor true, true xor true);
-      if ((cov->type == ISOHYPERMODEL) xor (kc->op == 2))
+      if ((cov->type == ISOHYPERMODEL || cov->type == ANISOHYPERMODEL)
+	  xor (kc->op == 2))
 	  return ERRORPARENTHESIS;
     }
-    if (cov->type == ISOHYPERMODEL) {
-      kc->simugrid = false;
-      kc->genuine_time_component = Time;
-      ParamList += pAniso; // pAniso is ignored, but taken over from subsequent
-      //                      model
-    } else {
-      // not hypermodel:
-      // 
-      // natural scaling
-      GetNaturalScaling(&(kc->nr), &(kc->param[KAPPA]),
-			&naturalscaling, &newscale, &error);
-      if (error != NOERROR) return error;
-      if (anisotropy) newscale = 1.0 / newscale;
-      for (i=pAniso - 1; i>=0; i--)
+    // not hypermodel:
+    // 
+    // natural scaling
+    GetNaturalScaling(&(kc->nr), &(kc->param[KAPPA]),
+		      &naturalscaling, &newscale, &error);
+    if (error != NOERROR) return error;
+    if (anisotropy) newscale = 1.0 / newscale;
+    for (i=pAniso - 1; i>=0; i--)
 	param[ANISO + i] = newscale * ParamList[i];
-      if (!anisotropy) {
-        if (cov->type==SPACEISOTROPIC || cov->type==ANISOTROPIC)
+    if (!anisotropy) {
+      if (cov->type==SPACEISOTROPIC || cov->type==ANISOTROPIC || 
+	  cov->type==ANISOHYPERMODEL)
 	  return ERRORNOTANISO;
-	if (cov->cov==nugget && param[SCALE]==0.0) param[SCALE] = 1.0;
-	if (param[SCALE] <= 0.0) return ERRORNEGATIVESCALE;
-	if (Time) return ERRORTIMENOTANISO; 
-      }
-      ParamList += pAniso;
-      *equal &= !memcmp(&(kc->param[ANISO]), &(param[ANISO]), 
-			sizeof(double)* pAniso);
-      memcpy(&(kc->param[ANISO]), &(param[ANISO]), sizeof(double) * pAniso);
+      if (cov->cov==nugget && param[SCALE]==0.0) param[SCALE] = 1.0;
+      if (param[SCALE] <= 0.0) return ERRORNEGATIVESCALE;
+      if (Time) return ERRORTIMENOTANISO; 
+    }
+    ParamList += pAniso;
+    *equal &= !memcmp(&(kc->param[ANISO]), &(param[ANISO]), 
+		      sizeof(double)* pAniso);
+    memcpy(&(kc->param[ANISO]), &(param[ANISO]), sizeof(double) * pAniso);
+    
+    // reduced anisotropy matrix and true grid, time and dimension
+///////
+    // for hypermodels it is very unclear, how the dimension should be taken
+    GetTrueDim(anisotropy, timespacedim, kc->param, cov->type, 
+	       &(kc->genuine_last_dimension), 
+	       &(kc->truetimespacedim), kc->aniso);
+    kc->dim = timespacedim;
+    if (cov->type==SPACEISOTROPIC && !kc->genuine_last_dimension) {
+	return ERRORNOTDEFINED; /// give better message !
+    }
 
-      // reduced anisotropy matrix and true grid, time and dimension
-      kc->genuine_time_component = Time;
-      GetTrueDim(anisotropy, timespacedim, kc->param, cov->type, 
-		 &(kc->genuine_time_component), 
-		 &(kc->truetimespacedim), kc->aniso);
-
-      if (kc->truetimespacedim==0) return ERRORTRIVIAL;
-      int maxdim, dummy;
-      cov->info(kc->param, &maxdim, &dummy);
-      if (maxdim < kc->truetimespacedim) return ERRORCOVNOTALLOWED;
-      kc->simugrid = // kc->param[ANISO] !!
-	  grid && (!anisotropy || is_diag(&(kc->param[ANISO]), timespacedim));
-
+    if (kc->truetimespacedim==0) {
+	return ERRORTRIVIAL;
+    }
+    int maxdim, dummy;
+    cov->info(kc->param, &maxdim, &dummy);
+//    printf("%d %d\n", maxdim, kc->truetimespacedim); 
+    if (maxdim < kc->truetimespacedim) return ERRORCOVNOTALLOWED;
+    kc->simugrid = // kc->param[ANISO] !!
+	grid && (!anisotropy || is_diag(&(kc->param[ANISO]), timespacedim));
+    if (cov->type == ISOHYPERMODEL || cov->type == ANISOHYPERMODEL) {
+////////////////////////
+	kc->simugrid = false; // not programmed yet -- save version !!!!!!
+///////////////////////
+    } else {
       error = cov->check(kc->param, kc->truetimespacedim, Nothing);
-      if (error != NOERROR) return error;
-    } 
+      if (error != NOERROR) return error; 
+    }
   }
 
   for (v=ncov-1; v>=0; v--) {
@@ -700,14 +731,22 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     // this loop must be in reverse order for the same reasons.
     kc = &(keycov[v]);
     cov = &(CovList[kc->nr]);
-    if (cov->type == ISOHYPERMODEL) {
+    if (cov->type == ISOHYPERMODEL || cov->type == ANISOHYPERMODEL) {
       // take over the anisotropy structure from the first submodel
-      memcpy(&(kc->param[ANISO]), &(keycov[v+1].param[ANISO]),
+// 28.9.05: not a good idea !!!
+//      memcpy(&(kc->param[ANISO]), &(keycov[v+1].param[ANISO]),
+//	     sizeof(double) * pAniso);
+
+/*
+  memcpy(&(kc->param[ANISO]), &(keycov[v+1].param[ANISO]),
 	     sizeof(double) * pAniso);
-      GetTrueDim(anisotropy, timespacedim, kc->param,
+     GetTrueDim(anisotropy, timespacedim, kc->param,
 		 CovList[keycov[v+1].nr].type, 
-		 &(kc->genuine_time_component), 
-		 &(kc->truetimespacedim), kc->aniso);
+		&(kc->genuine_last_dimension), //
+		&(kc->truetimespacedim), kc->aniso);//
+     kc->aniso[0] = RF_NAN;
+*/
+
       error = cov->checkNinit(kc, COVLISTALL, ncov-v-1, Nothing);
       if (error != NOERROR) return error;
     }
@@ -767,7 +806,7 @@ int CheckCovariance(int *covnr, double *p, int np,
     kc = &(keycov[v]);
     cov = &(CovList[kc->nr]);
     if (cov->cov==NULL) return ERRORNOTPROGRAMMED;
-    if (cov->type==ISOHYPERMODEL) {
+    if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	v += (int) kc->param[HYPERNR];
     } else {
 	if (cov->variogram) return ERRORNOTDEFINED; 
@@ -1087,6 +1126,8 @@ void init_method_list(key_type *key)
   SimulationType DirectFst = key->totalpoints <= best_dirct ? Direct : Forbidden;
   SimulationType DirectLst = key->totalpoints <= max_dirct ? Direct : Forbidden;
 #define nStandard 6
+#define TBM3pos 5
+#define TBM2pos 4
   SimulationType Standard[nStandard] = 
     {CircEmbed, CircEmbedIntrinsic, CircEmbedCutoff, SpectralTBM, TBM2, TBM3};
 
@@ -1109,8 +1150,13 @@ void init_method_list(key_type *key)
     // special case: Nugget (part 1)
     if (cov->cov==nugget) continue;
     
-    Allowed[SpectralTBM] = Allowed[TBM2] =  Allowed[Hyperplane] = 
+    Allowed[TBM2] = Allowed[SpectralTBM] =Allowed[Hyperplane] =
 	key->cov[v].truetimespacedim <= 2;
+    if (key->cov[v].truetimespacedim == 3 && key->grid) {
+	Allowed[TBM2] = true;
+	Standard[TBM2pos] = TBM3;
+	Standard[TBM3pos] = TBM2;
+    }
     for (i=0; i<nraw; i++) raw[i] = Forbidden;
     int *implemented=cov->implemented, maxdim, CEbadlybehaved;
     for (i=0; i<Nothing; i++) 
@@ -1118,7 +1164,8 @@ void init_method_list(key_type *key)
 				  implemented[i] == NUM_APPROX);
     if (DECISION_PARAM.stationary_only==DECISION_CASESPEC && 
 	!cov->variogram) allowed[CircEmbedIntrinsic] = false;
-    if (DECISION_PARAM.exactness != DECISION_FALSE && implemented[i]==NUM_APPROX)
+    if (DECISION_PARAM.exactness != DECISION_FALSE && 
+	implemented[i]==NUM_APPROX)
       allowed[TBM2] = false;
 
     // multiplicative models
@@ -1164,7 +1211,7 @@ void init_method_list(key_type *key)
     for (i=0; i<nLastDefault; i++) raw[nr++] = LastDefault[i];
     nml = 0;
     for (i=0; i<nr; i++) {
-      if (raw[i]!=Forbidden && allowed[raw[i]]) {
+     if (raw[i]!=Forbidden && allowed[raw[i]]) {
 	key->ML[v][nml++] = raw[i];
 	allowed[raw[i]] = false;
       }
@@ -1277,7 +1324,7 @@ int internal_InitSimulateRF(double *x, double *T,
 
 //    printf("internal %d %d \n", covnr[0], covnr[1]);
 
-  bool user_defined, simple_definition;
+  bool user_defined, simple_definition, one_model_only;
   int i, last_incompatible, d,  v, M, err_occurred, error, timespacedim;
   unsigned long totalBytes;
   int method_used[(int) Nothing + 1];
@@ -1296,7 +1343,7 @@ int internal_InitSimulateRF(double *x, double *T,
   timespacedim = spatialdim + (int) Time; // may not set to key->timespacedim,
   //                      since key->timespacedim possibly by DeleteKeyNotTrend
 //  printf("timespacedim %d %d %d\n", timespacedim , spatialdim , (int) Time);
-  if ((spatialdim<1) || (timespacedim>MAXDIM) || (Time>1) || (Time<0)){
+  if (spatialdim<1 || timespacedim>MAXDIM){
     error=ERRORDIM; goto ErrorHandling;}  
   user_defined = method[0] >= 0;
   totalBytes =  sizeof(double) * lx * spatialdim;
@@ -1463,10 +1510,13 @@ int internal_InitSimulateRF(double *x, double *T,
 
   // simple definition of the covariance function?
   // (the only definition used up to version 1.0 of RandomFields) 
-  simple_definition = key->ncov==1 ||
-    (key->ncov==2 && !key->anisotropy && (key->cov[0].method==Nugget ||
-					  key->cov[1].method==Nugget));
-
+  one_model_only = simple_definition =
+      key->ncov==1 ||
+      (key->ncov==2 && !key->anisotropy && (key->cov[0].method==Nugget ||
+					    key->cov[1].method==Nugget));
+  for (v=key->ncov-2; v>=0; v--)  // above one_model_only only for making
+      // sure that it is initialised
+      if (!(one_model_only = op != 0)) break;
   err_occurred = NOERROR;
   error = ERROROUTOFMETHODLIST;
   key->n_unimeth = 0;
@@ -1485,7 +1535,8 @@ int internal_InitSimulateRF(double *x, double *T,
       if (kc->method >= (int) Nothing) {
 //	printf("kc->method=%d %d %d \n", v, kc->method, (int) Nothing);
 	error=ERRORNOTDEFINED; goto ErrorHandling;}
-      if (CovList[kc->nr].type == ISOHYPERMODEL) {
+      if (CovList[kc->nr].type == ISOHYPERMODEL || 
+	  CovList[kc->nr].type == ANISOHYPERMODEL) {
 	  int i, nc = (int) kc->param[HYPERNR];
 	  if (nc <= 0 || nc + v >= key->ncov) {
 	      error=ERRORHYPERNR; goto ErrorHandling;}
@@ -1505,7 +1556,8 @@ int internal_InitSimulateRF(double *x, double *T,
     }
   } else {
     for (v=0; v<key->ncov; v++) {
-	if (CovList[key->cov[v].nr].type == ISOHYPERMODEL) {
+	if (CovList[key->cov[v].nr].type == ISOHYPERMODEL ||
+	    CovList[key->cov[v].nr].type == ANISOHYPERMODEL) {
 	    error=ERRORHYPERMETHOD; goto ErrorHandling; 
 	}
     }
@@ -1562,7 +1614,7 @@ int internal_InitSimulateRF(double *x, double *T,
 //     printf("front m loop keynunimeth %d\n", key->n_unimeth);
    
     for (M=0; M<key->n_unimeth; M++) {
-//      printf("M=%d\n", M);
+	// printf("M=%d\n", M, key->n_unimeth);
       if (!key->meth[M].unimeth_alreadyInUse) {
 	// unimeth_alreadyInUse: to avoid that method is called again
 	// when next while loop, which would leed to a double i.e. an incorrect
@@ -1577,9 +1629,16 @@ int internal_InitSimulateRF(double *x, double *T,
 	// da init_method ueberschreibt und *danach* entscheidet, ob
 	// die methode funktioniert -- ueber key->method ist es zu schwierig
 	// da eine methode mehrmals verwendet werden kann
-	if (GENERAL_PRINTLEVEL>=4)
-          PRINTF("\n%sInit:  method %d (%s); currently %d method(s) in use\n",
+	if (GENERAL_PRINTLEVEL>=4) {
+          PRINTF("\n%sInit:  method %d (%s); %d method instance(s) in use\n",
 		 errorloc_save, M, METHODNAMES[meth->unimeth], key->n_unimeth);
+	  if (GENERAL_PRINTLEVEL>=5)
+	    for (v=0; v<key->ncov; v++)
+	      printf("%d (%s): left=%s, method=%s\n",
+		     v, CovList[key->cov[v].nr].name,
+		     key->cov[v].left ? "true" : "false", 
+		     METHODNAMES[key->cov[v].method]);
+	}
 	assert(meth->destruct==NULL);
 	assert(meth->S==NULL);
 	// printf("unimeth, nothing %d %d \n:", meth->unimeth,  Nothing);
@@ -1619,8 +1678,9 @@ int internal_InitSimulateRF(double *x, double *T,
 //		}
 //		printf("left: %d %d\n", v, left[v]);
 	      }
-	      if (simple_definition && GENERAL_PRINTLEVEL>2) 
-		ErrorMessage(Merr,error);
+	      if (simple_definition && GENERAL_PRINTLEVEL>2) {
+		ErrorMessage(Merr,err_occurred);
+	      }
 	      error = err_occurred; // error may occur anywhere
 	      //                     and final err_occured might be 0
 	}// switch
@@ -1654,7 +1714,7 @@ int internal_InitSimulateRF(double *x, double *T,
 
 //  printf("ERROR = %d\n", error);
 
-  if (error!=NOERROR && !simple_definition) {
+  if (error!=NOERROR && !simple_definition && !one_model_only) {
     int zaehler, vplus;
     if (user_defined && // to be set in sensitive way. not done yet
 	(err_occurred == -3 || err_occurred == -4)) goto ErrorHandling;
@@ -1696,7 +1756,8 @@ int internal_InitSimulateRF(double *x, double *T,
 	  for (w=0; w<key->ncov; w++) left[w] = key->cov[w].left; // sicherung,
 	  kcdummy = kc;
 	  while (v + vplus < key->ncov && kcdummy->op) {
-	    if (CovList[kcdummy->nr].type==ISOHYPERMODEL) {
+	    if (CovList[kcdummy->nr].type==ISOHYPERMODEL || 
+		CovList[kcdummy->nr].type==ANISOHYPERMODEL) {
 	      // too complicated for the moment; should be improved
 	      error = ERRORFAILED;
 	      goto ErrorHandling;
@@ -1916,18 +1977,17 @@ SEXP GetExtModelInfo(SEXP keynr) {
       key_type *key;
       key = &(KEY[knr]);
       return GetModelInfo(key->cov, key->ncov, key->totalparam,
-			  key->timespacedim, key->totalpoints);
+			  key->totalpoints);
     }
   } else if (knr == -1) {
     if (user_ncov>0)
       return GetModelInfo(user_keycov, user_ncov, user_anisotropy ?  
-			  ANISO + user_dim * user_dim : SCALE, user_dim, 0);
+			  ANISO + user_dim * user_dim : SCALE, 0);
   } else if (knr == -2) {
     if (Unchecked_ncov > -1)
       return GetModelInfo(Unchecked_keycov, Unchecked_ncov, 
 			  Unchecked_anisotropy 
-			  ? ANISO + Unchecked_dim * Unchecked_dim : SCALE,
-			  Unchecked_dim, 0);  
+			  ? ANISO + Unchecked_dim * Unchecked_dim : SCALE, 0);  
   }
   return allocVector(VECSXP, 0);
 }

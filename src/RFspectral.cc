@@ -81,7 +81,7 @@ int init_simulatespectral(key_type *key, int m) {
       assert(keycov->param[VARIANCE] >= 0.0);
       meth->covlist[actcov] = v;
       cov = &(CovList[keycov->nr]);
-      if (cov->type==ISOHYPERMODEL) {
+      if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; 
 	  goto ErrorHandling;
       }

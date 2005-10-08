@@ -181,7 +181,8 @@ ShowModels <- function(x, y=NULL,
   } else stopifnot(length(all.param)==3) ## var, nugg, scale
 
   npar <- as.list(.C("GetNrParameters", as.integer(0:(n-1)), as.integer(n),
-             k=integer(n), PACKAGE="RandomFields")$k)
+                     as.integer(dim),
+                     k=integer(n), PACKAGE="RandomFields")$k)
   npar <- lapply(npar, function(x) x <- rep(1,x))
   type <- lapply(npar, function(x) rep("real", length(x)))
 

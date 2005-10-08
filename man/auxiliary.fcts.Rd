@@ -30,7 +30,8 @@
 }
 \usage{
 CheckXT(x, y, z, T, grid, gridtriple)
-PrepareModel(model, param, timespacedim, trend, method=NULL, named=FALSE)
+PrepareModel(model, param, timespacedim, trend, method=NULL,
+             named=FALSE)
 convert.to.readable(l, allowed=c("standard", "nested", "list")) 
 plotWithCircles(data, factor=1.0, xlim=range(data[,1])+c(-maxr,maxr),
                 ylim=range(data[,2])+c(-maxr,maxr),col=1, fill=0, ...)
@@ -53,7 +54,7 @@ paramextract(p, model=c("cutoff"))
   \item{method}{simulation method}
   \item{named}{logical. If \code{TRUE} \code{covnr} and \code{param}
     are returned with names}
-  \cr
+ \cr
   \item{l}{list as returned by \code{PrepareModel}}
   \item{allowed}{allowed output formats, see
     \command{\link{CovarianceFct}}}

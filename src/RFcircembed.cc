@@ -229,7 +229,13 @@ int init_circ_embed(key_type *key, int m)
                                                                          
  // ("CE missing strategy for matrix entension in case of anisotropic fields %d\n
   for (i=0;i<dim;i++){ // size of matrix at the beginning  
+    if (fabs(cepar->mmin[i]) > 10000.0) {       
+	sprintf(ERRORSTRING_OK, "maximimal modulus of mmin is 10000");
+	sprintf(ERRORSTRING_WRONG,"%f", cepar->mmin[i]);
+	return ERRORMSG;
+    }
     mm[i] = s->nn[i];
+//printf("dd%d OK %d %f\n", i, mm[i], cepar->mmin[i]);
     if (cepar->mmin[i]>0.0) {
       if (mm[i] > (1 + (int) ceil(cepar->mmin[i])) / 2) { // plus 1 since 
 	// mmin might be odd; so the next even number should be used
@@ -252,6 +258,7 @@ int init_circ_embed(key_type *key, int m)
       mm[i] = (1 << 1 + (int) ceil(log((double) mm[i]) * INVLOG2 - EPSILON1000));
     }
   }                             
+
 
   positivedefinite = false;     
     /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
@@ -277,6 +284,7 @@ int init_circ_embed(key_type *key, int m)
       print "forced"
   }
 */
+
   
   trials=0;
   while (!positivedefinite && (trials<cepar->trials)){ 
@@ -295,8 +303,9 @@ int init_circ_embed(key_type *key, int m)
     }
 
     if (mtot > cepar->maxmem) {
+      //  printf("ifference %e\n", cepar->maxmem - mtot);
 	sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
-	sprintf(ERRORSTRING_WRONG,"%f", mtot);
+	sprintf(ERRORSTRING_WRONG,"%f", (double) mtot);
 	return ERRORMAXMEMORY;
     }
 
@@ -323,6 +332,8 @@ int init_circ_embed(key_type *key, int m)
       c[dummy] = (critical && cur_crit) ?  0.0 :      
 	 key->covFct(hx, dim, key->cov, meth->covlist, actcov, key->anisotropy); 
       // statt critical hier besser andere CovFct addieren!
+
+//      assert(c[dummy] < 10000000.0);
           
       c[dummy+1] = 0.0;
       k=0; while( (k<dim) && (++(index[k]) >= mm[k])) {
@@ -569,7 +580,7 @@ int init_circ_embed_local(key_type *key, int m)
 {
   methodvalue_type *meth;  
   int Xerror=NOERROR, v, store_msg[MAXDIM], msg, simuactcov, instance,
-      actcov, nc, store_nr, i, dimsq;
+      actcov, nc, store_nr, i, dimsq,  n_aniso, err;
   localCE_storage *s;
   cov_fct *hyper;
   covinfo_type *sc;
@@ -598,6 +609,8 @@ int init_circ_embed_local(key_type *key, int m)
   actcov = meth->actcov;
   if (2 * actcov > MAXCOV) {Xerror=ERRORNCOVOUTOFRANGE; goto ErrorHandling;}
 
+  n_aniso = key->anisotropy ? key->timespacedim * key->timespacedim : 1;
+
   for (i=0; i<key->timespacedim; i++) rawRmax[i] = 0.0;
   for (simuactcov=v=0; v<actcov; v++) {
     covinfo_type *kc;
@@ -608,9 +621,10 @@ int init_circ_embed_local(key_type *key, int m)
     sc->method = CircEmbed;
     sc->param[VARIANCE] = 1.0; 
     sc->param[HYPERNR] = 1; // as only addition between models allowed
-    sc->param[DIAMETER] = GetScaledDiameter(key, kc);
     // SCALE is considered as space trafo and envolved here
+    sc->param[DIAMETER] = GetScaledDiameter(key, kc);
     if (GENERAL_PRINTLEVEL>7) PRINTF("diameter %f\n", sc->param[DIAMETER]);
+    memcpy(&(sc->param[ANISO]), &(kc->param[ANISO]), sizeof(double) * n_aniso);
     sc->op = 2;
     covcpy(sc + 1, kc);
 
@@ -651,7 +665,7 @@ int init_circ_embed_local(key_type *key, int m)
 
         if (GENERAL_PRINTLEVEL>7) {
 	    PRINTF("v=%d nc=%d inst=%d err=%d hyp.kappa=%f, #=%d, diam=%f\n r=%f curmin_r=%f\n", 
-		   v, nc, instance, Xerror, sc->param[HYPERKAPPAI],
+		   v, nc, instance, Xerror, sc->param[HYPERKAPPAII],
 		   (int) sc->param[HYPERNR],
 		   sc->param[DIAMETER],  sc->param[LOCAL_R],
 		   store_param[LOCAL_R]);
@@ -672,20 +686,30 @@ int init_circ_embed_local(key_type *key, int m)
 	    }
 	}
       } // while
-      GetOrthogonalUnitExtensions(kc->aniso, key->timespacedim, grid_ext);
+      err =  GetOrthogonalUnitExtensions(kc->aniso, key->timespacedim, grid_ext);
+      if (err != NOERROR) {
+	  // err is extra since Xerror at this stage can be both NOERROR and
+	  // and an error message; the latter could be overwritten by
+	  // NOERROR; Xerror is only of relavance if all loops in while
+	  // fail; so it cannot be changed; see also assert(Xerror!=NOERROR)
+	  // below where consistency is checked.
+	  Xerror=err; 
+	  goto ErrorHandling;
+      }
 
       for (i=0; i<key->timespacedim; i++) {
         register double dummy;   
 	dummy = store_param[LOCAL_R] / 
 	    (grid_ext[i] * (double) (key->length[i] - 1) * key->x[i][XSTEP]);
-//	printf("%d grid_ext=%f dummy=%f, raw=%f local_r=%f\n",
-//	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R]);
+//  	printf("\nXXXX %d grid_ext=%f dummy=%f, raw=%f local_r=%f %d %f\n",
+//  	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R],
+//	       key->length[i], key->x[i][XSTEP]);
 	if (rawRmax[i] < dummy) rawRmax[i] = dummy;
       }
     } // nc
     if (!R_FINITE(store_param[LOCAL_R])) {
       PRINTF("v=%d nc=%d, inst=%d err=%d hyp.kappa=%f, #=%d, diam=%f\nr=%f curmin_r=%f\n", 
-	     v, nc, instance, Xerror, sc->param[HYPERKAPPAI],
+	     v, nc, instance, Xerror, sc->param[HYPERKAPPAII],
 	     (int) sc->param[HYPERNR],
 	     sc->param[DIAMETER],  sc->param[LOCAL_R],
 	     store_param[LOCAL_R]);
@@ -700,28 +724,22 @@ int init_circ_embed_local(key_type *key, int m)
   } // v
 
   // prepare for call of internal_InitSimulateRF
-  int covnr[MAXCOV], op[MAXCOV], CEMethod[MAXCOV], cum_nParam, 
-      aniso, n_aniso;
+  int covnr[MAXCOV], op[MAXCOV], CEMethod[MAXCOV], cum_nParam;
   double ParamList[MAXCOV * TOTAL_PARAM];
   char errorloc_save[nErrorLoc];
-  if (key->anisotropy) {
-      n_aniso = key->timespacedim * key->timespacedim ;
-      aniso = ANISO;
-  } else {
-      n_aniso = 1;
-      aniso = SCALE;
-  }
   cum_nParam = 0;
   for (v=0; v<simuactcov; v++) {
+    int kappas;
     sc = &(s->key.cov[v]);
     covnr[v] = sc->nr;
     op[v] = sc->op;
     CEMethod[v] = (int) CircEmbed;
     ParamList[cum_nParam++] = sc->param[VARIANCE];
-    for (i=0; i<CovList[sc->nr].kappas; i++)
+    kappas = CovList[sc->nr].kappas(key->timespacedim);
+    for (i=0; i<kappas; i++)
 	ParamList[cum_nParam++] = sc->param[KAPPA + i];
     for (i=0; i<n_aniso; i++)
-	ParamList[cum_nParam++] = sc->param[aniso + i];
+	ParamList[cum_nParam++] = sc->param[ANISO + i];
   }
 
   strcpy(errorloc_save, ERROR_LOC);
@@ -964,7 +982,7 @@ void do_circ_embed(key_type *key, int m, double *res){
 
 //    if (index[1] ==0) printf("A %d %d %d %d %d %f %f\n", 
 //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);
-      if (GENERAL_PRINTLEVEL>=10) PRINTF("cumm...");
+//      if (GENERAL_PRINTLEVEL>=10) PRINTF("cumm...");
       i <<= 1; // since we have to index imaginary numbers
       j <<= 1;
       if (noexception) { // case 3 in prop 3 of W&C
@@ -983,7 +1001,7 @@ void do_circ_embed(key_type *key, int m, double *res){
 // assert(false); 
 //    }
       
-      if (GENERAL_PRINTLEVEL>=10) PRINTF("k=%d ", k);
+//      if (GENERAL_PRINTLEVEL>=10) PRINTF("k=%d ", k);
       
 //    if (index[1] == 0) printf("B %d %d %d %d %d %f %f\n", 
 //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);

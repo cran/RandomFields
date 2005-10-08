@@ -52,7 +52,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static double range_stable[4] = {0, 2, 0.06, 2};
 static double range_whittle[4]= {0, RF_INF, 1e-2, 10.0};
 static double range_cauchy[4] = {0, RF_INF, 0.09, 10.0};
-static double range_genCauchy[8] = {0, 2, 0.05, 2, 0, RF_INF, 0.05, 10.0};
+static double range_genCauchy[8] = {0, 2, 0.05, 2, 
+				    0, RF_INF, 0.05, 10.0};
 
 
 double interpolate(double y, double *stuetz, int nstuetz, int origin,
@@ -95,7 +96,8 @@ int checkconstant(double *param, int timespacedim, SimulationType method) {
     return NOERROR;
 }
 void infoconstant(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = INFDIM; *CEbadlybehaved=false;
+  *maxdim = INFDIM; 
+  *CEbadlybehaved=false;
 }
 
 
@@ -213,7 +215,8 @@ int hyperexponential(double radius, double *center, double *rx,
   assert(false);
 }
 void infoexponential(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = INFDIM; *CEbadlybehaved=false;
+  *maxdim = INFDIM;
+  *CEbadlybehaved=false;
 }
 
 
@@ -640,15 +643,13 @@ double spectralWhittleMatern(double *p ) { /* see Yaglom ! */
 }
 
 int checkWhittleMatern(double *param, int timespacedim, SimulationType method) { 
-  int error;
-  error = NOERROR;
   static double spectrallimit=0.17;
   switch(method) {
       case TBM2 : 
 	if (param[KAPPA]!=0.5) {
 	  strcpy(ERRORSTRING_OK,"1/2");
 	  sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
-	  error=ERRORCOVNUMERICAL;
+	  return ERRORCOVNUMERICAL;
 	}
 	break;
       case SpectralTBM : 
@@ -658,17 +659,12 @@ int checkWhittleMatern(double *param, int timespacedim, SimulationType method) {
 		spectrallimit,spectrallimit);
 	sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
 	return ERRORCOVFAILED;
+
       case CircEmbedCutoff: case CircEmbedIntrinsic :
 	if (timespacedim>2) 
 	{
 	  strcpy(ERRORSTRING_OK,"total dim<=2");
 	  sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
-	  return ERRORCOVFAILED;
-	}
-	if ((2*param[KAPPA]<=0))
-	{
-	  strcpy(ERRORSTRING_OK,"0<kappa");
-	  sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
 	  return ERRORCOVFAILED;
 	}
 //     if (method==CircEmbedCutoff)
@@ -677,14 +673,16 @@ int checkWhittleMatern(double *param, int timespacedim, SimulationType method) {
 // 	sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
 // 	return ERRORCOVFAILED; 
 //       }
-	break;
+	// break;
+	// NOTE NO BREAK !
       default :
-	if ((param[KAPPA]>0)) return 0;
-	strcpy(ERRORSTRING_OK,"0<kappa");
-	sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
-	return ERRORCOVFAILED;
+	  if ((param[KAPPA]<=0)) {
+	      strcpy(ERRORSTRING_OK,"0<kappa");
+	      sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
+	      return ERRORCOVFAILED;
+	  }
   }
-  return error;
+  return NOERROR;
 }
 void rangeWhittleMatern(int dim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
@@ -742,7 +740,7 @@ double TBM3hyperbolic(double *x, double*p, int effectivedim)
   static double kappadelta;
   static double logconst;
   double y;
-  double ysq,s,kappas,logs;
+  double ysq,s,kappa_s,logs;
   if ( *x==0.0) {return 1.0;}
   if (p[KAPPAIII]==0) { // whittle matern
     y = *x * p[KAPPAI];
@@ -768,12 +766,12 @@ double TBM3hyperbolic(double *x, double*p, int effectivedim)
   }
   ysq = y * y;
   s=sqrt(deltasq + ysq);
-  kappas = kappa * s;
+  kappa_s = kappa * s;
   logs = log(s);  
   return  
-    ( exp(logconst + lambda * logs +log(bessel_k(kappas,lambda,2.0))-kappas)
+    ( exp(logconst + lambda * logs +log(bessel_k(kappa_s,lambda,2.0))-kappa_s)
       - ysq*kappa*exp(logconst + (lambda-1.0)*logs 
-		      +log(bessel_k(kappas,lambda-1.0,2.0))-kappas)
+		      +log(bessel_k(kappa_s,lambda-1.0,2.0))-kappa_s)
       );
 }
 double Dhyperbolic(double *x, double*p, int effectivedim)
@@ -785,7 +783,7 @@ double Dhyperbolic(double *x, double*p, int effectivedim)
   static double kappadelta;
   static double logconst;
   double y;
-  double s,kappas,logs;
+  double s,kappa_s,logs;
   if ( *x==0.0) {return 1.0;}
   if (p[KAPPAIII]==0) { // whittle matern
     y = *x * p[KAPPAI];
@@ -810,12 +808,12 @@ double Dhyperbolic(double *x, double*p, int effectivedim)
       - lambda * log(delta);
   }
   s=sqrt(deltasq + y * y);
-  kappas = kappa * s;
+  kappa_s = kappa * s;
   logs = log(s);  
   return  
     ( 
       - y * kappa*exp(logconst + (lambda-1.0)*logs 
-		      +log(bessel_k(kappas,lambda-1.0,2.0))-kappas)
+		      +log(bessel_k(kappa_s,lambda-1.0,2.0))-kappa_s)
       );
 }
 int checkhyperbolic(double *param, int timespacedim, SimulationType method){
@@ -1324,7 +1322,7 @@ void rangewave(int dim, int *index, double* range){
   if(dim<=3) *index=-1; else *index=-2;
 }
 void infowave(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = (int) (2.0 * p[KAPPA] + 2.0);
+  *maxdim = 3;
   *CEbadlybehaved = 2;
 }
 int checkwave(double *param, int timespacedim, SimulationType method){
@@ -1456,6 +1454,7 @@ double InvSqrtPsi(double x, double a, double b, int c) {
   default: assert(false);
   }
 }
+
 
 
 /* Tilmann Gneiting's space time models, part I */
@@ -1908,6 +1907,125 @@ void infoFD(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 1;
   *CEbadlybehaved = false;
 }
+
+
+
+/* iaco cesare model */
+double IacoCesare(double *x, double *p, int dim){
+    double s;
+    int d;
+    for (s=0.0, d=dim-2; d>=0; d--) s += x[d] * x[d];
+    return pow(1.0 + pow(s, 0.5 * p[KAPPAI]) + 
+	       pow(fabs(x[dim-1]),  p[KAPPAII]),
+	       - 0.5 * p[KAPPAIII]); 
+}
+//double ScaleIacoCesare(double *p, int scaling) { return 1.0; } 
+void rangeIacoCesare(int dim, int *index, double* range){
+    static double range_iacocesare[8]= 
+	{1, 2, 1, 2,
+	 1, 2, 1, 2};
+    memcpy(range, range_iacocesare, sizeof(double) * 8);
+    range[8] = range[10] = 0.5 * dim;
+    range[9] = RF_INF; range[11] = 10;
+    *index = -1;
+}
+void infoIacoCesare(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = INFDIM;
+  *CEbadlybehaved = false;
+}
+int checkIacoCesare(double *param, int timespacedim, SimulationType method) {
+  if (method!=Nothing && method!=CircEmbed && method!=Direct)
+      return ERRORNOTDEFINED;
+  if (timespacedim == 1) return ERRORNOTDEFINED;
+  if (param[KAPPAI] < 1 || param[KAPPAI] > 2) {
+    strcpy(ERRORSTRING_OK,"1 <= kappa1 <= 2");
+    sprintf(ERRORSTRING_WRONG, "%f",param[KAPPAI]);
+    return ERRORCOVFAILED;    
+  } 
+  if (param[KAPPAII] < 1 || param[KAPPAII] > 2) {
+    strcpy(ERRORSTRING_OK, "1 <= kappa2 <= 2");
+    sprintf(ERRORSTRING_WRONG, "%f", param[KAPPAII]);
+    return ERRORCOVFAILED;    
+  } 
+  if (param[KAPPAIII] < 0.5 * timespacedim) {
+    strcpy(ERRORSTRING_OK, "kappa3 >= 0.5 * <time-space dimension>");
+    sprintf(ERRORSTRING_WRONG, "%f", param[KAPPAIII]);
+    return ERRORCOVFAILED;    
+  } 
+  return NOERROR;
+}
+
+
+
+/* iaco cesare model */
+double SteinST1(double *x, double *p, int dim){
+    // kappa1 : nu
+    // kappa2 : tau
+    // kappa3-5 : z1-z3
+/* 2^(1-nu) / Gamma(nu) [ h^nu K_nu(h) - 2 * tau (x T z) t h^{nu-1} K_{nu-1}(h) /
+   (2 nu + d + 1) ]
+*/
+    register double s;
+    double z, logconst;
+    int d, time;   
+    static double nu=RF_INF;
+    static double loggamma;
+    time = dim - 1;
+
+    s = x[time] * x[time];
+    z = 0.0;
+    for (d=0; d<time; d++) {
+	s += x[d] * x[d];
+	z += x[d] * p[KAPPAIV + d];
+    }
+    if ( s==0.0 ) {return 1.0;}
+    s = sqrt(s);
+
+    if (nu!=p[KAPPAI]) {
+	nu=p[KAPPAI];
+	loggamma = lgammafn(nu);
+    }
+    logconst = (nu - 1.0) * log(0.5 * s)  - loggamma;
+    return 
+	s * exp(logconst + log(bessel_k(s, nu, 2.0)) - s)
+	- 2.0 / (2 * nu + p[KAPPAIII]) * p[KAPPAII] * z * x[time] *  
+	exp(logconst + log(bessel_k(s, nu - 1.0, 2.0)) - s);
+}
+// double ScaleSteinST1(double *p, int scaling) { return 1.0; } 
+int kappasSteinST1(int dim) {return 2 + dim;}
+void rangeSteinST1(int dim, int *index, double* range){
+    static double range_steinST1[20]= 
+	{1, RF_INF, 1, 10.0,
+	 0, 1, 0, 1,
+	 -RF_NEGINF, RF_INF, -100000, +100000,
+	 -RF_NEGINF, RF_INF, -100000, +100000,
+	 -RF_NEGINF, RF_INF, -100000, +100000,
+	};
+    *index = -1; 
+    memcpy(range, range_steinST1, sizeof(double) * 4 * (2 + dim));
+}
+void infoSteinST1(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = INFDIM;
+  *CEbadlybehaved = false;
+}
+int checkSteinST1(double *param, int timespacedim, SimulationType method) {
+  if (method!=Nothing && method!=CircEmbed && method!=Direct)
+      return ERRORNOTDEFINED;
+  if (timespacedim == 1) return ERRORNOTDEFINED;
+  if (param[KAPPAI] < 0) {
+    strcpy(ERRORSTRING_OK, "kappa1 >= 0");
+    sprintf(ERRORSTRING_WRONG, "%f", param[KAPPAII]);
+    return ERRORCOVFAILED;    
+  } 
+  if (param[KAPPAII] < 0 || param[KAPPAII] > 1) {
+    strcpy(ERRORSTRING_OK, "0 <= kappa2 <= 1");
+    sprintf(ERRORSTRING_WRONG, "%f", param[KAPPAII]);
+    return ERRORCOVFAILED;    
+  } 
+  return checkWhittleMatern(param, timespacedim, method);
+}
+
+
 
 /* nugget effect model */
 double nugget(double *x, double *p, int dim){

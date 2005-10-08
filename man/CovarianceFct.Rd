@@ -129,22 +129,27 @@ GetModelNames()
     support. %(See Chiles&Delfiner, 1998)
     
     \item \code{cutoff} (hypermodel, see also below)
-    \deqn{C(x)=\phi(x), 0\le x \le \kappa_2}{C(x) = phi(x),   0 <= x <= b}
+    \deqn{C(x)=\phi(xB), 0\le xA \le \kappa_2}{C(x) = phi(xB),
+      0 <= xA <= b}
     
-    \deqn{C(x)=b_1 (r^{\kappa_3} - x)^{2 \kappa_3}, \kappa_2\le x \le
-      \kappa_2\kappa_3}{C(x) = b_0 (r - x)^{2 c},   b <= x <= bc}
+    \deqn{C(x)=b_1 (r^{\kappa_3} - xB)^{2 \kappa_3}, \kappa_2\le xA \le
+      \kappa_2\kappa_3}{C(x) = b_0 (r - xB)^{2 c},   b <= xA <= bc}
     
-    \deqn{C(x)=0,  \kappa_2\kappa_3\le x}{C(x) = 0,   bc <= x}
+    \deqn{C(x)=0,  \kappa_2\kappa_3\le xA}{C(x) = 0,   bc <= xA}
    
     The cutoff model is a functional of the covariance function
-    \eqn{\phi}{phi};
-    see below for general comments on hypermodels.
+    \eqn{\phi}{phi}. Since the model itself is indifferent for
+    scale or anisotropy parameters, the latter must be given only
+    for the submodels.
+    See below for general comments on hypermodels.
     
     The first parameter, \eqn{\kappa_1}{a}, gives the number of
     subsequent models that build \eqn{\phi}{phi};
     \eqn{\kappa_2\ge0}{b>0}, \eqn{\kappa_3>0}{c>0}.
     The parameters \eqn{r} and \eqn{b_0}
     are chosen internally such that \eqn{C} is a smooth function.
+    The parameters \eqn{A} and \eqn{B} are the inverse scale parameters for
+    the hypermodel and submodel, respectively.
 
     The cutoff-model is not a valid covariance function for any
     choice of phi and the parameters. Only some few
@@ -307,6 +312,13 @@ GetModelNames()
     model and the \code{cauchy} model, for 
     \eqn{\kappa_3=0}{c=0} and \eqn{\kappa_1=0}{a=0}, respectively.
 
+    \item \code{iacocesare}
+    \deqn{C(x, t)=(1+\|x\|^{\kappa_1}+|t|^{\kappa_2})^{-\kappa_3}}{
+      C(x, t) = (1+||x||^a+|t|^b)^{-c}}
+    The parameters \eqn{\kappa_1}{a} and \eqn{\kappa_2}{b} take values
+    in \eqn{[1,2]}; the parameters \eqn{\kappa_3}{c} must be greater
+    than or equal to half the space-time dimension.
+    
     \item J-Bessel\cr
     see \code{bessel}
 
@@ -331,7 +343,33 @@ GetModelNames()
     \eqn{d + 1 - \frac\alpha2}{d + 1 - a/2}
     and Hurst coefficient \eqn{1 - \frac\beta2}{1 - b/2} for
     \eqn{\beta\in(0,1]}{b in (0,1]}
+
+    \item mastein (hypermodel for non-separabel space time modelling)
+    \deqn{C(x, t)=\Gamma(\kappa_2 + \gamma(t)) / \Gamma(\kappa_2 +
+      \gamma(t) + \kappa_3) W_{\kappa_2 + \gamma(t)}(\|x - Vt\|)}{
+      C(x, t)=Gamma(b + gamma(t)) / Gamma(b + gamma(t) + c)
+      W_{b + gamma(t)}(\|x - Vt\|)}
+
+    \eqn{\Gamma}{Gamma} is the Gamma function; \eqn{\gamma}{gamma}
+    is a variogram; \eqn{W} is the Whittle-Matern model.
+    The first parameter, \eqn{\kappa_1}{a}, gives the number of
+    subsequent models that build \eqn{\gamma}{gamma}. Here, the
+    names of covariance models can also be used; the algorithm
+    chooses the corresponding variograms then.
+    The parameter \eqn{\kappa}{b} is the smoothness parameter
+    of the Whittle-Matern model (for \eqn{t=0}) and must be positive.
+    Finally, \eqn{c} must be greater than or equal to half the
+    dimension of \eqn{x}.
+    Instead of the velocity parameter \eqn{V}, the anisotropy matrix
+    for the hyper model is chosen appropriately. Note that
+    the anisotropy matrix must be such that \eqn(x,t) is transformed
+    into a purely spatial vector, i.e. the entries in
+    last column of the matrix are all naught.
+    On the other hand, all entries of the
+    anisotropy matrices in the submodels that build \eqn{\gamma}{gamma}
+    is naught except the very last, purely temporal one.
    
+    
     \item matern\cr
     See \code{whittlematern}.
     
@@ -339,18 +377,19 @@ GetModelNames()
     \deqn{C(x,t)= \psi(t)^{-\kappa_6} \phi(x / \psi(t))}{C(x,t)=
       psi(t)^{-f} \phi(x / psi(t))}
     This model is used for space-time modelling where the spatial
-    component is isotropic.  Here\cr
+    component is isotropic.\cr
     \eqn{\phi} is the \code{stable} model if \eqn{\kappa_2=1}{b=1};\cr
     \eqn{\phi} is the \code{whittlematern} model if \eqn{\kappa_2=2}{b=2};\cr
     \eqn{\phi} is the \code{cauchy} model if \eqn{\kappa_2=3}{b=3};\cr
-    here, \eqn{kappa_1}{a} is the respective parameter for the model.
+    Here, \eqn{kappa_1}{a} is the respective parameter for the model.
+
     The function \eqn{\psi}{psi} satisfies\cr
     \eqn{\psi^2(t) = (t^{\kappa_3}+1)^{\kappa_4}}{psi^2(t) =
       (t^c+1)^d} if \eqn{\kappa_5=1}{e=1}\cr
     \eqn{\psi^2(t) = \frac{\kappa_4^{-1}t^{\kappa_3}+1}{t^{\kappa_3}+1}
     }{psi^2(t) = (d^{-1} t^c+1)/(t^c+1)} if \eqn{\kappa_5=2}{e=2}\cr
-    \eqn{\psi^2(t)= - \log(t^{\kappa_3}+\kappa_4^{-1})/
-	\log\kappa_4}{psi^2(t)=-\log(t^c+1/d)/log d}
+    \eqn{\psi^2(t) = -\log(t^{\kappa_3}+\kappa_4^{-1})/
+	\log\kappa_4}{psi^2(t) = -\log(t^c+1/d)/log d}
       if \eqn{\kappa_5=3}{e=3}\cr
     The parameter \eqn{\kappa_6}{f} must be greater than or equal to
     the spatial dimension of the field. Furthermore, \eqn{\kappa_3\in
@@ -363,7 +402,8 @@ GetModelNames()
       psi(t)^{-g} \phi(x / psi(t))}
     This model is used for space-time modelling where the spatial
     component is isotropic.  Here\cr
-    \eqn{\phi} is the \code{gencauchy} model if \eqn{\kappa_3=1}{c=1}.\cr
+    \eqn{\phi} is the \code{gencauchy} model
+    if \eqn{\kappa_3=1}{c=1}.\cr
     The parameters \eqn{kappa_1}{a} and \eqn{kappa_2}{b}
     are the respective parameters for the model.
     The function \eqn{\psi}{psi} satisfies\cr
@@ -371,8 +411,8 @@ GetModelNames()
       (t^d+1)^e} if \eqn{\kappa_6=1}{f=1}\cr
     \eqn{\psi^2(t) = \frac{\kappa_5^{-1}t^{\kappa_4}+1}{t^{\kappa_4}+1}
     }{psi^2(t) = (e^{-1} t^d+1)/(t^d+1)} if \eqn{\kappa_6=2}{f=2}\cr
-    \eqn{\psi^2(t) =-\log(t^{\kappa_4}+\kappa_5^{-1})/
-	\log\kappa_5}{psi^2(t)=-\log(t^d+1/e)/log e}
+    \eqn{\psi^2(t) = -\log(t^{\kappa_4}+\kappa_5^{-1})/
+	\log\kappa_5}{psi^2(t) = -\log(t^d+1/e)/log e}
       if \eqn{\kappa_6=3}{f=3}\cr
     The parameter \eqn{\kappa_7}{g} must be greater than or equal to
     the spatial dimension of the field. Furthermore, \eqn{\kappa_4\in
@@ -383,8 +423,13 @@ GetModelNames()
 
     \item \code{nugget}
     \deqn{C(x)=1_{\{0\}}(x)}{1(x==0)}
-    Here, either \code{param[2]}, the \code{variance},
+    If the model is used in \code{param}-definition mode,
+    either \code{param[2]}, the \code{variance},
     or \code{param[3]}, the \code{nugget}, must be zero.
+    If the model is used in the list-definition mode,
+    the anisotropy matrix must be given in an anisotropic
+    context, but not
+    the scale parameter in an isotropic context.
     
     \item \code{penta}
     \deqn{C(x)= \left(1 - \frac{22}3 x^2 +33 x^4 -
@@ -427,30 +472,36 @@ GetModelNames()
       1 - 1.5 x + 0.5 x^3  if 0<=x<=1, 0 otherwise}
     This isotropic covariance function is valid only for dimensions
     less than or equal to 3.
+
     
     \item \code{stable}
     \deqn{C(x)=\exp\left(-x^\kappa\right)}{C(x)=exp(-x^a)}
     The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}{[0,2]}.
     See \code{exponential} and \code{gaussian} for special cases.
 
+    
     \item \code{Stein} (hypermodel, see also below)
-    \deqn{C(x)=a_0 + a_2 x^2 + \phi(x), 0\le x \le \kappa_2}{C(x) = a_0 + a_2
-      x^2 + phi(x),   0 <= x <= b}
+    \deqn{C(x)=a_0 + a_2 (xB)^2 + \phi(xB), 0\le x \le \kappa_2}{C(x) = a_0 + a_2
+      (xB)^2 + phi(xB),   0 <= xA <= b}
     
-    \deqn{C(x)=b_1 (\kappa_3 - x)^3/x, \kappa_2\le x \le
-      \kappa_2\kappa_3}{C(x) = b_0 (c - x)^3/x,   b <= x <= bc}
+    \deqn{C(x)=b_1 (\kappa_3 - xB)^3/(xB), \kappa_2\le xA \le
+      \kappa_2\kappa_3}{C(x) = b_0 (c - xB)^3/(xB),   b <= xA <= bc}
     
-    \deqn{C(x)=0,  \kappa_2\kappa_3\le x}{C(x) = 0,   bc <= x}
+    \deqn{C(x)=0,  \kappa_2\kappa_3\le x}{C(x) = 0,   bc <= xA}
    
     The Stein model is a functional of the covariance function
-    \eqn{\phi}{phi};
-    see below for for general comments on hypermodels.
+    \eqn{\phi}{phi}. Since the model itself is indifferent for
+    scale or anisotropy parameters, the latter must be given only
+    for the submodels.
+    See below for for general comments on hypermodels.
     
     The first parameter, \eqn{\kappa_1}{a}, gives the number of
     subsequent models that build \eqn{\phi}{phi};
     \eqn{\kappa_2\ge0}{b>0}, \eqn{\kappa_3\ge1}{c>=1}.
     The parameters \eqn{a_0}, \eqn{a_2} and \eqn{b_0}
-    are chosen internally such that \eqn{C} is a smooth function.
+    are chosen internally such that \eqn{C} becomes a smooth function.
+    The parameters \eqn{A} and \eqn{B} are the inverse scale parameters for
+    the hypermodel and submodel, respectively.
 
     The Stein-model is not a valid covariance function for any
     choice of phi and the parameters. Only some few
@@ -460,6 +511,20 @@ GetModelNames()
     \code{whittle}, \code{gencauchy}, and the variogram
     model \code{fractalB}
     some sufficient conditions are known.
+
+    
+    \item \code{steinst1} (non-separabel space time model)
+    \deqn{W_{\kappa_1}(y) -
+      \frac{2 \kappa_2 \langle x, z \rangle t}{2(\kappa_1 - 1)(2\kappa_1
+	+ \kappa_3)} W_{\kappa_1 -1}(y)}{
+      W_a(y) - 2 b <x, z> t W_{a-1}(y) / [2(a - 1)(2a + c)]}
+
+    Here, \eqn{W_{\kappa_1}}{W_a} is the Whittle-Matern model with
+    smoothness parameter \eqn{\kappa_1}{a}; \eqn{\kappa_2\in[0,1]}{0 <=
+      b <= 1}; \eqn{\kappa_3}{b} is greater than or equal to the
+    space-time dimension \sQuote{dim}.
+    The components of \eqn{z} are given by \eqn{\kappa_4,
+      \ldots \kappa_{2+\sQuote{dim}}}{d, e, ...}.
     
     \item symmetric stable\cr
     See \code{stable}.
@@ -580,9 +645,9 @@ GetModelNames()
     or variograms. The first parameter is always the number of the following
     covariance models included.
     
-    The hypermodel inherits the anisotropy parameters (or the scale
-    parameter) from the first submodel. The given anisotropy parameters
-    are ignored.
+%    The hypermodel inherits the anisotropy parameters (or the scale
+%    parameter) from the first submodel. The given anisotropy parameters
+%    are ignored.
     
     \bold{Important!} Hyper models are in an experimental stage:\cr
     (i) the (current) algorithm does not allow for a complete
@@ -658,6 +723,16 @@ GetModelNames()
     wave-number spectrum-function pairs. \emph{Can. J. Phys.} \bold{46},
     2133-2153.
   }
+
+  Iaco-Cesare model
+ \itemize{
+   \item de Cesare, L., Myers, D.E., and Posa, D. (2002)
+   FORTRAN programs for space-time modeling. \emph{Computers \&
+     Geosciences} \bold{28}, 205-212.
+   \item  de Iaco, S.. Myers, D.E., and Posa, D. (2002)
+   Nonseparable space-time covariance models: some parameteric
+   families. \emph{Math. Geol.} \bold{34}, 23-42.
+  }
   
   lgd
   \itemize{
@@ -666,6 +741,15 @@ GetModelNames()
     \emph{SIAM review} % see also cauchy
   }
 
+  Ma-Stein model
+  \itemize{
+    \item Ma, C. (2003)
+    Spatio-temporal covariance functions generated by mixtures.
+    \emph{Math. Geol.}, \bold{34}, 965-975.
+    \item Stein, M.L. (2005) Space-time covariance functions. \emph{JASA},
+    \bold{100}, 310-321.
+  }
+  
   nsst
   \itemize{
     \item Gneiting, T. (2001) Nonseparable, stationary covariance

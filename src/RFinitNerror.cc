@@ -165,7 +165,7 @@ void ErrorMessage(SimulationType m, int error) {
   switch (error) {
       case USEOLDINIT : strcpy(EM,"Using stored initialization"); break;
       case NOERROR : strcpy(EM,"fine"); break;
-      case NOERROR_REPEAT : strcpy(EM,"none; repeat");break;
+      case NOERROR_REPEAT : strcpy(EM,"none; looking for further covariances applicable to the same method");break;
       case NOERROR_ENDOFLIST : strcpy(EM,"end of list");break;
       case ERRORDUMMY : strcpy(EM,"none"); break;
        
@@ -273,7 +273,7 @@ the anisotropies must be identical"); break;
 	strcpy(EM, "CE Intrinsic contradictsRFparmeters()$stationary.only=true");
 	break;
       case ERROROUTOFMETHODLIST:
-	strcpy(EM, "run out of list of methods -- are RFparameters too restrictive?\nRetry with RFparameters(PrintLevel=4) to learn more about the situation");
+	strcpy(EM, "run out of list of methods -- are RFparameters too\nrestrictive? Retry with RFparameters(PrintLevel=4) to get more information");
 	break;
       case ERRORTBMCENTER:
 	  strcpy(EM, "center contains non finite values");
@@ -351,7 +351,7 @@ the anisotropies must be identical"); break;
 
 
       case ERRORTRIVIAL :
-	strcpy(EM,"confused about trivial parameter specification");break;
+	strcpy(EM,"confused about low rank anisotropy matrix -- try putting the\nmodel with anisotropy matrix of highest rank at the beginning.\n");break;
       case ERRORUNSPECIFIED :
 	strcpy(EM,"(unspecified)");break;
      default : 
@@ -519,10 +519,19 @@ void InitModelList()
   addCov(nr,hyperbolic,Dhyperbolic,NULL);
   addTBM(nr,NULL,TBM3hyperbolic, NULL);
 
+  nr=IncludeModel("iacocesare", 3, checkIacoCesare, ANISOTROPIC, false,
+		  infoIacoCesare, rangeIacoCesare);
+  addCov(nr, IacoCesare, NULL, NULL);
+  
+
   nr=IncludeModel("lgd1", 2, checklgd1, FULLISOTROPIC, false,
 		 infolgd1, rangelgd1);
   addCov(nr, lgd1, Dlgd1, Scalelgd1);
   addTBM(nr,NULL, NULL, NULL);
+
+  nr=IncludeHyperModel("mastein", 3, checkNinit_MaStein, ANISOHYPERMODEL, false, 
+		       info_MaStein, range_MaStein);
+  addCov(nr, MaStein, NULL, NULL);
 
   nr=IncludeModel("nsst", 6, checkspacetime1, SPACEISOTROPIC, false, 
 		  infospacetime1, rangespacetime1);
@@ -541,6 +550,8 @@ void InitModelList()
   nr=IncludeModel("nugget",0, checknugget, FULLISOTROPIC, false, infonugget, 
 		  rangenugget);
   addCov(nr, nugget, NULL, Scalenugget);
+  modelexception(nr, true, false);
+  
   /* cf. convert.R, PrepareModel, near end of function */		  
   for (i=0; i<SimulationTypeLength; i++) {
     CovList[nr].implemented[i] = GIVEN_METH_IGNORED;
@@ -580,6 +591,10 @@ void InitModelList()
   addCov(nr, Stein, NULL, NULL);
   addInitLocal(nr, getintrinsicparam_Stein, alternativeparam_Stein,
 	       CircEmbedIntrinsic);
+
+  nr=IncludeModel("steinst1", kappasSteinST1, checkSteinST1, ANISOTROPIC,
+		  false, infoSteinST1, rangeSteinST1);
+  addCov(nr, SteinST1, NULL, NULL);
 
   nr=IncludeModel("wave", 0, checkwave, FULLISOTROPIC, false, infowave, 
 		  rangewave);

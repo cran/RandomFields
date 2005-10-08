@@ -181,12 +181,17 @@ void GetModelName(int *nr,char **name){
   strncpy(*name,CovList[*nr].name,COVMAXCHAR);
 }
 
-void GetNrParameters(int *covnr, int *n, int* kappas) {
+void GetNrParameters(int *covnr, int *n, int* dim, int* kappas) {
   int v;
   if (currentNrCov==-1) InitModelList();
   for (v=0; v<*n; v++) {
     if ((covnr[v]<0) ||(covnr[v]>=currentNrCov)) {kappas[v]=-1;}
-    else kappas[v] = CovList[covnr[v]].kappas;
+    else {
+//	printf("%s %d %d %d %d\n", 
+//	       CovList[covnr[v]].name, *dim, (int) CovList[covnr[v]].kappas,
+//	       kappaZero(*dim), CovList[covnr[v]].kappas(*dim));
+	kappas[v] = CovList[covnr[v]].kappas(*dim);
+    }
   }
 }
 
@@ -305,7 +310,7 @@ void GetRange(int *nr, int *dim, int *index, double *range, int *lrange){
   int i;
   if (currentNrCov==-1) InitModelList();
   if ((*nr<0) || (*nr>=currentNrCov) || 
-      (*lrange != CovList[*nr].kappas * 4) ) {
+      (*lrange != CovList[*nr].kappas(*dim) * 4) ) {
     for (i=0; i<*lrange; i++) range[i]=RF_NAN;
     *index = -100;
     return;
@@ -318,7 +323,18 @@ void GetRange(int *nr, int *dim, int *index, double *range, int *lrange){
   //assert(false);
 }
 
-int createmodel(char *name, int kappas, int type, infofct info, bool variogram, 
+int kappaZero(int dim) {return 0;}
+int kappaOne(int dim) {return 1;}
+int kappaTwo(int dim) {return 2;}
+int kappaThree(int dim) {return 3;}
+int kappaFour(int dim) {return 4;}
+int kappaFive(int dim) {return 5;}
+int kappaSix(int dim) {return 6;}
+int kappaSeven(int dim) {return 7;}
+int kappaFalse(int dim) { assert(false); return 0;}
+
+int createmodel(char *name, int kappas, kappas_type kappas_fct, 
+		int type, infofct info, bool variogram, 
 		rangefct range) {
   int i;
   if (currentNrCov==-1) InitModelList(); assert(CovList!=NULL);
@@ -333,7 +349,18 @@ int createmodel(char *name, int kappas, int type, infofct info, bool variogram,
 	   CovList[currentNrCov].name);
   }
 
-  CovList[currentNrCov].kappas = kappas;
+  CovList[currentNrCov].exception = 0;
+  assert(kappas < 0 xor kappas_fct == NULL);
+  CovList[currentNrCov].kappas = 
+      kappas < 0  ? kappas_fct :
+      kappas == 0 ? kappaZero :
+      kappas == 1 ? kappaOne :
+      kappas == 2 ? kappaTwo :
+      kappas == 3 ? kappaThree :
+      kappas == 4 ? kappaFour :
+      kappas == 5 ? kappaFive :
+      kappas == 6 ? kappaSix :
+      kappas == 7 ? kappaSeven : kappaFalse;
   CovList[currentNrCov].type = type;
   assert((CovList[currentNrCov].info=info) != NULL); 
   CovList[currentNrCov].variogram = variogram;
@@ -371,7 +398,17 @@ int IncludeHyperModel(char *name, int kappas, checkhyper check,
 			     rangefct range)
 {  
     int nr;
-    nr = createmodel(name, kappas, type, info, variogram, range);
+    nr = createmodel(name, kappas, NULL, type, info, variogram, range);
+    assert((CovList[nr].checkNinit = check) != NULL);
+    return nr;
+}
+int IncludeHyperModel(char *name, kappas_type kappas, checkhyper check,
+		      int type, bool variogram, infofct info,
+		      rangefct range)
+{  
+    int nr;
+    assert(type!=FULLISOTROPIC && type!=ISOHYPERMODEL);
+    nr = createmodel(name, -1, kappas, type, info, variogram, range);
     assert((CovList[nr].checkNinit = check) != NULL);
     return nr;
 }
@@ -382,7 +419,17 @@ extern int IncludeModel(char *name, int kappas, checkfct check,
 			rangefct range) 
 {  
     int nr;
-    nr = createmodel(name, kappas, type, info, variogram, range);
+    nr = createmodel(name, kappas, NULL, type, info, variogram, range);
+    assert((CovList[nr].check = check) != NULL);
+    return nr;
+}
+extern int IncludeModel(char *name, kappas_type kappas, checkfct check,
+			int type, bool variogram, infofct info,
+			rangefct range) 
+{  
+    int nr;
+    assert(type!=FULLISOTROPIC && type!=ISOHYPERMODEL);
+    nr = createmodel(name, -1, kappas, type, info, variogram, range);
     assert((CovList[nr].check = check) != NULL);
     return nr;
 }
@@ -418,6 +465,18 @@ void addCov(int nr, covfct cov, isofct derivative,
   CovList[nr].naturalscale=naturalscale;
   CovList[nr].implemented[CircEmbed] =
     CovList[nr].implemented[Direct] = !CovList[nr].variogram;
+}
+
+void modelexception(int nr, bool scale, bool aniso) {
+    CovList[nr].exception = (int) scale + 2 * (int) aniso;
+}
+
+void GetModelException(int *nr, int *n, int *scale, int*aniso) {
+    int i, Nr;
+    for (i=0; i<*n; i++) {
+	Nr = nr[i]; scale[i] = Nr % 2;
+	Nr >>= 1;   aniso[i] = Nr % 2;  
+    }
 }
 
 void addLocal(int nr, bool cutoff, isofct secondderiv, int*variable)
@@ -515,7 +574,7 @@ void PrintModelList()
     PRINTF(firstcolumn,empty[0]);PRINTF(header,empty[0]);  
     PRINTF("Legend:");
     PRINTF("'-': method not available\n");
-    PRINTF("'X': method available for at least some parameters\n");
+    PRINTF("'X': method available for at least some parameter values\n");
     PRINTF("'+': parts are evaluated only approximatively\n");
     PRINTF("'o': given method is ignored and an alternative one is used\n");
     PRINTF("'h': available only as internal model within the method \n");
@@ -550,16 +609,16 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
   static int oldcovnr = -99;
   static param_type oldp, p;
   static double OldNatScale;
-  int TEN, endfor, k;
+  int TEN, k;
   bool numeric;  
   *error = 0;
   TEN = 10;
 
-  endfor = KAPPA + CovList[*covnr].kappas;
-  for (k=KAPPA; k<endfor; k++) p[k]=q[k-KAPPA];
+  for (k=KAPPA; k<=LASTKAPPA; k++) p[k]=q[k-KAPPA];
   if (*naturalscaling) {	 
     if (CovList[*covnr].type!=FULLISOTROPIC) {
-      *error=ERRORANISOTROPIC; return;}
+      *error=ERRORANISOTROPIC; return;
+    }
     if (!(numeric=*naturalscaling>TEN)) {TEN=0;}
     *natscale=0.0;
     if (CovList[*covnr].naturalscale!=NULL) { 
@@ -576,12 +635,12 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       // already calculated ?
       parami=KAPPA; // do not compare mean,variance, etc.
       if (oldcovnr==*covnr) {
-	for (; parami<endfor; parami++) {
+	for (; parami<=LASTKAPPA; parami++) {
 	  if (oldp[parami]!=p[parami]) {
 	    break;
 	  }
 	}
-	if (parami==endfor) {
+	if (parami > LASTKAPPA) {
 	  *natscale=OldNatScale; 
 	  return;
 	}
@@ -589,7 +648,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 
       // the other parameters need not to be copied as checked that 
       // they are identical to previous ones
-      for (;parami<endfor;parami++) {oldp[parami]=p[parami];}
+      for (; parami<=LASTKAPPA; parami++) {oldp[parami]=p[parami];}
       // oldp[VARIANCE] = oldp[ANISO] = 1.0; not necessary to set explicitly, 
       // but used in this sense in the following
       oldcovnr = -99; /* if error occurs, the next call will realise that 
@@ -750,13 +809,13 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
     col = row = timespacedim;
     rowsq = row * row;
     endfor = ANISO + row * col; 
-    if (*Time) {
-      for (j=endfor - row; j<endfor; j++)
+    
+    for (j=endfor - row; j<endfor; j++)
 	if (param[j] != 0.0) break;
-      *Time = j == endfor;
-    }
+    *Time = j != endfor;
+
     switch (type) {
-	case ANISOTROPIC :
+	case ANISOTROPIC: case ANISOHYPERMODEL :
 	  *truetimespacedim = timespacedim;
 	  for (j=0; j<col; j++)
 	    for (i=0; i<row; i++)
@@ -765,7 +824,7 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	case SPACEISOTROPIC :
 	  col -= 1;
 	  // no break!;
-	case FULLISOTROPIC :
+	case FULLISOTROPIC: case ISOHYPERMODEL:
 	  for (i=0; i<row; i++) D[i] = V[i] = 0.0;
 	  for (; i<rowsq; V[i++]=0.0);
 	  if (is_diag(&(param[ANISO]), row)) {
@@ -791,13 +850,14 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	  for (TrueDim=i=j=0; j<row; j++)
 	      if (fabs(D[j]) > EIGENVALUE_EPS) {
 		  index[i++] = j;
-		    TrueDim++;
+		  TrueDim++;
 	      }
 
 	  for (j=0; j<TrueDim; j++) 
 	      for (i=0; i<row; i++) 
 		  aniso[i + j * row] =//note V, not V^T is returned by dsvdc !
 		      V[i + index[j] * row] * D[index[j]];
+	  for ( ; j<row; j++) for (i=0; i<row; i++)  aniso[i + j * row] = 0.0;
 	  *truetimespacedim = TrueDim;
 	  
 	  if (col < row) {
@@ -807,10 +867,6 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	      for (i=0; i<row; i++)
 		  aniso[i + TrueDim * row] = param[param_segm + i];
 	  }
-	  break;
-	case ISOHYPERMODEL :
-	  err = ERRORNOTPROGRAMMED;
-	  goto ErrorHandling;
 	  break;
 	default: assert(false);
     }
@@ -961,11 +1017,11 @@ SEXP mvcov(int* V, int n) {
 }
 
 SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam, 
-		  int timespacedim, long totalpoints)
+		  long totalpoints)
 {
 #define nmodelinfo 10 // mit op
   char *modelinfo[nmodelinfo] = 
-      {"method", "truedim", "name", "op" /* must keep name */, "time.comp", 
+      {"method", "truedim", "name", "op" /* must keep name */, "genuine.last.dim", 
        "simugrid", "processed", "param", "aniso", "x"};
   SEXP model,  submodel[MAXCOV], namemodelvec[2];
   int i, exception, k, subi;
@@ -994,13 +1050,14 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     if (!exception) 
 	SET_VECTOR_ELT(submodel[i], subi++, mkString(OP_SIGN[kc->op]));
     SET_VECTOR_ELT(submodel[i], subi++, 
-		   ScalarLogical(kc->genuine_time_component));
+		   ScalarLogical(kc->genuine_last_dimension));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(kc->simugrid));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(!kc->left));
     SET_VECTOR_ELT(submodel[i], subi++, (totalparam < 0) ? allocVector(VECSXP, 0)
 		   : Num(kc->param, totalparam));
-    SET_VECTOR_ELT(submodel[i], subi++, (timespacedim<0) ? allocVector(VECSXP, 0)
-		   : Mat(kc->aniso, timespacedim, kc->truetimespacedim)
+    SET_VECTOR_ELT(submodel[i], subi++, (kc->dim<=0) ? allocVector(VECSXP, 0)
+		   : Mat(kc->aniso, kc->dim, // kc->truetimespacedim
+			 kc->dim)
                      // should be matrix
 	);
     if (kc->x == NULL) 
@@ -1050,7 +1107,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
     
     int nS, nSlist[Forbidden + 1] =
 	{8 /* CE */, 2 /*Cutoff*/ , 2 /* Intr */, 9 /* TBM2 */ , 9 /* TBM3 */, 
-	 1 /*Sp */, 3 /* dir */, 3 /* nug */, 10 /* add */, 4 /* hyp */, 
+	 1 /*Sp */, 3 /* dir */, 4 /* nug */, 10 /* add */, 4 /* hyp */, 
 	 1 /* spec */, 1 /* noth */, 11 /* maxmpp */, 4 /*extremalGauss */,
 	 1 /* Forbidden */};
     assert(Forbidden == 14);
@@ -1172,11 +1229,17 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    s = (nugget_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simple"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simple));	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("srqtnugget"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->sqrtnugget));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
-	    SET_VECTOR_ELT(S, k++, s->pos == NULL ? ScalarLogical(false)
-			   : Int(s->pos, totpts));	
+	    if (s->pos == NULL) {
+	      SET_VECTOR_ELT(nameSvec, k, mkChar("diag"));
+	      SET_VECTOR_ELT(S, k++, Num(s->diag, key->timespacedim));
+	    } else {
+	      SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
+	      SET_VECTOR_ELT(S, k++, Int(s->pos, totpts));
+	    }	
 	  }  break;
 	case AdditiveMpp : {
 	    mpp_storage* s;
@@ -1324,7 +1387,7 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth)
     SET_VECTOR_ELT(info, ni++, ScalarReal(key->mean));
     //
     SET_VECTOR_ELT(info, ni++, GetModelInfo(key->cov, key->ncov, key->totalparam,
-					    key->timespacedim,key->totalpoints));
+					    key->totalpoints));
     SET_VECTOR_ELT(info, ni++, 
 		   GetMethodInfo(key, key->meth, ignore_active, depth));
   }
@@ -1424,6 +1487,8 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
     for (d=0; d<simuspatialdim; d++) {
       lx[d] = x[XSTEPD[d]] * (double) (key->length[d] - 1);
       center[d] = 0.5 * lx[d] + x[XSTARTD[d]];
+      //   printf("%d %f %f %d %f %f\n", d, center[d], x[XSTARTD[d]],
+//	     key->length[d], x[XSTEPD[d]], lx[d]);
       distsq += lx[d] * lx[d];
     }
   } else { // not simugrid
@@ -1451,12 +1516,14 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
     // max distance, upperbound
     distsq = 0.0;
     for (d=0; d< simuspatialdim; d++) { // not here no time component!
+//	printf("%d min %f max %f\n", d, min[d], max[d]);
       lx[d] = max[d] - min[d];
       distsq += lx[d] * lx[d];
       center[d] = 0.5 * (max[d] + min[d]); 
     }
   } // !simugrid
   *diameter = sqrt(distsq);
+//  printf("*dimater=%f\n", *diameter);
 }
 
 

@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RFsimu.h"
 #include "RFCovFcts.h"
 
-static double local_range[8] = {1, MAXCOV, 1, MAXCOV, // HYPERNR
+static double local_range[8] = {1, MAXCOV-1, 1, MAXCOV-1, // HYPERNR
 		       0, RF_INF, 1e-10, 1e10};// CUTOFF_DIAM
 
 int check_submodels(int nr, char **allowed_fct, int nr_allowed_list, 
@@ -68,6 +68,7 @@ int check_submodels(int nr, char **allowed_fct, int nr_allowed_list,
 double co(double *x, double *p, int effectivedim)
 {
   double y=fabs(*x);
+//  printf("%d %f %f\n", effectivedim, x[effectivedim], y);
   if (y <= p[DIAMETER]) return x[effectivedim]; // value of submodel!
   if (y >= p[LOCAL_R]) return 0.0;
   return p[CUTOFF_B] * pow(p[CUTOFF_ASQRTR] - pow(y, p[CUTOFF_A]), 
@@ -172,7 +173,7 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   param[LOCAL_R] = d * param[CUTOFF_THEOR];
   param[CUTOFF_ASQRTR] = pow(param[LOCAL_R], a);
   for (v=1; v<=nsub; v++) 
-      keycov[covlist[v]]. aniso[0] = store[v];
+      keycov[covlist[v]].aniso[0] = store[v];
   return NOERROR;
 }
 
@@ -297,4 +298,75 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
   return NOERROR;
 }
 
+
+
+double MaStein(double *x, double *p, int effectivedim)
+{
+  double s, nuG;
+  int d;
+  for (s = 0.0, d=0; d<effectivedim; d++) s += x[d] * x[d];
+  if (s==0.0) return 1.0;
+  s = sqrt(s);
+  // effectivedim + 1 : C(0)
+  // effectvedim : C(x)
+  nuG = p[HYPERKAPPAI] + x[effectivedim + 1] - x[effectivedim];
+  return 2.0 * exp(nuG * log(0.5 * s) - lgammafn(nuG + p[HYPERKAPPAII]) + 
+		   lgammafn(p[HYPERKAPPAI] + p[HYPERKAPPAII]) -
+		   lgammafn(p[HYPERKAPPAI]) +		   
+		   log(bessel_k(s, nuG, 2.0)) - s);
+}
+
+
+void range_MaStein(int dim, int *index, double* range) {
+    static double range_MaStein[8]={1, MAXCOV-1, 1, MAXCOV-1, 
+				    0, RF_INF, 1e-2, 10.0}; 
+    memcpy(range, range_MaStein, sizeof(double) * 8);
+    range[8] = range[10] = 0.5 * (double) (dim - 1);
+    range[9] = RF_INF; range[11] = 10;
+    *index = -1; 
+};
+
+void info_MaStein(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = INFDIM;
+  *CEbadlybehaved=false;
+}
+
+int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist, 
+		  int remaining_covlistlength, SimulationType method) {
+  int nsub, v, i, endfor;
+  covinfo_type *kc;
+  double *param;
+
+  kc = &(keycov[covlist[0]]);
+  param = kc->param;  
+  if ((param[HYPERKAPPAI]<=0)) {
+      strcpy(ERRORSTRING_OK,"0<kappa1");
+      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAI]);
+      return ERRORCOVFAILED;
+  }
+
+  if ((param[HYPERKAPPAII]<= 0.5 * (double) (kc->dim - 1))) {
+      strcpy(ERRORSTRING_OK,"kappa2 >= (<space-time dimension> - 1) / 2");
+      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAI]);
+      return ERRORCOVFAILED;
+  }
+
+  if (kc->genuine_last_dimension) {
+      printf("last_dim present\n");
+      return ERRORNOTDEFINED;
+  }
+  nsub= (int) (kc->param[HYPERNR]);
+  
+  endfor = ANISO +  kc->dim * kc->dim - 1;
+  for (v=1; v<=nsub; v++) {
+    kc=&(keycov[covlist[v]]);
+    for (i=ANISO; i<endfor; i++) {
+      if (kc->param[i]!=0.0) {
+	  printf("not truely temporal\n");
+	  return ERRORNOTDEFINED;
+      }
+    }
+  }
+  return NOERROR;
+}
 

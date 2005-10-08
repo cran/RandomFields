@@ -10,6 +10,7 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("hyper: was ist die truetimespacedim???")
     print("hyper: 'Ma'-Modelle; TBM3/2;");
     print("cross: verbesserungen (geswchwindigkeit)")
     print("GENERAL_PRECISION: einbinden + ueber .Mschine$precision definieren (mal Faktor 50")
@@ -110,8 +111,7 @@ function (nr = 0)
 }
 
 
-"DoSimulateRF" <-
-function (n = 1, register = 0, paired=FALSE) {
+DoSimulateRF <- function (n = 1, register = 0, paired=FALSE) {
   stopifnot(length(n) == 1,
             n>0, is.finite(n),
             length(register) == 1,
@@ -275,7 +275,7 @@ function (x, y = NULL, z = NULL, T=NULL,
   
   if (error > 0)
     stop(paste("Simulation could not be initiated.",
-               if (RFparameters()$PrintLevel >= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n")) 
+               if (RFparameters()$PrintLevel >= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n"))
   return(DoSimulateRF(n=n, reg=register, paired=paired))
 }
 
