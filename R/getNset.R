@@ -40,10 +40,10 @@ CheckAndComplete <- function(model, param, dim) {
     return(list(error=error, param=param))
 }
 
-GetRegisterInfo <- function(register=0, ignore.active=FALSE)
+GetRegisterInfo <- function(register=0, ignore.active=FALSE, max.elements=10^6)
   # ignore.active=TRUE only for internal debugging information!
   .Call("GetExtKeyInfo", as.integer(register), as.logical(ignore.active),
-        PACKAGE="RandomFields")
+        as.integer(max.elements), PACKAGE="RandomFields")
 
 GetModelInfo <- function(register=0)
   .Call("GetExtModelInfo", as.integer(register), PACKAGE="RandomFields")
@@ -194,6 +194,7 @@ parampositions <- function(model, param, print=TRUE) {
   CE.tolRe <- double(1)
   CE.tolIm <- double(1)
   CE.trials <- integer(1)
+  CE.several <- integer(1)
   CE.strategy <- integer(1)
   CE.mmin <- double(.p$maxdim)
   CE.enlarge <- integer(1)
@@ -204,8 +205,7 @@ parampositions <- function(model, param, print=TRUE) {
   local.force <- integer(1)
   local.tolRe <- double(1)
   local.tolIm <- double(1)
-  local.trials <- integer(1)
-  local.strategy <- integer(1)
+  local.several <- integer(1)
   local.mmin <- double(.p$maxdim)
   local.enlarge <- integer(1)
   local.maxmem <- double(1)
@@ -243,16 +243,14 @@ parampositions <- function(model, param, print=TRUE) {
   spectral.grid <- integer(1)
 
   direct.method <- integer(1)
-  direct.checkprecision <- integer(1)
-  direct.requiredprecision <- double(1)
   direct.bestvariables <- integer(1)
   direct.maxvariables <- integer(1)
 
   nugget.tol <- double(1)
 
-  MPP.approxzero <- double(1)
+  MPP.approxzero       <- double(1)
   add.MPP.realisations <- double(1)
-  MPP.radius <- double(1)
+  MPP.radius      <- double(1)
 
   hyper.superpos <- integer(1)
   hyper.maxlines <- integer(1)
@@ -280,10 +278,11 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetParamDecision", m, stationary.only, exactness,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 
-       CE.mmin, CE.useprimes, CE.strategy, CE.maxmem, CE.dependent,
+       CE.several, CE.mmin, CE.useprimes, CE.strategy, CE.maxmem, CE.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamLocal", m, local.force, local.tolRe, local.tolIm, local.trials,
-       local.mmin, local.useprimes, local.strategy, local.maxmem,
+    .C("SetParamLocal", m, local.force, local.tolRe, local.tolIm,
+       local.several,
+       local.mmin, local.useprimes, local.maxmem,
        local.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBMCE", m, TBMCE.force, TBMCE.tolRe, TBMCE.tolIm, TBMCE.trials,
@@ -299,8 +298,8 @@ parampositions <- function(model, param, print=TRUE) {
        PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
        PACKAGE="RandomFields", DUP=FALSE)
-    .C("SetParamDirectGauss", m, direct.method, direct.checkprecision,
-       direct.requiredprecision, direct.bestvariables, direct.maxvariables,
+    .C("SetParamDirectGauss", m, direct.method,
+       direct.bestvariables, direct.maxvariables,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamNugget", m, nugget.tol,
        PACKAGE="RandomFields", DUP=FALSE)
@@ -327,23 +326,21 @@ parampositions <- function(model, param, print=TRUE) {
                     CE.tolIm=CE.tolIm,
                     CE.tolRe=CE.tolRe,
                     CE.trials=CE.trials,
+                    CE.several=as.logical(CE.several),
                     CE.useprimes=as.logical(CE.useprimes),
                     CE.dependent=as.logical(CE.dependent),
                     local.force=as.logical(local.force),
                     local.mmin=local.mmin,
-                    local.strategy=local.strategy,
                     local.maxmem=local.maxmem,
                     local.tolIm=local.tolIm,
                     local.tolRe=local.tolRe,
-                    local.trials=local.trials,
+                    local.several=as.logical(local.several),
                     local.useprimes=as.logical(local.useprimes),
                     local.dependent=as.logical(local.dependent),
-                    direct.checkprecision=as.logical(direct.checkprecision),
                     direct.bestvariables=direct.bestvariables,
                     direct.maxvariables=direct.maxvariables,
                     nugget.tol=nugget.tol,
                     direct.method=direct.method,
-                    direct.requiredprecision=direct.requiredprecision,
                     spectral.grid=as.logical(spectral.grid),
                     spectral.lines=spectral.lines,
                     TBM.method=.methods[TBM.method+1],

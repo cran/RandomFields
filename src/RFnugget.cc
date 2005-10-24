@@ -51,6 +51,7 @@ void nugget_destruct(void ** S)
     nugget_storage *x;
     x = *((nugget_storage**)S); 
     if (x->pos!=NULL) free(x->pos);
+    if (x->red_field!=NULL) free(x->red_field);
     free(*S);
     *S = NULL;
   }
@@ -171,6 +172,7 @@ int init_nugget(key_type *key, int m){
   }
   s = (nugget_storage*) meth->S;
   s->pos = NULL;
+  s->red_field = NULL;
   kc = &(key->cov[meth->covlist[0]]);
   s->simple = key->timespacedim == kc->truetimespacedim;
   s->simugrid = kc->simugrid;
@@ -182,8 +184,17 @@ int init_nugget(key_type *key, int m){
       goto ErrorHandling;
     if (kc->simugrid) {
       int d, dim=key->timespacedim + 1;
-      for (d=i=0; i<key->timespacedim; i++, d+=dim)
-	s->diag[i] = kc->param[ANISO + d];
+      s->prod_dim[0] = 1; 
+      for (d=i=0; d<key->timespacedim; d++, i+=dim) {
+	s->diag[d] = kc->param[ANISO + i];
+        s->reduced_dim[d] =(fabs(s->diag[d]) < NUGGET_TOL)? 1 : key->length[d];
+	s->prod_dim[d + 1] = s->prod_dim[d] * s->reduced_dim[d];
+      }
+      if ((s->red_field=(double *) malloc(sizeof(double) * 
+					  s->prod_dim[key->timespacedim])) 
+	  == NULL){
+	  Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+      }
     } else {
       if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0) {
 	Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -202,38 +213,10 @@ int init_nugget(key_type *key, int m){
   s->sqrtnugget = sqrt(nugget_effect);
   
   if (key->anisotropy) return NOERROR_REPEAT;
-  else return 0;
+  else return NOERROR;
 
  ErrorHandling:
   return Xerror;
-}
-
-void nuggetgrid(double *res, bool *zerodiag, int *length, int k,
-		double sqrtnugget, int *p, int *p_ref) {
-//  printf("%d %d %d\n", k, *p, *p_ref);
-  if (k<0) {
-    if (*p_ref < 0) {
-      res[(*p)++] = GAUSS_RANDOM(sqrtnugget);
-//      printf("res[*p=%d]=%f\n", (*p)-1, res[(*p)-1]);
-    } else {
-      res[(*p)++] = res[(*p_ref)++];
-    }
-  } else {
-    int i, p_save;
-    if (*p_ref<0) {
-      p_save = *p;
-      nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref);
-      for (i=1; i<length[k]; i++) {
-	*p_ref = (zerodiag[k]) ? p_save : -1;
-//	printf("k=%d ii=%d %d %d\n", k, i, zerodiag[k], *p_ref);
-	nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref); 
-      }
-    } else {
-      for (i=0; i<length[k]; i++) {
-	nuggetgrid(res, zerodiag, length, k-1, sqrtnugget, p, p_ref);
-      }
-    }
-  }
 }
 
 void do_nugget(key_type *key, int m, double *res) {
@@ -252,14 +235,29 @@ void do_nugget(key_type *key, int m, double *res) {
       res[nx] += GAUSS_RANDOM(sqrtnugget);
   } else {
     if (s->simugrid) {
-      int p_ref, p ,d;
-      bool zerodiag[MAXDIM];
-      for (d=0; d<key->timespacedim; d++) 
-	zerodiag[d] = (s->diag[d] == 0.0);
-      p = 0;
-      p_ref = -1;
-      nuggetgrid(res, zerodiag, key->length, key->timespacedim-1, sqrtnugget, 
-		 &p, &p_ref);
+      int d, i, dim, index[MAXDIM], *red_dim, *prod_dim;
+      long totpnts, idx;
+      double *field;
+      totpnts = key->totalpoints;
+      dim = key->timespacedim;
+      field = s->red_field;
+      red_dim = s->reduced_dim;
+      prod_dim = s->prod_dim;
+
+      for (i=s->prod_dim[dim] - 1; i>=0; field[i--] = GAUSS_RANDOM(sqrtnugget));
+      for (d=0; d<dim; index[d++] = 0);
+      for (i=0; i<totpnts; i++) {
+	for(idx=d=0; d<dim; d++) idx += (index[d] % red_dim[d]) * prod_dim[d];
+	//printf("%d %d %f\n", i, idx, field[idx]);
+	res[i] += field[idx];
+	d = 0; 
+	(index[d])++; 
+	while (index[d] >= key->length[d]) { 
+	  index[d] = 0; 
+	  d++;   
+	  (index[d])++; 
+	}
+      }
     } else {
       int p;
       double dummy = RF_NAN; // just to avoid warnings from the compiler

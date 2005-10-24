@@ -10,19 +10,20 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("Bsp in GaussRF und RFparameters muessen von Hand durchgeschaut werden,
+ob sie den richtigen Effekt zeigen!")
+
+    print("environment statt der einzelnen Variablen; vereinfachung von RFparameters und der internen initGaussRD und DoSimulate");
     print("hyper: was ist die truetimespacedim???")
     print("hyper: 'Ma'-Modelle; TBM3/2;");
     print("cross: verbesserungen (geswchwindigkeit)")
     print("GENERAL_PRECISION: einbinden + ueber .Mschine$precision definieren (mal Faktor 50")
     print("chlo2inv in MLE: ")
-    print("nsst2 in Showmodels funktioniert nicht")
-    print("fractGauss -- was ist los?")
     print("Empirical Variogram: allow for NAs")
     print("include winddata")
     print("fitvario.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
     
     print("check documentation and readability of programs")
-    print("docu of TBM2.linesimustep not understandable")
     print("MLE: naturalscaling in anisotropic case")
     print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
     print("implement trend")

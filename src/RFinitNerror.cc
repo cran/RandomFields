@@ -164,9 +164,9 @@ void ErrorMessage(SimulationType m, int error) {
   }
   switch (error) {
       case USEOLDINIT : strcpy(EM,"Using stored initialization"); break;
-      case NOERROR : strcpy(EM,"fine"); break;
+      case NOERROR : strcpy(EM,"none"); break;
       case NOERROR_REPEAT : strcpy(EM,"none; looking for further covariances applicable to the same method");break;
-      case NOERROR_ENDOFLIST : strcpy(EM,"end of list");break;
+      case NOERROR_ENDOFLIST : strcpy(EM,"none; end of list");break;
       case ERRORDUMMY : strcpy(EM,"none"); break;
        
 
@@ -181,7 +181,7 @@ void ErrorMessage(SimulationType m, int error) {
       case ERRORFAILED: 
 	strcpy(EM,"algorithm failed (partially)");break;
       case ERRORMEMORYALLOCATION: 
-	strcpy(EM,"memory allocation error");break;
+	strcpy(EM,"memory allocation error"); break;
       case ERRORNOTINITIALIZED: 
 	strcpy(EM,"not initialized or RFparameters()$Storing==FALSE");break;
       case ERRORKEYNROUTOFRANGE: 
@@ -206,7 +206,7 @@ void ErrorMessage(SimulationType m, int error) {
 	break;
       case ERRORMAXMEMORY:
 	sprintf(EM,
-		"total real numbers needed=%s > allowed max real numbers=%s -- increase CE.maxmem using RFparameters\n",
+		"total real numbers needed=%s > allowed max real numbers=%s -- increase CE.maxmem and/or local.maxmem using RFparameters\n",
 		ERRORSTRING_WRONG, ERRORSTRING_OK);
 	break;
       case ERRORTOOMANYLINES:
@@ -601,7 +601,7 @@ void InitModelList()
   addCov(nr,wave,NULL,Scalewave);
   addTBM(nr,NULL,NULL,spectralwave);
  
-  nr=IncludeModel("whittlematern", 1, checkWhittleMatern,FULLISOTROPIC, false,
+  nr=IncludeModel("whittlematern", 1, checkWhittleMatern, FULLISOTROPIC, false,
 		  infoWhittleMatern, rangeWhittleMatern);
   addCov(nr,WhittleMatern, DWhittleMatern, ScaleWhittleMatern);
   addTBM(nr,NULL,TBM3WhittleMatern, spectralWhittleMatern);

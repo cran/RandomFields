@@ -35,8 +35,6 @@ ShowModels <- function(x, y=NULL,
                        use.outer.RFparameters=FALSE,
                        debug=FALSE,
                        ...){
-
-  print(link.fct)
   
   stopifnot(!missing(x))
   if (any(diff(x) <= 0)) stop("x should be a sequence of increasing numbers")

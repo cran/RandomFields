@@ -97,7 +97,7 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
     *error = internal_InitSimulateRF(x, T, *dim, *lx, (bool) *grid,
 				     (bool) *Time, covnr, ParamList, *nParam, 
 				     *ncov, (bool) *anisotropy, op,
-				     init_method, *distr, key, true, 
+				     init_method, *distr, key,
 				     GENERAL_NATURALSCALING, CovFct);
     strcpy(ERROR_LOC, "");
     if (*error!=NOERROR) goto ErrorHandling;
@@ -125,6 +125,7 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
      * *********************************************************** */
     double sigma, meanDsigma, mean;
     int d;
+    ce_param ce_save, local_save;
     methodvalue_type *meth; 
     extremes_storage* s;
   
@@ -140,11 +141,16 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
     KEY_NULL(&(s->key));
     s->rf = NULL;
  
+    memcpy(&ce_save, &CIRCEMBED, sizeof(ce_param));
+    memcpy(&local_save, &LOCAL_CE, sizeof(ce_param));
+    LOCAL_CE.severalrealisations = CIRCEMBED.severalrealisations = true;
     *error = internal_InitSimulateRF(x, T, *dim, *lx, (bool) *grid, 
 				     (bool) *Time, covnr, ParamList, *nParam, 
 				     *ncov, (bool) *anisotropy, op, method, 
-				     DISTR_GAUSS, &(s->key), true, 
+				     DISTR_GAUSS, &(s->key), 
 				     GENERAL_NATURALSCALING, CovFct);
+    memcpy(&CIRCEMBED, &ce_save, sizeof(ce_param));
+    memcpy(&LOCAL_CE, &local_save, sizeof(ce_param));
     if (*error!=NOERROR) goto ErrorHandling;
 
     key->distribution = *distr;
@@ -174,7 +180,6 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
     key->meth[0].unimeth = key->cov[0].method = ExtremalGauss;
     key->n_unimeth = 1;
     key->meth[0].actcov = 0; 
-    key->storing = GENERAL_STORING;
     key->active = true;
   }
   strcpy(ERROR_LOC, "");
@@ -192,7 +197,7 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
 void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 {
   key_type *key;
-  long totalpoints,control, counter;
+  long totalpoints, control, counter;
   double poisson, invpoisson, *RES, threshold;
 
 
@@ -205,7 +210,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 
   key = &(KEY[*keyNr]);
   if (!key->active) {*error=ERRORNOTINITIALIZED; goto ErrorHandling;}
-  totalpoints = key->totalpoints;
+  totalpoints = key->totalpoints;     
 
   counter = 0;
 
@@ -224,7 +229,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
     mppmodel model;
     MPPRandom MppFct;
     methodvalue_type *meth; 
-    covinfo_type *keycov;
+    covinfo_type *kc;
     
     actcov = key->n_unimeth;
     assert(actcov == key->ncov);
@@ -238,10 +243,10 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
       for (m=0; m<actcov; m++) {
 	meth = &(key->meth[m]); 
 	assert(meth->unimeth == MaxMpp);
-	keycov = &(key->cov[meth->covlist[m]]);
+	kc = &(key->cov[meth->covlist[m]]);
 	s = (mpp_storage*) meth->S;  
 	MppFct = s->MppFct;
-	dim = s->dim; 
+	dim = s->dim;
 	
 	control = 0;
 	poisson = rexp(1.0); 
@@ -251,37 +256,41 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	  // how to reorganise it to get rid of the duplication of the code??
 	  //	  
 	  MppFct(s, min, max, &model); 
-	  if (keycov->simugrid) {
+	  if (kc->simugrid) {
 	    int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
 	      segmentdelta[MAXDIM], dimM1;
 	    double coord[MAXDIM], startcoord[MAXDIM];
 	    
 	    resindex = 0;
-	    for (d=0; d<dim; d++) {	 
+	    for (d=0; d<key->timespacedim; d++) {	 
 	      // determine rectangle of indices, where the mpp function
 	      // is different from zero
-	      if ((next = ((min[d] > keycov->x[XENDD[d]]) ||
-			  (max[d] < keycov->x[XSTARTD[d]])))) { break;}
-	      if (min[d]< keycov->x[XSTARTD[d]]) {start[d]=0;}
-	      else start[d] = (int) ((min[d] - keycov->x[XSTARTD[d]]) / 
-				     keycov->x[XSTEPD[d]]);
-	      // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
-	      // not "* <= end[d]" !
-	      end[d] = (int) ((max[d] - keycov->x[XSTARTD[d]]) / 
-			      keycov->x[XSTEPD[d]]);
-	      if (end[d] > key->length[d]) end[d] = key->length[d];
-	  
+	      if (kc->length[d] != 1) {
+	        if ((next = ((min[d] > kc->x[XENDD[d]]) ||
+			     (max[d] < kc->x[XSTARTD[d]])))) { break;}
+		if (min[d] < kc->x[XSTARTD[d]]) {start[d]=0;}
+		else start[d] = (int) ((min[d] - kc->x[XSTARTD[d]]) / 
+				       kc->x[XSTEPD[d]]);
+		// "end[d] = 1 + *"  since inequalities are "* < end[d]" 
+		// not "* <= end[d]" !
+		end[d] = (int) ((max[d] - kc->x[XSTARTD[d]]) / 
+				kc->x[XSTEPD[d]]);
+		if (end[d] > key->length[d]) end[d] = key->length[d];
+	      } else {
+		start[d] = 0;
+		end[d] = key->length[d];
+	      }
 	      // prepare coord starting value and the segment vectors for res
 	      index[d]=start[d];
 	      segmentdelta[d] = segment[d] * (end[d] - start[d]);
 	      resindex += segment[d] * start[d];
-	      coord[d] = startcoord[d] = 
-		  keycov->x[XSTARTD[d]] +(double)start[d] * keycov->x[XSTEPD[d]];
+	      coord[kc->idx[d]] = startcoord[d] = 
+		  kc->x[XSTARTD[d]] +(double)start[d] * kc->x[XSTEPD[d]];
 	    }	
 	    if (next) continue;
 	      
 	    // "add" mpp function to res
-	    dimM1 = dim - 1;
+	    dimM1 = key->timespacedim - 1;
 	    d = 0; // only needed for assert(d<dim)
 	    while (index[dimM1]<end[dimM1]) {
 	      register double dummy;
@@ -290,17 +299,17 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	      if (RES[resindex] < dummy) RES[resindex]=dummy;
 	      d=0;
 	      index[d]++;
-	      coord[d]+=keycov->x[XSTEPD[d]];
+	      coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 	      resindex++;
 	      while (index[d] >= end[d]) { 
 	        if (d>=dimM1) break;  // below not possible
 		//                       as dim==1 will fail!
 		index[d]=start[d];
-		coord[d]=startcoord[d];
+		coord[kc->idx[d]] = startcoord[d];
 		resindex -= segmentdelta[d];
 		d++; // if (d>=dim) break;
 		index[d]++;
-		coord[d]+=keycov->x[XSTEPD[d]];
+		coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 		resindex += segment[d];
 	      }
 	    }
@@ -311,7 +320,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	    // but for ease, just the stupid algorithm
 	    for (d=dim; d<dim; d++) y[d]=0.0;
 	    for (j=i=0; i<totalpoints; i++) {
-	      for (d=0; d<dim; d++) y[d] = keycov->x[j++];
+	      for (d=0; d<dim; d++) y[d] = kc->x[j++];
 	      register double dummy;
 	      dummy =  model(y) * invpoisson;
 	      if (RES[i] < dummy) RES[i]=dummy;
@@ -343,7 +352,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 
     if (key->distribution!=DISTR_MAXSTABLE) {
       *error=ERRORWRONGINIT; 
-      goto InternalErrorHandling;
+      goto ErrorHandling;
     }
     s = (extremes_storage*) key->meth[0].S;
     assert(s!=NULL);
@@ -353,10 +362,8 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
        
       control = 0;
       
-      if (!key->active){ *error=ERRORNOTINITIALIZED; goto InternalErrorHandling;}
-     
       if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
-	  goto ErrorHandling;
+	  return;
       //  to get some consistency with GaussRF concerning Randomseed,
       //  DoSimulate must be called first; afterwards, it is called after 
       //  creation of Poisson variable 
@@ -380,7 +387,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	while ((control<totalpoints) && (RES[control]>=threshold)) {control++;}
 	if (control>=totalpoints) break;
 	if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
-	   goto ErrorHandling;
+	   return;
 	if (GENERAL_PRINTLEVEL>=3) {
 	  counter++;
 	  if (counter % 10==0) 
@@ -392,12 +399,10 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
       for (i=0; i<totalpoints; i++) RES[i] *= s->inv_mean_pos;
     } // for, n
   }
-  key->active=GENERAL_STORING && key->storing;
   return;
   
- InternalErrorHandling:
-  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);  
  ErrorHandling:
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing,*error);  
   if (key!=NULL) key->active=false;  
 }
 

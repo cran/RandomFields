@@ -84,9 +84,11 @@ GetModelNames()
       \left(1+x^{\kappa_1}\right)^{-\frac{\kappa_2}{\kappa_1}-1}}{
       C(x)=
       (1+(1-b/c)x^a)(1+x^a)^(-b/a-1)}
-    The parameter \eqn{\kappa_1}{a} is in (0,2],  \eqn{\kappa_2}{b}
-    is positive, and \eqn{\kappa_3}{c} is an integer. 
-    The model is valid for dimensions \eqn{d\le\kappa_3}{d<=c}.
+    The parameter \eqn{\kappa_1}{a} is in (0,2] and  \eqn{\kappa_2}{b}
+    is positive.
+    The model is valid for dimensions \eqn{d\le\kappa_3}{d<=c};
+    this has been shown for integer \eqn{\kappa_3}{c}, but the
+    package allows real values of \eqn{\kappa_3}{c}.
     \cr
     It allows for simulating random fields where 
     fractal dimension and Hurst coefficient can be chosen

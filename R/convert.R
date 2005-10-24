@@ -239,7 +239,8 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
                " is not correct: ",
                kappas[idx], " genuine parameters and ",
                n.par, " parameters for variance and scale expected; got ",
-               k[idx], " and ", sapply(param,length)[idx] - k[idx] ,  sep=""))
+               k[idx], " and ", sapply(param,length)[idx] - k[idx] ,
+               "\n", sep=""))
   }
   
   if (is.null(method)) method <- -1

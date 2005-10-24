@@ -135,7 +135,7 @@ typedef struct methodvalue_type {
   destructor destruct;  
                         /* function called to delete intermediate results */
   SimulationType unimeth;
-  bool unimeth_alreadyInUse;
+  bool unimeth_alreadyInUse, incompatible;
   int actcov;
   covlist_type covlist;  
 } methodvalue_type;
@@ -174,27 +174,35 @@ typedef struct covinfo_type {
      is tried at the moment or which has been 
      successfully initialized */
   int dim, truetimespacedim,
+    length[MAXDIM], /* if simugrid: what is the genuine extension of the grid?
+		       That is, length is one where the diag element is 0
+		    */
+    idx[MAXDIM], /* if ANISO=diag, what is the new column in aniso,
+		    where the columns with 0 diag elements are put
+		    to the end */
     nr, /* number of the covariance function in CovList; 
 	   obtained by function GetCovFunction */
     op; /* operator after the specified covariance function */
-    bool genuine_last_dimension, /* 
-				i.e. time component indicated and at least
-				one component of the last column of 
-				aniso is different from 0;
-				extra treating and not within aniso (where
-				time component is not reduced then) necessary
-				for SPACEISOTROPIC covriance functions,
+  
+  bool genuine_dim[MAXDIM], /* if ANISO==diag, is d-th diag element != 0? */
+    genuine_last_dimension, /* 
+			       i.e. time component indicated and at least
+			       one component of the last column of 
+			       aniso is different from 0;
+			       extra treating and not within aniso (where
+			       time component is not reduced then) necessary
+			       for SPACEISOTROPIC covriance functions,
 				and the MaStein hyper model*/
     simugrid, /* can the simulation technically be performed on a grid ?*/
     left;        /* left to be considered in the simulation
 		    initialisations ! */ 
-    double *x; // this pointer may only be used for the coordinates
-    // transformed by Transform2NoGrid; since this operation is time and 
-    // memory consuming but not needed by all methods, it is performed only
-    // when needed, but then kept for the next method if the calling 
-    // method fails
-  aniso_type aniso;
   param_type param;
+  aniso_type aniso;
+  double *x; // this pointer may only be used for the coordinates
+  // transformed by Transform2NoGrid; since this operation is time and 
+  // memory consuming but not needed by all methods, it is performed only
+  // when needed, but then kept for the next method if the calling 
+  // method fails
 } covinfo_type;
 typedef covinfo_type covinfo_arraytype[MAXCOV];
 typedef double (*CovFctType)(double *, int, covinfo_arraytype,
@@ -341,6 +349,11 @@ typedef struct decision_param{
 } decision_param;
 typedef struct key_type {
   bool active,   /* has the init_procedure been called successfully? */
+    stop, /* should the simulations be continued? -- appearing in
+	     circulant embedding when cepar->severalrealisation=false,
+	     may not be merged with active -- otherwise trends cannot be added
+	     afterwards
+	  */
     anisotropy, /* is it an isotropic covariance function ? */
     compatible,     // determines whether simulation result must be stored
     //                 in an intermediate storage since partial results cannot
@@ -405,14 +418,17 @@ int internal_InitSimulateRF(double *x, double *T,
 			    int *method, 
 			    int distr, /* still unused */
 			    key_type *key,
-			    bool storing, int natural_scaling,
+			    /* bool storing, */ 
+			    int natural_scaling,
 			    CovFctType covFct);
 int internal_DoSimulateRF(key_type *key, int nn, double *res);
-SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth);
+SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max);
 void printkey(key_type *key);
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 		char type, bool *Time, int *truetimespacedim, 
 		aniso_type aniso);
+SEXP TooLarge(int *n, int l); /* if printout is larger than given size */
+
 
 
 
@@ -423,12 +439,12 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 #define STRATEGY_PARTIAL 1
 #define LASTSTRATEGY STRATEGY_PARTIAL
 typedef struct ce_param {
-  bool force, useprimes, dependent;
+  bool force, useprimes, dependent, severalrealisations;
   char strategy;
   int trials;
   double maxmem, tol_re, tol_im, mmin[MAXDIM];
 } ce_param;
-extern ce_param CIRCEMBED;
+extern ce_param CIRCEMBED, LOCAL_CE;
 typedef struct local_user_param{
   double cutoff_a, intrinsic_r;
 } local_user_param;
@@ -441,7 +457,8 @@ typedef struct CE_storage {
     mtot, cur_square[MAXDIM], max_squares[MAXDIM]; /* !!!! **** */
   long square_seg[MAXDIM];
   double *c,*d;
-    bool dependent; // eigentlich braucht es nicht waehrend der initialisierung
+  bool new_simulation_next,
+     dependent; // eigentlich braucht es nicht waehrend der initialisierung
     // festgelegt zu werden. Ist aber wesentlich einfacher zu handhaben,
     // da sonst bei internal_dosimulate die parameter alle RFparameter alle
     // nochmals gesetzt werden muessen
@@ -458,7 +475,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
 void FFT_destruct(FFT_storage *S);
 void FFT_NULL(FFT_storage *S);
 void SetParamCE( int *action, int *force, double *tolRe, double *tolIm,
-		 int *trials, 
+		 int *trials, int *severalrealisations,
 		 double *mmin, /* vector of length MAXDIM */
 		 int *useprimes, int *strategy, double *maxmem, int* dependent,
 		 ce_param *CE, char *name);
@@ -474,7 +491,7 @@ extern int nlocal;
 // see RFtbm.cc			  
 typedef struct TBM_storage {
   aniso_type aniso;
-  bool simugrid;
+  bool simugrid, genuine_dim[MAXDIM];
   int simuspatialdim, ce_dim, truetimespacedim;
   double center[MAXDIM], *simuline, *x;
   key_type key;
@@ -511,8 +528,9 @@ void do_directGauss(key_type *key, int m, double *res);
 typedef struct nugget_storage {
   double sqrtnugget;
   bool simple, simugrid;
-  int *pos;
-  double diag[MAXDIM];
+  int *pos, reduced_dim[MAXDIM], prod_dim[MAXDIM + 1];
+  double diag[MAXDIM], *red_field;
+  
 } nugget_storage;
 extern double NUGGET_TOL;
 int init_nugget(key_type * key, int m);
@@ -594,7 +612,6 @@ void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
 void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
 			  int truetimespacedim, double *x, aniso_type aniso,
 			  double *center, double *lx, double *diameter);
-
 
 
 

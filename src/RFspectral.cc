@@ -53,34 +53,38 @@ void spectral_destruct(void **S)
 
 int init_simulatespectral(key_type *key, int m) {
   methodvalue_type *meth;  
-  covinfo_type *keycov;
+  covinfo_type *kc;
   spectral_storage *s;
   int Xerror, v, actcov;
   double store_variance=-1.0;
 
+  assert(key->timespacedim <= 4);
   meth = &(key->meth[m]);
   SET_DESTRUCT(spectral_destruct, m);
   if ((meth->S=malloc(sizeof(spectral_storage)))==0){
     Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
   s = (spectral_storage*)meth->S;
-  if (key->Time) {Xerror=ERRORTIMENOTALLOWED; goto ErrorHandling;}
+
+// 13.10. the following does not seem to be necessary,
+// since subsequently it checked for truetimespacedim<=2;
+//  if (key->Time) {Xerror=ERRORTIMENOTALLOWED; goto ErrorHandling;}
 
   // noerror_repeat = key->anisotropy;
   actcov=0;
-  Xerror = NOERROR;
+  Xerror = NOERROR; 
   for (v=0; v<key->ncov; v++) {
-    keycov = &(key->cov[v]);
-    if ((keycov->method==SpectralTBM) && (keycov->left)) {
+    kc = &(key->cov[v]);
+    if ((kc->method==SpectralTBM) && (kc->left)) {
       cov_fct *cov;
       int timespacedim;
-      timespacedim = keycov->truetimespacedim;
+      timespacedim = kc->truetimespacedim;
       if (timespacedim == 0) {Xerror=ERRORTRIVIAL; goto ErrorHandling;}
       if (timespacedim > 2) {Xerror=ERRORWRONGDIM; goto ErrorHandling;}
-      assert((keycov->nr >= 0) && (keycov->nr < currentNrCov));
-      assert(keycov->param[VARIANCE] >= 0.0);
+      assert((kc->nr >= 0) && (kc->nr < currentNrCov));
+      assert(kc->param[VARIANCE] >= 0.0);
       meth->covlist[actcov] = v;
-      cov = &(CovList[keycov->nr]);
+      cov = &(CovList[kc->nr]);
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; 
 	  goto ErrorHandling;
@@ -88,8 +92,8 @@ int init_simulatespectral(key_type *key, int m) {
       if (cov->implemented[SpectralTBM] != IMPLEMENTED) {
         Xerror=ERRORNOTDEFINED; goto ErrorHandling;}
       else s->randomAmplitude[actcov] = cov->spectral;
-      if ((Xerror=cov->check(keycov->param, timespacedim, SpectralTBM))!=NOERROR)
-	  goto ErrorHandling;
+      if ((Xerror=cov->check(kc->param, timespacedim, SpectralTBM))
+	  != NOERROR) goto ErrorHandling;
       if (actcov>0) {
         if (key->cov[v-1].op) {
           if (key->cov[v-1].method != SpectralTBM){
@@ -102,19 +106,19 @@ int init_simulatespectral(key_type *key, int m) {
 	    }
 	  Xerror=ERRORNOMULTIPLICATION; goto ErrorHandling;
 	}
-	if (store_variance == keycov->param[VARIANCE]) actcov++;
+	if (store_variance == kc->param[VARIANCE]) actcov++;
 	else {
-	  keycov->left=true;
+	  kc->left=true;
 	  continue;
 	}
       } else {
-	store_variance = keycov->param[VARIANCE];
+	store_variance = kc->param[VARIANCE];
 	// noerror_repeat= true; // only for !key->anisotropy ??
 	actcov++;
       }
       if ((Xerror=Transform2NoGrid(key, v)) != NOERROR) 
 	goto ErrorHandling;
-      keycov->left = false;
+      kc->left = false;
     }
   } // for v
   meth->actcov=actcov;
@@ -136,13 +140,13 @@ void do_simulatespectral(key_type *key, int m, double *res )
   // in two dimensions only!
 {  
   methodvalue_type *meth; 
-  int k, nx, ny, v;
-  double phi=RF_INF, phistep=RF_INF, sqrttwodivbyn; //initialisation not use
+  int k, nx, v, gridlenx, gridleny, gridlenz, gridlent;
+  double phi=RF_INF, phistep=RF_INF, cp, sp,
+    sqrttwodivbyn; //initialisation not use
   spectral_storage *s;
   covinfo_type *kc;
 
   meth = &(key->meth[m]);
-  assert(key->active);
   s = (spectral_storage*) meth->S;
 
   for (v=0; v<meth->actcov; v++) {
@@ -160,41 +164,73 @@ void do_simulatespectral(key_type *key, int m, double *res )
     phistep=TWOPI/ (double) SPECTRAL_LINES; 
     phi=phistep*UNIFORM_RANDOM;
   }
+
   v = (int) (UNIFORM_RANDOM * (double) meth->actcov);
   for (k=0; k<key->totalpoints; k++) { res[k]=0.0; }
   //the very procedure:
+
+  gridlenx = gridleny = gridlenz = gridlent = 1;
+  switch (key->timespacedim) {
+      case 4 : 
+	  gridlent = key->length[3];
+	  // no break;
+      case 3 : 
+	  gridlenz = key->length[2];
+	  // no break;
+     case 2 : 
+	  gridleny = key->length[1];
+	  // no break;
+      case 1 : 
+	  gridlenx = key->length[0];
+	  break;
+      default : assert(false);
+  }
   for (k=0; k<SPECTRAL_LINES; k++) {
-    double cp, Amp, VV;
+    double Amp, VV;
     if (SPECTRAL_GRID) {phi+=phistep;} else {phi=TWOPI*UNIFORM_RANDOM;}  
     v = (v + 1) % meth->actcov;
     kc = &(key->cov[meth->covlist[v]]);
     VV = TWOPI * UNIFORM_RANDOM;
     Amp= (s->randomAmplitude[v])(kc->param); 
     cp = Amp * cos(phi);
+    sp = Amp * sin(phi); 
+
     if (kc->simugrid) {
-      double incx, segx;
-      int zaehler;            
+      double inc[MAXDIM], incx, incy, segt, segz, segy, segx, cossin[2];
+      int idxcossind, ny, nz, nt, d;
+      long zaehler;
+      
+      cossin[0] = cp;
+      cossin[1] = sp;
+      segt = VV;
+      for (idxcossind = d = 0; d < key->timespacedim; d++) {
+//	  printf("%d %d \n", d, kc->length[d]);
+	if (kc->length[d] != 1) {
+	  segt += kc->x[XSTARTD[d]] * cossin[idxcossind];
+	  inc[d] = kc->x[XSTEPD[d]] * cossin[idxcossind++];
+	} else {
+	  inc[d] = 0.0;
+	}
+      }
+      incx = inc[0];            incy=inc[1];
+      
       zaehler = 0; 
-      incx = kc->x[XSTEPDIM1] * cp;
-      if (key->timespacedim==1) {
-	segx = VV + kc->x[XSTARTDIM1] * cp;
-	for (nx=0; nx<key->length[0]; nx++) {
-	  res[zaehler++] += cos(segx);	  
-	  segx += incx;
-	}
-      } else { // key->timespacedim==2
-	double incy, segy, sp;            
-	sp = Amp * sin(phi); 
-	segy = VV + kc->x[XSTARTDIM1] * cp + kc->x[XSTARTDIM2] * sp;
-	incy = kc->x[XSTEPDIM2] * sp; 
-	for (ny=0; ny<key->length[1]; ny++) {	
-	  segx = segy;
-	  for (nx=0; nx<key->length[0]; nx++) {
-	    res[zaehler++] += cos(segx);	  
-	    segx += incx;
+      for (nt=0; nt < gridlent; nt++) {	
+        segz = segt;
+	for (nz=0; nz < gridlenz; nz++) {	
+	  segy = segz;
+	  for (ny=0; ny<gridleny; ny++) {	
+	    segx = segy;
+	    for (nx=0; nx<gridlenx; nx++) {
+		// printf("zaehler=%d %f\n", zaehler, segx);
+	      res[zaehler++] += cos(segx);	  
+	      segx += incx;
+	    }
+	    segy += incy;
 	  }
-	  segy += incy;
+	  segz += inc[2];
 	}
+	segt += inc[3];
       }
     } else { // no grid
       if (kc->truetimespacedim==1) {
@@ -203,8 +239,6 @@ void do_simulatespectral(key_type *key, int m, double *res )
 	}
       } else { // kc->truetimespacedim==2 
 	int twonx;
-	double sp;
-	sp = Amp * sin(phi); 
 	for (nx=0; nx<key->totalpoints; nx++) {	
 	  twonx = nx * 2;
 	  res[nx] += cos(cp * kc->x[twonx] + sp * kc->x[twonx+1] + VV);

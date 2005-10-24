@@ -48,7 +48,7 @@ bool TBM2NUMERIC = true;
 int TBM_POINTS = 0;
 double TBM_CENTER[MAXDIM] = {NA_REAL, NA_REAL, NA_REAL, NA_REAL};
 
-ce_param TBMCE = {false, true, false, TRIVIALSTRATEGY, 3, 10000000, 
+ce_param TBMCE = {false, true, false, true, TRIVIALSTRATEGY, 3, 10000000, 
 		  -1e-7, 1e-3, 0, 0, 0, 0};
 
 SimulationType TBM_METHOD=CircEmbed;
@@ -405,12 +405,14 @@ void TBM_destruct(void **S)
   }
 }
 
-void SetParamTBMCE( int *action, int *force, double *tolRe, double *tolIm,
-			int *trials, double *mmin, int *useprimes, int *strategy,
-			double *maxmem, int *dependent) 
+void SetParamTBMCE(int *action, int *force, double *tolRe, double *tolIm,
+		   int *trials, double *mmin, int *useprimes, int *strategy,
+		   double *maxmem, int *dependent)
 {
-  SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
-	      maxmem, dependent, &TBMCE,"TBMCE");
+  int TRUE=1;
+  SetParamCE(action, force, tolRe, tolIm, trials, &TRUE, 
+	     mmin, useprimes, strategy,
+	     maxmem, dependent, &TBMCE,"TBMCE");
 }
 
 
@@ -508,6 +510,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   CovFctType CovFctTBM;
   TBM_storage *s;
 
+  assert(key->timespacedim <= 4);
   meth = &(key->meth[m]);
    /* multiplication of the anisotropy matrix from the right */
   nonzero_pos = -1;
@@ -557,6 +560,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   if (GENERAL_PRINTLEVEL>4) 
       PRINTF("determining first nonzero_pos and TBM simulation dimension...\n");
   s->ce_dim = 0;
+  ce_dim2 = false;
   for (v=0; v<key->ncov; v++) {
     kc = &(key->cov[v]);
     if ((kc->method==method) && (kc->left)) {
@@ -580,13 +584,12 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  Xerror=ERRORTRIVIAL; goto ErrorHandling;
       }
       if (key->Time) {
-        ce_dim2=TBM_FORCELAYERS;	
+        ce_dim2 |= TBM_FORCELAYERS;	
 	lasttimecomponent = lastmatching;
         firsttimecomponent = key->totalparam - key->timespacedim;
-        assert(kc->truetimespacedim <= 4);
  	ce_dim2 |= CovList[kc->nr].type==SPACEISOTROPIC ||
 	    kc->truetimespacedim == 1 + tbm_dim;
-	while (!ce_dim2 && kc->op && (++v)<key->ncov) {
+	while (!ce_dim2 && (++v)<key->ncov && kc->op) {
 	  // here: only check whether within the multiplicative model
 	  // the anisotropy matrices are not multiplicatives of each other.
 	  // If so, ce_dim2 is necessarily true.
@@ -607,7 +610,6 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  }
 	}
       } else {
-        ce_dim2 = false;
 	assert(kc->truetimespacedim <= tbm_dim); 
       }
       s->ce_dim = 1 + (int) ce_dim2;
@@ -630,8 +632,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     goto ErrorHandling;
   }
   s->simuspatialdim = first->truetimespacedim;
-  if (ce_dim2) s->simuspatialdim +=
-		   (int) (key->Time && first->param[lasttimecomponent]==0.0) - 1;
+  if (ce_dim2 && first->param[lasttimecomponent]!=0.0) (s->simuspatialdim)--;
+  // s->simuspatialdim aus aniso matrix!
 
 
   /****************************************************************/
@@ -712,7 +714,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	       SPACEISOTROPIC, &Timedummy, &totaltimespacedim, s->aniso);
     if (ce_dim2) assert(s->simuspatialdim == totaltimespacedim - 1);
     else assert(totaltimespacedim = first->truetimespacedim);
-    if (s->simuspatialdim > tbm_dim){Xerror = ERRORWRONGDIM; goto ErrorHandling;}
+    if (s->simuspatialdim > tbm_dim) {
+      Xerror = ERRORWRONGDIM; 
+      goto ErrorHandling;
+    }
     s->truetimespacedim = totaltimespacedim;
     
     // ******************************
@@ -784,6 +789,12 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   }
   if (diameter > MAXNN) {Xerror=ERRORNN; goto ErrorHandling;}
 
+
+  if (s->simugrid) {
+    for (d=0; d<key->timespacedim; d++) {
+      s->genuine_dim[d] = first->genuine_dim[d];
+    }
+  }
 
 //////////////////////////////////////////////////////////////////////
   if (GENERAL_PRINTLEVEL>4) PRINTF("extracting matching covariances...");
@@ -947,7 +958,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 				      ce_dim2 /* Time */, covnr, ParamList, 
 				      cum_nParam[actcov], meth->actcov,
 				      true /* anisotropy */, op, tbmmethod,
-				      DISTR_GAUSS, &(s->key), true /* storing */,
+				      DISTR_GAUSS, &(s->key),
 				      0 /* natural scaling */,
 				      CovFctTBM);
      if (Xerror==NOERROR) break;
@@ -974,7 +985,6 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   else return NOERROR;
   
  ErrorHandling:
-  key->active = false;
   return Xerror;
 }
 
@@ -988,12 +998,11 @@ int init_turningbands3(key_type *key, int m) {
 
 void do_turningbands(key_type *key, int m, double *res)
 { 
-  double phi, *simuline, centerx, centery, centerz, nnhalf, gridlent,
-      deltax, deltay,  deltaz, stepx, stepy, stepz;
+  double phi, *simuline, centerx, centery, centerz, nnhalf, 
+      incx, incy,  incz, inct=0.0, stepx, stepy, stepz, stept;
   long n, nn, totpoints, ntot;
-  int nt, simutimespacedim, gridlenx, gridleny, gridlenz;
+  int nt, simutimespacedim, idx, gridlent;
 
-  assert(key->active);
   tbm_lines *tbm;
   methodvalue_type *meth; 
   TBM_storage *s;
@@ -1003,104 +1012,103 @@ void do_turningbands(key_type *key, int m, double *res)
   nn = s->key.length[0];
   ntot = s->key.totalpoints;
   simutimespacedim = s->truetimespacedim;
-  if (s->ce_dim == 1) {
-    gridlent = 1;
-    totpoints = key->totalpoints;
-  } else {
-    assert(s->ce_dim==2); 
-    gridlent = s->key.length[1];
-    totpoints = key->spatialtotalpoints;
-  }
-  assert(gridlent * nn == ntot);
   nnhalf = 0.5 * (double) nn; 
   simuline = s->simuline; 
-
-  centery = stepy = deltay = centerz = stepz = deltaz = 0.0;
-  gridlenx = gridleny = gridlenz = 1;
-  switch (s->simuspatialdim) {
-      case 3 : 
-	  centerz = s->center[2]; 
-	  if (s->simugrid) centerz -= s->x[XSTARTDIM3];
-	  gridlenz=key->length[2];
-	  stepz = s->x[XSTEPDIM3];	    // no break;
-      case 2 : 
-	  centery = s->center[1];
-	  if (s->simugrid) centery -= s->x[XSTARTDIM2];
-	  gridleny=key->length[1];
-	  stepy = s->x[XSTEPDIM2];	    // no break;
-      case 1 : 
-	  centerx = s->center[0];
-	  if (s->simugrid) centerx -= s->x[XSTARTDIM1];
-	  gridlenx=key->length[0];
-	  stepx = s->x[XSTEPDIM1]; 
-	  break;
-      default : assert(false);
-  }  
   tbm = (meth->unimeth==TBM2) ?  &tbm2 : &tbm3;
-     
+
+
   for (n=0; n<key->totalpoints; n++) res[n]=0.0; 
   if (s->simugrid) { // old form, isotropic field
-    double xoffset,  yoffset, zoffset,  toffset;
-    int nx, ny, nz,  zaehler;
-      
-    if (meth->unimeth==TBM2) {// isotropy, TBM2, grid 
-      double deltaphi;
-      deltaphi = PI / (double) tbm->lines;
-      phi = deltaphi * UNIFORM_RANDOM; 
-      for (n=0; n<tbm->lines; n++) {
-	if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n);
-	deltax=sin(phi);
-	deltay=cos(phi);
-	internal_DoSimulateRF(&(s->key), 1, simuline);
-	toffset= nnhalf - centery * deltay - centerx * deltax;
-	deltax *= stepx;
-	deltay *= stepy;
-	zaehler = 0;
-	for (nt=0; nt<gridlent; nt++) {
-	  yoffset = toffset;
+    double xoffset,  yoffset, zoffset,  toffset, e[3], deltaphi;
+    int nx, ny, nz, gridlenx, gridleny, gridlenz, ix, iy, iz, it;
+    long zaehler;
+
+    stepx = stepy = stepz = stept = centerx = centery = centerz = 0.0;
+    gridlenx = gridleny = gridlenz = gridlent = 1;
+    ix = iy = iz = it = 0;
+    idx = key->timespacedim;
+    if (s->ce_dim==2) {
+      gridlent = key->length[idx]; // could be one !!
+      stept = s->x[XSTEPD[--idx]];	    
+      inct = (double) nn;
+    }
+    switch (idx) {
+	case 4 : 
+	  gridlent = key->length[--idx];
+	  if (s->genuine_dim[idx] != 0) {
+	    stept = s->x[XSTEPD[idx]];	    
+	    it = idx;	
+	  }
+	case 3 : 
+	  gridlenz = key->length[--idx];
+	  if (s->genuine_dim[idx] != 0) {
+	    stepz = s->x[XSTEPD[idx]];	  
+	    iz = idx;
+	  }  // no break;
+	case 2 : 
+	  gridleny = key->length[--idx];
+	  if (s->genuine_dim[idx] != 0) {
+	    stepy = s->x[XSTEPD[idx]];	 
+	    iy = idx;
+	  }  // no break;
+	case 1 : 
+	  gridlenx = key->length[--idx];
+	  if (s->genuine_dim[idx] != 0) {
+	    stepx = s->x[XSTEPD[idx]];	  
+	    ix = idx;
+	  } 
+	  break;
+	default : assert(false);
+    }
+    
+    switch (s->simuspatialdim) {
+	case 3 : 
+	    centerz = s->center[2] - s->x[XSTARTD[2]]; // no break;
+	case 2 : 
+	    centery = s->center[1] - s->x[XSTARTD[1]]; // no break;
+	case 1 : 
+	    centerx = s->center[0] - s->x[XSTARTD[0]];
+	    break;
+	default : assert(false);
+    }
+    assert(meth->unimeth==TBM2 || meth->unimeth==TBM3);
+     
+    deltaphi = PI / (double) tbm->lines;
+    phi = deltaphi * UNIFORM_RANDOM; 
+    for (n=0; n<tbm->lines; n++) {
+      if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n);
+      if (meth->unimeth==TBM2) {
+	phi += deltaphi;
+	sincos(phi, &(e[0]), &(e[1]));
+	toffset= nnhalf - centery * e[1] - centerx * e[0];
+      } else {
+  	unitvector3D(key->spatialdim, &(e[0]), &(e[1]), &(e[2]));
+ 	toffset= nnhalf - centerz * e[2] - centery * e[1] - centerx * e[0];
+      }
+      incx = e[ix] * stepx;
+      incy = e[iy] * stepy;
+      incz = e[iz] * stepz;
+      if (s->ce_dim == 1) inct = e[it] * stept; // else (double) nn !!
+      internal_DoSimulateRF(&(s->key), 1, simuline);
+      zaehler = 0;
+      for (nt=0; nt<gridlent; nt++) {
+	zoffset = toffset;
+	for (nz=0; nz<gridlenz; nz++) {	  
+	  yoffset = zoffset;
 	  for (ny=0; ny<gridleny; ny++) {	  
 	    xoffset = yoffset;
 	    for (nx=0; nx<gridlenx; nx++) {
 	      assert((xoffset<ntot) && (xoffset>=0) );
 	      res[zaehler++] += simuline[(long) xoffset];
-	      xoffset += deltax;
+	      xoffset += incx;
 	    }
-	    yoffset += deltay;
+	    yoffset += incy;
 	  }
-	  toffset += (double) nn;
+	  zoffset += incz;
 	}
-	phi += deltaphi;
+	toffset += inct;
       }
-    } else {// isotropy, TBM3, grid
-     assert(meth->unimeth==TBM3);
-     for (n=0; n<tbm->lines; n++){
-	if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n);
-	unitvector3D(key->spatialdim, &deltax, &deltay, &deltaz);
-	toffset= nnhalf - centerz * deltaz - centery * deltay - centerx * deltax;
-	deltax *= stepx;
-	deltay *= stepy;
-	deltaz *= stepz;
-	internal_DoSimulateRF(&(s->key), 1, simuline);
-	zaehler = 0;
-	for (nt=0; nt<gridlent; nt++) {
-	  zoffset = toffset;
-	  for (nz=0; nz<gridlenz; nz++) {
-	    yoffset = zoffset;
-	    for (ny=0; ny<gridleny; ny++) {
-	      xoffset = yoffset;
-	      for(nx=0; nx<gridlenx; nx++) {
-		assert( (xoffset<ntot) && (xoffset>=0) );
-		res[zaehler++] += simuline[(long) xoffset];	  
-		xoffset += deltax;
-	      }
-	      yoffset += deltay;
-	    }
-	    zoffset += deltaz;
-	  }
-	  toffset += (double) nn;
-	}
-      } // for n
-    } // isotropy, TBM3, simugrid
+    } // n
   } else { 
     // not simugrid, could be time-model!
     // both old and new form included
@@ -1131,6 +1139,31 @@ void do_turningbands(key_type *key, int m, double *res)
           offset += (double) nn;\
         }\
       }\
+    }
+
+    if (s->ce_dim == 1) {
+      gridlent = 1;
+      totpoints = key->totalpoints;
+    } else { // ce_dim==2 nur erlaubt fuer echte Zeitkomponente
+      assert(s->ce_dim==2); 
+      gridlent = s->key.length[1];
+      totpoints = key->spatialtotalpoints;
+    }
+    assert(gridlent * nn == ntot);
+    
+    centery = stepy = incy = centerz = stepz = incz = 0.0;
+    switch (s->simuspatialdim) {
+	case 3 : 
+	    centerz = s->center[2]; 
+	    stepz = s->x[XSTEPD[2]];	    // no break;
+	case 2 : 
+	    centery = s->center[1];
+	    stepy = s->x[XSTEPD[1]];	    // no break;
+	case 1 : 
+	    centerx = s->center[0];
+	    stepx = s->x[XSTEPD[0]]; 
+	    break;
+	default : assert(false);
     }
 
     if (meth->unimeth==TBM2) {

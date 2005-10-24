@@ -34,6 +34,8 @@
 #define EPSILON     0.00000000001
 #define EPSILON1000 0.000000001
 #define INFDIM 9999
+#define MAX_INT 2147483647
+
 extern double EIGENVALUE_EPS; // used in GetTrueDim
 
 

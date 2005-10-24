@@ -34,9 +34,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Applic.h>
 #include <R_ext/Linpack.h>
 
-ce_param CIRCEMBED={false, true, false, TRIVIALSTRATEGY, 3, 20000000, 
+#define MAX_CE_MEM 16777216
+ce_param CIRCEMBED={false, true, false, true, TRIVIALSTRATEGY, 3, MAX_CE_MEM, 
 		    -1e-7, 1e-3, 0, 0, 0, 0};
-ce_param LOCAL_CE={false, true, false, TRIVIALSTRATEGY, 1, 20000000, 
+ce_param LOCAL_CE={false, true, false, true, TRIVIALSTRATEGY, 1, MAX_CE_MEM, 
 		   -1e-9, 1e-7, 0, 0, 0, 0};
 
 void FFT_destruct(FFT_storage *FFT)
@@ -91,19 +92,23 @@ void localCE_destruct(void **S)
 /*********************************************************************/
 
 void SetParamCircEmbed( int *action, int *force, double *tolRe, double *tolIm,
-			int *trials, double *mmin, int *useprimes, int *strategy,
+			int *trials, int *severalrealisations,
+			double *mmin, int *useprimes, int *strategy,
 		        double *maxmem, int *dependent) 
 {
-  SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
+  SetParamCE(action, force, tolRe, tolIm, trials, severalrealisations,
+	     mmin, useprimes, strategy,
 	     maxmem, dependent, &CIRCEMBED, "CIRCEMBED");
 }
 
 void SetParamLocal( int *action, int *force, double *tolRe, double *tolIm,
-			int *trials, double *mmin, int *useprimes, int *strategy,
-		        double *maxmem, int *dependent) 
+		     int *severalrealisations, double *mmin, int *useprimes,
+		    double *maxmem, int *dependent) 
 {
-  SetParamCE(action, force, tolRe, tolIm, trials, mmin, useprimes, strategy,
-	     maxmem, dependent, &LOCAL_CE, "LOCAL");
+  int ONE=1;
+  SetParamCE(action, force, tolRe, tolIm, &ONE, severalrealisations,
+	     mmin, useprimes, 
+	     &ONE /* anything */, maxmem, dependent, &LOCAL_CE, "LOCAL");
 }
 
 int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
@@ -374,10 +379,10 @@ int init_circ_embed(key_type *key, int m)
 	      if (c[twoi]<smallest) { index=twoi; smallest=c[index]; }
 	    } 
 	  }
-	  PRINTF("   The smallest eigenvalue is c[%d] =  %e.\n",
+	  PRINTF("   There are %d negative eigenvalues (%5.3f%s).\n", 
+		 sum, 100.0 * (double) sum / (double) mtot, percent);
+	  PRINTF("   The smallest eigenvalue is c[%d] =  %e\n",
 		 index / 2, smallest);
-	  PRINTF("   The percentage of negative eigenvalues is %5.3f%s.\n", 
-		 100.0 * (double) sum / (double) mtot, percent);
 	}
       }
 
@@ -455,9 +460,11 @@ int init_circ_embed(key_type *key, int m)
     for (i=0;i<2*mtot;i++) {PRINTF("%f ",c[i]);} PRINTF("\n");
   }  
   
-  s->dependent = cepar->dependent; 
+  s->dependent = cepar->dependent;
+  s->new_simulation_next = true;
   for(i=0; i<dim; i++) { // set anyway -- does not cost too much
-    s->cur_square[i] = s->max_squares[i] = mm[i] / s->nn[i];
+    s->cur_square[i] = 0;
+    s->max_squares[i] = mm[i] / s->nn[i];
     s-> square_seg[i] = cumm[i] * (s->nn[i] + (mm[i] - s->max_squares[i] * 
 					       s->nn[i]) / s->max_squares[i]);
   }
@@ -465,8 +472,8 @@ int init_circ_embed(key_type *key, int m)
 //  s->c = c;
 //  return NOERROR;
   
-  if (key->storing) {
-    if ((s->d=(double *) malloc(twoRealmtot))==0){
+  if (cepar->severalrealisations) {
+    if ((s->d=(double *) malloc(twoRealmtot))==0) {
       Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;} //d
   }
   s->c = c;
@@ -761,7 +768,6 @@ int init_circ_embed_local(key_type *key, int m)
 				     covnr, ParamList, cum_nParam,
 				     simuactcov, key->anisotropy, op,
 				     CEMethod, DISTR_GAUSS, &(s->key), 
-				     GENERAL_STORING, 
 				     0 /* natural scaling */, CovFct);
     anychangings = false;
     if (Xerror == NOERROR || Xerror == USEOLDINIT) {
@@ -847,7 +853,6 @@ void do_circ_embed_local(key_type *key, int m, double *res )
   covinfo_type *sc;
   cov_fct *hyper;
 
-  assert(key->active);
   s = (localCE_storage*) key->meth[m].S;
   internal_DoSimulateRF(&(s->key), 1, res);
   
@@ -899,18 +904,15 @@ void do_circ_embed(key_type *key, int m, double *res){
   int  i, j, k, HalfMp1[MAXDIM], HalfMaM[2][MAXDIM], index[MAXDIM], dim,
     *mm, *cumm, *halfm;
   double XX,YY,invsqrtmtot, *c, *d;
-  bool first, free[MAXDIM+1], noexception, simulate;
+  bool first, free[MAXDIM+1], noexception;
   long mtot, start[MAXDIM], end[MAXDIM];
   CE_storage *s;
   s = (CE_storage*)key->meth[m].S;
-  assert(key->active);
   if (s->d==NULL) { /* overwrite the intermediate result directly
 		       (algorithm allows for that) */
     d=s->c;
-    assert(!key->storing);
   }
   else {
-    assert(key->storing);
     d=s->d;
   }
 
@@ -921,11 +923,7 @@ void do_circ_embed(key_type *key, int m, double *res){
      Wood and Chan,p. 415, although they have suggested a more general 
      algorithm;) 
      
-     Warning! If key->storing==false when calling init_circ_embed
-     and key->storing==true when calling do_circ_embed, the
-     complete programme will fail, since the initialization depends on
-     the value of key->storing
-  */  
+*/  
   
   dim = key->timespacedim;
   mm = s->m;
@@ -956,14 +954,7 @@ void do_circ_embed(key_type *key, int m, double *res){
   }
   free[MAXDIM] = false;
 
-//  if MaxStableRF calls Cutofff, c and look uninitialised
-  k=0; 
-  while(k<dim && (++s->cur_square[k] >= s->max_squares[k])) {
-      s->cur_square[k++]=0;
-  }
-  simulate = !s->dependent || k==dim;
-
-  if (simulate) {
+  if (s->new_simulation_next) {
     for(;;) {      
       i = j = 0;
       noexception = false;
@@ -1057,10 +1048,6 @@ void do_circ_embed(key_type *key, int m, double *res){
       }
   }
     
-//  printf("%f\n", d[0]);
-//  printf("%f\n", d[1]);
-//  printf("%f\n", d[2]);
-//  printf("%f\n", d[3]);
 
 //  double zz=0.0;
 //  for (i =0; i<2 * mtot; i++) {
@@ -1099,4 +1086,15 @@ void do_circ_embed(key_type *key, int m, double *res){
       index[k]=start[k]; 
     }
   }
+
+  if (s->dependent) {
+//  if MaxStableRF calls Cutoff, c and look uninitialised
+    k=0; 
+    while(k<dim && (++(s->cur_square[k]) >= s->max_squares[k])) {
+      s->cur_square[k++]=0;
+    }
+    s->new_simulation_next = k==dim; 
+  }
+  //printf("%d %d\n", s->cur_square[0],s->cur_square[1]);
+  key->stop |= s->new_simulation_next && s->d == NULL;
 }

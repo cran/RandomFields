@@ -93,23 +93,21 @@ EXTERN void VariogramNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 EXTERN void SetParamDecision( int *action, int *stationary_only, 
 			      int *exactness);
 EXTERN void SetParamSpectral(int *action,int *nLines, int *grid);
-EXTERN void SetParamDirectGauss(int *action,int *method,int *checkprecision,
-				double *requiredprecision, int *bestvariables,
+EXTERN void SetParamDirectGauss(int *action,int *method, int *bestvariables,
 				int *maxvariables);
 
 // simulation procedure
 EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe, 
 			      double *tolIm,
-			      int *trials, 
+			      int *trials,  int *severalrealisations,
 			      double *mmin, /* vector of length MAXDIM */
-			      int *userfft, int *strategy, double*maxmem,
+			      int *useprimes, int *strategy, double*maxmem,
 			      int *dependent);
 
 // for local circulant embedding
 EXTERN void SetParamLocal( int *action, int *force, double *tolRe, 
-			   double *tolIm,
-			   int *trials, double *mmin, int *useprimes, 
-			   int *strategy,
+			   double *tolIm,  int *severalrealisations,
+			   double *mmin, int *useprimes, 
 			   double *maxmem, int *dependent);
 
 // either linesimufactor or linesimustep is used; linesimufactor is used 
@@ -126,7 +124,7 @@ EXTERN void SetParamTBM3(int *action, int *nLines, double *linesimufactor,
 			   double *linesimustep, int *every);
 // for simulation of line by circular embedding
 EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
-			  int *trials, 
+			  int *trials,
 			  double *mmin, /* vector of length MAXDIM */ 
 			  int *userfft, int *strategy, double*maxmem,
 			  int *dependent); 
@@ -163,7 +161,7 @@ EXTERN void DoMaxStableRF(int *keyNr, int *n, int *pairs,
 
 EXTERN void GetKeyInfo(int *keyNr,int *total, int *lengths, int *dim, 
 		       int *timespacedim, int *grid, int *distr, int *maxdim);
-EXTERN SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive);
+EXTERN SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive, SEXP max_element);
 EXTERN SEXP GetExtModelInfo(SEXP keynr);
 
 /* 

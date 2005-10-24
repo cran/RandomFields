@@ -84,7 +84,8 @@ int init_hyperplane(key_type *key, int m)
   methodvalue_type *meth; 
   covinfo_type *kc=NULL;
   hyper_storage *s;
-  int error, timespacedim, optdim=2;
+  int error, timespacedim, 
+      optdim=2; // falls dies gelockert wird, so kc->idx[d] nicht vergessen!
 
       /* n == number of fields superposed 
         lx+1== grid points on x-axis
@@ -126,13 +127,13 @@ int init_hyperplane(key_type *key, int m)
       assert(kc->param[VARIANCE] >= 0.0);
       if ((key->ncov>v+1 && kc->op) || 
 	  (v>0 && key->cov[v-1].op)) {
-        error=ERRORNOMULTIPLICATION; goto ErrorHandling;
+	  error=ERRORNOMULTIPLICATION; goto ErrorHandling;
       }
-
-     /*    investigation of the param structure and the dimension    */
-     /*             check parameter of covariance function           */
-     timespacedim = kc->truetimespacedim;
-     if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
+      
+      /*    investigation of the param structure and the dimension    */
+      /*             check parameter of covariance function           */
+      timespacedim = kc->truetimespacedim;
+      if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  v += (int) kc->param[HYPERNR];
 	  error=ERRORHYPERNOTALLOWED; 
 	  goto ErrorHandling;
@@ -140,18 +141,18 @@ int init_hyperplane(key_type *key, int m)
       if (cov->implemented[Hyperplane] != IMPLEMENTED) { 
 	error = ERRORNOTDEFINED;
 	goto ErrorHandling;
-     }
+      }
       if ((error = cov->check(kc->param, timespacedim, Hyperplane)) 
 	  != NOERROR) 
 	goto ErrorHandling;
-     if (timespacedim == 1) {
-       error = ERRORNOTPROGRAMMED;
-       goto ErrorHandling;
-     }
-     if (timespacedim > optdim || timespacedim < 1) { 
-       error = ERRORWRONGDIM;
-       goto ErrorHandling;
-     }
+      if (timespacedim == 1) {
+	error = ERRORNOTPROGRAMMED;
+	goto ErrorHandling;
+      }
+      if (timespacedim > optdim || timespacedim < 1) { 
+	error = ERRORWRONGDIM;
+	goto ErrorHandling;
+      }
 
      if ((error=Transform2NoGrid(key, v)) != NOERROR) goto ErrorHandling;
      s->hyperplane = cov->hyperplane;
@@ -296,7 +297,6 @@ void do_hyperplane(key_type *key, int m, double *res)
 
   hx = hy = hr = NULL;
   assert(sizeof(unsigned int) == 4);
-  assert(key->active);
   meth = &(key->meth[m]);
   assert(meth->actcov == 1);
   kc = &(key->cov[meth->covlist[0]]);

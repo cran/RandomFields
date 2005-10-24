@@ -74,19 +74,22 @@
       Default: \code{'*'} [do]. 
     }
    \item{\code{Storing}}{Logical.
-      If \code{TRUE} then intermediate results are kept
-      after each simulation; if several simulation are performed with the same
-      model parameters then
-      \code{Storing=TRUE} accelerates the simulations, but needs additional
-      memory. \cr
-      Note that in subsequent calls of \command{\link{GaussRF}}
-      intermediate changes of RFparameters with flag "[init]"
-      do not have any influence on the algorithm.
-      Hence, for studying the effects for
-      divers values of technical parameters like
-      \code{CE.force}, \code{CE.mmin}, etc. the parameter \code{Storing} must be
-      \code{FALSE}.  See also last paragraphs in the Details.
-      Default: \code{FALSE} [init, do].
+     If \code{FALSE} then the intermediate results are
+     destroyed after the simulation of the random field(s).
+
+     On the other hand, if \code{Storing=TRUE}, then
+     several simulations for the same
+     model parameters are performed faster, see the examples.
+
+     Note that in subsequent calls of \command{\link{GaussRF}}
+     intermediate changes of RFparameters with flag "[init]"
+     do not have any influence on the algorithm, if
+     \code{Storing=TRUE}. 
+
+     See alse \code{CE.several}, \code{TBMCE.several} and
+     \code{local.several} for related parameters.
+     
+      Default: \code{FALSE} [do].
     }
     \item{\code{stationary.only}}{Logical or NA. Used for the automatic
       choice of methods. See also \link{RFMethods}.
@@ -118,10 +121,16 @@
       }
       Default: \code{NA} [init].
     }
+    \item{\code{direct.bestvariables}}{integer.
+      When searching for an appropriate simuation method
+      the matrix decomposition method (see \sQuote{direct method} below)
+      is preferred if the number of variables is less than or equal to 
+      \code{direct.bestvariables}
+      Default: \code{800} [init]}
   }
   %
   
-  \bold{Options for simulating with the circulant embedding method}\cr
+  \bold{Options for simulating with the standard circulant embedding method}\cr
   \describe{
     \item{\code{CE.force}}{Logical.  Circulant embedding does not work if a
       certain circulant
@@ -164,7 +173,7 @@
       circulant matrices, other simulation
       methods (TBM) are faster and might be preferred be the user.
       
-      \cr Default: \code{20000000} [init].
+      \cr Default: \code{4096^2 = 16777216} [init].
     }
     \item{\code{CE.tolIm}}{
       If the modulus of the imaginary part is less than
@@ -182,6 +191,11 @@
       up to \code{CE.trials-1} times.  If there are still negative
       eigenvalues, the simulation method fails if \code{CE.force=FALSE}. 
       Default: \code{3} [init].
+    }
+    \item{\code{CE.several}}{logical.
+      If \code{FALSE} only half the memory is need, but
+      only a single independent realisation can created.
+      Default: \code{TRUE} [init].
     }
     \item{\code{CE.useprimes}}{Logical.  If \code{FALSE}
       the columns of the circulant matrix
@@ -220,19 +234,17 @@
       be set to \code{-1}.
       
       Default: \code{0} [init].}    
-    \item{\code{local.strategy}}{see CE.strategy above.
-      Default: \code{0} [init].}
-    \item{\code{local.maxmem}}{see CE.maxmem above.
+    \item{\code{local.maxmem}}{see \code{CE.maxmem} above.
       Default: \code{20000000} [init].}
-    \item{\code{local.tolIm}}{see CE.tolIm above.
+    \item{\code{local.tolIm}}{see \code{CE.tolIm} above.
       Default: \code{1E-7} [init].}
-    \item{\code{local.tolRe}}{see CE.tolRe above.
+    \item{\code{local.tolRe}}{see \code{CE.tolRe} above.
       Default: \code{-1E-9} [init].}
-    \item{\code{local.trials}}{see CE.trials above.  
+    \item{\code{local.several}}{see \code{CE.several} above.  
       Default: \code{1} [init].}
-    \item{\code{local.useprimes}}{see CE.useprimes above.
+    \item{\code{local.useprimes}}{see \code{CE.useprimes} above.
       Default: \code{TRUE} [init].}
-    \item{\code{local.dependent}}{see CE.dependent above.
+    \item{\code{local.dependent}}{see \code{CE.dependent} above.
       Default: \code{FALSE} [init].}
   }
   %
@@ -240,33 +252,20 @@
   
   \bold{Options for simulating by simple matrix decomposition}\cr
   \describe{
-    \item{\code{direct.checkprecision}}{Gaussian
-      random vectors can be generated
-      by means of the square root of the covariance matrix. 
-      By default Cholesky decomposition is used.  If
-      \code{direct.checkprecision==TRUE} then the precision is checked. 
-      Default: \code{FALSE} [init].}
-    \item{\code{direct.maxvariables}}{Decomposition of the covariance matrix.
+    \item{\code{direct.maxvariables}}{
       If the number of variables to generate is
       greater than \code{direct.maxvariables}, then any matrix decomposition
       method is rejected.  It is important that this option is set
       conveniently to avoid great losses of time during the automatic
       search of a simulation method (\code{method=NULL} in
       \command{\link{GaussRF}}).  
-      Default: \code{1800} [init]}
+      Default: \code{4096} [init]}
     \item{\code{direct.method}}{Decomposition of the covariance matrix.
       If \code{direct.method==1}, Cholesky
       decomposition will not be attempted, but singular value
       decomposition
       used instead.
       Default: \code{0} [init].}
-    \item{\code{direct.requiredprecision}}{Decomposition of the covariance
-      matrix. 
-      If \code{direct.checkprecision==TRUE} and
-      the \code{direct.requiredprecision} is not reached then Cholesky
-      decomposition fails, and singular value decomposition is used. 
-      Default: \code{1e-11} [init].
-    }
   }
   %
 
@@ -359,7 +358,7 @@
     \item{\code{TBM2.lines}}{
       Number of lines used.
       Default: \code{60} [do].}
-    \item{\code{TBM2.linesimufactor}}{If \code{TBM2.linesimufactor} and
+    \item{\code{TBM2.linesimufactor}}{ \code{TBM2.linesimufactor} or
       \code{TBM2.linesimustep} must be non-negative; if
       \code{TBM2.linesimustep}
       is positive then \code{TBM2.linesimufactor} is ignored.
@@ -627,7 +626,8 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 ##                   use of exactness                     ##
 ##                                                        ##  
 ############################################################
-x <- seq(0, 1, 1/24)
+% library(RandomFields, lib="~/TMP")
+x <- seq(0, 1, 1/30)
 model <- list(list(model="stable", var=1, scale=1, kappa=1.0),
               "+",
               list(model="gencauchy", var=1, scale=1, kappa=c(1, 2)),
@@ -640,7 +640,8 @@ for (exactness in c(NA, FALSE, TRUE)) {
                 model=model, exactness=exactness,
                 stationary.only=NA, Print=4, n=1,
                 TBM2.linesimustep=1, Storing=TRUE)
-   str(GetRegisterInfo()$method)
+   str(lapply(GetRegisterInfo()$method,
+              function(x) x[c("name", "covnr")]))
  }
 
 
@@ -662,13 +663,18 @@ grid.size <- c(length(x), length(y))
 model <- list(list(model="exp", var=1.1, aniso=c(2,1,0.5,1)))
 CovarianceFct(matrix(c(1, -1), ncol=2), model=model) ## true value
 
+RFparameters(Storing=TRUE)
+m <- if (interactive()) 1000 else 2
+
 # determine number of non-overlapping realisations on the torus
 DeleteRegister()
 InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
 blocks <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$simupos
-(n <- prod(blocks))
-
-m <- if (interactive()) 1000 else 2
+(n <- prod(blocks) * 1) ## n any multiple of prod(blocks) to avoid
+##               dependencies between the m estimated covariance if
+##               if local.dep=TRUE; or put RFparameters(Storing=FALSE),
+##               but this is slower
+%str(GetRegisterInfo())
 
 # using local.dependent=TRUE...
 c1 <- numeric(m)

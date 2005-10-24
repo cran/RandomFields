@@ -73,7 +73,7 @@ int init_mpp(key_type * key, int m)
   int error, d, i, v, timespacedim, actcov;
   double max[MAXDIM];  
   mpp_storage *s;
-  covinfo_type *keycov;
+  covinfo_type *kc;
 
   error = NOERROR;
   meth = &(key->meth[m]);
@@ -86,26 +86,26 @@ int init_mpp(key_type * key, int m)
   s->dim = 0;  // otherwise error possible in InternalGetKeyInfo
 
   for (actcov=v=0; v<key->ncov; v++) {
-    keycov = &(key->cov[v]);
-    if ((keycov->method==AdditiveMpp) && keycov->left
-        && (keycov->param[VARIANCE]>0)) {
+    kc = &(key->cov[v]);
+    if ((kc->method==AdditiveMpp) && kc->left
+        && (kc->param[VARIANCE]>0)) {
       cov_fct *cov;
-      assert(keycov->nr>=0 && keycov->nr<currentNrCov);
+      assert(kc->nr>=0 && kc->nr<currentNrCov);
       meth->covlist[actcov] = v;
-      cov = &(CovList[keycov->nr]);
-      if (key->Time && !keycov->genuine_last_dimension && 
+      cov = &(CovList[kc->nr]);
+      if (key->Time && !kc->genuine_last_dimension && 
 	  (cov->type==SPACEISOTROPIC)) {// unclear whether this is too cautious
 	  error= ERRORWITHOUTTIME; goto ErrorHandling;}
-      if ((error=cov->check(keycov->param, keycov->truetimespacedim, 
+      if ((error=cov->check(kc->param, kc->truetimespacedim, 
 			    AdditiveMpp)) != NOERROR) goto ErrorHandling;
       if (cov->add_mpp_scl==NULL) {error=ERRORNOTDEFINED; goto ErrorHandling;}
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	error=ERRORHYPERNOTALLOWED; goto ErrorHandling;}
-      if ((v<key->ncov-1 &&  keycov->op)) {
+      if ((v<key->ncov-1 &&  kc->op)) {
 	// no multiplicative models are allowed
 	  error=ERRORNOMULTIPLICATION; goto ErrorHandling;}
       if ((error=Transform2NoGrid(key, v)) != NOERROR) goto ErrorHandling;
-      keycov->left=false;
+      kc->left=false;
       actcov++; 
       // do not pile up more than 1 elementary covariance function.
       // creating max-stable fields may cause difficulties! 
@@ -118,39 +118,38 @@ int init_mpp(key_type * key, int m)
   } else assert(actcov==1);
 
   meth->actcov = actcov;
-  keycov = &(key->cov[0]);
+  kc = &(key->cov[0]);
   // determine the minimum area where random field values are to be generated
-  if (keycov->simugrid) {
-    timespacedim = key->timespacedim;
-    for (d=0; d<timespacedim; d++) {
-      s->min[d]   = keycov->x[XSTARTD[d]];
-      s->length[d]= keycov->x[XSTEPD[d]] * (double) (key->length[d] - 1);
+    timespacedim = kc->truetimespacedim;
+  if (kc->simugrid) {
+    for (d=0; d<key->timespacedim; d++) {
+      s->min[kc->idx[d]]   = kc->x[XSTARTD[d]];
+      s->length[kc->idx[d]]= kc->x[XSTEPD[d]] * (double) (key->length[d] - 1);
       // x[XSTARTD[d]] and x[XSTEPD[d]] are assumed to be precise, but
       // not x[XENDD[d]] 
     }
   } else {
     int ix;
-    timespacedim = keycov->truetimespacedim;
       for (d=0; d<timespacedim; d++) {
       s->min[d]=RF_INF; 
       max[d]=RF_NEGINF;
     }
     v = 0;
-    keycov = &(key->cov[meth->covlist[v]]);
+    kc = &(key->cov[meth->covlist[v]]);
     for (ix=i=0; i<key->totalpoints; i++, ix+=timespacedim) {
       for (d=0; d<timespacedim; d++) {
-	if (keycov->x[ix+d] < s->min[d]) s->min[d] = keycov->x[ix+d];
-	if (keycov->x[ix+d] > max[d]) max[d] = keycov->x[ix+d];
+	if (kc->x[ix+d] < s->min[d]) s->min[d] = kc->x[ix+d];
+	if (kc->x[ix+d] > max[d]) max[d] = kc->x[ix+d];
       }
     }
     for (d=0; d<timespacedim; d++) 
       s->length[d] = max[d] - s->min[d];
   }
   v = 0;
-  keycov = &(key->cov[meth->covlist[v]]);
+  kc = &(key->cov[meth->covlist[v]]);
   s->addradius = MPP_RADIUS;  // must be set BEFORE the next command!!
-  CovList[keycov->nr].add_mpp_scl(s, timespacedim, keycov->param);
-  s->MppFct = CovList[keycov->nr].add_mpp_rnd;
+  CovList[kc->nr].add_mpp_scl(s, timespacedim, kc->param);
+  s->MppFct = CovList[kc->nr].add_mpp_rnd;
   if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>=2))
     PRINTF("Note: window has been enlarged by fixed value (%f)\n",s->addradius);
  
@@ -165,7 +164,7 @@ int init_mpp(key_type * key, int m)
 void do_addmpp(key_type *key, int m, double *res )
 { 
   methodvalue_type *meth; 
-  covinfo_type *keycov;
+  covinfo_type *kc;
   int i, d, v, timespacedim;
   double lambda, //[MAXDIM], 
     min[MAXDIM], max[MAXDIM], 
@@ -174,7 +173,6 @@ void do_addmpp(key_type *key, int m, double *res )
   mpp_storage *s;
   mppmodel model;
 
-  assert(key->active);
   meth = &(key->meth[m]);
   assert(meth->actcov==1);
   {
@@ -187,9 +185,9 @@ void do_addmpp(key_type *key, int m, double *res )
   
   switch (key->distribution) {
   case DISTR_GAUSS : 
-    keycov = &(key->cov[meth->covlist[v]]);
+    kc = &(key->cov[meth->covlist[v]]);
     lambda = ADDMPP_REALISATIONS * s->effectivearea;
-    factor = sqrt(keycov->param[VARIANCE] / 
+    factor = sqrt(kc->param[VARIANCE] / 
 		  (ADDMPP_REALISATIONS * s->integralsq));
     average = ADDMPP_REALISATIONS * s->integral;
     break;
@@ -201,8 +199,8 @@ void do_addmpp(key_type *key, int m, double *res )
     // only actcov==1 is possible!!
     //
     // maybe nice to switch MPPFcts back to actcov=1
-    keycov = &(key->cov[meth->covlist[v]]);
-    lambda = keycov->param[VARIANCE] * s->effectivearea; 
+    kc = &(key->cov[meth->covlist[v]]);
+    lambda = kc->param[VARIANCE] * s->effectivearea; 
     factor = average = 0.0 /* replace by true value !! */;  
     assert(false);
     if (key->mean!=0) {
@@ -224,11 +222,11 @@ void do_addmpp(key_type *key, int m, double *res )
   for (d=0; d<key->timespacedim; d++)  
       segment[d+1] = segment[d] * key->length[d];
   for (i=0; i<key->totalpoints; i++) res[i]=0.0;
-  keycov = &(key->cov[meth->covlist[v]]);
-  timespacedim = keycov->simugrid ? key->timespacedim : keycov->truetimespacedim;
+  kc = &(key->cov[meth->covlist[v]]);
+  timespacedim = kc->simugrid ? key->timespacedim : kc->truetimespacedim;
   for (poisson = rexp(1.0); poisson < lambda; poisson += rexp(1.0)) {   
     (s->MppFct)(s, min, max, &model);
-    if (keycov->simugrid) {
+    if (kc->simugrid) {
       int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
 	  segmentdelta[MAXDIM], dimM1;
       double coord[MAXDIM], startcoord[MAXDIM];
@@ -237,23 +235,28 @@ void do_addmpp(key_type *key, int m, double *res )
       for (d=0; d<timespacedim; d++) {	 
         // determine rectangle of indices, where the mpp function
         // is different from zero
-        if (min[d]< keycov->x[XSTARTD[d]]) {start[d]=0;}
-        else start[d] = (int) ((min[d] - keycov->x[XSTARTD[d]]) / 
-      			 keycov->x[XSTEPD[d]]);
-        // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
-        // not "* <= end[d]" !
-	end[d] = 1 + (int) ((max[d] - keycov->x[XSTARTD[d]]) /
-			    keycov->x[XSTEPD[d]]);
-	if (end[d] > key->length[d]) end[d] = key->length[d];	 
-
+	if (kc->length[d] != 1) {
+          if (min[d]< kc->x[XSTARTD[d]]) {start[d]=0;}
+	  else start[d] = (int) ((min[d] - kc->x[XSTARTD[d]]) / 
+				 kc->x[XSTEPD[d]]);
+	  // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
+	  // not "* <= end[d]" !
+	  end[d] = 1 + (int) ((max[d] - kc->x[XSTARTD[d]]) /
+			      kc->x[XSTEPD[d]]);
+	  if (end[d] > key->length[d]) end[d] = key->length[d];	 
+	} else {
+	    start[d] = 0;
+	    end[d] = key->length[d];
+	}
+	  
 	// prepare coord starting value and the segment vectors for res
 	index[d] = start[d];
 	segmentdelta[d] = segment[d] * (end[d]-start[d]);
 	resindex += segment[d] * start[d];
-	coord[d] = startcoord[d] = 
-	    keycov->x[XSTARTD[d]] + (double) start[d] * keycov->x[XSTEPD[d]];
+	coord[kc->idx[d]] = startcoord[d] = 
+	    kc->x[XSTARTD[d]] + (double) start[d] * kc->x[XSTEPD[d]];
       }
-	 
+
       // add mpp function to res
       dimM1 = timespacedim -1;
       d = 0; // only needed for assert(d<dim)
@@ -262,17 +265,17 @@ void do_addmpp(key_type *key, int m, double *res )
 	res[resindex] += model(coord); 
 	d=0;
 	index[d]++;
-	coord[d] += keycov->x[XSTEPD[d]];
+	coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 	resindex++;
 	while (index[d] >= end[d]) { 
 	  if (d>=dimM1) break;  // below not possible
 	  //                       as dim==1 will fail!
 	  index[d] = start[d];
-	  coord[d] = startcoord[d];
+	  coord[kc->idx[d]] = startcoord[d];
 	  resindex -= segmentdelta[d];
 	  d++; // if (d>=dim) break;
 	  index[d]++;
-	  coord[d] += keycov->x[XSTEPD[d]];
+	  coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 	  resindex += segment[d];
 	}
       }
@@ -282,7 +285,7 @@ void do_addmpp(key_type *key, int m, double *res )
       // the following algorithm can greatly be improved !
       // but for ease, just the stupid algorithm
       for (j=i=0; i<key->totalpoints; i++) {
-	for (d=0; d<timespacedim; d++, j++) y[d] = keycov->x[j];
+	for (d=0; d<timespacedim; d++, j++) y[d] = kc->x[j];
 	res[i] += model(y); 
       }
     }      

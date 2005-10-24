@@ -134,7 +134,7 @@ int checkexponential(double *param, int timespacedim, SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
     if (timespacedim>2) 
     {
-      strcpy(ERRORSTRING_OK,"total dim<=2");
+      strcpy(ERRORSTRING_OK,"genuine dim<=2");
       sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
       return ERRORCOVFAILED;
     }
@@ -297,13 +297,13 @@ int checkdampedcosine(double *param, int timespacedim, SimulationType method){
     }
   } else if (timespacedim==2 || timespacedim==1 && method==TBM2){
     if (param[KAPPA]<1.0) {
-      strcpy(ERRORSTRING_OK,"kappa >= 1.0 for 2 dimensions");
+      strcpy(ERRORSTRING_OK,"kappa >= 1.0 for 2 genuine dimensions");
       sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
       return ERRORCOVFAILED;
     }
   } else if (timespacedim==1){
     if (param[KAPPA]<0.0) {
-      strcpy(ERRORSTRING_OK,"kappa >= 0.0 for 1 dimension");
+      strcpy(ERRORSTRING_OK,"kappa >= 0.0 for 1 genuine dimension");
       sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
       return ERRORCOVFAILED;
     }
@@ -356,7 +356,7 @@ void infocircular(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkcircular(double *param, int timespacedim, SimulationType method){
   if (timespacedim>2) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 2");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 2");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -403,7 +403,7 @@ void infospherical(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkspherical(double *param, int timespacedim, SimulationType method){
   if (timespacedim > 3) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 3");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -463,7 +463,7 @@ int checkpower(double *param, int timespacedim, SimulationType method) {
   default: 
     if (param[KAPPA] <  0.5 * (1.0 + timespacedim)) {
       strcpy(ERRORSTRING_OK,"kappa >= (dim+1)/2");
-      sprintf(ERRORSTRING_WRONG,"kappa=%f dim=%d",param[KAPPA],
+      sprintf(ERRORSTRING_WRONG,"kappa=%f genuine dim=%d",param[KAPPA],
 	      timespacedim);
       return ERRORCOVFAILED;
     }
@@ -522,7 +522,7 @@ int checkstable(double *param, int timespacedim, SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
     if (timespacedim>2) 
     {
-      strcpy(ERRORSTRING_OK,"total dim<=2");
+      strcpy(ERRORSTRING_OK,"genuine total dim<=2");
       sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
       return ERRORCOVFAILED;
     }
@@ -663,7 +663,7 @@ int checkWhittleMatern(double *param, int timespacedim, SimulationType method) {
       case CircEmbedCutoff: case CircEmbedIntrinsic :
 	if (timespacedim>2) 
 	{
-	  strcpy(ERRORSTRING_OK,"total dim<=2");
+	  strcpy(ERRORSTRING_OK,"genuine total dim<=2");
 	  sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
 	  return ERRORCOVFAILED;
 	}
@@ -890,7 +890,7 @@ void infoGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkGneiting(double *param, int timespacedim, SimulationType method){
   if (timespacedim > 3) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 3");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -977,21 +977,21 @@ int checkgenGneiting(double *param, int timespacedim, SimulationType method)
   if ((method==TBM3) &&
       (param[KAPPAII] < 2.0 + param[KAPPAI])) { // b >= (d + 2a +1)/2 
     strcpy(ERRORSTRING_OK,"kappa2 <= 2.0 + kappa1");
-    sprintf(ERRORSTRING_WRONG, "method=TBM3, kappa1=%f and kappa2=%f ",
+    sprintf(ERRORSTRING_WRONG, "method=TBM3, kappa1=%f and kappa2=%f",
 	    param[KAPPAI], param[KAPPAII]);
     return ERRORCOVFAILED;    
   }
   if ((method==TBM2) &&
       (param[KAPPAII] < 1.5 + param[KAPPAI])) { // b >= (d + 2a +1)/2 
     strcpy(ERRORSTRING_OK,"kappa2 <= 2.0 + kappa1");
-    sprintf(ERRORSTRING_WRONG, "method=TBM3, kappa1=%f and kappa2=%f ",
+    sprintf(ERRORSTRING_WRONG, "method=TBM3, kappa1=%f and kappa2=%f",
 	    param[KAPPAI], param[KAPPAII]);
     return ERRORCOVFAILED;    
   }
   if  (param[KAPPAII] < ( 0.5 * timespacedim + 
 				 param[KAPPAI] + 0.5)) {
     strcpy(ERRORSTRING_OK, "kappa2 >= (dim + 2*kappa1 + 1)/2 ");
-    sprintf(ERRORSTRING_WRONG, "kappa1=%f, kappa2=%f, and dim=%d ",
+    sprintf(ERRORSTRING_WRONG, "kappa1=%f, kappa2=%f, and genuine dim=%d",
 	    param[KAPPAI], param[KAPPAII], timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1171,7 +1171,7 @@ int checkgeneralisedCauchy(double *param, int timespacedim, SimulationType metho
   {
     if (timespacedim>2) 
     {
-      strcpy(ERRORSTRING_OK,"total dim<=2");
+      strcpy(ERRORSTRING_OK,"genuine total dim<=2");
       sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
       return ERRORCOVFAILED;
     }
@@ -1198,8 +1198,8 @@ double Cauchytbm(double *x, double *p, int effectivedim){
   register double ha;
   if ( *x==0) {return 1.0;}
   ha=pow(fabs( *x),p[KAPPAI]);
-  return 
-    (1.0+ (1.0-p[KAPPAII]/p[KAPPAIII])*ha) * pow(1.0+ha,-p[KAPPAII]/p[KAPPAI]-1.0);
+  return (1.0 + (1.0 - p[KAPPAII] / p[KAPPAIII]) * ha) * 
+      pow(1.0 + ha, -p[KAPPAII] / p[KAPPAI] - 1.0);
 }
 double TBM3Cauchytbm(double *x, double *p, int effectivedim){
   register double bg,ha;
@@ -1223,19 +1223,19 @@ int checkCauchytbm(double *param, int timespacedim, SimulationType method){
   if ((method==TBM3) && (3.0 > param[KAPPAIII])) {
     strcpy(ERRORSTRING_OK,"3 <= kappa3 and method=TBM3");
     sprintf(ERRORSTRING_WRONG,
-	    "method=TBM3 and kappa3=%f ",param[KAPPAIII]);
+	    "method=TBM3 and kappa3=%f",param[KAPPAIII]);
     return ERRORCOVFAILED;    
   }
   if ((method==TBM2) && (2.0 > param[KAPPAIII])) {
     strcpy(ERRORSTRING_OK,"2 <= kappa3 and method=TBM2");
     sprintf(ERRORSTRING_WRONG,
-	    "method=TBM2 and kappa3=%f ",param[KAPPAIII]);
+	    "method=TBM2 and kappa3=%f", param[KAPPAIII]);
     return ERRORCOVFAILED;    
   }
   if (timespacedim > param[KAPPAIII]) {
     strcpy(ERRORSTRING_OK,"dim <= kappa3");
     sprintf(ERRORSTRING_WRONG,
-	    "kappa3=%f < dim=%d ",param[KAPPAIII], timespacedim);
+	    "kappa3=%f and  genuine dim=%d",param[KAPPAIII], timespacedim);
     return ERRORCOVFAILED;    
   }
   // theory: should check whether p[KAPPAIII] is an integer. 
@@ -1287,7 +1287,8 @@ int checkBessel(double *param,  int timespacedim, SimulationType method){
   // Whenever TBM3Bessel exists, add further check against too small kappa!
   if (param[KAPPA]<0.5*((double) timespacedim) - 1.0) {
     strcpy(ERRORSTRING_OK,"kappa >= dim/2 - 1");
-    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPA]);
+    sprintf(ERRORSTRING_WRONG,"kappa=%f and genuine dim=%d",
+	    param[KAPPA], timespacedim);
     return ERRORCOVFAILED;
   }
   if (method==SpectralTBM && param[KAPPA]<0.0) {
@@ -1327,7 +1328,7 @@ void infowave(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkwave(double *param, int timespacedim, SimulationType method){
   if (timespacedim > 3) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 3");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1366,7 +1367,7 @@ void infocubic(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkcubic(double *param, int timespacedim, SimulationType method){
   if (timespacedim > 3) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 3");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1423,7 +1424,7 @@ void infopenta(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 int checkpenta(double *param, int timespacedim, SimulationType method){
   if (timespacedim > 3) {
-    strcpy(ERRORSTRING_OK,"dimension must be less than or equal to 3");
+    strcpy(ERRORSTRING_OK,"genuine dimension must be less than or equal to 3");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1511,7 +1512,7 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
   // then choice of phi; then two parameters for psi, then choice of psi
   error = NOERROR;
   if (timespacedim<=1) {
-    strcpy(ERRORSTRING_OK,"total dim>=2");
+    strcpy(ERRORSTRING_OK,"genuine total dim>=2");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1560,7 +1561,7 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
   }
   if (timespacedim - 1 > param[KAPPAVI]) {
     strcpy(ERRORSTRING_OK,"kappa6>=spatial_dim");
-    sprintf(ERRORSTRING_WRONG,"%f for spatial dim=%d",
+    sprintf(ERRORSTRING_WRONG,"%f for genuine spatial dim=%d",
 	    param[KAPPAVI], timespacedim-1);
     return ERRORCOVFAILED;
   }
@@ -1642,7 +1643,7 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
   // then choice of phi; then two parameters for psi, then choice of psi
   error = NOERROR;
   if (timespacedim<=1) {
-    strcpy(ERRORSTRING_OK,"total dim>=2");
+    strcpy(ERRORSTRING_OK,"genuine total dim>=2");
     sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1681,8 +1682,9 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
     return ERRORCOVFAILED;
   }
   if (timespacedim>param[KAPPAVII]) {
-    strcpy(ERRORSTRING_OK,"kappa7>=dim");
-    sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAVII]);
+    strcpy(ERRORSTRING_OK,"kappa7 >= dim");
+    sprintf(ERRORSTRING_WRONG,"kappa7=%d and genuine dim=%d",
+	    (int) param[KAPPAVII], timespacedim);
   }
   return error;
 }
@@ -1744,7 +1746,7 @@ double DDfractalBrownian(double *x, double*p, int effectivedim)
 
 int checkfractalBrownian(double *param, int timespacedim, SimulationType method){
   if ((timespacedim>3) && (method!=Nothing)) {
-    strcpy(ERRORSTRING_OK,"total dim<=3");
+    strcpy(ERRORSTRING_OK,"genuine total dim<=3");
     sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1782,7 +1784,7 @@ double fractGauss(double *x, double *p, int effectivedim){
 }
 int checkfractGauss(double *param, int timespacedim, SimulationType method) {
   if ((timespacedim!=1)) {
-    strcpy(ERRORSTRING_OK,"dim=1");
+    strcpy(ERRORSTRING_OK,"genuine dim=1");
     sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
     return ERRORCOVFAILED;
   }
@@ -1828,18 +1830,18 @@ double Dlgd1(double *x, double *p, int dim){
 }
 int checklgd1(double *param, int timespacedim, SimulationType method) {
   if ((timespacedim>2) && (method!=Nothing)) {
-    strcpy(ERRORSTRING_OK, "dim<=2");
+    strcpy(ERRORSTRING_OK, "genuine dim<=2");
     sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
     return ERRORCOVFAILED;
   }
   if (((param[KAPPAI]<=0) || (param[KAPPAI]>1.0)) && (timespacedim==1)) {
-    strcpy(ERRORSTRING_OK,"0<kappa1<=1, dim=1");
+    strcpy(ERRORSTRING_OK,"0<kappa1<=1, genuine dim=1");
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAI]);
     return ERRORCOVFAILED;
   }
   if (((param[KAPPAI]<=0) || (param[KAPPAI]>0.5)) && 
       (timespacedim==2 || timespacedim==1 && method==TBM2)) {
-    strcpy(ERRORSTRING_OK,"0<kappa1<=1/2, dim=2");
+    strcpy(ERRORSTRING_OK,"0<kappa1<=1/2, genuine dim=2");
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAI]);
     return ERRORCOVFAILED;
   }
@@ -1891,7 +1893,7 @@ int checkFD(double *param, int timespacedim, SimulationType method) {
     return ERRORCOVFAILED;    
   } 
   if (timespacedim>1) {
-    strcpy(ERRORSTRING_OK, "dim=1");
+    strcpy(ERRORSTRING_OK, "genuine dim=1");
     sprintf(ERRORSTRING_WRONG, "%d", timespacedim);
     return ERRORCOVFAILED;
   } 
@@ -1948,7 +1950,7 @@ int checkIacoCesare(double *param, int timespacedim, SimulationType method) {
     return ERRORCOVFAILED;    
   } 
   if (param[KAPPAIII] < 0.5 * timespacedim) {
-    strcpy(ERRORSTRING_OK, "kappa3 >= 0.5 * <time-space dimension>");
+    strcpy(ERRORSTRING_OK, "kappa3 >= 0.5 * <genuine time-space dimension>");
     sprintf(ERRORSTRING_WRONG, "%f", param[KAPPAIII]);
     return ERRORCOVFAILED;    
   } 

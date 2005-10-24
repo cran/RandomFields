@@ -140,6 +140,10 @@ void COVINFO_NULL(covinfo_type *cov){
     c->genuine_last_dimension = c->simugrid = false;
     c->left = true;
     param = c->param;
+    for (d=0; d<MAXDIM; d++) {
+      c->genuine_dim[d] = false;
+      c->length[d] = c->idx[d] = -1;
+    }
     for (d=0; d<MAXDIMSQ; d++) param[d] = c->aniso[d] = RF_NAN;
     for (; d<TOTAL_PARAM; param[d++]=RF_NAN);
   }
@@ -148,7 +152,7 @@ void COVINFO_NULL(covinfo_type *cov){
 void KEY_NULL(key_type *key)
 {
   int m, d;
-  key->active = false;
+  key->stop = key->active = false;
   key->ncov = key->n_unimeth = 0;
   key->spatialdim = key->timespacedim = key->totalparam = -1;
   key->totalpoints = key->spatialtotalpoints = 0;
@@ -277,11 +281,18 @@ void printAllKeys() {
 }
 
 int Transform2NoGrid(key_type *key, int v) {
-  covinfo_type *keycov;
-  keycov = &(key->cov[v]);
-  return Transform2NoGrid(key, keycov->aniso, keycov->truetimespacedim,
-			  keycov->simugrid,
-			  &(keycov->x));
+  int d;
+  covinfo_type *kc;
+  kc = &(key->cov[v]);
+  if (kc->simugrid) {
+    for (d=0; d<key->timespacedim; d++) {
+      kc->length[d] = kc->genuine_dim[d] ? key->length[d] : 1;
+//      printf("%d %d %d %d \n", d, 
+//	     kc->length[d], kc->genuine_dim[d], key->length[d]);
+    }
+  }
+  return Transform2NoGrid(key, kc->aniso, kc->truetimespacedim,
+			  kc->simugrid, &(kc->x));
 }
 
 int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
@@ -321,7 +332,7 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
     ? (key->timespacedim * 3)
     : (truetimespacedim * key->totalpoints);
 //  printf("2nogr %d %d %d %d \n", total, truetimespacedim, simugrid, key->totalpoints);
-  if ((x = *xx = (double*) malloc(sizeof(double) * total))==NULL)
+  if ((x = *xx = (double*) malloc(sizeof(double) * total)) == NULL)
     return ERRORMEMORYALLOCATION;
 
   if (key->anisotropy) {
@@ -339,7 +350,8 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
 	  }
     } else { 
       if (key->grid) {/* grid; with or without time component */
-	if (simugrid) { // necessarily diag matrix
+	if (simugrid) { // necessarily stemming from diag matrix, but compressed
+	    // according to zeros in the diagonal
 	  for (i=0; i<3; i++) {
 	    k = i;
 	    for (n=d=0; d<key->timespacedim; d++, k+=3) {
@@ -630,7 +642,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 { 
   // IMPORTANT!: p is the parameter vector of the R interface !!
   // output param : equals p, except naturalscaling
-  int error, v, i, totkappas, pAniso;
+  int error, v, i, totkappas, pAniso, d;
   double newscale;
   covinfo_type *kc;
   cov_fct *cov;
@@ -713,6 +725,23 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     if (maxdim < kc->truetimespacedim) return ERRORCOVNOTALLOWED;
     kc->simugrid = // kc->param[ANISO] !!
 	grid && (!anisotropy || is_diag(&(kc->param[ANISO]), timespacedim));
+    if (kc->simugrid) {
+      if (anisotropy) {
+	int n, ii;
+	for (ii=n=d=0; d<timespacedim; d++, n += timespacedim + 1) {
+	    if ((kc->genuine_dim[d] = param[ANISO + n] != 0.0)) {
+		kc->idx[d] = ii++;
+	    } else {
+		kc->idx[d] = kc->truetimespacedim + d - ii; 
+	    }
+	}
+      } else {
+	for (d=0; d<timespacedim; d++) {
+	    kc->genuine_dim[d] = true;
+	    kc->idx[d] = d;
+	}
+      }
+    }
     if (cov->type == ISOHYPERMODEL || cov->type == ANISOHYPERMODEL) {
 ////////////////////////
 	kc->simugrid = false; // not programmed yet -- save version !!!!!!
@@ -1026,11 +1055,14 @@ void VariogramMatrix(double *dist, int *lx, int *covnr, double *p, int *np,
 }
 
 int insert_method(int* last_incompatible, key_type *key,
-			 SimulationType m) {
+			 SimulationType m, bool incompatible) {
   int idx;
+
+  assert(m != Nugget || !incompatible);
+
   assert(key->meth[key->n_unimeth].S==NULL);
   assert(key->meth[key->n_unimeth].destruct==NULL);
-  if (do_incompatiblemethod[m]!=NULL) {
+  if (incompatible) {
     // first the non-compatible (i.e. which do not allow direct 
     // adding to the random field), then those which allow for 
     // direct adding
@@ -1049,12 +1081,14 @@ int insert_method(int* last_incompatible, key_type *key,
     key->meth[key->n_unimeth].S=key->meth[*last_incompatible].S; // necessary
     // only if further methods are tried due to partial failure
     key->meth[key->n_unimeth].destruct=key->meth[*last_incompatible].destruct;
-
+    key->meth[key->n_unimeth].incompatible = 
+	key->meth[*last_incompatible].incompatible;
     key->meth[*last_incompatible].S = NULL;
     key->meth[*last_incompatible].destruct = NULL;
     idx = *last_incompatible;
   } else idx=key->n_unimeth;
   key->meth[idx].unimeth = m;
+  key->meth[idx].incompatible = incompatible;
   key->meth[idx].unimeth_alreadyInUse = false;
   key->n_unimeth++;
   return idx;
@@ -1067,14 +1101,15 @@ void delete_method(int *M, int *last_incompatible, key_type *key) {
   if (key->meth[*M].destruct != NULL) key->meth[*M].destruct(&(key->meth[*M].S));
   assert(key->meth[*M].S==NULL);
   key->meth[*M].destruct=NULL;
-  if (do_incompatiblemethod[key->meth[*M].unimeth]!=NULL) {
+  if (key->meth[*M].incompatible) {
     assert(*last_incompatible>=0);
     assert(*M<=*last_incompatible);
-    key->meth[*M].unimeth=key->meth[*last_incompatible].unimeth;
+    key->meth[*M].unimeth = key->meth[*last_incompatible].unimeth;
     key->meth[*M].unimeth_alreadyInUse =
 	key->meth[*last_incompatible].unimeth_alreadyInUse;
     key->meth[*M].S = key->meth[*last_incompatible].S;
     key->meth[*last_incompatible].S=NULL;
+    key->meth[*M].incompatible = key->meth[*last_incompatible].incompatible;
     key->meth[*M].destruct=key->meth[*last_incompatible].destruct;
     key->meth[*last_incompatible].destruct=NULL;
     idx = *last_incompatible;
@@ -1090,6 +1125,7 @@ void delete_method(int *M, int *last_incompatible, key_type *key) {
 	key->meth[key->n_unimeth].unimeth_alreadyInUse;
     key->meth[idx].S = key->meth[key->n_unimeth].S;
     key->meth[key->n_unimeth].S=NULL;
+    key->meth[idx].incompatible = key->meth[key->n_unimeth].incompatible;
     key->meth[idx].destruct = key->meth[key->n_unimeth].destruct;
     key->meth[key->n_unimeth].destruct=NULL;
   }
@@ -1194,7 +1230,7 @@ void init_method_list(key_type *key)
       // key->ncov > 1 laesst hoffen, dass die andere Kovarianzfunktion
       // sich freundlicher verhaelt (z.B. wenn Nugget), so dass die Matrix
       // des Gesamtmodells sich gut bzgl. CE verhaelt.
-      if (key->cov[v].truetimespacedim==2) {
+      if (key->cov[v].truetimespacedim==2 || CEbadlybehaved > 1) {
 	raw[nr++] = SpectralTBM;
 	if (DECISION_PARAM.exactness==DECISION_FALSE) raw[nr++] = TBM2;
       }
@@ -1294,7 +1330,7 @@ void InitSimulateRF(double *x, double *T,
 			      *lx, (bool) *grid, (bool) *Time, 
 			      covnr, ParamList, *nParam,
 			      *ncov, (bool) *anisotropy, op, method,
-			      *distr, key, GENERAL_STORING, 
+			      *distr, key, 
 			      GENERAL_NATURALSCALING, CovFct);
   if (*error != NOERROR) goto ErrorHandling;
   return;
@@ -1314,7 +1350,7 @@ int internal_InitSimulateRF(double *x, double *T,
 			    int *method, 
 			    int distr, /* still unused */
 			    key_type *key,
-			    bool storing, int naturalscaling,
+			    int naturalscaling,
 			    CovFctType covFct)
 { // grid  : boolean
   // NOTE: if grid and Time then the Time component is treated as if
@@ -1334,11 +1370,6 @@ int internal_InitSimulateRF(double *x, double *T,
   char errorloc_save[nErrorLoc];
 
   strcpy(errorloc_save, ERROR_LOC);
-  key->storing = storing;
-  key->covFct = covFct;
-  // check parameters
-
-
 
   timespacedim = spatialdim + (int) Time; // may not set to key->timespacedim,
   //                      since key->timespacedim possibly by DeleteKeyNotTrend
@@ -1347,7 +1378,7 @@ int internal_InitSimulateRF(double *x, double *T,
     error=ERRORDIM; goto ErrorHandling;}  
   user_defined = method[0] >= 0;
   totalBytes =  sizeof(double) * lx * spatialdim;
- 
+  key->active &= !key->stop;
   // also checked by R function `PrepareModel'
 
   if ((error = CheckAndBuildCov(covnr, op, ncov,  ParamList, nParam,
@@ -1378,31 +1409,11 @@ int internal_InitSimulateRF(double *x, double *T,
     }
   }
 
-  if (covFct == CovFctTBM2) {
-     for (i=0; i<ncov; i++) {
-       int error;
-       covinfo_type *kc;
-       cov_fct *cov;
-       kc = &(key->cov[i]);
-       cov = &(CovList[kc->nr]);
-       error=cov->check(kc->param, 2, TBM2);
-       kc->param[TBM2NUM] =
-	  (double) ((error && 
-		     (cov->implemented[TBM2] == IMPLEMENTED) ||
-		      (cov->implemented[TBM2] == NUM_APPROX)) 
-		    ||
-		    (cov->implemented[TBM2]==NUM_APPROX && TBM2NUMERIC));
-      if (GENERAL_PRINTLEVEL > 1 && (kc->param[TBM2NUM]!=0.0))
-	  PRINTF("\tnumerical evaluation of the TBM operator for %s\n",
-		 cov->name);
-      }
-  }
-
 
   if (key->active) {   
      assert(key->x[0]!=NULL);
      key->active = 
-	 (covFct = key->covFct) &&
+	 (covFct == key->covFct) &&
 	 (key->grid == grid) && 
 	 ((key->grid && lx==3) || (!key->grid && key->totalpoints==lx)) &&
 	 (key->spatialdim==spatialdim) && 
@@ -1459,6 +1470,26 @@ int internal_InitSimulateRF(double *x, double *T,
     }
   }
 
+  key->covFct = covFct;
+  if (covFct == CovFctTBM2) {
+     for (i=0; i<ncov; i++) {
+       int error;
+       covinfo_type *kc;
+       cov_fct *cov;
+       kc = &(key->cov[i]);
+       cov = &(CovList[kc->nr]);
+       error=cov->check(kc->param, 2, TBM2);
+       kc->param[TBM2NUM] =
+	  (double) ((error && 
+		     (cov->implemented[TBM2] == IMPLEMENTED) ||
+		      (cov->implemented[TBM2] == NUM_APPROX)) 
+		    ||
+		    (cov->implemented[TBM2]==NUM_APPROX && TBM2NUMERIC));
+      if (GENERAL_PRINTLEVEL > 1 && (kc->param[TBM2NUM]!=0.0))
+	  PRINTF("\tnumerical evaluation of the TBM operator for %s\n",
+		 cov->name);
+      }
+  }
 
 
    // not literally "total"param; there might be gaps in the sequence of the 
@@ -1596,7 +1627,8 @@ int internal_InitSimulateRF(double *x, double *T,
     for (m=CircEmbed; m<=Nothing; m++) {
 //      printf("used %s %d\n", METHODNAMES[m], method_used[m]);
       if (method_used[m]) {
-	insert_method(&last_incompatible, key, (SimulationType) m); 
+	insert_method(&last_incompatible, key, (SimulationType) m,
+		      do_incompatiblemethod[m]!=NULL); 
 	//                increments key->n_unimeth
 //	printf("keynunimeth %d\n", key->n_unimeth);
 	if (method_used[m]==1) {
@@ -1656,7 +1688,8 @@ int internal_InitSimulateRF(double *x, double *T,
 //      printf("A NML %d %d %d %d\n", M, M<key->n_unimeth, key->NML[0], key->NML[1]);
 	switch (err_occurred) {
 	    case NOERROR_REPEAT:
-	      insert_method(&last_incompatible, key, meth->unimeth); // ??!!
+	      insert_method(&last_incompatible, key, meth->unimeth,
+			    do_incompatiblemethod[meth->unimeth]!=NULL); // ??!!
 	      err_occurred = NOERROR; 
 	      break;
 	    case NOERROR:
@@ -1769,7 +1802,8 @@ int internal_InitSimulateRF(double *x, double *T,
 	  }
 	  kcdummy->method = key->ML[v][i];
 	    
-	  M = insert_method(&last_incompatible, key, kcdummy->method);
+	  M = insert_method(&last_incompatible, key, kcdummy->method,
+			    do_incompatiblemethod[kcdummy->method]!=NULL);
 	  error = init_method[key->meth[M].unimeth](key, M);
 	  if (GENERAL_PRINTLEVEL>=3) {
 	    PRINTF("%s has return code %d;", 
@@ -1860,8 +1894,7 @@ void DoPoissonRF(int *keyNr, int *pairs, int *n, double *res, int *error)
   assert(false);
 }
 
-void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error)
-{
+void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error) {
   // does not assume that orig_res[...] = 0.0, but it is set
   int i, internal_n;
   key_type *key=NULL;
@@ -1873,7 +1906,7 @@ void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error)
   key = &(KEY[*keyNr]);
   internal_n = *n / (1 + (*pairs!=0));
 
-  if (!key->active || (!key->storing && internal_n>1)) {
+  if (!key->active) {
     *error=ERRORNOTINITIALIZED; goto ErrorHandling;
   }
   if ((*error = internal_DoSimulateRF(key, internal_n, res)) != NOERROR)
@@ -1889,8 +1922,8 @@ void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error)
   AddTrend(keyNr, n, res, error);
   if (*error) goto ErrorHandling;
  
-  if (!(key->active = GENERAL_STORING && key->storing))
-      DeleteKey(keyNr);
+  if (!(key->active = GENERAL_STORING))
+    DeleteKey(keyNr);
   return; 
   
  ErrorHandling: 
@@ -1903,8 +1936,7 @@ void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 }
 
 
-int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) 
-{
+int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   // does not assume that orig_res[...] = 0.0, but it is set
   int error;
   long i, m;
@@ -1914,6 +1946,7 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res)
  
   res = orig_res;
   part_result = NULL;
+  if (!key->active) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
   if (nn>1 && GENERAL_PCH[0] == '!') {
     digits = (nn<900000000) ? 1 + (int) trunc(log(nn) / log(10)) : 9;
     back[digits] = '\0';
@@ -1925,37 +1958,34 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res)
       if ((part_result=(double *) malloc(sizeof(double) * key->totalpoints))
 	  == NULL) {error=ERRORMEMORYALLOCATION; goto ErrorHandling;}
   }
-
   for (ni=0; ni<nn; ni++, res += key->totalpoints) {
+    if (key->stop) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
     if (nn>1)
       if (GENERAL_PCH[0] != '!') PRINTF("%s", GENERAL_PCH);
       else if (ni % each ==0) PRINTF(format, back, ni);
     
-    if (key->n_unimeth == 0 || do_compatiblemethod[key->meth[0].unimeth]!=NULL)
+    if (key->n_unimeth == 0 || !key->meth[0].incompatible)
       for (i=0; i<key->totalpoints; i++) {
-	  res[i] = 0.0;
+	res[i] = 0.0;
       }
     for(m=0; m<key->n_unimeth; m++) {
-      if (!key->active) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
       methodvalue_type *meth;
       meth = &(key->meth[m]);
       if (GENERAL_PRINTLEVEL>=7)
 	PRINTF("DoSimu %d %s\n",m, METHODNAMES[meth->unimeth]);
-      if (do_compatiblemethod[meth->unimeth]!=NULL) {
-	do_compatiblemethod[meth->unimeth] (key, m, res); 
-      } else {
+      if (meth->incompatible) {
 	if (m==0) {
 	  if (GENERAL_PRINTLEVEL>=7) PRINTF("incomp\n");
 	  do_incompatiblemethod[meth->unimeth](key, m, res);
-	}
-	else {
-	  if (GENERAL_PRINTLEVEL>=7) PRINTF("extra %d\n",key->compatible);
+	} else {
+	  if (GENERAL_PRINTLEVEL>=7) PRINTF("extra %d\n", key->compatible);
 	  do_incompatiblemethod[meth->unimeth](key, m, part_result);
 	  for (i=0; i<key->totalpoints; i++) res[i] += part_result[i];
 	}
+      } else {
+	do_compatiblemethod[meth->unimeth] (key, m, res); 
       }
     } // for m
-
   } // for n
   PutRNGstate();
   if (part_result!=NULL) free(part_result);

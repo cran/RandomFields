@@ -393,7 +393,7 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  #############################################################
 
 DeleteAllRegisters()
-RFparameters(Storing=TRUE,PrintLevel=1)
+RFparameters(Storing=TRUE, PrintLevel=1)
 y <- x <- seq(0, 50, 0.2)
 (p <- c(runif(3), runif(1)+1))
 ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
