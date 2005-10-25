@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <unistd.h>
 #include "win_linux_aux.h"
-
  
 void sleepMilli(int *milli) {
 #ifdef WIN32
@@ -46,9 +45,9 @@ void sleepMilli(int *milli) {
 
 void pid(int *i)  {
 #ifndef WIN32 
-  *i = 0; 
-#else
   *i = getpid();
+#else
+  *i = 0; 
 #endif
 }
 
@@ -59,4 +58,5 @@ void hostname(char **h, int *i){
   gethostname(*h, *i);
 #endif
 }  
+
 

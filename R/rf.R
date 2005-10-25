@@ -10,9 +10,9 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("cutoff/intrinsic fuer Produkte / zonale Anisotropie bei Produkten")
     print("Bsp in GaussRF und RFparameters muessen von Hand durchgeschaut werden,
 ob sie den richtigen Effekt zeigen!")
-
     print("environment statt der einzelnen Variablen; vereinfachung von RFparameters und der internen initGaussRD und DoSimulate");
     print("hyper: was ist die truetimespacedim???")
     print("hyper: 'Ma'-Modelle; TBM3/2;");

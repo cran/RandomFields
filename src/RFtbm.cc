@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <assert.h>
 #include "RFsimu.h"
 #include "RFCovFcts.h"
+#include "win_linux_aux.h"
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */
 
@@ -1079,7 +1080,7 @@ void do_turningbands(key_type *key, int m, double *res)
       if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n);
       if (meth->unimeth==TBM2) {
 	phi += deltaphi;
-	sincos(phi, &(e[0]), &(e[1]));
+	SINCOS(phi, e[0], e[1]);
 	toffset= nnhalf - centery * e[1] - centerx * e[0];
       } else {
   	unitvector3D(key->spatialdim, &(e[0]), &(e[1]), &(e[2]));
