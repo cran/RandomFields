@@ -464,9 +464,9 @@ double SndDerivCovFct(double *x, int dim, covinfo_arraytype keycov,
       cov = &(CovList[kc->nr]);
       z = fabs(x[0] * kc->aniso[0]);
       fct[w1] = kc->param[VARIANCE] * cov->cov(&z, kc->param, dim); 
-      abl[w1] = kc->param[VARIANCE] * cov->derivative(&z, kc->param, dim)
+      abl[w1] = kc->param[VARIANCE] * cov->derivative(&z, kc->param)
 	* kc->aniso[0];
-      snd[w1] = kc->param[VARIANCE] * cov->secondderivt(&z, kc->param, dim)
+      snd[w1] = kc->param[VARIANCE] * cov->secondderivt(&z, kc->param)
 	  * kc->aniso[0] * kc->aniso[0];
     }
     for (w1=vold; w1<v; w1++) {
@@ -499,7 +499,7 @@ double DerivCovFct(double *x, int dim, covinfo_arraytype keycov,
       cov = &(CovList[kc->nr]);
       z = fabs(x[0] * kc->aniso[0]);
       fct[w] = kc->param[VARIANCE] * cov->cov(&z, kc->param, dim); 
-      abl[w] = kc->param[VARIANCE] * cov->derivative(&z, kc->param, dim)
+      abl[w] = kc->param[VARIANCE] * cov->derivative(&z, kc->param)
 	  * kc->aniso[0];
     }
     for (w=vold; w<v; w++) {
@@ -649,7 +649,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
   param_type param;
 
   if (currentNrCov==-1) InitModelList(); assert(CovList!=NULL); 
-  if (ncov<0 || ncov>=MAXCOV) return ERRORNCOVOUTOFRANGE;
+  if (ncov<0 || ncov>MAXCOV) return ERRORNCOVOUTOFRANGE;
   if (timespacedim < 1 || timespacedim > MAXDIM) return ERRORDIM; 
   pAniso = anisotropy ? timespacedim * timespacedim : 1;
 

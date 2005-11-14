@@ -10,6 +10,8 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("nsst/nsst2 als hypermodel formulieren")
+    print("C-1-Berechnung bei MLE durch FFT ersetzen; mit Erweiterung von C auf circulaere Matrix")
     print("cutoff/intrinsic fuer Produkte / zonale Anisotropie bei Produkten")
     print("Bsp in GaussRF und RFparameters muessen von Hand durchgeschaut werden,
 ob sie den richtigen Effekt zeigen!")

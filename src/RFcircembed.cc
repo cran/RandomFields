@@ -614,7 +614,9 @@ int init_circ_embed_local(key_type *key, int m)
 
   if ((Xerror = FirstCheck_Cov(key, m, false)) != NOERROR) goto ErrorHandling;
   actcov = meth->actcov;
-  if (2 * actcov > MAXCOV) {Xerror=ERRORNCOVOUTOFRANGE; goto ErrorHandling;}
+  if (2 * actcov > MAXCOV) {
+    Xerror=ERRORNCOVOUTOFRANGE; goto ErrorHandling;
+  }
 
   n_aniso = key->anisotropy ? key->timespacedim * key->timespacedim : 1;
 

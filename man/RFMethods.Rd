@@ -36,6 +36,9 @@ GetMethodNames()
     for further covariance models, e.g. the whittle matern model.
     In fact, the circulant embedding is called with the cutoff
     hypermodel, see \command{\link{CovarianceFct}}, and \eqn{A=B} there.
+    \code{cutoff embedding} halfens the maximum number of
+    elements models used to define the covariance function of interest
+    (from 10 to 5).
 
     Here multiplicative models are not allowed (yet).
   

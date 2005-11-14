@@ -522,7 +522,8 @@ extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
     : NOT_IMPLEMENTED;
   CovList[nr].cov_tbm3=cov_tbm3;
   if (cov_tbm3!=NULL || cov_tbm2!=NULL) assert(CovList[nr].derivative!=NULL);
-  CovList[nr].implemented[TBM3] = CovList[nr].cov_tbm3!=NULL;
+  CovList[nr].implemented[TBM3] = CovList[nr].cov_tbm3!=NULL || 
+    (CovList[nr].derivative!=NULL && CovList[nr].cov!=NULL);
   CovList[nr].spectral=spectral;
   CovList[nr].implemented[SpectralTBM] = spectral!=NULL;
 }

@@ -301,9 +301,8 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	      index[d]++;
 	      coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 	      resindex++;
-	      while (index[d] >= end[d]) { 
-	        if (d>=dimM1) break;  // below not possible
-		//                       as dim==1 will fail!
+	      while (index[d] >= end[d] && d < dimM1) { 
+		// loop never entered if dim=1
 		index[d]=start[d];
 		coord[kc->idx[d]] = startcoord[d];
 		resindex -= segmentdelta[d];

@@ -223,7 +223,7 @@ typedef double (*natscalefct)(double *, int); /* parameters, ; natural
 typedef double (*covfct)(double *, double* , int); /* h,parameters */
 typedef int (*getparamfct)(covinfo_type *, param_type, int);
 typedef bool (*alternativeparamfct)(covinfo_type *, int);
-typedef double (*isofct)(double*, double*, int); /* h,parameters */
+typedef double (*isofct)(double*, double*); /* h,parameters */
 typedef double (*randommeasure)(double *);     /* parameters, RANDOM */
 typedef struct mpp_storage;
 typedef double (*mppmodel)(double *); /* point of random field */
@@ -302,6 +302,8 @@ void addOther(int nr, initmppfct add_mpp_scl, MPPRandom add_mpp_rnd,
 	      hyper_pp_fct hyper_pp, generalSimuInit initother, 
 	      generalSimuMethod other);
 void addodd(int nr, int dim); 
+void addusersfunctions();
+
 /* function necessary to set CircEmbed correctly if the function is not 
    even in some coordinates! 
 */
@@ -612,7 +614,6 @@ void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
 void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
 			  int truetimespacedim, double *x, aniso_type aniso,
 			  double *center, double *lx, double *diameter);
-
 
 
 ///////////////////////////////////////////////////////////////////////

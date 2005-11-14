@@ -53,7 +53,7 @@
 				    covariance and tbm */
 #define ERRORISOTROPICMETHOD 29  /* TBM might be called only by isotropic
                                     functions */
-#define ERRORTIMESEPARATE 30     /* last line of of matrix 
+#define ERRORTIMESEPARATE 30     /* last line of matrix 
 				  */
 #define ERRORUNKNOWNMETHOD 31  
 
@@ -93,9 +93,11 @@
 #define ERRORPARENTHESIS 51    /* parenthesis as operator iff isohypermodel */
 #define ERRORMSG 52            /* parenthesis as operator iff isohypermodel */
 #define ERRORTBMPOINTSZERO 53  /* linesimustep and linesimufactor are zero 
-				   and TBM_POINTS<4*/
+				   and TBM_POINTS<4 */
 #define ERRORFULLRANK 54       /* anisotropy matrix does not have full rank,
 				  but needed in circ_embed_local */
+#define ERRORTIMECOMPONENT 55  /* some hyper models need vanishing temporal
+				  component in the anisotropy matrix*/
 
 #define NOERROR_REPEAT 97
 #define NOERROR_ENDOFLIST 98

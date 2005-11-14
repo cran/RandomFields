@@ -57,7 +57,7 @@ cat("\n landmark 1\n")
 y <-  x <-  1:256
 ff <- 10
 m <- matrix(c(1,0, 0,1),ncol=2) / ff
-k <- c(1,phi=1,1,1,psi=1,dim=3)
+k <- c(1,phi=1,1,0.5,psi=1,dim=3)
 model <- list(list(m="nsst",v=1,k=k,a=m))
 #m <- matrix(c(1,0.3, 0.2,0.1),ncol=2) / ff; k <- NULL
 #model <- list(list(m="gneiting",v=1,k=k,a=m))
@@ -104,7 +104,7 @@ y <- (1:32)/2
 T <- c(1,32,1)/2
 ff <- 1
 m <- matrix(c(1,0,0, 0,1,0, 0,0,1),ncol=3) / ff
-k <- c(1,phi=1,1,1,psi=1,dim=3)
+k <- c(1,phi=1,1,0.5,psi=1,dim=3)
 model <- list(list(m="nsst",v=1,k=k,a=m))
 
 z <- GaussRF(x=x,y=y,T=T,grid=TRUE, model=model, me="TBM3")
@@ -131,7 +131,7 @@ y <- (1:32)/2
 T <- c(1,32,1)/16
 ff <- 1
 m <- matrix(c(1,0,0, 0,1,0, 0,0,1),ncol=3) / ff
-k <- c(1,phi=1,1,1,psi=1,dim=2)
+k <- c(1,phi=1,1,0.5,psi=1,dim=2)
 model <- list(list(m="nsst",v=1,k=k,a=m))
 
 

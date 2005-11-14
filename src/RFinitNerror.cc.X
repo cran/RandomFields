@@ -313,9 +313,6 @@ the anisotropies must be identical"); break;
       case ERRORFULLRANK: 
 	sprintf(EM, "anisotropy matrix must have full rank");
 	break;
-      case ERRORTIMECOMPONENT:
-	sprintf(EM, "last column of the anisotropy matrix in the hypermodel must consist of zeros only");
-	break;	
       case ERRORSILLNULL : 
 	strcpy(EM,"Vanishing sill not allowed");break;     
       case ERRORPAIRS : 

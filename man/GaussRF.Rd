@@ -335,7 +335,7 @@ image(z,zlim=c(-3,3))
 x <- y <- (1:32)/2     ## grid definition, but as a sequence
 T <- c(1,32,1)*10      ## note necessarily gridtriple definition
 aniso <- diag(c(0.5,8,1)) 
-k <- c(1,phi=1,1,1,psi=1,dim=2)
+k <- c(1,phi=1,1,0.5,psi=1,dim=2)
 model <- list(list(m="nsst", v=1, k=k, a=aniso))
 z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model)
 rl <- function() if (interactive()) readline("Press return")

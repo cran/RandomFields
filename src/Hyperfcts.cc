@@ -351,19 +351,21 @@ int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist,
       return ERRORCOVFAILED;
   }
 
-  if (kc->genuine_last_dimension) {
-      printf("last_dim present\n");
-      return ERRORNOTDEFINED;
-  }
-  nsub= (int) (kc->param[HYPERNR]);
-  
+  if (kc->genuine_last_dimension) 
+    return ERRORTIMECOMPONENT;
+ 
+  nsub= (int) (kc->param[HYPERNR]);  
   endfor = ANISO +  kc->dim * kc->dim - 1;
   for (v=1; v<=nsub; v++) {
     kc=&(keycov[covlist[v]]);
     for (i=ANISO; i<endfor; i++) {
       if (kc->param[i]!=0.0) {
-	  printf("not truely temporal\n");
-	  return ERRORNOTDEFINED;
+	  strcpy(ERRORSTRING_OK,
+		 "anisotropy matrices in submodels with zeros every where except the very last component");
+          sprintf(ERRORSTRING_WRONG,
+		  "nonzero value (%f) in position %d of submodel %d",
+		  kc->param[i], i, v);
+	  return ERRORCOVFAILED;
       }
     }
   }

@@ -187,17 +187,22 @@ GetModelNames()
       G(1-a)^2/(G(1-a+k)G(1-a-k)) for integer k}
     and linearly interpolated otherwise.
     Here, \eqn{\Gamma}{G} is the Gamma function.
-    The fractionally differenced process
-    is a time series model where the grid locations are multiples
-    of the scale parameter.  The parameter \eqn{\kappa}{a} is in
+    The parameter \eqn{\kappa}{a} is in
     \eqn{[-1/2, 1/2)}. 
+    The model is defined in 1 dimension only.
+    
+    Remark: the fractionally differenced process
+    stems from time series modelling
+    where the grid locations are multiples
+    of the scale parameter.  
     
     \item \code{fractgauss}
     \deqn{C(x) = 0.5 (|x+1|^{\kappa_1} - 2|x|^{\kappa_1} +
       |x-1|^{\kappa_1})}{C(x) = 0.5 (|x+1|^a - 2|x|^a + |x-1|^a)}
       This model is the covariance function for the fractional Gaussian noise
       with Hurst parameter \eqn{H=\kappa_1 /2}{H =a/2}, \eqn{\kappa_1 \in
-	(0,2]}{a in (0,2].
+	(0,2]}{a in (0,2]. In particular, the model is valid only
+	in one dimension.
       }
 	
     \item \code{gauss}
@@ -330,7 +335,7 @@ GetModelNames()
     \item linear with sill\cr
     See \code{power} (\code{a=1} there).
 
-    \item lgd1 (local-global distinguisher)
+    \item \code{lgd1} (local-global distinguisher)
     \deqn{C(x)=
       1-\frac\beta{\alpha+\beta}|x|^{\alpha}, |x|\le 1 \qquad \hbox{and} \qquad
     \frac\alpha{\alpha+\beta}|x|^{-\beta}, |x|> 1
@@ -346,7 +351,7 @@ GetModelNames()
     and Hurst coefficient \eqn{1 - \frac\beta2}{1 - b/2} for
     \eqn{\beta\in(0,1]}{b in (0,1]}
 
-    \item mastein (hypermodel for non-separabel space time modelling)
+    \item \code{mastein} (hypermodel for non-separabel space time modelling)
     \deqn{C(x, t)=\Gamma(\kappa_2 + \gamma(t)) / \Gamma(\kappa_2 +
       \gamma(t) + \kappa_3) W_{\kappa_2 + \gamma(t)}(\|x - Vt\|)}{
       C(x, t)=Gamma(b + gamma(t)) / Gamma(b + gamma(t) + c)
@@ -626,7 +631,8 @@ GetModelNames()
     missing.
 
     \code{model = list(l.1, OP.1, l.2, OP.2, ..., l.n)}
-    where \eqn{n} is at most 10. The lists \code{l.i}
+    where \eqn{n} is at most 10 (except \code{cutoff embedding} is
+    used, see \link{RFMethods}). The lists \code{l.i}
     are all either of the  form \code{l.i =
       list(model=,var=,kappas=,scale=,method=)} 
     or of the form  \code{l.i = list(model=,var=,kappas=,aniso=,method=)}.
@@ -834,9 +840,17 @@ GetModelNames()
        list(m="nugget", v=p[3]))
  }
  # and then 
- param <- c(NA, runif(5,max=10)) ## as usual, here an example
- CovarianceFct(x,gneitingdiff(param))
+ param <- c(NA, runif(5,max=10)) 
+ CovarianceFct(0:100,gneitingdiff(param))
  ## instead of formerly CovarianceFct(x,"gneitingdiff",param)
+
+ # definition of a hypermodel is more complex
+ model <- list(list(model="mastein", var=1,
+                    aniso=c(1, -0.5, 0, 0), kappa=c(1, 0.5, 1.5)),
+              "(",
+              list(model="exp", var=1, aniso=c(0, 0, ,0, 1)))
+ CovarianceFct(cbind(0:10, 0:10), model=model)
+
 }
 \keyword{spatial}
 

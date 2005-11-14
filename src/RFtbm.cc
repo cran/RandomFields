@@ -104,11 +104,11 @@ double TBM2integr(int covnr, double h, double u, double *param, int dim,
       switch(fct) {
 	  case 0 : // cov_tbm3 coded, space & time separated
 	    z[0] = h * sqrt(1.0 - x * x);
-	    f = cov->cov_tbm3(z, param, dim);
+	    f = cov->cov_tbm3(z, param);
 	    break;
 	  case 1 : // cov_tbm3 not coded, space & time separated
 	    z[0] = h * sqrt(1.0 - x * x);
-	    f = cov->cov(z, param, dim) + z[0] * cov->derivative(z, param, dim);
+	    f = cov->cov(z, param, dim) + z[0] * cov->derivative(z, param);
 	    break;
 	  case 2 : // isotropic function in space-time
 	    assert(cov->type==FULLISOTROPIC);
@@ -116,7 +116,7 @@ double TBM2integr(int covnr, double h, double u, double *param, int dim,
 	    z[0] = sqrt(y + u2); 
 	    if (z[0]==0.0) f=1.0; 
 	    else f = cov->cov(z, param, dim) +
-		     y / z[0] * cov->derivative(z, param, dim);
+		     y / z[0] * cov->derivative(z, param);
 	    break;
 	  default : assert(false);
 	}
@@ -136,18 +136,18 @@ double TBM2integr(int covnr, double h, double u, double *param, int dim,
 	switch (fct) {
 	  case 0 : 
 	    z[0] = h * sqrt(1.0 - x * x);
-	    f = cov->cov_tbm3(z, param, dim);
+	    f = cov->cov_tbm3(z, param);
 	    break;
 	  case 1 :
 	    z[0] = h * sqrt(1.0 - x * x);
-	    f = cov->cov(z, param, dim) + z[0] * cov->derivative(z, param, dim);
+	    f = cov->cov(z, param, dim) + z[0] * cov->derivative(z, param);
 	    break;
 	  case 2 :
 	    y =  (1.0 - x * x) * h2;
 	    z[0] = sqrt(y + u2); 
 	    if (z[0]==0.0) f=1.0; 
 	    else f = cov->cov(z, param, dim) +
-		     y / z[0] * cov->derivative(z, param, dim);
+		     y / z[0] * cov->derivative(z, param);
 	    break;
 	  default : assert(false);
 	}
@@ -292,7 +292,7 @@ double CovFctTBM2(double *x, int dim, covinfo_arraytype keycov,
 	  assert(cov->type==SPACEISOTROPIC);
 	  if (z[0]==0.0)  zw *= cov->cov(z, kc->param, 2);
 	  else if (kc->param[TBM2NUM] == 0.0) {
-	    zw *= cov->cov_tbm2(z, kc->param,2);
+	    zw *= cov->cov_tbm2(z, kc->param);
 	  } else {
 	    assert(cov->derivative != NULL);
 	    zw *= TBM2integr(kc->nr, z[0], z[1], kc->param, 2,
@@ -316,7 +316,7 @@ double CovFctTBM2(double *x, int dim, covinfo_arraytype keycov,
       z = x[0] * kc->aniso[0];
       if (z==0.0) zw = 1.0;
       else if (kc->param[TBM2NUM] == 0.0) {
-	zw = cov->cov_tbm2(&z, kc->param, dim);
+	zw = cov->cov_tbm2(&z, kc->param);
       } else {
 	assert(cov->derivative != NULL);
 	zw = TBM2integr(kc->nr, z, 0, kc->param, 2, cov->cov_tbm3 == NULL);
@@ -353,12 +353,12 @@ double CovFctTBM3(double *x, int dim, covinfo_arraytype keycov,
 	  r = sqrt(z[0] * z[0] + z[1] * z[1]);
 	  if (r==0) abl[w] = 0;
 	  else abl[w] = kc->param[VARIANCE] * kc->aniso[0] * fabs(z[0]) / 
-		   r * cov->derivative(&r, kc->param, dim);
+		   r * cov->derivative(&r, kc->param);
 	  zw *= (fct[w] = kc->param[VARIANCE] * cov->cov(&r, kc->param, dim));
 	} else { 
 	  assert(cov->type==SPACEISOTROPIC);
 	  abl[w] = kc->param[VARIANCE] * 
-	    kc->aniso[0] * cov->derivative(z, kc->param, dim);
+	    kc->aniso[0] * cov->derivative(z, kc->param);
 	  zw *= (fct[w] = kc->param[VARIANCE] * cov->cov(z, kc->param, dim));
 	}
       }
@@ -382,7 +382,7 @@ double CovFctTBM3(double *x, int dim, covinfo_arraytype keycov,
     if (ncov==1 && cov->cov_tbm3!=NULL) {
       z[1] = 0.0; //in case of (CovList[covnr[v]].type==SPACESOTROPIC) 
       z[0] = x[0] * kc->aniso[0];
-      return kc->param[VARIANCE] * cov->cov_tbm3(z, kc->param, dim);
+      return kc->param[VARIANCE] * cov->cov_tbm3(z, kc->param);
     }
     result = CovFct(x, dim, keycov, covlist, ncov, anisotropy);
     if (x[0] != 0.0) {

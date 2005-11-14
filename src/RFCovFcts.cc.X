@@ -1535,8 +1535,8 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIII]);
     return ERRORCOVFAILED;
   }
-  if ((param[KAPPAIV]<=0) || (param[KAPPAIV]>=1)) {
-    strcpy(ERRORSTRING_OK,"0<kappa4<1");
+  if ((param[KAPPAIV]<=0) || (param[KAPPAIV]>1)) {
+    strcpy(ERRORSTRING_OK,"0<kappa4<=1");
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIV]);
     return ERRORCOVFAILED;
   } 
@@ -1602,7 +1602,7 @@ void infospacetime1(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* Tilmann Gneiting's space time models, part II*/
-double spacetime2(double *x,double *p, int effectivedim){
+double spacetime2(double *x,double *p){
   double y, z, invsqrtpsi;
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPAIV], p[KAPPAV], (int)p[KAPPAVI]);
   y = x[0] * invsqrtpsi; 
@@ -1614,7 +1614,7 @@ double spacetime2(double *x,double *p, int effectivedim){
 }
 double TBM3spacetime2(double *x, double *p){
   assert(false); // should never happen
-  return spacetime2(x, p, 2) + Dspacetime2(x, p) * fabs(x[0]);
+  return spacetime2(x, p) + Dspacetime2(x, p) * fabs(x[0]);
 }
 double Dspacetime2(double *x, double *p){
   double y, z, invsqrtpsi;
@@ -1812,7 +1812,7 @@ double Scalelgd1(double *p,int scaling) {
     return exp( log(0.95 * (p[KAPPAI] + p[KAPPAII]) / p[KAPPAII]) / p[KAPPAI]); 
   else return exp(log(0.05 * (p[KAPPAI] + p[KAPPAII]) / p[KAPPAI])/p[KAPPAII]);
 }
-double Dlgd1(double *x, double *p){
+double Dlgd1(double *x, double *p, int dim){
   double y, pp;
   if ( (y=fabs(*x)) == 0) return 0; // falscher Wert, aber sonst gibt NAN-Fehler
   pp = ( (y < 1) ? p[KAPPAI] : -p[KAPPAII] ) - 1.0;

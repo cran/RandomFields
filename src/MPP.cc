@@ -267,9 +267,8 @@ void do_addmpp(key_type *key, int m, double *res )
 	index[d]++;
 	coord[kc->idx[d]] += kc->x[XSTEPD[d]];
 	resindex++;
-	while (index[d] >= end[d]) { 
-	  if (d>=dimM1) break;  // below not possible
-	  //                       as dim==1 will fail!
+	while (d<dimM1 && index[d] >= end[d]) { 
+	  // loop never entered if dim=1
 	  index[d] = start[d];
 	  coord[kc->idx[d]] = startcoord[d];
 	  resindex -= segmentdelta[d];

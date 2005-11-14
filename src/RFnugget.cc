@@ -235,11 +235,12 @@ void do_nugget(key_type *key, int m, double *res) {
       res[nx] += GAUSS_RANDOM(sqrtnugget);
   } else {
     if (s->simugrid) {
-      int d, i, dim, index[MAXDIM], *red_dim, *prod_dim;
+      int d, i, dim, dimM1, index[MAXDIM], *red_dim, *prod_dim;
       long totpnts, idx;
       double *field;
       totpnts = key->totalpoints;
       dim = key->timespacedim;
+      dimM1 = dim -1;
       field = s->red_field;
       red_dim = s->reduced_dim;
       prod_dim = s->prod_dim;
@@ -247,12 +248,14 @@ void do_nugget(key_type *key, int m, double *res) {
       for (i=s->prod_dim[dim] - 1; i>=0; field[i--] = GAUSS_RANDOM(sqrtnugget));
       for (d=0; d<dim; index[d++] = 0);
       for (i=0; i<totpnts; i++) {
+//	  printf("i=%d %d %d \n", i, totpnts, key->timespacedim);
 	for(idx=d=0; d<dim; d++) idx += (index[d] % red_dim[d]) * prod_dim[d];
 	//printf("%d %d %f\n", i, idx, field[idx]);
 	res[i] += field[idx];
 	d = 0; 
 	(index[d])++; 
-	while (index[d] >= key->length[d]) { 
+	while (d < dimM1 && index[d] >= key->length[d]) { 
+	  assert(d<dim); // assert(d>=0);
 	  index[d] = 0; 
 	  d++;   
 	  (index[d])++; 
