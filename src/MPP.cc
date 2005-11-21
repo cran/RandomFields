@@ -97,7 +97,10 @@ int init_mpp(key_type * key, int m)
 	  (cov->type==SPACEISOTROPIC)) {// unclear whether this is too cautious
 	  error= ERRORWITHOUTTIME; goto ErrorHandling;}
       if ((error=cov->check(kc->param, kc->truetimespacedim, 
-			    AdditiveMpp)) != NOERROR) goto ErrorHandling;
+			    AdditiveMpp)) != NOERROR) {
+	ERRORMODELNUMBER = v;	
+	goto ErrorHandling;
+      }
       if (cov->add_mpp_scl==NULL) {error=ERRORNOTDEFINED; goto ErrorHandling;}
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	error=ERRORHYPERNOTALLOWED; goto ErrorHandling;}

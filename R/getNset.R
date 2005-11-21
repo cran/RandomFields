@@ -48,6 +48,7 @@ GetRegisterInfo <- function(register=0, ignore.active=FALSE, max.elements=10^6)
 GetModelInfo <- function(register=0)
   .Call("GetExtModelInfo", as.integer(register), PACKAGE="RandomFields")
 
+
 GetPracticalRange <- function(model, kappas=NULL, dim=1) {
   covnr <-
     as.integer(.C("GetModelNr", as.character(model), as.integer(1),
@@ -72,6 +73,8 @@ GetPracticalRange <- function(model, kappas=NULL, dim=1) {
   if (error) stop("natural scaling could not be obtained")
   return(1.0 / nat.scl)
 }
+#GetPracticalRange("whittle", 1)
+
 
 GetMethodNames <- function() {
   assign(".p",

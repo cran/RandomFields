@@ -143,8 +143,10 @@ int init_hyperplane(key_type *key, int m)
 	goto ErrorHandling;
       }
       if ((error = cov->check(kc->param, timespacedim, Hyperplane)) 
-	  != NOERROR) 
+	  != NOERROR) {
+	ERRORMODELNUMBER = v;	
 	goto ErrorHandling;
+      }
       if (timespacedim == 1) {
 	error = ERRORNOTPROGRAMMED;
 	goto ErrorHandling;

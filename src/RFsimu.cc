@@ -86,7 +86,10 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
       } else {
 	error = cov->check(keycov->param, keycov->truetimespacedim, Method);
       }
-      if (error != NOERROR) return error;
+      if (error != NOERROR) {
+	ERRORMODELNUMBER = v;
+	return error;
+      }
 //      printf("v=%d %d %d \n", v,  key->ncov, key->cov[v].op);
       if (v < key->ncov -1 && key->cov[v].op) { 
 	if (key->cov[v+1].method != Method) {
@@ -748,7 +751,10 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 ///////////////////////
     } else {
       error = cov->check(kc->param, kc->truetimespacedim, Nothing);
-      if (error != NOERROR) return error; 
+      if (error != NOERROR) {
+	ERRORMODELNUMBER = v;	
+	return error; 
+      }
     }
   }
 
@@ -777,10 +783,12 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 */
 
       error = cov->checkNinit(kc, COVLISTALL, ncov-v-1, Nothing);
-      if (error != NOERROR) return error;
+      if (error != NOERROR) {
+	ERRORMODELNUMBER = v;	
+	return error;
+      }
     }
   }
-
 
   if (ncov * (1 + pAniso) + totkappas != nParam) return ERRORPARAMNUMBER;
   return NOERROR;

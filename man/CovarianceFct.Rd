@@ -352,15 +352,18 @@ GetModelNames()
     \eqn{\beta\in(0,1]}{b in (0,1]}
 
     \item \code{mastein} (hypermodel for non-separabel space time modelling)
-    \deqn{C(x, t)=\Gamma(\kappa_2 + \gamma(t)) / \Gamma(\kappa_2 +
-      \gamma(t) + \kappa_3) W_{\kappa_2 + \gamma(t)}(\|x - Vt\|)}{
-      C(x, t)=Gamma(b + gamma(t)) / Gamma(b + gamma(t) + c)
-      W_{b + gamma(t)}(\|x - Vt\|)}
+    \deqn{C(x, t)=\frac{\Gamma(\kappa_2 + \gamma(t))\Gamma(\kappa 2 +
+	\kappa_3)}{ \Gamma(\kappa_2 +
+	\gamma(t) + \kappa_3) \Gamma(\kappa_2)}
+      W_{\kappa_2 + \gamma(t)}(\|x - Vt\|)}{
+      C(x, t)=Gamma(b + g(t)) Gamma(b + c) / [Gamma(b + g(t) + c)
+      Gamma(b)]
+      W_{b + g(t)}(\|x - Vt\|)}
 
-    \eqn{\Gamma}{Gamma} is the Gamma function; \eqn{\gamma}{gamma}
+    \eqn{\Gamma}{Gamma} is the Gamma function; \eqn{\gamma}{g}
     is a variogram; \eqn{W} is the Whittle-Matern model.
     The first parameter, \eqn{\kappa_1}{a}, gives the number of
-    subsequent models that build \eqn{\gamma}{gamma}. Here, the
+    subsequent models that build \eqn{\gamma}{g}. Here, the
     names of covariance models can also be used; the algorithm
     chooses the corresponding variograms then.
     The parameter \eqn{\kappa}{b} is the smoothness parameter
@@ -399,7 +402,7 @@ GetModelNames()
 	\log\kappa_4}{psi^2(t) = -\log(t^c+1/d)/log d}
       if \eqn{\kappa_5=3}{e=3}\cr
     The parameter \eqn{\kappa_6}{f} must be greater than or equal to
-    the spatial dimension of the field. Furthermore, \eqn{\kappa_3\in
+    the genuine spatial dimension of the field. Furthermore, \eqn{\kappa_3\in
       (0,2]}{c in (0,2]}  and \eqn{\kappa_4\in
       (0,1)}{d in (0,1)}.
      The spatial dimension must be \code{>=1}.
@@ -422,7 +425,7 @@ GetModelNames()
 	\log\kappa_5}{psi^2(t) = -\log(t^d+1/e)/log e}
       if \eqn{\kappa_6=3}{f=3}\cr
     The parameter \eqn{\kappa_7}{g} must be greater than or equal to
-    the spatial dimension of the field. Furthermore, \eqn{\kappa_4\in
+    the genuine spatial dimension of the field. Furthermore, \eqn{\kappa_4\in
       (0,2]}{d in (0,2]}  and \eqn{\kappa_5\in
       (0,1]}{e in (0,1]}.
     Necessarily, \code{dim>=2}.
@@ -518,18 +521,19 @@ GetModelNames()
     \code{whittle}, \code{gencauchy}, and the variogram
     model \code{fractalB}
     some sufficient conditions are known.
-
+    
     
     \item \code{steinst1} (non-separabel space time model)
-    \deqn{W_{\kappa_1}(y) -
+    \deqn{C(x, t) = W_{\kappa_1}(y) -
       \frac{2 \kappa_2 \langle x, z \rangle t}{2(\kappa_1 - 1)(2\kappa_1
 	+ \kappa_3)} W_{\kappa_1 -1}(y)}{
-      W_a(y) - 2 b <x, z> t W_{a-1}(y) / [2(a - 1)(2a + c)]}
+      C(x, t) = W_a(y) - 2 b <x, z> t W_{a-1}(y) / [2(a - 1)(2a + c)]}
 
     Here, \eqn{W_{\kappa_1}}{W_a} is the Whittle-Matern model with
     smoothness parameter \eqn{\kappa_1}{a}; \eqn{\kappa_2\in[0,1]}{0 <=
       b <= 1}; \eqn{\kappa_3}{b} is greater than or equal to the
-    space-time dimension \sQuote{dim}.
+    space-time dimension \sQuote{dim};
+    \eqn{y=\|(x,t)\|}{y = ||(x,t)||}.
     The components of \eqn{z} are given by \eqn{\kappa_4,
       \ldots \kappa_{2+\sQuote{dim}}}{d, e, ...}.
     
@@ -550,8 +554,8 @@ GetModelNames()
     (for \eqn{\kappa}{a}\eqn{=0.5}).
     
     \item \code{whittlematern}
-    \deqn{C(x)=2^{1-\kappa} \Gamma(\kappa)^{-1} x^\kappa
-      K_\kappa(x)}{C(x)=2^{1-a} Gamma(a)^{-1} x^a K_a(x),
+    \deqn{C(x)=W_a(x) = 2^{1-\kappa} \Gamma(\kappa)^{-1} x^\kappa
+      K_\kappa(x)}{C(x)=W_a(x) =2^{1-a} Gamma(a)^{-1} x^a K_a(x),
     }
     The parameter \eqn{\kappa}{a} is positive.
     \cr

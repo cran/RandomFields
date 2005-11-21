@@ -299,21 +299,19 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
 }
 
 
-
 double MaStein(double *x, double *p, int effectivedim)
 {
-  double s, nuG;
+  double s, nuG, gammas;
   int d;
+  // effectivedim + 1 : C(0) oder 0
+  // effectvedim : C(x) oder -gamma(x)
+  nuG = p[HYPERKAPPAI] + (x[effectivedim + 1] - x[effectivedim]);
+  gammas = lgammafn(p[HYPERKAPPAI] + p[HYPERKAPPAII]) -
+    lgammafn(p[HYPERKAPPAI]) -lgammafn(nuG + p[HYPERKAPPAII]);
   for (s = 0.0, d=0; d<effectivedim; d++) s += x[d] * x[d];
-  if (s==0.0) return 1.0;
+  if (s==0.0) return exp(lgammafn(nuG) + gammas);
   s = sqrt(s);
-  // effectivedim + 1 : C(0)
-  // effectvedim : C(x)
-  nuG = p[HYPERKAPPAI] + x[effectivedim + 1] - x[effectivedim];
-  return 2.0 * exp(nuG * log(0.5 * s) - lgammafn(nuG + p[HYPERKAPPAII]) + 
-		   lgammafn(p[HYPERKAPPAI] + p[HYPERKAPPAII]) -
-		   lgammafn(p[HYPERKAPPAI]) +		   
-		   log(bessel_k(s, nuG, 2.0)) - s);
+  return 2.0 * exp(nuG * log(0.5 * s) + gammas + log(bessel_k(s, nuG, 2.0)) - s);
 }
 
 
@@ -345,9 +343,9 @@ int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist,
       return ERRORCOVFAILED;
   }
 
-  if ((param[HYPERKAPPAII]<= 0.5 * (double) (kc->dim - 1))) {
+  if ((param[HYPERKAPPAII]< 0.5 * (double) (kc->dim - 1))) {
       strcpy(ERRORSTRING_OK,"kappa2 >= (<space-time dimension> - 1) / 2");
-      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAI]);
+      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAII]);
       return ERRORCOVFAILED;
   }
 
@@ -363,8 +361,9 @@ int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist,
 	  strcpy(ERRORSTRING_OK,
 		 "anisotropy matrices in submodels with zeros every where except the very last component");
           sprintf(ERRORSTRING_WRONG,
-		  "nonzero value (%f) in position %d of submodel %d",
-		  kc->param[i], i, v);
+		  "%f in element %d of anisotropy matrix of submodel %d",
+		  kc->param[i],  1 - (ANISO - i), v); // i - ANISO + 1 gibt
+	  // falsches Resultat !!!!!!!
 	  return ERRORCOVFAILED;
       }
     }

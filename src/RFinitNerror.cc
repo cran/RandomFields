@@ -106,6 +106,7 @@ double EIGENVALUE_EPS = 1e-15;
 
 char ERRORSTRING_OK[MAXERRORSTRING], ERRORSTRING_WRONG[MAXERRORSTRING],
     ERROR_LOC[nErrorLoc]="";
+int ERRORMODELNUMBER = -1;
 
 char METHODNAMES[][METHODMAXCHAR]={"circulant embedding",
 				   "cutoff CE",
@@ -363,7 +364,10 @@ the anisotropies must be identical"); break;
   }
   if (strcmp(ERROR_LOC,"") != 0) PRINTF("In %s", ERROR_LOC);
   if (m!=Nothing)  PRINTF("Method");
-  PRINTF(" %s: %s.\n", MS, EM);
+  PRINTF("%s", MS);
+  if (ERRORMODELNUMBER >= 0) PRINTF(" in submodel #%d", ERRORMODELNUMBER + 1);
+  PRINTF(": %s.\n", EM);
+  ERRORMODELNUMBER = -1;
 }
 
 int init_nothing(key_type *key, int m) {

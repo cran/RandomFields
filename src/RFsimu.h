@@ -409,6 +409,7 @@ extern char GENERAL_PCH[2];
 extern key_type KEY[MAXKEYS]; 
 extern char ERRORSTRING_OK[MAXERRORSTRING],
   ERRORSTRING_WRONG[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
+extern int ERRORMODELNUMBER;
 void ErrorMessage(SimulationType m, int error);
 void DeleteKeyNotTrend(key_type *key);
 void KEY_NULL(key_type *key);

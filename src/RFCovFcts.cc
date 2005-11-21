@@ -1527,7 +1527,7 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
   case 3 : error=checkCauchy(param, timespacedim, method); break;
   default : 
     strcpy(ERRORSTRING_OK,"kappa2=1,2,3");
-    sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAIII]);
+    sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAII]);
     return ERRORCOVFAILED;
   }
   if ((param[KAPPAIII]<=0) || (param[KAPPAIII]>2)) {
@@ -1535,8 +1535,13 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIII]);
     return ERRORCOVFAILED;
   }
-  if ((param[KAPPAIV]<=0) || (param[KAPPAIV]>=1)) {
-    strcpy(ERRORSTRING_OK,"0<kappa4<1");
+  if ((param[KAPPAIV]<=0) || (param[KAPPAIV]>1)) {
+    strcpy(ERRORSTRING_OK,"0<kappa4<=1");
+    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIV]);
+    return ERRORCOVFAILED;
+  } 
+  if (param[KAPPAIV]==1 && param[KAPPAV]==3) {
+    strcpy(ERRORSTRING_OK,"kappa4<1 if kappa5=3");
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIV]);
     return ERRORCOVFAILED;
   } 
@@ -1645,7 +1650,7 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
   switch((int) param[KAPPAIII]) {
   case 1 : error=checkgeneralisedCauchy(param, timespacedim, method); break;
   default : 
-    strcpy(ERRORSTRING_OK,"kappa3=1,2,3");
+    strcpy(ERRORSTRING_OK,"kappa3=1");
     sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAIII]);
     return ERRORCOVFAILED;
   }
@@ -1654,8 +1659,13 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAIV]);
     return ERRORCOVFAILED;
   }
-  if ((param[KAPPAV]<=0) || (param[KAPPAV]>1)) {
+  if (param[KAPPAV]<=0 || param[KAPPAV]>1) {
     strcpy(ERRORSTRING_OK,"0<kappa5<=1");
+    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAV]);
+    return ERRORCOVFAILED;
+  } 
+  if (param[KAPPAV]==1 && param[KAPPAVI]==3) {
+    strcpy(ERRORSTRING_OK,"kappa5<1 if kappa6=3");
     sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAV]);
     return ERRORCOVFAILED;
   } 
@@ -1671,10 +1681,12 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
     sprintf(ERRORSTRING_WRONG,"%d",(int) param[KAPPAVI]);
     return ERRORCOVFAILED;
   }
-  if (timespacedim>param[KAPPAVII]) {
-    strcpy(ERRORSTRING_OK,"kappa7 >= dim");
+//  printf("\n\n** spatial dim %d, %f\n", timespacedim- 1, param[KAPPAVII]);
+  if (timespacedim- 1 > param[KAPPAVII]) {
+    strcpy(ERRORSTRING_OK,"kappa7 >= spatialdim");
     sprintf(ERRORSTRING_WRONG,"kappa7=%d and genuine dim=%d",
 	    (int) param[KAPPAVII], timespacedim);
+    return ERRORCOVFAILED;
   }
   return error;
 }
@@ -1978,6 +1990,12 @@ double SteinST1(double *x, double *p, int dim){
 	loggamma = lgammafn(nu);
     }
     logconst = (nu - 1.0) * log(0.5 * s)  - loggamma;
+//    printf("%f \n",
+//	   s * exp(logconst + log(bessel_k(s, nu, 2.0)) - s) -
+//	   2.0 / (2 * nu + p[KAPPAIII]) * p[KAPPAII] * z * x[time] *  
+//	   exp(logconst + log(bessel_k(s, nu - 1.0, 2.0)) - s)
+//      );
+
     return 
 	s * exp(logconst + log(bessel_k(s, nu, 2.0)) - s)
 	- 2.0 / (2 * nu + p[KAPPAIII]) * p[KAPPAII] * z * x[time] *  

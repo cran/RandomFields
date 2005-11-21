@@ -57,7 +57,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       if (!is.null(method)) STOP("method is given twice")
       method <- model$meth
     }
-
+ 
     model$trend <- model$mean <- model$meth <- NULL
     ## the definition might be given at a deeper level as element
     ## $model of the list:
@@ -108,13 +108,13 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
         length(method)<=1 && length(explicite.method)>0 &&
         length(explicite.method)!=lm)
       STOP("number of methods and number of models differ")
-    if (any(explicite.method)) {
-      methodX <- as.character(methodX)
+   if (any(explicite.method)) {
+      methodX <- unlist(methodX) ## 11.11.05 as.character
       if (length(method)==0) method <- methodX
       else {
         method <- rep(method, len=lm)
         method[explicite.method] <- methodX
-      }
+       }
     }
 
     k <- c(lapply(model, function(x) length(x$k)), recursive=TRUE)  ## used

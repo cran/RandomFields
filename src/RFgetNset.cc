@@ -190,9 +190,9 @@ void GetNrParameters(int *covnr, int *n, int* dim, int* kappas) {
   for (v=0; v<*n; v++) {
     if ((covnr[v]<0) ||(covnr[v]>=currentNrCov)) {kappas[v]=-1;}
     else {
-//	printf("%s %d %d %d %d\n", 
-//	       CovList[covnr[v]].name, *dim, (int) CovList[covnr[v]].kappas,
-//	       kappaZero(*dim), CovList[covnr[v]].kappas(*dim));
+//	printf("%d %s %d %d %d %d\n", 
+//	       v, CovList[covnr[v]].name, *dim, (int) CovList[covnr[v]].kappas,
+//	       (int) kappaOne, CovList[covnr[v]].kappas(*dim));
 	kappas[v] = CovList[covnr[v]].kappas(*dim);
     }
   }

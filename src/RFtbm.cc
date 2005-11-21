@@ -843,8 +843,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  continue;
       }
       Xerror=cov->check(kc->param, tbm_dim + (int) ce_dim2, method);
-      if (Xerror && (Xerror!=ERRORCOVNUMERICAL || method!=TBM2 || !TBM2NUMERIC))
+      if (Xerror && (Xerror!=ERRORCOVNUMERICAL || method!=TBM2 || !TBM2NUMERIC)){
+	ERRORMODELNUMBER = v;
 	goto ErrorHandling;
+      }
 
       /* check whether the multiplicative construction are consistent,*/
       /* i.e. that the SPATIAL part of the anisotropy matrices are    */
