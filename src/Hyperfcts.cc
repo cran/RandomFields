@@ -38,8 +38,17 @@ int check_submodels(int nr, char **allowed_fct, int nr_allowed_list,
   covinfo_type *cn;
   char s[2][MAXERRORSTRING];
 
-  if (nr!=1  // should and will be relaxed in future
-      || nr>left) {
+  if (nr < 1) { // always necessary to check
+    strcpy(ERRORSTRING_OK, " at least 1 submodel");
+    sprintf(ERRORSTRING_WRONG,"%d", nr);
+    return ERRORCOVFAILED;
+  }
+  if (nr>1) { // should and will be relaxed in future
+    strcpy(ERRORSTRING_OK, " at most 1 submodel currently. (This will be relaxed in future)");
+    sprintf(ERRORSTRING_WRONG,"%d", nr);
+    return ERRORCOVFAILED;
+  }
+  if (nr>left) { // always necessary to check
     strcpy(ERRORSTRING_OK, " further submodels");
 //    strcpy(ERRORSTRING_OK,"number of models included must be at least 1 and less than or equal to the number of remaining models in the list (here %d)", left);
     sprintf(ERRORSTRING_WRONG,"announced=%d available=%d", nr, left);
@@ -153,7 +162,8 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   if ((err=check_submodels(nsub, allowed_fct, co_nr, keycov, 
 			   &(covlist[1]), remaining_covlistlength)) != NOERROR)
       return err;
-  if (method != CircEmbed && method!=Nothing) return ERRORUNKNOWNMETHOD;
+  if (method != CircEmbed && method!=Nothing && method != Direct) 
+    return ERRORUNKNOWNMETHOD;
   
   a2 = a * a;
   for (v=1; v<=nsub; v++) { 

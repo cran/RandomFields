@@ -1082,7 +1082,7 @@ void do_turningbands(key_type *key, int m, double *res)
       if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n);
       if (meth->unimeth==TBM2) {
 	phi += deltaphi;
-	SINCOS(phi, e[0], e[1]);
+	e[0] = sin(phi); e[1] = cos(phi);
 	toffset= nnhalf - centery * e[1] - centerx * e[0];
       } else {
   	unitvector3D(key->spatialdim, &(e[0]), &(e[1]), &(e[2]));

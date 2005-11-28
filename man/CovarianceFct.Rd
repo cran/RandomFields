@@ -151,11 +151,14 @@ GetModelNames()
     The parameters \eqn{r} and \eqn{b_0}
     are chosen internally such that \eqn{C} is a smooth function.
     The parameters \eqn{A} and \eqn{B} are the inverse scale parameters for
-    the hypermodel and submodel, respectively.
+    the hypermodel and submodel, respectively. Note that \code{cutoff} seldemly
+    works, if \eqn{A} and \eqn{B} are not identical.
 
-    The cutoff-model is not a valid covariance function for any
-    choice of phi and the parameters. Only some few
-    necessary conditions can be checked.
+     The algorithm that checks the given parameters knows
+     only about some few necessary conditions.
+     Hence it is not ensured that
+     the cutoff-model is a valid covariance function for any
+    choice of phi and the parameters. 
     
     For certain models \eqn{\phi}{phi}, i.e. \code{stable},
     \code{whittle} and \code{gencauchy}, some sufficient conditions
@@ -503,7 +506,7 @@ GetModelNames()
     \eqn{\phi}{phi}. Since the model itself is indifferent for
     scale or anisotropy parameters, the latter must be given only
     for the submodels.
-    See below for for general comments on hypermodels.
+    See below for  general comments on hypermodels.
     
     The first parameter, \eqn{\kappa_1}{a}, gives the number of
     subsequent models that build \eqn{\phi}{phi};
@@ -511,11 +514,14 @@ GetModelNames()
     The parameters \eqn{a_0}, \eqn{a_2} and \eqn{b_0}
     are chosen internally such that \eqn{C} becomes a smooth function.
     The parameters \eqn{A} and \eqn{B} are the inverse scale parameters for
-    the hypermodel and submodel, respectively.
+    the hypermodel and submodel, respectively. Note that \code{Stein} seldemly
+    works, if \eqn{A} and \eqn{B} are not identical.
 
-    The Stein-model is not a valid covariance function for any
-    choice of phi and the parameters. Only some few
-    necessary conditions can be checked.
+    The algorithm that checks the given parameters knows
+    only about some few necessary conditions.
+    Hence it is not ensured that
+    the Stein-model is a valid covariance function for any
+    choice of phi and the parameters. 
     
     For certain models \eqn{\phi}{phi}, i.e. \code{stable},
     \code{whittle}, \code{gencauchy}, and the variogram
