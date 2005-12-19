@@ -74,6 +74,7 @@ int init_simulatespectral(key_type *key, int m) {
   actcov=0;
   Xerror = NOERROR; 
   for (v=0; v<key->ncov; v++) {
+    ERRORMODELNUMBER = v;
     kc = &(key->cov[v]);
     if ((kc->method==SpectralTBM) && (kc->left)) {
       cov_fct *cov;
@@ -92,9 +93,10 @@ int init_simulatespectral(key_type *key, int m) {
       if (cov->implemented[SpectralTBM] != IMPLEMENTED) {
         Xerror=ERRORNOTDEFINED; goto ErrorHandling;}
       else s->randomAmplitude[actcov] = cov->spectral;
-      if ((Xerror=cov->check(kc->param, timespacedim, SpectralTBM))
+      if ((Xerror=check_within_range(kc->param, cov, 2, " (spectral TBM)")) 
+	  != NOERROR ||
+	  (Xerror=cov->check(kc->param, timespacedim, SpectralTBM)) 
 	  != NOERROR) {
-	ERRORMODELNUMBER = v;	
 	goto ErrorHandling;
       }
       if (actcov>0) {
@@ -124,6 +126,7 @@ int init_simulatespectral(key_type *key, int m) {
       kc->left = false;
     }
   } // for v
+  ERRORMODELNUMBER = -1;	
   meth->actcov=actcov;
 
   if (actcov==0) { /* no covariance for the considered method found */
@@ -207,24 +210,23 @@ void do_simulatespectral(key_type *key, int m, double *res )
       cossin[1] = sp;
       segt = VV;
       for (idxcossind = d = 0; d < key->timespacedim; d++) {
-//	  printf("%d %d \n", d, kc->length[d]);
-	if (kc->length[d] != 1) {
-	  segt += kc->x[XSTARTD[d]] * cossin[idxcossind];
-	  inc[d] = kc->x[XSTEPD[d]] * cossin[idxcossind++];
+//	  printf("%d %d \n", d, kc->genuinedim[d]);
+	if (kc->genuine_dim[d]) {
+	  segt += kc->xsimugr[XSTARTD[d]] * cossin[idxcossind];
+	  inc[d] = kc->xsimugr[XSTEPD[d]] * cossin[idxcossind++];
 	} else {
-	  inc[d] = 0.0;
+	  inc[d] = 0.0; 
 	}
       }
-      incx = inc[0];            incy=inc[1];
+      for (; d<4; d++) inc[d] = 0.0;
+      incx = inc[0];            
+      incy = inc[1];
       
       zaehler = 0; 
       for (nt=0; nt < gridlent; nt++) {	
-        segz = segt;
-	for (nz=0; nz < gridlenz; nz++) {	
-	  segy = segz;
-	  for (ny=0; ny<gridleny; ny++) {	
-	    segx = segy;
-	    for (nx=0; nx<gridlenx; nx++) {
+	for (segz = segt, nz=0; nz < gridlenz; nz++) {	
+	  for (segy = segz, ny=0; ny<gridleny; ny++) {	
+	    for (segx = segy, nx=0; nx<gridlenx; nx++) {
 		// printf("zaehler=%d %f\n", zaehler, segx);
 	      res[zaehler++] += cos(segx);	  
 	      segx += incx;

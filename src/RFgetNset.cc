@@ -95,14 +95,14 @@ void GetDistrNr(char **name, int *n, int *nr)
   }
 }
 
-void SetParamDecision( int *action, int *stationary_only, int *exactness)
+void SetParamDecision(int *action, int *stationary_only, int *exactness)
 {
   int NA=-1;
   if (*action) {
     DECISION_PARAM.stationary_only = (*stationary_only==NA) ?
        DECISION_CASESPEC : *stationary_only ? DECISION_TRUE : DECISION_FALSE;
-     DECISION_PARAM.exactness = (*exactness==NA) ?
-       DECISION_CASESPEC : *exactness ? DECISION_TRUE : DECISION_FALSE;
+    DECISION_PARAM.exactness = (*exactness==NA) ?
+      DECISION_CASESPEC : *exactness ? DECISION_TRUE : DECISION_FALSE;
   } else {
     *stationary_only = DECISION_PARAM.stationary_only==DECISION_TRUE ? true :
       DECISION_PARAM.stationary_only==DECISION_FALSE ? false : NA;
@@ -170,10 +170,10 @@ void SetParamCE(int *action, int *force, double *tolRe, double *tolIm,
     *trials=CE->trials;
     *severalrealisations = CE->severalrealisations;
     for (d=0; d<MAXDIM; d++) {mmin[d]=CE->mmin[d];}   
-    *useprimes= CE->useprimes;
+    *useprimes= CE->useprimes; //
     *dependent= (int) CE->dependent;
     *strategy = (int) CE->strategy;
-    *maxmem = CE->maxmem;
+    *maxmem = CE->maxmem; //
   }
 }
   
@@ -320,8 +320,13 @@ void GetRange(int *nr, int *dim, int *index, double *range, int *lrange){
   }
   assert(CovList[*nr].range != NULL);
   CovList[*nr].range(*dim, index, range);
+  for (i=0; i<*lrange; i+=3) {
+      if (range[i] == floor(range[i]) + OPEN) range[i] = floor(range[i]);
+      i++;
+      if (range[i] == ceil(range[i]) - OPEN) range[i] = ceil(range[i]);
+  }
   // index>0 : further parts of the range are missing
-  // index=-1: no further part of the range
+  // index=-1: no further part of the range, see also RFsimu.h
   // index=-2: dimension not valid
   //assert(false);
 }
@@ -491,6 +496,8 @@ void addLocal(int nr, bool cutoff, isofct secondderiv, int*variable)
   *variable = nr;
   CovList[nr].implemented[CircEmbedCutoff] = cutoff;
   CovList[nr].implemented[CircEmbedIntrinsic] = secondderiv != NULL;
+  // printf("**** %d %s %d %d\n", 
+//	 nr, CovList[nr].name, secondderiv, &DDexponential);
 }
 
 extern void addInitLocal(int nr, getparamfct getparam,
@@ -718,7 +725,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
   }
 }
 void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
-	      char **pch) {
+	      char **pch, int *skipchecks) {
   if (*action) {
     GENERAL_STORING= (bool) *storing;
     GENERAL_PRINTLEVEL=*printlevel;
@@ -726,11 +733,13 @@ void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
     if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
 	PRINTF("\n`pch' has more than one character -- first character taken only\n");
     strncpy(GENERAL_PCH, *pch, 1);
+    GENERAL_SKIPCHECKS=*skipchecks;
   } else {
     *storing =  GENERAL_STORING;
     *printlevel = GENERAL_PRINTLEVEL;
     *naturalscaling = GENERAL_NATURALSCALING;
     strcpy(*pch, GENERAL_PCH);
+    *skipchecks = GENERAL_SKIPCHECKS;
   }
 }
 
@@ -796,6 +805,21 @@ void GetParamterPos(int *variance, int *kappa, int* lastkappa,
 
 
 
+void Getxsimugr(coord_type x, param_type param, int timespacedim, 
+	   bool anisotropy, double *xsimugr) {
+  // bisher nur fuer Diagonalmatrizen 
+  int n, k, i, w;
+  double factor;
+  
+  for(n=ANISO, k=w=0; w<timespacedim; w++, n+=timespacedim+1) {
+//    printf("n=%d %f %f \n", n, param[n], param[SCALE]);
+    factor = anisotropy ? param[n] : 1.0 / param[SCALE];
+    for (i=0; i<3; i++) {
+      xsimugr[k++] = factor * x[w][i];
+    }
+  }
+}
+
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 		char type, bool *genuine_last_dim, int *truetimespacedim, 
 		aniso_type aniso) {
@@ -814,8 +838,9 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
     rowsq = row * row;
     endfor = ANISO + row * col; 
     
-    for (j=endfor - row; j<endfor; j++)
-	if (param[j] != 0.0) break;
+    for (j=endfor - row; j<endfor; j++) {
+      if (param[j] != 0.0) break;
+    }
     *genuine_last_dim = j != endfor;
 
     switch (type) {
@@ -834,7 +859,9 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	  if (is_diag(&(param[ANISO]), row)) {
 	    int diag = row + 1, size = row * col;
 	    for (j=i=0; i<size; i+=diag, j++) {
-	      D[j] = param[ANISO + i];
+	      D[j] = param[ANISO + i]; /// WICHTIG! Dadurch wird Ordnung
+	      //                           der Dimensionen eingehalten!!
+	      // siehe auch CheckAndBuild
 	      V[i] = 1.0;
 	    }
 	  } else {
@@ -1056,12 +1083,12 @@ SEXP TooLarge(int *n, int l){
 SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam, 
 		  long totalpoints)
 {
-#define nmodelinfo 14 // mit op
+#define nmodelinfo 15 // mit op
   char *modelinfo[nmodelinfo] = 
       {"method", "dim", "truedim", "length", "aniso.idx",
        "name", "op" /* must keep name */, 
        "genuine_dim", "genuine.last.dim", 
-       "simugrid", "processed", "param", "aniso", "x"};
+       "simugrid", "processed", "param", "aniso", "x", "xsimugr"};
   SEXP model,  submodel[MAXCOV], namemodelvec[2];
   int i, exception, k, subi;
   covinfo_type *kc;
@@ -1122,6 +1149,8 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
 	SET_VECTOR_ELT(submodel[i], subi++, 
 		       Mat(kc->x, kc->simugrid ? 3 : totalpoints, 
 			   kc->truetimespacedim, MAX_INT));
+    SET_VECTOR_ELT(submodel[i], subi++, 
+		   Mat(kc->xsimugr, kc->simugrid ? 3 : 0, kc->dim, MAX_INT));
 
     assert(subi==nmodelinfo - (i==nc)); 
     SET_VECTOR_ELT(model, i, submodel[i]);
@@ -1165,7 +1194,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 		   Int(meth->covlist, meth->actcov, MAX_INT));
     
     int nS, nSlist[Forbidden + 1] =
-	{8 /* CE */, 2 /*Cutoff*/ , 2 /* Intr */, 9 /* TBM2 */ , 9 /* TBM3 */, 
+	{8 /* CE */, 2 /*Cutoff*/, 2 /* Intr */, 10 /* TBM2 */, 10 /* TBM3 */, 
 	 1 /*Sp */, 3 /* dir */, 4 /* nug */, 10 /* add */, 4 /* hyp */, 
 	 1 /* spec */, 1 /* noth */, 11 /* maxmpp */, 4 /*extremalGauss */,
 	 1 /* Forbidden */};
@@ -1241,7 +1270,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->simuspatialdim));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("ce_dim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimesspacedim"));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimespacedim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->truetimespacedim));		
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
 	    SET_VECTOR_ELT(S, k++, Num(s->center, s->truetimespacedim, MAX_INT));
@@ -1250,6 +1279,9 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 			   ? allocVector(VECSXP, 0)
 			   : Mat(s->x, s->simugrid ? 3 : totpts, 
 				 s->truetimespacedim, max));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("xsimgr"));
+	    SET_VECTOR_ELT(S, k++, Mat(s->xsimugr, s->simugrid ? 3 : 0,
+				       s->timespacedim, MAX_INT));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("l"));
 	    SET_VECTOR_ELT(S, k++, s->simuline==NULL 
 			   ? allocVector(VECSXP,0) 
@@ -1294,13 +1326,9 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("srqtnugget"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->sqrtnugget));	
-	    if (s->pos == NULL) {
-	      SET_VECTOR_ELT(nameSvec, k, mkChar("diag"));
-	      SET_VECTOR_ELT(S, k++, Num(s->diag, key->timespacedim, MAX_INT));
-	    } else {
-	      SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
-	      SET_VECTOR_ELT(S, k++, Int(s->pos, totpts, max));
-	    }	
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
+	    SET_VECTOR_ELT(S, k++, 
+			     Int(s->pos, (s->pos == NULL) ? 0 : totpts, max));	
 	  }  break;
 	case AdditiveMpp : {
 	    mpp_storage* s;

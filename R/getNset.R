@@ -190,6 +190,8 @@ parampositions <- function(model, param, print=TRUE) {
   ##  3,13 : rough guess (good enough for MLE) (if given in RFCovfct.cc)
   ## >10: and if nothing appropriate given in RFCovfct.cc then numerical approx.
   pch <- as.character("  ")
+  skipchecks <- integer(1)
+
   stationary.only <- integer(1)
   exactness <- integer(1)
   
@@ -273,12 +275,14 @@ parampositions <- function(model, param, print=TRUE) {
     storage.mode(m) <- "integer"
     ## "SetParam" more complicated since pch is of character type
     x <- .C("SetParam", m, Storing=Storing, PrintLevel=PrintLevel,
-            PracticalRange=PracticalRange, pch=pch, PACKAGE="RandomFields")
+            PracticalRange=PracticalRange, pch=pch, skipchecks=skipchecks,
+            PACKAGE="RandomFields")
     Storing <- x$Storing
     PrintLevel <- x$PrintLevel
     PracticalRange <- x$PracticalRange
     pch <- x$pch
-    .C("SetParamDecision", m, stationary.only, exactness,
+    skipchecks <- x$skipchecks
+    .C("SetParamDecision", m, stationary.only, exactness, 
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 
        CE.several, CE.mmin, CE.useprimes, CE.strategy, CE.maxmem, CE.dependent,
@@ -319,6 +323,8 @@ parampositions <- function(model, param, print=TRUE) {
                     PrintLevel=PrintLevel,
                     pch=pch,
                     Storing=as.logical(Storing),
+                    skipchecks = if (skipchecks<=1)
+                                 as.logical(skipchecks) else skipchecks,
                     stationary.only = (if(stationary.only==-1) NA else
                                        as.logical(stationary.only)),
                     exactness = if(exactness==-1) NA else as.logical(exactness),

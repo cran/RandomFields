@@ -10,6 +10,8 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("RFparameters: set aufrufe zu einem + interne environment darstellung")
+    print("Showmodels: die mdoelle die nicht funktioniern in schwaecherer Farbe")
     print("nsst/nsst2 als hypermodel formulieren")
     print("C-1-Berechnung bei MLE durch FFT ersetzen; mit Erweiterung von C auf circulaere Matrix")
     print("cutoff/intrinsic fuer Produkte / zonale Anisotropie bei Produkten")
@@ -268,8 +270,9 @@ function (x, y = NULL, z = NULL, T=NULL,
   RFpar <- list(...)
   if (length(RFpar)>0) RFparameters(RFpar)
   if (delete <- n>1 && !RFparameters()$Storing) RFparameters(Storing=TRUE)
-  on.exit({RFparameters(old.param);
-           if (delete) DeleteRegister(register)})
+  on.exit({if (delete) DeleteRegister(register);
+           RFparameters(old.param);
+           })
   error <- InitSimulateRF(x=x, y=y, z=z, T=T, grid=grid, model=model,
                           param=param,
                           trend=trend, method=method, register=register,
@@ -279,7 +282,7 @@ function (x, y = NULL, z = NULL, T=NULL,
   if (error > 0)
     stop(paste("Simulation could not be initiated.",
                if (RFparameters()$PrintLevel >= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n"))
-  return(DoSimulateRF(n=n, reg=register, paired=paired))
+  return(if (n<1) NULL else DoSimulateRF(n=n, reg=register, paired=paired))
 }
 
 

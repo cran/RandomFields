@@ -215,7 +215,7 @@ int init_circ_embed(key_type *key, int m)
   int *mm, *cumm, *halfm, dim;
   double hx[MAXDIM];
   int  trials, index[MAXDIM], dummy;
-  long mtot,i,k,twoi, twoRealmtot;
+  long mtot,i,k,twoi;
   bool positivedefinite, cur_crit;
   
   mtot=-1;
@@ -315,11 +315,9 @@ int init_circ_embed(key_type *key, int m)
     }
 
 
-    twoRealmtot = 2 * mtot * sizeof(double);
-
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
-    if ((c = (double*) malloc(twoRealmtot)) == 0) {
+    if ((c = (double*) malloc(2 * mtot * sizeof(double))) == 0) {
       Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
 
@@ -473,7 +471,7 @@ int init_circ_embed(key_type *key, int m)
 //  return NOERROR;
   
   if (cepar->severalrealisations) {
-    if ((s->d=(double *) malloc(twoRealmtot))==0) {
+    if ((s->d=(double *) calloc(2 * mtot, sizeof(double)))==0) {
       Xerror=ERRORMEMORYALLOCATION;goto ErrorHandling;} //d
   }
   s->c = c;
@@ -716,12 +714,14 @@ int init_circ_embed_local(key_type *key, int m)
 	if (rawRmax[i] < dummy) rawRmax[i] = dummy;
       }
     } // nc
-    if (!R_FINITE(store_param[LOCAL_R])) {
-      PRINTF("v=%d nc=%d, inst=%d err=%d hyp.kappa=%f, #=%d, diam=%f\nr=%f curmin_r=%f\n", 
-	     v, nc, instance, Xerror, sc->param[HYPERKAPPAII],
-	     (int) sc->param[HYPERNR],
+    if (!R_FINITE(store_param[LOCAL_R])) { 
+      if (GENERAL_PRINTLEVEL>3) {
+	PRINTF("v=%d nc=%d, inst=%d err=%d hyp.kappa=%f, #=%d, diam=%f\nr=%f curmin_r=%f\n", 
+	       v, nc, instance, Xerror, sc->param[HYPERKAPPAII],
+	       (int) sc->param[HYPERNR],
 	     sc->param[DIAMETER],  sc->param[LOCAL_R],
-	     store_param[LOCAL_R]);
+	       store_param[LOCAL_R]);
+      }
       assert(Xerror!=NOERROR);
       goto ErrorHandling;
     }
@@ -815,7 +815,8 @@ int init_circ_embed_local(key_type *key, int m)
       dummy = sqrt(2.0 * sc->param[INTRINSIC_A2]); // see Stein (2002)
       sc = &(s->key.cov[v]);
       if ((s->correction[v] = malloc(sizeof(double) * dimsq))==NULL){
-        Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
+        Xerror=ERRORMEMORYALLOCATION;
+	goto ErrorHandling;
       }
       stein_aniso = (double*) s->correction[v];
       if (key->anisotropy) { // distinction necessary,

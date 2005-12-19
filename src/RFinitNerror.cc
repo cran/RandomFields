@@ -43,7 +43,7 @@ double ZERO[MAXDIM], UNIT[MAXDIM];
 cov_fct *CovList=NULL;
 int currentNrCov=-1;
 
-
+int  GENERAL_SKIPCHECKS=false;
 char GENERAL_PCH[2]="*"; 
 /*  character printed after each simulation
     just for entertainment of the user
@@ -172,7 +172,7 @@ void ErrorMessage(SimulationType m, int error) {
        
 
       case ERRORNOTDEFINED :       
-	strcpy(EM,"undefined for this model");break;
+	strcpy(EM,"method undefined for this model");break;
       case ERRORMETHODNOTALLOWED : 
 	strcpy(EM,"not allowed for the specified parameters or points");break;
       case ERRORNOTPROGRAMMED :    
@@ -242,7 +242,7 @@ void ErrorMessage(SimulationType m, int error) {
 	break;
       case ERRORANISOMIX:
 	strcpy(EM,"for multiplicative covariance functions and TBM \
-the anisotropies must be identical"); break;
+the anisotropy matrices must be identical"); break;
       case ERRORISOTROPICMETHOD:
 	strcpy(EM,"method (TBM) only allows for spatially isotropic functions in certain dimensions"); 
 	break;
@@ -355,7 +355,7 @@ the anisotropies must be identical"); break;
 
 
       case ERRORTRIVIAL :
-	strcpy(EM,"confused about low rank anisotropy matrix -- try putting the\nmodel with anisotropy matrix of highest rank at the beginning.\n");break;
+	strcpy(EM,"confused about low rank anisotropy matrix.\nTry putting the model with anisotropy matrix of highest rank at the beginning.\n");break;
       case ERRORUNSPECIFIED :
 	strcpy(EM,"(unspecified)");break;
      default : 
@@ -363,7 +363,7 @@ the anisotropies must be identical"); break;
 	assert(false);
   }
   if (strcmp(ERROR_LOC,"") != 0) PRINTF("In %s", ERROR_LOC);
-  if (m!=Nothing)  PRINTF("Method");
+  if (m!=Nothing)  PRINTF("Method ");
   PRINTF("%s", MS);
   if (ERRORMODELNUMBER >= 0) PRINTF(" in submodel #%d", ERRORMODELNUMBER + 1);
   PRINTF(": %s.\n", EM);
@@ -440,14 +440,14 @@ void InitModelList()
 		  infoCauchy, rangeCauchy);
   addCov(nr, Cauchy, DCauchy, ScaleCauchy);
   addTBM(nr, TBM2Cauchy, TBM3Cauchy, NULL);
-  addLocal(nr, true, DDgeneralisedCauchy, &CAUCHY);
+  addLocal(nr, true, DDCauchy, &CAUCHY);
 	       
-  nr=IncludeModel("cauchytbm",3,checkCauchytbm,FULLISOTROPIC, false,
+  nr=IncludeModel("cauchytbm", 3, checkOK, FULLISOTROPIC, false,
 		  infoCauchytbm, rangeCauchytbm);
   addCov(nr,Cauchytbm, DCauchytbm, NULL);
   addTBM(nr,NULL, TBM3Cauchytbm, NULL);
 	      
-  nr=IncludeModel("circular", 0, checkcircular,FULLISOTROPIC, false, 
+  nr=IncludeModel("circular", 0, checkOK,FULLISOTROPIC, false, 
 		  infocircular, rangecircular);
   addCov(nr,circular, Dcircular, Scalecircular);
   addTBM(nr, NULL, NULL, NULL);
@@ -457,12 +457,12 @@ void InitModelList()
 		  infocone, rangecone);
   addOther(nr, cone_init, cone,  NULL, NULL, NULL);
 
-  nr=IncludeModel("constant",0, checkconstant, FULLISOTROPIC, false, 
+  nr=IncludeModel("constant",0, checkOK, FULLISOTROPIC, false, 
 		  infoconstant, rangeconstant);
   addCov(nr, constant, Dconstant, NULL);
   addTBM(nr,TBM2constant,TBM3constant, NULL);
    
-  nr=IncludeModel("cubic",0, checkcubic,FULLISOTROPIC, false, infocubic, 
+  nr=IncludeModel("cubic",0, checkOK,FULLISOTROPIC, false, infocubic, 
 		  rangecubic);
   addCov(nr, cubic, Dcubic, Scalecubic);
   addTBM(nr,NULL, TBM3cubic, NULL);
@@ -472,7 +472,7 @@ void InitModelList()
   addCov(nr, co, NULL, NULL);
   addInitLocal(nr, getcutoffparam_co, alternativeparam_co, CircEmbedCutoff);
 
-  nr=IncludeModel("dampedcosine",1,checkdampedcosine,FULLISOTROPIC, false,
+  nr=IncludeModel("dampedcosine", 1, checkOK, FULLISOTROPIC, false,
 		  infodampedcosine, rangedampedcosine);
   addCov(nr,dampedcosine,Ddampedcosine,Scaledampedcosine);
   addTBM(nr,NULL,TBM3dampedcosine, NULL);
@@ -486,20 +486,21 @@ void InitModelList()
   addLocal(nr, true, DDexponential, &EXPONENTIAL);
   addOther(nr, NULL, NULL, hyperexponential, NULL, NULL);
   // numerisches Ergebnis passt nicht !
+//  printf("%d %d\n", nr, CovList[nr].implemented[CircEmbedCutoff]); assert(false);
 
-  nr=IncludeModel("FD", 1, checkFD, FULLISOTROPIC, false, infoFD, rangeFD);
+  nr=IncludeModel("FD", 1, checkOK, FULLISOTROPIC, false, infoFD, rangeFD);
   addCov(nr, FD, NULL, NULL);
 
-  nr=IncludeModel("fractalB",1,checkfractalBrownian,FULLISOTROPIC, true,
+  nr=IncludeModel("fractalB",1,checkOK,FULLISOTROPIC, true,
 		 infofractalBrownian, rangefractalBrownian);
   addCov(nr, fractalBrownian, DfractalBrownian, NULL);
   addLocal(nr, false, DDfractalBrownian, &BROWNIAN);
   
-  nr=IncludeModel("fractgauss", 1, checkfractGauss,FULLISOTROPIC, false,
+  nr=IncludeModel("fractgauss", 1, checkOK, FULLISOTROPIC, false,
 		  infofractGauss, rangefractGauss);
   addCov(nr, fractGauss, NULL, NULL);
 
-  nr=IncludeModel("gauss", 0, checkGauss, FULLISOTROPIC, false, infoGauss, 
+  nr=IncludeModel("gauss", 0, checkOK, FULLISOTROPIC, false, infoGauss, 
 		  rangeGauss);
   addCov(nr,Gauss, DGauss, ScaleGauss);
   addTBM(nr, NULL, TBM3Gauss, spectralGauss);
@@ -511,12 +512,12 @@ void InitModelList()
   addTBM(nr, NULL, TBM3generalisedCauchy, NULL);
   addLocal(nr, true, DDgeneralisedCauchy, &GENERALISEDCAUCHY);
 
-  nr=IncludeModel("gengneiting",2,checkgenGneiting,FULLISOTROPIC, false,
+  nr=IncludeModel("gengneiting", 2, checkOK, FULLISOTROPIC, false,
 		  infogenGneiting, rangegenGneiting);
   addCov(nr,genGneiting,DgenGneiting,NULL);
   addTBM(nr,NULL,TBM3genGneiting, NULL);
 
-  nr=IncludeModel("gneiting",0, checkGneiting,FULLISOTROPIC, false, 
+  nr=IncludeModel("gneiting",0, checkOK, FULLISOTROPIC, false, 
 		  infoGneiting, rangeGneiting); 
   addCov(nr,Gneiting,DGneiting,ScaleGneiting);
   addTBM(nr,NULL,TBM3Gneiting, NULL);
@@ -531,7 +532,7 @@ void InitModelList()
   addCov(nr, IacoCesare, NULL, NULL);
   
 
-  nr=IncludeModel("lgd1", 2, checklgd1, FULLISOTROPIC, false,
+  nr=IncludeModel("lgd1", 2, checkOK, FULLISOTROPIC, false,
 		 infolgd1, rangelgd1);
   addCov(nr, lgd1, Dlgd1, Scalelgd1);
   addTBM(nr,NULL, NULL, NULL);
@@ -550,10 +551,6 @@ void InitModelList()
   addCov(nr,spacetime2,Dspacetime2,NULL);
   addTBM(nr,NULL,TBM3spacetime2, NULL);
 
-//  nr=IncludeModel("nsst3",6,checkspacetime1,SPACEISOTROPIC, false, 
-//		  infospacetime1, rangespacetime1);
-//  addCov(nr,spacetime3,NULL);
-
   nr=IncludeModel("nugget",0, checknugget, FULLISOTROPIC, false, infonugget, 
 		  rangenugget);
   addCov(nr, nugget, NULL, Scalenugget);
@@ -566,7 +563,7 @@ void InitModelList()
   CovList[nr].implemented[Nugget] = CovList[nr].implemented[Direct] =
     CovList[nr].implemented[CircEmbed] =IMPLEMENTED;
  
-  nr=IncludeModel("penta",0, checkpenta,
+  nr=IncludeModel("penta",0, checkOK,
                   FULLISOTROPIC, false, infopenta, rangepenta);
   addCov(nr,penta,Dpenta,Scalepenta);
   addTBM(nr,NULL,TBM3penta,NULL);
@@ -576,12 +573,12 @@ void InitModelList()
   addCov(nr,power,Dpower,Scalepower);
   addTBM(nr, NULL, TBM3power, NULL);
  
-  nr=IncludeModel("qexponential",1,checkqexponential,FULLISOTROPIC, false,
+  nr=IncludeModel("qexponential", 1, checkOK, FULLISOTROPIC, false,
 		  infoqexponential, rangeqexponential);
   addCov(nr,qexponential, Dqexponential, Scaleqexponential);
   addTBM(nr, NULL, TBM3qexponential, NULL);
 
-  nr=IncludeModel("spherical",0, checkspherical, FULLISOTROPIC, false, 
+  nr=IncludeModel("spherical",0, checkOK, FULLISOTROPIC, false, 
 		  infospherical, rangespherical);
   addCov(nr,spherical,Dspherical,Scalespherical);
   addTBM(nr,TBM2spherical,TBM3spherical,NULL);
@@ -603,7 +600,7 @@ void InitModelList()
 		  false, infoSteinST1, rangeSteinST1);
   addCov(nr, SteinST1, NULL, NULL);
 
-  nr=IncludeModel("wave", 0, checkwave, FULLISOTROPIC, false, infowave, 
+  nr=IncludeModel("wave", 0, checkOK, FULLISOTROPIC, false, infowave, 
 		  rangewave);
   addCov(nr,wave,NULL,Scalewave);
   addTBM(nr,NULL,NULL,spectralwave);

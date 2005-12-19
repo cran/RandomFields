@@ -88,6 +88,7 @@ int init_nugget(key_type *key, int m){
   
   actcov=0;
   for (v=0; v<key->ncov; v++) {
+    ERRORMODELNUMBER = v;	
     kc = &(key->cov[v]);
     cov_fct *cov;
 
@@ -161,6 +162,7 @@ int init_nugget(key_type *key, int m){
       kc->left = false;
     }
   } // v
+  ERRORMODELNUMBER = -1;	
   if (actcov==0) { /* no covariance for the considered method found */
     Xerror=NOERROR_ENDOFLIST;
     goto ErrorHandling;
@@ -186,8 +188,8 @@ int init_nugget(key_type *key, int m){
       int d, dim=key->timespacedim + 1;
       s->prod_dim[0] = 1; 
       for (d=i=0; d<key->timespacedim; d++, i+=dim) {
-	s->diag[d] = kc->param[ANISO + i];
-        s->reduced_dim[d] =(fabs(s->diag[d]) < NUGGET_TOL)? 1 : key->length[d];
+        s->reduced_dim[d] =(fabs(kc->param[ANISO + i]) 
+			    < NUGGET_TOL)? 1 : key->length[d];
 	s->prod_dim[d + 1] = s->prod_dim[d] * s->reduced_dim[d];
       }
       if ((s->red_field=(double *) malloc(sizeof(double) * 

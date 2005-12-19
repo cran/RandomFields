@@ -118,6 +118,7 @@ int init_hyperplane(key_type *key, int m)
   int v, d, actcov;
   actcov=0;
   for (v=0; v <key->ncov; v++) {
+    ERRORMODELNUMBER = v;	
     kc = &(key->cov[v]);
     if (kc->method==Hyperplane && kc->left) {
       cov_fct *cov;
@@ -148,7 +149,10 @@ int init_hyperplane(key_type *key, int m)
 	goto ErrorHandling;
       }
       if (timespacedim == 1) {
-	error = ERRORNOTPROGRAMMED;
+	strcpy(ERRORSTRING_OK,"dim=2");
+	sprintf(ERRORSTRING_WRONG,
+		"genuine dim=1; this has not been programmed yet.");
+	error = ERRORCOVFAILED;
 	goto ErrorHandling;
       }
       if (timespacedim > optdim || timespacedim < 1) { 
@@ -162,6 +166,7 @@ int init_hyperplane(key_type *key, int m)
      break;
     }
   } 
+  ERRORMODELNUMBER = -1;	
   if (v==key->ncov) { /* no covariance for the considered method found */
     error=NOERROR_ENDOFLIST;
     goto ErrorHandling;
@@ -340,8 +345,8 @@ void do_hyperplane(key_type *key, int m, double *res)
 	int nn;
 	double deltax, deltay;
 
-	deltax = kc->x[XSTEPD[0]];
-	deltay = kc->x[XSTEPD[1]];
+	deltax = kc->xsimugr[XSTEPD[0]];
+	deltay = kc->xsimugr[XSTEPD[1]];
 
 	for(nn=0; nn<HYPERPLANE_SUPERPOS; nn++){
 	  q = s->hyperplane(s->radius, s->center, s->rx,
@@ -365,9 +370,10 @@ void do_hyperplane(key_type *key, int m, double *res)
 
 	  /* temporary code */
 	  if (kc->simugrid) {
-	    for (gy=kc->x[XSTARTD[1]], resindex=j=0; j<key->length[1]; j++) {
-	      for (gx= kc->x[XSTARTD[0]], i=0; i<key->length[0]; i++,
-		       resindex++) {
+	    for (gy=kc->xsimugr[XSTARTD[1]], resindex=j=0; j<key->length[1]; 
+		 j++) {
+	      for (gx= kc->xsimugr[XSTARTD[0]], i=0; i<key->length[0]; i++,
+		     resindex++) {
 //		  printf("\n%f %f\n", gx, gy);  
 		if ((cell = determine_cell(gx, gy, hx, hy, hr, &integers,
 					   &tree, randomvar)) == NULL) {

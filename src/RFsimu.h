@@ -46,14 +46,14 @@ typedef int covlist_type[MAXCOV];
 #define VARIANCE   0   /* without NUGGET */
 #define KAPPA      1   /* Kappas should be always the last ones of transferred 
 			  parameters */ 
-#define KAPPAI     KAPPA
-#define KAPPAII    2  
-#define KAPPAIII   3
-#define KAPPAIV    4
-#define KAPPAV     5
-#define KAPPAVI    6
-#define KAPPAVII   7
-#define LASTKAPPA  KAPPAVII
+#define KAPPA1     KAPPA
+#define KAPPA2     2  
+#define KAPPA3     3
+#define KAPPA4     4
+#define KAPPA5     5
+#define KAPPA6     6
+#define KAPPA7     7
+#define LASTKAPPA  KAPPA7
 #define TBM2NUM          LASTKAPPA + 1
 #define HYPERINTERNALI   LASTKAPPA + 2
 #define HYPERINTERNALII  LASTKAPPA + 3
@@ -68,11 +68,20 @@ typedef int covlist_type[MAXCOV];
     hyperbolic, TBM3hyperbolic, twodimfractalbrownian 
     R if changed! */
 
-#define HYPERNR KAPPAI
-#define HYPERKAPPAI KAPPAII
-#define HYPERKAPPAII KAPPAIII
-#define HYPERKAPPAIIII KAPPAIV
-#define HYPERKAPPAIV KAPPAV
+// for compatibility only
+#define KAPPAI     KAPPA1
+#define KAPPAII    KAPPA2  
+#define KAPPAIII   KAPPA3
+#define KAPPAIV    KAPPA4
+#define KAPPAV     KAPPA5
+#define KAPPAVI    KAPPA6
+#define KAPPAVII   KAPPA7
+
+#define HYPERNR KAPPA1
+#define HYPERKAPPAI KAPPA2
+#define HYPERKAPPAII KAPPA3
+#define HYPERKAPPAIIII KAPPA4
+#define HYPERKAPPAIV KAPPA5
 #define LASTHYPERKAPPA LASTKAPPA
 
 // parameters used in local cov fcts
@@ -168,6 +177,12 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 #define GIVEN_METH_IGNORED 3
 #define HYPERIMPLEMENTED 4
 
+// definitions for range
+#define OPEN 0.0001
+#define RANGE_LASTELEMENT -1
+#define RANGE_INVALIDDIM -2
+
+
 typedef struct covinfo_type {
   SimulationType method;
   /* the current method (out of SimulationsType) which 
@@ -197,21 +212,29 @@ typedef struct covinfo_type {
     left;        /* left to be considered in the simulation
 		    initialisations ! */ 
   param_type param;
-  aniso_type aniso;
+  aniso_type aniso; //the matrix aniso contains always the reduced matrix in the 
+  //    first columns (and maybe the coordinates have been changed position;
+  double xsimugr[MAXDIM * 3];
   double *x; // this pointer may only be used for the coordinates
   // transformed by Transform2NoGrid; since this operation is time and 
   // memory consuming but not needed by all methods, it is performed only
   // when needed, but then kept for the next method if the calling 
   // method fails
+  //
+  //    the x-values contain the coordinates transformed by aniso
 } covinfo_type;
 typedef covinfo_type covinfo_arraytype[MAXCOV];
 typedef double (*CovFctType)(double *, int, covinfo_arraytype,
 			       covlist_type covlist, int, bool);
 
-typedef void (*infofct)(double *, int *, int *); /* param, maxdim, 
-      CEbadlybehaved? --  to create preference list */
+typedef void (*infofct)(double *p, int *maxdim, int *CEbadly); 
+/* param, maxdim,   CEbadlybehaved? --  to create preference list
+   note: maxdim gives the maximal dimension allowed for the given
+   parameter values; it does not check whether the parameters 
+   are inside range!
+*/
 typedef void (*rangefct)(int, int *, double*);
-/* DO NOT change double to anything else since memcpy  fcts are used
+/* DO NOT change double to anything else since memcpy fcts are used
    dim, class parameter like in nsst, 
    return 2 x length(param) x {theor, pract }*/
 typedef int (*checkfct)(double*, int, SimulationType); /* h,parameters; 
@@ -303,6 +326,7 @@ void addOther(int nr, initmppfct add_mpp_scl, MPPRandom add_mpp_rnd,
 	      generalSimuMethod other);
 void addodd(int nr, int dim); 
 void addusersfunctions();
+int check_within_range(param_type param, cov_fct *cov, int timespacedim, char *txt);
 
 /* function necessary to set CircEmbed correctly if the function is not 
    even in some coordinates! 
@@ -349,6 +373,7 @@ int kappaFalse(int dim);
 typedef struct decision_param{
   int stationary_only, exactness;
 } decision_param;
+typedef double *coord_type[MAXDIM];
 typedef struct key_type {
   bool active,   /* has the init_procedure been called successfully? */
     stop, /* should the simulations be continued? -- appearing in
@@ -385,8 +410,8 @@ typedef struct key_type {
 			    == lengthx * lengthy * lengthz if grid==true
 			 */
 
-  double *x[MAXDIM],       /* the coordinates */
-    mean,         // only used if storagemodus=0 (see rf.R)
+  coord_type x;      /* the coordinates */
+  double mean,         // only used if storagemodus=0 (see rf.R)
     *LinearTrend, // only used for storing -- used in R
     T[3];             /* gridtriple definition for the time components --
 			 doubled in last coordinate of *x
@@ -406,6 +431,7 @@ extern int GENERAL_STORING;
 extern double GENERAL_PRECISION;
 extern decision_param DECISION_PARAM;
 extern char GENERAL_PCH[2]; 
+extern int GENERAL_SKIPCHECKS;
 extern key_type KEY[MAXKEYS]; 
 extern char ERRORSTRING_OK[MAXERRORSTRING],
   ERRORSTRING_WRONG[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
@@ -430,6 +456,8 @@ void printkey(key_type *key);
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 		char type, bool *Time, int *truetimespacedim, 
 		aniso_type aniso);
+void Getxsimugr(coord_type x, param_type param, int timespacedim, 
+	   bool anisotropy, double *xsimugr);
 SEXP TooLarge(int *n, int l); /* if printout is larger than given size */
 
 
@@ -495,8 +523,8 @@ extern int nlocal;
 typedef struct TBM_storage {
   aniso_type aniso;
   bool simugrid, genuine_dim[MAXDIM];
-  int simuspatialdim, ce_dim, truetimespacedim;
-  double center[MAXDIM], *simuline, *x;
+  int simuspatialdim, ce_dim, truetimespacedim, timespacedim;
+  double center[MAXDIM], *simuline, *x, xsimugr[3 * MAXDIM];
   key_type key;
 } TBM_storage;
 int init_turningbands2(key_type *key, int m);
@@ -532,7 +560,7 @@ typedef struct nugget_storage {
   double sqrtnugget;
   bool simple, simugrid;
   int *pos, reduced_dim[MAXDIM], prod_dim[MAXDIM + 1];
-  double diag[MAXDIM], *red_field;
+  double *red_field;
   
 } nugget_storage;
 extern double NUGGET_TOL;

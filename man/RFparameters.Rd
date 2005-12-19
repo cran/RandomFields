@@ -121,11 +121,20 @@
       }
       Default: \code{NA} [init].
     }
+    \item{\code{skipchecks}}{logical.
+      If \code{TRUE}, the check whether the given parameter values
+      and the dimension are within the allowed range is skipped.
+      Do not change the value of this variable except you really
+      know what you do.
+      
+      Default: \code{FALSE} [init].      
+    }
     \item{\code{direct.bestvariables}}{integer.
       When searching for an appropriate simuation method
       the matrix decomposition method (see \sQuote{direct method} below)
       is preferred if the number of variables is less than or equal to 
       \code{direct.bestvariables}
+      
       Default: \code{800} [init]}
   }
   %

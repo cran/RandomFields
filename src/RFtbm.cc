@@ -232,8 +232,10 @@ void unitvector3D(int projectiondim, double *deltax, double *deltay,
   switch (projectiondim) { // create random unit vector
       case 1 : 
 	*deltax= UNIFORM_RANDOM;
+	*deltaz = *deltay = 0.0;
 	break;
       case 2 :
+	*deltaz = 0.0;
 	*deltax= UNIFORM_RANDOM;// see Martin's tech rep for details
 	*deltay= sqrt(1.0 - *deltax * *deltax) * sin(UNIFORM_RANDOM*TWOPI);
 	break;
@@ -397,10 +399,11 @@ double CovFctTBM3(double *x, int dim, covinfo_arraytype keycov,
 void TBM_destruct(void **S) 
 {
   if (*S!=NULL) {
-   TBM_storage *x;
-    x = *((TBM_storage**)S);
-    if (x->simuline!=NULL) free(x->simuline);
-    DeleteKeyNotTrend(&(x->key));
+   TBM_storage *s;
+    s = *((TBM_storage**)S);
+    if (s->simuline != NULL) free(s->simuline);
+    if (s->x != NULL) free(s->x);
+    DeleteKeyNotTrend(&(s->key));
     free(*S);
     *S = NULL;
   }
@@ -507,7 +510,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   SimulationType tbm_method;
   bool ce_dim2=false, // just to avoid error messages 
       newadditive, equal, spacecomponent_found; 
-  char errorloc_save[nErrorLoc];
+  char errorloc_save[nErrorLoc], msg[15];
   CovFctType CovFctTBM;
   TBM_storage *s;
 
@@ -530,6 +533,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   s->x = NULL;
   KEY_NULL(&(s->key));
   first = NULL;
+  s->timespacedim = key->timespacedim;
 
   // get list of covariance functions that are of interest
   if (method==TBM2) {  CovFctTBM = CovFctTBM2;  tbm_dim = 2; tbm = &tbm2;}
@@ -563,6 +567,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   s->ce_dim = 0;
   ce_dim2 = false;
   for (v=0; v<key->ncov; v++) {
+    ERRORMODELNUMBER = v;
     kc = &(key->cov[v]);
     if ((kc->method==method) && (kc->left)) {
       first = kc; 
@@ -611,7 +616,9 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  }
 	}
       } else {
-	assert(kc->truetimespacedim <= tbm_dim); 
+	if (kc->truetimespacedim > tbm_dim) {
+	  Xerror=ERRORWRONGDIM; goto ErrorHandling;
+	}
       }
       s->ce_dim = 1 + (int) ce_dim2;
       if (ce_dim2) {
@@ -622,6 +629,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       break;
     }
   }
+  ERRORMODELNUMBER = -1;
+
 //  printf("tbm ansio first %f\n", first->aniso[0] );
   if (first == NULL) {
     Xerror=ERRORFAILED;
@@ -689,6 +698,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   // multiplication der x-skalenparameter so dass letztendlich
   // auf der TBM-Geraden mit Abstand 1 der Punkte simuliert werden kann
   // mit dem Vorteil des einfachen Zugriffs auf die simulierten Werte 
+  s->simugrid = first->simugrid;
   diameter = -1.0;
   for (iloop=0; iloop<loop; iloop++) {
     param_type simuparam;
@@ -710,7 +720,14 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 
     bool Timedummy;
     Timedummy = false;
-    if (ce_dim2) simuparam[lasttimecomponent] = 1.0;
+    if (ce_dim2) {
+      for (i=lastmatching + 1; i<lasttimecomponent; simuparam[i++]=0.0);
+      simuparam[lasttimecomponent] = 1.0;
+    }
+
+//    for (i=ANISO; i<ANISO + 4; i++) printf("%f ", simuparam[i]);
+//    printf("\n");
+
     GetTrueDim(key->anisotropy, key->timespacedim, simuparam,
 	       SPACEISOTROPIC, &Timedummy, &totaltimespacedim, s->aniso);
     if (ce_dim2) assert(s->simuspatialdim == totaltimespacedim - 1);
@@ -720,16 +737,23 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       goto ErrorHandling;
     }
     s->truetimespacedim = totaltimespacedim;
+
+    if (s->simugrid) { 
+      if (key->anisotropy)
+	for (i=lastmatching + 1; i<key->totalparam; i++) 
+	  simuparam[i] = first->param[i] * linesimuscale;
+      Getxsimugr(key->x, simuparam, key->timespacedim, 
+		 key->anisotropy, s->xsimugr);
+    }
+   
     
     // ******************************
     // diameter of the simulation area 
-    assert(s->x == 0);
-    s->simugrid = first->simugrid;
+    assert(s->x == NULL);
     if ((Xerror=Transform2NoGrid(key, s->aniso,  totaltimespacedim, 
 				s->simugrid, &(s->x))) != NOERROR)
       goto ErrorHandling;
-  
-
+ 
 //  printf("TRANSF %d %d %d %d  %d %d\n", iloop, key->anisotropy, key->Time,
 //	   key->grid, totaltimespacedim, s->simugrid);
 //  printf("s->x %f %f %f\n\n", s->x[0], s->x[1] , s->x[2]);
@@ -772,8 +796,9 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 // printf("tbm: %d %d %d %f %f %f %d %d\n", 
 //        iloop, loop, TBM_POINTS, diameter, linesimuscale, s->aniso[0],
 //        key->grid, s->simugrid);
-    if (loop==2 && iloop==0) linesimuscale = (TBM_POINTS - 3.0) / diameter;
-    else diameter = trunc(3.0 + diameter);
+    if (loop==2 && iloop==0) {
+      linesimuscale = (TBM_POINTS - 3.0) / diameter;
+    } else diameter = trunc(3.0 + diameter);
   } // loop
 
 
@@ -803,6 +828,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   cum_nParam[actcov]=0;
   spacecomponent_found = newadditive = true;
   for (v=0; v<key->ncov; v++) {
+    ERRORMODELNUMBER = v;
     kc = &(key->cov[v]);
     if ((kc->method==method) && (kc->left)) {
       cov_fct *cov;
@@ -842,9 +868,14 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  while (v<key->ncov && key->cov[v].op) v++;  
 	  continue;
       }
+      sprintf(msg, " (%s)", METHODNAMES[method]);
+      if ((Xerror=check_within_range(kc->param, cov, tbm_dim + (int) ce_dim2, 
+				     msg)) != NOERROR) {
+	goto ErrorHandling;
+      }    
       Xerror=cov->check(kc->param, tbm_dim + (int) ce_dim2, method);
-      if (Xerror && (Xerror!=ERRORCOVNUMERICAL || method!=TBM2 || !TBM2NUMERIC)){
-	ERRORMODELNUMBER = v;
+      if (Xerror && (Xerror!=ERRORCOVNUMERICAL || method!=TBM2 ||
+		     !TBM2NUMERIC)){
 	goto ErrorHandling;
       }
 
@@ -934,6 +965,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     } // kc->left
     newadditive = kc->op != 0;
   }  // v
+  ERRORMODELNUMBER = -1;
   meth->actcov = actcov;
 
 
@@ -976,7 +1008,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
    if (Xerror != NOERROR) goto ErrorHandling; // do not put this line before the
    // two preceeding ones!
   
-  if ((s->simuline=(double *) malloc(sizeof(double) * s->key.totalpoints))==0){
+  if ((s->simuline=(double *) calloc(s->key.totalpoints, sizeof(double)))==0){
     Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;}
   if (GENERAL_PRINTLEVEL>4) PRINTF("\ntbm is now initialized.\n");
  
@@ -1022,43 +1054,50 @@ void do_turningbands(key_type *key, int m, double *res)
 
   for (n=0; n<key->totalpoints; n++) res[n]=0.0; 
   if (s->simugrid) { // old form, isotropic field
-    double xoffset,  yoffset, zoffset,  toffset, e[3], deltaphi;
-    int nx, ny, nz, gridlenx, gridleny, gridlenz, ix, iy, iz, it;
+    int nx, ny, nz, gridlenx, gridleny, gridlenz, ix, iy, iz, it, keyidx;
     long zaehler;
-
+    double xoffset, yoffset, zoffset,  toffset, e[3 + 1], deltaphi;
+#define ezero 3 // must match e[3 + 1] above
+    e[0] = e[1] = e[2] = e[ezero] = 0.0;
     stepx = stepy = stepz = stept = centerx = centery = centerz = 0.0;
     gridlenx = gridleny = gridlenz = gridlent = 1;
-    ix = iy = iz = it = 0;
-    idx = key->timespacedim;
+    ix = iy = iz = it = ezero;
+    idx = s->truetimespacedim;
+    keyidx = key->timespacedim;
     if (s->ce_dim==2) {
-      gridlent = key->length[idx]; // could be one !!
-      stept = s->x[XSTEPD[--idx]];	    
-      inct = (double) nn;
+      gridlent = key->length[--keyidx]; // could be one !!
+      stept = s->xsimugr[XSTEPD[keyidx]];	    
+      inct = (double) s->key.length[1];
     }
-    switch (idx) {
+    //printf("%d %d \n", idx, s->timespacedim); assert(false);
+    switch (keyidx) {
 	case 4 : 
-	  gridlent = key->length[--idx];
-	  if (s->genuine_dim[idx] != 0) {
-	    stept = s->x[XSTEPD[idx]];	    
-	    it = idx;	
-	  }
+	  gridlent = key->length[--keyidx];
+	  if (s->genuine_dim[keyidx]) {
+	    stept = s->xsimugr[XSTEPD[keyidx]];	    
+	    it = --idx;	
+	  } // no break;
 	case 3 : 
-	  gridlenz = key->length[--idx];
-	  if (s->genuine_dim[idx] != 0) {
-	    stepz = s->x[XSTEPD[idx]];	  
-	    iz = idx;
+//	  printf("keyidxz %d \n", keyidx);
+	  gridlenz = key->length[--keyidx];
+	  if (s->genuine_dim[keyidx]) {
+	    stepz = s->xsimugr[XSTEPD[keyidx]];	  
+	    iz = --idx;
 	  }  // no break;
 	case 2 : 
-	  gridleny = key->length[--idx];
-	  if (s->genuine_dim[idx] != 0) {
-	    stepy = s->x[XSTEPD[idx]];	 
-	    iy = idx;
+//	  printf("keyidxy %d idx %d \n", keyidx, idx);
+	  gridleny = key->length[--keyidx];
+	  if (s->genuine_dim[keyidx]) {
+	    stepy = s->xsimugr[XSTEPD[keyidx]];	 
+//	  printf("step y %f \n", stepy);
+	    iy = --idx;
 	  }  // no break;
 	case 1 : 
-	  gridlenx = key->length[--idx];
-	  if (s->genuine_dim[idx] != 0) {
-	    stepx = s->x[XSTEPD[idx]];	  
-	    ix = idx;
+//	  printf("keyidxx %d \n", keyidx);
+	  gridlenx = key->length[--keyidx];
+	  if (s->genuine_dim[keyidx]) {
+	    stepx = s->xsimugr[XSTEPD[keyidx]];	  
+	    ix = --idx;
 	  } 
 	  break;
 	default : assert(false);
@@ -1101,8 +1140,25 @@ void do_turningbands(key_type *key, int m, double *res)
 	  for (ny=0; ny<gridleny; ny++) {	  
 	    xoffset = yoffset;
 	    for (nx=0; nx<gridlenx; nx++) {
-	      assert((xoffset<ntot) && (xoffset>=0) );
-	      res[zaehler++] += simuline[(long) xoffset];
+              register long longxoffset = (long) xoffset;
+	      
+//   printf("\n");
+ //  printf("grindlength %d %d %d %d\n", gridlenx, gridleny, gridlenz, gridlent);
+ //  printf("s->center:%f %f %f\n", s->center[0], s->center[1], s->center[2]);
+//   printf("center:%f %f %f\n", centerx, centery, centerz);
+//   printf("ix %d %d %d %d\n", ix, iy, iz, it);
+//   printf("e: %f %f %f %f\n", e[ix], e[iy], e[iz], e[it]);
+//   printf("step %f %f %f %f\n", stepx, stepy, stepz, stept);
+//   printf("incr %f %f %f %f \n", incx,  incy, incz, inct);
+//   printf("nn=%d ntot=%d nt=%d nnhalf=%f: xoff=%f %d zaehl=%d toffset=%d (%d %d %d)\n",
+//	  (int) nn, (int) ntot, (int) nt, nnhalf,  xoffset, (int) longxoffset,
+//	  (int)zaehler, (int)toffset, (int)(toffset + e[ix] * stepx * gridlenx),
+//	  (int) (toffset + e[iy] * stepy * gridleny),
+//	    (int) (toffset + e[ix]* stepx* gridlenx + e[iy]* stepy* gridleny));
+//  assert(zaehler < 1);
+
+	      assert((longxoffset<ntot) && (longxoffset>=0) );
+	      res[zaehler++] += simuline[longxoffset];
 	      xoffset += incx;
 	    }
 	    yoffset += incy;
@@ -1130,7 +1186,7 @@ void do_turningbands(key_type *key, int m, double *res)
             register long index;\
 	    index = (long) (offset + INDEX);\
 /* if (!((index<ntot) && (index>=0))) { \
-  printf("%f %f %f (%f %f %f; %f %f %f)\n %d %d %d %d %d : %f %f %f\n",\
+//  printf("%f %f %f (%f %f %f; %f %f %f)\n %d %d %d %d %d : %f %f %f\n",\
   s->x[v], ex + s->x[v+1] , s->x[v+2], \
 	 ex, ey, ez, centerx, centery, centerz, \
 	 index, nn, ntot, v, nt, OFFSET, INDEX);\

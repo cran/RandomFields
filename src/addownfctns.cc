@@ -15,18 +15,18 @@
 
 typedef int (*checkfct)(double* p, int timespace dim, 
 			SimulationType method);
-// The function checks whether the intrinsic parameters p[KAPPAI], p[KAPPAII],
+// The function checks whether the intrinsic parameters p[KAPPA1], p[KAPPA2],
 // etc, the dimension dim, and the method match or work together. It
 // returns NOERROR or an error code according to error.h
 
 typedef void (*infofct)(double *p, int *maxdim, int *CEbadlybehaved); 
 // the function has as input parameter p, the intrinsic parameter
-// vector from which p[KAPPAI], p[KAPPAII], etc. is used.
+// vector from which p[KAPPA1], p[KAPPA2], etc. is used.
 // maxdim is the maximum dimension for which the model is valid; use INFDIM
 //        if the model is allowed for all dimensions
 // CEbadlybehaved is only 0 (false), 1(true), 2 depending on whether
 //        the circulant embedding method frequently fails for the model
-// both maxdim and CEbadlybehaved may depend on p[KAPPAI], p[KAPPAII], etc
+// both maxdim and CEbadlybehaved may depend on p[KAPPA1], p[KAPPA2], etc
 
 typedef void (*rangefct)(int dim , int * index, double* range);
 // input parameters are
@@ -43,13 +43,17 @@ typedef void (*rangefct)(int dim , int * index, double* range);
 //          parameter; the following two elements give the range which is
 //          usually not exceeded in practice (worthless or difficult to
 //          simulate)
+//      +OPEN in first element if interval left open and left border is integer, 
+//      -OPEN in second elemend if interval right open and right border is int,
+//      non-integer border values of an interval are always supposed to be
+//      closed.
 
 typedef double (*covfct)(double *x, double*p, int dim);
 // all parameters are input parameters:
 // x : vector of length 1 for FULLISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
-// p : p[KAPPAI], p[KAPPAII], etc 
+// p : p[KAPPA1], p[KAPPA2], etc 
 // dim : currently unused, except for checking
 // IMPORTANT! covfct expect the standard model definition with variance 1 and 
 //            scale=1. That is, p[VARIANCE], p[SCALE], p[ANISO] may not be 
@@ -62,11 +66,11 @@ typedef double (*isofct)(double*, double*);
 // x : vector of length 1 for FULLISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
-// p : p[KAPPAI], p[KAPPAII], etc 
+// p : p[KAPPA1], p[KAPPA2], etc 
 
 typedef double (*natscalefct)(double* p, int scaling);
 // all parameters are input parameters:
-// p : p[KAPPAI], p[KAPPAII], etc 
+// p : p[KAPPA1], p[KAPPA2], etc 
 // scaling : NATSCALE_EXACT, NATSCALE_APPROX, NATSCALE_MLE
 // natscalefct returns the scale parameter such that, 
 // for x=1, the covariance function value is 0.05. if case
@@ -74,11 +78,11 @@ typedef double (*natscalefct)(double* p, int scaling);
 // should return 0.0 if scaling=NATSCALE_EXACT; 
 // if scaling=NATSCALE_APPROX or scaling=NATSCALE_MLE values are return
 // as approximation or of interest in MLE of parameters to put
-// the parameters p[KAPPAI], etc and p[SCALE] into a somehow orthogonal
+// the parameters p[KAPPA1], etc and p[SCALE] into a somehow orthogonal
 // direction.
 
 typedef double (*randommeasure)(double *p);     
-// p : p[KAPPAI], p[KAPPAII], etc 
+// p : p[KAPPA1], p[KAPPA2], etc 
 // the function returns a random draw from the spectral measure in the 
 // two dimensional spectral turning bands method
 
@@ -115,17 +119,17 @@ addTBM(int nr,                // the number returned by IncludeModel
 
 
 double gCauchy(double *x, double *p, int effectivedim){
-  return pow(1.0 + pow(fabs(*x), p[KAPPAI]), -p[KAPPAII]/p[KAPPAI]);
+  return pow(1.0 + pow(fabs(*x), p[KAPPA1]), -p[KAPPA2]/p[KAPPA1]);
 }
 
 double ScalegCauchy(double *p,int scaling) {
   switch(scaling) {
   case NATSCALE_EXACT: case NATSCALE_APPROX:
-    return pow(pow(0.05,-p[KAPPAI]/p[KAPPAII])-1.0,-1.0/p[KAPPAI]); 
+    return pow(pow(0.05,-p[KAPPA1]/p[KAPPA2])-1.0,-1.0/p[KAPPA1]); 
     break;
   case NATSCALE_MLE: 
     // should be changed! (long tails!)
-    return pow(pow(0.05,-p[KAPPAI]/p[KAPPAII])-1.0,-1.0/p[KAPPAI]);
+    return pow(pow(0.05,-p[KAPPA1]/p[KAPPA2])-1.0,-1.0/p[KAPPA1]);
     break;
   default: assert(false);
   }
@@ -134,23 +138,12 @@ double ScalegCauchy(double *p,int scaling) {
 double DgCauchy(double *x, double *p){
   register double ha,y;
   if ((y = fabs(*x))==0.0) 
-    return ((p[KAPPAI]>1.0) ? 0.0 : (p[KAPPAI]<1.0) ? -INFTY : -p[KAPPAII]); 
-  ha=pow(y, p[KAPPAI] - 1.0);
-  return  -  p[KAPPAII] * ha * pow(1.0 + ha * y,-p[KAPPAII] / p[KAPPAI] - 1.0);
+    return ((p[KAPPA1]>1.0) ? 0.0 : (p[KAPPA1]<1.0) ? -INFTY : -p[KAPPA2]); 
+  ha=pow(y, p[KAPPA1] - 1.0);
+  return  -  p[KAPPA2] * ha * pow(1.0 + ha * y,-p[KAPPA2] / p[KAPPA1] - 1.0);
 }
 
 int checkgCauchy(double *param, int timespacedim, SimulationType method){
-  if ((param[KAPPAI]<=0) || (param[KAPPAI]>2.0)) {
-    strcpy(ERRORSTRING_OK,"0<kappa1<=2");
-    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAI]);
-    return ERRORCOVFAILED;
-    if (param[KAPPAII]>0) return 0;
-  }
-  if (param[KAPPAII]<=0) {
-    strcpy(ERRORSTRING_OK,"0<kappa2");
-    sprintf(ERRORSTRING_WRONG,"%f",param[KAPPAII]);
-    return ERRORCOVFAILED;
-    }
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff)
   {
     if (timespacedim>2) 
@@ -163,11 +156,13 @@ int checkgCauchy(double *param, int timespacedim, SimulationType method){
   return 0;
 }
 
-static double range_gCauchy[8] = {0, 2, 0.05, 2, 
-				  0, RF_INF, 0.05, 10.0};
+//      +OPEN in first element if interval left open and left border is integer, 
+//      -OPEN in second elemend if interval right open and right border is int,
+static double range_gCauchy[8] = {OPEN, 2, 0.05, 2, 
+				  OPEN, RF_INF, 0.05, 10.0};
 void rangegCauchy(int dim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  *index = -1; 
+  *index = (dim<=12345) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM; 
   memcpy(range, range_gCauchy, sizeof(double) * 8);
 }
 

@@ -90,8 +90,9 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
     for (v=0; v<*ncov; v++) {
       init_method[v] = (int) AdditiveMpp;
       if (v<*ncov-1 && op[v]) {
-	  *error=ERRORNOMULTIPLICATION;
-	  goto InternalErrorHandling;
+	ERRORMODELNUMBER = v;	
+	*error=ERRORNOMULTIPLICATION;
+	goto InternalErrorHandling;
       }
     }
     *error = internal_InitSimulateRF(x, T, *dim, *lx, (bool) *grid,
@@ -265,16 +266,18 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	    for (d=0; d<key->timespacedim; d++) {	 
 	      // determine rectangle of indices, where the mpp function
 	      // is different from zero
-	      if (kc->length[d] != 1) {
-	        if ((next = ((min[d] > kc->x[XENDD[d]]) ||
-			     (max[d] < kc->x[XSTARTD[d]])))) { break;}
-		if (min[d] < kc->x[XSTARTD[d]]) {start[d]=0;}
-		else start[d] = (int) ((min[d] - kc->x[XSTARTD[d]]) / 
-				       kc->x[XSTEPD[d]]);
+	      if (kc->genuine_dim[d]) {
+	        if ((next = ((min[kc->idx[d]] > kc->xsimugr[XENDD[d]]) ||
+			     (max[kc->idx[d]] < kc->xsimugr[XSTARTD[d]])))) { 
+		  break;
+		}
+		if (min[kc->idx[d]] < kc->xsimugr[XSTARTD[d]]) {start[d]=0;}
+		else start[d] = (int)((min[kc->idx[d]] - kc->xsimugr[XSTARTD[d]])
+				      / kc->xsimugr[XSTEPD[d]]);
 		// "end[d] = 1 + *"  since inequalities are "* < end[d]" 
 		// not "* <= end[d]" !
-		end[d] = (int) ((max[d] - kc->x[XSTARTD[d]]) / 
-				kc->x[XSTEPD[d]]);
+		end[d] = (int) ((max[kc->idx[d]] - kc->xsimugr[XSTARTD[d]]) / 
+				kc->xsimugr[XSTEPD[d]]);
 		if (end[d] > key->length[d]) end[d] = key->length[d];
 	      } else {
 		start[d] = 0;
@@ -284,8 +287,8 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	      index[d]=start[d];
 	      segmentdelta[d] = segment[d] * (end[d] - start[d]);
 	      resindex += segment[d] * start[d];
-	      coord[kc->idx[d]] = startcoord[d] = 
-		  kc->x[XSTARTD[d]] +(double)start[d] * kc->x[XSTEPD[d]];
+	      coord[kc->idx[d]] = startcoord[d] = kc->xsimugr[XSTARTD[d]] + 
+		(double)start[d] * kc->xsimugr[XSTEPD[d]];
 	    }	
 	    if (next) continue;
 	      
@@ -299,7 +302,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	      if (RES[resindex] < dummy) RES[resindex]=dummy;
 	      d=0;
 	      index[d]++;
-	      coord[kc->idx[d]] += kc->x[XSTEPD[d]];
+	      coord[kc->idx[d]] += kc->xsimugr[XSTEPD[d]];
 	      resindex++;
 	      while (index[d] >= end[d] && d < dimM1) { 
 		// loop never entered if dim=1
@@ -308,7 +311,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 		resindex -= segmentdelta[d];
 		d++; // if (d>=dim) break;
 		index[d]++;
-		coord[kc->idx[d]] += kc->x[XSTEPD[d]];
+		coord[kc->idx[d]] += kc->xsimugr[XSTEPD[d]];
 		resindex += segment[d];
 	      }
 	    }

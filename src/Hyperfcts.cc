@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RFCovFcts.h"
 
 static double local_range[8] = {1, MAXCOV-1, 1, MAXCOV-1, // HYPERNR
-		       0, RF_INF, 1e-10, 1e10};// CUTOFF_DIAM
+		       OPEN, RF_INF, 1e-10, 1e10};// CUTOFF_DIAM
 
 int check_submodels(int nr, char **allowed_fct, int nr_allowed_list, 
 		    covinfo_arraytype keycov, 
@@ -127,8 +127,8 @@ bool alternativeparam_co(covinfo_type *kc, int instance){
 }
 
 void range_co(int dim, int *index, double* range) {
-  double cutoff_a[4] = {0, RF_INF, 0.5, 2.0}; 
-  *index = -1; 
+  double cutoff_a[4] = {OPEN, RF_INF, 0.5, 2.0}; 
+  *index = RANGE_LASTELEMENT; 
   memcpy(range, local_range, sizeof(double) * 8);
   memcpy(&(range[8]),cutoff_a, sizeof(double) * 4);
 };
@@ -147,23 +147,19 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   double *param, phi0, phi1, store[MAXCOV], a, a2, d, one=1.0;
   covinfo_type *kc;
 
+  if (method != CircEmbed && method!=Nothing && method != Direct) 
+    return ERRORUNKNOWNMETHOD;
+//  if (method != Nothing) return NOERROR; // already initialised by
+  // CheckAndBuild; no specific things to do
+
   kc = &(keycov[covlist[0]]);
   param = kc->param;  
   nsub= (int) (kc->param[HYPERNR]);
   d = param[DIAMETER]; // SCALE is considered as space trafo and envolved here
   a = param[CUTOFF_A];
-  if (a <= 0.0) {
-    strcpy(ERRORSTRING_OK, "cutoff power parameter 0.5 and 1.0");
-      // andere Werte gehen auch, sind aber nicht empfohlen!
-    sprintf(ERRORSTRING_WRONG,"%f", a);
-    return ERRORCOVFAILED;
-  }
-  if (d <= 0) return ERRORNEGATIVESCALE;
   if ((err=check_submodels(nsub, allowed_fct, co_nr, keycov, 
 			   &(covlist[1]), remaining_covlistlength)) != NOERROR)
       return err;
-  if (method != CircEmbed && method!=Nothing && method != Direct) 
-    return ERRORUNKNOWNMETHOD;
   
   a2 = a * a;
   for (v=1; v<=nsub; v++) { 
@@ -191,10 +187,13 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
 double Stein(double *x, double *p, int effectivedim)
 {
   double y=fabs(*x), z;
+//  printf("%f %f %f %f\n", x[0], x[1], y, p[DIAMETER]);
+//   printf("%f %f\n",  p[INTRINSIC_A0],  p[INTRINSIC_A2]);
   if (y <= p[DIAMETER]) 
     return p[INTRINSIC_A0] + p[INTRINSIC_A2] * y * y + x[effectivedim]; 
                                                          // value of submodel!
   if (y >= p[LOCAL_R]) return 0.0;
+//  printf("%f \n", p[LOCAL_R]);
   z = p[LOCAL_R] - y;
   return p[INTRINSIC_B] * z * z * z / y;
 }
@@ -233,7 +232,7 @@ bool alternativeparam_Stein(covinfo_type *kc, int instance)
 void range_Stein(int dim, int *index, double* range) 
 {
   double stein_r[4] = {1, RF_INF, 1, 20.0}; 
-  *index = -1; 
+  *index = RANGE_LASTELEMENT; 
   memcpy(range, local_range, sizeof(double) * 8);
   memcpy(&(range[8]), stein_r, sizeof(double) * 4);
 };
@@ -256,55 +255,53 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
     one = 1.0;
   covinfo_type *kc;
  
+  if (method != CircEmbed && method!=Nothing && method != Direct)
+      return ERRORUNKNOWNMETHOD;
+  // if (method != Nothing) return NOERROR; // already initialised by
+  // CheckAndBuild; no specific things to do
+
   kc = &(keycov[covlist[0]]);
   param = kc->param;  
   nsub= (int) (kc->param[HYPERNR]);
   d = param[DIAMETER];
   r = param[INTRINSIC_RAWR];
-  if (r < 1.0) {
-    strcpy(ERRORSTRING_OK, 
-	   "range parameter r about, but not lower than, 1.0");
-      // andere Werte gehen auch, sind aber nicht empfohlen!
-    sprintf(ERRORSTRING_WRONG,"%f", r);
-    return ERRORCOVFAILED;
-  }
-  if (d <= 0) return ERRORNEGATIVESCALE;
   if ((err=check_submodels(nsub, allowed_fct, stein_nr, keycov, 
 			    &(covlist[1]), remaining_covlistlength)) != NOERROR)
       return err;
-  if (method != CircEmbed && method!=Nothing) return ERRORUNKNOWNMETHOD;
 
-  if (method != Nothing) {
-
-    for (v=1; v<=nsub; v++) { 
-      kc = &(keycov[covlist[v]]);
-      store[v] = kc->aniso[0];
-      kc->aniso[0] = d;
-      if (v<nsub && CovList[kc->nr].variogram &&  kc->op)
-	return ERRORNOMULTIPLICATION;
-    }
-    
-    C0 = CovFct(&zero, 1, keycov, &(covlist[1]), nsub, false);
-    phi0 = CovFct(&one, 1, keycov, &(covlist[1]), nsub, false);
-    phi1 = DerivCovFct(&one, 1, keycov, &(covlist[1]), nsub);
-    phi2 = SndDerivCovFct(&one, 1, keycov, &(covlist[1]), nsub);
-    
-    param[LOCAL_R] =  r * d;   
-    param[INTRINSIC_A2] = (phi2 - phi1) / (3.0 * r * (r + 1.0)) ;
-    param[INTRINSIC_B]  = 
-      (r == 1.0) ? 0.0 : param[INTRINSIC_A2] / ((r - 1.0) * d * d);
-    param[INTRINSIC_A2] = 
-      (param[INTRINSIC_A2] - phi1 / 3.0 - phi2 / 6.0) / (d * d);
-    param[INTRINSIC_A0] = 
-      0.5 * (r - 1.0) / (r + 1.0) * phi2 + phi1 / (r + 1.0) - phi0;
- 
-    if ((param[INTRINSIC_B]  < 0.0) || (param[INTRINSIC_A2] < 0.0) ||
-	(param[INTRINSIC_A0] + C0 < 0.0)) 
-      return MSGLOCAL_INITINTRINSIC;
-
-    for (v=1; v<=nsub; v++) 
-      keycov[covlist[v]].aniso[0] = store[v];
+  for (v=1; v<=nsub; v++) { 
+    kc = &(keycov[covlist[v]]);
+    store[v] = kc->aniso[0];
+    kc->aniso[0] = d;
+    if (v<nsub && CovList[kc->nr].variogram &&  kc->op)
+      return ERRORNOMULTIPLICATION;
   }
+  
+  C0 = CovFct(&zero, 1, keycov, &(covlist[1]), nsub, false);
+  phi0 = CovFct(&one, 1, keycov, &(covlist[1]), nsub, false);
+  phi1 = DerivCovFct(&one, 1, keycov, &(covlist[1]), nsub);
+  phi2 = SndDerivCovFct(&one, 1, keycov, &(covlist[1]), nsub);
+ 
+  param[LOCAL_R] =  r * d;   
+  param[INTRINSIC_A2] = (phi2 - phi1) / (3.0 * r * (r + 1.0)) ;
+  param[INTRINSIC_B]  = 
+    (r == 1.0) ? 0.0 : param[INTRINSIC_A2] / ((r - 1.0) * d * d);
+  param[INTRINSIC_A2] = 
+    (param[INTRINSIC_A2] - phi1 / 3.0 - phi2 / 6.0) / (d * d);
+  param[INTRINSIC_A0] = 
+    0.5 * (r - 1.0) / (r + 1.0) * phi2 + phi1 / (r + 1.0) - phi0;
+ 
+//   printf("check: %f %e r=%f intr:%f %f\n", 
+//	  phi2, phi1, r,
+//	  param[INTRINSIC_A0],  param[INTRINSIC_A2]);
+
+
+  if ((param[INTRINSIC_B]  < 0.0) || (param[INTRINSIC_A2] < 0.0) ||
+      (param[INTRINSIC_A0] + C0 < 0.0)) 
+    return MSGLOCAL_INITINTRINSIC;
+  
+  for (v=1; v<=nsub; v++) 
+    keycov[covlist[v]].aniso[0] = store[v];
   return NOERROR;
 }
 
@@ -326,8 +323,9 @@ double MaStein(double *x, double *p, int effectivedim)
 
 
 void range_MaStein(int dim, int *index, double* range) {
-    static double range_MaStein[8]={1, MAXCOV-1, 1, MAXCOV-1, 
-				    0, RF_INF, 1e-2, 10.0}; 
+    static double range_MaStein[8]={
+	1, MAXCOV-1, 1, MAXCOV-1, 
+	OPEN, RF_INF, 1e-2, 10.0}; 
     memcpy(range, range_MaStein, sizeof(double) * 8);
     range[8] = range[10] = 0.5 * (double) (dim - 1);
     range[9] = RF_INF; range[11] = 10;
@@ -347,17 +345,6 @@ int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist,
 
   kc = &(keycov[covlist[0]]);
   param = kc->param;  
-  if ((param[HYPERKAPPAI]<=0)) {
-      strcpy(ERRORSTRING_OK,"0<kappa1");
-      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAI]);
-      return ERRORCOVFAILED;
-  }
-
-  if ((param[HYPERKAPPAII]< 0.5 * (double) (kc->dim - 1))) {
-      strcpy(ERRORSTRING_OK,"kappa2 >= (<space-time dimension> - 1) / 2");
-      sprintf(ERRORSTRING_WRONG,"%f",param[HYPERKAPPAII]);
-      return ERRORCOVFAILED;
-  }
 
   if (kc->genuine_last_dimension) 
     return ERRORTIMECOMPONENT;

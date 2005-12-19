@@ -132,12 +132,20 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     param <- PARAM
     param[LSQINDEX] <- variab
     param <- LSQTRANSFORM(param)
+
+#    str(list("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
+#         logicaldim, xdim,
+#         as.integer(length(covnr)), as.integer(pm$anisotropy),         
+#         as.integer(pm$op),model.values=double(bins), scalingmethod,
+#         PACKAGE="RandomFields", DUP=FALSE))
+    
     model.values <-
       .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
          logicaldim, xdim,
          as.integer(length(covnr)), as.integer(pm$anisotropy),         
          as.integer(pm$op),model.values=double(bins), scalingmethod,
          PACKAGE="RandomFields", DUP=FALSE)$model.values
+#    print("OK")
     
     if (any(is.na(model.values))) {
       if (PrintLevel>1) {
@@ -761,7 +769,7 @@ show <- function(nr, M, OPT, PARAM)
   stopifnot(all(is.finite(as.matrix(data))))
   data <- as.vector(data)
   spacedim <- new$spacedim
-  logicaldim <- spacedim + new$Time
+  logicaldim <- as.integer(spacedim + new$Time)
   pm <- PrepareModel(model, param, logicaldim, trend)
   ctr <- convert.to.readable(pm)
   if (!is.null(ctr$param))

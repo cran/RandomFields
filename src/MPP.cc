@@ -67,8 +67,17 @@ void mpp_destruct(void **S) {
   }
 }
 
-int init_mpp(key_type * key, int m)
-{
+void MPP_NULL(mpp_storage* s) {
+  int i;
+  s->integral = s->integralsq = s->integralpos = s->factor = s->maxheight = 
+    s->effectiveRadius = s->effectivearea = s->addradius = RF_NAN;
+  for (i=0; i<MAXDIM; i++) s->min[i] = s->length[i] = RF_NAN;
+  for (i=0; i<6; i++) s->c[i] = RF_NAN;
+  s->MppFct = NULL;
+  s->dim = 0;  // otherwise error possible in InternalGetKeyInfo
+}
+
+int init_mpp(key_type * key, int m) {
   methodvalue_type *meth; 
   int error, d, i, v, timespacedim, actcov;
   double max[MAXDIM];  
@@ -83,9 +92,10 @@ int init_mpp(key_type * key, int m)
     error=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
   s = (mpp_storage*) meth->S;
-  s->dim = 0;  // otherwise error possible in InternalGetKeyInfo
-
+  MPP_NULL(s);
+  kc = NULL;
   for (actcov=v=0; v<key->ncov; v++) {
+    ERRORMODELNUMBER = v;	
     kc = &(key->cov[v]);
     if ((kc->method==AdditiveMpp) && kc->left
         && (kc->param[VARIANCE]>0)) {
@@ -115,19 +125,27 @@ int init_mpp(key_type * key, int m)
       break;
     }
   }
+  ERRORMODELNUMBER = -1;	
   if (actcov==0) {
     if (error==NOERROR) error=NOERROR_ENDOFLIST;
     goto ErrorHandling;
   } else assert(actcov==1);
 
+  assert(kc != NULL);
+  if (v>key->ncov) {
+    error=ERRORFAILED; goto ErrorHandling;
+  }
   meth->actcov = actcov;
-  kc = &(key->cov[0]);
+  // kc = &(key->cov[0]); -- passt nicht waere v
   // determine the minimum area where random field values are to be generated
-    timespacedim = kc->truetimespacedim;
+  timespacedim = kc->truetimespacedim;
   if (kc->simugrid) {
     for (d=0; d<key->timespacedim; d++) {
-      s->min[kc->idx[d]]   = kc->x[XSTARTD[d]];
-      s->length[kc->idx[d]]= kc->x[XSTEPD[d]] * (double) (key->length[d] - 1);
+//      printf("%d, %d %d %f %f\n", d, kc->idx[d],
+//	     XSTARTD[d], kc->xsimugr[XSTARTD[d]], s->integralpos);
+      s->min[kc->idx[d]]   = kc->xsimugr[XSTARTD[d]];
+      s->length[kc->idx[d]]= kc->xsimugr[XSTEPD[d]] * 
+	(double) (key->length[d] - 1);
       // x[XSTARTD[d]] and x[XSTEPD[d]] are assumed to be precise, but
       // not x[XENDD[d]] 
     }
@@ -238,14 +256,14 @@ void do_addmpp(key_type *key, int m, double *res )
       for (d=0; d<timespacedim; d++) {	 
         // determine rectangle of indices, where the mpp function
         // is different from zero
-	if (kc->length[d] != 1) {
-          if (min[d]< kc->x[XSTARTD[d]]) {start[d]=0;}
-	  else start[d] = (int) ((min[d] - kc->x[XSTARTD[d]]) / 
-				 kc->x[XSTEPD[d]]);
+	if (kc->genuine_dim[d]) {
+          if (min[kc->idx[d]]< kc->xsimugr[XSTARTD[d]]) {start[d]=0;}
+	  else start[d] = (int) ((min[kc->idx[d]] - kc->xsimugr[XSTARTD[d]]) / 
+				 kc->xsimugr[XSTEPD[d]]);
 	  // "end[d] = 1 + *"  since inequalities are "* < end[d]" 
 	  // not "* <= end[d]" !
-	  end[d] = 1 + (int) ((max[d] - kc->x[XSTARTD[d]]) /
-			      kc->x[XSTEPD[d]]);
+	  end[d] = 1 + (int) ((max[kc->idx[d]] - kc->xsimugr[XSTARTD[d]]) /
+			      kc->xsimugr[XSTEPD[d]]);
 	  if (end[d] > key->length[d]) end[d] = key->length[d];	 
 	} else {
 	    start[d] = 0;
@@ -257,7 +275,7 @@ void do_addmpp(key_type *key, int m, double *res )
 	segmentdelta[d] = segment[d] * (end[d]-start[d]);
 	resindex += segment[d] * start[d];
 	coord[kc->idx[d]] = startcoord[d] = 
-	    kc->x[XSTARTD[d]] + (double) start[d] * kc->x[XSTEPD[d]];
+	    kc->xsimugr[XSTARTD[d]] + (double) start[d] * kc->xsimugr[XSTEPD[d]];
       }
 
       // add mpp function to res
@@ -268,7 +286,7 @@ void do_addmpp(key_type *key, int m, double *res )
 	res[resindex] += model(coord); 
 	d=0;
 	index[d]++;
-	coord[kc->idx[d]] += kc->x[XSTEPD[d]];
+	coord[kc->idx[d]] += kc->xsimugr[XSTEPD[d]];
 	resindex++;
 	while (d<dimM1 && index[d] >= end[d]) { 
 	  // loop never entered if dim=1
@@ -277,7 +295,7 @@ void do_addmpp(key_type *key, int m, double *res )
 	  resindex -= segmentdelta[d];
 	  d++; // if (d>=dim) break;
 	  index[d]++;
-	  coord[kc->idx[d]] += kc->x[XSTEPD[d]];
+	  coord[kc->idx[d]] += kc->xsimugr[XSTEPD[d]];
 	  resindex += segment[d];
 	}
       }
@@ -290,7 +308,7 @@ void do_addmpp(key_type *key, int m, double *res )
 	for (d=0; d<timespacedim; d++, j++) y[d] = kc->x[j];
 	res[i] += model(y); 
       }
-    }      
+    }
   }
 
   if (key->distribution==DISTR_GAUSS) {

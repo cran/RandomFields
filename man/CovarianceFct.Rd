@@ -180,18 +180,18 @@ GetModelNames()
     
     \item \code{fractalB} (fractal Brownian motion)
       \deqn{\gamma(x) = x^\kappa}{gamma(x) = x^a}   
-      The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}.
+      The parameter \eqn{\kappa}{a} is in \eqn{(0,2]}.
       (Implemented for up to three dimensions)   
       
     \item \code{FD}
-    \deqn{C(k) = \frac{(-1)^k \Gamma(1-\kappa)^2}{\Gamma(1-\kappa+k)
-	\Gamma(1-\kappa-k), 
+    \deqn{C(k) = \frac{(-1)^k \Gamma(1-\kappa/2)^2}{\Gamma(1-\kappa/2+k)
+	\Gamma(1-\kappa/2-k), 
       \qquad k \in {\bf N}}}{C(k) = (-1)^k
-      G(1-a)^2/(G(1-a+k)G(1-a-k)) for integer k}
+      G(1-a/2)^2/(G(1-a/2+k)G(1-a/2-k)) for integer k}
     and linearly interpolated otherwise.
     Here, \eqn{\Gamma}{G} is the Gamma function.
     The parameter \eqn{\kappa}{a} is in
-    \eqn{[-1/2, 1/2)}. 
+    \eqn{[-1, 1)}. 
     The model is defined in 1 dimension only.
     
     Remark: the fractionally differenced process
@@ -489,7 +489,7 @@ GetModelNames()
     
     \item \code{stable}
     \deqn{C(x)=\exp\left(-x^\kappa\right)}{C(x)=exp(-x^a)}
-    The parameter \eqn{\kappa}{a} is in \eqn{[0,2]}{[0,2]}.
+    The parameter \eqn{\kappa}{a} is in \eqn{(0,2]}{(0,2]}.
     See \code{exponential} and \code{gaussian} for special cases.
 
     
@@ -531,17 +531,18 @@ GetModelNames()
     
     \item \code{steinst1} (non-separabel space time model)
     \deqn{C(x, t) = W_{\kappa_1}(y) -
-      \frac{2 \kappa_2 \langle x, z \rangle t}{2(\kappa_1 - 1)(2\kappa_1
-	+ \kappa_3)} W_{\kappa_1 -1}(y)}{
-      C(x, t) = W_a(y) - 2 b <x, z> t W_{a-1}(y) / [2(a - 1)(2a + c)]}
+      \frac{\langle x, z \rangle t}{(\kappa_1 - 1)(2\kappa_1
+	+ \kappa_2)} W_{\kappa_1 -1}(y)}{
+      C(x, t) = W_a(y) - <x, z> t W_{a-1}(y) / [(a - 1)(2a + b)]}
 
     Here, \eqn{W_{\kappa_1}}{W_a} is the Whittle-Matern model with
-    smoothness parameter \eqn{\kappa_1}{a}; \eqn{\kappa_2\in[0,1]}{0 <=
-      b <= 1}; \eqn{\kappa_3}{b} is greater than or equal to the
+    smoothness parameter \eqn{\kappa_1}{a};
+    \eqn{\kappa_2}{b} is greater than or equal to the
     space-time dimension \sQuote{dim};
     \eqn{y=\|(x,t)\|}{y = ||(x,t)||}.
-    The components of \eqn{z} are given by \eqn{\kappa_4,
-      \ldots \kappa_{2+\sQuote{dim}}}{d, e, ...}.
+    The components of \eqn{z} are given by \eqn{\kappa_3,
+      \ldots \kappa_{1+\sQuote{dim}}}{c, d, ...}; the norm of \eqn{z}
+    must less than or equal to 1.
     
     \item symmetric stable\cr
     See \code{stable}.

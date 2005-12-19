@@ -90,8 +90,7 @@ EXTERN void VariogramNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 
 // SetParam****: 
 //         action: 0:set; 1:get; 2:print
-EXTERN void SetParamDecision( int *action, int *stationary_only, 
-			      int *exactness);
+EXTERN void SetParamDecision(int *action, int *stationary_only,  int *exactness);
 EXTERN void SetParamSpectral(int *action,int *nLines, int *grid);
 EXTERN void SetParamDirectGauss(int *action,int *method, int *bestvariables,
 				int *maxvariables);
@@ -194,7 +193,7 @@ EXTERN void AddTrend(int *keyNr, int *n, double *res, int *error);
 // printlevel : current value
 // naturalscaling : fixed value
 EXTERN void SetParam(int *action,int *storing, int *printlevel,
-		     int *naturalscaling, char **pch); 
+		     int *naturalscaling, char **pch, int *skipchecks); 
 /* GENERAL_STORING: 
    true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster

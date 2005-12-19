@@ -96,7 +96,7 @@ int init_directGauss(key_type *key, int m)
   if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
       goto ErrorHandling;
   //for SVD/Chol intermediate results AND  memory space for do_directGauss:
-  if ((G = (double *)  malloc(sizeof(double) * (totpnts + 1)))==NULL)
+  if ((G = (double *)  calloc(totpnts + 1, sizeof(double)))==NULL)
       goto ErrorHandling;
   if ((meth->S = malloc(sizeof(direct_storage))) == NULL)
     goto ErrorHandling;
@@ -186,6 +186,14 @@ int init_directGauss(key_type *key, int m)
       segment += totpnts;
     }
   }
+
+  if (false && GENERAL_PRINTLEVEL > 6 && totpnts < 500) {
+    int endfor = totpnts * totpnts;
+    for (i=0; i<endfor; i++) {
+      if (i % totpnts == 0) PRINTF("-- %d\n", (int) totpnts); 
+      PRINTF("%f ", COV[i]);
+    }
+  } 
 
   /* ********************* */
   /* matrix inversion part */

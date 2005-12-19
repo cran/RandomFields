@@ -105,20 +105,20 @@ double gauss_model(double *y)
 
 #define SPHERICALRsq 1
 #define SPHERICALadddist 2
-void generalspherical_init(mpp_storage *s, int dim, param_type param,
+void generalspherical_init(mpp_storage *s, int truedim, param_type param,
 			   int balldim) 
 {
   int d;
   double gamma;
 
   assert(s!=NULL);
-  s->dim = dim;
+  s->dim = truedim;
   s->effectiveRadius = 0.5;
   if (s->addradius<=0.0) {s->addradius = s->effectiveRadius;}
   s->effectivearea = 1.0;
-  for (d=0; d<dim; d++) 
+  for (d=0; d<truedim; d++) 
     s->effectivearea *= (s->length[d] + 2.0 * s->effectiveRadius);
-  for (d=dim; d<balldim; d++) {
+  for (d=truedim; d<balldim; d++) {
     s->effectivearea *= (2.0 * s->effectiveRadius);
   }   
   gamma = gammafn(1.0 + 0.5 * balldim);
@@ -129,9 +129,9 @@ void generalspherical_init(mpp_storage *s, int dim, param_type param,
 
 }
 
-void circular_init(mpp_storage *s, int dim, param_type param) {
+void circular_init(mpp_storage *s, int truedim, param_type param) {
   int TRUESPACE=2;
-  generalspherical_init(s, dim, param, TRUESPACE);
+  generalspherical_init(s, truedim, param, TRUESPACE);
 }
 
 void circularMpp(mpp_storage *s, double *min, double *max, mppmodel *model) { 
@@ -158,9 +158,9 @@ void circularMpp(mpp_storage *s, double *min, double *max, mppmodel *model) {
   }
 }
 
-void spherical_init(mpp_storage *s, int dim, param_type param) {
+void spherical_init(mpp_storage *s, int truedim, param_type param) {
   int TRUESPACE = 3;  
-  generalspherical_init(s, dim, param, TRUESPACE);
+  generalspherical_init(s, truedim, param, TRUESPACE);
 }
 
 void sphericalMpp(mpp_storage *s, double *min, double *max, mppmodel *model) { 
@@ -189,33 +189,33 @@ spherical_Rsq = s->c[SPHERICALRsq];
 #define CONEHEIGHTSOCLE 3
 #define CONEA 4
 #define CONEBSOCLE 5
-void cone_init(mpp_storage *s, int dim, param_type param)
+void cone_init(mpp_storage *s, int truedim, param_type param)
 {
   // ignoring: p[MEAN], p[NUGGET]
   // note : sqrt(p[VARIANCE])->height
   //        p[scale]         ->R
-  // p[KAPPAI] = r/R \in [0,1]
-  // p[KAPPAII]= socle (height)
-  // p[KAPPAIII]=height of cone (without socle)
+  // p[KAPPA1] = r/R \in [0,1]
+  // p[KAPPA2]= socle (height)
+  // p[KAPPA3]=height of cone (without socle)
   // 
   // standard cone has radius 1/2, height of (potential) top: 1
   //           
   int d;
   double cr,cb,CR,socle,height;
   assert(s!=NULL);
-  s->dim = dim;
-  socle = param[KAPPAII];
-  height= param[KAPPAIII];
-  cr= 0.5 * param[KAPPAI];
+  s->dim = truedim;
+  socle = param[KAPPA2];
+  height= param[KAPPA3];
+  cr= 0.5 * param[KAPPA1];
   s->c[CONErsq] = cr * cr;
   CR  = 0.5;
   s->c[CONERsq] = CR * CR;
   s->c[CONEHEIGHTSOCLE] = socle + height;
   s->c[CONEA] =  /* a = h / (r - R) */
-    height / ((param[KAPPAI] - 1.0) * 0.5);
-  cb = height / (1.0 - param[KAPPAI]); /* b = h R / (R - r) */  
+    height / ((param[KAPPA1] - 1.0) * 0.5);
+  cb = height / (1.0 - param[KAPPA1]); /* b = h R / (R - r) */  
   s->c[CONEBSOCLE] = socle + cb;
-  switch (dim) {
+  switch (truedim) {
   case 2 :
     //
     s->integral = s->integralpos = 
@@ -256,11 +256,11 @@ void cone_init(mpp_storage *s, int dim, param_type param)
   // or the simulation is very ineffective (if a large fixed border is used)
   // or the formula might be very complicated (if there are adapted borders,
   // and if the distribution density of the scale is weighted by about
-  //       (length[1] + 2 scale[1]) *...*(length[dim] + 2 scale[dim])
+  //       (length[1] + 2 scale[1]) *...*(length[truedim] + 2 scale[truedim])
   //
 
   s->effectivearea = 1.0;
-  for (d=0; d<dim; d++) 
+  for (d=0; d<truedim; d++) 
     s->effectivearea*= (s->length[d] + 2.0 * s->addradius);
 
   //
@@ -302,55 +302,9 @@ void cone(mpp_storage *s, double *min, double *max, mppmodel *model)
     max[d] = MPP_X[d] + s->effectiveRadius;
   }
 }
-int checkcone(double *param, int timespacedim, SimulationType method) {
-  switch (method) {
-  case  AdditiveMpp: 
-    if (timespacedim!=2) { 
-      strcpy(ERRORSTRING_OK,"2 dimensional space");
-      sprintf(ERRORSTRING_WRONG,"dim=%d",timespacedim);
-      return ERRORCOVFAILED;
-    }
-    break;
-  case Nothing :
-    break;
-  default :   
-    strcpy(ERRORSTRING_OK,"method=\"add. MPP (random coins)\"");
-    strcpy(ERRORSTRING_WRONG,METHODNAMES[method]);
-    return ERRORCOVFAILED;
-  }
-  if ((param[KAPPAI]  >= 1.0)  ||
-      (param[KAPPAI]  < 0.0)  ||
-      (param[KAPPAII] < 0.0) ||
-      (param[KAPPAIII]< 0.0) || 
-      ((param[KAPPAIII] + param[KAPPAII])==0.0)) {
-    strcpy(ERRORSTRING_OK,
-	   "all kappa_i non-negative, kappa1<1, and kappa2+kappa3>0.0");
-    sprintf(ERRORSTRING_WRONG,"c(%f,%f,%f)",param[KAPPAI],
-	    param[KAPPAII],param[KAPPAIII]);
-    return ERRORCOVFAILED;
-  }	
-  return NOERROR;
-}
-SimulationType methodcone(int spacedim, bool grid){
-  return AdditiveMpp;
-}
-#define RANGE_EPSILON 1E-20
-void rangecone(int spatialdim, int *index, double* range){
-  //  2 x length(param) x {theor, pract } 
-  *index = -1;
-  double r[12] = {0, 1, 0, 1.0-RANGE_EPSILON,
-		0, RF_INF, RANGE_EPSILON, 10.0, 
-		0, RF_INF, RANGE_EPSILON, 10.0};
-  memcpy(range, r, sizeof(double) * 12);
-}
-void infocone(double *p, int *maxdim, int *CEbadlybehaved) {
-  *maxdim = 3;
-  *CEbadlybehaved = false;
-}
 
 
 #define GAUSSRADIUSSQ 0
-
 double gaussInt(int d, int xi, double sigma, double R) {
   // int_{b(0,R) e^{-a r^2} dr = d b_d int_0^R r^{d-1} e^{-a r^2} dr
   // where a = 2.0 * xi / sigma^2
@@ -376,24 +330,24 @@ double gaussInt(int d, int xi, double sigma, double R) {
   }
 }
 
-void gaussmpp_init(mpp_storage *s, int dim, param_type param) 
+void gaussmpp_init(mpp_storage *s, int truedim, param_type param) 
 {
   int d;
 
-  s->dim = dim;
+  s->dim = truedim;
   s->c[GAUSSRADIUSSQ] = -0.5 * log(MPP_APPROXZERO);
   s->effectiveRadius = sqrt(s->c[GAUSSRADIUSSQ]);
   if (s->addradius<=0.0) {s->addradius=s->effectiveRadius;}
 
-  s->integral   = gaussInt(dim, 1, 1.0, s->effectiveRadius);
-  s->integralsq = gaussInt(dim, 2, 1.0, s->effectiveRadius);
+  s->integral   = gaussInt(truedim, 1, 1.0, s->effectiveRadius);
+  s->integralsq = gaussInt(truedim, 2, 1.0, s->effectiveRadius);
 
-//  printf("%d %f %f %f\n", dim, s->effectiveRadius, s->integral, s->integralsq);
+//  printf("%d %f %f %f\n", truedim, s->effectiveRadius, s->integral, s->integralsq);
 //  assert(false);
 
   s->integralpos = s->integral;
   s->effectivearea = 1.0;
-  for (d=0; d<dim; d++) 
+  for (d=0; d<truedim; d++) 
     s->effectivearea *= (s->length[d] + 2.0 * s->addradius);
   s->maxheight= 1.0;
 }
