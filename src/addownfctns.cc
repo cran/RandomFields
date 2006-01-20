@@ -13,7 +13,7 @@
 
 // see RFCovFct.cc for examples of possible definitions.
 
-typedef int (*checkfct)(double* p, int timespace dim, 
+typedef int (*checkfct)(double* p, int reduceddim, 
 			SimulationType method);
 // The function checks whether the intrinsic parameters p[KAPPA1], p[KAPPA2],
 // etc, the dimension dim, and the method match or work together. It
@@ -28,9 +28,10 @@ typedef void (*infofct)(double *p, int *maxdim, int *CEbadlybehaved);
 //        the circulant embedding method frequently fails for the model
 // both maxdim and CEbadlybehaved may depend on p[KAPPA1], p[KAPPA2], etc
 
-typedef void (*rangefct)(int dim , int * index, double* range);
+typedef void (*rangefct)(int reduceddim , int * index, double* range);
 // input parameters are
-//   dim: the dimension of the random field
+//   reduceddim: the reduced dimension of the random field, see RFsimu.h
+//               for details
 //   index: currently called region, starting with 0
 // output parameters are
 //   index: returns -2 if dimension is not allowed
@@ -48,13 +49,12 @@ typedef void (*rangefct)(int dim , int * index, double* range);
 //      non-integer border values of an interval are always supposed to be
 //      closed.
 
-typedef double (*covfct)(double *x, double*p, int dim);
+typedef double (*covfct)(double *x, double*p);
 // all parameters are input parameters:
 // x : vector of length 1 for FULLISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
 // p : p[KAPPA1], p[KAPPA2], etc 
-// dim : currently unused, except for checking
 // IMPORTANT! covfct expect the standard model definition with variance 1 and 
 //            scale=1. That is, p[VARIANCE], p[SCALE], p[ANISO] may not be 
 //            used within covfct. (These parameters are set elsewhere.)
@@ -118,7 +118,7 @@ addTBM(int nr,                // the number returned by IncludeModel
 */
 
 
-double gCauchy(double *x, double *p, int effectivedim){
+double gCauchy(double *x, double *p){
   return pow(1.0 + pow(fabs(*x), p[KAPPA1]), -p[KAPPA2]/p[KAPPA1]);
 }
 
@@ -143,13 +143,13 @@ double DgCauchy(double *x, double *p){
   return  -  p[KAPPA2] * ha * pow(1.0 + ha * y,-p[KAPPA2] / p[KAPPA1] - 1.0);
 }
 
-int checkgCauchy(double *param, int timespacedim, SimulationType method){
+int checkgCauchy(double *param, int reduceddim, SimulationType method){
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff)
   {
-    if (timespacedim>2) 
+    if (reduceddim>2) 
     {
       strcpy(ERRORSTRING_OK,"genuine total dim<=2");
-      sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+      sprintf(ERRORSTRING_WRONG,"%d",reduceddim);
       return ERRORCOVFAILED;
     }
   }
@@ -160,9 +160,9 @@ int checkgCauchy(double *param, int timespacedim, SimulationType method){
 //      -OPEN in second elemend if interval right open and right border is int,
 static double range_gCauchy[8] = {OPEN, 2, 0.05, 2, 
 				  OPEN, RF_INF, 0.05, 10.0};
-void rangegCauchy(int dim, int *index, double* range){
+void rangegCauchy(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  *index = (dim<=12345) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM; 
+  *index = (reduceddim<=12345) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM; 
   memcpy(range, range_gCauchy, sizeof(double) * 8);
 }
 

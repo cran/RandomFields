@@ -74,11 +74,10 @@ int check_submodels(int nr, char **allowed_fct, int nr_allowed_list,
 
 
 
-double co(double *x, double *p, int effectivedim)
+double co(double *x, double *p)
 {
-  double y=fabs(*x);
-//  printf("%d %f %f\n", effectivedim, x[effectivedim], y);
-  if (y <= p[DIAMETER]) return x[effectivedim]; // value of submodel!
+  double y=fabs(x[0]);
+  if (y <= p[DIAMETER]) return x[1]; // value of submodel!
   if (y >= p[LOCAL_R]) return 0.0;
   return p[CUTOFF_B] * pow(p[CUTOFF_ASQRTR] - pow(y, p[CUTOFF_A]), 
 			   2.0 * p[CUTOFF_A]);
@@ -126,7 +125,7 @@ bool alternativeparam_co(covinfo_type *kc, int instance){
   return false;
 }
 
-void range_co(int dim, int *index, double* range) {
+void range_co(int reduceddim, int *index, double* range) {
   double cutoff_a[4] = {OPEN, RF_INF, 0.5, 2.0}; 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, local_range, sizeof(double) * 8);
@@ -184,14 +183,12 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
 }
 
 
-double Stein(double *x, double *p, int effectivedim)
+double Stein(double *x, double *p)
 {
-  double y=fabs(*x), z;
-//  printf("%f %f %f %f\n", x[0], x[1], y, p[DIAMETER]);
-//   printf("%f %f\n",  p[INTRINSIC_A0],  p[INTRINSIC_A2]);
+  double y=fabs(x[0]), z;
   if (y <= p[DIAMETER]) 
-    return p[INTRINSIC_A0] + p[INTRINSIC_A2] * y * y + x[effectivedim]; 
-                                                         // value of submodel!
+    return p[INTRINSIC_A0] + p[INTRINSIC_A2] * y * y + x[1]; 
+                                                    // value of submodel!
   if (y >= p[LOCAL_R]) return 0.0;
 //  printf("%f \n", p[LOCAL_R]);
   z = p[LOCAL_R] - y;
@@ -209,7 +206,7 @@ int getintrinsicparam_Stein(covinfo_type *kc, param_type q, int instance)
     q[INTRINSIC_RAWR] = 1.0;
     return MSGLOCAL_OK;
   } else if (kc->nr == BROWNIAN) {
-      q[INTRINSIC_RAWR] = (kc->truetimespacedim <= 2 
+      q[INTRINSIC_RAWR] = (kc->reduceddim <= 2 
 			    ? ((kc->param[KAPPA] <= 1.5) ? 1.0 : 2.0)
 			    : ((kc->param[KAPPA] <= 1.0) ? 1.0 : 2.0));
        // for genuine variogram models only
@@ -229,7 +226,7 @@ bool alternativeparam_Stein(covinfo_type *kc, int instance)
   return true;
 }
 
-void range_Stein(int dim, int *index, double* range) 
+void range_Stein(int reduceddim, int *index, double* range) 
 {
   double stein_r[4] = {1, RF_INF, 1, 20.0}; 
   *index = RANGE_LASTELEMENT; 
@@ -306,10 +303,11 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
 }
 
 
-double MaStein(double *x, double *p, int effectivedim)
+double MaStein(double *x, double *p)
 {
   double s, nuG, gammas;
-  int d;
+  int d, effectivedim;
+  effectivedim = (int) p[EFFECTIVEDIM];
   // effectivedim + 1 : C(0) oder 0
   // effectvedim : C(x) oder -gamma(x)
   nuG = p[HYPERKAPPAI] + (x[effectivedim + 1] - x[effectivedim]);
@@ -322,12 +320,12 @@ double MaStein(double *x, double *p, int effectivedim)
 }
 
 
-void range_MaStein(int dim, int *index, double* range) {
+void range_MaStein(int reduceddim, int *index, double* range) {
     static double range_MaStein[8]={
 	1, MAXCOV-1, 1, MAXCOV-1, 
 	OPEN, RF_INF, 1e-2, 10.0}; 
     memcpy(range, range_MaStein, sizeof(double) * 8);
-    range[8] = range[10] = 0.5 * (double) (dim - 1);
+    range[8] = range[10] = 0.5 * (double) (reduceddim - 1);
     range[9] = RF_INF; range[11] = 10;
     *index = -1; 
 };

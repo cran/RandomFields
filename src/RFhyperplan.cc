@@ -84,7 +84,7 @@ int init_hyperplane(key_type *key, int m)
   methodvalue_type *meth; 
   covinfo_type *kc=NULL;
   hyper_storage *s;
-  int error, timespacedim, 
+  int error, reduceddim, 
       optdim=2; // falls dies gelockert wird, so kc->idx[d] nicht vergessen!
 
       /* n == number of fields superposed 
@@ -133,7 +133,7 @@ int init_hyperplane(key_type *key, int m)
       
       /*    investigation of the param structure and the dimension    */
       /*             check parameter of covariance function           */
-      timespacedim = kc->truetimespacedim;
+      reduceddim = kc->reduceddim;
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  v += (int) kc->param[HYPERNR];
 	  error=ERRORHYPERNOTALLOWED; 
@@ -143,19 +143,19 @@ int init_hyperplane(key_type *key, int m)
 	error = ERRORNOTDEFINED;
 	goto ErrorHandling;
       }
-      if ((error = cov->check(kc->param, timespacedim, Hyperplane)) 
+      if ((error = cov->check(kc->param, reduceddim, Hyperplane)) 
 	  != NOERROR) {
 	ERRORMODELNUMBER = v;	
 	goto ErrorHandling;
       }
-      if (timespacedim == 1) {
+      if (reduceddim == 1) {
 	strcpy(ERRORSTRING_OK,"dim=2");
 	sprintf(ERRORSTRING_WRONG,
 		"genuine dim=1; this has not been programmed yet.");
 	error = ERRORCOVFAILED;
 	goto ErrorHandling;
       }
-      if (timespacedim > optdim || timespacedim < 1) { 
+      if (reduceddim > optdim || reduceddim < 1) { 
 	error = ERRORWRONGDIM;
 	goto ErrorHandling;
       }
@@ -172,20 +172,20 @@ int init_hyperplane(key_type *key, int m)
     goto ErrorHandling;
   } else assert(kc!=NULL);
   meth->actcov = 1;
-  timespacedim = kc->truetimespacedim;
+  reduceddim = kc->reduceddim;
 
   /****************************************************************/
   /*            determine size of surrounding rectangle           */
   /****************************************************************/
   
-  GetCenterAndDiameter(key, kc->simugrid, timespacedim, kc->truetimespacedim,
+  GetCenterAndDiameter(key, kc->simugrid, reduceddim, kc->reduceddim,
 		       kc->x, kc->aniso, s->center, s->rx, &(s->radius));
   s->radius *= 0.5;
-  for (d=0; d<kc->truetimespacedim; d++) s->rx[d] *= 0.5;
+  for (d=0; d<kc->reduceddim; d++) s->rx[d] *= 0.5;
 
   double *h;
   h=NULL;
-  if (s->hyperplane(s->radius, s->center, s->rx, timespacedim, false, &h, &h, &h)
+  if (s->hyperplane(s->radius, s->center, s->rx, reduceddim, false, &h, &h, &h)
       > HYPERPLANE_MAXLINES) {
     error = ERRORTOOMANYLINES;
     goto ErrorHandling;
@@ -295,7 +295,7 @@ void do_hyperplane(key_type *key, int m, double *res)
   covinfo_type *kc;
   double gx, gy, *hx, *hy, *hr, E, sd, variance;
   int resindex, integers, bits, q, endfor, i,
-    xerror, j, timespacedim;
+    xerror, j, reduceddim;
   randomvar_type randomvar;
   hyper_storage *s;
   bool add;
@@ -307,7 +307,7 @@ void do_hyperplane(key_type *key, int m, double *res)
   meth = &(key->meth[m]);
   assert(meth->actcov == 1);
   kc = &(key->cov[meth->covlist[0]]);
-  timespacedim = kc->truetimespacedim;
+  reduceddim = kc->reduceddim;
   s = (hyper_storage*) meth->S;
   assert(meth->actcov == 1);
   variance = key->cov[meth->covlist[0]].param[VARIANCE];
@@ -338,7 +338,7 @@ void do_hyperplane(key_type *key, int m, double *res)
     for (i=0; i<key->totalpoints; res[i++]=R_NegInf);
   /* how many Poisson Hyperplanes maximal (on circle x [0,rmax]) ?  --> p */
 
-  switch (timespacedim) {
+  switch (reduceddim) {
       case 1 :
 	assert(false);
       case 2 :
@@ -350,7 +350,7 @@ void do_hyperplane(key_type *key, int m, double *res)
 
 	for(nn=0; nn<HYPERPLANE_SUPERPOS; nn++){
 	  q = s->hyperplane(s->radius, s->center, s->rx,
-			    timespacedim, true, &hx, &hy, &hr);
+			    reduceddim, true, &hx, &hy, &hr);
 	  
 	  /* as the length of the codes for the cells are naturally a multiple 
 	     of number of bits of an integer variable, some lines are added to
@@ -400,7 +400,7 @@ void do_hyperplane(key_type *key, int m, double *res)
 	      if (add) res[resindex] += cell->colour;
 	      else if (res[resindex] < cell->colour)
 		  res[resindex] = cell->colour;
-	      j += timespacedim;
+	      j += reduceddim;
 	    }
 	  }
 	  free(hx); free(hy); free(hr); 
@@ -410,7 +410,7 @@ void do_hyperplane(key_type *key, int m, double *res)
 	}/* for nn */
 	break;
       default: assert(false);
-  } // switch  (timespacedim)
+  } // switch  (reduceddim)
   switch (key->distribution) {
     case DISTR_GAUSS :   
       switch (HYPERPLANE_MAR_DISTR) {

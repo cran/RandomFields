@@ -291,8 +291,11 @@
       are considered as being identical. This strategy applies to
       the simulation method and the covariance function itself.
       Hence, the covariance function is only positive definite
-      if \code{nugget.tol=0.0}. The value of \code{nugget.tol}
-      should be of order \eqn{10^{-15}}{1e-15}.
+      if \code{nugget.tol=0.0}. However, if the anisotropy matrix
+      does not have full rank and \code{nugget.tol=0.0} then,
+      the simulations are likely to be odd. 
+      The value of \code{nugget.tol}
+      should be of order \eqn{10^{-15}}{1e-15}. 
       Default: \code{0.0} [init].
     }
   }

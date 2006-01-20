@@ -135,7 +135,14 @@ GetMethodNames()
     \code{TBM2} and \code{TBM3} allow for arbitrary points, and
     arbitrary grids
     (arbitrary number of points in each direction, arbitrary grid length
-    for each direction).    
+    for each direction).
+
+    \bold{Note:} Both the precision and the simulation time
+    depend heavily on \code{TBM*.linesimustep} and
+    \code{TBM*.linesimufactor}
+    that can be set by \code{\link{RFparameters}}.
+    For covariance models with larger values of the scale parameter,
+    \code{TBM*.linesimufactor=2} is too small.
 
     The turning layers are used for the simulations with time component.
     Here, 

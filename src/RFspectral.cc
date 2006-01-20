@@ -67,7 +67,7 @@ int init_simulatespectral(key_type *key, int m) {
   s = (spectral_storage*)meth->S;
 
 // 13.10. the following does not seem to be necessary,
-// since subsequently it checked for truetimespacedim<=2;
+// since subsequently it checked for reduceddim<=2;
 //  if (key->Time) {Xerror=ERRORTIMENOTALLOWED; goto ErrorHandling;}
 
   // noerror_repeat = key->anisotropy;
@@ -78,10 +78,10 @@ int init_simulatespectral(key_type *key, int m) {
     kc = &(key->cov[v]);
     if ((kc->method==SpectralTBM) && (kc->left)) {
       cov_fct *cov;
-      int timespacedim;
-      timespacedim = kc->truetimespacedim;
-      if (timespacedim == 0) {Xerror=ERRORTRIVIAL; goto ErrorHandling;}
-      if (timespacedim > 2) {Xerror=ERRORWRONGDIM; goto ErrorHandling;}
+      int reduceddim;
+      reduceddim = kc->reduceddim;
+      // if (reduceddim == 0) {Xerror=ERRORTRIVIAL; goto ErrorHandling;}
+      if (reduceddim > 2) {Xerror=ERRORWRONGDIM; goto ErrorHandling;}
       assert((kc->nr >= 0) && (kc->nr < currentNrCov));
       assert(kc->param[VARIANCE] >= 0.0);
       meth->covlist[actcov] = v;
@@ -95,7 +95,7 @@ int init_simulatespectral(key_type *key, int m) {
       else s->randomAmplitude[actcov] = cov->spectral;
       if ((Xerror=check_within_range(kc->param, cov, 2, " (spectral TBM)")) 
 	  != NOERROR ||
-	  (Xerror=cov->check(kc->param, timespacedim, SpectralTBM)) 
+	  (Xerror=cov->check(kc->param, reduceddim, SpectralTBM)) 
 	  != NOERROR) {
 	goto ErrorHandling;
       }
@@ -157,7 +157,7 @@ void do_simulatespectral(key_type *key, int m, double *res )
 
   for (v=0; v<meth->actcov; v++) {
     kc = &(key->cov[meth->covlist[v]]);
-    assert((kc->truetimespacedim>=1) && (kc->truetimespacedim<=2));
+    assert((kc->reduceddim>=1) && (kc->reduceddim<=2));
   }
 
   kc = &(key->cov[meth->covlist[0]]);
@@ -238,11 +238,11 @@ void do_simulatespectral(key_type *key, int m, double *res )
 	segt += inc[3];
       }
     } else { // no grid
-      if (kc->truetimespacedim==1) {
+      if (kc->reduceddim==1) {
 	for (nx=0; nx<key->totalpoints; nx++) {	
 	  res[nx] += cos(cp * kc->x[nx] + VV);
 	}
-      } else { // kc->truetimespacedim==2 
+      } else { // kc->reduceddim==2 
 	int twonx;
 	for (nx=0; nx<key->totalpoints; nx++) {	
 	  twonx = nx * 2;

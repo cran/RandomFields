@@ -170,7 +170,6 @@ function (x, y = NULL, z = NULL, T=NULL, grid, model, param,
           trend, method = NULL,
           register = 0, gridtriple = FALSE, distribution=NA)  
 {
-
   InitNameList <- c("InitSimulateRF","InitSimulateRF","InitMaxStableRF")
   if (is.na(distribution)) {
     stop("This function is an internal function.\nUse `GaussRF', `InitGaussRF', `MaxStableRF', etc., instead.\n")    
@@ -273,6 +272,7 @@ function (x, y = NULL, z = NULL, T=NULL,
   on.exit({if (delete) DeleteRegister(register);
            RFparameters(old.param);
            })
+
   error <- InitSimulateRF(x=x, y=y, z=z, T=T, grid=grid, model=model,
                           param=param,
                           trend=trend, method=method, register=register,

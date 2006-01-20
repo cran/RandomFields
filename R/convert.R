@@ -398,6 +398,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
 CheckXT <- function(x, y, z, T, grid, gridtriple){
   ## converts the given coordinates into standard formats
   ## (one for arbitrarily given locations and one for grid points)
+
   if (is.data.frame(x)) {
     if (ncol(x)==1) x <- as.vector(x) else x <- as.matrix(x)
   }
@@ -442,7 +443,6 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     y <- z <- NULL
   }
 
-
   if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
   if (grid) {
     if (gridtriple) {
@@ -477,7 +477,7 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     ##if (l == 1) stop("Use grid=FALSE if only a single point is simulated")
   } else {
     total <- nrow(x)
-   if (total < 2000 && any(as.double(dist(x)) == 0))
+    if (total < 200 && any(as.double(dist(x)) == 0)) ## 2000
      stop("locations must be distinguishable")
     ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
  }
@@ -488,6 +488,8 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     T[2] <- T[1] + (lT - 0.999) * T[3]
     total <- total * lT
   }
+
+
   return(list(x=x, T=T, Time=Time, total=total, l=l, spacedim=spacedim, grid=grid))
 }
 

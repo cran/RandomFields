@@ -36,7 +36,7 @@ void SetParamNugget(int *action, double *nuggettol)
     NUGGET_TOL = *nuggettol;
     if (NUGGET_TOL < 0) {
       if (GENERAL_PRINTLEVEL>=1) 
-	PRINTF("negative tolerance for distance in nugget covariance to allowed;set to zero");
+	PRINTF("negative tolerance for distance in nugget covariance not allowed; set to zero");
       NUGGET_TOL = 0.0;
     }
   } else {
@@ -70,7 +70,7 @@ bool equal(int i, int j, double *X, int dim)
     dist += dummy * dummy;
   }
   dist = sqrt(dist);
-  return nugget(&dist, p, 1)==1.0;
+  return nugget(&dist, p)==1.0;
 }
 
 // uses global RANDOM !!!
@@ -149,12 +149,13 @@ int init_nugget(key_type *key, int m){
 	    }
 	  }
 	} else {
+	  // needed to determine nonzero_pos above
 	  first = kc;
 	  nonzero_pos=ANISO;
 	  while ((nonzero_pos<endfor) && (first->param[nonzero_pos]==0.0))
-	    nonzero_pos++;
+	      nonzero_pos++;
 	  if (nonzero_pos>=endfor) {
-	      Xerror=ERRORTRIVIAL; goto ErrorHandling; 
+	      Xerror=ERRORLOWRANK; goto ErrorHandling; 
 	  }
 	}
       }
@@ -176,7 +177,7 @@ int init_nugget(key_type *key, int m){
   s->pos = NULL;
   s->red_field = NULL;
   kc = &(key->cov[meth->covlist[0]]);
-  s->simple = key->timespacedim == kc->truetimespacedim;
+  s->simple = key->timespacedim == kc->reduceddim; // fkt, da FULLISOTROPIC
   s->simugrid = kc->simugrid;
   if (key->anisotropy && !s->simple) {
     int *pos, oldpos;
@@ -201,10 +202,10 @@ int init_nugget(key_type *key, int m){
       if ((pos = (int*) malloc(sizeof(int) * key->totalpoints))==0) {
 	Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
-      ordering(kc->x, key->totalpoints, kc->truetimespacedim, pos);
+      ordering(kc->x, key->totalpoints, kc->reduceddim, pos);
       oldpos = pos[0];
       for (i=1 /* ! */; i<key->totalpoints; i++) {
-	if (equal(oldpos, pos[i], kc->x, kc->truetimespacedim)) 
+	if (equal(oldpos, pos[i], kc->x, kc->reduceddim)) 
 	  pos[i]= -1 - pos[i];
 	else oldpos=pos[i];
       }

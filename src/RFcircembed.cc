@@ -498,7 +498,7 @@ double GetScaledDiameter(key_type *key, covinfo_type *kc) {
     int i, j, k, dim, ncorner_dim;
     double distsq;
     double sx[ZWEIHOCHMAXDIM * MAXDIM];
-    dim = kc->truetimespacedim;
+    dim = kc->reduceddim;
     ncorner_dim = (1 << key->timespacedim) * dim;
     GetCornersOfGrid(key, dim, kc->aniso, sx);
     for (i=dim; i<ncorner_dim; i+=dim) {

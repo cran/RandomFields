@@ -76,7 +76,7 @@ double interpolate(double y, double *stuetz, int nstuetz, int origin,
 
 //// NOTE : `*p' may not be changed by any of the functions!
 /* Bessel function */ 
-double Bessel(double *x,double *p, int effectivedim){
+double Bessel(double *x,double *p){
   static double kappa=RF_INF;
   static double gamma;
   double y;
@@ -92,7 +92,7 @@ double spectralBessel(double *p ) {
   return p[KAPPA]==0 ? 1.0 : 
     (sqrt(1-pow(UNIFORM_RANDOM, 1.0/p[KAPPA])));
 }
-int checkBessel(double *param,  int timespacedim, SimulationType method){
+int checkBessel(double *param,  int reduceddim, SimulationType method){
   // Whenever TBM3Bessel exists, add further check against too small kappa!
   if (method==SpectralTBM && param[KAPPA]<0.0) {
     strcpy(ERRORSTRING_OK,"spectral TBM and kappa>=0");
@@ -101,10 +101,10 @@ int checkBessel(double *param,  int timespacedim, SimulationType method){
   }
   return NOERROR;
 }
-void rangeBessel(int dim, int *index, double* range){
+void rangeBessel(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract }
   *index = RANGE_LASTELEMENT; 
-  range[2] = 0.0001 + (range[0] =  0.5 * ((double) dim - 2.0));
+  range[2] = 0.0001 + (range[0] =  0.5 * ((double) reduceddim - 2.0));
   range[1] = RF_INF;
   range[3] = 10.0;
  }
@@ -115,7 +115,7 @@ void infoBessel(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* Cauchy models */
-double Cauchy(double *x, double *p, int effectivedim){
+double Cauchy(double *x, double *p){
   return  pow(1.0 + *x * *x, -p[KAPPA]);
 }
 double ScaleCauchy(double *p,int scaling) {
@@ -159,11 +159,11 @@ double DDCauchy(double *x, double *p){
   return 2.0 * p[KAPPA] * ((2.0 * p[KAPPA] + 1.0) * ha - 1.0) * 
     pow(1.0 + ha, -p[KAPPA] - 2.0);
 }
-int checkCauchy(double *param, int timespacedim, SimulationType method){
+int checkCauchy(double *param, int reduceddim, SimulationType method){
   if (method == TBM2) {
     // not replaced by numerical evaluation due to bad
     // numerical behaviour?!
-    if (timespacedim>2) return ERRORCOVFAILED;
+    if (reduceddim>2) return ERRORCOVFAILED;
     if ((param[KAPPA]!=0.5) && (param[KAPPA]!=1.5) &&
 	(param[KAPPA]!=2.5) && (param[KAPPA]!=3.5)) {
       strcpy(ERRORSTRING_OK,"kappa in {0.5, 1.5, 2.5 ,3.5} (TBM2)");
@@ -173,7 +173,7 @@ int checkCauchy(double *param, int timespacedim, SimulationType method){
   }
   return NOERROR;
 }
-void rangeCauchy(int dim, int *index, double* range){
+void rangeCauchy(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, range_cauchy, sizeof(double) * 4);
@@ -183,7 +183,7 @@ void infoCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
   *CEbadlybehaved = 2;
 }
 
-double Cauchytbm(double *x, double *p, int effectivedim){
+double Cauchytbm(double *x, double *p){
   register double ha;
   if ( *x==0) {return 1.0;}
   ha=pow(fabs( *x),p[KAPPA1]);
@@ -208,13 +208,13 @@ double DCauchytbm(double *x, double *p){
 		       ha * y * (p[KAPPA2]/p[KAPPA3] - 1.0)) *
     pow(1.0 + ha * y,-p[KAPPA2]/p[KAPPA1]-2.0);
 }
-void rangeCauchytbm(int dim, int *index, double* range){
+void rangeCauchytbm(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, range_genCauchy, sizeof(double) * 8);
-  range[8] = range[10] = (double) dim;
+  range[8] = range[10] = (double) reduceddim;
   range[9] = RF_INF;
-  range[11] = (double) dim + 10.0;
+  range[11] = (double) reduceddim + 10.0;
 }
 void infoCauchytbm(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
@@ -224,7 +224,7 @@ void infoCauchytbm(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* circular model */
-double circular(double *x, double *p, int effectivedim)
+double circular(double *x, double *p)
 {
   double y;
   if ((y=fabs( *x))>1.0) return 0.0; 
@@ -238,8 +238,8 @@ double Dcircular(double *x, double *p){
   if ((y=*x * *x) >= 1.0) {return 0.0;} 
   return -4 * INVPI * sqrt(1 - y);
 }
-void rangecircular(int dim, int *index, double* range){
-  *index = (dim<=2) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangecircular(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=2) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infocircular(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim= 2;
@@ -248,7 +248,7 @@ void infocircular(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* constant model */
-double constant(double *x, double *p, int effectivedim){
+double constant(double *x, double *p){
   return 1.0;
 }
 double TBM2constant(double *x, double *p) 
@@ -261,7 +261,7 @@ double TBM3constant(double *x, double *p){
 double Dconstant(double *x, double *p){
   return 0.0;
 }
-void rangeconstant(int dim, int *index, double* range){ 
+void rangeconstant(int reduceddim, int *index, double* range){ 
   *index = RANGE_LASTELEMENT; 
 }
 void infoconstant(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -271,12 +271,12 @@ void infoconstant(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* cone */
 // no covariance function defined yet; see MPPFcts.cc for additive method
-int checkcone(double *param, int timespacedim, SimulationType method) {
+int checkcone(double *param, int reduceddim, SimulationType method) {
   switch (method) {
   case  AdditiveMpp: 
-    if (timespacedim!=2) { 
+    if (reduceddim!=2) { 
       strcpy(ERRORSTRING_OK,"2 dimensional space");
-      sprintf(ERRORSTRING_WRONG,"dim=%d",timespacedim);
+      sprintf(ERRORSTRING_WRONG,"dim=%d",reduceddim);
       return ERRORCOVFAILED;
     }
     break;
@@ -294,9 +294,9 @@ int checkcone(double *param, int timespacedim, SimulationType method) {
   }	
   return NOERROR;
 }
-void rangecone(int dim, int *index, double* range){
+void rangecone(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  *index = (dim <= 3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+  *index = (reduceddim <= 3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   double r[12] = {0, 1-OPEN, 0, 1.0-RANGE_EPSILON,
 		0, RF_INF, RANGE_EPSILON, 10.0, 
 		0, RF_INF, RANGE_EPSILON, 10.0};
@@ -310,7 +310,7 @@ void infocone(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* cubic */
-double cubic(double *x, double *p, int effectivedim)
+double cubic(double *x, double *p)
 { ///
   double y, y2;
   if ((y=fabs(*x)) >= 1.0) {return 0.0;}
@@ -332,8 +332,8 @@ double Dcubic(double *x, double *p)
   return  y * (-14.0 + y * (26.25 + y2 * (-17.5 + 5.25 * y2)));
 }
 double Scalecubic(double *p,int scaling) {return 1.44855683156829;}
-void rangecubic(int dim, int *index, double* range){
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangecubic(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infocubic(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
@@ -346,7 +346,7 @@ void infocubic(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /*  damped cosine -- derivative of exponential:*/
-double dampedcosine(double *x, double*p, int effectivedim){
+double dampedcosine(double *x, double*p){
   register double y;
   y = fabs( *x);
   return exp(-y * p[KAPPA]) * cos(y);
@@ -365,12 +365,12 @@ double Ddampedcosine(double *x, double *p){
   y = fabs( *x);
   return - exp(-p[KAPPA]*y) * (p[KAPPA] * cos(y) + sin(y));
 }
-void rangedampedcosine(int dim, int *index, double* range){
+void rangedampedcosine(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM; 
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM; 
   range[1] = RF_INF;
   range[3] = 10.0;
-  switch(dim) {
+  switch(reduceddim) {
       case 1 : range[2] = (range[0] = 0.0) + 1e-10; break;
       case 2 : range[2] = (range[0] = 1.0) + 1e-10; break;
       case 3 : range[2] = (range[0] = RF_M_SQRT_3) + 1e-10; break;
@@ -385,7 +385,7 @@ void infodampedcosine(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* exponential model */
-double exponential(double *x, double *p, int effectivedim){
+double exponential(double *x, double *p){
   return exp(-fabs( *x));
 }
 double Scaleexponential(double *p, int scaling){ return MINUSINVLOG005; } 
@@ -413,22 +413,22 @@ double spectralexponential(double *p) { /* see Yaglom ! */
   y = 1.0 - UNIFORM_RANDOM;
   return sqrt(1.0 / (y * y) - 1.0);
 }
-void rangeexponential(int dim, int *index, double* range){ 
+void rangeexponential(int reduceddim, int *index, double* range){ 
   *index = RANGE_LASTELEMENT; 
 }
-int checkexponential(double *param, int timespacedim, SimulationType method) {
+int checkexponential(double *param, int reduceddim, SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
-    if (timespacedim>2) 
+    if (reduceddim>2) 
     {
       strcpy(ERRORSTRING_OK,"genuine dim<=2");
-      sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+      sprintf(ERRORSTRING_WRONG,"%d",reduceddim);
       return ERRORCOVFAILED;
     }
   }
   return NOERROR;
 }
 int hyperexponential(double radius, double *center, double *rx,
-		     int dim, bool simulate, 
+		     int reduceddim, bool simulate, 
 		     double** Hx, double** Hy, double** Hr)
 {
   // lenx : half the length of the rectangle
@@ -444,7 +444,7 @@ int hyperexponential(double radius, double *center, double *rx,
   long i, p, q;
   int k, error;
   
-  if (dim==2) {
+  if (reduceddim==2) {
     // we should be in two dimensions
     // first, we simulate the lines for a rectangle with center (0,0)
     // and half the side length equal to lenx
@@ -490,7 +490,7 @@ int hyperexponential(double radius, double *center, double *rx,
       }
     }
   } else { 
-    // dim = 1  --  not programmed yet
+    // reduceddim = 1  --  not programmed yet
     assert(false);
   }
   return q;
@@ -507,7 +507,7 @@ void infoexponential(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 // Brownian motion 
-double fractalBrownian(double*x, double *p, int effectivdim) {
+double fractalBrownian(double*x, double *p) {
   return - pow(fabs(*x), p[KAPPA]);//this is an invalid covariance function!
   // keep definition such that the value at the origin is 0
 }
@@ -522,10 +522,10 @@ double DDfractalBrownian(double *x, double*p)
 {
     return -p[KAPPA] * (p[KAPPA]-1.0) * pow(fabs(*x), p[KAPPA] - 2.0);
 }
-void rangefractalBrownian(int dim, int *index, double* range){
+void rangefractalBrownian(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   double r[4] = {OPEN, 2.0, RANGE_EPSILON, 2.0 - UNIT_EPSILON};
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   memcpy(range, r, sizeof(double*) * 4);
 }
 void infofractalBrownian(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -536,7 +536,7 @@ void infofractalBrownian(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* FD model */
-double FD(double *x,double *p, int effectivedim){
+double FD(double *x,double *p){
   static double dold=RF_INF;
   static double kold, sk;
   double y, d, k, skP1;
@@ -555,9 +555,9 @@ double FD(double *x,double *p, int effectivedim){
   skP1 = sk * (kold + d) / (kold + 1.0 - d);
   return sk + (y - k) * (skP1 - sk);
 }
-void rangeFD(int dim, int *index, double* range){
+void rangeFD(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  *index = (dim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+  *index = (reduceddim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   range[2] = (range[0] = -1.0) + RANGE_EPSILON;
   range[4] = (range[1] = 1.0 - OPEN) - RANGE_EPSILON;
 }
@@ -568,7 +568,7 @@ void infoFD(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* fractgauss */
-double fractGauss(double *x, double *p, int effectivedim){
+double fractGauss(double *x, double *p){
   register double y;
   if ((y = fabs(*x))==0.0) return 1.0;
   return 0.5 * (pow(fabs(y + 1.0), p[KAPPA])  
@@ -576,10 +576,10 @@ double fractGauss(double *x, double *p, int effectivedim){
 		+ pow(fabs(y - 1.0), p[KAPPA]) 
 		);
 }
-void rangefractGauss(int dim, int *index, double* range){
+void rangefractGauss(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   double r[4] = {OPEN, 2, RANGE_EPSILON, 2};
-  *index = (dim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+  *index = (reduceddim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   memcpy(range, r, sizeof(double) * 4);
 }
 void infofractGauss(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -589,7 +589,7 @@ void infofractGauss(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* Gausian model */
-double Gauss(double *x, double*p, int effectivedim) {
+double Gauss(double *x, double*p) {
   return  exp(-  *x * *x);
 }
 double ScaleGauss(double *p,int scaling) {return SQRTINVLOG005;}
@@ -606,7 +606,7 @@ double DGauss(double *x, double*p) {
 double spectralGauss(double *p ) {   
   return 2.0  * sqrt(-log(1.0 - UNIFORM_RANDOM));
 }
-void rangeGauss(int dim, int *index, double* range){
+void rangeGauss(int reduceddim, int *index, double* range){
   *index = RANGE_LASTELEMENT;
 }
 void infoGauss(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -616,7 +616,7 @@ void infoGauss(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* gencauchy */
-double generalisedCauchy(double *x, double *p, int effectivedim){
+double generalisedCauchy(double *x, double *p){
   return pow(1.0 + pow(fabs(*x), p[KAPPA1]), -p[KAPPA2]/p[KAPPA1]);
 }
 double ScalegeneralisedCauchy(double *p,int scaling) {
@@ -652,19 +652,19 @@ double DDgeneralisedCauchy(double *x, double *p){
   return p[KAPPA2] * ha / (y * y) * (1.0 - p[KAPPA1] + (1.0 + p[KAPPA2]) * ha)
 	    * pow(1.0 + ha, -p[KAPPA2] / p[KAPPA1] - 2.0);
 }
-int checkgeneralisedCauchy(double *param, int timespacedim, SimulationType method){
+int checkgeneralisedCauchy(double *param, int reduceddim, SimulationType method){
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff)
   {
-    if (timespacedim>2) 
+    if (reduceddim>2) 
     {
       strcpy(ERRORSTRING_OK,"genuine total dim<=2");
-      sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+      sprintf(ERRORSTRING_WRONG,"%d",reduceddim);
       return ERRORCOVFAILED;
     }
   }
   return NOERROR;
 }
-void rangegeneralisedCauchy(int dim, int *index, double* range){
+void rangegeneralisedCauchy(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, range_genCauchy, sizeof(double) * 8);
@@ -676,7 +676,7 @@ void infogeneralisedCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* gengneiting */
-double genGneiting(double *x, double *p, int effectivedim)
+double genGneiting(double *x, double *p)
 {
   register double y, s;
   if ((y=fabs( *x))>1.0) return 0.0; 
@@ -742,14 +742,14 @@ double DgenGneiting(double *x, double *p)
   default : assert(false);   
   }
 }
-void rangegenGneiting(int dim, int *index, double* range){
+void rangegenGneiting(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   range[0] = range[2] = range[1] = range[3] = *index;
-  range[4] = range[6] = 0.5 * (double) (dim + 2 * *index + 1);
+  range[4] = range[6] = 0.5 * (double) (reduceddim + 2 * *index + 1);
   range[5] = RF_INF;
   range[7] = 20.0;
   if ((++(*index)) > 3) *index = RANGE_LASTELEMENT;
-  if (dim>3) *index = RANGE_INVALIDDIM;
+  if (reduceddim>3) *index = RANGE_INVALIDDIM;
 }
 void infogenGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = (int) (2.0 * p[KAPPA2] - 1.0 - 2.0 * p[KAPPA1]);
@@ -761,7 +761,7 @@ void infogenGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
 /* Gneiting's functions -- alternative to Gaussian */
 #define Sqrt2TenD47 0.30089650263257344820 /* approcx 0.3 ?? */
 #define NumericalScale 0.301187465825
-double Gneiting(double *x, double *p, int effectivedim){ 
+double Gneiting(double *x, double *p){ 
   register double y,oneMy8;
   if ((y=fabs(*x * NumericalScale))>1.0) {return(0.0);}
   oneMy8 = 1.0-y; oneMy8*=oneMy8; oneMy8*=oneMy8; oneMy8*=oneMy8;
@@ -782,8 +782,8 @@ double DGneiting(double *x, double *p){
   return 
     (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7 * Sqrt2TenD47;
 }
-void rangeGneiting(int dim, int *index, double* range){
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangeGneiting(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infoGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
@@ -792,7 +792,7 @@ void infoGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* hyperbolic */
-double hyperbolic(double *x, double*p, int effectivedim){ 
+double hyperbolic(double *x, double*p){ 
   static double kappa = RF_INF;
   static double lambda= RF_INF;
   static double delta = RF_INF;
@@ -804,7 +804,7 @@ double hyperbolic(double *x, double*p, int effectivedim){
   if ( *x==0.0) {return 1.0;}
   if (p[KAPPA3]==0) { // whittle matern
     y = *x * p[KAPPA1];
-    return WhittleMatern(&y, p, effectivedim);
+    return WhittleMatern(&y, p);
   } 
   if (p[KAPPA1]==0) { //cauchy   => KAPPA2 < 0 !
     y =  *x/p[KAPPA3];
@@ -912,7 +912,7 @@ double Dhyperbolic(double *x, double*p)
 		      +log(bessel_k(kappa_s,lambda-1.0,2.0))-kappa_s)
       );
 }
-int checkhyperbolic(double *param, int timespacedim, SimulationType method){
+int checkhyperbolic(double *param, int reduceddim, SimulationType method){
   if (param[KAPPA2]>0) {
     if ((param[KAPPA3]<0) || (param[KAPPA1]<=0)) {
       strcpy(ERRORSTRING_OK,"kappa1>0 and kappa3>=0 if kappa2>0");
@@ -937,7 +937,7 @@ int checkhyperbolic(double *param, int timespacedim, SimulationType method){
   }
   return NOERROR;
 }
-void rangehyperbolic(int dim, int *index, double* range){
+void rangehyperbolic(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   double r[12] = {0, RF_INF, 0.000001, 10.0,
 		  RF_NEGINF, RF_INF, -20.0, 20.0,
@@ -953,38 +953,34 @@ void infohyperbolic(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* iaco cesare model */
-double IacoCesare(double *x, double *p, int dim){
-    double s;
-    int d;
-    for (s=0.0, d=dim-2; d>=0; d--) s += x[d] * x[d];
-    return pow(1.0 + pow(s, 0.5 * p[KAPPA1]) + 
-	       pow(fabs(x[dim-1]),  p[KAPPA2]),
-	       - 0.5 * p[KAPPA3]); 
+double IacoCesare(double *x, double *p){
+    return pow(1.0 + pow(x[0], p[KAPPA1]) + pow(fabs(x[1]), p[KAPPA2]),
+	       - p[KAPPA3]); 
 }
 //double ScaleIacoCesare(double *p, int scaling) { return 1.0; } 
-void rangeIacoCesare(int dim, int *index, double* range){
+void rangeIacoCesare(int reduceddim, int *index, double* range){
     static double range_iacocesare[8]= 
 	{1, 2, 1, 2,
 	 1, 2, 1, 2};
     memcpy(range, range_iacocesare, sizeof(double) * 8);
-    range[8] = range[10] = 0.5 * dim;
-    range[9] = RF_INF; range[11] = 10;
+    range[8] = range[10] = 0.5 * reduceddim;
+    range[9] = RF_INF; range[11] = 0.5 * reduceddim + 10;
     *index = RANGE_LASTELEMENT;
 }
 void infoIacoCesare(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-int checkIacoCesare(double *param, int timespacedim, SimulationType method) {
+int checkIacoCesare(double *param, int reduceddim, SimulationType method) {
   if (method!=Nothing && method!=CircEmbed && method!=Direct)
       return ERRORNOTDEFINED;
-  if (timespacedim == 1) return ERRORNOTDEFINED;
+  if (reduceddim == 1) return ERRORWRONGDIM;
   return NOERROR;
 }
 
 
 /* local-global distinguisher */
-double lgd1(double *x, double*p, int effectivedim) {
+double lgd1(double *x, double*p) {
   double y;
   if ((y=fabs(*x)) < 1) return 1.0 - p[KAPPA2] / (p[KAPPA1] + p[KAPPA2]) 
 	     * exp(p[KAPPA1] * log(y));
@@ -1002,14 +998,14 @@ double Dlgd1(double *x, double *p){
   pp = ( (y < 1) ? p[KAPPA1] : -p[KAPPA2] ) - 1.0;
   return - p[KAPPA1] * p[KAPPA2] / (p[KAPPA1] + p[KAPPA2]) * exp(pp * y);
 }
-void rangelgd1(int dim, int *index, double* range){
+void rangelgd1(int reduceddim, int *index, double* range){
   static double range_lgd1[8] =
     {OPEN, 1.0, 0.01, 1.0, 
      OPEN, RF_INF, 0.01, 20.0};
   //  2 x length(param) x {theor, pract } 
-  *index = (dim<=2) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+  *index = (reduceddim<=2) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   memcpy(range, range_lgd1, sizeof(double) * 8);
-  if (dim==2) range[1] = range[3] = 0.5;
+  if (reduceddim==2) range[1] = range[3] = 0.5;
 }
 void infolgd1(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = (p[KAPPA] <= 0) ? 0 : (int) (2.0 * (1.5 - p[KAPPA]));
@@ -1035,15 +1031,16 @@ double InvSqrtPsi(double x, double a, double b, int c) {
   default: assert(false);
   }
 }
-double spacetime1(double *x, double *p, int effectivedim){
+double spacetime1(double *x, double *p){
   double y, z, invsqrtpsi;
-  assert(effectivedim==2);
+  assert(p[EFFECTIVEDIM]==2.0);
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPA3], p[KAPPA4], (int)p[KAPPA5]);
   y = x[0] * invsqrtpsi; 
   switch((int) p[KAPPA2]) {
-  case 1 : z = stable(&y, p, 1); break;
-  case 2 : z = WhittleMatern(&y, p, 1); break;
-  case 3 : z = Cauchy(&y, p, 1); break;
+   case 1 : z = stable(&y, p); break;  // called with the wrong EFFECTIVEDIM,
+       // but not checked by stable, neither by WhittleMatern nor Cauchy
+  case 2 : z = WhittleMatern(&y, p); break;
+  case 3 : z = Cauchy(&y, p); break;
   default: assert(false);
   }
   return pow(invsqrtpsi, p[KAPPA6]) * z;
@@ -1060,10 +1057,10 @@ double TBM2spacetime1(double *x, double *p){
   }
   return pow(invsqrtpsi, p[KAPPA6]) * z;
 }
-double TBM3spacetime1(double *x, double *p){
-  assert(false); // should never happen
-  return spacetime1(x, p, 2) + Dspacetime1(x, p) * fabs(x[0]);
-}
+//double TBM3spacetime1(double *x, double *p){
+//  assert(false); // should never happen
+//  return spacetime1(x, p, 2) + Dspacetime1(x, p) * fabs(x[0]);
+//}
 double Dspacetime1(double *x, double *p){
   double y, z, invsqrtpsi;
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPA3], p[KAPPA4], (int)p[KAPPA5]);
@@ -1076,7 +1073,7 @@ double Dspacetime1(double *x, double *p){
   }
   return pow(invsqrtpsi, p[KAPPA6] + 1.0) * z;
 }
-int checkspacetime1(double *param, int timespacedim, SimulationType method) {
+int checkspacetime1(double *param, int reduceddim, SimulationType method) {
   int error;
   // 1 : stable
   // 2 : whittle
@@ -1084,14 +1081,9 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
   // first parameter(s) for phi
   // then choice of phi; then two parameters for psi, then choice of psi
   error = NOERROR;
-  if (timespacedim<=1) {
-    strcpy(ERRORSTRING_OK,"genuine total dim>=2");
-    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
-    return ERRORCOVFAILED;
-  }
   switch((int) param[KAPPA2]) {
   case 1 : 
-    error=checkstable(param, timespacedim, method);
+    error=checkstable(param, reduceddim, method);
     if (error==NOERROR && method==TBM2)  {
       strcpy(ERRORSTRING_OK,"TBM2 and kappa2=2,3");
       sprintf(ERRORSTRING_WRONG,"%f", param[KAPPA2]);
@@ -1099,9 +1091,9 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
     }
     break;
   case 2 : 
-    error=checkWhittleMatern(param, timespacedim, method);
+    error=checkWhittleMatern(param, reduceddim, method);
     break;
-  case 3 : error=checkCauchy(param, timespacedim, method); 
+  case 3 : error=checkCauchy(param, reduceddim, method); 
     break;
   default : 
       assert(false);
@@ -1116,11 +1108,14 @@ int checkspacetime1(double *param, int timespacedim, SimulationType method) {
   } 
   return error;
 }
-void rangespacetime1(int dim, int *index, double* range){
+void rangespacetime1(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract }
   double *r;
   if ((*index<=0) || (*index>9)) { // see also last line
-    int i; for (i=0; i<24; i++) range[i]= RF_NAN; *index = RANGE_LASTELEMENT; return;
+    int i; 
+    for (i=0; i<24; i++) range[i]= RF_NAN; 
+    *index = RANGE_LASTELEMENT; 
+    return;
   }
   switch ((*index-1) % 3) {
   case 0 : r=range_stable;  break;
@@ -1145,9 +1140,9 @@ void rangespacetime1(int dim, int *index, double* range){
   range[16] = range[17] = 
     range[18] = range[19] =  (double) (1 + (*index - 1) / 3);
   
-  range[20] = range[22] = (double) dim - 1; // spatial dim
+  range[20] = range[22] = (double) reduceddim - 1; // spatial reduceddim
   range[21] = RF_INF;
-  range[23] = (double) dim + 10.0;
+  range[23] = (double) reduceddim + 10.0;
 
   if ( (++(*index)) > 9) *index = RANGE_LASTELEMENT;
 }
@@ -1158,20 +1153,22 @@ void infospacetime1(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* Tilmann Gneiting's space time models, part II*/
-double spacetime2(double *x,double *p, int effectivedim){
+double spacetime2(double *x, double *p){
   double y, z, invsqrtpsi;
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPA4], p[KAPPA5], (int)p[KAPPA6]);
   y = x[0] * invsqrtpsi; 
   switch((int) p[KAPPA3]) {
-  case 1 : z = generalisedCauchy(&y, p, 1); break;
+  case 1 : z = generalisedCauchy(&y, p); break;
+       // called with the wrong EFFECTIVEDIM,
+       // but not checked by generalisedCauchy
   default: assert(false);
   }
   return pow(invsqrtpsi, p[KAPPA7]) * z;
 }
-double TBM3spacetime2(double *x, double *p){
-  assert(false); // should never happen
-  return spacetime2(x, p, 2) + Dspacetime2(x, p) * fabs(x[0]);
-}
+//double TBM3spacetime2(double *x, double *p){
+//  assert(false); // should never happen
+//  return spacetime2(x, p, 2) + Dspacetime2(x, p) * fabs(x[0]);
+//}
 double Dspacetime2(double *x, double *p){
   double y, z, invsqrtpsi;
   invsqrtpsi = InvSqrtPsi(x[1],  p[KAPPA4], p[KAPPA5], (int)p[KAPPA6]);
@@ -1182,19 +1179,14 @@ double Dspacetime2(double *x, double *p){
   }
   return pow(invsqrtpsi, p[KAPPA5] + 1.0) * z;
 }
-int checkspacetime2(double *param, int timespacedim, SimulationType method) {
+int checkspacetime2(double *param, int reduceddim, SimulationType method) {
   int error;
   // 1 : generalisedcauchy 
   // first parameter(s) for phi
   // then choice of phi; then two parameters for psi, then choice of psi
   error = NOERROR;
-  if (timespacedim<=1) {
-    strcpy(ERRORSTRING_OK,"genuine total dim>=2");
-    sprintf(ERRORSTRING_WRONG,"%d", timespacedim);
-    return ERRORCOVFAILED;
-  }
   switch((int) param[KAPPA3]) {
-  case 1 : error=checkgeneralisedCauchy(param, timespacedim, method); break;
+  case 1 : error=checkgeneralisedCauchy(param, reduceddim, method); break;
   default : 
     assert(false);
 //    strcpy(ERRORSTRING_OK,"kappa3=1");
@@ -1208,11 +1200,14 @@ int checkspacetime2(double *param, int timespacedim, SimulationType method) {
   }
   return error;
 }
-void rangespacetime2(int dim, int *index, double* range){
+void rangespacetime2(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract }
   double *r;
   if ((*index<=0) || (*index>3)) { // see also last line
-    int i; for (i=0; i<28; i++) range[i]= RF_NAN; *index = RANGE_LASTELEMENT; return;
+    int i; 
+    for (i=0; i<28; i++) range[i]= RF_NAN; 
+    *index = RANGE_LASTELEMENT;
+    return;
   }
   switch ((*index-1) % 1) {
   case 0 : r = range_genCauchy;  break;
@@ -1235,9 +1230,9 @@ void rangespacetime2(int dim, int *index, double* range){
   range[20] = range[21] = 
     range[22] = range[23] =  (double) (1 + (*index - 1) / 1);
 
-  range[24] = range[26] = (double) dim - 1; // spatial dim
+  range[24] = range[26] = (double) reduceddim - 1; // spatial dim
   range[25] = RF_INF;
-  range[27] = (double) dim + 10.0;
+  range[27] = (double) reduceddim + 10.0;
   
   if ( (++(*index)) > 3) *index = RANGE_LASTELEMENT;
 }
@@ -1248,19 +1243,19 @@ void infospacetime2(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* nugget effect model */
-double nugget(double *x, double *p, int dim){
+double nugget(double *x, double *p){
   if (*x <= NUGGET_TOL) return 1.0;  return 0.0;
 }
 
 double Scalenugget(double *p, int scaling) { return 1.0; }//or better 0.0 => error?
-void rangenugget(int dim, int *index, double* range){
+void rangenugget(int reduceddim, int *index, double* range){
   *index = RANGE_LASTELEMENT;
 }
 void infonugget(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-int checknugget(double *param, int timespacedim, SimulationType method) {
+int checknugget(double *param, int reduceddim, SimulationType method) {
   if (method!=Nothing && method!=CircEmbed && method!=Direct && method!=Nugget)
     return ERRORNOTDEFINED;
   return NOERROR;
@@ -1269,7 +1264,7 @@ int checknugget(double *param, int timespacedim, SimulationType method) {
 
 
 /* penta */
-double penta(double *x, double *p, int effectivedim)
+double penta(double *x, double *p)
 { ///
   double y,y2;
   if ((y=fabs( *x))>=1.0) { return 0.0; }
@@ -1310,8 +1305,8 @@ double Dpenta(double *x, double *p)
   
  }
 double Scalepenta(double *p,int scaling) {return 1.6552838957365;}
-void rangepenta(int dim, int *index, double* range){
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangepenta(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infopenta(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
@@ -1320,7 +1315,7 @@ void infopenta(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* power model */ 
-double power(double *x, double *p, int effectivedim){
+double power(double *x, double *p){
   register double y;
   if ((y=fabs( *x))>1.0) {return 0.0;}
   return  pow(1.0 - y, p[KAPPA]);
@@ -1347,17 +1342,17 @@ double Dpower(double *x, double *p){
   if ((y=fabs( *x))>1.0) {return 0.0;} 
   return  -  p[KAPPA] * pow(1.0 - y, p[KAPPA]-1.0);
 }
-int checkpower(double *param, int timespacedim, SimulationType method) {
+int checkpower(double *param, int reduceddim, SimulationType method) {
   if (method == TBM2 && param[KAPPA]!=2.0) return ERRORCOVNUMERICAL;
   return NOERROR;
 }
 // range definition:
 // 0: min, theory, 1:max, theory
 // 2: min, practically 3:max, practically
-void rangepower(int dim, int *index, double* range){
+void rangepower(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
-  range[0] = range[2] = 0.5 * ((double) dim + 1);
+  range[0] = range[2] = 0.5 * ((double) reduceddim + 1);
   range[1] = RF_INF;
   range[3] = 20.0;
 }
@@ -1368,7 +1363,7 @@ void infopower(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* qexponential -- derivative of exponential */
-double qexponential(double *x,double *p, int effectivedim){
+double qexponential(double *x,double *p){
   register double y;
   y = exp(-fabs( *x));
   return y * (2.0  - p[KAPPA] * y) / (2.0 - p[KAPPA]);
@@ -1389,7 +1384,7 @@ double Dqexponential(double *x, double *p) {
   y = exp(-fabs( *x));
   return y * (p[KAPPA] * y - 1.0) * 2.0 / (2.0 - p[KAPPA]);
 }
-void rangeqexponential(int dim, int *index, double* range){
+void rangeqexponential(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   static double r[4] = {0, 1, 0, 1};
@@ -1403,7 +1398,7 @@ void infoqexponential(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* spherical model */ 
-double spherical(double *x, double *p, int effectivedim){
+double spherical(double *x, double *p){
   register double y;
   if ((y= fabs( *x))>1.0) {return 0.0;}
   return (1.0+y*0.5*(y*y-3.0));
@@ -1425,8 +1420,8 @@ double Dspherical(double *x, double *p){
   if ((y=fabs( *x))>1.0) {return 0.0;} 
   return  1.5 * (y * y - 1.0);
 }
-void rangespherical(int dim, int *index, double* range){
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangespherical(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infospherical(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
@@ -1436,7 +1431,7 @@ void infospherical(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* stable model */
-double stable(double *x,double *p, int effectivedim){
+double stable(double *x,double *p){
   if (*x==0.0) {return 1.0;}
   return  (exp(-pow(fabs( *x), p[KAPPA])));
 }
@@ -1463,18 +1458,18 @@ double DDstable(double *x, double*p)
   return p[KAPPA] * (1.0 - p[KAPPA] + p[KAPPA] * xkappa) * y * exp(-xkappa);
 }
 
-int checkstable(double *param, int timespacedim, SimulationType method) {
+int checkstable(double *param, int reduceddim, SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
-    if (timespacedim>2) 
+    if (reduceddim>2) 
     {
       strcpy(ERRORSTRING_OK,"genuine total dim<=2");
-      sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+      sprintf(ERRORSTRING_WRONG,"%d",reduceddim);
       return ERRORCOVFAILED;
     }
   }
   return NOERROR;
 }
-void rangestable(int dim, int *index, double* range){
+void rangestable(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, range_stable, sizeof(double) * 4);
@@ -1491,7 +1486,7 @@ void infostable(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* stein space-time model */
-double SteinST1(double *x, double *p, int dim){
+double SteinST1(double *x, double *p){
     // kappa1 : nu
     // kappa2 : tau
     // kappa3-5 : z1-z3
@@ -1500,9 +1495,10 @@ double SteinST1(double *x, double *p, int dim){
 */
     register double s;
     double z, logconst;
-    int d, time;   
+    int d, time, dim;   
     static double nu=RF_INF;
     static double loggamma;
+    dim = (int) p[EFFECTIVEDIM];
     time = dim - 1;
 
     s = x[time] * x[time];
@@ -1527,7 +1523,7 @@ double SteinST1(double *x, double *p, int dim){
 }
 // double ScaleSteinST1(double *p, int scaling) { return 1.0; } 
 int kappasSteinST1(int dim) {return 1 + dim;}
-void rangeSteinST1(int dim, int *index, double* range){
+void rangeSteinST1(int reduceddim, int *index, double* range){
     static double range_steinST1[20]= 
 	{0, RF_INF, 0, 10.0,
 	 RF_NAN, RF_INF, RF_NAN, +100,
@@ -1536,27 +1532,27 @@ void rangeSteinST1(int dim, int *index, double* range){
 	 RF_NEGINF, RF_INF, -100000, +100000,
 	};
     *index = RANGE_LASTELEMENT; 
-    memcpy(range, range_steinST1, sizeof(double) * 4 * (2 + dim));
-    range[4] = range[6] = dim;
+    memcpy(range, range_steinST1, sizeof(double) * 4 * (2 + reduceddim));
+    range[4] = range[6] = reduceddim;
 }
 void infoSteinST1(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-int checkSteinST1(double *param, int timespacedim, SimulationType method) {
+int checkSteinST1(double *param, int reduceddim, SimulationType method) {
   double absz;
   int d;
   if (method!=Nothing && method!=CircEmbed && method!=Direct)
       return ERRORNOTDEFINED;
-  if (timespacedim == 1) return ERRORNOTDEFINED;
-  for (absz=0.0, d=timespacedim + KAPPA1; d>=KAPPA3; d--)
+  if (reduceddim == 1) return ERRORNOTDEFINED;
+  for (absz=0.0, d=reduceddim + KAPPA1; d>=KAPPA3; d--)
       absz += param[d] * param[d];
   if (absz > 1.0 + UNIT_EPSILON && !GENERAL_SKIPCHECKS) {
       strcpy(ERRORSTRING_OK, "||z||^2 <= 1");
       sprintf(ERRORSTRING_WRONG, "%f", absz);
       return ERRORCOVFAILED;    
   }
-  return checkWhittleMatern(param, timespacedim, method);
+  return checkWhittleMatern(param, reduceddim, method);
 }
 
 
@@ -1566,16 +1562,16 @@ void infoundefined(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 0;
   *CEbadlybehaved = true;
 }
-int checkundefined(double *param, int timespacedim, SimulationType method) {
+int checkundefined(double *param, int reduceddim, SimulationType method) {
     return ERRORNOTDEFINED;
 }
-int checkOK(double *param, int timespacedim, SimulationType method){
+int checkOK(double *param, int reduceddim, SimulationType method){
   return NOERROR;
 }
 
 
 /* wave */
-double wave(double *x, double *p, int effectivedim) {
+double wave(double *x, double *p) {
   if ( *x==0.0) { return 1.0;}
   return sin( *x)/ *x;
 }
@@ -1583,8 +1579,8 @@ double Scalewave(double *p,int scaling) {return 0.302320850755833;}
 double spectralwave(double *p ) {
   double x;  x=UNIFORM_RANDOM; return sqrt(1- x * x);
 }
-void rangewave(int dim, int *index, double* range){
-  *index = (dim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+void rangewave(int reduceddim, int *index, double* range){
+  *index = (reduceddim<=3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
 }
 void infowave(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 3;
@@ -1594,7 +1590,7 @@ void infowave(double *p, int *maxdim, int *CEbadlybehaved) {
 
 
 /* Whittle-Matern or Whittle or Besset */ 
-double WhittleMatern(double *x, double *p, int effectivedim) 
+double WhittleMatern(double *x, double *p) 
 // check calling functions, like hyperbolic and gneiting if any changings !!
 {
   static double kappa=RF_INF;
@@ -1689,7 +1685,7 @@ double spectralWhittleMatern(double *p ) { /* see Yaglom ! */
   return sqrt(pow(1.0 - UNIFORM_RANDOM, -1.0 / p[KAPPA]) - 1.0);
 }
 
-int checkWhittleMatern(double *param, int timespacedim, SimulationType method) { 
+int checkWhittleMatern(double *param, int reduceddim, SimulationType method) { 
   static double spectrallimit=0.17;
   switch(method) {
       case TBM2 : 
@@ -1709,17 +1705,17 @@ int checkWhittleMatern(double *param, int timespacedim, SimulationType method) {
 	}
 	break;
       case CircEmbedCutoff: case CircEmbedIntrinsic :
-	if (timespacedim>2) 
+	if (reduceddim>2) 
 	{
 	  strcpy(ERRORSTRING_OK,"genuine total dim<=2");
-	  sprintf(ERRORSTRING_WRONG,"%d",timespacedim);
+	  sprintf(ERRORSTRING_WRONG,"%d",reduceddim);
 	  return ERRORCOVFAILED;
 	}
       default : {}
   }
   return NOERROR;
 }
-void rangeWhittleMatern(int dim, int *index, double* range){
+void rangeWhittleMatern(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = RANGE_LASTELEMENT; 
   memcpy(range, range_whittle, sizeof(double) * 4);

@@ -521,16 +521,22 @@ extern void addInitLocal(int nr, getparamfct getparam,
 extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
 		   randommeasure spectral) {
   // must be called always AFTER addCov !!!!
+  int index=1;
+  double range[4 * LASTKAPPA];
   assert((nr>=0) && (nr<currentNrCov));
   CovList[nr].cov_tbm2=cov_tbm2;
+  CovList[nr].range(2, &index, range);
+  assert(index != RANGE_INVALIDDIM);
+  CovList[nr].range(3, &index, range);
   CovList[nr].implemented[TBM2] = (cov_tbm2!=NULL) ? IMPLEMENTED : 
     (CovList[nr].derivative!=NULL) 
     ? NUM_APPROX 
     : NOT_IMPLEMENTED;
   CovList[nr].cov_tbm3=cov_tbm3;
   if (cov_tbm3!=NULL || cov_tbm2!=NULL) assert(CovList[nr].derivative!=NULL);
-  CovList[nr].implemented[TBM3] = CovList[nr].cov_tbm3!=NULL || 
-    (CovList[nr].derivative!=NULL && CovList[nr].cov!=NULL);
+  CovList[nr].implemented[TBM3] = (index != RANGE_INVALIDDIM) && 
+      (CovList[nr].cov_tbm3!=NULL || 
+       (CovList[nr].derivative!=NULL && CovList[nr].cov!=NULL));
   CovList[nr].spectral=spectral;
   CovList[nr].implemented[SpectralTBM] = spectral!=NULL;
 }
@@ -660,6 +666,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       // the other parameters need not to be copied as checked that 
       // they are identical to previous ones
       for (; parami<=LASTKAPPA; parami++) {oldp[parami]=p[parami];}
+      oldp[EFFECTIVEDIM] = 1.0;
       // oldp[VARIANCE] = oldp[ANISO] = 1.0; not necessary to set explicitly, 
       // but used in this sense in the following
       oldcovnr = -99; /* if error occurs, the next call will realise that 
@@ -670,10 +677,10 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       */
       wave  = 0;
       x = 1.0; 
-      if ( (yold=cov(&x, oldp, 1)) > 0.05) {
+      if ( (yold=cov(&x, oldp)) > 0.05) {
 	double leftx;
 	x *= 2.0;
-	while ( (y=cov(&x, oldp, 1)) > 0.05) {  
+	while ( (y=cov(&x, oldp)) > 0.05) {  
 	  if (yold<y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
 	  yold = y;
 	  x *= 2.0;
@@ -683,7 +690,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 	for (i=0; i<3 /* good choice?? */ ;i++) {          
 	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
 	  newx = x + (x-leftx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(&newx, oldp, 1)) >0.05) {
+	  if ( (newy=cov(&newx, oldp)) >0.05) {
 	    leftx = newx;
 	    yold  = newy;
 	  } else {
@@ -696,7 +703,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
       } else {
 	double rightx;
 	x *= 0.5;
-	while ( (y=cov(&x, oldp, 1)) < 0.05) {  
+	while ( (y=cov(&x, oldp)) < 0.05) {  
 	  if (yold>y){ wave++;  if (wave>10) {*error=ERRORWAVING; return;} }
 	  yold = y;
 	  x *= 0.5;
@@ -706,7 +713,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 	for (i=0; i<3 /* good choice?? */ ;i++) {          
 	  if (y==yold) {*error=ERRORWAVING; return;} // should never appear
 	  newx = x + (x-rightx)/(y-yold)*(0.05-y);
-	  if ( (newy=cov(&newx, oldp, 1)) <0.05) {
+	  if ( (newy=cov(&newx, oldp)) <0.05) {
 	    rightx = newx;
 	    yold   = newy;
 	  } else {
@@ -820,91 +827,106 @@ void Getxsimugr(coord_type x, param_type param, int timespacedim,
   }
 }
 
+void matrixrotat(double *paramaniso, int col, int row,
+		 int *truedim, aniso_type aniso) {
+  double G[MAXDIM+1], matrix[MAXDIMSQ], e[MAXDIM], D[MAXDIM], V[MAXDIMSQ];
+  int i, j, TrueDim, rowsq, job=01, err, index[MAXDIM];
+  for (i=0; i<row; i++) D[i] = V[i] = 0.0;
+  rowsq = row * row;
+  for (; i<rowsq; V[i++]=0.0);
+  if (is_diag(paramaniso, row)) {
+      int diag = row + 1, size = row * col;
+      for (j=i=0; i<size; i+=diag, j++) {
+	  D[j] = paramaniso[i]; /// WICHTIG! Dadurch wird Ordnung
+	  //                           der Dimensionen eingehalten!!
+	  // siehe auch CheckAndBuild
+	  V[i] = 1.0;
+      }
+  } else {
+      for (j=0; j<col; j++)
+	  for (i=0; i<row; i++)
+	      matrix[i * row + j] = paramaniso[i + j * row];
+      for (; j<row; j++)
+	  for (i=0; i<row; i++) 
+	      matrix[i * row + j] = 0.0;
+      
+      // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
+      F77_NAME(dsvdc)(matrix, &row, &row, &row, D, e, NULL /* U */,
+		      &row, V, &row, G, &job, &err);
+      if (err!=NOERROR) {
+	  PRINTF("F77 error in GetTrueDim: %d\n", err);
+	  assert(false);
+      }
+  }
+  
+  for (TrueDim=i=j=0; j<row; j++)
+      if (fabs(D[j]) > EIGENVALUE_EPS) {
+	  index[i++] = j;
+	  TrueDim++;
+      }
+  
+  for (j=0; j<TrueDim; j++) 
+      for (i=0; i<row; i++) {
+	  aniso[i + j * row] =//note V, not V^T is returned by dsvdc !
+	      V[i + index[j] * row] * D[index[j]];
+      }
+  for ( ; j<row; j++) for (i=0; i<row; i++)  aniso[i + j * row] = 0.0;
+  *truedim = TrueDim;
+}
+
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
-		char type, bool *genuine_last_dim, int *truetimespacedim, 
+		char type, bool *genuine_last_dim, int *reduceddim, 
 		aniso_type aniso) {
   // returns always the a (reduced) matrix; if not anisotropy then diag matrix
   // of full size with elements 1/SCALE. 
-  int i,j, index[MAXDIM], job=01, err;
-  double G[MAXDIM+1], matrix[MAXDIMSQ], e[MAXDIM], D[MAXDIM], V[MAXDIMSQ];
+  int i,j;
+  // int dummytruedim;
+  // aniso_type dummyaniso;
 
   assert(timespacedim>0);
   if (anisotropy) {
-    int col, row, endfor, TrueDim, rowsq;
+    int col, row, endfor;
     // row: rows of aniso matrix and of param
     // col: number colums of param used for "matrix" (i.e. time is excluded for
     //                                      space isotropy), see switch below
     col = row = timespacedim;
-    rowsq = row * row;
     endfor = ANISO + row * col; 
     
+    //  *genuine_last_dim = DIM_GENUINE;
     for (j=endfor - row; j<endfor; j++) {
       if (param[j] != 0.0) break;
     }
+//    if (j != endfor) *genuine_last_dim = DIM_ZERO;
     *genuine_last_dim = j != endfor;
 
     switch (type) {
 	case ANISOTROPIC: case ANISOHYPERMODEL :
-	  *truetimespacedim = timespacedim;
-	  for (j=0; j<col; j++)
-	    for (i=0; i<row; i++)
-	      aniso[i + j * row] = param[ANISO + i + j * row];
-	  break;
-	case SPACEISOTROPIC :
-	  col -= 1;
-	  // no break!;
-	case FULLISOTROPIC: case ISOHYPERMODEL:
-	  for (i=0; i<row; i++) D[i] = V[i] = 0.0;
-	  for (; i<rowsq; V[i++]=0.0);
-	  if (is_diag(&(param[ANISO]), row)) {
-	    int diag = row + 1, size = row * col;
-	    for (j=i=0; i<size; i+=diag, j++) {
-	      D[j] = param[ANISO + i]; /// WICHTIG! Dadurch wird Ordnung
-	      //                           der Dimensionen eingehalten!!
-	      // siehe auch CheckAndBuild
-	      V[i] = 1.0;
-	    }
-	  } else {
 	    for (j=0; j<col; j++)
 		for (i=0; i<row; i++)
-		    matrix[i * row + j] = param[ANISO + i + j * row];
-	    for (; j<row; j++)
-		for (i=0; i<row; i++) 
-		    matrix[i * row + j] = 0.0;
-
-	    // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
-	    F77_NAME(dsvdc)(matrix, &row, &row, &row, D, e, NULL /* U */,
-			    &row, V, &row, G, &job, &err);
-	    if (err!=NOERROR) { err=-err;  goto ErrorHandling; }
-	  }
-
-	  for (TrueDim=i=j=0; j<row; j++)
-	      if (fabs(D[j]) > EIGENVALUE_EPS) {
-		  index[i++] = j;
-		  TrueDim++;
-	      }
-
-	  for (j=0; j<TrueDim; j++) 
-	      for (i=0; i<row; i++) {
-		  aniso[i + j * row] =//note V, not V^T is returned by dsvdc !
-		      V[i + index[j] * row] * D[index[j]];
-	      }
-	  for ( ; j<row; j++) for (i=0; i<row; i++)  aniso[i + j * row] = 0.0;
-	  *truetimespacedim = TrueDim;
-	  
-	  if (col < row) {
-	      int param_segm = ANISO + row * col;
-	      assert(col + 1 == row && type==SPACEISOTROPIC);
-	      (*truetimespacedim)++;
-	      for (i=0; i<row; i++)
-		  aniso[i + TrueDim * row] = param[param_segm + i];
-	  }
-	  break;
+		    aniso[i + j * row] = param[ANISO + i + j * row];
+	    *reduceddim = timespacedim;
+	    break;
+	case SPACEISOTROPIC :
+	    matrixrotat(&(param[ANISO]), col - 1, row, reduceddim, aniso);
+	    int param_segm, aniso_segm;
+	    param_segm = ANISO + row * (col - 1);
+	    aniso_segm = *reduceddim * row;
+	    for (i=0; i<row; i++) {
+		aniso[aniso_segm + i] = param[param_segm + i];
+//		printf("> %d %f ", param_segm + i, aniso[aniso_segm + i]);
+	    }
+//	    for (i=0; i<TOTAL_PARAM; i++) printf("i=%d %f\n", i, param[i]);
+	    (*reduceddim)++;
+//	    printf("%d %d\n", param_segm, aniso_segm); 
+	    break;
+	case FULLISOTROPIC: case ISOHYPERMODEL:
+	    matrixrotat(&(param[ANISO]), col, row, reduceddim, aniso);
+	    break;
 	default: assert(false);
     }
   } else { 
     *genuine_last_dim = true;
-    *truetimespacedim = timespacedim; // == spatialdim
+    *reduceddim = timespacedim; // == spatialdim
     double invscale;
     int endfor;
     invscale = 1.0 / param[SCALE];
@@ -915,12 +937,6 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
   }
 
 //  printf("gettrue aniso %f\n", aniso[0]);
-
-  return;
-
- ErrorHandling:
-  PRINTF("F77 error in GetTrueDim: %d\n", -err);
-  assert(false);
 }
 
 
@@ -1119,7 +1135,7 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     subi = 0;
     SET_VECTOR_ELT(submodel[i],subi++, mkString(METHODNAMES[kc->method]));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->dim));
-    SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->truetimespacedim));
+    SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->reduceddim));
     SET_VECTOR_ELT(submodel[i], subi++,
 		   Int(kc->length, kc->simugrid ? kc->dim : 0, MAX_INT));
     // printf("X\n");
@@ -1138,7 +1154,7 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     SET_VECTOR_ELT(submodel[i], subi++, (totalparam < 0) ? allocVector(VECSXP, 0)
 		   : Num(kc->param, totalparam, MAX_INT));
     SET_VECTOR_ELT(submodel[i], subi++, (kc->dim<=0) ? allocVector(VECSXP, 0)
-		   : Mat(kc->aniso, kc->dim, // kc->truetimespacedim
+		   : Mat(kc->aniso, kc->dim, // kc->reduceddim
 			 kc->dim, MAX_INT)
                     // should be matrix
 	);
@@ -1148,7 +1164,7 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     else
 	SET_VECTOR_ELT(submodel[i], subi++, 
 		       Mat(kc->x, kc->simugrid ? 3 : totalpoints, 
-			   kc->truetimespacedim, MAX_INT));
+			   kc->reduceddim, MAX_INT));
     SET_VECTOR_ELT(submodel[i], subi++, 
 		   Mat(kc->xsimugr, kc->simugrid ? 3 : 0, kc->dim, MAX_INT));
 
@@ -1263,22 +1279,22 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    s = (TBM_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("aniso"));
 	    SET_VECTOR_ELT(S, k++, 
-			   Mat(s->aniso, tsdim, s->truetimespacedim, MAX_INT));
+			   Mat(s->aniso, tsdim, s->reduceddim, MAX_INT));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuspatialdim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->simuspatialdim));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("ce_dim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("truetimespacedim"));
-	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->truetimespacedim));		
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("reduceddim"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->reduceddim));		
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
-	    SET_VECTOR_ELT(S, k++, Num(s->center, s->truetimespacedim, MAX_INT));
+	    SET_VECTOR_ELT(S, k++, Num(s->center, s->reduceddim, MAX_INT));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
 	    SET_VECTOR_ELT(S, k++, (s->x == NULL) 
 			   ? allocVector(VECSXP, 0)
 			   : Mat(s->x, s->simugrid ? 3 : totpts, 
-				 s->truetimespacedim, max));
+				 s->reduceddim, max));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("xsimgr"));
 	    SET_VECTOR_ELT(S, k++, Mat(s->xsimugr, s->simugrid ? 3 : 0,
 				       s->timespacedim, MAX_INT));
@@ -1551,7 +1567,7 @@ void GetCornersOfElement(double *x[MAXDIM], int timespacedim,
   endfor *= timespacedim;
   for (index=l=0; index<endfor; index+=timespacedim) {
     n = 0;
-    for (k=0; k<keycov->truetimespacedim; k++) {
+    for (k=0; k<keycov->reduceddim; k++) {
       register double dummy;
       dummy = 0.0;
       for (g=0; g<timespacedim; g++) 
@@ -1563,7 +1579,7 @@ void GetCornersOfElement(double *x[MAXDIM], int timespacedim,
 
 
 void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
-			  int truetimespacedim, double *x, aniso_type aniso,
+			  int reduceddim, double *x, aniso_type aniso,
 			  double *center, double *lx, double *diameter)
 {
     // center and length of surrounding rectangle of the simulation area
@@ -1577,8 +1593,8 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
     for (d=0; d<simuspatialdim; d++) {
       lx[d] = x[XSTEPD[d]] * (double) (key->length[d] - 1);
       center[d] = 0.5 * lx[d] + x[XSTARTD[d]];
-      //   printf("%d %f %f %d %f %f\n", d, center[d], x[XSTARTD[d]],
-//	     key->length[d], x[XSTEPD[d]], lx[d]);
+//        printf("getcenteranddiam %d %f %f %d %f %f\n", d, center[d], 
+//	       x[XSTARTD[d]], key->length[d], x[XSTEPD[d]], lx[d]);
       distsq += lx[d] * lx[d];
     }
   } else { // not simugrid
@@ -1586,18 +1602,18 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
     int endfor, i;
     for (d=0; d<MAXDIM; d++) {min[d]=RF_INF; max[d]=RF_NEGINF;}
     if (key->grid) { // key->grid     
-      GetCornersOfGrid(key, truetimespacedim, aniso, sxx);      
-      endfor = (1 << key->timespacedim) * truetimespacedim;
+      GetCornersOfGrid(key, reduceddim, aniso, sxx);      
+      endfor = (1 << key->timespacedim) * reduceddim;
       xx = sxx;
     } else { // not key->grid
-      endfor = key->totalpoints * truetimespacedim;
+      endfor = key->totalpoints * reduceddim;
       // determine componentwise min and max (for the diameter)
       xx = x;
     }
     // to determine the diameter of the grid determine as approxmation
     // componentwise min and max corner
     for (i=0; i<endfor; ) {
-      for (d=0; d<truetimespacedim; d++, i++) {
+      for (d=0; d<reduceddim; d++, i++) {
         //temporal part need not be considered, but for ease included
 	if (xx[i]<min[d]) min[d] = xx[i];
 	if (xx[i]>max[d]) max[d] = xx[i];

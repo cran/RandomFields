@@ -79,7 +79,7 @@ void MPP_NULL(mpp_storage* s) {
 
 int init_mpp(key_type * key, int m) {
   methodvalue_type *meth; 
-  int error, d, i, v, timespacedim, actcov;
+  int error, d, i, v, reduceddim, actcov;
   double max[MAXDIM];  
   mpp_storage *s;
   covinfo_type *kc;
@@ -106,7 +106,7 @@ int init_mpp(key_type * key, int m) {
       if (key->Time && !kc->genuine_last_dimension && 
 	  (cov->type==SPACEISOTROPIC)) {// unclear whether this is too cautious
 	  error= ERRORWITHOUTTIME; goto ErrorHandling;}
-      if ((error=cov->check(kc->param, kc->truetimespacedim, 
+      if ((error=cov->check(kc->param, kc->reduceddim, 
 			    AdditiveMpp)) != NOERROR) {
 	ERRORMODELNUMBER = v;	
 	goto ErrorHandling;
@@ -138,7 +138,7 @@ int init_mpp(key_type * key, int m) {
   meth->actcov = actcov;
   // kc = &(key->cov[0]); -- passt nicht waere v
   // determine the minimum area where random field values are to be generated
-  timespacedim = kc->truetimespacedim;
+  reduceddim = kc->reduceddim;
   if (kc->simugrid) {
     for (d=0; d<key->timespacedim; d++) {
 //      printf("%d, %d %d %f %f\n", d, kc->idx[d],
@@ -151,25 +151,25 @@ int init_mpp(key_type * key, int m) {
     }
   } else {
     int ix;
-      for (d=0; d<timespacedim; d++) {
+      for (d=0; d<reduceddim; d++) {
       s->min[d]=RF_INF; 
       max[d]=RF_NEGINF;
     }
     v = 0;
     kc = &(key->cov[meth->covlist[v]]);
-    for (ix=i=0; i<key->totalpoints; i++, ix+=timespacedim) {
-      for (d=0; d<timespacedim; d++) {
+    for (ix=i=0; i<key->totalpoints; i++, ix+=reduceddim) {
+      for (d=0; d<reduceddim; d++) {
 	if (kc->x[ix+d] < s->min[d]) s->min[d] = kc->x[ix+d];
 	if (kc->x[ix+d] > max[d]) max[d] = kc->x[ix+d];
       }
     }
-    for (d=0; d<timespacedim; d++) 
+    for (d=0; d<reduceddim; d++) 
       s->length[d] = max[d] - s->min[d];
   }
   v = 0;
   kc = &(key->cov[meth->covlist[v]]);
   s->addradius = MPP_RADIUS;  // must be set BEFORE the next command!!
-  CovList[kc->nr].add_mpp_scl(s, timespacedim, kc->param);
+  CovList[kc->nr].add_mpp_scl(s, reduceddim, kc->param);
   s->MppFct = CovList[kc->nr].add_mpp_rnd;
   if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>=2))
     PRINTF("Note: window has been enlarged by fixed value (%f)\n",s->addradius);
@@ -244,7 +244,7 @@ void do_addmpp(key_type *key, int m, double *res )
       segment[d+1] = segment[d] * key->length[d];
   for (i=0; i<key->totalpoints; i++) res[i]=0.0;
   kc = &(key->cov[meth->covlist[v]]);
-  timespacedim = kc->simugrid ? key->timespacedim : kc->truetimespacedim;
+  timespacedim = kc->simugrid ? key->timespacedim : kc->reduceddim;
   for (poisson = rexp(1.0); poisson < lambda; poisson += rexp(1.0)) {   
     (s->MppFct)(s, min, max, &model);
     if (kc->simugrid) {

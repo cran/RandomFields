@@ -257,7 +257,7 @@ GetModelNames()
     \deqn{C(x)=\left(1 + 8 sx + 25 (sx)^2 + 32
       (sx)^3\right)(1-sx)^8 1_{[0,1]}(sx)}{C(x)=
       (1 + 8 s x + 25 s^2 x^2 + 32
-      s^3 x^3)*(1-s x)^8   if 0<=s x<=1, 0 otherwise}
+      s^3 x^3)*(1-s x)^8   if 0 <= x <= 1/s, 0 otherwise}
     where
     \eqn{s=0.301187465825}.
     This isotropic covariance function is valid only for dimensions less
@@ -394,7 +394,8 @@ GetModelNames()
     \eqn{\phi} is the \code{stable} model if \eqn{\kappa_2=1}{b=1};\cr
     \eqn{\phi} is the \code{whittlematern} model if \eqn{\kappa_2=2}{b=2};\cr
     \eqn{\phi} is the \code{cauchy} model if \eqn{\kappa_2=3}{b=3};\cr
-    Here, \eqn{kappa_1}{a} is the respective parameter for the model.
+    Here, \eqn{kappa_1}{a} is the respective parameter for the model;
+    the restrictions on \eqn{kappa_1}{a} are described there.
 
     The function \eqn{\psi}{psi} satisfies\cr
     \eqn{\psi^2(t) = (t^{\kappa_3}+1)^{\kappa_4}}{psi^2(t) =

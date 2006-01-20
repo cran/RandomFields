@@ -253,7 +253,7 @@ the anisotropy matrices must be identical"); break;
 	strcpy(EM,"Unknown method in this context or unallowed mixture of methods"); 
 	break;
       case ERRORWITHOUTTIME:
-	strcpy(EM,"spatially isotropic covariance fcts that are not fully isotropic must be called with a time component"); 
+	strcpy(EM,"spatially isotropic covariance fcts that are not fully isotropic must be called with a genuine time component T"); 
 	break;
       case ERRORCOVNROUTOFRANGE: 
 	strcpy(EM,"wrong covnr number");break;
@@ -317,6 +317,13 @@ the anisotropy matrices must be identical"); break;
       case ERRORTIMECOMPONENT:
 	sprintf(EM, "last column of the anisotropy matrix in the hypermodel must consist of zeros only");
 	break;	
+      case ERRORLOWRANK :
+	  strcpy(EM,"confused about low rank anisotropy matrix");
+	  break;
+      case ERRORLOWRANKTBM :
+	  strcpy(EM,"confused about low rank anisotropy matrix.\nWhen using TBM then try putting the model with anisotropy matrix of\nhighest rank at the beginning");
+	  break;
+ 
       case ERRORSILLNULL : 
 	strcpy(EM,"Vanishing sill not allowed");break;     
       case ERRORPAIRS : 
@@ -354,9 +361,7 @@ the anisotropy matrices must be identical"); break;
 	strcpy(EM,"one of a2, b or a0+phi(0) has wrong sign");break;
 
 
-      case ERRORTRIVIAL :
-	strcpy(EM,"confused about low rank anisotropy matrix.\nTry putting the model with anisotropy matrix of highest rank at the beginning.\n");break;
-      case ERRORUNSPECIFIED :
+     case ERRORUNSPECIFIED :
 	strcpy(EM,"(unspecified)");break;
      default : 
 	PRINTF(" m=%d error=%d\n",m,error); 
@@ -527,7 +532,7 @@ void InitModelList()
   addCov(nr,hyperbolic,Dhyperbolic,NULL);
   addTBM(nr,NULL,TBM3hyperbolic, NULL);
 
-  nr=IncludeModel("iacocesare", 3, checkIacoCesare, ANISOTROPIC, false,
+  nr=IncludeModel("iacocesare", 3, checkIacoCesare, SPACEISOTROPIC, false,
 		  infoIacoCesare, rangeIacoCesare);
   addCov(nr, IacoCesare, NULL, NULL);
   
@@ -535,7 +540,7 @@ void InitModelList()
   nr=IncludeModel("lgd1", 2, checkOK, FULLISOTROPIC, false,
 		 infolgd1, rangelgd1);
   addCov(nr, lgd1, Dlgd1, Scalelgd1);
-  addTBM(nr,NULL, NULL, NULL);
+  addTBM(nr, NULL, NULL, NULL);
 
   nr=IncludeHyperModel("mastein", 3, checkNinit_MaStein, ANISOHYPERMODEL, false, 
 		       info_MaStein, range_MaStein);
@@ -544,12 +549,12 @@ void InitModelList()
   nr=IncludeModel("nsst", 6, checkspacetime1, SPACEISOTROPIC, false, 
 		  infospacetime1, rangespacetime1);
   addCov(nr,spacetime1,Dspacetime1,NULL);
-  addTBM(nr,TBM2spacetime1,TBM3spacetime1, NULL);
+  addTBM(nr,TBM2spacetime1, NULL /* TBM3spacetime1 */, NULL);
   
   nr=IncludeModel("nsst2",7,checkspacetime2,SPACEISOTROPIC, false, 
 		  infospacetime2, rangespacetime2);
   addCov(nr,spacetime2,Dspacetime2,NULL);
-  addTBM(nr,NULL,TBM3spacetime2, NULL);
+  addTBM(nr,NULL, NULL /* TBM3spacetime2 */, NULL);
 
   nr=IncludeModel("nugget",0, checknugget, FULLISOTROPIC, false, infonugget, 
 		  rangenugget);

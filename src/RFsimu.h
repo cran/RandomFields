@@ -54,11 +54,12 @@ typedef int covlist_type[MAXCOV];
 #define KAPPA6     6
 #define KAPPA7     7
 #define LASTKAPPA  KAPPA7
-#define TBM2NUM          LASTKAPPA + 1
-#define HYPERINTERNALI   LASTKAPPA + 2
-#define HYPERINTERNALII  LASTKAPPA + 3
-#define HYPERINTERNALIII LASTKAPPA + 4
-#define HYPERINTERNALIV  LASTKAPPA + 5
+#define EFFECTIVEDIM     LASTKAPPA + 1
+#define TBM2NUM          LASTKAPPA + 2
+#define HYPERINTERNALI   LASTKAPPA + 3
+#define HYPERINTERNALII  LASTKAPPA + 4
+#define HYPERINTERNALIII LASTKAPPA + 5
+#define HYPERINTERNALIV  LASTKAPPA + 6
 #define LASTHYPERINTERNAL HYPERINTERNALIV
 #define SCALE LASTHYPERINTERNAL + 1
 #define ANISO SCALE
@@ -168,7 +169,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 #define SPACEISOTROPIC 1
 #define ANISOTROPIC 2
 #define ISOHYPERMODEL 3
-#define ANISOHYPERMODEL 4
+#define ANISOHYPERMODEL 5
 
 // way of implementing simulation methods:
 #define NOT_IMPLEMENTED 0 /* do not change this value except to false */
@@ -182,13 +183,23 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 #define RANGE_LASTELEMENT -1
 #define RANGE_INVALIDDIM -2
 
+/* 
+   different definitions for the "dimension" of the field is used
+      dim : the formal dimension (given by the user)
+      effectivedim: the dimension used in the evaluation of the covariance fct
+                    E.G. for isotropic models it is 1
+      reduceddim : dim of lin. independent subspace for ISOTROPIC models;
+                   1 + dim of lin. indep. spatial subspace for SPACEISOTROPIC
+                   dim for ANISOTROPIC covariance models 
+*/
+
 
 typedef struct covinfo_type {
   SimulationType method;
   /* the current method (out of SimulationsType) which 
      is tried at the moment or which has been 
      successfully initialized */
-  int dim, truetimespacedim,
+  int dim, reduceddim,
     length[MAXDIM], /* if simugrid: what is the genuine extension of the grid?
 		       That is, length is one where the diag element is 0
 		    */
@@ -198,16 +209,16 @@ typedef struct covinfo_type {
     nr, /* number of the covariance function in CovList; 
 	   obtained by function GetCovFunction */
     op; /* operator after the specified covariance function */
-  
-  bool genuine_dim[MAXDIM], /* if ANISO==diag, is d-th diag element != 0? */
-    genuine_last_dimension, /* 
+    bool genuine_last_dimension;/* 
 			       i.e. time component indicated and at least
-			       one component of the last column of 
-			       aniso is different from 0;
+			       one component of the last column of  aniso is
+			       different from zero. Time component needs
 			       extra treating and not within aniso (where
 			       time component is not reduced then) necessary
 			       for SPACEISOTROPIC covriance functions,
 				and the MaStein hyper model*/
+  
+  bool genuine_dim[MAXDIM], /* if ANISO==diag, is d-th diag element != 0? */
     simugrid, /* can the simulation technically be performed on a grid ?*/
     left;        /* left to be considered in the simulation
 		    initialisations ! */ 
@@ -243,7 +254,7 @@ typedef int (*checkhyper)(covinfo_arraytype, covlist_type, int,
 			  SimulationType);
 typedef double (*natscalefct)(double *, int); /* parameters, ; natural 
 						 scaling */
-typedef double (*covfct)(double *, double* , int); /* h,parameters */
+typedef double (*covfct)(double *, double*); /* h,parameters */
 typedef int (*getparamfct)(covinfo_type *, param_type, int);
 typedef bool (*alternativeparamfct)(covinfo_type *, int);
 typedef double (*isofct)(double*, double*); /* h,parameters */
@@ -454,7 +465,7 @@ int internal_DoSimulateRF(key_type *key, int nn, double *res);
 SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max);
 void printkey(key_type *key);
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
-		char type, bool *Time, int *truetimespacedim, 
+		char type, bool *Time, int *reduceddim, 
 		aniso_type aniso);
 void Getxsimugr(coord_type x, param_type param, int timespacedim, 
 	   bool anisotropy, double *xsimugr);
@@ -523,7 +534,7 @@ extern int nlocal;
 typedef struct TBM_storage {
   aniso_type aniso;
   bool simugrid, genuine_dim[MAXDIM];
-  int simuspatialdim, ce_dim, truetimespacedim, timespacedim;
+  int simuspatialdim, ce_dim, reduceddim, timespacedim;
   double center[MAXDIM], *simuline, *x, xsimugr[3 * MAXDIM];
   key_type key;
 } TBM_storage;
@@ -632,7 +643,7 @@ typedef struct extremes_storage{
 #define XSTEPDIM4 XSTEP+9
 extern int XSTARTD[MAXDIM], XENDD[MAXDIM], XSTEPD[MAXDIM];
 int Transform2NoGrid(key_type *key, int v);
-int Transform2NoGrid(key_type *key, aniso_type aniso, int truetimespacedim,
+int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
 		     bool simugrid, double **x);
 void GetCornersOfElement(double *x[MAXDIM], int timespacedim,
 			 covinfo_type *cov, double *sxx);
@@ -641,7 +652,7 @@ void GetCornersOfGrid(key_type *key, int Stimespacedim, double *aniso,
 void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
 			  int Ssimuspatialdim, double *min, double *max);
 void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim, 
-			  int truetimespacedim, double *x, aniso_type aniso,
+			  int reduceddim, double *x, aniso_type aniso,
 			  double *center, double *lx, double *diameter);
 
 

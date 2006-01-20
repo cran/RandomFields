@@ -98,6 +98,10 @@
 				  but needed in circ_embed_local */
 #define ERRORTIMECOMPONENT 55  /* some hyper models need vanishing temporal
 				  component in the anisotropy matrix*/
+#define ERRORLOWRANK 56   
+#define ERRORLOWRANKTBM 57       /* tbm does not allow that the matrix `a' of 
+                                   a product matrix are all zero
+				 */ 
 
 #define NOERROR_REPEAT 97
 #define NOERROR_ENDOFLIST 98
@@ -122,9 +126,6 @@
 #define MSGLOCAL_SIGNPHIFST 305
 #define MSGLOCAL_SIGNPHISND 306
 #define MSGLOCAL_INITINTRINSIC 307
-#define ERRORTRIVIAL 998        /* tbm does not allow that the matrix `a' of 
-                                   a product matrix are all zero
-				 */ 
 #define ERRORUNSPECIFIED 999  
 
 #endif
