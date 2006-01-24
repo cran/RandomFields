@@ -55,11 +55,10 @@ typedef int covlist_type[MAXCOV];
 #define KAPPA7     7
 #define LASTKAPPA  KAPPA7
 #define EFFECTIVEDIM     LASTKAPPA + 1
-#define TBM2NUM          LASTKAPPA + 2
-#define HYPERINTERNALI   LASTKAPPA + 3
-#define HYPERINTERNALII  LASTKAPPA + 4
-#define HYPERINTERNALIII LASTKAPPA + 5
-#define HYPERINTERNALIV  LASTKAPPA + 6
+#define HYPERINTERNALI   LASTKAPPA + 2
+#define HYPERINTERNALII  LASTKAPPA + 3
+#define HYPERINTERNALIII LASTKAPPA + 4
+#define HYPERINTERNALIV  LASTKAPPA + 5
 #define LASTHYPERINTERNAL HYPERINTERNALIV
 #define SCALE LASTHYPERINTERNAL + 1
 #define ANISO SCALE
@@ -165,7 +164,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 // COVARIANCE SPECIFICATIONS
 ///////////////////////////////////////////////////////////////////////
 // type of covariance functions that need distinguished treatment
-#define FULLISOTROPIC 0
+#define ISOTROPIC 0
 #define SPACEISOTROPIC 1
 #define ANISOTROPIC 2
 #define ISOHYPERMODEL 3
@@ -464,6 +463,8 @@ int internal_InitSimulateRF(double *x, double *T,
 int internal_DoSimulateRF(key_type *key, int nn, double *res);
 SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max);
 void printkey(key_type *key);
+void matrixrotat(double *paramaniso, int col, int row,
+		 int *truedim, aniso_type aniso);
 void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 		char type, bool *Time, int *reduceddim, 
 		aniso_type aniso);
@@ -531,6 +532,14 @@ extern int nlocal;
 
 
 // see RFtbm.cc			  
+typedef struct tbm_param {
+  int lines,           // number of lines simulated
+      every;           // every `every' line is announced if every>0
+  double linesimufactor, /*factor by which simulation on the line is finer 
+			     than the grid */
+      linesimustep;      /* grid lag defined absolutely */
+  bool layers, tbm2num; 
+} tbm_param;
 typedef struct TBM_storage {
   aniso_type aniso;
   bool simugrid, genuine_dim[MAXDIM];
@@ -542,7 +551,6 @@ int init_turningbands2(key_type *key, int m);
 int init_turningbands3(key_type *key, int m);
 void do_turningbands(key_type *key, int m, double *res );
 extern SimulationType TBM_METHOD;
-extern bool TBM2NUMERIC;
 
 
 // see RFspectral.cc			   

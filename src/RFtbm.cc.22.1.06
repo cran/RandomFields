@@ -5,7 +5,7 @@
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands
 
- Copyright (C) 2001 -- 2006 Martin Schlather, 
+ Copyright (C) 2001 -- 2005 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,15 +29,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <sys/timeb.h>
 #include <unistd.h>
 #include <assert.h>
-#include <R_ext/Applic.h>
 #include "RFsimu.h"
 #include "RFCovFcts.h"
 #include "win_linux_aux.h"
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */
 
-tbm_param tbm2 =   { 60, 0, 2.0, 0.0, false, true};
-tbm_param tbm3 =   {500, 0, 2.0, 0.0, false, false};
+
+tbm_param tbm2 =   { 60, 0, 2.0, 0.0, false};
+tbm_param tbm3 =   {500, 0, 2.0, 0.0, false};
+bool TBM2NUMERIC = true;
 int TBM_POINTS = 0;
 double TBM_CENTER[MAXDIM] = {NA_REAL, NA_REAL, NA_REAL, NA_REAL};
 
@@ -45,6 +46,175 @@ ce_param TBMCE = {false, true, false, true, TRIVIALSTRATEGY, 3, 10000000,
 		  -1e-7, 1e-3, 0, 0, 0, 0};
 
 SimulationType TBM_METHOD=CircEmbed;
+
+double TBM2_INTEGR_PREC=1e-10;
+#define NNN 40 /* immmer gerade !! */
+double TBM2integr(int covnr, double h, double u, double *param, int dim,
+		  int fct) 
+{
+  // fct==0 : cov_tbm3 is coded, space & time separated
+  // fct==1 : cov_tbm3 is not coded, space & time separated
+  // fct==2 : isotropic function in space-time
+  double de, ialt, ineu, x, y, z[2], factor[3] = {0.5, 2.0, 0.5}, 
+    b[NNN+1], integral, delta,  f, h2, u2, alpha; 
+  unsigned long int n, k;
+  int i, unten, oben, mitte, kk, zz; //, zzcum
+  cov_fct *cov;
+
+  //zzcum=0;
+  cov = &(CovList[covnr]);
+  assert(fct>=0 && fct<=2);
+  h2 = h * h;
+  u2 = u * u;
+  z[1] = u;
+  unten = 4;
+  mitte = 12;
+  oben = 26;
+  b[unten] = 0.1;
+  b[mitte] = 0.8;
+  b[oben] = 0.95;
+  b[0] = 0.0;
+  b[NNN] = 1.0;
+  alpha = 0.2;
+  for (i=unten-1; i>0; i--)  b[i] = alpha * b[i+1] + (1.0 - alpha) * b[0];
+  for (i=unten+1; i<mitte; i++) 
+    b[i] = (double) (i - unten) / (double) (mitte - unten) *
+      (b[mitte] - b[unten]) + b[unten];
+  alpha = 0.4;
+  for (i=mitte+1; i<oben; i++) b[i] = alpha * b[i-1] + (1.0 - alpha) * b[oben];
+  alpha = 0.5;
+  for (i=oben+1; i<NNN; i++) b[i] = alpha * b[i-1] + (1.0 - alpha) * b[NNN];
+  integral = 0.0;
+  for (i=0; i<NNN; i++) {
+    if (GENERAL_PRINTLEVEL>20) PRINTF("i=%d [1..%d]\n", i, NNN);
+    n = 2;
+    delta = b[i+1] - b[i];
+    de = delta / (double) n;
+    ialt = 0.0;
+    for (k=0, x=b[i]; k<=2; k++, x+=de) {
+      switch(fct) {
+	  case 0 : // cov_tbm3 coded, space & time separated
+	    z[0] = h * sqrt(1.0 - x * x);
+	    f = cov->cov_tbm3(z, param);
+	    break;
+	  case 1 : // cov_tbm3 not coded, space & time separated
+	    z[0] = h * sqrt(1.0 - x * x);
+	    f = cov->cov(z, param) + z[0] * cov->derivative(z, param);
+	    break;
+	  case 2 : // isotropic function in space-time
+	    assert(cov->type==ISOTROPIC);
+	    y = (1.0 - x * x) * h2;
+	    z[0] = sqrt(y + u2); 
+	    if (z[0]==0.0) f=1.0; 
+	    else f = cov->cov(z, param) + y / z[0] * cov->derivative(z, param);
+	    break;
+	  default : assert(false);
+	}
+      ialt += factor[k] * f;
+    }
+    
+    for (zz=0; zz<12; zz++) { // sonst rechnet der sich u.U. tot
+      n *= 3;
+      de = delta / (double) n;
+      ineu = 0.0;
+      for (k=1, x=b[i]+de; k<n; k++, x+=de) {
+	kk = k % 6;
+	if (kk == 0 || kk == 3) continue;
+
+	//zzcum++;
+
+	switch (fct) {
+	  case 0 : 
+	    z[0] = h * sqrt(1.0 - x * x);
+	    f = cov->cov_tbm3(z, param);
+	    break;
+	  case 1 :
+	    z[0] = h * sqrt(1.0 - x * x);
+	    f = cov->cov(z, param) + z[0] * cov->derivative(z, param);
+	    break;
+	  case 2 :
+	    y =  (1.0 - x * x) * h2;
+	    z[0] = sqrt(y + u2); 
+	    if (z[0]==0.0) f=1.0; 
+	    else f = cov->cov(z, param) + y / z[0] * cov->derivative(z, param);
+	    break;
+	  default : assert(false);
+	}
+	if (kk==1 || kk==5) f *= 2.0;
+	ineu += f; 
+      }
+      if ((fabs(ineu - 2 * ialt) * de < TBM2_INTEGR_PREC)) break;
+      ialt += ineu;
+    }
+    ialt += ineu;
+   integral += ialt * de / 1.5;
+  }
+//  printf("exit\n");
+  return integral;
+}
+
+/*
+double TBM2_INTEGR_TIME_PREC=1e-9;
+double TBM2integr_time(double aa, double c, covfct f, double *param, int dim) {
+#define NN 26 // immmer gerade !! 
+  double h, ialt, ineu, bb=1.0, x, y, z, factor[3]= {0.5, 2.0, 0.5}, 
+    xx[3], b[NN+1], integral, delta, alpha; 
+  unsigned long int n,k;
+  int i, mitte;
+
+  b[NN] = bb;
+  b[0] = aa;
+  mitte = NN / 2 - 3;
+  b[mitte] = 0.5 * aa + 0.5 * bb;
+  alpha = 0.65;
+  for (i=mitte + 1; i<NN ; i++) {
+    b[i] = bb * alpha + (1.0 - alpha) * b[i-1];
+  }
+  alpha = 0.7;
+  for (i=mitte - 1; i>0 ; i--) {
+    b[i] = aa * alpha + (1.0 - alpha) * b[i+1];
+  }
+
+  integral = 0.0;
+  for (i=0; i<NN; i++) {
+    n = 2;
+    delta = b[i+1] - b[i];
+    h = delta / (double) n;
+    ialt = 0.0;
+    for (k=0, x=b[i]; k<=2; k++, x+=h) {
+      y = x * x;
+      z = c * sqrt(1.0 - y); 
+      ialt += factor[k] * f(&z, param, dim) / y;
+    }
+    
+    while (true) {
+      n *= 3;
+      h = delta / (double) n;
+      ineu = 0.0;
+      for (k=1, x=b[i]+h; k<n; k++, x+=h) {
+	switch (k % 6) {
+	    case 0: case 3 : break;
+	    case 1: case 5 : 
+	      y = x * x; 
+	      z = c * sqrt(1.0 - y); 
+	      ineu += 2.0 * f(&z, param, dim) / y;
+	      break;
+	    case 2: case 4 : 
+	      y = x * x; 
+	      z = c * sqrt(1.0 - y); 
+	      ineu += f(&z, param, dim) / y;
+	      break;
+	}
+      }
+      if ((n>6) && (fabs(ineu - 2 * ialt) * h < TBM2_INTEGR_TIME_PREC)) break;
+      ialt += ineu;
+    }s->timespacedim
+    ialt += ineu;
+    integral += ialt * h / 1.5;
+  }
+  return integral;
+}
+*/
 
 void unitvector3D(int projectiondim, double *deltax, double *deltay, 
 		double *deltaz) {
@@ -72,6 +242,83 @@ void unitvector3D(int projectiondim, double *deltax, double *deltay,
 
 
 #define TBMTIME 3
+double CovFctTBM2(double *x, int dim, covinfo_arraytype keycov,
+		  covlist_type covlist, int ncov, bool anisotropy){
+// in dieser und der naechste Funktion hat $x$ entweder
+// 1 Element (Geradenpunkt der turning bands) oder 2 Elemente
+// (Punkt auf Flaeche der turning layers)
+  int v, vold;
+  double zw, result;
+  covinfo_type *kc;
+  cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */
+  result = 0.0;
+  v = 0;
+  if (dim==2) { // => s->anisotropy! (time-space simulation)
+    int w;
+    double z[2]; //'' !! 2 !
+    while (v<ncov) {
+      vold = v;
+      v++; while ((v<ncov) && keycov[covlist[v-1]].op) v++; 
+      zw = 1.0;
+      for (w=vold; w<v; w++) { 
+	// there could be multiplication by pure time components (z[0]=0)!
+	kc = &(keycov[covlist[w]]);
+        cov = &(CovList[kc->nr]);
+	z[0] = kc->aniso[0] * x[0];
+	z[1] = kc->aniso[TBMTIME] * x[1];
+	if (cov->type==ISOTROPIC) {
+	  if (z[0]==0.0)  zw *= cov->cov(&(z[1]),  kc->param); 
+	  else { // called only once in the loop
+	    zw *= TBM2integr(kc->nr, z[0], z[1], kc->param, 2, 2);
+	    /* 
+               // alternatively: faster, but more complicated, and uses cov_tbm2
+	       z[0] = fabs(z[0]);
+	       r = sqrt(z[0] * z[0] + z[1] * z[1]);
+	       zw *=  kc->param[VARIANCE] * z[0] / r *
+	       (cov->cov_tbm2(&r,  kc->param, dim) +
+	       TBM2integr_time(z[0] / r, r, cov->cov, kc->param, dim) );
+	    */
+	  }
+	} else { 
+	  assert(cov->type==SPACEISOTROPIC);
+	  if (z[0]==0.0) zw *= cov->cov(z, kc->param);
+	  else if (kc->param[TBM2NUM] == 0.0) {
+	    zw *= cov->cov_tbm2(z, kc->param);
+	  } else {
+	    assert(cov->derivative != NULL);
+	    zw *= TBM2integr(kc->nr, z[0], z[1], kc->param, 2,
+			     cov->cov_tbm3 == NULL);
+	  }
+	}
+	zw *= kc->param[VARIANCE];	
+      }
+      result += zw;
+    }
+  } else {
+    assert(dim==1);
+    double z;
+    for (v=0; v<ncov; v++) {
+      //    printf("%d %d %d\n", v, ncov, covlist[v]);
+      kc = &(keycov[covlist[v]]);
+      cov = &(CovList[kc->nr]);
+      // the field must be isotropic, so the x's have been transformed
+      // multiplication of covariance functions is not allowed,
+      // in contrast to 3dim TBM
+      z = x[0] * kc->aniso[0];
+      if (z==0.0) zw = 1.0;
+      else if (kc->param[TBM2NUM] == 0.0) {
+	zw = cov->cov_tbm2(&z, kc->param);
+      } else {
+	assert(cov->derivative != NULL);
+	zw = TBM2integr(kc->nr, z, 0, kc->param, 2, cov->cov_tbm3 == NULL);
+     }
+      result += kc->param[VARIANCE] * zw;
+    }
+  }
+  return result;
+}
+
+
 double CovFctTBM3(double *x, int dim, covinfo_arraytype keycov,
 		  covlist_type covlist, int ncov, bool anisotropy){
   int v, vold, w, y;
@@ -131,117 +378,9 @@ double CovFctTBM3(double *x, int dim, covinfo_arraytype keycov,
     result = CovFct(x, dim, keycov, covlist, ncov, anisotropy);
     if (x[0] != 0.0) {
       result += fabs(x[0]) * DerivCovFct(x, dim, keycov, covlist, ncov);
-   }
+    }
     // printf("%f %f\n", x[0], result);
   }
-  return result;
-}
-
-double CovFctTBM2(double *x, int dim, covinfo_arraytype keycov,
-		     covlist_type covlist, int ncov, bool anisotropy) {
-// in dieser und der naechste Funktion hat $x$ entweder
-// 1 Element (Geradenpunkt der turning bands) oder 2 Elemente
-// (Punkt auf Flaeche der turning layers)
-  int v, vold;
-  double result;
-  covinfo_type *kc;
-  cov_fct *cov=NULL; /* no meaning -- just avoids warning from -Wall */
-  result = 0.0;
-  v = 0;
-  if (dim==2) { // => s->anisotropy! (time-space simulation)
-    int w;
-    double z[2], zw; //'' !! 2 !
-    while (v<ncov) {
-      vold = v;
-      v++; while ((v<ncov) && keycov[covlist[v-1]].op) v++; 
-      zw = 1.0;
-      for (w=vold; w<v; w++) { 
-	// there could be multiplication by pure time components (z[0]=0)!
-	kc = &(keycov[covlist[w]]);
-        cov = &(CovList[kc->nr]);
-	z[0] = kc->aniso[0] * x[0];
-	z[1] = kc->aniso[TBMTIME] * x[1];
-	if (cov->type==ISOTROPIC) {
-	  assert(z[0]==0.0);
-	  zw *= cov->cov(&(z[1]), kc->param); 
-	} else {
-	  assert(cov->type==SPACEISOTROPIC);
-	  if (z[0]==0.0) zw *= cov->cov(z, kc->param);
-	  else zw *= cov->cov_tbm2(z, kc->param);
-	}
-	zw *= kc->param[VARIANCE];
-      }
-      result += zw;
-    }
-  } else {
-    assert(dim==1);
-    double z;
-    for (v=0; v<ncov; v++) {
-      //    printf("%d %d %d\n", v, ncov, covlist[v]);
-      kc = &(keycov[covlist[v]]);
-      cov = &(CovList[kc->nr]);
-      // the field must be isotropic, so the x's have been transformed
-      // multiplication of covariance functions is not allowed,
-      // in contrast to 3dim TBM
-      z = x[0] * kc->aniso[0];
-      result += (z==0.0) ? kc->param[VARIANCE] 
-	  : kc->param[VARIANCE] * cov->cov_tbm2(&z, kc->param);
-    }
-  }
-  return result;
-}
-
-typedef struct TBM2_integr {
-    int dim, ncov;
-    covinfo_type *keycov;
-    int *covlist;
-    bool anisotropy;
-    double x, time;
-} TBM2_integr;
-
-
-void TBM2NumIntegrFct(double *u, int n, void *ex) {
-  int i;
-  TBM2_integr *info;
-  double z[2];
-  info = (TBM2_integr*) ex;
-  z[1] = info->time;
-  for (i=0; i<n; i++) {
-       z[0] = info->x * sqrt(1 - u[i] * u[i]);
-       u[i] = CovFctTBM3(z, info->dim, info->keycov, info->covlist, 
-			   info->ncov, info->anisotropy);
-  }
-}
-
-double CovFctTBM2Num(double *x, int dim, covinfo_arraytype keycov,
-		     covlist_type covlist, int ncov, bool anisotropy) {
-// in dieser und der naechste Funktion hat $x$ entweder
-// 1 Element (Geradenpunkt der turning bands) oder 2 Elemente
-// (Punkt auf Flaeche der turning layers)
-  TBM2_integr info;
-#define MAXSUBDIVISIONS 100
-  static double a = 0, 
-      b = 1, 
-      eps = 1e-10; // 1e-15
-  static int maxsubdivisions = MAXSUBDIVISIONS, 
-      lenw = 4 * MAXSUBDIVISIONS;
-  double result, abserr, work[4 * MAXSUBDIVISIONS];
-  int subdivisions, integralevaluations, Xerror, iwork[MAXSUBDIVISIONS];
-
-//  printf("dim=%d \n", dim);
-  info.dim = dim;
-  info.keycov = keycov;
-  info.covlist = covlist;
-  info.ncov = ncov;
-  info.anisotropy = anisotropy;
-  info.x = x[0];
-  info.time = (dim==2) ? x[1] : 0.0;
-
-  Rdqags(TBM2NumIntegrFct, (void *) &info, &a, &b, &eps, &eps,
-	 &result, &abserr, &integralevaluations, &Xerror,
-	 &maxsubdivisions, &lenw, &subdivisions, iwork, work);
-//   printf("tbm2num %f %f %d %d %e %f\n", x[0], x[1], integralevaluations, subdivisions, abserr, result);
-
   return result;
 }
 
@@ -271,9 +410,8 @@ void SetParamTBMCE(int *action, int *force, double *tolRe, double *tolIm,
 
 
 void SetParamLines(int *action,int *nLines, double *linesimufactor, 
-		   double *linesimustep, int *every, 
-		   int *layers, int*tbm2num,
-		   tbm_param *tbm, 
+		   double *linesimustep, tbm_param *tbm, int *every, 
+		   int *layers,
 		   char *name, double *linesimustep_o, double *linesimufactor_o) 
 {
   if (*action) {
@@ -285,22 +423,19 @@ void SetParamLines(int *action,int *nLines, double *linesimufactor,
     if (*linesimufactor!=0.0 && *linesimustep!=0.0 && GENERAL_PRINTLEVEL>0 &&
 	(*linesimustep_o != *linesimustep || 
 	 *linesimufactor_o != *linesimufactor)) {
-      if (GENERAL_PRINTLEVEL>0) 
-	  PRINTF("%s.linesimufactor is ignored!\n", name); 
+      if (GENERAL_PRINTLEVEL>0) PRINTF("%s.linesimufactor is ignored!\n", name); 
       *linesimustep_o = *linesimustep;
       *linesimufactor_o = *linesimufactor;
       // else, i.e. both are zero, the old values are kept!
     }
     tbm->every=*every;
     tbm->layers=(bool) *layers;
-    tbm->tbm2num=(bool) *tbm2num;
   } else {
     *nLines=tbm->lines;
     *linesimufactor=tbm->linesimufactor;
     *linesimustep=tbm->linesimustep;  
     *every=tbm->every;
     *layers = (int) tbm->layers;
-    *tbm2num = (int) tbm->tbm2num;
   }
 }
 
@@ -308,20 +443,25 @@ void SetParamTBM2(int *action, int *nLines, double *linesimufactor,
 		  double *linesimustep, int *every, int *tbm2num,
 		  int *layers) {
   static double linesimustep_old=-1, linesimufactor_old=-1;
-  SetParamLines(action, nLines, linesimufactor, linesimustep, every,
-		layers, tbm2num,
-		 &tbm2, "TBM2", &linesimustep_old, &linesimufactor_old);
+  SetParamLines(action, nLines, linesimufactor, linesimustep, &tbm2, every,
+		layers,
+		"TBM2", &linesimustep_old, &linesimufactor_old);
+  if (*action) {
+    TBM2NUMERIC = (bool) *tbm2num;
+  } else {
+    *tbm2num = TBM2NUMERIC; 
+  }
 }
 
 void SetParamTBM3(int *action,int *nLines, double *linesimufactor, 
 		  double *linesimustep, int *every,
 		  int *layers) {
   static double linesimustep_old=-1, linesimufactor_old=-1;
-  int tbm2num=0;
-  SetParamLines(action, nLines, linesimufactor, linesimustep, every,
-		layers, &tbm2num,
-		&tbm3, "TBM3", &linesimustep_old, &linesimufactor_old);
+  SetParamLines(action, nLines, linesimufactor, linesimustep, &tbm3, every,
+		layers,
+		"TBM3", &linesimustep_old, &linesimufactor_old);
 }
+
 
 void SetParamTBM(int *action, int *tbm_method, double *center, int *points) {
   int d;
@@ -368,10 +508,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   tbm_param *tbm;
   SimulationType tbm_method;
   bool ce_dim2=false, // just to avoid error messages 
-      newadditive, equal, spacecomponent_found, tbm2num; 
+      newadditive, equal, spacecomponent_found; 
   char errorloc_save[nErrorLoc], msg[15];
+  CovFctType CovFctTBM;
   TBM_storage *s;
-  param_type simuparam;
 
   assert(key->timespacedim <= 4);
   meth = &(key->meth[m]);
@@ -393,12 +533,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   KEY_NULL(&(s->key));
   first = NULL;
   s->timespacedim = key->timespacedim;
-  tbm2num = false; 
 
   // get list of covariance functions that are of interest
-  // CovFctTBM2 might be changed to CovFctTBM2Num
-  if (method==TBM2) { tbm_dim = 2; tbm = &tbm2; }
-  else {              tbm_dim = 3; tbm = &tbm3; }
+  if (method==TBM2) {  CovFctTBM = CovFctTBM2;  tbm_dim = 2; tbm = &tbm2;}
+  else {               CovFctTBM = CovFctTBM3;  tbm_dim = 3; tbm = &tbm3;}
 
  
   /****************************************************************/
@@ -483,13 +621,10 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	}
       } else {
 	ce_dim2 = false;
-      }
-
-      if (s->simuspatialdim > tbm_dim) {
+	if (first->reduceddim > tbm_dim) {
 	  Xerror=ERRORWRONGDIM; goto ErrorHandling;
+	}
       }
-      // printf("%d %d %d \n",s->simuspatialdim, tbm_dim. 1);  assert(false);
-
       s->ce_dim = 1 + (int) ce_dim2;
       if (ce_dim2) {
 	lastmatching = firsttimecomponent - 1;
@@ -525,7 +660,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   // minimum distance between the points   
   loop = 1;
   if (tbm->linesimustep  > 0.0) linesimuscale = 1.0 / tbm->linesimustep;
-  else if (tbm->linesimufactor > 0) {
+  else if (tbm->linesimufactor>0) {
     double mindelta;
     mindelta = RF_INF; 
     if (key->grid) {
@@ -568,6 +703,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
   s->simugrid = first->simugrid;
   diameter = -1.0;
   for (iloop=0; iloop<loop; iloop++) {
+    param_type simuparam;
     int i;
     double dummylx[MAXDIM];
     // the loop must be performed twice only if 
@@ -589,20 +725,32 @@ int init_turningbands(key_type *key, SimulationType method, int m)
     if (ce_dim2) {
       for (i=lastmatching + 1; i<lasttimecomponent; simuparam[i++]=0.0);
       simuparam[lasttimecomponent] = 1.0;
-      GetTrueDim(key->anisotropy, key->timespacedim, simuparam,
-		 SPACEISOTROPIC, &Timedummy, &totaltimespacedim, s->aniso);
-      assert(s->simuspatialdim == totaltimespacedim - 1);
-      for (i=lastmatching + 1; i<lasttimecomponent; i++)
-	  simuparam[i] = first->param[i] * linesimuscale; // only used in Getxsimugr
-    } else {
-      GetTrueDim(key->anisotropy, key->timespacedim, simuparam,
-		 ISOTROPIC, &Timedummy, &totaltimespacedim, s->aniso);
-      assert(totaltimespacedim = first->reduceddim);
+    }
+
+//    for (i=ANISO; i<ANISO + 4; i++) printf("%f ", simuparam[i]);
+//    printf("\n");
+
+    GetTrueDim(key->anisotropy, key->timespacedim, simuparam,
+	       SPACEISOTROPIC, &Timedummy, &totaltimespacedim, s->aniso);
+
+//    printf("%d %d %d\n",first->reduceddim,s->simuspatialdim, totaltimespacedim);
+ 
+    if (ce_dim2) assert(s->simuspatialdim == totaltimespacedim - 1);
+    else assert(totaltimespacedim = first->reduceddim);
+    if (s->simuspatialdim > tbm_dim) {
+      Xerror = ERRORWRONGDIM; 
+      goto ErrorHandling;
     }
     s->reduceddim = totaltimespacedim;
 
-    // for (i=ANISO; i<ANISO + 4; i++) printf("%f ", simuparam[i]);  printf("-----\n");
-//    printf("%d %d %d\n",first->reduceddim,s->simuspatialdim, totaltimespacedim);
+    if (s->simugrid) { 
+      if (key->anisotropy)
+	for (i=lastmatching + 1; i<key->totalparam; i++) 
+	  simuparam[i] = first->param[i] * linesimuscale;
+      Getxsimugr(key->x, simuparam, key->timespacedim, 
+		 key->anisotropy, s->xsimugr);
+    }
+   
     
     // ******************************
     // diameter of the simulation area 
@@ -674,7 +822,6 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 
 
   if (s->simugrid) {
-    Getxsimugr(key->x, simuparam, key->timespacedim,  key->anisotropy, s->xsimugr); // see do_tbm
     for (d=0; d<key->timespacedim; d++) {
       s->genuine_dim[d] = first->genuine_dim[d];
     }
@@ -707,11 +854,13 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	  Xerror=ERRORHYPERNOTALLOWED; goto ErrorHandling;}
       if (cov->implemented[method] != IMPLEMENTED &&
-	  cov->implemented[method] != NUM_APPROX) {
+	  cov->implemented[method] != NUM_APPROX) { 
+	  Xerror = ERRORNOTDEFINED; goto ErrorHandling;}
+      if (method==TBM2 && !TBM2NUMERIC && cov->implemented[method]==NUM_APPROX){ 
 	  Xerror = ERRORNOTDEFINED; goto ErrorHandling;}
       if (CovList[kc->nr].type!=ISOTROPIC && !key->Time) {
 	  Xerror=ERRORWITHOUTTIME; goto ErrorHandling;
-      }
+	}
       if ((!key->anisotropy && cov->type!=ISOTROPIC) ||
 	  cov->type==ANISOTROPIC) { 
 	  Xerror = ERRORISOTROPICMETHOD; goto ErrorHandling;}
@@ -733,16 +882,9 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	goto ErrorHandling;
       }    
       Xerror=cov->check(kc->param, tbm_dim + (int) ce_dim2, method);
-      if (method==TBM2) {
-	if (Xerror && (Xerror!=ERRORCOVNUMERICAL || !tbm->tbm2num)) {
-	  goto ErrorHandling;
-	}
-	if (!tbm->tbm2num && cov->implemented[method]==NUM_APPROX) { 
-	  Xerror = ERRORNOTDEFINED; goto ErrorHandling;
-	}
-	tbm2num |= Xerror || (cov->implemented[method]==NUM_APPROX);
-      } else { // method = TBM3
-	if (Xerror) goto ErrorHandling;
+      if (Xerror && (Xerror!=ERRORCOVNUMERICAL || method!=TBM2 ||
+		     !TBM2NUMERIC)){
+	goto ErrorHandling;
       }
 
       /* check whether the multiplicative construction are consistent,*/
@@ -786,8 +928,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	     sizeof(double) * kappas);
       Aniso = cum_nParam[actcov] + kappas;
 
-      ParamList[Aniso] = 
-	  ((key->anisotropy) ? quot : 1.0 / quot) / linesimuscale;
+      ParamList[Aniso] = ((key->anisotropy) ? quot : 1.0 / quot) / linesimuscale;
 
 //      printf("quot %f\n", quot);
 
@@ -806,36 +947,35 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	      goto ErrorHandling;
 	  }
 	}
-	ParamList[Aniso + 1] = ParamList[Aniso + 2] = 0.0;
+	ParamList[Aniso + 1] =0.0; 
+	ParamList[Aniso + 2] =0.0;
 	ParamList[Aniso + 3] = kc->param[lasttimecomponent];
 
-	if (method==TBM2 && !tbm2num) {
-	  // TBM2: per multiplication block at most 1 covariance function 
-	  //       with non vanishing spatial components, otherwise 
-	  //       numerical integration
+	if (method==TBM2) {
+	  // TBM2: per multiplication block at most 1 covariance function with
+	  //       non vanishing spatial components
+	  // the very first matrix must have spatial components;
+	  // otherwise the the structure is considered as trivial
 	  if (newadditive) spacecomponent_found = false;
 	  if (spacecomponent_found) {
 	    for (w=firstmatching; w<=lastmatching; w++)
 	      if (kc->param[w] != 0.0) {
-		  tbm2num = true;
-		  break;
+		Xerror = ERRORTIMESEPARATE; goto ErrorHandling;
 	      }
 	  } else {
 	    for (w=firstmatching; w<=lastmatching; w++)
 	      if (spacecomponent_found = (kc->param[w]!=0.0)) break;
 	  }
-	} // method==TBM2
+	} // methRFod==TBM2
       } // cedim
       kc->left=false;
       actcov++;
     } // kc->left
-    newadditive = kc->op == 0; // geaendert 22.1.06
+    newadditive = kc->op != 0;
   }  // v
-  if (tbm2num && GENERAL_PRINTLEVEL > 1)
-    PRINTF("\tnumerical evaluation of the TBM operator\n");
-
   ERRORMODELNUMBER = -1;
   meth->actcov = actcov;
+
 
   // xline[XEND]: number of points on the TBM line
   double xline[3];
@@ -857,16 +997,13 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 
      //   printf("tbm %d %d\n", covnr[0], meth->actcov);
 
-     Xerror = 
-	 internal_InitSimulateRF(xline, key->T, 1, 3, true, 
-				 ce_dim2 /* Time */, covnr, ParamList, 
-				 cum_nParam[actcov], meth->actcov,
-				 true /* anisotropy */, op, tbmmethod,
-				 DISTR_GAUSS, &(s->key),
-				 0 /* natural scaling */,
-				 (method == TBM3) ?  CovFctTBM3 :
-				 tbm2num ? CovFctTBM2Num : CovFctTBM2
-	     );
+     Xerror = internal_InitSimulateRF(xline, key->T, 1, 3, true, 
+				      ce_dim2 /* Time */, covnr, ParamList, 
+				      cum_nParam[actcov], meth->actcov,
+				      true /* anisotropy */, op, tbmmethod,
+				      DISTR_GAUSS, &(s->key),
+				      0 /* natural scaling */,
+				      CovFctTBM);
      if (Xerror==NOERROR) break;
       switch(tbm_method) {
 	  case Direct : tbm_method=CircEmbed; break;
@@ -1057,20 +1194,21 @@ void do_turningbands(key_type *key, int m, double *res)
           for (v = 0; i < end; i++) {\
             register long index;\
 	    index = (long) (offset + INDEX);\
-/* if (true || !((index<ntot) && (index>=0)))  \ 
- { \
+/* if (true || !((index<ntot) && (index>=0))) \ 
+{ \
   printf("%f %f %f (%f %f %f; %f %f %f)\n index=%d %d %d %d %d : %f %f %f\n", \
   s->x[v], s->x[v+1] , s->x[v+2], \
 	 ex, ey, ez, centerx, centery, centerz, \
 	 index, nn, ntot, v, nt, OFFSET, INDEX); \
-	 } */  \
+   printf("%f\n", simuline[index]);  \
+	 } */ \
             assert((index<ntot) && (index>=0)); \
 	    res[i] += simuline[index]; \
 	    v += simutimespacedim; \
           }\
           offset += inct;\
-        } assert(true);\
-	} \
+        }\
+      }\
     }
 
     inct = (double) nn;

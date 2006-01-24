@@ -653,7 +653,8 @@ int init_circ_embed_local(key_type *key, int m)
 //	printf("%d %s %d \n", instance, hyper->name, msg);
 
 	if ((Xerror=
-	     hyper->checkNinit(sc, COVLISTALL, key->ncov - meth->covlist[v], 
+	     hyper->checkNinit(sc, &(COVLISTALL[v]), 
+			       key->ncov - meth->covlist[v], 
 			       CircEmbed)) == NOERROR
 	    && (
 		(int) msg < (int) store_msg[simuactcov] 
@@ -784,7 +785,8 @@ int init_circ_embed_local(key_type *key, int m)
 	    bool improved;
 	    memcpy(store_param, sc->param, sizeof(param_type));
 	    improved = hyper->alternative(sc, instance) && 
-		(hyper->checkNinit(sc, COVLISTALL, (int) sc->param[HYPERNR], 
+		(hyper->checkNinit(sc, &(COVLISTALL[v]), 
+				   (int) sc->param[HYPERNR], 
 				   CircEmbed) != NOERROR);
 	    if (improved) memcpy(sc->param, store_param, sizeof(param_type));
 	    anychangings |=  improved;

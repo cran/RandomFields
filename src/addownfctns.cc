@@ -51,7 +51,7 @@ typedef void (*rangefct)(int reduceddim , int * index, double* range);
 
 typedef double (*covfct)(double *x, double*p);
 // all parameters are input parameters:
-// x : vector of length 1 for FULLISOTROPIC, of length 2 for SPACEISOTROPIC
+// x : vector of length 1 for ISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
 // p : p[KAPPA1], p[KAPPA2], etc 
@@ -63,7 +63,7 @@ typedef double (*covfct)(double *x, double*p);
 
 typedef double (*isofct)(double*, double*);  
 // all parameters are input parameters:
-// x : vector of length 1 for FULLISOTROPIC, of length 2 for SPACEISOTROPIC
+// x : vector of length 1 for ISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
 // p : p[KAPPA1], p[KAPPA2], etc 
@@ -90,7 +90,7 @@ nr = IncludeModel(
   char *name,    // name of the model appearing in R
   int kappas,    // number of specific parameters
   checkfct,      // see above
-  int isotropic, // values are: FULLISOTROPIC, SPACEISOTROPIC, ANISOTROPIC
+  int isotropic, // values are: ISOTROPIC, SPACEISOTROPIC, ANISOTROPIC
   bool variogram,// is the model a variogramm, e.g. gamma(h)=|h|
   //                if so, then the covaiance function definition must 
   //                be C(h) = -\gamma(h); the derivatives accordingly
@@ -99,7 +99,7 @@ nr = IncludeModel(
   );
 addCov(int nr,                  // the number returned by IncludeModel
        covfct cov,              // see above
-       isofct derivative,       // the derivative of a FULLISOTROPIC model
+       isofct derivative,       // the derivative of a ISOTROPIC model
        //                          or the derivative w.r.t. the spatial 
        //                          component in case of a SPACEISOTROPIC model; 
        //                          used in TBM3 method for product models; see 
@@ -179,7 +179,7 @@ void addusersfunctions() {
 /*
 void addusersfunctions() {
   int nr;
-  nr=IncludeModel("gencauchy2", 2, checkgCauchy, FULLISOTROPIC, false,
+  nr=IncludeModel("gencauchy2", 2, checkgCauchy, ISOTROPIC, false,
 		  infogCauchy, rangegCauchy);
   addCov(nr,gCauchy, DgCauchy, ScalegCauchy);
   addTBM(nr, NULL, NULL, NULL);

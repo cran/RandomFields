@@ -106,7 +106,7 @@ void rangeBessel(int reduceddim, int *index, double* range){
   *index = RANGE_LASTELEMENT; 
   range[2] = 0.0001 + (range[0] =  0.5 * ((double) reduceddim - 2.0));
   range[1] = RF_INF;
-  range[3] = 10.0;
+  range[3] = range[2] + 10.0;
  }
 void infoBessel(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = (int) (2.0 * p[KAPPA] + 2.0);
@@ -747,9 +747,8 @@ void rangegenGneiting(int reduceddim, int *index, double* range){
   range[0] = range[2] = range[1] = range[3] = *index;
   range[4] = range[6] = 0.5 * (double) (reduceddim + 2 * *index + 1);
   range[5] = RF_INF;
-  range[7] = 20.0;
+  range[7] = 10.0 + range[6];
   if ((++(*index)) > 3) *index = RANGE_LASTELEMENT;
-  if (reduceddim>3) *index = RANGE_INVALIDDIM;
 }
 void infogenGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = (int) (2.0 * p[KAPPA2] - 1.0 - 2.0 * p[KAPPA1]);
@@ -964,7 +963,7 @@ void rangeIacoCesare(int reduceddim, int *index, double* range){
 	 1, 2, 1, 2};
     memcpy(range, range_iacocesare, sizeof(double) * 8);
     range[8] = range[10] = 0.5 * reduceddim;
-    range[9] = RF_INF; range[11] = 0.5 * reduceddim + 10;
+    range[9] = RF_INF; range[11] = range[10] + 10.0;
     *index = RANGE_LASTELEMENT;
 }
 void infoIacoCesare(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -1142,7 +1141,7 @@ void rangespacetime1(int reduceddim, int *index, double* range){
   
   range[20] = range[22] = (double) reduceddim - 1; // spatial reduceddim
   range[21] = RF_INF;
-  range[23] = (double) reduceddim + 10.0;
+  range[23] = range[22] + 10.0;
 
   if ( (++(*index)) > 9) *index = RANGE_LASTELEMENT;
 }
@@ -1232,7 +1231,7 @@ void rangespacetime2(int reduceddim, int *index, double* range){
 
   range[24] = range[26] = (double) reduceddim - 1; // spatial dim
   range[25] = RF_INF;
-  range[27] = (double) reduceddim + 10.0;
+  range[27] = range[26] + 10.0;
   
   if ( (++(*index)) > 3) *index = RANGE_LASTELEMENT;
 }

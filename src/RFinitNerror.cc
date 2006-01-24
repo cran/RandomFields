@@ -323,7 +323,12 @@ the anisotropy matrices must be identical"); break;
       case ERRORLOWRANKTBM :
 	  strcpy(EM,"confused about low rank anisotropy matrix.\nWhen using TBM then try putting the model with anisotropy matrix of\nhighest rank at the beginning");
 	  break;
- 
+      case ERRORHYPERNOTISO :
+	  strcpy(EM, 
+		 "only isotropic models allowed for submodels of hyper models");
+	  break;
+
+
       case ERRORSILLNULL : 
 	strcpy(EM,"Vanishing sill not allowed");break;     
       case ERRORPAIRS : 
@@ -436,38 +441,38 @@ void InitModelList()
   currentNrCov=0;
   nlocal=0;
   
-  nr=IncludeModel("bessel",1, checkBessel, FULLISOTROPIC, false,
+  nr=IncludeModel("bessel",1, checkBessel, ISOTROPIC, false,
 		  infoBessel, rangeBessel);
   addCov(nr, Bessel, NULL, NULL);
   addTBM(nr, NULL, NULL, spectralBessel);
  	       
-  nr=IncludeModel("cauchy", 1, checkCauchy, FULLISOTROPIC, false,
+  nr=IncludeModel("cauchy", 1, checkCauchy, ISOTROPIC, false,
 		  infoCauchy, rangeCauchy);
   addCov(nr, Cauchy, DCauchy, ScaleCauchy);
   addTBM(nr, TBM2Cauchy, TBM3Cauchy, NULL);
   addLocal(nr, true, DDCauchy, &CAUCHY);
 	       
-  nr=IncludeModel("cauchytbm", 3, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("cauchytbm", 3, checkOK, ISOTROPIC, false,
 		  infoCauchytbm, rangeCauchytbm);
   addCov(nr,Cauchytbm, DCauchytbm, NULL);
   addTBM(nr,NULL, TBM3Cauchytbm, NULL);
 	      
-  nr=IncludeModel("circular", 0, checkOK,FULLISOTROPIC, false, 
+  nr=IncludeModel("circular", 0, checkOK,ISOTROPIC, false, 
 		  infocircular, rangecircular);
   addCov(nr,circular, Dcircular, Scalecircular);
   addTBM(nr, NULL, NULL, NULL);
   addOther(nr, circular_init, circularMpp, NULL, NULL, NULL);
 
-  nr=IncludeModel("cone",3,checkcone, FULLISOTROPIC, false,
+  nr=IncludeModel("cone",3,checkcone, ISOTROPIC, false,
 		  infocone, rangecone);
   addOther(nr, cone_init, cone,  NULL, NULL, NULL);
 
-  nr=IncludeModel("constant",0, checkOK, FULLISOTROPIC, false, 
+  nr=IncludeModel("constant",0, checkOK, ISOTROPIC, false, 
 		  infoconstant, rangeconstant);
   addCov(nr, constant, Dconstant, NULL);
   addTBM(nr,TBM2constant,TBM3constant, NULL);
    
-  nr=IncludeModel("cubic",0, checkOK,FULLISOTROPIC, false, infocubic, 
+  nr=IncludeModel("cubic",0, checkOK,ISOTROPIC, false, infocubic, 
 		  rangecubic);
   addCov(nr, cubic, Dcubic, Scalecubic);
   addTBM(nr,NULL, TBM3cubic, NULL);
@@ -477,12 +482,12 @@ void InitModelList()
   addCov(nr, co, NULL, NULL);
   addInitLocal(nr, getcutoffparam_co, alternativeparam_co, CircEmbedCutoff);
 
-  nr=IncludeModel("dampedcosine", 1, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("dampedcosine", 1, checkOK, ISOTROPIC, false,
 		  infodampedcosine, rangedampedcosine);
   addCov(nr,dampedcosine,Ddampedcosine,Scaledampedcosine);
   addTBM(nr,NULL,TBM3dampedcosine, NULL);
 
-  nr=IncludeModel("exponential",0, checkexponential,FULLISOTROPIC, false, 
+  nr=IncludeModel("exponential",0, checkexponential,ISOTROPIC, false, 
 		  infoexponential, rangeexponential);
   addCov(nr,exponential,Dexponential,Scaleexponential);
   //addTBM(nr,NULL,TBM3exponential,Dexponential,NULL);
@@ -493,41 +498,41 @@ void InitModelList()
   // numerisches Ergebnis passt nicht !
 //  printf("%d %d\n", nr, CovList[nr].implemented[CircEmbedCutoff]); assert(false);
 
-  nr=IncludeModel("FD", 1, checkOK, FULLISOTROPIC, false, infoFD, rangeFD);
+  nr=IncludeModel("FD", 1, checkOK, ISOTROPIC, false, infoFD, rangeFD);
   addCov(nr, FD, NULL, NULL);
 
-  nr=IncludeModel("fractalB",1,checkOK,FULLISOTROPIC, true,
+  nr=IncludeModel("fractalB",1,checkOK,ISOTROPIC, true,
 		 infofractalBrownian, rangefractalBrownian);
   addCov(nr, fractalBrownian, DfractalBrownian, NULL);
   addLocal(nr, false, DDfractalBrownian, &BROWNIAN);
   
-  nr=IncludeModel("fractgauss", 1, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("fractgauss", 1, checkOK, ISOTROPIC, false,
 		  infofractGauss, rangefractGauss);
   addCov(nr, fractGauss, NULL, NULL);
 
-  nr=IncludeModel("gauss", 0, checkOK, FULLISOTROPIC, false, infoGauss, 
+  nr=IncludeModel("gauss", 0, checkOK, ISOTROPIC, false, infoGauss, 
 		  rangeGauss);
   addCov(nr,Gauss, DGauss, ScaleGauss);
   addTBM(nr, NULL, TBM3Gauss, spectralGauss);
   addOther(nr, gaussmpp_init, gaussmpp, NULL,  NULL, NULL);
 
-  nr=IncludeModel("gencauchy", 2, checkgeneralisedCauchy, FULLISOTROPIC, false,
+  nr=IncludeModel("gencauchy", 2, checkgeneralisedCauchy, ISOTROPIC, false,
 		  infogeneralisedCauchy, rangegeneralisedCauchy);
   addCov(nr,generalisedCauchy, DgeneralisedCauchy, ScalegeneralisedCauchy);
   addTBM(nr, NULL, TBM3generalisedCauchy, NULL);
   addLocal(nr, true, DDgeneralisedCauchy, &GENERALISEDCAUCHY);
 
-  nr=IncludeModel("gengneiting", 2, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("gengneiting", 2, checkOK, ISOTROPIC, false,
 		  infogenGneiting, rangegenGneiting);
   addCov(nr,genGneiting,DgenGneiting,NULL);
-  addTBM(nr,NULL,TBM3genGneiting, NULL);
+  addTBM(nr, NULL, TBM3genGneiting, NULL);
 
-  nr=IncludeModel("gneiting",0, checkOK, FULLISOTROPIC, false, 
+  nr=IncludeModel("gneiting",0, checkOK, ISOTROPIC, false, 
 		  infoGneiting, rangeGneiting); 
   addCov(nr,Gneiting,DGneiting,ScaleGneiting);
   addTBM(nr,NULL,TBM3Gneiting, NULL);
 
-  nr=IncludeModel("hyperbolic",3,checkhyperbolic, FULLISOTROPIC, false,
+  nr=IncludeModel("hyperbolic",3,checkhyperbolic, ISOTROPIC, false,
 		  infohyperbolic, rangehyperbolic);
   addCov(nr,hyperbolic,Dhyperbolic,NULL);
   addTBM(nr,NULL,TBM3hyperbolic, NULL);
@@ -537,7 +542,7 @@ void InitModelList()
   addCov(nr, IacoCesare, NULL, NULL);
   
 
-  nr=IncludeModel("lgd1", 2, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("lgd1", 2, checkOK, ISOTROPIC, false,
 		 infolgd1, rangelgd1);
   addCov(nr, lgd1, Dlgd1, Scalelgd1);
   addTBM(nr, NULL, NULL, NULL);
@@ -556,7 +561,7 @@ void InitModelList()
   addCov(nr,spacetime2,Dspacetime2,NULL);
   addTBM(nr,NULL, NULL /* TBM3spacetime2 */, NULL);
 
-  nr=IncludeModel("nugget",0, checknugget, FULLISOTROPIC, false, infonugget, 
+  nr=IncludeModel("nugget",0, checknugget, ISOTROPIC, false, infonugget, 
 		  rangenugget);
   addCov(nr, nugget, NULL, Scalenugget);
   modelexception(nr, true, false);
@@ -569,27 +574,27 @@ void InitModelList()
     CovList[nr].implemented[CircEmbed] =IMPLEMENTED;
  
   nr=IncludeModel("penta",0, checkOK,
-                  FULLISOTROPIC, false, infopenta, rangepenta);
+                  ISOTROPIC, false, infopenta, rangepenta);
   addCov(nr,penta,Dpenta,Scalepenta);
   addTBM(nr,NULL,TBM3penta,NULL);
 	
-  nr=IncludeModel("power",1,checkpower,FULLISOTROPIC, false, 
+  nr=IncludeModel("power",1,checkpower,ISOTROPIC, false, 
 		  infopower, rangepower);
   addCov(nr,power,Dpower,Scalepower);
   addTBM(nr, NULL, TBM3power, NULL);
  
-  nr=IncludeModel("qexponential", 1, checkOK, FULLISOTROPIC, false,
+  nr=IncludeModel("qexponential", 1, checkOK, ISOTROPIC, false,
 		  infoqexponential, rangeqexponential);
   addCov(nr,qexponential, Dqexponential, Scaleqexponential);
   addTBM(nr, NULL, TBM3qexponential, NULL);
 
-  nr=IncludeModel("spherical",0, checkOK, FULLISOTROPIC, false, 
+  nr=IncludeModel("spherical",0, checkOK, ISOTROPIC, false, 
 		  infospherical, rangespherical);
   addCov(nr,spherical,Dspherical,Scalespherical);
   addTBM(nr,TBM2spherical,TBM3spherical,NULL);
   addOther(nr, spherical_init, sphericalMpp, NULL, NULL, NULL);
 
-  nr=IncludeModel("stable", 1, checkstable, FULLISOTROPIC, false, 
+  nr=IncludeModel("stable", 1, checkstable, ISOTROPIC, false, 
 		  infostable, rangestable);
   addCov(nr, stable, Dstable,  Scalestable);
   addTBM(nr, NULL, TBM3stable, NULL);
@@ -605,12 +610,12 @@ void InitModelList()
 		  false, infoSteinST1, rangeSteinST1);
   addCov(nr, SteinST1, NULL, NULL);
 
-  nr=IncludeModel("wave", 0, checkOK, FULLISOTROPIC, false, infowave, 
+  nr=IncludeModel("wave", 0, checkOK, ISOTROPIC, false, infowave, 
 		  rangewave);
   addCov(nr,wave,NULL,Scalewave);
   addTBM(nr,NULL,NULL,spectralwave);
  
-  nr=IncludeModel("whittlematern", 1, checkWhittleMatern, FULLISOTROPIC, false,
+  nr=IncludeModel("whittlematern", 1, checkWhittleMatern, ISOTROPIC, false,
 		  infoWhittleMatern, rangeWhittleMatern);
   addCov(nr,WhittleMatern, DWhittleMatern, ScaleWhittleMatern);
   addTBM(nr,NULL,TBM3WhittleMatern, spectralWhittleMatern);
@@ -623,7 +628,7 @@ void InitModelList()
   */
 
   // must be the very last one!
-  nr = IncludeModel("undefined", 0, checkundefined, FULLISOTROPIC, false, 
+  nr = IncludeModel("undefined", 0, checkundefined, ISOTROPIC, false, 
 		    infoundefined, rangenugget);
   assert(nr > 0); // otherwise we have already reached the maximum number
   //                of models; note that it is planned that further

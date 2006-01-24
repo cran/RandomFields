@@ -102,6 +102,8 @@
 #define ERRORLOWRANKTBM 57       /* tbm does not allow that the matrix `a' of 
                                    a product matrix are all zero
 				 */ 
+#define ERRORHYPERNOTISO 58      /* only ISOTROPIC covariance models allowed
+				    for submodels of hypermodels */
 
 #define NOERROR_REPEAT 97
 #define NOERROR_ENDOFLIST 98

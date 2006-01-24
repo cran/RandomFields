@@ -415,7 +415,7 @@ int IncludeHyperModel(char *name, kappas_type kappas, checkhyper check,
 		      rangefct range)
 {  
     int nr;
-    assert(type!=FULLISOTROPIC && type!=ISOHYPERMODEL);
+    assert(type!=ISOTROPIC && type!=ISOHYPERMODEL);
     nr = createmodel(name, -1, kappas, type, info, variogram, range);
     assert((CovList[nr].checkNinit = check) != NULL);
     return nr;
@@ -436,7 +436,7 @@ extern int IncludeModel(char *name, kappas_type kappas, checkfct check,
 			rangefct range) 
 {  
     int nr;
-    assert(type!=FULLISOTROPIC && type!=ISOHYPERMODEL);
+    assert(type!=ISOTROPIC && type!=ISOHYPERMODEL);
     nr = createmodel(name, -1, kappas, type, info, variogram, range);
     assert((CovList[nr].check = check) != NULL);
     return nr;
@@ -528,10 +528,15 @@ extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
   CovList[nr].range(2, &index, range);
   assert(index != RANGE_INVALIDDIM);
   CovList[nr].range(3, &index, range);
-  CovList[nr].implemented[TBM2] = (cov_tbm2!=NULL) ? IMPLEMENTED : 
-    (CovList[nr].derivative!=NULL) 
-    ? NUM_APPROX 
-    : NOT_IMPLEMENTED;
+  if (cov_tbm2 != NULL) {
+    CovList[nr].implemented[TBM2] = IMPLEMENTED;
+    assert(CovList[nr].derivative!=NULL); 
+    // IMPLEMENTED must imply the NUM_APPROX to simply the choice
+    // between COV_TBM2 and Cov_TBM2Num
+  } else {
+    CovList[nr].implemented[TBM2] = (CovList[nr].derivative!=NULL) 
+	? NUM_APPROX : NOT_IMPLEMENTED;
+  }
   CovList[nr].cov_tbm3=cov_tbm3;
   if (cov_tbm3!=NULL || cov_tbm2!=NULL) assert(CovList[nr].derivative!=NULL);
   CovList[nr].implemented[TBM3] = (index != RANGE_INVALIDDIM) && 
@@ -633,7 +638,7 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
 
   for (k=KAPPA; k<=LASTKAPPA; k++) p[k]=q[k-KAPPA];
   if (*naturalscaling) {	 
-    if (CovList[*covnr].type!=FULLISOTROPIC) {
+    if (CovList[*covnr].type!=ISOTROPIC) {
       *error=ERRORANISOTROPIC; return;
     }
     if (!(numeric=*naturalscaling>TEN)) {TEN=0;}
@@ -789,14 +794,13 @@ void StoreTrend(int *keyNr, int *modus, char **trend,
 
 
 void GetParamterPos(int *variance, int *kappa, int* lastkappa, 
-		    int *tbm2num, int *hyperinternal, int *lasthyperinternal,
+		    int *hyperinternal, int *lasthyperinternal,
 		    int *scale, int *aniso, int *hypernr, int *localdiameter,
 		    int *local_r, int *cutoff_theo_r, int *hyperkappa,
 		    int *total) {
     *variance = VARIANCE;
     *kappa = KAPPA;
     *lastkappa = LASTKAPPA;
-    *tbm2num = TBM2NUM;
     *hyperinternal = HYPERINTERNALI;
     * lasthyperinternal = LASTHYPERINTERNAL;
     *scale = SCALE;
@@ -919,7 +923,7 @@ void GetTrueDim(bool anisotropy, int timespacedim, param_type param,
 	    (*reduceddim)++;
 //	    printf("%d %d\n", param_segm, aniso_segm); 
 	    break;
-	case FULLISOTROPIC: case ISOHYPERMODEL:
+	case ISOTROPIC: case ISOHYPERMODEL:
 	    matrixrotat(&(param[ANISO]), col, row, reduceddim, aniso);
 	    break;
 	default: assert(false);
@@ -1298,7 +1302,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("xsimgr"));
 	    SET_VECTOR_ELT(S, k++, Mat(s->xsimugr, s->simugrid ? 3 : 0,
 				       s->timespacedim, MAX_INT));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("l"));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuline"));
 	    SET_VECTOR_ELT(S, k++, s->simuline==NULL 
 			   ? allocVector(VECSXP,0) 
 			   : (s->ce_dim==1 

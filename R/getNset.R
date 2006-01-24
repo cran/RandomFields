@@ -1,7 +1,7 @@
 
 paramextract <- function(p, model=c("cutoff")) {
   i <- .C("GetParamterPos", variance=integer(1), kappa=integer(1),
-          lastkappa=integer(1), tbm2num=integer(1), hyperinternal=integer(1),
+          lastkappa=integer(1), hyperinternal=integer(1),
           lasthyperinternal=integer(1), scale=integer(1), aniso=integer(1),
           hypernr=integer(1), localdiameter=integer(1), localr=integer(1),
           cutoffr=integer(1),
@@ -18,7 +18,7 @@ paramextract <- function(p, model=c("cutoff")) {
 CheckAndComplete <- function(model, param, dim) {
     p <- PrepareModel(model, param, dim)
     i <- .C("GetParamterPos", variance=integer(1), kappa=integer(1),
-            lastkappa=integer(1), tbm2num=integer(1), hyperinternal=integer(1),
+            lastkappa=integer(1), hyperinternal=integer(1),
             lasthyperinternal=integer(1), scale=integer(1), aniso=integer(1),
             hypernr=integer(1), localdiameter=integer(1), localr=integer(1),
             cutoffr=integer(1),
@@ -237,12 +237,14 @@ parampositions <- function(model, param, print=TRUE) {
   TBM2.linesimustep <- double(1)
   TBM2.every <- integer(1)
   TBM2.num <- integer(1)
+  TBM2.layers <- integer(1)
   
   
   TBM3.lines <- integer(1)
   TBM3.linesimufactor <- double(1)
   TBM3.linesimustep <- double(1)
   TBM3.every <- integer(1)
+  TBM3.layers <- integer(1)
 
   spectral.lines <- integer(1)
   spectral.grid <- integer(1)
@@ -297,10 +299,11 @@ parampositions <- function(model, param, print=TRUE) {
        TBMCE.dependent,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM2", m, TBM2.lines, TBM2.linesimufactor,
-       TBM2.linesimustep, TBM2.every, TBM2.num,
+       TBM2.linesimustep, TBM2.every, TBM2.num, TBM2.layers,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamTBM3", m, TBM3.lines, TBM3.linesimufactor,
-       TBM3.linesimustep, TBM3.every, PACKAGE="RandomFields", DUP=FALSE)
+       TBM3.linesimustep, TBM3.every, TBM3.layers,
+       PACKAGE="RandomFields", DUP=FALSE)
    .C("SetParamTBM", m, TBM.method, TBM.center, TBM.points,
        PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
@@ -360,10 +363,12 @@ parampositions <- function(model, param, print=TRUE) {
                     TBM2.linesimufactor=TBM2.linesimufactor,
                     TBM2.linesimustep=TBM2.linesimustep,
                     TBM2.num=as.logical(TBM2.num),
+                    TBM2.layers=as.logical(TBM2.layers),
                     TBM3.every=TBM3.every,
                     TBM3.lines=TBM3.lines,
                     TBM3.linesimufactor=TBM3.linesimufactor,
                     TBM3.linesimustep=TBM3.linesimustep,
+                    TBM3.layers=as.logical(TBM3.layers),
                     TBMCE.force=as.logical(TBMCE.force),
                     TBMCE.mmin=TBMCE.mmin,
                     TBMCE.strategy=TBMCE.strategy,

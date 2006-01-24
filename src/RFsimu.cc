@@ -79,7 +79,8 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
       if (cov->type==ISOHYPERMODEL || cov->type==ANISOHYPERMODEL) {
 	if (!MultiplyAndHyper) error = ERRORHYPERNOTALLOWED;
 	else {
-	  error = cov->checkNinit(kc, COVLISTALL, key->ncov - v - 1, Method);
+	  error = 
+	      cov->checkNinit(kc, &(COVLISTALL[v]), key->ncov - v - 1, Method);
 	}
       } else {
 	error = cov->check(kc->param, kc->reduceddim, Method);
@@ -554,14 +555,14 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
           /* of being SPACEISOTROPIC or not) -- unclear whether relaxation in*/
           /* CheckAndBuildCov possible */
 	  if (cov_type != ANISOHYPERMODEL) {
-            //FULLISOTROPIC, ISOHYPERMODEL, spaceisotropic
+            //ISOTROPIC, ISOHYPERMODEL, spaceisotropic
             zz = 0.0;
 //	    printf("red=%d %f %f %f %f %f %f -- ", 
 //		   kc->reduceddim, z[0], z[1], z[2], 
 //		   kc->aniso[6], kc->aniso[7], kc->aniso[8]);
 	    endfor = kc->reduceddim - 1;
 	    for (j=0; j<endfor; j++) zz += z[j] * z[j];
-	    if (cov_type==FULLISOTROPIC || cov_type==ISOHYPERMODEL) 
+	    if (cov_type==ISOTROPIC || cov_type==ISOHYPERMODEL) 
 		zz += z[endfor] * z[endfor];
 	    else z[1]=z[endfor]; // spaceisotropic
 	    z[0] = sqrt(zz);
@@ -745,7 +746,7 @@ int check_within_range(param_type param, cov_fct *cov, int timespacedim,
 	sprintf(ERRORSTRING_OK, "%s when %s dim=%d%s", 
 		ERRORSTRING_OK,
 		(cov->type == SPACEISOTROPIC) ? "genuine spatial" :
-		(cov->type == FULLISOTROPIC || cov->type==ISOHYPERMODEL) 
+		(cov->type == ISOTROPIC || cov->type==ISOHYPERMODEL) 
 		? "genuine" : "",
 		timespacedim - (int) (cov->type == SPACEISOTROPIC),
 		txt == NULL ? "" : txt);
@@ -835,7 +836,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     totkappas += kappas;
     if (kc->param[VARIANCE]<0.0) return ERRORNEGATIVEVAR;
     switch(cov->type) {
-	case FULLISOTROPIC : case ISOHYPERMODEL :
+	case ISOTROPIC : case ISOHYPERMODEL :
 	    kc->param[EFFECTIVEDIM] = 1.0;
 	    break;
 	case SPACEISOTROPIC :
@@ -899,7 +900,8 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     int maxdim, dummy;
     cov->info(kc->param, &maxdim, &dummy);
 //    printf("%d %d\n", maxdim, kc->reduceddim); 
-    if (maxdim < kc->reduceddim) return ERRORCOVNOTALLOWED;
+    if (maxdim < kc->reduceddim && !GENERAL_SKIPCHECKS)
+	return ERRORCOVNOTALLOWED;
     kc->simugrid = // kc->param[ANISO] !!
 	grid && (!anisotropy || is_diag(&(kc->param[ANISO]), timespacedim));
     if (kc->simugrid) {
@@ -936,6 +938,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
   ERRORMODELNUMBER = -1;
 
   for (v=ncov-1; v>=0; v--) {
+    int w;
     ERRORMODELNUMBER = v;	
     // this loop cannot be intregrated above. The subsequent
     // submodels must be initialised first, since  
@@ -960,7 +963,13 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
      kc->aniso[0] = RF_NAN;
 */
 
-      error = cov->checkNinit(kc, COVLISTALL, ncov-v-1, Nothing);
+     for (w = v + (int) (kc->param[HYPERNR]); w>v; w--) {
+       if (CovList[keycov[w].nr].type != ISOTROPIC) {
+	   // z.B. tbm viel complizierter
+	   error = ERRORHYPERNOTISO;
+       }
+     }
+      error = cov->checkNinit(kc, &(COVLISTALL[v]), ncov-v-1, Nothing);
       if (error != NOERROR) {
 	return error;
       }
@@ -1038,7 +1047,6 @@ void CalculateCovariance(double *x, int lx, covinfo_arraytype keycov, int xdim,
   for (i=0; i<lx; i++, x += xdim)
     result[i] = CovFct(x, xdim, keycov, COVLISTALL, ncov, anisotropy);
 }
-
 
 
 // note: number of parameters is not checked whether it is correct!!
@@ -1664,27 +1672,7 @@ int internal_InitSimulateRF(double *x, double *T,
     }
   }
 
-  key->covFct = covFct;
-  if (covFct == CovFctTBM2) {
-     for (i=0; i<ncov; i++) {
-       int error;
-       covinfo_type *kc;
-       cov_fct *cov;
-       kc = &(key->cov[i]);
-       cov = &(CovList[kc->nr]);
-       error=cov->check(kc->param, 2, TBM2);
-       kc->param[TBM2NUM] =
-	  (double) ((error && 
-		     (cov->implemented[TBM2] == IMPLEMENTED) ||
-		      (cov->implemented[TBM2] == NUM_APPROX)) 
-		    ||
-		    (cov->implemented[TBM2]==NUM_APPROX && TBM2NUMERIC));
-      if (GENERAL_PRINTLEVEL > 1 && (kc->param[TBM2NUM]!=0.0))
-	  PRINTF("\tnumerical evaluation of the TBM operator for %s\n",
-		 cov->name);
-      }
-  }
-
+  key->covFct = covFct; // CovFct, CovFctTBM2, CovFctTBM2Num, CovFctTBM3
 
    // not literally "total"param; there might be gaps in the sequence of the 
    // parameters (if not all seven KAPPA parameters are used)
@@ -2138,30 +2126,41 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   // does not assume that orig_res[...] = 0.0, but it is set
   int error;
   long i, m;
-  double  *part_result, *res;
+  double  *part_result, *res, realeach;
   char back[]="\b\b\b\b\b\b\b\b\b\b\b", format[20], prozent[]="%";
   int ni, digits, each=0;
  
   res = orig_res;
   part_result = NULL;
   if (!key->active) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
-  if (nn>1 && GENERAL_PCH[0] == '!') {
-    digits = (nn<900000000) ? 1 + (int) trunc(log(nn) / log(10)) : 9;
-    back[digits] = '\0';
-    each = (nn<100) ? 1 : nn / 100;
-    sprintf(format, "%ss%s%dd", prozent, prozent, digits);
-  }
+  if (nn>1 && GENERAL_PCH[0] != '\0') {
+    if (GENERAL_PCH[0] == '!') {
+      digits = (nn<900000000) ? 1 + (int) trunc(log(nn) / log(10)) : 9;
+      back[digits] = '\0';
+      each = (nn < 100) ? 1 :  nn / 100;
+      realeach = 100.0;
+      sprintf(format, "%ss%s%dd", prozent, prozent, digits);
+    } else if (GENERAL_PCH[0] == '%') {
+      back[4] = '\0';
+      realeach = (double) nn / 100.0;
+      each = (nn < 100) ? 1 : (int) realeach;
+      sprintf(format, "%ss%s%dd%ss", prozent, prozent, 3, prozent);
+    } else each = 1;
+  } else each = nn + 1;
   GetRNGstate();
   if (!key->compatible) {
       if ((part_result=(double *) malloc(sizeof(double) * key->totalpoints))
 	  == NULL) {error=ERRORMEMORYALLOCATION; goto ErrorHandling;}
   }
-  for (ni=0; ni<nn; ni++, res += key->totalpoints) {
+  for (ni=1; ni<=nn; ni++, res += key->totalpoints) {
     if (key->stop) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
-    if (nn>1)
-      if (GENERAL_PCH[0] != '!') PRINTF("%s", GENERAL_PCH);
-      else if (ni % each ==0) PRINTF(format, back, ni);
-    
+    if (ni % each == 0) {
+      if (GENERAL_PCH[0] == '!')  
+	  PRINTF(format, back, ni / each);
+      else if (GENERAL_PCH[0] == '%')
+	  PRINTF(format, back, (int) (ni / realeach), prozent);
+      else PRINTF("%s", GENERAL_PCH);
+    }
     if (key->n_unimeth == 0 || !key->meth[0].incompatible)
       for (i=0; i<key->totalpoints; i++) {
 	res[i] = 0.0;
@@ -2187,7 +2186,8 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   } // for n
   PutRNGstate();
   if (part_result!=NULL) free(part_result);
-  if (nn>1 && GENERAL_PCH[0] == '!') PRINTF("%s", back);
+  if (nn>1 && (GENERAL_PCH[0] == '!' || GENERAL_PCH[0] == '%'))
+      PRINTF("%s", back);
   return NOERROR;
 
  ErrorHandling: 

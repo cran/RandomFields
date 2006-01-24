@@ -66,9 +66,12 @@
     \item{\code{pch}}{Character or empty string.
       The character is printed after each
       performed simulation if more than one simulation is performed at
-      once. If \code{pch='!'} then a counter is shown instead of the character.
-      Note that also '\eqn{\mbox{\textasciicircum}}{^}H's are printed if
-      the counter (\code{pch='!'}) is shown, 
+      once. If \code{pch='!'} then an absolute
+      counter is shown instead of the character.
+      If \code{pch='\%'} then a
+      counter of percentages is shown instead of the character.
+      Note that also '\eqn{\mbox{\textasciicircum}}{^}H's are printed in
+      the last two cases, 
       which may have undesirable interactions with some few other R
       functions, e.g.  \command{\link[utils]{Sweave}}.
       Default: \code{'*'} [do]. 
@@ -393,6 +396,12 @@
       that have an analytic representation on
       the line.
       Default: \code{TRUE} [init].}
+    \item{\code{TBM2.layers}}{
+      Logical. If \code{TRUE} then the turning layers are used whenever
+      a time component is given.
+      If \code{FALSE} the turning layers are used only when the
+      traditional TBM is not applicable.
+      Default: \code{FALSE} [init].}
     \item{\code{TBM3.every}}{If \code{TBM3.every>0} then every
       \code{TBM3.every}th iteration is announced.
       Default: \code{0} [do].}
@@ -402,7 +411,10 @@
     \item{\code{TBM3.linesimufactor}}{See \code{TBM2.linesimufactor} for
       the meaning.
       Default: \code{2.0} [init].}
-    \item{\code{TBM3.linesimustep}}{See 
+    \item{\code{TBM3.layers}}{See 
+      \code{TBM2.layers} for the meaning.   
+      Default: \code{FALSE} [init].}
+    \item{\code{TBM3.linesimus}}{See 
       \code{TBM2.linesimustep} for the meaning.   
       Default: \code{0.0} [init].}
     \item{\code{TBMCE.force}}{see \code{TBM.method} and \code{CE.force}
@@ -491,6 +503,8 @@
     }
   }
 
+  \bold{General comments on the options}
+  \cr
   The following refers to the simulation of Gaussian random fields
   (\command{\link{InitGaussRF}}, \command{\link{GaussRF}}), but most
   parts also apply

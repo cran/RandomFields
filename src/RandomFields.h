@@ -18,7 +18,7 @@ EXTERN void GetrfParameters(int *covmaxchar, int *methodmaxchar,
 			    int *covnr, int *methodnr, int *distrnr,
 			    int *maxdim, int *maxmodels);
 EXTERN void GetParamterPos(int *variance, int *kappa, int* lastkappa, 
-		    int *tbm2num, int *hyperinternal, int *lasthyperinternal,
+		    int *hyperinternal, int *lasthyperinternal,
 		    int *scale, int *aniso, int *hypernr, int *localdiameter,
 		    int *local_r, int *cutoff_theo_r, int *hyperkappa,
 		    int *total);
@@ -118,9 +118,11 @@ EXTERN void SetParamLocal( int *action, int *force, double *tolRe,
 // For further details, also on the other parameter, see library(rf),
 // ?RFparameters, in R, http://www.R-project.org/
 EXTERN void SetParamTBM2(int *action, int *nLines, double *linesimufactor, 
-			 double *linesimustep, int *every, int *tbm2num);
+			 double *linesimustep, int *every, int *tbm2num,
+			 int *layers);
 EXTERN void SetParamTBM3(int *action, int *nLines, double *linesimufactor, 
-			   double *linesimustep, int *every);
+			 double *linesimustep, int *every, 
+			 int *layers);
 // for simulation of line by circular embedding
 EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
 			  int *trials,
