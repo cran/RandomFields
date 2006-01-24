@@ -4,7 +4,7 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2005 -- 2005 Martin Schlather
+ Copyright (C) 2005 -- 2006 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

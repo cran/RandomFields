@@ -5,7 +5,7 @@
 
  library for simulation of random fields -- init part and error messages
 
- Copyright (C) 2001 -- 2005 Martin Schlather
+ Copyright (C) 2001 -- 2006 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -591,7 +591,7 @@ void InitModelList()
   nr=IncludeModel("spherical",0, checkOK, ISOTROPIC, false, 
 		  infospherical, rangespherical);
   addCov(nr,spherical,Dspherical,Scalespherical);
-  addTBM(nr,TBM2spherical,TBM3spherical,NULL);
+  addTBM(nr, TBM2spherical, TBM3spherical,NULL);
   addOther(nr, spherical_init, sphericalMpp, NULL, NULL, NULL);
 
   nr=IncludeModel("stable", 1, checkstable, ISOTROPIC, false, 

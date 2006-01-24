@@ -4,7 +4,7 @@
 
  Simulation of a random field by spectral turning bands
 
- Copyright (C) 2000 -- 2005 Martin Schlather, 
+ Copyright (C) 2000 -- 2006 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

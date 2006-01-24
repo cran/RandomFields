@@ -4,7 +4,7 @@
  Authors 
  Martin Schlather, schlath@hsu-hh.de 
 
- Copyright (C) 2001 -- 2005 Martin Schlather, 
+ Copyright (C) 2001 -- 2006 Martin Schlather, 
 
 
 This program is free software; you can redistribute it and/or
