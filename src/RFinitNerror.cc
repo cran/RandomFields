@@ -530,7 +530,8 @@ void InitModelList()
   nr=IncludeModel("gneiting",0, checkOK, ISOTROPIC, false, 
 		  infoGneiting, rangeGneiting); 
   addCov(nr,Gneiting,DGneiting,ScaleGneiting);
-  addTBM(nr,NULL,TBM3Gneiting, NULL);
+  addTBM(nr,NULL, NULL, // TBM3Gneiting, 
+	 NULL);
 
   nr=IncludeModel("hyperbolic",3,checkhyperbolic, ISOTROPIC, false,
 		  infohyperbolic, rangehyperbolic);

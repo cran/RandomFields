@@ -1,5 +1,5 @@
 Package: RandomFields
-Version: 1.3.16
+Version: 1.3.18
 Title: Simulation and Analysis of Random Fields
 Author:  Martin Schlather <schlath@hsu-hh.de>
 Maintainer: Martin Schlather <schlath@hsu-hh.de>
@@ -7,5 +7,5 @@ Depends: R (>= 2.2.0)
 Description:  Simulation of Gaussian and extreme value random fields;
 	      conditional simulation; kriging 
 License: GPL Version 2 or later.
-URL: http://bruce.hsu-hh.de/~schlather/index.html
-Packaged: Tue Jan 24 09:09:32 2006; schlather
+URL: http://www2.hsu-hh.de/schlath/index.html
+Packaged: Thu Feb  2 21:42:45 2006; hornik

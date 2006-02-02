@@ -712,33 +712,34 @@ double TBM3genGneiting(double *x, double *p)
 		      (p[KAPPA2] + 5.0))));
   case 3:
     return  pow((1.0 - y), (p[KAPPA2]+2.0)) *
-      (1.0 + y * ((p[KAPPA2]+2.0)
+      (1.0 + y * (s - 1.0
 		  + y * (0.2 * (-9.0 + s * (-10.0 + s))
 			 + y * 0.0666666666666666 * 
-			 ((27.0 - s*(7.0 + s*(18.0 + 2.0*s)))
-			  - y * (s*s - 4.0) * s * (p[KAPPA2] + 7.0)))));
+			 ((27.0 - s*(7.0 + s * (18.0 + 2.0*s)))
+			  - y * (s*s - 4.0) * s * (s + 4.0)))));
   default : assert(false);   
   }
 }
 double DgenGneiting(double *x, double *p)
 {
   register double y, s;
-  if ((y=fabs( *x))>1.0) {return 0.0;} 
-  s = p[KAPPA2] + p[KAPPA];
+  if ((y=fabs(*x)) > 1.0) {return 0.0;} 
+  s = p[KAPPA2] + p[KAPPA1];
+
   switch ((int) p[KAPPA1]) {
   case 1:
-    return  -  pow(1.0 - y, p[KAPPA2]) *
-      y *  (p[KAPPA2] + 1.0)  * (p[KAPPA2] + 2.0) ; 
+    return  - pow(1.0 - y, s - 1.0) * y * s  * (s + 1.0); 
   case 2:
-    return -  pow(1.0 - y, s - 1.0) *
+    return - pow(1.0 - y, s - 1.0) *
       y * (0.333333333333333333 * s * s + 0.66666666666666666667 + s +
 	   y * 0.333333333333333333 * (s * s - 1.0) * (p[KAPPA2] + 4.0) );
   case 3:
     return -  pow(1.0 - y, s - 1.0) *
       0.2 * y * (6 + s * (5.0 + s) +
 		 y * (-6 + s * (1.0 + s * (4.0 + s)) +
-		      - 0.33333333333333333 * y * s * (-12.0 + s * (-4.0 + s * (3.0 + s)))
-		      ));
+		      0.33333333333333333 * y * s * (-12.0 + s * 
+						       (-4.0 + s * (3.0 + s)))
+		   ));
   default : assert(false);   
   }
 }
@@ -777,7 +778,17 @@ double TBM3Gneiting(double *x, double *p){
 double DGneiting(double *x, double *p){ 
   register double y,oneMy7;
   if ((y=fabs( *x * NumericalScale))>1.0) {return 0.0;}  
-  oneMy7 = 1.0-y; oneMy7*=oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
+  oneMy7 = 1.0-y; oneMy7 *= oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
+
+/*  double zz,z;
+  z= (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7;
+  p[KAPPA1] = 3; p[KAPPA2] =5.0;
+  zz=  DgenGneiting(&y, p);
+  printf("%f %f\n",z, zz);
+  assert(z==zz);
+  assert(false);
+*/
+
   return 
     (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7 * Sqrt2TenD47;
 }

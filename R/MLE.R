@@ -119,9 +119,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
-      if (PrintLevel>1) 
-        cat("LSQ WARNING! Forbidden values!", variab, "[", LSQLB, ",",
-            LSQUB, "]\n")
+      ##if (PrintLevel>1) 
+      warning(paste("LSQ: forbidden values:", variab, "[", LSQLB, ",",
+                    LSQUB, "]"))
       penalty <- variab 
       variab<-pmax(LSQLB, pmin(LSQUB, variab)) 
       penalty <- sum(variab-penalty)^2
@@ -251,10 +251,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      if (PrintLevel>0)
-        cat("REML WARNING! Forbidden values! -- if there are too many",
-            "warnings try narrower lower and upper bounds for the variables.",
-            variab, "[", MLELB, ",", MLEUB, "]\n")
+      ##if (PrintLevel>1)
+      warning(paste("REML: forbidden values -- if there are too many warnings",
+                    "try narrower lower and upper bounds for the variables:",
+                    variab, "[", MLELB, ",", MLEUB, "]"))
       penalty <- variab 
       variab <- pmax(MLELB, pmin(MLEUB, variab)) 
       penalty <- sum(variab - penalty)^2 ## not the best ....
@@ -407,10 +407,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      if (PrintLevel>0)
-        cat("ML WARNING! Forbidden values! -- if there are too many",
-            "warnings try narrower lower and upper bounds for the variables.",
-            variab, "[", MLELB, ",", MLEUB, "]\n")
+      ##if (PrintLevel>1)
+      warning(paste("ML: forbidden values -- if there are too many warnings",
+                    "try narrower lower and upper bounds for the variables:",
+                    variab, "[", MLELB, ",", MLEUB, "]"))
       penalty <- variab 
       variab <- pmax(MLELB, pmin(MLEUB, variab)) 
       penalty <- sum(variab - penalty)^2 ## not the best ....
@@ -617,8 +617,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      if (PrintLevel>0)
-        cat("CROSS WARNING! forbidden variab values ! -- if there are too many warnings try narrower lower and upper bounds for the variables.",variab,"[",CROSSLB,",",CROSSUB,"]\n")
+      ##if (PrintLevel>1)
+      warning(paste("CROSS: forbidden values -- if there are too many warnings",
+                    "try narrower lower and upper bounds for the variables:",
+                    variab,"[",CROSSLB,",",CROSSUB,"]"))
       penalty <- variab 
       variab <- pmax(CROSSLB, pmin(CROSSUB, variab)) 
       penalty <- sum(variab-penalty)^2 ## not the best ....
@@ -859,7 +861,7 @@ show <- function(nr, M, OPT, PARAM)
         if (any(pq <- is.na(PARAM)[!is.nan(PARAM)] & pp))
           warning(paste("position(s)", paste(pos[pq], collapse=","),
                         "of param has been changed by 'transform'",
-                        "that were NA.\n"))
+                        "that were NA."))
         pp <- pp & !pq
       }
       if (any(pp))
@@ -1260,7 +1262,7 @@ show <- function(nr, M, OPT, PARAM)
         cat("\ninconsistent boundaries\n")
         print(rbind("fixed"=notidx, "inconsist?"=inconsist, lower, PARAM, upper))
       }
-      warning("fixed parameters out of range\n")
+      warning("fixed parameters out of range")
     }
     stopifnot( varnugNA + zeronugget + sillbounded <= 1)
   }
@@ -2117,7 +2119,7 @@ show <- function(nr, M, OPT, PARAM)
       warning(paste(sep="",
                     "Chosen model does not seem to be appropriate!\n Probably a",
                   if (nugget!=0.0) "larger",
-                    "nugget effect should be considered.\n")
+                    "nugget effect should be considered.")
               )
   }
   

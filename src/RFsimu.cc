@@ -323,6 +323,11 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
   long endtime, total;
   double t, *x;
 
+//  printf("%d %d %d %d %f %f %f %d\n",
+//	 key->timespacedim,key->anisotropy,key->Time,key->grid,
+//	 key->T[0],key->T[1],key->T[2],key->length[0]
+//    );
+
   dimM1 = key->timespacedim - 1;
 //  assert(*xx == NULL);
   if (*xx != NULL) {
@@ -371,6 +376,7 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
 	  int yi[MAXDIM]; /* counter for the current position in the grid */
 	  for (w=0; w<key->timespacedim; w++) {y[w]=key->x[w][XSTART]; yi[w]=0;}
 	  for (k=0; k<total; ){
+//	    printf("%f %f %f %d %d %d\n", y[0], y[1], y[2], yi[0], yi[1], yi[2]);
 	    for (n=d=0; d<reduceddim; d++, k++) {
 	      x[k] = 0.0;
 	      for(w=0; w<key->timespacedim; w++) {
@@ -2126,7 +2132,7 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   // does not assume that orig_res[...] = 0.0, but it is set
   int error;
   long i, m;
-  double  *part_result, *res, realeach;
+  double  *part_result, *res, realeach=0.0;
   char back[]="\b\b\b\b\b\b\b\b\b\b\b", format[20], prozent[]="%";
   int ni, digits, each=0;
  
@@ -2138,7 +2144,6 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
       digits = (nn<900000000) ? 1 + (int) trunc(log(nn) / log(10)) : 9;
       back[digits] = '\0';
       each = (nn < 100) ? 1 :  nn / 100;
-      realeach = 100.0;
       sprintf(format, "%ss%s%dd", prozent, prozent, digits);
     } else if (GENERAL_PCH[0] == '%') {
       back[4] = '\0';
