@@ -340,22 +340,28 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
     ? (key->timespacedim * 3)
     : (reduceddim * key->totalpoints);
 //  printf("2nogr %d %d %d %d \n", total, reduceddim, simugrid, key->totalpoints);
+//  printf("total %d %d %d %d\n", total, key->totalpoints, reduceddim, key->timespacedim);
+
   if ((x = *xx = (double*) malloc(sizeof(double) * total)) == NULL)
     return ERRORMEMORYALLOCATION;
 
   if (key->anisotropy) {
     /* determine points explicitly */
     if (key->Time && !key->grid) { // time component, no grid
-      k=0;
       endtime =  key->length[key->spatialdim]; 
-      for (j=0, t=key->T[XSTART]; j<endtime; j++, t += key->T[XSTEP])
-	for (i=0; i<key->length[0]; i++)
+      for (k=j=0, t=key->T[XSTART]; j<endtime; j++, t += key->T[XSTEP]) {
+	for (i=0; i<key->length[0]; i++) {
 	  for (n=d=0; d<reduceddim; d++, k++) {
  	    x[k] = 0.0;
-	    for(w=0; w<key->timespacedim; w++)
+	    for(w=0; w<key->spatialdim; w++) {
+//	      printf("k=%d n=%d, w=%d, i=%d\n", k, n, w, i);
+//	      printf("xk=%f aniso=%f %f\n", x[k], aniso[n], key->x[w][i]);
 	      x[k] += aniso[n++] * key->x[w][i];
+	    }
 	    x[k] += aniso[n++] * t; //auf keinen Fall nach vorne holen
 	  }
+	}
+      }
     } else { 
       if (key->grid) {/* grid; with or without time component */
 	if (simugrid) { // necessarily stemming from diag matrix, but 
@@ -363,8 +369,7 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
 	  for (i=0; i<3; i++) {
 	    k = i;
 	    for (n=d=0; d<key->timespacedim; d++, k+=3) {
-              //not the reduced matrix!!
-//	      printf("2nogrid %d %f\n", k, x[k]);
+ //	      printf("2nogrid %d %f\n", k, x[k]);
  	      x[k] = 0.0;
 	      for(w=0; w<key->timespacedim; w++) 
 		x[k] += aniso[n++] * key->x[w][i]; 
@@ -399,7 +404,7 @@ int Transform2NoGrid(key_type *key, aniso_type aniso, int reduceddim,
 	    }
 	  }
 	}
-      } else {/* anisoptropic, no grid, no time component */
+      } else { /* anisoptropic, no grid, no time component */
 	for (k=i=0; i<key->totalpoints; i++)
 	  for (n=d=0; d<reduceddim; d++, k++) {
 	    x[k] = 0.0;
@@ -535,6 +540,7 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 
   zw = result = 0.0;
   ncovM1 = ncov - 1;
+//  printf("ani %d \n", anisotropy);
   if (anisotropy) {
     int cov_type;
     for (v=0; v<ncov; v++) {
@@ -550,6 +556,7 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 	    z[k] += kc->aniso[ani++] * x[j];
 	  }
 	}
+//	printf("%d %f %f\n", dim, z[0], z[1]);
 	if (cov_type==ANISOTROPIC) 
 	    zw *= cov->cov(z, kc->param);
 	/* derzeit ist dim in cov->FCT bis auf assert-checks unbenutzt */
@@ -578,9 +585,11 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 	    subdim = (int) kc->param[EFFECTIVEDIM];
 	    // subdim + 1 : C(0)
 	    // subdim : C(x)
+//	   printf("A %d %f\n", subdim, z[0]);
 	    z[subdim] =CovFct(x, dim, keycov, &(covlist[v+1]), nsub, anisotropy);
-	    z[subdim+1] =CovFct(ZERO, dim, keycov, &(covlist[v+1]), nsub, 
-				anisotropy);
+//	   printf("B\n");
+	    z[subdim+1] = CovFct(ZERO, dim, keycov, &(covlist[v+1]), nsub, 
+				 anisotropy);
 	    // printf("%f %f %f %f %d \n",zw,  z[0], z[1], z[2], subdim);
 //	    printf("zw=%f ", zw);
 	    zw *= cov->cov(z, kc->param);
@@ -588,7 +597,8 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 //		   z[0], z[1], z[2], kc->param[VARIANCE], 
 //		   kc->param[KAPPA1], kc->param[KAPPA2], kc->param[KAPPA3],
 //		   subdim, cov->name, cov->cov(z, kc->param, subdim), zw);
-	    assert(zw < 100000000.00);
+//
+//	    assert(zw < 100000000.00); // nicht loeschen
 	    v += nsub;
 	    kc = &(keycov[covlist[v]]);
 	  } else {
@@ -646,6 +656,13 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 //	   ncov, keycov[0].nr, keycov[ncov==1 ? 0 : 1].nr
 //	   ,zz, var, zw
 //      );
+
+//  if (dim==2) 
+//    printf("X%d %f %f, %f %f: %f %f \n",dim, x[0], x[1], z[0], z[1], zw, result);
+//  else 
+//    printf("-%d %f, %f : %f %f \n",dim, x[0], z[0], zw, result);
+// assert(result > 0.4);
+
   return result;
 }
 
@@ -819,6 +836,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
   if (ncov<0 || ncov>MAXCOV) return ERRORNCOVOUTOFRANGE;
   if (timespacedim < 1 || timespacedim > MAXDIM) return ERRORDIM; 
   pAniso = anisotropy ? timespacedim * timespacedim : 1;
+  if (Time && !anisotropy) return ERRORTIMENOTANISO; 
 
   totkappas = 0;
   for (v=0; v<ncov; v++){
@@ -846,7 +864,8 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 	    kc->param[EFFECTIVEDIM] = 1.0;
 	    break;
 	case SPACEISOTROPIC :
-	    kc->param[EFFECTIVEDIM] = 2.0;
+	    kc->param[EFFECTIVEDIM] = 2.0;    
+	    if (!Time) return ERRORWITHOUTTIME;
 	    break;
 	case ANISOTROPIC : case ANISOHYPERMODEL :
 	    kc->param[EFFECTIVEDIM] = (double) timespacedim;
@@ -879,7 +898,6 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 	  return ERRORNOTANISO;
       if (cov->cov==nugget && param[SCALE]==0.0) param[SCALE] = 1.0;
       if (param[SCALE] <= 0.0) return ERRORNEGATIVESCALE;
-      if (Time) return ERRORTIMENOTANISO; 
     }
     ParamList += pAniso;
     *equal &= !memcmp(&(kc->param[ANISO]), &(param[ANISO]), 
@@ -1027,7 +1045,7 @@ int CheckCovariance(int *covnr, double *p, int np,
 
   if ((logicaldim!=xdim) && (anisotropy || (xdim!=1))) return ERRORDIMMISMATCH;
   error = CheckAndBuildCov(covnr, op, ncov, p, np, naturalscaling, 
-			  anisotropy, /* Time */ false, /* grid*/
+			   anisotropy /* Time */,  false /* grid*/,
 			  logicaldim, anisotropy, keycov, &dummyequal);
   if (error != NOERROR) return error;
 

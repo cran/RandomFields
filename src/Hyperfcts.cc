@@ -130,7 +130,7 @@ void range_co(int reduceddim, int *index, double* range) {
   *index = RANGE_LASTELEMENT; 
   memcpy(range, local_range, sizeof(double) * 8);
   memcpy(&(range[8]),cutoff_a, sizeof(double) * 4);
-};
+}
 
 void info_co(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
@@ -232,7 +232,7 @@ void range_Stein(int reduceddim, int *index, double* range)
   *index = RANGE_LASTELEMENT; 
   memcpy(range, local_range, sizeof(double) * 8);
   memcpy(&(range[8]), stein_r, sizeof(double) * 4);
-};
+}
 
 
 void info_Stein(double *p, int *maxdim, int *CEbadlybehaved) 
@@ -311,6 +311,7 @@ double MaStein(double *x, double *p)
   // effectivedim + 1 : C(0) oder 0
   // effectvedim : C(x) oder -gamma(x)
   nuG = p[HYPERKAPPAI] + (x[effectivedim + 1] - x[effectivedim]);
+  if (nuG >= 80.0) return NA_REAL;
   gammas = lgammafn(p[HYPERKAPPAI] + p[HYPERKAPPAII]) -
     lgammafn(p[HYPERKAPPAI]) -lgammafn(nuG + p[HYPERKAPPAII]);
   for (s = 0.0, d=0; d<effectivedim; d++) s += x[d] * x[d];
@@ -328,7 +329,7 @@ void range_MaStein(int reduceddim, int *index, double* range) {
     range[8] = range[10] = 0.5 * (double) (reduceddim - 1);
     range[9] = RF_INF; range[11] = 10;
     *index = -1; 
-};
+}
 
 void info_MaStein(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;

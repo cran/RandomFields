@@ -381,7 +381,9 @@ GetModelNames()
     On the other hand, all entries of the
     anisotropy matrices in the submodels that build \eqn{\gamma}{gamma}
     is naught except the very last, purely temporal one.
-   
+
+    Note, that for numerical reasons, \eqn{b + g(t)} may not exceed
+    the value 80.0. If exceeded \code{NA} is returned or the algorithm fails.
     
     \item matern\cr
     See \code{whittlematern}.
@@ -555,7 +557,8 @@ GetModelNames()
     See \code{power}.
     
     \item \code{wave}
-    \deqn{C(x)=\frac{\sin x}x, \quad x>0}{C(x)=sin(x)/x if x>0}
+    \deqn{C(x)=\frac{\sin x}x, \quad x>0 \qquad \hbox{and } C(0)=1}{
+      C(x)=sin(x)/x if x>0 and C(0)=1}
     This isotropic covariance function is valid only for dimensions less
     than or equal to 3.
     It is a special case of the \code{bessel} model

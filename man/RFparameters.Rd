@@ -170,7 +170,12 @@
       one direction, namely that one where the covariance function has the
       largest value at the end point of the grid --- note that
       the default value of \code{CE.trials} is probably too small
-      in that case. \cr Default: \code{0}
+      in that case.
+
+      In some cases \code{CE.strategy=0} works better, in other cases
+      \code{CE.strategy=1}. Just try.
+      
+      \cr Default: \code{0}
       [init].}
     \item{\code{CE.maxmem}}{
       maximal total size of the circulant matrix. 
@@ -289,7 +294,7 @@
   where sets of points have to be identified that belong to the
   same subspace of eigenvalue 0 of the anisotropy matrix.
   \describe{
-    \item{nugget.tol}{
+    \item{\code{nugget.tol}}{
       points at a distance less than or equal to \code{nugget.tol}
       are considered as being identical. This strategy applies to
       the simulation method and the covariance function itself.
@@ -401,6 +406,8 @@
       a time component is given.
       If \code{FALSE} the turning layers are used only when the
       traditional TBM is not applicable.
+      If negative then turning layers may never be used.
+      If greater than 1 then only turning layers may be used. 
       Default: \code{FALSE} [init].}
     \item{\code{TBM3.every}}{If \code{TBM3.every>0} then every
       \code{TBM3.every}th iteration is announced.

@@ -202,7 +202,7 @@ void ErrorMessage(SimulationType m, int error) {
 	break;
       case ERRORCOVNUMERICAL: 
 	sprintf(EM,
-		"cov. of model & method calculable exactly only for %s. Got %s. Try TBM2.num=TRUE.",
+		"covariance exactly calculable in TBM2 only for %s. Got %s. Try TBM2.num=TRUE",
 		ERRORSTRING_OK,ERRORSTRING_WRONG);
 	break;
       case ERRORMAXMEMORY:
@@ -326,6 +326,9 @@ the anisotropy matrices must be identical"); break;
       case ERRORHYPERNOTISO :
 	  strcpy(EM, 
 		 "only isotropic models allowed for submodels of hyper models");
+	  break;
+      case ERRORLAYERS :
+	  strcpy(EM, "value of TBM*.layers does not match the situation");
 	  break;
 
 
@@ -524,14 +527,13 @@ void InitModelList()
 
   nr=IncludeModel("gengneiting", 2, checkOK, ISOTROPIC, false,
 		  infogenGneiting, rangegenGneiting);
-  addCov(nr,genGneiting,DgenGneiting,NULL);
+  addCov(nr, genGneiting, DgenGneiting, NULL);
   addTBM(nr, NULL, TBM3genGneiting, NULL);
 
-  nr=IncludeModel("gneiting",0, checkOK, ISOTROPIC, false, 
+  nr=IncludeModel("gneiting", 0, checkOK, ISOTROPIC, false, 
 		  infoGneiting, rangeGneiting); 
   addCov(nr,Gneiting,DGneiting,ScaleGneiting);
-  addTBM(nr,NULL, NULL, // TBM3Gneiting, 
-	 NULL);
+  addTBM(nr, NULL, TBM3Gneiting, NULL);
 
   nr=IncludeModel("hyperbolic",3,checkhyperbolic, ISOTROPIC, false,
 		  infohyperbolic, rangehyperbolic);
@@ -555,7 +557,8 @@ void InitModelList()
   nr=IncludeModel("nsst", 6, checkspacetime1, SPACEISOTROPIC, false, 
 		  infospacetime1, rangespacetime1);
   addCov(nr,spacetime1,Dspacetime1,NULL);
-  addTBM(nr,TBM2spacetime1, NULL /* TBM3spacetime1 */, NULL);
+  addTBM(nr, NULL, //TBM2spacetime1,
+	 NULL, NULL);
   
   nr=IncludeModel("nsst2",7,checkspacetime2,SPACEISOTROPIC, false, 
 		  infospacetime2, rangespacetime2);
@@ -601,6 +604,14 @@ void InitModelList()
   addTBM(nr, NULL, TBM3stable, NULL);
   addLocal(nr, true, DDstable, &STABLE);
  
+
+  // SPACEISOTROPIC variant of stable -- used for testing purposes only
+  nr=IncludeModel("stableX", 1, checkOK, SPACEISOTROPIC, false, 
+		  infostable, rangestable);
+  addCov(nr, stableX, DstableX, Scalestable);
+  addTBM(nr, NULL, NULL, NULL);
+
+
   nr=IncludeHyperModel("Stein", 3, checkNinit_Stein, ISOHYPERMODEL, false, 
 		       info_Stein, range_Stein);
   addCov(nr, Stein, NULL, NULL);

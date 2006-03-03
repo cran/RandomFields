@@ -37,7 +37,7 @@ bool is_diag(double *aniso, int dim) {
     if (i % diag != 0 && (notdiag = aniso[i] != 0.0)) break;
   }
   return !notdiag;
-};
+}
 
 void I0ML0(double *x, int *n) {
   int i;

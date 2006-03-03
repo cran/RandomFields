@@ -45,11 +45,11 @@ typedef void (*rangefct)(int reduceddim , int * index, double* range);
 //          usually not exceeded in practice (worthless or difficult to
 //          simulate)
 //      +OPEN in first element if interval left open and left border is integer, 
-//      -OPEN in second elemend if interval right open and right border is int,
+//      -OPEN in 2nd elemend if interval right open and right border is integer,
 //      non-integer border values of an interval are always supposed to be
 //      closed.
 
-typedef double (*covfct)(double *x, double*p);
+typedef double (*covfct)(double *x, double *p);
 // all parameters are input parameters:
 // x : vector of length 1 for ISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
@@ -61,12 +61,14 @@ typedef double (*covfct)(double *x, double*p);
 // The function returns the function value for a covariance model and
 //  - gamma(h) for a variogram model
 
-typedef double (*isofct)(double*, double*);  
+typedef double (*isofct)(double *x, double *p);  
 // all parameters are input parameters:
 // x : vector of length 1 for ISOTROPIC, of length 2 for SPACEISOTROPIC
 //     and of length dim for ANISOTROPIC -- currently no ANISOTROPIC model
 //     has been programmed yet.
 // p : p[KAPPA1], p[KAPPA2], etc 
+// *isofct is distinguished from *covfct, since it is used for the
+// the derivatives of isotropic functions
 
 typedef double (*natscalefct)(double* p, int scaling);
 // all parameters are input parameters:
@@ -91,12 +93,15 @@ nr = IncludeModel(
   int kappas,    // number of specific parameters
   checkfct,      // see above
   int isotropic, // values are: ISOTROPIC, SPACEISOTROPIC, ANISOTROPIC
-  bool variogram,// is the model a variogramm, e.g. gamma(h)=|h|
-  //                if so, then the covaiance function definition must 
-  //                be C(h) = -\gamma(h); the derivatives accordingly
+  bool variogram,// Is the model a variogramm, e.g. gamma(h)=|h| ?
+  //                If so, then the covariance function definition must 
+  //                be C(h) = -gamma(h); the derivatives accordingly
   infofct info,  // see above
   rangefct range // see above
   );
+
+// below, the function parameters can be set also to NULL. Then
+// the corresponding methods will not be available
 addCov(int nr,                  // the number returned by IncludeModel
        covfct cov,              // see above
        isofct derivative,       // the derivative of a ISOTROPIC model
@@ -108,9 +113,10 @@ addCov(int nr,                  // the number returned by IncludeModel
   );
 addTBM(int nr,                // the number returned by IncludeModel
        isofct cov_tbm2,       // the solved Abel intregral for TBM2
-       isofct cov_tbm3,       // d(hC(h))/dh -- will become obsolete, 
+       isofct cov_tbm3,       // d(hC(h))/dh -- may become obsolete, 
        //                        since it can be composed from cov and
-       //                        derivative
+       //                        derivative. The call of cov_tbm3, however,
+       //                        can be much faster
        randommeasure spectral // see above
   );
 // other addons exist, but are rarely used 
@@ -175,7 +181,9 @@ void infogCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
 void addusersfunctions() {
 // replace this function by something similar to the code
 // found below in the comment
+// Only the call of IncludeModel is obligatory.
 }
+
 /*
 void addusersfunctions() {
   int nr;

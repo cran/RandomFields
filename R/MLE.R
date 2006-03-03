@@ -46,6 +46,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 ) {
   ####################################################################
   ##all the following save.* are used for debugging only
+  CROSSLB <- CROSSUB <- LSQLB <- LSQUB <- MLEUB <- MLEUB <- NULL
   debug <- FALSE
   ##
   ## debug <- TRUE
@@ -64,6 +65,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
  ##
   show.error.message <- TRUE
   save.RFparameters <- RFparameters(no.readonly=TRUE)
+  if (save.RFparameters$PracticalRange) stop("PracticalRange must be FALSE")
   save.options <- options()
   on.exit({RFparameters(save.RFparameters);
            options(save.options)
@@ -113,15 +115,21 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     }
   }
 
+  WarningMessage <- function (variab, LB, UB, txt){
+    cat("Note:", txt, ": forbidden values -- if there are too many warnings",
+        "try narrower lower and upper bounds for the variables: (",
+        paste(variab, collapse=","), ") not in [(",
+        paste(LB, collapse=", "),  ") ; (",
+        paste(UB, collapse=", "), ")]\n")
+  }
+  
   LStarget <- function(variab) {
     if (PrintLevel>4) {cat("LSMIN=", LSMIN); print(variab,dig=20)}
     if (any((variab<LSQLB) | (variab>LSQUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
-      ##if (PrintLevel>1) 
-      warning(paste("LSQ: forbidden values:", variab, "[", LSQLB, ",",
-                    LSQUB, "]"))
+      if (PrintLevel>2) WarningMessage(variab, LSQLB, LSQUB, "LSQ")
       penalty <- variab 
       variab<-pmax(LSQLB, pmin(LSQUB, variab)) 
       penalty <- sum(variab-penalty)^2
@@ -236,7 +244,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
            assign("REML.data", crossprod(REML.A, data), envir=ENVIR)
            assign("MLEtarget", REMLtarget, envir=ENVIR)
          } else {
-           assign("MLEtarget", REMLtarget, envir=ENVIR) #!
+           assign("MLEtarget", MLtarget, envir=ENVIR) #!
          } 
        },
        stop(paste(M, "unknown"))
@@ -251,10 +259,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      ##if (PrintLevel>1)
-      warning(paste("REML: forbidden values -- if there are too many warnings",
-                    "try narrower lower and upper bounds for the variables:",
-                    variab, "[", MLELB, ",", MLEUB, "]"))
+      if (PrintLevel>2) WarningMessage(variab, MLELB, MLEUB, "REML")
       penalty <- variab 
       variab <- pmax(MLELB, pmin(MLEUB, variab)) 
       penalty <- sum(variab - penalty)^2 ## not the best ....
@@ -315,7 +320,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ## korrigiert, s.u. !!
     logdet <- 2 * sum(log(diag(cov.matrix))) * repet #  repet * log(det C)
     if (!is.finite(logdet)) logdet <- 1E300 ## the best ?! 
-    cov.matrix <- chol2inv(cov.matrix, LIN = TRUE) # La.chol2inv, LIN=TRUE
+    cov.matrix <- chol2inv(cov.matrix, LIN=TRUE) # La.chol2inv, LIN=TRUE
     quadratic <- sum(REML.data * (cov.matrix %*% REML.data))
     ##               sum_i (D_i - Xm)^T C^{-1} (D_i - X m)
     if (varnugNA || zeronugget) {
@@ -407,10 +412,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      ##if (PrintLevel>1)
-      warning(paste("ML: forbidden values -- if there are too many warnings",
-                    "try narrower lower and upper bounds for the variables:",
-                    variab, "[", MLELB, ",", MLEUB, "]"))
+      if (PrintLevel>2) WarningMessage(variab, MLELB, MLEUB, "MLE")   
       penalty <- variab 
       variab <- pmax(MLELB, pmin(MLEUB, variab)) 
       penalty <- sum(variab - penalty)^2 ## not the best ....
@@ -469,7 +471,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ## korrigiert, s.u. !!
     logdet <- 2 * sum(log(diag(cov.matrix))) * repet #  repet * log(det C)
     if (!is.finite(logdet)) logdet <- 1E300 ## the best ?! 
-    cov.matrix <- chol2inv(cov.matrix, LIN = TRUE) # La.chol2inv, LIN=TRUE
+    cov.matrix <- chol2inv(cov.matrix, LIN=TRUE) # La.chol2inv, LIN=TRUE
     m <- XC <- NULL
     if (givenCoVariates)  {
     ## m minimimiert, falls
@@ -617,10 +619,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 23.12.03 : still happens
-      ##if (PrintLevel>1)
-      warning(paste("CROSS: forbidden values -- if there are too many warnings",
-                    "try narrower lower and upper bounds for the variables:",
-                    variab,"[",CROSSLB,",",CROSSUB,"]"))
+      if (PrintLevel>2) WarningMessage(variab, CROSSLB, CROSSUB, "Cross")
       penalty <- variab 
       variab <- pmax(CROSSLB, pmin(CROSSUB, variab)) 
       penalty <- sum(variab-penalty)^2 ## not the best ....
@@ -1254,6 +1253,7 @@ show <- function(nr, M, OPT, PARAM)
     
     stopifnot(length(index)==length(autostart)) ## simple check
     notidx <- !index & !is.nan(PARAM)
+    
     incons.idx <- PARAM[notidx] > upper[notidx] | PARAM[notidx] < lower[notidx]
     if (any(incons.idx)){
       inconsist <- rep(NA, length(notidx))
@@ -1375,7 +1375,6 @@ show <- function(nr, M, OPT, PARAM)
   LSQLB  <- lsqlower[LSQINDEX]
   LSQUB  <- lsqupper[LSQINDEX]
   ixdLSQINDEX <- LSQINDEX[index]
-
   
 ##################################################
 ###############    PRIMITIVE METHODS   ###########
@@ -1389,10 +1388,6 @@ show <- function(nr, M, OPT, PARAM)
 #print(autostart)
 
   
-#  print(LSQTRANSFORM)
-#  print(lsqtrafoUser)
- # print(lsqtrafo)
-#  xxx
   if (nLSQINDEX > 0) param.table[[M]][idx[1]:idx[2]] <- autostart 
   idx <- tblidx[["covariab"]]
   param.table[[M]][idx[1]:idx[2]] <- lsq.covariates(autostart)
@@ -1561,14 +1556,14 @@ show <- function(nr, M, OPT, PARAM)
   ## advantage of the following way is that the for-loop is run through
   ## in an ordered sense -- this might be useful in case partial results
   ## are reused
-  methods <- (if (is.null(lsq.methods)) NULL else
+  lsqMethods <- (if (is.null(lsq.methods)) NULL else
               lsq.orig.methods[pmatch(lsq.methods, lsq.orig.methods)])
-  if (any(is.na(methods))) stop("not all lsq.methods could be matched")
-  if ("internal" %in% methods)
-    methods <- c(methods, paste("internal", 1:nlsqinternal, sep=""))
+  if (any(is.na(lsqMethods))) stop("not all lsq.methods could be matched")
+  if ("internal" %in% lsqMethods)
+    lsqMethods <- c(lsqMethods, paste("internal", 1:nlsqinternal, sep=""))
   
   for (M in c(alllsqmeth)) {
-    if (!(M %in% methods)) next;
+    if (!(M %in% lsqMethods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
     param.table[[M]] <- default.param
     LSQsettings(M)
@@ -1655,10 +1650,11 @@ show <- function(nr, M, OPT, PARAM)
 ##################################################
 ###################   MLE    #####################
   
-  methods <- (if (is.null(mle.methods)) NULL else
+  mleMethods <- (if (is.null(mle.methods)) NULL else
               allmlemeth[pmatch(mle.methods, allmlemeth)])
-  if ("reml" %in% methods && !givenCoVariates) methods <- c(methods, "ml")
-  mlelower <- lower
+  if ("reml" %in% mleMethods && !givenCoVariates)
+    mleMethods <- c(mleMethods, "ml")
+  mlelower <- lsqlower
   mleupper <- lsqupper
   MLEINDEX <- LSQINDEX
   nMLEINDEX <- sum(MLEINDEX)
@@ -1678,13 +1674,14 @@ show <- function(nr, M, OPT, PARAM)
   else 
     mlelower[scale.pos>0] <- mlelower[scale.pos>0] *
       lowerbound.scale.LS.factor / lowerbound.scale.factor
+  
   MLELB  <- mlelower[MLEINDEX]
   MLEUB  <- mleupper[MLEINDEX]
   ixdMLEINDEX <- MLEINDEX[index]
 
   ## fnscale <- -1 : maximisation
   for (M in c(allmlemeth)) {
-    if (!(M %in% methods)) next;
+    if (!(M %in% mleMethods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
     param.table[[M]] <- default.param
     if (M=="reml" && !givenCoVariates) { ## same as MLE
@@ -1859,7 +1856,7 @@ show <- function(nr, M, OPT, PARAM)
   CROSSUB <- crossupper[CROSSINDEX]
   ixdCROSSINDEX <- CROSSINDEX[index]
 
-  methods <- (if (is.null(cross.methods)) NULL else
+  crossMethods <- (if (is.null(cross.methods)) NULL else
               allcrossmeth[pmatch(cross.methods, allcrossmeth)])
   CROSS.lcrepet <- lc * repet
   cross.optim.control <-
@@ -1879,7 +1876,7 @@ show <- function(nr, M, OPT, PARAM)
       c(cross.optim.control$parscale, rep(1, nCoVariates))
   }
   for (M in c(allcrossmeth)) {
-    if (!(M %in% methods)) next;
+    if (!(M %in% crossMethods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
     stopifnot(is.null(trend)) ## vuniversal kriging not programmed yet
     crosssettings(M)    
@@ -2042,26 +2039,27 @@ show <- function(nr, M, OPT, PARAM)
 ######################################################################
   if (table.format) {
     for (i in 1:length(allmethods)) if (!is.na(param.table[1, i])) {
+      idx <- tblidx[["variab"]]
+      idxCovar <-  tblidx[["covariab"]]
+
       for (M in alllsqmeth) {
         cur <- param.table[tblidx[[M]][1], i]
         if (is.na(cur) && !is.nan(cur)) {
           LSQsettings(M)
           param.table[tblidx[[M]][1], i] <-
-            LStarget(LSQinvTrafo(param.table[, i])[LSQINDEX])
+            LStarget(LSQinvTrafo(param.table[idx[1]:idx[2], i])[LSQINDEX])
         }
       }
-
+ 
       for (M in allmlemeth) {
         cur <- param.table[tblidx[[M]][1], i]
         if (is.na(cur) && !is.nan(cur)) {
-          MLEsettings(M)
-          param.table[tblidx[[M]][1], i] <-
-            MLEtarget(MLEinvTrafo(param.table[, i])[MLEINDEX])
+           MLEsettings(M)
+           param.table[tblidx[[M]][1], i] <-
+            MLEtarget(MLEinvTrafo(param.table[idx[1]:idx[2], i])[MLEINDEX])
         }
       }
       
-      idx <- tblidx[["variab"]]
-      idxCovar <-  tblidx[["covariab"]]
       for (M in allcrossmeth) {
         cur <- param.table[tblidx[[M]][1], i]
         if (is.na(cur) && !is.nan(cur)) {
@@ -2152,8 +2150,25 @@ show <- function(nr, M, OPT, PARAM)
   }
   names(res) <- names(param.table)[idx.meth]
   
+#  lowerbounds <- list()
+#  r$mean <- I
+#  r$param <- lsqlower; lowerbounds$LSQLB <- convert.to.readable(r)
+#  r$mean <- -Inf
+#  r$param <- mlelower; lowerbounds$MLELB <- convert.to.readable(r)
+#  r$param <- crosslower; lowerbounds$CROSSLB <- convert.to.readable(r)
+#  upperbounds <- list()
+#  r$mean <- Inf
+#  r$param <- lsqupper; upperbounds$LSQLB <- convert.to.readable(r)
+#  r$mean <- Inf
+#  r$param <- mleupper; upperbounds$MLELB <- convert.to.readable(r)
+#  r$param <- crossupper; upperbounds$CROSSLB <- convert.to.readable(r)
+  
+  
   return(c(list(ev = ev),
            variogram=list(res),
-           values=list(values.res)))
+           values=list(values.res)
+  #         lowerbounds=list(lowerbounds),
+ #          upperbounds=list(upperbounds)
+         ))
 }
 

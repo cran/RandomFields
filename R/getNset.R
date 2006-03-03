@@ -1,3 +1,13 @@
+#usermodel <- function(info, range, cov, derivative) {
+#  ## hypermodels not allowed!
+#  stopifnot(!is.null(info), !is.null(range), is.null(check))
+#  .C("Init")
+#  if (!is.null(cov))
+#    .C("AddCov")
+#  if (!is.null(derivative))
+#    .C("AddTBM")
+#}
+
 
 paramextract <- function(p, model=c("cutoff")) {
   i <- .C("GetParamterPos", variance=integer(1), kappa=integer(1),
@@ -363,12 +373,14 @@ parampositions <- function(model, param, print=TRUE) {
                     TBM2.linesimufactor=TBM2.linesimufactor,
                     TBM2.linesimustep=TBM2.linesimustep,
                     TBM2.num=as.logical(TBM2.num),
-                    TBM2.layers=as.logical(TBM2.layers),
+                    TBM2.layers=if (TBM2.layers==0 || TBM2.layers==1)
+                                   as.logical(TBM2.layers) else TBM2.layers,
                     TBM3.every=TBM3.every,
                     TBM3.lines=TBM3.lines,
                     TBM3.linesimufactor=TBM3.linesimufactor,
                     TBM3.linesimustep=TBM3.linesimustep,
-                    TBM3.layers=as.logical(TBM3.layers),
+                    TBM3.layers=if (TBM3.layers==0 || TBM3.layers==1)
+                                  as.logical(TBM3.layers) else TBM3.layers,
                     TBMCE.force=as.logical(TBMCE.force),
                     TBMCE.mmin=TBMCE.mmin,
                     TBMCE.strategy=TBMCE.strategy,

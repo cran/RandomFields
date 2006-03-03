@@ -202,6 +202,9 @@ int checkstable(double *param, int timespacedim, SimulationType method);
 void rangestable(int dim, int *index, double* range);
 void infostable(double *p, int *maxdim, int *CEbadlybehaved);
 
+double stableX(double *x, double *p);
+double DstableX(double *x, double *p);
+
 double SteinST1(double *x, double *p);
 //double ScaleSteinST1(double *p, int scaling);
 int kappasSteinST1(int dim);

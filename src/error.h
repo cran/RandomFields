@@ -29,7 +29,8 @@
 				    the variogram is defined */
 #define ERRORFOURIER 13          /* specific error in Fourier transformation */
 #define ERRORCOVFAILED 14        /* covariance model not defined for specified 
-				    parameters */
+				    parameters -- NOTE: ERRORSTRING_OK and 
+				    ERRORSTRING_WRONG must be set*/
 #define ERRORREGISTER 15         /* wrong register number */
 #define ERRORCOORDINATES 16      /* coordinates are not given or invalid grid 
 				    specification */
@@ -73,9 +74,12 @@
 #define ERRORTIMENOTALLOWED 38  /* time component not allowed for the specified 
                                    method */
 #define ERRORCOVNUMERICAL 39    /* covariance function of derivative cannot
-				   be calculated exactly, e.g. in TBM2 */
+				   be calculated exactly, e.g. in TBM2 -- 
+				   NOTE: ERRORSTRING_OK and 
+				   ERRORSTRING_WRONG must be set */
 #define ERRORMAXMEMORY 40       /* in circulant embedding: circulant vector too
-				   large */
+				   large  -- NOTE: ERRORSTRING_OK and 
+				    ERRORSTRING_WRONG must be set */
 #define ERRORTOOMANYLINES 41    /* Hyperplane tesselation: estimated simulated
 				   lines passes given threshold*/
 #define ERRORANYLEFT 42         /* some covariances have not been simulated yet
@@ -91,7 +95,9 @@
 				   yet */
 #define ERRORNCOVOUTOFRANGE 50 /* number of cov. functions not in 0/1..MAXDIM*/
 #define ERRORPARENTHESIS 51    /* parenthesis as operator iff isohypermodel */
-#define ERRORMSG 52            /* parenthesis as operator iff isohypermodel */
+#define ERRORMSG 52            /* parenthesis as operator iff isohypermodel 
+				  -- NOTE: ERRORSTRING_OK and 
+				  ERRORSTRING_WRONG must be set*/
 #define ERRORTBMPOINTSZERO 53  /* linesimustep and linesimufactor are zero 
 				   and TBM_POINTS<4 */
 #define ERRORFULLRANK 54       /* anisotropy matrix does not have full rank,
@@ -104,6 +110,8 @@
 				 */ 
 #define ERRORHYPERNOTISO 58      /* only ISOTROPIC covariance models allowed
 				    for submodels of hypermodels */
+#define ERRORLAYERS 59           /* value of TBM*.layers does not match 
+				   the situation */
 
 #define NOERROR_REPEAT 97
 #define NOERROR_ENDOFLIST 98

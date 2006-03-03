@@ -15,7 +15,7 @@
 #define COVMAXCHAR 14 /* max number of characters for covariance name*/
 #define MAXCOV 10     /* max number of covariance functions for a random 
 			 field -- NEVER MORE THAN 255 */
-#define MAXDIM 4          
+#define MAXDIM 4    
 #define MAXDIMSQ MAXDIM * MAXDIM
 #define ZWEIHOCHMAXDIM 16 /* 2^MAXDIM */
 /* if explicite simulation method is not given by
@@ -534,11 +534,12 @@ extern int nlocal;
 // see RFtbm.cc			  
 typedef struct tbm_param {
   int lines,           // number of lines simulated
-      every;           // every `every' line is announced if every>0
+      every,           // every `every' line is announced if every>0
+      layers;
   double linesimufactor, /*factor by which simulation on the line is finer 
 			     than the grid */
       linesimustep;      /* grid lag defined absolutely */
-  bool layers, tbm2num; 
+  bool  tbm2num; 
 } tbm_param;
 typedef struct TBM_storage {
   aniso_type aniso;

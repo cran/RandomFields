@@ -62,7 +62,7 @@ model <- list(list(m="nsst",v=1,k=k,a=m))
 #m <- matrix(c(1,0.3, 0.2,0.1),ncol=2) / ff; k <- NULL
 #model <- list(list(m="gneiting",v=1,k=k,a=m))
 
-z <- GaussRF(x=x,y=y,grid=TRUE, model=model,me="ci")
+z <- GaussRF(x=x, T=c(1,256,1),grid=TRUE, model=model,me="ci")
 image(z,zlim=c(-3,3))
 
 #stop("")
@@ -90,7 +90,8 @@ image(matrix(cc,ncol=sqrt(length(cd))),zlim=c(-0.5,1))
 image(matrix((abs(cd) -abs(cc))/cd, ncol=sqrt(length(cd))),zlim=c(-1,1),
       col=rainbow(100))
 
-z <- GaussRF(x=x,y=y,grid=TRUE, model=model)
+Time <- c(min(y), max(y), diff(y)[1])
+z <- GaussRF(x=x,T=Time,grid=TRUE, model=model)
 image(z,zlim=c(-3,3))
 
 
@@ -98,7 +99,7 @@ image(z,zlim=c(-3,3))
 cat("\n landmark 4\n")
 
 
-RFparameters(TBMCE.trials=5);
+RFparameters(TBMCE.trials=3, TBMCE.maxmem=2e7); # TBMCE.trials=5
 x <- (1:32)/2
 y <- (1:32)/2
 T <- c(1,32,1)/2
@@ -107,7 +108,7 @@ m <- matrix(c(1,0,0, 0,1,0, 0,0,1),ncol=3) / ff
 k <- c(1,phi=1,1,0.5,psi=1,dim=3)
 model <- list(list(m="nsst",v=1,k=k,a=m))
 
-z <- GaussRF(x=x,y=y,T=T,grid=TRUE, model=model, me="TBM3")
+z <- GaussRF(x=x,y=y,T=T,grid=TRUE, model=model, me="TBM3", Print=5)
 
 
 print(z[,,1])
@@ -354,7 +355,7 @@ z1 <- GaussRF(x=x, y=x, grid=TRUE,
                "+",
                list(m="sph", v=10, a = matrix(c(0.5,-1,0,0.5),ncol=2)),
                ),
-              me="TBM2")
+              me="TBM2", TBM2.num=TRUE)
 print(c(mean(as.double(z1)),var(as.double(z1))))
 
 image(z1,zlim=c(-3,3))
@@ -362,7 +363,7 @@ image(z1,zlim=c(-3,3))
 cat("\n landmark 15\n")
 
 z1 <- GaussRF(x=x, y=x, grid=TRUE, model=list(list(m="power", v=1,k=2,s=10)),
-              me="TBM2")
+              me="TBM2", TBM2.num=TRUE)
 image(z1,zlim=c(-3,3))
 
 ## spectral TBM
@@ -439,7 +440,7 @@ x <- (0:100)/10
 x <- (0:30)/10
 n <- 100
 
-RFparameters(CE.trials=3, Print=20); DeleteAllRegisters()
+RFparameters(CE.trials=3, Print=2); DeleteAllRegisters()
 z <- GaussRF(x=x, y=x, grid=TRUE,
              model=list(list(m="exponen", v=1, a=matrix(c(0.5,0,1,0.5),ncol=2)))
                )
@@ -449,7 +450,7 @@ cat("\n landmark 21\n")
 
 ## unspecified, general testing
 
-RFparameters(Print=5)
+RFparameters(Print=1)
 z <- GaussRF(x=x, y=x, grid=TRUE,
              model=list(list(m="exponen", v=1, a=matrix(c(0.5,0,1,0.5),ncol=2)),
                "*",

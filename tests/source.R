@@ -1,4 +1,6 @@
 
+# .x <- dir(); for (.i in .x) source(.i)
+
 library(RandomFields,
         lib=if (TRUE && file.exists("~/TMP/RandomFields") &&
           file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
@@ -25,3 +27,5 @@ if (EXTENDED.TESTING <- file.exists(paste(.path, "rf.R", sep="")) &&
   Source("modelling.R")
   Source("rf.R")
 } 
+
+# .f <- dir(); for (.i in .f) {cat("\n\n\n\n\n\n\n", .i);source(.i)}

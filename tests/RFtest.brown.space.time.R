@@ -20,7 +20,7 @@ n <- 2; TBM2.lines<-2
 #kappa <- scale <- var <-  1
 
 x <- c(1,5,1)#x <- c(1,4,1)
-RFparameters(Print=8)
+RFparameters(Print=8, Practical=FALSE)
 z <- GaussRF(x=x, y=x, z=x, grid=TRUE, gridtriple=TRUE, model=model,
 		me="intr", param=c(0,var,0,scale,kappa), n=5 * n)
 
@@ -115,7 +115,7 @@ print(CovarianceFct(x=cbind(1,1,1), model=model))
 print(Variogram(x=cbind(1,1,1), model=model))
 
 z <- GaussRF(x=x, y=y, T=T, grid=TRUE, gridtriple=TRUE, model=model, me="TBM2",
-             n=n)
+             n=n, Print=90, TBM2.num=TRUE, TBMCE.trials=1) ## 1 fuehrt zu Fehlern
 
 print(CovarianceFct(x=cbind(1,1,1), model=model))
 print(cov(z[1,1,1, ], z[2,2,2,]))

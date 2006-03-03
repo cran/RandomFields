@@ -527,7 +527,6 @@ extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
   CovList[nr].cov_tbm2=cov_tbm2;
   CovList[nr].range(2, &index, range);
   assert(index != RANGE_INVALIDDIM);
-  CovList[nr].range(3, &index, range);
   if (cov_tbm2 != NULL) {
     CovList[nr].implemented[TBM2] = IMPLEMENTED;
     assert(CovList[nr].derivative!=NULL); 
@@ -538,6 +537,7 @@ extern void addTBM(int nr, isofct cov_tbm2, isofct cov_tbm3,
 	? NUM_APPROX : NOT_IMPLEMENTED;
   }
   CovList[nr].cov_tbm3=cov_tbm3;
+  CovList[nr].range(3, &index, range);
   if (cov_tbm3!=NULL || cov_tbm2!=NULL) assert(CovList[nr].derivative!=NULL);
   CovList[nr].implemented[TBM3] = (index != RANGE_INVALIDDIM) && 
       (CovList[nr].cov_tbm3!=NULL || 
@@ -1033,11 +1033,10 @@ void GetKeyInfo(int *keyNr, int *total, int *lengths, int *spatialdim,
 }
 
 
-
-
-SEXP Logi(bool* V, int n, int max) {
+SEXP Logi(bool* V, int n, int max, long *mem) {
   int i;
   SEXP dummy;
+  (*mem) += n * sizeof(bool);
   if (n>max) return TooLarge(&n, 1);
   PROTECT(dummy=allocVector(LGLSXP, n));
   for (i=0; i<n; i++) LOGICAL(dummy)[i] = V[i];
@@ -1045,9 +1044,10 @@ SEXP Logi(bool* V, int n, int max) {
   return dummy;
 }
 
-SEXP Num(double* V, int n, int max) {
+SEXP Num(double* V, int n, int max, long *mem) {
   int i;
   SEXP dummy;
+  (*mem) += n * sizeof(double);
   if (n>max) return TooLarge(&n, 1);
   PROTECT(dummy=allocVector(REALSXP, n));
   for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
@@ -1055,9 +1055,10 @@ SEXP Num(double* V, int n, int max) {
   return dummy;
 }
 
-SEXP Int(int *V, int n, int max) {
+SEXP Int(int *V, int n, int max, long *mem) {
   int i;
   SEXP dummy;
+  (*mem) += n * sizeof(int);
   if (n>max) return TooLarge(&n, 1);
   PROTECT(dummy=allocVector(INTSXP, n));
   for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
@@ -1065,9 +1066,10 @@ SEXP Int(int *V, int n, int max) {
   return dummy;
 }
 
-SEXP Mat(double* V, int row, int col, int max) {
+SEXP Mat(double* V, int row, int col, int max, long *mem) {
   int i, n;
   n = row * col;
+  (*mem) += n * sizeof(double);
   if (n>max) {
       int nn[2];
       nn[0] = row;
@@ -1086,13 +1088,14 @@ SEXP TooLarge(int *n, int l){
 #define nTooLarge 2 // mit op
   char *tooLarge[nTooLarge] = {"size", "msg"};
   int i;
+  long mem=0;
   SEXP namevec, info;
   PROTECT(info=allocVector(VECSXP, nTooLarge));
   PROTECT(namevec = allocVector(STRSXP, nTooLarge));
   for (i=0; i<nTooLarge; i++) SET_VECTOR_ELT(namevec, i, mkChar(tooLarge[i]));
   setAttrib(info, R_NamesSymbol, namevec);
   i=0;
-  SET_VECTOR_ELT(info, i++, Int(n, l, l));
+  SET_VECTOR_ELT(info, i++, Int(n, l, l, &mem));
   SET_VECTOR_ELT(info, i,
 		 mkString("too many elements - increase max.elements"));
   UNPROTECT(2);
@@ -1111,10 +1114,11 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
        "simugrid", "processed", "param", "aniso", "x", "xsimugr"};
   SEXP model,  submodel[MAXCOV], namemodelvec[2];
   int i, exception, k, subi;
+  long mem;
   covinfo_type *kc;
 
   // printf("0X\n");
-
+  mem = 0;
   PROTECT(model = allocVector(VECSXP, nc));
   for (exception=0; exception <= 1; exception++) {
     int j;
@@ -1141,25 +1145,26 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->dim));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarInteger(kc->reduceddim));
     SET_VECTOR_ELT(submodel[i], subi++,
-		   Int(kc->length, kc->simugrid ? kc->dim : 0, MAX_INT));
+		   Int(kc->length, kc->simugrid ? kc->dim : 0, MAX_INT, &mem));
     // printf("X\n");
     SET_VECTOR_ELT(submodel[i], subi++, 
-		   Int(kc->idx, kc->simugrid ? kc->dim :0, MAX_INT));
+		   Int(kc->idx, kc->simugrid ? kc->dim :0, MAX_INT, &mem));
     // printf("Xa\n");
     SET_VECTOR_ELT(submodel[i], subi++, mkString(CovList[kc->nr].name));
     if (!exception) 
 	SET_VECTOR_ELT(submodel[i], subi++, mkString(OP_SIGN[kc->op]));
     SET_VECTOR_ELT(submodel[i], subi++,
-		   Logi(kc->genuine_dim, kc->simugrid ? kc->dim : 0, MAX_INT));
+		   Logi(kc->genuine_dim, kc->simugrid ? kc->dim : 0, MAX_INT, 
+			&mem));
     SET_VECTOR_ELT(submodel[i], subi++, 
 		   ScalarLogical(kc->genuine_last_dimension));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(kc->simugrid));
     SET_VECTOR_ELT(submodel[i], subi++, ScalarLogical(!kc->left));
     SET_VECTOR_ELT(submodel[i], subi++, (totalparam < 0) ? allocVector(VECSXP, 0)
-		   : Num(kc->param, totalparam, MAX_INT));
+		   : Num(kc->param, totalparam, MAX_INT, &mem));
     SET_VECTOR_ELT(submodel[i], subi++, (kc->dim<=0) ? allocVector(VECSXP, 0)
 		   : Mat(kc->aniso, kc->dim, // kc->reduceddim
-			 kc->dim, MAX_INT)
+			 kc->dim, MAX_INT, &mem)
                     // should be matrix
 	);
     //printf("Xb\n");
@@ -1168,9 +1173,9 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
     else
 	SET_VECTOR_ELT(submodel[i], subi++, 
 		       Mat(kc->x, kc->simugrid ? 3 : totalpoints, 
-			   kc->reduceddim, MAX_INT));
+			   kc->reduceddim, MAX_INT, &mem));
     SET_VECTOR_ELT(submodel[i], subi++, 
-		   Mat(kc->xsimugr, kc->simugrid ? 3 : 0, kc->dim, MAX_INT));
+		   Mat(kc->xsimugr, kc->simugrid ? 3 : 0, kc->dim, MAX_INT, &mem));
 
     assert(subi==nmodelinfo - (i==nc)); 
     SET_VECTOR_ELT(model, i, submodel[i]);
@@ -1184,12 +1189,12 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
 SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod, 
 		   bool ignore_active, int depth, int max) 
 {
-#define nmethodinfo 6 // mit op
+#define nmethodinfo 7 // mit op
   char *methodinfo[nmethodinfo] = 
-    {"name", "in.use", "not.addable", "actcov", "covnr", "mem"};
+    {"name", "in.use", "not.addable", "actcov", "covnr", "allocated", "mem"};
   SEXP submethod[MAXCOV], namemethodvec, method, nameSvec, S;
   int i, k, subi, tsdim;
-  long totpts;
+  long totpts, mem;
 
   totpts = key->totalpoints;
   tsdim = key->timespacedim;
@@ -1198,6 +1203,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
   for (k=0; k<nmethodinfo; k++)
        SET_VECTOR_ELT(namemethodvec, k, mkChar(methodinfo[k]));
   for (i=0; i<key->n_unimeth; i++) {
+    mem = 0;
     methodvalue_type *meth;
     meth = &(key->meth[i]);
     PROTECT(submethod[i] = allocVector(VECSXP, nmethodinfo));
@@ -1211,7 +1217,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 		   ScalarLogical(meth->incompatible));
     SET_VECTOR_ELT(submethod[i], subi++, ScalarInteger(meth->actcov));
     SET_VECTOR_ELT(submethod[i], subi++, 
-		   Int(meth->covlist, meth->actcov, MAX_INT));
+		   Int(meth->covlist, meth->actcov, MAX_INT, &mem));
     
     int nS, nSlist[Forbidden + 1] =
 	{8 /* CE */, 2 /*Cutoff*/, 2 /* Intr */, 10 /* TBM2 */, 10 /* TBM3 */, 
@@ -1229,28 +1235,28 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    CE_storage* s;
 	    s = (CE_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("size"));
-	    SET_VECTOR_ELT(S, k++, Int(s->m, tsdim, MAX_INT));
+	    SET_VECTOR_ELT(S, k++, Int(s->m, tsdim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("totalsize"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->mtot));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("next_new"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->new_simulation_next));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("curSimuPosition"));
-	    SET_VECTOR_ELT(S, k++, Int(s->cur_square, tsdim, MAX_INT));
+	    SET_VECTOR_ELT(S, k++, Int(s->cur_square, tsdim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simupositions"));
-	    SET_VECTOR_ELT(S, k++, Int(s->max_squares, tsdim, MAX_INT));
+	    SET_VECTOR_ELT(S, k++, Int(s->max_squares, tsdim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("segmentLength"));
 	    {
 	      int dummy[MAXDIM], i;
 	      for (i=0; i< tsdim; i++) 
 		  dummy[i] = s-> square_seg[i] / s->cumm[i];
-	      SET_VECTOR_ELT(S, k++, Int(dummy, tsdim, MAX_INT));
+	      SET_VECTOR_ELT(S, k++, Int(dummy, tsdim, MAX_INT, &mem));
 	    }
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("fft"));
 	    SET_VECTOR_ELT(S, k++, s->c == NULL ? ScalarLogical(false)
-			   : Mat(s->c, 2, s->mtot, max));	    
+			   : Mat(s->c, 2, s->mtot, max, &mem));	    
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("invfft"));
 	    SET_VECTOR_ELT(S, k++, s->d == NULL ? ScalarLogical(false)
-			   : Mat(s->d, 2, s->mtot, max));	    
+			   : Mat(s->d, 2, s->mtot, max, &mem));	    
 	    } break;
 	case CircEmbedCutoff : case CircEmbedIntrinsic : {
 	    localCE_storage* s;
@@ -1266,7 +1272,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 			       : (CovList[s->key.cov[v].nr].localtype == 
 				  CircEmbedIntrinsic 
 				  ? Mat((double*)s->correction[v], tsdim, tsdim,
-					MAX_INT)
+					MAX_INT, &mem)
 				  :  mkChar("error")
 				   )
 		    );
@@ -1277,13 +1283,14 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
 	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						      depth + 1, max));
+	    
 	} break;
 	case TBM2: case TBM3 : {
 	    TBM_storage* s;
 	    s = (TBM_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("aniso"));
 	    SET_VECTOR_ELT(S, k++, 
-			   Mat(s->aniso, tsdim, s->reduceddim, MAX_INT));
+			   Mat(s->aniso, tsdim, s->reduceddim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuspatialdim"));
@@ -1293,22 +1300,23 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("reduceddim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->reduceddim));		
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
-	    SET_VECTOR_ELT(S, k++, Num(s->center, s->reduceddim, MAX_INT));
+	    SET_VECTOR_ELT(S, k++, Num(s->center, s->simuspatialdim,
+				       MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
 	    SET_VECTOR_ELT(S, k++, (s->x == NULL) 
 			   ? allocVector(VECSXP, 0)
-			   : Mat(s->x, s->simugrid ? 3 : totpts, 
-				 s->reduceddim, max));
+			   : Mat(s->x, s->reduceddim, s->simugrid ? 3 : totpts, 
+				 max, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("xsimgr"));
 	    SET_VECTOR_ELT(S, k++, Mat(s->xsimugr, s->simugrid ? 3 : 0,
-				       s->timespacedim, MAX_INT));
+				       s->timespacedim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuline"));
 	    SET_VECTOR_ELT(S, k++, s->simuline==NULL 
 			   ? allocVector(VECSXP,0) 
 			   : (s->ce_dim==1 
-			      ? Num(s->simuline, s->key.length[0], max)
+			      ? Num(s->simuline, s->key.length[0], max, &mem)
 			      : Mat(s->simuline, s->key.length[0], 
-				    s->key.length[1], max)
+				    s->key.length[1], max, &mem)
 			     )
 	      );
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
@@ -1331,10 +1339,10 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 			   mkString(invm[s->method]) :  ScalarLogical(false));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("sqrtCov"));
 	    SET_VECTOR_ELT(S, k++, s->U == NULL ? ScalarLogical(false)
-			   : Mat(s->U, totpts, totpts, max));
+			   : Mat(s->U, totpts, totpts, max, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("dummy"));
 	    SET_VECTOR_ELT(S, k++, s->G == NULL ? ScalarLogical(false)
-			   : Num(s->G, totpts + 1, max));	    
+			   : Num(s->G, totpts + 1, max, &mem));	    
 	    
 	}  break;
 	case Nugget : {
@@ -1348,7 +1356,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->sqrtnugget));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
 	    SET_VECTOR_ELT(S, k++, 
-			     Int(s->pos, (s->pos == NULL) ? 0 : totpts, max));	
+			     Int(s->pos, (s->pos == NULL) ? 0 : totpts, max, &mem));	
 	  }  break;
 	case AdditiveMpp : {
 	    mpp_storage* s;
@@ -1364,11 +1372,11 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
-	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT));	    
+	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT, &mem));	    
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
-	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
-	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
@@ -1378,9 +1386,9 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    hyper_storage* s;
 	    s = (hyper_storage*) meth->S;
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("rx"));
-	    SET_VECTOR_ELT(S, k++, Num(s->rx, tsdim, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->rx, tsdim, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
-	    SET_VECTOR_ELT(S, k++, Num(s->center, tsdim, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->center, tsdim, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("radius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->radius));	
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("HyperplaneFctOK"));
@@ -1402,11 +1410,11 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
-	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT));	    
+	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT, &mem));	    
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
-	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
-	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT)); 
+	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT, &mem)); 
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
@@ -1425,7 +1433,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	  
 	  dim = key->grid ? tsdim : 1;
 	  if (dim==1) {
-	    SET_VECTOR_ELT(S, k++, Num(s->rf, totpts, max));	
+	    SET_VECTOR_ELT(S, k++, Num(s->rf, totpts, max, &mem));	
 	  } else {
 	    PROTECT(dummy=allocVector(INTSXP, dim));
 	    for (i=0; i<dim; i++) INTEGER(dummy)[i] = key->length[i];
@@ -1444,7 +1452,10 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    
     }
     assert(k==nS);
+ 
+    
     setAttrib(S, R_NamesSymbol, nameSvec);
+    SET_VECTOR_ELT(submethod[i], subi++, ScalarInteger(mem));
     SET_VECTOR_ELT(submethod[i], subi++, S);
     UNPROTECT(2); // method + namemethodvec
  
@@ -1515,6 +1526,7 @@ SEXP GetExtKeyInfo(SEXP keynr, SEXP Ignoreactive, SEXP max_elements)
     return InternalGetKeyInfo(&(KEY[knr]), LOGICAL(Ignoreactive)[0], 0,
 			      INTEGER(max_elements)[0]);
 }
+
 
 void GetCornersOfGrid(key_type *key, int Stimespacedim, double *aniso, 
 		      double *sxx)
@@ -1595,10 +1607,10 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
   if (simugrid) {
     // diameter of the grid
     for (d=0; d<simuspatialdim; d++) {
-      lx[d] = x[XSTEPD[d]] * (double) (key->length[d] - 1);
+      lx[d] = x[XENDD[d]] - x[XSTARTD[d]];
       center[d] = 0.5 * lx[d] + x[XSTARTD[d]];
-//        printf("getcenteranddiam %d %f %f %d %f %f\n", d, center[d], 
-//	       x[XSTARTD[d]], key->length[d], x[XSTEPD[d]], lx[d]);
+      //       printf("getcenteranddiam %d %f %f %d %f %f %f\n", d, center[d], 
+//	       x[XSTARTD[d]], key->length[d], x[XSTEPD[d]], x[XENDD[d]], lx[d]);
       distsq += lx[d] * lx[d];
     }
   } else { // not simugrid
