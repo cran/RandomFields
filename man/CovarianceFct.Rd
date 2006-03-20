@@ -517,8 +517,12 @@ GetModelNames()
     The parameters \eqn{a_0}, \eqn{a_2} and \eqn{b_0}
     are chosen internally such that \eqn{C} becomes a smooth function.
     The parameters \eqn{A} and \eqn{B} are the inverse scale parameters for
-    the hypermodel and submodel, respectively. Note that \code{Stein} seldemly
-    works, if \eqn{A} and \eqn{B} are not identical.
+    the hypermodel and submodel, respectively.
+
+    Note that if \eqn{A} and \eqn{B} are not identical,
+    \code{Stein} seldemly
+    works; it may also happen that unsound results 
+    are returned without any message of failure.
 
     The algorithm that checks the given parameters knows
     only about some few necessary conditions.

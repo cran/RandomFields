@@ -145,7 +145,8 @@ void ErrorMessage(SimulationType m, int error) {
       case TBM2 : strcpy(MS,"2-dim. TBM"); break;
       case TBM3: strcpy(MS,"3-dim. TBM"); break;
       case SpectralTBM: strcpy(MS,"spectral TBM"); break;
-      case Direct : strcpy(MS,"direct Gaussian (decomposition of cov. matrix)");
+      case Direct : 
+	  strcpy(MS,"direct Gaussian (decomposition of cov. matrix)");
 	break;
       case Nugget: strcpy(MS,"nugget effect modelling"); break;
       case AdditiveMpp: strcpy(MS,"additive MPP (random coins)"); break;
@@ -173,8 +174,8 @@ void ErrorMessage(SimulationType m, int error) {
 
       case ERRORNOTDEFINED :       
 	strcpy(EM,"method undefined for this model");break;
-      case ERRORMETHODNOTALLOWED : 
-	strcpy(EM,"not allowed for the specified parameters or points");break;
+      case ERRORONLYGRIDALLOWED : 
+	strcpy(EM,"only allowed for grids");break;
       case ERRORNOTPROGRAMMED :    
 	strcpy(EM,"not programmed yet. Sorry"); break;
       case ERRORCOVNOTALLOWED :    
@@ -264,7 +265,7 @@ the anisotropy matrices must be identical"); break;
       case ERRORDIMMISMATCH:
 	strcpy(EM,"logical dimension does not match physical dimension"); break;
       case ERRORTOOMANYPOINTS:
-	strcpy(EM, "two many points to determine smallest distance between the points"); break;
+	strcpy(EM, "too many points to determine smallest distance between the points; try TBM*.linesimustep with a positive value"); break;
       case ERRORTIMENOTALLOWED:
 	strcpy(EM, "time component not allowed for the specified method"); break;
       case ERRORANYLEFT:

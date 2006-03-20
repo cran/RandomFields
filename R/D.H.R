@@ -20,7 +20,7 @@ regression <- function(x, y, main, scr,
     y <- as.vector(y)
   } else stopifnot(length(y) %% length(x) == 0)
   if (length(y)>length(x)) {
-    if (averaging) y <- apply(matrix(y, nrow=length(x)), 1, mean)
+    if (averaging) y <- rowMeans(matrix(y, nrow=length(x)))
     else x <- rep(x, len=length(y))
   }
   regr <- lm(y ~ x)[regr.select]

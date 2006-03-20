@@ -138,7 +138,8 @@ void info_co(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 
 int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist, 
-		  int remaining_covlistlength, SimulationType method) {
+		  int remaining_covlistlength, 
+		  SimulationType method, bool anisotropy) {
 #define co_nr 5
   char *allowed_fct[co_nr] = {"stable", "cauchy",
 			      "whittle", "gencauchy", "exponential"};
@@ -242,37 +243,46 @@ void info_Stein(double *p, int *maxdim, int *CEbadlybehaved)
 }
 
 int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist, 
-		 int remaining_covlistlength, SimulationType method) 
+		     int remaining_covlistlength, SimulationType method,
+		     bool anisotropy) 
 {
 #define stein_nr 6
   char *allowed_fct[stein_nr] = 
       {"stable", "whittle", "cauchy", "gencauchy", "fractalB", "exponential"};
-  int v, nsub, err;
+  int i, v, nsub, err, endfor;
   double *param, C0, phi0, phi1, phi2, store[MAXCOV], d, zero = 0.0, r, 
     one = 1.0;
-  covinfo_type *kc;
+  covinfo_type *kc, *kc0;
+  bool differentmatrices;
  
   if (method != CircEmbed && method!=Nothing && method != Direct)
       return ERRORUNKNOWNMETHOD;
   // if (method != Nothing) return NOERROR; // already initialised by
   // CheckAndBuild; no specific things to do
 
-  kc = &(keycov[covlist[0]]);
-  param = kc->param;  
-  nsub= (int) (kc->param[HYPERNR]);
+  kc0 = &(keycov[covlist[0]]);  
+  param = kc0->param;  
+  nsub= (int) (kc0->param[HYPERNR]);
   d = param[DIAMETER];
   r = param[INTRINSIC_RAWR];
   if ((err=check_submodels(nsub, allowed_fct, stein_nr, keycov, 
 			    &(covlist[1]), remaining_covlistlength)) != NOERROR)
       return err;
-
+  
+  endfor = ANISO + (anisotropy ? kc0->dim * kc0->dim : 1); 
+  differentmatrices = false;
   for (v=1; v<=nsub; v++) { 
     kc = &(keycov[covlist[v]]);
+//  printf("%d %d %d %d %d\n", ANISO, endfor, anisotropy, kc0->dim, covlist[0]);
+    for (i=ANISO; i<endfor; i++) 
+	differentmatrices |= param[i] != kc->param[i];
     store[v] = kc->aniso[0];
     kc->aniso[0] = d;
     if (v<nsub && CovList[kc->nr].variogram &&  kc->op)
       return ERRORNOMULTIPLICATION;
   }
+  if (differentmatrices)
+    warning("The use of different anisotropy matrices within the hypermodel Stein may lead to unsound results.");
   
   C0 = CovFct(&zero, 1, keycov, &(covlist[1]), nsub, false);
   phi0 = CovFct(&one, 1, keycov, &(covlist[1]), nsub, false);
@@ -311,12 +321,22 @@ double MaStein(double *x, double *p)
   // effectivedim + 1 : C(0) oder 0
   // effectvedim : C(x) oder -gamma(x)
   nuG = p[HYPERKAPPAI] + (x[effectivedim + 1] - x[effectivedim]);
-  if (nuG >= 80.0) return NA_REAL;
+  if (nuG >= 80.0) {
+      error("Whittle Matern function cannot be evaluated with parameter value b+g(t) greater than 80.");
+//      printf("%f %f %f %f: %f %f %f\n", x[0], x[1], x[2], x[3],
+//	     p[HYPERKAPPAI], (x[effectivedim + 1] - x[effectivedim]),
+//	     p[HYPERKAPPAI] + (x[effectivedim + 1] - x[effectivedim]) );
+  }
   gammas = lgammafn(p[HYPERKAPPAI] + p[HYPERKAPPAII]) -
     lgammafn(p[HYPERKAPPAI]) -lgammafn(nuG + p[HYPERKAPPAII]);
   for (s = 0.0, d=0; d<effectivedim; d++) s += x[d] * x[d];
   if (s==0.0) return exp(lgammafn(nuG) + gammas);
   s = sqrt(s);
+//  printf("%f %f %f %f: %f %f %f %f \n", 
+//	 x[0], x[1], x[2], x[3],
+//	 s, nuG, gammas,
+//	 2.0 * exp(nuG * log(0.5 * s) + gammas + log(bessel_k(s, nuG, 2.0)) - s)
+//	 );
   return 2.0 * exp(nuG * log(0.5 * s) + gammas + log(bessel_k(s, nuG, 2.0)) - s);
 }
 
@@ -337,7 +357,8 @@ void info_MaStein(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 
 int checkNinit_MaStein(covinfo_arraytype keycov, covlist_type covlist, 
-		  int remaining_covlistlength, SimulationType method) {
+		       int remaining_covlistlength, SimulationType method,
+		       bool anisotropy) {
   int nsub, v, i, endfor;
   covinfo_type *kc;
   double *param;

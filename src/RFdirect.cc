@@ -84,10 +84,12 @@ int init_directGauss(key_type *key, int m)
   SET_DESTRUCT(direct_destruct, m);
   totpnts = key->totalpoints;
   if (totpnts>DIRECTGAUSS_MAXVARIABLES) {
-     if (GENERAL_PRINTLEVEL>3)
-	 PRINTF("cur. points=%d, max points=%d", 
-	    (int) totpnts, (int) DIRECTGAUSS_MAXVARIABLES);
-   Xerror=ERRORMETHODNOTALLOWED; goto ErrorHandling;
+      sprintf(ERRORSTRING_OK, 
+	    "number of points less than RFparameters()$direct.maxvariables (%d)",
+	      (int) DIRECTGAUSS_MAXVARIABLES);
+      if (totpnts < 1000000) sprintf(ERRORSTRING_WRONG,"%d", (int) totpnts);
+      else sprintf(ERRORSTRING_WRONG,"%e", (double) totpnts);
+      Xerror=ERRORCOVFAILED; goto ErrorHandling;
   }
 
   Xerror=ERRORMEMORYALLOCATION;  
@@ -187,13 +189,6 @@ int init_directGauss(key_type *key, int m)
     }
   }
 
-  if (false && GENERAL_PRINTLEVEL > 6 && totpnts < 500) {
-    int endfor = totpnts * totpnts;
-    for (i=0; i<endfor; i++) {
-      if (i % totpnts == 0) PRINTF("-- %d\n", (int) totpnts); 
-      PRINTF("%f ", COV[i]);
-    }
-  } 
 
   /* ********************* */
   /* matrix inversion part */
@@ -209,7 +204,6 @@ int init_directGauss(key_type *key, int m)
 	// dpotrf	F77_CALL(dpotrf)("Upper", &m, REAL(ans), &m, &i);
 	F77_CALL(dpotrf)("Upper", &row, U, &row, &err);
 	// F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
-
 	if (err!=NOERROR) {
 	  if (GENERAL_PRINTLEVEL>2)
 	      PRINTF("Error code F77_CALL(dpotrf) = %d\n", err);
@@ -243,7 +237,7 @@ int init_directGauss(key_type *key, int m)
 	double optim_lwork;
 	int lwork;
 	lwork = -1;
-	F77_CALL(dgesdd)("A",  &row,  &row, COV, &row, D, U, &row, VT, &row, 
+	F77_CALL(dgesdd)("A", &row, &row, COV, &row, D, U, &row, VT, &row, 
 			 &optim_lwork, &lwork, iwork, &err);
 	if ((Xerror=err) != NOERROR) {
 	  Xerror=ERRORDECOMPOSITION;
@@ -273,6 +267,7 @@ int init_directGauss(key_type *key, int m)
 	  }
 	}
 	break;
+
 
 	default : assert(false);
   } // switch

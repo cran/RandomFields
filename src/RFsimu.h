@@ -250,7 +250,7 @@ typedef void (*rangefct)(int, int *, double*);
 typedef int (*checkfct)(double*, int, SimulationType); /* h,parameters; 
 							covariance fct, nr. */
 typedef int (*checkhyper)(covinfo_arraytype, covlist_type, int, 
-			  SimulationType);
+			  SimulationType, bool);
 typedef double (*natscalefct)(double *, int); /* parameters, ; natural 
 						 scaling */
 typedef double (*covfct)(double *, double*); /* h,parameters */

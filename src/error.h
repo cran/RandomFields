@@ -10,7 +10,7 @@
 #define ERRORNOTDEFINED 1        /* the specification for the  covariance and 
 				    method is not given/known, e.g. TBM2 for 
 				    many covariance functions  */
-#define ERRORMETHODNOTALLOWED 2  /* wrong method for the specified covariance 
+#define ERRORONLYGRIDALLOWED 2  /* wrong method for the specified covariance 
 				    function or grid */
 #define ERRORNOTPROGRAMMED 3     
 #define ERRORCOVNOTALLOWED 4     /* wrong dimension for the specified covariance 

@@ -547,17 +547,18 @@ int init_turningbands(key_type *key, SimulationType method, int m)
           {mindelta=key->x[d][XSTEP];}
       }
     } else {
-      int j, i, d, ix, jx;	
+      int j, i, d;	
       if (key->totalpoints > 50000) {
 	  Xerror=ERRORTOOMANYPOINTS; goto ErrorHandling;
 	  /* algorithmus kann verbessert werden, so dass diese Fehlermeldung 
 	     nicht mehr notwendig ist! */ 
       }
-      for (ix=i=0; i<key->totalpoints; i++, ix+=key->timespacedim) {
-	 for (jx=j=0; j<i; j++, jx+=key->timespacedim) {
+      for (i=0; i<key->totalpoints; i++) {
+	 for (j=0; j<i; j++) {
 	    register double diff, dist;
 	    for (dist=0.0, d=0; d<key->timespacedim; d++) {
-	      diff = key->x[d][ix] - key->x[d][jx]; 
+		// if (i > 2525) printf("d=%d %d %d\n", d, i, j);
+	      diff = key->x[d][i] - key->x[d][j]; 
 	      dist += diff * diff;
 	    }
 	    if (dist>0 && dist<mindelta) mindelta=dist; 

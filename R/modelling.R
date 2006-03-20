@@ -49,10 +49,9 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     data <- data[pos, , drop=FALSE]
     
     ## are locations given twice with different data values?
-    dup <- c(FALSE, apply(abs(given[-nd, , drop=FALSE] -
-                              given[-1, , drop=FALSE]), 1, sum))
-    if (any(dup <- c(FALSE, apply(abs(given[-1, , drop=FALSE] -
-                                      given[-nd, , drop=FALSE]), 1, sum)==0))) {
+    dup <- c(FALSE, rowSums(abs(given[-nd,,drop=FALSE] - given[-1,,drop=FALSE])))
+    if (any(dup <- c(FALSE, rowSums(abs(given[-1, , drop=FALSE] -
+                                        given[-nd, , drop=FALSE]))==0))) {
       if (any(data[dup, ] != data[c(dup[-1], FALSE), ]))
         stop("duplicated conditioning points with different data values")
       given <- given[!dup, , drop=FALSE]
@@ -118,10 +117,10 @@ if (FALSE) if (RFparameters()$Print>3){
                    as.integer(dim(given)),
                    vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
                    PACKAGE="RandomFields")$vd, ncol=xdim)))
-  print(sqrt(apply(t(matrix(.C("vectordist", as.double(given),
+  print(sqrt(colSums(t(matrix(.C("vectordist", as.double(given),
                    as.integer(dim(given)),
                    vd=double(xdim * nd * (nd - 1)/2), as.integer(FALSE),
-                   PACKAGE="RandomFields")$vd, ncol=xdim))^2, 2, sum)))
+                   PACKAGE="RandomFields")$vd, ncol=xdim))^2)))
   print(list("UncheckedCovMatrix",
        t(matrix(.C("vectordist", as.double(given),
                    as.integer(dim(given)),
@@ -339,8 +338,8 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
       ## so that they can be used as conditioning points of the grid
       if (!all(outside.grid)) {
         new.index[!outside.grid] <- 1 +
-          apply((index[, !outside.grid, drop=FALSE]-1) *
-                cumprod(c(1, ll[-length(ll)])), 2, sum)
+          colSums((index[, !outside.grid, drop=FALSE]-1) *
+                  cumprod(c(1, ll[-length(ll)])))
       }
       index <- new.index
       new.index <- NULL
@@ -375,7 +374,7 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     ## that point
     one2ncol.xx <- 1:ncol(xx)
     index <- apply(as.matrix(given), 1, function(z){
-      i <- one2ncol.xx[apply(abs(xx - z), 2, sum) < tol]
+      i <- one2ncol.xx[colSums(abs(xx - z)) < tol]
       if (length(i)==0) return(0)
       if (length(i)==1) return(i)
       return(NA)

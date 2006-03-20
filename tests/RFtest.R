@@ -226,8 +226,8 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
     print(param)
     print(dim)
         truevariogram  <- Variogram(midbinP0, model, param, dim)
-        delta <- apply(abs(v-truevariogram[-1]),2,sum,na.rm=TRUE)
-        delta[apply(is.na(v),2,all)]<-NA;
+        delta <- colSums(abs(v-truevariogram[-1]),na.rm=TRUE)
+        delta[apply(is.na(v), 2, all)]<-NA;
         assign("zaehler", zaehler + 1, envir=ENVIR)
         filename <- paste(ps,".",zaehler,".ps",sep="")
         print(filename)

@@ -80,7 +80,8 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
 	if (!MultiplyAndHyper) error = ERRORHYPERNOTALLOWED;
 	else {
 	  error = 
-	      cov->checkNinit(kc, &(COVLISTALL[v]), key->ncov - v - 1, Method);
+	      cov->checkNinit(kc, &(COVLISTALL[v]), key->ncov - v - 1, Method, 
+			      key->anisotropy);
 	}
       } else {
 	error = cov->check(kc->param, kc->reduceddim, Method);
@@ -845,6 +846,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     *equal &= keycov[v].nr == covnr[v];
     keycov[v].nr = covnr[v];
     kc = &(keycov[v]);
+    kc->dim = timespacedim;
     cov = &(CovList[kc->nr]);
     if (GENERAL_PRINTLEVEL > 7)
        PRINTF("Check&Build %d %d covnr=%d op=%d\n", v, ncov, covnr[v],
@@ -888,7 +890,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     GetNaturalScaling(&(kc->nr), &(kc->param[KAPPA]),
 		      &naturalscaling, &newscale, &error);
 //  printf("&naturalscaling = %d \n", naturalscaling);
-   if (error != NOERROR) return error;
+    if (error != NOERROR) return error;
     if (anisotropy) newscale = 1.0 / newscale;
     for (i=pAniso - 1; i>=0; i--)
 	param[ANISO + i] = newscale * ParamList[i];
@@ -910,7 +912,6 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
     GetTrueDim(anisotropy, timespacedim, kc->param, cov->type, 
 	       &(kc->genuine_last_dimension), 
 	       &(kc->reduceddim), kc->aniso);
-    kc->dim = timespacedim;
 
     if (kc->reduceddim==0 || // e.g. used in RFnugget and Spectral
 	(cov->type==SPACEISOTROPIC && 
@@ -987,15 +988,16 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
      kc->aniso[0] = RF_NAN;
 */
 
-     for (w = v + (int) (kc->param[HYPERNR]); w>v; w--) {
-       if (CovList[keycov[w].nr].type != ISOTROPIC) {
-	   // z.B. tbm viel complizierter
-	   error = ERRORHYPERNOTISO;
-       }
-     }
-      error = cov->checkNinit(kc, &(COVLISTALL[v]), ncov-v-1, Nothing);
+      for (w = v + (int) (kc->param[HYPERNR]); w>v; w--) {
+	 if (CovList[keycov[w].nr].type != ISOTROPIC) {
+	     // z.B. tbm viel complizierter
+	     error = ERRORHYPERNOTISO;
+	 }
+      }
+      error = cov->checkNinit(kc, &(COVLISTALL[v]), ncov-v-1, Nothing,
+			      anisotropy);
       if (error != NOERROR) {
-	return error;
+	  return error;
       }
     }
   }
@@ -1885,7 +1887,7 @@ int internal_InitSimulateRF(double *x, double *T,
 	assert(meth->S==NULL);
 	// printf("unimeth, nothing %d %d \n:", meth->unimeth,  Nothing);
 	if (meth->unimeth > Nothing) {
-	  error=ERRORMETHODNOTALLOWED; 
+	  error = ERRORUNKNOWNMETHOD; 
 	  goto ErrorHandling;
 	}
 

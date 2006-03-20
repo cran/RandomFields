@@ -182,7 +182,7 @@ int init_circ_embed(key_type *key, int m)
   c = NULL;
   meth = &(key->meth[m]);
   cepar = &CIRCEMBED;
-  if (!key->grid) {Xerror=ERRORMETHODNOTALLOWED;goto ErrorHandling;}
+  if (!key->grid) {Xerror=ERRORONLYGRIDALLOWED;goto ErrorHandling;}
   SET_DESTRUCT(CE_destruct, m);
 
   if ((meth->S = malloc(sizeof(CE_storage)))==0){
@@ -596,7 +596,7 @@ int init_circ_embed_local(key_type *key, int m)
 
   if (key->covFct != CovFct) { Xerror=ERRORNOTPROGRAMMED; goto ErrorHandling;}
   SET_DESTRUCT(localCE_destruct, m);
-  if (!key->grid) { Xerror=ERRORMETHODNOTALLOWED; goto ErrorHandling;}
+  if (!key->grid) { Xerror=ERRORONLYGRIDALLOWED; goto ErrorHandling;}
   meth = &(key->meth[m]);
   assert(meth->S==NULL);
    if ((meth->S=malloc(sizeof(localCE_storage)))==0){
@@ -627,6 +627,7 @@ int init_circ_embed_local(key_type *key, int m)
 //    printf("** %d\n", kc->nr);
     sc = &(s->key.cov[simuactcov]);
     sc->method = CircEmbed;
+    sc->dim = key->timespacedim;
     sc->param[VARIANCE] = 1.0; 
     sc->param[HYPERNR] = 1; // as only addition between models allowed
     // SCALE is considered as space trafo and envolved here
@@ -656,7 +657,7 @@ int init_circ_embed_local(key_type *key, int m)
 	if ((Xerror=
 	     hyper->checkNinit(sc, &(COVLISTALL[v]), 
 			       key->ncov - meth->covlist[v], 
-			       CircEmbed)) == NOERROR
+			       CircEmbed, key->anisotropy)) == NOERROR
 	    && (
 		(int) msg < (int) store_msg[simuactcov] 
 		||
@@ -788,7 +789,7 @@ int init_circ_embed_local(key_type *key, int m)
 	    improved = hyper->alternative(sc, instance) && 
 		(hyper->checkNinit(sc, &(COVLISTALL[v]), 
 				   (int) sc->param[HYPERNR], 
-				   CircEmbed) != NOERROR);
+				   CircEmbed, key->anisotropy) != NOERROR);
 	    if (improved) memcpy(sc->param, store_param, sizeof(param_type));
 	    anychangings |=  improved;
 	  }

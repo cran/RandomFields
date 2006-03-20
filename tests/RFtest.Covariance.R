@@ -7,9 +7,9 @@ epsilon <-  0.000000001
 tf <- function(x, l, i=1) {
   x <- as.matrix(x) 
   if (!is.null(l[[i]]$s)) {
-    return(sqrt(apply(x^2, 1, sum))/l[[i]]$s)
+    return(sqrt(rowSums(x^2))/l[[i]]$s)
   } else {
-    return(sqrt(apply((x %*% matrix(l[[i]]$a, nrow=ncol(x)))^2, 1, sum)))
+    return(sqrt(rowSums((x %*% matrix(l[[i]]$a, nrow=ncol(x)))^2)))
   }
 }
 
@@ -20,7 +20,7 @@ tfst <- function(x, m) {
     }
     else {
       x <- x %*% matrix(m$a, nrow=ncol(x))
-      return(cbind(sqrt(apply(x[,-ncol(x),drop=FALSE]^2, 1, sum)),
+      return(cbind(sqrt(rowSums(x[,-ncol(x),drop=FALSE]^2)),
                     abs(x[,ncol(x)])))
     }
   } else {
