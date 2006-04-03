@@ -78,7 +78,8 @@
     }
    \item{\code{Storing}}{Logical.
      If \code{FALSE} then the intermediate results are
-     destroyed after the simulation of the random field(s).
+     destroyed after the simulation of the random field(s)
+     or if an error had occured.
 
      On the other hand, if \code{Storing=TRUE}, then
      several simulations for the same
@@ -93,6 +94,14 @@
      \code{local.several} for related parameters.
      
       Default: \code{FALSE} [do].
+    }
+    \item{\code{skipchecks}}{logical.
+      If \code{TRUE}, the check whether the given parameter values
+      and the dimension are within the allowed range is skipped.
+      Do not change the value of this variable except you really
+      know what you do.
+      
+      Default: \code{FALSE} [init].      
     }
     \item{\code{stationary.only}}{Logical or NA. Used for the automatic
       choice of methods. See also \link{RFMethods}.
@@ -124,21 +133,6 @@
       }
       Default: \code{NA} [init].
     }
-    \item{\code{skipchecks}}{logical.
-      If \code{TRUE}, the check whether the given parameter values
-      and the dimension are within the allowed range is skipped.
-      Do not change the value of this variable except you really
-      know what you do.
-      
-      Default: \code{FALSE} [init].      
-    }
-    \item{\code{direct.bestvariables}}{integer.
-      When searching for an appropriate simuation method
-      the matrix decomposition method (see \sQuote{direct method} below)
-      is preferred if the number of variables is less than or equal to 
-      \code{direct.bestvariables}
-      
-      Default: \code{800} [init]}
   }
   %
   
@@ -269,6 +263,13 @@
   
   \bold{Options for simulating by simple matrix decomposition}\cr
   \describe{
+    \item{\code{direct.bestvariables}}{integer.
+      When searching for an appropriate simuation method
+      the matrix decomposition method (see \sQuote{direct method} below)
+      is preferred if the number of variables is less than or equal to 
+      \code{direct.bestvariables}
+      
+      Default: \code{800} [init]}
     \item{\code{direct.maxvariables}}{
       If the number of variables to generate is
       greater than \code{direct.maxvariables}, then any matrix decomposition
@@ -283,6 +284,13 @@
       decomposition
       used instead.
       Default: \code{0} [init].}
+    \item{\code{direct.svdtolerance}}{
+      If SVD decomposition is used for calculating the square root of
+      the covariance matrix then the absolute componentwise difference between
+      the covariance matrix and square of the square root must be less
+      than \code{direct.svdtolerance}. No check is performed if
+      \code{direct.svdtolerance} is negative.
+      Default: \code{1e-12} [init].}
   }
   %
 

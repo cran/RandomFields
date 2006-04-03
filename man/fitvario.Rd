@@ -120,17 +120,25 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \item{PrintLevel}{level to which messages are shown.  See Details.}
   \item{optim.control}{control list for \command{\link[stats]{optim}}, which uses
     'L-BFGS-B'. However 'parscale' may not be given.}
-  \item{bins}{number of bins of the empirical variogram.  See Details.}
+  \item{bins}{number of bins of the empirical variogram.
+    See Details.}
   \item{nphi}{scalar or vector of 2 components.
     If it is a vector then the first component gives the first angle
     of the xy plane
     and the second one gives the number of directions on the half circle.
-    If scalar then the first angle is assumed to be zero}
+    If scalar then the first angle is assumed to be zero.
+    Note that a good estimation of the variogramm by LSQ with a
+    anisotropic model a large value for \code{ntheta} might be needed (about 20).
+  }
   \item{ntheta}{scalar or vector of 2 components.
     If it is a vector then the first component gives the first angle
     in the third direction
     and the second one gives the number of directions on the half circle.
-    If scalar then the first angle is assumed to be zero.}
+    If scalar then the first angle is assumed to be zero.
+
+    Note that a good estimation of the variogramm by LSQ with a
+    anisotropic model a large value for \code{ntheta} might be needed (about 20).
+}
   \item{ntime}{scalar or vector of 2 components.
     if \code{ntimes} is a vector, then the first component are the
     maximum time distance (in units of the grid length \code{T[3]}) and the
@@ -199,7 +207,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     
     Default: \code{NULL}}
   \item{standard.style}{logical or \code{NULL}.  This variable should only be
-    set by the advanced user.  If \code{NULL} \code{standard.style} will be
+    set by the advanced user.  If \code{NULL} then \code{standard.style} will be
     \code{TRUE} if the covariance model allows for a \sQuote{standard}
     definition (see \command{\link{convert.to.readable}} and
     \command{\link{CovarianceFct}}) and \code{transform} is \code{NULL}.
@@ -362,7 +370,10 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     vector of explicit boundaries for the bins or the
     number of bins for the empirical variogram (used in the
     LSQ target function, which is described at the beginning
-    of the Details).  Default: \code{20}.
+    of the Details).
+    Note that for anisotropic models, the value of \code{bins} might
+    be enlarged.
+    Default: \code{20}.
     
     \item \code{distance.factor}\cr
     right boundary of the last
@@ -663,6 +674,17 @@ system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
 system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
       param=estparam, transform=f, cross.me=NULL,
       standard.style=TRUE), vec.len=6))
+
+
+
+#########################################################
+## estimation in a anisotropic framework
+  x <- y <- (1:6)/4
+  model <- list(list(m="exp", v=1.5, aniso=c(4,2,-2,1)))
+  z <- GaussRF(x=x, y=y, grid=TRUE, model=model, n=10)
+  estmodel <- list(list(m="exp", v=NA, aniso=c(NA, NA,-2,1)))
+  system.time(str(fitvario(as.matrix(expand.grid(x, y)), data=z,
+                           model=estmodel, nphi=20)))
 
 
 %#################################################################

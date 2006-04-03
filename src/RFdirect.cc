@@ -34,7 +34,7 @@ InversionMethod DIRECTGAUSS_INVERSIONMETHOD=Cholesky;
 int DIRECTGAUSS_BESTVARIABLES=800; // see RFsimu.h NOTE: if changed, 
 // then also the example in RFparameters must be reconsidered
 int DIRECTGAUSS_MAXVARIABLES=4096; // see RFsimu.h
-
+double DIRECTGAUSS_SVDTOLERANCE=1e-12;
 
 void direct_destruct(void ** S)
 {
@@ -49,19 +49,21 @@ void direct_destruct(void ** S)
 }
 
 void SetParamDirectGauss(int *action,int *method, int *bestvariables,
-			 int *maxvariables)
+			 int *maxvariables, double *svdtolerance)
 {
   if (*action) {
     if ((*method<0) || (*method>=(int) NoFurtherInversionMethod)){
       PRINTF("inversion method out of range; ignored\n");
     }
     else {DIRECTGAUSS_INVERSIONMETHOD= (InversionMethod) *method;}
-   DIRECTGAUSS_BESTVARIABLES=*bestvariables;
-   DIRECTGAUSS_MAXVARIABLES=*maxvariables;
+    DIRECTGAUSS_BESTVARIABLES = *bestvariables;
+    DIRECTGAUSS_MAXVARIABLES  = *maxvariables;
+    DIRECTGAUSS_SVDTOLERANCE  = *svdtolerance;
   } else {
     *method = (int) DIRECTGAUSS_INVERSIONMETHOD;
     *bestvariables = DIRECTGAUSS_BESTVARIABLES;
-    *maxvariables = DIRECTGAUSS_MAXVARIABLES;
+    *maxvariables  = DIRECTGAUSS_MAXVARIABLES;
+    *svdtolerance  = DIRECTGAUSS_SVDTOLERANCE;
   }
 }  
 
@@ -69,20 +71,23 @@ void SetParamDirectGauss(int *action,int *method, int *bestvariables,
 
 int init_directGauss(key_type *key, int m) 
 {
-  long Xerror=NOERROR, totpnts, i;
-  double *xx[MAXDIM], *G, *COV, *U, *VT, *work, *D;
+  long Xerror=NOERROR, totpnts, totpntsSQ, i;
+  double *xx[MAXDIM], *G, *COV, *U, *VT, *work, *D, *SICH;
   int d, *iwork,
       dim=key->timespacedim; bool freexx=false;
   direct_storage* S;
   methodvalue_type *meth; 
+  InversionMethod method;
 
-  G=COV=U=VT=work=D=NULL;
+  method = DIRECTGAUSS_INVERSIONMETHOD;
+  G=COV=U=VT=work=D=SICH=NULL;
   iwork = NULL;
   S=NULL;
   for (d=0; d<dim; d++) xx[d]=NULL;
   meth = &(key->meth[m]);
   SET_DESTRUCT(direct_destruct, m);
-  totpnts = key->totalpoints;
+  totpntsSQ = totpnts = key->totalpoints;
+  totpntsSQ *= totpntsSQ;
   if (totpnts>DIRECTGAUSS_MAXVARIABLES) {
       sprintf(ERRORSTRING_OK, 
 	    "number of points less than RFparameters()$direct.maxvariables (%d)",
@@ -93,9 +98,9 @@ int init_directGauss(key_type *key, int m)
   }
 
   Xerror=ERRORMEMORYALLOCATION;  
-  if ((COV =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+  if ((COV =(double *) malloc(sizeof(double) * totpntsSQ))==NULL)
     goto ErrorHandling;
-  if ((U =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+  if ((U =(double *) malloc(sizeof(double) * totpntsSQ))==NULL)
       goto ErrorHandling;
   //for SVD/Chol intermediate results AND  memory space for do_directGauss:
   if ((G = (double *)  calloc(totpnts + 1, sizeof(double)))==NULL)
@@ -173,7 +178,6 @@ int init_directGauss(key_type *key, int m)
   /* ********************* */
   long j, k, segment;
   int actcov, row, err;
-  InversionMethod method;
 
   actcov = meth->actcov;
   k = 0;
@@ -193,14 +197,12 @@ int init_directGauss(key_type *key, int m)
   /* ********************* */
   /* matrix inversion part */
   /* ********************* */
-  method = DIRECTGAUSS_INVERSIONMETHOD;
   switch (method) {
-      case Cholesky :
-
+      case Cholesky : // only works for strictly positive def. matrices
 	if (GENERAL_PRINTLEVEL>=3) PRINTF("method=Cholesky\n");
 	row=totpnts;
 	// dchdc destroys the input matrix; upper half of U contains result!
-	memcpy(U, COV, sizeof(double) * row * row);
+	memcpy(U, COV, sizeof(double) * totpntsSQ);
 	// dpotrf	F77_CALL(dpotrf)("Upper", &m, REAL(ans), &m, &i);
 	F77_CALL(dpotrf)("Upper", &row, U, &row, &err);
 	// F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
@@ -213,22 +215,25 @@ int init_directGauss(key_type *key, int m)
 	// try next method : 
 	// most common error: singular matrix 
 	
-      case SVD :
+      case SVD :// works for any positive semi-definite matrix
         int jobint; 
+	double sum;
 	jobint = 11;
 	method = SVD; // necessary if the value of method has been Cholesky.
 	//               originally
 	if (GENERAL_PRINTLEVEL>=3) PRINTF("method=SVD\n");
 	Xerror=ERRORMEMORYALLOCATION;
-	if ((VT =(double *) malloc(sizeof(double) * totpnts * totpnts))==NULL)
+	if ((VT =(double *) malloc(sizeof(double) * totpntsSQ))==NULL)
 	    goto ErrorHandling;
 	if ((D =(double *) malloc(sizeof(double) * totpnts))==NULL)
 	    goto ErrorHandling;
 	if ((iwork = (int *) malloc(sizeof(int) * 8 * totpnts))==NULL)
 	    goto ErrorHandling;
+	if ((SICH =(double *) malloc(sizeof(double) * totpntsSQ))==NULL)
+	    goto ErrorHandling;
+	memcpy(SICH, COV, sizeof(double) * totpntsSQ);
 	row=totpnts;
         // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
-
 
 	// DGESDD (or DGESVD)
       	// dgesdd destroys the input matrix COV;
@@ -237,7 +242,7 @@ int init_directGauss(key_type *key, int m)
 	double optim_lwork;
 	int lwork;
 	lwork = -1;
-	F77_CALL(dgesdd)("A", &row, &row, COV, &row, D, U, &row, VT, &row, 
+	F77_CALL(dgesdd)("A", &row, &row, SICH, &row, D, U, &row, VT, &row, 
 			 &optim_lwork, &lwork, iwork, &err);
 	if ((Xerror=err) != NOERROR) {
 	  Xerror=ERRORDECOMPOSITION;
@@ -246,7 +251,7 @@ int init_directGauss(key_type *key, int m)
 	lwork = (int) optim_lwork;
 	if ((work = (double *) malloc(sizeof(double) * lwork))==NULL)
 	    goto ErrorHandling;
-	F77_CALL(dgesdd)("A",  &row,  &row, COV, &row, D, U, &row, VT, &row, 
+	F77_CALL(dgesdd)("A",  &row,  &row, SICH, &row, D, U, &row, VT, &row, 
 			 work, &lwork, iwork, &err);
 	
 	if (Xerror==NOERROR && RF_ISNA(D[0]))
@@ -266,31 +271,45 @@ int init_directGauss(key_type *key, int m)
 	    U[k++] *= dummy;
 	  }
 	}
+
+	/* check SVD */
+	if (DIRECTGAUSS_SVDTOLERANCE >=0) {
+	  for (i=0; i<totpnts; i++) {
+	    for (k=i; k<totpnts; k++) {
+	      sum = 0.0;
+	      for (j=0; j<totpntsSQ; j+=totpnts) sum += U[i+j] * U[k+j];
+//	      printf("%d %d %e %e %e\n", totpnts, i * totpnts + k, sum,
+//		     fabs(COV[i * totpnts + k] - sum), DIRECTGAUSS_SVDTOLERANCE);
+
+	      if (fabs(COV[i * totpnts + k] - sum) > DIRECTGAUSS_SVDTOLERANCE) {
+	        if (GENERAL_PRINTLEVEL > 3)
+		    PRINTF("difference at (%d,%d) between the value (%e) of the covariance matrix and the square of its root (%e) is %e.\n", 
+			 i, k, COV[i* totpnts +k ], sum, COV[i * totpnts +k] - sum);
+		Xerror = ERRORPRECISION;
+		goto ErrorHandling;
+	      }
+	    }
+	  }
+	}
+
 	break;
+	
 
-
-	default : assert(false);
+      default : assert(false);
   } // switch
 
-  if (Xerror!=NOERROR) { goto ErrorHandling; }
 
-  
-  S->U=U;
-  S->method=method;
-  S->G=G;
-  free(COV);
-  if (D!=NULL) free(D);
-  if (work!=NULL) free(work);
-  if (iwork!=NULL) free(iwork);
-  if (VT!=NULL) free(VT);  
-  if (freexx) for (i=0; i<dim; i++) {free(xx[i]);}
-  return NOERROR;
-
- ErrorHandling: 
-  if (freexx)
-      for (i=0; i<dim; i++) if (xx[i] != NULL) free(xx[i]);
-  if (U!=NULL) free(U); 
-  if (G!=NULL) free(G); 
+ ErrorHandling: // and NOERROR...
+  S->method = method;
+  if (freexx) for (i=0; i<dim; i++) if (xx[i] != NULL) free(xx[i]);
+  if (!GENERAL_STORING && Xerror!=NOERROR) {
+    if (U!=NULL) free(U);
+    if (G!=NULL) free(G); 
+  } else {
+    S->U=U;
+    S->G=G;
+  }
+  if (SICH!=NULL) free(SICH);
   if (COV!=NULL) free(COV);
   if (D!=NULL) free(D);
   if (work!=NULL) free(work);

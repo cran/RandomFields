@@ -281,7 +281,7 @@ typedef struct cov_fct {
 		 standard ones are variance and scale */
   char type;
   infofct info;
-  bool variogram, even, odd[MAXDIM]; // even and odd not used yet, but set
+  bool variogram; // even and odd not used yet, but set
   rangefct range;
   checkfct check;
   checkhyper checkNinit;             

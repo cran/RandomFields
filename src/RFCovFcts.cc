@@ -40,8 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    dim must always be the true dimension!
 */
 
-#define RANGE_EPSILON 1E-20
-#define UNIT_EPSILON 1E-14
+#define UNIT_EPSILON 1E-13
 
 #include <math.h>
 #include <assert.h>
@@ -313,9 +312,9 @@ int checkcone(double *param, int reduceddim, SimulationType method) {
 void rangecone(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = (reduceddim <= 3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
-  double r[12] = {0, 1 - OPEN, 0, 1.0 - RANGE_EPSILON,
-		0, RF_INF, RANGE_EPSILON, 10.0, 
-		0, RF_INF, RANGE_EPSILON, 10.0};
+  double r[12] = {0, 1 - OPEN, 0, 1.0 - UNIT_EPSILON,
+		0, RF_INF, UNIT_EPSILON, 10.0, 
+		0, RF_INF, UNIT_EPSILON, 10.0};
   memcpy(range, r, sizeof(double) * 12);
 }
 void infocone(double *p, int *maxdim, int *CEbadlybehaved) {
@@ -541,7 +540,7 @@ double DDfractalBrownian(double *x, double*p)
 }
 void rangefractalBrownian(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  double r[4] = {OPEN, 2.0, RANGE_EPSILON, 2.0 - UNIT_EPSILON};
+  double r[4] = {OPEN, 2.0, UNIT_EPSILON, 2.0 - UNIT_EPSILON};
   *index = (reduceddim <= 3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   memcpy(range, r, sizeof(double*) * 4);
 }
@@ -575,8 +574,9 @@ double FD(double *x,double *p){
 void rangeFD(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
   *index = (reduceddim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
-  range[2] = (range[0] = -1.0) + RANGE_EPSILON;
-  range[4] = (range[1] = 1.0 - OPEN) - RANGE_EPSILON;
+  range[2] = (range[0] = -1.0) + UNIT_EPSILON;
+  range[1] = 1.0 - OPEN;
+  range[4] = 1.0 - UNIT_EPSILON;
 }
 void infoFD(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 1;
@@ -595,7 +595,7 @@ double fractGauss(double *x, double *p){
 }
 void rangefractGauss(int reduceddim, int *index, double* range){
   //  2 x length(param) x {theor, pract } 
-  double r[4] = {OPEN, 2, RANGE_EPSILON, 2};
+  double r[4] = {OPEN, 2, UNIT_EPSILON, 2};
   *index = (reduceddim==1) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
   memcpy(range, r, sizeof(double) * 4);
 }
@@ -1170,11 +1170,11 @@ void rangespacetime1(int reduceddim, int *index, double* range){
 
   range[8] = OPEN;
   range[9] = range[11] = 2;
-  range[10] = RANGE_EPSILON;
+  range[10] = UNIT_EPSILON;
 
   range[12] = OPEN;
   range[13] = 1 - OPEN;
-  range[14] = RANGE_EPSILON;
+  range[14] = UNIT_EPSILON;
   range[15] = 1.0 - UNIT_EPSILON;
   
   range[16] = range[17] = 
@@ -1266,11 +1266,11 @@ void rangespacetime2(int reduceddim, int *index, double* range){
 
   range[12] = OPEN;
   range[13] = range[15] = 2.0;
-  range[14] = RANGE_EPSILON;
+  range[14] = UNIT_EPSILON;
 
   range[16] = OPEN;
   range[17] = 1.0;
-  range[18] = RANGE_EPSILON;
+  range[18] = UNIT_EPSILON;
   range[19] = 1.0 - UNIT_EPSILON;
 
   range[20] = range[21] = 
@@ -1610,7 +1610,8 @@ void infoSteinST1(double *p, int *maxdim, int *CEbadlybehaved) {
 int checkSteinST1(double *param, int reduceddim, SimulationType method) {
   double absz;
   int d;
-  if (method!=Nothing && method!=CircEmbed && method!=Direct)
+//  printf("%d %d \n", reduceddim + KAPPA1, KAPPA3); assert(false);
+ if (method!=Nothing && method!=CircEmbed && method!=Direct)
       return ERRORNOTDEFINED;
   if (param[KAPPA1] >= Besselupperbound[method]) {
       sprintf(ERRORSTRING_OK, "%s and kappa1 < %1.0f", 
@@ -1619,8 +1620,11 @@ int checkSteinST1(double *param, int reduceddim, SimulationType method) {
       return ERRORCOVFAILED;
   }
   if (reduceddim == 1) return ERRORNOTDEFINED;
-  for (absz=0.0, d=reduceddim + KAPPA1; d>=KAPPA3; d--)
+  for (absz=0.0, d=reduceddim + KAPPA1; d>KAPPA2; d--) {
       absz += param[d] * param[d];
+//      printf("%d %f %d\n", d, param[d], reduceddim);
+  }
+//  printf("%f %d\n", absz, GENERAL_SKIPCHECKS);
   if (absz > 1.0 + UNIT_EPSILON && !GENERAL_SKIPCHECKS) {
       strcpy(ERRORSTRING_OK, "||z||^2 <= 1");
       sprintf(ERRORSTRING_WRONG, "%f", absz);

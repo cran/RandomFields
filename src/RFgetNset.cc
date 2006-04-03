@@ -125,14 +125,14 @@ void SetParamCE(int *action, int *force, double *tolRe, double *tolIm,
     if (CE->tol_re>0) {
       CE->tol_re=0;
       if (GENERAL_PRINTLEVEL>0)
-	PRINTF("\nWARNING! %s.tol_re had been positive.\n",name);
+	PRINTF("\nWARNING! %s.tol_re which has been positive is set to 0.\n",name);
     }
 
     CE->tol_im=*tolIm; 
     if (CE->tol_im<0) {
       CE->tol_im=0; 
       if (GENERAL_PRINTLEVEL>0) 
-	PRINTF("\nWARNING! %s.tol_im had been neagtive.\n",name);
+	PRINTF("\nWARNING! %s.tol_im which has been negative is set 0.\n",name);
     }
 
     CE->severalrealisations=(bool) *severalrealisations; 
@@ -372,8 +372,6 @@ int createmodel(char *name, int kappas, kappas_type kappas_fct,
   CovList[currentNrCov].type = type;
   assert((CovList[currentNrCov].info=info) != NULL); 
   CovList[currentNrCov].variogram = variogram;
-  CovList[currentNrCov].even = true; 
-  for (i=0; i<MAXDIM; i++) CovList[currentNrCov].odd[i] = false;
   assert((CovList[currentNrCov].range= range) != NULL);
   CovList[currentNrCov].check = NULL;
   CovList[currentNrCov].checkNinit = NULL; // hyper and local ce
@@ -442,27 +440,6 @@ extern int IncludeModel(char *name, kappas_type kappas, checkfct check,
     return nr;
 }
 
-extern void addodd(int nr, int dim) {
-  PRINTF("addodd not implemented yet. Sorry.");
-  assert(false);
-
-  assert((dim>=0) && (dim<MAXDIM));
-  assert((nr>=0) && (nr<currentNrCov));
-  assert(CovList[nr].type==ANISOTROPIC);
-  CovList[nr].even = false;
-  CovList[nr].odd[dim] = true;
-}
-			
-//extern void addSimu(int nr, SimulationType r1, SimulationType r2,
-//		    SimulationType r3)
-//  // see RFsimu.h for comments
-//{ 
-//  int i;
-//  assert((nr>=0) && (nr<currentNrCov));
-//  CovList[nr].first[0]=r1;
-//  CovList[nr].first[1]=r2;
-//  for (i=2; i<MAXDIM; i++) CovList[nr].first[i]=r3;
-//}
 
 void addCov(int nr, covfct cov, isofct derivative,
 		   natscalefct naturalscale)
@@ -1478,6 +1455,8 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max)
     };
   int ni, actninfo, i;
   SEXP info, namevec; 
+
+//  printf("max=%f", (double) max); 
 
   actninfo = (key->active || ignore_active) ? ninfo : 1;
   PROTECT(info=allocVector(VECSXP, actninfo));

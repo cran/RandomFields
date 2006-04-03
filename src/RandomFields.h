@@ -93,7 +93,7 @@ EXTERN void VariogramNatSc(double *x,int *lx,int *covnr,double *p,int *np,
 EXTERN void SetParamDecision(int *action, int *stationary_only,  int *exactness);
 EXTERN void SetParamSpectral(int *action,int *nLines, int *grid);
 EXTERN void SetParamDirectGauss(int *action,int *method, int *bestvariables,
-				int *maxvariables);
+				int *maxvariables, double *svdtolerance);
 
 // simulation procedure
 EXTERN void SetParamCircEmbed(int *action, int *force, double *tolRe, 
@@ -243,7 +243,6 @@ EXTERN void empvarioXT(double *X, double *T,
 		double *sum,   // \sum (a-b)^2 / 2
 		double *sq,   // \sum (a-b)^4 / 4
 		int *n);
-
 
 // kriging methods
 EXTERN void simpleKriging(double *tgiven, double *x, double *invcov, 

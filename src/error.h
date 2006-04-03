@@ -82,8 +82,8 @@
 				    ERRORSTRING_WRONG must be set */
 #define ERRORTOOMANYLINES 41    /* Hyperplane tesselation: estimated simulated
 				   lines passes given threshold*/
-#define ERRORANYLEFT 42         /* some covariances have not been simulated yet
-				 */
+#define ERRORLAYERS 42           /* value of TBM*.layers does not match 
+				   the situation */
 #define ERRORMETHODEXCLUDED 43  /* method explicitely excluded by other 
 				   parameter; here: stationary_only=TRUE */
 #define ERROROUTOFMETHODLIST 44 /* no further method we can try is available */
@@ -110,9 +110,10 @@
 				 */ 
 #define ERRORHYPERNOTISO 58      /* only ISOTROPIC covariance models allowed
 				    for submodels of hypermodels */
-#define ERRORLAYERS 59           /* value of TBM*.layers does not match 
-				   the situation */
 
+#define ERRORANYLEFT 96         /* some covariances have not been simulated yet
+				  -- this error code may be used only in #
+				  InitSimulation */
 #define NOERROR_REPEAT 97
 #define NOERROR_ENDOFLIST 98
 

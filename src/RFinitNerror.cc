@@ -191,7 +191,9 @@ void ErrorMessage(SimulationType m, int error) {
       case ERRORDECOMPOSITION:
 	strcpy(EM,"matrix decomposition failed");break;
       case ERRORPRECISION: 
-	strcpy(EM,"required precision not attained");break;
+	strcpy(EM,
+	      "required precision not attained. Consider increasing the value of `direct.svdtolerance'");
+	break;
       case ERRORRESCALING:
 	strcpy(EM,"rescaling not defined; try PracticalRange=FALSE");break;
       case ERRORFOURIER: 
@@ -607,10 +609,10 @@ void InitModelList()
  
 
   // SPACEISOTROPIC variant of stable -- used for testing purposes only
-  nr=IncludeModel("stableX", 1, checkOK, SPACEISOTROPIC, false, 
-		  infostable, rangestable);
-  addCov(nr, stableX, DstableX, Scalestable);
-  addTBM(nr, NULL, NULL, NULL);
+//  nr=IncludeModel("stableX", 1, checkOK, SPACEISOTROPIC, false, 
+//		  infostable, rangestable);
+//  addCov(nr, stableX, DstableX, Scalestable);
+//  addTBM(nr, NULL, NULL, NULL);
 
 
   nr=IncludeHyperModel("Stein", 3, checkNinit_Stein, ISOHYPERMODEL, false, 
@@ -634,11 +636,6 @@ void InitModelList()
   addTBM(nr,NULL,TBM3WhittleMatern, spectralWhittleMatern);
   addLocal(nr, true, DDWhittleMatern, &WHITTLEMATERN);
   
-  /* 
-     in case of anisotropic models: do not forget to set `addodd',
-     i.e. the coordinate dimensions where the covariance function is not
-     an even function!
-  */
 
   // must be the very last one!
   nr = IncludeModel("undefined", 0, checkundefined, ISOTROPIC, false, 

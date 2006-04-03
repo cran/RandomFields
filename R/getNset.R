@@ -53,7 +53,9 @@ CheckAndComplete <- function(model, param, dim) {
 GetRegisterInfo <- function(register=0, ignore.active=FALSE, max.elements=10^6)
   # ignore.active=TRUE only for internal debugging information!
   .Call("GetExtKeyInfo", as.integer(register), as.logical(ignore.active),
-        as.integer(max.elements), PACKAGE="RandomFields")
+        as.integer(if (max.elements > .Machine$integer.max)
+                   .Machine$integer.max else max.elements),
+        PACKAGE="RandomFields")
 
 GetModelInfo <- function(register=0)
   .Call("GetExtModelInfo", as.integer(register), PACKAGE="RandomFields")
@@ -262,6 +264,7 @@ parampositions <- function(model, param, print=TRUE) {
   direct.method <- integer(1)
   direct.bestvariables <- integer(1)
   direct.maxvariables <- integer(1)
+  direct.svdtolerance <- double(1)
 
   nugget.tol <- double(1)
 
@@ -319,7 +322,7 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetParamSpectral", m, spectral.lines, spectral.grid,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDirectGauss", m, direct.method,
-       direct.bestvariables, direct.maxvariables,
+       direct.bestvariables, direct.maxvariables, direct.svdtolerance,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamNugget", m, nugget.tol,
        PACKAGE="RandomFields", DUP=FALSE)
@@ -361,8 +364,9 @@ parampositions <- function(model, param, print=TRUE) {
                     local.dependent=as.logical(local.dependent),
                     direct.bestvariables=direct.bestvariables,
                     direct.maxvariables=direct.maxvariables,
-                    nugget.tol=nugget.tol,
+                    direct.svdtolerance=direct.svdtolerance,
                     direct.method=direct.method,
+                    nugget.tol=nugget.tol,
                     spectral.grid=as.logical(spectral.grid),
                     spectral.lines=spectral.lines,
                     TBM.method=.methods[TBM.method+1],

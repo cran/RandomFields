@@ -9,12 +9,10 @@ fitvario <-
 function(x, y=NULL, z=NULL, T=NULL, data, model, param,
          lower=NULL, upper=NULL, sill=NA,
          ...) {
-  
   fitvario.default(x=x, y=y, z=z, T=T, data=data, model=model, param=param,
                 lower=lower, upper=upper, sill=sill,
                 ...)
 }
-
 fitvario.default <-
 function(x, y=NULL, z=NULL, T=NULL, data, model, param,
          lower=NULL, upper=NULL, sill=NA,
@@ -125,13 +123,15 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   
   LStarget <- function(variab) {
     if (PrintLevel>4) {cat("LSMIN=", LSMIN); print(variab,dig=20)}
+#    print(rbind(LSQLB, variab, LSQUB))
+#    print(rbind(LSQLB, variab, LSQUB)-1)  
     if (any((variab<LSQLB) | (variab>LSQUB))) {
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
       if (PrintLevel>2) WarningMessage(variab, LSQLB, LSQUB, "LSQ")
       penalty <- variab 
-      variab<-pmax(LSQLB, pmin(LSQUB, variab)) 
+      variab <- pmax(LSQLB, pmin(LSQUB, variab)) 
       penalty <- sum(variab-penalty)^2
       res <- LStarget(variab)
       if (res<=0) return(penalty + res * (1-penalty))
@@ -142,19 +142,22 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     param <- LSQTRANSFORM(param)
 
 #    str(list("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
-#         logicaldim, xdim,
+#         truedim, xdim,
 #         as.integer(length(covnr)), as.integer(pm$anisotropy),         
 #         as.integer(pm$op),model.values=double(bins), scalingmethod,
 #         PACKAGE="RandomFields", DUP=FALSE))
+
+# print(param)
+
     
-    model.values <-
-      .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
-         logicaldim, xdim,
-         as.integer(length(covnr)), as.integer(pm$anisotropy),         
-         as.integer(pm$op),model.values=double(bins), scalingmethod,
-         PACKAGE="RandomFields", DUP=FALSE)$model.values
-#    print("OK")
-    
+    model.values <- double(bins)
+    .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
+       truedim, xdim,
+       as.integer(length(covnr)), as.integer(pm$anisotropy),         
+       as.integer(pm$op), model.values, scalingmethod,
+       PACKAGE="RandomFields", DUP=FALSE)
+#  print("OK")
+   
     if (any(is.na(model.values))) {
       if (PrintLevel>1) {
         cat("\nmissing values!")
@@ -166,14 +169,15 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
         param <- PARAM
         param[LSQINDEX] <- variab
-        print(param)
+        print(rbind(LSQLB, param, LSQUB))
+        print(rbind(LSQLB, param, LSQUB) -1)
         print(LSQTRANSFORM)
 
         param <- LSQTRANSFORM(param)
         print(param)
 
-        str(.C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
-               logicaldim, xdim,
+        str(.C("VariogramNatSc", bin.centers, bins, covnr, as.double(param),
+               lpar, truedim, xdim,
                as.integer(length(covnr)), as.integer(pm$anisotropy),         
                as.integer(pm$op),model.values=double(bins), scalingmethod,
                PACKAGE="RandomFields", DUP=FALSE))
@@ -204,6 +208,26 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       } else ergb <- sum((binned.variogram - model.values)^2 * LSQ.WEIGHTS)
     }
     
+    if (!TRUE) {
+      str(list( bin.centers, bins, covnr, as.double(param), lpar,
+               truedim, xdim,
+               as.integer(length(covnr)), as.integer(pm$anisotropy),         
+               as.integer(pm$op), model.values, scalingmethod,
+               PACKAGE="RandomFields", DUP=FALSE), vec=20)
+      print(param)
+      print(xdim)
+      print(scalingmethod)
+      str(bin.centers)
+      print(cbind(matrix(bin.centers, ncol=truedim, byrow=TRUE),
+                  model.values, binned.variogram,
+                  if (LSQ.SELF.WEIGHING) (binned.variogram / model.values -1)^2
+                  else (binned.variogram - model.values)^2 * LSQ.WEIGHTS
+                  ))
+      print(LSQTRANSFORM)
+      print(ergb)
+                                        # readline()
+    }
+
     if (ergb<LSMIN) {
       if (varnugNA) {
         sill <- bgw/g2w
@@ -217,7 +241,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     }
     return(ergb)
   }
-
 
   MLEsettings <- function(M) {
     switch(M,
@@ -278,7 +301,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                          matrix(.C("CovarianceMatrixNatSc",
                                    distances, lc,
                                    covnr, as.double(param), lpar,
-                                   logicaldim,#space time dim of random field
+                                   truedim,#space time dim of random field
                                    xdim,      #dimension of the distance (vector)
                                    ##      so for isotropic fields it might be 1
                                    ##      although that the random field is 3
@@ -385,7 +408,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         stop("file already exists")
       }
       save(file=filename, fitvario.bug, txt, filename, variab, MLELB, MLEUB,
-           PARAM, param, MLEINDEX, distances, lc, covnr, lpar, logicaldim, xdim,
+           PARAM, param, MLEINDEX, distances, lc, covnr, lpar, truedim, xdim,
            pm, cov.matrix, scalingmethod, REML.A, logdet, quadratic, REML.data,
            varnugNA, zeronugget, REML.twopilcrepet, res, MLEMAX)
       if (is.na(res) || is.na(MLEMAX)) stop(txt)
@@ -430,7 +453,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     cov.matrix <- try(chol(CC <- matrix(.C("CovarianceMatrixNatSc",
                          distances, lc,
                          covnr, as.double(param), lpar,
-                         logicaldim, ##  space time dim of random field
+                         truedim, ##  space time dim of random field
                          xdim,       ##  dimension of the distance (vector)
                          ##          so for isotropic fields it might be 1
                          ##          although that the random field is 3
@@ -549,7 +572,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       }
       save(file=filename, fitvario.bug, txt, filename, variab, MLELB, MLEUB,
            PARAM, param, MLEINDEX, MLETRANSFORM, distances, lc, covnr,
-           lpar, logicaldim, xdim,
+           lpar, truedim, xdim,
            pm, cov.matrix, scalingmethod, repet, logdet, quadratic,
            givenCoVariates, XC, m, meandata, MLtargetV, ML.loglcrepet,
            ML.lcrepet, ML.twopilcrepet, CC,
@@ -612,7 +635,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
            )
     assign("CROSS.DIST", CROSS.DIST, envir=ENVIR)
   }
- 
+
   crosstarget <- function(variab) {
     if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab<CROSSLB) | (variab>CROSSUB))) {
@@ -642,7 +665,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       param[CROSSINDEX] <- variab[1:nCROSSINDEX]
     } else param[CROSSINDEX] <- variab
     model$param <- CROSSTRANSFORM(param)
-
+  
     res <- 0.0
     ## data is matrix!
     for (d in 1:lc) {
@@ -662,14 +685,14 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (PrintLevel>6) cat("result cross val", res, "\n")
     return(res)
   }
-  
+
   lsq.covariates <- function(modelparam) {
      if (givenCoVariates) {
       if (!is.null(pm$trend)) stop("sorry, not implemented yet")
       XC <- solve(matrix(.C("CovarianceMatrixNatSc",
                             distances, lc,
                             covnr, as.double(modelparam), lpar,
-                            logicaldim,#space time dim of random field
+                            truedim,#space time dim of random field
                             xdim,      #dimension of the distance (vector)
                             ##      so for isotropic fields it might be 1
                             ##      although that the random field is 3
@@ -687,9 +710,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     }
   }
 
-show <- function(nr, M, OPT, PARAM)
-  cat("\n ", M, ", ", switch(nr, "start", "grid ", "re-do"), ": value=",
-      format(OPT, dig=6), ", param=", format(PARAM, dig=2), sep="")
+  show <- function(nr, M, OPT, PARAM)
+    cat("\n ", M, ", ", switch(nr, "start", "grid ", "re-do"), ": value=",
+        format(OPT, dig=6), ", param=", format(PARAM, dig=2), sep="")
 
 ######################################################################
 ###                Initial settings                                ###
@@ -742,7 +765,7 @@ show <- function(nr, M, OPT, PARAM)
     f.transform <- NULL
     model.nan <- functionToNaN(model)
     model.nan <-
-      convert.to.readable(PrepareModel(model.nan,NULL, # new$spacedim+new$Time
+      convert.to.readable(PrepareModel(model.nan,NULL, # truedim
                                        ), allow="list")
     if (any(sapply(model.nan[-1], function(x) !is.null(x) && is.nan(x))))
       stop("transform functions may not given (yet) for mean and trend")
@@ -770,64 +793,85 @@ show <- function(nr, M, OPT, PARAM)
   stopifnot(all(is.finite(as.matrix(data))))
   data <- as.vector(data)
   spacedim <- new$spacedim
-  logicaldim <- as.integer(spacedim + new$Time)
-  pm <- PrepareModel(model, param, logicaldim, trend)
+  truedim <- as.integer(new$spacedim+new$Time)
+  pm <- PrepareModel(model, param, truedim, trend)
   ctr <- convert.to.readable(pm)
   if (!is.null(ctr$param))
     ## to make sure that the model is  given in a standardised way
     ## if not truely a composed covariance function
-    pm <- PrepareModel(ctr$model, ctr$param, new$spacedim+new$Time, trend)
+    pm <- PrepareModel(ctr$model, ctr$param, truedim, trend)
   covnr <- as.integer(pm$covnr)
   lpar <- as.integer(length(pm$param))  
-
   
+
+ 
 ##############              Coordinates               #################
   if (PrintLevel>4) cat("\ncoordinates...")
   if (pm$anisotropy) {
-    xdim <- as.integer(logicaldim)
+    xdim <- as.integer(truedim)
     dd <- 0
     
     coord <- new$x
     if (!is.null(T)) {
-      y <- expand.grid(1:nrow(new$x), seq(new$T[1], new$T[2], new$T[3]))
-      coord <- cbind(coord[y[,1], ], y[,2])
+      tt <- seq(new$T[1], new$T[2], new$T[3])
+      coord <- cbind(new$x[rep(1:nrow(new$x), length(tt)), ],
+                     rep(tt, each=nrow(new$x)))
     }
     
     lc <- nrow(coord)
     ## note: the direct C call needs matrix where points are given column-wise
     ##       whereas the R function CovarianceFct need them row-wise,
     ##                   except for fctcall==CovarianceMatrix
-    distances <- matrix(nrow=logicaldim, ncol=lc * (lc-1) / 2)
+    distances <- matrix(nrow=truedim, ncol=lc * (lc-1) / 2)
     ## distances are used to calculate bounds for the scale parameter(s)
     ## to be estimated -- further it is used in MLtarget
 
-    for (i in 1:logicaldim) {
-      dx <- outer(coord[,i], coord[,i], "-")
-      distances[i, ] <- as.double(dx[lower.tri(dx)])
-      ## x <- c(1,6,0.1)
-      ## outer(x, x, "-")
-      ##     [,1] [,2] [,3]
-      ##[1,]  0.0 -5.0  0.9
-      ##[2,]  5.0  0.0  5.9
-      ##[3,] -0.9 -5.9  0.0
-      if (i<=spacedim) dd <- dd + distances[i, ]^2
-    }
-    dd <- sqrt(dd)
-    coord <- NULL
-   
-    maxdistances <- max(dd)
-   ## mindistances <- min(dd[dd!=0])
-    mindistances <- min(dd)
-    rm("dd")
+###  30.3.06 folgenden code durch nachfolgenden ersetzt.
+###     for (i in 1:truedim) {
+###      dx <- outer(coord[,i], coord[,i], "-")
+###      distances[i, ] <- as.double(dx[lower.tri(dx)])
+###      ## x <- c(1,6,0.1)
+###      ## outer(x, x, "-")
+###      ##     [,1] [,2] [,3]
+###      ##[1,]  0.0 -5.0  0.9
+###      ##[2,]  5.0  0.0  5.9
+###      ##[3,] -0.9 -5.9  0.0
+###      if (i<=spacedim) dd <- dd + distances[i, ]^2 
+###    }
+###    dd <- sqrt(dd)
+###    coord <- NULL
+###    maxdistances <- max(dd)
+###    mindistances <- min(dd[dd!=0])  ## notwendig falls !is.null(T)
+###    rm("dd")
+###
+ 
+    distances <- double(truedim * lc * (lc-1) / 2)
+    maxdistances <- double(1)
+    mindistances <- double(1)
+    error <- integer(1)
+    .C("vectordist",
+       as.double(coord),
+       as.integer(dim(coord)),
+       distances, as.integer(FALSE),
+       PACKAGE="RandomFields", DUP=FALSE)
+    distances <- matrix(distances, nrow=truedim, byrow = TRUE)
+    mindistances <-
+      range(sqrt(colSums(distances[1:spacedim, if (is.null(T)) TRUE else
+                                   distances[truedim, ]==0]^2)))
+    maxdistances <- mindistances[2]
+    mindistances <- mindistances[1]   
+    rm("coord")
   } else {
     lc <- nrow(new$x)
     xdim <- as.integer(1)
-    distance.matrix <- dist(new$x)
-    distances <- as.double(distance.matrix)
-    distance.matrix <- as.matrix(distance.matrix)
-    mindistances <- min(distances[lower.tri(distances)])
+    distances <- as.matrix(dist(new$x))
+    distances <- distances[lower.tri(distances)]
+    mindistances <- min(distances)
     maxdistances <- max(distances)
   }
+  storage.mode(distances) <- "double"
+ # xxxx
+  
   if (mindistances==0) stop("two points given twice")
   gc() ## necessairy, since otherwise too much memory is being taken because
   ##      of dd[dd!=0]
@@ -897,7 +941,7 @@ show <- function(nr, M, OPT, PARAM)
       if (is.null(lower[[i]]$a)) lower[[i]]$aniso <- autostart$a * NA
       else if (!is.numeric(lower[[i]]$s)) lower[[i]]$scale <- NA
     if (!is.numeric(lower[[i]]$k)) lower[[i]]$kappas <- autostart$param * NA
-    bndtst <- PrepareModel(lower, time=new$spacedim+new$Time, trend=trend)
+    bndtst <- PrepareModel(lower, time=truedim, trend=trend)
     bndtst$param <- rep(NA, length(bndtst$param))
     if (dummy!=Unlist(convert.to.readable(bndtst, allowed="list")))
       stop(structuremismatch)
@@ -908,7 +952,7 @@ show <- function(nr, M, OPT, PARAM)
       if (is.null(upper[[i]]$a)) upper[[i]]$aniso <- autostart$a * NA
       else if (!is.numeric(upper[[i]]$s)) upper[[i]]$scale <- NA
     if (!is.numeric(upper[[i]]$k)) upper[[i]]$kappas <- autostart$param * NA
-    bndtst <- PrepareModel(upper, time=new$spacedim+new$Time, trend=trend)
+    bndtst <- PrepareModel(upper, time=truedim, trend=trend)
     bndtst$param <- rep(NA, length(bndtst$param))
     if (dummy!=Unlist(convert.to.readable(bndtst, allowed="list")))
       stop(structuremismatch)
@@ -926,11 +970,9 @@ show <- function(nr, M, OPT, PARAM)
         lower <- c(rep(NA, 1 + nulltrend), nugg, NA, lower)
         upper <- c(rep(NA, 1 + nulltrend), nugg, NA, upper)
       } else if (length(ctr$param) < length(lower)) stop(lengthmismatch)
-      lower <- convert.to.readable(PrepareModel(ctr$model, lower,
-                                                new$spacedim+new$Time, trend),
+      lower <- convert.to.readable(PrepareModel(ctr$model, lower,truedim, trend),
                                    allowed="list")
-      upper <- convert.to.readable(PrepareModel(ctr$model, upper,
-                                                new$spacedim+new$Time, trend),
+      upper <- convert.to.readable(PrepareModel(ctr$model, upper,truedim, trend),
                                    allowed="list")
     } else if (is.matrix(ctr$param)) {
       if (nrow(lower)<length(ctr$param)) {
@@ -939,12 +981,12 @@ show <- function(nr, M, OPT, PARAM)
         upper <- c(NA, NA, upper)
       } else if (nrow(lower)>length(ctr$param)) stop(lengthmismatch)     
       lower <- convert.to.readable(PrepareModel(ctr$model,
-                matrix(lower, ncol=ncol(ctr$param), nrow=nrow(ctr$param)),
-                                                new$spacedim+new$Time, trend),
-                                                allowed="list")
+               matrix(lower, ncol=ncol(ctr$param), nrow=nrow(ctr$param)),
+                                                truedim, trend),
+                                   allowed="list")
       upper <- convert.to.readable(PrepareModel(ctr$model,
                matrix(upper, ncol=ncol(ctr$param), nrow=nrow(ctr$param)),
-                                                new$spacedim+new$Time, trend),
+                                                truedim, trend),
                                    allowed="list")
     } else stop("vector valued lower bound only allowed if param is given")
   } else { # !(is.vector(lower)) i.e. not given
@@ -964,7 +1006,7 @@ show <- function(nr, M, OPT, PARAM)
   ##    this is necessary to change the limits for the scale parameters
   ##    before MLE is performed
   vardata <- var(data)
-  truedim <- new$spacedim+new$Time ## could made better by considering
+  ## truedim: could made better by considering
   ##   the anisotropy matrices if there are any
   ##   but too much work with the low profit too allow some more
   ##   models for the estimation (those that are allowed for
@@ -983,7 +1025,7 @@ show <- function(nr, M, OPT, PARAM)
     if (parscale[[i]]$var==0) parscale[[i]]$var <- 1
     if (pm$anisotropy) {
       scale.pos[[i]]$aniso <- rep((i+1)/2, length(scale.pos[[i]]$aniso))      
-      diagonal <- as.vector(diag(logicaldim))
+      diagonal <- as.vector(diag(truedim))
       if (upper[[i]]$model=="nugget") {
         ## user may have given an anisotropy matrix
         ## matrix entries are supposed to be within [-1,1], so
@@ -1028,10 +1070,12 @@ show <- function(nr, M, OPT, PARAM)
         if (!all(is.finite(autostart[[i]]$kappa[fixed.kappas])))
           stop(paste("in model #", (i+1)/2,
                      "the parameters that select subclasses are not all given"))
-        for (nk in 1:length(kappas$th)) 
-          if (all(kappas$th[[nk]][fixed.kappas] ==
-                  autostart[[nk]]$kappa[fixed.kappas])) break
-        if (any(kappas$th[[nk]][fixed.kappas]!=autostart[[nk]]$kappa[fixed.kappas]))
+        for (nk in 1:length(kappas$th)) {
+          if (all(kappas$th[[nk]][1, fixed.kappas] ==
+                  autostart[[i]]$kappa[fixed.kappas])) break
+        }
+        if (any(kappas$th[[nk]][1, fixed.kappas] !=
+                autostart[[i]]$kappa[fixed.kappas]))
           stop(paste("Could not find the indicated subclass for model #",
                      (i+1)/2))
       } else nk <- 1
@@ -1044,19 +1088,19 @@ show <- function(nr, M, OPT, PARAM)
     } # !is.null(kappas)
   }
 
-  lower <- PrepareModel(model=lower, time=new$spacedim+new$Time, trend=trend,
+  lower <- PrepareModel(model=lower, time=truedim, trend=trend,
                         named=PrintLevel>1)$par
-  upper <- PrepareModel(model=upper, time=new$spacedim+new$Time, trend=trend,
+  upper <- PrepareModel(model=upper, time=truedim, trend=trend,
                         named=PrintLevel>1)$par
   lower[is.nan(PARAM)] <- -Inf ## nan should not be checked -- this is
   ##                              completely up to the user ...
   upper[is.nan(PARAM)] <- Inf
   
-  autostart <- PrepareModel(model=autostart, time=new$spacedim+new$Time, trend=trend)$par
+  autostart <- PrepareModel(model=autostart, time=truedim, trend=trend)$par
   parscale <- 
-    PrepareModel(model=parscale, time=new$spacedim+new$Time, trend=trend)$par
+    PrepareModel(model=parscale, time=truedim, trend=trend)$par
   scale.pos <-
-    PrepareModel(model=scale.pos, time=new$spacedim+new$Time, trend=trend)$par
+    PrepareModel(model=scale.pos, time=truedim, trend=trend)$par
   
   
 ###################      check optim.control      ####################
@@ -1141,8 +1185,7 @@ show <- function(nr, M, OPT, PARAM)
     if (PrintLevel>4) cat("\nstandard style settings...")
     VARIANCE <- 1
     KAPPA <- 2
-    n.kappas <- .C("GetNrParameters", covnr, as.integer(1),
-                   as.integer(logicaldim), k=integer(1),
+    n.kappas <- .C("GetNrParameters", covnr, as.integer(1),truedim, k=integer(1),
                    PACKAGE="RandomFields", DUP=FALSE)$k
     SCALE  <- KAPPA + n.kappas
     if (SCALE<length(PARAM)) {
@@ -1267,6 +1310,7 @@ show <- function(nr, M, OPT, PARAM)
     stopifnot( varnugNA + zeronugget + sillbounded <= 1)
   }
   RFparameters(PracticalRange=scalingmethod)
+  autostart[!is.na(PARAM)] <- PARAM[!is.na(PARAM)]
 
 
   
@@ -1338,7 +1382,7 @@ show <- function(nr, M, OPT, PARAM)
                         dimnames=list(tablenames, allmethods))
   param.table <- data.frame(param.table)
 
-  
+ 
 ##########  Trafo def + bounds for LSQ, also used for autostart  ###############
 
   LSQTRANSFORM <- users.transform  ## note: LSQTRANSFORM is used also in MLE
@@ -1375,7 +1419,7 @@ show <- function(nr, M, OPT, PARAM)
   LSQLB  <- lsqlower[LSQINDEX]
   LSQUB  <- lsqupper[LSQINDEX]
   ixdLSQINDEX <- LSQINDEX[index]
-  
+ 
 ##################################################
 ###############    PRIMITIVE METHODS   ###########
   ##****************    autostart    *****************
@@ -1399,20 +1443,23 @@ show <- function(nr, M, OPT, PARAM)
   if (!is.null(users.guess)) {
     M <- "users.guess"
     ug <- if (is.list(users.guess)) {
-      PrepareModel(users.guess, NULL, new$spacedim+new$Time, trend=users.beta)
+      PrepareModel(users.guess, NULL, truedim, trend=users.beta)
     } else {
         if (is.null(param))
           stop("cannot interpret users.guess -- better use the list definition for model to define user's guess")
-        PrepareModel(save.model, users.guess, new$spacedim+new$Time,
-                     trend=users.beta)
+        PrepareModel(save.model, users.guess, truedim, trend=users.beta)
       }
     ug <- convert.to.readable(ug)
-    ug <- PrepareModel(ug$model, ug$param, new$spacedim+new$Time,
-                       trend=ug$trend)$param
-    if (!is.null(users.transform) &&  up != users.transform(ug))
-      stop("user's guess does not satisfy the user's transformation function") 
+    ug <- PrepareModel(ug$model, ug$param, truedim, trend=ug$trend)$param
     if (length(ug)!=length(PARAM))
       stop("model given by users.guess does not match 'model'")
+    if (!is.null(users.transform)) {
+      ust <- unlist(users.transform(ug))
+      uug <- unlist(ug)
+      if (length(ust) != length(uug) || any(ust!=uug))
+        ## not a complete check, but should be enough
+      stop("user's guess does not satisfy the user's transformation function")
+    }
     idx <- tblidx[["variab"]]
     param.table[[M]][idx[1]:idx[2]] <- ug
     idx <- tblidx[["covariab"]]
@@ -1451,7 +1498,7 @@ show <- function(nr, M, OPT, PARAM)
     }
   }
 
-                                  
+                                 
 ##################################################
 ###################  LSQ  ########################
   ## see above for the trafo definitions
@@ -1470,19 +1517,20 @@ show <- function(nr, M, OPT, PARAM)
   if (length(ntheta)==1) ntheta <- c(0, ntheta) # see above
   if (length(ntime)==1) ntime <- c(ntime, 1) 
   ntime <- ntime * T[3] ## time endpoint; step
-  
+
   ev <- EmpiricalVariogram(new$x, T=new$T, data=EVtargetV, grid=FALSE, 
                            bin=if (length(bins)>1) bins else 
                            c(-1, seq(0, distance.factor * maxdistances,
                                     len=bins+1)),
-                           phi=if ((new$spacedim>=2) && pm$anisotropy) nphi,
-                           theta=if ((new$spacedim>=3) && pm$anisotropy) ntheta,
+                           phi=if ((spacedim>=2) && pm$anisotropy) nphi,
+                           theta=if ((spacedim>=3) && pm$anisotropy) ntheta,
                            deltaT=if (!is.null(T)) ntime
                            )
-  
+ 
   index.bv <- as.vector(!is.na(ev$e)) ## exclude bins without entry
-  if (sum(index.bv)==0)
-    stop("only NAs in empirical variogram; check values of bins and distance.factor")
+
+  if (sum(index.bv) < 1)
+    stop("not more than 1 value in empirical variogram that is not NA; check values of bins and distance.factor")
   binned.variogram <- as.double(ev$e[index.bv])
  
   bin.centers <- as.matrix(ev$c)
@@ -1495,6 +1543,7 @@ show <- function(nr, M, OPT, PARAM)
                            as.vector(outer(bin.centers, sin(ev$phi))))
     }
     if (!is.null(ev$theta)) {
+      
       if (spacedim<3)
         stop("x dimension is less than three, but theta is given") 
       if (ncol(bin.centers)==1) bin.centers <- cbind(bin.centers, 0)
@@ -1516,11 +1565,14 @@ show <- function(nr, M, OPT, PARAM)
               rep(ev$T, each=nrow(bin.centers)))      
     }
   }
- 
+
+#  str(ev$e)
+#  print(index.bv)
+#  print(bin.centers)
   bin.centers  <- as.double(t(bin.centers[index.bv, ])) #
   ##  es muessen beim direkten C-aufruf die componenten der Punkte
   ##  hintereinander kommen (siehe auch variable distance). Deshalb t()
-
+  
   evsd <- as.double(ev$sd)
   evsd[is.na(evsd)] <- 0
   evsd[evsd==0] <- 10 * sum(evsd, na.rm=TRUE) ## == "infinity"
@@ -1531,7 +1583,8 @@ show <- function(nr, M, OPT, PARAM)
                    rep(1, bins),            # plain 
                    sqrt(binned.n),          # sqrt(#)
                    1 / evsd,                # sd^-1
-                   sqrt(bins:1 * binned.n), # internal1
+                   sqrt(bins:1 * as.double(binned.n)), # internal1 # kann sonst
+                   ##                   fehler verursachen, da integer overflow
                    bins:1,                  # internal2
                    sqrt(bins:1)             # internal3
                    )[index.bv, ]
@@ -1596,6 +1649,9 @@ show <- function(nr, M, OPT, PARAM)
               }
             } else param.table[tblidx[[M]][1], i] <- NaN
           }
+#          print( LSQUB -1)
+#          print(min)
+#          print(min.variab-1)
         }
         stopifnot(length(min.variab) == length(LSQLB))
         
@@ -1608,7 +1664,8 @@ show <- function(nr, M, OPT, PARAM)
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
                     upper = LSQUB, control= lsq.optim.control)$par, silent=!debug)
-      }
+#       readline()
+       }
     }
     options(show.error.messages = show.error.message)  
     ## side effect: minimum so far is in LSMIN and LSPARAM
@@ -1704,7 +1761,7 @@ show <- function(nr, M, OPT, PARAM)
                                upper = MLEUB, maximum=TRUE)$maximum,
                       silent=!debug)
       } else {
-        min <- Inf
+        max <- -Inf
         for (i in methodprevto$mle) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
           idx <- tblidx[["variab"]]
@@ -1713,18 +1770,25 @@ show <- function(nr, M, OPT, PARAM)
             value <- MLEtarget(variab) ## !
             if (is.finite(value)) {
               param.table[tblidx[[M]][1], i] <- value
-              if (value < min) {
-                min.variab <- variab
-                min <- value
+              if (value > max) {
+                max.variab <- variab
+                max <- value
               }
             } else param.table[tblidx[[M]][1], i] <- NaN
           }
         }
-        stopifnot(length(min.variab) == length(MLELB))        
+        stopifnot(length(max.variab) == length(MLELB))        
         mle.optim.control <-
-          c(optim.control, parscale=list(parscale[MLEINDEX]), fnscale=-min)
+          c(optim.control, parscale=list(parscale[MLEINDEX]),
+            fnscale=-max(abs(max), 0.1))
+
+#        print(max.variab)
+#       print(MLELB)
+#       print(MLEUB)
+#       str(mle.optim.control)
+        
         variab <-
-          try(optim(min.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
+          try(optim(max.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
                     upper = MLEUB, control=mle.optim.control)$par,
               silent=!debug)
       }
@@ -1737,6 +1801,9 @@ show <- function(nr, M, OPT, PARAM)
                                 )) ||
                        any(abs(variab - MLEUB) <
                            pmax(mindistance, minboundreldist * abs(MLEUB))))
+ #     print("onborderline")
+ #     print(onborderline)
+      
     }
     idx <- tblidx[["variab"]]
     if (is.finite(MLEMAX)) {

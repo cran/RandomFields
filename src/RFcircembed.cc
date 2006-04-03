@@ -41,16 +41,18 @@ ce_param CIRCEMBED={false, true, false, true, TRIVIALSTRATEGY, 3, MAX_CE_MEM,
 ce_param LOCAL_CE={false, true, false, true, TRIVIALSTRATEGY, 1, MAX_CE_MEM, 
 		   -1e-9, 1e-7, 0, 0, 0, 0};
 
-void FFT_destruct(FFT_storage *FFT)
-{
-  if (FFT->iwork!=NULL) {free(FFT->iwork); FFT->iwork=NULL;}
-  if (FFT->work!=NULL) {free(FFT->work); FFT->work=NULL;} //?
-}
 
 void FFT_NULL(FFT_storage *FFT) 
 {
   FFT->work = NULL;
   FFT->iwork = NULL;
+}
+
+void FFT_destruct(FFT_storage *FFT)
+{
+  if (FFT->iwork!=NULL) {free(FFT->iwork);}
+  if (FFT->work!=NULL) {free(FFT->work);} 
+  FFT_NULL(FFT);
 }
 
 void CE_destruct(void **S) 
@@ -176,12 +178,11 @@ int init_circ_embed(key_type *key, int m)
   double steps[MAXDIM], *c;
   CE_storage *s;
   ce_param* cepar;
-  bool // Critical[MAXDIM],
-      critical;
 
   c = NULL;
   meth = &(key->meth[m]);
   cepar = &CIRCEMBED;
+  s = NULL;
   if (!key->grid) {Xerror=ERRORONLYGRIDALLOWED;goto ErrorHandling;}
   SET_DESTRUCT(CE_destruct, m);
 
@@ -196,17 +197,6 @@ int init_circ_embed(key_type *key, int m)
 
   if ((Xerror = FirstCheck_Cov(key, m, true)) != NOERROR)  goto ErrorHandling;
   actcov = meth->actcov;
-  critical = false; 
-//  for (k=0; k<dim; k++) Critical[k]=false; // critical odd not used yet
-//    if (cov->type==ANISOTROPIC) { // if Hypermodels are
-//	// included it becomes much more difficult!
-//     if (!cov->even) {
-//        for(k=0; k<dim; k++) {
-//	  Critical[k] |= cov->odd[k];
-//        }
-//      }
-//     }
-
 
   for (d=0; d<key->timespacedim; d++) {
     s->nn[d]=key->length[d]; 
@@ -241,7 +231,6 @@ int init_circ_embed(key_type *key, int m)
 	return ERRORMSG;
     }
     mm[i] = s->nn[i];
-//printf("dd%d OK %d %f\n", i, mm[i], cepar->mmin[i]);
     if (cepar->mmin[i]>0.0) {
       if (mm[i] > (1 + (int) ceil(cepar->mmin[i])) / 2) { // plus 1 since 
 	// mmin might be odd; so the next even number should be used
@@ -276,7 +265,8 @@ int init_circ_embed(key_type *key, int m)
        Then h[l]=(index[l]+mm[l]) mod mm[l] !!
     */
 
- /* The algorithm below:
+
+ /* The algorithm below is as follows:
   while (!positivedefinite && (trials<cepar->trials)){
     trials++;
     calculate the covariance values "c" according to the given "m"
@@ -291,7 +281,6 @@ int init_circ_embed(key_type *key, int m)
   }
 */
 
-  
   trials=0;
   while (!positivedefinite && (trials<cepar->trials)){ 
     trials++;
@@ -309,36 +298,41 @@ int init_circ_embed(key_type *key, int m)
     }
 
     if (mtot > cepar->maxmem) {
-      //  printf("ifference %e\n", cepar->maxmem - mtot);
 	sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
 	sprintf(ERRORSTRING_WRONG,"%f", (double) mtot);
 	return ERRORMAXMEMORY;
     }
 
 
+    if (c != NULL) free(c); 
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
-    if ((c = (double*) malloc(2 * mtot * sizeof(double))) == 0) {
+    if ((c = (double*) malloc(2 * mtot * sizeof(double))) == NULL) {
       Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
 
     for(i=0; i<dim; i++){index[i]=0;}
   
-    for (i=0; i<mtot; i++){
+    for (i=0; i<mtot; i++) {
       cur_crit = false;
       for (k=0; k<dim; k++) {
 	hx[k] = steps[k] * 
 	  (double) ((index[k] <= halfm[k]) ? index[k] : index[k] - mm[k]);
 	cur_crit |= (index[k]==halfm[k]);
       }	
-      dummy=i << 1;
+      dummy = i << 1;
 
-      c[dummy] = (critical && cur_crit) ?  0.0 :      
-	 key->covFct(hx, dim, key->cov, meth->covlist, actcov, key->anisotropy); 
-      // statt critical hier besser andere CovFct addieren!
-
-//      assert(c[dummy] < 10000000.0);
-          
+      c[dummy] =      
+         key->covFct(hx, dim, key->cov, meth->covlist, actcov, key->anisotropy);
+      if (cur_crit) {
+	for (k=0; k<dim; k++) {
+          if (index[k]==halfm[k]) hx[k] -= steps[k] * (double) mm[k];
+	}
+	c[dummy] = 
+	    0.5 *(c[dummy] + key->covFct(hx, dim, key->cov, meth->covlist,
+					 actcov, key->anisotropy));
+      }
+           
       c[dummy+1] = 0.0;
       k=0; while( (k<dim) && (++(index[k]) >= mm[k])) {
 	index[k]=0;
@@ -387,8 +381,6 @@ int init_circ_embed(key_type *key, int m)
 
       if (!positivedefinite && (trials<cepar->trials)) { 
 	FFT_destruct(&(s->FFT));
-	free(c); c=NULL;
-
 	switch (cepar->strategy) {
 	case 0 :
 	  for (i=0; i<dim; i++) { /* enlarge uniformly in each direction, maybe 
@@ -422,7 +414,7 @@ int init_circ_embed(key_type *key, int m)
 	}
       }
     } else {if (GENERAL_PRINTLEVEL>=2) PRINTF("forced\n");}
-  }
+  } // while (!positivedefinite && (trials<cepar->trials))
   assert(mtot>0);
  
 
@@ -467,9 +459,6 @@ int init_circ_embed(key_type *key, int m)
     s-> square_seg[i] = cumm[i] * (s->nn[i] + (mm[i] - s->max_squares[i] * 
 					       s->nn[i]) / s->max_squares[i]);
   }
-
-//  s->c = c;
-//  return NOERROR;
   
   if (cepar->severalrealisations) {
     if ((s->d=(double *) calloc(2 * mtot, sizeof(double)))==0) {
@@ -477,10 +466,13 @@ int init_circ_embed(key_type *key, int m)
   }
   s->c = c;
 
+//  printf("xxxx %d", (int) s);
+
   return NOERROR;
   
  ErrorHandling:
-    if (c!=NULL) {free(c);}
+  if (GENERAL_STORING && s != NULL) s->c = c;
+  else if (c!=NULL) {free(c);}
   return Xerror;
 }
 
@@ -914,6 +906,10 @@ void do_circ_embed(key_type *key, int m, double *res){
   bool first, free[MAXDIM+1], noexception;
   long mtot, start[MAXDIM], end[MAXDIM];
   CE_storage *s;
+
+//  printf("%d %d %d\n", m, (int) key->meth[m].S, key->n_unimeth);
+// printf("key->n_unimeth %d\n", key->n_unimeth);
+
   s = (CE_storage*)key->meth[m].S;
   if (s->d==NULL) { /* overwrite the intermediate result directly
 		       (algorithm allows for that) */

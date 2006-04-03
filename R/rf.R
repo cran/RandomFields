@@ -10,6 +10,7 @@
     ## appear only on computers I have a login
     cat("To-Do List\n==========\n")
 
+    print("MLE: berechnung maxdistances und mindistances fuer anisotropy und spaetere verwendung beruecksichtigt nicht, dass Zeitachse sich anders verhaelt -- bloss wie loesen ohne riesigen Aufwand?")
     print("RFdirect: zusaetzlicher Parameter, der regelt ob SVD Zerlegung ueberprueft ob wirklich OK")
     print("RFparameters: set aufrufe zu einem + interne environment darstellung")
     print("Showmodels: die mdoelle die nicht funktioniern in schwaecherer Farbe")

@@ -720,30 +720,28 @@ int check_within_range(param_type param, cov_fct *cov, int timespacedim,
     truesegm = true;
     for (i=0; i<kappas; i++) {
       i4 = i * 4;
-      if (param[KAPPA1 + i] < range[i4] || 
-	  param[KAPPA1 + i] <= range[i4] - OPEN && 
-	  range[i4] == floor(range[i4]) + OPEN)
-	error = i;
+      if (range[i4] == floor(range[i4]) + OPEN) {
+	  if (param[KAPPA1 + i] <= range[i4] - OPEN) error=i;
+      } else {
+	  if (param[KAPPA1 + i] < range[i4]) error=i;
+      }
       i4++;
-      if (param[KAPPA1 + i] > range[i4] ||
-	  param[KAPPA1 + i] >= range[i4] + OPEN && 
-	  range[i4] + OPEN == ceil(range[i4])) 
-	error = i;
+      if (range[i4] + OPEN == ceil(range[i4])) {
+	  if (param[KAPPA1 + i] >= range[i4] + OPEN) error=i;
+      } else {
+	  if (param[KAPPA1 + i] > range[i4]) error=i;
+      }	   
       truesegm &= range[i4] != range[i4-1] || param[KAPPA1 + i] == range[i4];
-
       
 /*
 // printf("%d %d %d %d %d %f %f %f %d\n", i,
-	     param[KAPPA1 + i] < range[--i4],
-	     param[KAPPA1 + i] == range[i4] && 
-	     range[i4] == floor(range[i4]) + OPEN ,
-	     param[KAPPA1 + i] > range[++i4] ,
-	     param[KAPPA1 + i] == range[i4] && 
-	     range[i4] + OPEN == ceil(range[i4]),
-	     range[i4-1], range[i4], param[KAPPA1 + i], truesegm
+	param[KAPPA1 + i] < range[--i4],
+	param[KAPPA1 + i] == range[i4] &&range[i4] == floor(range[i4]) + OPEN ,
+	param[KAPPA1 + i] > range[++i4] ,
+	param[KAPPA1 + i] == range[i4] && range[i4] + OPEN == ceil(range[i4]),
+	range[i4-1], range[i4], param[KAPPA1 + i], truesegm
 	);
 */
-
     }
     if (truesegm) { // exakte indizierung darf nur 1x auftauchen 
       //               kleine Einschr\"ankung, aber bisher kein Problem
@@ -1111,8 +1109,8 @@ void Covariance(double *x,int *lx, int *covnr, double *p, int *np,
 		  ncov, anisotropy, op, result, &GENERAL_NATURALSCALING);
 }
 
-void CalculateCovMatrix(double *dist, int lx, covinfo_arraytype keycov, int xdim,
-			int ncov, bool anisotropy, double *result) {
+void CalculateCovMatrix(double *dist, int lx, covinfo_arraytype keycov,
+			int xdim, int ncov, bool anisotropy, double *result) {
   // note: column of x is point !!
   int i, ii, endfor, lxP1;
   long ve, ho;
@@ -1151,8 +1149,8 @@ void CovarianceMatrixNatSc(double *dist,int *lx, int *covnr,double *p,
       for (i=0; i<lxq; i++) result[i] = RF_NAN;
       return;	
   }
-  CalculateCovMatrix(dist, *lx, user_keycov, *xdim, user_ncov, user_anisotropy, 
-		     result);
+  CalculateCovMatrix(dist, *lx, user_keycov, *xdim, user_ncov, 
+		     user_anisotropy, result);
 }
 
 void CovarianceMatrix(double *dist, int *lx,int *covnr, double *p, int *np,
@@ -1282,6 +1280,7 @@ void VariogramMatrix(double *dist, int *lx, int *covnr, double *p, int *np,
   assert(false);
 }
 
+/*
 int insert_method(int* last_incompatible, key_type *key,
 			 SimulationType m, bool incompatible) {
   int idx;
@@ -1360,7 +1359,100 @@ void delete_method(int *M, int *last_incompatible, key_type *key) {
   key->meth[key->n_unimeth].unimeth_alreadyInUse = false;
   (*M)--;
 }
+*/
 
+int insert_method(int* last_incompatible, key_type *key,
+			 SimulationType m, bool incompatible) {
+  int idx;
+
+  assert(m != Nugget || !incompatible);
+
+  if (key->meth[key->n_unimeth].destruct != NULL)
+    key->meth[key->n_unimeth].destruct(&(key->meth[key->n_unimeth].S));
+  assert(key->meth[key->n_unimeth].S==NULL);
+  key->meth[key->n_unimeth].destruct=NULL;
+
+  if (incompatible) {
+    // first the non-compatible (i.e. which do not allow direct 
+    // adding to the random field), then those which allow for 
+    // direct adding
+    // --if attention wouldn't be payed to the ordering of the methods,
+    // the simulation algorithm had to create an intermediate field 
+    // more frequently -- sometimes the fields are pretty large,
+    // and then this procedure is quite helpful
+    //
+    // da waehrend der for-schleife unten eingefuegt wird:
+    // immer moeglichst weit hinten einfuegen!
+    (*last_incompatible)++;
+
+    key->meth[key->n_unimeth].unimeth_alreadyInUse =
+      key->meth[*last_incompatible].unimeth_alreadyInUse;
+    key->meth[key->n_unimeth].unimeth=key->meth[*last_incompatible].unimeth;
+    key->meth[key->n_unimeth].S=key->meth[*last_incompatible].S; // necessary
+    // only if further methods are tried due to partial failure
+    key->meth[key->n_unimeth].destruct=key->meth[*last_incompatible].destruct;
+    key->meth[key->n_unimeth].incompatible = 
+	key->meth[*last_incompatible].incompatible;
+    key->meth[*last_incompatible].S = NULL;
+    key->meth[*last_incompatible].destruct = NULL;
+    idx = *last_incompatible;
+  } else idx=key->n_unimeth;
+  key->meth[idx].unimeth = m;
+  key->meth[idx].incompatible = incompatible;
+  key->meth[idx].unimeth_alreadyInUse = false;
+  key->n_unimeth++;
+  return idx;
+}
+
+void delete_method(int *M, int *last_incompatible, key_type *key) {
+  // note that key->n_unimeth had been decreased before this function
+  // is called
+  int idx, i;
+  methodvalue_type dummy;
+
+  dummy.S = key->meth[*M].S;
+  dummy.destruct= key->meth[*M].destruct;
+  dummy.unimeth = key->meth[*M].unimeth;
+  dummy.incompatible = key->meth[*M].incompatible;
+  if (key->meth[*M].incompatible) {
+    assert(*last_incompatible>=0);
+    assert(*M<=*last_incompatible);
+    key->meth[*M].unimeth = key->meth[*last_incompatible].unimeth;
+    key->meth[*M].unimeth_alreadyInUse =
+	key->meth[*last_incompatible].unimeth_alreadyInUse;
+    key->meth[*M].S = key->meth[*last_incompatible].S;
+    key->meth[*last_incompatible].S=NULL;
+    key->meth[*M].incompatible = key->meth[*last_incompatible].incompatible;
+    key->meth[*M].destruct=key->meth[*last_incompatible].destruct;
+    key->meth[*last_incompatible].destruct=NULL;
+    idx = *last_incompatible;
+    (*last_incompatible)--;
+  } else idx = *M;
+  key->n_unimeth--;
+  if (idx==key->n_unimeth){ // deleting of the very last entry
+    assert(*M==key->n_unimeth || *last_incompatible + 1 == key->n_unimeth); 
+  } else {
+    assert(idx>=0 && idx<key->n_unimeth);
+    key->meth[idx].unimeth = key->meth[key->n_unimeth].unimeth;
+    key->meth[idx].unimeth_alreadyInUse = 
+	key->meth[key->n_unimeth].unimeth_alreadyInUse;
+    key->meth[idx].S = key->meth[key->n_unimeth].S;
+    key->meth[key->n_unimeth].S=NULL;
+    key->meth[idx].incompatible = key->meth[key->n_unimeth].incompatible;
+    key->meth[idx].destruct = key->meth[key->n_unimeth].destruct;
+    key->meth[key->n_unimeth].destruct=NULL;
+  }
+
+  key->meth[key->n_unimeth].unimeth_alreadyInUse = false;
+  key->meth[key->n_unimeth].S = dummy.S;
+  key->meth[key->n_unimeth].destruct = dummy.destruct;
+  key->meth[key->n_unimeth].unimeth = dummy.unimeth;
+  key->meth[key->n_unimeth].incompatible = dummy.incompatible;
+  key->meth[key->n_unimeth].actcov = key->meth[*M].actcov;
+  for (i=key->meth[*M].actcov-1; i>=0; i--)
+      key->meth[key->n_unimeth].covlist[i] = key->meth[*M].covlist[i];
+  (*M)--;
+}
 
 /*
 
@@ -1500,15 +1592,6 @@ void init_method_list(key_type *key)
     key->ML[v][nml++] = Nugget;
     key->NML[v] = nml;
   }
-  
-  if (GENERAL_PRINTLEVEL>2) {
-    PRINTF("Lists of methods for the simulation\n===================================\n");
-    for (v=0; v<key->ncov; v++) {
-      PRINTF("%s: ", CovList[key->cov[v].nr].name);
-      for (i=0; i < key->NML[v]; i++) PRINTF("%s, ", METHODNAMES[key->ML[v][i]]);
-      PRINTF("\n");
-    }
-  }
 }
   
 
@@ -1588,7 +1671,7 @@ int internal_InitSimulateRF(double *x, double *T,
 
 //    printf("internal %d %d \n", covnr[0], covnr[1]);
 
-  bool user_defined, simple_definition, one_model_only;
+  bool user_defined, simple_definition;
   int i, last_incompatible, d,  v, M, err_occurred, error, timespacedim;
   unsigned long totalBytes;
   int method_used[(int) Nothing + 1];
@@ -1749,13 +1832,10 @@ int internal_InitSimulateRF(double *x, double *T,
 
   // simple definition of the covariance function?
   // (the only definition used up to version 1.0 of RandomFields) 
-  one_model_only = simple_definition =
+  simple_definition =
       key->ncov==1 ||
-      (key->ncov==2 && !key->anisotropy && (key->cov[0].method==Nugget ||
-					    key->cov[1].method==Nugget));
-  for (v=key->ncov-2; v>=0; v--)  // above one_model_only only for making
-      // sure that it is initialised
-      if (!(one_model_only = op != 0)) break;
+      (key->ncov==2 && !key->anisotropy && op[0]==0 &&
+       (key->cov[0].method==Nugget || key->cov[1].method==Nugget));
   err_occurred = NOERROR;
   error = ERROROUTOFMETHODLIST;
   key->n_unimeth = 0;
@@ -1808,19 +1888,23 @@ int internal_InitSimulateRF(double *x, double *T,
     // da es auf Daten von key zugreift, die weiter vorne noch nicht
     // vorhanden sind 
   }
+  if (GENERAL_PRINTLEVEL>2) {
+    PRINTF("Lists of methods for the simulation\n===================================\n");
+    for (v=0; v<key->ncov; v++) {
+      PRINTF("%s: ", CovList[key->cov[v].nr].name);
+      for (i=0; i < key->NML[v]; i++) PRINTF("%s, ", METHODNAMES[key->ML[v][i]]);
+      PRINTF("\n");
+    }
+  }
+  
   
   while (error != NOERROR) {
     int error_covnr, m;
     error_covnr = NOERROR;
+
     if (error != ERRORANYLEFT) {
         error_covnr = next_element_of_method_list(key); 
     }
-
-//    printf("XXX %d %d %d %d ledt: %d %d\n", key->NML[0], key->NML[1], 
-//	   key->cov[0].method, key->cov[1].method,
-//	   key->cov[0].left, key->cov[1].left);
-//   printf("keynunimeth %d\n", key->n_unimeth);
-
 
     if (error_covnr) {
       if (GENERAL_PRINTLEVEL>2)
@@ -1837,34 +1921,24 @@ int internal_InitSimulateRF(double *x, double *T,
     for (v=0; v<key->ncov; v++)
       method_used[key->cov[v].method] += key->cov[v].left; 
     for (m=CircEmbed; m<=Nothing; m++) {
-//      printf("used %s %d\n", METHODNAMES[m], method_used[m]);
       if (method_used[m]) {
 	insert_method(&last_incompatible, key, (SimulationType) m,
 		      do_incompatiblemethod[m]!=NULL); 
-	//                increments key->n_unimeth
-//	printf("keynunimeth %d\n", key->n_unimeth);
 	if (method_used[m]==1) {
 	  v=0; 
 	  while(key->cov[v].method!=m || !key->cov[v].left) v++;
 	  key->ML[v][key->IML[v]] = Nothing; 
-//        printf("IML NML %d %d %d %d\n", m,m, NML[0], NML[1]);
 	  // es lohnt sich nicht, die Methoden durchzuleiern,
 	  // die auf die Kovarianzfunktion bereits angewandt wurden und
 	  // diese Kovarianzfunktion dabei die einzige war
 	}
       }
     }
-
-//     printf("front m loop keynunimeth %d\n", key->n_unimeth);
-   
+    
     for (M=0; M<key->n_unimeth; M++) {
-	// printf("M=%d\n", M, key->n_unimeth);
       if (!key->meth[M].unimeth_alreadyInUse) {
 	// unimeth_alreadyInUse: to avoid that method is called again
-	// when next while loop, which would leed to a double i.e. an incorrect
-	// memory allocation
-//        printf("M NML %d %d %d %d\n", M, key->n_unimeth, key->NML[0], key->NML[1]);
-
+	// when next while loop, which would leed to double use of key->meth[M]
 	bool left[MAXCOV];
 	methodvalue_type *meth;
 	meth =  &key->meth[M];
@@ -1883,21 +1957,16 @@ int internal_InitSimulateRF(double *x, double *T,
 		     key->cov[v].left ? "true" : "false", 
 		     METHODNAMES[key->cov[v].method]);
 	}
-	assert(meth->destruct==NULL);
-	assert(meth->S==NULL);
-	// printf("unimeth, nothing %d %d \n:", meth->unimeth,  Nothing);
+	assert(meth->destruct==NULL && meth->S==NULL);
 	if (meth->unimeth > Nothing) {
 	  error = ERRORUNKNOWNMETHOD; 
 	  goto ErrorHandling;
 	}
 
 	err_occurred = init_method[meth->unimeth](key, M);
-//printf("err=%d\n", err_occurred);
 	if (GENERAL_PRINTLEVEL>=5) {
-	    // PRINTF("return code %d :", err_occurred);
-	  ErrorMessage(Nothing, err_occurred);
+	    ErrorMessage(Nothing, err_occurred);
 	}
-//      printf("A NML %d %d %d %d\n", M, M<key->n_unimeth, key->NML[0], key->NML[1]);
 	switch (err_occurred) {
 	    case NOERROR_REPEAT:
 	      insert_method(&last_incompatible, key, meth->unimeth,
@@ -1913,15 +1982,11 @@ int internal_InitSimulateRF(double *x, double *T,
 	    default:
 	      Merr = meth->unimeth; // do not shift after delete_method, since 
 	      // the latter changes the value of M !
-	      delete_method(&M, &last_incompatible, key);
+	      delete_method(&M, &last_incompatible, key); 
 	      for (v=0; v<key->ncov; v++) {
 		covinfo_type *kc;
 		kc = &(key->cov[v]);
 		kc->left = left[v];
-//		if (kc->left) {
-//		  if (kc->x != NULL) { free(kc->x); kc->x = NULL; }
-//		}
-//		printf("left: %d %d\n", v, left[v]);
 	      }
 	      if (simple_definition && GENERAL_PRINTLEVEL>2) {
 		ErrorMessage(Merr,err_occurred);
@@ -1930,17 +1995,8 @@ int internal_InitSimulateRF(double *x, double *T,
 	      //                     and final err_occured might be 0
 	}// switch
       } // if not already in Use
-
-//      printf("M, nunimeth %d %d\n", M, key->n_unimeth);
-
-
     } // for (M...)
 
-//    printf("ERROR NR %d %d\n", error, err_occurred)    ;
-
-//    for (v=0; v<key->ncov; v++)
-//	printf("left: %d %d %d\n", v, key->cov[v].left, key->ncov); 
-    
     if (error==NOERROR) {
       for (v=0; v<key->ncov; v++) {
 	  if (key->cov[v].left) {
@@ -1952,17 +2008,8 @@ int internal_InitSimulateRF(double *x, double *T,
     }
   } // while error!=NOERROR
 
-  //    for (v=0; v<key->ncov; v++) 
-//	 printf("*** %d %s %s %d\n", 
-//		v, METHODNAMES[key->cov[v].method], 
-//		 METHODNAMES[key->ML[v][0]], key->NML[v]);
-
-//  printf("ERROR = %d\n", error);
-
-  if (error!=NOERROR && !simple_definition && !one_model_only) {
+  if (error!=NOERROR && !simple_definition) {
     int zaehler, vplus;
-    if (user_defined && // to be set in sensitive way. not done yet
-	(err_occurred == -3 || err_occurred == -4)) goto ErrorHandling;
     if (GENERAL_PRINTLEVEL>1) {
       PRINTF("algorithm partially failed. Retrying. Last error has been:\n");
       ErrorMessage(Merr, error);   
@@ -1982,6 +2029,7 @@ int internal_InitSimulateRF(double *x, double *T,
       if (kc->left) {
 	int w;
         if (key->NML[v]==0) {
+	  if (error != ERRORANYLEFT) key->n_unimeth++;
           error = ERROROUTOFMETHODLIST;
 	  goto ErrorHandling;
 	}
@@ -2004,6 +2052,7 @@ int internal_InitSimulateRF(double *x, double *T,
 	    if (CovList[kcdummy->nr].type==ISOHYPERMODEL || 
 		CovList[kcdummy->nr].type==ANISOHYPERMODEL) {
 	      // too complicated for the moment; should be improved
+	      if (error != ERRORANYLEFT) key->n_unimeth++;
 	      error = ERRORFAILED;
 	      goto ErrorHandling;
 	    }
@@ -2028,9 +2077,6 @@ int internal_InitSimulateRF(double *x, double *T,
 	    for (w=0; w<key->ncov; w++) {
 	      kcdummy = &(key->cov[w]);
 	      kc->left = left[w];
-//	      if (kc->left) {
-//		if (kcdummy->x != NULL) { free(kcdummy->x); kcdummy->x = NULL; }
-//	      }
 	    }
 	  } else {
             error = NOERROR;
@@ -2051,7 +2097,10 @@ int internal_InitSimulateRF(double *x, double *T,
     } // for v < key->ncov
   } // error & not simple definition
    
-  if (!(key->active = error==NOERROR)) goto ErrorHandling;
+  if (!(key->active = error==NOERROR)) {
+    if (error != ERRORANYLEFT) key->n_unimeth++;
+    goto ErrorHandling;
+  }
   if (GENERAL_PRINTLEVEL>=4) 
       PRINTF("%sSuccessfully initialised.\n", errorloc_save);
   key->compatible = last_incompatible <= 0; // if at most one incompatible

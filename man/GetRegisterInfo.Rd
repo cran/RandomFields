@@ -49,6 +49,12 @@ GetModelInfo(register=0)
   or \command{\link{Variogram}} or similar commands.
   \code{register==-2} is for internal use only.
 }
+\note{
+  Put \code{Storing=TRUE}, see \command{\link{RFparameters}}
+  if you like to have more
+  internal information in case of an expected failure of an initialisation of
+  a random field simulation.
+}
 \value{
   List of internal information is returned.
 }
