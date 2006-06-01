@@ -122,7 +122,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
   
   LStarget <- function(variab) {
-    if (PrintLevel>4) {cat("LSMIN=", LSMIN); print(variab,dig=20)}
+    if (PrintLevel>4) {cat("LSMIN=", LSMIN, "\n"); print(variab,dig=20)}
 #    print(rbind(LSQLB, variab, LSQUB))
 #    print(rbind(LSQLB, variab, LSQUB)-1)  
     if (any((variab<LSQLB) | (variab>LSQUB))) {
@@ -169,8 +169,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
         param <- PARAM
         param[LSQINDEX] <- variab
-        print(rbind(LSQLB, param, LSQUB))
-        print(rbind(LSQLB, param, LSQUB) -1)
+        print(rbind(lsqlower, param, lsqupper))
+        print(rbind(lsqlower, param, lsqupper) -1)
         print(LSQTRANSFORM)
 
         param <- LSQTRANSFORM(param)
@@ -184,6 +184,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
        
         print("end model.values")
       }
+
+      readline()
+      
       return(1E300)
     }
     
@@ -479,10 +482,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ## logarithmus der wahrscheinlichkeitsdichte ergibt
     ## - lc/2 log(2pi) - 1/2 log(det C) - 1/2 (D-X m)^T C^{-1} (D-X m)
     ## nun wird zunaechst  (-2) * () betrachtet:
-    ##     konstante lc/2 log(2pi):
-    ##     log(det C) + (D-X m)^T C^{-1} (D-X m),
+    ##     lc log(2pi) + log(det C) + (D-X m)^T C^{-1} (D-X m),
     ## genauer, fuer wiederholte daten:
-    ## repet * log(det C) + sum_i (D_i-Xm)^T C^{-1} (D_i-X m)
+    ## repet* lc log(2pi) + repet* log(det C) + sum_i (D_i-Xm)^T C^{-1} (D_i-X m)
     ##
     ## somit hat log(det(C)) vorfaktor 1
     ## nun erhaelt man aus chol(matrix)=wurzel der matrix,
@@ -525,14 +527,14 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       ##     =  (lc *  repet)^{-1} * sum_i (D_i-Xm)^T C^{-1} (D_i-X m)
       ##
       ## plugging in gives
-      ##     repet * log(det C_1) -  repet * lc * log(repet * lc) +
+      ##     repet * log(det C_1) - repet * lc * log(repet * lc) +
       ##     repet * lc * log(sum_i (D_i-Xm)^T C^{-1} (D_i-X m)) + repet * lc
       ## = logdet + loglcrepet + lcrepet * log(sum_i (D_i-Xm)^T C^{-1} (D_i-X m))
-      res <- sum(logdet + ML.loglcrepet + ML.lcrepet * log(quadratic))
+      res <- logdet + ML.loglcrepet + ML.lcrepet * log(quadratic)
     } else {
-      res <- sum(logdet + quadratic)
+      res <- logdet + quadratic
     }
-    res <- -0.5 * (res + ML.twopilcrepet)
+    res <- -0.5 * (res + ML.twopilcrepet)    
     if (is.na(res) || is.na(MLEMAX) || debug) {
       filename <- "RandomFields.fitvario.bug.rda"
       txt <- paste("algorithm has failed for unknown reasons -- please contact the author: schlather@cu.lu; please send the data that have been written on the file '", filename, "'.", sep="")
@@ -605,20 +607,20 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
               assign("CROSS.VAR", FALSE, envir=ENVIR)
               ## d can have more than 1 element
               CROSS.DIST <- function(x, d) sum((x-d)^2)
-              environment(CROSS.DIST) <- NULL
+              environment(CROSS.DIST) <-EmptyEnv()
             },
            "cross.abs" = {
               assign("CROSS.VAR", FALSE, envir=ENVIR)
               ## d can have more than 1 element
               CROSS.DIST <- function(x, d) sum(abs(x-d))
-              environment(CROSS.DIST) <- NULL
+              environment(CROSS.DIST) <- EmptyEnv()
            },
            "cross.ign" = {
              assign("CROSS.VAR", TRUE, envir=ENVIR)
              CROSS.DIST <- function(x, d) {
                sum(0.5 * log(2 * pi * x$var) + (d - x$est)^2/ (2 * x$var))
              }
-             environment(CROSS.DIST) <- NULL
+             environment(CROSS.DIST) <- EmptyEnv()
            },
            "cross.crps" = {
              assign("CROSS.VAR", TRUE, envir=ENVIR)
@@ -629,7 +631,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                  n <- (d - x$est) / sigma
                  sigma * sum(n * (2 * pnorm(n) - 1) + 2 * dnorm(n) - 1/sqrt(pi))
                }
-             environment(CROSS.DIST) <- .GlobalEnv
+             environment(CROSS.DIST) <- EmptyEnv()
            },
            stop(paste(M, "unknown"))
            )
@@ -1203,6 +1205,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (sillbounded <- !is.na(sill)) {
       ## only VARIANCE need to be optimised
       ## NUGGET = SILL - VARIANCE
+      stopifnot(sill > 0)
       if (xor(is.na(PARAM[VARIANCE]), is.na(nugget)))
         stop("Sill fixed. Then variance and nugget should be given or unknown simultaneously.")
       if ((is.nan(PARAM[VARIANCE]) || is.nan(nugget)) &&
@@ -1241,6 +1244,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
             ## more than only the variance has to be estimated
             zeronugget <- TRUE
             lower[VARIANCE] <- PARAM[VARIANCE] <- 0 ## dito
+            lower[NUGGET] <- upper[NUGGET] <- 0
             autostart[VARIANCE] <- vardata
           } else { ## not sillbounded, is.na(variance), nugget!=0
             lower[VARIANCE] <- pmax(0, (vardata-nugget)/lowerbound.var.factor)
@@ -1329,7 +1333,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   allmlemeth <- eval(formals$mle.methods)
   allcrossmeth <- eval(formals$cross.methods)
   allmethods <- c(allprimmeth, alllsqmeth, allmlemeth, allcrossmeth)
-
+  
   ## how preceding methods have been condidered ?
   ## note cm is used again at the very end when error checking
   cm <- cumsum(c(0, length(allprimmeth), length(alllsqmeth),
@@ -1337,6 +1341,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   cm <- cbind(cm[-length(cm)] + 1, cm[-1])
   cm <- apply(cm, 1, function(x) x[1] : x[2])
   names(cm) <- c("prim", "lsq", "mle", "cross")
+
   methodprevto <- list(lsq=c(cm$prim),
                        mle=c(cm$prim, cm$lsq),
                        cross=c(cm$prim, cm$lsq, cm$cross)
@@ -1419,6 +1424,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   LSQLB  <- lsqlower[LSQINDEX]
   LSQUB  <- lsqupper[LSQINDEX]
   ixdLSQINDEX <- LSQINDEX[index]
+
+
+  
  
 ##################################################
 ###############    PRIMITIVE METHODS   ###########
@@ -1445,10 +1453,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     ug <- if (is.list(users.guess)) {
       PrepareModel(users.guess, NULL, truedim, trend=users.beta)
     } else {
-        if (is.null(param))
-          stop("cannot interpret users.guess -- better use the list definition for model to define user's guess")
-        PrepareModel(save.model, users.guess, truedim, trend=users.beta)
+        if (missing(param) || is.null(param))
+          stop("cannot interpret users.guess -- better use the list definition of the covariance model to define user's guess")
+         PrepareModel(save.model, users.guess, truedim, trend=users.beta)
       }
+
     ug <- convert.to.readable(ug)
     ug <- PrepareModel(ug$model, ug$param, truedim, trend=ug$trend)$param
     if (length(ug)!=length(PARAM))
@@ -1460,8 +1469,34 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         ## not a complete check, but should be enough
       stop("user's guess does not satisfy the user's transformation function")
     }
+    
+#    print(data.frame(lower=lsqlower, user=ug, upper=lsqupper))
+    
+    lower.clear <- lsqlower
+    upper.clear <- lsqupper
+    if (sillbounded) {
+      if (abs((ug[VARIANCE] + ug[NUGGET]) / sill - 1) > 1e-15)
+        stop("sum of variance and nugget does not equal the sill")
+    } else {
+      if (varnugNA) {
+        lower.clear[NUGGET] <- lower.clear[VARIANCE]
+        upper.clear[NUGGET] <- upper.clear[VARIANCE]
+      }
+    }
+    
+    if (any(idx <- (ug < lower.clear & !is.na(lower.clear)) |
+              (ug > upper.clear &  !is.na(upper.clear)))) {
+        var.pos <- which(names(lsqlower) =="var")
+   #     print(c(varnugNA, zeronugget))
+        ii <-  rep(1:length(var.pos), diff(c(var.pos, 1 +length(ug)))) 
+  #      print(data.frame(lower=lower.clear, user=ug, upper=upper.clear,
+  #                     within=!idx, row.names=paste(sep="", names(lsqlower),ii)
+  #                       ))
+        stop(paste("not all users.guesses within bounds\n change values of `lower' and `upper' or those of the `*bound*'s"))
+      }
     idx <- tblidx[["variab"]]
     param.table[[M]][idx[1]:idx[2]] <- ug
+
     idx <- tblidx[["covariab"]]
     if (is.null(trend)) {
       param.table[[M]][idx[1]:idx[2]] <-
@@ -1481,6 +1516,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     }
   }
 
+  ### hier ist ein kleines Problem mit den schranken fuer SCALE@
+  ### oben: schranken beziehen sich auf nicht natscale, unten auf
+  ### natscale...
   if (standard.style && use.naturalscaling && index[SCALE]) {
       idx <- tblidx[["variab"]]
       for (i in 1:length(allprimmeth)) if (!is.na(param.table[1, i])) {
@@ -1638,9 +1676,14 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         for (i in methodprevto$lsq) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
           idx <- tblidx[["variab"]]
+#print(i)
           if (!is.na(param.table[1, i])) {
             variab <- LSQinvTrafo(param.table[idx[1]:idx[2], i])[LSQINDEX]
             value <- LStarget(variab) ## !
+#str(methodprevto)
+#            print(methodprevto$lsq)
+#print(i)
+#print(value)            
             if (is.finite(value)) {
               param.table[tblidx[[M]][1], i] <- value
               if (value < min) {
@@ -1706,7 +1749,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   
 ##################################################
 ###################   MLE    #####################
-  
+
   mleMethods <- (if (is.null(mle.methods)) NULL else
               allmlemeth[pmatch(mle.methods, allmlemeth)])
   if ("reml" %in% mleMethods && !givenCoVariates)
@@ -1764,9 +1807,12 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         max <- -Inf
         for (i in methodprevto$mle) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
+ # print(dimnames(param.table)[[2]][i])
           idx <- tblidx[["variab"]]
           if (!is.na(param.table[1, i])) {
             variab <- MLEinvTrafo(param.table[idx[1]:idx[2], i])[MLEINDEX]
+ # print(rbind(param.table[idx[1]:idx[2], i], lsqlower))           
+ # print(variab)          
             value <- MLEtarget(variab) ## !
             if (is.finite(value)) {
               param.table[tblidx[[M]][1], i] <- value
@@ -1776,7 +1822,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
               }
             } else param.table[tblidx[[M]][1], i] <- NaN
           }
-        }
+         }
         stopifnot(length(max.variab) == length(MLELB))        
         mle.optim.control <-
           c(optim.control, parscale=list(parscale[MLEINDEX]),
@@ -2111,7 +2157,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
       for (M in alllsqmeth) {
         cur <- param.table[tblidx[[M]][1], i]
-        if (is.na(cur) && !is.nan(cur)) {
+        if (is.na(cur) && !is.nan(cur) && M %in% lsqMethods) {
           LSQsettings(M)
           param.table[tblidx[[M]][1], i] <-
             LStarget(LSQinvTrafo(param.table[idx[1]:idx[2], i])[LSQINDEX])
@@ -2120,7 +2166,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
  
       for (M in allmlemeth) {
         cur <- param.table[tblidx[[M]][1], i]
-        if (is.na(cur) && !is.nan(cur)) {
+        if (is.na(cur) && !is.nan(cur) && M %in% mleMethods) {
            MLEsettings(M)
            param.table[tblidx[[M]][1], i] <-
             MLEtarget(MLEinvTrafo(param.table[idx[1]:idx[2], i])[MLEINDEX])
@@ -2129,7 +2175,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       
       for (M in allcrossmeth) {
         cur <- param.table[tblidx[[M]][1], i]
-        if (is.na(cur) && !is.nan(cur)) {
+        if (is.na(cur) && !is.nan(cur) && M %in% crossMethods) {
           crosssettings(M)
           variab <- CROSSinvTrafo(param.table[idx[1]:idx[2], i])[CROSSINDEX]
           if (givenCoVariates) {
@@ -2182,9 +2228,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     alllsqscales <- param.table[idx[1]:idx[2], cm$lsq][SCALE, ]
     if (any(alllsqscales < mindistances/scale.max.relative.factor, na.rm=TRUE))
       warning(paste(sep="",
-                    "Chosen model does not seem to be appropriate!\n Probably a",
-                  if (nugget!=0.0) "larger",
-                    "nugget effect should be considered.")
+                    "Chosen model seems to be inappropriate!\n Probably a ",
+                    if (nugget!=0.0) "larger ",
+                    "nugget effect should be considered")
               )
   }
   

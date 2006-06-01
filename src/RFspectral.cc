@@ -95,7 +95,7 @@ int init_simulatespectral(key_type *key, int m) {
       else s->randomAmplitude[actcov] = cov->spectral;
       if ((Xerror=check_within_range(kc->param, cov, 2, " (spectral TBM)")) 
 	  != NOERROR ||
-	  (Xerror=cov->check(kc->param, reduceddim, SpectralTBM)) 
+	  (Xerror=cov->check(kc->param, reduceddim, kc->dim, SpectralTBM)) 
 	  != NOERROR) {
 	goto ErrorHandling;
       }

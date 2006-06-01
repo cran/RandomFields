@@ -72,6 +72,16 @@ void LOCAL_NULL(localCE_storage* x){
   int i;
   for (i=0; i<MAXDIM; i++) x->correction[i] = NULL;
 }
+
+void CE_NULL(CE_storage* x){
+  FFT_NULL(&(x->FFT));  
+  x->positivedefinite = FALSE;
+  x->trials = -1;
+  x->c = x->d = NULL;
+  x->smallestRe = x->largestAbsIm = NA_REAL;
+//  int i;
+  //for (i=0; i<MAXDIM; i++) x->[i] = NULL;
+}
  
 void localCE_destruct(void **S) 
 {
@@ -190,9 +200,7 @@ int init_circ_embed(key_type *key, int m)
     Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
   } 
   s =  (CE_storage*) meth->S;
-  s->c =NULL;
-  s->d =NULL;
-  FFT_NULL(&(s->FFT));
+  CE_NULL(s);
   
 
   if ((Xerror = FirstCheck_Cov(key, m, true)) != NOERROR)  goto ErrorHandling;
@@ -205,9 +213,9 @@ int init_circ_embed(key_type *key, int m)
 
   int *mm, *cumm, *halfm, dim;
   double hx[MAXDIM];
-  int  trials, index[MAXDIM], dummy;
+  int index[MAXDIM], dummy;
   long mtot,i,k,twoi;
-  bool positivedefinite, cur_crit;
+  bool cur_crit;
   
   mtot=-1;
   mm = s->m;
@@ -255,7 +263,7 @@ int init_circ_embed(key_type *key, int m)
   }                             
 
 
-  positivedefinite = false;     
+  s->positivedefinite = false;     
     /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
        so only the first two rows of (3.9) (without the taking the
        modulus of h in the first row)
@@ -267,13 +275,13 @@ int init_circ_embed(key_type *key, int m)
 
 
  /* The algorithm below is as follows:
-  while (!positivedefinite && (trials<cepar->trials)){
-    trials++;
+  while (!s->positivedefinite && (s->trials<cepar->trials)){
+    (s->trials)++;
     calculate the covariance values "c" according to the given "m"
     fastfourier(c)
-    if (!cepar->force || (trials<cepar->trials)) {
+    if (!cepar->force || (s->trials<cepar->trials)) {
       check if positive definite
-      if (!positivedefinite && (trials<cepar->trials)) {
+      if (!s->positivedefinite && (s->trials<cepar->trials)) {
         enlarge "m"
       }
     } else 
@@ -281,9 +289,9 @@ int init_circ_embed(key_type *key, int m)
   }
 */
 
-  trials=0;
-  while (!positivedefinite && (trials<cepar->trials)){ 
-    trials++;
+  s->trials=0;
+  while (!s->positivedefinite && (s->trials<cepar->trials)){ 
+    (s->trials)++;
     cumm[0]=1; 
     for(i=0;i<dim;i++){
       halfm[i]=mm[i]/2; 
@@ -347,16 +355,16 @@ int init_circ_embed(key_type *key, int m)
     if (GENERAL_PRINTLEVEL>6) PRINTF("finished\n");
    
     // check if positive definite. If not: enlarge and restart 
-    if (!cepar->force || (trials<cepar->trials)) { 
+    if (!cepar->force || (s->trials<cepar->trials)) { 
       long int mtot2;
       mtot2 = mtot * 2; 
       twoi=0;
       // 16.9. < cepar.tol.im  changed to <=
-      while ((twoi<mtot2) && (positivedefinite=(c[twoi]>=cepar->tol_re) && 
+      while ((twoi<mtot2) && (s->positivedefinite=(c[twoi]>=cepar->tol_re) && 
 					  (fabs(c[twoi+1])<=cepar->tol_im)))
 	{twoi+=2;}      
 
-      if ( !positivedefinite) {
+      if ( !s->positivedefinite) {
         if (GENERAL_PRINTLEVEL>=2)
 	  // 1.1.71: %f changed to %e because c[twoi+1] is usually very small
 	  PRINTF("non-positive eigenvalue: c[%d])=%e + %e i.\n",
@@ -379,7 +387,7 @@ int init_circ_embed(key_type *key, int m)
 	}
       }
 
-      if (!positivedefinite && (trials<cepar->trials)) { 
+      if (!s->positivedefinite && (s->trials<cepar->trials)) { 
 	FFT_destruct(&(s->FFT));
 	switch (cepar->strategy) {
 	case 0 :
@@ -414,15 +422,14 @@ int init_circ_embed(key_type *key, int m)
 	}
       }
     } else {if (GENERAL_PRINTLEVEL>=2) PRINTF("forced\n");}
-  } // while (!positivedefinite && (trials<cepar->trials))
+  } // while (!s->positivedefinite && (s->trials<cepar->trials))
   assert(mtot>0);
- 
-
-  if (positivedefinite || cepar->force) { 
+  if (s->positivedefinite || cepar->force) { 
     // correct theoretically impossible values, that are still within 
     // tolerance CIRCEMBED.tol_re/CIRCEMBED.tol_im 
     double r, imag;
-    r = imag = 0.0;    
+    r = c[0];
+    imag = 0.0;    
     for(i=0,twoi=0;i<mtot;i++) {
       if (c[twoi] > 0.0) {
 	c[twoi] = sqrt(c[twoi]);
@@ -446,9 +453,14 @@ int init_circ_embed(key_type *key, int m)
 	  PRINTF("\tlargest modulus of the imaginary part has been %e \n",imag);
       }
     }
-  } else {Xerror=ERRORFAILED;goto ErrorHandling;}
-  if (GENERAL_PRINTLEVEL>=10) {
-    for (i=0;i<2*mtot;i++) {PRINTF("%f ",c[i]);} PRINTF("\n");
+    s->smallestRe = (r > 0.0) ? NA_REAL : r;
+    s->largestAbsIm = imag;
+  } else {
+    Xerror = ERRORFAILED;
+    goto ErrorHandling;
+  }
+  if (GENERAL_PRINTLEVEL >= 10) {
+    for (i=0; i < 2 * mtot; i++) {PRINTF("%f ",c[i]);} PRINTF("\n");
   }  
   
   s->dependent = cepar->dependent;

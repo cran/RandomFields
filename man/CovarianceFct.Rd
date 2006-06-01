@@ -163,6 +163,13 @@ GetModelNames()
     For certain models \eqn{\phi}{phi}, i.e. \code{stable},
     \code{whittle} and \code{gencauchy}, some sufficient conditions
     are known.
+
+%    \item \code{dagum}
+%    \deqn{C(x)=1 - ( 1 + x^{-\kappa_2})^{-\kappa_1}}{
+%      C(x)=1 - ( 1 + x^-b)^(-a)}
+%    This model is valid in dimensions up to 3 for
+%    \eqn{\kappa_1 \in (0,1)}{a in (0,1)} and
+%    \eqn{\kappa_2 \in (0,2]}{b in (0,2]}.
     
     \item \code{dampedcosine}
     \deqn{C(x)=e^{-\kappa x} \cos(x),  \quad x\ge0}{C(x)=
@@ -411,7 +418,10 @@ GetModelNames()
     the genuine spatial dimension of the field. Furthermore, \eqn{\kappa_3\in
       (0,2]}{c in (0,2]}  and \eqn{\kappa_4\in
       (0,1)}{d in (0,1)}.
-     The spatial dimension must be \code{>=1}.
+    The spatial dimension must be \code{>=1}.
+
+%    Note that the estimation of \eqn{\kappa_4}{d} fails in general
+%    if \eqn{\kappa_5=1}{e=1}.
 
     \item \code{nsst2}
     \deqn{C(x,t)= \psi(t)^{-\kappa_7} \phi(x /\psi(t))}{C(x,t)=
@@ -729,7 +739,14 @@ GetModelNames()
     Stochastic models which separate fractal dimension and Hurst effect.
     \emph{SIAM review} \bold{46}, 269-282.% see also lgd
   }
- 
+
+%  Dagum model
+%  \itemize{
+%    \item Procu, M., Zini, A. and Pini, R. (2005)
+%    Modelling spatio-temporal data: a new variogram and covariance
+%    structure proposal. Technical report \bold{73}, Universitat Jaume I.
+%  }
+  
   Gneiting's models
   \itemize{
     \item Gneiting, T. (1999)

@@ -1197,7 +1197,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 		   Int(meth->covlist, meth->actcov, MAX_INT, &mem));
     
     int nS, nSlist[Forbidden + 1] =
-	{8 /* CE */, 2 /*Cutoff*/, 2 /* Intr */, 10 /* TBM2 */, 10 /* TBM3 */, 
+	{12 /* CE */, 2 /*Cutoff*/, 2 /* Intr */, 10 /* TBM2 */, 10 /* TBM3 */, 
 	 1 /*Sp */, 3 /* dir */, 4 /* nug */, 10 /* add */, 4 /* hyp */, 
 	 1 /* spec */, 1 /* noth */, 11 /* maxmpp */, 4 /*extremalGauss */,
 	 1 /* Forbidden */};
@@ -1215,6 +1215,20 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(S, k++, Int(s->m, tsdim, MAX_INT, &mem));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("totalsize"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->mtot));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("trials"));
+	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->trials));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("positivedefinite"));
+	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->positivedefinite));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("smallest.neg.real"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->smallestRe));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("largest.abs.imag"));
+	    SET_VECTOR_ELT(S, k++, ScalarReal(s->largestAbsIm));
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("fft"));
+	    SET_VECTOR_ELT(S, k++, s->c == NULL ? ScalarLogical(false)
+			   : Mat(s->c, 2, s->mtot, max, &mem));	    
+	    SET_VECTOR_ELT(nameSvec, k, mkChar("invfft"));
+	    SET_VECTOR_ELT(S, k++, s->d == NULL ? ScalarLogical(false)
+			   : Mat(s->d, 2, s->mtot, max, &mem));	    
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("next_new"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->new_simulation_next));
 	    SET_VECTOR_ELT(nameSvec, k, mkChar("curSimuPosition"));
@@ -1228,12 +1242,6 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 		  dummy[i] = s-> square_seg[i] / s->cumm[i];
 	      SET_VECTOR_ELT(S, k++, Int(dummy, tsdim, MAX_INT, &mem));
 	    }
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("fft"));
-	    SET_VECTOR_ELT(S, k++, s->c == NULL ? ScalarLogical(false)
-			   : Mat(s->c, 2, s->mtot, max, &mem));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("invfft"));
-	    SET_VECTOR_ELT(S, k++, s->d == NULL ? ScalarLogical(false)
-			   : Mat(s->d, 2, s->mtot, max, &mem));	    
 	    } break;
 	case CircEmbedCutoff : case CircEmbedIntrinsic : {
 	    localCE_storage* s;

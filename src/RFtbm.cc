@@ -750,7 +750,8 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 				     msg)) != NOERROR) {
 	goto ErrorHandling;
       }    
-      Xerror=cov->check(kc->param, tbm_dim + (int) ce_dim2, method);
+      Xerror=cov->check(kc->param, tbm_dim + (int) ce_dim2, 
+			tbm_dim + (int) ce_dim2, method);
       if (method==TBM2) {
 	if (Xerror && (Xerror!=ERRORCOVNUMERICAL || !tbm->tbm2num)) {
 	  goto ErrorHandling;

@@ -106,7 +106,7 @@ int init_mpp(key_type * key, int m) {
       if (key->Time && !kc->genuine_last_dimension && 
 	  (cov->type==SPACEISOTROPIC)) {// unclear whether this is too cautious
 	  error= ERRORWITHOUTTIME; goto ErrorHandling;}
-      if ((error=cov->check(kc->param, kc->reduceddim, 
+      if ((error=cov->check(kc->param, kc->reduceddim, kc->dim,
 			    AdditiveMpp)) != NOERROR) {
 	ERRORMODELNUMBER = v;	
 	goto ErrorHandling;

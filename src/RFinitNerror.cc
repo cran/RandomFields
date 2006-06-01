@@ -482,6 +482,10 @@ void InitModelList()
 		  rangecubic);
   addCov(nr, cubic, Dcubic, Scalecubic);
   addTBM(nr,NULL, TBM3cubic, NULL);
+
+//  nr=IncludeModel("dagum",0, checkOK,ISOTROPIC, false, infodagum, rangedagum);
+//  addCov(nr, dagum, Ddagum, Scaledagum);
+//  addTBM(nr,NULL, NULL, NULL);
 	       
   nr=IncludeHyperModel("cutoff", 3, checkNinit_co, ISOHYPERMODEL, 
 		       false, info_co, range_co);

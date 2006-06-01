@@ -84,7 +84,7 @@ int FirstCheck_Cov(key_type *key, int m, bool MultiplyAndHyper)
 			      key->anisotropy);
 	}
       } else {
-	error = cov->check(kc->param, kc->reduceddim, Method);
+	error = cov->check(kc->param, kc->reduceddim, kc->dim, Method);
       }
       if (error != NOERROR) return error;
 //      printf("v=%d %d %d \n", v,  key->ncov, key->cov[v].op);
@@ -759,7 +759,11 @@ int check_within_range(param_type param, cov_fct *cov, int timespacedim,
 	i4++;
 	sprintf(ERRORSTRING_OK, "%skappa%d", ERRORSTRING_OK, i+1);
 	if (range[i4] < RF_INF) {
-//	  printf("%f %f\n", range[i4] + OPEN, ceil(range[i4]));
+
+	  printf("%f %f %d %e\n", range[i4] + OPEN, ceil(range[i4]),
+		 range[i4] + OPEN == ceil(range[i4]),
+		 range[i4] + OPEN - ceil(range[i4]));
+
 	  if (range[i4] + OPEN == ceil(range[i4]))
 	    addright(ERRORSTRING_OK, "<", ceil(range[i4]));
 	  else
@@ -773,6 +777,7 @@ int check_within_range(param_type param, cov_fct *cov, int timespacedim,
 		timespacedim - (int) (cov->type == SPACEISOTROPIC),
 		txt == NULL ? "" : txt);
 //	  printf("%e %e\n", range[i4-1], range[i4]);
+//	assert(false);
 	return ERRORCOVFAILED;
       } else return NOERROR;
     } else {
@@ -954,7 +959,7 @@ int CheckAndBuildCov(int *covnr, int *op, int ncov,
 	kc->simugrid = false; // not programmed yet -- save version !!!!!!
 ///////////////////////
     } else {
-      error = cov->check(kc->param, kc->reduceddim, Nothing);
+      error = cov->check(kc->param, kc->reduceddim, kc->dim, Nothing);
       if (error != NOERROR) return error; 
     }
   }

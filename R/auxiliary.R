@@ -6,6 +6,9 @@ source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R"
 
 # putactionlist(getactionlist()[1:(length(getactionlist())-1)])
 
+EmptyEnv <- function() {
+  if (version$major <= 2 && version$minor < 3) NULL else baseenv()
+}
 
 .RandomFields.env <- new.env()
 

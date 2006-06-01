@@ -300,7 +300,8 @@ int init_directGauss(key_type *key, int m)
 
 
  ErrorHandling: // and NOERROR...
-  S->method = method;
+//  printf("%d\n", S);
+  if (S != NULL) S->method = method;
   if (freexx) for (i=0; i<dim; i++) if (xx[i] != NULL) free(xx[i]);
   if (!GENERAL_STORING && Xerror!=NOERROR) {
     if (U!=NULL) free(U);

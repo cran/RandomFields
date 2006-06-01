@@ -94,7 +94,7 @@ double spectralBessel(double *p ) {
   return p[KAPPA]==0.0 ? 1.0 : 
     (sqrt(1.0 - pow(UNIFORM_RANDOM, 1.0 / p[KAPPA])));
 }
-int checkBessel(double *param,  int reduceddim, SimulationType method){
+int checkBessel(double *param,  int reduceddim, int dim, SimulationType method){
   // Whenever TBM3Bessel exists, add further check against too small kappa!  
   if (param[KAPPA] >= Besselupperbound[method]) {
       sprintf(ERRORSTRING_OK, "%s and kappa < %1.0f", 
@@ -170,7 +170,7 @@ double DDCauchy(double *x, double *p){
   return 2.0 * p[KAPPA] * ((2.0 * p[KAPPA] + 1.0) * ha - 1.0) * 
     pow(1.0 + ha, -p[KAPPA] - 2.0);
 }
-int checkCauchy(double *param, int reduceddim, SimulationType method){
+int checkCauchy(double *param, int reduceddim, int dim, SimulationType method){
   if (method == TBM2) {
     // not replaced by numerical evaluation due to bad
     // numerical behaviour?!
@@ -286,7 +286,7 @@ void infoconstant(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* cone */
 // no covariance function defined yet; see MPPFcts.cc for additive method
-int checkcone(double *param, int reduceddim, SimulationType method) {
+int checkcone(double *param, int reduceddim, int dim, SimulationType method) {
   switch (method) {
   case  AdditiveMpp: 
     if (reduceddim!=2) { 
@@ -358,6 +358,31 @@ void infocubic(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* cutoff */
 // see Hypermodel.cc
+
+/* dagum */
+double dagum(double *x, double *p){
+    //                     delta
+    return 1 - pow((1 + pow(fabs(*x), -p[KAPPA2])), - p[KAPPA1]);
+}
+double Scaledagum(double *p,int scaling){ 
+    return pow(pow(0.95, - 1 / p[KAPPA1]) -1, -1 / p[KAPPA2]);
+} 
+double Ddagum(double *x, double *p){
+    register double y, xd;
+    y = fabs(*x);
+    xd = pow(y, -p[KAPPA2]);
+    return -p[KAPPA1] * p[KAPPA2] * xd / y * pow(1 + xd, -p[KAPPA1] -1);
+}
+void rangedagum(int reduceddim, int *index, double* range){
+    static double range_dagum[8] = {OPEN, 2, 0.01, 2, 
+				    OPEN, 1-OPEN, 0.01, 0.99};
+    *index = (reduceddim <= 3) ? RANGE_LASTELEMENT : RANGE_INVALIDDIM;
+    memcpy(range, range_dagum, sizeof(double) * 8);
+}
+void infodagum(double *p, int *maxdim, int *CEbadlybehaved) {
+  *maxdim = 3;
+  *CEbadlybehaved=false;
+}
 
 
 /*  damped cosine -- derivative of exponential:*/
@@ -431,7 +456,8 @@ double spectralexponential(double *p) { /* see Yaglom ! */
 void rangeexponential(int reduceddim, int *index, double* range){ 
   *index = RANGE_LASTELEMENT; 
 }
-int checkexponential(double *param, int reduceddim, SimulationType method) {
+int checkexponential(double *param, int reduceddim, int dim, 
+		     SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
     if (reduceddim>2) 
     {
@@ -669,7 +695,8 @@ double DDgeneralisedCauchy(double *x, double *p){
   return p[KAPPA2] * ha / (y * y) * (1.0 - p[KAPPA1] + (1.0 + p[KAPPA2]) * ha)
 	    * pow(1.0 + ha, -p[KAPPA2] / p[KAPPA1] - 2.0);
 }
-int checkgeneralisedCauchy(double *param, int reduceddim, SimulationType method){
+int checkgeneralisedCauchy(double *param, int reduceddim, int dim, 
+			   SimulationType method){
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff)
   {
     if (reduceddim>2) 
@@ -941,7 +968,8 @@ double Dhyperbolic(double *x, double*p)
 		      +log(bessel_k(kappa_s,lambda-1.0,2.0))-kappa_s)
       );
 }
-int checkhyperbolic(double *param, int reduceddim, SimulationType method){
+int checkhyperbolic(double *param, int reduceddim, int dim, 
+		    SimulationType method){
   if (param[KAPPA2] >= Besselupperbound[method]) {
       sprintf(ERRORSTRING_OK, "%s and kappa2 < %1.0f", 
 	      METHODNAMES[method], Besselupperbound[method]);
@@ -1007,7 +1035,8 @@ void infoIacoCesare(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-int checkIacoCesare(double *param, int reduceddim, SimulationType method) {
+int checkIacoCesare(double *param, int reduceddim, int dim, 
+		    SimulationType method) {
   if (method!=Nothing && method!=CircEmbed && method!=Direct)
       return ERRORNOTDEFINED;
   if (reduceddim == 1) return ERRORWRONGDIM;
@@ -1113,7 +1142,8 @@ double Dspacetime1(double *x, double *p){
 //	 pow(invsqrtpsi, p[KAPPA6] + 1.0) * z);
   return pow(invsqrtpsi, p[KAPPA6] + 1.0) * z;
 }
-int checkspacetime1(double *param, int reduceddim, SimulationType method) {
+int checkspacetime1(double *param, int reduceddim, int dim, 
+		    SimulationType method) {
   int error;
   // 1 : stable
   // 2 : whittle
@@ -1123,7 +1153,7 @@ int checkspacetime1(double *param, int reduceddim, SimulationType method) {
   error = NOERROR;
   switch((int) param[KAPPA2]) {
   case 1 : 
-    error = checkstable(param, reduceddim, method);
+    error = checkstable(param, reduceddim, dim, method);
     if (error==NOERROR && method==TBM2)  {
       strcpy(ERRORSTRING_OK, "kappa2=2,3");
       sprintf(ERRORSTRING_WRONG,"%f", param[KAPPA2]);
@@ -1131,9 +1161,9 @@ int checkspacetime1(double *param, int reduceddim, SimulationType method) {
     }
     break;
   case 2 : 
-    error = checkWhittleMatern(param, reduceddim, method);
+    error = checkWhittleMatern(param, reduceddim, dim, method);
     break;
-  case 3 : error = checkCauchy(param, reduceddim, method); 
+  case 3 : error = checkCauchy(param, reduceddim, dim, method); 
     break;
   default : 
       assert(false);
@@ -1225,14 +1255,15 @@ double Dspacetime2(double *x, double *p){
   }
   return pow(invsqrtpsi, p[KAPPA5] + 1.0) * z;
 }
-int checkspacetime2(double *param, int reduceddim, SimulationType method) {
+int checkspacetime2(double *param, int reduceddim, int dim, 
+		    SimulationType method) {
   int error;
   // 1 : generalisedcauchy 
   // first parameter(s) for phi
   // then choice of phi; then two parameters for psi, then choice of psi
   error = NOERROR;
   switch((int) param[KAPPA3]) {
-  case 1 : error = checkgeneralisedCauchy(param, reduceddim, method); break;
+  case 1 : error = checkgeneralisedCauchy(param, reduceddim, dim, method); break;
   default : 
     assert(false);
 //    strcpy(ERRORSTRING_OK,"kappa3=1");
@@ -1302,7 +1333,7 @@ void infonugget(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
   *CEbadlybehaved = false;
 }
-int checknugget(double *param, int reduceddim, SimulationType method) {
+int checknugget(double *param, int reduceddim, int dim, SimulationType method) {
   if (method!=Nothing && method!=CircEmbed && method!=Direct && method!=Nugget)
     return ERRORNOTDEFINED;
   return NOERROR;
@@ -1388,7 +1419,7 @@ double Dpower(double *x, double *p){
   if ( (y=fabs(*x)) >= 1.0 ) return 0.0;
   return  - p[KAPPA] * pow(1.0 - y, p[KAPPA] - 1.0);
 }
-int checkpower(double *param, int reduceddim, SimulationType method) {
+int checkpower(double *param, int reduceddim, int dim, SimulationType method) {
   if (method == TBM2 && param[KAPPA]!=2.0) {
     strcpy(ERRORSTRING_OK, "kappa=2");
     sprintf(ERRORSTRING_WRONG,"%f", param[KAPPA]);
@@ -1510,7 +1541,7 @@ double DDstable(double *x, double*p)
   return p[KAPPA] * (1.0 - p[KAPPA] + p[KAPPA] * xkappa) * y * exp(-xkappa);
 }
 
-int checkstable(double *param, int reduceddim, SimulationType method) {
+int checkstable(double *param, int reduceddim, int dim, SimulationType method) {
   if (method==CircEmbedIntrinsic || method==CircEmbedCutoff) {
     if (reduceddim>2) 
     {
@@ -1605,9 +1636,11 @@ void rangeSteinST1(int reduceddim, int *index, double* range){
 }
 void infoSteinST1(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
-  *CEbadlybehaved = false;
+  *CEbadlybehaved = p[KAPPA] >= 2.5;
+;
 }
-int checkSteinST1(double *param, int reduceddim, SimulationType method) {
+int checkSteinST1(double *param, int reduceddim, int dim, SimulationType method) 
+{
   double absz;
   int d;
 //  printf("%d %d \n", reduceddim + KAPPA1, KAPPA3); assert(false);
@@ -1620,9 +1653,9 @@ int checkSteinST1(double *param, int reduceddim, SimulationType method) {
       return ERRORCOVFAILED;
   }
   if (reduceddim == 1) return ERRORNOTDEFINED;
-  for (absz=0.0, d=reduceddim + KAPPA1; d>KAPPA2; d--) {
+  for (absz=0.0, d=dim + KAPPA1; d>KAPPA2; d--) {
       absz += param[d] * param[d];
-//      printf("%d %f %d\n", d, param[d], reduceddim);
+//     printf("%d %f %d %d\n", d, param[d], reduceddim, dim);
   }
 //  printf("%f %d\n", absz, GENERAL_SKIPCHECKS);
   if (absz > 1.0 + UNIT_EPSILON && !GENERAL_SKIPCHECKS) {
@@ -1630,7 +1663,7 @@ int checkSteinST1(double *param, int reduceddim, SimulationType method) {
       sprintf(ERRORSTRING_WRONG, "%f", absz);
       return ERRORCOVFAILED;    
   }
-  return checkWhittleMatern(param, reduceddim, method);
+  return checkWhittleMatern(param, reduceddim, dim, method);
 }
 
 
@@ -1640,10 +1673,11 @@ void infoundefined(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = 0;
   *CEbadlybehaved = true;
 }
-int checkundefined(double *param, int reduceddim, SimulationType method) {
+int checkundefined(double *param, int reduceddim, int dim, 
+		   SimulationType method) {
     return ERRORNOTDEFINED;
 }
-int checkOK(double *param, int reduceddim, SimulationType method){
+int checkOK(double *param, int reduceddim, int dim, SimulationType method){
   return NOERROR;
 }
 
@@ -1765,7 +1799,8 @@ double spectralWhittleMatern(double *p ) { /* see Yaglom ! */
   return sqrt(pow(1.0 - UNIFORM_RANDOM, -1.0 / p[KAPPA]) - 1.0);
 }
 
-int checkWhittleMatern(double *param, int reduceddim, SimulationType method) { 
+int checkWhittleMatern(double *param, int reduceddim, int dim, 
+		       SimulationType method) { 
   static double spectrallimit=0.17;
   if (param[KAPPA] >= Besselupperbound[method]) {
       sprintf(ERRORSTRING_OK, "%s and kappa < %1.0f", 
@@ -1810,7 +1845,7 @@ void rangeWhittleMatern(int reduceddim, int *index, double* range){
 }
 void infoWhittleMatern(double *p, int *maxdim, int *CEbadlybehaved) {
   *maxdim = INFDIM;
-  *CEbadlybehaved = p[KAPPA] >= 1.5;
+  *CEbadlybehaved = p[KAPPA] >= 2.5;
 }
 
 

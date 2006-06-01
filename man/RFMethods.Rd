@@ -47,7 +47,7 @@ GetMethodNames()
     This method is based on the well-known method for simulating
     any multivariate Gaussian distribution, using the square root of the
     covariance matrix.  The method is pretty slow and limited to
-    about 1000 points, i.e. a 10x10x10 grid in three dimensions. 
+    about 8000 points, i.e. a 20x20x20 grid in three dimensions. 
     This implementation can use the Cholesky decomposition and
     the singular value decomposition. 
     It allows for arbitrary points and arbitrary grids.
@@ -99,14 +99,16 @@ GetMethodNames()
     }
     
     \item \code{nugget}.\cr
-    One may specify this method (and "nugget" as covariance
-    function) to generate a random field of
-    independent Gaussian random variables.  However, any other
-    method and any covariance function, called with zero
-    variance, generates also such a random field (without loss
-    of speed). 
-    This method exists mainly for reasons of internal
-    implementation.
+    The method allows for generating a random field of 
+    independent Gaussian random variables. In the isotropic case
+    and if the simple notation of a model (with \code{model} and
+    \code{param})
+    is used, this method is called automatically if the nugget
+    effect is positive except the method \code{"circulant embedding"}
+    or \code{"direct"} have been explicitely.
+
+    The method has been extended to zonal anisotropies, see
+    also parameter \code{nugget.tol} in \code{\link{RFparameters}}.
 
     \item Random coins.\cr
     See marked point processes.

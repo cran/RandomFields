@@ -178,7 +178,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
 #define HYPERIMPLEMENTED 4
 
 // definitions for range
-#define OPEN 0.0001
+#define OPEN 0.0009765625
 #define RANGE_LASTELEMENT -1
 #define RANGE_INVALIDDIM -2
 
@@ -187,9 +187,9 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod);
       dim : the formal dimension (given by the user)
       effectivedim: the dimension used in the evaluation of the covariance fct
                     E.G. for isotropic models it is 1
-      reduceddim : dim of lin. independent subspace for ISOTROPIC models;
-                   1 + dim of lin. indep. spatial subspace for SPACEISOTROPIC
-                   dim for ANISOTROPIC covariance models 
+      reduceddim : *  dim of lin. independent subspace for ISOTROPIC models;
+                   *  1 + dim of lin. indep. spatial subspace for SPACEISOTROPIC
+                   *  dim for ANISOTROPIC covariance models 
 */
 
 
@@ -198,7 +198,8 @@ typedef struct covinfo_type {
   /* the current method (out of SimulationsType) which 
      is tried at the moment or which has been 
      successfully initialized */
-  int dim, reduceddim,
+  int dim, /* timespacedim */
+    reduceddim, /* see above */
     length[MAXDIM], /* if simugrid: what is the genuine extension of the grid?
 		       That is, length is one where the diag element is 0
 		    */
@@ -247,8 +248,7 @@ typedef void (*rangefct)(int, int *, double*);
 /* DO NOT change double to anything else since memcpy fcts are used
    dim, class parameter like in nsst, 
    return 2 x length(param) x {theor, pract }*/
-typedef int (*checkfct)(double*, int, SimulationType); /* h,parameters; 
-							covariance fct, nr. */
+typedef int (*checkfct)(double*, int, int, SimulationType); 
 typedef int (*checkhyper)(covinfo_arraytype, covlist_type, int, 
 			  SimulationType, bool);
 typedef double (*natscalefct)(double *, int); /* parameters, ; natural 
@@ -496,11 +496,12 @@ typedef struct local_user_param{
 // see RFcircembed.cc
 typedef struct FFT_storage { double* work; int *iwork, nseg; } FFT_storage;
 typedef struct CE_storage {
-  int m[MAXDIM], halfm[MAXDIM], nn[MAXDIM], cumm[MAXDIM+1], 
+  int m[MAXDIM], halfm[MAXDIM], nn[MAXDIM], cumm[MAXDIM+1], trials,
     mtot, cur_square[MAXDIM], max_squares[MAXDIM]; /* !!!! **** */
   long square_seg[MAXDIM];
-  double *c,*d;
-  bool new_simulation_next,
+  double *c,*d, smallestRe, largestAbsIm;
+  bool positivedefinite,
+    new_simulation_next,
      dependent; // eigentlich braucht es nicht waehrend der initialisierung
     // festgelegt zu werden. Ist aber wesentlich einfacher zu handhaben,
     // da sonst bei internal_dosimulate die parameter alle RFparameter alle
