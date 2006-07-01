@@ -7,8 +7,7 @@
   Gaussian random fields using turning bands/layers, circulant embedding,
   direct methods, and the random coin method.
 }
-\usage{
-GaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
+\usage{GaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
         method=NULL, n=1, register=0, gridtriple=FALSE, paired=FALSE, ...)
 
 InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
@@ -55,11 +54,11 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \item{n}{number of realisations to generate}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers}
-  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical. Only relevant if \code{grid=TRUE}.
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values
   }
   \item{paired}{
@@ -75,7 +74,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   \code{GaussRF} can use different methods for the simulation,
   i.e., circulant embedding, turning bands, direct methods, and random
   coin method. 
-  If \code{method==NULL} then \code{GaussRF} searches for a
+  If \code{method=NULL} then \code{GaussRF} searches for a
   valid method.  \code{GaussRF} may not find the fastest method neither the
   most precise one.  It just finds any method among the available
   methods. (However it guesses what is a good choice.) See
@@ -132,14 +131,14 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   
   Comments on specific parameters:
   \itemize{
-  \item \code{grid==FALSE} : the vectors \code{x}, \code{y},
+  \item \code{grid=FALSE} : the vectors \code{x}, \code{y},
   and \code{z} are interpreted as vectors of coordinates
-  \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+  \item \code{(grid=TRUE) && (gridtriple=FALSE)} : the vectors
   \code{x}, \code{y}, and \code{z}
   are increasing sequences with identical lags for each sequence. 
   A corresponding
   grid is created (as given by \code{expand.grid}). 
-  \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+  \item \code{(grid=TRUE) && (gridtriple=TRUE)} : the vectors
   \code{x}, \code{y}, and \code{z}
   are triples of the form (start,end,step) defining a grid
   (as given by \code{expand.grid(seq(x$start,x$end,x$step),
@@ -201,19 +200,19 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
   The object returned \code{GaussRF} and \command{\link{DoSimulateRF}}
   depends on the parameters \code{n} and \code{grid}:\cr
-    \code{n==1}:\cr
-    * \code{grid==FALSE}.  A vector of simulated values is
+    \code{n=1}:\cr
+    * \code{grid=FALSE}.  A vector of simulated values is
     returned (independent of the dimension of the random field)\cr
-    * \code{grid==TRUE}.  An array of the dimension of the
+    * \code{grid=TRUE}.  An array of the dimension of the
     random field is returned.\cr
     
     \code{n>1}:\cr
-    * \code{grid==FALSE}.  A matrix is returned.  The columns
-    contain the repetitions.\cr
-    * \code{grid==TRUE}.  An array of dimension
+    * \code{grid=FALSE}.  A matrix is returned.  The columns
+    contain the realisations.\cr
+    * \code{grid=TRUE}.  An array of dimension
     \eqn{d+1}{d+1}, where \eqn{d}{d} is the dimension of
     the random field, is returned.  The last
-    dimension contains the repetitions.
+    dimension contains the realisations.
 }
 \references{
   See \link{RFMethods} for the references.

@@ -177,11 +177,12 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       else op <- rep(pmatch("+", op.list) - 1, ncol(param) - 1)
       param <- apply(param, 2, function(x) list(var=x[1], kappa=x[-1:-2],
                                                   scale=x[2]))
-      for (i in 1:length(param)) if (param[[i]]$scale==0) {
-        model[i] <- "nugget"
-        param[[i]] <- c(nugget=param[[i]]$var, nugget.scale=1.0)
-        k[i] <- 0
-      }
+      for (i in 1:length(param))
+        if (!is.na(param[[i]]$scale) && param[[i]]$scale==0.0) {
+          model[i] <- "nugget"
+          param[[i]] <- c(nugget=param[[i]]$var, nugget.scale=1.0)
+          k[i] <- 0
+        }
       param <- lapply(param, function(x) unlist(x))
    } else if (is.vector(param)) {  ## standard, simple way
       ### falls trend gegeben, dann ist param um 1 Komponente gekuerzt
@@ -308,7 +309,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   if (!is.null(method)) method <- .methods[1 + method]
   lc <- length(l$covnr)
   if (!is.null(l$trend)) {
-    stopifnot(l$mean==0)
+    stopifnot(l$mean==0.0)
     l$mean <- NULL
   }
   dim.scale <- if (l$anisotropy) l$timespacedim^2 else 1
@@ -354,7 +355,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
     if (k[pos[1]+1]>=k[pos[1]]+3) ## i.e., there are additional parameters
       for (i in pos) 
         kappa <- cbind(kappa, l$param[(k[i]+2):(k[i+1]-1)])
-    if (nugget==0) nugget <- NULL
+    if (!is.na(nugget) && nugget==0.0) nugget <- NULL
     else {
       nugget <- c(nugget, rep(0, k[pos[1]+1]-k[pos[1]]-1))
       if (!all(method[ngg] == "nugget") && PrintLevel>1)
@@ -457,7 +458,7 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     } else {
       eqdist <- function(x) {
         step <- diff(x)
-        if (any(step)==0)
+        if (any(step) == 0.0)
           stop("duplicated values detected: the definition of coordinates does not seem to define a grid of equidistant coordinates")
         if (max(abs(step / step[1] - 1.0)) > 1e-13) {
           print(x[1:min(10000, length(x))])

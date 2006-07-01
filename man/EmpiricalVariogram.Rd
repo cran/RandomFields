@@ -23,11 +23,11 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     \code{x}, \code{y}, and \code{z} define a grid; otherwise
     \code{x}, \code{y}, and \code{z} are interpreted as points}
   \item{bin}{vector of ascending values giving the bin boundaries}
-  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical. Only relevant if \code{grid=TRUE}.
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values}
   \item{phi}{vector of two components. First component gives the angle
     for the first line of midpoints of an angular variogram.
@@ -72,16 +72,16 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     a multiple of it.  In case the number of data equals \eqn{n}{n} times the
     number of points, the data are interpreted as \eqn{n}{n} independent
     realisations for the given set of points. 
-    \item \code{(grid==FALSE)}: the vectors \code{x}, \code{y}, and
+    \item \code{(grid=FALSE)}: the vectors \code{x}, \code{y}, and
     \code{z}, are interpreted as
     vectors of coordinates
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)}: the vectors \
+    \item \code{(grid=TRUE) && (gridtriple=FALSE)}: the vectors \
     code{x}, \code{y}, and
     \code{z}
     are increasing sequences with identical lags for each sequence.
     A corresponding
     grid is created (as given by \code{expand.grid}).
-    \item \code{(grid==TRUE) && (gridtriple==TRUE)}: the vectors
+    \item \code{(grid=TRUE) && (gridtriple=TRUE)}: the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid (as given by
     \code{expand.grid(seq(x$start,x$end,x$step),
@@ -111,14 +111,14 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
   gridtriple <- FALSE      ## see help("GaussRF")
   model <- "whittle"       ## whittlematern
   bins <- seq(0, 5, 0.001)
-  repetition <- 5 ## by far too small to get reliable results!!
+  realisations <- 5 ## by far too small to get reliable results!!
                    ## It should be of order 500,
                    ## but then it will take some time
                    ## to do the simulations
   param <- c(mean=1, variance=10, nugget=5, scale=2, alpha=2)
   f <- GaussRF(x=x, y=y, grid=TRUE, gridtriple=gridtriple,
                model=model, param=param, method="TBM3",
-               n=repetition)
+               n=realisations)
   binned <- EmpiricalVariogram(x=x, y=y, data=f, grid=TRUE,
                                gridtriple=gridtriple, bin=bins)
   truevariogram  <- Variogram(binned$c, model, param)

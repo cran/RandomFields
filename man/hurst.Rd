@@ -25,11 +25,11 @@ hurst(x, y = NULL, z = NULL, data,
 %    \code{y}, and \code{z} should be
 %    interpreted as a grid definition, see Details.  \code{grid}
 %    does not apply for \code{T}.}
-  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical. Only relevant if \code{grid=TRUE}.
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values
   }
   \item{sort}{logical.  If \code{TRUE} then the coordinates are permuted
@@ -70,7 +70,7 @@ hurst(x, y = NULL, z = NULL, data,
     or 'interactive'}
   \item{PrintLevel}{integer.  If \code{PrintLevel} is 0 or 1
     nothing is printed. 
-    If \code{PrintLevel==2} warnings and the regression results
+    If \code{PrintLevel=2} warnings and the regression results
     are given.  If \code{PrintLevel>2} tracing information is given.
   }
   \item{height}{height of the graphics window}

@@ -23,7 +23,7 @@
   \describe{
     \item{\code{PracticalRange}}{logical or 2, 3, 11, 12, 13.
       If not \code{FALSE} the range of the covariance functions is
-      adjusted so that cov(1) is about 0.05 (for \code{scale==1}).
+      adjusted so that cov(1) is about 0.05 (for \code{scale=1}).
       \itemize{
 	\item \code{FALSE} : the practical range ajustment is not used.
 	\item \code{TRUE} : \code{PracticalRange} is applicable only if
@@ -142,7 +142,7 @@
       certain circulant
       matrix has negative eigenvalues.  Sometimes it is convenient
       to replace all the negative eigenvalues by zero
-      (\code{CE.force==TRUE}) after \code{CE.trials} number of trials. 
+      (\code{CE.force=TRUE}) after \code{CE.trials} number of trials. 
       Default: \code{FALSE} [init].
     }
     \item{\code{CE.mmin}}{Scalar or vector, integer if positive.
@@ -279,7 +279,7 @@
       \command{\link{GaussRF}}).  
       Default: \code{4096} [init]}
     \item{\code{direct.method}}{Decomposition of the covariance matrix.
-      If \code{direct.method==1}, Cholesky
+      If \code{direct.method=1}, Cholesky
       decomposition will not be attempted, but singular value
       decomposition
       used instead.
@@ -336,7 +336,7 @@
    The following parameters are used. 
   \describe{
     \item{\code{spectral.grid}}{Logical.    The angle of the lines is random if
-      \code{spectral.grid==FALSE}, 
+      \code{spectral.grid=FALSE}, 
       and \eqn{k\pi/}{k*pi/}\code{spectral.lines}
       for \eqn{k}{k} in \code{1:spectral.lines},
       otherwise.  Default: \code{TRUE} [do].}
@@ -546,22 +546,22 @@
   
   \code{Storing} has an influence on both, \command{\link{InitGaussRF}} and
   \command{\link{DoSimulateRF}}.  \command{\link{InitGaussRF}} may reserve
-  more memory if \code{Storing==TRUE}.  \command{\link{DoSimulateRF}} will
+  more memory if \code{Storing=TRUE}.  \command{\link{DoSimulateRF}} will
   free the register
-  if \code{Storing==FALSE}, whatever the value of \code{Storing} was
+  if \code{Storing=FALSE}, whatever the value of \code{Storing} was
   when \command{\link{InitGaussRF}} was called. 
 
   The distinction between [init] and [do] is also relevant if 
   \command{\link{GaussRF}} is used and called a second time
   with the same parameters for the random field and if
-  \code{RFparameters()$Storing==TRUE}.  
+  \code{RFparameters()$Storing=TRUE}.  
   Then \command{\link{GaussRF}} realises that the second call has the
   same random field parameters, and
   takes over the stored intermediate results (that have been calculated
   with the \code{RFparameters()} at that time).  To prevent the use of
   stored intermediate results or to take into account intermediate
   changes of RFparameters
-  set \code{RFparameters(Storing==FALSE)} or use
+  set \code{RFparameters(Storing=FALSE)} or use
   \command{\link{DeleteRegister}()} between calls of \code{GaussRF}.
 
   A programme that checks whether the parameters are well

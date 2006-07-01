@@ -44,10 +44,10 @@ GetModelInfo(register=0)
   provide any information.
 
   \code{GetModelInfo} returns the partial information on the internal
-  model structure. It allows for \code{register==-1} returning the
+  model structure. It allows for \code{register=-1} returning the
   model structure for the last use of \command{\link{CovarianceFct}}
   or \command{\link{Variogram}} or similar commands.
-  \code{register==-2} is for internal use only.
+  \code{register=-2} is for internal use only.
 }
 \note{
   Put \code{Storing=TRUE}, see \command{\link{RFparameters}}

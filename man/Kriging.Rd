@@ -21,11 +21,11 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
-  \item{gridtriple}{logical.  Only relevant if \code{grid==TRUE}. 
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical.  Only relevant if \code{grid=TRUE}. 
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values.
   }
   \item{model}{string; covariance model, see \command{\link{CovarianceFct}}, or
@@ -62,14 +62,14 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 }
 \details{
   \itemize{
-    \item \code{grid==FALSE} : the vectors \code{x}, \code{y},
+    \item \code{grid=FALSE} : the vectors \code{x}, \code{y},
     and \code{z} are interpreted as vectors of coordinates
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+    \item \code{(grid=TRUE) && (gridtriple=FALSE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are increasing sequences with identical lags for each sequence. 
     A corresponding
     grid is created (as given by \code{expand.grid}). 
-    \item \code{(grid==TRUE) && (gridtriple==TRUE)} : the vectors
+    \item \code{(grid=TRUE) && (gridtriple=TRUE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid
     (as given by \code{expand.grid(seq(x$start,x$end,x$step),
@@ -84,20 +84,20 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   \code{grid}, and \code{data}.\cr
   
  \code{data}: a vector or matrix with \emph{one} column\cr
-    * \code{grid==FALSE}.  A vector of simulated values is
+    * \code{grid=FALSE}.  A vector of simulated values is
     returned (independent of the dimension of the random field)\cr
-    * \code{grid==TRUE}.  An array of the dimension of the
+    * \code{grid=TRUE}.  An array of the dimension of the
     random field is returned (according to the specification
     of \code{x}, \code{y}, and \code{z}).\cr
     
   \code{data}: a matrix with \emph{at least two} columns\cr
-    * \code{grid==FALSE}.  A matrix with the \code{ncol(data)} columns
+    * \code{grid=FALSE}.  A matrix with the \code{ncol(data)} columns
     is returned.\cr
-    * \code{grid==TRUE}.  An array of dimension
+    * \code{grid=TRUE}.  An array of dimension
     \eqn{d+1}{d+1}, where \eqn{d}{d} is the dimension of
     the random field, is returned (according to the specification
     of \code{x}, \code{y}, and \code{z}).  The last
-    dimension contains the repetitions.
+    dimension contains the realisations.
 
     If \code{variance.return=TRUE} a list of two elements, \code{estim} and
     \code{var}, i.e. the kriged field and the kriging variances,

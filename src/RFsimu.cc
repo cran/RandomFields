@@ -1110,6 +1110,7 @@ void Covariance(double *x,int *lx, int *covnr, double *p, int *np,
 		int *xdim, int *ncov, int *anisotropy, int *op,
 		double *result)
 {
+
   CovarianceNatSc(x, lx, covnr, p, np, logicaldim, xdim,
 		  ncov, anisotropy, op, result, &GENERAL_NATURALSCALING);
 }
@@ -2265,8 +2266,10 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   } // for n
   PutRNGstate();
   if (part_result!=NULL) free(part_result);
-  if (nn>1 && (GENERAL_PCH[0] == '!' || GENERAL_PCH[0] == '%'))
-      PRINTF("%s", back);
+  if (nn>1 && GENERAL_PCH[0] != '\0') {
+    if (GENERAL_PCH[0] == '!' || GENERAL_PCH[0] == '%') PRINTF("%s", back);
+    else PRINTF("\n");
+  }
   return NOERROR;
 
  ErrorHandling: 

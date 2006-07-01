@@ -335,7 +335,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     \emph{always} to the standard covariance model as given in
     \command{\link{CovarianceFct}}. (In contrast to \code{PracticalRange}
     in \command{\link{RFparameters}}.)\cr
-    Advantages if \code{use.naturalscaling==TRUE}:
+    Advantages if \code{use.naturalscaling=TRUE}:
     \itemize{
       \item \code{scale} and the shape parameter of a parameterised
       covariance model can be estimated better if they are estimated
@@ -346,7 +346,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
       \item in case of anisotropic models, the inverse of the elements
       of the anisotropy matrix should be in the above bounds.
     }
-    Disadvantages if \code{use.naturalscaling==TRUE}:
+    Disadvantages if \code{use.naturalscaling=TRUE}:
     \itemize{
       \item For some covariance models with additional parameters, the
       rescaling factor has to be determined numerically.

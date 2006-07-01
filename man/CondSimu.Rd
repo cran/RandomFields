@@ -23,11 +23,11 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   \item{grid}{logical; determines whether the vectors \code{x},
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.}
-  \item{gridtriple}{logical.  Only relevant if \code{grid==TRUE}. 
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical.  Only relevant if \code{grid=TRUE}. 
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values.}
   \item{model}{string; covariance model of the random field. 
     See \command{\link{CovarianceFct}}, or
@@ -100,14 +100,14 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 
   Comments on specific parameters
   \itemize{
-    \item \code{grid==FALSE} : the vectors \code{x}, \code{y},
+    \item \code{grid=FALSE} : the vectors \code{x}, \code{y},
     and \code{z} are interpreted as vectors of coordinates
-    \item \code{(grid==TRUE) && (gridtriple==FALSE)} : the vectors
+    \item \code{(grid=TRUE) && (gridtriple=FALSE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are increasing sequences with identical lags for each sequence. 
     A corresponding
     grid is created (as given by \code{expand.grid}). 
-    \item \code{(grid==TRUE) && (gridtriple==TRUE)} : the vectors
+    \item \code{(grid=TRUE) && (gridtriple=TRUE)} : the vectors
     \code{x}, \code{y}, and \code{z}
     are triples of the form (start,end,step) defining a grid
     (as given by \code{expand.grid(seq(x$start,x$end,x$step),
@@ -118,19 +118,19 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 \value{
   The returned object depends on the parameters \code{n} and
   \code{grid}:\cr
-    \code{n==1}:\cr
-    * \code{grid==FALSE}.  A vector of simulated values is
+    \code{n=1}:\cr
+    * \code{grid=FALSE}.  A vector of simulated values is
     returned (independent of the dimension of the random field)\cr
-    * \code{grid==TRUE}.  An array of the dimension of the
+    * \code{grid=TRUE}.  An array of the dimension of the
     random field is returned.\cr
     
     \code{n>1}:\cr
-    * \code{grid==FALSE}.  A matrix is returned.  The columns
-    contain the repetitions.\cr
-    * \code{grid==TRUE}.  An array of dimension
+    * \code{grid=FALSE}.  A matrix is returned.  The columns
+    contain the realisations.\cr
+    * \code{grid=TRUE}.  An array of dimension
     \eqn{d+1}{d+1}, where \eqn{d}{d} is the dimension of
     the random field as given by \code{x}, \code{y}, and \code{z},
-    is returned.  The last dimension contains the repetitions.
+    is returned.  The last dimension contains the realisations.
 }
 \references{
  Chiles, J.-P. and Delfiner, P. (1999)

@@ -41,13 +41,13 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
   \item{n}{number of realisations to generate}
   \item{register}{0:9; place where intermediate calculations are stored;
     the numbers are aliases for 10 internal registers}
-  \item{gridtriple}{logical;  if \code{gridtriple==FALSE} ascending
+  \item{gridtriple}{logical;  if \code{gridtriple=FALSE} ascending
     sequences for the parameters 
     \code{x}, \code{y}, and \code{z} are
-    expected; if \code{gridtriple==TRUE} triples of form
+    expected; if \code{gridtriple=TRUE} triples of form
     \code{c(start,end,step)} 
     expected; this parameter is used only
-    if \code{grid==TRUE}}
+    if \code{grid=TRUE}}
   \item{...}{\command{\link{RFparameters}} that are locally used only.}
 }
 \details{
@@ -99,19 +99,19 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
   \code{MaxStableRF} and \command{\link{DoSimulateRF}} return \code{NULL}
   if an error has occurred; otherwise the returned object
   depends on the parameters:\cr
-    \code{n==1}:\cr
-    * \code{grid==FALSE}.  A vector of simulated values is
+    \code{n=1}:\cr
+    * \code{grid=FALSE}.  A vector of simulated values is
     returned (independent of the dimension of the random field)\cr
-    * \code{grid==TRUE}.  An array of the dimension of the
+    * \code{grid=TRUE}.  An array of the dimension of the
     random field is returned.\cr
     
     \code{n>1}:\cr
-    * \code{grid==FALSE}.  A matrix is returned.  The columns
-    contain the repetitions.\cr
-    * \code{grid==TRUE}.  An array of dimension
+    * \code{grid=FALSE}.  A matrix is returned.  The columns
+    contain the realisations.\cr
+    * \code{grid=TRUE}.  An array of dimension
     \eqn{d+1}{d+1}, where \eqn{d}{d} is the dimension of
     the random field, is returned.  The last
-    dimension contains the repetitions.
+    dimension contains the realisations.
 
 }
 \references{

@@ -43,11 +43,11 @@ fractal.dim(x, y = NULL, z = NULL, data,
     \code{y}, and \code{z} should be
     interpreted as a grid definition, see Details.  \code{grid}
     does not apply for \code{T}.}
-  \item{gridtriple}{logical. Only relevant if \code{grid==TRUE}.
-    If \code{gridtriple==TRUE}
+  \item{gridtriple}{logical. Only relevant if \code{grid=TRUE}.
+    If \code{gridtriple=TRUE}
     then \code{x}, \code{y}, and \code{z} are of the
     form \code{c(start,end,step)}; if
-    \code{gridtriple==FALSE} then \code{x}, \code{y}, and \code{z}
+    \code{gridtriple=FALSE} then \code{x}, \code{y}, and \code{z}
     must be vectors of ascending values.
   }
   \item{bin}{sequence of bin boundaries for the empirical variogram}
@@ -102,8 +102,8 @@ fractal.dim(x, y = NULL, z = NULL, data,
   \item{cex}{vector or scalar; size of \code{pch}.}
   \item{cex.main}{The size of the title in the regression plots.}
   \item{PrintLevel}{integer.  If \code{PrintLevel} is 0 nothing is
-    printed.  If \code{PrintLevel==1} error messages are printed. 
-    If \code{PrintLevel==2} warnings and the regression results
+    printed.  If \code{PrintLevel=1} error messages are printed. 
+    If \code{PrintLevel=2} warnings and the regression results
     are given.  If \code{PrintLevel>2} tracing information is given.
   }
   \item{height}{height of the grahics window}

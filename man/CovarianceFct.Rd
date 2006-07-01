@@ -610,7 +610,7 @@ GetModelNames()
   \code{TRUE} and the covariance model is isotropic
   then the covariance function is internally
   rescaled such that cov\eqn{(1)\approx 0.05}{(1)~=0.05} for standard
-  parameters (\code{scale==1}).
+  parameters (\code{scale=1}).
 
   The model and the parameters can be specified by three different
   forms; the first \sQuote{standard} form allows for the specification of the

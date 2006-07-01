@@ -671,7 +671,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     res <- 0.0
     ## data is matrix!
     for (d in 1:lc) {
- #if (PrintLevel>3) cat(d, "")   
       res <- res +
         CROSS.DIST(Kriging(CROSS.KRIGE, x=new$x[d, , drop=FALSE], grid=FALSE,
                            model=model, given=new$x[-d, , drop=FALSE],
@@ -691,6 +690,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   lsq.covariates <- function(modelparam) {
      if (givenCoVariates) {
       if (!is.null(pm$trend)) stop("sorry, not implemented yet")
+      m <- matrix(ncol=lc, nrow=lc)
+      m[lower.tri(m)] <- m[upper.tri(m)] <- distances
+      diag(m) <- 0
       XC <- solve(matrix(.C("CovarianceMatrixNatSc",
                             distances, lc,
                             covnr, as.double(modelparam), lpar,
@@ -1243,9 +1245,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
             
             ## more than only the variance has to be estimated
             zeronugget <- TRUE
-            lower[VARIANCE] <- PARAM[VARIANCE] <- 0 ## dito
+            lower[VARIANCE] <- 0
             lower[NUGGET] <- upper[NUGGET] <- 0
-            autostart[VARIANCE] <- vardata
+            PARAM[VARIANCE] <- autostart[VARIANCE] <- vardata            
           } else { ## not sillbounded, is.na(variance), nugget!=0
             lower[VARIANCE] <- pmax(0, (vardata-nugget)/lowerbound.var.factor)
             if (lower[VARIANCE] < lowerbound.sill) {
@@ -1283,6 +1285,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       } ##  else { ## not sillbounded, !is.na(variance)
     } ## else { ## not sill bounded
     
+    
+    if (PrintLevel>4) cat("\nnaturalscaling...")
     if (index[SCALE] && use.naturalscaling) {
       ##  11: exact or numeric
       ##  13: MLE or numeric
@@ -1315,14 +1319,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
   RFparameters(PracticalRange=scalingmethod)
   autostart[!is.na(PARAM)] <- PARAM[!is.na(PARAM)]
-
-
   
 ######################################################################
 ###                     Estimation part itself                     ###
 ######################################################################
 
 ###################  preparation  ################
+  if (PrintLevel>4) cat("\npreparing fitting...")
   ## methods
   formals <- formals()
   allprimmeth <- c("autostart", "users.guess")
@@ -1433,13 +1436,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   ##****************    autostart    *****************
   ## for historical reasons, autostart uses the coding of LSQtarget;
   ## hence, LSQTRANSFORM must be called to get the true parameter values
+  if (PrintLevel>4) cat("\nautostart...")
   M <- "autostart"
   idx <- tblidx[["variab"]]
-#print(autostart)
   if (!is.null(users.transform)) autostart <- users.transform(autostart)
-#print(autostart)
 
-  
   if (nLSQINDEX > 0) param.table[[M]][idx[1]:idx[2]] <- autostart 
   idx <- tblidx[["covariab"]]
   param.table[[M]][idx[1]:idx[2]] <- lsq.covariates(autostart)
@@ -1470,8 +1471,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       stop("user's guess does not satisfy the user's transformation function")
     }
     
-#    print(data.frame(lower=lsqlower, user=ug, upper=lsqupper))
-    
     lower.clear <- lsqlower
     upper.clear <- lsqupper
     if (sillbounded) {
@@ -1487,11 +1486,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (any(idx <- (ug < lower.clear & !is.na(lower.clear)) |
               (ug > upper.clear &  !is.na(upper.clear)))) {
         var.pos <- which(names(lsqlower) =="var")
-   #     print(c(varnugNA, zeronugget))
         ii <-  rep(1:length(var.pos), diff(c(var.pos, 1 +length(ug)))) 
-  #      print(data.frame(lower=lower.clear, user=ug, upper=upper.clear,
-  #                     within=!idx, row.names=paste(sep="", names(lsqlower),ii)
-  #                       ))
         stop(paste("not all users.guesses within bounds\n change values of `lower' and `upper' or those of the `*bound*'s"))
       }
     idx <- tblidx[["variab"]]
@@ -1604,9 +1599,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     }
   }
 
-#  str(ev$e)
-#  print(index.bv)
-#  print(bin.centers)
   bin.centers  <- as.double(t(bin.centers[index.bv, ])) #
   ##  es muessen beim direkten C-aufruf die componenten der Punkte
   ##  hintereinander kommen (siehe auch variable distance). Deshalb t()
@@ -1676,14 +1668,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         for (i in methodprevto$lsq) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
           idx <- tblidx[["variab"]]
-#print(i)
           if (!is.na(param.table[1, i])) {
             variab <- LSQinvTrafo(param.table[idx[1]:idx[2], i])[LSQINDEX]
             value <- LStarget(variab) ## !
-#str(methodprevto)
-#            print(methodprevto$lsq)
-#print(i)
-#print(value)            
             if (is.finite(value)) {
               param.table[tblidx[[M]][1], i] <- value
               if (value < min) {
@@ -1692,17 +1679,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
               }
             } else param.table[tblidx[[M]][1], i] <- NaN
           }
-#          print( LSQUB -1)
-#          print(min)
-#          print(min.variab-1)
         }
         stopifnot(length(min.variab) == length(LSQLB))
         
         lsq.optim.control <-
           c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=min)
-
-#        print(parscale)
-#        print(parscale[LSQINDEX])
         
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
@@ -1807,12 +1788,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         max <- -Inf
         for (i in methodprevto$mle) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
- # print(dimnames(param.table)[[2]][i])
-          idx <- tblidx[["variab"]]
+           idx <- tblidx[["variab"]]
           if (!is.na(param.table[1, i])) {
             variab <- MLEinvTrafo(param.table[idx[1]:idx[2], i])[MLEINDEX]
- # print(rbind(param.table[idx[1]:idx[2], i], lsqlower))           
- # print(variab)          
             value <- MLEtarget(variab) ## !
             if (is.finite(value)) {
               param.table[tblidx[[M]][1], i] <- value
@@ -1828,11 +1806,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
           c(optim.control, parscale=list(parscale[MLEINDEX]),
             fnscale=-max(abs(max), 0.1))
 
-#        print(max.variab)
-#       print(MLELB)
-#       print(MLEUB)
-#       str(mle.optim.control)
-        
         variab <-
           try(optim(max.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
                     upper = MLEUB, control=mle.optim.control)$par,
@@ -1847,8 +1820,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                                 )) ||
                        any(abs(variab - MLEUB) <
                            pmax(mindistance, minboundreldist * abs(MLEUB))))
- #     print("onborderline")
- #     print(onborderline)
       
     }
     idx <- tblidx[["variab"]]
@@ -2237,7 +2208,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 ######################################################################
 ###                   format and return values                     ###
 ######################################################################
-  # print(param.table, digits=3)
   if (table.format) return(param.table)
   
   ## else table.format=FALSE :
