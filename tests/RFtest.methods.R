@@ -36,7 +36,7 @@ models<- list(list("bessel",1),
               list("spherical",NULL),
               list("stable",1),
               list("wave",NULL),
-              list("whittle",1),
+              list("whittle",1)
               )
               
 methods <- c("cir", "cutoff", "intrinsic",

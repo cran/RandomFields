@@ -353,7 +353,7 @@ z1 <- GaussRF(x=x, y=x, grid=TRUE,
              model=list(list(m="power",v=10,k=2,a=matrix(c(0.5,0,1,0.5),
                                                   ncol=2)),
                "+",
-               list(m="sph", v=10, a = matrix(c(0.5,-1,0,0.5),ncol=2)),
+               list(m="sph", v=10, a = matrix(c(0.5,-1,0,0.5),ncol=2))
                ),
               me="TBM2", TBM2.num=TRUE)
 print(c(mean(as.double(z1)),var(as.double(z1))))
@@ -371,7 +371,7 @@ dev.set()
 z <- GaussRF(x=x, y=x, grid=TRUE,
              model=list(list(m="gauss", v=1, a=matrix(c(0.5,0,1,0.5),ncol=2)),
                "+",
-               list(m="wave", v=1, a = matrix(c(0.5,-1,0,0.5),ncol=2)),
+               list(m="wave", v=1, a = matrix(c(0.5,-1,0,0.5),ncol=2))
                ),me="sp")
 image(z,zlim=c(-3,3)) 
 dev.set()

@@ -404,7 +404,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                param=if (!missing.param) get("param", envir=ENVIR),
                lower=save.lower,
                upper=save.upper, trend=if (!missing.trend) trend,
-               transform=transform, standard.style=save.standard.style),
+               transform=transform, standard.style=save.standard.style)
              )
       if (file.exists(filename) && !debug) {
         cat(txt, "\n")
@@ -566,7 +566,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
                param=if (!missing.param) get("param", envir=ENVIR),
                lower=save.lower,
                upper=save.upper, trend=if (!missing.trend) trend,
-               transform=transform, standard.style=save.standard.style),
+               transform=transform, standard.style=save.standard.style)
              )
       if (file.exists(filename) && !debug) {
         cat(txt, "\n")

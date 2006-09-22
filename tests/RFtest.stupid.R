@@ -99,7 +99,7 @@ simplemodels <- c("gauss","penta");
 
 models <- list(
  list(model="whittle",     kappa1=runif(NP,-0.5,3),   kappa2=NULL),
- list(model="cauchy",      kappa1=runif(NP,-0.5,3),   kappa2=NULL),
+ list(model="cauchy",      kappa1=runif(NP,-0.5,3),   kappa2=NULL)
 )
 
 largemodels <-

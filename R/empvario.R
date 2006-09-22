@@ -2,7 +2,7 @@
 function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
           phi,  ## phi[1] erste richtung, phi[2] : anzahl der richtungen
           theta, ## aehnlich
-          deltaT ##  deltaT[1] max abstand, deltaT[2] : gitterabstand,
+          deltaT ##  deltaT[1] max abstand, deltaT[2] : gitterabstand
           ) 
 {
   ## bin centers will be a vector of scalar distances  (in cylinder coord, e.g.)
@@ -169,7 +169,7 @@ function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
                 n.bin=n.bin,
                 phi=phibins,
                 theta=thetabins,
-                T=Tbins,
+                T=Tbins
                 ))
   }
 }

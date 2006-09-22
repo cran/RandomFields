@@ -189,7 +189,7 @@ ShowModels <- function(x, y=NULL,
   ## (goal is that at starting point, user always gets a set of valid
   #   parameter values)
   m.par.except <- list("cone", "cauchy", "cauchytbm", "power", "gengneiting",
-                       "lgd1", "FD", )
+                       "lgd1", "FD")
   npar.except <- list(c(0.5,0.5,0.5), 2, c(1,1,2), 2, c(1,3),
                       c(0.45, 1), 0)
 
@@ -198,7 +198,7 @@ ShowModels <- function(x, y=NULL,
   type.except <- ## which parameters take only discrete values? 
     list(c("discrete","real"),
          c("real", "discrete", "real", "real", "discrete", "real"),
-         c("real", "real", "discrete", "real", "real", "discrete", "real"),
+         c("real", "real", "discrete", "real", "real", "discrete", "real")
          )
   
   scale <- rep(all.param[3], n)
@@ -651,7 +651,7 @@ ShowModels <- function(x, y=NULL,
                   mini=minscale) }),
            list(name="angle (degrees)", var="angle",
                 delta=FALSE, val=function(d, v) pmin(maxangle,
-                               pmax(0,d * maxangle))),
+                               pmax(0,d * maxangle)))
            )
   } else model.entry <- NULL
 
@@ -664,7 +664,7 @@ ShowModels <- function(x, y=NULL,
            list(name="variance", var="model[[1]]$var", delta=TRUE,
                 val=function(d, v) {quadratic(d=d, v=v, a=maxstep[2]) }),
            list(name="nugget", var="model[[3]]$var", delta=TRUE,
-                val=function(d, v) {quadratic(d=d, v=v, a=maxstep[3]) }),
+                val=function(d, v) {quadratic(d=d, v=v, a=maxstep[3]) })
            ),
       model.entry,
       list(
@@ -682,8 +682,8 @@ ShowModels <- function(x, y=NULL,
                                  param="vario"
                                  ),
            if (!is.null(link.fct)) list(name="show transformed field",
-                                        var="link", val=TRUE, param="field"),
-           ),
+                                        var="link", val=TRUE, param="field")
+           )
       )
  
   #######################################################################
@@ -693,7 +693,7 @@ ShowModels <- function(x, y=NULL,
     ## is the chosen model class chosen for the first time?
     ## if so copy "standard" values from former choices
     if (is.null(cur.par[[covnr]])) {
-      cur.par[[covnr]] <- cur.par[[oldnr]] ## var, nugget, (scale/aniso,) mean
+      cur.par[[covnr]] <- cur.par[[oldnr]] ## var, nugget, (scale/aniso) mean
       cur.par[[covnr]]$model[[1]]$model <- namen[covnr]     
       ## event fall unterscheidung npar[[covr]] == / != 0
       cur.par[[covnr]]$model[[1]]$kappas <- npar[[covnr]]
@@ -724,7 +724,7 @@ ShowModels <- function(x, y=NULL,
                  function(d, v) {if (missing(v)) v<-rep(0, length(d));
                                  v[d>0.5] <- v[d>0.5] + 1;
                                  v[d<0.5] <- v[d<0.5] - 1;
-                                 v},
+                                 v}
                  ),
                col=if (rd==1) "blue" else "lightblue"
                )

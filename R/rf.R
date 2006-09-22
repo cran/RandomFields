@@ -34,8 +34,8 @@ ob sie den richtigen Effekt zeigen!")
     print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
     print("implement trend")
     print("MPP.cc: anisotropies, time")
-    cat("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
-    cat("interface, such that user can add its own covariance function, written in R\n\n")
+    print("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
+    print("interface, such that user can add its own covariance function, written in R\n\n")
   }
  }
 #Implementierung von Cox & Isham's non-separable model

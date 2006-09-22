@@ -401,7 +401,7 @@ parampositions <- function(model, param, print=TRUE) {
                     hyper.maxlines=hyper.maxlines,
                     hyper.mar.distr=hyper.mar.distr,
                     hyper.mar.param=hyper.mar.param,
-                    maxstable.maxGauss=maxstable.maxGauss,
+                    maxstable.maxGauss=maxstable.maxGauss
                     ),
                if (!no.readonly)
                list(
@@ -412,7 +412,7 @@ parampositions <- function(model, param, print=TRUE) {
                     maxdim=.p$maxdim,
                     maxmodels=.p$maxmodels,
                     methodmaxchar=.p$methodmaxchar,
-                    methodnr=.p$methodnr,
+                    methodnr=.p$methodnr
                     )
                )
              )

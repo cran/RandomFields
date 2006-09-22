@@ -363,7 +363,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
       method <- method[!ngg]
     }
     method <- if (all(method==method[1])) method[1] else c(method, "nugget")
-    ## do not change ordering of cbind(rbind( , ), nugget)
+    ## do not change ordering of cbind(rbind(. , .), nugget)
     ## since this ordering is used by other functions (mleRF)
     param <- cbind(rbind(param, kappa), nugget)
     attr(param, "dimnames") <- NULL 

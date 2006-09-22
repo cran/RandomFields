@@ -111,7 +111,7 @@ RFparameters(CE.force=TRUE, TBMCE.force=TRUE, CE.trials=1, TBMCE.trials=1,
 gneitingdiff <-  function(p, op="*"){
    list(list(m="gneiting", v=p[2], s=p[6]*p[4]*10*sqrt(2)/47),
        op,
-       list(m="whittle", k=p[5], v=1.0, s=p[4]),
+       list(m="whittle", k=p[5], v=1.0, s=p[4])
         )
 }
 

@@ -884,7 +884,7 @@ GetModelNames()
  model <- list(list(model="mastein", var=1,
                     aniso=c(1, -0.5, 0, 0), kappa=c(1, 0.5, 1.5)),
               "(",
-              list(model="exp", var=1, aniso=c(0, 0, ,0, 1)))
+              list(model="exp", var=1, aniso=c(0, 0, 0, 1)))
  CovarianceFct(cbind(0:10, 0:10), model=model)
 
 }

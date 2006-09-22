@@ -3,3 +3,4 @@
 PKG_CXXFLAGS = -g
 #PKG_FFLAGS = -O2 -Wall -pedantic -g
 PKG_LIBS = $(LAPACK_LIBS)
+#PKG_LIBS = -L /tmp/R-beta/lib -lRlapack

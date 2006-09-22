@@ -125,7 +125,7 @@ models <-
        list(model="qexpone", kappa1=runif(NP,-0.2,1.2), kappa2=NULL),
        list(model="stable",  kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
        list(model="whittle", kappa1=runif(NP,-0.5,3),   kappa2=NULL),
-       list(model="fractalB",kappa1=runif(NP,-0.5,2.5), kappa2=NULL),
+       list(model="fractalB",kappa1=runif(NP,-0.5,2.5), kappa2=NULL)
 )
 largemodels <-
   list(
@@ -157,7 +157,7 @@ models <-
        list(model="qexpon",  kappa1=c(-1,0,0.5,1),     kappa2=NULL),
        list(model="stable",  kappa1=c(-1,0,0.1,1,2),   kappa2=NULL),
        list(model="whittle", kappa1=c(-1,0,0.1,1,8),   kappa2=NULL),
-       list(model="fractalB",kappa1=c(-1,0,1,2,3),     kappa2=NULL),
+       list(model="fractalB",kappa1=c(-1,0,1,2,3),     kappa2=NULL)
       )
 largemodels <-
   list(

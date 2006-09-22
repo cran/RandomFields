@@ -182,13 +182,13 @@ if (EXTENDED.TESTING) {
         switch(ncol(xx),
                expand.grid(xx[1:2], tt[1:2]),
                expand.grid(xx[1:2,1], xx[1:2,2], tt[1:2]),
-               expand.grid(xx[1:2,1], xx[1:2,2], xx[1:2,3], tt[1:2]),
+               expand.grid(xx[1:2,1], xx[1:2,2], xx[1:2,3], tt[1:2])
                  )
       } else {
         switch(ncol(xx),
                expand.grid(xx, tt[1:2]),
                expand.grid(xx[,1], xx[,2], tt[1:2]),
-               expand.grid(xx[,1], xx[,2], xx[,3], tt[1:2]),
+               expand.grid(xx[,1], xx[,2], xx[,3], tt[1:2])
                )
       }) %*% model[[1]]$aniso)
     }

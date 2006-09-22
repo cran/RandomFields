@@ -168,7 +168,7 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
           val=function(d, v) pmin(1, pmax(0, d))),
      list(name="variance", var="var", delta=TRUE,
           val=function(d, v) quadratic(d, v, 10)),
-     list(name="name", var="name", par=3, cond="modify"),
+     list(name="name", var="name", par=3, cond="modify")
     )
 
   scr <- split.screen(rbind(c(0, 0.45, 0, 1), c(0.5, 1, 0, 1)))

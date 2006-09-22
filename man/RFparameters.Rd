@@ -671,7 +671,7 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 x <- seq(0, 1, 1/30)
 model <- list(list(model="stable", var=1, scale=1, kappa=1.0),
               "+",
-              list(model="gencauchy", var=1, scale=1, kappa=c(1, 2)),
+              list(model="gencauchy", var=1, scale=1, kappa=c(1, 2))
               )
 
 for (exactness in c(NA, FALSE, TRUE)) { 

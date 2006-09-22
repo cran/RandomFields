@@ -5,8 +5,8 @@ library(RandomFields,
         lib=if (TRUE && file.exists("~/TMP/RandomFields") &&
           file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
 
-.path <- "~/R/RF/RandomFields/R/"
-.path2 <- "/home/schlather/R/RF/RandomFields/R/"
+.path <- "~/R/old.randomfields/RandomFields/R/"
+.path2 <- "/home/schlather/R/old.randomfields/RandomFields/R/"
 if (EXTENDED.TESTING <- file.exists(paste(.path, "rf.R", sep="")) &&
     file.exists(paste(.path2, "rf.R", sep=""))) {
   EXTENDED.TESTING <- FALSE

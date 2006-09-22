@@ -104,7 +104,7 @@ models <-
                 list(model="nsst", var=5, aniso=aniso,
                      kappa=c(1.2, 1, 1.5,0.7, 1, 3))),
             function(x,l)st.fct(x,l[[1]]) *  st.fct(x,l[[3]]) + st.fct(x,l[[5]]),
-            x1),
+            x1)
        )
   
 {

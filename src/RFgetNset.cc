@@ -1069,7 +1069,7 @@ SEXP TooLarge(int *n, int l){
   SEXP namevec, info;
   PROTECT(info=allocVector(VECSXP, nTooLarge));
   PROTECT(namevec = allocVector(STRSXP, nTooLarge));
-  for (i=0; i<nTooLarge; i++) SET_VECTOR_ELT(namevec, i, mkChar(tooLarge[i]));
+  for (i=0; i<nTooLarge; i++) SET_STRING_ELT(namevec, i, mkChar(tooLarge[i]));
   setAttrib(info, R_NamesSymbol, namevec);
   i=0;
   SET_VECTOR_ELT(info, i++, Int(n, l, l, &mem));
@@ -1105,7 +1105,7 @@ SEXP GetModelInfo(covinfo_arraytype keycov, int nc, int totalparam,
 	//     printf("%d %d\n", exception, k);
       if (exception && !strcmp("op", modelinfo[k])) continue;
       //   printf("a%d %d %s \n", exception, k, modelinfo[k]);
-      SET_VECTOR_ELT(namemodelvec[exception], j++, mkChar(modelinfo[k]));
+      SET_STRING_ELT(namemodelvec[exception], j++, mkChar(modelinfo[k]));
       //  printf("X%d %d\n", exception, k);
     }
   }
@@ -1178,7 +1178,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
   PROTECT(method = allocVector(VECSXP, key->n_unimeth));
   PROTECT(namemethodvec = allocVector(STRSXP, nmethodinfo));
   for (k=0; k<nmethodinfo; k++)
-       SET_VECTOR_ELT(namemethodvec, k, mkChar(methodinfo[k]));
+      SET_STRING_ELT(namemethodvec, k, mkChar(methodinfo[k]));
   for (i=0; i<key->n_unimeth; i++) {
     mem = 0;
     methodvalue_type *meth;
@@ -1211,31 +1211,31 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	case CircEmbed : {
 	    CE_storage* s;
 	    s = (CE_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("size"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("size"));
 	    SET_VECTOR_ELT(S, k++, Int(s->m, tsdim, MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("totalsize"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("totalsize"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->mtot));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("trials"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("trials"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->trials));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("positivedefinite"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("positivedefinite"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->positivedefinite));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("smallest.neg.real"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("smallest.neg.real"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->smallestRe));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("largest.abs.imag"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("largest.abs.imag"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->largestAbsIm));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("fft"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("fft"));
 	    SET_VECTOR_ELT(S, k++, s->c == NULL ? ScalarLogical(false)
 			   : Mat(s->c, 2, s->mtot, max, &mem));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("invfft"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("invfft"));
 	    SET_VECTOR_ELT(S, k++, s->d == NULL ? ScalarLogical(false)
 			   : Mat(s->d, 2, s->mtot, max, &mem));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("next_new"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("next_new"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->new_simulation_next));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("curSimuPosition"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("curSimuPosition"));
 	    SET_VECTOR_ELT(S, k++, Int(s->cur_square, tsdim, MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simupositions"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simupositions"));
 	    SET_VECTOR_ELT(S, k++, Int(s->max_squares, tsdim, MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("segmentLength"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("segmentLength"));
 	    {
 	      int dummy[MAXDIM], i;
 	      for (i=0; i< tsdim; i++) 
@@ -1246,7 +1246,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	case CircEmbedCutoff : case CircEmbedIntrinsic : {
 	    localCE_storage* s;
 	    s = (localCE_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("correctionTerms"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("correctionTerms"));
 	    {
 	      SEXP corr;
 	      int v;
@@ -1265,7 +1265,7 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	      UNPROTECT(1);
 	      SET_VECTOR_ELT(S, k++, corr);	
 	    }
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("new"));
 	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						      depth + 1, max));
 	    
@@ -1273,29 +1273,29 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	case TBM2: case TBM3 : {
 	    TBM_storage* s;
 	    s = (TBM_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("aniso"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("aniso"));
 	    SET_VECTOR_ELT(S, k++, 
 			   Mat(s->aniso, tsdim, s->reduceddim, MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simugrid"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuspatialdim"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simuspatialdim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->simuspatialdim));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("ce_dim"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("ce_dim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->ce_dim));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("reduceddim"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("reduceddim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->reduceddim));		
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("center"));
 	    SET_VECTOR_ELT(S, k++, Num(s->center, s->simuspatialdim,
 				       MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("x"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("x"));
 	    SET_VECTOR_ELT(S, k++, (s->x == NULL) 
 			   ? allocVector(VECSXP, 0)
 			   : Mat(s->x, s->reduceddim, s->simugrid ? 3 : totpts, 
 				 max, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("xsimgr"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("xsimgr"));
 	    SET_VECTOR_ELT(S, k++, Mat(s->xsimugr, s->simugrid ? 3 : 0,
 				       s->timespacedim, MAX_INT, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simuline"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simuline"));
 	    SET_VECTOR_ELT(S, k++, s->simuline==NULL 
 			   ? allocVector(VECSXP,0) 
 			   : (s->ce_dim==1 
@@ -1304,14 +1304,14 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 				    s->key.length[1], max, &mem)
 			     )
 	      );
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("new"));
 	    SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						      depth + 1, max));
 	} break;
 	case SpectralTBM: {
 	    spectral_storage* s;
 	    s = (spectral_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("AmplitudeOK"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("AmplitudeOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->randomAmplitude[0] != NULL));
 	} break;
 	case Direct : {
@@ -1319,13 +1319,13 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    s = (direct_storage*) meth->S;
 	    char *invm[NoFurtherInversionMethod + 1] =
 		{"Cholesky", "SVD", "None"};
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("invmethod"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("invmethod"));
 	    SET_VECTOR_ELT(S, k++, (s->method < NoFurtherInversionMethod) ?
 			   mkString(invm[s->method]) :  ScalarLogical(false));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("sqrtCov"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("sqrtCov"));
 	    SET_VECTOR_ELT(S, k++, s->U == NULL ? ScalarLogical(false)
 			   : Mat(s->U, totpts, totpts, max, &mem));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("dummy"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("dummy"));
 	    SET_VECTOR_ELT(S, k++, s->G == NULL ? ScalarLogical(false)
 			   : Num(s->G, totpts + 1, max, &mem));	    
 	    
@@ -1333,76 +1333,76 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	case Nugget : {
 	    nugget_storage* s;
 	    s = (nugget_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simple"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simple"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simple));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("simugrid"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("simugrid"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->simugrid));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("srqtnugget"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("srqtnugget"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->sqrtnugget));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("internalsort"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("internalsort"));
 	    SET_VECTOR_ELT(S, k++, 
 			     Int(s->pos, (s->pos == NULL) ? 0 : totpts, max, &mem));	
 	  }  break;
 	case AdditiveMpp : {
 	    mpp_storage* s;
 	    s = (mpp_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("integral"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("integral"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integral));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("integralsq"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("integralsq"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integralsq));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectiveRadius"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("effectiveRadius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectiveRadius));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectivearea"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("effectivearea"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectivearea));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("addradius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("min"));
 	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT, &mem));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("length"));
 	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("internal.constants"));
 	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("primitiveFctOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("dim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));
 	}  break;
 	case Hyperplane : {
 	    hyper_storage* s;
 	    s = (hyper_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("rx"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("rx"));
 	    SET_VECTOR_ELT(S, k++, Num(s->rx, tsdim, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("center"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("center"));
 	    SET_VECTOR_ELT(S, k++, Num(s->center, tsdim, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("radius"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("radius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->radius));	
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("HyperplaneFctOK"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("HyperplaneFctOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->hyperplane != NULL));
 	} break;
 	case MaxMpp : {
 	    mpp_storage* s;
 	    s = (mpp_storage*) meth->S;
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("integralpos")); 
+	    SET_STRING_ELT(nameSvec, k, mkChar("integralpos")); 
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->integralpos));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("factor"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("factor"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->factor));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("maxheight"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("maxheight"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->maxheight));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectiveRadius"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("effectiveRadius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectiveRadius));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("effectivearea"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("effectivearea"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->effectivearea));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("addradius"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("addradius"));
 	    SET_VECTOR_ELT(S, k++, ScalarReal(s->addradius));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("min"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("min"));
 	    SET_VECTOR_ELT(S, k++, Num(s->min, tsdim, MAX_INT, &mem));	    
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("length"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("length"));
 	    SET_VECTOR_ELT(S, k++, Num(s->length, tsdim, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("internal.constants"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("internal.constants"));
 	    SET_VECTOR_ELT(S, k++, Num(s->c, 6, MAX_INT, &mem)); 
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("primitiveFctOK"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("primitiveFctOK"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(s->MppFct != NULL));
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("dim"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("dim"));
 	    SET_VECTOR_ELT(S, k++, ScalarInteger(s->dim));
 	} break;
 	case ExtremalGauss : {
@@ -1410,11 +1410,11 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	  int i, dim;
 	  extremes_storage* s;
 	  s = (extremes_storage*) meth->S;
-	  SET_VECTOR_ELT(nameSvec, k, mkChar("inv_mean_pos"));
+	  SET_STRING_ELT(nameSvec, k, mkChar("inv_mean_pos"));
 	  SET_VECTOR_ELT(S, k++, ScalarReal(s->inv_mean_pos));
-	  SET_VECTOR_ELT(nameSvec, k, mkChar("assumedmax"));
+	  SET_STRING_ELT(nameSvec, k, mkChar("assumedmax"));
 	  SET_VECTOR_ELT(S, k++, ScalarReal(s->assumedmax));
-	  SET_VECTOR_ELT(nameSvec, k, mkChar("field")); 
+	  SET_STRING_ELT(nameSvec, k, mkChar("field")); 
 	  
 	  dim = key->grid ? tsdim : 1;
 	  if (dim==1) {
@@ -1427,12 +1427,12 @@ SEXP GetMethodInfo(key_type *key, methodvalue_arraytype keymethod,
 	    SET_VECTOR_ELT(S, k++, array);
 	    UNPROTECT(2);
 	  }
-	  SET_VECTOR_ELT(nameSvec, k, mkChar("new"));
+	  SET_STRING_ELT(nameSvec, k, mkChar("new"));
 	  SET_VECTOR_ELT(S, k++, InternalGetKeyInfo(&(s->key), ignore_active,
 						    depth + 1, max));
 	} break;
 	default :  
-	    SET_VECTOR_ELT(nameSvec, k, mkChar("calling.method"));
+	    SET_STRING_ELT(nameSvec, k, mkChar("calling.method"));
 	    SET_VECTOR_ELT(S, k++, ScalarLogical(meth->unimeth));
 	    
     }
@@ -1469,7 +1469,7 @@ SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max)
   actninfo = (key->active || ignore_active) ? ninfo : 1;
   PROTECT(info=allocVector(VECSXP, actninfo));
   PROTECT(namevec = allocVector(STRSXP, actninfo));
-  for (i=0; i<actninfo; i++) SET_VECTOR_ELT(namevec, i, mkChar(infonames[i]));
+  for (i=0; i<actninfo; i++) SET_STRING_ELT(namevec, i, mkChar(infonames[i]));
   setAttrib(info, R_NamesSymbol, namevec);
   ni = 0;
   SET_VECTOR_ELT(info, ni++, ScalarLogical(key->active));
