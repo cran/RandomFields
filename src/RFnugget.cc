@@ -1,7 +1,7 @@
 
 /* 
  Authors
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  all around the nugget effect -- needs special treatment 
 

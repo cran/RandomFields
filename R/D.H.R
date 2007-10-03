@@ -289,6 +289,9 @@ fractal.dim <-
       Ml.range.sequ <- l.range.count <- rnge <-
         l.lambda <- l.I.lambda <- fft <- NULL
 
+  range.sequ <- box.enlarge.y <- box.sequ <- NULL ## not used but otherwise
+  ##  check will complain
+
   modes <- c("nographics", "plot", "interactive")
   if (any(is.na(mode <- modes[pmatch(mode, modes)])))
     stop("unknown values of `mode'")

@@ -1,5 +1,5 @@
 /*
- Authors  Martin Schlather, schlath@hsu-hh.de 
+ Authors  Martin Schlather, martin.schlather@math.uni-goettingen.de 
 
  Simulation of a random field by circular embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )

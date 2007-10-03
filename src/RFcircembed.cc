@@ -1,7 +1,7 @@
 /*
  Authors 
  Yindeng, Jiang, jiangyindeng@gmail.com
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  Simulation of a random field by circulant embedding
  (see Wood and Chan, or Dietrich and Newsam for the theory )
@@ -37,9 +37,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MAX_CE_MEM 16777216
 ce_param CIRCEMBED={false, true, false, true, TRIVIALSTRATEGY, 3, MAX_CE_MEM, 
-		    -1e-7, 1e-3, 0, 0, 0, 0};
+		    -1e-7, 1e-3, {0, 0, 0, 0}};
 ce_param LOCAL_CE={false, true, false, true, TRIVIALSTRATEGY, 1, MAX_CE_MEM, 
-		   -1e-9, 1e-7, 0, 0, 0, 0};
+		   -1e-9, 1e-7, {0, 0, 0, 0}};
 
 
 void FFT_NULL(FFT_storage *FFT) 

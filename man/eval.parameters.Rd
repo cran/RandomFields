@@ -135,8 +135,8 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   stops with an error message.
 }
 
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
 %\seealso{\command{\link[SoPhy]{define.horizons}}, \command{\link[SoPhy]{SoPhy}}}
 \seealso{\command{\link{useraction}}}
@@ -189,7 +189,6 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   useraction("replay")
   str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
      H=H, par=17))
-}
 }
 \keyword{spatial}
 

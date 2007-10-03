@@ -282,11 +282,11 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
           if (dev) {
             fn <- paste(ps, ext, sep=".")
             if (!file.create(fn)) stop(paste("The file", fn,"cannot be created"))
-            postscript(fn, horizontal=FALSE, paper=paper, width=width,
+            postscript(fn, paper=paper, width=width,
                        height=height, ...)
           } else {
             fn <- paste(ps,".pdf",sep="")
-            pdf(fn, horizontal=FALSE, width=width, height=height, ...)
+            pdf(fn, width=width, height=height, ...)
           }
         } else { # character
           fn <-  paste(ps,".", dev, sep="")

@@ -2,7 +2,7 @@
 
 /*
  Authors 
- Martin Schlather, schlath@hsu-hh.de 
+ Martin Schlather, martin.schlather@math.uni-goettingen.de 
 
  Copyright (C) 2001 -- 2006 Martin Schlather, 
 

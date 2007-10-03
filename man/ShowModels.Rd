@@ -179,8 +179,8 @@ ShowModels(x, y=NULL,
 \value{
   list of the last model and its parameters.
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 \seealso{\command{\link{CovarianceFct}}, \command{\link{eval.parameters}},
   \command{\link{GaussRF}},
   \command{\link{RFMethods}}, \code{\link{RandomFields}}.}

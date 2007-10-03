@@ -1,7 +1,7 @@
 /*
 Authors
  Yindeng, Jiang, jiangyindeng@gmail.com
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  library for unconditional simulation of stationary and isotropic random fields
 
@@ -2176,6 +2176,12 @@ void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error) {
   if (!key->active) {
     *error=ERRORNOTINITIALIZED; goto ErrorHandling;
   }
+
+  if (key->n_unimeth == 0 || !key->meth[0].incompatible) {
+    long total =internal_n * key->totalpoints ;
+   for (i=0; i<total; i++)res[i] = 0.0;
+  }
+  
   if ((*error = internal_DoSimulateRF(key, internal_n, res)) != NOERROR)
     goto ErrorHandling;
 
@@ -2241,10 +2247,6 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
 	  PRINTF(format, back, (int) (ni / realeach), prozent);
       else PRINTF("%s", GENERAL_PCH);
     }
-    if (key->n_unimeth == 0 || !key->meth[0].incompatible)
-      for (i=0; i<key->totalpoints; i++) {
-	res[i] = 0.0;
-      }
     for(m=0; m<key->n_unimeth; m++) {
       methodvalue_type *meth;
       meth = &(key->meth[m]);

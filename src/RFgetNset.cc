@@ -2,7 +2,7 @@
 
 /* 
  Authors
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  library for simulation of random fields -- get's, set's, and print's
 

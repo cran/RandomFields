@@ -110,13 +110,16 @@ models <-
 {
 for (model in models) {
   cat("\n",paste(c(lapply(model[[1]], function(l) l[[1]]), recursive=TRUE)),"..")
+  str(model)
   for (x in model[[3]]) {
     f <- model[[2]]
     M <- model[[1]]
-    for (i in 1:length(model[[1]]))
-      if (is.function(M[[i]]$aniso))
+    str(M)
+    for (i in 1:length(model[[1]])) {
+      if (is.list(M[[i]]) && is.function(M[[i]]$aniso))
         M[[i]]$aniso <- M[[i]]$aniso(ncol(as.matrix(x)))
     #print(M)
+    }
     if ( any(abs(CovarianceFct(as.matrix(x), M) - f(x, M)) > f(x, M) * epsilon)){
       #print(model)
       print("X")

@@ -88,8 +88,8 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     the random field, is returned.  The last
     dimension contains the realisations.    
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 \seealso{
   \command{\link{GaussRF}}, \command{\link{MaxStableRF}}, \code{\link{RandomFields}}
 }

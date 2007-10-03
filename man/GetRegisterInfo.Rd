@@ -58,8 +58,8 @@ GetModelInfo(register=0)
 \value{
   List of internal information is returned.
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
 \seealso{\command{\link{GaussRF}}}
 \examples{

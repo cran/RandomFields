@@ -71,7 +71,7 @@ GetPracticalRange <- function(model, kappas=NULL, dim=1) {
   }
   if (length(kappas) !=
       .C("GetNrParameters", covnr, as.integer(1), as.integer(dim),
-         k = integer(1), PACKAGE="RandomFields", DUP=FALSE)$k)
+         k = integer(1), PACKAGE="RandomFields")$k)
     stop("incorrect number of parameters!")
   nat.scl <- double(1)
   error <- integer(1)
@@ -482,20 +482,21 @@ parameter.range <- function(model, dim){
   }
   storage.mode(nr) = "integer"
   storage.mode(dim) = "integer"
-  l <- as.integer(4 * .C("GetNrParameters", nr, as.integer(1), as.integer(dim),
+  l <- as.integer(4 * .C("GetNrParameters", nr, as.integer(1), dim,
                          k=integer(1), PACKAGE="RandomFields")$k)
   r <- list()
   r$theoretical <- list()
   r$practical <- list()
   index <- as.integer(1)
+
   while (index>0) {
     R <- double(l)
-    index.orig <- as.integer(index) ## without index.orig points to index,
+    index.orig <- index + 0 ## without + 0 index.orig points to index,
     ## what is a bug in R -- do report! -- Check if bug is still there
     .C("GetRange", nr, dim, index, R, l, PACKAGE="RandomFields", DUP=FALSE)
     R <- matrix(R, nrow=4)
     r$theoretical[[index.orig]] <- R[1:2, , drop=FALSE]
-    r$practical[[index.orig]] <- R[3:4, ,drop=FALSE]
+    r$practical[[index.orig]] <- R[3:4, , drop=FALSE]
   }
   if (index <= -2) {
     if (index==-2) r <- NaN ##  stop("dimension not correct")

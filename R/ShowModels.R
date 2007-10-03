@@ -36,6 +36,10 @@ ShowModels <- function(x, y=NULL,
                        debug=FALSE,
                        ...){
   
+  scr <- name.dev <- name.mar <- simu.dev <- model.dev <- model.mar <-
+    par.dev <- save.seed <- zsimu <- ztrafo <-
+      simu.mar <- NULL ## else check will complain
+
   stopifnot(!missing(x))
   if (any(diff(x) <= 0)) stop("x should be a sequence of increasing numbers")
   if (!is.null(y) && any(diff(y) <= 0))

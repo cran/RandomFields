@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands
@@ -42,7 +42,7 @@ int TBM_POINTS = 0;
 double TBM_CENTER[MAXDIM] = {NA_REAL, NA_REAL, NA_REAL, NA_REAL};
 
 ce_param TBMCE = {false, true, false, true, TRIVIALSTRATEGY, 3, 10000000, 
-		  -1e-7, 1e-3, 0, 0, 0, 0};
+		  -1e-7, 1e-3, {0, 0, 0, 0}};
 
 SimulationType TBM_METHOD=CircEmbed;
 
@@ -1029,6 +1029,14 @@ void do_turningbands(key_type *key, int m, double *res)
       incy = e[iy] * stepy;
       incz = e[iz] * stepz;
       if (s->ce_dim == 1) inct = e[it] * stept; // else (double) nn !!
+
+      if (s->key.n_unimeth == 0 || !s->key.meth[0].incompatible) {
+	int i;
+	long total = s->key.totalpoints;
+	double *sres = simuline;
+	for (i=0; i<total; i++) sres[i] = 0.0;
+      }
+
       internal_DoSimulateRF(&(s->key), 1, simuline);
       zaehler = 0;
       for (nt=0; nt<gridlent; nt++) {

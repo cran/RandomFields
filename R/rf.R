@@ -142,8 +142,8 @@ DoSimulateRF <- function (n = 1, register = 0, paired=FALSE) {
   if (keyinfo$total <= 0)
     stop(paste("register", register, "does not look initialized"))
   keyinfo$len <- keyinfo$len[1:keyinfo$timespacedim]
-  error <- integer(1)
-    
+
+  error <- integer(1)  
   result <- double(keyinfo$total * n)
   .C(DoNameList[1+keyinfo$distr], register, as.integer(n),
      as.integer(paired), result, error, PACKAGE="RandomFields", DUP=FALSE)

@@ -3,7 +3,7 @@
 
 /* 
  Authors
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  Collection of auxiliary functions
 

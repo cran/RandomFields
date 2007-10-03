@@ -1,6 +1,6 @@
 /* 
  Authors
- Martin Schlather, schlath@hsu-hh.de
+ Martin Schlather, martin.schlather@math.uni-goettingen.de
 
  Collection of auxiliary functions
 
@@ -360,7 +360,13 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
     assert(s!=NULL);
      
     for (RES = res, ni=0; ni<*n; ni++, RES += key->totalpoints) {
-      for  (i=0; i<totalpoints; i++) RES[i]=0.0;      
+      for  (i=0; i<totalpoints; i++) RES[i]=0.0;     
+ 
+      if (s->key.n_unimeth == 0 || !s->key.meth[0].incompatible) {
+	long total = s->key.totalpoints;
+	double *sres = s->rf;
+	for (i=0; i<total; i++) sres[i] = 0.0;
+      }
        
       control = 0;
       

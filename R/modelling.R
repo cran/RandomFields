@@ -59,7 +59,7 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     }
 
     tgiven <-  t(given)
-    nd <- nrow(given)
+    nd <- as.integer(nrow(given))
     
     if (grid) {
       zz <- cbind(x$x, x$T)
@@ -321,6 +321,7 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
       simu.grid <- FALSE
       l <- ncol(zz)
       if (l>3) stop(txt)
+      ll <- NULL  ## otherwise checker complains
       if (l==1) xx <- matrix(seq(x$x[1], x$x[2], x$x[3]), nrow=1)
       else  eval(parse(text=paste("xx <-  t(as.matrix(expand.grid(",
                          paste("seq(zz[1,", 1:l,

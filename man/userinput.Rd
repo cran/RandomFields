@@ -43,8 +43,8 @@ userinput(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
   \command{\link{Readline}},
   \command{\link{useraction}}
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 \keyword{iplot}
 \keyword{utilities}
 \keyword{internal}

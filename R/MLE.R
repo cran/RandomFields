@@ -74,6 +74,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       stop("if cross.methods then standard.style may not be used")
   ENVIR <- environment()
   save.model <- model
+  LSQ.SELF.WEIGHING <- LSQ.WEIGHTS <- LSQ.BINNEDSQUARE <- ML.lcrepet <-
+    REML.lc <- REML.A <- REML.data <- REML.loglcrepet <- REML.lcrepet <-
+      REML.twopilcrepet <- ML.loglcrepet <- ML.twopilcrepet <- CROSS.DIST <-
+        CROSS.KRIGE <- CROSS.VAR <- NLEtarget <- CROSSMODEL  <- NULL
                
 ######################################################################
 ###                function definitions                            ###
@@ -81,6 +85,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
   ## function not used yet -- for trend definitions
   formulaToMatrix <- function(formula, coord, var.name="X", time.name="T") {
+    l <- NULL ## otherwise check will give a warning
     coord <- as.matrix(coord)
     if (is.null(time.name)) co <- ""
     else co <- paste(time.name,"=coord[,ncol(coord)]")
@@ -939,7 +944,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (!is.list(upper)) stop(txt)
     dummy <- pm
     dummy$param <- rep(NA, length(dummy$param))
-    dummy <- Unlist(convert.to.readable(dummy, allowed="list"))
+    dummy <- unlist(convert.to.readable(dummy, allowed="list"))
     if (!is.numeric(lower[[i]]$v)) lower[[i]]$var <- NA ##i.e. not given
     if (pm$anisotropy)
       if (is.null(lower[[i]]$a)) lower[[i]]$aniso <- autostart$a * NA
@@ -947,7 +952,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (!is.numeric(lower[[i]]$k)) lower[[i]]$kappas <- autostart$param * NA
     bndtst <- PrepareModel(lower, time=truedim, trend=trend)
     bndtst$param <- rep(NA, length(bndtst$param))
-    if (dummy!=Unlist(convert.to.readable(bndtst, allowed="list")))
+    if (dummy!=unlist(convert.to.readable(bndtst, allowed="list")))
       stop(structuremismatch)
     lower <- convert.to.readable(bndtst, allowed="list")
 
@@ -958,7 +963,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     if (!is.numeric(upper[[i]]$k)) upper[[i]]$kappas <- autostart$param * NA
     bndtst <- PrepareModel(upper, time=truedim, trend=trend)
     bndtst$param <- rep(NA, length(bndtst$param))
-    if (dummy!=Unlist(convert.to.readable(bndtst, allowed="list")))
+    if (dummy!=unlist(convert.to.readable(bndtst, allowed="list")))
       stop(structuremismatch)
     upper <- convert.to.readable(bndtst, allowed="list")
     rm("dummy")

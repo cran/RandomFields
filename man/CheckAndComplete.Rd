@@ -19,20 +19,19 @@ CheckAndComplete(model, param, dim)
   A list of two parameters is returned:
 
   \code{error}
-    a value different from zero signifies an error;
-    to get a readable error information put
-    \code{RFparameters()$PrintLevel}
-    to a higher level and rerun.
-
-    \code{param}
-    (currently for internal purposes only).
-    matrix of the internal parameter list; columns correspond to
-    the simple models and can be extracted using
-    \command{\link{paramextract}}.
-  }
+  a value different from zero signifies an error;
+  to get a readable error information put
+  \code{RFparameters()$PrintLevel}
+  to a higher level and rerun.
+  
+  \code{param}
+  (currently for internal purposes only).
+  matrix of the internal parameter list; columns correspond to
+  the simple models and can be extracted using
+  \command{\link{paramextract}}.
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de},
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de},
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
 \seealso{\command{\link{GaussRF}},  \command{\link{paramextract}},
   \code{\link{RandomFields}}, \code{\link{RFMethods}}.}

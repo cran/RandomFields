@@ -31,8 +31,8 @@ GetPracticalRange(model, kappas=NULL, dim=1)
   Goovaerts, P. (1997) \emph{Geostatistics for Natural Resources
     Evaluation.} New York: Oxford University Press.
 }
-\author{Martin Schlather, \email{schlath@hsu-hh.de}
-  \url{http://www.unibw-hamburg.de/WWEB/math/schlath/schlather.html}}
+\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
+  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
 \seealso{  \command{\link{CovarianceFct}},
   \code{\link{RandomFields}},
