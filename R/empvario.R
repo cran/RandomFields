@@ -153,7 +153,7 @@ function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
 
     evsd <- emp.vario.sd[idx] / (n.bin[idx] - 1) -
       n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2
-    if (any(evsd) < -1e-14) {
+    if (any(evsd < -1e-14)) {
       print(idx)
       print(n.bin[idx] - 1)
       print(emp.vario.sd[idx])

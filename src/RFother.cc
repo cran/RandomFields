@@ -46,7 +46,7 @@ int init_special(key_type *key, int m){
 void do_special(key_type *key, int m, double *res ) {
   assert(false);
  {
-    register long i,endfor;
+    long i,endfor;
     endfor = key->totalpoints;
     for (i=0;i<endfor;i++) { res[i]=0.0; }
   }

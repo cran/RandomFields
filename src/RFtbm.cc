@@ -555,7 +555,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
       }
       for (i=0; i<key->totalpoints; i++) {
 	 for (j=0; j<i; j++) {
-	    register double diff, dist;
+	    double diff, dist;
 	    for (dist=0.0, d=0; d<key->timespacedim; d++) {
 		// if (i > 2525) printf("d=%d %d %d\n", d, i, j);
 	      diff = key->x[d][i] - key->x[d][j]; 
@@ -652,7 +652,7 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 	  Xerror=ERRORTBMCENTER; goto ErrorHandling; 
 	}
       for (n=k=0; k<s->simuspatialdim; k++) {
-	register double dummy;
+	double dummy;
 	dummy = 0.0;
 	for (g=0; g<key->timespacedim; g++) {
 	  dummy += s->aniso[n++] * TBM_CENTER[g];
@@ -1030,14 +1030,7 @@ void do_turningbands(key_type *key, int m, double *res)
       incz = e[iz] * stepz;
       if (s->ce_dim == 1) inct = e[it] * stept; // else (double) nn !!
 
-      if (s->key.n_unimeth == 0 || !s->key.meth[0].incompatible) {
-	int i;
-	long total = s->key.totalpoints;
-	double *sres = simuline;
-	for (i=0; i<total; i++) sres[i] = 0.0;
-      }
-
-      internal_DoSimulateRF(&(s->key), 1, simuline);
+      InternalSimulate(&(s->key), simuline);
       zaehler = 0;
       for (nt=0; nt<gridlent; nt++) {
 	zoffset = toffset;
@@ -1046,7 +1039,7 @@ void do_turningbands(key_type *key, int m, double *res)
 	  for (ny=0; ny<gridleny; ny++) {	  
 	    xoffset = yoffset;
 	    for (nx=0; nx<gridlenx; nx++) {
-              register long longxoffset = (long) xoffset;
+	      long longxoffset = (long) xoffset;
 	      
 //     printf("\n");
 //     printf("grindlength %d %d %d %d\n", gridlenx, gridleny, gridlenz, gridlent);
@@ -1085,11 +1078,11 @@ void do_turningbands(key_type *key, int m, double *res)
       for (n=0; n<tbm->lines; n++){\
         if (tbm->every>0  && (n % tbm->every == 0)) PRINTF("%d \n",n); \
         UNITYVECTOR;\
-        internal_DoSimulateRF(&(s->key), 1, simuline);\
+        InternalSimulate(&(s->key), simuline);\
         offset= nnhalf - (OFFSET); \
         for (v = nt = i = 0, end=totpoints; nt<gridlent; nt++, end+=totpoints){\
           for (; i < end; i++) {\
-            register long index;\
+            long index;\
 	    index = (long) (offset + INDEX); \
  /* if (true || !((index<ntot) && (index>=0))) { \
     printf("\n%f %f %f (%f %f %f; %1.4f %1.4f %1.4f)\n", \
@@ -1176,10 +1169,10 @@ void do_turningbands(key_type *key, int m, double *res)
     }
   }
 
-  register long i;
-  register double InvSqrtNlines;   
+  long i;
+  double InvSqrtNlines;   
   InvSqrtNlines=1.0 / sqrt((double) tbm->lines);
-  for(i=0;i<key->totalpoints;i++) {
+  for(i=0; i<key->totalpoints; i++) {
     res[i] *= InvSqrtNlines; 
     // printf("%d, %f\n", i, res[i]);
   }

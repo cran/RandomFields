@@ -1,7 +1,6 @@
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <sys/timeb.h>
 #include <assert.h>
 #include <string.h>
 #include "RFsimu.h"
@@ -142,7 +141,7 @@ double ScalegCauchy(double *p,int scaling) {
 }
 
 double DgCauchy(double *x, double *p){
-  register double ha,y;
+  double ha,y;
   if ((y = fabs(*x))==0.0) 
     return ((p[KAPPA1]>1.0) ? 0.0 : (p[KAPPA1]<1.0) ? -INFTY : -p[KAPPA2]); 
   ha=pow(y, p[KAPPA1] - 1.0);

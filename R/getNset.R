@@ -289,14 +289,9 @@ parampositions <- function(model, param, print=TRUE) {
     # m = 1 storing parameters
     storage.mode(m) <- "integer"
     ## "SetParam" more complicated since pch is of character type
-    x <- .C("SetParam", m, Storing=Storing, PrintLevel=PrintLevel,
-            PracticalRange=PracticalRange, pch=pch, skipchecks=skipchecks,
-            PACKAGE="RandomFields")
-    Storing <- x$Storing
-    PrintLevel <- x$PrintLevel
-    PracticalRange <- x$PracticalRange
-    pch <- x$pch
-    skipchecks <- x$skipchecks
+    pch <- .Call("SetParamPch", m, pch);
+    .C("SetParam", m, Storing, PrintLevel, PracticalRange, skipchecks,
+            PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamDecision", m, stationary.only, exactness, 
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamCircEmbed", m, CE.force, CE.tolRe, CE.tolIm, CE.trials, 

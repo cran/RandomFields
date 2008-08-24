@@ -251,6 +251,8 @@ int init_circ_embed(key_type *key, int m)
     } else if (cepar->mmin[i] < 0.0) {
 	assert(cepar->mmin[i] <= -1.0);
 	mm[i] = (int) ceil((double) mm[i] * -cepar->mmin[i]);
+
+//	printf("%d %f\n", mm[i], cepar->mmin[i]);
     }
     if (cepar->useprimes) {
       // Note! algorithm fails if mm[i] is not a multiple of 2
@@ -261,6 +263,7 @@ int init_circ_embed(key_type *key, int m)
       mm[i] = (1 << 1 + (int) ceil(log((double) mm[i]) * INVLOG2 - EPSILON1000));
     }
   }                             
+//   assert(false);
 
 
   s->positivedefinite = false;     
@@ -332,6 +335,10 @@ int init_circ_embed(key_type *key, int m)
 
       c[dummy] =      
          key->covFct(hx, dim, key->cov, meth->covlist, actcov, key->anisotropy);
+
+      
+//      printf("%f %f %f \n", hx[0], hx[1], c[dummy]);
+
       if (cur_crit) {
 	for (k=0; k<dim; k++) {
           if (index[k]==halfm[k]) hx[k] -= steps[k] * (double) mm[k];
@@ -438,7 +445,7 @@ int init_circ_embed(key_type *key, int m)
 	c[twoi] = 0.0;
       }
       {
-	register double a;
+	double a;
 	if ((a=fabs(c[twoi+1])) > imag) imag = a;
       }
       c[twoi+1] = 0.0;
@@ -510,7 +517,7 @@ double GetScaledDiameter(key_type *key, covinfo_type *kc) {
       for (j=0; j<i; j+=dim) {
         distsq = 0.0;
 	for (k=0; k<dim; k++) { 
-	  register double dummy;
+	  double dummy;
 	  dummy = fabs(sx[i + k] - sx[j + k]);
 //	  printf("getscale %d %d %d %f\n", i, j, k, dummy);
 	  distsq += dummy * dummy;
@@ -712,11 +719,11 @@ int init_circ_embed_local(key_type *key, int m)
       }
 
       for (i=0; i<key->timespacedim; i++) {
-        register double dummy;   
+        double dummy;   
 	dummy = store_param[LOCAL_R] / 
 	    (grid_ext[i] * (double) (key->length[i] - 1) * key->x[i][XSTEP]);
-//  	printf("\nXXXX %d grid_ext=%f dummy=%f, raw=%f local_r=%f %d %f\n",
-//  	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R],
+	// 	printf("\nXXXX %d grid_ext=%f dummy=%f, raw=%f local_r=%f len=%d step=%f\n",
+	// 	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R],
 //	       key->length[i], key->x[i][XSTEP]);
 	if (rawRmax[i] < dummy) rawRmax[i] = dummy;
       }
@@ -757,7 +764,7 @@ int init_circ_embed_local(key_type *key, int m)
     for (i=0; i<n_aniso; i++)
 	ParamList[cum_nParam++] = sc->param[ANISO + i];
   }
-
+  
   strcpy(errorloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "%s%s ", errorloc_save, "local circ. embed.: ");
   ce_param ce_save;
@@ -766,8 +773,9 @@ int init_circ_embed_local(key_type *key, int m)
  
   for (i=0; i<key->timespacedim; i++) {
     if (CIRCEMBED.mmin[i]==0.0) CIRCEMBED.mmin[i] = - rawRmax[i];
-//    printf("%d %f\n", i, CIRCEMBED.mmin[i]);
+    //   printf("%d %f\n", i, CIRCEMBED.mmin[i]);
   }
+  // assert(false);
 
   instance = 0;
   for (;;) {
@@ -865,7 +873,7 @@ void do_circ_embed_local(key_type *key, int m, double *res )
   cov_fct *hyper;
 
   s = (localCE_storage*) key->meth[m].S;
-  internal_DoSimulateRF(&(s->key), 1, res);
+  InternalSimulate(&(s->key), res);
   
   dim = key->timespacedim;
   dimsq = dim * dim;

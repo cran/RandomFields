@@ -6,10 +6,6 @@ source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R"
 
 # putactionlist(getactionlist()[1:(length(getactionlist())-1)])
 
-EmptyEnv <- function() {
-  if (version$major <= 2 && version$minor < 3) NULL else baseenv()
-}
-
 .RandomFields.env <- new.env()
 
 sleep.milli <- function(milli) {
@@ -233,8 +229,9 @@ Readline <- function(prompt="", info=NULL)
   
 
 Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
-                width=5, height=5, quiet=FALSE, innerwidth, innerheight,
-                mai, ...){
+                width=5, height=5,
+                quiet=FALSE, innerwidth, innerheight,
+                mai, horizontal=FALSE, ...){
   
   # print(ls(all=TRUE, envir=.RandomFields.env))
   if (!missing(innerwidth) || !missing(innerheight)) {
@@ -256,7 +253,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       warning("Dev has been still open (.dev.orig exists). Closing.")
       if (!is.null(try(Dev(FALSE, get(".dev.orig",
                                       envir=.RandomFields.env)$dev))))  
-        rm(.dev.orig, envir=.RandomFields.env)
+        rm(".dev.orig", envir=.RandomFields.env)
     }
     if ((cur.cex <- cur.cex && !is.null(par.orig)) && !is.null(dev.list())) {
       par.orig <- par(no.readonly=TRUE)
@@ -283,7 +280,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
             fn <- paste(ps, ext, sep=".")
             if (!file.create(fn)) stop(paste("The file", fn,"cannot be created"))
             postscript(fn, paper=paper, width=width,
-                       height=height, ...)
+                       height=height, horizontal=horizontal, ...)
           } else {
             fn <- paste(ps,".pdf",sep="")
             pdf(fn, width=width, height=height, ...)
@@ -302,7 +299,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       else {
         # print(c(height, width))
         stopifnot(is.finite(height+width))
-        get(getOption("device"))(height=height, width=width)
+        do.call(getOption("device"), list(height=height, width=width))
       }
       keep <- dev < 3
     }
@@ -327,7 +324,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       else dev.off()
     if ((devPrev <- get(".dev.orig", envir=.RandomFields.env)$dev.prev) != 1)
       dev.set(devPrev)
-    rm(.dev.orig, envir=.RandomFields.env) 
+    rm(".dev.orig", envir=.RandomFields.env) 
   }
   invisible(NULL)
 }

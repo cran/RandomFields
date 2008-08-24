@@ -165,7 +165,7 @@ void empvarioXT(double *X, double *T,
 	  vec[2] = vec[1] + iz * segmentbase[2];
 	 
 	  {
-	    register int up;
+	    int up;
 	    low=0; up= *nbin; /* */ cur= halfnbin;
 	    while(low!=up){
 	      if (psq[2] > BinSq[cur]) {low=cur;} else {up=cur-1;}/*( . ; . ]*/ 
@@ -248,7 +248,7 @@ void empvarioXT(double *X, double *T,
 	distSq += dx[2] * dx[2];
 			
 	if ((distSq>BinSq[0]) && (distSq<=BinSq[*nbin])) {
-	  register int up, cur,low;
+	  int up, cur,low;
 	  low=0; up=*nbin; cur=halfnbin;
 	  while (low!=up) {
 	    if (distSq> BinSq[cur]) {low=cur;} else {up=cur-1;} // ( * ; * ]  

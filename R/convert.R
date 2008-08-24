@@ -458,7 +458,7 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
     } else {
       eqdist <- function(x) {
         step <- diff(x)
-        if (any(step) == 0.0)
+        if (any(step == 0.0))
           stop("duplicated values detected: the definition of coordinates does not seem to define a grid of equidistant coordinates")
         if (max(abs(step / step[1] - 1.0)) > 1e-13) {
           print(x[1:min(10000, length(x))])

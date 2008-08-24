@@ -184,7 +184,7 @@ hurst <-  function(x, y = NULL, z = NULL, data,
   if (any(mode=="plot" | mode=="interactive"))
   {
     plots <- do.dfa + do.fft + do.var
-    get(getOption("device"))(height=height, width=height * plots)
+    do.call(getOption("device"), list(height=height, width=height * plots))
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))
@@ -412,7 +412,8 @@ fractal.dim <-
 
   if (any(mode=="plot" | mode=="interactive")) {
     plots <- do.vario + do.box + do.range + do.fft
-    get(getOption("device"))(height=height, width = height * min(3.4, plots))
+    do.call(getOption("device"),
+            list(height=height, width = height * min(3.4, plots)))
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))

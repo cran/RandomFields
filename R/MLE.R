@@ -98,12 +98,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       dummy <- as.list(fo)
       stopifnot(dummy[[1]]=="+")
       fo <- dummy[[2]]
-      variables <- cbind(eval(dummy[[3]],l), variables)
+      variables <- cbind(eval(dummy[[3]], NaN), variables) # l ?!
     }
-    variables <- cbind(eval(fo, l), variables) 
+    variables <- cbind(eval(fo, NaN), variables) # l ?!
     return(variables)
   }
 
+  EmptyEnv <- function() baseenv()
 
   ## Note
   ## creating "global" variables LSMIN, LSPARAM
@@ -281,10 +282,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
        stop(paste(M, "unknown"))
       )
   }
-    
+  MLEtarget <- NULL
      
   ## note "global" variables REMLMIN, REMLPARAM
   REMLtarget <- function(variab) {
+    
     if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab < MLELB) | (variab > MLEUB))) {
       ## for safety -- should not happen, older versions of the optimiser
@@ -438,6 +440,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
   ## note "global" variables MLEMAX, MLEPARAM
   MLtarget<-function(variab) {
+
     if (PrintLevel>4) {print(variab, dig=10)}
     if (any((variab < MLELB) | (variab > MLEUB))) {
       ## for safety -- should not happen, older versions of the optimiser
@@ -458,6 +461,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     param[MLEINDEX] <- variab
     param <- MLETRANSFORM(param)
     options(show.error.messages = show.error.message)
+    
     cov.matrix <- try(chol(CC <- matrix(.C("CovarianceMatrixNatSc",
                          distances, lc,
                          covnr, as.double(param), lpar,
@@ -482,6 +486,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       return(1E300)
     }
     if (any(diag(cov.matrix)<0)) {stop("chol det<0!")}
+
+#    print(sum(cov.matrix))
     
     ## der faktor zwei erklaert sich wie folgt:
     ## logarithmus der wahrscheinlichkeitsdichte ergibt
@@ -514,7 +520,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       MLtargetV  <- data - as.double(CoVariates %*% m) # (sumD-X m)
     } ## otherwise MLtargetV had been set by the calling function
 
+
     quadratic <- sum(MLtargetV * (cov.matrix %*% MLtargetV))
+
+    
     ##               sum_i (D_i - Xm)^T C^{-1} (D_i - X m)
     if (varnugNA || zeronugget) {
       ## varnugNA : sill = s^2, var=p * s^2, nugget= (1-p) * s^2
@@ -598,6 +607,18 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       assign("MLEPARAM", param, envir=ENVIR)
     }
     if (PrintLevel>5) cat("result MLE", res, "\n")
+
+    if (FALSE) {
+      str(MLtargetV)
+      print(quadratic)
+      print(sum(cov.matrix))
+      print(logdet)
+      print(ML.loglcrepet)
+      print(ML.twopilcrepet)
+      print(repet)
+      stop("xxxxx")
+    }
+
     return(res)
   }
 
@@ -879,7 +900,6 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     maxdistances <- max(distances)
   }
   storage.mode(distances) <- "double"
- # xxxx
   
   if (mindistances==0) stop("two points given twice")
   gc() ## necessairy, since otherwise too much memory is being taken because
@@ -1428,7 +1448,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     lsqtrafoUser <- LSQTRANSFORM
     LSQTRANSFORM <- function(param) lsqtrafoUser(lsqtrafo(param))
   }
-  if (is.null(LSQTRANSFORM)) LSQTRANSFORM <- function(x) x
+  if (is.null(LSQTRANSFORM)) LSQTRANSFORM <- function(param) param
   LSQLB  <- lsqlower[LSQINDEX]
   LSQUB  <- lsqupper[LSQINDEX]
   ixdLSQINDEX <- LSQINDEX[index]
@@ -1466,8 +1486,9 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
     ug <- convert.to.readable(ug)
     ug <- PrepareModel(ug$model, ug$param, truedim, trend=ug$trend)$param
-    if (length(ug)!=length(PARAM))
+    if (length(ug)!=length(PARAM)) {
       stop("model given by users.guess does not match 'model'")
+    }
     if (!is.null(users.transform)) {
       ust <- unlist(users.transform(ug))
       uug <- unlist(ug)
@@ -1926,7 +1947,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   crossupper <- upper
   CROSSTRANSFORM <- users.transform
   CROSSinvTrafo <- function(param) param
-  crosstrafo <- NULL;
+  crosstrafo <- function(param) param;
   if (sillbounded) {
     CROSSINDEX[NUGGET] <- FALSE;
     crosstrafo <- function(param) {
@@ -1934,13 +1955,13 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       param
     }
   }
-  if (is.null(CROSSTRANSFORM)) CROSSTRANSFORM <- crosstrafo
-  else if (!is.null(crosstrafo)) {
+  if (is.null(CROSSTRANSFORM)) {
+    CROSSTRANSFORM <- crosstrafo
+  } else if (sillbounded) {
     warning("standard.style and transform!=NULL may cause strange effects -- internal transformation is performed before the user's one")
     crosstrafoUser <- CROSSTRANSFORM
     CROSSTRANSFORM <- function(param) crosstrafoUser(crosstrafo(param))
   }
-  if (is.null(CROSSTRANSFORM)) CROSSTRANSFORM <- function(x) x
   CROSSLB <- crosslower[CROSSINDEX] 
   CROSSUB <- crossupper[CROSSINDEX]
   ixdCROSSINDEX <- CROSSINDEX[index]

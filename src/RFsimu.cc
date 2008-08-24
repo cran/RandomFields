@@ -622,7 +622,8 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
         //printf("covfct %d %d\n", v, covlist[v]);
 
 	kc = &(keycov[covlist[v]]);
-	//printf("covfct %d %d\n", v, kc->nr);
+//	printf("covfct %d %d %s %f\n", v, kc->nr, CovList[kc->nr].name,
+//	       kc->aniso[0]); 
         cov = &(CovList[kc->nr]); /* cov needed in FORMULA for Vario */
 	if (cov->type==ISOHYPERMODEL) {
 	   nsub = (int) kc->param[HYPERNR];
@@ -2161,52 +2162,6 @@ void DoPoissonRF(int *keyNr, int *pairs, int *n, double *res, int *error)
   assert(false);
 }
 
-void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error) {
-  // does not assume that orig_res[...] = 0.0, but it is set
-  int i, internal_n;
-  key_type *key=NULL;
-
-  *error=NOERROR; 
-  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
-    *error=ERRORKEYNROUTOFRANGE; goto ErrorHandling;
-  }
-  key = &(KEY[*keyNr]);
-  internal_n = *n / (1 + (*pairs!=0));
-
-  if (!key->active) {
-    *error=ERRORNOTINITIALIZED; goto ErrorHandling;
-  }
-
-  if (key->n_unimeth == 0 || !key->meth[0].incompatible) {
-    long total =internal_n * key->totalpoints ;
-   for (i=0; i<total; i++)res[i] = 0.0;
-  }
-  
-  if ((*error = internal_DoSimulateRF(key, internal_n, res)) != NOERROR)
-    goto ErrorHandling;
-
-  if (*pairs) {
-    double* res_pair;
-    long endfor=key->totalpoints * *n / 2;
-    res_pair = res + endfor;
-    for (i=0; i<endfor; i++) res_pair[i] = -res[i];
-  }
-
-  AddTrend(keyNr, n, res, error);
-  if (*error) goto ErrorHandling;
- 
-  if (!(key->active = GENERAL_STORING))
-    DeleteKey(keyNr);
-  return; 
-  
- ErrorHandling: 
-  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing, *error);
-  if (key!=NULL) {
-    key->active = false;
-    DeleteKey(keyNr);
-  }
-  return;
-}
 
 
 int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
@@ -2280,6 +2235,65 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   key->active = false;
   return error;
 }
+
+
+void DoSimulateRF(int *keyNr, int *n, int *pairs, double *res, int *error) {
+  // does not assume that orig_res[...] = 0.0, but it is set
+  int i, internal_n;
+  key_type *key=NULL;
+
+  *error=NOERROR; 
+  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {
+    *error=ERRORKEYNROUTOFRANGE; goto ErrorHandling;
+  }
+  key = &(KEY[*keyNr]);
+  internal_n = *n / (1 + (*pairs!=0));
+
+  if (!key->active) {
+    *error=ERRORNOTINITIALIZED; goto ErrorHandling;
+  }
+
+  if (key->n_unimeth == 0 || !key->meth[0].incompatible) {
+    long total =internal_n * key->totalpoints ;
+   for (i=0; i<total; i++)res[i] = 0.0;
+  }
+  
+  if ((*error = internal_DoSimulateRF(key, internal_n, res)) != NOERROR)
+    goto ErrorHandling;
+
+  if (*pairs) {
+    double* res_pair;
+    long endfor=key->totalpoints * *n / 2;
+    res_pair = res + endfor;
+    for (i=0; i<endfor; i++) res_pair[i] = -res[i];
+  }
+
+  AddTrend(keyNr, n, res, error);
+  if (*error) goto ErrorHandling;
+ 
+  if (!(key->active = GENERAL_STORING))
+    DeleteKey(keyNr);
+  return; 
+  
+ ErrorHandling: 
+  if (GENERAL_PRINTLEVEL>0) ErrorMessage(Nothing, *error);
+  if (key!=NULL) {
+    key->active = false;
+    DeleteKey(keyNr);
+  }
+  return;
+}
+
+int InternalSimulate(key_type *key, double *orig_res) {
+   if (key->n_unimeth == 0 || !key->meth[0].incompatible) {
+     long i, total = key->totalpoints;
+     double *sres = orig_res;
+     for (i=0; i<total; i++) sres[i] = 0.0;
+   }
+   return internal_DoSimulateRF(key, 1, orig_res);
+}
+
+
 
 SEXP GetExtModelInfo(SEXP keynr) {
   int knr;   

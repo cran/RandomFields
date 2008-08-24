@@ -63,6 +63,7 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
     
     if (grid) {
       zz <- cbind(x$x, x$T)
+      dimension <- NULL
       eval(parse(text=paste("dimension <- c(",
                    paste(paste("length(seq(", zz[1,], ",", zz[2,], ",",
                                zz[3,], "))"), collapse=","),
@@ -151,11 +152,12 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
              if (!(is.matrix(try(invcov <- solve(covmatrix), silent=silent))))
                stop("covmatrix is singular")
              sigma2 <- double(nrow(x))
+             lambda <- double(nrow(x))
              .C("simpleKriging2", as.double(tgiven), as.double(x),
                 as.double(data-pm$mean), as.double(invcov),
                 as.integer(nrow(x)), nn, as.integer(ncol(x)),
                 as.integer(ncol(data)), as.double(pm$mean),
-                res, sigma2,
+                res, sigma2, lambda,
                 PACKAGE="RandomFields", DUP=FALSE)           
            } else {
              if (!(is.matrix(try(invcov <- solve(covmatrix, data-pm$mean),
@@ -176,10 +178,11 @@ if (FALSE)if (RFparameters()$Print>3)   print(c(krige.method.nr, return.variance
              if (!(is.matrix(try(invcov <- solve(covmatrix), silent=silent))))
                stop("covmatrix is singular") 
              sigma2 <- double(nrow(x))
+             lambda <- double(nrow(x))
              .C("ordinaryKriging2", as.double(tgiven), as.double(x),
                 as.double(data), as.double(invcov),
                 as.integer(nrow(x)), nn, as.integer(ncol(x)),
-                as.integer(ncol(data)), res, sigma2,
+                as.integer(ncol(data)), res, sigma2, lambda,
                 PACKAGE="RandomFields", DUP=FALSE)
            } else {
              if (!(is.matrix(try(invcov <- solve(covmatrix,
@@ -226,7 +229,10 @@ if (FALSE) if (RFparameters()$Print>3) {
     ## else res <- res
   }
   return(if (return.variance) 
-         list(estim=res, var=if (grid) array(sigma2, dim=dimension) else sigma2)
+         list(estim=res,
+              var=if (grid) array(sigma2, dim=dimension) else sigma2,
+              lambda=if (grid) array(lambda, dim=dimension) else lambda
+              )
   else res)
 }
 
@@ -242,9 +248,11 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      paired=FALSE,
                      na.rm=FALSE
                      ) {
-  op.list <- c("+","*")  
+  op.list <- c("+","*")
+  stopifnot(is.character(krige.method))
   if (is.character(method) && (!is.na(pmatch(method, c("S","O")))))
     stop("Sorry. The parameters of the function `CondSimu' as been redefined. Use `krige.method' instead of `method'. See help(CondSimu) for details")
+
 
   x  <- CheckXT(x, y, z, T, grid, gridtriple)
   pm <- PrepareModel(model, param, x$spacedim + x$Time, trend, method=method)

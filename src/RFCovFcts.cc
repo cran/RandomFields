@@ -143,7 +143,7 @@ double ScaleCauchy(double *p,int scaling) {
   }
 }
 double TBM2Cauchy(double *x, double *p){
-  register double y2, lpy2;
+  double y2, lpy2;
   y2 = *x * *x; 
   lpy2 = 1.0 + y2;
   switch ((int) (p[KAPPA] * 2.0 + 0.001)) {// ueber check sichergestellt
@@ -155,17 +155,17 @@ double TBM2Cauchy(double *x, double *p){
   }
 }
 double TBM3Cauchy(double *x, double *p){
-  register double ha;
+  double ha;
   ha= *x * *x;
   return (1.0 + (1.0 - 2.0 * p[KAPPA]) * ha) * pow(1.0 + ha, -p[KAPPA] - 1.0);
 }
 double DCauchy(double *x, double *p){
-  register double y;
+  double y;
   y = fabs( *x);
   return (-2.0 * p[KAPPA] * y) * pow(1.0 + y * y, -p[KAPPA] - 1.0);
 }
 double DDCauchy(double *x, double *p){
-  register double ha;
+  double ha;
   ha = *x * *x;
   return 2.0 * p[KAPPA] * ((2.0 * p[KAPPA] + 1.0) * ha - 1.0) * 
     pow(1.0 + ha, -p[KAPPA] - 2.0);
@@ -199,14 +199,14 @@ void infoCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
 }
 
 double Cauchytbm(double *x, double *p){
-  register double ha;
+  double ha;
   if ( *x==0) {return 1.0;}
   ha=pow(fabs( *x),p[KAPPA1]);
   return (1.0 + (1.0 - p[KAPPA2] / p[KAPPA3]) * ha) * 
       pow(1.0 + ha, -p[KAPPA2] / p[KAPPA1] - 1.0);
 }
 double TBM3Cauchytbm(double *x, double *p){
-  register double bg,ha;
+  double bg,ha;
   ha=pow(fabs( *x), p[KAPPA1]);
   bg=p[KAPPA2] / p[KAPPA3];
   return  
@@ -214,7 +214,7 @@ double TBM3Cauchytbm(double *x, double *p){
     pow(1+ha,-p[KAPPA2]/p[KAPPA1]-2.0);
 }
 double DCauchytbm(double *x, double *p){
-  register double y,ha;
+  double y,ha;
   if ((y = fabs(*x)) == 0.0) return 0.0; // WRONG VALUE, but multiplied 
   //                                        by zero anyway
   ha = pow(y, p[KAPPA1] - 1.0);
@@ -249,7 +249,7 @@ double Scalecircular(double *p,int scaling) {return 1.138509531721630274603;}
 // spectral measure, see Lantue !! 
 
 double Dcircular(double *x, double *p){
-  register double y;
+  double y;
   if ((y = *x * *x) >= 1.0) {return 0.0;} 
   return -4 * INVPI * sqrt(1.0 - y);
 }
@@ -368,7 +368,7 @@ double Scaledagum(double *p,int scaling){
     return pow(pow(0.95, - 1 / p[KAPPA1]) -1, -1 / p[KAPPA2]);
 } 
 double Ddagum(double *x, double *p){
-    register double y, xd;
+    double y, xd;
     y = fabs(*x);
     xd = pow(y, -p[KAPPA2]);
     return -p[KAPPA1] * p[KAPPA2] * xd / y * pow(1 + xd, -p[KAPPA1] -1);
@@ -387,7 +387,7 @@ void infodagum(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /*  damped cosine -- derivative of exponential:*/
 double dampedcosine(double *x, double*p){
-  register double y;
+  double y;
   y = fabs(*x);
   return exp(-y * p[KAPPA]) * cos(y);
 }
@@ -396,12 +396,12 @@ double Scaledampedcosine(double *p,int scaling){
   return MINUSINVLOG005; 
 } 
 double TBM3dampedcosine(double *x, double *p){
-  register double y;
+  double y;
   y = fabs(*x);
   return exp(-p[KAPPA] * y) * ((1.0 - p[KAPPA] * y) * cos(y) - y * sin(y));
 }
 double Ddampedcosine(double *x, double *p){
-  register double y;
+  double y;
   y = fabs( *x);
   return - exp(-p[KAPPA]*y) * (p[KAPPA] * cos(y) + sin(y));
 }
@@ -437,7 +437,7 @@ double TBM2exponential(double *x, double *p)
   return 1.0 - PIHALF * y * I0mL0(y);
 }
 double TBM3exponential(double *x, double *p){
-   register double y;
+   double y;
    y = fabs( *x);
    return (1.0-y)*exp(-y);
 }
@@ -449,7 +449,7 @@ double DDexponential(double *x, double *p){
   return exp(-fabs( *x));
 }
 double spectralexponential(double *p) { /* see Yaglom ! */
-  double register y;
+  double y;
   y = 1.0 - UNIFORM_RANDOM;
   return sqrt(1.0 / (y * y) - 1.0);
 }
@@ -612,7 +612,7 @@ void infoFD(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* fractgauss */
 double fractGauss(double *x, double *p){
-  register double y;
+  double y;
   if ((y = fabs(*x)) == 0.0) return 1.0;
   return 0.5 * (pow(fabs(y + 1.0), p[KAPPA])  
 		- 2.0 * pow(y, p[KAPPA]) 
@@ -637,12 +637,12 @@ double Gauss(double *x, double*p) {
 }
 double ScaleGauss(double *p,int scaling) {return SQRTINVLOG005;}
 double TBM3Gauss(double *x, double*p) {
-  register double y;
+  double y;
   y = *x * *x; 
   return (1 - 2.0 * y) * exp(-y);
 }
 double DGauss(double *x, double*p) {
-  register double y;
+  double y;
   y = fabs(*x); 
   return -2.0 * y * exp(- y * y);
 }
@@ -675,20 +675,20 @@ double ScalegeneralisedCauchy(double *p,int scaling) {
   }
 }
 double TBM3generalisedCauchy(double *x, double *p){
-  register double ha;
+  double ha;
   ha=pow(fabs( *x), p[KAPPA1]);
   return 
     (1.0 + (1.0 - p[KAPPA2]) * ha) * pow(1.0 + ha, -p[KAPPA2] / p[KAPPA1] - 1.0);
 }
 double DgeneralisedCauchy(double *x, double *p){
-  register double ha,y;
+  double ha,y;
   if ((y = fabs(*x))==0.0) 
     return ((p[KAPPA1] > 1.0) ? 0.0 : (p[KAPPA1] < 1.0) ? -INFTY : -p[KAPPA2]); 
   ha=pow(y, p[KAPPA1] - 1.0);
   return  -p[KAPPA2] * ha * pow(1.0 + ha * y, -p[KAPPA2] / p[KAPPA1] - 1.0);
 }
 double DDgeneralisedCauchy(double *x, double *p){
-  register double ha,y;
+  double ha,y;
   if ((y = fabs(*x))==0.0) 
     return ((p[KAPPA1]==2.0) ? p[KAPPA2] * (p[KAPPA2] + 1.0) : INFTY); 
   ha=pow(y, p[KAPPA1]);
@@ -722,7 +722,7 @@ void infogeneralisedCauchy(double *p, int *maxdim, int *CEbadlybehaved) {
 /* gengneiting */
 double genGneiting(double *x, double *p)
 {
-  register double y, s;
+  double y, s;
   if ((y=fabs( *x)) >= 1.0) return 0.0; 
   s = p[KAPPA2] + p[KAPPA1];
   switch ((int) p[KAPPA1]) {
@@ -741,7 +741,7 @@ double genGneiting(double *x, double *p)
 }
 double TBM3genGneiting(double *x, double *p)
 {
-  register double y, s;
+  double y, s;
   if ((y=fabs( *x)) >= 1.0) {return 0.0;} 
   s = p[KAPPA2] + p[KAPPA1];
   switch ((int) p[KAPPA1]) {
@@ -766,7 +766,7 @@ double TBM3genGneiting(double *x, double *p)
 }
 double DgenGneiting(double *x, double *p)
 {
-  register double y, s;
+  double y, s;
   if ((y=fabs(*x)) >= 1.0) {return 0.0;} 
   s = p[KAPPA2] + p[KAPPA1];
 
@@ -808,21 +808,21 @@ void infogenGneiting(double *p, int *maxdim, int *CEbadlybehaved) {
 // #define Sqrt2TenD47 0.30089650263257344820 /* approcx 0.3 ?? */
 #define NumericalScale 0.301187465825
 double Gneiting(double *x, double *p){ 
-  register double y,oneMy8;
+  double y,oneMy8;
   if ((y=fabs(*x * NumericalScale)) >= 1.0) {return(0.0);}
   oneMy8 = 1.0-y; oneMy8*=oneMy8; oneMy8*=oneMy8; oneMy8*=oneMy8;
   return ((1.0+y * ( 8.0 + y * (25.0 + 32.0 *y)))*oneMy8);
 }
 double ScaleGneiting(double *p,int scaling) {return 0.5854160193;}
 double TBM3Gneiting(double *x, double *p){ 
-  register double y,oneMy7;
+  double y,oneMy7;
   if ((y=fabs( *x * NumericalScale)) >= 1.0) {return 0.0;}  
   oneMy7 = 1.0-y; oneMy7*=oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
   return 
     (1.0 + y * (7.0  -  y * (5.0 + y * (147.0 + 384.0 * y))))* oneMy7;
 }
 double DGneiting(double *x, double *p){ 
-  register double y,oneMy7;
+  double y,oneMy7;
   if ((y=fabs( *x * NumericalScale)) >= 1.0) {return 0.0;}  
   oneMy7 = 1.0-y; oneMy7 *= oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
 
@@ -899,7 +899,7 @@ double TBM3hyperbolic(double *x, double*p)
     return TBM3WhittleMatern(&y, p);
   } 
   if (p[KAPPA1]==0) { //cauchy
-    register double y,ha;
+    double y,ha;
     y= *x / p[KAPPA3];
     ha=y * y;
     /* note change in sign as KAPPA2<0 */
@@ -942,7 +942,7 @@ double Dhyperbolic(double *x, double*p)
     return DWhittleMatern(&y, p);
   } 
   if (p[KAPPA1]==0) { //cauchy
-    register double y,ha;
+    double y,ha;
     y= *x / p[KAPPA3];
     ha=y * y;
     /* note change in sign as KAPPA2<0 */
@@ -1394,7 +1394,7 @@ void infopenta(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* power model */ 
 double power(double *x, double *p){
-  register double y;
+  double y;
   if ((y=fabs(*x)) >= 1.0) return 0.0;
   return pow(1.0 - y, p[KAPPA]);
 }
@@ -1403,19 +1403,19 @@ double Scalepower(double *p,int scaling){
 }
 double TBM2power(double *x, double *p){
   // only kappa=2 up to now !
-  register double y;
+  double y;
   y = fabs(*x);
   return (y > 1.0) 
       ? (1.0 - 2.0 * y *(asin(1.0 / y) - y + sqrt(y * y - 1.0) ))
       : 1.0 - y * (PI - 2.0 * y);
 }
 double TBM3power(double *x, double *p){
-  register double y;
+  double y;
   if ( (y=fabs(*x)) >= 1.0 ) return 0.0;
   return (1.0 - y - y * p[KAPPA]) * pow(1.0 - y, p[KAPPA] - 1.0);
 }
 double Dpower(double *x, double *p){
-  register double y;
+  double y;
   if ( (y=fabs(*x)) >= 1.0 ) return 0.0;
   return  - p[KAPPA] * pow(1.0 - y, p[KAPPA] - 1.0);
 }
@@ -1447,7 +1447,7 @@ void infopower(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* qexponential -- derivative of exponential */
 double qexponential(double *x,double *p){
-  register double y;
+  double y;
   y = exp(-fabs(*x));
   return y * (2.0  - p[KAPPA] * y) / (2.0 - p[KAPPA]);
 }
@@ -1456,13 +1456,13 @@ double Scaleqexponential(double *p,int scaling){
     log( (1.0 - sqrt(1.0 - p[KAPPA] * (2.0 - p[KAPPA]) * 0.05)) / p[KAPPA]);
 } 
 double TBM3qexponential(double *x, double *p) {
-   register double y;
+   double y;
    y = exp(-fabs( *x));
    return y * ((2.0  - p[KAPPA] * y) + fabs( *x) * (p[KAPPA] * y - 1.0) * 2.0) /
      (2.0 - p[KAPPA]);
 }
 double Dqexponential(double *x, double *p) {
-  register double y;
+  double y;
   y = exp(-fabs( *x));
   return y * (p[KAPPA] * y - 1.0) * 2.0 / (2.0 - p[KAPPA]);
 }
@@ -1481,13 +1481,13 @@ void infoqexponential(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* spherical model */ 
 double spherical(double *x, double *p){
-  register double y;
+  double y;
   if ((y=fabs( *x)) >= 1.0) return 0.0;
   return (1.0 + y * 0.5 * (y * y - 3.0));
 }
 double Scalespherical(double *p,int scaling){ return 1.23243208931941;}
 double TBM2spherical(double *x, double *p){
-  register double y, y2;
+  double y, y2;
   y  = fabs(*x);
   y2 = y * y;
   return (y>1.0) 
@@ -1495,12 +1495,12 @@ double TBM2spherical(double *x, double *p){
       : (1.0 - 0.375 * PI * y * (2.0 - y2));
 }
 double TBM3spherical(double *x, double *p){
-  register double y;
+  double y;
   if ((y=fabs(*x)) >= 1.0) return 0.0; 
   return (1.0 + (-3.0 + 2.0 * y * y) * y);
 }
 double Dspherical(double *x, double *p){
-  register double y;
+  double y;
   if ((y=fabs(*x)) >= 1.0) return 0.0;
   return 1.5 * (y * y - 1.0);
 }
@@ -1520,12 +1520,12 @@ double stable(double *x,double *p){
 }
 double Scalestable(double *p,int scaling){return pow(MINUSINVLOG005,1/p[KAPPA]);}
 double TBM3stable(double *x, double *p){
-  register double y;
+  double y;
   y = pow(fabs(*x), p[KAPPA]);
   return exp(-y) * (1.0 - p[KAPPA] * y);
 }
 double Dstable(double *x, double *p){
-  register double y, z;
+  double y, z;
   if ( (z = fabs( *x)) == 0.0) 
     return ((p[KAPPA] > 1.0) ? 0.0 : (p[KAPPA] < 1.0) ? INFTY : 1.0);
   y = pow(z, p[KAPPA] - 1.0);
@@ -1571,7 +1571,7 @@ double stableX(double *x,double *p){
   return (z==0.0) ? 1.0 : exp(-pow(z, 0.5 * p[KAPPA]));
 }
 double DstableX(double *x, double *p){
-  register double y, z;
+  double y, z;
   z = x[0] * x[0] + x[1] * x[1];
   if (z == 0.0) return ((p[KAPPA] > 1.0) ? 0.0 : (p[KAPPA] < 1.0) ? INFTY : 1.0);
   y = pow(z, 0.5 * p[KAPPA] - 1.0);
@@ -1592,7 +1592,7 @@ double SteinST1(double *x, double *p){
 /* 2^(1-nu) / Gamma(nu) [ h^nu K_nu(h) - 2 * tau (x T z) t h^{nu-1} K_{nu-1}(h) /
    (2 nu + d + 1) ]
 */
-    register double s;
+    double s;
     double z, logconst;
     int d, time, dim;   
     static double nu=RF_INF;
@@ -1709,7 +1709,7 @@ double WhittleMatern(double *x, double *p)
 {
   static double kappa=RF_INF;
   static double loggamma;
-  register double y;
+  double y;
   if (*x==0.0) return 1.0;
   y = fabs(*x); 
   if (kappa != p[KAPPA]) {
@@ -1748,7 +1748,7 @@ double TBM3WhittleMatern(double *x, double *p)
 { 
   static double kappa=RF_INF;
   static double loggamma;
-  register double y,loghalfy;
+  double y,loghalfy;
   if (*x==0.0) return 1.0;
   y = fabs(*x); 
   loghalfy = log(0.5 * y);
@@ -1767,7 +1767,7 @@ double DWhittleMatern(double *x, double *p)
 { 
   static double kappa=RF_INF;
   static double loggamma;
-  register double y;
+  double y;
   if (*x==0.0) 
     return ((p[KAPPA] > 0.5) ? 0.0 : (p[KAPPA] < 0.5) ? INFTY : 1.253314137);
   y = fabs( *x); 
@@ -1784,7 +1784,7 @@ double DDWhittleMatern(double *x, double *p)
 { 
   static double kappa=RF_INF;
   static double gamma;
-  register double y;
+  double y;
   if (*x==0.0)  return ((p[KAPPA] > 1.0) ? 0.5 / (p[KAPPA] - 1.0) : INFTY);
   y = fabs( *x); 
   if (kappa!=p[KAPPA]) {

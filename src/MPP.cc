@@ -197,7 +197,7 @@ void do_addmpp(key_type *key, int m, double *res )
   meth = &(key->meth[m]);
   assert(meth->actcov==1);
   {
-    register long i;
+    long i;
     for (i=key->totalpoints - 1; i>=0; res[i--]=0.0);
   }
 

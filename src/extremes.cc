@@ -296,7 +296,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	    dimM1 = key->timespacedim - 1;
 	    d = 0; // only needed for assert(d<dim)
 	    while (index[dimM1]<end[dimM1]) {
-	      register double dummy;
+	      double dummy;
 	      assert(d<dim); 
 	      dummy =  model(coord) * invpoisson;
 	      if (RES[resindex] < dummy) RES[resindex]=dummy;
@@ -323,7 +323,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	    for (d=dim; d<dim; d++) y[d]=0.0;
 	    for (j=i=0; i<totalpoints; i++) {
 	      for (d=0; d<dim; d++) y[d] = kc->x[j++];
-	      register double dummy;
+	      double dummy;
 	      dummy =  model(y) * invpoisson;
 	      if (RES[i] < dummy) RES[i]=dummy;
 	    }
@@ -361,16 +361,10 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
      
     for (RES = res, ni=0; ni<*n; ni++, RES += key->totalpoints) {
       for  (i=0; i<totalpoints; i++) RES[i]=0.0;     
- 
-      if (s->key.n_unimeth == 0 || !s->key.meth[0].incompatible) {
-	long total = s->key.totalpoints;
-	double *sres = s->rf;
-	for (i=0; i<total; i++) sres[i] = 0.0;
-      }
-       
+    
       control = 0;
       
-      if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
+      if ((*error = InternalSimulate(&(s->key), s->rf)) != NOERROR)
 	  return;
       //  to get some consistency with GaussRF concerning Randomseed,
       //  DoSimulate must be called first; afterwards, it is called after 
@@ -394,7 +388,7 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	threshold = s->assumedmax * invpoisson;
 	while ((control<totalpoints) && (RES[control]>=threshold)) {control++;}
 	if (control>=totalpoints) break;
-	if ((*error = internal_DoSimulateRF(&(s->key), 1, s->rf)) != NOERROR)
+	if ((*error = InternalSimulate(&(s->key), s->rf)) != NOERROR)
 	   return;
 	if (GENERAL_PRINTLEVEL>=3) {
 	  counter++;

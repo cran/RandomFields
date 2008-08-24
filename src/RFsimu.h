@@ -460,7 +460,7 @@ int internal_InitSimulateRF(double *x, double *T,
 			    /* bool storing, */ 
 			    int natural_scaling,
 			    CovFctType covFct);
-int internal_DoSimulateRF(key_type *key, int nn, double *res);
+int InternalSimulate(key_type *key, double *orig_res);
 SEXP InternalGetKeyInfo(key_type *key, bool ignore_active, int depth, int max);
 void printkey(key_type *key);
 void matrixrotat(double *paramaniso, int col, int row,

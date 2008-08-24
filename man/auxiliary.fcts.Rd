@@ -6,7 +6,6 @@
 \alias{circle}
 \alias{GetDistributionNames}
 \alias{paramextract}
-\alias{EmptyEnv}
 \title{Internal functions -- do not use them directly}
 \description{
   \code{CheckXT} checks whether the coordinates of the data and related
@@ -29,8 +28,6 @@
   \code{paramextract} extracts for some models some parameters
   from an internal parameter list
   
-  \code{EmptyEnv} equals emptyenv vor R version 2.3.0 and newer,
-  and \code{NULL} otherwise
 
 }
 \usage{
@@ -42,7 +39,6 @@ plotWithCircles(data, factor=1.0, xlim=range(data[,1])+c(-maxr,maxr),
                 ylim=range(data[,2])+c(-maxr,maxr),col=1, fill=0, ...)
 GetDistributionNames()
 paramextract(p, model=c("cutoff"))
-EmptyEnv()
 }
 \arguments{
   \item{x}{\code{x} coordinates}

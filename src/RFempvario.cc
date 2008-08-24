@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 double EV_TIMES_LESS = 2.0; // 0:always new method; inf:always usual method
 int EV_SYSTEM_LARGER = 100; // 0:always new method; inf:always usual method
 
-double variogram(double a, double b) {register double dummy;dummy=a-b; return dummy*dummy;}
+double variogram(double a, double b) {double dummy;dummy=a-b; return dummy*dummy;}
 
 double Efunction(double a, double b) {return a + b;} 
 /*  see Schlather (2001), Bernoulli, 7(1), 99-117
@@ -179,7 +179,7 @@ void empiricalvariogram(double *x, int *dim, int *lx,
 	  
 	  if ((distSq>BinSq[0]) && (distSq<=BinSq[*nbin])) { 
 	    /* search which bin distSq in */
-	    register int up, cur, low;
+	    int up, cur, low;
 	    low=0; up= *nbin; /* 21.2.01, *nbin-1 */  cur= halfnbin;
 	    while (low!=up) { 
 	      if (distSq> BinSq[cur]) {low=cur;} else {up=cur-1;} /* ( * ; * ] */ 
@@ -273,7 +273,7 @@ void empiricalvariogram(double *x, int *dim, int *lx,
 	    PRINTF("\n {%d %d %d}",delta[0],delta[1],delta[2]);
 	assert((distSq<=BinSq[*nbin]) && (distSq>BinSq[0]));
 	{
-	  register int up;
+	  int up;
 	  low=0; up= *nbin; /* */ cur= halfnbin;
 	  while(low!=up){
 	    if (distSq> BinSq[cur]) {low=cur;} else {up=cur-1;} /* ( * ; * ] */ 
@@ -379,14 +379,14 @@ void empiricalvariogram(double *x, int *dim, int *lx,
       for (j=0;j<i;j++){
         double distSq;
       	for (distSq=0.0,d=0; d<=dimM1;d++) {
-	  register double dx;
+	  double dx;
 	  dx=xx[d][i]-xx[d][j];
 	  distSq += dx * dx;
 	}		
 	// see also above
 	//distSq = sqrt(distSq); 26.2.
 	if ((distSq>BinSq[0]) && (distSq<=BinSq[*nbin])) { 
-	  register int up, cur,low;
+	  int up, cur,low;
 	  low=0; up= *nbin; cur= halfnbin;
 	  while (low!=up) {  
 	    if (distSq> BinSq[cur]) {low=cur;} else {up=cur-1;} // ( * ; * ]  

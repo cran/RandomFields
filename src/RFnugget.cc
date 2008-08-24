@@ -60,8 +60,7 @@ void nugget_destruct(void ** S)
 bool equal(int i, int j, double *X, int dim)
 {
   param_type p;
-  double *x, *y;
-  register double dummy, dist;
+  double *x, *y, dummy, dist;
   int d;
   x = X + i * dim;
   y = X + j * dim;

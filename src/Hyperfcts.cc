@@ -169,7 +169,13 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   }
   phi0 = CovFct(&one, 1, keycov, &(covlist[1]), nsub, false);
   phi1 = DerivCovFct(&one, 1, keycov, &(covlist[1]), nsub);
-//  printf("check_co %f %f %f %f\n", phi0, phi1, a, a2);
+//  printf("check_co %f %f %f %f %d %s\n", 
+//	 phi0, phi1, a, a2, covlist[1], CovList[keycov[covlist[1]].nr].name);
+//  printf("XXX %f %s\n", keycov[covlist[0]].param[ANISO],
+//	 CovList[keycov[covlist[0]].nr].name);
+//  printf("XXX %f\n", keycov[covlist[1]].aniso[0]);assert(false);
+
+//  assert(false);
   if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
   if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
   param[CUTOFF_B] = //sound constant even if variance of submodel is not 1
@@ -180,6 +186,9 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   param[CUTOFF_ASQRTR] = pow(param[LOCAL_R], a);
   for (v=1; v<=nsub; v++) 
       keycov[covlist[v]].aniso[0] = store[v];
+
+  // printf("%f %f %f %f\n",param[CUTOFF_B], param[CUTOFF_THEOR], param[LOCAL_R], param[CUTOFF_ASQRTR]);assert(false);
+
   return NOERROR;
 }
 

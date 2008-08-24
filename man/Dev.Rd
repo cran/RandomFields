@@ -8,7 +8,7 @@
 }
 \usage{
 Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
-    quiet=FALSE, innerwidth, innerheight, mai, ...)
+    quiet=FALSE, innerwidth, innerheight, mai, horizontal = FALSE, ...)
 }
 \arguments{
   \item{on}{logical. Indicates whether \code{dev} should be switched on
@@ -28,6 +28,7 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
     \code{width} if given -- experimental state}
   \item{mai}{parameters of function \command{\link[graphics]{par}} --
       experimental state}
+  \item{horizontal}{logical. See \command{\link{postscript}}}.
   \item{...}{further parameters for pdf or postscript}
 }
 \details{

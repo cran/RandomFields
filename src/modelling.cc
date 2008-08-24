@@ -102,7 +102,8 @@ void simpleKriging(double *tgiven, double *x, double *invcov,
 
 void simpleKriging2(double *tgiven, double *x, double *data, double *invcov,
 		    int *Len_x, int *NN, int *Dim, int *Rep, 
-		    double *Mean, double *Res, double *sigma2)
+		    double *Mean, double *Res, double *sigma2, 
+		    double *mlambda)
 {
   int error, len_tgiven, dim, nn, d, i, k, j, r, rep, resi, len_x, divachtzig, 
     divachtzigM1, one=1;
@@ -137,9 +138,11 @@ void simpleKriging2(double *tgiven, double *x, double *data, double *invcov,
     for (d=0, j=i; d<dim; d++, j+=len_x) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
     UncheckedCovFct(dist, NN, cov);
+    mlambda[i] = 0.0;
     for (d=k=0; k<nn; k++) {
       lambda[k] = 0.0;
       for (j=0; j<nn; j++) lambda[k] += cov[j] * invcov[d++];
+      mlambda[i] = mlambda[i] + fabs(lambda[k]); 
     }
     sigma2[i] = var;
     for (j=0; j<nn; j++) {
@@ -223,7 +226,7 @@ void ordinaryKriging(double *tgiven, double *x, double *invcov,
 
 void ordinaryKriging2(double *tgiven, double *x, double *data, double *invcov,
 		    int *Len_x, int *NN, int *Dim, int *Rep, 
-		    double *Res, double *sigma2)
+		    double *Res, double *sigma2, double *mlambda)
 {
   int error, len_tgiven, dim, nn, nnP1, d, i, j, k, r, rep, resi, len_x,
     divachtzig, divachtzigM1, one=1;
@@ -259,10 +262,12 @@ void ordinaryKriging2(double *tgiven, double *x, double *data, double *invcov,
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
     UncheckedCovFct(dist, NN, cov);
     cov[nn] = 1.0;
+    mlambda[i] = 0.0;
     for (d=k=0; k<nnP1; k++) { 
       lambda[k] = 0.0;
       for (j=0; j<nnP1; j++) lambda[k] += cov[j] * invcov[d++];
-    }
+      mlambda[i] = mlambda[i] + fabs(lambda[k]) * fabs(lambda[k]); 
+   }
 
     sigma2[i] = var;
     for (j=0; j<nnP1; j++) sigma2[i] -= lambda[j] * cov[j];

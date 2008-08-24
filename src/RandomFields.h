@@ -194,8 +194,10 @@ EXTERN void AddTrend(int *keyNr, int *n, double *res, int *error);
 // storing : current value
 // printlevel : current value
 // naturalscaling : fixed value
+
+EXTERN SEXP SetParamPch(SEXP act, SEXP pch);
 EXTERN void SetParam(int *action,int *storing, int *printlevel,
-		     int *naturalscaling, char **pch, int *skipchecks); 
+		     int *naturalscaling,  int *skipchecks); 
 /* GENERAL_STORING: 
    true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster
@@ -251,14 +253,16 @@ EXTERN void simpleKriging(double *tgiven, double *x, double *invcov,
 EXTERN void simpleKriging2(double *tgiven, double *x, double *data,
 			   double *invcov,
 			   int *Len_x, int *NN, int *Dim, int *Rep, 
-			   double *Mean, double *Res, double *sigma2);
+			   double *Mean, double *Res, double *sigma2,
+			   double *mlambda);
 EXTERN void ordinaryKriging(double *tgiven, double *x, double *data, 
 			    int *Len_x, int *NN,
 			    int *Dim, int *Rep, double *Res);
 EXTERN void ordinaryKriging2(double *tgiven, double *x, double *data, 
 			     double *invcov,
 			     int *Len_x, int *NN, int *Dim, int *Rep, 
-			     double *Res, double *sigma2);
+			     double *Res, double *sigma2,
+			     double *mlambda);
 
 // fractal dimension, 
 EXTERN void boxcounting(double *z, int *lx, int * repet, double *factor,

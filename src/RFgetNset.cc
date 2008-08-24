@@ -713,21 +713,36 @@ void GetNaturalScaling(int *covnr, double *q, int *naturalscaling,
     *natscale = 1.0;
   }
 }
+
+SEXP SetParamPch(SEXP act, SEXP pch) {
+  int action = INTEGER(act)[0];
+  if (action) {
+    // strncpy(GENERAL_PCH, *pch, 1);
+        strncpy(GENERAL_PCH, (char*) CHAR(STRING_ELT(pch, 0)), 1);
+//    if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
+//	PRINTF("\n`pch' has more than one character -- first character taken only\n");
+    return pch;
+  } else {
+    // strcpy(*pch, GENERAL_PCH);
+    SEXP neupch;
+    PROTECT (neupch =  allocVector(STRSXP, 1));
+    SET_STRING_ELT(neupch, 0, mkChar(GENERAL_PCH));
+    UNPROTECT(1);
+    return neupch;
+  }
+}
+
 void SetParam(int *action, int *storing,int *printlevel,int *naturalscaling,
-	      char **pch, int *skipchecks) {
+	      int *skipchecks) {
   if (*action) {
     GENERAL_STORING= (bool) *storing;
     GENERAL_PRINTLEVEL=*printlevel;
     GENERAL_NATURALSCALING=*naturalscaling;
-    if ((strlen(*pch)>1) && (GENERAL_PRINTLEVEL>0)) 
-	PRINTF("\n`pch' has more than one character -- first character taken only\n");
-    strncpy(GENERAL_PCH, *pch, 1);
     GENERAL_SKIPCHECKS=*skipchecks;
   } else {
     *storing =  GENERAL_STORING;
     *printlevel = GENERAL_PRINTLEVEL;
     *naturalscaling = GENERAL_NATURALSCALING;
-    strcpy(*pch, GENERAL_PCH);
     *skipchecks = GENERAL_SKIPCHECKS;
   }
 }
@@ -1540,7 +1555,7 @@ void GetCornersOfGrid(key_type *key, int Stimespacedim, double *aniso,
   endfor *= key->timespacedim;
   for (index=l=0; index<endfor; index+=key->timespacedim) {
     for (n=k=0; k<Stimespacedim; k++) {
-      register double dummy;
+      double dummy;
       dummy = 0.0;
       for (g=0; g<key->timespacedim; g++) 
 	dummy += aniso[n++] * sx[index + g];
@@ -1571,7 +1586,7 @@ void GetCornersOfElement(double *x[MAXDIM], int timespacedim,
   for (index=l=0; index<endfor; index+=timespacedim) {
     n = 0;
     for (k=0; k<keycov->reduceddim; k++) {
-      register double dummy;
+      double dummy;
       dummy = 0.0;
       for (g=0; g<timespacedim; g++) 
         dummy += keycov->aniso[n++] * sx[index + g];
@@ -1645,7 +1660,7 @@ void GetRangeCornerDistances(key_type *key, double *sxx, int Stimespacedim,
   *max = RF_NEGINF;
   for (index=i=0; i<endfor; i++, index+=Stimespacedim)
     for (indexx=k=0; k<i; k++, indexx+=Stimespacedim) {
-      register double sum = 0.0, dummy;
+      double sum = 0.0, dummy;
       for (d=0; d<Ssimuspatialdim; d++) {
 	dummy = sxx[index+d] - sxx[indexx+d];
 	sum += dummy * dummy;

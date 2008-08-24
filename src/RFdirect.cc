@@ -265,7 +265,7 @@ int init_directGauss(key_type *key, int m)
 			
 	/* calculate SQRT of covariance matrix */
 	for (k=0,j=0;j<totpnts;j++) {
-	  register double dummy;
+	  double dummy;
 	  dummy = sqrt(D[j]);
 	  for (i=0;i<totpnts;i++) {
 	    U[k++] *= dummy;
@@ -336,7 +336,7 @@ void do_directGauss(key_type *key, int m, double *res)
   switch (S->method) {
   case Cholesky :
     for (k=0, i=0; i<totpnts; i++, k+=totpnts){
-      register double dummy;
+      double dummy;
       dummy =0.0;
       for (j=0; j<=i; j++){
 	dummy += G[j] * U[j+k];
@@ -346,7 +346,7 @@ void do_directGauss(key_type *key, int m, double *res)
     break;
   case SVD :
     for (i=0; i<totpnts; i++){
-      register double dummy;
+      double dummy;
       dummy = 0.0;
       for (j=0, k=i; j<totpnts; j++, k+=totpnts){
 	dummy += U[k] * G[j];

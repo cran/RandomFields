@@ -1,6 +1,7 @@
 # source("RFtest.Cond.Simu.R")
 
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
+#gctorture()
 
 ## normal checking
 #nn <- c(10,1); step <- 1; #graphics.off(); X11(); X11();

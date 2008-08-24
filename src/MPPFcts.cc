@@ -59,7 +59,7 @@ double spherical_model(double *y)
   int i;
   distance = spherical_adddist;
   for (i=0; i<MPP_DIM; i++) {
-    register double dummy;
+    double dummy;
     dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   }
@@ -78,7 +78,7 @@ double cone_model(double *y)
   int i;
   distance = 0.0;
   for (i=0; i<MPP_DIM; i++) {
-    register double dummy;
+    double dummy;
     dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   }
@@ -94,7 +94,7 @@ double gauss_model(double *y)
   int i;
   distance = 0.0;
   for (i=0; i<MPP_DIM; i++) {
-    register double dummy;
+    double dummy;
     dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
   } 

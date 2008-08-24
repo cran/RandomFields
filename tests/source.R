@@ -2,8 +2,8 @@
 # .x <- dir(); for (.i in .x) source(.i)
 
 library(RandomFields,
-        lib=if (TRUE && file.exists("~/TMP/RandomFields") &&
-          file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
+        lib=if (TRUE && file.exists("~/R/OLD") &&
+          file.exists("/home/schlather/R/OLD/RandomFields")) "~/R/OLD")
 
 .path <- "~/R/old.randomfields/RandomFields/R/"
 .path2 <- "/home/schlather/R/old.randomfields/RandomFields/R/"
