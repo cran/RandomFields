@@ -174,9 +174,9 @@ model <- "exponential"
 RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
-get(getOption("device"))(height=4,width=4);
-get(getOption("device"))(height=4,width=4);
-get(getOption("device"))(height=4,width=4);
+do.call(getOption("device"), list(height=4,width=4))
+do.call(getOption("device"), list(height=4,width=4))
+do.call(getOption("device"), list(height=4,width=4))
 
 # another grid, where values are to be simulated
 step <- 0.25 # or 0.3

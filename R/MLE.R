@@ -307,6 +307,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
     param[MLEINDEX] <- variab
     param <- MLETRANSFORM(param)
     options(show.error.messages = show.error.message)
+
+ #   print(REML.A)
+ #     cccc
+    
     cov.matrix <- try(chol(crossprod(REML.A,
                          matrix(.C("CovarianceMatrixNatSc",
                                    distances, lc,
@@ -1089,6 +1093,10 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       if (is.na(autostart[[i]]$scale))
         parscale[[i]]$scale <- autostart[[i]]$scale <-
           (maxdistances + 7 * mindistances) / 8
+
+##print(autostart)
+##      cccc
+      
     }
     kappas <- parameter.range(autostart[[i]]$model, truedim)
     if (!is.null(kappas)) {
@@ -1650,6 +1658,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   bins <- as.integer(sum(index.bv))
   EVtargetV <- NULL
 
+# print(param.table)
+ #   xx
  
   ##***********   estimation part itself   **********     
   ## find a good initial value for MLE using weighted least squares
@@ -1711,6 +1721,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         lsq.optim.control <-
           c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=min)
         
+          print(min.variab)
+        #  errr
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
                     upper = LSQUB, control= lsq.optim.control)$par, silent=!debug)

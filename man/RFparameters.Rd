@@ -169,7 +169,7 @@
       In some cases \code{CE.strategy=0} works better, in other cases
       \code{CE.strategy=1}. Just try.
       
-      \cr Default: \code{0}
+      Default: \code{0}
       [init].}
     \item{\code{CE.maxmem}}{
       maximal total size of the circulant matrix. 
@@ -184,7 +184,7 @@
       circulant matrices, other simulation
       methods (TBM) are faster and might be preferred be the user.
       
-      \cr Default: \code{4096^2 = 16777216} [init].
+      Default: \code{4096^2 = 16777216} [init].
     }
     \item{\code{CE.tolIm}}{
       If the modulus of the imaginary part is less than
@@ -644,7 +644,7 @@ DeleteAllRegisters()
 z1 <- GaussRF(x1, y1, model=model, param=param, grid=TRUE, register=1,
               method=meth, TBM.center=0, Storing=TRUE)
 % str(GetRegisterInfo(1))
-get(getOption("device"))(height=1.55, width=12)
+do.call(getOption("device"), list(height=1.55, width=12))
 par(mar=c(2.2, 2.2, 0.1, 0.1))
 image(x1, y1, z1, col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
@@ -656,7 +656,7 @@ z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=2,
               method=meth, TBM.center=0,
               TBM.points=length(GetRegisterInfo(1)$method[[1]]$mem$l))
 % str(GetRegisterInfo(2))
-get(getOption("device"))(height=4.3, width=4.3)
+do.call(getOption("device"), list(height=4.3, width=4.3))
 par(mar=c(2.2, 2.2, 0.1, 0.1))
 image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)

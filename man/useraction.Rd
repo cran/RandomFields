@@ -110,7 +110,7 @@ sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {
   r2 <- if (read.r2) Readline(prompt="second input: ", info="2nd input")
   else " -- no input  -- "
   cat("Mark some points with the right mouse key, then leave with the left mouse key\n")
-  get(getOption("device"))()
+  do.call(getOption("device"), list())
   plot(Inf, Inf, xlim=c(-1,1), ylim=c(-1,1), xlab="", ylab="")
   l <- Locator(100, info="locator input", type=type, pch=pch)
   r3 <- Readline(prompt="third input: ", info="last input")

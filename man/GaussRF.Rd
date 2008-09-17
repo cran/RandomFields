@@ -477,8 +477,9 @@ DeleteRegister()
 z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=prod(blocks),
              local.dependent=TRUE, local.mmin=size)
 hei <- 8
-get(getOption("device"))(hei=hei, wid=hei / blocks[2] / diff(range(y)) *
-                         blocks[1] * diff(range(x)))
+do.call(getOption("device"),
+        list(hei=hei, wid=hei / blocks[2] / diff(range(y)) *
+                         blocks[1] * diff(range(x))))
 close.screen(close.screen())
 split.screen(rev(blocks))
 k <- 0
