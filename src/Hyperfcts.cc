@@ -187,7 +187,8 @@ int checkNinit_co(covinfo_arraytype keycov, covlist_type covlist,
   for (v=1; v<=nsub; v++) 
       keycov[covlist[v]].aniso[0] = store[v];
 
-  // printf("%f %f %f %f\n",param[CUTOFF_B], param[CUTOFF_THEOR], param[LOCAL_R], param[CUTOFF_ASQRTR]);assert(false);
+//  printf("phi0=%f %f a=%f %f\n", phi0, phi1, a, d);
+//  printf("%f %f %f %f\n",param[CUTOFF_B], param[CUTOFF_THEOR], param[LOCAL_R], param[CUTOFF_ASQRTR]);assert(false);
 
   return NOERROR;
 }
@@ -307,8 +308,8 @@ int checkNinit_Stein(covinfo_arraytype keycov, covlist_type covlist,
   param[INTRINSIC_A0] = 
     0.5 * (r - 1.0) / (r + 1.0) * phi2 + phi1 / (r + 1.0) - phi0;
  
-//   printf("check: %f %e r=%f intr:%f %f\n", 
-//	  phi2, phi1, r,
+//   printf("check: %f %e r=%f intr:%f %f  %f\n", 
+//	  phi2, phi1, r, param[INTRINSIC_B],
 //	  param[INTRINSIC_A0],  param[INTRINSIC_A2]);
 
 

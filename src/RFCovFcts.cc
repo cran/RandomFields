@@ -426,6 +426,7 @@ void infodampedcosine(double *p, int *maxdim, int *CEbadlybehaved) {
 
 /* exponential model */
 double exponential(double *x, double *p){
+  // printf("exp %f %f\n", *x, exp(-fabs( *x)));
   return exp(-fabs( *x));
 }
 double Scaleexponential(double *p, int scaling){ return MINUSINVLOG005; } 

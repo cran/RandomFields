@@ -1721,7 +1721,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
         lsq.optim.control <-
           c(optim.control, parscale=list(parscale[LSQINDEX]), fnscale=min)
         
-          print(min.variab)
+   #       print(min.variab)
         #  errr
         variab <- ## fnscale=1: minimisation
           try(optim(min.variab, LStarget, method ="L-BFGS-B", lower = LSQLB,
@@ -1844,6 +1844,11 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
           c(optim.control, parscale=list(parscale[MLEINDEX]),
             fnscale=-max(abs(max), 0.1))
 
+
+ #        print("mle.optim.control")
+#        print(mle.optim.control)
+       
+        
         variab <-
           try(optim(max.variab, MLEtarget, method="L-BFGS-B", lower = MLELB,
                     upper = MLEUB, control=mle.optim.control)$par,

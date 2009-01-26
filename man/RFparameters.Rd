@@ -156,7 +156,7 @@
       by \eqn{|\code{CE.mmin}|}; here \code{CE.mmin} must be smaller than -1; the
       value -1 takes over the minimal starting size.\cr
       Note: in any cases, the initial size might be increased according
-      to \code{CE.useprimes}.\cr
+      to \code{CE.useprimes}.
       Default: \code{0} [init].} 
     \item{\code{CE.strategy}}{0 : if the circulant
       matrix has negative eigenvalues then the
@@ -168,8 +168,8 @@
 
       In some cases \code{CE.strategy=0} works better, in other cases
       \code{CE.strategy=1}. Just try.
-      
-      Default: \code{0}
+ 
+       Default: \code{0}
       [init].}
     \item{\code{CE.maxmem}}{
       maximal total size of the circulant matrix. 
@@ -205,7 +205,7 @@
     }
     \item{\code{CE.several}}{logical.
       If \code{FALSE} only half the memory is need, but
-      only a single independent realisation can created.
+      only a single independent realisation can created. 
       Default: \code{TRUE} [init].
     }
     \item{\code{CE.useprimes}}{Logical.  If \code{FALSE}

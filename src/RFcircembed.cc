@@ -543,13 +543,18 @@ int GetOrthogonalUnitExtensions(aniso_type aniso, int dim, double *grid_ext) {
   double s[MAXDIMSQ], G[MAXDIM+1], e[MAXDIM], D[MAXDIM], V[MAXDIMSQ];
   dimsq = dim * dim;
   for (k=0; k<dim; k++) {
+    // kte-Zeile von aniso wird auf null gesetzt/gestrichen -> aniso_k
+    // s = aniso %*% aniso_k 
+    // s hat somit mindestens Eigenwert der 0 ist.
+    // der zugeheorige EVektor wird miit der k-ten Spalte von aniso multipliziert
+    // und ergibt dann den Korrekturfaktor
     for (i=0; i<dim; i++) {
       for (l=j=0; j<dimsq; j+=dim) {
 	s[j + i] = 0.0;
 	jump = l + k;
 	endfor = l + dim;
 	for (m=i; l<endfor; l++, m += dim) {
-	  if (l!=jump) s[i + j] += aniso[l] * aniso[m];
+	  if (l!=jump) s[i + j] +=  aniso[m] * aniso[l];
 	}
       }
     }
@@ -722,8 +727,8 @@ int init_circ_embed_local(key_type *key, int m)
         double dummy;   
 	dummy = store_param[LOCAL_R] / 
 	    (grid_ext[i] * (double) (key->length[i] - 1) * key->x[i][XSTEP]);
-	// 	printf("\nXXXX %d grid_ext=%f dummy=%f, raw=%f local_r=%f len=%d step=%f\n",
-	// 	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R],
+//	printf("\nXXX %d grid_ext=%f dummy=%f, raw=%f loc_r=%f len=%d step=%f\n",
+//	       i, grid_ext[i], dummy,  rawRmax[i], store_param[LOCAL_R],
 //	       key->length[i], key->x[i][XSTEP]);
 	if (rawRmax[i] < dummy) rawRmax[i] = dummy;
       }
@@ -773,7 +778,7 @@ int init_circ_embed_local(key_type *key, int m)
  
   for (i=0; i<key->timespacedim; i++) {
     if (CIRCEMBED.mmin[i]==0.0) CIRCEMBED.mmin[i] = - rawRmax[i];
-    //   printf("%d %f\n", i, CIRCEMBED.mmin[i]);
+    // printf("%d %f\n", i, CIRCEMBED.mmin[i]);
   }
   // assert(false);
 

@@ -480,7 +480,7 @@ double SndDerivCovFct(double *x, int dim, covinfo_arraytype keycov,
       z = fabs(x[0] * kc->aniso[0]);
       fct[w1] = kc->param[VARIANCE] * cov->cov(&z, kc->param); 
       abl[w1] = kc->param[VARIANCE] * cov->derivative(&z, kc->param)
-	* kc->aniso[0];
+	* kc->aniso[0]; 
       snd[w1] = kc->param[VARIANCE] * cov->secondderivt(&z, kc->param)
 	  * kc->aniso[0] * kc->aniso[0];
 //      printf("2nd: %d %f %f %f %f %s %d\n", w1,fct[w1], abl[w1], snd[w1],
@@ -515,6 +515,9 @@ double DerivCovFct(double *x, int dim, covinfo_arraytype keycov,
       kc = &(keycov[covlist[w]]);
       cov = &(CovList[kc->nr]);
       z = fabs(x[0] * kc->aniso[0]);
+
+//      printf("phi1-C: %f %f %f %f\n",  kc->param[VARIANCE], kc->aniso[0], x[0], z);
+
       fct[w] = kc->param[VARIANCE] * cov->cov(&z, kc->param); 
       abl[w] = kc->param[VARIANCE] * cov->derivative(&z, kc->param)
 	  * kc->aniso[0];

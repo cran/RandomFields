@@ -382,7 +382,7 @@ GetModelNames()
     dimension of \eqn{x}.
     Instead of the velocity parameter \eqn{V}, the anisotropy matrix
     for the hyper model is chosen appropriately. Note that
-    the anisotropy matrix must be such that \eqn(x,t) is transformed
+    the anisotropy matrix must be such that \eqn{(x,t)} is transformed
     into a purely spatial vector, i.e. the entries in
     last column of the matrix are all naught.
     On the other hand, all entries of the
@@ -818,7 +818,7 @@ GetModelNames()
   \itemize{
     \item  Stein, M.L. (2002)
     Fast and exact simulation of fractional Brownian surfaces.
-    {\emph J. Comput. Graph. Statist.} \bold{11}, 587-599.
+    \emph{J. Comput. Graph. Statist.} \bold{11}, 587-599.
   }
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}

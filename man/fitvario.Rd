@@ -212,7 +212,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     definition (see \command{\link{convert.to.readable}} and
     \command{\link{CovarianceFct}}) and \code{transform} is \code{NULL}.
     %Otherwise \code{standard.style} will be \code{FALSE}.
-    If a \\sQuote{standard} definition is given and both the variance and the
+    If a \sQuote{standard} definition is given and both the variance and the
     nugget are either not estimated or do not appear on the right hand
     side of the \code{transform}, then \code{standard.style} might be set
     to \code{TRUE} by the user. This accelerates the MLE algorithm.

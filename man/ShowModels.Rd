@@ -159,11 +159,11 @@ ShowModels(x, y=NULL,
     a primitive way -- this is indicated with a star in the legend
     \item bottom left: one- or two-dimensional simulation
     \item right:
-    \itemize {
-      \item 
-      list of implemented models; a specific
+    
+      -- list of implemented models; a specific
       model is chosen by the left mouse button, or:
-      \item menu for the parameters of the chosen model.
+      
+      --  menu for the parameters of the chosen model.
       The list includes the variance, a nugget effect, the mean and the
       scale or the anisotropy parameters. Further, some global parameters
       can be changed. They are the \code{PracticalRange}  (see
@@ -171,7 +171,6 @@ ShowModels(x, y=NULL,
       main variogram direction (or NA, then it follows the angle of the
       anisotropy). Finally, the user can choose between the plot of the
       covariance and the corresponding variogram.
-    }
   }
   The interactive plot is left by clicking any mouse button different
   from the left when the top right part is active.
