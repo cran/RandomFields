@@ -51,7 +51,7 @@ void SetMPP(int *action, double *approxzero, double *realisations,
    } else ADDMPP_REALISATIONS = *realisations;
    MPP_RADIUS = *radius;
    if ((MPP_RADIUS>0.0) && (GENERAL_PRINTLEVEL>1))
-     PRINTF("\nWARNING! Positive `addradius' may result in simulation results that are difficult to detect.\n");
+     PRINTF("\nWARNING! Positive, but too small values of `MPP.radius' may result in wrong simulations that are difficult to detect.\n");
   } else {
     *approxzero = MPP_APPROXZERO;
     *realisations =  ADDMPP_REALISATIONS;

@@ -35,7 +35,7 @@ extern double ZERO[MAXDIM];
 extern double UNIT[MAXDIM];
 
 
-typedef struct key_type;
+typedef struct key_type key_type;
 typedef int covlist_type[MAXCOV];
 
 
@@ -258,7 +258,7 @@ typedef int (*getparamfct)(covinfo_type *, param_type, int);
 typedef bool (*alternativeparamfct)(covinfo_type *, int);
 typedef double (*isofct)(double*, double*); /* h,parameters */
 typedef double (*randommeasure)(double *);     /* parameters, RANDOM */
-typedef struct mpp_storage;
+typedef struct mpp_storage mpp_storage;
 typedef double (*mppmodel)(double *); /* point of random field */
 typedef void (*initmppfct)(mpp_storage*, int dim, 
 			   param_type param); /* h,parameters */
@@ -306,7 +306,7 @@ typedef struct cov_fct {
 } cov_fct;
 
 extern int currentNrCov;
-typedef struct cov_fct;
+typedef struct cov_fct cov_fct;
 extern cov_fct *CovList;
 extern int GENERALISEDCAUCHY, STABLE, WHITTLEMATERN, BROWNIAN, CAUCHY,
   EXPONENTIAL;

@@ -673,7 +673,7 @@ double CovFct(double *x, int dim, covinfo_arraytype keycov,
 
 char STR[30];
 char *strround(double x){
-  if (x == round(x)) sprintf(STR, "%d", (int) x);
+  if (x == floor(x + 0.5) ) sprintf(STR, "%d", (int) x);
   else sprintf(STR, "%f", x);
   return STR;
 }
@@ -687,7 +687,7 @@ void addone(char *str, double x) {
   sprintf(str, "%s, %s", str, strround(x));
 }
 void addpair(char *str, double x, double y) {
-    if (x == round(x) && y==round(y))
+    if (x == floor(x + 0.5) && y==floor(y + 0.5))
 	sprintf(str, "%s, (%d,%d)", str, (int) x, int(y));
     else 
 	sprintf(str, "%s, (%f,%f)", str, x, y);
@@ -2180,7 +2180,7 @@ int internal_DoSimulateRF(key_type *key, int nn, double *orig_res) {
   if (!key->active) {error=ERRORNOTINITIALIZED; goto ErrorHandling;}
   if (nn>1 && GENERAL_PCH[0] != '\0') {
     if (GENERAL_PCH[0] == '!') {
-      digits = (nn<900000000) ? 1 + (int) trunc(log(nn) / log(10)) : 9;
+	digits = (nn<900000000) ? 1 + (int) trunc(log((double) nn) / log(10.0)) : 9;
       back[digits] = '\0';
       each = (nn < 100) ? 1 :  nn / 100;
       sprintf(format, "%ss%s%dd", prozent, prozent, digits);

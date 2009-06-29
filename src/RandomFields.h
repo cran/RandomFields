@@ -274,7 +274,11 @@ EXTERN void periodogram(double *dat, int *len, int *repet, int *fftm,
 EXTERN void minmax(double *dat, int *dim, int *ldim, int *boxes, int *lb, 
 		   double *count);
 
+extern "C" SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show);
+
+
 #endif /* RF_simu_PUBLIC_H*/
+
 
 
 

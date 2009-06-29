@@ -28,7 +28,73 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <unistd.h>
 #include <assert.h>
+#include <curses.h>
 #include "auxiliary.h"
+
+
+SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {  
+    int i, j, 
+      start = RF_NAN,
+      milli = 500,
+      len = LENGTH(Choice), 
+      n = INTEGER(N)[0],
+      nline = 100;
+  bool shorter = LOGICAL(Shorter)[0],
+      piep = LOGICAL(Beep)[0],
+      show = LOGICAL(Show)[0];
+  char choice[256], *res,
+      backspace = 127,
+      eof = 'e'; // crl-D, ^D
+  SEXP Res;
+  
+  res = (char*) malloc(sizeof(char) * (n+1));
+  if (len > 256) len = 256;  
+  for (i=0; i<len; i++) {
+      choice[i] = CHAR(STRING_ELT(Choice, i))[0];
+  }
+ 
+  system("/bin/stty cbreak -echo iuclc"); /* or "stty raw" */
+  for (j=0; j<n; ) {
+   if (j % nline == 0) {
+       start = j;
+       if (show) {
+	   if (j != 0) PRINTF("\n");
+	   int m = n-j;
+	   if (m > nline) m = nline;
+	   for (i=0; i<m; i++) if (i % 20 == 19) PRINTF(":"); else PRINTF(".");
+	   for (i=0; i<m; i++) PRINTF("\b");
+       }
+   }
+
+    res[j] = getchar();
+    if (res[j] == eof && shorter) break;
+    if (res[j] == backspace && j>start) {
+      j--;
+      PRINTF("\b \b");
+      continue;
+    }
+    for (i=0; i<len; i++)
+      if (res[j] == choice[i]) break;
+    if (i < len) {
+	if (show) PRINTF("%c", res[j], n-1-j);
+        j++; 
+    } else {
+	if (piep) beep();
+    }
+  }
+  beep();
+  if (show) {
+      printf("\n");
+      sleepMilli(&milli);
+  }
+  system("/bin/stty -cbreak echo -iuclc");
+  res[j] = '\0';
+  PROTECT(Res = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Res, 0, mkChar(res));
+  UNPROTECT(1);      
+  return Res;
+}
+
 
 bool is_diag(double *aniso, int dim) {
   int diag = dim + 1, size = dim * dim, i;

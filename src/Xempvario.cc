@@ -108,8 +108,8 @@ void empvarioXT(double *X, double *T,
   else BinSq[i]=bin[i];
   }
 
-  assert(NEARBYINT(atan2(-1, 0) + PIHALF) == 0.0);
-  assert(atan2(0, 0) == 0);
+  assert(NEARBYINT(atan2(-1.0, 0.0) + PIHALF) == 0.0);
+  assert(atan2(0.0, 0.0) == 0.0);
   maxbinsquare = BinSq[*nbin];
 
 
