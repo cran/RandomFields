@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <unistd.h>
 #include <assert.h>
-#include <curses.h>
+// #include <curses.h>
 #include "auxiliary.h"
 
 
@@ -79,10 +79,10 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
 	if (show) PRINTF("%c", res[j], n-1-j);
         j++; 
     } else {
-	if (piep) beep();
+	if (piep) PRINTF("beep does not work.\n"); // beep();
     }
   }
-  beep();
+//  beep();
   if (show) {
       printf("\n");
       sleepMilli(&milli);
