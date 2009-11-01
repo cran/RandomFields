@@ -18,8 +18,9 @@
 }
 \details{
   The possible parameters are
+  \cr\cr
   %
-  \cr\cr\bold{General options}\cr
+  \bold{General options}\cr
   \describe{
     \item{\code{PracticalRange}}{logical or 2, 3, 11, 12, 13.
       If not \code{FALSE} the range of the covariance functions is
