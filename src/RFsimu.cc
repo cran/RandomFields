@@ -764,9 +764,9 @@ int check_within_range(param_type param, cov_fct *cov, int timespacedim,
 	sprintf(ERRORSTRING_OK, "%skappa%d", ERRORSTRING_OK, i+1);
 	if (range[i4] < RF_INF) {
 
-	  printf("%f %f %d %e\n", range[i4] + OPEN, ceil(range[i4]),
-		 range[i4] + OPEN == ceil(range[i4]),
-		 range[i4] + OPEN - ceil(range[i4]));
+//	  printf("%f %f %d %e\n", range[i4] + OPEN, ceil(range[i4]),
+//		 range[i4] + OPEN == ceil(range[i4]),
+//		 range[i4] + OPEN - ceil(range[i4]));
 
 	  if (range[i4] + OPEN == ceil(range[i4]))
 	    addright(ERRORSTRING_OK, "<", ceil(range[i4]));

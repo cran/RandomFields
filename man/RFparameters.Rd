@@ -54,9 +54,8 @@
       >2 : additional informations
       
       Note that \code{PrintLevel} is also used in other packages
-      as a default, for example in \link[SoPhy]{SoPhy}
-      (\command{\link[SoPhy]{risk.index}} and
-      \command{\link[SoPhy]{create.roots}}). The changing of
+      as a default, for example in SoPhy
+      (\command{risk.index} and \command{create.roots}). The changing of
       \code{PrintLevel} here may cause some unexpected effects in these
       functions. See the documentation there.
     }

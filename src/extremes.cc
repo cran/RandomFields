@@ -113,13 +113,21 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
     n = key->n_unimeth - 1;
     s = (mpp_storage*) key->meth[n].S;  
     s->factor = s->effectivearea / (s->integralpos * (double) (key->n_unimeth));
-    for (v=0; v<n; v++) {
+ 
+    //  printf("factor = %f %f %f %f %d\n",   
+//	  s->factor, s->effectivearea, (s->integralpos),
+//	  (double) key->n_unimeth, n); 
+    //   assert(false);
+
+
+   for (v=0; v<n; v++) {
       mpp_storage* sp1; 
       s = (mpp_storage*) key->meth[v].S;  
       sp1 = (mpp_storage*) key->meth[v+1].S;  
       s->factor = s->effectivearea / s->integralpos / 
-	  (sp1->effectivearea / sp1->integralpos);
+	  (sp1->effectivearea / sp1->integralpos); 
     }
+
   } else { 
     /* ***********************************************************
        EXTREMAL GAUSSIAN
@@ -165,6 +173,7 @@ void InitMaxStableRF(double *x, double *T, int *dim, int *lx, int *grid,
 	     // pnorm(meanDsigma, key->mean, sigma,1,0));
 	     pnorm(0.0, mean, sigma, 1, 0) 
 	     );
+
     s->assumedmax = EXTREMES_STANDARDMAX * sigma + ((mean>0) ? mean : 0);  
     *error=NOERROR;
     key->totalpoints = s->key.totalpoints;// DoSimulateRF regards whether
@@ -256,7 +265,20 @@ void DoMaxStableRF(int *keyNr, int *n, int *pairs, double *res, int *error)
 	  // the following is essentially the same as the code in MPP.cc!!
 	  // how to reorganise it to get rid of the duplication of the code??
 	  //	  
+//  printf("%f\n", invpoisson);
+
 	  MppFct(s, min, max, &model); 
+
+/*	  
+	  double zz[2];
+	  zz[0] = MPP_X[0] + 1;
+	  zz[1] = MPP_X[1] -1;	  
+//	  printf("%f %f %f \n", MPP_X[0], MPP_X[1], model(zz));	  
+	  assert(false);
+*/
+/////////////////////////////////////////////////////////////
+
+
 	  if (kc->simugrid) {
 	    int start[MAXDIM], end[MAXDIM], resindex, index[MAXDIM],
 	      segmentdelta[MAXDIM], dimM1;

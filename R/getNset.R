@@ -324,7 +324,7 @@ parampositions <- function(model, param, print=TRUE) {
     .C("SetMPP", m, MPP.approxzero, add.MPP.realisations, MPP.radius,
        PACKAGE="RandomFields", DUP=FALSE)
     .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines,
-       hyper.mar.distr, hyper.mar.param, NA.OK=TRUE, DUP=FALSE)
+       hyper.mar.distr, hyper.mar.param, NAOK=TRUE, DUP=FALSE)
     .C("SetExtremes", m, maxstable.maxGauss, PACKAGE="RandomFields", DUP=FALSE)
     
     if (length(parameters)==0)

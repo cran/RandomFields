@@ -138,7 +138,6 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
   \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
-%\seealso{\command{\link[SoPhy]{define.horizons}}, \command{\link[SoPhy]{SoPhy}}}
 \seealso{\command{\link{useraction}}}
 
 \examples{
@@ -197,5 +196,3 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 
 
 
-
-%  LocalWords:  val cond dQuote SoPhy

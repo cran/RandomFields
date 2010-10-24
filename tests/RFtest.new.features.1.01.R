@@ -1,12 +1,43 @@
-# source("RFtest.new.features.1.01.R")
+# source("/home/schlather/R/old.randomfields/RandomFields/tests/RFtest.new.features.1.01.R")
+
+# library(RandomFields, lib="~/R/OLD")
+#source("/home/schlather/R/old.randomfields/RandomFields/tests/source.R")
 
 
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
+cat("EXTENDED.TESTING ", EXTENDED.TESTING, "\n")
 
 cat("\n landmark -2")
 
 
 RFparameters(Print=6)
+
+
+
+                                        #stop("")
+cat("\n landmark 6\n")
+
+
+x <- (1:32)/2
+y <- (1:32)/2
+T <- c(1,32,1)/16
+ff <- 1
+m <- matrix(c(1,0,0, 0,1,0, 0,0,1),ncol=3) / ff
+k <- c(1,phi=1,1,1,psi=1,dim=2)
+k <- NULL
+model <- list(list(m="gneiting",v=1,k=k,a=m))
+
+z <- GaussRF(x=x,y=y,T=T,grid=TRUE, Print=8,
+             model=model, me="ci")
+
+print(z[,,1])
+print(z[,,1]-z[,,2])
+if (FALSE)
+  for (i in 1:dim(z)[3]) { image(z[,,i]); readline();}
+
+print(CovarianceFct(cbind(0:10,0,0),model))
+
+
 #RFparameters(Print=1)
 RFparameters(Print=0)
 
@@ -167,7 +198,7 @@ k <- c(1,phi=1,1,1,psi=1,dim=2)
 k <- NULL
 model <- list(list(m="gneiting",v=1,k=k,a=m))
 
-z <- GaussRF(x=x,y=y,T=T,grid=TRUE,
+z <- GaussRF(x=x,y=y,T=T,grid=TRUE, Print=8,
              model=model, me="ci")
 print(z[,,1])
 print(z[,,1]-z[,,2])

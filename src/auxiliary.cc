@@ -84,7 +84,7 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
   }
 //  beep();
   if (show) {
-      printf("\n");
+      PRINTF("\n");
       sleepMilli(&milli);
   }
   system("/bin/stty -cbreak echo -iuclc");

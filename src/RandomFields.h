@@ -132,8 +132,7 @@ EXTERN void SetParamTBMCE(int *action,int *force, double *tolRe,double *tolIm,
 EXTERN void SetParamTBM(int *action,int *tbm_method, double *center, 
 			int *points);
 EXTERN void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
-			       int *normalise, int *mar_distr, 
-			       double *mar_param);
+			       int *mar_distr, double *mar_param);
 // for  MPP
 EXTERN void SetMPP(int *action, double *approxzero, 
 			  double *realisations, double *radius);

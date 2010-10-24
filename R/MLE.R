@@ -157,6 +157,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
     
     model.values <- double(bins)
+       
+    
     .C("VariogramNatSc", bin.centers, bins, covnr, as.double(param), lpar,
        truedim, xdim,
        as.integer(length(covnr)), as.integer(pm$anisotropy),         
@@ -830,15 +832,14 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
   truedim <- as.integer(new$spacedim+new$Time)
   pm <- PrepareModel(model, param, truedim, trend)
   ctr <- convert.to.readable(pm)
-  if (!is.null(ctr$param))
+  if (!is.null(ctr$param)) {    
     ## to make sure that the model is  given in a standardised way
     ## if not truely a composed covariance function
     pm <- PrepareModel(ctr$model, ctr$param, truedim, trend)
+  }
   covnr <- as.integer(pm$covnr)
   lpar <- as.integer(length(pm$param))  
-  
 
- 
 ##############              Coordinates               #################
   if (PrintLevel>4) cat("\ncoordinates...")
   if (pm$anisotropy) {
@@ -915,6 +916,8 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
 ##########   Check consistency of NA, NaN and users.transform  ##########
   if (PrintLevel>4) cat("\nconsistency of NA, NaN, transform...")
   PARAM <- pm$param
+
+  
   ##PARAM <- param: just to make clear in MLtarget and LStarget what is global,
   ##and do not overwrite param
   index <- is.na(PARAM) & !is.nan(PARAM)
@@ -1697,7 +1700,7 @@ function(x, y=NULL, z=NULL, T=NULL, data, model, param,
       param.table[[M]][idx[1]:idx[2]][ixdLSQINDEX] <- LSQUB
       options(show.error.messages = show.error.message) ##
       if (nLSQINDEX == 1) {
-        variab <- try(optimize(LStarget, lower = LSQLB, upper = LSQUB)$minimum,
+         variab <- try(optimize(LStarget, lower = LSQLB, upper = LSQUB)$minimum,
                       silent=!debug)
       } else {
         min <- Inf

@@ -212,7 +212,7 @@ int init_circ_embed(key_type *key, int m)
   }
 
   int *mm, *cumm, *halfm, dim;
-  double hx[MAXDIM];
+  double hx[MAXDIM], realmtot;
   int index[MAXDIM], dummy;
   long mtot,i,k,twoi;
   bool cur_crit;
@@ -233,36 +233,39 @@ int init_circ_embed(key_type *key, int m)
                                                                          
  // ("CE missing strategy for matrix entension in case of anisotropic fields %d\n
   for (i=0;i<dim;i++){ // size of matrix at the beginning  
+    double mm_d;
     if (fabs(cepar->mmin[i]) > 10000.0) {       
 	sprintf(ERRORSTRING_OK, "maximimal modulus of mmin is 10000");
 	sprintf(ERRORSTRING_WRONG,"%f", cepar->mmin[i]);
 	return ERRORMSG;
     }
-    mm[i] = s->nn[i];
+    mm_d = (double)  s->nn[i];
     if (cepar->mmin[i]>0.0) {
-      if (mm[i] > (1 + (int) ceil(cepar->mmin[i])) / 2) { // plus 1 since 
+      if (mm_d > (1 + (int) ceil(cepar->mmin[i])) / 2) { // plus 1 since 
 	// mmin might be odd; so the next even number should be used
 	sprintf(ERRORSTRING_OK, "Minimum size in direction %d is %d", 
-		(int) i, mm[i]);
+		(int) i, (int) mm_d);
 	sprintf(ERRORSTRING_WRONG,"%d", (int) ceil(cepar->mmin[i]));
 	return ERRORMSG;
       }
-      mm[i] = (1 + (int) ceil(cepar->mmin[i])) / 2;
+      mm_d = (double) ((1 + (int) ceil(cepar->mmin[i])) / 2);
     } else if (cepar->mmin[i] < 0.0) {
 	assert(cepar->mmin[i] <= -1.0);
-	mm[i] = (int) ceil((double) mm[i] * -cepar->mmin[i]);
-
-//	printf("%d %f\n", mm[i], cepar->mmin[i]);
+	mm_d = ceil(mm_d * -cepar->mmin[i]);
+//	printf("%d %f\n", mm_d, cepar->mmin[i]);
     }
+    if (mm_d > MAX_INT) return ERRORMEMORYALLOCATION;
     if (cepar->useprimes) {
-      // Note! algorithm fails if mm[i] is not a multiple of 2
+      // Note! algorithm fails if mm_d is not a multiple of 2
       //       2 may not be put into NiceFFTNumber since it does not
       //       guarantee that the result is even even if the input is even !
-      mm[i] = 2 * NiceFFTNumber((unsigned long) mm[i]);
+      mm_d = 2.0 * NiceFFTNumber((unsigned long) mm_d);
     } else {
-      mm[i] = (1 << 1 + (int) ceil(log((double) mm[i]) * INVLOG2 - EPSILON1000));
+      mm_d = pow(2.0,  1.0 + ceil(log(mm_d) * INVLOG2 - EPSILON1000));
     }
-  }                             
+    if (mm_d >=  MAX_INT) return ERRORMEMORYALLOCATION;
+    mm[i] = (int) mm_d;
+  } // for (i, ,) { ...
 //   assert(false);
 
 
@@ -293,13 +296,18 @@ int init_circ_embed(key_type *key, int m)
 */
 
   s->trials=0;
-  while (!s->positivedefinite && (s->trials<cepar->trials)){ 
+   while (!s->positivedefinite && (s->trials<cepar->trials)){ 
     (s->trials)++;
     cumm[0]=1; 
-    for(i=0;i<dim;i++){
+    realmtot = 1.0;
+   for(i=0;i<dim;i++){
       halfm[i]=mm[i]/2; 
       index[i]=1-halfm[i]; 
       cumm[i+1]=cumm[i] * mm[i]; // only relevant up to i<dim-1 !!
+      realmtot *= (double) mm[i];
+
+      //     printf("cumm=%d %f\n", cumm[i+1], realmtot);
+
     }
     s->mtot = mtot = cumm[dim-1] * mm[dim-1]; 
 
@@ -308,9 +316,9 @@ int init_circ_embed(key_type *key, int m)
       PRINTF("mtot=%d\n ",mtot);
     }
 
-    if (mtot > cepar->maxmem) {
-	sprintf(ERRORSTRING_OK, "%f", cepar->maxmem);
-	sprintf(ERRORSTRING_WRONG,"%f", (double) mtot);
+    if (realmtot > cepar->maxmem) {
+	sprintf(ERRORSTRING_OK, "%.0f", cepar->maxmem);
+	sprintf(ERRORSTRING_WRONG,"%.0f", realmtot);
 	return ERRORMAXMEMORY;
     }
 
@@ -318,6 +326,8 @@ int init_circ_embed(key_type *key, int m)
     if (c != NULL) free(c); 
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
+    
+
     if ((c = (double*) malloc(2 * mtot * sizeof(double))) == NULL) {
       Xerror=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
@@ -431,6 +441,7 @@ int init_circ_embed(key_type *key, int m)
     } else {if (GENERAL_PRINTLEVEL>=2) PRINTF("forced\n");}
   } // while (!s->positivedefinite && (s->trials<cepar->trials))
   assert(mtot>0);
+
   if (s->positivedefinite || cepar->force) { 
     // correct theoretically impossible values, that are still within 
     // tolerance CIRCEMBED.tol_re/CIRCEMBED.tol_im 

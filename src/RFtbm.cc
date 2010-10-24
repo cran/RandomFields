@@ -623,20 +623,20 @@ int init_turningbands(key_type *key, SimulationType method, int m)
 				s->simugrid, &(s->x))) != NOERROR)
       goto ErrorHandling;
  
-/*
-  printf("TRANSF %d %d %d %d  %d %d\n", iloop, key->anisotropy, key->Time,
-	   key->grid, totaltimespacedim, s->simugrid);
-  printf("s->x %f %f %f\n\n", s->x[0], s->x[1] , s->x[2]);
-  printf("aniso %f %f %f %f %f %f %f %f %f \n\n", 
-	 s->aniso[0], s->aniso[1], s->aniso[2], s->aniso[3],
-	 s->aniso[4], s->aniso[5], s->aniso[6], s->aniso[7],
-	 s->aniso[8]);
-  printf("first %f %f %f %f \n\n", 
-	 first->aniso[0], first->aniso[1], first->aniso[2], first->aniso[3]);
-  for (i=0; i<12*3; i++) printf("%f ", s->x[i]);
-  printf("\n");
-  // assert(false);
-  */
+
+//  printf("TRANSF %d %d %d %d  %d %d\n", iloop, key->anisotropy, key->Time,
+//	   key->grid, totaltimespacedim, s->simugrid);
+//  printf("s->x %f %f %f\n\n", s->x[0], s->x[1] , s->x[2]);
+//  printf("aniso %f %f %f %f %f %f %f %f %f \n\n", 
+//	 s->aniso[0], s->aniso[1], s->aniso[2], s->aniso[3],
+//	 s->aniso[4], s->aniso[5], s->aniso[6], s->aniso[7],
+//	 s->aniso[8]);
+//  printf("first %f %f %f %f \n\n", 
+//	 first->aniso[0], first->aniso[1], first->aniso[2], first->aniso[3]);
+//  for (i=0; i<12*3; i++) printf("%f ", s->x[i]);
+//  printf("\n");
+//  // assert(false);
+
     
     GetCenterAndDiameter(key, s->simugrid, s->simuspatialdim,  
 			 totaltimespacedim, s->x, s->aniso,
@@ -1084,18 +1084,19 @@ void do_turningbands(key_type *key, int m, double *res)
           for (; i < end; i++) {\
             long index;\
 	    index = (long) (offset + INDEX); \
- /* if (true || !((index<ntot) && (index>=0))) { \
+  if (!true || !(index<ntot && index>=0)) {	\
+      printf("\n%d %d %d %d", !true || !(index<ntot && index>=0), !(index<ntot && index>=0), index<ntot, index>=0); \
     printf("\n%f %f %f (%f %f %f; %1.4f %1.4f %1.4f)\n", \
        s->x[v], s->x[v+1] , s->x[v+2], ex, ey, ez, centerx, centery, centerz); \
     printf("index=%d nn=%d ntot=%d v=%d nt=%d OFF=%f IDX=%f inct=%f e=%d\n", \
        index, nn, ntot, v, nt, OFFSET, INDEX, inct, end); \
-       } */ \
+       }  \
             assert((index<ntot) && (index>=0)); \
 	    res[i] += simuline[index]; \
 	    v += simutimespacedim; \
           }\
           offset += inct;\
-        } assert(true);\
+        } \
 	} \
     }
 
@@ -1141,7 +1142,7 @@ void do_turningbands(key_type *key, int m, double *res)
 	TBMST(phi += deltaphi; ex=sin(phi); ey=cos(phi),
 	      centerx * ex + centery * ey,
 	      s->x[v] * ex + s->x[v+1] * ey);
-      }
+     }
     } else { // TBM3, not grid, dim=1 or 2
       assert(meth->unimeth == TBM3);
 

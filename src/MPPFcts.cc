@@ -49,7 +49,7 @@
 #include "MPPFcts.h"
 
 static int MPP_DIM;
-static double MPP_X[MAXDIM];
+double MPP_X[MAXDIM];
 
 
 static double spherical_Rsq, spherical_adddist;
@@ -97,7 +97,9 @@ double gauss_model(double *y)
     double dummy;
     dummy = y[i]-MPP_X[i];
     distance += dummy * dummy;
+    //   printf("%d %f %f %f\n", i, y[i], MPP_X[i], dummy);
   } 
+//  printf("dist %f\n", distance);
   if (distance > gauss_effectiveradiussq) return 0;
   return exp(- 2.0 * distance);
 }
@@ -350,6 +352,10 @@ void gaussmpp_init(mpp_storage *s, int truedim, param_type param)
   for (d=0; d<truedim; d++) 
     s->effectivearea *= (s->length[d] + 2.0 * s->addradius);
   s->maxheight= 1.0;
+
+  // printf("%f %f %f %f %f\n",
+//	 s->c[GAUSSRADIUSSQ], s->addradius, s->integralpos,
+//	 s->integralsq, s->effectivearea);
 }
 
 

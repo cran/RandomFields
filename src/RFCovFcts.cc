@@ -831,7 +831,7 @@ double DGneiting(double *x, double *p){
   z= (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7;
   p[KAPPA1] = 3; p[KAPPA2] =5.0;
   zz=  DgenGneiting(&y, p);
-  printf("%f %f\n",z, zz);
+//  printf("%f %f\n",z, zz);
   assert(z==zz);
   assert(false);
 */

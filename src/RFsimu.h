@@ -5,6 +5,7 @@
 #include "RandomFields.h"
 #include <string.h>
 #include "error.h"
+#include <errno.h>
 
 ///////////////////////////////////////////////////////////////////////
 // BASIC DIMENSIONS AND VARIABLES
@@ -675,6 +676,7 @@ void GetCenterAndDiameter(key_type *key, bool simugrid, int simuspatialdim,
 #define TREND_PARAM_FCT 3
 void DeleteKeyTrend(key_type *key);
 
+extern double MPP_X[MAXDIM];
 
 
 #endif

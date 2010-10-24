@@ -324,11 +324,13 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   iso <- !l$anisotropy && (all(!is.na(nuggets)) || all(is.na(nuggets)))
   if (iso) {
     lp <- length(l$param)
-    nugget <- sum(nuggets)
+
+    nugget <-  if (all(is.na(nuggets))) NA else sum(nuggets)
+     
     if (all(ngg) && Allowed[1])
       return(list(model="nugget", param=as.double(c(l$mean, nugget, 0, 1)),
                   method=method, trend=l$trend)) # old.method 
- #   if ((lc==1) && Allowed[1])
+    ##   if ((lc==1) && Allowed[1])
  #      return(list(model=ModelNames[1 + l$covnr],
  #                 param=as.double(c(l$mean, l$param[1], 0, l$param[lp],
  #                   l$param[-c(1, lp)])),
@@ -347,6 +349,8 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
              )
     }
   }
+
+
   
   if (iso && all(l$covnr[pos][1]==l$covnr[pos]) && Allowed[2]) {
     ## nested model
@@ -399,7 +403,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
 CheckXT <- function(x, y, z, T, grid, gridtriple){
   ## converts the given coordinates into standard formats
   ## (one for arbitrarily given locations and one for grid points)
-
+ 
   if (is.data.frame(x)) {
     if (ncol(x)==1) x <- as.vector(x) else x <- as.matrix(x)
   }
@@ -417,18 +421,25 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
       dx <- diff(x)
       stopifnot(!gridtriple || l==3)
       grid <- max(abs(diff(dx))) < dx[1] * 1e-12
-    } else stopifnot(is.logical(grid))
+    } else {
+      stopifnot(is.logical(grid))
+      if (missing(gridtriple)) gridtriple <- l!=3
+    }
     if (grid && !gridtriple)
       ## list with columns as list elements -- easier way to do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
-  } else { ## x, y, z given separately 
+  } else { ## x, y, z given separately
+    
     if (is.null(y) && !is.null(z)) stop("y is not given, but z")
     spacedim <- 1 + (!is.null(y)) + (!is.null(z))
     if (missing(grid) && spacedim==1) {      
       dx <- diff(x)
       stopifnot(!gridtriple || length(x)==3)
       grid <- gridtriple || (max(abs(diff(dx))) < dx[1] * 1e-12)
-    } else stopifnot(is.logical(grid))
+    } else {
+      stopifnot(is.logical(grid))
+      if (missing(gridtriple)) gridtriple <- l!=3
+    }
     l <- c(length(x), length(y), length(z))[1:spacedim] 
     if (!grid || gridtriple) {
       if (any(diff(l) != 0))

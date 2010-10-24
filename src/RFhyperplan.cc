@@ -64,7 +64,7 @@ void hyper_destruct(void **S)
 }
 
 void SetParamHyperplane(int *action, int *superpos, int *maxlines, 
-			int *normalise, int *mar_distr, double *mar_param)
+			int *mar_distr, double *mar_param)
 {
   if (*action) {
     HYPERPLANE_SUPERPOS = *superpos;
