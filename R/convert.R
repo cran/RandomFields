@@ -4,7 +4,7 @@
 ## nugget/ main model should not be changed; 
 
 PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
-                          named=FALSE)
+                          named=FALSE, nugget.remove=TRUE)
 {
   
   ## any of the users model definition (standard, nested, list) for the
@@ -192,7 +192,7 @@ PrepareModel <-  function(model, param, timespacedim, trend, method=NULL,
       } else if (Mean!=0) STOP("trend/mean given twice")
       k <- length(param) - 3
       
-      if (is.na(param[2]) || (param[2]>0)) {## nugget
+      if (is.na(param[2]) || (param[2]>0) || !nugget.remove) {## nugget
         param <- list(c(var=param[1], kappa=param[-1:-3], scale=param[3]),
                       c(nugget=param[2], nugget.scale=1.0))
         model <- c(model, "nugget") ## do not change ordering,
@@ -308,6 +308,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
   stopifnot(all(method != -1))
   if (!is.null(method)) method <- .methods[1 + method]
   lc <- length(l$covnr)
+  
   if (!is.null(l$trend)) {
     stopifnot(l$mean==0.0)
     l$mean <- NULL
@@ -375,7 +376,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
                 method=method, mean=l$mean, trend=l$trend))
   }
   
-  ## anisotropic
+  ## anisotropic  
   model <- NULL
   if (!Allowed[3]) return(NULL)
   for (i in 1:lc) {
@@ -394,7 +395,7 @@ convert.to.readable<- function(l, allowed=c("standard", "nested", "list")) {
                                   scale=l$param[k[i+1]]
                                   )))
     }
-    if (i<lc) model <- c(model, op=op.list[op=l$op[i]+1])
+     if (i<lc) model <- c(model, op=op.list[op=l$op[i]+1])
   }
   return(list(model=model, mean=l$mean, method=method, trend=l$trend))
 }
@@ -429,18 +430,17 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
       ## list with columns as list elements -- easier way to do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
   } else { ## x, y, z given separately
-    
     if (is.null(y) && !is.null(z)) stop("y is not given, but z")
     spacedim <- 1 + (!is.null(y)) + (!is.null(z))
+    l <- c(length(x), length(y), length(z))[1:spacedim]    
     if (missing(grid) && spacedim==1) {      
       dx <- diff(x)
       stopifnot(!gridtriple || length(x)==3)
       grid <- gridtriple || (max(abs(diff(dx))) < dx[1] * 1e-12)
     } else {
       stopifnot(is.logical(grid))
-      if (missing(gridtriple)) gridtriple <- l!=3
+      if (missing(gridtriple) && grid) gridtriple <- l!=3
     }
-    l <- c(length(x), length(y), length(z))[1:spacedim] 
     if (!grid || gridtriple) {
       if (any(diff(l) != 0))
         stop(if (gridtriple)

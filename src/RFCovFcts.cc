@@ -49,7 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //  {min, max} x {theor, pract}  x length(param) 
 static double range_stable[4] = {OPEN, 2, 0.06, 2};
-static double range_whittle[4]= {OPEN, RF_INF, 1e-2, 10.0};
+static double range_whittle[4]= {OPEN, RF_INF, 1e-2, 8.0};
 static double range_cauchy[4] = {OPEN, RF_INF, 0.09, 10.0};
 static double range_genCauchy[8] = {OPEN, 2, 0.05, 2, 
 				    OPEN, RF_INF, 0.05, 10.0};

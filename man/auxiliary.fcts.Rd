@@ -33,7 +33,7 @@
 \usage{
 CheckXT(x, y, z, T, grid, gridtriple)
 PrepareModel(model, param, timespacedim, trend, method=NULL,
-             named=FALSE)
+             named=FALSE, nugget.remove=TRUE)
 convert.to.readable(l, allowed=c("standard", "nested", "list")) 
 plotWithCircles(data, factor=1.0, xlim=range(data[,1])+c(-maxr,maxr),
                 ylim=range(data[,2])+c(-maxr,maxr),col=1, fill=0, ...)
@@ -56,6 +56,8 @@ paramextract(p, model=c("cutoff"))
   \item{method}{simulation method}
   \item{named}{logical. If \code{TRUE} \code{covnr} and \code{param}
     are returned with names}
+  \item{nugget.remove}{if nugget is 0, the nugget part be removed in the
+    returned model?}
  \cr
   \item{l}{list as returned by \code{PrepareModel}}
   \item{allowed}{allowed output formats, see
