@@ -160,6 +160,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 }
 
 \examples{
+% library(RandomFields, lib="~/TMP")
 ## creating random variables first
 ## here, a grid is chosen, but any arbitrary points for which
 ## data are given are fine.  Indeed if the data are given on a
@@ -174,9 +175,7 @@ model <- "exponential"
 RFparameters(PracticalRange=FALSE)
 p <- 1:7
 data <- GaussRF(x=p, y=p, grid=TRUE, model=model, param=param)
-do.call(getOption("device"), list(height=4,width=4))
-do.call(getOption("device"), list(height=4,width=4))
-do.call(getOption("device"), list(height=4,width=4))
+for (i in 1:3) do.call(getOption("device"), list(height=4,width=4))
 
 # another grid, where values are to be simulated
 step <- 0.25 # or 0.3

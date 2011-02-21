@@ -1,20 +1,27 @@
 #  source("technical.report.positive.def.fcts.R")
 # cutoff, intrinsic, TBM2, spectral, add MPP
 
-q()
+# q()
 
 #library(SoPhy, lib="~/TMP")
 #library(RandomFields, lib="~/TMP")
 
-source("~/R/RF/RandomFields/tests/source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
-  p3 <- function(model, param, col=grey(100:0/100), x=c(0, 10, 10/127),
+fast <- !interactive()
+fast <- TRUE
+
+  p3 <- function(model, param, col=grey(100:0/100),
+                 x=c(0, 10, if (fast) 1 else 10/127),
                 yf = 1, zf = 1){
     par(mfcol=c(3,5), cex=0.5)
-    methods <- c("circ", "intrinsic", "TBM3", "direct", "add")
+
+    if (!fast) Print(model)
+    
+    methods <- c("circ", "intrinsic", "TBM3", "direct", "coins")
     for (m in 1:length(methods)) {
       meth <- methods[m]
-      print(meth)
+      Print(meth)
       xx <- x
       if (meth=="direct") xx[3] <- xx[3] * 12
                                         # if (meth=="intrinsic CE") break;
@@ -26,7 +33,7 @@ source("~/R/RF/RandomFields/tests/source.R")
       za <- seq(zz[1], zz[2], zz[3])
       z <- try(GaussRF(xx, yy, zz, grid=TRUE, gridtriple=TRUE, method=meth,
                        model=model, param=param, reg=m))
-      str(GetRegisterInfo(m, TRUE), vec=15)
+ #     str(GetRegisterInfo(m, TRUE), vec=15)
       if (is.numeric(z)) {
         par(mar=c(4, 4.5, 4.5, 0.5), cex=0.5)
         image(xa, ya, z[,,1],
@@ -47,19 +54,29 @@ source("~/R/RF/RandomFields/tests/source.R")
 
 
 model <- list(list(model="whittle", var=1, kappa=2,
-                   aniso=c(0.05, 0, 0, 0, 0.2, 0, 0, 0, 0.2) * 5 ))
+                   aniso=matrix(nr=3, c(0.05, 0, 0, 0, 0.2, 0, 0, 0, 0.2) * 5 )))
+if (FALSE)
 p3(model=model)
+
+
+## Rest muss noch umgeschrieben werden 
 
 
 model <- list(list(model="whittle", var=1, kappa=2,
-                   aniso=c(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.05) * 5 ))
+                   aniso=matrix(nr=3, c(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.05) * 5 )))
+if (FALSE)
 p3(model=model)
+
 
 # system("sleep 3")
 
 
-  p <- function(model, param, col=grey(100:0/100), x=c(0, 10, 0.05),
+  p <- function(model, param, col=grey(100:0/100),
+                x=c(0, 10, if (fast) 0.5 else 0.05),
                 yf = 1){
+
+    Print(model)
+    
     par(mfcol=c(3,3))
     methods <- GetMethodNames()[1:9]
     mittel <- v <- numeric(length(methods))
@@ -71,12 +88,14 @@ p3(model=model)
       if (meth=="direct matrix decomposition") xx[3] <- xx[3] * 8
                                         # if (meth=="intrinsic CE") break;
                                         #if (meth!="TBM3") next
-      yy <- xx;   yy[2] = yy[2] * yf
+      yy <- xx;
+      yy[2] = yy[2] * yf
       xa <- seq(xx[1], xx[2], xx[3])
       ya <- seq(yy[1], yy[2], yy[3])
+      if (!fast) Print(xx, yy, model)
       z <- try(GaussRF(xx, yy, grid=TRUE, gridtriple=TRUE, method=meth,
                        model=model, param=param, reg=m))
-      str(GetRegisterInfo(m, TRUE), vec=15)
+#      str(GetRegisterInfo(m, TRUE), vec=15)
       if (is.numeric(z)) {
         par(mar=c(0.5, 4.5, 4.5, 0.5))
         image(xa, ya, z, main=meth, col=col, zlim=c(-2.5, 2.5), xlim=range(xx),
@@ -90,7 +109,7 @@ p3(model=model)
   }
 
 m <- function(model, param, col=grey(100:0/100), meth, ...){
-  x <- c(0, 10, 0.05)
+  x <- c(0, 10, if (fast) 0.5 else 0.05)
   xx <- x
   if (meth=="direct matrix decomposition") xx[3] <- xx[3] * 8
   y <- seq(xx[1], xx[2], xx[3])
@@ -103,9 +122,10 @@ m <- function(model, param, col=grey(100:0/100), meth, ...){
 }
 
 if (interactive() || file.exists("../../../SOPHY/makefile"))
-  X11(width=5.3, height=5.3)
+  do.call(getOption("device"), list(height=4.3, width=4.3))
+
 RFparameters(CE.force=TRUE, TBMCE.force=TRUE, CE.trials=1, TBMCE.trials=1,
-             Print=4, Storing=TRUE, spectral.lines=500)
+             Print=4 * 0, Storing=TRUE, spectral.lines=500)
 
 
 gneitingdiff <-  function(p, op="*"){
@@ -126,18 +146,17 @@ if (FALSE)
 # 1.78 und 1.45 als varianz fuertbm2 und 3
 }
 
-str(RFparameters())
+# str(RFparameters())
 
 #model = list(list(model="stable", var=2, kappa=1.5, scale=1),
-model = list(list(model="stable", var=2, kappa=1.5, aniso=c(1,0,0,1)),
+model = list(list(model="stable", var=2, kappa=1.5, aniso=c(1,0,0,1)))
 #  "+"
 #  list(model="stable", var=0, kappa=0.2, aniso=c(0,1,-1, 0))
-  )
 
 ##str(GetRegisterInfo(5), vec=20)
 #system("sleep 3")
 
-DeleteAllRegisters()
+# DeleteAllRegisters()
 
 ## 3d bilder -- anisotropien richtig?
 
@@ -149,50 +168,52 @@ DeleteAllRegisters()
 
 RFparameters(PracticalRange=11)
 model <- list(list(model="whittle", var=1, kappa=2,
-                   aniso=c(0.05, 0, 0, 0.2)))
+                   aniso=matrix(nr=2, c(0.05, 0, 0, 0.2))))
+if (FALSE)
 p(model=model, x=c(-10, 110, 1), yf=0.5)
 RFparameters(PracticalRange=FALSE)
 
 
 model <- list(list(model="whittle", var=0.25, kappa=2,
-                   aniso=c(0.05, 0, 0, 0.2)))
+                   aniso=matrix(nr=2, c(0.05, 0, 0, 0.2))))
+if (FALSE)
 p(model=model, x=c(-10, 110, 1))
 
 
-model = list(list(model="stable", var=2, kappa=2, aniso=c(1,4,0,1.5)) ,
+model = list(list(model="stable", var=2,kappa=2,aniso=matrix(nr=2,c(1,4,0,1.5))) ,
   "+",
-  list(model="stable", var=1, kappa=1.5, aniso=c(1,4,0,1.5) * 4),
+  list(model="stable", var=1, kappa=1.5, aniso= matrix(nr=2, c(1,4,0,1.5) * 4)),
   "+",
-  list(model="nugget", var=1, aniso=c(1,1,1,1))
+  list(model="nugget", var=1, aniso=matrix(nr=2, c(1,1,1,1)))
+  )
+p(model=model)
+
+model = list(list(model="stable", var=2, kappa=2, aniso=matrix(nr=2, c(1,4,0,1.5))) ,
+  "+",
+  list(model="stable", var=1, kappa=1.5, aniso=matrix(nr=2, c(1,4,0,1.5) * 4)),
+  "+",
+  list(model="nugget", var=10, aniso=matrix(nr=2, c(1,1,1,1)))
+  )
+p(model=model)
+
+model = list(list(model="stable", var=2, kappa=2,
+  aniso= matrix(nr=2, c(1,4,0,1.5))) ,
+  "+",
+  list(model="stable", var=1, kappa=1.5, aniso= matrix(nr=2, c(1,4,0,1.5) * 0.4))
   )
 p(model=model)
 
 
-model = list(list(model="stable", var=2, kappa=2, aniso=c(1,4,0,1.5)) ,
+model = list(list(model="stable", var=2, kappa=2, aniso=matrix(nr=2, c(1,4,0,1.5))) ,
   "+",
-  list(model="stable", var=1, kappa=1.5, aniso=c(1,4,0,1.5) * 4),
-  "+",
-  list(model="nugget", var=10, aniso=c(1,1,1,1))
+  list(model="stable", var=1, kappa=1.5, aniso=matrix(nr=2, c(1,4,0,1.5) * 4))
   )
 p(model=model)
 
-model = list(list(model="stable", var=2, kappa=2, aniso=c(1,4,0,1.5)) ,
-  "+",
-  list(model="stable", var=1, kappa=1.5, aniso=c(1,4,0,1.5) * 0.4)
-  )
+model = list(list(model="stable", var=2, kappa=1.5, aniso=matrix(nr=2, c(1,4,0,1.5))))
 p(model=model)
 
-
-model = list(list(model="stable", var=2, kappa=2, aniso=c(1,4,0,1.5)) ,
-  "+",
-  list(model="stable", var=1, kappa=1.5, aniso=c(1,4,0,1.5) * 4)
-  )
-p(model=model)
-
-model = list(list(model="stable", var=2, kappa=1.5, aniso=c(1,4,0,1.5)))
-p(model=model)
-
-model = list(list(model="stable", var=2, kappa=1.5, aniso=c(0.5,0,0,4)))
+model = list(list(model="stable", var=2, kappa=1.5, aniso=matrix(nr=2, c(0.5,0,0,4))))
 p(model=model)
 
 m(model="exp", param=c(0, 1, 0, 2/3), meth="hyper", hyper.superpos=1)
@@ -201,10 +222,10 @@ m(model="exp", param=c(0, 1, 0, 2/3), meth="hyper", hyper.superpos=10)
 m(model="exp", param=c(0, 1, 0, 2/3), meth="hyper", hyper.superpos=100)
 
 
-m(model="circ", param=c(0,1,0, 5/2), meth="add", add.MPP=1)
-m(model="circ", param=c(0,1,0, 5/2), meth="add", add.MPP=10)
-m(model="circ", param=c(0,1,0, 5/2), meth="add", add.MPP=100)
-m(model="circ", param=c(0,1,0, 5/2), meth="add", add.MPP=1000)
+m(model="circ", param=c(0,1,0, 5/2), meth="coins", mpp.intens=1)
+m(model="circ", param=c(0,1,0, 5/2), meth="coins", mpp.intens=10)
+m(model="circ", param=c(0,1,0, 5/2), meth="coins", mpp.intens=100)
+m(model="circ", param=c(0,1,0, 5/2), meth="coins", mpp.intens=1000)
 
 p(model="nugget", param=c(0, 1, 0, 1/0.4))
 

@@ -1,9 +1,13 @@
 ## source("geoR.R")
 
 
-if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) {
+  source("source.R")
+} else if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
+
 if (EXTENDED.TESTING) {
-  data(soil, package="geoR")
+  data(soil250, package="geoR")
+  soil <- soil250
   x <- soil$Linha
   y <- soil$Coluna
   z <- soil$pHAgua

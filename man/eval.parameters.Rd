@@ -138,9 +138,11 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
   \url{http://www.stochastik.math.uni-goettingen.de/institute}}
 
+%\seealso{\command{\link[SoPhy]{define.horizons}}, \command{\link[SoPhy]{SoPhy}}}
 \seealso{\command{\link{useraction}}}
 
 \examples{
+\dontrun{
   ## the following lines define a menu that does not make
   ## too much sense, but shows the various kinds of buttons
 
@@ -151,7 +153,7 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   }
 
   simulate <- function(H, par) { ## not a serious example
-    print(c(H$x$var, par, runif(1)))
+    Print(c(H$x$var, par, runif(1)))
     return(H)  ## the function must return the first parameter
   }
 
@@ -180,14 +182,15 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   options(locatorBell=FALSE)
 %   source("/home/schlather/R/RF/RandomFields/R/auxiliary.R"); source("/home/schlather/R/RF/RandomFields/R/evalpar.R");
   useraction("start.register")  ## registring the user's input
-  str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
+  Print(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
      H=H, par=17)) # do not forget to call by name
   getactions()
 
   ## replay the user's input
   useraction("replay")
-  str(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
+  Print(eval.parameters("H$x", entry, simulate, update=TRUE, dev=scr[2],
      H=H, par=17))
+}
 }
 \keyword{spatial}
 
@@ -196,3 +199,5 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
 
 
 
+
+%  LocalWords:  val cond dQuote SoPhy

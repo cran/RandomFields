@@ -9,7 +9,7 @@ The function estimates the Hurst coefficient of a process
 \usage{
 hurst(x, y = NULL, z = NULL, data,
       gridtriple = FALSE, sort = TRUE,
-      block.sequ = unique(round(exp(seq(log(3000), log(dim[1]),
+      block.sequ = unique(round(exp(seq(log(min(3000, dim[1] / 5)), log(dim[1]),
                           len=min(100, dim[1]))))),
       fft.m = c(1, min(1000, (fft.len - 1) / 10)),
       fft.max.length = Inf, method=c("dfa", "fft", "var"),
@@ -162,8 +162,16 @@ hurst(x, y = NULL, z = NULL, data,
 \seealso{
   \command{\link{CovarianceFct}}, \command{\link{fractal.dim}}
 }
-%\examples{
-%}
+\examples{
+
+x <- runif(1000)
+if (interactive()) {
+   h <- hurst(1:length(x), data=x)
+} else {
+   h <- hurst(1:length(x), data=x, mode = "nographics")
+}
+
+}
 \keyword{ spatial }%-- one or more ...
 
 

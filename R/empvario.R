@@ -1,10 +1,10 @@
-"EmpiricalVariogram" <-
-function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
-          phi,  ## phi[1] erste richtung, phi[2] : anzahl der richtungen
-          theta, ## aehnlich
+EmpiricalVariogram <-
+  function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
+            phi,  ## phi[1] erste richtung, phi[2] : anzahl der richtungen
+            theta, ## aehnlich
           deltaT ##  deltaT[1] max abstand, deltaT[2] : gitterabstand
-          ) 
-{
+          ) {
+
   ## bin centers will be a vector of scalar distances  (in cylinder coord, e.g.)
   ## for the angles: start always with the first non negative angle, continue
   ##                 counter clockwise [0,2pi]
@@ -26,11 +26,13 @@ function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
     
   new <- CheckXT(x, y, z, T, grid, gridtriple)
   repet <- as.integer(length(data)/new$total)
+  
   if (length(data) != new$total * repet) 
     stop("number of data does not match coordinates")
   if (repet==0) stop("no data given")
 
   centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
+
   n.bins <- length(bin) - 1 
   
   if (is.null(T) && missing(phi) && missing(theta)) {  
@@ -154,10 +156,8 @@ function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
     evsd <- emp.vario.sd[idx] / (n.bin[idx] - 1) -
       n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2
     if (any(evsd < -1e-14)) {
-      print(idx)
-      print(n.bin[idx] - 1)
-      print(emp.vario.sd[idx])
-      print(emp.vario.sd[idx] / (n.bin[idx] - 1) -
+      Print(idx, n.bin[idx] - 1, emp.vario.sd[idx],
+            emp.vario.sd[idx] / (n.bin[idx] - 1) -
             n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2)
       warning(paste(evsd))
     }

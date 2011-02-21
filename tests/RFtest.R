@@ -2,7 +2,8 @@
 # R <  RFtest.all.R && R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R &&R <  RFtest.all.R
 
 
-if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) {  source("source.R")
+} else if (file.exists(f <- "~/R/RF/RandomFields/tests/source.R")) source(f) 
        
 ## how many simulation methods are available?
 MAXMETHODNUMBER <- length(GetMethodNames())
@@ -78,6 +79,8 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
   ## fieldsize : in units of scaling, in each direction
   cat("\n", model)
   MethodNames <- GetMethodNames()
+
+  
   
   model<-model;kappa1<-kappa1;kappa2<-kappa2;kappa3<-kappa3;
   nugget<-nugget; mean<-mean; variance<-variance;
@@ -157,7 +160,7 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
         repet <- matrix(0, nrow=numberbins, ncol=MAXMETHODNUMBER+1)
         MethodIgnoreList <- -99
 #
-        MethodIgnoreList <- c(0,2,3,4,5)
+#        MethodIgnoreList <- c(0,2,3,4,5)
         for (i in 1:pointrepet) {
           print(c("pointrepet", pointrepet, i))
           locations <- getxyz(grid,dim,pointnumber,fieldsize,quadraticgrid)
@@ -176,10 +179,11 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
 ##           dim = dim, midbinP0=midbinP0,
 ##           seed=seed)
 ##save(file="xx", xx)                      
-              error <- InitGaussRF(locations$x,y=locations$y,z=locations$z,
+              error <- try(InitGaussRF(locations$x,y=locations$y,z=locations$z,
                                    grid=grid,model=model,
                                    param=param,meth=methodname,
-                                   reg=0,gridtriple=TRUE)
+                                   reg=0,gridtriple=TRUE))
+              if (!is.numeric(error)) error <- 10000
               if (save) {
                 savename<-paste(ps,".save",sep="")              
                 save(file=savename,locations,grid,model,param,methodname,
@@ -225,7 +229,9 @@ RFcontrol <- function (model,kappa1=NULL,kappa2=NULL,kappa3=NULL,
     print(model)
     print(param)
     print(dim)
-        truevariogram  <- Variogram(midbinP0, model, param, dim)
+        truevariogram  <-
+          try(Variogram(midbinP0, model, param, dim))
+        if (!is.numeric(truevariogram)) next
         delta <- colSums(abs(v-truevariogram[-1]),na.rm=TRUE)
         delta[apply(is.na(v), 2, all)]<-NA;
         assign("zaehler", zaehler + 1, envir=ENVIR)

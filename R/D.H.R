@@ -30,7 +30,7 @@ regression <- function(x, y, main, scr,
   ## curmain must be set since within repeat loop curmain is not set if
   ## the user immediately breaks the loop
   curmain <- main <- paste(main,": ",variable,"=", format(val, dig=3), sep="")
-  sm <- ksmooth(x, y, n.p=100, kernel="box", bandwidth=0.5)[c("x", "y")]
+  sm <- ksmooth(x, y, n.points=100, kernel="box", bandwidth=0.5)[c("x", "y")]
   if (mode!="nographics") { 
     screen(scr)
     par(mar=c(4.1, 4.1, 3, 0.1))
@@ -38,7 +38,7 @@ regression <- function(x, y, main, scr,
          col=if (mode=="plot") col.passive else col.active, main=main,
          col.main=if (mode=="plot")  col.main.passive else col.main.active,
          cex.main=cex.main, ...)
-    abline(regr, col=abline)
+    abline(regr, col=col.abline)
     lines(sm$x, sm$y, col=col.smooth)
     if (mode=="interactive") {
       repeat {
@@ -77,8 +77,8 @@ regression <- function(x, y, main, scr,
   
 hurst <-  function(x, y = NULL, z = NULL, data,
                    gridtriple = FALSE, sort=TRUE,
-                   block.sequ = unique(round(exp(seq(log(3000), log(dim[1]),
-                     len=min(100, dim[1]))))),
+                   block.sequ = unique(round(exp(seq(log(min(3000, dim[1] / 5)),
+                     log(dim[1]), len=min(100, dim[1]))))),
                    fft.m = c(1, min(1000, (fft.len - 1) / 10)),
                    fft.max.length = Inf, ## longer ts are cut down
                    method=c("dfa", "fft", "var"),
@@ -88,6 +88,7 @@ hurst <-  function(x, y = NULL, z = NULL, data,
                    height=3.5,
                    ...
                    ) {
+  
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -116,6 +117,8 @@ hurst <-  function(x, y = NULL, z = NULL, data,
   ct <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, gridtriple=gridtriple)
   dim <- apply(cbind(ct$x, ct$T), 2,
                function(x) length(seq(x[1], x[2], x[3])))
+  if (block.sequ[1] < 2500)
+    warning("results may show high variation due to short sequence(s).")
 
   if (PrintLevel>2) cat("(formatting) ")
   if (ncol(ct$x)>1) {
@@ -161,6 +164,7 @@ hurst <-  function(x, y = NULL, z = NULL, data,
       if (do.dfa) cat("detrended fluctuation; ")
       if (do.var) cat("aggregated variation; ")
     }
+    
     stopifnot(all(diff(block.sequ)>0))
     l.block.sequ <- log(block.sequ)
     dfa.len <- length(block.sequ)
@@ -227,8 +231,8 @@ hurst <-  function(x, y = NULL, z = NULL, data,
     cat("---- by interactively defined regression interval:\n")
     cat(c(dfa.H=dfa$val.u, varmeth.H=varmeth$val.u, fft.H=fft$val.u))
     #cat("---- beta (Cauchy model) ----\n")
-    #print(2 * (1 - c(dfa.H=dfa$val, fft.H=fft$val, varmeth.H=varmeth$val)))
-    #print(2 * (1 - c(dfa.H=dfa$val.u, fft.H=fft$val.u,varmeth.H=varmeth$val.u)))
+    #Print(2 * (1 - c(dfa.H=dfa$val, fft.H=fft$val, varmeth.H=varmeth$val)))
+    #Print(2 * (1 - c(dfa.H=dfa$val.u, fft.H=fft$val.u,varmeth.H=varmeth$val.u)))
     cat("############################################### \n")
   }
   if (any(mode=="plot" | mode=="interactive")) close.screen(screens)
@@ -468,9 +472,9 @@ fractal.dim <-
     cat(c(D.vario=vario$val.u, # D.box=box$val.u, D.range=rnge$val.u,
             D.fft=fft$val.u))
     #cat("----alpha (Cauchy)----\n")
-    #DIM <- 1
-    #print(2 * (DIM + 1 - c(D.vario=vario$val, D.box=box$val, D.range=rnge$val)))
-    #print(2 * (DIM + 1 - c(D.vario=vario$val.u, D.box=box$val.u,
+    #DIM <- 1ev
+    #Print(2 * (DIM + 1 - c(D.vario=vario$val, D.box=box$val, D.range=rnge$val)))
+    #Print(2 * (DIM + 1 - c(D.vario=vario$val.u, D.box=box$val.u,
     #                       D.range=rnge$val.u))) 
     cat("############################################### \n")
   }

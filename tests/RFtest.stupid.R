@@ -1,9 +1,8 @@
 ## RX -o "testlevel<-2" -i RFtest.stupid.R  | R > stupid.out2
 ## R --no-save < RFtest.stupid.R
-# source("RFtest.stupid.R")
+#   source("RFtest.stupid.R")
 
-if (EXTENDED.TESTING <- file.exists("source.R")) {
-  source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) { source("source.R")
   source("RFtest.R")
 } else if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
 
@@ -17,6 +16,9 @@ switch (testlevel,
         {NP <- 2; repeatscript <-500; }
         )
 
+
+ns <- c(FALSE,TRUE)
+pn <- 0:5
 
 pointrepet <- 1;
 valuerepet <- 3;
@@ -110,15 +112,18 @@ largemodels <-
             kappa2=runif(NP,-0.5,3), kappa3=runif(NP,-0.5,3))
        )
 
+
+
 for (i in 1:repeatscript) {
-  for (naturalscaling in FALSE:TRUE) for (pointnumber in 0:5) {
+  for (naturalscaling in ns) for (pointnumber in pn) {
     print(c("nsc,pn",naturalscaling,pointnumber))
     RFparameters(PracticalRange=naturalscaling)
     
-      if (FALSE) for (model in models) {
+    if (!FALSE) for (model in models) {
       cat("\n ********* models "); str(model)
       randomize()
-      x <- try(RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
+      x <- try(RFcontrol(model$model,pointnumber=pointnumber,
+                         valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
                 scaling=scaling,var=variance,nug=nugget,mean=Mean,
                 field=fieldsize,endof=endofbins,numberb=numberbins,
@@ -127,7 +132,8 @@ for (i in 1:repeatscript) {
       if (!is.null(x)) { readline();}
     }
     
-   for (model in simplemodels) {
+   if (!FALSE)
+     for (model in simplemodels) {
       cat("\n ********* simplemodels "); str(model)
       randomize()
       x <- try(RFcontrol(model,pointnumber=pointnumber,valuerepet=valuerepet,
@@ -137,6 +143,8 @@ for (i in 1:repeatscript) {
           )
       if (!is.null(x)) { readline();}
     }
+  
+    
     
     for (model in largemodels) {
       cat("\n ********* largemodels "); str(model)
@@ -148,6 +156,6 @@ for (i in 1:repeatscript) {
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
           )
         if (!is.null(x)) { readline();}
-    }    
+    }
   }
 }

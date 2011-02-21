@@ -87,11 +87,11 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
         .f <- eval(parse(text=paste(variable, "$", .e$var)))
         if (is.expression(.e$name))
           .lab <- eval(parse(text=paste("expression(", as.character(.e$name),
-                              "==", format(.f, dig=3),")")))        
-        else  .lab <- paste(.e$name,"=", format(.f, dig=3))
+                              "==", format(.f, digits=3),")")))        
+        else  .lab <- paste(.e$name,"=", format(.f, digits=3))
         text(0.5, .j + 0.25, adj=c(0.5, 0), lab=.lab, col=col.txt, cex=cex)
         .lab <- character(length(.x))
-        .lab <- formatC(.ff <- .e$val(.x), dig=3, width=1)
+        .lab <- formatC(.ff <- .e$val(.x), digits=3, width=1)
         if (.e$delta) {
           ## incremental
           .lab[.ff==0] <- paste("", .lab[.ff==0], "+", sep="") ## "-" !!!??
@@ -145,12 +145,12 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
     ## check that names are not vector of characters
     .e <- entry[[j]]    
     if (!is.character(.e$name) && !is.expression(.e$name)) {
-      stop(paste("'name' of entry", length(entry) + 1 - j,
-                 "is not a character of length 1"))
+      stop("'name' of entry ", length(entry) + 1 - j,
+                 " is not a character of length 1")
     }
     if (!is.character(.e$var) && !is.null(.e$var)) {
-      stop(paste("'var' of entry",  length(entry) + 1 - j,
-                 "is not a character of length 1"))
+      stop("'var' of entry ",  length(entry) + 1 - j,
+                 " is not a character of length 1")
     }
   }   
 
@@ -185,8 +185,6 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
   ## .history contains last changed value; it is erased if simulate is called
   .zaehler <- 0
 
-#  print(paste(variable, "$.history <- list()", is.list(action.list)))
-  
   eval(parse(text=paste(variable, "$.history <- list()")))
   while (!is.null(.loc <- Locator(1, info=variable))){
     .j <- as.integer(.loc$y + 0.2)
@@ -208,7 +206,6 @@ eval.parameters <- function(variable, entry, update, simulate, dev,
             eval(parse(text=paste(names(.e), "<- .e$", names(.e))))
             eval(parse(text=.simu.txt), envir=environment())
           } else {
- #           print(.e$val)
             eval(parse(text=.e$val))
           }
         }

@@ -1,10 +1,9 @@
 # source("RFtest.Cond.Simu.R")
 
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
-#gctorture()
 
 ## normal checking
-#nn <- c(10,1); step <- 1; #graphics.off(); X11(); X11();
+#nn <- c(10,1); step <- 1; 
 
 ## light; for automatic checking
 nn <- c(1,3); step <- 1
@@ -89,7 +88,8 @@ for (krige.method in krige.meth) {
           data <- GaussRF(points, grid=FALSE, model=model, param=param)
 
           
-          ## conditional simulation 
+          
+       ## conditional simulation 
           cz <- CondSimu(krige.method=krige.method,
                          x=xp, grid=is.null(add.points),
                          model=model, param=c(0,1,0,1),

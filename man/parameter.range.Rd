@@ -5,12 +5,15 @@
 \description{
   \code{parameter.range} returns the range of the parameters specific to
   a parametrised variogram model or a covariance function
+
+  --- NOT PROGRAMMED YET --
 }
 \usage{
-parameter.range(model, dim)
+parameter.range(model, param, dim=1)
 }
 \arguments{
   \item{model}{the variogram model or covariance function, see \code{CovarianceFct}}
+  \item{param}{see \code{CovarianceFct}}
   \item{dim}{the dimension of the random field}
 }
 \value{
@@ -41,13 +44,12 @@ parameter.range(model, dim)
 \seealso{\command{\link{CovarianceFct}}}
 
 \examples{
-  parameter.range("exponential", 1) # NULL
-  str(parameter.range("power", 1))
-  str(parameter.range("power", 2))
-  str(parameter.range("gengneiting", 2))
-  str(parameter.range("nsst",1))
-  str(parameter.range("nsst2",1))
-  str(parameter.range("hyper",1))
+  parameter.range("exponential", param=NA, dim=1) # NULL
+  try(parameter.range("power", param=NA, dim=1))
+  try(parameter.range("power", param=c(NA, NA, NA, NA, 2), dim=2))
+  Print(parameter.range("gengneiting", param=NA, dim=2))
+  Print(parameter.range("nsst", param=NA,  dim=1))
+  Print(parameter.range("hyper",param, dim=1))
 }
 
 \keyword{spatial}

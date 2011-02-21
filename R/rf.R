@@ -1,43 +1,24 @@
-## source("rf.R")
+# source("rf.R")
 # see getNset.R for the variable .methods
 
 # readline <- function(...) return("") 
 
-
 .onLoad <- function (lib, pkg) {
-  if (file.exists("/home/schlather/bef/x")) {
-    ## to do list -- since my surname is rare, the message should 
-    ## appear only on computers I have a login
-    cat("To-Do List\n==========\n")
+##  cat("As all other package writers of R, I am happy if you cite RandomFields\n",
+##      "whenever you use it. To get the correct reference please type in\n",
+##      "citation(\"RandomFields\")    or   \n",
+##      "help(RandomFields)   and see the Reference section for a complete list\n",
+##      "Many thanks,  Martin Schlather\n")
 
-    print("MLE: berechnung maxdistances und mindistances fuer anisotropy und spaetere verwendung beruecksichtigt nicht, dass Zeitachse sich anders verhaelt -- bloss wie loesen ohne riesigen Aufwand?")
-    print("RFdirect: zusaetzlicher Parameter, der regelt ob SVD Zerlegung ueberprueft ob wirklich OK")
-    print("RFparameters: set aufrufe zu einem + interne environment darstellung")
-    print("Showmodels: die mdoelle die nicht funktioniern in schwaecherer Farbe")
-    print("nsst/nsst2 als hypermodel formulieren")
-    print("C-1-Berechnung bei MLE durch FFT ersetzen; mit Erweiterung von C auf circulaere Matrix")
-    print("cutoff/intrinsic fuer Produkte / zonale Anisotropie bei Produkten")
-    print("Bsp in GaussRF und RFparameters muessen von Hand durchgeschaut werden,
-ob sie den richtigen Effekt zeigen!")
-    print("environment statt der einzelnen Variablen; vereinfachung von RFparameters und der internen initGaussRD und DoSimulate");
-    print("hyper: was ist die truetimespacedim???")
-    print("hyper: 'Ma'-Modelle; TBM3/2;");
-    print("cross: verbesserungen (geswchwindigkeit)")
-    print("GENERAL_PRECISION: einbinden + ueber .Mschine$precision definieren (mal Faktor 50")
-    print("chlo2inv in MLE: ")
-    print("Empirical Variogram: allow for NAs")
-    print("include winddata")
-    print("fitvario.Rd/wind.Rd/GaussRF.Rd examples fertig machen")
-    
-    print("check documentation and readability of programs")
-    print("MLE: naturalscaling in anisotropic case")
-    print("critical odd unused, see RFcircembed.cc; see also addodd in RFgetNset.cc")
-    print("implement trend")
-    print("MPP.cc: anisotropies, time")
-    print("init poisson : check mean=variance; in rf.R: either one is NaN, or equal, set both equal\n")
-    print("interface, such that user can add its own covariance function, written in R\n\n")
-  }
- }
+##  cat("\n\n\n\n\n ACHTUNG!! wird bei DO richtig erkannt, wann res[..]=0 gesetzt werden muss??\n\n")
+    cat("  RandomFields V2.0 is currently a beta-Version. Updates will come up soon.\n")
+    cat("  The last stable versions are V 1.3.X.\n")
+
+  
+}
+
+.onUnload <- function(lib, pkg){
+   }
 #Implementierung von Cox & Isham's non-separable model
 
 #individuelle Praeferenzliste:
@@ -51,131 +32,202 @@ ob sie den richtigen Effekt zeigen!")
   DeleteAllRegisters()
 }
 
-"CovarianceFct" <-
-  function (x, model, param, dim = ifelse(is.matrix(x), ncol(x), 1),
-            fctcall="Covariance") 
-{
+
+Covariance <- function(x, y=NULL, model, param=NULL,
+                       dim = ifelse(is.matrix(x), ncol(x), 1),
+                       Distances,
+                       fctcall=c("Cov", "Variogram", "CovMatrix")) {
   ## note: * if x is a matrix, the points are expected to be given row-wise
-  ##       * if not anisotropic CovarianceFct expects distances as values of x
+  ##       * if not anisotropic Covariance expects distances as values of x
   ##
+  ## here, in contrast to Covariance, nonstatCovMatrix needs only x
+
+  stopifnot(xor(missing(x), missing(Distances)))
+  if (are.dist <- missing(x)) x <- Distances
   
   if (ismatrix.x <- is.matrix(x)) stopifnot(dim == ncol(x))
-  x <- as.matrix(x)
-
-  stopifnot(length(x)!=0,
+  x <- as.matrix(x)## C code expects the coordinates columwise
+  fctcall <- match.arg(fctcall)
+  
+  stopifnot(length(x)!=0, 
             all(is.finite(x)),
             length(dim) == 1,
-            is.finite(dim),
-            !is.null(pmatch(fctcall, c("Covariance", "Variogram",
-                                       "CovarianceMatrix")))
-            )
-  xdim <- ncol(x) ## may differ from dim if dim>1 and x gives distance,
+            is.finite(dim))
+  xdim <- as.integer(ncol(x)) ## may differ from dim if dim>1 and x gives distance,
   ##                 instead of distance vectors
-  p <- PrepareModel(model, param, xdim)
-  if (!ismatrix.x && p$anisotropy)
-    stop("x must be a matrix for anisotropic models")
   
+  if (!is.null(y)) {
+    stopifnot(length(x) == length(y), all(dim == ncol(y)))
+    y <- t(y)  ## C code expects the coordinates columwise
+    storage.mode(y) <- "double"
+    stopifnot(fctcall != "CovMatrix")
+ }
+  
+  storage.mode(dim) <- "integer"
+  vdim <- .Call("CheckModelUser", PrepareModel(model, param)$model,
+                as.integer(dim), as.integer(xdim), is.null(y),
+                PACKAGE="RandomFields")
+
+  len <- nrow(x)
+  x <- t(x)
   storage.mode(x) <- "double"
-  x <- t(x)  ## C code expects the coordinates columwise
-  if (fctcall %in% c("CovarianceMatrix")) {
-    len <- (1 + sqrt(1 + 8 * ncol(x))) / 2 # since the x's give
-    ##                       the upper triangle of a quadratic matrix     
-    reslen <- len^2
-  } else {
-    reslen <- len <- ncol(x)
-  }
+  dim <- as.integer(dim)
+ 
   
-  result <- .C(fctcall, as.double(x),
-               as.integer(len),
-               as.integer(p$covnr),
-               as.double(p$param), 
-               as.integer(length(p$param)), ## control
-               as.integer(dim), as.integer(xdim),
-               as.integer(length(p$covnr)),
-               as.integer(p$anisotropy),
-               as.integer(p$op),            
-               res=double(reslen),
-               PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)$res
-  if (fctcall %in% c("CovarianceMatrix")) return(matrix(result, ncol=len))
-  else return(result)
+  if (fctcall == "CovMatrix") {    
+    if (are.dist) {
+      stopifnot(is.null(y))
+      len.old <- len
+      len <- (1 + sqrt(1 + 8 * len)) / 2 # since the x's give
+      ##                       the upper triangle of a quadratic matrix
+      stopifnot(len * (len-1) / 2 == len.old)# only stationary case currently
+    }
+    size <- len * vdim
+    result <- double(size^2)     
+    .C(fctcall, x, as.integer(are.dist), as.integer(len), result, 
+       PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)
+
+    ##  Print(result, size, len, vdim, x, as.integer(are.dist)); xxxx
+    
+    dim(result) <- rep(size, 2)
+  } else {
+    if (are.dist)
+      stop("Distances are only allowed when calculating covariance matrices")    
+    result <- double(len * vdim * vdim)
+    .C(fctcall, x, y, as.integer(len), result, 
+     PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)
+    if (vdim > 1) dim(result) <- c(len * vdim , vdim) ###
+  }
+      
+  return(result)
 }
 
 
-"DeleteAllRegisters" <-
-function () 
-{
+CovarianceFct <- function(...) Covariance(...)
+
+CovMatrix <- function(...) {
+  Covariance(..., fctcall="CovMatrix")
+}
+
+DeleteAllRegisters <- function () {
     .C("DeleteAllKeys", PACKAGE="RandomFields")
     invisible()
 }
 
-
-"DeleteRegister" <-
-function (nr = 0) 
-{
+DeleteRegister <- function (nr = 0) {
    stopifnot( length(nr) == 1, is.finite(nr) ) 
    .C("DeleteKey", as.integer(nr), PACKAGE="RandomFields")
    invisible()
 }
 
 
-DoSimulateRF <- function (n = 1, register = 0, paired=FALSE) {
+DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
   stopifnot(length(n) == 1,
             n>0, is.finite(n),
             length(register) == 1,
             is.finite(register)
             )
   storage.mode(register) <- "integer"
-  DoNameList <- c("DoSimulateRF", "DoSimulateRF", "DoMaxStableRF")
-  assign(".p",
-         .C("GetrfParameters", covmaxchar=integer(1), methodmaxchar=integer(1),
-            distrmaxchar=integer(1),
-            covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-            maxdim=integer(1), maxmodels=integer(1),
-            PACKAGE="RandomFields"))    
+  DoNameList <- c("DoSimulateRF", "DoSimulateRF", "DoMaxStableRF")  
+  assign(".p", GetrfParameters(TRUE))
   keyinfo <- .C("GetKeyInfo", register, 
-                total = integer(1), len = integer(.p$maxdim),
+                total = integer(1), len = integer(.p$maxdim["simu"]),
                 spatialdim = integer(1), timespacedim = integer(1),
                 grid = integer(1), distr = integer(1),
-                maxdim = as.integer(.p$maxdim),
+                maxdim = as.integer(.p$maxdim["simu"]), vdim=integer(1),
                 PACKAGE="RandomFields", DUP=FALSE)
   if (paired && (n %% 2 != 0)) stop("if paired, then n must be an even number")
   if (keyinfo$total <= 0)
-    stop(paste("register", register, "does not look initialized"))
+    stop("register ", register, " does not look initialized")
   keyinfo$len <- keyinfo$len[1:keyinfo$timespacedim]
+  error <- integer(1)
 
-  error <- integer(1)  
-  result <- double(keyinfo$total * n)
+  if (!is.null(trend) && (keyinfo$distr<=1)) {
+      x <- GetRegisterInfo(register)$loc
+  }
+  result <- double(keyinfo$total * n * keyinfo$vdim)
   .C(DoNameList[1+keyinfo$distr], register, as.integer(n),
      as.integer(paired), result, error, PACKAGE="RandomFields", DUP=FALSE)
-  
-  if (error) stop(paste("error", error));
-  if (n==1) {
-    if (keyinfo$grid) {
-      if (length(keyinfo$len)>1) dim(result) <- keyinfo$len
-    } else if (keyinfo$spatialdim<keyinfo$timespacedim)
-      dim(result) = keyinfo$len[c(1,length(keyinfo$len))]
-  } else {
-    dim(result) <-
-      c(if (keyinfo$grid) keyinfo$len else
-        if (keyinfo$spatialdim==keyinfo$timespacedim) keyinfo$total else
-        keyinfo$len[c(1,length(keyinfo$len))]
-        , n)
+  if (error) stop("error ", error); ## Hallo Marco,
+  ## Du hattest hier auskommentiert, weiss nicht wieso
+  dim(result) <- c(if (keyinfo$vdim > 1) keyinfo$vdim, #
+                   if (keyinfo$grid) keyinfo$len else
+                   if (keyinfo$spatialdim == keyinfo$timespacedim) keyinfo$total
+                   else keyinfo$len[c(1,length(keyinfo$len))], #
+                   if (n>1) n)
+  if (!is.null(trend) && (keyinfo$distr<=1)) {
+   if (keyinfo$vdim > 1 && (!is.list(trend) || (length(trend) != keyinfo$vdim)))
+	stop(paste("Due to the covariance model a ", keyinfo$vdim, "-dimensional random
+        field is created. Then trend should be a list of trends for each component."))
+ 
+   time.used <- keyinfo$timespacedim - keyinfo$spatialdim
+   spacedim <- keyinfo$spatialdim
+   if (x$grid) {
+      zz <- as.matrix(cbind(matrix(x$xgr, nrow=3), x$T))
+      xlist <- mapply(seq, zz[1,], zz[2,], zz[3,], SIMPLIFY=FALSE)
+      dimension <- sapply(xlist, length)
+      ## 'x' will be used in apply within kriging
+      x <- as.matrix(do.call(expand.grid, xlist))
+   }
+   else if (time.used) {
+     x$x <- matrix(x$x, nrow=spacedim)
+     x <- as.matrix(cbind(
+          matrix(rep(x$x,times=length(seq(x$T[1],x$T[2],x$T[3]))),
+	  ncol=nrow(x$x), byrow=TRUE),
+          rep(seq(x$T[1],x$T[2],x$T[3]), each=ncol(x$x))))
+   }
+   else x <- t(matrix(x$x, nrow=spacedim))
+
+   for (k in 1:keyinfo$vdim) {
+     if (keyinfo$vdim==1) {
+        trend<-list(trend)
+        resulttext <- paste("result[",
+		       paste(rep("", length=length(dim(result))), collapse=","),
+                       "]", sep="")
+     }
+     else resulttext <- paste("result[k,",
+			paste(rep("", length=length(dim(result))-1), collapse=","),
+                        "]", sep="")
+     if (class(trend[[k]])=="numeric") {
+       if (length(trend[[k]])==1)
+	  eval(parse(text=paste(resulttext, "<-", resulttext, "+ trend[[k]]")))
+       else if (length(trend[[k]]) != ncol(x) + 1)
+          stop("if trend is a vector, its length should be d+1 with d being the
+                dimension of the points to be simulated at (space + time)")
+        else   {
+	   dim(trend[[k]])<-c(length(trend[[k]]),1)
+	   eval(parse(text=paste(resulttext, "<-", resulttext, 
+			    "+ (cbind(1,x) %*% trend[[k]])[,1]")))
+        }
+     } else if (class(trend[[k]])=="function")  {
+       variablenames <- variables <- NULL
+       if (any(!is.na(match(c("x","y","z"),names(formals(trend[[k]]))))))
+            variablenames <-c(c("x","y","z")[1:(ncol(x)-time.used)], if(time.used) "T")
+       else variablenames <- c(paste("X",1:(ncol(x)-time.used),sep=""), if(time.used) "T")
+       for(i in 1:ncol(x))
+          variables <- cbind(variables, paste(variablenames[i],"=x[,",i,"]",sep=""))
+       argmatch <- match(variablenames, names(formals(trend[[k]])))
+       args <- paste(variables[!is.na(argmatch)], collapse=",")
+       eval(parse(text=paste(resulttext, "<-", resulttext, "+trend[[k]](",args,")", sep="")))
+     } else if(is.null(trend[[k]])) {
+     } else stop("trend should be an integer, vector or function")
+   }
   }
   
   return(result)
 }
 
 
+InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
+                            grid=!missing(gridtriple), model, param,
+                            trend, method = NULL,
+                            register = 0, gridtriple, distribution=NA) {
 
-"InitSimulateRF" <-
-function (x, y = NULL, z = NULL, T=NULL, grid, model, param,
-          trend, method = NULL,
-          register = 0, gridtriple = FALSE, distribution=NA)  
-{
   InitNameList <- c("InitSimulateRF","InitSimulateRF","InitMaxStableRF")
   if (is.na(distribution)) {
     stop("This function is an internal function.\nUse `GaussRF', `InitGaussRF', `MaxStableRF', etc., instead.\n")    
   }
+  
   distrNr <- .C("GetDistrNr", as.character(distribution), as.integer(1),
                 nr=integer(1), PACKAGE="RandomFields")$nr
   if (distrNr<0)
@@ -186,74 +238,49 @@ function (x, y = NULL, z = NULL, T=NULL, grid, model, param,
       stop("Sorry. Not programmed yet.")  ##
     InitName <- InitNameList[distrNr + 1]
   }
+
+ 
+  neu <- CheckXT(x, y, z, T, grid, gridtriple)
+  p <- PrepareModel(model, param, trend=trend, method=method)
+
+#  Print(p)
+#  xxxxx
   
-  new <- CheckXT(x, y, z, T, grid, gridtriple)
-  p <- PrepareModel(model, param, new$spacedim+new$Time, trend=trend,
-                    method=method)
-  if (any(is.na(p$param))) stop("some model parameters are NA")
+  dim <- as.integer(ncol(neu$x) + neu$Time)
+  stopifnot(length(dim) > 0)
+
   
-  ## modus:
-  ## 0 : mean
-  ## 1 : linear trend
-  ## 2 : function
-  ## 3 : function with parameters
-  if (is.null(p$trend)) {
-    lambda <- p$mean
-    trend <- ""    
-    modus <- 0
-  } else {
-    stop("sorry; not programmed yet.")
-    if (is.list(p$trend)) {
-      stopifnot(is.numeric(lambda <- p$trend$lambda))
-      trend <- p$trend$trend
-      modus <- 3
-    } else
-    if (is.numeric(trend)) {
-      lambda <- p$trend
-      trend <- ""    
-      modus <- 1
-    } else { # function
-      lambda <- 0
-      trend <- as.character(substitute(trend))
-      trend <- trend[length(trend)]
-      modus <- 2
-    }
-  }
-  
+  .Call("CheckModelSimu", p$model, dim, dim, FALSE, PACKAGE="RandomFields")  
+
   ## "StoreTrend must be called before .C(InitName, ...)" !!
   ## see extrems.cc for example
-  error <- .C("StoreTrend", as.integer(register), as.integer(modus),
-              as.character(trend), as.integer(nchar(trend)),
-              as.double(lambda), as.integer(length(lambda)),
+ 
+  error <- .C("StoreTrend", as.integer(register), as.integer(0),
+              as.character(""), as.integer(nchar("")),
+              as.double(0), as.integer(1),
               err=integer(1), PACKAGE="RandomFields")$err
-  if (error) stop(paste("trend not correct -- error nr", error))
+  if (error) stop("trend not correct -- error nr", error)
 
-  error <- .C(InitName, as.double(new$x), as.double(new$T),
-                  as.integer(new$spacedim),
-                  as.integer(new$l), 
-                  as.integer(new$grid),
-                  as.integer(new$Time),
-                  as.integer(p$covnr),
-                  as.double(p$param),
-                  as.integer(length(p$param)),
-                  as.integer(length(p$covnr)),
-                  as.integer(p$anisotropy),
-                  as.integer(p$op),
-                  as.integer(p$method),
-                  as.integer(distrNr),
-                  as.integer(register),
-                  error=integer(1),
-                  PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)$error
-  return(error)
+  
+  .C(InitName, as.double(neu$x), as.double(neu$T),
+              as.integer(neu$spacedim),
+              as.integer(neu$l), 
+              as.integer(neu$grid),
+              as.integer(neu$Time),
+              as.integer(distrNr),
+              as.integer(register),
+              as.integer(1),
+              error=integer(1),
+              PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)
+
+   return(error)
 }
 
 
-
-"InitGaussRF" <-
-  function(x, y = NULL, z = NULL, T=NULL, grid, model, param,
-           trend, method = NULL,
-           register = 0, gridtriple = FALSE)
-  {
+InitGaussRF <- function(x, y = NULL, z = NULL, T=NULL, grid=!missing(gridtriple),
+                        model, param,
+                        trend=NULL, method = NULL,
+                        register = 0, gridtriple) {
   return(InitSimulateRF(x=x, y=y, z=z,  T=T, 
                         grid=grid, model=model, param=param, trend=trend,
                         method=method, register=register,
@@ -261,34 +288,39 @@ function (x, y = NULL, z = NULL, T=NULL, grid, model, param,
 }
 
 
-"GaussRF" <-
-function (x, y = NULL, z = NULL, T=NULL,
-          grid, model, param, trend, method = NULL, 
-          n = 1, register = 0, gridtriple = FALSE,
-          paired=FALSE, ...) 
-{
-  old.param <- RFparameters(no.readonly=TRUE)
+GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
+          grid=!missing(gridtriple), model, param, trend=NULL, method = NULL, 
+          n = 1, register = 0, gridtriple,
+          paired=FALSE, ...) {
   RFpar <- list(...)
-  if (length(RFpar)>0) RFparameters(RFpar)
-  if (delete <- n>1 && !RFparameters()$Storing) RFparameters(Storing=TRUE)
-  on.exit({if (delete) DeleteRegister(register);
-           RFparameters(old.param);
-           })
+  old.param <- NULL
+  delete <- n>1 && !(old.param <- RFparameters(no.readonly=TRUE))$Storing
+  modifiedParam <- length(RFpar)>0 || delete
+  if (modifiedParam) {
+    if (is.null(old.param))
+      old.param <- RFparameters(no.readonly=TRUE)
+    if (length(RFpar)>0) RFparameters(RFpar)
+    if (delete) RFparameters(Storing=TRUE)
+  }
+  on.exit(if (modifiedParam) {
+    RFparameters(old.param);
+    if (delete) DeleteRegister(register);
+  })
 
   error <- InitSimulateRF(x=x, y=y, z=z, T=T, grid=grid, model=model,
                           param=param,
                           trend=trend, method=method, register=register,
                           gridtriple=gridtriple, distribution="Gauss")
-#str(GetRegisterInfo(register))
-  
+
   if (error > 0)
-    stop(paste("Simulation could not be initiated.",
-               if (RFparameters()$PrintLevel >= 2) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n"))
-  return(if (n<1) NULL else DoSimulateRF(n=n, reg=register, paired=paired))
+    stop("Simulation could not be initiated.",
+         if (RFparameters()$PrintLevel < 3) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n")
+  res <- (if (n<1) NULL
+           else DoSimulateRF(n=n, register=register, paired=paired, trend=trend))
+  return(res)
 }
 
 
-"Variogram" <-
-function (x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
-  CovarianceFct(x, model, param, dim, fctcall="Variogram")
+Variogram <- function (x, model, param=NULL, dim=ifelse(is.matrix(x),ncol(x),1))
+  CovarianceFct(x=x, model=model, param=param, dim=dim, fctcall="Variogram")
 

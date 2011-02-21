@@ -10,41 +10,59 @@
   }
 \usage{
 fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param,
-         lower=NULL, upper=NULL, sill=NA, ...)
+         lower=NULL, upper=NULL, sill=NA, grid=!missing(gridtriple),
+          gridtriple, ...)
 
 fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
-         lower=NULL, upper=NULL, sill=NA, trend,
-         use.naturalscaling=TRUE, PrintLevel=RFparameters()$Print,
+         grid=!missing(gridtriple), gridtriple=FALSE,
+         trend = NULL,
+         BC.lambda, ## if missing then no BoxCox-Trafo
+         BC.lambdaLB=-10, BC.lambdaUB=10,  
+         lower=NULL, upper=NULL, sill=NA, 
+         use.naturalscaling=FALSE, PrintLevel,
          optim.control=NULL, bins=20, nphi=1, ntheta=1, ntime=20,
          distance.factor=0.5,
-         upperbound.scale.factor=3, lowerbound.scale.factor=20,
+         upperbound.scale.factor=3, lowerbound.scale.factor=3,
          lowerbound.scale.LS.factor=5,
          upperbound.var.factor=10, lowerbound.var.factor=100,
          lowerbound.sill=1E-10, scale.max.relative.factor=1000,
          minbounddistance=0.001, minboundreldist=0.02,
          approximate.functioncalls=50, refine.onborder=TRUE,
-          pch=RFparameters()$pch,
-         var.name="X",
-         time.name="T", transform=NULL, standard.style=NULL,
+         minmixedvar=1/1000, maxmixedvar=1000,
+         pch=RFparameters()$pch,
+         transform=NULL, standard.style=NULL,
+         var.name="X", time.name="T",
          lsq.methods=c("self", "plain", "sqrt.nr", "sd.inv", "internal"),
          mle.methods=c("ml", "reml"),
          cross.methods=NULL,
 %         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
-         users.guess=NULL, users.beta=NULL, table.format=FALSE)
+         users.guess=NULL, only.users = FALSE,
+         Distances=NULL, truedim,
+         solvesigma = NA, # if NA then use algorithm -- ToDo
+         allowdistanceZero = FALSE,
+         na.rm = TRUE)
 }
 \arguments{
   \item{x}{(\eqn{n\times2}{n x 2})-matrix of coordinates, or vector of
-    x-coordinates}
+    x-coordinates. All locations must be given explicitely and
+    cannot be passed via a grid definition
+    as in \command{GaussRF}}
   \item{y}{vector of y coordinates}
   \item{z}{vector of z coordinates}
   \item{T}{vector of T coordinates; these coordinates are given in
     triple notation, see \command{\link{GaussRF}}}
   \item{data}{vector or matrix of values measured at \code{coord};
-    If also a time component is given, the in the data the indices for
+    If a matrix is given then the columns are interpreted as independent
+    realisations.\cr
+    If also a time component is given, then in the data the indices for
     the spatial components run the fastest.
+    
+    If an \code{n}-variate model is used, then each realisation is given as
+    \code{n} consecutive columns of \code{data}.
   }
   \item{model}{string or list;
-    covariance model, see \command{\link{CovarianceFct}}, or
+    covariance model, see \command{\link{CovarianceFct}}
+    and \command{\link{Covariance}}, or
     type \command{\link{PrintModelList}()} to get all options.
 %    See also t
     
@@ -69,42 +87,51 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     the parameters must be given
     in this order. Further parameters are to be added in case of a
     parametrised class of covariance functions, see
-    \command{\link{CovarianceFct}}.
+    \command{\link{CovarianceFct}} and \command{\link{Covariance}}.
     \emph{Any} components set to \code{NA} are estimated; the others
     are kept fix.
     See also \code{model} above. 
   }
   \item{lower}{list or vector. Lower bounds for the parameters.
-    If \code{lower} and \code{param} are vectors and \code{length(lower) <
-      length(param)} 
-    then \code{lower} must match the number of additional parameters
-    \eqn{\kappa}{a,b,c,...}.
+    If \code{param} is a vector, \code{lower} has to be a vector as well and
+    its length must equal the number of parameters to be estimated. The order
+    of \code{param} has to be maintained. A component being \code{NA} means
+    that no manual lower bound for the corresponding parameter is set.
     
-    If \code{param} is matrix the length of \code{lower} must match the
-    number columns of param or being 2 elements smaller (then
-    \code{lower} is filled with \code{NA} from the left.
-    The bounds are equally applied to all rows.
-
-    If \code{lower} is a list, then elements that are not given are
-    considered as \code{NA}.
-
-    If \code{lower} is not given, or \code{lower} contains \code{NA}
-    then the missing bounds are generated automatically.
+    If \code{param} is a list, \code{lower} has to be of (exactly) the same
+    structure.
   }
   \item{upper}{list or vector. Upper bounds for the parameters.
     See also lower.
   }
   \item{sill}{If not \code{NA} the sill is kept fix. Only used if the
     standard format for the covariance model is given. See Details.}
+  \item{grid}{boolean. Weather coordinates give a grid}
+  \item{gridtriple}{boolean. Format, see \command{\link{GaussRF}}}
+  \item{BC.lambda}{a vector of at most two numerical components (just one component
+     corresponds to two identical ones) which are the parameters of the 
+     box-cox-transformation:
+     \eqn{\frac{x^\lambda_1-1}\lambda_1+\lambda_2}{(x^\lambda_1-1)/\lambda_1+\lambda_2}
+     If the model is univariate, the first parameter can be estimated by
+     using \code{NA}.
+   }
+  \item{BC.lambdaLB}{lower bound for the first box-cox-parameter}
+  \item{BC.lambdaUB}{upper bound for the first box-cox-parameter}
   \item{trend}{
-    Not programmed yet.
-    May only be set if \code{missing(param)};
-    linear formula : uses \code{X1}, \code{X2},... and \code{T} as internal
+    If a univariate model is used, the following trend types are possible:\cr
+    number: the constant mean (not to be estimated any more)\cr
+    NA: there is a constant mean to be estimated \cr
+    formula : uses \code{X1}, \code{X2},... and \code{T} as internal \cr
     parameters for the coordinates; all parameters are estimated\cr
-    matrix   : must have the same number of rows as \code{x}\cr
-    \emph{fixed} mean + matrix or linear formula : not possible within
-    this function (just subtract the mean from your data before calling
-    this function)    
+    list of matrices: length of the list must be the number of realisations;
+	each matrix must have the same number of rows as \code{x}\cr
+    list of matrices and formula: trend is a list of matrices (see above)
+    and one additional entry which is a formula\cr
+
+    In an \eqn{n}-variate model trend can be either a list of \eqn{n}
+    trends for univariate models or a list of \eqn{n*d}
+    matrices (\eqn{d}: number of independent realisations) where each
+    entry of \code{trend} corresponds to a column of \code{data}.
   }
   \item{...}{arguments as given in \code{fitvario.default} and listed in the
     following.}
@@ -117,7 +144,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     and the form parameters of the model get \sQuote{orthogonal},
     but \code{use.naturalscaling} does not work for all models.
     See Details.}
-  \item{PrintLevel}{level to which messages are shown.  See Details.}
+  \item{PrintLevel}{level to which messages are shown. See Details.}
   \item{optim.control}{control list for \command{\link[stats]{optim}}, which uses
     'L-BFGS-B'. However 'parscale' may not be given.}
   \item{bins}{number of bins of the empirical variogram.
@@ -138,13 +165,13 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 
     Note that a good estimation of the variogramm by LSQ with a
     anisotropic model a large value for \code{ntheta} might be needed (about 20).
-}
+  }
   \item{ntime}{scalar or vector of 2 components.
     if \code{ntimes} is a vector, then the first component are the
     maximum time distance (in units of the grid length \code{T[3]}) and the
     second component gives the step size (in units of the grid length
     \code{T[3]}). If scalar then the step size is assumed to 1 (in units
-    of the grid length \code{T[3]}.
+    of the grid length \code{T[3]}).
   }
   \item{distance.factor}{relative right bound for the bins.  See Details.}
   \item{upperbound.scale.factor}{relative upper bound for scale in LSQ
@@ -162,7 +189,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     and nugget.  See Details.}
   \item{scale.max.relative.factor}{relative lower bound
     for scale below
-    which an additional nugget effect is detected.  See Details.}
+    which an additional nugget effect is detected. See Details.}
   \item{minbounddistance}{absolute distance to the bounds
     below which a part of the algorithm is considered as
     having failed.  See Details.}
@@ -176,6 +203,16 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     any maximum likelihood method or cross validation method
     is on a borderline, then the optimisation is redone
     in a modified way (which takes about double extra time)
+  }
+  \item{minmixedvar}{
+    lower bound for variance in a mixed model;
+    so, the covariance model for mixed model part might
+    be calibrated appropriately
+  }
+  \item{maxmixedvar}{
+    upper bound for variance in a mixed model;
+    so, the covariance model for mixed model part might
+    be calibrated appropriately
   }
   \item{pch}{character shown before evaluating any method;
     if \code{pch!=""} then one or two
@@ -207,10 +244,11 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     
     Default: \code{NULL}}
   \item{standard.style}{logical or \code{NULL}.  This variable should only be
-    set by the advanced user.  If \code{NULL} then \code{standard.style} will be
+    set by the advanced user.  If \code{NULL} then \code{standard.style}
+    will be 
     \code{TRUE} if the covariance model allows for a \sQuote{standard}
-    definition (see \command{\link{convert.to.readable}} and
-    \command{\link{CovarianceFct}}) and \code{transform} is \code{NULL}.
+    definition (see \command{\link{CovarianceFct}})
+    and \code{transform} is \code{NULL}.
     %Otherwise \code{standard.style} will be \code{FALSE}.
     If a \sQuote{standard} definition is given and both the variance and the
     nugget are either not estimated or do not appear on the right hand
@@ -235,13 +273,41 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     using the same rules as for either \code{param} (except that no NA's should
     be contained) or \code{model}.
   }
-  \item{users.beta}{
-    User's guess of the trend.
+  \item{only.users}{boolean. If true then only users.guess is used as a
+    starting point for the fitting algorithms}
+  \item{Distances}{alternatively to coordinates
+    \code{x}, \code{y}, and \code{z} the distances themselves can be
+    given. Then \code{truedim} must be indicated.
   }
-  \item{table.format}{logical.
-    The parameters controls the output. See Value.
+  \item{truedim}{see Distances}
+  \item{solvesigma}{Boolean -- experimental stage!
+    If a mixed effect part is present where the variance
+    has to be estimated, then this variance parameter is solved
+    iteratively within the profile likelihood function, if
+    \code{solvesigma=TRUE}.This makes sense
+    if the number of independent variables is very small.
+    If \code{solvesigma=FALSE} then the variance parameter is
+    treated as any other parameter to be estimated.}
+  \item{allowdistanceZero}{boolean. If true, then
+    multiple observations are allowed within a single data set.
+    In this case, the coordinates are slightly scattered, so that
+    the points have some tiny distances.}
+  \item{na.rm}{boolean -- experimental stage.   
+    Only the data may have missing values.
+    If \code{na.rm=TRUE} then lines of (repeated) data are deleted if at
+    least one missing value appears. If \code{na.rm=FALSE} then the
+    repetitions are treated sepeartely.
   }
+%  \item{na.action}{ 
+%    If \sQuote{na.fail}, then the \command{fitvario} fails whenever
+%    a non-finite value appears in the data. If \sQuote{na.omitallrepet}
+%    then all locations are deleted for which not all repeated data
+%    are of finite value.
+%    }
+
 }
+  
+
 
 \details{
   The optimisations are performed using \command{\link[stats]{optimize}} if one
@@ -283,9 +349,17 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   
   Comments on specific parameters:
   \itemize{
+    \item \code{BC.lambda} If you want to estimate \code{BC.lambda} you should assert that all data values are positive;\cr
+    otherwise errors will probably occur because of the box-cox-transformation.\cr
+    The second parameter of the box-cox-transformation cannot be estimated since it corresponds to the mean.
+    So the mean should be estimated instead.
+
+    \item \code{trend} Among the formes mentioned above it is possible to use just one matrix for the trend 
+    instead of a list of identical ones.
+
     \item \code{lower}\cr
     The lower bounds are technical bounds that should not
-    restrict really restrict the domaine of the value.
+    really restrict the domaine of the value.
     However, if these values are too small the optimisation
     algorithm will frequently run into local minima or get
     stuck close the border of the parameter domain.
@@ -558,19 +632,29 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
 }
 \value{
-  If \code{table.format=TRUE} then a matrix is returned where the
-  first rows contain the estimated parameters, followed by 
-  the target values of all methods for the given set of parameters;
-  the last rows give the lower and upper bounds used in the estimations.
-  The columns correspond to the various estimation methods for the parameters.
 
-  If \code{table.format=FALSE} then
-  the function returns a list with the following elements
+  The function returns a list with the following elements
   \item{ev}{list returned by \command{\link{EmpiricalVariogram}}}
-  \item{variogram}{list of fitted models; they include the fixed and the
-    estimated parameters; each list element gives the estimated
-    covariance model}
-  \item{values}{list of optimal target values}
+  \item{table}{Matrix. The first rows contain the estimated parameters,
+    followed by  
+    the target values of all methods for the given set of parameters;
+    the last rows give the lower and upper bounds used in the estimations.
+    The columns correspond to the various estimation methods for the parameters.}
+  \item{lowerbounds}{lower bounds}
+  \item{lowerbounds}{upper bounds}
+  \item{transform}{transformation function}
+  \item{vario}{obsolete}
+  \item{self}{list containing
+    \itemize{
+      \item{\code{model}}{the variogram or covariance model}
+      \item{\code{residuals}}{\code{NULL}}
+      \item{\code{ml.value}}{the likelihood value for the \code{model}}
+    }
+  }
+  \item{plain, sqrt.nr, sd.inv, internal, ml, reml}{
+    see \code{self}; excepetion is \code{ml}, where the \code{residuals}
+    are given instead of \code{NULL}.
+  }
 }
 \references{
   \itemize{
@@ -598,6 +682,11 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \command{\link{RFparameters}}\code{()$PracticalRange}. 
   The function \code{fitvario} always uses the standard specification
   of the covariance model as given in \command{\link{CovarianceFct}}.
+
+  Further, the function has implemented accelerations if the model
+  is simple. E.g., if there is a common variance to estimated
+  and the definition by lists is used, then the leading model should
+  be \sQuote{$} with \code{var=NA}.
   
 %  The function is still in an experimental stage (and will probably
 %  never leave it).  The function works well if
@@ -610,14 +699,19 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \url{http://www.est.ufpr.br/geoR/}.
 }
 \seealso{
+  \command{\link{Covariance}},
   \command{\link{CovarianceFct}},
   \command{\link{GetPracticalRange}},
   \command{\link{parampositions}}
   \code{\link{RandomFields}},
- % \command{\link{winddata}}.
+  \command{\link{weather}}.
 }
 \examples{
- % library(RandomFields, lib="~/TMP"); source("~/R/RF/RandomFields/R/mle.old.R");
+
+
+% options(error=recover)
+ % library(RandomFields, lib="~/TMP");  source("~/R/RF/RandomFields/R/MLE.R"); source("~/R/RF/RandomFields/R/getNset.R");
+
  model <-"gencauchy"
  param <- c(0, 1, 0, 1, 1, 2)
  estparam <- c(0, NA, 0, NA, NA, 2) ## NA means: "to be estimated"
@@ -627,73 +721,81 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
  ## Nugget is fixed and equals zero.
  points <- 100
  x <- runif(points,0,3)
- y <- runif(points,0,3) ## 100 random points in square [0, 3]^2
- d <- GaussRF(x=x, y=y, grid=FALSE, model=model, param=param, n=10)
- str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
-              lower=c(0.1, 0.1), upper=c(1.9, 5), cross.me=NULL))
+ y <- runif(points,0,3) ## 300 random points in square [0, 3]^2
+ ## simulate data according to the model:
+ d <- GaussRF(x=x, y=y, grid=FALSE, model=model, param=param, n=1000) #1000
+ ## fit the data:
+
+Print(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
+    lower=c(0.1, 0.1, 0.1), upper=c(1.9, 5, 2)))
 
 
 #########################################################
 ## The next two estimations give about the same result.
 ## For the first the sill is fixed to 1.5. For the second the sill
 ## is reached if the estimated variance is smaller than 1.5
-estparam <-  c(0, NA, NA, NA, NA, NA) 
-str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
-    sill=1.5, cross.me=NULL))
-
-estparam <-  c(0, NA, NaN, NA, NA, NA) 
-parampositions(model=model, param=estparam)
-f <- function(param) {
-   param[5] <- max(0, 1.5 - param[1])
-   return(param)
+estparam <- c(0, NA, NA, NA, NA, NA) 
+\dontrun{
+Print(v <- fitvario(x=cbind(x,y), data=d, model=model, param=estparam,
+    sill=1, use.nat=FALSE)) ## gencauchy works better with use.nat=FALSE
 }
-str(fitvario(x=cbind(x,y), data=d, model=model, param=estparam, 
-    transform=f, cross.me=NULL))
+
+estmodel <-  list("+",
+                  list("$", var=NA, scale=NA,
+                       list("gencauchy", alpha=NA, beta=NA)
+                       ),
+                  list("$", var=NA, list("nugget"))
+                 )
+parampositions(model=estmodel, dim=2)
+f <- function(param) c(param, max(0, 1.0 - param[1]))
+\dontrun{
+Print(v2 <- fitvario(x=cbind(x,y), data=d, model=estmodel, 
+                  lower = c(TRUE, TRUE, TRUE, TRUE, FALSE),
+                  transform=f, use.nat=FALSE))
+}
 
 #########################################################
-## esimation of coupled parameters (kappa1 = kappa2, here)
-estmodel <- list(list(model="gencauchy", var=NA, scale=NA,
-                      kappa=list(NA, function(m) m[[1]]$kappa[1])),
-                 "+",
-                 list(model="nugget", var=NA))
-system.time(str(fitvario(x=cbind(x,y), data=d, model=estmodel,
-              cross.me=NULL), vec.len=6))
-
-## much faster implementation, but trickier coding
-estparam <- c(0, NA, NA, NA, NA, NaN) 
-parampositions(model=model, param=estparam)
-f <- function(param) {param[3] <- param[2]; param}
-system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
-      param=estparam, transform=f, cross.me=NULL), vec.len=6))
-
-
-## about as fast as previous coding
-## about the same precision as previous coding, or better
-## But, a warning is given, since the user may programme
-## strange things in this setup, and the programme cannot check it.
-system.time(str(fitvario(x=cbind(x,y), data=d, model=model,
-      param=estparam, transform=f, cross.me=NULL,
-      standard.style=TRUE), vec.len=6))
+## estimation of coupled parameters (alpha = beta, here)
+# source("RandomFields/tests/source.R")
+f <- function(param) param[c(1:3,3,4)]
+\dontrun{
+Print(fitvario(x=cbind(x,y), data=d, model=estmodel,
+             lower=c(TRUE, TRUE, TRUE, FALSE, TRUE),
+             transform=f))
+}
 
 
 
 #########################################################
 ## estimation in a anisotropic framework
-  x <- y <- (1:6)/4
-  model <- list(list(m="exp", v=1.5, aniso=c(4,2,-2,1)))
-  z <- GaussRF(x=x, y=y, grid=TRUE, model=model, n=10)
-  estmodel <- list(list(m="exp", v=NA, aniso=c(NA, NA,-2,1)))
-  system.time(str(fitvario(as.matrix(expand.grid(x, y)), data=z,
-                           model=estmodel, nphi=20)))
+% source("~/R/RF/RandomFields/tests/source.R")
+x <- y <- (1:6)/4
+model <- list("$", aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5,
+              list("exp"))
+z <- GaussRF(x=x, y=y, grid=TRUE, model=model, n=10)
+estmodel <-list("$", aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA,
+                list("exp"))
+Print(fitvario(as.matrix(expand.grid(x, y)), data=z,
+             model=estmodel, nphi=20))
 
 
-%#################################################################
-%##                                                             ##
-%## for a further, more complicated example, see data(winddata) ##
-%##                                                             ##
-%#################################################################
-%
-% check space time extension in MLE\n add examples\n add test
+
+%    source("~/R/RF/RandomFields/tests/source.R")
+
+#########################################################
+## estimation with trend (formula)
+model <- list("$", var=1, scale=2, list("gauss"))
+estmodel <- list("$", var=NA, scale=NA, list("gauss"))
+x <- seq(-pi,pi,pi/2)
+n <- 5
+data <- GaussRF(x, x, gridtri=FALSE, model=model,
+       trend=function(X1,X2) sin(X1) + 2*cos(X2),n=n)
+Print(v <- fitvario(x, x, data=data, gridtrip=FALSE,
+                  model=estmodel,
+                  trend=~sin(X1)+cos(X1)+sin(X2)+cos(X2)))
+
+
+
 }
 \keyword{spatial}
 

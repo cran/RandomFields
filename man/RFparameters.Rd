@@ -1,3 +1,7 @@
+% x <- read.table("RFparameters.Rd")
+% y <- iconv(x, "", "utf-8", sub="byte")
+% write(y, "xx.Rd")
+ 
 \name{RFparameters}
 \alias{RFparameters}
 \title{Control Parameters}
@@ -18,30 +22,28 @@
 }
 \details{
   The possible parameters are
-  \cr\cr
-  %
+  
   \bold{General options}\cr
   \describe{
-    \item{\code{PracticalRange}}{logical or 2, 3, 11, 12, 13.
-      If not \code{FALSE} the range of the covariance functions is
-      adjusted so that cov(1) is about 0.05 (for \code{scale=1}).
+    \item{\code{PracticalRange}}{logical or .
+      If not \code{FALSE} the range of the \strong{primitive}
+      covariance functions is
+      adjusted so that cov(1) is zero for models with finite range.
+      The value of 
+      cov(1) is about 0.05 (for \code{scale=1})
+      for models without range.
+      See \command{\link{CovarianceFct}} or type
+      \command{PrintModelList()}
+      for the list of
+      primitive models.
       \itemize{
 	\item \code{FALSE} : the practical range ajustment is not used.
 	\item \code{TRUE} : \code{PracticalRange} is applicable only if
-	the value is known exactly.
-	\item \code{2} : \code{PracticalRange} is applicable if the value is
-	known pretty well
-	\item \code{3} : \code{PracticalRange} is applicable if the value is
-	roughly known
-	\item \code{11} : if the practical range is not known exactly it
-	is approximated numerically.
-	\item \code{12} : if the practical range is not known pretty well it
-	is approximated numerically.
-	\item \code{13} : if the practical range is even not known
-	approximately it is approximated numerically.
+	the value is known exactly, or, at least, can be approximated by
+	a closed formula.
+	\item \code{2} : if the practical range is not known exactly it
+	is approximated numerically.	
       }
-      Note that values beyond \code{FALSE}, \code{TRUE}, and \code{11},
-      are only used for specialists' purposes.
       
       Default: \code{FALSE} [init].}
     
@@ -55,11 +57,12 @@
       
       Note that \code{PrintLevel} is also used in other packages
       as a default, for example in SoPhy
-      (\command{risk.index} and \command{create.roots}). The changing of
+      (\command{risk.index} and  \command{create.roots}). The changing of
       \code{PrintLevel} here may cause some unexpected effects in these
       functions. See the documentation there.
     }
   }
+  
   %
   \bold{General options for simulating}\cr
   \describe{
@@ -82,13 +85,8 @@
      or if an error had occured.
 
      On the other hand, if \code{Storing=TRUE}, then
-     several simulations for the same
-     model parameters are performed faster, see the examples.
-
-     Note that in subsequent calls of \command{\link{GaussRF}}
-     intermediate changes of RFparameters with flag "[init]"
-     do not have any influence on the algorithm, if
-     \code{Storing=TRUE}. 
+     several simulations performed with \code{DoSimulateRF} for the same
+     model parameters are performed faster.
 
      See alse \code{CE.several}, \code{TBMCE.several} and
      \code{local.several} for related parameters.
@@ -133,9 +131,25 @@
       }
       Default: \code{NA} [init].
     }
+    \item{\code{every}}{integer.
+      if greater than zero, then every \code{every}th iteration is
+      printed if simulated by TBM or random coin method.
+      Default: \code{0} [do].
+    }
+    \item{\code{aniso}}{logical.
+      If \code{TRUE} missing anisotropy parameter
+      or scale parameter in model \code{$} are
+      intepreted as identity matrix. If \code{FALSE}
+      missing anisotropy or scale parameter is intepreted
+      as scale parameter of value 1.0. The latter coding tends to faster
+      simulation, but also to more error messages. The parameter should
+      be changed only by advanced users.
+      Default: \code{TRUE} [init].
+    }
   }
-  %
+
   
+  %
   \bold{Options for simulating with the standard circulant embedding method}\cr
   \describe{
     \item{\code{CE.force}}{Logical.  Circulant embedding does not work if a
@@ -153,11 +167,12 @@
       If \code{CE.mmin>0} then the absolute starting size is given.
       If \code{CE.mmin<0} then the automatically determined
       matrix size is multiplied
-      by \eqn{|\code{CE.mmin}|}; here \code{CE.mmin} must be smaller than -1; the
+      by \eqn{|\code{CE.mmin}|}; here \code{CE.mmin} must be smaller
+      than -1; the 
       value -1 takes over the minimal starting size.\cr
       Note: in any cases, the initial size might be increased according
-      to \code{CE.useprimes}.
-      Default: \code{0} [init].} 
+      to \code{CE.useprimes}.\cr
+      Default: \code{0} [init].}
     \item{\code{CE.strategy}}{0 : if the circulant
       matrix has negative eigenvalues then the
       size in each direction is doubled; \cr 1 : the size is enhanced only in
@@ -168,8 +183,8 @@
 
       In some cases \code{CE.strategy=0} works better, in other cases
       \code{CE.strategy=1}. Just try.
- 
-       Default: \code{0}
+      
+      Default: \code{0}
       [init].}
     \item{\code{CE.maxmem}}{
       maximal total size of the circulant matrix. 
@@ -205,7 +220,7 @@
     }
     \item{\code{CE.several}}{logical.
       If \code{FALSE} only half the memory is need, but
-      only a single independent realisation can created. 
+      only a single independent realisation can created.
       Default: \code{TRUE} [init].
     }
     \item{\code{CE.useprimes}}{Logical.  If \code{FALSE}
@@ -222,9 +237,99 @@
       See \code{CE.trials} for some
       more information on the circulant matrix.
       Default: \code{FALSE} [init].}
+    \item{\code{CE.method}}{0 or 1. Decomposition of the covariance matrix.
+      This parameter
+      is only relevant if multivariate random fields are simulated.
+
+      Default (\code{CE.method=0}):
+      If \code{.Random.seed} is fixed, Cholesky decomposition allows for
+      fixing the random field of the first component whilst
+      parameters for the second field are changed.
+      If \code{CE.method=0} and approximate circulant embedding is
+      allowed, i.e. \code{CE.force=TRUE},
+      SVD is tried for the last failed attempt of Cholesky
+      decomposition. (SVD, in contrast to Cholesky decomposition, allows
+      for approximate circulant embedding.)
+
+      If \code{CE.method=1}, Cholesky
+      decomposition will not be attempted, but singular value
+      decomposition used instead in all attempts. (SVD is slower, but
+      more precise.)
+     
+      Default: \code{0} [init].}
+   }
+  
+  
+  \bold{Options for simulating by simple matrix decomposition}\cr
+  \describe{
+    \item{\code{direct.bestvariables}}{integer.
+      When searching for an appropriate simuation method
+      the matrix decomposition method (see \sQuote{direct method} below)
+      is preferred if the number of variables is less than or equal to 
+      \code{direct.bestvariables}.
+      Default: \code{800} [init]}
+    \item{\code{direct.maxvariables}}{
+      If the number of variables to generate is
+      greater than \code{direct.maxvariables}, then any matrix decomposition
+      method is rejected.  It is important that this option is set
+      conveniently to avoid great losses of time during the automatic
+      search of a simulation method (\code{method=NULL} in
+      \command{\link{GaussRF}}).  
+      Default: \code{4096} [init]}
+    \item{\code{direct.method}}{Decomposition of the covariance matrix.
+      If \code{direct.method=1}, Cholesky
+      decomposition will not be attempted, but singular value
+      decomposition
+      used instead if \code{direct.svdtolerance} positive.
+      In case of a multivariate random field, \code{direct.method = 2}
+      or 3 orders the covariance such that first all components are
+      considered for the first variable, then all components for the
+      second one, and so on. If \code{direct.method = 0} or 1
+      it starts with the first component of all locations, then the
+      second components follow, etc.
+      
+      
+      
+      Default: \code{0} [init].}
+    \item{\code{direct.svdtolerance}}{
+      If SVD decomposition is used for calculating the square root of
+      the covariance matrix then the absolute componentwise difference between
+      the covariance matrix and square of the square root must be less
+      than \code{direct.svdtolerance}. No check is performed if
+      \code{direct.svdtolerance} is negative.
+      Default: \code{1e-12} [init].}
   }
   
-  
+  %
+  \bold{Options for simulating hyperplane tessellations}\cr
+  \describe{
+    \item{\code{hyper.superpos}}{integer.
+      number of superposed hyperplane tessellations.
+      Default: \code{300} [do].
+    }
+    \item{\code{hyper.maxlines}}{integer.
+      Maximum number of allowed lines.
+      Default: \code{1000} [init].
+    }
+    \item{\code{hyper.mar.distr}}{integer.
+      code for the marginal distribution used in the
+      simulation:
+      \describe{
+	\item{\code{0}}{uniform distribution}
+	\item{\code{1}}{Frechet distribution with form parameter
+	  \code{hyper.mar.param}}
+	\item{\code{2}}{Bernoulli distribution (Binomial with \eqn{n=1}) with
+	  parameter \code{hyper.mar.param}}
+      }
+      The parameter should not be changed yet.
+      Default: \code{0} [do].
+    }
+    \item{\code{hyper.mar.param}}{Parameter used for the marginal
+      distribution. The parameter should not be changed yet.
+      Default: \code{0} [do].
+    }
+  }
+
   \bold{Options for simulating with the local ce
     methods (cutoff, intrinsic)}\cr
   \describe{
@@ -260,40 +365,79 @@
   }
   %
 
-  
-  \bold{Options for simulating by simple matrix decomposition}\cr
+  \bold{Options for simulating a Gaussian Markov random fields}
   \describe{
-    \item{\code{direct.bestvariables}}{integer.
-      When searching for an appropriate simuation method
-      the matrix decomposition method (see \sQuote{direct method} below)
-      is preferred if the number of variables is less than or equal to 
-      \code{direct.bestvariables}
-      
-      Default: \code{800} [init]}
-    \item{\code{direct.maxvariables}}{
-      If the number of variables to generate is
-      greater than \code{direct.maxvariables}, then any matrix decomposition
-      method is rejected.  It is important that this option is set
-      conveniently to avoid great losses of time during the automatic
-      search of a simulation method (\code{method=NULL} in
-      \command{\link{GaussRF}}).  
-      Default: \code{4096} [init]}
-    \item{\code{direct.method}}{Decomposition of the covariance matrix.
-      If \code{direct.method=1}, Cholesky
-      decomposition will not be attempted, but singular value
-      decomposition
-      used instead.
-      Default: \code{0} [init].}
-    \item{\code{direct.svdtolerance}}{
-      If SVD decomposition is used for calculating the square root of
-      the covariance matrix then the absolute componentwise difference between
-      the covariance matrix and square of the square root must be less
-      than \code{direct.svdtolerance}. No check is performed if
-      \code{direct.svdtolerance} is negative.
-      Default: \code{1e-12} [init].}
+    \item{\code{markov.neighbours}}{2 or 3.
+      Number of neighbours in each direction.
+      Default: \code{2} [init].
+    }
+    \item{\code{markov.precision}}{
+      See also the GMRF manual.
+      Default: \code{1.0} [init].
+    }
+    \item{\code{markov.cyclic}}{logical.
+      simulation on a torus; should not be changed
+      except the user knows what he/she does. (The covariance function
+      will be (slightly?!) changed then without further notice!)
+      Default: \code{FALSE} [init].
+    }
+    \item{\code{markov.maxmem}}{integer.
+      maximum numer of points of the grid.
+      Default: \code{250000} [init].
+    }
   }
-  %
-
+  
+  \bold{Options for simulating by random coins}\cr
+  \describe{
+    \item{\code{mpp.locations}}{
+      integer. Way of defining the point process.\cr
+      -1 : automatic choice\cr
+      0 : grid\cr
+      1 : Poisson point process\cr
+      2 : uniform distribution\cr
+      3 : single point follows d dimensional Gaussian distribution\cr
+      Default: \code{-1} [init].
+    }
+    \item{\code{mpp.intensity}}{real.
+      Number of superposed
+      realisations (to approximate the normal distribution; total number
+      for all (additive) components with same anisotropy);
+      if \code{mpp.intensity<=0.0} then only a single
+      value is simulated (for checking).
+      Default: \code{100} [do].}
+    
+    \item{\code{mpp.plus}}{
+      In order avoid edge effects, the simulation area is enlarged by
+      a constant \eqn{r}{r} so that all marks have their
+      (supposed) support in the ball with radius \eqn{r}{r} centred at
+      the origin; see also \code{mpp.approxzero}.
+      If \code{mpp.plus>0} the true radius \eqn{r}{r} is replaced by
+      \code{mpp.radius}.
+      Default: \code{0.0} [init].}
+    \item{\code{mpp.relRadius}}{
+      \eqn{\code{mpp.relRadius} / V} is added to the effectiveRadius.
+      The latter gives the approximate radius for the support of the
+      grain.
+      Default: \code{2.5} [init].
+    }
+    \item{\code{mpp.approxzero}}{Functions that
+      do not have 
+      compact support are set to zero outside the ball outside for which the
+      function has absolute values less than \code{MPP.approxzero}. 
+      Default: \code{0.001} [init].}
+    \item{\code{mpp.samplingdist}}{
+      \code{mpp.samplingdist} gives the grid distance
+      to numerically approximate the volume of the grain.
+      \code{[-mpp.samplingr,mpp.sampling]^d } gives the
+      domain over which the approximation is calculated.
+      
+      Default: \code{0.01} [init].
+    }
+    \item{\code{mpp.samplingr}}{
+      see \code{mpp.samplingdist}
+      Default: \code{5} [init].
+    }
+  }
   
   \bold{Options for simulating nugget effects}\cr
   Simulating a nugget effect seems trivial. It gets complicated
@@ -314,9 +458,73 @@
       should be of order \eqn{10^{-15}}{1e-15}. 
       Default: \code{0.0} [init].
     }
+    \item{\code{nugget.meth}}{
+      logical. If \code{TRUE} any method given the user for the
+      simulation of the nugget effect is replaced by the method
+      \sQuote{nugget} whenever appropriate (zonal nugget or a method
+      different form circulant embedding, direct and sequential).
+    }
   }
 
+  \bold{Options for using the sequential method}\cr
+  The method works only for spatio-temporal settings (and
+  grids).
+  \describe{
+    \item{\code{sequ.max}}{integer.
+      maximum number of allowed variables on which
+      the conditional distribution is conditionned.
+      Default: \code{5000} [init].
+    }
+    \item{\code{sequ.back}}{integer.
+      number of previous instances on which
+      the algorithm should condition.
+      If less than one then the number of previous instances
+      equals \code{sequ.max} / (number of spatial points).
+      Default: \code{5} [init].
+      
+    }
+    \item{\code{sequ.initial}}{
+      First, N=(number of spatial points) * \code{sequ.back}
+      number of points are simulated. Then, sequentially,
+      all spatial points for the next time instance
+      are simulated at once, based on the previous \code{sequ.back}
+      instances. The distribution of the first N points
+      is the correct distribution, but
+      differs, in general, from the distribution of the sequentially
+      simulated variables. We prefer here to have the same distribution
+      all over (although only approximatively the correct one),
+      hence do some initial sequential steps first.
+      If \code{sequ.initial} is non-negative, then \code{sequ.initial}
+      first steps are performed.
+      If \code{sequ.initial} is negative, then
+      \code{sequ.back} -  \code{sequ.initial}
+      initial steps are performed. The latter ensures that
+      none of the very first N variables are returned.
+      Default: \code{-10} [init].
+    }
+  }
 
+  \bold{Options for special simulation methods}\cr
+  Special methods exist for the following covariance functions
+  \describe{
+    \item{spatialMA1}{
+      this covariance function is simulated by
+      a certain moving average of a spatially independent,
+      but temporally dependent random field \eqn{Y}.
+      \describe{
+	\item{\code{spec.MA.r}}{gives the radius beyond which the bivariate
+	  standard normal density is considered as being zero
+	  Default: \code{2.5} [init].
+	}
+	\item{\code{spec.MA.dist}}{the random field \eqn{Y} is
+	  approximated by a grid; the grid length is given by
+	  \code{spec.MA.dist}.
+	  Default: \code{0.1} [init].
+	}
+      }
+    }
+  }
+  
   \bold{Options for simulating with a turning bands method}\cr
   Currently, there are 3 variants of the turning bands method
   implemented:
@@ -333,32 +541,63 @@
       the time dimension can be added.
       }
     }
+
    The following parameters are used. 
-  \describe{
-    \item{\code{spectral.grid}}{Logical.    The angle of the lines is random if
+   \describe{
+    \item{\code{spectral.grid}}{Logical.
+      The angle of the lines is random if
       \code{spectral.grid=FALSE}, 
       and \eqn{k\pi/}{k*pi/}\code{spectral.lines}
       for \eqn{k}{k} in \code{1:spectral.lines},
-      otherwise.  Default: \code{TRUE} [do].}
-    \item{\code{spectral.lines}}{Spectral turning bands.
+      otherwise. This parameter is only considered
+      if the spectral measure, not the density is used.
+      Default: \code{TRUE} [do].}
+    \item{\code{spectral.ergodic}}{
+      In case of an additive model and \code{spectral.ergodic=FALSE},
+      the additive component are chosen proportional to their
+      variance. In total \code{spectral.lines} are simulated. If
+      \code{spectral.ergodic=TRUE}, the components are simulated
+      separately and then added.
+      Default: \code{FALSE} [do].
+    }
+    \item{\code{spectral.lines}}{
       Number of lines used (in total for all additive components of the
       covariance function).  Default: \code{500} [do].}
-    %\item{\code{TBM.method}}{Set at init time; setting ignored and stored
+    \item{\code{spectral.metro}}{
+      Logical. If \code{TRUE} then preference is given
+      to the (slower) metropolis sampling algorithm of the spectral
+      density.
+      Default: \code{FALSE} [init].
+    }
+    \item{\code{spectral.nmetro}}{integer. Considered if the Metropolis
+      algorithm is used. It gives the number of metropolis steps
+      before returning the next draw from the spectral density.
+      If  \code{spectral.nmetro}
+      is not positive then\code{RandomFields} tries to find a good
+      choice for 
+      \code{spectral.nmetro} by itself.
+      Default: \code{0} [init].
+    }
+    \item{\code{spectral.sigma}}{real. Considered if the Metropolis
+      algorithm is used. It gives the standard deviation of the
+      multivariate normal distribution of the proposing
+      distribution.
+      If \code{spectral.sigma}
+      is not positive then\code{RandomFields} tries to find a good
+      choice for 
+      \code{spectral.sigma}  itself.
+      Default: \code{0} [init].
+      }
+    
+     %\item{\code{TBM.method}}{Set at init time; setting ignored and stored
     %setting used if other parameters are identical to former parameters!
     %-- use DeleteKey, to make sure that the current setting is used.
     % [init]}
     \item{\code{TBM.method}}{character.
       The preferred method to simulate on the line for \code{TBM2} and
       \code{TBM3};
-      currently either \code{'circulant embedding'} or \code{'direct'}.
-      If \code{'direct'}
-      then the method is overwritten if the number of points on the grid
-      is larger than \code{direct.maxvariables}.
-      If the circulant embedding method is used, then the \code{TBMCE}
-      parameters below determine the behaviour of the circulant
-      embedding algorithm.
-      
-      Default: \code{"circulant embedding"} [init].
+      If \sQuote{Nothing} then automatic choice.
+      Default: \code{"Nothing"} [init].
     }
     \item{\code{TBM.center}}{Scalar or vector.
       If not \code{NA}, the \code{TBM.center} is used as the center of
@@ -402,21 +641,21 @@
       \code{TBM2.linesimustep}. 
       See also \code{TBM2.linesimufactor}. 
       Default: \code{0.0} [init].}
-    \item{\code{TBM2.num}}{
-      Logical. If \code{TRUE} then the covariance function on the line
-      is approximated numerically.
-      If \code{FALSE} only those models are allowed
-      that have an analytic representation on
-      the line.
-      Default: \code{TRUE} [init].}
     \item{\code{TBM2.layers}}{
-      Logical. If \code{TRUE} then the turning layers are used whenever
+      Logical or integer. If \code{TRUE} then the turning layers are used whenever
       a time component is given.
       If \code{FALSE} the turning layers are used only when the
       traditional TBM is not applicable.
       If negative then turning layers may never be used.
       If greater than 1 then only turning layers may be used. 
       Default: \code{FALSE} [init].}
+%    \item{\code{TBM2.num}}{
+%      Logical. If \code{TRUE} then the covariance function on the line
+%      is approximated numerically.
+%      If \code{FALSE} only those models are allowed
+%      that have an analytic representation on
+%      the line.
+%      Default: \code{TRUE} [init].}
     \item{\code{TBM3.every}}{If \code{TBM3.every>0} then every
       \code{TBM3.every}th iteration is announced.
       Default: \code{0} [do].}
@@ -426,12 +665,12 @@
     \item{\code{TBM3.linesimufactor}}{See \code{TBM2.linesimufactor} for
       the meaning.
       Default: \code{2.0} [init].}
+    \item{\code{TBM3.linesimustep}}{See 
+      \code{TBM2.linesimustep} for the meaning.   
+      Default: \code{0.0} [init].}
     \item{\code{TBM3.layers}}{See 
       \code{TBM2.layers} for the meaning.   
       Default: \code{FALSE} [init].}
-    \item{\code{TBM3.linesimus}}{See 
-      \code{TBM2.linesimustep} for the meaning.   
-      Default: \code{0.0} [init].}
     \item{\code{TBMCE.force}}{see \code{TBM.method} and \code{CE.force}
       Default: \code{FALSE} [init].}
     \item{\code{TBMCE.mmin}}{see \code{TBM.method} and 
@@ -453,57 +692,6 @@
   }
   %
 
-  \bold{Options for simulating with Poisson point processes}\cr
-  \describe{
-    \item{\code{add.MPP.realisations}}{
-      Number of superposed
-      realisations (to approximate the normal distribution; total number
-      for all (additive) components with same anisotropy);
-      Default: \code{100} [do].}
-    \item{\code{MPP.approxzero}}{Functions that
-      do not have 
-      compact support are set to zero outside the ball outside for which the
-      function has absolute values less than \code{MPP.approxzero}. 
-      Default: \code{0.001} [init].}
-    \item{\code{MPP.radius}}{
-      In order avoid edge effects, the simulation area is enlarged by
-      a constant \eqn{r}{r} so that all marks have their
-      (supposed) support in the ball with radius \eqn{r}{r} centred at
-      the origin; see also \code{MPP.approxzero}.
-      If \code{MPP.radius>0} the true radius \eqn{r}{r} is replaced by
-      \code{MPP.radius}.
-      Default: \code{0.0} [init].}
-  }
-%
-
-  \bold{Options for simulating hyperplane tessellations}\cr
-  \describe{
-    \item{\code{hyper.superpos}}{integer.
-      number of superposed hyperplane tessellations.
-      Default: \code{300} [do].
-    }
-    \item{\code{hyper.maxlines}}{integer.
-      Maximum number of allowed lines.
-      Default: \code{1000} [init].
-    }
-    \item{\code{hyper.mar.distr}}{integer.
-      code for the marginal distribution used in the
-      simulation:
-      \describe{
-	\item{\code{0}}{uniform distribution}
-	\item{\code{1}}{Frechet distribution with form parameter
-	  \code{hyper.mar.param}}
-	\item{\code{2}}{Bernoulli distribution (Binomial with \eqn{n=1}) with
-	  parameter \code{hyper.mar.param}}
-      }
-      The parameter should not be changed yet.
-      Default: \code{0} [do].
-    }
-    \item{\code{hyper.mar.param}}{Parameter used for the marginal
-      distribution. The parameter should not be changed yet.
-      Default: \code{0} [do].
-    }
-  }
   
   \bold{Options specific to simulating max-stable random fields}
   \describe{
@@ -626,24 +814,20 @@
 ############################################################
 ## The following example shows that the same realisation      
 ## can be obtained on different grid geometries (or point     
-## configurations) using TBM3 (or TBM2)
-                                             
-% library(RandomFields, lib="~/TMP")
+## configurations, i.e. grid, non-grid) using TBM3 (or TBM2)
 
 x1 <- seq(-150,150,1)
 y1 <- seq(-15, 15, 1)
 x2 <- seq(-50, 50, 1)
 model <- "exponential"
 param <- c(0, 1, 0, 10)
-
 meth <- "TBM3"
+
 ###### simulation of a random field on long thing stripe
 runif(1)
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
-DeleteAllRegisters()
-z1 <- GaussRF(x1, y1, model=model, param=param, grid=TRUE, register=1,
+z1 <- GaussRF(x1, y1, model=model, param=param, grid=TRUE, 
               method=meth, TBM.center=0, Storing=TRUE)
-% str(GetRegisterInfo(1))
 do.call(getOption("device"), list(height=1.55, width=12))
 par(mar=c(2.2, 2.2, 0.1, 0.1))
 image(x1, y1, z1, col=rainbow(100))
@@ -652,14 +836,14 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 
 ###### definition of a random field on a square of shorter diagonal
 assign(".Random.seed", rs, envir=.GlobalEnv)
-z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=2,
-              method=meth, TBM.center=0,
-              TBM.points=length(GetRegisterInfo(1)$method[[1]]$mem$l))
-% str(GetRegisterInfo(2))
+tbm.points <- length(GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$line)
+z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=1,
+              method=meth, TBM.center=0, TBM.points=tbm.points)
 do.call(getOption("device"), list(height=4.3, width=4.3))
 par(mar=c(2.2, 2.2, 0.1, 0.1))
 image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
+
 
 
 ############################################################
@@ -669,21 +853,20 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 ############################################################
 % library(RandomFields, lib="~/TMP")
 x <- seq(0, 1, 1/30)
-model <- list(list(model="stable", var=1, scale=1, kappa=1.0),
-              "+",
-              list(model="gencauchy", var=1, scale=1, kappa=c(1, 2))
+model <- list("+",
+              list("stable", alpha=1.0),
+              list(model="gencauchy", alpha=1.0, beta=2.0)
               )
 
 for (exactness in c(NA, FALSE, TRUE)) { 
-  readline(paste("\n\nexactness: ", exactness, "; press return"))
-  DeleteRegister()
-  z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
+  readline(paste("\n\nexactness: `", exactness, "'; press return"))
+   z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
                 model=model, exactness=exactness,
-                stationary.only=NA, Print=4, n=1,
+                stationary.only=NA, Print=1, n=1,
                 TBM2.linesimustep=1, Storing=TRUE)
-   str(lapply(GetRegisterInfo()$method,
-              function(x) x[c("name", "covnr")]))
- }
+   Print(GetRegisterInfo()$meth$name)
+  }
+
 
 
  #############################################################
@@ -691,55 +874,51 @@ for (exactness in c(NA, FALSE, TRUE)) {
  ## local.dependent=TRUE (and CE.dependent=TRUE) if in a    ##
  ## study most of the time is spent with simulating the     ##
  ## Gaussian random fields. Here, the covariance at a pair  ##
- ## of points is estimated.                                 ##
+ ## of points is estimated for n independentent repetitions ##
+ ## and 2*n locally dependent dependent repetitions .       ##
+ ## To get the precision, the procedure is repeated m times.##
  #############################################################
 
 # In the example below, local.dependent speeds up the simulation
-# by about factor 27 at the price of an increased variance of
+# by about factor 16 at the price of an increased variance of
 # factor 1.5
 
 x <- seq(0, 1, len=10)
 y <- seq(0, 1, len=10)
 grid.size <- c(length(x), length(y))
-model <- list(list(model="exp", var=1.1, aniso=c(2,1,0.5,1)))
-CovarianceFct(matrix(c(1, -1), ncol=2), model=model) ## true value
+model <- list("$", var=1.1, aniso=matrix(nc=2, c(2,1,0.5,1)),
+              list(model="exp"))
+(CovarianceFct(matrix(c(1, -1), ncol=2), model=model)) ## true value
 
-RFparameters(Storing=TRUE)
-m <- if (interactive()) 1000 else 2
+m <- if (interactive()) 100 else 2
+n <- if (interactive()) 100 else 10
 
-# determine number of non-overlapping realisations on the torus
-DeleteRegister()
-InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
-blocks <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$simupos
-(n <- prod(blocks) * 1) ## n any multiple of prod(blocks) to avoid
-##               dependencies between the m estimated covariance if
-##               if local.dep=TRUE; or put RFparameters(Storing=FALSE),
-##               but this is slower
-%str(GetRegisterInfo())
-
-# using local.dependent=TRUE...
+# using local.dependent=FALSE (which is the default)
 c1 <- numeric(m)
-DeleteRegister()
 unix.time(
 for (i in 1:m) {
-  cat("\n", i)
-  z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=n,
-               local.dependent=TRUE, pch="")
-  c1[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
-}) # about 35 0.3 35 0  0
-var(c1) # about 0.013
-
-# using local.dependent=FALSE...
-c2 <- numeric(m)
-DeleteRegister()
-unix.time(
-for (i in 1:m) {
-  cat("\n", i)
+  cat("", i)
   z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=n,
                local.dependent=FALSE, pch="")
+  c1[i] <- cov(z[1,length(y), ], z[length(x), 1, ])
+})  # many times slower than with local.dependent=TRUE
+mean(c1)
+sd(c1)
+
+# using local.dependent=TRUE...
+c2 <- numeric(m)
+unix.time(
+for (i in 1:m) {
+  cat("", i)
+  z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=2 * n,
+               local.dependent=TRUE, pch="")
   c2[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
-})  # about 950  3 950 0 0
-var(c2) # about 0.0087
+})
+mean(c2)
+sd(c2) # the sd is samller (using more locally dependent realisations)
+##       but it is (much) faster! For n=n2 instead of n=2 * n, the 
+##       value of sd(c2) would be larger due to the local dependencies 
+##       in the realisations.
 
 }
 

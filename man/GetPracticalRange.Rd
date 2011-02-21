@@ -8,13 +8,15 @@
   (\code{variance=1}, \code{nugget=0}, \code{scale=1}) values 0.05
 }
 \usage{
-GetPracticalRange(model, kappas=NULL, dim=1)
+GetPracticalRange(model, param, dim=1)
 }
 \arguments{
-  \item{model}{string; covariance model, see \command{\link{CovarianceFct}}, or
-    type \command{\link{PrintModelList}}\code{()} to get all options.}
-  \item{kappas}{additional parameters of a parametrised model, see
-    \command{\link{CovarianceFct}}.}
+  \item{model}{covariance model in the new list not;
+    the model must be primitive, i.e. may not call other models.
+    See \command{\link{Covariance}} and \command{\link{CovarianceFct}}
+    for details.}
+  \item{param}{optional vector of parameters for the model,
+  see \command{\link{CovarianceFct}}}
   \item{dim}{space-time dimension; except for some few anisotropic
     models, this parameter does not have an effect}
 }
@@ -40,8 +42,8 @@ GetPracticalRange(model, kappas=NULL, dim=1)
 }
 
 \examples{
-GetPracticalRange("exponential")
-GetPracticalRange("whittlematern",kappa=2)
-GetPracticalRange("gengneiting",kappa=c(a=3,b=5))
+GetPracticalRange(list("exponential"))
+GetPracticalRange(list("whittle", nu=2))
+try(GetPracticalRange(list("bessel", nu=-0.5))) # leads to an error
 }
 \keyword{spatial}

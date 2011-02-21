@@ -6,13 +6,16 @@
   the selection of 
  models and their one- or two-dimensional simulations;
  it also allows for the fitting of variogram models by eye.
+
+ CURRENTLY NOT AVAIABLE IN VERSION 2 OF RANDOMFIELDS.
+ PLEASE USE VERSION 1.3.47 INSTEAD.
 }
 \usage{
 ShowModels(x, y=NULL,
            covx=ifelse(is.null(empirical), diff(range(x))/5,
                        max(empirical$c)), 
            fixed.rs=TRUE, method=NULL, empirical=NULL,
-           model=NULL, param=NULL, all.param=NULL,  
+           model=NULL, param=NULL, anisotropy = FALSE, all.param=NULL,  
            legends = TRUE, 
            register=0, Mean=NULL, erase=TRUE,
            x.fraction=0.60, cex.names=1, covx.default = 100,
@@ -64,6 +67,9 @@ ShowModels(x, y=NULL,
     in this order; see \command{\link{CovarianceFct}} for more details.
     Only considered if \code{model} is given.
     If given, \code{model} is initialised by \code{param}.}
+  \item{anisotropy}{logical. If \code{TRUE} then an isotropic model is
+    considered. 
+  }
   \item{all.param}{%% ## var, nugg, scale
     \code{all.param=c(mean, variance, nugget, scale)};
     the parameters must be given in this order;
@@ -159,11 +165,11 @@ ShowModels(x, y=NULL,
     a primitive way -- this is indicated with a star in the legend
     \item bottom left: one- or two-dimensional simulation
     \item right:
-    
+
       -- list of implemented models; a specific
       model is chosen by the left mouse button, or:
       
-      --  menu for the parameters of the chosen model.
+      -- menu for the parameters of the chosen model.
       The list includes the variance, a nugget effect, the mean and the
       scale or the anisotropy parameters. Further, some global parameters
       can be changed. They are the \code{PracticalRange}  (see
@@ -184,13 +190,22 @@ ShowModels(x, y=NULL,
   \command{\link{GaussRF}},
   \command{\link{RFMethods}}, \code{\link{RandomFields}}.}
 \examples{
+\dontrun{
+
 %library(RandomFields, lib="~/TMP"); source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R");source("~/R/RF/RandomFields/R/auxiliary.R")
 # first example: one-dimensional simulations
 
 
+# library(RandomFields)
+
 options(locatorBell=FALSE)
-x <-  seq(1,10,0.1);
-ShowModels(x=x)
+x <-  seq(1,10,0.1)
+ShowModels(x=x, covx=10, cov.def=100, type="l")
+
+
+x <-  seq(1,10,0.1)
+ShowModels(x=x, y=x, covx=10, cov.def=100)
+
 
 # second example: two-dimensional simulations and
 #                 empirical variogram
@@ -219,7 +234,9 @@ ShowModels(x=x, link=function(x) exp(x),
 x <-  seq(1,10,0.1)
 ShowModels(x=x, link="MaxStable", fixed.rs=TRUE,
            model=list(list(model="gauss",var=1, scale=1)), type="l")
-}
+} % dontrun
+
+} % examples
 \keyword{spatial}            
 
 

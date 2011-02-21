@@ -101,6 +101,9 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     and \code{\link{RandomFields}}}}
 \examples{
 % library(RandomFields, lib="~/TMP"); RFparameters(Print=6)
+%  source("/home/schlather/R/RF/RandomFields/tests/source.R")
+% RFparameters(Print=9)
+
   #############################################################
   ## this example checks whether a certain simulation method ##
   ## works well for a specified covariance model and         ##
@@ -112,9 +115,8 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
   model <- "whittle"       ## whittlematern
   bins <- seq(0, 5, 0.001)
   realisations <- 5 ## by far too small to get reliable results!!
-                   ## It should be of order 500,
-                   ## but then it will take some time
-                   ## to do the simulations
+                   ## It should be of order 500, but then it will
+                   ## take some time to do the simulations
   param <- c(mean=1, variance=10, nugget=5, scale=2, alpha=2)
   f <- GaussRF(x=x, y=y, grid=TRUE, gridtriple=gridtriple,
                model=model, param=param, method="TBM3",

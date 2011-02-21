@@ -3,13 +3,18 @@
 
 #library(RandomFields)
 
+
+## unten sind 2 Beispiele ausgeblendet, da zu lange brauchen --
+## was ist los??
+
+
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
 
 wait <- TRUE; ##wait <- FALSE;  
 
 RFsimu <- function(cov="expo", param =c(1000,2,0,2/3,1),
-                   x=seq(0, 10, 0.2),
-                   y=seq(0, 10, 0.1),
+                   x=seq(0, 10, if (interactive()) 0.2 else 1),
+                   y=seq(0, 10, if (interactive()) 0.1 else 1),
                    key=0)
 {
   #str(RFparameters())
@@ -34,6 +39,7 @@ RFparameters(PrintLevel=2,
 
 print("",quote=FALSE);print("Press RETURN to start",quote=FALSE);
 if (wait) readline()
+
 print("",quote=FALSE);
 print("STORING TRUE VS FALSE -- NOTE THE DIFFERENCE IN TIME FOR THE RESPECTIVE SECOND SIMULATION",quote=FALSE)
 print("Storing=false:",quote=FALSE)
@@ -76,6 +82,8 @@ print("Example 2: Gneiting, 1) working directly 2)enlarging necessary 3)failed",
 RFparameters(Storing=TRUE,PrintLevel=2)
 RFsimu("gneiting",param=c(0,1,0,10));
 RFsimu("gneiting",param=c(0,1,0,15));
+
+RFparameters(Storing=TRUE,PrintLevel=5)
 RFsimu("gneiting",param=c(0,1,0,20));
 
 

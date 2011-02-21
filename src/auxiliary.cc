@@ -7,7 +7,7 @@
 
  Collection of auxiliary functions
 
- Copyright (C) 2001 -- 2006 Martin Schlather, 
+ Copyright (C) 2001 -- 2011 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,8 +28,34 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <unistd.h>
 #include <assert.h>
-// #include <curses.h>
 #include "auxiliary.h"
+//#include <curses.h>
+#include "RandomFields.h"
+#include <R_ext/Lapack.h>
+#include <R_ext/Linpack.h>
+
+
+void distInt(int *X, int*N, int *Genes, double *dist) {
+    int i,j, k, di, diff, *x, *y, ve, ho, endfor,
+	n = *N,
+	nP1 = n + 1,
+	genes = *Genes;
+ 
+  x = y = X;
+  for (j=0, i=0;  j<n;  i += nP1, j++, y += genes) {
+    dist[i] = 0.0;
+    endfor = i + (n - j);
+    for (ve = i + 1, ho = i + n, x = y + genes; 
+         ve < endfor; 
+	 ve++, ho += n) {
+      for (di=0.0, k=0; k<genes; k++, x++) {
+	diff = *x - y[k];
+	di += diff * diff;
+      }
+      dist[ve] = dist[ho] = sqrt((double) di);
+    }
+  }
+}
 
 
 SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {  
@@ -42,12 +68,12 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
   bool shorter = LOGICAL(Shorter)[0],
       piep = LOGICAL(Beep)[0],
       show = LOGICAL(Show)[0];
-  char choice[256], *res,
+  char choice[256], *zk,
       backspace = 127,
       eof = 'e'; // crl-D, ^D
-  SEXP Res;
+  SEXP Zk;
   
-  res = (char*) malloc(sizeof(char) * (n+1));
+  zk = (char*) malloc(sizeof(char) * (n+1));
   if (len > 256) len = 256;  
   for (i=0; i<len; i++) {
       choice[i] = CHAR(STRING_ELT(Choice, i))[0];
@@ -66,17 +92,17 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
        }
    }
 
-    res[j] = getchar();
-    if (res[j] == eof && shorter) break;
-    if (res[j] == backspace && j>start) {
+    zk[j] = getchar();
+    if (zk[j] == eof && shorter) break;
+    if (zk[j] == backspace && j>start) {
       j--;
       PRINTF("\b \b");
       continue;
     }
     for (i=0; i<len; i++)
-      if (res[j] == choice[i]) break;
+      if (zk[j] == choice[i]) break;
     if (i < len) {
-	if (show) PRINTF("%c", res[j], n-1-j);
+	if (show) PRINTF("%c", zk[j], n-1-j);
         j++; 
     } else {
 	if (piep) PRINTF("beep does not work.\n"); // beep();
@@ -88,21 +114,17 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
       sleepMilli(&milli);
   }
   system("/bin/stty -cbreak echo -iuclc");
-  res[j] = '\0';
-  PROTECT(Res = allocVector(STRSXP, 1));
-  SET_STRING_ELT(Res, 0, mkChar(res));
+  zk[j] = '\0';
+  PROTECT(Zk = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Zk, 0, mkChar(zk));
   UNPROTECT(1);      
-  return Res;
+  return Zk;
 }
 
-
-bool is_diag(double *aniso, int dim) {
-  int diag = dim + 1, size = dim * dim, i;
-  bool notdiag=false;
-  for (i=0; i<size; i++) {
-    if (i % diag != 0 && (notdiag = aniso[i] != 0.0)) break;
-  }
-  return !notdiag;
+void strcopyN(char *dest, const char *src, int n) {
+  n--;
+  strncpy(dest, src, n);
+  dest[n] = '\0';
 }
 
 void I0ML0(double *x, int *n) {
@@ -195,7 +217,7 @@ void StruveL(double *x, double *nu, int * expScaled)
 }
 double struve(double x, double nu, double factor_sign, bool expscaled)
 { 
-  double sign, res, epsilon=1e-20;
+  double sign, value, epsilon=1e-20;
   double dummy, logx, x1, x2;
   if ((x==0.0) && (nu>-1.0)) return 0.0;
   if (x<=0) return RF_NAN; // not programmed yet
@@ -206,12 +228,12 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
   if (x2 > 0.0) { 
     dummy = (nu + 1.0) * logx - lgammafn(x1) - lgammafn(x2);
     if (expscaled) dummy -= x;
-    res = exp(dummy);
+    value = exp(dummy);
   } else {
     if ( (double) ((int) (x1-0.5)) != x1-0.5 ) return RF_NAN;
-    res=pow(0.5 * x, nu + 1.0) / (gammafn(x1) * gammafn(x2));
-    if (expscaled) res *= exp(-x);
-    if ((dummy= res) <0) {
+    value=pow(0.5 * x, nu + 1.0) / (gammafn(x1) * gammafn(x2));
+    if (expscaled) value *= exp(-x);
+    if ((dummy= value) <0) {
       dummy = -dummy;
       sign = -1.0;
     }
@@ -221,25 +243,32 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
   do {
     if (x2<0) { sign = -sign; }    
     dummy += logx - log(x1) - log(fabs(x2));
-    res +=  sign * exp(dummy);
+    value +=  sign * exp(dummy);
     x1 += 1.0;
     x2 += 1.0;
     sign = factor_sign * sign; 
-  } while (exp(dummy) > fabs(res) * epsilon);
-  return res;
+  } while (exp(dummy) > fabs(value) * epsilon);
+  return value;
 }
 
-void vectordist(double *v, int *Dim, double *dist, int *diag){
-  int m, n, d, l, dim, r, lr, dr, add;
-  add = (*diag==0) ? 1 : 0;
-  l = Dim[0];
-  dim = Dim[1] * l;
-  lr = (l * (l + 1 - 2 * add)) / 2;
-  for (r=0, m=0; m<l; m++) { // if add==1 loop is one to large, but
+void vectordist(double *v, int *Dim, double *Dist, int *diag){
+  int d, dim, dr;
+  double *v1, *v2, *end;
+  bool notdiag = (*diag==0);
+  dim = Dim[0];
+  end = v + Dim[1] * dim; 
+
+//  printf("%d %d %f %f\n", dim , Dim[0], v, end);
+
+  for (dr=0, v1=v; v1<end; v1+=dim) { // if add==1 loop is one to large, but
       // but doesn't matter
-    for (n=m+add; n<l; n++, r++) {
-      for (d=0, dr=0; d<dim; d+=l, dr+=lr) {
-	  dist[r + dr] = v[n + d] - v[m + d];
+    v2 = v1;
+    if (notdiag) {
+       v2 += dim;
+    }
+    for (; v2<end; ) {
+      for (d=0; d<dim; v2++) {
+	Dist[dr++] = v1[d++] - *v2;
       }
     }
   }
@@ -247,6 +276,11 @@ void vectordist(double *v, int *Dim, double *dist, int *diag){
 
 static int ORDERDIM;
 static double *ORDERD;
+static int *ORDERDINT;
+
+typedef bool (*vergleich)(int, int);
+vergleich SMALLER=NULL, GREATER=NULL;
+
 bool smaller(int i, int j)
 {
   double *x, *y;
@@ -269,6 +303,41 @@ bool greater(int i, int j)
   return false;
 }
 
+bool smallerInt(int i, int j)
+{
+  int *x, *y;
+  int d;
+  x = ORDERDINT + i * ORDERDIM;
+  y = ORDERDINT + j * ORDERDIM;
+  for(d=0; d<ORDERDIM; d++)
+     if (x[d] != y[d]) return x[d] < y[d];
+  return false;
+}
+
+
+
+bool greaterInt(int i, int j)
+{
+  int *x, *y;
+  int d;
+  x = ORDERDINT + i * ORDERDIM;
+  y = ORDERDINT + j * ORDERDIM;
+  for(d=0; d<ORDERDIM; d++)
+    if (x[d] != y[d]) return x[d] > y[d];
+  return false;
+}
+
+int is_positive_definite(double *C, int dim) {
+    int err,
+	bytes = sizeof(double) * dim * dim;
+  double *test;
+  test = (double*) malloc(bytes);
+  memcpy(test, C, bytes);
+  F77_CALL(dpofa)(test, &dim, &dim, &err); 
+  free(test);
+  return(err == 0);
+}
+
 void order(int *pos, int start, int end) {
   int randpos, pivot, left, right, pivotpos, swap;
   
@@ -283,8 +352,8 @@ void order(int *pos, int start, int end) {
     left = start;
     right=end+1;   
     while (left < right) {      
-      while (++left < right && smaller(pos[left], pivot)) pivotpos++;
-      while (--right > left && greater(pos[right], pivot));      
+      while (++left < right && SMALLER(pos[left], pivot)) pivotpos++;
+      while (--right > left && GREATER(pos[right], pivot));      
       if (left < right) {
 	swap=pos[left]; pos[left]=pos[right]; pos[right]=swap;
 	pivotpos++;
@@ -309,6 +378,8 @@ void ordering(double *d, int len, int dim, int *pos)
   for (i=0; i<len;i++) pos[i]=i;
   ORDERD = d;
   ORDERDIM = dim;
+  SMALLER = smaller;
+  GREATER = greater;
   order(pos, 0, len-1);
 }
 
@@ -319,6 +390,54 @@ void Ordering(double *d, int *len, int *dim, int *pos)
   for (i=0; i<*len; i++) pos[i]=i;
   ORDERD = d;
   ORDERDIM = *dim;
+  SMALLER = smaller;
+  GREATER = greater;
   order(pos, 0, *len-1 );
 }
+
+
+void orderingInt(int *d, int len, int dim, int *pos) 
+{
+  /* quicksort algorithm, slightly modified:
+     does not sort the data, but d[pos] will be ordered 
+     NOTE: pos must have the values 0,1,2,...,start-end !
+     (orderdouble is a kind of sorting pos according to
+     the variable d)
+  */  
+  int i;
+  for (i=0; i<len;i++) pos[i]=i;
+  ORDERDINT = d;
+  ORDERDIM = dim;
+  SMALLER = smallerInt;
+  GREATER = greaterInt;
+  order(pos, 0, len-1);
+}
+
+
+int xMatch(char *name, char **list, unsigned int llen)  {
+  unsigned int ln, nr;
+  // == -1 if no matching function is found
+  // == -2 if multiple matching fctns are found, without one matching exactly
+  // if more than one match exactly, the last one is taken (enables overwriting 
+  // standard functions)
+  // see also GetModelNr !
+
+  nr=0;
+  ln=strlen(name);
+  while ((nr < llen) && strncmp(name, list[nr], ln)) nr++;
+  if (nr < llen) { 
+    // a matching method is found. Are there other methods that match?
+    unsigned int j; 
+    if (ln == strlen(list[nr])) return nr; // exact matching
+    j = nr + 1; // if two or more methods have the same name the last one is
+    //          taken; stupid here, but nice in GetCovNr
+    while (j < llen && strncmp(name, list[j], ln)) j++;
+    if (j < llen) {
+      if (ln == strlen(list[j])) return j; //exact matching 
+      else return -2; // multiple matching
+    }
+    return nr;
+  } else return -1; // unmatched
+}
+
 

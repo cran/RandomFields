@@ -5,7 +5,7 @@
 
  Collection of system specific auxiliary functions
 
- Copyright (C) 2001 -- 2006 Martin Schlather, 
+ Copyright (C) 2001 -- 2011 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // achtung! windows.h zusammen mit <Rmath.h oder R.graphics>
 // gibt warnung, da ERROR mehrfach definiert !
-// deshalb auch in auxiliary.h nicht GSLvsR.h einbinden
+// deshalb auch in auxiliary.h nicht basic.h einbinden // obsolette ?!!
 #include <math.h>
 #include <unistd.h>
 #include "win_linux_aux.h"

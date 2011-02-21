@@ -13,7 +13,14 @@
   interactive fitting of parameters, LSQ and MLE estimation of parameters.
   Basic kriging procedures are also provided.
 
-  Further extensions of the package are planned.
+  Starting with version 2.0, it also allows for the simulation
+  of random fields that are non-stationary or multivariate or
+  complex space-time fields.
+  fitvario allows for multivariate models and mixed effect models.
+}
+\section{Installation}{
+  If like to have Havard Rue's GMRF available,
+  please follow the instruction in \link{RFMethods}.
 }
 \details{
   The following random fields and related functionalities are
@@ -22,20 +29,26 @@
     \item stationary and isotropic Gaussian random fields\cr
     \itemize{
       \item \command{\link{CondSimu}} : conditional simulation
-      \item \command{\link{CovarianceFct}} :  covariance functions or
+      \item \command{\link{CovarianceFct}},
+      \link{sophisticated} models:  covariance functions and
       variogram models
       \item \command{\link{EmpiricalVariogram}} : empirical variogram
       \item \command{\link{GaussRF}} : simulation of Gaussian random
         fields; nice examples to get familiar with the
-        simulation features of the package
+        simulation features of the package;	
       \item \command{\link{Kriging}} : simple and ordinary kriging
       \item \command{\link{fitvario}} : variogram/covariance function fit
       by least squares, maximum likelihood and cross validation
       techniques
+
+      \bold{NOTE! '$vario' is defunctioned. Use '$ml' instead of '$value$ml'!}
+
       \item \command{\link{PrintMethodList}} : list of implemented
       simulation methods
       \item \command{\link{ShowModels}} : interactive, graphical choice of
-      models
+      models -- currently not available.
+
+      Use ShowModels in version 1.3.x
       \item \command{\link{soil}} : Soil physical and chemical data;
       the \code{example} gives a simple geostatistical analysis using
       features of the package      
@@ -46,6 +59,9 @@
      extremal Gaussian random fields
      \item \command{\link{MaxStableRF}} : simulation of max-stable
      random fields
+
+     \bold{Note: Simulation algorithm for Brown-Resnick processes will
+    come up soon.}
     }
     
     \item stationary and isotropic Poisson random fields
@@ -57,6 +73,14 @@
 %    }
   }
 
+  Data and example code:
+  \itemize{
+    \item \code{\link{soil}} : soil physical data
+    \item \code{\link{papers}} : code used in the papers published by
+    the author
+    \item \code{\link{weather}} : UWME weather data
+  }
+  
   Functions used in diverse simulation methods:
   \itemize{
     \item \command{\link{DeleteRegister}} : deleting internal registers
@@ -65,21 +89,28 @@
 
   Functions of general purpose:
    \itemize{
-    \item \command{\link{eval.parameters}} : provides an interactive menu 
+%    \item \command{\link{eval.parameters}} : provides an interactive menu 
     \item \command{\link{fractal.dim}} : estimation of the fractal dimension
     \item \command{\link{hurst}} : estimation of the Hurst parameter
+    \item \command{\link{Print}} : nice print function
     \item \command{\link{regression}} : interactive regression plot
     \item \command{\link{Locator}}, \command{\link{Readline}} :
     \command{\link[graphics]{locator}} and \command{\link[base]{readline}},
     respectively, with storage and replay functionality
     \item \command{\link{sleep.milli}} : sets the process into sleeping status
   }
+
+
+  In the beta version, the following functionalities are currently
+  not available:
+  \itemize{
+    \item \command{\link{ShowModels}}
+    \item numerical evaluation of the covariance function in tbm2
+    \item Harvard Rue's Markov fields 
+  }
  
 }
-\note{
-  From version 1.3 on: Default value of
-  \code{RFparameters()$Storing} is \code{FALSE}.
-}
+
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
   \url{http://www.stochastik.math.uni-goettingen.de/institute};
   }
@@ -87,10 +118,7 @@
   This package is announced in and can be cited by:
 
   Schlather, M. (2001) Simulation of stationary and isotropic random
-  fields. \emph{R-News} \bold{1} (2), 18-20.
-  
-  Schlather, M. (2004)
-  Simulation of random fields and applications. \emph{In preparation.}
+  fields. \emph{R-News} \bold{1} (2), 18-20. 
 }
 \section{Acknowledgement}{
   Many thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting

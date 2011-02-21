@@ -8,7 +8,7 @@
 }
 \usage{
 Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
-    quiet=FALSE, innerwidth, innerheight, mai, horizontal = FALSE, ...)
+    quiet=FALSE, innerwidth, innerheight, mai,  horizontal = FALSE, ...)
 }
 \arguments{
   \item{on}{logical. Indicates whether \code{dev} should be switched on
@@ -27,8 +27,9 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
   \item{innerheight}{width of graphic without the margins; overwrites
     \code{width} if given -- experimental state}
   \item{mai}{parameters of function \command{\link[graphics]{par}} --
-      experimental state}
-  \item{horizontal}{logical. See \command{\link{postscript}}}.
+    experimental state}
+  \item{horizontal}{logical. If \code{FALSE} the picture is not
+    automatically turned if height is larger than width}
   \item{...}{further parameters for pdf or postscript}
 }
 \details{
@@ -66,7 +67,7 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
   dev.list <- list(TRUE, 1)
   if (interactive()) dev.list <- c(dev.list, "jpeg")
   for (dev in dev.list) {
-    print(dev)
+    Print(dev)
     size <- if (dev=="jpeg") 450 else 5
     err <- class(try(Dev(TRUE, dev, ps="test", height=size, width=size)))
     if (err!="try-error") {

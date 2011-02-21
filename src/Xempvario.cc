@@ -1,10 +1,9 @@
 /*
  Authors  Martin Schlather, martin.schlather@math.uni-goettingen.de 
 
- Simulation of a random field by circular embedding
- (see Wood and Chan, or Dietrich and Newsam for the theory )
+ a second library for calculating the empirical variogram
 
- Copyright (C) 2002 - 2006 Martin Schlather, 
+ Copyright (C) 2002 - 2011 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include "RFsimu.h"
+#include "RF.h"
 #include <assert.h>
 
 // z coordinate run the fastest in values, x the slowest   
@@ -67,7 +66,7 @@ void empvarioXT(double *X, double *T,
  */
 { 
   long rep;
-  int i, halfnbin,gridpoints[4], error, totalbins, totalspatialbins,
+  int i, halfnbin,gridpoints[4], err, totalbins, totalspatialbins,
     twoNphi, twoNphiNbin, Ntheta, nbinNphiNtheta, maxi[4], mini[4],
     ix, iy, iz, it, endX, startX, endY, startY, endZ, startZ, endT, low, cur,
     ktheta, kphi, nstepTstepT, vec[4], deltaT, x, y, z, t,  j, stepT, nstepT;
@@ -91,15 +90,15 @@ void empvarioXT(double *X, double *T,
   for (rep=i=0; i<3; i++, rep+=*lx) xx[i]=&(X[rep]);
   xx[3] = T;
 
-  if (xx[0]==NULL) {error=TOOLS_XERROR; goto ErrorHandling;}
+  if (xx[0]==NULL) {err=TOOLS_XERROR; goto ErrorHandling;}
   for (i=0; i<*nbin;i++) {
-    if (bin[i]>=bin[i+1])  {error=TOOLS_BIN_ERROR; goto ErrorHandling;}
+    if (bin[i]>=bin[i+1])  {err=TOOLS_BIN_ERROR; goto ErrorHandling;}
   }
 
   halfnbin = *nbin / 2;
    
   if ((BinSq = (double *) malloc(sizeof(double)* (*nbin + 1)))==NULL) {
-    error=TOOLS_MEMORYERROR; goto ErrorHandling; 
+    err=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
   totalspatialbins =  twoNphiNbin * Ntheta;
   totalbins = totalspatialbins * (nstepT + 1);
@@ -301,7 +300,7 @@ void empvarioXT(double *X, double *T,
 
  ErrorHandling:
   PRINTF("Error: ");
-  switch (error) {
+  switch (err) {
   case TOOLS_MEMORYERROR :  
     PRINTF("Memory alloc failed in empiricalvariogram.\n"); break;
   case TOOLS_XERROR :  

@@ -1,9 +1,14 @@
-# source("intrinsic.embedding.R")
+## l <- dir(); for (i in 1:length(l))  {f<-l[i]; print(f); source(f)}
 
-if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
-PrintModelList()
-print(GetMethodNames())
 
+## source("intrinsic.embedding.R")
+
+if (EXTENDED.TESTING <- file.exists("source.R"))  source("source.R")
+#PrintModelList()
+#print(GetMethodNames())
+#xxxx
+
+## library(RandomFields, lib="/tmp")
 
 RFparameters(Storing=TRUE, Print=8, CE.force=TRUE, TBMCE.force=TRUE)
 meth <- "intr"
@@ -16,14 +21,19 @@ meth <- "intr"
 x <- seq(0, 2, len=12)
 y <- seq(0, 1, len=15)
 grid.size <- c(length(x), length(y))
-model <- list(list(model="fractalB", var=1.1, kappa=1, aniso=c(1, 0, 0, 1)))# num [1:2, 1:2]  2.07e-05  1.66e+00 -5.52e-01  6.90e-06
-model <- list(list(model="fractalB", var=1.1, kappa=1, aniso=c(1, 1, 0, 3)))# num [1:2, 1:2]  2.07e-05  1.66e+00 -5.52e-01  6.90e-06
+model <- list("$", var=1.1, aniso=matrix(nc=2, c(1, 0, 0, 1)),
+              list("fractalB",  k=1))# num [1:2, 1:2]  2.07e-05  1.66e+00 -5.52e-01  6.90e-06
+model <- list("$", var=1.1, aniso=matrix(nc=2, c(1, 1, 0, 3)),
+              list("fractalB",  k=1)) # num [1:2, 1:2]  2.07e-05  1.66e+00 -5.52e-01  6.90e-06
 
 # determination of the (minimal) size of the torus
 DeleteRegister()
-RFparameters(Storing=TRUE, Print=6, CE.force=TRUE, TBMCE.force=TRUE)
+RFparameters(Storing=TRUE, Print=8, CE.force=TRUE, TBMCE.force=TRUE)
 InitGaussRF(x, y, model=model, grid=TRUE, method=meth)
-ce.info <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem
+#GetRegisterInfo(0, TRUE)
+
+
+ce.info <- GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$new$meth$S
 blocks <- ceiling(ce.info$size / grid.size)
 size <- blocks * grid.size
 RFparameters(Print=1)
@@ -46,7 +56,6 @@ hei <- 8
 do.call(getOption("device"),
         list(height=hei, wid=hei / blocks[2] / diff(range(y)) *
              blocks[1] * diff(range(x))))
-
 close.screen(close.screen())
 split.screen(rev(blocks[1:2]))
 k <- 0
@@ -74,11 +83,14 @@ grid.size <- c(length(x), length(y), length(z))
 model <- list(list(model="fractalB", var=1.1, kappa=1,
                    aniso=c(2,1,0.5, -1,1,2, -1,3,-1)))
 
+model <- list("$", var=1.1, aniso=matrix(nc=3, c(2,1,0.5, -1,1,2, -1,3,-1)),
+              list("fractalB",  k=1))
+
 # determination of the (minimal) size of the torus
 DeleteRegister()
 #RFparameters(local.mmin=c(60, 72, 80))
 InitGaussRF(x, y, z=z, model=model, grid=TRUE, method=meth)
-ce.info <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem
+ce.info <- GetRegisterInfo()$meth$sub[[1]]$S$new$meth$S
 blocks <- ceiling(ce.info$size / grid.size)
 size <- blocks * grid.size
 # str(GetRegisterInfo(0, TRUE))

@@ -1,11 +1,10 @@
 \name{CheckXT}
 \alias{CheckXT}
 \alias{PrepareModel}
-\alias{convert.to.readable}
 \alias{plotWithCircles}
 \alias{circle}
 \alias{GetDistributionNames}
-\alias{paramextract}
+\alias{GetrfParameters}
 \title{Internal functions -- do not use them directly}
 \description{
   \code{CheckXT} checks whether the coordinates of the data and related
@@ -16,52 +15,40 @@
   model and related parameters are specified correctly and transforms
   the parameters into a standard format
 
-  \code{convert.to.readable} is the inverse function to
-  \code{PrepareModel}; see Details
-
   \code{plotWithCircles} displays data values of marked point processes
   by circles
 
   \code{GetDistributionNames} returns the names of the currently
   available marginal distributions of the random fields
-
-  \code{paramextract} extracts for some models some parameters
-  from an internal parameter list
   
-
-}
+  \code{GetrfParameters} returns some internal constants
+  
+ }
 \usage{
 CheckXT(x, y, z, T, grid, gridtriple)
-PrepareModel(model, param, timespacedim, trend, method=NULL,
-             named=FALSE, nugget.remove=TRUE)
-convert.to.readable(l, allowed=c("standard", "nested", "list")) 
+PrepareModel(model, param, trend, method=NULL, nugget.remove=TRUE)
 plotWithCircles(data, factor=1.0, xlim=range(data[,1])+c(-maxr,maxr),
                 ylim=range(data[,2])+c(-maxr,maxr),col=1, fill=0, ...)
 GetDistributionNames()
-paramextract(p, model=c("cutoff"))
+GetrfParameters(initcov)
 }
 \arguments{
   \item{x}{\code{x} coordinates}
   \item{y}{\code{y} coordinates}
   \item{z}{\code{z} coordinates}
   \item{T}{time instances}
-  \item{grid}{see \command{\link{GaussRF}}}
-  \item{gridtriple}{see \command{\link{GaussRF}}}
+  \item{grid}{logical; simulation on a grid; see \command{\link{GaussRF}}}
+  \item{gridtriple}{logical; grid is given in abbreviated form;
+    see \command{\link{GaussRF}}}
   \cr 
-  \item{model}{see \command{\link{GaussRF}}}
-  \item{param}{see \command{\link{GaussRF}}}
-  \item{timespacedim}{dimension of the random field including the time
-    dimension, if there is any}
+  \item{model}{name of the covariance model; see \command{\link{GaussRF}}}
+  \item{param}{parameter for the covariance model; see \command{\link{GaussRF}}}
+%  \item{timespacedim}{dimension of the random field including the time
+%    dimension, if there is any}
   \item{trend}{mean or trend of the random field}
   \item{method}{simulation method}
-  \item{named}{logical. If \code{TRUE} \code{covnr} and \code{param}
-    are returned with names}
   \item{nugget.remove}{if nugget is 0, the nugget part be removed in the
     returned model?}
- \cr
-  \item{l}{list as returned by \code{PrepareModel}}
-  \item{allowed}{allowed output formats, see
-    \command{\link{CovarianceFct}}}
   \cr
   \item{data}{matrix of 3 columns; first two columns give the
     coordinates, the third the data}
@@ -70,23 +57,12 @@ paramextract(p, model=c("cutoff"))
   \item{ylim}{see \command{\link[graphics]{plot}}}
   \item{col}{border colour of circles}
   \item{fill}{filling colour of circles}
-  \item{...}{further graphical parameters}
-  \item{p}{internal parameter list; e.g. the columns of
-    \command{\link{CheckAndComplete}}\code{(...)$param}.
-  }
-  \item{model}{the name of a covariance model.}
+  \item{...}{further graphical parameters in \command{plotWithCircles}
+    and any variables to be printed in \command{Print}}
+  \item{initcov}{boolean, whether to call the C function InitModelList}
 }
-\details{
-  \code{convert.to.readable} is roughly speaking the inverse function to
-  \code{PrepareModel}.  \code{convert.to.readable} also tries to 
-  simplify the model definition, but cannot rediscover the given method for
-  the simulation of the nugget effect in all cases.  Due to the
-  simplification in \code{convert.to.readable} and the special
-  definition of the nugget effect for nested models,
-  \code{convert.to.readable} may return a correct model definition in case
-  of incorrect input, namely if \code{scale} is set to \eqn{0} in a list
-  definition, see Examples.
-}
+%\details{
+%}
 %\value{
 %  lists of internal parameters
 %}
@@ -98,27 +74,13 @@ paramextract(p, model=c("cutoff"))
 \examples{
 % library(RandomFields)
 
-x <- function(...) {
-  str(PrepareModel(...))
-  cat("--------------------------------\n")
-  str(convert.to.readable(PrepareModel(...)))
-}
-model <- list(list(model="whi", kappa=5, var=2, s=4), "+",
-    list(model="whi", kappa=1, var=3, s=0)) ## s=0 should not be used only in
-##                             a model definition where the parameters are
-##                             are given in a matrix, see the result
-x(model=model, ti=1, me="ci")
+model <- list(model="whittle", param=c(1,2,3,4,5))
+Print(PrepareModel(model=model, me="ci"))
 
-## since convert.to.readable performs a one-step simplification,
-## iterative calls may further simplify the model
-xx <- convert.to.readable(PrepareModel(model=model, ti=1, me="ci"))
-x(model=xx$mo, pa=xx$pa, ti=1, me=xx$me)
+model <- list("+",
+              list("$", var=2, s=4, list(model="whi", kappa=5)),
+              list("$", var=3, s=0, list(model="whi", kappa=1)) )
+Print(PrepareModel(model=model, me="ci"))
 
-## back to the matrix definition of nested models
-str(convert.to.readable(PrepareModel(xx, ti=1), allowed="nested"))
-
-## back to the (correct) list definition
-str(convert.to.readable(PrepareModel(xx, ti=1), allowed="list"))
-}
-
+} 
 

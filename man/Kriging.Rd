@@ -6,13 +6,14 @@
 }
 \usage{
 Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
-        gridtriple=FALSE, model, param, given, data, trend, pch=".",
-        return.variance=FALSE, internal=FALSE)
+        gridtriple=FALSE, model, param, given, data, trend=NULL, pch=".",
+        return.variance=FALSE, allowdistanceZero = FALSE, cholesky=FALSE)
 }
 %- maybe also `usage' for other objects documented here.
 \arguments{
   \item{krige.method}{kriging method; currently only 'S' (simple
-    kriging) and 'O' (ordinary kriging) implemented.}
+    kriging), 'O' (ordinary kriging), 'U' (universal kriging) and 'I'
+    (intrinsic kriging) implemented.}
   \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of \code{x}
     coordinates; coordinates of \eqn{n} points to be kriged}
   \item{y}{vector of \code{y} coordinates.}
@@ -42,7 +43,14 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
   \item{data}{the data values given at \code{given}; it might be a
     vector or a matrix. If a matrix is given multivariate data are
     assumed which are kriged \emph{separately}.}
-  \item{trend}{not programmed yet (will be used in case of universal kriging)}
+  \item{trend}{only used for universal and intrinsic kriging. In case of
+  universal kriging \code{trend} is a non-negative integer (monomials
+  up to order k as trend functions), a list of functions or a formula (the
+  summands are the trend functions); you have the choice of using either
+  x, y, z or X1, X2, X3,... as spatial variables;
+  in case of intrinsic kriging trend should be a nonnegative integer which
+  is the order of the underlying model.
+  }
   \item{pch}{Kriging procedures are quite time consuming in general. 
     The character \code{pch} is printed after roughly
     each 80th part of calculation.}
@@ -50,14 +58,10 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
     returned. If \code{TRUE} a list of two elements, \code{estim} and
     \code{var}, i.e. the kriged field and the kriging variances,
     is returned.}
-  \item{internal}{
-    \code{FALSE}. \code{internal} should not be set to \code{TRUE}
-    by the user.
-    (In case \code{internal=TRUE},
-    various consistency checks for the input variables
-    are not performed. Further, \code{grid} must be \code{FALSE},
-    and \code{model} must be given in the output format of
-    \command{\link{PrepareModel}}.)
+  \item{allowdistanceZero}{if \code{TRUE} then
+    identical locations are slightly scattered}
+  \item{cholesky}{
+    if \code{TRUE} cholesky decomposition is used instead of LU.
   }
 }
 \details{
@@ -126,12 +130,14 @@ Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
 
 \seealso{
   \command{\link{CondSimu}},
+  \command{\link{Covariance}},
   \command{\link{CovarianceFct}},
   \command{\link{EmpiricalVariogram}},
   \code{\link{RandomFields}},
 }
 
 \examples{
+###Example 1: Ordinary Kriging
 ## creating random variables first
 ## here, a grid is chosen, but does not matter
 step <- 0.25 
@@ -157,7 +163,59 @@ z <-  Kriging(krige.method=krige.method,
               model=model, param=param,
               given=points, data=data)
 image(x,x,z,col=colour,zlim=zlim)
+
+
+
+%###Example 2: Universal Kriging (trend as formula)
+%##creating random variables
+%model <- "gauss"
+%step <- pi/30
+%#step <- pi/30 is nicer, but also time consuming
+%param <- c(1,0,3)
+%given <- expand.grid(x=seq(0,4*pi,pi/2), y=seq(0,4*pi, pi/2))
+%data <- 0.5*(jitter(sin(rowSums(given)),factor=3)+1)
+%x <- seq(0,4*pi,step)
+%
+%#Universal Kriging with trend as formula
+%z <- Kriging("U", x=x, y=x, grid=TRUE, model=model, param=param, given=given,
+% data=data, trend= z ~ sin(X1+X2) + 1, return.variance=FALSE)
+%
+%zlim <- c(min(z),max(z))
+%colour <- rainbow(1000)
+%image(x,x,z,col=colour,zlim=zlim)
+
+
+
+%###Example 3: Universal Kriging (trend as list of functions)
+%##creating random variables
+%model <- "cubic"
+%step <- pi/3
+%#step <- pi/30 is nicer, but also time consuming
+%param <- c(1,0,2)
+%given <- expand.grid(x=seq(-2*pi,2*pi,pi/2), y=seq(-2*pi,2*pi, pi/2))
+%data <- jitter(given[,1]^2 + given[,2]^2,factor=15)
+%x <- seq(-2*pi,2*pi,step)
+
+%#Universal Kriging with trend as list of functions
+%z <- Kriging("U", x=x, y=x, grid=TRUE, model=model, param=param, given=given,
+% data=data, trend=list(function(x,y) x^2 + y^2, function(x,y) (x^2 + y^2)^0.5, function(x,y) 1), return.variance=FALSE)
+%
+%zlim <- c(min(z),max(z))
+%colour <- rainbow(1000)
+%image(x,x,z,col=colour,zlim=zlim)
+
+
+
+%###Example 4: Intrinsic Kriging
+%model <- list("$", var=1, scale=4, list("fractalB", a=1))
+%step=0.5
+%given=expand.grid(x=seq(-3,3,0.25), y=seq(-3,3,0.25))
+%data <- jitter((given[,1]+given[,2])^2, factor=10)
+%x <- seq(-5,5,step)
+%z <- Kriging("I", x=x, y=x, grid=TRUE, model=model, given=given, data=data, trend=2, return.variance=TRUE)
+%Print(z)
+%zlim <- c(min(z$estim),max(z$estim))
+%colour <- rainbow(1000)
+%image(x,x,z$estim,col=colour,zlim=zlim)
 }
 \keyword{spatial}%-- one or more ...
-
-

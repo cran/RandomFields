@@ -13,10 +13,11 @@
 % and some exotic methods, like hyperplane tessellations. 
 }
 \usage{
-DoSimulateRF(n=1, register=0, paired=FALSE)
+DoSimulateRF(n=1, register=0, paired=FALSE, trend=NULL)
 
-InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
-               method=NULL, register=0, gridtriple=FALSE, distribution=NA)
+InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid=!missing(gridtriple),
+               model, param, trend, method=NULL, register=0, gridtriple,
+               distribution=NA)
 }
 \arguments{
   \item{x}{matrix of coordinates, or vector of x coordinates}
@@ -39,10 +40,10 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
       the parameters must be given
       in this order; further parameters are to be added in case of a
       parametrised class of models, see \command{\link{CovarianceFct}}}
-    \item{trend}{Not programmed yet.
-      trend surface: number (mean),  vector of length
-    \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
-      a_0 +a_1 x_1 + ... + a_d x_d}), or function}
+%    \item{trend}{Not programmed yet.
+%      trend surface: number (mean),  vector of length
+%    \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
+%     a_0 +a_1 x_1 + ... + a_d x_d}), or function}
   \item{method}{\code{NULL} or string; Method used for simulating,
     see \command{\link{RFMethods}}, or
     type \command{\link{PrintMethodList}}\code{()} to get all options}
@@ -65,6 +66,14 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     If \code{TRUE} then every second simulation is obtained by
     only changing the signs of the standard Gaussian random variables, the
     simulation is based on (\dQuote{antithetic pairs}).
+  }
+  \item{trend}{only used for universal and intrinsic kriging. In case of
+  universal kriging \code{trend} is a non-negative integer (monomials
+  up to order k as trend functions), a list of functions or a formula (the
+  summands are the trend functions); you have the choice of using either
+  x, y, z or X1, X2, X3,... as spatial variables;
+  in case of intrinsic kriging trend should be a nonnegative integer which
+  is the order of the underlying model.
   }
 }
 \value{

@@ -16,6 +16,9 @@ GetMethodNames()
 }
 \details{
   \itemize{
+    \item (random spatial) Averages\cr
+    -- details soon
+    
     \item Boolean functions.\cr
     See marked point processes.
 
@@ -86,7 +89,7 @@ GetMethodNames()
       Thus, if the marks \eqn{m_i}{m_i}
       are all indicator functions, we obtain
       a Poisson random field. If the intensity of the Poisson
-      process is high we obtain an approximate Gaussian random
+      process is high we obtain an approximative Gaussian random
       field by the central limit theorem - this is the
       \code{add.mpp} method.
       
@@ -98,6 +101,25 @@ GetMethodNames()
       method.
     }
     
+    \item \code{Markov} Gaussian Random Fields.\cr
+    The method is due to Havard Rue and uses the property that the
+    precision matrix (i.e. the inverse of the covariance matrix)
+    of a Markov Gaussian random field has a small band width.
+
+    \bold{Note:} This method is only available on Intel Linux systems
+    when installed as follows:\cr
+    
+    1. install GMRFLib by Havard Rue from \url{www.math.ntnu.no/~hrue/GMRFsim}
+    
+    2.  install all external libraries given in GMRFLib/EXTLIBS/
+    (it may happen that precompiled libraries included in your distribution
+    work better)
+
+    3. install RandomFields with option --enable-GMRF and 
+     --with-GMRF-lib=LIB_PATH and --with-GMRF-EXT-lib=LIB_PATH 
+     for the path ot GMRFLib and the EXTLIBS, respectively.
+     E.g., \sQuote{R CMD INSTALL RandomFields_* --configure-args="--enable-GMRF --with-GMRF-EXT-lib=/home/schlather/local/lib"}
+
     \item \code{nugget}.\cr
     The method allows for generating a random field of 
     independent Gaussian random variables. In the isotropic case
@@ -110,18 +132,35 @@ GetMethodNames()
     The method has been extended to zonal anisotropies, see
     also parameter \code{nugget.tol} in \code{\link{RFparameters}}.
 
+    \item \code{particular} method\cr
+    -- details missing --
+    
     \item Random coins.\cr
     See marked point processes.
+
+    \item \code{sequential}
+    This method is programmed for spatio-temporal models
+    where the field is modelled sequentially in the time direction
+    conditioned on the previous \eqn{k} instances.
+    For \eqn{k=5} the method has its limits for about 1000 spatial
+    points. It is an approximative method. The larger \eqn{k} the
+    better.
+    It also works for certain grids where the last dimension should
+    contain the highest number of grid points.
     
     \item \code{spectral TBM} (Spectral turning bands).\cr
     The principle of \code{spectral TBM}
     does not differ from the other
     turning bands methods.  However, line simulations are performed by a
-    spectral technique (Mantoglou and Wilson, 1982); a
+    spectral technique (Mantoglou and Wilson, 1982).
+
+    The standard method
+    allows  for the simulation of 2-dimensional random
+    fields defined on arbitrary points or arbitrary grids. Here
     realisation is given as the cosine with random
     amplitude and random phase.   
-    The implementation allows the simulation of 2-dimensional random
-    fields defined on arbitrary points or arbitrary grids.
+
+    
 
     \item \code{TBM2}, \code{TBM3} (Turning bands methods; turning layers).\cr
     It is generally difficult to use the turning bands method
@@ -153,8 +192,7 @@ GetMethodNames()
     product may contain matrices with pure time component.  All
     the other matrices must be equal up to a factor and the temporal
     part of the anisotropy matrix (right column) may contain only
-    zeros, except the very last entry.
-    
+    zeros, except the very last entry.    
   }
 }
 \note{Most methods possess additional parameters,
@@ -191,9 +229,18 @@ GetMethodNames()
     stochastic simulations.
     \emph{Water Resour. Res.} \bold{29}, 2861-2869.    
         
+     Dietrich, C.R. and Newsam, G.N. (1996)
+     A fast and exact method for multidimensional {G}aussian stochastic
+     simulations: Extensions to realizations conditioned on direct and
+     indirect measurement 
+    \emph{Water Resour. Res.} \bold{32}, 1643-1652.    
+
     Wood, A.T.A. and Chan, G. (1994)
     Simulation of stationary Gaussian processes in \eqn{[0,1]^d}{[0,1]^d}
     \emph{J. Comput. Graph. Stat.} \bold{3}, 409-432.
+
+    The code used in \cite{RandomFields} is based on
+    Dietrich and Newsam (1996).
     
     \item Intrinsic embedding and  Cutoff embedding:
     
@@ -207,6 +254,16 @@ GetMethodNames()
     Fast and Exact Simulation of Large Gaussian Lattice Systems in
     \eqn{R^2}: Exploring the Limits
     \emph{J. Comput. Graph. Statist.} Submitted.
+
+    \item Markov Gaussian Random Field:
+    
+    Rue, H. (2001) Fast sampling of Gaussian Markov random fields.
+    \emph{J. R. Statist. Soc., Ser. B}, \bold{63} (2), 325-338.
+      
+    Rue, H., Held, L. (2005) \emph{Gaussian Markov Random Fields:
+      Theory and Applications.}
+    Monographs on Statistics and Applied Probability, no \bold{104},
+    Chapman \& Hall.
 
 
     \item Turning bands method (TBM), turning layers:
@@ -242,66 +299,14 @@ GetMethodNames()
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})
 }
-\seealso{\command{\link{GaussRF}}, \command{\link{MaxStableRF}},
+\seealso{
+  \command{\link{CovarianceFct}},
+  \command{\link{GaussRF}},
+  \command{\link{MaxStableRF}},
   \command{\link{PrintModelList}},
-  \code{\link{RandomFields}}.}
+  \code{\link{RandomFields}},
+  \link{sophisticated}.}
 
-\examples{
- PrintMethodList()
-
-
-############################################################
-##                                                        ##
-##                     Figure 1 in                        ##
-##           Gneiting, T., Sevcikova, H.,                 ##
-##   Percival, D.B., Schlather, M. and Jiang, Y. (2005)   ##
-##                                                        ##
-############################################################
-## the example below shows for which parameter combinations
-## of the stable model, the cutoff method works
-## note the method 'cutoff' itself has an automatic
-## selection algorithm implemented and is called with
-## the stable model only.
-\dontrun{
-
-stabletest <- function(alpha, theta, size=512) {
-  RFparameters(CE.trials=1, CE.tolIm = 1e-8, CE.tolRe=0, CE.force = FALSE,
-               CE.useprimes=TRUE, CE.strategy=0, Print=2)
-  model <- list(list(model="cutoff", var=1, kappa=c(1, theta, 1)),
-                "(",
-                list(model="stable", var=1, scale=1, kappa=alpha)
-                )
-  check <- CheckAndComplete(model=model, dim=2)
-  if (check$error != 0) {
-    cat("error", check$error, "\n")
-    return(NA)
-  }
-  r <- paramextract(check$param[ , 1])$cutoffr
-#  x <- c(r/size, r,  r /  size)
-  x <- c(0, r, r / (size - 1)) * theta
-  RFparameters(CE.mmin=rep(2 * size, 2))
-  return(if (InitGaussRF(x, x, grid=TRUE, gridtriple=TRUE,
-                         model=model, meth="circulant") == 0)
-         r else NA)
-}
-
-alphas <- seq(1.52, 2.0, 0.01) # 0.02
-thetas <- seq(0.05, 3.5, 0.05) #0.05( 2x)
-m <- matrix(NA, nrow=length(thetas), ncol=length(alphas))
-for (it in 1:length(thetas)) {
-  theta <- thetas[it]
-  for (ia in 1:length(alphas)) {
-    alpha <- alphas[ia]
-    cat("alpha=", alpha, "theta=", theta,"\n")
-    print(unix.time(m[it, ia] <- stabletest(alpha=alpha, theta=theta)))
-    if (is.na(m[it, ia])) break
-  }
-  if (any(is.finite(m))) image(thetas, alphas, m, col=rainbow(100))
-}
-
-} % dont run
-
-}
 \keyword{spatial}
 
 

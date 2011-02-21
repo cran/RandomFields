@@ -84,7 +84,9 @@ endofbins <- 1.3
 numberbins <-31
 if (!is.null(ps))  {histo <- FALSE}  ## Da R CMD check die Variable `ps' nicht
                                     ## definiert hat,
-if (histo) {X11(); X11();}         ## wird X11() nicht mehr aufgerufen
+if (histo) {
+  for (i in 1:2) do.call(getOption("device"), list(height=4.3, width=4.3))
+}         
 RFparameters(Storing=TRUE,PrintLevel=PrintLevel,
              TBM2.lines=6/5*lines,TBM2.linesimufactor=0,TBM2.linesimustep=0.01,
              TBM3.lines=lines,TBM3.linesimufactor=0,TBM3.linesimustep=0.01,
@@ -102,8 +104,8 @@ randomize <- function(){
          envir=ENVIR)
 }
 
-simplemodels <- c("circular","cubic",
-                  "exponential","gauss",
+simplemodels <- c("exponential", "circular","cubic",
+                  "gauss",
                   "gneiting","penta",
                   "spherical","wave");
 
@@ -139,8 +141,7 @@ largemodels <-
             kappa2=runif(NP,-0.5,3), kappa3=runif(NP,-0.5,3))
        )
 
-## very large models are not tested yet:
-##      nsst, nsst2
+## hyper models are not tested yet !!!!
 
 } else { ## fixed random parameters
 models <-
@@ -169,8 +170,7 @@ largemodels <-
             kappa3=c(-0.1,0,0.1,5))
        )
 
-## very large models are not tested yet:
-##      nsst, nsst2
+## hyper models are not tested yet:
 
 } 
 
@@ -178,23 +178,28 @@ for (i in 1:repeatscript) {
   randomize()
   print("nugget only simulates the nugget effect. Therefore the value of variance is not taken into account");
   
-  RFcontrol("nugget",pointnumber=pointnumber,valuerepet=valuerepet,
+  if (!FALSE)
+    RFcontrol("nugget",pointnumber=pointnumber,valuerepet=valuerepet,
             pointrepet=pointrepet,scal=1,var=0,nug=nugget,mean=Mean,
             field=fieldsize,endof=endofbins,numberb=numberbins,histo=histo,
             ps=ps,quadraticgrid=quadraticgrid,save=save)
     
-  for (naturalscaling in FALSE:TRUE) {
+#  for (naturalscaling in FALSE:TRUE) {
+  for (naturalscaling in !FALSE) {
     RFparameters(PracticalRange=as.logical(naturalscaling))
 
+    if (FALSE)
     for (model in models) {##
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,
                 pointrepet=pointrepet,kappa1=model$kappa1,kappa2=model$kappa2,
                 scaling=scaling,var=variance,nug=nugget,mean=Mean,
                 field=fieldsize,endof=endofbins,numberb=numberbins,
+                methods = 7,
                 histo=histo,ps=ps,quadraticgrid=quadraticgrid,save=save)
     }
     
+    if (FALSE)
     for (model in largemodels) {
       randomize()
       RFcontrol(model$model,pointnumber=pointnumber,valuerepet=valuerepet,

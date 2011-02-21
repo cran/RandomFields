@@ -7,11 +7,12 @@
   Gaussian random fields using turning bands/layers, circulant embedding,
   direct methods, and the random coin method.
 }
-\usage{GaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
-        method=NULL, n=1, register=0, gridtriple=FALSE, paired=FALSE, ...)
+\usage{GaussRF(x, y=NULL, z=NULL, T=NULL, grid=!missing(gridtriple), model, param,
+       trend=NULL, method=NULL, n=1, register=0, gridtriple,
+       paired=FALSE, ...)
 
-InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
-            method=NULL, register=0, gridtriple=FALSE)
+InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid=!missing(gridtriple), model,
+            param, trend=NULL, method=NULL, register=0, gridtriple)
 }
 \arguments{
   \item{x}{matrix of coordinates, or vector of x coordinates}
@@ -37,10 +38,11 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     \code{param=c(NA,variance,nugget,scale,...)}, in this order;\cr
     The dots \code{...} stand for additional parameters of the
     model.}
-  \item{trend}{Not programmed yet.
-    trend surface: number (mean) or a vector of length
+  \item{trend}{trend surface: number (mean) or a vector of length
     \eqn{d+1} (linear trend \eqn{a_0+a_1 x_1 + \ldots + a_d x_d}{
-      a_0 +a_1 x_1 + ... + a_d x_d}), or function(x)}
+      a_0 +a_1 x_1 + ... + a_d x_d}), or function; you have the choice
+    of using either x, y, z or X1, X2, X3, ... as spatial variables, as
+    time variable T should be chosen}
   \item{method}{\code{NULL} or string; method used for simulating,
     see \command{\link{RFMethods}}, or
     type \command{\link{PrintMethodList}}\code{()} to get all options.
@@ -88,7 +90,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
     \code{GaussRF} where
     \code{model} is the covariance or variogram model and the
     parameter is \code{param=c(mean,variance,nugget,scale, ...)}.
-    Alternatively the \code{trend} can be given (not programmed yet); then
+    Alternatively the \code{trend} can be given; then
     \code{param=c(variance,nugget,scale, ...)}.
 
     \item
@@ -200,19 +202,17 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
   The object returned \code{GaussRF} and \command{\link{DoSimulateRF}}
   depends on the parameters \code{n} and \code{grid}:\cr
-    \code{n=1}:\cr
-    * \code{grid=FALSE}.  A vector of simulated values is
-    returned (independent of the dimension of the random field)\cr
-    * \code{grid=TRUE}.  An array of the dimension of the
-    random field is returned.\cr
-    
-    \code{n>1}:\cr
-    * \code{grid=FALSE}.  A matrix is returned.  The columns
-    contain the realisations.\cr
-    * \code{grid=TRUE}.  An array of dimension
-    \eqn{d+1}{d+1}, where \eqn{d}{d} is the dimension of
-    the random field, is returned.  The last
-    dimension contains the realisations.
+
+  if \code{vdim > 1} the \code{vdim}-variate vector makes the first dimension
+
+  if \code{grid=TRUE} an array of the dimension of the
+  random field makes the next dimensions.
+  Else if no time component is given, then the values are passed as a
+  single vector. Else if the time component is given the next 2
+  dimensions give space and time.
+  
+  if \code{n > 1} the repetitions make the last dimension
+
 }
 \references{
   See \link{RFMethods} for the references.
@@ -223,6 +223,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})}
 \seealso{
+  \command{\link{Covariance}},
   \command{\link{CovarianceFct}},
   \command{\link{DeleteRegister}},
   \command{\link{DoSimulateRF}},
@@ -239,6 +240,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
 
 \examples{
 % library(RandomFields, lib="~/TMP"); RFparameters(Print=6)
+
  #############################################################
  ##                                                         ##
  ## Examples using the symmetric stable model, also called  ##
@@ -277,7 +279,7 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
  x <- runif(100, max=20) 
  y <- runif(100, max=20)
  z <- runif(100, max=20) # 100 points in 3 dimensional space
-(f <- GaussRF(grid=FALSE,
+(f <- GaussRF(grid=FALSE, Print=5,
               x=x, y=y, z=z, model=model, 
               param=c(mean, variance, nugget, scale, alpha)))
 
@@ -303,44 +305,61 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid, model, param, trend,
  image(x, y, f[,,1])
  image(x, y, f[,,2])
  image(x, y, f[,,3])
+
+
         
 
  #############################################################
  ##                                                         ##
- ##      Examples using the extended definition forms       ##
+ ##      Examples using the extended definition form        ##
  ##                                                         ##
  ##                                                         ##  
  #############################################################
 
-## note that the output seems plausible but not checked!!!!
 
-## tbm may also be used for multiplicate models (if they have
-## *exactly* the same anisotropy parameters)
+#% library(RandomFields, lib="~/TMP"); RFparameters(Print=6)
 x <- (0:100)/10
 m <- matrix(c(1,2,3,4),ncol=2)/5
-z <- GaussRF(x=x, y=x, grid=TRUE,
-              model=list(
-                list(m="power",v=1,k=2,a=m),
-                "*", list(m="sph", v=1, a=m)
-                ),
-              me="TBM3", reg=0,n=1)
-print(c(mean(as.double(z)),var(as.double(z))))
+model <- list("$", aniso=m,
+              list("*",              
+                   list("power", k=2),
+                   list("sph"))
+              )
+z <- GaussRF(x=x, y=x, grid=TRUE, model=model, me="TBM3")
+Print(c(mean(as.double(z)),var(as.double(z))))
 image(z,zlim=c(-3,3))
+
+## to know more what GaussRF does, use Print
+## TMB can be very slow. To trace the iteration, use every
+##
+z <- GaussRF(x=x, y=x, grid=TRUE, model=model, me="TBM3",
+             Print=3, every=100)
+image(z,zlim=c(-3,3))
+## here, GaussRF uses `direct decomp' to simulate on the line
+##       and the square root of the covariance matrix is
+##       calculated by the Cholesky decomposition
+
 
 
 ## non-separable space-time model applied for two space dimensions
-## note that tbm method does not work nicely, but at least
-## in some special cases.
-x <- y <- (1:32)/2     ## grid definition, but as a sequence
-T <- c(1,32,1)*10      ## note necessarily gridtriple definition
-aniso <- diag(c(0.5,8,1)) 
-k <- c(1,phi=1,1,0.5,psi=1,dim=2)
-model <- list(list(m="nsst", v=1, k=k, a=aniso))
-z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model)
+## note that tbm method works in some special cases.
+#%    library(RandomFields, lib="~/TMP")
+x <- y <- seq(0, 7, if (interactive()) 0.05 else 0.2) 
+T <- c(1,32,1) * 10        ## note necessarily gridtriple definition
+model <- list("$", aniso=diag(c(3, 3, 0.02)),
+             list("nsst", k1=2,
+                  list("gauss"),
+                  list("genB", k=c(1, 0.5))
+              ))
+z <- GaussRF(x=x, y=y, T=T, grid=TRUE, model=model,
+             method="ci", CE.strategy=1,
+             CE.trials=if (interactive()) 4 else 1)
 rl <- function() if (interactive()) readline("Press return")
-for (i in 1:dim(z)[3]) { image(z[,,i]); rl();}
-for (i in 1:dim(z)[2]) { image(z[,i,]); rl();}
-for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
+for (i in 1:dim(z)[3]) { image(z[,,i], zlim=range(z)); rl();}
+for (i in 1:dim(z)[2]) { image(z[,i,], zlim=range(z)); rl();}
+for (i in 1:dim(z)[1]) { image(z[i,,], zlim=range(z)); rl();}
+
+
 
 
  #############################################################
@@ -351,13 +370,16 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  #############################################################
 
 x <- seq(0, 10, 1/10)
-model <- list(list(model="fractgauss", var=1, kappa=0.5,
-                   aniso=c(1, 0, 0, 0)),
-              "*",
-              list(model="fractgauss", var=1, kappa=0.5,
-                   aniso=c(0, 0, 0, 1)))
+model <- list("*",
+              list("$",  aniso=matrix(nr=2, c(1, 0)),
+                   list("fractgauss", k=0.5)),
+              list("$",  aniso=matrix(nr=2, c(0, 1)),
+                   list("fractgauss", k=0.9))
+              )
 z <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE, model=model)
 image(x, x, z)
+
+
 
 
  #############################################################
@@ -366,19 +388,24 @@ image(x, x, z)
  ##                (using Stein's method)                   ##
  ##                                                         ##  
  #############################################################
+# 1d
+kappa <- 1   # in [0,2)
+z <- GaussRF(x=c(0, 10, 0.001), grid=TRUE, Print=5,
+             model=list("fractalB", kappa))
+plot(z, type="l")
+
 # 2d
-step <- 0.3  ## nicer, but also time consuming if step <- 0.1
+step <- 0.3  ## nicer, but also time consuming if step = 0.1
 x <- seq(0, 10, step)
 kappa <- 1   # in [0,2)
-z <- GaussRF(x=x, y=x, grid=TRUE, model="fractalB",
-             param=c(0,1,0,1,kappa))
+z <- GaussRF(x=x, y=x, grid=TRUE, model=list("fractalB", kappa))
 image(z,zlim=c(-3,3))
 
 # 3d
 x <- seq(0, 3, step)
 kappa <- 1   # in [0,2)
-z <- GaussRF(x=x, y=x, z=x, grid=TRUE, model="fractalB",
-             param=c(0,1,0,1,kappa)) 
+z <- GaussRF(x=x, y=x, z=x, grid=TRUE,
+             model=list("fractalB", kappa)) 
 rl <- function() if (interactive()) readline("Press return")
 for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
@@ -391,23 +418,21 @@ for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
  ## simulation.                                             ##  
  #############################################################
 
-DeleteAllRegisters()
-RFparameters(Storing=TRUE, PrintLevel=1)
+RFparameters(Storing=TRUE)
 y <- x <- seq(0, 50, 0.2)
 (p <- c(runif(3), runif(1)+1))
 ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
                               method="circ", param=p))
 image(x, y, f)
-hist(f)
-c( mean(as.vector(f)), var(as.vector(f)) )
+%hist(f)
+%c( mean(as.vector(f)), var(as.vector(f)) )
 cat("system time (first call)", format(ut,dig=3),"\n")
 
-# second call with the *same* parameters is much faster:
-ut <- system.time(f <- GaussRF(x=x,y=y,grid=TRUE,model="exponen",
-                              method="circ",param=p)) 
+# second call with the same parameters can be much faster:
+ut <- system.time(f <- DoSimulateRF()) 
 image(x, y, f)
-hist(f)
-c( mean(as.vector(f)), var(as.vector(f)) )
+%hist(f)
+%c( mean(as.vector(f)), var(as.vector(f)) )
 cat("system time (second call)", format(ut,dig=3),"\n")
 
 
@@ -423,32 +448,40 @@ cat("system time (second call)", format(ut,dig=3),"\n")
 ## further: parameters and algorithms may change in
 ##       future.
 
-% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
+#% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
 ## simuation of the stable model using the cutoff method
 #RFparameters(Print=8, Storing=FALSE)
-x <- seq(0, 1, 1/24)
+x <- seq(0, 1, 1/24) # nicer pictures with 1/240
 scale <- 1.0
-model1 <- list( list(model="stable", var=1, scale=scale, kappa=1.0) )
+model1 <- list("$", scale=scale, list("stable", alpha=1.0))
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
 z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
              model=model1, n=1, meth="cutoff", Storing=TRUE)
-size <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem$size
-#str(GetRegisterInfo(), vec=15)
+internal <- GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$new
+(size <- internal$meth$S$size)
+(cut.off.param <- internal$cov$sub[[1]]$sub[[1]]$sub[[1]]$param)
+
+# % Print(GetRegisterInfo(), vec=15)
+image(x, x, z1)
+
 
 ## simulation of the same random field using the circulant
 ## embedding method and defining the hypermodel explicitely
-model2 <- list(list(model="cutoff", var=1, kappa=c(1, sqrt(2), 1),
-                    scale=scale),
-              "(",
-              list(model="stable", var=1, scale=scale, kappa=1.0)
+model2 <- list("$", scale = scale,
+               list("cutoff", diam=cut.off.param$diam, a=cut.off.param$a,       
+                    list("stable", alpha=1.0))
               )
 assign(".Random.seed", rs, envir=.GlobalEnv)
-z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
-             model=model2, n=1, meth="circulant", CE.mmin=size)
-%str(GetRegisterInfo(), vec=15)
-print(range(z1-z2)) ## essentially no difference between the fields!
+z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE, model=model2,
+              meth="circulant", n=1, CE.mmin=size, Storing=TRUE)
+#%Print(GetRegisterInfo(), vec=15)
+image(x, x, z2)
+Print(range(z1-z2)) ## essentially no difference between the fields!
 
 
+
+
+#% library(RandomFields)
 
  #############################################################
  ## The cutoff method simulates on a torus and a (small)    ##
@@ -459,44 +492,72 @@ print(range(z1-z2)) ## essentially no difference between the fields!
  ## local.mmin to multiples of the basic rectangle lengths  ##
  #############################################################
 
+
 # definition of the realisation
-x <- seq(0, 2, len=20)
-y <- seq(0, 1, len=40)
+RFparameters(CE.useprimes=FALSE)
+x <- seq(0, 2, len=4) # better 20
+y <- seq(0, 1, len=5) # better 40
 grid.size <- c(length(x), length(y))
-model <- list(list(model="exp", var=1.1, aniso=c(2,1,0.5,1)))
+model <- list("$", var=1.1, aniso=matrix(nc=2, c(2, 1, 0.5, 1)),
+              list(model="exp"))
 
 # determination of the (minimal) size of the torus
-DeleteRegister()
 InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
-ce.info <- GetRegisterInfo()$method[[1]]$mem$new$method[[1]]$mem
-blocks <- ceiling(ce.info$size / grid.size)
-size <- blocks * grid.size
+ce.info.size <- GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$new$meth$S$size
+blocks <- ceiling(ce.info.size / grid.size / 4) *4
+(size <- blocks * grid.size)
 
-# simulation and plot of the torus
-DeleteRegister()
-z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=prod(blocks),
-             local.dependent=TRUE, local.mmin=size)
+# simulation and plot of the torus 
+z <- GaussRF(x, y, model=model, grid=TRUE, method="cu", n=prod(blocks) * 2,
+             local.dependent=TRUE, local.mmin=size)[,,c(TRUE, FALSE)]
 hei <- 8
 do.call(getOption("device"),
         list(hei=hei, wid=hei / blocks[2] / diff(range(y)) *
                          blocks[1] * diff(range(x))))
+
 close.screen(close.screen())
-split.screen(rev(blocks))
-k <- 0
-for (j in 1:blocks[2]) {
-  for (i in 1:blocks[1]) {
-    k <- k + 1
-    screen(k)
-    par(mar=rep(1, 4) * 0.02)
-    image(z[,,(blocks[2]-j) * blocks[1]  + i], zlim=c(-3, 3), axes=FALSE)
-  }
+sc <- matrix(nc=blocks[1], split.screen(rev(blocks)), byrow=TRUE)
+sc <- as.vector(t(sc[nrow(sc):1, ]))
+
+for (i in 1:prod(blocks)) {
+  screen(sc[i])
+  par(mar=rep(1, 4) * 0.0)
+  image(z[,, i], zlim=c(-3, 3), axes=FALSE, col=rainbow(100)) 
 }
+
+
+
+##############################################################
+##	  Simulating with trend (as function)       	    ##
+##############################################################
+
+x <- seq(-5,5,0.1)
+z <- GaussRF(x=x, y=x, model = "exponential", param=c(1,0,1), grid=TRUE,
+             trend=function(x,y) 3*sin(x)*cos(y))
+colors=heat.colors(1000)
+image(x,x,z,col=colors)
+
+
+
+
+##############################################################
+##	  Simulating with linear trend surface    	    ##
+##############################################################
+
+x <- seq(-5,5,0.1)
+##trend surface: 3x - y
+z <- GaussRF(x=x, y=x, model = "cubic", param=c(1,0,2), grid=TRUE,
+             trend=c(0,1,-1))
+colors=heat.colors(1000)
+persp(x,x,z, phi=30, theta=-3)
 
 
 %##############################################################
 %##       for a further, more complicated example on         ##
 %##        space-time modelling, see data(winddata)          ##
 %##############################################################
+
+
 }
 
 \keyword{spatial}

@@ -2,15 +2,16 @@
 # source("RFtest.methods.R")
 
 if (EXTENDED.TESTING <- file.exists("source.R")) source("source.R")
-RFparameters(PrintLevel=6, TBM2.num=EXTENDED.TESTING) ## 0
+RFparameters(PrintLevel=0, exact=EXTENDED.TESTING) ## 0
+
+## laeuft formal durch, aber 
        
 ERRORCOVNOTALLOWED <- 4 ## check with RFsimu.h!!!
 ERRORCOVFAILED <- 14
 
-firstmodel <- if (interactive()) 1 else 18
-#firstmodel <- 23
+firstmodel <- if (interactive()) 1 else 1
 firstmethod <- 1
-#firstmethod <- 3
+#firstmodel <- 4;  firstmethod <- 4
 
 models<- list(list("bessel",1),
               list("cauchy",1),
@@ -39,8 +40,8 @@ models<- list(list("bessel",1),
               list("whittle",1)
               )
               
-methods <- c("cir", "cutoff", "intrinsic",
-             "TBM2", "TBM3", "sp", "dir", "add", "hyper")
+methods <- c("ci", "cu", "int",
+             "TBM2", "TBM3", "sp", "dir", "coi", "hyp")
 
 working <- matrix(0, nrow=length(models), ncol=length(methods))
 for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
@@ -52,16 +53,20 @@ for (scale in c(0.3,1,3)) for (kappa1 in c(0.5,1,2,10)) {
     for (me in firstmethod:length(methods)) {
       cat(">>>>", scale, kappa1, models[[mo]][[1]], methods[me],"\n")
       ##cat("\n\nSTART")
-      error <- InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
-                             param=param,method=methods[me])
+      error <- try(InitGaussRF(x=1:10,y=1:10,grid=TRUE,model=models[[mo]][[1]],
+                             param=param,method=methods[me]))      
       ##cat(" E=",error)
       if (error==ERRORCOVNOTALLOWED || error==ERRORCOVFAILED)
-        error <- InitGaussRF(x=1:10,grid=TRUE,model=models[[mo]][[1]],
-                             param=param,method=methods[me])
+        error <- try(InitGaussRF(x=1:10,grid=TRUE,model=models[[mo]][[1]],
+                             param=param,method=methods[me]))
       ##cat(" E1=",error)
-      if (error==0)
-        working[mo,me]  <- working[mo,me] +1      
-    } 
+      if (is.numeric(error) && error==0)
+        working[mo,me]  <- working[mo,me] +1
+
+     cat(">> tried: ", scale, kappa1, models[[mo]][[1]], methods[me],"\n")  
+    # readline()
+        
+    }
   }
 }
 

@@ -119,6 +119,8 @@ sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {
 
 %   source("/home/schlather/R/RF/RandomFields/R/auxiliary.R")
 
+\dontrun{
+
 #########################
 ## user terminal input ##
 #########################
@@ -177,6 +179,7 @@ Readline(prompt="last input of 1: ")
 #####################################################
 ## see help("eval.parameters") for another example ##
 #####################################################
+}
 
 }
 \keyword{utilities}

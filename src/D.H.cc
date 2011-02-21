@@ -2,9 +2,10 @@
  Authors
  Martin Schlather, martin.schlather@math.uni-goettingen.de
 
- library for unconditional simulation of stationary and isotropic random fields
+ calculation of the Hurst coefficient and the fractal dimension of
+ the graph of a random field
 
- Copyright (C) 2002 - 2006 Martin Schlather, 
+ Copyright (C) 2002 - 2011 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <assert.h>
-#include "RFsimu.h"
+#include "RF.h"
 
 void boxcounting(double *z,  // data
 		 int *lx,    // basic length of data 
@@ -80,7 +81,7 @@ void periodogram(double *dat, // data
                  //             over all these parts
 		 double *lambda // (fftm[1] - fftm[0] + 1) * repet
     ){ 
-  int seg_dat, Xerror, k, j, total_seg, segment_r, start_k, end_k,
+  int seg_dat, err, k, j, total_seg, segment_r, start_k, end_k,
       segm_l, lenMpart, delta_l, r, end_l;
   double factor, *compl_number, n_inv, *taper, taper_fact, cos_factor;
   FFT_storage FFT;
@@ -125,7 +126,7 @@ void periodogram(double *dat, // data
 	compl_number[k++] = dat[total_seg + j] * taper[j];
 	compl_number[k++] = 0.0;
       }
-      if ((Xerror=fastfourier(compl_number,
+      if ((err=fastfourier(compl_number,
 			      part,   // length
 			      1,      // dim 
 			      (total_seg==0), // start? 
