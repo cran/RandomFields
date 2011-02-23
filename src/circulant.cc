@@ -325,7 +325,7 @@ int init_circ_embed(method_type *meth)
 	 hilfsm_d = 2.0 * NiceFFTNumber((int) hilfsm_d);
     } else {
       hilfsm_d = multivariate
-       ? round(pow(3.0, 1.0 + ceil(log(hilfsm_d) / log(3) - EPSILON1000)))
+	  ? round(pow(3.0, 1.0 + ceil(log(hilfsm_d) / LOG3 - EPSILON1000)))
        : pow(2.0, 1.0 + ceil(log(hilfsm_d) * INVLOG2 -EPSILON1000));
     }
     if (hilfsm_d >=  MAXINT) return ERRORMEMORYALLOCATION;

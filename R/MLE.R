@@ -358,9 +358,6 @@ fitvario.default <-
         if (effect[k] > DeterministicEffect && effect[k] < RemainingError) {
           idx <-  startCoVar[i, k] : endCoVar[i, k]
 
-##          Print(i, k, mmcomponents, idx, nCoVar[i], D)
-##          if (effect[k] >= RVarEffect) Print(Sinv[[i]][[k]])
-          
           if (effect[k] == RVarEffect) {
             D[idx, idx] <- Sinv[[i]][[k]] / sigma2[j]
             j = j + 1
@@ -372,20 +369,18 @@ fitvario.default <-
        
       rS <- 0
       for (m in 1:length(idx.repet[[i]])) {
-        Spalte <- crossprod(Xges[[i]][[m]], Sinv[[i]][[idx.error]][[m]])  # all k
+        Spalte <- crossprod(Xges[[i]][[m]], Sinv[[i]][[idx.error]][[m]]) # all k
         for (k in 1:nrow(nCoVar)) if (nCoVar[i, k] > 0) {
           idx <- startCoVar[i, k] : endCoVar[i, k]
-          
- #         Print(D, idx,
-#           Spalte, Xges[[i]][[m]][, idx, drop=FALSE],
- #           idx.repet[[i]][m])
-          
+                    
           D[, idx] <- D[, idx] +
             Spalte %*% Xges[[i]][[m]][, idx, drop=FALSE] * idx.repet[[i]][m]
         }
         rS <- rS + Spalte %*% sumdata[[i]][[m]]
-      }
-      z[[i]] <- solve(D, rS)
+      }      
+      z[[i]] <- try(solve(D, rS))
+      if (!is.numeric(z[[i]]))
+        stop("Design matrix shows linear dependence. Check the design matrix and \n  make sure that you do not use `trend' and the `mixed' model at the same time.")
     }
  
     if (return.z) {
@@ -432,8 +427,6 @@ fitvario.default <-
         penalty <-  - sum(variab - penalty)^2 ## not the best ....
         res <- MLtarget(variab)
 
-#        Print(res + penalty * (1+ abs(res)))
-        
         return(res + penalty * (1+ abs(res)))
       }
 
@@ -459,22 +452,13 @@ fitvario.default <-
         if (effect[k] >= SpaceEffect) { ## ansonsten muss schon vorher gesetzt
           ##                              werden
 
-        
-##      Print("CovMatrixMLE", Xdistances[[i]], as.integer(lc[i]),
-##           as.integer(i), as.integer(k),  GetModelInfo(model=3, level=3),
-##           S, effect, i,k, param, minmax, variab, MLEUB, MLELB)
-
           .C("CovMatrixMLE", Xdistances[[i]], as.integer(is.dist),
              as.integer(lc[i]),
              as.integer(i),
              as.integer(if (anyeffect) k else 0),  
              S,
              PACKAGE="RandomFields", DUP=FALSE)
-          dim(S) <- rep(lc[i] * vdim, 2)
-
-  ##        Print(S, GetModelInfo(model=3, gatter=TRUE))
-##          Print("OK", eigen(S)$values)
-         
+          dim(S) <- rep(lc[i] * vdim, 2)         
 
           if (effect[k] == SpaceEffect) {
             Si <- try(chol(S), silent=silent)
@@ -484,19 +468,8 @@ fitvario.default <-
             Sinv[[i]][[k]] <<- chol2inv(Si, LINPACK=TRUE)
           } else {
             for (m in 1:length(idx.repet[[i]])) {
-##              Print("chol styart")
-              Si <- S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]]        
-##             Print(Si)
-              
-               Si <- try(chol(Si), silent=silent)
-##              str(Si)
-      #        Print(Si)
-              
-##              Print("chol")
-              
-##            Print(Sinv, i,k,m, Si, t(Si) %*% (Si),
-##                 S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]],
-##                 svd(S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]]))
+              Si <- S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]] 
+              Si <- try(chol(Si), silent=silent)
               
               if (!is.numeric(Si) || any(is.na(Si))) {
                 
@@ -512,31 +485,20 @@ fitvario.default <-
                 }
                 if (PrintLevel>1 || is.na(MLEVARIAB)) {
                   cat("\nMLE: error in cholesky decomp. -- matrix pos def?")
-##                  Print(format(variab, dig=20), format(param, dig=20),
-##                        i,k,m, all(Si==0), MLEVARIAB)
                 }
- #               Print(1E300)
-                
                 return(1E300)
               }
               
-#            Print(Si)
-
-##           Print(Si, logdet, 2*sum(log(diag(Si))), idx.repet[[i]][m])
-
               logdet <- logdet + 2 * sum(log(diag(Si))) * idx.repet[[i]][m]
               
               ## Si ist hier Si^{1/2} !! Zum Schluss wird mit -0.5 multipliziert
 
               Sinv[[i]][[k]][[m]] <<- chol2inv(Si, LINPACK=TRUE)
-              ##         Print(Sinv)
             }
           }
         }
       }
       S <- NULL
-
-  ##    Print("X")
       
       Werte[[i]] <- list()
       for (m in 1:length(idx.repet[[i]])) {
@@ -609,8 +571,6 @@ fitvario.default <-
               (Sinv[[i]][[k]] %*% LINEARPARTZ[[i]][idx]))
       }
     }
-
- ##  Print(quadratic)
 
     if (solvesigma) {
       idx <- effect == RVarEffect
@@ -1280,9 +1240,6 @@ fitvario.default <-
   if (missing(param))  {
     if (is.list(lower))  {
       pm.l <- PrepareModel(lower, nugget.remove=FALSE)
-
- #     Print("Take2ndAtNaOf1st", pm$model, pm.l$model,
-  #             truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
       
       users.lower <- lower <-
         .Call("Take2ndAtNaOf1st", pm$model, pm.l$model,
@@ -1312,8 +1269,6 @@ fitvario.default <-
     else 
       pm.u <- PrepareModel(model=users.guess, nugget.remove=FALSE)
 
-#    Print(pm$model, pm.u$model)
-
     users.guess <-
       .Call("Take2ndAtNaOf1st", pm$model, pm.u$model,
             truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
@@ -1329,7 +1284,6 @@ fitvario.default <-
       mm <- list("mixed", X=CoVariates, b=rep(NA, ncol(CoVariates[[1]])))
       ## b is always of the same length
     }
-##    Print(mm)
     if (orig.anyeffect) {
       if (PrintLevel>0) cat("The model is considered as a mixed effect model\n")
       trend.input <- FALSE
@@ -1349,18 +1303,14 @@ fitvario.default <-
   
   
 #######################         model          ########################
-##Print(pm)
 
   ResMLEGet <- .Call("MLEGetModelInfo", pm$model, truedim, xdim,
                      PACKAGE="RandomFields")
 
- # Print(GetModelInfo(model=ModelNr, level=1), ResMLEGet)
    
   NAs <-  ResMLEGet$NAs
   effect <- ResMLEGet$effect
 
-#  Print(effect, pm$model)
-  
   anyeffect <- length(effect) > 0
   if (anyeffect) {
     idx <- effect == RemainingError    
@@ -1382,13 +1332,9 @@ fitvario.default <-
   
   xdim <- as.integer(if (isotropy) 1 else truedim + 0)
 
-  ## Print(NAs, minmax)
-
-  
   if (anyeffect) stopifnot(sum(NAs) == nrow(minmax))
   if (anyeffect) {
     eff <- rep(FALSE, nrow(minmax))
-#    Print(NAs)
     csNAs <- cumsum(c(0, NAs))
     for (k in 1:length(effect)) {
       if (effect[k] > FixedEffect && effect[k] <= SpaceEffect && NAs[k] > 0)
@@ -1434,7 +1380,6 @@ fitvario.default <-
   }
   stopifnot(length(lower) == length(upper))
 
-##  Print(lower, upper, length(lower), length(upper))
 
 
 #################################################################
@@ -1547,8 +1492,6 @@ fitvario.default <-
   det.effect <- which(effect == DeterministicEffect)
   for (i in 1:sets) {
     repet <- length(data[[i]]) /  (lc * vdim)
-
-##    Print(repet, data,  lc,  vdim)
     
     if (repet != as.integer(repet))
       stop("number of data does not match number of coordinates" )
@@ -1557,8 +1500,6 @@ fitvario.default <-
     for (k in det.effect) {
       size <- nrow(modelinfo$sub[[k]]$param$X[[i]])
       if (size != 1) {
-
-      # Print(modelinfo$sub[[k]]$param$X, werte[[i]], size)
         
         if (size != prod(dim(werte[[i]])[1:2]))
           stop("matrix of data does not match deterministic effect")
@@ -1624,8 +1565,6 @@ fitvario.default <-
   SCALE.IDX <- ptype == SCALEPARAM  ## large capitals 
   varnames <- minmax.names <- attr(minmax, "row.names")
 
-##  Print(lower, upper, length(lower), length(upper))
-
   vardata <- var(unlist(werte))
   if (vardata==0) stop("data values are identically constant")
   ## autostart will give the starting values for LSQ
@@ -1651,7 +1590,6 @@ fitvario.default <-
       upper[idx] <- vardata * upperbound.var.factor
       autostart[idx] <- vardata / length(idx)
     }
- ##  Print(lower, upper, length(lower), length(upper))
      
     if (any(idx <- ptype == DIAGPARAM)) {
       lower[idx] <- 1 / (upperbound.scale.factor * maxdistances)
@@ -1664,14 +1602,11 @@ fitvario.default <-
       upper[idx] <- lowerbound.scale.LS.factor / mindistances
       autostart[idx] <- 0
     }
-
-## Print(upper, SCALE.IDX, minmax)
     
     if (any(SCALE.IDX)) {
       idx <- which(SCALE.IDX)
       lower[idx] <- mindistances / lowerbound.scale.LS.factor
       upper[idx] <- maxdistances * upperbound.scale.factor
-## Print("hier", upper, idx, maxdistances, upperbound.scale.factor)
       autostart[idx] <- (maxdistances + 7 * mindistances) / 8      
     }
 
@@ -1682,8 +1617,6 @@ fitvario.default <-
       autostart[pos] <-  sqrt(lower[pos]*upper[pos])
     }
   }
-##  Print(upper)
-
 
 
 ######################################################################
@@ -1945,7 +1878,6 @@ fitvario.default <-
   ## and drawn independently among sets
   ## error part is independent for each repetition in/for each set
 
-##  Print(anyeffect, modelinfo, sets)
 
 
   if (anyeffect) {
@@ -1956,17 +1888,14 @@ fitvario.default <-
     s <- numeric(length(allcomponents))
     for (i in 1:sets) {   
       for (k in allcomponents) {
-#        Print(i,k)
         s[k] <-
           if (effect[k]==RemainingError) 0
           else {
-#            Print(i, k, modelinfo$sub[[k]]$param$X) 
             if (length(modelinfo$sub[[k]]$param$X) > 0)
               ncol(modelinfo$sub[[k]]$param$X[[i]])
             else nrow(idx.na[[i]][[1]])
           }
       }
-##      Print(anyeffect, nCoVar)
       
       nCoVar[i, ] <- s  
       
@@ -1977,10 +1906,7 @@ fitvario.default <-
     nTotalComp <- apply(nCoVar, 2, sum)
     nCoVarSets <- apply(nCoVar, 1, sum)
     nCoVarAll <- sum(nCoVarSets)
-    
- 
-#    Print(nCoVar, nCoVarAll, startCoVar, endCoVar)
-    
+   
     Ny <-
       sapply(modelinfo$sub,
              function(x) {
@@ -1997,10 +1923,8 @@ fitvario.default <-
 
   for (i in 1:sets) {
     Xges[[i]] <- Sinv[[i]] <- list()
-#    Print(i, sets)
     if (anyeffect) {
       for (m in 1:ncol(idx.na[[i]][[1]])) {
-#        Print(m, ncol(idx.na[[i]][[1]]))
         Xges[[i]][[m]] <- matrix(nrow=sum(idx.na[[i]][[1]][,m]), ncol=nCoVarAll)
         for (k in mmcomponents) {
           
@@ -2011,13 +1935,6 @@ fitvario.default <-
             if (Ny[i, k] != nrow(idx.na[[i]][[1]]))
               stop("length of data does not match X matrix")
           }
-
-
-   
-#          Print(i,m,Xges[[i]][[m]], startCoVar[i, k] : endCoVar[i, k])
-#          Print(Ny[i,k] == 0, diag(nCoVar[i, k]),
-#            modelinfo$sub[[k]]$param$X[i], idx.na[[i]][[1]][,m])
-
           Xges[[i]][[m]][, startCoVar[i, k] : endCoVar[i, k] ] <-
             (if (Ny[i,k] == 0) diag(nCoVar[i, k])
             else modelinfo$sub[[k]]$param$X[[i]]) [idx.na[[i]][[1]][,m], ]
@@ -2029,23 +1946,16 @@ fitvario.default <-
        nCoVar <- matrix(nrow=1, ncol=1, 0)
    }
 
-##    Print(allcomponents, effect, SpaceEffect,  FixedEffect)
     for (k in allcomponents) {
       if (effect[k] > FixedEffect) {
         if (effect[k] < SpaceEffect) {       
           cov <- double(nCoVar[i, k]^2)
-
-#          Print(i, Xdistances[[i]], as.integer(lc[i]),
-#                as.integer(i), as.integer(k), 
-#                cov, PACKAGE="RandomFields", DUP=FALSE)
           
           .C("CovMatrixMLE", Xdistances[[i]], as.integer(is.dist),
              as.integer(lc[i]),
              as.integer(i), as.integer(k), 
              cov, PACKAGE="RandomFields", DUP=FALSE)
           dim(cov) <- rep(nCoVar[i, k], 2)
-
-##          Print(cov)
           
           cov <- chol(cov)
           logdetbase <- logdetbase + 2 * sum(log(diag(cov)))     
@@ -2059,29 +1969,26 @@ fitvario.default <-
 
 
 
-  eff <- rep(0, RemainingError + 1)
+  eff <- efftmp <- rep(0, RemainingError + 1)
   for (k in mmcomponents) {
     if (effect[k] <= SpaceEffect) {
       eff[effect[k] + 1] <- eff[effect[k] + 1] + 1
     }
   }
 
-#  Print(nCoVar)
-  
   betanames <- character(nCoVarAll)
   for (i in 1:sets) {    
     for (k in mmcomponents) {
       if (effect[k] <= SpaceEffect) {
+        efftmp[effect[k] + 1] <- efftmp[effect[k] + 1] + 1
         bn <- paste(EffectName[effect[k] + 1],
-                    if (eff[effect[k] + 1] > 1) eff[effect[k] + 1], sep="")
+                    if (eff[effect[k] + 1] > 1) efftmp[effect[k] + 1], sep="")
         if (nCoVar[i, k]>1) bn <- paste(bn, 1:nCoVar[i, k], sep=".")
         betanames[startCoVar[i, k] : endCoVar[i, k]] <-
           if (sets == 1) bn else c(betanames, paste(i, bn, sep=""))
       }
     }
-  }
-
-  
+  }  
   
 
 ######################################################################
@@ -2096,10 +2003,6 @@ fitvario.default <-
   parscale <- pmax(abs(lower), abs(upper)) / 10
   idx <- lower * upper > 0
   parscale[idx] <- sqrt(lower[idx] * upper[idx])
-
-#  Print(cbind( lower,parscale, upper))
-  
-
   stopifnot(all(is.finite(parscale)))
   if (length(optim.control)>0) {
     stopifnot(is.list(optim.control))
@@ -2194,8 +2097,6 @@ fitvario.default <-
 
       ## if (nCoVarAll > 0) paste("upper", betanames, sep=":")
       )
-
-  
   
   param.table <- data.frame(matrix(NA, nrow=maxtblidx, ncol=length(allmethods),
                                    dimnames=list(tablenames, allmethods)))
@@ -2228,7 +2129,6 @@ fitvario.default <-
       m <- cbind(lower, users.guess, upper, idx)
       dimnames(m) <- list(rep("", length(lower)),
                           c("lower", "user", "upper", "outside bounds"))
-#      Print(m)
       stop("not all users.guesses within bounds\n change values of `lower' and `upper' or those of the `*bound*'s")
     }
     param.table[[M]][IDX("variab")] <- users.guess
@@ -2300,9 +2200,6 @@ fitvario.default <-
             for (h in (g+1):lc) {
               idx <- sum(Distances[[i]][k] > bin)
               n.bin[idx] <- n.bin[idx] + 2
-
-    #          Print(W, h, g, vario, idx)
-              
               vario[idx] <- vario[idx] + mean((W[g] - W[h])^2)
               vario2[idx] <- vario2[idx] + mean((W[g] - W[h])^4)
               k <- k + 1
@@ -2564,8 +2461,6 @@ fitvario.default <-
     MLEUB[idx] <- MLEUB[idx] *
       lowerbound.scale.factor / lowerbound.scale.LS.factor
 
-  # Print(MLELB, MLEUB, minmax)
-
   ## fnscale <- -1 : maximisation
   for (M in c(allmlemeth)) {
     assign("LINEARPARTS2", rep(1, length(mixed.idx)), envir=ENVIR)
@@ -2617,8 +2512,6 @@ fitvario.default <-
  
       mle.optim.control <-
           c(optim.control, list(parscale=parscale, fnscale=-max(abs(max), 0.1)))
-
- #     Print(mle.optim.control)
 
       MLEINF <- FALSE
  
@@ -3041,9 +2934,6 @@ fitvario.default <-
   idxCovar <- IDX("covariab")
   idx.meth <- rep(FALSE, length(allmethods))
   res <- values.res <- list()
-
- # print(param.table)
-#  Print(idx, tblidx)
   
   for (i in 1:length(allmethods)) {
     M <- allmethods[i]
@@ -3062,8 +2952,6 @@ fitvario.default <-
       
       if (trend.input) {
         mm <- which(sapply(modelres, function(x) {x[[1]]=="mixed"}))
- 
-##        Print(trend.input, modelres, mm, length(modelres))
         
         if (length(modelres) > 3) {
            sub <- modelres[-mm]
