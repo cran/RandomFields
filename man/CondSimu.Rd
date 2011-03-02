@@ -148,7 +148,7 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
  Springer, 2nd edition.  
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 %\note{}
 
 

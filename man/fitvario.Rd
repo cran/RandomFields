@@ -676,7 +676,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   }
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 
 \note{This function does not depend on the value of
   \command{\link{RFparameters}}\code{()$PracticalRange}. 

@@ -11,9 +11,8 @@
 ##      "Many thanks,  Martin Schlather\n")
 
 ##  cat("\n\n\n\n\n ACHTUNG!! wird bei DO richtig erkannt, wann res[..]=0 gesetzt werden muss??\n\n")
-    cat("  RandomFields V2.0 is currently a beta-Version. Updates will come up soon.\n")
-    cat("  The last stable versions are V 1.3.X.\n")
-
+    cat("##  Note that several updates of RandomFields are expected during 2011. ##\n##  Please see help(\"changings\") for important changes.                 ##\n")
+ 
   
 }
 
@@ -44,8 +43,22 @@ Covariance <- function(x, y=NULL, model, param=NULL,
 
   stopifnot(xor(missing(x), missing(Distances)))
   if (are.dist <- missing(x)) x <- Distances
-  
+
   if (ismatrix.x <- is.matrix(x)) stopifnot(dim == ncol(x))
+
+  xy <- list(x=x, y=y)
+  for (i in 1:2) {
+    if (!is.null(xy[[i]]) && !is.numeric(xy[[i]])) {
+      if (ismatrix.x) stop("values of x are not numeric")
+      if (RFparameters()$Print>0) 
+        warning(paste(names(xy)[i],
+                      "not being numeric it is converted to numeric"))
+      assign(names(xy)[i], as.numeric(xy[[i]]))
+    }
+  }
+  remove(xy)
+
+
   x <- as.matrix(x)## C code expects the coordinates columwise
   fctcall <- match.arg(fctcall)
   
@@ -150,15 +163,20 @@ DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
      as.integer(paired), result, error, PACKAGE="RandomFields", DUP=FALSE)
   if (error) stop("error ", error); ## Hallo Marco,
   ## Du hattest hier auskommentiert, weiss nicht wieso
-  dim(result) <- c(if (keyinfo$vdim > 1) keyinfo$vdim, #
-                   if (keyinfo$grid) keyinfo$len else
-                   if (keyinfo$spatialdim == keyinfo$timespacedim) keyinfo$total
-                   else keyinfo$len[c(1,length(keyinfo$len))], #
-                   if (n>1) n)
+  dimres <- c(keyinfo$vdim,
+              if (keyinfo$grid) keyinfo$len else
+              if (keyinfo$spatialdim == keyinfo$timespacedim) keyinfo$total
+              else keyinfo$len[c(1,length(keyinfo$len))], #
+              if (n>1) n)
+  dim(result) <- dimres
   if (!is.null(trend) && (keyinfo$distr<=1)) {
-   if (keyinfo$vdim > 1 && (!is.list(trend) || (length(trend) != keyinfo$vdim)))
-	stop(paste("Due to the covariance model a ", keyinfo$vdim, "-dimensional random
+   if (keyinfo$vdim == 1) {
+     trend<-list(trend)
+   } else {
+     if ((!is.list(trend) || (length(trend) != keyinfo$vdim)))
+       stop(paste("Due to the covariance model a ", keyinfo$vdim, "-dimensional random
         field is created. Then trend should be a list of trends for each component."))
+   }
  
    time.used <- keyinfo$timespacedim - keyinfo$spatialdim
    spacedim <- keyinfo$spatialdim
@@ -168,51 +186,43 @@ DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
       dimension <- sapply(xlist, length)
       ## 'x' will be used in apply within kriging
       x <- as.matrix(do.call(expand.grid, xlist))
-   }
-   else if (time.used) {
+   } else if (time.used) {
      x$x <- matrix(x$x, nrow=spacedim)
      x <- as.matrix(cbind(
           matrix(rep(x$x,times=length(seq(x$T[1],x$T[2],x$T[3]))),
 	  ncol=nrow(x$x), byrow=TRUE),
           rep(seq(x$T[1],x$T[2],x$T[3]), each=ncol(x$x))))
-   }
-   else x <- t(matrix(x$x, nrow=spacedim))
+   } else x <- t(matrix(x$x, nrow=spacedim))
 
+   len <- prod(dimres[-1])
    for (k in 1:keyinfo$vdim) {
-     if (keyinfo$vdim==1) {
-        trend<-list(trend)
-        resulttext <- paste("result[",
-		       paste(rep("", length=length(dim(result))), collapse=","),
-                       "]", sep="")
-     }
-     else resulttext <- paste("result[k,",
-			paste(rep("", length=length(dim(result))-1), collapse=","),
-                        "]", sep="")
+     idx <- ((k-1) * len + 1) : (k * len)
+    
      if (class(trend[[k]])=="numeric") {
-       if (length(trend[[k]])==1)
-	  eval(parse(text=paste(resulttext, "<-", resulttext, "+ trend[[k]]")))
+       if (length(trend[[k]])==1) result[idx] <- result[idx] + trend[[k]]
        else if (length(trend[[k]]) != ncol(x) + 1)
           stop("if trend is a vector, its length should be d+1 with d being the
                 dimension of the points to be simulated at (space + time)")
         else   {
-	   dim(trend[[k]])<-c(length(trend[[k]]),1)
-	   eval(parse(text=paste(resulttext, "<-", resulttext, 
-			    "+ (cbind(1,x) %*% trend[[k]])[,1]")))
+	   dim(trend[[k]]) <- c(length(trend[[k]]), 1)
+           result[idx] <- result[idx] + (cbind(1,x) %*% trend[[k]])[,1]
         }
      } else if (class(trend[[k]])=="function")  {
        variablenames <- variables <- NULL
-       if (any(!is.na(match(c("x","y","z"),names(formals(trend[[k]]))))))
-            variablenames <-c(c("x","y","z")[1:(ncol(x)-time.used)], if(time.used) "T")
+       if (any(!is.na(match(c("x","y","z"), names(formals(trend[[k]]))))))
+            variablenames <- c(c("x","y","z")[1:(ncol(x)-time.used)], if(time.used) "T")
        else variablenames <- c(paste("X",1:(ncol(x)-time.used),sep=""), if(time.used) "T")
        for(i in 1:ncol(x))
           variables <- cbind(variables, paste(variablenames[i],"=x[,",i,"]",sep=""))
        argmatch <- match(variablenames, names(formals(trend[[k]])))
        args <- paste(variables[!is.na(argmatch)], collapse=",")
-       eval(parse(text=paste(resulttext, "<-", resulttext, "+trend[[k]](",args,")", sep="")))
-     } else if(is.null(trend[[k]])) {
-     } else stop("trend should be an integer, vector or function")
+       result[idx] <- result[idx] + eval(parse(text=paste("trend[[k]](",args,")", sep="")))
+     } else if(!is.null(trend[[k]])) stop("trend should be an integer, vector or function")
    }
   }
+
+  if (dimres[1] == 1) dim(result) <- dimres[-1]
+  if (length(dim(result))==1) result <- as.vector(result)
   
   return(result)
 }

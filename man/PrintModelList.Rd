@@ -19,11 +19,11 @@ PrintModelList(operators=FALSE, internal=FALSE)
 
 GetModelList(abbr=TRUE, internal=FALSE)
 
-GetModelNames(stationary = c("any", "stationary", "variogram", 
-                             "irf", "auxmatrix", "auxvector", "nonstationary",
-                             "genvariogram", "gencovariance", "prev.model"),
+GetModelNames(stationary = c("any", "stationary", "variogram", "irf",
+                             "auxmatrix", "auxvector", "gencovariance",
+                             "nonstationary", "genvariogram", "prev.model"),
               isotropy = c("any", "isotropic", "spaceisotropic",
-                           "anisotropic", "prev.model"),
+                           "zerospaceiso", "anisotropic", "prev.model"),
               multivariate = -9999:9999,
               operator, normalmix, finiterange, methods, internal=FALSE,
               dim = 1)
@@ -84,6 +84,6 @@ GetModelList(abbr=TRUE)
 GetModelNames("stationary", "spaceisotropic")
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
 }
 \keyword{spatial}

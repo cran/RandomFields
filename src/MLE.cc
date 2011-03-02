@@ -241,7 +241,7 @@ s
       *ncol = cov->ncol;
   double *lastmem = NULL;
 #define SHORTlen 4
-  char shortname[SHORTlen], shortD[SHORTlen+2];
+  char shortname[SHORTlen+2], shortD[SHORTlen+2];
   bool user;
   cov_fct *C = CovList + cov->nr,
     *CC = C;
@@ -253,9 +253,7 @@ s
   covzaehler[cov->nr]++;
   strcopyN(shortname, CC->name, SHORTlen);
 
-  // printf("%d:%s %d %s\n", cov->nr, CC->name, covzaehler[cov->nr], shortname);
-
-  if (covzaehler[cov->nr] >= 2) {
+   if (covzaehler[cov->nr] >= 2) {
       char dummy[SHORTlen];
       strcopyN(dummy, shortname, SHORTlen-1);
       sprintf(shortname, "%s%d", dummy, covzaehler[cov->nr]);
@@ -263,6 +261,7 @@ s
   if (printing>0) PRINTF("%s\n", CC->name); 
   // CC needed below for the kappa.names which are given
 
+//  printf("%d:%s %d %s\n", cov->nr, CC->name, covzaehler[cov->nr], shortname);
 
   if (cov->manipulating_x > 0) {
       // any scale==NA in the calling function
@@ -322,12 +321,16 @@ s
 		  (next->nr >= DOLLAR && next->nr <= LASTDOLLAR) || 
 		  (next->nr == NATSC))
 	      next = next->sub[0];
-	    if (covzaehler[next->nr] < 2) {
+	    if (covzaehler[next->nr] == 0) { // next wurde noch nicht
+		// untersucht, somit ist covzaehler[next->nr] um 1 niedriger
+		// als covzaehler[cov->nr] !
 	      strcopyN(shortD, CovList[next->nr].name, SHORTlen);
 	    } else {
 	      char dummy[SHORTlen];
-	      strcopyN(dummy, shortD, SHORTlen);
+	      strcopyN(dummy, CovList[next->nr].name, SHORTlen-1);
 	      sprintf(shortD, "%s%d", dummy, covzaehler[next->nr]+1);
+//	      printf("$$ > %d:%s %d %s\n", next->nr, CovList[next->nr].name, 
+//		     covzaehler[next->nr], shortD);
 	    }
 	    
 	    //  assert(DANISO == DSCALE + 1);
@@ -593,10 +596,13 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
        
 
 	if (ISNA(v) || ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
-           if (cov->nr < DOLLAR || cov->nr > LASTDOLLAR || 
-	       i == DVAR ||
-	       (i== DSCALE && cov->q == NULL) || // ! natscaling 
-	       i == DANISO) // aniso ?? ABfrage OK ??
+	    if ((cov->nr < DOLLAR || cov->nr > LASTDOLLAR || 
+		 i == DVAR ||
+		 (i== DSCALE && cov->q == NULL) || // ! natscaling 
+		 i == DANISO) &&
+		((cov->nr != MIXEDEFFECT && cov->nr != MLEMIXEDEFFECT) || 
+		 i != BETAMIXED)
+                )// aniso ?? ABfrage OK ??
 	   {
 //		 printf("%s %s, r=%d, c=%d: %d <? %d\n",
 //			C->name, C->kappanames[i], r, c, nv, *NBOUNDS);

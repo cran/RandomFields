@@ -93,7 +93,7 @@ GetModel(register, modelreg, modus=0)
   List of internal information is returned.
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 
 \seealso{\command{\link{GaussRF}}}
 \examples{

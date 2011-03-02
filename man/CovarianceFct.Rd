@@ -46,7 +46,8 @@ Variogram(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
   \item{Distances}{for covariance matrices, the lower triangular part
     of the distance matrix can be given instead of the values \code{x}
     themselves}
-  \item{fctcall}{this parameter should not be changed by the user}
+  \item{fctcall}{internal. This parameter should not be considered by
+    the user}
   \item{...}{The function \code{CovarianceFct} is identical to the function
     \code{Covariance}.
   }
@@ -631,7 +632,7 @@ Variogram(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
 
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
 }
 \seealso{
   \command{\link{sophisticated}},

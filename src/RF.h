@@ -39,6 +39,8 @@
 // IMPORTANT ISO and STAT must start with 0 and may not have gaps
 // see GetModelNames in getNset.R !
 
+// NOTE!!!
+// if any definition is changed check GetModelNames in R !!!
 #define ISOTROPIC (isotropy_type) 0
 #define SPACEISOTROPIC (isotropy_type) 1 /* fully symmertric */
 #define ZEROSPACEISO (isotropy_type) 2   /* isotropic if time diff is zero */
@@ -47,7 +49,9 @@
 #define ISO_MISMATCH  (isotropy_type) 9 /* always last ! */
 #define LAST_ISO 9
 
-// if any definition is changed check setbackward() !!!
+// *****************
+// NOTE!!!
+// if any definition is changed check setbackward() AND GetModelNames in R !!!
 // IN - variables !
 #define STATIONARY (stationary_type) 0
 #define VARIOGRAM (stationary_type) 1
@@ -151,6 +155,8 @@ typedef char NAname_type[MAX_NA][255];
 #define DANISO 2
 #define DPROJ 3
 #define DMAX DPROJ
+
+#define BETAMIXED 1
 
 ///////////////////////////////////////////////////////////////////////
 // BASICS

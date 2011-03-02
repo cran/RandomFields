@@ -34,7 +34,7 @@ of Washington Department of Atmospheric Sciences.
    328-350.
 
    \item
-    Gneiting, T., Kleiber,W.  and  Schlather, M. (2011) Matern
+    Gneiting, T., Kleiber, W.  and  Schlather, M. (2011) Matern
     cross-covariance functions for multivariate random fields 
     \emph{J. Amer. Statist. Assoc.} \bold{105}, 1167-1177.
 

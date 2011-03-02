@@ -67,7 +67,7 @@ regression(x, y, main, scr, value=function(regr) regr$coeff[2],
   \item{sm}{smoothed curve through the (x,y) points}
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 %\seealso{}
 %\examples{}
 \keyword{ spatial }%-- one or more ...

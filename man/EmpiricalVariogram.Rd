@@ -95,7 +95,7 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
   }
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
 }
 \seealso{\command{\link{GaussRF}}, \command{\link{fitvario},
     and \code{\link{RandomFields}}}}

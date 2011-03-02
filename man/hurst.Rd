@@ -158,7 +158,7 @@ hurst(x, y = NULL, z = NULL, data,
   }
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 \seealso{
   \command{\link{CovarianceFct}}, \command{\link{fractal.dim}}
 }

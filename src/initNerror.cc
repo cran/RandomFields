@@ -1042,7 +1042,7 @@ void InitModelList() {
   MIXEDEFFECT = 
       IncludeModel("mixed", 0, 1, 2, PREVMODELS, PREVMODELI,
 		   checkmixed, rangemixed, pmixed);
-  kappanames("X", LISTOF+REALSXP, "b", REALSXP);
+  kappanames("X", LISTOF+REALSXP, "b", REALSXP); // #define BETAMIXED 1
   subnames("covb");
   addCov(mixed, NULL, NULL);
   addCov(mixed_nonstat);

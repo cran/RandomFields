@@ -10,21 +10,20 @@
  }
  
  \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute};
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather};
   }
   \references{
     \itemize{
       \item
-    Gneiting, T., Kleiber,W.  and  Schlather, M. (2011) Matern
+    Gneiting, T., Kleiber, W.  and  Schlather, M. (2011) Matern
     cross-covariance functions for multivariate random fields 
-    \emph{J. Amer. Statist. Assoc.} \bold{}, online.
+    \emph{J. Amer. Statist. Assoc.} \bold{105}, 1167-1177.
     
      \item
     Gneiting, T., Sevcikova, H., Percival, D.B., Schlather, M., Jiang,
-  Y. (2006) Fast and Exact Simulation of Large Gaussian Lattice Systems
+    Y. (2006) Fast and Exact Simulation of Large Gaussian Lattice Systems
     in R2: Exploring the Limits. \emph{J. Comput. Graph. Stat.},
-    \bold{15},
-    483-501.
+    \bold{15}, 483-501.
 
       \item
    Schlather, M. (2002) Models for stationary max-stable
@@ -234,7 +233,7 @@ save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
 ##                                                        ##
 ############################################################
 
-##    see example(weather)
+##    see   help("weather") 
 
 
 

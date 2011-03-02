@@ -103,12 +103,11 @@ GetDistributionNames <- function() {
 }
 
 
-GetModelNames <- function(stationary = c("any", "stationary", "variogram", 
-                            "irf", "auxmatrix", "auxvector", "nonstationary",
-                            "genvariogram",
-                            "gencovariance", "prev.model"),
+GetModelNames <- function(stationary = c("any", "stationary", "variogram", "irf",
+                            "auxmatrix", "auxvector",  "gencovariance",
+                            "nonstationary", "genvariogram", "prev.model"),
                           isotropy = c("any", "isotropic", "spaceisotropic",
-                                  "anisotropic", "prev.model"),
+                                  "zerospaceiso", "anisotropic", "prev.model"),
                           multivariate = -9999:9999, ## any !
                           operator,
                           normalmix,
@@ -567,7 +566,7 @@ parampositions <- function(model, param, trend=NULL, dim, print=1) {
   if (!is.null(trend)) stop("trend not programmed yet")
   model <- PrepareModel(model, param, trend=trend, nugget.remove=FALSE)
   .Call("GetNAPositions", model$model, as.integer(dim), as.integer(dim),
-             FALSE, as.integer(print), PACKAGE="RandomFields")
+        FALSE, as.integer(print), PACKAGE="RandomFields")
 }
 
 

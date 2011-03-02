@@ -102,7 +102,7 @@ putactions(l)
  % \command{\link{userinput}},
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 \examples{
 %   library(RandomFields, lib="~/TMP"); source("/home/schlather/R/RF/RandomFields/R/auxiliary.R")
 sample.interaction <- function(read.r2=TRUE, type="p", pch=16) {

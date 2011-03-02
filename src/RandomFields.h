@@ -317,7 +317,8 @@ extern "C" SEXP CheckModelSimu(SEXP model, SEXP tsdim, SEXP xdim,
 			       SEXP stationary);
 
 extern "C" SEXP GetNAPositions(SEXP model, SEXP tsdim, SEXP xdim,
-			       SEXP stationary, SEXP print);
+			       SEXP stationary, 
+			       SEXP print);
 extern "C" SEXP MLEGetModelInfo(SEXP model, SEXP tsdim, SEXP xdim); // ex GetNA
 extern "C" void PutValuesAtNA(double *values);
 extern "C" void expliciteDollarMLE(double *values);

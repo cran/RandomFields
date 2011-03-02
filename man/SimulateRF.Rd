@@ -98,7 +98,7 @@ InitSimulateRF(x, y=NULL, z=NULL, T=NULL, grid=!missing(gridtriple),
     dimension contains the realisations.    
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 \seealso{
   \command{\link{GaussRF}}, \command{\link{MaxStableRF}}, \code{\link{RandomFields}}
 }

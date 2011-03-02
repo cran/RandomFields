@@ -1,4 +1,3 @@
-
 Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                     grid, gridtriple=FALSE,
                     model, param, given, data, trend=NULL,            

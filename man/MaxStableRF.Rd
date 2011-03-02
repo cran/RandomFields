@@ -119,7 +119,7 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
    random fields. \emph{Extremes} \bold{5}, 33-44.
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 \seealso{
   \command{\link{CovarianceFct}},
   \link{sophisticated},

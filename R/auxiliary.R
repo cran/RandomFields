@@ -1,10 +1,4 @@
-if (FALSE) {
-  library(RandomFields, lib="~/TMP"); source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R");source("~/R/RF/RandomFields/R/auxiliary.R");source("~/R/RF/RandomFields/R/evalpar.R"); options(locatorBell=FALSE); RFparameters(Print=1); x <- seq(1,10,0.1); user.action("start"); ShowModels(x=x); getactionlist()
 
-source("~/R/RF/RandomFields/R/ShowModels.R");source("~/R/RF/RandomFields/R/rf.R");source("~/R/RF/RandomFields/R/auxiliary.R");source("~/R/RF/RandomFields/R/evalpar.R"); user.action("replay"); ShowModels(x=x)
-}
-
-# putactionlist(getactionlist()[1:(length(getactionlist())-1)])
 
 
 .RandomFields.env <- new.env()
@@ -43,7 +37,9 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       par.orig <- par(no.readonly=TRUE)
     }
 
-    par.orig$new <- par.orig$fin <- par.orig$mai <- par.orig$pin <-
+     
+    par.orig$new <- FALSE
+    par.orig$fin <- par.orig$mai <- par.orig$pin <-
       par.orig$plt <- NULL
     
     devPrev <- dev.cur()
@@ -79,8 +75,9 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
        }
       if (!missing(mai)) par(mai=mai)
     } else {
-      if (dev %in% dev.list()) dev.set(dev)
-      else {
+      if (dev %in% dev.list()) {
+        dev.set(dev)
+      } else {
         stopifnot(is.finite(height+width))
         do.call(getOption("device"), list(height=height, width=width))
       }
@@ -88,11 +85,12 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
     }
 
     if (cur.cex) par(par.orig) # uncommented 12.8.04 + nach unten
+    if (exists("abc")) return()
     if (cur.cex && FALSE) { ## komisches Verhalten !! wenn die beiden Befehle
       ##              zusammengefasst werden (gekippte eps in Latex)
       ##              29.5.05
-      par(par.orig[39]) # $mfg
-      par(par.orig[-39])# uncommented 12. 8.04 + nach unten
+#      par(par.orig[39]) # $mfg
+#      par(par.orig[-39])# uncommented 12. 8.04 + nach unten
     }
     assign(".dev.orig", 
            list(dev.prev=devPrev, dev.cur=dev.cur(), keep=keep),
@@ -107,7 +105,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
       if (get(".dev.orig", envir=.RandomFields.env)$keep) par(new=FALSE)
       else dev.off()
     if ((devPrev <- get(".dev.orig", envir=.RandomFields.env)$dev.prev) != 1)
-      dev.set(devPrev)
+      dev.set(devPrev)   
     rm(".dev.orig", envir=.RandomFields.env) 
   }
   invisible(NULL)

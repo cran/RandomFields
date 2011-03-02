@@ -294,7 +294,7 @@ GetMethodNames()
    --- details coming soon ---
  }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
   
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})

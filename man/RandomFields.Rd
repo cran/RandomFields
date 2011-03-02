@@ -15,13 +15,16 @@
 
   Starting with version 2.0, it also allows for the simulation
   of random fields that are non-stationary or multivariate or
-  complex space-time fields.
+  sophisticated space-time fields.
   fitvario allows for multivariate models and mixed effect models.
+
+  \bold{There are some changings in the definitions and in the output,
+    see help("changings")}
 }
-\section{Installation}{
-  If like to have Havard Rue's GMRF available,
-  please follow the instruction in \link{RFMethods}.
-}
+%\section{Installation}{
+%  If like to have Havard Rue's GMRF available,
+%  please follow the instruction in \link{RFMethods}.
+%}
 \details{
   The following random fields and related functionalities are
   provided by the package.
@@ -40,9 +43,6 @@
       \item \command{\link{fitvario}} : variogram/covariance function fit
       by least squares, maximum likelihood and cross validation
       techniques
-
-      \bold{NOTE! '$vario' is defunctioned. Use '$ml' instead of '$value$ml'!}
-
       \item \command{\link{PrintMethodList}} : list of implemented
       simulation methods
       \item \command{\link{ShowModels}} : interactive, graphical choice of
@@ -112,7 +112,7 @@
 }
 
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute};
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather};
   }
 \references{
   This package is announced in and can be cited by:
@@ -121,19 +121,34 @@
   fields. \emph{R-News} \bold{1} (2), 18-20. 
 }
 \section{Acknowledgement}{
-  Many thanks to Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
-  for proof-reading parts of the code and the help text for the versions
-  1.0 of this package. 
-  Yindeng Jiang \email{jiangyindeng@gmail.com} implemented the
-  circulant embedding methods \sQuote{cutoff} and \sQuote{intrinsic}
-  in 2004 for the versions 1.2.
-
-  The coding of V1.0 has been financially supported by the EU TMR network
-  ERB-FMRX-CT96-0095 on
-  ``Computational and statistical methods for the analysis of spatial
-  data'' in 1999,
-  and by the German Federal Ministry of Research and Technology 
-  (BMFT) grant PT BEO 51-0339476C during 2000-03.
+  Many thanks to 
+  \itemize{
+    %    \item Marco Oesting     
+    \item
+    Peter Menck implemented the multivariate circulant embedding
+    for version 2.0. 
+    \item
+    Yindeng Jiang \email{jiangyindeng@gmail.com} implemented the
+    circulant embedding methods \sQuote{cutoff} and \sQuote{intrinsic}
+    in 2004 for the versions 1.2.
+     \item
+    Martin Maechler, Paulo Ribeiro, and Tilmann Gneiting
+    were proof-reading parts of the code and the help text for the versions
+    1.0.
+  }
+}
+\section{Financial support}{
+  \itemize{
+    \item
+    V1.0 has been  financially supported by
+    the German Federal Ministry of Research and Technology 
+    (BMFT) grant PT BEO 51-0339476C during 2000-03.
+    \item
+    V1.0 has been financially supported by the EU TMR network
+    ERB-FMRX-CT96-0095 on
+    ``Computational and statistical methods for the analysis of spatial
+    data'' in 1999.
+  }
 }
 \keyword{spatial}
 

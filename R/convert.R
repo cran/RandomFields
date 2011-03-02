@@ -204,6 +204,7 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
   ## else to matrix cbind(x,y,z)
   if (missing(grid) && gridtriple) grid <- TRUE
   if (is.matrix(x)) {
+    if (!is.numeric(x)) stop("x is not numeric.")
     if (!is.null(y) || !is.null(z)) 
       stop("If x is a matrix, then y and z may not be given")
     spacedim <- ncol(x)
@@ -220,6 +221,17 @@ CheckXT <- function(x, y, z, T, grid, gridtriple){
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
   } else { ## x, y, z given separately 
     if (is.null(y) && !is.null(z)) stop("y is not given, but z")
+    xyzT <- list(x=if (!missing(x)) x, y=if (!missing(y)) y,
+                 z=if (!missing(z)) z, T=if (!missing(T)) T)
+    for (i in 1:4) {
+      if (!is.null(xyzT[[i]]) && !is.numeric(xyzT[[i]])) {
+        if (RFparameters()$Print>0) 
+          warning(paste(names(xyzT)[i],
+                        "not being numeric it is converted to numeric"))
+        assign(names(xyzT)[i], as.numeric(xyzT[[i]]))
+      }
+    }
+    remove(xyzT)
     spacedim <- 1 + (!is.null(y)) + (!is.null(z))
     if (missing(grid) && spacedim==1) {      
       dx <- diff(x)

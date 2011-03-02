@@ -410,8 +410,7 @@ fitvario.default <-
   }
 
   
-        
-  ## note "global" variables MLEMAX, MLEPARAM
+          ## note "global" variables MLEMAX, MLEPARAM
   MLtarget <- function(variab) {
     if (length(variab)>0) variab <- variab + 0  ## unbedingt einfuegen, da bei R Fehler der Referenzierung !! 16.2.10
 
@@ -928,6 +927,7 @@ fitvario.default <-
          y <- list(y)
        }
        if (!is.null(z)) {
+         stopifnot(!is.list(z))
          z <- list(z)
        }
        if (!is.null(T)) {
@@ -945,8 +945,6 @@ fitvario.default <-
       if (PrintLevel>2) Print(neu)
       if (i==1) {
         spacedim <- neu$spacedim
-
-        
         xdim <- truedim <- as.integer(spacedim + !is.null(T))
         storage.mode(truedim) <- "integer"
         
@@ -1269,6 +1267,8 @@ fitvario.default <-
     else 
       pm.u <- PrepareModel(model=users.guess, nugget.remove=FALSE)
 
+#    Print(ncovparam)
+    
     users.guess <-
       .Call("Take2ndAtNaOf1st", pm$model, pm.u$model,
             truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
@@ -1332,6 +1332,9 @@ fitvario.default <-
   
   xdim <- as.integer(if (isotropy) 1 else truedim + 0)
 
+
+#  Print(sum(NAs), nrow(minmax), NAs, minmax)
+  
   if (anyeffect) stopifnot(sum(NAs) == nrow(minmax))
   if (anyeffect) {
     eff <- rep(FALSE, nrow(minmax))
@@ -2097,6 +2100,9 @@ fitvario.default <-
 
       ## if (nCoVarAll > 0) paste("upper", betanames, sep=":")
       )
+
+#  print(list(tablenames, allmethods))
+
   
   param.table <- data.frame(matrix(NA, nrow=maxtblidx, ncol=length(allmethods),
                                    dimnames=list(tablenames, allmethods)))
@@ -2129,10 +2135,11 @@ fitvario.default <-
       m <- cbind(lower, users.guess, upper, idx)
       dimnames(m) <- list(rep("", length(lower)),
                           c("lower", "user", "upper", "outside bounds"))
-      stop("not all users.guesses within bounds\n change values of `lower' and `upper' or those of the `*bound*'s")
+      Print(m)
+      stop("not all users.guesses within bounds\n change values of `lower' and `upper' or \nthose of the `lowerbound*.factor's and `upperbound*.factor's")
     }
     param.table[[M]][IDX("variab")] <- users.guess
-    param.table[[M]][IDX("param")] <- users.guess <- transform(users.guess)
+    param.table[[M]][IDX("param")] <- transform(users.guess)
   }
 
 
@@ -2141,9 +2148,11 @@ fitvario.default <-
   ##****************    autostart    *****************
   param.table[[M]][IDX("covariab")] <- get.covariates(autostart)
   ## ****************    user's guess    *****************
+
+ # Print(autostart, users.guess)
   if (!is.null(users.guess))
     param.table[[M]][IDX("covariab")] <- get.covariates(users.guess)
-  
+ # Print("OK")
 
 
 ##################################################
@@ -2557,7 +2566,7 @@ fitvario.default <-
       ml.residuals <- ML.RESIDUALS
        
       if (length(MLELB) > 0 && any(onborderline) && refine.onborder &&
-          !only.users) {
+          !only.users && n.variab > 1) {
         ## if the MLE result is close to the border, it usually means that
         ## the algorithm has failed, especially because of a bad starting
         ## value (least squares do not always give a good starting point,helas)
@@ -2615,26 +2624,19 @@ fitvario.default <-
           ## side effect:Maximum is in MLEMAX!
           ##                             and optimal parameter is in MLEVARIAB
           if (PrintLevel>5) show(2, M, MLEMAX, MLEVARIAB)
-          if (n.variab > 1) {
-            cat(detailpch)
-            options(show.error.messages = show.error.message) ##
-            try(optim(MLEVARIAB, MLEtarget, method ="L-BFGS-B",lower = MLELB,
-                      upper = MLEUB, control=mle.optim.control)$par
-                , silent=silent)
-             options(show.error.messages = TRUE) ##
-            if (!is.finite(MLEMAX) &&(PrintLevel>0))
-              cat("MLtarget II failed.\n")
-            ## do not check anymore whether there had been convergence or not.
-            ## just take the best of the two strategies (initial value given by
-            ## LS, initial value given by a grid), and be happy.
-            if (PrintLevel>5) show(3, M, MLEMAX, MLEVARIAB)
-          } else {
-            cat("cannot find MLE optimum\n")
-            RFparameters(old.param)
-            options(save.options)
-            return(NA)
-          }
 
+          cat(detailpch)
+          options(show.error.messages = show.error.message) ##
+          try(optim(MLEVARIAB, MLEtarget, method ="L-BFGS-B",lower = MLELB,
+                    upper = MLEUB, control=mle.optim.control)$par
+              , silent=silent)
+          options(show.error.messages = TRUE) ##
+          if (!is.finite(MLEMAX) &&(PrintLevel>0))
+            cat("MLtarget II failed.\n")
+          ## do not check anymore whether there had been convergence or not.
+          ## just take the best of the two strategies (initial value given by
+          ## LS, initial value given by a grid), and be happy.
+          if (PrintLevel>5) show(3, M, MLEMAX, MLEVARIAB) else 
           if (PrintLevel>2) Print("mle second round", MLEVARIAB, MLEPARAM, MLEMAX)
             
           if (is.finite(MLEMAX) && MLEMAX > param.table[[M]][tblidx[[M]][1]]) {
@@ -2646,7 +2648,7 @@ fitvario.default <-
           }
         } # (is.na(MLEgridmin[1]))
       } # onborderline
-    }  
+    } # length(MLELB) != 0
   } ## M
 
 

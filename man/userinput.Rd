@@ -44,7 +44,7 @@ userinput(fct, info=NULL, prompt, n,  type="n", pch=par()$pch,
   \command{\link{useraction}}
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/institute}}
+  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
 \keyword{iplot}
 \keyword{utilities}
 \keyword{internal}
