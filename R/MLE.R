@@ -37,6 +37,11 @@
 
 
 
+###################################
+## !!! Mixed Model Equations !!! ##
+###################################
+
+
 
 fitvario <-
   function(x, y=NULL, z=NULL, T=NULL, data, model, param,
@@ -77,7 +82,7 @@ fitvario.default <-
            lsq.methods=c("self", "plain", "sqrt.nr", "sd.inv", "internal"),
            ## "internal" : name should not be changed; should always be last
            ##              method!
-           mle.methods=c("ml", "reml"), #, "reml"),
+           mle.methods=c("ml"), # "reml", "rml1"),
            cross.methods=NULL,
   #       cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
            users.guess=NULL,  only.users = FALSE,
@@ -89,8 +94,7 @@ fitvario.default <-
 ####################################################################
 ###                      Preludium                               ###
 ####################################################################
-  mle.methods <- "ml"
-    
+
  
   if (length(cross.methods) > 0) {
     stop("not programmed yet")
@@ -299,90 +303,158 @@ fitvario.default <-
   
 
   MLEsettings <- function(M) {
-    switch(M,
-      "ml" = {
-        base <- 0
-        ML.totalRV <- ntotdata * sum(effect == RemainingError)
+    base <- 0
+    ML.df <- ntotdata
+    assign("MLEtarget", MLtarget, envir=ENVIR)
 
-        if (globalsigma)
-          base <- base + ML.totalRV * (1 - log(ML.totalRV))
-
-        dummy <-
-          rowSums(nCoVar[, effect >= RandomEffect && effect <= SpaceEffect,
-                         drop=FALSE])
-        if (solvesigma) {
-          base <- base + sum(dummy * (1 - log(dummy)))
+    assign("DO.REML", M =="reml" && anyfixedeffect, envir=ENVIR)
+    assign("DO.RML1", M =="rml1" && anyfixedeffect, envir=ENVIR)
+    if (DO.RML1) {
+      ML.df <- ML.df - rowSums(nCoVar[, effect == FixedEffect]) * repet
+      rml.a <- rml.x <- rml.data <- vector("list", sets)
+      idx <- NULL
+      for (i in 1:sets) {
+        for (k in mmcomponents) if (effect[k] == FixedEffect)
+          idx <- c(idx, startCoVar[i, k] : endCoVar[i, k])
+        
+        rml.data[[i]] <- rml.a[[i]] <- rml.x[[i]] <-
+          vector("list", length(idx.repet[[i]]))
+        for (m in 1:length(idx.repet[[i]])) {
+          ortho <- eigen(tcrossprod(Xges[[i]][[m]][, idx, drop=FALSE]))
+          ortho <-
+            ortho$vectors[ , order(abs(ortho$value))[1:(ML.df[i]/repet[i])],
+                          drop=FALSE]
+          rml.x[[i]][[m]] <-
+            crossprod(ortho, Xges[[i]][[m]][, -idx, drop=FALSE])
+          if (!lambdaest) {
+            w <- werte[[i]][idx.na[[i]][[1]][, m], ,idx.na[[i]][[2]][m, ], ,
+                            drop = FALSE]
+            d <- dim(w)
+            dim(w) <- c(d[1] * d[2], d[3])
+            rml.data[[i]][[m]] <-  crossprod(ortho, w)                          
+          }
+          rml.a[[i]][[m]] <- ortho
+        }          
+      }      
+      assign("RML.A", rml.a, envir=ENVIR)
+      assign("RML.Xges", rml.x, envir=ENVIR)
+      assign("RML.data", rml.data, envir=ENVIR)
+      assign("MLEtarget", MLtarget, envir=ENVIR)        
+    } else if (DO.REML) {       
+      ML.df <- ML.df - nCoVar[, effect == FixedEffect]
+      for (k in which(effect == FixedEffect)) {
+        XtX <- 0
+        for (i in 1:sets) {
+          for (m in 1:ncol(idx.na[[i]][[1]])) {
+            XtX <- XtX +
+              crossprod(modelinfo$sub[[k]]$param$X[[i]]) [idx.na[[i]][[1]][,m],]
+          }
+          XtX <- try(chol(XtX))
+          if (!is.numeric(XtX)) stop("X does not have full rank")
+          base <- base - 2 * sum(log(diag(XtX)))
         }
- 
-        base <-  base + (sum(dummy) +  ML.totalRV) * log(2 * pi)
+      }
+    } else if (M=="rml2") {
+      stop("not programmed yet")
+      ML.df <- ML.df - rowSums(nCoVar[, effect == FixedEffect]) 
+      ## hier wirklich die riesengrosse Matrix erstellen wo wirklich nur
+      ## rowSums(nCoVar[, effect == FixedEffect]) abgezogen wird und nicht
+      ## das repet-fache ?!
+      ## oder per Rechnung klein machen
+      for (i in 1:sets) {
+        for (k in mmcomponents) if (effect[k] == FixedEffect)
+          idx <- c(idx, startCoVar[i, k] : endCoVar[i, k])
+        
+        Xfix <- NULL
+        for (m in 1:length(idx.repet[[i]])) {
+          Xfix <- rbind(Xfix,
+                        Xges[[i]][[m]][, idx, drop=FALSE])                  
+          Xnonfix <- rbind(Xnonfix, Xges[[i]][[m]][, -idx, drop=FALSE])
+        }
+        
+        ortho <- eigen(tcrossprod(Xfix))
+        rml.a[[i]] <-
+          ortho$vectors[ , order(abs(ortho$value))[1:ML.df[i]], drop=FALSE]
+        rml.x[[i]] <- crossprod(rml.a[[i]], Xnonfix)
+        if (!lambdaest) rml.data[[i]] <- crossprod(rml.a[[i]], werte[[i]])
+        
+      }
+    }
+
+    ML.df <- sum(ML.df)
+    if (globalsigma)  base <- base + ML.df * (1 - log(ML.df))
     
-        assign("ML.totalRV", ML.totalRV, envir=ENVIR)
-        assign("ML.base", base, envir=ENVIR)
-        assign("MLEtarget", MLtarget, envir=ENVIR)
-       },
-      "reml" = {
-        stop("not programmed yet")
-        if (any(effect>2)) stop("mixed model not yet programmed in REML.")
-        reml.lc <- sapply(CoVariates, function(x) nrow(x) - ncol(x))
-        assign("REML.totalRV", reml.lc * repet, envir=ENVIR)
-        sumREML.totalRV <- sum(REML.totalRV)
-        assign("REML.loglcrepet", sumREML.totalRV * (1 -log(sumREML.totalRV)),
-               envir=ENVIR)
-        assign("REML.twopilcrepet", sumREML.totalRV * log(2 * pi),
-               envir=ENVIR)
-        reml.a0 <- lapply(CoVariates, function(x) eigen(tcrossprod(x)))
-        reml.a <- reml.data <- vector("list", length(reml.a0))
-        for (i in 1:length(reml.a0)) {
-          reml.a[[i]] <-
-            reml.a0[[i]]$vectors[ ,
-                                 order(abs(reml.a0[[i]]$value))[1:reml.lc[i]],
-                                 drop=FALSE]
-          reml.data[[i]] <- crossprod(reml.a[[i]], werte[[i]]) 
-        }
-        assign("REML.A", reml.a, envir=ENVIR)
-        assign("REML.data", reml.data, envir=ENVIR)
-        assign("MLEtarget", REMLtarget, envir=ENVIR)        
-       },
-       stop(M, " unknown")
-           ) # switch
+    dummy <- rowSums(nCoVar[, effect >= RandomEffect && effect <= SpaceEffect,
+                            drop=FALSE])
+    if (solvesigma) {
+      base <- base + sum(dummy * (1 - log(dummy)))
+    }
+    
+    base <-  base + (sum(dummy) +  ML.df) * log(2 * pi)
+    
+    assign("ML.df", ML.df, envir=ENVIR)
+     assign("ML.base", base, envir=ENVIR)
   }
-
+ 
 
   linearpart <- function(sigma2, return.z=FALSE) {
     z <- list()
-       
-    for (i in 1:sets) {
+    reml.corr <- 0
+   
+    for (i in 1:sets) {      
       D <- matrix(0, ncol=nCoVarSets[i], nrow=nCoVarSets[i])
+      rS <- 0
+      for (m in 1:length(idx.repet[[i]])) {
+        Spalte <- crossprod(if (DO.RML1) RML.Xges[[i]][[m]] else Xges[[i]][[m]],
+                            Sinv[[i]][[idx.error]][[m]]) # all k
+        for (k in mmcomponents) {
+          if (nCoVar[i, k] > 0 && (effect[k] != FixedEffect || !DO.RML1)) {
+            idx <- startCoVar[i, k] : endCoVar[i, k]
+            D[, idx] <- D[, idx] + idx.repet[[i]][m] * Spalte %*%
+              if (DO.RML1) RML.Xges[[i]][[m]][, idx, drop=FALSE]
+              else Xges[[i]][[m]][, idx, drop=FALSE] 
+          }
+        }
+        rS <- rS + Spalte %*% sumdata[[i]][[m]]
+      }
+
+      if (DO.REML) {
+        idx <- NULL
+        for (k in mmcomponents) if (effect[k] == FixedEffect)
+          idx <- c(idx, startCoVar[i, k] : endCoVar[i, k])
+        sqrtD <- try(chol(D[idx, idx]))
+        if (!is.numeric(sqrtD)) stop("X C^{-1} X  does not have full rank")
+        reml.corr <- reml.corr + 2 * sum(log(diag(sqrtD)))             
+      }
+
       j <- 1
       for (k in mmcomponents) {
         if (effect[k] > DeterministicEffect && effect[k] < RemainingError) {
           idx <-  startCoVar[i, k] : endCoVar[i, k]
 
           if (effect[k] == RVarEffect) {
-            D[idx, idx] <- Sinv[[i]][[k]] / sigma2[j]
+            D[idx, idx] <- D[idx, idx] + Sinv[[i]][[k]] / sigma2[j]
             j = j + 1
           } else if (effect[k] > RVarEffect) {
-            D[idx, idx] <- Sinv[[i]][[k]]
+            D[idx, idx] <- D[idx, idx] + Sinv[[i]][[k]]
           }
         }
       }
-       
-      rS <- 0
-      for (m in 1:length(idx.repet[[i]])) {
-        Spalte <- crossprod(Xges[[i]][[m]], Sinv[[i]][[idx.error]][[m]]) # all k
-        for (k in 1:nrow(nCoVar)) if (nCoVar[i, k] > 0) {
-          idx <- startCoVar[i, k] : endCoVar[i, k]
-                    
-          D[, idx] <- D[, idx] +
-            Spalte %*% Xges[[i]][[m]][, idx, drop=FALSE] * idx.repet[[i]][m]
-        }
-        rS <- rS + Spalte %*% sumdata[[i]][[m]]
-      }      
+
+      if (DO.RML1) {
+        idx <- NULL
+        for (k in mmcomponents) if (effect[k] == FixedEffect)
+          idx <- c(idx, startCoVar[i, k] : endCoVar[i, k])
+        D <- D[-idx, -idx]
+      }       
+      
       z[[i]] <- try(solve(D, rS))
       if (!is.numeric(z[[i]]))
         stop("Design matrix shows linear dependence. Check the design matrix and \n  make sure that you do not use `trend' and the `mixed' model at the same time.")
     }
  
+    assign("REML.CORRECTION", reml.corr, envir=ENVIR)
+    
     if (return.z) {
       return(z)
     }
@@ -430,6 +502,7 @@ fitvario.default <-
       }
 
       param <- as.double(transform(variab[1:nvarWithoutBC]))
+#      if (PrintLevel>4)  Print(format(param, dig=20))
       .C("PutValuesAtNA", param, PACKAGE="RandomFields", DUP=FALSE)
       options(show.error.messages = show.error.message)
     }
@@ -446,8 +519,6 @@ fitvario.default <-
     for (i in 1:sets) {
       S <- double((lc[i] * vdim)^2)
       for (k in allcomponents) {
-
-        
         if (effect[k] >= SpaceEffect) { ## ansonsten muss schon vorher gesetzt
           ##                              werden
 
@@ -465,23 +536,17 @@ fitvario.default <-
             
             logdet <- logdet + 2 * sum(log(diag(Si)))
             Sinv[[i]][[k]] <<- chol2inv(Si, LINPACK=TRUE)
-          } else {
+          } else {  ## RemainingError, genau 1x pro i aufgerufen
             for (m in 1:length(idx.repet[[i]])) {
-              Si <- S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]] 
+              Si <- S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]]
+              if (DO.RML1) {
+                Si <- crossprod(RML.A[[i]][[m]], Si) %*% RML.A[[i]][[m]]
+              }
+              
               Si <- try(chol(Si), silent=silent)
               
-              if (!is.numeric(Si) || any(is.na(Si))) {
-                
+              if (!is.numeric(Si) || any(is.na(Si))) {             
                 assign("MLEINF", TRUE, envir=ENVIR)
-
-                if (FALSE) {
-                  Si <- S[idx.na[[i]][[1]][, m], idx.na[[i]][[1]][, m]]
-                  for (u in 1:lc[i]) {
-                    minor <- det(Si[1:u,1:u, drop=FALSE])
-                    if (PrintLevel>5) Print(minor) #
-                    if (minor < -1e-10) stop("Covmatrix not positive definite")
-                  }
-                }
                 if (PrintLevel>1 || is.na(MLEVARIAB)) {
                   cat("\nMLE: error in cholesky decomp. -- matrix pos def?")
                 }
@@ -489,8 +554,8 @@ fitvario.default <-
               }
               
               logdet <- logdet + 2 * sum(log(diag(Si))) * idx.repet[[i]][m]
-              
-              ## Si ist hier Si^{1/2} !! Zum Schluss wird mit -0.5 multipliziert
+
+              ## Si ist hier Si^{1/2}!! Zum Schluss wird mit -0.5 multipliziert
 
               Sinv[[i]][[k]][[m]] <<- chol2inv(Si, LINPACK=TRUE)
             }
@@ -506,18 +571,20 @@ fitvario.default <-
           Werte[[i]][[m]] <-
             BoxCox(werte[[i]] [ idx.na[[i]][[1]][, m], , idx.na[[i]][[2]][m, ],
                                drop = FALSE ], variab[n.variab])
+          if (DO.RML1) 
+            Werte[[i]][[m]] <- crossprod(RML.A[[i]][[m]],  Werte[[i]][[m]])
           for (k in det.effect) {
-            if (length(modelinfo$sub[[k]]$param$X)==1)
-              Werte[[i]][[m]] <- Werte[[i]][[m]] -
+            Werte[[i]][[m]] <- Werte[[i]][[m]] -
+              if (length(modelinfo$sub[[k]]$param$X)==1)
                 modelinfo$sub[[k]]$param$X[[i]]
-            else 
-             Werte[[i]][[m]] <- Werte[[i]][[m]] -
-               modelinfo$sub[[k]]$param$X[[i]][idx.na[[i]][[1]][, m]]
+              else 
+                modelinfo$sub[[k]]$param$X[[i]][idx.na[[i]][[1]][, m]]
             }
-        } else {
+        } else {          
           Werte[[i]][[m]] <-
-            werte[[i]] [ idx.na[[i]][[1]][, m], , idx.na[[i]][[2]][m, ],
-                        drop = FALSE ]
+            if (DO.RML1) RML.data[[i]][[m]]
+            else werte[[i]] [ idx.na[[i]][[1]][, m], , idx.na[[i]][[2]][m, ],
+                             drop = FALSE ]
         }
 
         sumdata[[i]][[m]] <<- as.vector(t(apply(Werte[[i]][[m]], 1:2, sum)))
@@ -526,6 +593,7 @@ fitvario.default <-
       } # for m
     } # for i
 
+    assign("REML.CORRECTION", 0, envir=ENVIR)  
     if (nCoVarAll > 0) {
       assign("LINEARPART", Inf, envir=ENVIR)
       if (!solvesigma) {
@@ -553,10 +621,11 @@ fitvario.default <-
       MLtargetV[[i]] <- list()
       for (m in 1:length(idx.repet[[i]])) {
         
-        MLtargetV[[i]][[m]] <- Werte[[i]][[m]] -
-          if (nCoVarAll>0)
-            as.vector(Xges[[i]][[m]] %*% LINEARPARTZ[[i]])
-          else 0
+        MLtargetV[[i]][[m]] <- Werte[[i]][[m]] 
+        if (nCoVarAll>0)
+          MLtargetV[[i]][[m]] <- MLtargetV[[i]][[m]] -
+            as.vector(if (DO.RML1) RML.Xges[[i]][[m]] else Xges[[i]][[m]]
+                      %*% LINEARPARTZ[[i]])
                                         # y-\sum A_i z_i
         quadratic <- quadratic +
           sum(MLtargetV[[i]][[m]] *
@@ -577,28 +646,28 @@ fitvario.default <-
       quad.effect[idx] <- log(quad.effect[idx] / nc) * nc
     }
 
-     res <- -0.5 * (logdet + sum(quad.effect) +
-                    if (globalsigma) ntotdata * log(quadratic) else quadratic)
+    res <- -0.5 * (logdet + sum(quad.effect) + REML.CORRECTION +
+                    if (globalsigma) ML.df * log(quadratic) else quadratic)
     
     if (is.na(res)) {
       warning("NA results appeared")
     }
     
     if (PrintLevel > 6) {
-      Print(globalsigma, variab, param, var.global, ML.totalRV,
-            quadratic / ML.totalRV)
+      Print(globalsigma, variab, param, var.global, ML.df,
+            quadratic / ML.df)
       readline(paste(res, "Bitte return druecken."))
     }
 
     if (res > MLEMAX) {
       if (varnugNA) { ## then globalsigma is true as well. So never change oder of
         ##               if's
-        sill <- quadratic / ML.totalRV ### check!!!
+        sill <- quadratic / ML.df ### check!!!
         param[var.global] <- sill * (1.0 - param[nugget.idx])        
         param[nugget.idx] <- sill * param[nugget.idx]
       } else{
         if (globalsigma)
-          param[var.global] <- quadratic / ML.totalRV  ### check!!!
+          param[var.global] <- quadratic / ML.df  ### check!!!
       }
 
       assign("MLEMAX", res, envir=ENVIR)
@@ -618,7 +687,7 @@ fitvario.default <-
   
 
   
-  REMLtarget <- function(variab) {
+  RMLtarget <- function(variab) {
     variab <- variab + 0  ## unbedingt einfuegen, da bei R Fehler der Referenzierung !! 16.2.10
     if (n.variab > 0) {
       if (PrintLevel>4) {Print(format(variab, dig=10))} #
@@ -631,7 +700,7 @@ fitvario.default <-
          penalty <- variab 
         variab <- pmax(MLELB, pmin(MLEUB, variab)) 
         penalty <-  - sum(variab - penalty)^2 ## not the best ....
-        res <- REMLtarget(variab)
+        res <- RMLtarget(variab)
         return(res + penalty * (1+ abs(res)))
       }
 
@@ -660,7 +729,7 @@ fitvario.default <-
       }
 
      cov.matrix <-
-        try(chol(crossprod(REML.A[[i]], cov.matrix %*% REML.A[[i]])),
+        try(chol(crossprod(RML.A[[i]], cov.matrix %*% RML.A[[i]])),
             silent=silent)
       options(show.error.messages = TRUE)
       if (!is.numeric(cov.matrix) || any(is.na(cov.matrix))) {
@@ -693,11 +762,12 @@ fitvario.default <-
       if (!is.finite(logdet[i])) logdet[i] <- 1E300 ## the best ?! 
       cov.matrix <- chol2inv(cov.matrix, LINPACK=TRUE) # La.chol2inv, LIN=TRUE
       if (lambdaest)  {
-          REML.data.transform <- crossprod(REML.A[[i]], BoxCox(as.matrix(werte[[i]]), variab[n.variab]))
-	  quadratic[i] <- sum(REML.data.transform * (cov.matrix %*% REML.data.transform))
+          RML.data.transform <-
+            crossprod(RML.A[[i]], BoxCox(as.matrix(werte[[i]]), variab[n.variab]))
+	  quadratic[i] <- sum(RML.data.transform * (cov.matrix %*% RML.data.transform))
       }
       else
-      	  quadratic[i] <- sum(REML.data[[i]] * (cov.matrix %*% REML.data[[i]]))
+      	  quadratic[i] <- sum(RML.data[[i]] * (cov.matrix %*% RML.data[[i]]))
     }
 
     ##               sum_i (D_i - Xm)^T C^{-1} (D_i - X m)
@@ -720,12 +790,12 @@ fitvario.default <-
       ##     repet * log(det C_1) -  repet * lc * log(repet * lc) +
       ##     repet * lc * log(sum_i (D_i-Xm)^T C^{-1} (D_i-X m)) + repet * lc
       ## = logdet + loglcrepet + lcrepet * log(sum_i (D_i-Xm)^T C^{-1} (D_i-X m))
-      res <- REML.loglcrepet + sum(repet *logdet + REML.totalRV * log(quadratic))
+      res <-  sum(repet *logdet + ML.df * log(quadratic))
     } else {
       res <- sum(repet * logdet + quadratic)  ## 23.9.08 Marco
       ##res <- sum(repet * (logdet + quadratic)) 
     }
-    res <- -0.5 * (res + REML.twopilcrepet)
+    res <- -0.5 * (res + ML.base)
     if (is.na(res) || is.na(MLEMAX) #|| debug
         ) {
       filename <- "RandomFields.fitvario.reml.bug.rda"
@@ -738,11 +808,11 @@ fitvario.default <-
     
     if (res > MLEMAX) {
       if (varnugNA) {
-        sill <- sum(quadratic) / sum(REML.totalRV)
+        sill <- sum(quadratic) / sum(ML.df)
         param[var.global] <- sill * (1.0 - param[nugget.idx])
         param[nugget.idx] <- sill * param[nugget.idx]
       } else {
-        if (globalsigma) param[var.global] <- quadratic / REML.totalRV
+        if (globalsigma) param[var.global] <- quadratic / ML.df
       }
       assign("MLEMAX", res, envir=ENVIR)
       if (n.variab > 0) {
@@ -890,8 +960,9 @@ fitvario.default <-
   ## variable that are used in the local functions:
   ENVIR <- environment()
   LSQ.SELF.WEIGHING <- LSQ.WEIGHTS <- LSQ.BINNEDSQUARE <- 
-    REML.A <- REML.data <- REML.loglcrepet <- REML.totalRV <-REML.twopilcrepet <-
-      ML.base <- ML.totalRV <- MLEtarget <-
+    DO.REML <- DO.REML1 <- RML.A <- RML.Xges <- RML.data <-
+      REML.CORRECTION <- DO.RML1 <- 
+      ML.base <- ML.df <- MLEtarget <-
         ML.RESIDUALS <- MLEMAX <- MLEVARIAB <- MLEINF <- MLEPARAM <- 
       CROSS.DIST <- CROSS.KRIGE <- CROSS.VAR <- CROSSMODEL <-
         LINEARPART <- LINEARPARTS2 <- LINEARPARTZ  <- 
@@ -1013,6 +1084,13 @@ fitvario.default <-
 ################    analyses of orginal model        ###############
 ##### variables needed for analysis of trend, upper and lower input --
 ##### user cannot know what the internal represenatation is
+  if (is.list(model) && !is.null(model$param)) {
+    if (!missing(param)) stop("`param' is given twice")
+    param <- model$param
+    model <- model$model
+  }
+
+#  Print(model, if (!missing(param)) param)
   
   pm <- PrepareModel(model, param, nugget.remove=FALSE)
 
@@ -1232,35 +1310,47 @@ fitvario.default <-
 
   
 #######################   upper,lower,user     ########################
-  if (PrintLevel>1) cat("\n lower and upper ...\n")
+  if (PrintLevel>1) cat("\nlower and upper ...\n")
+
+ 
+  if (!is.null(lower) && !is.logical(lower)) {
+    stopifnot(!is.null(upper),
+              typeof(lower) == typeof(upper),
+              length(lower) == length(upper))
+  }
 
   users.lower <- users.upper <- NULL
-  if (missing(param))  {
-    if (is.list(lower))  {
+  if (!is.null(lower) && !is.logical(lower)) {
+    if (is.list(lower)) {
       pm.l <- PrepareModel(lower, nugget.remove=FALSE)
-      
-      users.lower <- lower <-
-        .Call("Take2ndAtNaOf1st", pm$model, pm.l$model,
-               truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
-    } else if (is.null(transform)) stopifnot(is.null(lower))
-    if (is.list(upper))  {
-      pm.u <- PrepareModel(upper, nugget.remove=FALSE)      
-      users.upper <- upper <-
-        .Call("Take2ndAtNaOf1st", pm$model, pm.u$model,
-               truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
-    } else if (is.null(transform)) stopifnot(is.null(upper))
-  } else {
-    if (!is.null(lower)) {
+      pm.u <- PrepareModel(upper, nugget.remove=FALSE)
+    } else {
       if (length(lower) != ncovparam)
-        stop("length of lower does not match the number of parameters to be estimated")
-      users.lower <- lower
+        stop("length(lower) does not match number of parameters to be estimated")
+      if (missing(param)) stop("if `lower' is a vector then `param' must be given")
+      dummyl <- lower
+      dummyu <- upper
+      lower <- upper <- param
+      lower[is.na(param)] <- dummyl
+      upper[is.na(param)] <- dummyu
+      pm.l <- PrepareModel(model=model, param=c(NA, lower), nugget.remove=FALSE)
+      pm.u <- PrepareModel(model=model, param=c(NA, upper), nugget.remove=FALSE)
     }
-    if (!is.null(upper)) {
-      if (length(upper) != ncovparam)
-        stop("length of lower does not match the number of parameters to be estimated")
-      users.upper <- upper
-    }
+
+#    Print("Take2ndAtNaOf1st", pm$model, pm.l$model,
+#          truedim, xdim, stationary, ncovparam, !is.null(transform),
+#          PACKAGE="RandomFields")
+    users.lower <-
+        .Call("Take2ndAtNaOf1st", pm$model, pm.l$model,
+               truedim, xdim, stationary, ncovparam, !is.null(transform),
+              PACKAGE="RandomFields")
+    users.upper <-
+        .Call("Take2ndAtNaOf1st", pm$model, pm.u$model,
+               truedim, xdim, stationary, ncovparam, !is.null(transform),
+              PACKAGE="RandomFields")
   }
+  
+ 
   if(!is.null(users.guess))  {
     if (!missing(param)) 
       pm.u <- PrepareModel(model=model, users.guess, nugget.remove=FALSE)
@@ -1271,7 +1361,8 @@ fitvario.default <-
     
     users.guess <-
       .Call("Take2ndAtNaOf1st", pm$model, pm.u$model,
-            truedim, xdim, stationary, ncovparam, PACKAGE="RandomFields")
+            truedim, xdim, stationary, ncovparam, !is.null(transform),
+            PACKAGE="RandomFields")
   }
 
 
@@ -1312,6 +1403,7 @@ fitvario.default <-
   effect <- ResMLEGet$effect
 
   anyeffect <- length(effect) > 0
+  anyfixedeffect <- any(effect == FixedEffect)
   if (anyeffect) {
     idx <- effect == RemainingError    
     if (sum(idx) != 1)
@@ -1351,14 +1443,12 @@ fitvario.default <-
  
 ###########################      transform     #######################
 ## either given bu users.transform + users.min, users.max
+## DIESER TEIL MUSS IMMER HINTER  Take2ndAtNaOf1st STEHEN
   delete.idx <- NULL
    if (is.null(transform)) {
     if (any(minmax[,4]==1)) ## nan, not na
       stop("NaN only allowed if transform is given.")
     transform <- function(x) x;
-    if (is.null(lower)) lower <- minmax[,1] 
-    if (is.null(upper)) upper <- minmax[,2]
-    
   } else {
     standard.style <- solvesigma <- FALSE
     stopifnot(!is.null(lower), !is.null(upper) || is.logical(lower),
@@ -1366,8 +1456,6 @@ fitvario.default <-
     if (is.logical(lower)) {
       stopifnot(length(lower) == nrow(minmax))
       delete.idx <- which(!lower)
-      lower <- minmax[,1]
-      upper <- minmax[,2]
       if (any(minmax[,4]==1))
         stop("logical lower and NaN may not given at the same time")
     } else {
@@ -1376,13 +1464,8 @@ fitvario.default <-
       ptype <- NULL  ## if NULL, then better bounds are not searched for
     }
   }
-  if (!is.null(lower)) {
-    stopifnot(!is.null(upper),
-              typeof(lower) == typeof(upper),
-              length(lower) == length(upper))
-  }
-  stopifnot(length(lower) == length(upper))
-
+  lower <- minmax[,1] 
+  upper <- minmax[,2]    
 
 
 #################################################################
@@ -1475,6 +1558,7 @@ fitvario.default <-
   mindistances <- min(mindistances[1, ])
   is.dist <- TRUE ## might be changed in future when fitvario is speeded up
   ##                 by intermediate results in the knots
+
   
 ##############         Coordinates & data    #################
   if (PrintLevel>1) cat("\ndistances and data...")
@@ -1487,7 +1571,7 @@ fitvario.default <-
     stop("lambda can be estimated only in the univariate case")
   }    
 
-  ntotdata <- sum(sapply(data, length)) 
+  ntotdata <- sapply(data, length)
   idx.na <- werte <- sumdata <- vector("list", length(coord))
   repet <- numeric(length(coord))
   idx.repet <-  vector("list", length(sets))
@@ -1818,14 +1902,11 @@ fitvario.default <-
   
   globalsigma <- globalsigma || varnugNA
 
-  if (!is.null(users.lower))  {
+  if (!is.null(users.lower)) {
     stopifnot(length(users.lower)==length(lower))
     idx <- !is.na(users.lower)
-    lower[idx] <- users.lower[idx]
-  }
 
-  if (!is.null(users.upper))  {
-    stopifnot(length(users.upper)==length(upper))
+    lower[idx] <- users.lower[idx]
     idx <- !is.na(users.upper)
     upper[idx] <- users.upper[idx]
   }
@@ -1917,7 +1998,7 @@ fitvario.default <-
                else rep(0, sets)
              }) / vdim
     if (is.vector(Ny)) dim(Ny) <- c(1, length(Ny))   
-  } 
+  }
 
   
   param <- as.double(transform(autostart)) ## only the 1s in mixed.idx needed  
@@ -1929,10 +2010,8 @@ fitvario.default <-
     if (anyeffect) {
       for (m in 1:ncol(idx.na[[i]][[1]])) {
         Xges[[i]][[m]] <- matrix(nrow=sum(idx.na[[i]][[1]][,m]), ncol=nCoVarAll)
-        for (k in mmcomponents) {
-          
-
-          if (Ny[i,k] == 0) {
+        for (k in mmcomponents) {          
+          if (Ny[i, k] == 0) {
             stopifnot(nCoVar[i, k] == nrow(idx.na[[i]][[1]]))
           } else {
             if (Ny[i, k] != nrow(idx.na[[i]][[1]]))
@@ -1941,13 +2020,12 @@ fitvario.default <-
           Xges[[i]][[m]][, startCoVar[i, k] : endCoVar[i, k] ] <-
             (if (Ny[i,k] == 0) diag(nCoVar[i, k])
             else modelinfo$sub[[k]]$param$X[[i]]) [idx.na[[i]][[1]][,m], ]
-         
         }
       }
     } else {
-       nCoVarAll <- 0
-       nCoVar <- matrix(nrow=1, ncol=1, 0)
-   }
+      nCoVarAll <- 0
+      nCoVar <- matrix(nrow=1, ncol=1, 0)
+    }
 
     for (k in allcomponents) {
       if (effect[k] > FixedEffect) {
@@ -2123,6 +2201,7 @@ fitvario.default <-
   ##****************    autostart    *****************
   if (PrintLevel>1) cat("\nautostart...")
   M <- "autostart"
+  
   default.param <- param.table[[M]][IDX("variab")] <- autostart
   param.table[[M]][IDX("param")] <- transform(autostart) 
   ## ****************    user's guess    *****************
@@ -2448,11 +2527,11 @@ fitvario.default <-
 ##################################################
 ###################   MLE    #####################
   
-   MLEtarget <- NULL
-   mleMethods <- (if (is.null(mle.methods)) NULL else
-              allmlemeth[pmatch(mle.methods, allmlemeth)])
+  MLEtarget <- NULL
+  mleMethods <- (if (is.null(mle.methods)) NULL else
+                 allmlemeth[pmatch(mle.methods, allmlemeth)])
   if ("reml" %in% mleMethods && nCoVarAll == 0)
-    mleMethods <- c("ml", "reml")
+    mleMethods <- c("ml", "reml", "rml")
 
   ## lowerbound.scale.LS.factor <  lowerbound.scale.factor, usually
   ## LS optimisation should not run to a boundary (what often happens
@@ -2476,15 +2555,12 @@ fitvario.default <-
     if (!(M %in% mleMethods)) next;
     if (PrintLevel>2) cat("\n", M) else cat(pch)
     param.table[[M]][IDX("variab")] <- default.param
-    if (M=="reml") {
-      if (nCoVarAll == 0) { ## same as MLE
-        param.table[[M]] <- param.table[["ml"]]
-        param.table[[M]][tblidx[[M]][1]] <- param.table[[M]][tblidx[["ml"]][1]]
-        next
-      } else {
-        stop("reml currently not programmed.")
-      }
+    if (M!="ml" && !anyfixedeffect) { 
+      param.table[[M]] <- param.table[["ml"]]
+      param.table[[M]][tblidx[[M]][1]] <- param.table[[M]][tblidx[["ml"]][1]]
+      next
     }
+   
 
     MLEsettings(M)
     MLEMAX <- -Inf ## must be before next "if (nMLEINDEX==0)"
@@ -2598,7 +2674,7 @@ fitvario.default <-
           MLEgridmax <- pmin(MLEgridmax + step/2, MLEUB)
           step <- (MLEgridmax - MLEgridmin) / (MLEgridlength-1)
 
-          startingvalues <- vector("list", len=length(step))
+          startingvalues <- vector("list", length(step))
           for (i in 1:length(step)) {
             startingvalues[[i]] <- MLEgridmin[i] + step[i] * 0:(MLEgridlength-1)
           }

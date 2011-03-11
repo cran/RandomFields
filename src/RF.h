@@ -19,7 +19,7 @@
 #define MAXMLEDIM MAXCOVDIM
 #define MAXSIMUDIM MAXCOVDIM
 
-#define MAXCEDIM 20
+#define MAXCEDIM 13
 #define MAXTBMSPDIM 4
 #define MAXMPPDIM 4
 #define MAXHYPERDIM 4
@@ -153,7 +153,8 @@ typedef char NAname_type[MAX_NA][255];
 #define DVAR 0
 #define DSCALE 1
 #define DANISO 2
-#define DPROJ 3
+#define DALEFT 3
+#define DPROJ 4
 #define DMAX DPROJ
 
 #define BETAMIXED 1
@@ -1176,9 +1177,7 @@ extern char NEWMSG[1000];
 
 #define ERR(X) {UERR; sprintf(MSG, "%s\n%s", ERROR_LOC, X); error(MSG);}
 #define XERR(X) {errorMSG(X, MSG); \
- /* sprintf(NEWMSG, "%s\nerror %d: %s", ERROR_LOC, X, MSG);*/	\
- /* printf("**** %s **** \n", NEWMSG); */ \
- error(NEWMSG);}
+ sprintf(NEWMSG, "in `%s' error %d: %s", ERROR_LOC, X, MSG); error(NEWMSG);}
 #define PERR(X) {UERR;sprintf(MSG, "%s\n%s: %s", ERROR_LOC, param_name, X); error(MSG);}
 
 void ErrCov(double *x, cov_model *cov, double *v);

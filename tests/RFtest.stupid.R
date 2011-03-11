@@ -2,10 +2,22 @@
 ## R --no-save < RFtest.stupid.R
 #   source("RFtest.stupid.R")
 
-if (EXTENDED.TESTING <- file.exists("source.R")) { source("source.R")
+if (EXTENDED.TESTING <- file.exists("source.R")) {
+  source("source.R")
   source("RFtest.R")
-} else if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
+  runif(1)
+  save(file="RandomSeedStupid", .Random.seed)
+} else {
+  if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) {
+    source(f)
+    runif(1)
+    save(file="RandomSeedStupid", .Random.seed)
+  } else { ## CRAN
+    .Random.seed <- 9999
+  }
+}
 
+readline <- function(...) {} 
 
 if (!exists("testlevel")) testlevel <- 1
 if (!exists("ps")) ps <- NULL

@@ -1,5 +1,5 @@
 Package: RandomFields
-Version: 2.0.44
+Version: 2.0.45
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather <martin.schlather@math.uni-goettingen.de>
 Maintainer: Martin Schlather <martin.schlather@math.uni-goettingen.de>
@@ -8,6 +8,6 @@ Description: Simulation of Gaussian and extreme value random fields;
         conditional simulation; kriging
 License: GPL
 URL: http://www.stochastik.math.uni-goettingen.de/~schlather
-Packaged: 2011-03-02 09:15:48 UTC; schlather
+Packaged: 2011-03-11 12:16:13 UTC; schlather
 Repository: CRAN
-Date/Publication: 2011-03-02 11:53:09
+Date/Publication: 2011-03-11 16:08:03

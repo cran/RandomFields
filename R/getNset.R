@@ -359,33 +359,9 @@ RFparameters <- function (..., no.readonly=FALSE) {
        mpp.approxzero,
        mpp.samplingdist, mpp.samplingr, mpp.p, mpp.beta,
        PACKAGE="RandomFields", DUP=FALSE)
-  ## in der naehcsten Zeile bringt valgrind einen Fehler
-  ## im system, nicht klar wieso
-
-##17264## Conditional jump or move depends on uninitialised value(s)
-##17264##    at 0x401620C: (within /lib/ld-2.8.so)
-##17264##    by 0x42895C3: (within /lib/libc-2.8.so)
-##17264##    by 0x4289989: _dl_sym (in /lib/libc-2.8.so)
-##17264##    by 0x4181DE7: (within /lib/libdl-2.8.so)
-##17264##    by 0x400DE25: (within /lib/ld-2.8.so)
-##17264##    by 0x41820DB: (within /lib/libdl-2.8.so)
-##17264##    by 0x4181D72: dlsym (in /lib/libdl-2.8.so)
-##17264##    by 0x8119155: R_dlsym (Rdynload.c:796)
-##17264##    by 0x8119AC8: R_FindSymbol (Rdynload.c:845)
-##17264##    by 0x8176E9C: resolveNativeRoutine (dotcode.c:238)
-##17264##    by 0x817782A: do_dotCode (dotcode.c:1651)
-##17264##    by 0x819FC0A: Rf_eval (eval.c:495)
-##17264##    by 0x81A233A: do_begin (eval.c:1266)
-##17264##    by 0x819F9D0: Rf_eval (eval.c:469)
-##17264##    by 0x81A296A: do_for (eval.c:1154)
-##17264##    by 0x819F9D0: Rf_eval (eval.c:469)
-##17264##    by 0x81A233A: do_begin (eval.c:1266)
-##17264##    by 0x819F9D0: Rf_eval (eval.c:469)
-##17264##    by 0x81A36DB: Rf_applyClosure (eval.c:704)
-##17264##    by 0x819F923: Rf_eval (eval.c:513)
-
-    .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines,
-       hyper.mar.distr, hyper.mar.param, NAOK=TRUE, DUP=FALSE)
+   .C("SetParamHyperplane", m, hyper.superpos, hyper.maxlines,
+       hyper.mar.distr, hyper.mar.param, PACKAGE="RandomFields",
+       NAOK=TRUE, DUP=FALSE)
     .C("SetExtremes", m, maxstable.maxGauss, PACKAGE="RandomFields", DUP=FALSE)
     if (length(parameters)==0)
       return(c(list(

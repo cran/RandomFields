@@ -23,11 +23,25 @@
     Operator that multiplies at most 10 submodels
 
     \item \code{$}\cr
-    Operator that modifies the scale (\code{scale}), the variance (\code{var}),
-    and the anisotropy matrix \code{aniso}. The latter is an arbitrary
-    matrix.
-    When \code{aniso} is not given, it allows for a vector of integers
-    \code{proj} which gives the components on which is projected.
+    \deqn{C(x, y) = v C(x / s, y / s)}
+    \deqn{C(x, y) = v C(x a, y a)}
+    \deqn{C(x, y) = v C(A x, A y)}
+    \deqn{C(x, y) = v C(p x, p y)}
+    Operator that modifies the the variance (\eqn{v=}\code{var}) and the
+    coordinates or distances by 
+    \itemize{
+      \item the scale (\eqn{s=}\code{scale}) or
+      \item  the anisotropy matrix \eqn{a=}\code{anisoT} multiplied from the
+      right or
+      \item the anisotropy matrix \eqn{A} multiplied from the left or
+      \item \eqn{p=}\code{proj} on a lower dimensional space along
+      the coordinate axis
+    }
+    The parameter \code{scale} is positive, \code{aniso} and \code{A}
+    are matrices, and \code{proj} is a vector indices with between 1 and
+    the dimension of \eqn{x}.
+    Note, at most one of the parameters,
+    \code{anisoT}, \code{A}, \code{proj} may be given at the same time.
 
     The operator \code{$} has 1 submodel.
     If the dimension of the field is 1 or \code{aniso} is not given, the
@@ -65,11 +79,11 @@
     for some constant \eqn{\nu_{red} \in (0,1]}.
     The scalar \eqn{c_{12} =c_{21} = \rho_{red} \sqrt{f m c_{11} c_{22}}}
     where
-    \deqn{f = Gamma(\nu_{11} + d/2) * Gamma(\nu_{22} + d/2) /
-      Gamma(\nu_{11}) / Gamma(\nu_{22}) *
-      (Gamma(\nu_{12}) / Gamma(\nu_{12}+d/2))^2 *
+    \deqn{f = \Gamma(\nu_{11} + d/2) * \Gamma(\nu_{22} + d/2) /
+      \Gamma(\nu_{11}) / \Gamma(\nu_{22}) *
+      (\Gamma(\nu_{12}) / \Gamma(\nu_{12}+d/2))^2 *
       ( s_{12}^{2*\nu_{12}} / s_{11}^{\nu_{11}} / s_{22}^{\nu_{22}} / )^2}
-    and \eqn{Gamma} is the Gamma function and \eqn{d} is the dimension
+    and \eqn{\Gamma} is the Gamma function and \eqn{d} is the dimension
     of the space. The constant \eqn{m} is 
     the infimum of the function \eqn{g} on \eqn{[0,\infty)},
     \deqn{
@@ -134,7 +148,7 @@
 
     \item \code{curlfree} (multivariate)
     \deqn{
-      ( - \nabla \nabla^T ) C_0(x, t)
+      ( - \nabla_x \nabla_x^T ) C_0(x, t)
     }
     \eqn{C_0} is a univariate
     covariance model that is motion invariant and at least twice differentiable
@@ -190,17 +204,6 @@
       C_{11}(h) = C_{22}(h) = C_0(h),  C_{12}(h) = C_0(h + r), C_{21}(h) = C_0(-h + r)}
     Here \eqn{r} is a vector of the dimension of the random field,
     and \eqn{C_0} is a translation invariant, univariate covariance model.
-
-    \item \code{EAxxA} (auxiliary function)
-    \deqn{
-      S(x) = E + A^t x x^t A, \qquad x \in R^d
-    }{
-      S(x) = E + A^t x x^t A,   x \in R^d
-    }
-    where \eqn{E} and \eqn{A} are arbitrary \eqn{d \times d}{d x d} matrices.
-  
-     This is not a covariance function, but can be used an submodels for
-     certain classes.
 
 
      \item \code{divfree} (multivariate)
@@ -262,25 +265,7 @@
     \eqn{ C(h) = \exp(-C(0)+C(h)) }.
 
     
-    \item \code{vector} (multivariate)
-    \deqn{
-      ( -0.5 * (a + 1) \Delta E + a \nabla \nabla^T ) C_0(x, t)
-    }
-    \eqn{C_0} is a univariate
-    covariance model that is motion invariant and at least twice differentiable
-    in the first component. The operator is applied to the first
-    component only. The parameter \eqn{a} is in \eqn{[-1, 1]}. If \eqn{a=-1}
-    then the field is curl free; if \eqn{a=1} then the field is
-    divergence free.
-
-    \eqn{C_0} is either a spatiotemporal model (then \eqn{t} is the
-    time component) or it is an isotropic model. Then, the first \eqn{Dspace}
-    coordinates are considered as \eqn{x} coordinates and the remaining
-    ones as \eqn{t} coordinates. By default, \eqn{Dspace} equals the
-    dimension of the field (and \eqn{t} is identically \eqn{0}).
-
-    See also the models \code{divfree} and \code{curlfree}
-    
+   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     \item \code{M}
@@ -408,6 +393,20 @@
     \code{s} is chosen by \code{natsc} such that the practical range
     (or the mathematical range, if finite) is 1.
 
+  
+   \item \code{nonstWM}
+    \deqn{C(x, y)=\Gamma(\mu) \Gamma(\nu(x))^{-1/2} \Gamma(\nu(y))^{-1/2}
+      W_{\mu} (\|x-y\|)}
+    \deqn{= 2^{1-\mu}  \Gamma(\nu(x))^{-1/2} \Gamma(\nu(y))^{-1/2}
+      \|x-y\|^\mu
+      K_\nu(\|x-y\|)}
+    where  \eqn{\mu = [\nu(x) + \nu(y)]/2} and
+    \eqn{\nu} is a positive function.
+    If \eqn{\nu} is a scalar use the variable \code{nu}.
+    If \eqn{\nu} is a function, use the submodel \code{Nu}.
+    Note that for \code{Nu} the usual list structure applies
+    and only the defined covriance models can be used.
+
     
     \item \code{nsst} (Non-Separable Space-Time model)
     \deqn{C(h,u)= (\psi(u)+1)^{-\delta/2} \phi(h /\sqrt(\psi(u) +1))}
@@ -418,7 +417,7 @@
     
     This model is used for space-time modelling where the spatial
     component is isotropic.\cr
-
+    
 
     \item \code{nugget} (multivariat model)
     \deqn{C(h)= {\rm diag}(1,\ldots,1) 1_{\{0\}}(h)}{diag(1,\ldots,1) 1(h==0)}
@@ -436,14 +435,14 @@
     Furthermore,  \eqn{\nu_{12} =\nu_{21} = 0.5 (\nu_{11} + \nu{22})}
     and the scalar \eqn{c_{12} =c_{21} = \rho_{red} \sqrt{f m c_{11} c_{22}}}
     where
-    \deqn{f = Gamma(\nu_{11} + d/2) * Gamma(\nu_{22} + d/2) /
-      Gamma(\nu_{11}) / Gamma(\nu_{22}) *
-      (Gamma(\nu_{12}) / Gamma(\nu_{12}+d/2))^2}
-    and \eqn{Gamma} is the Gamma function and \eqn{d} is the dimension
+    \deqn{f = \Gamma(\nu_{11} + d/2) * \Gamma(\nu_{22} + d/2) /
+      \Gamma(\nu_{11}) / \Gamma(\nu_{22}) *
+      (\Gamma(\nu_{12}) / \Gamma(\nu_{12}+d/2))^2}
+    and \eqn{\Gamma} is the Gamma function and \eqn{d} is the dimension
     of the space. The constant \eqn{m} is 
     the infimum of the function \eqn{g} on \eqn{[0,\infty)}, 
     \deqn{
-      g(t) = (1/_{12}^2 +t^2)^{2\nu_{12} + d}
+      g(t) = (1/s_{12}^2 +t^2)^{2\nu_{12} + d}
       (1/s_{11}^2 + t^2)^{-\nu_{11}-d/2}
       (1/s_{22}^2 + t^2)^{-\nu_{22}-d/2}
     }
@@ -451,8 +450,9 @@
 
     The model now has the parameters
 
-    \code{nu} \eqn{= (nu_{11}, nu_{22})}\cr
-    \code{s} \cr
+    \code{nu} \eqn{= (\nu_{11}, \nu_{22})}\cr
+    \code{s} \eqn{= (s_{11}, s_{22})}\cr
+    \code{s12} \eqn{= s_{12} = s_{21}}\cr
      \code{c} \eqn{= (c_{11}, c_{22})}\cr
     \code{rhored} \eqn{=\rho_{red}}
   
@@ -629,18 +629,28 @@
     
     This operator is currently only designed for internal use!
     
-   \item \code{nonstWM}
-    \deqn{C(x, y)=\Gamma(\mu) \Gamma(\nu(x))^{-1/2} \Gamma(\nu(y))^{-1/2}
-      W_{\mu} (\|x-y\|)
-      = 2^{1-\mu}  \Gamma(\nu(x))^{-1/2} \Gamma(\nu(y))^{-1/2}
-      \|x-y\|^\mu
-      K_\nu(\|x-y\|)}
-    where  \eqn{\mu = [\nu(x) + \nu(y)]/2} and
-    \eqn{\nu} is a positive function.
-    If \eqn{\nu} is a scalar use the variable \code{nu}.
-    If \eqn{\nu} is a function, use the submodel \code{Nu}.
-    Note that for \code{Nu} the usual list structure applies
-    and only the defined covriance models can be used.
+    \item \code{vector} (multivariate)
+    \deqn{
+      ( -0.5 * (a + 1) \Delta E + a \nabla \nabla^T ) C_0(x, t)
+    }
+    \eqn{C_0} is a univariate
+    covariance model that is motion invariant and at least twice differentiable
+    in the first component. The operator is applied to the first
+    component only. The parameter \eqn{a} is in \eqn{[-1, 1]}. If \eqn{a=-1}
+    then the field is curl free; if \eqn{a=1} then the field is
+    divergence free.
+
+    \eqn{C_0} is either a spatiotemporal model (then \eqn{t} is the
+    time component) or it is an isotropic model. Then, the first \eqn{Dspace}
+    coordinates are considered as \eqn{x} coordinates and the remaining
+    ones as \eqn{t} coordinates. By default, \eqn{Dspace} equals the
+    dimension of the field (and \eqn{t} is identically \eqn{0}).
+
+    See also the models \code{divfree} and \code{curlfree}
+  
+
+     
+  
   }
   
   See \command{\link{CovarianceFct}} for comments on the use of a
@@ -900,10 +910,8 @@
 }
 
 \examples{
-%  library(RandomFields,lib="~/TMP")
-%  source("/home/schlather/R/RF/RandomFields/tests/source.R")
+%  library(RandomFields,lib="~/TMP");  source("/home/schlather/R/RF/RandomFields/tests/source.R")
 % RFparameters(Print=9)
-
 PrintModelList(op=TRUE)
 
 ## the subsequent model can be used to model rainfall...

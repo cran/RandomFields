@@ -86,21 +86,17 @@ int False=0; // never change
 int PL=PRINTLEVEL, 
     NS=NAT_SCALE;
 
+
 globalparam GLOBAL = {
     {false, '*', false, PRINTLEVEL, NAT_SCALE, 0 //, false /* aniso */
   },//general_param general;
   {DECISION_CASESPEC, DECISION_CASESPEC},    // decision_param ;
   {false, true, false, TRIVIALSTRATEGY, 3, 0, MAX_CE_MEM,
-   -1e-7, 1e-3, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0}},  //ce_param ce, 20 NULLEN
+   -1e-7, 1e-3, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, //ce_param ce, 13 NULLEN
   {false, true, false, TRIVIALSTRATEGY, 1, 0, MAX_CE_MEM,
-           -1e-9, 1e-7, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0}}, // localce; 20 NULLEN
+   -1e-9, 1e-7, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, // localce; 13 NULLEN
   {false, true, false, TRIVIALSTRATEGY, 3, 0, 10000000,
-   -1e-7, 1e-3, {0, 0, 0, 0, 0, 
-                 0, 0, 0, 0, 0, 
-                 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0}}, // tbmce, 20 NULLEN
+   -1e-7, 1e-3, {0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, // tbmce, 13 NULLEN
   { 60, 1, 2.0, 0.0}, //TBM2, specific
   {500, 1, 2.0, 0.0}, //TBM3, specific
   {Nothing, {NA_REAL, NA_REAL, NA_REAL, NA_REAL}, 0},  // TBM3 general
@@ -607,12 +603,12 @@ void InitModelList() {
   
   pref_type pS= {5, 5, 5, 3, 5, 5, 5, 5, 0, 0, 5, 0, 0, 5};
  	//       CE CO CI TBM23 Sp di sq Ma av n mpp Hy any
-  DOLLAR = IncludeModel("$", 1, 1, 4, kappaS, // kappadollar,
+  DOLLAR = IncludeModel("$", 1, 1, 5, kappaS, // kappadollar,
 			PREVMODELS, PREVMODELI, checkS, rangeS, pS,
 			initS, doS, false, SUBMODELM);
   // do not change Order!!
-  kappanames("var", REALSXP, "scale", REALSXP, "aniso", REALSXP,
-	     "proj", INTSXP);
+  kappanames("var", REALSXP, "scale", REALSXP, "anisoT", REALSXP,
+	     "A", REALSXP, "proj", INTSXP);
   addCov(Siso, DS, DDS, NULL);
   addLocal(coinitS, ieinitS);
   addTBM(tbm2S, initspectralS, spectralS);
@@ -742,13 +738,6 @@ void InitModelList() {
 	     "s", REALSXP, "s12", REALSXP,
 	     "c", REALSXP, "rhored", REALSXP);
 
- IncludePrim("parsbiWM", 4, kappa_parsbiWM, STATIONARY, ISOTROPIC, 
-	      checkparsbiWM2, rangeparsbiWM2, 2);
-  addCov(parsbiWM2, NULL, NULL);
-  kappanames("nu", REALSXP, 
-	     "s", REALSXP,
-	     "c", REALSXP, 
-	     "rhored", REALSXP);
 
 
   pref_type pchauchy=  {2, 0, 0, 0, 3, 0, 4, 5, 0, 0, 0, 0, 0, 5};
@@ -967,14 +956,14 @@ void InitModelList() {
   kappanames("nu", REALSXP, "lambda", REALSXP, "delta", REALSXP);
   addCov(IacoCesare, NULL, NULL);
   
-  IncludeModel("identity", 1, 1, 1, NULL, PREVMODELS, PREVMODELI, checkId,
-	       rangeId,	PREF_ALL, initstandard, dostandard, true, SUBMODELM);
-  kappanames("vdim", INTSXP);
-  addCov(IdStat, DId, DDId, NULL);
-  addTBM(TBM2Id, initspectralId, spectralId);
-  addLocal(coinitId, ieinitId);
-  //  addMarkov(&ID);
-  addCov(IdNonStat);
+//  IncludeModel("identity", 1, 1, 1, NULL, PREVMODELS, PREVMODELI, checkId,
+//	       rangeId,	PREF_ALL, initstandard, dostandard, true, SUBMODELM);
+//  kappanames("vdim", INTSXP);
+//  addCov(IdStat, DId, DDId, NULL);
+//  addTBM(TBM2Id, initspectralId, spectralId);
+//  addLocal(coinitId, ieinitId);
+//  //  addMarkov(&ID);
+//  addCov(IdNonStat);
 
   VECTOR = IncludeModel("vector", 
 	       1, 1, 2, NULL, STATIONARY, ANISOTROPIC, checkvector,
@@ -1071,6 +1060,15 @@ void InitModelList() {
   assert(CovList[NATSC].naturalscale == NULL); // needed in CMbuild
 
 
+  IncludeModel("nonstWM", 0, 1, 1,  kappaNonStWM, COVARIANCE, ANISOTROPIC, 
+	       checkNonStWM, rangeNonStWM, PREF_ALL);
+  addCov(NonStWMQ); // anders herum gibt es fehler in addCov(aux_covfct auxcf),
+  addCov(NonStWM);  // da auxiliary ia.. nicht mit cov hand in hand gehen kann
+  kappanames("nu", REALSXP);
+  subnames("Nu");
+  addGaussMixture(DrawLogMixNonStWM, LogMixWeightNonStWM);
+
+
   IncludeModel("nsst", 2, 2, 1, STATIONARY, SPACEISOTROPIC,
 	       checknsst, rangensst, PREF_ALL);
   kappanames("delta", REALSXP);
@@ -1107,6 +1105,14 @@ void InitModelList() {
       CovList[nr].implemented[CircEmbed] =IMPLEMENTED;
   }
   */
+
+ IncludePrim("parsbiWM", 4, kappa_parsbiWM, STATIONARY, ISOTROPIC, 
+	      checkparsbiWM2, rangeparsbiWM2, 2);
+  addCov(parsbiWM2, NULL, NULL);
+  kappanames("nu", REALSXP, 
+	     "s", REALSXP,
+	     "c", REALSXP, 
+	     "rhored", REALSXP);
 
   IncludePrim("penta", 0, STATIONARY, ISOTROPIC, checkOK, 
                 rangepenta);
@@ -1242,14 +1248,7 @@ void InitModelList() {
   addGaussMixture(DrawLogMixWM, LogMixWeightW);
   addInv(invWhittleSq);
 
-  IncludeModel("nonstWM", 0, 1, 1,  kappaNonStWM, COVARIANCE, ANISOTROPIC, 
-	       checkNonStWM, rangeNonStWM, PREF_ALL);
-  addCov(NonStWMQ); // anders herum gibt es fehler in addCov(aux_covfct auxcf),
-  addCov(NonStWM);  // da auxiliary ia.. nicht mit cov hand in hand gehen kann
-  kappanames("nu", REALSXP);
-  subnames("Nu");
-  addGaussMixture(DrawLogMixNonStWM, LogMixWeightNonStWM);
-
+ 
   pref_type pX= {0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 5};
 		   //          CE CO CI TBM23 Sp di sq Ma av  n mpp Hy any
    MIXX = IncludeModel("X", 1, 1, 1,  PREVMODELS, PREVMODELI, checkX, rangeX, 

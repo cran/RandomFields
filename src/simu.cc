@@ -576,7 +576,6 @@ void CheckModelInternal(SEXP model, int tsdim, int xdim,
   
   strcpy(ERROR_LOC, "Checking model at ");
   CMbuild(model, 0, Cov, NULL);
-
  
   if (PL>6) PRINTF("detected model structure is:\n%s\n", ERROR_LOC);
   strcpy(ERROR_LOC, "");
@@ -592,7 +591,10 @@ void CheckModelInternal(SEXP model, int tsdim, int xdim,
     cov->tsdim = tsdim;
     cov->xdim = xdim;
     cov->statIn = stationary ? STATIONARY : PREVMODELS;
-    if ((err = CovList[cov->nr].check(cov)) != NOERROR) XERR(err);
+    if ((err = CovList[cov->nr].check(cov)) != NOERROR) {
+	printf("err =%d\n", err);
+	XERR(err);
+    }
  
     DeleteGatter(Cov);
 

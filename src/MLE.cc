@@ -630,15 +630,19 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 
 
 SEXP Take2ndAtNaOf1st(SEXP model, SEXP model_bound, SEXP tsdim, SEXP xdim, 
-		  SEXP stationary, SEXP nbounds) {
+		      SEXP stationary, SEXP nbounds, SEXP skipchecks) {
     // MAXMLEDIM
   double *bounds_pointer;
   int NBOUNDS_INT =INTEGER(nbounds)[0],
       *NBOUNDS= &NBOUNDS_INT;
-  
+  bool oldskipchecks = GLOBAL.general.skipchecks;
+
+  NAOK_RANGE = true;
+  if (LOGICAL(skipchecks)[0]) GLOBAL.general.skipchecks = true;
   CheckModel(model_bound, tsdim, xdim, stationary, STORED_MODEL + MODEL_BOUNDS,
       MAXMLEDIM);
-  
+  GLOBAL.general.skipchecks = oldskipchecks;
+
 //  PrintModelInfo(STORED_MODEL[MODEL_BOUNDS]); assert(false);
 
   NAOK_RANGE = true;
@@ -839,7 +843,7 @@ SEXP MLEGetModelInfo(SEXP model, SEXP tsdim, SEXP xdim) { // ex MLEGetNAPos
 
   NAOK_RANGE = true;
 
-//  printf("her` e\n");
+//  printf("here\n");
   CheckModel(model, tsdim, xdim, stationary, STORED_MODEL + MODEL_MLE,
       MAXMLEDIM);
   NAOK_RANGE = false;

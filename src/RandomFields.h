@@ -323,7 +323,8 @@ extern "C" SEXP MLEGetModelInfo(SEXP model, SEXP tsdim, SEXP xdim); // ex GetNA
 extern "C" void PutValuesAtNA(double *values);
 extern "C" void expliciteDollarMLE(double *values);
 extern "C" SEXP Take2ndAtNaOf1st(SEXP model, SEXP model_bound, SEXP tsdim, 
-			       SEXP xdim, SEXP stationary, SEXP nbounds);
+				 SEXP xdim, SEXP stationary, SEXP nbounds, 
+				 SEXP skipchecks);
 extern "C" void UserGetNatScaling(double *natscale);
 
 extern "C" void  GOUE(double * aniso, int *dim, double *grid_ext);

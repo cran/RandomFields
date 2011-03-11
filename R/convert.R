@@ -111,7 +111,7 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
       return(list(model = transform(model[[1]]), trend=trend))
 
     op <- pmatch(c(model[seq(2, length(model), 2)], recursive=TRUE),
-                 op.list, dup=TRUE) - 1
+                 op.list, duplicates.ok=TRUE) - 1
     if (!all(is.finite(op))) STOP("operators are not all allowed; see the extended list definition for extensions")
     model <- model[seq(1, length(model), 2)]
 

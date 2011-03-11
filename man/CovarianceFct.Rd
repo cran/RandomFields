@@ -145,6 +145,12 @@ Variogram(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
     This model is valid only for dimensions less than or equal to 3. 
     It is a 2 times differentiable covariance functions with compact
     support. %(See Chiles&Delfiner, 1998)
+
+    \item \code{dagum}
+    \deqn{C(h) = 1-(1 + h^{-\beta})^{-\gamma/\beta}}
+    RandomFields allows to vary the  parameters \eqn{\beta} and
+    \eqn{\gamma}  within the intervals \eqn{(0,1]} and
+    \eqn{(0,1)}, respectively.
         
     \item \code{dampedcosine} (hole effect model)
     \deqn{C(h)= e^{-\lambda h} \cos(h),   \quad h\ge0}
@@ -565,9 +571,12 @@ Variogram(x, model, param, dim=ifelse(is.matrix(x),ncol(x),1))
   Dagum model
   \itemize{
     \item Porcu, E., Zini, A. and Pini, R. (2007)
+    Modelling spatio-temporal data: A new variogram and covariance
+  structure proposal 
     \emph{Stats. Probab. Lett.}, \bold{77}, 83-89. 
 
     \item Berg, C., Mateu, J. and Porcu, E. (2008)
+    The Dagum family of isotropic correlation functions
     \emph{Bernoulli}, \bold{14}, 1134-1149.
   }
 

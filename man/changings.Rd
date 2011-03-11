@@ -13,6 +13,10 @@
     \code{$vario} is defunctioned. Use, for instance, \code{$ml$model} instead of
     \code{$vario$ml}.
 
+    \item The options for \code{mle.methods} in \command{fitvario}
+    are currently restricted to \sQuote{ml}. This options 
+    \sQuote{reml} and \sQuote{rml1} have not been tested yet.
+
     \item the \code{list} definition of sophisticated covariance models
     has become obsolete. Furthermore, the parameter \code{kappa}
     for the model parameters is not accepted anymore. Instead \code{k}

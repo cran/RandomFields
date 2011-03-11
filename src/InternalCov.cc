@@ -152,8 +152,13 @@ int checkkappas(cov_model *cov){
 
 // $
 void kappaS(int i, cov_model *cov, int *nr, int *nc){
-  *nc = (int) (i < 2); // 0 mean not determined
-  *nr = i == 2 ? cov->xdim : i <= 3 ? 1 : -1; // nicht cov->tsdim !!
+   *nc = (i==DALEFT) ? cov->xdim 
+       : (int) (i==DVAR || i==DSCALE); // 0 mean not determined
+   *nr = (i == DALEFT) ? 0 : 
+       (i == DANISO) ? cov->xdim :
+       i <= DMAX ? 1 
+       : -1; 
+  // nicht cov->tsdim !!
 }
 
   // simple transformations as variance, scale, anisotropy matrix, etc.  
@@ -476,46 +481,50 @@ void tbm2S(double *x, cov_model *cov, double *v){
 
 int checkS(cov_model *cov) {
 
-
 // hier kommt unerwartet  ein scale == nan rein ?!!
 
   cov_model *next = cov->sub[0];
   cov_fct *C = CovList + cov->nr;
   double  **p = cov->p;
   int i, err,
-    xdim = cov->xdim,
-    nrow = -1,
-    ncol = -1,
-    nproj = cov->nrow[DPROJ];
+      xdim = cov->xdim,
+      nproj = cov->nrow[DPROJ];
+  bool skipchecks = GLOBAL.general.skipchecks;
 
   strcpy(ERROR_LOC, C->name);
   assert(cov->nr >= DOLLAR && cov->nr<=LASTDOLLAR);
   cov->nr = DOLLAR; // wegen nr++ unten !
   cov->manipulating_x = !true; // !! exception as treated directly
   
-  // cov->q[1]
-  // = 1.0 if ANISO is given
-  // = 0.0 if ANISO is not given and ANISO is not forced
-  // = -1.0 if ANISO is not given, but ANISO is forced
-//  if (cov->q == NULL) {
-  //   // note that q[0] give NS
-  // assert(cov->qlen ==0 );
-  // cov->q = (double*) calloc(sizeof(double), 2);
-  // cov->qlen = 2;
-  // cov->q[1] = p[DANISO] != NULL;
-//
-  //  if (cov->q[1] == 0.0 && GLOBAL.general.aniso) cov->q[1] = -1.0;
-  //}
- 
-  // note that q[0] give NS !!!
+  // cov->q[1] not NULL then A has been given
 
+  if (cov->q == NULL && cov->p[DALEFT]!=NULL) {
+    // here for the first time
+    if (p[DANISO] != NULL) ERR("aniso and A may not be given at the same time");
+    int j, k,
+	nrow = cov->nrow[DALEFT],
+        ncol = cov->ncol[DALEFT],
+	total = ncol * nrow;
+    double
+	*pA = p[DALEFT], 
+	*pa = p[DANISO];
+    p[DANISO] = (double*) malloc(sizeof(double) * total);
+    cov->nrow[DANISO] = ncol;
+    cov->ncol[DANISO] = nrow;
+    for (i=k=0; i<nrow; i++) {
+	for (j=i; j<total; j+=nrow) p[DANISO][k++] = pA[j];
+    }
+    cov->q = (double*) calloc(1, sizeof(double));
+    cov->qlen = 1;
+  }
+ 
   kdefault(cov, DVAR, 1.0);
-  if (cov->p[DANISO] != NULL) { // aniso given
-    int *idx=NULL;
+  if (p[DANISO] != NULL) { // aniso given
+      int *idx=NULL,
+	  nrow = cov->nrow[DANISO],
+	  ncol = cov->ncol[DANISO];
     bool quasidiag;
     matrix_type type;
-    nrow = cov->nrow[DANISO];
-    ncol = cov->ncol[DANISO];
 
     idx = (int *) malloc((nrow > ncol ? nrow : ncol) * sizeof(int));
     if (nrow==0 || ncol==0) ERR("no dimension of the matrix may be 0");
@@ -609,7 +618,6 @@ int checkS(cov_model *cov) {
     }
 
     kdefault(cov, DSCALE, 1.0);
-    if (p[DSCALE][0] <= 0.0)  XERR(ERRORNEGATIVESCALE);
      
     //  if (p[DANISO] != NULL) free(p[DANISO]);
     //  p[DANISO] = NULL;
@@ -697,6 +705,7 @@ void spectralS(cov_model *cov, spectral_storage *s, double *e) {
 
 void rangeS(cov_model *cov, range_arraytype* ra){
   range_type *range = ra->ranges + 0;
+  int i;
 
   range->finiterange = true;
   range->maxdim = INFDIM;
@@ -704,23 +713,25 @@ void rangeS(cov_model *cov, range_arraytype* ra){
   range->min[DVAR] = 0.0;
   range->max[DVAR] = RF_INF;
   range->pmin[DVAR] = 0.0;
-  range->pmax[DVAR] = 1e10;
+  range->pmax[DVAR] = 100000;
   range->openmin[DVAR] = false;
   range->openmax[DVAR] = true;
 
   range->min[DSCALE] = 0.0;
   range->max[DSCALE] = RF_INF;
-  range->pmin[DSCALE] = UNIT_EPSILON;
-  range->pmax[DSCALE] = 1e7;
+  range->pmin[DSCALE] = 0.0001;
+  range->pmax[DSCALE] = 10000;
   range->openmin[DSCALE] = true;
   range->openmax[DSCALE] = false;
 
-  range->min[DANISO] = RF_NEGINF;
-  range->max[DANISO] = RF_INF;
-  range->pmin[DANISO] = -1e10;
-  range->pmax[DANISO] = 1e10;
-  range->openmin[DANISO] = true;
-  range->openmax[DANISO] = true;
+  for (i=DANISO; i<= DALEFT; i++) {
+    range->min[i] = RF_NEGINF;
+    range->max[i] = RF_INF;
+    range->pmin[i] = -10000;
+    range->pmax[i] = 10000;
+    range->openmin[i] = true;
+    range->openmax[i] = true;
+  }
 }
 
 

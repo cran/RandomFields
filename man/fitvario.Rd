@@ -33,7 +33,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
          transform=NULL, standard.style=NULL,
          var.name="X", time.name="T",
          lsq.methods=c("self", "plain", "sqrt.nr", "sd.inv", "internal"),
-         mle.methods=c("ml", "reml"),
+         mle.methods=c("ml"),
          cross.methods=NULL,
 %         cross.methods=c("cross.sq", "cross.abs", "cross.ign", "cross.crps"),
          users.guess=NULL, only.users = FALSE,
@@ -217,30 +217,28 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
   \item{pch}{character shown before evaluating any method;
     if \code{pch!=""} then one or two
     additional steps in the MLE methods are
-    marked by \dQuote{+}.
+    marked by \dQuote{+} and \dQuote{#}.
     Default: "*".}
   \item{var.name}{basic name for the coordinates in the formula of the
     trend.  Default: \sQuote{X}}
   \item{time.name}{basic name for the time component in the formula of the
     trend.  Default: \sQuote{X}}
-  \item{transform}{vector of strings.
+  \item{transform}{function.
     Essentially, \code{transform} allows for the definition of a parameter as a
-    function of other estimated or fixed parameters.
+    function of other estimated parameters.
     All the parameters are supposed to be in a vector called \sQuote{param}
     where the positions are given by \command{\link{parampositions}}.
     An example of \code{transform} is
     \code{function(param) \{param[3] <- 5 - param[1]; param\}}.
-    Any parameter that is set by \code{transform}, should be \code{NaN}
-    in the model definition. If it is \code{NA} a warning is given.
+   
     Note that the mean and the trend of the model can be neither set nor used in
     \code{transform}.  See also \code{standard.style}.
     
-    Instead of giving \code{transform}, in the model definition,
-    all NaN values are replaced by functions whose only parameter
-    is a bare model list, i.e., only the list elements
-    variance, scale or anisotropy, and kappas can be used, and
-    not the mean or the trend.
-    Further, the mean or the trend cannot be set by such a function.
+    Note further that many internal checks cannot be performed in case
+    of the very flexible function transform. Hence, it is completely up
+    to the user to get \code{users.guess}, \code{lower} and \code{upper}
+    right. The parameter \code{users.guess} must be given; \code{lower} and
+    \code{upper} should be given.    
     
     Default: \code{NULL}}
   \item{standard.style}{logical or \code{NULL}.  This variable should only be
@@ -673,6 +671,12 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
     Ribeiro, P. and Diggle, P. (2001) Software for geostatistical analysis
     using R and S-PLUS: geoR and geoS, version 0.6.15.
     \url{http://www.maths.lancs.ac.uk/~ribeiro/geoR.html}.
+
+    \item REML (rml)
+    
+    LaMotte, L.R. (2007)
+    A direct derivation of the REML likelihood function
+    \emph{Statistical Papers} \bold{48}, 321-327.
   }
 }
 \author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
@@ -747,7 +751,7 @@ estmodel <-  list("+",
                   list("$", var=NA, list("nugget"))
                  )
 parampositions(model=estmodel, dim=2)
-f <- function(param) c(param, max(0, 1.0 - param[1]))
+f <- function(variab) c(variab, max(0, 1.0 - variab[1]))
 \dontrun{
 Print(v2 <- fitvario(x=cbind(x,y), data=d, model=estmodel, 
                   lower = c(TRUE, TRUE, TRUE, TRUE, FALSE),
@@ -795,6 +799,25 @@ Print(v <- fitvario(x, x, data=data, gridtrip=FALSE,
                   trend=~sin(X1)+cos(X1)+sin(X2)+cos(X2)))
 
 
+
+########################################################
+## estimation of anisotropy matrix with two identical ##
+## diagonal elements                                  ##
+\dontrun{
+x <- c(0, 5, 0.4)
+model <- list("$", var=1, scale=1, list("exponential"))
+z <- GaussRF(x, x, x, model=model, gridtriple=TRUE, n=10, Print=2)
+
+est.model <- list("+",
+                 list("$", var=NA, aniso=diag(c(NA, NA, NA)), list("exponen")),
+                 list("$", var=NA, list("nugget")))
+parampositions(est.model, dim=3)
+trafo <- function(variab) {variab[c(1:2, 2:4)]}
+lower <- c(TRUE, TRUE, FALSE, TRUE, TRUE) # which parameter to be estimated
+fitlog <- fitvario(x, x, x, gridtriple=TRUE, data=z, model=est.model,
+                   transform=trafo, lower=lower)
+str(fitlog$ml)
+}
 
 }
 \keyword{spatial}
