@@ -30,7 +30,7 @@ extern "C" {
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include "primitive.h"
@@ -655,10 +655,10 @@ void createmodel(const char *name, int kappas, size_fct kappasize,
     C->kappatype[i] = REALSXP;
   }
   C->kappasize = (kappasize == NULL) ? kappasize1 : kappasize;
-    
-  assert((C->range= range) != NULL);
-  C->check = NULL;
-  assert((C->check = check) != NULL);
+  C->range= range; 
+  assert(range != NULL);
+  C->check = check;
+  assert(C->check != NULL);
   for (i=0; i<SimulationTypeLength; i++)
     C->implemented[i] = NOT_IMPLEMENTED;
 
@@ -1363,8 +1363,9 @@ void covcpy(cov_model **localcov, cov_model *cov, bool insertgatter,
     n = -1;
   cov_model *current;
   cov_fct *C = CovList + cov->nr;
-  assert(!insertgatter || covnr < GATTER || covnr > LASTGATTER);
-  
+  if (insertgatter && covnr >= GATTER && covnr <= LASTGATTER)
+    error("covcpy detects # at forbidden place -- please contact author");
+    
   if (*localcov != NULL) error("local cov not NULL");
   if ((*localcov = (cov_model*) malloc(sizeof(cov_model)))==0) 
     ERR("memory allocation error");

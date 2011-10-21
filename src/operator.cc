@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "Covariance.h"
 #include <R_ext/Lapack.h>
@@ -1443,6 +1443,7 @@ void rangeundefined(cov_model *cov, range_arraytype* ra){
 }
 int checkundefined(cov_model *cov) {
   assert(false);
+  return NA_INTEGER;
 //  info->CEbad = true;
 }
 
@@ -1868,8 +1869,7 @@ int checkX(cov_model *cov) {
   cov_model *sub, 
       *next = cov->sub[0];
   int  err,
-      nsub = cov->nsub,
-      *nrow = cov->nrow; // taken[MAX DIM],
+       *nrow = cov->nrow; // taken[MAX DIM],
 //      *ncol = cov->ncol,
 //  listoftype *list = (listoftype*) (cov->p[0]);
   bool *Const;
@@ -1877,7 +1877,7 @@ int checkX(cov_model *cov) {
   CovMatrixRow = CovMatrixCol = INT_MAX;
 
   cov->vdim = 1;
-  assert(nsub==1);
+  if (cov->nsub!=1) error("nsub must be 1");
 
   if (cov->q == NULL) cov->q = (double*) malloc(sizeof(bool));
   Const = ((bool*) cov->q);

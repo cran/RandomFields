@@ -5,8 +5,10 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 #include <errno.h>
-
-#define print printf
+#define NDEBUG 1
+#include <assert.h>
+ 
+#define print Rprintf
 #define PRINTF Rprintf
 #define RF_NAN NA_REAL 
 #define RF_NEGINF R_NegInf

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "Covariance.h"
 //#include <R_ext/Lapack.h>
@@ -489,7 +489,6 @@ int checkS(cov_model *cov) {
   int i, err,
       xdim = cov->xdim,
       nproj = cov->nrow[DPROJ];
-  bool skipchecks = GLOBAL.general.skipchecks;
 
   strcpy(ERROR_LOC, C->name);
   assert(cov->nr >= DOLLAR && cov->nr<=LASTDOLLAR);
@@ -506,8 +505,7 @@ int checkS(cov_model *cov) {
         ncol = cov->ncol[DALEFT],
 	total = ncol * nrow;
     double
-	*pA = p[DALEFT], 
-	*pa = p[DANISO];
+	*pA = p[DALEFT];
     p[DANISO] = (double*) malloc(sizeof(double) * total);
     cov->nrow[DANISO] = ncol;
     cov->ncol[DANISO] = nrow;

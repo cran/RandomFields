@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "primitive.h"
 #include <R_ext/Lapack.h>
@@ -107,10 +107,12 @@ void spectralBessel(cov_model *cov, spectral_storage *s, double *e) {
 }
 int checkBessel(cov_model *cov) {
   // Whenever TBM3Bessel exists, add further check against too small kappa! 
+  assert(false);
   double kappa = cov->p[0][0];
   int i;
-  for (i=0; i<= Nothing; i++)
+  for (i=0; i<= Nothing; i++) {
     cov->pref[i] *= (ISNA(kappa) || ISNAN(kappa) || kappa < BesselUpperB[i]);
+  }
   if (kappa <= 0.0) cov->pref[SpectralTBM] = PREF_NONE;
   return NOERROR;
 }
@@ -618,7 +620,8 @@ int hyperexponential(double radius, double *center, double *rx,
   // 
   // the function expects scale = 1;
   double lambda, phi, lx, ly, *hx, *hy, *hr;
-  long i, p, q;
+  long i, p, 
+    q = RF_NAN;
   int k, err;
   
   if (cov->tsdim==2) {
@@ -671,13 +674,14 @@ int hyperexponential(double radius, double *center, double *rx,
     }
   } else { 
     // tsdim = 1  --  not programmed yet
-    assert(false);
+    error("impossible dimension in hyperexponential\n");
   }
   return q;
 
  ErrorHandling:
   PRINTF("error=%d\n", err);
-  assert(false);
+  error("impossible dimension in hyperexponential\n");
+  return NA_INTEGER;
 }
 void coinitExp(cov_model *cov, localinfotype *li) {
   li->instances = 1;
@@ -1177,13 +1181,13 @@ void hyperbolic(double *x, cov_model *cov, double *v){
     *v = pow(1 + y * y, lambda); 
   } else {
     if ((kappa!=kappaOld) || (lambda!=lambdaOld) || (delta!=deltaOld)) {
-    kappaOld = kappa; 
-    lambdaOld = lambda;
-    deltaOld = delta;
-    deltasq = delta * delta;
-    kappadelta = kappa * delta;
-    logconst = kappadelta - log(bessel_k(kappadelta, lambda, 2.0)) 
-      - lambda * log(delta);
+      kappaOld = kappa; 
+      lambdaOld = lambda;
+      deltaOld = delta;
+      deltasq = deltaOld * deltaOld;
+      kappadelta = kappaOld * deltaOld;
+      logconst = kappadelta - log(bessel_k(kappadelta, lambdaOld, 2.0)) 
+	- lambda * log(deltaOld);
     }
     y=sqrt(deltasq + y * y);  
     kappay = kappa * y;
@@ -1191,6 +1195,7 @@ void hyperbolic(double *x, cov_model *cov, double *v){
 	     - kappay);
   }
 }
+
 void Dhyperbolic(double *x, cov_model *cov, double *v)
 { 
   double kappa = cov->p[0][0], lambda=cov->p[1][0], delta=cov->p[2][0];
@@ -1220,10 +1225,10 @@ void Dhyperbolic(double *x, cov_model *cov, double *v)
       kappaOld = kappa; 
       lambdaOld= lambda;
       deltaOld = delta;
-      deltasq = delta * delta;
-      kappadelta = kappa * delta;
-      logconst = kappadelta - log(bessel_k(kappadelta,lambda,2.0)) 
-	- lambda * log(delta);
+      deltasq = deltaOld * deltaOld;
+      kappadelta = kappaOld * deltaOld;
+      logconst = kappadelta - log(bessel_k(kappadelta,lambdaOld,2.0)) 
+	- lambdaOld * log(deltaOld);
     }
     s=sqrt(deltasq + y * y);
     kappa_s = kappa * s;

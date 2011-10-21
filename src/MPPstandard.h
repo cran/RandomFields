@@ -10,7 +10,7 @@
   cov_fct *C = CovList + cov->nr;\
   mpp_model randomcoin = C->randomcoin;\
   \
-  long zaehler,\
+  long zaehler= 0,\
     cumgridlen[MAXMPPDIM +1],\
     total = loc->totalpoints;\
   int d, gridlen[MAXMPPDIM], n,\

@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <math.h>
 #include <unistd.h>
-#include <assert.h>
+ 
 #include "auxiliary.h"
 //#include <curses.h>
 #include "RandomFields.h"
@@ -59,7 +59,7 @@ void distInt(int *X, int*N, int *Genes, double *dist) {
 
 
 SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {  
-    int i, j, 
+  int i, j, ret,
       start = RF_NAN,
       milli = 500,
       len = LENGTH(Choice), 
@@ -79,7 +79,8 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
       choice[i] = CHAR(STRING_ELT(Choice, i))[0];
   }
  
-  system("/bin/stty cbreak -echo iuclc"); /* or "stty raw" */
+  ret = system("/bin/stty cbreak -echo iuclc"); /* or "stty raw" */
+  if (ret < 0) error("GetChar failed.");
   for (j=0; j<n; ) {
    if (j % nline == 0) {
        start = j;
@@ -113,7 +114,8 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
       PRINTF("\n");
       sleepMilli(&milli);
   }
-  system("/bin/stty -cbreak echo -iuclc");
+  ret = system("/bin/stty -cbreak echo -iuclc");
+  if (ret < 0) error("GetChar failed.");
   zk[j] = '\0';
   PROTECT(Zk = allocVector(STRSXP, 1));
   SET_STRING_ELT(Zk, 0, mkChar(zk));

@@ -22,6 +22,15 @@
 
 /* This is file avltr.h in libavl. */
 
+/* Martin Schlather: 21 October, 2011,
+   This file has been file avltr.h in libavl. 
+   The last 12 lines have been put into / *  * /
+   as they are incompatible with R.
+   The above stated GNU General Public License to its full extend
+   is still valid.
+*/
+
+
 #if !avltr_h
 #define avltr_h 1
 
@@ -122,6 +131,9 @@ extern void *avltr_replace (avltr_tree *tree, void *item);
 #endif /* not gcc */
 
 /* Easy assertions on insertion & deletion. */
+/* *** Martin Schlather: uncomment the following lines
+   to get the original version back:
+
 #ifndef NDEBUG
 #define avltr_force_insert(A, B)		\
 	do					\
@@ -137,6 +149,8 @@ extern void *avltr_force_delete (avltr_tree *, void *);
 #define avltr_force_delete(A, B)		\
 	avltr_delete (A, B)
 #endif
+
+*/
 
 #endif /* avltr_h */
 

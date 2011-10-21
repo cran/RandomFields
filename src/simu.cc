@@ -46,7 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 //#include <sys/timeb.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include <unistd.h>
@@ -391,7 +391,7 @@ error(MSG);}
 	  }
 	}
 	if (j == C->maxsub) {
-	    printf("%d %d\n", j, C->maxsub);
+	  PRINTF("j=%d maxsub=%d\n", j, C->maxsub);
 	  ERR("too many submodels");
 	}
       }
@@ -592,8 +592,8 @@ void CheckModelInternal(SEXP model, int tsdim, int xdim,
     cov->xdim = xdim;
     cov->statIn = stationary ? STATIONARY : PREVMODELS;
     if ((err = CovList[cov->nr].check(cov)) != NOERROR) {
-	printf("err =%d\n", err);
-	XERR(err);
+      PRINTF("err =%d\n", err);
+      XERR(err);
     }
  
     DeleteGatter(Cov);
@@ -661,11 +661,15 @@ int check_within_range(cov_model *cov, bool NAOK) {
   SEXPTYPE *type = C->kappatype;
   rangefct getrange = C->range;
   char msg[255]="";
-  double value, min, max;
+  double min, max,
+    value= RF_NAN;
 
   if (GLOBAL.general.skipchecks) return NOERROR;
 
   range_default(&ra);  // default : 1 range; maxdim = inf
+
+  //  printf("%s %ld %ld\n", C->name, C->cov, C->range);
+
   getrange(cov, &ra); 
   cov->finiterange = ra.ranges[0].finiterange;
 
@@ -699,14 +703,14 @@ int check_within_range(cov_model *cov, bool NAOK) {
       
       err = NOERROR;
       for (i=0; i<kappas; i++) {
-	  if (type[i] >= LISTOF) {
- 	    // to simplify things -- otherwise in simu.cc
-	    // code must also be changed.
-	    assert(range->min[i] == RF_NEGINF && range->max[i]==RF_INF);
-	    continue;  
-	  }
-	  // full range !!
-
+	if (type[i] >= LISTOF) {
+	  // to simplify things -- otherwise in simu.cc
+	  // code must also be changed.
+	  assert(range->min[i] == RF_NEGINF && range->max[i]==RF_INF);
+	  continue;  
+	}
+	// full range !!
+	
 	len=cov->ncol[i] * cov->nrow[i];
 	min = range->min[i];
 	max = range->max[i];
@@ -720,7 +724,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
 	  else if (type[i] == INTSXP)
 	      value = ((int *)cov->p[i])[k] == NA_INTEGER 
 		  ? NA_REAL : (double) ((int *)cov->p[i])[k];
-	  else assert(false);
+	  else error("parameter value of unknown SXP type");
 	  if (ISNA(value) || ISNAN(value)) {
 	    if (NAOK) {
 	      continue;
@@ -803,7 +807,8 @@ void get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       err = NOERROR;
       for (i=0; i<kappas; i++) {
 	int len=cov->ncol[i] * cov->nrow[i];
-	double value, dmin, dmax, dopenmin, dopenmax;
+	double dmin, dmax, dopenmin, dopenmax,
+	  value = RF_NAN;
 	  if (practical) {
 	    dmin = range->pmin[i];
 	    dmax = range->pmax[i];
@@ -854,7 +859,7 @@ void get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	    
 	    value = RF_NAN;
             // error cannot appear as range is (-infty, +infty)
-	  } else assert(false);
+	  } else  error("parameter value of unknown SXP type");
 	  if (ISNA(value) || ISNAN(value)) {
 	      continue;
 	  }
@@ -1349,7 +1354,6 @@ int internal_InitSimulateRF(double *x, double *T,
 
   char errloc_save[nErrorLoc];
   int err, dim;
-  cov_model *cov;
   location_type *loc;
   
   strcpy(errloc_save, ERROR_LOC);
@@ -1364,7 +1368,6 @@ int internal_InitSimulateRF(double *x, double *T,
   memcpy(&(key->gp), gp, sizeof(globalparam));
   loc = &(key->loc);
   dim = loc->timespacedim;
-  cov = key->cov;
   if (err) goto ErrorHandling; // muss als 3. stehen
 
   // setmethod

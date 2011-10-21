@@ -41,7 +41,7 @@
 // basic shapes are: sphere (2 or 3 dimensions), cone, and Gaussian curve
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "Covariance.h"
 
@@ -262,7 +262,10 @@ double gaussInt(int d, int xi, double sigma, double R) {
     piDa = PI / a;
     return -2.0 * piDa * R * exp(- a * R * R )
       + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1, 1, 0) - 1.0);
-  default : assert(false);
+  default :   
+    error("dimension of gauss integral out of range");
+    return RF_NAN;
+
   }
 }
 
@@ -333,7 +336,9 @@ double gausstestInt(int d, int xi, double sigma, double R) {
     piDa = PI / a;
     return -2.0 * piDa * R * exp(- a * R * R )
       + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1, 1, 0) - 1.0);
-  default : assert(false);
+  default :  
+    error("dimension of gauss integral out of range");
+    return RF_NAN;
   }
 }
 
@@ -400,7 +405,9 @@ double whittleInt(int d, int xi, double sigma, double R) {
     piDa = PI / a;
     return -2.0 * piDa * R * exp(- a * R * R )
       + piDa * sqrt(piDa) * (2.0 * pnorm(SQRT2 * sqrt(a) * R, 0, 1, 1, 0) - 1.0);
-  default : assert(false);
+  default : 
+    error("dimension of whittle integral out of range");
+    return RF_NAN;
   }
 }
 

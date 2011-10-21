@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include "RF.h"
-#include <assert.h>
+ 
 
 // z coordinate run the fastest in values, x the slowest   
 
@@ -83,8 +83,9 @@ void empiricalvariogram(double *x, int *dim, int *lx,
  */
 { 
   int i,ii,j,d,halfnbin,gridpoints[MAXVARIODIM],dimM1,EV_METHOD,err;   
-  long totalpoints,totalpointsrepet, segment, factor; 
-  double (*characteristic)(double, double);
+  long totalpoints,totalpointsrepet, segment, 
+    factor = RF_NAN; 
+  double (*characteristic)(double, double) = NULL;
   double *xx[MAXVARIODIM],maxdist[MAXVARIODIM],dd,*BinSq; 
 
   if (*dim > MAXVARIODIM) 
@@ -115,7 +116,8 @@ void empiricalvariogram(double *x, int *dim, int *lx,
     characteristic = kmm;
     factor = 1;
     break;
-  default : assert(false);
+  default : 
+    error("unknown type of second order characteristic");
   }
    
   if ((BinSq = (double *) malloc(sizeof(double)* (*nbin + 1)))==NULL) {

@@ -24,10 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 //#include <stdlib.h>
-#include <assert.h>
+ 
 //#include <string.h>
 #include "RF.h"
-#include "avltr.h"
+#include "avltr_modified.h"
 //#include <unistd.h>
 
 // #define HYPER_UNIFORM 0   see RF.h
@@ -284,11 +284,13 @@ void do_hyperplane(method_type *meth, res_type *res)
 
   assert(sizeof(unsigned int) == 4);
  
-  double gx, gy, *hx, *hy, *hr, E, sd, variance;
+  double gx, gy, *hx, *hy, *hr, variance,
+    E=RF_NAN, 
+    sd=RF_NAN;
   int resindex, integers, bits, q, endfor, i, err, j;
-  randomvar_type randomvar;
+  randomvar_type randomvar=NULL;
   hyper_storage *s;
-  bool add;
+  bool add=FALSE;
   avltr_tree *tree;
   cell_type *cell;
 
@@ -302,7 +304,7 @@ void do_hyperplane(method_type *meth, res_type *res)
       case HYPER_UNIFORM : randomvar=uniform; break;
       case HYPER_FRECHET : randomvar=frechet; break;
       case HYPER_BERNOULLI : randomvar=bernoulli; break;
-      default : assert(false);
+  default : error("random var of unknown type");
   }
   
   switch (meth->simu->distribution) {
@@ -315,7 +317,8 @@ void do_hyperplane(method_type *meth, res_type *res)
       case DISTR_MAXSTABLE : 
 	add = false;
 	break;
-      default : assert(false);
+      default : 
+	error("unknown distribution in hyperplane algorthim\n");
   }
 
   if (add) for (i=0; i < loc->totalpoints; res[i++]=0.0);
@@ -325,7 +328,7 @@ void do_hyperplane(method_type *meth, res_type *res)
 
   switch (dim) {
       case 1 :
-	assert(false);
+	error("wrong dimension (1) in hyperplane\n");
       case 2 :
 	int nn;
 	double deltax, deltay;
@@ -397,7 +400,8 @@ void do_hyperplane(method_type *meth, res_type *res)
 	  tree = NULL;
 	}/* for nn */
 	break;
-      default: assert(false);
+      default: 
+	error("wrong dimension (>2) in hyperplane\n"); 
   } // switch  (dim)
   switch (meth->simu->distribution) {
     case DISTR_GAUSS :   
@@ -408,25 +412,26 @@ void do_hyperplane(method_type *meth, res_type *res)
           break;
         case HYPER_FRECHET :
           assert(lp->mar_param > 2);
-          assert(false); 
+          error("hyper_frechet not programmed yet\n");
           break;
         case HYPER_BERNOULLI : 
           E = lp->mar_param;
           sd = lp->mar_param * (1.0 - lp->mar_param);
           break;
-      default : assert(false);
+      default : error("distribution unknown in hyperplane\n");
       }
       sd = sqrt(variance / (lp->superpos * sd));
       for(i=0; i<loc->totalpoints; i++) 
 	  res[i] = (res_type) (((double) res[i] - lp->superpos * E) * sd);    
       break;
     case DISTR_POISSON : 
-      assert(false); 
+     error("Poission not allowed in hyperplane\n");
       break;
     case DISTR_MAXSTABLE : 
-      assert(false);
+      error("Maxstable not allowed in hyperplane\n");
       break;
-      default : assert(false);
+      default : 
+	error("Distribution unknown in hyperplane\n");
   }
   return;
 
@@ -436,7 +441,8 @@ void do_hyperplane(method_type *meth, res_type *res)
   if (hy != NULL) free(hy);
   if (hr != NULL) free(hr);
   if (tree!=NULL) avltr_destroy(tree, delcell);
-  ErrorMessage(Hyperplane, err); assert(false);
+  ErrorMessage(Hyperplane, err);
+  error("hyperplane failed\n");
 }
                       
 		   

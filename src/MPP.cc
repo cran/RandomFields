@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "Covariance.h"
 #include "MPPstandard.h"
@@ -254,10 +254,9 @@ void approx_integral(ave_logfct logg, cov_model *cov, mpp_storage *s) {
   double value, sign, xstart[MAXMPPDIM], xend[MAXMPPDIM], x[MAXMPPDIM],
     inc = s->samplingdist,
     R = (s->samplingr <= 0.0) ? s->effectiveRadius : s->samplingr;
-  int zaehler, d, 
+  int d,
     dim = s->dim; 
   
-  zaehler = 0;
   for (d=0; d<dim; d++) {
     xstart[d] = -R + UNIFORM_RANDOM * inc;
     xend[d] = R;
@@ -292,7 +291,7 @@ int init_mppave(method_type *meth, int dim, bool timesep) {
   mpp_param* lp = &(gp->mpp);
   cov_model *cov = meth->cov;
   cov_fct *C = CovList + cov->nr;
-  int  err, d, v,
+  int  err, d,
 //    PL = gp->general.printlevel,
     dimM1 = dim - 1;
   long
@@ -337,7 +336,6 @@ int init_mppave(method_type *meth, int dim, bool timesep) {
       s->min[d]=RF_INF; 
       s->max[d]=RF_NEGINF;
       }
-    v = 0;
     int endfor = total * dim;
     double *x;
     x = meth->sptime;
@@ -514,20 +512,8 @@ void do_addmpp(method_type *meth, res_type *res ) {
 //      printf("%f %f %f\n", s->u[0], s->u[1], s->u[2]);
       int nn = 0;
       if (inside) while (true) {
-/*	{
-	  double m = mppget(x,s);
-	  if (m>0) printf("x=(%f %f) u=(%f, %f) dist=%f: %f\n", //
-			  x[0], x[1], s->u[0], s->u[1],
-			  sqrt((x[0]-s->u[0]) * (x[0]-s->u[0])
-			       + (x[1]-s->u[1]) * (x[1]-s->u[1])),
-			  m);
-	}
-*/
-
-
-//	printf("%d\n", zaehler);
 	if (false && mppget(x, s->u, cov, s) > 0.0)
-	  printf("%d %d %f u=%f %f x=%f %f; %f %ld\n", //
+	  print("%d %d %f u=%f %f x=%f %f; %f %ld\n", //
 		 n, (int)zaehler, (double) res[0], s->u[0], s->u[1], x[0],x[1],
 		 mppget(x, s->u, cov, s), total);
 	

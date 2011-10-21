@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <math.h>
 #include <stdio.h>
-#include <assert.h>
+ 
 
 #include "RF.h"
 #ifdef INCLUDEMARKOV
@@ -55,9 +55,9 @@ int rowcol[2];
 void Markov_destruct(void **S) 
 { 
   if (*S!=NULL) {
+#ifdef INCLUDEMARKOV
     markov_storage *s;
     s = *((markov_storage**)S);
-#ifdef INCLUDEMARKOV
     GMRFLib_free_problem(s->problem);
 #endif
    free(*S);   

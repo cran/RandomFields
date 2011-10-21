@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include "Covariance.h"
 #include <R_ext/Lapack.h>
@@ -365,9 +365,8 @@ void sd_ave_stp(mpp_storage *s, cov_model *cov){
 
 cov_model aveGAUSS;
 void mppinit_ave(mpp_storage *s, cov_model *cov, int dim) {
-  cov_model *next = covOhneGatter(cov->sub[0]);
 
-  assert(next->tsdim == 1); 
+  assert(covOhneGatter(cov->sub[0])->tsdim == 1); 
 
   s->c[DRAWMIX_EXPONENT] = 0.25 * dim;
   COV_NULL(&aveGAUSS);
@@ -1095,23 +1094,7 @@ res_type mppget_stp(double *x, double*u, cov_model *cov, mpp_storage *s){
   }
 
   assert(exp(exponent) < 10000000.0);
-  if (false)
-    if ( s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi > 100000) {
-      printf("%f %e xi=%f %e %f\n",//
-	     s->c[MPP_VV],
-	     s->c[MPP_SPECTRAL],
-	     xi,
-	     s->c[MPP_SPECTRAL] * xi,
-	     cos(s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi));
-      //assert(s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi < 100000);
-    }
-  if (false)
-    printf("%e %e %e %e\n",//
-	     (exponent), 
-	   exp(exponent),
-	     s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi,
-	     cos(s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi));
-    
+     
   free(Sx);
   return (res_type)
       (exp(exponent) * cos(s->c[MPP_VV] + s->c[MPP_SPECTRAL] * xi));  /* Y */

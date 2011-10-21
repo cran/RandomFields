@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 //#include <sys/timeb.h>
 #include <unistd.h>
-#include <assert.h>
+ 
 #include <R_ext/Applic.h>
 #include "RF.h"
 //#include "Covariance.h"

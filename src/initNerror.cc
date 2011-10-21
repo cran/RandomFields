@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 //#include <sys/timeb.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include "Covariance.h"
@@ -555,12 +555,14 @@ int checkOK(cov_model *cov){
 void EinheitsMatrix(double **mem, int dim) {
      // Einheitsmatrizen
     int d;
-    assert((*mem = (double*) calloc(dim * dim, sizeof(double))) != NULL);
+    *mem = (double*) calloc(dim * dim, sizeof(double));
+    if (*mem == NULL) error("memory allocation error in EinheitsMatrix");
     for (d=0; d<dim; d+=dim+1) *mem[d] = 1.0;
 }
 
 
 void InitModelList() {
+
   assert(currentNrCov=-1);
   assert(CUTOFF_THEOR == 4);/* do not change this value as used in RFmethods.Rd */
 
@@ -621,7 +623,8 @@ void InitModelList() {
   // for speed MLE only -- not programmed yet 
   int mleDollar = addFurtherCov(Siso_MLE, DS_MLE, DDS_MLE); // 5
   addCov(Snonstat_MLE);
-  assert(mleDollar == LASTDOLLAR + (LASTDOLLAR - DOLLAR));
+  if (mleDollar != LASTDOLLAR + (LASTDOLLAR - DOLLAR)) 
+    error("mleDollar not at the end of $");
  
 
   ISO2ISO = GATTER = // 6
@@ -672,7 +675,8 @@ void InitModelList() {
   addFurtherCov(Stat2spacetime_MLE, ErrCov);// 16
   int mleGatter = addFurtherCov(Stat2Stat_MLE, ErrCov);// 17
   addCov(Nonstat2Stat_MLE);// 
-  assert(mleGatter == LASTGATTER + (LASTGATTER - GATTER + 1)); // see MLE !
+  if (mleGatter != LASTGATTER + (LASTGATTER - GATTER + 1))
+    error("mleGatter not at the end of #"); // see MLE !
 
 
 //  MLE_ENDCOV = 
@@ -1289,7 +1293,7 @@ void InitModelList() {
     // correct pref according to given functions
     C = CovList + nr; 
     implement = C->implemented;
-//    printf("\n%s ", C->name);
+//  
  
     // if (nr == UserMatrix) continue;
     
@@ -1315,8 +1319,8 @@ void InitModelList() {
     if (nr == biwm || nr == CONSTANT || nr == MIXEDEFFECT || nr == MLEMIXEDEFFECT
 	|| nr == MIXX) 
 	continue;
-  
-    cov = (cov_model *) malloc(sizeof(cov_model));
+
+   cov = (cov_model *) malloc(sizeof(cov_model));
     COV_NULL(cov);
     cov->nr = nr;
     cov->maxdim = 1;
@@ -1331,7 +1335,9 @@ void InitModelList() {
     if (C->primitive && C->stationary!=AUXMATRIX && C->stationary!=AUXVECTOR) {
       for (i=0; i<Nothing; i++) cov->user[i] = cov->pref[i] = 0;
       cov->tsdim = cov->xdim =  (C->cov == SteinST1) ? 2 : 1;
+      //  printf("ok %ld %ld\n", C->check, checkBessel);
       C->check(cov); // no check on error;
+      //     printf("done\n");
       for (i=0; i<Nothing; i++) {
 	if(!C->implemented[i] && cov->pref[i]>0) {
 	  PRINTF("%d: %s  pos=%d, value %d > 0\n", nr, C->name, i,

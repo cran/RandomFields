@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 //#include <sys/timeb.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include <Rdefines.h>
@@ -427,13 +427,11 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Level, SEXP gatter) {
 #define nglobalinfo 0
 SEXP GetGlobalInfo(globalparam global, long *mem) {
   SEXP namevec, l; 
-  int k;
 
   PROTECT(l = allocVector(VECSXP, nglobalinfo));
   PROTECT(namevec = allocVector(STRSXP, nglobalinfo));
-  k = 0;
   setAttrib(l, R_NamesSymbol, namevec);
-  assert(k == nglobalinfo);
+  assert(0 == nglobalinfo);
   UNPROTECT(2);
   return l;
 }

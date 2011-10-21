@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include <R_ext/Lapack.h>
 #include "RF.h"
 #include "primitive.h"
@@ -85,13 +85,12 @@ int init_nugget(method_type *meth){
   nugget_storage *s;
   globalparam *gp = meth->gp;
   nugget_param* lp = &(gp->nugget);
-  int err, i, nonzero_pos, vdim,
+  int err, i, vdim,
     PL = gp->general.printlevel,
     origdim = loc->timespacedim,
       dim = cov->tsdim,
       dimSq = origdim * origdim;
 
-  nonzero_pos = -1;
   SET_DESTRUCT(nugget_destruct);
     if ((meth->S=malloc(sizeof(mpp_storage)))==0){
     err=ERRORMEMORYALLOCATION; goto ErrorHandling;

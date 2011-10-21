@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include "RF.h"
 #include <R_ext/Lapack.h>
 //#include <R_ext/Linpack.h>
@@ -320,9 +320,7 @@ int init_directGauss(method_type *meth) {
 	// most common error: singular matrix 
 	
       case SVD : case TSVD: // works for any positive semi-definite matrix
-        int jobint; 
 	double sum;
-	jobint = 11;
 	method = SVD; // necessary if the value of method has been Cholesky.
 	//               originally
 	if (vdimtot>lp->maxvariables * 0.8) {
@@ -349,7 +347,7 @@ int init_directGauss(method_type *meth) {
 	// DGESDD (or DGESVD)
       	// dgesdd destroys the input matrix COV;
 	// F77_NAME(dsvdc)(COV, &row, &row, &row, D, e, U, &row, V, &row, G,
-	//		&jobint, &err);
+	//		&jobint /* 11 */ , &err);
 	double optim_lwork;
 	int lwork;
 	lwork = -1;

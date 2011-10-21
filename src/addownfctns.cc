@@ -1,7 +1,7 @@
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include "Covariance.h"

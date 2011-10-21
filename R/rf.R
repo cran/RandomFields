@@ -3,7 +3,7 @@
 
 # readline <- function(...) return("") 
 
-.onLoad <- function (lib, pkg) {
+.onAttach <- function (lib, pkg) {
 ##  cat("As all other package writers of R, I am happy if you cite RandomFields\n",
 ##      "whenever you use it. To get the correct reference please type in\n",
 ##      "citation(\"RandomFields\")    or   \n",
@@ -11,7 +11,7 @@
 ##      "Many thanks,  Martin Schlather\n")
 
 ##  cat("\n\n\n\n\n ACHTUNG!! wird bei DO richtig erkannt, wann res[..]=0 gesetzt werden muss??\n\n")
-    cat("##  Note that several updates of RandomFields are expected during 2011. ##\n##  Please see help(\"changings\") for important changes.                 ##\n")
+    packageStartupMessage("##  Note that several updates of RandomFields are expected during 2011. ##\n##  Please see help(\"changings\") for important changes.                 ##\n")
  
   
 }

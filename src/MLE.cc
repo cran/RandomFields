@@ -30,7 +30,7 @@ extern "C" {
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include "primitive.h"
@@ -239,7 +239,7 @@ s
       namenr = 1,     
       *nrow =  cov->nrow,
       *ncol = cov->ncol;
-  double *lastmem = NULL;
+  //  double *lastmem = NULL;
 #define SHORTlen 4
   char shortname[SHORTlen+2], shortD[SHORTlen+2];
   bool user;
@@ -281,7 +281,7 @@ s
     for (r=0; r<nrow[i]; r++) {
        int nv = 0; // anzahl NA in aktuellem parameter
        for (c=0; c<ncol[i]; c++) {
-	double v; // value in aktuellem parameter
+	double v = RF_NAN; // value in aktuellem parameter
 	int idx = c * nrow[i] + r;
 	if (*internn >= MAX_NA) error("maximum number of NA reached");
 
@@ -305,7 +305,9 @@ s
 	      if (ISNA(p[j]) || ISNAN(p[j])) 
 		error("no NAs allowed in regression ");
 	    v = 0.0; // dummy
-	} else assert(false);
+	} else {
+	  error("unknown SXP type");
+	}
 	user  = true;
 
  	isnan[*usern] = ISNAN(v) && !ISNA(v);
@@ -346,7 +348,7 @@ s
 	      cov->anyNAscaleup = TriTrue; 
 	      SetPrevToTriMaxFalse(cov->calling);
 	      if (i==DSCALE) {
-	        lastmem = mem[*internn]; // used for all diagonal elements of
+		// lastmem = mem[*internn]; // used for all diagonal elements of
 		//                          aniso
 		sorts[*usern] = internsorts[*internn] = SCALEPARAM;	
 		sprintf(names[*usern], "%s.s", shortD);// for R level only
@@ -685,7 +687,10 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
     *ncol = cov->ncol;
   cov_fct *C = CovList + cov->nr;
   SEXPTYPE *type = C->kappatype;
-  double v, dmin, dmax;
+  double 
+    v = RF_NAN,
+    dmin = RF_NAN,
+    dmax = RF_NAN;
 
   for (i=0; i<C->kappas; i++) {
     int end = nrow[i] * ncol[i];
@@ -704,7 +709,7 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
 	dmin = min->p[i][0];
 	dmax = max->p[i][0];
     } else {
-	assert(false);
+      error("unknown SXP type in GetRanges.");
     }
     
     for (r=0; r<end; r++) {

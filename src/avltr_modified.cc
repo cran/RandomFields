@@ -21,6 +21,18 @@
    through more mundane means. */
 
 /* This is file avltr.c in libavl. */
+/* Martin Schlather: 21 October, 2011,
+   This file has been file avltr.cc in libavl. 
+   The #include "avltr.h" has been changed to "avltr_modified.h".
+   Further
+       #include "basic.h" is added,
+       fprintf has been replaced by error,
+       exit has been outcommented,
+       printf has been replaced by Rprintf.
+   The above stated GNU General Public License to its full extend
+   is still valid.
+*/
+
 
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -32,8 +44,10 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <assert.h>
-#include "avltr.h"
+#include "basic.h" // must be before assert.h
+ 
+//#include "avltr.h"
+#include "avltr_modified.h"
 
 /* Tag types. */
 #define PLUS +1
@@ -67,8 +81,8 @@ xmalloc (size_t size)
   assert (vp != NULL);
   if (vp == NULL)
     {
-      fprintf (stderr, "virtual memory exhausted\n");
-      exit (EXIT_FAILURE);
+      error("virtual memory exhausted\n");
+      // exit (EXIT_FAILURE);
     }
   return vp;
 }
@@ -1172,21 +1186,21 @@ print_structure (avltr_tree *tree, avltr_node *node, int level)
 
   if (node == NULL)
     {
-      printf (" :nil");
+      Rprintf (" :nil");
       return;
     }
   else if (level >= 10)
     {
-      printf ("Too deep, giving up.\n");
+      Rprintf ("Too deep, giving up.\n");
       done = 1;
       return;
     }
   else if (node == &tree->root)
     {
-      printf (" root");
+      Rprintf (" root");
       return;
     }
-  printf (" %c%d", lc[level % 5], (int) node->data);
+  Rprintf (" %c%d", lc[level % 5], (int) node->data);
   fflush (stdout);
 
   print_structure (tree, node->link[0], level + 1);
@@ -1195,12 +1209,12 @@ print_structure (avltr_tree *tree, avltr_node *node, int level)
   if (node->rtag == PLUS)
     print_structure (tree, node->link[1], level + 1);
   else if (node->link[1] != &tree->root)
-    printf (" :%d", (int) node->link[1]->data);
+    Rprintf (" :%d", (int) node->link[1]->data);
   else
-    printf (" :r");
+    Rprintf (" :r");
   fflush (stdout);
 
-  printf ("%c", rc[level % 5]);
+  Rprintf ("%c", rc[level % 5]);
   fflush (stdout);
 }
 
@@ -1215,7 +1229,7 @@ compare_ints (const void *a, const void *b, void *param unused)
 void
 print_int (void *a, void *param unused)
 {
-  printf (" %d", (int) a);
+  Rprintf (" %d", (int) a);
 }
 
 /* Linearly print contents of TREE. */
@@ -1223,7 +1237,7 @@ void
 print_contents (avltr_tree *tree)
 {
   avltr_walk (tree, print_int, NULL);
-  printf ("\n");
+  Rprintf ("\n");
 }
 
 /* Examine NODE in a avl tree.  *COUNT is increased by the number of
@@ -1248,7 +1262,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
       assert (d >= 0 && d < TREE_SIZE);
       if (nodes[d / 8] & (1 << (d % 8)))
 	{
-	  printf (" Arrived at node %d by two different paths.\n", d);
+	  Rprintf (" Arrived at node %d by two different paths.\n", d);
 	  done = 1;
 	}
       else
@@ -1261,7 +1275,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 	{
 	  if (node->link[1] == NULL)
 	    {
-	      printf (" Null thread link.\n");
+	      Rprintf (" Null thread link.\n");
 	      done = 1;
 	    }
 	  nr = recurse_tree (tree, node->link[1], count, d, 1, nodes, threads);
@@ -1272,7 +1286,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 	  assert (dr >= 0 && dr < TREE_SIZE);
 	  if (threads[dr / 8] & (1 << dr % 8))
 	    {
-	      printf (" Multiple threads to node %d.\n", d);
+	      Rprintf (" Multiple threads to node %d.\n", d);
 	      done = 1;
 	    }
 	  threads[dr / 8] |= 1 << (dr % 8);
@@ -1280,7 +1294,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 
       if (nr - nl != node->bal)
 	{
-	  printf (" Node %d has incorrect balance: right height=%d, "
+	  Rprintf (" Node %d has incorrect balance: right height=%d, "
 		  "left height=%d, difference=%d, but balance factor=%d.\n",
 		  d, nr, nl, nr - nl, node->bal);
 	  done = 1;
@@ -1288,7 +1302,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
       
       if (node->bal < -1 || node->bal > 1)
 	{
-	  printf (" Node %d has invalid balance factor %d.\n", d, node->bal);
+	  Rprintf (" Node %d has invalid balance factor %d.\n", d, node->bal);
 	  done = 1;
 	}
       
@@ -1297,13 +1311,13 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 	  assert (dir == -1 || dir == +1);
 	  if (dir == -1 && d > parent)
 	    {
-	      printf (" Node %d is smaller than its left child %d.\n",
+	      Rprintf (" Node %d is smaller than its left child %d.\n",
 		      parent, d);
 	      done = 1;
 	    }
 	  else if (dir == +1 && d < parent)
 	    {
-	      printf (" Node %d is larger than its right child %d.\n",
+	      Rprintf (" Node %d is larger than its right child %d.\n",
 		      parent, d);
 	      done = 1;
 	    }
@@ -1333,7 +1347,7 @@ verify_tree (avltr_tree *tree)
     
     if (count != tree->count)
       {
-	printf (" Tree should have %d nodes, but tree count by recursive "
+	Rprintf (" Tree should have %d nodes, but tree count by recursive "
 		"descent is %d.\n", tree->count, count);
 	done = 1;
       }
@@ -1345,7 +1359,7 @@ verify_tree (avltr_tree *tree)
 
 	if (thread && !node)
 	  {
-	    printf (" A thread leads to ``node'' %d, "
+	    Rprintf (" A thread leads to ``node'' %d, "
 		    "which is not in the tree.", i);
 	    done = 1;
 	  }
@@ -1362,12 +1376,12 @@ verify_tree (avltr_tree *tree)
       {
 	if (((int) *data) < last)
 	  {
-	    printf (" Misordered right threads.\n");
+	    Rprintf (" Misordered right threads.\n");
 	    abort ();
 	  }
 	else if (((int) *data) == last)
 	  {
-	    printf (" Loop in right threads detected on %d.\n", last);
+	    Rprintf (" Loop in right threads detected on %d.\n", last);
 	    abort ();
 	  }
 	last = (int) *data;
@@ -1376,7 +1390,7 @@ verify_tree (avltr_tree *tree)
 
     if (count != tree->count)
       {
-	printf (" Tree should have %d nodes, but tree count by right threads "
+	Rprintf (" Tree should have %d nodes, but tree count by right threads "
 		"is %d.\n", tree->count, count);
 	done = 1;
       }
@@ -1419,18 +1433,18 @@ compare_trees (avltr_node *a, avltr_node *b)
   diff |= ((a->rtag == PLUS) ^ (b->rtag == PLUS));
   if (diff)
     {
-      printf (" Copied nodes differ: %d b=%d a->bal=%d b->bal=%d a:",
+      Rprintf (" Copied nodes differ: %d b=%d a->bal=%d b->bal=%d a:",
 	      (int) a->data, (int) b->data, a->bal, b->bal);
       if (a->link[0])
-	printf ("l");
+	Rprintf ("l");
       if (a->link[1])
-	printf ("r");
-      printf (" b:");
+	Rprintf ("r");
+      Rprintf (" b:");
       if (b->link[0])
-	printf ("l");
+	Rprintf ("l");
       if (b->link[1])
-	printf ("r");
-      printf ("\n");
+	Rprintf ("r");
+      Rprintf ("\n");
       abort ();
     }
   if (a->link[0] != NULL)
@@ -1475,14 +1489,14 @@ main (int argc, char **argv)
   else
     seed = time (0) * 257 % 32768;
 
-  fputs ("Testing avltr...\n", stdout);
+  Rprintf ("Testing avltr...\n");
 
   for (iteration = 1; iteration <= N_ITERATIONS; iteration++)
     {
       avltr_tree *tree;
       int i;
       
-      printf ("Iteration %4d/%4d: seed=%5d", iteration, N_ITERATIONS, seed);
+      Rprintf ("Iteration %4d/%4d: seed=%5d", iteration, N_ITERATIONS, seed);
       fflush (stdout);
       
       srand (seed++);
@@ -1510,18 +1524,18 @@ main (int argc, char **argv)
 	    compare_trees (tree->root.link[0], copy->root.link[0]);
 	  else if (copy->root.link[0] != NULL)
 	    {
-	      printf (" Empty tree results in nonempty copy.\n");
+	      Rprintf (" Empty tree results in nonempty copy.\n");
 	      abort ();
 	    }
 	  avltr_destroy (copy, NULL);
 
 	  if (i % 128 == 0)
 	    {
-	      putchar ('.');
+	      Rprintf (".");
 	      fflush (stdout);
 	    }
 	}
-      fputs (" good.\n", stdout);
+      Printf(" good.\n", stdout);
 
       avltr_destroy (tree, NULL);
     }

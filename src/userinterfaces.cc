@@ -31,7 +31,7 @@ extern "C" {
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-#include <assert.h>
+ 
 #include <string.h>
 #include "RF.h"
 #include "primitive.h"
@@ -360,8 +360,9 @@ void PrintMethods()
 
 
 SEXP GetRange(){
+ 
   assert(false); // muss neu geschrieben werden, als SEXP
-
+  return R_NilValue;
 /*
   // never change double without crosschecking with fcts in RFCovFcts.cc!
   // index is increased by one except index is the largest value possible

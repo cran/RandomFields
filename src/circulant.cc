@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include "RF.h"
-#include <assert.h>
+ 
 #include <R_ext/Applic.h>
 #include <R_ext/Linpack.h>
 #include <R_ext/Utils.h>     
@@ -213,8 +213,7 @@ int init_circ_embed(method_type *meth)
   long int i,k,twoi,twoi_plus1, mtot, hilfsm[MAXCEDIM],
       *idx = NULL;
   bool cur_crit;
-  matrix_type type;
-
+ 
   CE_storage *s;
   globalparam *gp = meth->gp;
   ce_param* lp = &(gp->ce);
@@ -270,7 +269,6 @@ int init_circ_embed(method_type *meth)
   }
 
   s->aniso = getAnisoMatrix(meth);
-  type = meth->type;
   mtot=0;
   mm = s->m;
   halfm= s->halfm;
@@ -1248,7 +1246,7 @@ int init_circ_embed_local(method_type *meth, SimulationType method){
   location_type *loc = meth->loc;
   simu_type *simu = meth->simu;
   globalparam *gp = meth->gp;
-  int instance, i, d, dimM1, bytes,
+  int instance, i, d, bytes,
     timespacedim = loc->timespacedim,   
     newcol,
     local_nr[Nothing + 1], 
@@ -1351,7 +1349,6 @@ int init_circ_embed_local(method_type *meth, SimulationType method){
 
 //  PrintModelInfo(cov);
 //  assert(cov->xdim == cov->tsdim);
-  dimM1 = cov->xdim + 1;
  
   memcpy(&newparam, meth->gp, sizeof(globalparam));
   memcpy(&newparam.ce, &(newparam.localce), sizeof(ce_param));

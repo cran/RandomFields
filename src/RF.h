@@ -382,7 +382,6 @@ extern bool NAOK_RANGE;
 ///////////////////////////////////////////////////////////////////////
 // GENERAL PARAMETERS FOR THE SIMULATIONMETHODS
 ///////////////////////////////////////////////////////////////////////
-//  printf("%ld %ld\n", key->meth[m].S, key->meth[m].destruct);
 #define SET_DESTRUCT(A)\
   assert(meth->S==NULL && meth->destruct==NULL);\
   meth->destruct = A;
@@ -1166,14 +1165,14 @@ extern int DOLLAR, LASTDOLLAR, GATTER,  LASTGATTER, MLE_ENDCOV, OUT, SPLIT,
 
 extern char MSG[1000];
 extern char NEWMSG[1000];
-#define UERR if (PL>4) { printf("\n\n================================\n");\
+#define UERR if (PL>4) { PRINTF("\n\n================================\n");\
   if (STORED_MODEL[MODEL_USER]!=NULL) \
     PrintModelInfo(STORED_MODEL[MODEL_USER]); \
   if (STORED_MODEL[MODEL_INTERN]!=NULL) \
     PrintModelInfo(STORED_MODEL[MODEL_INTERN]); \
   if (STORED_MODEL[MODEL_SIMU]!=NULL) \
     PrintModelInfo(STORED_MODEL[MODEL_SIMU]); }\
- printf("---------------------------------\n");\
+ PRINTF("---------------------------------\n");\
 
 #define ERR(X) {UERR; sprintf(MSG, "%s\n%s", ERROR_LOC, X); error(MSG);}
 #define XERR(X) {errorMSG(X, MSG); \
