@@ -751,7 +751,7 @@ int initS(method_type *meth){
       ) {      
       if (PL>5) {
 	PRINTF("initS:\n");      
-	PrintMethodInfo(meth);
+	PrintMethodInfo(meth); //
       }
       return ERRORHANGING;
     }

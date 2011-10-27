@@ -295,6 +295,7 @@ int init_turningbands(method_type *meth, SimulationType method)
 
   // minimum distance between the points   
   linesimuscale = -1.0;
+
   if (tbm->linesimustep  > 0.0) linesimuscale = 1.0 / tbm->linesimustep;
   else if (tbm->linesimufactor > 0) {
     double mindelta;
@@ -699,8 +700,6 @@ void do_internal_tbm(method_type *meth, res_type *res, SimulationType unimeth,
     double offset;
     long v;
     int i, end;
-
-    PrintMethodInfo(s->key.meth);
 
 #define TBMST(INDEX) { \
       for (n=0; n<tbm->lines; n++){ \

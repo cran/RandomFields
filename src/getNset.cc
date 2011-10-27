@@ -1212,6 +1212,9 @@ void GetNaturalScaling(cov_model *cov, double *natscale)
   *natscale = 0.0;
 
 
+  // printf("%s %d\n", C->name, C->maxsub);
+
+
   if (C->maxsub!=0) XERR(ERRORFAILED); 
  
   if (C->isotropy != ISOTROPIC || C->stationary != STATIONARY ||

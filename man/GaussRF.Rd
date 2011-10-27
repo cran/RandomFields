@@ -448,7 +448,7 @@ cat("system time (second call)", format(ut,dig=3),"\n")
 ## further: parameters and algorithms may change in
 ##       future.
 
-#% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
+#% library(RandomFields, lib="~/TMP");source("~/R/cran/RandomFields/tests/source.R")
 ## simuation of the stable model using the cutoff method
 #RFparameters(Print=8, Storing=FALSE)
 x <- seq(0, 1, 1/24) # nicer pictures with 1/240
@@ -457,11 +457,10 @@ model1 <- list("$", scale=scale, list("stable", alpha=1.0))
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
 z1 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE,
              model=model1, n=1, meth="cutoff", Storing=TRUE)
-internal <- GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$new
-(size <- internal$meth$S$size)
-(cut.off.param <- internal$cov$sub[[1]]$sub[[1]]$sub[[1]]$param)
+(size <- GetRegisterInfo(meth=c("cutoff", "circ"))$S$size)
+(cut.off.param <-
+   GetRegisterInfo(meth=c("cutoff", "circ"), modelname="cutoff")$param)
 
-# % Print(GetRegisterInfo(), vec=15)
 image(x, x, z1)
 
 
@@ -474,7 +473,6 @@ model2 <- list("$", scale = scale,
 assign(".Random.seed", rs, envir=.GlobalEnv)
 z2 <- GaussRF(x, x,  grid=TRUE, gridtriple=FALSE, model=model2,
               meth="circulant", n=1, CE.mmin=size, Storing=TRUE)
-#%Print(GetRegisterInfo(), vec=15)
 image(x, x, z2)
 Print(range(z1-z2)) ## essentially no difference between the fields!
 
@@ -503,7 +501,7 @@ model <- list("$", var=1.1, aniso=matrix(nc=2, c(2, 1, 0.5, 1)),
 
 # determination of the (minimal) size of the torus
 InitGaussRF(x, y, model=model, grid=TRUE, method="cu")
-ce.info.size <- GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$new$meth$S$size
+ce.info.size <- GetRegisterInfo(meth=c("cutoff", "circ"))$S$size
 blocks <- ceiling(ce.info.size / grid.size / 4) *4
 (size <- blocks * grid.size)
 

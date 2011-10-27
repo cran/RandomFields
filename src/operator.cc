@@ -1745,7 +1745,7 @@ int initspectralnatsc(cov_model *cov) {
   if (CovList[next->nr].initspectral == NULL) {
       //     PRINTF("natsc: %ld %s\n", 
 //	     (POINTER) CovList[next->nr].initspectral, CovList[next->nr].name);
-      PrintModelInfo(cov);
+//      PrintModelInfo(cov);
       assert(CovList[next->nr].initspectral != NULL);
   }
 

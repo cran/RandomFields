@@ -9,14 +9,47 @@
 #}
 
 
-GetRegisterInfo <- function(register=0, ignore.active=FALSE, max.elements=10^6) {
+GetRegisterInfo <- function(register=0, ignore.active=FALSE, max.elements=10^6,
+                            meth=NULL, modelname=NULL) {
+
+
+  search.model.name <- function(cov, name, level) {
+    if (is.na(pmatch(name, cov))) {
+      for (i in 1:length(cov$submodels)) {
+        found <- search.model.name(cov$submodels[[i]], name, level+1)
+        if (!is.null(found)) return(found)      
+      }
+      if (level == 0) stop("model name not found")
+      else return(NULL)
+    } else return(cov)
+  }
+
+  
   # ignore.active=TRUE only for internal debugging information!
   if (ignore.active)
      warning("ignore.active = TRUE may cause failure of R -- do not use it!!")
-  .Call("GetRegisterInfo", as.integer(register), as.logical(ignore.active),
-        as.integer(if (max.elements > .Machine$integer.max)
-                   .Machine$integer.max else max.elements),
-        PACKAGE="RandomFields")
+  reg <- .Call("GetRegisterInfo", as.integer(register),
+             as.logical(ignore.active),
+             as.integer(if (max.elements > .Machine$integer.max)
+                        .Machine$integer.max else max.elements),
+             PACKAGE="RandomFields")
+  if (!is.null(meth)) {
+    reg <- reg$meth
+    while (length(meth) > 0) {
+      while (is.na(pmatch(meth[1], reg$name))) {
+        reg <- reg$sub[[1]]
+        if (is.null(reg)) stop("method not found")
+      }
+      meth <- meth[-1]
+      if (length(meth) > 0) {
+        reg <- reg$S$new$meth
+      }
+    }
+  }
+  if (!is.null(modelname)) {
+    reg <- search.model.name(reg$cov, modelname, 0)
+  }
+  return(reg)
 }
 
 GetModelInfo <- function(register, modelreg, level=3, gatter=FALSE) {

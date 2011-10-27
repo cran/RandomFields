@@ -436,7 +436,7 @@ void do_addmpp(method_type *meth, res_type *res ) {
 
 	switch (locations) {
 	    case MPP_AUTO : case MPP_MISMATCH :
-		PrintModelInfo(cov);
+	      PrintModelInfo(cov); //
 	      error("impossible");
 	      break;
 	    case MPP_GRID :

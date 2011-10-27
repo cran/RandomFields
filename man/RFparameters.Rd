@@ -836,7 +836,7 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)], border="red", lwd=3)
 
 ###### definition of a random field on a square of shorter diagonal
 assign(".Random.seed", rs, envir=.GlobalEnv)
-tbm.points <- length(GetRegisterInfo()$meth$sub[[1]]$sub[[1]]$S$line)
+tbm.points <- length(GetRegisterInfo(meth="TBM")$S$line)
 z2 <- GaussRF(x2, x2, model=model, param=param, grid=TRUE, register=1,
               method=meth, TBM.center=0, TBM.points=tbm.points)
 do.call(getOption("device"), list(height=4.3, width=4.3))

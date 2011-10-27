@@ -9,7 +9,8 @@
   of a random field and the calculation of covariance functions
 }
 \usage{
-GetRegisterInfo(register, ignore.active = FALSE, max.elements=10^6)
+GetRegisterInfo(register, ignore.active = FALSE, max.elements=10^6,
+                meth=NULL, modelname=NULL)
 GetModelInfo(register, modelreg, level=3, gatter=FALSE)
 GetModel(register, modelreg, modus=0)
 }
@@ -44,6 +45,17 @@ GetModel(register, modelreg, modus=0)
     only the size of the critical parts are returned and not the
     vector or matrix itself, if the number of elements exceeds
     \code{max.elements}. 
+  }
+  \item{meth}{
+    vector of strings. If \code{meth} is given
+    \command{GetRegisterInfo} returns not the whole register info but
+    only part method part.
+  }
+  \item{modelname}{
+    string. If \code{modelname}  is given then
+    \command{GetRegisterInfo} returns the first appearance of the
+    covariance model with name \code{modelname}.
+    If \code{meth} is given then the model within the method is returned.
   }
   \item{level}{integer; level of details}
   \item{modus}{integer; see details}
