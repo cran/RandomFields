@@ -1,5 +1,5 @@
 8037259fdbb64b81f1b7c07fa96a71d4 *Copyright
-2613888bed3259c93b6565a812fbcfbf *DESCRIPTION
+89c7486d2862275d9c0fe4f1716df4c6 *DESCRIPTION
 8294c85471be8826b6997f0e26921419 *NAMESPACE
 60a184bd1cb0694dccf25ff3baf1608b *R/D.H.R
 0c433a570f9a670f5548ebc67424f639 *R/MLE.R
@@ -121,7 +121,7 @@ ec016042bd97d4aa37eb18a82774e829 *tests/geoR.R
 8a563843d2d07e2714510bb73d4b53fc *tests/show.getregisterinfo.R
 2b07f31c8cb6b7e5bd95e0af1e57a94a *tests/source.R
 d034f6635583df8a7a10abaab976d33a *tests/technical.report.positive.def.fcts.R
-0976bae8f4c852447cd163b4adf8d82d *tests/x.R
+454e415d1dd1d1ed9d8d2c71802a0f24 *tests/x.R
 2d6f09835ae24ded1c14b5e435b767f0 *todo/BR/BR.R
 aa84c19e686b8907506961f1c9bdab2c *todo/BR/BRmethods.Rd
 1dab4510aef618fa6f9de3f69ee68b89 *todo/ShowModels.R

@@ -1,3 +1,4 @@
+
 model <- list("a", list("y", 6, 7, c(0, NA, NA)), list(5, 6, NA,8 ))
 
 
@@ -69,8 +70,11 @@ getpos <- function(l, pos, n=0) {
   }
 }
 
+if (FALSE) {
 
-cat(rep("\n", 15))
-p <- getNApos(model)[[1]]
-(pp <- putpos(model, p, c(23, 24, 25)))
-(pp2 <- getpos(pp[[1]], p))
+  cat(rep("\n", 15))
+  (p <- getNApos(model)[[1]])
+  str(pp <- putpos(model, p, c(23, 24, 25)))
+  (pp2 <- getpos(pp[[1]], p))
+
+}
