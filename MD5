@@ -1,5 +1,5 @@
 8037259fdbb64b81f1b7c07fa96a71d4 *Copyright
-89c7486d2862275d9c0fe4f1716df4c6 *DESCRIPTION
+3482fa7da7972d3ef1baf6b2788537f9 *DESCRIPTION
 8294c85471be8826b6997f0e26921419 *NAMESPACE
 60a184bd1cb0694dccf25ff3baf1608b *R/D.H.R
 0c433a570f9a670f5548ebc67424f639 *R/MLE.R
@@ -61,7 +61,7 @@ f8cecd0e5c36ed209bbeb50cdae4b57a *man/weather.Rd
 f9d7b17f6a712331a246d75b884ae844 *src/Average.cc
 e7b8a0958d165bd700e3572b3e483d30 *src/Covariance.h
 f5e46faaf5adda33003755adab495e78 *src/D.H.cc
-73d58e9ed9e58b86ed3e90f87fba1024 *src/Gneiting.cc
+c1828fbbe94777f82c51f04964c01262 *src/Gneiting.cc
 30af8b9ffee9b2a2154c9068a68b9b5b *src/InternalCov.cc
 35564ad0713dd35a52dcc2389828f2be *src/KeyInfo.cc
 1571208ed2fb3cdee95287b37063fce8 *src/MLE.cc
@@ -72,7 +72,7 @@ db448ba8c2769253a339a477fa2db307 *src/MPPstandard.h
 6201ef9b11620bcf535f9f17e4a410ab *src/Makevars.win
 c690b58ec76df823fa505da4b3c0f45c *src/Primitive.cc
 9cdee9fb0072f2166ddbf765a74114aa *src/RF.h
-559678606d5fa27fd050b02b6e4706ef *src/RandomFields.h
+dbc19e5eb6e1608012258aac91b96fed *src/RandomFields.h
 b9ce0952bfe0c879e5180987da2dc905 *src/Xempvario.cc
 a14492bf069ac38461798ed6cd670573 *src/addownfctns.cc
 a1519fbe70707b1054ddc2f7310d42af *src/auxiliary.cc
@@ -119,7 +119,7 @@ ec016042bd97d4aa37eb18a82774e829 *tests/geoR.R
 56595d8a6770e32e2e4bcfb15ea869f9 *tests/intrinsic.embedding.R
 81bd98b277f507e32840181ef69801d7 *tests/multiplicative.R
 8a563843d2d07e2714510bb73d4b53fc *tests/show.getregisterinfo.R
-2b07f31c8cb6b7e5bd95e0af1e57a94a *tests/source.R
+a77c63b8960e35e2c4f03a20acfca58c *tests/source.R
 d034f6635583df8a7a10abaab976d33a *tests/technical.report.positive.def.fcts.R
 454e415d1dd1d1ed9d8d2c71802a0f24 *tests/x.R
 2d6f09835ae24ded1c14b5e435b767f0 *todo/BR/BR.R

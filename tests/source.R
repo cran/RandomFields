@@ -1,10 +1,11 @@
 
 # .x <- dir(); for (.i in .x) source(.i)
 
-library(RandomFields,
-        lib=if (TRUE && file.exists("~/TMP/RandomFields") &&
-          file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
+#library(RandomFields,
+#        lib=if (TRUE && file.exists("~/TMP/RandomFields") &&
+#          file.exists("/home/schlather/TMP/RandomFields")) "~/TMP")
 
+library(RandomFields)
 .path <- "~/R/cran/RandomFields/R/"
 .path2 <- "/home/schlather/R/cran/RandomFields/R/"
 if (EXTENDED.TESTING <- file.exists(paste(.path, "rf.R", sep="")) &&

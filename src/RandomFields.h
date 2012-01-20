@@ -188,7 +188,7 @@ extern "C" void AddTrend(int *keyNr, int *n, double *res, int *error);
 // storing : current value
 // printlevel : current value
 // naturalscaling : fixed value
-extern "C" SEXP  SetParamPch(SEXP act, SEXP pch);
+extern "C" SEXP SetParamPch(SEXP act, SEXP pch);
 extern "C" void SetParam(int *action,int *storing, int *printlevel,
 		     int *naturalscaling, int *skipchecks,
 		     int *every); 

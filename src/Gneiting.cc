@@ -1489,7 +1489,7 @@ void NonStWM(double *x, double *y, cov_model *cov, double *v){
     Q += delta * delta;
   }
 
-  NonStWMQ(x, y, Q, cov, v);
+  NonStWMQ(x, y, sqrt(Q), cov, v);
 }
 
 int checkNonStWM(cov_model *cov) { 
