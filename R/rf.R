@@ -107,7 +107,9 @@ Covariance <- function(x, y=NULL, model, param=NULL,
     if (are.dist)
       stop("Distances are only allowed when calculating covariance matrices")    
     result <- double(len * vdim * vdim)
-    .C(fctcall, x, y, as.integer(len), result, 
+    .C(fctcall, x, if (is.null(y)) double(0) else y,
+       as.integer(is.null(y)),
+       as.integer(len), result, 
      PACKAGE="RandomFields", DUP = FALSE, NAOK=TRUE)
     if (vdim > 1) dim(result) <- c(len * vdim , vdim) ###
   }

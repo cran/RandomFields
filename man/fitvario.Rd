@@ -699,7 +699,7 @@ fitvario.default(x, y=NULL, z=NULL, T=NULL, data, model, param,
 \section{Acknowledgement}{
   Thanks to Paulo Ribeiro for hints and comparing the perliminary versions
   of \code{fitvario} in RandomFields V1.0 to
-  \command{\link[geoR]{likfit}} of the package \code{geoR} whose homepage is at 
+  \code{likfit} of the package \code{geoR} whose homepage is at 
   \url{http://www.est.ufpr.br/geoR/}.
 }
 \seealso{

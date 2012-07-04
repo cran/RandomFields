@@ -1,8 +1,8 @@
 8037259fdbb64b81f1b7c07fa96a71d4 *Copyright
-3482fa7da7972d3ef1baf6b2788537f9 *DESCRIPTION
+bbece372b9354f7cf5325324ff1f8106 *DESCRIPTION
 8294c85471be8826b6997f0e26921419 *NAMESPACE
 60a184bd1cb0694dccf25ff3baf1608b *R/D.H.R
-0c433a570f9a670f5548ebc67424f639 *R/MLE.R
+3a483c5134e22acac2a3bcc516990b01 *R/MLE.R
 81948f16aee60cc040744cd96193beb7 *R/ShowModels.R
 89c0ad1b4e8afe61d1861e12dcacac11 *R/auto/x.el
 fbe7af62ab1a66d0b6874ec496d83df6 *R/auxiliary.R
@@ -14,7 +14,7 @@ a0b30145a93a52f97d3d26ced1d2b74a *R/empvario.R
 95afa958761aa29eb60defcf37573600 *R/kleinn.R
 30108f2c20e816dce6a9b854d6507336 *R/modelling.R
 3e88acd2e90bc06560d15f064116dd73 *R/readin.R
-de097218340b6d300933123f0a81d1c8 *R/rf.R
+fa671d2b0601893e39e2c64e61e53741 *R/rf.R
 bcb569bb4a3bf7842efe39d3a582a26c *configure
 e019bff0a7703670ee9a80ba464ba872 *configure.ac
 da07e8c72b199c2b45fbb5e46f8fcf2f *data/soil.txt.gz
@@ -44,7 +44,7 @@ c734d17766377f8b4c1973de32e7a95a *man/auxiliary.fcts.Rd
 ca561506f24202912ffb9658342cc5e6 *man/changings.Rd
 df5bb94e19bceca0f43615ab6dec51bf *man/eval.parameters.Rd
 edd108d9da2e08617b9796ccfdb42f6e *man/fileexists.Rd
-8a48e4308734ad0901d0ba0a916b2c0e *man/fitvario.Rd
+9413942625dff93355340a3d318fff9d *man/fitvario.Rd
 3d99181f729a9c857ad32b0c14bb0d73 *man/fractal.Rd
 f3547ab2af47f6e12d7ae379b3e7126a *man/getactions.Rd
 b7ed44f9b6e7a437d03eb8f6cef85822 *man/hostname.Rd
@@ -54,7 +54,7 @@ bd68f90ccea0f9f25f04e426c95af6a4 *man/papers.Rd
 17694468ec5d371aba4fd0b1546278db *man/parampositions.Rd
 3d62685622e27124283ee4d31b86d2ea *man/regression.Rd
 e4893669697fe1d759a7fdde4e98a4de *man/sleep.Rd
-4f5ef192f4b4bc12cd1306ec739b6432 *man/soil.Rd
+9f2a3f8dd1314b2a7598c07c776c5bdd *man/soil.Rd
 83fd08c40cb21417eb4bc7b0e954b139 *man/useraction.Rd
 127d2c652862b0ac45984b0960c9d0ab *man/userinput.Rd
 f8cecd0e5c36ed209bbeb50cdae4b57a *man/weather.Rd
@@ -70,9 +70,9 @@ c1828fbbe94777f82c51f04964c01262 *src/Gneiting.cc
 db448ba8c2769253a339a477fa2db307 *src/MPPstandard.h
 1a2c9c40ee92af54d074892cf551c528 *src/Makevars.in
 6201ef9b11620bcf535f9f17e4a410ab *src/Makevars.win
-c690b58ec76df823fa505da4b3c0f45c *src/Primitive.cc
-9cdee9fb0072f2166ddbf765a74114aa *src/RF.h
-dbc19e5eb6e1608012258aac91b96fed *src/RandomFields.h
+25346614a31e0fc2e5ae1dc93bc8d339 *src/Primitive.cc
+980dfb4bdfffbdc273c9422efe1c8181 *src/RF.h
+7799730aa0bd80271b09af95993059f4 *src/RandomFields.h
 b9ce0952bfe0c879e5180987da2dc905 *src/Xempvario.cc
 a14492bf069ac38461798ed6cd670573 *src/addownfctns.cc
 a1519fbe70707b1054ddc2f7310d42af *src/auxiliary.cc
@@ -92,14 +92,14 @@ f5ba3de8ee2320d6bc5fa83cac57ee86 *src/getNset.cc
 656945cbd2c8de0d6e36fed62fc4111f *src/includeMarkov.h.in
 f7041aa4f34f0d9fe78894d75a5641eb *src/initNerror.cc
 9581261ca63795dd8f53cbd80c07f28c *src/kleinn.cc
-6fa048a6ce9451c833ac047abdc541f8 *src/kriging.cc
+19d9b5ec905c2e45e6cf894578ba2852 *src/kriging.cc
 417f60b3aef6670c001792e97139bbc7 *src/markov.cc
 0e7b437b3c083922ea109a9835ae1e3f *src/metropolis.cc
 ac53840094baaa29036db1b46f85abd8 *src/nugget.cc
 8c34135217cee5bd77d256b03643f932 *src/operator.cc
 916222247236ffbe03edd0866ee81c52 *src/primitive.h
 54a6d1016d54ab9d0003441647e48c88 *src/sequential.cc
-ee84f9c4ad7313c1fae97fdf2b1ea6e6 *src/simu.cc
+c7000b69778a693c44baeb53cf8e2822 *src/simu.cc
 89dd5deaf3128b325eca0c731bbc943a *src/spatialMA.cc
 6e7ed323829ea4f00f583111382ccca7 *src/spectral.cc
 bfc47b639abfea721689d0dce0459315 *src/tbm.cc
@@ -115,7 +115,7 @@ c6166464d7e967401370fdeefd9693a7 *tests/RFtest.methods.R
 d7052a4551768af59688e804e52b5bc8 *tests/RFtest.model.R
 eb226670015754475f42e1c42d165e7f *tests/RFtest.stupid.R
 2253f3933c597e241ef1e8effe0f71f0 *tests/RFtest.time.R
-ec016042bd97d4aa37eb18a82774e829 *tests/geoR.R
+8715b6790de56b1923969508c0647f96 *tests/geoR.R
 56595d8a6770e32e2e4bcfb15ea869f9 *tests/intrinsic.embedding.R
 81bd98b277f507e32840181ef69801d7 *tests/multiplicative.R
 8a563843d2d07e2714510bb73d4b53fc *tests/show.getregisterinfo.R

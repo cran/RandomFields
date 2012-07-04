@@ -254,7 +254,7 @@ void rangeCauchytbm(cov_model *cov, range_arraytype *ra){
   range->openmin[2] = false;
   range->openmax[2] = true;
 
-  range->maxdim = 1; 
+  range->maxdim = INFDIM; 
 }
 
 
@@ -1120,7 +1120,7 @@ void rangegenGneiting(cov_model *cov, range_arraytype* ra){
     range->pmax[1] = range->pmin[1] + 10.0;
     range->openmin[1] = false;
     range->openmax[1] = true;
-    double dim = (2.0 * cov->p[1][0] - 1.0 - 2.0 * ((int *) cov->p[0])[0]);  
+    double dim = (2.0 * cov->p[1][0] + 1.0 + 2.0 * ((int *) cov->p[0])[0]);  
     range->maxdim = (dim >= INFDIM) ? INFDIM-1 : (int) dim;
     range->finiterange = true;
   }

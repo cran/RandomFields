@@ -903,7 +903,7 @@ void get_ranges(cov_model *cov, cov_model **min, cov_model **max,
 }
 
 
-void Covariance(double *x, double *y, int lx, 
+void Covariance(double *x, double *y, bool y_not_given, int lx, 
 		cov_model *cov, int idx, double *value) {
   int  vsq = cov->vdim * cov->vdim,
     xdim = cov->xdim;
@@ -917,7 +917,7 @@ void Covariance(double *x, double *y, int lx,
 
   // CovMatrixIndexActive = idx >= 0;
   CovMatrixRow = idx;
-  if (y==NULL || (SEXPREC*)y==R_NilValue) {
+  if (y_not_given) {
     for (CovMatrixCol=0; CovMatrixCol<lx; CovMatrixCol++, x += xdim) { 
       CovList[cov->nr].cov(x, cov, value + CovMatrixCol * vsq);
     }
@@ -1006,21 +1006,21 @@ ErrorHandling:
 }
 
 
-void CovIntern(double *x, double *y, int lx, double *value) {
+void CovIntern(double *x, double *y, bool y_not_given, int lx, double *value) {
     cov_model *cov = STORED_MODEL[MODEL_INTERN];
     if (cov->vdim > 1) {
  	CovMulti(x, y, lx, cov, value);
     } else {
-	Covariance(x, y,  lx, cov, -1, value);
+	Covariance(x, y, y_not_given, lx, cov, -1, value);
     }
 }
 
-void Cov(double *x, double *y, int *lx, double *value) {
+void Cov(double *x, double *y, int *y_not_given, int *lx, double *value) {
     cov_model *cov = STORED_MODEL[MODEL_USER];
     if (cov->vdim > 1) {
  	CovMulti(x, y, *lx, cov, value);
     } else {
-	Covariance(x, y,  *lx, cov, -1, value);
+      Covariance(x, y,  *y_not_given, *lx, cov, -1, value);
     }   
 }
 
@@ -1160,6 +1160,11 @@ void CovMatrixMulti(double *x, bool dist, int size,
     }
   }
 
+  if (cov->statIn==VARIOGRAM) {
+    double first=value[0];
+    for (i=0; i<vdimsize2; value[i++] -= first);
+  }
+
 ErrorHandling:
   CovMatrixCol = CovMatrixRow = RF_NAN;
   if (Val!=NULL) free(Val);
@@ -1231,6 +1236,14 @@ void CovarianceMatrix(double *x, bool dist, int size, cov_model *cov,
       }
     }
   }
+
+  if (cov->statIn==VARIOGRAM) {
+    int l, sizesq = size * size;
+    double first=value[0];
+    for (l=0; l<sizesq; value[l++] -= first);
+  }
+ 
+
   CovMatrixCol = CovMatrixRow = RF_NAN;
 }
 
@@ -1274,8 +1287,8 @@ void CalculateVariogram(double *x, int lx, cov_model *cov, double *value) {
   free(dummy);
 }
 
-void Variogram(double *x, double *y, int *lx, double *value) {
-  assert((SEXPREC*) y==R_NilValue);
+void Variogram(double *x, double *y, int *y_not_given, int *lx, double *value) {
+  if (!y_not_given) error("y may not be given for a variogram.");
   CalculateVariogram(x, *lx, STORED_MODEL[MODEL_USER], value);
 }
 
@@ -1287,8 +1300,8 @@ void VariogramIntern(double *x, double *y, int *lx, double *value) {
   CalculateVariogram(x, *lx, STORED_MODEL[MODEL_INTERN], value);
 }
 
-void VariogramMLE(double *x, double *y, int *lx, double *value) {
-  assert((SEXPREC*) y==R_NilValue);
+void VariogramMLE(double *x, int *lx, double *value) {
+  // assert((SEXPREC*) y==R_NilValue);
 // PrintModelInfo(STORED_MODEL[MODEL_INTERN]);
 //  assert(false);
 

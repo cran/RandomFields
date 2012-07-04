@@ -300,10 +300,12 @@ extern "C" void minmax(double *dat, int *dim, int *ldim, int *boxes, int *lb,
 		   double *count);
 
 
-extern "C" void Cov(double *x, double *y, int *lx, double *result);
-extern "C" void Variogram(double *x,double *y, int *lx, double *result);
+extern "C" void Cov(double *x, double *y, int *y_not_given, 
+		    int *lx, double *result);
+extern "C" void Variogram(double *x,double *y, int *y_not_given, 
+			  int *lx, double *result);
 extern "C" void VariogramIntern(double *x,double *y, int *lx, double *result);
-extern "C" void VariogramMLE(double *x, double *y, int *lx, double *result);
+extern "C" void VariogramMLE(double *x, int *lx, double *result);
 
 extern "C" void CovMatrix(double *x, int * dist, int *lx, double *result);
 extern "C" void CovMatrixIntern(double *x, int * dist, int *lx, double *result);

@@ -52,6 +52,8 @@ This data frame contains the following columns:
 ##                                                            ##
 ################################################################
 
+options(warn=2)
+
 data(soil)
 names(soil)
 pts <- soil[,c(1,2)]

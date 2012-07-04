@@ -249,7 +249,7 @@ fitvario.default <-
     .C("PutValuesAtNA", param, PACKAGE="RandomFields", DUP=FALSE)
 
     model.values <- double(bins * vdim^2)
-    .C("VariogramMLE", bin.centers, NULL, bins, model.values,
+    .C("VariogramMLE", bin.centers, bins, model.values,
        PACKAGE="RandomFields", DUP=FALSE)
 
     if (any(!is.finite(model.values))) {

@@ -1379,7 +1379,7 @@ void xA(double *x, double*A, int nrow, int ncol, double *y);
 void Ax(double *A, double*x, int nrow, int ncol, double *y);
 
 SEXP Param(void* p, int nrow, int ncol, SEXPTYPE type, bool drop, long* mem);
-void CovIntern(double *x, double *y, int lx, double *result);
+void CovIntern(double *x, double *y, bool y_not_given,  int lx, double *result);
 int is_positive_definite(double *C, int dim);
 
 // typedef long long POINTER;

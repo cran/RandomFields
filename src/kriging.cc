@@ -98,7 +98,7 @@ void simpleKriging(double *tgiven, double *x, double *invcov, int *notna,
 	xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim)
 	dist[j] = tgiven[j] - xx[d];
-    CovIntern(dist, NULL, ngiven, M);
+    CovIntern(dist, NULL, true, ngiven, M);
 
     //   for (r=0; r<ngiven * vdim * vdim; r++) printf("%e ", M[r]); printf("\n");
 
@@ -166,12 +166,12 @@ void simpleKriging2(double *tgiven, double *x, double *data, double *invcov,
     goto ErrorHandling;
   }  
   for (i=0; i<dim; i++) origin[i]=0.0;
-  CovIntern(origin, NULL, 1, &var);
+  CovIntern(origin, NULL, true, 1, &var);
   for (krigi=i=0; i<nx; i++) {
     if (PL>0 && (krigi % divachtzig == divachtzigM1)) PRINTF(".");
     for (d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(dist, NULL, ngiven, M); 
+    CovIntern(dist, NULL, true, ngiven, M); 
     for (d=k=0; k<ngiven; k++) {
       lambda[k] = 0.0;
       for (j=0; j<ngiven; j++) lambda[k] += M[j] * invcov[d++];
@@ -240,7 +240,7 @@ void ordinaryKriging(double *tgiven, double *x, double *invcov,
     for (d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
 //    printf("Xok\n");
-    CovIntern(dist, NULL, ngiven, M); 
+    CovIntern(dist, NULL, true, ngiven, M); 
 //    printf("ok1\n");
     M[ngiven] = 1.0; // =
     for (d=r=0; r<rep; r++, krigi++) {
@@ -296,12 +296,12 @@ void ordinaryKriging2(double *tgiven, double *x, double *data, double *invcov,
     goto ErrorHandling;
   }
   for (i=0; i<dim; i++) origin[i]=0.0;
-  CovIntern(origin, NULL, 1, &var);
+  CovIntern(origin, NULL, true, 1, &var);
   for (krigi=i=0; i<nx; i++) {
     if (PL>0 && (krigi % divachtzig ==divachtzigM1)) PRINTF(".");
     for (d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(dist, NULL, ngiven, M); 
+    CovIntern(dist, NULL, true, ngiven, M); 
     M[ngiven] = 1.0;
     for (d=k=0; k<ngivenP1; k++) { 
       lambda[k] = 0.0;
@@ -372,7 +372,7 @@ void universalKriging(double *tgiven, double *x, double *invcov, int *Nx,
     for (d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
     //Initializing covf0
-    CovIntern(dist, NULL, ngiven, covf0); 
+    CovIntern(dist, NULL, true, ngiven, covf0); 
     *iR = i + 1;	//in- and output varingivenle
     for(j=0; j < nfct; j++) { //for each function
 	*jR = j + 1; //in- and output varingivenle
@@ -472,7 +472,7 @@ void universalKriging2(double *tgiven, double *x, double *data, double *invcov,
 
  //Calculating the variance
  for (j=0; j < dim; j++) origin[j]=0.0;
- CovIntern(origin, NULL, 1, &var);
+ CovIntern(origin, NULL, true, 1, &var);
 
  SEXP f_0;
  PROTECT(f_0 = allocVector(REALSXP,1));
@@ -483,7 +483,7 @@ void universalKriging2(double *tgiven, double *x, double *data, double *invcov,
   for(d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
   //Calculating cov vector
   for(j=d=0; j < len_tgiven; j++, d= (d+1) % dim) dist[j] = tgiven[j] - xx[d];
-  CovIntern(dist, NULL, ngiven, M); 
+  CovIntern(dist, NULL, true, ngiven, M); 
   //Calculating fvector
   *iR = i + 1;   //in- and output varingivenle
   for (j=0; j<nfct; j++)  {
@@ -569,7 +569,7 @@ void universalKriging3(double *tgiven, double *x, double *invcov, int *Nx,
     for (d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
     for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
     //Initializing covf0
-    CovIntern(dist, NULL, ngiven, covf0); 
+    CovIntern(dist, NULL, true, ngiven, covf0); 
     for(j=0; j < nfct; j++) { //for each function
 	covf0[ngiven+j] = 1;
 	for(d=0; d < dim; d++) //for each component
@@ -681,7 +681,7 @@ void universalKriging4(double *tgiven, double *x, double *data, double *invcov,
 
  //Calculating the variance
  for (j=0; j < dim; j++) origin[j]=0.0;
- CovIntern(origin, NULL, 1, &var);
+ CovIntern(origin, NULL, true, 1, &var);
  //Kriging for each kriging point
  for (krigi=i=0; i<nx; i++) {
    if (PL > 0 && (krigi % divachtzig == divachtzigM1)) PRINTF(".");
@@ -689,7 +689,7 @@ void universalKriging4(double *tgiven, double *x, double *data, double *invcov,
    for(d=0, j=i; d<dim; d++, j+=nx) xx[d]=x[j];
    //Calculating cov vector
    for(j=d=0; j < len_tgiven; j++, d= (d+1) % dim) dist[j] = tgiven[j] - xx[d];
-   CovIntern(dist, NULL, ngiven, M); 
+   CovIntern(dist, NULL, true, ngiven, M); 
    //Calculating fvector
    for(j=0; j < nfct; j++) { //for each function
 	fvector[j] = 1;

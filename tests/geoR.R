@@ -5,8 +5,8 @@ if (EXTENDED.TESTING <- file.exists("source.R")) {
   source("source.R")
 } else if (file.exists(f <- "~/R/RF/RandomFields/tests/RFtest.R")) source(f) 
 
-if (EXTENDED.TESTING) {
-  data(soil250, package="geoR")
+if (EXTENDED.TESTING && FALSE) {
+  ## data(soil250, package="geoR") ## wirft warning im check
   soil <- soil250
   x <- soil$Linha
   y <- soil$Coluna
