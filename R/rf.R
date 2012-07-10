@@ -9,7 +9,6 @@
 ##      "citation(\"RandomFields\")    or   \n",
 ##      "help(RandomFields)   and see the Reference section for a complete list\n",
 ##      "Many thanks,  Martin Schlather\n")
-
 ##  cat("\n\n\n\n\n ACHTUNG!! wird bei DO richtig erkannt, wann res[..]=0 gesetzt werden muss??\n\n")
     packageStartupMessage("##  Note that several updates of RandomFields are expected during 2011. ##\n##  Please see help(\"changings\") for important changes.                 ##\n")
  
@@ -255,7 +254,7 @@ InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
   neu <- CheckXT(x, y, z, T, grid, gridtriple)
   p <- PrepareModel(model, param, trend=trend, method=method)
 
-#  Print(p)
+# Print(p)
 #  xxxxx
   
   dim <- as.integer(ncol(neu$x) + neu$Time)
@@ -319,6 +318,8 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
     if (delete) DeleteRegister(register);
   })
 
+  p <- PrepareModel(model, param, trend=trend, method=method)
+
   error <- InitSimulateRF(x=x, y=y, z=z, T=T, grid=grid, model=model,
                           param=param,
                           trend=trend, method=method, register=register,
@@ -328,7 +329,8 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
     stop("Simulation could not be initiated.",
          if (RFparameters()$PrintLevel < 3) "\nRerun with higher value of RFparameters()$PrintLevel for more information. (Or put debug=TRUE if you are using Showmodels.)\n\n")
   res <- (if (n<1) NULL
-           else DoSimulateRF(n=n, register=register, paired=paired, trend=trend))
+           else DoSimulateRF(n=n, register=register, paired=paired,
+                             trend=p$trend))
   return(res)
 }
 
