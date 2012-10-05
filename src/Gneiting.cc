@@ -1,6 +1,6 @@
 /*
  Authors 
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Copyright (C) 2006 -- 2011 Martin Schlather
 
@@ -915,7 +915,7 @@ int checkstp(cov_model *cov){
   }
 
   if (H != NULL) {
-   if ((err = check2X(H, dim, dim, AUXVECTOR, ANISOTROPIC, dim)) != NOERROR)
+   if ((err = check2X(H, dim, dim, ANYFCT, ANISOTROPIC, dim)) != NOERROR)
      return err;
   }
   return NOERROR;

@@ -1,6 +1,6 @@
  /* 
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  library for simulation of random fields -- init part and error messages
 
@@ -232,7 +232,7 @@ void errorMSG(int err, char* m) {
 	sprintf(m, "multivariate dimension of %s expected. Got %s",
 		ERRORSTRING_OK, ERRORSTRING_WRONG);
 	break;
-      case ERRORAUXVECTOR: 
+      case ERRORANYFCT: 
 	strcpy(m, "auxiliary vector expected");
 	break;
       case ERRORCOVNUMERICAL: 
@@ -1160,7 +1160,7 @@ void InitModelList() {
   kappanames("speed", REALSXP, "phi", REALSXP);
   addSpecial(minEigenrotat);
 
-  IncludePrim("Rotat", 1, kappa_Rotat, AUXVECTOR, ANISOTROPIC,
+  IncludePrim("Rotat", 1, kappa_Rotat, ANYFCT, ANISOTROPIC,
 	      checkRotat, rangeRotat, PARAMETERM);
   addCov(Rotat, NULL, NULL);
   kappanames("phi", REALSXP);
@@ -1332,7 +1332,7 @@ void InitModelList() {
       cov->ncol[i] = cov->nrow[i] = 2;
     }
 
-    if (C->primitive && C->stationary!=AUXMATRIX && C->stationary!=AUXVECTOR) {
+    if (C->primitive && C->stationary!=AUXMATRIX && C->stationary!=ANYFCT) {
       for (i=0; i<Nothing; i++) cov->user[i] = cov->pref[i] = 0;
       cov->tsdim = cov->xdim =  (C->cov == SteinST1) ? 2 : 1;
       //  printf("ok %ld %ld\n", C->check, checkBessel);

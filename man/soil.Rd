@@ -52,7 +52,7 @@ This data frame contains the following columns:
 ##                                                            ##
 ################################################################
 
-options(warn=2)
+# options(warn=2)
 
 data(soil)
 names(soil)

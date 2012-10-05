@@ -1,5 +1,5 @@
 /*
- Authors  Martin Schlather, martin.schlather@math.uni-goettingen.de 
+ Authors  Martin Schlather, schlather@math.uni-mannheim.de 
 
  a second library for calculating the empirical variogram
 

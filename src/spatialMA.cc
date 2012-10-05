@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Simulation of a random field by random average method, that is 
  stationary in time

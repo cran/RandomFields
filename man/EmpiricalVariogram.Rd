@@ -94,8 +94,8 @@ EmpiricalVariogram(x, y=NULL, z=NULL, T=NULL, data, grid, bin,
     Hence, to include zero, \code{bin[1]} must be negative.
   }
 }
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}
 }
 \seealso{\command{\link{GaussRF}}, \command{\link{fitvario},
     and \code{\link{RandomFields}}}}

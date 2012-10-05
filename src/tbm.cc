@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands

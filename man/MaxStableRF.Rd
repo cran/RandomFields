@@ -118,8 +118,8 @@ InitMaxStableRF(x, y=NULL, z=NULL, grid, model, param, maxstable,
    Schlather, M. (2002) Models for stationary max-stable
    random fields. \emph{Extremes} \bold{5}, 33-44.
 }
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 \seealso{
   \command{\link{CovarianceFct}},
   \link{sophisticated},

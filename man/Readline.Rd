@@ -36,8 +36,8 @@
   \command{\link{useraction}},
   \command{\link{userinput}},
 }
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 \examples{
 ## see useraction
 }

@@ -1,6 +1,6 @@
 /*
  Authors 
- Martin Schlather, martin.schlather@math.uni-goettingen.de 
+ Martin Schlather, schlather@math.uni-mannheim.de 
 
  function shapes for the random coin method in MPP.cc
  not included in CovFct.cc since these functions are of 

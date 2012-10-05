@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Metropolis-Hasting for drawing from the spectral density
 

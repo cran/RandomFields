@@ -1,6 +1,6 @@
 /*
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  simulation of a random field by hyperplane tessellation
 

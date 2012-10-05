@@ -66,8 +66,8 @@ GetrfParameters(initcov)
 %\value{
 %  lists of internal parameters
 %}
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 \seealso{\command{\link{CovarianceFct}}}
 \keyword{ spatial }%-- one or more ...
 \keyword{internal}

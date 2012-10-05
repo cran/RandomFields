@@ -217,8 +217,8 @@ InitGaussRF(x, y=NULL, z=NULL, T=NULL, grid=!missing(gridtriple), model,
 \references{
   See \link{RFMethods} for the references.
 }
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}
   
   Yindeng Jiang \email{jiangyindeng@gmail.com} (circulant embedding
   methods \sQuote{cutoff} and \sQuote{intrinsic})}

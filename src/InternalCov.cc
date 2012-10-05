@@ -1,6 +1,6 @@
 /*
  Authors 
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Definition of auxiliary correlation functions 
 
@@ -1248,7 +1248,7 @@ int check2(cov_model *cov) {
 	default : assert(false);
     }
   } else {
-    if (next->statIn == AUXMATRIX || next->statIn == AUXVECTOR)
+    if (next->statIn == AUXMATRIX || next->statIn == ANYFCT)
       ERR("auxiliary functions are not allowed on top level");
     if (next->statIn != COVARIANCE && next->statIn != GEN_VARIOGRAM)
       ERR("the translation invariance property of the model is unknown");
@@ -1298,7 +1298,7 @@ int check2X(cov_model *cov, int tsdim, int xdim,
     ERR("preceding model has unexpected m-dimensionality")
 //  printf("Xhere\n");
 
-  if (next->statIn == AUXMATRIX || next->statIn == AUXVECTOR) {
+  if (next->statIn == AUXMATRIX || next->statIn == ANYFCT) {
     cov->tsdim = DEL_COV - 2;
     return NOERROR;
   }
@@ -1351,8 +1351,8 @@ int check2X(cov_model *cov, int tsdim, int xdim,
 	      assert(false);
 	}
 	break;
-      case AUXVECTOR :
-	if (next->statIn != AUXVECTOR) return ERRORAUXVECTOR;
+      case ANYFCT :
+	if (next->statIn != ANYFCT) return ERRORANYFCT;
 	break;
       case COVARIANCE : case GEN_VARIOGRAM :
 	  if (next->statIn == STATIONARY || next->statIn == VARIOGRAM || 

@@ -60,6 +60,8 @@
 			takes only x vector, but is not statonary */
 #define AUXVECTOR (stationary_type) 4 /* not a genuine covariance function;
 			takes only x vector, but is not statonary */
+#define ANYFCT AUXVECTOR /* not a genuine covariance function;
+			takes only x vector, but is not statonary */
 #define GENERALISEDCOVARIANCE (stationary_type) 5 /* "stationary",
     but "cov fct" does not have finite value at the origin, e.g. 1/x */
 #define COVARIANCE (stationary_type) 6 /* x,y; FIRST non-stationary;

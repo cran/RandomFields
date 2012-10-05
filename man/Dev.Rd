@@ -57,8 +57,8 @@ Dev(on, dev, ps=NULL, cur.cex=TRUE, paper="special", width=5, height=5,
   is created when \code{Dev(on=TRUE,...)} is called.
 }
 
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 
 \examples{
   ## first an eps-file test.eps is created, then a jpeg-file,

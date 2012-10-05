@@ -1,6 +1,6 @@
 /* 
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  calculation of the Hurst coefficient and the fractal dimension of
  the graph of a random field

@@ -147,8 +147,8 @@ CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid,
  Wackernagel, H. (1998) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 2nd edition.  
 }
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 %\note{}
 
 

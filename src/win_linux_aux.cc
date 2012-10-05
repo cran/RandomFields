@@ -1,7 +1,7 @@
 
 /* 
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  Collection of system specific auxiliary functions
 

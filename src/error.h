@@ -117,6 +117,7 @@
 #define ERRORNOMULTIVARIATE 102   /* vdim > 1 not allowed */
 #define ERRORMULTIMISMATCH 104    /* another multivariate dimension expected */
 #define ERRORAUXVECTOR 105    /* another multivariate dimension expected */
+#define ERRORANYFCT ERRORAUXVECTOR
 #define ERRORMEMORYALLOCATION 106 /* malloc returned NULL pointer */
 #define ERRORNOTINITIALIZED 107   /* key.active==false in DoSimulateRF; is only 
 				    checked there !!! */

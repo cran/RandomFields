@@ -135,8 +135,8 @@ eval.parameters(variable, entry, update, simulate, dev, create = TRUE,
   stops with an error message.
 }
 
-\author{Martin Schlather, \email{martin.schlather@math.uni-goettingen.de}
-  \url{http://www.stochastik.math.uni-goettingen.de/~schlather}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de}}
 
 %\seealso{\command{\link[SoPhy]{define.horizons}}, \command{\link[SoPhy]{SoPhy}}}
 \seealso{\command{\link{useraction}}}

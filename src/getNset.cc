@@ -2,7 +2,7 @@
 
 /* 
  Authors
- Martin Schlather, martin.schlather@math.uni-goettingen.de
+ Martin Schlather, schlather@math.uni-mannheim.de
 
  (library for simulation of random fields)
 
@@ -886,7 +886,7 @@ void addCov(aux_covfct auxcf)
   cov_fct *C = CovList + nr;
 
   assert(C->cov == ErrCov && C->nonstat_cov==ErrCovNonstat && 
-	 (C->stationary == AUXMATRIX || C->stationary == AUXVECTOR || true));
+	 (C->stationary == AUXMATRIX || C->stationary == ANYFCT || true));
   C->aux_cov = auxcf;
   if (C->derivs < 0) C->derivs = 0;
 }
