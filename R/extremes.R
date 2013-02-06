@@ -30,7 +30,7 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid, model, param,
         method <- "max.MPP"
       }
     }
-  } 
+  }
   
   return(InitSimulateRF(x=x, y=y, z=z, grid=grid, model=model, param=param,
                         trend=NULL, method=method, register=register,

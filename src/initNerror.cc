@@ -208,6 +208,8 @@ void errorMSG(int err, char* m) {
 	strcpy(m,"model not allowed for specified dimension");break;
       case ERRORFAILED: 
 	strcpy(m,"algorithm failed (partially)");break;
+      case ERRORFFT: 
+	strcpy(m,"error within Fourier transform"); break;
       case ERRORMEMORYALLOCATION: 
 	strcpy(m,"memory allocation error"); break;
       case ERRORNOTINITIALIZED: 
@@ -1219,8 +1221,6 @@ void InitModelList() {
 	       initstandard, dostandard, true, UNIVARIATE);
   addCov(tbm3, NULL, NULL);
   kappanames("n", REALSXP);
- 
-
 
   /*
   int UserMatrix =

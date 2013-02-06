@@ -52,6 +52,8 @@ This data frame contains the following columns:
 ##                                                            ##
 ################################################################
 
+\dontrun{
+
 # options(warn=2)
 
 data(soil)
@@ -152,6 +154,7 @@ for (i in 1:4)
 %dev.copy2eps(file="condsimu.eps", width=5, height=5)
 mean(apply(cs<=24, 3, all)) ## about 40 percent ...
 
+}
 }
 \keyword{datasets}
 

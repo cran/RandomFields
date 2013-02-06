@@ -26,16 +26,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
 #include "RF.h"
  
-#include <R_ext/Applic.h>
 #include <R_ext/Linpack.h>
 #include <R_ext/Utils.h>     
 #include <R_ext/Lapack.h> // MULT
+ 
 
 
 void FFT_NULL(FFT_storage *FFT) 
@@ -142,6 +141,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
 {
     long int inv, nseg, n,nspn,i;
   int maxf, maxp, err;
+  bool ok;
   if (first) {
    int maxmaxf,maxmaxp;
    nseg = maxmaxf =  maxmaxp = 1;
@@ -149,7 +149,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
 
    for (i = 0; i<dim; i++) {
      if (m[i] > 1) {
-       fft_factor(m[i], &maxf, &maxp);
+       fft_factor_(m[i], &maxf, &maxp);
        if (maxf == 0) {err=ERRORFOURIER; goto ErrorHandling;}	
        if (maxf > maxmaxf) maxmaxf = maxf;
        if (maxp > maxmaxp) maxmaxp = maxp;
@@ -177,8 +177,10 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
       nspn *= n;
       n = m[i];
       nseg /= n;
-      fft_factor(n, &maxf, &maxp);
-      fft_work(&(data[0]), &(data[1]), nseg, n, nspn, inv, FFT->work,FFT->iwork);
+      fft_factor_(n, &maxf, &maxp);
+      ok = (bool) fft_work_(&(data[0]), &(data[1]), nseg, n, nspn, inv,
+			   FFT->work, FFT->iwork);
+      if (!ok) {err=ERRORFFT; goto ErrorHandling;}
     }
   }
   return NOERROR;

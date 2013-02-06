@@ -8,6 +8,13 @@
 #define NDEBUG 1
 #include <assert.h>
  
+
+// Formerly in <R_ext/Applic.h>
+void fft_factor_(int n, int *pmaxf, int *pmaxp);
+Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn, int isn, 
+		  double *work, int *iwork);/* TRUE: success */
+
+
 #define print Rprintf
 #define PRINTF Rprintf
 #define RF_NAN NA_REAL 

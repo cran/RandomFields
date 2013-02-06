@@ -14,6 +14,7 @@
 				    function */
 #define ERRORFAILED 5            /* method didn't work for the specified 
 				    parameters */
+#define ERRORFFT 6 
 #define ERRORDECOMPOSITION 9     /* direct simulation; matrix inversion failed */
 #define ERRORPRECISION 10        /* direct simulation; matrix inversion didn't 
 				    reach the desired presicion */

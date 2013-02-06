@@ -115,16 +115,22 @@
   \url{http://ms.math.uni-mannheim.de};
   }
 \references{
-  This package is announced in and can be cited by:
-
-  Schlather, M. (2001) Simulation of stationary and isotropic random
-  fields. \emph{R-News} \bold{1} (2), 18-20. 
+  Singleton, R.C. (1979). In \emph{Programs for Digital Signal Processing} 
+  Ed.: Digital Signal Processing Committee and IEEE Acoustics,
+  Speech, and Signal Processing Committe (1979)
+  IEEE press.
 }
 \section{Acknowledgement}{
   Many thanks to 
   \itemize{
     %    \item Marco Oesting     
+    \item 
+    R Core Team making available the algoithm for fft (fft.c)
+    by Richard Singleton and advicing
     \item
+    Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA making available
+    an algorithm for AVL trees (avltr*)
+   \item
     Peter Menck implemented the multivariate circulant embedding
     for version 2.0. 
     \item
@@ -150,6 +156,7 @@
     data'' in 1999.
   }
 }
+
 \keyword{spatial}
 
 
