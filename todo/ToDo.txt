@@ -1,5 +1,0 @@
- multivariate = !true;  in circulant.cc
-
- natsc: spectral etc in operator.cc
-
- check ohneGatter etc und spectral2, etc.

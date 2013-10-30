@@ -1,5 +1,5 @@
 8037259fdbb64b81f1b7c07fa96a71d4 *Copyright
-ad3af2c70b7538cfc2753ad7db4dc1f5 *DESCRIPTION
+014cb0b8bcb9e7d19b4874786a0842c4 *DESCRIPTION
 8294c85471be8826b6997f0e26921419 *NAMESPACE
 60a184bd1cb0694dccf25ff3baf1608b *R/D.H.R
 3a483c5134e22acac2a3bcc516990b01 *R/MLE.R
@@ -62,10 +62,11 @@ f3fc9bdca830f04c9a1693c63933988d *src/D.H.cc
 ff64f3ca38322921e31f5674302bf0f2 *src/Gneiting.cc
 e5a2d3ff0ca5cb257e3b80b15c7c6dde *src/InternalCov.cc
 a3556df83cea152d440519a206b51fa6 *src/KeyInfo.cc
-b53d6f7781a1a30b8da036ce58b154a2 *src/MLE.cc
+7fd3d4da081d5db01835e810f75a7859 *src/MLE.cc
 15f4678a3aa7db5b6390d9c0502ad7f5 *src/MPP.cc
 5ef281ef128e91a6f294b890fac36bed *src/MPPFcts.cc
 db448ba8c2769253a339a477fa2db307 *src/MPPstandard.h
+81714b36f3462c129820f795bf78aaf2 *src/Makevars
 1a2c9c40ee92af54d074892cf551c528 *src/Makevars.in
 6201ef9b11620bcf535f9f17e4a410ab *src/Makevars.win
 4d217e0c4864c0ed5a06693da229343e *src/Primitive.cc
@@ -85,7 +86,7 @@ f635416ec90e702e19fcd55e852ce5b3 *src/empvario.cc
 a1efb3246ab632785bbe185f20dae008 *src/extremes.cc
 a26a9c322a37ba4c6a91503de5a373b0 *src/extremes.h
 18d128783f0961ffe07cdaaa6ba0858d *src/fft.cc
-5f3d17b1dfa016efe67af8de79ccdb3c *src/getNset.cc
+738b11aded51821f6b0b35284a538a3a *src/getNset.cc
 d710c2f6c8eb2e8655c2dead05350bfe *src/hyperplan.cc
 6503ba0f450d5f66748e458cd723c27b *src/includeMarkov.h
 656945cbd2c8de0d6e36fed62fc4111f *src/includeMarkov.h.in
@@ -101,7 +102,7 @@ e93d3954ab2b7d372fcab9864a94b9d6 *src/operator.cc
 5bff93b359986df85d38c3bd046e2399 *src/spatialMA.cc
 9c4ca5b4bc7f4552dfbfb20d775c1290 *src/spectral.cc
 a967e84bfd79313648e6d39e3ec8e79a *src/tbm.cc
-4189159ad31efbdecae7ae08b3f957b3 *src/userinterfaces.cc
+b0211acf74d505feb8c26af0ba4be2d9 *src/userinterfaces.cc
 02b3900a1fb4e099c4e81979d092d630 *src/win_linux_aux.cc
 634602955c57c54b309a14d2ff4054eb *src/win_linux_aux.h
 ce962ea9756b4fbf3c2ae5b9fdf21d78 *tests/RFtest.Cond.Simu.R
@@ -120,17 +121,3 @@ eb226670015754475f42e1c42d165e7f *tests/RFtest.stupid.R
 a77c63b8960e35e2c4f03a20acfca58c *tests/source.R
 d034f6635583df8a7a10abaab976d33a *tests/technical.report.positive.def.fcts.R
 454e415d1dd1d1ed9d8d2c71802a0f24 *tests/x.R
-2d6f09835ae24ded1c14b5e435b767f0 *todo/BR/BR.R
-aa84c19e686b8907506961f1c9bdab2c *todo/BR/BRmethods.Rd
-1dab4510aef618fa6f9de3f69ee68b89 *todo/ShowModels.R
-977c591444a99f113fd7de461fa0dc22 *todo/ToDo.txt
-422e05bc4b64f54d6d7c0578d561b164 *todo/tests/RFtest.Covariance.R
-5d638f11e772972b4a40c85e536d8a12 *todo/tests/RFtest.brown.space.time.R
-8e7ad3a529a0e6ed68c5e821de8d74ba *todo/tests/RFtest.mle2.R
-1a70e85400e02885a0c41ba4d3d27249 *todo/tests/RFtest.new.features.1.01.R
-b4c156421aa4222183816b94645526ed *todo/tests/RFtest.precision.R
-edb9866e0e42236e388dbe2dd5100971 *todo/tests/RFtest.precisionX.R
-b6401ca930fa9bdeaf081e596fa12964 *todo/tests/cokriging.R
-1478873a9bc9aa491c73b21ca5922435 *todo/tests/schrott/mle.old.R
-efd40c6d46886959b23bf75fe16013d6 *todo/tests/schrott/theta.1d.R
-b83f8beb8991651b53942a65591d1d7f *todo/tests/test.mle.R

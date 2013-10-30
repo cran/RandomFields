@@ -22,10 +22,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-extern "C" {
 #include <R.h>
 #include <Rdefines.h>
-}
 #include <R_ext/Linpack.h>
 #include <math.h>  
 #include <stdio.h>  

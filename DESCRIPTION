@@ -1,5 +1,5 @@
 Package: RandomFields
-Version: 2.0.65
+Version: 2.0.66
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Peter Menck [aut], Richard
         Singleton [ctb], Ben Pfaff [ctb], R Core team [ctb]
@@ -9,6 +9,7 @@ Description: Simulation of Gaussian and extreme value random fields;
         conditional simulation; kriging
 License: GPL (>= 2)
 URL: http://ms.math.uni-mannheim.de
-Packaged: 2013-02-06 08:12:41 UTC; schlather
+Packaged: 2013-10-30 09:00:51 UTC; ripley
 Repository: CRAN
-Date/Publication: 2013-02-06 09:48:50
+Date/Publication: 2013-10-30 10:02:36
+NeedsCompilation: yes
