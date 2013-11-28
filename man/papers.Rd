@@ -15,7 +15,7 @@
   \references{
     \itemize{
       \item
-    Gneiting, T., Kleiber, W.  and  Schlather, M. (2011) Matern
+    Gneiting, T., Kleiber, W.  and  Schlather, M. (2010) Matern
     cross-covariance functions for multivariate random fields 
     \emph{J. Amer. Statist. Assoc.} \bold{105}, 1167-1177.
     
@@ -229,7 +229,7 @@ save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
 
 ############################################################
 ##                                                        ##
-##    T. Gneiting, W. Kleiber, M. Schlather, JASA 2011    ##
+##    T. Gneiting, W. Kleiber, M. Schlather, JASA 2010    ##
 ##                                                        ##
 ############################################################
 

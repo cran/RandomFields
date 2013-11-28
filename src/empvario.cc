@@ -84,7 +84,7 @@ void empiricalvariogram(double *x, int *dim, int *lx,
 { 
   int i,ii,j,d,halfnbin,gridpoints[MAXVARIODIM],dimM1,EV_METHOD,err;   
   long totalpoints,totalpointsrepet, segment, 
-    factor = RF_NAN; 
+    factor = -1; 
   double (*characteristic)(double, double) = NULL;
   double *xx[MAXVARIODIM],maxdist[MAXVARIODIM],dd,*BinSq; 
 

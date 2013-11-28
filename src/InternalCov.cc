@@ -495,6 +495,9 @@ int checkS(cov_model *cov) {
   cov->nr = DOLLAR; // wegen nr++ unten !
   cov->manipulating_x = !true; // !! exception as treated directly
   
+  if ((p[DANISO] != NULL || p[DPROJ] != NULL)
+      && cov->isoIn != ANISOTROPIC) return ERRORANISO;
+ 
   // cov->q[1] not NULL then A has been given
 
   if (cov->q == NULL && cov->p[DALEFT]!=NULL) {

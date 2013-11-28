@@ -731,7 +731,7 @@
 
   biWM, parsbiWM
    \itemize{
-    \item Gneiting, T., Kleiber, W., Schlather, M. (2011)
+    \item Gneiting, T., Kleiber, W., Schlather, M. (2010)
     Matern covariance functions for multivariate random fields
     \emph{JASA}
   }

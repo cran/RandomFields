@@ -383,7 +383,7 @@ int loc_set(double *x, double *T,
     // correct value for higher dimensions (never used)
   }
   for (d=loc->timespacedim; d<MAXSIMUDIM; d++)
-      loc->length[d] = (int) RF_NAN; // 1
+    loc->length[d] = -1; // 1
 
   return NOERROR;
 }

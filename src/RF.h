@@ -3,7 +3,6 @@
 
 #include "auxiliary.h"
 #include "RandomFields.h"
-#include "includeMarkov.h"
 #include "error.h"
 #include <string.h>
 #include <R_ext/Complex.h>

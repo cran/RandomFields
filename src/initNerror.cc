@@ -390,7 +390,7 @@ the anisotropy matrices must be identical"); break;
 	   strcpy(m, "model can be called only by stationary arguments");
 	   break;
       case ERRORMARKOVNOTINCLUDED :
-	strcpy(m, "Simiulaton by Markov techniques not possible, since Havard Rue's library has not been included; see RandomFields/src/includeMarkov.h for installation instructions");
+	strcpy(m, "Simiulaton by Markov techniques not possible anymore");
 	  break;
       case ERRORNOVARIOGRAM:
 	strcpy(m, "Variogram model allowed in this context");

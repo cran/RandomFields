@@ -998,7 +998,7 @@ void CovMulti(double *x, double *y, int lx, cov_model *cov, double *value) {
   }
 
 ErrorHandling:
-  CovMatrixCol = CovMatrixRow = RF_NAN;
+  CovMatrixCol = CovMatrixRow = -1;
   if (Val!=NULL) free(Val);
   if (cross!=NULL) free(cross);
   if (z!=NULL) free(z);
@@ -1244,7 +1244,7 @@ void CovarianceMatrix(double *x, bool dist, int size, cov_model *cov,
   }
  
 
-  CovMatrixCol = CovMatrixRow = RF_NAN;
+  CovMatrixCol = CovMatrixRow = -1;
 }
 
 int check_within_range(cov_model *cov) {
