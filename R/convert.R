@@ -1,7 +1,187 @@
 
+InitModel <- function(reg, model, dim, NAOK=FALSE){
+  for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
+    vdim <- try(.Call("Init",
+                      MODEL.USER,
+                      model,
+                      matrix(nrow=dim, ncol=3, as.double(1:3)), ## nur dummies
+                      y, #y
+                      as.double(0), #T
+                      as.integer(dim), #spatdim
+                      FALSE, # grid
+                      FALSE, # distances
+                      FALSE, # Time
+                      NAOK=NAOK,
+                      PACKAGE="RandomFields"), silent=TRUE)
+    
+    if (is.numeric(vdim)) return(vdim)
+    msg <- strsplit(vdim[[1]], "\n")[[1]][2]
+    if (RFoptions()$general$printlevel >= PL.FCTN.ERRORS) cat(msg, "\n")
+  }
+  stop(msg)
+  ##  stop("model could not be initialized")
+}
 
-PrepareModel <-  function(model, param, trend=NULL, method=NULL,
-                          nugget.remove=TRUE) {
+rfSplitTrendAndCov <-
+  function(model, spatialdim, xdimOZ, Time,  forcedplus=FALSE,
+           cathegories=list(trend=DetTrendEffect : SpVarEffect),
+           remaining.name="cov") {
+  ## splittet additives modell in trend-Teil und cov-Teil auf
+
+  
+   info <- .Call("SetAndGetModelInfo",
+                 GetModelRegister("split"), list("Dummy", model),
+                 as.integer(spatialdim),
+                 FALSE,
+                 TRUE, ## in case it is a non-domain model
+                 as.logical(Time), 
+                 as.integer(xdimOZ), 
+                 MaxNameCharacter, FALSE, TRUE,
+                 PACKAGE="RandomFields")
+
+    
+  effect <- info$effect
+  
+  submodels <- list()
+  for (j in 1:(length(cathegories)+1)) submodels[[j]]<-list()
+  names(submodels) <- c(names(cathegories), remaining.name)
+
+  if ( !(model[[1]] %in% ZF_PLUS)) model<- list(ZF_SYMBOLS_PLUS, model)        
+
+  for (i in 2:length(model)) {
+    j<-1
+    while(j<=length(cathegories) && !(effect[i-1] %in% cathegories[[j]])) {
+      j <- j+1
+    }
+    submodels[[j]][[length(submodels[[j]])+1]] <- model[[i]]
+  }
+
+  for (j in 1:(length(cathegories)+1)) {
+    if (length(submodels[[j]]) > 1 ||
+        (forcedplus && length(submodels[[j]])>0)) { # geaendert 2.11.11
+      submodels[[j]] <- c(ZF_SYMBOLS_PLUS,  submodels[[j]])
+    } else if (length(submodels[[j]])==1) {
+      submodels[[j]] <- submodels[[j]][[1]]
+    }
+  }
+  submodels[sapply(submodels, length)==0] <- NULL
+  return(submodels)
+}
+
+
+StandardSimpleModel <- function(model, tsdim, aniso=TRUE, addnugget=TRUE, ...) {    ## bei mixed model ist eine zweite Ebene von '+' vorhanden
+  ## einfache mixed model koennen aber wie Simple behandelt werden
+  ## die zweite '+'-Ebene wird hier aufgeloest:
+  ##
+  ## Nun koennten noch Namen fuer die Untermodelle vergeben worden sein.
+  ## Wenn dann "unlist" aufgerufen wird, werden die namen der Ober- und
+  ## Untermodelle zu einem gemeinsamen Namen verbunden, der dann nicht
+  ## mehr als als submodel-Name erkannt wird. Also hilft nur alle
+  ## (potentiellen) Namen zu loeschen:
+  if (model[[1]] %in% ZF_PLUS) {
+    submodels <- sapply(model[-1], function(x) x[[1]])
+    plus <- submodels %in% ZF_PLUS
+    if (any(plus)) {
+      plus <- which(plus) + 1
+      subs <- lapply(model[plus], function(x) x[-1])
+      names(subs) <- NULL
+      subs <- unlist(subs, recursive=FALSE)
+      names(subs) <- NULL
+      trend <- model[-plus]
+      names(trend) <- NULL      
+      model <- c(trend, subs)
+      ## Print(model,trend,subs); xxx
+    }
+  } 
+
+ # Print("SSM X", model)
+
+  model <- PrepareModel2(model, ...)
+  storage.mode(tsdim) <- "integer"
+ # userdefined <- GetParameterModelUser(model)
+  
+  vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE)
+  if (!is.numeric(vdim) || vdim > 1) return("model not univariate")
+  model <- GetModel(register=MODEL.USER) # , do.notreturnparam=TRUE)
+  .C("DeleteKey", MODEL.USER)
+
+  s <- rfSplitTrendAndCov(model=model, spatialdim=tsdim, xdimOZ=tsdim,
+                          Time=FALSE, forcedplus=TRUE,
+                          cathegories=list(simple=c(Primitive:Simple),
+                            trend=DetTrendEffect:FixedTrendEffect),
+                          remaining.name="cov")
+  
+  ##  Print(model, s, s$cov, s$simple)
+  
+  ## Print(model, s); #hhhh
+  
+  if (!is.null(s$cov) || length(s$simple)>3)
+    return("model is too complex to be simple")
+  if (length(s$simple) <= 1) return("model is too primitive")
+  s <- s$simple
+
+  for (i in 2:length(s)) {
+    if (! (s[[i]][[1]] %in% DOLLAR)) s[[i]] <- list(DOLLAR[1], var=1, s[[i]])
+  }
+  if (length(s)==2 && !(s[[2]][[length(s[[2]])]][[1]] %in% ZF_NUGGET)
+              && addnugget){
+    ## assuming nugget is missing
+    s[[3]] <- list(DOLLAR[1], var=0, list(ZF_NUGGET[2]))
+  }
+
+  if (length(s) == 3) {  ## [[1]] is '+'
+    if (s[[2]][[length(s[[2]])]][[1]] %in% ZF_NUGGET) {
+      s[2:3] <- s[3:2] ## [[1]] is '+'
+    }
+    if (s[[2]][[length(s[[2]])]][[1]] %in% ZF_NUGGET)
+      return("nugget model given twice")
+    if (!(s[[3]][[length(s[[3]])]][[1]] %in% ZF_NUGGET))
+      return("simple model must the sum of some domain and isotropic model and a nugget effect")
+     if (length(c(s[[3]]$scale, s[[3]]$Aniso, s[[3]]$aniso, s[[3]]$proj)) > 0)
+       return("nugget contains scale and/or anisotropic elements")
+  }
+  if (length(c(if (!aniso) s[[2]]$aniso, s[[2]]$Aniso, s[[2]]$proj)) > 0)
+    return("model is a complicated scale structure")
+       
+  return(s)
+}
+
+
+PrepareModel2 <- function(model, ...) {
+  if (missing(model) || is.null(model)) stop("'model' must be given.")
+  m <- parseModel(model, ...)
+  
+  #if (!is.list(model))
+      
+#  if (class(try(all.equal(parseModel(list2RMmodel(m)), m, check.attr=FALSE)))=="try-error"){
+#    print("AlexWarning in PrepareModel2: ruecktrafo via list2RMmodel waere falsch oder nich dasselbe ... bitte model mir zuschicken")
+#    print("doppelt hin und zurueck:")
+#    print(try(all.equal(parseModel(list2RMmodel(parseModel(list2RMmodel(m)))), parseModel(list2RMmodel(m)), check.attr=FALSE)))
+#  }
+
+  if (notplus <- !(m[[1]] %in% ZF_PLUS)) m <- list(ZF_SYMBOLS_PLUS, m)
+     
+  for (i in 2:length(m)) {
+    if ((m[[i]][[1]] %in% ZF_MIXED) && length(m[[i]]$X)==1 &&
+        is.numeric(m[[i]]$X) && m[[i]]$X==1 && !is.null(m[[i]]$b)) {        
+      m[[i]] <- list(ZF_TREND[2], mean=m[[i]]$b)
+      if (RFoptions()$general$printlevel > PL.IMPORPANT)
+        message(paste("The '1' in the mixed model definition has been replaced by '", ZF_TREND[1], "(mean=", m[[i]]$mean, ")'.", sep=""))
+      }
+  }
+    
+  return(if (notplus) m[[2]] else m)
+
+#  if (class(model) != "formula") {
+#    if (is.list(model)) return(model)
+#    else stop("model of unknown form -- maybe you have used an obsolete definition. See ?RMmodel for the model definition")
+#  }
+#  return(listmodel)
+}
+
+
+PrepareModel <-  function(model, param, trend=NULL, 
+                          nugget.remove=TRUE, method=NULL) {
   ## any of the users model definition (standard, nested, list) for the
   ## covariance function is transformed into a standard format, used
   ## especially in the c programs
@@ -9,30 +189,36 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
   ## overwrites in some situation the simulation method for nugget.
   ## allows trend to be NA (or any other non finite value  -- is not checked!)
   ## trend has not been implemented yet!
+
+  if (is(model, ZF_MODEL))
+    stop("models of class ZF_MODEL cannot be combined with obsolete RandomFields functions")
+
+  if (!is.null(method)) stop("to give method in PrepareModel is obsolete")
+  
+  if (!is.null(trend))      
+     if (!is.numeric(trend) || length(trend)!=1)
+        stop("in the obsolete setting, only constant mean can used")
  
   if (is.list(model) && is.character(model[[1]]) &&
       (is.null(names(model)) || names(model)[[1]]=="")) {
-    if (!is.null(method)) {
-      if (!is.null(model$method)) stop("method given twice")
-      model <- c(model[1], method = method, model[-1])
-    }
-    if(!missing(param) && !is.null(param))
-      stop("param cannot be given in the extended definition")
-    return(list(model=model, trend=trend))
+     if (!missing(param) && !is.null(param))
+        stop("param cannot be given in the extended definition")
+     if (is.null(trend)) return(model)
+     trend <- list(ZF_TREND[2], mean=trend)
+     if (model[[1]] %in% ZF_PLUS) return(c(model, list(trend)))
+     else return(list(ZF_SYMBOLS_PLUS, model, trend))
   }
     
-#  PrintLevel <- RFparametersrf()$Print
-  PrintLevel <- 2
+  printlevel <- RFoptions()$general$printlevel
   STOP <- function(txt) {
-    if (PrintLevel>1) {
+    if (printlevel>=PL.FCTN.ERRORS) {
       cat("model: ")
       if (!missing.model) Print(model) else cat(" missing.\n") #
       cat("param: ")
       if (!missing.param) Print(param) else cat(" missing.\n") #
       cat("trend: ")
       Print(trend) # 
-      Print(method) #
-    }
+     }
     stop("(in PrepareModel) ", txt, call.=FALSE)
   }
    
@@ -40,19 +226,18 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
     if (!is.list(model)) {
       STOP("some elements of the model definition are not lists")
     }
-    m <- list("$", var=model$v)
+    m <- list(DOLLAR[1], var=model$v)
     lm <- length(model) - 3 # var, scale/aniso, name
     if (!is.null(model$a)) m$aniso <- model$a else m$scale <- model$scale
-    model <- c(model, if (!is.null(model$a))
-               list(aniso=model$a) else list(scale=model$s)) ## ???
-    if (is.na(p <- pmatch("meth", names(model), duplicates.ok=TRUE))) {
-      if (!is.null(method)) m$method <- method
-    } else {
-      if (length(p) > 1) STOP("method may be given only once")
-      lm <- lm - 1
-      m$method <- model$meth
-      model[[p]] <- NULL
-    }
+##    model <- c(model, if (!is.null(model$a))
+##               list(aniso=model$a) else list(scale=model$s)) ## ???
+
+## Print(m, model, lm)
+    
+    if (!is.na(p <- pmatch("meth", names(model), duplicates.ok=TRUE))) {
+      if (printlevel>=PL.FCTN.ERRORS)  Print(p, model)
+      stop("method cannot be given with the model anymore. It must be given as a parameter to the function. See RFoptions and RFsimulate")
+     }
   
     if (!is.null(model$me))
       stop("'mean' seems to be given within the inner model definitions"); 
@@ -68,7 +253,7 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
       }
     }
     if (lm != 0) {
-      Print(lm, model) 
+      if (printlevel>=PL.FCTN.ERRORS) Print(lm, model) 
       stop("some parameters do not fit")
     }
     m <- c(m, list(m1))
@@ -78,12 +263,13 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
     
   } # end transform
 
-  op.list <- c("+", "*")  ## if others use complex list definition !
+  op.list <- c(ZF_SYMBOLS_PLUS, ZF_SYMBOLS_MULT)  ## if others use complex list definition !
   missing.model <- missing(model)
   missing.param <- missing(param) || is.null(param)
 
   if (full.model <- missing.param && is.null(model$param)) { ## full model
-    warning("the sequential list format is depreciated.")
+    if (RFoptions()$warn$oldstyle)
+      warning("the sequential list format is depreciated.")
     if (missing.model || (length(model)==0)) model <- list()
     else if (!is.list(model))
       STOP("if param is missing, model must be a list of lists (or a list in the extended notation)")
@@ -91,12 +277,8 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
       STOP("trend/mean is given twice")
     if (!is.null(model$mean)) trend <- model$mean else
     if (!is.null(model$trend)) trend <- model$trend else trend <- NULL
-    if (!is.null(model$meth)) {
-      if (!is.null(method)) STOP("method is given twice")
-      method <- model$meth
-    }
 
-    model$trend <- model$mean <- model$meth <- NULL
+    model$trend <- model$mean <- NULL
     ## the definition might be given at a deeper level as element
     ## $model of the list:
     if (is.list(model$model)) {
@@ -104,11 +286,16 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
         STOP("if param is missing, the model$model must be a list of lists")
       model <- model$model
     }
-    if (length(model)==0) ## deterministic 
-      return(list(model=list(), trend = trend))
+    if (length(model)==0) { ## deterministic      
+      return(if (is.null(trend)) NULL else list(ZF_TREND[2], mean=trend))
+    }
     if (length(model) %% 2 !=1) STOP("list for model definition should be odd")
     if (length(model)==1)
-      return(list(model = transform(model[[1]]), trend=trend))
+      return(if (is.null(trend) ||
+                 is.numeric(trend) && length(trend)==1 && !is.na(trend)&&trend==0)
+             transform(model[[1]]) 
+             else list(ZF_SYMBOLS_PLUS, transform(model[[1]]),
+                       list(ZF_TREND[2], mean=trend)));
 
     op <- pmatch(c(model[seq(2, length(model), 2)], recursive=TRUE),
                  op.list, duplicates.ok=TRUE) - 1
@@ -120,21 +307,19 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
       m <- list("*", lapply(model, transform))
     } else {
       plus <- c(0, plus, length(op)+1)
-      m <- list("+")
+      m <- list(ZF_SYMBOLS_PLUS)
       for (i in 1:(length(plus) - 1)) {
         m[[i+1]] <-
           if (plus[i] + 1 == plus[i+1]) transform(model[[plus[i] + 1]])
-          else list("*", lapply(model[(plus[i] + 1) : plus[i+1]], transform))
+          else list(ZF_SYMBOLS_MULT,
+                    lapply(model[(plus[i] + 1) : plus[i+1]], transform))
       }
     }
-   model <- m     
+   model <- m
   } else { ## standard definition or nested model
     if (missing.param) { ## a simple list of the model and the
       ##                    parameters is also possible
       if (is.null(param <- model$p)) STOP("is.null(model$param)")
-      stopifnot(is.null(method) || is.null(model$meth))
-      if (is.null(method))
-        if (!is.null(model$meth)) method <- model$meth
       stopifnot(is.null(trend) || is.null(model$trend))
       if (is.null(trend)) trend <- model$trend
       if (!is.null(model$mean)) {
@@ -143,170 +328,376 @@ PrepareModel <-  function(model, param, trend=NULL, method=NULL,
       }
       model <- model$model
     }
-    if (length(method)>1) STOP("only one method should be given")
     stopifnot(is.character(model), length(model)==1)
     if (is.matrix(param)) { ## nested
       if (nrow(param) == 1)
         return(PrepareModel(model=model, param=c(param[1], 0, param[-1]),
-                            trend=trend, method=method))
+                            trend=trend))
       name <- model
-      model <- list("+")#, method=method)
+      model <- list(ZF_SYMBOLS_PLUS)#, method=method)
       for (i in 1:nrow(param)) {
         model <- c(model,
                    if (is.na(param[i, 2]) || param[i, 2] != 0)
-                   list(list("$", var=param[i, 1], scale=param[i, 2],
+                   list(list(DOLLAR[1], var=param[i, 1], scale=param[i, 2],
                              if (ncol(param) >2) list(name, k=param[i,-1:-2])
                              else list(name)))
-                   else list(list("$", var=param[i,1], list("nugget"))))
+                   else list(list(DOLLAR[1], var=param[i,1],
+                                  list(ZF_NUGGET[2]))))
       }
     } else if (is.vector(param)) {  ## standard, simple way
       ## falls trend gegeben, dann ist param um 1 Komponente gekuerzt
       if (is.null(trend)) {
         trend <- param[1]
         param <- param[-1]
-      } else warning("it is assumed that no mean is given so that the first component of param is the variance")
-      if (model == "nugget") {
+      } else message("It is assumed that no mean is given so that the first component of param is the variance")
+      if (model == ZF_NUGGET[2]) {
         model <- transform(list(model=model, var=sum(param[1:2]), scale=1)) 
       } else {
         if  (length(param) > 3)
           model <- transform(list(model=model, var=param[1], scale=param[3],
-                                  k=param[-1:-3], method=method))
+                                  k=param[-1:-3]))
         else 
-          model <- transform(list(model=model, var=param[1], scale=param[3],
-                                  method=method))
+          model <- transform(list(model=model, var=param[1], scale=param[3]))
         if (is.na(param[2]) || param[2] != 0 || !nugget.remove) {# nugget
-          model <- list("+",
+          model <- list(ZF_SYMBOLS_PLUS,
                         model,
-                        transform(list(model="nugget", var=param[2], scale=1)))
+                        transform(list(model=ZF_NUGGET[2], var=param[2], scale=1)))
         }
         ## if (!is.null(method)) model <- c(model, method=method) ## doppelt
       }
     } else stop("unknown format")  # end nested/standard definition
   }
-  return(list(model = model, trend=trend))
+
+  return(if (is.null(trend) ||
+             is.numeric(trend) && length(trend)==1 &&  !is.na(trend) &&trend==0)
+         return(model)
+         else if (model[[1]] %in% ZF_PLUS)
+                 c(model, list(list(ZF_TREND[2], mean=trend)))
+         else list(ZF_SYMBOLS_PLUS, model, list(ZF_TREND[2], mean=trend)))
 }
 
 
+seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
+  xx <- matrix(nrow=3, ncol=length(x))
+  step0 <- rep(FALSE, length(x))
+  
+  for (i in 1:length(x)) {
+    if (length(x[[i]]) == 1) {
+      xx[,i] <- c(x[[i]], 0, 1)
+      next
+    }
+    step <- diff(x[[i]])
+    if (step[1] == 0.0) {
+      ok <- step0[i] <- all(step == 0.0)
+    } else {
+      ok <- max(abs(step / step[1] - 1.0)) <= gridtolerance
+    }
+
+    if (!ok) {
+      if (missing(grid)) return(FALSE)
+
+      stop(paste(sep="", name, "= (",
+                 paste(x[[i]][1:min(100, length(x[[i]]))], collapse=", "),
+                 ")\ndiff = (",
+                 paste(step[1:min(100,length(step))], collapse=", "),
+                 ")\nDifferent grid distances detected, but the grid must ",
+                 "have equal distances in each direction -- if sure that ",
+                 "it is a grid, increase the value of 'gridtolerance'.\n"))
+    }
+
+    ## return(c(x[1], x[length(x)]+0.001*step[1], step[1]))
+    ##       Print(c(x[1], step[1], length(x)))
+    xx[,i] <- c(x[[i]][1], step[1], if (step0[i]) 1 else length(x[[i]]))
+  }
+
+  if (missing(grid) && warn.ambiguous && length(x) > 1) {
+    RFoptions(warn.ambiguous = FALSE)
+    message("Ambiguous interpretation of coordinates. Better give 'grid=TRUE' explicitly. (This message appears only once per session.)")
+  }
+
+  if (any(step0)) {
+    if (all(step0)) {
+      if (missing(grid)) return(FALSE)
+      else stop("Within a grid, the coordinates must be distinguishable")
+    } else {
+      if (missing(grid) && warn.ambiguous) {
+        RFoptions(warn.ambiguous = FALSE)
+        warning("Interpretation as degenerated grid. Better give 'grid' explicitely. (This warning appears only once per session.)")
+      }
+    }
+  }
+
+  return(xx)
+}
 
 
-CheckXT <- function(x, y, z, T, grid, gridtriple){
- 
+CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
+                    y.ok = FALSE, 
+                    printlevel = RFoptions()$general$printlevel){
+
   ## converts the given coordinates into standard formats
   ## (one for arbitrarily given locations and one for grid points)
+  
+  if (!missing(distances)) {
+    stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
+              missing(grid) || length(grid)==0,
+              missing(x) || is.null(x),
+              missing(y) || is.null(y),
+              missing(z) || is.null(z),
+              missing(T) || is.null(T))
 
+    
+    if (class(distances) == "dist") {
+      x <- as.vector(distances)
+      l <- length(x)
+    } else if (is.matrix(distances) || is.vector(distances)) {
+      if (is.matrix(distances)) {        
+        len <- nrow(distances)
+        if (is.null(spdim)) spdim = ncol(distances)
+        else if (spdim != ncol(distances))
+          stop("matrix of distances does not fit the given dimension")
+      } else {
+        len <- length(distances)
+        if (is.null(spdim))
+          stop("spdim is not given although 'distances' are used")
+      }
+      x <- distances
+      l <- as.integer(1e-9 + 0.5 * (1 + sqrt(1 + 8 * len)))
+      if (l * (l-1) / 2 != len)
+        stop("number of given 'distances' is incorrect.")
+    } else {
+      stop("'distances' not of required format.")
+    }
+
+    return(list(x=as.matrix(x),
+                T=NULL, 
+                Time=FALSE,
+                restotal = l,
+                l = l,
+                spacedim=spdim,
+                grid = FALSE,
+                distances = TRUE
+                )
+           )
+  }
+
+  stopifnot(!missing(x))
+  
+  RFopt <- RFoptions()
+
+  if (missing(grid) && !missing(length.data)) {
+    new <-  try(CheckXT(x=x, y=y, z=z, T=T, grid=TRUE, distances=distances,
+                        spdim=if (!missing(spdim)) spdim,
+                        length.data = length.data, y.ok =y.ok,
+                        printlevel = printlevel
+                        ), silent=TRUE)
+    if (grid <- (class(new) != "try-error")) {
+      ratio <- length.data / new$restotal
+
+   # Print(new, ratio, length.data, x)
+      
+      if (grid <- ratio == as.integer(ratio)) {
+        if (printlevel>=PL.IMPORPANT && new$spacedim > 1)
+          message("Grid detected. If it is not a grid, set grid=FALSE.\n")
+      }
+    }
+    return(if (grid) new else { CheckXT(x, y, z, T, grid=FALSE, distances,
+                                        if (!missing(distances)) spdim=1,
+                                        length.data = length.data,
+                                        printlevel = printlevel) }
+           )
+  } # if (missing(grid) && !missing(length.data))
+  
+
+  if (!missing(spdim) && !is.null(spdim))
+    stop("'dim' should be given only when 'distances' are given")
+  gridtriple <- FALSE
+
+  ## if (!missing(x)) {  ## missing(x) ist hier immer FALSE 
+  ##  Print(x)
+  if (is.GridTopology <- is(x, "GridTopology")){
+    x <- rbind(x@cellcentre.offset,
+               x@cellsize,
+               x@cells.dim)
+    if (missing(grid)) grid <- TRUE else stopifnot(grid)
+    gridtriple <- TRUE
+  }
+  ##else {
+  ##  is.GridTopology <- FALSE
+  ##}
+
+  
   if (is.data.frame(x)) {
     if (ncol(x)==1) x <- as.vector(x) else x <- as.matrix(x)
   }
-  stopifnot(length(x) != 0, #, !grid || is.logical(gridtriple),
-            all(is.finite(x)), all(is.finite(y)), all(is.finite(z))
-  )
-  ## if (grid && !gridtriple) convert (x,y,z) to list(x,y,z)
-  ## else to matrix cbind(x,y,z)
-  if (missing(grid) && gridtriple) grid <- TRUE
+  
+  stopifnot(all(unlist(lapply(as.list(x), FUN=function(li) is.numeric(li)))))
+  stopifnot(length(x) != 0) 
+  stopifnot(all(is.finite(x)), all(is.finite(y)), all(is.finite(z)))
+            
+  
   if (is.matrix(x)) {
     if (!is.numeric(x)) stop("x is not numeric.")
-    if (!is.null(y) || !is.null(z)) 
-      stop("If x is a matrix, then y and z may not be given")
+    if (!is.null(z)) stop("If x is a matrix, then z may not be given")
+    if (!is.null(y)) {
+      if (!y.ok) stop("If x is a matrix, then y may not be given")
+      if (!is.null(T))
+        stop("If x is a matrix and y is given, then T may not be given")
+      if (!is.matrix(y) || ncol(y) != ncol(x) ||
+          nrow(x)==3 && nrow(y)!=3 && (missing(grid) || grid))
+        stop("y does not match x (it must be a matrix)")
+    }
     spacedim <- ncol(x)
+
     len <- nrow(x)
-    if (missing(grid) && spacedim==1) {
-      dx <- diff(x)
-      grid <- max(abs(diff(dx))) < dx[1] * 1e-12
-    } else {
-      stopifnot(is.logical(grid))
-      if (missing(gridtriple)) gridtriple <- len==3
-    } 
-    if (grid && !gridtriple)
-      ## list with columns as list elements -- easier way to do it??
+    if (spacedim==1 && len != 3 && missing(grid)) {
+      if (length(x) <= 2) grid <- TRUE
+      else {
+        dx <- diff(x)
+        grid <- max(abs(diff(dx))) < dx[1] * RFopt$general$gridtolerance
+      }
+    } # else {
+    if (missing(grid) && apply(x, 2, function(z) (length(z) <= 2) ||
+                               (max(abs(diff(diff(z))))
+        > RFopt$general$gridtolerance)))
+      grid <- FALSE      
+    if (missing(grid) || !is.logical(grid)) {
+      grid <- TRUE
+      if (spacedim > 1 && RFopt$warn$ambiguous) {
+        RFoptions(warn.ambiguous = FALSE)
+        warning("Ambiguous interpretation of the coordinates. Better give the logical parameter 'grid=TRUE' explicitely. (This warning appears only once per session.)")
+      }
+    }
+    if (grid && !is.GridTopology) {
+      if (gridtriple <- len==3) {
+        if (printlevel >= PL.SUBIMPORPANT && RFopt$warn$oldstyle) {
+          message("x was interpreted as a gridtriple; the new gridtriple notation is:\n  1st row of x is interpreted as starting values of sequences,\n  2nd row as step,\n 3rd row as number of points (i.e. length),\n  in each of the ", ncol(x), " directions.")
+        } 
+      } else len <- rep(len, times=spacedim)   # Alex 8.10.2011
+    }
+    if (grid && !gridtriple) {
+      ## list with columns as list elements -- easier way to
+      ## do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
+      if (!is.null(y)) y <- lapply(apply(y, 2, list), function(r) r[[1]])
+    }
   } else { ## x, y, z given separately 
-    if (is.null(y) && !is.null(z)) stop("y is not given, but z")
+   if (is.null(y) && !is.null(z)) stop("y is not given, but z")
     xyzT <- list(x=if (!missing(x)) x, y=if (!missing(y)) y,
                  z=if (!missing(z)) z, T=if (!missing(T)) T)
     for (i in 1:4) {
       if (!is.null(xyzT[[i]]) && !is.numeric(xyzT[[i]])) {
-        if (RFparameters()$Print>0) 
-          warning(paste(names(xyzT)[i],
-                        "not being numeric it is converted to numeric"))
+        if (printlevel>PL.IMPORPANT) 
+          message(names(xyzT)[i],
+                  " not being numeric it is converted to numeric")
         assign(names(xyzT)[i], as.numeric(xyzT[[i]]))
       }
     }
     remove(xyzT)
     spacedim <- 1 + (!is.null(y)) + (!is.null(z))
-    if (missing(grid) && spacedim==1) {      
-      dx <- diff(x)
-      grid <- gridtriple || (max(abs(diff(dx))) < dx[1] * 1e-12)
-    } else {
-      stopifnot(is.logical(grid))
-      if (missing(gridtriple)) gridtriple <- length(x) == 3
+    if (spacedim==1 && (missing(grid) || !grid)) {
+      ## ueberschreibt Einstellung des Nutzers im Falle d=1
+      if (length(x) <= 2) newgrid <- TRUE
+      else {
+        dx <- diff(x)
+        newgrid <- max(abs(diff(dx))) < dx[1] * RFopt$general$gridtolerance
+      }
+      if (missing(grid)) grid <- newgrid
+      else if (xor(newgrid, grid))
+        message("coordinates", if (grid) " do not",
+                " seem to be on a grid, but grid =", grid)
     }
-    len <- c(length(x), length(y), length(z))[1:spacedim] 
-    if (!grid || gridtriple) {
-      if (any(diff(len) != 0))
-        stop(if (gridtriple)
-             "some of x, y, z are neither NULL nor have length 3" else
-             "some of x, y, z differ in length")
+    len <- c(length(x), length(y), length(z))[1:spacedim]
+    
+    if (!missing(grid) && !grid) { ## sicher nicht grid, ansonsten ausprobieren
+      if (any(diff(len) != 0)) stop("some of x, y, z differ in length")
       x <- cbind(x, y, z)
       ## make a matrix out of the list
       len <- len[1]
     } else {
-      x <- list(x,y,z)[1:spacedim]
+      if (missing(grid) && any(len != len[1])) grid <- TRUE
+      x <- list(x, y, z)[1:spacedim]
     }
-    y <- z <- NULL
-  }
+    y <- z <- NULL ## wichtig dass y = NULL ist, da unten die Abfrage
+  }  ## end of x, y, z given separately 
 
+  ##Print(grid,  gridtriple, tryCatch(dim(x), error=function(e) "err"), len)
+  
   if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
-  if (grid) {
+
+  
+  if (missing(grid) || grid) {
     if (gridtriple) {
       if (len != 3)
         stop("In case of simulating a grid with option gridtriple, exactly 3 numbers are needed for each direction")
-      lr <- apply(x, 2, function(r) length(seq(r[1],r[2],r[3])))
-      x[2,] <- x[1,] + (lr - 0.999) * x[3,] ## since own algorithm recalculates
+      lr <- x[3,] # apply(x, 2, function(r) length(seq(r[1], r[2], r[3])))
+      ##x[2,] <- x[1,] + (lr - 0.999) * x[3,] ## since own algorithm recalculates
       ##                               the sequence, this makes sure that
       ##                               I will certainly get the result of seq
       ##                               altough numerical errors may occurs
-      total <- prod(lr)
-    } else {
-      eqdist <- function(x) {
-        step <- diff(x)
-        if (any(step == 0.0))
-          stop("duplicated values detected: the definition of coordinates does not seem to define a grid of equidistant coordinates")
-        if (max(abs(step / step[1] - 1.0)) > 1e-13) {
-          diffx <- round(diff(diff(x)))
-          Print(x[1:min(10000, length(x))], diffx[1:min(10000,length(diffx))], 14)
-          stop("different grid distances detected, but the grid must have equal distances in each direction -- try gridtriple=TRUE that avoids numerical errors.")
-        }
-        return(c(x[1], x[length(x)]+0.001*step[1], step[1]))
+      restotal <- prod(x[3, ])
+      if (!is.null(y) && !all(y[3,] == x[3,]))
+        stop("the grids of x and y do not match ")        
+    } else {     
+      xx <- seq2grid(x, "x",  grid,
+                     RFopt$warn$ambiguous, RFopt$general$gridtolerance)
+  #    Print(xx, x, grid); ddd
+      if (!is.null(y)) {
+        yy <- seq2grid(y, "y", grid,
+                       RFopt$warn$ambiguous, RFopt$general$gridtolerance)
+        if (xor(is.logical(xx), is.logical(yy)) ||
+            (!is.logical(xx) && !all(yy[3,] == xx[3,])))
+          stop("the grids for x and y do not match")      
       }
-      total <- prod(len)
-      x <- sapply(x, eqdist)
-      len <- 3
+      if (missing(grid)) grid <- !is.logical(xx)       
+      if (grid) {
+        x <- xx
+        if (!is.null(y)) y <- yy
+        restotal <- prod(len)
+        len <- 3
+      } else {
+        x <- sapply(x, function(z) z)
+        if (!is.null(y)) y <- sapply(y, function(z) z)
+      }
     }
-    if (any(x[3, ] <= 0)) {
-      Print(x)    
-      stop("step must be postive")
-    }
+    if (grid && any(x[3, ] <= 0))
+      stop(paste("step must be postive. Got as steps", x[3,]))
     ##if (len == 1) stop("Use grid=FALSE if only a single point is simulated")
-  } else {
-    total <- nrow(x)
-    if (total < 200 && any(as.double(dist(x)) == 0)) {## 2000
-      d <- as.matrix(dist(x))
-      diag(d) <- 1
-      idx <-  which(as.matrix(d) ==0)
-      Print(x, dim(d), idx , cbind( 1 + ((idx-1)%% nrow(d)),
-                                   1 + as.integer((idx - 1)  / nrow(d))) )
-      stop("locations must be distinguishable")
-   }
-    ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
- }
+  }
+
+  stopifnot(!missing(grid))
+  
+  if (!grid) { ## not grid
+    restotal <- nrow(x)
+    if (is.null(y)) {
+      if (restotal < 200 && any(as.double(dist(x)) == 0)) {## 2000
+        d <- as.matrix(dist(x))
+        diag(d) <- 1
+        idx <-  which(as.matrix(d) ==0)
+        if (printlevel>PL.FCTN.ERRORS)
+          Print(x, dim(d), idx , cbind( 1 + ((idx-1)%% nrow(d)), #
+                                       1 + as.integer((idx - 1)  / nrow(d))) )
+        stop("locations must be distinguishable")
+      }
+      ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
+    }
+  }
   
   if (Time <- !is.null(T)) {
-    stopifnot(length(T)==3)
-    lT <- length(seq(T[1],T[2],T[3]))
-    T[2] <- T[1] + (lT - 0.999) * T[3]
-    total <- total * lT
+    if (length(T)!=3) stop("length(T) == 3 is not TRUE. Note that for the time component R,\nthe gridtriple notation c(start, step, length) must be used.")
+    #lT <- length(seq(T[1],T[2],T[3]))
+    #T[2] <- T[1] + (lT - 0.999) * T[3]
+    restotal <- restotal * T[3]
   }
-  return(list(x=x, T=T, Time=Time, total=total, l=len, spacedim=spacedim,
-              grid=grid))
-}
 
+  storage.mode(x) <- "double"
+  if (is.null(y)) {
+    return(list(x=x, T=T, Time=Time, restotal=restotal, l=len,
+                spacedim=spacedim, grid=grid, distances=FALSE))
+  } else {
+    storage.mode(y) <- "double"
+    return(list(x=x, y=y, T=T, Time=Time, restotal=restotal, l=len,
+                spacedim=spacedim, grid=grid, distances=FALSE))
+  }
+  
+}

@@ -1,14 +1,15 @@
 Package: RandomFields
-Version: 2.0.71
+Version: 3.0.5
 Title: Simulation and Analysis of Random Fields
-Author: Martin Schlather [aut, cre], Peter Menck [aut], Richard Singleton [ctb], Ben Pfaff [ctb],  R Core Team [ctb]
+Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Peter Menck [aut], Sebastian Gross [aut], Katharina Burmeister [ctb], Juliane Manitz [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
-Depends: R (>= 2.10)
+Depends: R (>= 3.0.2), sp
+Suggests: tcltk2, tcltk, tkrplot, spam, methods
 Description: Simulation of Gaussian and extreme value random fields;
-        conditional simulation; kriging
-License: GPL (>= 2)
+	      conditional simulation; kriging; maximum likelihood estimation
+License: GPL (>= 3)
 URL: http://ms.math.uni-mannheim.de
-Packaged: 2013-11-28 08:02:02 UTC; schlather
-Repository: CRAN
-Date/Publication: 2013-11-28 11:29:03
+Packaged: 2013-12-04 20:15:16 UTC; schlather
 NeedsCompilation: yes
+Repository: CRAN
+Date/Publication: 2013-12-05 08:25:03

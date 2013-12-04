@@ -117,33 +117,32 @@ hostname<-function(){.C("hostname", h=paste(seq(0,0,l=100), collapse=""),
 pid <- function() {.C("pid", i=integer(1), PACKAGE="RandomFields")$i}
 
 
-FileExists <- function(file, PrintLevel=RFparameters()$Print) {
+FileExists <- function(file, printlevel=RFoptions()$general$printlevel) {
   ## for parallel simulation studies: the same data output file should not
   ## be created twice. So:
   ## 1. if file exists then assume another process has done the work already
   ## 2. if file.lock existss then assume another process is doing the work
   ## 3.a. otherwise create file.lock to show other processes that the process
-  ##      is going to do the work
+  ##      will do the work
   ## 3.b. check if another process has started with the same work at the same
   ##      time it may happen that in case of simulatenous creation of file.lock
   ##      no process will do the work...(then the lock file will rest.)
   lock.ext <- ".lock";
   if (file.exists(file)) { #1.
-    if (PrintLevel>2) cat("'", file, "' already exists.\n");
+    if (printlevel>=PL.FCTN.ERRORS ) cat("'", file, "' already exists.\n");
     return(1)
   } else { 
     LockFile <- paste(file, lock.ext, sep="")
     if (file.exists(LockFile)) { #2.
-      if (PrintLevel>2) cat("'",file,"' is locked.\n");
+      if (printlevel>=PL.FCTN.ERRORS ) cat("'",file,"' is locked.\n");
       return(2);
     }
-    PID<-pid();
-    ## to do : dir<-strsplit(file,"/") ## check if directory exists !!
-    ##         otherwise write will fail.
+    PID <- pid();
     write(file=LockFile,c(PID,hostname()),ncolumns=2,append=TRUE); #3.a.
     Pid <- matrix(scan(LockFile,what=character(0), quiet=TRUE),nrow=2)
     if ((sum(Pid[1,]==PID)!=1) || (sum(Pid[1,]>PID)>0)){ #3.b.
-      if (PrintLevel>2) cat("Lock file of '", file, "' is knocked out.\n");
+      if (printlevel>PL.FCTN.ERRORS )
+        cat("Lock file of '", file, "' is knocked out.\n");
       return(3);
     }
   }
@@ -162,9 +161,9 @@ plotWithCircles <- function(data, factor=1.0,
                             ylim=range(data[,2])+c(-maxr,maxr),
                             col=1, fill=0, ...) {
   ## marked point process: presents positive values of data as radii of circles
-  CIRCLE.X <- cos(seq(0,2*pi,l=20))
-  CIRCLE.Y <- sin(seq(0,2*pi,l=20))
-  circle <- function(x,r) { polygon(x[1]+ r* CIRCLE.X,x[2]+ r* CIRCLE.Y,
+  CIRLLE.X <- cos(seq(0,2*pi,l=20))
+  CIRLLE.Y <- sin(seq(0,2*pi,l=20))
+  circle <- function(x,r) { polygon(x[1]+ r* CIRLLE.X,x[2]+ r* CIRLLE.Y,
                                     col=fill, border=col) }
   ##r <- x$NormedData - min(x$NormedData) +1
   ##r <- r/max(r)/nrow(x$coord) * diff(xlim) * diff(ylim) * 2.5;
@@ -174,22 +173,30 @@ plotWithCircles <- function(data, factor=1.0,
 }
 
 
-Print <- function(...) {
+Print <- function(..., digits=6, empty.lines=2) { #
+   max.elements <- 999
   l <- list(...)
   n <- as.character(match.call())[-1]
-  cat("\n\n")
+  cat(paste(rep("\n", empty.lines), collapse="")) #
   for (i in 1:length(l)) {
-    if (!is.list(l[[i]]) && is.vector(l[[i]])) cat("\n",n[i], "=", l[[i]])
-    else {
-      cat("\n", n[i], "= ")
-      if (is.list(l[[i]])) {
-        cat("  ")
-        str(l[[i]])
+    cat(n[i], "= ") #
+    if (!is.list(l[[i]]) && is.vector(l[[i]])) {
+      if (length(l[[i]])==0) cat("<zero>")#
+      else {
+        cat(l[[i]][1:min(length(l[[i]]), max.elements)]) #
+        if (max.elements < length(l[[i]])) cat(" ...")
+      }
+    } else {
+       if (is.list(l[[i]])) {
+        cat("  ") #
+        str(l[[i]]) #
       } else {
         cat("\n")
-        print(l[[i]])
+        if (length(l[[i]]) <= 100) {
+          print(if (is.numeric(l[[i]])) round(l[[i]],digits=digits) else l[[i]])
+        } else str(l[[i]]) #
       }
     }
+    cat("\n")
   }
-  cat("\n")
 }

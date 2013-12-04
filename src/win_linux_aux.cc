@@ -5,11 +5,11 @@
 
  Collection of system specific auxiliary functions
 
- Copyright (C) 2001 -- 2011 Martin Schlather, 
+ Copyright (C) 2001 -- 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <windows.h>
 #endif
 
+
 // achtung! windows.h zusammen mit <Rmath.h oder R.graphics>
 // gibt warnung, da ERROR mehrfach definiert !
 // deshalb auch in auxiliary.h nicht basic.h einbinden // obsolette ?!!
@@ -38,8 +39,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void sleepMilli(int *milli) {
 #ifdef WIN32
   Sleep((long) *milli);
-#else
+#else 
   usleep(1000 * (unsigned long) *milli);
+#endif
+}
+
+void sleepMicro(int *micro) {
+#ifdef WIN32
+  Sleep((long) ((*micro + 500) / 1000));
+#else
+  usleep((unsigned long) *micro);
 #endif
 }
 
@@ -58,5 +67,3 @@ void hostname(char **h, int *i){
   gethostname(*h, *i);
 #endif
 }  
-
-

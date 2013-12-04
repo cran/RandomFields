@@ -5,11 +5,11 @@
  calculation of the Hurst coefficient and the fractal dimension of
  the graph of a random field
 
- Copyright (C) 2002 - 2011 Martin Schlather, 
+ Copyright (C) 2002 - 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -100,10 +100,8 @@ void periodogram(double *dat, // data
   FFT_NULL(&FFT);
   compl_number = NULL;
   taper = NULL;
-  if ((compl_number = (double*) malloc(sizeof(double) * 2 * *part))==NULL){
-    goto ErrorHandling;
-  }
-  if ((taper = (double*) malloc(sizeof(double) * *part))==NULL){
+  if ((compl_number = (double*) MALLOC(sizeof(double) * 2 * *part))==NULL || 
+      (taper = (double*) MALLOC(sizeof(double) * *part))==NULL){
     goto ErrorHandling;
   }
   

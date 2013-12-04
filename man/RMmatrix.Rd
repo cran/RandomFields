@@ -1,0 +1,53 @@
+\name{RMmatrix}
+\alias{RMmatrix}
+\title{Matrix operator}
+\description{
+ \command{\link{RMmatrix}} is a multivariate covariance model
+ depending on a multivariate covariance model \eqn{\phi}{phi}.
+ The corresponding covariance function is given by
+ \deqn{ C(h) = M \phi(h) M^t}{ C(h) = M phi(h) M^t}
+}
+\usage{
+RMmatrix(phi, M, var, scale, Aniso, proj)
+}
+\arguments{
+ \item{phi}{a k-variate covariance \command{\link{RMmodel}}.}
+ \item{M}{a k times k matrix}
+ \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \command{\link{RMmodel}}. If not passed, the above
+ covariance function remains unmodified.}
+}
+%\details{}
+\value{
+ \command{\link{RMmatrix}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+}
+\references{
+ Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2013)
+ \R package \pkg{RandomFields}: Analysis and simulation of
+ multivariate random fields and more. \emph{Submitted}
+}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+}
+\seealso{
+ \command{\link{RMmodel}},
+ \command{\link{RFsimulate}},
+ \command{\link{RFfit}}.
+}
+
+
+\keyword{spatial}
+\keyword{models}
+
+
+
+\examples{
+set.seed(0)
+# bivariate Linear Model of Coregionalisation
+model <- RMmatrix(M = c(0.9, 0.43), RMwhittle(nu = 0.3)) + 
+         RMmatrix(M = c(0.6, 0.8), RMwhittle(nu = 2))
+x <- y <- seq(-10, 10, 0.2)
+simu <- RFsimulate(model, x, y, grid=TRUE)
+plot(simu)
+
+
+}

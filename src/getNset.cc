@@ -1,18 +1,17 @@
 
-
 /* 
  Authors
  Martin Schlather, schlather@math.uni-mannheim.de
 
  (library for simulation of random fields)
 
- Copyright (C) 2001 -- 2011 Martin Schlather, 
+ Copyright (C) 2001 -- 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
-RO
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -33,140 +32,67 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "primitive.h"
 #include <R_ext/Linpack.h>
+#include "PoissonPolygon.h"
 
-
-
-void KEY_DELETE(key_type *key) {
-  KEY_DELETE_NOTTREND(key);
-  TREND_DELETE(&(key->trend));
-}
-
-void KEY_NULL(key_type *key)
-{
-  KEY_NULLNOTTREND(key);
-  TREND_NULL(&(key->trend));
-}
-
-
-void KEY_DELETE_NOTTREND(key_type *key)
-{
-  LOC_DELETE(&(key->loc));
-  METHOD_DELETE(&(key->meth));
-
-  // PrintModelInfo(key->cov);
-
-  if (key->cov!=NULL) COV_DELETE(&(key->cov));
-//  KEY_NULLNOTTREND(key);
-}
-
-void KEY_NULLNOTTREND(key_type *key) {
-  memcpy(&(key->gp), &GLOBAL, sizeof(globalparam)); 
-  memcpy(&(key->gpdo), &GLOBAL, sizeof(globalparam));
-  simu_type *simu = &(key->simu);
-  simu->stop = simu->active = false;
-  simu->expected_number_simu = 0;
-  LOC_NULL(&(key->loc));
-  // trend left as is
-  key->cov = NULL;
-  key->meth= NULL;
- }
-
-void TREND_DELETE(trend_type *trend)
-{ 
- if (trend->TrendFunction!=NULL) free(trend->TrendFunction); 
-  if (trend->LinearTrend!=NULL) free(trend->LinearTrend); 
-//  TREND_NULL(trend);
-}
-
-void TREND_NULL(trend_type *trend)
-{
-  trend->mean = 0.0;
-  trend->TrendModus = -1;
-  trend->lTrendFct = 0;
-  trend->lLinTrend = 0;
-  trend->TrendFunction = NULL;
-  trend->LinearTrend = NULL;
-}
 
 void LOC_NULL(location_type *loc) {
   int d;
-  loc->spatialdim = loc->timespacedim = -1;
-  loc->totalpoints = loc->spatialtotalpoints = 0;
+  loc->spatialdim = loc->timespacedim = loc->lx = -1;
   for (d=0; d<MAXSIMUDIM; d++) {
-    loc->xgr[d]=NULL;
+    loc->xgr[d] = loc->ygr[d] = NULL;
     loc->length[d] = -1;
   }
-  loc->x = NULL;
-  loc->T[0] = loc->T[1] = loc->T[2] = 0.0; 
+  loc->totalpoints = loc->spatialtotalpoints = 0;
+  loc->grid = loc->distances = loc->Time = false;
+  loc->delete_x = true;
+  loc->x = loc->y = loc->caniso = NULL;
+  loc->T[0] = loc->T[1] = loc->T[2] = 0.0;
+  loc->i_row = loc->i_col = loc->cani_ncol = loc->cani_nrow = -1;
 }
+ 
      
-void LOC_DELETE(location_type *loc) {
-  if (loc->x!=NULL) {
-    free(loc->x); 
-    loc->x = NULL;
-  } else 
-  if (loc->xgr[0] != NULL) {
-    free(loc->xgr[0]);
-    loc->xgr[0] = NULL;
+void LOC_DELETE(location_type **Loc) {
+  // print("LKOC DELETE!");
+  location_type *loc = *Loc;
+  if (loc == NULL) return;
+    
+  if (loc->x != NULL) {
+    if (loc->delete_x) {
+      if (loc->y != NULL && loc->y != loc->x) free(loc->y);
+      free(loc->x); 
+    }     
   }
+  // it may happen that both are set ! Especially after calling 
+  // partial_loc_set in variogramAndCo.cc
+  if (loc->xgr[0] != NULL && loc->spatialdim>0) {
+    if (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0]) free(loc->ygr[0]);
+    free(loc->xgr[0]); ///
+  }
+  
+  free(*Loc);
+  *Loc = NULL;
+
 }
 
-void METHOD_DELETE(method_type **Meth) {
-  method_type *meth = *Meth;
-  int  i;
 
-  if (meth==NULL) {
-    return;
-  }
-
-  for (i=0; i<MAXSUB; i++) {
-    if (meth->sub[i] != NULL) METHOD_DELETE(meth->sub + i);
-  }
-  if (meth->destruct!=NULL) meth->destruct(&(meth->S));
-  if (meth->caniso != NULL) free(meth->caniso);
-  if (meth->cproj != NULL) free(meth->cproj);
-  if (meth->loc != NULL) {
-    if (meth->loc->Time) {
-      if (meth->space != NULL) free(meth->space);
-      if (meth->sptime != NULL) free(meth->sptime);
-    } else {
-      assert(meth->space == meth->sptime);
-      if (meth->space != NULL) {
-	free(meth->space);
-      }
-    }
-  }
-  free(*Meth);
-  *Meth = NULL;
-}
-
-void METHOD_NULL( method_type *meth) {
-  int  i;
-  meth->gp = meth->gpdo = NULL; // never leave unset -- used in METHOD_SET
-  meth->simu = NULL;
-  meth->loc = NULL;
-
-  // method
-  meth->nr = -Forbidden-1;
-  meth->compatible = false;
-  meth->nsub = 0;
-  for (i=0; i<MAXSUB; i++) meth->sub[i] = NULL;
-  meth->domethod = NULL;
-  meth->destruct = NULL;
-  meth->S = NULL;
-
-  meth->cov = NULL;
-  meth->caniso = NULL;
-  meth->cscale = 1.0;
-  meth->cvar = -1.0;
-  meth->cproj = NULL;
-  meth->xdimout = -1;
-  meth->type = TypeAny;
-  meth->hanging = NULL;
-  meth->space = meth->sptime = NULL;
-  // grani
-}
-
+//void GLOBAL_NULL() {
+//  ReSetGlobal();
+//}
+//
+//void SetTemporarilyGlobal(globalparam *gp) {
+//  if (!GLOBALORIG.set) {
+//    MEMCOPY(&(GLOBALORIG.param), &GLOBAL, sizeof(globalparam));
+//    GLOBALORIG.set = true;
+//  }
+//  MEMCOPY(&GLOBAL, gp, sizeof(globalparam));
+//}
+//
+//void ReSetGlobal() {
+//  if (GLOBALORIG.set) {
+//    MEMCOPY(&GLOBAL, &(GLOBALORIG.param), sizeof(globalparam));
+//    GLOBALORIG.set = false;
+//  }
+//}
 
 // Achtung! removeonly muss zwingend mit dem originalen SUB + i aufgerufen
 // werden. Der **Cov ueberschrieben wird. Ansonsten muessen die
@@ -187,229 +113,1048 @@ void removeOnly(cov_model **Cov) {
   COV_DELETE_WITHOUTSUB(&cov);
 }
 
+ void MPPPROPERTIES_NULL(mpp_properties *mpp) {
+   // mpp->refradius= 
+   mpp->maxheight = mpp->log_zhou_c = RF_INF;
+   mpp->M = mpp->Mplus = NULL;
+   //   mpp->refsd = 
+   //mpp->totalmass = RF_NAN;
+   //mpp->methnr = -1;
+   //mpp->loc_done = false;
+ }
+
+ void MPPPROPERTIES_DELETE(mpp_properties *mpp) {   
+   if (mpp->M != NULL) free(mpp->M);
+   mpp->M = NULL;
+   if (mpp->Mplus != NULL) free(mpp->Mplus);
+   mpp->Mplus = NULL;  
+ }
+
 
 void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   cov_model *cov = *Cov;
+
+  assert(cov != NULL);
+
   int i, j,
     last = (cov->nr < 0) ? MAXPARAM : CovList[cov->nr].kappas; 
-  if (cov->q != NULL) {
-    free(cov->q);
-    cov->q = NULL;
-    cov->qlen = 0;
-  }
-
-  if (cov->MLE != NULL) free(cov->MLE);
-
-  // print("last = %d  %s\n", last, CovList[cov->nr].name);
   
   for (i=0; i<last; i++) {
     if (cov->p[i] != NULL) {
-      if (CovList[cov->nr].kappatype[i] >= LISTOF) {
-	  listoftype *list = (listoftype*) (cov->p[i]);
-	for (j=0; j<cov->nrow[i]; j++) {
+      if (CovList[cov->nr].kappatype[i] == LANGSXP) {
+	sexp_type *S = (sexp_type*) cov->p[i];
+	if (S->Delete) R_ReleaseObject(S->sexp);	
+      } else if (CovList[cov->nr].kappatype[i] >= LISTOF) {
+	listoftype *list = (listoftype*) cov->p[i];
+	if (list->deletelist) {
+	  for (j=0; j<cov->nrow[i]; j++) {
 	    free(list->p[j]);  
+	  }
 	}
       }
       free(cov->p[i]); 
-      cov->p[i] = NULL;
-      cov->ncol[i] = cov->nrow[i] = 0;
-    }	
-  }
-  // important check in combination with above; can be easily removed or 
-  // generalised  !!!!
-  for (; i<MAXPARAM; i++) {
-    if (cov->p[i] != NULL) {
-	// print("last=%d current=%d max=%d\n", last, i, MAXPARAM);
-	// PrintModelInfo(*Cov); //
-      // assert(cov->p[i] == NULL);
+      cov->ncol[i] = cov->nrow[i] = SIZE_NOT_DETERMINED; // ==0
     }
   }
+
+  MPPPROPERTIES_DELETE(&(cov->mpp));
+
+  if (cov->ownkappanames != NULL) {
+    int kappas = CovList[cov->nr].kappas;
+    for (j=0; j<kappas; j++) 
+      if (cov->ownkappanames[j] != NULL) free(cov->ownkappanames[j]);
+    free(cov->ownkappanames);
+    cov->ownkappanames = NULL;
+  }
+  
+  if (cov->q != NULL) {
+    free(cov->q);
+    cov->qlen = 0;
+  }
+   // important check in combination with above; can be easily removed or 
+  // generalised  !!!!
+ 
+  if (cov->MLE != NULL) free(cov->MLE);
+
+  //MPPPROPERTIES_DELETE(&(cov->mpp));
+
+  cov->prevloc = NULL;
+  LOC_DELETE(&(cov->ownloc));
+  if (cov->key != NULL) {
+    // printf("deleting key %s\n", CovList[cov->key->nr].name);
+    COV_DELETE(&(cov->key));
+  }
+  if (cov->rf != NULL && cov->origrf) free(cov->rf);
+
+  CE_DELETE(&(cov->SCE));
+  LOCAL_DELETE(&(cov->SlocalCE));
+  CE_APPROX_DELETE(&(cov->SapproxCE));
+  DIRECT_DELETE(&(cov->Sdirect));
+  HYPER_DELETE(&(cov->Shyper));  
+  MIXED_DELETE(&(cov->Smixed));
+  NUGGET_DELETE(&(cov->Snugget));
+
+  PLUS_DELETE(&(cov->Splus));
+  SEQU_DELETE(&(cov->Sseq));
+  //  SPECTRAL_DELETE(&(cov->Sspectral));
+  TREND_DELETE(&(cov->Strend));
+  TBM_DELETE(&(cov->Stbm));
+  BR_DELETE(&(cov->SBR));
+  PGS_DELETE(&(cov->Spgs));
+  SET_DELETE(&(cov->Sset));
+  POLYGON_DELETE(&(cov->Spolygon));
+  RECT_DELETE(&(cov->Srect));
+  DOLLAR_DELETE(&(cov->Sdollar));
+  GATTER_DELETE(&(cov->S2));
+  GET_STORAGE_DELETE(&(cov->Sget));
+  //  SELECT_DELETE(&(cov->Sselect));
+  STORAGE_DELETE(&(cov->stor));  
+  
+  simu_type *simu = &(cov->simu);
+  simu->active = simu->pair = false;
+  simu->expected_number_simu = 0;
+
   free(*Cov);
   *Cov = NULL;
 }
 
-
-void COV_DELETE(cov_model **Cov) { 
+void COV_DELETE_WITHOUT_LOC(cov_model **Cov) { 
   cov_model *cov = *Cov;
-  int i;
+  int i,
+    nsub = CovList[cov->nr].maxsub;
 
   if (cov == NULL) {
     warning("*cov is NULL in COV_DELETE");
     return;
   }
 
-  for (i=0; i<MAXSUB; i++) { // cov->sub[i] // seit 1.10.07: luecken erlaubt
+  // PMI(cov, "delete");
+  assert(cov != NULL);
+
+  for (i=0; i<MAXPARAM; i++) { // cov->sub[i] // seit 1.10.07: luecken erlaubt
     //                         bei PSgen !
-    if (cov->sub[i] != NULL) COV_DELETE(cov->sub + i);
+    if (cov->kappasub[i] != NULL) {
+      //   printf("%d %d %ld\n",i, MAXPARAM, cov->kappasub[i]);
+      //PMI(cov);
+      //assert(false);
+      COV_DELETE_WITHOUT_LOC(cov->kappasub + i);
+    }
   }
-//  for (; i<MAXSUB; i++) assert(cov->sub[i] == NULL);
+
+  for (i=0; i<nsub; i++) { // cov->sub[i] // seit 1.10.07: luecken erlaubt
+    //                         bei PSgen !
+    // Achtung nach nsub koennen "blinde" Untermodelle kommen, die
+    // nicht geloescht werden duerfen!!
+    if (cov->sub[i] != NULL) COV_DELETE_WITHOUT_LOC(cov->sub + i);
+  }
   COV_DELETE_WITHOUTSUB(Cov);
 }
 
 
+void COV_DELETE(cov_model **Cov) { 
+  cov_model *cov = *Cov;
+
+  //  if (*Cov == NULL) crash(*Cov);
+
+  assert(*Cov != NULL);
+  if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc));
+  COV_DELETE_WITHOUT_LOC(Cov);
+  *Cov = NULL;
+}
+
+
+void SIMU_NULL(simu_type *simu) {
+  simu->pair = simu->active = false;
+  simu->expected_number_simu =0;
+}
+
+void COV_ALWAYS_NULL(cov_model *cov) {
+  cov->calling = NULL;
+  cov->prevloc = cov->ownloc = NULL;
+
+  cov->MLE = NULL;
+  cov->key = NULL;
+  cov->rf = NULL;
+
+  cov->mpp.M = cov->mpp.Mplus = NULL;
+  cov->mpp.moments = MISMATCH;
+  
+  cov->SCE = NULL;
+  cov->SlocalCE = NULL;
+  cov->SapproxCE = NULL;
+  cov->Sdirect = NULL;
+  cov->Shyper = NULL;
+  cov->Smixed = NULL;
+  cov->Snugget = NULL;
+  cov->Splus = NULL;
+  cov->Sseq = NULL;
+  cov->Stbm = NULL;
+  cov->Strend = NULL;
+  cov->SBR = NULL;
+  cov->Spgs = NULL;
+  cov->Sset = NULL;
+  cov->Spolygon = NULL;
+  cov->Srect = NULL;
+  cov->Sdollar = NULL;
+  cov->S2 = NULL;
+  cov->Sget = NULL;
+  //cov->Sselect = NULL;
+  cov->stor = NULL;
+
+  cov->fieldreturn = cov->origrf = false;
+  cov->initialised = false;
+}
 
 void COV_NULL(cov_model *cov) {
-  int i;
+  int i, j;
+  COV_ALWAYS_NULL(cov);
+
+  cov->nr = cov->gatternr = MISMATCH;
   for (i=0; i<MAXPARAM; i++) {
     cov->p[i] = NULL;
-    cov->ncol[i] = cov->nrow[i] = 0;
+    cov->ncol[i] = cov->nrow[i] = 0; 
+    cov->kappasub[i] = NULL;
   }
+  for (i=0; i<MAXTAYLOR; i++) {
+    for (j=(int) TaylorConst; j<=(int) TaylorPow; j++) 
+      cov->taylor[i][j] = cov->tail[i][j] = 0.0;
+     for ( ; j<=(int) TaylorExpPow; j++) 
+       cov->tail[i][j] = 0.0;
+  }
+
   cov->q = NULL;
   cov->qlen = 0;
   for (i=0; i<MAXSUB; i++) cov->sub[i] = NULL;
   cov->nsub = 0;
-  cov->calling = NULL;
-  cov->tsdim = cov->xdim =cov->maxdim = UNSET;
-  cov->normalmix = cov->finiterange = cov->diag = cov->semiseparatelast
-    = cov->separatelast = false;
-  for (i=0; i<=Nothing; i++) cov->user[i] = cov->pref[i] = PREF_BEST;
+  cov->user_given = ug_internal; // to know which models are given by the
+  // user and which ones have been added internally
+
+  cov->role = ROLE_UNDEFINED;
+  cov->typus = UndefinedType;
+  cov->method = Forbidden;
+  cov->tsdim = cov->xdimprev = cov->xdimown =cov->maxdim = UNSET;
+  cov->vdim = MISMATCH;
+  cov->vdim2[0] = cov->vdim2[1] = MISMATCH;
+
+ 
+  cov->ownkappanames = NULL;
+
+  cov->domown = cov->domprev = STAT_MISMATCH;
+  cov->isoown = cov->isoprev = ISO_MISMATCH;
+  cov->logspeed = RF_NAN;
+  cov->delflag = 0;
+  cov->full_derivs = cov->rese_derivs = MISMATCH;
+
+  cov->deterministic = true;
+  cov->monotone = MISMATCH; 
+  cov->total_n = MISMATCH;
+  cov->total_sum = 0.0;
+  cov->finiterange = cov->loggiven =  cov->diag = cov->semiseparatelast
+    = cov->separatelast = cov->matrix_indep_of_x = false;
+  cov->hess = cov->tbm2num = NOT_IMPLEMENTED;
+  for (i=0; i<=Nothing; i++) cov->pref[i] = PREF_BEST;
   // mpp und extrG muessen auf NONE sein !
-  for (; i<=Forbidden; i++) cov->user[i] = cov->pref[i] = PREF_NONE;
-  cov->derivatives = -1;
-  cov->tbm2num = false;
-  cov->spec.density = NULL;
-  cov->statIn = STAT_MISMATCH;
-  cov->isoIn = ISO_MISMATCH;
-  cov->vdim = M_MISMATCH;
-  cov->nr = -1;
-  cov->MLE = NULL;
-  cov->anyNAdown = cov->anyNAscaleup = TriBeyond;
-  cov->manipulating_x=false;
-  cov->spec.nmetro = -1;
-  cov->spec.sigma = -1.0;
-  cov->hess = false;
+  for (; i<=Forbidden; i++) cov->pref[i] = PREF_NONE;
+
+  cov->taylorN = cov->tailN = 0;
+
+  MPPPROPERTIES_NULL(&(cov->mpp));
+  SIMU_NULL(&(cov->simu));
+
+  // cov->localcov=NULL;
+}
+
+
+
+void FFT_NULL(FFT_storage *FFT) 
+{
+  if (FFT == NULL) return;
+  FFT->work = NULL;
+  FFT->iwork = NULL;
+}
+
+void FFT_destruct(FFT_storage *FFT)
+{
+  if (FFT->iwork!=NULL) {free(FFT->iwork);}
+  if (FFT->work!=NULL) {free(FFT->work);} 
+  FFT_NULL(FFT);
+}
+
+
+void CE_DELETE(CE_storage **S) {
+  CE_storage *x = *S;
+  if (x != NULL) {
+    int l, vdimSQ = x->vdim * x->vdim;
+    if (x->c!=NULL) {
+      for(l=0; l<vdimSQ; l++) if(x->c[l]!=NULL) free(x->c[l]);
+      free(x->c);
+    }
+    if (x->d!=NULL) {
+      for(l=0; l<x->vdim; l++) if(x->d[l]!=NULL) free(x->d[l]);
+      free(x->d);
+    }
+    FFT_destruct(&(x->FFT));
+    if (x->aniso != NULL) free(x->aniso);
+    if (x->gauss1 != NULL) free(x->gauss1);
+    if (x->gauss2 != NULL) free(x->gauss2);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void CE_NULL(CE_storage* x){
+  if (x == NULL) return;
+  FFT_NULL(&(x->FFT));  
+  x->positivedefinite = FALSE;
+  x->trials = -1;
+  x->c = x->d = NULL;
+  x->smallestRe = x->largestAbsIm = NA_REAL;
+  x->aniso = NULL;
+  x->stop = false;
+  x->gauss1 = x->gauss2 = NULL;
+//  int i;
+  //for (i=0; i<MAXCEDIM; i++) x->[i] = NULL;
+}
+
+
+
+void LOCAL_DELETE(localCE_storage**S) 
+{
+  localCE_storage* x = *S;
+  if (x!=NULL) {
+    if (x->correction != NULL) free(x->correction);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void LOCAL_NULL(localCE_storage* x){
+  // int i;  for (i=0; i<MAXCEDIM; i++) 
+  if (x == NULL) return;
+  x->correction = NULL;
+}
+
+
+void CE_APPROX_DELETE(ce_approx_storage **S) {
+  ce_approx_storage* x = * S;
+  if (x != NULL) {
+    if (x->idx != NULL) free(x->idx);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void CE_APPROX_NULL(ce_approx_storage* x){
+  if (x == NULL) return;
+  x->idx = NULL;
+}
+
+
+void DIRECT_DELETE(direct_storage  ** S) {
+  direct_storage *x = *S;
+  if (x!=NULL) {
+    if (x->U!=NULL) free(x->U); 
+    if (x->G!=NULL) free(x->G);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void DIRECT_NULL(direct_storage  *x) {
+  if (x == NULL) return;
+  x->U = NULL;
+  x->G = NULL;
+}
+
+
+
+
+void HYPER_DELETE(hyper_storage  **S) {
+  hyper_storage *x = *S; 
+  if (x != NULL) {
+    free(*S);
+    *S = NULL; 
+  }
+}
+
+void HYPER_NULL(hyper_storage* x) {
+  if (x == NULL) return;
+}
+
+
+void MIXED_DELETE(mixed_storage ** S) {
+  mixed_storage *x = *S;
+  if (x!=NULL) {
+   if (x->Xb != NULL) free(x->Xb);
+   if (x->mixedcov != NULL) free(x->mixedcov);
+   free(*S);
+   *S = NULL;
+  }
+}
+
+void MIXED_NULL(mixed_storage* x) {
+  x->Xb = NULL;
+  x->mixedcov = NULL;
+  x->initialized = false;
+}
+
+
+void NUGGET_NULL(nugget_storage *x){
+  if (x == NULL) return;
+  x->pos = NULL;
+  x->red_field = NULL;
+}
+
+void NUGGET_DELETE(nugget_storage ** S)
+{
+  nugget_storage *x = *S;
+  if (x != NULL) {
+    if (x->pos!=NULL) free(x->pos);
+    if (x->red_field!=NULL) free(x->red_field);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void PLUS_NULL(plus_storage *x){
+  if (x != NULL) {
+    int i;
+    for (i=0; i<MAXSUB; i++) x->keys[i] = NULL;
+  }
+}
+
+void PLUS_DELETE(plus_storage ** S){
+  plus_storage *x = *S;
+  if (x != NULL) {
+    int i;
+    for (i=0; i<MAXSUB; i++)
+      if (x->keys[i] != NULL) COV_DELETE(x->keys + i);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void SEQU_NULL(sequential_storage *x){
+  if (x == NULL) return;
+  x->U11 = NULL;
+  x->U22 = NULL;
+  x->MuT = NULL;
+  x->G = NULL;
+  x->Cov21 = NULL;
+  x->Inv22 = NULL;
+  x->res0 = NULL;
+}
+
+void SEQU_DELETE(sequential_storage ** S){
+  sequential_storage *x = *S;
+  if (x!=NULL) {
+    if (x->U11!=NULL) free(x->U11); 
+    if (x->U22!=NULL) free(x->U22); 
+    if (x->MuT!=NULL) free(x->MuT); 
+    if (x->G!=NULL) free(x->G);
+    if (x->Cov21!=NULL) free(x->Cov21);
+    if (x->Inv22!=NULL) free(x->Inv22);
+    if (x->res0!=NULL) free(x->res0);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void SPECTRAL_DELETE(spectral_storage **S) 
+{ 
+  spectral_storage *x = *S;
+  if (x!=NULL) {
+    // do NOT delete cov --- only pointer
+      // spectral_storage *x; x =  *((spectral_storage**)S);
+    free(*S);   
+    *S = NULL;
+  }
+}
+
+
+void SPECTRAL_NULL(spectral_storage *x) 
+{ 
+  if (x!=NULL) {
+  }
+}
+
+
+void TREND_DELETE(trend_storage ** S) {
+  trend_storage *x = *S;
+  if (x!=NULL) {
+    if (x->x!=NULL) free(x->x);
+    if (x->xi!=NULL) free(x->xi);
+    if (x->evalplane!=NULL) free(x->evalplane);
+    if (x->powmatrix!=NULL) free(x->powmatrix);    
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void TREND_NULL(trend_storage* x) {
+  x->x = NULL;
+  x->xi = NULL;
+  x->evalplane = NULL;
+  x->powmatrix = NULL;
+}
+
+void TBM_DELETE(TBM_storage **S) 
+{
+  TBM_storage *x = *S;
+  if (x!=NULL) {
+     free(*S);
+    *S = NULL;
+  }
+}
+
+void TBM_NULL(TBM_storage* x) {
+  if (x == NULL) return;
+  x->ce_dim =  0;
+  x->err = ERRORFAILED;
+}
+
+void BRTREND_DELETE(double **BRtrend, int trendlen) {
+   int j;
+   if (BRtrend == NULL) return;
+   for (j=0; j<trendlen; j++) {
+     if (BRtrend[j] != NULL) {
+       free(BRtrend[j]);
+       BRtrend[j] = NULL;
+     }
+   }
+ }
+
+void BR_DELETE(BR_storage **S) {
+  BR_storage *br = *S;
+  if (br != NULL) {
+    if (br->trend != NULL) {
+      BRTREND_DELETE(br->trend, br->trendlen); 
+      free(br->trend);
+      br->trend = NULL;
+    }
+    if (br->shiftedloc != NULL) {
+      free(br->shiftedloc); 
+      br->shiftedloc = NULL;
+    }
+    if (br->loc2mem != NULL) {
+      free(br->loc2mem);
+      br->loc2mem = NULL;
+    }
+    if (br->mem2loc != NULL) {
+      free(br->mem2loc);
+      br->mem2loc = NULL;
+    }
+    if (br->lowerbounds != NULL) {
+      free(br->lowerbounds);
+      br->lowerbounds = NULL;
+    } 
+    if (br->vario != NULL) 
+      COV_DELETE(&(br->vario));
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void BR_NULL(BR_storage *br) {
+  br->trend = NULL;
+  br->trendlen = 0;
+  br->shiftedloc = NULL;
+  br->zeropos = 0;
+  br->mem2loc = NULL;
+  br->loc2mem = NULL;
+  br->memcounter = 0;
+  br->radius = 0.0;
+  br->hatnumber = 0;
+  br->lowerbounds = NULL;
+  br->vario = NULL;  
+}
+
+
+void PGS_DELETE(pgs_storage **S) 
+{
+  pgs_storage *x = *S;
+  if (x!=NULL) {
+       if (x->supportmin != NULL) free(x->supportmin);
+    if (x->supportmax != NULL) free(x->supportmax);
+    if (x->supportcentre != NULL) free(x->supportcentre);   
+    if (x->gridlen != NULL) free(x->gridlen);
+    if (x->end != NULL) free(x->end);
+    if (x->start != NULL) free(x->start);
+    if (x->delta != NULL) free(x->delta);
+    if (x->nx != NULL) free(x->nx);
+
+    if (x->x != NULL) free(x->x);
+    if (x->xgr[0] != NULL) free(x->xgr[0]);
+    if (x->xstart != NULL) free(x->xstart);    
+    if (x->inc != NULL) free(x->inc);    
+ 
+    if (x->v != NULL) free(x->v);
+    if (x->y != NULL) free(x->y);
+    if (x->localmin != NULL) free(x->localmin);
+    if (x->localmax != NULL) free(x->localmax);
+    if (x->minmean != NULL) free(x->minmean);
+    if (x->maxmean != NULL) free(x->maxmean);
+
+    if (x->single != NULL) free(x->single);
+    if (x->total != NULL) free(x->total);
+
+    if (x->pos != NULL) free(x->pos);
+    if (x->len != NULL) free(x->len);
+    if (x->min != NULL) free(x->min);
+    if (x->max != NULL) free(x->max); 
+     
+    if (x->halfstepvector != NULL) free(x->halfstepvector);    
+
+    // variogramAndCo.cc:
+    if (x->endy != NULL) free(x->endy);
+    if (x->startny != NULL) free(x->startny);
+    if (x->ptrcol != NULL) free(x->ptrcol);
+    if (x->ptrrow != NULL) free(x->ptrrow);
+    if (x->C0x != NULL) free(x->C0x);
+    if (x->C0y != NULL) free(x->C0y);
+    if (x->z != NULL) free(x->z);
+    if (x->cross != NULL) free(x->cross);
+    if (x->Val != NULL) free(x->Val);
+  
+
+    free(*S);
+    *S = NULL;
+  }
+}
+
+
+void PGS_NULL(pgs_storage* x) {
+  if (x == NULL) return;
+   x->log_density = x->intensity = x->globalmin = x->currentthreshold = 
+    RF_NEGINF;
+  x->flat = false;
+  x->totalmass = x->value_orig = RF_NAN;
+
+  x->size = -1;
+
+  x->single = x->total = x->v = x->x = x->xstart = x->inc =
+    x->localmin = x->localmax =x->minmean = x->maxmean =
+    x->supportmin = x->supportmax = x->supportcentre = NULL;
+
+  x->xgr[0] = NULL;
+
+  x->gridlen = x->end = x->start = x->delta = x->nx = NULL;
+
+
+  x->y = NULL;
+ 
+  x->pos = x->len = x->min = x->max = NULL;
+
+  x->halfstepvector = NULL;  
+
+  // variogramAndCo.cc
+  x->endy = x->startny = x->ptrcol = x->ptrrow = NULL;
+  x->C0x = x->C0y = x->cross = x->z = NULL;
+  x->Val = NULL;
+
+  x->param_set = NULL;
+  
+}
+
+
+void SET_DELETE(set_storage **S) {
+  set_storage *x = *S;
+  if (x!=NULL) {
+    if (x->valuefrom != NULL) free(x->valuefrom);
+    if (x->valueto != NULL) free(x->valueto);
+    if (x->bytes != NULL) free(x->bytes);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void SET_NULL(set_storage* x) {
+  if (x == NULL) return;
+  x->from = NULL;
+  x->set = NULL;
+  x->valuefrom = x->valueto = NULL;
+  x->bytes = NULL;
+  x->variant = 0;
+}
+
+void POLYGON_DELETE(polygon_storage **S) 
+{
+  polygon_storage *x = *S;
+  if (x != NULL) {
+    if (x->P != NULL) {
+      freePolygon(x->P);
+      free(x->P);
+    }
+  }
+  free(*S);
+  *S = NULL;
+}
+
+void POLYGON_NULL(polygon_storage* x) {
+  if (x == NULL) return;
+  polygon *P = x->P;
+  if (P == NULL) BUG;
+  P->e = NULL;
+  P->v = NULL;
+  P->n = 0;
+}
+
+void RECT_DELETE(rect_storage **S){
+  rect_storage *x = *S;
+  if (x!=NULL) {
+    if (x->value != NULL) free(x->value);
+    if (x->weight != NULL) free(x->weight);
+    if (x->tmp_weight != NULL) free(x->tmp_weight);
+    if (x->right_endpoint != NULL) free(x->right_endpoint);
+    if (x->z != NULL) free(x->z);
+
+     if (x->squeezed_dim != NULL) free(x->squeezed_dim);
+    if (x->assign != NULL) free(x->assign);
+    if (x->i != NULL) free(x->i);
+
+    free(*S);
+    *S = NULL;
+  }
+}
+
+
+
+void RECT_NULL(rect_storage* x) {
+  if (x == NULL) return;
+  x->tmp_n = x->nstep = -999;
+  x->value = x->weight = x->tmp_weight = 
+    x->right_endpoint = x->z = NULL;
+
+
+  // for PMI
+  //  x->inner = x->inner_const = x->inner_pow = x->outer =
+  //    x->outer_const = x->outer_pow = x->outer_pow_const = x->step = RF_NAN;
+
+  x->squeezed_dim = x->assign = x->i = NULL;
+}
+
+
+void DOLLAR_DELETE(dollar_storage **S) 
+{
+  dollar_storage *x = *S;
+  if (x!=NULL) {
+    if (x->z != NULL) free(x->z);
+    if (x->z2 != NULL) free(x->z2);
+    if (x->y != NULL) free(x->y);
+    if (x->nx != NULL) free(x->nx);
+    if (x->len != NULL) free(x->len);
+    if (x->total != NULL) free(x->total);
+    if (x->cumsum != NULL) free(x->cumsum);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void DOLLAR_NULL(dollar_storage* x) {
+  if (x == NULL) return;
+  x->z = x->z2 = x->y = NULL;
+  x->cumsum = x->nx = x->total = x->len = NULL;
+}
+
+
+
+void GATTER_DELETE(gatter_storage **S) 
+{
+  gatter_storage *x = *S;
+  if (x!=NULL) {
+    if (x->z != NULL) free(x->z);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void GATTER_NULL(gatter_storage* x) {
+  if (x == NULL) return;
+  x->z = NULL;
+}
+
+
+void GET_STORAGE_NULL(get_storage *s){
+  s->orig = s->get_cov = NULL;
+  s->idx = NULL;
+  s->param_nr = -1;
+}
+
+void GET_STORAGE_DELETE(get_storage **S){
+  get_storage *x = *S;
+  if (x != NULL) {
+    if (x->idx != NULL) free(x->idx);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+
+void STORAGE_NULL(storage *x) {
+  int d;
+  if (x == NULL) return;
+  //  x->mpp.newx = NULL;
+
+  // for (d=0; d<MAXMPPDIM; d++) 
+  //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NAN;
+  
+
+
+  x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
+    = RF_NAN;
+  x->Sspectral.grid = x->Sspectral.ergodic = false;
+
+  x->spec.nmetro = -1;
+  x->spec.sigma = -1.0;
+  x->spec.density = NULL;
+  for (d=0; d<MAXTBMSPDIM; d++) {
+    x->spec.E[d] = x->spec.sub_sd_cum[d] = RF_NAN;
+  }
+}
+
+void STORAGE_DELETE(storage **S) {
+  storage *x = *S;
+  if (x!=NULL) {
+    free(*S);
+    *S = NULL;
+  }
 }
 
 void addModel(cov_model **pcov, int covnr) {
   cov_model *cov;
   int i;
-  if (covnr >= GATTER && covnr <= LASTGATTER && 
-      *pcov != NULL && (*pcov)->nr == GATTER)
-    return; // keine 2 Gatter hintereinander
-  if ((cov = (cov_model*) malloc(sizeof(cov_model)))==0)
-    ERR("memory allocation error");
+  
+  // printf("addmodel: %s %ld\n", CovList[covnr].name, (long int) *pcov);
+
+  cov = (cov_model*) MALLOC(sizeof(cov_model));
   COV_NULL(cov);
+  //assert(cov->calling == NULL);
   cov->nr = covnr;
-  cov->nsub = 1;
-  if (*pcov!=NULL) {
+  if (*pcov != NULL) {
+    cov->nsub = 1;
     cov->calling = (*pcov)->calling;
     (*pcov)->calling = cov;
-  } 
-  cov->sub[0] = *pcov;
+    cov->sub[0] = *pcov;
+    for (i=0; i<=Forbidden; i++) {	
+      // cov->user[i] = cov->sub[0]->user[i];
+      cov->pref[i] = cov->sub[0]->pref[i];
+    }
+  }
   *pcov = cov;
-  cov->tbm2num = NOT_IMPLEMENTED;
-
-  if (covnr == GATTER && *pcov != NULL)
-      for (i=0; i<=Forbidden; i++) {
-	  cov->user[i] = cov->sub[0]->user[i];
-	  cov->pref[i] = cov->sub[0]->pref[i];
-      }
 }
 
 
-int loc_set(double *x, double *T, 
-	    int spatialdim, /* spatial dim only ! */
-	    int lx,  bool Time, bool grid,
-	    location_type *loc, globalparam *gp) {
-  int d, i, j;
-  unsigned long totalBytes;
-  // preference lists, distinguished by grid==true/false and dimension
-  // lists must end with Nothing!
+int setgrid(coord_type xgr, double *x, int lx, int spatialdim) {
+  int d,
+    totalBytes = sizeof(double) * lx * spatialdim;
+  if (lx!=3) {      
+    //    PRINTF("%d\n", lx);
+    //    crash();
+    SERR("Problem with the coordinates (non-integer number of locations or non-positive step)")      
+  }
   
-  loc->timespacedim = spatialdim + (int) Time;
-  loc->spatialdim = spatialdim;
-  loc->lx = lx;
-  if (spatialdim<1 ||  loc->timespacedim>MAXSIMUDIM) return ERRORDIM;
+  if (xgr[0] == NULL && (xgr[0] =(double*) MALLOC(totalBytes))==NULL)
+    return ERRORMEMORYALLOCATION; 
 
-  loc->grid= grid;
-  // coordinates
-  assert(loc->xgr[0]==NULL);
-  assert(loc->x == NULL);
+  //printf("setgrid %d\n", totalBytes);
+  MEMCOPY(xgr[0], x, totalBytes);
+  
+  // folgende Zeile nur beim ersten Mal zu setzen, aber egal
+  for (d=1; d<spatialdim; d++) xgr[d] = &(xgr[0][d * lx]); 
+  for (; d<MAXSIMUDIM; d++)  xgr[d]=NULL;    
+  
+  return NOERROR;
+}
+
+int partial_loc_set(location_type *loc, double *x, double *y,
+		    int lx, int ly, bool dist, int xdimOZ, double *T,
+		    bool grid, bool cpy){
+  int d, err;
+  unsigned long totalBytes;
+
+  if (((loc->x != NULL) && ((loc->y == NULL) xor (ly==0))) ||
+      ((loc->xgr[0] != NULL) && ((loc->ygr[0] == NULL) xor (ly==0)))) {
+    // 28783440 51590192 0; 0 0 0 dist=0
+
+   //printf("%ld %ld %d; %ld %ld %d dist=%d\n",
+    //  (long int) loc->x, (long int)loc->y, ly,
+    //     (long int) loc->xgr[0], (long int) loc->ygr[0], ly, loc->distances);
 
 
-  totalBytes =  sizeof(double) * lx * spatialdim;
-  if (loc->grid) {
-    if ((loc->xgr[0]=(double*) malloc(totalBytes))==NULL){
-      return ERRORMEMORYALLOCATION; 
+  // assert(false);
+  // 
+  //crash();
+  SERR("domain structure of the first and second call do not match");
+}
+
+loc->xdimOZ = xdimOZ; // ohne Zeit !!
+loc->lx = lx;
+loc->ly = ly;
+if (ly  > 0) { 
+  //crash();
+  if (dist) { SERR("distances are not allowed if y is given"); } 
+ }
+
+loc->grid = grid;
+loc->distances = dist;
+if (loc->delete_x) {
+  if (loc->y != NULL) {
+    if (loc->y != loc->x) free(loc->y); 
+    loc->y = NULL;
+  }
+  if (loc->x != NULL) { free(loc->x); loc->x = NULL; }
+ }
+ loc->delete_x = cpy;
+
+ if (grid) {
+  if ((err = setgrid(loc->xgr, x, lx, loc->spatialdim)) !=NOERROR) return err;
+  if (ly>0) {
+    if (x == y) for(d=0; d<loc->spatialdim; d++) loc->ygr[d] = loc->xgr[d];
+    else {
+      if ((err = setgrid(loc->ygr, y, ly, loc->spatialdim)) !=NOERROR) 
+	return err;
     }
-    memcpy(loc->xgr[0], x, totalBytes);
-    for (d=1; d<spatialdim; d++) loc->xgr[d]= &(loc->xgr[0][d * lx]);
-    for (; d<MAXSIMUDIM; d++)  loc->xgr[d]=NULL;
-  } else {
-    if ((loc->x=(double*) malloc(totalBytes))==NULL){
-      return ERRORMEMORYALLOCATION; 
-    }
-    for (d=0; d<spatialdim; d++) loc->xgr[d] = x + d * lx;
-    for (j=i=0; i<lx; i++) {
-      for (d=0; d<spatialdim; d++) {
-	loc->x[j++] = loc->xgr[d][i];
+  }
+  
+  for (d=0; d<loc->spatialdim; d++) 
+    loc->length[d] = (int) loc->xgr[d][XLENGTH]; 
+  for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
+    loc->spatialtotalpoints *= loc->length[d];
+  }
+  loc->totalpoints = loc->spatialtotalpoints;
+ } 
+
+ else if (dist) {
+   // lx : anzahl der Puntke involviert, d.h. x muss die Laenge lx ( lx -1) / 2
+   // haben.
+
+   if (cpy) {
+     totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
+     if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
+       return ERRORMEMORYALLOCATION; 
+     }
+     MEMCOPY(loc->x, x, totalBytes);
+   } else {
+     loc->x = x;
+   }
+   loc->totalpoints = loc->spatialtotalpoints = loc->length[0] = lx;
+   //     (int) (1e-9 + 0.5 * (1.0 + sqrt(1.0 + 8.0 * lx)));
+   //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
+   //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
+   //   SERR("distances do not have expected size");
+   //}
+ }
+
+ else { // not grid, not distances
+   if (cpy) {
+     totalBytes =  sizeof(double) * lx * loc->xdimOZ;
+      
+     //       printf("totalbyets %d %ld %d\n", totalBytes, lx, loc->xdimOZ);
+  
+     if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
+       return ERRORMEMORYALLOCATION; 
+     }
+     MEMCOPY(loc->x, x, totalBytes);
+     if (loc->ly>0) {
+       if (x == y) {
+	 loc->y = loc->x;
+       } else {
+	 totalBytes =  sizeof(double) * ly * loc->xdimOZ;
+	 //printf("totalbytes y %d %ld %d\n", totalBytes, ly, loc->xdimOZ);
+	 if ((loc->y=(double*) MALLOC(totalBytes))==NULL){
+	   return ERRORMEMORYALLOCATION; 
+	 }
+	  MEMCOPY(loc->y, y, totalBytes);	
+	}
       }
-    }
-    for (d=0; d<MAXSIMUDIM; d++) loc->xgr[d]=NULL;
-  }
-    
-  //Time
-  if ((loc->Time = Time)) {
-    memcpy(loc->T, T, sizeof(double) * 3);
-    //if (loc->grid) 
-    loc->xgr[loc->spatialdim] = loc->T;
-  }
-
-  if (loc->grid) { 
-    if ((lx!=3) || 
-	(InternalGetGridSize(loc->xgr, loc->timespacedim, loc->length))) {
-      PRINTF("%d\n", lx);
-      ERR("problem with the coordiates");
-      return ERRORCOORDINATES; 
+    } else {
+      loc->x = x;
+      loc->y = y;
     }
 
-    for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
-      loc->spatialtotalpoints *= loc->length[d];
-    }
-    loc->totalpoints = loc->spatialtotalpoints;
-    if (loc->Time) loc->totalpoints *= loc->length[loc->spatialdim];
-  } else { // not grid
+    //printf("getnset %d\n", lx);
+
     loc->totalpoints = loc->spatialtotalpoints = loc->length[0]= lx;
-    if (loc->Time) {
-      double *Tx[MAXSIMUDIM];
-      Tx[0] = loc->T;
-      if (InternalGetGridSize(Tx, 1 , loc->length + loc->spatialdim)) {
-	return ERRORCOORDINATES; 
-      }
-      loc->totalpoints *= loc->length[loc->spatialdim];
-    }
     // just to say that considering these values does not make sense
     for (d=1; d<loc->spatialdim; d++) loc->length[d]=0; 
     // correct value for higher dimensions (never used)
   }
-  for (d=loc->timespacedim; d<MAXSIMUDIM; d++)
-    loc->length[d] = -1; // 1
+
+  if ((loc->Time) xor (T!=NULL)) {    
+    //cov_model *cov;  crash(cov);
+    //  AERR(1);
+    SERR("partial_loc: time mismatch");
+  }
+  if (loc->Time) {
+    MEMCOPY(loc->T, T, sizeof(double) * 3);
+    if (grid) {
+      loc->xgr[loc->spatialdim] = loc->T;
+      if (ly>0) loc->ygr[loc->spatialdim] = loc->T;
+    }
+    
+    loc->length[loc->spatialdim] = (int) loc->T[XLENGTH];
+    if (loc->length[loc->spatialdim]<=0) {
+      SERR("The number of temporal points is not positive. Check the triple definition of 'T'.")
+	}
+    loc->totalpoints *= loc->length[loc->spatialdim];
+  }
+
+  return NOERROR;
+}
+
+int loc_set(double *x, double *y, double *T, 
+	    int spatialdim, /* spatial dim only ! */
+	    int xdimOZ,
+	    int lx, int ly, bool Time, bool grid,
+	    bool distances,
+	    location_type **Loc) {
+  int d, err;
+  //unsigned long totalBytes;
+  // preference lists, distinguished by grid==true/false and dimension
+  // lists must end with Nothing!
+ 
+  if (*Loc != NULL) LOC_DELETE(Loc);
+  location_type *loc = *Loc = (location_type*) MALLOC(sizeof(location_type));
+  LOC_NULL(loc);
+
+  loc->timespacedim = spatialdim + (int) Time;
+  loc->spatialdim = spatialdim;
+  loc->Time = Time; 
+  if (spatialdim<1 || loc->timespacedim>MAXSIMUDIM) return ERRORDIM;
+  
+  if ((err = partial_loc_set(*Loc, x, y, lx, ly, distances, xdimOZ,
+			     Time ? T : NULL,
+			     grid, true)) != NOERROR) XERR(err);
+ 
+  for (d=loc->timespacedim; d<MAXSIMUDIM; d++) loc->length[d] = -1;// 1
 
   return NOERROR;
 }
 
 
-
-
-void Aniso(double *x, double *aniso, int origdim, int dim, double *newx) {
-  double dummy;
-  int i, j, k;
-
-  // hier kann die Geschwindigkeit verbessert werden,
-  // indem die Typen unterschieden werden
-  if (aniso == NULL) {
-      assert(dim == origdim);
-      memcpy(newx, x, sizeof(double) * origdim);
+int loc_set(cov_model *cov, int totalpoints) {
+  location_type *loc;
+  if (cov->ownloc == NULL) {
+    loc = cov->ownloc = (location_type*) MALLOC(sizeof(location_type));
+    LOC_NULL(loc);
+    loc->delete_x = false;
   } else {
-    for (k=i=0; i<dim; i++) {
-      dummy = 0.0;
-      for (j=0; j<origdim; j++) {
-        dummy += x[j] * aniso[k++];
-      }
-      newx[i] = dummy;
-    }
+    loc = Loc(cov);
+    if (loc->xgr[0] != NULL || loc->x != NULL) BUG;
   }
+  cov->ownloc->totalpoints = totalpoints;
+  return NOERROR;
 }
+
+int loc_set(double *x, double *T, 
+	    int spatialdim, /* spatial dim only ! */
+	    int xdimOZ, /* original ! */
+	    int lx, bool Time, bool grid,
+	    bool distances,
+	    location_type **Loc) {
+  return loc_set(x, NULL, T, spatialdim, xdimOZ, lx, 0, Time, grid,
+		 distances, Loc);    
+} 
 
 
 
@@ -423,12 +1168,12 @@ void analyse_matrix(double *aniso, int row, int col,
   // see also Type -- can it be unified ????
 
   /* 
-       -> i
-   |  * 0 0
-   j  0 0 *
-      0 * 0
+     -> i
+     |  * 0 0
+     j  0 0 *
+     0 * 0
   */
-    bool notquasidiag=true, *taken;
+  bool notquasidiag=true, *taken=NULL;
   int j, k, startidx, i, last;
 
   if (aniso == NULL) {
@@ -438,7 +1183,7 @@ void analyse_matrix(double *aniso, int row, int col,
   }
 
   
-  taken = (bool *) malloc(row * sizeof(bool));
+  taken = (bool *) MALLOC(row * sizeof(bool));
 
   for (j=0; j<row; j++) {
     taken[j]=false;
@@ -479,684 +1224,17 @@ void analyse_matrix(double *aniso, int row, int col,
   free(taken);
 }
 
-void addkappa(int i, const char *n, SEXPTYPE t) {
-  cov_fct *C = CovList + currentNrCov - 1;
-  assert(n[0] != '\0' && 
-	 n[0] != 'k' && // reserved for standard parameter names
-	 n[0] != 'u' && // reserved for standard submodel names
-	 (n[0] != 'm' || n[1] != 'e') // reserved for me-thod
-    );
-  assert(i < MAXPARAM);
-  strcopyN(C->kappanames[i], n, PARAMMAXCHAR);
-  C->kappatype[i] = t;
-}
-
-void kappanames(const char* n1, SEXPTYPE t1) {
-  addkappa(0, n1, t1);
-}
-void kappanames(const char* n1, SEXPTYPE t1, const char* n2, SEXPTYPE t2) {
-  addkappa(0, n1, t1);
-  addkappa(1, n2, t2);
-}
-void kappanames(const char* n1, SEXPTYPE t1, const char* n2, SEXPTYPE t2,
-		const char* n3, SEXPTYPE t3) {
-  addkappa(0, n1, t1);
-  addkappa(1, n2, t2);
-  addkappa(2, n3, t3);
-}
-void kappanames(const char* n1, SEXPTYPE t1, const char* n2, SEXPTYPE t2,
-		const char* n3, SEXPTYPE t3, const char* n4, SEXPTYPE t4) {
-  addkappa(0, n1, t1);
-  addkappa(1, n2, t2);
-  addkappa(2, n3, t3);
-  addkappa(3, n4, t4);
-}
-void kappanames(const char* n1, SEXPTYPE t1, const char* n2, SEXPTYPE t2,
-		const char* n3, SEXPTYPE t3, const char* n4, SEXPTYPE t4,
-		const char* n5, SEXPTYPE t5) {
-  addkappa(0, n1, t1);
-  addkappa(1, n2, t2);
-  addkappa(2, n3, t3);
-  addkappa(3, n4, t4);
-  addkappa(4, n5, t5);
-}
-void kappanames(const char* n1, SEXPTYPE t1, const char* n2, SEXPTYPE t2,
-		const char* n3, SEXPTYPE t3, const char* n4, SEXPTYPE t4,
-		const char* n5, SEXPTYPE t5, const char* n6, SEXPTYPE t6) {
-  addkappa(0, n1, t1);
-  addkappa(1, n2, t2);
-  addkappa(2, n3, t3);
-  addkappa(3, n4, t4);
-  addkappa(4, n5, t5);
-  addkappa(5, n6, t6);
-}
-
-/*
-real    0m47.752s
-user    0m47.479s
-sys     0m0.204s
-make: *** [vrun] Error 1
-
-real    0m47.996s
-user    0m47.559s
-sys     0m0.364s
-
-
-real    4m18.616s
-user    4m12.044s
-sys     0m2.284s
-make: *** [vrun] Error 1
-
-real    4m25.319s
-user    4m17.472s
-sys     0m3.008s
-schlather@DD787F2J:~/R/RF> time make v
-echo -e "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-
-*/
-
-void addsub(int i, const char *n) {
-  cov_fct *C = CovList + currentNrCov - 1;
-  assert(n[0] != 'k' && n[0] != 'u');
-  assert(i < MAXSUB);
-  strcopyN(C->subnames[i], n, PARAMMAXCHAR);
-}
-
-void subnames(const char* n1) {
-  addsub(0, n1);
-}
-void subnames(const char* n1, const char* n2) {
-  addsub(0, n1);
-  addsub(1, n2);
-}
-void subnames(const char* n1, const char* n2, const char* n3) {
-  addsub(0, n1);
-  addsub(1, n2);
-  addsub(2, n3);
-}
-void subnames(const char* n1, const char* n2, const char* n3, const char* n4) {
-  addsub(0, n1);
-  addsub(1, n2);
-  addsub(2, n3);
-  addsub(3, n4);
-}
-void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
-	      const char* n5) {
-  addsub(0, n1);
-  addsub(1, n2);
-  addsub(2, n3);
-  addsub(3, n4);
-  addsub(4, n5);
-}
-void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
-	      const char* n5, const char* n6) {
-  addsub(0, n1);
-  addsub(1, n2);
-  addsub(2, n3);
-  addsub(3, n4);
-  addsub(4, n5);
-  addsub(5, n6);
-}
-
-
-void ErrCov(double *x, cov_model *cov, double *v) {
-    // int *f; PRINTF("%d\n", f[0]);
-  error("unallowed or undefined call of function");
-}
-void ErrCovNonstat(double *x, double *y, cov_model *cov, double *v) {
-  error("unallowed or undefined call of non-stationary function");
-}
-
-char InternalName[]="-";
-void kappasize1(int i, cov_model *cov, int *nrow, int *ncol) {
-  *nrow = *ncol = 1;
-}
-void createmodel(const char *name, int kappas, size_fct kappasize,	
-		 stationary_type stationary, isotropy_type isotropy,
-		 checkfct check, rangefct range, init_meth initmethod,
-		 do_meth domethod, int vdim, pref_shorttype pref) {
-  int i;
-
-  if (currentNrCov==-1) InitModelList(); 
-  assert(CovList!=NULL);
-  assert(currentNrCov>=0);
-  if (currentNrCov>=MAXNRCOVFCTS) {
-    PRINTF("Error. Model list full.\n");
-    assert(false);
-  }
-  
-  //printf("%d\n", PL);
-  if (PL > 8) PRINTF("%d %s vdim=%d\n", currentNrCov, name, vdim); 
-
-  strcopyN(CovList[currentNrCov].name, name, MAXCHAR);
-  strcopyN(CovNames[currentNrCov], name, MAXCHAR);
-  assert(strcmp(InternalName, name));
-
-  CovList[currentNrCov].name[MAXCHAR-1]='\0';
-  if (strlen(name)>=MAXCHAR) {
-    PRINTF("Warning! Covariance name is truncated to `%s'",
-	   CovList[currentNrCov].name);
-  }
-
-  cov_fct *C = CovList + currentNrCov;
-  assert(kappas >= 0);
-  C->kappas = kappas;
-  C->minsub = C->maxsub = 0;
-  C->primitive = true;
-  memcpy(C->pref, pref, sizeof(pref_shorttype));
-
-  C->stationary = stationary; 
-  C->isotropy = isotropy;
-  C->vdim = vdim;
-  for (i=0; i<kappas; i++) {
-    sprintf(C->kappanames[i], "k%d", i); // default (repeated twice)
-    C->kappatype[i] = REALSXP;
-  }
-  C->kappasize = (kappasize == NULL) ? kappasize1 : kappasize;
-  C->range= range; 
-  assert(range != NULL);
-  C->check = check;
-  assert(C->check != NULL);
-  for (i=0; i<SimulationTypeLength; i++)
-    C->implemented[i] = NOT_IMPLEMENTED;
-
-  C->internal = false;
-  C->naturalscale=NULL;
-  C->invSq = C->cov = C->D = C->D2 = C->tbm2 = C->D3 = C->D4 = ErrCov;
-  C->derivs = -1;
-  C->nonstat_cov = ErrCovNonstat;
-  C->nabla = C->hess =  ErrCov;
-  C->coinit = C->ieinit = NULL;
-  C->alternative = NULL;
-
-  C->spectral=NULL;
-  C-> initspectral=NULL;
-
-  C->mppinit = NULL;
-  C->randomcoin = NULL;
-  C->mppget = NULL;
-  C->mppgetstat = NULL;
-  C->mpplocations = MPP_MISMATCH;
-  C->avef = NULL;
-  C->avelogg = NULL;
-  C->mineigenvalue = NULL;
-
-  C->drawlogmix = NULL;
-  C->logmixweight = NULL;
-
-  C->hyperplane=NULL;
-//  C->initspecial=NULL;
-//  C->special=NULL;
-  
-  C->initmethod=initmethod;
-  C->domethod=domethod;
-
-  currentNrCov++;
-}
-
-int IncludePrim(const char *name, int kappas, 
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range) {  
-    createmodel(name, kappas, NULL, stationary, isotropy, check, range,
-		NULL, NULL, UNIVARIATE, PREF_ALL);
-    return currentNrCov - 1;
-}
-int IncludePrim(const char *name, int kappas, size_fct kappasize,
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range) {  
-    createmodel(name, kappas, kappasize, stationary, isotropy, check, range,
-		NULL, NULL, UNIVARIATE, PREF_ALL);
-    return currentNrCov - 1;
-}
-
-int IncludePrim(const char *name, int kappas, 
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range, int vdim) {  
-    createmodel(name, kappas, NULL, stationary, isotropy, check, range,
-		NULL, NULL, vdim, PREF_ALL);
-    return currentNrCov - 1;
-}
-int IncludePrim(const char *name, int kappas, size_fct kappasize,
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range, int vdim) {  
-    createmodel(name, kappas, kappasize, stationary, isotropy, check, range,
-		NULL, NULL, vdim, PREF_ALL);
-    return currentNrCov - 1;
-}
-
-int IncludePrim(const char *name, int kappas, 
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range, pref_type pref,
-		 int vdim) {  
-    createmodel(name, kappas, NULL, stationary, isotropy, check, range,
-		NULL, NULL, vdim, pref);
-    return currentNrCov - 1;
-}
-int IncludePrim(const char *name, int kappas, size_fct kappasize,
-		 stationary_type stationary, isotropy_type isotropy,	
-		 checkfct check, rangefct range,pref_type pref, int vdim) {  
-    createmodel(name, kappas, kappasize, stationary, isotropy, check, range,
-		NULL, NULL, vdim, pref);
-    return currentNrCov - 1;
-}
-
-
-void make_internal() {  
-    int nr = currentNrCov - 1;  
-    cov_fct *C = CovList + nr;
-    C->internal = true;
-}
-
-
-// extern ?!
-int IncludeModel(const char *name, char minsub, char maxsub, int kappas,
-		  size_fct kappasize,
-		  stationary_type stationary, isotropy_type isotropy,
-		  checkfct check, rangefct range, pref_type pref, 
-		  init_meth initmethod, do_meth domethod, bool internal,
-		  int vdim) {  
-    createmodel(name, kappas, kappasize, stationary, isotropy, check, range,
-		initmethod, domethod, vdim, pref);
-//    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
-    assert(maxsub >= minsub && maxsub <= MAXSUB);
-
-    int i, 
-      nr = currentNrCov - 1;  
-    cov_fct *C = CovList + nr;
-    C->minsub = minsub;
-    C->maxsub = maxsub;  
-    C->primitive = false;
-    C->internal = internal;
-
-    for (i=0; i<maxsub; i++) {
-      sprintf(C->subnames[i], "u%d", i+1); // default (repeated twice)
-    }
-    return nr;
-}
-int IncludeModel(const char *name, char minsub, char maxsub, int kappas, 
-		  size_fct kappasize,
-		  stationary_type stationary, isotropy_type isotropy,
-		  checkfct check, rangefct range, pref_type pref) {
-  return 
-      IncludeModel(name, minsub, maxsub, kappas, kappasize, stationary, isotropy,
-		   check, range, pref, NULL, NULL, false, UNIVARIATE);
-}
-int IncludeModel(const char *name, char minsub, char maxsub, int kappas, 
-		  stationary_type stationary, isotropy_type isotropy,
-		  checkfct check, rangefct range, pref_type pref) {
-  return
-      IncludeModel(name, minsub, maxsub, kappas, NULL, stationary, isotropy,
-	       check, range, pref, NULL, NULL, false, UNIVARIATE);
-}
-
-
-void addCov(covfct cf, covfct D, covfct D2, natscalefct naturalscale) {
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov) && cf!=NULL);
-  cov_fct *C = CovList + nr;
-  assert(cf != NULL);
-  C->cov = cf;
-  if (C->derivs < 0) C->derivs = 0;
-  assert(C->nonstat_cov == ErrCovNonstat);
-  assert(C->vdim == UNIVARIATE || C->vdim == SUBMODELM || D==NULL);
-
-  if (D != NULL) {
-    assert(cf != NULL);
-   if (C->cov!=NULL && C->derivs < 1) C->derivs = 1;
-    C->D=D;    
-    assert(C->isotropy == ISOTROPIC || C->isotropy == SPACEISOTROPIC ||
-	   C->isotropy == PREVMODELI);
-    C->implemented[TBM2] = NUM_APPROX;
-    C->implemented[TBM3] = true; 
-  }
-  if (D2 != NULL) {
-    assert(D != NULL);
-    C->D2 = D2;
-   if (C->cov!=NULL && C->D != NULL && C->derivs < 2)  C->derivs = 2;
-  }
-  if (C->maxsub > 0 && currentNrCov>GATTER+10) 
-      assert(naturalscale == NULL);
-  C->naturalscale=naturalscale;
-  C->implemented[Direct] = cf != NULL;
-  C->implemented[CircEmbed] = cf != NULL &&
-    (C->stationary == STATIONARY || C->stationary == PREVMODELS);
-  C->implemented[Sequential] = C->implemented[CircEmbed] && C->vdim <= 1;
-}
-
-void addCov(covfct cf, covfct D, natscalefct naturalscale) {
-  addCov(cf, D, NULL, naturalscale);
-}
-
-
-void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    natscalefct naturalscale) {
-
-    addCov(cf, D, D2, naturalscale);
-
- 
-    cov_fct *C = CovList + currentNrCov - 1;
-    C->D3 = D3;
-    C->D4 = D4;
-    assert(C->derivs == 2 && D3!=NULL && D4!=NULL);
-    C->derivs = 4;
-}
-
-
-
-void addCov(nonstat_covfct cf) {
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov) && cf!=NULL);
-  cov_fct *C = CovList + nr;
-
-  assert(cf != NULL);
-  C->nonstat_cov = cf;
-  C->implemented[Direct] = true;
-  C->implemented[CircEmbed] = 
-      C->stationary == STATIONARY || C->stationary == PREVMODELS;
-  C->implemented[Sequential] = C->implemented[CircEmbed] && C->vdim <= 1;
-
-  if (C->derivs < 0) C->derivs = 0;
-  
-}
-
-void nablahess(covfct nabla, covfct hess) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-
-  assert((nr>=0) && (nr<currentNrCov));
-  assert(C->vdim == UNIVARIATE || C->vdim == SUBMODELM || nabla==NULL);
-  assert(C->cov != NULL && nabla!=NULL && hess != NULL);
-  
-  C->nabla=nabla;    
-  C->hess = hess;
-
-//  if (C->derivs>0) {
-//     printf("%s: %d\n", C->name, C->derivs);
-//      assert(C->derivs >= 2);
-//  }
-}
-
-void addCov(aux_covfct auxcf)
-{
-
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov) && auxcf!=NULL);
-  cov_fct *C = CovList + nr;
-
-  assert(C->cov == ErrCov && C->nonstat_cov==ErrCovNonstat && 
-	 (C->stationary == AUXMATRIX || C->stationary == ANYFCT || true));
-  C->aux_cov = auxcf;
-  if (C->derivs < 0) C->derivs = 0;
-}
-
-int addFurtherCov(covfct cf, covfct D, covfct D2) {
-  assert(currentNrCov > 0);
-  cov_fct *C = CovList + currentNrCov;
-  memcpy(C, C - 1, sizeof(cov_fct));
-  assert(C->vdim == UNIVARIATE || C->vdim == SUBMODELM || D == NULL);
-
-  strcopyN(CovNames[currentNrCov], InternalName, MAXCHAR);
-  C->name[0] = InternalName[0];
-  strcopyN(C->name + 1, CovList[currentNrCov-1].name, MAXCHAR - 1);
-  if (cf != NULL) {
-    C->cov = cf;
-    C->derivs = 0;
-  }
-  if (D != NULL) {
-    assert(cf != NULL);
-    C->D = D;
-    C->derivs = 1;
-
-    //   printf("%s %d\n", C->name, C->isotropy);
-
-    assert(C->isotropy == ISOTROPIC || C->isotropy == SPACEISOTROPIC ||
-	   C->isotropy == ZEROSPACEISO ||
-	   C->isotropy == PREVMODELI);
- 
-    C->implemented[TBM2] = NUM_APPROX;
-    C->implemented[TBM3] = true; 
-  }
-  if (D2 != NULL) {
-    assert(D != NULL);
-    C->D2 = D2;
-    C->derivs = 2;
-  }
-  C->internal = true; // addCov is used without previous call of IncludeModel
-  currentNrCov++;
-  return currentNrCov - 1;
-}
-
-int addFurtherCov(covfct cf, covfct D) {
-  return addFurtherCov(cf, D, NULL);
-}
-
-int addFurtherCov(nonstat_covfct cf) {
-  assert(currentNrCov > 0);
-  cov_fct *C = CovList + currentNrCov;
-  memcpy(C, C - 1, sizeof(cov_fct));
-  strcopyN(CovNames[currentNrCov], InternalName, MAXCHAR);
-  C->name[0] = InternalName[0];
-  strcopyN(C->name + 1, CovList[currentNrCov-1].name, MAXCHAR - 1);
-  C->derivs = -1;
-  if (cf != NULL) {
-    C->nonstat_cov = cf;
-    C->derivs = 0;
-  }
-  C->D = ErrCov;
-  C->internal = true; // addCov is used without previous call of IncludeModel
-  C->mppget = NULL;
-  C->mppgetstat = NULL;
-  currentNrCov++;
-  return currentNrCov - 1;
-}
-
-int addFurtherCov(nonstat_covfct cf, covfct D, covfct D2) {
-  assert(currentNrCov > 0);
-  cov_fct *C = CovList + currentNrCov;
-  memcpy(C, C - 1, sizeof(cov_fct));
-  strcopyN(CovNames[currentNrCov], InternalName, MAXCHAR);
-  C->name[0] = InternalName[0];
-  strcopyN(C->name + 1, CovList[currentNrCov-1].name, MAXCHAR - 1);
-  C->derivs = -1;
-  if (cf != NULL) {
-    C->nonstat_cov = cf;
-    C->derivs = 0;
-  }
-  C->D = ErrCov;
-  C->internal = true; // addCov is used without previous call of IncludeModel
-  C->mppget = NULL;
-  C->mppgetstat = NULL;
-  currentNrCov++;
-  return currentNrCov - 1;
-}
-
-
-void addLocal(getlocalparam coinit, getlocalparam ieinit) {
-  int nr = currentNrCov - 1;
-  assert(nr>=0 && nr < currentNrCov) ;
-  cov_fct *C = CovList + nr;
-  assert(C->D!=ErrCov);
-  if ((C->implemented[CircEmbedIntrinsic] = ieinit != NULL)) {
-    assert(C->D2 != NULL);
-    C->ieinit = ieinit;
-  } 
-  if ((C->implemented[CircEmbedCutoff] = coinit != NULL)) {
-    C->coinit = coinit;
-  }
-}
-void addCallLocal(altlocalparam alt) {
-  int nr = currentNrCov - 1;
-  assert(nr>=0 && nr < currentNrCov) ;
-  cov_fct *C = CovList + nr;
-  C->alternative = alt;
-}
-
-int addTBM(covfct tbm2) {
-  // must be called always AFTER addCov !!!!
-  int nr = currentNrCov - 1;
-  assert((nr>=0) && (nr<currentNrCov));
-  cov_fct *C = CovList + nr;
-  assert(C->stationary == STATIONARY || C->stationary == PREVMODELS);
-  assert(C->vdim == UNIVARIATE || C->vdim == SUBMODELM);
-  C->tbm2=tbm2;
-  if (tbm2 != NULL) {
-    // addTBM is called from the other addTBM's -- so tbm2 might
-    // be NULL
-    assert(C->isotropy==ISOTROPIC || C->isotropy==SPACEISOTROPIC || 
-	   C->isotropy==PREVMODELI);
-    assert(C->D != ErrCov);
-    C->implemented[TBM2] = IMPLEMENTED;
-  }
-  // IMPLEMENTED must imply the NUM_APPROX to simplify the choice
-  // between TBM2 and Tbm2Num
-  return nr;
-}
-
-void addTBM(covfct tbm2, spectral_init initspectral, spectral_do spectral) {
-  int nr = addTBM(tbm2);
-  cov_fct *C = CovList + nr;
-  assert(C->vdim == UNIVARIATE || C->vdim == SUBMODELM);
-
-  C->initspectral=initspectral;
-  C->spectral=spectral;
-  C->implemented[SpectralTBM] = true;
-  assert(C->stationary == STATIONARY || C->stationary == PREVMODELS);
-}
-
-void addTBM(spectral_init initspectral, spectral_do spectral) {
-  addTBM((covfct) NULL, initspectral, spectral);
-}
-	
-void addInv(covfct invSq) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert((nr>=0) && (nr<currentNrCov));
-  
-  // printf("%s %d  %d\n", C->name, invSq, invstableSq);
-
-  C->invSq=invSq;
-}
-	
-void addHyper(hyper_pp_fct hyper_pp) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert((nr>=0) && (nr<currentNrCov));
-  C->hyperplane=hyper_pp;
-  C->implemented[Hyperplane] = hyper_pp!=NULL;
-}
-		   
-//void addSpecialMeth(initstandard initspecial, dometh special)  {
-///  int nr = currentNrCov - 1;
-//  cov_fct *C = CovList + nr;
-//  C->initspecial=initspecial;
-//  C->special=special;
-//  if ((special!=NULL) || (initspecial!=NULL)) 
-//    assert((special!=NULL) && (initspecial!=NULL));
-//  C->implemented[Special] = true;
-//}
-
-void addMarkov(int *variable) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  C->implemented[Markov] = true; 
-  *variable = nr;
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_get mppget,
-	    sd_fct sd, int loc, bool timesep){
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-
-//  print("addmpp %s\n", C->name);
-
-  assert(mppinit!=NULL &&  randomcoin!=NULL && mppget!=NULL);
-  C->mppinit = mppinit;
-  C->randomcoin = randomcoin;
-  C->mppget = mppget;
-  assert(C->stationary >= COVARIANCE);
-  C->sd = sd;
-  C->mpplocations = loc;
-  C->implemented[RandomCoin] = true; 
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_get mppget, 
-	    sd_fct sd, int loc){
- addMPP(mppinit, randomcoin, mppget, sd, loc, false);
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_get mppget, 
-	    sd_fct sd, int loc,
-	    ave_fct avef, ave_logfct avelogg) {
-  addMPP(mppinit, randomcoin, mppget, sd, loc, true);
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert(avef != NULL && avelogg != NULL);
-   assert(C->stationary == STATIONARY);
-  C->avef = avef;
-  C->avelogg = avelogg;
-  C->implemented[Average] = true; 
-
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_getstat mppgetstat,
-	    sd_fct sd, int loc, bool timesep){
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert(mppinit!=NULL &&  randomcoin!=NULL && mppgetstat!=NULL);
-  C->mppinit = mppinit;
-  C->randomcoin = randomcoin;
-  C->mppgetstat = mppgetstat;
-  // printf("%d\n", C->stationary);
-  assert(C->stationary < COVARIANCE || C->stationary == PREVMODELS );
-  C->sd = sd;
-  C->mpplocations = loc;
-  C->implemented[RandomCoin] = true; 
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_getstat mppgetstat, 
-	    sd_fct sd, int loc){
- addMPP(mppinit, randomcoin, mppgetstat, sd, loc, false);
-}
-
-void addMPP(mpp_init mppinit, mpp_model randomcoin, mpp_getstat mppgetstat, 
-	    sd_fct sd, int loc,
-	    ave_fct avef, ave_logfct avelogg) {
-  addMPP(mppinit, randomcoin, mppgetstat, sd, loc, true);
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert(avef != NULL && avelogg != NULL);
-  assert(C->stationary == STATIONARY || C->stationary == PREVMODELS);
-  C->avef = avef;
-  C->avelogg = avelogg;
-  C->implemented[Average] = true; 
-
-}
-
-void addSpecial(realfct mineigen){
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  C->mineigenvalue = mineigen;
-}
-
-void addGaussMixture(draw_logmix drawlogmix,
-		     log_mixweight logmixweight) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr;
-  assert(drawlogmix != NULL && logmixweight != NULL);
-  C->drawlogmix = drawlogmix;
-  C->logmixweight = logmixweight;
-}
-
 int getmodelnr(char *name) {
   // == -1 if no matching function is found
   // == -2 if multiple matching fctns are found, without one matching exactly
   // == -3 if internal name is passed
   // if more than one match exactly, the last one is taken (enables overwriting 
   // standard functions)
+  int match;
 
-  if (currentNrCov==-1) InitModelList();
+  if (currentNrCov==-1) { InitModelList(); }
   if (!strcmp(name, InternalName)) return MATCHESINTERNAL;
-
+  if ((match = Match(name, CovNickNames, currentNrCov)) >= 0) return match;
   return Match(name, CovNames, currentNrCov);
 }
 
@@ -1167,6 +1245,41 @@ int Match(char *name, name_type List, int n) {
   int Nr;
   Nr=0;
   ln=strlen(name);
+  //  print("Match %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+
+  while ( Nr < n  && strncmp(name, List[Nr], ln)) Nr++;
+  if (Nr < n) { 
+    if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
+      return Nr;
+    // a matching function is found. Are there other functions that match?
+    int j; 
+    bool multiplematching=false;
+    j=Nr+1; // if two or more covariance functions have the same name 
+    //            the last one is taken 
+    while (j<n) {
+      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
+      if (j<n) {
+	if (ln==strlen(List[j])) { // exactmatching -- take first 
+	  return j;
+	}
+	else {multiplematching=true;}
+      }
+      j++;
+    }
+    if (multiplematching) {return MULTIPLEMATCHING;}
+  } else return NOMATCHING;
+  return Nr;
+}
+
+int Match(char *name, const char * List[], int n) {
+  // == -1 if no matching name is found
+  // == -2 if multiple matching fctns are found, without one matching exactly
+  unsigned int ln;
+  int Nr;
+  Nr=0;
+  ln=strlen(name);
+  //  print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+
   while ( Nr < n  && strncmp(name, List[Nr], ln)) Nr++;
   if (Nr < n) { 
     if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
@@ -1192,8 +1305,152 @@ int Match(char *name, name_type List, int n) {
 }
 
 
+void MultiDimRange(cov_model *cov, double *natscale) {
+  int wave, i, redxdim, d, idx, 
+    xdimprev = cov->xdimprev,
+    vdim = cov->vdim,
+    err = NOERROR;
+  double y, yold, x[MAXGETNATSCALE], threshold, natsc, factor, sign,
+    newx, xsave, newy, 
+    *dummy =  NULL,
+    rel_threshold = 0.05;
+
+  
+  bool domain = cov->domown ==XONLY;
+  //  covfct cf=NULL;
+  // nonstat_covfct ncf=NULL;
+  
+  assert(MAXGETNATSCALE <= MAXCOVDIM); // ZERO
+  
+  redxdim = cov->xdimown;
+         
+  if (redxdim > MAXGETNATSCALE) {
+    err = -1; goto ErrorHandling;
+  }
+ 
+  if ((dummy = (double*) MALLOC(sizeof(double) * vdim * vdim)) == NULL) {
+    err = -2; goto ErrorHandling;
+  }
+ 
+  if (cov->full_derivs < 0) { err=ERRORNOTDEFINED; goto ErrorHandling; }
+  if (domain) {
+    COV(ZERO, cov, dummy);
+  } else {
+    NONSTATCOV(ZERO, ZERO, cov, dummy);
+  }
+  threshold = rel_threshold * dummy[0];
+  
+  for (d=0; d<redxdim; d++) {
+    wave  = 0;
+    for (i=0; i<xdimprev; i++) x[i] = 0.0;
+    
+    idx = (redxdim == xdimprev || d==0) ? d : xdimprev-1; 
+    x[idx] = 1.0;
+
+     
+    if (domain) COV(x, cov, dummy) else NONSTATCOV(ZERO, x, cov, dummy); 
+    yold = dummy[0];
+    if (ISNA(yold) || ISNAN(yold)) { err = -3; goto ErrorHandling;}
+    // print("(%f %f) thres=%f yold=%f %d\n", x[0], x[1], threshold, yold,
+    //	   yold > threshold);
+    if (yold > threshold) {
+      factor = 2.0;
+      sign = 1.0;
+    } else {
+      factor = 0.5;
+      sign = -1.0;
+    } 
+    
+    double otherx;
+    x[idx] *= factor;
+    if (domain) COV(x, cov, dummy) else NONSTATCOV(ZERO, x, cov, dummy);
+    y = dummy[0];
+    
+    // print("%f %f : y=%f diff=%f %f\n", x[0], x[1], y, y - threshold,
+    //	   sign * (y - threshold));
+    while (sign * (y - threshold) > 0) {  
+      if (yold<y){ 
+	if (wave++>10) { err=ERRORWAVING; goto ErrorHandling; }
+      }
+      yold = y;
+      x[idx] *= factor;
+      if (x[idx]>1E30) { err=ERRORRESCALING; goto ErrorHandling; }
+      if (domain) COV(x, cov, dummy) else NONSTATCOV(ZERO, x, cov, dummy);
+      y = dummy[0];
+    }
+
+
+    otherx = x[idx] / factor;
+
+    //   print("%f %f : y=%f diff=%f %f\n", x[0], x[1], y, y - threshold,
+    //	   sign * (y - threshold));
+
+    for (i=0; i<3 /* good choice?? */ ;i++) {       
+
+      //   print("%d %f %f; other=%f\n", i, x[0], x[1], otherx); 
+   
+      if (y==yold) { err=ERRORWAVING; goto ErrorHandling; }
+      newx = x[idx] + (x[idx]-otherx)/(y-yold)*(threshold-y);
+      // print("newx=%f xidx=%f, oth=%f y=%f yold=%f, thr=%f\n",
+      //	     newx, x[idx], otherx, y, yold, threshold);
+      //  print("thres %f\n", threshold);
+      xsave = x[idx];
+      x[idx] = newx;
+      if (domain) COV(x, cov, dummy) else NONSTATCOV(ZERO, x, cov, dummy);
+      newy = dummy[0];
+      x[idx] = xsave;
+      
+      if (sign * (newy - threshold) > 0) {
+	otherx = newx;
+	yold  = newy;
+      } else {
+	x[idx] = newx;
+	y = newy;
+      }
+    }
+
+    // print("%f %f\n", y, threshold);
+
+    if (y==yold)  { err=ERRORWAVING; goto ErrorHandling; }
+    natsc = 1.0 / ( x[idx] + 
+		    (x[idx]-otherx)/(y-yold)*(threshold-y) );
+    
+    if (redxdim == xdimprev || d==0) {
+      natscale[d] = natsc;
+    } else {
+      int beg, end;
+      if (redxdim == 2) {
+	if (d==0) {
+	  beg = 0;
+	  end = xdimprev-1;
+	} else {
+	  beg = end = xdimprev-1;
+	}
+      } else {
+	beg = 0;
+	end = xdimprev;
+      }
+      for (i=beg; i<end; natscale[i++] = natsc);
+    }
+  }
+  
+ ErrorHandling:
+  if (dummy  != NULL) free(dummy);
+  switch(err) {
+  case NOERROR : break;
+  case -1 : 
+    ERR("dimension of x-coordinates too high to detect natural scaling.");
+  case -2 :
+    ERR("not enough memory when determining natural scaling.");
+  case -3 :
+    ERR("NA in model evaluation detected"); 
+  default: XERR(err);
+  } 
+}
+
+
 void UserGetNatScaling(double *natscale) {
-  GetNaturalScaling(STORED_MODEL[MODEL_USER], natscale);
+  GetNaturalScaling(KEY[MODEL_USER], natscale);
 }
 
 
@@ -1204,24 +1461,24 @@ void GetNaturalScaling(cov_model *cov, double *natscale)
   //#define NATSCALE_EXACT 1   
   //#define NATSCALE_APPROX 2
   //#define NATSCALE_MLE 3 /* check fitvario when changing !! */
-  // +10 if numerical is allowed
-   if (cov->nr >= GATTER && cov->nr <= LASTGATTER) cov = cov->sub[0];
-  cov_fct *C = CovList + cov->nr;
+  
+  cov_fct *C = CovList + cov->nr; // nicht gatternr
   *natscale = 0.0;
-
-
-  // printf("%s %d\n", C->name, C->maxsub);
-
 
   if (C->maxsub!=0) XERR(ERRORFAILED); 
  
-  if (C->isotropy != ISOTROPIC || C->stationary != STATIONARY ||
-      C->vdim != UNIVARIATE) 
-      XERR(ERRORANISOTROPIC); 
+  if (C->isotropy != ISOTROPIC || C->domain != XONLY ||
+      !isPosDef(C->Type) || C->vdim != SCALAR) 
+    ERR("anisotropic function not allowed");
 	 
+  if (C->finiterange == true) {
+    *natscale = 1.0;
+    return;
+  }
   
-  if (C->naturalscale!=NULL) { 
-    *natscale = C->naturalscale(cov);
+  if (C->inverse!=NULL) { 
+    C->inverse(&GLOBAL.gauss.approx_zero, cov, natscale);
+    *natscale = 1.0 / *natscale;
     if (ISNAN(*natscale) || ISNA(*natscale) || *natscale != 0.0) {
       return;
     }
@@ -1229,93 +1486,30 @@ void GetNaturalScaling(cov_model *cov, double *natscale)
     
   if (NS != NATSCALE_ORNUMERIC) XERR(ERRORRESCALING); 
 
-  double x,newx,yold,y,newy;
-  covfct cf;
-  int wave, i;
   if ((C->cov)==nugget)  XERR(ERRORRESCALING); 
-  if ((cf=C->cov)==NULL) XERR(ERRORNOTDEFINED);
       
-      // already calculated ?
-//      parami=KAPPA; // do not compare mean,variance, etc.
-//      if (oldcovnr==*covnr) {
-//	for (; parami<=LASTKAPPA; parami++) {
-//	  if (oldp[parami]!=p[parami]) {
-//	    break;
-//	  }
-//	}
-//	if (parami > LASTKAPPA) {
-//	  *natscale=OldNatScale; 
-//	  return;
-//	}
-//      }
-//      for (; parami<=LASTKAPPA; parami++) {oldp[parami]=p[parami];}
+  // already calculated ?
+  //      parami=KAPPA; // do not compare mean,variance, etc.
+  //      if (oldcovnr==*covnr) {
+  //	for (; parami<=LASTKAPPA; parami++) {
+  //	  if (oldp[parami]!=p[parami]) {
+  //	    break;
+  //	  }
+  //	}
+  //	if (parami > LASTKAPPA) {
+  //	  *natscale=OldNatScale; 
+  //	  return;
+  //	}
+  //      }
+  //      for (; parami<=LASTKAPPA; parami++) {oldp[parami]=p[parami];}
 
-      /* **************************************
-	 Now, find a quick and good solution for NewInvScale --
-      */
+  /* **************************************
+     Now, find a quick and good solution for NewInvScale --
+  */
   
-  wave  = 0;
-  x = 1.0;
-  cf(&x, cov, &yold);
-  if (ISNA(yold) || ISNAN(yold)) {*natscale = RF_NAN; return;}
-  if (yold > 0.05) {
-    double leftx;
-    x *= 2.0;
-    cf(&x, cov, &y);
-    while (y > 0.05) {  
-      if (yold<y){ 
-	  wave++;  
-	  if (wave>10) XERR(ERRORWAVING); 
-      }
-      yold = y;
-      x *= 2.0;
-      if (x>1E30) XERR(ERRORRESCALING); // or use a separate ERROR
-      cf(&x, cov, &y);
-    } 
-    leftx = x * 0.5;
-    for (i=0; i<3 /* good choice?? */ ;i++) {          
-	if (y==yold) XERR(ERRORWAVING); // should never appear
-      newx = x + (x-leftx)/(y-yold)*(0.05-y);
-      cf(&newx, cov, &newy);
-      if (newy > 0.05) {
-	leftx = newx;
-	yold  = newy;
-      } else {
-	x = newx;
-	y = newy;
-      }
-    }
-    if (y==yold) XERR(ERRORWAVING); // should never appear
-    *natscale = 1.0 / ( x + (x-leftx)/(y-yold)*(0.05-y) );
-  } else {
-    double rightx;
-    x *= 0.5;
-    cf(&x, cov, &y);
-    while (y < 0.05) {  
-	if (yold>y){ wave++;  if (wave>10) XERR(ERRORWAVING); }
-      yold = y;
-      x *= 0.5;
-      if (x<1E-30) XERR(ERRORRESCALING); //or use a separate ERROR
-      cf(&x, cov, &y);
-    }    
-    rightx = x * 2.0;
-    for (i=0; i<3 /* good choice?? */ ;i++) {          
-	if (y==yold) XERR(ERRORWAVING); // should never appear
-      newx = x + (x-rightx)/(y-yold)*(0.05-y);
-      cf(&x, cov, &newy);
-      if (newy < 0.05) {
-	rightx = newx;
-	yold   = newy;
-      } else {
-	x = newx;
-	y = newy;
-      }
-    }
-    if (y==yold) XERR(ERRORWAVING); // should never appear
-    *natscale = 1.0 / ( x + (x-rightx)/(y-yold)*(0.05-y));
-  }
+  assert(cov->xdimown == 1); 
+  MultiDimRange(cov, natscale);
 }
-
 
 
 
@@ -1326,181 +1520,324 @@ void Getxsimugr(coord_type x, double *aniso, int timespacedim, double **xsimugr)
   if (aniso == NULL) {
     for(w=0; w<timespacedim; w++) {
       for (i=0; i<3; i++) {
-	  xsimugr[w][i] = x[w][i];
+	xsimugr[w][i] = x[w][i];
       }
     } 
   } else {  
-      for(n=w=0; w<timespacedim; w++, n+=timespacedim+1) {
-	  for (i=0; i<3; i++) {
-	      xsimugr[w][i] = aniso[n] * x[w][i];
-	  }
+    for(n=w=0; w<timespacedim; w++, n+=timespacedim+1) {
+      for (i=0; i<3; i++) {
+	xsimugr[w][i] = aniso[n] * x[w][i];
       }
+    }
   }
 }
 
-void GetCoordinates(int *keyNr, double *x, int *err)
-{
-  key_type *key;
-  if (currentNrCov==-1) {*err=-1;goto ErrorHandling;}
-  if ((*keyNr<0) || (*keyNr>=MAXKEYS)) {*err=-2; goto ErrorHandling;}
-  key = &(KEY[*keyNr]);
-  if (!key->simu.active) {*err=-3; goto ErrorHandling;}
-  if (key->trend.TrendModus==0) {*err=-4; goto ErrorHandling;}
- 
-  *err = ERRORNOTPROGRAMMED;  // TODO !!
 
-  return;
-
- ErrorHandling:
-  return;
-}
-
-
-void covcpy(cov_model **localcov, cov_model *cov, bool insertgatter,
-	    bool keepuser) {
-  assert(cov != NULL);
+void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
+  cov_fct *C = CovList + from->nr; // nicht gatternr
+  double **pto = to->p,
+    **pfrom = from->p;
   int i,
-    covnr = cov->nr,
-    n = -1;
-  cov_model *current;
-  cov_fct *C = CovList + cov->nr;
-  if (insertgatter && covnr >= GATTER && covnr <= LASTGATTER)
-    error("covcpy detects # at forbidden place -- please contact author");
-    
-  if (*localcov != NULL) error("local cov not NULL");
-  if ((*localcov = (cov_model*) malloc(sizeof(cov_model)))==0) 
-    ERR("memory allocation error");
-  if (insertgatter) {  // covnr != DOLLAR && 
-    COV_NULL(*localcov);
-    (*localcov)->nr = GATTER;
-    (*localcov)->nsub = 1;
-    (*localcov)->isoIn = cov->isoIn;
-    (*localcov)->statIn = cov->statIn;
-    (*localcov)->vdim = cov->vdim;
-    if (((*localcov)->sub[0] = (cov_model*) malloc(sizeof(cov_model)))==0)
-      ERR("memory allocation error");
-   current = (*localcov)->sub[0];
-  } else current = *localcov;
-  
-  memcpy(current, cov, sizeof(cov_model)); // replaces COV_NULL(*localcov);
-  if (!keepuser) {
-    for (i=0; i<Forbidden; i++)
-      current->user[i] = PREF_BEST;
-  }
-
-  current->calling = *localcov; 
-  
+     n = -1,
+     *to_col = to->ncol,
+     *to_row = to->nrow,
+     *from_col = from->ncol,
+     *from_row = from->nrow;
   for (i=0; i<MAXPARAM; i++) {
-    if (cov->p[i] == NULL) {
+    if (pfrom[i] == NULL) {
       continue;
     }
-    if (C->kappatype[i] >= LISTOF) {
-      current->p[i] = (double*) malloc(sizeof(listoftype));
-      int j, len = cov->nrow[i];
-      listoftype *p = (listoftype*) (cov->p[i]),
-	  *q = (listoftype*) (current->p[i]);	
-      for (j=0; j<len; j++) {
-	if (C->kappatype[i]== LISTOF + REALSXP) {
-	  n = sizeof(double);
-	} else assert(false);
-	n *= p->nrow[j] * p->ncol[j];
-	q->nrow[j] = p->nrow[j];
-	q->ncol[j] = p->ncol[j];
-	q->p[j] = (double*) malloc(n);
-	memcpy(q->p[i], p->p[i], n);	    
+
+    if (check) {
+      // if (strcmp(to->kappanames[i], from->kappanames[i]) != 0 ||
+      //	  type != from->kappatype[i]) return false;
+      if (to_col[i] != from_col[i] || to_row[i] != from_row[i]) {
+	if (pto[i] != NULL) free(pto[i]);
+	to_col[i] = from_col[i];
+	to_row[i] = from_row[i];
       }
+    }
+ 
+    if (C->kappatype[i] >= LISTOF) {      
+      pto[i] = (double*) MALLOC(sizeof(listoftype));
+      int j, len = from_row[i];
+      listoftype *p = (listoftype*) (pfrom[i]),
+	*q = (listoftype*) (pto[i]);	
+      if ((q->deletelist = copy_lists)) {      
+	for (j=0; j<len; j++) {
+	  if (C->kappatype[i]== LISTOF + REALSXP) {
+	    n = sizeof(double);
+	  } else assert(false);
+	  n *= p->nrow[j] * p->ncol[j];
+	  q->nrow[j] = p->nrow[j];
+	  q->ncol[j] = p->ncol[j];
+	  q->p[j] = (double*) MALLOC(n);
+	  MEMCOPY(q->p[j], p->p[j], n);	    
+	}
+      } else {
+ 	for (j=0; j<len; j++) {
+	  q->nrow[j] = p->nrow[j];
+	  q->ncol[j] = p->ncol[j];
+	  q->p[j] =  p->p[j];	    
+	}
+      }
+    } else if (C->kappatype[i]==LANGSXP) {
+      n = sizeof(sexp_type);
+      pto[i] = (double*) MALLOC(n);
+      MEMCOPY(pto[i], pfrom[i], n);
+      ((sexp_type *) pto[i])->Delete = false;
     } else {
-      if (C->kappatype[i]==REALSXP) {
-        n = sizeof(double);
-      } else if (C->kappatype[i]==INTSXP) {
-        n = sizeof(int);
-      } else assert(false);
-      n *= cov->nrow[i] * cov->ncol[i];
-      current->p[i] = (double*) malloc(n);
-      memcpy(current->p[i], cov->p[i], n);
+      if (C->kappatype[i]==CLOSXP) {
+	assert(false); // Marco brauchen wir CLSXP ??
+	n = sizeof(SEXP);
+      } else {
+	if (C->kappatype[i]==REALSXP) {
+	  n = sizeof(double);
+	} else if (C->kappatype[i]==INTSXP) {
+	  n = sizeof(int);
+	} else assert(false);
+	n *= from_row[i] * from_col[i];
+      }
+      
+      //      printf("i=%d %s %d\n", i, NICK(to), n);
+      
+      pto[i] = (double*) MALLOC(n); // war: lost ;; sollte jetzt ok sein.
+      MEMCOPY(pto[i], pfrom[i], n);
     }
   }
+
+  //PMI(to, "to");
+}
+
+
+int covcpy(cov_model **localcov, bool sub, cov_model *cov,
+	   location_type *prevloc, location_type *ownloc,
+	   bool copy_lists) {
+  assert(cov != NULL);
+  int i,
+    n = -1;
+  //cov_fct *C = CovList + cov->nr; // nicht gatternr
+
+  //PMI(cov);
+ 
+  if ((*localcov = (cov_model*) MALLOC(sizeof(cov_model)))==0) 
+    return ERRORMEMORYALLOCATION;
+  cov_model *current = *localcov;
+
+  MEMCOPY(current, cov, sizeof(cov_model)); // replaces COV_NULL(*localcov);
+  COV_ALWAYS_NULL(current);
+  current->calling = NULL; 
+  paramcpy(current, cov, false, copy_lists);
+
+  if (cov->ownkappanames != NULL) {
+    int nkappas = CovList[cov->nr].kappas;
+    current->ownkappanames = (char**)  CALLOC(nkappas, sizeof(char*));
+    for (i=0; i<nkappas; i++) {
+      if (cov->ownkappanames[i] != NULL) {
+	current->ownkappanames[i] =
+	  (char*) MALLOC(sizeof(char) * (1 + strlen(cov->ownkappanames[i])));
+	strcpy(current->ownkappanames[i], cov->ownkappanames[i]);
+      }
+    }
+  }
+
+  //  PMI(current, "covcpy");
+  
   if (cov->q != NULL) {
     n = sizeof(double) * current->qlen;
-    current->q = (double*) malloc(n);
-    memcpy(current->q, cov->q, n);
+    current->q = (double*) MALLOC(n);
+    MEMCOPY(current->q, cov->q, n);
   } else assert(current->qlen==0);
+
+  current->prevloc = ownloc != NULL ? ownloc : 
+    cov->prevloc == prevloc ? prevloc : NULL;
   
-  for (i=0; i<MAXSUB; i++) {
-    current -> sub[i] = NULL;
-    if (cov->sub[i] == NULL) continue;
-    if (insertgatter && 
-	cov->sub[i]->nr >= GATTER && cov->sub[i]->nr <= LASTGATTER) 
-      covcpy(current->sub + i, cov->sub[i]->sub[0], insertgatter, keepuser);
-    else 
-      covcpy(current->sub + i, cov->sub[i], insertgatter, keepuser);
-    current->sub[i]->calling = current; 
+  for (i=0; i<MAXPARAM; i++) {
+    int err;
+    current->kappasub[i] = NULL;
+    if (cov->kappasub[i] == NULL) continue;
+    err = covcpy(current->kappasub + i, true, cov->kappasub[i], 
+		 prevloc, ownloc, copy_lists);
+    if (err != NOERROR) return err;
+    current->kappasub[i]->calling = current;       
   }
-}
-
-
-
-//void covcpy(cov_model **localcov, cov_model *cov) {
-//  covcpy(localcov, cov, true, true);
-//}
-
-double *getAnisoMatrix(method_type *meth) {
-  double *ani;
-  int i, bytes, 
-      origdim = meth->loc->timespacedim,
-      dimP1 = origdim + 1;
-  if (meth->caniso != NULL) {
-    bytes = sizeof(double) * origdim * meth->xdimout;
-    ani = (double *) malloc(bytes);
-
-//      PrintMethodInfo(meth);
-//      printf("%ld  %ld %d %d %d\n", ani, meth->caniso, bytes,
-//	     origdim,  meth->xdimout); assert(false);
-
-    memcpy(ani, meth->caniso, bytes);
-  } else {
-    double a = 1.0 / meth->cscale;  
-    if (meth->cproj == NULL) {
-      bytes = origdim * origdim;
-      ani = (double *) calloc(bytes,  sizeof(double));
-      for (i=0; i<bytes; i+=dimP1) ani[i] = a; 
-    } else {
-      bytes = origdim * meth->xdimout;
-      ani = (double *) calloc(bytes,  sizeof(double));
-      for (i=0; i<meth->xdimout; i++) ani[i + meth->cproj[i] * origdim] = a; 	
-    }
-  }
-  return ani;
-}
  
-double *getAnisoMatrix(cov_model *cov, int dim) {
-  double *ani;
-  int i, bytes, dimout = dim,
-      dimP1 = dim + 1,
-       *proj = (int *)cov->p[DPROJ];
-  if (cov->p[DANISO] != NULL) {
-      bytes = sizeof(double) * dim * dimout;
-      ani = (double *) malloc(bytes);
-      memcpy(ani, cov->p[DANISO], bytes);
-  } else {
-    double a;
-    a = (cov->p[DSCALE] == NULL) ? 1.0 : 1.0 / cov->p[DSCALE][0];  
-    if (proj == NULL) {
-      bytes = dim * dimout;
-      ani = (double *) calloc(bytes,  sizeof(double));
-      for (i=0; i<bytes; i+=dimP1) ani[i] = a; 
-    } else {
-      dimout = cov->nrow[DPROJ];
-      bytes = dim * dimout;
-      ani = (double *) calloc(bytes,  sizeof(double));
-      for (i=0; i<dimout; i++) ani[i + proj[i] * dim] = a; 	
+  if (sub) {
+    for (i=0; i<MAXSUB; i++) {
+      int err;
+      current->sub[i] = NULL;
+      if (cov->sub[i] == NULL) continue;
+      err = covcpy(current->sub + i, sub, cov->sub[i], prevloc, ownloc,
+		   copy_lists);
+      if (err != NOERROR) return err;
+      current->sub[i]->calling = current;       
     }
+  } else {
+    for (i=0; i<MAXSUB; i++) current->sub[i] = NULL;
   }
+
+  // PMI(*localcov, "end covcpy");
+  return NOERROR;
+}
+
+
+int covcpy(cov_model **localcov, cov_model *cov) {
+  bool cov2key = &(cov->key)==localcov;
+  int 
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true);
+  if (err == NOERROR) 
+    (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+  // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
+  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
+  // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
+  // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
+  return err;
+}
+
+
+int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {
+  bool cov2key = &(cov->key)==localcov;
+  int 
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, copy_lists);
+  if (err == NOERROR) 
+    (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+  // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
+  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
+  // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
+  // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
+  return err;
+}
+
+int covcpy(cov_model **localcov, cov_model *cov,
+	   double *x, double *T, int spatialdim, int xdimOZ, int lx, bool Time, 
+	   bool grid, bool distances) {
+  bool cov2key = &(cov->key)==localcov;
+  int err;
+  location_type *loc= NULL;
+
+  err = loc_set(x, T, spatialdim, xdimOZ, lx, Time, grid, distances, &loc); 
+  if (err != NOERROR) return err;
+  if ((err = covcpy(localcov, true, cov, loc, NULL, true)) != NOERROR)
+    return err;
+  (*localcov)->prevloc = cov->prevloc;
+  (*localcov)->ownloc=loc;
+  (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+  (*localcov)->ownloc->totalpoints = loc->totalpoints;
+  return NOERROR;
+}
+
+int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
+		    double *x, double *y, double *T, 
+	            int spatialdim, /* spatial dim only ! */
+	            int xdimOZ, int lx, int ly, bool Time, bool grid,
+	            bool distances) {
+  int i, err;
+  assert(*localcov == NULL);
+  addModel(localcov, model);
+  cov_model *neu = *localcov;
+  
+  loc_set(x, y, T, spatialdim, xdimOZ, lx, ly, Time, grid, distances,
+	  &(neu->ownloc));
+  if ((err = covcpy(neu->sub + 0, cov)) != NOERROR) return err;
+
+  // PMI(neu, "hier");
+
+  assert(neu->calling == NULL);
+  neu->sub[0]->calling = neu;
+
+  // APMI(neu);
+  //printf("newmodel %s %s\n", NICK(cov), TYPENAMES[CovList[cov->nr].Type]);
+
+  for (i=0; i<2; i++) {
+    if ((err = CHECK(neu, cov->tsdim, cov->xdimprev,
+		     cov->typus,//Martin:changed 27.11.13 CovList[cov->nr].Type,
+		     cov->domprev, cov->isoprev, 
+		     cov->vdim, ROLE_BASE)) != NOERROR)
+      return err;
+    if (i==0 && (err =  STRUCT(neu, NULL)) != NOERROR) return err;
+  }
+  return NOERROR;
+}
+
+int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov) {
+  
+  int err;
+  location_type *loc = Loc(cov);
+  
+  err = newmodel_covcpy(localcov, model, cov,
+               loc->grid ? loc->xgr[0] : loc->x, 
+	       loc->grid ? loc->ygr[0] : loc->y, 
+               loc->grid ? loc->xgr[0] + 3 * loc->spatialdim : loc->T, 
+	       loc->spatialdim, loc->xdimOZ, 
+	       loc->grid ? 3 : loc->totalpoints, 
+	       loc->ly == 0 ? 0 : loc->grid ? 3 : loc->totalpoints,
+	       loc->Time, loc->grid, loc->distances);
+  return err;
+  
+}
+
+
+double *getAnisoMatrix(cov_model *cov, bool null_if_id, int *nrow, int *ncol) {
+  int i, total,
+    *proj = (int *) cov->p[DPROJ],
+    origdim = cov->prevloc->timespacedim,
+    dimP1 = origdim + 1;
+
+  if (!isAnyDollar(cov) && null_if_id) {
+    *nrow = *ncol = origdim;
+    return NULL;
+  }
+
+  double *ani,
+    *aniso = cov->p[DANISO],
+    a = cov->p[DSCALE] == NULL ? 1.0 : 1.0 / cov->p[DSCALE][0];  
+      
+ 
+  if (aniso != NULL) {
+    total = origdim * cov->ncol[DANISO];
+    int bytes = total * sizeof(double);
+    ani = (double *) MALLOC(bytes);
+    MEMCOPY(ani, aniso, bytes); 
+    for (i=0; i<total; i++) {
+      //     printf("anui %d %f %f\n", i, ani[i], a);
+      ani[i] *= a;    
+    }
+    *nrow = cov->nrow[DANISO];
+    *ncol = cov->ncol[DANISO];
+
+    // printf("A %d %d\n", *nrow, *ncol);
+
+  } else if (proj != NULL) {
+    total = origdim * cov->nrow[DPROJ];
+    //
+    //    print("origdim %d %f %d\n", origdim, a, proj[0]);
+    ani = (double *) CALLOC(total, sizeof(double));
+    for (i=0; i<total; i+=dimP1) ani[i * origdim + proj[i] - 1] = a; 
+    *nrow = origdim;
+    *ncol = cov->nrow[DPROJ];
+    //  printf("BA %d %d\n", *nrow, *ncol); assert(false);
+  } else {
+    if (a == 1.0 && null_if_id) {
+      *nrow = *ncol = origdim;
+      return NULL;
+    }
+    total = origdim * origdim;
+    ani = (double *) CALLOC(total, sizeof(double));
+    for (i=0; i<total; i+=dimP1) ani[i] = a;
+    *nrow = *ncol = origdim;
+    //    printf("CA %d %d\n", *nrow, *ncol);
+ }
+  //   printf("DA %d %d\n", *nrow, *ncol);
+
   return ani;
 }
 
-double GetDiameter(double *origcenter, double *origmin, double *origmax, 
-		   double *aniso, int origdim, int spatialdim,
+double *getAnisoMatrix(cov_model *cov, int *nrow, int *ncol) {
+  return getAnisoMatrix(cov, false, nrow, ncol);
+}
+
+
+double GetDiameter(location_type *loc,
 		   double *min, double *max, double *center) {
   
   // calculates twice the distance between origcenter %*% aniso and
@@ -1509,113 +1846,103 @@ double GetDiameter(double *origcenter, double *origmin, double *origmax,
   // NOTE: origcenter is not alway (min + max)/2 since origcenter might be
   //       given by the user and not calculated automatically !
 
-  double *lx, *sx, distsq, dummy,
-    diameter=0.0;
-  bool *j;
-  int d;
- 
-
-  j = (bool*) malloc( (origdim + 1) * sizeof(double));
-  lx = (double*) malloc( origdim * sizeof(double));
-  sx = (double*) malloc(spatialdim * sizeof(double));
-
-  Aniso(origcenter, aniso, origdim, spatialdim, center);
-  for (d=0; d<origdim; d++) {
-    j[d]=false;
-    lx[d]=origmin[d];
-  }
-  j[origdim] = false;
-  
-  for (d=0; d<spatialdim; d++) {
-      min[d] = R_PosInf;
-      max[d] = R_NegInf;
-  }
-
-  while(true) {
-    d=0; 
-    while(j[d]) {
-      lx[d]=origmin[d];
-      j[d++]=false;
-    }
-    if (d==origdim) break;
-    j[d]=true;
-    lx[d]=origmax[d];
-    Aniso(lx, aniso, origdim, spatialdim, sx);
-    
-    // suche maximale Distanz von center zu transformierter Ecke
-    distsq = 0.0;
-    for (d=0; d<spatialdim; d++) {
-      if (min[d] > sx[d]) min[d] = sx[d];
-      if (max[d] < sx[d]) max[d] = sx[d];
-      dummy = center[d] - sx[d];
-      distsq += dummy * dummy;
-      
-      //  printf("%d sx=%f %f %f diam=%f\n", d, sx[d], min[d], max[d], distsq);
-
-    }
-    if (distsq > diameter) diameter = distsq;
-  }
-
-  free(j);
-  free(lx);
-  free(sx);
-  return 2.0 * sqrt(diameter);
-}
-
-double GetDiameter(double *origcenter, double *min, double *max, 
-		   double *aniso, int tsdim, int spatialdim) { 
-    double diam,
-	*dummymin, *dummymax, *dummycenter;
-  
-  dummymin = (double*) malloc(spatialdim * sizeof(double));
-  dummymax = (double*) malloc(spatialdim * sizeof(double));
-  dummycenter = (double*) malloc(spatialdim * sizeof(double));
-  diam = GetDiameter(origcenter, min, max, 
-		     aniso, tsdim, // meth->loc->timespacedim,
-		     spatialdim,
-		     dummymin, dummymax, dummycenter);
-  free(dummymin);
-  free(dummymax);
-  free(dummycenter);
-  return diam;
-}
-
-
-void GetMinMax(method_type *meth, double *min, double *max, double *center,
-    int MaxDim) {
-  // untersucht die Original-Werte fuer Koordinaten fuer center!!
-  // aber gibt diameter in den neuen Koordinaten wieder.
-
-  location_type *loc = meth->loc;
+   bool *j=NULL;
   int d,
     origdim = loc->timespacedim,  
-    spatialdim = loc->spatialdim;  
-
+    spatialdim = loc->spatialdim;
+ double distsq, dummy,
+    *lx=NULL, *sx=NULL, 
+   diameter=0.0;
+ 
   if (loc->grid) {
-     // diameter of the grid
-      
-      //   printf("origdim =%d\n", origdim);
+    double 
+      *origmin = (double*) MALLOC(origdim * sizeof(double)),
+      *origmax = (double*) MALLOC(origdim * sizeof(double)),
+      *origcenter = (double*) MALLOC(origdim * sizeof(double));
 
     for (d=0; d<origdim; d++) {   
-      if (loc->xgr[d][XEND] > loc->xgr[d][XSTART]) {
-	min[d] = loc->xgr[d][XSTART];
-	max[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
-	  (double) (loc->length[d] - 1);
+      if (loc->xgr[d][XSTEP] > 0) {
+	origmin[d] = loc->xgr[d][XSTART];
+	origmax[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
+	    (double) (loc->length[d] - 1);
       } else {
-	min[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
+	origmin[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
 	  (double) (loc->length[d] - 1);
-	max[d] = loc->xgr[d][XSTART];
+	origmax[d] = loc->xgr[d][XSTART];
       }
+      origcenter[d] = 0.5 * (origmin[d] + origmax[d]);
     }
 
-    // assert(!false);
+    if (loc->caniso == NULL) {
+      for  (d=0; d<origdim; d++) {   
+	center[d] = origcenter[d];
+	min[d] = origmin[d];
+	max[d] = origmax[d];
+	dummy = max[d] - min[d];
+	diameter += dummy * dummy;
+      }
+    } else {      
+      j = (bool*) MALLOC( (origdim + 1) * sizeof(double));
+      lx = (double*) MALLOC( origdim * sizeof(double));
+      sx = (double*) MALLOC(spatialdim * sizeof(double));
+      
+      xA(origcenter, loc->caniso, origdim, spatialdim, center);
+      for (d=0; d<origdim; d++) {
+	j[d]=false;
+	lx[d]=origmin[d];
+      }
+      j[origdim] = false;
+      
+      for (d=0; d<spatialdim; d++) {
+	min[d] = R_PosInf;
+	max[d] = R_NegInf;
+      }
+      
+      while(true) {
+	d=0; 
+	while(j[d]) {
+	  lx[d]=origmin[d];
+	  j[d++]=false;
+	}
+	if (d==origdim) break;
+	j[d]=true;
+	lx[d]=origmax[d];
+	xA(lx, loc->caniso, origdim, spatialdim, sx);
+	
+	// suche maximale Distanz von center zu transformierter Ecke
+	distsq = 0.0;
+	for (d=0; d<spatialdim; d++) {
+	  if (min[d] > sx[d]) min[d] = sx[d];
+	  if (max[d] < sx[d]) max[d] = sx[d];
+	  dummy = center[d] - sx[d];
+	  distsq += dummy * dummy;	  
+	  //  print("%d sx=%f %f %f diam=%f\n", d, sx[d], min[d], max[d], distsq);	  
+	}
+	if (distsq > diameter) diameter = distsq;
+      }
 
-  } else { // not simugrid
+      free(j);
+      free(lx);
+      free(sx);
+    }
+  
+    free(origmin);
+    free(origmax);
+    free(origcenter);
+
+  } else { // not loc->grid
+
+    if (loc->caniso != NULL) BUG;
+
     double *xx=loc->x; 
     int i,
       endfor = loc->length[0] * loc->timespacedim;
 
-    for (d=0; d<MaxDim; d++) {min[d]=RF_INF; max[d]=RF_NEGINF;}
+    for (d=0; d<spatialdim; d++) {
+      min[d]=RF_INF; 
+      max[d]=RF_NEGINF; 
+    }
+
     // to determine the diameter of the grid determine as approxmation
     // componentwise min and max corner
     for (i=0; i<endfor; ) {
@@ -1625,10 +1952,10 @@ void GetMinMax(method_type *meth, double *min, double *max, double *center,
 	if (xx[i]>max[d]) max[d] = xx[i];
       }
     }
-        
+       
     if (loc->Time) {
       assert(d == origdim - 1);
-      if (loc->T[XEND] > loc->T[XSTART]) {
+      if (loc->T[XSTEP] > 0) {
 	min[d] = loc->T[XSTART];
 	max[d] = loc->T[XSTART] + loc->T[XSTEP] * 
 	  (double) (loc->length[d] - 1);
@@ -1637,21 +1964,33 @@ void GetMinMax(method_type *meth, double *min, double *max, double *center,
 	max[d] = loc->T[XSTART];
       }
     }
-  } // !simugrid
-
-
-  for (d=0; d<origdim; d++) { // note here no time component!
+    
+    for (diameter=0.0, d=0; d<origdim; d++) {
       center[d] = 0.5 * (max[d] + min[d]); 
-      //    printf("%d center %f\n", d, center[d]);
-  }
-  for ( ; d<MaxDim; d++) {
-      min[d] = 0.0;
-      max[d] = 0.0;
-      center[d] = 0.0;
-  }
-
-  // assert(false);
+      dummy = max[d] - min[d];
+      diameter += dummy * dummy;
+      // print("%d center %f %f %f %f\n", d, center[d], min[d], max[d], diameter);
+    }
+  } // !simugrid
+   
+  return 2.0 * sqrt(diameter);
 }
+
+double GetDiameter(location_type *loc) { 
+  double diam,
+    *dummymin=NULL, *dummymax=NULL, *dummycenter=NULL;
+  int origdim = loc->timespacedim; 
+  
+  dummymin = (double*) MALLOC(origdim * sizeof(double));
+  dummymax = (double*) MALLOC(origdim * sizeof(double));
+  dummycenter = (double*) MALLOC(origdim * sizeof(double));
+  diam = GetDiameter(loc, dummymin, dummymax, dummycenter);
+  free(dummymin);
+  free(dummymax);
+  free(dummycenter);
+  return diam;
+}
+
 
 
 bool ok_n(int n, int *f, int nf) // taken from fourier.c of R
@@ -1670,9 +2009,9 @@ int nextn(int n, int *f, int nf) // taken from fourier.c of R
 #define F_NUMBERS2 3
 bool HOMEMADE_NICEFFT=false;
 unsigned long NiceFFTNumber(unsigned long n) {
-  int f[F_NUMBERS1]={2,3,5}; 
   unsigned long i,ii,j,jj,l,ll,min, m=1;
   if (HOMEMADE_NICEFFT) {
+    int f[F_NUMBERS1]={2,3,5}; 
     if (n<=1) return n;
     for (i=0; i<F_NUMBERS1; i++) 
       while ( ((n % f[i])==0) && (n>10000)) { m*=f[i]; n/=f[i]; }
@@ -1708,60 +2047,23 @@ unsigned long NiceFFTNumber(unsigned long n) {
   }
 }
 
-void cpyMethod(method_type *meth, method_type *ziel, bool cp_aniso) {
-  int xdimout = meth->xdimout,
-      tsdim = meth->loc->timespacedim;
-  
-  ziel->gp   = meth->gp;
-  ziel->gpdo = meth->gpdo;
-  ziel->simu = meth->simu;
-  ziel->loc  = meth->loc;
-  // nr  (by METHOD_NULL)
-  // compatible  (by METHOD_NULL)
-  // nsub  (by METHOD_NULL)
-  // domethod  (by METHOD_NULL)
-  // destruct  (by METHOD_NULL)
-  // S  (by METHOD_NULL)
-  // cov  (by METHOD_NULL)
-  if (cp_aniso) {
-    if (meth->cproj != NULL) {
-      ziel->cproj = (int*) malloc(xdimout * sizeof(int));
-      assert(ziel->cproj != NULL);
-      memcpy(ziel->cproj, meth->cproj, xdimout * sizeof(int));
-    }
-    if (meth->caniso != NULL) {
-	ziel->caniso = (double*) malloc(xdimout * tsdim * sizeof(double));
-	assert(ziel->caniso != NULL);
-	memcpy(ziel->caniso, meth->caniso, xdimout * tsdim * sizeof(double));
-    }
-  }
-  ziel->cscale = meth->cscale;
-  ziel->cvar = meth->cvar;
-  // cproj  (by METHOD_NULL)
-  ziel->xdimout = meth->xdimout;
-  ziel->type = meth->type;
-  // hanging  (by METHOD_NULL)
-  // space  (by METHOD_NULL)
-  // sptime  (by METHOD_NULL)
-  // grani  (not set !)
-} 
 
 void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
-  double *x,* y; /* current point within grid, but without
+  double *x=NULL, *y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
   int pts, w, k, total, i, d, dimM1 = nrow - 1,
-      *yi, /* counter for the current position in the grid */
+      *yi=NULL, /* counter for the current position in the grid */
       ncol = nrow;
   for (pts=1, i=0; i<nrow; i++) {
     pts *= len[i];
   }
 
-  y = (double*) malloc(ncol * sizeof(double));
-  yi = (int*) malloc(ncol * sizeof(int));
+  y = (double*) MALLOC(ncol * sizeof(double));
+  yi = (int*) MALLOC(ncol * sizeof(int));
 
   total = ncol * pts;
 
-  x = *xx = (double*) malloc(sizeof(double) * total);
+  x = *xx = (double*) MALLOC(sizeof(double) * total);
 
   for (w=0; w<ncol; w++) {y[w]=xgr[w][XSTART]; yi[w]=0;}
   for (k=0; k<total; ){
@@ -1788,21 +2090,29 @@ void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
 }
 
 
+
 void expandgrid(coord_type xgr, int *len, double **xx, double* aniso, 
 		int nrow, int ncol){
-  double *x, * y; /* current point within grid, but without
+  double *x=NULL, * y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
   int pts, w, k, total, n, i, d, 
-      *yi,   /* counter for the current position in the grid */
+      *yi=NULL,   /* counter for the current position in the grid */
       dimM1 = nrow - 1; 
+
+
+  if (aniso == NULL) {
+    expandgrid(xgr, len, xx, nrow);
+    return;
+  }
+
   for (pts=1, i=0; i<nrow; i++) {
     pts *= len[i];
   }
 
   total = ncol * pts;
-  x = *xx = (double*) malloc(sizeof(double) * total);
-  y = (double*) malloc(ncol * sizeof(double));
-  yi = (int*) malloc(ncol * sizeof(int));
+  x = *xx = (double*) MALLOC(sizeof(double) * total);
+  y = (double*) MALLOC(ncol * sizeof(double));
+  yi = (int*) MALLOC(ncol * sizeof(int));
 
 
   for (w=0; w<nrow; w++) {y[w]=xgr[w][XSTART]; yi[w]=0;}
@@ -1836,26 +2146,41 @@ void expandgrid(coord_type xgr, int *len, double **xx, double* aniso,
   free(yi);
 }
 
-void grid2grid(coord_type xgr, static_grid grani, double *aniso, int dim) {
+
+
+void grid2grid(coord_type xgr, double **grani, double *aniso, int origdim,
+	       int dim) {
   // diag is assumed
-  double factor;
-  int n, d, i;
+  double *pgr, *A;
+  int d, i,
+    origdimM1 = origdim - 1;
+
+  (*grani) = (double *) MALLOC(sizeof(double) * 3 * dim);
+  pgr = *grani;
+
   if (aniso == NULL) {
     for(d=0; d<dim; d++) {
-      for (i=0; i<3; i++) {
-        grani[d][i] = xgr[d][i];
+      for (i=0; i<3; i++, pgr++) {
+        *pgr = xgr[d][i];
       }
     }
   } else {
-    for(n=d=0; d<dim; d++, n+=dim+1) {
-      factor = aniso[n];
+
+    //printf("%d %d %f %f\n", origdim, dim, aniso[0], aniso[1]);
+
+    for (d=0; d<dim; d++, pgr += 3) {
+      A = aniso + d * origdim;
+      for (i=0; i<origdimM1; i++, A++) if (*A != 0.0) break;
+      //printf("%d %f %d %d \n", d, *A, i, origdimM1);
       // factor = d < cov->nrow ? aniso[n] : 0.0; // hier zwingend diag !!
-      for (i=0; i<3; i++) {
-        grani[d][i] = xgr[d][i] * factor;
-      }
+      
+      pgr[XSTART] = xgr[i][XSTART] * *A;
+      pgr[XSTEP] = xgr[i][XSTEP] * *A;
+      pgr[XLENGTH] = xgr[i][XLENGTH];
     }
   }
 }
+
 
 void xtime2x(double *x, int nx, double *T, int timelen, 
 	     double **newx, int timespacedim) {
@@ -1864,7 +2189,7 @@ void xtime2x(double *x, int nx, double *T, int timelen,
     *z,  t;
   int j, k, i, d, 
     spatialdim = timespacedim - 1;
-  z = *newx = (double*) malloc(sizeof(double) * timespacedim * nx * timelen);
+  z = *newx = (double*) MALLOC(sizeof(double) * timespacedim * nx * timelen);
   for (k=j=0, t=T[XSTART]; j<timelen; j++, t += T[XSTEP]){
    y = x;
    for (i=0; i<nx; i++) {
@@ -1876,44 +2201,40 @@ void xtime2x(double *x, int nx, double *T, int timelen,
   }
 }
 
-void xtime2x(double *x, int nx, double *T, int len, double **newx,  
-	     double *aniso, int nrow, int ncol) {
+
+void xtime2x(double *x, int nx, double *T, int timelen, 
+	     double **newx, double *aniso, int nrow, int ncol) {
   double *y, // umhaengen zwingend notwendig, da u.U. **xx und *newx
     // der gleiche aufrufende Pointer ist, d.h. es wird "ueberschrieben"
     *z, dummy, t;
   int j, k, i, d, n, endfor, w,
-      spatialdim = nrow - 1,
-      nxspdim = nx * spatialdim,
-      ncolM1 = ncol - 1;
-  z = *newx = (double*) malloc(sizeof(double) * ncol * nx); 
+    spatialdim = nrow - 1,
+    nxspdim = nx * spatialdim;
+
   if (aniso == NULL) {
-    assert(ncol == nrow);
-    for (k=j=0, t=T[XSTART]; j<len; j++, t += T[XSTEP]) {
-      y = x;
-      for (i=0; i<nx; i++) {
-	  for (d=0; d<ncolM1; d++, y++) {
-	  z[k++] = *y; //auf keinen Fall nach vorne holen
+    assert(nrow == ncol);
+    xtime2x(x, nx, T, timelen, newx, nrow);
+    return;
+  }
+
+  z = *newx = (double*) MALLOC(sizeof(double) * ncol * nx * timelen); 
+ 
+  for (k=j=0, t=T[XSTART]; j<timelen; j++, t += T[XSTEP]){
+    y = x;
+    for (i=0; i<nxspdim; i+=spatialdim) {
+      endfor = i + spatialdim;
+      for (n=d=0; d<ncol; d++) {
+	dummy = 0.0;
+	for(w=i; w<endfor; w++) {
+	  dummy += aniso[n++] * y[w];
 	}
-	z[k++] = t;
-      }
-    }
-  } else {
-    for (k=j=0, t=T[XSTART]; j<len; j++, t += T[XSTEP]){
-      y = x;
-      for (i=0; i<nxspdim; i+=spatialdim) {
-        endfor = i + spatialdim;
-        for (n=d=0; d<ncol; d++) {
-	  dummy = 0.0;
-          for(w=i; w<endfor; w++) {
-	    dummy += aniso[n++] * y[w];
-	  }
-//  printf("%d %d %f\n", k, n, t);
-	  z[k++] = dummy + aniso[n++] * t; //auf keinen Fall nach vorne holen
-	}
+	//	print("%d %d %f\n", k, n, t);
+	z[k++] = dummy + aniso[n++] * t; //auf keinen Fall nach vorne holen
       }
     }
   }
 }
+
 
 void x2x(double *x, int nx, double **newx, 
 	 double *aniso, int nrow, int ncol) {
@@ -1923,10 +2244,10 @@ void x2x(double *x, int nx, double **newx,
   int k, i, d, n, endfor, w,
       nxnrow = nx * nrow;
 
-  z = *newx = (double*) malloc(sizeof(double) * ncol * nx);  
+  z = *newx = (double*) MALLOC(sizeof(double) * ncol * nx);  
   if (aniso == NULL) {
     assert(nrow == ncol);
-    memcpy(z, y, sizeof(double) * nrow * ncol);
+    MEMCOPY(z, x, sizeof(double) * nx * ncol);
   } else {
     for (k=i=0; i<nxnrow; i+=nrow) {
       endfor = i + nrow;
@@ -1944,7 +2265,7 @@ void x2x(double *x, int nx, double **newx,
 
 double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
     double dummy, 
-	*m0 = (double*) malloc(sizeof(double) * dim1 * dim3);
+	*m0 = (double*) MALLOC(sizeof(double) * dim1 * dim3);
   int i,j,k;
   for (i=0; i<dim1; i++) {
     for (k=0; k<dim3; k++) {
@@ -1958,144 +2279,290 @@ double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
   return m0;
 }
 
-matrix_type Type(double *m, int nrow, int ncol) {
+
+
+
+bool isMiso(matrix_type type) { 
+  return type == TypeMiso;
+}
+
+
+bool isMproj(matrix_type type) { 
+  assert(TypeMtimesepproj == 2);
+ return type == TypeMproj || type <= TypeMtimesepproj;
+}
+
+
+bool isMdiag(matrix_type type) { 
+  return type <= TypeMdiag;
+}
+
+bool isMtimesep(matrix_type type) { 
+  assert(TypeMtimesep == 3);
+  return type <= TypeMtimesep;
+}
+
+
+
+matrix_type Type(double *M, int nrow, int ncol) {
 
     // see also analyse_matrix: can it be unified ???
 
-  matrix_type type = TypeIso; // default
-  double elmt;
-  int i, endfor, endfor2;
+  matrix_type type = TypeMiso; // default
+  //  double elmt;
+  int i, j, k; //, endfor2;
+  double *m = M;
 
   if (m==NULL) {
       assert(ncol == nrow);
-      return TypeIso;
+      return TypeMiso;
   }
+  
+  if (ncol == 1 &&  nrow == 1) return TypeMiso;
   
   if (ncol > nrow) {
-    endfor =  nrow * ncol;
-    for (i=nrow * ncol; i < endfor; i++) 
-      if (m[i]!= 0.0) return TypeAny;
-    ncol = nrow;
+    int endfor = nrow * ncol;
+    for (i=ncol * ncol; i < endfor; i++) 
+      if (m[i]!= 0.0) return TypeMany;
+    ncol = nrow; // !!
   }
 
-  i = nrow * ncol -1;
-  if (i==0) return TypeIso;
-  if (ncol==1) {
-    endfor = nrow - 1;
-    for (i=1; i<endfor; i++) if (m[i] != 0.0) return TypeAny;
-    if (m[endfor] == 0.0) return TypeIso;
-    if (m[0] == 0.0) return TypeIso;
-    return TypeAny;
+  for (k=0; k<ncol; k++, m += nrow) {
+    for (i=0; i<nrow; i++) if (m[i] != 0.0) break;
+    for (j=i+1; j<nrow; j++) {
+      if (m[j] != 0.0) type = TypeMany;
+      if (k == ncol - 1) return type;
+      k = ncol - 1; // bestenfalls noch 
+      m = M + k * nrow;
+    }
+    matrix_type newtype = i!=k ? TypeMproj : m[i] == 1.0 ? TypeMiso : TypeMdiag;
+
+    if (newtype <= TypeMdiag && nrow > 1 && k==ncol-1 && type >= TypeMproj) {
+      return type == TypeMproj ? TypeMtimesepproj : TypeMproj;
+    } else {
+      if (newtype > type) type = newtype;
+    }
   }
-
-  elmt = m[i];
-  endfor = i - nrow;
-
-//  printf("endfor %d, i=%d\n", endfor, i);
-
-  for (i--; i>endfor; i--) { // last row but very last element: not all zero ? 
-    if (m[i] != 0.0) return TypeAny;
-  }
-  endfor--;
-
-  for (i = 0; i < endfor; ) { 
-    if (m[i++] != elmt) type=TypeDiag; // not iso
-    endfor2 = i + nrow;
-    for ( ; i<endfor2; )
-      if (m[i++] != 0.0) return TypeTimesep; // time compent of x is not 
-    //   mixed with spatial components of x; (other way round may be possible
-  }
-  if (m[i++] != elmt) type=TypeDiag; // vorletzte Spalte, vorletzte Zeile,
-  //                        d.h. vorletztes Diagonalelement
-  if(m[i++] != 0.0) return TypeTimesep; // vorletzte Spalte, letzte Zeile
-  
-//  printf("%d %d %d %d\n", i , nrow, (ncol-1), type);
-
-  assert(i == nrow * (ncol-1));
-  return (type);
+  return type;
 }
 
 
-
-void Transform2NoGridExt(method_type *meth, bool timesep, bool gridexpand, 
-		      double **Space, double **Sptime) {
-    // this function transforms the coordinates according to the anisotropy
+ 
+void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand, 
+			 double **grani, double **SpaceTime, 
+			 double **caniso, int *Nrow, int *Ncol,
+			 bool *Time, bool *grid, int *newdim, bool takeX) {
+  // this function transforms the coordinates according to the anisotropy
   // matrix 
   
-  location_type *loc = meth->loc;
-  int origdim = loc->timespacedim,
-    dim = meth->cov->tsdim,
-    *length = loc->length;
-  double *aniso=NULL, 
-    *T = loc->T,
-    *x = loc->x;
+  location_type *loc = Loc(cov);
+  bool isdollar = isAnyDollar(cov);
 
-  aniso = getAnisoMatrix(meth);
-  if (loc->grid && meth->type <= TypeDiag) {
-    if (gridexpand) {
-      if (*Sptime == NULL) {
-	expandgrid(loc->xgr, length, Sptime, aniso, origdim, dim);
-     }
-      if (!loc->Time) *Space = *Sptime;
+  matrix_type type;
+  int 
+    nrow = -1,
+    ncol = -1,
+    origdim = loc->caniso == NULL ? loc->timespacedim : loc->cani_nrow,
+    dim = (isdollar ? (cov->p[DANISO] != NULL ? cov->ncol[DANISO] : 
+		       cov->p[DPROJ] != NULL ? cov->nrow[DPROJ] : origdim )
+	   : origdim
+	   ),
+    *length = loc->length;
+  double *aniso,
+    *T = loc->T, *x = takeX ? loc->x : loc->y;
+  coord_type 
+    *xgr= takeX ? &(loc->xgr) : &(loc->ygr);
+  
+  if (x==NULL && (*xgr)[0] ==NULL) ERR("locations are all NULL");
+ 
+  *newdim = dim;
+  *caniso = NULL;
+  *Nrow = *Ncol = -1;
+
+  // print("newdim dim %d %d\n", *newdim, dim);
+
+  aniso = getAnisoMatrix(cov, true, &nrow, &ncol); // null if not dollar
+
+  
+
+  // 
+  //printf("bb NCOL %d %d %ld loc->cani_nrow %d %d aniso=%f %f \n", 
+  //          nrow, ncol, aniso, loc->cani_nrow, loc->cani_ncol, aniso[0], aniso[1]);
+  // assert(false);
+
+  if (loc->caniso != NULL) {    
+    if (aniso == NULL) {
+      int bytes = sizeof(double) * loc->cani_nrow * loc->cani_ncol;
+      aniso =(double*) MALLOC(bytes);
+      MEMCOPY(aniso, loc->caniso, bytes);
+      nrow = loc->cani_nrow;
+      ncol = loc->cani_ncol;
     } else {
-      grid2grid(loc->xgr, meth->grani, aniso, origdim);
+      double *aniso_old = aniso;
+      assert(loc->cani_ncol == nrow);
+      aniso =matrixmult(loc->caniso, aniso_old, loc->cani_nrow, nrow, ncol);
+      nrow = loc->cani_nrow;
+      free (aniso_old);
     }
-  } else if (loc->grid) { // aniso not diag
-    if (!loc->Time) { // grid no time
-      assert(*Sptime == *Space);
-      if (*Space == NULL) {
-	expandgrid(loc->xgr, length, Space, aniso, origdim, dim);
-	*Sptime = *Space;
-      }
-    } else { // grid and time 
-      if (timesep) {
-	if (*Space == NULL) 
-	  expandgrid(loc->xgr, length, Space, aniso, origdim, dim - 1);
+  }
+
+  //print("transfor\n");
+
+  type = aniso == NULL ? TypeMiso : Type(aniso, origdim, dim);
+  *Time = loc->Time;
+  *grid = loc->grid && !gridexpand;
+  
+  //  printf("nrow %d origdim=%d dim=%d %d type=%d grid=%d type=%d\n",
+  //	 nrow, origdim, dim, ncol, type, loc->grid, isMproj(type)); 
+  //   assert(false);
+  //PMI(cov); if (origdim != nrow) crash(cov);
+  assert(origdim == nrow);
+  assert(dim == ncol);
+  if (loc->grid) {
+    assert(*xgr != NULL);
+    if (isMproj(type)) {
+      if (gridexpand == true) {
+	expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+	*Time = false;
       } else {
-	if (*Sptime == NULL) 
-	  expandgrid(loc->xgr, length, Sptime, aniso, origdim, dim);
+	// nur aniso auf grid multipliziert
+	grid2grid(*xgr, grani, aniso, nrow, ncol);
       }
+    } else if (gridexpand) {
+      if (!loc->Time) { // grid no time
+	expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+      } else { // grid and time 
+	if (timesep && isMtimesep(type)) {
+	  expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol - 1); 
+	  grid2grid(*xgr + loc->spatialdim, grani, 
+		    aniso + nrow * nrow - 1, 1, 1);
+	} else {
+	  expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+	  *Time = false;
+	}
+      }
+    } else {     
+      //      assert(false);
+      //      crash();
+      int i,d,k;
+      (*grani) = (double *) MALLOC(sizeof(double) * 3 * origdim);
+      for (k=d=0; d<origdim; d++) {
+	for (i=0; i<3; i++) {
+	  //   printf(" !!!!!!! xgr %d %d %d %f\n", takeX, d, i,(*xgr)[d][i]); 
+	  (*grani)[k++] = (*xgr)[d][i];
+	}
+      }
+      *newdim = dim;     
+      *caniso = aniso;
+      *Nrow = nrow;
+      *Ncol = ncol;
+      return; // hier rausgehen!
     }
   } else { // nogrid
     if (!loc->Time) { // no grid no time
-       assert(*Sptime == *Space);
-       if (*Space == NULL) {
-	 x2x(x, length[0], Space, aniso, origdim, dim); 
-	 *Sptime = *Space;
-       }
+	 x2x(x, length[0], SpaceTime, aniso, nrow, ncol); 
     } else { // no grid but time
-      if (timesep) {
-	 x2x(x, length[0], Space, aniso, origdim, dim-1);
+      if (timesep && isMtimesep(type)) {
+	x2x(x, length[0], SpaceTime, aniso, nrow, ncol-1);
+	grid2grid((*xgr) + loc->spatialdim, grani, 
+		  aniso + nrow * nrow - 1, 1, 1);
       } else {
-	xtime2x(x, length[0], T, length[dim-1],Sptime, aniso, origdim, dim);
+	xtime2x(x, length[0], T, length[dim-1], SpaceTime, aniso, nrow,ncol);
+	*Time = false;
       }
     }
   }
+
   if (aniso != NULL) free(aniso);
+  
+  // printf("NCOL %d\n", *ncol);
 }
 
-void Transform2NoGrid(method_type *meth, bool timesep) {
-  Transform2NoGridExt(meth, timesep, false, &(meth->space), &(meth->sptime));
-}
 
-int InternalGetGridSize(double *x[MAXSIMUDIM], int dim, int *lx)
-{  
-  int d;
-  for (d=0; d<dim; d++) {
-    if ((x[d][XEND]<=x[d][XSTART]) || (x[d][XSTEP]<=0.0)) {
-      return ERRORCOORDINATES;
-    }
-    lx[d] = 1 + (int)((x[d][XEND]-x[d][XSTART])/x[d][XSTEP]); 
+void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand) {
+  location_type *loc = cov->prevloc; // transform2nogrid
+  assert(loc != NULL);
+  bool Time, grid;
+  int err,
+    spacedim=-1, 
+    nrow=-1,
+    ncol=-1;
+  double  *xgr=NULL, 
+    *x = NULL,
+    *caniso = NULL;
+
+  if ((loc->y != NULL && loc->y != loc->x) || 
+      (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0])) {
+    //printf("ly=%d %ld %ld %ld\n", loc->ly, loc->y, loc->ygr, loc->xgr);
+    //    PMI(cov->calling->calling);
+    ERR("unexpected y coordinates");
   }
-  return NOERROR;
+
+  assert(cov->prevloc != NULL);
+  Transform2NoGridExt(cov, timesep, gridexpand, &xgr, &x, 
+		      &caniso, &nrow, &ncol, &Time, &grid, &spacedim, true);
+  
+  // print("spacedim %d time=%d\n", spacedim, Time);
+
+  //  PMI(cov, "trafo");
+
+  if (Time) spacedim--;
+  assert(cov->ownloc == NULL);
+  err = loc_set(grid ? xgr : x, 
+		grid ? xgr + 3 * spacedim : xgr, 
+		spacedim, 
+		spacedim,
+		grid ? 3 : loc->totalpoints, 
+		Time, grid, false, &(cov->ownloc));
+  assert(cov->ownloc->caniso == NULL);
+  cov->ownloc->caniso = caniso;
+  cov->ownloc->cani_nrow = nrow;
+  cov->ownloc->cani_ncol = ncol;
+
+  //  printf("nrow %d %d %ld %ld\n", nrow, ncol, caniso, cov->ownloc);
+  //  PMI(cov, "transform to no grid");
+  //nrow 0 256501392 256504320 256504528
+  // assert(ncol < 10);
+
+  caniso = NULL;
+
+  if (x != NULL) free(x);
+  if (xgr != NULL) free(xgr);
+  if (err != NOERROR) ERR("error when transforming to no grid");
 }
+
+
+void Transform2NoGrid(cov_model *cov, double **xx) {
+  bool Time, grid;
+  int newdim, nrow, ncol;
+  double *caniso = NULL;
+  Transform2NoGridExt(cov, false, true, NULL, xx, 
+		      &caniso, &nrow, &ncol, &Time, &grid, &newdim, true); 
+  assert(caniso == NULL);
+}
+
+
+void Transform2NoGrid(cov_model *cov, double **xx, double **yy) {
+  location_type *loc = Loc(cov);
+  bool Time, grid;
+  int newdim, nrow, ncol;
+  double *caniso = NULL;
+  Transform2NoGridExt(cov, false, true, NULL, xx,
+		      &caniso,&nrow, &ncol, &Time, &grid, &newdim, true); 
+  assert(caniso == NULL);
+  if (loc->y == NULL && loc->ygr[0] == NULL) *yy = NULL;
+  else Transform2NoGridExt(cov, false, true, NULL, yy, 
+			   &caniso, &nrow, &ncol, &Time, &grid, &newdim, false);
+  assert(caniso == NULL);
+}
+
 
 
 double *selectlines(double *m, int *sel, int nsel, int nrow, int ncol) {
     // selects lines in matrix m according to sel
   int j;  
   double *red_matrix,
-      *Red_Matrix = (double *) malloc(sizeof(double) * nsel * ncol),
+      *Red_Matrix = (double *) MALLOC(sizeof(double) * nsel * ncol),
       *endfor = Red_Matrix + nsel * ncol;
   
   for (red_matrix=Red_Matrix; red_matrix<endfor; m+=nrow) {
@@ -2110,7 +2577,7 @@ double *selectlines(double *m, int *sel, int nsel, int nrow, int ncol) {
 int *selectlines(int *m, int *sel, int nsel, int nrow, int ncol) {
   int j;  
   int *red_matrix,
-      *Red_Matrix = (int *) malloc(sizeof(int) * nsel * ncol),
+      *Red_Matrix = (int *) MALLOC(sizeof(int) * nsel * ncol),
       *endfor = Red_Matrix + nsel * ncol;
   
   for (red_matrix=Red_Matrix; red_matrix<endfor; m+=nrow) {
@@ -2121,81 +2588,432 @@ int *selectlines(int *m, int *sel, int nsel, int nrow, int ncol) {
   return Red_Matrix;
 }
 
+bool TypeConsistency(Types requiredtype, Types deliveredtype) {
+  if (deliveredtype == UndefinedType) BUG;
+  switch(requiredtype) {
+  case TcfType:        return isTcf(deliveredtype);
+  case PosDefType:     return isPosDef(deliveredtype);
+  case NegDefType:     return isNegDef(deliveredtype);
+  case ProcessType :   return (isProcess(deliveredtype) ||
+			       isTrend(deliveredtype));
+  case GaussMethodType:return isGaussMethod(deliveredtype);
+  case BrMethodType:   return isBRuserProcess(deliveredtype);
+  case PointShapeType: return isPointShape(deliveredtype);
+  case RandomType :    return isRandom(deliveredtype);
+  case ShapeType :     return isShape(deliveredtype);
+  case TrendType :     return isTrend(deliveredtype);
+  case InterfaceType:  return isInterface(deliveredtype);
+  case OtherType :     return isOtherType(deliveredtype);
+  default : BUG;
+  }
+  BUG;
+  return FALSE;
+}
 
+bool TypeConsistency(Types requiredtype, cov_model *cov) {
+  assert(cov != NULL);
+  cov_fct *C = CovList + cov->nr; // nicht gatternr
+  if (C->Type == UndefinedType) {
+    assert(C->TypeFct != NULL);
 
-void cum_dollar(method_type *meth, int origdim, cov_model *cov, 
-		   method_type *ziel) {
-  /* 
-       cpy meth to ziel with dollar...
-       schiebe scale/proj/aniso in meth->cscale/cproj/caniso
-       Sowie: setze meth->xdimout
-       
-  */
-    
-    int i, total,
-      nproj = cov->nrow[DPROJ],
-      *proj = (int *) cov->p[DPROJ];
-  assert(meth != ziel); 
+    //printf("consist %s\n", NICK(cov));
 
-  if (nproj > 0) {  // DSCALE is given at the same time !
-    if (meth->caniso == NULL) {
-	ziel->cscale = meth->cscale * cov->p[DSCALE][0];
-      if (meth->cproj == NULL) {
-	ziel->cproj = (int*) malloc(sizeof(int) * nproj);
-	memcpy(ziel->cproj, proj, nproj * sizeof(int));
-      } else {
-        ziel->cproj = selectlines(meth->cproj, proj, nproj, -9999, 1);
-      }
-      ziel->type = TypeDiag;
-    } else { //cov->p[DPROJ] != NULL, mcaniso != NULL
-      ziel->caniso = selectlines(meth->caniso, proj, 
-				 nproj, origdim, meth->xdimout);
-    }
-    ziel->xdimout = nproj;
-  } else {
-    if (cov->p[DANISO] == NULL) {
-      total = origdim * meth->xdimout;
-      ziel->xdimout = meth->xdimout;
-      if (meth->caniso != NULL) {  
-        double invscale = 1.0 / cov->p[DSCALE][0];
-	ziel->caniso = (double *) malloc(total * sizeof(double));
-	for (i=0; i<total; i++) ziel->caniso[i] = meth->caniso[i] * invscale;
-      } else {
-	ziel->cscale = meth->cscale * cov->p[DSCALE][0]; 
-      }
-    } else { // cov->p[DANISO] != NULL
-      int ncol = cov->ncol[DANISO];
-      total = origdim * cov->ncol[DANISO];
-      if (meth->caniso == NULL) {
-        if (meth->cproj == NULL) { 
-	  ziel->caniso = (double *) malloc(total * sizeof(double));
-	  //  printf("%d %d %d\n", total, ncol, cov->nrow[DANISO]);
-	  // assert(false);
-	  memcpy(ziel->caniso, cov->p[DANISO], total * sizeof(double));
-	} else {
-	  double *ca, *endfor,
-	      *aniso = cov->p[DANISO];
-	  ziel->caniso =
-	      (double *) calloc(origdim * ncol, sizeof(double)); 
-	  //                       timespacedim x ncol
-	  endfor = ziel->caniso + ncol * origdim;
-	  for (ca = ziel->caniso; ca<endfor;  ca += origdim) {
-	    for (i=0; i<nproj; i++, aniso++) {
-	      ca[meth->cproj[i]] = *aniso; 
-	    }
-	  }
-	  free(meth->cproj);
-	  meth->cproj = NULL;
+    return C->TypeFct(requiredtype, cov);
+  }
+  return TypeConsistency(requiredtype, CovList[cov->nr].Type);
+}
+
+int SetGatter(domain_type domprev, domain_type statnext, 
+	      isotropy_type isoprev, isotropy_type isonext, 
+	      int *nr, int *delflag) {  
+
+  // printf("gatter %d %d %d %d\n",  domprev, statnext, isoprev,isonext);
+
+  if (domprev < statnext) 
+    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
+	  STATNAMES[(int) statnext], STATNAMES[(int) domprev]);
+  bool isoOK = (isoprev == VECTORISOTROPIC && isonext == VECTORISOTROPIC) ||
+    isoprev >= isonext;
+  if (!isoOK) 
+    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
+	  ISONAMES[(int) statnext], ISONAMES[(int) domprev]);
+
+  if (domprev == XONLY) {
+      switch(isoprev) {
+      case ISOTROPIC :
+	*nr = ISO2ISO; 
+	break;
+      case SPACEISOTROPIC :
+	*nr = (isonext == ISOTROPIC) ? SP2ISO : SP2SP;
+	break;	      
+      case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC : 
+      case NO_ROTAT_INV:
+	switch (isonext) {
+	case ISOTROPIC :
+	  *nr = S2ISO;
+	  break;
+	case SPACEISOTROPIC :
+	  *nr = S2SP;
+	  break;
+	case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
+	case NO_ROTAT_INV:
+	  *nr = S2S;
+	  *delflag = DEL_COV - 5; ///
+	  break;
+	default : assert(false);
 	}
-      } else {
-	  assert(meth->xdimout == cov->nrow[DANISO]);
-	  ziel->caniso = matrixmult(meth->caniso, cov->p[DANISO], origdim, 
-				    meth->xdimout, ncol);
-	  // caniso = caniso %*%cov->p
+	break;
+       default: 
+	PRINTF("GetGatter %d %d\n", domprev, isoprev);
+	assert(false);
       }
-      if (origdim != ncol) ziel->type = TypeAny;
-      else ziel->type = Type(ziel->caniso, origdim, ncol);
-      ziel->xdimout = ncol;
+  } else { // KERNEL
+    if (statnext == XONLY) {
+      switch(isonext) {
+      case ISOTROPIC :
+	*nr = S2ISO;
+	break;
+      case SPACEISOTROPIC : 
+	*nr = S2SP;
+	break;
+      case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
+      case NO_ROTAT_INV:
+	*nr = S2S; 
+	break;
+      default: assert(false);
+      }
+    } else { // still non-domain: cannot be simplified
+      *nr = SId;
+      *delflag = DEL_COV - 4;//
+    }
+  } 
+
+  // printf("prev %d %d ; next %d %d nr = %d\n", domprev, isoprev, statnext, isonext, *nr);
+
+  return NOERROR;
+}
+
+
+
+int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max, 
+			cov_model *pmin, cov_model *pmax, 
+			cov_model *openmin, cov_model *openmax) {
+  cov_fct *C = CovList + cov->nr; // nicht gatternr
+  int 
+      err = NOERROR, k = 0, i = 0,  // compiler dummy values
+      kappas = C->kappas ;
+  range_type range;
+  rangefct getrange = C->range;
+  SEXPTYPE *type = C->kappatype;
+  
+  //  print("entry\n");
+  //PMI(cov, "gir");
+
+  if (kappas > 0) {
+    getrange(cov, &range); 
+    
+    // PMI(cov);
+    assert (cov->maxdim >= cov->tsdim);
+      
+    err = NOERROR;
+    for (i=0; i<kappas; i++) {
+      int len=cov->ncol[i] * cov->nrow[i];
+      double dmin, dmax, dpmin, dpmax, dopenmin, dopenmax,
+	value =  RF_NAN;
+      dpmin = range.pmin[i];
+      dpmax = range.pmax[i];
+      dmin = range.min[i];
+      dmax = range.max[i];
+      dopenmin = (double) range.openmin[i];
+      dopenmax = (double) range.openmax[i];
+
+      //    print("i=%d %d %s %f %d %d\n", i, len, C->name, 
+      //	   (cov->p[i]==NULL) ? RF_NAN : cov->p[i][0], type[i], REALSXP);
+      
+      for (k=0; k<len; k++) {
+	if (type[i] == REALSXP) {
+	  value = cov->p[i][k];
+	  min->p[i][k] = dmin;
+	  max->p[i][k] = dmax;
+	  pmin->p[i][k] = dpmin;
+	  pmax->p[i][k] = dpmax;
+	  openmin->p[i][k] = dopenmin;
+	  openmax->p[i][k] = dopenmax;
+	} else if (type[i] == INTSXP) {
+	  value = ((int *)cov->p[i])[k] == NA_INTEGER 
+	    ? NA_REAL : (double) ((int *)cov->p[i])[k];
+	  ((int *) min->p[i])[k] = (int) dmin;
+	  ((int *) max->p[i])[k] = (int) dmax;
+	  ((int *) pmin->p[i])[k] = (int) dpmin;
+	  ((int *) pmax->p[i])[k] = (int) dpmax;
+	  ((int *) openmin->p[i])[k] = (int) dopenmin;
+	  ((int *) openmax->p[i])[k] = (int) dopenmax;
+	} else if (type[i] == LISTOF + REALSXP) {
+	  listoftype 
+	    *p = (listoftype*) min->p[i];
+
+	  if (p->deletelist) {
+	    int j, 
+	      lenj = p->nrow[k] * p->ncol[k];
+	    double
+	      *qmin = ((listoftype*) min->p[i])->p[k],
+	      *qmax = ((listoftype*) max->p[i])->p[k],
+	      *ppmin = ((listoftype*) pmin->p[i])->p[k],
+	      *ppmax = ((listoftype*) pmax->p[i])->p[k],
+	      *omin = ((listoftype*) openmin->p[i])->p[k],
+	      *omax = ((listoftype*) openmax->p[i])->p[k];
+	    
+	    for (j=0; j<lenj; j++) {
+	      qmin[j] = dmin;
+	      qmax[j] = dmax;
+	      ppmin[j] = dpmin;
+	      ppmax[j] = dpmax;
+	      omin[j] = dopenmin;
+	      omax[j] = dopenmax;
+	    }
+	  } // elses list had not been copied
+
+	  value = RF_NAN;
+	  // error cannot appear as range is (-infty, +infty)
+	} else if (type[i] == CLOSXP) {
+          continue;   
+	} else if (type[i] == LANGSXP) {
+	  continue;   
+	} else return ERRORUNKOWNSXPTYPE;
+
+	if (ISNA(value) || ISNAN(value)) {
+	  continue;
+	}
+
+	dmin = range.min[i];
+	dmax = range.max[i];
+	if (value < dmin
+	    || value > dmax
+	    || (range.openmin[i] && value == dmin)
+	    || (range.openmax[i] && value == dmax)
+	    ) {
+	  sprintf(ERRORSTRING,
+		  "value (%f) of '%s' in '%s' not within interval %s%f,%f%s",
+		  value, C->kappanames[i], C->nick, 
+		  range.openmin[i] ? "(" : "[", dmin, dmax,
+		  range.openmax[i] ? ")" : "]"
+		  );
+	  return ERRORM;
+	}
+      } // for k
+    } // for i in kappas;
+  } // if (kappa > 0)
+
+  for (i=0; i<MAXPARAM; i++) {
+    if (cov->kappasub[i] != NULL) {
+      err = get_internal_ranges(cov->kappasub[i], 
+				min->kappasub[i], max->kappasub[i],  
+				pmin->kappasub[i], pmax->kappasub[i],
+				openmin->kappasub[i], openmax->kappasub[i]);
+      if (err != NOERROR) return err;
     }
   }
+  for (i=0; i<MAXSUB; i++) {
+    if (cov->sub[i] != NULL) {
+      err = get_internal_ranges(cov->sub[i], min->sub[i], max->sub[i], 
+			       pmin->sub[i], pmax->sub[i],
+			       openmin->sub[i], openmax->sub[i]);
+      if (err != NOERROR) return err;
+    }
+  }
+  return NOERROR;
 }
+
+
+void strround(double x, char *s){
+  if (x==RF_INF)  sprintf(s, "Inf"); else
+    if (x==RF_NEGINF)  sprintf(s, "-Inf"); else
+      if (x == floor(x + 0.5)) sprintf(s, "%d", (int) x);
+      else sprintf(s, "%f", x);
+}
+
+
+
+
+void addmsg(double value, const char *sign, double y, char *msg) {
+  char str1[30], str2[30];
+  strround(value, str1);
+  strround(y, str2);
+  sprintf(msg, "%s %s %s", str1, sign, str2);
+}
+
+
+void addone(char *str, double x) {
+  char str2[30];
+  strround(x, str2);
+  sprintf(str, "%s, %s", str, str2);
+}
+void addpair(char *str, double x, double y) {
+    if (x == floor(x + 0.5) && y==floor(y + 0.5))
+	sprintf(str, "%s, (%d,%d)", str, (int) x, int(y));
+    else 
+	sprintf(str, "%s, (%f,%f)", str, x, y);
+}
+
+
+int check_within_range(cov_model *cov, bool NAOK) {
+  // sets also maxdim and finiterange in cov !
+
+  cov_fct *C = CovList + cov->nr; //nicht gatternr
+  int len,
+    err = NOERROR,
+    k = 0, 
+    i = 0,   // compiler dummy values
+    kappas = C->kappas;
+  range_type range;
+  SEXPTYPE *type = C->kappatype;
+  rangefct getrange = C->range;
+  char Msg[255] = "";
+  double min, max,
+    value= RF_NAN;
+
+  if (GLOBAL.general.skipchecks) return NOERROR;
+
+  getrange(cov, &range); 
+
+  if (cov->maxdim >=0 && cov->maxdim < cov->tsdim) {
+    GERR2("Max. dimension is %d. Got %d", cov->maxdim, cov->tsdim);
+  }
+
+   for (i=0; i<kappas; i++) {
+     if (!strcmp(C->kappanames[i], FREEVARIABLE)) {
+       // i.e. equal
+       if (cov->p[i] == NULL) continue;
+     }
+     if (type[i] >= LISTOF) {
+       // to simplify things -- otherwise in simu.cc
+       // code must also be changed.
+       assert(range.min[i] == RF_NEGINF && range.max[i]==RF_INF);
+       continue;
+     }
+    // full range !!
+    
+    len = cov->ncol[i] * cov->nrow[i];
+    min = range.min[i];
+    max = range.max[i];
+    
+    //  print("%s i=%d [%f, %f] size=%d %s\n", 
+    //	    C->name, i,  range.min[i],  range.max[i], len, C->kappanames[i]);
+  
+    for (k=0; k<len; k++) {
+      if (type[i] == REALSXP) value = cov->p[i][k];
+      else if (type[i] == INTSXP)
+	value = ((int *)cov->p[i])[k] == NA_INTEGER 
+	  ? NA_REAL : (double) ((int *)cov->p[i])[k];
+      else if (type[i] == CLOSXP) continue;
+      else if (type[i] == LANGSXP) continue;
+      else GERR2("%s [%d] is not finite", C->kappanames[i], k+1);
+      if (ISNA(value) || ISNAN(value)) {
+	if (NAOK) {
+	  continue;
+	} else GERR2("%s[%d] is not finite.", C->kappanames[i], k+1);
+      }
+      
+      //  print("k=%d %f\n", k, value);
+	 // print("range %d %d %d op=%d %f %f %f\n", 
+         // kappas, i, k, range.openmin[i], value, min, max);
+      
+      err = ERRORUNSPECIFIED;
+      if (range.openmin[i] && value <= min) { 
+	//crash();
+	addmsg(value, ">", min, Msg);
+	goto ErrorHandling;
+      } else if (value < min) {
+	addmsg(value, ">=", min, Msg); 
+        goto ErrorHandling;
+      }
+      if (range.openmax[i] && value >= max) { 
+	addmsg(value, "<", max, Msg); 
+        goto ErrorHandling;
+      } else if (value > max) { 
+	addmsg(value, "<=", max, Msg);
+	goto ErrorHandling;
+      }
+      err = NOERROR; 
+    }
+  } // kappas
+  
+ErrorHandling:
+
+   // PMI(cov, "range");
+ 
+  if (err != NOERROR) {
+    // printf("i=%d\n", i);
+    if (PL>PL_ERRORS)
+      PRINTF("error in check range: %s kappa%d err=%d ('%s' does not hold.)\n",
+	     C->name, i+1, err, Msg);
+    if (err == ERRORUNSPECIFIED)
+      SERR4("%s[%d] = %s does not hold (dim=%d).",
+	     C->kappanames[i], k+1, Msg, cov->tsdim); // + return
+  }
+
+  // print("done %s\n", NICK(cov));
+ 
+  return err;
+}
+
+int get_ranges(cov_model *cov, cov_model **min, cov_model **max, 
+		cov_model **pmin, cov_model **pmax, 
+		cov_model **openmin, cov_model **openmax) {
+  int err;
+  // returns a reliable value only in the very first
+  // entry of each parameter vector/matrix int err;
+  if ((err = covcpy(min, cov, false)) != NOERROR) return err; 
+  if ((err = covcpy(max, cov, false)) != NOERROR) return err; 
+  if ((err = covcpy(pmin, cov, false)) != NOERROR) return err ;
+  if ((err = covcpy(pmax, cov, false)) != NOERROR) return err;
+  if ((err = covcpy(openmin, cov, false)) != NOERROR) return err; 
+  if (( err = covcpy(openmax, cov, false)) != NOERROR) return err; 
+  (*min)->calling = (*max)->calling = (*pmin)->calling = (*pmax)->calling = 
+    (*openmin)->calling = (*openmax)->calling = cov;
+  //  (*min)->calling = NULL; ja nicht auf NULL setzen, da sonst angenommen
+  //  wird, dass prevloc ein Original ist
+
+  return get_internal_ranges(cov, *min, *max, *pmin, *pmax, *openmin, *openmax);
+}
+
+
+
+int FieldReturn(cov_model *cov) {
+   location_type *loc = Loc(cov);
+  if (cov->rf != NULL) {
+    //PMI(cov, "fieldreturn");
+    assert(cov->fieldreturn && cov->origrf);
+    if (cov->origrf) {
+      free(cov->rf);
+    }
+  }
+
+  // printf("%d\n",sizeof(res_type) * loc->totalpoints * cov->vdim);
+  if ((cov->rf = 
+       (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim))
+      == NULL) return ERRORMEMORYALLOCATION;
+  cov->fieldreturn = cov->origrf = true;
+  return NOERROR;
+}
+
+
+void SetLoc2NewLoc(cov_model *cov, location_type *loc) {
+  int i,
+    maxsub =  CovList[cov->nr].maxsub;
+  // printf("s2n %s %ld\n", NICK(cov), (long int) loc);
+  if (cov->ownloc != NULL) {
+    // printf("ownloc not null %s\n", NICK(cov));
+    return;
+  }
+  for (i=0; i<MAXPARAM; i++) {
+    if (cov->kappasub[i] != NULL) SetLoc2NewLoc(cov->kappasub[i], loc);
+  }
+  cov->prevloc = loc;
+  for (i=0; i<maxsub; i++) {
+    if (cov->sub[i] != NULL) SetLoc2NewLoc(cov->sub[i], loc);
+  }
+  if (cov->key != NULL)  SetLoc2NewLoc(cov->key, loc);
+}
+
+

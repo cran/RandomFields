@@ -1,2 +1,67 @@
-exportPattern("^[^\\.]")
+
+## Usual Functions
+
+##
+##exportPattern("^[^\\.]")
+exportPattern("^R")
+export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
+       conventional2RFspDataFrame,
+# auxiliary       
+       Print,
+## internal fcts
+       rfGenerateModels, checkExamples, plotWithCircles, 
+# obsolete       
+       CondSimu, Covariance, CovarianceFct, CovMatrix,
+       DeleteAllRegisters, DeleteRegister, DoSimulateRF,
+       EmpiricalVariogram, fitvario, fractal.dim, GaussRF, hurst,
+       InitSimulateRF, InitGaussRF, InitMaxStableRF, 
+       Kriging, MaxStableRF, RFparameters, Variogram,
+#others:
+       ## never delete PrintModelList as used in Roger's book!
+       PrintModelList
+       )
+
 useDynLib(RandomFields)
+
+# Classes
+
+importClassesFrom('sp',
+                  "SpatialGridDataFrame",
+                  "SpatialPointsDataFrame",
+                  "SpatialGrid",
+                  "SpatialPixels",
+                  "SpatialPoints",
+                  "Spatial")
+
+exportClasses()
+
+## S4 methods
+
+importMethodsFrom('sp', "dimensions")  #"gridded"gibts nicht!
+
+exportMethods("[", "[<-", "+", show, plot)
+
+exportMethods(RFspDataFrame2conventional,
+              RFspDataFrame2dataArray,
+#              GridTopology2gridVectors,
+              coerce,
+#              coordinates,
+              isGridded,
+              dimensions)
+
+## S3 Methods
+
+S3method(summary, RFsp)
+
+S3method(print, RMmodel)
+S3method(print, RMmodelgenerator)
+S3method(points, RMmodel)
+S3method(lines, RMmodel)
+
+S3method(cbind, RFspatialGridDataFrame)
+S3method(cbind, RFgridDataFrame)
+S3method(print, RFpointsDataFrame)
+S3method(print, RFgridDataFrame)
+S3method(print, RFspatialPointsDataFrame)
+S3method(print, RFspatialGridDataFrame)
+S3method(print, RFopt)

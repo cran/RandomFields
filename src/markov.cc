@@ -4,11 +4,11 @@
 
  wrapper for Havard Rue's GMRF library
 
- Copyright (C) 2001 -- 2011 Martin Schlather, 
+ Copyright (C) 2001 -- 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -25,8 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // wie wird *problem geloescht ??
 
 
-
+#include <math.h>
+#include <stdio.h>
 #include "RF.h"
+
+
 
 
 typedef struct markov_storage {
@@ -41,45 +44,22 @@ int rowcol[2];
 void Markov_destruct(void **S) 
 { 
   if (*S!=NULL) {
-   free(*S);   
+    free(*S);   
     *S = NULL;
   }
 }
 
 
-void SetParamMarkov(int *action,int *neighbours, double *precision,
-		    int *cyclic, int *maxmem) {
-   markov_param *lp = &(GLOBAL.markov);
-  if (*action) {
-    lp->neighbours = *neighbours; 
-    if (lp->neighbours < 2) {
-	if (PL>0) PRINTF("minimal neighbourhood is 2");
-	lp->neighbours = 2;
-    } 
-    if (lp->neighbours > 3) {
-	if (PL>0) PRINTF("maximal neighbourhood is 3");
-	lp->neighbours = 3;
-    }
-    lp->precision = *precision;
-    lp->cyclic = *cyclic;
-    lp->maxmem = *maxmem;
-  } else {
-    *neighbours = lp->neighbours; 
-    *precision = lp->precision;
-    *cyclic = lp->cyclic;
-    *maxmem = lp->maxmem;
-  }
-}
+int init_markov(cov_model VARIABLE_IS_NOT_USED *cov, 
+		storage VARIABLE_IS_NOT_USED *S){ 
+  //  SET_DESTRUCT(Markov_destruct);
 
-
-
-int init_markov(method_type *meth){ 
-  return ERRORFAILED;
+  SERR("not programmed anymore");
 }
 
     
- 
-void do_markov(method_type *meth, res_type *res ) {
-  error("Markov not programmed anymore");
-}
 
+void do_markov(cov_model VARIABLE_IS_NOT_USED *cov, 
+	       storage VARIABLE_IS_NOT_USED *s) {
+  BUG;
+}

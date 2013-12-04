@@ -1,0 +1,93 @@
+\name{Max-stable random fields}
+\alias{maxstable}
+\alias{Maxstable}
+\alias{RPmaxstable}
+
+\title{Simulation of Max-Stable Random Fields}
+\description{
+  Here, a list of models and methods for simulating max-stable random
+  fields is given.
+
+ See also \link{maxstableAdvanced} for more advanced examples.
+}
+
+
+\section{Implemeted models and methods}{
+\tabular{ll}{
+ \command{\link{RPbrmixed}} \tab simulation of Brown-Resnick processes
+ using M3 representation\cr
+ \command{\link{RPbrorig}} \tab simulation of Brown-Resnick processes using
+ the original definition\cr
+ \command{\link{RPbrshifted}} \tab simulation of Brown-Resnick processes using
+ a random shift\cr
+ \command{\link{RPbrownresnick}} \tab simulation of Brown-Resnick process
+ using automatic choice of the previous 3 methods\cr
+ \command{\link{RPschlather}} \tab simulation of the extremal Gaussian
+ process \cr 
+ \command{\link{RPsmith}} \tab simulation of M3 processes \cr
+}
+
+}
+
+
+\references{
+  \itemize{
+  \item Kabluchko, Z., Schlather, M. & de Haan, L (2009)
+  Stationary max-stable random fields associated to negative definite functions
+  \emph{Ann. Probab.} \bold{37}, 2042-2065.
+
+  \item Schlather, M. (2002) Models for stationary max-stable
+  random fields. \emph{Extremes} \bold{5}, 33-44.
+
+  \item Smith, R.L. (1990) Max-stable processes and spatial extremes
+  Unpublished Manuscript.
+  }
+}
+ 
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de}
+}
+
+
+\examples{
+set.seed(0)
+
+model <- RMfbm(alpha=1.5)
+x <- seq(0, 10, if (interactive()) 0.1 else 1)
+z <- RFsimulate(RPbrownresnick(model), x=x, n=4)
+plot(z)
+
+model <- RMball()
+x <- seq(0, 10, if (interactive()) 0.02 else 5)
+n <- if (interactive()) 10000 else 1
+z <- RFsimulate(RPsmith(model, xi=0), x, n=n, every=1000)
+plot(z)
+hist(unlist(z@data), 150, freq=FALSE)
+curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
+
+
+model <- RMgauss()
+z <- RFsimulate(RPschlather(model, xi=0), x, n=n)
+plot(z)
+hist(unlist(z@data), 50, freq=FALSE)
+curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
+
+
+## for some more sophisticated models see maxstableAdvanced
+
+}
+
+\seealso{
+ \link{RP},
+ \command{\link{RMmodel}},
+ \command{\link{RPgauss}},
+ \command{\link{RPbernoulli}}
+ \command{\link{maxstableAdvanced}}
+}
+
+
+
+
+\keyword{spatial}
+
+

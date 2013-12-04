@@ -1,23 +1,25 @@
 \name{weather}
+\docType{data}
 \alias{weather}
+\alias{GKS11}
 \title{Pressure and temperature forecast errors over the Pacific Northwest}
 \usage{data(weather)}
 \description{
-  Meteorological dataset, which consists of difference between forecasts
-  and observations (forcasts minus observations) of temperature and
-  pressure at 157 locations in the North American Pacific Northwest. 
+ Meteorological dataset, which consists of difference between forecasts
+ and observations (forcasts minus observations) of temperature and
+ pressure at 157 locations in the North American Pacific Northwest. 
 }
 \format{
-  This data frame contains the following columns:
-  \describe{
-    \item{pressure}{in units of Pascal}
-    \item{temperature}{in units of degree Celcius}
-    \item{lon}{longitudinal coordinates of the locations}
-    \item{lat}{latitude coordinates of the locations}
-  }
+ This data frame contains the following columns:
+ \describe{
+ \item{pressure}{in units of Pascal}
+ \item{temperature}{in units of degree Celcius}
+ \item{lon}{longitudinal coordinates of the locations}
+ \item{lat}{latitude coordinates of the locations}
+ }
 }
 \details{
-  The forecasts are from the GFS member of the University of Washington
+ The forecasts are from the GFS member of the University of Washington
 regional numerical weather prediction ensemble (UWME; Grimit and Mass
 2002; Eckel and Mass 2005); they were valid on December 18, 2003 at 4 pm
 local time, at a forecast horizon of 48 hours.
@@ -27,33 +29,35 @@ The data were obtained from Cliff Mass and Jeff Baars in the University
 of Washington Department of Atmospheric Sciences.
 }
 \references{
-  \itemize{
-    \item
-    Eckel, A. F. and Mass, C. F. (2005) Aspects of effective mesoscale,
-   short-range ensemble forecasting \emph{Wea. Forecasting} \bold{20},
-   328-350.
+ \itemize{
+ \item
+ Eckel, A. F. and Mass, C. F. (2005) Aspects of effective mesoscale,
+ short-range ensemble forecasting \emph{Wea. Forecasting} \bold{20},
+ 328-350.
 
-   \item
-    Gneiting, T., Kleiber, W.  and  Schlather, M. (2010) Matern
-    cross-covariance functions for multivariate random fields 
-    \emph{J. Amer. Statist. Assoc.} \bold{105}, 1167-1177.
+ \item
+ Gneiting, T., Kleiber, W. and Schlather, M. (2010) Matern
+ cross-covariance functions for multivariate random fields 
+ \emph{J. Amer. Statist. Assoc.} \bold{105}, 1167-1177.
 
-    \item
-    Grimit, E. P. and Mass, C. F. (2002) Initial results of a
-    mesoscale short-range forecasting system over the Pacific
-    Northwest \emph{Wea. Forecasting} \bold{17}, 192-205.
-  }
-  }
+ \item
+ Grimit, E. P. and Mass, C. F. (2002) Initial results of a
+ mesoscale short-range forecasting system over the Pacific
+ Northwest \emph{Wea. Forecasting} \bold{17}, 192-205.
+ }
+ }
 \examples{
 
-\dontrun{
+\dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
+
+\dontshow{\dontrun{
 
 # % library(RandomFields, lib="~/TMP")
 
 ############################################################
-##                                                        ##
-##    T. Gneiting, W. Kleiber, M. Schlather, JASA 2010    ##
-##                                                        ##
+## ##
+## T. Gneiting, W. Kleiber, M. Schlather, JASA 2010       ##
+## ##
 ############################################################
 
 ## Here the analysis in the above mentioned paper is replicated.
@@ -68,7 +72,52 @@ of Washington Department of Atmospheric Sciences.
 
 
 #################################
-## get the data                ##
+## output ##
+#################################
+
+PaperOutput <- function(m, sdP, sdT) {
+ ## correct for miles2l=km and for sdP and sdT
+ if (pars <- !is.null(m$C1$scale)) { ## ! parsimonious
+ m$C1$scale <- m$C1$scale * miles2km 
+ m$C1$phi$cdiag <- m$C1$phi$cdiag * c(sdP, sdT)^2
+ m$C1$phi$c <- m$C1$phi$c * c(sdP^2, sdP * sdT, sdT^2)
+ biwm <- m$C1$phi
+ } else {
+ m$C1$cdiag <- m$C1$cdiag * c(sdP, sdT)^2
+ m$C1$c <- m$C1$c * c(sdP^2, sdP * sdT, sdT^2)
+ m$C1$s <- m$C1$s * miles2km
+ biwm <- m$C1
+ }
+ m$C0$M <- m$C0$M * c(sdP, 0, 0, sdT)
+ 
+ ml <- RFfit(distances=Dist.mat * miles2km,
+ dim = 2, data=t(t(PT) * c(sdP, sdT)),
+ model=m, grid=FALSE, meth="ml",
+ spC=FALSE)$ml$ml
+ 
+ sigmaP <- sqrt(biwm$c[1])
+ sigmaT <- sqrt(biwm$c[3])
+ 
+ return(list(#model = m,
+ sigmaP = sigmaP,
+ sigmaT = sigmaT,
+ nuP = biwm$nu[1],
+ nuT = biwm$nu[3],
+ nuPT = if(biwm$c[2]==0) NA else biwm$nu[2],
+ inv.aP = if (pars) m$C1$s else biwm$s[1],
+ inv.aT = if (pars) m$C1$s else biwm$s[3] ,
+ inv.aPT= if (pars) m$C1$s else if(biwm$c[2]==0) NA else biwm$s[2],
+ rhoPT = biwm$c[2] / (sigmaP * sigmaT), 
+ tauP = m$C0$M[1],
+ tauT = m$C0$M[4],
+ ml = ml
+ ))
+}
+
+ 
+
+#################################
+## get the data ##
 #################################
 library(fields)
 miles2km <- 1.608
@@ -80,243 +129,84 @@ sdP <- sd(weather[, 1])
 sdT <- sd(weather[, 2])
 PT <- cbind( weather[, 1] / sdP, weather[, 2] / sdT )
 
-Dist.mat <- rdist.earth(weather[,3:4])
+Dist.mat <- rdist.earth(weather[, 3:4])
 Dist.mat <- Dist.mat[lower.tri(Dist.mat)] ## in miles
 
-
-#################################
-## first: marginal estimation  ##
-#################################
-uni.est <- 
-  list("+",
-       list("$", var=NA, list("nugget")),
-       list("$", var=NA, scale=NA, list("whittle", nu=NA))
-       )
-fvP <- fitvario(Distances=Dist.mat, truedim=2, data=PT[, 1],
-                model=uni.est, grid=FALSE, ml="ml", Print=1)$ml # -153.9
-
-    
-fvT <- fitvario(Distances=Dist.mat, truedim=2, data=PT[, 2],
-                model=uni.est, grid=FALSE, ml="ml", Print=1)$ml # -138.45
-
-# % file <- "fvPT.rda"; load(file); fvT <- fvT$ml; fvP  <- fvP$ml
-
-
-#################################
-## second: parsimoninous model ##
-#################################
-puni2bi <- function(mP, mT, lower) {
-  nugg1 <- mP[[2]]$var
-  nugg2 <- mT[[2]]$var
-  nu1 <- mP[[3]][[4]]$nu
-  nu2 <- mT[[3]][[4]]$nu
-  s <- mean(c(mP[[3]]$scale, mT[[3]]$scale))
-  c1 <- mP[[3]]$var
-  c2 <- mT[[3]]$var
-  if (missing(lower)) {
-    rhored <- 0
-    f <- 1
-  } else if (lower) {
-    rhored <- -1
-    f <- 0.2
-    nugg1 <- nugg2 <- 0
-  } else {
-    rhored <- 1
-    f <- 4
-    nugg1 <- c1 / 2
-    nugg2 <- c2 / 2
-  }
-  return(list("+",
-              list("M", M=matrix(nc=2, c(sqrt(nugg1), 0, 0, sqrt(nugg2))),
-                   list("nugget")),
-              list("parsbiWM",
-                   nu = c(nu1 * f, nu2 * f), 
-                   s = s * f,
-                   c = c(c1 * f, c2 * f), rhored=rhored 
-                   )
-              ) )
-}
-
-p.est.model <- 
-  list("+",
-       list("M", M=matrix(nc=2, c(NA, 0, 0, NA)),
-            list("nugget")),
-       list("parsbiWM",
-            nu = c(NA, NA), 
-            s = NA,
-            c = c(NA, NA), rhored=NA
-            ))
-
-## takes a rather long time (15 min in 2011)
-pars <- fitvario(Distances=Dist.mat, truedim = 2, data=PT,
-                 model=p.est.model, grid=FALSE, trend=list(0,0),
-                 lower= puni2bi(fvP$model, fvT$model, lower=TRUE),
-                 upper= puni2bi(fvP$model, fvT$model, lower=FALSE),
-                 users.guess=puni2bi(fvP$model, fvT$model),
-                 Print=2, ml="ml")$ml ## -280.9791
-
-# % save(file="pars", pars)
-# % Print(puni2bi(fvP$model, fvT$model, lower=TRUE),puni2bi(fvP$model, fvT$model, lower=FALSE),puni2bi(fvP$model, fvT$model))
-
-
-#################################
-## third: full biwm model      ##
-#################################
-pars2full <- function(model, lower){
-  s <- model[[3]]$s
-  nuP <- model[[3]]$nu[1]
-  nuT <- model[[3]]$nu[2]
-  tauP <- model[[2]]$M[1]
-  tauT <- model[[2]]$M[4]
-  cP <- model[[3]]$c[1]
-  cT <- model[[3]]$c[2]
-  Rhored <- model[[3]]$rhored
-  nured <- 1
-
-  if (missing(lower)) {
-    f <- 1
-  } else if (lower) {
-    nured <- 0.1
-    f <- 0.5
-    Rhored <- -1
-    tauP <- tauT <- 0
-  } else {
-    f <- 2
-    tauP <- max(f * tauP, cP / 10)
-    tauT <- max(f * tauT, cT / 10)
-    Rhored <- 0 ## as estimated Rhored is negativ
-  }
-
-  list("+",
-       list("M", M=matrix(nc=2, c(tauP, 0, 0, tauT)),
-            list("nugget")),
-       list("biWM",
-            nu = c(nuP * f, nuT * f), nured=nured,
-            s = c(s * f, s * f), s12=s * f,
-            c = c(cP * f, cT * f), rhored=Rhored 
-            ) )
-}
-
-est.model <- 
-  list("+",
-       list("M", M=matrix(nc=2, c(NA, 0, 0, NA)),
-            list("nugget")),
-       list("biWM",
-            nu = c(NA, NA), nured=NA,
-            s = c(NA, NA), s12=NA,
-            c = c(NA, NA), rhored=NA
-            ))
-
-fv <- fitvario(Distances=Dist.mat, truedim = 2, data=PT, Print=2,
-               model=est.model, grid=FALSE, trend=list(0,0),
-               lower=pars2full(pars$model, lower=TRUE),
-               upper=pars2full(pars$model, lower=FALSE),
-               users.guess=pars2full(pars$model), ml="ml")$ml # -280.6910
-## %                      now even  -280.5419
-# %  Print(pars2full(pars$model, lower=TRUE),pars2full(pars$model,lower=FALSE),pars2full(pars$model))
-
-
-#################################
-## output                      ##
-#################################
-
-
-Factor <- function(nu1, nu2, nu12, a1, a2, a12, d) {
-  gamma(nu1 + d/2) * gamma(nu2 + d/2) / gamma(nu1) / gamma(nu2) *
-  (gamma(nu12) / gamma(nu12+d/2))^2 * (a1^nu1 * a2^nu2 / a12^(2*nu12) )^2
-}
-
-
-InfQ <- function(nu1, nu2, nu12, a1, a2, a12, d) {
-  gamma <- (2*nu12+d) * a1^2 * a2^2 - (nu2 +d/2)*a1^2*a12^2 -
-    (nu1 +d/2) *a2^2*a12^2
-  beta <- (2 * nu12 - nu2 + d/2) * a1^2 + (2 * nu12 - nu1 + d/2) * a2^2  -
-    (nu1 + nu2 + d) *a12^2
-  alpha <- 2 * nu12 - nu1 -nu2
-  rednu12 <- 0.5 * (nu1 + nu2) / nu12
+RFoptions(use_naturalscaling=FALSE)
  
-  if (rednu12 == 1.0) {
-    t1sq <- t2sq <- max(0, if (beta==0) 0 else -gamma / beta)
-    inf <- 1
-  } else {
-    inf <- Inf
-    discr <- beta^2 - 4 * alpha * gamma
-    t1sq <- t2sq <- 0
-    if (discr >= 0) {
-      discr <- sqrt(discr)
-      t1sq = max(0, (-beta + discr) / (2.0 * alpha))
-      t2sq = max(0, (-beta - discr) / (2.0 * alpha))
-    }  
-  }
-  tsq <- c(0, t1sq, t2sq)
-  return(min(inf, (a12^2 + tsq)^(2.0 * nu12 + d) /
-            (a1^2 + tsq)^(nu1 + d/2) / (a2^2 + tsq)^(nu2 + d/2) ))
-}
+nug <- RMmatrix(M=matrix(nc=2, c(NA, 0, 0, NA)), RMnugget())
 
+modes <- c("normal", "easy", "sloppy")
 
-uni2full <- function(mP, mT) {
-  nuggP <- mP[[2]]$var
-  nuggT <- mT[[2]]$var
-  nuP <- mP[[3]][[4]]$nu
-  nuT <- mT[[3]][[4]]$nu
-  sP <- mP[[3]]$scale
-  sT <- mT[[3]]$scale
-  c1 <- mP[[3]]$var
-  c2 <- mT[[3]]$var
-  return(list("+",
-             list("M", M=matrix(nc=2, c(sqrt(nuggP), 0, 0, nuggT)),
-                 list("nugget")),
-             list("biWM",
-                  nu = c(nuP, nuT), nured=1,
-                  s = c(sP, sT), s12=1,
-                  c = c(c1, c2), rhored=0)
-            ) )
-}
+for (mode in modes) {
+ cat("mode\n")
+ file <- paste(mode, ".rda", sep="")
+ #% if (FileExists(file)) next;
 
-
-
-
-PaperOutput <- function(m, sdP, sdT) {
-  m[[2]]$M <- m[[2]]$M * c(sdP, 0, 0, sdT)
-  m[[3]]$c <- m[[3]]$c * c(sdP, sdT)^2
-  sP <- m[[3]]$s[1] * miles2km
-  sT <- m[[3]]$s[2] * miles2km
-  sPT <- m[[3]]$s12 * miles2km
-  m[[3]]$s <- c(sP, sT)
-  m[[3]]$s12 <- sPT
-  d <- 2
-
-  ml <- fitvario(Distances=Dist.mat * miles2km,
-                 truedim = d, data=t(t(PT) * c(sdP, sdT)),
-                 m=m, grid=FALSE, trend=list(0,0), ml="ml")$ml$ml
-
-  nuP <- m[[3]]$nu[1]
-  nuT <- m[[3]]$nu[2]
-  nuPT <- 0.5 * (nuP + nuT) / m[[3]]$nured
+ #################################
+ ## first: independent model ##
+ #################################
+ indep.model <- nug + RMbiwm(nudiag=c(NA,NA), s=c(NA, 1, NA), c=c(NA, 0, NA))
+ indep <- RFfit(indep.model, distances=Dist.mat, dim=2, data=PT,
+                meth="ml", modus_op=mode, spC=FALSE)
  
-  f <- Factor(nuP, nuT, nuPT, 1/sP, 1/sT, 1/sPT, d)
-  infQ <- InfQ(nuP, nuT, nuPT, 1/sP, 1/sT, 1/sPT, d)
-  return(list(
-         model = m,
-         sigmaP = sqrt(m[[3]]$c[1]),
-         sigmaT = sqrt(m[[3]]$c[2]),
-         nuP  = nuP,
-         nuT  = nuT,
-         nuPT = nuPT,
-         inv.aP = sP,
-         inv.aT = sT,
-         inv.aPT= sPT,
-         rhoPT  = m[[3]]$rhored * sqrt(f * infQ),
-         tauP = m[[2]]$M[1],
-         tauT = m[[2]]$M[4],
-         ml = ml
-  ))
+ #################################
+ ## second: parsimoninous model ## (takes a rather long time: 15 min in 2012)
+ #################################
+ pars.model <- nug + RMbiwm(nudiag=c(NA,NA), scale=NA, c=rep(NA, 3))
+ pars <- RFfit(pars.model, distances=Dist.mat, dim = 2, data=PT,
+               meth="ml", modus_op=mode, spC=FALSE)
+
+ #################################
+ ## third: full biwm model ##
+ #################################
+ full.model <- nug + RMbiwm(nu=rep(NA, 3), s=rep(NA, 3), c=rep(NA, 3))
+ full <- RFfit(full.model, distances=Dist.mat, dim = 2, data=PT,
+               meth="ml", modus_op=mode, spC=FALSE)
+
+ #################################
+ ## output ##
+ #################################
+
+ i <- PaperOutput(indep$ml$model, sdP, sdT)#% ever best: -1276.75
+ p <- PaperOutput(pars$ml$model, sdP, sdT) #% ever best: -1265.73
+ f <- PaperOutput(full$ml$model, sdP, sdT) #% ever best: -1265.30
+ table <- rbind(indep=unlist(i), pars=unlist(p), full=unlist(f))
+ print(table, digits=3)
+ print(table[, ncol(table)], digits=8)
+
+ save(file=file, indep, pars,full, full.model, pars.model, indep.model,
+ sdP, sdT, table, modes)
+
+
+ file <- paste(mode, ".tex", sep="")
+ model.names <- c("indep.{}", "pars.{}", "full")
+ write(file=file,
+ paste("\\begin{table}[p]\\small\n\\centering\n\\caption{Comparison ",
+ "between the bivariate Whittle-Mat\'ern models 'independent',",
+ " 'parsimonious' and 'full'. Here $\\sigma_P=\\sqrt{c_{pp}}$ and",
+ " $\\nu_P$ instead of $\\nu_{PP}$ etc., for short.", 
+ " Optimization mode is '", mode, "'. Here, \\label{tab:", mode,
+ "}}\n\\begin{tabular}{l",
+ paste(rep("c", ncol(table)), collapse=""), "}\n",
+ " & $\\sigma_P$ & $\\sigma_T$ & $\\nu_P$ & $\\nu_T$ & ",
+ "$\\nu_{PT}$ & $s_P$ & $s_T$ & $s_{PT}$ & $\\rho_{PT}$ &",
+ " $\\tau_P$ & $\\tau_T$ & ML \\\\\\hline",
+ sep="")
+ )
+ for (nr in 1:length(modes)) {
+ write(file=file, append=TRUE,
+ paste(model.names[nr], " & ",
+ paste(signif(table[nr, (0:1) - ncol(table)], 3),
+ collapse=" & "),
+ " & ", signif(table[nr, ncol(table)-1], 1),
+ " & ", signif(table[nr, ncol(table)], 7), "\\\\"))
+ }
+ write(file=file, append=TRUE, "\\end{tabular}\n\\end{table}\n", sep="")
 }
 
 
-Print(PaperOutput(uni2full(fvP$model, fvT$model), sdP, sdT)) # -1277.11
-Print(PaperOutput(pars2full(pars$model), sdP, sdT)) # -1265.73
-Print(PaperOutput(fv$model, sdP, sdT)) # -1265.30
+}
 
 
 }

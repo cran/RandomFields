@@ -1,15 +1,14 @@
-
 /* 
  Authors
  Martin Schlather, schlather@math.uni-mannheim.de
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2011 Martin Schlather, 
+ Copyright (C) 2001 -- 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 RO
 This program is distributed in the hope that it will be useful,
@@ -21,7 +20,6 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-
 
 #include <R.h>
 #include <Rdefines.h>
@@ -36,240 +34,68 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // #include "Covariance.h"
 
 
-/* 
-   operator "#" that has been modified such that explanatory
-   variables can be used instead of the spatial coordinates
-*/
-void iso2iso_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void spiso2spiso_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void spacetime2iso_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
+bool is_top(cov_model *cov) {
+  if (cov == NULL) BUG;
+  return isInterface(cov);
 }
 
-void Stat2iso_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void Nonstat2iso_MLE(double *x, double *y, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void Stat2spacetime_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void Nonstat2spacetime_MLE(double *x, double *y, cov_model *cov, double *v) {
-  //assert(false);
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-      CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void Stat2Stat_MLE(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-void Nonstat2Stat_MLE(double *x, double *y, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);  
-  else {
-    CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-}
-
-/*
-*/
-
-  // simple transformations as variance, scale, anisotropy matrix, etc.  
-void Siso_MLE(double *x, cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  int i,
-    vdimSq = cov->vdim * cov->vdim;
-  double **p = cov->p,
-    var = p[DVAR][0];
-
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);//x wird nicht verwendet
-  else {
-      CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-  for (i=0; i<vdimSq; i++) v[i] *= var; 
-}
-
-void Sstat_MLE(double *x, cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  double 
-      **p = cov->p, 
-      var = p[DVAR][0];
-  int i,
-      vdimSq = cov->vdim * cov->vdim;
- 
-  if (cov->MLE == NULL) CovList[next->nr].cov(x, next, v);//x wird nicht verwendet
-  else {
-      CovList[next->nr].cov(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
- 
-  for (i=0; i<vdimSq; i++) v[i] *= var; 
-}
-
-void Snonstat_MLE(double *x, double *y, cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  double 
-      **p = cov->p, 
-      var = p[DVAR][0];
-  int i,
-      vdimSq = cov->vdim * cov->vdim;
-  
-  if (cov->MLE == NULL) CovList[next->nr].nonstat_cov(x, y, next, v);  
-  else {
-      double *xx;
-      xx = cov->MLE + CovMatrixTotal * next->xdim * 2;
-      CovList[next->nr].nonstat_cov(xx, xx + next->xdim, next, v);
-  }
-
-  for (i=0; i<vdimSq; i++) v[i] *= var; 
-}
-
-
-void DS_MLE(double *x, cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  int i,
-      vdimSq = cov->vdim * cov->vdim;
-  double  
-    **p = cov->p,
-    spinvscale = (p[DANISO] == NULL) ? 1.0 / p[DSCALE][0] : p[DANISO][0], 
-    varSc = p[DVAR][0] * spinvscale;
-  
- 
-  if (cov->MLE == NULL) CovList[next->nr].D(x, next, v);//x wird nicht verwendet
-  else {
-      CovList[next->nr].D(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-
-  for (i=0; i<vdimSq; i++) v[i] *= varSc; 
-}
-
-void DDS_MLE(double *x, cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  int i,
-      vdimSq = cov->vdim * cov->vdim;
-   double 
-    **p = cov->p,
-    spinvscale = (p[DANISO] == NULL) ? 1.0 / p[DSCALE][0] : p[DANISO][0], 
-    varScSq = p[DVAR][0] * spinvscale * spinvscale;
-  
-  if (cov->MLE == NULL) CovList[next->nr].D2(x, next, v);//x wird nicht verwendet
-  else {
-      CovList[next->nr].D2(cov->MLE + CovMatrixTotal * next->xdim, next, v);
-  }
-
-  for (i=0; i<vdimSq; i++) v[i] *= varScSq; 
-}
-
-
-// nachfolgende Funktion sowie anyNAscaleup, anyNAdow, manipulate_x
-// nur fuer speed in MLE verwendet, wenn die x-Werte direkt den
-// knoten vorliegen sollen 
-void SetPrevToTriMaxFalse(cov_model *calling) {
-  // bislang war TriFalse; jetzt nicht mehr;
-  // setze letzes DOLLAR auf  TriMaxFalse;
-  if (calling != NULL && calling->anyNAscaleup == TriFalse) {
-    cov_model *prev = calling;
-    while (prev != NULL &&
-	   (prev->nr < DOLLAR || prev->nr > LASTDOLLAR)) {
-	//  prev->anyNAscaleup = TriBeyond;
-      prev = prev->calling;
-    }
-    if (prev != NULL) prev->anyNAscaleup = TriMaxFalse;
-  }
-}
-
-
-void GetNAPosition(cov_model *cov, int *usern, int *internn, 
-		   naptr_type mem, naptr_type address,
-		   NAname_type names, sortsofparam *sorts,
-		   sortsofparam *internsorts, bool *isnan,
-		   int *covzaehler,
-		   int printing, int depth) {
+void GetNAPosition(cov_model *cov, 
+		   int *NAs, naptr_type mem, int *elmnts, elptr_type mem_elmnts,
+		   NAname_type names, sortsofparam *sorts, bool *isnan,
+		   int *covzaehler, int allowforintegerNA,
+		   int SHORTlen, int printing, int depth, bool no_variance,
+		   bool excludetrends
+		   ) {
   /*
     printing <= 0 nothing
-             1 only NA, NaN
-	     2 others as "*"
-	     3 others as value
-s
-   mem[0..internn] : addresse wo (neue) NA position im Speicher	   
-   address[0..internn] 
-       == NULL         : address in mem the value should be put;
-       == mem[internn] :
-          * internsort=ANISOFROMSCALE : point to scale (using 1/value)
-   sorts[0..usern]     : see sortsofparam in RF.h
-   internsorts[0..internn] : see sortsofparam in RF.h
-   isnan[0..usern] : NA or NaN
+    1 only NA, NaN
+    2 others as "*"
+    3 others as value
+
+    mem[0..NAs] : addresse wo (neue) NA position im Speicher	   
+    sorts[0..NAs]     : see sortsofparam in RF.h
+    isnan[0..NAs] : NA or NaN
   */
+
+  // PMI(cov);
+ 
   int i, c, r, 
-      namenr = 1,     
-      *nrow =  cov->nrow,
-      *ncol = cov->ncol;
-  //  double *lastmem = NULL;
-#define SHORTlen 4
-  char shortname[SHORTlen+2], shortD[SHORTlen+2];
-  bool user;
-  cov_fct *C = CovList + cov->nr,
+    namenr = 1,     
+    *nrow =  cov->nrow,
+    *ncol = cov->ncol;
+  // double *lastmem = NULL;
+  char shortname[255], shortD[255];
+  cov_fct *C = CovList + cov->nr, // nicht gatternr
     *CC = C;
   SEXPTYPE *type = C->kappatype;
+	  
+  if (isRandom(cov)) {
+    error("Random functions not allowed in models of RFfit, yet");
+  }
+
+  //printf("depth =%d %s %d\n", depth, C->name, *elmnts);
+
 
   // C is pointer to true model; CC points to the first model passed
   // in initNerror.cc by IncludeModel or IncludePrim
   while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
   covzaehler[cov->nr]++;
+  //  
+  
+  //  print("SHORT %d %s\n", SHORTlen, CC->name);
+
   strcopyN(shortname, CC->name, SHORTlen);
 
-   if (covzaehler[cov->nr] >= 2) {
-      char dummy[SHORTlen];
-      strcopyN(dummy, shortname, SHORTlen-1);
-      sprintf(shortname, "%s%d", dummy, covzaehler[cov->nr]);
+  if (covzaehler[cov->nr] >= 2) {
+    char dummy[255];
+    strcopyN(dummy, shortname, SHORTlen-1);
+    sprintf(shortname, "%s%d", dummy, covzaehler[cov->nr]);
   }
   if (printing>0) PRINTF("%s\n", CC->name); 
   // CC needed below for the kappa.names which are given
 
-//  printf("%d:%s %d %s\n", cov->nr, CC->name, covzaehler[cov->nr], shortname);
 
-  if (cov->manipulating_x > 0) {
-      // any scale==NA in the calling function
-    cov->anyNAscaleup = cov->anyNAdown = TriTrue;
-    SetPrevToTriMaxFalse(cov->calling);
-  } else {
-    cov->anyNAscaleup = cov->anyNAdown = TriFalse;
-    if (cov->calling != NULL) cov->anyNAscaleup = cov->calling->anyNAscaleup;
-  }
+  //  print("%d:%s %d %s\n", cov->nr, CC->name, covzaehler[cov->nr], shortname);
 
   depth++;
   for (i=0; i<C->kappas; i++) {
@@ -277,152 +103,170 @@ s
     if (printing > 0) {
       leer(depth); PRINTF("%s\n", C->kappanames[i]);
     }
+    if (i==0 && type[i] == INTSXP && strcmp(C->kappanames[i], "element") == 0){
+      if (*elmnts >= MAX_MLE_ELMNTS ) 
+	ERR("maximum number of models with variable elements reached");
+      if (((int *) cov->p[i])[0] == NA_INTEGER) ERR("'elements' may not be NA");
+      mem_elmnts[(*elmnts)++] = (int*) cov->p[i];
+      
+      //printf("elmnts %s %d %s %d\n", CC->name, i, C->kappanames[i], *elmnts);
+      
+      continue;
+    }
     for (r=0; r<nrow[i]; r++) {
-       int nv = 0; // anzahl NA in aktuellem parameter
-       for (c=0; c<ncol[i]; c++) {
-	double v = RF_NAN; // value in aktuellem parameter
+      int nv = 0; // anzahl NA in aktuellem parameter
+      for (c=0; c<ncol[i]; c++) {
+	double v; // value in aktuellem parameter
 	int idx = c * nrow[i] + r;
-	if (*internn >= MAX_NA) error("maximum number of NA reached");
+	if (*NAs >= MAX_NA) ERR("maximum number of NA reached");
+
+	// print("NAs=%d, %d %d %s\n", *NAs, i, idx, C->kappanames[i]);
 
 	if (type[i] == REALSXP) {
 	  v = cov->p[i][idx];
-	  mem[*internn] = &(cov->p[i][idx]);
+	  mem[*NAs] = cov->p[i] + idx;
 	} else if (type[i] == INTSXP) {
 	  v = ((int *) cov->p[i])[idx] == NA_INTEGER 
-	      ? NA_REAL : (double) ((int *) cov->p[i])[idx];
-	  if (ISNA(v) || ISNAN(v))
-	    error("integer variables currently do not allowed for NA"); // !!!
-	  // mem[*internn] = (*double) &(((int *) cov->p[i])[idx]);
+	    ? NA_REAL : (double) ((int *) cov->p[i])[idx];
+	  if ((ISNA(v) || ISNAN(v)) && !allowforintegerNA) {
+	    // crash(cov);
+	    ERR("integer variables currently do not allow for NA"); // !!!
+	  }
+	  // mem[*NAs] = (*double) &(((int *) cov->p[i])[idx]);
 	} else if (type[i] == LISTOF + REALSXP) {
-	    listoftype *q;
-	    int j, end;
-	    double *p;
-	    q=(listoftype*) cov->p[i];
-	    p = q->p[r];
-	    end = q->nrow[r] * q->ncol[r];
-	    for (j=0; j<end; j++)
-	      if (ISNA(p[j]) || ISNAN(p[j])) 
-		error("no NAs allowed in regression ");
-	    v = 0.0; // dummy
+	  listoftype *q;
+	  int j, end;
+	  double *p;
+	  q=(listoftype*) cov->p[i];
+	  p = q->p[r];
+	  end = q->nrow[r] * q->ncol[r];
+	  for (j=0; j<end; j++)
+	    if (ISNA(p[j]) || ISNAN(p[j])) ERR("no NAs allowed in regression ");
+	  v = 0.0; // dummy
+	} else if (type[i] == CLOSXP) {
+	  v = 0.0; //dummy
+	} else if (type[i] == LANGSXP) {
+	  v = 0.0; //dummy
 	} else {
-	  error("unknown SXP type");
+	  v = RF_NAN;
+	  BUG;
 	}
-	user  = true;
 
- 	isnan[*usern] = ISNAN(v) && !ISNA(v);
+ 	isnan[*NAs] = ISNAN(v) && !ISNA(v);
 	if (ISNA(v) || ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
-	  cov->anyNAdown = TriTrue;
+	  if (isRandom(cov)){
+	    error("NA in random functions not programmed yet");
+	  }
 	  if (printing > 0) {
 	    if (nv>1 || (c>0 && printing > 1)) PRINTF(", "); else leer(depth+1);
 	  }
-	  if (cov->nr >= DOLLAR && cov->nr <= LASTDOLLAR) {
+	  if (isDollar(cov)) {
 	    // shortD partial name for R level
 	    cov_model *next = cov->sub[0];
-	    while((next->nr >= GATTER && next->nr <= LASTGATTER)  ||
-		  (next->nr >= DOLLAR && next->nr <= LASTDOLLAR) || 
-		  (next->nr == NATSC))
-	      next = next->sub[0];
+	    while(isDollar(next) || next->nr == NATSC) next = next->sub[0];// ok
 	    if (covzaehler[next->nr] == 0) { // next wurde noch nicht
-		// untersucht, somit ist covzaehler[next->nr] um 1 niedriger
-		// als covzaehler[cov->nr] !
-	      strcopyN(shortD, CovList[next->nr].name, SHORTlen);
+	      // untersucht, somit ist covzaehler[next->nr] um 1 niedriger
+	      // als covzaehler[cov->nr] !
+	      strcopyN(shortD, NAME(next), SHORTlen);
 	    } else {
-	      char dummy[SHORTlen];
-	      strcopyN(dummy, CovList[next->nr].name, SHORTlen-1);
+	      char dummy[255];
+	      strcopyN(dummy, NAME(next), SHORTlen-1);
 	      sprintf(shortD, "%s%d", dummy, covzaehler[next->nr]+1);
-//	      printf("$$ > %d:%s %d %s\n", next->nr, CovList[next->nr].name, 
-//		     covzaehler[next->nr], shortD);
+	      //	      print("$$ > %d:%s %d %s\n", next->nr, NICK(to), 
+	      //		     covzaehler[next->nr], shortD);
 	    }
 	    
 	    //  assert(DANISO == DSCALE + 1);
 
-	    address[*internn] = NULL;
 	    if (i==DVAR) {
-	      internsorts[*internn] = sorts[*usern] = 
-		  // zur sicherheit beide:
-		  (next->nr == MIXEDEFFECT || next->nr == MLEMIXEDEFFECT) ? 
-		  MIXEDVAR : next->nr == NUGGET ? NUGGETVAR : VARPARAM; 
-	      sprintf(names[*usern], "%s.var", shortD); // for R level only
+	      cov_model *call = cov->calling;
+	      if (call == NULL) BUG;
+	      if (!is_top(call) && call->nr == MIXEDEFFECT) {
+		sorts[*NAs] = !is_top(call->calling) && 
+		  (call->calling->nr == PLUS || call->calling->nr == SELECT)
+		  && is_top(call->calling->calling) ? MIXEDVAR : ANYPARAM;
+	      } else {
+		while (!is_top(call) && (call->nr == PLUS || call->nr==SELECT))
+		  call = call->calling;	
+		if (call == NULL) BUG;
+		sorts[*NAs] = is_top(call)
+		  ? (next->nr == NUGGET ? NUGGETVAR : VARPARAM)
+		  : ANYPARAM; 
+	      }
+	      if (no_variance && sorts[*NAs] <= SIGNEDSDPARAM)
+		sorts[*NAs] = ANYPARAM;
+	      sprintf(names[*NAs], 
+		      sorts[*NAs] <= SIGNEDSDPARAM || sorts[*NAs] == NUGGETVAR 
+		      || sorts[*NAs]==MIXEDVAR ? "%s.var" : "%s.vx",
+		      shortD); // for R level only
 	    } else  {
-	      cov->anyNAscaleup = TriTrue; 
-	      SetPrevToTriMaxFalse(cov->calling);
 	      if (i==DSCALE) {
-		// lastmem = mem[*internn]; // used for all diagonal elements of
+		//	        lastmem = mem[*NAs]; // used for all diagonal elements of
 		//                          aniso
-		sorts[*usern] = internsorts[*internn] = SCALEPARAM;	
-		sprintf(names[*usern], "%s.s", shortD);// for R level only
+		sorts[*NAs] = SCALEPARAM;	
+		sprintf(names[*NAs], "%s.s", shortD);// for R level only
 	      } else {
 		assert(i == DANISO);
 		// no lastmem here !
 		
-		if (cov->ncol[DSCALE] != 0 &&
-		    (ISNA(cov->p[DSCALE][0]) || ISNAN(cov->p[DSCALE][0]))) {
-		    assert(false);
-		    /*
-		  // internal
-		  address[*internn] = lastmem; // points to scale which 
-		  //                           was just be before and had NA
-		  internsorts[*internn] = ANISOFROMSCALE; 
-		  sprintf(names[*usern], "%s.aniso", shortD);// R level only
-		  // no setting of sorts[users]
-		  if (printing > 1) {
-		    if (printing > 2) PRINTF("(given by scale)");
-		    else PRINTF("*");  
-		  }
-		  user = false;
-		    */
+		if (cov->q != NULL && cov->q[0] != 0.0) {
+		  //		    print("sdfasdf\n");
+		  ERR("naturalscaling only allowed for isotropic setting");
+		}
+		if (r==c) { 
+		  sorts[*NAs] = DIAGPARAM; 
+		  sprintf(names[*NAs], "%s.d.%d", shortD, r);// R level only
 		} else {
-		  if (cov->q != NULL && cov->q[0] != 0.0) {
-//		    printf("sdfasdf\n");
-		    ERR("naturalscaling only allowed for isotropic setting");
-		  }
-		  if (r==c) { 
-		    internsorts[*internn] = sorts[*usern] = DIAGPARAM; 
-		    sprintf(names[*usern], "%s.d.%d", shortD, r);// R level only
-		  } else {
-		    internsorts[*internn] = sorts[*usern] = ANISOPARAM;
-		    sprintf(names[*usern], "%s.d.%d.%d", shortD, r, c);// R level
-		  }	
+		  sorts[*NAs] = ANISOPARAM;
+		  sprintf(names[*NAs], "%s.d.%d.%d", shortD, r, c);// R level	
 		}	
 	      }
 	    }
 	  } else {
 	    // standard setting !
-	    address[*internn] = NULL; 
-	    if (cov->nr==MIXEDEFFECT || cov->nr==MLEMIXEDEFFECT)
-		continue;
-	    else 
-		sorts[*usern] = internsorts[*internn] = ANYPARAM; 
-	    char kappashort[SHORTlen];
+	    if (cov->nr==MIXEDEFFECT || cov->nr==TREND) {
+	      // || cov->nr==MLEMIXEDEFFECT)
+	      if (excludetrends) continue;
+	      assert(type[i] == REALSXP);	      
+	      sorts[*NAs] = cov->nr==TREND ? TRENDPARAM : MIXEDPARAM;
+	    } else {
+	      if (type[i] == INTSXP)
+		sorts[*NAs] = INTEGERPARAM; 
+	      else {
+		// r)ow, c)olumn; i:kappa, cov->nr, C
+		sorts[*NAs] = C->paramtype(i, r, c);  // ANYPARAM; 
+		if (sorts[*NAs] == IGNOREPARAM || 
+		    sorts[*NAs] == DONOTRETURNPARAM) continue;
+
+		//		print("%s k=%d no_var=%d, %d \n", C->name, i,
+		//		       no_variance, sorts[*NAs]);
+
+		if (no_variance && sorts[*NAs] <= SIGNEDSDPARAM)
+		  sorts[*NAs] = ANYPARAM;
+	      }
+	    }
+	    char kappashort[255];
 	    strcopyN(kappashort, CC->kappanames[i], SHORTlen);
-	    sprintf(names[*usern], "%s.%s", shortname,  kappashort);
-	    if (*usern > 0 && 0==
-	        strncmp(names[*usern], names[*usern-1], strlen(names[*usern]))){
-		if (namenr == 1) {
-		    sprintf(names[*usern-1], "%s.%s.%d",
-			    shortname, kappashort, namenr);
-		} 
-		namenr++; 
-          	sprintf(names[*usern], "%s.%s.%d", shortname, kappashort,namenr); 
+	    sprintf(names[*NAs], "%s.%s", shortname,  kappashort);
+	    if (*NAs > 0 && 0==
+	        strncmp(names[*NAs], names[*NAs-1], strlen(names[*NAs]))){
+	      if (namenr == 1) {
+		sprintf(names[*NAs-1], "%s.%s.%d",
+			shortname, kappashort, namenr);
+	      } 
+	      namenr++; 
+	      sprintf(names[*NAs], "%s.%s.%d", shortname, kappashort,namenr); 
 	    } else namenr=1;			
 	  }
-
-	  if (PL > 7) {
-//	    PRINTF(" %d mem %ld; addr %ld; %s, %d %d\n", *usern,
-//		   (POINTER) mem[*internn], (POINTER)address[*internn], 
-//		   names[*usern], sorts[*usern], internsorts[*internn]);
-	  } 
  
-	  if (user) {
-	    if (printing > 0) {
-	      if (printing <= 2) PRINTF("%d",*usern + 1); 
-	      else PRINTF("!%d", *usern + 1);
-	    }
-	    (*usern)++;
+	  if (printing > 0) {
+	    if (printing <= 2) PRINTF("%d",*NAs + 1); 
+	    else PRINTF("!%d", *NAs + 1);
 	  }
-	  (*internn)++;
+	  //	  print("%d %ld\n", *NAs, mem[*NAs]);
+	  (*NAs)++;
 	  nv++;
-	} else {
+	} else { // not is.na(v)
 	  // kein NA an der Position; somit nur Anzeige
 	  if (printing > 1) {
 	    if (c>0) PRINTF(", "); else leer(depth+1);
@@ -435,7 +279,7 @@ s
 	}  // else kein NA 
       } //c
       if ((printing > 0 && nv > 0) || (printing > 1 && ncol[i] > 0)) 
-	  PRINTF("\n"); 
+	PRINTF("\n"); 
     } // r
   } // i
 
@@ -448,73 +292,75 @@ s
 	leer(depth);
 	PRINTF("%s = ", C->subnames[i]);
       }
-      GetNAPosition(sub, usern, internn, mem, address, 
-		    names, sorts, internsorts, isnan,
-		    covzaehler, printing, depth);
-      if (cov->anyNAdown==TriFalse && sub->anyNAdown==TriTrue)
-	 cov->anyNAdown = TriTrue;
+      GetNAPosition(sub, NAs, mem, elmnts, mem_elmnts,
+		    names, sorts, isnan,
+		    covzaehler, allowforintegerNA, 
+		    SHORTlen, printing, depth, 
+		    C->paramtype(-i-1, 0, 0) != VARPARAM,
+		    excludetrends );
     }
   }
 
-  if (cov->anyNAdown == TriTrue && cov->anyNAscaleup != TriTrue) {
-     for (i=0; i<MAXSUB; i++) {
-      sub = cov->sub[i];
-      if (sub != NULL) {
-	  if (sub->anyNAdown==TriFalse && sub->anyNAscaleup != TriTrue)
-	      sub->anyNAdown=TriMaxFalse;
-      }
-    }
-  }
 }
 
 
-
-SEXP GetNAPositions(SEXP model, SEXP tsdim, SEXP xdim, SEXP stationary,
- 		    SEXP Print) {
-    int i, usern, internn, covzaehler[MAXNRCOVFCTS];
-  naptr_type mem, address;
-  sortsofparam sorts[MAX_NA], internsorts[MAX_NA];
+/* wird (derzeit) nicht verwenden !! */
+SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
+		    SEXP xdimOZ, SEXP integerNA, SEXP Print) {
+  int i, NAs, elmnts,  covzaehler[MAXNRCOVFCTS];
+  naptr_type mem;
+  elptr_type mem_elmnts;
+  sortsofparam sorts[MAX_NA];
   bool isnan[MAX_NA];
   NAname_type names;
 
   bool skipchecks = GLOBAL.general.skipchecks;
   GLOBAL.general.skipchecks = true;
-  CheckModel(model, tsdim, xdim, stationary, STORED_MODEL + MODEL_USER,
-      MAXMLEDIM);  
+  
+  CheckModelInternal(model, ZERO, ZERO, ZERO, INTEGER(spatialdim)[0], 
+		     INTEGER(xdimOZ)[0], 1, 1, false, false, 
+		     LOGICAL(Time)[0], 
+		     KEY + INTEGER(model_reg)[0]);  
+  sprintf(ERROR_LOC, "getting positions with NA: ");
+
+  // print("global=%d\n", GLOBAL.fit.lengthshortname);
   
   GLOBAL.general.skipchecks = skipchecks;
-  usern = internn = 0;
+  NAs = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
-  GetNAPosition(STORED_MODEL[MODEL_USER], &usern, &internn, mem, address,
-		names,
-		sorts, internsorts, isnan,  
-		covzaehler, INTEGER(Print)[0], 0);  
+  GetNAPosition(KEY[MODEL_USER], &NAs, mem, &elmnts, mem_elmnts,
+		names, sorts, isnan,  
+		covzaehler,
+		INTEGER(integerNA)[0],
+		GLOBAL.fit.lengthshortname, 
+		INTEGER(Print)[0], 
+		0, false, true);  
   SEXP ans;
   PROTECT (ans =  allocVector(INTSXP, 1));
-  INTEGER(ans)[0] = usern;
+  INTEGER(ans)[0] = NAs;
   UNPROTECT(1);
   return ans;
 }
 
 
 
-
-
-
-int countnas(cov_model *cov) {
+int countnas(cov_model *cov, int level) {
     int i, r,  count, endfor,
       *nrow =  cov->nrow,
       *ncol = cov->ncol;
-    cov_fct *C = CovList + cov->nr;
+    cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
 
-  if (( cov->nr == MIXEDEFFECT || cov->nr == MLEMIXEDEFFECT )
-      && cov->nrow[1] > 0) // b is given
-      return 0;
+  if (cov->nr == MIXEDEFFECT && level==0) { // || cov->nr == MLEMIXEDEFFECT )
+    if (cov->nrow[MIXED_BETA] > 0) return 0; // b is given
+  }
+  if (cov->nr == TREND && level==0) return 0;
 
   count= 0;
   for (i=0; i<C->kappas; i++) {
-    if (nrow[i] == 0 || ncol[i] == 0) continue;
+    if (nrow[i] == 0 || ncol[i] == 0 || C->paramtype(i, 0, 0) == IGNOREPARAM
+	|| C->paramtype(i, 0, 0) == DONOTRETURNPARAM )
+      continue;
     endfor = nrow[i] * ncol[i];
     if (type[i] == REALSXP) { 
       double *p = cov->p[i];
@@ -531,7 +377,7 @@ int countnas(cov_model *cov) {
   for (i=0; i<MAXSUB; i++) {
     sub = cov->sub[i];
     if (sub == NULL) continue; 
-    count += countnas(sub);
+    count += countnas(sub, level + 1);
   }
 
   return count;
@@ -540,35 +386,33 @@ int countnas(cov_model *cov) {
 
 
 void Take21internal(cov_model *cov, cov_model *cov_bound,
-		       double **bounds_pointer, int *NBOUNDS) {
+		    double **bounds_pointer, int *NBOUNDS) {
   /* determine the bounds for the parameters that 
      are to be estimated
    */
 
-
-//    PrintModelInfo(cov_bound);
-//    assert(false);
-
-  int i, c, r, nv=0,
+  int i, c, r,
+    nv=0, // zaehlt NAs
     *nrow = cov->nrow,
     *ncol = cov->ncol,
     *nrow2 = cov_bound->nrow,
     *ncol2 = cov_bound->ncol;
-  cov_fct *C = CovList + cov->nr;
+  cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
   
-//  printf("\n\n\n ======================= \n");
-//  PrintModelInfo(cov);
-//  PrintModelInfo(cov_bound);
+//  print("\n\n\n ======================= \n");
+//  print("%s\n", C->name);
 
   for (i=0; i<C->kappas; i++) {
-      //     printf("%s %s \n", C->name, C->kappanames[i]);
-  if (C->kappatype[i] >= LISTOF) continue;
+      //    print("i=%d %s %s \n", i, C->name, C->kappanames[i]);
+    if (C->kappatype[i] >= LISTOF ||
+	C->paramtype(i, 0, 0) == IGNOREPARAM ||
+	C->paramtype(i, 0, 0) == DONOTRETURNPARAM) continue;
     
     if (nrow[i] != nrow2[i] || ncol[i] != ncol2[i]) {
         PRINTF("%s i: %d, nrow1=%d, nrow2=%d, ncol1=%d, ncol2=%d\n", 
 	       C->name, i, nrow[i], nrow2[i], ncol[i], ncol2[i]);
-  	error("lower/upper/user does not fit to model (size of matrix)");
+  	ERR("lower/upper/user does not fit the model (size of matrix)");
     }
     
     for (r=0; r<nrow[i]; r++) {
@@ -577,7 +421,8 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 	      w=RF_NAN; // value in aktuellem parameter
 	int idx = c * nrow[i] + r;
 	
-//	printf("%d %d idx=%d %d %d %d\n", r,c, idx, type[i], REALSXP, INTSXP);
+// print("%d %d idx=%d %d %d %d nv=%d %d\n", r,c, idx, type[i], REALSXP, INTSXP,
+//	      nv, *NBOUNDS);
 
 	if (type[i] == REALSXP) {
 	  v = cov->p[i][idx];
@@ -585,32 +430,26 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 	}
 	else if (type[i] == INTSXP) {
 	  v = ((int *) cov->p[i])[idx] == NA_INTEGER 
-	      ? NA_REAL : (double) ((int *) cov->p[i])[idx];;
+	      ? NA_REAL : (double) ((int *) cov->p[i])[idx];
 	  w = ((int *) cov_bound->p[i])[idx] == NA_INTEGER 
 	      ? NA_REAL : (double) ((int *) cov_bound->p[i])[idx];	  
 	}
-	
-//	if (cov->nr >= DOLLAR && cov->nr <= LASTDOLLAR)
-//	    printf("%s ", CovList[cov->sub[0]->nr].name);
-	//             printf("%s %s, r=%d, c=%d: %d %d %f\n",
-//	       C->name, C->kappanames[i], r, c, nrow[i], ncol[i], v);
-       
+	     
 
 	if (ISNA(v) || ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
-	    if ((cov->nr < DOLLAR || cov->nr > LASTDOLLAR || 
-		 i == DVAR ||
-		 (i== DSCALE && cov->q == NULL) || // ! natscaling 
+	  if ((!isDollar(cov) || 
+	       i == DVAR ||
+	       (i== DSCALE && cov->q == NULL) || // ! natscaling 
 		 i == DANISO) &&
-		((cov->nr != MIXEDEFFECT && cov->nr != MLEMIXEDEFFECT) || 
-		 i != BETAMIXED)
-                )// aniso ?? ABfrage OK ??
+		(cov->nr != MIXEDEFFECT && cov->nr != TREND)
+                ) // aniso ?? ABfrage OK ??
 	   {
-//		 printf("%s %s, r=%d, c=%d: %d <? %d\n",
-//			C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
- 	     if (nv >= *NBOUNDS) {
-//		 PRINTF("%s %s, r=%d, c=%d: %d >= %d\n",
-//			C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
-  	       error("lower/upper/user does not fit to model (number parameters)");
+	     //		 print("%s %s, r=%d, c=%d: %d <? %d\n",
+	     //		C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
+	     if (nv >= *NBOUNDS) {
+	       PRINTF("%s %s, r=%d, c=%d: %d >= %d\n",
+	       		C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
+  	       ERR("lower/upper/user does not fit the model (number parameters)");
 	     }
 	     (*bounds_pointer)[nv] = w;
 	     nv++;
@@ -630,45 +469,38 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 }
 
 
-SEXP Take2ndAtNaOf1st(SEXP model, SEXP model_bound, SEXP tsdim, SEXP xdim, 
-		      SEXP stationary, SEXP nbounds, SEXP skipchecks) {
+SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP model, SEXP model_bound,
+		      SEXP spatialdim, SEXP Time, SEXP xdimOZ, 
+		      SEXP nbounds, SEXP skipchecks) {
     // MAXMLEDIM
   double *bounds_pointer;
-  int NBOUNDS_INT =INTEGER(nbounds)[0],
-      *NBOUNDS= &NBOUNDS_INT;
+  int m,
+    NBOUNDS_INT =INTEGER(nbounds)[0],
+    *NBOUNDS= &NBOUNDS_INT,
+    nr[2] = {INTEGER(model_reg)[0], MODEL_BOUNDS};
+  SEXP bounds,
+    models[2] = {model, model_bound};
   bool oldskipchecks = GLOBAL.general.skipchecks;
 
+  if (nr[0] == nr[1]) error("do not use register 'model bounds'");
+  
   NAOK_RANGE = true;
   if (LOGICAL(skipchecks)[0]) GLOBAL.general.skipchecks = true;
-  CheckModel(model_bound, tsdim, xdim, stationary, STORED_MODEL + MODEL_BOUNDS,
-      MAXMLEDIM);
-  GLOBAL.general.skipchecks = oldskipchecks;
-
-//  PrintModelInfo(STORED_MODEL[MODEL_BOUNDS]); assert(false);
-
-  NAOK_RANGE = true;
-  CheckModel(model, tsdim, xdim, stationary, STORED_MODEL + MODEL_INTERN,
-      MAXMLEDIM);
-
-//  print("take\n");
-//  PrintModelInfo(STORED_MODEL[MODEL_INTERN]);
-
-
+  for (m=1; m>=0; m--) { // 2er Schleife !!
+    // assert(m==1);
+    CheckModelInternal(models[m], ZERO, ZERO, ZERO, INTEGER(spatialdim)[0], 
+		       INTEGER(xdimOZ)[0], 1, 1, false, false, 
+		       LOGICAL(Time)[0], 
+		       KEY + nr[m]);  
+    GLOBAL.general.skipchecks = oldskipchecks;
+  }
   NAOK_RANGE = false;
-  SEXP bounds;
+
   PROTECT(bounds = allocVector(REALSXP, *NBOUNDS));
   bounds_pointer = NUMERIC_POINTER(bounds);
-//  printf("%f %f %f\n", bounds_pointer[0], bounds_pointer[1], 
-//	 bounds_pointer[2]);
-//  assert(false);
+  Take21internal(KEY[nr[0]], KEY[nr[1]], &bounds_pointer, NBOUNDS);
 
-//  printf("s %ld\n", bounds_pointer);
-  Take21internal(STORED_MODEL[MODEL_INTERN], STORED_MODEL[MODEL_BOUNDS], 
-		    &bounds_pointer, NBOUNDS);
-//  printf("e %ld\n", bounds_pointer);
-// assert(false);
-
-  if (*NBOUNDS != 0) error("lower/upper does not fit to model");
+  if (*NBOUNDS != 0) ERR("lower/upper does not fit to model");
   UNPROTECT(1);
   return bounds;
 }
@@ -677,19 +509,18 @@ SEXP Take2ndAtNaOf1st(SEXP model, SEXP model_bound, SEXP tsdim, SEXP xdim,
 
 
 void GetNARanges(cov_model *cov, cov_model *min, cov_model *max, 
-		 double *minpile, double *maxpile, int *usern) {
+		 double *minpile, double *maxpile, int *NAs) {
     /* 
        determine the ranges of the parameters to be estimated 
      */
   int i,  r,
-    *nrow =  cov->nrow,
+    *nrow = cov->nrow,
     *ncol = cov->ncol;
-  cov_fct *C = CovList + cov->nr;
+  cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
-  double 
-    v = RF_NAN,
-    dmin = RF_NAN,
-    dmax = RF_NAN;
+  double v, dmin, dmax;
+
+  //  print("\ngetnaranges\n");
 
   for (i=0; i<C->kappas; i++) {
     int end = nrow[i] * ncol[i];
@@ -707,11 +538,19 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
     } else if (type[i] == LISTOF + REALSXP) {
 	dmin = min->p[i][0];
 	dmax = max->p[i][0];
+    } else if (type[i] == CLOSXP) {
+	dmin = 0.0;
+	dmax = 0.0;
+    } else if (type[i] == LANGSXP) {
+	dmin = 0.0;
+	dmax = 0.0;
     } else {
-      error("unknown SXP type in GetRanges.");
+      dmin = dmax = RF_NAN;
+      assert(false);
     }
     
     for (r=0; r<end; r++) {
+      v = RF_NAN;
       if (type[i] == REALSXP) {
 	v = cov->p[i][r];
       }
@@ -720,21 +559,22 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
 	  ? NA_REAL : (double) ((int *) cov->p[i])[r];
       } else if (type[i] == LISTOF + REALSXP) {
 	  continue;  // !!!!!!!!!!!
+      } else if (type[i] == CLOSXP) {
+          continue;  // !!!!!!!!!!!
+      } else if (type[i] == LANGSXP) {
+          continue;  // !!!!!!!!!!!
       } else assert(false);
 
-      if ( (ISNA(v) || ISNAN(v)) 
-	   && cov->nr!=MIXEDEFFECT && cov->nr!=MLEMIXEDEFFECT) {
-	if (cov->nr < DOLLAR || cov->nr > LASTDOLLAR || 
-	    i == DVAR ||
-	    (i== DSCALE && cov->q == NULL) || // ! natscaling 
-	    i == DANISO // aniso ?? ABfrage OK ??
-	    ) {
-	    minpile[*usern] = dmin;
-	    maxpile[*usern] = dmax;
-//	    printf("%f %f\n", dmin, dmax);
-	    (*usern)++;
+      if ((ISNA(v) || ISNAN(v)) && C->paramtype(i, 0, 0) != IGNOREPARAM
+	  && C->paramtype(i, 0, 0) != DONOTRETURNPARAM
+	  && cov->nr!=MIXEDEFFECT && cov->nr!=TREND) {// cov->nr!=MLEMIXEDEFFECT
+	if (!isDollar(cov) || (i!=DALEFT && i!=DPROJ)) {
+	    minpile[*NAs] = dmin;
+	    maxpile[*NAs] = dmax;
+//	    print("%s %d %f %f\n", C->kappanames[i],r, dmin, dmax);
+	    (*NAs)++;
 	} else {
-	    // maybe internn and internpile should be set here
+	  // maybe NAs and internpile should be set here
 	  continue;
 	}
       } // isna
@@ -743,26 +583,19 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
 
   for (i=0; i<MAXSUB; i++) {
     if (cov->sub[i] != NULL) {
-      GetNARanges(cov->sub[i], min->sub[i], max->sub[i], minpile, maxpile, 
-		  usern);
+      GetNARanges(cov->sub[i], 
+		  min->sub[i], max->sub[i], 
+		  minpile, maxpile, 
+		  NAs);
     }
   }
 }
 
 
 
-void CovMatrixMLE(double *x, int *dist, int *lx, int *set, int *submodel, // k
-		  double *value) {
-    LIST_ELEMENT = *set - 1;
-    ELEMENTNR_PLUS = *submodel - 1;
-    CovarianceMatrix(x, (bool) *dist, *lx, STORED_MODEL[MODEL_MLE], value);
-    ELEMENTNR_PLUS = LIST_ELEMENT = - 1;
-}
-
-
 int check_recursive_range(cov_model *cov, bool NAOK) {
     /*
-      called by MLEGetModelInfo
+      called by SetAndGetModelInfo
      */
   int i, err;
   if ((err = check_within_range(cov, NAOK)) != NOERROR) return err;
@@ -777,18 +610,19 @@ int check_recursive_range(cov_model *cov, bool NAOK) {
 
 
 int CheckEffect(cov_model *cov) {
-  int i,j,end;
+  int i,j,end, nr;    
   bool na_var = false;
   double *p;
   cov_model *next;
-  if (cov->nr >= GATTER && cov->nr <= LASTGATTER) return CheckEffect(cov->sub[0]);
-  else if (cov->nr == MIXEDEFFECT) {    
-    cov->nr = MLEMIXEDEFFECT;  
-    if (cov->nrow[1] == 0 && cov->nsub == 0) return deteffect;
-    if (cov->nsub == 0) return fixedeffect;
+  if (cov->nr == MIXEDEFFECT) {    
+    // cov->nr = MLEMIXEDEFFECT;  
+    if (cov->nsub == 0) {
+      return (cov->nrow[MIXED_BETA] > 0 && 
+	      (ISNA(cov->p[MIXED_BETA][0]) || ISNAN(cov->p[MIXED_BETA][0])))
+	? fixedeffect : deteffect;
+    }
     next = cov->sub[0];
-    if (next->nr >= GATTER && next->nr <= LASTGATTER) next = next->sub[0];
-    if (next->nr >= DOLLAR && next->nr <= LASTDOLLAR) { 
+    if (isDollar(next)) { 
       if (next->ncol[DVAR] == 1 && next->nrow[DVAR] == 1) {
         na_var = (ISNA(next->p[DVAR][0]) || ISNAN(next->p[DVAR][0]));
       }
@@ -798,360 +632,389 @@ int CheckEffect(cov_model *cov) {
 	  p = next->p[i];
 	  for (j=0; j<end; j++) {
 	    if (ISNA(p[j]) || ISNAN(p[j])) {
-	      return (next->nr == CONSTANT) ? eff_error : spaceeffect;
+	      return next->nr == CONSTANT ? eff_error :
+		na_var ? spvareffect : spaceeffect;
 		  // NA in e.g. scale for constant matrix -- does not make sense
 	    }
 	  }
 	}
       }
-      next = next->sub[0];
-      if (next->nr >= GATTER && next->nr <= LASTGATTER) next = next->sub[0];
+      next = next->sub[0]; // ok
     }
-    if (next->nr == CONSTANT) {
-       return (cov->nrow[0] > cov->ncol[0])
-	   ? (na_var ? rvareffect : randomeffect)
-	   : (na_var ? lvareffect : largeeffect);
-    } else return spaceeffect;
-  } else return remaining;
+  
+    int xx =  next->nr == CONSTANT  
+      ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
+	 ? (na_var ? rvareffect : randomeffect)
+	 : (na_var ? lvareffect : largeeffect)
+	 )
+      : (na_var ? spvareffect : spaceeffect);
+    if (xx == spvareffect || xx == spaceeffect) {
+      BUG; //APMI(next);
+    }
+
+
+    return next->nr == CONSTANT  
+      ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
+	 ? (na_var ? rvareffect : randomeffect)
+	 : (na_var ? lvareffect : largeeffect)
+	 )
+      : (na_var ? spvareffect : spaceeffect);
+  }
+
+  if (cov->nr == TREND) {
+    int trend,
+      effect = eff_error;
+    bool isna ;
+
+    for (j=0; j<2; j++) {
+      trend = (j==0) ? TREND_MEAN : TREND_LINEAR;  
+      //  print("trend %d %d\n", j, trend);
+
+      if ( (nr = cov->nrow[trend] * cov->ncol[trend]) > 0) {
+	p = cov->p[trend];
+	isna = ISNA(p[0]) || ISNAN(p[0]);
+	if ((effect != eff_error) && ((effect == fixedtrend) xor isna))
+	  SERR1("do not mix deterministic effect with fixed effects in '%s'", 
+		NICK(cov));
+	for (i = 1; i<nr; i++) {
+	  if ( (ISNA(p[i]) || ISNAN(p[i])) xor isna) 
+	    SERR("mu and linear trend:  all coefficient must be deterministic or all must be estimated");
+	}
+	effect = isna ? fixedtrend : dettrend;
+      }
+    }
+
+    for (j=0; j<2; j++) {
+      int param;
+      trend = (j==0) ? TREND_POLY : TREND_FCT;
+      //print("trend %d\n", trend);
+      param = (j==0) ? TREND_PARAM_POLY : TREND_PARAM_FCT;
+      if (cov->nrow[trend] > 0) {
+	if (effect != eff_error)
+	  SERR("polynomials and free functions in trend may not be mixed with other trend definitions. Please use a sum of trends.");
+
+	nr = cov->nrow[param] * cov->ncol[param];
+	if (nr > 0) {
+	  p = cov->p[param];
+	  isna = ISNA(p[0]) || ISNAN(p[0]);
+	  for (i = 1; i<nr; i++) {
+	    if ( (ISNA(p[i]) || ISNAN(p[i])) xor isna) 
+	      SERR("the coefficients in trend must be all deterministic or all coefficient are estimated");
+	  }
+	  effect = isna ? fixedtrend : dettrend;
+	} else effect = fixedtrend;
+      }
+    }
+
+    return effect;
+  }
+
+  cov_model *sub = cov;
+  bool Simple = true;
+  if (isDollar(sub)) {
+    Simple = sub->p[DPROJ] == NULL && sub->p[DANISO] == NULL && 
+      sub->p[DALEFT] == NULL;
+    sub = sub->sub[0];
+  }
+  
+  if (sub->nr == NATSC) sub = sub->sub[0];
+  cov_fct *C = CovList + sub->nr; // nicht gatternr
+  
+  if (C->maxsub == 0) {
+    if (isPosDef(C->Type) && 
+	C->domain == XONLY && C->isotropy == ISOTROPIC &&
+	(C->vdim == 1 || C->cov==nugget) && Simple) {
+      return simple; 
+    }
+    return primitive;
+  }
+  return remaining;
 }
 
 
-static naptr_type MLE_MEM, MLE_ADDRESS;
-static int MLE_USERN=-1, MLE_INTERNN = -1;
-static sortsofparam MLE_SORTS[MAX_NA], MLE_INTERNSORTS[MAX_NA];
-static bool MLE_ISNAN[MAX_NA];
+static naptr_type MEMORY[MODEL_MAX+1]; 
+static elptr_type MEMORY_ELMNTS[MODEL_MAX+1];
+int MEM_NAS[MODEL_MAX+1], MEM_ELMNTS[MODEL_MAX+1];
 
-
-SEXP MLEGetModelInfo(SEXP model, SEXP tsdim, SEXP xdim) { // ex MLEGetNAPos
+SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim, 
+			SEXP distances, SEXP ygiven,
+			SEXP Time,
+			SEXP xdimOZ, SEXP shortlen, SEXP allowforintegerNA, 
+			SEXP excludetrend) { 
+  // ex MLEGetNAPos
+  sortsofparam MEM_SORTS[MAX_NA];
+  bool anyeffect, MEM_ISNAN[MAX_NA];
     /*
       basic set up of covariance model, determination of the NA's
       and the corresponding ranges.
      */
-    cov_model *cov, *min=NULL,
-    *max=NULL, 
-    *openmin=NULL, 
-    *openmax=NULL;
+  cov_model *cov, *key,
+    *min=NULL,  *max=NULL, 
+    *pmin=NULL,  *pmax=NULL, 
+    *openmin=NULL,  *openmax=NULL;
 //  bool skipchecks = GLOBAL.general.skipchecks;
   NAname_type names;
-  double mle_min[MAX_NA], mle_max[MAX_NA];
-  int i, covzaehler[MAXNRCOVFCTS],
-      usern = 0, effect[MAXSUB], nas[MAXSUB];
-  bool anyeffect;
-  SEXP stationary, isotropy, Effect, Nas;
-#define total 5
+  double mle_min[MAX_NA], mle_max[MAX_NA], mle_pmin[MAX_NA], mle_pmax[MAX_NA],
+    mle_openmin[MAX_NA], mle_openmax[MAX_NA];
+  int i,  covzaehler[MAXNRCOVFCTS], effect[MAXSUB], nas[MAXSUB],
+    newxdim, neffect, NAs,
+    err = NOERROR, 
+    modelnr = INTEGER(model_reg)[0];
+  const char *colnames[8] =
+    {"pmin", "pmax", "type", "is.nan", "min", "max", "openmin", "openmax"};
+ SEXP return_domain, isotropic, Sxdim,
+   matrix, nameAns, nameMatrix, RownameMatrix, 
+   ans=NULL;
 
-  PROTECT(stationary=allocVector(LGLSXP, 1));
-  LOGICAL(stationary)[0] = false;
-  PROTECT(isotropy=allocVector(LGLSXP, 1));
-  LOGICAL(isotropy)[0] = false;
+#define total 7
+
+  PROTECT(return_domain=allocVector(LGLSXP, 1));
+  LOGICAL(return_domain)[0] = false;
+  PROTECT(isotropic=allocVector(LGLSXP, 1));
+  LOGICAL(isotropic)[0] = false;
 
   NAOK_RANGE = true;
+ 
+  CheckModelInternal(model, ZERO, ZERO, ZERO, 
+		     INTEGER(spatialdim)[0], INTEGER(xdimOZ)[0],
+		     1, LOGICAL(ygiven)[0] ? 1 : 0, // lx, ly
+		     false, //grid
+		     LOGICAL(distances)[0], //distances
+		     LOGICAL(Time)[0], 
+		     KEY + modelnr);  
 
-//  printf("here\n");
-  CheckModel(model, tsdim, xdim, stationary, STORED_MODEL + MODEL_MLE,
-      MAXMLEDIM);
+  //  APMI(KEY[modelnr]); //, "setandget");
+
+  cov = key = KEY[modelnr];
+  if (isInterface(cov)) {
+    cov = cov->key == NULL ? cov->sub[0] : cov->key;
+  }
+
+  if (key->prevloc->timespacedim > MAXMLEDIM) 
+    ERR("dimension too high in MLE");
+
   NAOK_RANGE = false;
 
-  // printf("here\n");
- 
+  if (cov->pref[Nothing] == PREF_NONE) {
+    err = ERRORINVALIDMODEL;
+    goto ErrorHandling;
+  }
+  // print("here returnx tsdim %d %d %d\n", 
+  // INTEGER(tsdim)[0], LOGICAL(domain)[0],  LOGICAL(isotropic)[0]);
 
-  cov = STORED_MODEL[MODEL_MLE];
-  if (cov->nr >= GATTER && cov->nr <= LASTGATTER) {
-    cov_model *next = cov->sub[0];
-    if (next->statIn < COVARIANCE) {
-      LOGICAL(stationary)[0] = true;
-      if (next->isoIn==ISOTROPIC) {
-	LOGICAL(isotropy)[0] = true;
-	INTEGER(xdim)[0] = 1;
-//	removeOnly(STORED_MODEL + MODEL_MLE); nicht wegnehmen
-// da derzeit negative distanczen in CovMatrixMult auftreten
-      }
+
+  // print("here\n");
+ 
+  newxdim = INTEGER(xdimOZ)[0];
+  if (cov->domown == XONLY && isPosDef(cov->typus)) {
+    LOGICAL(return_domain)[0] = true;
+    if (cov->isoown==ISOTROPIC) {
+      LOGICAL(isotropic)[0] = true;
+      newxdim = 1;
+//	removeOnly(KEY + modelnr); nicht wegnehmen
+// da derzeit negative distanczen in GLOBAL.CovMatrixMult auftreten -- obsolete ?!
     }
   }
+  //  print("SD here returnx tsdim %d\n", INTEGER(tsdim)[0]);
 
 
   // GLOBAL.general.skipchecks = skipchecks;
-  check_recursive_range(STORED_MODEL[MODEL_MLE], true);
+  check_recursive_range(cov, true);
 
-  get_ranges(STORED_MODEL[MODEL_MLE], &min, &max, &openmin, &openmax, 
-	     true);
+  // print("AS here returnx tsdim %d\n", INTEGER(tsdim)[0]);
+  if ((err = get_ranges(cov, &min, &max, &pmin, &pmax, &openmin, &openmax))
+      != NOERROR) goto ErrorHandling;
 
-//  printf("min/max\n");
-//  PrintModelInfo(min);
-//  PrintModelInfo(max);
-  
-//x  PrintModelInfo(cov); assert(false);
- 
+  //  print("hier %d\n", INTEGER(shortlen)[0]);
 
-  MLE_USERN = MLE_INTERNN = 0;
+  MEM_ELMNTS[modelnr] = MEM_NAS[modelnr] = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
-  GetNAPosition(STORED_MODEL[MODEL_MLE], &MLE_USERN, &MLE_INTERNN,
-		MLE_MEM, MLE_ADDRESS, names, 
-		MLE_SORTS, MLE_INTERNSORTS,  MLE_ISNAN, 		
+
+  // !!
+  GetNAPosition(cov, MEM_NAS + modelnr, MEMORY[modelnr], 
+		MEM_ELMNTS + modelnr, MEMORY_ELMNTS[modelnr],
+		names, MEM_SORTS, MEM_ISNAN, 			
 		covzaehler,
-		(PL > 2) + (PL > 4) + (PL > 6), 0); 
-  GetNARanges(STORED_MODEL[MODEL_MLE], min, max, mle_min, mle_max, 
-	      &usern);
+		INTEGER(allowforintegerNA)[0],
+		INTEGER(shortlen)[0],
+		(PL >= PL_COV_STRUCTURE) + (PL >=PL_DETAILS) + 
+		           (PL >= PL_SUBDETAILS), 
+		0, false, LOGICAL(excludetrend)[0]); 
+
+// print("XX modelnr=%d\n", modelnr);
+  NAs = 0; GetNARanges(cov, min, max, mle_min, mle_max, &NAs);
+  //print("XXz modelnr=%d\n", modelnr);
+  NAs = 0; GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &NAs);
+  //print("XX-------- amodelnr=%d\n", modelnr);
+  NAs = 0; GetNARanges(cov, openmin, openmax, mle_openmin, mle_openmax, &NAs);
  
-  cov = STORED_MODEL[MODEL_MLE];
-  if (cov->nr >= GATTER && cov->nr <= LASTGATTER) cov = cov->sub[0];
-
   anyeffect=false;
-  if (cov->nr == PLUS) {  
-
+  if (cov->nr == PLUS || cov->nr == SELECT) {  
      for (i=0; i<cov->nsub; i++) {
-	 effect[i] = CheckEffect(cov->sub[i]);
-	 nas[i] = countnas(cov->sub[i]);
+       //  print("checkeffect: %d %d\n", i, cov->nsub);
+       
+       effect[i] = CheckEffect(cov->sub[i]);
+       nas[i] = countnas(cov->sub[i], 0);
+       
+       // print("i=%d nsub=%d eff=%d remain=%d nas=%d\n", i, cov->nsub, effect[i], remaining, nas[i]);
+       
+       if (effect[i] == eff_error) GERR("scaling parameter appears with constant matrix in the mixed effect part");
 
-      //    printf("%d %d %d\n", i, effect[i], remaining);
-
-      if (effect[i] == eff_error) 
-        ERR("scaling parameter appears with constant matrix in the mixed effect part");
-      if (effect[i] != remaining) anyeffect = true;
+       anyeffect |= (effect[i] != remaining && effect[i] != primitive);
      }
+  } else {
+    effect[0] = CheckEffect(cov);
+    nas[0] = countnas(cov, 0);
   }
-
-
-  PROTECT(Effect = allocVector(INTSXP, anyeffect  ? cov->nsub : 0));
-  PROTECT(Nas = allocVector(INTSXP, anyeffect  ? cov->nsub : 0));
+  anyeffect = true; // always bring back effects!!
+  
   if (anyeffect) {
-    for (i=0; i<cov->nsub;i++) INTEGER(Effect)[i] = effect[i];
-    for (i=0; i<cov->nsub;i++) INTEGER(Nas)[i] = nas[i];
-    assert(cov->nr == PLUS); // zur sicherheit
-    cov->nr = MLEPLUS;
-  }
-  // printf("xx %d %d %d %d\n", effect[0], effect[1], anyeffect, LENGTH(Effect));
-     
+    if (cov->nr == PLUS || cov->nr == SELECT)
+      neffect = cov->nsub;
+    else neffect = 1;
+  } else neffect = 0;
 
-  COV_DELETE(&min);
-  COV_DELETE(&max);
-  COV_DELETE(&openmin);
-  COV_DELETE(&openmax);
+  // print("There returnx tsdim %d\n", INTEGER(tsdim)[0]);
 
-  SEXP ans, matrix, nameAns, nameMatrix;
-  PROTECT(matrix =  allocMatrix(REALSXP, MLE_USERN, 4));
-  PROTECT(nameMatrix = allocVector(STRSXP, MLE_USERN));
-  for (i=0; i<MLE_USERN; i++) {
-    REAL(matrix)[i] = mle_min[i];
-    REAL(matrix)[i + MLE_USERN] = mle_max[i];
-    REAL(matrix)[i + 2 * MLE_USERN] = MLE_SORTS[i];
-    REAL(matrix)[i + 3 * MLE_USERN] = (int) MLE_ISNAN[i];
-    SET_STRING_ELT(nameMatrix, i, mkChar(names[i]));
-  }
-  setAttrib(matrix, R_RowNamesSymbol, nameMatrix);
 
+ 
+  PROTECT(Sxdim=allocVector(INTSXP, 1));
+  INTEGER(Sxdim)[0] = newxdim;
+
+  // print("hYere returnx tsdim %d\n", INTEGER(tsdim)[0]);
+  PROTECT(matrix =  allocMatrix(REALSXP, MEM_NAS[modelnr], 8));
+  PROTECT(RownameMatrix = allocVector(STRSXP, MEM_NAS[modelnr]));
+  PROTECT(nameMatrix = allocVector(VECSXP, 2));
+  for (i=0; i<MEM_NAS[modelnr]; i++) {
+    REAL(matrix)[i] = mle_pmin[i];
+    REAL(matrix)[i + MEM_NAS[modelnr]] = mle_pmax[i];
+    REAL(matrix)[i + 2 * MEM_NAS[modelnr]] = MEM_SORTS[i];
+    REAL(matrix)[i + 3 * MEM_NAS[modelnr]] = (int) MEM_ISNAN[i];
+    REAL(matrix)[i + 4 * MEM_NAS[modelnr]] = mle_min[i];
+    REAL(matrix)[i + 5 * MEM_NAS[modelnr]] = mle_max[i];
+    REAL(matrix)[i + 6 * MEM_NAS[modelnr]] = mle_openmin[i];
+    REAL(matrix)[i + 7 * MEM_NAS[modelnr]] = mle_openmax[i];
+    SET_STRING_ELT(RownameMatrix, i, mkChar(names[i]));
+    // print("i=%d %s %e %e\n", i, names[i], mle_pmin[i], mle_pmax[i]);
+   }
+      
+  SET_VECTOR_ELT(nameMatrix, 0, RownameMatrix);
+  SET_VECTOR_ELT(nameMatrix, 1, Char(colnames, 8));
+  setAttrib(matrix, R_DimNamesSymbol, nameMatrix);
+   
   PROTECT(ans = allocVector(VECSXP, total));
   PROTECT(nameAns = allocVector(STRSXP, total));
   i = 0;
   SET_STRING_ELT(nameAns, i, mkChar("minmax"));
   SET_VECTOR_ELT(ans, i++, matrix);
-  SET_STRING_ELT(nameAns, i, mkChar("stationary"));
-  SET_VECTOR_ELT(ans, i++, stationary);  
-  SET_STRING_ELT(nameAns, i, mkChar("isotropy"));
-  SET_VECTOR_ELT(ans, i++, isotropy);  
+  SET_STRING_ELT(nameAns, i, mkChar("trans.inv")); // !!
+  SET_VECTOR_ELT(ans, i++, return_domain);  
+  SET_STRING_ELT(nameAns, i, mkChar("isotropic"));
+  SET_VECTOR_ELT(ans, i++, isotropic);  
   SET_STRING_ELT(nameAns, i, mkChar("effect"));
-  SET_VECTOR_ELT(ans, i++, Effect);  
+  SET_VECTOR_ELT(ans, i++, Int(effect, neffect, MAXINT));  
   SET_STRING_ELT(nameAns, i, mkChar("NAs"));
-  SET_VECTOR_ELT(ans, i++, Nas);  
+  SET_VECTOR_ELT(ans, i++, Int(nas, neffect, MAXINT));  
+  SET_STRING_ELT(nameAns, i, mkChar("xdimOZ"));
+  SET_VECTOR_ELT(ans, i++, Sxdim);  
+  SET_STRING_ELT(nameAns, i, mkChar("matrix.indep.of.x"));
+  SET_VECTOR_ELT(ans, i++, ScalarLogical(cov->matrix_indep_of_x));  
   setAttrib(ans, R_NamesSymbol, nameAns);
   assert(i==total);
 
   UNPROTECT(8);
+  // print(" J here returnx tsdim %d\n", INTEGER(tsdim)[0]);
 
+ ErrorHandling:
+  if (min != NULL) COV_DELETE(&min);
+  if (max != NULL) COV_DELETE(&max);
+  if (pmin != NULL) COV_DELETE(&pmin);
+  if (pmax != NULL) COV_DELETE(&pmax);
+  if (openmin != NULL) COV_DELETE(&openmin);
+  if (openmax != NULL) COV_DELETE(&openmax);
+  if (err != NOERROR) XERR(err);
+  
   return ans;
 }
  
 
-bool anymixed(cov_model *cov) {
-  int i;
-  if (cov->nr == MIXEDEFFECT || cov->nr == MLEMIXEDEFFECT) return true;
-  for (i=0; i<cov->nsub; i++) {
-    if (anymixed(cov->sub[i])) return true;
-  }
-  return false;
-}
 
- 
-void MLEanymixed(int *anymix) {
-    *anymix = (int) anymixed(STORED_MODEL[MODEL_MLE]);
-}
-
-void iexplDollar(cov_model *cov) {
-    /*    
-      get the naturalscaling values and devide the preceeding scale model     
-      by this value
-    */
-  double *p, scale;
-  if (cov->nr == NATSC) {
-      cov_model 
-	  *next = cov->sub[0],
-	  *calling = cov->calling;
-      if (calling->nr >= GATTER && calling->nr <= LASTGATTER)
-	  calling = calling->calling;
-      assert(calling!=NULL && calling->nr >= DOLLAR && calling->nr <= LASTDOLLAR);
-      scale = CovList[next->nr].naturalscale(next);
-
-      p = calling->p[DSCALE];
-      if (p != NULL) p[0] /= scale;
-      else {
-	  int i,
-	      n = calling->nrow[DANISO] * calling->ncol[DANISO];
-	  p = calling->p[DANISO];
-	  for (i=0; i<n; i++) p[i] /= scale;
-      }
-  } else {
-    int i;
-    for (i=0; i<MAXSUB; i++) { // cov->sub[i]: luecken erlaubt bei PSgen !
-      if (cov->sub[i] != NULL) iexplDollar(cov->sub[i]);
-    }
-  }
-}
-  
-
-void expliciteDollarMLE(double *values) {
+void expliciteDollarMLE(int* ModelNr, double *values) {
     // userinterfaces.cc 
-  int i, un;
+  int i, un,
+    modelnr = *ModelNr,
+    NAs = MEM_NAS[modelnr];
  	
   // first get the naturalscaling values and devide the preceeding 
   // scale model by this value 
   if (NS==NATSCALE_MLE) {
-      iexplDollar(STORED_MODEL[MODEL_MLE]);
+      iexplDollar(KEY[modelnr]);
   }
 
   // Then get the values out of the model
-  for (un=i=0; un<MLE_USERN; i++) {
-      values[un++] = MLE_MEM[i][0];
-      MLE_MEM[i][0] = RF_NAN;
+  for (un=i=0; un<NAs; i++) {
+    values[un++] = MEMORY[modelnr][i][0];
+    MEMORY[modelnr][i][0] = RF_NAN;
   }
 }
 
 
 
-void PutValuesAtNA(double *values){
-  int i, un;
+void PutValuesAtNA(int *reg, double *values){
+  int i, un,
+    NAs = MEM_NAS[*reg];
   // set ordinary parameters for all (sub)models
-  for (un=i=0; i<MLE_INTERNN; i++) MLE_MEM[i][0] = values[un++];
-  if (un != MLE_USERN) ERR("severe error in PutValuesAtNA.");
  
-  // finally set all aniso from scale
-  //for (i=0; i<MLE_INTERNN; i++) {
-  //  if (MLE_INTERNSORTS[i] == ANISOFROMSCALE) {
-  //    MLE_MEM[i][0] = 1.0 / MLE_ADDRESS[i][0];
-  //   }
-  // }
+  // cov_model *cov = KEY[*reg];
+  //cov = cov->sub[0];
+  //  print("%s %d\n", NICK(cov), *reg);
+  ///assert(isDollar(cov));
+  //print("%ld %f %ld %f\n", cov->p[DVAR], cov->p[DVAR][0],
+  //	 cov->p[DSCALE], cov->p[DSCALE][0]);
 
-//  PrintModelInfo(STORED_MODEL[MODEL_INTERN]);
+  
 
+  for (un=i=0; i<NAs; i++) {
+ //   print("reg=%d i=%d %d %ld %f\n", *reg, i, NAs, MEMORY[*reg][i], values[un]);
+    //  print("mem=%f\n",MEMORY[*reg][i][0]) ;  
+    //if (*reg < 0 || *reg > MODEL_MAX) XERR(ERRORREGISTER);  
+
+    MEMORY[*reg][i][0] = values[un++];
+  //  print("ok\n");
+  }
+
+  int one = 1;
+  setListElements(reg, &one, &one, &one);
 }
 
 
+void setListElements(int *reg, int *i, int *k, int* len_k) {
+  int len = *len_k;
+  if (*reg < 0 || *reg > MODEL_MAX) XERR(ERRORREGISTER);
+  cov_model *cov = KEY[*reg];
 
+  if (cov==NULL) ERR("register is not initialised bei 'RFfit'");
+  if (isInterface(cov)) {
+    cov = cov->key == NULL ? cov->sub[0] : cov->key;
+  }
+  if (cov->nr == SELECT) {
+    int j;
+    if (len != cov->nrow[SELECT_SUBNR]) {
+      free(cov->p[SELECT_SUBNR]);
+      cov->nrow[SELECT_SUBNR] = len;
+      cov->p[SELECT_SUBNR] = (double*) MALLOC(sizeof(int) * len);
+    }
+    for (j=0; j<len; j++) {
+      ((int *) cov->p[SELECT_SUBNR])[j] = k[j] - 1;
+    }
 
-#define MAX_INT   2000000
-SEXP IGetModel(cov_model *cov, int modus) {
-
-//      # modus: 1 : Modell wie gespeichert
-//      #        0 : Modell unter Annahme PracticalRange>0
-//      #        [ 2 : natscale soweit wie moeglich zusammengezogen ]
-
-  SEXP model, nameMvec, dummy;
-  int i, nmodelinfo,
-    k = 0; 
-  long int mem=0;
-  cov_fct *C = CovList + cov->nr;
-
-  if ((modus == 0 && cov->nr == NATSC) 
-      || (cov->nr>=GATTER && cov->nr<=LASTGATTER)) { 
-    return IGetModel(cov->sub[0], modus);
+  }
+  int j,
+    iM1 = *i - 1,
+    nr = MEM_ELMNTS[*reg];
+  for (j=0; j<nr; j++) {
+    MEMORY_ELMNTS[*reg][j][0] = iM1;
+    // printf("setlistel %d %d %ld\n", j, iM1, MEMORY_ELMNTS[*reg][j]);
   }
   
-  nmodelinfo = C->kappas + 1;
-  for (i=0; i<MAXSUB; i++) if (cov->sub[i] != NULL) nmodelinfo++;
-  for (i=0; i<C->kappas; i++) if (cov->p[i] == NULL) nmodelinfo--;
-
-  PROTECT(model = allocVector(VECSXP, nmodelinfo));
-  PROTECT(nameMvec = allocVector(STRSXP, nmodelinfo));
-
-  SET_STRING_ELT(nameMvec, k, mkChar("")); // name
-  cov_fct *CC = CovList + cov->nr;
-  while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
-  SET_VECTOR_ELT(model, k++, mkString(CC->name));
-
-  for(i=0; i<C->kappas; i++) {
-    if (cov->p[i] == NULL) {	
-	// k++; // 9.1.09, needed for "$" (proj can be NULL) -- 19.1.09 k++ 
-	// deleted since otherwise outcome does not fit 
-	// model definition anymore (arbitrary NULL in the definition)
-	// instead: nmodelinfo--; above wihtin loop
-      continue;
-    } else  dummy = Param((void*) cov->p[i], cov->nrow[i], cov->ncol[i], 
-			  C->kappatype[i], true, &mem);    
-    SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
-    SET_VECTOR_ELT(model, k++, dummy);
-  }
-
-  // vielleicht mal spaeter !
-//  SET_STRING_ELT(nameMvec, k, mkChar("user"));  
-//  SET_VECTOR_ELT(model, k++, Int(cov->user, Nothing + 1, MAXINT, mem));
-
-//  printf("a %d %d %d %s\n",cov->nsub, k, nmodelinfo, CovList[cov->nr].name);
-//  PrintModelInfo(cov);
-
-  int zaehler = 0;
-  for (i=0; i<MAXSUB; i++) {
-    if (cov->sub[i] != NULL) {
-// printf("i=%d %d %d %s\n", i,cov->nsub,zaehler,CovList[cov->sub[i]->nr].name);
-      SET_VECTOR_ELT(model, k++, IGetModel(cov->sub[i], modus));
-      if (++zaehler >= cov->nsub) break;
-    }
-  }
-
-//  PrintModelInfo(cov);
-//  printf("b %d %d %s\n", k, nmodelinfo, CovList[cov->nr].name);
-
-  assert(k == nmodelinfo);
-
-  setAttrib(model, R_NamesSymbol, nameMvec);
-  UNPROTECT(2); // model + namemodelvec
-
-  return model;
 }
-
-SEXP GetModel(SEXP keynr, SEXP Modus) {
-//    # modus: 1 : Modell wie gespeichert
-//    #        0 : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
-//    #        2 : natscale soweit wie moeglich zusammengezogen (natsc werden
-//                 drauf multipliziert)
-
-// Nutzer kann 3 Modifikationen des Models in MLE laufen lassen:
-//      * keinen Praktikal range oder individuell angeben
-//      * extern practical range definieren
-//      * intern practical range verwenden lassen (use.naturalscaling)
-
-  int knr = INTEGER(keynr)[0],
-    modus = INTEGER(Modus)[0];
-  cov_model *cov;
-  if (knr>=0) {
-    if (knr < MAXKEYS) {
-      key_type *key;
-      key = &(KEY[knr]);
-      if (key->cov == NULL) return allocVector(VECSXP, 0);
-      cov = key->cov;
-    } else return allocVector(VECSXP, 0);
-  } else {
-    knr = -knr-1;
-    if (knr < MODEL_MAX && STORED_MODEL[knr] != NULL) cov = STORED_MODEL[knr];
-    else return allocVector(VECSXP, 0);
-  }
-  if (modus == 0 || modus == 1) return IGetModel(cov, modus);
-  else {
-    cov_model *dummy = NULL; //ACHTUNG: "=NULL" hinzugefuegt
-    SEXP value;
-    covcpy(&dummy, cov, false, true);
-    iexplDollar(dummy);
-    value = IGetModel(dummy, 0);
-    COV_DELETE(&dummy);
-    return(value);
-  }
-}
-

@@ -4,11 +4,11 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2001 -- 2011 Martin Schlather, 
+ Copyright (C) 2001 -- 2013 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -26,471 +26,429 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
  
 #include "RF.h"
+#include "randomshape.h"
 #include <R_ext/Lapack.h>
 //#include <R_ext/Linpack.h>
 
 bool debug=false;
 
-void direct_destruct(void ** S)
-{
-  if (*S!=NULL) {
-    direct_storage *x;
-    x = *((direct_storage**)S);    
-    if (x->U!=NULL) free(x->U); 
-    if (x->G!=NULL) free(x->G);
-    free(*S);
-    *S = NULL;
+
+#define DIRECT_METHOD (COMMON_GAUSS + 1)
+#define DIRECT_SVDTOL (COMMON_GAUSS + 2)
+#define DIRECT_MAXVAR (COMMON_GAUSS + 3)
+
+int check_directGauss(cov_model *cov) {
+#define nsel 4
+  cov_model *next=cov->sub[0];
+  int j, err ; // taken[MAX DIM],
+  direct_param *gp  = &(GLOBAL.direct); //
+  
+  ROLE_ASSERT(ROLE_GAUSS);
+
+  if ((err = check_common_gauss(cov)) != NOERROR) return err;
+
+  kdefault(cov, DIRECT_METHOD, (int) gp->inversionmethod);
+  kdefault(cov, DIRECT_SVDTOL, gp->svdtolerance);
+  kdefault(cov, DIRECT_MAXVAR, gp->maxvariables);
+  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
+    return ERRORDIM;
+
+  Types type = PosDefType;
+
+  for (j=0; j<=1; j++) {
+    if ((err = CHECK(next, cov->tsdim,  cov->tsdim, 
+		     type, KERNEL, SYMMETRIC,
+		     SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
+    type = NegDefType;
   }
+  if (err != NOERROR) return err;
+  
+  if (next->pref[Direct] == PREF_NONE) return ERRORPREFNONE;
+
+  setbackward(cov, next);
+  return NOERROR;
 }
 
-void SetParamDirect(int *action,int *method, int *bestvariables,
-			 int *maxvariables, double *svdtolerance)
-{
-  direct_param *gp = &(GLOBAL.direct);
-  if (*action) {
-    if ((*method<0) || (*method>=(int) NoFurtherInversionMethod)){
-      PRINTF("inversion method out of range; ignored\n");
-    }
-    else {gp->inversionmethod= (InversionMethod) *method;}
-    gp->bestvariables = *bestvariables;
-    gp->maxvariables  = *maxvariables;
-    gp->svdtolerance  = *svdtolerance;
-  } else {
-    *method = (int) gp->inversionmethod;
-    *bestvariables = gp->bestvariables;
-    *maxvariables  = gp->maxvariables;
-    *svdtolerance  = gp->svdtolerance;
-  }
-}  
 
 
-int init_directGauss(method_type *meth) {
-  cov_model *cov = meth->cov;
-  long err=NOERROR;
-  double *xx, 
+
+void range_direct(cov_model *cov, range_type *range) {
+  range_common_gauss(cov, range);
+
+  range->min[DIRECT_METHOD] = Cholesky;
+  range->max[DIRECT_METHOD] = NoFurtherInversionMethod;
+  range->pmin[DIRECT_METHOD] = Cholesky;
+  range->pmax[DIRECT_METHOD] = NoFurtherInversionMethod;
+  range->openmin[DIRECT_METHOD] = false;
+  range->openmax[DIRECT_METHOD] = true; 
+
+  range->min[DIRECT_SVDTOL] = 0;
+  range->max[DIRECT_SVDTOL] = 1;
+  range->pmin[DIRECT_SVDTOL] = 1e-17;
+  range->pmax[DIRECT_SVDTOL] = 1e-8;
+  range->openmin[DIRECT_SVDTOL] = false;
+  range->openmax[DIRECT_SVDTOL] = true; 
+
+  range->min[DIRECT_MAXVAR] = 0;
+  range->max[DIRECT_MAXVAR] = 10000;
+  range->pmin[DIRECT_MAXVAR] = 500;
+  range->pmax[DIRECT_MAXVAR] = 5000;
+  range->openmin[DIRECT_MAXVAR] = false;
+  range->openmax[DIRECT_MAXVAR] = false; 
+}
+
+
+int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
+  cov_model *next = cov->sub[0];
+  double //*xx,
+    svdtol = cov->p[DIRECT_SVDTOL][0], 
     *G=NULL, 
-    *COV=NULL, 
+    *Cov=NULL, 
     *U=NULL, 
     *VT=NULL, 
     *work=NULL,
     *D=NULL, 
     *SICH=NULL;
-  int *iwork=NULL, 
-    dim=cov->tsdim;
-  direct_storage* S=NULL;
-  InversionMethod method;
-  location_type *loc = meth->loc;
-  globalparam *gp = meth->gp;
-  direct_param *lp = &(gp->direct);
-  bool storing = gp->general.storing;
-  nonstat_covfct cf;
+  int err,
+    maxvariab = ((int *)cov->p[DIRECT_MAXVAR])[0],
+    *iwork=NULL;
+  int dim=cov->tsdim;
+  direct_storage* s=NULL;
+  InversionMethod
+    method = ((InversionMethod *) cov->p[DIRECT_METHOD])[0];
+  location_type *loc = Loc(cov);
+  bool storing = GLOBAL.warn.stored_init; //
+  // nonstat_covfct cf;
   long 
     vdim = cov->vdim,
     locpts = loc->totalpoints,
 //    loctot = locpts *dim,
     vdimtot = vdim * locpts,
-    vdimSqtot = vdim * vdimtot,
-    vdimtotSq = vdimtot * locpts,
+    //     vdimSqtot = vdim * vdimtot,
+    // vdimtotSq = vdimtot * locpts,
     vdimSqtotSq = vdimtot * vdimtot;
 
-  method = lp->inversionmethod;
-  assert(meth->S == NULL); // ist in simu.cc sichergestellt, schadet aber nich
-  SET_DESTRUCT(direct_destruct);
-  if (vdimtot>lp->maxvariables) {
-      sprintf(ERRORSTRING_OK, 
-	    "number of points less than RFparameters()$direct.maxvariables (%d)",
-	     lp->maxvariables);
-      sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
-      err=ERRORCOVFAILED; goto ErrorHandling;
-  }
-  if (meth->caniso != NULL || meth->cproj!=NULL || meth->cscale != 1.0) {
-      err = ERRORPREVDOLLAR;
-      goto ErrorHandling;
+  ROLE_ASSERT_GAUSS;
+
+  cov->method = Direct;
+
+  if ((err = alloc_cov(cov, dim, vdim)) != NOERROR) return err;
+
+  if (cov->Sdirect != NULL) DIRECT_DELETE(&cov->Sdirect);
+  if (vdimtot > maxvariab) {
+    sprintf(ERRORSTRING_OK, 
+	    "number of columns less than or equal to %d", maxvariab);
+    sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
+    err=ERRORCOVFAILED;
+    goto ErrorHandling;
   }
    
-  err=ERRORMEMORYALLOCATION;  
-  if ((COV =(double *) malloc(sizeof(double) * vdimSqtotSq))==NULL)
+  if (cov->Sdirect != NULL) free(cov->Sdirect);
+  cov->Sdirect = NULL;
+  if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
+      (U =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
+   //for SVD/Chol intermediate results AND  memory space for do_directGauss:
+      (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL ||
+      (cov->Sdirect = (direct_storage*) MALLOC(sizeof(direct_storage)))==NULL) {
+    err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
-  if ((U =(double *) malloc(sizeof(double) * vdimSqtotSq))==NULL)
-      goto ErrorHandling;
-  //for SVD/Chol intermediate results AND  memory space for do_directGauss:
-  if ((G = (double *)  calloc(vdimtot + 1, sizeof(double)))==NULL)
-      goto ErrorHandling;
-  if ((meth->S = malloc(sizeof(direct_storage))) == NULL)
-    goto ErrorHandling;
-  S = (direct_storage*) meth->S;
-  S->U = S->G = NULL;
-  err = NOERROR;
+  }  
+  s = cov->Sdirect;
+  DIRECT_NULL(s);
+  s->U = s->G = NULL;
 
-  
-  if (cov->statIn != STATIONARY && cov->statIn != COVARIANCE) {
-    err = ERRORNOVARIOGRAM; 
-    goto ErrorHandling;
-  }
-
-//  printf("%d %d %d\n", cov->statIn, STATIONARY, COVARIANCE);
-//  PrintModelInfo(cov); assert(false);
-
-  /* ************************* */
-  /* create matrix of explicit */
-  /*       x-coordinates       */
-  /* ************************* */  
-
-  if (loc->grid) {
-     expandgrid(loc->xgr, loc->length, 
-		&(meth->sptime), 
-		loc->timespacedim);
-     xx = meth->sptime;
-     if (!loc->Time) meth->space = meth->sptime;
-  } else {
-    if (loc->Time) {
-      xtime2x(loc->x, loc->length[0], loc->T, loc->length[dim-1],
-	      &(meth->sptime), loc->timespacedim);
-      //     printf("direct %d %d %d \n", meth->sptime, meth->space , loc->length[0]); assert(false);
-      xx = meth->sptime;
-
-//      for (i=0; i<loc->totalpoints * 3; i++)
-//	 printf("%f\n", xx[i]);
-
-
-    } else xx = loc->x;
-  }
-     
-///  printf("vdimtot=%d %d %d %d %d\n", vdimtot, dim, vdim, locpts, loc->totalpoints);  assert(false);
-//  PrintModelInfo(cov);
 
   /* ********************* */
   /* matrix creation part  */
   /* ********************* */
-  long k, segment;
-  int row, Err;
-  double *x, *y;
 
-  k = 0;
-  cf = CovList[cov->nr].nonstat_cov;
-  x = xx;
-  LIST_ELEMENT = 0;
-  if (cov->vdim == 1) {
-    for (CovMatrixCol=0; CovMatrixCol<locpts; CovMatrixCol++, x+=dim) {
-      k += CovMatrixCol;
-      y = x;
-      segment=CovMatrixCol* vdimtot+CovMatrixCol;
-      for (CovMatrixRow=CovMatrixCol;  CovMatrixRow<locpts; 
-	   CovMatrixRow++, y+=dim, segment += vdimtot) {
-	cf(x, y, cov, COV + segment);
-	
-//	       PRINTF("%d (%d %d) %f %f %d %f\n", i, k, segment,
-//	       x[0], y[0],  dim, COV[segment]);
-	
-//	     PRINTF("%d (%d %d)   [%f %f ; %f %f]   %d %f\n", i, k, segment,
-//	     x[0], y[0], x[1], y[1], dim, COV[segment]);
-	
-	if (ISNA(COV[segment])) {
-	  err=ERRORFAILED; goto ErrorHandling;
-	}
-	COV[k++] = COV[segment];
-      }
-    }
-  } else {
-    int l,n,m;
-    double *z, *C;
-
-    z = (double*) malloc(sizeof(double) * vdim * vdim);
-
-    /*
-     for (i=0; i<locpts; i++, x+=dim) {
-      for (y=x, j=i; j<locpts; j++, y+=dim) {
-	cf(x, y, cov, z);
-	
-	l = k = 0;
-	C = COV + vdim * (i + j * vdimtot);
-	for (n=0; n<vdim; n++, k += vdimtot - vdim) {
-	  for (m=0; m<vdim; m++) {
-	    C[k++] = z[l++];
-	  }
-	}
-
-	if (i != j) {
-	  l = k = 0;
-	  C = COV + vdim * (j + i * vdimtot);
-	  for (n=0; n<vdim; n++) {
-	    k = n;
-	    for (m=0; m<vdim; m++, k+=vdimtot) {
-	      C[k] = z[l++];
-	    }
-	  }
-	}
-      }
-    }
-    */
-
-    //   printf("method %d %d pts=%d\n", method, TCholesky, locpts);
+  CovarianceMatrix(next, Cov);
  
-    if (method == TCholesky || method == TSVD) {
-      for (CovMatrixCol=0; CovMatrixCol<locpts; CovMatrixCol++, x+=dim) {
-	for (y=x, CovMatrixRow=CovMatrixCol; CovMatrixRow<locpts; 
-	     CovMatrixRow++, y+=dim) {
-	  cf(x, y, cov, z);
-	  
-	  C = COV + vdim * (CovMatrixCol + CovMatrixRow * vdimtot);
-	  for (l=n=0; n<vdimSqtot; n+=vdimtot) {
-	    int endfor = n + vdim;
-	    for (m=n; m<endfor; m++) {
-	      C[m] = z[l++];
-	    }
-	  }
-	  
-	  if (CovMatrixCol != CovMatrixRow) {
-	    C = COV + vdim * (CovMatrixRow + CovMatrixCol * vdimtot);
-	    for (l=n=0; n<vdim; n++) {
-	      for (m=n; m<vdimSqtot; m+=vdimtot) {
-		C[m] = z[l++];
-	      }
-	    }
-	  }
+  if (false) {
+    int i,j;
+    PRINTF("\n");
+    for (i=0; i<locpts * vdim; i++) {
+       for (j=0; j<locpts * vdim; j++) {
+	 PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
+       }
+       PRINTF("\n");
+    }
+    assert(false);
+  }
+   
+  
+  if (!isPosDef(next)) {
+    if (isNegDef(next)) {
+      int i, j, v;
+      double min,
+	*C = Cov;
+      min = RF_INF;
+      for (i=0; i< vdimSqtotSq; i++) if (Cov[i] < min) min=Cov[i];
+      //       print("Cov %f\n", min);
+      // Die Werte der Diagonalbloecke werden erh\"oht:
+      for (C=Cov, v=0; v<vdim; v++, C += locpts) { 
+	for (i=0; i<locpts; i++, C+=vdimtot) {
+	  for (j=0; j<locpts; C[j++] -= min);
 	}
       }
     } else {
-      for (CovMatrixCol=0; CovMatrixCol<locpts; CovMatrixCol++, x+=dim) {
-	for (y=x, CovMatrixRow=CovMatrixCol; CovMatrixRow<locpts; 
-	     CovMatrixRow++, y+=dim) {
-	  cf(x, y, cov, z);
-	  
-	  C = COV + CovMatrixCol + CovMatrixRow * vdimtot;
-	  for (l=n=0; n<vdimSqtotSq; n+=vdimtotSq) {
-	    int endfor=n + vdimtot;
-	    for (m=n; m<endfor; m+=locpts) {
-	      C[m] = z[l++];
-	    }
-	  }
-	  
-	  if (CovMatrixCol != CovMatrixRow) {
-	    C = COV + CovMatrixRow + CovMatrixCol * vdimtot;
-	    for (l=m=0; m<vdimtot; m+=locpts) {
-	      for (n=m; n<vdimSqtotSq; n+=vdimtotSq) {
-		C[n] = z[l++];
-	      }
-	    }
-	  }
-	}
-      }
+      //   APMI(next);
+      err = ERRORNOVARIOGRAM; 
+      goto ErrorHandling;
     }
-    free(z);
   }
 
-//  assert(false);
-
-
-/*
-  for (k=i=0; i<vdimtot; i++){
-      for (j=0; j<vdimtot; j++) {
-	PRINTF("%3.2f ", COV[k++]);
-      }
-      PRINTF("\n");
+  if (false) {
+    int i,j;
+    PRINTF("\n");
+    for (i=0; i<locpts * vdim; i++) {
+       for (j=0; j<locpts * vdim; j++) {
+	 PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
+       }
+       PRINTF("\n");
     }
-
-//  assert(false);
-*/
-
-
+    // assert(false);
+  }
+   
+   
   /* ********************** */
   /*  square root of matrix */
   /* ********************** */
+  int row, Err,k;
   switch (method) {
-      case Cholesky : case TCholesky : 
-	// only works for strictly positive def. matrices
-	if (PL>=3) PRINTF("method to the root=Cholesky\n");
-	row=vdimtot;
-	// dchdc destroys the input matrix; upper half of U contains result!
-	memcpy(U, COV, sizeof(double) * vdimSqtotSq);
-	if (debug) {
-	    err = ERRORDECOMPOSITION; goto ErrorHandling;
-	}   
-	F77_CALL(dpotrf)("Upper", &row, U, &row, &Err);
+  case Cholesky : 
+    // only works for strictly positive def. matrices
+    if (PL>=PL_STRUCTURE) { LPRINT("method to the root=Cholesky\n"); }
+    row=vdimtot;
+    // dchdc destroys the input matrix; upper half of U contains result!
+    MEMCOPY(U, Cov, sizeof(double) * vdimSqtotSq);
+    if (debug) {
+      err = ERRORDECOMPOSITION; goto ErrorHandling;
+    }   
+    F77_CALL(dpotrf)("Upper", &row, U, &row, &Err);  
 
-
-	// F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
-	if (Err!=NOERROR) {
-	  if (PL>2)
-	      PRINTF("Error code F77_CALL(dpotrf) = %d\n", Err);
-	  err=ERRORDECOMPOSITION;
-	} else break;
-	if (lp->svdtolerance <= 0.0) break;
-	// try next method : 
-	// most common error: singular matrix 
-	
-      case SVD : case TSVD: // works for any positive semi-definite matrix
-	double sum;
-	method = SVD; // necessary if the value of method has been Cholesky.
-	//               originally
-	if (vdimtot>lp->maxvariables * 0.8) {
-	  sprintf(ERRORSTRING_OK, 
-		  "number of points less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD",
-		  lp->maxvariables);
-	  sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
-	  err=ERRORCOVFAILED; goto ErrorHandling;
+    if (false)  {
+      double *sq  = (double *) MALLOC(sizeof(double) * vdimtot * vdimtot);
+      AtA(U, vdimtot, vdimtot, sq);
+      
+      int i,j;
+      PRINTF("AtA \n");
+      for (i=0; i<locpts * vdim; i++) {
+	for (j=0; j<locpts * vdim; j++) {
+	  PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
 	}
-	if (PL>=3) PRINTF("method to the root=SVD\n");
-	err=ERRORMEMORYALLOCATION;
-	if ((VT =(double *) malloc(sizeof(double) * vdimSqtotSq))==NULL)
-	    goto ErrorHandling;
-	if ((D =(double *) malloc(sizeof(double) * vdimtot))==NULL)
-	    goto ErrorHandling;
-	if ((iwork = (int *) malloc(sizeof(int) * 8 * vdimtot))==NULL)
-	    goto ErrorHandling;
-	if ((SICH =(double *) malloc(sizeof(double) * vdimSqtotSq))==NULL)
-	    goto ErrorHandling;
-	memcpy(SICH, COV, sizeof(double) * vdimSqtotSq);
-	row=vdimtot;
-        // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
+	PRINTF("\n");
+      }
+      //  assert(false);
+    }
+ 
+    
+    // F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
+    if (Err!=NOERROR) {
+      if (PL>=PL_SUBIMPORTANT) { 
+	LPRINT("Error code F77_CALL(dpotrf) = %d\n", Err); }
+      err=ERRORDECOMPOSITION;
+    } else break;
+    // try next method : 
+    // most common error: singular matrix 
+       
+    if (svdtol <= 0.0) break;
+    
+   case SVD :  // works for any positive semi-definite matrix
+     double sum;
+     method = SVD; // necessary if the value of method has been Cholesky.
+     //               originally
+     if (vdimtot>maxvariab * 0.8) {
+       sprintf(ERRORSTRING_OK, 
+	       "number of points less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD",
+	       maxvariab);
+       sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
+       err=ERRORCOVFAILED; goto ErrorHandling;
+     }
+     if (PL>=PL_STRUCTURE) { LPRINT("method to the root=SVD\n"); }
+     if ((VT =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
+	 (D =(double *) MALLOC(sizeof(double) * vdimtot))==NULL ||
+	 (iwork = (int *) MALLOC(sizeof(int) * 8 * vdimtot))==NULL ||
+	 (SICH =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL) {
+       err=ERRORMEMORYALLOCATION;
+       goto ErrorHandling;
+     }
+     MEMCOPY(SICH, Cov, sizeof(double) * vdimSqtotSq);
+     row=vdimtot;
+     // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
+     
+     // DGESDD (or DGESVD)
+     // dgesdd destroys the input matrix Cov;
+     // F77_NAME(dsvdc)(Cov, &row, &row, &row, D, e, U, &row, V, &row, G,
+     //		&jobint /* 11 */, &err);
+     double optim_lwork;
+     int lwork;
+     lwork = -1;
+     F77_CALL(dgesdd)("A", &row, &row, SICH, &row, D, U, &row, VT, &row, 
+		      &optim_lwork, &lwork, iwork, &Err);
+     if ((err=Err) != NOERROR) {
+       err=ERRORDECOMPOSITION;
+       goto ErrorHandling;
+     }
+     lwork = (int) optim_lwork;
+     if ((work = (double *) MALLOC(sizeof(double) * lwork))==NULL)
+       goto ErrorHandling;
+     F77_CALL(dgesdd)("A",  &row,  &row, SICH, &row, D, U, &row, VT, &row, 
+		      work, &lwork, iwork, &Err);
+     
+     err = Err;
+     if (err==NOERROR && ISNA(D[0])) err=9999;
+     if (err!=NOERROR) {
+       if (PL>PL_ERRORS) { 
+	 LPRINT("Error code F77_CALL(dgesdd) = %d\n", err); 
+	   }
+       err=ERRORDECOMPOSITION;
+       goto ErrorHandling;
+     }
 
-	// DGESDD (or DGESVD)
-      	// dgesdd destroys the input matrix COV;
-	// F77_NAME(dsvdc)(COV, &row, &row, &row, D, e, U, &row, V, &row, G,
-	//		&jobint /* 11 */ , &err);
-	double optim_lwork;
-	int lwork;
-	lwork = -1;
-	F77_CALL(dgesdd)("A", &row, &row, SICH, &row, D, U, &row, VT, &row, 
-			 &optim_lwork, &lwork, iwork, &Err);
-	if ((err=Err) != NOERROR) {
-	  err=ERRORDECOMPOSITION;
-	  goto ErrorHandling;
-	}
-	lwork = (int) optim_lwork;
-	if ((work = (double *) malloc(sizeof(double) * lwork))==NULL)
-	    goto ErrorHandling;
-	F77_CALL(dgesdd)("A",  &row,  &row, SICH, &row, D, U, &row, VT, &row, 
-			 work, &lwork, iwork, &Err);
-	
-	if (err==NOERROR && RF_ISNA(D[0]))
-	    err=9999;
-	if (err!=NOERROR) {
-	  if (PL>2) 
-	    PRINTF("Error code F77_CALL(dgesdd) = %d\n", err); 
-	  err=ERRORDECOMPOSITION;
-	  goto ErrorHandling;
-	}
-		
-	int i,j;
-	/* calculate SQRT of covariance matrix */
-	for (k=0,j=0;j<vdimtot;j++) {
-	  double dummy;
-	  dummy = sqrt(D[j]);
-	  for (i=0;i<vdimtot;i++) {
-	    U[k++] *= dummy;
-	  }
-	}
+     int i,j;
+	 /* calculate SQRT of covariance matrix */
+     for (k=0,j=0;j<vdimtot;j++) {
+       double dummy;
+       //printf("diag=%d %f\n", j, D[j]);
+       dummy = sqrt(D[j]);
+       for (i=0;i<vdimtot;i++) {
+	     U[k++] *= dummy;
+       }
+     }
+     
+     /* check SVD */
+     if (svdtol >=0) {
+       for (i=0; i<vdimtot; i++) {
+	 for (k=i; k<vdimtot; k++) {
+	   sum = 0.0;
+	   for (j=0; j<vdimSqtotSq; j+=vdimtot) sum += U[i+j] * U[k+j];
+	   
+	   if (fabs(Cov[i * vdimtot + k] - sum) > svdtol) {
+	     if (PL > PL_ERRORS) {
+	       LPRINT("difference %e at (%d,%d) between the value (%e) of the covariance matrix and the square of its root (%e).\n", 
+		      Cov[i * vdimtot +k] - sum, i, k, Cov[i* vdimtot +k ], 
+		      sum);
+	     }
+	     GERR("required precision not attained: probably invalid model.\nSee also parameter 'svdtolerance'.");
+	     goto ErrorHandling;
+	   }
+	 }
+       }
+     }
+     break;
+   default : assert(false);
+   } // switch
 
-	/* check SVD */
-	if (lp->svdtolerance >=0) {
-	  for (i=0; i<vdimtot; i++) {
-	    for (k=i; k<vdimtot; k++) {
-	      sum = 0.0;
-	      for (j=0; j<vdimSqtotSq; j+=vdimtot) sum += U[i+j] * U[k+j];
+ 
+  err = FieldReturn(cov);
 
-	      if (fabs(COV[i * vdimtot + k] - sum) > lp->svdtolerance) {
-	        if (PL > 3)
-		    PRINTF("difference %e at (%d,%d) between the value (%e) of the covariance matrix and the square of its root (%e).\n", 
-			   COV[i * vdimtot +k] - sum, i, k, COV[i* vdimtot +k ], 
-			   sum);
-		err = ERRORPRECISION;
-		goto ErrorHandling;
-	      }
-	    }
-	  }
-	}
-	break;
-      default : assert(false);
-  } // switch
+  ErrorHandling: // and NOERROR...
 
-
- ErrorHandling: // and NOERROR...
-  if (S != NULL) S->method = method;
-  if (!storing && err!=NOERROR) {
-    if (U!=NULL) free(U);
-    if (G!=NULL) free(G); 
-  } else {
-    if (S != NULL) {
-      S->U=U;
-      S->G=G;
+   if (s != NULL) s->method = method;
+   if (!storing && err!=NOERROR) {
+     if (U!=NULL) free(U);
+     if (G!=NULL) free(G); 
+     U = G = NULL;
+   } else {
+    if (s != NULL) {
+      s->U=U;
+      s->G=G;
     }
   }
   if (SICH!=NULL) free(SICH);
-  if (COV!=NULL) free(COV);
+  SICH = NULL;
+  if (Cov!=NULL) free(Cov);
   if (D!=NULL) free(D);
   if (work!=NULL) free(work);
   if (iwork!=NULL) free(iwork);
   if (VT!=NULL) free(VT);
-  LIST_ELEMENT = CovMatrixRow = CovMatrixCol = -1;
 
   return err;
 }
 
-void do_directGauss(method_type *meth, res_type *res) 
-{  
-  location_type *loc = meth->loc;
-  direct_storage *S;
-  long locpts, vdimtot, i,j,k, vdim;
-  double *G,*U, dummy;  
+void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {  
+  location_type *loc = Loc(cov);
+  direct_storage *s = cov->Sdirect;
+  long i, j, k,
+    locpts = loc->totalpoints,
+    vdim = cov->vdim,
+    vdimtot = locpts * vdim;
+  double dummy,
+    *G = NULL,
+    *U = NULL,
+    *res = cov->rf;  
   int m, n;
+  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0],
+    vdim_close_together = GLOBAL.general.vdim_close_together;
 
-  S = (direct_storage*) meth->S;
-  locpts = loc->totalpoints;
-  vdim = meth->cov->vdim;
-  vdimtot = locpts * vdim;
+  // APMI(cov);
 
-//  printf("vdim %d %d\n", meth->cov->vdim, loc->totalpoints);
+//  print("vdim %d %d\n", meth->cov->vdim, loc->totalpoints);
 
-  U = S->U;// S^{1/2}
-  G = S->G;// only the memory space is of interest (stored to avoid 
+  U = s->U;// S^{1/2}
+  G = s->G;// only the memory space is of interest (stored to avoid 
   //          allocation errors here)
-  for (i=0; i<vdimtot; i++) G[i] = GAUSS_RANDOM(1.0);
-
-  switch (S->method) {
-      case TCholesky :
-	for (k=0, i=0; i<vdimtot; i++, k+=vdimtot) {
-	  double *Uk = U + k; 
-	  dummy =0.0;
+  for (i=0; i<vdimtot; i++) {
+    G[i] = GAUSS_RANDOM(1.0);
+    //printf("%d %f\n", i, G[i]);
+  }
+  
+  switch (s->method) {
+  case Cholesky :
+    if (vdim_close_together) {
+      for (k=0, i=0; i<vdimtot; i++, k+=vdimtot) {
+	double *Uk = U + k; 
+	dummy =0.0;
+	for (j=0; j<=i; j++){
+	  dummy += G[j] * Uk[j];
+	}
+	res[i] = (res_type) dummy; 
+      }
+    } else {
+      //printf("vdim %d vdimtot %d\n", vdim, vdimtot);
+      for (k=i=m=0; m<vdim; m++) {
+	for (n=m; n<vdimtot; n+=vdim, i++, k+=vdimtot) {
+	  double *Uk = U + k;
+	  dummy = 0.0;
 	  for (j=0; j<=i; j++){
 	    dummy += G[j] * Uk[j];
 	  }
-	  res[i] += (res_type) dummy; 
+	  res[n] = (res_type) dummy; 
+	  //	printf("%d %f\n", n, res[n]);
 	}
-	break;
-      case Cholesky :
-	for (k=i=m=0; m<vdim; m++) {
-	  for (n=m; n<vdimtot; n+=vdim, i++, k+=vdimtot) {
-	    double *Uk = U + k;
-	    dummy = 0.0;
-	    for (j=0; j<=i; j++){
-	      dummy += G[j] * Uk[j];
-	    }
-	    res[n] += (res_type) dummy; 
-	  }
-	}
-	break;
-      case TSVD :
-	for (i=0; i<vdimtot; i++){
+      }
+    }
+    //{int i; for(i=0;i<18;i++) printf("%d:%f \n", i,res[i]); printf("\n");APMI(cov)}
+    break;
+  case SVD :
+    if (vdim_close_together) {
+      for (i=0; i<vdimtot; i++){
+	dummy = 0.0;
+      for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
+	dummy += U[k] * G[j];
+      }
+      res[i] = (res_type) dummy; 
+      }
+    } else {
+      for (i=m=0; m<vdim; m++) {
+	for (n=m; n<vdimtot; n+=vdim, i++) {
 	  dummy = 0.0;
 	  for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
 	    dummy += U[k] * G[j];
 	  }
-	  res[i] += (res_type) dummy; 
+	  res[n] = (res_type) dummy; 
 	}
-	break;
-      case SVD :
-	for (i=m=0; m<vdim; m++) {
-	  for (n=m; n<vdimtot; n+=vdim, i++) {
-	    dummy = 0.0;
-	    for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
-	      dummy += U[k] * G[j];
-	    }
-	    res[n] += (res_type) dummy; 
-	  }
-	}
-	break;
-      default : assert(false);
+      }
+    } 
+    break;
+  default : assert(false);
   }
+
+  if (loggauss) {
+    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
+  }
+
 }
 

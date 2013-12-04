@@ -1,4 +1,4 @@
-\name{PrintModelList}
+\name{PrintModelList} 
 \alias{PrintModelList}
 \alias{GetModelList}
 \alias{GetModelNames}
@@ -6,27 +6,11 @@
 \description{
   \code{PrintModelList} prints the list of currently implemented models
   including the corresponding simulation methods
-
-  \code{GetModelList} returns a matrix of currently implemented models
-  and their simulation methods
-
-  \code{GetModelNames} returns a list of currently implemented models
-
 }
 \usage{
 
-PrintModelList(operators=FALSE, internal=FALSE)
+PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
 
-GetModelList(abbr=TRUE, internal=FALSE)
-
-GetModelNames(stationary = c("any", "stationary", "variogram", "irf",
-                             "auxmatrix", "auxvector", "gencovariance",
-                             "nonstationary", "genvariogram", "prev.model"),
-              isotropy = c("any", "isotropic", "spaceisotropic",
-                           "zerospaceiso", "anisotropic", "prev.model"),
-              multivariate = -9999:9999,
-              operator, normalmix, finiterange, methods, internal=FALSE,
-              dim = 1)
 }
 \arguments{
   \item{operators}{logical. Flag whether operators should be
@@ -36,52 +20,33 @@ GetModelNames(stationary = c("any", "stationary", "variogram", "irf",
     also considered. In case of \command{PrintModelList} and
     \code{internal=2}, variants of internal models are also printed.
   }
-  \item{abbr}{logical or numerical. If \code{TRUE} the names for the methods are
-    abbreviated. If numerical, \code{abbr} gives the number of letters.}
-  \item{stationary}{Selection criterion for the models}
-  \item{isotropy}{Selection criterion for the models}
-  \item{multivariate}{the dimension of the multivariate model}
-  \item{operator}{logical. If missing any covariance model is returned;
-    otherwise, the (non)primitive models are returned if \code{FALSE}
-    (\code{TRUE});
-    see \command{\link{Covariance}} for details.
+  \item{newstyle}{
+    logical. If \code{FALSE} then only the old style model names (Version 2
+    and earlier) are shown. These names can still be used in the list
+    definition of models, see \link{RMmodelsAdvanced}.
+    If \code{TRUE} then the standard names will also be shown.
   }
-  \item{normalmix}{logical. If missing any covariance model is returned;
-    otherwise all normal scale mixture models are returned if
-    \code{TRUE}}
-  \item{finiterange}{logical. If missing any covariance model is returned;
-    otherwise all models with finite range are returned if
-    \code{TRUE}; note that some option are excluding, e.g. no normal
-    scale model can have a finite range.}
-  \item{methods}{If missing any covariance model is returned;
-    otherwise the models with respective attribute are returned;
-    see \code{\link{PrintMethodList}} for a complete list of methods}
-  \item{dim}{dimension in which the model should be valid;
-    there are some models where the validity in a given dimension
-    depends on the some parameter; those models are returned partially
-    only.}
 }
 \value{
   \code{PrintModelList} prints a table of the currently implemented covariance
   functions and the matching methods.
   \code{PrintModelList} returns \code{NULL}.
-
-  \code{GetModelNames} returns a list of implemented models
 }
 \details{
-  \bold{See \command{\link{CovarianceFct}} and
-   \link{sophisticated} models for a description of the models
-    and their use}
+ See \link{RMmodel} for a description of the models and their use.
 }
-\seealso{
- \link{sophisticated}, \command{\link{CovarianceFct}},
- \command{\link{GetModel}} 
- }
+\note{
+  From version 3.0 on, the command \code{PrintModelList()}
+  is replaced by the call
+  \code{\link{RFgetModelNames}(internal=FALSE)}
+}
+
+
+
  \examples{
+set.seed(0)
 %  library(RandomFields)
 PrintModelList()
-GetModelList(abbr=TRUE)
-GetModelNames("stationary", "spaceisotropic")
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
   \url{http://ms.math.uni-mannheim.de}

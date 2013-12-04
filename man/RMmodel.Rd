@@ -1,0 +1,143 @@
+\name{RMmodel}
+\alias{RM}
+\alias{RMmodel}
+\alias{RMmodels}
+\alias{[,RMmodel,ANY,ANY-method} %]
+\alias{[<-,RMmodel,ANY,ANY-method} %]
+\title{Covariance and Variogram Models in \pkg{RandomFields}}
+\description{
+Summary of implemented covariance and variogram models% in \link{RFformula}
+}
+%\usage{
+%RMmodel(..., var, scale, Aniso, proj)
+%}
+%\arguments{
+% \item{...}{Parameter corresponding to specific covariance model}
+% \item{var}{Variance parameter}
+% \item{scale}{Scale parameter}
+% \item{Aniso}{Anisotropy matrix}
+% \item{proj}{Projection}
+%}
+\details{
+ To generate a covariance or variogram model for use within
+ \pkg{RandomFields}, calls of the form
+ \deqn{RM_name_(..., var, scale, Aniso, proj)}
+ can be used,
+ where _name_ has to be replaced by a valid model name,
+ \itemize{
+ \item
+ \code{...} can take model specific parameters. %Parameter
+ %corresponding to specific covariance model
+ \item
+ \code{var} is the optional variance parameter \eqn{v},
+ \item
+ \code{scale} the optional scale parameter \eqn{s},
+ \item
+ \code{Aniso} the optional anisotropy matrix \eqn{A}, and
+ \item
+ \code{proj} is the optional projection vector which defines a
+ diagonal matrix of zeros and ones and \code{proj} gives the
+ positions of the ones (integer values).
+ }
+ With \eqn{\phi} denoting the original model, the transformed model is
+ \eqn{C(h) = v * \phi(A*h/s)}.
+
+ \command{RM_name_} must be a function of class
+ \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
+ The return value of all functions \command{RM_name_} is of class
+ \command{\link[=RMmodel-class]{RMmodel}}.\cr
+ 
+ The following models are available
+ (cf. \command{\link{RFgetModelNames}}).
+ %Choose from the following covariance models
+
+ \bold{Basic stationary and isotropic models}
+ \tabular{ll}{
+ \command{\link{RMcauchy}} \tab Cauchy family \cr
+ \command{\link{RMexp}} \tab exponential model \cr
+ \command{\link{RMgencauchy}} \tab generalized Cauchy family \cr
+ \command{\link{RMgauss}} \tab Gaussian model \cr
+ \command{\link{RMgneiting}} \tab differentiable model with compact support \cr
+ \command{\link{RMmatern}} \tab Whittle-Matern model \cr
+ \command{\link{RMnugget}} \tab nugget effect model \cr
+ \command{\link{RMspheric}} \tab spherical model \cr
+ \command{\link{RMstable}} \tab symmetric stable family or powered exponential model \cr
+ \command{\link{RMwhittle}} \tab Whittle-Matern model, alternative
+ parametrization\cr 
+ }
+
+ \bold{Variogram models (stationary increments/intrinsically stationary)}
+
+ \tabular{ll}{
+ \command{\link{RMfbm}} \tab fractal Brownian motion\cr
+ }
+
+
+ \bold{Basic Operations}
+
+ \tabular{ll}{
+ \command{\link{RMmult}} \tab product of covariance models \cr
+ \command{\link{RMplus}} \tab sum of covariance models \cr
+ }
+
+
+
+ \bold{Basic models for mixed effect modelling}
+
+ \tabular{ll}{
+ \command{\link{RMconstant}} \tab constant pre-defined covariance \cr
+ \command{\link{RMfixed}} \tab fixed or trend effects;
+ Caution: \link{RMfixed} is not
+ a function and can be used only in \link[=RFformula]{formula notation}\cr
+ %\command{\link{RMmixed}} \tab Mixture of fixed, mixed, and random effect
+ %model\cr % gibts nur noch intern
+ }
+
+ \bold{Trend}
+ \tabular{ll}{
+ \command{\link{RMtrend}} \tab trend \cr
+ }
+
+ \bold{See \link{RMmodelsAdvanced} for many more, advanced models.
+ }
+}
+
+\references{
+ \itemize{
+ \item Chiles, J.-P. and Delfiner, P. (1999)
+ \emph{Geostatistics. Modeling Spatial Uncertainty.}
+ New York: Wiley.
+ % \item Gneiting, T. and Schlather, M. (2004)
+ % Statistical modeling with covariance functions.
+ % \emph{In preparation.}
+ \item Schlather, M. (1999) \emph{An introduction to positive definite
+ functions and to unconditional simulation of random fields.}
+ Technical report ST 99-10, Dept. of Maths and Statistics,
+ Lancaster University.
+ \item Schlather, M. (2011) Construction of covariance functions and
+ unconditional simulation of random fields. In Porcu, E., Montero, J.M.
+ and Schlather, M., \emph{Space-Time Processes and Challenges Related
+ to Environmental Problems.} New York: Springer.
+ \item Yaglom, A.M. (1987) \emph{Correlation Theory of Stationary and
+ Related Random Functions I, Basic Results.}
+ New York: Springer.
+ \item Wackernagel, H. (2003) \emph{Multivariate Geostatistics.} Berlin:
+ Springer, 3nd edition.
+ }
+}
+
+\author{
+ Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
+ 
+ Martin Schlather, \email{schlather@math.uni-mannheim.de}
+}
+
+\examples{
+set.seed(0)
+RFgetModelNames(type="positive definite", domain="single variable",
+                isotropy="isotropic", operator=FALSE)
+}
+
+\seealso{\command{\link{RFformula}}, \command{\link{RMmodelsAdvanced}},
+ \command{\link{RMmodelsAuxiliary}}
+}
