@@ -4,7 +4,7 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2005 -- 2013 Martin Schlather
+ Copyright (C) 2005 -- 2014 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -54,7 +54,7 @@ void location_rules(cov_model *cov, pref_type pref) {
   // APMI(cov);
   
 
-  if (((int*) cov->p[GAUSSPROC_STATONLY])[0] > 0) {
+  if (P0INT(GAUSSPROC_STATONLY) > 0) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 1;
   }
 
@@ -69,7 +69,8 @@ void location_rules(cov_model *cov, pref_type pref) {
   if (loc->distances) {
     if (loc->grid) BUG;
      for (i=CircEmbed; i<Nothing; i++) 
-      if (i!=Direct && i!=Nugget) pref[i] = LOC_PREF_NONE;
+       if (i!=Direct // && i!=Nugget
+	  ) pref[i] = LOC_PREF_NONE;
   } else if (loc->grid) {
     if ((!ISNA(exactness) || !exactness) && 
 	loc->totalpoints * (1 << loc->timespacedim) * sizeof(double) > maxmem){
@@ -144,7 +145,7 @@ void mixed_rules(cov_model *cov, pref_type locpref,
   //  if ((ISNA(exactness) || !exactness) && C->tbm2 == NULL)
   //    pref[TBM2] = LOC_PREF_NONE - 5;
 
-  if (((int*) cov->p[GAUSSPROC_STATONLY])[0] < 0 && isPosDef(cov)) {
+  if (P0INT(GAUSSPROC_STATONLY) < 0 && isPosDef(cov)) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 6;
   }
     
@@ -179,19 +180,15 @@ int checkgaussprocess(cov_model *cov) {
   cov_model 
     *next=cov->sub[cov->sub[0] == NULL],
     *key = cov->key;
+  location_type *loc=Loc(cov);
   int err, role,
     //    domown = cov->domown,
     // taken[MAX DIM],
+    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
     dim = cov->tsdim;
-  gauss_param *gp  = &(GLOBAL.gauss);
-  
-  //  location_type *loc=Loc(cov); 
-  
-  //  printf("**** calling %s : %d %d ; %d %d \n", 
-  //cov->calling==NULL ? "none" : CovList[cov->calling->nr].name,
-  // domown, COVARIANCE, cov->isoown, ANISOTROPIC);
-  //
-    
+  gauss_param *gp  = &(GLOBAL.gauss);  
+  assert((loc->distances && xdim==1) || xdim == dim);
+     
   ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_BERNOULLI || 
 	      cov->role == ROLE_MAXSTABLE);
  
@@ -218,8 +215,10 @@ int checkgaussprocess(cov_model *cov) {
   //  }
   //}
 
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) {
-    //APMI(cov->calling);
+  if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
+      (!loc->distances || cov->xdimprev!=1)) {
+    //    
+    //PMI(cov->calling);
     return ERRORDIM;
   }
 
@@ -239,9 +238,9 @@ int checkgaussprocess(cov_model *cov) {
       // PMI(cov);
       //  assert(role == ROLE_COV); // oder trend
       
-      if ((err = CHECKPD2ND(next, dim, dim, SYMMETRIC, SUBMODEL_DEP, role))
+      if ((err = CHECKPD2ND(next, dim, xdim, SYMMETRIC, SUBMODEL_DEP, role))
 	  != NOERROR) {
-	if (CHECK(next, dim, dim, TrendType, XONLY, NO_ROTAT_INV, 
+	if (CHECK(next, dim, dim, TrendType, XONLY, cov->isoown, 
 		  SUBMODEL_DEP, role)) return err; // previous error
       }
       
@@ -252,8 +251,8 @@ int checkgaussprocess(cov_model *cov) {
       PRINTF("checking key in gauss process  ...\n");
     }
 
-   // PMI(cov);    printf("gauss %d %s\n", dim, NICK(key));
-    if ((err = CHECK(key, dim, dim, ProcessType, XONLY, NO_ROTAT_INV, 
+    // PMI(cov);    printf("gauss %d %s\n", dim, NICK(key));
+    if ((err = CHECK(key, dim, xdim, ProcessType, XONLY, cov->isoown, 
 		     SUBMODEL_DEP, 
 		     cov->role == ROLE_BASE ? ROLE_BASE : ROLE_GAUSS))
 	!= NOERROR) return err;
@@ -301,8 +300,8 @@ int gauss_init_settings(cov_model *cov) {
 
     // PMI(next, "gaus_init_XXXX");
     if (cov->key != NULL) { // sind diese Zeilen notwendig?      
-       CHECK(next, cov->tsdim, cov->xdimown, PosDefType, KERNEL, SYMMETRIC,
-	      cov->vdim, ROLE_COV);
+      CHECK(next, cov->tsdim, cov->xdimown, PosDefType, KERNEL, SYMMETRIC,
+	    cov->vdim, ROLE_COV);
     }
      
     //    PMI(next, "gaus_init"); printf("cov->key=%ld", (long int) cov->key);//assert(false);
@@ -359,12 +358,15 @@ int gauss_init_settings(cov_model *cov) {
 int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
   cov_model *next = cov->sub[0]; // nicht cov->sub[cov->sub != NULL]
+  location_type *loc=Loc(cov);
   int role,
     nr = cov->nr,
     err = ERROROUTOFMETHODLIST;
   //  char dummy[100 * Nothing];
   int 
-    dim = cov->tsdim;
+    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
+   dim = cov->tsdim;
+  assert(loc->distances && xdim==1 || xdim == dim);
 
   cov->fieldreturn = true;
   if (newmodel != NULL) SERR("unexpected call of struct_gauss "); /// ?????
@@ -372,8 +374,10 @@ int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
   // print("extract dollar A\n");
   ROLE_ASSERT_GAUSS;
 
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
+  if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
+      (!loc->distances || cov->xdimprev!=1)) {
     return ERRORDIM;
+  }
 
   //  PMI(cov, "xxxx");
   //if (cov->role == ROLE_COV) return NOERROR;  else
@@ -410,22 +414,22 @@ int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
   // assert(false);
   
   // cov!! nicht cov->key!!  ??? Nein, sonst ist Coin u.ae. nicht gesetzt.
-  if ((err = CHECK(cov, dim, dim, GaussMethodType, cov->domown,
- 		     cov->isoown, cov->vdim, 
-		     // role // 19.5.2013 auskommentiert und ersetzt durch
-		     ROLE_BASE  // wegen spectral.cc
-		     )) != NOERROR) {
+  if ((err = CHECK(cov, dim, xdim, GaussMethodType, cov->domown,
+		   cov->isoown, cov->vdim, 
+		   // role // 19.5.2013 auskommentiert und ersetzt durch
+		   ROLE_BASE  // wegen spectral.cc
+		   )) != NOERROR) {
     // APMI(cov);//, "YUUUU");
     // crash(cov);
     // print("extract dollar A %d", err);
-   //  XERR(err);
+    //  XERR(err);
     return err;
-   }
+  }
   //print("\n\n\n\n\n err YY  %d \n", err);
   //  PMI(cov, "YYY");
 
-   //XERR(err);
-   // print("extract dollar C\n");
+  //XERR(err);
+  // print("extract dollar C\n");
   
   err = STRUCT(cov->key, NULL);
   cov->role = ROLE_GAUSS; // wichtig !! -> check_nugget_proc
@@ -463,9 +467,9 @@ int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
     dollar->prevloc = cov->prevloc;
 
 
-     /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
-    if ((err = CHECK(cov, dim, dim, ProcessType, cov->domown, cov->isoown, 
-		       cov->vdim, role)) != NOERROR) {
+    /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
+    if ((err = CHECK(cov, dim, xdim, ProcessType, cov->domown, cov->isoown, 
+		     cov->vdim, role)) != NOERROR) {
       return err;
     }
          
@@ -506,10 +510,12 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
  
   pref_type locpref, pref;
   int order[Nothing], i,
-      err = ERROROUTOFMETHODLIST;
+    err = ERROROUTOFMETHODLIST;
   char dummy[100 * Nothing];
   int 
+    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
     dim = cov->tsdim;
+  assert(loc->distances && xdim==1 || xdim == dim);
   static char FailureMsg[][80] = 
     {"total number of points > maximum value",
      "non-domain model not allowed",
@@ -522,9 +528,9 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   bool all_PREF_NONE;
   Methods unimeth = Forbidden;
   int 
-     meth, 
-     zaehler = 0,
-     nr = next->nr;
+    meth, 
+    zaehler = 0,
+    nr = next->nr;
 #define nsel 4
   // int statselect[nsel]={STATIONARY, VARIOGRAM, COVARIANCE, GEN_VARIOGRAM};
 
@@ -534,7 +540,8 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
     return ERRORFAILED;
   }
 
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) {
+  if( (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
+    (!loc->distances || cov->xdimprev!=1)) {
     return ERRORDIM;
   }
 
@@ -543,14 +550,14 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   //  printf("ok7\n");
   //  if (cov->role == ROLE_COV) return NOERROR; else 
   if (!isNegDef(next) && !isTrend(next)) {
-     SERR("submodel must be a covariance function");
+    SERR("submodel must be a covariance function");
   }
   
 
   //////////////////////////////////////////////////////////////////////
   // ROLE_GAUSS; cov->key not given
 
-   //  print("-------------gauspr\n");  PMI(cov);
+  //  print("-------------gauspr\n");  PMI(cov);
 
   { // only for error reporting !
     cov_model *sub = cov; 
@@ -566,7 +573,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   //  print("PL: %d\n", PL); 
 
   if (PL >= PL_REC_DETAILS) {
-      LPRINT("\n");
+    LPRINT("\n");
     for (i=0; i < Nothing; i++) {
       LPRINT("%-15s:   covprev=%1d   locpref=%4d   totpref=%6d\n", 
 	     METHODNAMES[i], cov->pref[i], 
@@ -613,7 +620,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 
     //PMI(cov);
     
-    if ((err = CHECK(key, dim, dim, GaussMethodType, cov->domown,
+    if ((err = CHECK(key, dim, xdim, GaussMethodType, cov->domown,
 		     cov->isoown, cov->vdim, role)) == NOERROR) {
       
 
@@ -625,7 +632,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 	  
 	if (!key->initialised) {
 	  
-	  if ((err = CHECK(key, dim, dim, GaussMethodType, cov->domown,
+	  if ((err = CHECK(key, dim, xdim, GaussMethodType, cov->domown,
 			   cov->isoown, cov->vdim, role)) == NOERROR){
 	    key->method = unimeth;
 	    if (cov->stor == NULL) 
@@ -662,17 +669,17 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
     key = key->sub[0];
     //       printf("delete A back to gauss %d\n", err);
   
-   COV_DELETE_WITHOUTSUB(&(cov->key));
-   //   printf("donr A back to gauss %d\n", err);
+    COV_DELETE_WITHOUTSUB(&(cov->key));
+    //   printf("donr A back to gauss %d\n", err);
   
-   cov->key=key;
+    cov->key=key;
     key->calling = cov;      
   }
   //   printf("A back to gauss %d\n", err);
   
   if (PL >= PL_REC_DETAILS) {
     // printf("B back to gauss %d\n", err);
-  strcpy(PREF_FAILURE, "");
+    strcpy(PREF_FAILURE, "");
     int p, lp;
 #define NMAX 14
     char lpd[255], pd[255], names[NMAX];
@@ -720,7 +727,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 
   if (zaehler==1) {
     //   printf("F back to gauss %d\n", err);
-   sprintf(ERROR_LOC, "Only 1 method found for '%s', namely '%s', that comes into question.\nHowever:", NICK(next), METHODNAMES[unimeth]);
+    sprintf(ERROR_LOC, "Only 1 method found for '%s', namely '%s', that comes into question.\nHowever:", NICK(next), METHODNAMES[unimeth]);
     return err;
   }
   
@@ -752,7 +759,7 @@ int init_gaussprocess(cov_model *cov, storage *s) {
   ROLE_ASSERT_GAUSS;
   assert(key != NULL);
 
-    //  if (key == NULL) {
+  //  if (key == NULL) {
   //    if ((err = INIT(next, s)) != NOERROR) {
   //      //APMI(next);
   //      return err;
@@ -764,7 +771,8 @@ int init_gaussprocess(cov_model *cov, storage *s) {
   //STORAGE_NULL(cov->stor);
   //print("init gauss here\n");
 
-  ((int*) key->p[LOG_GAUSS])[0] = (int) false; // wegen paired !
+  if (!isGaussProcess(key) && !isBernoulliProcess(key))
+    PARAMINT(key, LOG_GAUSS)[0] = (int) false; // wegen paired ! WARUM? to do
   if ((err = INIT(key, 0, s)) != NOERROR) return err;
   //  print("INIT gauss here\n");
 
@@ -797,7 +805,7 @@ void do_gaussprocess(cov_model *cov, storage *s) {
   cov_model 
     // *next = cov->sub[0],
     *key = cov->key ;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
  
   strcpy( errorloc_save,  ERROR_LOC);
 
@@ -846,7 +854,7 @@ int checkbinaryprocess(cov_model *cov) {
     
   if (key == NULL && isNegDef(next)) {
     if ((err = checkgaussprocess(cov)) != NOERROR) {
-       return err;
+      return err;
     }
     
     COV(ZERO, sub, &v);
@@ -858,9 +866,9 @@ int checkbinaryprocess(cov_model *cov) {
     role = cov->role == ROLE_BASE ? cov->role : role_of_process(sub->nr);
     
     if ((err = CHECK(sub, cov->tsdim, cov->xdimprev, ProcessType, 
-		       cov->domown, cov->isoown,
-		       SUBMODEL_DEP, 
-		       role)) != NOERROR) return err;
+		     cov->domown, cov->isoown,
+		     SUBMODEL_DEP, 
+		     role)) != NOERROR) return err;
     setbackward(cov, sub);
   } else SERR1("process type model required, but '%s' obtained",
 	       CovList[sub->nr].nick);
@@ -881,7 +889,7 @@ int struct_binaryprocess(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
     }
     cov->key->nr = GAUSSPROC;
     err = CHECK(cov->key, cov->tsdim, cov->xdimprev, ProcessType, 
-		   cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS);
+		cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS);
     if (err != NOERROR)  return err;
     err = STRUCT(cov->key, NULL);
     return err;
@@ -891,7 +899,7 @@ int struct_binaryprocess(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
 
 int init_binaryprocess( cov_model *cov, storage *s) {
   double sigma, mean, variance,
-    p = cov->p[BINARY_THRESHOLD][0];
+    p = P0(BINARY_THRESHOLD);
   cov_model 
     *key = cov->key,
     *next=cov->sub[0],
@@ -917,7 +925,7 @@ int init_binaryprocess( cov_model *cov, storage *s) {
 	sigma = sqrt(variance);
 	cov->mpp.M[1]= cov->mpp.Mplus[1] = pnorm(p, mean, sigma, 0, 0);
 	int i;
-	for (i=2; i< cov->mpp.moments; i++)
+	for (i=2; i<= cov->mpp.moments; i++)
 	  cov->mpp.M[i] = cov->mpp.Mplus[i] = cov->mpp.M[1];
       }
     }
@@ -936,13 +944,13 @@ void do_binaryprocess(cov_model *cov, storage *s){
   int  i, 
     n = cov->prevloc->totalpoints * cov->vdim;
   double 
-    threshold = cov->p[BINARY_THRESHOLD][0],
+    threshold = P0(BINARY_THRESHOLD),
     *rf = cov->rf;
-   cov_model 
+  cov_model 
     *next=cov->sub[0];
-   if (isNegDef(next)) {
-     do_gaussprocess(cov, s);
-   } else DO(next, s);
+  if (isNegDef(next)) {
+    do_gaussprocess(cov, s);
+  } else DO(next, s);
 
   for (i=0; i<n; i++) rf[i] = (double) (rf[i] >= threshold);
 }
@@ -972,8 +980,11 @@ int checkchisqprocess(cov_model *cov) {
     *next = cov->sub[0];
   double v;
   int err = NOERROR,
-    dim = cov->tsdim;
-  if (cov->p[CHISQ_DEGREE] == NULL) SERR("degree of freedom must be given");
+    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
+   dim = cov->tsdim;
+  assert(Loc(cov)->distances && xdim==1 || xdim == dim);
+
+  if (PisNULL(CHISQ_DEGREE)) SERR("degree of freedom must be given");
   if (key == NULL) {
     // if (next->nr >= FIRSTGAUSSPROC && next->nr <= LASTGAUSSPROC) {
     //   // wird verboten
@@ -981,9 +992,9 @@ int checkchisqprocess(cov_model *cov) {
     // }
     if (!isGaussProcess(next) && !isNegDef(next))
       SERR1("Gaussian process required, but '%s' obtained", NICK(cov));
-    if ((err = CHECK(next, dim, dim, ProcessType, XONLY, NO_ROTAT_INV,
+    if ((err = CHECK(next, dim, xdim, ProcessType, XONLY, cov->isoown, 
 		     SUBMODEL_DEP, cov->role)) != NOERROR) {
-      if ((err = CHECK(next, dim, dim, NegDefType, KERNEL, SYMMETRIC,
+      if ((err = CHECK(next, dim, xdim, NegDefType, KERNEL, SYMMETRIC,
 		     SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
       return err;
       }
@@ -1070,7 +1081,7 @@ int init_chisqprocess(cov_model *cov, storage *s) {
 void do_chisqprocess(cov_model *cov, storage *s){
   // reopened by internal_dogauss
   int  i, f,
-    degree = ((int*) cov->p[CHISQ_DEGREE])[0],
+    degree = P0INT(CHISQ_DEGREE),
     n = cov->prevloc->totalpoints * cov->vdim;
   cov_model 
     *next=cov->sub[0],

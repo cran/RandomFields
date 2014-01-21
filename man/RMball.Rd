@@ -20,10 +20,11 @@ RMball()
 }
 \keyword{spatial}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 model <- RPcoins(shape=RMball())
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x))
 }}
+\dontshow{RFoptions(seed=NA)}
 }

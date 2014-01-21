@@ -41,8 +41,9 @@ RMsign(phi, p)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RPpoisson(RMsign(RMtent(), p=0.8))
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

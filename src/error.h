@@ -43,6 +43,7 @@
 
 #define ERRORREGISTER 36
 #define ERRORINCORRECTSTATISO 37
+#define ERRORKERNEL 38
 
 #define ERRORWRONGDIM 40        /* (tbm) dimension couldn't be reduced to be 
                                    appropriate for the respective method */

@@ -266,9 +266,9 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
-\dontrun{
+\dontrun{%\dontshow?
 
  ## define the model:
  model <- RMtrend(mean=0.5) + # mean
@@ -373,6 +373,7 @@ plot(simu, zlim=c(-6,2))
 plot(simu, zlim="joint")
 
 }
+\dontshow{RFoptions(seed=NA)}
 
 }
 

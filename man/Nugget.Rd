@@ -71,7 +71,7 @@ RPnugget(phi, loggauss, tol, vdim)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMnugget()
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
@@ -79,6 +79,7 @@ plot(z)
 model <- RPnugget(RMnugget(var=0.01, Aniso=matrix(nc=2, rep(1,4))))
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

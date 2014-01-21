@@ -73,8 +73,9 @@
 
 
 \examples{
-set.seed(0)
 # for examples, see the specific papers.
+\dontshow{RFoptions(seed=NA)}
+
 }
 
 \keyword{spatial}

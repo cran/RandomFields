@@ -102,8 +102,10 @@
       (ii) automatic estimation of 10 and more parameters in
       multivariate and/or space-time models
 
-      \item \link{RFempiricalvariogram} is now based on an fft algorithm
+      \item \command{\link{RFempiricalvariogram}} is now based on an fft algorithm
       if the data are on a grid, even allowing for missing values.
+
+      \item \command{\link{RFratiotest}} has been added.
     }
     
     \item \bold{Processes}
@@ -183,7 +185,9 @@
  
  \item \bold{ Estimation} of paramters
  \itemize{ 
- \item \command{\link{RFfit}} : general function for estimating parametes
+ \item \command{\link{RFfit}} : general function for estimating parameters;
+ \item \command{\link{RFratiotest}} : Monte Carlo likelihood ratio test
+ for Gaussian random fields
  \item \command{\link{RFhurst}} : estimation of the Hurst parameter
  \item \command{\link{RFfractaldim}} : estimation of the fractal dimension 
  \item \command{\link{RFempiricalvariogram}} : calculates
@@ -293,37 +297,47 @@
   } 
  }
 \section{Contributions}{
- \itemize{
-   \item Contributions to version 3.0 and following:\cr
- Felix Ballani (TU Bergakademie Freiberg; Poisson Polygons, 2013) \cr
- Daphne Boecker (Univ. Goettingen; RFgui, 2011)\cr
- Katharina Burmeister (Univ. Goettingen; testing, 2012)\cr
- Sebastian Engelke (Univ. Goettingen; RFempiricalvariogram, 2011-12)\cr
- Sebastian Gross (Univ. Goettingen; tilde formulae, 2011)\cr
- Alexander Malinowski (Univ. Mannheim; S3, S4 classes 2011-13)\cr
- Juliane Manitz (Univ. Goettingen; testing, 2012)\cr
- Johannes Martini (Univ. Goettingen; RFempiricalvariogram, 2011-12)\cr
- Marco Oesting (Univ. Mannheim; Brown-Resnick processes, Kriging, Trend,
- 2011-13)\cr 
- Kirstin Strokorb (Univ. Mannheim; help pages, 2011-13)\cr
- \item Contributions to version 2.0 and following:\cr
- Peter Menck (Univ. Goettingen; multivariate circulant embedding)\cr
- R Core Team, Richard Singleton (fft.c and advice) 
- \item Contributions to version 1 and following:\cr
- Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA making available
- an algorithm for AVL trees (avltr*)
- }
+  \itemize{
+    \item Contributions to version 3.0 and following:\cr
+    Felix Ballani (TU Bergakademie Freiberg; Poisson Polygons, 2013) \cr
+    Daphne Boecker (Univ. Goettingen; RFgui, 2011)\cr
+    Katharina Burmeister (Univ. Goettingen; testing, 2012)\cr
+    Sebastian Engelke (Univ. Goettingen; RFempiricalvariogram, 2011-12)\cr
+    Sebastian Gross (Univ. Goettingen; tilde formulae, 2011)\cr
+    Alexander Malinowski (Univ. Mannheim; S3, S4 classes 2011-13)\cr
+    Juliane Manitz (Univ. Goettingen; testing, 2012)\cr
+    Johannes Martini (Univ. Goettingen; RFempiricalvariogram, 2011-12)\cr
+    Marco Oesting (Univ. Mannheim; Brown-Resnick processes, Kriging, Trend,
+    2011-13)\cr 
+    Kirstin Strokorb (Univ. Mannheim; help pages, 2011-13)\cr
+    \item Contributions to version 2.0 and following:\cr
+    Peter Menck (Univ. Goettingen; multivariate circulant embedding)\cr
+    R Core Team, Richard Singleton (fft.c and advice) 
+    \item Contributions to version 1 and following:\cr
+    Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA making available
+    an algorithm for AVL trees (avltr*)
+  }
+}
+\section{Thanks}{
+  Patrick Brown : comments on Version 3\cr
+  Paulo Riberio : comments on Version 1\cr
+  Martin Maechler : advice for Version 1
 }
 \section{Financial support}{
  \itemize{
  \item
- V3.0 has been financially supported by Volkswagen Stiftung within
- the project \sQuote{WEX-MOP}.
+ V3.0 has been financially supported by the German Science Foundation
+ (DFG) through the Research Training Group 1953 \sQuote{Statistical
+ Modeling of Complex Systems and Processes --- Advanced Nonparametric
+ Approaches} (2013-2018).
  \item
- V3.0 has been
+ V3.0 has been financially supported by Volkswagen Stiftung within
+ the project \sQuote{WEX-MOP} (2011-2014).
+ \item
+ Alpha versions for V3.0 have been
  financially supported by the German Science Foundation (DFG) through the
  Research Training Groups 1644 \sQuote{Scaling problems in Statistics}
- and 1023 \sQuote{Identification in Mathematical Models}
+ and 1023 \sQuote{Identification in Mathematical Models} (2008-13).
  \item
  V1.0 has been financially supported by
  the German Federal Ministry of Research and Technology 
@@ -336,8 +350,8 @@
  }
 }
 \examples{
-set.seed(0)
 # Best to start with the examples in 'RFsimulate'
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

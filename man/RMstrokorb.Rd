@@ -25,7 +25,7 @@ RMstrokorbBall(phi);
   function belonging to Gneiting's class \eqn{H_d}.
 
   \command{RMstrokorbBall} defines
-  balls with random radius that corresponds a tail correlaton
+  balls with random \emph{radius} that corresponds a tail correlaton
   function belonging to Gneiting's class \eqn{H_d}.
 
    \command{RMstrokorbPoly} ) defines
@@ -54,12 +54,16 @@ RMstrokorbBall(phi);
  \command{\link{RMmodel}}.
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 #plot shape function of an M3 process of type 'strokorb'
+model <- RMbrownresnick(RMfbm(alpha=1.5, s=0.2))
+plot(RMstrokorbMono(model))
 
-RMmodel <- RMbrownresnick(RMfbm(alpha=1.5, s=0.2))
-plot(RMstrokorbMono(RMmodel))
+x <- seq(0, 10, if (interactive()) 0.005 else 1)
+z <- RFsimulate(RPsmith(RMstrokorbMono(model), xi=0), x)
+plot(z, type="p", pch=20)
 
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}

@@ -306,8 +306,9 @@ RFgetMethodNames(show=TRUE)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 RFgetMethodNames()
+\dontshow{RFoptions(seed=NA)}
 }
 
 

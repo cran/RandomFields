@@ -31,15 +31,16 @@ RMid(phi, vdim, var, scale, Aniso, proj)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMexp()
 x <- 0:10
-set.seed(0)
+RFoptions(seed=0)
 z <- RFsimulate(model, x, spC=FALSE)
 model2 <- RMid(model)
-set.seed(0)
+RFoptions(seed=0)
 z2 <- RFsimulate(model, x, spC=FALSE)
 sum(abs(z-z2)) == 0 # TRUE
+\dontshow{RFoptions(seed=NA)}
 
 }
 

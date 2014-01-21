@@ -27,10 +27,18 @@
     \command{\link{RFpseudovariogram}} \tab assigns to a  model the
     values of the pseudo variogram
     at given locations\cr
+    \command{\link{RFsimulate}} \tab simulation of random fields
+    \cr
     \command{\link{RFvariogram}} \tab assigns to a  model the
     values of the (cross-)variogram
     at given locations\cr
   }
+}
+
+\note{
+  Note not all the functions starting with \code{RF}
+  possess a corresponding implementation as operator, e.g. not
+  \command{\link{RFfit}} and \command{\link{RFinterpolate}}.
 }
 
 \seealso{
@@ -40,10 +48,11 @@
  \link{RR}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 z <- RFsimulate(model=RMexp(), 1:10)
 str(RFgetModel(RFsimulate, show.call = TRUE))
 str(RFgetModel(RFsimulate, show.call = FALSE))
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}

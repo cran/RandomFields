@@ -52,7 +52,7 @@ RPbernoulli(phi, loggauss, stationary_only, threshold)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 model <- RPbernoulli(RMexp(), threshold=0)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
@@ -64,6 +64,7 @@ z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 }}
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

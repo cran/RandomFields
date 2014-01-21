@@ -42,7 +42,21 @@
  \item{\code{internal3}:}{RMmodelExt; analog to slot 'autostart'} 
  \item{\code{users.guess}:}{RMmodelExt; analog to slot 'autostart'} 
  \item{\code{ml}:}{RMmodelExt; analog to slot 'autostart'; with maximum
- likelihood method} 
+   likelihood method}
+ \item{\code{coord.units}:}{string giving the units of the coordinates,
+   see also option \code{coord_units} of \command{\link{RFoptions}}.
+ }
+ \item{\code{variab.units}:}{string giving the units of the variables,
+   see also option \code{variab_units} of \command{\link{RFoptions}}.
+ }
+ \item{\code{number.of.data}:}{
+   the number of data values passed to \command{\link{RFfit}} that are
+   not \code{NA} or \code{NaN}
+ }
+ \item{\code{number.of.parameters}:}{
+   total number of parameters of the model that had to be estimated
+   including variances, scales, co-variables, etc.
+ }
  }
 }
  
@@ -80,8 +94,8 @@
 }
  
 \examples{
-set.seed(0)
 # see RFfit
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{classes}

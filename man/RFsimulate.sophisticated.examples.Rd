@@ -19,7 +19,7 @@
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) { }}
 
 \dontshow{\dontrun{
@@ -45,6 +45,7 @@ for (mpp.intensity in c(1, 10, 100)){
  par(mfcol=c(2,1))
  plot(z@data[,1:min(length(z@data), 1000)], type="l")
  hist(z@data[,1])
+par(mfcol=c(1,1))
 
 
 
@@ -67,8 +68,8 @@ for (mpp.intensity in c(1, 10, 100)){
  hist(ylim=c(0,1), pmin(z,5), 200, freq=FALSE)
  xx <- seq(0,4,len=1000)
  lines(xx, exp(-1/xx) / xx^2)
- 
- dev.off()
+ par(mfcol=c(1,1))
+
  
  ## a more complicated mixed moving maximum process
  model <- RPsmith(RMmppplus(RMgauss(), RMexp(), p=c(0.3, 0.7)))
@@ -82,8 +83,8 @@ for (mpp.intensity in c(1, 10, 100)){
  hist(ylim=c(0,1), pmin(z,5), 200, freq=FALSE)
  xx <- seq(0,4,len=1000)
  lines(xx, exp(-1/xx) / xx^2)
+par(mfcol=c(1,1))
 
- dev.off()
  
  ## there are different possibilities to define a max-stable process:
  ## * m[[1]] below is a detailed way of defining a model.
@@ -98,9 +99,8 @@ for (mpp.intensity in c(1, 10, 100)){
 
   x <- GridTopology(0, .1, 500)
 
- for (i in 1:3){
- set.seed(123)
- z <- RFsimulate(model=Schlather(m[[i]]),x=x, n=2)
+ for (i in 1:3){ %# same seed always
+ z <- RFsimulate(model=Schlather(m[[i]]),x=x, n=2, seed=0)
 
  x11()
  plot(z, nmax=1, ylim=c(0, 15))
@@ -114,6 +114,7 @@ for (mpp.intensity in c(1, 10, 100)){
  lines(xx, exp(-1/xx) / xx^2)
  print(quantile(as.vector(z), probs=seq(0,1,0.05)))
  Sys.sleep(1)
+par(mfcol=c(1,1))
  dev.off()
  }
  
@@ -134,6 +135,7 @@ for (mpp.intensity in c(1, 10, 100)){
  xx <- seq(0,4,len=1000)
  lines(xx, exp(-1/xx) / xx^2)
  print(summary(as.vector(z))) 
+par(mfcol=c(1,1))
 
  dev.off()
 
@@ -267,5 +269,6 @@ for (i in 1:prod(blocks)) {
 
 }}
 
+\dontshow{RFoptions(seed=NA)}
 
 }

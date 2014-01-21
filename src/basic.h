@@ -5,9 +5,10 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 #include <errno.h>
-#define NDEBUG 1
+// NDEBUG /* uncomment to stop assert working */
+#define N_DEBUG 1
 #include <assert.h>
-
+#include <R_ext/Complex.h>
 
 #ifdef __GNUC__
 #define VARIABLE_IS_NOT_USED __attribute__ ((unused))
@@ -20,7 +21,8 @@ void fft_factor_(int n, int *pmaxf, int *pmaxp);
 Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 		  int isn, double *work, int *iwork);/* TRUE: success */
 
-
+#define LENGTH length // safety, in order not to use LENGTH defined by R
+#define complex Rcomplex
 #define DOT "."
 #define print Rprintf
 #define PRINTF Rprintf
@@ -50,7 +52,6 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define LOG05 -0.69314718055994528623
 #define LOG3 1.0986122886681096913952452369225257046474905578227
 #define LOG2 M_LN2
-#define M_LN_PId2 0.225791352644727432363097614947 * 0.225791352644727432363097614947
 
 #define EPSILON     0.00000000001
 #define EPSILON1000 0.000000001

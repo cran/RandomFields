@@ -360,6 +360,7 @@ void DDbiGneiting(double *x, cov_model *cov, double *v);
 int checkbiGneiting(cov_model *cov);
 sortsofparam paramtype_biGneiting(int k, int row, int col) ;
 void rangebiGneiting(cov_model *cov, range_type* ra);
+int initbiGneiting(cov_model *cov, storage *s);
 
 
 /* User defined model */
@@ -390,6 +391,7 @@ void biWM2D(double *x, cov_model *cov, double *v);
 int checkbiWM2(cov_model *cov);
 sortsofparam paramtype_biWM(int k, int row, int col);
 void rangebiWM2(cov_model *cov, range_type* ra);
+int initbiWM2(cov_model *cov, storage *s);
 
 
 sortsofparam paramtype_biWM(int k, int row, int col);

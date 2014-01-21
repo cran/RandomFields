@@ -41,6 +41,6 @@ RMcoord(C0, coord, dist)
 
 
 \examples{
-set.seed(0)
  ## For examples see the help page of 'RFformula' ##
+\dontshow{RFoptions(seed=NA)}
 }

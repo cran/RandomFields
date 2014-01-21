@@ -260,7 +260,8 @@ RPintrinsic(phi, loggauss, force, mmin, strategy,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
+
 model <- RMstable(s=1, alpha=1.8)
 x <- seq(-3,3,0.1)
 z <- RFsimulate(model=RPcirculant(model), x=x, y=x, grid=TRUE, n=1)
@@ -274,6 +275,7 @@ model <- RMfbm(Aniso=diag(c(1,2)), alpha=1.5)
 z <- RFsimulate(model, x=1:10, y=1:10, grid=TRUE)
 plot(z)
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 

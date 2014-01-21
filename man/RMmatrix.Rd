@@ -41,7 +41,7 @@ RMmatrix(phi, M, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 # bivariate Linear Model of Coregionalisation
 model <- RMmatrix(M = c(0.9, 0.43), RMwhittle(nu = 0.3)) + 
          RMmatrix(M = c(0.6, 0.8), RMwhittle(nu = 2))
@@ -49,5 +49,6 @@ x <- y <- seq(-10, 10, 0.2)
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu)
 
+\dontshow{RFoptions(seed=NA)}
 
 }

@@ -103,13 +103,13 @@
  \code{\link[=RandomFields-package]{RandomFields}}.}
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {
 RFoptions(modus_operandi="sloppy")
 }}
 
-\dontrun{
+\dontshow{\dontrun{
 ##############################################################
 #
 # Example 1: Simulation and fitting of a two-dimensional
@@ -143,9 +143,9 @@ fitted <- RFfit(model=model.na, data=simulated)
 # compare sample mean of data with ML estimate:
 mean(simulated@data[,1]) 
 fitted@ml@trend
-}
+}}
 
-\dontrun{
+\dontshow{\dontrun{
 ##############################################################
 #
 # Example 2: Fitting a standard linear mixed model using maximum
@@ -165,7 +165,7 @@ model <- response ~ W@RMfixed(beta=NA) +
  Z@RMconstant(A, var=NA) +
  RMnugget(var=NA)
 fitted <- RFfit(model=model, data=response, W=W, Z=Z, A=A)
-}
+}}
 
 
 \dontshow{\dontrun{
@@ -239,10 +239,11 @@ fit <- RFfit(model=model.na, data=multi.simulated)
 
 
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {
+\dontshow{%if (!.C("isAuthor", a=integer(1))$a) 
 RFoptions(modus_operandi="normal")
-}}
+}
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

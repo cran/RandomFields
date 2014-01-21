@@ -106,12 +106,11 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{RFoptions(warn.newstyle=FALSE, warn.oldstyle=FALSE)}
 
 ## no examples given, as command is obsolete
-\dontshow{
-\dontrun{
+\dontshow{\dontrun{
 
 x <- seq(0, 5, if (interactive()) 0.2 else 2)
 model <- "exp"
@@ -143,8 +142,8 @@ points(g1, g2, pch=16, col=col[pmax(1, (z-zlim[1]) / diff(zlim) * 20 )])
 estparam <- rep(NA, 4)
 v <- fitvario(x=g1, y=g2, grid=FALSE, model=model, param=estparam, data=z)
 Print(v$ml, v$ml$ml.value)
-}
-}
+}}
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

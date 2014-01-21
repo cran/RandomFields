@@ -37,7 +37,7 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
 #  Print("in", l)
   if (length(l) > 0) {
     storing <- (substr(names(l), 1, 3) == "sto" |
-                substr(names(l), 1, 9) == "general.s")
+                substr(names(l), 1, 9) == "general.sto")
     if (any(storing)) last <- rev(which(storing))[1]
     if (any(storing) && !l[[last]]) {
       for (p in which(storing)) l[[p]] <- c(FALSE, REGISTER, COVREGISTER)

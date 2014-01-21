@@ -80,7 +80,7 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
 \keyword{spatial}
 \keyword{models}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgengneiting(kappa=1, mu=1.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
@@ -92,5 +92,6 @@ model <- RMgengneiting(kappa=3, mu=1.5, scale= 1 / 0.301187465825 * scale)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 points(x,  RFcov(RMgneiting(scale = scale), x))
+\dontshow{RFoptions(seed=NA)}
 
 }

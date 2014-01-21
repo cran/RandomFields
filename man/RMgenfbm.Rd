@@ -8,11 +8,9 @@
  The corresponding centered semi-variogram only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between two points and is given by
  \deqn{\gamma(r) = (r^{\alpha}+1)^{\delta}-1}{\gamma(r)=(r^{\alpha}+1)^{\delta}-1}
- where \eqn{\alpha \in (0,2]}{0 < \alpha \le 2} and \eqn{0< \delta <
+ where \eqn{\alpha \in (0,2]}{0 < \alpha \le 2} and \eqn{\delta <
  1}.\cr
- By now, the model is implemented for dimensions up to 3.\cr
  See also \command{\link{RMfbm}}.
-
 }
 \usage{
 RMgenfbm(alpha, delta, var, scale, Aniso, proj)
@@ -27,7 +25,6 @@ RMgenfbm(alpha, delta, var, scale, Aniso, proj)
 \details{
  Here the variogram of \command{\link{RMfbm}} is slightly modified by
  the transformation \eqn{(\gamma+1)^\delta-1} on variograms \eqn{\gamma}.
- The model is implemented up to dimension \eqn{d=3}. 
 }
 \value{
  \command{\link{RMgenfbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
@@ -61,9 +58,10 @@ RMgenfbm(alpha, delta, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgenfbm(alpha=1, delta=0.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

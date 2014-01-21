@@ -15,7 +15,7 @@
   \command{\link{RPmaxstable}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{\dontrun{
 
@@ -72,6 +72,7 @@ model <- RMgauss()
 BR <- RFsimulate(RPbrownresnick(model), x, x, grid=TRUE)
 
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }
 \author{

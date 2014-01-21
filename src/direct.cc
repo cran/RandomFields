@@ -4,7 +4,7 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@ bool debug=false;
 int check_directGauss(cov_model *cov) {
 #define nsel 4
   cov_model *next=cov->sub[0];
+  location_type *loc = Loc(cov);
   int j, err ; // taken[MAX DIM],
   direct_param *gp  = &(GLOBAL.direct); //
   
@@ -51,13 +52,15 @@ int check_directGauss(cov_model *cov) {
   kdefault(cov, DIRECT_SVDTOL, gp->svdtolerance);
   kdefault(cov, DIRECT_MAXVAR, gp->maxvariables);
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
+  if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
+      (!loc->distances || cov->xdimprev!=1)) {
     return ERRORDIM;
+  }
 
   Types type = PosDefType;
 
   for (j=0; j<=1; j++) {
-    if ((err = CHECK(next, cov->tsdim,  cov->tsdim, 
+    if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, 
 		     type, KERNEL, SYMMETRIC,
 		     SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
     type = NegDefType;
@@ -102,7 +105,7 @@ void range_direct(cov_model *cov, range_type *range) {
 int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   cov_model *next = cov->sub[0];
   double //*xx,
-    svdtol = cov->p[DIRECT_SVDTOL][0], 
+    svdtol = P0(DIRECT_SVDTOL), 
     *G=NULL, 
     *Cov=NULL, 
     *U=NULL, 
@@ -111,12 +114,12 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     *D=NULL, 
     *SICH=NULL;
   int err,
-    maxvariab = ((int *)cov->p[DIRECT_MAXVAR])[0],
+    maxvariab = P0INT(DIRECT_MAXVAR),
     *iwork=NULL;
   int dim=cov->tsdim;
   direct_storage* s=NULL;
   InversionMethod
-    method = ((InversionMethod *) cov->p[DIRECT_METHOD])[0];
+    method = (InversionMethod) P0INT(DIRECT_METHOD);
   location_type *loc = Loc(cov);
   bool storing = GLOBAL.warn.stored_init; //
   // nonstat_covfct cf;
@@ -133,7 +136,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
 
   cov->method = Direct;
 
-  if ((err = alloc_cov(cov, dim, vdim)) != NOERROR) return err;
+  if ((err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR) return err;
 
   if (cov->Sdirect != NULL) DIRECT_DELETE(&cov->Sdirect);
   if (vdimtot > maxvariab) {
@@ -164,13 +167,14 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   /* ********************* */
 
   CovarianceMatrix(next, Cov);
+  assert(R_FINITE(Cov[0]));
  
   if (false) {
     int i,j;
     PRINTF("\n");
     for (i=0; i<locpts * vdim; i++) {
        for (j=0; j<locpts * vdim; j++) {
-	 PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
+	 PRINTF("%+2.3f ", Cov[i  + locpts * vdim * j]);
        }
        PRINTF("\n");
     }
@@ -380,7 +384,7 @@ void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     *U = NULL,
     *res = cov->rf;  
   int m, n;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0],
+  bool loggauss = (bool) P0INT(LOG_GAUSS),
     vdim_close_together = GLOBAL.general.vdim_close_together;
 
   // APMI(cov);

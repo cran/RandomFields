@@ -72,10 +72,11 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x.max <- 10
 model <- RMintrinsic(RMfbm(alpha=1), diameter=x.max)
 x <- seq(0, x.max, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,6))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

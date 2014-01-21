@@ -80,7 +80,7 @@ RFfctn(...)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 # locations:
 X <- matrix(runif(15), ncol=3)
@@ -168,6 +168,7 @@ C <- RFcovmatrix(model=model, x=X)
 # yields covariance matrix C(xi,xj) for i,j=1,2,3,4,5
 C
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }
 \keyword{spatial}

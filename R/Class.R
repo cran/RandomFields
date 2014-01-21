@@ -169,6 +169,7 @@ setClass('RMmodelgenerator', contains ="function",
 ## definition of class 'RMmodelExt'
 setClass('RMmodelExt',  contains='RMmodel',
          representation(likelihood = "numeric",
+                        AICc = "numeric",
                         trend = "numeric",
                         residuals = "ANY"
                         )
@@ -185,6 +186,8 @@ setClass("RFempVariog",
                         phi.centers = "ANY",
                         theta.centers = "ANY",
                         T = "ANY",
+                        coord.units = "character",
+                        variab.units = "character",
                         call = "ANY"
                         )
          )
@@ -208,6 +211,10 @@ setClass("RFfit",
                         upperbounds ='RMmodel',
                         transform = "list",
                         #vario = "character",
+                        coord.units = "character",
+                        variab.units = "character",
+                        number.of.data = "integer",
+                        number.of.parameters = "integer",
                         autostart = 'RMmodelExt',
                         users.guess = 'RMmodelExt', # Martin: 2.4.: eingefuegt
                         self = 'RMmodelExt',
@@ -217,7 +224,7 @@ setClass("RFfit",
                         internal1 = 'RMmodelExt',
                         internal2 = 'RMmodelExt',
                         internal3 = 'RMmodelExt',
-                        ml = 'RMmodelExt'#,
+                        ml = 'RMmodelExt'
                         #ml.residuals = "ANY" # matrix or RFsp
                         )
          )

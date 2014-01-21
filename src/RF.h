@@ -5,48 +5,118 @@
 #include "RandomFields.h"
 #include "error.h"
 #include <string.h>
-#include <R_ext/Complex.h>
-#include <errno.h>
 #include "PoissonPolygon.h"
 
-#define ASSERT_GATTER(Cov) assert(Cov->gatternr >= FIRST_GATTER && Cov->gatternr <= LAST_GATTER);
+//   intptr_t and uintptr_t fuer: umwandlung pointer in int und umgekehrt
 
-// NDEBUG /* uncomment to stop assert working */
+#define ASSERT_GATTER(Cov) assert(isTrafo(Cov));
+
 // #define RF_DEBUGGING 1
 
 #ifndef RF_DEBUGGING
+
+//#define ERRLINE 
+#define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
+
+#define MEMCOPY(A,B,C) memcpy(A,B,C)
+//#define MEMCOPY(A,B,C) memory_copy(A, B, C)
+
+#define MALLOC malloc
+#define CALLOC calloc
 
 #define CHECK(C,T,X,type,D,I,V,R) check2X(C,T,X,type,D,I,V,R)
 #define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) check2X(C,T,X,type,D,I,V0,V1,R)
 #define CHECKPD2ND(N,D1,D2,I,V,R) CheckPD2ND(N,D1,D2,I,V,R)
 #define INIT(M, Moments, S) INIT_intern(M, Moments, S)
 #define INIT_RANDOM(M, Moments, S) INIT_RANDOM_intern(M, Moments, S)
-#define STRUCT(Cov, NM) CovList[Cov->gatternr].Struct(Cov, NM)
-#define MALLOC malloc
-#define CALLOC calloc
+#define STRUCT(Cov, NM) CovList[(Cov)->gatternr].Struct(Cov, NM)
+
+#define PARAM(P, IDX) (P)->px[IDX]
+#define PARAMINT(P, IDX) ((int *) (P)->px[IDX])
+#define PARAMENV(P, IDX) ((sexp_type *) (P)->px[IDX])
+#define PARAMLIST(P, IDX) ((listoftype *) (P)->px[IDX])
+
+#define PARAM0(P, IDX) PARAM(P, IDX)[0]
+#define PARAM0INT(P, IDX) PARAMINT(P, IDX)[0]
+
+#define PCOPY(TO, FROM, IDX) 						\
+  MEMCOPY((TO)->px[IDX], (FROM)->px[IDX],				\
+	  ((FROM)->nrow[IDX]) * ((FROM)->ncol[IDX]) *			\
+	  (CovList[FROM->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
+	    CovList[FROM->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
+	    -1))
+
+
+ 
 #define DEBUGINFOERR
 #define DEBUGINFO 
 
+
 #else
+
+#define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
+
+#define MEMCOPY(A,B,C) ({ assert((A)!=NULL && (B)!=NULL); memcpy(A,B,C); })
+//#define MEMCOPY(A,B,C) memory_copy(A, B, C)
+
+//
+#define MALLOC(X) ({PRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);assert(X>0 && X<=268435456);malloc(X);})
+//
+#define CALLOC(X, Y) ({PRINTF("(CALLOC %s, line %d)\n",__FILE__, __LINE__);assert(X>0 && X<1e8 && Y>0 && Y<=64); calloc(X,Y);})
+//#define MALLOC malloc
+//#define CALLOC calloc
+
 
 #define XX(C) assert((C)->simu.expected_number_simu >= 0|| ({PRINTF("Start.\n"); false;}))
 #define YY(C) assert((C)->simu.expected_number_simu >= 0 || ({PRINTF("End.\n"); false;}))
 
 
-#define CHECK(C,T,X,type,D,I,V,R) ({PRINTF("(CHECK %s, line %d)\n", __FILE__, __LINE__); XX(C); int x = check2X(C,T,X,type,D,I,V,R); YY(C); x;})
-#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({PRINTF("(CHECK %s, line %d)\n", __FILE__, __LINE__); XX(C); int x = check2X(C,T,X,type,D,I,V0,V1,R);YY(C); x;})
-#define CHECKPD2ND(N,D1,D2,I,V,R) ({PRINTF("(CHECKPD2ND %s, line %d)\n", __FILE__, __LINE__); XX(N); int x = CheckPD2ND(N,D1,D2,I,V,R);YY(N); x;})
-#define INIT(M, Moments, S) ({PRINTF("(INIT %s, line %d)\n", __FILE__, __LINE__);  XX(M); int x = INIT_intern(M, Moments, S);YY(M); x;})
-#define INIT_RANDOM(M, Moments, S) ({PRINTF("(STRUCT %s, line %d)\n", __FILE__, __LINE__);  XX(M); int x = INIT_RANDOM_intern(M, Moments, S);YY(M); x;})
+#define LLPRINT(cov, X, Y, Z) {				\
+    cov_model *lprint_z=cov;				\
+    int lprint_i=0;					\
+    while (lprint_z->calling != NULL && lprint_i<10) {	\
+      lprint_z=lprint_z->calling;			\
+      Rprintf("_ ");					\
+      lprint_i++;}					\
+    if (lprint_i==100) {				\
+      Rprintf("LPRINT i=%d\n", lprint_i);		\
+      PMI(cov);						\
+      assert(false);					\
+    }							\
+  }PRINTF(X, Y, Z)
+#define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(C, "(CHECK %s, line %d)\n", __FILE__, __LINE__); XX(C); int x = check2X(C,T,X,type,D,I,V,R); YY(C); x;})
+#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(C, "(CHECK %s, line %d)\n", __FILE__, __LINE__); XX(C); int x = check2X(C,T,X,type,D,I,V0,V1,R);YY(C); x;})
+#define CHECKPD2ND(N,D1,D2,I,V,R) ({LLPRINT(N, "(CHECKPD2ND %s, line %d)\n", __FILE__, __LINE__); XX(N); int x = CheckPD2ND(N,D1,D2,I,V,R);YY(N); x;})
+#define INIT(M, Moments, S) ({LLPRINT(M, "(INIT %s, line %d)\n", __FILE__, __LINE__);  XX(M); int x = INIT_intern(M, Moments, S);YY(M); x;})
+#define INIT_RANDOM(M, Moments, S) ({LLPRINT(M, "(STRUCT %s, line %d)\n", __FILE__, __LINE__);  XX(M); int x = INIT_RANDOM_intern(M, Moments, S);YY(M); x;})
 
-#define STRUCT(Cov, NM)  ({PRINTF("(STRUCT %s, line %d)\n", __FILE__, __LINE__); ASSERT_GATTER(Cov);  XX(Cov); int x = CovList[Cov->gatternr].Struct(Cov, NM);YY(Cov); x;})
+#define STRUCT(Cov, NM)  ({LLPRINT(Cov, "(STRUCT %s, line %d)\n", __FILE__, __LINE__); ASSERT_GATTER(Cov);  XX(Cov); int x = CovList[Cov->gatternr].Struct(Cov, NM);YY(Cov); x;})
 
-//
-#define MALLOC(X) ({PRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);malloc(X);})
-//
-#define CALLOC(X, Y) ({PRINTF("(CALLOC %s, line %d)\n",__FILE__, __LINE__);calloc(X,Y);})
-//#define MALLOC malloc
-//#define CALLOC calloc
+
+#define PARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP); (P)->px[IDX];})
+#define PARAMINT(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == INTSXP); ((int *) (P)->px[IDX]);})
+#define PARAMENV(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((sexp_type *) (P)->px[IDX]);})
+#define PARAMLIST(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((listoftype *) (P)->px[IDX]);})
+
+#define PARAM0(P, IDX) ({assert(PARAM(P, IDX) != NULL); PARAM(P, IDX)[0];})
+#define PARAM0INT(P, IDX)  ({assert(PARAMINT(P, IDX) != NULL); PARAMINT(P, IDX)[0];})
+
+
+#define PCOPY(TO, FROM, IDX) {						\
+    if (!((TO) != NULL && (FROM) != NULL &&  (TO)->px[IDX] != NULL && (FROM)->px[IDX] &&IDX > 0 && (FROM)->ncol[IDX] == (TO)->ncol[IDX] &&   (FROM)->nrow[IDX] == (TO)->nrow[IDX] && CovList[(FROM)->nr].kappatype[IDX]==CovList[(TO)->nr].kappatype[IDX] &&  (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ||	     CovList[(FROM)->nr].kappatype[IDX]==INTSXP)  )) BUG; \
+    MEMCOPY((TO)->px[IDX], (FROM)->px[IDX],				\
+	    ((FROM)->nrow[IDX]) * ((FROM)->ncol[IDX]) *			\
+	   (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
+	    CovList[(FROM)->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
+	    -1));							\
+}
+
+   /*  printf("%ld %ld %d %d %d idx=%d\n", (TO)->px[IDX], (FROM)->px[IDX], \
+       (FROM)->nrow[IDX], (FROM)->ncol[IDX],				\
+       CovList[(FROM)->nr].kappatype[IDX]==REALSXP ? sizeof(double) :	\
+       CovList[(FROM)->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
+       -1, IDX);							\
+				 */
 
 #define DEBUGINFOERR {							\
     char dummy[MAXERRORSTRING]; strcpy(dummy, ERRORSTRING);		\
@@ -56,6 +126,37 @@
 
 #endif
 
+
+
+#define P(IDX) PARAM(cov, IDX) 
+#define PINT(IDX) PARAMINT(cov, IDX)
+#define P0(IDX) PARAM0(cov, IDX) 
+#define P0INT(IDX) PARAM0INT(cov, IDX)
+#define PENV(IDX) PARAMENV(cov, IDX) 
+#define PSEXP PENV
+#define PLIST(IDX) PARAMLIST(cov, IDX)
+
+#define PARAMFREE(P, IDX) if ((P)->px[IDX] != NULL) { free((P)->px[IDX]); (P)->px[IDX] = NULL; (P)->ncol[IDX] = (P)->nrow[IDX] = 0;}
+
+
+#define PARAMALLOC(P, IDX, ROW, COL) {					\
+    int _PARAMsize;							\
+    switch(CovList[(P)->nr].kappatype[IDX]) {				\
+    case REALSXP : _PARAMsize = sizeof(double); break;			\
+    case INTSXP : _PARAMsize = sizeof(int); break;			\
+    default : BUG;							\
+    }									\
+    assert((P)->px[IDX]==NULL);						\
+    (P)->nrow[IDX] = ROW; (P)->ncol[IDX] = COL;				\
+    if (((P)->px[IDX] = (double*) CALLOC((ROW) * (COL), _PARAMsize)) == NULL) { \
+      XERR(ERRORMEMORYALLOCATION)					\
+	} ;}
+#define PALLOC(IDX, ROW, COL) PARAMALLOC(cov, IDX, ROW, COL)
+#define PINRALLOC(IDX, ROW, COL) PARAMINTALLOC(cov, IDX, ROW, COL)
+
+#define PFREE(IDX) PARAMFREE(cov, IDX)
+#define PARAMisNULL(P, IDX) ((P)->px[IDX] == NULL)
+#define PisNULL(IDX) PARAMisNULL(cov, IDX)
 
 ///////////////////////////////////////////////////////////////////////
 // max. dimension of the field. Standard is 4
@@ -145,9 +246,13 @@
 #define ZEROSPACEISO (isotropy_type) 2   /* isotropic if time diff is zero */
 #define VECTORISOTROPIC (isotropy_type) 3
 #define SYMMETRIC (isotropy_type) 4 // in the covariance sense if multivariate!
-#define NO_ROTAT_INV (isotropy_type) 5
-#define PREVMODELI (isotropy_type) 6  /* type taken from submodels */
-#define ISO_MISMATCH  (isotropy_type) 7 /* always last ! */
+#define CARTESIAN_COORD (isotropy_type) 5
+#define EARTH_COORD (isotropy_type) 6
+#define SPHERICAL_COORD (isotropy_type) 7
+#define CYLINDER_COORD (isotropy_type) 8
+#define UNREDUCED (isotropy_type) 9  /*CARTESIAN_COORD  or EARTH_COORD  */
+#define PREVMODELI (isotropy_type) 10  /* type taken from submodels */
+#define ISO_MISMATCH  (isotropy_type) 11 /* always last ! */
 #define LAST_ISO ISO_MISMATCH
 
  //#define ISOTROPIC (isotropy_type) 0
@@ -184,6 +289,7 @@
 #define NORMAL_MIXTURE 4
 #define BERNSTEIN 5 // is different from everything else before
 
+
 ///////////////////////////////////////////////////////////////////////
 // BASIC DIMENSIONS AND VARIABLES
 ///////////////////////////////////////////////////////////////////////
@@ -191,6 +297,8 @@
 #define PARAMMAXCHAR MAXCHAR
 #define METHODMAXCHAR MAXCHAR /* max number of character to describe a Method (including \0)*/
 #define MAXLONGCHAR 40 // for RFoptions that are string
+#define MAXUNITSCHAR 10
+#define MAXUNITS 4
 
 #define MAXNRCOVFCTS 200
 #define MAXPARAM 20
@@ -244,6 +352,13 @@ typedef char name_type[][MAXCHAR];
 typedef char longname_type[][MAXLONGCHAR];
 
 typedef char NAname_type[MAX_NA][255];
+
+#define GETMODEL_AS_SAVED 0
+#define GETMODEL_DEL_NATSC 1
+#define GETMODEL_SOLVE_NATSC 2
+#define GETMODEL_DEL_MLE 3
+#define GETMODEL_SOLVE_MLE 4
+
 
 ///////////////////////////////////////////////////////////////////////
 // PARAMETER AND THEIR LOCATIONS FOR VARIOUS MODELS
@@ -353,17 +468,17 @@ typedef char NAname_type[MAX_NA][255];
 #define pLOC_R pLOC_A // always last of pLOC_*
 
 #define LOCAL_R 0 
-#define LOCAL_MSG LOCAL_R + 1
+#define LOCAL_MSG (LOCAL_R + 1)
 
-#define CUTOFF_B LOCAL_MSG + 1
-#define CUTOFF_ASQRTR CUTOFF_B + 1
-#define CUTOFF_THEOR CUTOFF_ASQRTR + 1 // muss immer == 4 sein
-#define CUTOFF_MAX CUTOFF_THEOR + 1   /* size of vector q */
+#define CUTOFF_B (LOCAL_MSG + 1)
+#define CUTOFF_ASQRTR (CUTOFF_B + 1)
+#define CUTOFF_THEOR (CUTOFF_ASQRTR + 1) // muss immer == 4 sein
+#define CUTOFF_MAX (CUTOFF_THEOR + 1)   /* size of vector q */
 
-#define INTRINSIC_A0 LOCAL_MSG + 1
-#define INTRINSIC_A2 INTRINSIC_A0 + 1
-#define INTRINSIC_B INTRINSIC_A2 + 1
-#define INTRINSIC_MAX INTRINSIC_B + 1 /* size of vector q */
+#define INTRINSIC_A0 (LOCAL_MSG + 1)
+#define INTRINSIC_A2 (INTRINSIC_A0 + 1)
+#define INTRINSIC_B (INTRINSIC_A2 + 1)
+#define INTRINSIC_MAX (INTRINSIC_B + 1) /* size of vector q */
 #define LOCAL_MAX INTRINSIC_MAX
 
 
@@ -378,11 +493,14 @@ typedef char NAname_type[MAX_NA][255];
 #define UNIF_MIN 0
 #define UNIF_MAX 1
 
-#define SETPARAM_VARIANT 0
 #define SETPARAM_TO 0
 #define SET_PERFORMDO 0
+//#define SETPARAM_VARIANT 1
 //#define SETPARAM_FROM 1
 //#define SETPARAM_SET 2
+
+#define LOC_LOC 0
+#define LOC_SCALE 1
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -523,12 +641,12 @@ typedef enum Methods {
   addXXX and createmodel in getNset
 */
 
-#define BrOriginal Forbidden + 1
-#define BrShifted Forbidden + 2
-#define BrMixed Forbidden + 3 // M3
-#define BrHat Forbidden + 4
-#define BrCheck Forbidden + 5
-#define TotalNumberOfMethods BrCheck + 1
+#define BrOriginal (Forbidden + 1)
+#define BrShifted (Forbidden + 2)
+#define BrMixed (Forbidden + 3) // M3
+#define BrHat (Forbidden + 4)
+#define BrCheck (Forbidden + 5)
+#define TotalNumberOfMethods (BrCheck + 1)
 
 typedef enum BRmethod {
   BRorig,
@@ -552,6 +670,17 @@ typedef enum TaylorCoeff {TaylorConst, TaylorPow, TaylorExpConst,
 // USER CHANGABLE PARAMETERS
 ///////////////////////////////////////////////////////////////////////
 // others
+
+typedef enum units_enum {
+  units_none, units_km, units_miles, units_time, units_user
+} units_enum;
+#define nr_units (units_user + 1)
+
+typedef enum coord_sys_enum {
+  coord_auto, cartesian, earth // earth always last
+} coord_sys_enum;
+#define nr_coord_sys (earth + 1)
+
 #define MAXINVERSIONS 2
 typedef enum modes {careless, sloppy, easygoing, normal, precise, 
 		    pedantic, neurotic} modes;
@@ -624,8 +753,13 @@ typedef struct general_param {
   int keynr, interpolregister, condregister, errregister, guiregister,
     matrix_inversion[MAXINVERSIONS]; // 0:cholesky, 1:QR, 2:SVD; negativ: stop
     
-
+  int seed;
+ 
   double xyz_notation, gridtolerance, matrixtolerance, exactness;
+
+  coord_sys_enum coord_system;
+  char newunits[MAXUNITS][MAXUNITSCHAR], curunits[MAXUNITS][MAXUNITSCHAR],
+    varunits[MAXUNITS][MAXUNITSCHAR];
 } general_param;
 
 typedef struct gauss_param{
@@ -767,14 +901,14 @@ typedef struct gui_param{
 
 typedef struct graphics_param{
   bool always_close;
-  int PL;
+  double height;
+  int PL, increase_upto[2];
 } graphics_param;
 
 typedef struct warn_param{
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool oldstyle, newstyle, Aniso, ambiguous, normal_mode,
-    warn_mode, warn_colour, //
-    stored_init;// 
+    warn_mode, warn_colour, stored_init, warn_coordinates;// 
 } warn_param;
 
 typedef double *coord_type[MAXSIMUDIM];
@@ -862,8 +996,8 @@ extern bool NAOK_RANGE;
 // GENERAL PARAMETERS FOR THE SIMULAIONMETHODS
 ///////////////////////////////////////////////////////////////////////
 
-#define NICK(COV) CovList[COV->nr].nick
-#define NAME(COV) CovList[COV->nr].name
+#define NICK(COV) CovList[(COV)->nr].nick
+#define NAME(COV) CovList[(COV)->nr].name
 
 
 #define SET_DESTRUCT(A)\
@@ -891,13 +1025,12 @@ typedef struct simu_type {
 } simu_type;
 
 
-
-
 extern const char *METHODNAMES[Forbidden+1], *ISONAMES[LAST_ISO + 1], 
   *STATNAMES[LAST_STAT + 1], *ROLENAMES[ROLE_LAST+1], *TYPENAMES[OtherType + 1],
   *CAT_TYPENAMES[OtherType + 1], *REGNAMES[MODEL_MAX+1], 
   *MONOTONE_NAMES[BERNSTEIN + 1 - MISMATCH] ,
-  *MODENAMES[nr_modes];
+  *MODENAMES[nr_modes], *UNITS_NAMES[nr_units], 
+  *COORD_SYS_NAMES[nr_coord_sys];
 
 
 
@@ -949,6 +1082,7 @@ typedef struct listoftype {
     nrow[MAXELEMENTS];   // although p[.] is NULL; latter set in CHECK
 } listoftype;
 typedef double *naptr_type[MAX_NA];
+typedef cov_model *covptr_type[MAX_NA];
 typedef int *elptr_type[MAX_MLE_ELMNTS];
 // typedef double *internal_type[MAXINTERNALPARAM];
 
@@ -1100,7 +1234,7 @@ extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
   GAUSS, NUGGET, PLUS, MLEPLUS, MIXEDEFFECT, BALL, ECF, MULT,
   DISTRIBUTION,  DETERM_DISTR, GAUSS_DISTR, SETPARAM, SET_DISTR,
   COVMATRIX, RFGET, COVFCTN,
-  ATOM, LOC, SCALESPHERICAL, TRUNCSUPPORT, BROWNRESNICK, 
+  ATOM, LOC, SET_DISTR, SCALESPHERICAL, TRUNCSUPPORT, BROWNRESNICK, 
   STROKORB_MONO, STROKORB_BALL_INNER, POLYGON, RECTANGULAR, MULT_INVERSE,
   SHAPESTP, SHAPEAVE, SPHERICAL, UNIF, MPPPLUS, PTS_GIVEN_SHAPE,
   STATIONARY_SHAPE, STANDARD_SHAPE,
@@ -1180,6 +1314,8 @@ void addCov(covfct cf, covfct D, covfct D2,
 	    covfct inverse, nonstat_inv nonstat_inverse);
 void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
 	    covfct inverse);
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    covfct inverse, nonstat_inv nonstat_inverse);
 void addCov(nonstat_covfct cf);
 void addCov(aux_covfct auxcf);
 void addCov(covfct distrD, logfct logdistrD, nonstat_inv Dinverse,
@@ -1256,7 +1392,7 @@ void InitModelList();
 #define DECISION_TRUE 1
 #define DECISION_FALSE 0
 // #define DECISION_CASESPEC -1
-#define MAXERRORSTRING 100 + MAXNRCOVFCTS * (MAXCHAR+1)
+#define MAXERRORSTRING (100 + (MAXNRCOVFCTS) * (MAXCHAR+1))
 #define nErrorLoc 1000
 
 extern int PL, NS;
@@ -1292,7 +1428,7 @@ typedef struct CE_storage {
 
   long mtot, square_seg[MAXCEDIM];
   double **c, **d, smallestRe, largestAbsIm, *aniso;
-  Rcomplex *gauss1, *gauss2;
+  complex *gauss1, *gauss2;
   bool positivedefinite,
     stop,
     new_simulation_next,
@@ -1436,10 +1572,10 @@ typedef struct pgs_storage {
 } pgs_storage;
 
 typedef struct set_storage {
-  cov_model *from;
+  cov_model *remote;
   param_set_fct set;
-  void **valuefrom,
-    **valueto;
+  void **valueRemote,
+    **valueLocal;
   int variant,
      *bytes; // to be transfered
 } set_storage;
@@ -1453,7 +1589,7 @@ typedef struct rect_storage {
   double inner, inner_const, inner_pow,
     outer, outer_const, outer_pow, outer_pow_const,
     step, *value, *weight, 
-    *tmp_weight, *right_endpoint, *z;
+    *tmp_weight, *right_endpoint, *ysort, *z;
     int nstep, *squeezed_dim, *assign, *i, tmp_n;
 } rect_storage;
 
@@ -1465,8 +1601,15 @@ typedef struct dollar_storage {
 } dollar_storage;
 
 typedef struct gatter_storage {
-  double *z;
+  double *z, *zsys;
 } gatter_storage;
+
+typedef struct biwm_storage {
+  bool nudiag_given, cdiag_given;
+  double a[3], lg[3], aorig[3], nunew[3],
+    scale[4], gamma[4], c[4];
+} biwm_storage;
+
 
 typedef struct spec_properties {
   spectral_density density;
@@ -1498,6 +1641,7 @@ typedef struct mpp_properties {
 typedef struct storage { // cov_storage, do_storage, init_storage
   // wird in Struct initialisiert, sofern INIT aufgerufen wird;
   // abgespeichert wird es immer im aktuell aufrufenden (fuer next oder key)
+  bool check; // used in biWM, BiGneiting
   spec_properties spec;       // used in init
   spectral_storage Sspectral; // used in do
 } storage;
@@ -1528,28 +1672,24 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
 
 extern int DOLLAR, //LASTDOLLAR, 
   MLE_ENDCOV, OUT, SPLIT, FIRST_GATTER, LAST_GATTER,
-  ISO2ISO,SP2SP, SP2ISO, S2ISO, S2SP, S2S, SId, NATSC, TREND, CONSTANT;
+  ISO2ISO,SP2SP, SP2ISO, S2ISO, S2SP, S2S, SId, EARTHKM2CART, EARTHMILES2CART,
+  NATSC_USER, NATSC_INTERN, TREND, CONSTANT;
 
-extern char MSG[1000];
-extern char NEWMSG[1000];
+#define LENERRMSG 2000
+extern char MSG[LENERRMSG];
+extern char NEWMSG[LENERRMSG];
 
 
 
 #define STOP // assert(false)
-
-
-
-
-
-
-#define ERR(X) {sprintf(MSG, "%s %s", ERROR_LOC, X); STOP; error(MSG);}
-#define XXERR(X) {/* UERR; */ errorMSG(X, MSG); 	\
+#define ERR(X) {ERRLINE;sprintf(MSG, "%s %s", ERROR_LOC, X); STOP; error(MSG);}
+#define XXERR(X) {/* UERR; */ ERRLINE;errorMSG(X, MSG); 	\
  sprintf(NEWMSG, "in `%s' error %d: %s", ERROR_LOC, X, MSG); STOP; error(NEWMSG);}
-#define AERR(X) { PRINTF("AERR: "); errorMSG(X, MSG); 	\
+#define AERR(X) {ERRLINE; PRINTF("AERR: "); errorMSG(X, MSG); 	\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG); assert(false);}
 #define MERR(X) { PRINTF("MERR: "); errorMSG(X, MSG, 50);		\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG);}
-#define XERR(X) {/* UERR; */ errorMSG(X, MSG); 	\
+#define XERR(X) {/* UERR; */ ERRLINE;errorMSG(X, MSG); 	\
     sprintf(NEWMSG, "%s%s", ERROR_LOC, MSG); STOP; error(NEWMSG);}
 #define PERR(X) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, param_name, X); STOP;error(MSG);}
 #define QERR(X) {sprintf(ERRORSTRING, "'%s' %s", param_name, X); DEBUGINFOERR; return ERRORM;}
@@ -1592,12 +1732,15 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
 int covcpy(cov_model **localcov, cov_model *cov,
 	   double *x, double *T, int spatialdim, int xdim, int lx, bool Time, 
 	   bool grid, bool distances);
+int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov);
 
 int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov);
 int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
 		    double *x, double *y, double *T, int spatialdim,
 	            int xdim, int lx, int ly, bool Time, bool grid,
 	            bool distances);
+
+void TaylorCopy(cov_model *to, cov_model *from);
 
 int getmodelnr(char *name);
 
@@ -1711,6 +1854,9 @@ int loc_set(double *x, double *y, double *T,
 	    bool distances,
 	    location_type **Loc);
 int loc_set(cov_model *cov, int totalpoints);
+int add_y_zero(location_type *loc);
+
+
 int Match(char *name, const char * List[], int n);
 int Match(char *name, name_type List, int n);
 
@@ -1882,6 +2028,9 @@ extern int PrInL;
 void SetTemporarilyGlobal(globalparam *gp);
 void ReSetGlobal();
 				
+int change_coordinate_system(isotropy_type callingprev, isotropy_type isoprev,
+			     int *nr, isotropy_type  *newisoprev,
+			     int *newtsdim, int *newxdim);
 int SetGatter(domain_type domprev, domain_type statnext, 
 	      isotropy_type isoprev, isotropy_type isonext, 
 	      int *nr, int *delflag);
@@ -1897,12 +2046,6 @@ void poly_basis(cov_model *cov, storage *s);
 double evalpoly(double *x, int *powmatrix, double *polycoeff, int basislen,
 	      int dim);
 
-//extern void
-//F77_NAME(cpotf2)(int* uplo, int* n, Rcomplex* a, int* lda, int* info);
-
-//extern void
-//F77_NAME(zpotf)(char* uplo, int* n, Rcomplex* a, int* lda, int* info);
-
 void MultiDimRange(cov_model *cov, double *natscale);
 
 #define DEL_COV -100 // #->tsdim wird auf del_cov gesetzt, wenn zu loeschen  
@@ -1911,8 +2054,10 @@ typedef struct cov_model {
   int nr, /* number of the covariance function in CovList; 
 	     obtained by function GetCovFunction 
 	  */
-    gatternr; /* trafo function for the coordinates */
-  param_type p;       // 24 b
+    gatternr,/* trafo function for the coordinates */
+    secondarygatternr, /* used if first one is a cooord system trafo */
+    zaehler; /* for debugging only */
+  param_type px;       // 24 b
   int nrow[MAXPARAM], // 24 bytes
     ncol[MAXPARAM];   // 24 bytes
   double *q;
@@ -1928,9 +2073,11 @@ typedef struct cov_model {
   Types typus;  /* CovList->Type may change in case of operators */
   int role, /* current role of the model */
      tsdim,  /* current timespacedim  */
-    xdimprev,  /* current xdim *including time* (when entering #),
+    xdimprev,  /* current xdim *including time* (when entering # or >),
 		  which may differ from tsdim for isotropic or
 		  space-isotropic models   */
+    xdimgatter, /* only differs from xdimprev if > is called and 
+		 only used by #*/
     xdimown,  /* current xdim *including time* (when leaving #),
 		 which may differ from tsdim for isotropic or
 		 space-isotropic models   */
@@ -2040,6 +2187,7 @@ typedef struct cov_model {
   rect_storage *Srect;
   dollar_storage *Sdollar;
   gatter_storage *S2;
+  biwm_storage *Sbiwm;
   //select_storage *Sselect;
 
   storage *stor; // only once for the whole model tree
@@ -2093,6 +2241,10 @@ void DOLLAR_NULL(dollar_storage* x);
 
 void GATTER_DELETE(gatter_storage **S); 
 void GATTER_NULL(gatter_storage* x);
+
+void BIWM_DELETE(biwm_storage **S); 
+void BIWM_NULL(biwm_storage* x);
+
 
 void TREND_DELETE(trend_storage ** S);
 void TREND_NULL(trend_storage* x);
@@ -2159,7 +2311,7 @@ void matmulttransposed(double *A, double *B, double *C, int m, int l, int n) ;
 int invertMatrix(double *M, int size) ;
 //void solveMatrix(int method, double *M, double *v, double *res, int size) ;
 
-void iexplDollar(cov_model *cov);
+void iexplDollar(cov_model *cov, bool MLEnatsc_only);
 
 
 void BRtrend_destruct(double **BRtrend, int trendlen);
@@ -2181,59 +2333,64 @@ void free_mpp_M(cov_model *cov);
 
 int alloc_pgs(cov_model *cov, int dim);
 int alloc_pgs(cov_model *cov);
-int alloc_cov(cov_model *cov, int dim, int vdim);
+int alloc_cov(cov_model *cov, int dim, int rows, int cols);
 
 
-#define DO(Cov, S) {assert(CovList[Cov->nr].Type != RandomType); ASSERT_GATTER(Cov); \
-    CovList[Cov->gatternr].Do(Cov, S);}
-#define DORANDOM(Cov, S) {assert(CovList[Cov->nr].Type == RandomType); ASSERT_GATTER(Cov); \
-    CovList[Cov->gatternr].DoRandom(Cov, S);}
+#define DO(Cov, S) {assert(CovList[(Cov)->nr].Type != RandomType); ASSERT_GATTER(Cov); \
+    CovList[(Cov)->gatternr].Do(Cov, S);}
+#define DORANDOM(Cov, S) {assert(CovList[(Cov)->nr].Type == RandomType);\
+    ASSERT_GATTER(Cov);						      \
+    CovList[(Cov)->gatternr].DoRandom(Cov, S);}
 #define DO_PARAM_MODELS							\
   cov_fct *C = CovList + cov->nr;					\
   {int do_param_i,							\
       kappas = C->kappas;						\
     for (do_param_i=0; do_param_i<kappas; do_param_i++) {		\
       if (cov->kappasub[do_param_i] != NULL)				\
-	DORANDOM(cov->kappasub[do_param_i], cov->p[do_param_i]);	\
+	DORANDOM(cov->kappasub[do_param_i], P(do_param_i));		\
    }}
-#define COV(X, Cov, V) {ASSERT_GATTER(Cov); CovList[Cov->gatternr].cov(X, Cov, V);}
-#define LOGCOV(X, Cov, V, S) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].log(X, Cov, V, S);}
+#define COV(X, Cov, V) {ASSERT_GATTER(Cov); CovList[(Cov)->gatternr].cov(X, Cov, V);}
+#define LOGCOV(X, Cov, V, S) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].log(X, Cov, V, S);}
 #define SHAPE COV
 #define FCTN COV
 #define LOGSHAPE LOGCOV
-#define VTLG_D(X, Cov, V) CovList[Cov->nr].D(X, Cov, V) // kein gatter notw.
-#define VTLG_DLOG(X, Cov, V, SIGN) CovList[Cov->nr].logD(X, Cov, V, SIGN)
-#define VTLG_P(X, Cov, V) CovList[Cov->nr].cov(X, Cov, V)
-#define VTLG_P2SIDED(X, Y, Cov, V) CovList[Cov->nr].nonstat_cov(X, Y, Cov, V) /* nicht gatter, da X=NULL sein kann !*/ 
-#define VTLG_Q(V, Cov, X) CovList[Cov->nr].inverse(V, Cov, X)
-#define VTLG_R(X, Cov, V) CovList[Cov->nr].random(X, Cov, V) /* dito */
-#define VTLG_R2SIDED(X, Y, Cov, V) CovList[Cov->nr].nonstat_random(X, Y, Cov, V)
+#define VTLG_D(X, Cov, V) CovList[(Cov)->nr].D(X, Cov, V) // kein gatter notw.
+#define VTLG_DLOG(X, Cov, V, SIGN) CovList[(Cov)->nr].logD(X, Cov, V, SIGN)
+#define VTLG_P(X, Cov, V) CovList[(Cov)->nr].cov(X, Cov, V)
+#define VTLG_P2SIDED(X, Y, Cov, V) CovList[(Cov)->nr].nonstat_cov(X, Y, Cov, V) /* nicht gatter, da X=NULL sein kann !*/ 
+#define VTLG_Q(V, Cov, X) CovList[(Cov)->nr].inverse(V, Cov, X)
+#define VTLG_R(X, Cov, V) CovList[(Cov)->nr].random(X, Cov, V) /* dito */
+#define VTLG_R2SIDED(X, Y, Cov, V) CovList[(Cov)->nr].nonstat_random(X, Y, Cov, V)
 #define CHECK_R(cov, tsdim)				     \
-  CHECK_VDIM(cov, tsdim, tsdim, RandomType, KERNEL, NO_ROTAT_INV, \
+  CHECK_VDIM(cov, tsdim, tsdim, RandomType, KERNEL, CARTESIAN_COORD, \
 	  tsdim, 1, ROLE_DISTR)			       
 #define NONSTATINVERSE_D(V, Cov, X, Y)		       \
-  CovList[Cov->nr].nonstat_inverse_D(V, Cov, X, Y)
+  CovList[(Cov)->nr].nonstat_inverse_D(V, Cov, X, Y)
 #define INVERSE_UNKNOWN -1
 
 
-//#define DENSITY(X, Dens, V) CovList[Cov->gatternr].approx_dens(X, Dens, V)
-#define NONSTATCOV(X, Y, Cov, V) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].nonstat_cov(X, Y, Cov,V);}
-#define LOGNONSTATCOV(X, Y, Cov, V, S) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].nonstatlog(X, Y, Cov,V,S);}
-#define Abl1(X, Cov, V) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].D(X, Cov, V);}
-#define Abl2(X, Cov, V) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].D2(X, Cov, V);}
-#define Abl3(X, Cov, V) CovList[Cov->nr].D3(X, Cov, V) /* OK ? */
-#define Abl4(X, Cov, V) CovList[Cov->nr].D4(X, Cov, V) /* OK ? */
-#define SPECTRAL(Cov, S, E) CovList[Cov->nr].spectral(Cov, S, E)/* not gatter */
-#define TBM2CALL(X, Cov, V) CovList[Cov->nr].tbm2(X, Cov, V)
-#define INVERSE(V, Cov, X) {ASSERT_GATTER(Cov);CovList[Cov->gatternr].inverse(V, Cov, X);}
+//#define DENSITY(X, Dens, V) CovList[(Cov)->gatternr].approx_dens(X, Dens, V)
+#define NONSTATCOV(X, Y, Cov, V) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].nonstat_cov(X, Y, Cov,V);}
+#define LOGNONSTATCOV(X, Y, Cov, V, S) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].nonstatlog(X, Y, Cov,V,S);}
+#define Abl1(X, Cov, V) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].D(X, Cov, V);}
+#define Abl2(X, Cov, V) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].D2(X, Cov, V);}
+#define Abl3(X, Cov, V) CovList[(Cov)->nr].D3(X, Cov, V) /* OK ? */
+#define Abl4(X, Cov, V) CovList[(Cov)->nr].D4(X, Cov, V) /* OK ? */
+#define SPECTRAL(Cov, S, E) CovList[(Cov)->nr].spectral(Cov, S, E)/* not gatter */
+#define TBM2CALL(X, Cov, V) CovList[(Cov)->nr].tbm2(X, Cov, V)
+#define INVERSE(V, Cov, X) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].inverse(V, Cov, X);}
 #define NONSTATINVERSE(V, Cov, X, Y) {ASSERT_GATTER(Cov);\
-				      CovList[Cov->gatternr].nonstat_inverse(V, Cov, X, Y);}
-#define HESSE(X, Cov, V) CovList[Cov->nr].hess(X, Cov, V)
-#define NABLA(X, Cov, V) CovList[Cov->nr].nabla(X, Cov, V)
+				      CovList[(Cov)->gatternr].nonstat_inverse(V, Cov, X, Y);}
+#define HESSE(X, Cov, V) CovList[(Cov)->nr].hess(X, Cov, V)
+#define NABLA(X, Cov, V) CovList[(Cov)->nr].nabla(X, Cov, V)
 
 
-#define ROLE_ASSERT(Role) if (!(cov->role == ROLE_BASE || cov->role == Role))\
-    SERR2("Role '%s' not recognised by '%s'.", ROLENAMES[cov->role], NICK(cov))
+#define ROLE_ASSERT(Role) \
+  if (!(cov->role == ROLE_BASE || cov->role == Role)){/* NICHT! : '(Role)' */ \
+    assert(({PMI(cov) ; true;}));					\
+    SERR2("Role '%s' not recognised by '%s'.",				\
+	  ROLENAMES[cov->role], NICK(cov));				\
+}
 
 #define ILLEGAL_ROLE \
   SERR2("cannot initiate '%s' by role '%s'", NICK(cov), ROLENAMES[cov->role])
@@ -2263,9 +2420,9 @@ int alloc_cov(cov_model *cov, int dim, int vdim);
 
 #define ASSERT_ONE_SUBMODEL(COV)					\
   DEBUGINFO;								\
-  if (!((COV->sub[0] == NULL) xor (COV->sub[1] == NULL)))		\
-    SERR2("either '%s' or '%s' must be given", CovList[COV->nr].subnames[0],\
-      CovList[COV->nr].subnames[1])
+  if (!(((COV)->sub[0] == NULL) xor ((COV)->sub[1] == NULL)))		\
+    SERR2("either '%s' or '%s' must be given", CovList[(COV)->nr].subnames[0],\
+      CovList[(COV)->nr].subnames[1])
 
 #define ASSERT_ROLE_DEFINED(SUB) DEBUGINFO;			\
   if (role == ROLE_UNDEFINED)					\
@@ -2286,9 +2443,6 @@ void do_random_failed(cov_model *cov, double *v);
 
 
 
-// 
-#define MEMCOPY(A,B,C) memcpy(A,B,C)
-//#define MEMCOPY(A,B,C) memory_copy(A, B, C)
 void memory_copy(void *dest, void *src, int bytes);
 int invertMatrix(double *M, int vdimnf);
 
@@ -2302,14 +2456,20 @@ double VolumeBall(int d, double r);
 
 double intpow(double x, int p);
 
+bool isDummyInit(initfct Init);
+
 bool isMtimesep(matrix_type type);
 bool isMproj(matrix_type type);
 bool isMdiag(matrix_type type);
 bool isMiso(matrix_type type);
 
+void ScaleDollarToLoc(cov_model *to, cov_model *from, int depth);
+bool ScaleOnly(cov_model *cov);
 bool isDollar(cov_model *cov);
 bool isDollarProc(cov_model *cov);
 bool isAnyDollar(cov_model *cov);
+bool isNatsc(cov_model *cov);
+
 bool isTcf(cov_model *cov);
 bool isPosDef(cov_model *cov);
 bool isNegDef(cov_model *cov);
@@ -2356,8 +2516,22 @@ bool isMaxStable(cov_model *cov);
 
 bool isCov(cov_model *cov);
 
+bool isIsotropic(isotropy_type iso);
+bool isSpaceIsotropic(isotropy_type iso);
+bool isZeroSpaceIsotropic(isotropy_type iso);
+bool isVectorIsotropic(isotropy_type iso);
+bool isSymmetric(isotropy_type iso);
+bool isNotRotatInv(isotropy_type iso);
+bool isCartesian(isotropy_type iso);
+bool isSpherical(isotropy_type iso);
+bool isCylinder(isotropy_type iso);
+bool isEarth(isotropy_type iso);
+bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2);
+bool isTrafo(cov_model *cov);
+
 bool hasNoRole(cov_model *cov);
 bool hasMaxStableRole(cov_model *cov);
+bool hasExactMaxStableRole(cov_model *cov);
 bool hasPoissonRole(cov_model *cov);
 
 bool TypeConsistency(Types requiredtype, Types deliveredtype);
@@ -2391,8 +2565,28 @@ int addressbits(void *addr);
 #define MAX(A,B) ((A) > (B) ? (A) : (B));
 
 
+#define EXTRA_STORAGE						\
+  if (cov->S2 != NULL && cov->S2->z != NULL)			\
+    GATTER_DELETE(&(cov->S2));					\
+  if (cov->S2 == NULL) {					\
+    cov->S2 = (gatter_storage*) MALLOC(sizeof(gatter_storage));	\
+    GATTER_NULL(cov->S2);					\
+  }								\
+  assert(cov->S2->z == NULL);
+
+
+#define ALLOC_EXTRA1(Z, SIZE)						\
+  double *Z = cov->S2->z;						\
+  if (Z == NULL) Z = cov->S2->z = (double*) MALLOC(sizeof(double)* SIZE)
+
+
+// hier keine klammern drum rum
+#define ALLOC_EXTRA2(Z, SIZE)						\
+  double *Z = cov->S2->zsys;						\
+  if (Z == NULL) Z = cov->S2->zsys = (double*) MALLOC(sizeof(double)* (SIZE))
+
 //extern void F77_NAME(zpotf)(int* info);
-extern "C" void F77_CALL(zpotf2)(char *name, int *row, Rcomplex *U, int *xxx,
+extern "C" void F77_CALL(zpotf2)(char *name, int *row, complex *U, int *xxx,
 				 int *Err);
 				
 

@@ -15,7 +15,8 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
 }
 \arguments{
  \item{x}{matrix of coordinates, or vector of x coordinates, or object
- of class \code{\link[sp:GridTopology-class]{GridTopology}} (see 'sp' package). 
+ of class \code{\link[sp:GridTopology-class]{GridTopology}}  or
+   \code{\link[raster]{raster}}. 
  If matrix, \code{ncol(x)} is the dimension
  of the index space. Matrix notation is required in case of more than 3 spatial
  dimensions; in this case, if \code{grid=FALSE}, \code{x_ij} is the
@@ -125,7 +126,7 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMexp()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 z <- RFsimulate(model, x=x)
@@ -139,10 +140,13 @@ emp.vario <- RFempiricalvariogram(data=z, phi=4)
 plot(emp.vario, model=model)
 
 model <- RMexp()
+x <- seq(0, 10, if (interactive()) 0.05 else 1)
 T <- c(0, if (interactive()) 0.1 else 1, if (interactive()) 100 else 10)
 z <- RFsimulate(x=x, T=T, model=model)
 emp.vario <- RFempiricalvariogram(data=z, deltaT=c(10, 1))
 plot(emp.vario, model=model, nmax.T=3)
+
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

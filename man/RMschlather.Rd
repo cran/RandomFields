@@ -36,7 +36,7 @@ RMschlather(phi, var, scale, Aniso, proj)
  \command{\link{RFsimulate}},
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 #Example 1
 x <- if (interactive()) 0:1000 else 0:10
@@ -60,6 +60,7 @@ y  <- if (interactive()) 0:100 else 0:10
 cov <- RFcov(model, y)
 ecf <- RFcov(RMschlather(model), y)
 matplot(y, cbind(cov, ecf), type="l")
+\dontshow{RFoptions(seed=NA)}
 
 }
 

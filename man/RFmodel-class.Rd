@@ -82,8 +82,8 @@
 }
 
 \examples{
-set.seed(0)
 # see RMmodel for examples
+\dontshow{RFoptions(seed=NA)}
 }
 
 

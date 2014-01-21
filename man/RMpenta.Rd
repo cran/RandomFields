@@ -52,9 +52,10 @@ support (cf. Chiles, J.-P. and Delfiner, P. (1999), p. 84).
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMpenta()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

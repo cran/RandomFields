@@ -14,7 +14,8 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  
  \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of x
  coordinates, or object of class
- \code{\link[sp:GridTopology-class]{GridTopology}};
+ \code{\link[sp:GridTopology-class]{GridTopology}} or
+   \code{\link[raster]{raster}};
  coordinates of \eqn{n} points to be kriged.
  For more options see \link{RFsimulateAdvanced}.
  }
@@ -169,7 +170,7 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 ## Preparation of graphics
 if (interactive()) dev.new(height=7, width=16)
@@ -239,6 +240,7 @@ screen(scr <- scr+1); plot(z, data)
 }}
 
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 

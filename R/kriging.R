@@ -196,6 +196,7 @@ rfPrepareData <- function(orig.model, x, y, z, T, grid, data,
        ## subtract the trend part that is known:
        data <- data - RFsimulate(model=pm$trend, x=xgiv, y=ygiv, z=zgiv, 
                          T=Tgiv, grid=FALSE, register = reg, spConform=FALSE)
+       ## parameter
     }
   } else {
     pm <- list(cov=model)
@@ -260,7 +261,7 @@ rfPrepareData <- function(orig.model, x, y, z, T, grid, data,
 RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                           distances, dim, err.model,  ...) {
   if (!missing(err.model)) stop("'err.model' not programmed yet.")
-  if (!missing(distances)) stop("'distances' not programmed yet.")
+  if (!missing(distances) && length(distances) > 0) stop("'distances' not programmed yet.")
   if (!missing(dim)) warning("'dim' is ignored.")
   krige.methlist <- c("A", "S", "O", "M", "U", "I")
   ## currently only univariate Kriging possible
@@ -379,6 +380,10 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         names(var@data) <- paste("var.", names(var@data), sep="")
         res <- cbind(res, var)
         res@.RFparams$has.variance <- TRUE
+      }
+      if (is.raster(x)) {
+        res <- raster::raster(res)
+        projection(res) <- projection(x)
       }
       return(res)
     } else {
@@ -903,7 +908,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
        base::dim(sigma2) <- newdim
 
     if (vdim > 1) {
-      ##order as in RFsimulate: vdim, timespacedim, repet
+      ##order as in 'RFsimulate': vdim, timespacedim, repet
       Resperm <- c(length(dimension)+1, 1:length(dimension),
                    if(repet>1) length(dimension)+2) 
       Res <- aperm(Res, perm=Resperm)
@@ -963,6 +968,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                                       n=1, vdim=vdim)
     names(var@data) <- paste("var.", names(var@data), sep="")
     Res@.RFparams$has.variance <- TRUE
+    Res <-  cbind(Res, var)
   }
 
   ## Res@.RFparams$var <- sigma2 ## sehr unelegant.
@@ -970,8 +976,13 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   ## * var(Res) sollte sigma2 zurueckliefern
   ## * summary(Res) auch summary der varianz, falls vorhanden
   ## * summary(Res) auch die Kriging methode
-  
-  return(if (return.variance) cbind(Res, var) else Res)
+
+  if (is.raster(x)) {
+    Res <- raster::raster(Res)
+    projection(Res) <- projection(x)
+  }
+   
+  return(Res)
 }
 
 
@@ -1084,6 +1095,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                                     grid=all$grid,
                                     model=all$cov, n=n, 
                                     register=cond.reg,
+                                    seed = NA,
                                     spConform=FALSE),
                                     dots))
       ## for all the other cases of simulation see, below
@@ -1125,7 +1137,8 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
     simu <- do.call(RFsimulate, args=c(list(x=xx, grid=FALSE,
                                model=all$cov, n=n,
                                register = cond.reg,
-                               spConform=FALSE),
+                                  seed = NA,
+                                  spConform=FALSE),
                                dots))     
     xx <- NULL
   }
@@ -1152,6 +1165,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
       error <- do.call(RFsimulate, args=c(list(model=err.model, t(all$given),
                                      grid=FALSE, n=n,
                                      register = RFopt$general$errregister,
+                                     seed = NA,
                                      spConform=FALSE),
                                      dots))
     if (is.null(error)) stop("error field simulation failed")
@@ -1172,6 +1186,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
     simu <- simu + RFsimulate(model=all$trend, x=x, y=y,
                               z=z, T=T, grid=all$grid, n=n,
                               register=interpol.reg,
+                              seed = NA,
                               spConform=FALSE)
   }
 

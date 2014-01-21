@@ -56,7 +56,7 @@ RPschlather(phi, tcf, xi, mu, s)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgauss()
 x <- seq(0, 10, if (interactive()) 0.1 else 1)
 z <- RFsimulate(RPschlather(model, xi=0, s=0.1), x)
@@ -75,6 +75,7 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 ## for some more sophisticated models see 'maxstableAdvanced'
 
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }
 

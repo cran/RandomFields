@@ -4,7 +4,7 @@
 
  wrapper for Havard Rue's GMRF library
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

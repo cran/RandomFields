@@ -29,8 +29,8 @@ RFspDataFrame2dataArray(obj)
 }
 
 \examples{
-set.seed(0)
 ## for examples, see the links in section 'See Also'
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

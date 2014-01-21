@@ -6,52 +6,46 @@ RMtrend <- function(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(mean)) {
+  if (hasArg(mean) && !is.null(subst <- substitute(mean))) {
     u <- try(is.numeric(mean) || is.logical(mean) || is.language(mean)
 	 || is.list(mean) || is(mean, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mean']] <- mean
-    else if (substr(deparse(substitute(mean)), 1, 1)=='R')
-      par.model[['mean']] <- mean
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mean']] <- mean
     else  stop('random parameter not allowed')
   }
-  if (hasArg(plane)) {
+  if (hasArg(plane) && !is.null(subst <- substitute(plane))) {
     u <- try(is.numeric(plane) || is.logical(plane) || is.language(plane)
 	 || is.list(plane) || is(plane, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['plane']] <- plane
-    else if (substr(deparse(substitute(plane)), 1, 1)=='R')
-      par.model[['plane']] <- plane
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['plane']] <- plane
     else  stop('random parameter not allowed')
   }
-  if (hasArg(polydeg)) {
+  if (hasArg(polydeg) && !is.null(subst <- substitute(polydeg))) {
     u <- try(is.numeric(polydeg) || is.logical(polydeg) || is.language(polydeg)
 	 || is.list(polydeg) || is(polydeg, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['polydeg']] <- polydeg
-    else if (substr(deparse(substitute(polydeg)), 1, 1)=='R')
-      par.model[['polydeg']] <- polydeg
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['polydeg']] <- polydeg
     else  stop('random parameter not allowed')
   }
-  if (hasArg(polycoeff)) {
+  if (hasArg(polycoeff) && !is.null(subst <- substitute(polycoeff))) {
     u <- try(is.numeric(polycoeff) || is.logical(polycoeff) || is.language(polycoeff)
 	 || is.list(polycoeff) || is(polycoeff, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['polycoeff']] <- polycoeff
-    else if (substr(deparse(substitute(polycoeff)), 1, 1)=='R')
-      par.model[['polycoeff']] <- polycoeff
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['polycoeff']] <- polycoeff
     else  stop('random parameter not allowed')
   }
-  if (hasArg(arbitraryfct)) {
+  if (hasArg(arbitraryfct) && !is.null(subst <- substitute(arbitraryfct))) {
     u <- try(is.numeric(arbitraryfct) || is.logical(arbitraryfct) || is.language(arbitraryfct)
 	 || is.list(arbitraryfct) || is(arbitraryfct, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['arbitraryfct']] <- arbitraryfct
-    else if (substr(deparse(substitute(arbitraryfct)), 1, 1)=='R')
-      par.model[['arbitraryfct']] <- arbitraryfct
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['arbitraryfct']] <- arbitraryfct
     else  stop('random parameter not allowed')
   }
-  if (hasArg(fctcoeff)) {
+  if (hasArg(fctcoeff) && !is.null(subst <- substitute(fctcoeff))) {
     u <- try(is.numeric(fctcoeff) || is.logical(fctcoeff) || is.language(fctcoeff)
 	 || is.list(fctcoeff) || is(fctcoeff, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['fctcoeff']] <- fctcoeff
-    else if (substr(deparse(substitute(fctcoeff)), 1, 1)=='R')
-      par.model[['fctcoeff']] <- fctcoeff
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['fctcoeff']] <- fctcoeff
     else  stop('random parameter not allowed')
   }
   
@@ -89,41 +83,33 @@ RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
   if (hasArg(C8)) submodels[['C8']] <- C8
   if (hasArg(C9)) submodels[['C9']] <- C9
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMplus', 
   		submodels = submodels, 
@@ -159,41 +145,33 @@ RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
   if (hasArg(C8)) submodels[['C8']] <- C8
   if (hasArg(C9)) submodels[['C9']] <- C9
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMmult', 
   		submodels = submodels, 
@@ -220,50 +198,40 @@ RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.model[['var']] <- var
-    else par.model[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['var']] <- var
+    else par.model[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.model[['scale']] <- scale
-    else par.model[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['scale']] <- scale
+    else par.model[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(anisoT)) {
+  if (hasArg(anisoT) && !is.null(subst <- substitute(anisoT))) {
     u <- try(is.numeric(anisoT) || is.logical(anisoT) || is.language(anisoT)
 	 || is.list(anisoT) || is(anisoT, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['anisoT']] <- anisoT
-    else if (substr(deparse(substitute(anisoT)), 1, 1)=='R')
-      par.model[['anisoT']] <- anisoT
-    else par.model[['anisoT']] <-
-	do.call('RRdistr', list(substitute(anisoT)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['anisoT']] <- anisoT
+    else par.model[['anisoT']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.model[['Aniso']] <- Aniso
-    else par.model[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['Aniso']] <- Aniso
+    else par.model[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.model[['proj']] <- proj
-    else par.model[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['proj']] <- proj
+    else par.model[['proj']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMS', 
@@ -291,68 +259,54 @@ RMave <- function(phi, A, z, spacetime, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(A)) {
+  if (hasArg(A) && !is.null(subst <- substitute(A))) {
     u <- try(is.numeric(A) || is.logical(A) || is.language(A)
 	 || is.list(A) || is(A, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['A']] <- A
-    else if (substr(deparse(substitute(A)), 1, 1)=='R')
-      par.model[['A']] <- A
-    else par.model[['A']] <-
-	do.call('RRdistr', list(substitute(A)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['A']] <- A
+    else par.model[['A']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(z)) {
+  if (hasArg(z) && !is.null(subst <- substitute(z))) {
     u <- try(is.numeric(z) || is.logical(z) || is.language(z)
 	 || is.list(z) || is(z, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['z']] <- z
-    else if (substr(deparse(substitute(z)), 1, 1)=='R')
-      par.model[['z']] <- z
-    else par.model[['z']] <-
-	do.call('RRdistr', list(substitute(z)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['z']] <- z
+    else par.model[['z']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(spacetime)) {
+  if (hasArg(spacetime) && !is.null(subst <- substitute(spacetime))) {
     u <- try(is.numeric(spacetime) || is.logical(spacetime) || is.language(spacetime)
 	 || is.list(spacetime) || is(spacetime, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['spacetime']] <- spacetime
-    else if (substr(deparse(substitute(spacetime)), 1, 1)=='R')
-      par.model[['spacetime']] <- spacetime
-    else par.model[['spacetime']] <-
-	do.call('RRdistr', list(substitute(spacetime)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['spacetime']] <- spacetime
+    else par.model[['spacetime']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMave', 
   		submodels = submodels, 
@@ -378,50 +332,40 @@ RMbessel <- function(nu, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbessel', 
   		submodels = submodels, 
@@ -447,113 +391,89 @@ RMbigneiting <- function(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, sca
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(kappa)) {
+  if (hasArg(kappa) && !is.null(subst <- substitute(kappa))) {
     u <- try(is.numeric(kappa) || is.logical(kappa) || is.language(kappa)
 	 || is.list(kappa) || is(kappa, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['kappa']] <- kappa
-    else if (substr(deparse(substitute(kappa)), 1, 1)=='R')
-      par.model[['kappa']] <- kappa
-    else par.model[['kappa']] <-
-	do.call('RRdistr', list(substitute(kappa)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['kappa']] <- kappa
+    else par.model[['kappa']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
-    else par.model[['mu']] <-
-	do.call('RRdistr', list(substitute(mu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
+    else par.model[['mu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
-    else par.model[['s']] <-
-	do.call('RRdistr', list(substitute(s)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
+    else par.model[['s']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(sred12)) {
+  if (hasArg(sred12) && !is.null(subst <- substitute(sred12))) {
     u <- try(is.numeric(sred12) || is.logical(sred12) || is.language(sred12)
 	 || is.list(sred12) || is(sred12, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['sred12']] <- sred12
-    else if (substr(deparse(substitute(sred12)), 1, 1)=='R')
-      par.model[['sred12']] <- sred12
-    else par.model[['sred12']] <-
-	do.call('RRdistr', list(substitute(sred12)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sred12']] <- sred12
+    else par.model[['sred12']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(gamma)) {
+  if (hasArg(gamma) && !is.null(subst <- substitute(gamma))) {
     u <- try(is.numeric(gamma) || is.logical(gamma) || is.language(gamma)
 	 || is.list(gamma) || is(gamma, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['gamma']] <- gamma
-    else if (substr(deparse(substitute(gamma)), 1, 1)=='R')
-      par.model[['gamma']] <- gamma
-    else par.model[['gamma']] <-
-	do.call('RRdistr', list(substitute(gamma)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['gamma']] <- gamma
+    else par.model[['gamma']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(cdiag)) {
+  if (hasArg(cdiag) && !is.null(subst <- substitute(cdiag))) {
     u <- try(is.numeric(cdiag) || is.logical(cdiag) || is.language(cdiag)
 	 || is.list(cdiag) || is(cdiag, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['cdiag']] <- cdiag
-    else if (substr(deparse(substitute(cdiag)), 1, 1)=='R')
-      par.model[['cdiag']] <- cdiag
-    else par.model[['cdiag']] <-
-	do.call('RRdistr', list(substitute(cdiag)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['cdiag']] <- cdiag
+    else par.model[['cdiag']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(rhored)) {
+  if (hasArg(rhored) && !is.null(subst <- substitute(rhored))) {
     u <- try(is.numeric(rhored) || is.logical(rhored) || is.language(rhored)
 	 || is.list(rhored) || is(rhored, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['rhored']] <- rhored
-    else if (substr(deparse(substitute(rhored)), 1, 1)=='R')
-      par.model[['rhored']] <- rhored
-    else par.model[['rhored']] <-
-	do.call('RRdistr', list(substitute(rhored)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rhored']] <- rhored
+    else par.model[['rhored']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(c)) {
+  if (hasArg(c) && !is.null(subst <- substitute(c))) {
     u <- try(is.numeric(c) || is.logical(c) || is.language(c)
 	 || is.list(c) || is(c, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['c']] <- c
-    else if (substr(deparse(substitute(c)), 1, 1)=='R')
-      par.model[['c']] <- c
-    else par.model[['c']] <-
-	do.call('RRdistr', list(substitute(c)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['c']] <- c
+    else par.model[['c']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbigneiting', 
   		submodels = submodels, 
@@ -580,50 +500,40 @@ RMbernoulli <- function(phi, threshold, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(threshold)) {
+  if (hasArg(threshold) && !is.null(subst <- substitute(threshold))) {
     u <- try(is.numeric(threshold) || is.logical(threshold) || is.language(threshold)
 	 || is.list(threshold) || is(threshold, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['threshold']] <- threshold
-    else if (substr(deparse(substitute(threshold)), 1, 1)=='R')
-      par.model[['threshold']] <- threshold
-    else par.model[['threshold']] <-
-	do.call('RRdistr', list(substitute(threshold)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['threshold']] <- threshold
+    else par.model[['threshold']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbernoulli', 
   		submodels = submodels, 
@@ -649,113 +559,89 @@ RMbiwm <- function(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var, scal
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nudiag)) {
+  if (hasArg(nudiag) && !is.null(subst <- substitute(nudiag))) {
     u <- try(is.numeric(nudiag) || is.logical(nudiag) || is.language(nudiag)
 	 || is.list(nudiag) || is(nudiag, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nudiag']] <- nudiag
-    else if (substr(deparse(substitute(nudiag)), 1, 1)=='R')
-      par.model[['nudiag']] <- nudiag
-    else par.model[['nudiag']] <-
-	do.call('RRdistr', list(substitute(nudiag)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nudiag']] <- nudiag
+    else par.model[['nudiag']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(nured12)) {
+  if (hasArg(nured12) && !is.null(subst <- substitute(nured12))) {
     u <- try(is.numeric(nured12) || is.logical(nured12) || is.language(nured12)
 	 || is.list(nured12) || is(nured12, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nured12']] <- nured12
-    else if (substr(deparse(substitute(nured12)), 1, 1)=='R')
-      par.model[['nured12']] <- nured12
-    else par.model[['nured12']] <-
-	do.call('RRdistr', list(substitute(nured12)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nured12']] <- nured12
+    else par.model[['nured12']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
-    else par.model[['s']] <-
-	do.call('RRdistr', list(substitute(s)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
+    else par.model[['s']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(cdiag)) {
+  if (hasArg(cdiag) && !is.null(subst <- substitute(cdiag))) {
     u <- try(is.numeric(cdiag) || is.logical(cdiag) || is.language(cdiag)
 	 || is.list(cdiag) || is(cdiag, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['cdiag']] <- cdiag
-    else if (substr(deparse(substitute(cdiag)), 1, 1)=='R')
-      par.model[['cdiag']] <- cdiag
-    else par.model[['cdiag']] <-
-	do.call('RRdistr', list(substitute(cdiag)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['cdiag']] <- cdiag
+    else par.model[['cdiag']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(rhored)) {
+  if (hasArg(rhored) && !is.null(subst <- substitute(rhored))) {
     u <- try(is.numeric(rhored) || is.logical(rhored) || is.language(rhored)
 	 || is.list(rhored) || is(rhored, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['rhored']] <- rhored
-    else if (substr(deparse(substitute(rhored)), 1, 1)=='R')
-      par.model[['rhored']] <- rhored
-    else par.model[['rhored']] <-
-	do.call('RRdistr', list(substitute(rhored)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rhored']] <- rhored
+    else par.model[['rhored']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(c)) {
+  if (hasArg(c) && !is.null(subst <- substitute(c))) {
     u <- try(is.numeric(c) || is.logical(c) || is.language(c)
 	 || is.list(c) || is(c, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['c']] <- c
-    else if (substr(deparse(substitute(c)), 1, 1)=='R')
-      par.model[['c']] <- c
-    else par.model[['c']] <-
-	do.call('RRdistr', list(substitute(c)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['c']] <- c
+    else par.model[['c']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(notinvnu)) {
+  if (hasArg(notinvnu) && !is.null(subst <- substitute(notinvnu))) {
     u <- try(is.numeric(notinvnu) || is.logical(notinvnu) || is.language(notinvnu)
 	 || is.list(notinvnu) || is(notinvnu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['notinvnu']] <- notinvnu
-    else if (substr(deparse(substitute(notinvnu)), 1, 1)=='R')
-      par.model[['notinvnu']] <- notinvnu
-    else par.model[['notinvnu']] <-
-	do.call('RRdistr', list(substitute(notinvnu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['notinvnu']] <- notinvnu
+    else par.model[['notinvnu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbiwm', 
   		submodels = submodels, 
@@ -782,41 +668,33 @@ RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbrownresnick', 
   		submodels = submodels, 
@@ -843,41 +721,33 @@ RMbr2bg <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbr2bg', 
   		submodels = submodels, 
@@ -904,41 +774,33 @@ RMbr2eg <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMbr2eg', 
   		submodels = submodels, 
@@ -964,50 +826,40 @@ RMcauchy <- function(gamma, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(gamma)) {
+  if (hasArg(gamma) && !is.null(subst <- substitute(gamma))) {
     u <- try(is.numeric(gamma) || is.logical(gamma) || is.language(gamma)
 	 || is.list(gamma) || is(gamma, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['gamma']] <- gamma
-    else if (substr(deparse(substitute(gamma)), 1, 1)=='R')
-      par.model[['gamma']] <- gamma
-    else par.model[['gamma']] <-
-	do.call('RRdistr', list(substitute(gamma)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['gamma']] <- gamma
+    else par.model[['gamma']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcauchy', 
   		submodels = submodels, 
@@ -1033,41 +885,33 @@ RMcircular <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcircular', 
   		submodels = submodels, 
@@ -1093,68 +937,54 @@ RMconstant <- function(M, vdim, element, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(M)) {
+  if (hasArg(M) && !is.null(subst <- substitute(M))) {
     u <- try(is.numeric(M) || is.logical(M) || is.language(M)
 	 || is.list(M) || is(M, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['M']] <- M
-    else if (substr(deparse(substitute(M)), 1, 1)=='R')
-      par.model[['M']] <- M
-    else par.model[['M']] <-
-	do.call('RRdistr', list(substitute(M)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['M']] <- M
+    else par.model[['M']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(vdim)) {
+  if (hasArg(vdim) && !is.null(subst <- substitute(vdim))) {
     u <- try(is.numeric(vdim) || is.logical(vdim) || is.language(vdim)
 	 || is.list(vdim) || is(vdim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['vdim']] <- vdim
-    else if (substr(deparse(substitute(vdim)), 1, 1)=='R')
-      par.model[['vdim']] <- vdim
-    else par.model[['vdim']] <-
-	do.call('RRdistr', list(substitute(vdim)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['vdim']] <- vdim
+    else par.model[['vdim']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(element)) {
+  if (hasArg(element) && !is.null(subst <- substitute(element))) {
     u <- try(is.numeric(element) || is.logical(element) || is.language(element)
 	 || is.list(element) || is(element, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['element']] <- element
-    else if (substr(deparse(substitute(element)), 1, 1)=='R')
-      par.model[['element']] <- element
-    else par.model[['element']] <-
-	do.call('RRdistr', list(substitute(element)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['element']] <- element
+    else par.model[['element']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMconstant', 
   		submodels = submodels, 
@@ -1181,68 +1011,54 @@ RMcoxisham <- function(phi, mu, D, beta, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
-    else par.model[['mu']] <-
-	do.call('RRdistr', list(substitute(mu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
+    else par.model[['mu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(D)) {
+  if (hasArg(D) && !is.null(subst <- substitute(D))) {
     u <- try(is.numeric(D) || is.logical(D) || is.language(D)
 	 || is.list(D) || is(D, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['D']] <- D
-    else if (substr(deparse(substitute(D)), 1, 1)=='R')
-      par.model[['D']] <- D
-    else par.model[['D']] <-
-	do.call('RRdistr', list(substitute(D)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['D']] <- D
+    else par.model[['D']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(beta)) {
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
     u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
 	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['beta']] <- beta
-    else if (substr(deparse(substitute(beta)), 1, 1)=='R')
-      par.model[['beta']] <- beta
-    else par.model[['beta']] <-
-	do.call('RRdistr', list(substitute(beta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcoxisham', 
   		submodels = submodels, 
@@ -1268,41 +1084,33 @@ RMcubic <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcubic', 
   		submodels = submodels, 
@@ -1329,41 +1137,33 @@ RMcurlfree <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcurlfree', 
   		submodels = submodels, 
@@ -1390,59 +1190,47 @@ RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(diameter)) {
+  if (hasArg(diameter) && !is.null(subst <- substitute(diameter))) {
     u <- try(is.numeric(diameter) || is.logical(diameter) || is.language(diameter)
 	 || is.list(diameter) || is(diameter, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['diameter']] <- diameter
-    else if (substr(deparse(substitute(diameter)), 1, 1)=='R')
-      par.model[['diameter']] <- diameter
-    else par.model[['diameter']] <-
-	do.call('RRdistr', list(substitute(diameter)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diameter']] <- diameter
+    else par.model[['diameter']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(a)) {
+  if (hasArg(a) && !is.null(subst <- substitute(a))) {
     u <- try(is.numeric(a) || is.logical(a) || is.language(a)
 	 || is.list(a) || is(a, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['a']] <- a
-    else if (substr(deparse(substitute(a)), 1, 1)=='R')
-      par.model[['a']] <- a
-    else par.model[['a']] <-
-	do.call('RRdistr', list(substitute(a)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['a']] <- a
+    else par.model[['a']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMcutoff', 
   		submodels = submodels, 
@@ -1468,59 +1256,47 @@ RMdagum <- function(beta, gamma, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(beta)) {
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
     u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
 	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['beta']] <- beta
-    else if (substr(deparse(substitute(beta)), 1, 1)=='R')
-      par.model[['beta']] <- beta
-    else par.model[['beta']] <-
-	do.call('RRdistr', list(substitute(beta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(gamma)) {
+  if (hasArg(gamma) && !is.null(subst <- substitute(gamma))) {
     u <- try(is.numeric(gamma) || is.logical(gamma) || is.language(gamma)
 	 || is.list(gamma) || is(gamma, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['gamma']] <- gamma
-    else if (substr(deparse(substitute(gamma)), 1, 1)=='R')
-      par.model[['gamma']] <- gamma
-    else par.model[['gamma']] <-
-	do.call('RRdistr', list(substitute(gamma)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['gamma']] <- gamma
+    else par.model[['gamma']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMdagum', 
   		submodels = submodels, 
@@ -1546,50 +1322,40 @@ RMdampedcos <- function(lambda, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(lambda)) {
+  if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
     u <- try(is.numeric(lambda) || is.logical(lambda) || is.language(lambda)
 	 || is.list(lambda) || is(lambda, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
-    else if (substr(deparse(substitute(lambda)), 1, 1)=='R')
-      par.model[['lambda']] <- lambda
-    else par.model[['lambda']] <-
-	do.call('RRdistr', list(substitute(lambda)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
+    else par.model[['lambda']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMdampedcos', 
   		submodels = submodels, 
@@ -1615,50 +1381,40 @@ RMdewijsian <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMdewijsian', 
   		submodels = submodels, 
@@ -1685,41 +1441,33 @@ RMdivfree <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMdivfree', 
   		submodels = submodels, 
@@ -1745,68 +1493,54 @@ RMepscauchy <- function(alpha, beta, eps, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(beta)) {
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
     u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
 	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['beta']] <- beta
-    else if (substr(deparse(substitute(beta)), 1, 1)=='R')
-      par.model[['beta']] <- beta
-    else par.model[['beta']] <-
-	do.call('RRdistr', list(substitute(beta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(eps)) {
+  if (hasArg(eps) && !is.null(subst <- substitute(eps))) {
     u <- try(is.numeric(eps) || is.logical(eps) || is.language(eps)
 	 || is.list(eps) || is(eps, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['eps']] <- eps
-    else if (substr(deparse(substitute(eps)), 1, 1)=='R')
-      par.model[['eps']] <- eps
-    else par.model[['eps']] <-
-	do.call('RRdistr', list(substitute(eps)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['eps']] <- eps
+    else par.model[['eps']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMepscauchy', 
   		submodels = submodels, 
@@ -1832,41 +1566,33 @@ RMexp <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMexp', 
   		submodels = submodels, 
@@ -1893,59 +1619,47 @@ RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(n)) {
+  if (hasArg(n) && !is.null(subst <- substitute(n))) {
     u <- try(is.numeric(n) || is.logical(n) || is.language(n)
 	 || is.list(n) || is(n, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['n']] <- n
-    else if (substr(deparse(substitute(n)), 1, 1)=='R')
-      par.model[['n']] <- n
-    else par.model[['n']] <-
-	do.call('RRdistr', list(substitute(n)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['n']] <- n
+    else par.model[['n']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(standardised)) {
+  if (hasArg(standardised) && !is.null(subst <- substitute(standardised))) {
     u <- try(is.numeric(standardised) || is.logical(standardised) || is.language(standardised)
 	 || is.list(standardised) || is(standardised, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['standardised']] <- standardised
-    else if (substr(deparse(substitute(standardised)), 1, 1)=='R')
-      par.model[['standardised']] <- standardised
-    else par.model[['standardised']] <-
-	do.call('RRdistr', list(substitute(standardised)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['standardised']] <- standardised
+    else par.model[['standardised']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMexponential', 
   		submodels = submodels, 
@@ -1972,41 +1686,33 @@ RMschlather <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMschlather', 
   		submodels = submodels, 
@@ -2032,50 +1738,40 @@ RMfractdiff <- function(a, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(a)) {
+  if (hasArg(a) && !is.null(subst <- substitute(a))) {
     u <- try(is.numeric(a) || is.logical(a) || is.language(a)
 	 || is.list(a) || is(a, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['a']] <- a
-    else if (substr(deparse(substitute(a)), 1, 1)=='R')
-      par.model[['a']] <- a
-    else par.model[['a']] <-
-	do.call('RRdistr', list(substitute(a)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['a']] <- a
+    else par.model[['a']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMfractdiff', 
   		submodels = submodels, 
@@ -2101,50 +1797,40 @@ RMfbm <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMfbm', 
   		submodels = submodels, 
@@ -2170,50 +1856,40 @@ RMfractgauss <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMfractgauss', 
   		submodels = submodels, 
@@ -2239,41 +1915,33 @@ RMgauss <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMgauss', 
   		submodels = submodels, 
@@ -2299,59 +1967,47 @@ RMgenfbm <- function(alpha, delta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(delta)) {
+  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
     u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
 	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(substitute(delta)), 1, 1)=='R')
-      par.model[['delta']] <- delta
-    else par.model[['delta']] <-
-	do.call('RRdistr', list(substitute(delta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
+    else par.model[['delta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMgenfbm', 
   		submodels = submodels, 
@@ -2377,59 +2033,47 @@ RMgencauchy <- function(alpha, beta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(beta)) {
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
     u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
 	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['beta']] <- beta
-    else if (substr(deparse(substitute(beta)), 1, 1)=='R')
-      par.model[['beta']] <- beta
-    else par.model[['beta']] <-
-	do.call('RRdistr', list(substitute(beta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMgencauchy', 
   		submodels = submodels, 
@@ -2455,59 +2099,47 @@ RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(kappa)) {
+  if (hasArg(kappa) && !is.null(subst <- substitute(kappa))) {
     u <- try(is.numeric(kappa) || is.logical(kappa) || is.language(kappa)
 	 || is.list(kappa) || is(kappa, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['kappa']] <- kappa
-    else if (substr(deparse(substitute(kappa)), 1, 1)=='R')
-      par.model[['kappa']] <- kappa
-    else par.model[['kappa']] <-
-	do.call('RRdistr', list(substitute(kappa)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['kappa']] <- kappa
+    else par.model[['kappa']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
-    else par.model[['mu']] <-
-	do.call('RRdistr', list(substitute(mu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
+    else par.model[['mu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMgengneiting', 
   		submodels = submodels, 
@@ -2533,41 +2165,33 @@ RMgneiting <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMgneiting', 
   		submodels = submodels, 
@@ -2593,68 +2217,54 @@ RMhyperbolic <- function(nu, lambda, delta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(lambda)) {
+  if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
     u <- try(is.numeric(lambda) || is.logical(lambda) || is.language(lambda)
 	 || is.list(lambda) || is(lambda, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
-    else if (substr(deparse(substitute(lambda)), 1, 1)=='R')
-      par.model[['lambda']] <- lambda
-    else par.model[['lambda']] <-
-	do.call('RRdistr', list(substitute(lambda)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
+    else par.model[['lambda']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(delta)) {
+  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
     u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
 	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(substitute(delta)), 1, 1)=='R')
-      par.model[['delta']] <- delta
-    else par.model[['delta']] <-
-	do.call('RRdistr', list(substitute(delta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
+    else par.model[['delta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMhyperbolic', 
   		submodels = submodels, 
@@ -2680,68 +2290,54 @@ RMiaco <- function(nu, lambda, delta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(lambda)) {
+  if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
     u <- try(is.numeric(lambda) || is.logical(lambda) || is.language(lambda)
 	 || is.list(lambda) || is(lambda, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
-    else if (substr(deparse(substitute(lambda)), 1, 1)=='R')
-      par.model[['lambda']] <- lambda
-    else par.model[['lambda']] <-
-	do.call('RRdistr', list(substitute(lambda)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
+    else par.model[['lambda']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(delta)) {
+  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
     u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
 	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(substitute(delta)), 1, 1)=='R')
-      par.model[['delta']] <- delta
-    else par.model[['delta']] <-
-	do.call('RRdistr', list(substitute(delta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
+    else par.model[['delta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMiaco', 
   		submodels = submodels, 
@@ -2768,50 +2364,40 @@ RMid <- function(phi, vdim, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(vdim)) {
+  if (hasArg(vdim) && !is.null(subst <- substitute(vdim))) {
     u <- try(is.numeric(vdim) || is.logical(vdim) || is.language(vdim)
 	 || is.list(vdim) || is(vdim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['vdim']] <- vdim
-    else if (substr(deparse(substitute(vdim)), 1, 1)=='R')
-      par.model[['vdim']] <- vdim
-    else par.model[['vdim']] <-
-	do.call('RRdistr', list(substitute(vdim)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['vdim']] <- vdim
+    else par.model[['vdim']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMid', 
   		submodels = submodels, 
@@ -2837,41 +2423,33 @@ RMkolmogorov <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMkolmogorov', 
   		submodels = submodels, 
@@ -2897,59 +2475,47 @@ RMlgd <- function(alpha, beta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(beta)) {
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
     u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
 	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['beta']] <- beta
-    else if (substr(deparse(substitute(beta)), 1, 1)=='R')
-      par.model[['beta']] <- beta
-    else par.model[['beta']] <-
-	do.call('RRdistr', list(substitute(beta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMlgd', 
   		submodels = submodels, 
@@ -2976,59 +2542,47 @@ RMmastein <- function(phi, nu, delta, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(delta)) {
+  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
     u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
 	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(substitute(delta)), 1, 1)=='R')
-      par.model[['delta']] <- delta
-    else par.model[['delta']] <-
-	do.call('RRdistr', list(substitute(delta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
+    else par.model[['delta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMmastein', 
   		submodels = submodels, 
@@ -3055,59 +2609,47 @@ RMma <- function(phi, alpha, theta, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(theta)) {
+  if (hasArg(theta) && !is.null(subst <- substitute(theta))) {
     u <- try(is.numeric(theta) || is.logical(theta) || is.language(theta)
 	 || is.list(theta) || is(theta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['theta']] <- theta
-    else if (substr(deparse(substitute(theta)), 1, 1)=='R')
-      par.model[['theta']] <- theta
-    else par.model[['theta']] <-
-	do.call('RRdistr', list(substitute(theta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['theta']] <- theta
+    else par.model[['theta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMma', 
   		submodels = submodels, 
@@ -3134,41 +2676,33 @@ RMintexp <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMintexp', 
   		submodels = submodels, 
@@ -3195,50 +2729,40 @@ RMmatrix <- function(phi, M, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(M)) {
+  if (hasArg(M) && !is.null(subst <- substitute(M))) {
     u <- try(is.numeric(M) || is.logical(M) || is.language(M)
 	 || is.list(M) || is(M, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['M']] <- M
-    else if (substr(deparse(substitute(M)), 1, 1)=='R')
-      par.model[['M']] <- M
-    else par.model[['M']] <-
-	do.call('RRdistr', list(substitute(M)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['M']] <- M
+    else par.model[['M']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMmatrix', 
   		submodels = submodels, 
@@ -3264,59 +2788,47 @@ RMmatern <- function(nu, notinvnu, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(notinvnu)) {
+  if (hasArg(notinvnu) && !is.null(subst <- substitute(notinvnu))) {
     u <- try(is.numeric(notinvnu) || is.logical(notinvnu) || is.language(notinvnu)
 	 || is.list(notinvnu) || is(notinvnu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['notinvnu']] <- notinvnu
-    else if (substr(deparse(substitute(notinvnu)), 1, 1)=='R')
-      par.model[['notinvnu']] <- notinvnu
-    else par.model[['notinvnu']] <-
-	do.call('RRdistr', list(substitute(notinvnu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['notinvnu']] <- notinvnu
+    else par.model[['notinvnu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMmatern', 
   		submodels = submodels, 
@@ -3352,50 +2864,40 @@ RMmqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, A
   if (hasArg(C8)) submodels[['C8']] <- C8
   if (hasArg(C9)) submodels[['C9']] <- C9
   
-  if (hasArg(theta)) {
+  if (hasArg(theta) && !is.null(subst <- substitute(theta))) {
     u <- try(is.numeric(theta) || is.logical(theta) || is.language(theta)
 	 || is.list(theta) || is(theta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['theta']] <- theta
-    else if (substr(deparse(substitute(theta)), 1, 1)=='R')
-      par.model[['theta']] <- theta
-    else par.model[['theta']] <-
-	do.call('RRdistr', list(substitute(theta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['theta']] <- theta
+    else par.model[['theta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMmqam', 
   		submodels = submodels, 
@@ -3422,41 +2924,33 @@ RMnatsc <- function(phi, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMnatsc', 
   		submodels = submodels, 
@@ -3482,50 +2976,40 @@ RMnonstwm <- function(nu, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMnonstwm', 
   		submodels = submodels, 
@@ -3553,50 +3037,40 @@ RMnsst <- function(phi, psi, delta, var, scale, Aniso, proj) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(psi)) submodels[['psi']] <- psi
   
-  if (hasArg(delta)) {
+  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
     u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
 	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(substitute(delta)), 1, 1)=='R')
-      par.model[['delta']] <- delta
-    else par.model[['delta']] <-
-	do.call('RRdistr', list(substitute(delta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
+    else par.model[['delta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMnsst', 
   		submodels = submodels, 
@@ -3622,59 +3096,47 @@ RMnugget <- function(tol, vdim, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(tol)) {
+  if (hasArg(tol) && !is.null(subst <- substitute(tol))) {
     u <- try(is.numeric(tol) || is.logical(tol) || is.language(tol)
 	 || is.list(tol) || is(tol, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tol']] <- tol
-    else if (substr(deparse(substitute(tol)), 1, 1)=='R')
-      par.model[['tol']] <- tol
-    else par.model[['tol']] <-
-	do.call('RRdistr', list(substitute(tol)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tol']] <- tol
+    else par.model[['tol']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(vdim)) {
+  if (hasArg(vdim) && !is.null(subst <- substitute(vdim))) {
     u <- try(is.numeric(vdim) || is.logical(vdim) || is.language(vdim)
 	 || is.list(vdim) || is(vdim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['vdim']] <- vdim
-    else if (substr(deparse(substitute(vdim)), 1, 1)=='R')
-      par.model[['vdim']] <- vdim
-    else par.model[['vdim']] <-
-	do.call('RRdistr', list(substitute(vdim)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['vdim']] <- vdim
+    else par.model[['vdim']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMnugget', 
   		submodels = submodels, 
@@ -3700,50 +3162,40 @@ RMparswm <- function(nudiag, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nudiag)) {
+  if (hasArg(nudiag) && !is.null(subst <- substitute(nudiag))) {
     u <- try(is.numeric(nudiag) || is.logical(nudiag) || is.language(nudiag)
 	 || is.list(nudiag) || is(nudiag, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nudiag']] <- nudiag
-    else if (substr(deparse(substitute(nudiag)), 1, 1)=='R')
-      par.model[['nudiag']] <- nudiag
-    else par.model[['nudiag']] <-
-	do.call('RRdistr', list(substitute(nudiag)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nudiag']] <- nudiag
+    else par.model[['nudiag']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMparswm', 
   		submodels = submodels, 
@@ -3769,41 +3221,33 @@ RMpenta <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMpenta', 
   		submodels = submodels, 
@@ -3829,50 +3273,40 @@ RMaskey <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMaskey', 
   		submodels = submodels, 
@@ -3899,50 +3333,40 @@ RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMpower', 
   		submodels = submodels, 
@@ -3978,50 +3402,40 @@ RMqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, An
   if (hasArg(C8)) submodels[['C8']] <- C8
   if (hasArg(C9)) submodels[['C9']] <- C9
   
-  if (hasArg(theta)) {
+  if (hasArg(theta) && !is.null(subst <- substitute(theta))) {
     u <- try(is.numeric(theta) || is.logical(theta) || is.language(theta)
 	 || is.list(theta) || is(theta, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['theta']] <- theta
-    else if (substr(deparse(substitute(theta)), 1, 1)=='R')
-      par.model[['theta']] <- theta
-    else par.model[['theta']] <-
-	do.call('RRdistr', list(substitute(theta)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['theta']] <- theta
+    else par.model[['theta']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMqam', 
   		submodels = submodels, 
@@ -4047,50 +3461,40 @@ RMqexp <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMqexp', 
   		submodels = submodels, 
@@ -4117,68 +3521,54 @@ RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(M)) {
+  if (hasArg(M) && !is.null(subst <- substitute(M))) {
     u <- try(is.numeric(M) || is.logical(M) || is.language(M)
 	 || is.list(M) || is(M, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['M']] <- M
-    else if (substr(deparse(substitute(M)), 1, 1)=='R')
-      par.model[['M']] <- M
-    else par.model[['M']] <-
-	do.call('RRdistr', list(substitute(M)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['M']] <- M
+    else par.model[['M']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(diag)) {
+  if (hasArg(diag) && !is.null(subst <- substitute(diag))) {
     u <- try(is.numeric(diag) || is.logical(diag) || is.language(diag)
 	 || is.list(diag) || is(diag, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['diag']] <- diag
-    else if (substr(deparse(substitute(diag)), 1, 1)=='R')
-      par.model[['diag']] <- diag
-    else par.model[['diag']] <-
-	do.call('RRdistr', list(substitute(diag)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diag']] <- diag
+    else par.model[['diag']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(rhored)) {
+  if (hasArg(rhored) && !is.null(subst <- substitute(rhored))) {
     u <- try(is.numeric(rhored) || is.logical(rhored) || is.language(rhored)
 	 || is.list(rhored) || is(rhored, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['rhored']] <- rhored
-    else if (substr(deparse(substitute(rhored)), 1, 1)=='R')
-      par.model[['rhored']] <- rhored
-    else par.model[['rhored']] <-
-	do.call('RRdistr', list(substitute(rhored)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rhored']] <- rhored
+    else par.model[['rhored']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMschur', 
   		submodels = submodels, 
@@ -4205,50 +3595,40 @@ RMdelay <- function(phi, s, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
-    else par.model[['s']] <-
-	do.call('RRdistr', list(substitute(s)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
+    else par.model[['s']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMdelay', 
   		submodels = submodels, 
@@ -4274,41 +3654,33 @@ RMspheric <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMspheric', 
   		submodels = submodels, 
@@ -4334,50 +3706,40 @@ RMstable <- function(alpha, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMstable', 
   		submodels = submodels, 
@@ -4404,59 +3766,47 @@ RMintrinsic <- function(phi, diameter, rawR, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(diameter)) {
+  if (hasArg(diameter) && !is.null(subst <- substitute(diameter))) {
     u <- try(is.numeric(diameter) || is.logical(diameter) || is.language(diameter)
 	 || is.list(diameter) || is(diameter, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['diameter']] <- diameter
-    else if (substr(deparse(substitute(diameter)), 1, 1)=='R')
-      par.model[['diameter']] <- diameter
-    else par.model[['diameter']] <-
-	do.call('RRdistr', list(substitute(diameter)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diameter']] <- diameter
+    else par.model[['diameter']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(rawR)) {
+  if (hasArg(rawR) && !is.null(subst <- substitute(rawR))) {
     u <- try(is.numeric(rawR) || is.logical(rawR) || is.language(rawR)
 	 || is.list(rawR) || is(rawR, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['rawR']] <- rawR
-    else if (substr(deparse(substitute(rawR)), 1, 1)=='R')
-      par.model[['rawR']] <- rawR
-    else par.model[['rawR']] <-
-	do.call('RRdistr', list(substitute(rawR)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rawR']] <- rawR
+    else par.model[['rawR']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMintrinsic', 
   		submodels = submodels, 
@@ -4482,59 +3832,47 @@ RMstein <- function(nu, z, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(z)) {
+  if (hasArg(z) && !is.null(subst <- substitute(z))) {
     u <- try(is.numeric(z) || is.logical(z) || is.language(z)
 	 || is.list(z) || is(z, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['z']] <- z
-    else if (substr(deparse(substitute(z)), 1, 1)=='R')
-      par.model[['z']] <- z
-    else par.model[['z']] <-
-	do.call('RRdistr', list(substitute(z)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['z']] <- z
+    else par.model[['z']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMstein', 
   		submodels = submodels, 
@@ -4562,68 +3900,54 @@ RMstp <- function(xi2, phi, S, z, M, var, scale, Aniso, proj) {
   if (hasArg(xi2)) submodels[['xi2']] <- xi2
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(S)) {
+  if (hasArg(S) && !is.null(subst <- substitute(S))) {
     u <- try(is.numeric(S) || is.logical(S) || is.language(S)
 	 || is.list(S) || is(S, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['S']] <- S
-    else if (substr(deparse(substitute(S)), 1, 1)=='R')
-      par.model[['S']] <- S
-    else par.model[['S']] <-
-	do.call('RRdistr', list(substitute(S)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['S']] <- S
+    else par.model[['S']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(z)) {
+  if (hasArg(z) && !is.null(subst <- substitute(z))) {
     u <- try(is.numeric(z) || is.logical(z) || is.language(z)
 	 || is.list(z) || is(z, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['z']] <- z
-    else if (substr(deparse(substitute(z)), 1, 1)=='R')
-      par.model[['z']] <- z
-    else par.model[['z']] <-
-	do.call('RRdistr', list(substitute(z)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['z']] <- z
+    else par.model[['z']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(M)) {
+  if (hasArg(M) && !is.null(subst <- substitute(M))) {
     u <- try(is.numeric(M) || is.logical(M) || is.language(M)
 	 || is.list(M) || is(M, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['M']] <- M
-    else if (substr(deparse(substitute(M)), 1, 1)=='R')
-      par.model[['M']] <- M
-    else par.model[['M']] <-
-	do.call('RRdistr', list(substitute(M)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['M']] <- M
+    else par.model[['M']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMstp', 
   		submodels = submodels, 
@@ -4650,68 +3974,54 @@ RMtbm <- function(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(fulldim)) {
+  if (hasArg(fulldim) && !is.null(subst <- substitute(fulldim))) {
     u <- try(is.numeric(fulldim) || is.logical(fulldim) || is.language(fulldim)
 	 || is.list(fulldim) || is(fulldim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['fulldim']] <- fulldim
-    else if (substr(deparse(substitute(fulldim)), 1, 1)=='R')
-      par.model[['fulldim']] <- fulldim
-    else par.model[['fulldim']] <-
-	do.call('RRdistr', list(substitute(fulldim)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['fulldim']] <- fulldim
+    else par.model[['fulldim']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(reduceddim)) {
+  if (hasArg(reduceddim) && !is.null(subst <- substitute(reduceddim))) {
     u <- try(is.numeric(reduceddim) || is.logical(reduceddim) || is.language(reduceddim)
 	 || is.list(reduceddim) || is(reduceddim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['reduceddim']] <- reduceddim
-    else if (substr(deparse(substitute(reduceddim)), 1, 1)=='R')
-      par.model[['reduceddim']] <- reduceddim
-    else par.model[['reduceddim']] <-
-	do.call('RRdistr', list(substitute(reduceddim)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['reduceddim']] <- reduceddim
+    else par.model[['reduceddim']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(layers)) {
+  if (hasArg(layers) && !is.null(subst <- substitute(layers))) {
     u <- try(is.numeric(layers) || is.logical(layers) || is.language(layers)
 	 || is.list(layers) || is(layers, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['layers']] <- layers
-    else if (substr(deparse(substitute(layers)), 1, 1)=='R')
-      par.model[['layers']] <- layers
-    else par.model[['layers']] <-
-	do.call('RRdistr', list(substitute(layers)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['layers']] <- layers
+    else par.model[['layers']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMtbm', 
   		submodels = submodels, 
@@ -4738,59 +4048,47 @@ RMvector <- function(phi, a, Dspace, var, scale, Aniso, proj) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(a)) {
+  if (hasArg(a) && !is.null(subst <- substitute(a))) {
     u <- try(is.numeric(a) || is.logical(a) || is.language(a)
 	 || is.list(a) || is(a, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['a']] <- a
-    else if (substr(deparse(substitute(a)), 1, 1)=='R')
-      par.model[['a']] <- a
-    else par.model[['a']] <-
-	do.call('RRdistr', list(substitute(a)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['a']] <- a
+    else par.model[['a']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Dspace)) {
+  if (hasArg(Dspace) && !is.null(subst <- substitute(Dspace))) {
     u <- try(is.numeric(Dspace) || is.logical(Dspace) || is.language(Dspace)
 	 || is.list(Dspace) || is(Dspace, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['Dspace']] <- Dspace
-    else if (substr(deparse(substitute(Dspace)), 1, 1)=='R')
-      par.model[['Dspace']] <- Dspace
-    else par.model[['Dspace']] <-
-	do.call('RRdistr', list(substitute(Dspace)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['Dspace']] <- Dspace
+    else par.model[['Dspace']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMvector', 
   		submodels = submodels, 
@@ -4816,41 +4114,33 @@ RMwave <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMwave', 
   		submodels = submodels, 
@@ -4876,59 +4166,47 @@ RMwhittle <- function(nu, notinvnu, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(nu)) {
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
     u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
 	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['nu']] <- nu
-    else if (substr(deparse(substitute(nu)), 1, 1)=='R')
-      par.model[['nu']] <- nu
-    else par.model[['nu']] <-
-	do.call('RRdistr', list(substitute(nu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else par.model[['nu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(notinvnu)) {
+  if (hasArg(notinvnu) && !is.null(subst <- substitute(notinvnu))) {
     u <- try(is.numeric(notinvnu) || is.logical(notinvnu) || is.language(notinvnu)
 	 || is.list(notinvnu) || is(notinvnu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['notinvnu']] <- notinvnu
-    else if (substr(deparse(substitute(notinvnu)), 1, 1)=='R')
-      par.model[['notinvnu']] <- notinvnu
-    else par.model[['notinvnu']] <-
-	do.call('RRdistr', list(substitute(notinvnu)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['notinvnu']] <- notinvnu
+    else par.model[['notinvnu']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(var)) {
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['var']] <- var
-    else if (substr(deparse(substitute(var)), 1, 1)=='R')
-      par.general[['var']] <- var
-    else par.general[['var']] <-
-	do.call('RRdistr', list(substitute(var)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.general[['scale']] <- scale
-    else par.general[['scale']] <-
-	do.call('RRdistr', list(substitute(scale)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(Aniso)) {
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
     u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
 	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
-    else if (substr(deparse(substitute(Aniso)), 1, 1)=='R')
-      par.general[['Aniso']] <- Aniso
-    else par.general[['Aniso']] <-
-	do.call('RRdistr', list(substitute(Aniso)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(proj)) {
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
     u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
 	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.general[['proj']] <- proj
-    else if (substr(deparse(substitute(proj)), 1, 1)=='R')
-      par.general[['proj']] <- proj
-    else par.general[['proj']] <-
-	do.call('RRdistr', list(substitute(proj)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
   }
   model <- new('RMmodel', call = cl, name = 'RMwhittle', 
   		submodels = submodels, 
@@ -4946,6 +4224,52 @@ RMwhittle <- new('RMmodelgenerator',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
+	)
+
+
+
+RMangle <- function(angle, ratio, diag) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg(angle) && !is.null(subst <- substitute(angle))) {
+    u <- try(is.numeric(angle) || is.logical(angle) || is.language(angle)
+	 || is.list(angle) || is(angle, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['angle']] <- angle
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['angle']] <- angle
+    else par.model[['angle']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(ratio) && !is.null(subst <- substitute(ratio))) {
+    u <- try(is.numeric(ratio) || is.logical(ratio) || is.language(ratio)
+	 || is.list(ratio) || is(ratio, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['ratio']] <- ratio
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['ratio']] <- ratio
+    else par.model[['ratio']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(diag) && !is.null(subst <- substitute(diag))) {
+    u <- try(is.numeric(diag) || is.logical(diag) || is.language(diag)
+	 || is.list(diag) || is(diag, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['diag']] <- diag
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diag']] <- diag
+    else par.model[['diag']] <- do.call('RRdistr', list(subst))
+  }
+  
+  model <- new('RMmodel', call = cl, name = 'RMangle', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMangle <- new('RMmodelgenerator',
+	.Data = RMangle,
+	type = 'shape function',
+	domain = 'single variable',
+	isotropy = 'cartesian system',
+	operator = FALSE,
+	normalmix = FALSE,
+	finiterange = FALSE,
+	maxdim = Inf,
+	vdim = -1
 	)
 
 
@@ -4979,23 +4303,19 @@ RMeaxxa <- function(E, A) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(E)) {
+  if (hasArg(E) && !is.null(subst <- substitute(E))) {
     u <- try(is.numeric(E) || is.logical(E) || is.language(E)
 	 || is.list(E) || is(E, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['E']] <- E
-    else if (substr(deparse(substitute(E)), 1, 1)=='R')
-      par.model[['E']] <- E
-    else par.model[['E']] <-
-	do.call('RRdistr', list(substitute(E)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['E']] <- E
+    else par.model[['E']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(A)) {
+  if (hasArg(A) && !is.null(subst <- substitute(A))) {
     u <- try(is.numeric(A) || is.logical(A) || is.language(A)
 	 || is.list(A) || is(A, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['A']] <- A
-    else if (substr(deparse(substitute(A)), 1, 1)=='R')
-      par.model[['A']] <- A
-    else par.model[['A']] <-
-	do.call('RRdistr', list(substitute(A)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['A']] <- A
+    else par.model[['A']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMeaxxa', 
@@ -5008,7 +4328,7 @@ RMeaxxa <- new('RMmodelgenerator',
 	.Data = RMeaxxa,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,
@@ -5022,32 +4342,26 @@ RMetaxxa <- function(E, A, alpha) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(E)) {
+  if (hasArg(E) && !is.null(subst <- substitute(E))) {
     u <- try(is.numeric(E) || is.logical(E) || is.language(E)
 	 || is.list(E) || is(E, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['E']] <- E
-    else if (substr(deparse(substitute(E)), 1, 1)=='R')
-      par.model[['E']] <- E
-    else par.model[['E']] <-
-	do.call('RRdistr', list(substitute(E)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['E']] <- E
+    else par.model[['E']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(A)) {
+  if (hasArg(A) && !is.null(subst <- substitute(A))) {
     u <- try(is.numeric(A) || is.logical(A) || is.language(A)
 	 || is.list(A) || is(A, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['A']] <- A
-    else if (substr(deparse(substitute(A)), 1, 1)=='R')
-      par.model[['A']] <- A
-    else par.model[['A']] <-
-	do.call('RRdistr', list(substitute(A)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['A']] <- A
+    else par.model[['A']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(alpha)) {
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
     u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
 	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['alpha']] <- alpha
-    else if (substr(deparse(substitute(alpha)), 1, 1)=='R')
-      par.model[['alpha']] <- alpha
-    else par.model[['alpha']] <-
-	do.call('RRdistr', list(substitute(alpha)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMetaxxa', 
@@ -5060,7 +4374,7 @@ RMetaxxa <- new('RMmodelgenerator',
 	.Data = RMetaxxa,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,
@@ -5070,27 +4384,55 @@ RMetaxxa <- new('RMmodelgenerator',
 
 
 
+RMtrafo <- function(isotropy) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg(isotropy) && !is.null(subst <- substitute(isotropy))) {
+    u <- try(is.numeric(isotropy) || is.logical(isotropy) || is.language(isotropy)
+	 || is.list(isotropy) || is(isotropy, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['isotropy']] <- isotropy
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['isotropy']] <- isotropy
+    else par.model[['isotropy']] <- do.call('RRdistr', list(subst))
+  }
+  
+  model <- new('RMmodel', call = cl, name = 'RMtrafo', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMtrafo <- new('RMmodelgenerator',
+	.Data = RMtrafo,
+	type = 'shape function',
+	domain = 'single variable',
+	isotropy = 'parameter dependent',
+	operator = FALSE,
+	normalmix = FALSE,
+	finiterange = FALSE,
+	maxdim = Inf,
+	vdim = -1
+	)
+
+
+
 RMpolygon <- function(lambda, safetyfactor) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(lambda)) {
+  if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
     u <- try(is.numeric(lambda) || is.logical(lambda) || is.language(lambda)
 	 || is.list(lambda) || is(lambda, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
-    else if (substr(deparse(substitute(lambda)), 1, 1)=='R')
-      par.model[['lambda']] <- lambda
-    else par.model[['lambda']] <-
-	do.call('RRdistr', list(substitute(lambda)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
+    else par.model[['lambda']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(safetyfactor)) {
+  if (hasArg(safetyfactor) && !is.null(subst <- substitute(safetyfactor))) {
     u <- try(is.numeric(safetyfactor) || is.logical(safetyfactor) || is.language(safetyfactor)
 	 || is.list(safetyfactor) || is(safetyfactor, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['safetyfactor']] <- safetyfactor
-    else if (substr(deparse(substitute(safetyfactor)), 1, 1)=='R')
-      par.model[['safetyfactor']] <- safetyfactor
-    else par.model[['safetyfactor']] <-
-	do.call('RRdistr', list(substitute(safetyfactor)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['safetyfactor']] <- safetyfactor
+    else par.model[['safetyfactor']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMpolygon', 
@@ -5103,7 +4445,7 @@ RMpolygon <- new('RMmodelgenerator',
 	.Data = RMpolygon,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5117,23 +4459,19 @@ RMrational <- function(A, a) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(A)) {
+  if (hasArg(A) && !is.null(subst <- substitute(A))) {
     u <- try(is.numeric(A) || is.logical(A) || is.language(A)
 	 || is.list(A) || is(A, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['A']] <- A
-    else if (substr(deparse(substitute(A)), 1, 1)=='R')
-      par.model[['A']] <- A
-    else par.model[['A']] <-
-	do.call('RRdistr', list(substitute(A)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['A']] <- A
+    else par.model[['A']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(a)) {
+  if (hasArg(a) && !is.null(subst <- substitute(a))) {
     u <- try(is.numeric(a) || is.logical(a) || is.language(a)
 	 || is.list(a) || is(a, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['a']] <- a
-    else if (substr(deparse(substitute(a)), 1, 1)=='R')
-      par.model[['a']] <- a
-    else par.model[['a']] <-
-	do.call('RRdistr', list(substitute(a)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['a']] <- a
+    else par.model[['a']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMrational', 
@@ -5146,7 +4484,7 @@ RMrational <- new('RMmodelgenerator',
 	.Data = RMrational,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,
@@ -5160,23 +4498,19 @@ RMrotat <- function(speed, phi) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(speed)) {
+  if (hasArg(speed) && !is.null(subst <- substitute(speed))) {
     u <- try(is.numeric(speed) || is.logical(speed) || is.language(speed)
 	 || is.list(speed) || is(speed, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['speed']] <- speed
-    else if (substr(deparse(substitute(speed)), 1, 1)=='R')
-      par.model[['speed']] <- speed
-    else par.model[['speed']] <-
-	do.call('RRdistr', list(substitute(speed)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['speed']] <- speed
+    else par.model[['speed']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(phi)) {
+  if (hasArg(phi) && !is.null(subst <- substitute(phi))) {
     u <- try(is.numeric(phi) || is.logical(phi) || is.language(phi)
 	 || is.list(phi) || is(phi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['phi']] <- phi
-    else if (substr(deparse(substitute(phi)), 1, 1)=='R')
-      par.model[['phi']] <- phi
-    else par.model[['phi']] <-
-	do.call('RRdistr', list(substitute(phi)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['phi']] <- phi
+    else par.model[['phi']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMrotat', 
@@ -5189,7 +4523,7 @@ RMrotat <- new('RMmodelgenerator',
 	.Data = RMrotat,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,
@@ -5203,14 +4537,12 @@ RMrotation <- function(phi) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(phi)) {
+  if (hasArg(phi) && !is.null(subst <- substitute(phi))) {
     u <- try(is.numeric(phi) || is.logical(phi) || is.language(phi)
 	 || is.list(phi) || is(phi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['phi']] <- phi
-    else if (substr(deparse(substitute(phi)), 1, 1)=='R')
-      par.model[['phi']] <- phi
-    else par.model[['phi']] <-
-	do.call('RRdistr', list(substitute(phi)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['phi']] <- phi
+    else par.model[['phi']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMrotation', 
@@ -5223,7 +4555,7 @@ RMrotation <- new('RMmodelgenerator',
 	.Data = RMrotation,
 	type = 'shape function',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,
@@ -5238,14 +4570,12 @@ RMsign <- function(phi, p) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(p)) {
+  if (hasArg(p) && !is.null(subst <- substitute(p))) {
     u <- try(is.numeric(p) || is.logical(p) || is.language(p)
 	 || is.list(p) || is(p, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['p']] <- p
-    else if (substr(deparse(substitute(p)), 1, 1)=='R')
-      par.model[['p']] <- p
-    else par.model[['p']] <-
-	do.call('RRdistr', list(substitute(p)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['p']] <- p
+    else par.model[['p']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMsign', 
@@ -5325,14 +4655,12 @@ RMtruncsupport <- function(phi, radius) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(radius)) {
+  if (hasArg(radius) && !is.null(subst <- substitute(radius))) {
     u <- try(is.numeric(radius) || is.logical(radius) || is.language(radius)
 	 || is.list(radius) || is(radius, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['radius']] <- radius
-    else if (substr(deparse(substitute(radius)), 1, 1)=='R')
-      par.model[['radius']] <- radius
-    else par.model[['radius']] <-
-	do.call('RRdistr', list(substitute(radius)))
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['radius']] <- radius
+    else par.model[['radius']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMtruncsupport', 
@@ -5359,12 +4687,11 @@ RRdeterm <- function(mean) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(mean)) {
+  if (hasArg(mean) && !is.null(subst <- substitute(mean))) {
     u <- try(is.numeric(mean) || is.logical(mean) || is.language(mean)
 	 || is.list(mean) || is(mean, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mean']] <- mean
-    else if (substr(deparse(substitute(mean)), 1, 1)=='R')
-      par.model[['mean']] <- mean
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mean']] <- mean
     else  stop('random parameter not allowed')
   }
   
@@ -5378,7 +4705,7 @@ RRdeterm <- new('RMmodelgenerator',
 	.Data = RRdeterm,
 	type = 'distribution family',
 	domain = 'calling model',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5392,28 +4719,25 @@ RRgauss <- function(mu, sd, log) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(sd)) {
+  if (hasArg(sd) && !is.null(subst <- substitute(sd))) {
     u <- try(is.numeric(sd) || is.logical(sd) || is.language(sd)
 	 || is.list(sd) || is(sd, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['sd']] <- sd
-    else if (substr(deparse(substitute(sd)), 1, 1)=='R')
-      par.model[['sd']] <- sd
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sd']] <- sd
     else  stop('random parameter not allowed')
   }
-  if (hasArg(log)) {
+  if (hasArg(log) && !is.null(subst <- substitute(log))) {
     u <- try(is.numeric(log) || is.logical(log) || is.language(log)
 	 || is.list(log) || is(log, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['log']] <- log
-    else if (substr(deparse(substitute(log)), 1, 1)=='R')
-      par.model[['log']] <- log
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['log']] <- log
     else  stop('random parameter not allowed')
   }
   
@@ -5427,7 +4751,7 @@ RRgauss <- new('RMmodelgenerator',
 	.Data = RRgauss,
 	type = 'distribution family',
 	domain = 'calling model',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -5442,20 +4766,18 @@ RRloc <- function(phi, mu, scale) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(scale)) {
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
     u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
 	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['scale']] <- scale
-    else if (substr(deparse(substitute(scale)), 1, 1)=='R')
-      par.model[['scale']] <- scale
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['scale']] <- scale
     else  stop('random parameter not allowed')
   }
   
@@ -5469,7 +4791,7 @@ RRloc <- new('RMmodelgenerator',
 	.Data = RRloc,
 	type = 'distribution family',
 	domain = 'calling model',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5484,92 +4806,81 @@ RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, inner
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(safety)) {
+  if (hasArg(safety) && !is.null(subst <- substitute(safety))) {
     u <- try(is.numeric(safety) || is.logical(safety) || is.language(safety)
 	 || is.list(safety) || is(safety, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['safety']] <- safety
-    else if (substr(deparse(substitute(safety)), 1, 1)=='R')
-      par.model[['safety']] <- safety
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['safety']] <- safety
     else  stop('random parameter not allowed')
   }
-  if (hasArg(minsteplen)) {
+  if (hasArg(minsteplen) && !is.null(subst <- substitute(minsteplen))) {
     u <- try(is.numeric(minsteplen) || is.logical(minsteplen) || is.language(minsteplen)
 	 || is.list(minsteplen) || is(minsteplen, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['minsteplen']] <- minsteplen
-    else if (substr(deparse(substitute(minsteplen)), 1, 1)=='R')
-      par.model[['minsteplen']] <- minsteplen
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['minsteplen']] <- minsteplen
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxsteps)) {
+  if (hasArg(maxsteps) && !is.null(subst <- substitute(maxsteps))) {
     u <- try(is.numeric(maxsteps) || is.logical(maxsteps) || is.language(maxsteps)
 	 || is.list(maxsteps) || is(maxsteps, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxsteps']] <- maxsteps
-    else if (substr(deparse(substitute(maxsteps)), 1, 1)=='R')
-      par.model[['maxsteps']] <- maxsteps
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxsteps']] <- maxsteps
     else  stop('random parameter not allowed')
   }
-  if (hasArg(parts)) {
+  if (hasArg(parts) && !is.null(subst <- substitute(parts))) {
     u <- try(is.numeric(parts) || is.logical(parts) || is.language(parts)
 	 || is.list(parts) || is(parts, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['parts']] <- parts
-    else if (substr(deparse(substitute(parts)), 1, 1)=='R')
-      par.model[['parts']] <- parts
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['parts']] <- parts
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxit)) {
+  if (hasArg(maxit) && !is.null(subst <- substitute(maxit))) {
     u <- try(is.numeric(maxit) || is.logical(maxit) || is.language(maxit)
 	 || is.list(maxit) || is(maxit, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxit']] <- maxit
-    else if (substr(deparse(substitute(maxit)), 1, 1)=='R')
-      par.model[['maxit']] <- maxit
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxit']] <- maxit
     else  stop('random parameter not allowed')
   }
-  if (hasArg(innermin)) {
+  if (hasArg(innermin) && !is.null(subst <- substitute(innermin))) {
     u <- try(is.numeric(innermin) || is.logical(innermin) || is.language(innermin)
 	 || is.list(innermin) || is(innermin, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['innermin']] <- innermin
-    else if (substr(deparse(substitute(innermin)), 1, 1)=='R')
-      par.model[['innermin']] <- innermin
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['innermin']] <- innermin
     else  stop('random parameter not allowed')
   }
-  if (hasArg(outermax)) {
+  if (hasArg(outermax) && !is.null(subst <- substitute(outermax))) {
     u <- try(is.numeric(outermax) || is.logical(outermax) || is.language(outermax)
 	 || is.list(outermax) || is(outermax, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['outermax']] <- outermax
-    else if (substr(deparse(substitute(outermax)), 1, 1)=='R')
-      par.model[['outermax']] <- outermax
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['outermax']] <- outermax
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mcmc_n)) {
+  if (hasArg(mcmc_n) && !is.null(subst <- substitute(mcmc_n))) {
     u <- try(is.numeric(mcmc_n) || is.logical(mcmc_n) || is.language(mcmc_n)
 	 || is.list(mcmc_n) || is(mcmc_n, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mcmc_n']] <- mcmc_n
-    else if (substr(deparse(substitute(mcmc_n)), 1, 1)=='R')
-      par.model[['mcmc_n']] <- mcmc_n
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mcmc_n']] <- mcmc_n
     else  stop('random parameter not allowed')
   }
-  if (hasArg(normed)) {
+  if (hasArg(normed) && !is.null(subst <- substitute(normed))) {
     u <- try(is.numeric(normed) || is.logical(normed) || is.language(normed)
 	 || is.list(normed) || is(normed, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['normed']] <- normed
-    else if (substr(deparse(substitute(normed)), 1, 1)=='R')
-      par.model[['normed']] <- normed
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['normed']] <- normed
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx)) {
+  if (hasArg(approx) && !is.null(subst <- substitute(approx))) {
     u <- try(is.numeric(approx) || is.logical(approx) || is.language(approx)
 	 || is.list(approx) || is(approx, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx']] <- approx
-    else if (substr(deparse(substitute(approx)), 1, 1)=='R')
-      par.model[['approx']] <- approx
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx']] <- approx
     else  stop('random parameter not allowed')
   }
-  if (hasArg(onesided)) {
+  if (hasArg(onesided) && !is.null(subst <- substitute(onesided))) {
     u <- try(is.numeric(onesided) || is.logical(onesided) || is.language(onesided)
 	 || is.list(onesided) || is(onesided, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['onesided']] <- onesided
-    else if (substr(deparse(substitute(onesided)), 1, 1)=='R')
-      par.model[['onesided']] <- onesided
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['onesided']] <- onesided
     else  stop('random parameter not allowed')
   }
   
@@ -5583,7 +4894,7 @@ RRrectangular <- new('RMmodelgenerator',
 	.Data = RRrectangular,
 	type = 'distribution family',
 	domain = 'calling model',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5597,20 +4908,18 @@ RRspherical <- function(spacedim, balldim) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(spacedim)) {
+  if (hasArg(spacedim) && !is.null(subst <- substitute(spacedim))) {
     u <- try(is.numeric(spacedim) || is.logical(spacedim) || is.language(spacedim)
 	 || is.list(spacedim) || is(spacedim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['spacedim']] <- spacedim
-    else if (substr(deparse(substitute(spacedim)), 1, 1)=='R')
-      par.model[['spacedim']] <- spacedim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['spacedim']] <- spacedim
     else  stop('random parameter not allowed')
   }
-  if (hasArg(balldim)) {
+  if (hasArg(balldim) && !is.null(subst <- substitute(balldim))) {
     u <- try(is.numeric(balldim) || is.logical(balldim) || is.language(balldim)
 	 || is.list(balldim) || is(balldim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['balldim']] <- balldim
-    else if (substr(deparse(substitute(balldim)), 1, 1)=='R')
-      par.model[['balldim']] <- balldim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['balldim']] <- balldim
     else  stop('random parameter not allowed')
   }
   
@@ -5624,7 +4933,7 @@ RRspherical <- new('RMmodelgenerator',
 	.Data = RRspherical,
 	type = 'distribution family',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5638,20 +4947,18 @@ RRunif <- function(min, max) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  if (hasArg(min)) {
+  if (hasArg(min) && !is.null(subst <- substitute(min))) {
     u <- try(is.numeric(min) || is.logical(min) || is.language(min)
 	 || is.list(min) || is(min, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['min']] <- min
-    else if (substr(deparse(substitute(min)), 1, 1)=='R')
-      par.model[['min']] <- min
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['min']] <- min
     else  stop('random parameter not allowed')
   }
-  if (hasArg(max)) {
+  if (hasArg(max) && !is.null(subst <- substitute(max))) {
     u <- try(is.numeric(max) || is.logical(max) || is.language(max)
 	 || is.list(max) || is(max, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['max']] <- max
-    else if (substr(deparse(substitute(max)), 1, 1)=='R')
-      par.model[['max']] <- max
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['max']] <- max
     else  stop('random parameter not allowed')
   }
   
@@ -5665,7 +4972,7 @@ RRunif <- new('RMmodelgenerator',
 	.Data = RRunif,
 	type = 'distribution family',
 	domain = 'calling model',
-	isotropy = 'no ratation invariance',
+	isotropy = 'cartesian system',
 	operator = FALSE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -5689,12 +4996,11 @@ RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
   if (hasArg(C8)) submodels[['C8']] <- C8
   if (hasArg(C9)) submodels[['C9']] <- C9
   
-  if (hasArg(p)) {
+  if (hasArg(p) && !is.null(subst <- substitute(p))) {
     u <- try(is.numeric(p) || is.logical(p) || is.language(p)
 	 || is.list(p) || is(p, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['p']] <- p
-    else if (substr(deparse(substitute(p)), 1, 1)=='R')
-      par.model[['p']] <- p
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['p']] <- p
     else  stop('random parameter not allowed')
   }
   
@@ -5724,20 +5030,18 @@ RPaverage <- function(phi, shape, loggauss, intensity) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(intensity)) {
+  if (hasArg(intensity) && !is.null(subst <- substitute(intensity))) {
     u <- try(is.numeric(intensity) || is.logical(intensity) || is.language(intensity)
 	 || is.list(intensity) || is(intensity, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['intensity']] <- intensity
-    else if (substr(deparse(substitute(intensity)), 1, 1)=='R')
-      par.model[['intensity']] <- intensity
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['intensity']] <- intensity
     else  stop('random parameter not allowed')
   }
   
@@ -5751,7 +5055,7 @@ RPaverage <- new('RMmodelgenerator',
 	.Data = RPaverage,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -5766,100 +5070,88 @@ RPcirculant <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tol
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(force)) {
+  if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['force']] <- force
-    else if (substr(deparse(substitute(force)), 1, 1)=='R')
-      par.model[['force']] <- force
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['force']] <- force
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mmin)) {
+  if (hasArg(mmin) && !is.null(subst <- substitute(mmin))) {
     u <- try(is.numeric(mmin) || is.logical(mmin) || is.language(mmin)
 	 || is.list(mmin) || is(mmin, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mmin']] <- mmin
-    else if (substr(deparse(substitute(mmin)), 1, 1)=='R')
-      par.model[['mmin']] <- mmin
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mmin']] <- mmin
     else  stop('random parameter not allowed')
   }
-  if (hasArg(strategy)) {
+  if (hasArg(strategy) && !is.null(subst <- substitute(strategy))) {
     u <- try(is.numeric(strategy) || is.logical(strategy) || is.language(strategy)
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
-    else if (substr(deparse(substitute(strategy)), 1, 1)=='R')
-      par.model[['strategy']] <- strategy
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxmem)) {
+  if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
     u <- try(is.numeric(maxmem) || is.logical(maxmem) || is.language(maxmem)
 	 || is.list(maxmem) || is(maxmem, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxmem']] <- maxmem
-    else if (substr(deparse(substitute(maxmem)), 1, 1)=='R')
-      par.model[['maxmem']] <- maxmem
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxmem']] <- maxmem
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolIm)) {
+  if (hasArg(tolIm) && !is.null(subst <- substitute(tolIm))) {
     u <- try(is.numeric(tolIm) || is.logical(tolIm) || is.language(tolIm)
 	 || is.list(tolIm) || is(tolIm, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolIm']] <- tolIm
-    else if (substr(deparse(substitute(tolIm)), 1, 1)=='R')
-      par.model[['tolIm']] <- tolIm
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolIm']] <- tolIm
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolRe)) {
+  if (hasArg(tolRe) && !is.null(subst <- substitute(tolRe))) {
     u <- try(is.numeric(tolRe) || is.logical(tolRe) || is.language(tolRe)
 	 || is.list(tolRe) || is(tolRe, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolRe']] <- tolRe
-    else if (substr(deparse(substitute(tolRe)), 1, 1)=='R')
-      par.model[['tolRe']] <- tolRe
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolRe']] <- tolRe
     else  stop('random parameter not allowed')
   }
-  if (hasArg(trials)) {
+  if (hasArg(trials) && !is.null(subst <- substitute(trials))) {
     u <- try(is.numeric(trials) || is.logical(trials) || is.language(trials)
 	 || is.list(trials) || is(trials, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['trials']] <- trials
-    else if (substr(deparse(substitute(trials)), 1, 1)=='R')
-      par.model[['trials']] <- trials
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['trials']] <- trials
     else  stop('random parameter not allowed')
   }
-  if (hasArg(useprimes)) {
+  if (hasArg(useprimes) && !is.null(subst <- substitute(useprimes))) {
     u <- try(is.numeric(useprimes) || is.logical(useprimes) || is.language(useprimes)
 	 || is.list(useprimes) || is(useprimes, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['useprimes']] <- useprimes
-    else if (substr(deparse(substitute(useprimes)), 1, 1)=='R')
-      par.model[['useprimes']] <- useprimes
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['useprimes']] <- useprimes
     else  stop('random parameter not allowed')
   }
-  if (hasArg(dependent)) {
+  if (hasArg(dependent) && !is.null(subst <- substitute(dependent))) {
     u <- try(is.numeric(dependent) || is.logical(dependent) || is.language(dependent)
 	 || is.list(dependent) || is(dependent, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['dependent']] <- dependent
-    else if (substr(deparse(substitute(dependent)), 1, 1)=='R')
-      par.model[['dependent']] <- dependent
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['dependent']] <- dependent
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_step)) {
+  if (hasArg(approx_step) && !is.null(subst <- substitute(approx_step))) {
     u <- try(is.numeric(approx_step) || is.logical(approx_step) || is.language(approx_step)
 	 || is.list(approx_step) || is(approx_step, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_step']] <- approx_step
-    else if (substr(deparse(substitute(approx_step)), 1, 1)=='R')
-      par.model[['approx_step']] <- approx_step
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_step']] <- approx_step
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_maxgrid)) {
+  if (hasArg(approx_maxgrid) && !is.null(subst <- substitute(approx_maxgrid))) {
     u <- try(is.numeric(approx_maxgrid) || is.logical(approx_maxgrid) || is.language(approx_maxgrid)
 	 || is.list(approx_maxgrid) || is(approx_maxgrid, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_maxgrid']] <- approx_maxgrid
-    else if (substr(deparse(substitute(approx_maxgrid)), 1, 1)=='R')
-      par.model[['approx_maxgrid']] <- approx_maxgrid
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_maxgrid']] <- approx_maxgrid
     else  stop('random parameter not allowed')
   }
   
@@ -5873,7 +5165,7 @@ RPcirculant <- new('RMmodelgenerator',
 	.Data = RPcirculant,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -5888,116 +5180,102 @@ RPcutoff <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tolRe,
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(force)) {
+  if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['force']] <- force
-    else if (substr(deparse(substitute(force)), 1, 1)=='R')
-      par.model[['force']] <- force
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['force']] <- force
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mmin)) {
+  if (hasArg(mmin) && !is.null(subst <- substitute(mmin))) {
     u <- try(is.numeric(mmin) || is.logical(mmin) || is.language(mmin)
 	 || is.list(mmin) || is(mmin, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mmin']] <- mmin
-    else if (substr(deparse(substitute(mmin)), 1, 1)=='R')
-      par.model[['mmin']] <- mmin
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mmin']] <- mmin
     else  stop('random parameter not allowed')
   }
-  if (hasArg(strategy)) {
+  if (hasArg(strategy) && !is.null(subst <- substitute(strategy))) {
     u <- try(is.numeric(strategy) || is.logical(strategy) || is.language(strategy)
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
-    else if (substr(deparse(substitute(strategy)), 1, 1)=='R')
-      par.model[['strategy']] <- strategy
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxmem)) {
+  if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
     u <- try(is.numeric(maxmem) || is.logical(maxmem) || is.language(maxmem)
 	 || is.list(maxmem) || is(maxmem, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxmem']] <- maxmem
-    else if (substr(deparse(substitute(maxmem)), 1, 1)=='R')
-      par.model[['maxmem']] <- maxmem
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxmem']] <- maxmem
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolIm)) {
+  if (hasArg(tolIm) && !is.null(subst <- substitute(tolIm))) {
     u <- try(is.numeric(tolIm) || is.logical(tolIm) || is.language(tolIm)
 	 || is.list(tolIm) || is(tolIm, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolIm']] <- tolIm
-    else if (substr(deparse(substitute(tolIm)), 1, 1)=='R')
-      par.model[['tolIm']] <- tolIm
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolIm']] <- tolIm
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolRe)) {
+  if (hasArg(tolRe) && !is.null(subst <- substitute(tolRe))) {
     u <- try(is.numeric(tolRe) || is.logical(tolRe) || is.language(tolRe)
 	 || is.list(tolRe) || is(tolRe, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolRe']] <- tolRe
-    else if (substr(deparse(substitute(tolRe)), 1, 1)=='R')
-      par.model[['tolRe']] <- tolRe
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolRe']] <- tolRe
     else  stop('random parameter not allowed')
   }
-  if (hasArg(trials)) {
+  if (hasArg(trials) && !is.null(subst <- substitute(trials))) {
     u <- try(is.numeric(trials) || is.logical(trials) || is.language(trials)
 	 || is.list(trials) || is(trials, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['trials']] <- trials
-    else if (substr(deparse(substitute(trials)), 1, 1)=='R')
-      par.model[['trials']] <- trials
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['trials']] <- trials
     else  stop('random parameter not allowed')
   }
-  if (hasArg(useprimes)) {
+  if (hasArg(useprimes) && !is.null(subst <- substitute(useprimes))) {
     u <- try(is.numeric(useprimes) || is.logical(useprimes) || is.language(useprimes)
 	 || is.list(useprimes) || is(useprimes, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['useprimes']] <- useprimes
-    else if (substr(deparse(substitute(useprimes)), 1, 1)=='R')
-      par.model[['useprimes']] <- useprimes
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['useprimes']] <- useprimes
     else  stop('random parameter not allowed')
   }
-  if (hasArg(dependent)) {
+  if (hasArg(dependent) && !is.null(subst <- substitute(dependent))) {
     u <- try(is.numeric(dependent) || is.logical(dependent) || is.language(dependent)
 	 || is.list(dependent) || is(dependent, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['dependent']] <- dependent
-    else if (substr(deparse(substitute(dependent)), 1, 1)=='R')
-      par.model[['dependent']] <- dependent
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['dependent']] <- dependent
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_step)) {
+  if (hasArg(approx_step) && !is.null(subst <- substitute(approx_step))) {
     u <- try(is.numeric(approx_step) || is.logical(approx_step) || is.language(approx_step)
 	 || is.list(approx_step) || is(approx_step, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_step']] <- approx_step
-    else if (substr(deparse(substitute(approx_step)), 1, 1)=='R')
-      par.model[['approx_step']] <- approx_step
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_step']] <- approx_step
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_maxgrid)) {
+  if (hasArg(approx_maxgrid) && !is.null(subst <- substitute(approx_maxgrid))) {
     u <- try(is.numeric(approx_maxgrid) || is.logical(approx_maxgrid) || is.language(approx_maxgrid)
 	 || is.list(approx_maxgrid) || is(approx_maxgrid, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_maxgrid']] <- approx_maxgrid
-    else if (substr(deparse(substitute(approx_maxgrid)), 1, 1)=='R')
-      par.model[['approx_maxgrid']] <- approx_maxgrid
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_maxgrid']] <- approx_maxgrid
     else  stop('random parameter not allowed')
   }
-  if (hasArg(diameter)) {
+  if (hasArg(diameter) && !is.null(subst <- substitute(diameter))) {
     u <- try(is.numeric(diameter) || is.logical(diameter) || is.language(diameter)
 	 || is.list(diameter) || is(diameter, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['diameter']] <- diameter
-    else if (substr(deparse(substitute(diameter)), 1, 1)=='R')
-      par.model[['diameter']] <- diameter
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diameter']] <- diameter
     else  stop('random parameter not allowed')
   }
-  if (hasArg(a)) {
+  if (hasArg(a) && !is.null(subst <- substitute(a))) {
     u <- try(is.numeric(a) || is.logical(a) || is.language(a)
 	 || is.list(a) || is(a, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['a']] <- a
-    else if (substr(deparse(substitute(a)), 1, 1)=='R')
-      par.model[['a']] <- a
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['a']] <- a
     else  stop('random parameter not allowed')
   }
   
@@ -6011,7 +5289,7 @@ RPcutoff <- new('RMmodelgenerator',
 	.Data = RPcutoff,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6026,116 +5304,102 @@ RPintrinsic <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tol
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(force)) {
+  if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['force']] <- force
-    else if (substr(deparse(substitute(force)), 1, 1)=='R')
-      par.model[['force']] <- force
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['force']] <- force
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mmin)) {
+  if (hasArg(mmin) && !is.null(subst <- substitute(mmin))) {
     u <- try(is.numeric(mmin) || is.logical(mmin) || is.language(mmin)
 	 || is.list(mmin) || is(mmin, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mmin']] <- mmin
-    else if (substr(deparse(substitute(mmin)), 1, 1)=='R')
-      par.model[['mmin']] <- mmin
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mmin']] <- mmin
     else  stop('random parameter not allowed')
   }
-  if (hasArg(strategy)) {
+  if (hasArg(strategy) && !is.null(subst <- substitute(strategy))) {
     u <- try(is.numeric(strategy) || is.logical(strategy) || is.language(strategy)
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
-    else if (substr(deparse(substitute(strategy)), 1, 1)=='R')
-      par.model[['strategy']] <- strategy
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxmem)) {
+  if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
     u <- try(is.numeric(maxmem) || is.logical(maxmem) || is.language(maxmem)
 	 || is.list(maxmem) || is(maxmem, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxmem']] <- maxmem
-    else if (substr(deparse(substitute(maxmem)), 1, 1)=='R')
-      par.model[['maxmem']] <- maxmem
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxmem']] <- maxmem
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolIm)) {
+  if (hasArg(tolIm) && !is.null(subst <- substitute(tolIm))) {
     u <- try(is.numeric(tolIm) || is.logical(tolIm) || is.language(tolIm)
 	 || is.list(tolIm) || is(tolIm, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolIm']] <- tolIm
-    else if (substr(deparse(substitute(tolIm)), 1, 1)=='R')
-      par.model[['tolIm']] <- tolIm
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolIm']] <- tolIm
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tolRe)) {
+  if (hasArg(tolRe) && !is.null(subst <- substitute(tolRe))) {
     u <- try(is.numeric(tolRe) || is.logical(tolRe) || is.language(tolRe)
 	 || is.list(tolRe) || is(tolRe, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tolRe']] <- tolRe
-    else if (substr(deparse(substitute(tolRe)), 1, 1)=='R')
-      par.model[['tolRe']] <- tolRe
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tolRe']] <- tolRe
     else  stop('random parameter not allowed')
   }
-  if (hasArg(trials)) {
+  if (hasArg(trials) && !is.null(subst <- substitute(trials))) {
     u <- try(is.numeric(trials) || is.logical(trials) || is.language(trials)
 	 || is.list(trials) || is(trials, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['trials']] <- trials
-    else if (substr(deparse(substitute(trials)), 1, 1)=='R')
-      par.model[['trials']] <- trials
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['trials']] <- trials
     else  stop('random parameter not allowed')
   }
-  if (hasArg(useprimes)) {
+  if (hasArg(useprimes) && !is.null(subst <- substitute(useprimes))) {
     u <- try(is.numeric(useprimes) || is.logical(useprimes) || is.language(useprimes)
 	 || is.list(useprimes) || is(useprimes, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['useprimes']] <- useprimes
-    else if (substr(deparse(substitute(useprimes)), 1, 1)=='R')
-      par.model[['useprimes']] <- useprimes
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['useprimes']] <- useprimes
     else  stop('random parameter not allowed')
   }
-  if (hasArg(dependent)) {
+  if (hasArg(dependent) && !is.null(subst <- substitute(dependent))) {
     u <- try(is.numeric(dependent) || is.logical(dependent) || is.language(dependent)
 	 || is.list(dependent) || is(dependent, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['dependent']] <- dependent
-    else if (substr(deparse(substitute(dependent)), 1, 1)=='R')
-      par.model[['dependent']] <- dependent
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['dependent']] <- dependent
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_step)) {
+  if (hasArg(approx_step) && !is.null(subst <- substitute(approx_step))) {
     u <- try(is.numeric(approx_step) || is.logical(approx_step) || is.language(approx_step)
 	 || is.list(approx_step) || is(approx_step, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_step']] <- approx_step
-    else if (substr(deparse(substitute(approx_step)), 1, 1)=='R')
-      par.model[['approx_step']] <- approx_step
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_step']] <- approx_step
     else  stop('random parameter not allowed')
   }
-  if (hasArg(approx_maxgrid)) {
+  if (hasArg(approx_maxgrid) && !is.null(subst <- substitute(approx_maxgrid))) {
     u <- try(is.numeric(approx_maxgrid) || is.logical(approx_maxgrid) || is.language(approx_maxgrid)
 	 || is.list(approx_maxgrid) || is(approx_maxgrid, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['approx_maxgrid']] <- approx_maxgrid
-    else if (substr(deparse(substitute(approx_maxgrid)), 1, 1)=='R')
-      par.model[['approx_maxgrid']] <- approx_maxgrid
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['approx_maxgrid']] <- approx_maxgrid
     else  stop('random parameter not allowed')
   }
-  if (hasArg(diameter)) {
+  if (hasArg(diameter) && !is.null(subst <- substitute(diameter))) {
     u <- try(is.numeric(diameter) || is.logical(diameter) || is.language(diameter)
 	 || is.list(diameter) || is(diameter, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['diameter']] <- diameter
-    else if (substr(deparse(substitute(diameter)), 1, 1)=='R')
-      par.model[['diameter']] <- diameter
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['diameter']] <- diameter
     else  stop('random parameter not allowed')
   }
-  if (hasArg(rawR)) {
+  if (hasArg(rawR) && !is.null(subst <- substitute(rawR))) {
     u <- try(is.numeric(rawR) || is.logical(rawR) || is.language(rawR)
 	 || is.list(rawR) || is(rawR, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['rawR']] <- rawR
-    else if (substr(deparse(substitute(rawR)), 1, 1)=='R')
-      par.model[['rawR']] <- rawR
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rawR']] <- rawR
     else  stop('random parameter not allowed')
   }
   
@@ -6149,7 +5413,7 @@ RPintrinsic <- new('RMmodelgenerator',
 	.Data = RPintrinsic,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6164,36 +5428,32 @@ RPdirect <- function(phi, loggauss, root_method, svdtolerance, max_variab) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(root_method)) {
+  if (hasArg(root_method) && !is.null(subst <- substitute(root_method))) {
     u <- try(is.numeric(root_method) || is.logical(root_method) || is.language(root_method)
 	 || is.list(root_method) || is(root_method, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['root_method']] <- root_method
-    else if (substr(deparse(substitute(root_method)), 1, 1)=='R')
-      par.model[['root_method']] <- root_method
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['root_method']] <- root_method
     else  stop('random parameter not allowed')
   }
-  if (hasArg(svdtolerance)) {
+  if (hasArg(svdtolerance) && !is.null(subst <- substitute(svdtolerance))) {
     u <- try(is.numeric(svdtolerance) || is.logical(svdtolerance) || is.language(svdtolerance)
 	 || is.list(svdtolerance) || is(svdtolerance, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['svdtolerance']] <- svdtolerance
-    else if (substr(deparse(substitute(svdtolerance)), 1, 1)=='R')
-      par.model[['svdtolerance']] <- svdtolerance
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['svdtolerance']] <- svdtolerance
     else  stop('random parameter not allowed')
   }
-  if (hasArg(max_variab)) {
+  if (hasArg(max_variab) && !is.null(subst <- substitute(max_variab))) {
     u <- try(is.numeric(max_variab) || is.logical(max_variab) || is.language(max_variab)
 	 || is.list(max_variab) || is(max_variab, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['max_variab']] <- max_variab
-    else if (substr(deparse(substitute(max_variab)), 1, 1)=='R')
-      par.model[['max_variab']] <- max_variab
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['max_variab']] <- max_variab
     else  stop('random parameter not allowed')
   }
   
@@ -6207,7 +5467,7 @@ RPdirect <- new('RMmodelgenerator',
 	.Data = RPdirect,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6222,44 +5482,39 @@ RPhyperplane <- function(phi, loggauss, superpos, maxlines, mar_distr, mar_param
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(superpos)) {
+  if (hasArg(superpos) && !is.null(subst <- substitute(superpos))) {
     u <- try(is.numeric(superpos) || is.logical(superpos) || is.language(superpos)
 	 || is.list(superpos) || is(superpos, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['superpos']] <- superpos
-    else if (substr(deparse(substitute(superpos)), 1, 1)=='R')
-      par.model[['superpos']] <- superpos
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['superpos']] <- superpos
     else  stop('random parameter not allowed')
   }
-  if (hasArg(maxlines)) {
+  if (hasArg(maxlines) && !is.null(subst <- substitute(maxlines))) {
     u <- try(is.numeric(maxlines) || is.logical(maxlines) || is.language(maxlines)
 	 || is.list(maxlines) || is(maxlines, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['maxlines']] <- maxlines
-    else if (substr(deparse(substitute(maxlines)), 1, 1)=='R')
-      par.model[['maxlines']] <- maxlines
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxlines']] <- maxlines
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mar_distr)) {
+  if (hasArg(mar_distr) && !is.null(subst <- substitute(mar_distr))) {
     u <- try(is.numeric(mar_distr) || is.logical(mar_distr) || is.language(mar_distr)
 	 || is.list(mar_distr) || is(mar_distr, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mar_distr']] <- mar_distr
-    else if (substr(deparse(substitute(mar_distr)), 1, 1)=='R')
-      par.model[['mar_distr']] <- mar_distr
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mar_distr']] <- mar_distr
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mar_param)) {
+  if (hasArg(mar_param) && !is.null(subst <- substitute(mar_param))) {
     u <- try(is.numeric(mar_param) || is.logical(mar_param) || is.language(mar_param)
 	 || is.list(mar_param) || is(mar_param, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mar_param']] <- mar_param
-    else if (substr(deparse(substitute(mar_param)), 1, 1)=='R')
-      par.model[['mar_param']] <- mar_param
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mar_param']] <- mar_param
     else  stop('random parameter not allowed')
   }
   
@@ -6273,7 +5528,7 @@ RPhyperplane <- new('RMmodelgenerator',
 	.Data = RPhyperplane,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6288,28 +5543,25 @@ RPnugget <- function(phi, loggauss, tol, vdim) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(tol)) {
+  if (hasArg(tol) && !is.null(subst <- substitute(tol))) {
     u <- try(is.numeric(tol) || is.logical(tol) || is.language(tol)
 	 || is.list(tol) || is(tol, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['tol']] <- tol
-    else if (substr(deparse(substitute(tol)), 1, 1)=='R')
-      par.model[['tol']] <- tol
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['tol']] <- tol
     else  stop('random parameter not allowed')
   }
-  if (hasArg(vdim)) {
+  if (hasArg(vdim) && !is.null(subst <- substitute(vdim))) {
     u <- try(is.numeric(vdim) || is.logical(vdim) || is.language(vdim)
 	 || is.list(vdim) || is(vdim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['vdim']] <- vdim
-    else if (substr(deparse(substitute(vdim)), 1, 1)=='R')
-      par.model[['vdim']] <- vdim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['vdim']] <- vdim
     else  stop('random parameter not allowed')
   }
   
@@ -6323,7 +5575,7 @@ RPnugget <- new('RMmodelgenerator',
 	.Data = RPnugget,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = TRUE,
@@ -6339,20 +5591,18 @@ RPcoins <- function(phi, shape, loggauss, intensity) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(intensity)) {
+  if (hasArg(intensity) && !is.null(subst <- substitute(intensity))) {
     u <- try(is.numeric(intensity) || is.logical(intensity) || is.language(intensity)
 	 || is.list(intensity) || is(intensity, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['intensity']] <- intensity
-    else if (substr(deparse(substitute(intensity)), 1, 1)=='R')
-      par.model[['intensity']] <- intensity
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['intensity']] <- intensity
     else  stop('random parameter not allowed')
   }
   
@@ -6366,7 +5616,7 @@ RPcoins <- new('RMmodelgenerator',
 	.Data = RPcoins,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6381,36 +5631,32 @@ RPsequential <- function(phi, loggauss, max_variables, back_steps, initial) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(max_variables)) {
+  if (hasArg(max_variables) && !is.null(subst <- substitute(max_variables))) {
     u <- try(is.numeric(max_variables) || is.logical(max_variables) || is.language(max_variables)
 	 || is.list(max_variables) || is(max_variables, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['max_variables']] <- max_variables
-    else if (substr(deparse(substitute(max_variables)), 1, 1)=='R')
-      par.model[['max_variables']] <- max_variables
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['max_variables']] <- max_variables
     else  stop('random parameter not allowed')
   }
-  if (hasArg(back_steps)) {
+  if (hasArg(back_steps) && !is.null(subst <- substitute(back_steps))) {
     u <- try(is.numeric(back_steps) || is.logical(back_steps) || is.language(back_steps)
 	 || is.list(back_steps) || is(back_steps, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['back_steps']] <- back_steps
-    else if (substr(deparse(substitute(back_steps)), 1, 1)=='R')
-      par.model[['back_steps']] <- back_steps
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['back_steps']] <- back_steps
     else  stop('random parameter not allowed')
   }
-  if (hasArg(initial)) {
+  if (hasArg(initial) && !is.null(subst <- substitute(initial))) {
     u <- try(is.numeric(initial) || is.logical(initial) || is.language(initial)
 	 || is.list(initial) || is(initial, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['initial']] <- initial
-    else if (substr(deparse(substitute(initial)), 1, 1)=='R')
-      par.model[['initial']] <- initial
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['initial']] <- initial
     else  stop('random parameter not allowed')
   }
   
@@ -6424,7 +5670,7 @@ RPsequential <- new('RMmodelgenerator',
 	.Data = RPsequential,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6439,44 +5685,39 @@ RPspectral <- function(phi, loggauss, sp_lines, sp_grid, prop_factor, sigma) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(sp_lines)) {
+  if (hasArg(sp_lines) && !is.null(subst <- substitute(sp_lines))) {
     u <- try(is.numeric(sp_lines) || is.logical(sp_lines) || is.language(sp_lines)
 	 || is.list(sp_lines) || is(sp_lines, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['sp_lines']] <- sp_lines
-    else if (substr(deparse(substitute(sp_lines)), 1, 1)=='R')
-      par.model[['sp_lines']] <- sp_lines
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sp_lines']] <- sp_lines
     else  stop('random parameter not allowed')
   }
-  if (hasArg(sp_grid)) {
+  if (hasArg(sp_grid) && !is.null(subst <- substitute(sp_grid))) {
     u <- try(is.numeric(sp_grid) || is.logical(sp_grid) || is.language(sp_grid)
 	 || is.list(sp_grid) || is(sp_grid, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['sp_grid']] <- sp_grid
-    else if (substr(deparse(substitute(sp_grid)), 1, 1)=='R')
-      par.model[['sp_grid']] <- sp_grid
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sp_grid']] <- sp_grid
     else  stop('random parameter not allowed')
   }
-  if (hasArg(prop_factor)) {
+  if (hasArg(prop_factor) && !is.null(subst <- substitute(prop_factor))) {
     u <- try(is.numeric(prop_factor) || is.logical(prop_factor) || is.language(prop_factor)
 	 || is.list(prop_factor) || is(prop_factor, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['prop_factor']] <- prop_factor
-    else if (substr(deparse(substitute(prop_factor)), 1, 1)=='R')
-      par.model[['prop_factor']] <- prop_factor
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['prop_factor']] <- prop_factor
     else  stop('random parameter not allowed')
   }
-  if (hasArg(sigma)) {
+  if (hasArg(sigma) && !is.null(subst <- substitute(sigma))) {
     u <- try(is.numeric(sigma) || is.logical(sigma) || is.language(sigma)
 	 || is.list(sigma) || is(sigma, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['sigma']] <- sigma
-    else if (substr(deparse(substitute(sigma)), 1, 1)=='R')
-      par.model[['sigma']] <- sigma
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sigma']] <- sigma
     else  stop('random parameter not allowed')
   }
   
@@ -6490,7 +5731,7 @@ RPspectral <- new('RMmodelgenerator',
 	.Data = RPspectral,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6505,12 +5746,11 @@ RPspecific <- function(phi, loggauss) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
   
@@ -6524,7 +5764,7 @@ RPspecific <- new('RMmodelgenerator',
 	.Data = RPspecific,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6539,76 +5779,67 @@ RPtbm <- function(phi, loggauss, fulldim, reduceddim, layers, lines, linessimufa
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(fulldim)) {
+  if (hasArg(fulldim) && !is.null(subst <- substitute(fulldim))) {
     u <- try(is.numeric(fulldim) || is.logical(fulldim) || is.language(fulldim)
 	 || is.list(fulldim) || is(fulldim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['fulldim']] <- fulldim
-    else if (substr(deparse(substitute(fulldim)), 1, 1)=='R')
-      par.model[['fulldim']] <- fulldim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['fulldim']] <- fulldim
     else  stop('random parameter not allowed')
   }
-  if (hasArg(reduceddim)) {
+  if (hasArg(reduceddim) && !is.null(subst <- substitute(reduceddim))) {
     u <- try(is.numeric(reduceddim) || is.logical(reduceddim) || is.language(reduceddim)
 	 || is.list(reduceddim) || is(reduceddim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['reduceddim']] <- reduceddim
-    else if (substr(deparse(substitute(reduceddim)), 1, 1)=='R')
-      par.model[['reduceddim']] <- reduceddim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['reduceddim']] <- reduceddim
     else  stop('random parameter not allowed')
   }
-  if (hasArg(layers)) {
+  if (hasArg(layers) && !is.null(subst <- substitute(layers))) {
     u <- try(is.numeric(layers) || is.logical(layers) || is.language(layers)
 	 || is.list(layers) || is(layers, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['layers']] <- layers
-    else if (substr(deparse(substitute(layers)), 1, 1)=='R')
-      par.model[['layers']] <- layers
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['layers']] <- layers
     else  stop('random parameter not allowed')
   }
-  if (hasArg(lines)) {
+  if (hasArg(lines) && !is.null(subst <- substitute(lines))) {
     u <- try(is.numeric(lines) || is.logical(lines) || is.language(lines)
 	 || is.list(lines) || is(lines, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lines']] <- lines
-    else if (substr(deparse(substitute(lines)), 1, 1)=='R')
-      par.model[['lines']] <- lines
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lines']] <- lines
     else  stop('random parameter not allowed')
   }
-  if (hasArg(linessimufactor)) {
+  if (hasArg(linessimufactor) && !is.null(subst <- substitute(linessimufactor))) {
     u <- try(is.numeric(linessimufactor) || is.logical(linessimufactor) || is.language(linessimufactor)
 	 || is.list(linessimufactor) || is(linessimufactor, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['linessimufactor']] <- linessimufactor
-    else if (substr(deparse(substitute(linessimufactor)), 1, 1)=='R')
-      par.model[['linessimufactor']] <- linessimufactor
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['linessimufactor']] <- linessimufactor
     else  stop('random parameter not allowed')
   }
-  if (hasArg(linesimustep)) {
+  if (hasArg(linesimustep) && !is.null(subst <- substitute(linesimustep))) {
     u <- try(is.numeric(linesimustep) || is.logical(linesimustep) || is.language(linesimustep)
 	 || is.list(linesimustep) || is(linesimustep, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['linesimustep']] <- linesimustep
-    else if (substr(deparse(substitute(linesimustep)), 1, 1)=='R')
-      par.model[['linesimustep']] <- linesimustep
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['linesimustep']] <- linesimustep
     else  stop('random parameter not allowed')
   }
-  if (hasArg(center)) {
+  if (hasArg(center) && !is.null(subst <- substitute(center))) {
     u <- try(is.numeric(center) || is.logical(center) || is.language(center)
 	 || is.list(center) || is(center, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['center']] <- center
-    else if (substr(deparse(substitute(center)), 1, 1)=='R')
-      par.model[['center']] <- center
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['center']] <- center
     else  stop('random parameter not allowed')
   }
-  if (hasArg(points)) {
+  if (hasArg(points) && !is.null(subst <- substitute(points))) {
     u <- try(is.numeric(points) || is.logical(points) || is.language(points)
 	 || is.list(points) || is(points, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['points']] <- points
-    else if (substr(deparse(substitute(points)), 1, 1)=='R')
-      par.model[['points']] <- points
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['points']] <- points
     else  stop('random parameter not allowed')
   }
   
@@ -6622,7 +5853,7 @@ RPtbm <- new('RMmodelgenerator',
 	.Data = RPtbm,
 	type = 'method for Gauss processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6638,28 +5869,25 @@ RPbrorig <- function(phi, tcf, xi, mu, s) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
   
@@ -6673,7 +5901,7 @@ RPbrorig <- new('RMmodelgenerator',
 	.Data = RPbrorig,
 	type = 'method for Brown-Resnick processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6689,100 +5917,88 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, lowerbound_optim, vertnumbe
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
-  if (hasArg(meshsize)) {
+  if (hasArg(meshsize) && !is.null(subst <- substitute(meshsize))) {
     u <- try(is.numeric(meshsize) || is.logical(meshsize) || is.language(meshsize)
 	 || is.list(meshsize) || is(meshsize, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['meshsize']] <- meshsize
-    else if (substr(deparse(substitute(meshsize)), 1, 1)=='R')
-      par.model[['meshsize']] <- meshsize
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['meshsize']] <- meshsize
     else  stop('random parameter not allowed')
   }
-  if (hasArg(lowerbound_optim)) {
+  if (hasArg(lowerbound_optim) && !is.null(subst <- substitute(lowerbound_optim))) {
     u <- try(is.numeric(lowerbound_optim) || is.logical(lowerbound_optim) || is.language(lowerbound_optim)
 	 || is.list(lowerbound_optim) || is(lowerbound_optim, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lowerbound_optim']] <- lowerbound_optim
-    else if (substr(deparse(substitute(lowerbound_optim)), 1, 1)=='R')
-      par.model[['lowerbound_optim']] <- lowerbound_optim
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lowerbound_optim']] <- lowerbound_optim
     else  stop('random parameter not allowed')
   }
-  if (hasArg(vertnumber)) {
+  if (hasArg(vertnumber) && !is.null(subst <- substitute(vertnumber))) {
     u <- try(is.numeric(vertnumber) || is.logical(vertnumber) || is.language(vertnumber)
 	 || is.list(vertnumber) || is(vertnumber, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['vertnumber']] <- vertnumber
-    else if (substr(deparse(substitute(vertnumber)), 1, 1)=='R')
-      par.model[['vertnumber']] <- vertnumber
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['vertnumber']] <- vertnumber
     else  stop('random parameter not allowed')
   }
-  if (hasArg(optim_mixed)) {
+  if (hasArg(optim_mixed) && !is.null(subst <- substitute(optim_mixed))) {
     u <- try(is.numeric(optim_mixed) || is.logical(optim_mixed) || is.language(optim_mixed)
 	 || is.list(optim_mixed) || is(optim_mixed, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['optim_mixed']] <- optim_mixed
-    else if (substr(deparse(substitute(optim_mixed)), 1, 1)=='R')
-      par.model[['optim_mixed']] <- optim_mixed
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed']] <- optim_mixed
     else  stop('random parameter not allowed')
   }
-  if (hasArg(optim_mixed_tol)) {
+  if (hasArg(optim_mixed_tol) && !is.null(subst <- substitute(optim_mixed_tol))) {
     u <- try(is.numeric(optim_mixed_tol) || is.logical(optim_mixed_tol) || is.language(optim_mixed_tol)
 	 || is.list(optim_mixed_tol) || is(optim_mixed_tol, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['optim_mixed_tol']] <- optim_mixed_tol
-    else if (substr(deparse(substitute(optim_mixed_tol)), 1, 1)=='R')
-      par.model[['optim_mixed_tol']] <- optim_mixed_tol
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed_tol']] <- optim_mixed_tol
     else  stop('random parameter not allowed')
   }
-  if (hasArg(optim_mixed_maxp)) {
+  if (hasArg(optim_mixed_maxp) && !is.null(subst <- substitute(optim_mixed_maxp))) {
     u <- try(is.numeric(optim_mixed_maxp) || is.logical(optim_mixed_maxp) || is.language(optim_mixed_maxp)
 	 || is.list(optim_mixed_maxp) || is(optim_mixed_maxp, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['optim_mixed_maxp']] <- optim_mixed_maxp
-    else if (substr(deparse(substitute(optim_mixed_maxp)), 1, 1)=='R')
-      par.model[['optim_mixed_maxp']] <- optim_mixed_maxp
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed_maxp']] <- optim_mixed_maxp
     else  stop('random parameter not allowed')
   }
-  if (hasArg(lambda)) {
+  if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
     u <- try(is.numeric(lambda) || is.logical(lambda) || is.language(lambda)
 	 || is.list(lambda) || is(lambda, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
-    else if (substr(deparse(substitute(lambda)), 1, 1)=='R')
-      par.model[['lambda']] <- lambda
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
     else  stop('random parameter not allowed')
   }
-  if (hasArg(areamat)) {
+  if (hasArg(areamat) && !is.null(subst <- substitute(areamat))) {
     u <- try(is.numeric(areamat) || is.logical(areamat) || is.language(areamat)
 	 || is.list(areamat) || is(areamat, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['areamat']] <- areamat
-    else if (substr(deparse(substitute(areamat)), 1, 1)=='R')
-      par.model[['areamat']] <- areamat
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['areamat']] <- areamat
     else  stop('random parameter not allowed')
   }
-  if (hasArg(variobound)) {
+  if (hasArg(variobound) && !is.null(subst <- substitute(variobound))) {
     u <- try(is.numeric(variobound) || is.logical(variobound) || is.language(variobound)
 	 || is.list(variobound) || is(variobound, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['variobound']] <- variobound
-    else if (substr(deparse(substitute(variobound)), 1, 1)=='R')
-      par.model[['variobound']] <- variobound
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['variobound']] <- variobound
     else  stop('random parameter not allowed')
   }
   
@@ -6796,7 +6012,7 @@ RPbrmixed <- new('RMmodelgenerator',
 	.Data = RPbrmixed,
 	type = 'method for Brown-Resnick processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6812,28 +6028,25 @@ RPbrshifted <- function(phi, tcf, xi, mu, s) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
   
@@ -6847,7 +6060,7 @@ RPbrshifted <- new('RMmodelgenerator',
 	.Data = RPbrshifted,
 	type = 'method for Brown-Resnick processes',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6862,28 +6075,25 @@ RPbernoulli <- function(phi, loggauss, stationary_only, threshold) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(stationary_only)) {
+  if (hasArg(stationary_only) && !is.null(subst <- substitute(stationary_only))) {
     u <- try(is.numeric(stationary_only) || is.logical(stationary_only) || is.language(stationary_only)
 	 || is.list(stationary_only) || is(stationary_only, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['stationary_only']] <- stationary_only
-    else if (substr(deparse(substitute(stationary_only)), 1, 1)=='R')
-      par.model[['stationary_only']] <- stationary_only
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['stationary_only']] <- stationary_only
     else  stop('random parameter not allowed')
   }
-  if (hasArg(threshold)) {
+  if (hasArg(threshold) && !is.null(subst <- substitute(threshold))) {
     u <- try(is.numeric(threshold) || is.logical(threshold) || is.language(threshold)
 	 || is.list(threshold) || is(threshold, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['threshold']] <- threshold
-    else if (substr(deparse(substitute(threshold)), 1, 1)=='R')
-      par.model[['threshold']] <- threshold
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['threshold']] <- threshold
     else  stop('random parameter not allowed')
   }
   
@@ -6897,7 +6107,7 @@ RPbernoulli <- new('RMmodelgenerator',
 	.Data = RPbernoulli,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6913,28 +6123,25 @@ RPbrownresnick <- function(phi, tcf, xi, mu, s) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
   
@@ -6948,7 +6155,7 @@ RPbrownresnick <- new('RMmodelgenerator',
 	.Data = RPbrownresnick,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -6963,20 +6170,18 @@ RPgauss <- function(phi, loggauss, stationary_only) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss)) {
+  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
     u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
 	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(substitute(loggauss)), 1, 1)=='R')
-      par.model[['loggauss']] <- loggauss
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
     else  stop('random parameter not allowed')
   }
-  if (hasArg(stationary_only)) {
+  if (hasArg(stationary_only) && !is.null(subst <- substitute(stationary_only))) {
     u <- try(is.numeric(stationary_only) || is.logical(stationary_only) || is.language(stationary_only)
 	 || is.list(stationary_only) || is(stationary_only, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['stationary_only']] <- stationary_only
-    else if (substr(deparse(substitute(stationary_only)), 1, 1)=='R')
-      par.model[['stationary_only']] <- stationary_only
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['stationary_only']] <- stationary_only
     else  stop('random parameter not allowed')
   }
   
@@ -6990,7 +6195,7 @@ RPgauss <- new('RMmodelgenerator',
 	.Data = RPgauss,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -7005,12 +6210,11 @@ RPpoisson <- function(phi, intensity) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(intensity)) {
+  if (hasArg(intensity) && !is.null(subst <- substitute(intensity))) {
     u <- try(is.numeric(intensity) || is.logical(intensity) || is.language(intensity)
 	 || is.list(intensity) || is(intensity, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['intensity']] <- intensity
-    else if (substr(deparse(substitute(intensity)), 1, 1)=='R')
-      par.model[['intensity']] <- intensity
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['intensity']] <- intensity
     else  stop('random parameter not allowed')
   }
   
@@ -7024,7 +6228,7 @@ RPpoisson <- new('RMmodelgenerator',
 	.Data = RPpoisson,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -7040,28 +6244,25 @@ RPschlather <- function(phi, tcf, xi, mu, s) {
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
   
@@ -7075,7 +6276,7 @@ RPschlather <- new('RMmodelgenerator',
 	.Data = RPschlather,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -7091,28 +6292,25 @@ RPsmith <- function(shape, tcf, xi, mu, s) {
   if (hasArg(shape)) submodels[['shape']] <- shape
   if (hasArg(tcf)) submodels[['tcf']] <- tcf
   
-  if (hasArg(xi)) {
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
     u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
 	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['xi']] <- xi
-    else if (substr(deparse(substitute(xi)), 1, 1)=='R')
-      par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
     else  stop('random parameter not allowed')
   }
-  if (hasArg(mu)) {
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
     u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
 	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['mu']] <- mu
-    else if (substr(deparse(substitute(mu)), 1, 1)=='R')
-      par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
     else  stop('random parameter not allowed')
   }
-  if (hasArg(s)) {
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
     u <- try(is.numeric(s) || is.logical(s) || is.language(s)
 	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['s']] <- s
-    else if (substr(deparse(substitute(s)), 1, 1)=='R')
-      par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
     else  stop('random parameter not allowed')
   }
   
@@ -7126,7 +6324,7 @@ RPsmith <- new('RMmodelgenerator',
 	.Data = RPsmith,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,
@@ -7141,12 +6339,11 @@ RPchi2 <- function(phi, f) {
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(f)) {
+  if (hasArg(f) && !is.null(subst <- substitute(f))) {
     u <- try(is.numeric(f) || is.logical(f) || is.language(f)
 	 || is.list(f) || is(f, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['f']] <- f
-    else if (substr(deparse(substitute(f)), 1, 1)=='R')
-      par.model[['f']] <- f
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['f']] <- f
     else  stop('random parameter not allowed')
   }
   
@@ -7160,7 +6357,7 @@ RPchi2 <- new('RMmodelgenerator',
 	.Data = RPchi2,
 	type = 'process',
 	domain = 'single variable',
-	isotropy = 'no ratation invariance',
+	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	normalmix = TRUE,
 	finiterange = FALSE,

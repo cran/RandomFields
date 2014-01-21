@@ -6,7 +6,7 @@
  Kriging methods
 
  Copyright (C) 2001 -- 2010 Martin Schlather, 
- Copyright (C) 2011 -- 2013 Marco Oesting & Martin Schlather, 
+ Copyright (C) 2011 -- 2014 Marco Oesting & Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

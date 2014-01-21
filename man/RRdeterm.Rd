@@ -33,10 +33,11 @@ RRdeterm(mean)
  
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- seq(-2, 2, 0.001)
 p <- RFpdistr(RRdeterm(mean=1), q=x)
 plot(x, p, type="l")
+\dontshow{RFoptions(seed=NA)}
 }
 
  

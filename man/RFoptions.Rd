@@ -34,7 +34,7 @@
  \bold{12. Max-stable random fields (\command{\link{RFsimulate}})}\cr
  \bold{13. \command{\link{BRmethods}}}\cr
  \bold{14. \command{\link{RRrectangular}}}\cr
- \bold{15. \command{\link{RFfit}}}\cr
+ \bold{15. \command{\link{RFfit}}, \command{\link{RFratiotest}}}\cr
  \bold{16. \command{\link{RFempiricalvariogram}}}\cr
  \bold{17. \command{\link{RFgui}}}\cr
  \bold{18. Graphics}\cr
@@ -73,7 +73,7 @@
  7 : details on intermediate calculations\cr
  8 : further details on intermediate calculations\cr
  
- Default: 1 [init, do].\cr
+ Default: 1 [also do].\cr
  }
  
  \item{\code{storing}}{Logical.
@@ -102,7 +102,7 @@
  Do not change the value of this variable except you really
  know what you do.
  
- Default: \code{FALSE} [init,do]. 
+ Default: \code{FALSE} [also do]. 
  }
  
  \item{\code{every}}{integer.
@@ -123,28 +123,28 @@
  simlulation speed can be increased if several registers
  are used and \code{storing=TRUE}.
  
- Default: \code{0} [init,do].
+ Default: \code{0} [also do].
  }
  
  \item{\code{interpolregister}}{Register number for kriging
 
- Default: \code{9} [init,do].
+ Default: \code{9} [also do].
  }
  
  \item{\code{condregister}}{Register number for conditional simulation
 
- Default: \code{8} [init,do].
+ Default: \code{8} [also do].
  }
  
  \item{\code{errregister}}{Additional register for conditional
  simulation if error term is envolved.
 
- Default: \code{7} [init,do].
+ Default: \code{7} [also do].
  }
  
  \item{\code{guiregister}}{Register number for RFgui.
 
- Default: \code{0} [init,do].
+ Default: \code{0} [also do].
  }
  
  \item{\code{gridtolerance}}{
@@ -200,7 +200,7 @@
    is approximated numerically.	
  }
  
- Default: \code{FALSE} [init].
+ Default: \code{FALSE} .
  }
  
  \item{\code{spConform}}{logical.
@@ -229,7 +229,7 @@
  9 : details on intermediate calculations\cr
  10 : further details on intermediate calculations\cr
  
- Default: 1 [init, do].\cr
+ Default: 1 [also  do].\cr
  }
 
  \item{\code{exactness}}{logical or NA.
@@ -247,7 +247,7 @@
 	cannot be given explicitely.
  }
  
- Default: \code{NA} [init].
+ Default: \code{NA} .
  }
 
  \item{\code{matrix_inversion}}{
@@ -319,11 +319,58 @@
    % \code{2}:this value is only used by calls of RFcov and should not
    % be used by a user
  }
- 
- 
- 
+
+ \item{\code{coordinate_system}}{
+   One of the values \code{"auto"}, \code{"cartesian"},
+%   \code{"polar"}, \code{"cylindric"}, \code{"spherical"},
+   \code{"earth"}
+
+   Default: \code{"auto"}
  }
+
+ \item{\code{coord_units}}{any string.
+     
+    If \code{coordinate_system = "earth"} and longitude and latitude
+    are transformed to 3d cartesian coordinates, \code{coord_units}
+    determines 
+    whether the radius is given in kilometers (\code{"km"}) or miles
+    (\code{"miles"}).
+      If empty, then \code{"km"} is chosen.
  
+    Default: \code{""}
+  }
+  
+
+ \item{\code{new_coord_units}}{internal and should not be set
+  internal.
+
+  Default: \code{""}
+}
+  
+   
+  \item{\code{variab_units}}{vector of characters.
+    The default units of the variables
+    
+    Default: \code{""}
+  }
+
+  \item{seed}{integer. If not \code{NULL} and not \code{NA}
+    the \code{\link[base]{set.seed}(seed)} is set
+    before simulations are performed, e.g. by
+    \command{\link{RFsimulate}} or \command{\link{RFdistr}}.
+    Otherwise  \command{\link{set.seed}} is \bold{not} called.
+
+    If the parameter is set locally, i.e. within a function,
+    it has the usual local effect. If it is set globally, i.e. by
+    \command{RFoptions} the \code{seed} is fixed
+    for all subsequent calls.
+
+    Note that \command{\link{RFratiotest}} has its own parameter
+    \code{seed} with a slightly different meaning.
+  }
+}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  \bold{2. Gaussian random field simulation}
@@ -490,7 +537,7 @@
  \code{ergodic=TRUE}, the components are simulated
  separately and then added.
  
- Default: \code{FALSE} [init].
+ Default: \code{FALSE} .
  }
 
  
@@ -502,6 +549,8 @@
  }
 
  }
+
+ 
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  \bold{9. Options for simulating with a turning bands method}\cr
@@ -523,7 +572,7 @@
  automatically such that the line length is minimal.
  See also \code{points} and the examples below.
  
- Default: \code{NA} [init].
+ Default: \code{NA} .
  }
  
  \item{\code{points}}{integer. If greater than 0,
@@ -537,13 +586,13 @@
  The use of \code{center} and \code{points} is highlighted
  in an example below.
  
- Default: \code{0} [init].
+ Default: \code{0} .
  }
  
  \item{\code{lines}}{
  Number of lines used.
  
- Default: \code{60} [init].
+ Default: \code{60} .
  }
  
  \item{\code{linesimufactor}}{ \code{linesimufactor} or
@@ -557,14 +606,14 @@
  finer than the smallest distance. 
  See also \code{linesimustep}.
  
- Default: \code{2.0} [init].
+ Default: \code{2.0} .
  }
  \item{\code{linesimustep}}{
  If \code{linesimustep} is positive the grid on the line has lag
  \code{linesimustep}. 
  See also \code{linesimufactor}.
  
- Default: \code{0.0} [init].
+ Default: \code{0.0} .
  }
  \item{\code{layers}}{
  Logical or integer. If \code{TRUE} then the turning layers are used whenever
@@ -573,7 +622,7 @@
  traditional TBM is not applicable.
  If \code{FALSE} then turning layers may never be used.
  
- Default: \code{TRUE} [init].
+ Default: \code{TRUE} .
  }
  \item{\code{grid}}{Logical.
  The angle of the lines is random if
@@ -583,7 +632,7 @@
  otherwise. This parameter is only considered
  if the spectral measure, not the density is used.
  
- Default: \code{TRUE} [init].
+ Default: \code{TRUE} .
  }
  }
  
@@ -597,7 +646,7 @@
  distribution of the scale to estimate the mean of the distribution.
  This is used only if the mean of the scale distribution
  is not explicitely given.
- Default: \code{50000} [init].
+ Default: \code{50000} .
  }
  \item{\code{intensity}}{real.
  Number of superposed
@@ -606,7 +655,7 @@
  if \code{intensity<=0.0} then only a single
  value is simulated (for checking).
  
- Default: \code{100} [init].
+ Default: \code{100} .
  }
  
  \item{\code{about_zero}}{Functions that
@@ -614,7 +663,7 @@
  compact support are set to zero outside the ball outside for which the
  function has absolute values less than \code{about_zero}.
  
- Default: \code{0.001} [init].
+ Default: \code{0.001} .
  }
  
  }
@@ -626,12 +675,12 @@
  \item{\code{superpos}}{integer.
  number of superposed hyperplane tessellations.
  
- Default: \code{300} [init].
+ Default: \code{300} .
  }
  \item{\code{maxlines}}{integer.
  Maximum number of allowed lines.
  
- Default: \code{1000} [init].
+ Default: \code{1000} .
  }
  \item{\code{mar_distr}}{integer.
    This parameter should not be changed yet.
@@ -645,12 +694,12 @@
      parameter \code{mar.param}
 
  
- Default: \code{0} [init].
+ Default: \code{0} .
  }
  \item{\code{mar_param}}{Parameter used for the marginal
  distribution. The parameter should not be changed yet.
  
- Default: \code{NA} [init].
+ Default: \code{NA} .
  }
  }
 
@@ -667,20 +716,20 @@
  \command{\link{RPschlather}}, respectively), the upper endpoint is
  approximated by \code{standardmax}. 
  
- Default: \code{3.0} [init].
+ Default: \code{3.0} .
  }
  \item{\code{maxpoints}}{
   positive integer; the maximal number of Poisson points to be simulated
   for one realization of the max-stable random field. This option will
   not be considered for most of the users.
   
-  Default: \code{2e9} [init].
+  Default: \code{2e9} .
  }
 
  \item{\code{xi}}{
    Extreme value index.
    
- Default: \code{1.0} [init].
+ Default: \code{1.0} .
  }
 
  \item{\code{check_every}}{
@@ -699,7 +748,7 @@
    (For ease and for concerns of efficiency, the more adequate, local
    minimum is not considered.)
    
-   Default: 30 [init].
+   Default: 30 .
  }
  
  
@@ -714,7 +763,7 @@
    constant in the convex hull of the grid.
    
    
-   Default: [init].
+   Default: .
  }
  
  \item{\code{flat}}{\code{-1, FALSE, TRUE}.
@@ -724,7 +773,7 @@
    is considered to \code{flat} in the convex hull of the grid.
    If \code{flat=-1} the choice is done automatically.
      
- Default: -1 [init].
+ Default: -1 .
  }
  
 
@@ -736,81 +785,81 @@
  
  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \bold{13. Specific method options for Brown-Resnick Fields}
- \describe{
-  \item{\code{maxtrendmem}}{
-   integer; the maximal number of trends for shifted locations that may
-   be stored at the same time when simulating BR processes via
-   \code{RPbrshifted}; if \code{maxtrendmem} is large, multiple trend
-   evaluation may be avoided. 
- 
-   Default: \code{1e8} [init].
- }
- \item{\code{meshsize}}{
-   positive; width of the grid on which the shape functions in the M3
-   representation of BR processes are simulated; only used for
-   simulation of BR processes via \code{RPbrmixed}.
- 
- Default:  \code{0.1} [init].
- }
- \item{\code{lowerbound_optimarea}}{
-   the lower bound \eqn{x_0} of the domain \eqn{[x_0, \infty] \times E}
-   {[x_0, Inf] x E} of the Poisson point process which is used for the
-   simulation of the shape functions in the M3 representation of BR
-   processes (cf. Oesting et al., 2012); only used for simulation of
-   BR processes via \code{RPbrmixed}.
-   
- Default: \code{-2.0} [init].
- }
-  \item{\code{vertnumber}}{
-    positive integer; for an efficient simulation of the shape functions
-    in the M3 representation of BR processes, the component \eqn{E} from
-    of the domain \eqn{[x_0, \infty] \times E}{[x_0, Inf] x E} of the
-    underlying Poisson point process is sub-dividedinto cubes
-    (cf. Oesting et al., 2012); \code{vertical}  is the number of
-    vertical breaks of \eqn{E}; only used for simulation of BR processes
-    via \code{RPbrmixed} with \code{optim_mixed=2}.
- 
- Default: \code{7} [init].
- }
- \item{\code{optim_mixed}}{\code{0, 1, 2}; only used for simulation of BR
-    processes via \code{RPbrmixed}.\cr
-   If \code{optim_mixed=0}, the arguments \code{lambda} and
-   \code{areamat} of \command{\link{RPbrshifted}} are used for the
-   simulation.\cr
-   If \code{optim_mixed=1}, \code{lambda} is estimated for
-   \code{areamat=1}.\cr
-   If If \code{optim_mixed=2}, \code{areamat} is optimized and
-   \code{lambda} is estimated.
- 
- Default: \code{0} [init].
- }
- \item{\code{optim_mixed_tol}}{
-   value in \eqn{[0,1]}; only used for simulation of BR processes via
-    \code{RPbrmixed} with \code{optim_mixed=2}. In this case,
-    \code{areamat} is optimized under the constraint that the
-    probability of drawing the shape function incorrectly is bounded by
-    \code{optim_mixed_tol} (cf. Oesting et al., 2012).
- 
- Default: \code{0.01} [init].
- }
-\item{\code{optim_mixed_maxpoints}}{
- positive integer; only used for simulation of BR processes via
- \code{RPbrmixed} with \code{optim_mixed>0}. Maximal number of Poisson
- points used for the optimization of \code{areamat} and the estimation
- of \code{lambda}.
- 
- Default: \code{1000000} [init].
- }
- 
- \item{\code{variobound}}{
-   positive; the shape functions in the mixed moving maxima
-   representation are cut off where the variogram belonging
-   to \code{phi} exceeds \code{variobound}.
-   
- Default: \code{3.0} [init].
- }
- 
+  \bold{13. Specific method options for Brown-Resnick Fields}
+  \describe{
+    \item{\code{maxtrendmem}}{
+      integer; the maximal number of trends for shifted locations that may
+      be stored at the same time when simulating BR processes via
+      \code{RPbrshifted}; if \code{maxtrendmem} is large, multiple trend
+      evaluation may be avoided. 
+      
+      Default: \code{1e8} .
+    }
+    \item{\code{meshsize}}{
+      positive; width of the grid on which the shape functions in the M3
+      representation of BR processes are simulated; only used for
+      simulation of BR processes via \code{RPbrmixed}.
+      
+      Default:  \code{0.1} .
+    }
+    \item{\code{lowerbound_optimarea}}{
+      the lower bound \eqn{x_0} of the domain \eqn{[x_0, \infty] \times E}
+      {[x_0, Inf] x E} of the Poisson point process which is used for the
+      simulation of the shape functions in the M3 representation of BR
+      processes (cf. Oesting et al., 2012); only used for simulation of
+      BR processes via \code{RPbrmixed}.
+      
+      Default: \code{-2.0} .
+    }
+    \item{\code{vertnumber}}{
+      positive integer; for an efficient simulation of the shape functions
+      in the M3 representation of BR processes, the component \eqn{E} from
+      of the domain \eqn{[x_0, \infty] \times E}{[x_0, Inf] x E} of the
+      underlying Poisson point process is sub-dividedinto cubes
+      (cf. Oesting et al., 2012); \code{vertical}  is the number of
+      vertical breaks of \eqn{E}; only used for simulation of BR processes
+      via \code{RPbrmixed} with \code{optim_mixed=2}.
+      
+      Default: \code{7} .
+    }
+    \item{\code{optim_mixed}}{\code{0, 1, 2}; only used for simulation of BR
+      processes via \code{RPbrmixed}.\cr
+      If \code{optim_mixed=0}, the arguments \code{lambda} and
+      \code{areamat} of \command{\link{RPbrshifted}} are used for the
+      simulation.\cr
+      If \code{optim_mixed=1}, \code{lambda} is estimated for
+      \code{areamat=1}.\cr
+      If If \code{optim_mixed=2}, \code{areamat} is optimized and
+      \code{lambda} is estimated.
+      
+      Default: \code{0} .
+    }
+    \item{\code{optim_mixed_tol}}{
+      value in \eqn{[0,1]}; only used for simulation of BR processes via
+      \code{RPbrmixed} with \code{optim_mixed=2}. In this case,
+      \code{areamat} is optimized under the constraint that the
+      probability of drawing the shape function incorrectly is bounded by
+      \code{optim_mixed_tol} (cf. Oesting et al., 2012).
+      
+      Default: \code{0.01} .
+    }
+    \item{\code{optim_mixed_maxpoints}}{
+      positive integer; only used for simulation of BR processes via
+      \code{RPbrmixed} with \code{optim_mixed>0}. Maximal number of Poisson
+      points used for the optimization of \code{areamat} and the estimation
+      of \code{lambda}.
+      
+      Default: \code{1000000} .
+    }
+    
+    \item{\code{variobound}}{
+      positive; the shape functions in the mixed moving maxima
+      representation are cut off where the variogram belonging
+      to \code{phi} exceeds \code{variobound}.
+      
+      Default: \code{3.0} .
+    }
+    
  }
  
  
@@ -819,21 +868,21 @@
  \describe{
   \item{\code{safety}}{ % to do
  
- Default: \code{0.08} [init].
+ Default: \code{0.08} .
  }
 
  \item{\code{minsteplen}}{
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
    
- Default: \code{0.1} [init].
+ Default: \code{0} (i.e. not used as a criterion.)
  }
  
  \item{\code{innermin}}{
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
  
- Default: \code{1e} [init].
+ Default: \code{1e} .
  }
 
 
@@ -841,28 +890,28 @@
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
  
- Default: \code{1e5} [init].
+ Default: \code{1e5} .
  }
  
  \item{\code{maxsteps}}{
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
  
- Default: \code{100} [init].
+ Default: \code{1000} .
  }
  
  \item{\code{parts}}{
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
  
- Default: \code{8} [init].
+ Default: \code{8} .
  }
  
  \item{\code{maxit}}{
    Technical parameters to run an algorithm to simulate from the
    \command{\link{RRrectangular}} distribution.
  
- Default: \code{20} [init].
+ Default: \code{20} .
  }
  
  \item{\code{mcmc_n}}{
@@ -870,7 +919,7 @@
    member of the Markov chain bevor the \eqn{n} member
    is returned.
  
- Default: \code{15} [init].
+   Default: \code{15} .
  }
  
 
@@ -881,7 +930,10 @@
  
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \bold{15. Options for \command{\link{RFfit}}}
+ \bold{15. Options for \command{\link{RFfit}} and \command{\link{RFratiotest}}}
+ The following comments on \command{\link{RFfit}} apply
+ also to \command{\link{RFratiotest}}.
+
  \describe{
  \item{\code{bin_dist_factor}}{
  
@@ -1301,14 +1353,42 @@ Default: \code{-1}.
  \bold{18. Options for graphical output}\cr
  \describe{%to do
    \item{\code{always_close_screen}}{logical.
-     If \code{TRUE} then \command{\link[graphics]{close.screen}}
-     is performed before the plot is shown
- Default: \code{TRUE}.
+     If \code{FALSE} the current device is kept as it is.
+     Otherwise the action depends on the value of
+     \code{height}: if \code{height} is not positive
+     then \command{\link[graphics]{close.screen}}
+     is performed on the current device.
+     Else the current device is closed.
+
+     Default: \code{TRUE}.
  }
  \item{\code{grPrintlevel}}{
    integer values 0, 1, 2. The higher the more text is shown in the plot.
    Default: \code{1}.
  }
+
+ \item{\code{height}}{real number.
+   if \code{height} is greater than zero then it gives the height
+   of a single figure in a plot create by \pkg{RandomFields};
+   always a new window is opened. See also \code{always_close_screen}.
+   
+   If plots with multiple figures are
+   shown, the height and width of the plot
+   will be increased by a factor up the
+   ones given by \code{increase_upto}.
+
+   
+   Default: \code{0}.
+ }
+
+ \item{\code{increase_upto}}{
+   See \code{height}.
+   
+   Default: \code{c(3,4)}.
+ }
+
+ 
+ 
  }
 
  \bold{19. Options for warnings and messages}\cr
@@ -1331,7 +1411,8 @@ Default: \code{-1}.
  \bold{General comments}\cr
 
  
- Some of the global parameters determine the basic settings of a
+ 
+ Most of the global parameters determine the basic settings of a
  simulation, e.g. \code{root_method} (which chooses the method to
  calculate a square
  root of a positive definite matrix). The values of
@@ -1339,14 +1420,13 @@ Default: \code{-1}.
  \command{\link{RFsimulate}} and stored in an internal register
  and used in preliminary, deterministic calculations (e.g. calculation
  of the square of a covariance matrix)
- These parameters have the flag \dQuote{[init]}.
- 
- Parameters like \code{lines} (which determines the number of
+% These parameters have the flag \dQuote{}.
+ Some few other parameters like \code{lines} (which determines the number of
  i.i.d. processes to be simulated on the line)
  are only relevant when generating
- random numbers. These parameters are read only when actually
- simulations are performed, and
- are marked by \dQuote{[do]}.
+ random numbers.
+ These parameters are read only when actually simulations are performed, and
+  are marked by \dQuote{[do]}.
 
  The differnce of these two classes of parameters might become
  important only if \code{general.storing = TRUE} and
@@ -1399,9 +1479,9 @@ Default: \code{-1}.
  and \command{\link{RFgetMethodNames}}.}
 
 \examples{
-set.seed(0)
- RFoptions(storing=TRUE)
- str(RFoptions())
+RFoptions(seed=0)
+RFoptions(storing=TRUE)
+str(RFoptions())
 
 
 ############################################################
@@ -1497,8 +1577,7 @@ mar <- c(2.2, 2.2, 0.1, 0.1)
 points <- 700
 
 ###### simulation of a random field on long thin stripe
-set.seed(1)
-z1 <- RFsimulate(model, x1, y1, grid=TRUE, center=0,
+z1 <- RFsimulate(model, x1, y1, grid=TRUE, center=0, seed=0,
                  points=points, storing=TRUE, spConform=FALSE)
 do.call(getOption("device"), list(height=1.55, width=12))
 par(mar=mar)
@@ -1508,8 +1587,7 @@ polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
 
 
 ###### definition of a random field on a square of shorter diagonal
-set.seed(1)
-z2 <- RFsimulate(model, x2, x2, grid=TRUE, register=1,
+z2 <- RFsimulate(model, x2, x2, grid=TRUE, register=1, seed=0,
                  center=0, points=points, spConform=FALSE)
 do.call(getOption("device"), list(height=4.3, width=4.3))
 par(mar=mar)
@@ -1520,6 +1598,7 @@ tbm.points <- RFgetModelInfo(RFsimulate)$loc$totpts
 Print(tbm.points, empty.lines=0) # number of points on the line
 }}
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 

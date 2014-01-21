@@ -6,7 +6,7 @@
 
  Collection of auxiliary functions
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -576,7 +576,7 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
     int i, j, 
       start = RF_NAN,
       milli = 500,
-      len = LENGTH(Choice), 
+      len = length(Choice), 
       n = INTEGER(N)[0],
       nline = 100;
   bool shorter = LOGICAL(Shorter)[0],
@@ -638,7 +638,8 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
 */
 
 void strcopyN(char *dest, const char *src, int n) {
-  n--;
+  n--; assert(n > 0);
+  //  printf("%ld %ld %d\n", dest, src, n);
   strncpy(dest, src, n);
   dest[n] = '\0';
 }
@@ -776,8 +777,7 @@ void vectordist(double *v, int *Dim, double *Dist, int *diag){
 
 //  print("%d %d %f %f\n", dim , Dim[0], v, end);
 
-  for (dr=0, v1=v; v1<end; v1+=dim) { // if add==1 loop is one to large, but
-      // but doesn't matter
+  for (dr=0, v1=v; v1<end; v1+=dim) { // loop is one to large??
     v2 = v1;
     if (notdiag) {
        v2 += dim;
@@ -971,6 +971,7 @@ void indextrafo(int onedimindex, int *length, int dim, int *multidimindex) {
 int CeilIndex(double x, double *cum, int size) {  
    // der kleinste index i so das cum[i] >= x --- sollte das gleiche sein
   // wie searchFirstGreater
+
   int mitte,
     min = 0,
     max = size - 1;
@@ -979,9 +980,10 @@ int CeilIndex(double x, double *cum, int size) {
     if (cum[mitte] >= x) max = mitte;
     else min = mitte + 1;
   }
-  //printf("%f < %f <= %f\n", cum[min-1], x, cum[min]);//
- assert((min==0) || x > cum[min-1]);
-  assert(x <= cum[min]);
+  //  printf("%f < %f <= %f\n", cum[min-1], x, cum[min]);
+  assert((min==0) || x > cum[min-1]);
+  assert(x <= cum[min] && (min==0 || x > cum[min-1]));
+
 
   return min;
 } 
@@ -1076,6 +1078,9 @@ double searchInverse(covfct fct, cov_model *cov,
 
 double incomplete_gamma(double start, double end, double s) {
   // int_start^end t^{s-1} e^{-t} \D t
+
+  // print("incomplete IN s=%f e=%f s=%f\n", start, end, s);
+
   double
     v = 0.0, 
     w = 0.0;
@@ -1102,7 +1107,10 @@ double incomplete_gamma(double start, double end, double s) {
   
   w = pgamma(start, s, 1.0, 0, 0);  // q, shape, scale, lower, log
   if (R_FINITE(end)) w -= pgamma(end, s, 1.0, 0, 0);
-  return v + gammafn(s) * w;
+
+  //  print("incomplete s=%f e=%f s=%f v=%f g=%f w=%f\n", start, end, s, v, gammafn(s), w);
+
+  return v + gammafn(s) * w * factor;
 }
 
 
@@ -1110,8 +1118,8 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
 #ifndef RF_DEBUGGING  
   return 0;
 #else
-  double x = (double) addr;
-  cut = 1e9;
+  double x = (long int) addr,
+    cut = 1e9;
   x = x - trunc(x / cut) * cut;
   return (int) x;
 #endif

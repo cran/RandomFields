@@ -88,8 +88,9 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMmastein(RMgauss(), nu=1, delta=10)
 x <- seq(0, 10, if (interactive()) 0.1 else 3) 
 plot(RFsimulate(model, x=x, y=x))
+\dontshow{RFoptions(seed=NA)}
 }

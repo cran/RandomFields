@@ -49,7 +49,7 @@ RMnonstwm(nu, var, scale, Aniso, proj)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 x <- seq(-1.2, 1.2, len=if (interactive()) 70 else 3)
 model <- RMnonstwm(nu=RMgauss())
@@ -57,6 +57,7 @@ model <- RMnonstwm(nu=RMgauss())
 z <- RFsimulate(model=model, x, x, grid=TRUE, n=4)
 plot(z)
 }}
+\dontshow{RFoptions(seed=NA)}
 }
 
 

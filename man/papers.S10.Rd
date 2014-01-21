@@ -22,7 +22,7 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 
 \dontshow{\dontrun{
@@ -75,6 +75,7 @@ Plot <- function(basicname, x, y, z, pixels=200, col=col, delay=1,
  " -lavcopts vcodec=mpeg4:vbitrate=9800:aspect=4/3:vhq:keyint=15",
  " -vf scale=720:576 -o ", basicname, ".avi mf://",
  basicname, "*.jpg &", sep=""))
+
 }
 
 
@@ -147,6 +148,10 @@ Plot(basicname, x, y, z, col=col, T=T, pixels=256, zi=0.5 + dim(z)[2]/2,
 save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
 
 }}
+
+\dontshow{RFoptions(seed=NA)}
+
+
 }
 
 

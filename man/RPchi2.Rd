@@ -30,12 +30,13 @@ RPchi2(phi, f)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 model <- RPchi2(RMexp(), f=2)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

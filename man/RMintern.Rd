@@ -57,11 +57,12 @@ The following internal models exist
 }
 \keyword{spatial}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 ## in the following 'try' the model 'RMtbmIntern' appears
 model <- RPtbm(RMexp())
 x <- seq(0, 10, 1) 
 try(RFsimulate(model, x=x)) ## fails
+\dontshow{RFoptions(seed=NA)}
 
 }

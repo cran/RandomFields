@@ -51,8 +51,8 @@ RMetaxxa(E, A, alpha)
  }
 
 \examples{
-set.seed(0)
 # see S10
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

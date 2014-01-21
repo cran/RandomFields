@@ -3,7 +3,7 @@
 
  calculation of the empirical variogram
 
- Copyright (C) 2002 - 2013 Martin Schlather, 
+ Copyright (C) 2002 - 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

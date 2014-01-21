@@ -62,11 +62,12 @@
   \command{\link{RFsimulateAdvanced}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 RFoptions(printlevel=4)
 x <- seq(0, 10, 0.01)
 z <- RFsimulate(RMexp(), x) # circulant embedding is chosen
+\dontshow{RFoptions(seed=NA)}
 
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

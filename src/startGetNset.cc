@@ -4,7 +4,7 @@
 
  (library for simulation of random fields)
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -359,17 +359,21 @@ void crash(cov_model *cov) {
 }
 void crash() {cov_model *cov=NULL; crash(cov);}
 
-void ErrCov(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
-	    double VARIABLE_IS_NOT_USED *v) {
+void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
+	     double VARIABLE_IS_NOT_USED *v, const char *name) {
     // 
-  PRINTF("\nErrCov %s [%d] gatter=%d:\n", 
+  PRINTF("\nErr%s %s [%d] gatter=%d:\n", name,
 	 NICK(cov), cov->nr, cov->gatternr); // ok
-  if (PL >=  PL_ERRORS){
+  if (PL >= PL_ERRORS){
     PMI(cov, "ErrCov");//
     crash(cov);
   }
   ERR("unallowed or undefined call of function");
 }
+void ErrCov(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "cov");}
+void ErrD(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "D");}
+void ErrRnd(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "Rnd");}
+
 void ErrLogCov(double VARIABLE_IS_NOT_USED *x, cov_model *cov, 
 	       double VARIABLE_IS_NOT_USED *v, 
 	       double VARIABLE_IS_NOT_USED *sign) {
@@ -502,7 +506,7 @@ int initOK(cov_model *cov, storage *s) {
 
 int init_failed(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
   if (PL >= PL_ERRORS) PRINTF("init failed cov=%s:\n", NICK(cov));
-  SERR("Init failed. Compound Poisson fields are essentially only programmed for simple, domain and isotropic shape functions");
+  SERR("Init failed. Compound Poisson fields are essentially only programmed for simple and isotropic shape functions (not kernels)");
   return ERRORFAILED;
 }
 
@@ -536,22 +540,29 @@ int init_statiso(cov_model *cov, storage *s) {
 }
 
 
-void doOK(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) { }
+void doOK(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s){
+}
 
 void do_failed(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
   //PMI(cov->calling);
-  if (PL >= PL_ERRORS) PRINTF("do failed %s:\n", NICK(cov));
-  ERR("Call of do: Compound Poisson fields are essentially only programmed for domain and isotropic shape functions");
+  if (PL >= PL_ERRORS) PRINTF("do failed for %s:\n", NICK(cov));
+  ERR("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
 }
 
 void do_random_failed(cov_model *cov, double VARIABLE_IS_NOT_USED *v) {
-  if (PL >= PL_ERRORS) PRINTF("do_random failed %s:\n", NICK(cov));
-  ERR("Call of do: Compound Poisson fields are essentially only programmed for domain and isotropic shape functions");
+  if (PL >= PL_ERRORS) PRINTF("do_random failed for %s:\n", NICK(cov));
+  ERR("Call of do: Compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
 }
 
 void do_statiso(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
- if (cov->role == ROLE_POISSON) return;
-  if (PL >= PL_ERRORS) ERR("Call of do: Compound Poisson fields are essentially only programmed for domain and isotropic shape functions");
+  
+  if (cov->role == ROLE_POISSON || cov->role == ROLE_MAXSTABLE) {
+    return;
+  }
+
+  if (PL >= PL_ERRORS) PRINTF("do_statosp failed for '%s' and role='%s':\n", 
+				NICK(cov), ROLENAMES[cov->role]);
+  if (PL >= PL_ERRORS) ERR("Call of do_statiso: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
  
 }
 
@@ -659,7 +670,8 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
     warning(msg);
   }
   
-  if (PL >= PL_DETAILS) PRINTF("%d %s vdim=%d\n", currentNrCov, name, vdim); 
+  if (PL >= PL_DETAILS)
+    PRINTF("%d %s vdim=%d statiso=%d iso=%d\n", currentNrCov, name, vdim, stat_iso, isotropy); 
   C->Type = type; // ganz vorne 
   assert(type >=0 && type <= OtherType);
   C->TypeFct = NULL;
@@ -670,7 +682,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 
   // nachfolgendes unbedingt lassen, da sonst vor Aufruf von Interface
   // reduzierende Gatter gesetzt werden koennten
-  assert(type != InterfaceType || (domain == XONLY && isotropy==NO_ROTAT_INV));
+  assert(type != InterfaceType || (domain == XONLY && isotropy==UNREDUCED));
 
   C->kappas = kappas;
   assert(kappas >= 0 && kappas <= MAXPARAM);
@@ -715,8 +727,9 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 
   MEMCOPY(C->pref, pref, sizeof(pref_shorttype));
  
-  C->cov = C->D = C->D2 = C->D3 = C->D4 =C->tbm2 = C->nabla = C->hess = 
-    C->random = ErrCov;
+  C->cov = ErrCov;
+  C->D = C->D2 = C->D3 = C->D4 =C->tbm2 = C->nabla = C->hess = ErrD;
+  C->random = ErrRnd;
   C->inverse = finiterange == true ? InverseFiniteRange : ErrInverse;
   C->nonstat_inverse =  C->nonstat_inverse_D = ErrInverseNonstat;
   C->density = MISMATCH;
@@ -734,7 +747,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->logmixdens = NULL;
 
   C->Struct = stat_iso ? struct_statiso : struct_failed;
-  C->Init = stat_iso ? init_statiso : init_failed;
+  C->Init = stat_iso ? init_statiso : init_failed; // !!!! see isDummyInit below
   //  printf("%s failed=%d\n", C->nick, !stat_iso);
   C->Do = stat_iso ? do_statiso : do_failed;
   C->minmaxeigenvalue = NULL;
@@ -754,6 +767,11 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
  
   currentNrCov++;
 }
+
+bool isDummyInit(initfct Init) {
+  return Init == init_statiso || Init == init_failed;
+}
+
 
 int CopyModel(const char *name, int which) {
   memcpy(CovList + currentNrCov, CovList + which, sizeof(cov_fct));  
@@ -996,22 +1014,35 @@ void addCov(covfct cf, covfct D, covfct inverse) {
   addCov(MISMATCH, cf, D, inverse);
 }
 
+
 void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
-	    covfct inverse) {
-  addCov(cf, D, D2, inverse, NULL);
+	    covfct inverse, nonstat_inv nonstat_inverse) {
+  addCov(cf, D, D2, inverse, nonstat_inverse);
   cov_fct *C = CovList + currentNrCov - 1;
   C->D3 = D3;
-  C->D4 = D4;
-  assert(C->RS_derivs == 2 && D3!=NULL && D4!=NULL);
-  C->RS_derivs = 4;
-  C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
-  assert(C->F_derivs <= C->RS_derivs);
+  assert(C->RS_derivs == 2 && D3 != NULL);
+  if (D4 == NULL) {
+    C->RS_derivs = 3;
+  } else {
+    C->RS_derivs = 4;
+    C->D4 = D4;
+    C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
+    assert(C->F_derivs <= C->RS_derivs);
+  }
 }
+
 
 void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
 	    covfct inverse) {
-  addCov(-1, cf, D, D2, D3, D4, inverse);
+  addCov(-1, cf, D, D2, D3, D4, inverse, NULL);
 }
+
+void addCov(covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
+	    covfct inverse, nonstat_inv nonstat_inverse) {
+  addCov(-1, cf, D, D2, D3, D4, inverse, nonstat_inverse);
+}
+
+
 
 void addCov(int F_derivs, nonstat_covfct cf) {
   int nr = currentNrCov - 1;
@@ -1071,8 +1102,7 @@ void addCov(covfct distrD, logfct logdistrD, nonstat_inv Dinverse,
     assert(distrP2sided == NULL && distrR2sided ==NULL);
     C->domain = XONLY;
   }
-  
-  C->isotropy = NO_ROTAT_INV;
+  C->isotropy = CARTESIAN_COORD;
 }
 
 void addlogCov(logfct log, nonstat_logfct nonstatlog) {
@@ -1397,10 +1427,10 @@ void Taylor(double c, double pow) {
     nr = currentNrCov - 1;
   cov_fct *C = CovList + nr; // nicht gatternr
 
-  assert(pow != 0.0);
 
   C->TaylorN = 0;
   if (isPosDef(C->Type) || isUndefinedType(C->Type)) {
+    assert(pow != 0.0);
     C->Taylor[C->TaylorN][TaylorConst] = 1.0;
     C->Taylor[C->TaylorN][TaylorPow] = 0.0;    
     C->TaylorN++;

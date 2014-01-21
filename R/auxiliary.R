@@ -189,7 +189,7 @@ Print <- function(..., digits=6, empty.lines=2) { #
     } else {
        if (is.list(l[[i]])) {
         cat("  ") #
-        str(l[[i]]) #
+        str(l[[i]], digits.d=digits) #
       } else {
         cat("\n")
         if (length(l[[i]]) <= 100) {
@@ -200,3 +200,60 @@ Print <- function(..., digits=6, empty.lines=2) { #
     cat("\n")
   }
 }
+
+
+vectordist <- function(x, diag=FALSE) {
+  size <- c(ncol(x), 0.5 * (nrow(x) * (nrow(x) - 1 + 2 * diag)))
+  res <- double(prod(size))
+  .C("vectordist", as.double(t(x)), rev(dim(x)), res, diag, DUP=FALSE)
+  dim(res) <- size
+  #Print(dimnames(x)[[2]], dim(res))
+  dimnames(res) <- list(dimnames(x)[[2]], NULL)
+  return(t(res));
+}
+
+xylabs <- function(x, y, T=NULL, units=NULL) {
+  if (is.null(units)) units <- RFoptions()$general$coord_units
+  xlab <- if (is.null(x)) NULL
+          else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
+  ylab <- if (is.null(y)) NULL
+          else if (units[2]=="") y else paste(y, " [", units[2], "]", sep="")
+  Tlab <- if (is.null(T)) NULL
+          else if (units[3]=="") T else paste(T, " [", units[3], "]", sep="")
+  return (list(xlab=xlab, ylab=ylab, Tlab=Tlab))
+}
+
+add.units <- function(x,  units=NULL) {
+  if (is.null(x)) return(NULL)
+  if (is.null(units)) units <- RFoptions()$general$variab_units
+  return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
+}
+
+ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
+                         dw = 2.5, w.outer=0.7) {
+  if (graphics$always_close_screen) {
+    if (is.finite(graphics$height) && graphics$height>0) {
+      if (length(dev.list()) > 0) dev.off()
+    } else close.screen(all.screens=TRUE)
+  }
+ 
+    H <-  graphics$height
+  if (is.finite(H) && H>0) {
+    H <- H * pmin(1, graphics$increase_upto[1] / figs[1],
+                  graphics$increase_upto[2] / figs[2])
+    DH <- H * dh / (dh + h.outer)
+    HO <- H - DH
+    curH <- figs[1] * DH + HO
+    W <- H * (dw + w.outer) / (dh + h.outer)
+    DW <- W * dw / (dw + w.outer)
+    WO <- W - DW
+    curW <-  figs[2] * DW + WO    
+    getOption("device")(height=curH, width=curW)
+
+    #Print(figs, c(curH, curW), graphics); XXXX
+    return(c(curH, curW)) 
+ } else return(rep(NA, 2))
+
+  
+}
+

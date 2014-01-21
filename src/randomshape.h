@@ -65,6 +65,13 @@ void kappatrend(int i, cov_model *cov, int *nr, int *nc);
 
 //-----------------------------------------------------------------
 // shapes
+
+void kappa_Angle(int i, cov_model *cov, int *nr, int *nc);
+void Angle(double *x, cov_model *cov, double *v);
+int checkAngle(cov_model *cov);
+void rangeAngle(cov_model *cov, range_type* ra);
+
+
 void kappa_ave(int i, cov_model *cov, int *nr, int *nc);
 void ave(double *x, cov_model *cov, double *v);
 int checkave(cov_model *cov);
@@ -341,6 +348,7 @@ void Cov(double *x, cov_model *cov, double *value) ;
 int check_cov(cov_model *cov) ;
 int struct_cov(cov_model *cov, cov_model **newmodel);
 
+void Fctn(double *x, cov_model *cov, double *value);
 int check_fctn(cov_model *cov);
 
 void CovMatrix(double *x, cov_model *cov, double *value) ;

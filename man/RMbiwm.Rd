@@ -24,10 +24,10 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  \item{nu}{alternative to \code{nudiag} and \code{nured12}:
  a vector of length 3 of numerical values; each entry
  positive; the vector \eqn{(\nu_{11},\nu_{21},\nu_{22})}.
- Either 
- \code{nured} and \code{nudiag} or \code{nu} must be given.}
- \item{s}{a vector of length 2 of numerical values; each entry
- positive; the vector \eqn{(s_{11},s_{22})}}
+ Either
+ \code{nured} and \code{nudiag}, or \code{nu} must be given.}
+ \item{s}{a vector of length 3 of numerical values; each entry
+ positive; the vector \eqn{(s_{11},s_{21},s_{22})}}
  \item{cdiag}{a vector of length 2 of numerical values; each entry
  positive; the vector \eqn{(c_{11},c_{22})}}
  \item{rhored}{a numerical value; in the interval \eqn{[-1,1]}. See
@@ -53,8 +53,8 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  \deqn{\nu_{ii}, s_{ii}, c_{ii} > 0.}
  For the offdiagonal elements we have 
  \deqn{s_{12}=s_{21} > 0,}
- \deqn{\nu_{12} =\nu_{21} = 0.5 (\nu_{11} + \nu{22}) / \nu_{red}}
- for some constant \eqn{\nu_{red} \in (0,1]} and
+ \deqn{\nu_{12} =\nu_{21} = 0.5 (\nu_{11} + \nu{22}) * \nu_{red}}
+ for some constant \eqn{\nu_{red} \in [1,\infty)} and
  \deqn{c_{12} =c_{21} = \rho_{red} \sqrt{f m c_{11} c_{22}}}
  for some constant \eqn{\rho_{red}} in \eqn{[-1,1]}.
  
@@ -98,10 +98,11 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- y <- seq(-10, 10, if (interactive()) 0.2 else 5)
 model <- RMbiwm(nudiag=c(1, 2), nured=1, rhored=1, cdiag=c(1, 5), 
                 s=c(1, 1, 2))
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu)
+\dontshow{RFoptions(seed=NA)}
 }

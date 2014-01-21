@@ -137,12 +137,13 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- seq(0, 1, len=if (interactive()) 100 else 3)
 model <- RMwhittle(nu=1, Aniso=matrix(nc=2, c(1.5, 3, -3, 4)))
 plot(model, dim=2, xlim=c(-1,1))
 z <- RFsimulate(model=model, x, x, grid=TRUE)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 

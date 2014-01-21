@@ -26,7 +26,7 @@ RMcoord <- new('RMmodelgenerator',
                .Data = RMcoord,
                type = ZF_TYPE[OtherType + 1],
                domain = ZF_DOMAIN[PREVMODELD + 1],
-               isotropy = ZF_ISOTROPY[NO_ROTAT_INV + 1],
+               isotropy = ZF_ISOTROPY[CARTESIAN_COORD + 1],
                operator = TRUE,
                normalmix = TRUE,
                finiterange = TRUE,
@@ -66,7 +66,7 @@ internalRMmixed <- new('RMmodelgenerator',
                        .Data = internalRMmixed,
                        type = ZF_TYPE[OtherType + 1],
                        domain = ZF_DOMAIN[PREVMODELD + 1],
-                       isotropy = ZF_ISOTROPY[NO_ROTAT_INV + 1],
+                       isotropy = ZF_ISOTROPY[CARTESIAN_COORD + 1],
                        operator = TRUE,
                        normalmix = TRUE,
                        finiterange = TRUE,
@@ -81,9 +81,9 @@ RRdistr <- function(fct, nrow, ncol, envir) {
     if (is.logical(u) && u)
       return(fct)
   }
-  
-  cl <- match.call()
 
+  cl <- match.call()
+  
   par.general <- submodels <- par.model <- list()
 
  # Print(substitute(fct), rate);  xxxx
@@ -148,7 +148,7 @@ RRdistr <- new('RMmodelgenerator',
 	.Data = RRdistr,
 	type = ZF_TYPE[.RandomType + 1],
         domain = ZF_DOMAIN[PREVMODELD + 1],
-	isotropy = ZF_ISOTROPY[ISOTROPIC + 1],
+	isotropy = ZF_ISOTROPY[PREVMODELI + 1],
 	operator = FALSE,
 	normalmix = FALSE,
 	finiterange = FALSE,

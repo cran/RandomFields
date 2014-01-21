@@ -33,7 +33,8 @@
 
 \arguments{
   \item{type, domain, isotropy, operator, normalmix, finiterange, vdim}{
-    see \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
+    see \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
+    and \link{constants}.
   }
   \item{valid.in.dim}{an optional integer indicating the dimension of
   the space where the model is valid}
@@ -190,17 +191,19 @@
 %}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de}
 }
 
 \seealso{
+  \link{constants},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}}.
 }
 
 \examples{
-set.seed(0)
-# get vector of names of all objects of class RMmodelgenerator
+RFoptions(seed=0)
+# get vector of names of all functions
 RFgetModelNames()
 
 # get vector of names of all stationary objects of class RMmodelgenerator
@@ -210,7 +213,7 @@ RFgetModelNames(type="positive definite", domain="single variable")
 RFgetModelNames(group.by=c("type"))
 
 
-\dontrun{
+\dontshow{\dontrun{
 # get list of all univariate stationary models
 # additionally grouped by the isotropy attribute
 str(RFgetModelNames(type="positive definite", domain="single variable",
@@ -228,8 +231,9 @@ RFgetModelNames(type=c("tail correlation function",
 # argument and subsequently grouped by the isotropy argument
 str(RFgetModelNames(type=c("positive definite", "negative definite", "process"),
                     group.by=c("type", "domain", "isotropy")))
-}
+}}
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 \keyword{spatial}

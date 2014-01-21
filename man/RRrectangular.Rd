@@ -70,7 +70,7 @@ RRrectangular(phi, safety, minsteplen, maxsteps, parts, maxit,
  }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 # simulation of Gaussian variables (in a not very straight forward way):
 distr <- RRrectangular(RMgauss(), approx=FALSE)
@@ -87,6 +87,7 @@ z <- RFrdistr(distr, n=if (interactive()) 1000000 else 10)
 hist(z, 200, freq=!TRUE)
 x <- seq(-10, 10, 0.01)
 lines(x, 4/3*RFcov(RMspheric(), x, spConform=FALSE))
+\dontshow{RFoptions(seed=NA)}
 
 }
  

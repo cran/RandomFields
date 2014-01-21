@@ -56,8 +56,9 @@ RMstein(nu, z, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMstein(nu=1.5, z=0.9)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x, y=x))
+\dontshow{RFoptions(seed=NA)}
 }

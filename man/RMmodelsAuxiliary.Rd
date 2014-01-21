@@ -27,6 +27,8 @@
   Besides any of the covariance functions the following functions can be
   used as shape functions.
  \tabular{ll}{
+    \command{\link{RMangle}} \tab defines an anisotropy matrix by angle
+    and a diagonal matrix. \cr
     \command{\link{RMball}} \tab Indicator of a ball of radius
     \eqn{1/2}. \cr
     \command{\link{RMeaxxa}} \tab shape function used in the Bernoulli
@@ -80,7 +82,7 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 type <- c("tail correlation function",
           "positive definite",
           "negative definite",
@@ -93,6 +95,7 @@ type <- c("tail correlation function",
           "trend",
           "interface")
 RFgetModelNames(type=type, group.by="type")
+\dontshow{RFoptions(seed=NA)}
 }
 
 \author{

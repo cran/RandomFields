@@ -267,6 +267,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
  #       is.null(fct.type), fct.type,"Variogram") ; xxx
   
   distance <- seq(xlim[1], xlim[2], length=n.points)
+  
   if (xlim[1]*xlim[2] < 0 & !(any(distance==0)))
     distance <- sort(c(0, distance))
 
@@ -349,12 +350,14 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     cov <- RFcov(x=li$distance, model=x, fctcall=li$fctcall)
 
     #print(cov, li$distance)
+    lab <- xylabs("distance", li$ylab)
     
-    if (!("xlab" %in% dotnames)) dots$xlab <- "distance"
-    if (!("ylab" %in% dotnames)) dots$ylab <- li$ylab
-  } else {
-    if (!("xlab" %in% dotnames)) dots$xlab <- NULL
-    if (!("ylab" %in% dotnames)) dots$ylab <- NULL
+    if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
+    if (!("ylab" %in% dotnames)) dots$ylab <- lab$y
+  } else {  
+    lab <- xylabs("", "")    
+    if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
+    if (!("ylab" %in% dotnames)) dots$ylab <- lab$y
     dots$type <- NULL
  
     if (dim==2)
@@ -390,9 +393,8 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
                          z=matrix(cov, nrow=length(li$distance))), dots))
     }
   } else { ## multivariate 
-    
-    if (RFoptions()$graphics$always_close_screen)
-      close.screen(all.screens=TRUE)
+    graphics <- RFoptions()$graphics
+    ArrangeDevice(graphics, dim(cov)[2:3])
     scr <- matrix(split.screen(figs=dim(cov)[2:3]),
                   ncol=dim(cov)[2], byrow=TRUE)
     par(oma=margins)
@@ -426,7 +428,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
               args=c(dots.axis, list(side=2, outer = TRUE, line=1)))
       }
     }
-    if (RFoptions()$graphics$always_close_screen)
+    if (graphics$always_close_screen)
       close.screen(all.screens=TRUE)
   } 
 }

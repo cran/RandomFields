@@ -30,7 +30,7 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{if (.C("isAuthor", a=integer(1))$a) {
 
 ## Figure 1 
@@ -64,6 +64,7 @@ for (it in 1:length(thetas)) {
 }
 
 }}
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

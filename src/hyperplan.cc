@@ -4,7 +4,7 @@
 
  simulation of a random field by hyperplane tessellation
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -96,7 +96,7 @@ int check_hyperplane(cov_model *cov) {
       BUG;
     } else if (intern != cov) paramcpy(intern, cov, true, false);
  
-    if ((err = CHECK(sub, dim,  dim, ProcessType, XONLY, NO_ROTAT_INV, 
+    if ((err = CHECK(sub, dim,  dim, ProcessType, XONLY, CARTESIAN_COORD, 
 		       SCALAR, cov->role)) != NOERROR) {
       return err;
     }
@@ -188,7 +188,7 @@ int init_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   hyper_storage *s = NULL;
   long int lines;
   int d,
-    maxlines = ((int *) cov->p[HYPER_MAXLINES])[0],
+    maxlines = P0INT(HYPER_MAXLINES),
     dim = cov->tsdim,
     err = NOERROR,  
     optdim=2;// falls dies gelockert wird, so kc->idx[d] nicht vergessen!
@@ -390,25 +390,25 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     *loc = Loc(cov);
   int 
     dim = cov->tsdim,
-    mar_distr = ((int *) cov->p[HYPER_MAR_DISTR])[0];
+    mar_distr = P0INT(HYPER_MAR_DISTR);
   double *res = cov->rf;
   double gx, gy, *hx, *hy, *hr, variance,
     E=RF_NAN,
     sd=RF_NAN,
-    mar_param = cov->p[HYPER_MAR_PARAM][0];
+    mar_param = P0(HYPER_MAR_PARAM);
   int resindex, integers, bits, q, endfor, i, err, j,
-    superpos = ((int *) cov->p[HYPER_SUPERPOS])[0];
-    mar_distr = ((int *) cov->p[HYPER_MAR_DISTR])[0];
+    superpos = P0INT(HYPER_SUPERPOS);
+    mar_distr = P0INT(HYPER_MAR_DISTR);
    randomvar_type randomvar=NULL;
   hyper_storage *s = cov->Shyper;
   bool add = true;
   avltr_tree *tree;
   cell_type *cell;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
 
   hx = hy = hr = NULL;
   s = (hyper_storage*) cov->Shyper;
-  variance = isDollar(cov) ? cov->p[DVAR][0] : 1.0;
+  variance = isDollar(cov) ? P0(DVAR) : 1.0;
   tree = NULL;
   
   switch (mar_distr) {

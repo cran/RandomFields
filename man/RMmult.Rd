@@ -45,13 +45,14 @@ RMmult(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 # separable, multiplicative model
 model <- RMmult(RMgauss(proj=1), RMexp(proj=2, scale=5))
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 

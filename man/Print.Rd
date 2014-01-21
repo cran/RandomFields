@@ -17,11 +17,12 @@ Print(..., digits = 6, empty.lines = 2)
   is used and for lists \command{str}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
   a <- 4
   b <- list(c=5, g=7)
   m <- matrix(1:4, nc=2)
   Print(a, b, m)
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
   \url{http://ms.math.uni-mannheim.de}}

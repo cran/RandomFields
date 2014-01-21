@@ -17,7 +17,7 @@
 
 
 ## jetzt nur noch global naturalscaling (ja / nein)
-## spaeter eine Funktion schreibbar, die den naturscaling umwandelt;
+## spaeter eine unktion schreibbar, die den naturscaling umwandelt;
 ##   im prinzipt CMbuild, aber ruechwaers mit 1/newscale und eingefuegt
 ##   in eventuell schon vorhandene $ operatoren
 
@@ -62,6 +62,177 @@
 
 # load("UKFALSE.rda")
 # load("UKTRUE.rda")
+
+StandardizeData <- function(x, y, z, T, grid, data, distances, dimensions,
+                            RFopt) {
+  if (missing(grid)) grid <- NULL
+  dist.given <- !is.null(distances)
+  matrix.indep.of.x.assumed <- FALSE  
+  rangex <- neu <- gridlist <- RFsp.coord <-  gridTopology <- data.RFparams <-
+    NULL
+
+  if (isRFsp <- is(data, "RFsp")){ # ||(is.list(data) && is(data[[1]], "RFsp")))
+    stopifnot(missing(x) || is.null(x),
+              is.null(y), is.null(z), is.null(T),
+              is.null(distances))
+    if (!is.list(data)) data <- list(data)
+    sets <- length(data)
+ 
+    x <- T <- gridlist <- RFsp.coord <- gridTopology <- data.RFparams <-
+      vector("list", sets)
+    
+
+    dimdata <- NULL
+    for (i in 1:length(data)) {      
+      gridtmp <- isGridded(data[[i]])
+      compareGridBooleans(grid, gridtmp)
+      data.RFparams[[i]] <- data[[i]]@.RFparams
+      gridTopology[[i]] <- if (gridtmp) data[[i]]@grid else NULL
+      RFsp.coord[[i]] <- if (!gridtmp) data[[i]]@coords else NULL
+      dimdata <- rbind(dimdata,
+                       if (gridtmp) c(data[[i]]@.RFparams$vdim,
+                                      data[[i]]@grid@cells.dim,
+                                      data[[i]]@.RFparams$n)
+                       else c(data[[i]]@.RFparams$vdim,
+                              nrow(data[[i]]@data),
+                              data[[i]]@.RFparams$n))
+      
+      gridlist[[i]] <- gridtmp
+      tmp <- RFspDataFrame2conventional(data[[i]])
+      x[[i]] <- tmp$x
+      if (!is.null(tmp$T)) T[[i]] <- tmp$T
+      data[[i]] <- as.matrix(tmp$data)      
+    }
+
+    if (all(dimdata[, 1] == 1))
+      dimdata <- dimdata[, -1, drop=FALSE]
+    if (all(dimdata[, ncol(dimdata)] == 1))
+      dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
+    distances <- NULL
+  } else {
+    ## dimdata wird spaeter bestimmt
+    if (dist.given) {
+      stopifnot(missing(x) || is.null(x), is.null(y), is.null(z))
+      if (!is.list(distances)) {
+        distances <- list(distances)
+        if (is.list(data))
+          stop("if list of data is given then also for distances ")
+        data <- list(as.matrix(data))
+      } else if (!is.list(data)) {
+        stop("if list of distances is given then also for data ")
+        if (length(data) != length(distances))
+          stop("length of distances does not match length of data")
+      }      
+      for (i in 1:length(distances)) {
+        if (any(is.na(data)))
+          stop("missing data are not allowed if distances are used.")
+      }
+      spdim <- tsdim <- as.integer(dimensions)
+      stopifnot(missing(T)  || is.null(T))
+      lcc <- sapply(distances, function(x) 0.5 * (1 + sqrt(1 + 8 * length(x))) )
+      lc <- as.integer(lcc)
+      if (any(lc != lcc)) stop("number of distances not of form k(k-1)/2")
+      coord <- distances
+      coord.units <- RFopt$general$coord_units
+    } else { ## distances not given
+      distances <- NULL
+      if (missing(x)){ ## dec 2012: matrix.indep.of.x.assumed
+        matrix.indep.of.x.assumed <- TRUE
+        x <- 1:nrow(as.matrix(data))
+        x[1] <- 0 ## so no grid !
+      } #else {
+      if (is.data.frame(x)) x <- as.matrix(x)
+      if (is.data.frame(data) || is.vector(data)) data <- as.matrix(data)
+      if (is.list(x)) {
+        if (!is.null(y) & !is.list(y) |
+            !is.null(z) & !is.list(z) |
+            !is.null(T) & !is.list(T) |
+            !is.list(data)) {
+          stop("either all coordinates and data must be given by a list or none.")
+        }
+      } else {
+        x <- list(x)
+        if (!is.null(y)) {
+          stopifnot(!is.list(y))
+          y <- list(y)
+          }
+        if (!is.null(z)) {
+          stopifnot(!is.list(z))
+          z <- list(z)
+        }
+        if (!is.null(T)) {
+          stopifnot(!is.list(T))
+          T <- list(T)
+        }
+        stopifnot(!is.list(data))
+        data <- list(as.matrix(data))
+      }
+      ##}
+    }
+    sets <- length(data)
+    dimdata <- matrix(nrow=sets, ncol=length(dim(data[[1]])))
+    gridlist <- rep(list(grid), sets)
+  }
+  
+   if (!dist.given) { ##   x coordinates, not distances
+     coord <- neu <- list()
+    for (i in 1:length(x)) {
+      
+      neu[[i]] <- CheckXT(x[[i]], y[[i]], z[[i]], T[[i]],
+                       grid = gridlist[[i]],
+                       length.data=length(data[[i]]),
+                       printlevel = 0)
+ 
+      if (i==1) {
+        spdim <- as.integer(neu[[i]]$spacedim)
+        tsdim <- as.integer(spdim + !is.null(T[[i]]))
+        if (!missing(dimensions) && !is.null(dimensions)) {
+          stop("dim should be given only when 'distances' are given")
+        }
+         rangex <- as.matrix(apply(neu[[i]]$x, 2, range))       
+      } else if (spdim != neu[[i]]$spacedim |
+                 tsdim != as.integer(spdim + !is.null(T[[i]])))
+        stop("dimensions of all sets must be the same")
+
+      coord[[i]] <- neu[[i]]$x # stehend
+      
+      if (neu[[i]]$grid) {
+        ## note: checkxt returns always gridtriple format !
+ 
+        coord[[i]] <- apply(coord[[i]], 2, function(z) z[1] +  z[2] * (1:z[3]))
+        args <- lapply(if (is.list(coord[[i]])) coord[[i]] else
+                      apply(coord[[i]], 2, list),
+                      function(z) c(z, recursive=TRUE))
+        coord[[i]] <- as.matrix(do.call("expand.grid", args=args))
+      }
+      if (!is.null(T[[i]])) {
+        tt <- T[[i]][1] + T[[i]][2] * (1:T[[i]][3])
+        coord[[i]] <- cbind(coord[[i]][rep(1:nrow(coord[[i]]), length(tt)), ],
+                        rep(tt, each=nrow(coord[[i]])))
+      }
+      coord[[i]] <- t(coord[[i]]) ## liegend
+      
+    }
+    # x <- y <- z <- T <- NULL    
+    lc <- sapply(coord, ncol)    
+    coord.units <- neu[[1]]$coord_units
+  }
+  
+  storage.mode(tsdim) <- "integer"
+  storage.mode(spdim) <- "integer"
+  return(list(coord=coord, data=data, dimdata=dimdata, isRFsp = isRFsp,
+              RFsp.coord = RFsp.coord,
+              distances = distances,
+              neu = neu,
+              dist.given=dist.given,
+              gridTopology = gridTopology,
+              data.RFparams = data.RFparams,
+              lc=lc, spdim=spdim, tsdim=tsdim,
+              rangex = rangex, coord.units=coord.units,
+              matrix.indep.of.x.assumed = matrix.indep.of.x.assumed))
+
+}
+
 
 
 GetLowerUpper <- function(lower, upper, trafo, optim_var_estim,
@@ -180,28 +351,39 @@ GetTrend <- function(coord, idx, model, vdim, param) {
   }
 }
 
-GetValuesAtNA <- function(model, model2, spdim, Time, short,
-                          ncovparam, skipchecks) {
+GetValuesAtNA <- function(NAmodel, valuemodel, spdim, Time, shortnamelength,
+                          skipchecks) {
+
   spdim <- as.integer(spdim)
   Time <- as.logical(Time)
+  skipchecks <- as.logical(skipchecks)
+  shortnamelength <- as.integer(shortnamelength)
   
   reg <- MODEL.SPLIT
 
-  .Call("SetAndGetModelInfo", reg, list("Cov", model2),
-        spdim, FALSE, # distances
-        TRUE, # in case it is a non-trans.inv model
-        Time, spdim,
-        as.integer(short),
-        FALSE, # allowforinteger
-        TRUE,  # excludetrend
-        PACKAGE="RandomFields")
+  info <- neu <- list()
+  models <- list(NAmodel, valuemodel)
+  #Print(models)
+  for (m in 1:length(models)) {
+    
+    info[[m]] <- .Call("SetAndGetModelInfo", reg, list("Cov", models[[m]]),
+                  spdim, FALSE, # distances
+                  TRUE, # in case it is a non-trans.inv model
+                  Time, spdim,
+                  shortnamelength,
+                  FALSE, # allowforinteger
+                  TRUE,  # excludetrend
+                  PACKAGE="RandomFields")
+    neu[[m]] <- GetModel(register=reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
+                         do.notreturnparam=TRUE)
+    
+  }
+ # Print(neu)
 
-  neu <- GetModel(register=reg, modus=1, spConform=FALSE,
-                  do.notreturnparam=TRUE)
-
-  ret <- .Call("Take2ndAtNaOf1st", reg, list("Cov", model),
-               list("Cov", neu), spdim, Time, spdim, 
-               as.integer(ncovparam), skipchecks, PACKAGE="RandomFields")
+  NAs <- nrow(info[[1]]$minmax)
+  ret <- .Call("Take2ndAtNaOf1st", reg, list("Cov", neu[[1]]),
+               list("Cov", neu[[2]]), spdim, Time, spdim, 
+               NAs, skipchecks, PACKAGE="RandomFields")
   
   return(ret)
 }
@@ -251,7 +433,7 @@ ModelSplitXT <- function(Reg, info.cov, trafo, variab,
           var[p.proj[i]] <- modivar[i, m1]
 
           .C("PutValuesAtNA", Reg, trafo(var), PACKAGE="RandomFields",DUP=FALSE)
-         
+          
           .Call("CovLoc", Reg, x, y, xdimOZ, ncol(x), S,
                 PACKAGE="RandomFields")
           dim(S) <- c(ncol(x), vdim, vdim)          
@@ -394,7 +576,7 @@ ModelSplit <- function(Reg, info.cov, trafo, variab,
 
         .C("PutValuesAtNA", Reg, trafo(var),
            PACKAGE="RandomFields", DUP=FALSE)
-             
+
         .Call("CovLoc", Reg, x, if (is.dist.vector) NULL else y,
               xdimOZ, ncol(x), S, PACKAGE="RandomFields")
        
@@ -483,11 +665,12 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
 
   w <- 0.5
   dist.given <- missing(x) || is.null(x)
-  new.lower <- upper
-  new.upper <- lower
+  new.lower <- lower
+  new.upper <- upper
   sets <- length(data)
 
   if (printlevel >= PL.FCTN.DETAILS) Print(split) #
+
    
   for (s in 1:length(split)) {  
     sp <- split[[s]]
@@ -497,7 +680,7 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
             paste(p, collapse=", "), sep="")
          cat("\n")
       }
-     #
+     #         Print(new.lower, new.upper)
       stopifnot(all(new.lower[p] <= new.upper[p]))
       lower[p] <- new.lower[p] <- w * new.lower[p] + (1-w) * lower[p]
       upper[p] <- new.upper[p] <- w * new.upper[p] + (1-w) * upper[p]
@@ -507,7 +690,8 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
       res <- recurs.estim(split=sp, level=level+1, Reg=Reg,
                                   vdim=vdim, lc=lc,
                                   model=model, x=x, T=T, 
-                                  data= data, lower=lower, upper=upper,
+                                  data= data,
+                                  lower=lower, upper=upper,
                                   users.lower=users.lower,
                                   users.upper=users.upper,
                                   guess= guess,  
@@ -551,22 +735,22 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
       
       .C("PutValuesAtNA", Reg,  trafo(guess),
          PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-      old.model <- GetModel(register=Reg, modus=1 , do.notreturnparam=TRUE)
+      old.model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE , do.notreturnparam=TRUE)
 
       guess[sp$p.proj] <- NA
       .C("PutValuesAtNA", Reg, trafo(guess),
          PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-      new.model <- GetModel(register=Reg, modus=1, spConform=FALSE,
+      new.model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                             do.notreturnparam=TRUE)
       
       .C("PutValuesAtNA", Reg, trafo(lower),
          PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-      lower.model <- GetModel(register=Reg, modus=1, spConform=FALSE,
+      lower.model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                               do.notreturnparam=TRUE)
       
       .C("PutValuesAtNA", Reg,  trafo(upper),
          PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-      upper.model <- GetModel(register=Reg, modus=1, spConform=FALSE,
+      upper.model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                               do.notreturnparam=TRUE)
 
        
@@ -729,6 +913,7 @@ rffit.gauss <-
   ##    practicalrange, optim_var_estimation
   ##
 
+    
   
   RFoptOld <- internal.rfoptions(...)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
@@ -1052,6 +1237,10 @@ rffit.gauss <-
     .Call("VariogramIntern", Reg, bin.centers, bins, model.values,
        PACKAGE="RandomFields")
 
+#    Print( RFgetModelInfo(reg=Reg, lev=1, spC=F),
+#          bin.centers, bins, model.values, length(bin.centers),length(model.values))
+  
+ 
     if (any(!is.finite(model.values))) {
       if (printlevel>=PL.IMPORPANT) {
         message("LSQ missing values!")
@@ -1385,7 +1574,7 @@ rffit.gauss <-
                    as.integer(idx.na[[i]][[m]] - 1),
                       as.integer(nSidx), Si,
                    PACKAGE="RandomFields", eigen(Si)$value,
-                      GetModel(Reg)) ;
+                      GetModel(Reg)) ## OK
 
                }
 
@@ -1561,7 +1750,6 @@ rffit.gauss <-
   }
 
   
-  IDX <- function(name) {idx <- tblidx[[name]]; idx[1]:idx[2]}
 
 
   ## to avoid warning on "no visible binding" we define the following
@@ -1591,156 +1779,29 @@ rffit.gauss <-
 
   if (printlevel>=PL.FCTN.STRUCTURE) cat("\ninitial settings...\n")
 
-  matrix.indep.of.x.assumed <- FALSE
 
-  if (isRFsp <- is(data, "RFsp")){ # ||(is.list(data) && is(data[[1]], "RFsp")))
-    stopifnot(missing(x) || is.null(x),
-              is.null(y), is.null(z), is.null(T),
-              is.null(distances))
-    if (!is.list(data)) data <- list(data)
-    x <- T <- gridlist <- coords <- gridTopology <- data.RFparams <-
-      vector("list", length(data))
+  variab.units <- RFopt$general$variab_units
 
-    dimdata <- NULL
-    for (i in 1:length(data)) {      
-      gridtmp <- isGridded(data[[i]])
-      compareGridBooleans(grid, gridtmp)
-      data.RFparams[[i]] <- data[[i]]@.RFparams
-      gridTopology[[i]] <- if (gridtmp) data[[i]]@grid else NULL
-      coords[[i]] <- if (!gridtmp) data[[i]]@coords else NULL
-      dimdata <- rbind(dimdata,
-                       if (gridtmp) c(data[[i]]@.RFparams$vdim,
-                                      data[[i]]@grid@cells.dim,
-                                      data[[i]]@.RFparams$n)
-                       else c(data[[i]]@.RFparams$vdim,
-                              nrow(data[[i]]@data),
-                              data[[i]]@.RFparams$n))
-      
-      gridlist[[i]] <- gridtmp
-      tmp <- RFspDataFrame2conventional(data[[i]])
-      x[[i]] <- tmp$x
-      if (!is.null(tmp$T)) T[[i]] <- tmp$T
-      data[[i]] <- as.matrix(tmp$data)      
-    }
+  Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+                       distances=distances, dimensions=dimensions, RFopt=RFopt)
+  coord <- Z$coord
+  data <- Z$data
+  dimdata <- Z$dimdata
+  isRFsp <- Z$isRFsp
+  dist.given <- Z$dist.given
+  gridTopology <- Z$gridTopology
+  data.RFparams <- Z$data.RFparams
+  lc <- Z$lc
+  spdim <- Z$spdim
+  tsdim <- Z$tsdim
+  rangex <- Z$rangex
+  coord.units <- Z$coord.units
+  matrix.indep.of.x.assumed <- Z$matrix.indep.of.x.assumed
+  neu <- Z$neu
+  RFsp.coord <- Z$RFsp.coord
+  distances <- Z$distances
 
-    if (all(dimdata[, 1] == 1))
-      dimdata <- dimdata[, -1, drop=FALSE]
-    if (all(dimdata[, ncol(dimdata)] == 1))
-      dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
-    dist.given <- FALSE
-  } else {
-    ## dimdata wird spaeter bestimmt
-    if (dist.given <- !is.null(distances)) {
-      stopifnot(missing(x) || is.null(x), is.null(y), is.null(z))
-      if (!is.list(distances)) {
-        distances <- list(distances)
-        if (is.list(data))
-          stop("if list of data is given then also for distances ")
-        data <- list(as.matrix(data))
-      } else if (!is.list(data)) {
-        stop("if list of distances is given then also for data ")
-        if (length(data) != length(distances))
-          stop("length of distances does not match length of data")
-      }      
-      for (i in 1:length(distances)) {
-        if (any(is.na(data)))
-          stop("missing data are not allowed if distances are used.")
-      }
-    } else { ## distances not given
-      if (missing(x)){ ## dec 2012: matrix.indep.of.x.assumed
-        matrix.indep.of.x.assumed <- TRUE
-        x <- 1:nrow(as.matrix(data))
-        x[1] <- 0 ## so no grid !
-      } #else {
-      if (is.data.frame(x)) x <- as.matrix(x)
-      if (is.data.frame(data) || is.vector(data)) data <- as.matrix(data)
-      if (is.list(x)) {
-        if (!is.null(y) & !is.list(y) |
-            !is.null(z) & !is.list(z) |
-            !is.null(T) & !is.list(T) |
-            !is.list(data)) {
-          if (printlevel>=PL.FCTN.ERRORS) Print(x, y, z, T)#
-          stop("either all coordinates and data must be given by a list or none.")
-        }
-      } else {
-        x <- list(x)
-        if (!is.null(y)) {
-          stopifnot(!is.list(y))
-          y <- list(y)
-          }
-        if (!is.null(z)) {
-          stopifnot(!is.list(z))
-          z <- list(z)
-        }
-        if (!is.null(T)) {
-          stopifnot(!is.list(T))
-          T <- list(T)
-        }
-        stopifnot(!is.list(data))
-        data <- list(as.matrix(data))
-      }
-      ##}
-    }
-  }
-   
-  if (dist.given) {
-    spdim <- tsdim <- as.integer(dimensions)
-    stopifnot(missing(T)  || is.null(T))
-    lcc <- sapply(distances, function(x) 0.5 * (1 + sqrt(1 + 8 * length(x))) )
-    lc <- as.integer(lcc)
-    if (any(lc != lcc)) stop("number of distances not of form k(k-1)/2")
-    coord <- distances
-  } else { ##   x coordinates, not distances
-    coord <- neu <- list()
-    for (i in 1:length(x)) {
-
-      if (isRFsp) ## Unterscheidung notwendig wegen missing(grid)
-        neu[[i]] <- CheckXT(x[[i]], y[[i]], z[[i]], T[[i]],
-                       grid = gridlist[[i]],
-                       length.data=length(data[[i]]),
-                       printlevel = 0)
-      else
-        neu[[i]] <- CheckXT(x[[i]], y[[i]], z[[i]], T[[i]],
-                            grid = grid,
-                            length.data=length(data[[i]]),
-                            printlevel = 0)
-      
-      if (printlevel>=PL.FCTN.DETAILS) Print(neu[[i]])#
-      if (i==1) {
-        spdim <- as.integer(neu[[i]]$spacedim)
-        tsdim <- as.integer(spdim + !is.null(T[[i]]))
-        if (!missing(dimensions) && !is.null(dimensions)) {
-          stop("dim should be given only when 'distances' are given")
-        }
-        storage.mode(tsdim) <- "integer"
-        rangex <- as.matrix(apply(neu[[i]]$x, 2, range))       
-      } else if (spdim != neu[[i]]$spacedim |
-                 tsdim != as.integer(spdim + !is.null(T[[i]])))
-        stop("dimensions of all sets must be the same")
-
-      coord[[i]] <- neu[[i]]$x # stehend
-      
-      if (neu[[i]]$grid) {
-        ## note: checkxt returns always gridtriple format !
- 
-        coord[[i]] <- apply(coord[[i]], 2, function(z) z[1] +  z[2] * (1:z[3]))
-        args <- lapply(if (is.list(coord[[i]])) coord[[i]] else
-                      apply(coord[[i]], 2, list),
-                      function(z) c(z, recursive=TRUE))
-        coord[[i]] <- as.matrix(do.call("expand.grid", args=args))
-      }
-      if (!is.null(T[[i]])) {
-        tt <- T[[i]][1] + T[[i]][2] * (1:T[[i]][3])
-        coord[[i]] <- cbind(coord[[i]][rep(1:nrow(coord[[i]]), length(tt)), ],
-                        rep(tt, each=nrow(coord[[i]])))
-      }
-      coord[[i]] <- t(coord[[i]]) ## liegend
-      
-    }
-    # x <- y <- z <- T <- NULL    
-    lc <- sapply(coord, ncol)
-  }
-
+  
   small.dataset <- max(lc) <= fit$smalldataset    
     
   ## check box-cox transformation 
@@ -1761,9 +1822,8 @@ rffit.gauss <-
   ## gets response part of model, if model is a formula
 
   ##
-  xdimOZ <- as.integer(tsdim - !is.null(T[[i]]))
+  xdimOZ <- as.integer(tsdim - !is.null(T[[1]]))
 
-  
   info.cov <- .Call("SetAndGetModelInfo", Reg, list("Cov", model),
                     spdim, FALSE, TRUE, time, xdimOZ,
                     fit$short, FALSE, TRUE,
@@ -1773,7 +1833,7 @@ rffit.gauss <-
   ## hier zum ersten mal model verwendet wichtig,
   ## da interne Darstellung abweichen kann. Z.B. dass ein optionaler Parameter
   ## auf einen Standardwert gesetzt wird
-  model <- GetModel(register=Reg, modus=1, spConform=FALSE,
+  model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                     do.notreturnparam=TRUE) ##standardisiert
   #userdefined <- GetParameterModelUser(model)
   
@@ -1787,7 +1847,11 @@ rffit.gauss <-
   trans.inv <- info.cov$trans.inv ## note: only with respect to the
   ##              coordinates, mixed effect koennen andere wirkung haben
   isotropic <- info.cov$isotropic
-  stopifnot(!dist.given || trans.inv && isotropic)
+  
+  if (dist.given && (!trans.inv || !isotropic)) {
+    #Print(dist.given, !trans.inv, !isotropic, recall)
+    stop("only domain and isotropic models go along with distances")
+  }
   minmax <- info.cov$minmax # 4 Spalten: 1:min, 2:max, 3:type, 4:is.nan, not na
   ##VARLARAM, SCALEPARAM, DIAGPARAM, ANISOPARAM, // 0..3
   ##INTERNALPARAM, ANYPARAM, TRENDPARAM, NUGGETVAR, MIXEDVAR, // 4..8
@@ -1798,10 +1862,7 @@ rffit.gauss <-
   ncovparam <- nrow(minmax)
   ptype <- minmax[, 3]
 
-  if (dist.given && (!trans.inv || !isotropic))
-    stop("only domain and isotropic models go along with distances")
-
-
+  
   ## identify the effects:
   effect <- info.cov$effect
   idx.error <- effect >= Primitive
@@ -1842,20 +1903,23 @@ rffit.gauss <-
   vareffect <- which(effect == .RVarEffect)
   if (length(vareffect) == 0) solvesigma <- FALSE
  
-
-  
   is.dist.vector <- trans.inv && small.dataset || dist.given
-  if (is.scalar.dist <- isotropic && is.dist.vector) {
+  coordinate_system <- RFoptions()$general$coordinate_system
+  cartesian <- coordinate_system %in% CARTESIAN_COORD_NAMES
+  if (is.scalar.dist <- isotropic && is.dist.vector && cartesian) {
     xdimOZ <- as.integer(1)
   }
-  ts.xdim <- xdimOZ + !is.null(T[[i]])
- 
+  ts.xdim <- xdimOZ + !is.null(T[[1]])
+
+  
   #Print(is.dist.vector, trans.inv, small.dataset, dist.given)
 
 ######################################################################
 ## model specific settings, upper & lower
 ######################################################################
+   if (printlevel>=PL.FCTN.STRUCTURE) cat("\nupper & lower...\n")
 
+#  xxxxxxxxxxxxxx
   
   trafoidx <- trafo <- NULL
   if (!is.null(transform)) {
@@ -1872,7 +1936,7 @@ rffit.gauss <-
     if (length(trafoidx) != nrow(minmax) || !is.numeric(trafoidx))
     .C("PutValuesAtNA", Reg, as.double((1:nrow(minmax)) * 1.11),
        PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-    model_with_NAs_replaced_by_ranks <- GetModel(register=Reg, modus=1)
+    model_with_NAs_replaced_by_ranks <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE)
     cat("transform must be a list of two elements:\n* A vector V of logicals whose length equals the number of NAs in the model.\n* A function taking a vector whose length equals sum(V). The output\n  is the original model where the NAs are replaced by real numbers.\n\nThe currently identified NAs are:\n")
     print(minmax[, c(1:2)]) #
     cat("\nwithin the following model (NA positions are given by n.nn) :\n")
@@ -1891,35 +1955,46 @@ rffit.gauss <-
   if (printlevel>=PL.FCTN.STRUCTURE) cat("\nlower and upper ...\n")
   
   users.lower <- users.upper <- NULL
-  if (!is.null(lower)) 
-    users.lower <- GetValuesAtNA(model=model, model2=lower, spdim=spdim,
-                                 Time=time,  short=fit$short,
-                                 ncovparam=ncovparam,
-                                 skipchecks=!is.null(trafo)) 
+  if (!is.null(lower)) {
+    users.lower <- try(GetValuesAtNA(NAmodel=model, valuemodel=lower,
+                                     spdim=spdim,
+                                     Time=time, shortnamelength=fit$short,
+                                     skipchecks=!is.null(trafo)) )
+    if (!is.numeric(users.lower)) {
+      if (printlevel>=PL.IMPORPANT) Print(model, lower, users.lower)
+      stop("'lower' does not match 'model'")
+    }
+  }
   if (!is.null(upper)) {
-    users.upper <- GetValuesAtNA(model=model, model2=upper, spdim=spdim,
-                                 Time=time, short=fit$short,
-                                 ncovparam=ncovparam,
-                                 skipchecks=!is.null(trafo))
+    users.upper <- try(GetValuesAtNA(NAmodel=model, valuemodel=upper,
+                                     spdim=spdim,
+                                     Time=time, shortnamelength=fit$short,
+                                     skipchecks=!is.null(trafo)))
+   if (!is.numeric(users.upper)) {
+      if (printlevel>=PL.IMPORPANT) Print(model, upper, users.upper)
+      stop("'upper' does not match 'model'")
+    }
   }
 
 #  Print(users.guess)
   
   if(!is.null(users.guess)) {
-    users.guess <- GetValuesAtNA(model=model, model2=users.guess,
-                                 spdim=spdim,
-                                 Time=time, short=fit$short,
-                                 ncovparam=ncovparam,skipchecks=!is.null(trafo))
+    Users.guess <- try(GetValuesAtNA(NAmodel=model, valuemodel=users.guess,
+                                     spdim=spdim,
+                                     Time=time, shortnamelength=fit$short,
+                                     skipchecks=!is.null(trafo)))
     
-    if (length(users.guess) != nrow(minmax))
-        stop("users.guess must contain all NA/NaN parameters")
+    if (!is.numeric(Users.guess)) {
+      if (printlevel>=PL.IMPORPANT) Print(model, users.guess, Users.guess)
+      stop("'users.guess' does not match 'model'")
+    }
+    users.guess <- Users.guess
   }
  
   if (anyrandomeffects) {    
     stopifnot(model[[1]] %in% ZF_PLUSSELECT)
     model[[1]] <- ZF_SELECT[1]
   }
-  
 
   if (is.dist.vector || anyrandomeffects) {
     info.cov <- .Call("SetAndGetModelInfo", Reg, list("Cov", model),
@@ -1929,7 +2004,7 @@ rffit.gauss <-
                       PACKAGE="RandomFields")
     modelinfo <- RFgetModelInfo(register=Reg, level=1, spConform=FALSE)
     
-    model <- GetModel(register=Reg, modus=1, spConform=FALSE,
+    model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                       do.notreturnparam=TRUE)
 
   }
@@ -1979,7 +2054,7 @@ rffit.gauss <-
   mixed.idx <-  which(ptype == MIXEDVAR)
   solvesigma <- length(MIXED.IDX) > 0
 
-  
+
 #################################################################
 ##############     prepare constants in S, X,etc      ###########
 #################################################################
@@ -2012,7 +2087,7 @@ rffit.gauss <-
 ###    rm("dd")
 ###
  if (printlevel>=PL.FCTN.STRUCTURE) cat("\ndistances ...\n")
-           sets <- length(lc)
+  sets <- length(lc)
   Xdistances <- vector("list", sets)
 
   n.sample.smallset <- fit$smalldataset / 2
@@ -2020,7 +2095,8 @@ rffit.gauss <-
   mindistances <- matrix(ncol=sets, nrow=2)
 
   if (is.scalar.dist) {
-    for (i in 1:sets) {       
+    for (i in 1:sets) {
+     
       Xdistances[[i]] <-
         if (dist.given) distances[[i]] else as.vector(dist(t(coord[[i]]))) 
       idx <- Xdistances[[i]] < nuggetrange
@@ -2103,11 +2179,12 @@ rffit.gauss <-
 
   balanced <- rep(TRUE, sets)
 
-  if (!isRFsp) dimdata <- matrix(nrow=sets, ncol=length(dim(data[[1]])))
-
+ 
 
   #Print(isRFsp, dimdata, sets, data)
 
+
+  sum.not.isna.data <- 0
   for (i in 1:sets) {
     repet[i] <- length(data[[i]]) /  (lc[i] * vdim) ## repetitions
     if (repet[i] != as.integer(repet[i]))
@@ -2117,6 +2194,8 @@ rffit.gauss <-
     dim(data[[i]]) <- c(lc[i], vdim, repet[i])
     
     werte[[i]] <- array(data[[i]], c(lc[i] * vdim, repet[i])) # matrix only
+
+#    stopifnot(all(abs(werte[[i]]) < 10))
     
     for (k in which.deteff) {
       ## for the deterministic effects:
@@ -2177,6 +2256,7 @@ rffit.gauss <-
 
     not.isna <- !is.na(werte[[i]])
     idx.na[[i]] <- idx.na.rep[[i]] <- sumdata[[i]] <- list()
+    sum.not.isna.data <- sum.not.isna.data + sum(not.isna)
      
     if (general$na_rm_lines) {
       dim(not.isna) <- c(lc[i], vdim, repet[i])
@@ -2302,7 +2382,7 @@ rffit.gauss <-
       warning("Are the average values of the components rather different? If so, it is worth thinking of standardising the values before calling RFfit")
     if (any(abs(log(s / s[1])) > 1.5))
       warning("The standard deviations of the components are rather different. It is adviced to standardise the components of the data before calling RFfit")
-    dim(werte[[i]]) <- c(lc[i] * vdim, repet[i])
+    dim(werte[[i]]) <- c(lc[i] * vdim, repet[i])    
   }
  
 
@@ -2401,6 +2481,7 @@ rffit.gauss <-
 ###########################        split       #######################
   if (printlevel>=PL.FCTN.STRUCTURE) cat("\nsplit...")
   if (fit$split && length(autostart)>3) {
+    
     Range <- if (is.scalar.dist || dist.given) {
       as.matrix(c(0, diff(range(if (dist.given) distances else
                                 as.double(neu[[1]]$x) ))))
@@ -2437,6 +2518,9 @@ rffit.gauss <-
                           xdimOZ = xdimOZ, vdim=vdim,
                           is.dist.vector=is.dist.vector),
                         model=model)
+    if (printlevel>=PL.FCTN.STRUCTURE) cat("\nsplitted...")  
+
+    
 
     if (length(split) == 1)
       stop("split does not work in this case. Use split=FALSE")
@@ -2445,8 +2529,8 @@ rffit.gauss <-
       if (printlevel>=PL.FCTN.STRUCTURE) {
         cat("\n")
       }
-    
-      if (printlevel >= PL.RECURSIVE.CALL) Print(split)
+
+      if (printlevel >= PL.RECURSIVE.CALL) Print(split) #
 
       return(recurs.estim(split=split, level=0,  Reg=aux.reg,
                           vdim=vdim,
@@ -2623,11 +2707,13 @@ rffit.gauss <-
             lower[var.idx] <-
               pmax(lower[var.idx], 0, (vardata-nugget)/fit$lowerbound_var_factor)
             if (lower[var.idx] < fit$lowerbound_sill) {
-              if (printlevel>=PL.SUBIMPORPANT)
-                cat("low.var=",lower[var.idx]," low_sill",fit$lowerbound_sill,
-                    "\ estimated variance from data=", vardata,
-                    "nugget=", nugget, "\n")
-              warning("param[NUGGET] might not be given correctly.")
+              if (printlevel>=PL.SUBIMPORPANT) {
+                if (printlevel>=PL.SUBIMPORPANT)
+                  cat("low.var=",lower[var.idx]," low_sill",fit$lowerbound_sill,
+                      "\ estimated variance from data=", vardata,
+                      "nugget=", nugget, "\n")
+                message("The given nugget effect might not be too small.")
+              }
               lower[var.idx] <- fit$lowerbound_sill
             }
             autostart[var.idx] <- autopar[var.idx] <- lower[var.idx]
@@ -2727,7 +2813,7 @@ rffit.gauss <-
   }
 
 
-#  Print(lower, users.lower, upper, users.upper, delete.idx)
+#  Print(lower, users.lower, upper, users.upper, delete.idx, users.guess); kkk
 
   
   if (any(autostart<lower) || any(autostart>upper)) {
@@ -2938,9 +3024,9 @@ rffit.gauss <-
 
   if (!is.null(parscale <- optim.control$parscale)) {
     if (!is.numeric(parscale)) {
-      parscale <- GetValuesAtNA(model=model, model2=parscale, spdim=spdim,
+      parscale <- GetValuesAtNA(NAmodel=model, valuemodel=parscale, spdim=spdim,
                                 Time=time,
-                                short=fit$short, ncovparam=ncovparam,
+                                shortnamelength=fit$short, 
                                 skipchecks=!is.null(trafo))
     } # else is.numeric
   } else {
@@ -3011,6 +3097,7 @@ rffit.gauss <-
 
   ## index (start, end) to the various categories of
   ## information to be stored
+  IDX <- function(name) {idx <- tblidx[[name]]; idx[1]:idx[2]}
   tblidx <- cumsum(c(0,
                      n.variab, # variables used in algorithm
                      length(lower), # their lower bounds
@@ -3018,6 +3105,7 @@ rffit.gauss <-
                      ncovparam,  # param values to be estimated
                      rep(1, length(allmethods) - length(allprimmeth)),#method
                      ##                                                 score
+                     1, ## AICc
                      nCoVarAll # coeff to estimated for covariates, i.e.
                      ##           mixed effects and trend parameters
                     ))
@@ -3030,6 +3118,7 @@ rffit.gauss <-
   dimnames(tblidx) <- list(c("start", "end"),                           
                            c("variab", "lower", "upper", "param", 
                              allmethods[-1:-length(allprimmeth)],
+                             "aicc",
                              "covariab"
                              ##,  "lowbeta", "upbeta", only used for
                              ## cross-validation
@@ -3047,6 +3136,7 @@ rffit.gauss <-
 ##       if (nrow(minmax) > 0) paste("p", 1:nrow(minmax), sep=":")
   ##                       else minmax.names,
       allmethods[-1:-length(allprimmeth)],
+       "aicc",
       betanames
       ## do not try to join the next two lines, since both
       ## varnames and betanames may contain nonsense if
@@ -3068,9 +3158,6 @@ rffit.gauss <-
 ## end preparation; remaining part is estimation  ###########
 #############################################################
 
-  MLELB <- LSQLB <- lower
-  MLEUB <- LSQUB <- upper
-
 ##################################################
 ###############    PRIMITIVE METHODS   ###########
 ##################################################
@@ -3089,19 +3176,28 @@ rffit.gauss <-
     M <- "users.guess"
     if (length(delete.idx) > 0) users.guess <- users.guess[-delete.idx]
     if (any(idx <- users.guess < lower | users.guess > upper)) {
-      m <- cbind(lower, users.guess, upper, idx)
-      dimnames(m) <- list(rep("", length(lower)),
-                          c("lower", "user", "upper", "outside"))
-      cat("\n")
-      print(m) ## nicht loeschen!
-      stop("not all users.guesses within bounds\n change values of `lower' and `upper' or \nthose of the `lowerbound*.factor's and `upperbound*.factor's")
-    }
+      if (RFopt$general$modus_operandi == "careless") {
+        lower <- pmin(lower, users.guess)
+        upper <- pmax(upper, users.guess)
+      } else {
+        m <- cbind(lower, users.guess, upper, idx)
+        dimnames(m) <- list(rep("", length(lower)),
+                            c("lower", "user", "upper", "outside"))
+        cat("\n")
+        print(m) ## nicht loeschen!
+        stop("not all users.guesses within bounds\n change values of `lower' and `upper' or \nthose of the `lowerbound*.factor's and `upperbound*.factor's")
+      }
+    } 
+    
     param.table[[M]][IDX("variab")] <- users.guess
     param.table[[M]][IDX("param")] <- trafo(users.guess)
   }
 
 
   
+  MLELB <- LSQLB <- lower
+  MLEUB <- LSQUB <- upper
+
 ##################################################
 ################### Empirical Variogram   ########################
   lsqMethods <- NULL
@@ -3247,7 +3343,7 @@ rffit.gauss <-
               rep(ev[[1]]$T, each=nrow(bin.centers)))
     }
 
-    if (isotropic) {
+    if (isotropic && cartesian) {
       bin.centers <- as.matrix(sqrt(apply(bin.centers^2, 1, sum)))
     }
     bin.ts.xdim <- ncol(bin.centers)
@@ -3340,7 +3436,7 @@ rffit.gauss <-
   if (trans.inv && !is.null(lsq.methods)) {
     
     #Print(is.dist.vector, bin.ts.xdim)
-    
+
    .Call("SetAndGetModelInfo", Reg, list("Cov", model),
           spdim,
           ## die nachfolgenden beiden Festlegungen widersprechen sich,
@@ -3371,8 +3467,9 @@ rffit.gauss <-
       #  param.table[[M]][!indices] <- 1
       }
     }
-   
-    for (M in c(alllsqmeth)) {
+
+   firstoptim <- TRUE
+   for (M in c(lsqMethods[1], alllsqmeth)) {
       if (!(M %in% lsqMethods)) next;
       if (printlevel>=PL.FCTN.STRUCTURE) cat("\n", M) else cat(pch)
 
@@ -3395,31 +3492,39 @@ rffit.gauss <-
         LStarget(param.table[IDX("variab"), methodprevto$lsq[1]])
       } else {
         min <- Inf
+        min.variab <- NULL
         for (i in methodprevto$lsq) { ## ! -- the parts that change if
           ##                               this part is copied for other methods
+
+          ##   Print(M, param.table[IDX("variab"), i])
           if (!any(is.na(variab <- param.table[IDX("variab"), i]))) {
-            value <- LStarget(variab) ##
-            if (is.finite(value)) {
-              param.table[tblidx[[M]][1], i] <- value
-              if (value < min) {
-                min.variab <- variab
-                min <- value
-              } else {
-                param.table[tblidx[[M]][1], i] <- NaN
-                  next
+             value <- LStarget(variab) ##
+             ## Print(value, min.variab, LSVARIAB, min, LSMIN,is.finite(value))
+             if (is.finite(value)) {
+               param.table[tblidx[[M]][1], i] <- value
+               if (value < min) {
+                 min.variab <- variab
+                 min <- value
+               } else {
+                 param.table[tblidx[[M]][1], i] <- NaN
+                 next
               }
             }
           }
         }
-                                        #
+
+        ##Print( methodprevto$lsq, param.table[IDX("variab"),methodprevto$lsq])
+        ##Print(min.variab, LSVARIAB, min, LSMIN)
         
-        stopifnot(min.variab==LSVARIAB, min==LSMIN) ## check 
+        stopifnot(min.variab==LSVARIAB, min==LSMIN) ## check
+        
         fnscale <- if (is.null(fit.fnscale) || is.na(fit.fnscale[M]))
           min else fit.fnscale[M]
 
         lsq.optim.control <-
           c(opt.control, list(parscale=parscale, fnscale=fnscale))
-          OPTIM(LSVARIAB, LStarget, lower = LSQLB, upper = LSQUB,
+         
+        OPTIM(LSVARIAB, LStarget, lower = LSQLB, upper = LSQUB,
                 control=lsq.optim.control,optimiser=optimiser,silent=silent)
       
       } # n.variab > 0
@@ -3433,12 +3538,20 @@ rffit.gauss <-
         param.table[[M]][tblidx[[M]][1]] <- LSMIN
         param.table[[M]][IDX("variab")] <- LSVARIAB
         param.table[[M]][IDX("param")] <- LSPARAM
+
+        ps <- abs(LSVARIAB)
+        parscale <- ps
+        zero <- parscale == 0
+        parscale[zero] <- pmax(abs(LSQLB[zero]), abs(LSQUB[zero])) / 10 
+       # Print(parscale)
+        
       } else {
         param.table[[M]] <- if (n.variab==0) NA else NaN
       }
 
       param.table[[M]][IDX("covariab")] <- get.covariates(LSVARIAB)
 
+      firstoptim <- FALSE
     } # for M
 
     .Call("SetAndGetModelInfo", Reg, list("Cov", model),
@@ -3446,7 +3559,23 @@ rffit.gauss <-
           fit$short, FALSE, TRUE,
           PACKAGE="RandomFields")
     
-  } # trans.inv
+ } # trans.inv
+
+
+  sum <- 0
+  n <- 0
+  for (M in alllsqmeth) {
+     if (!is.na(param.table[[M]][tblidx[[M]][1]])) {
+       sum <- sum + abs(param.table[[M]][IDX("variab")])
+       n <- n + 1
+     }
+  }
+  if (n >= 1) {
+    parscale <- sum / n
+    zero <- parscale == 0
+    parscale[zero] <- pmax(abs(LSQLB[zero]), abs(LSQUB[zero])) / 10 
+  }
+
  
 ##################################################
 ### optional parameter grid for MLE and CROSS  ###
@@ -3556,6 +3685,7 @@ rffit.gauss <-
       param.table[[M]][IDX("upper")] <- MLEUB
       options(show.error.messages = show.error.message) ##
       max <- -Inf
+      
       for (i in methodprevto$mle) { ## ! -- the parts that change if
         ##                             this part is copied for other methods
         ## should mle be included when M=reml?
@@ -3564,11 +3694,10 @@ rffit.gauss <-
 #        Print(i, param.table[IDX("variab"), i], MLEMAX, MLELB, MLEUB, LSQLB, LSQUB)
 
         if (!any(is.na(variab <- param.table[IDX("variab"), i]))) {
-
-         
+          
           value <- MLEtarget(variab) ## !
 
-#          Print(i, variab, value, MLEVARIAB)
+#        Print(i, variab, value, MLEVARIAB)
           
           if (is.finite(value)) {
             param.table[tblidx[[M]][1], i] <- value
@@ -3591,12 +3720,15 @@ rffit.gauss <-
                              list(parscale=parscale, fnscale=fnscale))
 
 #      print(param.table)
-#      Print(mle.optim.control, MLEVARIAB, MLELB, MLEUB)
+#      Print(methodprevto$mle,variab,mle.optim.control, parscale, MLEVARIAB, MLELB, MLEUB)
 
       stopifnot(length(parscale)==0 || length(parscale) == length(MLEVARIAB))
       
       MLEINF <- FALSE
 
+ 
+     # Print(fit$critical, mle.optim.control);
+      
       if (fit$critical < 2) {
 
         OPTIM(MLEVARIAB, MLEtarget, lower = MLELB, upper=MLEUB,
@@ -3641,7 +3773,7 @@ rffit.gauss <-
       param.table[[M]][IDX("covariab")] <- get.covariates(MLEVARIAB)     
       ml.residuals <- ML.RESIDUALS
 
-      if (FALSE) Print(recall, fit$critical>=2 || any(onborderline), ## 
+      if (FALSE) Print(recall, fit$critical>=2 || any(onborderline),#
              !fit$only_users , fit$critical >= 0)
       
       if ((fit$critical>=2  || any(onborderline))
@@ -3811,12 +3943,12 @@ rffit.gauss <-
                   new.bounds <- FALSE
                   .C("PutValuesAtNA", Reg, as.double(new.lower.vector),
                      PACKAGE="RandomFields", DUP=FALSE)
-                  new.lower <- GetModel(register=Reg, modus=1, spConform=FALSE,
+                  new.lower <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                                     do.notreturnparam=TRUE)
 
                   .C("PutValuesAtNA", Reg, as.double(new.upper.vector),
                      PACKAGE="RandomFields", DUP=FALSE)
-                  new.upper <- GetModel(register=Reg, modus=1, spConform=FALSE,
+                  new.upper <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                                     do.notreturnparam=TRUE)
                 }
                
@@ -3917,7 +4049,7 @@ rffit.gauss <-
                   pmax(abs(lower[zero]), abs(upper[zero])) / 10                
                 new.parscale[b.idx] <-
                   w * new.parscale[b.idx] + (1-w) * bounds[b.idx]
-                new.parscale <- abs(guess[-delete.idx])
+                #new.parscale <- abs(guess[-delete.idx])
               
                 used <- which(!apply(is.na(res$table), 2, all)[-1:-2]) # ohne auto,user
                 names.tbl <- names(tblidx)
@@ -3935,7 +4067,7 @@ rffit.gauss <-
 
                 .C("PutValuesAtNA", Reg, guess,
                    PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
-                guess <- GetModel(register=Reg, modus=1, spConform=FALSE,
+                guess <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                                   do.notreturnparam=TRUE)
                 first.passage <- FALSE
               } # while true
@@ -3961,13 +4093,8 @@ rffit.gauss <-
         OPTIM(revariab, MLEtarget, lower = low, upper=MLEUB,
               control=mle.optim.control, optimiser=optimiser, silent=silent)
         
-        if (FALSE) Print(printlevel >= PL.SUBIMPORPANT,new.parscale,
-                old.control, mle.optim.control,
-              fnscale, revariab, param.table[[M]][IDX("param")],
-                MLEMAX, MLEVARIAB,  MLEPARAM)
-
         if (MLEMAX >  param.table[[M]][tblidx[[M]][1]]) {   
-          if (printlevel >= PL.SUBIMPORPANT)
+          if (printlevel > PL.SUBIMPORPANT)
             Print(old.control, fnscale, revariab, #
                   param.table[[M]][IDX("param")],
                   MLEMAX, MLEVARIAB,  MLEPARAM)
@@ -3996,7 +4123,7 @@ rffit.gauss <-
           param.table[tblidx[[M]][1], i] <- LStarget(param.table[idx, i])
         }
       }
-    }
+    } 
 
     for (M in allmlemeth) {
       cur <- param.table[tblidx[[M]][1], i]
@@ -4070,7 +4197,12 @@ rffit.gauss <-
   idxCovar <- IDX("covariab")
   idx.meth <- rep(FALSE, length(allmethods))
   res <- values.res <- list()
-
+  nparam <- ncovparam + nCoVarAll
+  storage.mode(sum.not.isna.data) <- "integer"
+  storage.mode(nparam) <- "integer"
+  AICconst <-
+    2 * nparam + 2 * nparam * (nparam + 1) / (sum.not.isna.data - nparam - 1)
+  
   for (i in 1:length(allmethods)) {
     M <- allmethods[i]
     if (idx.meth[i] <- !is.na(param.table[1, i]) || is.nan(param.table[1,i])
@@ -4080,8 +4212,10 @@ rffit.gauss <-
       # modus: 1 : Modell wie gespeichert
       #        0 : Modell unter Annahme practicalrange>0
       #        2 : natscale soweit wie moeglich zusammengezogen
-      modus <- (general$practicalrange == 0) + (fit$use_naturalscaling > 0)
-      modelres <- GetModel(register=Reg, modus=modus, replace.select=TRUE)
+      modelres <- GetModel(register=Reg, modus=GETMODEL_SOLVE_MLE,
+                           replace.select=TRUE)
+
+     ## Print(M, modelres)
   
       ## trend werte in das Modell einfuegen fuer die fixed effects
       ## geht nur gut wenn sets==1
@@ -4139,11 +4273,14 @@ rffit.gauss <-
       }
 
 
-      
+      ml.value <- param.table[[M]][tblidx[["ml"]][1]]
+      aicc <- AICconst - 2 * ml.value
+      param.table[[M]][tblidx[["aicc"]][1]] <- aicc
       res[[M]] <- list(model=modelres,
                        trend=if (length(idxCovar)>0) regression,
                        residuals = if (M == "ml") residu,
-                       ml.value =  param.table[[M]][tblidx[["ml"]][1]]
+                       ml.value = ml.value,
+                       aicc = aicc
                        )
       
     } else {
@@ -4170,13 +4307,13 @@ rffit.gauss <-
  #Print("hereX")
   .C("PutValuesAtNA", Reg, as.double(lower),
      PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)  
-  lower <-    GetModel(register=Reg, modus=1, replace.select=TRUE)
+  lower <-    GetModel(register=Reg, modus=GETMODEL_SOLVE_MLE, replace.select=TRUE)
   .C("PutValuesAtNA", Reg, as.double(upper),
     PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)  
-  upper <- GetModel(register=Reg, modus=1, replace.select=TRUE)
+  upper <- GetModel(register=Reg, modus=GETMODEL_SOLVE_MLE, replace.select=TRUE)
 
 
-  ## Print("here E", GetModel(Reg, modus=1))
+  ## Print("here E", GetModel(Reg, modus=GETMODEL_SOLVE_MLE))
   
   
   ## die nachfolgenden Zeilen aendern die Tabellenwerte -- somit
@@ -4199,14 +4336,14 @@ rffit.gauss <-
                   lowerbounds=lower,
                   upperbounds=upper,
                   transform = transform,
+                  number.of.parameters = nparam,
+                  number.of.data= sum.not.isna.data,
                   vario = "'$vario' is defunctioned. Use '$ml' instead of '$value$ml'!"
                   ),
              res))
   } else {
     ev2 <- lapply(ev, FUN=list2RFempVariog)
-
- #    Print(res)
-    res2 <- lapply(res, FUN=list2RMmodelExt, isRFsp=isRFsp, coords=coords,
+    res2 <- lapply(res, FUN=list2RMmodelExt, isRFsp=isRFsp, coord=RFsp.coord,
                    gridTopology=gridTopology, data.RFparams=data.RFparams)
     if (is.null(transform)) transform <- list()
 
@@ -4219,7 +4356,12 @@ rffit.gauss <-
                           table=as.matrix(param.table),
                           lowerbounds=list2RMmodel(lower),
                           upperbounds=list2RMmodel(upper),
-                          transform=transform),
+                          transform=transform,                          
+                          coord.units=coord.units,
+                          variab.units=variab.units,
+                          number.of.data = sum.not.isna.data,
+                          number.of.parameters = nparam
+                          ),
                      res2)
     
     fit2 <- do.call("new", args=do.call.par)
@@ -4228,4 +4370,148 @@ rffit.gauss <-
     return(fit2)
   }
 
+}
+
+
+
+
+RFratiotest <-
+  function(nullmodel, alternative,
+           x, y=NULL, z=NULL, T=NULL,  grid, data,
+           alpha=0.05, n = 5 / alpha, ## number of simulations to do
+           seed = 0,
+           lower=NULL, upper=NULL, 
+           BC.lambda, ## if missing then no BoxCox-Trafo
+           methods, # "reml", "rml1"),
+           sub.methods,
+           ## "internal" : name should not be changed; should always be last
+           ##              method!
+           optim.control=NULL,
+           users.guess=NULL,  
+           distances=NULL, dim,
+           transform=NULL,
+           ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
+           ##             "Poisson"),
+           ... ) {
+   
+  stopifnot(alpha>=-0, alpha<=1, n >= 1 / alpha)
+  RFoptOld <- internal.rfoptions(general.modus_operandi="normal",
+                                  ..., general.seed=NA)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  RFopt <- RFoptOld[[2]]
+  printlevel <- RFopt$general$printlevel
+
+  if (!is.null(seed) && !is.na(seed)) set.seed(seed)
+  else if (!is.na(RFopt$general$seed)) set.seed(RFopt$general$seed)
+  
+
+  nullmodel <- PrepareModel2(nullmodel)
+  alternative <- PrepareModel2(alternative)
+
+  Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+                       distances=distances, dimensions=dim, RFopt=RFopt)
+  values <- try(GetValuesAtNA(NAmodel=nullmodel, valuemodel=alternative,
+                              spdim=Z$spdim, Time=Z$tsdim-Z$spdim,
+                              shortnamelength=3, skipchecks=FALSE),
+                silent=TRUE)
+  remove("Z")
+
+  isSubmodel <- is.numeric(values) && all(is.na(values))
+  if (!isSubmodel && printlevel > 0)
+    message("'nullmodel' cannot be automatically detected as being a nullmodel of 'alternative'")
+  
+  model.list <- list(nullmodel, alternative)
+  data.fit <- list()
+  guess <- users.guess
+
+  for (m in 1:length(model.list)) {
+ #   Print(guess)
+    
+    data.fit[[m]] <-
+      RFfit(model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
+            lower=lower, upper=upper, BC.lambda=BC.lambda,
+             methods=methods,
+            sub.methods=sub.methods, optim.control=optim.control,
+            users.guess=guess,
+            distances=distances, dim=dim,
+            transform=transform,
+            ..., spConform = FALSE)$ml
+    guess <- if (isSubmodel) data.fit[[m]]$model else NULL
+ #   Print(guess); stopifnot(!is.null(guess))
+  }
+  
+  model <- data.fit[[1]]$model
+  data.ratio <- -diff(sapply(data.fit, function(x) x$ml))
+  stopifnot(!isSubmodel || data.ratio <= 0) # should never appear
+
+  simu.n <- n - 1
+  ratio <- numeric(simu.n)
+  fit <- numeric(2)
+  Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+                       distances=distances, dimensions=dim, RFopt=RFopt)
+  dist.given <- !is.null(distances)
+  if (length(Z$neu) > 1) stop("multisets of data cannot be considered yet")
+
+
+#  stopifnot(isSubmodel)
+  
+  newx <- if (!dist.given) Z$neu[[1]]$x # lapply(Z$neu, function(x) x$x)
+  newT <- if (!dist.given) Z$neu[[1]]$T # lapply(Z$neu, function(x) x$T),
+
+  ##  Print(Z, model,users.guess, nullmodel, alternative,data.fit, guess, isSubmodel, newx, newT, dim);
+  
+  pch <- if (RFopt$general$pch=="") "" else '@'
+  for (i in 1:simu.n) {
+    if (printlevel>=PL.SUBIMPORPANT)
+      cat("\n ", i, "th simulation out of", simu.n)
+    else cat(pch)
+    simu <- RFsimulate(model, x=newx, T=newT, grid=grid, 
+                       distances=Z$distances[[1]], dim=dim, spC=FALSE)
+    guess <- users.guess   
+    for (m in 1:length(model.list)) {
+      simufit <-
+        RFfit(model.list[[m]], x=newx, T=newT, grid=grid,
+              data=simu,
+              lower=lower, upper=upper, BC.lambda=BC.lambda,
+              methods=methods,
+              sub.methods=sub.methods, optim.control=optim.control,
+              users.guess=guess,
+              distances=Z$distances[[1]], dim=dim,
+              transform=transform,
+              ..., spConform=FALSE)
+      fit[m] <- simufit$ml$ml
+      guess <- if (isSubmodel) simufit$ml$model else NULL
+#      Print(m, guess)
+#      Print(simufit,fit, digits=10)
+#      print(simufit$table, digits=10)
+    }
+
+    ratio[i] <- -diff(fit)
+
+    stopifnot(!isSubmodel || ratio[i] <= 0)# should never appear
+    
+    if (printlevel > PL.SUBIMPORPANT)
+      Print(c(data.ratio, ratio), fit, rank(c(data.ratio, ratio))[1])#
+  }
+
+#  Print(c(data.ratio, ratio))
+  
+  r <- rank(c(data.ratio, ratio))[1]
+  
+  p <- r / n
+
+  msg <-
+    paste("\nThe likehood ratio test ranks the likelihood of the data on rank",
+          r, "among", simu.n, "simulations. Thus the p-value equals", p,
+         "and the Hypothesis that the two models significantly differ at",
+          "the level alpha=", alpha, "is",
+          ifelse(p <= alpha, "accepted.", "rejected."),
+          "\n")
+  
+  if (printlevel > 0) {
+    cat(msg)
+  }
+  invisible(list(p=p, n=n, data.ratio=data.ratio, simu.ratios=ratio,
+                 data.fit=data.fit, msg=msg)
+            )
 }

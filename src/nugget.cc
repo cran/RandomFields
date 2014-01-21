@@ -5,7 +5,7 @@
 
  all around the nugget effect -- needs special treatment 
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ bool equal(cov_model *cov, int i, int j, double *X, int dim)
 /* nugget effect model */
 void nugget(double *x, cov_model *cov, double *v) {
 
-  double diag = (*x <= cov->p[NUGGET_TOL][0]) ? 1.0 : 0.0;
+  double diag = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
     vdim   = cov->vdim,
     vdimsq = vdim * vdim;
@@ -104,14 +104,14 @@ int check_nugget(cov_model *cov) {
   ROLE_ASSERT(ROLE_COV || cov->role == ROLE_GAUSS);
 
   kdefault(cov, NUGGET_TOL, gp->tol);
-  if (cov->p[NUGGET_VDIM]==NULL) {
+  if (PisNULL(NUGGET_VDIM)) {
 
     //printf("nugget vdim %d\n", cov->vdim);
 
     if (cov->vdim <= 0) cov->vdim = 1;
     kdefault(cov, NUGGET_VDIM, cov->vdim);
   } else {
-    cov->vdim =((int*) cov->p[NUGGET_VDIM])[0];
+    cov->vdim = P0INT(NUGGET_VDIM);
   }
 
   cov->matrix_indep_of_x = true;
@@ -165,16 +165,16 @@ int check_nugget_proc(cov_model *cov) {
       SERR2("'%s' only allows for '%s'", NICK(cov),
 	    CovList[NUGGET].nick);
     }
-    if (cov->p[NUGGET_PROC_TOL] != NULL) 
-      kdefault(intern, NUGGET_TOL, cov->p[NUGGET_PROC_TOL][0]);
-    if (cov->p[NUGGET_PROC_VDIM] != NULL) 
-      kdefault(intern, NUGGET_VDIM, ((int*) cov->p[NUGGET_PROC_VDIM])[0]);
+    if (!PisNULL(NUGGET_PROC_TOL)) 
+      kdefault(intern, NUGGET_TOL, P0(NUGGET_PROC_TOL));
+    if (!PisNULL(NUGGET_PROC_VDIM)) 
+      kdefault(intern, NUGGET_VDIM, P0INT(NUGGET_PROC_VDIM));
     if ((err = CHECK(next, dim, dim, PosDefType, KERNEL, SYMMETRIC,
 		       SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
-    if (intern->p[NUGGET_TOL] != NULL)
-      kdefault(cov, NUGGET_PROC_TOL, intern->p[NUGGET_TOL][0]);  
-    if (intern->p[NUGGET_VDIM] != NULL)
-      kdefault(cov, NUGGET_PROC_VDIM, ((int*) intern->p[NUGGET_VDIM])[0]);    
+    if (!PARAMisNULL(intern, NUGGET_TOL))
+      kdefault(cov, NUGGET_PROC_TOL, PARAM0(intern, NUGGET_TOL));  
+    if (!PARAMisNULL(intern,NUGGET_VDIM))
+      kdefault(cov, NUGGET_PROC_VDIM, PARAM0INT(intern, NUGGET_VDIM));
   } else {    // key != NULL  && next != nugget   
     // dann ruft NuggetIntern Nugget auf 
     intern = cov->nr == NUGGET_USER ? sub : cov;
@@ -184,14 +184,17 @@ int check_nugget_proc(cov_model *cov) {
     if (intern == NULL || intern->nr != NUGGET_INTERN) {
       //PMI(cov);  APMI(intern);
       BUG;
-    } else if (intern != cov) paramcpy(intern, cov, true, false);
+    } else if (intern != cov) {
+      //print("****** here\n");
+      paramcpy(intern, cov, true, false);
+    }
 
-    if (cov->p[NUGGET_PROC_TOL] != NULL) 
-      kdefault(intern, NUGGET_PROC_TOL, cov->p[NUGGET_PROC_TOL][0]);
-    if (cov->p[NUGGET_PROC_VDIM] != NULL) 
-      kdefault(intern, NUGGET_PROC_VDIM, ((int*) cov->p[NUGGET_PROC_VDIM])[0]);
+    if (!PisNULL(NUGGET_PROC_TOL)) 
+      kdefault(intern, NUGGET_PROC_TOL, P0(NUGGET_PROC_TOL));
+    if (!PisNULL(NUGGET_PROC_VDIM)) 
+      kdefault(intern, NUGGET_PROC_VDIM, P0INT(NUGGET_PROC_VDIM));
     
-    if ((err = CHECK(key, dim, dim, ProcessType, XONLY, NO_ROTAT_INV,
+    if ((err = CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD,
 		       SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
       // printf("error nug prox %d\n", err);
       return err;
@@ -208,6 +211,7 @@ int check_nugget_proc(cov_model *cov) {
   cov->role = ROLE_GAUSS;
   
   // printf("OK nugget\n");
+  EXTRA_STORAGE;
 
   return NOERROR;
 }
@@ -251,7 +255,7 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
     dim = cov->tsdim,
     dimSq = origdim * origdim;
   double
-    tol = cov->p[NUGGET_PROC_TOL][0];
+    tol = P0(NUGGET_PROC_TOL);
   matrix_type anisotype = TypeMdiag;
   
   ROLE_ASSERT_GAUSS;
@@ -347,7 +351,7 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
       }
     } else {
       int i;
-      if ((pos = (int*) MALLOC(sizeof(int) * loc->totalpoints))==0) {
+      if ((pos = (int*) MALLOC(sizeof(int) * loc->totalpoints)) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
       Transform2NoGrid(cov, false, true);
@@ -388,7 +392,7 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     vdim = cov->vdim;
   double 
     *res = cov->rf;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
 
   s = (nugget_storage*) cov->Snugget;
 //  sqrtnugget = s->sqrtnugget;
@@ -435,7 +439,7 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       }
     } else {
       int p;
-      double *dummy = (double*) MALLOC(sizeof(double) * vdim);
+      ALLOC_EXTRA1(dummy, vdim);
       assert(s->pos[0]>=0);
       for (v=0; v<vdim; v++) dummy[v] = RF_NAN; // just to avoid warnings 
       //                                           from the compiler
@@ -449,7 +453,6 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
 	for (v=0; v<vdim; v++)
 	  res[p + v] = dummy[v];
       }
-      free(dummy);
     }
   }
 

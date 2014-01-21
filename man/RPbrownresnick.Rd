@@ -86,7 +86,7 @@
   Fields" in \command{\link{RFoptions}}.}
 
   \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{\dontrun{
 model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
@@ -108,6 +108,8 @@ plot(z)
 }}
 
 ## for some more sophisticated models see 'maxstamableAdvanced'
+
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

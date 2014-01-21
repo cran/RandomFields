@@ -13,7 +13,7 @@ Note:
  * definitions for genuinely anisotropic or nondomain models are in
    SophisticatedModel.cc; hyper models also in Hypermodel.cc
 
- Copyright (C) 2011 - 2013 Marco Oesting & Martin Schlather
+ Copyright (C) 2011 - 2014 Marco Oesting & Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -65,13 +65,13 @@ void mixed(double *x, cov_model *cov, double *v) {
   cov_model  *next = cov->sub[0];
   location_type *loc = Loc(cov);
   mixed_storage *s = cov->Smixed;
-  listoftype *X = (listoftype*) (cov->p[MIXED_X]);
+  listoftype *X = PLIST(MIXED_X);
   double //distTF, 
     var = 1.0, 
     *covmatrix=NULL;
   int i, err, // Xnrow, 
     //    err=NOERROR,
-    element = ((int*) cov->p[MIXED_ELMNT])[0],
+    element = P0INT(MIXED_ELMNT),
     vdim = cov->vdim,
     vdimsq = vdim * vdim;
   
@@ -100,10 +100,10 @@ void mixed(double *x, cov_model *cov, double *v) {
     // classical random effect
     cov_model *sub = next;
     while (isDollar(sub)) {
-      var *= sub->p[DVAR][0];
+      var *= PARAM0(sub, DVAR);
       sub=sub->sub[0];
     }
-    listoftype *list= (listoftype*) (next->p[CONSTANT_M]);
+    listoftype *list= PARAMLIST(next, CONSTANT_M);
     covmatrix = list->p[element];
     if (X->ncol[element] != list->nrow[element]) {
       GERR("mixed model: X and covariance matrix M do not match");
@@ -130,7 +130,7 @@ void mixed(double *x, cov_model *cov, double *v) {
 
 void mixed_nonstat(double *x, double *y, cov_model *cov, double *v){
   int 
-    element = ((int*) cov->p[MIXED_ELMNT])[0];
+    element = P0INT(MIXED_ELMNT);
 
   error("mixed_constant not programmed yet");
   
@@ -143,7 +143,7 @@ void mixed_nonstat(double *x, double *y, cov_model *cov, double *v){
   }
 
 
-   if (cov->nsub != 0 && cov->p[MIXED_X] == NULL) { // no X given, but a submodel	
+  if (cov->nsub != 0 && PisNULL(MIXED_X)) { // no X given, but a submodel	
     cov_model *next = cov->sub[0];
     NONSTATCOV(x, y, next, v);
   } else mixed(x, cov, v);
@@ -151,7 +151,7 @@ void mixed_nonstat(double *x, double *y, cov_model *cov, double *v){
 
 void covmatrix_mixed(cov_model *cov, double *v) {
   cov_model *sub = cov->sub[0];
-  int element = ((int*) cov->p[MIXED_ELMNT])[0];
+  int element = P0INT(MIXED_ELMNT);
   
   if (cov->ncol[MIXED_X] == 0 || element < 0) {
     CovList[sub->nr].covmatrix(sub, v);
@@ -159,7 +159,7 @@ void covmatrix_mixed(cov_model *cov, double *v) {
   }
   if (element >= cov->nrow[MIXED_X]) ERR("value of 'element' is too large");
 
-  listoftype *X = (listoftype*) (cov->p[MIXED_X]);
+  listoftype *X = PLIST(MIXED_X);
   double *C=NULL;
   int nrow = X->nrow[element],
     ncol=X->ncol[element]; 
@@ -209,7 +209,7 @@ int set_mixed_constant(cov_model *cov) {
     totalpoints = loc->totalpoints,
     *ncol = cov->ncol,
     *nrow = cov->nrow; 
-  listoftype *X = (listoftype*) (cov->p[MIXED_X]);
+  listoftype *X = PLIST(MIXED_X);
 
   cov->q = (double*) MALLOC(sizeof(double) * 1);
   cov->qlen = 1;
@@ -217,9 +217,9 @@ int set_mixed_constant(cov_model *cov) {
   // PMI(cov);
 
   while (sub != NULL && isDollar(sub) &&
-	 ((simple = sub->p[DPROJ] == NULL 
-	   && (sub->p[DSCALE] == NULL || sub->p[DSCALE][0] == 1.0)
-	   && sub->p[DANISO] == NULL))) sub=sub->sub[0];
+	 ((simple = PARAMisNULL(sub, DPROJ)
+	   && (PARAMisNULL(sub, DSCALE) || PARAM0(sub, DSCALE) == 1.0)
+	   && PARAMisNULL(sub, DANISO)))) sub=sub->sub[0];
   
   if ((cov->q[MIXED_CONSTANT] = sub != NULL && sub->nr == CONSTANT)) {
     //next->delflag = DEL_COV - 6;
@@ -233,7 +233,7 @@ int set_mixed_constant(cov_model *cov) {
     int constant_size;
     
     for (i=0; i<nrow[MIXED_X]; i++) {
-      constant_size = ((listoftype*) (sub->p[CONSTANT_M]))->nrow[i];
+      constant_size = PARAMLIST(sub, CONSTANT_M)->nrow[i];
       
       if (ncol[MIXED_X] > 0 && X->ncol[i] != constant_size) {
 	SERR5("%dth matrix 'X' (%d x %d) and (%d x %d) constant matrix 'M' do not match", i, X->nrow[i], X->ncol[i], constant_size, constant_size);
@@ -278,14 +278,17 @@ int checkmixed(cov_model *cov) {
     // cov_model *sub;
   //location_type *loc=Loc(cov);
   int i, err, 
+    nkappa = CovList[cov->nr].kappas,
     //totalpoints = loc->totalpoints,
     nsub = cov->nsub,
     *ncol = cov->ncol,
     *nrow = cov->nrow; // taken[MAX DIM],
   char msg[300];
-  listoftype *X = (listoftype*) (cov->p[MIXED_X]);
+  listoftype *X = PLIST(MIXED_X);
   
   ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_COV);
+  for (i=0; i<nkappa; i++) // NEVER; cf kriging.R, for instance
+    if (cov->kappasub[i] != NULL) SERR("parameters may not be random")
 
   cov->vdim=1; //falls kein submodel vorhanden (Marco)
   cov->maxdim=INFDIM;
@@ -339,9 +342,9 @@ int checkmixed(cov_model *cov) {
   if (cov->vdim > 1) 
     SERR("multivariate version of mixed not programmed yet");
 
-  if ((cov->p[MIXED_DIST] == NULL) xor (cov->p[MIXED_DIM] == NULL))
+  if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_DIM))
     SERR("if 'dim' and 'dist' must be given at the same time");
-  if ((cov->p[MIXED_DIST] != NULL) xor (cov->p[MIXED_COORD] != NULL))
+  if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_COORD))
     SERR("'dist' and 'coord' may not be given together");
 
   // incorrect. but save !!
@@ -387,21 +390,20 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
   mixed_storage *s;
   char errorloc_save[nErrorLoc];
   double 
-    *b = cov->p[MIXED_BETA],
-    *coord = cov->p[MIXED_COORD],
-    *dist = cov->p[MIXED_DIST];
+    *b = P(MIXED_BETA),
+    *coord = P(MIXED_COORD),
+    *dist = P(MIXED_DIST);
   int 
     Cn = -1, 
     Cdim = -1, 
     list_element=0,
     err = NOERROR,
     vdim = cov->vdim,
-    dim = coord!=NULL ? cov->ncol[MIXED_COORD] : ((int*) cov->p[MIXED_DIM])[0],
+    dim = coord!=NULL ? cov->ncol[MIXED_COORD] : P0INT(MIXED_DIM),
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
 
-  listoftype 
-    *X = (listoftype*) (cov->p[MIXED_X]);
+  listoftype *X = PLIST(MIXED_X);
   bool distTF;
 
 
@@ -514,7 +516,7 @@ void domixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S){
     total = vdim * totalpoints;
  
   listoftype 
-    *X = (listoftype*) (cov->p[MIXED_X]);
+    *X = PLIST(MIXED_X);
 
   if (cov->ncol[MIXED_BETA] > 0) { // b is given
     // X is given, but no covariance model
@@ -596,7 +598,7 @@ void kappatrend(int i, cov_model *cov, int *nr, int *nc){
      break;
     
     case TREND_PARAM_POLY: //polycoeff
-      if(cov->p[TREND_POLY] == NULL) {
+      if(PisNULL(TREND_POLY)) {
         *nr = -1; 
       } else {
         *nr = 0;
@@ -604,7 +606,7 @@ void kappatrend(int i, cov_model *cov, int *nr, int *nc){
 	//APMI(cov);
         for(k=0; k < cov->nrow[TREND_POLY]; k++) {
 	  //printf("%d\n", *nr);
-	  *nr += binomialcoeff(((int*) cov->p[TREND_POLY])[k] + 
+	  *nr += binomialcoeff(PINT(TREND_POLY)[k] + 
 			      cov->tsdim, cov->tsdim);
 	}
       }
@@ -632,18 +634,21 @@ int checktrend(cov_model *cov){
   // if (cov->ncol[TREND_LINEAR] > 0 || cov->ncol[TREND_FCT]>0
   //    || cov->ncol[TREND_PARAM_FCT] > 0)
   //  return(ERRORNOTPROGRAMMED);
-  double *mu = cov->p[TREND_MEAN],
-         *plane = cov->p[TREND_LINEAR],
-         *polydeg = cov->p[TREND_POLY],
-         *arbitraryfct = cov->p[TREND_FCT];
+  double *mu = P(TREND_MEAN),
+    *plane = P(TREND_LINEAR),
+    *arbitraryfct = P(TREND_FCT);
   int i, 
+     nkappa = CovList[cov->nr].kappas,
+   *polydeg = PINT(TREND_POLY),
     vdim = 0, 
     tsdim= cov->tsdim,
     basislen = 0;
   //SEXP Rx, fctbody, envir;
 
   ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_COV);
- 
+  for (i=0; i<nkappa; i++) // NEVER; cf kriging.R, for instance
+    if (cov->kappasub[i] != NULL) SERR("parameters may not be random")
+
   if (mu != NULL) {
     vdim = cov->nrow[TREND_MEAN];
     cov->matrix_indep_of_x = true;
@@ -656,23 +661,18 @@ int checktrend(cov_model *cov){
     cov->matrix_indep_of_x = false;
   }
   
-  if (polydeg != NULL) {
+  if (!PisNULL(TREND_POLY)) {
     if (vdim>0) {
       if (vdim != cov->nrow[TREND_POLY])
 	SERR("trend parameters have different multivariate dimensions");
       SERR("polynomials and free functions in trend may not be mixed with other trend definitions. Please use a sum of trends.");
     }
     vdim = cov->nrow[TREND_POLY];
-    if (cov->p[TREND_PARAM_POLY] == NULL) {
+    if (PisNULL(TREND_PARAM_POLY)) {
       for (i=0; i<vdim; i++) 
-	basislen += binomialcoeff(((int*) polydeg)[i] + tsdim, tsdim);
-      if ((cov->p[TREND_PARAM_POLY] = 
-	   (double *) MALLOC(sizeof(double) * basislen))==NULL) {
-	return ERRORMEMORYALLOCATION;
-      }
-      for(i=0; i<basislen; i++) (cov->p[TREND_PARAM_POLY])[i] = NA_REAL;
-      cov->ncol[TREND_PARAM_POLY] = 1;
-      cov->nrow[TREND_PARAM_POLY] = basislen;
+	basislen += binomialcoeff(polydeg[i] + tsdim, tsdim);      
+      PALLOC(TREND_PARAM_POLY, basislen, 1);
+      for(i=0; i<basislen; i++) P(TREND_PARAM_POLY)[i] = NA_REAL;
     }
     cov->matrix_indep_of_x = false;
   }
@@ -712,24 +712,20 @@ int checktrend(cov_model *cov){
     vdim = cov->calling->vdim;
     if (vdim <= 0) 
       SERR("multivariate dimension for trend cannot be determined.");
-    if ((cov->p[TREND_MEAN] =
-	 (double *) MALLOC(vdim*sizeof(double)))==NULL) {
-      return ERRORMEMORYALLOCATION;
-    }
-    for(i=0; i<vdim; i++) (cov->p[TREND_MEAN])[i] = 0.0;
-    cov->nrow[TREND_MEAN] = vdim;
-    cov->ncol[TREND_MEAN] = 1;
+    PALLOC(TREND_MEAN, vdim, 1);
+    for(i=0; i<vdim; i++) P(TREND_MEAN)[i] = 0.0;
   }
   cov->vdim = vdim;
-  cov->isoown = cov->matrix_indep_of_x ? ISOTROPIC : NO_ROTAT_INV;
+  cov->isoown = cov->matrix_indep_of_x ? ISOTROPIC : CARTESIAN_COORD;
   
  return NOERROR;
 
 }
 
 
+
 void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
-  //cov->p[TREND_MEAN]: mu / mean
+  //P(TREND_MEAN]: mu / mean
   
   range->min[TREND_MEAN] = RF_NEGINF;
   range->max[TREND_MEAN] = RF_INF;
@@ -738,7 +734,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TREND_MEAN] = true;
   range->openmax[TREND_MEAN] = true;
   
-  //cov->p[TREND_LINEAR]: plane
+  //P(TREND_LINEAR]: plane
   range->min[TREND_LINEAR] = RF_NEGINF;
   range->max[TREND_LINEAR] = RF_INF;
   range->pmin[TREND_LINEAR] = -10^10;
@@ -746,7 +742,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TREND_LINEAR] = true;
   range->openmax[TREND_LINEAR] = true;
   
-  //cov->p[TREND_POLY]: polydeg / polynomial degree
+  //P(TREND_POLY]: polydeg / polynomial degree
   range->min[TREND_POLY] = 0;
   range->max[TREND_POLY] = RF_INF;
   range->pmin[TREND_POLY] = 0;
@@ -754,7 +750,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TREND_POLY] = false;
   range->openmax[TREND_POLY] = false;
   
-  //cov->p[TREND_PARAM_POLY]: polycoeff / coefficients of polynomial
+  //P(TREND_PARAM_POLY]: polycoeff / coefficients of polynomial
   range->min[TREND_PARAM_POLY] = RF_NEGINF;
   range->max[TREND_PARAM_POLY] = RF_INF;
   range->pmin[TREND_PARAM_POLY] = -10^10;
@@ -762,7 +758,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TREND_PARAM_POLY] = true;
   range->openmax[TREND_PARAM_POLY] = true;
  
-  //cov->p[TREND_FCT]: arbitraryfct / arbitrary function
+  //P(TREND_FCT]: arbitraryfct / arbitrary function
   range->min[TREND_FCT] = RF_NEGINF;
   range->max[TREND_FCT] = RF_INF;
   range->pmin[TREND_FCT] = -10^10;
@@ -770,7 +766,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TREND_FCT] = true;
   range->openmax[TREND_FCT] = true;
   
-  //cov->p[TREND_PARAM_FCT]: fctcoeff / coefficient of arbitrary function
+  //P(TREND_PARAM_FCT]: fctcoeff / coefficient of arbitrary function
   range->min[TREND_PARAM_FCT] = RF_NEGINF;
   range->max[TREND_PARAM_FCT] = RF_INF;
   range->pmin[TREND_PARAM_FCT] = -10^10;
@@ -786,7 +782,7 @@ double GetInternalMean(cov_model *cov){
       if (cov->nrow[TREND_MEAN] != 1) {
 	return(RF_NAN); // only scalar allowed !
       }
-      return(cov->p[TREND_MEAN][0]);
+      return P0(TREND_MEAN);
     } 
   }
   double sum=0.0;
@@ -804,11 +800,13 @@ int init_trend(cov_model *cov, storage *S) {
   
   long err = NOERROR;
   trend_storage *s;
-  double *polydeg =  cov->p[TREND_POLY],
-         *arbitraryfct = cov->p[TREND_FCT];
-  int i, basislen=0,
-      tsdim = cov->tsdim,
-      vdim = cov->vdim;
+  double
+    *arbitraryfct = P(TREND_FCT);
+  int i, 
+    *polydeg = PINT(TREND_POLY),
+    basislen=0,
+    tsdim = cov->tsdim,
+    vdim = cov->vdim;
   //SEXP fctformals, argnames;
 
   //assert(false);
@@ -817,7 +815,7 @@ int init_trend(cov_model *cov, storage *S) {
    
   if(polydeg != NULL) {
     for(i=0; i<vdim; i++) 
-      basislen += binomialcoeff(((int*) polydeg)[i]+tsdim,tsdim);
+      basislen += binomialcoeff(polydeg[i]+tsdim,tsdim);
   }
 
   if (cov->Strend != NULL) free(cov->Strend);
@@ -893,17 +891,17 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
   //PMI(cov->calling->calling);
   assert(S != NULL);
   double t,
-    *mu = cov->p[TREND_MEAN],
-    *plane   = cov->p[TREND_LINEAR],
-    *polydeg = cov->p[TREND_POLY],
-    *polycoeff = cov->p[TREND_PARAM_POLY],
-    *arbitraryfct = cov->p[TREND_FCT],
-    //    *fctcoeff = cov->p[TREND_PARAM_FCT],
+    *mu = P(TREND_MEAN),
+    *plane   = P(TREND_LINEAR),
+    *polycoeff = P(TREND_PARAM_POLY),
+    *arbitraryfct = P(TREND_FCT),
+    //    *fctcoeff = P(TREND_PARAM_FCT),
     **xgr = loc->xgr,
     *x = S->x,
     *evalplane = S->evalplane;
   int i, j, k, v, w,
     basislen, startindex,
+    *polydeg = PINT(TREND_POLY),
     totalpoints = loc->totalpoints,
     vdim = cov->vdim,
     tsdim = cov->tsdim,
@@ -984,7 +982,7 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
     startindex=0;
     int end_k = totalpoints * vdim;
     for(v=0; v<vdim; v++) { 
-      basislen = binomialcoeff(((int *) polydeg)[v] + tsdim, tsdim);
+      basislen = binomialcoeff(polydeg[v] + tsdim, tsdim);
       if(isnan(polycoeff[0])) {
 	ERR("Error: cannot evaluate polynomial without coefficients.\n");
       }
@@ -1148,7 +1146,7 @@ void poly_basis(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s) {
     *powmatrix = S->powmatrix,
       *dimi=NULL,
       err=NOERROR;
-  double *polydeg = cov->p[TREND_POLY];
+  int *polydeg = PINT(TREND_POLY);
   
   dimi = (int *) MALLOC(dim * sizeof(int));
   if (dimi == NULL) {
@@ -1157,7 +1155,7 @@ void poly_basis(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s) {
   }
   
   for(v=0, j=0; v<vdim; v++) {
-    basislen = binomialcoeff(((int *) polydeg)[v]+dim,dim);
+    basislen = binomialcoeff(polydeg[v] + dim, dim);
     //   print("v: %d\n", v);
     for(d=0; d<dim; d++) dimi[d] = 0;
     for(k=0; k<basislen; k++) {
@@ -1168,7 +1166,7 @@ void poly_basis(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s) {
       (dimi[i])++;
       powsum = 0;
       for(d=0; d<dim; d++) powsum += dimi[d];
-      while(powsum > ((int*) polydeg)[v]) {
+      while(powsum > polydeg[v]) {
         dimi[i] = 0;
         if (i < dim-1) {
 	  i++;

@@ -4,7 +4,7 @@
 
  simulation of max-stable random fields
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -154,14 +154,16 @@ int check_pts_given_shape(cov_model *cov) {
   if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, ISOTROPIC,
 		     SCALAR, role)) != NOERROR)  return err;
   // but it must be treated as if it was non-isotropic
-  if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, NO_ROTAT_INV,
+  if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
 		     SCALAR, role)) != NOERROR)  BUG;
- setbackward(cov, shape);
-  if (!shape->deterministic) return ERRORNOTPROGRAMMED; // Dichte muss nicht normiert sein und stattdessen durch das mittlere Volumen dividiert werden.
+  setbackward(cov, shape);
+
+  //if (!shape->deterministic) return ERRORNOTPROGRAMMED; // Dichte muss nicht normiert sein und stattdessen durch das mittlere Volumen dividiert werden.
 
   if (pts != NULL) {
 
     //printf("pts %s %s\n", CovList[pts->nr + 1].nick, CovList[pts->nr + 1].name);
+    //PMI(pts);
 
     if ((err = CHECK_R(pts, dim)) != NOERROR) return err;
   }
@@ -189,14 +191,15 @@ int struct_pts_given_shape(cov_model *cov, cov_model **newmodel){
     if ((err = STRUCT(shape, cov->sub + PGS_LOC)) != NOERROR)
       return err;
   
+
     if (cov->sub[PGS_LOC] == NULL) 
       SERR1("no intensity found for '%s'", NICK(shape));
 
-    cov->sub[PGS_LOC]->calling = cov;
+    assert(cov->sub[PGS_LOC]->calling != NULL);
 
     //   printf("here %s\n", NICK(cov->sub[PGS_LOC]));
     
-    if ((err = CHECK_R(cov->sub[PGS_LOC], cov->tsdim)) != NOERROR) return err;
+    //if ((err = CHECK_R(cov->sub[PGS_LOC], cov->tsdim)) != NOERROR) return err;
 
   }
   return NOERROR;
@@ -296,7 +299,7 @@ int calculate_mass_gauss(cov_model *cov) {
 	double range = loc->xgr[d][XSTEP] * (loc->xgr[d][XLENGTH] - 1.0);
 	xgr[d][XLENGTH] = ceil(range / y[d] + 1.0);
 	if (xgr[d][XLENGTH] >= loc->xgr[d][XLENGTH]) {
-	  assert(false);
+	  BUG; assert(false);
 	  memcpy(xgr[d], loc->xgr[d], 3 * sizeof(double));
 	} else {
 	  xgr[d][XSTART] =
@@ -349,13 +352,13 @@ int calculate_mass_maxstable(cov_model *cov) {
 
   for (d=0; d<dim; d++) halfstepvector[d] = 0.0; 
 
-  //  printf("hier\n");
+  //  printf("hier calculate_mass\n");
   VTLG_D(halfstepvector, pts, &(pgs->value_orig));
 
   //  PMI(cov, "calculate max");
   
-  int flat = ((int *) cov->p[PGS_FLAT])[0];
-  //  printf("%s %d %d %f\n",NICK(cov), PGS_FLAT, ((int*)cov->p[PGS_FLAT])[0], pgs->value_orig ); APMI(cov); assert(false);
+  int flat =P0INT(PGS_FLAT);
+  //  printf("%s %d %d %f\n",NICK(cov), PGS_FLAT, ((int*)cov->p[PGS_FLAT])[0], pgs->value_orig );// APMI(cov); assert(false);
     
   if (flat == FLAT_UNDETERMINED) {
     // flat == im Kerngebiet wird konstant simuliert; ausserhalb dann
@@ -367,7 +370,7 @@ int calculate_mass_maxstable(cov_model *cov) {
       double threshold = 
 	pgs->value_orig == RF_INF//&& cov->p[PGS_RATIO][0] == 0.0 
 	? RF_INF
-	: pgs->value_orig * cov->p[PGS_RATIO][0];
+	: pgs->value_orig * P0(PGS_RATIO);
       pgs->flat =  threshold < v;
     } else { // not grid
       BUG;
@@ -387,14 +390,17 @@ int calculate_mass_maxstable(cov_model *cov) {
     for (d=0; d<dim; d++) single[PGS_VOXEL] *= loc->xgr[d][XSTEP];
   } else {
     //    APMI(cov);
-    assert(halfstepvector[0] > 0);
+    //       printf("two sided %f %f %f\n", halfstepvector[0], halfstepvector[1], halfstepvector[2]); //assert(false);
     VTLG_P2SIDED(NULL, halfstepvector, pts, single + PGS_VOXEL);
+    //   printf("two sided done %f %s\n", single[PGS_VOXEL], NICK(pts)); assert(false);
   }
   voxels = 1.0;
   for (d=0; d<dim; d++) voxels *= loc->xgr[d][XLENGTH] - 1.0;  
   total[PGS_VOXEL] = single[PGS_VOXEL] * voxels;
   
-  single[PGS_CORNER] = 1.0;
+  for (d=0; d<dim; d++) x[d] = RF_INF;  
+  VTLG_P2SIDED(NULL, x, pts, single + PGS_CORNER);
+  assert(single[PGS_CORNER] == 1.0); // nur wenn normiert
   total[PGS_CORNER] = 1.0 + total[PGS_VOXEL];
 
   if (dim >= 2) {
@@ -405,13 +411,16 @@ int calculate_mass_maxstable(cov_model *cov) {
       x[d] = RF_INF; // !! changed
       VTLG_P2SIDED(NULL, x, pts, single + PGS_SIDES + d);
 
-      for (i=0; i<dim; i++) 
+      for (i=0; i<dim; i++) {
 	if (R_FINITE(x[i])) {
 	  if (pgs->flat) single[PGS_SIDES + d] *= loc->xgr[i][XSTEP]; 
 	  nr *= loc->xgr[i][XLENGTH] - 1.0;
 	}
-      //printf("  single d=%d %d %f %d\n", d, PGS_SIDES + d, 
-      //    single[PGS_SIDES + d], nr);
+      }
+      //
+      //PMI(cov);
+      //  printf("  single d=%d %d x=(%f %f %f) val=%f %d\n", d, PGS_SIDES + d, 
+      //     x[0], x[1], x[2], single[PGS_SIDES + d], nr); assert(false);
 
       total[PGS_SIDES + d] =
 	total[PGS_SIDES + d - 1] + nr * single[PGS_SIDES + d];
@@ -426,17 +435,19 @@ int calculate_mass_maxstable(cov_model *cov) {
 	if (pgs->flat) single[PGS_SIDES + dim + d] *= loc->xgr[d][XSTEP]; 
 	nr *= loc->xgr[d][XLENGTH] - 1.0;
 	
+	//	printf("  single d=%d %d x=(%f %f %f) val=%f %d\n", d, PGS_SIDES + dim + d,  x[0], x[1], x[2], single[PGS_SIDES + dim + d], nr); //assert(false);
+
 	total[PGS_SIDES + dim + d] = 
 	  total[PGS_SIDES + dim + d - 1] + nr * single[PGS_SIDES + dim + d];
       }
     } else if (dim > 3) BUG;
   }
+  //	APMI(cov);
 
   if (!R_FINITE(pgs->totalmass = total[pgs->size - 1])) {
     // int i; for (i=0; i<pgs->size; i++) printf("i=%d total=%f\n", i, total[i]);
     SERR("the total intensity mass is not finite");
   }
-
 
   return NOERROR;
 }
@@ -477,12 +488,21 @@ int init_pts_given_shape(cov_model *cov, storage *S) {
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
   // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
   // schoen abfangen.
+
+  //  printf("A moments=%d\n", cov->mpp.moments);
+  //  APMI(cov);
   if ((err = INIT(shape, cov->mpp.moments, S)) != NOERROR) return err; //gatter?
+  // APMI(shape);
+
 
   assert(cov->mpp.moments >= 1);
   assert(shape->mpp.moments >= 1);
 
-  if ((err = INIT(pts, 0, S)) != NOERROR) return err; 
+  //  printf("AB moments=%d\n", cov->mpp.moments);
+  if ((err = INIT(pts, 1, S)) != NOERROR) {
+    return err; 
+  }
+  //   printf("AC moments=%d\n", cov->mpp.moments);
 
   if (!grid) { // todo
     SERR("non-grid not programmed yet"); // meiste da; fehlt noch
@@ -507,11 +527,29 @@ int init_pts_given_shape(cov_model *cov, storage *S) {
 	(pgs->halfstepvector = (double*) CALLOC(dim, sizeof(double)))==NULL
 	)
       return ERRORMEMORYALLOCATION;
+
+    // APMI(cov);
+
     if ((err = calculate_mass_maxstable(cov)) != NOERROR) return err;
-    cov->mpp.log_zhou_c = log(pgs->totalmass);
-    cov->mpp.maxheight = pts->mpp.maxheight * shape->mpp.maxheight;
-    if (!R_FINITE(cov->mpp.maxheight)) BUG;
-   } else {
+    cov->mpp.log_zhou_c = log(pgs->totalmass); 
+
+    //  printf("zhou %f %f\n",  cov->mpp.log_zhou_c, pgs->totalmass); APMI(cov); assert(false); // x,x,x:zhou 2.161274 8.682194; x,x,0: zhou 1.177634 3.246682
+
+
+    if (shape->deterministic) {
+      cov->mpp.maxheight = pts->mpp.maxheight * shape->mpp.maxheight;
+      if (!R_FINITE(cov->mpp.maxheight)) BUG;
+    } else { // currently both cases are identical ...
+      cov->mpp.maxheight = pts->mpp.maxheight * shape->mpp.maxheight;
+      if (!R_FINITE(cov->mpp.maxheight)) {
+	//	APMI(cov);
+	BUG;
+      }
+    }
+
+
+
+  } else {
     // APMI(cov);
     BUG;
   }
@@ -519,23 +557,28 @@ int init_pts_given_shape(cov_model *cov, storage *S) {
 
   if (CovList[shape->nr].nonstat_inverse == ErrInverseNonstat) {
     if (pts->nr != RECTANGULAR) {
+      // APMI(shape);
       warning("Inverse of shape function cannot be determined. Simulation speed  might be heavily decreased.");
     }
   }
   
  
-  for (i=0; i<cov->mpp.moments; i++) {
-    cov->mpp.M[i] = shape->mpp.M[i];
-    cov->mpp.Mplus[i] = shape->mpp.Mplus[i];
+  for (i=0; i<=cov->mpp.moments; i++) {
+    //    printf("%d %f %f %d\n", i, shape->mpp.M[i], shape->mpp.Mplus[i], cov->mpp.moments);
+
+    cov->mpp.M[i] = pts->mpp.M[i];
+    cov->mpp.Mplus[i] = pts->mpp.Mplus[i];
   }
    
   cov->rf = shape->rf;
   cov->origrf = false;
  
 
-  //PMI(cov);
+  //APMI(cov);
 
   // assert(false);
+
+  //  printf("init done %d\n", err);
 
   return err;
 }
@@ -590,7 +633,12 @@ void do_pgs_gauss(cov_model *cov, storage *S) {
 
 
   if (!cov->deterministic) {
+    int err;
     DO(shape, S); 
+    // APMI(pts);
+    if ((err = INIT(pts, 1, S)) != NOERROR) {
+      XERR(err); 
+    }
     DORANDOM(pts, cov->q);  // cov->q nur dummy. Wird ueberschrieben
     if (cov->role == ROLE_POISSON_GAUSS || !grid) { 
       if (calculate_mass_gauss(cov) != NOERROR) 
@@ -715,7 +763,11 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
 
 
   if (!cov->deterministic) {
+    int err;
     DO(shape, S); 
+    if ((err = INIT(pts, 1, S)) != NOERROR) {
+      XERR(err); 
+    }
     DORANDOM(pts, cov->q);  // cov->q nur dummy. Wird ueberschrieben
      // CovList[shape->nr].Do(shape, S); // nicht gatternr
     if (calculate_mass_maxstable(cov) != NOERROR) 
@@ -724,7 +776,9 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
 
   i = DrawCathegory(pgs->size, single, total, loc->grid, &elmts);
 
-  //   printf("i=%d total=%f grid=%d elm=%d sin=%f, size=%d\n", i, *total, loc->grid, elmts, *single, pgs->size);
+  //   pgs:single 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.020262 
+  //     pgs:total  0.000000 1.000000 1.000000 1.000000 1.000000 1.000000 1.000000 21.261911 
+   //  printf("i=%d total=%f grid=%d elm=%d sin=%f, size=%d\n", i, *total, loc->grid, elmts, *single, pgs->size);
  
   if (flat) for (d=0; d<dim; d++) x[d] = 0.0; 
   else for (d=0; d<dim; d++) x[d] = halfstepvector[d];
@@ -759,7 +813,7 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
       break;
     case PGS_3D_EDGE2 : x[0] = x[2] = RF_INF;
       break;
-    case PGS_3D_EDGE3 : x[1] = x[2] = RF_INF;
+    case PGS_3D_EDGE3 : x[0] = x[1] = RF_INF;
       break;
     default : BUG;
     }    
@@ -820,7 +874,7 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
    
 
     
-    //printf("log density v=%f, %f, %f %e\n", v[0],v[1],v[2], pgs->log_density);
+    //      printf("log density v=%f, %f, %f %e\n", v[0],v[1],v[2], pgs->log_density);
 
      //printf("log_dens %f\n", pgs->log_density);
     //  pgs->log_density -= log(pgs->totalmass); // ueberprueft: normierung
@@ -829,7 +883,7 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
     double density;
     VTLG_D(v, pts, &density);
 
-    //printf("density %e\n", density);
+    //    printf("density %e v=%f %f %f\n", density, v[0], v[1], v[2]);
 
     pgs->log_density = log(density);
   }
@@ -841,7 +895,11 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
  //assert(counter[0] < 40);
 
   //  PMI(pts);
-  assert(R_FINITE(pgs->log_density));
+  
+  if (!R_FINITE(pgs->log_density)) {
+    //PMI(cov);
+    BUG;
+  }
   
 }
 
@@ -865,7 +923,7 @@ void do_pts_given_shape(cov_model *cov, storage *S) {
   } else if (hasMaxStableRole(cov)) { // todo: sauber trennen, wann 
     // max-stable, smith etc
     do_pgs_maxstable(cov, S); 
-    eps =  pgs->currentthreshold;
+    eps = pgs->currentthreshold;
     if (cov->loggiven)  eps += pgs->log_density;
     else eps *= exp(pgs->log_density);
   } else {
@@ -876,9 +934,11 @@ void do_pts_given_shape(cov_model *cov, storage *S) {
   
   NONSTATINVERSE(&eps, shape, x, y);
   if (ISNA(x[0]) || x[0] > y[0]) {
-     double eps_neu = eps / cov->mpp.maxheight;
-     NONSTATINVERSE_D(&eps_neu, pts, x, y); 
-     if (ISNA(x[0]) || x[0] > y[0]) BUG;
+    assert(!cov->loggiven);
+    //double eps_neu = eps / cov->mpp.maxheight; // warum ?? 29.12.2013
+    double eps_neu = eps; //  29.12.2013
+    NONSTATINVERSE_D(&eps_neu, pts, x, y); 
+    if (ISNA(x[0]) || x[0] > y[0]) BUG;
  
       //printf("eps=%f %f %f x=(%e %e %e) y=(%e %e %e) q=(%f %f %f)\n",
       //     eps, pgs->currentthreshold,  exp(pgs->log_density),
@@ -886,17 +946,17 @@ void do_pts_given_shape(cov_model *cov, storage *S) {
       //     cov->q[0], cov->q[1], cov->q[2]);
   }
  
-  assert(!R_FINITE(y[0]) || y[0] < 55.281);
+  //  assert(!R_FINITE(y[0]) || y[0] < 55.281);
 
   //APMI(cov);
-
+  
   for (d=0; d<dim; d++) {
 
     //     printf("do d=%d q=%f x=%f y=%f eps=%e thr=%e\n",
-    //	   d, cov->q[d], x[d], y[d], eps, pgs->currentthreshold);
+    //	  d, cov->q[d], x[d], y[d], eps, pgs->currentthreshold);
 
-    pgs->supportmin[d] = cov->q[d] - y[d]; // 4 * for debugging...
-    pgs->supportmax[d] = cov->q[d] - x[d];
+    pgs->supportmin[d] = cov->q[d] - 10 * y[d]; // 4 * for debugging...
+    pgs->supportmax[d] = cov->q[d] - 10 * x[d];
 
     if (ISNA(pgs->supportmin[d]) || ISNA(pgs->supportmax[d]) ||
 	pgs->supportmin[d] > pgs->supportmax[d]) {
@@ -965,7 +1025,7 @@ int check_standard_shape(cov_model *cov) {
   } else ILLEGAL_ROLE;
 
 
-  if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, NO_ROTAT_INV, 
+  if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD, 
 		     SCALAR, role)) != NOERROR)  return err;
   setbackward(cov, shape);
   
@@ -978,8 +1038,7 @@ int check_standard_shape(cov_model *cov) {
 
 int struct_standard_shape(cov_model *cov, cov_model **newmodel){
   cov_model *shape = cov->sub[PGS_FCT];
-  int
-    err = NOERROR;
+  //  int    err = NOERROR;
   //dim = shape->xdimprev;
 
   // printf("ttt\n");
@@ -993,17 +1052,18 @@ int struct_standard_shape(cov_model *cov, cov_model **newmodel){
   //   printf("here %s\n", NICK(cov->sub[PGS_LOC]));
   
   //  APMI(cov);
+       
+  //if ((err = CHECK_R(cov->sub[PGS_LOC], cov->tsdim)) != NOERROR) return err;
   
-  if ((err = CHECK_R(cov->sub[PGS_LOC], cov->tsdim)) != NOERROR) return err;
-  
-
   return NOERROR;
 }
-
+ 
 
 int init_standard_shape(cov_model *cov, storage *S) {  
   cov_model *shape = cov->sub[PGS_FCT];
   //  location_type *loc = Loc(cov);
+
+  //APMI(cov);
 
   assert(cov->sub[PGS_LOC] != NULL);
   location_type *loc = Loc(cov);
@@ -1023,21 +1083,7 @@ int init_standard_shape(cov_model *cov, storage *S) {
       (pgs->maxmean = (double*) CALLOC(dim, sizeof(double))) == NULL)
     return ERRORMEMORYALLOCATION;
 
-  if (cov->sub[PGS_LOC] == NULL) {
-    // COV_DELETE(cov->sub + PGS_LOC);
-    // assert(cov->sub[PGS_LOC] == NULL);
  
-    cov_model *u = cov->sub[PGS_LOC];
-    u->p[UNIF_MIN] = (double*) MALLOC(dim * sizeof(double));
-    u->p[UNIF_MAX] = (double*) MALLOC(dim * sizeof(double));
-    u->ncol[UNIF_MIN] = 1;
-    u->nrow[UNIF_MIN] = dim;
-    u->ncol[UNIF_MAX] = 1;
-    u->nrow[UNIF_MAX] = dim;
-  }
- 
-      
-
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
   // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
   // schoen abfangen.
@@ -1049,9 +1095,11 @@ int init_standard_shape(cov_model *cov, storage *S) {
   if ((err = INIT(shape, cov->mpp.moments, S)) != NOERROR) return err; //gatter?
 
   cov_model *u = cov->sub[PGS_LOC]; 
+  //PMI(cov);
+  assert(u->nr == UNIF);
   double 
-    *min = u->p[UNIF_MIN],
-    *max = u->p[UNIF_MAX],
+    *min = PARAM(u, UNIF_MIN),
+    *max = PARAM(u, UNIF_MAX),
     *x = pgs->minmean, // !! wird gespeichert
     *y = pgs->maxmean; // !!
   
@@ -1114,10 +1162,14 @@ void do_standard_shape(cov_model *cov, storage *S) {
 
   for (d=0; d<dim; d++) {
 
-    //     printf("do d=%d q=%f x=%f y=%f eps=%e thr=%e\n",
-    //	   d, cov->q[d], x[d], y[d], eps, pgs->currentthreshold);
+
+    //    printf("do d=%d q=%f x=%f y=%f thr=%e\n",
+    //	  d, cov->q[d], x[d], y[d], pgs->currentthreshold);
     pgs->supportmin[d] = cov->q[d] - y[d]; // 4 * for debugging...
     pgs->supportmax[d] = cov->q[d] - x[d];
+
+    assert(pgs->supportmin[d] != NA_INTEGER && 
+	   pgs->supportmax[d] != NA_INTEGER);
     
     assert(pgs->supportmin[d] <= pgs->supportmax[d]);
   }  
@@ -1173,7 +1225,7 @@ int check_stationary_shape(cov_model *cov) {
 
   //printf("here\n");
   
-  if ((err = CHECK(shape, dim, dim, ProcessType, XONLY, NO_ROTAT_INV, 
+  if ((err = CHECK(shape, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
 		     SCALAR, role)) != NOERROR)  return err;
   setbackward(cov, shape);
 
@@ -1218,7 +1270,7 @@ int init_stationary_shape(cov_model *cov, storage *S) {
 
   assert(shape->mpp.moments >= 1);
  
-  cov->mpp.log_zhou_c = 0;
+  cov->mpp.log_zhou_c = 0.0;
   if (!R_FINITE(cov->mpp.log_zhou_c))
     SERR1("max height of '%s' not finite", NICK(shape));
   

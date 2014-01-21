@@ -44,6 +44,8 @@ list2RFempVariog <- function(li)
              phi.centers=li$phi.centers,
              theta.centers=li$theta.centers,
              T=li$Tbins,
+             coord.units = RFoptions()$general$coord_units,
+             variab.units = RFoptions()$general$variab_units,
              call=li$call ))
 
 
@@ -72,13 +74,19 @@ setMethod(f="plot", signature(x="RFfit", y="missing"),
                           ...))
 
 
+
 plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
                             plot.nbin, plot.sd, fit.method = NULL, model,
-                            variogram=variogram,...) {
+                            variogram=variogram,
+                            coord.units=c(""),
+                            variab.units=c(""),
+                            ...) {
+  
   if (!variogram)
     stop("plot of estimated covariance functions not programmed yet.")
   
   dots = list(...)
+
   dotnames <- names(dots)
   if (!("type" %in% dotnames)) dots$type <- "b"
   
@@ -114,10 +122,14 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
     methodidx <- fit.method %in% names(newx[unlist(lapply(newx, FUN = function(x) is(x, ZF_MODELEXT)))])
     methodnames <- fit.method[methodidx]
     nomethodnames <- fit.method[!methodidx]
-    
+
     if( !all(methodidx) )
       warning( paste("The following method does not exist: ", nomethodnames) )
-  }
+  } 
+
+  variab.name <-
+    if (is.matrix(x@emp.vario)) dimnames(x@emp.vario)[[2]][1]
+    else names(x@emp.vario)[1]
 
   if(!is.null(model)){
     len.modelnames <- length(names(model))
@@ -150,9 +162,22 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
       do.call(plot, args=c(dots, list(x=x, plot.nbin=FALSE)))
       return()
     }
-
-    if (!("main" %in% dotnames)) dots$main <- "Variogram image plot"
+   
+    if (!("main" %in% dotnames)) {
+      main <- "Variogram image plot"
+      if (length(variab.name)>0) main <- paste(main, "for", variab.name)
+      dots$main <- main
+    }
     lab.names <- paste(lab.names, "-distance", sep="")
+
+    idx <- lab.names != "T-distance"
+    if (any(idx) && all(coord.units[idx] != ""))
+      lab.names[idx] <-
+        paste(lab.names[idx], " [", coord.units[idx], "]", sep="")
+    if (!all(idx) && all(coord.units[!idx] != ""))
+      lab.names[!idx] <-
+        paste(lab.names[!idx], " [", coord.units[!idx], "]", sep="")
+    
     if (!("xlab" %in% dotnames)) dots$xlab <- lab.names[1]
     if (!("ylab" %in% dotnames)) dots$ylab <- lab.names[2]
     if (!("xlim" %in% dotnames)) dots$xlim <- range(coords[[1]])
@@ -208,6 +233,7 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
   halftheta.sector <- pi/(2*l.theta)
   
   dim(x@emp.vario) <- newdim <- c(length(x@centers), l.phi, l.theta, l.T)
+  
 
   if (!is.null(x@n.bin)) dim(x@n.bin) <- newdim
   if (has.sd <- !is.null(x@sd))  dim(x@sd) <- newdim
@@ -229,8 +255,12 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
   dots$cex <- NULL
 
   if (!("pch" %in% dotnames)) dots$pch <- 19
-  
-  main <- if ("main" %in% dotnames) dots$main else "Variogram plot"
+
+  if ("main" %in% dotnames)  main <- dots$main
+  else {
+    main <- "Variogram plot"
+    if (length(variab.name)>0) main <- paste(main, "for", variab.name)
+  }
   dots$main <- NULL
   if (!is.null(main)) oma.top <- 2 else oma.top <- 0
 
@@ -267,11 +297,13 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
         for (iph in 1:n.phi) {
           if (n.phi > 1) col <- col.v[iph]
           if (iph==1) {
+            lab <- xylabs("bin centers", NULL, units=x@coord.units)
             plot(x@centers, x@n.bin[ ,iph, ith, iT],
                  xlim=dots$xlim, ylim=ylim.nbin,
                  type=if (n.phi>1) "p" else "h",
                  col =if (n.phi>1) col else "darkgray", lwd=4,
-                 pch=16, axes=FALSE, ylab="")
+                 pch=16, axes=FALSE, ylab="", xlab = lab$x
+                 )
             box()
             at <- seq(range.nbin[1], range.nbin[2], len=3)
             if (ith==1)
@@ -440,9 +472,10 @@ plotRFempVariog <- function(x, y, nmax.phi, nmax.theta, nmax.T,
       screen <- screen+1
     }
   dots$type <- NULL
-  if (!is.null(xlab)) do.call(title, args=c(dots, xlab=xlab, outer=TRUE))
-  if (!is.null(main)) do.call(title, args=c(dots, main=main, outer=TRUE))
   
+  if (!is.null(main)) do.call(title, args=c(dots, main=main, outer=TRUE))
+  if (!is.null(xlab)) do.call(title, args=c(dots, xlab=xlab, outer=TRUE))
+
   close.screen(all.screens=TRUE)
 }
 
@@ -460,7 +493,9 @@ if (FALSE){
   ym <- c(min(ev$emp.vario), max(ev$emp.vario)*1.1)
   # plot emp.vario
   par(mar=c(1,4,2,2), las=1)
-  plot(ev$centers,ev$emp.vario,xlim=xm, ylim=ym, xlab='', ylab='emprical variogram', pch=19, xaxt='n',...)
+   lab <- xylabs("bin centers", NULL, units=x@coord.units)
+  plot(ev$centers, ev$emp.vario, xlim=xm, ylim=ym, xlab=lab$x,
+       ylab='emprical variogram', pch=19, xaxt='n',...)
   # add fitted variogram if available
   if(!is.null(fit)){
     gx <- seq(0.001, max(xm), l=100)
@@ -476,7 +511,9 @@ if (FALSE){
   }
   # add info with bins
   par(mar=c(3,4,0,2))
-  plot(x=ev$centers, y=ev$n.bin, ylab='n.bin', type='h', lwd=5, col='darkgrey')
+  lab <- xylabs("bin centers", NULL, units=x@coord.units)
+  plot(x=ev$centers, y=ev$n.bin, ylab='n.bin', xlab=lab$x,
+       type='h', lwd=5, col='darkgrey')
   mtext(line=-10,'distance')
   
  }

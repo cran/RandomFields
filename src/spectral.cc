@@ -4,7 +4,7 @@
 
  Simulation of a random field by spectral turning bands
 
- Copyright (C) 2000 -- 2013 Martin Schlather, 
+ Copyright (C) 2000 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -69,7 +69,7 @@ int check_spectral(cov_model *cov) {
 
     //PMI(cov, "here");
  
-    if ((err = CHECK(sub, dim, dim, ProcessType, XONLY, NO_ROTAT_INV, 
+    if ((err = CHECK(sub, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
 		       SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
        return err;
     }
@@ -153,8 +153,8 @@ int init_spectral(cov_model *cov, storage *S){
   if (cov->tsdim > MAXTBMSPDIM) {
     err=ERRORMAXDIMMETH; goto ErrorHandling;
   } 
-  S->Sspectral.prop_factor = cov->p[SPECTRAL_METRO_FACTOR][0];
-  s->sigma = cov->p[SPECTRAL_SIGMA][0];
+  S->Sspectral.prop_factor = P0(SPECTRAL_METRO_FACTOR);
+  s->sigma = P0(SPECTRAL_SIGMA);
   s->nmetro = 0;
   s->density = NULL;
 // 13.10. the following does not seem to be necessary,
@@ -247,7 +247,7 @@ void do_spectral(cov_model *cov, storage *S)
   spec_properties *cs = &(S->spec);
   spectral_storage *s = &(S->Sspectral);
   int nt, d, n, nx, gridlenx, gridleny, gridlenz, gridlent,
-    ntot = ((int *) cov->p[SPECTRAL_LINES])[0],
+    ntot = P0INT(SPECTRAL_LINES),
     origdim = loc->timespacedim,
     spatialdim = loc->spatialdim,
     every = GLOBAL.general.every,
@@ -262,10 +262,10 @@ void do_spectral(cov_model *cov, storage *S)
     *res = cov->rf;
   long total = loc->totalpoints,
     spatialpoints = loc->spatialtotalpoints;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
 
 			
-  s->grid = ((int*) cov->p[SPECTRAL_GRID])[0];
+  s->grid = P0INT(SPECTRAL_GRID);
   s->phistep2d = TWOPI/ (double) ntot; 
   s->phi2d = s->phistep2d * UNIFORM_RANDOM;
 //  print("%d %f %f\n", s->grid, s->phistep2d, s->phi2d); assert(false);

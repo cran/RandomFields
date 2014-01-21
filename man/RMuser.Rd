@@ -69,7 +69,7 @@ RMuser(type, domain, isotropy, vdim, beta, fctn, fst, snd, envir,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## Alternatively to 'model <- RMexp()' one may define the following
 ## (which is, however, much slower and cannot use all features of
 ## RandomFields)
@@ -90,6 +90,7 @@ model <- RMnugget(var=1e-5) +
 x <- y <- seq(1, 10, len=7^(1+interactive()))
 z <- RFsimulate(model, x=x, y=y, grid=TRUE, n=6)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}
@@ -99,14 +100,14 @@ plot(z)
 
 %x <- y <- seq(1, 10, len=10)
 %model <- RMexp()
-%set.seed(100)
-%z <- RFsimulate(model = model, x=x, y=y, grid=TRUE)
+%
+%z <- RFsimulate(model = model, x=x, y=y, grid=TRUE, seed=0)
 %plot(z)
 %
 %model <- RMuser(type="positive definit", domain="single variable",
 %                iso="isotropic",  fctn=quote(exp(-x)))
-%set.seed(100)
-%z1 <- RFsimulate(model = RPcirculant(model), x=x, y=y, grid=TRUE)
+%
+%z1 <- RFsimulate(model = RPcirculant(model), x=x, y=y, grid=TRUE, seed=0)
 %plot(z1)
 %stopifnot(sum(abs(z@data-z1@data)) == 0) ## 0
 

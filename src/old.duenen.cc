@@ -4,7 +4,7 @@
 
  library for simulation of random fields -- init part and error messages
 
- Copyright (C) 2011 -- 2013 Martin Schlather
+ Copyright (C) 2011 -- 2014 Martin Schlather
 tree
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

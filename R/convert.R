@@ -102,7 +102,7 @@ StandardSimpleModel <- function(model, tsdim, aniso=TRUE, addnugget=TRUE, ...) {
   
   vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE)
   if (!is.numeric(vdim) || vdim > 1) return("model not univariate")
-  model <- GetModel(register=MODEL.USER) # , do.notreturnparam=TRUE)
+  model <- GetModel(register=MODEL.USER, GETMODEL_DEL_NATSC) # , do.notreturnparam=TRUE)
   .C("DeleteKey", MODEL.USER)
 
   s <- rfSplitTrendAndCov(model=model, spatialdim=tsdim, xdimOZ=tsdim,
@@ -235,8 +235,8 @@ PrepareModel <-  function(model, param, trend=NULL,
 ## Print(m, model, lm)
     
     if (!is.na(p <- pmatch("meth", names(model), duplicates.ok=TRUE))) {
-      if (printlevel>=PL.FCTN.ERRORS)  Print(p, model)
-      stop("method cannot be given with the model anymore. It must be given as a parameter to the function. See RFoptions and RFsimulate")
+      if (printlevel>=PL.FCTN.ERRORS)  Print(p, model) #
+      stop("method cannot be given with the model anymore. It must be given as a parameter to the function. See 'RFoptions' and 'RFsimulate'")
      }
   
     if (!is.null(model$me))
@@ -253,7 +253,7 @@ PrepareModel <-  function(model, param, trend=NULL,
       }
     }
     if (lm != 0) {
-      if (printlevel>=PL.FCTN.ERRORS) Print(lm, model) 
+      if (printlevel>=PL.FCTN.ERRORS) Print(lm, model) #
       stop("some parameters do not fit")
     }
     m <- c(m, list(m1))
@@ -380,6 +380,7 @@ PrepareModel <-  function(model, param, trend=NULL,
 seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
   xx <- matrix(nrow=3, ncol=length(x))
   step0 <- rep(FALSE, length(x))
+  gridnotgiven <- missing(grid) || length(grid) == 0
   
   for (i in 1:length(x)) {
     if (length(x[[i]]) == 1) {
@@ -389,20 +390,19 @@ seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
     step <- diff(x[[i]])
     if (step[1] == 0.0) {
       ok <- step0[i] <- all(step == 0.0)
-    } else {
+    } else {      
       ok <- max(abs(step / step[1] - 1.0)) <= gridtolerance
     }
 
     if (!ok) {
-      if (missing(grid)) return(FALSE)
+      if ( gridnotgiven) return(FALSE)
 
-      stop(paste(sep="", name, "= (",
-                 paste(x[[i]][1:min(100, length(x[[i]]))], collapse=", "),
-                 ")\ndiff = (",
-                 paste(step[1:min(100,length(step))], collapse=", "),
-                 ")\nDifferent grid distances detected, but the grid must ",
-                 "have equal distances in each direction -- if sure that ",
-                 "it is a grid, increase the value of 'gridtolerance'.\n"))
+      Print(x[[i]][1:min(100, length(x[[i]]))], step[1:min(100,length(step))],#
+            range(diff(step[1:min(100,length(step))])))
+      stop("Different grid distances detected, but the grid must ",
+           "have equal distances in each direction -- if sure that ",
+           "it is a grid, increase the value of 'gridtolerance' which equals ",
+           gridtolerance,".\n")
     }
 
     ## return(c(x[1], x[length(x)]+0.001*step[1], step[1]))
@@ -410,17 +410,17 @@ seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
     xx[,i] <- c(x[[i]][1], step[1], if (step0[i]) 1 else length(x[[i]]))
   }
 
-  if (missing(grid) && warn.ambiguous && length(x) > 1) {
+  if (gridnotgiven && warn.ambiguous && length(x) > 1) {
     RFoptions(warn.ambiguous = FALSE)
     message("Ambiguous interpretation of coordinates. Better give 'grid=TRUE' explicitly. (This message appears only once per session.)")
   }
 
   if (any(step0)) {
     if (all(step0)) {
-      if (missing(grid)) return(FALSE)
+      if (gridnotgiven) return(FALSE)
       else stop("Within a grid, the coordinates must be distinguishable")
     } else {
-      if (missing(grid) && warn.ambiguous) {
+      if (gridnotgiven && warn.ambiguous) {
         RFoptions(warn.ambiguous = FALSE)
         warning("Interpretation as degenerated grid. Better give 'grid' explicitely. (This warning appears only once per session.)")
       }
@@ -438,9 +438,15 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   ## converts the given coordinates into standard formats
   ## (one for arbitrarily given locations and one for grid points)
   
-  if (!missing(distances)) {
+  RFopt <- RFoptions()
+  curunits <- RFopt$general$coord_units
+  newunits <-  RFopt$general$new_coord_units
+ 
+  if (!missing(x) && is.raster(x)) x <- as(x, 'GridTopology')
+
+  if (!missing(distances) && length(distances) > 0) {
     stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
-              missing(grid) || length(grid)==0,
+              (missing(grid) || length(grid) == 0),
               missing(x) || is.null(x),
               missing(y) || is.null(y),
               missing(z) || is.null(z),
@@ -463,8 +469,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       }
       x <- distances
       l <- as.integer(1e-9 + 0.5 * (1 + sqrt(1 + 8 * len)))
-      if (l * (l-1) / 2 != len)
-        stop("number of given 'distances' is incorrect.")
+      if (l * (l-1) / 2 != len) l <- NaN
     } else {
       stop("'distances' not of required format.")
     }
@@ -476,16 +481,17 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                 l = l,
                 spacedim=spdim,
                 grid = FALSE,
-                distances = TRUE
+                distances = TRUE,
+                coord_units = curunits,
+                new_coord_units = newunits
                 )
            )
   }
 
   stopifnot(!missing(x))
   
-  RFopt <- RFoptions()
-
-  if (missing(grid) && !missing(length.data)) {
+ 
+  if ((missing(grid) || length(grid) == 0) && !missing(length.data)) {
     new <-  try(CheckXT(x=x, y=y, z=z, T=T, grid=TRUE, distances=distances,
                         spdim=if (!missing(spdim)) spdim,
                         length.data = length.data, y.ok =y.ok,
@@ -502,15 +508,15 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       }
     }
     return(if (grid) new else { CheckXT(x, y, z, T, grid=FALSE, distances,
-                                        if (!missing(distances)) spdim=1,
+                                        if (!missing(distances) &&
+                                            length(distances) > 0) spdim=1,
                                         length.data = length.data,
                                         printlevel = printlevel) }
            )
   } # if (missing(grid) && !missing(length.data))
   
 
-  if (!missing(spdim) && !is.null(spdim))
-    stop("'dim' should be given only when 'distances' are given")
+  
   gridtriple <- FALSE
 
   ## if (!missing(x)) {  ## missing(x) ist hier immer FALSE 
@@ -519,7 +525,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     x <- rbind(x@cellcentre.offset,
                x@cellsize,
                x@cells.dim)
-    if (missing(grid)) grid <- TRUE else stopifnot(grid)
+    if ((missing(grid) || length(grid) == 0)) grid <- TRUE else stopifnot(grid)
     gridtriple <- TRUE
   }
   ##else {
@@ -544,30 +550,56 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       if (!is.null(T))
         stop("If x is a matrix and y is given, then T may not be given")
       if (!is.matrix(y) || ncol(y) != ncol(x) ||
-          nrow(x)==3 && nrow(y)!=3 && (missing(grid) || grid))
+          nrow(x)==3 && nrow(y)!=3 && ((missing(grid) || length(grid) == 0) || grid))
         stop("y does not match x (it must be a matrix)")
     }
+    
+    if (RFopt$general$coordinate_system == "auto" && ncol(x) >= 2
+        && !is.null(n <- dimnames(x)[[2]])) {
+      n <- tolower(n)[1:2]
+      nc <- nchar(n)
+      if (all(nc >= 2 & substr(c("longitu", "latitu"), 1, nc) == n)) {
+        if (RFopt$warn$warn_coordinates)
+          message("\nEarth coordinates detected; current units are '",
+                  curunits[1],
+                  "'.\nChange options 'coordinate_system' and/or 'units' if ",
+                  "necessary.\n(This message appears only once per session.)\n")
+        curunits <- newunits <- RFopt$general$new_coord_units
+        curunits[1:2] <- c("longitude", "latitude")
+        if (newunits[1] == "") newunits[1] <- "km"
+        newunits[2:3] <- newunits[1]        
+        RFoptions(general.coordinate_system = "earth",
+                  general.coord_units = curunits,
+                  general.new_coord_units = newunits,
+                   warn.warn_coordinates=FALSE)
+
+       }
+    }
+        
     spacedim <- ncol(x)
 
     len <- nrow(x)
-    if (spacedim==1 && len != 3 && missing(grid)) {
+    if (spacedim==1 && len != 3 && (missing(grid) || length(grid) == 0)) {
       if (length(x) <= 2) grid <- TRUE
       else {
         dx <- diff(x)
         grid <- max(abs(diff(dx))) < dx[1] * RFopt$general$gridtolerance
       }
     } # else {
-    if (missing(grid) && apply(x, 2, function(z) (length(z) <= 2) ||
-                               (max(abs(diff(diff(z))))
-        > RFopt$general$gridtolerance)))
-      grid <- FALSE      
-    if (missing(grid) || !is.logical(grid)) {
+
+    if ((missing(grid) || length(grid) == 0) &&
+        any(apply(x, 2, function(z) (length(z) <= 2) || max(abs(diff(diff(z))))
+                  > RFopt$general$gridtolerance))) {
+      grid <- FALSE
+    }
+    if ((missing(grid) || length(grid) == 0) || !is.logical(grid)) {
       grid <- TRUE
       if (spacedim > 1 && RFopt$warn$ambiguous) {
         RFoptions(warn.ambiguous = FALSE)
         warning("Ambiguous interpretation of the coordinates. Better give the logical parameter 'grid=TRUE' explicitely. (This warning appears only once per session.)")
       }
     }
+
     if (grid && !is.GridTopology) {
       if (gridtriple <- len==3) {
         if (printlevel >= PL.SUBIMPORPANT && RFopt$warn$oldstyle) {
@@ -595,27 +627,27 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     }
     remove(xyzT)
     spacedim <- 1 + (!is.null(y)) + (!is.null(z))
-    if (spacedim==1 && (missing(grid) || !grid)) {
+    if (spacedim==1 && ((missing(grid) || length(grid) == 0) || !grid)) {
       ## ueberschreibt Einstellung des Nutzers im Falle d=1
       if (length(x) <= 2) newgrid <- TRUE
       else {
         dx <- diff(x)
         newgrid <- max(abs(diff(dx))) < dx[1] * RFopt$general$gridtolerance
       }
-      if (missing(grid)) grid <- newgrid
+      if ((missing(grid) || length(grid) == 0)) grid <- newgrid
       else if (xor(newgrid, grid))
         message("coordinates", if (grid) " do not",
                 " seem to be on a grid, but grid =", grid)
     }
     len <- c(length(x), length(y), length(z))[1:spacedim]
     
-    if (!missing(grid) && !grid) { ## sicher nicht grid, ansonsten ausprobieren
+    if (!(missing(grid) || length(grid) == 0) && !grid) { ## sicher nicht grid, ansonsten ausprobieren
       if (any(diff(len) != 0)) stop("some of x, y, z differ in length")
       x <- cbind(x, y, z)
       ## make a matrix out of the list
       len <- len[1]
     } else {
-      if (missing(grid) && any(len != len[1])) grid <- TRUE
+      if ((missing(grid) || length(grid) == 0) && any(len != len[1])) grid <- TRUE
       x <- list(x, y, z)[1:spacedim]
     }
     y <- z <- NULL ## wichtig dass y = NULL ist, da unten die Abfrage
@@ -625,8 +657,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   
   if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
 
-  
-  if (missing(grid) || grid) {
+
+  if ((missing(grid) || length(grid) == 0) || grid) {
     if (gridtriple) {
       if (len != 3)
         stop("In case of simulating a grid with option gridtriple, exactly 3 numbers are needed for each direction")
@@ -649,7 +681,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
             (!is.logical(xx) && !all(yy[3,] == xx[3,])))
           stop("the grids for x and y do not match")      
       }
-      if (missing(grid)) grid <- !is.logical(xx)       
+      if (missing(grid) || length(grid) == 0) grid <- !is.logical(xx)       
       if (grid) {
         x <- xx
         if (!is.null(y)) y <- yy
@@ -661,12 +693,12 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       }
     }
     if (grid && any(x[3, ] <= 0))
-      stop(paste("step must be postive. Got as steps", x[3,]))
+      stop(paste("step must be postive. Got as steps",
+                 paste(x[3,], collapse=",")))
     ##if (len == 1) stop("Use grid=FALSE if only a single point is simulated")
   }
 
-  stopifnot(!missing(grid))
-  
+ 
   if (!grid) { ## not grid
     restotal <- nrow(x)
     if (is.null(y)) {
@@ -690,14 +722,20 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     restotal <- restotal * T[3]
   }
 
+  if (!missing(spdim) && !is.null(spdim) && spacedim != spdim) {
+    stop("'dim' should be given only when 'distances' are given. Here, 'dim' contradicts the given coordinates.")
+  }
+  
   storage.mode(x) <- "double"
   if (is.null(y)) {
     return(list(x=x, T=T, Time=Time, restotal=restotal, l=len,
-                spacedim=spacedim, grid=grid, distances=FALSE))
+                spacedim=spacedim, grid=grid, distances=FALSE,
+                coord_units = curunits,  new_coord_units = newunits))
   } else {
     storage.mode(y) <- "double"
     return(list(x=x, y=y, T=T, Time=Time, restotal=restotal, l=len,
-                spacedim=spacedim, grid=grid, distances=FALSE))
+                spacedim=spacedim, grid=grid, distances=FALSE,
+                coord_units = curunits, new_coord_units = newunits))
   }
   
 }

@@ -6,7 +6,7 @@
   teaching classes 
 }
 \usage{
-RFgui(data, x, y, same.algorithm = FALSE, ev, xcov, ycov,
+RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
       sim_only1dim=FALSE, wait = 0, ...)
 }
 \arguments{
@@ -85,8 +85,9 @@ RFgui(data, x, y, same.algorithm = FALSE, ev, xcov, ycov,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 RFgui()
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

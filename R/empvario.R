@@ -15,7 +15,10 @@ RFempiricalvariogram <- function(
   ## make sure that exactly one negative value appears, and that zero is
   ## added if bin starts with a positive value 
 
-  
+  RFoptOld <- internal.rfoptions(...)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  RFopt <- RFoptOld[[2]]
+
   call <- match.call()
 
   if( missing(phi) ) phi <- NULL
@@ -27,11 +30,14 @@ RFempiricalvariogram <- function(
   if (missing.data2 <- missing(data2))
     data2 <- data
 
+  variab.units <- RFopt$general$variab_units
+  variab.names <- ""
   if (is(data, "RFsp")) { 
     stopifnot(is(data2, "RFsp"))
     data@data <- data@data[0:(data@.RFparams$n-1) * data@.RFparams$vdim + 1]
-    data2@data <- data2@data[0:(data2@.RFparams$n-1) * data2@.RFparams$vdim +
+     data2@data <- data2@data[0:(data2@.RFparams$n-1) * data2@.RFparams$vdim +
                              min(2, data2@.RFparams$vdim)]
+    variab.names <- names(data)
 
     stopifnot(all.equal(coordinates(data), coordinates(data2)))
     if (!(missing(x) && is.null(y) && is.null(z) && is.null(T)))
@@ -49,18 +55,18 @@ RFempiricalvariogram <- function(
     data <- tmp$data
     data2 <- tmp2$data
     rm(tmp)
-  } else stopifnot(!is(data2, "RFsp"))
-   
- 
-  RFoptOld <- internal.rfoptions(...)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
+  } else {
+    stopifnot(!is(data2, "RFsp"))
+    variab.names <- if (is.matrix(data)) dimnames(data)[[2]] else names(data)
+  }
+
 
   ## bitte code ueberpruefen. Hiermit soll Nutzer fast nie
   ## "grid" eingeben muessen
  
   new <- CheckXT(x, y, z, T, grid, distances,
-                 if (!missing(distances)) spdim=1, length.data=length(data))
+                 if (!missing(distances) && length(distances) > 0) spdim=1,
+                 length.data=length(data))
   repetitions <- length(data)/new$restotal
   
   variance <- var(data)
@@ -110,52 +116,59 @@ RFempiricalvariogram <- function(
       data2<-as.array(data2)
 
       ## missing(bin) not implemented properly yet, instead choose bins automatically (below)
-      if( (is.null(bin)) && FALSE) 
-	{
-          stop("Bin vector")
-                    
-          if(!(is.null(phi))    ||
-             !(is.null(theta)))
-            warning("Cannot handle angles if bin is missing!")
+      if ( (is.null(bin)) && FALSE) {
+        stop("Bin vector")
+        
+        if(!(is.null(phi))    ||
+           !(is.null(theta)))
+          warning("Cannot handle angles if bin is missing!")
+        
+        data<-.incrDim3(as.array(data), time)
+        data2<-.incrDim3(as.array(data2), time)
+        
+        crossvar <- doVario(data, data2, asVector = FALSE, pseudo=pseudo, time = time)
+        sumvals <- doMerge(crossvar[[1]])
+        nbvals <- doMerge(crossvar[[2]])
+        
+        idx <- nbvals > 0
+        emp.vario <- array(0, dim=dim(as.array(sumvals)))
+        emp.vario[idx] <- sumvals[idx] / nbvals[idx]
+        emp.vario[!idx] <- NaN
 
-          data<-.incrDim3(as.array(data), time)
-          data2<-.incrDim3(as.array(data2), time)
-          
-	  crossvar <- doVario(data, data2, asVector = FALSE, pseudo=pseudo, time = time)
-          sumvals <- doMerge(crossvar[[1]])
-          nbvals <- doMerge(crossvar[[2]])
-          
-          idx <- nbvals > 0
-	  emp.vario <- array(0, dim=dim(as.array(sumvals)))
-          emp.vario[idx] <- sumvals[idx] / nbvals[idx]
-          emp.vario[!idx] <- NaN
+        if (is.matrix(emp.vario)) 
+          dimnames(emp.vario) <-
+            list(NULL, rep(variab.names, length.out=ncol(emp.vario) ))
+        else names(emp.vario) <- variab.names[1]
 
          if (RFopt$general$spConform)
-           l <-  new("RFempVariog",
+          l <-  new("RFempVariog",
                     centers=new,
-                     emp.vario=emp.vario,
-                     sd=NULL,
-                     n.bin=NULL,
-                     phi.centers=NULL,
-                     theta.centers=NULL,
-                     T=NULL,
-                     call=call )
-          else
-           l <- list("RFempVariog",
+                    emp.vario=emp.vario,
+                    sd=NULL,
+                    n.bin=NULL,
+                    phi.centers=NULL,
+                    theta.centers=NULL,
+                    T=NULL,
+                    coord.units = new$coord_units,
+                    variab.units = variab.units,
+                    call=call )
+        else
+          l <- list("RFempVariog",
                     centers=new,
-                     emp.vario=emp.vario,
-                     sd=NULL,
-                     n.bin=NULL,
-                     phi.centers=NULL,
-                     theta.centers=NULL,
-                     T=NULL
-                     )
-
-#          Print(l)
-          
-          return(l)
-          #return(emp.vario)
-	}
+                    emp.vario=emp.vario,
+                    sd=NULL,
+                    n.bin=NULL,
+                    phi.centers=NULL,
+                    theta.centers=NULL,
+                    T=NULL,
+                    coord.units =  new$coord_units,
+                    variab.units = variab.units
+                    )
+        
+                                        #          Print(l)
+        return(l)
+                                        #return(emp.vario)
+      }
       
       bin<- prepareBin(bin)
       centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
@@ -313,7 +326,8 @@ RFempiricalvariogram <- function(
       centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
       n.bins <- length(bin) - 1 
       
-      if (!missing(distances)) stop("option distances not programmed yet.")
+      if (!missing(distances) && length(distances)>0)
+        stop("option distances not programmed yet.")
 
       repetitions <- as.integer(length(data)/new$restotal)
       
@@ -468,8 +482,14 @@ RFempiricalvariogram <- function(
   if(new$spacedim <= 1) phibins <- NULL
   if(!time) Tbins <- NULL  
 
- if (RFopt$general$spConform)
-   l <- new("RFempVariog",
+  
+  if (is.matrix(emp.vario)) 
+    dimnames(emp.vario) <-
+      list(NULL, rep(variab.names, length.out=ncol(emp.vario) ))
+  else
+    names(emp.vario) <- variab.names[1]
+  if (RFopt$general$spConform)
+    l <- new("RFempVariog",
             centers=centers,
             emp.vario=emp.vario,
             var=variance,
@@ -478,6 +498,8 @@ RFempiricalvariogram <- function(
             phi.centers=phibins,
             theta.centers=thetabins,
             T=Tbins,
+            coord.units = new$coord_units,
+            variab.units = variab.units,
             call=call)
   else 
     l <- list("RFempVariog",
@@ -488,8 +510,10 @@ RFempiricalvariogram <- function(
               n.bin=n.bin,
               phi.centers=phibins,
               theta.centers=thetabins,
-              T=Tbins
-            )
+              T=Tbins,
+              coord.units =  new$coord_units,
+              variab.units = variab.units
+           )
   
   return(l)
  

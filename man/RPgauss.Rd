@@ -80,14 +80,13 @@ By default, all Gaussian random fields have zero mean.
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMexp()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
-set.seed(99)
-plot(RFsimulate(model, x=x))
-set.seed(99)
-plot(RFsimulate(RPgauss(model), x=x), col=2) ## the same
+plot(RFsimulate(model, x=x, seed=0))
+plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
+\dontshow{RFoptions(seed=NA)}
 }
 
 

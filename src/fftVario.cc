@@ -5,7 +5,7 @@
 
  library for simulation of random fields -- init part and error messages
 
- Copyright (C) 2011 -- 2013 Sebastian Engelke, Johannes Martini, Martin Schlather
+ Copyright (C) 2011 -- 2014 Sebastian Engelke, Johannes Martini, Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

@@ -10,7 +10,7 @@
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2005 Yindeng Jiang & Martin Schlather
  Copyright (C) 2006 -- 2011 Martin Schlather
- Copyright (C) 2011 -- 2013 Peter Menck & Martin Schlather
+ Copyright (C) 2011 -- 2014 Peter Menck & Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -68,7 +68,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
        nseg *= m[i];
      }
    }
- 
+  
    if (FFT->work != NULL) free (FFT->work);
    if (FFT->iwork != NULL) free (FFT->iwork);
    if ((FFT->work = (double*) MALLOC(4 * maxmaxf * sizeof(double)))==NULL || 
@@ -76,7 +76,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
    }
    FFT->nseg = nseg;
-   //  nseg = LENGTH(z); see loop above
+   //  nseg = length(z); see loop above
   }
   inv = (inverse) ? 2 : -2;
   n = 1;
@@ -139,7 +139,7 @@ int init_circ_embed(cov_model *cov, VARIABLE_IS_NOT_USED storage *S){
       *rwork=NULL, 
       *tmpLambda=NULL,
       *smallest=NULL;
-  Rcomplex optim_lwork, 
+    complex optim_lwork, 
       *R = NULL,
       *work=NULL;
   long int i,k,twoi,twoi_plus1, mtot, hilfsm[MAXCEDIM],
@@ -149,24 +149,24 @@ int init_circ_embed(cov_model *cov, VARIABLE_IS_NOT_USED storage *S){
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   double
-    tolRe = cov->p[CE_TOLRE][0],
-    tolIm = cov->p[CE_TOLIM][0],
+    tolRe = P0(CE_TOLRE),
+    tolIm = P0(CE_TOLIM),
     *caniso = loc->caniso,
-    *mmin = cov->p[CE_MMIN];
+    *mmin = P(CE_MMIN);
   int dim = cov->tsdim,
     vdim   = cov->vdim,
     cani_ncol = loc->cani_ncol,
     cani_nrow = loc->cani_nrow,
     lenmmin = cov->nrow[CE_MMIN],
     vdimSQ = vdim * vdim, // PM 12/12/2008
-    maxmem = ((int *) cov->p[CE_MAXMEM])[0],
-    trials = ((int *) cov->p[CE_TRIALS])[0],
-    strategy = ((int *) cov->p[CE_STRATEGY])[0];
+    maxmem = P0INT(CE_MAXMEM),
+    trials = P0INT(CE_TRIALS),
+    strategy = P0INT(CE_STRATEGY);
   bool 
     isaniso = loc->caniso != NULL,
-    force = (bool) ((int*) cov->p[CE_FORCE])[0],
-    useprimes = (bool) ((int*) cov->p[CE_USEPRIMES])[0],
-    dependent = (bool) ((int *) cov->p[CE_DEPENDENT])[0];
+    force = (bool) P0INT(CE_FORCE),
+    useprimes = (bool) P0INT(CE_USEPRIMES),
+    dependent = (bool) P0INT(CE_DEPENDENT);
  
   ROLE_ASSERT_GAUSS;
 
@@ -324,9 +324,9 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       PRINTF("mtot=%d\n ", mtot  * vdimSQ);
     }
 
-    if (realmtot * vdimSQ > maxmem)
+    if (realmtot > maxmem)
       GERR2("total real numbers needed=%.0f > allowed max real numbers=%d -- increase CE.maxmem and/or local.maxmem using RFoptions",
-	    realmtot * vdimSQ, maxmem);
+	    realmtot, maxmem); 
 
     if (c != NULL) {
       for(l=0; l<vdimSQ; l++) if(c[l]!=NULL) free(c[l]);
@@ -338,6 +338,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
     for(l=0; l<vdimSQ; l++) {
+      //     printf("%d maxmem=%d %d %f\n", 2 * mtot * sizeof(double), maxmem, mtot, realmtot);
       if( (c[l] = (double *) MALLOC(2 * mtot * sizeof(double))) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
@@ -408,15 +409,15 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     for(j=0; j<vdim; j++) {
       for(k=0; k<vdim; k++) {
 	l= j*vdim + k;
-	if (!false) {
-	  int ii;
-	  for (ii =0; ii<mtot * 2; ii++) {
-	    if (ISNAN(c[l][ii]) || ISNA(c[l][ii])) {
-	      PRINTF("%d %d %f\n", l, ii, c[l][ii]);
-	      error("fourier transform returns NAs");
-	    }
-	  }
-	}
+        assert({				\
+	    int ii;				\
+	    for (ii =0; ii<mtot * 2; ii++) {		\
+	      if (ISNAN(c[l][ii]) || ISNA(c[l][ii])) {	\
+		PRINTF("%d %d %f\n", l, ii, c[l][ii]);	\
+		error("fourier transform returns NAs");	\
+	      }						\
+	    }; true;					\
+	  });
 
 	if(k>=j) { //// martin 29.12.
 		   // just compute FFT for upper right triangle
@@ -464,7 +465,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     if( (Lambda = (double **) MALLOC(vdim * sizeof(double *))) == NULL ||
 	(rwork = (double *) MALLOC(sizeof(double) * (3*vdim - 2) )) == NULL ||
 	(tmpLambda = (double *) MALLOC(sizeof(double) * vdim )) == NULL ||
-	(R = (Rcomplex *) MALLOC(vdimSQ * sizeof(Rcomplex))) == NULL) {
+	(R = (complex *) MALLOC(vdimSQ * sizeof(complex))) == NULL) {
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
 
@@ -534,7 +535,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  lwork = (int) optim_lwork.r;
 
 	  if (work != NULL) free(work);
-	  if( (work = (Rcomplex *) CALLOC(lwork, sizeof(Rcomplex))) == NULL ) {
+	  if( (work = (complex *) CALLOC(lwork, sizeof(complex))) == NULL ) {
 	    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
 	  }
 	}
@@ -776,10 +777,10 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
   }
 
-  if ((s->gauss1 = (Rcomplex *) MALLOC(sizeof(Rcomplex) * vdim)) == NULL) {
+  if ((s->gauss1 = (complex *) MALLOC(sizeof(complex) * vdim)) == NULL) {
     err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
-  if ((s->gauss2 = (Rcomplex *) MALLOC(sizeof(Rcomplex) * vdim)) == NULL) {
+  if ((s->gauss2 = (complex *) MALLOC(sizeof(complex) * vdim)) == NULL) {
     err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
 
@@ -841,12 +842,10 @@ int check_ce_basic(cov_model *cov) {
   }
   if ((err = check_common_gauss(cov)) != NOERROR) return err;
   kdefault(cov, CE_FORCE, (int) gp->force);
-  if (cov->p[CE_MMIN] == NULL) {
-    cov->p[CE_MMIN] = (double*) MALLOC(sizeof(double) * dim);
-    cov->nrow[CE_MMIN] = dim;
-    cov->ncol[CE_MMIN] = 1;
+  if (PisNULL(CE_MMIN)) {
+    PALLOC(CE_MMIN, dim, 1);
     for (i=0; i<dim; i++) {
-      cov->p[CE_MMIN][i] = gp->mmin[i];
+      P(CE_MMIN)[i] = gp->mmin[i];
     }
   } 
   kdefault(cov, CE_STRATEGY, (int) gp->strategy);
@@ -992,12 +991,12 @@ void do_circ_embed(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
     *dd=NULL,
     *res = cov->rf; // MULT *c->**c
   bool vfree[MAXCEDIM+1], noexception, // MULT varname free->vfree
-    loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+    loggauss = (bool) P0INT(LOG_GAUSS);
   long mtot, start[MAXCEDIM], end[MAXCEDIM];
   CE_storage *s = cov->SCE;
   location_type *loc = Loc(cov);
   
-  Rcomplex *gauss1 = s->gauss1, *gauss2 = s->gauss2;
+  complex *gauss1 = s->gauss1, *gauss2 = s->gauss2;
 
   if (s->stop) XERR(ERRORNOTINITIALIZED);
  
@@ -1352,7 +1351,7 @@ int check_local_proc(cov_model *cov) {
   //dim = cov->tsdim; // timespacedim -- needed ?;
   //  double  //*q, 
   //    //q2[LOCAL_MAX],
-  //    d=RF_NAN, **p = cov->p;
+  //    d=RF_NAN;
   cov_model 
     *key = cov->key,
     *next = cov->sub[0],
@@ -1398,27 +1397,27 @@ int check_local_proc(cov_model *cov) {
     else if (intern != cov) paramcpy(intern, cov, true, false);  // i.e. INTERN
     else { 
       if (RMintrinsic->nr != CUTOFF && RMintrinsic->nr != STEIN) BUG;
-      if (cov->p[LOCPROC_DIAM] != NULL) 
-	kdefault(RMintrinsic, pLOC_DIAM, cov->p[LOCPROC_DIAM][0]);
-      if (cov->p[LOCPROC_R] != NULL) 
-	kdefault(RMintrinsic, pLOC_DIAM, cov->p[LOCPROC_R][0]);
+      if (!PisNULL(LOCPROC_DIAM)) 
+	kdefault(RMintrinsic, pLOC_DIAM, P0(LOCPROC_DIAM));
+      if (!PisNULL(LOCPROC_R)) 
+	kdefault(RMintrinsic, pLOC_DIAM, P0(LOCPROC_R));
     }
      
-    if ((err = CHECK(sub, dim,  dim, ProcessType, KERNEL, NO_ROTAT_INV, 
+    if ((err = CHECK(sub, dim,  dim, ProcessType, KERNEL, CARTESIAN_COORD, 
 		     SCALAR, ROLE_GAUSS)) != NOERROR) {
       return err;
     }
     if (intern == cov) { // all the other parameters are not needed on the 
       //                    upper levels
-      if (cov->p[LOCPROC_DIAM] == NULL) 
-	kdefault(cov, LOCPROC_DIAM, RMintrinsic->p[pLOC_DIAM][0]);  
+      if (PisNULL(LOCPROC_DIAM))
+	kdefault(cov, LOCPROC_DIAM, PARAM0(RMintrinsic, pLOC_DIAM));  
     }
   } else {
     if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : NegDefType,
 		     XONLY, ISOTROPIC, SCALAR, ROLE_COV))
 	!= NOERROR) {
       if (isDollar(next) && 
-	  (next->p[DANISO] != NULL || next->p[DALEFT] != NULL)) {
+	  (PARAM(next, DANISO) != NULL || PARAM(next, DALEFT) != NULL)) {
 	// if aniso is given then xdimprev 1 does not make sense
 	err = CHECK(sub, dim, dim, cutoff ? PosDefType : NegDefType,
 		    XONLY, ISOTROPIC, SCALAR, ROLE_COV);
@@ -1456,7 +1455,7 @@ int init_circ_embed_local(cov_model *cov, storage *S){
  
   int first_instance;
   double
-    *mmin = cov->p[CE_MMIN];
+    *mmin = P(CE_MMIN);
 
   double sqrt2a2;
   bool is_cutoff = cov->nr == CE_CUTOFFPROC_INTERN;
@@ -1492,25 +1491,22 @@ int init_circ_embed_local(cov_model *cov, storage *S){
 
   //printf("diameter %d \n",LOCPROC_DIAM); APMI(cov);
 
-  if (key->sub[0]->p[LOCPROC_R] != NULL) 
-    kdefault(key, pLOC_DIAM, cov->p[LOCPROC_R][0]);
+  if (!PARAMisNULL(key->sub[0], LOCPROC_R))
+    kdefault(key, pLOC_DIAM, P0(LOCPROC_R));
  
-  kdefault(key, CE_FORCE, ((int*) cov->p[CE_FORCE])[0]);
-  {
-    int dim = cov->tsdim;
-    if (key->p[CE_MMIN] != NULL) free(key->p[CE_MMIN]);
-    key->p[CE_MMIN] = (double*) MALLOC(sizeof(double) * dim);
-    key->nrow[CE_MMIN] = dim;
-    key->ncol[CE_MMIN] = 1;
-    for (i=0; i<dim; i++) key->p[CE_MMIN][i] = cov->p[CE_MMIN][i];
-  }
-  kdefault(key, CE_STRATEGY, ((int*) cov->p[CE_STRATEGY])[0]);
-  kdefault(key, CE_MAXMEM, ((int*) cov->p[CE_MAXMEM])[0]);
-  kdefault(key, CE_TOLIM, cov->p[CE_TOLIM][0]);
-  kdefault(key, CE_TOLRE, cov->p[CE_TOLRE][0]);
-  kdefault(key, CE_TRIALS, ((int*) cov->p[CE_TRIALS])[0]);
-  kdefault(key, CE_USEPRIMES, ((int*) cov->p[CE_USEPRIMES])[0]);
-  kdefault(key, CE_DEPENDENT, ((int*) cov->p[CE_DEPENDENT])[0]);
+  kdefault(key, CE_FORCE, P0INT(CE_FORCE));
+
+  PARAMFREE(key, CE_MMIN);
+  PARAMALLOC(key, CE_MMIN, cov->tsdim, 1);
+  PCOPY(key, cov, CE_MMIN);
+  
+  kdefault(key, CE_STRATEGY, P0INT(CE_STRATEGY));
+  kdefault(key, CE_MAXMEM, P0INT(CE_MAXMEM));
+  kdefault(key, CE_TOLIM, P0(CE_TOLIM));
+  kdefault(key, CE_TOLRE, P0(CE_TOLRE));
+  kdefault(key, CE_TRIALS, P0INT(CE_TRIALS));
+  kdefault(key, CE_USEPRIMES, P0INT(CE_USEPRIMES));
+  kdefault(key, CE_DEPENDENT, P0INT(CE_DEPENDENT));
  
   //  APMI(key);
  
@@ -1692,7 +1688,7 @@ void do_circ_embed_intr(cov_model *cov, storage *S) {
     col = cov->tsdim,
     rowcol =  row * col;
   localCE_storage *s = cov->SlocalCE;
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
 
   do_circ_embed(key, S);
 
@@ -1754,9 +1750,9 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     location_type *loc = Loc(cov);  
     double max[MAXCEDIM], min[MAXCEDIM],  centre[MAXCEDIM], 
       x[3 * MAXCEDIM],
-      approx_gridstep = cov->p[CE_APPROXSTEP][0];
+      approx_gridstep = P0(CE_APPROXSTEP);
     int k, d, len, err,
-      maxgridsize = ((int*) cov->p[CE_APPROXMAXGRID])[0],
+      maxgridsize = P0INT(CE_APPROXMAXGRID),
       //totpts = loc->totalpoints,
     spatialdim = loc->timespacedim;
     // vdim   = cov->vdim,
@@ -1824,7 +1820,7 @@ int init_ce_approx(cov_model *cov, storage *S) {
     //min[MAXCEDIM],
     cumgridlen[MAXCEDIM];
   int d, i, err,
-    // maxgridsize = ((int*) cov->p[CE_APPROXMAXGRID])[0],
+    // maxgridsize = P0INT(CE_APPROXMAXGRID),
     totpts = loc->totalpoints,
     dim = loc->timespacedim;
   // vdim   = cov->vdim,

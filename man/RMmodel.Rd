@@ -133,9 +133,10 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 RFgetModelNames(type="positive definite", domain="single variable",
                 isotropy="isotropic", operator=FALSE)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{\command{\link{RFformula}}, \command{\link{RMmodelsAdvanced}},

@@ -17,10 +17,14 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
+
 # to do
 \dontshow{if (.C("isAuthor", a=integer(1))$a) {
 }}
+
+\dontshow{RFoptions(seed=NA)}
+
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }

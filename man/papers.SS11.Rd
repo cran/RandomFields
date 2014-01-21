@@ -27,7 +27,7 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 
 \dontshow{\dontrun{
@@ -118,8 +118,11 @@ for (modelname in c("divfree", "curlfree")) {
  }
 }
 
+par(mfcol=c(1,1))
+
 }}
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

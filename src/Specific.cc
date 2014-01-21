@@ -4,7 +4,7 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -50,7 +50,7 @@ int check_specificGauss(cov_model *cov) {
   if (key == NULL) {
     Types type[3] = {PosDefType, NegDefType, TrendType};
     int i,
-      iso[3] = {SYMMETRIC, SYMMETRIC, NO_ROTAT_INV};
+      iso[3] = {SYMMETRIC, SYMMETRIC, CARTESIAN_COORD};
     
     for (i=0; i<3; i++) {
       if ((err = CHECK(next, cov->tsdim,  cov->tsdim, type[i],
@@ -61,10 +61,13 @@ int check_specificGauss(cov_model *cov) {
     if (next->pref[Specific] == PREF_NONE) return ERRORPREFNONE;
   } else {
     if ((err = CHECK(key, cov->tsdim,  cov->tsdim, ProcessType,
-		     XONLY, NO_ROTAT_INV,
+		     XONLY, cov->isoown,
 		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
       return err;
     }
+
+    //APMI(key);
+
   }
   cov_model *sub = cov->key == NULL ? next : key;
   setbackward(cov, sub);
@@ -101,7 +104,7 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   //   APMI(cov->key);
 
   if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		   XONLY, NO_ROTAT_INV, cov->vdim, ROLE_GAUSS)) != NOERROR) {
+		   XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) != NOERROR) {
     //PMI(cov->key);
     //printf("specific ok\n");
     // crash();
@@ -143,7 +146,7 @@ int init_specificGauss(cov_model *cov, storage *S) {
 void do_specificGauss(cov_model *cov, storage *S) {  
   cov_model *key = cov->key;
   location_type *loc = Loc(cov);
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
   double *res = cov->rf;
 
   assert(key != NULL);

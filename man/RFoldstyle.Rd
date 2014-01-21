@@ -29,9 +29,10 @@ RFoldstyle(old=TRUE)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
   RFoldstyle()
 \dontshow{RFoldstyle(FALSE)}
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

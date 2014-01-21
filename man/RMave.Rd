@@ -63,7 +63,7 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 ## Example of an evaluation of the ave2-covariance function
 ## in three different ways
@@ -87,6 +87,9 @@ z3 <- ( (det(E+2*B))^(-1/2) ) *
  ( 1-2*t(h) \%*\% A \%*\% solve(E+2*B) \%*\% A \%*\% h) ) )
 ##
 stopifnot(abs(z1-z2)<1e-12, abs(z2-z3)<1e-12)
+
+\dontshow{RFoptions(seed=NA)}
+
 }
 
 

@@ -35,15 +35,16 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
  \command{\link{RMmodel}}.
 }
 \examples{
-set.seed(0)
-  #plot covariance model of type RMbrownresnick
-  RMmodel <- RMfbm(alpha=1.5, scale=0.2)
-  plot(RMbrownresnick(RMmodel))
+RFoptions(seed=0)
+#plot covariance model of type RMbrownresnick
+RMmodel <- RMfbm(alpha=1.5, scale=0.2)
+plot(RMbrownresnick(RMmodel))
 
-  #simulate and plot corresponding Gaussian random field
-  x <- if (interactive()) seq(-5, 5, 0.25) else seq(-5, 5, 5)
-  z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE, print=6)
-  plot(z)
+#simulate and plot corresponding Gaussian random field
+x <- if (interactive()) seq(-5, 5, 0.05) else seq(-5, 5, 5)
+z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE, print=6)
+plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

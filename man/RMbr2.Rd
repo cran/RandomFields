@@ -71,6 +71,6 @@ RMbr2eg(phi, var, scale, Aniso, proj)
 }
 \keyword{spatial}
 \examples{
-set.seed(0)
 ## see 'maxstableAdvanced' for some examples
+\dontshow{RFoptions(seed=NA)}
 }

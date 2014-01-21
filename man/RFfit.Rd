@@ -16,13 +16,14 @@
   has not been implemented yet.
 }
 \usage{
-RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
- NULL, upper = NULL, BC.lambda, methods,
+RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
+ lower = NULL, upper = NULL, BC.lambda, methods,
  sub.methods, optim.control = NULL, users.guess = NULL,
  distances = NULL, dim, transform = NULL, ...)
 }
+
 \arguments{
- \item{model}{string or list;
+ \item{model}{
  covariance model, see \command{\link{RMmodel}} or
  type \code{\link{RFgetModelNames}()} to get all options.
 % See also t
@@ -30,10 +31,11 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
  All parameters that are set to \code{NA} will be estimated;
  see the examples below.
  }
- \item{x}{(\eqn{n\times2}{n x 2})-matrix of coordinates, or vector of
- x-coordinates. All locations must be given explicitely and
- cannot be passed via a grid definition
- as in \command{\link{RFsimulate}}.}
+ \item{x}{vector of x coordinates, or object
+   of class \code{\link[sp:GridTopology-class]{GridTopology}} or
+   \code{\link[raster]{raster}};
+ For more options see \link{RFsimulateAdvanced}.
+ }
  \item{y}{vector of y coordinates}
  \item{z}{vector of z coordinates}
  \item{T}{vector of T coordinates; these coordinates are given in
@@ -44,8 +46,8 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
  If also a time component is given, then in the data the indices for
  the spatial components run the fastest.
  
- If an \code{n}-variate model is used, then each realisation is given as
- \code{n} consecutive columns of \code{data}.
+ If an \code{m}-variate model is used, then each realisation is given as
+ \code{m} consecutive columns of \code{data}.
  }
  \item{lower}{list or vector. Lower bounds for the parameters.
  If \code{param} is a vector, \code{lower} has to be a vector as well and
@@ -59,7 +61,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
  \item{upper}{list or vector. Upper bounds for the parameters.
  See also lower.
  }
- \item{grid}{boolean. Weather coordinates give a grid}
+ \item{grid}{boolean. Whether coordinates give a grid}
  \item{BC.lambda}{a vector of at most two numerical components (just
  one component 
  corresponds to two identical ones) which are the parameters of the 
@@ -131,6 +133,15 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
   
 
 }
+\references{
+ \itemize{
+ \item Burnham, K. P. and Anderson, D. R. (2002)
+ \emph{Model selection and Multi-Model Inference: A Practical
+   Information-Theoretic Approach.}
+ 2nd edition. New York: Springer.
+ }
+}
+
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}}
 
@@ -140,12 +151,13 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data, lower =
  of the covariance model as given in \command{\link{RMmodel}}.
 }
 \seealso{
+  \command{\link{RFratiotest}}
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 % options(error=recover)
 % source("randomfields_2/tests/source.R")
 
@@ -172,7 +184,7 @@ v <- RFfit(estmodel, data=d, spC=FALSE)
 Print(v$ml, v$ml$ml.value)
 
 
-\dontrun{
+\dontshow{\dontrun{
 
 #########################################################
 ## Estimation with fixed sill (variance + nugget equals a
@@ -194,7 +206,7 @@ estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
  RMtrend(mean=NA)
 v2 <- RFfit(estmodel, data=z, fit.nphi=20, spC=FALSE)
 Print(v2$ml, v2$ml$ml.value)
-}
+}}
 
 
 \dontshow{ \dontrun{
@@ -246,6 +258,7 @@ Print(v6$ml, v6$ml$ml.value)
 RFoptions(modus_operandi="normal")
 }}
 
+\dontshow{RFoptions(seed=NA)}
 
 }
 \keyword{spatial}

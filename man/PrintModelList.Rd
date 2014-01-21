@@ -44,11 +44,14 @@ PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
 
 
  \examples{
-set.seed(0)
+RFoptions(seed=0)
 %  library(RandomFields)
 PrintModelList()
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
   \url{http://ms.math.uni-mannheim.de}
 }
 \keyword{spatial}
+
+%getOption("device")

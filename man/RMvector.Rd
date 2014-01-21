@@ -67,10 +67,11 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 %    source("randomfields_2/tests/source.R")
 model <- RMvector(RMgauss(), scale=0.3)
 x <- seq(0, 10, if (interactive()) 0.4 else 3) 
 plot(RFsimulate(model, x=x, y=x, z=0), select.variables=list(1:2))
+\dontshow{RFoptions(seed=NA)}
 
 }

@@ -45,6 +45,6 @@ RMconstant(M, vdim, element, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-set.seed(0)
  ## For examples see the help page of 'RFformula' ##
+\dontshow{RFoptions(seed=NA)}
 }

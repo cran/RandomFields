@@ -156,7 +156,7 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RPtbm(RMstable(s=1, alpha=1.8))
 x <- seq(-3,3,0.1)
 z <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
@@ -165,6 +165,7 @@ plot(z)
 model <- RPtbm(RMexp(Aniso=matrix(nc=2, rep(1,4))))
 z <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

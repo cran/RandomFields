@@ -74,7 +74,8 @@
  }
  }
  \item{x}{matrix of coordinates, or vector of x coordinates, or object
- of class \code{\link[sp:GridTopology-class]{GridTopology}}; 
+ of class \code{\link[sp:GridTopology-class]{GridTopology}} or
+   \code{\link[raster]{raster}}; 
  if matrix, \code{ncol(x)} is the dimension
  of the index space; matrix notation is required in case of more than 3 space
  dimensions; in this case, if \code{grid=FALSE}, \code{x_ij} is the
@@ -133,7 +134,12 @@
  between the points at which the field is to be simulated; only
  applicable for stationary and isotropic models; if not \code{NULL},
  \code{dim} must be given and \code{x}, \code{y}, \code{z} and
- \code{T} must be missing or \code{NULL}. 
+ \code{T} must be missing or \code{NULL}.
+
+ If \code{distances} are given, the current value of \code{spConform}, see
+ \command{\link{RFoptions}}, is ignored and instead
+ \code{spConform=FALSE} is used. (This fact may change in future.) % To Do
+ 
  }
  \item{dim}{
  integer; space or space-time dimension of the field
@@ -390,7 +396,7 @@
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{\dontrun{
 
@@ -437,7 +443,8 @@ plot(z)
  par(mfcol=c(2,1))
  plot(z@data[,1:min(length(z@data), 1000)], type="l")
  hist(z@data[,1])
- 
+ par(mfcol=c(1,1))
+
  
  z <- RFsimulate(x=x, model=RPpoisson(RMball()), mpp.intensity = 0.1)
  
@@ -445,7 +452,8 @@ plot(z)
  par(mfcol=c(2,1))
  plot(z@data[,1:min(length(z@data), 1000)], type="l")
  hist(z@data[,1])
- 
+ par(mfcol=c(1,1))
+
 
 
 
@@ -487,6 +495,7 @@ z <- RFsimulate(x=x, y=x, z=x, grid=TRUE,
 %for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
 }}
+\dontshow{RFoptions(seed=NA)}
 
 
 }

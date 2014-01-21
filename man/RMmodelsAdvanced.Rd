@@ -84,7 +84,7 @@ Here, most of the models are composed models (operators).
  \command{\link{RMstp}} \tab Single temporal process\cr
  \command{\link{RMtbm}} \tab Turning bands operator}
 
-\bold{Multivariate and vector valued models}
+\bold{Multivariate/Multivariable and vector valued models}
 \tabular{ll}{
  \command{\link{RMbiwm}} \tab full bivariate Whittle-Matern model (stationary and isotropic)\cr
  \command{\link{RMbigneiting}} \tab bivariate Gneiting model (stationary and isotropic)\cr
@@ -151,7 +151,12 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
     can be passed. This is possible if all the parameters
     are scalar. Then \code{k} must have length equal to the number of
     parameters.
-
+    \item
+    If a parameter equals \code{NULL} the
+    parameter is not set (but must be a valid name).
+    \item
+    \code{Aniso} can be given also by \command{\link{RMangle}}
+    instead by a matrix
     \item
     Note also that a completely different possibility exists to define a
     model, namely by a list. This format allows for easy flexible models
@@ -255,8 +260,9 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 RFgetModelNames(type="positive", group.by=c("domain", "isotropy"))
+\dontshow{RFoptions(seed=NA)}
 }
 
 \author{

@@ -13,7 +13,7 @@ rfGenerateModels(assigning,
  )
  
 checkExamples(exclude = NULL, include=1:length(.fct.list),
-               ask=FALSE, echo=ask, halt=FALSE, ignore.all = FALSE,
+               ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path="randomfields_2", package = "RandomFields",
                           read.rd.files=TRUE)
 
@@ -43,7 +43,7 @@ plotWithCircles(data, factor=1.0,
 \keyword{spatial}
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 ## check own examples
 checkExamples(ignore.all=TRUE, halt=!TRUE)
@@ -71,4 +71,5 @@ Print(not.working)
 }}
 
 # for (i in dep.packages) cat(maintainer(i), "\n") 
+\dontshow{RFoptions(seed=NA)}
 }

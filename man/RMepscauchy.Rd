@@ -80,9 +80,10 @@ RMepscauchy(alpha, beta, eps, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMepscauchy(alpha=1.5, beta=1.5, scale=0.3, eps=0.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

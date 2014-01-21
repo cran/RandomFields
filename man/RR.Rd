@@ -32,9 +32,9 @@
 
 \section{Implemented models}{
 \tabular{ll}{
-\command{\link{RRdeterm}} \tab no scattering \cr
-  \command{\link{RRdistr}} \tab generic definition of a family of distributions
-  for \pkg{RandomFields} based on the distribution families of R
+  \command{\link{RRdeterm}} \tab no scattering \cr
+  \command{\link{RRdistr}} \tab  families of distributions transferred
+  from R
   \cr
   \command{\link{RRgauss}} \tab a (multivariate) Gaussian random variable
   \cr
@@ -69,7 +69,7 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## here, the scale is given by an exponential variable:
 model <- RMgauss(scale=exp())
 for (i in 1:4) {
@@ -90,6 +90,7 @@ model <- RMgauss(scale=exp(rate=unif()))
 plot(model)
 plot(RFsimulate(model, x=seq(0,10,0.1)))
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }
 \keyword{spatial}

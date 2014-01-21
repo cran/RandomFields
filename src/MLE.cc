@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,6 +42,7 @@ bool is_top(cov_model *cov) {
 void GetNAPosition(cov_model *cov, 
 		   int *NAs, naptr_type mem, int *elmnts, elptr_type mem_elmnts,
 		   NAname_type names, sortsofparam *sorts, bool *isnan,
+		   covptr_type covModels, 
 		   int *covzaehler, int allowforintegerNA,
 		   int SHORTlen, int printing, int depth, bool no_variance,
 		   bool excludetrends
@@ -58,6 +59,8 @@ void GetNAPosition(cov_model *cov,
   */
 
   // PMI(cov);
+
+  // if (SHORTlen < 2) BUG;
  
   int i, c, r, 
     namenr = 1,     
@@ -106,13 +109,15 @@ void GetNAPosition(cov_model *cov,
     if (i==0 && type[i] == INTSXP && strcmp(C->kappanames[i], "element") == 0){
       if (*elmnts >= MAX_MLE_ELMNTS ) 
 	ERR("maximum number of models with variable elements reached");
-      if (((int *) cov->p[i])[0] == NA_INTEGER) ERR("'elements' may not be NA");
-      mem_elmnts[(*elmnts)++] = (int*) cov->p[i];
-      
+      if (P0INT(i) == NA_INTEGER) ERR("'elements' may not be NA");
+      mem_elmnts[(*elmnts)++] = PINT(i);
+      // to do!! covModels[*NAs] hierher uebertragen !! s.u.
+
       //printf("elmnts %s %d %s %d\n", CC->name, i, C->kappanames[i], *elmnts);
       
       continue;
     }
+
     for (r=0; r<nrow[i]; r++) {
       int nv = 0; // anzahl NA in aktuellem parameter
       for (c=0; c<ncol[i]; c++) {
@@ -123,21 +128,22 @@ void GetNAPosition(cov_model *cov,
 	// print("NAs=%d, %d %d %s\n", *NAs, i, idx, C->kappanames[i]);
 
 	if (type[i] == REALSXP) {
-	  v = cov->p[i][idx];
-	  mem[*NAs] = cov->p[i] + idx;
+	  v = P(i)[idx];
+	  mem[*NAs] = P(i) + idx;
+	  covModels[*NAs] = cov;
 	} else if (type[i] == INTSXP) {
-	  v = ((int *) cov->p[i])[idx] == NA_INTEGER 
-	    ? NA_REAL : (double) ((int *) cov->p[i])[idx];
+	  v = PINT(i)[idx] == NA_INTEGER 
+	    ? NA_REAL : (double) PINT(i)[idx];
 	  if ((ISNA(v) || ISNAN(v)) && !allowforintegerNA) {
 	    // crash(cov);
 	    ERR("integer variables currently do not allow for NA"); // !!!
 	  }
-	  // mem[*NAs] = (*double) &(((int *) cov->p[i])[idx]);
+	  // mem[*NAs] = (*double) &(P0INT(i])[idx]);
 	} else if (type[i] == LISTOF + REALSXP) {
 	  listoftype *q;
 	  int j, end;
 	  double *p;
-	  q=(listoftype*) cov->p[i];
+	  q= PLIST(i); 
 	  p = q->p[r];
 	  end = q->nrow[r] * q->ncol[r];
 	  for (j=0; j<end; j++)
@@ -163,7 +169,7 @@ void GetNAPosition(cov_model *cov,
 	  if (isDollar(cov)) {
 	    // shortD partial name for R level
 	    cov_model *next = cov->sub[0];
-	    while(isDollar(next) || next->nr == NATSC) next = next->sub[0];// ok
+	    while(isDollar(next) || isNatsc(next)) next = next->sub[0];// ok
 	    if (covzaehler[next->nr] == 0) { // next wurde noch nicht
 	      // untersucht, somit ist covzaehler[next->nr] um 1 niedriger
 	      // als covzaehler[cov->nr] !
@@ -294,6 +300,7 @@ void GetNAPosition(cov_model *cov,
       }
       GetNAPosition(sub, NAs, mem, elmnts, mem_elmnts,
 		    names, sorts, isnan,
+		    covModels,
 		    covzaehler, allowforintegerNA, 
 		    SHORTlen, printing, depth, 
 		    C->paramtype(-i-1, 0, 0) != VARPARAM,
@@ -310,6 +317,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   int i, NAs, elmnts,  covzaehler[MAXNRCOVFCTS];
   naptr_type mem;
   elptr_type mem_elmnts;
+  covptr_type covModels;
   sortsofparam sorts[MAX_NA];
   bool isnan[MAX_NA];
   NAname_type names;
@@ -330,6 +338,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
   GetNAPosition(KEY[MODEL_USER], &NAs, mem, &elmnts, mem_elmnts,
 		names, sorts, isnan,  
+		covModels,
 		covzaehler,
 		INTEGER(integerNA)[0],
 		GLOBAL.fit.lengthshortname, 
@@ -363,11 +372,11 @@ int countnas(cov_model *cov, int level) {
       continue;
     endfor = nrow[i] * ncol[i];
     if (type[i] == REALSXP) { 
-      double *p = cov->p[i];
+      double *p = P(i);
       for (r=0; r<endfor; r++) if (ISNAN(p[r]) || ISNA(p[r])) count++;
     } else if (type[i] == INTSXP) {
-	int *p = (int *) cov->p[i];
-	for (r=0; r<endfor; r++) if (p[r] == NA_INTEGER) count++;
+      int *p = PINT(i);
+      for (r=0; r<endfor; r++) if (p[r] == NA_INTEGER) count++;
     } else if (type[i] == LISTOF + REALSXP) {
 	continue; // no NAs allowed
     } else assert(false);
@@ -400,11 +409,17 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
   
+  if (strcmp(CovList[cov->nr].nick, CovList[cov_bound->nr].nick) != 0) {
+    // print("%s %s\n", CovList[cov->nr].nick, CovList[cov_bound->nr].nick);  
+    ERR("models do not match.");
+  }
 //  print("\n\n\n ======================= \n");
-//  print("%s\n", C->name);
+//   print("%s %d %s\n", C->name, C->kappas, CovList[cov_bound->nr].name);
+  
 
   for (i=0; i<C->kappas; i++) {
-      //    print("i=%d %s %s \n", i, C->name, C->kappanames[i]);
+      //       print("i=%d %s %s alt=%s\n", i, C->name, C->kappanames[i], 
+    //CovList[cov_bound->nr].name);
     if (C->kappatype[i] >= LISTOF ||
 	C->paramtype(i, 0, 0) == IGNOREPARAM ||
 	C->paramtype(i, 0, 0) == DONOTRETURNPARAM) continue;
@@ -425,14 +440,13 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 //	      nv, *NBOUNDS);
 
 	if (type[i] == REALSXP) {
-	  v = cov->p[i][idx];
-	  w = cov_bound->p[i][idx];
+	  v = P(i)[idx];
+	  w = PARAM(cov_bound, i)[idx];
 	}
 	else if (type[i] == INTSXP) {
-	  v = ((int *) cov->p[i])[idx] == NA_INTEGER 
-	      ? NA_REAL : (double) ((int *) cov->p[i])[idx];
-	  w = ((int *) cov_bound->p[i])[idx] == NA_INTEGER 
-	      ? NA_REAL : (double) ((int *) cov_bound->p[i])[idx];	  
+	  v = PINT(i)[idx] == NA_INTEGER ? NA_REAL : (double) PINT(i)[idx];
+	  w = PARAMINT(cov_bound, i)[idx] == NA_INTEGER 
+	    ? NA_REAL : (double) PARAMINT(cov_bound, i)[idx];	  
 	}
 	     
 
@@ -498,6 +512,10 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP model, SEXP model_bound,
 
   PROTECT(bounds = allocVector(REALSXP, *NBOUNDS));
   bounds_pointer = NUMERIC_POINTER(bounds);
+
+  //  PMI(KEY[nr[0]]);
+  //  PMI(KEY[nr[1]]);
+
   Take21internal(KEY[nr[0]], KEY[nr[1]], &bounds_pointer, NBOUNDS);
 
   if (*NBOUNDS != 0) ERR("lower/upper does not fit to model");
@@ -528,16 +546,16 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
     if (end == 0) continue;
 
     if (type[i] == REALSXP) {
-	dmin = min->p[i][0];
-	dmax = max->p[i][0];
+      dmin = PARAM0(min, i);
+      dmax = PARAM0(max, i);
     } else if (type[i] == INTSXP) {
-	dmin = ((int *) min->p[i])[0] == NA_INTEGER 
-	    ? NA_REAL : (double) ((int *) min->p[i])[0];
-	dmax = ((int *) max->p[i])[0]  == NA_INTEGER 
-	    ? NA_REAL : (double) ((int *) max->p[i])[0];
+      dmin = PARAM0INT(min, i) == NA_INTEGER 
+	? NA_REAL : (double) PARAM0INT(min, i);
+      dmax = PARAM0INT(max, i) == NA_INTEGER 
+	? NA_REAL : (double) PARAM0INT(max, i);
     } else if (type[i] == LISTOF + REALSXP) {
-	dmin = min->p[i][0];
-	dmax = max->p[i][0];
+      dmin = PARAM0(min, i);
+      dmax = PARAM0(max, i);
     } else if (type[i] == CLOSXP) {
 	dmin = 0.0;
 	dmax = 0.0;
@@ -552,11 +570,10 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
     for (r=0; r<end; r++) {
       v = RF_NAN;
       if (type[i] == REALSXP) {
-	v = cov->p[i][r];
+	v = P(i)[r];
       }
       else if (type[i] == INTSXP) {
-        v = ((int *) cov->p[i])[r] == NA_INTEGER 
-	  ? NA_REAL : (double) ((int *) cov->p[i])[r];
+        v = PINT(i)[r] == NA_INTEGER ? NA_REAL : (double) PINT(i)[r];
       } else if (type[i] == LISTOF + REALSXP) {
 	  continue;  // !!!!!!!!!!!
       } else if (type[i] == CLOSXP) {
@@ -618,18 +635,18 @@ int CheckEffect(cov_model *cov) {
     // cov->nr = MLEMIXEDEFFECT;  
     if (cov->nsub == 0) {
       return (cov->nrow[MIXED_BETA] > 0 && 
-	      (ISNA(cov->p[MIXED_BETA][0]) || ISNAN(cov->p[MIXED_BETA][0])))
+	      (ISNA(P0(MIXED_BETA)) || ISNAN(P0(MIXED_BETA))))
 	? fixedeffect : deteffect;
     }
     next = cov->sub[0];
     if (isDollar(next)) { 
       if (next->ncol[DVAR] == 1 && next->nrow[DVAR] == 1) {
-        na_var = (ISNA(next->p[DVAR][0]) || ISNAN(next->p[DVAR][0]));
+        na_var = (ISNA(PARAM0(next, DVAR)) || ISNAN(PARAM0(next, DVAR)));
       }
       for (i=0; i<=DMAX; i++) { 
         if (i!=DVAR) {
 	  end = next->ncol[i] * next->nrow[i];
-	  p = next->p[i];
+	  p = PARAM(next, i);
 	  for (j=0; j<end; j++) {
 	    if (ISNA(p[j]) || ISNAN(p[j])) {
 	      return next->nr == CONSTANT ? eff_error :
@@ -671,7 +688,7 @@ int CheckEffect(cov_model *cov) {
       //  print("trend %d %d\n", j, trend);
 
       if ( (nr = cov->nrow[trend] * cov->ncol[trend]) > 0) {
-	p = cov->p[trend];
+	p = P(trend);
 	isna = ISNA(p[0]) || ISNAN(p[0]);
 	if ((effect != eff_error) && ((effect == fixedtrend) xor isna))
 	  SERR1("do not mix deterministic effect with fixed effects in '%s'", 
@@ -695,7 +712,7 @@ int CheckEffect(cov_model *cov) {
 
 	nr = cov->nrow[param] * cov->ncol[param];
 	if (nr > 0) {
-	  p = cov->p[param];
+	  p = P(param);
 	  isna = ISNA(p[0]) || ISNAN(p[0]);
 	  for (i = 1; i<nr; i++) {
 	    if ( (ISNA(p[i]) || ISNAN(p[i])) xor isna) 
@@ -712,12 +729,12 @@ int CheckEffect(cov_model *cov) {
   cov_model *sub = cov;
   bool Simple = true;
   if (isDollar(sub)) {
-    Simple = sub->p[DPROJ] == NULL && sub->p[DANISO] == NULL && 
-      sub->p[DALEFT] == NULL;
+    Simple = PARAMisNULL(sub, DPROJ) && PARAMisNULL(sub, DANISO) && 
+      PARAMisNULL(sub, DALEFT);
     sub = sub->sub[0];
   }
   
-  if (sub->nr == NATSC) sub = sub->sub[0];
+  if (isNatsc(sub)) sub = sub->sub[0];
   cov_fct *C = CovList + sub->nr; // nicht gatternr
   
   if (C->maxsub == 0) {
@@ -732,7 +749,8 @@ int CheckEffect(cov_model *cov) {
 }
 
 
-static naptr_type MEMORY[MODEL_MAX+1]; 
+static naptr_type MEMORY[MODEL_MAX+1];
+static covptr_type MEM_COVMODELS[MODEL_MAX+1];
 static elptr_type MEMORY_ELMNTS[MODEL_MAX+1];
 int MEM_NAS[MODEL_MAX+1], MEM_ELMNTS[MODEL_MAX+1];
 
@@ -762,14 +780,14 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
     modelnr = INTEGER(model_reg)[0];
   const char *colnames[8] =
     {"pmin", "pmax", "type", "is.nan", "min", "max", "openmin", "openmax"};
- SEXP return_domain, isotropic, Sxdim,
+ SEXP trans_inv, isotropic, Sxdim,
    matrix, nameAns, nameMatrix, RownameMatrix, 
    ans=NULL;
 
 #define total 7
 
-  PROTECT(return_domain=allocVector(LGLSXP, 1));
-  LOGICAL(return_domain)[0] = false;
+  PROTECT(trans_inv=allocVector(LGLSXP, 1));
+  LOGICAL(trans_inv)[0] = false;
   PROTECT(isotropic=allocVector(LGLSXP, 1));
   LOGICAL(isotropic)[0] = false;
 
@@ -805,9 +823,11 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
 
   // print("here\n");
  
+  //  PMI(cov);
+
   newxdim = INTEGER(xdimOZ)[0];
-  if (cov->domown == XONLY && isPosDef(cov->typus)) {
-    LOGICAL(return_domain)[0] = true;
+  if (cov->domprev == XONLY && isPosDef(cov->typus)) {
+    LOGICAL(trans_inv)[0] = true;
     if (cov->isoown==ISOTROPIC) {
       LOGICAL(isotropic)[0] = true;
       newxdim = 1;
@@ -833,7 +853,8 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
   // !!
   GetNAPosition(cov, MEM_NAS + modelnr, MEMORY[modelnr], 
 		MEM_ELMNTS + modelnr, MEMORY_ELMNTS[modelnr],
-		names, MEM_SORTS, MEM_ISNAN, 			
+		names, MEM_SORTS, MEM_ISNAN, 		
+		MEM_COVMODELS[modelnr],
 		covzaehler,
 		INTEGER(allowforintegerNA)[0],
 		INTEGER(shortlen)[0],
@@ -908,7 +929,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
   SET_STRING_ELT(nameAns, i, mkChar("minmax"));
   SET_VECTOR_ELT(ans, i++, matrix);
   SET_STRING_ELT(nameAns, i, mkChar("trans.inv")); // !!
-  SET_VECTOR_ELT(ans, i++, return_domain);  
+  SET_VECTOR_ELT(ans, i++, trans_inv);  
   SET_STRING_ELT(nameAns, i, mkChar("isotropic"));
   SET_VECTOR_ELT(ans, i++, isotropic);  
   SET_STRING_ELT(nameAns, i, mkChar("effect"));
@@ -939,7 +960,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
  
 
 
-void expliciteDollarMLE(int* ModelNr, double *values) {
+void expliciteDollarMLE(int* ModelNr, double *values) { // 
     // userinterfaces.cc 
   int i, un,
     modelnr = *ModelNr,
@@ -948,7 +969,7 @@ void expliciteDollarMLE(int* ModelNr, double *values) {
   // first get the naturalscaling values and devide the preceeding 
   // scale model by this value 
   if (NS==NATSCALE_MLE) {
-      iexplDollar(KEY[modelnr]);
+    iexplDollar(KEY[modelnr], true);
   }
 
   // Then get the values out of the model
@@ -963,6 +984,11 @@ void expliciteDollarMLE(int* ModelNr, double *values) {
 void PutValuesAtNA(int *reg, double *values){
   int i, un,
     NAs = MEM_NAS[*reg];
+  cov_fct *C = NULL;
+  cov_model *cov = NULL;
+  storage s;
+  STORAGE_NULL(&s);
+  s.check = false;
   // set ordinary parameters for all (sub)models
  
   // cov_model *cov = KEY[*reg];
@@ -972,15 +998,26 @@ void PutValuesAtNA(int *reg, double *values){
   //print("%ld %f %ld %f\n", cov->p[DVAR], cov->p[DVAR][0],
   //	 cov->p[DSCALE], cov->p[DSCALE][0]);
 
-  
-
   for (un=i=0; i<NAs; i++) {
  //   print("reg=%d i=%d %d %ld %f\n", *reg, i, NAs, MEMORY[*reg][i], values[un]);
-    //  print("mem=%f\n",MEMORY[*reg][i][0]) ;  
+    //     print("mem=%ld %f\n", (long int) MEMORY[*reg][i], values[un]) ;  
     //if (*reg < 0 || *reg > MODEL_MAX) XERR(ERRORREGISTER);  
 
     MEMORY[*reg][i][0] = values[un++];
-  //  print("ok\n");
+  }
+
+  
+  for (i=0; i<NAs; i++) {
+    cov = MEM_COVMODELS[*reg][i];
+    C = CovList + cov->nr;    
+    if (i==0 || cov != MEM_COVMODELS[*reg][i-1]) {
+      if (!isDummyInit(C->Init)) {
+	C->Init(cov, &s);
+	//print("i=%d %s initalised (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),  
+	//   MEMORY[*reg][i][0]);
+      }
+    }
+  //  
   }
 
   int one = 1;
@@ -1000,12 +1037,11 @@ void setListElements(int *reg, int *i, int *k, int* len_k) {
   if (cov->nr == SELECT) {
     int j;
     if (len != cov->nrow[SELECT_SUBNR]) {
-      free(cov->p[SELECT_SUBNR]);
-      cov->nrow[SELECT_SUBNR] = len;
-      cov->p[SELECT_SUBNR] = (double*) MALLOC(sizeof(int) * len);
+      PFREE(SELECT_SUBNR);
+      PALLOC(SELECT_SUBNR, len, 1);
     }
     for (j=0; j<len; j++) {
-      ((int *) cov->p[SELECT_SUBNR])[j] = k[j] - 1;
+      PINT(SELECT_SUBNR)[j] = k[j] - 1;
     }
 
   }

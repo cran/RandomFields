@@ -2,7 +2,8 @@
 ## Usual Functions
 
 ##
-##exportPattern("^[^\\.]")
+#
+#exportPattern("^[^\\.]")
 exportPattern("^R")
 export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
        conventional2RFspDataFrame,
@@ -18,7 +19,10 @@ export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame,
        Kriging, MaxStableRF, RFparameters, Variogram,
 #others:
        ## never delete PrintModelList as used in Roger's book!
-       PrintModelList
+       PrintModelList,
+#constants:
+       ZF_ISOTROPY, ZF_TYPE, ZF_DOMAIN,
+       ISOTROPIC, SPACEISOTROPIC, CARTESIAN_COORD
        )
 
 useDynLib(RandomFields)
@@ -32,12 +36,14 @@ importClassesFrom('sp',
                   "SpatialPixels",
                   "SpatialPoints",
                   "Spatial")
+#importClassesFrom('raster', "Raster")
 
 exportClasses()
 
 ## S4 methods
 
 importMethodsFrom('sp', "dimensions")  #"gridded"gibts nicht!
+#importMethodsFrom('raster', '[')
 
 exportMethods("[", "[<-", "+", show, plot)
 
@@ -48,6 +54,8 @@ exportMethods(RFspDataFrame2conventional,
 #              coordinates,
               isGridded,
               dimensions)
+
+#importFrom("raster", raster)
 
 ## S3 Methods
 

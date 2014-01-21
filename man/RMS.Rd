@@ -53,9 +53,10 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model1 <- RMS(RMexp(), scale=2)
 model2 <- RMexp(scale=2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1)
 print(all(RFcov(model1, x) == RFcov(model2, x))) # TRUE
+\dontshow{RFoptions(seed=NA)}
 }

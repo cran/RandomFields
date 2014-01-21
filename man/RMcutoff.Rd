@@ -76,6 +76,6 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
  ## For examples see the help page of 'RFsimulateAdvanced' ##
+\dontshow{RFoptions(seed=NA)}
 }

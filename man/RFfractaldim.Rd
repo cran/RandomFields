@@ -161,10 +161,11 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \command{\link{RMmodel}}, \command{\link{RFhurst}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- seq(0, 10, if (interactive()) 0.001 else 1)
 z <- RFsimulate(RMexp(), x)
 if (interactive()) str(RFfractaldim(data=z))
+\dontshow{RFoptions(seed=NA)}
 }
 \keyword{ spatial }%-- one or more ...
 

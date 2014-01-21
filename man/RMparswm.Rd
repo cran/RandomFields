@@ -75,7 +75,7 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 RFoptions(circulant.maxmem=6e7, pri=5)
 model <- RMparswmX(nudiag=c(1.3, 0.7, 2),
@@ -84,6 +84,7 @@ x.seq <- y.seq <- seq(-10,10,0.05)
 simulated <- RFsimulate(model = model, x=x.seq, y=y.seq, grid=TRUE, n=1, spC=F)
 par(mfcol=c(1, dim(simulated)[1]))
 for (i in 1: dim(simulated)[1]) image(simulated[i,,])
+par(mfcol=c(1,1))
 
 
 ## the definition of RMparswmX is
@@ -92,6 +93,7 @@ RMparswmX <- function(nudiag, rho, var, scale, Aniso, proj) {
 }
 
 }}
+\dontshow{RFoptions(seed=NA)}
 } % examples
 
 \keyword{spatial}

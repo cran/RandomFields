@@ -32,8 +32,8 @@ RMrational(A, a)
  }
 
 \examples{
-set.seed(0)
 # see S10
+\dontshow{RFoptions(seed=NA)}
 }
 
 

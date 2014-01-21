@@ -20,19 +20,21 @@
   \link{RR}, \link{RM}, \link{RF}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
   x <- seq(0, 10, 0.1)
   model <- RMexp()
-  set.seed(0)
+  RFoptions(seed=0)
   z <- RFsimulate(model, x)
   plot(z)
-  set.seed(0)
+  RFoptions(seed=0)
   b <- RFsimulate(RPbernoulli(model), x)
   plot(b)
 
 str(z)
 
   sum( abs((z@data$variabl1 >=0 ) - b@data$variable1)) == 0 ## TRUE
+
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}

@@ -80,13 +80,14 @@ RPhyperplane(phi, loggauss, superpos, maxlines, mar_distr, mar_param)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 model <- RPhyperplane(RMexp(s=2), superpos=1)
 x <- seq(0, 3, if (interactive()) 0.04 else 1)
 z <- RFsimulate(x=x, x, grid=TRUE, model=model, n=1)
 plot(z)
 }}
+\dontshow{RFoptions(seed=NA)}
 }
 
 

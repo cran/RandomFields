@@ -5,7 +5,8 @@
 
 #   rfGenerateModels(TRUE)
 param.text.fct <- function(catheg, names, havedistr=TRUE){
-  x <- paste("if (hasArg(", names, ")) {\n    u <- try(is.numeric(",
+  x <- paste("if (hasArg(", names, ") && !is.null(subst <- substitute(", names,
+             "))) {\n    u <- try(is.numeric(",
              names,
              ") || is.logical(", names,
              ") || is.language(", names,
@@ -14,14 +15,12 @@ param.text.fct <- function(catheg, names, havedistr=TRUE){
              ", class2='RMmodel'), silent=TRUE)\n",
              "    if (is.logical(u) && u) ", catheg, "[['", names,
              "']] <- ", names,
-             "\n    else if (substr(deparse(substitute(", names,
-             ")), 1, 1)=='R')\n      ", catheg, "[['",
-             names,  "']] <- ", names,
+             "\n    else if (substr(deparse(subst), 1, 1)=='R') ", catheg,
+             "[['", names,  "']] <- ", names,
              "\n    else ", sep="")
   if (havedistr) {
     paste(x, catheg, "[['", names,
-          "']] <-\n\tdo.call('", ZF_DISTR[1], "', list(substitute(",
-          names, ")))\n  }", sep="")
+          "']] <- do.call('", ZF_DISTR[1], "', list(subst))\n  }", sep="")
   } else {
     paste(x, "stop('random parameter not allowed')\n  }");
   }

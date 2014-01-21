@@ -17,7 +17,7 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{\dontrun{
 % library(RandomFields, lib="~/TMP"); runif(1)
@@ -51,6 +51,7 @@ ms4 <- MaxStableRF(x, x, model="gauss", param=c(0, 1, 0, 1),
 image(x, x, ms4^root, col=col)
 }}
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

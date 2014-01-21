@@ -4,7 +4,7 @@
 
  Gneiting's space-time covariance models and related models
 
- Copyright (C) 2006 -- 2013 Martin Schlather
+ Copyright (C) 2006 -- 2014 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -49,8 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void kappa_ave(int i, cov_model *cov, int *nr, int *nc){
   bool 
-    spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int dim = spacetime ? cov->tsdim-1 : cov->tsdim;
   *nr = (i==AVE_A || i==AVE_Z) ? dim : 1;
   *nc = (i==AVE_A) ? dim : i < CovList[cov->nr].kappas ? 1 : -1;
@@ -60,8 +59,7 @@ void kappa_ave(int i, cov_model *cov, int *nr, int *nc){
 void ave(double *h, cov_model *cov, double *v) {
   // f = uAu +zu; 
   bool 
-     spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   cov_model *next = cov->sub[0];
   int i,j,k,d,
     dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
@@ -69,8 +67,8 @@ void ave(double *h, cov_model *cov, double *v) {
   double  detEplus2B, Ah[AveMaxDim], Eplus2B[AveMaxDim], 
     dummy, 
     hh,
-    *A = cov->p[AVE_A],
-    *z = cov->p[AVE_Z],
+    *A = P(AVE_A),
+    *z = P(AVE_Z),
     c = spacetime ? h[cov->tsdim-1] : 0.0; // Sockelwert fuer c
 
   hh = 0.0;
@@ -99,13 +97,12 @@ void ave(double *h, cov_model *cov, double *v) {
 int checkave(cov_model *cov) {
   cov_model *next = cov->sub[0];
   bool
-     spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int i, j, err,
     dim =  cov->tsdim,
     spdim = spacetime ? dim - 1 : dim;
   double 
-    *A = cov->p[AVE_A];
+    *A = P(AVE_A);
   char msg[2][4] = {"d", "d-1"};
 
    if (cov->xdimown < 2) SERR("The spatial dimension must be at least 2.");
@@ -241,13 +238,12 @@ int structAve(cov_model *cov, cov_model **newmodel) {
 void  logshapeave(double *x, cov_model *cov, double *v, double *sign) {
     // nur stationaer
   bool 
-    spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int d, j, k,
     dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
   double f, dummy, r2,
-    *A = cov->p[AVE_A],
-    *z = cov->p[AVE_Z],
+    *A = P(AVE_A),
+    *z = P(AVE_Z),
     t = spacetime ? x[cov->tsdim-1] : 0.0,
     *q = cov->q;
  
@@ -287,8 +283,7 @@ int init_shapeave(cov_model *cov, storage *s) {
   double sd,
     *q = cov->q;
   bool 
-    spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int err = NOERROR,
     dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
   
@@ -322,8 +317,7 @@ void do_shapeave(cov_model *cov, storage *S) {
   double spectral[StpMaxDim], sd,
     *q = cov->q;
   bool 
-     spacetime = (bool) (cov->p[AVE_SPACETIME] == NULL || 
-			((int*) cov->p[AVE_SPACETIME])[0]);
+    spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int 
     dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
   
@@ -356,14 +350,14 @@ void do_shapeave(cov_model *cov, storage *S) {
 #define COX_D 1
 #define COX_BETA 2
 
-void GetEu2Dinv(param_type p, double *x, int dim, 
+void GetEu2Dinv(cov_model *cov, double *x, int dim, 
 		double *det, double *Eu2Dinv,
 		double *newxsq, double *newx, double *z) {
     double t, t2,
 	y[CoxMaxDim],
-	*V = p[COX_MU],
-      *D= p[COX_D],
-      beta = p[COX_BETA][0];
+      *V = P(COX_MU),
+      *D= P(COX_D),
+      beta = P0(COX_BETA);
     int d,
 	dimP1 = dim + 1,
 	dimsq = dim * dim;
@@ -435,17 +429,16 @@ void cox(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
   int dim = cov->tsdim - 1,
       dimsq = dim * dim;
-  double det, newx, *Eu2Dinv, newxsq;
+  double det, newx,  newxsq;
  
   //PMI(cov, "cox");
 
-  Eu2Dinv = (double*) MALLOC(sizeof(double) * dimsq);
-  GetEu2Dinv(cov->p, x, dim, &det, Eu2Dinv, &newxsq, &newx, NULL);
+  ALLOC_EXTRA1(Eu2Dinv, dimsq);
+
+  GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, NULL);
    
   COV(&newx, next, v);
   *v /= sqrt(det);
-
-  free(Eu2Dinv);
 }
 
 void coxhess(double *x, cov_model *cov, double *v) {
@@ -453,10 +446,10 @@ void coxhess(double *x, cov_model *cov, double *v) {
   int tsdim = cov->tsdim,
       dim = tsdim - 1,
       dimsq = dim * dim;
-  double z[CoxMaxDim], det, *Eu2Dinv, newx, newxsq, phiD, phiD2;
+  double z[CoxMaxDim], det, newx, newxsq, phiD, phiD2;
 
-  Eu2Dinv = (double*) MALLOC(sizeof(double) * dimsq);
-  GetEu2Dinv(cov->p, x, dim, &det, Eu2Dinv, &newxsq, &newx, z);
+  ALLOC_EXTRA1(Eu2Dinv, dimsq);
+  GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z);
 
   Abl2(&newx, next, &phiD2);  
   if (newxsq == 0.0) {
@@ -466,8 +459,6 @@ void coxhess(double *x, cov_model *cov, double *v) {
     cpyUf(Eu2Dinv, phiD / (sqrt(det) * newx), dim, tsdim, v);
     addzzT(v, (phiD2 - phiD/newx) / (sqrt(det) * newxsq), z, dim, tsdim);
   }
-
-  free(Eu2Dinv);
 }
 
 
@@ -477,10 +468,10 @@ void coxnabla(double *x, cov_model *cov, double *v) {
       tsdim = cov->tsdim,
       dim = tsdim - 1,
       dimsq=dim * dim;
-  double z[CoxMaxDim], det, newx, newxsq, *Eu2Dinv, phiD, factor;
+  double z[CoxMaxDim], det, newx, newxsq, phiD, factor;
   
-  Eu2Dinv = (double*) MALLOC(sizeof(double) * dimsq);
-  GetEu2Dinv(cov->p, x, dim, &det, Eu2Dinv, &newxsq, &newx, z); 
+  ALLOC_EXTRA1(Eu2Dinv, dimsq);
+  GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z); 
 
   if (newxsq == 0.0) {
       for (d=0; d<=dim; d++)  v[d] = 0.0;
@@ -494,8 +485,7 @@ void coxnabla(double *x, cov_model *cov, double *v) {
     for (d=0; d<tsdim; v[d++]=0.0);
   }
 
-  free(Eu2Dinv);
-}
+ }
 
 
 
@@ -522,12 +512,11 @@ int checkcox(cov_model *cov) {
   }
 
   // is matrix positive definite?
-  if (cov->p[COX_D] == NULL) {
-    cov->p[COX_D] = (double *) CALLOC(dimsq, sizeof(double));
-    cov->ncol[COX_D] = cov->nrow[COX_D] = dim;
-    for (i=0; i<dimsq; i++) cov->p[COX_D][i] = 1.0;
+  if (PisNULL(COX_D)) {
+    PALLOC(COX_D, dim, dim);
+    for (i=0; i<dimsq; i++) P(COX_D)[i] = 1.0;
   } else {
-    if (!is_positive_definite(cov->p[COX_D], dim))
+    if (!is_positive_definite(P(COX_D), dim))
       SERR("D is not (strictly) positive definite");
   }
 
@@ -546,11 +535,11 @@ int checkcox(cov_model *cov) {
   
   // no setbackard
   updatepref(cov, next);
-  if (cov->p[COX_BETA][0] != 2.0) cov->pref[SpectralTBM] = 0;
+  if (P0(COX_BETA) != 2.0) cov->pref[SpectralTBM] = 0;
 
   cov->hess = true;
 
-	 
+  EXTRA_STORAGE;	 
   return NOERROR;
 }
 
@@ -589,8 +578,8 @@ void spectralcox(cov_model *cov, storage *s, double *e) {
   int d,
     dim = cov->tsdim - 1;
   double t, v[CoxMaxDim],
-    *V = cov->p[COX_MU],
-    rho= cov->p[COX_D][0];
+    *V = P(COX_MU),
+    rho= P0(COX_D);
   SPECTRAL(next, s, e); // nicht gatternr
   
   v[0] = rnorm(0.0, INVSQRTTWO);
@@ -633,9 +622,9 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     *Sx = cov->Sdollar->z, 
     *Sy = cov->Sdollar->z2, 
     *A = cov->Sdollar->y,
-    *Sc = cov->p[STP_S],
-    *M = cov->p[STP_M],
-    *z = cov->p[STP_Z];
+    *Sc = P(STP_S),
+    *M = P(STP_M),
+    *z = P(STP_Z);
   cov_model *phi = cov->sub[STP_PHI],
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
@@ -736,24 +725,21 @@ int checkstp(cov_model *cov){
     SERR2("For technical reasons max. dimension for ave is %d. Got %d.", 
 	  StpMaxDim, cov->xdimprev);
 
-  if (cov->p[STP_S] == NULL && Sf==NULL) {  // Sc
-    if ((cov->p[STP_S] = EinheitsMatrix(dim)) == NULL) 
+ if (PisNULL(STP_S) && Sf==NULL) {  // Sc
+   if ((cov->px[STP_S] = EinheitsMatrix(dim)) == NULL) 
       return ERRORMEMORYALLOCATION;
     cov->ncol[STP_S] = cov->nrow[STP_S] = dim;
   }
-  if (cov->p[STP_M] == NULL) { // M
-    if ((cov->p[STP_M] = EinheitsMatrix(dim)) == NULL)
+ if (PisNULL(STP_M)) { // M
+   if ((cov->px[STP_M] = EinheitsMatrix(dim)) == NULL)
       return ERRORMEMORYALLOCATION;
     cov->ncol[STP_M] = cov->nrow[STP_M] = dim;
   }
-  if (cov->p[STP_Z] == NULL) { // z
-    if ((cov->p[STP_Z] = (double*) CALLOC(dim, sizeof(double))) == NULL) 
-      return ERRORMEMORYALLOCATION;
-    cov->ncol[STP_Z] = 1;
-    cov->nrow[STP_Z] = dim;
-  }
+ if (PisNULL(STP_Z)) { // z
+   PALLOC(STP_Z, dim, 1);
+ }
 
-  if (cov->xdimprev != cov->tsdim || cov->xdimprev != cov->tsdim)
+ if (cov->xdimprev != cov->tsdim || cov->xdimprev != cov->tsdim)
     return ERRORDIM;
    
   if ((err = CHECK(phi, dim,  1, PosDefType, XONLY, ISOTROPIC,
@@ -764,14 +750,14 @@ int checkstp(cov_model *cov){
   cov->pref[Average] = 5;
 
   if (Sf != NULL) {
-    if ((err = CHECK(Sf, dim,  dim, ShapeType, XONLY, NO_ROTAT_INV,
+    if ((err = CHECK(Sf, dim,  dim, ShapeType, XONLY, CARTESIAN_COORD,
 		       dim, ROLE_COV)) != NOERROR) 
       return err;
   }
   
 
   if (xi2 != NULL) {
-   if ((err = CHECK(xi2, dim, dim,  ShapeType, XONLY, NO_ROTAT_INV,
+   if ((err = CHECK(xi2, dim, dim,  ShapeType, XONLY, CARTESIAN_COORD,
 		    SCALAR, ROLE_COV)) != NOERROR)
      return err;
   }
@@ -825,7 +811,7 @@ int structStp(cov_model *cov, cov_model **newmodel) {
 int check_shapestp(cov_model *cov) {  
   if (cov->sub[AVE_GAUSS] == NULL)
     SERR1("both submodels must be set to '%s'", CovList[GAUSS].nick);
- 
+  EXTRA_STORAGE;
   return checkstp(cov); // !! not next
 }
 
@@ -855,7 +841,7 @@ int init_shapestp(cov_model *cov, storage *s) {
       dim = cov->tsdim,
       ndummy = dummyN;
  
-    F77_NAME(dgeev)("No", "No", &dim, cov->p[STP_S], &dim, 
+    F77_NAME(dgeev)("No", "No", &dim, P(STP_S), &dim, 
 		    value, ivalue, NULL, &dim, NULL, &dim,
 		    dummy, &ndummy, &Ferr);
     if (Ferr != 0) SERR("error in F77 function call");
@@ -925,16 +911,17 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
   int j, k, d, 
-      dim= cov->xdimprev,
-      bytes = sizeof(double) * dim * dim;
-  double h[StpMaxDim], hSxh, hSx, xi, Mhd, *Sx,
-    **p = cov->p,
-    *Sc = p[STP_S],
-    *M = p[STP_M],
-    *z = p[STP_Z],
+    dim= cov->xdimprev,
+    dimsq = dim * dim,
+    bytes = sizeof(double) * dimsq;
+  double h[StpMaxDim], hSxh, hSx, xi, Mhd, 
+    *Sc = P(STP_S),
+    *M = P(STP_M),
+    *z = P(STP_Z),
     *q = cov->q;
   
-  Sx= (double*) MALLOC(bytes);
+  ALLOC_EXTRA1(Sx, dimsq); 
+
   if (Sf == NULL) {
     MEMCOPY(Sx, Sc, bytes);
   } else {
@@ -966,7 +953,7 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
   double exponent =
     0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
 		  q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
-     + 0.25 *log(detU(Sx, dim))                          // Sx ^1/4 
+    + 0.25 *log(detU(Sx, dim))                          // Sx ^1/4 
       - q[AVESTP_V] * hSxh             // exp(-V(U-x) S (U-x)) 
     // + CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi) // g //nicht gatternr
     //    - 0.5 * cov_a->logdens // f 
@@ -975,7 +962,8 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
   if (!(exponent < 5.0) && PL >= PL_DETAILS) {
     if (!(exponent < 6.0)) // could be NA, too
      PRINTF("\n%f logDetU=%f %f expon=%f",
-            0.25 * dim * (2.0 + q[AVESTP_LOGV] - 2*M_LN_PId2)// 2V/pi)^{d/2} 
+          0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
+			q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
 	    , 0.25 * log(detU(Sx, dim))                         /// Sx ^1/4 
 	    , -q[AVESTP_V]* hSxh             // exp(-V(U-x) S (U-x)) 
 	    // , CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV],  phi)// g
@@ -987,7 +975,6 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
   assert(exp(exponent) < 10000000.0);
   
  
-  free(Sx);
   double cos_value = cos(q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * xi);
   *v = exponent + log(fabs(cos_value)) ;  // Y 
   *sign = cos_value > 0.0 ? 1.0 : cos_value < 0.0 ? -1.0 : 0.0;
@@ -1003,7 +990,7 @@ void kappa_rational(int i, cov_model *cov, int *nr, int *nc){
   *nr = (i == RATIONAL_A) ? cov->tsdim : (i==RATIONAL_a) ? 2 : -1;
 }
 void minmaxEigenrational(cov_model *cov, double *mm) {
-  double *a = cov->p[RATIONAL_a];
+  double *a = P(RATIONAL_a);
   if (a[0] < a[1]) {
     mm[0] = a[0];
     mm[1] = a[1];
@@ -1013,15 +1000,15 @@ void minmaxEigenrational(cov_model *cov, double *mm) {
   }
 }
 double maxEigenrational(cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *mm) {
-  double *a = cov->p[RATIONAL_a];
+  double *a = P(RATIONAL_a);
   return (a[0] > a[1]) ? a[0] : a[1];
 }
 void rational(double *x, cov_model *cov, double *v) {
   int i, k, j, 
     dim = cov->tsdim;
   double nu,
-    *A = cov->p[RATIONAL_A],
-    *a = cov->p[RATIONAL_a];
+    *A = P(RATIONAL_A),
+    *a = P(RATIONAL_a);
   nu = 0.0;
   for (k=0, i=0; i<dim; i++) {
     double xTC;
@@ -1040,16 +1027,15 @@ int checkrational(cov_model *cov){
   // CE CO CI TBM Sp di sq Ma av n mpp Hy any
   int err;
   if (cov->nrow[RATIONAL_a] == 1) {
-    double dummy = cov->p[RATIONAL_a][0];
-    free(cov->p[RATIONAL_a]);
-    cov->p[RATIONAL_a] = (double *) MALLOC(sizeof(double) * 2);
-    cov->p[RATIONAL_a][0] = dummy;
-    cov->p[RATIONAL_a][1] = 0.0;
-    cov->nrow[RATIONAL_a] = 2;
+    double dummy = P0(RATIONAL_a);
+    free(P(RATIONAL_a));
+    PALLOC(RATIONAL_a, 2, 1);
+    P(RATIONAL_a)[0] = dummy;
+    P(RATIONAL_a)[1] = 0.0;
   }
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->mpp.maxheight =  cov->p[RATIONAL_a][0] > cov->p[RATIONAL_a][1] 
-    ? cov->p[RATIONAL_a][0] : cov->p[RATIONAL_a][1];
+  cov->mpp.maxheight =  P(RATIONAL_a)[0] > P(RATIONAL_a)[1] 
+    ? P(RATIONAL_a)[0] : P(RATIONAL_a)[1];
   return NOERROR;
 }
 
@@ -1076,15 +1062,15 @@ void rangerational(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 #define EAXXA_A 1
 #define ETAXXA_ALPHA 2
 void kappa_EAxxA(int i, cov_model *cov, int *nr, int *nc){
-  *nc = (EAXXA_A == 1) ? cov->tsdim : 1;
+  *nc = (EAXXA_A == i) ? cov->tsdim : 1;
   *nr = i < CovList[cov->nr].kappas ? cov->tsdim : -1;
 }
 void EAxxA(double *x, cov_model *cov, double *v) {
   int d, k, j, 
     dim = cov->tsdim;
   double xA[EaxxaMaxDim],
-    *E = cov->p[EAXXA_E],
-    *A = cov->p[EAXXA_A];
+    *E = P(EAXXA_E),
+    *A = P(EAXXA_A);
   for (k=0, d=0; d<dim; d++) {
     xA[d] =  0.0;
     for (j=0; j<dim; j++) {
@@ -1105,7 +1091,7 @@ void EAxxA(double *x, cov_model *cov, double *v) {
 
 void minmaxEigenEAxxA(cov_model *cov, double *mm) {
   double 
-    *E = cov->p[EAXXA_E];
+    *E = P(EAXXA_E);
   int i,
     dim = cov->tsdim;
   for (mm[0] = RF_INF, mm[1]=-RF_INF, i=0; i<dim; i++) {
@@ -1151,6 +1137,7 @@ void rangeEAxxA(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 
 
+
 // Sigma(x) = diag>0 + A'xx'A
 void kappa_EtAxxA(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   int tsdim = 3; //  cov->tsdim
@@ -1162,9 +1149,9 @@ void EtAxxA(double *x, cov_model *cov, double *v) {
     dim = cov->tsdim,
     time = dim - 1;
   double xAR[EaxxaMaxDim], R[9],
-    *E = cov->p[EAXXA_E],
-    *A = cov->p[EAXXA_A],
-    phi = cov->p[ETAXXA_ALPHA][0],
+    *E = P(EAXXA_E),
+    *A = P(EAXXA_A),
+    phi = P0(ETAXXA_ALPHA),
     c =  cos(phi * x[time]),
     s = sin(phi * x[time]); 
      
@@ -1207,7 +1194,7 @@ void EtAxxA(double *x, cov_model *cov, double *v) {
 
 void minmaxEigenEtAxxA(cov_model *cov, double *mm) {
   double 
-    *E = cov->p[EAXXA_E];
+    *E = P(EAXXA_E);
   int i,
     dim = cov->tsdim;
   for (mm[0] = RF_INF, mm[1]=-RF_INF, i=0; i<dim; i++) {
@@ -1264,8 +1251,8 @@ void rotat(double *x, cov_model *cov, double *v) {
     dim = cov->tsdim,
     time = dim - 1;
   double
-    speed = cov->p[ROTAT_SPEED][0],
-    phi = cov->p[ROTAT_PHI][0],
+    speed = P0(ROTAT_SPEED),
+    phi = P0(ROTAT_PHI),
     absx = sqrt(x[0] * x[0] + x[1] * x[1]);
   *v = (absx == 0.0) ? 0.0
     : speed * (cos(phi * x[time]) * x[0] + sin(phi * x[time]) * x[1]) / absx;
@@ -1315,7 +1302,7 @@ void Rotat(double *x, cov_model *cov, double *v) {
     dim = cov->tsdim,
     time = dim - 1;
   double
-      phi = cov->p[ROTAT_PHI][0],
+    phi = P0(ROTAT_PHI),
       c =  cos(phi * x[time]),
       s = sin(phi * x[time]),
       R[9]; assert(dim ==3);
@@ -1367,7 +1354,7 @@ void NonStWMQ(double *x, double *y, double sqrtQ, cov_model *cov, double *v){
   cov_model *nu = cov->kappasub[WM_NU];
 
   if (nu == NULL) {
-    nuxy = cov->p[WM_NU][0];
+    nuxy = P0(WM_NU);
     loggamma = lgammafn(nuxy);
   } else {
     FCTN(x, nu, &nux);
@@ -1407,12 +1394,12 @@ int checkNonStWM(cov_model *cov) {
 
   return ERRORNOTPROGRAMMED; 
 
-  if (cov->p[WM_NU] == NULL && nu==NULL) SERR("'nu' is missing");
+  if (PisNULL(WM_NU) && nu==NULL) SERR("'nu' is missing");
   if (isRandom(CovList[cov->nr].kappaParamType[WM_NU])) 
     SERR("only deterministic models for 'nu' are allowed.\nHowever these models can have random parameters.");
   
   if (nu != NULL) {
-    if ((err = CHECK(nu, dim, dim, ShapeType, XONLY, NO_ROTAT_INV,
+    if ((err = CHECK(nu, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
 		       SCALAR, ROLE_COV)) != NOERROR) 
       return err;
     if (nu->tsdim != cov->tsdim) return ERRORWRONGDIM;
@@ -1448,7 +1435,7 @@ void rangeNonStWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 //  double alpha;
 //
 //  if (nu == NULL) {
-//    minnu = cov->p[WM_NU][0];
+//    minnu = P(WM_NU][0];
 //  } else {
 //    double minmax[2];
 //    CovList[nu->nr].minmaxeigenvalue(nu, minmax);
@@ -1497,7 +1484,7 @@ void rangeNonStWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
     V = cov_a->V;
   
   if (Nu == NULL) 
-    nu = cov->p[WM_NU][0];
+    nu = P(WM_NU][0];
   else 
      FCTN(x, Nu, &nu);
 
@@ -1550,7 +1537,7 @@ void nsst(double *x, cov_model *cov, double *v) {
   psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   COV(&y, subphi, &phi);
-  *v = pow(psi, -cov->p[NSST_DELTA][0]) * phi;
+  *v = pow(psi, -P0(NSST_DELTA)) * phi;
 }
 
 void TBM2nsst(double *x, cov_model *cov, double *v) {
@@ -1563,7 +1550,7 @@ void TBM2nsst(double *x, cov_model *cov, double *v) {
   psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   TBM2CALL(&y, subphi, &phi);
-  *v = pow(psi, -cov->p[NSST_DELTA][0]) * phi;
+  *v = pow(psi, -P0(NSST_DELTA)) * phi;
 }
 
 void Dnsst(double *x, cov_model *cov, double *v) {
@@ -1576,7 +1563,7 @@ void Dnsst(double *x, cov_model *cov, double *v) {
   psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   Abl1(&y, subphi, &phi);
-  *v = pow(psi, -cov->p[NSST_DELTA][0] - 1) * phi;
+  *v = pow(psi, -P0(NSST_DELTA) - 1) * phi;
   // print("(%f %f %f)",  psi, y, *v);
 }
 

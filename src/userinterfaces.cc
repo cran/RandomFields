@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define nOptimVar 4
 const char * OPTIM_VAR_NAMES[nOptimVar] = 
-  {"never", "respect bounds", "try", "yes"}; 
+  {"never", "respect bounds", "try", "yes"}; // keep yes last !!
 
 #define nOptimiser 8
 const char * OPTIMISER_NAMES[nOptimiser] = 
@@ -92,7 +92,7 @@ const char *NLOPTR_NAMES[nNLOPTR] =
 void ResetWarnings() {
   warn_param *w = &(GLOBAL.warn);
   w->oldstyle = w->newstyle = w->Aniso = w->ambiguous = w->normal_mode =
-    w->warn_mode = w->warn_colour = true;
+    w->warn_mode = w->warn_colour = w->warn_coordinates = true;
 }
 
 #define MaxMaxInts 9
@@ -138,6 +138,7 @@ bool skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
   ce_force[nr_modes] =       {true, true, true, false, false, false, false},
   ce_dependent[nr_modes] =   {true, true, true, false, false, false, false},
   grid[nr_modes] =           {true, true, true, true, true, false, false},
+  fit_split[nr_modes] =      {false,  true,  true, true, true, true, true},
   fit_refine[nr_modes] =     {false, false, false, true, true, true, true},
   fit_reoptimise[nr_modes] = {false, false, false, true, true, true, true}
   ;
@@ -149,15 +150,15 @@ int locmaxn[nr_modes] =      {3000, 4000, 6000, 8000, 9000, 10000000, 10000000},
   tbm_lines[nr_modes] =      {40,   40,   50,   60,   80,   100,   200},
   mpp_n_estim_E[nr_modes] =  {10000, 10000, 20000,50000,80000,100000,1000000},
   hyper_superpos[nr_modes] = {200, 300, 450, 700, 1000, 2000, 5000},
-  fit_critical[nr_modes] =   {-1,   -1,   0,   1,   2,   3,   3},
-  fit_ncrit[nr_modes] =      { 5,    5,   5,  10,  10,  20,  20},
-  fit_optim_var[nr_modes] =  { 2,    2,   2,   1,   1,   1,   1}
+  fit_critical[nr_modes] =   {-1,  -1,   -1,   0,   1,   2,   3}, 
+  fit_ncrit[nr_modes] =      { 2,   4,    5,   5,   10,  10,  20}, 
+  fit_optim_var[nr_modes] =  { 2,   2,    2,   2,   1,   1,   1} 
   ;
 double exactness[nr_modes] = {false, false, false, NA_REAL, true, true, true},
   matrixtolerance[nr_modes] ={1e-6,  1e-6,  1e-6,  1e-12,   1e-14, 0, 0},
   ce_tolIm[nr_modes] =       {1e6,  1e6,  1e-1,  1e-3,   1e-7, 0, 0},
   ce_tolRe[nr_modes] =       {-1e6,  -1e6,  -1e-3, -1e-7,  -1e-14, 0, 0},
-  ce_approx_step[nr_modes] = {1.0,  1.0,   1.0, 1.0, -1.0, -1.0, -1.0},
+  ce_approx_step[nr_modes] = {1.0,  1.0,   1.0, 1.0, 0.0, 0.0, 0.0},
   direct_tol[nr_modes] =     {1e-8, 1e-8, 1e-10, 1e-12, 1e-14, 0, 0},
   nugget_tol[nr_modes] =     {1e-8, 1e-8, 1e-12, 0,     0,     0,     0},
   tbm_linefactor[nr_modes] = {1.5,  1.5,  1.7,   2.0,  3.0,  5.0,  6.0},
@@ -166,7 +167,7 @@ double exactness[nr_modes] = {false, false, false, NA_REAL, true, true, true},
   max_max_gauss[nr_modes] =  {2,    2,    3,    4,    5,   6,   6}
   ;
 
-const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optimx", "optimx", "optimx"};
+const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optimx", "optimx", "optimx"}; // to do optimx
  
 void SetDefaultModeValues(int old, int m){
   int i;
@@ -200,14 +201,17 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.hyper.superpos = hyper_superpos[m];
   GLOBAL.extreme.standardmax = max_max_gauss[m];
   fit_param *f = &(GLOBAL.fit);
+  f->split = fit_split[m];
   f->refine_onborder = fit_refine[m];
+  f->reoptimise = fit_reoptimise[m];
   f->critical = fit_critical[m];
   f->n_crit = fit_ncrit[m];
   f->optim_var_estim = fit_optim_var[m];
-  f->reoptimise = fit_reoptimise[m];
   char dummy[10];
   strcpy(dummy, f_opt[m]);
   f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
+
+  //  printf("optimiser %d %s\n", f->optimiser,  OPTIMISER_NAMES[f->optimiser]);
 
   warn_param *w = &(GLOBAL.warn);
   w->stored_init = false;
@@ -334,7 +338,7 @@ SEXP GetSubNames(SEXP nr) {
     if (C->subintern[i]) 
       PRINTF("%s subintern[%d]=true\n", C->nick, i);
     
-    // since 17 May 2013:
+    // since 17 May 2014:
     INTEGER(subintern)[i] = C->subintern[i];
     SET_STRING_ELT(subnames, j++, mkChar(C->subnames[i]));
   
@@ -574,23 +578,24 @@ void GetAttr(int *type, int *op, int *monotone, int *finiterange,
 	     int *internal, int *dom, int *iso, int *maxdim, int *vdim) {
 #define MAXPN 10 /* only used for testing purposes */
   int nr, p;
-  cov_model cov;
+  cov_model Cov,
+    *cov = &Cov;
   range_type range;
 //  range_type *range;
   cov_fct *C = CovList;
-  for (p=0; p<MAXPARAM; p++) {
-    cov.p[p] = (double *) CALLOC(sizeof(double), MAXPN);
-    cov.ncol[p] = cov.nrow[p] = 1;
-    cov.tsdim = 1;
-  }
-  cov.vdim = 1;
-  cov.nsub = 2;
+
+
+  for (p=0; p<C->kappas; p++) 
+    cov->px[p] = (double*) CALLOC(MAXPN, sizeof(double));
+  Cov.tsdim = 1;
+  Cov.vdim = 1;
+  Cov.nsub = 2;
  
   for (nr=0; nr<currentNrCov; nr++, C++){   
-    cov.nr = nr;
+    Cov.nr = nr;
     type[nr] = C->Type;
     op[nr] = (int) C->maxsub > 0;   
-    C->range(&cov, &range);
+    C->range(cov, &range);
     maxdim[nr] = C->maxdim;
     finiterange[nr] = C->finiterange;
     monotone[nr] = C->Monotone;
@@ -599,9 +604,7 @@ void GetAttr(int *type, int *op, int *monotone, int *finiterange,
     iso[nr] = C->isotropy;
     vdim[nr] = C->vdim;
   }
-  for (p=0; p<MAXPARAM; p++) {
-    free(cov.p[p]);
-  }
+  for (p=0; p<C->kappas; p++) free(cov->px[p]);
 }
 
 //static int ZZ = 0;
@@ -633,7 +636,7 @@ void Real(SEXP el,  char *name, double *vec, int maxn) {
     sprintf(msg,"'%s' cannot be transformed to double.\n", name);
     ERR(msg);
   }
-  n = LENGTH(el);
+  n = length(el);
   for (j=i=0; i<maxn; i++) {
     vec[i] = Real(el, name, j);
     if (++j >= n) j=0;
@@ -641,9 +644,9 @@ void Real(SEXP el,  char *name, double *vec, int maxn) {
   return;
 }
 
-int Integer(SEXP p, char *name, int idx) {
+int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
   char msg[200];
-  if (p != R_NilValue)
+  if (p != R_NilValue) {
     switch(TYPEOF(p)) {
     case INTSXP : 
       return INTEGER(p)[idx]; 
@@ -663,11 +666,15 @@ int Integer(SEXP p, char *name, int idx) {
     case LGLSXP :
       return  LOGICAL(p)[idx]==NA_LOGICAL ? NA_INTEGER : (int) LOGICAL(p)[idx];
     }
+  } else if (nulltoNA) return NA_INTEGER;
   sprintf(msg, "%s: unmatched type of parameter [type=%d]", name, TYPEOF(p));
   ERR(msg);
   return NA_INTEGER; // compiler warning vermeiden
 }
 
+int Integer(SEXP p, char *name, int idx) {
+  return Integer(p, name, idx, false);
+}
 
 
 void Integer(SEXP el, char *name, int *vec, int maxn) {
@@ -677,7 +684,7 @@ void Integer(SEXP el, char *name, int *vec, int maxn) {
     sprintf(msg, "'%s' cannot be transformed to integer.\n",name);
     ERR(msg);
   }
-  n = LENGTH(el);
+  n = length(el);
   for (j=i=0; i<maxn; i++) {
     vec[i] = Integer(el, name, j);
     if (++j >= n) j=0;
@@ -708,7 +715,7 @@ char Char(SEXP el, char *name) {
   type = TYPEOF(el);
   if (type == CHARSXP) return CHAR(el)[0];
   if (type == STRSXP) {
-    if (LENGTH(el)==1) {
+    if (length(el)==1) {
       if (strlen(CHAR(STRING_ELT(el,0))) == 1)
 	return (CHAR(STRING_ELT(el,0)))[0];
       else if (strlen(CHAR(STRING_ELT(el,0))) == 0)
@@ -795,22 +802,55 @@ double PositiveReal(SEXP el, char *name) {
 #define POSINT PositiveInteger(el, name) /* better: non-negative */
 #define POSNUM PositiveReal(el, name)
 
+void getUnits(SEXP el, char VARIABLE_IS_NOT_USED *name, 
+	      char units[MAXUNITS][MAXUNITSCHAR], 
+	      char units2[MAXUNITS][MAXUNITSCHAR]) {  
+  int i, j, 
+    l = length(el);
+  if (TYPEOF(el) != NILSXP && TYPEOF(el) == STRSXP && l >= 1) {
+    for (i=j=0; i<MAXUNITS; i++, j=(j + 1) % l) {
+      strncpy(units[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
+      units[i][MAXUNITSCHAR - 1] ='\0';		    
+      if (units2!=NULL) {
+	strncpy(units2[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
+        units2[i][MAXUNITSCHAR - 1] ='\0';		    
+      }
+    }
+  } else ERR("invalid units");
+}
 
-int GetName(SEXP meth, char *name, const char * List[], int n,
+SEXP UNITS(char units[MAXUNITS][MAXUNITSCHAR]) {
+  SEXP unitnames;
+  int nn;
+  PROTECT(unitnames = allocVector(STRSXP, MAXUNITS)); 
+  for (nn=0; nn<MAXUNITS; nn++) {
+    SET_STRING_ELT(unitnames, nn, mkChar(units[nn]));
+  }
+  UNPROTECT(1);
+  return unitnames;
+}
+
+int GetName(SEXP el, char *name, const char * List[], int n,
 	    int defaultvalue) {
   char msg[1000], dummy[1000];
   int i,
     nM1 = n - 1;
-  if (TYPEOF(meth) == NILSXP) goto ErrorHandling;
-  if (TYPEOF(meth) == STRSXP) {
-    int m = Match((char*) CHAR(STRING_ELT(meth, 0)), List, n);
 
-    if (m >= 0) return m; else 
-      if (strcmp((char*) CHAR(STRING_ELT(meth, 0)), " ") == 0) 
+  if (TYPEOF(el) == NILSXP) goto ErrorHandling;
+ 
+
+  if (TYPEOF(el) == STRSXP) {
+    int m = Match((char*) CHAR(STRING_ELT(el, 0)), List, n);
+
+    if (m >= 0) return m; else {
+      if (strcmp((char*) CHAR(STRING_ELT(el, 0)), " ") == 0 ||
+	  strcmp((char*) CHAR(STRING_ELT(el, 0)), "") == 0) {
 	goto ErrorHandling;
+      }
+    }
   }
   sprintf(dummy, "'%s': unknown value '%s'. Possible values are:", 
-	  name, CHAR(STRING_ELT(meth, 0)));
+	  name, CHAR(STRING_ELT(el, 0)));
   for (i=0; i<nM1; i++) {
     sprintf(msg, "%s '%s',", dummy, List[i]);    
     strcpy(dummy, msg);
@@ -819,16 +859,16 @@ int GetName(SEXP meth, char *name, const char * List[], int n,
   ERR(msg);
  
  ErrorHandling:
-  if (defaultvalue > 0) return defaultvalue;
-    else {
-      sprintf(msg, "'%s': no value given.", name);
-      ERR(msg);
-    }
+  if (defaultvalue >= 0) return defaultvalue;
+  
+  sprintf(msg, "'%s': no value given.", name);
+  ERR(msg);
+
   return 999;// to avoid warning from compiler
 }
 
-int GetName(SEXP meth, char *name, const char * List[], int n) {
- return GetName(meth, name, List, n, -1);
+int GetName(SEXP el, char *name, const char * List[], int n) {
+ return GetName(el, name, List, n, -1);
 }
 
 
@@ -890,7 +930,7 @@ const char * prefixlist[prefixN] =
    "empvario", "gui", "graphics",// 18 
    "warn", // ACHTUNG warn wird nicht pauschal zurueckgesetzt
 };
-#define generalN 23
+#define generalN 28
 // IMPORTANT: all names of general must be at least 3 letters long !!!
 const char *general[generalN] =
   { "modus_operandi", "printlevel", "storing", 
@@ -900,7 +940,8 @@ const char *general[generalN] =
     "practicalrange", "spConform", "cPrintlevel", 
     "exactness", "matrix_inversion", "matrix_tolerance",
     "allowdistanceZero", "na_rm_lines", "vdim_close_together",
-    "expected_number_simu", "xyz_notation"};
+    "expected_number_simu", "xyz_notation", "coordinate_system", 
+    "new_coord_units", "coord_units", "variab_units", "seed"};
 
 #define gaussN 5
 const char *gauss[gaussN]= {"paired", "stationary_only", "approx_zero", 
@@ -981,14 +1022,14 @@ const char * empvario[empvarioN] =
 const char * gui[guiN] = 
   {"alwaysSimulate", "simu_method", "size"};
 
-#define graphicsN 2
-const char *graphics[graphicsN]= {"always_close_screen" ,"grPrintlevel"};
+#define graphicsN 4
+const char *graphics[graphicsN]= {"always_close_screen" ,"grPrintlevel", "height", "increase_upto"};
 
-#define warnN 8
+#define warnN 9
 const char * warns[warnN] =  { // Achtung ! warn parameter werden nicht
   // pauschal zurueckgesetzt
   "oldstyle", "newstyle", "newAniso", "ambiguous", "normal_mode", 
-  "colour_palette", "warn_colour", "stored.init"};
+  "colour_palette", "warn_colour", "stored.init", "warn_coordinates"};
 
 const char **all[] = {general, gauss, krige, CE, direct, // markov,
 		      pnugget, sequ, spectral, pTBM, mpp,
@@ -1006,7 +1047,7 @@ void RelaxUnknownRFoption(int *relax) {
 }
 
 
-void setparameter(SEXP el, char *prefix, char *mainname) {  
+void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {  
   int i,j,ii;
   char msg[200], name[200];
   
@@ -1084,7 +1125,8 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 0: {
       int old_mode = gp->mode;
       SetDefaultModeValues(old_mode,
-			   gp->mode = GetName(el, name, MODENAMES, pedantic+1));
+			   gp->mode = GetName(el, name, MODENAMES, nr_modes,
+					      normal));
       break;
     }
     case 1: {
@@ -1097,7 +1139,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 2: {
       bool storing = LOG;
       //  print("before setting storing %d %d\n", storing, KEY[0].simu.active);
-      if  (LENGTH(el) > 1) {
+      if  (length(el) > 1) {
 	if (!storing) {	  
 	  int nr = Integer(el, (char*) "storing (register)", 1);
 	  if (nr != NA_INTEGER) {
@@ -1108,7 +1150,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
 	    //	  print("xstoring = %d\n", storing);
 	  }
 	  
-	  if (LENGTH(el) >=3) {
+	  if (length(el) >=3) {
 	    nr = Integer(el, (char*) "storing (model)", 2);  
 	     if (nr != NA_INTEGER) {
 	       if (nr>=0 && nr<=MODEL_MAX && KEY[nr] != NULL) 
@@ -1117,7 +1159,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
 	  }
 	}
 	//
-	// print("hereX %d %d %d\n", storing, LENGTH(el), KEY[0].simu.active);
+	// print("hereX %d %d %d\n", storing, length(el), KEY[0].simu.active);
       } else {
 	if (!storing) {	  
 	  // delete all keys
@@ -1182,7 +1224,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 15: gp->exactness = NUM;        break; 
     case 16: {
       int old[MAXINVERSIONS],
-	l = LENGTH(el);
+	l = length(el);
       if (l > MAXINVERSIONS) ERR("matrix_inversion: vector too long");
       for (ii=0; ii<l; ii++) {
 	old[ii] = gp->matrix_inversion[ii];
@@ -1208,6 +1250,18 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
       break;
     case 21: gp->expected_number_simu = POS0INT; break;
     case 22: gp->xyz_notation = INT; break;
+    case 23: gp->coord_system =
+	(coord_sys_enum) GetName(el, name, COORD_SYS_NAMES, nr_coord_sys,
+				 coord_auto);
+      break; 
+    case 24: getUnits(el, name, gp->newunits, NULL);
+      break;
+    case 25: getUnits(el, name, gp->curunits, isList ? NULL : gp->newunits);
+      break;
+    case 26: getUnits(el, name, gp->varunits, NULL);      
+    break;
+    case 27: gp->seed = Integer(el, name, 0, true); break;
+    break;
   default: ERR("unknown option  for 'general'");
     }}
     break;
@@ -1251,7 +1305,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 2: kp->locmaxn = POS0INT; break;
     case 3: {
       int  old[3];
-      if (LENGTH(el) < 3) ERR("krige.locsplitn must have 3 components");
+      if (length(el) < 3) ERR("krige.locsplitn must have 3 components");
       for (ii=0; ii<3; ii++) {
 	old[ii] = kp->locsplitn[ii];
 	kp->locsplitn[ii] = Integer(el, name, ii); 
@@ -1424,7 +1478,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     ep = &(GLOBAL.distr);
     switch(j) { 
     case 0: ep->safety=POSNUM; break;
-    case 1: ep->minsteplen=POSNUM; break;
+    case 1: ep->minsteplen=POS0NUM; break;
     case 2: ep->maxsteps=POSINT; break;
     case 3: ep->parts=POSINT; break;
     case 4: ep->maxit=POSINT; break;
@@ -1479,7 +1533,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 30: ef->n_crit = POS0INT; break;
     case 31: ef->locmaxn = POS0INT; break;
     case 32: {
-      if (LENGTH(el) < 3) ERR("fit.locsplitn must have 3 components");
+      if (length(el) < 3) ERR("fit.locsplitn must have 3 components");
       for (ii=0; ii<3; ii++)
 	ef->locsplitn[ii] = Integer(el, name, ii); 
       break;
@@ -1488,7 +1542,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 34: ef->smalldataset = POS0INT; break;
     case 35: ef->min_diag = NUM; break;
     case 36: ef->reoptimise = LOG; break;
-    case 37: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser); 
+    case 37: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); 
       break;
     case 38: 
       switch(ef->optimiser) {
@@ -1521,11 +1575,15 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
       gp->method = GetName(el, name, METHODNAMES, Forbidden + 1, Nothing);
       break;
     case 2: {
-      Integer(el, name, gp->size, 2);
-      for (ii=0; ii<2; ii++) {
-	if (gp->size[ii] <= 1) 
+      int sizedummy[2];
+      if (length(el) != 2) ERR("length of 'size' must be 2");
+      Integer(el, name, sizedummy, 2);
+      for (ii=0; ii<2; ii++) {	
+	if (sizedummy[ii] <= 1) 
 	  ERR("grid size in RFgui must contain at least 2 points");
-      } }
+      }
+      for (ii=0; ii<2; ii++) {	 gp->size[ii] = sizedummy[ii]; }
+    }
       break;
     default: ERR("unknown option  for 'gui'");
     }}
@@ -1535,6 +1593,17 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     switch(j) {
     case 0 : gp->always_close = LOG; break;
     case 1 : gp->PL = INT; break;
+    case 2 : gp->height = NUM; break;
+    case 3 : {
+      int uptodummy[2];
+      if (length(el) != 2) ERR("length of 'increase_upto' must be 2");
+      Integer(el, name, uptodummy, 2);
+      for (ii=0; ii<2; ii++) {
+	if (uptodummy[ii] <= 0)  ERR("increase_upto must be positive");
+      } 
+      for (ii=0; ii<2; ii++) { gp->increase_upto[ii] = uptodummy[ii]; }
+    }
+    break;
     default: ERR("unknown option  for 'graphics'");
     }}
    break;
@@ -1549,7 +1618,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
    }}
     break;
     */ 
-  case 18: {
+  case 18: if (!isList) {
     warn_param *wp = &(GLOBAL.warn);
     switch(j) {
     case 0: wp->oldstyle = LOG;       break;
@@ -1560,6 +1629,7 @@ void setparameter(SEXP el, char *prefix, char *mainname) {
     case 5: wp->warn_mode = LOG;       break;
     case 6: wp->warn_colour = LOG;       break;
     case 7: wp->stored_init = LOG;       break;
+    case 8: wp->warn_coordinates = LOG;       break;
     default: ERR("unknown option for 'general'");
     }}
     break;
@@ -1658,6 +1728,12 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->vdim_close_together));
     ADD(ScalarInteger(p->expected_number_simu));    
     ADD(ExtendedInteger(p->xyz_notation));    
+    ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->coord_system])));
+    ADD(UNITS(p->newunits));
+    ADD(UNITS(p->curunits));
+    ADD(UNITS(p->varunits));
+    ADD(ScalarInteger(p->seed));
+   
   }
 
   //  printf("OK %d\n", i);
@@ -1898,7 +1974,9 @@ SEXP getRFoptions() {
      graphics_param *p = &(GLOBAL.graphics);   
      ADD(ScalarLogical(p->always_close));
      ADD(ScalarInteger(p->PL));
-   }
+     ADD(ScalarReal(p->height));
+     SET_VECTOR_ELT(sublist[i], k++, Int(p->increase_upto, 2, 2));
+ }
 
 
   i++; {
@@ -1912,6 +1990,7 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->warn_mode));
     ADD(ScalarLogical(p->warn_colour));
     ADD(ScalarLogical(p->stored_init));
+    ADD(ScalarLogical(p->warn_coordinates));
   }
 
 
@@ -1949,7 +2028,7 @@ SEXP getRFoptions() {
 
 
 
-void splitAndSet(SEXP el, char *name) {
+void splitAndSet(SEXP el, char *name, bool isList) {
   int i, len;
   char msg[200];
   char prefix[200], mainname[200];   
@@ -1968,7 +2047,7 @@ void splitAndSet(SEXP el, char *name) {
   }
 
   //  printf("i=%d %d\n", i, len);
-  setparameter(el, prefix, mainname);
+  setparameter(el, prefix, mainname, isList);
   // printf("ende\n");
 }
 
@@ -1977,6 +2056,7 @@ SEXP RFoptions(SEXP options) {
   int i, j, lenlist, lensub;
   SEXP el, list, sublist, names, subnames;
   char *name, *pref;
+  bool isList = false;
  /* 
      In case of strange values of a parameter, undelete
      the comment for PRINTF
@@ -1993,12 +2073,12 @@ SEXP RFoptions(SEXP options) {
   }
 
   name = (char*) (isNull(TAG(options)) ? "" : CHAR(PRINTNAME(TAG(options))));
-  if (strcmp(name, "LIST")==0) {   
+  if ((isList = strcmp(name, "LIST")==0)) {   
     list = CAR(options);
     if (TYPEOF(list) != VECSXP)
       ERR("'LIST' needs as argument the output of RFoptions");
     names = getAttrib(list, R_NamesSymbol);   
-    lenlist = LENGTH(list);
+    lenlist = length(list);
     for (i=0; i<lenlist; i++) {
       int len;
       pref = (char*) CHAR(STRING_ELT(names, i));  
@@ -2011,11 +2091,8 @@ SEXP RFoptions(SEXP options) {
       if (TYPEOF(sublist) == VECSXP && j==len) { // no "."
 	// so, general parameters may not be lists,
 	// others yes
-	lensub = LENGTH(sublist);
+	lensub = length(sublist);
 	subnames = getAttrib(sublist, R_NamesSymbol); 
-	if (strcmp(pref, "warn") == 0) {
-	  continue;
-	}
 	for (j=0; j<lensub; j++) {
 	  name = (char*) CHAR(STRING_ELT(subnames, j));
 
@@ -2026,10 +2103,10 @@ SEXP RFoptions(SEXP options) {
 	  //
 	  //print("  %d %d pref=%s name=%s\n", i, j, pref, name);
 	  	  
-	  setparameter(VECTOR_ELT(sublist, j), pref, name);
+	  setparameter(VECTOR_ELT(sublist, j), pref, name, isList);
 	}
       } else {  
-	splitAndSet(sublist, pref);
+	splitAndSet(sublist, pref, isList);
       }
     }
     //    print("end1 %f\n", GLOBAL.TBM.linesimufactor);
@@ -2037,7 +2114,7 @@ SEXP RFoptions(SEXP options) {
     for(i = 0; options != R_NilValue; i++, options = CDR(options)) {
       el = CAR(options);
       name = (char*) (isNull(TAG(options)) ? "" :CHAR(PRINTNAME(TAG(options))));
-      splitAndSet(el, name);
+      splitAndSet(el, name, isList);
     }
     //       print("end2 %f\n", GLOBAL.gauss.exactness);
   }
@@ -2340,8 +2417,10 @@ void isAuthor(int *is) {
 #ifdef WIN32
   *is = false;
 #else
+  #define NCHAR 5
   char host[5];
-  gethostname(host, 4);
+  gethostname(host, NCHAR);
+  host[NCHAR-1] = '\0';
   *is = strcmp("viti", host) == 0;
 #endif
 }

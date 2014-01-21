@@ -64,7 +64,7 @@ RMstp(xi2, phi, S, z, M, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMstp(xi2 = RMrotat(phi= -2 * pi, speed=1),
                phi = RMwhittle(nu = 1),
                M=matrix(nc=3, rep(0, 9)),
@@ -73,4 +73,5 @@ model <- RMstp(xi2 = RMrotat(phi= -2 * pi, speed=1),
               )
 x <- seq(0, 10, if (interactive()) 0.7 else 5) 
 plot(RFsimulate(model, x=x, y=x, z=x))
+\dontshow{RFoptions(seed=NA)}
 }

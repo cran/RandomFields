@@ -111,11 +111,12 @@ RPspectral(phi, loggauss, sp_lines, sp_grid, prop_factor, sigma)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RPspectral(RMmatern(nu=1))
 y <- x <- seq(0,10,len=if (interactive()) 400 else 3)
 z <- RFsimulate(model, x, y, n=2, grid=TRUE)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

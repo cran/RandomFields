@@ -25,3 +25,26 @@ RMpoweredexp <- function(alpha, var, scale, Aniso, proj) {
 RMtent <- function(var, scale, Aniso, proj) {
   return(RMaskey(alpha=1.0, var, scale, Aniso, proj))
 }
+
+RFearth2cartesian <- function(coord, units=NULL) {
+  if (is.null(units)) {
+    global.units <- RFoptions()$general$new_coord_units[1]
+    units <- if (global.units[1] == "") "km" else global.units 
+  }
+  if (!is.matrix(coord)) coord <- t(coord)
+  return(t(RFfctn(RMtrafo(CARTESIAN_COORD), coord, grid=FALSE,
+                  general.new_coord_units=units,
+                  general.coordinate_system="earth")))
+}
+
+RFearth2dist <- function(coord, units=NULL, ...) {
+  if (is.null(units)) {
+    global.units <- RFoptions()$general$new_coord_units[1]
+    units <- if (global.units[1] == "") "km" else global.units 
+  }
+  if (!is.matrix(coord)) coord <- t(coord)
+  z <- t(RFfctn(RMtrafo(CARTESIAN_COORD), coord, grid=FALSE,
+                general.new_coord_units=units,
+                general.coordinate_system="earth"))
+  return(dist(z, ...))
+}

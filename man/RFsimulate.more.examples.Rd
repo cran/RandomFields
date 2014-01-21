@@ -22,7 +22,7 @@
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 
 \dontshow{\dontrun{
@@ -180,10 +180,10 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
  C1 = RMwhittle(nu=1, var=3), var=5)
  x.seq <- y.seq <- seq(-10,10,0.5)
 
- set.seed(123)
+
  simulated1 <- RFsimulate(model = model1,
  x=x.seq, y=y.seq, grid=TRUE) 
- set.seed(123)
+
  simulated2 <- RFsimulate(model = model2,
  x=x.seq, y=y.seq, grid=TRUE)
  # compare
@@ -228,14 +228,14 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
 #############################################################
 ## pass given data and locations as SP4-object
 ## given.data is an SP4-object
- seed <- .Random.seed
+
  cond.simulated <- RFsimulate(model = RMexp(),
  x=x.seq.cond, y=y.seq.cond,
  grid=TRUE, data=data)
 
 #############################################################
 ## or equivalently: pass given data and locations as a matrix
- set.seed(seed)
+
  cond.simulated.2 <- RFsimulate(model = RMexp(),
  x=x.seq.cond, y=y.seq.cond,
  grid=TRUE,
@@ -277,5 +277,6 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
  plot(cond.simulated, data)
 
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }

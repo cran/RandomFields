@@ -158,7 +158,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  \command{\link{RMmodel}}, \command{\link{RFfractaldim}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{.randomfields.options = options()$warn; options(warn=0)}
 x <- runif(1000)
 if (interactive()) {
@@ -168,6 +168,7 @@ if (interactive()) {
 }
 \dontshow{options(warn = .randomfields.options)}
 
+\dontshow{RFoptions(seed=NA)}
 }
 \keyword{ spatial }%-- one or more ...
 

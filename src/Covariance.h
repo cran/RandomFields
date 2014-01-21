@@ -33,6 +33,19 @@ void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v);
 void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
 			double *sign);
 
+void EarthKM2CartStat(double *x, cov_model *cov, double *v);
+void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign);
+void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v);
+void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
+		     double *sign);
+void EarthMiles2CartStat(double *x, cov_model *cov, double *v);
+void logEarthMiles2CartStat(double *x, cov_model *cov, double *v,double *sign); 
+void EarthMiles2Cart(double *x, double *y, cov_model *cov, double *v);
+void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
+		     double *sign);
+int checkEarth(cov_model *cov);
+
+
 void D_2(double *x, cov_model *cov, double *v);
 void DD_2(double *x, cov_model *cov, double *v);
 //int check2(cov_model *cov);
@@ -106,6 +119,8 @@ char iscovmatrixS(cov_model *cov);
 void logSstat(double *x, cov_model *cov, double *v, double * sign);
 void DS(double *x, cov_model *cov, double *v);
 void DDS(double *x, cov_model *cov, double *v);
+void D3S(double *x, cov_model *cov, double *v);
+void D4S(double *x, cov_model *cov, double *v);
 void tbm2S(double *x, cov_model *cov, double *v);
 void Snonstat(double *x, double *y, cov_model *cov, double *v);  
 void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *);  
@@ -132,6 +147,7 @@ void brownresnick(double *x, cov_model *cov, double *v);
 int checkbrownresnick(cov_model *cov);
 void Dbrownresnick(double *x, cov_model *cov, double *v);
 void DDbrownresnick(double *x, cov_model *cov, double *v);
+void D3brownresnick(double *x, cov_model *cov, double *v);
 int struct_brownresnick(cov_model *cov, cov_model **newmodel);
 int init_brownresnick(cov_model *cov, storage *s);
 void do_brownresnick(cov_model *cov, storage *s);
@@ -152,10 +168,6 @@ void spectralcox(cov_model *cov, storage *s, double *e);
 void coxnabla(double *x, cov_model *cov, double *v);
 void coxhess(double *x, cov_model *cov, double *v);
 
-void lp(double *x, cov_model *cov, double *v);
-int checklp(cov_model *cov);
-void rangelp(cov_model *cov, range_type* ra);
-
 void extremalgaussian(double *x, cov_model *cov, double *v);
 int check_extremalgaussian(cov_model *cov);
 
@@ -164,10 +176,6 @@ int check_binaryGauss(cov_model *cov);
 
 void extrgauss(double *x, cov_model *cov, double *v);
   int check_extrgauss(cov_model *cov);
-
-void MaStein(double *x, cov_model *cov, double *v);
-int check_MaStein(cov_model *cov);
-void range_MaStein(cov_model *cov, range_type* ra);
 
 void kappaNonStWM(int i, cov_model *cov, int *nr, int *nc);
 void NonStWMQ(double *x, double *y,  double srqtQ, cov_model *cov, double *v);
@@ -178,6 +186,14 @@ void rangeNonStWM(cov_model *cov, range_type* ra);
 void DrawMixNonStWM(cov_model *cov, double *random);
 double LogMixWeightNonStWM(double *x, double logV, cov_model *cov);
 
+
+void lp(double *x, cov_model *cov, double *v);
+int checklp(cov_model *cov);
+void rangelp(cov_model *cov, range_type* ra);
+
+void MaStein(double *x, cov_model *cov, double *v);
+int check_MaStein(cov_model *cov);
+void range_MaStein(cov_model *cov, range_type* ra);
 
 /* nsst */
 /* Tilmann Gneiting's space time models, part I */
@@ -210,32 +226,11 @@ int checkdivcurl(cov_model *cov);
 //void rangedivcurl(cov_model *cov, range_type* ra);
 
 
-void kappaqam(int i, cov_model *cov, int *nr, int *nc);
-void qam(double *x, cov_model *cov, double *v);
-int checkqam(cov_model *cov);
-sortsofparam paramtype_qam(int k, int row, int col);
-void rangeqam(cov_model *cov, range_type* ra);
-
-void kappamqam(int i, cov_model *cov, int *nr, int *nc);
-void mqam(double *x, cov_model *cov, double *v);
-int checkmqam(cov_model *cov);
-void rangemqam(cov_model *cov, range_type* ra);
-
-
 void Exp(double *x, cov_model *cov, double *v);
 void DExp(double *x, cov_model *cov, double *v);
 void DDExp(double *x, cov_model *cov, double *v);
 int checkExp(cov_model *cov);
 void rangeExp(cov_model *cov, range_type *range);
-
-
-void Pow(double *x, cov_model *cov, double *v);
-void DPow(double *x, cov_model *cov, double *v);
-void DDPow(double *x, cov_model *cov, double *v);
-int checkPow(cov_model *cov);
-void rangePow(cov_model *cov, range_type* ra); 
-void InversePow(double *x, cov_model *cov, double *v);
-
 
 void ma1(double *x, cov_model *cov, double *v);
 int checkma1(cov_model *cov);
@@ -294,6 +289,26 @@ int initnatsc(cov_model *cov, storage *s);
 void donatsc(cov_model *cov, storage *s);
 
 
+
+void Pow(double *x, cov_model *cov, double *v);
+void DPow(double *x, cov_model *cov, double *v);
+void DDPow(double *x, cov_model *cov, double *v);
+int checkPow(cov_model *cov);
+void rangePow(cov_model *cov, range_type* ra); 
+void InversePow(double *x, cov_model *cov, double *v);
+
+void kappaqam(int i, cov_model *cov, int *nr, int *nc);
+void qam(double *x, cov_model *cov, double *v);
+int checkqam(cov_model *cov);
+sortsofparam paramtype_qam(int k, int row, int col);
+void rangeqam(cov_model *cov, range_type* ra);
+
+void kappamqam(int i, cov_model *cov, int *nr, int *nc);
+void mqam(double *x, cov_model *cov, double *v);
+int checkmqam(cov_model *cov);
+void rangemqam(cov_model *cov, range_type* ra);
+
+
 void select(double *x, cov_model *cov, double *v);
 void covmatrix_select(cov_model *cov, double *v);
 char iscovmatrix_select(cov_model *cov);
@@ -333,6 +348,9 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel);
 void strokorbBallInner(double *x, cov_model *cov, double *v);
 int check_strokorbBallInner(cov_model *cov);
 void range_strokorbBallInner(cov_model *cov, range_type *range);
+int init_strokorbBallInner(cov_model *cov,  storage *s);
+void do_strokorbBallInner(cov_model *cov, storage *s);
+
 
 int checkstrokorbPoly(cov_model *cov);
   int struct_strokorbPoly(cov_model *cov, cov_model **newmodel); 
@@ -350,15 +368,22 @@ char iscovmatrix_setparam(cov_model *cov);
 int checksetparam(cov_model *cov);
 void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void Inverse_setparam(double *v, cov_model *cov, double *x);
+void NonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y);
 bool Typesetparam(Types required, cov_model *cov);
 void Dsetparam(double *x, cov_model *cov, double *v);
 void DDsetparam(double *x, cov_model *cov, double *v);
 void D3setparam(double *x, cov_model *cov, double *v);
 void D4setparam(double *x, cov_model *cov, double *v);
 void spectralsetparam(cov_model *cov, storage *s, double *e);
+int initsetparam(cov_model *cov, storage *s);
 void dosetparam(cov_model *cov, storage *s);
 void covmatrix_setparam(cov_model *cov, double *v);
 
+
+
+void idcoord(double *x, cov_model *cov, double *v);
+int checkidcoord(cov_model *cov);
+void rangeidcoord(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 
 #endif /* Operators_H */
  

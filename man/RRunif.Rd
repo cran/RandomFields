@@ -30,11 +30,12 @@ RRunif(min, max)
 
  
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## uniform distribution on [0,1] x [-2, -1]
 RFrdistr(RRunif(c(0, -2), c(2, -1)), n=5, dim=2)
 RFpdistr(RRunif(c(0, -2), c(2, -1)), q=c(1, -1.5), dim=2)
 RFddistr(RRunif(c(0, -2), c(2, -1)), x=c(1, -1.5), dim=2)
+\dontshow{RFoptions(seed=NA)}
 }
 
  

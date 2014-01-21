@@ -4,7 +4,7 @@
 
  Simulation of a random field by sequential method
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -115,9 +115,9 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
     dim=cov->tsdim,
     spatialdim = dim - 1,
     spatialpnts = loc->totalpoints / loc->length[spatialdim],
-    max = ((int *) cov->p[SEQU_MAX])[0],
-    back= ((int *) cov->p[SEQU_BACK])[0], 
-    initial= ((int *) cov->p[SEQU_INIT])[0];
+    max = P0INT(SEQU_MAX),
+    back= P0INT(SEQU_BACK), 
+    initial= P0INT(SEQU_INIT);
   sequential_storage* S = NULL;
   long totpntsSQ, i, spatialpntsSQback,
     err=NOERROR,
@@ -508,7 +508,7 @@ void do_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s)
   double *G,*U22, *U11, *MuT;
   res_type *res0,
     *res = cov->rf; 
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+  bool loggauss = (bool) (P0INT(LOG_GAUSS));
 
   assert(res != NULL);
 

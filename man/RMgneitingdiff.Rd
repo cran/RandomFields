@@ -59,9 +59,10 @@ RMgneitingdiff(nu, taper.scale, scale, var, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgneitingdiff(nu=2, taper.scale=1, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

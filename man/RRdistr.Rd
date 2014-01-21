@@ -51,7 +51,7 @@ RRdistr(fct, nrow, ncol, envir)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## here a model with random scale parameter
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
@@ -72,6 +72,7 @@ for (i in 1:n) {
 
 ## here, just two other examples:
 ## fst
+\dontshow{RFoptions(seed=NA)}
 model <- RMmatern(nu=unif(min=0.1, max=2)) # random
 for (i in 1:n) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
@@ -88,6 +89,7 @@ plot(z <- RFsimulate(model=model, x=1:100/10))
 %#all.equal(parseModel(model), parseModel(list2RMmodel(parseModel(model))))
 
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

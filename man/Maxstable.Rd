@@ -50,23 +50,26 @@
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 model <- RMfbm(alpha=1.5)
 x <- seq(0, 10, if (interactive()) 0.1 else 1)
 z <- RFsimulate(RPbrownresnick(model), x=x, n=4)
 plot(z)
 
+\dontrun{\dontshow{
 model <- RMball()
 x <- seq(0, 10, if (interactive()) 0.02 else 5)
-n <- if (interactive()) 10000 else 1
+n <- if (interactive()) 1000 else 1
 z <- RFsimulate(RPsmith(model, xi=0), x, n=n, every=1000)
 plot(z)
-hist(unlist(z@data), 150, freq=FALSE)
-curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
-
+hist(unlist(z@data), 150, freq=FALSE) #not correct; to do; sqrt(2) wrong
+curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE, col=3)
+}}
 
 model <- RMgauss()
+n <- if (interactive()) 100 else 1
+x <- seq(0, 10, if (interactive()) 0.05 else 5)
 z <- RFsimulate(RPschlather(model, xi=0), x, n=n)
 plot(z)
 hist(unlist(z@data), 50, freq=FALSE)
@@ -74,6 +77,7 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
 
 ## for some more sophisticated models see maxstableAdvanced
+\dontshow{RFoptions(seed=NA)}
 
 }
 

@@ -36,11 +36,12 @@ vdim=1)
   \email{alexander.malinowski@math.uni-goettingen.de}}
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- 1:20
 z <- RFsimulate(RMexp(), x, spC=FALSE)
 z2 <- conventional2RFspDataFrame(z, coord=x)
 Print(z, z2)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

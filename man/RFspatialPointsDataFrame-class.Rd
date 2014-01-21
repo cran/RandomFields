@@ -121,7 +121,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 x <- cbind(runif(50), runif(50))
 f <- RFsimulate(model=RMexp(), x=x, n=3)
@@ -138,11 +138,11 @@ plot(f, nmax=2)
 f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=10), x=cbind(x,x), n=4)
 plot(f2, MARGIN=c(3,4), nmax=2)
 
-set.seed(123)
-f.sp <- RFsimulate(model=RMexp(), x=x, n=3)
-set.seed(123)
-f.old <- RFsimulate(model=RMexp(), x=x, n=3, spConform=FALSE)
+f.sp <- RFsimulate(model=RMexp(), x=x, n=3, seed=0)
+f.old <- RFsimulate(model=RMexp(), x=x, n=3, spConform=FALSE, seed=0)
 all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
+
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{classes}

@@ -173,8 +173,9 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 RFgetModelNames(group="type")
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{classes}

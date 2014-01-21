@@ -54,7 +54,8 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  }
  }
  \item{x}{vector of x coordinates, or object
- of class \code{\link[sp]{GridTopology}};
+   of class \code{\link[sp:GridTopology-class]{GridTopology}} or
+   \code{\link[raster]{raster}};
  For more options see \link{RFsimulateAdvanced}.
  }
  \item{y}{optional vector of y coordinates}
@@ -203,6 +204,9 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  See \link{RFsimulateAdvanced} for more specific literature.
 }
 
+\note{Several advanced options can be found in section \sQuote{General
+    options} of \command{\link{RFoptions}}.}
+
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}
 }
@@ -219,7 +223,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
 }
 
 \examples{
-set.seed(0) % library(RandomFields, lib="~/TMP")
+RFoptions(seed=0) % library(RandomFields, lib="~/TMP")
 #############################################################
 ## ##
 ## ONLY TWO VERY BASIC EXAMPLES ARE GIVEN HERE ##
@@ -279,6 +283,7 @@ model <- RMexp()
 cond <- RFsimulate(model = model, x=x.seq.cond, y=y.seq.cond,
  grid=TRUE, data=data)
 plot(cond, data)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

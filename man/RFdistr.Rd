@@ -46,7 +46,7 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni
   \command{\link{RRgauss}}, \link{RR}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 Print(RFoptions())
 ## a very toy example to understand the use
@@ -55,18 +55,21 @@ v <- 0.5
 Print(RFdistr(model=model, x=v), dnorm(x=v)) 
 Print(RFdistr(model=model, q=v), pnorm(q=v))
 Print(RFdistr(model=model, p=v), qnorm(p=v))
+
 n <- 10
-set.seed(10); r <- RFdistr(model=model, n=n)
-set.seed(10); Print(r, rnorm(n=n))
+r <- RFdistr(model=model, n=n, seed=0)
+set.seed(0); Print(r, rnorm(n=n))
 
 
-## note that a conditional covarianc function given the
-## random parameters is given
+## note that a conditional covariance function given the
+## random parameters is given here:
+\dontshow{RFoptions(seed=NA)}
 model <- RMgauss(scale=exp())
 for (i in 1:3) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
   plot(model)
   plot(RFsimulate(model, x=seq(0,10,0.1)))
 }
+\dontshow{RFoptions(seed=NA)}
 }
 \keyword{spatial}

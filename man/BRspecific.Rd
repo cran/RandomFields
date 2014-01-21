@@ -104,10 +104,11 @@ RPbrshifted(phi, tcf, xi, mu, s)
         \url{http://ms.math.uni-mannheim.de}}
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
   model <- RPbrshifted(RMfbm(alpha=1.5), xi=0)
   z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
   plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

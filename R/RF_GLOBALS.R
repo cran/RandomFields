@@ -142,12 +142,19 @@ ZF_DOMAIN <- c('single variable', 'kernel', 'calling model', 'mismatch')
 
 ISOTROPIC <- as.integer(0)
 SPACEISOTROPIC <- as.integer(1)
-SYMMETRIC <- 4
-NO_ROTAT_INV <- 5
-PREVMODELI <- 6
+ZEROSPACEISOTROPIC <- as.integer(2)
+VECTORISOTROPIC <- as.integer(3)
+SYMMETRIC <- as.integer(4)
+CARTESIAN_COORD <- as.integer(5)
+EARTH_COORD <- as.integer(6)
+SPHERICAL_COORD <- as.integer(7)
+CYLINDER_COORD <- as.integer(8)
+UNREDUCED <- as.integer(9)
+PREVMODELI <- as.integer(10)
 ZF_ISOTROPY <- c("isotropic", "space-isotropic", "zero-space-isotropic",
-                 "vector-isotropic", "symmetric", "no ratation invariance",
-                 "parameter dependent", "<mismatch>")
+                 "vector-isotropic", "symmetric", "cartesian system",
+                 "earth system", "spherical system", "cylinder system",
+                 "non-dimension-reducing", "parameter dependent", "<mismatch>")
 
 ## Coding of stationarity and isotropy in RF.h, see also ZF_DOMAIN
 ## and ZF_ISOTROPY
@@ -185,6 +192,9 @@ isNegDef <- function(type) {
   (is.numeric(type) && type == NegDefType) ||
   (is.character(type) && type == ZF_TYPE[NegDefType+1])
 }
+
+COORD_SYSTEMS <- c("auto", "cartesian", "earth")
+CARTESIAN_COORD_NAMES <- c("auto", "cartesian")
 
 
 #ZF_TYPE_PREFIX <- .Call("GetCathegoryNames")
@@ -267,3 +277,8 @@ MODEL.MAX <- as.integer(MODEL.BOUNDS + 1)
 
 MaxNameCharacter <- as.integer(200)
 
+GETMODEL_AS_SAVED <- as.integer(0)
+GETMODEL_DEL_NATSC <- as.integer(1)
+GETMODEL_SOLVE_NATSC <- as.integer(2)
+GETMODEL_DEL_MLE <- as.integer(3)
+GETMODEL_SOLVE_MLE <- as.integer(4)

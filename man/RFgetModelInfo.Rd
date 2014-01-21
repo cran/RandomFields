@@ -111,7 +111,7 @@ RFgetModelInfo(register, level = 3,
 \seealso{\command{\link{RFsimulate}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
 RFsimulate(model, 1:4, grid=TRUE, storing=TRUE)
 str(RFgetModelInfo(RFsimulate), list.len=5, max.level=5)
@@ -122,6 +122,7 @@ str(RFgetModelInfo(RFsimulate), list.len=5, max.level=5)
 
 str(RFgetModel(RFsimulate, show.call=FALSE))
 str(RFgetModel(RFsimulate, show.call=TRUE))
+\dontshow{RFoptions(seed=NA)}
 
 }
 \keyword{spatial}

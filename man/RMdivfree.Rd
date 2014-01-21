@@ -51,7 +51,7 @@ RMdivfree(phi, var, scale, Aniso, proj)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 model <- RMdivfree(RMgauss(), scale=4)
 x.seq <- y.seq <- seq(-10, 10, if (interactive()) 0.2 else 5)
@@ -64,6 +64,7 @@ plot(simulated, select.variables=list(2:3))
 plot(simulated, select.variables=list(1, 2:3, 4))
 plot(simulated, select.variables=list(1, c(1, 2:3), 4))
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

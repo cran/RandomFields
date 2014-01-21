@@ -5,7 +5,7 @@
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -89,9 +89,9 @@ cov_model* get_user_input(cov_model *cov) {
 
 int get_subdim(cov_model *cov, bool Time, bool *ce_dim2, int *ce_dim,
 	       int *effectivedim) {
-  int fulldim = ((int *) cov->p[TBM_FULLDIM])[0];
+  int fulldim = P0INT(TBM_FULLDIM);
   double
-    layers = cov->p[TBM_LAYERS][0];
+    layers = P0(TBM_LAYERS);
   *effectivedim = cov->tsdim;
   if (Time) {
     *ce_dim2 = (!ISNA(layers) && layers) ||
@@ -195,14 +195,14 @@ int checktbmproc(cov_model *cov) {
   //PMI(cov);
 
   kdefault(cov, TBM_FULLDIM, gp->fulldim);
-  kdefault(cov, TBM_FULLDIM, cov->p[TBM_TBMDIM] == NULL || gp->tbmdim >= 0
-	   ? gp->fulldim : ((int*)cov->p[TBM_TBMDIM])[0] - gp->tbmdim);
+  kdefault(cov, TBM_FULLDIM, PisNULL(TBM_TBMDIM) || gp->tbmdim >= 0
+	   ? gp->fulldim : P0INT(TBM_TBMDIM) - gp->tbmdim);
   kdefault(cov, TBM_TBMDIM, gp->tbmdim > 0 
-	   ? gp->tbmdim : ((int *) cov->p[TBM_FULLDIM])[0] + gp->tbmdim);
+	   ? gp->tbmdim : P0INT(TBM_FULLDIM) + gp->tbmdim);
   kdefault(cov, TBM_LAYERS, gp->layers);
   int 
-    tbmdim = ((int *) cov->p[TBM_TBMDIM])[0],
-    fulldim = ((int *) cov->p[TBM_FULLDIM])[0];
+    tbmdim = P0INT(TBM_TBMDIM),
+    fulldim = P0INT(TBM_FULLDIM);
   if (tbmdim >= fulldim) {
      SERR2("'reduceddim (=%d)' must be less than 'fulldim' (=%d)", 
 	   tbmdim, fulldim);
@@ -211,15 +211,13 @@ int checktbmproc(cov_model *cov) {
   kdefault(cov, TBM_LINESIMUFACTOR, gp->linesimufactor); 
   kdefault(cov, TBM_LINESIMUSTEP, gp->linesimustep);
   //  kdefault(cov, TBM_GRID, gp->grid);
-  // if ( ((int *) cov->p[TBM_GRID])[0])
+  // if ( P0INT(TBM_GRID))
   //  warning("grid parameter for tbm not programmed yet");
-  if (cov->p[TBM_CENTER] == NULL) {
-    cov->p[TBM_CENTER] = (double*) MALLOC(sizeof(double) * dim);
+  if (PisNULL(TBM_CENTER)) {    
+    PALLOC(TBM_CENTER, dim, 1);
     for (i=0; i<dim; i++) {
-      cov->p[TBM_CENTER][i] = gp->center[i];
+      P(TBM_CENTER)[i] = gp->center[i];
     }
-    cov->nrow[TBM_CENTER] = dim;
-    cov->ncol[TBM_CENTER] = 1;
   } else {
     if (cov->nrow[TBM_CENTER] < dim) SERR("vector for 'center' too short");
   }
@@ -289,7 +287,7 @@ int checktbmproc(cov_model *cov) {
     //PMI(sub); printf("nd %d\n", newdim); assert(newdim == 1);
     //PMI(sub);
 
-    if ((err = CHECK(sub, newdim, newdim, ProcessType, XONLY, NO_ROTAT_INV,
+    if ((err = CHECK(sub, newdim, newdim, ProcessType, XONLY, CARTESIAN_COORD,
 		     SUBMODEL_DEP, 
 		     cov->role == ROLE_BASE ? cov->role : ROLE_GAUSS))
 	!= NOERROR) {
@@ -324,16 +322,16 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   double linesimufactor, diameter,
     min[MAXTBMSPDIM], max[MAXTBMSPDIM], Center[MAXTBMSPDIM],
     user_min[MAXTBMSPDIM], user_max[MAXTBMSPDIM], user_Center[MAXTBMSPDIM],
-    tbm_linesimustep = cov->p[TBM_LINESIMUSTEP][0],
-    tbm_linesimufactor = cov->p[TBM_LINESIMUFACTOR][0],
-    *tbm_center = cov->p[TBM_CENTER];
+    tbm_linesimustep = P0(TBM_LINESIMUSTEP),
+    tbm_linesimufactor = P0(TBM_LINESIMUFACTOR),
+    *tbm_center = P(TBM_CENTER);
   int d, 
     err=NOERROR,
-    //  tbm_lines = ((int *) cov->p[TBM_LINES])[0],
-    fulldim = ((int*) cov->p[TBM_FULLDIM])[0], 
-    tbmdim = ((int*) cov->p[TBM_TBMDIM])[0],
+    //  tbm_lines = P0INT(TBM_LINES),
+    fulldim = P0INT(TBM_FULLDIM), 
+    tbmdim = P0INT(TBM_TBMDIM),
     //  endaniso = origdim * origdim - 1,
-    *points = (int*) cov->p[TBM_POINTS],
+    *points = PINT(TBM_POINTS),
     user_dim = loc_user->timespacedim,
     user_spatialpoints = loc_user->spatialtotalpoints,
     user_spatialdim = loc_user->spatialdim
@@ -655,27 +653,25 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   addModel(modelB1->sub+0, DOLLAR);
   if (modelB1->nr==BROWNIAN){
     // &(cov->key))->calling = key;
-    kdefault(cov, DVAR, 1.0 + next->p[BROWN_ALPHA][0] / tbmdim);
+    kdefault(cov, DVAR, 1.0 + PARAM0(next, BROWN_ALPHA) / tbmdim);
   } else {
     cov_model *dollar = modelB1->sub[0];
     dollar->tsdim = dollar->xdimprev = s->ce_dim;
     kdefault(dollar, DVAR, 1.0);
-    dollar->p[DANISO] = (double*) MALLOC(sizeof(double) * 
-					 s->ce_dim * s->ce_dim);
-    dollar->ncol[DANISO] = dollar->nrow[DANISO] = s->ce_dim; 
-    dollar->p[DANISO][0] = 1.0 / linesimufactor;
+    PARAMALLOC(dollar, DANISO, s->ce_dim, s->ce_dim);
+    PARAM(dollar, DANISO)[0] = 1.0 / linesimufactor;
 
     if (s->ce_dim == 2) {
-      dollar->p[DANISO][1] = dollar->p[DANISO][2] = 0.0;
-      dollar->p[DANISO][3] = loc->T[XSTEP];
+      PARAM(dollar, DANISO)[1] = PARAM(dollar, DANISO)[2] = 0.0;
+      PARAM(dollar, DANISO)[3] = loc->T[XSTEP];
     } 
     addModel(modelB1->sub+0, TBM_OP);
-    if (cov->p[TBMOP_TBMDIM] != NULL)
-      kdefault(modelB1->sub[0], TBMOP_TBMDIM, ((int*) cov->p[TBM_TBMDIM])[0]);
-    if (cov->p[TBMOP_FULLDIM] != NULL)
-      kdefault(modelB1->sub[0], TBMOP_FULLDIM, ((int*) cov->p[TBM_FULLDIM])[0]);
-   if (cov->p[TBMOP_LAYERS] != NULL)
-      kdefault(modelB1->sub[0], TBMOP_LAYERS, cov->p[TBM_LAYERS][0]);
+    if (!PisNULL(TBMOP_TBMDIM))
+      kdefault(modelB1->sub[0], TBMOP_TBMDIM, P0INT(TBM_TBMDIM));
+    if (!PisNULL(TBMOP_FULLDIM))
+      kdefault(modelB1->sub[0], TBMOP_FULLDIM, P0INT(TBM_FULLDIM));
+    if (!PisNULL(TBMOP_LAYERS))
+      kdefault(modelB1->sub[0], TBMOP_LAYERS, P0(TBM_LAYERS));
   }
  
 
@@ -718,7 +714,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
    GLOBAL.general.expected_number_simu = 100;
   if ((err = CHECK(cov->key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
-		     ProcessType, XONLY, NO_ROTAT_INV,
+		     ProcessType, XONLY, CARTESIAN_COORD,
 		     cov->vdim, ROLE_GAUSS)) != NOERROR) {
     goto ErrorHandling;  
   }
@@ -885,7 +881,7 @@ void do_tbmproc(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     tsdim = cov->tsdim,
     spatialdim = s->simuspatialdim, // for non-grids only
     every = GLOBAL.general.every,
-    tbm_lines = ((int *) cov->p[TBM_LINES])[0];
+    tbm_lines = P0INT(TBM_LINES);
    
   res_type
     *res = cov->rf,
@@ -898,8 +894,8 @@ void do_tbmproc(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     inct=0.0;
   long n, totpoints;
   int nt, idx, gridlent,
-    fulldim = ((int *) cov->p[TBM_FULLDIM])[0];
-  bool loggauss = (bool) ((int*) cov->p[LOG_GAUSS])[0];
+    fulldim = P0INT(TBM_FULLDIM);
+  bool loggauss = (bool) P0INT(LOG_GAUSS);
 
   assert(cov->stor != NULL);
      

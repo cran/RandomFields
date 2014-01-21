@@ -5,7 +5,7 @@
 
  (library for simulation of random fields)
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -140,19 +140,19 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
     last = (cov->nr < 0) ? MAXPARAM : CovList[cov->nr].kappas; 
   
   for (i=0; i<last; i++) {
-    if (cov->p[i] != NULL) {
+    if (!PisNULL(i)) {
       if (CovList[cov->nr].kappatype[i] == LANGSXP) {
-	sexp_type *S = (sexp_type*) cov->p[i];
+	sexp_type *S = PSEXP(i);
 	if (S->Delete) R_ReleaseObject(S->sexp);	
       } else if (CovList[cov->nr].kappatype[i] >= LISTOF) {
-	listoftype *list = (listoftype*) cov->p[i];
+	listoftype *list = PLIST(i);
 	if (list->deletelist) {
 	  for (j=0; j<cov->nrow[i]; j++) {
 	    free(list->p[j]);  
 	  }
 	}
       }
-      free(cov->p[i]); 
+      PFREE(i);
       cov->ncol[i] = cov->nrow[i] = SIZE_NOT_DETERMINED; // ==0
     }
   }
@@ -206,6 +206,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   RECT_DELETE(&(cov->Srect));
   DOLLAR_DELETE(&(cov->Sdollar));
   GATTER_DELETE(&(cov->S2));
+  BIWM_DELETE(&(cov->Sbiwm));
   GET_STORAGE_DELETE(&(cov->Sget));
   //  SELECT_DELETE(&(cov->Sselect));
   STORAGE_DELETE(&(cov->stor));  
@@ -268,7 +269,10 @@ void SIMU_NULL(simu_type *simu) {
   simu->expected_number_simu =0;
 }
 
+
+static int CovZaehler = 0;
 void COV_ALWAYS_NULL(cov_model *cov) {
+  cov->zaehler = CovZaehler++;
   cov->calling = NULL;
   cov->prevloc = cov->ownloc = NULL;
 
@@ -297,6 +301,7 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Srect = NULL;
   cov->Sdollar = NULL;
   cov->S2 = NULL;
+  cov->Sbiwm = NULL;
   cov->Sget = NULL;
   //cov->Sselect = NULL;
   cov->stor = NULL;
@@ -309,9 +314,9 @@ void COV_NULL(cov_model *cov) {
   int i, j;
   COV_ALWAYS_NULL(cov);
 
-  cov->nr = cov->gatternr = MISMATCH;
+  cov->nr = cov->gatternr =  cov->secondarygatternr = MISMATCH;
   for (i=0; i<MAXPARAM; i++) {
-    cov->p[i] = NULL;
+    cov->px[i] = NULL;
     cov->ncol[i] = cov->nrow[i] = 0; 
     cov->kappasub[i] = NULL;
   }
@@ -332,7 +337,8 @@ void COV_NULL(cov_model *cov) {
   cov->role = ROLE_UNDEFINED;
   cov->typus = UndefinedType;
   cov->method = Forbidden;
-  cov->tsdim = cov->xdimprev = cov->xdimown =cov->maxdim = UNSET;
+  cov->tsdim = cov->xdimprev = cov->xdimown =cov->maxdim = cov->xdimgatter = 
+    UNSET;
   cov->vdim = MISMATCH;
   cov->vdim2[0] = cov->vdim2[1] = MISMATCH;
 
@@ -760,8 +766,8 @@ void PGS_NULL(pgs_storage* x) {
 void SET_DELETE(set_storage **S) {
   set_storage *x = *S;
   if (x!=NULL) {
-    if (x->valuefrom != NULL) free(x->valuefrom);
-    if (x->valueto != NULL) free(x->valueto);
+    if (x->valueRemote != NULL) free(x->valueRemote);
+    if (x->valueLocal != NULL) free(x->valueLocal);
     if (x->bytes != NULL) free(x->bytes);
     free(*S);
     *S = NULL;
@@ -770,9 +776,9 @@ void SET_DELETE(set_storage **S) {
 
 void SET_NULL(set_storage* x) {
   if (x == NULL) return;
-  x->from = NULL;
+  x->remote = NULL;
   x->set = NULL;
-  x->valuefrom = x->valueto = NULL;
+  x->valueRemote = x->valueLocal = NULL;
   x->bytes = NULL;
   x->variant = 0;
 }
@@ -806,6 +812,7 @@ void RECT_DELETE(rect_storage **S){
     if (x->weight != NULL) free(x->weight);
     if (x->tmp_weight != NULL) free(x->tmp_weight);
     if (x->right_endpoint != NULL) free(x->right_endpoint);
+    if (x->ysort != NULL) free(x->ysort);
     if (x->z != NULL) free(x->z);
 
      if (x->squeezed_dim != NULL) free(x->squeezed_dim);
@@ -823,7 +830,7 @@ void RECT_NULL(rect_storage* x) {
   if (x == NULL) return;
   x->tmp_n = x->nstep = -999;
   x->value = x->weight = x->tmp_weight = 
-    x->right_endpoint = x->z = NULL;
+    x->right_endpoint = x->ysort = x->z = NULL;
 
 
   // for PMI
@@ -863,6 +870,7 @@ void GATTER_DELETE(gatter_storage **S)
   gatter_storage *x = *S;
   if (x!=NULL) {
     if (x->z != NULL) free(x->z);
+    if (x->zsys != NULL) free(x->zsys);
     free(*S);
     *S = NULL;
   }
@@ -871,6 +879,22 @@ void GATTER_DELETE(gatter_storage **S)
 void GATTER_NULL(gatter_storage* x) {
   if (x == NULL) return;
   x->z = NULL;
+  x->zsys = NULL;
+}
+
+
+
+void BIWM_DELETE(biwm_storage **S) 
+{
+  biwm_storage *x = *S;
+  if (x!=NULL) {
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void BIWM_NULL(biwm_storage* x) {
+  if (x == NULL) return;  
 }
 
 
@@ -897,8 +921,7 @@ void STORAGE_NULL(storage *x) {
 
   // for (d=0; d<MAXMPPDIM; d++) 
   //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NAN;
-  
-
+  x->check = true;
 
   x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
     = RF_NAN;
@@ -966,6 +989,34 @@ int setgrid(coord_type xgr, double *x, int lx, int spatialdim) {
   return NOERROR;
 }
 
+
+int add_y_zero(location_type *loc) {
+  int d;
+  if (loc->ly > 0) BUG;
+  if (loc->distances) { SERR("distances are allowed only for cartesian systems"); } 
+  if (loc->grid) {
+    loc->ly = 3;
+    double *ygrid = (double*) MALLOC(sizeof(double) * loc->ly *loc->spatialdim);
+    int i;
+    for (i=d=0; d<loc->spatialdim; d++) {
+      ygrid[i++] = 0.0;
+      ygrid[i++] = 0.0;
+      ygrid[i++] = 1.0;
+    }
+    setgrid(loc->ygr, ygrid, loc->ly, loc->spatialdim);
+  } else {
+    loc->ly = 1;
+    if ((loc->y=(double*) CALLOC(loc->ly * loc->xdimOZ, sizeof(double) ))==NULL)
+      return ERRORMEMORYALLOCATION; 
+  } 
+
+  if (loc->Time) {
+    if (loc->grid) loc->ygr[loc->spatialdim] = loc->T;
+  }
+
+  return NOERROR;
+}
+
 int partial_loc_set(location_type *loc, double *x, double *y,
 		    int lx, int ly, bool dist, int xdimOZ, double *T,
 		    bool grid, bool cpy){
@@ -985,85 +1036,85 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   // 
   //crash();
   SERR("domain structure of the first and second call do not match");
-}
-
-loc->xdimOZ = xdimOZ; // ohne Zeit !!
-loc->lx = lx;
-loc->ly = ly;
-if (ly  > 0) { 
-  //crash();
-  if (dist) { SERR("distances are not allowed if y is given"); } 
- }
-
-loc->grid = grid;
-loc->distances = dist;
-if (loc->delete_x) {
-  if (loc->y != NULL) {
-    if (loc->y != loc->x) free(loc->y); 
-    loc->y = NULL;
   }
-  if (loc->x != NULL) { free(loc->x); loc->x = NULL; }
- }
- loc->delete_x = cpy;
 
- if (grid) {
-  if ((err = setgrid(loc->xgr, x, lx, loc->spatialdim)) !=NOERROR) return err;
-  if (ly>0) {
-    if (x == y) for(d=0; d<loc->spatialdim; d++) loc->ygr[d] = loc->xgr[d];
-    else {
-      if ((err = setgrid(loc->ygr, y, ly, loc->spatialdim)) !=NOERROR) 
-	return err;
+  loc->xdimOZ = xdimOZ; // ohne Zeit !!
+  loc->lx = lx;
+  loc->ly = ly;
+  if (ly  > 0) { 
+    //crash();
+    if (dist) { SERR("distances are not allowed if y is given"); } 
+  }
+  
+  loc->grid = grid;
+  loc->distances = dist;
+  if (loc->delete_x) {
+    if (loc->y != NULL) {
+      if (loc->y != loc->x) free(loc->y); 
+      loc->y = NULL;
     }
+    if (loc->x != NULL) { free(loc->x); loc->x = NULL; }
+  }
+  loc->delete_x = cpy;
+  
+  if (grid) {
+    if ((err = setgrid(loc->xgr, x, lx, loc->spatialdim)) !=NOERROR) return err;
+    if (ly>0) {
+      if (x == y) for(d=0; d<loc->spatialdim; d++) loc->ygr[d] = loc->xgr[d];
+      else {
+	if ((err = setgrid(loc->ygr, y, ly, loc->spatialdim)) !=NOERROR) 
+	  return err;
+      }
+    }
+    
+    for (d=0; d<loc->spatialdim; d++) 
+      loc->length[d] = (int) loc->xgr[d][XLENGTH]; 
+    for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
+      loc->spatialtotalpoints *= loc->length[d];
+    }
+    loc->totalpoints = loc->spatialtotalpoints;
+  } 
+
+  else if (dist) {
+    // lx : anzahl der Puntke involviert, d.h. x muss die Laenge lx ( lx -1) / 2
+    // haben.
+    
+    if (cpy) {
+      totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
+      if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
+	return ERRORMEMORYALLOCATION; 
+     }
+      MEMCOPY(loc->x, x, totalBytes);
+    } else {
+      loc->x = x;
+    }
+    loc->totalpoints = loc->spatialtotalpoints = loc->length[0] = lx;
+    //     (int) (1e-9 + 0.5 * (1.0 + sqrt(1.0 + 8.0 * lx)));
+    //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
+    //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
+    //   SERR("distances do not have expected size");
+    //}
   }
   
-  for (d=0; d<loc->spatialdim; d++) 
-    loc->length[d] = (int) loc->xgr[d][XLENGTH]; 
-  for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
-    loc->spatialtotalpoints *= loc->length[d];
-  }
-  loc->totalpoints = loc->spatialtotalpoints;
- } 
-
- else if (dist) {
-   // lx : anzahl der Puntke involviert, d.h. x muss die Laenge lx ( lx -1) / 2
-   // haben.
-
-   if (cpy) {
-     totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
-     if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
-       return ERRORMEMORYALLOCATION; 
-     }
-     MEMCOPY(loc->x, x, totalBytes);
-   } else {
-     loc->x = x;
-   }
-   loc->totalpoints = loc->spatialtotalpoints = loc->length[0] = lx;
-   //     (int) (1e-9 + 0.5 * (1.0 + sqrt(1.0 + 8.0 * lx)));
-   //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
-   //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
-   //   SERR("distances do not have expected size");
-   //}
- }
-
- else { // not grid, not distances
-   if (cpy) {
-     totalBytes =  sizeof(double) * lx * loc->xdimOZ;
+  else { // not grid, not distances
+    if (cpy) {
+      totalBytes =  sizeof(double) * lx * loc->xdimOZ;
       
-     //       printf("totalbyets %d %ld %d\n", totalBytes, lx, loc->xdimOZ);
-  
-     if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
-       return ERRORMEMORYALLOCATION; 
-     }
-     MEMCOPY(loc->x, x, totalBytes);
-     if (loc->ly>0) {
-       if (x == y) {
-	 loc->y = loc->x;
-       } else {
-	 totalBytes =  sizeof(double) * ly * loc->xdimOZ;
-	 //printf("totalbytes y %d %ld %d\n", totalBytes, ly, loc->xdimOZ);
-	 if ((loc->y=(double*) MALLOC(totalBytes))==NULL){
-	   return ERRORMEMORYALLOCATION; 
-	 }
+      //       printf("totalbyets %d %ld %d\n", totalBytes, lx, loc->xdimOZ);
+      
+      if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
+	return ERRORMEMORYALLOCATION; 
+      }
+      MEMCOPY(loc->x, x, totalBytes);
+      if (loc->ly>0) {
+	if (x == y) {
+	  loc->y = loc->x;
+	} else {
+	  totalBytes =  sizeof(double) * ly * loc->xdimOZ;
+	  //printf("totalbytes y %d %ld %d\n", totalBytes, ly, loc->xdimOZ);
+	  if ((loc->y=(double*) MALLOC(totalBytes))==NULL){
+	    return ERRORMEMORYALLOCATION; 
+	  }
 	  MEMCOPY(loc->y, y, totalBytes);	
 	}
       }
@@ -1071,15 +1122,15 @@ if (loc->delete_x) {
       loc->x = x;
       loc->y = y;
     }
-
+    
     //printf("getnset %d\n", lx);
-
+    
     loc->totalpoints = loc->spatialtotalpoints = loc->length[0]= lx;
     // just to say that considering these values does not make sense
     for (d=1; d<loc->spatialdim; d++) loc->length[d]=0; 
     // correct value for higher dimensions (never used)
   }
-
+  
   if ((loc->Time) xor (T!=NULL)) {    
     //cov_model *cov;  crash(cov);
     //  AERR(1);
@@ -1535,14 +1586,22 @@ void Getxsimugr(coord_type x, double *aniso, int timespacedim, double **xsimugr)
 
 void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
   cov_fct *C = CovList + from->nr; // nicht gatternr
-  double **pto = to->p,
-    **pfrom = from->p;
+  double **pto = to->px,
+    **pfrom = from->px;
   int i,
      n = -1,
      *to_col = to->ncol,
      *to_row = to->nrow,
      *from_col = from->ncol,
      *from_row = from->nrow;
+
+  bool same_model = abs(to->nr - from->nr) <= 1 ||
+    (isDollar(to) && isDollar(from));
+
+  if (!same_model) {
+    BUG;      
+  }    
+
   for (i=0; i<MAXPARAM; i++) {
     if (pfrom[i] == NULL) {
       continue;
@@ -1551,17 +1610,17 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
     if (check) {
       // if (strcmp(to->kappanames[i], from->kappanames[i]) != 0 ||
       //	  type != from->kappatype[i]) return false;
-      if (to_col[i] != from_col[i] || to_row[i] != from_row[i]) {
-	if (pto[i] != NULL) free(pto[i]);
-	to_col[i] = from_col[i];
-	to_row[i] = from_row[i];
-      }
+      if (pto[i] != NULL) free(pto[i]);
+      pto[i] = NULL;
+      to_col[i] = from_col[i];
+      to_row[i] = from_row[i];
     }
- 
+
+  
     if (C->kappatype[i] >= LISTOF) {      
       pto[i] = (double*) MALLOC(sizeof(listoftype));
       int j, len = from_row[i];
-      listoftype *p = (listoftype*) (pfrom[i]),
+      listoftype *p = PARAMLIST(from, i),
 	*q = (listoftype*) (pto[i]);	
       if ((q->deletelist = copy_lists)) {      
 	for (j=0; j<len; j++) {
@@ -1599,9 +1658,9 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
 	n *= from_row[i] * from_col[i];
       }
       
-      //      printf("i=%d %s %d\n", i, NICK(to), n);
+      //        printf("i=%d to=%s from=%s %d\n", i, NICK(to), NICK(from), n);
       
-      pto[i] = (double*) MALLOC(n); // war: lost ;; sollte jetzt ok sein.
+      pto[i] = (double*) MALLOC(n); 
       MEMCOPY(pto[i], pfrom[i], n);
     }
   }
@@ -1612,7 +1671,7 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
 
 int covcpy(cov_model **localcov, bool sub, cov_model *cov,
 	   location_type *prevloc, location_type *ownloc,
-	   bool copy_lists) {
+	   bool copy_lists, bool copy_randomparam) {
   assert(cov != NULL);
   int i,
     n = -1;
@@ -1655,9 +1714,9 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
   for (i=0; i<MAXPARAM; i++) {
     int err;
     current->kappasub[i] = NULL;
-    if (cov->kappasub[i] == NULL) continue;
+    if (cov->kappasub[i] == NULL || !copy_randomparam) continue;
     err = covcpy(current->kappasub + i, true, cov->kappasub[i], 
-		 prevloc, ownloc, copy_lists);
+		 prevloc, ownloc, copy_lists, copy_randomparam);
     if (err != NOERROR) return err;
     current->kappasub[i]->calling = current;       
   }
@@ -1668,7 +1727,7 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
       current->sub[i] = NULL;
       if (cov->sub[i] == NULL) continue;
       err = covcpy(current->sub + i, sub, cov->sub[i], prevloc, ownloc,
-		   copy_lists);
+		   copy_lists, copy_randomparam);
       if (err != NOERROR) return err;
       current->sub[i]->calling = current;       
     }
@@ -1681,10 +1740,41 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
 }
 
 
+void TaylorCopy(cov_model *to, cov_model *from) {
+  int i, j;
+  to->taylorN = from->taylorN;
+  to->tailN = from->tailN;
+  for(i=0; i<to->taylorN; i++) {
+    for (j=0; j<=TaylorPow; j++) to->taylor[i][j] = from->taylor[i][j];
+  }
+  for(i=0; i<to->tailN; i++) {
+    for (j=0; j<=TaylorExpPow; j++) to->tail[i][j] = from->tail[i][j];
+  }
+}
+
+int covcpy(cov_model **localcov, bool sub, cov_model *cov,
+	   location_type *prevloc, location_type *ownloc,
+	   bool copy_lists) {
+  return covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, true);
+}
+ 
 int covcpy(cov_model **localcov, cov_model *cov) {
   bool cov2key = &(cov->key)==localcov;
   int 
-    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true);
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, true);
+  if (err == NOERROR) 
+    (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
+  // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
+  // rueckwaerts! Muss aber sein, da sonst LOC_DELETE bei cov->calling==NULL
+  // versucht cov->prevloc zu loeschen. oder es muesste prevloc auf NULL
+  // gesetzt zu werden. Dies scheint eher contraproduktiv zu sein.
+  return err;
+}
+
+int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov) {
+  bool cov2key = &(cov->key)==localcov;
+  int 
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, false);
   if (err == NOERROR) 
     (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
@@ -1698,7 +1788,7 @@ int covcpy(cov_model **localcov, cov_model *cov) {
 int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {
   bool cov2key = &(cov->key)==localcov;
   int 
-    err = covcpy(localcov, true, cov, cov->prevloc, NULL, copy_lists);
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, copy_lists, true);
   if (err == NOERROR) 
     (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
@@ -1717,7 +1807,7 @@ int covcpy(cov_model **localcov, cov_model *cov,
 
   err = loc_set(x, T, spatialdim, xdimOZ, lx, Time, grid, distances, &loc); 
   if (err != NOERROR) return err;
-  if ((err = covcpy(localcov, true, cov, loc, NULL, true)) != NOERROR)
+  if ((err = covcpy(localcov, true, cov, loc, NULL, true, true)) != NOERROR)
     return err;
   (*localcov)->prevloc = cov->prevloc;
   (*localcov)->ownloc=loc;
@@ -1778,21 +1868,20 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov) {
 
 
 double *getAnisoMatrix(cov_model *cov, bool null_if_id, int *nrow, int *ncol) {
-  int i, total,
-    *proj = (int *) cov->p[DPROJ],
-    origdim = cov->prevloc->timespacedim,
-    dimP1 = origdim + 1;
-
+  int 
+    origdim = cov->prevloc->timespacedim;
   if (!isAnyDollar(cov) && null_if_id) {
     *nrow = *ncol = origdim;
     return NULL;
   }
 
   double *ani,
-    *aniso = cov->p[DANISO],
-    a = cov->p[DSCALE] == NULL ? 1.0 : 1.0 / cov->p[DSCALE][0];  
-      
- 
+    *aniso = P(DANISO),
+    a = PisNULL(DSCALE) ? 1.0 : 1.0 / P0(DSCALE);   
+  int i, total,
+    *proj = PINT(DPROJ),
+    dimP1 = origdim + 1;
+
   if (aniso != NULL) {
     total = origdim * cov->ncol[DANISO];
     int bytes = total * sizeof(double);
@@ -2363,8 +2452,8 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     nrow = -1,
     ncol = -1,
     origdim = loc->caniso == NULL ? loc->timespacedim : loc->cani_nrow,
-    dim = (isdollar ? (cov->p[DANISO] != NULL ? cov->ncol[DANISO] : 
-		       cov->p[DPROJ] != NULL ? cov->nrow[DPROJ] : origdim )
+    dim = (isdollar ? (!PisNULL(DANISO) ? cov->ncol[DANISO] : 
+		       !PisNULL(DPROJ) ? cov->nrow[DPROJ] : origdim )
 	   : origdim
 	   ),
     *length = loc->length;
@@ -2611,24 +2700,58 @@ bool TypeConsistency(Types requiredtype, Types deliveredtype) {
 }
 
 bool TypeConsistency(Types requiredtype, cov_model *cov) {
+  //  if (cov == NULL) crash();
   assert(cov != NULL);
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   if (C->Type == UndefinedType) {
     assert(C->TypeFct != NULL);
 
-    //printf("consist %s\n", NICK(cov));
+    //  printf("consist %s\n", NICK(cov));
 
     return C->TypeFct(requiredtype, cov);
   }
+  //  printf("not consist %s\n", NICK(cov));
   return TypeConsistency(requiredtype, CovList[cov->nr].Type);
 }
+
+
+int change_coordinate_system(isotropy_type callingprev, isotropy_type isoprev,
+			     int *nr, isotropy_type  *newisoprev,
+			     int *newtsdim, int *newxdim) {
+  switch(callingprev) {
+  case EARTH_COORD :
+    if (isCartesian(isoprev)) {
+      if (strcmp(GLOBAL.general.newunits[0], UNITS_NAMES[units_km]) == 0) {
+	*nr = EARTHKM2CART;
+      } else if (strcmp(GLOBAL.general.newunits[0], 
+			UNITS_NAMES[units_miles]) == 0) {
+	*nr = EARTHMILES2CART;
+      } else {
+	SERR4("only units '%s' and '%s' are allowed. Got '%s' (user's '%s').",
+	      UNITS_NAMES[units_km], UNITS_NAMES[units_miles], 
+	      GLOBAL.general.newunits[0], GLOBAL.general.curunits[0]);
+      }
+      *newisoprev = CARTESIAN_COORD;
+      *newtsdim =  *newxdim = 3;
+    } else if (isSpherical(isoprev)) {
+      BUG; // not programmed yet
+    } else {
+      BUG; // dito
+      }      
+    break;
+  default:    
+    BUG; // not programmed yet, alle anderen 
+  }    
+  return NOERROR;
+}
+
 
 int SetGatter(domain_type domprev, domain_type statnext, 
 	      isotropy_type isoprev, isotropy_type isonext, 
 	      int *nr, int *delflag) {  
 
   // printf("gatter %d %d %d %d\n",  domprev, statnext, isoprev,isonext);
-
+  
   if (domprev < statnext) 
     SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
 	  STATNAMES[(int) statnext], STATNAMES[(int) domprev]);
@@ -2637,6 +2760,10 @@ int SetGatter(domain_type domprev, domain_type statnext,
   if (!isoOK) 
     SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
 	  ISONAMES[(int) statnext], ISONAMES[(int) domprev]);
+
+  if (isoprev == SPHERICAL_COORD || isonext == SPHERICAL_COORD ||
+      isoprev == CYLINDER_COORD || isonext ==  CYLINDER_COORD)
+    SERR("general sphericaUNREDUCED,UNREDUCED,UNREDUCED,l coordinates not programmed yet");
 
   if (domprev == XONLY) {
       switch(isoprev) {
@@ -2647,7 +2774,7 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	*nr = (isonext == ISOTROPIC) ? SP2ISO : SP2SP;
 	break;	      
       case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC : 
-      case NO_ROTAT_INV:
+      case CARTESIAN_COORD:
 	switch (isonext) {
 	case ISOTROPIC :
 	  *nr = S2ISO;
@@ -2656,12 +2783,17 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	  *nr = S2SP;
 	  break;
 	case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
-	case NO_ROTAT_INV:
+	case CARTESIAN_COORD:
 	  *nr = S2S;
 	  *delflag = DEL_COV - 5; ///
 	  break;
 	default : assert(false);
 	}
+	break;	
+      case EARTH_COORD:
+	if (isonext != EARTH_COORD) BUG;
+	*nr = S2S;
+	*delflag = DEL_COV - 8; ///
 	break;
        default: 
 	PRINTF("GetGatter %d %d\n", domprev, isoprev);
@@ -2677,8 +2809,13 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	*nr = S2SP;
 	break;
       case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
-      case NO_ROTAT_INV:
+      case CARTESIAN_COORD:
 	*nr = S2S; 
+	break;
+      case EARTH_COORD:
+	if (isonext != EARTH_COORD) BUG;
+	*nr = S2S;
+	*delflag = DEL_COV - 8; ///
 	break;
       default: assert(false);
       }
@@ -2728,40 +2865,39 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       dopenmax = (double) range.openmax[i];
 
       //    print("i=%d %d %s %f %d %d\n", i, len, C->name, 
-      //	   (cov->p[i]==NULL) ? RF_NAN : cov->p[i][0], type[i], REALSXP);
+      //	   PisNULL(i) ? RF_NAN : P0(i][0], type[i], REALSXP);
       
       for (k=0; k<len; k++) {
 	if (type[i] == REALSXP) {
-	  value = cov->p[i][k];
-	  min->p[i][k] = dmin;
-	  max->p[i][k] = dmax;
-	  pmin->p[i][k] = dpmin;
-	  pmax->p[i][k] = dpmax;
-	  openmin->p[i][k] = dopenmin;
-	  openmax->p[i][k] = dopenmax;
+	  value = P(i)[k];
+	  PARAM(min, i)[k] = dmin;
+	  PARAM(max, i)[k] = dmax;
+	  PARAM(pmin, i)[k] = dpmin;
+	  PARAM(pmax, i)[k] = dpmax;
+	  PARAM(openmin, i)[k] = dopenmin;
+	  PARAM(openmax, i)[k] = dopenmax;
 	} else if (type[i] == INTSXP) {
-	  value = ((int *)cov->p[i])[k] == NA_INTEGER 
-	    ? NA_REAL : (double) ((int *)cov->p[i])[k];
-	  ((int *) min->p[i])[k] = (int) dmin;
-	  ((int *) max->p[i])[k] = (int) dmax;
-	  ((int *) pmin->p[i])[k] = (int) dpmin;
-	  ((int *) pmax->p[i])[k] = (int) dpmax;
-	  ((int *) openmin->p[i])[k] = (int) dopenmin;
-	  ((int *) openmax->p[i])[k] = (int) dopenmax;
+	  value = PINT(i)[k] == NA_INTEGER ? NA_REAL : (double) PINT(i)[k];
+	  PARAMINT(min, i)[k] = dmin;
+	  PARAMINT(max, i)[k] = dmax;
+	  PARAMINT(pmin, i)[k] = dpmin;
+	  PARAMINT(pmax, i)[k] = dpmax;
+	  PARAMINT(openmin, i)[k] = dopenmin;
+	  PARAMINT(openmax, i)[k] = dopenmax;
 	} else if (type[i] == LISTOF + REALSXP) {
 	  listoftype 
-	    *p = (listoftype*) min->p[i];
+	    *p = PARAMLIST(min, i);
 
 	  if (p->deletelist) {
 	    int j, 
 	      lenj = p->nrow[k] * p->ncol[k];
 	    double
-	      *qmin = ((listoftype*) min->p[i])->p[k],
-	      *qmax = ((listoftype*) max->p[i])->p[k],
-	      *ppmin = ((listoftype*) pmin->p[i])->p[k],
-	      *ppmax = ((listoftype*) pmax->p[i])->p[k],
-	      *omin = ((listoftype*) openmin->p[i])->p[k],
-	      *omax = ((listoftype*) openmax->p[i])->p[k];
+	      *qmin = PARAMLIST(min, i)->p[k],
+	      *qmax = PARAMLIST(max, i)->p[k],
+	      *ppmin = PARAMLIST(pmin, i)->p[k],
+	      *ppmax = PARAMLIST(pmax, i)->p[k],
+	      *omin = PARAMLIST(openmin, i)->p[k],
+	      *omax = PARAMLIST(openmax, i)->p[k];
 	    
 	    for (j=0; j<lenj; j++) {
 	      qmin[j] = dmin;
@@ -2883,7 +3019,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
    for (i=0; i<kappas; i++) {
      if (!strcmp(C->kappanames[i], FREEVARIABLE)) {
        // i.e. equal
-       if (cov->p[i] == NULL) continue;
+       if (PisNULL(i)) continue;
      }
      if (type[i] >= LISTOF) {
        // to simplify things -- otherwise in simu.cc
@@ -2901,10 +3037,9 @@ int check_within_range(cov_model *cov, bool NAOK) {
     //	    C->name, i,  range.min[i],  range.max[i], len, C->kappanames[i]);
   
     for (k=0; k<len; k++) {
-      if (type[i] == REALSXP) value = cov->p[i][k];
+      if (type[i] == REALSXP) value = P(i)[k];
       else if (type[i] == INTSXP)
-	value = ((int *)cov->p[i])[k] == NA_INTEGER 
-	  ? NA_REAL : (double) ((int *)cov->p[i])[k];
+	value = PINT(i)[k] == NA_INTEGER ? NA_REAL : (double) PINT(i)[k];
       else if (type[i] == CLOSXP) continue;
       else if (type[i] == LANGSXP) continue;
       else GERR2("%s [%d] is not finite", C->kappanames[i], k+1);
@@ -2947,7 +3082,7 @@ ErrorHandling:
     if (PL>PL_ERRORS)
       PRINTF("error in check range: %s kappa%d err=%d ('%s' does not hold.)\n",
 	     C->name, i+1, err, Msg);
-    if (err == ERRORUNSPECIFIED)
+     if (err == ERRORUNSPECIFIED)
       SERR4("%s[%d] = %s does not hold (dim=%d).",
 	     C->kappanames[i], k+1, Msg, cov->tsdim); // + return
   }
@@ -2989,7 +3124,7 @@ int FieldReturn(cov_model *cov) {
     }
   }
 
-  // printf("%d\n",sizeof(res_type) * loc->totalpoints * cov->vdim);
+  // printf("FieldReturn %d\n",sizeof(res_type) * loc->totalpoints * cov->vdim);
   if ((cov->rf = 
        (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim))
       == NULL) return ERRORMEMORYALLOCATION;

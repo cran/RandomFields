@@ -55,7 +55,7 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 model <- RMqam(phi=RMgauss(), RMexp(), RMgauss(),
                theta=c(0.3, 0.7), scale=0.5)
@@ -63,4 +63,5 @@ x <- seq(0, 10, if (interactive()) 0.02 else 1)
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
 }}
+\dontshow{RFoptions(seed=NA)}
 }

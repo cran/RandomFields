@@ -62,11 +62,12 @@ the optimal one was used: \eqn{s=\frac{10 \sqrt(2)}{47}}{s=10 sqrt(2)/47}.
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 scale <- 0.4
 model <- RMgneiting(scale = scale)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 points(x, RFcov(RMgauss(scale = scale), x), col="red")
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

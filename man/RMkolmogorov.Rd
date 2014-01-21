@@ -44,11 +44,12 @@
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- y <- seq(-2, 2, len=if (interactive()) 20 else 2)
 model <- RMkolmogorov()
 simu <- RFsimulate(model, x, y, z=0, grid=TRUE)
 plot(simu, select.variables=list(c(1,2)), col=c("red"))
+\dontshow{RFoptions(seed=NA)}
 }
 
 

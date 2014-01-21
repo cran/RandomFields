@@ -82,7 +82,7 @@ RPsmith(shape, tcf, xi, mu, s)
 }
  
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 model <- RMball()
 x <- if (interactive()) seq(0, 1000, 0.02) else seq(0, 100, 10)
@@ -96,6 +96,8 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
 
 ## for some more sophisticated models see 'maxstableAdvanced'
+
+\dontshow{RFoptions(seed=NA)}
 }
 
 \seealso{

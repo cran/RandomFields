@@ -35,9 +35,10 @@ RRloc(phi, mu, scale)
  }
 
  \examples{
-set.seed(0)
+RFoptions(seed=0)
 hist(RFrdistr(RRspherical(balldim=2), n=1000), 50)
 hist(RFrdistr(RRloc(mu=3, RRspherical(balldim=2)), n=1000), 50)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

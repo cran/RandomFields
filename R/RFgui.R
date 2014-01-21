@@ -1,14 +1,13 @@
 
 
 RFgui <- function(data, x, y,
-                  same.algorithm = FALSE,
+                  same.algorithm = TRUE,
                   ev, 
                   xcov, ycov,
                   sim_only1dim=FALSE,
                   wait = 0,
                   ...) {
-  if (!interactive())
-    return("'RFgui' might be used only in an interactive mode")
+  if (!interactive()) return("'RFgui' can be used only in an interactive mode")
   wait <- as.integer(wait)
   Env <- if (wait >= 0) environment() else .GlobalEnv
   assign("RFgui.model", NULL, envir=Env)
@@ -39,9 +38,9 @@ rfgui.intern <- function(data, x, y,
                          ev, 
                          xcov, ycov,
                          sim_only1dim=FALSE,                         
-                         parent.ev=NULL, ...) {
+                         parent.ev=NULL,
+                         printlevel=0,...) {
   simuMethod <- "circulant"
-  printlevel <- 0
   circ.trials <- 1
   circ.force <- TRUE
   circ.min <- -2
@@ -61,16 +60,18 @@ rfgui.intern <- function(data, x, y,
   assign("model", NULL, envir = ENVIR) # orignal: model als parameter uebergeben
 
   RFoptOld <- if (same.alg)
-    internal.rfoptions(storing=FALSE, printlevel=printlevel,
+    internal.rfoptions(storing=FALSE, printlevel=printlevel - 10,
                        circulant.trials=circ.trials,
                        gui.simu_method = simuMethod,
                        circulant.force=circ.force,
                        circulant.mmin=circ.min, ...)
-  else  internal.rfoptions(storing=FALSE, printlevel=printlevel, ...)
+  else  internal.rfoptions(storing=FALSE, printlevel=printlevel - 10, ...)
   #Print(same.alg, RFoptOld)
   assign("RFopt.old", RFoptOld[[1]], envir=ENVIR)
   RFopt <- RFoptOld[[2]]
   rm("RFoptOld")
+
+  
   guiReg <- GetModelRegister("gui")
   guiOpt <- RFopt$gui
   stopifnot(guiReg == RFopt$general$guiregister)
@@ -305,8 +306,9 @@ rfgui.intern <- function(data, x, y,
         notNA <- !is.nan(ev@emp.vario)
         xm <- c(min(ev@centers[notNA]), max(ev@centers[notNA]))
         ym <- c(min(ev@emp.vario[notNA]), max(ev@emp.vario[notNA])*1.1)
+        lab <- xylabs("", NULL)
         plot(ev@centers[!is.nan(ev@emp.vario)],
-             ev@emp.vario[!is.nan(ev@emp.vario)], pch=19) 
+             ev@emp.vario[!is.nan(ev@emp.vario)], pch=19, xlab=lab$x) 
         return(0)
       } 
       plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
@@ -379,8 +381,9 @@ rfgui.intern <- function(data, x, y,
       xm <- c(min(ev@centers[notNA]), max(ev@centers[notNA]))
       ym <- c(min(ev@emp.vario[notNA]), max(ev@emp.vario[notNA])*1.1)
     }
+    lab <- xylabs("", NULL)
     plot(xcov[2:length(xcov)], cv[2:length(xcov)], type="l",
-         xlab="", ylab="", xlim=xm, ylim=ym)
+         xlab=lab$x, ylab="", xlim=xm, ylim=ym)
     points(xcov[1], cv[1])
 
     # plot emp.vario
@@ -407,7 +410,6 @@ rfgui.intern <- function(data, x, y,
       ##  assign("cx", x, envir=.GlobalEnv)
       ##  assign("cmodel", model,  envir=.GlobalEnv)
       
-      set.seed(fixed.rs)
       par(cex=0.6, bg="lightgrey")
       
       if (guiOpt$simu_method != "any method")
@@ -422,11 +424,12 @@ rfgui.intern <- function(data, x, y,
       z <- try(RFsimulate(x=x, grid=TRUE, model=simu.model,
                           y=if (get("simDim", envir = ENVIR) =="sim1Dim") NULL
                           else if (is.null(y)) x else y,
+                          seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
                           practicalrange = tclvalue(cbPracRangeVal) != "0"),
                silent=!TRUE)
 
-      if (class(z) == "RFspatialGridDataFrame") plot(z, xlab=NULL, cex=.5)
+      if (class(z) == "RFspatialGridDataFrame") plot(z, cex=.5)
       else {
         plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="", ylab="",
              cex.main=2, col.main="brown",

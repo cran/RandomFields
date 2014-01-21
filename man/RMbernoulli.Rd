@@ -42,7 +42,7 @@ RMbernoulli(phi, threshold, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 threshold <- 0
 x <- seq(0, 5, if (interactive()) 0.02 else 1)
@@ -56,4 +56,5 @@ z <- RFsimulate(RPbernoulli(GaussModel, threshold=threshold),
 estim.cov <- apply(z, 1, function(x) cov(x, z[1,]))
 plot(x, estim.cov)
 lines(x, RFcov(x=x, RMbernoulli(RMgauss(), threshold=threshold)))
+\dontshow{RFoptions(seed=NA)}
 }

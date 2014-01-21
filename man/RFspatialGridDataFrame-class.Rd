@@ -142,7 +142,7 @@
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 %   library(RandomFields, lib="~/TMP")
 
 n <- 3
@@ -170,11 +170,10 @@ scale <- if (interactive()) 10 else 1
 f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, grid=TRUE, n=n)
 plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)
 
-set.seed(123)
-f.sp <- RFsimulate(model=RMexp(), x=x, n=n)
-set.seed(123)
-f.old <- RFsimulate(model=RMexp(), x=x, n=n, spConform=FALSE)
+f.sp <- RFsimulate(model=RMexp(), x=x, n=n, seed=0)
+f.old <- RFsimulate(model=RMexp(), x=x, n=n, spConform=FALSE, seed=0)
 all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
+\dontshow{RFoptions(seed=NA)}
 
 }
 

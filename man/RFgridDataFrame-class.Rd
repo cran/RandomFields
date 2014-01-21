@@ -94,7 +94,7 @@
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 x <- seq(0,10,length=100)
 f <- RFsimulate(model=RMgauss(), x=x, n=3)
@@ -106,6 +106,7 @@ str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 
 plot(f, nmax=2)
+\dontshow{RFoptions(seed=NA)}
 
 }
 

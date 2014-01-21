@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2012 -- 2013 Martin Schlather, 
+ Copyright (C) 2012 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

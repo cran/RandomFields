@@ -45,9 +45,10 @@ RMfractgauss(alpha,var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMfractgauss(alpha=0.5, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(-0.3, 1))
 plot(RFsimulate(model, x=x))
+\dontshow{RFoptions(seed=NA)}
 }

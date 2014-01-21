@@ -128,13 +128,14 @@ RPsequential(phi, loggauss, max_variables, back_steps, initial)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.01)
 z <- RFsimulate(model=RPdirect(model), 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 
 cov <- RFcov(model=model, 1:10)
 Print(cov)
+\dontshow{RFoptions(seed=NA)}
 
 
 }

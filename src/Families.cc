@@ -4,7 +4,7 @@
 
  Definition of multivariate distribution families
 
- Copyright (C) 2013 -- 2013 Martin Schlather
+ Copyright (C) 2013 -- 2014 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,13 +26,11 @@ Foundation, Inc., 59 Temple Place - Suix2te 330, Boston, MA  02111-1307, USA.
 
 #include "RF.h"
 #include "families.h"
-
-
+#include "Covariance.h"
 
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-
 
 /*
 
@@ -130,7 +128,7 @@ void addVariable(char *name, double *x, int nrow, int ncol, SEXP env) {
 #define DISTR_LAST DISTR_NAME
 void evaluateDistr(cov_model *cov, int which, double *Res) {
   SEXP  res,
-    env = ((sexp_type*) cov->p[DISTR_ENV])->sexp;
+    env = PENV(DISTR_ENV)->sexp;
   int size,
     nkappas = CovList[cov->nr].kappas,
     i = nkappas;
@@ -139,22 +137,22 @@ void evaluateDistr(cov_model *cov, int which, double *Res) {
   
   if (cov->ownkappanames != NULL) {
     while(cov->ownkappanames[--i] != NULL) {
-      addVariable(cov->ownkappanames[i], cov->p[i], cov->nrow[i], cov->ncol[i], 
+      addVariable(cov->ownkappanames[i], P(i), cov->nrow[i], cov->ncol[i], 
 		  env);		
     }  
   }
 
   //  PMI(cov);
   //  print("which = %d\n", which);
-  //  eval( ((sexp_type*) cov->p[1])->sexp , env);
+  //  eval( ((sexp_type*) P(1])->sexp , env);
 
-  res = eval(((sexp_type*) cov->p[which])->sexp, env);
-  size = ((int*) cov->p[DISTR_NROW])[0] * ((int*) cov->p[DISTR_NCOL])[0];
+  res = eval(PSEXP(which)->sexp, env);
+  size = P0INT(DISTR_NROW) * P0INT(DISTR_NCOL);
   for (i=0; i<size; i++) Res[i] = REAL(res)[i]; 
 }
 
 void distrD(double *x, cov_model *cov, double *v) {
-  addVariable((char*) "x", x, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+  addVariable((char*) "x", x, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_DX, v);
 }
 void distrDlog(double *x, cov_model *cov, double *v, double *Sign) {
@@ -169,12 +167,12 @@ void distrDinverse(double VARIABLE_IS_NOT_USED  *v, cov_model  VARIABLE_IS_NOT_U
 }
 
 void distrP(double *x, cov_model *cov, double *v) {
-  addVariable((char*) "q", x, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+  addVariable((char*) "q", x, 1, 1,  PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_PX, v);
 }
 void distrP2sided(double *x, double *y, cov_model *cov, double *v) {
   int i,
-    size = ((int*) cov->p[DISTR_NROW])[0] * ((int*) cov->p[DISTR_NCOL])[0],
+    size = P0INT(DISTR_NROW) * P0INT(DISTR_NCOL),
     dim = cov->xdimown;
   double w;
   assert(dim == cov->tsdim);
@@ -182,9 +180,9 @@ void distrP2sided(double *x, double *y, cov_model *cov, double *v) {
   
   if (dim == 1) {
     double z = x != NULL ? *x : -*y;
-    addVariable((char*) "q", &z, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+    addVariable((char*) "q", &z, 1, 1, PENV(DISTR_ENV)->sexp);
     evaluateDistr(cov, DISTR_PX, &w);
-    addVariable((char*) "q", y, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+    addVariable((char*) "q", y, 1, 1, PENV(DISTR_ENV)->sexp);
     evaluateDistr(cov, DISTR_PX, v);
     *v -= w;
   } else {
@@ -192,30 +190,32 @@ void distrP2sided(double *x, double *y, cov_model *cov, double *v) {
 
     double 
       Sign = 1.0,
-      *z = (double *) MALLOC(sizeof(double) * size);
+      *z = cov->Sdollar->z;
+    if (z == NULL) z = cov->Sdollar->z =
+		     (double*) MALLOC(size * sizeof(double));
+ 
     for (i=0; i<size; i++) v[i] = 0.0;
 
     while (true) {
       // Siebformel !! ueber 2^size Moeglichkeiten
       for (i=0; i<size; i++) v[i] = Sign * z[i];
     }
-    free(z);  
   }
 }
 
 void distrQ(double *x, cov_model *cov, double *v) {
-  addVariable((char*) "p", x, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+  addVariable((char*) "p", x, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_QX, v);
 }
 void distrR(double *x, cov_model *cov, double *v) {
   if (x != NULL) error("Conditional distribution not allowed yet");
-  addVariable((char*) "n", &ONE, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+  addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
 void distrR2sided(double *x, double *y, cov_model *cov, double *v) {
   if (x != NULL || y != NULL) 
     error("conditional distribution not allowed yet");
-  addVariable((char*) "n", &ONE, 1, 1, ((sexp_type*) cov->p[DISTR_ENV])->sexp);
+  addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
 void kappa_distr(int i, cov_model *cov, int *nr, int *nc){
@@ -227,14 +227,25 @@ int check_distr(cov_model *cov) {
 
   kdefault(cov, DISTR_NROW, 1);
   kdefault(cov, DISTR_NCOL, 1);
-  cov->vdim2[0] = ((int*) cov->p[DISTR_NROW])[0];
-  cov->vdim2[1] = ((int*) cov->p[DISTR_NCOL])[0];
+  cov->vdim2[0] = P0INT(DISTR_NROW);
+  cov->vdim2[1] = P0INT(DISTR_NCOL);
+ 
+  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
+    DOLLAR_DELETE(&(cov->Sdollar));
+  if (cov->Sdollar == NULL) {
+    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
+    DOLLAR_NULL(cov->Sdollar);
+  }
+  assert(cov->Sdollar->z == NULL);
+
+
   return NOERROR;
 }
 int init_distr(cov_model VARIABLE_IS_NOT_USED *cov, 
 	       storage  VARIABLE_IS_NOT_USED *s){
   int err = NOERROR;
   cov->mpp.maxheight = RF_NAN;
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
   return err;
 }
 void do_distr_do(cov_model *cov, double *v){ 
@@ -271,8 +282,8 @@ void range_distr(cov_model *cov, range_type *range){
 
 
 #define GAUSS_PARAMETER_BASICS					\
-  double VARIABLE_IS_NOT_USED *m = cov->p[GAUSS_DISTR_MEAN],	\
-    *sd = cov->p[GAUSS_DISTR_SD]				\
+  double VARIABLE_IS_NOT_USED *m = P(GAUSS_DISTR_MEAN),		\
+    *sd = P(GAUSS_DISTR_SD)					\
 
 #define GAUSS_PARAMETERS						\
   GAUSS_PARAMETER_BASICS;						\
@@ -286,7 +297,7 @@ void range_distr(cov_model *cov, range_type *range){
 
 void gaussDlog(double *x, cov_model *cov, double *v, double *Sign) {
   GAUSS_PARAMETERS;
-  double returnlog = cov->p[GAUSS_DISTR_LOG][0];
+  double returnlog = P0(GAUSS_DISTR_LOG);
   *v = 0.0;
   FOR *v += dnorm(x[i], m[mi], sd[si], returnlog);
   *Sign = 1.0;
@@ -294,7 +305,7 @@ void gaussDlog(double *x, cov_model *cov, double *v, double *Sign) {
 
 void gaussD(double *x, cov_model *cov, double *v) {
   GAUSS_PARAMETERS;
-  double returnlog = cov->p[GAUSS_DISTR_LOG][0];
+  double returnlog = P0(GAUSS_DISTR_LOG);
   if (returnlog) { 
     double Sign;
     gaussDlog(x, cov, v, &Sign);
@@ -321,7 +332,7 @@ void gaussDinverse(double *v, cov_model *cov, double *left, double *right) {
 
 void gaussP(double *x, cov_model *cov, double *v) {
   GAUSS_PARAMETERS; 
-  double returnlog = cov->p[GAUSS_DISTR_LOG][0];
+  double returnlog = P0(GAUSS_DISTR_LOG);
   if (returnlog) {
     *v = 0.0;
     FOR *v += pnorm(x[i], m[mi], sd[si], 1.0, returnlog);
@@ -332,7 +343,7 @@ void gaussP(double *x, cov_model *cov, double *v) {
 }
 void gaussP2sided(double *x, double *y, cov_model *cov, double *v) {
   GAUSS_PARAMETERS; 
-  double returnlog = cov->p[GAUSS_DISTR_LOG][0];
+  double returnlog = P0(GAUSS_DISTR_LOG);
   assert(y != NULL);
   
   if (x == NULL) { // symmetric 2-sided with a=-b
@@ -361,7 +372,7 @@ void gaussP2sided(double *x, double *y, cov_model *cov, double *v) {
 }	   
 void gaussQ(double *x, cov_model *cov, double *v) {
   GAUSS_PARAMETER_BASICS; 
-  double returnlog = cov->p[GAUSS_DISTR_LOG][0];
+  double returnlog = P0(GAUSS_DISTR_LOG);
   *v *= qnorm(x[0], m[0], sd[0], 1.0, returnlog);
 }		   
 
@@ -431,6 +442,7 @@ int init_gauss_distr(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   // sd's but normed to 1 at the origin
   cov->mpp.maxheight = intpow(SQRTTWOPI, dim);
   FOR cov->mpp.maxheight *= sd[si];
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
   return NOERROR;
 }
 
@@ -505,8 +517,8 @@ void sphericQ(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED  *c
 }
 void sphericR(double *x, cov_model *cov, double *v) {
   int 
-    dim = ((int *) cov->p[SPHERIC_SPACEDIM])[0],
-    balldim = ((int *) cov->p[SPHERIC_BALLDIM])[0];  
+    dim = P0INT(SPHERIC_SPACEDIM),
+    balldim = P0INT(SPHERIC_BALLDIM);  
   if (x==NULL) *v = random_spheric(dim, balldim); // q[>0] ist E
   else error("conditional distribution cannot be calculated for sphericP.");
 }
@@ -516,7 +528,7 @@ int check_RRspheric(cov_model *cov) {
   ROLE_ASSERT(ROLE_DISTR);
 
   kdefault(cov, SPHERIC_SPACEDIM, 1);
-  kdefault(cov, SPHERIC_BALLDIM, ((int *) cov->p[SPHERIC_SPACEDIM])[0]);
+  kdefault(cov, SPHERIC_BALLDIM, P0INT(SPHERIC_SPACEDIM));
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   if (cov->tsdim != 1) SERR("only dimension 1 allowed");
@@ -547,8 +559,8 @@ void range_RRspheric(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 int init_RRspheric(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
   int i, m,
     nm = cov->mpp.moments,
-    dim = ((int *) cov->p[SPHERIC_SPACEDIM])[0],
-    balldim = ((int *) cov->p[SPHERIC_BALLDIM])[0],
+    dim = P0INT(SPHERIC_SPACEDIM),
+    balldim = P0INT(SPHERIC_BALLDIM),
     testn = GLOBAL.mpp.n_estim_E;
 
  double scale, 
@@ -557,7 +569,7 @@ int init_RRspheric(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
  
   // printf("ball mppM2 %f\n", cov->mpp.M2);
   //printf("%d %d %d\n", testn, GLOBAL.mpp.n_estim_E,
-  //	 ((int *) cov->p[SPHERIC_BALLDIM])[0]);// assert(false);
+  //	 P0INT(SPHERIC_BALLDIM));// assert(false);
   
   for (M[0] = 1.0, m=1; m<=nm; M[m++] = 0.0);
   for (i=0; i<testn; i++) { // take random sample of scales
@@ -587,6 +599,7 @@ int init_RRspheric(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
 	   
   //cov->mpp.refradius = RF_NAN;
   cov->mpp.maxheight = RF_NAN;
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
 
   return NOERROR;
 }
@@ -601,7 +614,7 @@ void do_RRspheric(cov_model *cov, double *v) {
 // ***** deterministic ****
 #define DETERM_MEAN 0
 #define DETERM_PARAMETERS						\
-  double *mean = cov->p[DETERM_MEAN];					\
+  double *mean = P(DETERM_MEAN);					\
   int i, mi, dim = cov->xdimown,					\
     len_mean = cov->nrow[DETERM_MEAN]				      
 
@@ -692,7 +705,7 @@ int check_determ(cov_model *cov) {
 
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
   
-  if (cov->p[DETERM_MEAN] == NULL) kdefault(cov, DETERM_MEAN, 0.0);
+  if (PisNULL(DETERM_MEAN)) kdefault(cov, DETERM_MEAN, 0.0);
   
   cov->vdim2[0] = dim;
   cov->vdim2[1] = 1;
@@ -716,6 +729,7 @@ int init_determ(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USE
   // normed against an extremal gaussian process with shape that 
   // is identically constant 1 in space
   cov->mpp.maxheight = 1.0;
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
   return err;
 }
 
@@ -725,141 +739,117 @@ void do_determ(cov_model *cov, double *v) {
 }
 
 
-/*
+
+
 // ***** Set ****
 void setParamD(double *x, cov_model *cov, double *v) { 
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET], // falls user defined, ansonsten gleich from
-    *from = cov->sub[SETPARAM_FROM]; //
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_D(x, to, v);
+VTLG_D(x, cov->sub[SETPARAM_TO], v);
 }
 
 void setParamDlog(double *x, cov_model *cov, double *v, double *Sign) { 
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  LOGCOV(x, to, v, Sign);
+  VTLG_DLOG(x, cov->sub[SETPARAM_TO], v, Sign);
 }
 
 void setParamDinverse(double *v, cov_model *cov, double *left, double *right) {
- cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  NONSTATINVERSE_D(v, to, left, right);
+  NONSTATINVERSE_D(v, cov->sub[SETPARAM_TO], left, right);
 }
 
 void setParamP(double *x, cov_model *cov, double *v) {   
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_P(x, to, v);
+  VTLG_P(x, cov->sub[SETPARAM_TO], v);
 }
 
 void setParamP2sided(double *x, double *y, cov_model *cov, double *v) {   
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_P2SIDED(x, y, to, v);
+  VTLG_P2SIDED(x, y, cov->sub[SETPARAM_TO], v);
 }
 
 void setParamQ(double *x, cov_model *cov, double *v) {   
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_Q(x, to, v);
+  VTLG_Q(x, cov->sub[SETPARAM_TO], v);
 }
 
 void setParamR(double *x, cov_model *cov, double *v) {   
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_R(x, to, v);
+  VTLG_R(x, cov->sub[SETPARAM_TO], v);
 }
 
 void setParamR2sided(double *x, double *y, cov_model *cov, double *v) {   
-  cov_model *to = cov->sub[SETPARAM_TO],
-    *set = cov->sub[SETPARAM_SET],
-    *from = cov->sub[SETPARAM_FROM];
-  int 
-    variant = ((int *) cov->p[SETPARAM_VARIANT])[0];
-  CovList[set->nr].param_set(to, from, variant);
-  VTLG_R2SIDED(x, y, to, v);
+  VTLG_R2SIDED(x, y, cov->sub[SETPARAM_TO], v);
 }
 
 int check_setParam(cov_model *cov) {
   cov_model *to= cov->sub[SETPARAM_TO];
   int err,
-    dim = cov->xdimown;  
+    dim = cov->xdimown,
+    role = cov->role;
+   domain_type dom = cov->domown;
+  isotropy_type iso = cov->isoown;
 
-  assert(false);
-
-  kdefault(cov, SETPARAM_VARIANT, 0);
+  kdefault(cov, SET_PERFORMDO, true);
 
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
 
-  if ((err = CHECK(to, dim, dim, RandomType, cov->domprev, cov->isoprev, 
-		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+  if ((err = CHECK(to, dim, dim, RandomType, dom, iso, 
+		     SUBMODEL_DEP, role)) != NOERROR) return err;
 
+  setbackward(cov, to);
   cov->vdim = to->vdim;
   cov->vdim2[0] = to->vdim2[0];
   cov->vdim2[1] = to->vdim2[1];
+  cov->deterministic = false;
+
+  TaylorCopy(cov, to);
 
   return NOERROR;
 }
 
 
-void range_setParam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[SETPARAM_VARIANT] = RF_NEGINF;
-  range->max[SETPARAM_VARIANT] = RF_INF;
-  range->pmin[SETPARAM_VARIANT] = -1e10;
-  range->pmax[SETPARAM_VARIANT] = 1e10;
-  range->openmin[SETPARAM_VARIANT] = true;
-  range->openmax[SETPARAM_VARIANT] = true;
-}
-
 int init_setParam(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
-  int err = NOERROR;
-  cov->mpp.maxheight = RF_NAN;
-  return err;
+  cov_model *to= cov->sub[SETPARAM_TO];
+  int err;
+  if ((err = INIT(to, cov->mpp.moments, s)) != NOERROR)
+    return err;
+  cov->mpp.maxheight = to->mpp.maxheight;
+  return NOERROR;
 }
 
 void do_setParam(cov_model *cov, double *v) {
+  cov_model *next = cov->sub[SETPARAM_TO];
+  set_storage *X = cov->Sset;
   cov_model *to = cov->sub[SETPARAM_TO];
-  DO_PARAM_MODELS;
-  setParamR(NULL, cov, v);
+  int performDo = P0INT(SET_PERFORMDO);
+  DORANDOM(next, v);
+
+  if (performDo > 0) DORANDOM(next, v); 
+  if (X->remote != NULL) {
+    assert(X->set != NULL);
+    X->set(cov->sub[0], X->remote, X->variant);
+  }
+  if (performDo < 0) DORANDOM(next, v); 
+
+
+  if (performDo == 0) setParamR(NULL, cov, v);
   cov->mpp.maxheight = to->mpp.maxheight;
 }
 
-*/
 
-#define LOC_LOC 0
-#define LOC_SCALE 1
+void range_setParam(cov_model *cov, range_type *range){
+  range_setparam(cov, range);
+  /*
+    range->min[SETPARAM_VARIANT] = 0;
+    range->max[SETPARAM_VARIANT] = 0;
+    range->pmin[SETPARAM_VARIANT] = 0;
+    range->pmax[SETPARAM_VARIANT] = 0;
+    range->openmin[SETPARAM_VARIANT] = false;
+    range->openmax[SETPARAM_VARIANT] = false;
+  */
+}
+
+
+
+
 #define LOC_PARAMETER_BASICS			\
   cov_model *next = cov->sub[0];		\
   int dim=cov->xdimown;				\
-  double *loc = cov->p[LOC_LOC],		\
-    *scale= cov->p[LOC_SCALE]			        
+  double *loc = P(LOC_LOC),			\
+    *scale= P(LOC_SCALE)			        
   
 
 #define LOC_PARAMETERS				\
@@ -874,7 +864,8 @@ void do_setParam(cov_model *cov, double *v) {
 void locD(double *x, cov_model *cov, double *v) {
   LOC_PARAMETERS;
   double prod = 1.0,
-    *z = (double*) MALLOC(dim * sizeof(double)); 
+    *z = cov->Sdollar->z;
+  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double));
     
   LOCFOR { 
     z[i] = (x[i] - loc[mi]) / scale[si];
@@ -882,7 +873,6 @@ void locD(double *x, cov_model *cov, double *v) {
   }
   VTLG_D(z, next, v);
   *v *= prod;
-  free(z);
 }
 
 void locDlog(double *x, cov_model *cov, double *v, double *Sign) {
@@ -903,28 +893,28 @@ void locDinverse(double *v, cov_model *cov, double *left, double *right) {
 
 void locP(double *x, cov_model *cov, double *v) {
   LOC_PARAMETERS;
-  double *z = (double*) MALLOC(dim * sizeof(double)); 
+  double *z = cov->Sdollar->z;
+  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double));
   LOCFOR z[i] = (x[i] - loc[mi]) / scale[si];
   VTLG_P(z, next, v);
-  free(z);
 }
 
 void locP2sided(double *x, double *y, cov_model *cov, double *v) {
   LOC_PARAMETERS;
-  double *z = (double*) MALLOC(dim * sizeof(double)); 
+  double *z = cov->Sdollar->z;
+  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double)); 
   if (x == NULL) {
     LOCFOR z[i] = (y[i] - loc[mi]) / scale[si];
     VTLG_P2SIDED(NULL, z, next, v);
-  } else {
-    double *zy = (double*) MALLOC(dim * sizeof(double));
+  } else {    
+    double *zy = cov->Sdollar->y;
+    if (zy == NULL) zy = cov->Sdollar->y=(double*) MALLOC(dim * sizeof(double));
     LOCFOR { 
       z[i] = (x[i] - loc[mi]) / scale[si];
       zy[i] = (y[i] - loc[mi]) / scale[si];
     }
     VTLG_P2SIDED(z, zy, next, v);
-    free(zy);
   }
-  free(z);
 }
 
 void locQ(double *x, cov_model *cov, double *v) {
@@ -944,7 +934,10 @@ void locR(double *x, cov_model *cov, double *v) {
 void locR2sided(double *x, double *y, cov_model *cov, double *v) {
   LOC_PARAMETERS;  
   VTLG_R2SIDED(x, y, next, v);
-  LOCFOR v[i] = v[i] * scale[si] + loc[mi]; 
+  //   printf("locR dim=%d scale=%f %f %f %f -> %f %f %f\n", dim, *scale, y[0], y[1], y[2], v[0], v[1], v[2]);
+  LOCFOR {
+    v[i] = v[i] * scale[si] + loc[mi]; 
+  }
 }
 
 void kappa_loc(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
@@ -964,8 +957,8 @@ int check_loc(cov_model *cov) {
     dim = cov->xdimown;
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
   double 
-    *loc = cov->p[LOC_LOC],
-    *scale = cov->p[LOC_SCALE];
+    *loc = P(LOC_LOC),
+    *scale = P(LOC_SCALE);
   int err;
 
   if ((err = CHECK(next, dim, dim, RandomType, cov->domprev, cov->isoprev, 
@@ -980,20 +973,31 @@ int check_loc(cov_model *cov) {
   cov->vdim2[0] = next->vdim2[0];
   cov->vdim2[1] = next->vdim2[1];
 
+  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
+    DOLLAR_DELETE(&(cov->Sdollar));
+  if (cov->Sdollar == NULL) {
+    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
+    DOLLAR_NULL(cov->Sdollar);
+  }
+  assert(cov->Sdollar->z == NULL);
+
   return NOERROR;
 }
 
 int init_loc(cov_model *cov, storage *s){
   // cov_fct *C = CovList + cov->nr;
-  LOC_PARAMETER_BASICS;
+  LOC_PARAMETERS;
   int err;
   
   if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR) return err;
-  
+ 
   if (cov->mpp.moments >= 0) {
     cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
-      if (dim > 1) SERR("multivariate moment cannot be calculated");
+      if (dim > 1) {
+	LOCFOR if (scale[si] != 1.0 || loc[mi]!=0.0)
+	  SERR("multivariate moment cannot be calculated");
+      }
       cov->mpp.M[1] = cov->mpp.M[1] * scale[0] + loc[0];
       cov->mpp.Mplus[1] = loc[0] == 0.0 ? cov->mpp.Mplus[1] * scale[0] : RF_NAN;
       if (cov->mpp.moments >= 2) {
@@ -1007,13 +1011,16 @@ int init_loc(cov_model *cov, storage *s){
 
   // normed against a shape function with the same scale modification
   cov->mpp.maxheight = next->mpp.maxheight * scale[0];
+  cov->mpp.M[0] = next->mpp.M[0];
+  cov->mpp.Mplus[0] = next->mpp.Mplus[0];
   return NOERROR;
 }
 
 void do_loc(cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
-  double *scale= cov->p[LOC_SCALE];			        
+  double *scale= P(LOC_SCALE);
   DO_PARAM_MODELS;
+  DORANDOM(cov->sub[0], v);
   locR(NULL, cov, v);
   cov->mpp.maxheight = next->mpp.maxheight * scale[0];
 }
@@ -1039,8 +1046,8 @@ void range_loc(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 #define UNIF_PARAMETER_BASICS			\
   double					\
-   *min = cov->p[UNIF_MIN],			\
-   *max = cov->p[UNIF_MAX]			
+  *min = P(UNIF_MIN),				\
+    *max = P(UNIF_MAX)			
 
 #define UNIF_PARAMETERS				\
   UNIF_PARAMETER_BASICS;			\
@@ -1168,6 +1175,9 @@ void kappa_unif(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
 }
 
 int check_unif(cov_model *cov) {
+
+  //PMI(cov->calling);
+
   ROLE_ASSERT(ROLE_DISTR);
 
   int 
@@ -1177,8 +1187,8 @@ int check_unif(cov_model *cov) {
 
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
     
-   if (cov->p[UNIF_MIN] == NULL) kdefault(cov, UNIF_MIN, 0.0);
-   if (cov->p[UNIF_MAX] == NULL)  kdefault(cov, UNIF_MAX, 1.0);
+  if (PisNULL(UNIF_MIN)) kdefault(cov, UNIF_MIN, 0.0);
+  if (PisNULL(UNIF_MAX)) kdefault(cov, UNIF_MAX, 1.0);
 
   cov->vdim2[0] = cov->tsdim;
   cov->vdim2[1] = 1;
@@ -1210,6 +1220,7 @@ int init_unif(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   // of the respective window
   cov->mpp.maxheight = 1.0;
   UNIFOR  cov->mpp.maxheight *= max[maxi] - min[mini];
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
     
   return NOERROR;
 }
@@ -1240,35 +1251,49 @@ void range_unif(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 
-#define SURFACE(dim) (dim * intpow(2.0, dim)) //of a d-dim cube with edge length 2
+#define SURFACE(dim) (dim * intpow(2.0, dim)) //of a d-dim cube with edge length 2, i.e. a (dim-1) dimensional surface !
 
+
+// Ring constanter intensitaet
 #define TwoDSimu					     \
-  X = (2.0 * UNIFORM_RANDOM - 1.0) * (start + end);	     \
+  X = UNIFORM_RANDOM * (start + end);			     \
   Y = (2.0 * UNIFORM_RANDOM - 1.0) * (end - start);	     \
-  i0 = X < 0;						     \
+  i0 = UNIFORM_RANDOM < 0.5;				     \
   							     \
-  x[i0] = X - start;					     \
   x[1 - i0] = Y >= 0 ? Y + start : Y - start;		     \
+  x[i0] = ((Y >= 0) xor (i0==1)) ? X -  start : start - X;		     
 
 
 
-double VolumeOfCubeRing(double start, double end, int dim, 
+double VolumeOfCubeRing(double *xsort, double start, double end, int dim, 
 			int squeezed_parts) {
-  double red_dim = dim - squeezed_parts;
+  int d,
+    red_dim = dim - squeezed_parts;
   assert(red_dim > 0);
-  
-  return intpow(2 * start, squeezed_parts) * 
-    (intpow(2 * end, red_dim) - intpow(2 * start, red_dim));
+  double res = intpow(2.0, dim);
+  //  printf("res = %f\n", res);
+  for (d=1; d<=squeezed_parts; d++) res *= xsort[d]; 
+
+  // printf("res = %f %f %d %f\n", res, xsort[1], red_dim,
+  //	 intpow(end, red_dim) - intpow(start, red_dim));
+
+  return res * (intpow(end, red_dim) - intpow(start, red_dim));
 }
 
-double PoweredVolOfCube(double start, double end, double p, int dim, 
-			   int squeezed_parts) {
+double PoweredVolOfCube(double *xsort, double start, double end, double p, 
+			int dim, int squeezed_parts) {
   double red_dim = dim - squeezed_parts;
   assert(red_dim > 0);
-  double pPd = p + red_dim;
-  
-  return SURFACE(red_dim) * intpow(2 * start, squeezed_parts) / pPd
-    * (pow(end, pPd) - pow(start, pPd));
+  double res = red_dim * intpow(2.0, dim), // surface * 2^squeezed
+    pPd = p + red_dim;
+  int d;
+
+  for (d=1; d<=squeezed_parts; d++) res *= xsort[d];
+
+  //printf("res=%f %f %f %f\n", res,  pow(end, pPd), pow(start, pPd), pPd);
+
+  //return  * intpow(2 * start, squeezed_parts) 
+  return res * (pow(end, pPd) - pow(start, pPd)) / pPd;
 }
 
 double ExpVolOfCube(double start, double end, double p, double s, int dim, 
@@ -1293,13 +1318,14 @@ double ExpVolOfCube(double start, double end, double p, double s, int dim,
     a = - squeezed_parts / p + 1.0;
   assert(red_dim > 0);
 
-  //  printf("s=%f start=%f p=%f sq=%d a=%f %f\n",
-  //	 s, start, p, squeezed_parts, a, s * pow(start, p));
+  //  printf("s=%f start=%f p=%f sq=%d a=%f %f\n", s, start, p, squeezed_parts, a, s * pow(start, p));
   
  
-  //  printf("expvol %f g=%f a=%f %f v=%f\n", 
-  //	 SURFACE(red_dim) / SURFACE(dim), gammafn(a),
-  //	a, pow(s, squeezed_parts / p),  incomplete_gamma(s * pow(start, p), s * pow(end, p), a));
+  //  printf("expvol %f %f %f a=%f ret=%f\n", 
+  //       SURFACE(red_dim) / SURFACE(dim),  pow(s, squeezed_parts / p),
+  //   incomplete_gamma(s * pow(start, p), s * pow(end, p), a), a,
+  //   SURFACE(red_dim) / SURFACE(dim) * pow(s, squeezed_parts / p) * 
+  // incomplete_gamma(s * pow(start, p), s * pow(end, p), a));
 
   return 
     SURFACE(red_dim) / SURFACE(dim) * pow(s, squeezed_parts / p) * 
@@ -1330,9 +1356,11 @@ void RandomPointOnCubeRing(double start, double end, int dim, double *x) {
     // und den beiden noch fehlenden Kappen der Groesse 4 end^2
     double massTube, massEnds, Z;
 
-    massTube = 4.0 * (start + end) * (start - end) * twostart;
+    massTube = 4.0 * (start + end) * (end - start) * twostart;
     massEnds = 2.0 * end;
     massEnds = 2.0 * massEnds * massEnds;
+    assert(massTube > 0);
+    assert(massEnds > 0);
     
     X = UNIFORM_RANDOM * (massTube + massEnds);
     if (X < massTube) { // Roehre
@@ -1341,13 +1369,16 @@ void RandomPointOnCubeRing(double start, double end, int dim, double *x) {
     } else { // kappen
       x[0] = (2.0 * UNIFORM_RANDOM - 1.0) * end;
       x[1] = (2.0 * UNIFORM_RANDOM - 1.0) * end;
-      Z = (2.0 * UNIFORM_RANDOM - 1.0) * (start - end);
+      Z = (2.0 * UNIFORM_RANDOM - 1.0) * (end - start);
       x[2] = Z > 0 ? Z + start : Z - start;
     }
+    //printf("x= %f %f %f  start=%f %f Z=%f\n", x[0], x[1],x[2], start, end, Z);
   }
     break;
   default : BUG;
   }
+  
+  //printf("x0= %f %f %f dim=%d\n", x[0], x[1],x[2],dim);
 }
  
 
@@ -1420,8 +1451,6 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
 #define OUTER_POW_CONST rect->outer_pow_const
 #define STEP   rect->step
 #define NSTEP  rect->nstep
-#define OUTER_VALUE  rect->value[IDX_OUTER]
-#define INNER_VALUE  rect->value[IDX_INNER]
 #define VALUE(IDX)  rect->value[IDX_STEPS + IDX]
 #define INNER_CUM  rect->weight[IDX_INNER]
 #define OUTER_CUM  rect->weight[IDX_OUTER]
@@ -1444,59 +1473,69 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
  
 #define RECTFOR  for(i=0; i<dim; i++)
 
-
+#define DEBUG_CUMSUM false
 void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
   // kurz: kann eine Abkurzung verwendet werden, da rect->weight
   // bereits bekannt ist ?
   RECTANGULAR_PARAMETERS;
   double min, 
-    *z = rect->z;    
+    *ysort = rect->ysort,    
+    *zneu = rect->z;    
   int d, kstep, dM1,
     start_cumul = 1,
     dimP1 = dim + 1,
-    One = 1,
-    *i = rect->i;
-  bool weights = cumsum != rect->weight;
+    One = 1;
+  bool use_weights = cumsum != rect->weight;
   
   //  printf("y=%f \n", y[0]);
-  z[0] = 0.0;
+  ysort[0] = 0.0;
   for (d=0; d<dim; d++) {
-    if (y[d] <= 0.0) { BUG;}
-    z[d+1] = fabs(y[d]);
+    //
+    //   printf("%d y=%f\n", d, y[d]);
+    if (y[d] <= 0.0) {  BUG;}
+    ysort[d+1] = fabs(y[d]);
     //printf("y=%f\n", y[d]);
   }
-  if (dim > 1) {
-    Ordering(z, &dimP1, &One, i);
-    assert(dim < 3 || (z[i[0]] <= z[i[1]] && z[i[1]] <= z[i[2]]));
-  } else {
-    i[0] = 0;
-    i[1] = 1;
+
+  {
+    int *i = rect->i;
+    if (dim > 1) {
+      Ordering(ysort, &dimP1, &One, i);
+      assert(dim < 3 || 
+	     (ysort[i[0]] <= ysort[i[1]] && ysort[i[1]] <= ysort[i[2]]));
+    } else {
+      i[0] = 0;
+      i[1] = 1;      
+    }
+    assert(i[0] == 0 && i[1] > 0);
+    //for (d=0; d<=dim; d++) printf("%d,%f ", i[d], z[d]); printf("\n");
+    for(d=0; d<dimP1; d++) zneu[d] = ysort[i[d]];
+    for(d=0; d<dimP1; d++) ysort[d] = zneu[d];
   }
-  
-
-  //for (d=0; d<=dim; d++) printf("%d,%f ", i[d], z[d]); printf("\n");
-  assert(i[0] == 0 && i[1] > 0);
-
 
   TMP = 0;
   d = 1;
   dM1 = d - 1;
-  if (z[i[d]] >= INNER && weights) {
-    kstep = z[i[d]] >= OUTER ? NSTEP : (z[i[d]] - INNER) / STEP;  
+  if (zneu[d] >= INNER && use_weights) {
+    kstep = zneu[d] >= OUTER ? NSTEP : (zneu[d] - INNER) / STEP;  
 
-    //printf("kstep %d %f\n", kstep, (z[i[d]] - INNER) / STEP);
+    //
+    if (DEBUG_CUMSUM) printf("kstep %d %f\n", kstep, (zneu[d] - INNER)/STEP);//
 
     if (kurz) {
-      if (z[i[d]] == RF_INF) {
-	rectangularR(NULL, cov, &(cumsum[TMP]));
+      if (zneu[d] == RF_INF) {
+	cumsum[TMP] = OUTER_CUM;
 	TMP++;
+	//PMI(cov, -1); print("%d %d %f\n",IDX_OUTER, NSTEP, OUTER_CUM);
 	assert(cumsum[TMP-1] >= 0);
 	return;
       }	
       RIGHT_END(TMP) = INNER + kstep * STEP;
       SQUEEZED(TMP)  = - MAXINT / 2;
       ASSIGNMENT(TMP)= ASSIGN_IDX_MISMATCH;
-      //   printf("0. TMP=%d kstep=%d ass=%d\n", TMP, kstep,  ASSIGNMENT(TMP));
+      //  
+      if (DEBUG_CUMSUM)
+	printf("0. TMP=%d kstep=%d ass=%d\n", TMP, kstep,  ASSIGNMENT(TMP));//
       cumsum[TMP++] = WEIGHT(kstep - 1);
 	assert(cumsum[TMP-1] >= 0);
     } else {
@@ -1505,44 +1544,51 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
 	RIGHT_END(TMP) = INNER + (k + IDX_STEPS) * STEP;
 	SQUEEZED(TMP)  = dM1;
 	ASSIGNMENT(TMP) = k == -IDX_STEPS ? ASSIGN_IDX_INNER : k;
-	//	printf("1. TMP=%d k=%d ass=%d\n", TMP, k,  ASSIGNMENT(TMP));
+	//
+	if (DEBUG_CUMSUM)
+	  printf("1. TMP=%d k=%d ass=%d\n", TMP, k,  ASSIGNMENT(TMP));//
 	cumsum[TMP++]  = WEIGHT(k);
 	assert(cumsum[TMP-1] >= 0);
       }
     }
-    z[i[dM1]] = INNER + STEP * kstep; 
+    zneu[dM1] = INNER + STEP * kstep; 
     start_cumul = TMP;
   } else {
     kstep = 0;
-    //  printf("AA d=%d %d %f %f\n", d, TMP, z[i[dM1]], INNER);
+    //  printf("AA d=%d %d %f %f\n", d, TMP, zneu[dM1], INNER);
   }
   
   for ( ; d<=dim; d++) {
     dM1 = d - 1;
-    if (z[i[d]] == z[i[dM1]]) continue;
-    //printf("%f == %f %d\n",z[i[d]],  z[i[dM1]], z[i[d]] == z[i[dM1]] );
+    if (zneu[d] == zneu[dM1]) continue;
+    //printf("%f == %f %d\n",zneu[d],  zneu[dM1], zneu[d] == zneu[dM1] );
    // printf("A d=%d %d\n", d, TMP);
  
-    if (z[i[dM1]] < INNER) {
-      min = RIGHT_END(TMP) = z[i[d]] <= INNER ? z[i[d]] : INNER;
+    if (zneu[dM1] < INNER) {
+      min = RIGHT_END(TMP) = zneu[d] <= INNER ? zneu[d] : INNER;
       SQUEEZED(TMP) = dM1;
       ASSIGNMENT(TMP) = ASSIGN_IDX_INNER;
-      cumsum[TMP++]= INNER_CONST * 
-	PoweredVolOfCube(z[i[dM1]], min, INNER_POW, dim, dM1);
-       //  printf("2. TMP=%d kstep=%d ass=%d cum=%f outer_c=%f pow=%f\n", TMP, kstep,  ASSIGNMENT(TMP), cumsum[TMP-1], INNER_CONST, 	PoweredVolOfCube(z[i[dM1]], min, INNER_POW, dim, dM1));
+      cumsum[TMP++] = INNER_CONST * 
+	PoweredVolOfCube(ysort, zneu[dM1], min, INNER_POW, dim, dM1);
+       // 
+      if (DEBUG_CUMSUM)
+	printf("2. TMP=%d kstep=%d ass=%d cum=%f inner_c=%f start=%f ende=%f pow=%f dim=%d squ=%d\n", TMP, kstep,  ASSIGNMENT(TMP), cumsum[TMP-1], //
+	       INNER_CONST, zneu[dM1],
+	       min,PoweredVolOfCube(ysort, zneu[dM1], min, INNER_POW, dim, dM1),
+	       dim, dM1);// assert(false);
 	assert(cumsum[TMP-1] >= 0);
-      if (z[i[d]] <= INNER) continue;
-      z[i[dM1]] = INNER;
+      if (zneu[d] <= INNER) continue;
+      zneu[dM1] = INNER;
     }
 
-    if (z[i[dM1]] < OUTER) {
-      min = z[i[d]] <= OUTER ? z[i[d]] : OUTER;
+    if (zneu[dM1] < OUTER) {
+      min = zneu[d] <= OUTER ? zneu[d] : OUTER;
       int k,
-	steps = (min - z[i[dM1]]) / STEP;
-      double a = z[i[dM1]];
+	steps = (min - zneu[dM1]) / STEP;
+      double a = zneu[dM1];
       assert(steps <= NSTEP);
       
-      //printf("d=%d min=%f %f %f\n", d, min, z[i[dM1]], z[i[d]]);
+      //printf("d=%d min=%f %f %f\n", d, min, zneu[dM1], zneu[d]);
       
       //  
       assert(TMP <= NSTEP + 2 + dim);
@@ -1552,13 +1598,17 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
 	SQUEEZED(TMP) = dM1;
 	ASSIGNMENT(TMP) = kstep; // NICHT k !
 	//   	double z; FCTN(&a, cov->sub[0], &z);
-	//	printf("3. TMP=%d kstep=%d ass=%d a=%f %f end=%f OUTER=%f\n", TMP, kstep,  ASSIGNMENT(TMP), a, STEP, RIGHT_END(TMP), OUTER);
 	//
 
-
-	cumsum[TMP++] = VolumeOfCubeRing(a, a + STEP, dim, dM1) * VALUE(kstep);
+	cumsum[TMP++] = 
+	  VolumeOfCubeRing(ysort, a, a + STEP, dim, dM1) * VALUE(kstep);
 	assert(cumsum[TMP-1] >= 0);	
-      }
+  	//
+	if (DEBUG_CUMSUM)
+	  printf("3. TMP=%d kstep=%d ass=%d a=%4.2f st=%4.2f end=%4.2f val=%4.2e, tot=%4.4f\n", TMP, kstep,  ASSIGNMENT(TMP), a, STEP, RIGHT_END(TMP), //
+		 VALUE(kstep), cumsum[TMP-1]);
+	//	assert(dM1 != 1);
+    }
       // 
       // printf("B %d %d\n", d, TMP);
       assert(TMP <= NSTEP + 2 + dim);
@@ -1568,10 +1618,12 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
 	SQUEEZED(TMP) = dM1;
 	ASSIGNMENT(TMP) = kstep;
 	assert(TMP > 0);
-	// 	printf("4. TMP=%d k=%d ass=%d\n", TMP, kstep, ASSIGNMENT(TMP));
-	cumsum[TMP++] = VolumeOfCubeRing(a, min, dim, dM1) * VALUE(kstep);
+	// 
+	if (DEBUG_CUMSUM)
+	  printf("4. TMP=%d k=%d ass=%d\n", TMP, kstep, ASSIGNMENT(TMP));//
+	cumsum[TMP++] = VolumeOfCubeRing(ysort, a, min, dim, dM1) * VALUE(kstep);
 	assert(cumsum[TMP-1] >= 0);
-	if (z[i[d]] <= OUTER) continue;
+	if (zneu[d] <= OUTER) continue;
       }
       
       // printf("outer=%f %f %f %e %d %d %d\n", OUTER, a,  cumsum[TMP-1], 
@@ -1581,35 +1633,51 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
     }
       
 
-    RIGHT_END(TMP) = z[i[d]];
+    RIGHT_END(TMP) = zneu[d];
     SQUEEZED(TMP) = dM1;
     ASSIGNMENT(TMP) = ASSIGN_IDX_OUTER;
-    //  printf("5. TMP=%d k=%d ass=%d %f p=%f right=%f\n", 
-    //       TMP, 9999,  ASSIGNMENT(TMP), OUTER, OUTER_POW, z[i[d]]);
+    //  
+    if (DEBUG_CUMSUM) 
+      printf("5. TMP=%d k=%d ass=%d %f p=%f right=%f\n", //
+	     TMP, 9999, ASSIGNMENT(TMP), OUTER, OUTER_POW, zneu[d]);
     
     if (next->finiterange == true) {
       cumsum[TMP++] = 0.0;
       continue;
     } else if (OUTER_POW > 0) {
       //      printf("here %d C=%f Z=%f PC=%f e=%f %f\n", 
-      ///	     IDX_OUTER, OUTER_CONST,z[i[d]],
+      ///	     IDX_OUTER, OUTER_CONST,zneu[d],
       //    OUTER_POW_CONST,
-      //     ExpVolOfCube(OUTER, z[i[d]], OUTER_POW, 
+      //     ExpVolOfCube(OUTER, zneu[d], OUTER_POW, 
       //		  OUTER_POW_CONST, dim, dM1),
-      //     OUTER_POW_CONST * ExpVolOfCube(OUTER, z[i[d]], OUTER_POW, 
+      //     OUTER_POW_CONST * ExpVolOfCube(OUTER, zneu[d], OUTER_POW, 
       //				    OUTER_POW_CONST, dim, dM1)	     
       //     );
-      cumsum[TMP++] = OUTER_CONST * ExpVolOfCube(OUTER, z[i[d]], OUTER_POW, 
+      cumsum[TMP++] = OUTER_CONST * ExpVolOfCube(OUTER, zneu[d], OUTER_POW, 
 						 OUTER_POW_CONST, dim, dM1);
 
- 	assert(cumsum[TMP-1] >= 0);
-     assert(R_FINITE(cumsum[TMP-1]));
+     // 
+      if (DEBUG_CUMSUM)
+	printf("6. TMP=%d k=%d ass=%d oc=%f c=%f op=%f opc=%f dim=%d %d right=%f\n", TMP, 10001, ASSIGNMENT(TMP),OUTER_CONST, OUTER, OUTER_POW, //
+	       OUTER_POW_CONST, dim, dM1, zneu[d]);
+      //  printf("TMP=%d %f\n", TMP, cumsum[TMP-1]);
+      // if (cumsum[TMP-1] < 0) {
+      //t i;
+      //fori=1; i<TMP; i++) {
+      //	  if (cumsum[i] < 0)
+      //	    printf("i=%d %f %f\n", i, cumsum[i], cumsum[i - 1]);
+      //	}
+      //	PMI(cov);
+      //      }
+
+      assert(cumsum[TMP-1] >= 0);
+      assert(R_FINITE(cumsum[TMP-1]));
 
     } else {
       //printf("here XXX\n");
-      cumsum[TMP++]= 
-	OUTER_CONST * PoweredVolOfCube(OUTER, z[i[d]], OUTER_POW, dim, dM1);
-	assert(cumsum[TMP-1] >= 0);
+      cumsum[TMP++]= OUTER_CONST * 
+	PoweredVolOfCube(ysort, OUTER, zneu[d], OUTER_POW, dim, dM1);
+      assert(cumsum[TMP-1] >= 0);
     }
 
   }
@@ -1669,22 +1737,23 @@ void evaluate_rectangular(double *x, cov_model *cov, double *v) {
       return;
     }
     OUTER_DENSITY(*v, *x);
-    return;							\
+    return;					
   } else {
-    //printf("k=%d ", (int) ((*x - INNER) / STEP));
+    //   printf("k=%d %f %f ", (int) ((*x - INNER) / STEP),
+    //	   VALUE(0),
+    //	   VALUE( (int) ((*x - INNER) / STEP)));
    *v = VALUE( (int) ((*x - INNER) / STEP));
     return;
   }
 }
 
 void rectangularD(double *x, cov_model *cov, double *v) {
-  bool onesided = ((int *) cov->p[RECT_ONESIDED])[0]; 
+  bool onesided = P0INT(RECT_ONESIDED); 
   if (onesided && *x <= 0) {
     *v = 0;
     return;
   }
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETERS;
   int i;
    
@@ -1693,11 +1762,12 @@ void rectangularD(double *x, cov_model *cov, double *v) {
   RECTFOR {double y=fabs(x[i]); if (y > max) max = y;}
 
   evaluate_rectangular(&max, cov, v);
+  
+  // printf("max %f %f\n", max, *v);
+  // printf("rectD %f %f %d %f\n", max, *v, P0INT(RECT_NORMED), OUTER_CUM);
 
-  // printf("rectD %f %f %f\n", max, *v, OUTER_CUM);
-
-  if (((int *) cov->p[RECT_NORMED])[0]) *v /= OUTER_CUM; // unnormed v
-  if (onesided) *v *= 2.0;
+  if (P0INT(RECT_NORMED)) *v /= OUTER_CUM; 
+  if (onesided) *v *= 2.0; // R^1 !!
 }
 
 
@@ -1710,16 +1780,15 @@ void rectangularDlog(double *x, cov_model *cov, double *v, double *Sign) {
 
 void rectangularDinverse(double *V, cov_model *cov, double *left,
 			 double *right) {
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETERS;
   double  er, outer,
     x = RF_NAN,
     v = *V; 
   int i;
-  bool onesided = ((int *) cov->p[RECT_ONESIDED])[0]; 
+  bool onesided = P0INT(RECT_ONESIDED); 
 
-  if (((int *) cov->p[RECT_NORMED])[0]) v *= OUTER_CUM; // unnormed v
+  if (P0INT(RECT_NORMED)) v *= OUTER_CUM; // unnormed v
   if (onesided) v /= 2.0;
   
   //  printf("V=%e dim=%d\n", *V, dim);
@@ -1793,8 +1862,7 @@ void rectangularDinverse(double *V, cov_model *cov, double *left,
 void rectangularP(double VARIABLE_IS_NOT_USED *x, 
 		  cov_model VARIABLE_IS_NOT_USED *cov, 
 		  double VARIABLE_IS_NOT_USED *v) {
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
  // RECTANGULAR_PARAMETERS;
 
   // not programmed yet
@@ -1805,17 +1873,23 @@ void rectangularP(double VARIABLE_IS_NOT_USED *x,
 
 void rectangularP2sided(double *x, double *y, cov_model *cov, double *v) {
   // distribution functions
-  bool onesided = ((int *) cov->p[RECT_ONESIDED])[0]; 
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  bool onesided = P0INT(RECT_ONESIDED); 
+  int d;
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETERS;
   if (x != NULL) BUG;
   if (onesided && *y <= 0) {
     *v = 0;
     return;
+  } 
+  for (d=0; d<dim; d++) {// To Do ?? Stimmt das? Oder Masse der dimension d-k ??
+    assert(y[d] >= 0.0);
+    if (y[d] == 0.0) {
+      *v = 0.0;
+      return;
+    }
   }
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
      
   //  CumSum(y, false, cov, rect->tmp_weight);
   //  double tw = TMP_WEIGHT[TMP-1];
@@ -1829,10 +1903,10 @@ void rectangularP2sided(double *x, double *y, cov_model *cov, double *v) {
   //  if(*v != tw) APMI(cov);
   //  assert(*v == tw);
 
-  if (((int *) cov->p[RECT_NORMED])[0]) *v /= OUTER_CUM;
+  if (P0INT(RECT_NORMED)) *v /= OUTER_CUM;
 
   //  printf("p2sided %f %d outercum=%f, %d %f\n",
-  //	 *y, ((int *) cov->p[RECT_NORMED])[0], OUTER_CUM, 
+  //	 *y, P0INT(RECT_NORMED), OUTER_CUM, 
   //	 TMP, TMP_WEIGHT[TMP-1]);
   //  int i; for (i=0; i<TMP; i++) printf("ii=%d %f\n", i, TMP_WEIGHT[i]);
 
@@ -1844,14 +1918,13 @@ void rectangularP2sided(double *x, double *y, cov_model *cov, double *v) {
 void rectangularQ(double  VARIABLE_IS_NOT_USED *x, 
 		  cov_model  VARIABLE_IS_NOT_USED *cov, 
 		  double  VARIABLE_IS_NOT_USED *v) {
-  if (!((int*) cov->p[RECT_INNERMIN])[0]) 
-    ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
    error("rectangularQ not programmed yet");
 }
 
 
 #define ACCEPT_REJECT							\
-  if (!((int*) cov->p[RECT_APPROX])[0]) {				\
+  if (!P0INT(RECT_APPROX)) {				\
     int ni = dim,							\
       quot = dim + 1,							\
       bytes =  sizeof(double) * dim;					\
@@ -1862,7 +1935,7 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
     FCTN(v, next, &truevalue);						\
     newquot = truevalue / approx;					\
     assert(quot < cov->qlen + 2);					\
-   if (isMonotone(next->monotone)) {					\
+    if (isMonotone(next->monotone)) { /* rejection sampling */		\
       assert(approx >= truevalue);					\
       cov->q[ni] = 0;							\
        if (UNIFORM_RANDOM >= newquot) {					\
@@ -1879,7 +1952,7 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
 	  memcpy(cov->q, v, bytes);					\
 	}								\
       } else { /* !R_FINITE(cov->q[ni]), i.e. starting value */		\
-	cov->q[ni] = ((int *) cov->p[RECT_MCMC_N])[0] - 1.0;		\
+	cov->q[ni] = P0INT(RECT_MCMC_N) - 1.0;		\
 	cov->q[quot] = newquot; /* pi / Q */				\
 	memcpy(cov->q, v, bytes);					\
       }									\
@@ -1887,7 +1960,7 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
     if (cov->q[ni] > 0) {						\
       RECT_R;								\
     } else {								\
-      cov->q[ni] = ((int *) cov->p[RECT_MCMC_N])[0];			\
+      cov->q[ni] = P0INT(RECT_MCMC_N);			\
       if (final) {							\
 	cov->total_n++;							\
 	cov->total_sum += truevalue;					\
@@ -1898,7 +1971,7 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
     if (final) {							\
       double approx,							\
 	max = RF_NEGINF;						\
-      RECTFOR {double z=fabs(v[i]); if (z > max) max = z;}	\
+      RECTFOR {double z=fabs(v[i]); if (z > max) max = z;}		\
       evaluate_rectangular(&max, cov, &approx);				\
       cov->total_n++;							\
       cov->total_sum += approx;						\
@@ -1914,6 +1987,8 @@ void rectangularR(double *x, cov_model *cov, double *v) {
   
   int i = CeilIndex(UNIFORM_RANDOM * OUTER_CUM, rect->weight, NSTEP + 2);
   //int i = searchFirstGreater(rect->weight, NSTEP + 2, UNIFORM_RANDOM  * OUTER_CUM);
+
+  //printf("i=%d dim=%d %d %d %s\n", i, dim, IDX_INNER, IDX_OUTER, NICK(cov->sub[0]));
  
   if (i == IDX_INNER) {
     RandomPointOnCubeSurface(pow(UNIFORM_RANDOM, 1.0 / (INNER_POW+dim)) * INNER,
@@ -1931,15 +2006,14 @@ void rectangularR(double *x, cov_model *cov, double *v) {
     double start = INNER + i * STEP;
     RandomPointOnCubeRing(start, start + STEP, dim, v); 
   }
-  if (((int *) cov->p[RECT_ONESIDED])[0]) *v = fabs(*v);
+  if (P0INT(RECT_ONESIDED)) *v = fabs(*v);
 #define RECT_R rectangularR(x, cov, v)
-
  
   ACCEPT_REJECT;
   
 }
 
-
+static int zi=0, zs=0, zo=0;
 
 void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) { 
   if (x != NULL) 
@@ -1948,15 +2022,18 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
   int d, sel, red_dim, i,
     *I = rect->i;
   double *u, start, end,
-    *Z = rect->z;    
+    *ysort = rect->ysort;    
  
   CumSum(y, false, cov, rect->tmp_weight); // ACHTUNG! reck->z gesetzt
+  //assert(rect->tmp_weight[TMP-1] >= 2.1 && rect->tmp_weight[TMP-1] <= 2.2);
   double random = UNIFORM_RANDOM * rect->tmp_weight[TMP-1];
   bool final = SQUEEZED(TMP-1) == 0 && 
-    (!((int*) cov->p[RECT_APPROX])[0] || !next->deterministic); // ohne Einschraenkung
+    (!P0INT(RECT_APPROX) || !next->deterministic); // ohne Einschraenkung
   assert(!final); // nur zur Kontrolle
 
   sel = CeilIndex(random, rect->tmp_weight, TMP);
+  //printf("r=%f inner=%f o.tmp=%f lst.step.tmp=%f\n", random,  rect->tmp_weight[IDX_INNER],  rect->tmp_weight[TMP-1],rect->tmp_weight[TMP-1]);
+
   red_dim = dim - SQUEEZED(sel);
   if (red_dim <= 0) BUG;
   start = sel > 0 ? RIGHT_END(sel - 1) : 0;
@@ -1972,12 +2049,23 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
   u = rect->tmp_weight; // nutzen des Platzes...
   //printf("assess %d %d %d\n", ASSIGNMENT(sel), sel, TMP);
   if (ASSIGNMENT(sel) == ASSIGN_IDX_INNER) {
-    double 
-      ap = start == 0.0 ? 0 : pow(start / end, INNER_POW + red_dim),
-      r = end * pow(ap + UNIFORM_RANDOM * (1 - ap), 1.0 /(INNER_POW + red_dim));
-    //printf("hXere %d %d\n", dim, SQUEEZED(sel));
+    //   RandomPointOnCubeSurface(pow(UNIFORM_RANDOM, 1.0 / (INNER_POW+dim))
+    //                        * INNER, dim, v);
+    zi ++;
+    double // a + b x^p probab distr on [s, e], i.e. b = 1/(e^p-s^p),
+      p = INNER_POW + red_dim,
+      sp = pow(start, p),
+      ep = pow(end, p),
+      binv = ep - sp,
+      a = - sp / binv,
+      r = pow((UNIFORM_RANDOM - a) * binv, 1 / p);
+    //
+    //   printf("inner %d %d ap=%f r=%f inner=%f w=%f tmp=%f, %f\n", dim, SQUEEZED(sel), ap, r, INNER, INNER_CUM, TMP_WEIGHT[IDX_INNER], TMP_WEIGHT[IDX_INNER+1]);
+
     RandomPointOnCubeSurface(r, red_dim, u);
   } else if (ASSIGNMENT(sel) == ASSIGN_IDX_OUTER) {
+    zo++;
+    // printf("outer\n");
     double w;
     assert(next->finiterange == false);
     if (OUTER_POW > 0) {// sampling by inversion formula
@@ -1991,6 +2079,8 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
     //printf("hXXere\n");
     RandomPointOnCubeSurface(w, red_dim, u);
   } else { // i \in steps
+    zs++;
+    //  printf("steps \n");
     assert(ASSIGNMENT(sel) >= 0 && ASSIGNMENT(sel) < NSTEP);
     // printf("hAere\n");
    
@@ -1998,19 +2088,23 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
 
     RandomPointOnCubeRing(start, end, red_dim, u); 
   }
+  // printf("zi=%d s=%d o=%d tot=%d\n", zi, zs, zo, zi+zs+zo);
  
   // up to now simulation on cubes on the non-squeezed dimensions
   // Now the coordinates have to put on the right place and
   // the remaining coordinates have to be filled with uniformly scattered
-  // random variables on [-Z[d], Z[d]]
-  // I[.] and Z[.] have been set by CumSum
+  // random variables on [-ysort[d], ysort[d]
+  // I[.] and ysort[.] have been set by CumSum
   assert(I[0] == 0.0);
-  for (d=1; d<=SQUEEZED(sel); d++) 
-    v[I[d] - 1] = (2.0 * UNIFORM_RANDOM - 1.0) * Z[I[d]]; // I[d] indiziert ab 1
-  //                                                    da Z[0]=0 per def.
-  for (d=SQUEEZED(sel); d<dim; d++) v[I[d+1] - 1] = u[d - SQUEEZED(sel)];
+  for (d=1; d<=SQUEEZED(sel); d++) {
+    v[I[d] - 1] = (2.0 * UNIFORM_RANDOM - 1.0) * ysort[d];//I[d] indiziert ab 1
+  //                                                    da ysort[0]=0 per def.
+  }
+  for (d=SQUEEZED(sel); d<dim; d++) {
+    v[I[d+1] - 1] = u[d - SQUEEZED(sel)];
+  }
 
-  if (((int *) cov->p[RECT_ONESIDED])[0]) *v = fabs(*v);
+  if (P0INT(RECT_ONESIDED)) *v = fabs(*v);
 
 #undef RECT_R
 #define RECT_R rectangularR2sided(x, y, cov, v)	
@@ -2023,25 +2117,24 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
 int GetMajorant(cov_model *cov) {
   RECTANGULAR_PARAMETERS;
   double v, m, delta, old_ratio,
-    **p = cov->p,
     starting_point = 1.0,
-    min_steps = p[RECT_MINSTEPLENGTH][0], // middle
-    safety = p[RECT_SAFETY][0],
+    min_steps = P0(RECT_MINSTEPLENGTH), // middle
+    safety = P0(RECT_SAFETY),
     safetyP1 = safety + 1.0,
     EMsafety = 1.0 - safety,
     dimsafety = dim * safety,
-    inner_min = p[RECT_INNERMIN][0],
-    outer_max = p[RECT_OUTERMAX][0],
+    inner_min = P0(RECT_INNERMIN),
+    outer_max = P0(RECT_OUTERMAX),
     inner_factor = 0.5,
     outer_factor = 1.3
     ;
   
-  assert(p[RECT_MAXSTEPS] != NULL);
+  assert(!PisNULL(RECT_MAXSTEPS));
 
   int i, j, 
-    max_steps = ((int *) p[RECT_MAXSTEPS])[0],
-    parts = ((int *) p[RECT_PARTS])[0],
-    max_iterations =  ((int *) p[RECT_MAXIT])[0];
+    max_steps = P0INT(RECT_MAXSTEPS),
+    parts = P0INT(RECT_PARTS),
+    max_iterations =  P0INT(RECT_MAXIT);
 
   assert(next->taylor[0][TaylorConst] > 0.0);
   INNER_CONST = next->taylor[0][TaylorConst] * safetyP1;
@@ -2123,6 +2216,7 @@ int GetMajorant(cov_model *cov) {
     
     // APMI(cov);
     INVERSE(ZERO, next, &(OUTER));
+    if (INNER >= OUTER) OUTER = INNER * (1.0 + 1e-5);
   } else { // ! finiterange
     assert(next->tail[0][TaylorConst] > 0.0);
     i = 0;
@@ -2172,7 +2266,7 @@ int GetMajorant(cov_model *cov) {
     }
   }
 
-  //printf("outer %f\n", OUTER); assert(false);
+  //  printf("inner outer %f %f\n", INNER, OUTER);// assert(false);
   // STEPS  
   
   // todo variable Schrittweiten waeren wegen des steilen
@@ -2206,21 +2300,30 @@ int check_rectangular(cov_model *cov) {
   kdefault(cov, RECT_NORMED, true);
   kdefault(cov, RECT_APPROX, true);
   kdefault(cov, RECT_ONESIDED, false);
+  //  int onesided = P0INT(RECT_ONESIDED);
   
   cov->q = (double *) CALLOC(dim + 2, sizeof(double));
   cov->qlen = 1;
   cov->q[dim] = RF_NAN;
 
-  if ((err = CHECK(next, dim, dim, ShapeType, XONLY, ISOTROPIC, SCALAR, 
-		     ROLE_MAXSTABLE)) != NOERROR) return err;
+  if ((err = CHECK(next, dim, dim, ShapeType, XONLY, 
+		   dim == 1 && P0INT(RECT_ONESIDED) ? CARTESIAN_COORD 
+		   : ISOTROPIC, 
+		   SCALAR, ROLE_BASE)) != NOERROR) {
+    return err;
+  }
 
-  if (!next->deterministic)
+  if (!next->deterministic) {
+    //APMI(cov);
     SERR("currently, only deterministic submodels are allowed"); // to do
+  }
   
-  if (!isMonotone(next->monotone)) SERR("only monotone submodels are allowed");
+  // if (!isMonotone(next->monotone)) SERR("only monotone submodels are allowed");
 
-  if (next->taylorN <= 0 || next->tailN <= 0) 
+  if (next->taylorN <= 0 || next->tailN <= 0) {
+    //PMI(next);
     SERR1("'%s' does not have integrability information", NICK(next));
+  }
   assert(R_FINITE(next->taylor[0][TaylorPow]));
   if (next->taylor[0][TaylorPow] <= -dim)
     SERR1("pole of '%s' not integrable", NICK(next));
@@ -2232,6 +2335,8 @@ int check_rectangular(cov_model *cov) {
       next->tail[0][TaylorConst] != 0.0) 
     SERR1("tail of '%s' not integrable", NICK(next));
   assert(R_FINITE(next->tail[0][TaylorConst]));
+
+  //PMI(next);
   if (next->taylor[0][TaylorConst] == 0.0) 
     SERR1("'%s' seems to be a trivial shape function", NICK(next));
 
@@ -2251,15 +2356,25 @@ int check_rectangular(cov_model *cov) {
 
 int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   int  err;
-  if (cov->Srect != NULL) RECT_DELETE(&(cov->Srect));
+
+  // printf("init rectangular\n");
+ 
+  if (cov->Srect != NULL) RECT_DELETE(&(cov->Srect)); // init_rectangular 
+  // kann ein 2. Mal aufgerufen werden
   cov->Srect = (rect_storage *) MALLOC(sizeof(rect_storage));
   RECT_NULL(cov->Srect);
+
+  RECTANGULAR_PARAMETERS; // muss nach obigen stehen und vor allem anderen
+
+  if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR) {
+    //PMI(cov);
+    return err;
+  }
+
   if ((err = GetMajorant(cov)) != NOERROR) return err; // muss genau nach MALLOC oben und MALLOC unten stehen
-
-  RECTANGULAR_PARAMETERS;
-
-  // PMI(cov);
   if (INNER >= OUTER) BUG;
+
+  //   APMI(cov);
    
   int d,
     abschnitte = NSTEP + 2, 
@@ -2270,7 +2385,8 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
       (rect->weight = (double*) MALLOC(sizeof(double) * abschnitte)) == NULL||
       (rect->tmp_weight = (double*) CALLOC(tmp_n, sizeof(double))) == NULL ||
       (rect->right_endpoint = (double*) MALLOC(sizeof(double) * tmp_n)) ==NULL||
-      (rect->z = (double*) MALLOC(sizeof(double) * (dim + 1))) == NULL ||
+      (rect->ysort = (double*) MALLOC(sizeof(double) * (dim + 1))) == NULL ||
+      (rect->z = (double*) MALLOC(sizeof(double) * (dim + 1))) == NULL ||//dummy
       (rect->squeezed_dim = (int*) MALLOC(sizeof(int) * tmp_n)) == NULL ||
       (rect->assign = (int*) MALLOC(sizeof(int) * tmp_n)) == NULL ||
       (rect->i = (int*) MALLOC(sizeof(int) * (dim + 1))) == NULL)
@@ -2280,6 +2396,7 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   x = INNER;
   for (d=0; d<NSTEP; d++, x+=STEP) {
     FCTN(&x, next, &(VALUE(d)));
+    //printf("x=%f %f\n", x, VALUE(d));
     assert(VALUE(d) >= 0);
   }
   rect->value[IDX_INNER] = rect->value[IDX_OUTER] = RF_NAN;
@@ -2288,8 +2405,21 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   
   CumSum(rect->tmp_weight, false, cov, rect->weight);
 
+  cov->mpp.M[0] = cov->mpp.Mplus[0] = P0INT(RECT_NORMED) ? 1.0 : OUTER_CUM;
+  assert(R_FINITE(OUTER_CUM));
+  if (cov->mpp.moments > 0) {    
+    cov->mpp.M[1] = next->mpp.M[1];
+    cov->mpp.Mplus[1] = next->mpp.Mplus[1]; 
+    if (!R_FINITE(cov->mpp.M[1])){
+      //APMI(cov);
+      BUG;
+    }
+  }
+
   // normed against cov->sub[0]
   cov->mpp.maxheight = OUTER_CUM;
+
+  //PMI(cov);
 
   if (false) {
     double mini=1e-6, u,w,t, tot_u=0.0, tot_t=0.0, e,
@@ -2339,14 +2469,15 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 
 void do_rectangular(cov_model *cov, double *v){
   RECTANGULAR_PARAMETERS;
-  int err;
+  //
   storage s;
-  STORAGE_NULL(&s);
-  if (cov->deterministic) BUG;
+  STORAGE_NULL(&s);  
   DO_PARAM_MODELS;
-  DO(next, &s);
-  if ((err = GetMajorant(cov)) != NOERROR) XXERR(err);
-  CumSum(rect->tmp_weight, false, cov, rect->weight);
+  if (!next->deterministic) {
+    DO(next, &s);
+    cov->initialised = false;
+    INIT(cov, cov->mpp.moments, &s);
+  }
   rectangularR(NULL, cov, v);
 }
 
@@ -2362,13 +2493,13 @@ void range_rectangular(cov_model *cov, range_type *range){
   range->max[RECT_MINSTEPLENGTH] = RF_INF;
   range->pmin[RECT_MINSTEPLENGTH] = 0.01;
   range->pmax[RECT_MINSTEPLENGTH] = 10;
-  range->openmin[RECT_MINSTEPLENGTH] = true;
+  range->openmin[RECT_MINSTEPLENGTH] = false;
   range->openmax[RECT_MINSTEPLENGTH] = true;
   
   range->min[RECT_MAXSTEPS] = 1;
   range->max[RECT_MAXSTEPS] = RF_INF;
   range->pmin[RECT_MAXSTEPS] = 2;
-  range->pmax[RECT_MAXSTEPS] = 1000;
+  range->pmax[RECT_MAXSTEPS] = 10000;
   range->openmin[RECT_MAXSTEPS] = false;
   range->openmax[RECT_MAXSTEPS] = true;
   

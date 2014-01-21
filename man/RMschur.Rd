@@ -53,6 +53,6 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
  ## For an example see the help page of 'RMparswmX' ##
+\dontshow{RFoptions(seed=NA)}
 }

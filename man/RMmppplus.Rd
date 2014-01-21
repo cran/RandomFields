@@ -40,10 +40,11 @@ RMmppplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p)%, var,scale,Aniso,proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 \dontshow{\dontrun{
 model <- RPcoins(RMmppplus(p=c(0.8, 0.2), RMgauss(), RMexp()), intensity=1)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x))
 }}
+\dontshow{RFoptions(seed=NA)}
 }

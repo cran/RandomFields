@@ -51,8 +51,9 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMiaco(nu=1, lambda=2, delta=0.5)
 x <- seq(0, 10, if (interactive()) 0.1 else 5) 
 plot(RFsimulate(model, x=x, y=x))
+\dontshow{RFoptions(seed=NA)}
 }

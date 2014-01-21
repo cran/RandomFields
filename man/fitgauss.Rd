@@ -73,8 +73,9 @@
  \code{\link{RFfit}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## to do
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de}}

@@ -40,9 +40,9 @@
  Master thesis, University of Bayreuth, Germany.
 }
 \examples{
-set.seed(0)
-% library(RandomFields, lib="~/TMP");
-% source("~/R/RF/RandomFields/R/rf.R")
+RFoptions(seed=0)
+%  library(RandomFields, lib="~/TMP");  source("randomfields_2/private/source.R");
+
 ################################################################
 ## ##
 ## a geostatistical analysis that demonstrates ##
@@ -50,7 +50,7 @@ set.seed(0)
 ## ##
 ################################################################
 \dontshow{\dontrun{
-
+%   library(RandomFields, lib="~/TMP")
 data(soil)
 str(soil)
 soil <- RFspatialPointsDataFrame(
@@ -65,7 +65,6 @@ soil <- RFspatialPointsDataFrame(
 colour <- rainbow(100)
 plot(soil["moisture"], col=colour)
 
-x <- seq(min(soil@coords[, 1]), max(soil@coords[, 1]), l=121)
 
 ## fit by eye
 RFgui.model <-  RFgui(soil["moisture"]) 
@@ -79,6 +78,7 @@ plot(fit, fit.method=c("ml", "plain", "sqrt.nr", "sd.inv"),
 
 
 ## Kriging ...
+x <- seq(min(soil@coords[, 1]), max(soil@coords[, 1]), l=121)
 k <- RFinterpolate(fit["ml"], x=x, y=x, grid=TRUE, data=soil["moisture"])
 plot(x=k, col=colour)
 plot(x=k, y=soil["moisture"], col=colour)
@@ -95,6 +95,7 @@ Print(mean(apply(as.matrix(cs@data) <= 24, 2, all))) ## about 40 percent
 
 }
 }
+\dontshow{RFoptions(seed=NA)}
 }
 \keyword{datasets}
 

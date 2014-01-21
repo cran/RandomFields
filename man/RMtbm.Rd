@@ -69,11 +69,12 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
  \command{\link{RFsimulate}}.
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 x <- seq(0,25, if (interactive()) 0.02 else 5)
 model <- RPtbm(RMspheric())
 z <- RFsimulate(model, x, x)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }

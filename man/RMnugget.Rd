@@ -59,8 +59,9 @@ RMnugget(tol, vdim, var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMnugget(Aniso=matrix(1, nr=2, nc=2))
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x, y=x, tol=1e-10))
+\dontshow{RFoptions(seed=NA)}
 }

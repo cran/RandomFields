@@ -35,6 +35,7 @@
  \item{\code{submodels}:}{see \code{\link[=RMmodel]{RMmodel}}.}
  \item{\code{par.model}:}{see \code{\link[=RMmodel]{RMmodel}}.}
  \item{\code{par.general}:}{see \code{\link[=RMmodel]{RMmodel}}.}
+ \item{\code{AICc}:}{the corrected AIC value for the ml estimation}
  }
 }
 
@@ -65,8 +66,8 @@
 }
  
 \examples{
-set.seed(0)
 # see RFfit
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{classes}

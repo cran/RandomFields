@@ -45,7 +45,7 @@ RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMgauss() + RMnugget(var=0.01)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
@@ -55,6 +55,7 @@ plot(z)
 model <- RMplus(RMgauss(), RMnugget(var=0.01))
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{spatial}

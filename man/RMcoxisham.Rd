@@ -74,9 +74,10 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
 
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 model <- RMcoxisham(RMgauss(), mu=1, D=1)
 x <- seq(0, 10, if (interactive()) 0.3 else 1) 
 plot(model, ylim=c(0, 1), dim=2)
 plot(RFsimulate(model, x=x, y=x))
+\dontshow{RFoptions(seed=NA)}
 }

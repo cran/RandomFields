@@ -4,7 +4,7 @@
 
  library for simulation of random fields -- get key strukture
 
- Copyright (C) 2001 -- 2013 Martin Schlather, 
+ Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -439,7 +439,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 	int t,l,m;
 	for (t=l=0; l<cov->nrow[i]; l++) {
 	  for (m=0; m<cov->ncol[i]; m++) {
-	    Aniso[t++] = cov->p[DANISO][m * cov->nrow[i] + l];
+	    Aniso[t++] = P(DANISO)[m * cov->nrow[i] + l];
 	  }
 	}
 	SET_VECTOR_ELT(param, j,
@@ -452,7 +452,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 				       ? cov->ownkappanames[i] 
 				       : C->kappanames[i]));
       SET_VECTOR_ELT(param, j,
-		     Param((void*) cov->p[i], cov->nrow[i], cov->ncol[i], 
+		     Param((void*) cov->px[i], cov->nrow[i], cov->ncol[i], 
 			   C->kappatype[i], true));    
       j++;
     }
@@ -663,7 +663,7 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
 		       INTEGER(whichSub)[0], 0);
     if (prlevel>=1 && delete_call) {
       names = getAttrib(res, R_NamesSymbol);
-      int i, len = LENGTH(names);
+      int i, len = length(names);
       for (i=0; i<len; i++) {
 	const char *name = CHAR(STRING_ELT(names, i));
 	if (strcmp("xdimprev", name) == 0) {
@@ -813,10 +813,11 @@ void PrintLoc(int level, location_type *loc, bool own) {
 
 static bool PMI_print_dollar = !true,
   PMI_print_mpp = true,
-  PMI_print_pgs = true,
-  PMI_print_rect = true,
-  PMI_print_details = true,
+  PMI_print_pgs = !true, 
+  PMI_print_details = !true,
   PMI_print_loc = true;
+static int  PMI_print_rect = 0;  // 0, 1, 2
+
 void pmi(cov_model *cov, char all, int level) {     
   int i, j, endfor;
   cov_fct *C = CovList + cov->nr; // nicht gatternr
@@ -831,8 +832,8 @@ void pmi(cov_model *cov, char all, int level) {
 
   cov_fct *CC = C;
   while(strcmp(CC->name, InternalName) ==0) CC--;
-  if (level == 0)  PRINTF("******   %s   ****** [%d]", CC->nick, cov->nr);
-  else PRINTF("    **** %s **** [%d]", CC->nick, cov->nr);
+  if (level == 0)  PRINTF("******   %s   ****** [%d,%d]", CC->nick, cov->nr, cov->zaehler);
+  else PRINTF("    **** %s **** [%d,%d]", CC->nick, cov->nr, cov->zaehler);
   PRINTF("\n");
 
   leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
@@ -852,42 +853,42 @@ void pmi(cov_model *cov, char all, int level) {
     name[9] = '\0';
     leer(level + 1); PRINTF("%-10s", 
 			    name); 
-    if (cov->p[i] == NULL) {
+    if (PisNULL(i)) {
       PRINTF(" NULL");
     } else if (C->kappatype[i] == REALSXP) {
       if (cov->ncol[i]==1) {
 	if (cov->nrow[i]==1) {
-	  PRINTF("%f", cov->p[i][0]); 
+	  PRINTF("%f", P0(i)); 
 	} else {
 	  PRINTF("[%d] ", cov->nrow[i]);
 	  endfor = cov->nrow[i]; if (endfor > MAX_PMI) endfor = MAX_PMI;
 	  for (j=0; j<endfor; j++)
-	    PRINTF(" %f", cov->p[i][j]); 
+	    PRINTF(" %f", P(i)[j]); 
 	}
       } else {
 	PRINTF("[%d, %d] ", cov->nrow[i],  cov->ncol[i]);
 	endfor = cov->nrow[i] * cov->ncol[i]; 
 	if (endfor > MAX_PMI) endfor = MAX_PMI;
 	for (j=0; j<endfor; j++)
-	  PRINTF(" %f", cov->p[i][j]); 
+	  PRINTF(" %f", P(i)[j]); 
       }
     } else if (C->kappatype[i] == INTSXP) {
       if (cov->ncol[i]==1) {
 	if (cov->nrow[i]==1) {
-	  PRINTF("%d", ((int*) cov->p[i])[0]); 
+	  PRINTF("%d", P0INT(i)); 
 	} else {
 	  PRINTF("[%d] ", cov->nrow[i]);
 	  endfor = cov->nrow[i]; 
 	  if (endfor > MAX_PMI) endfor = MAX_PMI;
 	  for (j=0; j<endfor; j++)
-	    PRINTF(" %d", ((int*) cov->p[i])[j]); 
+	    PRINTF(" %d", PINT(i)[j]); 
 	}
       } else {
 	PRINTF("[%d, %d] ", cov->nrow[i],  cov->ncol[i]);
 	endfor = cov->nrow[i] * cov->ncol[i];
 	if (endfor > MAX_PMI) endfor = MAX_PMI;
 	for (j=0; j<endfor; j++)
-	  PRINTF(" %d", ((int*) cov->p[i])[j]); 
+	  PRINTF(" %d", PINT(i)[j]); 
       }
     } else if (C->kappatype[i] == CLOSXP) {
       PRINTF("arbitrary function...");      
@@ -895,7 +896,7 @@ void pmi(cov_model *cov, char all, int level) {
       PRINTF("arbitrary language expression ...");      
     } else if (C->kappatype[i] == LISTOF + REALSXP) {
       int k, ende=0;
-      listoftype *p=(listoftype*) (cov->p[i]);	
+      listoftype *p= PLIST(i);	
       PRINTF("list [%d]\n", cov->nrow[i]);
       leer(level + 2); 
       for (k=0; k<cov->nrow[i]; k++) {
@@ -926,6 +927,11 @@ void pmi(cov_model *cov, char all, int level) {
       pmi(cov->kappasub[i], all, level + 3);
     } else  PRINTF("\n");
   }
+  if (cov->Sset != NULL) {
+    cov_model *from = cov->Sset->remote;
+    leer(level + 1); 
+    PRINTF("%-10s%s [%d]\n", "<remote>", NICK(from), from->zaehler);     
+  }
 
   //  for (; i<MAXPARAM; i++) if (cov->kappasub[i] != NULL) 
   //			    PRINTF(" %d != NULL !!\n", i);
@@ -937,12 +943,17 @@ void pmi(cov_model *cov, char all, int level) {
   for (i=0; i<endfor; i++) PRINTF(" %f", cov->q[i]); 
   PRINTF("\n");
 
-  
+  if (cov->calling == NULL && level != 0) BUG;
   leer(level); PRINTF("%-10s %s\n","calling", cov->calling==NULL ?
 		      "NULL" : NICK(cov->calling));  
   leer(level); PRINTF("%-10s %s (%d)\n","gatter",
 		      cov->gatternr >=0 ? CovList[cov->gatternr].name : "none",
 		      cov->gatternr);  
+  if (cov->secondarygatternr >= 0) {
+    leer(level);
+    PRINTF("%-10s %s (%d)\n","secondary",
+	   CovList[cov->secondarygatternr].name, cov->secondarygatternr);  
+  }
   leer(level); PRINTF("%-10s %d/%d (%s/%s)\n","domprev/own", 
 		      cov->domprev, cov->domown,
 		      STATNAMES[(int) cov->domprev],
@@ -951,8 +962,9 @@ void pmi(cov_model *cov, char all, int level) {
 		      cov->isoprev, cov->isoown,
 		      ISONAMES[(int) cov->isoprev],
 		      ISONAMES[(int) cov->isoown]);
-  leer(level); PRINTF("%-10s %d, %d:%d, %d\n","ts-x-v-dim",
-		      cov->tsdim, cov->xdimprev, cov->xdimown, cov->vdim);  
+  leer(level); PRINTF("%-10s %d, %d:%d, %d/%d/%d\n","ts-x-v-dim",
+		      cov->tsdim, cov->xdimprev, cov->xdimown, cov->vdim,
+		      cov->vdim2[0], cov->vdim2[1]);  
    leer(level); PRINTF("%-10s %d\n","maxdim", cov->maxdim);  
   leer(level); PRINTF("%-10s %s (%d)\n", "type", TYPENAMES[cov->typus],
 		      (int) cov->typus);
@@ -1109,7 +1121,7 @@ void pmi(cov_model *cov, char all, int level) {
       leer(level); PRINTF("%-10s %d\n","rct:nstep", p->nstep);
       leer(level); PRINTF("%-10s %d\n","rct:ntmp", p->tmp_n);
       
-      if (p->value != NULL) {
+      if (PMI_print_rect > 1 && p->value != NULL) {
 	leer(level); { PRINTF("%-10s ","rct:val"); 
 	  for (d=0; d<nstepP2; d++) PRINTF("%4.3f ", p->value[d]); PRINTF("\n"); }
 	leer(level); { PRINTF("%-10s ","rct:wght"); 
@@ -1209,61 +1221,77 @@ void pmi(cov_model *cov, char all, int level) {
 
 
 
-void iexplDollar(cov_model *cov) {
-    /*    
-      get the naturalscaling values and devide the preceeding scale model     
-      by this value
-    */
+void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
+  /*    
+	get the naturalscaling values and devide the preceeding scale model     
+	by this value
+  */
   double *p, invscale;
-  if (cov->nr == NATSC) {
-    cov_model 
-      *next = cov->sub[0],
-      *calling = cov->calling;
+  cov_model *dollar = cov->calling;
 
-    assert(calling!=NULL && isAnyDollar(calling));
+  bool solve = (cov->nr == NATSC_INTERN ||
+		(cov->nr == NATSC_USER && !MLEnatsc_only))
+    && dollar != NULL && isDollar(dollar);
+
+  if (solve) {
+    cov_model 
+      *next = cov->sub[0];
+    assert(dollar!=NULL && isDollar(dollar));
+
     INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
     if (ISNA(invscale)) error("inverse function of in 'iexplDollar' unknown");
     
-    p = calling->p[DANISO];
+    p = PARAM(dollar, DSCALE);
     if (p != NULL) {
-      int i,
-	n = calling->nrow[DANISO] * calling->ncol[DANISO];
-      for (i=0; i<n; i++) p[i] *= invscale;
+      p[0] /= invscale;
     } else {
-      p = calling->p[DSCALE];
-      if (p == NULL) kdefault(calling, DSCALE, 1.0 / invscale);
-      else p[0] /= invscale;
+      p = PARAM(dollar, DANISO);      
+      if (p != NULL) { 	
+	int i,
+	  n = dollar->nrow[DANISO] * dollar->ncol[DANISO];
+	for (i=0; i<n; i++) p[i] *= invscale;
+      } else {
+	assert(cov->nr == NATSC_USER);
+      }
     }
   } else {
     int i;
     for (i=0; i<MAXSUB; i++) { // cov->sub[i]: luecken erlaubt bei PSgen !
-      if (cov->sub[i] != NULL) iexplDollar(cov->sub[i]);
+      if (cov->sub[i] != NULL) iexplDollar(cov->sub[i], MLEnatsc_only);
     }
   }
 }
+
+
   
 SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam) {
+  // modus:
+  //  AS_SAVED : Modell wie gespeichert
+  //  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
+  //  SOLVE_NATSC : natscale soweit wie moeglich zusammengezogen (natsc werden
+  //               drauf multipliziert; Rest wie gespeichert)
+  //  DEL_MLE : nur natscale_MLE werden geloescht
+  //  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
+  //               drauf multipliziert; Rest wie gespeichert)
+  //
+  // modus: 10-12 : wie 0-2, jedoch ohne CALL_FCT zu loeschen 
 
-  //printf("IGetM %d %d %d\n", modus, spConform, do_notreturnparam);
-
-//      # modus: 1 : Modell wie gespeichert
-//      #        0 : Modell unter Annahme PracticalRange>0
-//      #        [ 2 : natscale soweit wie moeglich zusammengezogen ]
 
   SEXP model, nameMvec;
   int i, nmodelinfo,
     k = 0; 
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   bool plus_mixed_models;
-
-  if (modus == 0 && cov->nr == NATSC) { 
+  
+  if ((cov->nr == NATSC_INTERN && cov->nr != GETMODEL_AS_SAVED) ||
+      (cov->nr == NATSC_USER && modus == GETMODEL_DEL_NATSC)) { 
     return IGetModel(cov->sub[0], modus, spConform, do_notreturnparam);
   }
   
   nmodelinfo = C->kappas + 1;
   for (i=0; i<MAXSUB; i++) if (cov->sub[i] != NULL) nmodelinfo++;
   for (i=0; i<C->kappas; i++) {
-    if (cov->p[i] == NULL ||
+    if (PisNULL(i) ||
 	(do_notreturnparam && C->paramtype(i, 0, 0) == DONOTRETURNPARAM))
       nmodelinfo--;
   }
@@ -1276,7 +1304,7 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
   while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
   //  print("conform %d\n", GLOBAL.general.sp_conform);
   if ((plus_mixed_models = (cov->nr == PLUS))) {
-    plus_mixed_models = cov->calling == NULL;
+    plus_mixed_models = cov->calling == NULL; // to do: stimmt nicht mehr
     if (plus_mixed_models) {
       for (i=0; i<MAXSUB; i++) {
 	if ((plus_mixed_models = 
@@ -1286,16 +1314,14 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
   }
 
   if (spConform && !plus_mixed_models) {
-    char name[MAXCHAR+2];
-    sprintf(name, "%s", CC->nick); 
-    SET_VECTOR_ELT(model, k++, mkString(name));
+    SET_VECTOR_ELT(model, k++, mkString(CC->nick));
   } else {
     SET_VECTOR_ELT(model, k++, mkString(CC->name));
   }
 
   for(i=0; i<C->kappas; i++) {
     // naechste Zeile geloescht 30.4.2013
-     if (cov->p[i] == NULL ||
+    if (PisNULL(i) ||
 	 (do_notreturnparam && C->paramtype(i, 0, 0) == DONOTRETURNPARAM)) {	
        // k++; // 9.1.09, needed for "$" (proj can be NULL) -- 19.1.09 k++ 
 	// deleted since otherwise outcome does not fit 
@@ -1305,7 +1331,7 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
     }     
     SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
     SET_VECTOR_ELT(model, k++, 
-		   Param((void*) cov->p[i], cov->nrow[i], cov->ncol[i], 
+		   Param((void*) cov->px[i], cov->nrow[i], cov->ncol[i], 
 			 C->kappatype[i], true));
   }
 
@@ -1326,7 +1352,6 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
     }
   }
 
-
   assert(k == nmodelinfo);
 
   setAttrib(model, R_NamesSymbol, nameMvec);
@@ -1336,11 +1361,17 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
 }
 
 SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
-//    # modus: 1 : Modell wie gespeichert
-//    #        0 : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
-//    #        2 : natscale soweit wie moeglich zusammengezogen (natsc werden
-//                 drauf multipliziert)
-//    # modus: 10-12 : wie 0-2, jedoch ohne CALL_FCT zu loeschen
+  // modus:
+  //  AS_SAVED : Modell wie gespeichert
+  //  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
+  //  SOLVE_NATSC : natscale soweit wie moeglich zusammengezogen (natsc werden
+  //               drauf multipliziert; Rest wie gespeichert)
+  //  DEL_MLE : nur natscale_MLE werden geloescht
+  //  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
+  //               drauf multipliziert; Rest wie gespeichert)
+  //
+  // modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
+
 
 // Nutzer kann 3 Modifikationen des Models in MLE laufen lassen:
 //      * keinen Praktikal range oder individuell angeben
@@ -1365,20 +1396,23 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
   }
   //PMI(cov);
 
-  if (modus == 0 || modus == 1) {
+  if (modus == GETMODEL_DEL_NATSC || modus == GETMODEL_DEL_MLE) {
      return IGetModel(cov, modus, spConform, do_notreturnparam);
   } else {
     cov_model *dummy = NULL; //ACHTUNG: "=NULL" hinzugefuegt
     SEXP value;
     if (covcpy(&dummy, cov) != NOERROR) return R_NilValue;
-    iexplDollar(dummy);
-    value = IGetModel(dummy, 0, spConform, do_notreturnparam);
+    iexplDollar(dummy, modus == GETMODEL_SOLVE_MLE);
+    if (modus == GETMODEL_SOLVE_NATSC) {
+      modus = GETMODEL_DEL_NATSC;
+    } else if (modus == GETMODEL_SOLVE_MLE) {
+      modus = GETMODEL_DEL_MLE;
+    }
+    value = IGetModel(dummy, modus, spConform, do_notreturnparam);
     COV_DELETE(&dummy);
     return(value);
   }
 }
-
-
 
 
 
@@ -1395,12 +1429,12 @@ void Path(cov_model *cov, cov_model *sub) {
   }
 
   if (sub == NULL) return; 
-  if (cov->key == sub) { PRINTF("%s.key->", C->nick); return; }
+  if (cov->key == sub) { PRINTF("%s.key.%d->", C->nick, cov->zaehler); return; }
 
   int i;
   for (i=0; i<C->maxsub; i++) {
     if (cov->sub[i] == sub) {
-      PRINTF("%s.sub[%d]->", C->nick, i);
+      PRINTF("%s.sub[%d].%d->", C->nick, i, cov->zaehler);
       return;
     }
   }
@@ -1408,13 +1442,21 @@ void Path(cov_model *cov, cov_model *sub) {
   if (cov->Splus != NULL) {
     for (i=0; i<C->maxsub; i++) {
       if (cov->Splus->keys[i] == sub) {
-	PRINTF("%s.S[%d]->", C->nick, i);
+	PRINTF("%s.S[%d].zaehler->", C->nick, i, cov->zaehler);
 	return;
       }
     }
   }
 
-  PRINTF("unknown->");
+  for (i=0; i<C->kappas; i++) {
+    if (cov->kappasub[i] == sub) {
+      PRINTF("%s.%s.%d->", C->nick, C->kappanames[i], cov->zaehler);
+      return;
+    }
+  }
+
+
+  PRINTF("%s (UNKNOWN,%d)->", C->nick, cov->zaehler);
 }
 
 void pmi(cov_model *cov) { // OK

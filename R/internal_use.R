@@ -1,4 +1,3 @@
-
 ########################################################################
 ## Hier sind Funktionen, die vermutlich kaum ein Anwender interessiert
 ########################################################################
@@ -220,6 +219,7 @@ resolve.register <- function(register){
              "RFinterpolate" =  RFoptions()$general$interpolreg,
              "RFgui" =  GetModelRegister("gui"),
              "RFfit" =  MODEL.MLE,
+             "RFratiotest" =  MODEL.MLE,
              stop("register unknown")
              )
   }
@@ -262,21 +262,29 @@ RFgetModelInfo <-
 RFgetModel <- function(register, explicite.natscale, show.call=FALSE)  {
   register <- resolve.register(if (missing(register) || is.numeric(register))
                                register else deparse(substitute(register)))
-  modus <- if (missing(explicite.natscale)) 1 else 2 * explicite.natscale
+  modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
+            if (explicite.natscale)  GETMODEL_DEL_NATSC else
+            GETMODEL_SOLVE_NATSC)
   if (show.call) modus <- modus + 10
   GetModel(register=register, modus=modus)
 }
            
            
-GetModel <- function(register, modus=0,
+GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
                      spConform=RFoptions()$general$spConform,
                      do.notreturnparam=FALSE,
                      replace.select = FALSE) {
-  ## modus: 1 : Modell wie gespeichert
-  ##        0 : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
-  ##        2 : natscale soweit wie moeglich zusammengezogen (natsc werden
-  ##               drauf multipliziert)
-  ## modus: 10-12 : wie 0-2, jedoch ohne CALL_FCT zu loeschen
+  ## modus:
+  ##  AS_SAVED : Modell wie gespeichert
+  ##  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
+  ##  SOLVE_NATSC : natscale soweit wie moeglich zusammengezogen (natsc werden
+  ##               drauf multipliziert; Rest wie gespeichert)
+  ##  DEL_MLE : nur natscale_MLE werden geloescht
+  ##  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
+  ##               drauf multipliziert; Rest wie gespeichert)
+  ## 
+  ## modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
+
 
   ## do.notreturnparam : if true, then also parameters with the flag
   ##                      DONOTRETURN are returned
@@ -531,7 +539,8 @@ cmplists <- function(l, m) {
 }
 
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
-                           ask=FALSE, echo=ask, halt=FALSE, ignore.all=FALSE,
+                          ask=FALSE, echo=TRUE, halt=FALSE,
+                          ignore.all=FALSE,
                            path="randomfields_2", package="RandomFields",
                           read.rd.files=TRUE) {
   .exclude <- exclude
@@ -616,6 +625,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
         " (total=", length(.fct.list), ") \n", sep="")
     RFoptions(LIST=.RFopt)
     .C("ResetWarnings")
+    if (.echo) cat(.idx, "")
     if (.halt) do.call("example", list(.fct.list[.idx], ask=.ask, echo=.echo))
     else {
       if (is(try(do.call("example", list(.fct.list[.idx], ask=.ask,
@@ -624,8 +634,13 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
         .not_working <- c(.not_working, .fct.list[.idx])
       }
     }
+    cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
+    if (!is.na(RFoptions()$general$seed)) {
+      Print(.not_working, paste(.not_working_no, collapse=", ")) #
+      stop("seed not NA: ", .fct.list[.idx])
+    }
   }
-  Print(.not_working, .not_working_no) #
+  Print(.not_working, paste(.not_working_no, collapse=", ")) #
   .ret <- list(.not_working, .not_working_no)
   names(.ret) <- c(.package, "")
   return(.ret)

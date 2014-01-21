@@ -70,7 +70,7 @@ RPaverage(phi, shape, loggauss, intensity)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 \dontshow{\dontrun{
 x <- seq(0,25, if (interactive()) 0.02 else 5)
@@ -89,6 +89,7 @@ for (intensity in c(1, 10, 100)) {
 }
 }}
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

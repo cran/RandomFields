@@ -52,13 +52,14 @@ RMdelay(phi,s,var, scale, Aniso, proj)
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 
 x <- y <- seq(-10,10,0.2)
 model <- RMdelay(RMstable(alpha=1.9, scale=2), s=c(4,4))
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu, zlim="joint")
 
+\dontshow{RFoptions(seed=NA)}
 }
 
 

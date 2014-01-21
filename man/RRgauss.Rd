@@ -34,9 +34,10 @@ RRgauss(mu, sd, log)
  }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 r <- RFrdistr(RRgauss(mu=c(1,5)), n=1000, dim=2)
 plot(r[1,], r[2, ])
+\dontshow{RFoptions(seed=NA)}
 }
 
  

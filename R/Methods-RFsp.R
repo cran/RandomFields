@@ -1,6 +1,14 @@
 
+
+AddUnits <- function(params) {
+  ## see also empvario.R and fitgauss.R, if changed
+  general <- RFoptions()$general
+  return(c(params, list(coord.units=general$coord_units,
+                        variab.units=general$variab_units)))
+}
+
 compareGridBooleans <- function(grid, gridtmp) {
-  if (!missing(grid) && grid!=gridtmp)
+  if (!missing(grid) && length(grid)>0 && grid!=gridtmp)
     message(paste("you specified grid=", as.character(grid),
                   " but isGridded(data)=", as.character(gridtmp),
                   ";  grid is set to ", as.character(gridtmp), sep=""))
@@ -15,7 +23,7 @@ RFspatialGridDataFrame <- function(grid, data,
   grid <- convert2GridTopology(grid)
   tmp <- SpatialGridDataFrame(grid=grid, data=data, proj4string=proj4string)
   tmp <- as(tmp, "RFspatialGridDataFrame")
-  tmp@.RFparams <- RFparams
+  tmp@.RFparams <- AddUnits(RFparams)
   validObject(tmp)
   return(tmp)
 }
@@ -23,6 +31,8 @@ RFspatialGridDataFrame <- function(grid, data,
 RFspatialPointsDataFrame <- function(coords, data, coords.nrs = numeric(0),
                                      proj4string = CRS(as.character(NA)), 
                                      match.ID = TRUE, bbox = NULL,
+                                     coord.units = NULL,
+                                     variab.units = NULL,
                                      RFparams=list()) {
   if (is.null(bbox)) {
     bbox <- t(apply(coords, 2, range))
@@ -32,7 +42,8 @@ RFspatialPointsDataFrame <- function(coords, data, coords.nrs = numeric(0),
                                 proj4string=proj4string, 
                                 match.ID=match.ID, bbox=bbox)
   tmp <- as(tmp, "RFspatialPointsDataFrame")
-  tmp@.RFparams <- RFparams
+  tmp@.RFparams <- AddUnits(RFparams)
+
 #  if (!is.null(dimnames(coords)))
 #    dimnames(tmp@coords) <- dimnames(coords)
   validObject(tmp)
@@ -43,15 +54,16 @@ RFgridDataFrame <- function(data, grid,
                             RFparams=list()){
   grid <- convert2GridTopology(grid)
   data <- as.data.frame(data)
-  return(new("RFgridDataFrame", data=data, grid=grid, .RFparams=RFparams))
+  return(new("RFgridDataFrame", data=data, grid=grid,
+             .RFparams=AddUnits(RFparams)))
 }
 
 RFpointsDataFrame <- function(data=data.frame(NULL), coords=as.numeric(NULL),
                               RFparams=list()){
   data <- as.data.frame(data)
-  if (is.null(dim(coords)))
-    coords <- matrix(coords)
-  return(new("RFpointsDataFrame", data=data, coords=coords, .RFparams=RFparams))
+  if (is.null(dim(coords))) coords <- matrix(coords)
+  return(new("RFpointsDataFrame", data=data, coords=coords,
+             .RFparams=AddUnits(RFparams)))
 }
 
 
@@ -92,11 +104,6 @@ setAs("RFgridDataFrame", "RFpointsDataFrame",
         RFpointsDataFrame(data=from@data, coords=coords,
                           RFparams=from@.RFparams)
       })
-
-
-## access data slot via "["-operator
-#str(z[c(1)])
-#z<-(RFsimulate(model=RMdelay(C0=RMexp(), s=c(3,5)), x=1:10, y=1:10, grid=TRUE, n=3))
 
 
 
@@ -222,7 +229,7 @@ cbind.RFpointsDataFrame <- function(...)
 
 
 
-## convert 'RFsp' objects to conventional format of RFsimulate,
+## convert 'RFsp' objects to conventional format of 'RFsimulate',
 ## i.e. data is an array and x a matrix of coordinates or gridtriple defs.
 
 spatialGridObject2conventional <- function(obj) {
@@ -408,9 +415,7 @@ setMethod(f = "variance", signature="RFsp",
 
 
 
-## conventional RFsimulate output to RFsp class
-
-
+## conventional 'RFsimulate' output to 'RFsp' class
 
 print.RFpointsDataFrame = function(x, ..., digits = 6) {
   df = data.frame(coordinates=signif(coordinates(x), digits), x@data)
@@ -536,13 +541,13 @@ setMethod(f="plot", signature(x="RFspatialGridDataFrame", y="missing"),
             zlim,
             legend=TRUE, ...)
           plotRFspatialGridDataFrame(x=x, MARGIN=MARGIN,
-                                      MARGIN.slices=MARGIN.slices,
-                                      n.slices=n.slices, nmax=nmax,
-                                      plot.variance = plot.variance,
-                                      select=select.variables,
-                                      zlim=zlim,
-                                      legend=legend,
-                                      ...))
+                                     MARGIN.slices=MARGIN.slices,
+                                     n.slices=n.slices, nmax=nmax,
+                                     plot.variance = plot.variance,
+                                     select=select.variables,
+                                     zlim=zlim,
+                                     legend=legend,
+                                       ...))
 setMethod(f="plot",
           signature(x="RFspatialGridDataFrame", y="RFspatialPointsDataFrame"),
 	  definition=function(
@@ -561,7 +566,8 @@ setMethod(f="plot",
                                       plot.variance = plot.variance,
                                       select=select.variables,
                                       zlim=zlim,
-                                      legend=legend, ...))
+                                      legend=legend,
+                                     ...))
 
 setMethod(f="plot", signature(x="RFspatialPointsDataFrame", y="missing"),
 	  definition=function(x, y, MARGIN = c(1, 2), nmax = 6,
@@ -646,10 +652,12 @@ plotRFpointsDataFrame <-
     par(bg=dots$bg)
     dots$bg <- NULL
   }
-  if (!("xlab" %in% dotnames))
-    dots$xlab <- dimnames(x@coords)[[2]][1]
-  if (!("type" %in% dotnames))
-    dots$type <- "l"
+
+  dummy <- dimnames(x@coords)[[2]][1]
+  lab <- xylabs(if (is.null(dummy)) "" else dummy, "", units=x@.RFparams$coord.units)
+ 
+  if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
+  if (!("type" %in% dotnames)) dots$type <- "l"
 
   make.small.mar <- ("xlab" %in% dotnames &&
                      is.null(dots$xlab) && is.null(dots$ylab))
@@ -683,13 +691,18 @@ plotRFpointsDataFrame <-
     dots$col <- NULL
   }
 
-  if (always.close) {
-    close.screen(all.screens=TRUE)
-    par(mfrow=c(1,1))
-    split.screen(c(n,1))
-  }
+  
+  ArrangeDevice(graphics, c(1, n))
+  split.screen(c(n,1))
+  
+#  if (always.close) {
+#    close.screen(all.screens=TRUE)
+#    par(mfrow=c(1,1))
+#    split.screen(c(n,1))
+#  }
+                
   for (i in 1:n){
-    if (always.close) screen(i)
+    screen(i)
     if (make.small.mar)
       par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
     else
@@ -733,7 +746,9 @@ plotRFpointsDataFrame <-
 ### nur fuer Testzwecke
 plotRFspatialGridDataFrameX <- function(x, y, MARGIN, MARGIN.slices,
                                         n.slices, nmax, plot.variance,
-                                        select, zlim, legend, ...) {
+                                        select, zlim, legend,
+                                        coord.units=NULL, variab.units=NULL,
+                                        ...) {
   if (file.exists("/home/schlather/R/RF/svn/makefile")) {
 
     args <- list(x=x,
@@ -743,7 +758,8 @@ plotRFspatialGridDataFrameX <- function(x, y, MARGIN, MARGIN.slices,
                  plot.variance = if (!missing(plot.variance)) plot.variance,
                  select = if (!missing(select)) select,
                  zlim = if (!missing(zlim)) zlim,
-                 legend=if (!missing(legend)) legend, ...)
+                 legend=if (!missing(legend)) legend,
+                 coord.units=coord.units, variab.units, variab.units, ...)
     args <- args[!sapply(args, is.null)]
  #   Print(args)
     do.call("plotRFspatialGridDataFrame", args=args, envir=.GlobalEnv)
@@ -751,6 +767,8 @@ plotRFspatialGridDataFrameX <- function(x, y, MARGIN, MARGIN.slices,
   } else {
     plotRFspatialGridDataFrame(x, y, MARGIN, MARGIN.slices,
                                n.slices, nmax, plot.variance,
-                               select, zlim, legend, ...)
+                               select, zlim, legend,
+                               coord.units=coord.units,
+                               variab.units=variab.units, ...)
   }
 }

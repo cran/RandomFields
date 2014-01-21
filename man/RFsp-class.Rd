@@ -103,8 +103,9 @@
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
 }
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ## to do
+\dontshow{RFoptions(seed=NA)}
 }
 
 \keyword{classes}

@@ -101,7 +101,7 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
 \examples{
-set.seed(0)
+RFoptions(seed=0)
 ##################################################
 # Example 1: # 
 # Simulate from model with a plane trend surface #
@@ -206,6 +206,7 @@ model.est <- ~ RMtrend(polydeg=2) + RMwhittle(nu=NA, scale=0.5)
 estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
  data=simulated@data, mle.methods="ml")
 }}
+\dontshow{RFoptions(seed=NA)}
 
 }
 		 
