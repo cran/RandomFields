@@ -1,6 +1,9 @@
-\name{RFmodel}
-\alias{RFmodel}
+\name{RFfunction}
 \alias{RF}
+\alias{RFmodel}
+\alias{RFmodels}
+\alias{RFfunction}
+\alias{RFfunctions}
 \title{Evaluation operators}
 \description{
   Here, those \command{RF_name_} commands are listed that are
@@ -14,15 +17,22 @@
   \tabular{ll}{
     \command{\link{RFcov}} \tab assigns to a covariance model the
     covariance values
-    at given locations \cr
+    at given locations
+    \cr
     \command{\link{RFcovmatrix}} \tab assigns to a covariance model the
-    cross covariance values at given locations  \cr
- %   \command{\link{RFget}} \tab not implemented yet\cr
+    cross covariance values at given locations
+    \cr
+    %   \command{\link{RFget}} \tab not implemented yet\cr
+    \command{\link{RFcrossvalidate}} \tab performs a cross validation
+    \cr
     \command{\link{RFfctn}} \tab assigns to a covariance model the
-    value of the function at given locations\cr
+    value of the function at given locations
+    \cr
     \command{\link{RFdistr}} \tab generic function
     assigning to distribution family various characteristics of the
     distribution
+    \cr
+    \command{\link{RFratiotest}} \tab performs a likelihood ratio test
     \cr
     \command{\link{RFpseudovariogram}} \tab assigns to a  model the
     values of the pseudo variogram
@@ -42,20 +52,20 @@
 }
 
 \seealso{
-   \link{RM},
+   \link{RC}, \link{RM}, \link{RP},
+ \link{RR},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
- \link{RP},
- \link{RR}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 z <- RFsimulate(model=RMexp(), 1:10)
 str(RFgetModel(RFsimulate, show.call = TRUE))
 str(RFgetModel(RFsimulate, show.call = FALSE))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 

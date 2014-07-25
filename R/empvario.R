@@ -1,19 +1,20 @@
 RFempiricalvariogram <- function(
- x, y = NULL, z = NULL, T = NULL, data, data2, grid, bin, 
+ x, y = NULL, z = NULL, T = NULL, data, grid, bin, 
  phi,  ## phi, number of anglular segments per PI
  theta, ## aehnlich
  deltaT, ##  deltaT[1] max abstand, deltaT[2] : gitterabstand
- distances, ...
+ distances, vdim, ...
  ) {
+  ## repetition is last dimension
   
   ## bin centers will be a vector of scalar distances  (in cylinder coord, e.g.)
-  ## for the angles: start always with the first non negative angle, continue
-  ##                 counter clockwise [0,2pi]
-  ## in 3 d the third angle is zero if vector in the (x,y) plane, positive
+  ## for the angles: start always with the first on negative angle, continue
+  ##                 counter clockwise [0, 2pi]
+  ## in 3 d the third angle is zero if vector in the (x, y) plane, positive
   ##                 angle starts with points above plane
   
   ## make sure that exactly one negative value appears, and that zero is
-  ## added if bin starts with a positive value 
+  ## added if bin starts with a positive value
 
   RFoptOld <- internal.rfoptions(...)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
@@ -25,499 +26,375 @@ RFempiricalvariogram <- function(
   if( missing(theta) ) theta <- NULL
   if( missing(T) ) T <- NULL
   if( missing(bin) ) bin <- NULL
-  if( missing(deltaT) ) deltaT <- NULL
+  if( missing(deltaT) ) deltaT <- NULL 
   
-  if (missing.data2 <- missing(data2))
-    data2 <- data
+  variab.units <- RFopt$coords$variab_units
 
-  variab.units <- RFopt$general$variab_units
-  variab.names <- ""
-  if (is(data, "RFsp")) { 
-    stopifnot(is(data2, "RFsp"))
-    data@data <- data@data[0:(data@.RFparams$n-1) * data@.RFparams$vdim + 1]
-     data2@data <- data2@data[0:(data2@.RFparams$n-1) * data2@.RFparams$vdim +
-                             min(2, data2@.RFparams$vdim)]
-    variab.names <- names(data)
+  if (is(data, "RFsp") && !missing(x))
+    stop("x, y, z, T may not be given if 'data' is of class 'RFsp'")
 
-    stopifnot(all.equal(coordinates(data), coordinates(data2)))
-    if (!(missing(x) && is.null(y) && is.null(z) && is.null(T)))
-      stop("x, y, z, T may not be given if 'data' is of class 'RFsp'")
-    
-    gridtmp <- isGridded(data)
-    compareGridBooleans(grid, gridtmp)
-    grid <- gridtmp
-    tmp <- RFspDataFrame2conventional(data)
-    tmp2 <- RFspDataFrame2conventional(data2)
-    x <- tmp$x
-    y <- NULL
-    z <- NULL
-    T <- tmp$T
-    data <- tmp$data
-    data2 <- tmp2$data
-    rm(tmp)
+
+  ## to do: distances
+  if (!missing(distances) && length(distances)>0)
+    stop("option distances not programmed yet.")
+#  Print(data)
+  
+  new <- rfPrepare(x=x, y=y, z=z, T=T, distances=distances, grid=grid,
+                   data=data, fillall=TRUE, unconditional=TRUE, vdim=vdim)
+  
+  if (missing(vdim)) {
+    vdim <- if (!is.null(new$vdim)) new$vdim else 1
   } else {
-    stopifnot(!is(data2, "RFsp"))
-    variab.names <- if (is.matrix(data)) dimnames(data)[[2]] else names(data)
-  }
-
-
-  ## bitte code ueberpruefen. Hiermit soll Nutzer fast nie
-  ## "grid" eingeben muessen
- 
-  new <- CheckXT(x, y, z, T, grid, distances,
-                 if (!missing(distances) && length(distances) > 0) spdim=1,
-                 length.data=length(data))
-  repetitions <- length(data)/new$restotal
-  
-  variance <- var(data)
-  if (!missing.data2) {
-    variance <- matrix(ncol=2, c(variance, rep(var(data, data2), 2),
-                         var(data2)))
+    if (!is.null(new$vdim) && vdim!=new$vdim)
+      warning("given multivariate dimension 'vdim' does not match multivariate dimension of the data")
   }
   
+  data <- new$fulldata
+
+#  Print(data)
+ # xxxx
+  
+  x <- new$x
+  y <- new$y ## will be NULL
+  z <- new$z ## will be NULL
+  stopifnot(is.null(y), is.null(z))
+  T <- new$T
+  repetitions <- as.integer(length(data) / (new$restotal * vdim))
+  if (repetitions==0) stop("no data given")
+  if (length(data) != new$restotal * vdim * repetitions)
+    stop("number of data does not match coordinates")
+  dim.data <- c(new$restotal, vdim, repetitions)
+  dim(data) <- dim.data
+
+#  Print(data); lll
+
+  if (vdim > 1 && repetitions > 1) {
+    dataX <- aperm(data, c(1, 3, 2)) ## now: coord, repet, vdim
+    dim(dataX) <- c(dim.data[1] * dim.data[3], dim.data[2])
+    variance <- cov(dataX)
+    rm(dataX)
+  } else {
+    dim(data) <- if (vdim == 1) prod(dim.data) else dim.data[1:2]    
+    variance <- var(data)
+    dim(data) <- dim.data
+  }
  
-  if(is.null(bin)){
+  if(is.null(bin) || length(bin)==0) bin <- 20
+  if (length(bin) == 1) {
     ## automatic bin depending on coords
-    
+    #Print(new)
     if(new$grid)
-      bin <- seq(0, max(new$x[2,] * new$x[3,]) / 2, len = 20) 
+      bin <- seq(0, max(new$x[2, ] * new$x[3, ]) / 2, len = bin) 
     else {
-      bin <- seq(0, sqrt(sum((apply(new$x, 2, max)-apply(new$x, 2, min))^2)) /2,
-                len = 20)      
+      bin <- seq(0, sqrt(sum((apply(new$x, 2, max)-apply(new$x, 2, min))^2))/2,
+                 len = bin)
     }
-    message("Bins in RFempiricalvariogram are chosen automatically:\n",
-            paste(signif(bin, 2), collapse=" "))
+    if (RFopt$general$printlevel >= PL.IMPORPANT)
+      message("Bins in RFempiricalvariogram are chosen automatically:\n", 
+              paste(signif(bin, 2), collapse=" "))
   }
-
-  
 
 
 #  Print(RFopt$empvario, new)
     
   fft <- RFopt$empvario$fft && new$grid
-  pseudo <- RFopt$empvario$pseudo
+  pseudo <- RFopt$empvario$pseudovariogram
   phi0 <- RFopt$empvario$phi0 # 0 if automatic
   theta0 <- RFopt$empvario$theta0 # 0 if automatic
   time <- !is.null(new$T)
 
-  if(new$spacedim <= 2) theta <- NULL
-  if(new$spacedim <= 1) phi <- NULL
+  thetagiven <- !is.null(theta) && new$spacedim > 2
+  phigiven <- !is.null(phi) && new$spacedim > 1
+  deltagiven <- !is.null(deltaT) && all(deltaT > 0)
+  basic <- !(time || phigiven || thetagiven)
  
-  
-  if(time && pseudo)
-    stop("Time component is not compatible with Pseudo variogram")
-  if(!fft && pseudo)
+  if (time && !fft) stop("currently time components are not possible") ## to do
+  ## to do multivariate;
+    
+ if(time && pseudo)
+    stop("Time component is not compatible with Pseudo variogram") # to do
+  if(!fft && pseudo) ## to do
     stop("Pseudo variogram is only implemented for grids with the FFT method")
   ## IS THE FFT FLAG SET
 
-   if(fft)
-    {
-      data<-as.array(data)
-      data2<-as.array(data2)
-
-      ## missing(bin) not implemented properly yet, instead choose bins automatically (below)
-      if ( (is.null(bin)) && FALSE) {
-        stop("Bin vector")
-        
-        if(!(is.null(phi))    ||
-           !(is.null(theta)))
-          warning("Cannot handle angles if bin is missing!")
-        
-        data<-.incrDim3(as.array(data), time)
-        data2<-.incrDim3(as.array(data2), time)
-        
-        crossvar <- doVario(data, data2, asVector = FALSE, pseudo=pseudo, time = time)
-        sumvals <- doMerge(crossvar[[1]])
-        nbvals <- doMerge(crossvar[[2]])
-        
-        idx <- nbvals > 0
-        emp.vario <- array(0, dim=dim(as.array(sumvals)))
-        emp.vario[idx] <- sumvals[idx] / nbvals[idx]
-        emp.vario[!idx] <- NaN
-
-        if (is.matrix(emp.vario)) 
-          dimnames(emp.vario) <-
-            list(NULL, rep(variab.names, length.out=ncol(emp.vario) ))
-        else names(emp.vario) <- variab.names[1]
-
-         if (RFopt$general$spConform)
-          l <-  new("RFempVariog",
-                    centers=new,
-                    emp.vario=emp.vario,
-                    sd=NULL,
-                    n.bin=NULL,
-                    phi.centers=NULL,
-                    theta.centers=NULL,
-                    T=NULL,
-                    coord.units = new$coord_units,
-                    variab.units = variab.units,
-                    call=call )
-        else
-          l <- list("RFempVariog",
-                    centers=new,
-                    emp.vario=emp.vario,
-                    sd=NULL,
-                    n.bin=NULL,
-                    phi.centers=NULL,
-                    theta.centers=NULL,
-                    T=NULL,
-                    coord.units =  new$coord_units,
-                    variab.units = variab.units
-                    )
-        
-                                        #          Print(l)
-        return(l)
-                                        #return(emp.vario)
-      }
-      
-      bin<- prepareBin(bin)
-      centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
-      n.bins <- length(bin) - 1 
-      if(((is.null(phi)) && (is.null(theta)) && !is.null(bin) && FALSE) ||
-         (new$spacedim > 3)) {
-        cubes <- doVario(data, data2, asVector = FALSE, pseudo=pseudo)
-        warning("Not implemented yet!")
-        if(!is.null(T)) {
-        } else {
-        }
-      } else {   #3-dimensional case with angles and bins
-        stopifnot(ncol(new$x) <= 3)
-          if (ncol(new$x)<3)  # not matrix(0,...) here! since x could be a triple
-            new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x),
-                                         ncol=3-ncol(new$x)))
-                       
-          data<-.incrDim3(as.array(data), time)
-          data2<-.incrDim3(as.array(data2), time)
-          
-          ## to achieve a reflection in x and z instead of y we transpose the
-          ## array
-          
-          if (!time) {
-            T <- c(1, 1, 1) 
-            #data<- aperm(data, c(1,3,2))
-            #data2<- aperm(data2, c(1,3,2))
-          } else {
-            T <- new$T            
-            #data<- aperm(data, c(1,3,2,4))
-            #data2<- aperm(data2, c(1,3,2,4))
-          }
-
-          NotimeComponent <- (T[3]==1 ||
-                              is.null(deltaT) || any(deltaT==0))
-                    
-          crossvar <- doVario(data, data2, asVector=TRUE, pseudo, time)
-          sumvals <- crossvar[[1]]
-          nbvals <- crossvar[[2]]
-
-          ## Prepare data for C call
-       
-          if (is.null(phi)) phi <- c(0, 0)
-          else phi <- c(phi0, phi)         
-          if (is.null(theta)) theta <- c(0, 0)
-          else theta <- c(theta0, theta)
-          if (is.null(deltaT)) deltaT <- c(0,0)
-          stepT <- deltaT[2] / T[2]
-          if (stepT != as.integer(stepT))
-            stop("deltaT not multiple of distance of temporal grid")
-          if (any(diff(bin)<=0))
-            stop("bin must be a strictly increasing sequence")
-          stopifnot(0 <= phi[1], 2 * pi > phi[1],
-                    0 <= theta[1], 2 * pi > theta[1],
-                    phi[2] >= 0,  phi[2] == as.integer(phi[2]), 
-                    theta[2] >= 0, theta[2] == as.integer(theta[2]))
-          stopifnot(all(is.finite(deltaT)), all(deltaT >= 0))
-          realdelta <- deltaT[2]
-        
-          stepT <- max(1, stepT)
-          nstepT <- as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], deltaT[2]))
-          
-          n.phi <- max(1, phi[2])
-          if((!pseudo)&&NotimeComponent)            
-            n.phibin <- max(1,n.phi)
-          else
-            n.phibin <- if(phi[2]==0) 1 else 2 * n.phi           
-          n.theta <- max(1, theta[2])
-          n.delta <- 1 + nstepT
-          totalbins <- n.bins * n.phibin * n.theta * n.delta
-          emp.vario <- double(totalbins)
-          n.bin <- double(totalbins)
-          phibins <- thetabins <- NULL
-          Tbins <- 0
-          if (length(data) != new$restotal * repetitions)
-            stop("number of data does not match coordinates")
-          ##print( list(new$x, sumvals,nbvals,repetitions,phi,pseudo))
+  #fft <- fft && repetitions == 1 # to do ! fft should allow for repetitions  
   
-        .C("fftVario3D", as.double(new$x),
-             as.double(sumvals), as.double(nbvals),
-             as.double(bin), as.integer(n.bins),
-             as.integer(T[3]),
-             as.integer(stepT), as.integer(nstepT),       
-             as.double(c(phi[1], phi[2])),
-             as.double(c(theta[1], theta[2])),
-             as.integer(repetitions),
-             emp.vario,
-             n.bin,
-             pseudo,
-             PACKAGE="RandomFields", DUP = FALSE)
-          ## the results are now reformatted into arrays
-          ## the angles are given in clear text
-          
-          if (NotimeComponent) {
-            ## no genuine time component
-            if (n.theta>1) {             
-              if (phi[2]>0) {                                          
-                n.bin <- array(n.bin, dim=c(n.bins, n.phibin, n.theta))
-                emp.vario <- array(emp.vario, dim=c(n.bins, n.phibin, n.theta))
-              } else {                
-                n.bin <- matrix(n.bin, nrow=n.bins, ncol=n.theta)
-                emp.vario <- matrix(emp.vario, nrow=n.bins, ncol=n.theta)
-              }
-            } else { # n.theta==1
-              if (phi[2]>0) {
-                ## phi[2]!=0, theta[2]==0, no time component                  
-                n.bin <- matrix(n.bin, ncol=n.phibin)
-                emp.vario <-  matrix(emp.vario, ncol=n.phibin)                
-              } else {
-                ## nichts zu tun
-              }
-            }
-          } else {
-            ## genuine time component
-            dims <- c(n.bins, n.phibin, n.theta, n.delta)
-            dims <- dims[dims!=1] 
-            n.bin <-  array(n.bin, dim=dims)
-            emp.vario <- array(emp.vario, dim=dims)             
-            Tbins <- (0:nstepT) * realdelta            
-          }
+  bin <- prepareBin(bin)
+  stopifnot(length(bin)>=2, all(is.finite(bin)))
+  if (any(diff(bin)<=0)) stop("bin must be a strictly increasing sequence")
+   ##  is.null(bin) in fft : see version 3.0.12 or earlier ! to do ?! 
+  
+  centers <- pmax(0, (bin[-1] + bin[-length(bin)])/2)
+  n.bins <- length(bin) - 1
+  
+  
+  T <- if (!time) c(1, 1, 1) else new$T
+  phi <- if (!phigiven) c(0, 0) else c(phi0, phi)        
+  theta <- if (!thetagiven) c(0, 0) else c(theta0, theta)
+  if (!deltagiven) deltaT <- c(0, 0)
+  stopifnot(0 <= phi[1], 2 * pi > phi[1], 
+            0 <= theta[1], 2 * pi > theta[1], 
+            phi[2] >= 0,  phi[2] == as.integer(phi[2]), 
+            theta[2] >= 0, theta[2] == as.integer(theta[2]),
+            all(is.finite(deltaT)), all(deltaT >= 0))
+  realdelta <- deltaT[2]
 
-          thetabins <- theta[1] +  0 : (n.theta-1) * pi / n.theta +  pi / (2 * n.theta)
-          phibins <- phi[1] + 0 : (n.phibin - 1) * pi / n.phi          
-          
-          idx <- n.bin > 0
-          emp.vario[idx] <- emp.vario[idx] / n.bin[idx]
-          emp.vario[!idx] <- NaN   
-          
-          
-#          return(list(centers=centers, emp.vario=emp.vario,
-#                      n.bin=n.bin,
-#                      phi.centers=phibins,
-#                      theta.centers=thetabins,
-#                      T=Tbins
-#                      ))
-        } # else        
-    
-    }  # if(fft)
+  NotimeComponent <- T[3]==1 || !deltagiven
+  stepT <-  deltaT[2] / T[2]
+  if (stepT != as.integer(stepT))
+    stop("deltaT not multiple of distance of temporal grid")
+  stepT <- max(1, stepT)
+  nstepT <- as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], deltaT[2]))
+  n.theta <- max(1, theta[2])
+  n.delta <- 1 + nstepT
+  n.phi <- max(1, phi[2])
+  if (!fft && !basic) {
+    n.phibin <- 2 * n.phi
+  } else {
+    n.phibin <-
+      if (!pseudo && NotimeComponent) max(1, n.phi)
+      else if(phi[2]==0) 1 else 2 * n.phi
+  }
+
+ # Print(n.phi, n.phibin)
+
+  totalbinsOhnevdim <- as.integer(n.bins * n.phibin * n.theta * n.delta)
+  totalbins <- totalbinsOhnevdim * vdim^2
+  emp.vario <- double(totalbins)
+  n.bin <- if (fft) double(totalbins) else integer(totalbins)
+
+  phibins <- thetabins <- Tbins <- NULL
+
+  if (!NotimeComponent) Tbins <- (0:nstepT) * realdelta
+  if (phi[2] > 0) phibins <- phi[1] + 0 : (n.phibin - 1) * pi / n.phi
+
+  if (n.theta > 1)
+    thetabins <- theta[1] + (0 : (n.theta-1) + 0.5) * pi / n.theta
+ 
+  dims <- c(bins=n.bins, phi=n.phibin, theta=n.theta, delta=n.delta,
+            vdim=rep(vdim, 2))
+  # Print(dims, fft)
+
+  emp.vario.sd <- NULL
+
   
-  else
-    {
-#      Print(fft); xxx
-  
+  if (fft) {
+    #Print(new)
+
+    ## to do: das liest sich alles irgendwie komisch
+    maxspatialdim <- 3
+        
+    if (ncol(new$x) > maxspatialdim)
+      stop("fft does not work yet for spatial dimensions greater than ",
+           maxspatialdim)
+    if (ncol(new$x)<maxspatialdim)  # not matrix(0, ...) here!
+      ##                              since x is a triple
+      new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x),
+                                   ncol=maxspatialdim-ncol(new$x)))
      
-      ## #################################################################################################
-      ##
-      ## MARPINS CODE WENN FFT == FALSE
-      ##
-      ## #################################################################################################
+    newdim <- c(new$x[3, ], if (time) T[3])
       
-      stopifnot( #all(is.finite(data)), fuer nicht grid jetzt NA erlaubt
-                length(bin)>=2, all(is.finite(bin)))
+    ## last: always repetitions
+    ## last but: always vdim
+    ## previous ones: coordinate dimensions
+    dim(data) <- c(newdim, dim.data[-1])
+    
       
-      bin<- prepareBin(bin)
-      centers <- pmax(0,(bin[-1] + bin[-length(bin)])/2)
-      n.bins <- length(bin) - 1 
-      
-      if (!missing(distances) && length(distances)>0)
-        stop("option distances not programmed yet.")
+    ## to achieve a reflection in x and z instead of y we transpose the
+    ## array
+    crossvar <- doVario(X=data, asVector=TRUE, pseudo=pseudo, time=time)
+    sumvals <- crossvar[[1]]
+    nbvals <- crossvar[[2]]
 
-      repetitions <- as.integer(length(data)/new$restotal)
-      
-      if (length(data) != new$restotal * repetitions) 
-        stop("number of data does not match coordinates")
-      if (repetitions==0) stop("no data given")
-      
-      if (is.null(T) && is.null(phi) && is.null(theta)) {
-         
-        emp.vario <- double(n.bins)
-        emp.vario.sd <- double(n.bins)
-        n.bin <- integer(n.bins)
-##        new$x <- rfConvertToOldGrid(new$x)
-        
-       .C("empiricalvariogram",
-           as.double(new$x), ## new definition
-           as.integer(new$spacedim), as.integer(new$l), 
-           as.double(data), as.integer(repetitions), as.integer(new$grid), 
-           as.double(bin), as.integer(n.bins), as.integer(0), 
-           emp.vario, emp.vario.sd,
-           n.bin, PACKAGE="RandomFields", NAOK=TRUE, DUP = FALSE)
-        emp.vario[is.na(emp.vario) & (centers==0)] <- 0
-        phibins <- 0
-        thetabins <- 0
-        Tbins <- 0       
-        
-      } else { ## anisotropic space-time
-        ## always transform to full 3 dimensional space-time coordinates
-        ## with all angles given. Otherwise there would be too many special
-        ## cases to treat in the c program. However, there is some lost
-        ## of speed in the calculations...
-        stopifnot(is.matrix(new$x))
-        if (ncol(new$x)<3)  # not matrix(0,...) here! since x could be a triple
-          new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x), ncol=3-ncol(new$x)))
-    ##    new$x <- rfConvertToOldGrid(new$x)
-        phi <- if (is.null(phi)) c(0, 0)  else c(phi0, phi)
-        theta <- if (is.null(theta)) c(0, 0)
-                 else c(theta0, theta)        
-        T <- if (is.null(T)) c(1, 1, 1) else new$T
-        if (is.null(deltaT)) deltaT <- c(0,0)
-        if (any(diff(bin)<=0)) stop("bin must be a strictly increasing sequence")
-        stopifnot(0 <= phi[1], 2 * pi > phi[1], 0 <= theta[1], 2 * pi > theta[1],
-                  phi[2] >= 0,  phi[2] == as.integer(phi[2]), 
-                  theta[2] >= 0, theta[2] == as.integer(theta[2]))
-        stopifnot(all(is.finite(deltaT)), all(deltaT >= 0))
-        realdelta <- deltaT[2]
-        stepT <-  deltaT[2] / T[2]
-        if (stepT != as.integer(stepT))
-          stop("deltaT not multiple of distance of temporal grid")
-        deltaT <- c(max(1, stepT),
-                    as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], deltaT[2])))
-        n.phi <- max(1, 2 * phi[2])
-        n.theta <- max(1, theta[2])
-        n.delta <- 1 + deltaT[2]
-        totalbins <- n.bins * n.phi * n.theta * n.delta
-        emp.vario <- double(totalbins)
-        emp.vario.sd <- double(totalbins)
-        n.bin <- integer(totalbins)
-        phibins <- thetabins <- NULL
-        Tbins <- 0
-       .C("empvarioXT", as.double(new$x), as.double(T), as.integer(new$l),
-           as.double(data), as.integer(repetitions), as.integer(new$grid), 
-           as.double(bin), as.integer(n.bins),
-           as.double(c(phi[1], phi[2])),
-           as.double(c(theta[1], theta[2])),
-           as.integer(deltaT),
-           ##  input : deltaT[1] max abstand, deltaT[2] : echter gitterabstand,
-           ##    c   : delta[1] : index gitterabstand, deltaT[2] : number of bins -1
-           ##                   (zero is the additional distance)
-           emp.vario, emp.vario.sd,
-           n.bin,  PACKAGE="RandomFields", NAOK=TRUE,  DUP = FALSE)
-        
-        ## the results are now reformatted into arrays
-        ## the angles are given in clear text    
-        if (T[3]==1 || is.null(deltaT) || any(deltaT==0)) {
-          ## no genuine time component
-          if (n.theta>1) { 
-            
-            ## thetabins <- theta[1] +  0 : (n.theta-1) * pi / n.theta
-            if (n.phi>1) {
-              n.phi <- n.phi / 2              
-              n.bin <- array(n.bin, dim=c(n.bins, n.phi, 2, n.theta))
-              n.bin <- n.bin[,,1,] + n.bin[,,2,]
-              emp.vario <- array(emp.vario, dim=c(n.bins, n.phi, 2, n.theta))
-              emp.vario <- emp.vario[,,1,] + emp.vario[,,2,]
-              emp.vario.sd <- array(emp.vario.sd, dim=c(n.bins, n.phi, 2, n.theta))
-              emp.vario.sd <- emp.vario.sd[,,1,] + emp.vario.sd[,,2,]
-            } else {
-              n.bin <- matrix(n.bin, ncol=n.theta, nrow=n.bins)
-              emp.vario <- matrix(emp.vario, ncol=n.theta, nrow=n.bins)
-              emp.vario.sd <- matrix(emp.vario.sd, nrow=n.bins, ncol=n.theta)
-            }     
-          } else { # n.theta==1, no real 3 dimensional component
-            if (n.phi>1) {              
-              ## phi[2]!=0, theta[2]==0, no time component
-              n.phi <- n.phi /2
-              half <- totalbins/2
-              n.bin <- matrix(n.bin[1:half] + n.bin[(half+1):totalbins], ncol=n.phi)              
-              emp.vario <-  matrix(emp.vario[1:half] + emp.vario[(half+1):totalbins], ncol=n.phi)   
-              emp.vario.sd <-
-                matrix(emp.vario.sd[1:half] + emp.vario.sd[(half+1):totalbins],
-                       ncol=n.phi)              
-            } else {
-              ## nichts zu tun
-            }
-          }
-          phibins <- phi[1] + 0 : (n.phi - 1) * pi / n.phi
-          thetabins <- theta[1] +  0 : (n.theta-1) * pi / n.theta +  pi / (2 * n.theta)          
-        } else {
-          ## genuine time component
-          dims <- c(n.bins, n.phi, n.theta, n.delta)
-          dims <- dims[dims!=1]
-          n.bin <-  array(n.bin, dim=dims)
-          emp.vario <- array(emp.vario, dim=dims) 
-          emp.vario.sd <- array(emp.vario.sd, dim=dims)
-          Tbins <- (0:deltaT[2]) * realdelta
-          thetabins <- theta[1] +  0 : (n.theta-1) * pi / n.theta +  pi / (2 * n.theta)
-          phibins <- phi[1] + 0 : (n.phi - 1) * 2 * pi / n.phi
-        }
-        
-        idx <- n.bin > 0
-        emp.vario[idx] <- emp.vario[idx] / n.bin[idx]
-        emp.vario[!idx] <- NaN
-        idx <- n.bin > 1        
-        
-        evsd <- emp.vario.sd[idx] / (n.bin[idx] - 1) -
-          n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2
-        if (any(evsd < -1e-14)) {
-          Print(idx, n.bin[idx] - 1, emp.vario.sd[idx], #
-                emp.vario.sd[idx] / (n.bin[idx] - 1) -
-                n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2)
-          warning(paste(evsd))
-        }
-        evsd[evsd < 0] <- 0
-        emp.vario.sd[idx] <- sqrt(evsd)   
-        emp.vario.sd[!idx] <- NaN
-        
-      } ## anisotropic space-time
+#    Print("doVario", crossvar, data);
+#    print(crossvar)
+
+ #   xxxxxxxAAAA
+
+#    Print("fftVario3D")
+#    d <- c(length(sumvals) / 4 , 4)
+#    dim(sumvals) <- d;   dim(nbvals) <- d
+ #    print(sumvals);  print(nbvals)
+
+#dddd
+    
+    .C("fftVario3D", as.double(new$x), 
+       as.double(sumvals), as.double(nbvals), 
+       as.double(bin), as.integer(n.bins), 
+       as.integer(T[3]), 
+       as.integer(stepT), as.integer(nstepT),       
+       as.double(phi), 
+       as.double(theta), 
+       as.integer(repetitions),
+       as.integer(vdim),
+       emp.vario, 
+         n.bin, 
+       totalbinsOhnevdim,
+       as.integer(pseudo), 
+       PACKAGE="RandomFields", DUP = DUPFALSE)
+    ## the results are now reformatted into arrays
+    ## the angles are given in clear text
+ 
+#    Print("end fftVario3D");
+#    dim(emp.vario) <- c(length(emp.vario) / 4 , 4)
+#    dim(n.bin) <- c(length(n.bin) / 4 , 4)
+#    print(emp.vario);    print(n.bin)
+       
+    emp.vario <- emp.vario / n.bin ## might cause 0/0, but OK
+    n.bin <- as.integer(round(n.bin))
+  
+ #   Print("Xend fftVario3D")
    
-      
-      ## #################################################################################################
-      ##
-      ## END OF MARPINS CODE WENN FFT == FALSE
-      ##
-      ## #################################################################################################
-      
-    } # if(fft) else {}
-  
-  sd <- if (fft) NULL else emp.vario.sd
+  } else {   
+    
+    ## #####################################################################
+    ##
+    ## MARTINS CODE WENN FFT == FALSE
+    ##
+    ## #####################################################################
 
-  if(new$spacedim <= 2) thetabins <- NULL
-  if(new$spacedim <= 1) phibins <- NULL
-  if(!time) Tbins <- NULL  
+    if (vdim > 1) stop("multivariat only progrmmed for fft up to now")
+
+    emp.vario.sd <- double(totalbins)
+
+    if (basic) {           
+      .C("empiricalvariogram", 
+         as.double(new$x), ## new definition
+         as.integer(new$spacedim), as.integer(new$l), 
+         as.double(data), as.integer(repetitions), as.integer(new$grid), 
+         as.double(bin), as.integer(n.bins), as.integer(0), 
+         emp.vario, emp.vario.sd, 
+         n.bin, PACKAGE="RandomFields", NAOK=TRUE, DUP = DUPFALSE)
+      emp.vario[is.na(emp.vario) & (centers==0)] <- 0
+        
+    } else { ## anisotropic space-time
+      ## always transform to full 3 dimensional space-time coordinates
+      ## with all angles given. Otherwise there would be too many special
+      ## cases to treat in the c program. However, there is some lost
+      ## of speed in the calculations...
+
+      stopifnot(is.matrix(new$x))
+      if (ncol(new$x)<3)  # not matrix(0, ...) here! since x could be a triple
+        new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x), ncol=3-ncol(new$x)))
+      ##    new$x <- rfConvertToOldGrid(new$x)
+      
+      .C("empvarioXT", as.double(new$x), as.double(T), as.integer(new$l), 
+         as.double(data), as.integer(repetitions), as.integer(new$grid), 
+         as.double(bin), as.integer(n.bins), 
+         as.double(c(phi[1], phi[2])), 
+         as.double(c(theta[1], theta[2])), 
+         as.integer(c(stepT, nstepT)), 
+         ## input : deltaT[1] max abstand, deltaT[2] : echter gitterabstand, 
+         ##   c   : delta[1] : index gitterabstand, deltaT[2] : # of bins -1
+         ##                   (zero is the additional distance)
+         emp.vario, emp.vario.sd, 
+         n.bin,  PACKAGE="RandomFields", NAOK=TRUE,  DUP = DUPFALSE)
+   
+      if (!time && vdim == 1) {
+        ## vario is symmetric in phi;
+        ## so the number of phi's can be halfened in this case
+        dim(emp.vario) <- dims
+        dim(n.bin) <- dims
+        dim(emp.vario.sd) <- dims
+        
+        ##   Print(dims, "here"); print(n.bin[, 1, 1,1,,]); print(emp.vario[, 1, 1,1,,])
+        
+        if (dims[2] > 1) {
+          dims[2] <- as.integer(dims[2] / 2)
+          half <- 1 : dims[2]
+          n.bin <- n.bin[, half,,,,, drop=FALSE] +n.bin[, -half,,,,, drop=FALSE]
+          emp.vario <- emp.vario[, half, , , , , drop=FALSE] +
+            emp.vario[, -half, , , , , drop=FALSE]
+          emp.vario.sd <- emp.vario.sd[, half, , , , , drop=FALSE] +
+            emp.vario.sd[, -half, , , , , drop=FALSE]
+          phibins <- phibins[half]
+        }
+      }
 
   
-  if (is.matrix(emp.vario)) 
-    dimnames(emp.vario) <-
-      list(NULL, rep(variab.names, length.out=ncol(emp.vario) ))
-  else
-    names(emp.vario) <- variab.names[1]
+    
+      emp.vario <- emp.vario / n.bin ## might cause 0/0, but OK
+    
+      idx <- n.bin > 1 & emp.vario != 0    
+      evsd <- emp.vario.sd[idx] / (n.bin[idx] - 1) -
+        n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2
+      if (any(evsd < -1e-14)) {
+        Print(idx, n.bin[idx] - 1, emp.vario.sd[idx], #
+              emp.vario.sd[idx] / (n.bin[idx] - 1), #
+              emp.vario.sd[idx] / (n.bin[idx] - 1) -
+              n.bin[idx] / (n.bin[idx] -1) * emp.vario[idx]^2,
+              emp.vario)
+        warning(paste(evsd))
+      }
+      evsd[evsd < 0] <- 0
+      emp.vario.sd[idx] <- sqrt(evsd)   
+      emp.vario.sd[!idx] <- NaN
+    }
+
+    ## ################################################################
+    ##
+    ## END OF MARPINS CODE WENN FFT == FALSE
+    ##
+    ## ################################################################
+
+
+  } # !fft
+      
+  
+  dim(emp.vario) <- dims
+  dim(n.bin) <- dims
+  if (!is.null(emp.vario.sd)) dim(emp.vario.sd) <- dims
+ 
+#  Print(emp.vario, n.bin, dims, phibins, phibins-pi)
+   
+#  if (is.array(emp.vario) && length(dims) > 2) {
+  name <- list()
+  namedim <- names(dims)
+  for (i in 1:length(dims)) {
+  #  Print(namedim[i], namedim[i] %in% c("vdim1", "vdim2"))
+    name[[i]] <-
+      if (namedim[i] %in% c("vdim1", "vdim2")) {
+          if (length(new$variab.names) == 0) NULL
+          else rep(new$variab.names, length.out=dims[i])
+      } else if (namedim[i] != "bins") paste(namedim[i], 1:dims[i], sep="")  
+  }
+  dimnames(emp.vario) <- name
+#  } else names(emp.vario) <- new$variab.names[1]
+
+#  Print(emp.vario, fft)
+
   if (RFopt$general$spConform)
     l <- new("RFempVariog",
             centers=centers,
             emp.vario=emp.vario,
             var=variance,
-            sd=sd,
+            sd= emp.vario.sd,
             n.bin=n.bin,
             phi.centers=phibins,
             theta.centers=thetabins,
             T=Tbins,
+            vdim = vdim,
             coord.units = new$coord_units,
             variab.units = variab.units,
             call=call)
-  else 
-    l <- list("RFempVariog",
-              centers=centers,
+  else {
+    l <- list(centers=centers,
               emp.vario=emp.vario,
               var=variance,
-              sd=sd,
+              sd= emp.vario.sd,
               n.bin=n.bin,
               phi.centers=phibins,
               theta.centers=thetabins,
               T=Tbins,
+              vdim = vdim,
               coord.units =  new$coord_units,
               variab.units = variab.units
            )
+    class(l) <- "RF_empVariog"
+  }
   
   return(l)
- 
-  
+   
 } # function RFempiricalvariogram
 
 
@@ -530,222 +407,197 @@ reflection <- function(data, orth, drop=FALSE)
   ## why ???
   ## since the variable data is pasted by its name
 {
-  
-  len<- dim(data)[orth]
-  n<- length(dim(data))
-  text <- paste("data[", reps(orth-1), len, ":1", reps(n - orth),
-                ",drop=", drop, "]")
- # Print(text)
-  return(eval(parse(text=text)))
-    
-#  catch(text)
-
-}
-
-#ERWARPET:	
-#SICHERP:		
-#AUTHOR:		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-stick<- function(X, Y, orth)
-{
-  len<- dim(X)[orth]
-  
-  n<- length(dim(X))
-  
-  prefix <- paste("[", reps(orth-1))
-  suffix <- paste(reps(n-orth))
- 
-  newDim <- dim(X)
-  newDim[orth] <- len* 2- 1
-
-  data<- array(NA, newDim)
-
-  text <- paste("data", prefix, "1:", len, suffix, "]",
-                "<- Y", prefix, "1:", len, suffix, ",drop=FALSE]")
-  eval(parse(text=text))
-
-  text <- paste("data", prefix, len+ 1,":", len* 2- 1, suffix, "]",
-                "<- X", prefix, "2:", len, suffix, ",drop=FALSE]")
-  eval(parse(text=text))	
-  
-  return(data)
+  d <- dim(data)
+  return(do.call("[", c(list(data), rep(TRUE, orth-1), list(d[orth]:1),
+                        rep(TRUE, length(d) - orth), drop=drop)))
 }
 
 
-doMerge <- function(cubes)
-{
-  n<- log2(length(cubes))+ 1
 
-  i<- 1
+doVario <- function(X, asVector=FALSE, pseudo=FALSE, time=FALSE) {
+  dimX <- dim(X)
+  idx.repet <- length(dimX) 
+  idx.vdim <- length(dimX) - 1
   
-  while (i < n)
-  {
-      for (j in c(1:(length(cubes)/2)))
-        {
-          cubes[[j]]<- stick(cubes[[j]], cubes[[j+ 1]], i)
-          cubes<- cubes[-(j+ 1)]
-        }
-          
-      i <- i+ 1
-  }
-  
-  return(cubes[[1]])
-}
-
-
-doVario <- function(X, Y, asVector=FALSE, pseudo=FALSE, time=FALSE)
-{
-  
-  n<- length(dim(X)) + pseudo
+  d <- length(dimX) - 2## last two dimensions are repet & vdim
+  twoD <- dimX[3] == 1
+  n <- d + pseudo 
   len<- 2^(n-1)
-  X_list<- list(X)
-  Y_list<- list(Y)
- 
-  ##reflect the data, careful with time reflection
-  if(time && !pseudo)
-    refl.order <- c(1,3,4)
-  else
-    refl.order <- c(1,3,2)
-  i<- 1
-  while (i <= (n-1))
-    {
-      for (X in X_list)
-        {
-          X_list<- c(X_list, list(reflection(X, refl.order[i])))
-        }
-      for (Y in Y_list)
-        {
-          Y_list<- c(Y_list, list(reflection(Y, refl.order[i])))
-        }
-      
-      i<- i+ 1
-    }
-  cubes<- numbers <- list()
-  ##do the crossvariogram
+
+  
+  numbers <- cubes <- array(dim=c(dimX[1:d], len, dimX[idx.repet],
+                              rep(dimX[idx.vdim], 2)))
+  X_list <- as.list(rep(NA, len))
+  X_list[[1]] <- X
+  
+  ##reflect the data, carefully with time reflection
+  refl.order <- if(time && !pseudo) c(1,3,4) else c(1,3,2)
+
+  j <- 2
+  for (i in 1:(n-1)) {
+    for (k in 1:(2^(i-1))) {
+      X_list[[j]] <- reflection(X_list[[k]], refl.order[i])
+      j <- j + 1
+    }      
+  }
+
+#  print(X_list)
+ # Print(n, j, X_list); lllll
+    ##do the crossvariogram
   
   ## decide which blocks are needed
-  blockidx <- array(0,dim=8)
+  blockidx <- rep(FALSE, 8)
   if(!time && !pseudo){
-    if(dim(X)[3] == 1)  ## 2-dim case
-      blockidx[1:2] <- 1
+    if(twoD)  ## 2-dim case
+      blockidx[1:2] <- TRUE
     else                ## 3-dim case
-      blockidx[1:4] <- 1
-  }
-  if((time && !pseudo) || (!time && pseudo)){
-    if(dim(X)[3] == 1)  ## 2-dim case
-      blockidx[c(1:2,5:6)] <- 1
-    else                ## 3-dim case
-      blockidx[1:8] <- 1
-  }
-  if(time && pseudo)
+      blockidx[1:4] <- TRUE
+  } else if(time && pseudo) {
     stop("Time component is not compatible with Pseudo variogram")
-  
-  for (i in c(1:len)){    
-      crossvar <- crossvario(X_list[[i]], Y_list[[i]], pseudo, !as.logical(blockidx[i]))      
-      cubes <- c(cubes, list(crossvar[[1]]))
-      numbers <- c(numbers, list(crossvar[[2]]))
-    }
-  
-  if(asVector) 
-    return(list(unlist(lapply(cubes, FUN=as.vector)), unlist(lapply(numbers, FUN=as.vector))))
+  } else { # ((time && !pseudo) || (!time && pseudo))
+    if(twoD)  ## 2-dim case
+      blockidx[c(1:2, 5:6)] <- TRUE
+    else                ## 3-dim case
+      blockidx[1:8] <- TRUE
+  }
 
-  ##revert the reflection
-  i<- n- 1
-  while (i > 0)
-    {
-      parts<- len/(2^i)
-      
-      for (j in c(1:parts))
-        {
-          positions<- 2^(i- 1) 
-          
-          for (k in c(1:positions))
-            {
-              cubes[[2* positions* j- positions + k]]<- reflection(cubes[[2* positions* j- positions + k]], i)
-              numbers[[2* positions* j- positions + k]]<- reflection(numbers[[2* positions* j- positions + k]], i)
-            }
-        }
-      
-      i<-i- 1
-    }
+ 
   
+  for (i in c(1:len)){
+#    Print(i, len)
+    crossvar <- crossvario(X_list[[i]], pseudo=pseudo, dummy=!blockidx[i])
+    if (time) {
+      cubes[,,,,i ,,,] <- crossvar[[1]]
+      numbers[,,,,i ,,,] <- crossvar[[2]]
+    } else {
+      cubes[,,,i ,,,] <- crossvar[[1]]
+      numbers[,,,i ,,,] <- crossvar[[2]]
+    }
+  }
+
+  if(asVector) return(list(as.vector(cubes), as.vector(numbers)))
+ 
+  ##revert the reflection ## currently not used as asVector
+  cubes <- crossvar[[1]]
+  numbers <- crossvar[[2]]
+  i<- n - 1
+  for (i in (n-1):1) {
+#    Print(i, n)
+    parts<- len / (2^i)      
+    positions <- 2^(i - 1)       
+    for (j in 1:parts) {
+      for (k in 1:positions) {
+        idx <- 2* positions * j- positions + k
+        if (time) {
+          cubes[,,,,idx ,,,] <- reflection(cubes[,,,,idx ,,,], i)
+          numbers[,,,,idx ,,,] <- reflection(numbers[,,,,idx ,,,], i)
+        } else {
+          cubes[,,,idx ,,,] <- reflection(cubes[,,,idx ,,,], i)
+          numbers[,,,idx ,,,] <- reflection(numbers[,,,idx ,,,], i)
+        }
+      }
+    }
+  }
   return(list(cubes, numbers))
 } 
 
-crossvario<-function(f,g, pseudo = FALSE, dummy = FALSE)
-{
-  d<-dim(f)
-  if(dummy) return(list(array(1,d), array(1,d)))
+crossvario<-function(f, pseudo = FALSE, dummy = FALSE) {
+  d <- dim(f)
+
+#  Print("crossvario", d, f, dummy); 
+  idx.repet <- length(d) 
+  idx.vdim <- length(d) - 1
+  repetvdim <- c(idx.vdim, idx.repet)
+  vdim <- d[idx.vdim]
+  repet <- d[idx.repet]
+  CVd <- c(d[-repetvdim], repet, vdim, vdim)
+  if(dummy) return(list(array(1, dim=CVd), array(1, dim=CVd)))
+
   
-  F <- G <- If <- Ig <- array(0,2*d-1)
-  eval(parse(text=paste("If[",paste(1,":",d,collapse=","),"]","<-!is.na(f)")))  
-  eval(parse(text=paste("Ig[",paste(1,":",d,collapse=","),"]","<-!is.na(g)")))
+  idx <- rep(TRUE, length(d) - 2)
+  idx.data <- paste("[", paste(1, ":", d, collapse=", "), "]")
+  idx.vario <- paste("[", paste(rep(",", length(d)-2), collapse=""), "r, i, j]")
+  idx.w <- paste("[", paste(1, ":", d[-repetvdim], collapse=", "), "]")
+ 
+  dim.coord <- 2 * d[-repetvdim]-1
+  F <- If <- array(0, dim=c(dim.coord, d[repetvdim]))
+
+  #  Print(If, f, idx.data, dim.coord)
   
+  eval(parse(text=paste("If", idx.data, "<- !is.na(f)")))
   f[is.na(f)] <- 0
-  g[is.na(g)] <- 0 
-  eval(parse(text=paste("F[",paste(1,":",d,collapse=","),"]","<-f")))
-  eval(parse(text=paste("G[",paste(1,":",d,collapse=","),"]","<-g")))      
-  if(!pseudo){    
-    fftIfIg <- fft(If*Ig)
-    fftFG <- fft(F*G)
-    fftIfG <- fft(G*If)
-    fftIgF <- fft(F*Ig)   
-    z<-fft(Conj(fftFG)*fftIfIg + Conj(fftIfIg)*fftFG - Conj(fftIgF)*fftIfG - Conj(fftIfG)*fftIgF, inverse=TRUE)
-    N <- fft( Conj(fftIfIg)*fftIfIg, inverse=TRUE )
-  }
-  else
-    {
-      F2 <- F^2
-      G2 <- G^2
-      fftIf <- fft(If)
-      fftIg <- fft(Ig)
-      z <- fft( Conj(fft(F2))* fftIg + Conj(fftIf) * fft(G2)- 2* Conj(fft(F)) * fft(G), inverse=TRUE)
-      ## N <- 2* fft(Conj(fftIf)*fftIg, inverse=TRUE)
-      N <- fft(Conj(fftIf)*fftIg, inverse=TRUE)
-    }  
+  eval(parse(text=paste("F", idx.data,  "<- f")))
+  LIf <- list(If)
+  LF <- list(F)
+
+  nbvals <- Crossvario <- array(0, CVd)
+   
+  for (i in 1:vdim) {
+    for (j in 1:vdim) {
+      for (r in 1:repet) {
+        #
+        
+        
+        If <- do.call("[", c(LIf, idx, i, r))
+        dim(If) <- dim.coord
+        Ig <- do.call("[", c(LIf, idx, j, r))        
+        dim(Ig) <- dim.coord
+        F <- do.call("[", c(LF, idx, i, r))
+        dim(F) <- dim.coord
+        G <- do.call("[", c(LF, idx, j, r))
+        dim(G) <- dim.coord
+
+        #Print(F, If, i, j, r, d)
+        #Print(r, repet)
+     
+        if (!pseudo) {    
+          fftIfIg <- fft(If * Ig)
+          fftFG <- fft(F * G)
+          fftIfG <- fft(G * If)
+          fftIgF <- fft(F * Ig)   
+          z <- fft(Conj(fftFG) * fftIfIg
+                   + Conj(fftIfIg) * fftFG
+                   - Conj(fftIgF) * fftIfG
+                   - Conj(fftIfG) * fftIgF, inverse=TRUE)
+          N <- fft( Conj(fftIfIg) * fftIfIg, inverse=TRUE )
+        } else {
+          F2 <- F^2
+          G2 <- G^2
+          fftIf <- fft(If)
+          fftIg <- fft(Ig)
+          z <- fft( Conj(fft(F2))* fftIg
+                   + Conj(fftIf) * fft(G2)
+                   - 2* Conj(fft(F)) * fft(G), inverse=TRUE)
+          ## N <- 2* fft(Conj(fftIf)*fftIg, inverse=TRUE)
+          N <- fft(Conj(fftIf)*fftIg, inverse=TRUE)
+        }
+
+        w <- Re(z) / (2 * prod(dim(N))) # sumvals
   
-  w <- Re(z) / (2 * prod(dim(N))) # sumvals
-  Crossvario<-array(0,d)
-  eval(parse(text=paste("Crossvario[",paste(1,":",d,collapse=","),"]","<-w[",paste(1,":",d,collapse=","),"]")))
-  eval(parse(text=paste("nbvals<-Re(N)[",paste(1,":",d,collapse=","),"]")))     
-  nbvals <- nbvals / prod(dim(N))
-  return(list(Crossvario,as.array(round(nbvals))))
+        
+        eval(parse(text=paste("Crossvario", idx.vario, "<- w", idx.w)))
+        eval(parse(text=paste("nbvals", idx.vario,
+                     "<- Re(N", idx.w, ") / prod(dim(N))")))
+
+#        Print(CVd, w, idx.vario, If, idx.w, r, i,j, dim(Crossvario))
+      }
+    }
+  }  
+  return(list(Crossvario, as.array(round(nbvals))))
 }
+
 
 prepareBin <- function(bin)
 {
-  if(missing(bin))
-    {
-      return()
-    }
-
-  if (bin[1] > 0)
-    {
+  if(missing(bin)) return(NULL)
+  if (bin[1] > 0) {
       if (RFoptions()$general$printlevel>1)
-	cat("empirical variogram: left bin border 0 added\n")
+	message("empirical variogram: left bin border 0 added\n")
       bin <- c(0, bin)
-    }         
+    }
   if (bin[1]==0) bin <- c(-1, bin)
   if (bin[1] < 0) bin <- c(bin[1], bin[bin>=0])
   
   bin
 }
 
-
-.incrDim3<- function(data, time)
-{
-  newDim<-dim(data)  
-  timeidx <- i <- length(dim(data))
-  while (i < (3+time))
-    {
-      newDim<-c(newDim, 1)      
-      i<- i+ 1
-    }
-  if(time)
-    newDim[c(timeidx,4)] <- newDim[c(4,timeidx)]
-  return(array(data,newDim))
-}
-
-hasTimeComponent <- function(coords)
-{
-	return ("coords.T1" %in% dimnames(coords)[[2]])
-}

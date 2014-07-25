@@ -29,7 +29,7 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
   holds. If \code{FALSE} then only the nominator of the above formula is
   returned. Default value is \code{TRUE}.
 }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
 }
 \details{
  If \eqn{\gamma} is a variogram, then \eqn{\exp(-\gamma)} is a valid
@@ -73,11 +73,12 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMexponential(RMfbm(alpha=1)) 
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 points(x, exp(-abs(x)), col="red")
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

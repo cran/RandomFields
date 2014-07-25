@@ -1,11 +1,14 @@
 \name{fitgauss}
 \alias{fitgauss}
+%\alias{AIC}
+%\alias{AICc}
+%\alias{logLik}
 \title{Details on fitting Gaussian random fields}
 \description{
  Here some details of \command{\link{RFfit}} are given
  concerning the fitting of models for Gaussian random fields
 
- This documentation is far from being complete.
+\bold{  This documentation is far from being complete. }
 }
 % to do : merge with privat/rffitAdvanced.Rd
 
@@ -13,7 +16,8 @@
 %\arguments{}
 %\value{}
 \section{Maximum likelihood}{
- to do
+  The application of the usual maximum likelihood method and
+  reporting the result is the default.
 }
 
 %\section{Restricted maximum likelihood}{
@@ -25,9 +29,8 @@
 %}
 
 \section{Least squares}{
-  The following least square estimation methods are available:
-
- The weighted least squares methods minimises
+ 
+ The weighted least squares methods minimise
  \deqn{
  \sum_{i} w_i (\hat \gamma(h_i) - \gamma(h_i))^2
  }
@@ -62,21 +65,23 @@
 	\item{\code{'internal3'}}{
 	 \eqn{w_i^2 = N-i+1}
 	}
- }
- }
- }
-
- 
+      }
+    }
+  }
 }
-%\references{}
+
+
 \seealso{
- \code{\link{RFfit}}
+ \code{\link{RFfit}}, \code{RFfit-class}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ## to do
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
 \keyword{spatial}
+\keyword{optimize}

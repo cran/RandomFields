@@ -15,7 +15,7 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
 \arguments{
  \item{nu,lambda}{number in \eqn{(0,2]}}
  \item{delta}{positive number}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -51,9 +51,10 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMiaco(nu=1, lambda=2, delta=0.5)
 x <- seq(0, 10, if (interactive()) 0.1 else 5) 
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

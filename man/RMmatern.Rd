@@ -35,9 +35,9 @@ RMmatern(nu, notinvnu, var, scale, Aniso, proj)
  \item{nu}{a numerical value called \dQuote{smoothness parameter};
  should be greater than 0.} 
  \item{notinvnu}{logical, if not given the model is defined as above.
- (default). This parameter should not be set
+ (default). This argument should not be set
  by users. See the Notes.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -74,9 +74,9 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
  the Handcock-Wallis (1994) parametrisation. 
 
  The model allows further to be reparameterized by substituting
- \eqn{\nu}{\nu} for \eqn{\nu^{-1}}{\nu^{-1}} setting the parameter
+ \eqn{\nu}{\nu} for \eqn{\nu^{-1}}{\nu^{-1}} setting the argument
  \code{invnu=TRUE}. Note that the inversion of \eqn{\nu} does not really
- make sense for the Whittle model. Due to this fact, if the parameter
+ make sense for the Whittle model. Due to this fact, if the argument
  \code{invnu} is given, the Whittle model changes its definition and
  becomes identical to the Matern model.
 }
@@ -105,10 +105,7 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
  \emph{JASA} \bold{89}, 368--378.
 
  \item Stein, M. L. (1999) \emph{Interpolation of Spatial Data --
- Some Theory for Kriging.} New York: Springer.
-
- \item Strokorb, K., Ballani, F., and Schlather, M. (2014)
- In Preparation.
+   Some Theory for Kriging.} New York: Springer.
  }
 }
 
@@ -137,13 +134,14 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- seq(0, 1, len=if (interactive()) 100 else 3)
 model <- RMwhittle(nu=1, Aniso=matrix(nc=2, c(1.5, 3, -3, 4)))
 plot(model, dim=2, xlim=c(-1,1))
 z <- RFsimulate(model=model, x, x, grid=TRUE)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

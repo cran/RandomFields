@@ -229,6 +229,80 @@ double x_UxPz(double *x, double *U, double *z, int dim) {
   return xVx;
 }
 
+double getMinimalAbsEigenValue(double *Aniso, int dim) {
+  double dummy, 
+    min = RF_INF, 
+    *SICH = NULL, 
+    *D = NULL, 
+    *work = NULL;
+  int dd, Err,
+    err = NOERROR,
+    *iwork = NULL,
+     dimSq = dim * dim,
+    optim_work = 12 * dim;
+
+  if ((D =(double *) MALLOC(sizeof(double) * dim))==NULL ||
+      (work = (double *) MALLOC(sizeof(double) * optim_work))==NULL ||
+      (iwork = (int *) MALLOC(sizeof(int) * 8 * dim))==NULL ||
+      (SICH =(double *) MALLOC(sizeof(double) * dimSq))==NULL) {
+    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+  }
+  
+  MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
+  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim, D, NULL, &dim, NULL,
+		   &dim, work, &optim_work, iwork, &Err);
+  if (Err != 0) GERR("SVD for anisotropy matrix failed.");
+  for (dd = 0; dd < dim; dd++) {
+    dummy = fabs(D[dd]);
+    if (dummy < min) min = dummy;
+  } 
+
+ ErrorHandling:
+  if (D != NULL) free(D);
+  if (SICH != NULL) free(SICH);
+  if (work != NULL) free(work);
+  if (iwork != NULL) free(iwork);
+  if (err != NOERROR) XERR(err);
+
+  return min;
+}
+
+
+double getDet(double *Aniso, int dim) {
+  double  
+    det = 1.0, 
+    *SICH = NULL, 
+    *D = NULL, 
+    *work = NULL;
+  int dd, Err,
+    err = NOERROR,
+    *iwork = NULL,
+     dimSq = dim * dim,
+    optim_work = 12 * dim;
+
+  if ((D =(double *) MALLOC(sizeof(double) * dim))==NULL ||
+      (work = (double *) MALLOC(sizeof(double) * optim_work))==NULL ||
+      (iwork = (int *) MALLOC(sizeof(int) * 8 * dim))==NULL ||
+      (SICH =(double *) MALLOC(sizeof(double) * dimSq))==NULL) {
+    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+  }
+  
+  MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
+  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim, D, NULL, &dim, NULL,
+		   &dim, work, &optim_work, iwork, &Err);
+  if (Err != 0) GERR("SVD for anisotropy matrix failed.");
+  for (dd = 0; dd < dim; det *= D[dd++]);
+
+ ErrorHandling:
+  if (D != NULL) free(D);
+  if (SICH != NULL) free(SICH);
+  if (work != NULL) free(work);
+  if (iwork != NULL) free(iwork);
+  if (err != NOERROR) XERR(err);
+
+  return det;
+}
+
 double detU(double *C, int dim) {
   /* ACHTUNG!! detU zerstoert !!! */
   int i, info, 
@@ -251,7 +325,10 @@ void det_UpperInv(double *C, double *det, int dim) {
     dimP1 = dim + 1,
     dimsq = dim * dim;
   F77_CALL(dpofa)(C, &dim, &dim, &info); // C i s now cholesky
-  if (info != 0) ERR("det_UpperInv: dpofa failed -- is matrix positive definite?");
+  if (info != 0) {
+    //printf("C=%f %f %f %f\n", C[0], C[1], C[2], C[3]);
+    ERR("det_UpperInv: dpofa failed -- is matrix positive definite?");
+  }
 
   double Det = 1.0;
   for (i=0; i<dimsq; i+=dimP1) Det *= C[i];
@@ -359,7 +436,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
       memcpy(M, SICH, sizeSq);
     }
     switch(method) {
-    case 0 : // cholesky
+    case Cholesky : // cholesky
        F77_CALL(dpotrf)("Upper", &size, M, &size, &err);  
        if (err != 0) {
 	if (PL >= PL_COV_STRUCTURE) 
@@ -449,7 +526,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
       F77_CALL(dgesdd)("A",  &size,  &size, M, &size, D, U, &size, VT, &size, 
 		       work, &lwork, iwork, &err);
       
-      if (err==NOERROR && ISNA(D[0])) err=9999;
+      if (err==NOERROR && ISNAN(D[0])) err=9999;
       if (err!=NOERROR) {
 	if (PL>PL_ERRORS) PRINTF("Error code F77_CALL(dgesdd) = %d\n", err); 
 	err=ERRORDECOMPOSITION;
@@ -574,7 +651,7 @@ void distInt(int *X, int*N, int *Genes, double *dist) {
 
 SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {  
     int i, j, 
-      start = RF_NAN,
+      start = RF_NA,
       milli = 500,
       len = length(Choice), 
       n = INTEGER(N)[0],
@@ -708,7 +785,7 @@ double I0mL0(double x){
   double r, x2, ac;
   int i;
   
-  if (x < 0.0) {return RF_NAN;}
+  if (x < 0.0) {return RF_NA;}
   if (x < 16.0) {
     r = 0.5 * g2[0];
     ac = acos((6.0 * x - 40.0) / (x + 40.0));
@@ -737,7 +814,7 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
   double sign, value, epsilon=1e-20;
   double dummy, logx, x1, x2;
   if ((x==0.0) && (nu>-1.0)) return 0.0;
-  if (x<=0) return RF_NAN; // not programmed yet
+  if (x<=0) return RF_NA; // not programmed yet
   logx = log(0.5 * x);
   x1=1.5;   
   x2=nu+1.5;   
@@ -747,7 +824,7 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
     if (expscaled) dummy -= x;
     value = exp(dummy);
   } else {
-    if ( (double) ((int) (x1-0.5)) != x1-0.5 ) return RF_NAN;
+    if ( (double) ((int) (x1-0.5)) != x1-0.5 ) return RF_NA;
     value=pow(0.5 * x, nu + 1.0) / (gammafn(x1) * gammafn(x2));
     if (expscaled) value *= exp(-x);
     if ((dummy= value) <0) {
@@ -959,14 +1036,6 @@ int xMatch(char *name, char **list, unsigned int llen)  {
   } else return -1; // unmatched
 }
 
-void indextrafo(int onedimindex, int *length, int dim, int *multidimindex) {
-  int d;
-  for (d=0; d<dim; d++) {
-    multidimindex[d] = onedimindex % length[d];
-    onedimindex = onedimindex / length[d];    
-  }
-}
-
 
 int CeilIndex(double x, double *cum, int size) {  
    // der kleinste index i so das cum[i] >= x --- sollte das gleiche sein
@@ -1086,7 +1155,7 @@ double incomplete_gamma(double start, double end, double s) {
     w = 0.0;
 
   if (s <= 1.0) {
-    if (start == 0.0) return RF_NAN;
+    if (start == 0.0) return RF_NA;
   }
   
   double 
@@ -1118,7 +1187,7 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
 #ifndef RF_DEBUGGING  
   return 0;
 #else
-  double x = (long int) addr,
+  double x = (intptr_t) addr,
     cut = 1e9;
   x = x - trunc(x / cut) * cut;
   return (int) x;

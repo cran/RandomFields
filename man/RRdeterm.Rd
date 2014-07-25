@@ -2,7 +2,7 @@
 \alias{RRdeterm}
 \title{Random scaling used with balls}
 \description{
- \command{RRdeterm} refers to the determinstic distribution.
+ \command{RRdeterm} refers to the distribution of a deterministic variable.
  }
  \usage{
 RRdeterm(mean) 
@@ -17,11 +17,6 @@ RRdeterm(mean)
 
 }
 
-\details{
-  It has the same effect as
-  \code{\link{RRdistr}(\link{norm}(mu=mu, sd=sd, log=log))}
-}
-
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
@@ -33,11 +28,12 @@ RRdeterm(mean)
  
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- seq(-2, 2, 0.001)
 p <- RFpdistr(RRdeterm(mean=1), q=x)
 plot(x, p, type="l")
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
  

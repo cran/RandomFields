@@ -3,7 +3,8 @@
 \title{Covariance Model for binary field based on a Gaussian field}
 \description{
   \command{RMbernoulli} gives
-  the centered covariance function of a binary field.
+  the centered covariance function of a binary field,
+  obtained by thresholding a Gaussian field.
 }
 \usage{
 RMbernoulli(phi, threshold, var, scale, Aniso, proj)
@@ -12,7 +13,7 @@ RMbernoulli(phi, threshold, var, scale, Aniso, proj)
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
  \item{threshold}{real valued threshold, see \command{\link{RPbernoulli}}.
  }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -27,7 +28,7 @@ RMbernoulli(phi, threshold, var, scale, Aniso, proj)
  Ballani, Schlather
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 \seealso{
  \command{\link{RPbernoulli}}
  \command{\link{RMmodel}},
@@ -42,7 +43,8 @@ RMbernoulli(phi, threshold, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 threshold <- 0
 x <- seq(0, 5, if (interactive()) 0.02 else 1)
@@ -56,5 +58,5 @@ z <- RFsimulate(RPbernoulli(GaussModel, threshold=threshold),
 estim.cov <- apply(z, 1, function(x) cov(x, z[1,]))
 plot(x, estim.cov)
 lines(x, RFcov(x=x, RMbernoulli(RMgauss(), threshold=threshold)))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

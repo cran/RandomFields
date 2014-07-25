@@ -138,7 +138,7 @@ RFgetMethodNames(show=TRUE)
  or \code{"direct"} have been explicitely.
 
  The method has been extended to zonal anisotropies, see
- also parameter \code{nugget.tol} in \command{\link{RFoptions}}.
+ also argument \code{nugget.tol} in \command{\link{RFoptions}}.
 
  \item \code{particular} method\cr
  -- details missing --
@@ -203,9 +203,9 @@ RFgetMethodNames(show=TRUE)
  zeros, except the very last entry. 
  }
 }
-\note{Most methods possess additional parameters,
+\note{Most methods possess additional arguments,
  see \code{\link{RFoptions}()}
- that control the precision of the result. The default parameters
+ that control the precision of the result. The default arguments 
  are chosen such that the simulations are fine for many models
  and their parameters. 
  The example in \code{\link{RFempiricalvariogram}()}
@@ -302,13 +302,14 @@ RFgetMethodNames(show=TRUE)
  --- details coming soon ---
  }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 RFgetMethodNames()
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

@@ -1,11 +1,47 @@
 
+summary.RFopt <- function(object, ...) {
+  object <- lapply(object, function(z) z[order(names(z))])
+  object <- object[c(1, 1 + order(names(object[-1])))]
+  class(object) <- "summary.RFopt"
+  object
+}
+
+
+print.summary.RFopt <- function(x, ...) {
+  str(x, ...) #
+  invisible(x)
+}
+
+print.RFopt <- function(x, ...) {
+  print.summary.RFopt(summary.RFopt(x, ...)) #
+  invisible(x)
+}
+
+summary.RFoptElmnt <- function(object, ...) {
+  object <- object[order(names(object))]
+  class(object) <- "summary.RFoptElmt"
+  object
+}
+
+print.summary.RFoptElmnt <- function(x, ...) {
+  str(x, ...) #
+  invisible(x)
+}
+
+print.RFoptElmnt <- function(x, ...) {
+  print.summary.RFoptElmnt(summary.RFoptElmnt(x, ...)) #
+  invisible(x)
+}
+
+
 RFoptions <- function(..., no.readonly=TRUE) {
 ##  on.exit(.C("RelaxUnknownRFoption", FALSE))
 ##  .C("RelaxUnknownRFoption", TRUE)
-
- # Print(list(...))
-
-  opt <- .External("RFoptions", ...)
+  opt <- lapply(.External("RFoptions", ...),
+                function(x) {
+                  class(x) <- "RFoptElmnt"
+                  x
+                })
   if (length(opt)!=0) {      
     class(opt) <-  "RFopt"
     if (!no.readonly) {
@@ -21,7 +57,7 @@ RFoptions <- function(..., no.readonly=TRUE) {
                            )
     }
   }
-  if (is.null(opt)) invisible(opt) else opt
+  if (length(opt)==0) invisible(opt) else opt
 }
 
 internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
@@ -29,12 +65,11 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
   RFopt <- list()
   RFopt[[1]] <- .External("RFoptions")
   if (is.logical(REGISTER)) {
-    REGISTER <- if (REGISTER) RFopt[[1]]$general$register else as.integer(NA)
+    REGISTER <- if (REGISTER) RFopt[[1]]$registers$register else as.integer(NA)
   }
   RFopt[[1]]$general$storing <-
     c(RFopt[[1]]$general$storing, REGISTER, COVREGISTER)
   l <- list(...)
-#  Print("in", l)
   if (length(l) > 0) {
     storing <- (substr(names(l), 1, 3) == "sto" |
                 substr(names(l), 1, 9) == "general.sto")
@@ -42,26 +77,20 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
     if (any(storing) && !l[[last]]) {
       for (p in which(storing)) l[[p]] <- c(FALSE, REGISTER, COVREGISTER)
     }
-# Print("pass", l)
     on.exit(.C("RelaxUnknownRFoption", FALSE))
     .C("RelaxUnknownRFoption", RELAX)
     .External("RFoptions", LIST=l)
- #   Print("final", l)
-  
-   
-    RFopt[[2]] <- .External("RFoptions")
-
- #    Print("end", RFopt)
-    
+    RFopt[[2]] <- .External("RFoptions")    
   } else {
     RFopt[[2]] <- RFopt[[1]]
   }
   return(RFopt)
 }
 
-RFgetModelNames <- function(type = ZF_TYPE, domain = ZF_DOMAIN,
-                            isotropy = ZF_ISOTROPY, operator = c(TRUE, FALSE),
-                            normalmix = c(TRUE, FALSE),
+RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
+                            isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
+                            monotone = RC_MONOTONE,
+                            implied_monotonicities = length(monotone) == 1,
                             finiterange = c(TRUE, FALSE),
                             valid.in.dim = c(1, Inf), 
                             vdim = c(1, 5),
@@ -76,7 +105,7 @@ RFgetModelNames <- function(type = ZF_TYPE, domain = ZF_DOMAIN,
   }
   if (!missing(newnames) && !newnames) {
     if (hasArg(type) || hasArg(domain) || hasArg(isotropy) || hasArg(operator)
-        || hasArg(normalmix) || hasArg(finiterange) || hasArg(valid.in.dim)
+        || hasArg(monotone) || hasArg(finiterange) || hasArg(valid.in.dim)
         || hasArg(vdim) || hasArg(group.by))
       stop("use 'newnames=FALSE' without further parameters or in combination with 'internal'")
     return (.Call("GetAllModelNames", PACKAGE="RandomFields"))
@@ -93,37 +122,50 @@ RFgetModelNames <- function(type = ZF_TYPE, domain = ZF_DOMAIN,
   
   if (group <- !is.null(group.by)) {  
     names <- c("type", "domain", "isotropy", "operator",
-               "normalmix", "finiterange", "valid.in.dim", "vdim")
+               "monotone", "finiterange", "valid.in.dim", "vdim")
     idx <- pmatch(group.by[1], names)
     if (is.na(idx))
       stop("'group.by' can be equal to '", paste(names, collapse="', '"), "'")
     
     FUN <- function(string){
       args <- list(type=type, domain=domain, isotropy=isotropy,
-                   operator=operator, normalmix=normalmix,
+                   operator=operator, monotone=monotone,
+                   implied_monotonicities = implied_monotonicities &&
+                   group.by[1] != "monotone",
                    finiterange=finiterange, valid.in.dim=valid.in.dim,
                    vdim=vdim,
                    if (group && length(group.by) > 1) group.by=group.by[-1])
       args[[idx]] <- string
-      do.call("RFgetModelNames", args)
+      list(do.call("RFgetModelNames", args))
     }
     li <- sapply(get(group.by[1]), FUN=FUN)
-    #if (is.null(names(li))) names(li) <- as.character(possible.values)
+    if (is.null(names(li)))
+      names(li) <- paste(group.by[1], get(group.by[1]), sep="=")
     length <- unlist(lapply(li, FUN=length))
     li <- li[length>0]
     return(li)
   } # matches  if (hasArg(group.by)) {
   
-  if (any(is.na(pmatch(type, ZF_TYPE))))
+  if (any(is.na(pmatch(type, RC_TYPE))))
     stop(paste("'", type, "'", " is not a valid category", sep=""))
-  if (any(is.na(pmatch(domain, ZF_DOMAIN))))
+  if (any(is.na(pmatch(domain, RC_DOMAIN))))
     stop(paste("'", domain, "'", " is not a valid category", sep=""))
-  if (any(is.na(pmatch(isotropy, ZF_ISOTROPY))))
+  if (any(is.na(pmatch(isotropy, RC_ISOTROPY))))
     stop(paste("'", isotropy, "'", " is not a valid category", sep=""))
-  
+  if (any(is.na(pmatch(monotone, RC_MONOTONE))))
+    stop(paste("'", monotone, "'", " is not a valid category", sep=""))
+
   envir <- as.environment("package:RandomFields")
   ls.RFmg <- ls(envir=envir)
   idx <- logical(len <- length(ls.RFmg))
+  if (implied_monotonicities) {
+    if (RC_MONOTONE[MON_MISMATCH] %in% monotone)
+      monotone <- c(monotone, RC_MONOTONE[c(MON_MISMATCH + 1, BERNSTEIN)])
+    for (i in 1:3)
+      if (RC_MONOTONE[MON_MISMATCH + i] %in% monotone)
+        monotone <- c(monotone, RC_MONOTONE[MON_MISMATCH + i + 1])
+    monotone <- unique(monotone)
+  }
   
   for (i in 1:len){
     fun <- get(ls.RFmg[i], envir=envir)
@@ -134,7 +176,7 @@ RFgetModelNames <- function(type = ZF_TYPE, domain = ZF_DOMAIN,
                !all(is.na(pmatch(domain, fun["domain"]))) &&
                !all(is.na(pmatch(isotropy, fun["isotropy"]))) &&
                fun["operator"] %in% operator &&
-               fun["normalmix"] %in% normalmix &&
+               !all(is.na(pmatch(monotone, fun["monotone"]))) &&
                fun["finiterange"] %in% finiterange &&
                (fun["maxdim"] < 0 ||
                 (fun["maxdim"] >= valid.in.dim[1] &&

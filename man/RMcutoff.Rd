@@ -31,7 +31,7 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
    diameter of the domain on which the simulation is done}
  \item{a}{a numerical value; should be greater than 0; has been shown to be
    optimal for \eqn{a = 1/2} or \eqn{a =1}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
    \command{\link{RMmodel}}. If not passed, the above
    covariance function remains unmodified.}
 }
@@ -39,7 +39,7 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
  only about some few necessary conditions.
  Hence it is not ensured that
  the cutoff-model is a valid covariance function for any
- choice of phi and the parameters. 
+ choice of \eqn{\phi} and the parameters. 
  
  For certain models \eqn{\phi}{phi}, e.g. \command{\link{RMstable}},
  \command{\link{RMwhittle}} and \command{\link{RMgencauchy}}, some
@@ -77,5 +77,5 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
 
 \examples{
  ## For examples see the help page of 'RFsimulateAdvanced' ##
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

@@ -14,20 +14,20 @@ with \eqn{d}{d} denoting the dimension of the random field.
 RMlgd(alpha, beta, var, scale, Aniso, proj)
 }
 \arguments{
- \item{alpha}{parameter whose range is dependend on the dimension of the random field: \eqn{0< \alpha \le (3-d)/2}{0< \alpha \le (3-d)/2}.}
+ \item{alpha}{argument whose range depends on the dimension of the random field: \eqn{0< \alpha \le (3-d)/2}{0< \alpha \le (3-d)/2}.}
  \item{beta}{beta > 0.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{
 The model is only valid for dimension \eqn{d=1,2}{d=1,2}.
 
-This model admits simulating random fields where RFfractaldimension
+This model admits simulating random fields where fractal dimension
 \emph{D} of the Gaussian sample and Hurst coefficient \emph{H}
 can be chosen independently (compare also \command{\link{RMgencauchy}}.):
 
-Here, the random field has RFfractaldimension \deqn{D = d+1 - \alpha/2}{D = d+1
+Here, the random field has fractal dimension \deqn{D = d+1 - \alpha/2}{D = d+1
  - \alpha/2} and Hurst coefficient \deqn{H = 1-\beta/2}{H = 1-\beta/2} for \eqn{0< \beta \le 1}{0< \beta \le 1}.
 }
 \value{
@@ -38,7 +38,7 @@ Here, the random field has RFfractaldimension \deqn{D = d+1 - \alpha/2}{D = d+1
 \references{
  \itemize{
  \item Gneiting, T. and Schlather, M. (2004)
- Stochastic models which separate RFfractaldimension and Hurst effect.
+ Stochastic models which separate fractal dimension and Hurst effect.
  \emph{SIAM review} \bold{46}, 269--282.
  }
 }
@@ -59,10 +59,11 @@ Here, the random field has RFfractaldimension \deqn{D = d+1 - \alpha/2}{D = d+1
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMlgd(alpha=0.7, beta=4, scale=0.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

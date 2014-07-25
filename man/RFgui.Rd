@@ -28,11 +28,11 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
    locations where the covariance function is plotted}
  \item{ycov}{Only for anisotropic models. \code{\link[base]{seq}}uence of the
    locations where the covariance function is also plotted}
- \item{sim_only1dim}{Logical. The parameter determines whether a process
+ \item{sim_only1dim}{Logical. The argument determines whether a process
    should be simulated on the line or on the plane}
  \item{wait}{integer. See details.
  }
- \item{...}{further options and control parameters for the simulation
+ \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}.}
 }
 \details{
@@ -70,13 +70,13 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
 
 \author{
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 
  \subsection{Author(s) of the code}{
  Daphne Boecker \email{d.boecker@gmx.de}
 
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
  }
 }
 
@@ -85,9 +85,10 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 RFgui()
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

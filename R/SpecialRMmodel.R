@@ -1,3 +1,8 @@
+
+RMstrokorbMono <- function(phi) stop("Please use 'RMm2r' instead")
+RMstrokorbBall <- function(phi) stop("Please use 'RMm3b' instead")
+RMstrokorbPoly <- function(phi) stop("Please use 'RMmps' instead")
+
 RMcoord <- function(C0, coord, dist)
 {
 	cl <- match.call()
@@ -24,11 +29,11 @@ RMcoord <- function(C0, coord, dist)
 
 RMcoord <- new('RMmodelgenerator',
                .Data = RMcoord,
-               type = ZF_TYPE[OtherType + 1],
-               domain = ZF_DOMAIN[PREVMODELD + 1],
-               isotropy = ZF_ISOTROPY[CARTESIAN_COORD + 1],
+               type = RC_TYPE[OtherType + 1],
+               domain = RC_DOMAIN[PREVMODELD + 1],
+               isotropy = RC_ISOTROPY[RC_CARTESIAN_COORD + 1],
                operator = TRUE,
-               normalmix = TRUE,
+               monotone = RC_MONOTONE[NOTMONOTONE],
                finiterange = TRUE,
                maxdim = Inf,
                vdim = -2
@@ -64,11 +69,11 @@ internalRMmixed <- function(X, beta, cov, coord, dist, element)
 
 internalRMmixed <- new('RMmodelgenerator',
                        .Data = internalRMmixed,
-                       type = ZF_TYPE[OtherType + 1],
-                       domain = ZF_DOMAIN[PREVMODELD + 1],
-                       isotropy = ZF_ISOTROPY[CARTESIAN_COORD + 1],
+                       type = RC_TYPE[OtherType + 1],
+                       domain = RC_DOMAIN[PREVMODELD + 1],
+                       isotropy = RC_ISOTROPY[RC_CARTESIAN_COORD + 1],
                        operator = TRUE,
-                       normalmix = TRUE,
+                       monotone =  RC_MONOTONE[NOTMONOTONE],
                        finiterange = TRUE,
                        maxdim = Inf,
                        vdim = -2
@@ -145,16 +150,16 @@ RRdistr <- function(fct, nrow, ncol, envir) {
 }
 
 RRdistr <- new('RMmodelgenerator',
-	.Data = RRdistr,
-	type = ZF_TYPE[.RandomType + 1],
-        domain = ZF_DOMAIN[PREVMODELD + 1],
-	isotropy = ZF_ISOTROPY[PREVMODELI + 1],
-	operator = FALSE,
-	normalmix = FALSE,
-	finiterange = FALSE,
-	maxdim = Inf,
-	vdim = 1
-	)
+               .Data = RRdistr,
+               type = RC_TYPE[.RandomType + 1],
+               domain = RC_DOMAIN[PREVMODELD + 1],
+               isotropy = RC_ISOTROPY[PREVMODELI + 1],
+               operator = FALSE,
+               monotone =  RC_MONOTONE[NOTMONOTONE],
+               finiterange = FALSE,
+               maxdim = Inf,
+               vdim = 1
+               )
 
 
 
@@ -172,31 +177,35 @@ GetSymbols <- function(ll) {
        
 
 RMuser <- function(type, domain, isotropy, vdim, beta,
+                   variab.names = c("x", "y", "z", "T"),
                    fctn, fst, snd, envir, var, scale, Aniso, proj) {
 	cl <- match.call()
 	submodels <- par.general <- par.model <- list() 
 	
-	if (hasArg(type)) {
-	  if (is.numeric(type)) par.model[['type']] <- type
-          else if (is.character(type))
-                   par.model[['type']] <- pmatch(type, ZF_TYPE) - 1
-	  else stop("undefined value for 'type'")
-	}
+	if (!hasArg(type)) type <- RC_TYPE[ShapeType + 1]
+        if (is.numeric(type)) par.model[['type']] <- type
+        else if (is.character(type))
+          par.model[['type']] <- pmatch(type, RC_TYPE) - 1
+        if (type < ProcessType)
+          message("It is likely that the defined function is already available in 'RandomFields'. Using predefined functions leads to (much) shorter computing times. See ?RMmodels for an overview over the implemented models. Further, some simulation methods do not work at all for user defined functions.")
+        else if (type == TrendType)
+          message("Please make sure that the defined function is not available in 'RandomFields'. Using predefined functions leads to (much) shorter computing times. Further, some simulation methods do not work at all for user defined functions.");
+
 	if (hasArg(domain)) {
 	  if (is.numeric(domain)) par.model[['domain']] <- domain
 	  else if (is.character(domain))
-                   par.model[['domain']] <- pmatch(domain, ZF_DOMAIN) - 1
+                   par.model[['domain']] <- pmatch(domain, RC_DOMAIN) - 1
 	  else stop("wrong value for 'domain'")
 	}
 	if (hasArg(isotropy)) {
 	  if (is.numeric(isotropy)) par.model[['isotropy']] <- isotropy
 	  else if (is.character(isotropy))
-                   par.model[['isotropy']] <- pmatch(isotropy, ZF_ISOTROPY) - 1
+                   par.model[['isotropy']] <- pmatch(isotropy, RC_ISOTROPY) - 1
 	  else stop("wrong value for 'isotropy'")
 	}
 
         
-   #     Print(par.model, type, domain, isotropy, ZF_TYPE, ZF_DOMAIN, ZF_ISOTROPY); xxx        
+   #     Print(par.model, type, domain, isotropy, RC_TYPE, RC_DOMAIN, RC_ISOTROPY); xxx        
 	if (hasArg(vdim)) {
 	  if (is.numeric(vdim)) par.model[['vdim']] <- vdim
 	  else stop("wrong value for 'vdim'")
@@ -209,29 +218,30 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 	    submodels[['beta']] <- beta
 	  else submodels[['beta']] <- RRdistr(beta)
 	}
-        par.names <- c("x", "y", "z", "T")
-	if (hasArg(fctn)) {
+ 	if (hasArg(fctn)) {
           f <- substitute(fctn)
-          par <- par.names %in% GetSymbols(as.list(as.list(f)[-1]))
+          par <- variab.names %in% GetSymbols(as.list(as.list(f)[-1]))
           par.model[['fctn']] <- f
-	} else stop("'fctn' not given")
+ 	} else stop("'fctn' not given")
        
 	if (hasArg(fst)) {
           f <- substitute(fst)
-          if (any(xor(par, par.names %in% GetSymbols(as.list(as.list(f)[-1])))))
+          if (any(xor(par,
+                      variab.names %in% GetSymbols(as.list(as.list(f)[-1])))))
             stop("the variables in 'fst' do not match the ones in 'fctn'")
           par.model[['fst']] <- f
 	} else if (hasArg(snd)) stop("'fst' not given")
         
 	if (hasArg(snd)) {         
 	  f <- substitute(snd)          
-          if (any(xor(par, par.names %in% GetSymbols(as.list(as.list(f)[-1])))))
+          if (any(xor(par,
+                      variab.names %in% GetSymbols(as.list(as.list(f)[-1])))))
             stop("the variables in 'snd' do not match the ones in 'fctn'")
 	  par.model[['snd']] <- f
 	}
 
         ##      Print(par.names, par);        xxx
-        par.model[['variab.names']] <- which(par)        
+        par.model[['variab.names']] <- which(par)    
 	par.model[['envir']] <- if (hasArg(envir)) envir else new.env()
 	par.general[['var']] <-if (hasArg(var)) var else ZF_DEFAULT_STRING
 	par.general[['scale']] <-if (hasArg(scale)) scale else ZF_DEFAULT_STRING
@@ -246,11 +256,11 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 
 RMuser <- new('RMmodelgenerator',
               .Data = RMuser,
-              type = ZF_TYPE[PosDefType + 1],
-              domain = ZF_DOMAIN[PREVMODELD + 1],
-              isotropy = ZF_ISOTROPY[PREVMODELI + 1],
+              type = RC_TYPE[PosDefType + 1],
+              domain = RC_DOMAIN[PREVMODELD + 1],
+              isotropy = RC_ISOTROPY[PREVMODELI + 1],
               operator = FALSE,
-              normalmix = FALSE,
+              monotone =  RC_MONOTONE[NOTMONOTONE], # [MON_PARAMETER]
               finiterange = TRUE,
               maxdim = Inf,
               vdim = -1

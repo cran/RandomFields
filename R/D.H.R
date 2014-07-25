@@ -148,7 +148,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
        as.integer(fft.len),## Reihe zerhackt in Stuecke dieser Laenge 
        as.integer(fft.len / 2), ## WOSO(?)-Sch\"aetzer
        l.I.lambda,
-       PACKAGE="RandomFields", DUP=FALSE)
+       PACKAGE="RandomFields", DUP=DUPFALSE)
     l.lambda <-  log((2 * pi * (fft.m[1]:fft.m[2])) / fft.len)
   } 
 
@@ -169,7 +169,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     ## log already returned!
     .C("detrendedfluc", as.double(data), as.integer(dimen[1]), as.integer(repet),
        as.integer(block.sequ), as.integer(dfa.len),
-       l.dfa.var, l.varmeth.var, PACKAGE="RandomFields", DUP=FALSE)
+       l.dfa.var, l.varmeth.var, PACKAGE="RandomFields", DUP=DUPFALSE)
     ## 1:dfa.len since data could be a matrix; l.block.sequ has length dfa.len
     ## and is then shorter than l.varmeth.var!
     varmeth.idx <- is.finite(l.varmeth.var[1:dfa.len])
@@ -188,7 +188,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))
-    on.exit(close.screen(screens))
+    on.exit(close.screen(screens))  ## nervig sonst bei Fehlern
   }
 
   ## calculation and plot are separated into blocks since calculation time
@@ -232,7 +232,10 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     cat("############################################### \n")
   }
   #if (any(mode=="plot" | mode=="interactive")) close.screen(screens)
-  if (any(mode=="plot" | mode=="interactive")) dev.off()
+  if (any(mode=="plot" | mode=="interactive")) {
+    close.screen(screens)
+    dev.off() # OK
+  }
    
   return(list(dfa=list(x=l.block.sequ, y=l.dfa.var, regr=dfa$regr,
                 sm=dfa$sm,
@@ -350,7 +353,7 @@ RFfractaldim <-
       ## logarithm is already taken within minmax
       .C("minmax", as.double(data), as.integer(dimen[1]),
          as.integer(repet), as.integer(range.sequ), as.integer(lrs),
-         l.range.count, PACKAGE="RandomFields", DUP=FALSE, NAOK=TRUE)
+         l.range.count, PACKAGE="RandomFields", DUP=DUPFALSE, NAOK=TRUE)
       box.length.correction <- 0 ## might be set differently
       ##                            for testing or development
       Ml.range.sequ <- -log(range.sequ + box.length.correction)
@@ -369,7 +372,7 @@ RFfractaldim <-
          as.integer(dimen[1]),
          as.integer(repet), as.double(factor),
          as.integer(box.sequ), as.integer(length(box.sequ)),
-         l.box.count, PACKAGE="RandomFields", DUP=FALSE)
+         l.box.count, PACKAGE="RandomFields", DUP=DUPFALSE)
       gc()
       
       box.length.correction <- 0 ## might be set differently
@@ -401,7 +404,7 @@ RFfractaldim <-
          as.integer(fft.len),## Reihe zerhackt in Stuecke dieser Laenge 
          as.integer(fft.len / 100 * fft.shift), ## shift (WOSA-Sch\"aetzer)
          l.I.lambda,
-         PACKAGE="RandomFields", DUP=FALSE)
+         PACKAGE="RandomFields", DUP=DUPFALSE)
     }
   } else { # not grid
     if (do.box || do.range || do.fft) {

@@ -2,7 +2,7 @@
 \alias{RMspheric}
 \title{Spherical Covariance Model}
 \description{
- \command{\link{RMhyperbolic}} is a stationary isotropic covariance model
+ \command{\link{RMspheric}} is a stationary isotropic covariance model
  which is only valid up to dimension 3.
  The corresponding covariance function only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between two points and is given by
@@ -13,7 +13,7 @@
 RMspheric(var, scale, Aniso, proj)
 }
 \arguments{
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -48,10 +48,11 @@ RMspheric(var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMspheric()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

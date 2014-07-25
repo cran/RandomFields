@@ -1,18 +1,21 @@
-\name{RMstrokorb}
+\name{Strokorb's Functions}
 \alias{RMstrokorb}
 \alias{RMstrokorbMono}
 \alias{RMstrokorbBall}
 \alias{RMstrokorbPoly}
+\alias{RMm2r}
+\alias{RMm3b}
+\alias{RMmps}
 \title{Tail correlation function of the Brown-Resnick process}
 \description{
-  The \command{RMstrokorb} models define various
+  The models define various
   shape functions for max-stable processes for a given
   tail correlation function
 }
 \usage{
-RMstrokorbMono(phi);
-RMstrokorbBall(phi);
-%RMstrokorbPoly(phi);
+RMm2r(phi);
+RMm3b(phi);
+RMmps(phi);
 }
 \arguments{
   \item{phi}{a model for a tail correlation function belonging to the
@@ -20,19 +23,30 @@ RMstrokorbBall(phi);
 }
 
 \details{
-  \command{RMstrokorbMoni} defines
+  \command{RMm2r} used with \command{\link{RPsmith}} defines
   a monotone shape function that corresponds a tail correlaton
-  function belonging to Gneiting's class \eqn{H_d}.
+  function belonging to Gneiting's class \eqn{H_d}. Currently, the
+  function is implemented for dimensions 1 and 3.
+  Called as such it returns the corresponding monotone function.
+  
 
-  \command{RMstrokorbBall} defines
-  balls with random \emph{radius} that corresponds a tail correlaton
-  function belonging to Gneiting's class \eqn{H_d}.
+  \command{RMm3b} used with \command{\link{RPsmith}} defines
+  balls with random \emph{radius} that corresponds to a tail correlation
+  function belonging to Gneiting's class \eqn{H_d}. Currently, the
+  function is implemented for dimensions 1 and 3.
+  (Note that in Strokorb et al. (2014) the density function for twice
+  the radius is considered.)
+  Called as such it returns the corresponding density function for the
+  radius of the balls.
 
-   \command{RMstrokorbPoly} ) defines
+  \command{RMmps}  used with \command{\link{RPsmith}} defines
+   random hyperplane polygons
    that corresponds a tail correlaton
    function belonging to Gneiting's class \eqn{H_d}.
    It currently only allows for
-   \code{\link{RMbrownresnick}(\link{RMfbm}(alpha=1))}.
+   \code{\link{RMbrownresnick}(\link{RMfbm}(alpha=1))} and dimension 2.
+   Called as such it returns the tcf defined by the submodel -- this
+   definition may change in future.
  
 }
 \value{
@@ -54,18 +68,18 @@ RMstrokorbBall(phi);
  \command{\link{RMmodel}}.
 }
 \examples{
-RFoptions(seed=0)
-#plot shape function of an M3 process of type 'strokorb'
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMbrownresnick(RMfbm(alpha=1.5, s=0.2))
-plot(RMstrokorbMono(model))
+plot(RMm2r(model))
 
 x <- seq(0, 10, if (interactive()) 0.005 else 1)
-z <- RFsimulate(RPsmith(RMstrokorbMono(model), xi=0), x)
+z <- RFsimulate(RPsmith(RMm2r(model), xi=0), x)
 plot(z, type="p", pch=20)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \keyword{spatial}

@@ -1,8 +1,9 @@
 \name{RMsign}
 \alias{RMsign}
+\alias{RRsign}
 \title{Random sign}
 \description{
-  \command{RMsign} defined a random sign. It can be used as part of the
+  \command{RMsign} defines a random sign. It can be used as part of the
   model definition of a Poisson field. 
 
  }
@@ -25,12 +26,18 @@ RMsign(phi, p)
 
 }
 
+\note{
+  Random univariate or multivariate objects are
+  usually start with \code{RR} not with \code{RM}.
+  This is an exception here, as it operates on shape functions.
+}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
- \command{\link{RMmodel}},
- \command{\link{RMmatrix}},
+  \command{\link{RMmodel}}
+  \link{RR}.
+
  }
 
 
@@ -41,9 +48,10 @@ RMsign(phi, p)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RPpoisson(RMsign(RMtent(), p=0.8))
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

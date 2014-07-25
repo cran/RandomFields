@@ -13,7 +13,7 @@ RMfractgauss(alpha,var, scale, Aniso, proj)
 }
 \arguments{
  \item{alpha}{ \eqn{0 < \alpha \le 2}}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -28,7 +28,7 @@ RMfractgauss(alpha,var, scale, Aniso, proj)
 \references{
  \itemize{
  \item Gneiting, T. and Schlather, M. (2004)
- Stochastic models which separate RFfractaldimension and Hurst effect.
+ Stochastic models which separate fractal dimension and Hurst effect.
  \emph{SIAM review} \bold{46}, 269--282.
  }
 }
@@ -45,10 +45,11 @@ RMfractgauss(alpha,var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMfractgauss(alpha=0.5, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(-0.3, 1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

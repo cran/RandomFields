@@ -11,7 +11,7 @@ among max-stable processes
 }
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de};
+ \url{http://ms.math.uni-mannheim.de/de/publications/software};
 }
 \references{
  \itemize{ 
@@ -24,39 +24,90 @@ among max-stable processes
 }
 
 \examples{
-RFoptions(seed=0)
+\dontrun{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
-
 %  library(RandomFields, lib="~/TMP")
+
+H <- c(0:9, LETTERS[1:6])
+numbers <- rep(0:255, each=2)
+col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) \%\% 16)],sep=""),
+         paste("#", H[1 + (numbers / 16)], H[1 + (numbers \%\% 16)],
+               H[1 + (numbers / 16)], H[1 + (numbers \%\% 16)], "FF", sep=""))
+
 RFoptions(every=1000, xi=0)
-model <- RMfbm(alpha=1, var=1) ## not 8 as in the paper
 x <- seq(0, 5, if (interactive()) 0.01 else 1)
 
+
+## Figure 2
+model <- RMfbm(alpha=1, var=4) ## not 8 as in the paper, since semi-variogram
+bm <- RMbrownresnick(model)
+
+
 # Fig. 2, Brown-Resnick
-z <- RFsimulate(RPbrownresnick(model), x, x)
-plot(z)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) dev.copy2pdf(file="SBS_BRorig.pdf")}
+z1 <- RFsimulate(RPbrownresnick(model), x, x)
+plot(z1, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_BRorig.pdf");  dev.print(device=jpeg,
+file="SBS_BRorig.jpg", height=1000, width=1000, quality=100)}}
 
 
 # Fig. 2, Monotone functions
-bm <- RMbrownresnick(model)
-z <- RFsimulate(RPsmith(RMstrokorbMono(bm), xi=0), x, x, 0)
-H <- c(0:9, LETTERS[1:6])
-numbers <- rep(0:255, each=2)
-col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) \%\% 16)], sep=""),
-         paste("#", H[1 + (numbers / 16)], H[1 + (numbers \%\% 16)],
-               H[1 + (numbers / 16)], H[1 + (numbers \%\% 16)], "FF", sep=""))
-plot(z, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) dev.copy2pdf(file="SBS_mono.pdf")}
+z2 <- RFsimulate(RPsmith(RMm2r(bm), xi=0), x, x, 0)
+plot(z2, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_mono.pdf"); dev.print(device=jpeg,
+file="SBS_mono.jpg", height=1000, width=1000, quality=100)}}
 
 
 # Fig. 2, balls
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) dev.copy2pdf(file="SBS_ball.pdf")}
+z3 <- RFsimulate(RPsmith(RMm3b(bm)), x, x, 0, eps_zhou=0.1)
+plot(z3, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+  dev.copy2pdf(file="SBS_ball.pdf"); dev.print(device=jpeg,
+file="SBS_ball.jpg", height=1000, width=1000, quality=100)}}
 
 
 # Fig. 2,
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) dev.copy2pdf(file="SBS_poly.pdf")}
+z4 <- RFsimulate(RPsmith(RMmps(bm)), x, x, eps_zhou=0.1)
+plot(z4, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_poly.pdf"); dev.print(device=jpeg,
+file="SBS_poly.jpg", height=1000, width=1000, quality=100)}}
 
+
+## Figure 4
+model <- RMexp(var=1.62) 
+bm <- RMbrownresnick(model)
+
+
+# Fig. 4, Brown-Resnick
+z5 <- RFsimulate(RPbrownresnick(model), x, x)
+plot(z5, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_BRexp.pdf"); dev.print(device=jpeg,
+file="SBS_BRexp.jpg", height=1000, width=1000, quality=100)}}
+
+
+# Fig. 4, extremal Gaussian
+z6 <- RFsimulate(RPschlather(bm), x, x)
+plot(z6, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_schlather.pdf");
+dev.print(device=jpeg, file="SBS_schlather.jpg",
+height=1000, width=1000, quality=100)}}
+
+
+# Fig. 4, extremal binary 
+z7 <- RFsimulate(RPschlather(RPbernoulli(bm)), x, x)
+plot(z7, col=col)
+\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+dev.copy2pdf(file="SBS_binary.pdf");
+dev.print(device=jpeg, file="SBS_binary.jpg",
+height=1000, width=1000, quality=100)}}
+
+}
 
 
 
@@ -79,12 +130,12 @@ RFoptions(xi=0)
 model <- RMfbm(var=4, alpha=0.65) ## not 8 as in the paper
 model <- RMfbm(var=4,alpha=1) ## not 8 as in the paper
 model <- RMfbm(alpha=1) ## not 8 as in the paper
-sm <- RMstrokorbMono(RMbrownresnick(model))
+sm <- RMm2r(RMbrownresnick(model))
 
 x <- seq(0, 10, 0.02)
 
 
-z <- RFsimulate(RPsmith(RMstrokorbMono(RMbrownresnick(model)), xi=0),
+z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 x, x, 0, n=1, print=10)
 H <- c(0:9, LETTERS[1:6])
 numbers <- rep(0:255, each=2)
@@ -108,7 +159,7 @@ if (!interactive()) .C("sleepMicro", as.integer(3e6))
 ############# test
 
 unix.time(
-z <- RFsimulate(RPsmith(RMstrokorbMono(RMbrownresnick(model)), xi=0),
+z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 seq(0, len=400, by=0.02), seq(0, len=400, by=0.02), 0, n=1,
                 spC=FALSE, every=0)
 )
@@ -116,7 +167,7 @@ z <- RFsimulate(RPsmith(RMstrokorbMono(RMbrownresnick(model)), xi=0),
 ###
 
 ### Hintergrundbild
-z <- RFsimulate(RPsmith(RMstrokorbMono(RMbrownresnick(model)), xi=0),
+z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 seq(0, 1920/100, 0.02), seq(0, 1280/100, 0.02), 0, n=1,
                 spC=FALSE, every=0)
                
@@ -129,12 +180,12 @@ col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) %% 16)], sep=""),
 png(filename="~/Pictures/strokorb.png", width=1920, height=1280)#1930,1290
 par(mar=rep(0,4))
 image(z[,,1], col=col)
-dev.off()
+
 
 }}
 
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

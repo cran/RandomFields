@@ -52,7 +52,7 @@ RMetaxxa(E, A, alpha)
 
 \examples{
 # see S10
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

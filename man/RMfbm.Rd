@@ -14,23 +14,20 @@
 RMfbm(alpha, var, scale, Aniso, proj)
 }
 \arguments{
- \item{alpha}{parameter in \eqn{(0,2]} refering to the RFfractaldimension of the
+ \item{alpha}{numeric in \eqn{(0,2]}; refers to the fractal dimension of the
  process}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  variogram remains unmodified.}
 }
 \details{
- The parameter \eqn{\alpha}{\alpha} must satisfy \eqn{\alpha \in (0,2]}{0
- < \alpha \le 2}.
-
 The variogram is unbounded and belongs to a non-stationary process with
 stationary increments. For \eqn{\alpha=1}{\alpha=1} and \code{scale=2}
 we get a variogram corresponding to a standard Brownian Motion.
 
 For \eqn{\alpha \in (0,2)}{0 < \alpha < 2} the quantity \eqn{H =
  \frac{\alpha} 2}{H=\alpha/2} is called Hurst index and determines
-the RFfractaldimension \eqn{D} of the corresponding Gaussian sample paths
+the fractal dimension \eqn{D} of the corresponding Gaussian sample paths
 \deqn{D = d + 1 - H}
 where \eqn{d}{d} is the dimension of the random field (see Chiles and
  Delfiner, 1999, p. 89).
@@ -43,6 +40,7 @@ where \eqn{d}{d} is the dimension of the random field (see Chiles and
  \itemize{
  \item Chiles, J.-P. and P. Delfiner (1999) \emph{Geostatistics. Modeling
  Spatial Uncertainty.} New York, Chichester: John Wiley & Sons.
+
  \item Stein, M.L. (2002) Fast and exact simulation of fractional
  Brownian surfaces. \emph{J. Comput. Graph. Statist.} \bold{11}, 587--599
  }
@@ -65,10 +63,11 @@ where \eqn{d}{d} is the dimension of the random field (see Chiles and
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMfbm(alpha=1)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

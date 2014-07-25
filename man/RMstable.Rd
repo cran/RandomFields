@@ -20,12 +20,12 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
  to provide a valid covariance function for a random field of any
  dimension. 
 }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{
- The parameter \eqn{\alpha}{\alpha} determines the RFfractaldimension
+ The parameter \eqn{\alpha}{\alpha} determines the fractal dimension
  \eqn{D}{D} of the Gaussian sample paths:
  \deqn{ D = d + 1 - \frac{\alpha}{2}}{D = d + 1 - \alpha/2}
  where \eqn{d}{d} is the dimension of the random field.
@@ -84,10 +84,11 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMstable(alpha=1.9, scale=0.4)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

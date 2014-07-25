@@ -11,7 +11,7 @@
 
 \usage{
 
-RPbernoulli(phi, loggauss, stationary_only, threshold)
+RPbernoulli(phi, stationary_only, threshold)
 
 }
 
@@ -21,15 +21,18 @@ RPbernoulli(phi, loggauss, stationary_only, threshold)
     specified.
     In the latter case, a Gaussian process \command{\link{RPgauss}} is
     tacitely assumed.}
- \item{loggauss, stationary_only}{optional parameters; same meaning as for 
- \command{\link{RPgauss}}. They will be ignored if the submodel
+  \item{stationary_only}{optional arguments; same meaning as for 
+ \command{\link{RPgauss}}. It is ignored if the submodel
  is a process definition.}
- \item{threshold}{real valued. \command{\link{RPbernoulli}} returns \eqn{1}
- if value of the random field given by \code{phi} is equal
- to or larger than the value of \code{threshold}, and \eqn{0}
- otherwise.
+
+ \item{threshold}{real valued.
+   \command{\link{RPbernoulli}} returns \eqn{1}
+   if value of the random field given by \code{phi} is equal
+   to or larger than the value of \code{threshold}, and \eqn{0}
+   otherwise. In the multivariate case, a vector might be given.
+   If the threshold is not finite, then the original field is returned.
  
- \code{threshold} defaults value is 0.
+   \code{threshold} defaults value is 0.
  }
 }
 
@@ -47,12 +50,13 @@ RPbernoulli(phi, loggauss, stationary_only, threshold)
 
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 model <- RPbernoulli(RMexp(), threshold=0)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
@@ -64,7 +68,7 @@ z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

@@ -36,7 +36,7 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 
  Most user will never call \command{\link{RMS}} directly.
 }
-\note{At most one of the parameters,
+\note{At most one of the arguments,
  \code{Aniso} and \code{proj} may be given at the same time.
 }
 
@@ -53,10 +53,11 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model1 <- RMS(RMexp(), scale=2)
 model2 <- RMexp(scale=2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1)
 print(all(RFcov(model1, x) == RFcov(model2, x))) # TRUE
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

@@ -45,7 +45,7 @@ RMrotation(phi)
  
 \examples{
 # see S10
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

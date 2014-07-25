@@ -17,7 +17,7 @@ RMconstant(M, vdim, element, var, scale, Aniso, proj)
  \item{element}{integer. If a list of several matrices is given then
  \code{element} chooses the one that should currently be
  used. Default: 0}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
 }
 \details{
  Note, this is not a covariance model for arbitrary locations, the
@@ -46,5 +46,5 @@ RMconstant(M, vdim, element, var, scale, Aniso, proj)
 \keyword{models}
 \examples{
  ## For examples see the help page of 'RFformula' ##
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

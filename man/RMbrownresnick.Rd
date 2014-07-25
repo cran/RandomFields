@@ -5,20 +5,29 @@
   \command{RMbrownresnick} defines
   the tail correlation function of the Brown-Resnick process.
   \deqn{C(h) = 2 - 2\Phi(\sqrt{\gamma(h) / 2})}
-  where \eqn{Phi} is the standard normal distribution function.
+  where \eqn{\phi} is the standard normal distribution function
+  and \eqn{\gamma} is the \bold{semi-}variogram.
 }
 \usage{
 RMbrownresnick(phi, var, scale, Aniso, proj);
 }
 \arguments{
  \item{phi}{variogram of class \code{\link[=RMmodel-class]{RMmodel}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \value{
  object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
+\note{
+  \bold{In the paper Kabluchko et al (2009)
+    the variogram instead of the semi-variogram is considered, so the
+    formulae differ slightly.}
+
+  Here, a definition is used that is consistend with the rest of the package.
+}
+
 \details{
  For a given \command{\link{RMmodel}} the function
  \code{\link{RMbrownresnick}(\link{RMmodel}())} 'returns' the tail correlation
@@ -31,11 +40,12 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
 }
 \seealso{
  \command{\link{RFsimulate}},
- \command{\link{RMstrokorb}},
+ \command{\link{RMm2r}}, \command{\link{RMm3b}}, \command{\link{RMmps}},
  \command{\link{RMmodel}}.
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 #plot covariance model of type RMbrownresnick
 RMmodel <- RMfbm(alpha=1.5, scale=0.2)
 plot(RMbrownresnick(RMmodel))
@@ -44,10 +54,10 @@ plot(RMbrownresnick(RMmodel))
 x <- if (interactive()) seq(-5, 5, 0.05) else seq(-5, 5, 5)
 z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE, print=6)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \keyword{spatial}

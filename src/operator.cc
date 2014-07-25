@@ -146,13 +146,16 @@ int checkbinary(cov_model *cov) {
   cov_model
     *next = cov->sub[0];
   double v;
-  int err = NOERROR;
+  int i,
+    vdim = cov->vdim2[0],
+    err = NOERROR;
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
   kdefault(cov, BINARY_P, 0.0);
   if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, PosDefType,
 		     cov->domown, cov->isoown,
 		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   COV(ZERO, next, &v);
   return NOERROR;
 }
@@ -187,12 +190,15 @@ int check_extrgauss(cov_model *cov) {
   cov_model
     *next = cov->sub[0];
   double v;
-  int err = NOERROR;
+  int i,
+    vdim = cov->vdim2[0],
+    err = NOERROR;
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
   if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, PosDefType,
 		     cov->domown, cov->isoown,
 		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   COV(ZERO, next, &v);
   if (v != 1.0) SERR("only correlation functions allowed");
   return NOERROR;
@@ -227,10 +233,10 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
   
   //  
 
-  if (cov->role != ROLE_COV && cov->role != ROLE_MAXSTABLE) BUG;
-  if (cov->taylorN < 1) BUG;
+  if ((cov->role != ROLE_COV && cov->role != ROLE_MAXSTABLE) || 
+      cov->taylorN <= 1) BUG;
 
-  if (cov->taylor[1][TaylorPow] == 0.0) {
+  if (cov->taylor[1][TaylorPow] == 0.0) { // const??
     *v = 0.0;
     return;
   }
@@ -354,21 +360,11 @@ void D3brownresnick(double *x, cov_model *cov, double *v) {
   }
 }
 
-
-int checkbrownresnick(cov_model *cov) {
+int TaylorBrownresnick(cov_model *cov) {
   cov_model  
    *next = cov->sub[0];
-  int err, idx, dim = cov->tsdim;
-
-  if ((err = CHECK(next, dim,  dim, NegDefType, cov->domown, 
-		   cov->isoown, SUBMODEL_DEP, 
-		   hasMaxStableRole(cov) ? ROLE_MAXSTABLE : ROLE_COV))
-      != NOERROR) {
-    return err;
-  } 
-  
-  idx = isPosDef(next->typus); // Taylorentw. in 2 Glieder falls pos def.
-  assert(idx == 0);
+ int idx = isPosDef(next->typus); // Taylorentw. in 2 Glieder falls pos def.
+ assert(idx == 0);
 
   //  assert(!idx);
 
@@ -377,17 +373,12 @@ int checkbrownresnick(cov_model *cov) {
   } else cov->full_derivs = 0;
   cov->rese_derivs = next->rese_derivs;
   if (cov->rese_derivs > 3) cov->rese_derivs = 3;
-  if (next->taylorN < 1 + idx) cov->rese_derivs = 0;
-  // else if (next->taylor[idx][TaylorPow] == 2) {
+ 
+   // else if (next->taylor[idx][TaylorPow] == 2) {
   //  if (next->taylorN < 2 + idx) cov->rese_derivs = 0;
     // else if (cov->rese_derivs > 2) cov->rese_derivs = 2; 
   //  }
-    
-
-  setbackward(cov, next);
-  cov->monotone = isBernstein(next) ? GNEITING_MON : 
-    isMonotone(next) ? MONOTONE : NOT_MONOTONE;
-
+   
   if (next->taylorN >= 1 + idx &&  next->taylor[idx][TaylorConst] < 0.0) {
     // 2 \Phi(sqrt(gamma * br_f)) =
     //1+ 2 * phi(0) * sqrt(gamma * br_f) - 2 phi(0) / 6 *sqrt(gamma*br_f)^3
@@ -445,7 +436,7 @@ int checkbrownresnick(cov_model *cov) {
   } else cov->taylorN = 0;
 
   
-  if (next->tailN >= 1 && next->taylorN >= 1) {
+  if (next->tailN >= 1) {
     cov->tailN = 1;    
     cov->tail[0][TaylorPow] = -0.5 * next->tail[0][TaylorPow];
     if (next->tail[0][TaylorPow] > 0) {  
@@ -466,7 +457,32 @@ int checkbrownresnick(cov_model *cov) {
 
   if (cov->taylorN < 1) cov->rese_derivs = 0;
 
-  cov->mpp.maxheight = 1.0;
+  return NOERROR;
+}
+
+int checkbrownresnick(cov_model *cov) {
+  cov_model  
+   *next = cov->sub[0];
+  int i, err, 
+    vdim = cov->vdim2[0],
+    dim = cov->tsdim;
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+
+  if ((err = CHECK(next, dim,  dim, NegDefType, cov->domown, 
+		   cov->isoown, SUBMODEL_DEP, 
+		   hasMaxStableRole(cov) ? ROLE_MAXSTABLE : ROLE_COV))
+      != NOERROR) {
+    return err;
+  } 
+  setbackward(cov, next);
+  cov->monotone = isBernstein(next) ? GNEITING_MON : 
+    isMonotone(next) ? MONOTONE : NOT_MONOTONE;
+
+  if ((err = TaylorBrownresnick(cov)) != NOERROR) return err;
+
+
+
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   MEMCOPY(cov->pref, CovList[cov->nr].pref, sizeof(pref_shorttype)); 
 
  
@@ -485,14 +501,11 @@ int struct_brownresnick(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmode
 
     BUG;
 
-    assert(false);
-
     // shape ist somit die Ableitung, falls d=1 und i.w. die 
     // zweifache Ableitung, falls d=3
 
     // hier ist auch Taylor zu setztn fuer den neuen Shape
 
-    // STRUCT(next);
   } else ILLEGAL_ROLE;
 
 
@@ -500,7 +513,9 @@ int struct_brownresnick(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmode
 }
 
 int init_brownresnick(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
+  int err;
   // cov_model *next = cov->sub[0];
+  if ((err = TaylorBrownresnick(cov)) != NOERROR) return err;
   return NOERROR;
 }
 
@@ -574,19 +589,19 @@ int init_randomsign(cov_model *cov, storage *s) {
     SERR("log return is incompatible with random sign");
   
   if (cov->mpp.moments >= 1) {
-    cov->mpp.M[0] = next->mpp.M[0];
-    cov->mpp.Mplus[0] = next->mpp.Mplus[0];
-    Eminus = cov->mpp.Mplus[1] - cov->mpp.M[1];
-    cov->mpp.Mplus[1] = 
-      P(SIGN_P)[0] * (cov->mpp.Mplus[1] - Eminus) + Eminus; 
-    cov->mpp.M[1] = 0.0;
+    cov->mpp.mM[0] = next->mpp.mM[0];
+    cov->mpp.mMplus[0] = next->mpp.mMplus[0];
+    Eminus = cov->mpp.mMplus[1] - cov->mpp.mM[1];
+    cov->mpp.mMplus[1] = 
+      P(SIGN_P)[0] * (cov->mpp.mMplus[1] - Eminus) + Eminus; 
+    cov->mpp.mM[1] = 0.0;
   }
-  cov->mpp.maxheight = next->mpp.maxheight;
+  cov->mpp.maxheights[0] = next->mpp.maxheights[0];
   cov->fieldreturn = next->fieldreturn;
   cov->origrf = false;
   cov->rf = next->rf;  
 
-  // assert(cov->mpp.maxheight == 1.00);
+  // assert(cov->mpp.maxheights[0] == 1.00);
 
   return err;
 }
@@ -608,9 +623,12 @@ void do_randomsign(cov_model *cov, storage *s) {
 
 
 int struct_randomsign(cov_model *cov, cov_model **newmodel) {  
-  int err = STRUCT(cov->sub[0], newmodel);
-  //  assert(cov->sub[0]->mpp.maxheight == 1.0);
-  return err;
+  if (cov->role == ROLE_GAUSS || hasPoissonRole(cov)) {
+    int err = STRUCT(cov->sub[0], newmodel);
+    //  assert(cov->sub[0]->mpp.maxheights[0] == 1.0);
+    return err;
+  }
+  SERR("'RMsign' not allowed in this context.");
 }
 
 
@@ -627,12 +645,14 @@ void BR2BG(double *x, cov_model *cov, double *v) {
 int check_BR2BG(cov_model *cov) {
   cov_model *next = cov->sub[0];
   double v, t;
-  int err;
+  int err, i,
+    vdim = cov->vdim2[0];
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType,
 		     cov->domown, cov->isoown, 
 		     SCALAR, cov->role)) != NOERROR)  return err;
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
 
   COV(ZERO, next, &v);
@@ -657,12 +677,15 @@ void BR2EG(double *x, cov_model *cov, double *v) {
 int check_BR2EG(cov_model *cov) {
   cov_model *next = cov->sub[0];
   double v, t;
-  int err;
+  int err, i,
+    vdim = cov->vdim2[0];
+   if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+  
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, 
 		     cov->domown, cov->isoown, 
 		     SCALAR, cov->role)) != NOERROR)  return err;
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
   COV(ZERO, next, &v);
   t = qnorm(0.5 * (1.0 - INVSQRTTWO), 0.0, 1.0, 0, 0);
@@ -744,7 +767,7 @@ void shift(double *x, cov_model *cov, double *v) {
     *h = P(SHIFT_DELAY);
   int i, j, d,
     tsdim = cov->tsdim,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdimM1 = vdim - 1,
     vdimSq = vdim * vdim,
     vdimP1 = vdim + 1;
@@ -782,7 +805,7 @@ int checkshift(cov_model *cov) {
 		     SCALAR, ROLE_COV)) != NOERROR) 
     return err;
   setbackward(cov, next);
-  cov->vdim = cov->ncol[SHIFT_DELAY] + 1;
+  cov->vdim2[0] = cov->vdim2[1] = cov->ncol[SHIFT_DELAY] + 1;
   return NOERROR;
 }
 
@@ -925,7 +948,7 @@ void vectorAniso(double *x, cov_model *cov, double *v) {
 
 int checkvector(cov_model *cov) {
   cov_model *next = cov->sub[0];
-  int err,
+  int err, i,
     dim = cov->tsdim;
   isotropy_type isotropy = cov->domown;
 
@@ -958,10 +981,8 @@ int checkvector(cov_model *cov) {
     }
   }
 
-  //  APMI(cov);
-
   setbackward(cov, next);
-  cov->mpp.maxheight = RF_NAN;
+  for (i=0; i<dim; i++) cov->mpp.maxheights[i] = RF_NA;
 
   if (next->full_derivs < 2 && !next->hess) {
     //    print("%s (%d): full_derivs %d  %d\n", NICK(to), 
@@ -977,7 +998,7 @@ int checkvector(cov_model *cov) {
       cov->nr++;
   }
 
-  cov->vdim = P0INT(VECTOR_D);
+  cov->vdim2[0] = cov->vdim2[1] = P0INT(VECTOR_D);
   next->delflag = DEL_COV;
 
   EXTRA_STORAGE;
@@ -1227,7 +1248,7 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
 int checkdivcurl(cov_model *cov) {
   cov_model  *next = cov->sub[0];
   // been programmed yet 
-  int err,
+  int err, i,
       dim = cov->tsdim,
       spacedim;
   isotropy_type isotropy;
@@ -1254,8 +1275,8 @@ int checkdivcurl(cov_model *cov) {
        SERR("model currently only defined for the plane");
   
   setbackward(cov, next);
-  cov->mpp.maxheight = RF_NAN;
-  cov->vdim = spacedim + 2; // only correct for spacedim == 2!!!
+  for (i=0; i<dim; i++) cov->mpp.maxheights[i] = RF_NA;
+  cov->vdim2[0] = cov->vdim2[1] = spacedim + 2; // only correct for spacedim == 2!!!
   assert(spacedim == 2);
   next->delflag = DEL_COV;
   return NOERROR;
@@ -1347,7 +1368,7 @@ int checkma1(cov_model *cov) {
   cov->logspeed = 0.0;
   //  updatepref(cov, next);
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+  cov->mpp.maxheights[0] = 1.0;
   return NOERROR;
 }
 void rangema1(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
@@ -1391,7 +1412,7 @@ int checkma2(cov_model *cov) {
   cov->logspeed = 0.0;
  //  updatepref(cov, next);
   setbackward(cov, next);
-  cov->mpp.maxheight = 1.0;
+  cov->mpp.maxheights[0] = 1.0;
 
   return NOERROR;
 }
@@ -1420,10 +1441,8 @@ void M(cov_model *cov, double *Z, double *V) {
 // K : cols of op(A)= rows of op(B)
 // LD-X : first dimension of X
 
-  // printf("dim=%d %d %d", next->vdim, nrow[0], ncol[0]);
 
-
-  if (next->vdim == 1) {
+ if (next->vdim2[0] == 1) {
     F77_CALL(dgemm)("N", "T", nrow, nrow, ncol, Z, M, nrow, M, nrow, 
 		    &beta, V, nrow); 
   } else {
@@ -1448,18 +1467,32 @@ void Mnonstat(double *x, double *y, cov_model *cov, double *v){
   NONSTATCOV(x, y, next, z);  
   M(cov, z, v);
 }
+
 int checkM(cov_model *cov) {
   cov_model *next = cov->sub[0];
-  int err;
+  int err, i,
+    nrow = cov->ncol[M_M];
+
+  //  if (cov->isoown < SYMMETRIC) SERR("sdfkjaskfj"); printf("hh");
+  //  PMI(cov, 1);
+
+  if (nrow > MAXMPPVDIM) 
+    SERR2("the maximum multivariate dimension is %d, but %d is given by the user", MAXMPPVDIM, nrow);
   
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->vdim = cov->nrow[M_M]; // zwingend vor CHECK
+  cov->vdim2[0] = cov->vdim2[1] = cov->nrow[M_M]; // zwingend vor C-HECK
+
+
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, cov->domown, 
-		     cov->isoown, cov->ncol[M_M], ROLE_COV)) != NOERROR) 
+		   cov->isoown, cov->ncol[M_M], ROLE_COV)) != NOERROR) {
+    //    MERR(err); printf("x");
     return err;
+  }
+
+  //APMI(next);
+
   setbackward(cov, next);
-  //  if (cov->vdim != cov->nrow[M_M]) APMI(cov);
-  cov->mpp.maxheight = RF_NAN;
+  for (i=0; i<nrow; i++) cov->mpp.maxheights[i] = RF_NA;
 
   EXTRA_STORAGE;
 
@@ -1495,7 +1528,7 @@ void kappaSchur(int i, cov_model *cov, int *nr, int *nc){
 void SchurMult(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
   double *M = P(SCHUR_M);
   int i,
-    vdim = cov->vdim;
+    vdim = cov->vdim2[0];
   if (!PisNULL(SCHUR_M)) {
     int nrow2 = cov->nrow[SCHUR_M] * cov->nrow[SCHUR_M];
     for (i=0; i<nrow2; i++) v[i] *= M[i]; 
@@ -1544,7 +1577,7 @@ int checkSchur(cov_model *cov) {
     *nrow = cov->nrow,
     *ncol = cov->ncol;
 
-  cov->vdim =  vdim;
+  cov->vdim2[0] = cov->vdim2[1] = vdim;
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, cov->domown, 
 		     cov->isoown, nrow[SCHUR_M], ROLE_COV)) != NOERROR) 
     return err;
@@ -1579,7 +1612,7 @@ int checkSchur(cov_model *cov) {
   }
     
   free(C);
-  cov->mpp.maxheight = RF_NAN;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
 
   /*
 
@@ -1651,10 +1684,14 @@ int checkId(cov_model *cov) {
   cov_model *next = cov->sub[0];
   int err;
 
-  cov->vdim = !PisNULL(ID_VDIM) ? P0INT(ID_VDIM) : SUBMODEL_DEP;
+  cov->vdim2[0] = cov->vdim2[1] = 
+    !PisNULL(ID_VDIM) ? P0INT(ID_VDIM) : SUBMODEL_DEP;
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, cov->domown,
-		     cov->isoown, cov->vdim, cov->role)) != NOERROR) return err;
-  if (cov->vdim == SUBMODEL_DEP) cov->vdim = next->vdim;
+		     cov->isoown, cov->vdim2, cov->role)) !=NOERROR) return err;
+  if (cov->vdim2[0] == SUBMODEL_DEP) {
+    cov->vdim2[0] = next->vdim2[0];
+    cov->vdim2[1] = next->vdim2[1];
+  }
   cov->logspeed = next->logspeed;
   setbackward(cov, next);
    
@@ -1672,7 +1709,7 @@ void DDId(double *x, cov_model *cov, double *v){
 }
 void TBM2Id(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
-  TBM2CALL(x, next, v);
+  TBM2CALL(x, next, v)
 }
 void IdInverse(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
@@ -1686,7 +1723,7 @@ int initId(cov_model *cov, storage *S) {
 void spectralId(cov_model *cov, storage *S, double *e) { 
   //  spectral_storage *s = &(S->Sspectral);
   cov_model *next = cov->sub[0];
-  return SPECTRAL(next, S, e); // nicht nr
+  SPECTRAL(next, S, e); // nicht nr
 }
 void coinitId(cov_model *cov, localinfotype *li) {
   cov_model *next = cov->sub[0];
@@ -1714,7 +1751,7 @@ void Exp(double *x, cov_model *cov, double *v, int n, bool standardize){
     w = 1.0;
   cov_model *next = cov->sub[0];
   int k,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdim2q = vdim * vdim;
 
   COV(x, next, v);
@@ -1748,7 +1785,7 @@ void nonstatExp(double *x, double *y, cov_model *cov, double *v, int n,
     s = 0.0, 
     w = 1.0;
   int k,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdim2q = vdim * vdim;
 
   NONSTATCOV(x, y, next, v);
@@ -1778,7 +1815,7 @@ void DExp(double *x, cov_model *cov, double *v){
   double D;
   cov_model *next = cov->sub[0];
   int n = P0(EXP_N);
-  assert(cov->vdim == 1);
+  assert(cov->vdim2[0] == 1);
   
   Abl1(x, next, &D);
   Exp(x, cov, v, n - 1, false);
@@ -1798,7 +1835,7 @@ void DDExp(double *x, cov_model *cov, double *v){
   double D, Abl2, w;
   cov_model *next = cov->sub[0];
   int n = P0INT(EXP_N);
-  assert(cov->vdim == 1);
+  assert(cov->vdim2[0] == 1);
 
   Abl1(x, next, &D);
   Abl2(x, next, &Abl2);
@@ -1816,7 +1853,8 @@ void DDExp(double *x, cov_model *cov, double *v){
 
 int checkExp(cov_model *cov) {
   cov_model *next = cov->sub[0];
-  int err;
+  int err, i,
+      vdim = cov->vdim2[0];
 
   kdefault(cov, EXP_N, -1);
   if (!isPosDef(next->typus) && P0INT(EXP_N) != -1)
@@ -1829,9 +1867,9 @@ int checkExp(cov_model *cov) {
   next->delflag = DEL_COV - 10;
 
   setbackward(cov, next);
-  if (cov->vdim > 1 && P0INT(EXP_N) != -1)
+  if (cov->vdim2[0] > 1 && P0INT(EXP_N) != -1)
     SERR("'n' must be '-1' in the multivariate case");
-  if (cov->vdim > 1) SERR("multivariate case not programmed yet");
+  if (cov->vdim2[0] > 1) SERR("multivariate case not programmed yet");
  
   if (next->domown == XONLY) {
     cov_fct *C = CovList + cov->nr;
@@ -1846,8 +1884,9 @@ int checkExp(cov_model *cov) {
 			      TYPENAMES[cov->typus]);
  
   }
-  cov->mpp.maxheight = isNegDef(next->typus) && !isPosDef(next->typus)
-    ? 1.0 : RF_NAN;
+
+  double height= isNegDef(next->typus) && !isPosDef(next->typus) ? 1.0 : RF_NA;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = height;
 
   cov->monotone = 
     (isBernstein(next)) ? NORMAL_MIXTURE : 
@@ -1950,7 +1989,8 @@ int checkPow(cov_model *cov) {
   }
   // print("xOK %d\n",err);
   setbackward(cov, next);      
-  cov->mpp.maxheight = RF_NAN;
+  assert(cov->vdim2[0] == 1);
+  cov->mpp.maxheights[0] = RF_NA;
    cov->monotone = isMonotone(next->monotone) ? MONOTONE : NOT_MONOTONE;
   
   return NOERROR;
@@ -2030,7 +2070,8 @@ int checkqam(cov_model *cov) {
   } 
 
   INVERSE(ZERO, next, &v);
-  if (!ISNA(v)) SERR1("inverse function of '%s' unknown", NICK(next));
+
+  if (ISNAN(v)) SERR1("inverse function of '%s' unknown", NICK(next));
 
   cov->logspeed = 0.0;   
   return NOERROR;
@@ -2064,7 +2105,7 @@ void kappamqam(int i, cov_model *cov, int *nr, int *nc) {
 void mqam(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
   int i, j, k, l,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdimP1 = vdim + 1;
   double s0,
     *theta = P(QAM_THETA),
@@ -2096,10 +2137,10 @@ int checkmqam(cov_model *cov) {
     nsub = cov->nsub,
     vdim = nsub - 1;     
 
-  return ERRORNOTPROGRAMMED;
+  //  NotProgrammedYet("");
 
   if ((err = checkqam(cov)) != NOERROR) return err;
-  cov->vdim = vdim;
+  cov->vdim2[0] = cov->vdim2[1] = vdim;
   return NOERROR;
 }
 
@@ -2126,7 +2167,8 @@ void natsc(double *x, cov_model *cov, double *v){
 void Dnatsc(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   int i,
-    vdimSq = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vdimSq = vdim * vdim;
   double invscale, y;
  
   assert(CovList[next->nr].inverse != NULL);
@@ -2140,7 +2182,8 @@ void Dnatsc(double *x, cov_model *cov, double *v){
 void DDnatsc(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   int i,
-    vdimSq = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vdimSq = vdim * vdim;
   double invscale, y, invScSq;
 
   assert(CovList[next->nr].inverse != NULL);
@@ -2154,15 +2197,11 @@ void DDnatsc(double *x, cov_model *cov, double *v){
 
 void Inversenatsc(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
-  int i,
-    vdimSq = cov->vdim * cov->vdim;
-  double invscale;
-
+  double invscale, modelinv;
   assert(CovList[next->nr].inverse != NULL);
-  INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);    
-  Abl1(x, next, v);
-  for (i=0; i<vdimSq; i++) v[i] /= invscale; 
-
+  INVERSE(x, next, &modelinv);    
+  INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
+  *v = modelinv / invscale;
 }
 
 int checknatsc(cov_model *cov) {
@@ -2175,6 +2214,7 @@ int checknatsc(cov_model *cov) {
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, cov->domown,
 		   cov->isoown, SUBMODEL_DEP, ROLE_COV))
       != NOERROR) {
+
     return err;
   }
 
@@ -2190,12 +2230,19 @@ int checknatsc(cov_model *cov) {
  
   double invscale;
   INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
-  if (R_FINITE(invscale) && invscale == INVERSE_UNKNOWN)
+
+  //  PMI(cov);  printf("%f %f\n", GLOBAL.gauss.approx_zero, next, invscale);
+
+  if (invscale == RF_NAN)
     SERR1("inverse function of '%s' unknown", NICK(next));
 
 
   cov->logspeed = 0.0;
   setbackward(cov, next);
+
+  cov->vdim2[0] = next->vdim2[0];
+  cov->vdim2[1] = next->vdim2[1];
+
   return NOERROR;
 }
 
@@ -2261,7 +2308,7 @@ void tbm2natsc(double *x, cov_model *cov, double *v){
   INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
   y = x[0] * invscale;
      
-  TBM2CALL(&y, next, v);
+  TBM2CALL(&y, next, v)
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2330,8 +2377,7 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel) {
 
   ASSERT_NEWMODEL_NOT_NULL;
 
-  if (cov->role == ROLE_POISSON_GAUSS || cov->role == ROLE_MAXSTABLE || 
-      cov->role == ROLE_POISSON) {
+  if (hasPoissonRole(cov) || hasMaxStableRole(cov)) {
     if ((err = addUnifModel(cov, P0(TRUNC_RADIUS), newmodel)) != NOERROR)
       return err;
   } else ILLEGAL_ROLE_STRUCT;
@@ -2349,7 +2395,8 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel) {
     break;      
   case ROLE_POISSON : // optimierte density
     return addUnifModel(cov, 1.0, newmodel);
-  case ROLE_MAXSTABLE :    
+  case ROLE_MAXSTABLE :   
+  case ROLE_SMITH : 
     return addUnifModel(cov, 1.0, newmodel);
   default : ILLEGAL_ROLE_STRUCT;
   }
@@ -2358,7 +2405,10 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel) {
 }
 
 int init_truncsupport(cov_model *cov,  storage *s) {
-  int err;
+  int i, err,
+    vdim = cov->vdim2[0];
+  assert(cov->vdim2[0] == cov->vdim2[1]);
+
   if (cov->role == ROLE_BROWNRESNICK || cov->role == ROLE_SMITH ||
       cov->role == ROLE_SCHLATHER || cov->role == ROLE_POISSON
       || cov->role == ROLE_POISSON_GAUSS) {
@@ -2371,8 +2421,7 @@ int init_truncsupport(cov_model *cov,  storage *s) {
     //   if (radius>=0 && radius < cov->mpp.refradius) cov->mpp.refradius = radius;
     
     // Eplus, M2 are assumed to be still precise !!
-    
-    cov->mpp.maxheight = next->mpp.maxheight;
+    for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = next->mpp.maxheights[i];
 
     return NOERROR;
   }
@@ -2384,11 +2433,14 @@ int init_truncsupport(cov_model *cov,  storage *s) {
 void do_truncsupport(cov_model *cov, storage *s) {
   //  mppinfotype *info = &(s->mppinfo);
   cov_model *next = cov->sub[0];
-  //  double
+  int i, 
+    vdim = cov->vdim2[0];
+ //  double
   //    radius = P0(TRUNC_RADIUS); // default -1
+  assert(cov->vdim2[0] == cov->vdim2[1]);
   
   DO(next, s);  
-  cov->mpp.maxheight = next->mpp.maxheight;
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = next->mpp.maxheights[i];
 
   // if (radius>=0 && radius < info->radius) info->radius = radius;
 }
@@ -2400,10 +2452,13 @@ void do_truncsupport(cov_model *cov, storage *s) {
 void tbm3(double *x, cov_model *cov, double *v, double tbmdim){
   cov_model *next = cov->sub[TBMOP_COV];
   int i,
-    vdim2 = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vdim2 = vdim * vdim;
+  assert(cov->vdim2[0] == cov->vdim2[1]);
+   
   double v1[MAXTBMVDIM * MAXTBMVDIM];
   COV(x, next, v); // x has dim 2, if turning planes
-  //  print(" cov=%4.4f ", *v);
+  //   print(" cov=%4.4f %f %f %f %f\n ", x[0], v[0], v[1], v[2], v[3]);
   if (x[0] != 0.0) {
     Abl1(x, next, v1);
     //  print(" D=%4.4f ", v1);
@@ -2464,7 +2519,7 @@ void tbm(double *x, cov_model *cov, double *v){
   else if (fulldim == tbmdim + 2) tbm3(x, cov, v, (double) tbmdim);
 
   else if (fulldim == 2 && tbmdim == 1) {
-    if (CovList[next->nr].tbm2 != NULL) TBM2CALL(x, next, v);
+    if (CovList[next->nr].tbm2 != NULL) TBM2CALL(x, next, v)
     else tbm2num(x, cov, v);
   }
 
@@ -2476,7 +2531,9 @@ void Dtbm(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[TBMOP_COV];
   int i,
     fulldim = P0INT(TBMOP_FULLDIM),
-    vdim2 = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vdim2 = vdim * vdim;
+  assert(cov->vdim2[0] == cov->vdim2[1]);
   double v1[MAXTBMVDIM * MAXTBMVDIM],
     tbmdim = (double) P0INT(TBMOP_TBMDIM),
     f = 1.0 + 1.0 / tbmdim;
@@ -2509,17 +2566,18 @@ int checktbmop(cov_model *cov) {
 
   int 
     tbmdim = P0INT(TBMOP_TBMDIM),
-    fulldim = P0INT(TBMOP_FULLDIM);
+    fulldim = P0INT(TBMOP_FULLDIM),
+    vdim = cov->vdim2[0];
   double
     storedlayer = P0(TBMOP_LAYERS);
-  bool layers = !ISNA(storedlayer) ? storedlayer :
+  bool layers = !ISNAN(storedlayer) ? storedlayer :
     cov->xdimown == tbmdim + 1 && cov->isoown == SPACEISOTROPIC;
+  if(cov->vdim2[0] != cov->vdim2[1]) BUG;
   if (tbmdim >= fulldim)
      SERR2("'reduceddim (=%d)' must be less than 'fulldim' (=%d)", 
 	   tbmdim, fulldim);
   if (cov->tsdim > fulldim + layers) return ERRORWRONGDIM;
-  //  printf("%d %d %d %d\n",  !ISNA_INT(storedlayer), storedlayer, cov->xdimown == tbmdim + 1 , cov->isoown == SPACEISOTROPIC );
-  //printf("%d %d %d %d\n",cov->xdimown,tbmdim,layers, cov->isoown);
+   //printf("%d %d %d %d\n",cov->xdimown,tbmdim,layers, cov->isoown);
   if (cov->xdimown > tbmdim + layers) {
     //    APMI(cov);
     SERR("dimension of coordinates does not match reduced dimension of tbm");
@@ -2548,9 +2606,8 @@ int checktbmop(cov_model *cov) {
   cov->rese_derivs = next->rese_derivs - 1;
   cov->finiterange = ((fulldim - tbmdim) % 2 == 0) && next->finiterange == true;
 
-  if (cov->vdim > MAXTBMVDIM) 
-    SERR2("vdim (%d) exceeds max. value of vdim in tbm3 (%d)", 
-	  cov->vdim, MAXTBMVDIM);
+   if (vdim > MAXTBMVDIM) 
+    SERR2("vdim (%d) exceeds max. value of vdim in tbm3 (%d)", vdim,MAXTBMVDIM);
 
   //  printf("gp=%f sto=%d %d %d\n", gp->layers, storedlayer, 
   //	 layers,  P0INT(TBMOP_LAYERS));
@@ -2621,16 +2678,22 @@ int set_stein_q(cov_model *next, double r, double d, double *q) {
   q[INTRINSIC_A2] = (q[INTRINSIC_A2] - phi1 / 3.0 - phi2 / 6.0) / dsq;
   q[INTRINSIC_A0] = 0.5 * rM1 / rP1 * phi2 + phi1 / rP1 - phi0;
 
-
   //print("check: %f %e r=%f intr:%f %f  %f\n", 
-  //	  phi2, phi1, r, q[INTRINSIC_B],  q[INTRINSIC_A0],  q[INTRINSIC_A2]);
+  //      phi2, phi1, r, q[INTRINSIC_B],  q[INTRINSIC_A0],  q[INTRINSIC_A2]);
 
 
 //   assert(false);
+//   printf("%f %f %f+%f \n", q[INTRINSIC_B], q[INTRINSIC_A2], q[INTRINSIC_A0], C0);
 
   if ((q[INTRINSIC_B]  < 0.0) || (q[INTRINSIC_A2] < 0.0) ||
-      (q[INTRINSIC_A0] + C0 < 0.0)) 
+      (q[INTRINSIC_A0] + C0 < 0.0)) {
+    
+    //   printf("%f %f %f+%f \n", q[INTRINSIC_B], q[INTRINSIC_A2], q[INTRINSIC_A0], C0);
     return MSGLOCAL_INITINTRINSIC;
+  }
+
+  
+  
 
   return NOERROR;
 }
@@ -2690,7 +2753,7 @@ int check_local(cov_model *cov,
     err=NOERROR;
   //dim = cov->tsdim; // timespacedim -- needed ?;
   double  *q, q2[LOCAL_MAX],
-    d=RF_NAN;
+    d=RF_NA;
   cov_model *next = cov->sub[0];
   localinfotype li;
   //ce_param *gp  = &(GLOBAL.localce); // ok
@@ -2727,7 +2790,7 @@ int check_local(cov_model *cov,
   }
   cov->qlen = maxq;
   q = cov->q = (double*) CALLOC(maxq, sizeof(double));
-  for (i = 0; i < maxq; i++) q2[i] = RF_NAN; // q2 will be copied to cov->q;
+  for (i = 0; i < maxq; i++) q2[i] = RF_NA; // q2 will be copied to cov->q;
   //  {int i; print("%d %f\n", cov->qlen); for(i=0;i<9;i++)print("%f ", cov->q[i]); print("\n");  assert(false);}
   
   
@@ -2791,7 +2854,7 @@ int check_local(cov_model *cov,
   cov->pref[CircEmbed] = 5;
   // APMI(cov);
 
-// print("pdq %f %f %f %d\n", p[pLOC_A]==NULL ?RF_NAN :p[pLOC_A][0],d,q2, rr);
+// print("pdq %f %f %f %d\n", p[pLOC_A]==NULL ?RF_NA :p[pLOC_A][0],d,q2, rr);
 //
   //if (err != NOERROR) { X ERR(err)
     //   char Msg[255];
@@ -2917,8 +2980,9 @@ void strokorb(double *x, cov_model *cov, double *v) {
      if (*x == 0.0) {
       while (idx < next->taylorN && (next->taylor[idx][TaylorPow] ==0.0 || 
 				     next->taylor[idx][TaylorPow] ==1.0)) idx++;
+      if (idx >= next->taylorN) BUG;
       double p = next->taylor[idx][TaylorPow];
-      if (idx >= next->taylorN || p > 3.0) BUG;
+      if (p > 3.0) BUG;
       // > 3 ist mathematisch vermutlich nicht moeglich, da bei strokorb
       // das submodel die entwicklung 1 - c x (oder rauher) hat
       *v = p < 3.0 ? RF_INF 
@@ -2950,6 +3014,8 @@ int checkstrokorb(cov_model *cov) {
   if ((err = CHECK(next, cov->tsdim, cov->xdimprev, TcfType,
 		     cov->domown, cov->isoown,
 		     SCALAR, ROLE_COV)) != NOERROR) return err;
+  if (!next->deterministic) SERR("only deterministic submodels allowed"); 
+
   if (!isGneiting(next)) 
     SERR("member of the Gneiting-Schaback class as submodel needed");
   switch(dim) {
@@ -2963,10 +3029,12 @@ int checkstrokorb(cov_model *cov) {
     SERR("only dimensions 1 and 3 are allowed");
   }
 
+
   //  PMI(cov);
 
-  if (!(hasMaxStableRole(cov) || hasNoRole(cov)))
+  if (!(hasMaxStableRole(cov) || hasNoRole(cov) || hasDistrRole(cov))) {
     SERR1("'%s' may be used only as a shape function with max-stable field simulation", NICK(cov));
+  }
 
   if (next->tailN < 1)
     SERR2("%d members of the Taylor expansion at infinity of '%s', but at least order 1 required.", next->tailN, NICK(next));
@@ -3052,7 +3120,7 @@ int checkstrokorb(cov_model *cov) {
 
 
 int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
-  if (cov->role == ROLE_MAXSTABLE || hasNoRole(cov)) {
+  if (cov->role == ROLE_MAXSTABLE || hasNoRole(cov) || hasDistrRole(cov)) {
     
     //cov_model *next = cov->sub[0];
     //    double
@@ -3063,8 +3131,8 @@ int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
     //if (radius>=0 && radius < cov->mpp.refradius) cov->mpp.refradius = radius;
     // Eplus, M2 are assumed to be still precise !!
     
-    
-    cov->mpp.maxheight = RF_NAN;
+    assert(cov->vdim2[0] == 1 && cov->vdim2[1] == 1);
+    cov->mpp.maxheights[0] = RF_NA;
     
   }
   
@@ -3079,9 +3147,9 @@ int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
 		   )) != NOERROR) return err;
   */
 
-  cov->mpp.maxheight = 1.0; // all with be covered by pgs
+  cov->mpp.maxheights[0] = 1.0; // all with be covered by pgs
   if (cov->mpp.moments >= 1) {
-    cov->mpp.M[1] = cov->mpp.Mplus[1] = 1;     
+    cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1;     
   }
 
   return NOERROR;
@@ -3089,7 +3157,7 @@ int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
 
 
 void do_strokorb(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
-  assert(false);
+  BUG;
 }
 
 
@@ -3123,17 +3191,14 @@ int checkstrokorbBall(cov_model *cov) {
     SERR("only dimensions 1 and 3 are allowed");
   }
   
-
-  //  PMI(cov);
-  
-  if (!(hasMaxStableRole(cov) || hasNoRole(cov)))
+  if (!(hasMaxStableRole(cov) || hasNoRole(cov) || hasDistrRole(cov)))
     SERR1("'%s' may be used only as a shape function with max-stable field simulation", NICK(cov));
   
   if (next->tailN < 1)
-    SERR2("%d members of the Taylor expansion at infinity of '%s', but at least order 1 required.", next->tailN, NICK(next));
+    SERR2("%d members of the Taylor expansion at infinity of '%s' found, but at least 1 is required.", next->tailN, NICK(next));
   
   if (next->taylorN < 2)
-    SERR2("%d members of the Taylor expansion at infinity of '%s', but at least order 1 required.", next->tailN, NICK(next));
+    SERR2("%d members of the Taylor expansion of '%s' found, but at least 2 is required.", next->taylorN, NICK(next));
 
   setbackward(cov, next);
 
@@ -3144,17 +3209,18 @@ int checkstrokorbBall(cov_model *cov) {
 void ScaleToVar(cov_model *local, cov_model *remote, 
 		int VARIABLE_IS_NOT_USED variant) {
   // ACHTUNG!! from and to sind hier vertauscht!! 
-  assert(isDollar(local) && isDollar(remote));
+  assert(local->nr==POWER_DOLLAR && remote->nr==LOC);
   //  int dim = local->tsdim;
-  double scale = PARAM0(local, DSCALE);
-  // var im submodel setzen
-  PARAM(local, DVAR)[0] = intpow(scale, - local->tsdim);
+  double scale = PARAM0(local, POWSCALE);
   // scale im entfernten model setzen
-  PARAM(remote, DSCALE)[0] = scale;
+  PARAM(remote, LOC_SCALE)[0] = scale;
+  remote->deterministic = false;
 }
+  
 
+    
 int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {  
-  int 
+  int  err,
     dim = cov->tsdim;
   
   ASSERT_NEWMODEL_NOT_NULL;
@@ -3162,46 +3228,50 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
   //PMI(cov, "strokorbBall");
   
   if (cov->role == ROLE_MAXSTABLE) {
-    set_storage *S;
     addModel(newmodel, BALL);
-
-    addModel(newmodel, DOLLAR);
-
-    covcpy((*newmodel)->kappasub + DSCALE, cov);
-    // !! inverse scale gegenueber paper
-    (*newmodel)->kappasub[DSCALE]->nr = STROKORB_BALL_INNER;
-    kdefault((*newmodel)->kappasub[DSCALE], STROKORBBALL_DIM, dim);
-
-    addModel((*newmodel)->kappasub + DSCALE, RECTANGULAR); 
-    (*newmodel)->kappasub[DSCALE]->calling = *newmodel;
-    kdefault((*newmodel)->kappasub[DSCALE], RECT_APPROX, false);
-    kdefault((*newmodel)->kappasub[DSCALE], RECT_ONESIDED, true);
-
-    // kopiert scale von shape nach loc
-    assert(SETPARAM_TO == 0);
-    addModel(newmodel, SETPARAM);
-    kdefault(*newmodel, SET_PERFORMDO, true);
-    if ((*newmodel)->Sset != NULL) SET_DELETE(&((*newmodel)->Sset));
-    S = (*newmodel)->Sset = (set_storage *) MALLOC(sizeof(set_storage));
-    SET_NULL(S);
-    // S->from wird unten gesetzt !
-    S->set = ScaleToVar;  
-    S->variant = 0;      
-
-    addModel(newmodel, PTS_GIVEN_SHAPE); // to do : unif better ?!
     
- 
-    assert(SETPARAM_TO == 0);
-    addModel((*newmodel)->sub + PGS_LOC, BALL);
-    addModel((*newmodel)->sub + PGS_LOC, DOLLAR);
-    kdefault((*newmodel)->sub[PGS_LOC], DSCALE, 1.0);
- 
-    S->remote = (*newmodel)->sub[PGS_LOC];
-    assert(isDollar(S->remote));
+    addModel(newmodel, POWER_DOLLAR);
+    kdefault(*newmodel, POWSCALE, 1.0);    
+    kdefault(*newmodel, POWPOWER, -dim);    
+    kdefault(*newmodel, POWVAR,  1.0 / VolumeBall(dim, BALL_RADIUS));    
+    cov_model *pts=NULL, *scale=NULL;
+    (*newmodel)->calling = cov;
+    if ((err = covcpy(&pts, *newmodel)) != NOERROR) return err;
+    
 
-    addModel((*newmodel)->sub + PGS_LOC, RECTANGULAR);
-    (*newmodel)->sub[PGS_LOC]->calling = *newmodel;
+    if (CovList[cov->nr].kappas < 2) {
+      if ((err = covcpy(&scale, cov)) != NOERROR) return err;
+      // !! inverse scale gegenueber paper
+      scale->nr = STROKORB_BALL_INNER;
+      kdefault(scale, STROKORBBALL_DIM, dim);
+      addModel(&scale, RECTANGULAR); 
+      kdefault(scale, RECT_APPROX, false);
+      kdefault(scale, RECT_ONESIDED, true);
+      (*newmodel)->kappasub[POWSCALE] = scale;
+      scale->calling = *newmodel;
+    } else { // for testing only
+      addModel((*newmodel)->kappasub + POWSCALE, UNIF); 
+      kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MIN, P0(0));
+      kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MAX, P0(1));
+      (*newmodel)->kappasub[POWSCALE]->calling = *newmodel;
+    }
+    
+    //    printf("%f %f %d\n", P0(0), P0(1), dim);
+    //    assert(false);
+  
+    addModel(&pts, RECTANGULAR);
+    addModel(&pts, LOC);
+    kdefault(pts, LOC_SCALE, 1.0);
+    kdefault(pts, LOC_POWER, -dim);
+    addModel(pts->kappasub + LOC_SCALE, NULL_MODEL); 
+    kdefault(pts->kappasub[LOC_SCALE], NULL_TYPE, RandomType);
+    pts->kappasub[LOC_SCALE]->calling = pts;
 
+    addSetParam(newmodel, pts, ScaleToVar, true, 0);
+    addModel(newmodel, PTS_GIVEN_SHAPE); // to do : unif better ?!
+    (*newmodel)->sub[PGS_LOC] = pts;
+    pts->calling = *newmodel;
+ 
    //    APMI(*newmodel);
 
   } else ILLEGAL_ROLE_STRUCT;
@@ -3209,6 +3279,22 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
   return NOERROR;
 }
 
+
+void rangestrokorbball(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[0] = RF_NEGINF; 
+  range->max[0] = RF_INF;
+  range->pmin[0] = -4.0;
+  range->pmax[0] = 4.0;
+  range->openmin[0] = false;
+  range->openmax[0] = false;
+
+  range->min[1] = RF_NEGINF; 
+  range->max[1] = RF_INF;
+  range->pmin[1] = -4.0;
+  range->pmax[1] = 4.0;
+  range->openmin[1] = false;
+  range->openmax[1] = false;
+}
 /*
 int init_strokorbBall(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
   if (cov->role == ROLE_MAXSTABLE) {
@@ -3222,7 +3308,7 @@ int init_strokorbBall(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
     //if (radius>=0 && radius < cov->mpp.refradius) cov->mpp.refradius = radius;
     // Eplus, M2 are assumed to be still precise !!
     
-    cov->mpp.maxheight = RF_NAN;
+    cov->mpp.maxheight = RF_NA;
     
   }
   
@@ -3230,7 +3316,7 @@ int init_strokorbBall(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
 
   cov->mpp.maxheight = 1.0; // all with be covered by pgs
   if (cov->mpp.moments >= 1) {
-    cov->mpp.M[1] = cov->mpp.Mplus[1] = 1;     
+    cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1;     
   }
 
   return NOERROR;
@@ -3248,17 +3334,20 @@ void do_strokorbBall(cov_model VARIABLE_IS_NOT_USED *cov, storage VA// RIABLE_IS
 void strokorbBallInner(double *x, cov_model *cov, double *v) {
   // only proportional to a density !!!
   cov_model *next = cov->sub[0];
-  int dim = P0INT(STROKORBBALL_DIM);
+
+  int dim = cov->nr != STROKORB_BALL_INNER || PisNULL(STROKORBBALL_DIM) 
+    ? cov->tsdim : P0INT(STROKORBBALL_DIM);
   if (*x <= 0) {
     *v = 0.0;
     return;
   }
+
   double y = 2 * *x;
   switch (dim) {
   case 1 :
-    // \chi''(s)*s [ diametet ] -> 4\chi''(2 s)*s
+    // \chi''(s)*s [ diameter ] -> 4\chi''(2 s)*s
     Abl2(&y, next, v);
-    *v *= 2.0 * y; // ?? 1.1.14 intpow(*x, dim + 1);
+    *v *= 2.0 * y;
     //printf("u=%f %e\n", u, *v);
     break;
   case 3 :
@@ -3267,7 +3356,6 @@ void strokorbBallInner(double *x, cov_model *cov, double *v) {
     //printf("y=%f\n", y);
     Abl2(&y, next, v);
     Abl3(&y, next, &w);
-    // *v = (*v - w * y) * intpow(y, dim + 1) / 3.0; ?? 1.1.14 
     *v = 2.0 * (*v - w * y) * y / 3.0;
     break;
   default: BUG;
@@ -3275,7 +3363,7 @@ void strokorbBallInner(double *x, cov_model *cov, double *v) {
   if (*v<0) {
      BUG;
   }  
-  //  assert(*v >= 0);
+  //  assert(*v >= 0);  
 }
 
 
@@ -3283,7 +3371,7 @@ int check_strokorbBallInner(cov_model *cov) {
   cov_model *next = cov->sub[0];
   int err;
    
-  ROLE_ASSERT(ROLE_MAXSTABLE);
+  ROLE_ASSERT(ROLE_DISTR);
   
   if ((err = checkkappas(cov)) != NOERROR) return err;
   if (cov->tsdim != 1) SERR("only dimension 1 allowed");
@@ -3313,7 +3401,7 @@ int check_strokorbBallInner(cov_model *cov) {
   if (next->taylor[1][TaylorPow] == (int) next->taylor[1][TaylorPow]) {
     assert(next->taylor[1][TaylorPow] == 1.0);
     // 2 sollte nie auftreten, laeuft aber gleich
-    if (cov->taylorN >= 3) idx++;
+    if (next->taylorN >= 3) idx++;
     else SERR1("%s does not have a long enough taylor development programmed", 
 	      NICK(next));
   }
@@ -3344,7 +3432,7 @@ int check_strokorbBallInner(cov_model *cov) {
     }
         
     cov->taylor[0][TaylorConst] = TP * (TP - 1.0) * (3.0 - TP) / 3.0;
-    cov->taylor[0][TaylorPow] = TP - 1.0;
+    cov->taylor[0][TaylorPow] = TP - 2.0;
     break;
   default: BUG;
   }
@@ -3372,12 +3460,13 @@ int init_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE
 		   ROLE_MAXSTABLE
 		   )) != NOERROR) return err;
   */
-  if (!next->deterministic) SERR("only deterministic submodels allowed");
+  if (!next->deterministic) SERR("only deterministic submodels allowed"); // u.a. Taylor fehlt
 
-  cov->mpp.maxheight = 1.0; 
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1;     
+  assert(cov->vdim2[0] == 1 && cov->vdim2[1] == 1);
+  cov->mpp.maxheights[0] = 1.0; 
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1;     
   if (cov->mpp.moments >= 1) {
-    cov->mpp.M[1] = cov->mpp.Mplus[1] = 1;     
+    cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1;     
   }
 
   return NOERROR;
@@ -3400,6 +3489,12 @@ void range_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, range_type *ra
 
 
 
+void strokorbPoly(double *x, cov_model *cov, double *v) {
+  // only proportional to a density !!!
+  cov_model *next = cov->sub[0];
+  COV(x, next, v);
+}
+
 
 int checkstrokorbPoly(cov_model *cov) {
   cov_model
@@ -3415,29 +3510,12 @@ int checkstrokorbPoly(cov_model *cov) {
 		   SCALAR, ROLE_COV)) != NOERROR) return err;
   if (!isGneiting(next)) 
     SERR("member of the Gneiting-Schaback class as submodel needed");
-  switch(dim) {
-  case 1: 
-    if (next->rese_derivs < 2) SERR("submodel must be twice differentiable");
-    break;
-  case 3: 
-    if (next->rese_derivs < 3) 
-      SERR("submodel must be three times differentiable");
-    break;
-  default:
-    SERR("only dimensions 1 and 3 are allowed");
-  }
   
-  
-  //  PMI(cov);
-  
-  if (!(hasMaxStableRole(cov) || hasNoRole(cov)))
+  if (dim != 2) SERR("only dimension 2 currently programmed");
+  if (!(hasMaxStableRole(cov) || hasNoRole(cov))) {
+    //  PMI(cov->calling->calling);
     SERR1("'%s' may be used only as a shape function with max-stable field simulation", NICK(cov));
-  
-  if (next->tailN < 1)
-    SERR2("%d members of the Taylor expansion at infinity of '%s', but at least order 1 required.", next->tailN, NICK(next));
-  
-  if (next->taylorN < 2)
-    SERR2("%d members of the Taylor expansion at infinity of '%s', but at least order 1 required.", next->tailN, NICK(next));
+  }
 
   setbackward(cov, next);
 
@@ -3446,22 +3524,75 @@ int checkstrokorbPoly(cov_model *cov) {
 
 
 
+void poly2unif(cov_model *local, cov_model *remote, 
+		int VARIABLE_IS_NOT_USED variant) {
+  assert(local->nr==POLYGON && remote->nr==UNIF && local->Spolygon != NULL &&
+	 local->Spolygon->P != NULL);
+  polygon *P = local->Spolygon->P;
+  assert(P->e != NULL);
+  int d,
+    dim = local->tsdim;
+  assert(dim == 2);
+
+  for (d=0; d<dim; d++) {
+    //printf("poly2unif %d %f %f %ld\n", d, P->box0[d],  P->box1[d], (long int) P);
+    PARAM(remote, UNIF_MIN)[d] = P->box0[d];
+    PARAM(remote, UNIF_MAX)[d] = P->box1[d];
+  }
+  remote->deterministic = false;
+}
+  
+
+
 int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {  
-  //  int err,
-  //    dim = cov->tsdim;
-  BUG;
+  cov_model *sub = cov->sub[0];
+  int 
+    dim = cov->tsdim;
+  double var = 1.0;
+  cov_model *pts=NULL, *shape=NULL;
 
   ASSERT_NEWMODEL_NOT_NULL;
   assert(*newmodel == NULL);
   //PMI(cov, "strokorbPoly");
-  
+    
   if (cov->role == ROLE_MAXSTABLE) {
-    addModel(newmodel, POLYGON);
-    addModel(newmodel, DOLLAR);
-    covcpy((*newmodel)->kappasub + DSCALE, cov);
-    (*newmodel)->kappasub[DSCALE]->nr = ARCSQRT_DISTR;
-    //  addModel( (*newmodel)->kappasub + DSCALE, MULT_INVERSE); 
+    if (sub->nr != BROWNRESNICK) 
+      SERR1("only tcf '%s' allowed", CovList[BROWNRESNICK].nick);
+    sub = sub->sub[0];
+    if (isDollar(sub)) {
+      var = PARAM0(sub, DVAR);    
+      sub = sub->sub[0];
+    }
+    if (sub->nr != BROWNIAN || PARAM0(sub, BROWN_ALPHA) != 1.0) {
+      //APMI(sub);
+      SERR2("Numerical inverse Laplace transform has not been implemented yet. Currently, only '%s' with parameter %s=1 is a valid submodel", CovList[BROWNIAN].nick,
+	    CovList[BROWNIAN].kappanames[BROWN_ALPHA]);
+    }
+    
+    addModel(&pts, UNIF);
+    kdefault(pts, UNIF_NORMED, (int) false);
+    PARAMALLOC(pts, UNIF_MIN, dim, 1);
+    PARAMALLOC(pts, UNIF_MAX, dim, 1);
+   
+   
+    addModel(&shape, POLYGON);
+    addModel(shape->kappasub + POLYGON_BETA, ARCSQRT_DISTR);
+    kdefault(shape->kappasub[POLYGON_BETA], ARCSQRT_SCALE, 1.0 / var);
+    shape->kappasub[POLYGON_BETA]->calling = shape;
+    addSetParam(&shape, pts, poly2unif, true, 0);
+   
+    addModel(newmodel, PTS_GIVEN_SHAPE);
+    kdefault(*newmodel, PGS_NORMED, false);
+    kdefault(*newmodel, PGS_ISOTROPIC, false);
+    shape->calling = *newmodel;
+    pts->calling = *newmodel;
+    (*newmodel)->sub[PGS_LOC] = pts;
+    (*newmodel)->sub[PGS_FCT] = shape;
+
   } else ILLEGAL_ROLE_STRUCT;
+
+  // APMI(*newmodel);
+
   return NOERROR;
 }
 
@@ -3485,12 +3616,13 @@ void mult_inverseNonstat(double *x, double *y, cov_model *cov, double *v) {
 int checkmult_inverse(cov_model *cov) {
   cov_model
     *next = cov->sub[0];
+  assert(cov->vdim2[0] == 1 && cov->vdim2[1] == 1 );
    int err = NOERROR;
   if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, ShapeType,
 		   cov->domown, cov->isoown,
 		   SUBMODEL_DEP, cov->role)) != NOERROR) return err;
   setbackward(cov, next);
-  cov->mpp.maxheight = RF_NAN;
+  cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
 }
 
@@ -3500,42 +3632,72 @@ int checkmult_inverse(cov_model *cov) {
 ////////////////////
 
 
+void addSetParam(cov_model **newmodel, cov_model* remote, 
+		 param_set_fct set, bool performdo, int variant, int nr) {
+  set_storage *S;
+  assert(SETPARAM_LOCAL == 0);
+  addModel(newmodel, nr);
+  kdefault(*newmodel, SET_PERFORMDO, performdo);
+  if ((*newmodel)->Sset != NULL) SET_DELETE(&((*newmodel)->Sset));
+  S = (*newmodel)->Sset = (set_storage *) MALLOC(sizeof(set_storage));
+  SET_NULL(S);
+  // S->from wird unten gesetzt !
+  S->remote = remote;
+  S->set = set;  
+  S->variant = variant;   
+}   
+void addSetParam(cov_model **newmodel, cov_model * remote, 
+		 param_set_fct set,  bool performdo, 
+		 int variant) {
+  addSetParam(newmodel, remote, set, performdo, variant, SETPARAM);
+}
+void addSetDistr(cov_model **newmodel, cov_model * remote, 
+		 param_set_fct set,  bool performdo, int variant) {
+  addSetParam(newmodel, remote, set, performdo, variant, SET_DISTR);
+}
+
 
 void setparamStat(double *x, cov_model *cov, double *v){
-  COV(x, cov->sub[SETPARAM_TO], v);
+  COV(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setparamNonStat(double *x, double *y, cov_model *cov, double *v){
-  NONSTATCOV(x, y, cov->sub[SETPARAM_TO], v);
+  NONSTATCOV(x, y, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void Dsetparam(double *x, cov_model *cov, double *v){
-  Abl1(x, cov->sub[SETPARAM_TO], v);
+  Abl1(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void DDsetparam(double *x, cov_model *cov, double *v){
-  Abl2(x, cov->sub[SETPARAM_TO], v);
+  Abl2(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void D3setparam(double *x, cov_model *cov, double *v){
-  Abl3(x, cov->sub[SETPARAM_TO], v);
+  Abl3(x, cov->sub[SETPARAM_LOCAL], v);
 }
 void D4setparam(double *x, cov_model *cov, double *v){
-  Abl4(x, cov->sub[SETPARAM_TO], v);
+  Abl4(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void Inverse_setparam(double *v, cov_model *cov, double *x){
-  cov_model *next = cov->sub[0];
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
   INVERSE(v, next, x);
 }
 
 void NonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y){
-  cov_model *next = cov->sub[0];
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
   NONSTATINVERSE(v, next, x, y);
+  // printf("nonstatinvere %f %f\n", x[0], y[0]);
+}
+void LogNonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y){
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
+  NONSTATLOGINVERSE(v, next, x, y);
+  // printf("nonstatinvere %f %f\n", x[0], y[0]);
 }
 
 int checksetparam(cov_model *cov) {
-  cov_model *to = cov->sub[SETPARAM_TO];
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
   int err, 
     dim = cov->tsdim,
     xdim = cov->xdimown,
@@ -3546,15 +3708,20 @@ int checksetparam(cov_model *cov) {
 
   kdefault(cov, SET_PERFORMDO, true);
 
-  if ((err = CHECK(to, dim, xdim, type, dom, iso, 
+  if (type == RandomType || next->typus== RandomType) {
+    //PMI(cov);
+    BUG;
+  }
+  if ((err = CHECK(next, dim, xdim, type, dom, iso, 
 		   SUBMODEL_DEP, role)) != NOERROR) return err;
-  setbackward(cov, to);
-  cov->vdim = to->vdim;
-  cov->vdim2[0] = to->vdim2[0];
-  cov->vdim2[1] = to->vdim2[1];
+  setbackward(cov, next);
+  cov->vdim2[0] = next->vdim2[0];
+  cov->vdim2[1] = next->vdim2[1];
   cov->deterministic = false;
 
-  TaylorCopy(cov, to);
+  TaylorCopy(cov, next);
+
+  //if (cov->xdimown == 1) crash();
  
   // ACHTUNG ! weder SETPARAM_FROM (da nur link) noch SETPARAM_SET (da 
   //           i.a. keine echten Modelle) werden ueberprueft!
@@ -3564,49 +3731,55 @@ int checksetparam(cov_model *cov) {
 
 
 bool Typesetparam(Types required, cov_model *cov) {
-  return TypeConsistency(required, cov->sub[SETPARAM_TO]);
+  return TypeConsistency(required, cov->sub[SETPARAM_LOCAL]);
 }
 
 void spectralsetparam(cov_model *cov, storage *s, double *e){
-   SPECTRAL(cov->sub[SETPARAM_TO], s, e);  // nicht gatternr
+   SPECTRAL(cov->sub[SETPARAM_LOCAL], s, e);  // nicht gatternr
 }
 
 int initsetparam(cov_model *cov, storage *s){
-  cov_model *to= cov->sub[SETPARAM_TO];
-  int err;
-  if ((err = INIT(to, cov->mpp.moments, s)) != NOERROR)
+  cov_model *next= cov->sub[SETPARAM_LOCAL];
+  set_storage *X = cov->Sset;
+
+  //  APMI(cov);  crash();
+
+  assert(X != NULL);
+  int err, i,
+    vdim = cov->vdim2[0];
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+
+  if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR)
     return err;
-  cov->mpp.maxheight = to->mpp.maxheight;
+  if (X->remote != NULL) {
+    assert(X->set != NULL);
+    X->set(cov->sub[0], X->remote, X->variant);
+  }
+  TaylorCopy(cov, next);
+  for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = next->mpp.maxheights[i];
   return NOERROR;
 }
 
 
 void dosetparam(cov_model *cov, storage *s) {
-  set_storage *X = cov->Sset;
-  int performDo = P0INT(SET_PERFORMDO);
-  assert(X != NULL);
-  if (performDo > 0) DO(cov->sub[SETPARAM_TO], s); 
-  if (X->remote != NULL) {
-    assert(X->set != NULL);
-    X->set(cov->sub[0], X->remote, X->variant);
-  }
-  if (performDo < 0) DO(cov->sub[SETPARAM_TO], s); 
+  bool performDo = P0INT(SET_PERFORMDO);
+  if (performDo) DO(cov->sub[SETPARAM_LOCAL], s); 
 }
 
 void covmatrix_setparam(cov_model *cov, double *v) {
-  cov_model *to = cov->sub[SETPARAM_TO];
-  CovList[to->nr].covmatrix(to, v);
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
+  CovList[next->nr].covmatrix(next, v);
 }
 
 char iscovmatrix_setparam(cov_model *cov) {
-  cov_model *to = cov->sub[SETPARAM_TO];
-  return CovList[to->nr].is_covmatrix(to);
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
+  return CovList[next->nr].is_covmatrix(next);
 }
 
 void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[SET_PERFORMDO] = -1; 
+  range->min[SET_PERFORMDO] = 0; 
   range->max[SET_PERFORMDO] = 1;
-  range->pmin[SET_PERFORMDO] = -1;
+  range->pmin[SET_PERFORMDO] = 0;
   range->pmax[SET_PERFORMDO] = 1;
   range->openmin[SET_PERFORMDO] = false;
   range->openmax[SET_PERFORMDO] = false;

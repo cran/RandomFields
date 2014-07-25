@@ -1,12 +1,14 @@
 \name{RFinterpolate}
 \alias{RFinterpolate}
-\title{Kriging methods}
+\alias{kriging}
+\title{Interpolation methods}
 \description{
- The function allows for different methods of kriging.
+  The function allows for different methods of interpolation.
+  Currently only various kinds of kriging are installed.
 }
 \usage{
 RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
- distances, dim, err.model, ...)
+              distances, dim, err.model, method = "ml", ...)
 }
 \arguments{
  \item{model}{string; covariance model, see \command{\link{RMmodel}}, or
@@ -38,7 +40,7 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  If a matrix or a data.frame, the first columns are
  interpreted as coordinate vectors, and the last column(s) as
  (multiple) measurement(s) of the field which are kriged 
- \emph{separately}; if the parameter \code{x} is missing,
+ \emph{separately}; if the argument \code{x} is missing,
  \code{data} may contain \code{NA}s, which are then replaced by
  the kriged values (imputing); 
  for details on matching of variable names see 
@@ -55,14 +57,19 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  Usually \code{err.model=RMnugget(var=var)}, or not given at all
  (error-free measurements).
  }
+ \item{method}{
+   character. A single method out of \code{methods} or
+   \code{sub.methods},
+   see \command{\link{RFfit}}.
+ }
  \item{...}{
- Two intrinsic parameters can be given:
+ Two intrinsic arguements can be given:
  \describe{
  \item{given}{matrix. If \code{data} is a matrix, then the coordinates
  can be given separately, namely by \code{given} where, in each row,
  a single location is given}
  \item{MARGIN}{character or integer.
-	This parameter is only given when the mean is kriged, i.e.
+	This argument is only given when the mean is kriged, i.e.
 	\code{method='M'} (see \command{\link{RFoptions}}).
 	Then it has a similar meaning as in \command{\link{apply}}:
 	e.g. if \code{MARGIN="T"} in a space-time model, then spatial
@@ -92,10 +99,22 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  % if \code{TRUE} cholesky decomposition is used instead of LU.
  %}
 }
+
+\note{Important options are
+  \itemize{
+    \item \code{method} (overwriting the automatically detected variant
+    of kriging)
+    \item \code{return_variance} (returning also the kriging variance)
+    \item \code{locmaxm} (maximum number of conditional values before
+    neighbourhood kriging is performed)
+    \item \code{fillall} imputing estimates location by default
+}}
+
 \details{
  In case of intrinsic cokriging (intrinsic kriging for a multivariate
  random fields) the pseudo-cross-variogram is used (cf. Ver Hoef and
  Cressie, 1991).
+
 }
 \value{
  The value depends on the additional argument \code{variance.return},
@@ -149,13 +168,13 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
 
 \author{
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
  
  Marco Oesting, \email{oesting@math.uni-mannheim.de}
 
  \subsection{Author(s) of the code:}{
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 
  Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
  
@@ -170,7 +189,8 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 ## Preparation of graphics
 if (interactive()) dev.new(height=7, width=16)
@@ -208,10 +228,14 @@ plot(z, data)
 ## Ordinary kriging
 model <- RMexp() + RMtrend(mean=NA)
 z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
-screen(scr <- scr+1); plot(z, data)
+screen(scr <- scr+1)
+plot(z, data)
 
 
 \dontshow{\dontrun{
+
+## alternatively 
+
 ## Intrinsic kriging
 model <- RMfbm(a=1)
 z <- RFinterpolate(model, x, x, grid=TRUE, data=data)
@@ -239,8 +263,10 @@ z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
 screen(scr <- scr+1); plot(z, data)
 }}
 
+% folgender Befehl muss unbedingt drin bleiben
+close.screen(all = TRUE)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

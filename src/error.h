@@ -7,10 +7,10 @@
 // negative values are messages
 
 #define NOERROR 0                 
-#define ERRORNOTPROGRAMMED 1     
+#define ERRORNOTPROGRAMMEDYET 1     
 #define ERRORFAILED 2           /* method didn't work for the specified 
 				    parameters */
-#define ERRORVDIMNOTPROGRAMMED 3
+#define ERRORVDIMNOTPROGRAMMEDYET 3
 #define ERRORTYPECONSISTENCY 4
 
 #define ERRORM 10                /* a single error message */
@@ -123,3 +123,4 @@
 /* do not use numbers 800 -- 900 : reserved to MPP package */
 
 #endif
+

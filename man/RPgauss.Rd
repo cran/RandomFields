@@ -11,16 +11,16 @@
 
 \usage{
 
-RPgauss(phi, loggauss, stationary_only)
+RPgauss(phi, stationary_only)
 
 
 }
 
 \arguments{
  \item{phi}{the \command{\link{RMmodel}}.}
- \item{loggauss}{logical. If \code{TRUE} then a log-Gaussian random
- field is returned. Default is \code{FALSE}.
- }
+% \item{loggauss}{logical. If \code{TRUE} then a log-Gaussian random
+% field is returned. Default is \code{FALSE}.
+% }
  \item{stationary_only}{Logical or NA. Used for the automatic
  choice of methods. 
  \itemize{
@@ -75,18 +75,19 @@ By default, all Gaussian random fields have zero mean.
 
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMexp()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x, seed=0))
 plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 
@@ -97,7 +98,10 @@ plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
  \command{\link{RFoptions}},
  \command{\link{RPbrownresnick}},
  \command{\link{RPchi2}},
- \command{\link{RPschlather}},
+ \command{\link{RPschlather}}.
+
+ Do not mix up with \command{\link{RMgauss}} or \command{\link{RRgauss}}.
+
 }
 
 

@@ -17,11 +17,13 @@
 RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{a valid covariance \command{\link{RMmodel}} where \command{normalmix} is true}
+ \item{phi}{a valid covariance \command{\link{RMmodel}} that is a normal
+   scale mixture, cf. \code{\link{RFgetModelNames}(monotone="normal mixture")}
+   }
  \item{C1, C2, C3, C4, C5, C6, C7, C8, C9}{optional further univariate
  stationary \command{\link{RMmodel}}.}
  \item{theta}{a vector with positive entries}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
 }
 \details{
  Note that \eqn{\psi(\cdot) := \phi(\sqrt(\cdot))}{psi( . ) :=
@@ -45,7 +47,7 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
-% \command{\link{RMmqam}},
+ \command{\link{RMmqam}},
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
@@ -55,7 +57,8 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{\dontrun{
 model <- RMqam(phi=RMgauss(), RMexp(), RMgauss(),
                theta=c(0.3, 0.7), scale=0.5)
@@ -63,5 +66,5 @@ x <- seq(0, 10, if (interactive()) 0.02 else 1)
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

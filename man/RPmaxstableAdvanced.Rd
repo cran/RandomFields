@@ -3,7 +3,7 @@
 
 \title{Simulation examples of advanced Max-Stable Random Fields}
 \description{
-  Here, some more advanced examples are given
+  Here, some more advanced examples will be given here in future
 }
 
 %\details{
@@ -15,7 +15,8 @@
   \command{\link{RPmaxstable}}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontshow{\dontrun{
 
@@ -72,7 +73,7 @@ model <- RMgauss()
 BR <- RFsimulate(RPbrownresnick(model), x, x, grid=TRUE)
 
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \author{

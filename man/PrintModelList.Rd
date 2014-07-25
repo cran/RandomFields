@@ -44,13 +44,17 @@ PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
 
 
  \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 %  library(RandomFields)
 PrintModelList()
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de/de/publications/software}
+}
+\seealso{
+  \command{\link{RFgetModelNames}}
 }
 \keyword{spatial}
 

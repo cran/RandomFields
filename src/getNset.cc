@@ -32,7 +32,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "primitive.h"
 #include <R_ext/Linpack.h>
-#include "PoissonPolygon.h"
 
 
 void LOC_NULL(location_type *loc) {
@@ -62,6 +61,7 @@ void LOC_DELETE(location_type **Loc) {
       free(loc->x); 
     }     
   }
+  if (loc->caniso != NULL) free(loc->caniso);
   // it may happen that both are set ! Especially after calling 
   // partial_loc_set in variogramAndCo.cc
   if (loc->xgr[0] != NULL && loc->spatialdim>0) {
@@ -115,19 +115,21 @@ void removeOnly(cov_model **Cov) {
 
  void MPPPROPERTIES_NULL(mpp_properties *mpp) {
    // mpp->refradius= 
-   mpp->maxheight = mpp->log_zhou_c = RF_INF;
-   mpp->M = mpp->Mplus = NULL;
+   int i;
+   for (i=0; i<MAXMPPVDIM; i++) mpp->maxheights[i] = RF_INF;
+   mpp->unnormedmass = RF_NA;
+   mpp->mM = mpp->mMplus = NULL;
    //   mpp->refsd = 
-   //mpp->totalmass = RF_NAN;
+   //mpp->totalmass = RF_NA;
    //mpp->methnr = -1;
    //mpp->loc_done = false;
  }
 
  void MPPPROPERTIES_DELETE(mpp_properties *mpp) {   
-   if (mpp->M != NULL) free(mpp->M);
-   mpp->M = NULL;
-   if (mpp->Mplus != NULL) free(mpp->Mplus);
-   mpp->Mplus = NULL;  
+   if (mpp->mM != NULL) free(mpp->mM);
+   mpp->mM = NULL;
+   if (mpp->mMplus != NULL) free(mpp->mMplus);
+   mpp->mMplus = NULL;  
  }
 
 
@@ -207,6 +209,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   DOLLAR_DELETE(&(cov->Sdollar));
   GATTER_DELETE(&(cov->S2));
   BIWM_DELETE(&(cov->Sbiwm));
+  INV_DELETE(&(cov->Sinv));
   GET_STORAGE_DELETE(&(cov->Sget));
   //  SELECT_DELETE(&(cov->Sselect));
   STORAGE_DELETE(&(cov->stor));  
@@ -258,6 +261,10 @@ void COV_DELETE(cov_model **Cov) {
   //  if (*Cov == NULL) crash(*Cov);
 
   assert(*Cov != NULL);
+
+  //  PMI(cov, -1);
+  // printf("del %s\n", NAME(cov));
+
   if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc));
   COV_DELETE_WITHOUT_LOC(Cov);
   *Cov = NULL;
@@ -275,12 +282,13 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->zaehler = CovZaehler++;
   cov->calling = NULL;
   cov->prevloc = cov->ownloc = NULL;
+  cov->checked = false;
 
   cov->MLE = NULL;
   cov->key = NULL;
   cov->rf = NULL;
 
-  cov->mpp.M = cov->mpp.Mplus = NULL;
+  cov->mpp.mM = cov->mpp.mMplus = NULL;
   cov->mpp.moments = MISMATCH;
   
   cov->SCE = NULL;
@@ -295,6 +303,7 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Stbm = NULL;
   cov->Strend = NULL;
   cov->SBR = NULL;
+  cov->Sget = NULL;
   cov->Spgs = NULL;
   cov->Sset = NULL;
   cov->Spolygon = NULL;
@@ -302,7 +311,8 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Sdollar = NULL;
   cov->S2 = NULL;
   cov->Sbiwm = NULL;
-  cov->Sget = NULL;
+  cov->Sinv = NULL;
+  //cov->Sselect = NULL;
   //cov->Sselect = NULL;
   cov->stor = NULL;
 
@@ -339,7 +349,6 @@ void COV_NULL(cov_model *cov) {
   cov->method = Forbidden;
   cov->tsdim = cov->xdimprev = cov->xdimown =cov->maxdim = cov->xdimgatter = 
     UNSET;
-  cov->vdim = MISMATCH;
   cov->vdim2[0] = cov->vdim2[1] = MISMATCH;
 
  
@@ -347,14 +356,14 @@ void COV_NULL(cov_model *cov) {
 
   cov->domown = cov->domprev = STAT_MISMATCH;
   cov->isoown = cov->isoprev = ISO_MISMATCH;
-  cov->logspeed = RF_NAN;
+  cov->logspeed = RF_NA;
   cov->delflag = 0;
   cov->full_derivs = cov->rese_derivs = MISMATCH;
 
   cov->deterministic = true;
   cov->monotone = MISMATCH; 
-  cov->total_n = MISMATCH;
-  cov->total_sum = 0.0;
+  //  cov->total_n = MISMATCH;
+  //  cov->total_sum = 0.0;
   cov->finiterange = cov->loggiven =  cov->diag = cov->semiseparatelast
     = cov->separatelast = cov->matrix_indep_of_x = false;
   cov->hess = cov->tbm2num = NOT_IMPLEMENTED;
@@ -390,13 +399,15 @@ void FFT_destruct(FFT_storage *FFT)
 void CE_DELETE(CE_storage **S) {
   CE_storage *x = *S;
   if (x != NULL) {
-    int l, vdimSQ = x->vdim * x->vdim;
+    int l,       
+      vdim = x->vdim,      
+      vdimSQ = vdim * vdim;
     if (x->c!=NULL) {
       for(l=0; l<vdimSQ; l++) if(x->c[l]!=NULL) free(x->c[l]);
       free(x->c);
     }
     if (x->d!=NULL) {
-      for(l=0; l<x->vdim; l++) if(x->d[l]!=NULL) free(x->d[l]);
+      for(l=0; l<vdim; l++) if(x->d[l]!=NULL) free(x->d[l]);
       free(x->d);
     }
     FFT_destruct(&(x->FFT));
@@ -631,32 +642,48 @@ void BRTREND_DELETE(double **BRtrend, int trendlen) {
  }
 
 void BR_DELETE(BR_storage **S) {
-  BR_storage *br = *S;
+  BR_storage *br = *S;  
   if (br != NULL) {
+    int i;
     if (br->trend != NULL) {
       BRTREND_DELETE(br->trend, br->trendlen); 
       free(br->trend);
-      br->trend = NULL;
     }
-    if (br->shiftedloc != NULL) {
-      free(br->shiftedloc); 
-      br->shiftedloc = NULL;
+    if (br->shiftedloc != NULL) free(br->shiftedloc);     
+    if (br->loc2mem != NULL) free(br->loc2mem);
+
+    
+    if (br->countvector != NULL) {
+      for (i=0; i<br->vertnumber; i++) {
+	if (br->countvector[i] != NULL) free(br->countvector[i]);
+      }
+      free(br->countvector);
     }
-    if (br->loc2mem != NULL) {
-      free(br->loc2mem);
-      br->loc2mem = NULL;
+ 
+   if (br->areamatrix != NULL) {
+      for (i=0; i<br->vertnumber; i++) {
+	if (br->areamatrix[i] != NULL) free(br->areamatrix[i]);
+      }
+      free(br->areamatrix);
     }
-    if (br->mem2loc != NULL) {
-      free(br->mem2loc);
-      br->mem2loc = NULL;
-    }
-    if (br->lowerbounds != NULL) {
-      free(br->lowerbounds);
-      br->lowerbounds = NULL;
-    } 
-    if (br->vario != NULL) 
-      COV_DELETE(&(br->vario));
-    free(*S);
+   if (br->logvertnumber != NULL) free(br->logvertnumber);
+
+   if (br->locindex != NULL) free(br->locindex);
+    if (br->suppmin != NULL) free(br->suppmin);
+    if (br->suppmax != NULL) free(br->suppmax);
+    if (br->locmin != NULL) free(br->locmin);
+    if (br->locmax != NULL) free(br->locmax);
+    if (br->loccentre != NULL) free(br->loccentre);
+
+    if (br->mem2loc != NULL) free(br->mem2loc);
+    if (br->newx != NULL) free(br->newx);
+    if (br->vario != NULL) COV_DELETE(&(br->vario));
+     for(i=0; i<MAXSUB; i++) {
+      if (br->lowerbounds[i] != NULL) free(br->lowerbounds[i]);
+      if (br->sub[i] != NULL) COV_DELETE(br->sub + i);
+     }
+    if (br->submodel != NULL) COV_DELETE(&(br->submodel));
+     free(*S);
     *S = NULL;
   }
 }
@@ -664,15 +691,25 @@ void BR_DELETE(BR_storage **S) {
 void BR_NULL(BR_storage *br) {
   br->trend = NULL;
   br->trendlen = 0;
+  br->next_am_check = NA_INTEGER;
   br->shiftedloc = NULL;
-  br->zeropos = 0;
-  br->mem2loc = NULL;
-  br->loc2mem = NULL;
+  br->mem2loc = br->locindex = br->loc2mem = NULL;
   br->memcounter = 0;
-  br->radius = 0.0;
-  br->hatnumber = 0;
-  br->lowerbounds = NULL;
-  br->vario = NULL;  
+  br->newx = br->suppmin = br->suppmax = 
+    br->locmin = br->locmax = br->loccentre = NULL;
+  int i;
+  for (i=0; i<MAXSUB; i++) {
+    br->lowerbounds[i] = NULL;
+    br->radii[i] = RF_NA;
+    br->thresholds[i] = RF_INF;
+    br->sub[i] = NULL;
+    br->zeropos[i] = NA_INTEGER;
+  }
+  br->vario = br->submodel = NULL;  
+  br->idx = 0;
+  br->countvector = NULL;
+  br->areamatrix = NULL;
+  br->logvertnumber = NULL;
 }
 
 
@@ -680,7 +717,10 @@ void PGS_DELETE(pgs_storage **S)
 {
   pgs_storage *x = *S;
   if (x!=NULL) {
-       if (x->supportmin != NULL) free(x->supportmin);
+    if (x->own_grid_start != NULL) free(x->own_grid_start);
+    if (x->own_grid_step != NULL) free(x->own_grid_step);
+    if (x->own_grid_length != NULL) free(x->own_grid_length);
+   if (x->supportmin != NULL) free(x->supportmin);
     if (x->supportmax != NULL) free(x->supportmax);
     if (x->supportcentre != NULL) free(x->supportcentre);   
     if (x->gridlen != NULL) free(x->gridlen);
@@ -722,6 +762,18 @@ void PGS_DELETE(pgs_storage **S)
     if (x->cross != NULL) free(x->cross);
     if (x->Val != NULL) free(x->Val);
   
+    if (x->cov != NULL) {
+      cov_model *dummy = x->cov;
+      if (x->cov->Spgs != NULL && x->cov->Spgs->cov != NULL && 
+	  x->cov->Spgs->cov->Spgs == x) {
+	 x->cov->Spgs->cov = NULL;// um "Unendlich"-Schleife zu vermeiden!
+      } else {
+	assert(x->cov->Spgs == NULL || x->cov->Spgs->cov == NULL || 
+	       x->cov->Spgs->cov->Spgs == x);
+      }
+      x->cov = NULL; // Sicherheitshalber
+      COV_DELETE(&(dummy));
+    }
 
     free(*S);
     *S = NULL;
@@ -733,13 +785,16 @@ void PGS_NULL(pgs_storage* x) {
   if (x == NULL) return;
    x->log_density = x->intensity = x->globalmin = x->currentthreshold = 
     RF_NEGINF;
-  x->flat = false;
-  x->totalmass = x->value_orig = RF_NAN;
+  x->flat = x->estimated_zhou_c = x->logmean = false;
+  x->totalmass = RF_NA;
 
   x->size = -1;
+  x->zhou_c = x->sq_zhou_c = x->sum_zhou_c = RF_NA;
+  x->n_zhou_c = 0;
 
   x->single = x->total = x->v = x->x = x->xstart = x->inc =
     x->localmin = x->localmax =x->minmean = x->maxmean =
+    x->own_grid_start = x->own_grid_step =  x->own_grid_length = 
     x->supportmin = x->supportmax = x->supportcentre = NULL;
 
   x->xgr[0] = NULL;
@@ -759,6 +814,8 @@ void PGS_NULL(pgs_storage* x) {
   x->Val = NULL;
 
   x->param_set = NULL;
+
+  x->cov = NULL;
   
 }
 
@@ -766,9 +823,9 @@ void PGS_NULL(pgs_storage* x) {
 void SET_DELETE(set_storage **S) {
   set_storage *x = *S;
   if (x!=NULL) {
-    if (x->valueRemote != NULL) free(x->valueRemote);
-    if (x->valueLocal != NULL) free(x->valueLocal);
-    if (x->bytes != NULL) free(x->bytes);
+    //    if (x->valueRemote != NULL) free(x->valueRemote);
+    //    if (x->valueLocal != NULL) free(x->valueLocal);
+    //if (x->bytes != NULL) free(x->bytes);
     free(*S);
     *S = NULL;
   }
@@ -778,8 +835,8 @@ void SET_NULL(set_storage* x) {
   if (x == NULL) return;
   x->remote = NULL;
   x->set = NULL;
-  x->valueRemote = x->valueLocal = NULL;
-  x->bytes = NULL;
+  //  x->valueRemote = x->valueLocal = NULL;
+  //x->bytes = NULL;
   x->variant = 0;
 }
 
@@ -787,6 +844,12 @@ void POLYGON_DELETE(polygon_storage **S)
 {
   polygon_storage *x = *S;
   if (x != NULL) {
+    if (x->vdual != NULL) {
+      int i;
+      for (i=0; i<x->n_vdual; i++) free(x->vdual[i]);
+      free(x->vdual);
+    }
+    if (x->vprim != NULL) free(x->vprim);
     if (x->P != NULL) {
       freePolygon(x->P);
       free(x->P);
@@ -798,6 +861,10 @@ void POLYGON_DELETE(polygon_storage **S)
 
 void POLYGON_NULL(polygon_storage* x) {
   if (x == NULL) return;
+  x->vprim = NULL;
+  x->vdual = NULL;
+  x->n_vdual = x->n_vertex = x->n_v = 0;
+
   polygon *P = x->P;
   if (P == NULL) BUG;
   P->e = NULL;
@@ -835,7 +902,7 @@ void RECT_NULL(rect_storage* x) {
 
   // for PMI
   //  x->inner = x->inner_const = x->inner_pow = x->outer =
-  //    x->outer_const = x->outer_pow = x->outer_pow_const = x->step = RF_NAN;
+  //    x->outer_const = x->outer_pow = x->outer_pow_const = x->step = RF_NA;
 
   x->squeezed_dim = x->assign = x->i = NULL;
 }
@@ -848,6 +915,8 @@ void DOLLAR_DELETE(dollar_storage **S)
     if (x->z != NULL) free(x->z);
     if (x->z2 != NULL) free(x->z2);
     if (x->y != NULL) free(x->y);
+    if (x->save_aniso != NULL) free(x->save_aniso);
+    if (x->inv_aniso != NULL) free(x->inv_aniso);
     if (x->nx != NULL) free(x->nx);
     if (x->len != NULL) free(x->len);
     if (x->total != NULL) free(x->total);
@@ -859,7 +928,7 @@ void DOLLAR_DELETE(dollar_storage **S)
 
 void DOLLAR_NULL(dollar_storage* x) {
   if (x == NULL) return;
-  x->z = x->z2 = x->y = NULL;
+  x->z = x->z2 = x->y = x->save_aniso = x->inv_aniso = NULL;
   x->cumsum = x->nx = x->total = x->len = NULL;
 }
 
@@ -898,6 +967,24 @@ void BIWM_NULL(biwm_storage* x) {
 }
 
 
+void INV_DELETE(inv_storage **S) {
+  inv_storage *x = *S;
+  if (x!=NULL) {
+    if (x->v != NULL) free(x->v);
+    if (x->wert != NULL) free(x->wert);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+
+void INV_NULL(inv_storage* x) {
+  if (x == NULL) return;  
+  x->v = NULL;
+  x->wert = NULL;
+}
+
+
 void GET_STORAGE_NULL(get_storage *s){
   s->orig = s->get_cov = NULL;
   s->idx = NULL;
@@ -920,18 +1007,18 @@ void STORAGE_NULL(storage *x) {
   //  x->mpp.newx = NULL;
 
   // for (d=0; d<MAXMPPDIM; d++) 
-  //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NAN;
+  //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NA;
   x->check = true;
 
   x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
-    = RF_NAN;
+    = RF_NA;
   x->Sspectral.grid = x->Sspectral.ergodic = false;
 
   x->spec.nmetro = -1;
   x->spec.sigma = -1.0;
   x->spec.density = NULL;
   for (d=0; d<MAXTBMSPDIM; d++) {
-    x->spec.E[d] = x->spec.sub_sd_cum[d] = RF_NAN;
+    x->spec.E[d] = x->spec.sub_sd_cum[d] = RF_NA;
   }
 }
 
@@ -1145,7 +1232,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
     
     loc->length[loc->spatialdim] = (int) loc->T[XLENGTH];
     if (loc->length[loc->spatialdim]<=0) {
-      SERR("The number of temporal points is not positive. Check the triple definition of 'T'.")
+      SERR("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of 'RFsimulate'.")
 	}
     loc->totalpoints *= loc->length[loc->spatialdim];
   }
@@ -1329,12 +1416,17 @@ int Match(char *name, const char * List[], int n) {
   int Nr;
   Nr=0;
   ln=strlen(name);
-  //  print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+  //    print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
 
-  while ( Nr < n  && strncmp(name, List[Nr], ln)) Nr++;
+  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
+    // print("       %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+    Nr++;
+  }
   if (Nr < n) { 
-    if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
+    if (ln==strlen(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
+      //      print(" found  X    %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
       return Nr;
+    }
     // a matching function is found. Are there other functions that match?
     int j; 
     bool multiplematching=false;
@@ -1352,6 +1444,9 @@ int Match(char *name, const char * List[], int n) {
     }
     if (multiplematching) {return MULTIPLEMATCHING;}
   } else return NOMATCHING;
+
+  //  print(" found      %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+ 
   return Nr;
 }
 
@@ -1359,7 +1454,7 @@ int Match(char *name, const char * List[], int n) {
 void MultiDimRange(cov_model *cov, double *natscale) {
   int wave, i, redxdim, d, idx, 
     xdimprev = cov->xdimprev,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     err = NOERROR;
   double y, yold, x[MAXGETNATSCALE], threshold, natsc, factor, sign,
     newx, xsave, newy, 
@@ -1401,7 +1496,7 @@ void MultiDimRange(cov_model *cov, double *natscale) {
      
     if (domain) COV(x, cov, dummy) else NONSTATCOV(ZERO, x, cov, dummy); 
     yold = dummy[0];
-    if (ISNA(yold) || ISNAN(yold)) { err = -3; goto ErrorHandling;}
+    if (ISNAN(yold)) { err = -3; goto ErrorHandling;}
     // print("(%f %f) thres=%f yold=%f %d\n", x[0], x[1], threshold, yold,
     //	   yold > threshold);
     if (yold > threshold) {
@@ -1530,7 +1625,7 @@ void GetNaturalScaling(cov_model *cov, double *natscale)
   if (C->inverse!=NULL) { 
     C->inverse(&GLOBAL.gauss.approx_zero, cov, natscale);
     *natscale = 1.0 / *natscale;
-    if (ISNAN(*natscale) || ISNA(*natscale) || *natscale != 0.0) {
+    if (ISNAN(*natscale) || *natscale != 0.0) {
       return;
     }
   }
@@ -1583,12 +1678,26 @@ void Getxsimugr(coord_type x, double *aniso, int timespacedim, double **xsimugr)
   }
 }
 
+void TaylorCopy(cov_model *to, cov_model *from) {
+  int i, j;
+  to->taylorN = from->taylorN;
+  to->tailN = from->tailN;
+  for(i=0; i<to->taylorN; i++) {
+    for (j=0; j<=TaylorPow; j++) to->taylor[i][j] = from->taylor[i][j];
+  }
+  for(i=0; i<to->tailN; i++) {
+    for (j=0; j<=TaylorExpPow; j++) to->tail[i][j] = from->tail[i][j];
+  }
+}
 
-void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
+
+void paramcpy(cov_model *to, cov_model *from, bool freeing,
+	      bool allocating, bool copy_lists, bool recursive,
+	      bool copy_mpp) {
   cov_fct *C = CovList + from->nr; // nicht gatternr
   double **pto = to->px,
     **pfrom = from->px;
-  int i,
+  int i, v,
      n = -1,
      *to_col = to->ncol,
      *to_row = to->nrow,
@@ -1601,13 +1710,14 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
   if (!same_model) {
     BUG;      
   }    
+  if (freeing && !allocating) BUG;
 
   for (i=0; i<MAXPARAM; i++) {
     if (pfrom[i] == NULL) {
       continue;
     }
 
-    if (check) {
+    if (freeing) {
       // if (strcmp(to->kappanames[i], from->kappanames[i]) != 0 ||
       //	  type != from->kappatype[i]) return false;
       if (pto[i] != NULL) free(pto[i]);
@@ -1618,7 +1728,7 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
 
   
     if (C->kappatype[i] >= LISTOF) {      
-      pto[i] = (double*) MALLOC(sizeof(listoftype));
+      if (allocating) pto[i] = (double*) MALLOC(sizeof(listoftype));
       int j, len = from_row[i];
       listoftype *p = PARAMLIST(from, i),
 	*q = (listoftype*) (pto[i]);	
@@ -1626,11 +1736,11 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
 	for (j=0; j<len; j++) {
 	  if (C->kappatype[i]== LISTOF + REALSXP) {
 	    n = sizeof(double);
-	  } else assert(false);
+	  } else BUG;
 	  n *= p->nrow[j] * p->ncol[j];
 	  q->nrow[j] = p->nrow[j];
 	  q->ncol[j] = p->ncol[j];
-	  q->p[j] = (double*) MALLOC(n);
+	  if (allocating) q->p[j] = (double*) MALLOC(n);
 	  MEMCOPY(q->p[j], p->p[j], n);	    
 	}
       } else {
@@ -1642,36 +1752,80 @@ void paramcpy(cov_model *to, cov_model *from, bool check, bool copy_lists) {
       }
     } else if (C->kappatype[i]==LANGSXP) {
       n = sizeof(sexp_type);
-      pto[i] = (double*) MALLOC(n);
+      if (allocating) pto[i] = (double*) MALLOC(n);
       MEMCOPY(pto[i], pfrom[i], n);
       ((sexp_type *) pto[i])->Delete = false;
     } else {
       if (C->kappatype[i]==CLOSXP) {
-	assert(false); // Marco brauchen wir CLSXP ??
+	BUG;  // Marco brauchen wir CLSXP ??
 	n = sizeof(SEXP);
       } else {
 	if (C->kappatype[i]==REALSXP) {
 	  n = sizeof(double);
 	} else if (C->kappatype[i]==INTSXP) {
 	  n = sizeof(int);
-	} else assert(false);
+	} else BUG;
 	n *= from_row[i] * from_col[i];
       }
       
-      //        printf("i=%d to=%s from=%s %d\n", i, NICK(to), NICK(from), n);
+      //           printf("i=%d to=%s %s from=%s %s %d\n", i, 
+      //NICK(to), CovList[to->nr].kappanames[i], 
+      //	     NICK(from), CovList[from->nr].kappanames[i], n);
       
-      pto[i] = (double*) MALLOC(n); 
+      if (allocating) pto[i] = (double*) MALLOC(n); 
       MEMCOPY(pto[i], pfrom[i], n);
     }
   }
 
+  if (copy_mpp) {
+    //  PMI(to); PMI(from);
+    if (to->mpp.moments < 0 && alloc_mpp_M(to, from->mpp.moments)!=NOERROR) 
+      error("error in allocating memory for Poisson point process data");
+    if (to->mpp.moments != from->mpp.moments) BUG;
+    //printf("size = %d\n", sizeof(mpp_properties));
+    assert(sizeof(mpp_properties) == 96);
+    mpp_properties *To = &(to->mpp), *From=&(from->mpp);
+    assert(To != NULL &&  From != NULL);
+    //    To->sum_zhou_c = From->sum_zhou_c;
+    //    To->sq_zhou_c = From->sq_zhou_c;
+    int vdim = from->vdim2[0];
+    for (v=0; v<vdim; v++) To->maxheights[v] = From->maxheights[v];
+    To->unnormedmass = From->unnormedmass;
+    //    To->zhou_c = From->zhou_c;    
+    assert(To->mM != NULL && To->mMplus != NULL);
+    int nmP1 = To->moments + 1;
+    MEMCOPY(To->mM, From->mM, nmP1 * sizeof(double));
+    MEMCOPY(To->mMplus, From->mMplus, nmP1 * sizeof(double));
+
+    if (to->qlen != from->qlen) BUG;
+    if (from->qlen > 0) {
+      assert(to->q != NULL);
+      MEMCOPY(to->q, from->q, (to->qlen)* sizeof(double));
+    }
+  }
+
+  if (recursive) {
+    for (i=0; i<MAXSUB; i++) if (from->sub[i] != NULL) {
+	assert(to->sub[i] != NULL);
+	paramcpy(to->sub[i], from->sub[i], freeing,
+		 allocating, copy_lists, recursive, copy_mpp);
+      }
+  }
   //PMI(to, "to");
 }
 
 
-int covcpy(cov_model **localcov, bool sub, cov_model *cov,
+int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
 	   location_type *prevloc, location_type *ownloc,
 	   bool copy_lists, bool copy_randomparam) {
+  return covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, // err
+		 copy_randomparam, false);
+}
+
+int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
+	   location_type *prevloc, location_type *ownloc,
+	   bool copy_lists, bool copy_randomparam, 
+	   bool allowCopyingInterface) {
   assert(cov != NULL);
   int i,
     n = -1;
@@ -1686,7 +1840,7 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
   MEMCOPY(current, cov, sizeof(cov_model)); // replaces COV_NULL(*localcov);
   COV_ALWAYS_NULL(current);
   current->calling = NULL; 
-  paramcpy(current, cov, false, copy_lists);
+  paramcpy(current, cov, false, true, copy_lists, false, false);
 
   if (cov->ownkappanames != NULL) {
     int nkappas = CovList[cov->nr].kappas;
@@ -1700,7 +1854,7 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
     }
   }
 
-  //  PMI(current, "covcpy");
+  //  PMI(current, "err = covcpy");
   
   if (cov->q != NULL) {
     n = sizeof(double) * current->qlen;
@@ -1710,6 +1864,12 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
 
   current->prevloc = ownloc != NULL ? ownloc : 
     cov->prevloc == prevloc ? prevloc : NULL;
+  if (current->prevloc == cov->prevloc && cov->calling==NULL) {
+    if (!isInterface(cov)) {
+      BUG;
+    }
+    if (!allowCopyingInterface) {PRINTF("\n\n***** unallowed copying ******\n"); BUG;}
+  }
   
   for (i=0; i<MAXPARAM; i++) {
     int err;
@@ -1735,33 +1895,21 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
     for (i=0; i<MAXSUB; i++) current->sub[i] = NULL;
   }
 
-  // PMI(*localcov, "end covcpy");
+  // PMI(*localcov, "end err=covcpy");
   return NOERROR;
 }
 
 
-void TaylorCopy(cov_model *to, cov_model *from) {
-  int i, j;
-  to->taylorN = from->taylorN;
-  to->tailN = from->tailN;
-  for(i=0; i<to->taylorN; i++) {
-    for (j=0; j<=TaylorPow; j++) to->taylor[i][j] = from->taylor[i][j];
-  }
-  for(i=0; i<to->tailN; i++) {
-    for (j=0; j<=TaylorExpPow; j++) to->tail[i][j] = from->tail[i][j];
-  }
-}
-
-int covcpy(cov_model **localcov, bool sub, cov_model *cov,
+int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
 	   location_type *prevloc, location_type *ownloc,
 	   bool copy_lists) {
-  return covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, true);
+  return covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, true); //err
 }
  
-int covcpy(cov_model **localcov, cov_model *cov) {
+int covcpy(cov_model **localcov, cov_model *cov) { //err
   bool cov2key = &(cov->key)==localcov;
   int 
-    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, true);
+    err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, true);//err
   if (err == NOERROR) 
     (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
@@ -1771,7 +1919,7 @@ int covcpy(cov_model **localcov, cov_model *cov) {
   return err;
 }
 
-int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov) {
+int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov) {//err
   bool cov2key = &(cov->key)==localcov;
   int 
     err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, false);
@@ -1785,7 +1933,7 @@ int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov) {
 }
 
 
-int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {
+int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {//err
   bool cov2key = &(cov->key)==localcov;
   int 
     err = covcpy(localcov, true, cov, cov->prevloc, NULL, copy_lists, true);
@@ -1798,7 +1946,7 @@ int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {
   return err;
 }
 
-int covcpy(cov_model **localcov, cov_model *cov,
+int covcpy(cov_model **localcov, cov_model *cov, //err
 	   double *x, double *T, int spatialdim, int xdimOZ, int lx, bool Time, 
 	   bool grid, bool distances) {
   bool cov2key = &(cov->key)==localcov;
@@ -1816,7 +1964,59 @@ int covcpy(cov_model **localcov, cov_model *cov,
   return NOERROR;
 }
 
-int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
+
+cov_model *getRemote(cov_model *remotecov, cov_model *rmt, cov_model *target) {
+  cov_model *found;
+  int i;
+  if (rmt == target) return remotecov;
+  
+  for (i=0; i<MAXPARAM; i++) {
+    if (rmt->kappasub[i] != NULL) {
+      if (remotecov->kappasub[i] == NULL) BUG;
+      found = getRemote(remotecov->kappasub[i], rmt->kappasub[i], target);
+      if (found != NULL) return found;
+    }
+  }
+ 
+  for (i=0; i<MAXSUB; i++) {
+    if (rmt->sub[i] != NULL) {
+      if (remotecov->sub[i] == NULL) BUG;
+      found = getRemote(remotecov->sub[i], rmt->sub[i], target);
+      if (found != NULL) return found;
+    }
+  }
+  return NULL;  
+}
+
+
+void Ssetcpy(cov_model *localcov, cov_model *remotecov, cov_model *cov,
+	    cov_model *rmt) {
+  int i;
+  if (cov->Sset != NULL) {
+    localcov->Sset = (set_storage*) MALLOC(sizeof(set_storage));
+    MEMCOPY(localcov->Sset, cov->Sset, sizeof(set_storage));
+    localcov->Sset->remote = getRemote(remotecov, rmt, cov->Sset->remote);
+    if (localcov->Sset->remote == NULL) BUG;
+  }
+  
+  for (i=0; i<MAXPARAM; i++) {
+    if (cov->kappasub[i] != NULL) {
+      if (localcov->kappasub[i] == NULL) BUG;      
+      Ssetcpy(localcov->kappasub[i], remotecov, cov->kappasub[i], rmt);
+    }
+  }
+ 
+  for (i=0; i<MAXSUB; i++) {
+    if (cov->sub[i] != NULL) {
+      if (localcov->sub[i] == NULL) BUG;      
+      Ssetcpy(localcov->sub[i], remotecov, cov->sub[i], rmt);
+    }
+  }
+}
+
+
+
+int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov, //err
 		    double *x, double *y, double *T, 
 	            int spatialdim, /* spatial dim only ! */
 	            int xdimOZ, int lx, int ly, bool Time, bool grid,
@@ -1825,6 +2025,7 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
   assert(*localcov == NULL);
   addModel(localcov, model);
   cov_model *neu = *localcov;
+  Types type;
   
   loc_set(x, y, T, spatialdim, xdimOZ, lx, ly, Time, grid, distances,
 	  &(neu->ownloc));
@@ -1835,21 +2036,28 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
   assert(neu->calling == NULL);
   neu->sub[0]->calling = neu;
 
-  // APMI(neu);
+  //   PMI(neu);
   //printf("newmodel %s %s\n", NICK(cov), TYPENAMES[CovList[cov->nr].Type]);
 
+  type = CovList[neu->nr].Type;
+  assert(type == InterfaceType); // anderes z.zt nicht benutzt
   for (i=0; i<2; i++) {
+    //print("i=%d %s\n", i, TYPENAMES[cov->typus]);
     if ((err = CHECK(neu, cov->tsdim, cov->xdimprev,
-		     cov->typus,//Martin:changed 27.11.13 CovList[cov->nr].Type,
-		     cov->domprev, cov->isoprev, 
-		     cov->vdim, ROLE_BASE)) != NOERROR)
+		     // CovList[cov->nr].Type,Martin:changed 27.11.13 
+		     //cov->typus,// auch nicht 20.5.14
+		     type,
+		     type == InterfaceType ? XONLY : cov->domprev, 
+		     type == InterfaceType ? CARTESIAN_COORD : cov->isoprev, 
+		     cov->vdim2, ROLE_BASE)) != NOERROR) {
       return err;
+    }
     if (i==0 && (err =  STRUCT(neu, NULL)) != NOERROR) return err;
   }
   return NOERROR;
 }
 
-int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov) {
+int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov) {//err
   
   int err;
   location_type *loc = Loc(cov);
@@ -2489,9 +2697,9 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     } else {
       double *aniso_old = aniso;
       assert(loc->cani_ncol == nrow);
-      aniso =matrixmult(loc->caniso, aniso_old, loc->cani_nrow, nrow, ncol);
+      aniso = matrixmult(loc->caniso, aniso_old, loc->cani_nrow, nrow, ncol);
       nrow = loc->cani_nrow;
-      free (aniso_old);
+      free(aniso_old);
     }
   }
 
@@ -2710,8 +2918,8 @@ bool TypeConsistency(Types requiredtype, cov_model *cov) {
 
     return C->TypeFct(requiredtype, cov);
   }
-  //  printf("not consist %s\n", NICK(cov));
-  return TypeConsistency(requiredtype, CovList[cov->nr].Type);
+  //   printf("not consist %s type=%d, %d;   %s %d\n", NAME(cov), C->Type, cov->typus,	 CovList[150].name, CovList[150].Type);
+  return TypeConsistency(requiredtype, C->Type);
 }
 
 
@@ -2721,26 +2929,26 @@ int change_coordinate_system(isotropy_type callingprev, isotropy_type isoprev,
   switch(callingprev) {
   case EARTH_COORD :
     if (isCartesian(isoprev)) {
-      if (strcmp(GLOBAL.general.newunits[0], UNITS_NAMES[units_km]) == 0) {
+      if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0) {
 	*nr = EARTHKM2CART;
-      } else if (strcmp(GLOBAL.general.newunits[0], 
+      } else if (strcmp(GLOBAL.coords.newunits[0], 
 			UNITS_NAMES[units_miles]) == 0) {
 	*nr = EARTHMILES2CART;
       } else {
 	SERR4("only units '%s' and '%s' are allowed. Got '%s' (user's '%s').",
 	      UNITS_NAMES[units_km], UNITS_NAMES[units_miles], 
-	      GLOBAL.general.newunits[0], GLOBAL.general.curunits[0]);
+	      GLOBAL.coords.newunits[0], GLOBAL.coords.curunits[0]);
       }
       *newisoprev = CARTESIAN_COORD;
       *newtsdim =  *newxdim = 3;
     } else if (isSpherical(isoprev)) {
-      BUG; // not programmed yet
+      NotProgrammedYet("");
     } else {
-      BUG; // dito
+      NotProgrammedYet("");
       }      
     break;
   default:    
-    BUG; // not programmed yet, alle anderen 
+     NotProgrammedYet("");
   }    
   return NOERROR;
 }
@@ -2753,7 +2961,7 @@ int SetGatter(domain_type domprev, domain_type statnext,
   // printf("gatter %d %d %d %d\n",  domprev, statnext, isoprev,isonext);
   
   if (domprev < statnext) 
-    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
+    SERR2("Cannot call more complex models ('%s') from simpler ones ('%s')",
 	  STATNAMES[(int) statnext], STATNAMES[(int) domprev]);
   bool isoOK = (isoprev == VECTORISOTROPIC && isonext == VECTORISOTROPIC) ||
     isoprev >= isonext;
@@ -2787,7 +2995,7 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	  *nr = S2S;
 	  *delflag = DEL_COV - 5; ///
 	  break;
-	default : assert(false);
+	default : BUG;
 	}
 	break;	
       case EARTH_COORD:
@@ -2797,7 +3005,7 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	break;
        default: 
 	PRINTF("GetGatter %d %d\n", domprev, isoprev);
-	assert(false);
+	BUG;
       }
   } else { // KERNEL
     if (statnext == XONLY) {
@@ -2817,7 +3025,7 @@ int SetGatter(domain_type domprev, domain_type statnext,
 	*nr = S2S;
 	*delflag = DEL_COV - 8; ///
 	break;
-      default: assert(false);
+      default: BUG;
       }
     } else { // still non-domain: cannot be simplified
       *nr = SId;
@@ -2856,7 +3064,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
     for (i=0; i<kappas; i++) {
       int len=cov->ncol[i] * cov->nrow[i];
       double dmin, dmax, dpmin, dpmax, dopenmin, dopenmax,
-	value =  RF_NAN;
+	value =  RF_NA;
       dpmin = range.pmin[i];
       dpmax = range.pmax[i];
       dmin = range.min[i];
@@ -2865,7 +3073,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       dopenmax = (double) range.openmax[i];
 
       //    print("i=%d %d %s %f %d %d\n", i, len, C->name, 
-      //	   PisNULL(i) ? RF_NAN : P0(i][0], type[i], REALSXP);
+      //	   PisNULL(i) ? RF_NA : P0(i][0], type[i], REALSXP);
       
       for (k=0; k<len; k++) {
 	if (type[i] == REALSXP) {
@@ -2909,7 +3117,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	    }
 	  } // elses list had not been copied
 
-	  value = RF_NAN;
+	  value = RF_NA;
 	  // error cannot appear as range is (-infty, +infty)
 	} else if (type[i] == CLOSXP) {
           continue;   
@@ -2917,7 +3125,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	  continue;   
 	} else return ERRORUNKOWNSXPTYPE;
 
-	if (ISNA(value) || ISNAN(value)) {
+	if (ISNAN(value)) {
 	  continue;
 	}
 
@@ -2930,7 +3138,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	    ) {
 	  sprintf(ERRORSTRING,
 		  "value (%f) of '%s' in '%s' not within interval %s%f,%f%s",
-		  value, C->kappanames[i], C->nick, 
+		  value, C->kappanames[i], NICK(cov), 
 		  range.openmin[i] ? "(" : "[", dmin, dmax,
 		  range.openmax[i] ? ")" : "]"
 		  );
@@ -3006,11 +3214,13 @@ int check_within_range(cov_model *cov, bool NAOK) {
   rangefct getrange = C->range;
   char Msg[255] = "";
   double min, max,
-    value= RF_NAN;
+    value= RF_NA;
 
   if (GLOBAL.general.skipchecks) return NOERROR;
 
   getrange(cov, &range); 
+
+  //  printf("maxdim = %d %d %s\n", cov->maxdim, cov->tsdim, Nick(cov));
 
   if (cov->maxdim >=0 && cov->maxdim < cov->tsdim) {
     GERR2("Max. dimension is %d. Got %d", cov->maxdim, cov->tsdim);
@@ -3043,7 +3253,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
       else if (type[i] == CLOSXP) continue;
       else if (type[i] == LANGSXP) continue;
       else GERR2("%s [%d] is not finite", C->kappanames[i], k+1);
-      if (ISNA(value) || ISNAN(value)) {
+      if (ISNAN(value)) {
 	if (NAOK) {
 	  continue;
 	} else GERR2("%s[%d] is not finite.", C->kappanames[i], k+1);
@@ -3124,9 +3334,9 @@ int FieldReturn(cov_model *cov) {
     }
   }
 
-  // printf("FieldReturn %d\n",sizeof(res_type) * loc->totalpoints * cov->vdim);
+  //     printf("FieldReturn %d %d %d %s\n",sizeof(res_type), loc->totalpoints, cov->vdim, NICK(cov));
   if ((cov->rf = 
-       (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim))
+       (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim2[0]))
       == NULL) return ERRORMEMORYALLOCATION;
   cov->fieldreturn = cov->origrf = true;
   return NOERROR;

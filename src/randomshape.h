@@ -56,10 +56,11 @@ char iscovmatrix_mixed(cov_model *cov);
 void trend(double *x, cov_model *cov, double *v);
 void trend_nonstat(double *x, double *y, cov_model *cov, double *v);
 int checktrend(cov_model *cov);
+int checktrendproc(cov_model *cov);
 void rangetrend(cov_model *cov, range_type* ra);
 int init_trend(cov_model *cov, storage *s);
 void do_trend(cov_model *cov, storage *s);
-double GetInternalMean(cov_model *cov);
+void GetInternalMean(cov_model *cov, int vdim, double *mean);
 void kappatrend(int i, cov_model *cov, int *nr, int *nc);
 
 
@@ -70,7 +71,7 @@ void kappa_Angle(int i, cov_model *cov, int *nr, int *nc);
 void Angle(double *x, cov_model *cov, double *v);
 int checkAngle(cov_model *cov);
 void rangeAngle(cov_model *cov, range_type* ra);
-
+void invAngle(double *x, cov_model *cov, double *v);
 
 void kappa_ave(int i, cov_model *cov, int *nr, int *nc);
 void ave(double *x, cov_model *cov, double *v);
@@ -106,7 +107,6 @@ void Polygon(double *x, cov_model *cov, double *v);
 int check_polygon(cov_model *cov);
 void range_polygon(cov_model *cov, range_type *range);
 int init_polygon(cov_model *cov, storage *s);
-void do_polygon(cov_model *cov, storage *s); 
 int struct_polygon(cov_model *cov, cov_model **newmodel);
 void Inversepolygon(double *x, cov_model *cov, double *v);
 void InversepolygonNonstat(double *v, cov_model *cov, double *x, double *y);
@@ -286,6 +286,13 @@ int checkplusproc(cov_model *cov);
 int initplusproc(cov_model *cov, storage *s);
 void doplusproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) ;
  
+int checkmultproc(cov_model *cov);
+int structmultproc(cov_model *cov, cov_model **newmodel);
+void rangemultproc(cov_model *cov, range_type *range);
+int initmultproc(cov_model *cov, storage *s);
+void domultproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) ;
+ 
+void kappa_binaryprocess(int i, cov_model *cov, int *nr, int *nc);
 void binary(double *x, cov_model *cov, double *v);
 int checkbinaryprocess(cov_model *cov);
 void rangebinaryprocess(cov_model *cov, range_type *range);
@@ -294,18 +301,19 @@ int init_binaryprocess(cov_model *cov, storage *s);
 void do_binaryprocess(cov_model *cov, storage *s);
 
 void BrownResnick(double *x, cov_model *cov, double *v);
-int checkBrownResnick(cov_model *cov);
+int checkBrownResnickProc(cov_model *cov);
 int structBrownResnick(cov_model *cov, cov_model **newmodel);
 int initBrownResnick(cov_model *cov, storage *s);
 void doBrownResnick(cov_model *cov, storage *s);
+void loglikelihoodBR(double *data, cov_model *cov, double *v);
+void range_likelihood(cov_model *cov, range_type* range);
 
-int check_common_gauss(cov_model *cov);
-void range_common_gauss(cov_model *cov, range_type *range);
 int checkgaussprocess(cov_model *cov);
 void rangegaussprocess(cov_model *cov, range_type *range);
 int struct_gaussprocess(cov_model *cov, cov_model **newmodel);
 int init_gaussprocess(cov_model *cov, storage *s);
 void do_gaussprocess(cov_model *cov, storage *s);
+void gaussprocessDlog(double *x, cov_model *cov, double *v);
 
 int struct_extractdollar(cov_model *cov, cov_model **newmodel);
 
@@ -317,9 +325,12 @@ int init_poisson(cov_model *cov, storage *S);
 void extremalgaussian(double *x, cov_model *cov, double *v);
 int check_schlather(cov_model *cov);
 int struct_schlather(cov_model *cov, cov_model **newmodel);
+void loglikelihoodSchlather(double *data, cov_model *cov, double *v);
 
 int struct_smith(cov_model *cov, cov_model **newmodel);
 int check_smith(cov_model *cov);
+int struct_smith_pts(cov_model **Key, cov_model *shape, cov_model *calling,
+		     int tsdim, int vdim);
 
 
 int checkchisqprocess(cov_model *cov) ;
@@ -343,6 +354,12 @@ void range_simulate(cov_model *cov, range_type *range);
 int struct_simulate(cov_model *cov, cov_model **newmodel);
 int init_simulate(cov_model *cov, storage *S);
 // void do_simulate(cov_model *cov, storage *S);
+void range_simulate(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
+
+void likelihood(double *data, cov_model *cov, double *v);
+int check_likelihood(cov_model *cov);
+int struct_likelihood(cov_model *cov, cov_model **newmodel);
+
 
 void Cov(double *x, cov_model *cov, double *value) ;
 int check_cov(cov_model *cov) ;
@@ -377,6 +394,7 @@ int struct_variogram(cov_model *cov, cov_model **newmodel);
 void Dummy(double *x, cov_model *cov, double *value);
 int check_dummy(cov_model *cov);
 int struct_dummy(cov_model *cov, cov_model **newmodel);
+
 
 
 //-----------------------------------------------------------------

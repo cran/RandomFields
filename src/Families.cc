@@ -53,11 +53,14 @@ Foundation, Inc., 59 Temple Place - Suix2te 330, Boston, MA  02111-1307, USA.
 
 
 
-
 void arcsqrtP(double *x, cov_model  VARIABLE_IS_NOT_USED *cov, double *v) {
-  if (*x <= PIHALF) *v = 0.0;
+  double 
+    scale = 4.0 * P0(ARCSQRT_SCALE),
+      y = *x / scale;
+ 
+  if (y <= PIHALF) *v = 0.0;
   else {
-    *v = atan(sqrt( *x / PIHALF - 1.0)) / PIHALF; // without (5) !!
+    *v = atan(sqrt( y / PIHALF  - 1.0)) / PIHALF; // without (5) !!
     // siehe tcf*KS-1.pdf
   }  
 }
@@ -66,36 +69,73 @@ void arcsqrtP(double *x, cov_model  VARIABLE_IS_NOT_USED *cov, double *v) {
 
 
 void arcsqrtD(double *x, cov_model  VARIABLE_IS_NOT_USED *cov, double *v) {
-  if (*x <= M_PI_2 ) *v = 0.0;
+ double 
+    scale = 4.0 * P0(ARCSQRT_SCALE),
+    y = *x / scale;
+  if (y <= M_PI_2 ) *v = 0.0;
   else {
-    *v = SQRT2 / (M_PI * *x * sqrt(*x / M_PI_2 - 2.0)); // wrong
+    *v = SQRT2 / (M_PI * scale * y * sqrt(y / M_PI_2 - 2.0)); 
   }
 }
 
-void arcsqrtDlog(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign) {
+void arcsqrtDlog(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   arcsqrtD(x, cov, v);
   *v = log(*v);
-  *Sign = 1.0;
- }
+}
 
 void arcsqrtDinverse(double VARIABLE_IS_NOT_USED *v, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *left, double VARIABLE_IS_NOT_USED *right) {
   error("Dinverse of arcsqrt unknown");
 }
 
 void arcsqrtQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
-  double z = tan(0.5 * PI * *x);
-  *v = 2.0 * (z * z + 1.0);
-}		   
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
+ double 
+   scale = 4.0 * P0(ARCSQRT_SCALE);
+  double z = tan(PIHALF * *x);
+  *v = PIHALF * (z * z + 1.0) * scale;
+  }		   
 
 void arcsqrtR(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   if (x != NULL) *v = *x;
   else {
-    double u = UNIFORM_RANDOM;
-    arcsqrtQ(&u, cov, v);
-  }
+    double 
+       u = UNIFORM_RANDOM;
+    arcsqrtQ(&u, cov, v); 
+    
+    //  printf("scale %f %f \n", scale, *v);
+  
+    assert(*v >= PIHALF);
+
+    //      *v = 0.1;
+  
+   }
 }
 
 
+int init_arcsqrt(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+  if (cov->mpp.moments >= 0) {
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
+  }
+
+  // maxheight based on a Gaussian shape function with the same
+  // sd's but normed to 1 at the origin
+  cov->mpp.maxheights[0] = RF_NA;
+  return NOERROR;
+}
+
+void do_arcsqrt(cov_model *cov, double *v){ 
+  arcsqrtR(NULL, cov, v);
+}
+
+
+void range_arcsqrt(cov_model  VARIABLE_IS_NOT_USED *cov, range_type* range){
+  range->min[ARCSQRT_SCALE] = 0.0;
+  range->max[ARCSQRT_SCALE] = RF_INF;
+  range->pmin[ARCSQRT_SCALE] = 0.0;
+  range->pmax[ARCSQRT_SCALE] = 100000;
+  range->openmin[ARCSQRT_SCALE] = false;
+  range->openmax[ARCSQRT_SCALE] = true;
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -155,15 +195,14 @@ void distrD(double *x, cov_model *cov, double *v) {
   addVariable((char*) "x", x, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_DX, v);
 }
-void distrDlog(double *x, cov_model *cov, double *v, double *Sign) {
+void distrDlog(double *x, cov_model *cov, double *v) {
   distrD(x, cov, v);
   *v = log(*v);
-  *Sign = 1.0;
 }
 
 void distrDinverse(double VARIABLE_IS_NOT_USED  *v, cov_model  VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED  *x, double  VARIABLE_IS_NOT_USED *y) {
   // v is here INPUT variable
-  error("'distrDinverse' not programmed yet");  
+  NotProgrammedYet("distrDinverse");  
 }
 
 void distrP(double *x, cov_model *cov, double *v) {
@@ -186,7 +225,7 @@ void distrP2sided(double *x, double *y, cov_model *cov, double *v) {
     evaluateDistr(cov, DISTR_PX, v);
     *v -= w;
   } else {
-    error("multivariate families of distribution functions not programmed yet");
+    NotProgrammedYet("multivariate families of distribution functions");
 
     double 
       Sign = 1.0,
@@ -204,6 +243,7 @@ void distrP2sided(double *x, double *y, cov_model *cov, double *v) {
 }
 
 void distrQ(double *x, cov_model *cov, double *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   addVariable((char*) "p", x, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_QX, v);
 }
@@ -244,12 +284,11 @@ int check_distr(cov_model *cov) {
 int init_distr(cov_model VARIABLE_IS_NOT_USED *cov, 
 	       storage  VARIABLE_IS_NOT_USED *s){
   int err = NOERROR;
-  cov->mpp.maxheight = RF_NAN;
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
+  cov->mpp.maxheights[0] = RF_NA;
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
   return err;
 }
 void do_distr_do(cov_model *cov, double *v){ 
-  DO_PARAM_MODELS;
   distrR(NULL, cov, v);
 }
 void range_distr(cov_model *cov, range_type *range){
@@ -295,20 +334,22 @@ void range_distr(cov_model *cov, range_type *range){
 
 #define FOR for(mi=si=i=0; i<dim; i++, mi=(mi + 1) % len_mean, si=(si + 1) % len_sd)
 
-void gaussDlog(double *x, cov_model *cov, double *v, double *Sign) {
+void gaussDlog(double *x, cov_model *cov, double *v) {
   GAUSS_PARAMETERS;
-  double returnlog = P0(GAUSS_DISTR_LOG);
+  double returnlog = 1.0;
   *v = 0.0;
-  FOR *v += dnorm(x[i], m[mi], sd[si], returnlog);
-  *Sign = 1.0;
+  FOR {
+    *v += dnorm(x[i], m[mi], sd[si], returnlog);
+    // printf("i=%d x=%f m=%f sd=%f  v=%f\n", i, x[i], m[mi], sd[si],  *v);
+  }
+
 }
 
 void gaussD(double *x, cov_model *cov, double *v) {
   GAUSS_PARAMETERS;
   double returnlog = P0(GAUSS_DISTR_LOG);
   if (returnlog) { 
-    double Sign;
-    gaussDlog(x, cov, v, &Sign);
+    gaussDlog(x, cov, v);
   } else {        
     *v = 1.0;
     FOR *v *= dnorm(x[i], m[mi], sd[si], returnlog);
@@ -348,29 +389,35 @@ void gaussP2sided(double *x, double *y, cov_model *cov, double *v) {
   
   if (x == NULL) { // symmetric 2-sided with a=-b
     if (returnlog) {
+      *v = 0.0;
       FOR *v += y[i] != 0.0 
 	? log(2.0 * pnorm(y[i], m[mi], sd[si], 1.0, 0.0) - 1.0)
 	: dnorm(y[i], m[mi], sd[si], returnlog);
     } else {
-      FOR *v *= y[i] != 0.0 
+      *v = 1.0;
+     FOR *v *= y[i] != 0.0 
 	? 2.0 * pnorm(y[i], m[mi], sd[si], 1.0, 0.0) - 1.0
  	: dnorm(y[i], m[mi], sd[si], returnlog);
     }
   } else {
     if (returnlog) {
+      *v = 0.0;
       FOR *v +=  x[i] != y[i]
 	? log(pnorm(y[i], m[mi], sd[si], 1.0, 0.0) -
 	      pnorm(x[i], m[mi], sd[si], 1.0, 0.0))
 	: dnorm(y[i], m[mi], sd[si], returnlog);
     } else {
+      *v = 1.0;
       FOR *v *=  x[i] != y[i]
 	? (pnorm(y[i], m[mi], sd[si], 1.0, 0.0) -
 	   pnorm(x[i], m[mi], sd[si], 1.0, 0.0))
 	: dnorm(y[i], m[mi], sd[si], returnlog);
     }
   }
+//   //  printf("p2 %f\n", *v);
 }	   
 void gaussQ(double *x, cov_model *cov, double *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   GAUSS_PARAMETER_BASICS; 
   double returnlog = P0(GAUSS_DISTR_LOG);
   *v *= qnorm(x[0], m[0], sd[0], 1.0, returnlog);
@@ -425,32 +472,31 @@ int check_gauss_distr(cov_model *cov) {
 
 int init_gauss_distr(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   GAUSS_PARAMETERS; 
-  
   if (cov->mpp.moments >= 0) {
-    cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; 
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
       if (dim > 1) SERR("multivariate moment cannot be calculated");
-      cov->mpp.M[1] = cov->mpp.Mplus[1] = m[0];
+      cov->mpp.mM[1] = cov->mpp.mMplus[1] = m[0];
       if (cov->mpp.moments >= 2) {
 	double SD = sd == NULL ? 1.0 : sd[0];      
-	cov->mpp.M[2] = cov->mpp.Mplus[2] = SD * SD + m[0] * m[0] ;
+	cov->mpp.mM[2] = cov->mpp.mMplus[2] = SD * SD + m[0] * m[0] ;
       }
     }
   }
 
   // maxheight based on a Gaussian shape function with the same
   // sd's but normed to 1 at the origin
-  cov->mpp.maxheight = intpow(SQRTTWOPI, dim);
-  FOR cov->mpp.maxheight *= sd[si];
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
+  cov->mpp.maxheights[0] = intpow(SQRTTWOPI, dim);
+  FOR cov->mpp.maxheights[0] *= sd[si];
+  cov->mpp.unnormedmass = RF_NA; // / cov->mpp.maxheights[0];
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
   return NOERROR;
 }
 
 void do_gauss_distr(cov_model *cov, double *v){
   GAUSS_PARAMETERS;
-  DO_PARAM_MODELS;
-  cov->mpp.maxheight = intpow(SQRTTWOPI, -dim);
-  FOR cov->mpp.maxheight /= sd[si];
+  cov->mpp.maxheights[0] = intpow(SQRTTWOPI, -dim);
+  FOR cov->mpp.maxheights[0] /= sd[si];
   gaussR(NULL, cov, v);
 }
 
@@ -482,6 +528,7 @@ void range_gauss_distr(cov_model VARIABLE_IS_NOT_USED  *cov, range_type *range){
 
 #define SPHERIC_SPACEDIM 0
 #define SPHERIC_BALLDIM 1
+#define SPHERIC_RADIUS 2
 double random_spheric(int tsdim, int balldim) {
   int d;
   double r2 = -1.0;    
@@ -503,23 +550,24 @@ void sphericD(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *co
   error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericDinverse(double VARIABLE_IS_NOT_USED  *v, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *left, double VARIABLE_IS_NOT_USED  *right) {
-  // v is here INPUT variable !!
+  //v is here INPUT variable !!
   error("density of 'RRspheric' cannot be calculated yet");
 }
-void sphericDlog(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v, double  VARIABLE_IS_NOT_USED *Sign) {
+void sphericDlog(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
   error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericP(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED   *cov, double VARIABLE_IS_NOT_USED  *v) {
   error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericQ(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericR(double *x, cov_model *cov, double *v) {
   int 
     dim = P0INT(SPHERIC_SPACEDIM),
     balldim = P0INT(SPHERIC_BALLDIM);  
-  if (x==NULL) *v = random_spheric(dim, balldim); // q[>0] ist E
+  if (x==NULL) *v = random_spheric(dim, balldim) * P0(SPHERIC_RADIUS); // q[>0] ist E
   else error("conditional distribution cannot be calculated for sphericP.");
 }
 
@@ -529,6 +577,7 @@ int check_RRspheric(cov_model *cov) {
 
   kdefault(cov, SPHERIC_SPACEDIM, 1);
   kdefault(cov, SPHERIC_BALLDIM, P0INT(SPHERIC_SPACEDIM));
+  kdefault(cov, SPHERIC_RADIUS, 1.0);
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   if (cov->tsdim != 1) SERR("only dimension 1 allowed");
@@ -553,42 +602,51 @@ void range_RRspheric(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->pmax[SPHERIC_BALLDIM] = 10;
   range->openmin[SPHERIC_BALLDIM] = false;
   range->openmax[SPHERIC_BALLDIM] = true;
+
+  range->min[SPHERIC_RADIUS] = 0; 
+  range->max[SPHERIC_RADIUS] = RF_INF;
+  range->pmin[SPHERIC_RADIUS] = 0.001;
+  range->pmax[SPHERIC_RADIUS] = 1000;
+  range->openmin[SPHERIC_RADIUS] = true;
+  range->openmax[SPHERIC_RADIUS] = true;
 }
 
 
 int init_RRspheric(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
   int i, m,
     nm = cov->mpp.moments,
+    nmvdim = nm + 1, // vdim == 1 
     dim = P0INT(SPHERIC_SPACEDIM),
     balldim = P0INT(SPHERIC_BALLDIM),
-    testn = GLOBAL.mpp.n_estim_E;
+     testn = GLOBAL.mpp.n_estim_E;
 
- double scale, 
-    *M = cov->mpp.M,
-    *Mplus = cov->mpp.Mplus;
+  double scale, dummy,
+    *M = cov->mpp.mM,  
+    radius = P0(SPHERIC_RADIUS),
+    *Mplus = cov->mpp.mMplus;
  
-  // printf("ball mppM2 %f\n", cov->mpp.M2);
+  // printf("ball mppM2 %f\n", cov->mpp.mM2);
   //printf("%d %d %d\n", testn, GLOBAL.mpp.n_estim_E,
-  //	 P0INT(SPHERIC_BALLDIM));// assert(false);
+//   //	 P0INT(SPHERIC_BALLDIM));// assert(false);
   
-  for (M[0] = 1.0, m=1; m<=nm; M[m++] = 0.0);
+  for (M[0] = 1.0, m=1; m < nmvdim; M[m++] = 0.0);
   for (i=0; i<testn; i++) { // take random sample of scales
     // printf("testn %d %f %d\n", i, scale, testn);
     scale = random_spheric(dim, balldim);
-    double dummy = 1.0;
-    for (m=1; m<=nm; m++) {
+    dummy = 1.0;
+    for (m=1; m < nmvdim; m++) {
       dummy *= scale;
       M[m] += dummy;
     }
   }
-  for (m=1; m<=nm; m++)  {
-    M[m] /= (double) testn;
+  for (dummy=radius, m=1; m < nmvdim; m++, dummy *= radius)  {
+    M[m] = dummy * (double) testn;
     Mplus[m] = M[m];
     //
     //printf("M: %d %f\n", d, M[d]);
   }
 
-  // exakte Formel; check ob das gleiche wie simu
+//   // exakte Formel; check ob das gleiche wie simu
   if (PL > 1) 
     PRINTF("init_spheric %f %f %f\n", M[nm], 
 	   exp( (balldim - dim) * M_LN_SQRT_PI // log(sqrt(pi)) 
@@ -597,15 +655,14 @@ int init_RRspheric(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
 		+ lgammafn(0.5 * cov->tsdim + 1))
 	   );
 	   
-  //cov->mpp.refradius = RF_NAN;
-  cov->mpp.maxheight = RF_NAN;
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
+  //cov->mpp.refradius = RF_NA;
+  cov->mpp.maxheights[0] = RF_NA;
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
 
   return NOERROR;
 }
 
 void do_RRspheric(cov_model *cov, double *v) {
-  DO_PARAM_MODELS;
   sphericR(NULL, cov, v);
 }
 
@@ -615,7 +672,8 @@ void do_RRspheric(cov_model *cov, double *v) {
 #define DETERM_MEAN 0
 #define DETERM_PARAMETERS						\
   double *mean = P(DETERM_MEAN);					\
-  int i, mi, dim = cov->xdimown,					\
+  int VARIABLE_IS_NOT_USED i, VARIABLE_IS_NOT_USED mi,			\
+    dim = cov->xdimown,							\
     len_mean = cov->nrow[DETERM_MEAN]				      
 
 #define DETERMFOR for(mi=i=0; i<dim; i++, mi=(mi + 1) % len_mean)
@@ -630,9 +688,8 @@ void determD(double *x, cov_model *cov, double *v) {
   *v = RF_INF;
 }
 
-void determDlog(double *x, cov_model *cov, double *v, double *Sign) { 
+void determDlog(double *x, cov_model *cov, double *v) { 
   determD(x, cov, v);
-  *Sign = 1.0;
   *v = log(*v);
 }
 
@@ -674,14 +731,16 @@ void determP2sided(double *x, double *y, cov_model *cov, double *v) {
 }
 
 void determQ(double *x, cov_model *cov, double *v) { 
-  determR(x, cov, v);
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
+  DETERM_PARAMETERS;
+  v[0] = mean[0];
 }
 
 void determR(double *x, cov_model *cov, double *v) { 
   DETERM_PARAMETERS;
   if (x==NULL) DETERMFOR v[i] = mean[i]; 
   else 
-    DETERMFOR v[i] = !R_FINITE(x[i]) || x[i] == mean[mi] ? mean[mi] : RF_NAN;
+    DETERMFOR v[i] = !R_FINITE(x[i]) || x[i] == mean[mi] ? mean[mi] : RF_NA;
 }
 
 void kappa_determ(int i, cov_model *cov, int *nr, int *nc){
@@ -693,9 +752,9 @@ void kappa_determ(int i, cov_model *cov, int *nr, int *nc){
 void determR2sided(double *x, double *y, cov_model *cov, double *v) { 
   DETERM_PARAMETERS;
   if (x == NULL) {
-    DETERMFOR v[i] = fabs(y[i]) > mean[mi] ? mean[mi] : RF_NAN;    
+    DETERMFOR v[i] = fabs(y[i]) > mean[mi] ? mean[mi] : RF_NA;    
   } else {
-    DETERMFOR v[i] = x[i] < mean[mi] && y[i] > mean[mi] ? mean[mi] : RF_NAN;
+    DETERMFOR v[i] = x[i] < mean[mi] && y[i] > mean[mi] ? mean[mi] : RF_NA;
   }
 }
 
@@ -728,13 +787,12 @@ int init_determ(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USE
 
   // normed against an extremal gaussian process with shape that 
   // is identically constant 1 in space
-  cov->mpp.maxheight = 1.0;
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
+  cov->mpp.maxheights[0] = 1.0;
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
   return err;
 }
 
 void do_determ(cov_model *cov, double *v) {
-  DO_PARAM_MODELS;
   determR(NULL, cov, v);
 }
 
@@ -743,90 +801,82 @@ void do_determ(cov_model *cov, double *v) {
 
 // ***** Set ****
 void setParamD(double *x, cov_model *cov, double *v) { 
-VTLG_D(x, cov->sub[SETPARAM_TO], v);
+VTLG_D(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
-void setParamDlog(double *x, cov_model *cov, double *v, double *Sign) { 
-  VTLG_DLOG(x, cov->sub[SETPARAM_TO], v, Sign);
+void setParamDlog(double *x, cov_model *cov, double *v) { 
+  VTLG_DLOG(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setParamDinverse(double *v, cov_model *cov, double *left, double *right) {
-  NONSTATINVERSE_D(v, cov->sub[SETPARAM_TO], left, right);
+  NONSTATINVERSE_D(v, cov->sub[SETPARAM_LOCAL], left, right);
 }
 
 void setParamP(double *x, cov_model *cov, double *v) {   
-  VTLG_P(x, cov->sub[SETPARAM_TO], v);
+  VTLG_P(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setParamP2sided(double *x, double *y, cov_model *cov, double *v) {   
-  VTLG_P2SIDED(x, y, cov->sub[SETPARAM_TO], v);
+  VTLG_P2SIDED(x, y, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setParamQ(double *x, cov_model *cov, double *v) {   
-  VTLG_Q(x, cov->sub[SETPARAM_TO], v);
+  VTLG_Q(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setParamR(double *x, cov_model *cov, double *v) {   
-  VTLG_R(x, cov->sub[SETPARAM_TO], v);
+  VTLG_R(x, cov->sub[SETPARAM_LOCAL], v);
 }
 
 void setParamR2sided(double *x, double *y, cov_model *cov, double *v) {   
-  VTLG_R2SIDED(x, y, cov->sub[SETPARAM_TO], v);
+  VTLG_R2SIDED(x, y, cov->sub[SETPARAM_LOCAL], v);
 }
 
 int check_setParam(cov_model *cov) {
-  cov_model *to= cov->sub[SETPARAM_TO];
+  cov_model *next= cov->sub[SETPARAM_LOCAL];
   int err,
-    dim = cov->xdimown,
-    role = cov->role;
-   domain_type dom = cov->domown;
-  isotropy_type iso = cov->isoown;
+    dim = cov->xdimown;
 
   kdefault(cov, SET_PERFORMDO, true);
 
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
 
-  if ((err = CHECK(to, dim, dim, RandomType, dom, iso, 
-		     SUBMODEL_DEP, role)) != NOERROR) return err;
+  if ((err = CHECK_R(next, dim)) != NOERROR) return err;
 
-  setbackward(cov, to);
-  cov->vdim = to->vdim;
-  cov->vdim2[0] = to->vdim2[0];
-  cov->vdim2[1] = to->vdim2[1];
-  cov->deterministic = false;
+  setbackward(cov, next);
+  cov->vdim2[0] = next->vdim2[0];
+  cov->vdim2[1] = next->vdim2[1];
 
-  TaylorCopy(cov, to);
-
+  TaylorCopy(cov, next);
+  cov->mpp.maxheights[0] = next->mpp.maxheights[0];
+  cov->mpp.unnormedmass = next->mpp.unnormedmass;
   return NOERROR;
 }
 
 
 int init_setParam(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
-  cov_model *to= cov->sub[SETPARAM_TO];
-  int err;
-  if ((err = INIT(to, cov->mpp.moments, s)) != NOERROR)
-    return err;
-  cov->mpp.maxheight = to->mpp.maxheight;
-  return NOERROR;
-}
-
-void do_setParam(cov_model *cov, double *v) {
-  cov_model *next = cov->sub[SETPARAM_TO];
+  cov_model *next= cov->sub[SETPARAM_LOCAL];
   set_storage *X = cov->Sset;
-  cov_model *to = cov->sub[SETPARAM_TO];
-  int performDo = P0INT(SET_PERFORMDO);
-  DORANDOM(next, v);
-
-  if (performDo > 0) DORANDOM(next, v); 
+  //  PMI(cov->calling); crash();
+  assert(X != NULL);
+  int err;
+  if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR)
+    return err;
   if (X->remote != NULL) {
     assert(X->set != NULL);
     X->set(cov->sub[0], X->remote, X->variant);
   }
-  if (performDo < 0) DORANDOM(next, v); 
+  TaylorCopy(cov, next);
+  cov->mpp.maxheights[0] = next->mpp.maxheights[0];
+  cov->mpp.unnormedmass = next->mpp.unnormedmass;
+  return NOERROR;
+}
 
-
-  if (performDo == 0) setParamR(NULL, cov, v);
-  cov->mpp.maxheight = to->mpp.maxheight;
+void do_setParam(cov_model *cov, double *v) {
+  cov_model *next = cov->sub[SETPARAM_LOCAL];
+  bool performDo = P0INT(SET_PERFORMDO);
+  if (performDo) { DORANDOM(next, v); } 
+  //cov->mpp.maxheights[0] = next->mpp.maxheights[0];
 }
 
 
@@ -872,13 +922,15 @@ void locD(double *x, cov_model *cov, double *v) {
     prod *= scale[si];
   }
   VTLG_D(z, next, v);
-  *v *= prod;
+
+  // printf("prod = %f %f %d %f\n", prod, scale[0], len_scale, *v);
+
+  *v /= prod;
 }
 
-void locDlog(double *x, cov_model *cov, double *v, double *Sign) {
+void locDlog(double *x, cov_model *cov, double *v) {
   locD(x, cov, v);
   *v = log(*v);
-  *Sign = 1.0;
 }
 
 void locDinverse(double *v, cov_model *cov, double *left, double *right) {
@@ -904,9 +956,17 @@ void locP2sided(double *x, double *y, cov_model *cov, double *v) {
   double *z = cov->Sdollar->z;
   if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double)); 
   if (x == NULL) {
-    LOCFOR z[i] = (y[i] - loc[mi]) / scale[si];
+    LOCFOR {
+      z[i] = (y[i] - loc[mi]) / scale[si];
+   }
     VTLG_P2SIDED(NULL, z, next, v);
-  } else {    
+    //  if (!true || *v > 1.0 / 100.0 && *v != 1.0) {
+    //  LOCFOR {
+    //	printf("loc %d %f %f s=%f %f\n", i, y[i], z[i],  scale[si], loc[mi]);
+    // }
+    //  printf("v=%e\n", *v);   
+    //}
+   } else {    
     double *zy = cov->Sdollar->y;
     if (zy == NULL) zy = cov->Sdollar->y=(double*) MALLOC(dim * sizeof(double));
     LOCFOR { 
@@ -914,6 +974,7 @@ void locP2sided(double *x, double *y, cov_model *cov, double *v) {
       zy[i] = (y[i] - loc[mi]) / scale[si];
     }
     VTLG_P2SIDED(z, zy, next, v);
+
   }
 }
 
@@ -926,26 +987,52 @@ void locQ(double *x, cov_model *cov, double *v) {
 
 void locR(double *x, cov_model *cov, double *v) {
   LOC_PARAMETERS;  
-  VTLG_R(x, next, v);
+  double 
+    *z1 = cov->Sdollar->z;
+  if (x != NULL) {
+    if (z1 == NULL) 
+      z1 = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double));
+    LOCFOR z1[i] = (x[i] - loc[mi]) / scale[si];
+  } else z1 = NULL;
+  VTLG_R(z1, next, v);
   if (x == NULL) LOCFOR v[i] = v[i] * scale[si] + loc[mi]; 
   else LOCFOR v[i] = R_FINITE(x[i]) ? x[i] : v[i] * scale[si] + loc[mi]; 
+
+  //    printf("v=%f %f %f  s=%f l=%f\n", v[0], v[1], v[2], scale[0], loc[0]);
+  //  APMI(cov->calling);
 }
 
 void locR2sided(double *x, double *y, cov_model *cov, double *v) {
   LOC_PARAMETERS;  
-  VTLG_R2SIDED(x, y, next, v);
-  //   printf("locR dim=%d scale=%f %f %f %f -> %f %f %f\n", dim, *scale, y[0], y[1], y[2], v[0], v[1], v[2]);
+  double 
+    *z1 = cov->Sdollar->z,
+    *z2 = cov->Sdollar->z2;
+  if (x != NULL) {
+    if (z1 == NULL) 
+      z1 = cov->Sdollar->z = (double*) MALLOC(dim * sizeof(double));
+    LOCFOR z1[i] = (x[i] - loc[mi]) / scale[si];
+  } else z1 = NULL; // !! can be != NULL as used differently among the loc-fcts
+  if (z2 == NULL) 
+    z2 = cov->Sdollar->z2 = (double*) MALLOC(dim * sizeof(double));
+  assert(y != NULL);
+  LOCFOR z2[i] = (y[i] - loc[mi]) / scale[si];
+  
+  VTLG_R2SIDED(z1, z2, next, v);
+  //     printf("locR dim=%d scale=%f %f %f %f -> %f %f %f %d -> %f %f %f\n", dim, *scale, y[0], y[1], y[2], z2[0], z2[1], z2[2], z1==NULL, v[0], v[1], v[2]);
+ 
   LOCFOR {
     v[i] = v[i] * scale[si] + loc[mi]; 
   }
+
+
 }
 
 void kappa_loc(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   if (i == LOC_SCALE || i== LOC_LOC) {
     *nc = 1;
     *nr = SIZE_NOT_DETERMINED;
-  } else
-    *nc = *nr = -1;
+  } else if (i == LOC_POWER) *nc = * nr = 1;
+  else *nc = *nr = -1;
 }
 
 int check_loc(cov_model *cov) {
@@ -961,15 +1048,17 @@ int check_loc(cov_model *cov) {
     *scale = P(LOC_SCALE);
   int err;
 
-  if ((err = CHECK(next, dim, dim, RandomType, cov->domprev, cov->isoprev, 
-		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+  kdefault(cov, POWPOWER, 0.0);
+
+  //PMI(cov);
+
+  if ((err = CHECK_R(next, dim)) != NOERROR) return err;
 
   // assert(false); /// not checked yet
  
   if (loc == NULL) kdefault(cov, LOC_LOC, 0.0);
   if (scale == NULL) kdefault(cov, LOC_SCALE, 1.0);
  
-  cov->vdim = next->vdim;
   cov->vdim2[0] = next->vdim2[0];
   cov->vdim2[1] = next->vdim2[1];
 
@@ -988,41 +1077,46 @@ int init_loc(cov_model *cov, storage *s){
   // cov_fct *C = CovList + cov->nr;
   LOC_PARAMETERS;
   int err;
+  double p = P0(LOC_POWER); // same role as POWPOWER of '$power'
   
   if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR) return err;
  
   if (cov->mpp.moments >= 0) {
-    cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; 
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
       if (dim > 1) {
 	LOCFOR if (scale[si] != 1.0 || loc[mi]!=0.0)
 	  SERR("multivariate moment cannot be calculated");
       }
-      cov->mpp.M[1] = cov->mpp.M[1] * scale[0] + loc[0];
-      cov->mpp.Mplus[1] = loc[0] == 0.0 ? cov->mpp.Mplus[1] * scale[0] : RF_NAN;
+      cov->mpp.mM[1] = cov->mpp.mM[1] * scale[0] + loc[0];
+      cov->mpp.mMplus[1] = loc[0] == 0.0 ? cov->mpp.mMplus[1] * scale[0] : RF_NA;
       if (cov->mpp.moments >= 2) {
 	double ssq = scale[0] * scale[0];
-	cov->mpp.M[2] =
-	  cov->mpp.M[2] * ssq + loc[0] * (2.0 * cov->mpp.M[1] - loc[0]);
-	cov->mpp.Mplus[1] = loc[0] == 0.0 ? cov->mpp.Mplus[1] * ssq : RF_NAN;
+	cov->mpp.mM[2] =
+	  cov->mpp.mM[2] * ssq + loc[0] * (2.0 * cov->mpp.mM[1] - loc[0]);
+	cov->mpp.mMplus[1] = loc[0] == 0.0 ? cov->mpp.mMplus[1] * ssq : RF_NA;
       }
     }
   }
 
   // normed against a shape function with the same scale modification
-  cov->mpp.maxheight = next->mpp.maxheight * scale[0];
-  cov->mpp.M[0] = next->mpp.M[0];
-  cov->mpp.Mplus[0] = next->mpp.Mplus[0];
+  if (R_FINITE(next->mpp.unnormedmass))
+    cov->mpp.unnormedmass = next->mpp.unnormedmass * pow(scale[0], dim + p); 
+  else 
+    cov->mpp.maxheights[0] = next->mpp.maxheights[0] / scale[0];
+
+  cov->mpp.mM[0] = next->mpp.mM[0];
+  cov->mpp.mMplus[0] = next->mpp.mMplus[0];
+
   return NOERROR;
 }
 
 void do_loc(cov_model *cov, double *v){
-  cov_model *next = cov->sub[0];
-  double *scale= P(LOC_SCALE);
-  DO_PARAM_MODELS;
+  //  cov_model *next = cov->sub[0];
+  //double *scale= P(LOC_SCALE);
   DORANDOM(cov->sub[0], v);
   locR(NULL, cov, v);
-  cov->mpp.maxheight = next->mpp.maxheight * scale[0];
+  // cov->mpp.maxheights[0] = next->mpp.maxheights[0] * scale[0];
 }
 
 void range_loc(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
@@ -1040,21 +1134,29 @@ void range_loc(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[LOC_SCALE] = true;
   range->openmax[LOC_SCALE] = true;
 
+  range->min[LOC_POWER] = RF_NEGINF;
+  range->max[LOC_POWER] = RF_INF;
+  range->pmin[LOC_POWER] = -cov->xdimown;
+  range->pmax[LOC_POWER] = +cov->xdimown;
+  range->openmin[LOC_POWER] = true;
+  range->openmax[LOC_POWER] = true;
 }
 
 
 
 #define UNIF_PARAMETER_BASICS			\
   double					\
-  *min = P(UNIF_MIN),				\
-    *max = P(UNIF_MAX)			
+  VARIABLE_IS_NOT_USED *min = P(UNIF_MIN),	\
+    VARIABLE_IS_NOT_USED *max = P(UNIF_MAX)			
 
-#define UNIF_PARAMETERS				\
-  UNIF_PARAMETER_BASICS;			\
-  int i, mini, maxi,				\
-   len_min = cov->nrow[UNIF_MIN],		\
-   len_max = cov->nrow[UNIF_MAX],		\
-   dim = cov->xdimown;				\
+#define UNIF_PARAMETERS							\
+  UNIF_PARAMETER_BASICS;						\
+  int VARIABLE_IS_NOT_USED i,						\
+    VARIABLE_IS_NOT_USED mini,						\
+    VARIABLE_IS_NOT_USED maxi,						\
+    VARIABLE_IS_NOT_USED len_min = cov->nrow[UNIF_MIN],			\
+    VARIABLE_IS_NOT_USED len_max = cov->nrow[UNIF_MAX],		\
+    VARIABLE_IS_NOT_USED dim = cov->xdimown;				\
  assert(dim == cov->tsdim)				
 
 #define UNIFOR  for(mini=maxi=i=0; i<dim; i++, mini=(mini + 1) % len_min, \
@@ -1065,31 +1167,31 @@ void unifD(double *x, cov_model *cov, double *v) {
   UNIF_PARAMETERS;
    
   double area = 1.0;
+  bool normed = P0INT(UNIF_NORMED);
   UNIFOR {
     if (x[i] < min[mini] || x[i] > max[maxi]) { *v = 0.0; return; }
-    else area *= max[maxi] - min[mini];  
+    else if (normed) area *= max[maxi] - min[mini];  
   }
   *v = 1.0 / area;
 }
 
 
-void unifDlog(double *x, cov_model *cov, double *v, double *Sign) {
+void unifDlog(double *x, cov_model *cov, double *v) {
   unifD(x, cov, v);
   *v = log(*v);
-  *Sign = 1.0;
 }
 
 void unifDinverse(double *v, cov_model *cov, double *left, double *right) {
-   UNIF_PARAMETERS;
+  UNIF_PARAMETERS;
    double area = 1.0;
-   UNIFOR area *= max[maxi] - min[mini];  
+   if (P0INT(UNIF_NORMED)) UNIFOR area *= max[maxi] - min[mini];  
    if (*v * area > 1){
      UNIFOR left[i] = right[i] = 0.5 * (max[maxi] + min[mini]);
    } else {
      UNIFOR {
        left[i] = min[mini];
        right[i] = max[maxi];
-     //   printf("unif=%d %f %f\n", i, min[mini], max[maxi]);
+       //  printf("unif=%d %f %f\n", i, min[mini], max[maxi]);
      }
    }
 }
@@ -1099,10 +1201,11 @@ void unifP(double *x, cov_model *cov, double *v) {
   UNIF_PARAMETERS;
  
   double area = 1.0;
+  bool normed = P0INT(UNIF_NORMED);
   UNIFOR {
     if (x[i] <= min[mini]) { *v = 0.0; return; }
-    if (x[i] < max[maxi]) 
-      area *= (x[i] - min[mini]) / (max[maxi] - min[mini]);  
+    if (x[i] < max[maxi]) area *= x[i] - min[mini];
+    if (normed) area /= max[maxi] - min[mini];  
     // ekse area *= 1.0;
   }
   *v = area;
@@ -1113,6 +1216,7 @@ void unifP2sided(double *x, double *y, cov_model *cov, double *v) {
   // distribution functions
   UNIF_PARAMETERS;
   double a, b;
+  bool normed = P0INT(UNIF_NORMED);
 
   double area = 1.0;
   UNIFOR {
@@ -1121,30 +1225,38 @@ void unifP2sided(double *x, double *y, cov_model *cov, double *v) {
       if (a < min[mini]) a =  min[mini];
       b = y[i] > max[maxi] ? max[maxi] : y[i];
       if (a >= b) { *v = 0.0; return; }
-      if (a < b) area *= (b - a) / (max[maxi] - min[mini]);  
+      area *= b - a;  
     } else {
       if (a < min[mini] || a > max[maxi]) { *v = 0.0; return; }
-      area /= max[maxi] - min[mini];  
     }
+    if (normed) area /= max[maxi] - min[mini];  
   }
   *v = area;
 }
 
+
 void unifQ(double *x, cov_model *cov, double *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   UNIF_PARAMETER_BASICS;
-  *v = min[0] + *x * (max[0] - min[0]);
+  if (P0INT(UNIF_NORMED)) {
+    *v = min[0] + *x * (max[0] - min[0]);
+  } else {
+    *v = min[0] + *x;
+  }
 }
 
 
 void unifR(double *x, cov_model *cov, double *v) { 
   UNIF_PARAMETERS;
   if (x == NULL) {
-    UNIFOR v[i] = min[mini] + UNIFORM_RANDOM * (max[maxi] - min[mini]);
+    UNIFOR {
+      v[i] = min[mini] + UNIFORM_RANDOM * (max[maxi] - min[mini]);
+     }
   } else {
     UNIFOR {
       v[i] = !R_FINITE(x[i]) 
 	? min[mini] + UNIFORM_RANDOM * (max[maxi] - min[mini]) 
-	: x[i] >= min[mini] && x[i] <= max[maxi] ? x[i] : RF_NAN;
+	: x[i] >= min[mini] && x[i] <= max[maxi] ? x[i] : RF_NA;
     }
   }
 }
@@ -1168,11 +1280,11 @@ void kappa_unif(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   if (i == UNIF_MIN || i == UNIF_MAX) {
     *nc = 1;
     *nr = SIZE_NOT_DETERMINED;
-  } else
-    *nc = *nr = -1;
-
-  //  printf("i=%d %d %d\n", i, *nr, *nc);
+  } else if (i == UNIF_NORMED) {
+    *nc = *nr = 1;
+  } else *nc = *nr = -1;
 }
+
 
 int check_unif(cov_model *cov) {
 
@@ -1189,11 +1301,12 @@ int check_unif(cov_model *cov) {
     
   if (PisNULL(UNIF_MIN)) kdefault(cov, UNIF_MIN, 0.0);
   if (PisNULL(UNIF_MAX)) kdefault(cov, UNIF_MAX, 1.0);
+  kdefault(cov, UNIF_NORMED, true);
 
   cov->vdim2[0] = cov->tsdim;
   cov->vdim2[1] = 1;
 
-  //PMI(cov);
+  //PMI(cov->calling);
 
   return NOERROR;
 }
@@ -1202,37 +1315,53 @@ int check_unif(cov_model *cov) {
 
 int init_unif(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   UNIF_PARAMETERS;
+
+  //  printf("entering init_unif\n");
  
-  if (cov->mpp.moments >= 0) {
-    cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; 
-    if (cov->mpp.moments >= 1) {
-      if (dim > 1) SERR("multivariate moment cannot be calculated");
-      cov->mpp.M[1] = 0.5 * (min[0] + max[0]);
-      cov->mpp.Mplus[1] = max[0] <= 0.0 ? 0.0 : 0.5 * max[0];
-      if (cov->mpp.moments >= 2) {
-	cov->mpp.M[2] = max[0] - min[0];
-	cov->mpp.M[2] *= cov->mpp.M[2] / 12.0;
-      }
-    }
-  }
    
   // normed against a shape function that is the indicator function 
   // of the respective window
-  cov->mpp.maxheight = 1.0;
-  UNIFOR  cov->mpp.maxheight *= max[maxi] - min[mini];
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0;
-    
+  cov->mpp.unnormedmass = 1.0;
+  UNIFOR {
+    cov->mpp.unnormedmass *= max[maxi] - min[mini];
+    //   printf("mini=%d %d; %f %f %f\n", mini, maxi, max[maxi], min[mini], 
+    //	   cov->mpp.unnormedmass);
+  }
+  if (P0INT(UNIF_NORMED)) {
+    cov->mpp.maxheights[0] =  1.0 / cov->mpp.unnormedmass;
+    if (cov->mpp.moments >= 0) {
+      cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
+      if (cov->mpp.moments >= 1) {
+	if (dim > 1) SERR("multivariate moment cannot be calculated");
+	cov->mpp.mM[1] = 0.5 * (min[0] + max[0]);
+	cov->mpp.mMplus[1] = max[0] <= 0.0 ? 0.0 : 0.5 * max[0];
+	if (cov->mpp.moments >= 2) {
+	  cov->mpp.mM[2] = max[0] - min[0];
+	cov->mpp.mM[2] *= cov->mpp.mM[2] / 12.0;
+	}
+      }
+    }    
+  } else { // not normed
+    cov->mpp.maxheights[0] = 1.0;
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = cov->mpp.unnormedmass;
+    if (cov->mpp.moments > 0) 
+      SERR("unnormed unif does not allow for higher moments");
+  }
+  // PMI(cov);
+  //    printf("leaving init_unif\n");
+   
   return NOERROR;
 }
 
 
 void do_unif(cov_model *cov, double *v){
   UNIF_PARAMETERS;
-  DO_PARAM_MODELS;
   unifR(NULL, cov, v);
-  cov->mpp.maxheight = 1.0;
-  UNIFOR cov->mpp.maxheight /= max[maxi] - min[mini];
+  // printf("v=%f\n", *v);
+  // cov->mpp.maxheights[0] = 1.0;
+  // UNIFOR cov->mpp.maxheights[0] /= max[maxi] - min[mini];
 }
+
 
 void range_unif(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[UNIF_MIN] = RF_NEGINF;
@@ -1248,6 +1377,13 @@ void range_unif(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->pmax[UNIF_MAX] = 1e8;
   range->openmin[UNIF_MAX] = true;
   range->openmax[UNIF_MAX] = true;
+
+  range->min[UNIF_NORMED] = 0;
+  range->max[UNIF_NORMED] = 1;
+  range->pmin[UNIF_NORMED] = 0;
+  range->pmax[UNIF_NORMED] = 1;
+  range->openmin[UNIF_NORMED] = false;
+  range->openmax[UNIF_NORMED] = false;
 }
 
 
@@ -1437,7 +1573,7 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
 
 #define IDX_INNER 0
 #define IDX_STEPS 1
-#define IDX_OUTER NSTEP + IDX_STEPS 
+#define IDX_OUTER NSTEP + IDX_STEPS // change also KeyInfo if changed
 #define ASSIGN_IDX_INNER (-IDX_STEPS)
 #define ASSIGN_IDX_OUTER (-IDX_STEPS - 1)
 #define ASSIGN_IDX_MISMATCH (-IDX_STEPS - 2)
@@ -1771,10 +1907,9 @@ void rectangularD(double *x, cov_model *cov, double *v) {
 }
 
 
-void rectangularDlog(double *x, cov_model *cov, double *v, double *Sign) {
+void rectangularDlog(double *x, cov_model *cov, double *v) {
   rectangularD(x, cov, v);
   *v = log(*v);
-  *Sign = 1.0;
 }
 
 
@@ -1783,7 +1918,7 @@ void rectangularDinverse(double *V, cov_model *cov, double *left,
   if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETERS;
   double  er, outer,
-    x = RF_NAN,
+    x = RF_NA,
     v = *V; 
   int i;
   bool onesided = P0INT(RECT_ONESIDED); 
@@ -1865,8 +2000,7 @@ void rectangularP(double VARIABLE_IS_NOT_USED *x,
   if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
  // RECTANGULAR_PARAMETERS;
 
-  // not programmed yet
-  BUG;
+  NotProgrammedYet("");
 
 }
 
@@ -1915,17 +2049,17 @@ void rectangularP2sided(double *x, double *y, cov_model *cov, double *v) {
 }
 
 
-void rectangularQ(double  VARIABLE_IS_NOT_USED *x, 
-		  cov_model  VARIABLE_IS_NOT_USED *cov, 
+void rectangularQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov, 
 		  double  VARIABLE_IS_NOT_USED *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
-   error("rectangularQ not programmed yet");
+  NotProgrammedYet("rectangularQ");
 }
 
 
 #define ACCEPT_REJECT							\
-  if (!P0INT(RECT_APPROX)) {				\
-    int ni = dim,							\
+  if (!P0INT(RECT_APPROX)) {						\
+  int ni = dim,								\
       quot = dim + 1,							\
       bytes =  sizeof(double) * dim;					\
     double newquot, approx, truevalue,					\
@@ -1937,14 +2071,14 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
     assert(quot < cov->qlen + 2);					\
     if (isMonotone(next->monotone)) { /* rejection sampling */		\
       assert(approx >= truevalue);					\
-      cov->q[ni] = 0;							\
-       if (UNIFORM_RANDOM >= newquot) {					\
-	/* printf("."); */						\
-	RECT_R;								\
-      } /* else printf(":"); */						\
+      cov->q[ni] = 0.0;							\
+      if (UNIFORM_RANDOM >= newquot) {					\
+	/*printf(".//");*/						\
+	RESTART;							\
+      } /* else printf("://"); */					\
     } else { /* MCMC */							\
       if (R_FINITE(cov->q[ni])) {					\
-	cov->q[ni] = cov->q[ni] - 1.0;					\
+	cov->q[ni] -= - 1.0;						\
 	if (UNIFORM_RANDOM * cov->q[quot] >= newquot) { /* keep old one */ \
 	  memcpy(v, cov->q, bytes);					\
 	} else { /* accept new one*/					\
@@ -1952,19 +2086,19 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
 	  memcpy(cov->q, v, bytes);					\
 	}								\
       } else { /* !R_FINITE(cov->q[ni]), i.e. starting value */		\
-	cov->q[ni] = P0INT(RECT_MCMC_N) - 1.0;		\
+	cov->q[ni] = P0INT(RECT_MCMC_N) - 1.0;				\
 	cov->q[quot] = newquot; /* pi / Q */				\
 	memcpy(cov->q, v, bytes);					\
       }									\
     }									\
     if (cov->q[ni] > 0) {						\
-      RECT_R;								\
+      RESTART;								\
     } else {								\
-      cov->q[ni] = P0INT(RECT_MCMC_N);			\
-      if (final) {							\
-	cov->total_n++;							\
-	cov->total_sum += truevalue;					\
-      }									\
+      cov->q[ni] = P0INT(RECT_MCMC_N);					\
+      /* if (final) { */						\
+      /* cov->total_n++;*/						\
+      /* cov->total_sum += truevalue;*/					\
+      /*} */								\
       return;								\
     }									\
   } else {								\
@@ -1973,18 +2107,25 @@ void rectangularQ(double  VARIABLE_IS_NOT_USED *x,
 	max = RF_NEGINF;						\
       RECTFOR {double z=fabs(v[i]); if (z > max) max = z;}		\
       evaluate_rectangular(&max, cov, &approx);				\
-      cov->total_n++;							\
-      cov->total_sum += approx;						\
+      /*      cov->total_n++;	*/					\
+      /* cov->total_sum += approx;	*/				\
     }									\
   }
 
 
 
 void rectangularR(double *x, cov_model *cov, double *v) { 
-  if (x != NULL) error("put 'flat = false'");
+  //printf("rectR %lu\n", x);
+
+ if (x != NULL) {
+   //crash();
+    error("put 'flat = false'");
+  }
   RECTANGULAR_PARAMETERS;
   bool final = true;
   
+ EntryPoint_R:
+
   int i = CeilIndex(UNIFORM_RANDOM * OUTER_CUM, rect->weight, NSTEP + 2);
   //int i = searchFirstGreater(rect->weight, NSTEP + 2, UNIFORM_RANDOM  * OUTER_CUM);
 
@@ -1995,7 +2136,7 @@ void rectangularR(double *x, cov_model *cov, double *v) {
 			     dim, v);
   } else if (i == IDX_OUTER) {
      double u;
-    assert(next->finiterange == false);
+     assert(next->finiterange == false); //
     if (OUTER_POW > 0) // sampling by inversion formula
       u = pow(pow(OUTER, OUTER_POW) - log(UNIFORM_RANDOM) / OUTER_POW_CONST,
 	      1 / OUTER_POW);
@@ -2007,22 +2148,23 @@ void rectangularR(double *x, cov_model *cov, double *v) {
     RandomPointOnCubeRing(start, start + STEP, dim, v); 
   }
   if (P0INT(RECT_ONESIDED)) *v = fabs(*v);
-#define RECT_R rectangularR(x, cov, v)
+#define RESTART goto EntryPoint_R
  
   ACCEPT_REJECT;
-  
 }
 
 static int zi=0, zs=0, zo=0;
 
 void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) { 
   if (x != NULL) 
-    error("2-sided distribution function for rectangular not programmed yet");
+    NotProgrammedYet("2-sided distribution function for rectangular");
   RECTANGULAR_PARAMETERS;
   int d, sel, red_dim, i,
     *I = rect->i;
   double *u, start, end,
-    *ysort = rect->ysort;    
+    *ysort = rect->ysort;      
+
+ EntrancePoint_R2:
  
   CumSum(y, false, cov, rect->tmp_weight); // ACHTUNG! reck->z gesetzt
   //assert(rect->tmp_weight[TMP-1] >= 2.1 && rect->tmp_weight[TMP-1] <= 2.2);
@@ -2067,7 +2209,7 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
     zo++;
     // printf("outer\n");
     double w;
-    assert(next->finiterange == false);
+    assert(next->finiterange == false);//
     if (OUTER_POW > 0) {// sampling by inversion formula
       double op = pow(OUTER, OUTER_POW),
 	factor = 1.0 - exp(- OUTER_POW_CONST * (pow(end, OUTER_POW) - op));
@@ -2099,6 +2241,10 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
   for (d=1; d<=SQUEEZED(sel); d++) {
     v[I[d] - 1] = (2.0 * UNIFORM_RANDOM - 1.0) * ysort[d];//I[d] indiziert ab 1
   //                                                    da ysort[0]=0 per def.
+
+ 
+ //  printf("%f\n", ysort[d]);
+    // v[I[d] - 1] = 2 *  UNIFORM_RANDOM - 1; /* print */
   }
   for (d=SQUEEZED(sel); d<dim; d++) {
     v[I[d+1] - 1] = u[d - SQUEEZED(sel)];
@@ -2106,10 +2252,11 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
 
   if (P0INT(RECT_ONESIDED)) *v = fabs(*v);
 
-#undef RECT_R
-#define RECT_R rectangularR2sided(x, y, cov, v)	
-  ACCEPT_REJECT;
-
+#undef RESTART
+#define RESTART goto EntrancePoint_R2
+   ACCEPT_REJECT;
+ 
+ 
   //printf("u=%f %f %f\n", u[0], u[1], u[2]);
 }
 
@@ -2126,8 +2273,11 @@ int GetMajorant(cov_model *cov) {
     inner_min = P0(RECT_INNERMIN),
     outer_max = P0(RECT_OUTERMAX),
     inner_factor = 0.5,
-    outer_factor = 1.3
-    ;
+    outer_factor = 1.3,
+    in_pow = next->taylor[0][TaylorPow];
+
+  bool
+    inpownot0 = in_pow != 0.0;
   
   assert(!PisNULL(RECT_MAXSTEPS));
 
@@ -2136,9 +2286,10 @@ int GetMajorant(cov_model *cov) {
     parts = P0INT(RECT_PARTS),
     max_iterations =  P0INT(RECT_MAXIT);
 
+
   assert(next->taylor[0][TaylorConst] > 0.0);
   INNER_CONST = next->taylor[0][TaylorConst] * safetyP1;
-  INNER_POW = next->taylor[0][TaylorPow] * EMsafety - dimsafety;
+  INNER_POW = inpownot0 ? in_pow * EMsafety - dimsafety : 0.0;
   
 
   // INNER
@@ -2147,13 +2298,12 @@ int GetMajorant(cov_model *cov) {
   FCTN(&(INNER), next, &v);
   m = INNER_CONST * pow(INNER, INNER_POW);
   //   PMI(next, -1);
-  // printf("inner=%e m=%e v=%e inner_c=%4.3f (%4.3f) inner_p=%4.3f (%4.3f)\n", 
-  //	 INNER, m, v, INNER_CONST, next->taylor[0][TaylorConst],
-  //	 INNER_POW, next->taylor[0][TaylorPow]);
+  //  printf("inner=%e m=%e v=%e inner_c=%4.3f (%4.3f) inner_p=%4.3f (%4.3f)\n",  INNER, m, v, INNER_CONST, next->taylor[0][TaylorConst], INNER_POW, in_pow);
+
   while (m < v && INNER >= inner_min) {
     INNER *= inner_factor;
     INNER_CONST *= safetyP1;
-    INNER_POW = INNER_POW * EMsafety - dimsafety;
+    if (inpownot0) INNER_POW = INNER_POW * EMsafety - dimsafety;
     FCTN(&(INNER), next, &v);
     m = INNER_CONST * pow(INNER, INNER_POW);
     // printf("inner=%e m=%e v=%e i=%d, maxit=%d\n", 
@@ -2181,11 +2331,11 @@ int GetMajorant(cov_model *cov) {
       m = INNER_CONST * pow(x, INNER_POW);
       double ratio = m / v;
 
-      //printf("inner j=%d (%d) x=%4.3f m=%4.3f ratio=%4.3f old=%4.3f\n", 
-      // j, max_iterations, x, m, ratio, old_ratio);
+      //printf("inner j=%d (%d) x=%4.3f m=%4.3f ratio=%4.3f old=%4.3f v=%f\n", 
+      //    j, max_iterations, x, m, ratio, old_ratio, v);
 
-      if (ratio < old_ratio) break;
-      old_ratio = ratio; 
+      if (!(  ratio >= old_ratio || (!inpownot0 && v <= INNER_CONST)  ))
+	old_ratio = ratio; 
     }
 
     if (j == parts) break;
@@ -2203,7 +2353,7 @@ int GetMajorant(cov_model *cov) {
   if (next->tail[0][TaylorExpPow] <= 0.0) {
     // polynomial tail
     OUTER_POW = next->tail[0][TaylorPow] * safetyP1 + dimsafety;
-    OUTER_POW_CONST = RF_NAN;
+    OUTER_POW_CONST = RF_NA;
   } else { // exponential tail
     assert(next->tail[0][TaylorExpConst] > 0.0);
     OUTER_POW = next->tail[0][TaylorExpPow] / safetyP1;
@@ -2228,7 +2378,7 @@ int GetMajorant(cov_model *cov) {
     OUTER_DENSITY(m, OUTER);
     while (m < v && OUTER < outer_max) {
       if (++i > max_iterations) 
-	SERR("no majorant found. Function does allow for a majorant or increase 'maxit'");
+	SERR("No majorant found. Function does not allow for a majorant or increase 'maxit'");
       OUTER_CONST *= safetyP1;
       OUTER_POW /= safetyP1;
       OUTER *= outer_factor;
@@ -2302,14 +2452,14 @@ int check_rectangular(cov_model *cov) {
   kdefault(cov, RECT_ONESIDED, false);
   //  int onesided = P0INT(RECT_ONESIDED);
   
-  cov->q = (double *) CALLOC(dim + 2, sizeof(double));
-  cov->qlen = 1;
-  cov->q[dim] = RF_NAN;
+  if (cov->q == NULL) cov->q = (double *) CALLOC(dim + 2, sizeof(double));
+  cov->qlen = dim + 2; // 1
+  cov->q[dim] = RF_NA;
 
   if ((err = CHECK(next, dim, dim, ShapeType, XONLY, 
 		   dim == 1 && P0INT(RECT_ONESIDED) ? CARTESIAN_COORD 
 		   : ISOTROPIC, 
-		   SCALAR, ROLE_BASE)) != NOERROR) {
+		   SCALAR, ROLE_DISTR)) != NOERROR) {
     return err;
   }
 
@@ -2337,8 +2487,10 @@ int check_rectangular(cov_model *cov) {
   assert(R_FINITE(next->tail[0][TaylorConst]));
 
   //PMI(next);
-  if (next->taylor[0][TaylorConst] == 0.0) 
+  if (next->taylor[0][TaylorConst] == 0.0) {
+    //PMI(next);
     SERR1("'%s' seems to be a trivial shape function", NICK(next));
+  }
 
   //  APMI(cov);
   
@@ -2399,27 +2551,28 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
     //printf("x=%f %f\n", x, VALUE(d));
     assert(VALUE(d) >= 0);
   }
-  rect->value[IDX_INNER] = rect->value[IDX_OUTER] = RF_NAN;
+  rect->value[IDX_INNER] = rect->value[IDX_OUTER] = RF_NA;
 
   for(d=0; d<dim; d++) rect->tmp_weight[d] = RF_INF;
   
   CumSum(rect->tmp_weight, false, cov, rect->weight);
 
-  cov->mpp.M[0] = cov->mpp.Mplus[0] = P0INT(RECT_NORMED) ? 1.0 : OUTER_CUM;
+  cov->mpp.mM[0] = cov->mpp.mMplus[0] = P0INT(RECT_NORMED) ? 1.0 : OUTER_CUM;
   assert(R_FINITE(OUTER_CUM));
   if (cov->mpp.moments > 0) {    
-    cov->mpp.M[1] = next->mpp.M[1];
-    cov->mpp.Mplus[1] = next->mpp.Mplus[1]; 
-    if (!R_FINITE(cov->mpp.M[1])){
-      //APMI(cov);
+    cov->mpp.mM[1] = next->mpp.mM[1];
+    cov->mpp.mMplus[1] = next->mpp.mMplus[1]; 
+    if (!R_FINITE(cov->mpp.mM[1])){
+      //      crash();      APMI(cov);
       BUG;
     }
   }
 
   // normed against cov->sub[0]
-  cov->mpp.maxheight = OUTER_CUM;
+  cov->mpp.maxheights[0] = RF_NA; // 
+  cov->mpp.unnormedmass = OUTER_CUM;
 
-  //PMI(cov);
+  // if (OUTER_CUM < 1.0) { APMI(cov); }
 
   if (false) {
     double mini=1e-6, u,w,t, tot_u=0.0, tot_t=0.0, e,
@@ -2460,8 +2613,8 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   
   //  A  PMI(cov, -1);
   //assert(false);
-  cov->total_n = 0;
-  cov->total_sum = 0.0;
+  //cov->total_n = 0;
+  // cov->total_sum = 0.0;
 
    return NOERROR;
 }
@@ -2469,15 +2622,10 @@ int init_rectangular(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 
 void do_rectangular(cov_model *cov, double *v){
   RECTANGULAR_PARAMETERS;
-  //
+  //int err;
   storage s;
   STORAGE_NULL(&s);  
-  DO_PARAM_MODELS;
-  if (!next->deterministic) {
-    DO(next, &s);
-    cov->initialised = false;
-    INIT(cov, cov->mpp.moments, &s);
-  }
+  DO(next, &s);  
   rectangularR(NULL, cov, v);
 }
 

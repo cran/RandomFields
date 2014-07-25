@@ -54,7 +54,7 @@ GetNeighbourhoods <- function(model.nr, all,
   if (model.nr >= 0) {
     natsc <- double(ts.xdim)
     .C("MultiDimRange", as.integer(model.nr), natsc,
-       DUP=FALSE, PACKAGE="RandomFields")
+       DUP=DUPFALSE, PACKAGE="RandomFields")
   } else natsc <- rep(1, ts.xdim)
 
  
@@ -99,12 +99,12 @@ GetNeighbourhoods <- function(model.nr, all,
 
  
     .C("countelements", cumidx, n, elms.in.boxes, 
-       DUP=FALSE, PACKAGE="RandomFields")
+       DUP=DUPFALSE, PACKAGE="RandomFields")
 
      
     .C("countneighbours", ts.xdim, parts, locfactor, Ccumparts,
        elms.in.boxes, neighbours, OK,
-       DUP=FALSE, PACKAGE="RandomFields")
+       DUP=DUPFALSE, PACKAGE="RandomFields")
 
     ## if there too many points within all the neighbours, then split
     ## into smaller boxes
@@ -130,7 +130,7 @@ GetNeighbourhoods <- function(model.nr, all,
     res.in.boxes <- integer(totparts)
     
     .C("countelements", i, nrow(all$x), res.in.boxes,
-       DUP=FALSE, PACKAGE="RandomFields")
+       DUP=DUPFALSE, PACKAGE="RandomFields")
     
     notzeros <- res.in.boxes > 0
     l[[3]] <- .Call("getelements", i, ts.xdim, as.integer(nrow(all$x)),
@@ -205,7 +205,11 @@ GetNeighbourhoods <- function(model.nr, all,
 }
 
 resolve.register <- function(register){
-  if (missing(register) || length(register) ==0) register <- 0
+  stopifnot(!missing(register))
+  if (length(register) == 0) {
+    register <- .C("GetCurrentRegister", reg=integer(1))$reg
+    if (register < 0) stop("model that has been used right now cannot be determined. This happens, for instance, after the use of 'RFfit'")
+  }
   if (!is.numeric(register)) {
  #   register <- deparse(substitute(register))   
     register <-
@@ -215,8 +219,8 @@ resolve.register <- function(register){
              "RFcovmatrix" = MODEL.USER,
              "RFvariogram" = MODEL.USER,
              "RFpseudovariogram" =  MODEL.USER,
-             "RFsimulate" =  RFoptions()$general$register,
-             "RFinterpolate" =  RFoptions()$general$interpolreg,
+             "RFsimulate" =  RFoptions()$registers$register,
+             "RFinterpolate" =  RFoptions()$registers$interpolregister,
              "RFgui" =  GetModelRegister("gui"),
              "RFfit" =  MODEL.MLE,
              "RFratiotest" =  MODEL.MLE,
@@ -224,6 +228,7 @@ resolve.register <- function(register){
              )
   }
   stopifnot(is.numeric(register))
+  if (register < 0) stop("'register' does not have a non-negative value.")
   return(register)
 }
 
@@ -231,11 +236,10 @@ RFgetModelInfo <-
   function(register, level=3, 
            spConform=RFoptions()$general$spConform,
            which.submodels = c("submodels", "keys", "both"),
-           modelname=NULL)
-{  
-  register <- resolve.register(if (!missing(register)) {
-                                  if (is.numeric(register))
-                                  register else deparse(substitute(register))})
+           modelname=NULL) {  
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register)) register else
+                               deparse(substitute(register)))
   which.submodels <- match.arg(which.submodels)
   ## positive values refer the covariance models in the registers
   ##define MODEL_USER : 0  /* for user call of Covariance etc. */
@@ -259,14 +263,18 @@ RFgetModelInfo <-
   return(cov)
 }
 
+
 RFgetModel <- function(register, explicite.natscale, show.call=FALSE)  {
-  register <- resolve.register(if (missing(register) || is.numeric(register))
-                               register else deparse(substitute(register)))
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register)) register else
+                               deparse(substitute(register)))
   modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
             if (explicite.natscale)  GETMODEL_DEL_NATSC else
             GETMODEL_SOLVE_NATSC)
   if (show.call) modus <- modus + 10
-  GetModel(register=register, modus=modus)
+  m <- GetModel(register=register, modus=modus)
+  class(m) <-  "RM_model"
+  m
 }
            
            
@@ -285,7 +293,6 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   ## 
   ## modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
 
-
   ## do.notreturnparam : if true, then also parameters with the flag
   ##                      DONOTRETURN are returned
 
@@ -295,9 +302,10 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   ##                  model "plus" -- they should be joined anyway
   
 
-  register <- resolve.register(if (missing(register) || is.numeric(register))
-                               register else deparse(substitute(register)))
-   if (missing(register)) register <- 0
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register))  register else
+                               deparse(substitute(register)))
+  if (missing(register)) register <- 0
   
   model <- .Call("GetModel", as.integer(register), as.integer(modus),
                  as.integer(spConform), as.integer(do.notreturnparam),
@@ -313,62 +321,15 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   return(model)
 }
 
-# http://www.happyland-badsaulgau.de/
-# www.spieleland.de/spielelandL/de/Oeffnungszeiten-Preise__3475392-3475399.html
-# http://www.bodenseeferien.de/seesicht/bodensee_aktuell/
-
-  	  	 
-#* Ausflug mit dem Schiff
-#* Freizeitpark Kinderspielewelt Happyland Indoor-Kinderspielplatz auf 1500 qm (Bad Saulgau) : beim Fahren
-#* Ravensburg : beim Fahren
-#* Dornier Museum
-#* ? Natur - Wildpark Sonnenhalde Tierpark und Freizeitpark in traumhafter Naturlandschaft Tettnang-Wildpoltsweiler 
-#* salem Affenberg
-#* Blumeninsel Mainau 
-#* Alten Burg Meersburg
-#* Festungsruine Hohentwiel
-#* http://www.spieleland.de/
-
-##nein:
-##* Fliegen
-##* http://www.reptilienhaus.de/index.php?oeffnungszeiten
-
-
-
-GetParameterModelUserIntern <- function(model){
-  #if (!is.list(model)) return(list())
-  #Print("XX", model)
-  if (model[[1]] %in% ZF_USER) {
-    ret <- list(model$d, model$p, model$q,  model$r)
-    ret <- ret[!sapply(ret, is.null)]
-    return(ret)
-  }
-  if (model[[1]] %in% ZF_DISTR) {
-    ret <- list(model$fctn, model$fst, model$snd)
-    ret <- ret[!sapply(ret, is.null)]
-    return(ret)    
-  }
-  idx <- which(sapply(model, is.list))
-  l <- list()
-  for (i in idx) l <- c(l, GetParameterModelUserIntern(model[[i]]))
-  return(l)
-}
-
-#GetParameterModelUser <- function(model){
-#  userdefined <- GetParameterModelUserIntern(model)
-# # Print(userdefined)
-#  return( if (length(userdefined) == 0) list() else c(new.env(), userdefined))
-#}
-
 
 GetPracticalRange <- function(model, param, dim=1) {
   ## dim=spdim=tsdim
   model <- PrepareModel(model, param)
 #  userdefined <- GetParameterModelUser(model)
-  InitModel(MODEL.USER, list("Dummy", model), dim)
+  InitModel(MODEL.USER, list("Dummy", model), dim) 
   natscl <- double(1)
-  .C("UserGetNatScaling", natscl, PACKAGE="RandomFields", DUP=FALSE)
-  .C("DeleteKey", MODEL.USER)
+  .C("UserGetNatScaling", natscl, PACKAGE="RandomFields", DUP=DUPFALSE)
+  .C("DeleteKey", MODEL.USER)# to do : nicht sauber
   return(1.0 / natscl)
 }
 
@@ -380,7 +341,7 @@ GetrfParameters <- function(initcov=TRUE){
   ## not be done for RFoptions (debugging reasons)
 
   maxints <- integer(1)
-  .C("GetMaxDims", maxints, DUP=FALSE, PACKAGE="RandomFields")
+  .C("GetMaxDims", maxints, DUP=DUPFALSE, PACKAGE="RandomFields")
   name <- c("GetrfParameters", "GetrfParametersI")[1 + (initcov != 0) ]
   
   p <- .C(name, covmaxchar=integer(1), methodmaxchar=integer(1),
@@ -446,7 +407,7 @@ distInt <- function(x) {
   n <- nrow(x)
   genes <- ncol(x)
   res <- double(n * n)
-  .C("distInt", t(x), n, genes, res, PACKAGE="RandomFields", DUP=FALSE)
+  .C("distInt", t(x), n, genes, res, PACKAGE="RandomFields", DUP=DUPFALSE)
   dim(res) <- rep(n, 2)
   res
 }
@@ -539,9 +500,8 @@ cmplists <- function(l, m) {
 }
 
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
-                          ask=FALSE, echo=TRUE, halt=FALSE,
-                          ignore.all=FALSE,
-                           path="randomfields_2", package="RandomFields",
+                          ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
+                          path="RandomFields", package="RandomFields",
                           read.rd.files=TRUE) {
   .exclude <- exclude
   .ask <- ask
@@ -596,7 +556,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   } else {
     .path <- read.rd.files
     if (is.logical(.path))
-      .path <- "/home/schlather/R/RF/svn/randomfields_2/man"
+      .path <- "/home/schlather/svn/RandomFields/RandomFields/man"
     .files <- dir(.path, pattern="d$")
     .fct.list <- character(length(.files))
     for (i in 1:length(.files)) {
@@ -611,7 +571,6 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   Print(.fct.list, length(.fct.list)) #
   .include <- include
   .RFopt <- RFoptions()
-  try(repeat dev.off())
   .not_working_no <- .not_working <- NULL
   .included.fl <- .fct.list[.include]
   .not.isna <- !is.na(.included.fl)
@@ -626,16 +585,20 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     RFoptions(LIST=.RFopt)
     .C("ResetWarnings")
     if (.echo) cat(.idx, "")
-    if (.halt) do.call("example", list(.fct.list[.idx], ask=.ask, echo=.echo))
-    else {
-      if (is(try(do.call("example", list(.fct.list[.idx], ask=.ask,
+    .tryok <- TRUE
+    if (.halt) {
+      do.call(utils::example, list(.fct.list[.idx], ask=.ask, echo=.echo))
+    } else {
+      if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
                                          echo=.echo))), "try-error")) {
         .not_working_no<- c(.not_working_no, .idx)
         .not_working <- c(.not_working, .fct.list[.idx])
+        .tryok <- FALSE
       }
     }
+    RFoptions(storing = FALSE);
     cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
-    if (!is.na(RFoptions()$general$seed)) {
+    if (.tryok && !is.na(RFoptions()$general$seed)) {
       Print(.not_working, paste(.not_working_no, collapse=", ")) #
       stop("seed not NA: ", .fct.list[.idx])
     }
@@ -645,3 +608,76 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   names(.ret) <- c(.package, "")
   return(.ret)
 }
+
+
+FinalizeExample <- function() {
+  if (!interactive()) {
+    close.screen(all.screens = TRUE)
+    n <- length(dev.list()) - 5
+    if (n > 0) {
+      for (i in 1:n) {      
+        dev.off() ## OK
+      }
+    }
+  }
+  RFoptions(seed = NA)
+}
+
+
+Dependencies <- function(install= all(pkgs == c(depends, imports, suggests)),
+                         check=TRUE,
+                         pkgs = c(depends, imports, suggests),
+                         lib.loc ="/usr/local/lib64/R/library" ) {
+  depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat", "MarkedPointProcess", "ProbForecastGOP", "Sunder")
+  imports <- c("constrainedKriging", "geoR", "georob", "lgcp", "spatsurv")
+  suggests <- c("CompRandFld", "fractaldim", "geostatsp", "rpanel", "spatstat")
+ 
+  PKGS <- character(length(pkgs))
+  ip <- installed.packages(lib.loc = lib.loc)
+  
+  rn <- rownames(ip)
+  for (i in 1:length(pkgs)) {
+    idx <- which(pkgs[i] == rn)
+    v <- ip[idx, "Version"]
+    PKGS[i] <- paste(pkgs[i], "_", v, ".tar.gz", sep="")    
+  }
+ 
+  if (install) {
+    for (i in 1:length(pkgs)) {
+      x <- system(paste("(cd Dependencies; wget http://cran.r-project.org/src/contrib/", PKGS[i], ")", sep=""))
+      if (x != 0) {
+        install.packages(pkgs[i], repos="http://ftp5.gwdg.de/pub/misc/cran/")
+        ip <- installed.packages(lib.loc = lib.loc)
+        rn <- rownames(ip)
+        idx <- which(pkgs[i] == rn)
+        v <- ip[idx, "Version"]
+        PKGS[i] <- paste(pkgs[i], "_", v, ".tar.gz", sep="")
+        x <- system(paste("(cd Dependencies; wget http://cran.r-project.org/src/contrib/", PKGS[i], ")", sep=""))
+        stopifnot(x == 0)
+      }
+    }
+  }
+  
+  if (check) {
+    for (i in 1:length(pkgs)) {
+      x <- system(paste("(cd Dependencies; R CMD check --as-cran", PKGS[i],")"))
+      if (x != 0) stop(PKGS[i], "failed")
+    }
+  }
+}
+
+showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
+  files <- dir(path)
+  result <- character(length(files))
+  for (i in 1:length(files)) {
+    cat("\n\n\n\n\n")
+    system(paste("grep \"\\examples\" -A 10000 ", path, "/", files[i], sep=""))
+    result[i] <- readline(files[i])
+  }
+  result <- cbind(files, result)
+  result <- result[result[, 2]!= "", ]
+  result[result[, 2]=="t", 2] <- "To Do"
+  result[result[, 2]=="s", 2] <- "dontshow"
+  return(result)
+}
+# showManpages()

@@ -33,7 +33,7 @@ RMrational(A, a)
 
 \examples{
 # see S10
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

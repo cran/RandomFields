@@ -35,7 +35,7 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
  Whittle-Matern model (for \eqn{t=0})} 
  \item{delta}{a numerical value; \eqn{\delta} must be greater than or
  equal to half the dimension of \eqn{h}}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -88,9 +88,10 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMmastein(RMgauss(), nu=1, delta=10)
 x <- seq(0, 10, if (interactive()) 0.1 else 3) 
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

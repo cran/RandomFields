@@ -1,23 +1,27 @@
-\name{RRspherical}
-\alias{RRspherical}
+\name{RRspheric}
+\alias{RRspheric}
 \title{Random scaling used with balls}
 \description{
-  This model describes the \bold{radius} of a \eqn{d} ball obtained by the
+  This model delivers the distribution
+  of the \bold{radius} of a ball 
+  obtained by the
   intersection of a \code{balldim}-dimensional ball
-  with \bold{diameter} 1 with a \eqn{d}-dimensional hyperplane that has uniform
+  with \bold{diameter} R by a \eqn{spacedim}-dimensional
+  hyperplane that has uniform
   distance from the center.
  }
  \usage{
-RRspherical(spacedim, balldim) 
+RRspheric(spacedim, balldim, R) 
 }
 
 \arguments{
-  \item{spacedim}{dimension \eqn{d} of the hyperplane; defaults to 1.}
- \item{balldim}{the dimension of the ball}
+  \item{spacedim}{dimension of the hyperplane; defaults to 1.}
+  \item{balldim}{the dimension of the ball}
+  \item{R}{radius. Default: 1}
 }
 
 \value{
- \command{\link{RRspherical}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RRspheric}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 
 }
 
@@ -29,9 +33,10 @@ RRspherical(spacedim, balldim)
 }
 
 \examples{
-RFoptions(seed=0)
-hist(RFrdistr(RRspherical(balldim=2), n=1000), 50)
-\dontshow{RFoptions(seed=NA)}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+hist(RFrdistr(RRspheric(balldim=2), n=1000), 50)
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

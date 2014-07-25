@@ -1,30 +1,30 @@
 \name{RFratiotest}
 \alias{RFratiotest}
-%\alias{mleRF}% obsolete
+\alias{print.RFratiotest}
 \title{Likelihood ratio test}
 \description{
-  The function performs a Monte Carlo likelihood ratio test
+  The function performs an approximate $\eqn{chi^2} test or
+  a Monte Carlo likelihood ratio test
   based on \command{\link{fitgauss}}. Currently it only works for
-    Gaussian random fields.
+  Gaussian random fields.
 }    
 \usage{
 RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL, grid, data,
-alpha=0.05, n = 5 / alpha, seed = 0, 
+alpha, n = 5 / alpha, seed = 0, 
 lower = NULL, upper = NULL, BC.lambda, methods,
 sub.methods, optim.control = NULL, users.guess = NULL,
 distances = NULL, dim, transform = NULL, ...)
 }
-\arguments{
-  \item{nullmodel, alternative}{
-    covariance model, see \command{\link{RMmodel}} or
- type \code{\link{RFgetModelNames}()} to get all options.
-
- 
-    The set of parameters to estimate for \code{nullmodel}
-    should be a subset of the parameters  to estimate for \code{alternative}.
-    }
-  \item{alpha}{value in [0,1]. Significance level.
- }
+\arguments{  
+  \item{nullmodel, alternative}{See Details.
+     
+    The set of parameters 
+    to be estimated for \code{nullmodel}
+    should be a subset of the parameters to be estimated for
+    \code{alternative} if \code{alternative} is given.
+  }
+  \item{alpha}{value in [0,1] or missing. Significance level.
+  }
  \item{n}{integer. The test is based on \code{n-1} simulations.}
  \item{seed}{integer. If not \code{NULL} and not \code{NA}, the
    \link[base]{.Random.seed} is set to \code{seed}. Otherwise,
@@ -36,8 +36,30 @@ distances = NULL, dim, transform = NULL, ...)
    sub.methods, optim.control, users.guess, distances, dim, transform,
    ...}{see \command{\link{RFfit}}}
 }
- 
+
+\note{
+  An important \command{\link{RFoptions}} is \code{ratiotest_approx}.
+}
+
 \details{
+  \code{nullmodel} (and the \code{alternative}) can be
+  \itemize{
+    \item
+    a covariance model, see \command{\link{RMmodel}} or
+    type \code{\link{RFgetModelNames}()} to get all options.
+
+    Depending weather the \command{\link{RFoptions}}
+    \code{ratiotest_approx} is TRUE the
+    the chisq approximation is performed. Otherwise 
+    a Monte Carlo ratio test is performed.
+    \item
+    \code{\link[=RFfit-class]{RFfit}} or
+    \code{\link[=RMmodelFit-class]{RMmodelFit}}
+
+    Here, a chisq approximative test is always performed on the
+    already fitted models.
+  }
+  
   \command{RFratiotest} tries to detect whether
   \code{nullmodel} is a submodel of \code{alternative}.
   If it fails,
@@ -54,6 +76,17 @@ distances = NULL, dim, transform = NULL, ...)
   a (log) likelihood that is at least as large as that of the \code{nullmodel}.
 }
 
+\note{
+  Note that the likelihood ratio test may take a huge amount of time.
+}
+
+\section{Methods}{
+ \describe{
+   \item{print}{prints the summary}
+   \item{summary}{gives a summary}
+ }
+}
+
 
 \value{
   The test returns a message whether the null hypothesis, i.e. the
@@ -67,9 +100,10 @@ distances = NULL, dim, transform = NULL, ...)
     \item \code{data.fit} the models fitted to the data
     \item \code{msg} the message that is also directly returned
   }
+  It has S3 class \code{"RFratiotest"}.
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \note{This function does not depend on the value of
  \command{\link{RFoptions}}\code{()$PracticalRange}. 
@@ -84,16 +118,17 @@ distances = NULL, dim, transform = NULL, ...)
 }
 \examples{
 % options(error=recover)
-% source("randomfields_2/tests/source.R")
+% source("RandomFields/tests/source.R")
 
 \dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
 RFoptions(modus_operandi="sloppy")
 }}
 
 \dontrun{
-% library(RandomFields, lib="~/TMP");  source("randomfields_2/private/source.R")
+% library(RandomFields, lib="~/TMP");  source("RandomFields/private/source.R")
 
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 ## see also ?soil
 data(soil)
@@ -116,18 +151,9 @@ str(test)
 RFoptions(modus_operandi="normal")
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}
+\keyword{htest}
 
-
-
-
-
-
-
-% LocalWords: fitvario mleRF LSQ param NA naturalscaling PrintLevel optim pch
-% LocalWords: RFoptions nphi ntheta ntime lowerbound minbounddistance var
-% LocalWords: minboundreldist functioncalls eqn coord RMmodel emph cr
-% LocalWords: RFgetModelNames cov variogram uote parampositions NaN kappas MLE

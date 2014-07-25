@@ -180,12 +180,12 @@ void sd_avestp(cov_model *cov, storage VARIABLE_IS_NOT_USED *S, int dim, double 
   // see article/GEOSTATS/simuspacetime/simuspacetime2008/simuspacetime.tex 
   // for the reasoning of these calculations
 
-  assert(false);
+  BUG; 
 
   assert(cov->role == Average);
   q[AVESTP_LOGV] = log(q[AVESTP_V]);
   for (x2=0.0, d=0; d<dim; d++) {
-    double lensimu = RF_NAN; ////  w->max[d] - w->min[d];
+    double lensimu = RF_NA; ////  w->max[d] - w->min[d];
     x2 += lensimu * lensimu;
   }
   // x2 *= 0.25;
@@ -194,7 +194,7 @@ void sd_avestp(cov_model *cov, storage VARIABLE_IS_NOT_USED *S, int dim, double 
   InvSqrt2a = 1.0 / sqrt(2.0 * alphamin * 6.0 * q[AVESTP_V]);
   *sd = InvSqrt2a;
   EmA = 1.0 - alphamin;
-  cov->mpp.maxheight = exp(-0.5 * log(EmA) - 0.25 * log(alphamin) + b / EmA -
+  cov->mpp.maxheights[0] = exp(-0.5 * log(EmA) - 0.25 * log(alphamin) + b / EmA -
 			   2 * x2); // proportional zum dritten Moment !
 
   /*
@@ -272,7 +272,7 @@ void  logshapeave(double *x, cov_model *cov, double *v, double *sign) {
 int check_shapeave(cov_model *cov) {
   if (cov->sub[AVE_GAUSS] == NULL)
     SERR1("both submodels must be set to '%s'", CovList[GAUSS].nick);
-  cov->mpp.maxheight = RF_NAN;
+  cov->mpp.maxheights[0] = RF_NA;
   return checkave(cov); // !! not next
 }
 
@@ -293,12 +293,14 @@ int init_shapeave(cov_model *cov, storage *s) {
   q[AVESTP_LOGDET] = 0.0;
   sd_avestp(cov, s, dim, &sd); // sd->gauss
 
+  assert(cov->vdim2[0] == 1);  assert(cov->vdim2[0] == cov->vdim2[1]);
+
   if (cov->mpp.moments >= 0) {
-    cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; 
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
       if ((err = INIT(gauss, cov->mpp.moments, s)) != NOERROR) return err;
       if (cov->mpp.moments >= 2) {
-	cov->mpp.M[2] = 1.0;
+	cov->mpp.mM[2] = 1.0;
       }
     }
   }
@@ -638,6 +640,17 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
   if (Sf != NULL) {
     FCTN(x, Sf, Sx); // symmetric, pos definite !!
     FCTN(y, Sf, Sy);
+    //
+    //    if (false) {
+    //      int ii;
+    //      printf("x=%f %f y=%f %f\n", x[0], x[1], y[0], y[1]);
+    //for (ii=0; ii<4; ii++) printf("%f ", Sx[ii]);
+    //      printf("\n");
+    //      for (ii=0; ii<4; ii++) printf("%f ", Sy[ii]);
+    //      printf("\n");
+    //    }
+    //APMI(Sf);
+
   } else {
     int bytes = sizeof(double) * dimsq;
     MEMCOPY(Sx, Sc, bytes);
@@ -675,16 +688,21 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
   //Q3 += (hMh + cxy) * (hMh + cxy); 
 
   // print("%f %f\N", 
+
+  //printf("x=%f %f y=%f %f\n", x[0], x[1], y[0], y[1]);
   
   for (k=d=0; d<dim; d++) {
     for (j=0; j<dim; j++, k++) {
       A[k] = Sx[k] + Sy[k] + 4.0 * Mh[d] * Mh[j];
+      //printf("d=%d %d S=%f %f M=%f %f A=%f\n", d, j, Sx[k], Sy[k], Mh[d], Mh[j], A[k]);
+      assert(R_FINITE(A[k]));
     }
     Amux[d] = hSx[d] + 2.0 * (hMh + cxy) * Mh[d]; // uses that M is symmetric
     Amuy[d] = Syh[d] + 2.0 * (hMh - cxy) * Mh[d];
   }
 
-  det_UpperInv(A, &detA, dim);
+
+  det_UpperInv(A, &detA, dim); // here
 
   Q = cxy * cxy - hMh * hMh + xUy(Amux, A, Amuy, dim);
   if (Q < 0.0) {
@@ -773,7 +791,7 @@ int checkstp(cov_model *cov){
   assert(cov->Sdollar->z == NULL);
 
 
-  cov->mpp.maxheight = RF_NAN;
+  cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
 }
 
@@ -861,11 +879,13 @@ int init_shapestp(cov_model *cov, storage *s) {
   q[AVESTP_LOGMIXDENS] = 0.0;
   sd_avestp(cov, s, cov->tsdim, &sd); // sd->gauss
 
+  assert(cov->vdim2[0] == 1);  assert(cov->vdim2[0] == cov->vdim2[1]);
+
   if (cov->mpp.moments >= 0) {
-    cov->mpp.M[0] = cov->mpp.Mplus[0] = 1.0; //// ??? notwendig 
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; //// ??? notwendig 
     if (cov->mpp.moments >= 1) {
       if ((err = INIT(gauss, 2, s)) != NOERROR) return err;
-      if (cov->mpp.moments >= 2) cov->mpp.M[2] = 1.0; 
+      if (cov->mpp.moments >= 2) cov->mpp.mM[2] = 1.0; 
     }
   }
   
@@ -1034,7 +1054,7 @@ int checkrational(cov_model *cov){
     P(RATIONAL_a)[1] = 0.0;
   }
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->mpp.maxheight =  P(RATIONAL_a)[0] > P(RATIONAL_a)[1] 
+  cov->mpp.maxheights[0] =  P(RATIONAL_a)[0] > P(RATIONAL_a)[1] 
     ? P(RATIONAL_a)[0] : P(RATIONAL_a)[1];
   return NOERROR;
 }
@@ -1112,8 +1132,8 @@ int checkEAxxA(cov_model *cov){
     
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
-  cov->vdim = cov->tsdim;
-  cov->mpp.maxheight = RF_NAN;
+  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
+  cov->mpp.maxheights[0] = RF_NA;
  return NOERROR;
 }
  
@@ -1210,9 +1230,9 @@ int checkEtAxxA(cov_model *cov){
   // CE CO CI TBM Sp di sq Ma av n mpp Hy any
 //  MEMCOPY(cov->pref, pref, sizeof(pref_type));  
   if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
-  cov->vdim = cov->tsdim;
+  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->mpp.maxheight = RF_NAN;
+  cov->mpp.maxheights[0] = RF_NA;
  return NOERROR;
 }
  
@@ -1273,8 +1293,7 @@ int checkrotat(cov_model *cov){
 //  MEMCOPY(cov->pref, pref, sizeof(pref_type));  
   if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
    if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->vdim = 1;
- cov->mpp.maxheight = RF_NAN;
+ cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
 }
  
@@ -1324,8 +1343,8 @@ int checkRotat(cov_model *cov){
   int err;
   if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->vdim = cov->tsdim;
-  cov->mpp.maxheight = RF_NAN;
+  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
+  cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
 }
 
@@ -1392,7 +1411,8 @@ int checkNonStWM(cov_model *cov) {
   int err,
     dim = cov->tsdim;
 
-  return ERRORNOTPROGRAMMED; 
+  NotProgrammedYet("");
+ 
 
   if (PisNULL(WM_NU) && nu==NULL) SERR("'nu' is missing");
   if (isRandom(CovList[cov->nr].kappaParamType[WM_NU])) 
@@ -1582,7 +1602,7 @@ int checknsst(cov_model *cov) {
   
   if (!isNormalMixture(subphi->monotone)) return(ERRORNORMALMIXTURE);
   setbackward(cov, subphi);
-  assert(cov->finiterange == false);
+  assert(cov->finiterange != true); //
 
   if ((err = CHECK(subpsi, 1, 1, NegDefType, XONLY, ISOTROPIC, 
 		     SCALAR, ROLE_COV)) != NOERROR) 

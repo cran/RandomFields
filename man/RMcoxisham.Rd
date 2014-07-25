@@ -25,13 +25,14 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
  \item{phi}{a univariate stationary isotropic covariance model for random fields
  on \eqn{d}-dimensional space, which is moreover a normal scale
  mixture, that means an
- \command{\link{RMmodel}} whose \code{normalmix} equals
- TRUE and whose \code{maxdim} is at least 2.}
+ \command{\link{RMmodel}} whose \code{monotone} property equals
+ \code{'normal mixture'},
+ see \code{\link{RFgetModelNames}(monotone="normal mixture")} and whose \code{maxdim} is at least 2.}
  \item{mu}{a vector in \eqn{d}-dimensional space}
  \item{D}{a \eqn{d \times d}{d x d}-correlation matrix with \eqn{|D| >
  0}}
- \item{beta}{a parameter in the interval \eqn{(0,2]}, default value is 2 }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{beta}{numeric in the interval \eqn{(0,2]}; default value is 2 }
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -74,10 +75,11 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMcoxisham(RMgauss(), mu=1, D=1)
 x <- seq(0, 10, if (interactive()) 0.3 else 1) 
 plot(model, ylim=c(0, 1), dim=2)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

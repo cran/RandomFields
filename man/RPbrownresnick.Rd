@@ -30,7 +30,8 @@
   is constant 
   in space. In contrast, \eqn{\mu} and \eqn{s} might be constant
   numerical value or given a \code{\link{RMmodel}}, in particular by a
-  \code{\link{RMtrend}} model. 
+  \code{\link{RMtrend}} model. The default values of \eqn{mu} and \eqn{s}
+  are \eqn{1} and \eqn{z\xi}, respectively.
 
  The functions \code{RPbrorig}, \code{RPbrshifted} and \code{RPbrmixed}
   perform the simulation of a Brown-Resnick process, which is defined by
@@ -50,7 +51,7 @@
  
 \author{Marco Oesting, \email{oesting@math.uni-mannheim.de},
         Martin Schlather, \email{schlather@math.uni-mannheim.de}
-        \url{http://ms.math.uni-mannheim.de}}
+        \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \references{
   \itemize{
@@ -79,14 +80,16 @@
 \note{Advanced options
    are \code{maxpoints} and \code{max_gauss}, see
    \command{\link{RFoptions}}.
+   
   Further advanced options related to the
   simulation methods \command{\link{RPbrorig}},
   \command{\link{RPbrshifted}} and \command{\link{RPbrmixed}} can be
-  found in the paragraph "Specific method options for Brown-Resnick
-  Fields" in \command{\link{RFoptions}}.}
+  found in the paragraph \sQuote{Specific method options for Brown-Resnick
+    Fields} in \command{\link{RFoptions}}.}
 
   \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontshow{\dontrun{
 model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
@@ -109,7 +112,7 @@ plot(z)
 
 ## for some more sophisticated models see 'maxstamableAdvanced'
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

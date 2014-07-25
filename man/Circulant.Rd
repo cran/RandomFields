@@ -54,23 +54,23 @@
 }
 
 \usage{
-RPcirculant(phi, loggauss, force, mmin, strategy,
+RPcirculant(phi, force, mmin, strategy,
  maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid)
 
-RPcutoff(phi, loggauss,  force, mmin, strategy,
+RPcutoff(phi, force, mmin, strategy,
  maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, a) 
  
 
-RPintrinsic(phi, loggauss, force, mmin, strategy,
+RPintrinsic(phi, force, mmin, strategy,
  maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, rawR) 
 }
 
 \arguments{
  \item{phi}{See \command{\link{RPgauss}}}
- \item{loggauss}{See \command{\link{RPgauss}}}
+% \item{loggauss}{See \command{\link{RPgauss}}}
  \item{force}{
    Logical. Circulant embedding does not work
    if the constructed circulant
@@ -181,7 +181,9 @@ RPintrinsic(phi, loggauss, force, mmin, strategy,
    circulant embedding is used although the points do not ly on a grid.
    
    If \code{NA} then \code{approx_step} is chosen such that
-   \code{approx_maxgrid} is nearly reached.   
+   \code{approx_maxgrid} is nearly reached.
+
+   Default: \code{NA}
  }
  \item{approx_maxgrid}{
    It defaults to \code{maxmem}.
@@ -260,7 +262,8 @@ RPintrinsic(phi, loggauss, force, mmin, strategy,
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 model <- RMstable(s=1, alpha=1.8)
 x <- seq(-3,3,0.1)
@@ -275,7 +278,7 @@ model <- RMfbm(Aniso=diag(c(1,2)), alpha=1.5)
 z <- RFsimulate(model, x=1:10, y=1:10, grid=TRUE)
 plot(z)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

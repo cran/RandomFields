@@ -13,17 +13,17 @@
 }
 
 \usage{
-RPdirect(phi, loggauss, root_method, svdtolerance, max_variab) 
+RPdirect(phi, root_method, svdtolerance, max_variab) 
 
-RPsequential(phi, loggauss, max_variables, back_steps, initial)
+RPsequential(phi, max_variables, back_steps, initial)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated.}
 
- \item{loggauss}{optional parameter; same meaning as for 
- \command{\link{RPgauss}}.}
+% \item{loggauss}{optional argument; same meaning as for 
+% \command{\link{RPgauss}}.}
 
  \item{root_method}{Decomposition of the covariance matrix.
  If \code{root_method=1} or \code{3}, Cholesky
@@ -128,14 +128,15 @@ RPsequential(phi, loggauss, max_variables, back_steps, initial)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.01)
 z <- RFsimulate(model=RPdirect(model), 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 
 cov <- RFcov(model=model, 1:10)
 Print(cov)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 
 }

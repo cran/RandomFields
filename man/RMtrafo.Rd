@@ -20,12 +20,12 @@ RFearth2dist(coord, units=NULL, ...)
 
 \arguments{
   \item{isotropy}{one of the values
-    \code{\link{ISOTROPIC}},
-    \code{\link{SPACEISOTROPIC}},
-    %    ZEROSPACEISOTROPIC,
-    %    VECTORISOTROPIC,
+    \code{\link{RC_ISOTROPIC}},
+    \code{\link{RC_SPACEISOTROPIC}},
+    %    ZERORC_SPACEISOTROPIC,
+    %    VECTORRC_ISOTROPIC,
     %    SYMMETRIC,
-    \code{\link{CARTESIAN_COORD}},
+    \code{\link{RC_CARTESIAN_COORD}},
     %   EARTH_COORD,
     %    SPHERICAL_COORD,
     %    CYLINDER_COORD
@@ -84,7 +84,7 @@ RFearth2dist(coord, units=NULL, ...)
 data(weather)
 (coord <- weather[1:5, 3:4])
 
-(z <- RFfctn(RMtrafo(CARTESIAN_COORD), coord))
+(z <- RFfctn(RMtrafo(RC_CARTESIAN_COORD), coord))
 (z1 <- RFearth2cartesian(coord)) ## equals t(z)
 z1 - t(z) ## 0, i.e., z1 and t(z) are the same
 dist(t(z))
@@ -117,7 +117,7 @@ xx <- matrix(weather[, 3:4], ncol=2) [ 1:5, ]
 
 xx <- weather[, 3:4][ 1:5, ]
 Print(xx)
-Print(yy <- RFfctn(RMtrafo(iso=CARTESIAN_COORD), xx), units="miles")
+Print(yy <- RFfctn(RMtrafo(iso=RC_CARTESIAN_COORD), xx), units="miles")
 
 (z1 <- as.matrix(dist(t(yy))))
 
@@ -129,7 +129,7 @@ z1
 }}
 
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

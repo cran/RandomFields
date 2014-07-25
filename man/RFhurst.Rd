@@ -69,7 +69,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  are given. If \code{printlevel>2} tracing information is given.
  }
  \item{height}{height of the graphics window}
- \item{...}{graphical parameters}
+ \item{...}{graphical arguments}
 }
 \details{
  The function is still in development. Several functionalities do
@@ -153,12 +153,13 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  }
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFfractaldim}}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{.randomfields.options = options()$warn; options(warn=0)}
 x <- runif(1000)
 if (interactive()) {
@@ -168,7 +169,7 @@ if (interactive()) {
 }
 \dontshow{options(warn = .randomfields.options)}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \keyword{ spatial }%-- one or more ...
 

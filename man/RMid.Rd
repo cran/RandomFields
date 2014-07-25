@@ -12,7 +12,7 @@ RMid(phi, vdim, var, scale, Aniso, proj)
 \arguments{
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
  \item{vdim}{for internal purposes}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -31,16 +31,16 @@ RMid(phi, vdim, var, scale, Aniso, proj)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMexp()
 x <- 0:10
-RFoptions(seed=0)
 z <- RFsimulate(model, x, spC=FALSE)
+
 model2 <- RMid(model)
-RFoptions(seed=0)
 z2 <- RFsimulate(model, x, spC=FALSE)
 sum(abs(z-z2)) == 0 # TRUE
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

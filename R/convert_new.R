@@ -174,7 +174,7 @@ buildCovList <- function(model)
 # @FUNCTION-END*************************************************************************************
 syntaxError <- function()
 {
-	return("Malformed model expression -- maybe you have used a wrong or obsolete definition. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)")
+	return("Malformed model expression -- maybe you have used a wrong or obsolete definition, or just used an incorrect option name. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)")
 }
 
 
@@ -643,25 +643,6 @@ cutoffArray <- function(data, grid, len)
 	return (data)
 }
 
-
-# @FUNCTION-STARP***********************************************************************************
-# @FUNCTION-END*************************************************************************************
-#getLastCovIndex <- function(summands)
-#{
-#	last <- 0
-#
-#	for (i in 1:length(summands))
-#	{		
-#		factorList <- strsplit(summands[[i]], ZF_SYMBOLS_AT)[[1]]
-#        			
-#		factor <- removeParenthesis(factorList[[1]])
-#	
-#		if(length(factorList) != 1 || !isCovModel(factor))
-#			last <- i
-#	}
-#	
-#	return (last)
-#}
 
 
 

@@ -43,11 +43,12 @@ RMtruncsupport(phi, radius)
  
 
 \examples{
-RFoptions(seed=0) 
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again 
 \dontshow{\dontrun{
 model <- RPcoins(shape = RMtruncsupport(RMgauss(), radius=1.5), intensity=1)
 x <- seq(0, 10, if (interactive()) 0.02 else 1)
 plot(RFsimulate(model, x=x))
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

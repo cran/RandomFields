@@ -19,9 +19,9 @@
 }
 
 \usage{
-RPcoins(phi, shape, loggauss, intensity) 
+RPcoins(phi, shape, intensity) 
 
-RPaverage(phi, shape, loggauss, intensity) 
+RPaverage(phi, shape, intensity) 
 
 }
 
@@ -34,9 +34,7 @@ RPaverage(phi, shape, loggauss, intensity)
  specifies the function which is attached to the Poisson points;
  note that this is not the covariance function of the simulated
  random field.}
- \item{loggauss}{optional parameters; same meaning as for 
- \command{\link{RPgauss}}.}
- \item{intensity}{positive number, intensity of the underlying Poisson
+\item{intensity}{positive number, intensity of the underlying Poisson
  point process.
  }
 }
@@ -63,6 +61,7 @@ RPaverage(phi, shape, loggauss, intensity)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
+  \command{\link{RFgetMethodNames}}
   \link{RP},
  \command{\link{RPhyperplane}},
  \command{\link{RPspectral}},
@@ -70,7 +69,8 @@ RPaverage(phi, shape, loggauss, intensity)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontshow{\dontrun{
 x <- seq(0,25, if (interactive()) 0.02 else 5)
@@ -84,12 +84,11 @@ image(z)
 x <- seq(0,10, if (interactive()) 0.02 else 5)
 for (intensity in c(1, 10, 100)) {
  z <- RFsimulate(x=x, model=RPcoins(RMspheric(), intensity = intensity))
- x11()
  plot(z)
 }
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

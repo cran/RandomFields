@@ -19,12 +19,12 @@ accessReplaceSlotsByName <- function(x,i,j,value) {
 }
 
 setMethod(f="[", signature = 'RMmodel', def = accessSlotsByName)
-setMethod(f="[", signature = 'RMmodelExt', def = accessSlotsByName)
+setMethod(f="[", signature = 'RMmodelFit', def = accessSlotsByName)
 setMethod(f="[", signature = 'RMmodelgenerator', def = accessSlotsByName)
 
 setReplaceMethod(f="[", signature = 'RMmodel',
                  def = accessReplaceSlotsByName)
-setReplaceMethod(f="[", signature = 'RMmodelExt',
+setReplaceMethod(f="[", signature = 'RMmodelFit',
                  def = accessReplaceSlotsByName)
 setReplaceMethod(f="[", signature = 'RMmodelgenerator',
                  def = accessReplaceSlotsByName)
@@ -36,22 +36,33 @@ setReplaceMethod(f="[", signature = 'RMmodelgenerator',
 ## summing up RMmodels
 setMethod('+', signature=c('RMmodel', 'RMmodel'),
           function(e1, e2) {
+            d <- list()
             if (e1@name==ZF_PLUS[1]){
-              len.e1 <- length(e1@submodels)
-              for (i in 1:len.e1)
-                eval(parse(text=paste("d", i,
-                             "<- e1@submodels[[", i, "]]",
-                             sep="")))
+              len.e1 <- length(e1@submodels)              
+              for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
             } else {
               len.e1 <- 1
-              d1 <- e1
+              d[[1]] <- e1
             }
-            len.e2 <- 1
-            eval(parse(text=paste("d", len.e1+1, " <- e2", sep="")))
-            model <- eval(parse(text=paste(ZF_PLUS[1], "(",
-                                  paste("d", 1:(len.e1+len.e2), sep="",
-                                        collapse=", "),
-                                  ")", sep="")))
+            d[[len.e1 + 1]] <- e2            
+            model <- do.call(ZF_PLUS[1], d)
+            return(model)
+          })
+
+
+## summing up RMmodels
+setMethod('*', signature=c('RMmodel', 'RMmodel'),
+          function(e1, e2) {
+            d <- list()
+            if (e1@name==ZF_MULT[1]){
+              len.e1 <- length(e1@submodels)              
+              for (i in 1:len.e1)  d[[i]] <-  e1@submodels[[i]]
+            } else {
+              len.e1 <- 1
+              d[[1]] <- e1
+            }
+            d[[len.e1 + 1]] <- e2            
+            model <- do.call(ZF_MULT[1], d)
             return(model)
           })
 
@@ -89,7 +100,7 @@ str.RMmodel <-
   }
   strict.width <- match.arg(strict.width, choices = c("no", "cut", "wrap"))
   if (strict.width != "no") {
-    ss <- capture.output(str(object, max.level = max.level, 
+    ss <- capture.output(str(object, max.level = max.level, #
                              vec.len = vec.len, digits.d = digits.d,
                              nchar.max = nchar.max, 
                              give.attr = give.attr,
@@ -120,7 +131,6 @@ str.RMmodel <-
                       "no.list", names(match.call())[-(1:2)], "...")
     aList <- as.list(fStr)[nf]
     aList[] <- lapply(nf, function(n) eval(as.name(n)))
-  #  Print(obj$par.general)
     if ("par.general" %in% names(obj)){
       is.RFdefault <-
         unlist(lapply(obj$par.general,
@@ -128,10 +138,9 @@ str.RMmodel <-
                         !is(x, ZF_MODEL) && !is.na(x) && x==ZF_DEFAULT_STRING
                       }))
       obj$par.general[is.RFdefault] <- NULL
-     # Print(is.RFdefault)
       if (all(is.RFdefault)) obj$par.general <- list()
     }
-    do.call(str, c(list(object = obj), aList, list(...)), 
+    do.call(utils::str, c(list(object = obj), aList, list(...)), 
             quote = TRUE)
   }
   v.len <- vec.len
@@ -160,24 +169,46 @@ str.RMmodel <-
   }
 }
 
-print.RMmodel <- function(x, ..., max.level = NA) {
-  cat("*** object of Class 'RMmodel' ***\n  ** str(object):\n  ")#
-  str(x, max.level = max.level)#
-  cat("*** end of 'RMmodel' ***\n")
-} 
+summary.RMmodel <- function(object, ...) summary(PrepareModel2(object, ...))
 
 setMethod(f="show", signature='RMmodel',
-          definition=function(object) print(object, max.level=8))
+          definition=function(object) print.RMmodel(object, max.level=8))#
+
+summary.RM_model <- function(object, ...) {
+  class(object) <- "summary.RMmodel"
+  object
+}
+
+print.summary.RMmodel <- function(x, max.level=3, ...) {
+  str(x, no.list=TRUE, max.level = max.level) #
+  invisible(x)
+}
+
+print.RM_model <- function(x, ...) {
+  print.summary.RMmodel(summary.RM_model(x, ...))#
+}
+print.RMmodel <- function(x, ...) {
+  print.summary.RMmodel(summary.RMmodel(x, ...))#
+}
+
+setMethod(f="show", signature='RMmodel',
+          definition=function(object) print.RMmodel(object))#
+
+
+
+
+
+
 
 print.RMmodelgenerator <- function(x, ...) {
-  cat("*** object of Class '", ZF_MODEL_FACTORY, "' ***\n  ** str(object):\n  ",
-      sep="")#
+  cat("*** object of Class '", ZF_MODEL_FACTORY,
+      "' ***\n  ** str(object):\n  ", sep="") #
   str(x)#
   cat("*** end of '", ZF_MODEL_FACTORY, "' ***\n", sep="")#
 }
   
 setMethod(f="show", signature='RMmodelgenerator',
-          definition=function(object) print(object))
+          definition=function(object) print.RMmodelgenerator(object))#
 
 
 
@@ -249,7 +280,6 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   }
 
   model <- list("", PrepareModel2(x))
-
   while (length(fct.type) > 0 &&
          { model[[1]] <- fct.type[1];
            !is.numeric(vdim <- try( InitModel(MODEL.USER, model, dim),
@@ -258,7 +288,11 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 
   fct.type <- fct.type[1]
   
-  if (!is.numeric(vdim)) stop(attr(vdim, "condition")$message)
+  if (!is.numeric(vdim)) {
+#    Print(vdim, model)
+ #   stop("'vdim' is not numerical")
+    stop(attr(vdim, "condition")$message)
+  }
 
 #  fctcall.vec <- c("Cov", "Variogram")
   covinfo <- RFgetModelInfo(register=MODEL.USER, level=2, spConform=TRUE)
@@ -268,7 +302,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   
   distance <- seq(xlim[1], xlim[2], length=n.points)
   
-  if (xlim[1]*xlim[2] < 0 & !(any(distance==0)))
+  if (xlim[1] * xlim[2] < 0 & !(any(distance==0)))
     distance <- sort(c(0, distance))
 
   if (dim > 1) {
@@ -277,8 +311,10 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
       distanceY <- sort(c(0, distanceY))
   }
 
-  if(covinfo$domown != TRANS_INV)
-    stop("method only implemented for domain models")
+#  Print(covinfo)
+
+#  if(covinfo$domown != TRANS_INV)
+#    stop("method only implemented for models that are not kernels")
 
   switch(fct.type,
          "Cov" = {
@@ -302,6 +338,8 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
                   paste(format(fixed.MARGIN, digits=4), collapse=", "))
 
   .C("DeleteKey", MODEL.USER)
+
+  
   return(list(main=main, fctcall=fct.type, ylab=ylab, distance=distance,
               distanceY = if (dim > 1) distanceY))
 }
@@ -324,12 +362,15 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   dots <- list(...)
   dotnames <- names(dots)
   
+  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
   plotfctcall <- if ("plotfctcall" %in% dotnames)
     dots$plotfctcall else "plot.default"
   dots$plotfctcall <- NULL
-  
-  if (!("xlim" %in% dotnames)) dots$xlim <- c(-1, 1)
-  if (!("ylim" %in% dotnames)) dots$ylim <- dots$xlim
+
+  if (!("xlim" %in% dotnames)) {
+    dots$xlim <- c(-1, 1)
+  }
+  if (!("ylim" %in% dotnames) && dim > 1) dots$ylim <- dots$xlim
   if (!("type" %in% dotnames)) dots$type <- "l"
 
   
@@ -351,7 +392,8 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
 
     #print(cov, li$distance)
     lab <- xylabs("distance", li$ylab)
-    
+    ## strokorb monotone ist z.B. nicht ueberall finite:
+    if (!("ylim" %in% dotnames)) dots$ylim <- range(0, cov[is.finite(cov)])
     if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
     if (!("ylab" %in% dotnames)) dots$ylab <- lab$y
   } else {  
@@ -363,6 +405,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     if (dim==2)
       cov <- RFcov(x=as.matrix(expand.grid(li$distance, li$distanceY)),
                    model=x, fctcall=li$fctcall)
+
     if (dim>=3) {
       m1 <- expand.grid(li$distance, li$distanceY)
       m2 <- matrix(NA, ncol=dim, nrow=nrow(m1))
@@ -381,15 +424,23 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
 
   if (is.null(dim(cov))) { ## i.e. vdim == 1
     if (dim==1){
-      liXY <-
-        if (plotfctcall=="plot.xy") list(xy = xy.coords(x=li$distance, y=cov))
-        else list(x=li$distance, y=cov)
+       D <- li$distance             
+       if (plotfctcall == "plot.default")  {
+         iszero <- D == 0
+         D[iszero] <- NA
+         plotpoint <- any(iszero)
+       }  
+       liXY <-
+        if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
+        else list(x=D, y=cov)
 
-  #    Print(plotfctcall, args=c(dots, liXY))
+  #       Print(plotfctcall, args=c(dots, liXY))
       
-      do.call(plotfctcall, args=c(dots, liXY))
+       do.call(plotfctcall, args=c(dots, liXY))
+      if (plotpoint) points(0, cov[iszero], pch=20, col = dots$col)
+      
     } else {
-      do.call(contour, args=c(list(x=li$distance, y=li$distanceY,
+      do.call(graphics::contour, args=c(list(x=li$distance, y=li$distanceY,
                          z=matrix(cov, nrow=length(li$distance))), dots))
     }
   } else { ## multivariate 
@@ -417,14 +468,14 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
               list(x=li$distance, y=covij)
           do.call(plotfctcall, args=c(dots, liXY, axes=FALSE))
         } else {
-          do.call(contour, args=c(dots, list(axes=FALSE,
+          do.call(graphics::contour, args=c(dots, list(axes=FALSE,
                              x=li$distance, y=li$distanceY,
                              z=matrix(covij, nrow=length(li$distance)))))
         }
         box()
-        if (i==1) do.call(axis,
+        if (i==1) do.call(graphics::axis,
               args=c(dots.axis, list(side=1, outer = TRUE, line=1)))
-        if (j==1) do.call(axis,
+        if (j==1) do.call(graphics::axis,
               args=c(dots.axis, list(side=2, outer = TRUE, line=1)))
       }
     }
@@ -528,30 +579,3 @@ list2RMmodel <- function(x, skip.prefix.check=FALSE) {
     #                        ")", sep=""))))
   }
 }
-
-# X <- matrix(1:10, nc=2)
-# m<-(((~ RMgauss() + X @ RMdelay(s=10,var=3, RMexp()) + 1 + RMwhittle(sc=3, nu=2))))#
-# m<- ~ RMgauss() + X @ RMcoord(coo=X, RMexp()) + 1 
-# all.equal(PrepareModel2(list2RMmodel(PrepareModel2(m))), PrepareModel2(m), check.attr=FALSE)
-
-#all.equal(list2RMmodel(PrepareModel2(list2RMmodel(m))), list2RMmodel(m), check.attr=FALSE)
-#all.equal((PrepareModel2(list2RMmodel(m))), (m), check.attr=FALSE)
-
-
-  
-
-## residuals2RFspDataFrame <- function(x, coords, gridTopology, data.RFparams){
-##   if (is.null(x)) return(NULL)
-
-##   if (is.list(x))
-##     return(lapply(x, FUN=residuals2RFspDataFrame,
-##                   coords=coords,
-##                   gridTopology=gridTopology,
-##                   data.RFparams=data.RFparams))
-  
-##   return(conventional2RFspDataFrame(data=x,
-##                                     coords=coords,
-##                                     gridTopology=gridTopology,
-##                                     n=data.RFparams$n,
-##                                     vdim=data.RFparams$vdim))
-## }

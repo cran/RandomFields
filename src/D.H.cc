@@ -145,7 +145,7 @@ void periodogram(double *dat, // data
  ErrorHandling:
   if (compl_number!=NULL) free(compl_number);
   if (taper!=NULL) free(taper);
-  for (j=0; j<end_l; j++) lambda[j] = RF_NAN;
+  for (j=0; j<end_l; j++) lambda[j] = RF_NA;
   FFT_destruct(&FFT);
   return;
 }
@@ -191,7 +191,7 @@ void detrendedfluc(double *dat, // data
         varmethvar[e + i] = log(VarMeth_var / ((realnbox - 1.0)));
         // varmethvar[e + i] = log(VarMeth_var / ((realnbox)));
       } else {
-	varmethvar[e + i] = RF_NAN;
+	varmethvar[e + i] = RF_NA;
       }
 
       // detrended fluctuation

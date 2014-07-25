@@ -80,7 +80,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  be performed;
  If a matrix or a data.frame, the first columns are
  interpreted as coordinate vectors, and the last column(s) as
- (multiple) measurement(s) of the field; if the parameter
+ (multiple) measurement(s) of the field; if the argument
  \code{x} is missing,
  \code{data} may contain \code{NA}s, which are then replaced by
  conditionally simulated values (random imputing); 
@@ -102,7 +102,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
    For a very advanced feature, see the notes in \link{RFsimulateAdvanced}.
  }
  \item{...}{for advanced use:
- further options and control parameters for the simulation
+ further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}
  }
 }
@@ -114,7 +114,8 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  in the model, see the examples below.
 
 
- If \code{data} is passed, conditional simulation is performed: 
+ If \code{data} is passed, conditional simulation based on
+ simple kriging is performed: 
  \itemize{
  
  \item
@@ -181,6 +182,8 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  if the space-time dimension equals 1 and the coordinates are not on a
  grid.
  }
+
+ In case of a multivariate 
  
  If \code{n > 1} the repetitions make the last dimension.
 
@@ -208,7 +211,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
     options} of \command{\link{RFoptions}}.}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 \seealso{
@@ -223,7 +226,10 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
 }
 
 \examples{
-RFoptions(seed=0) % library(RandomFields, lib="~/TMP")
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+% library(RandomFields, lib="~/TMP")
 #############################################################
 ## ##
 ## ONLY TWO VERY BASIC EXAMPLES ARE GIVEN HERE ##
@@ -283,7 +289,7 @@ model <- RMexp()
 cond <- RFsimulate(model = model, x=x.seq.cond, y=y.seq.cond,
  grid=TRUE, data=data)
 plot(cond, data)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

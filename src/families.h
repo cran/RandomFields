@@ -2,16 +2,19 @@
 #define Families_H 1
 
 void arcsqrtD(double *x, cov_model *cov, double *v);
-void arcsqrtDlog(double *x, cov_model *cov, double *v, double *sign);
+void arcsqrtDlog(double *x, cov_model *cov, double *v);
 void arcsqrtDinverse(double *v, cov_model *cov, double *left, double *right);
 void arcsqrtP(double *x, cov_model *cov, double *v);
 void arcsqrtQ(double *x, cov_model *cov, double *v);
 void arcsqrtR(double *x, cov_model *cov, double *v);
 int check_arcsqrt_distr(cov_model *cov);
+int init_arcsqrt(cov_model *cov, storage VARIABLE_IS_NOT_USED *s);
+void do_arcsqrt(cov_model *cov, double *v);
+void range_arcsqrt(cov_model *cov, range_type* range);
 
 
 void determD(double *x, cov_model *cov, double *v);
-void determDlog(double *x, cov_model *cov, double *v, double *sign);
+void determDlog(double *x, cov_model *cov, double *v);
 void determDinverse(double *v, cov_model *cov, double *left, double *right);
 void determP(double *x, cov_model *cov, double *v);
 void determP2sided(double *x, double *y, cov_model *cov, double *v);
@@ -26,7 +29,7 @@ void range_determ(cov_model *cov, range_type *range);
 
 
 void distrD(double *x, cov_model *cov, double *v);
-void distrDlog(double *x, cov_model *cov, double *v, double *sign);
+void distrDlog(double *x, cov_model *cov, double *v);
 void distrDinverse(double *v, cov_model *cov, double *left, double *right);
 void distrP(double *x, cov_model *cov, double *v);
 void distrP2sided(double *x, double *y, cov_model *cov, double *v);
@@ -41,7 +44,7 @@ void range_distr(cov_model *cov, range_type *range);
 
 
 void sphericD(double *x, cov_model *cov, double *v);
-void sphericDlog(double *x, cov_model *cov, double *v, double *sign);
+void sphericDlog(double *x, cov_model *cov, double *v);
 void sphericDinverse(double *v, cov_model *cov, double *left, double *right);
 void sphericP(double *x, cov_model *cov, double *v);
 void sphericQ(double *x, cov_model *cov, double *v);
@@ -53,7 +56,7 @@ void range_RRspheric(cov_model *cov, range_type *range);
 
 
 void gaussD(double *x, cov_model *cov, double *v);
-void gaussDlog(double *x, cov_model *cov, double *v, double *sign);
+void gaussDlog(double *x, cov_model *cov, double *v);
 void gaussDinverse(double *v, cov_model *cov, double *left, double *right);
 void gaussP(double *x, cov_model *cov, double *v);
 void gaussP2sided(double *x, double *y, cov_model *cov, double *v);
@@ -68,7 +71,7 @@ void range_gauss_distr(cov_model *cov, range_type *range);
 
 
 void locD(double *x, cov_model *cov, double *v);
-void locDlog(double *x, cov_model *cov, double *v, double *sign);
+void locDlog(double *x, cov_model *cov, double *v);
 void locDinverse(double *v, cov_model *cov, double *left, double *right);
 void locP(double *x, cov_model *cov, double *v);
 void locP2sided(double *x, double *y, cov_model *cov, double *v);
@@ -82,7 +85,7 @@ void do_loc(cov_model *cov, double *v);
 void range_loc(cov_model *cov, range_type *range);
 
 void rectangularD(double *x, cov_model *cov, double *v);
-void rectangularDlog(double *x, cov_model *cov, double *v, double *sign);
+void rectangularDlog(double *x, cov_model *cov, double *v);
 void rectangularDinverse(double *v, cov_model *cov, double *left,double *right);
 void rectangularP(double *x, cov_model *cov, double *v);
 void rectangularP2sided(double *x, double *y, cov_model *cov, double *v);
@@ -97,7 +100,7 @@ void range_rectangular(cov_model *cov, range_type *range);
 
 
 void setParamD(double *x, cov_model *cov, double *v); 
-void setParamDlog(double *x, cov_model *cov, double *v, double *sign); 
+void setParamDlog(double *x, cov_model *cov, double *v); 
 void setParamDinverse(double *v, cov_model *cov, double *left, double *right);
 void setParamP(double *x, cov_model *cov, double *v);   
 void setParamP2sided(double *x, double *y, cov_model *cov, double *v);   
@@ -113,7 +116,7 @@ void do_setParam(cov_model *cov, double *v);
 
 
 void unifD(double *x, cov_model *cov, double *v);
-void unifDlog(double *x, cov_model *cov, double *v, double *sign);
+void unifDlog(double *x, cov_model *cov, double *v);
 void unifDinverse(double *v, cov_model *cov, double *left, double *right);
 void unifP(double *x, cov_model *cov, double *v);
 void unifP2sided(double *x, double *y, cov_model *cov, double *v);

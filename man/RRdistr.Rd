@@ -41,7 +41,7 @@ RRdistr(fct, nrow, ncol, envir)
  
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{
   \command{\link{RMmodel}},
@@ -51,7 +51,8 @@ RRdistr(fct, nrow, ncol, envir)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ## here a model with random scale parameter
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
@@ -72,7 +73,7 @@ for (i in 1:n) {
 
 ## here, just two other examples:
 ## fst
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 model <- RMmatern(nu=unif(min=0.1, max=2)) # random
 for (i in 1:n) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
@@ -89,7 +90,7 @@ plot(z <- RFsimulate(model=model, x=1:100/10))
 %#all.equal(parseModel(model), parseModel(list2RMmodel(parseModel(model))))
 
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

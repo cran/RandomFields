@@ -2,13 +2,14 @@
  * PoissonPolygon.c
  *
  * written by Felix Ballani, 2012
+ *
+ * slightly modified by Martin Schlather, 2014
  ****/
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 
-#include "PoissonPolygon.h"
 #include "convhull2D.h"
 
 #include "RF.h"
@@ -49,6 +50,8 @@ int compareAngles(const void * a, const void * b)
  *   double runif(void)
  * which generates a uniform random number from (0,1)
  ****/
+
+/*
 void rTriangle(double *phi)
 {
 	int onceagain=1, ok=0;
@@ -72,6 +75,29 @@ void rTriangle(double *phi)
 		a = 0.5*(fabs(sin(phi[2]-phi[1]))+fabs(sin(phi[0]-phi[2]))+fabs(sin(phi[1]-phi[0])));
 		if(amax*UNIFORM_RANDOM<a) onceagain=0;
 	}
+}
+
+ */
+
+
+void rTriangle(double *phi) {
+  bool ok; // changed
+  double a, amax=1.2990381056766579701455847561294; 
+	// amax = maximum area of a triangle with vertices on the unit circle 
+	//      = 3*sqrt(3)/4
+  while(true) {
+    ok = false;
+    while(!ok) {
+      phi[0] = TWOPI * UNIFORM_RANDOM;
+      phi[1] = TWOPI * UNIFORM_RANDOM;
+      phi[2] = TWOPI * UNIFORM_RANDOM;
+      qsort(phi, 3, sizeof(double), compareAngles);
+      ok = !(phi[2]-phi[0]<PI || phi[1]<phi[2]-PI || phi[1]>phi[0]+PI);
+    }
+    a = 0.5 * (fabs(sin(phi[2]-phi[1])) + fabs(sin(phi[0]-phi[2])) +
+	       fabs(sin(phi[1]-phi[0])));
+    if(amax * UNIFORM_RANDOM < a) break;
+  }
 }
 
 /*******************************************************************************
@@ -101,18 +127,19 @@ void rTriangle(double *phi)
  *
  * ! no errors are catched so far
  ****/
-int rPoissonPolygon(struct polygon *P, double lambda)
+int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 {
 	double R,T,RRight,RLeft,RMax,uprim[2],pprim,udual[2],pdual;
 	double sqrlen,ulen,maxlen;
 	int n=0,nold=0,nneu,ok=0,i,j,nV=0;
-	int err=0;
+	int err=NOERROR;
 	// arrays
 	double phi[3], psi, **vdual, **vdtemp, **vsave;
 	struct vertex *vprim;
 
 	// generate initial triangle
-	T = rexp(2.0);
+	// T = rexp(2.0);
+	T = rexp(0.5);
 	n = 3;
 	rTriangle(phi);
 	vdual = (double **) CALLOC(n, sizeof(double *));
@@ -160,13 +187,21 @@ int rPoissonPolygon(struct polygon *P, double lambda)
 		nneu = rpois(2.0*R);		
 		if(nneu>0){
 			if (vprim != NULL) free(vprim); 
+			vprim = NULL;
 			n += nneu;
 			vdtemp = (double **) realloc(vdual, (n+1)*sizeof(double *));
-			if(vdtemp != NULL) vdual = vdtemp; // else 'error handling'
+			if(vdtemp != NULL) vdual = vdtemp; else {
+			  err = ERRORMEMORYALLOCATION;
+			  goto ErrorHandling;
+			}
 			vdtemp = (double **) realloc(vsave, n*sizeof(double *));
-			if(vdtemp != NULL) vsave = vdtemp; // else 'error handling'
+			if(vdtemp != NULL) vsave = vdtemp; else {
+			  err = ERRORMEMORYALLOCATION;
+			  goto ErrorHandling;
+			}
+
 			for(i=nold;i<n;i++){
-				psi = 2*PI*UNIFORM_RANDOM;
+				psi = TWOPI*UNIFORM_RANDOM;
 				uprim[0] = cos(psi);
 				uprim[1] = sin(psi);
 				pprim = RLeft+R*UNIFORM_RANDOM;
@@ -196,10 +231,6 @@ int rPoissonPolygon(struct polygon *P, double lambda)
 			if(maxlen<RRight*RRight) ok = 1;
 		}
 	}
-	// free vdual and vsave
-	for(i=0;i<n;i++) if(vsave[i] != NULL) free(vsave[i]);
-	if (vdual != NULL) free (vdual);
-	if (vsave != NULL) free(vsave);
 
 	// determine the final polygon
 	P->n = nV; 
@@ -209,25 +240,55 @@ int rPoissonPolygon(struct polygon *P, double lambda)
 	P->box1[1] = 0.0;
 	P->v = (struct vertex *) CALLOC(P->n, sizeof(struct vertex));
 	for(i=0;i<P->n;i++){
-		for(j=0;j<2;j++){
-			P->v[i].x[j] = vprim[i].x[j]/lambda;
-			if(P->v[i].x[j]<P->box0[j]) P->box0[j] = P->v[i].x[j];
-			if(P->v[i].x[j]>P->box1[j]) P->box1[j] = P->v[i].x[j];
-		}
+	  for(j=0;j<2;j++){
+	    P->v[i].x[j] = vprim[i].x[j]/lambda;
+	    //	    printf("i,j = %d %d %f \n", i, j, P->v[i].x[j]);
+	    if(P->v[i].x[j]<P->box0[j]) P->box0[j] = P->v[i].x[j];
+	    if(P->v[i].x[j]>P->box1[j]) P->box1[j] = P->v[i].x[j];
+	  }
 	}
+
+	/* neu */
+	if (do_centering) {
+	  double centre;
+	  int d;
+	  for (d=0; d<2; d++) {
+	    centre = 0.5 * (P->box0[d] + P->box1[d]);
+	    P->box0[d] -= centre;
+	    P->box1[d] -= centre;
+	    for(i=0;i<P->n;i++) P->v[i].x[d] -= centre;
+	  }
+	}
+	/* end neu */
+
 	P->e = (struct edge *) CALLOC(P->n, sizeof(struct edge));
 	for(i=0;i<P->n;i++) {
-		j = (i+1) % nV;
-		P->e[i].u[0] = P->v[j].x[1]-P->v[i].x[1];
-		P->e[i].u[1] = P->v[i].x[0]-P->v[j].x[0];
-		ulen = sqrt(scProd(P->e[i].u,P->e[i].u));
-		P->e[i].u[0] /= ulen;
-		P->e[i].u[1] /= ulen;
-		P->e[i].p = scProd(P->e[i].u,P->v[i].x);
+	  j = (i+1) % nV;
+	  P->e[i].u[0] = P->v[j].x[1]-P->v[i].x[1];
+	  P->e[i].u[1] = P->v[i].x[0]-P->v[j].x[0];
+	  ulen = sqrt(scProd(P->e[i].u,P->e[i].u));
+	  P->e[i].u[0] /= ulen;
+	  P->e[i].u[1] /= ulen;
+	  P->e[i].p = scProd(P->e[i].u,P->v[i].x);
 	}
+
+ ErrorHandling:
 	
+	// free vdual and vsave
+	for(i=0;i<n;i++)
+	  if(vsave[i] != NULL) {
+	    free(vsave[i]);
+	    vsave[i] = NULL;
+	  }
+	if (vdual != NULL) free(vdual);
+	if (vsave != NULL) free(vsave);
+	vdual = NULL;
+	vsave = NULL;
+
+
 	// free vprim
 	if (vprim != NULL) free(vprim);
+	vprim = NULL;
 	return err;
 }
 
@@ -236,10 +297,15 @@ int rPoissonPolygon(struct polygon *P, double lambda)
  *
  * frees allocated memory
  ****/
-void freePolygon(struct polygon *P)
-{
-	if (P->e != NULL) free (P->e); 
-	if (P->v != NULL) free (P->v); 
+void freePolygon(struct polygon *P) {
+  if (P->e != NULL) {
+    free (P->e); 
+    P->e = NULL; // neu
+  }
+  if (P->v != NULL) {
+    free (P->v); 
+    P->v = NULL; // neu
+  }	
 }
 
 /*******************************************************************************
@@ -247,15 +313,10 @@ void freePolygon(struct polygon *P)
  *
  * returns 1 if the two-dimensional vectors x is inside the polygon P, else 0
  ****/
-int isInside(struct polygon *P, double *x)
-{
-	int i, ok=1;
-	for(i=0;i<P->n;i++)
-		if(scProd(x,P->e[i].u) > P->e[i].p){
-			ok = 0;
-			break;
-		}
-	return ok;
+bool isInside(struct polygon *P, double *x) { // changed !
+  int i;
+  for(i=0;i<P->n;i++) if(scProd(x,P->e[i].u) > P->e[i].p) return false;
+  return true;
 }
 
 /*******************************************************************************

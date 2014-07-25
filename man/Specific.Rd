@@ -5,22 +5,20 @@
 \title{Methods that are specific to certain covariance models}
 
 \description{
- This model defines that the (Gaussian) random field should
+ This model determines that the (Gaussian) random field should
  be modelled by a particular method that is specific to the given
  covariance model.
-
- \bold{These is a very advanced model of \pkg{RandomFields}.}
 }
 
 \usage{
-RPspecific(phi, loggauss)
+RPspecific(phi)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated.}
- \item{loggauss}{optional parameters; same meaning as for 
- \command{\link{RPgauss}}.}
+% \item{loggauss}{optional arguments; same meaning as for 
+% \command{\link{RPgauss}}.}
 }
 
 \details{
@@ -29,12 +27,21 @@ RPspecific(phi, loggauss)
   
   \itemize{ % i.W. alle Modele mit struct und do Funktion
     \item{\command{\link{RMplus}}}{
-      \command{\link{RMplus}} is able to simulate separately
+      is able to simulate separately
       the fields given by its summands. This is necessary, e.g., when
       a \command{\link{RMtrend}} is involved.
     }
+
+    \item{\command{\link{RMmult}}} {
+      for Gaussian random fields only.
+      \command{RMmult} simulates the random fields
+      of all the components and multiplies them. This is repeated
+      several times and averaged.
+    }
+    
     \item{\command{\link{RMS}}}{
-      Then the \code{sqrt(var)} is multiplied onto the Gaussian random
+      Then, for instance,
+      \code{sqrt(var)} is multiplied onto the (Gaussian) random
       fields after the field has been simulated.
       Hence, when \code{var} is random, then, for each realisation
       of the Gaussian field (for \code{n>1} in \command{\link{RFsimulate}})
@@ -54,6 +61,9 @@ RPspecific(phi, loggauss)
     }
     % \item{\command{\link{RM}}}{}
   }
+
+  Note that \code{RPspecific} applies only to the first model or
+  operator in argument \code{phi}.
 }
 
 \value{
@@ -74,7 +84,8 @@ RPspecific(phi, loggauss)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ## example for implicite use
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.1)
 plot(model)
@@ -88,13 +99,13 @@ model <- RPspecific(RMS(var=unif(min=0, max=10), RMgauss()))
 n <- if (interactive()) 6 else 1
 k <- if (interactive()) 10 else 1
 x <- seq(0,10,0.02)
-\dontshow{RFoptions(seed=NA)}
+RFoptions(seed=NA)
 for (i in 1:k) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
   plot(RFsimulate(model, x=x, n=n), ylim=c(-5,5))
 }
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

@@ -26,9 +26,11 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define DOT "."
 #define print Rprintf
 #define PRINTF Rprintf
+#define DOPRINTF if (DOPRINT) Rprintf
 #define KPRINT leer(PrInL);Rprintf
-#define LPRINT {cov_model *lprint_z=cov; int lprint_i=0; while (lprint_z->calling != NULL && lprint_i<10) {lprint_z=lprint_z->calling; Rprintf(DOT); Rprintf(" "); lprint_i++;} if (lprint_i==100) {Rprintf("LPRINT i=%d\n", lprint_i);PMI(cov); assert(false);}}Rprintf
-#define RF_NAN NA_REAL 
+#define LPRINT {cov_model *lprint_z=cov; int lprint_i=0; while (lprint_z->calling != NULL && lprint_i<10) {lprint_z=lprint_z->calling; if (DOPRINT) {Rprintf(DOT); Rprintf(" ");} lprint_i++;} if (lprint_i==100) {Rprintf("LPRINT i=%d\n", lprint_i);PMI(cov); assert(false);}} if (DOPRINT) Rprintf
+#define RF_NA NA_REAL 
+#define RF_NAN R_NaN
 #define RF_NEGINF R_NegInf
 #define RF_INF R_PosInf
 #define GAUSS_RANDOM(SIGMA) rnorm(0.0, SIGMA)
@@ -49,7 +51,7 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define INVSQRTTWOPI 0.39894228040143270286
 #define SQRTTWOPI 2.5066282746310002416
 #define SQRTINVLOG005 0.5777613700268771079749
-#define LOG05 -0.69314718055994528623
+//#define LOG05 -0.69314718055994528623
 #define LOG3 1.0986122886681096913952452369225257046474905578227
 #define LOG2 M_LN2
 

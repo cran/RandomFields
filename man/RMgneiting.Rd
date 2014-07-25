@@ -8,15 +8,15 @@
  two points and is given by
  \deqn{C(r) = (1 + 8 s r + 25 s^2 r^2 + 32 s^3 r^3)(1-s r)^8 }{C(r) = (1 + 8 s r + 25 s^2 r^2 + 32 s^3 r^3)(1-s r)^8 }
  if \eqn{0 \ge r \ge \frac{1}{s}}{0 <= r <= 1/s} and 
- \deqn{C(r)=0}{C(r)=0} otherwise, 
- with \eqn{s=0.301187465825}{s=0.301187465825}.
+ \deqn{C(r)=0}{C(r)=0} otherwise. Here,
+  \eqn{s=0.301187465825}{s=0.301187465825}.
  For a generalized model see also \command{\link{RMgengneiting}}.
 }
 \usage{
 RMgneiting(var, scale, Aniso, proj)
 }
 \arguments{
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -62,12 +62,13 @@ the optimal one was used: \eqn{s=\frac{10 \sqrt(2)}{47}}{s=10 sqrt(2)/47}.
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 scale <- 0.4
 model <- RMgneiting(scale = scale)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 points(x, RFcov(RMgauss(scale = scale), x), col="red")
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

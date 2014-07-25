@@ -16,12 +16,12 @@ RMnugget(tol, vdim, var, scale, Aniso, proj)
 \arguments{
  \item{tol}{Only for advanced users. See \command{\link{RPnugget}}.}
  \item{vdim}{Only for advanced users. See \command{\link{RPnugget}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{
- Note that the parameter \code{scale} does not affect the covariance
+ Note that the argument \code{scale} does not affect the covariance
  model; \code{Aniso} has an effect in case of zonal anisotropy.
 
  The nugget effect belongs to Gaussian white noise and is often used for
@@ -59,9 +59,10 @@ RMnugget(tol, vdim, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMnugget(Aniso=matrix(1, nr=2, nc=2))
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x, y=x, tol=1e-10))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

@@ -22,7 +22,7 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
    \code{diag} is a vector of variances, \code{rhored} is a vector
    containing the correlations of lower triangle of the \code{M}
  }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -54,5 +54,5 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
 
 \examples{
  ## For an example see the help page of 'RMparswmX' ##
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

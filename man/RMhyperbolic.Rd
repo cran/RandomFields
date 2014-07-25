@@ -24,7 +24,7 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
  \eqn{\nu = 0}{\nu = 0}, or\cr
  \eqn{\delta > 0}{\delta > 0}, \eqn{\lambda \ge 0}{\lambda \ge 0}
  and \eqn{\nu < 0}{\nu < 0}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -80,10 +80,11 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMhyperbolic(nu=1, lambda=2, delta=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

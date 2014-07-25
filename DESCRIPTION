@@ -1,15 +1,16 @@
 Package: RandomFields
-Version: 3.0.10
+Version: 3.0.30
 Title: Simulation and Analysis of Random Fields
-Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Peter Menck [aut], Sebastian Gross [aut], Katharina Burmeister [ctb], Juliane Manitz [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
+Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Peter Menck [aut], Sebastian Gross [aut], Ulrike Ober [ctb], Katharina Burmeister [ctb], Juliane Manitz [ctb], Paulo Ribeiro [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
 Depends: R (>= 3.0.2), sp
-Suggests: raster, tcltk2, tcltk, tkrplot, spam, methods, colorspace
+Suggests: raster, tcltk2, tcltk, tkrplot, spam, methods, colorspace,
+        RColorBrewer
 Description: Simulation of Gaussian and extreme value random fields;
 	      conditional simulation; kriging; maximum likelihood estimation
 License: GPL (>= 3)
-URL: http://ms.math.uni-mannheim.de
-Packaged: 2014-01-21 10:27:36 UTC; schlather
+URL: http://ms.math.uni-mannheim.de/de/publications/software
+Packaged: 2014-07-25 01:06:39 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-01-21 15:18:01
+Date/Publication: 2014-07-25 08:36:48

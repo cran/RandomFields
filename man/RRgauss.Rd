@@ -22,7 +22,7 @@ RRgauss(mu, sd, log)
 
 \details{
   It has the same effect as
-  \code{\link{RRdistr}(\link{norm}(mu=mu, sd=sd, log=log))}
+  \code{\link{RRdistr}(\link[=rnorm]{norm}(mu=mu, sd=sd, log=log))}
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
@@ -30,14 +30,17 @@ RRgauss(mu, sd, log)
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RRdistr}},
- \command{\link{RRunif}},
+ \command{\link{RRunif}}.
+
+ Do not mix up with \command{\link{RMgauss}} or \command{\link{RPgauss}}.
  }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 r <- RFrdistr(RRgauss(mu=c(1,5)), n=1000, dim=2)
 plot(r[1,], r[2, ])
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
  

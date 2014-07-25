@@ -1,6 +1,6 @@
 \name{Smith}
 \alias{RPsmith}
-\alias{mixed movin maxima}
+\alias{mixed moving maxima}
 \alias{moving maxima}
 \alias{M2}
 \alias{M3}
@@ -20,7 +20,7 @@ RPsmith(shape, tcf, xi, mu, s)
  \item{tcf}{an \command{\link{RMmodel}} specifying the
    extremal correlation function; either \code{shape} or \code{tcf} must
    be given. If \code{tcf} is given a shape function is tried to be 
-   constructed via the \link[=RMstrokorbMono]{Strokorb} construction of
+   constructed via the \command{\link{RMm2r}} construction of
    deterministic, monotone functions.
  }
  \item{xi,mu,s}{the extreme value index, the location parameter and the
@@ -31,8 +31,12 @@ RPsmith(shape, tcf, xi, mu, s)
 }
 
 \note{
+  IMPORTANT: for consistency reasons with the geostatistical definitions
+  in this package the scale argument differs froms the original
+  definition of the Smith model! See the example below.
+  
   \command{RPsmith} depends on \command{\link{RRrectangular}}
-  and its parameters.
+  and its arguments.
 
   Advanced options
    are \code{maxpoints} and \code{max_gauss}, see
@@ -40,11 +44,13 @@ RPsmith(shape, tcf, xi, mu, s)
 }
 
 \details{
-  The parameter \code{xi}
+  The argument \code{xi}
   is always a number, i.e. \eqn{\xi} is constant in
  space. In contrast, \eqn{\mu} and \eqn{s} might be constant
  numerical value or given a \code{\link{RMmodel}}, in particular by a
- \code{\link{RMtrend}} model.
+ \code{\link{RMtrend}} model. The default values of \eqn{mu} and \eqn{s}
+ are \eqn{1} and \eqn{\xi}, respectively.
+ 
  
 
  It simulates max-stable processes \eqn{Z} that are referred to as
@@ -58,15 +64,12 @@ RPsmith(shape, tcf, xi, mu, s)
  \eqn{E[\int \max(0, Y(x)) dx] < \infty}{E[int max(0, Y(x)) dx ] < \infty}. 
  The constant \eqn{c} is chosen such that \eqn{Z} has standard Frechet
  margins.
-
- 
  }
 
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
-
 
 
 \references{
@@ -82,7 +85,8 @@ RPsmith(shape, tcf, xi, mu, s)
 }
  
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 model <- RMball()
 x <- if (interactive()) seq(0, 1000, 0.02) else seq(0, 100, 10)
@@ -91,21 +95,35 @@ plot(z)
 hist(z@data$variable1, 50, freq=FALSE)
 curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
+## 2-dim
+x <- seq(0, 10, if (interactive()) 0.05 else 1) 
+z <- RFsimulate(RPsmith(model, xi=0), x, x)
+plot(z)
+
+## original Smith model
+x <- seq(0, 10, if (interactive()) 0.05 else 1)
+model <- RMgauss(scale = sqrt(2)) # !! cf. definition of RMgauss
+z <- RFsimulate(RPsmith(model, xi=0), x, x)
+plot(z)
+
+
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {
 }}
 
 
 ## for some more sophisticated models see 'maxstableAdvanced'
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{
- \command{\link{RMmodel}},
- \command{\link{RPbernoulli}},
- \command{\link{RPgauss}},
- \link{maxstable}
- \command{\link{maxstableAdvanced}}
+  \command{\link{Advanced RMmodels}},
+  \command{\link{Auxiliary RMmodels}},
+  \command{\link{RMmodel}},
+  \command{\link{RPbernoulli}},
+  \command{\link{RPgauss}},
+  \link{maxstable}
+  \command{\link{maxstableAdvanced}}
 }
 
 

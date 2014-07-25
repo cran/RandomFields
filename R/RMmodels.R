@@ -61,7 +61,7 @@ RMtrend <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -120,10 +120,10 @@ RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
 RMplus <- new('RMmodelgenerator',
 	.Data = RMplus,
 	type = 'undefined',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -182,10 +182,10 @@ RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
 RMmult <- new('RMmodelgenerator',
 	.Data = RMmult,
 	type = 'tail correlation function',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -243,10 +243,10 @@ RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
 RMS <- new('RMmodelgenerator',
 	.Data = RMS,
 	type = 'undefined',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -320,9 +320,75 @@ RMave <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 10,
+	vdim = 1
+	)
+
+
+
+RMbcw <- function(alpha, beta, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
+    u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
+	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['alpha']] <- alpha
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
+    u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
+	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['beta']] <- beta
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
+    u <- try(is.numeric(var) || is.logical(var) || is.language(var)
+	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['var']] <- var
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
+    u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
+	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['scale']] <- scale
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
+    u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
+	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
+    u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
+	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['proj']] <- proj
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
+  }
+  model <- new('RMmodel', call = cl, name = 'RMbcw', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMbcw <- new('RMmodelgenerator',
+	.Data = RMbcw,
+	type = 'undefined',
+	domain = 'single variable',
+	isotropy = 'isotropic',
+	operator = FALSE,
+	monotone = 'normal mixture',
+	finiterange = FALSE,
+	maxdim = Inf,
 	vdim = 1
 	)
 
@@ -379,7 +445,7 @@ RMbessel <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -487,7 +553,7 @@ RMbigneiting <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -1,
 	vdim = 2
@@ -544,10 +610,10 @@ RMbernoulli <- function(phi, threshold, var, scale, Aniso, proj) {
 RMbernoulli <- new('RMmodelgenerator',
 	.Data = RMbernoulli,
 	type = 'tail correlation function',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -655,7 +721,7 @@ RMbiwm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 2
@@ -708,7 +774,7 @@ RMbrownresnick <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -761,7 +827,7 @@ RMbr2bg <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -814,7 +880,7 @@ RMbr2eg <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -873,7 +939,7 @@ RMcauchy <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -925,7 +991,7 @@ RMcircular <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'Gneiting-Schaback class',
 	finiterange = FALSE,
 	maxdim = 2,
 	vdim = 1
@@ -998,7 +1064,7 @@ RMconstant <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'completely monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -1072,7 +1138,7 @@ RMcoxisham <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'zero-space-isotropic',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = 1
@@ -1124,7 +1190,7 @@ RMcubic <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = 1
@@ -1177,7 +1243,7 @@ RMcurlfree <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -1244,7 +1310,7 @@ RMcutoff <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = 13,
 	vdim = 1
@@ -1310,7 +1376,7 @@ RMdagum <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1369,7 +1435,7 @@ RMdampedcos <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -1,
 	vdim = 1
@@ -1428,7 +1494,7 @@ RMdewijsian <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1481,7 +1547,7 @@ RMdivfree <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -1554,7 +1620,7 @@ RMepscauchy <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1606,7 +1672,7 @@ RMexp <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'completely monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1670,10 +1736,10 @@ RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
 RMexponential <- new('RMmodelgenerator',
 	.Data = RMexponential,
 	type = 'positive definite',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -1726,7 +1792,7 @@ RMschlather <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -1785,7 +1851,7 @@ RMfractdiff <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 1,
 	vdim = 1
@@ -1844,7 +1910,7 @@ RMfbm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'Bernstein',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1903,7 +1969,7 @@ RMfractgauss <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 1,
 	vdim = 1
@@ -1955,7 +2021,7 @@ RMgauss <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -1963,7 +2029,7 @@ RMgauss <- new('RMmodelgenerator',
 
 
 
-RMgenfbm <- function(alpha, delta, var, scale, Aniso, proj) {
+RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -1974,12 +2040,12 @@ RMgenfbm <- function(alpha, delta, var, scale, Aniso, proj) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
     else par.model[['alpha']] <- do.call('RRdistr', list(subst))
   }
-  if (hasArg(delta) && !is.null(subst <- substitute(delta))) {
-    u <- try(is.numeric(delta) || is.logical(delta) || is.language(delta)
-	 || is.list(delta) || is(delta, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['delta']] <- delta
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['delta']] <- delta
-    else par.model[['delta']] <- do.call('RRdistr', list(subst))
+  if (hasArg(beta) && !is.null(subst <- substitute(beta))) {
+    u <- try(is.numeric(beta) || is.logical(beta) || is.language(beta)
+	 || is.list(beta) || is(beta, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['beta']] <- beta
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['beta']] <- beta
+    else par.model[['beta']] <- do.call('RRdistr', list(subst))
   }
   if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
@@ -2021,7 +2087,7 @@ RMgenfbm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -2087,7 +2153,7 @@ RMgencauchy <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -2153,7 +2219,7 @@ RMgengneiting <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = 1
@@ -2205,7 +2271,7 @@ RMgneiting <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = 3,
 	vdim = 1
@@ -2278,7 +2344,7 @@ RMhyperbolic <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -2351,7 +2417,7 @@ RMiaco <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'space-isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -2408,10 +2474,10 @@ RMid <- function(phi, vdim, var, scale, Aniso, proj) {
 RMid <- new('RMmodelgenerator',
 	.Data = RMid,
 	type = 'undefined',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -2463,7 +2529,7 @@ RMkolmogorov <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'vector-isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = 3
@@ -2529,7 +2595,7 @@ RMlgd <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	maxdim = -1,
 	vdim = 1
@@ -2596,7 +2662,7 @@ RMmastein <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'space-isotropic',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -2663,7 +2729,7 @@ RMma <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -2716,7 +2782,7 @@ RMintexp <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -2773,10 +2839,10 @@ RMmatrix <- function(phi, M, var, scale, Aniso, proj) {
 RMmatrix <- new('RMmodelgenerator',
 	.Data = RMmatrix,
 	type = 'positive definite',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -2842,7 +2908,7 @@ RMmatern <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -2911,7 +2977,7 @@ RMmqam <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = -1
@@ -2964,7 +3030,7 @@ RMnatsc <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -3023,7 +3089,7 @@ RMnonstwm <- new('RMmodelgenerator',
 	domain = 'kernel',
 	isotropy = 'symmetric',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -3084,7 +3150,7 @@ RMnsst <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'space-isotropic',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -3150,10 +3216,69 @@ RMnugget <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = -2
+	)
+
+
+
+RMflatpower <- function(alpha, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
+    u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
+	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['alpha']] <- alpha
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else par.model[['alpha']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
+    u <- try(is.numeric(var) || is.logical(var) || is.language(var)
+	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['var']] <- var
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
+    u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
+	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['scale']] <- scale
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
+    u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
+	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
+    u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
+	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['proj']] <- proj
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
+  }
+  model <- new('RMmodel', call = cl, name = 'RMflatpower', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMflatpower <- new('RMmodelgenerator',
+	.Data = RMflatpower,
+	type = 'negative definite',
+	domain = 'single variable',
+	isotropy = 'isotropic',
+	operator = FALSE,
+	monotone = 'Bernstein',
+	finiterange = FALSE,
+	maxdim = Inf,
+	vdim = 1
 	)
 
 
@@ -3209,7 +3334,7 @@ RMparswm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -3261,7 +3386,7 @@ RMpenta <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = 3,
 	vdim = 1
@@ -3320,7 +3445,7 @@ RMaskey <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = 1
@@ -3377,10 +3502,10 @@ RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
 RMpower <- new('RMmodelgenerator',
 	.Data = RMpower,
 	type = 'positive definite',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -3449,7 +3574,7 @@ RMqam <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = -3,
 	vdim = 1
@@ -3508,7 +3633,7 @@ RMqexp <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -3579,10 +3704,10 @@ RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
 RMschur <- new('RMmodelgenerator',
 	.Data = RMschur,
 	type = 'positive definite',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -3642,7 +3767,7 @@ RMdelay <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -3694,7 +3819,7 @@ RMspheric <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'Gneiting-Schaback class',
 	finiterange = TRUE,
 	maxdim = 3,
 	vdim = 1
@@ -3753,7 +3878,7 @@ RMstable <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -3820,7 +3945,7 @@ RMintrinsic <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = 13,
 	vdim = 1
@@ -3886,7 +4011,7 @@ RMstein <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -3894,10 +4019,10 @@ RMstein <- new('RMmodelgenerator',
 
 
 
-RMstp <- function(xi2, phi, S, z, M, var, scale, Aniso, proj) {
+RMstp <- function(xi, phi, S, z, M, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
-  if (hasArg(xi2)) submodels[['xi2']] <- xi2
+  if (hasArg(xi)) submodels[['xi']] <- xi
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg(S) && !is.null(subst <- substitute(S))) {
@@ -3961,7 +4086,7 @@ RMstp <- new('RMmodelgenerator',
 	domain = 'kernel',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 10,
 	vdim = 1
@@ -4035,7 +4160,7 @@ RMtbm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -1,
 	vdim = -3
@@ -4102,7 +4227,7 @@ RMvector <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'symmetric',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -4154,7 +4279,7 @@ RMwave <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = 1
@@ -4220,7 +4345,7 @@ RMwhittle <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'normal mixture',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -4266,7 +4391,7 @@ RMangle <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -4274,11 +4399,38 @@ RMangle <- new('RMmodelgenerator',
 
 
 
-RMball <- function() {
+RMball <- function(var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
-  
+  if (hasArg(var) && !is.null(subst <- substitute(var))) {
+    u <- try(is.numeric(var) || is.logical(var) || is.language(var)
+	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['var']] <- var
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['var']] <- var
+    else par.general[['var']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(scale) && !is.null(subst <- substitute(scale))) {
+    u <- try(is.numeric(scale) || is.logical(scale) || is.language(scale)
+	 || is.list(scale) || is(scale, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['scale']] <- scale
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['scale']] <- scale
+    else par.general[['scale']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(Aniso) && !is.null(subst <- substitute(Aniso))) {
+    u <- try(is.numeric(Aniso) || is.logical(Aniso) || is.language(Aniso)
+	 || is.list(Aniso) || is(Aniso, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['Aniso']] <- Aniso
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['Aniso']] <- Aniso
+    else par.general[['Aniso']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(proj) && !is.null(subst <- substitute(proj))) {
+    u <- try(is.numeric(proj) || is.logical(proj) || is.language(proj)
+	 || is.list(proj) || is(proj, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.general[['proj']] <- proj
+    else if (substr(deparse(subst), 1, 1)=='R') par.general[['proj']] <- proj
+    else par.general[['proj']] <- do.call('RRdistr', list(subst))
+  }
   model <- new('RMmodel', call = cl, name = 'RMball', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
@@ -4291,7 +4443,7 @@ RMball <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = 1
@@ -4330,7 +4482,7 @@ RMeaxxa <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 10,
 	vdim = -1
@@ -4376,7 +4528,7 @@ RMetaxxa <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 10,
 	vdim = 3
@@ -4408,7 +4560,7 @@ RMtrafo <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -4416,7 +4568,7 @@ RMtrafo <- new('RMmodelgenerator',
 
 
 
-RMpolygon <- function(lambda, safetyfactor) {
+RMpolygon <- function(lambda) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -4426,13 +4578,6 @@ RMpolygon <- function(lambda, safetyfactor) {
     if (is.logical(u) && u) par.model[['lambda']] <- lambda
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['lambda']] <- lambda
     else par.model[['lambda']] <- do.call('RRdistr', list(subst))
-  }
-  if (hasArg(safetyfactor) && !is.null(subst <- substitute(safetyfactor))) {
-    u <- try(is.numeric(safetyfactor) || is.logical(safetyfactor) || is.language(safetyfactor)
-	 || is.list(safetyfactor) || is(safetyfactor, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['safetyfactor']] <- safetyfactor
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['safetyfactor']] <- safetyfactor
-    else par.model[['safetyfactor']] <- do.call('RRdistr', list(subst))
   }
   
   model <- new('RMmodel', call = cl, name = 'RMpolygon', 
@@ -4447,7 +4592,7 @@ RMpolygon <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = 2,
 	vdim = 1
@@ -4486,7 +4631,7 @@ RMrational <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -4525,7 +4670,7 @@ RMrotat <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = 1
@@ -4557,7 +4702,7 @@ RMrotation <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = FALSE,
 	maxdim = 3,
 	vdim = -1
@@ -4590,7 +4735,7 @@ RMsign <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = FALSE,
+	monotone = 'not monotone',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -4598,25 +4743,25 @@ RMsign <- new('RMmodelgenerator',
 
 
 
-RMstrokorbMono <- function(phi) {
+RMm2r <- function(phi) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   
-  model <- new('RMmodel', call = cl, name = 'RMstrokorbMono', 
+  model <- new('RMmodel', call = cl, name = 'RMm2r', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-RMstrokorbMono <- new('RMmodelgenerator',
-	.Data = RMstrokorbMono,
+RMm2r <- new('RMmodelgenerator',
+	.Data = RMm2r,
 	type = 'shape function',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = 3,
 	vdim = 1
@@ -4624,27 +4769,53 @@ RMstrokorbMono <- new('RMmodelgenerator',
 
 
 
-RMstrokorbBall <- function(phi) {
+RMm3b <- function(phi) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   
-  model <- new('RMmodel', call = cl, name = 'RMstrokorbBall', 
+  model <- new('RMmodel', call = cl, name = 'RMm3b', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-RMstrokorbBall <- new('RMmodelgenerator',
-	.Data = RMstrokorbBall,
+RMm3b <- new('RMmodelgenerator',
+	.Data = RMm3b,
 	type = 'shape function',
 	domain = 'single variable',
 	isotropy = 'isotropic',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'monotone',
 	finiterange = TRUE,
 	maxdim = 3,
+	vdim = 1
+	)
+
+
+
+RMmps <- function(phi) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  if (hasArg(phi)) submodels[['phi']] <- phi
+  
+  
+  model <- new('RMmodel', call = cl, name = 'RMmps', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMmps <- new('RMmodelgenerator',
+	.Data = RMmps,
+	type = 'shape function',
+	domain = 'single variable',
+	isotropy = 'cartesian system',
+	operator = TRUE,
+	monotone = 'monotone',
+	finiterange = TRUE,
+	maxdim = 2,
 	vdim = 1
 	)
 
@@ -4675,7 +4846,7 @@ RMtruncsupport <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -4704,10 +4875,10 @@ RRdeterm <- function(mean) {
 RRdeterm <- new('RMmodelgenerator',
 	.Data = RRdeterm,
 	type = 'distribution family',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = -3
@@ -4750,10 +4921,10 @@ RRgauss <- function(mu, sd, log) {
 RRgauss <- new('RMmodelgenerator',
 	.Data = RRgauss,
 	type = 'distribution family',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -1
@@ -4761,7 +4932,7 @@ RRgauss <- new('RMmodelgenerator',
 
 
 
-RRloc <- function(phi, mu, scale) {
+RRloc <- function(phi, mu, scale, pow) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -4780,6 +4951,13 @@ RRloc <- function(phi, mu, scale) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['scale']] <- scale
     else  stop('random parameter not allowed')
   }
+  if (hasArg(pow) && !is.null(subst <- substitute(pow))) {
+    u <- try(is.numeric(pow) || is.logical(pow) || is.language(pow)
+	 || is.list(pow) || is(pow, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['pow']] <- pow
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['pow']] <- pow
+    else  stop('random parameter not allowed')
+  }
   
   model <- new('RMmodel', call = cl, name = 'RRloc', 
   		submodels = submodels, 
@@ -4790,10 +4968,10 @@ RRloc <- function(phi, mu, scale) {
 RRloc <- new('RMmodelgenerator',
 	.Data = RRloc,
 	type = 'distribution family',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'cartesian system',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -4893,10 +5071,10 @@ RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, inner
 RRrectangular <- new('RMmodelgenerator',
 	.Data = RRrectangular,
 	type = 'distribution family',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'cartesian system',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = -1
@@ -4904,7 +5082,7 @@ RRrectangular <- new('RMmodelgenerator',
 
 
 
-RRspherical <- function(spacedim, balldim) {
+RRspheric <- function(spacedim, balldim, R) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -4922,20 +5100,27 @@ RRspherical <- function(spacedim, balldim) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['balldim']] <- balldim
     else  stop('random parameter not allowed')
   }
+  if (hasArg(R) && !is.null(subst <- substitute(R))) {
+    u <- try(is.numeric(R) || is.logical(R) || is.language(R)
+	 || is.list(R) || is(R, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['R']] <- R
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['R']] <- R
+    else  stop('random parameter not allowed')
+  }
   
-  model <- new('RMmodel', call = cl, name = 'RRspherical', 
+  model <- new('RMmodel', call = cl, name = 'RRspheric', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-RRspherical <- new('RMmodelgenerator',
-	.Data = RRspherical,
+RRspheric <- new('RMmodelgenerator',
+	.Data = RRspheric,
 	type = 'distribution family',
 	domain = 'single variable',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = 1,
 	vdim = 1
@@ -4943,7 +5128,7 @@ RRspherical <- new('RMmodelgenerator',
 
 
 
-RRunif <- function(min, max) {
+RRunif <- function(min, max, normed) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -4961,6 +5146,13 @@ RRunif <- function(min, max) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['max']] <- max
     else  stop('random parameter not allowed')
   }
+  if (hasArg(normed) && !is.null(subst <- substitute(normed))) {
+    u <- try(is.numeric(normed) || is.logical(normed) || is.language(normed)
+	 || is.list(normed) || is(normed, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['normed']] <- normed
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['normed']] <- normed
+    else  stop('random parameter not allowed')
+  }
   
   model <- new('RMmodel', call = cl, name = 'RRunif', 
   		submodels = submodels, 
@@ -4971,10 +5163,10 @@ RRunif <- function(min, max) {
 RRunif <- new('RMmodelgenerator',
 	.Data = RRunif,
 	type = 'distribution family',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'cartesian system',
 	operator = FALSE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = -1
@@ -5013,10 +5205,10 @@ RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
 RMmppplus <- new('RMmodelgenerator',
 	.Data = RMmppplus,
 	type = 'shifted shape function',
-	domain = 'calling model',
+	domain = 'framework dependent',
 	isotropy = 'parameter dependent',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -5024,19 +5216,12 @@ RMmppplus <- new('RMmodelgenerator',
 
 
 
-RPaverage <- function(phi, shape, loggauss, intensity) {
+RPaverage <- function(phi, shape, intensity) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(intensity) && !is.null(subst <- substitute(intensity))) {
     u <- try(is.numeric(intensity) || is.logical(intensity) || is.language(intensity)
 	 || is.list(intensity) || is(intensity, class2='RMmodel'), silent=TRUE)
@@ -5057,7 +5242,7 @@ RPaverage <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = 1
@@ -5065,18 +5250,11 @@ RPaverage <- new('RMmodelgenerator',
 
 
 
-RPcirculant <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
+RPcirculant <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
@@ -5167,7 +5345,7 @@ RPcirculant <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 13,
 	vdim = -3
@@ -5175,18 +5353,11 @@ RPcirculant <- new('RMmodelgenerator',
 
 
 
-RPcutoff <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
+RPcutoff <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
@@ -5291,7 +5462,7 @@ RPcutoff <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 13,
 	vdim = 1
@@ -5299,18 +5470,11 @@ RPcutoff <- new('RMmodelgenerator',
 
 
 
-RPintrinsic <- function(phi, loggauss, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
+RPintrinsic <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(force) && !is.null(subst <- substitute(force))) {
     u <- try(is.numeric(force) || is.logical(force) || is.language(force)
 	 || is.list(force) || is(force, class2='RMmodel'), silent=TRUE)
@@ -5415,7 +5579,7 @@ RPintrinsic <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 13,
 	vdim = 1
@@ -5423,18 +5587,11 @@ RPintrinsic <- new('RMmodelgenerator',
 
 
 
-RPdirect <- function(phi, loggauss, root_method, svdtolerance, max_variab) {
+RPdirect <- function(phi, root_method, svdtolerance, max_variab) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(root_method) && !is.null(subst <- substitute(root_method))) {
     u <- try(is.numeric(root_method) || is.logical(root_method) || is.language(root_method)
 	 || is.list(root_method) || is(root_method, class2='RMmodel'), silent=TRUE)
@@ -5469,7 +5626,7 @@ RPdirect <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = -3
@@ -5477,18 +5634,11 @@ RPdirect <- new('RMmodelgenerator',
 
 
 
-RPhyperplane <- function(phi, loggauss, superpos, maxlines, mar_distr, mar_param) {
+RPhyperplane <- function(phi, superpos, maxlines, mar_distr, mar_param) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(superpos) && !is.null(subst <- substitute(superpos))) {
     u <- try(is.numeric(superpos) || is.logical(superpos) || is.language(superpos)
 	 || is.list(superpos) || is(superpos, class2='RMmodel'), silent=TRUE)
@@ -5530,7 +5680,7 @@ RPhyperplane <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 2,
 	vdim = 1
@@ -5538,18 +5688,11 @@ RPhyperplane <- new('RMmodelgenerator',
 
 
 
-RPnugget <- function(phi, loggauss, tol, vdim) {
+RPnugget <- function(phi, tol, vdim) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(tol) && !is.null(subst <- substitute(tol))) {
     u <- try(is.numeric(tol) || is.logical(tol) || is.language(tol)
 	 || is.list(tol) || is(tol, class2='RMmodel'), silent=TRUE)
@@ -5577,7 +5720,7 @@ RPnugget <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	maxdim = Inf,
 	vdim = -2
@@ -5585,19 +5728,12 @@ RPnugget <- new('RMmodelgenerator',
 
 
 
-RPcoins <- function(phi, shape, loggauss, intensity) {
+RPcoins <- function(phi, shape, intensity) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   if (hasArg(shape)) submodels[['shape']] <- shape
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(intensity) && !is.null(subst <- substitute(intensity))) {
     u <- try(is.numeric(intensity) || is.logical(intensity) || is.language(intensity)
 	 || is.list(intensity) || is(intensity, class2='RMmodel'), silent=TRUE)
@@ -5618,7 +5754,7 @@ RPcoins <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = 1
@@ -5626,18 +5762,11 @@ RPcoins <- new('RMmodelgenerator',
 
 
 
-RPsequential <- function(phi, loggauss, max_variables, back_steps, initial) {
+RPsequential <- function(phi, max_variables, back_steps, initial) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(max_variables) && !is.null(subst <- substitute(max_variables))) {
     u <- try(is.numeric(max_variables) || is.logical(max_variables) || is.language(max_variables)
 	 || is.list(max_variables) || is(max_variables, class2='RMmodel'), silent=TRUE)
@@ -5672,7 +5801,7 @@ RPsequential <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = Inf,
 	vdim = 1
@@ -5680,18 +5809,11 @@ RPsequential <- new('RMmodelgenerator',
 
 
 
-RPspectral <- function(phi, loggauss, sp_lines, sp_grid, prop_factor, sigma) {
+RPspectral <- function(phi, sp_lines, sp_grid, prop_factor, sigma) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(sp_lines) && !is.null(subst <- substitute(sp_lines))) {
     u <- try(is.numeric(sp_lines) || is.logical(sp_lines) || is.language(sp_lines)
 	 || is.list(sp_lines) || is(sp_lines, class2='RMmodel'), silent=TRUE)
@@ -5733,7 +5855,7 @@ RPspectral <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = 1
@@ -5741,18 +5863,11 @@ RPspectral <- new('RMmodelgenerator',
 
 
 
-RPspecific <- function(phi, loggauss) {
+RPspecific <- function(phi) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   
   model <- new('RMmodel', call = cl, name = 'RPspecific', 
   		submodels = submodels, 
@@ -5766,7 +5881,7 @@ RPspecific <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -5774,18 +5889,11 @@ RPspecific <- new('RMmodelgenerator',
 
 
 
-RPtbm <- function(phi, loggauss, fulldim, reduceddim, layers, lines, linessimufactor, linesimustep, center, points) {
+RPtbm <- function(phi, fulldim, reduceddim, layers, lines, linessimufactor, linesimustep, center, points) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(fulldim) && !is.null(subst <- substitute(fulldim))) {
     u <- try(is.numeric(fulldim) || is.logical(fulldim) || is.language(fulldim)
 	 || is.list(fulldim) || is(fulldim, class2='RMmodel'), silent=TRUE)
@@ -5855,10 +5963,10 @@ RPtbm <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = -3,
-	vdim = 1
+	vdim = -1
 	)
 
 
@@ -5903,7 +6011,7 @@ RPbrorig <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -5911,7 +6019,7 @@ RPbrorig <- new('RMmodelgenerator',
 
 
 
-RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, lowerbound_optim, vertnumber, optim_mixed, optim_mixed_tol, optim_mixed_maxp, lambda, areamat, variobound) {
+RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, optim_mixed_maxp, lambda, areamat, variobound) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5943,13 +6051,6 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, lowerbound_optim, vertnumbe
 	 || is.list(meshsize) || is(meshsize, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['meshsize']] <- meshsize
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['meshsize']] <- meshsize
-    else  stop('random parameter not allowed')
-  }
-  if (hasArg(lowerbound_optim) && !is.null(subst <- substitute(lowerbound_optim))) {
-    u <- try(is.numeric(lowerbound_optim) || is.logical(lowerbound_optim) || is.language(lowerbound_optim)
-	 || is.list(lowerbound_optim) || is(lowerbound_optim, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['lowerbound_optim']] <- lowerbound_optim
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lowerbound_optim']] <- lowerbound_optim
     else  stop('random parameter not allowed')
   }
   if (hasArg(vertnumber) && !is.null(subst <- substitute(vertnumber))) {
@@ -6014,7 +6115,7 @@ RPbrmixed <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -6062,7 +6163,7 @@ RPbrshifted <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -6070,18 +6171,11 @@ RPbrshifted <- new('RMmodelgenerator',
 
 
 
-RPbernoulli <- function(phi, loggauss, stationary_only, threshold) {
+RPbernoulli <- function(phi, stationary_only, threshold) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(stationary_only) && !is.null(subst <- substitute(stationary_only))) {
     u <- try(is.numeric(stationary_only) || is.logical(stationary_only) || is.language(stationary_only)
 	 || is.list(stationary_only) || is(stationary_only, class2='RMmodel'), silent=TRUE)
@@ -6109,10 +6203,10 @@ RPbernoulli <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 11000,
-	vdim = 1
+	vdim = -3
 	)
 
 
@@ -6157,7 +6251,7 @@ RPbrownresnick <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -6165,18 +6259,11 @@ RPbrownresnick <- new('RMmodelgenerator',
 
 
 
-RPgauss <- function(phi, loggauss, stationary_only) {
+RPgauss <- function(phi, stationary_only) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg(loggauss) && !is.null(subst <- substitute(loggauss))) {
-    u <- try(is.numeric(loggauss) || is.logical(loggauss) || is.language(loggauss)
-	 || is.list(loggauss) || is(loggauss, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['loggauss']] <- loggauss
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['loggauss']] <- loggauss
-    else  stop('random parameter not allowed')
-  }
   if (hasArg(stationary_only) && !is.null(subst <- substitute(stationary_only))) {
     u <- try(is.numeric(stationary_only) || is.logical(stationary_only) || is.language(stationary_only)
 	 || is.list(stationary_only) || is(stationary_only, class2='RMmodel'), silent=TRUE)
@@ -6197,7 +6284,7 @@ RPgauss <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 11000,
 	vdim = -3
@@ -6230,7 +6317,7 @@ RPpoisson <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = -3
@@ -6278,7 +6365,7 @@ RPschlather <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 11000,
 	vdim = 1
@@ -6326,7 +6413,7 @@ RPsmith <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 4,
 	vdim = 1
@@ -6359,10 +6446,10 @@ RPchi2 <- new('RMmodelgenerator',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
-	normalmix = TRUE,
+	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	maxdim = 11000,
-	vdim = 1
+	vdim = -3
 	)
 
 

@@ -5,7 +5,8 @@
 
  library for simulation of random fields -- init part and error messages
 
- Copyright (C) 2011 -- 2014 Sebastian Engelke, Johannes Martini, Martin Schlather
+ Copyright (C) 2011 -- 2013 Sebastian Engelke, Johannes Martini
+ Copyright (C) 2014 Sebastian Engelke, Johannes Martini, Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,9 +32,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // z coordinate run the fastest in values, x the slowest   
 
 //#define debug_tools 1
-#define TOOLS_MEMORYERROR 1
-#define TOOLS_XERROR 2
-#define TOOLS_BIN_ERROR 3
+#define TOOLS_MEMORYERROR 501
+#define TOOLS_XERROR 502
+#define TOOLS_BIN_ERROR 503
 #define NEARBY 1e15
 
 // naechste Zeile nur notwendig, weil atan2 in Windows nicht
@@ -53,22 +54,33 @@ int GetAngleBin(double angle, double startangle, double SegPerPI, double maxAngl
   return(kphi);
 }
 
+static int maxjj = 0;
+double get(double *sumvals, int jj) {
+  if (jj > maxjj) {
+    maxjj = jj;
+    //printf("jj=%d\n", jj);
+  }
+  return sumvals[jj];
+}
+
 
 void fftVario3D(	
 	double *coord,
-	double *sumvals,
-	double *nbvals,
+	double *Sumvals,
+	double *Nbvals,
 	double *bin,
-	int *nbin,
+	int *Nbin,
 	int *lenT,
 	int *stepT,
 	int *nstepT,
 	double *phi,
 	double *theta,
-	int *repet,
-	double *empvario,	
-	double *n,
-	bool *pseudo
+	int *Repet,
+	int *Vdim,
+	double *Empvario,	
+	double *N,
+	int *SegmentEmpVario,
+	int *Pseudo
 )
 
 /*    coord   : 3x3 matrix of coordinates of the 3 space dimension
@@ -93,14 +105,33 @@ void fftVario3D(
  */
 {  
   long rep;
-  int i, binidx, halfnbin, err, totalbins, totalspatialbins,
+  int i, binidx, halfnbin, totalbins, totalbinsvdimSq,
     Nphi, NphiNbin, Ntheta, nbinNphiNtheta, Nphihalf, maxi[3],
     ix, iy, iz, startX, startY, startZ, startT, startrep, low, cur,
-    ktheta, kthetaz, kphi, kphixy, kphix, kphiy, kT, nstepTstepT, deltaT, x, y, z,
-    timecomp, k;
-  double tolerance, *xx[3], *BinSq, maxbinsquare, step[3], delta[3], psq[3],
+    ktheta, kthetaz, kphi, kphixy, kphix, kphiy, kT, nstepTstepT, deltaT, 
+    x, y, z, v1, v2,
+    timecomp, k,
+    err = NOERROR, 
+    nbin = *Nbin,
+    vdim = *Vdim,
+    repet = *Repet,
+    segmentEmpVario = *SegmentEmpVario;
+  bool pseudo = (bool) (*Pseudo);
+  double tolerance, *xx[3], maxbinsquare, step[3], 
+    d0, d1, d2,  // delta0
+    psq0, psq1, psq2,
     startphi, starttheta, thetadata, phidata, phixdata,
-    phiydata, phixydata, binshift;
+    phiydata, phixydata, binshift,
+    *BinSq = NULL,  
+    *sumvals = Sumvals,
+    *nbvals=  Nbvals,
+    *empvario = Empvario,
+    *n = N
+    ;
+
+#define SUMVALS_JJ sumvals[jj]
+  //#define SUMVALS_JJ get(sumvals, jj)
+
   
   kphix = 0;
   kphixy = 0;
@@ -110,7 +141,7 @@ void fftVario3D(
   nstepTstepT = *stepT * *nstepT;
   timecomp = nstepTstepT==0 ? 1 : 2;
 
-  if((!*pseudo) && (timecomp==1)){
+  if((!pseudo) && (timecomp==1)){
     Nphi =  phi[1]==0 ?  1 : (int) phi[1];    
   }
   else{
@@ -119,45 +150,47 @@ void fftVario3D(
   }
   Ntheta = theta[1]==0 ? 1 : (int) theta[1];
   //print("1,..");  
-  NphiNbin = Nphi * *nbin;
-  startphi = ((!*pseudo) && (timecomp==1)) ? (phi[0] - PI / (double) (2*Nphi) ) : (phi[0] - PI / (double) (Nphi) ); // [0, 2 pi]    
+  NphiNbin = Nphi * nbin;
+  startphi = ((!pseudo) && (timecomp==1)) ? (phi[0] - PI / (double) (2*Nphi))
+    : (phi[0] - PI / (double) (Nphi) ); // [0, 2 pi]    
   //invsegphi = phi[1] / PI; // note that phi[1] can be zero!
   //starttheta = theta[0] - PI / (double) (2*theta[1]);  // [0, pi]
   starttheta = 0;
   // invsegtheta = theta[1] / PI; // note that theta[1] can be zero
   nbinNphiNtheta = NphiNbin * Ntheta;
   //print("2,..");
-  BinSq = NULL;
-  for (rep=i=0; i<3; i++, rep+=3) xx[i]=&(coord[rep]);
+  for (rep=i=0; i<3; i++, rep+=3) xx[i] = &(coord[rep]);
     if (xx[0]==NULL) {err=TOOLS_XERROR; goto ErrorHandling;}
-  for (i=0; i<*nbin;i++) {
+  for (i=0; i<nbin;i++) {
     if (bin[i]>=bin[i+1])  {err=TOOLS_BIN_ERROR; goto ErrorHandling;}
   }
 
-  halfnbin = *nbin / 2;
+  halfnbin = nbin / 2;
   
-  if ((BinSq = (double *) MALLOC(sizeof(double)* (*nbin + 1)))==NULL) {
+  if ((BinSq = (double *) MALLOC(sizeof(double)* (nbin + 1))) ==NULL) {
     err=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
   //print("3,..");
-  totalspatialbins =  NphiNbin * Ntheta;
-  totalbins = totalspatialbins * (*nstepT + 1);
-  for (i=0; i<totalbins; i++){empvario[i]=0.0; n[i]=0;}
+  totalbins = nbinNphiNtheta * (*nstepT + 1);
+  totalbinsvdimSq = totalbins * vdim * vdim;
+  for (i=0; i<totalbinsvdimSq; i++){
+    //printf("%d ", i);
+    empvario[i]= n[i]=0.0;
+  }
+
   //print("sizeof double: %d ", (int) sizeof(res_type));
   if (sizeof(res_type) == 8 )
-    binshift = (bin[*nbin] * bin[*nbin]) * 1e-12;
-  else
-    binshift = (bin[*nbin] * bin[*nbin]) * 1e-4;   
+    binshift = bin[nbin] * bin[nbin] * (sizeof(res_type) == 8 ? 1e-12 : 1e-4);
   // shift all bins to the right to overcome rounding errors
-  for (i=0; i<=*nbin; i++){if (bin[i]>0) BinSq[i]=bin[i] * bin[i] + binshift; 
-    else BinSq[i]=bin[i];
+  for (i=0; i<=nbin; i++) {
+    BinSq[i] = bin[i]>0 ? bin[i] * bin[i] + binshift : bin[i];
   }
   
   assert(NEARBYINT(atan2(-1.0, 0.0) + PIHALF) == 0.0);
   assert(atan2(0.0, 0.0) == 0.0);
-  maxbinsquare = BinSq[*nbin];
+  maxbinsquare = BinSq[nbin];
   
-  int segmentbase[8];
+  int segmentbase[10];
   
   segmentbase[0]=1; // here x runs the fastest; 
   for (i=0; i<=2; i++) {
@@ -167,13 +200,15 @@ void fftVario3D(
   }
   
   segmentbase[4] = segmentbase[3] * *lenT; 
-  if(!*pseudo){
+  if (!pseudo) {
     segmentbase[5] = 4 * segmentbase[4];
-    segmentbase[6] = segmentbase[5] * timecomp;}
-  else{
+    segmentbase[6] = segmentbase[5] * timecomp;
+  } else {
     segmentbase[5] = 8 * segmentbase[4];
-    segmentbase[6] = segmentbase[5];}    
-  segmentbase[7] = segmentbase[6] * *repet;
+    segmentbase[6] = segmentbase[5];
+  }    
+  segmentbase[7] = segmentbase[6] * repet;
+  segmentbase[8] = segmentbase[7] * vdim * vdim;
   // sementbase: [0] : 1, [1] : length(x), [2] : length(x) * l(y),
   //  [3] : l(x) * l(y) * l(z), [4] : l(x) * l(y) * l(z) * l(T)
   //  [5] : 4 (or 8) * l(x) * l(y) * l(z) * l(T) 
@@ -181,169 +216,222 @@ void fftVario3D(
   //  [7] : 4 (or 8) * l(x) * l(y) * l(z) * l(T) * timecomp * repet    
   //  for pseudo variogram we need the whole sphere (not only half-sphere)
   
-  //print("4,..");
-  startX = 0;  
-  binidx = 0;  
-  for (x=startX, ix=0; x < segmentbase[1]; x++, ix++) {
-    
-    delta[0] = ix * step[0];   
-    startY = x;
-    if ((psq[0] = delta[0] * delta[0]) > maxbinsquare) continue;      
-   
-    for (y = startY, iy=0; y < segmentbase[2];  y+=segmentbase[1], iy++){
-    
-      delta[1] = iy * step[1];
-      startZ = y;
-      if ((psq[1] = delta[1] * delta[1] + psq[0]) > maxbinsquare) continue; 
-      
-      // angles
-      if(!*pseudo){
-	phidata = NEARBYINT(atan2(delta[1], delta[0]) - startphi);
-	kphi = GetAngleBin(phidata, 0, phi[1], PI);
-	phixdata = NEARBYINT(atan2(delta[1], -delta[0]) - startphi);
-	kphix = GetAngleBin(phixdata, 0, phi[1], PI);
-	if((delta[0] == 0) && (delta[1] == 0)) kphi = 0; // points on the z-axes 
-      }
-      else{
-	phidata = NEARBYINT(atan2(delta[1], delta[0]) - startphi);
-	kphi = GetAngleBin(phidata,0, phi[1], TWOPI);
-	phixdata = NEARBYINT(atan2(delta[1], -delta[0]) - startphi);
-	kphix = GetAngleBin(phixdata, 0, phi[1], TWOPI);
-	phiydata = NEARBYINT(atan2(-delta[1], delta[0]) - startphi);
-	kphiy = GetAngleBin(phiydata, 0, phi[1], TWOPI);
-	phixydata = NEARBYINT(atan2(-delta[1], -delta[0]) - startphi);
-	kphixy = GetAngleBin(phixydata, 0, phi[1], TWOPI);
-      }
-      
-      //if(delta[1] == delta[0])
-      //print("kphi: %d and kphix: %d, phidata: %lf, startphi: %lf", kphi, kphix, phidata, startphi);
-      // kphi is index of angle bin in x,y > 0 plane
-      // kphix is index of angle bin if phi 
-      // is mirrored along the x-axis (in the xy-plane)
-      // kphiy and kphixy similar
-	     
-	
-      
-      for (z=startZ, iz=0; z < segmentbase[3]; z+=segmentbase[2], iz++){
-	
-	delta[2] = iz * step[2];
-	startT = z;
-	if ((psq[2] = delta[2] * delta[2] + psq[1]) > maxbinsquare) continue;
-	
-	//print("5,..");
-	{ /* finds the bins for the radial space part */
-	  int up;
-	  low=0; up= *nbin; /* */ cur= halfnbin;
-	  while(low!=up){
-	    if (psq[2] > BinSq[cur]) {low=cur;} else {up=cur-1;}/*( . ; . ]*/ 
-	    cur=(up+low+1)/2;
-	  }
-	}	// low
-	
-	// angles
-	thetadata = NEARBYINT(PIHALF - atan2(delta[2], sqrt(psq[1])));
-	ktheta = GetAngleBin(thetadata, starttheta, theta[1], PI);
-	kthetaz = GetAngleBin(PI - thetadata, starttheta, theta[1], PI);
-	
-	for (deltaT=0, kT=0; deltaT<=nstepTstepT; 
-	     deltaT+=*stepT, kT+=nbinNphiNtheta) {
-	  //print("kT %d, stepT %d, nsteptT %d, deltaT %d", kT, *stepT, *nstepT, deltaT); 	 
-	  //print("kT %d --", kT);
-	  //timecomp = x==0 ? 1 : 2;
-	  
-	  for (k=1; k <= timecomp; k++){ 
-	    //if a time component is given, then, for statistical efficiency, the data is reflected also along the time component
-	  
-	    startrep = startT + deltaT * segmentbase[3] + (k-1) * segmentbase[5];
-	    binidx = cur + kT;
-	    assert( binidx < totalbins && binidx >= 0 );
-	    //print("ix = %d -- k = %d", ix, k);
-	    //for (i=0, T=(startT+(deltaT+i)*segmentbase[3]); i < endT; T+=segmentbase[3], i++) {
-	  
-	    for (rep = startrep; rep < segmentbase[7]; rep += segmentbase[6]) {
-	      //print("6,..");
-	      //print("ix: %d, iy: %d, iz: %d, kphi: %d, ktheta: %d, kphix: %d, kthetaz: %d, \n", ix, iy, iz, kphi, ktheta, kphix, kthetaz);
-	      //if(binidx == 0) print("rep: %d , sumvals[rep]: %lf \n", rep, sumvals[rep]);	      
-	      if(!*pseudo){
-		empvario[binidx + (kphi + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - ktheta) * (k-1) + ktheta * (2-k)) * NphiNbin] += sumvals[rep];
-		n[binidx + (kphi + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - ktheta) * (k-1) + ktheta * (2-k)) * NphiNbin] += nbvals[rep];	
-		if((ix > 0) && ((iy > 0) || (iz > 0))){		  
-		  empvario[binidx + (kphix + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - ktheta) * (k-1) + ktheta * (2-k)) * NphiNbin] += sumvals[rep + segmentbase[4]];
-		  n[binidx + (kphix + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - ktheta) * (k-1) + ktheta * (2-k)) * NphiNbin] += nbvals[rep + segmentbase[4]];
-		}
-		if((iz > 0) &&  (iy > 0)){
-		  empvario[binidx + (kphi + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - kthetaz) * (k-1) + kthetaz * (2-k)) * NphiNbin] += sumvals[rep + 2 * segmentbase[4]];
-		  n[binidx + (kphi + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - kthetaz) * (k-1) + kthetaz * (2-k)) * NphiNbin] += nbvals[rep + 2 * segmentbase[4]];			  
-		}
-		if((ix > 0) && (iz > 0) && (iy > 0)){
-		  empvario[binidx + (kphix + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - kthetaz) * (k-1) + kthetaz * (2-k)) * NphiNbin] += sumvals[rep + 3 * segmentbase[4]];
-		  n[binidx + (kphix + Nphihalf * (k-1)) * *nbin + (((Ntheta-1) - kthetaz) * (k-1) + kthetaz * (2-k)) * NphiNbin] += nbvals[rep + 3 * segmentbase[4]];
-		}
-	      }
-	      else{
-		empvario[binidx + kphi * *nbin + ktheta * NphiNbin] += sumvals[rep];
-		n[binidx + kphi * *nbin + ktheta * NphiNbin] += nbvals[rep];		
-		if(ix > 0){
-		  empvario[binidx + kphix * *nbin + ktheta * NphiNbin] += sumvals[rep + segmentbase[4]];
-		  n[binidx + kphix * *nbin + ktheta * NphiNbin] += nbvals[rep + segmentbase[4]];
-		}
-		if(iz > 0){
-		  empvario[binidx + kphi * *nbin + kthetaz * NphiNbin] += sumvals[rep + 2 * segmentbase[4]];
-		  n[binidx + kphi * *nbin + kthetaz * NphiNbin] += nbvals[rep + 2 * segmentbase[4]];			  
-		}
-		if((ix > 0) && (iz > 0)){
-		  empvario[binidx + kphix * *nbin + kthetaz * NphiNbin] += sumvals[rep + 3 * segmentbase[4]];
-		  n[binidx + kphix * *nbin + kthetaz * NphiNbin] += nbvals[rep + 3 * segmentbase[4]];
-		}
-		if(iy > 0){
-		  empvario[binidx + kphiy * *nbin + ktheta * NphiNbin] += sumvals[rep + 4 * segmentbase[4]];
-		  n[binidx + kphiy * *nbin + ktheta * NphiNbin] += nbvals[rep + 4 * segmentbase[4]];		
-		  if(ix > 0){ 
-		    empvario[binidx + kphixy * *nbin + ktheta * NphiNbin] += sumvals[rep + 5 * segmentbase[4]];
-		    n[binidx + kphixy * *nbin + ktheta * NphiNbin] += nbvals[rep + 5 * segmentbase[4]];
-		  }
-		  if(iz > 0){
-		    empvario[binidx + kphiy * *nbin + kthetaz * NphiNbin] += sumvals[rep + 6 * segmentbase[4]];
-		    n[binidx + kphiy * *nbin + kthetaz * NphiNbin] += nbvals[rep + 6 * segmentbase[4]];			  
-		  }
-		  if((ix > 0) && (iz > 0)){
-		    empvario[binidx + kphixy * *nbin + kthetaz * NphiNbin] += sumvals[rep + 7 * segmentbase[4]];
-		    n[binidx + kphixy * *nbin + kthetaz * NphiNbin] += nbvals[rep + 7 * segmentbase[4]];
-		  }
-		}	  
-	      } // else	  
-	    } // repet
-	  } // k
-	} // deltaT  
-      } // z
-    } // y
-  } //x	
+
+  for (v1=0; v1<vdim; v1++) {
+    for (v2=0; v2<vdim; v2++,
+	   sumvals += segmentbase[7], 
+	   nbvals += segmentbase[7],
+	   empvario += segmentEmpVario,
+	   n += segmentEmpVario) {
   
-  tolerance = GLOBAL.empvario.tol * segmentbase[3];  //
-  for(i=0; i < totalbins ;i++){
-    if(fabs(empvario[i]) < tolerance) empvario[i] = 0; 
-  }
+      //
+      //for (ix=0; ix<=8; ix++) printf("%d:%d ", ix, segmentbase[ix]);
+      //printf(">> ... %d %d %d\n", v1, v2, segmentEmpVario);
+      startX = 0;  
+      binidx = 0;  
+      for (x=startX, ix=0; x < segmentbase[1]; x++, ix++) {
+	
+	d0 = ix * step[0];   
+	startY = x;
+	if ((psq0 = d0 * d0) > maxbinsquare) continue;      
+	
+	for (y = startY, iy=0; y < segmentbase[2];  y+=segmentbase[1], iy++){
+	  
+	  d1 = iy * step[1];
+	  startZ = y;
+	  if ((psq1 = d1 * d1 + psq0) >maxbinsquare) continue; 
+	  
+	  // angles
+	  if(!pseudo){
+	    phidata = NEARBYINT(atan2(d1, d0) - startphi);
+	    kphi = GetAngleBin(phidata, 0, phi[1], PI);
+	    phixdata = NEARBYINT(atan2(d1, -d0) - startphi);
+	    kphix = GetAngleBin(phixdata, 0, phi[1], PI);
+	    if((d0 == 0) && (d1 == 0)) kphi = 0;// points on the z-axes 
+	  }
+	  else{
+	    phidata = NEARBYINT(atan2(d1, d0) - startphi);
+	    kphi = GetAngleBin(phidata,0, phi[1], TWOPI);
+	    phixdata = NEARBYINT(atan2(d1, -d0) - startphi);
+	    kphix = GetAngleBin(phixdata, 0, phi[1], TWOPI);
+	    phiydata = NEARBYINT(atan2(-d1, d0) - startphi);
+	    kphiy = GetAngleBin(phiydata, 0, phi[1], TWOPI);
+	    phixydata = NEARBYINT(atan2(-d1, -d0) - startphi);
+	    kphixy = GetAngleBin(phixydata, 0, phi[1], TWOPI);
+	  }
+	  
+	  //if(d1 == d0)
+	  //print("kphi: %d and kphix: %d, phidata: %lf, startphi: %lf", kphi, kphix, phidata, startphi);
+	  // kphi is index of angle bin in x,y > 0 plane
+	  // kphix is index of angle bin if phi 
+	  // is mirrored along the x-axis (in the xy-plane)
+	  // kphiy and kphixy similar
+	  
+	  for (d2=0.0, z=startZ, iz=0; 
+	       z < segmentbase[3]; 
+	       z+=segmentbase[2], iz++, d2 += step[2]){
+	    startT = z;
+	    if ((psq2 = d2 * d2 + psq1) > maxbinsquare) continue;
+	    
+	    //print("5,..");
+	    { /* finds the bins for the radial space part */
+	      int up = nbin;
+	      low=0;
+	      cur= halfnbin;
+	      while(low!=up){
+		if (psq2 > BinSq[cur]) {low=cur;} else {up=cur-1;}/*( . ; . ]*/ 
+		cur=(up+low+1) / 2;
+	      }
+	    }	// low
+	    
+	    // angles
+	    thetadata = NEARBYINT(PIHALF - atan2(d2, sqrt(psq1)));
+	    ktheta = GetAngleBin(thetadata, starttheta, theta[1], PI);
+	    kthetaz = GetAngleBin(PI - thetadata, starttheta, theta[1], PI);
+	    
+	    for (deltaT=0, kT=0; deltaT<=nstepTstepT; 
+		 deltaT += *stepT, kT += nbinNphiNtheta) {
+	      //print("kT %d, stepT %d, nsteptT %d, deltaT %d", kT, *stepT, *nstepT, deltaT); 	 
+	      //print("kT %d --", kT);
+	      //timecomp = x==0 ? 1 : 2;
+	      
+	      startrep = startT + deltaT * segmentbase[3];
+	      for (k=1; k <= timecomp; k++, startrep += segmentbase[5]){ 
+		//if a time component is given, then, for statistical efficiency, the data is reflected also along the time component
+		binidx = cur + kT;
+		assert( binidx < totalbins && binidx >= 0 );
+		//print("ix = %d -- k = %d", ix, k);
+		//for (i=0, T=(startT+(deltaT+i)*segmentbase[3]); i < endT; T+=segmentbase[3], i++) {
+		
+		for (rep = startrep; rep < segmentbase[7]; rep += segmentbase[6]) {
+		  //print("6,..");
+		  //print("ix: %d, iy: %d, iz: %d, kphi: %d, ktheta: %d, kphix: %d, kthetaz: %d, \n", ix, iy, iz, kphi, ktheta, kphix, kthetaz);
+		  //if(binidx == 0) print("rep: %d , sumvals[rep]: %lf \n", rep, sumvals[rep]);	      
+		  if(!pseudo) {
+		    int basX = NA_INTEGER, 
+		      jj = rep,
+		      kM1 = k - 1,	
+		      TkM2 = 2 - k,
+		      base = binidx + (kphi + Nphihalf * kM1) * nbin,
+		      Idx = ((Ntheta - 1 - ktheta) * kM1 + 
+			     ktheta * TkM2) * NphiNbin;
+
+		    //printf("rep =%d [%d %d; %d]  v1=%d %d [%d] x=%d %d %d deltaT=%d %d\n", 
+		    //rep, startrep, segmentbase[7], segmentbase[6],
+		    //v1, v2, vdim, x, y, z, deltaT, k);
+		    
+		    empvario[base + Idx] += SUMVALS_JJ;
+		    n[base + Idx] += nbvals[jj];	
+		    jj += segmentbase[4];
+		    if (ix > 0 && (iy > 0 || iz > 0)) {
+		      basX = binidx + (kphix + Nphihalf * kM1) * nbin;
+		      empvario[basX + Idx] += SUMVALS_JJ;
+		      n[basX + Idx] += nbvals[jj];
+		    }
+		    if (iy > 0 && iz > 0){
+		      Idx = ((Ntheta -1 - kthetaz) * kM1 + kthetaz * TkM2) * 
+			NphiNbin;
+		      jj += segmentbase[4];
+		      empvario[base + Idx] += SUMVALS_JJ;
+		      n[base + Idx] += nbvals[jj];
+		      
+		      if (ix > 0){
+			jj += segmentbase[4];
+			empvario[basX + Idx] += SUMVALS_JJ;
+			n[basX + Idx] += nbvals[jj];
+		      }
+		    }
+		  } else { // not pseudo
+		    int 
+		      jj = rep,
+		      knbin = binidx + kphi * nbin,
+		      kxnbin = binidx + kphix * nbin,
+		      kN = ktheta * NphiNbin,
+		      kzN = kthetaz * NphiNbin,
+		      Idx = knbin + kN;
+		    empvario[Idx] += SUMVALS_JJ;
+		    n[Idx] += nbvals[jj];
+		    jj += segmentbase[4];
+		    if (ix > 0) {
+		      Idx = kxnbin + kN;
+		      empvario[Idx] += SUMVALS_JJ;
+		      n[Idx] += nbvals[jj];
+		    }
+		    if (iz > 0) {
+		      Idx = knbin + kzN;
+		      jj += segmentbase[4];
+		      empvario[Idx] += SUMVALS_JJ;
+		      n[Idx] += nbvals[jj]; 
+		      
+		      if (ix > 0) {
+			Idx = kxnbin + kzN;
+			jj += segmentbase[4];
+			empvario[Idx] += SUMVALS_JJ;
+			n[Idx] += nbvals[jj];
+		      }
+		    }
+		    if(iy > 0) {
+		      int
+			kxynbin = NA_INTEGER,
+			kynbin = binidx + kphiy * nbin;
+		      Idx = kynbin + kN;
+		      jj = rep + 4 * segmentbase[4];
+		      empvario[Idx] += SUMVALS_JJ;
+		      n[Idx] += nbvals[jj];	
+		      jj += segmentbase[4];
+		      if (ix > 0){ // vor ix>0 && iz > 0 !
+			kxynbin = binidx +  kphixy * nbin;
+			Idx = kxynbin + kN;
+			empvario[Idx] += SUMVALS_JJ;
+			n[Idx] += nbvals[jj];
+		      }
+		      if (iz > 0){
+			Idx = kynbin + kzN;
+			jj += segmentbase[4];
+			empvario[Idx] += SUMVALS_JJ;
+			n[Idx] += nbvals[jj];  
+			
+			if (ix > 0) {
+			  Idx = kxynbin + kzN;
+			  jj += segmentbase[4];
+			  empvario[Idx] += SUMVALS_JJ;
+			  n[Idx] += nbvals[jj];
+			}
+		      } // iz > 0
+		    } // iy > 0
+		  } // else (not pseudo)	  
+		} // repet
+	      } // k timecomponent
+	    } // deltaT ; time bin
+	  } // z
+	} // y
+      } //x	
+  
+      tolerance = GLOBAL.empvario.tol * segmentbase[3];  // to do. Warum?
+      for(i=0; i < totalbins ;i++){
+	if (fabs(empvario[i]) < tolerance) empvario[i] = 0.0; 
+      }
+    } // vdim1
+  } // vdim2
   
     
   // print("C SCRIPT END !!!!!!!!! \n");
-  return;
   
  ErrorHandling:
-  PRINTF("Error: ");
-  switch (err) {
-  case TOOLS_MEMORYERROR :  
-    PRINTF("Memory alloc failed in empiricalvariogram.\n"); break;
-  case TOOLS_XERROR :  
-    PRINTF("The x coordinate may not be NULL.\n"); break;
-  case TOOLS_BIN_ERROR :
-    PRINTF("Bin components not an increasing sequence.\n"); break;
-  default : assert(false);
+  if (err != NOERROR) {
+    switch (err) {
+    case TOOLS_MEMORYERROR :  
+      error("Memory alloc failed in empiricalvariogram.\n");
+    case TOOLS_XERROR :  
+      error("The x coordinate may not be NULL.\n"); break;
+    case TOOLS_BIN_ERROR :
+      error("Bin components not an increasing sequence.\n"); break;
+    default : BUG;
+    }
   }
+
   if (BinSq!=NULL) free(BinSq);
-  for (i=0;i<*nbin;i++){sumvals[i]=RF_NAN;} 	
-
-
-
+  return;
 }
 
 

@@ -7,7 +7,7 @@
 \usage{
 RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 }
-\arguments{
+\arguments{ % to do orthogonale Polynome
  \item{mean}{optional; should be a vector of length \eqn{p}{p}, where
  \eqn{p}{p} is the number of variables taken into account by the
  corresponding multivariate random field
@@ -36,7 +36,7 @@ RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
  gives the coefficient to one basis function; these products are added
  providing \eqn{p}{p} trend polynomials.\cr
  For the order of the monomial basis functions see details.
- CAUTION: This parameter should be used by advanced users only as the
+ CAUTION: This argument should be used by advanced users only as the
  order might be sophisticated. In many cases it is recommended to use
  \code{arbitraryfct} and \code{fctcoeff} instead.
  } 
@@ -59,7 +59,7 @@ RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
  } 
 }
 \details{
- If different trend parameters are given, the corresponding trend
+ If different trend arguments are given, the corresponding trend
  components are added. Equivalently, \code{+} (see
  \command{\link{RFformula}}) or \command{\link{RMplus}} can be used
  to add trend terms.
@@ -91,7 +91,7 @@ RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 Marco Oesting, \email{oesting@math.uni-mannheim.de}
 
 Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{
  \command{\link{RMmodel}},
@@ -101,7 +101,8 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ##################################################
 # Example 1: # 
 # Simulate from model with a plane trend surface #
@@ -206,7 +207,7 @@ model.est <- ~ RMtrend(polydeg=2) + RMwhittle(nu=NA, scale=0.5)
 estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
  data=simulated@data, mle.methods="ml")
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 		 

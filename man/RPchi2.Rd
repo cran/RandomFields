@@ -25,18 +25,19 @@ RPchi2(phi, f)
 
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 model <- RPchi2(RMexp(), f=2)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

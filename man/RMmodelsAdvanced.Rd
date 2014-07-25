@@ -38,6 +38,8 @@
 \tabular{ll}{
 \command{\link{RMdewijsian}} \tab generalised version of the DeWijsian model \cr
 \command{\link{RMgenfbm}} \tab generalized fractal Brownian motion \cr
+\command{\link{RMflatpower}} \tab similar to fractal Brownian motion but
+always smooth at the origin\cr
 }
 
 \bold{General composed models (operators)}
@@ -53,7 +55,7 @@ based on a Gaussian field \cr
  \command{\link{RMpower}} \tab powered variograms\cr
  \command{\link{RMqam}} \tab Porcu's quasi-arithmetric-mean model\cr
  \command{\link{RMS}} \tab for details on the optional transformation
- parameters (\code{var}, \code{scale}, \code{Aniso}, \code{proj}).
+ arguments (\code{var}, \code{scale}, \code{Aniso}, \code{proj}).
 }
 
 \bold{Stationary and isotropic composed models (operators)}
@@ -93,7 +95,7 @@ Here, most of the models are composed models (operators).
 \command{\link{RMdivfree}} \tab divergence free (spatial) vector valued field, (stationary and anisotropic)\cr
  \command{\link{RMkolmogorov}} \tab Kolmogorov's model of turbulence\cr
 \command{\link{RMmatrix}} \tab trivial multivariate model\cr
-%\command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
+\command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
  \command{\link{RMparswm}} \tab multivariate Whittle-Matern model (stationary and isotropic)\cr
 \command{\link{RMschur}} \tab element-wise product with a positive definite
 matrix\cr 
@@ -121,14 +123,18 @@ model) with \eqn{\alpha \ge [dim / 2] +1}\cr
  \command{\link{RMbrownresnick}} \tab tail correlation function
  of Brown-Resnick process\cr
 \command{\link{RMgencauchy}} \tab generalized Cauchy family with  \eqn{\alpha\le 1/2}\cr
+\command{\link{RMm2r}} \tab shapes functions related max-stable
+ processes\cr 
+\command{\link{RMm3b}} \tab shapes functions related max-stable
+ processes\cr 
  \command{\link{RMmatern}} \tab Whittle-Matern model with \eqn{\nu\le 1}\cr
+ \command{\link{RMmps}} \tab shapes functions related max-stable
+ processes\cr 
 \command{\link{RMschlather}} \tab tail correlation function of the
  extremal Gaussian field \cr
  \command{\link{RMstable}} \tab symmetric stable family or powered
  exponential model with \eqn{\alpha\le 1}\cr
- \command{\link{RMstrokorb}} \tab shapes functions related max-stable
- processes\cr 
- \command{\link{RMwhittle}} \tab Whittle-Matern model, alternative
+  \command{\link{RMwhittle}} \tab Whittle-Matern model, alternative
  parametrization with \eqn{\nu\le 1/2}\cr
 
  }
@@ -147,61 +153,62 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 \note{
   \itemize{
     \item
-    Note that, instead of the named parameters, a single parameter \code{k}
-    can be passed. This is possible if all the parameters
+    Note that, instead of the named arguments, a single argument \code{k}
+    can be passed. This is possible if all the arguments
     are scalar. Then \code{k} must have length equal to the number of
-    parameters.
+    arguments.
     \item
-    If a parameter equals \code{NULL} the
-    parameter is not set (but must be a valid name).
+    If a argument equals \code{NULL} the
+    argument is not set (but must be a valid name).
     \item
     \code{Aniso} can be given also by \command{\link{RMangle}}
     instead by a matrix
     \item
     Note also that a completely different possibility exists to define a
     model, namely by a list. This format allows for easy flexible models
-    and modifications. Here, the parameter \code{var}, \code{scale},
+    and modifications. Here, the argument \code{var}, \code{scale},
     \code{Aniso} and \code{proj} must be passed by the model
     \command{\link{RMS}}. 
     For instance,
-    \code{model <- RMexp(scale=2, var=5)} is equivalent to
-    \code{model <- list("RMS", scale=2, var=5, list("RMexp"))}.
-    and
-    \code{model <- RMnsst(phi=RMgauss(var=7), psi=RMfbm(alpha=1.5),
-      scale=2, var=5)}
-    is equivalent to
-    \code{model <- list("RMS", scale=2, var=5,
-      list("RMnsst",
+    \itemize{
+      \item
+      \code{model <- RMexp(scale=2, var=5)} is equivalent to
+      \code{model <- list("RMS", scale=2, var=5, list("RMexp"))}.
+      \item
+      \code{model <- RMnsst(phi=RMgauss(var=7), psi=RMfbm(alpha=1.5),
+	scale=2, var=5)}
+      is equivalent to
+      \code{model <- list("RMS", scale=2, var=5,
+	list("RMnsst",
       phi=list("RMS", var=7, list("RMgauss")),
       psi=list("RMfbm", alpha=1.5))
     )}.
-
+  }
+  
   \item
-  Instead of a fixed parameter, a random parameter might be given.
-  These are models starting with \code{RR} or is distribution family,
-  e.g. \code{norm}, \code{exp}, or \code{unif}. Note that the behaviour
-  of the random parameters varies:
+  Instead of a deterministic value, a distribution family might be
+  given, see \command{\link{RRmodels}}.
+  The latter starts with \code{RR} or is distribution family,
+  e.g. \code{norm}, \code{exp}, or \code{unif}. Note that the
+  effect of the distribution family varies between the different processes:
 
   \itemize{
     \item in Max-stable fields and
     \command{\link{RPpoisson}}, a new realisation of the
-    random parameter is drawn for each shape function
+    distribution is drawn for each shape function
     \item in all the other cases: a realisation is only drawn once.
-    This effects, in particular, Gaussian fields with parameter
+    This effects, in particular, Gaussian fields with argument
     \code{n>1}, where all the realisations are based on the same
-    realisation of the random parameters.
+    realisation out of the distribution.
   }
   
   MLE ist not programmed yet.
 
   Very advanced:
-  In case of a distribution family, its parameters might be again given
-  by a \link{RMmodel}. Note that the checking of the validity of the
-  parameters is not possible anymore, in general.
-  If the size of the parameter can be passed by given in the model first
-  a deterministic parameter of the given size (with dummy values) and
-  then the genuine (random) definition.
-
+  In case of a distribution family, its arguments might be again given
+  by a \link{RMmodel}. Note that checking the validity of the
+  arguments is rather limited for such complicated models, in general.
+  
   See also
   \link{RMmodelsAuxiliary} and \link{Baysian}.
   }
@@ -260,9 +267,10 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames(type="positive", group.by=c("domain", "isotropy"))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \author{

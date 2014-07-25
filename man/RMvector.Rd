@@ -25,7 +25,7 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
  \item{a}{a numerical value; should be in the interval \eqn{[-1,1]}.}
  \item{Dspace}{an integer; either 2 or 3; the first \eqn{Dspace}
  coordinates give the first component \eqn{h}{h}}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -67,11 +67,12 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
-%    source("randomfields_2/tests/source.R")
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+%    source("RandomFields/tests/source.R")
 model <- RMvector(RMgauss(), scale=0.3)
 x <- seq(0, 10, if (interactive()) 0.4 else 3) 
 plot(RFsimulate(model, x=x, y=x, z=0), select.variables=list(1:2))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }

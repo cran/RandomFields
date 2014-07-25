@@ -17,13 +17,14 @@
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 # to do
 \dontshow{if (.C("isAuthor", a=integer(1))$a) {
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

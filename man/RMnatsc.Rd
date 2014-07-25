@@ -6,7 +6,7 @@
  depends on a stationary isotropic covariance model \eqn{\phi}{phi}.
  The covariance is given by 
  \deqn{ C(h) = \phi(h / s) }{ C(h) = phi(h / s) },
- where the parameter \code{s} is chosen by \command{\link{RMnatsc}}
+ where the argument \code{s} is chosen by \command{\link{RMnatsc}}
  such that the practical range or the mathematical range, if finite) is 1.
 }
 \usage{
@@ -14,7 +14,7 @@ RMnatsc(phi, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{a stationary isotropic covariance \command{\link{RMmodel}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -35,11 +35,12 @@ RMnatsc(phi, var, scale, Aniso, proj)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMnatsc(RMexp())
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1)) 
 print(RFcov(model, 1)) 
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

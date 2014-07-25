@@ -66,7 +66,7 @@
 RFfit <-
   function(model, x, y=NULL, z=NULL, T=NULL,  grid, data, 
            lower=NULL, upper=NULL, 
-           BC.lambda, ## if missing then no BoxCox-Trafo
+           bc_lambda, ## if missing then no BoxCox-Trafo
            methods, # "reml", "rml1"),
            sub.methods,
            ## "internal" : name should not be changed; should always be last
@@ -81,11 +81,15 @@ RFfit <-
 {
 
   #Print(RFoptions()$fit); xxxxxx###
+  .C("NoCurrentRegister")
 
   RFoptOld <- internal.rfoptions(xyz=!is.null(y),...,
                                  RELAX=isFormulaModel(model))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
+
+  if (RFopt$general$vdim_close_together)
+    stop("'vdim_close_together' must be FALSE")
 
  # Print(RFoptions()$fit, RFoptOld, RFopt$fit); xxxxxx###
   
@@ -119,7 +123,7 @@ RFfit <-
                    recall = FALSE),
               if (!missing(x)) list(x=x),
               if (!missing(grid)) list(grid = grid),
-              if (!missing(BC.lambda)) list(BC.lambda=BC.lambda),
+              if (!missing(bc_lambda)) list(bc_lambda=bc_lambda),
               if (!missing(methods))  list(mle.methods = methods),
               if (!missing(sub.methods)) list(lsq.methods=sub.methods),
               ## "internal" : name should not be changed; should always

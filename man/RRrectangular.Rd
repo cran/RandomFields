@@ -15,7 +15,7 @@ RRrectangular(phi, safety, minsteplen, maxsteps, parts, maxit,
   \item{phi}{a shape function; it is the user's responsability that it
     is non-negative. See details.}
   \item{safety, minsteplen, maxsteps, parts, maxit, innermin, outermax, mcmc_n}{
-    Technical parameters to run an algorithm to simulate from this
+    Technical arguments to run an algorithm to simulate from this
     distribution. See \command{\link{RFoptions}} for the default values.
   }
   \item{normed}{logical. If \code{FALSE} then the norming constant
@@ -70,7 +70,8 @@ RRrectangular(phi, safety, minsteplen, maxsteps, parts, maxit,
  }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 # simulation of Gaussian variables (in a not very straight forward way):
 distr <- RRrectangular(RMgauss(), approx=FALSE)
@@ -87,7 +88,7 @@ z <- RFrdistr(distr, n=if (interactive()) 1000000 else 10)
 hist(z, 200, freq=!TRUE)
 x <- seq(-10, 10, 0.01)
 lines(x, 4/3*RFcov(RMspheric(), x, spConform=FALSE))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
  

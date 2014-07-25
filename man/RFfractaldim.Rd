@@ -2,7 +2,7 @@
 \alias{RFfractaldim}
 \title{RFfractaldimension}
 \description{
- The function estimates the RFfractaldimension of a process
+ The function estimates the fractal dimension of a process
 }
 \usage{
 RFfractaldim(x, y = NULL, z = NULL, data, grid, 
@@ -12,7 +12,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  vario.n=5,
  sort=TRUE,
  fft.m = c(65, 86), ## in % of range of l.lambda
- fft.max.length=Inf,
+ fft.max.length=Inf,%
  fft.max.regr=150000,
  fft.shift = 50, # in %; 50:WOSA; 100: no overlapping
  method=c("variogram", "fft"), % "box", "range", 
@@ -57,18 +57,18 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \item{fft.max.length}{The first dimension of the data is cut into pieces
  of length \code{fft.max.length}. For each piece the FFT is
  calculated and then the average for all pieces is taken. The pieces
- may overlap, see the parameter \code{fft.shift}.}
+ may overlap, see the argument \code{fft.shift}.}
  \item{fft.max.regr}{If the \code{fft.m} is too large, parts of the
  regression fit will take a very long time.
  Therefore, the regression fit is calculated only if the number points
  given by \code{fft.m} is less than \code{fft.max.regr}.
  }
- \item{fft.shift}{This parameter is given in percent [of
+ \item{fft.shift}{This argument is given in percent [of
  \code{fft.max.length}] and defines the overlap of the pieces defined
  by \code{fft.max.length}. If \code{fft.shift=50} the WOSA estimator is
  given; if \code{fft.shift=100} no overlap exist.}
  \item{method}{
- list of implemented methods to calculate the RFfractaldimension; see Details
+ list of implemented methods to calculate the fractal dimension; see Details
  }
  \item{mode}{character. A vector with components
  \code{'nographics'}, \code{'plot'}, or \code{'interactive'}: 
@@ -93,10 +93,10 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  are given. If \code{printlevel>2} tracing information is given.
  }
  \item{height}{height of the grahics window}
- \item{...}{graphical parameters}
+ \item{...}{graphical arguments}
 }
 \details{ 
- The function calculates the RFfractaldimension by various methods:
+ The function calculates the fractal dimension by various methods:
  \itemize{
  \item variogram method
 % \item box counting
@@ -121,8 +121,8 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \item{y.u}{\code{NULL} or y-coordinates according to \code{x.u}}
  \item{regr.u}{\code{NULL} or the return list of
  \command{\link[stats]{lm}} for \code{x.u} and \code{y.u}}
- \item{D}{the RFfractaldimension}
- \item{D.u}{\code{NULL} or the RFfractaldimension corresponding to the
+ \item{D}{the fractal dimension}
+ \item{D.u}{\code{NULL} or the fractal dimension corresponding to the
  user's regression line}
  }
 \references{
@@ -135,7 +135,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \itemize{
  \item Constantine, A.G. and Hall, P. (1994)
  Characterizing surface smoothness via estimation of effective
- RFfractaldimension. \emph{J. R. Statist. Soc. Ser. B} \bold{56}, 97-113.
+ fractal dimension. \emph{J. R. Statist. Soc. Ser. B} \bold{56}, 97-113.
  }
 
 % box counting
@@ -156,16 +156,17 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
 
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFhurst}}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- seq(0, 10, if (interactive()) 0.001 else 1)
 z <- RFsimulate(RMexp(), x)
 if (interactive()) str(RFfractaldim(data=z))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \keyword{ spatial }%-- one or more ...
 

@@ -13,9 +13,8 @@
  }
 
 \usage{
-RPbrmixed(phi, tcf, xi, mu, s, meshsize, lowerbound_optim,
-         vertnumber,  optim_mixed, optim_mixed_tol, optim_mixed_maxp,
-         lambda, areamat, variobound) 
+RPbrmixed(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed,
+          optim_mixed_tol, optim_mixed_maxp, lambda, areamat, variobound) 
 
 RPbrorig(phi, tcf, xi, mu, s)
 
@@ -49,22 +48,22 @@ RPbrshifted(phi, tcf, xi, mu, s)
   optimized by setting \code{optim_mixed} if unknown. Default value is
   1.}
    
-\item{meshsize, lowerbound_optim, vertnumber, optim_mixed,
-  optim_mixed_tol, optim_mixed_maxp, variobound}{further parameters
+\item{meshsize, vertnumber, optim_mixed,
+  optim_mixed_tol, optim_mixed_maxp, variobound}{further arguments
   for simulation via the mixed moving maxima (M3) representation; see
   \code{\link{RFoptions}}}
 }
 
 \details{
-  The parameter \code{xi} is always a number, i.e. \eqn{\xi} is constant
+  The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant
   in space. In contrast, \eqn{\mu} and \eqn{s} might be constant
   numerical value or given a \code{\link{RMmodel}}, in particular by a
   \code{\link{RMtrend}} model. 
 
   The functions \code{RPbrorig}, \code{RPbrshifted} and \code{RPbrmixed}
   simulate a Brown-Resnick process, which is defined by
-  \deqn{Z(x) = \max_{i=1}^\infty X_i \exp(W_i(x) - \gamma^2),
-  }{Z(x) = max_{i=1, 2, ...} X_i * exp(W_i(x) - gamma^2),}
+  \deqn{Z(x) = \max_{i=1}^\infty X_i \exp(W_i(x) - \gamma),
+  }{Z(x) = max_{i=1, 2, ...} X_i * exp(W_i(x) - gamma),}
  where the \eqn{X_i} are the points of a Poisson point process on the
  positive real half-axis with intensity \eqn{x^{-2} dx}{1/x^2 dx},
  \eqn{W_i \sim W}{W_i ~ Y} are iid centered Gaussian processes with
@@ -101,14 +100,15 @@ RPbrshifted(phi, tcf, xi, mu, s)
   
 \author{Marco Oesting, \email{oesting@math.uni-mannheim.de},
         Martin Schlather, \email{schlather@math.uni-mannheim.de}
-        \url{http://ms.math.uni-mannheim.de}}
+        \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
   model <- RPbrshifted(RMfbm(alpha=1.5), xi=0)
   z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
   plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

@@ -13,14 +13,14 @@ and \eqn{(0,1)}{(0,1)}, respectively.
 RMdagum(beta, gamma, var, scale, Aniso, proj)
 }
 \arguments{
- \item{beta}{a parameter in \eqn{(0,1]}{(0,1]}}
- \item{gamma}{a parameter in \eqn{(0,1)}{(0,1)}}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{beta}{numeric in \eqn{(0,1]}{(0,1]}}
+ \item{gamma}{numeric in \eqn{(0,1)}{(0,1)}}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{Like the generalized Cauchy model the Dagum family can be used
- to model RFfractaldimension and Hurst effect. For a comparison of these
+ to model fractal dimension and Hurst effect. For a comparison of these
  see Berg, C. and Mateau, J. and Porcu, E. (2008). This paper also
  establishes valid parameter choices for the Dagum family, but be
  careful because therein the model is parameterized differently.
@@ -49,10 +49,11 @@ RMdagum(beta, gamma, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMdagum(beta=0.5, gamma=0.5, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

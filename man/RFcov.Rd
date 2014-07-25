@@ -46,7 +46,7 @@ RFfctn(...)
  equivalently the upper triangular part of the distance matrix row-wise;
  either \code{x} or \code{distances} must be missing}
  \item{dim}{dimension of the coordinate space in which the model is applied}
- \item{fctcall}{internal. This parameter should not be considered by
+ \item{fctcall}{internal. This argument should not be considered by
  the user}
  \item{...}{arguments passed to \command{\link{RFcov}} (\command{\link{RFcovmatrix}})
  and arguments passed to \command{\link{RFoptions}}}
@@ -71,7 +71,7 @@ RFfctn(...)
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{	
  \command{\link{RMmodel}},
@@ -80,7 +80,8 @@ RFfctn(...)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 # locations:
 X <- matrix(runif(15), ncol=3)
@@ -168,7 +169,7 @@ C <- RFcovmatrix(model=model, x=X)
 # yields covariance matrix C(xi,xj) for i,j=1,2,3,4,5
 C
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}

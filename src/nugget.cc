@@ -57,9 +57,10 @@ void nugget(double *x, cov_model *cov, double *v) {
 
   double diag = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
-    vdim   = cov->vdim,
+    vdim   = cov->vdim2[0],
     vdimsq = vdim * vdim;
-  
+  assert(cov->vdim2[0] == cov->vdim2[1]);
+
   v[0] = diag;
   for (i = 1; i<vdimsq; v[i++] = diag) {
     endfor = i + vdim;
@@ -71,7 +72,7 @@ void nugget(double *x, cov_model *cov, double *v) {
 void covmatrix_nugget(cov_model *cov, double *v) {
   location_type *loc = Loc(cov);
   int i,
-    vdim   = cov->vdim,
+    vdim   = cov->vdim2[0],
     n = loc->totalpoints * vdim,
     nP1 = n + 1,
     n2 = n * n;
@@ -106,12 +107,10 @@ int check_nugget(cov_model *cov) {
   kdefault(cov, NUGGET_TOL, gp->tol);
   if (PisNULL(NUGGET_VDIM)) {
 
-    //printf("nugget vdim %d\n", cov->vdim);
-
-    if (cov->vdim <= 0) cov->vdim = 1;
-    kdefault(cov, NUGGET_VDIM, cov->vdim);
+    if (cov->vdim2[0] <= 0) cov->vdim2[0] = cov->vdim2[1] = 1;
+    kdefault(cov, NUGGET_VDIM, cov->vdim2[0]);
   } else {
-    cov->vdim = P0INT(NUGGET_VDIM);
+    cov->vdim2[0] = cov->vdim2[1] = P0INT(NUGGET_VDIM);
   }
 
   cov->matrix_indep_of_x = true;
@@ -186,7 +185,7 @@ int check_nugget_proc(cov_model *cov) {
       BUG;
     } else if (intern != cov) {
       //print("****** here\n");
-      paramcpy(intern, cov, true, false);
+      paramcpy(intern, cov, true, true, false, false, false);
     }
 
     if (!PisNULL(NUGGET_PROC_TOL)) 
@@ -203,11 +202,10 @@ int check_nugget_proc(cov_model *cov) {
    
 
 
-  cov->vdim = next->vdim;  
+  cov->vdim2[0] = next->vdim2[0];  
+  cov->vdim2[1] = next->vdim2[1];  
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
     return ERRORDIM;
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
-  cov->vdim = sub->vdim;  
   cov->role = ROLE_GAUSS;
   
   // printf("OK nugget\n");
@@ -217,9 +215,7 @@ int check_nugget_proc(cov_model *cov) {
 }
 
 
-void range_nugget_proc(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
-
+void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->min[NUGGET_PROC_TOL] = 0;
   range->max[NUGGET_PROC_TOL] = RF_INF;
   range->pmin[NUGGET_PROC_TOL] = 0;
@@ -237,9 +233,6 @@ void range_nugget_proc(cov_model *cov, range_type *range) {
 
 // uses global RANDOM !!!
 int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
-
-  // printf(" CALL OF INIT NUGGET ****************\n");
-
   location_type 
     *loc=cov->prevloc; 
   if (cov->ownloc!=NULL) {
@@ -249,7 +242,8 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   }
   cov_model *next = cov->sub[0];
   nugget_storage *s;
-  int d, //vdim,
+  int d, //
+    vdim = cov->vdim2[0],
     err = NOERROR,
     origdim = loc->timespacedim,
     dim = cov->tsdim,
@@ -344,7 +338,7 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
       //print("d=%d %d %d %d\n",d,s->prod_dim[0],s->prod_dim[1],s->prod_dim[2]);
       }
 
-      if ((s->red_field=(res_type *) MALLOC(sizeof(res_type) * cov->vdim *
+      if ((s->red_field=(res_type *) MALLOC(sizeof(res_type) * vdim *
 					    s->prod_dim[dim]))
 	  == NULL){
 	  err=ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -389,10 +383,10 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   nugget_storage* s;
   long nx, endfor;
   int v, 
-    vdim = cov->vdim;
+    vdim = cov->vdim2[0];
   double 
     *res = cov->rf;
-  bool loggauss = (bool) P0INT(LOG_GAUSS);
+  bool loggauss = GLOBAL.gauss.loggauss;
 
   s = (nugget_storage*) cov->Snugget;
 //  sqrtnugget = s->sqrtnugget;
@@ -441,7 +435,7 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       int p;
       ALLOC_EXTRA1(dummy, vdim);
       assert(s->pos[0]>=0);
-      for (v=0; v<vdim; v++) dummy[v] = RF_NAN; // just to avoid warnings 
+      for (v=0; v<vdim; v++) dummy[v] = RF_NA; // just to avoid warnings 
       //                                           from the compiler
       for (nx=0; nx<loc->totalpoints; nx++) {
 	if ((p = s->pos[nx]) < 0) p = -1 - p; // if p<0 then take old variable
@@ -457,7 +451,8 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   }
 
   if (loggauss) {
-    int i, vdimtot = loc->totalpoints * cov->vdim;
+    int i, 
+      vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }

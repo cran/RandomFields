@@ -15,7 +15,7 @@
 }
 
 \usage{
-RPhyperplane(phi, loggauss, superpos, maxlines, mar_distr, mar_param)
+RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param)
 }
 
 \arguments{
@@ -24,7 +24,7 @@ RPhyperplane(phi, loggauss, superpos, maxlines, mar_distr, mar_param)
  only exponential covariance functions and scale mixtures
  of it are allowed.
  }
- \item{loggauss}{see  \command{\link{RPgauss}}.}
+% \item{loggauss}{see  \command{\link{RPgauss}}.}
  \item{superpos}{integer. number of superposed hyperplane tessellations.
  Default: \code{300}.}
  
@@ -42,14 +42,14 @@ RPhyperplane(phi, loggauss, superpos, maxlines, mar_distr, mar_param)
 	\item{\code{1}}{Frechet distribution with form parameter
 	 \code{mar_param}}
 	\item{\code{2}}{Bernoulli distribution (Binomial with \eqn{n=1}) with
-	 parameter \code{mar_param}}
+	 argument \code{mar_param}}
  }
- This parameter should not be changed yet.
+ This argument should not be changed yet.
  
  Default: \code{0}.
  }
- \item{mar_param}{Parameter used for the marginal
- distribution. The parameter should not be changed yet.
+ \item{mar_param}{Argument used for the marginal
+ distribution. The argument should not be changed yet.
  
  Default: \code{NA}.
  }
@@ -80,14 +80,15 @@ RPhyperplane(phi, loggauss, superpos, maxlines, mar_distr, mar_param)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{\dontrun{
 model <- RPhyperplane(RMexp(s=2), superpos=1)
 x <- seq(0, 3, if (interactive()) 0.04 else 1)
 z <- RFsimulate(x=x, x, grid=TRUE, model=model, n=1)
 plot(z)
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

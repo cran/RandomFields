@@ -9,7 +9,8 @@
 }
 \description{
   Through \command{\link{RRdistr}} distribution families can the
-  passed to \pkg{RandomFields} to create random parameters
+  passed to \pkg{RandomFields} to create distributions available
+  in the \command{\link{RMmodel}} defintions
 }
 \usage{
 RFddistr(model, x, dim=1, ...)
@@ -27,7 +28,7 @@ RFdistr(model, x, q, p, n, dim=1, ...)
   \item{n}{the number of random values to be drawn}
   \item{dim}{the dimension of the vector to be drawn}
   \item{\dots}{for advanced use:
-    further options and control parameters for the simulation
+    further options and control arguments for the simulation
     that are passed to and processed by \command{\link{RFoptions}}}
 }
 \details{
@@ -38,7 +39,7 @@ RFdistr(model, x, q, p, n, dim=1, ...)
   as described in the arguments
 }
 \author{
-Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de
+Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software
 }
 }
 
@@ -46,7 +47,8 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni
   \command{\link{RRgauss}}, \link{RR}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 Print(RFoptions())
 ## a very toy example to understand the use
@@ -63,13 +65,13 @@ set.seed(0); Print(r, rnorm(n=n))
 
 ## note that a conditional covariance function given the
 ## random parameters is given here:
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 model <- RMgauss(scale=exp())
 for (i in 1:3) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
   plot(model)
   plot(RFsimulate(model, x=seq(0,10,0.1)))
 }
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \keyword{spatial}

@@ -31,7 +31,7 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
  here \eqn{m} equals \code{length(nudiag)}
  For the calculation of \eqn{c_{ij}} see Details.
  }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
    \command{\link{RMmodel}}. If not passed, the above
    covariance function remains unmodified.
  }
@@ -75,7 +75,8 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{\dontrun{
 RFoptions(circulant.maxmem=6e7, pri=5)
 model <- RMparswmX(nudiag=c(1.3, 0.7, 2),
@@ -89,11 +90,11 @@ par(mfcol=c(1,1))
 
 ## the definition of RMparswmX is
 RMparswmX <- function(nudiag, rho, var, scale, Aniso, proj) {
-  return(RMschur(S=rho, RMparswm(nudiag, var, scale, Aniso, proj)))
+  return(RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj)))
 }
 
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 } % examples
 
 \keyword{spatial}

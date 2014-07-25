@@ -9,6 +9,7 @@
 \alias{[<-,RMmodel-method}
 \alias{[<-,RMmodel,ANY,ANY,ANY-method}
 \alias{+,RMmodel,RMmodel-method}
+\alias{*,RMmodel,RMmodel-method}
 %\alias{plot,RMmodel-method}
 %\alias{points.RMmodel}
 %\alias{lines.RMmodel}
@@ -17,6 +18,7 @@
 \description{ Class for \pkg{RandomField}'s representation of explicit
  covariance models 
 }
+
 
 \section{Creating Objects}{
  Objects are created by calling a function of class
@@ -30,9 +32,9 @@
  \item{\code{name}:}{character string; nickname of the model, name of
  the function by which the object was generated} 
  \item{\code{submodels}:}{list; contains submodels (if existent)} 
- \item{\code{par.model}:}{list; conatins model specific parameters} 
+ \item{\code{par.model}:}{list; conatins model specific arguments} 
  \item{\code{par.general}:}{list of 4; contains the four standard
- parameters \code{var}, \code{scale}, \code{Aniso} and \code{proj} that
+ arguments \code{var}, \code{scale}, \code{Aniso} and \code{proj} that
  can be given for any model; if not specified by the user, the string
  \code{"RFdefault"} is inserted}
  }
@@ -45,6 +47,8 @@
  \describe{
  \item{+}{\code{signature(x = "RMmodel")}: allows to sum up
  covariance models; internally calls \command{\link{RMplus}}.}
+ \item{*}{\code{signature(x = "RMmodel")}: allows to multiply
+ covariance models; internally calls \command{\link{RMmult}}.}
  \item{plot}{\code{signature(x = "RMmodel")}: gives a plot of the
  covariance function or of the variogram model, for more details see
  \command{\link{plot-method}}.}
@@ -83,8 +87,11 @@
 
 \examples{
 # see RMmodel for examples
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 
 \keyword{classes}
+\keyword{print}
+\keyword{hplot}
+

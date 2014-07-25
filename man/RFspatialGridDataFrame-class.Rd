@@ -6,6 +6,7 @@
 \alias{RFspDataFrame2conventional,RFspatialGridDataFrame-method}
 \alias{RFspDataFrame2dataArray,RFspatialGridDataFrame-method}
 \alias{show,RFspatialGridDataFrame-method}
+\alias{persp,RFspatialGridDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame,ANY-method}
 \alias{GridTopology2gridVectors,GridTopology-method}
@@ -61,7 +62,7 @@
     % see \link{SpatialPoints}; points slot which is
     % not actually filled with all coordinates (only with min/max)
     \item{\code{bbox}:}{matrix specifying the bounding box }
-    \item{\code{proj4string}:}{object of class \code{\link{CRS}};
+    \item{\code{proj4string}:}{object of class \code{\link[sp:CRS-class]{CRS}};
       projection }
   }
 }
@@ -82,11 +83,17 @@
  argument \code{MARGIN.slices} can be used;
  for more details see \code{\link{plot-method}} or type
  \code{method?plot("RFspatialGridDataFrame")}}
+
+\item{persp}{code{signature(obj =
+	"RFspatialGridDataFrame")}: generates \command{\link[graphics]{persp}} plots
+}
+
  \item{show}{\code{signature(x = "RFspatialGridDataFrame")}:
  uses the \command{show}-method for class
  \command{\link[sp]{SpatialGridDataFrame}}.}
  \item{print}{\code{signature(x = "RFspatialGridDataFrame")}:
- identical to \command{show}-method}
+   identical to \command{show}-method}
+ 
  \item{RFspDataFrame2conventional}{\code{signature(obj =
 	"RFspatialGridDataFrame")}: conversion to a list of
  non-\pkg{sp}-package based objects; the \code{data}-slot
@@ -142,7 +149,8 @@
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 %   library(RandomFields, lib="~/TMP")
 
 n <- 3
@@ -173,8 +181,10 @@ plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)
 f.sp <- RFsimulate(model=RMexp(), x=x, n=n, seed=0)
 f.old <- RFsimulate(model=RMexp(), x=x, n=n, spConform=FALSE, seed=0)
 all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 
 \keyword{classes}
+\keyword{print}
+\keyword{hplot}

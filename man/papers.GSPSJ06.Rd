@@ -11,7 +11,7 @@
 }
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de};
+ \url{http://ms.math.uni-mannheim.de/de/publications/software};
 }
 \references{
  \itemize{ 
@@ -30,11 +30,10 @@
 }
 
 \examples{
-RFoptions(seed=0)
-\dontshow{if (.C("isAuthor", a=integer(1))$a) {
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 ## Figure 1 
-
 stabletest <- function(alpha, theta, size=if (interactive()) 512 else 20) {
   RFoptions(trials=1, tolIm = 1e-8, tolRe=0, force = FALSE,
             useprimes=TRUE, strategy=0, skipchecks=!FALSE,
@@ -42,14 +41,14 @@ stabletest <- function(alpha, theta, size=if (interactive()) 512 else 20) {
   model <- RMcutoff(diameter=theta, a=1, RMstable(alpha=alpha))
   RFcov(dist=0, model=model, dim=2)
   r <- RFgetModelInfo(RFcov, modelname="RMcutoff")$internalq[5] # theor R
-  x <- c(0, r, r / (size - 1)) * theta
+  x <- seq(0, r, by= r / (size - 1)) * theta
   err <- try(RFsimulate(x, x, grid=TRUE, model=RPcirculant(model), n=0))
-  return(if (!is.numeric(err) || err != 0) NA else r)
+  return(if (class(err) == "try-error") NA else r)
 }
 
-alphas <- seq(1.52, 2.0, if (interactive()) 0.02 else 0.1) 
+alphas <- seq(1.52, 2.0, if (interactive()) 0.02 else 0.5) 
 thetas <-
-  if (interactive()) seq(0.05, 3.5, 0.05) else seq(0.1, 3.5, 0.2) 
+  if (interactive()) seq(0.05, 3.5, 0.05) else seq(0.1, 3.5, 2)
 
 m <- matrix(NA, nrow=length(thetas), ncol=length(alphas))
 for (it in 1:length(thetas)) {
@@ -63,8 +62,7 @@ for (it in 1:length(thetas)) {
   if (any(is.finite(m))) image(thetas, alphas, m, col=rainbow(100))
 }
 
-}}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

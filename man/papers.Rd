@@ -8,7 +8,7 @@
  }
  
  \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de};
+ \url{http://ms.math.uni-mannheim.de/de/publications/software};
  }
  \references{
  \itemize{
@@ -49,16 +49,19 @@
 
 
  \item
- Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2013)
- \R package \pkg{RandomFields}: Analysis and simulation of
- multivariate random fields and more. \emph{Submitted}
+ Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2014)
+ Analysis, simulation and prediction of
+ multivariate random fields with package RandomFields \emph{JSS}
+ \emph{Submitted}
 
- See \link{jss13} for the code.
+ See \link{jss14} for the code.
  
 
  \item
  Strokorb, K., Ballani, F. and Schlather, M. (2014)
  In Preparation.
+
+ See \link{SBS14} for the code.
  
 }
  % Schlather, M. (2001) Simulation of stationary and isotropic random
@@ -68,13 +71,13 @@
 }
 
 \seealso{
- \link{weather}, \link{GSPSJ06}, \link{SS12}, \link{S02}, \link{S10}, \link{jss13}
+ \link{weather}, \link{GSPSJ06}, \link{SS12}, \link{S02}, \link{S10}, \link{jss14}
  }
 
 
 \examples{
 # for examples, see the specific papers.
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

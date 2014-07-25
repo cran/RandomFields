@@ -20,8 +20,7 @@ RFspDataFrame2dataArray(obj)
  
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\author{Alexander Malinowski \email{alexander.malinowski@math.uni-goettingen.de}}
 
 \seealso{
   \command{\link{RFspatialGridDataFrame}},
@@ -30,7 +29,7 @@ RFspDataFrame2dataArray(obj)
 
 \examples{
 ## for examples, see the links in section 'See Also'
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

@@ -1,5 +1,7 @@
-\name{Random parameters}
+\name{Random models}
 \alias{RR}
+\alias{RRmodel}
+\alias{RRmodels}
 \title{
    Random parameters
 }
@@ -18,7 +20,7 @@
 \details{
   When simulating Gaussian random fields, the random parameters
   are drawn only once at the very beginning.
-  So, if the parameter \code{n} in \command{\link{RFsimulate}}
+  So, if the argument \code{n} in \command{\link{RFsimulate}}
   is greater than \code{1} then \code{n} simulations conditional
   on a single realisation of the random parameters are
   performed. See the examples below.
@@ -32,14 +34,17 @@
 
 \section{Implemented models}{
 \tabular{ll}{
-  \command{\link{RRdeterm}} \tab no scattering \cr
+  \command{\link{RRdeterm}} \tab no scattering
+  \cr
   \command{\link{RRdistr}} \tab  families of distributions transferred
   from R
   \cr
   \command{\link{RRgauss}} \tab a (multivariate) Gaussian random variable
   \cr
-  \command{\link{RRspherical}} \tab random scale for the
-  \command{\link{RMball}} to simulate \command{\link{RMspheric}}, etc.
+  \command{\link{RRloc}} \tab modification of location and scale
+  \cr
+  \command{\link{RRspheric}} \tab random scale for
+  the \command{\link{RMball}} to simulate \command{\link{RMspheric}}, etc.
   %on lower
 %  dimensions by \command{\link{RPcoins}} and \command{\link{RPpoisson}}
   \cr
@@ -49,27 +54,31 @@
 
 }
 
-
+\note{
+  A further random element is \command{\link{RMsign}}, which is an
+  operator on shape functions. As an exception its name starts with
+  \code{RM} and not with \code{RR}.
+}
 
 \author{
-Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de
+  Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de/de/publications/software
 }
 }
 
 \seealso{
-  \command{\link{Other models}},
+  \link{RC},
   \link{RF},
-  \command{\link{RFdistr}},
-    \link{RM},
- \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
+  \link{RM},
   \link{RP},
- \command{\link{RRdistr}},
-  \command{\link{RRgauss}},
-  \command{\link{RRspherical}}
-}
+  \command{\link{Other models}},
+  \command{\link{RFdistr}},
+ \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
+ }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ## here, the scale is given by an exponential variable:
 model <- RMgauss(scale=exp())
 for (i in 1:4) {
@@ -90,7 +99,8 @@ model <- RMgauss(scale=exp(rate=unif()))
 plot(model)
 plot(RFsimulate(model, x=seq(0,10,0.1)))
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}
+\keyword{distribution}

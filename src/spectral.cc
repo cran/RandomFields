@@ -38,11 +38,11 @@ int check_spectral(cov_model *cov) {
  int err,
     dim = cov->tsdim; // taken[MAX DIM],
   spectral_param *gp  = &(GLOBAL.spectral);
+
  
   ROLE_ASSERT(ROLE_GAUSS);
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
 
   kdefault(cov, SPECTRAL_LINES, gp->lines[dim]); // ok
   kdefault(cov, SPECTRAL_GRID, (int) gp->grid); //ok
@@ -84,9 +84,7 @@ int check_spectral(cov_model *cov) {
 }
 
 
-void range_spectral(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
-
+void range_spectral(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->min[SPECTRAL_LINES] = 1;
   range->max[SPECTRAL_LINES] = RF_INF;
   range->pmin[SPECTRAL_LINES] = 1;
@@ -165,7 +163,7 @@ int init_spectral(cov_model *cov, storage *S){
       goto ErrorHandling;
   }
  
-  if (cov->vdim > 1) {
+  if (cov->vdim2[0] > 1) {
     err = ERRORNOMULTIVARIATE;
     goto ErrorHandling;
   }
@@ -225,10 +223,10 @@ void E3(spectral_storage *s, double A, double *e) {
 }
 void E(int dim, spectral_storage *s, double A, double *e) {
   switch (dim) {
-      case 1 : E1(s, A, e); break;
-      case 2 : E2(s, A, e); break;
-      case 3 : E3(s, A, e); break;
-      default : assert(false);
+  case 1 : E1(s, A, e); break;
+  case 2 : E2(s, A, e); break;
+  case 3 : E3(s, A, e); break;
+  default: BUG;
   }
 }
 
@@ -262,7 +260,7 @@ void do_spectral(cov_model *cov, storage *S)
     *res = cov->rf;
   long total = loc->totalpoints,
     spatialpoints = loc->spatialtotalpoints;
-  bool loggauss = (bool) P0INT(LOG_GAUSS);
+  bool loggauss = GLOBAL.gauss.loggauss;
 
 			
   s->grid = P0INT(SPECTRAL_GRID);
@@ -275,19 +273,19 @@ void do_spectral(cov_model *cov, storage *S)
   //the very procedure:
   gridlenx = gridleny = gridlenz = gridlent = 1;
   switch (origdim) {
-      case 4 : 
-	  gridlent = loc->length[3];
-	  // no break;
-      case 3 : 
-	  gridlenz = loc->length[2];
-	  // no break;
-     case 2 : 
-	  gridleny = loc->length[1];
-	  // no break;
-      case 1 : 
-	  gridlenx = loc->length[0];
-	  break;
-      default : assert(false);
+  case 4 : 
+    gridlent = loc->length[3];
+    // no break;
+  case 3 : 
+    gridlenz = loc->length[2];
+    // no break;
+  case 2 : 
+    gridleny = loc->length[1];
+    // no break;
+  case 1 : 
+    gridlenx = loc->length[0];
+    break;
+  default: BUG;
   }
 
 

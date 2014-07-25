@@ -45,16 +45,17 @@
 }
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 model <- RMfbm(alpha=1.5)
-x <- seq(0, 10, if (interactive()) 0.1 else 1)
-z <- RFsimulate(RPbrownresnick(model), x=x, n=4)
+x <- if (interactive()) seq(0, 10, 0.1) else seq(0, 2, 1) 
+z <- RFsimulate(RPbrownresnick(model), x=x, n=if (interactive()) 4 else 1)
 plot(z)
 
 \dontrun{\dontshow{
@@ -77,7 +78,7 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
 
 ## for some more sophisticated models see maxstableAdvanced
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

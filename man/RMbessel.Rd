@@ -19,7 +19,7 @@ RMbessel(nu, var, scale, Aniso, proj)
  \item{nu}{a numerical value; should be equal to or greater than
  \eqn{\frac{d-2}2}{(d-2)/2} to provide a valid
  covariance function for a random field of dimension \eqn{d}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -47,15 +47,18 @@ RMbessel(nu, var, scale, Aniso, proj)
 
 }
 \references{
- \itemize{
- \item Chiles, J.-P. and Delfiner, P. (1999)
- \emph{Geostatistics. Modeling Spatial Uncertainty.}
- New York: Wiley.
- 
- \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
- P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
- Boca Raton: Chapman & Hall/CRL.
- }
+  \itemize{
+    \item Chiles, J.-P. and Delfiner, P. (1999)
+    \emph{Geostatistics. Modeling Spatial Uncertainty.}
+    New York: Wiley.
+    
+    \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
+    P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
+    Boca Raton: Chapman & Hall/CRL.
+    
+    \item
+    \url{http://homepage.tudelft.nl/11r49/documents/wi4006/bessel.pdf}
+  }
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
@@ -76,10 +79,11 @@ RMbessel(nu, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMbessel(nu=1, scale=0.1)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(-0.2, 1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

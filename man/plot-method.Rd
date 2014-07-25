@@ -3,8 +3,13 @@
 \alias{plot-method}
 \alias{plot,RFgridDataFrame,missing-method}
 \alias{plot,RFpointsDataFrame,missing-method}
+\alias{plot,RFspatialDataFrame,missing-method}
+\alias{plot,RFdataFrame,missing-method}
+\alias{plot,RFdataFrame,RFdataFrame-method}
 \alias{plot,RFspatialGridDataFrame,missing-method}
+\alias{plot,RFspatialDataFrame,RFspatialPointsDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
+\alias{plot,RFspatialDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,missing-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialPointsDataFrame-method}
@@ -130,32 +135,46 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
 }
 
 \usage{
-\S4method{plot}{RFspatialGridDataFrame,missing}(x, 
+\S4method{plot}{RFspatialDataFrame,missing}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (!missing(MARGIN.slices) &&
- !is.null(MARGIN.slices)) 10 else 1,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
 
-\S4method{plot}{RFspatialPointsDataFrame,missing}(x, y, MARGIN=c(1,2), nmax=6, 
+\S4method{plot}{RFspatialDataFrame,RFspatialGridDataFrame}(x, y,
+ MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+ nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
 
-\S4method{plot}{RFgridDataFrame,missing}(x, y, nmax=6, 
+\S4method{plot}{RFspatialDataFrame,RFspatialPointsDataFrame}(x, y,
+ MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+ nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
+
+
+\S4method{plot}{RFdataFrame,missing}(x, y, nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), ...)
 
-\S4method{plot}{RFpointsDataFrame,missing}(x, y, nmax=6, sorted=FALSE, 
+\S4method{plot}{RFdataFrame,RFdataFrame}(x, y, nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), ...)
 
-\S4method{plot}{RFempVariog,missing}(x, y, nmax.phi=6, nmax.theta=3, nmax.T=3,
- plot.nbin=TRUE, plot.sd=FALSE, model=NULL, variogram=TRUE, ...)
 
-\S4method{plot}{RFfit,missing}(x, y, fit.method="ml",
- nmax.phi=6, nmax.theta=3, nmax.T=3,
- plot.nbin=TRUE, plot.sd=FALSE, model=NULL, variogram = TRUE, ...)
+
+\S4method{plot}{RFempVariog,missing}(x, model=NULL,
+%nmax.phi=6, nmax.theta=3, nmax.T=3,
+nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
+ plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE, boundaries = TRUE,...)
+
+\S4method{plot}{RFfit,missing}(x, model=NULL,  fit.method="ml",
+ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
+ plot.nbin=TRUE, plot.sd=FALSE, variogram = TRUE, boundaries = TRUE,...)
 
 \S4method{plot}{RMmodel,missing}(x, y, dim=1, n.points=200,
  fct.type=NULL, MARGIN, fixed.MARGIN, ...)
@@ -188,17 +207,15 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  \code{n.slices>1}, \code{nmax} is set to 1}
  \item{nmax}{the maximal number of the \code{x@.RFparams$n} iid copies
  of the field that are to be plotted}
- \item{sorted}{logical; indicates whether the point locations are in
- increasing order}
  \item{...}{arguments to be passed to methods; mainly graphical
- parameters; internally, \code{...} are passed to \code{image} and
+   arguments; internally, \code{...} are passed to \code{image} and
  \code{plot.default}, respectively; if, by default, multiple colors,
  xlabs or ylabs are used, also vectors of suitable length can be
  passed as \code{col}, \code{xlab} and \code{ylab}, respectively}
  \item{fit.method}{character; only for \code{class(x)=="RFfit"}; a
  vector of slot names for which the fitted covariance or variogram model is to be plotted; should be a subset of
  \code{slotNames(x)} for which the corresponding slots are of class
- \code{"RMmodelExt"}; by default, the maximum likelihood fit will be
+ \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
  plotted} 
  \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
  the maximal number of bins of angle phi that are to be
@@ -214,9 +231,20 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
  indicates whether the calculated standard deviation (\code{x@sd}) is
  to be plotted (in form of arrows of length +-1*sd)}
- \item{variogram}{logical; This parameter should currently not be set
+ \item{variogram}{logical; This argument should currently not be set
  by the user. If \code{TRUE} then the empirical variogram
  is plotted, else an estimate for the covariance function} 
+ \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
+   the anisotropic case where \code{model} is given.
+   As the empirical variogram is calculated on a sector of angles,
+   no exact variogram curve corresponds to the mean values in this
+   sector.
+   If \code{boundaries=TRUE} the values of the variogram on the sector
+   boundaries are plotted. If \code{FALSE} some kind of mean
+   model values are plotted. Neither the boundaries may contain
+   the values of emprical variogram nor does the mean values
+   need to be close the emprical variogram.  
+ } 
  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
  covariance function and the variogram are plotted as a function of
  \eqn{\R^\code{dim}}{R^\code{dim}}.}
@@ -237,7 +265,7 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  \item{plot.variance}{logical, whether variances should be plotted if
  available}
  \item{select.variables}{vector of integers or list of vectors.
- The parameter is only of interest for multivariate models.
+ The argument is only of interest for multivariate models.
  Here, \code{length(select.variables)} gives the number of pictures shown
  (excuding the plot for the variances, if applicable).
  If \code{select.variables} is a vector of integers then exactly these
@@ -263,10 +291,15 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  be used.}
 }
 
+\author{Alexander Malinowski
+  \email{alexander.malinowski@math.uni-goettingen.de},
+  Martin Schlather
+}
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontrun{%\dontshow?
 
@@ -274,7 +307,7 @@ RFoptions(seed=0)
  model <- RMtrend(mean=0.5) + # mean
  RMstable(alpha=1, var=4, scale=10) +
  # see help("RMstable")
- # for additional parameters
+ # for additional arguments
  RMnugget(var=1) # nugget
 
  #############################################################
@@ -362,7 +395,7 @@ plot(simulated, select.variables=list(1, 1:3, 4))
 
 
 #############################################################
-## options for the zlim parameter
+## options for the zlim argument
 model <- RMdelay(RMstable(alpha=1.9, scale=2), s=c(0, 4)) +
  RMdelay(RMstable(alpha=1.9, scale=2), s=c(4, 0))
 simu <- RFsimulate(model, x, y, grid=TRUE)
@@ -373,7 +406,7 @@ plot(simu, zlim=c(-6,2))
 plot(simu, zlim="joint")
 
 }
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

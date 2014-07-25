@@ -1,10 +1,14 @@
 \name{RFsp-class}
 \docType{class}
 \alias{RFsp-class}
+\alias{RFspatialDataFrame}
+\alias{RFdataFrame}
 %% S4 methods
 \alias{summary,RFsp-method}
 \alias{variance,RFsp-method}
 \alias{dimensions,RFsp-method}
+\alias{dimensions,RFdataFrame-method}
+\alias{dimensions,RFspatialDataFrame-method}
 \alias{isGridded}
 \alias{isGridded,RFsp-method}
 \alias{[,RFsp-method}
@@ -13,18 +17,14 @@
 \alias{[<-,RFsp-method}
 \alias{[<-,RFsp,ANY,ANY-method}
 \alias{[<-,RFsp,ANY,ANY,ANY-method}
-%\alias{print.summary.Spatial}
-%\alias{summary,Spatial-method}
-%\alias{plot,Spatial,missing-method}
-%\alias{getParUsrBB}
-%\alias{setParUsrBB}
-%\alias{coordinates<-,Spatial-method}
-%\alias{[[<-,Spatial,ANY,missing-method}
-%\alias{[[,Spatial,ANY,missing-method}
-%\alias{$<-,Spatial-method}
-%\alias{$,Spatial-method}
+\alias{RFspatialDataFrame-class}
+\alias{RFspatialDataFrame}
+\alias{RFdataFrame-class}
+\alias{RFdataFrame}
+
 \title{Class \code{RFsp}}
-\description{ Virtual class which contains the four classes
+
+\description{ \code{"RFsp"} is a virtual class which contains the four classes
  \command{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}} 
  (data on a full grid and \eqn{space-time-dimension \ge
  2}{space-time-dimension > 2}), 
@@ -34,7 +34,17 @@
  \command{\link[=RFgridDataFrame-class]{RFgridDataFrame}}
  (data on a full grid and \eqn{space-time-dimension = 1}), 
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
- (data not on a grid spaced and \eqn{space-time-dimension = 1}) 
+ (data not on a grid spaced and \eqn{space-time-dimension = 1})
+
+
+ The first two class subclasses are summarized in
+ \code{"RFspatialDataFrame"} whilst the latter two are
+ summarized in \code{"RFdataFrame"}.
+ 
+% The first two classes are summarized in the class
+% \code{RFspatialDataFrame} the last two classes in the class
+%\code{ RFdataFrame}.
+ 
 }
 
 \section{Objects from the Class}{
@@ -90,7 +100,10 @@
 %\item{proj4string}{a CRS object}
 %}
 
-\author{Alexander Malinowski \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski
+  \email{alexander.malinowski@math.uni-goettingen.de},
+  Martin Schlather
+}
 
 
 \section{Warning }{this class is not useful in itself, but the above
@@ -103,9 +116,10 @@
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 ## to do
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{classes}

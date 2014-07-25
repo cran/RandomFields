@@ -19,10 +19,10 @@
 RMnonstwm(nu, var, scale, Aniso, proj)
 }
 \arguments{
- \item{nu}{positive parameter defining the smoothness of the random
+ \item{nu}{positive argument defining the smoothness of the random
  field, or it is an arbitrary \command{\link[=RMmodelsAuxiliary]{shape function}}.
  }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -49,7 +49,8 @@ RMnonstwm(nu, var, scale, Aniso, proj)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{\dontrun{
 x <- seq(-1.2, 1.2, len=if (interactive()) 70 else 3)
 model <- RMnonstwm(nu=RMgauss())
@@ -57,7 +58,7 @@ model <- RMnonstwm(nu=RMgauss())
 z <- RFsimulate(model=model, x, x, grid=TRUE, n=4)
 plot(z)
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

@@ -14,7 +14,7 @@
 }
 
 \usage{
-RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
+RPtbm(phi, fulldim, reduceddim, layers, lines,
       linessimufactor, linesimustep, center, points)
 }
 
@@ -26,10 +26,14 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
      domain="single variable", isotropy="isotropy",  vdim=1)})
  which is valid in dimension \code{fulldim}.
  }
- \item{loggauss}{see \command{\link{RPgauss}}.}
- \item{fulldim}{a positive integer}
+% \item{loggauss}{see \command{\link{RPgauss}}.}
+ \item{fulldim}{a positive integer. The dimension of the space of the
+ random field to be simulated}
 
- \item{reduceddim}{a positive integer; less than \code{fulldim}}
+ \item{reduceddim}{a positive integer; less than \code{fulldim}. 
+   The dimension of the auxiliary hyperplane (most frequently a line,
+   i.e. \code{reduceddim=1} used in the simulation.
+}
 
  \item{layers}{a boolean value; for space time model. If \code{TRUE} then the turning layers are
  used whenever a time component is given.
@@ -50,7 +54,7 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
  \code{linesimustep}
  is positive then \code{linesimufactor} is ignored.
  If both
- parameters are naught then \code{points} is used (and must be
+ arguments are naught then \code{points} is used (and must be
  positive).
  The grid on the line is \code{linesimufactor}-times
  finer than the smallest distance. 
@@ -95,8 +99,7 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
  }
 
  \details{
- \itemize{
- \item \command{RPtbm}(Turning bands methods; turning layers).\cr
+\command{RPtbm}(Turning bands methods; turning layers).\cr
  It is generally difficult to use the turning bands method
  (\command{RPtbm}) directly
  in the 2-dimensional space.
@@ -127,7 +130,6 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
  the other matrices must be equal up to a factor and the temporal
  part of the anisotropy matrix (right column) may contain only
  zeros, except the very last entry. 
-}
  
 }
 
@@ -156,7 +158,8 @@ RPtbm(phi, loggauss, fulldim, reduceddim, layers, lines,
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RPtbm(RMstable(s=1, alpha=1.8))
 x <- seq(-3,3,0.1)
 z <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
@@ -165,7 +168,7 @@ plot(z)
 model <- RPtbm(RMexp(Aniso=matrix(nc=2, rep(1,4))))
 z <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

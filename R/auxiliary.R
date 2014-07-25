@@ -103,7 +103,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
     }
     if (length(dev.list())>0)
       if (get(".dev.orig", envir=.RandomFields.env)$keep) par(new=FALSE)
-      else dev.off()
+      else dev.off() ## obsolete
     if ((devPrev <- get(".dev.orig", envir=.RandomFields.env)$dev.prev) != 1)
       dev.set(devPrev)   
     rm(".dev.orig", envir=.RandomFields.env) 
@@ -174,26 +174,29 @@ plotWithCircles <- function(data, factor=1.0,
 
 
 Print <- function(..., digits=6, empty.lines=2) { #
-   max.elements <- 999
+   max.elements <- 99
   l <- list(...)
   n <- as.character(match.call())[-1]
   cat(paste(rep("\n", empty.lines), collapse="")) #
   for (i in 1:length(l)) {
-    cat(n[i], "= ") #
+    cat(n[i]) #
     if (!is.list(l[[i]]) && is.vector(l[[i]])) {
-      if (length(l[[i]])==0) cat("<zero>")#
+      L <- length(l[[i]])
+      if (L==0) cat(" = <zero>")#
       else {
-        cat(l[[i]][1:min(length(l[[i]]), max.elements)]) #
-        if (max.elements < length(l[[i]])) cat(" ...")
+        cat(" [", L, "] = ", sep="")
+        cat(l[[i]][1:min(L , max.elements)]) #
+        if (max.elements < L) cat(" ...")
       }
     } else {
        if (is.list(l[[i]])) {
-        cat("  ") #
+        cat(" =  ") #
         str(l[[i]], digits.d=digits) #
       } else {
-        cat("\n")
-        if (length(l[[i]]) <= 100) {
-          print(if (is.numeric(l[[i]])) round(l[[i]],digits=digits) else l[[i]])
+        cat("=\n")
+        if (length(l[[i]]) <= 100 && FALSE) {
+          print(if (is.numeric(l[[i]])) round(l[[i]],digits=digits)#
+                else l[[i]])
         } else str(l[[i]]) #
       }
     }
@@ -205,7 +208,7 @@ Print <- function(..., digits=6, empty.lines=2) { #
 vectordist <- function(x, diag=FALSE) {
   size <- c(ncol(x), 0.5 * (nrow(x) * (nrow(x) - 1 + 2 * diag)))
   res <- double(prod(size))
-  .C("vectordist", as.double(t(x)), rev(dim(x)), res, diag, DUP=FALSE)
+  .C("vectordist", as.double(t(x)), rev(dim(x)), res, diag, DUP=DUPFALSE)
   dim(res) <- size
   #Print(dimnames(x)[[2]], dim(res))
   dimnames(res) <- list(dimnames(x)[[2]], NULL)
@@ -213,7 +216,7 @@ vectordist <- function(x, diag=FALSE) {
 }
 
 xylabs <- function(x, y, T=NULL, units=NULL) {
-  if (is.null(units)) units <- RFoptions()$general$coord_units
+  if (is.null(units)) units <- RFoptions()$coords$coord_units
   xlab <- if (is.null(x)) NULL
           else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
   ylab <- if (is.null(y)) NULL
@@ -225,19 +228,21 @@ xylabs <- function(x, y, T=NULL, units=NULL) {
 
 add.units <- function(x,  units=NULL) {
   if (is.null(x)) return(NULL)
-  if (is.null(units)) units <- RFoptions()$general$variab_units
+  if (is.null(units)) units <- RFoptions()$coords$variab_units
   return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
 }
 
 ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
                          dw = 2.5, w.outer=0.7) {
+
   if (graphics$always_close_screen) {
+    close.screen(all.screens=TRUE)
     if (is.finite(graphics$height) && graphics$height>0) {
-      if (length(dev.list()) > 0) dev.off()
-    } else close.screen(all.screens=TRUE)
+      if (length(dev.list()) > 0) dev.off() ## OK
+    }
   }
- 
-    H <-  graphics$height
+
+  H <-  graphics$height
   if (is.finite(H) && H>0) {
     H <- H * pmin(1, graphics$increase_upto[1] / figs[1],
                   graphics$increase_upto[2] / figs[2])
@@ -249,11 +254,9 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
     WO <- W - DW
     curW <-  figs[2] * DW + WO    
     getOption("device")(height=curH, width=curW)
-
-    #Print(figs, c(curH, curW), graphics); XXXX
     return(c(curH, curW)) 
- } else return(rep(NA, 2))
-
-  
+  } else {
+    return(rep(NA, 2))
+  }
 }
 

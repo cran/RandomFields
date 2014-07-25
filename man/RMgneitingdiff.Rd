@@ -18,7 +18,7 @@ RMgneitingdiff(nu, taper.scale, scale, var, Aniso, proj)
  \item{nu}{see \command{\link{RMwhittle}} }
  \item{taper.scale}{is the paramter \eqn{t} in the above formula}
  \item{scale}{is the paramter \eqn{s} in the above formula}
- \item{var,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -59,10 +59,11 @@ RMgneitingdiff(nu, taper.scale, scale, var, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMgneitingdiff(nu=2, taper.scale=1, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

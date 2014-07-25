@@ -24,13 +24,14 @@ RPschlather(phi, tcf, xi, mu, s)
 }
 
 \details{
-  The parameter \code{xi} is always a number, i.e. \eqn{\xi} is constant in
- space. In contrast, \eqn{\mu} and \eqn{s} might be constant
+  The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant in
+  space. In contrast, \eqn{\mu} and \eqn{s} might be constant
  numerical value or given a \code{\link{RMmodel}}, in particular by a
- \code{\link{RMtrend}} model. 
+ \code{\link{RMtrend}} model.  The default values of \eqn{mu} and \eqn{s}
+ are \eqn{1} and \eqn{z\xi}, respectively.
 
 
- The parameter \code{phi} can be any random field for
+ The argument \code{phi} can be any random field for
  which the expectation of the positive part is known at the origin.
 
  It simulates Extremal Gaussian process \eqn{Z} (also
@@ -51,16 +52,32 @@ RPschlather(phi, tcf, xi, mu, s)
    \command{\link{RFoptions}}.}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
-model <- RMgauss()
-x <- seq(0, 10, if (interactive()) 0.1 else 1)
-z <- RFsimulate(RPschlather(model, xi=0, s=0.1), x)
-plot(z)
+RFoptions(seed=0, xi=0)
+## seed=0: *ANY* simulation will have the random seed 0; set
+##         RFoptions(seed=NA) to make them all random again
+## xi=0: any simulated max-staable random field has extreme value index 0
+
+x <- seq(0, 2, if (interactive()) 0.01 else 1)
+
+## standard use of RPschlather (i.e. a standardized Gaussian field) 
+z <- RFsimulate(RPschlather(RMgauss()), x)
+plot(z, type="l")
+
+## the following refers to the standard use, but obviously is incorrect
+try(RFsimulate(model=RPschlather(RMgauss(var=2)), x=x, grid=TRUE))
+
+## the following refers to the generalized use of RPschlather, where
+## any random field can be used. Note that 'z' and 'z2' have the same
+## .Random.seed (and the same simulation method), hence the same values
+z2 <- RFsimulate(model=RPschlather(RPgauss(RMgauss(var=2))), x=x, grid=TRUE)
+plot(z2, type="l")
+all.equal(z, z2) # true
+
 
 \dontshow{if (.C("isAuthor", a=integer(1))$a) {
 
@@ -75,7 +92,7 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 ## for some more sophisticated models see 'maxstableAdvanced'
 
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

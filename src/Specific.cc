@@ -41,20 +41,24 @@ int check_specificGauss(cov_model *cov) {
   
   ROLE_ASSERT(ROLE_GAUSS);
    
-   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
+  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
+  if (CovList[next->nr].Specific == MISMATCH)
+    SERR1("specific method for '%s' not known", NAME(next));
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
-
-  //  PMI(cov); //assert(false);
+  //    APMI(cov); //assert(false);
   if (key == NULL) {
-    Types type[3] = {PosDefType, NegDefType, TrendType};
+#define SPEC_TYPES 4
+    Types type[SPEC_TYPES] = {PosDefType, PosDefType, NegDefType, TrendType};
     int i,
-      iso[3] = {SYMMETRIC, SYMMETRIC, CARTESIAN_COORD};
+      iso[SPEC_TYPES] = {SYMMETRIC, SYMMETRIC, SYMMETRIC, CARTESIAN_COORD},
+      dom[SPEC_TYPES] = {XONLY, KERNEL, XONLY, XONLY};    
     
-    for (i=0; i<3; i++) {
-      if ((err = CHECK(next, cov->tsdim,  cov->tsdim, type[i],
-		       cov->domown, iso[i],
+      // APMI(cov->calling);
+
+    for (i=0; i<SPEC_TYPES; i++) {
+      if ((err = CHECK(next, cov->tsdim,  cov->tsdim,
+		       type[i], dom[i], iso[i],
 		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
     }
     if (err != NOERROR) return err;
@@ -71,7 +75,10 @@ int check_specificGauss(cov_model *cov) {
   }
   cov_model *sub = cov->key == NULL ? next : key;
   setbackward(cov, sub);
-  cov->vdim = sub->vdim;
+  cov->vdim2[0] = sub->vdim2[0];
+  cov->vdim2[1] = sub->vdim2[1];
+
+  //PMI(cov);
 
   return NOERROR;
 }
@@ -82,7 +89,7 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
     *next = cov->sub[0];
   location_type *loc = cov->prevloc;
    int err;
-  // PMI(cov); assert(false);
+  //   PMI(cov); //assert(false);
   
   if (next->pref[Specific] == PREF_NONE) {
     return ERRORPREFNONE;
@@ -90,22 +97,35 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
 
   ROLE_ASSERT_GAUSS;
 
-
   if (cov->key != NULL) COV_DELETE(&(cov->key));
   if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
+  if ((err = CHECK(cov->key, next->tsdim, next->xdimprev, next->typus, 
+		   next->domprev, next->isoprev, next->vdim2,
+		   next->role))!= NOERROR) {
+    //PMI(cov->key); XERR(err);
+    //printf("specific ok\n");
+    // crash();
+    return err;
+  }
+
+  assert(CovList[next->nr].Specific >= 0);
+
+
+  cov->key->nr = CovList[cov->key->nr].Specific ;
   cov->key->role = ROLE_GAUSS;
   cov->key->typus = ProcessType;
 
-  //   if (next->nr == PLUS) {PMI(cov); assert(false);}
-  //printf("just befor struct\n");
-
-  if ((err = STRUCT(cov->key, NULL) != NOERROR)) return err; ;
+  //PMI(cov->key);
+  // APMI(cov->key);
+  if ((err = STRUCT(cov->key, NULL)) != NOERROR) {
+    return err;
+  }
 
   //   APMI(cov->key);
 
   if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		   XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) != NOERROR) {
-    //PMI(cov->key);
+		   XONLY, CARTESIAN_COORD, cov->vdim2, ROLE_GAUSS)) != NOERROR) {
+    //PMI(cov->key); XERR(err);
     //printf("specific ok\n");
     // crash();
     return err;
@@ -146,13 +166,13 @@ int init_specificGauss(cov_model *cov, storage *S) {
 void do_specificGauss(cov_model *cov, storage *S) {  
   cov_model *key = cov->key;
   location_type *loc = Loc(cov);
-  bool loggauss = (bool) P0INT(LOG_GAUSS);
+  bool loggauss = GLOBAL.gauss.loggauss;
   double *res = cov->rf;
 
   assert(key != NULL);
   DO(key, S);
   if (loggauss) {
-    int i, vdimtot = loc->totalpoints * cov->vdim;
+    int i, vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }

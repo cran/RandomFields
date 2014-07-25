@@ -87,7 +87,7 @@ ZF_MODEL <- "RMmodel"
 
 ZF_MIXED <- c( "RMmixed", "mixed") 
 ZF_NUGGET <- c("RMnugget", "nugget")
-ZF_MODELEXT <- "RMmodelExt"
+ZF_MODELEXT <- "RMmodelFit"
 
 
 # @GLOBAL-STARP*****************************************************************
@@ -118,7 +118,7 @@ ZF_MODEL_PREFIX <- "RM"
 
 
 #ZF_NULL <- '<null>'
-#ZF_TYPE_DOMAINS <-
+#RC_TYPE_DOMAINS <-
 #  cbind(c('domain', 'variogram', 'process', 'gauss method',
 #          'point-shape function', 'distribution', 'shape function',
 #          'trend', 'interface', 'undefined', 'of other type'),
@@ -131,33 +131,44 @@ ZF_MODEL_PREFIX <- "RM"
 #          ZF_NULL, 'param. dep. interface', 'undefined, parametric function',
 #          'of other param. dep. function')       
 #        )        
-#ZF_TYPE_DOM <- ZF_TYPE_DOMAINS[ZF_TYPE_DOMAINS != ZF_NULL]
+#RC_TYPE_DOM <- RC_TYPE_DOMAINS[RC_TYPE_DOMAINS != ZF_NULL]
 
 
 TRANS_INV <- as.integer(0)
 KERNEL <- as.integer(1)
 PREVMODELD <- as.integer(2)
-ZF_DOMAIN <- c('single variable', 'kernel', 'calling model', 'mismatch')
+DOMAIN_MISMATCH <- as.integer(3)
+RC_DOMAIN <- c('single variable', 'kernel', 'framework dependent', 'mismatch')
      
 
-ISOTROPIC <- as.integer(0)
-SPACEISOTROPIC <- as.integer(1)
-ZEROSPACEISOTROPIC <- as.integer(2)
-VECTORISOTROPIC <- as.integer(3)
+RC_ISOTROPIC <- as.integer(0)
+RC_SPACEISOTROPIC <- as.integer(1)
+ZERORC_SPACEISOTROPIC <- as.integer(2)
+VECTORRC_ISOTROPIC <- as.integer(3)
 SYMMETRIC <- as.integer(4)
-CARTESIAN_COORD <- as.integer(5)
+RC_CARTESIAN_COORD <- as.integer(5)
 EARTH_COORD <- as.integer(6)
 SPHERICAL_COORD <- as.integer(7)
 CYLINDER_COORD <- as.integer(8)
 UNREDUCED <- as.integer(9)
 PREVMODELI <- as.integer(10)
-ZF_ISOTROPY <- c("isotropic", "space-isotropic", "zero-space-isotropic",
+RC_ISOTROPY <- c("isotropic", "space-isotropic", "zero-space-isotropic",
                  "vector-isotropic", "symmetric", "cartesian system",
                  "earth system", "spherical system", "cylinder system",
                  "non-dimension-reducing", "parameter dependent", "<mismatch>")
+MON_MISMATCH <- 5
+MON_PARAMETER <- MON_MISMATCH - 1
+NOTMONOTONE <- MON_MISMATCH + 0
+BERNSTEIN <-  MON_MISMATCH + 5
+RC_MONOTONE <- c("mismatch in monotonicity",
+                 "submodel dependent monotonicity",
+                "previous model dependent monotonicity",
+                "parameter dependent monotonicity",
+                "not monotone", "monotone", "Gneiting-Schaback class", 
+                "normal mixture", "completely monotone", "Bernstein")
 
-## Coding of stationarity and isotropy in RF.h, see also ZF_DOMAIN
-## and ZF_ISOTROPY
+## Coding of stationarity and isotropy in RF.h, see also RC_DOMAIN
+## and RC_ISOTROPY
 
 
 # mostly unused
@@ -174,7 +185,7 @@ TrendType <- as.integer(9)
 InterfaceType <- as.integer(10) 
 UndefinedType <- as.integer(11) 
 OtherType <- as.integer(12) 
-ZF_TYPE <- c("tail correlation function", "positive definite",
+RC_TYPE <- c("tail correlation function", "positive definite",
              "negative definite", "process", 
     "method for Gauss processes", "method for Brown-Resnick processes",
     "shifted shape function",
@@ -184,20 +195,20 @@ isPosDef <- function(type) {
   (is.numeric(type) && (type==TcfType || type == PosDefType ||
                         type==UndefinedType)) ||
   (is.character(type) &&
-   (type == ZF_TYPE[TcfType+1] || type == ZF_TYPE[PosDefType + 1]
-    || type == ZF_TYPE[UndefinedType + 1]))
+   (type == RC_TYPE[TcfType+1] || type == RC_TYPE[PosDefType + 1]
+    || type == RC_TYPE[UndefinedType + 1]))
 }
 isNegDef <- function(type) {
   isPosDef(type) ||
   (is.numeric(type) && type == NegDefType) ||
-  (is.character(type) && type == ZF_TYPE[NegDefType+1])
+  (is.character(type) && type == RC_TYPE[NegDefType+1])
 }
 
 COORD_SYSTEMS <- c("auto", "cartesian", "earth")
-CARTESIAN_COORD_NAMES <- c("auto", "cartesian")
+ZF_CARTESIAN_COORD_NAMES <- c("auto", "cartesian")
 
 
-#ZF_TYPE_PREFIX <- .Call("GetCathegoryNames")
+#RC_TYPE_PREFIX <- .Call("GetCathegoryNames")
                             #c("RM", "RP", "", "RL", "RM", "RM", "RM", "RM")
 
 
@@ -208,20 +219,23 @@ CARTESIAN_COORD_NAMES <- c("auto", "cartesian")
 ## SetAndGetModelInfos:
 ## Flags that characterise parameters, see RF.h
 ## this is only important in MLE
-VARLARAM <- 0  ## to be consistent with the C definitions in RF.h
-SIGNEDVARLARAM <- 1
+VARPARAM <- 0  ## to be consistent with the C definitions in RF.h
+SIGNEDVARPARAM <- 1
 SDPARAM <- 2
 SIGNEDSDPARAM <- 3
 SCALEPARAM <- 4
 DIAGPARAM <- 5
 ANISOPARAM <- 6
-INTEGERLARAM <- 7 ## NEU
+INTEGERPARAM <- 7 ## NEU
 ANYPARAM <- 8
 TRENDPARAM <- 9
 NUGGETVAR <- 10
 MIXEDVAR <- 11
 .REGRESSION <- 12
 CRITICALPARAM <- 13
+ZF_TYPEOF_PARAM <- c("var", "signed var", "sd", "signed sd", "scale", "diag",
+                     "aniso", "integer", "unspecfd", "trend",  "nugget",
+                     "mixed var", "regress", "any")
 
 
 ## Flags that characterise a component within a mixed model definition
@@ -282,3 +296,9 @@ GETMODEL_DEL_NATSC <- as.integer(1)
 GETMODEL_SOLVE_NATSC <- as.integer(2)
 GETMODEL_DEL_MLE <- as.integer(3)
 GETMODEL_SOLVE_MLE <- as.integer(4)
+
+
+LSQMETHODS <- c("self", "plain", "sqrt.nr", "sd.inv", "internal") 
+MLMETHODS <- c("ml") # "reml", "rml1"),
+
+DUPFALSE <- FALSE

@@ -57,11 +57,11 @@ void kdefault(cov_model *cov, int i, double v) {
       PINT(i)[0] = (int) v;
     } else if (C->kappatype[i] == LISTOF + REALSXP) {
       //char msg[100];      
-      PRINTF("%s:%s (%d) unexpected list\n", C->nick, C->kappanames[i], i);
+      PRINTF("%s:%s (%d) unexpected list\n", NICK(cov), C->kappanames[i], i);
       BUG;
     } else {
       //char msg[100];
-      PRINTF("%s:%s (%d) is not defined\n", C->nick, C->kappanames[i], i);
+      PRINTF("%s:%s (%d) is not defined\n", NICK(cov), C->kappanames[i], i);
       BUG;
     }
     cov->nrow[i] = cov->ncol[i] = 1;
@@ -88,45 +88,8 @@ void updatepref(cov_model *cov, cov_model *sub) {
       cov->pref[i] = sub->pref[i];
     }
   }
- }
-
-/*
-signed char is_monotone(cov_model *cov) {
-  cov_fct *C = CovList + cov->nr;// nicht gatternr
-  signed char monotone;
-
-  assert(NOT_COMPLETELYMON == false);
-
-  monotone = cov->nr != NUGGET;
-
-  // print("monotone A %d\n", monotone);
-
-  if (monotone>NOT_COMPLETELYMON) {
-    if (C->domain == PREVMODELD) monotone=SUBMODEL_DEP;
-    else if (isPosDef(cov->typus)) monotone=NORMAL_ MIXTURE;
-    else if (isNegDef(cov->typus)) monotone=BERN STEIN; 
-    else monotone = NOT_COMPLETELYMON;
-  }
-
-  //  print("monotone B %d\n", monotone);
-
-  if (monotone>NOT_COMPLETELYMON) {
-    if (C->isotropy == PREVMODELI) monotone=SUBMODEL_DEP;
-    else if (C->isotropy > ISOTROPIC) monotone=NOT_COMPLETELYMON;
-  }
-
-  //print("monotone C %d\n", monotone);
-
-  if (monotone>NOT_COMPLETELYMON) {
-    if (C->maxdim == SUBMODEL_DEP) monotone=SUBMODEL_DEP;
-    else if (C->maxdim < INFDIM) monotone=NOT_COMPLETELYMON;
-  }
-
-  //  PMI(cov);
-  if (monotone>NOT_COMPLETELYMON && C->finit erange) BUG; //finite range contradicts monotone scale mixture
-  return monotone;
 }
-*/
+
 
 void setdefault(cov_model *cov) {
   // Achilles-Ferse: setdefault wird aufgerufen bevor die Varianten
@@ -136,20 +99,21 @@ void setdefault(cov_model *cov) {
 //  cov_model *prev=cov->calling;
   int i;
   cov_fct *C = CovList + cov->nr;// nicht gatternr
+
+  //  printf("setdefault %s\n", NAME(cov));
  
-  cov->logspeed = RF_NAN;
+  cov->logspeed = RF_NA;
 
   cov->maxdim = C->maxdim;
-  cov->vdim2[0] = cov->vdim2[1] = cov->vdim = C->vdim; 
   assert(C->vdim != MISMATCH);
   
-  cov->vdim2[0] = cov->vdim2[1] = MISMATCH;
-  if (C->vdim == PREVMODEL_DEP || C->vdim == SUBMODEL_DEP) {
-    cov->vdim = cov->calling != NULL ? cov->calling->vdim : 
-      C->vdim == PREVMODEL_DEP ? MISMATCH : SUBMODEL_DEP;
+  if ((C->vdim != PREVMODEL_DEP  &&  C->vdim != SUBMODEL_DEP)) {
+     cov->vdim2[0] = cov->vdim2[1] = C->vdim;     
   }
 
-  //printf("$$$$ %s: vdim %d C=%d maxdim=%d \n", C->nick, cov->vdim, C->vdim, cov->maxdim);
+  if (isPosDef(cov)) {
+    for (i=0; i<MAXMPPVDIM; i++) cov->mpp.maxheights[i] = 1.0;    
+  }
 
   cov->xdimown = cov->xdimprev;
   if (C->isotropy == ISOTROPIC && isPosDef(cov->typus) &&
@@ -167,16 +131,18 @@ void setdefault(cov_model *cov) {
 
   for (i=Nothing+1; i<Forbidden; i++) cov->pref[i] = PREF_NONE;
 
-  cov->deterministic = !isRandom(cov);
+  //cov->deterministic = !isRandom(cov); // nur die die zuf. Param haben
   cov->method = Forbidden;
 
   cov->taylorN = C->TaylorN;
   cov->tailN = C->TailN;
-  for (i=0; i<=cov->taylorN; i++) {
+
+  for (i=0; i<cov->taylorN; i++) {
+    //    printf("taylor %d %d\n", i, TaylorConst);
     cov->taylor[i][TaylorConst] = C->Taylor[i][TaylorConst];
     cov->taylor[i][TaylorPow] = C->Taylor[i][TaylorPow];
   }
-  for (i=0; i<=cov->tailN; i++) {
+  for (i=0; i<cov->tailN; i++) {
     cov->tail[i][TaylorConst] = C->Tail[i][TaylorConst];
     cov->tail[i][TaylorPow] = C->Tail[i][TaylorPow];
     cov->tail[i][TaylorExpConst] = C->Tail[i][TaylorExpConst];
@@ -244,7 +210,6 @@ void setbackward(cov_model *cov, cov_model *sub) {
   cov->tbm2num |= sub->tbm2num;
 
   if (C->vdim == SUBMODEL_DEP && (sub==cov->sub[0] || sub==cov->key)) {
-    cov->vdim = sub->vdim;
     cov->vdim2[0] = sub->vdim2[0];
     cov->vdim2[1] = sub->vdim2[1];
   }
@@ -262,11 +227,16 @@ int checkkappas(cov_model *cov, bool errornull){
     *nrow = cov->nrow;
   char param_name[PARAMMAXCHAR]; // used in QERR
 
+  //  printf("checkkappas %s\n", NICK(cov));
+
   for (i=0; i<kappas; i++) {
     strcpy(param_name, C->kappanames[i]);
-    if (PisNULL(i)) {
-      cov_model *ks = cov->kappasub[i];     
-      if (ks != NULL && (isRandom(C->kappaParamType[i]) || isRandom(ks))) {
+    cov_model *ks = cov->kappasub[i];     
+    //printf("%s\n", param_name);
+   if (ks != NULL) {
+     //printf("%d %d\n", isRandom(C->kappaParamType[i]), isRandom(ks));
+     if (//isRandom(C->kappaParamType[i]) ||  // auskommentiert wegen Aniso==nonstationary
+	 isRandom(ks)) {
 	cov->deterministic = false;
 	int err, len;
 	nr = nrow[i];
@@ -276,47 +246,35 @@ int checkkappas(cov_model *cov, bool errornull){
 	if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED)
 	  QERR("size of random parameter could not be determined -- please give the size explicitely");	
 	len = nr * nc;	
-	if ((err = CHECK_R(ks, len)) != NOERROR) {
-	  XERR(err);
-	  QERR("random parameter not well defined");	
-	}
+	if ((err = CHECK_R(ks, len)) != NOERROR)
+	QERRX(err, "random parameter not well defined");	
+	if ( (ks->vdim2[0] != nr || ks->vdim2[1] != nc) &&
+	     (ks->vdim2[0] != len || ks->vdim2[1] != 1) )
+	  QERR("required size of random parameter does not match the model");
+     
 	if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));
-	if ((err = INIT_RANDOM(ks, 0, cov->stor)) != NOERROR) { // wird spaeter
-	  // gegebememfalls nochmals initialisiert mit richtigen moments
-	  QERR("random parameter cannot be initialized");
-	}
-	if (nr <= 0 || nc <= 0) 
-	  QERR("size of random parameter cannot be determined");
-	if (ks->vdim == MISMATCH) {
-	  if (ks->vdim2[0] != nr || ks->vdim2[1] != nc) 
-	    QERR("required size of random parameter does not match the model");
-	} else {
-	  if (ks->vdim != len || nr != nc) 
-	    QERR("required size of random parameter does not match the model");
-	}
-
-	switch (CovList[cov->nr].kappatype[i]) {
-	case REALSXP :
+	
+	if (PisNULL(i)) {
 	  PALLOC(i, nr, nc);
-	  DORANDOM(ks, P(i));
-	  break;
-	case INTSXP :
-	  int j;
-	  double *dummy;
-	  PALLOC(i, nr, nc);
-	  dummy = (double*) MALLOC(sizeof(double) * len);
-	  DORANDOM(ks, dummy);
-	  for (j=0; j<len; j++) PINT(i)[j] = (int) dummy[j];
-	  free(dummy);
-	  break;
-	default : QERR("random parameter only allowed for numerical values");
+	  if ((err = INIT_RANDOM(ks, 0, cov->stor, P(i))) != NOERROR) { 
+	    // wird spaeter
+	    // gegebememfalls nochmals initialisiert mit richtigen moments
+	    //X4
+	    //PMI(ks); XERR(err);
+	    QERRX(err, "random parameter cannot be initialized");	  
+	  }
 	}
       } else {
-	if (errornull) {
-	  QERR("unset");
-	} else continue;
+	// none // BUG; // ??
       }
     }
+
+
+    if (PisNULL(i)) {
+      if (errornull) { QERR("unset"); }
+      else continue;    
+    }
+    
 
     C->kappasize(i, cov, &nr, &nc);   
     if (nc < 0 || nr < 0) {
@@ -333,9 +291,13 @@ int checkkappas(cov_model *cov, bool errornull){
       // PMI(cov);
       
       // nc==0, nr==0 is coded as SIZE_NOT_DETERMINED
-      char msg[255];
-      sprintf(msg, "not of the given size: (%d, %d) instead of (%d, %d)", 
-	      nrow[i], ncol[i], nr, nc);
+      char msg[255], msg2[255];
+      sprintf(msg, "not of the given size: (%d, %d) instead of (",
+	      nrow[i], ncol[i]);
+      if (nr!=SIZE_NOT_DETERMINED) sprintf(msg2, "%s%d, ", msg, nr);
+      else sprintf(msg2, "%sundetermined, ", msg);
+      if (nc!=SIZE_NOT_DETERMINED) sprintf(msg, "%s%d)", msg2, nc);
+      else sprintf(msg, "%sundetermined)", msg2);
       QERR(msg);
     }
     // if nc==0 (nr==0) then this is undetermined.
@@ -359,60 +321,90 @@ int alloc_mpp_M(cov_model *cov, int moments) {
   //if (!(maxmoments != MISMATCH && maxmoments != PARAM_DEP)) BUG;
  
 
-  if (moments > maxmoments && maxmoments != SUBMODEL_DEP) 
+  if (moments > maxmoments && maxmoments != SUBMODEL_DEP) {
+    //APMI(cov);
     SERR2("required moments (%d) exceeds the coded moments (%d)",
 	  moments, maxmoments);
+  }
   if (moments <= cov->mpp.moments) return NOERROR;
-  if (cov->mpp.M != NULL) free_mpp_M(cov);
+  if (cov->mpp.mM != NULL) free_mpp_M(cov);
   cov->mpp.moments = moments;
 
   int i,
-    nm = cov->mpp.moments + 1,
-    byte = sizeof(double) * nm;
+    vdim = cov->vdim2[0],
+    nm = cov->mpp.moments,
+    nmvdim = (nm + 1) * vdim,
+    bytes = sizeof(double) * nmvdim;
+  if (vdim <= 0 || vdim > MAXMPPVDIM) BUG;
+ 
+  //  printf("%d %d %d\n", cov->mpp.moments, bytes, vdim);
 
-  cov->mpp.M = (double*) MALLOC(byte);
-  cov->mpp.Mplus = (double*) MALLOC(byte);
-  cov->mpp.Mplus[0] = cov->mpp.M[0] = RF_INF;
+  cov->mpp.mM = (double*) MALLOC(bytes);
+  cov->mpp.mMplus = (double*) MALLOC(bytes);
 
-  for (i=1; i<nm; i++) cov->mpp.Mplus[i] = cov->mpp.M[i] = RF_NAN; 
-  // cov->mpp.Mplus[0] = cov->mpp.M[0] = 1.0;
+  //  printf("here\n");
+
+  //  assert(nm < 100);
+  int nmP1 = cov->mpp.moments + 1;
+  for (i=0; i<nmvdim; i++) cov->mpp.mMplus[i] = cov->mpp.mM[i] = RF_NA; 
+  for (i=0; i<vdim; i++) {
+    int idx = i * nmP1;
+    cov->mpp.mMplus[idx + 0] = cov->mpp.mM[idx + 0] = RF_INF;
+  }
+
+  //  printf("done\n");
+
+  // cov->mpp.mMplus[0] = cov->mpp.mM[0] = 1.0;
   return NOERROR;
 }
 
 void free_mpp_M(cov_model *cov) {
-  free(cov->mpp.M);
-  free(cov->mpp.Mplus);
-  cov->mpp.M = cov->mpp.Mplus = NULL;
+  free(cov->mpp.mM);
+  free(cov->mpp.mMplus);
+  cov->mpp.mM = cov->mpp.mMplus = NULL;
 }
 
 int UpdateMPPprev(cov_model * cov, int moments) {
   cov_model *prev = cov->calling;
-  int i, nm, err;
+  int i, nm, err,
+    nmvdim,
+    vdim = cov->vdim2[0];
+
+  //PMI(prev);
+
   nm = cov->mpp.moments < prev->mpp.moments ? cov->mpp.moments
-      : prev->mpp.moments;
+	: prev->mpp.moments;
+  nmvdim = (nm + 1) * vdim;
   //   print("nm=%d %d %d %s\n", nm, cov->mpp.moments, prev->mpp.moments, NICK(prev)); crash(); APMI(prev);
   if (moments >= 0 && prev != NULL) {
     if (prev->mpp.moments == SUBMODEL_DEP &&
 	(err = alloc_mpp_M(prev, moments)) != NOERROR) return err;
     // PMI(prev);
-    for (i=0; i<=nm; i++) {
+    for (i=0; i<nmvdim; i++) {
       //print("nm=%d %d %d %s %d\n", nm, cov->mpp.moments, prev->mpp.moments, NICK(prev), i);
-      prev->mpp.Mplus[i] = cov->mpp.Mplus[i];
-      prev->mpp.M[i]     = cov->mpp.M[i];
+      prev->mpp.mMplus[i] = cov->mpp.mMplus[i];
+      prev->mpp.mM[i]     = cov->mpp.mM[i];
     }
   }
+  
+  // nachfolgende Zeilen so lassen, da sonst unerwuenscht
+  // maxheight etc. nach oben gegeben werden.
+  // prev->mpp.maxheight = cov->mpp.maxheight; 
+  // prev->mpp.unnormedmass = cov->mpp.unnormedmass;
+  
   return NOERROR;
 }
 
 
-int INIT_intern(cov_model *cov, int moments, storage *s) {
+int INIT_intern(cov_model *cov, int moments, storage *s) { // kein err  
+  if (!cov->checked) BUG;
+  if (cov->initialised) return NOERROR;
   assert(cov != NULL);
   assert(cov->gatternr >= ISO2ISO && cov->gatternr <= SId);
-  //  printf("INIT '%s' moments = %d\n", NICK(cov), moments);
 
   cov_fct *C = CovList + cov->nr;
   int err = NOERROR;
-  sprintf(ERROR_LOC, "in %s: ", C->nick);
+  sprintf(ERROR_LOC, "in %s: ", NICK(cov));
   // printf("errorloc %s\n", ERROR_LOC);
   
   if (cov->mpp.moments != SUBMODEL_DEP && cov->mpp.moments != PARAM_DEP) {
@@ -427,50 +419,107 @@ int INIT_intern(cov_model *cov, int moments, storage *s) {
   if (C->maxmoments >= 0 && moments > C->maxmoments) {
       //printf("moment %s %d %d\n", NICK(cov), moments, C->maxmoments);PMI(cov);
       SERR3("moments known up to order %d for '%s', but order %d required",
-	    C->maxmoments, C->nick, moments);
+	    C->maxmoments, NICK(cov), moments);
   }
   
   sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "initiating the model"
 	  : NICK(cov->calling));
+  ASSERT_GATTER(cov);
   if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) {
     return err;   
   }
-
+   
   if ((err = UpdateMPPprev(cov, moments)) != NOERROR) {
     return err;
   }
 
+  cov->initialised = true;
   return NOERROR;
 }
 
-int INIT_RANDOM_intern(cov_model *cov, int moments, storage *s) {
-  int err = NOERROR;
-  sprintf(ERROR_LOC, "in %s: ", CovList[cov->nr].nick);
-  
-  //  printf("INIT_RANDOM '%s' moments = %d\n", NICK(cov), moments);
-  
-  assert(cov != NULL);
-  if (moments < 0) SERR("moments expected to be positive");
-  if (moments > CovList[cov->nr].maxmoments) SERR("Moments do not match");
- 
-  if (cov->mpp.moments != SUBMODEL_DEP && cov->mpp.moments != PARAM_DEP) {
-    if ((err = alloc_mpp_M(cov, moments)) != NOERROR) return err;
-  } else {
-    assert(false); // passt das hier??
-    if (cov->mpp.moments == PARAM_DEP) cov->mpp.moments = moments;
+void set_initialised_false(cov_model *cov){
+  set_initialised_false(cov, false);
+}
+
+void set_initialised_false(cov_model *cov, bool init_deterministic){
+  int i;
+  if (!init_deterministic && cov->deterministic) return;
+  cov->initialised = false;
+
+  for (i=0; i<MAXPARAM; i++) {
+    if (cov->kappasub[i] != NULL) {
+      set_initialised_false(cov->kappasub[i]);
+    }
   }
 
-  sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "initiating the model"
-	  : NICK(cov->calling));
-  if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) return err;   
-  if (ISNA(cov->mpp.M[moments])) {
-    // printf("moments = %d %s\n", moments, NICK(cov));
-    //APMI(cov);
-    SERR1("%s is not a random function", NICK(cov));
+  for (i=0; i<MAXSUB; i++) {
+    if (cov->sub[i] != NULL)
+      set_initialised_false(cov->sub[i]);
+  }
+}
+
+
+int REINIT_intern(cov_model *cov, int moments, storage *s) { // kein err
+  int err;
+  set_initialised_false(cov);
+  err = INIT_intern(cov, moments, s);
+  return err;
+}
+
+
+int INIT_RANDOM_intern(cov_model *cov, int moments, storage *s, // kein err
+		       double *p) {
+  if (!cov->checked) BUG;
+  if (!cov->initialised) {
+    int err = NOERROR;
+    
+    sprintf(ERROR_LOC, "in %s: ", NICK(cov));
+     
+    assert(cov != NULL);
+    if (moments < 0) SERR("moments expected to be positive");
+    if (CovList[cov->nr].maxmoments >= 0 &&
+	moments > CovList[cov->nr].maxmoments) SERR("Moments do not match");
+    
+    if (cov->mpp.moments != SUBMODEL_DEP && cov->mpp.moments != PARAM_DEP) {
+      if ((err = alloc_mpp_M(cov, moments)) != NOERROR) return err;
+    } else {
+      BUG; // passt das hier??
+      if (cov->mpp.moments == PARAM_DEP) cov->mpp.moments = moments;
+    }
+    
+    sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "initiating the model"
+	    : NICK(cov->calling));
+    //PMI(cov);
+    ASSERT_GATTER(cov);
+    if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) return err;   
+    if (ISNAN(cov->mpp.mM[moments])) {
+      // printf("moments = %d %s\n", moments, NICK(cov));
+      //APMI(cov);
+      SERR1("%s is not a random function", NICK(cov));
+    }
+    
+    if ((err = UpdateMPPprev(cov, moments)) != NOERROR) return err;
+    
+    cov->initialised = true;
   }
 
-  if ((err = UpdateMPPprev(cov, moments)) != NOERROR) return err;
-   
+  //  switch (CovList[cov->nr].kappatype[param_nr]) {
+  //  case REALSXP :   
+    DORANDOM(cov, p);
+    
+
+    //    break;
+    //  case INTSXP :
+    //    int j, len;
+    //    double *dummy;
+    //    dummy = (double*) MALLOC(sizeof(double) * len);
+    //    DORANDOM(cov, dummy);
+    //    for (j=0; j<len; j++) p[j] = (int) dummy[j];
+    //    free(dummy);
+    //    break;
+    //  default : SERR("random parameter only allowed for numerical values");
+    //  }
+  
   return NOERROR;
 }
 
@@ -750,22 +799,38 @@ void nonstatinverse2(double *v, cov_model *cov, double *x, double *y){
 
   //  printf("inverse2 %f %f %f\n", v[0], x[0], y[0]);
 }
+
+void nonstat_loginverse2(double *v, cov_model *cov, double *x, double *y){
+  cov_fct *C = CovList + cov->nr;// nicht gatternr
+
+  C->nonstat_loginverse(v, cov, x, y);//  nicht gatternr
+
+  //  printf("inverse2 %f %f %f\n", v[0], x[0], y[0]);
+}
+   
    
 
 int struct2(cov_model *cov, cov_model **newmodel) {
   int err;
   char errloc_save[nErrorLoc];
+  if (!cov->checked) {
+    //PMI(cov->calling->calling);
+    //    crash();
+    BUG;
+  }
   strcpy(errloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "in %s: ", CovList[cov->nr].nick);
+  sprintf(ERROR_LOC, "in %s: ", NICK(cov));
 
-  // printf("\nstart struct %s", CovList[cov->nr].nick);
+  // printf("\nstart struct %s\n", CovList[cov->nr].nick);
 
-  err = CovList[cov->nr].Struct(cov, newmodel);
+ err = CovList[cov->nr].Struct(cov, newmodel);
+
   //  assert(cov->nr != || cov->key->nr != );
   //  
   //printf("\nstruct %s", CovList[cov->nr].nick);
 
   if (err == NOERROR) strcpy(ERROR_LOC, errloc_save);
+
   return err;
 }
 
@@ -784,13 +849,25 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
    
   PrInL++;
 
+  for (i=0; i<kappas; i++) {
+    cov_model *param  = cov->kappasub[i];
+    if (param != NULL && isRandom(param)) {
+      //printf("%f ", P0(i));
+      if ((err = INIT_RANDOM(param, 0, s, P(i))) != NOERROR) return err;
+      //printf("init2 %s->%s->%s %s %d  i=%d %f \n", NICK(cov->calling), NICK(cov), NICK(param), KNAME(i), param != NULL && isRandom(param),  i, P0(i));
+      
+      // PMI(cov);
+
+    }
+  }
+
   //  printf("prev %s %d %d %ld\n", C->nick, prev->method,
   //	 Forbidden, (long int) s);
 
   if (cov->method == Forbidden) cov->method = prev->method;
 
   //   printf("role == %d", cov->role);
-  // PMI(cov, -1);
+  //  PMI(cov);
 
   if (cov->role == ROLE_GAUSS) {
     //  printf("here A\n");
@@ -805,9 +882,16 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
       //printf("fehelr init\n");
       goto ErrorHandling;
     }
-  }
+  } 
 
-  else if (hasMaxStableRole(cov) || hasPoissonRole(cov)) {
+  else if (cov->role == ROLE_BERNOULLI) {
+    if (!cov->initialised && (err=C->Init(cov, s)) != NOERROR) {
+      //printf("fehelr init\n");
+      goto ErrorHandling;
+    }
+  } 
+
+  else if (hasAnyShapeRole(cov)) {
      
     ///cov->mpp.methnr = prev->mpp.methnr;
     cov->origrf = false;
@@ -815,14 +899,14 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
     //printf("here B\n");
     //PMI(cov, -1);
 
-    assert(cov->mpp.moments < 0 xor cov->mpp.M != NULL);
+    assert((cov->mpp.moments < 0) xor (cov->mpp.mM != NULL));
 
-    //    if (cov->mpp.moments >= 0 && isRandom(cov->typus) && cov->mpp.M == NULL) {
+    //    if (cov->mpp.moments >= 0 && isRandom(cov->typus) && cov->mpp.mM == NULL) {
     //// insbesondere fuer cov_models die selbst vom Random-Type sind
       //alloc_mpp_M(cov);
     //    }
     
-    sprintf(ERROR_LOC, "in %s: ", C-> nick);
+    sprintf(ERROR_LOC, "in %s: ", NICK(cov));
     // if (C->maxsub == 0) cov->mpp.loc_done = false;
 
     //APMI(cov);
@@ -835,7 +919,7 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
     err = NOERROR;  
   }
 
-  else if (cov->role == ROLE_DISTR || hasNoRole(cov)) {
+  else if (hasNoRole(cov)) {
     //   printf("here C\n");
     if (!cov->initialised && (err=C->Init(cov, s)) != NOERROR) {
 	//	printf("fehelr init\n");
@@ -844,15 +928,9 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
   }
 
   else {
-    //    printf("here D\n");
+    //     printf("here D\n");
     //PMI(cov->calling);
     ILLEGAL_ROLE;
-  }
-
-  for (i=0; i<kappas; i++) {
-    cov_model *param  = cov->kappasub[i];
-    if (param != NULL && isRandom(param) && !param->initialised) 
-      INIT_RANDOM(param, 0, s);
   }
 
   prev->fieldreturn    = cov->fieldreturn;
@@ -860,22 +938,21 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
  ErrorHandling :
   PrInL--;
   if (err == NOERROR) strcpy(ERROR_LOC, errloc_save);
-  if (TypeConsistency(ProcessType, cov))
-    cov->initialised = err == NOERROR; // 1.1.14: das geht nicht allgemein
-  // wegen random parameter
+  cov->initialised = err == NOERROR;
   return err;
 }
 
 void do2(cov_model *cov, storage *s){
   //   cov_model *prev = cov->calling == NULL ? cov : cov->calling;
   //
-  int i,
-    kappas = CovList[cov->nr].kappas;
+  //  int i,
+  //    kappas = CovList[cov->nr].kappas;
 
-  for (i=0; i<kappas; i++) {
-    cov_model *param  = cov->kappasub[i];
-    if (param != NULL && isRandom(param)) DORANDOM(param, P(i));
-  }
+  // statt nachfolgende Zeilen: siehe init2
+  //  for (i=0; i<kappas; i++) {
+  //    cov_model *param  = cov->kappasub[i];
+  //    if (param != NULL && isRandom(param)) DORANDOM(param, P(i));
+  //  }
 
 
 //printf("Do prev %s %d %d %ld\n",
@@ -896,6 +973,8 @@ void dorandom2(cov_model *cov, double *v){
 //       NICK(prev), prev->method, Forbidden, (long int) s);
 //printf("Do current %s %d %d %ld\n",
 //       NICK(cov), cov->method, Forbidden, (long int) s);
+  //PMI(cov);
+
  CovList[cov->nr].DoRandom(cov, v); // ok
 
   // assert(false);
@@ -931,6 +1010,14 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
 int check2X(cov_model *cov, int tsdim, int tsxdim,
 	    Types type, domain_type domprev, isotropy_type isoprev,
+	    int *vdim, int role) {
+  return check2X(cov, tsdim, tsxdim, type, domprev, isoprev, vdim[0], vdim[1],
+		 role);
+}
+
+
+int check2X(cov_model *cov, int tsdim, int tsxdim,
+	    Types type, domain_type domprev, isotropy_type isoprev,
 	    int vdim0, int vdim1, int role) {
   //if (cov == NULL) crash();
   assert(cov != NULL);
@@ -941,11 +1028,12 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     *C = CovList + cov->nr;        //  nicht gatternr
   isotropy_type first_iso, last_iso, iso0; // iso
   domain_type dom, first_dom, last_dom; 
-  bool skipchecks = GLOBAL.general.skipchecks;
+  bool checkerror = false,
+    skipchecks = GLOBAL.general.skipchecks;
   char msg[1000] = "";
 
   // erst bei check unten
-  sprintf(ERROR_LOC, "%s: ", C->nick);
+  sprintf(ERROR_LOC, "%s: ", NICK(cov));
   if (PL >= PL_COV_STRUCTURE ) { 
     if (cov->calling == NULL) PRINTF("\n");
     LPRINT("%s\n", ERROR_LOC); 
@@ -956,21 +1044,26 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   cov->tsdim = tsdim; // muss wegen checkkappas gesetzt werden
   cov->role = role;  
   cov->typus = type;
-  cov->xdimprev = cov->xdimgatter = tsxdim; // if cov is isotropy or spaceisotropic 
-  //                       it is set to 1 or 2
-  //PMI(cov);
+  cov->xdimprev = cov->xdimgatter = tsxdim; //if cov is isotropy or 
+  //                                          spaceisotropic it is set to 1 or 2
   
-  if (tsxdim < 1) { SERR("dimension less than 1"); }
+  
+  if (tsxdim < 1) { 
+    //APMI(cov);
+    SERR("dimension less than 1"); 
+  }
   if (role == ROLE_UNDEFINED) SERR("role undefined");
   if (type == UndefinedType) {    
     //APMI(cov);
     SERR("type undefined");
   }
 
-  if (cov->calling != NULL && isInterface(cov))
+  if (cov->calling != NULL && isInterface(cov)) {
+    //APMI(cov);
     SERR1("'%s' may be used only as top model", NICK(cov));
+  }
   if (!TypeConsistency(type, cov)) {
-    // PMI(cov->calling);
+    //     printf("type =%d %s\n", type, TYPENAMES[type]);    PMI(cov->calling);
      //    crash();
     SERR3("required type '%s' does not match the type '%s' of '%s'",
 	  TYPENAMES[type], TYPENAMES[CovList[cov->nr].Type], NICK(cov));
@@ -994,8 +1087,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
  
 
   if (PL >= PL_STRUCTURE) {
-    LPRINT("#[%s -> %s] (%d %d): \n", cov->calling == NULL ? "NULL" : P->nick, 
-	   C->nick, domprev, isoprev); 
+    LPRINT("#[%s -> %s] (%d %d): \n", cov->calling == NULL ? "NULL" : 
+	   Nick(prev), Nick(cov), domprev, isoprev); 
   }
  
   //
@@ -1017,7 +1110,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
   if (last_iso > isoprev) {
     if (isCartesian(isoprev)) last_iso = isoprev;
-    else BUG; // not programmed yet 
+    else NotProgrammedYet("non Cartesian");
   }
   if (last_iso < first_iso) {
     //     PMI(cov->calling->calling, "iso"); assert(false);
@@ -1035,7 +1128,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       // PMI(cov, "cannot be called");
       //  crash();
       SERR4("model has property '%s'. It cannot be called by '%s' which requires the property '%s' (%d)",
-	    ISONAMES[(int) first_iso], P->nick, ISONAMES[(int) last_iso],
+	    ISONAMES[(int) first_iso], Nick(prev), ISONAMES[(int) last_iso],
 	    (int) last_iso);
     }
   }
@@ -1073,10 +1166,10 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     if (PL >= PL_COV_STRUCTURE) 
       PRINTF("model called from less complex one (%s:%s;%s -> %s:%s [%s;%s])\n",
 	     cov->calling == NULL ? "NULL" : 
-	     NICK(prev), 
+	     Nick(prev), 
 	     STATNAMES[(int)CovList[prev->nr].domain], 
 	     STATNAMES[(int)domprev],
-	     C->nick, 
+	     NICK(cov), 
 	     STATNAMES[(int) C->domain],
 	     STATNAMES[(int) first_dom],  STATNAMES[(int) last_dom]
 	  );
@@ -1084,22 +1177,25 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       //APMI(cov);
       SERR2("model is a '%s', but at least a '%s' is required for the given specification.",  STATNAMES[(int) C->domain], STATNAMES[(int) domprev]);
     } else {
-      SERR1("Model cannot be called from '%s'", P->nick);
+      SERR1("Model cannot be called from '%s'", Nick(prev));
     }
   }
   
   err = ERRORNOSTATMATCH;
   //  if (PL >= PL_STRUCTURE) 
-  // LPRINT("(dom.start=%d, end=%d)\n",first_dom, last_dom);
+  // 
+  LPRINT("(dom.start=%d, end=%d)\n",first_dom, last_dom);
+  LPRINT("(iso.start=%d, end=%d)\n",first_iso, last_iso);
 
-
+ 
   int *nr = NULL;
   isotropy_type  newisoprev = MISMATCH;
   for (dom = first_dom; dom <= last_dom; dom++) {
+    char checkmsg[LENERRMSG];
     cov->domown = dom;
     for (iso0=first_iso; iso0 <= last_iso; iso0++) {
 
-      //printf("iso=%d\n", iso0);
+      // printf("iso=%d\n", iso0);
 
       cov->full_derivs = C->F_derivs;
       cov->rese_derivs = C->RS_derivs;
@@ -1109,6 +1205,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       newisoprev = isoprev;
       cov->tsdim = tsdim;
       cov->isoown = iso0;
+      cov->vdim2[0] = vdim0;
+      cov->vdim2[1] = vdim1;
       setdefault(cov);
  
       if ((err = checkkappas(cov, C->primitive)) != NOERROR)  return err;
@@ -1149,7 +1247,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
 	
 	if ((err = change_coordinate_system(cov->calling->isoown, isoprev, nr, 
-					&newisoprev, &newtsdim, 
+					    &newisoprev, &newtsdim, 
 					    &(cov->xdimgatter)))
 	    != NOERROR) return err;
 	if (isEarth(cov->calling->isoown) && (err = checkEarth(cov)) != NOERROR)
@@ -1166,31 +1264,42 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
        //printf("iso0=%d nmewtsdim=%d dom=%d\n", iso0, newtsdim, dom);
 
        if (cov->xdimown > cov->xdimprev && newtsdim <= tsxdim) { // appear if spaceiso called by iso
-	  SERR2("dimension at least %d needed. Got %d dimension.", 
-	      cov->xdimown, cov->xdimprev);
-      }
-           
-      if ((err = C->check(cov)) == NOERROR) {
-	if (C->maxdim>=0 && cov->maxdim > C->maxdim) {
-	  cov->maxdim = C->maxdim;
-	}
+	 //	 PMI(cov);
+	 if (checkerror) {
+	   SERR2("%s: %s", NICK(cov), checkmsg);
+	 } else {
+	   SERR2("dimension at least %d needed. Got %d dimension.", 
+		 cov->xdimown, cov->xdimprev);
+	 }
+       }
 
-	if (cov->vdim <= 0) {
-	  //PMI(cov);
-	  if (cov->vdim2[0]<=0) SERR("m-dimensionality could not be detected");
-	  cov->vdim = cov->vdim2[0] == cov->vdim2[1] ? cov->vdim2[0] : MISMATCH;
-	} else {
-	  if ( (cov->vdim2[0] >= 0 || cov->vdim2[1] >= 0) &&
-	       (cov->vdim != cov->vdim2[0] || cov->vdim != cov->vdim2[1]))
-	    BUG;
-	  cov->vdim2[0] = cov->vdim2[1] = cov->vdim;
-	}
+       //       cov_model *calling = cov->calling;
+       err = C->check(cov);
+
+       //       printf("err = %d\n", err);
+
+       checkerror = err != NOERROR;
+       if (checkerror) {
+	 errorMSG(err, checkmsg, 50);
+       } else {
+
+	 if (C->maxdim>=0 && cov->maxdim > C->maxdim) {
+	   cov->maxdim = C->maxdim;
+	 }
+
+	 if (cov->vdim2[0] <= 0 || cov->vdim2[1] <= 0) {
+	   // 
+	   //	   PMI(cov);
+	   //	   printf("%d %d\n", vdim0, vdim1);
+	   SERR("m-dimensionality could not be detected");
+	 } 
 	
 	if ((vdim0 > 0 && cov->vdim2[0] != vdim0) || 
 	    (vdim1 > 0 && cov->vdim2[1] != vdim1)) {
-	  SERR6("multivariate dimension (of submodel), which is %d x %d, does not match the specification of '%s', which is %d x %d and is required by '%s'",
-		cov->vdim2[0],  cov->vdim2[1], C->name, vdim0, vdim1, 
+	  SERR7("multivariate dimension (of submodel '%s'), which is %d x %d, does not match the specification of '%s', which is %d x %d and is required by '%s'",
+		NICK(cov), cov->vdim2[0], cov->vdim2[1], C->name, vdim0, vdim1, 
 		cov->calling == NULL ? "-- none --" :  P->name); 
+	  checkerror = true;
 	}
 	
 	break;
@@ -1211,12 +1320,15 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	errorMSG(err, msg); 
       }
       
-    } // iso
+    } // for iso
+
     if (err == NOERROR) break;
   } // dom
+
+  //  printf("ok\n");
  
   if (PL > PL_COV_STRUCTURE && cov->calling == NULL) {
-    LPRINT("%s: end look ", C->nick); 
+    LPRINT("%s: end look ", Nick(cov)); 
     if (err != NOERROR) PRINTF("err = %d\n", err); else MERR(err);
   }
 
@@ -1224,7 +1336,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
 
   if (PL >= PL_COV_STRUCTURE) {
-    LPRINT("Back to `%s' (no error):\n", C->nick); 
+    LPRINT("Continuing `%s' (no error):\n", Nick(cov)); 
   }
 
   if (!skipchecks && (err = check_within_range(cov, NAOK_RANGE)) != NOERROR) { 
@@ -1247,32 +1359,35 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
   //  PMI(cov);
  
-  //printf("gattered %s\n", NAME(cov));
+  //    printf("gattered %s %d %d %d %d\n", NAME(cov), domprev, cov->domown, newisoprev, cov->isoown);
   
  
   err = SetGatter(domprev, cov->domown, 
 		  newisoprev, cov->isoown, 
 		  nr, &UnUsedDeleteFlag); //
 
-  ASSERT_GATTER(cov);
+  //printf("setgatter  err = %d\n", err);
+  ASSERT_GATTERONLY(cov);
 
   if (PL > PL_COV_STRUCTURE) {
-    LPRINT("leaving '%s' for '%s'  err=%d deriv=%d,%d \n",
-	   C->nick,
-	   cov->calling == NULL ? "none" : P->nick,
+    LPRINT("leaving '%s' for '%s'  SetGatter error=%d deriv=%d,%d \n",
+	   Nick(cov),
+	   cov->calling == NULL ? "none" : Nick(prev),
 	   err, cov->full_derivs, cov->rese_derivs);
   }
 
   sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "parsing the model"
-	  : P->nick);
+	  : Nick(prev));
 
-  // printf("err = %d\n", err);
+  // printf("end err = %d\n", err);
   EXTRA_STORAGE;
 
   // printf("2err = %d %s<-%s\n", err, NICK(cov), cov->calling == NULL ? "----" : NICK(cov->calling));
-
-   return(err);
+  cov->checked = err == NOERROR;
+  assert(err == NOERROR || (cov->vdim2[0] > 0 && cov->vdim2[1] > 0));
   
+  return(err);
+   
 }
 
 
@@ -1319,7 +1434,7 @@ void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign) {
 }
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v) {
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
-  // printf("earth : %4.4f %4.4f y=%4.4f %4.4f X=%4.4f %4.4f %4.4f  Y=%4.4f %4.4f %4.4f\n", x[0], x[1], y[0], y[1], X[0], X[1], X[2], Y[0], Y[1], Y[2]);
+  //  printf("earth : %4.4f %4.4f y=%4.4f %4.4f X=%4.4f %4.4f %4.4f  Y=%4.4f %4.4f %4.4f\n", x[0], x[1], y[0], y[1], X[0], X[1], X[2], Y[0], Y[1], Y[2]);
   CovList[cov->secondarygatternr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
@@ -1351,7 +1466,9 @@ void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
 int checkEarth(cov_model *cov){
   // ACHTUNG! KEIN AUFRUF VON SUB[0] !
 
-  if (cov->domown == XONLY && isSymmetric(cov->isoprev)) {
+  if (cov->domprev == XONLY// 20.2.14: warum war es vorher cov->domown == XONLY?
+      && isSymmetric(cov->isoprev)) {
+    // PMI(cov->calling);
     return ERRORKERNEL;
   }
 

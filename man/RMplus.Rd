@@ -19,7 +19,7 @@ RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
 \arguments{
  \item{C0}{an \command{\link{RMmodel}}.}
  \item{C1,C2,C3,C4,C5,C6,C7,C8,C9}{optional; each an \command{\link{RMmodel}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  model remains unmodified.}
 }
@@ -27,8 +27,8 @@ RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
  \command{\link{RMmodel}}s can also be summed up via the
  \code{+}-operator, e.g.: C0 + C1 
 
- The global parameters \code{var,scale,Aniso,proj} of \command{\link{RMplus}}
- are multiplied to the corresponding parameters of the submodels
+ The global arguments \code{var,scale,Aniso,proj} of \command{\link{RMplus}}
+ are multiplied to the corresponding arguments of the submodels
  (from the right side).
 }
 \value{
@@ -45,7 +45,8 @@ RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMgauss() + RMnugget(var=0.01)
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
@@ -55,7 +56,7 @@ plot(z)
 model <- RMplus(RMgauss(), RMnugget(var=0.01))
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

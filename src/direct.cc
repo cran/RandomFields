@@ -46,8 +46,6 @@ int check_directGauss(cov_model *cov) {
   
   ROLE_ASSERT(ROLE_GAUSS);
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
-
   kdefault(cov, DIRECT_METHOD, (int) gp->inversionmethod);
   kdefault(cov, DIRECT_SVDTOL, gp->svdtolerance);
   kdefault(cov, DIRECT_MAXVAR, gp->maxvariables);
@@ -75,10 +73,7 @@ int check_directGauss(cov_model *cov) {
 
 
 
-
-void range_direct(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
-
+void range_direct(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->min[DIRECT_METHOD] = Cholesky;
   range->max[DIRECT_METHOD] = NoFurtherInversionMethod;
   range->pmin[DIRECT_METHOD] = Cholesky;
@@ -121,10 +116,10 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   InversionMethod
     method = (InversionMethod) P0INT(DIRECT_METHOD);
   location_type *loc = Loc(cov);
-  bool storing = GLOBAL.warn.stored_init; //
+  bool storing = GLOBAL.internal.stored_init; //
   // nonstat_covfct cf;
   long 
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     locpts = loc->totalpoints,
 //    loctot = locpts *dim,
     vdimtot = vdim * locpts,
@@ -133,6 +128,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     vdimSqtotSq = vdimtot * vdimtot;
 
   ROLE_ASSERT_GAUSS;
+  assert(cov->vdim2[0] == cov->vdim2[1]);
 
   cov->method = Direct;
 
@@ -149,9 +145,14 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
    
   if (cov->Sdirect != NULL) free(cov->Sdirect);
   cov->Sdirect = NULL;
+  
+ 
+  //printf("vdim = %d %d %d %d\n", vdim, locpts, vdimtot, vdimSqtotSq); 
+  //  PMI(cov);
+
   if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
       (U =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
-   //for SVD/Chol intermediate results AND  memory space for do_directGauss:
+   //for SVD/Chol intermediate r esults AND  memory space for do_directGauss:
       (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL ||
       (cov->Sdirect = (direct_storage*) MALLOC(sizeof(direct_storage)))==NULL) {
     err=ERRORMEMORYALLOCATION;  
@@ -178,7 +179,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
        }
        PRINTF("\n");
     }
-    assert(false);
+    assert(false); //
   }
    
   
@@ -204,26 +205,34 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   }
 
   if (false) {
-    int i,j;
+    int i,j,
+      endfor = locpts * vdim
+      // endfor = 40
+      ;
     PRINTF("\n");
-    for (i=0; i<locpts * vdim; i++) {
-       for (j=0; j<locpts * vdim; j++) {
+    for (i=0; i<endfor; i++) {
+       for (j=0; j<endfor; j++) {
 	 PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
        }
        PRINTF("\n");
     }
-    // assert(false);
+    //    assert(false); 
   }
    
+
+  //APMI(cov);
    
   /* ********************** */
   /*  square root of matrix */
   /* ********************** */
   int row, Err,k;
+
+  //printf(" vdimSqtotSq = %d\n",  vdimSqtotSq);assert(false);
+  
   switch (method) {
   case Cholesky : 
     // only works for strictly positive def. matrices
-    if (PL>=PL_STRUCTURE) { LPRINT("method to the root=Cholesky\n"); }
+    if (PL>=PL_STRUCTURE) { LPRINT("method for the root=Cholesky\n"); }
     row=vdimtot;
     // dchdc destroys the input matrix; upper half of U contains result!
     MEMCOPY(U, Cov, sizeof(double) * vdimSqtotSq);
@@ -302,7 +311,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
 		      work, &lwork, iwork, &Err);
      
      err = Err;
-     if (err==NOERROR && ISNA(D[0])) err=9999;
+     if (err==NOERROR && ISNAN(D[0])) err=9999;
      if (err!=NOERROR) {
        if (PL>PL_ERRORS) { 
 	 LPRINT("Error code F77_CALL(dgesdd) = %d\n", err); 
@@ -342,7 +351,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
        }
      }
      break;
-   default : assert(false);
+  default : BUG;
    } // switch
 
  
@@ -377,19 +386,18 @@ void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   direct_storage *s = cov->Sdirect;
   long i, j, k,
     locpts = loc->totalpoints,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdimtot = locpts * vdim;
   double dummy,
     *G = NULL,
     *U = NULL,
     *res = cov->rf;  
-  int m, n;
-  bool loggauss = (bool) P0INT(LOG_GAUSS),
-    vdim_close_together = GLOBAL.general.vdim_close_together;
+  //  int m, n;
+  bool loggauss = GLOBAL.gauss.loggauss;
+    // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
   // APMI(cov);
 
-//  print("vdim %d %d\n", meth->cov->vdim, loc->totalpoints);
 
   U = s->U;// S^{1/2}
   G = s->G;// only the memory space is of interest (stored to avoid 
@@ -401,7 +409,7 @@ void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   
   switch (s->method) {
   case Cholesky :
-    if (vdim_close_together) {
+    //   if (vdim_close_together) {
       for (k=0, i=0; i<vdimtot; i++, k+=vdimtot) {
 	double *Uk = U + k; 
 	dummy =0.0;
@@ -409,45 +417,46 @@ void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
 	  dummy += G[j] * Uk[j];
 	}
 	res[i] = (res_type) dummy; 
+	//printf("i=%d %f %lu\n", i, res[i], res);
       }
-    } else {
-      //printf("vdim %d vdimtot %d\n", vdim, vdimtot);
-      for (k=i=m=0; m<vdim; m++) {
-	for (n=m; n<vdimtot; n+=vdim, i++, k+=vdimtot) {
-	  double *Uk = U + k;
-	  dummy = 0.0;
-	  for (j=0; j<=i; j++){
-	    dummy += G[j] * Uk[j];
-	  }
-	  res[n] = (res_type) dummy; 
-	  //	printf("%d %f\n", n, res[n]);
-	}
-      }
-    }
+      //   } else {
+      //    //printf("vdim %d vdimtot %d\n", vdim, vdimtot);
+      //  for (k=i=m=0; m<vdim; m++) {
+      //	for (n=m; n<vdimtot; n+=vdim, i++, k+=vdimtot) {
+      //	  double *Uk = U + k;
+      //	  dummy = 0.0;
+      //	  for (j=0; j<=i; j++){
+      //	    dummy += G[j] * Uk[j];
+      //	  }
+      //	  res[n] = (res_type) dummy; 
+      //	  //	printf("%d %f\n", n, res[n]);
+      //	}
+      //      }
+      //  }
     //{int i; for(i=0;i<18;i++) printf("%d:%f \n", i,res[i]); printf("\n");APMI(cov)}
     break;
   case SVD :
-    if (vdim_close_together) {
+    // if (vdim_close_together) {
       for (i=0; i<vdimtot; i++){
 	dummy = 0.0;
-      for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
+	for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
 	dummy += U[k] * G[j];
       }
       res[i] = (res_type) dummy; 
       }
-    } else {
-      for (i=m=0; m<vdim; m++) {
-	for (n=m; n<vdimtot; n+=vdim, i++) {
-	  dummy = 0.0;
-	  for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
-	    dummy += U[k] * G[j];
-	  }
-	  res[n] = (res_type) dummy; 
-	}
-      }
-    } 
+      // } else {
+      ///      for (i=m=0; m<vdim; m++) {
+      //	for (n=m; n<vdimtot; n+=vdim, i++) {
+      //	  dummy = 0.0;
+      //	  for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
+      //	    dummy += U[k] * G[j];
+      //	  }
+      //	  res[n] = (res_type) dummy; 
+      //	}
+      //      }
+      //    }
     break;
-  default : assert(false);
+  default : BUG;
   }
 
   if (loggauss) {

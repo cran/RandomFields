@@ -147,9 +147,11 @@ extern "C" {
 		  double *phi,
 		  double *theta,
 		  int *repet,
+		  int *vdim,
 		  double *empvario,	
 		  double *n,
-		  bool *pseudo);
+		  int *segmentEmpVario,
+		  int *pseudo);
   
   // kriging methods
   SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
@@ -226,6 +228,7 @@ extern "C" {
   
   
   void PutValuesAtNA(int *reg, double *values);
+  void PutValuesAtNAnoInit(int *reg, double *values);
   void setListElements(int *reg, int *i, int *k, int *len_k);
   
   void expliciteDollarMLE(int * modelnr, double *values);
@@ -274,10 +277,10 @@ extern "C" {
   
   
   void GetLH(int *LL, int *BB, int *HH);
-  
-  void intEV(int* x, int* z, int* Len, int *k, int *sumsq, int *n,
-	     int *pos);
-  
+
+  void NoCurrentRegister();
+  void GetCurrentRegister(int *reg);
+   
   SEXP GetCathegoryNames();
   void isAuthor(int *is);
   SEXP allintparam();

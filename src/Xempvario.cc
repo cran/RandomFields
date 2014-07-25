@@ -104,7 +104,15 @@ void empvarioXT(double *X, double *T,
   }
   totalspatialbins =  twoNphiNbin * Ntheta;
   totalbins = totalspatialbins * (nstepT + 1);
-  for (i=0; i<totalbins; i++){sq[i]=sum[i]=0.0; n[i]=0;}
+
+  //printf("total %d %d %d %d \n", nstepT,  twoNphi, *nbin,  Ntheta);
+
+  for (i=0; i<totalbins; i++) { 
+    //printf("%d %d\n", i, totalbins);
+    sq[i] = 0.0;
+    sum[i]= 0.0; 
+    n[i] = 0;
+  }
   for (i=0; i<=*nbin; i++){if (bin[i]>0) BinSq[i]=bin[i] * bin[i]; 
   else BinSq[i]=bin[i];
   }
@@ -311,10 +319,10 @@ void empvarioXT(double *X, double *T,
     PRINTF("The x coordinate may not be NULL.\n"); break;
   case TOOLS_BIN_ERROR :
     PRINTF("Bin components not an increasing sequence.\n"); break;
-  default : assert(false);
+  default : BUG;
   }
   if (BinSq!=NULL) free(BinSq);
-  for (i=0;i<*nbin;i++){sq[i]=sum[i]=RF_NAN;} 
+  for (i=0;i<*nbin;i++){sq[i]=sum[i]=RF_NA;} 
 } 
 	 
 

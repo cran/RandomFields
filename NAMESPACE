@@ -7,22 +7,18 @@
 exportPattern("^R")
 export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
        conventional2RFspDataFrame,
-# auxiliary       
-       Print,
-## internal fcts
-       rfGenerateModels, checkExamples, plotWithCircles, 
+# internal fcts used for maintainance 
+       Print, rfGenerateModels, checkExamples, FinalizeExample, Dependencies,
 # obsolete       
        CondSimu, Covariance, CovarianceFct, CovMatrix,
        DeleteAllRegisters, DeleteRegister, DoSimulateRF,
        EmpiricalVariogram, fitvario, fractal.dim, GaussRF, hurst,
        InitSimulateRF, InitGaussRF, InitMaxStableRF, 
        Kriging, MaxStableRF, RFparameters, Variogram,
+       plotWithCircles, 
 #others:
-       ## never delete PrintModelList as used in Roger's book!
-       PrintModelList,
-#constants:
-       ZF_ISOTROPY, ZF_TYPE, ZF_DOMAIN,
-       ISOTROPIC, SPACEISOTROPIC, CARTESIAN_COORD
+       ## never delete PrintModelList as it is used in Roger's book!
+       PrintModelList
        )
 
 useDynLib(RandomFields)
@@ -45,7 +41,8 @@ exportClasses()
 importMethodsFrom('sp', "dimensions")  #"gridded"gibts nicht!
 #importMethodsFrom('raster', '[')
 
-exportMethods("[", "[<-", "+", show, plot)
+exportMethods("[", "[<-", "+", show, plot, persp, anova, summary)
+#, logLik, AIC, BIC)
 
 exportMethods(RFspDataFrame2conventional,
               RFspDataFrame2dataArray,
@@ -61,15 +58,53 @@ exportMethods(RFspDataFrame2conventional,
 
 S3method(summary, RFsp)
 
-S3method(print, RMmodel)
 S3method(print, RMmodelgenerator)
-S3method(points, RMmodel)
+
+S3method(print, RMmodel)
+S3method(points,RMmodel)
 S3method(lines, RMmodel)
 
-S3method(cbind, RFspatialGridDataFrame)
-S3method(cbind, RFgridDataFrame)
-S3method(print, RFpointsDataFrame)
-S3method(print, RFgridDataFrame)
 S3method(print, RFspatialPointsDataFrame)
+
+S3method(cbind, RFspatialGridDataFrame)
 S3method(print, RFspatialGridDataFrame)
+
+S3method(print, RFpointsDataFrame)
+
+S3method(cbind, RFgridDataFrame)
+S3method(print, RFgridDataFrame)
+S3method(as.matrix, RFgridDataFrame)
+
+
 S3method(print, RFopt)
+S3method(summary, RFopt)
+#S3method(print, summary.RFopt)
+S3method(print, RFoptElmnt)
+S3method(summary, RFoptElmnt)
+#S3method(print, summary.RFoptElmnt)
+
+
+S3method(anova, RFfit)
+S3method(print, RFfit)
+S3method(summary, RFfit)
+#S3method(print, summary.RFfit)
+
+S3method(anova, RMmodelFit)
+#S3method(AIC, RFmodelfit)
+#S3method(AICc, RFmodelfit)
+#S3method(BIC, RFmodelfit)
+#S3method(logLik, RFmodelfit)
+S3method(print, RMmodelFit)
+S3method(summary, RMmodelFit)
+#S3method(print, summary.RFmodelfit)
+
+S3method(print, RFratiotest)
+
+S3method(summary, RFcrossvalidate)
+S3method(print, RFcrossvalidate)
+S3method(print, summary.RFcrossvalidate)
+
+
+#S3method(summary, )
+#S3method(print, )
+

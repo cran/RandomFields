@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define POISSON_INTENSITY 0
 #define RANDOMCOIN_INTENSITY (COMMON_GAUSS + 1) 
 
-
+/* not used 
 double GetTotal(cov_model* cov) {
   cov_fct *C = CovList + cov->nr;
   double v = 1.0;
@@ -63,6 +63,7 @@ double GetTotal(cov_model* cov) {
   }
   return v;
 }
+*/
 
 
 int addStandard(cov_model **Cov) {
@@ -70,8 +71,9 @@ int addStandard(cov_model **Cov) {
     *next = *Cov;
   int i, err,
     dim = next->xdimprev,
-    vdim = next->vdim,
+    vdim = next->vdim2[0],
     role = next->role;     
+  assert(cov->vdim2[0] == cov->vdim2[1]);
 
   addModel(Cov, STANDARD_SHAPE);
   cov_model *key = *Cov;
@@ -105,8 +107,9 @@ int addPGS(cov_model **Cov) {
   //  isotropy_type iso = shape->isoprev;
   int err,
     dim = shape->xdimprev,
-    vdim = shape->vdim,
+    vdim = shape->vdim2[0],
     role = shape->role;
+  assert(shape->vdim2[0] == shape->vdim2[1]);
 
 
   //PMI(shape);
@@ -176,8 +179,8 @@ int init_mpp(cov_model *cov, storage *S) {
   if (sub == NULL) SERR("substructure could be detected");
   location_type *loc = Loc(cov);
   //window_info *w = &(S->window);
-  int d, err,
-    dim = cov->tsdim,
+  int err,
+    //    dim = cov->tsdim,
     role = cov->role, 
     maxstable = hasMaxStableRole(cov);
   pgs_storage *pgs;
@@ -206,25 +209,22 @@ int init_mpp(cov_model *cov, storage *S) {
 
   assert(pgs != NULL);
    
-  for (d=0; d<dim; d++)
-    pgs->supportmin[d] = pgs->supportmax[d] = pgs->supportcentre[d] = RF_NAN;
   GetDiameter(loc, pgs->supportmin, pgs->supportmax, pgs->supportcentre); 
   
   if (maxstable) {      
-    if (ISNA(sub->mpp.Mplus[1]) || !R_FINITE(sub->mpp.Mplus[1])
-	|| sub->mpp.Mplus[1] <= 0.0 ) {
-      // A
-      //     PMI(sub);
+    if (!R_FINITE(sub->mpp.mMplus[1]) || sub->mpp.mMplus[1] <= 0.0) {
+      // APMI(sub);
+      // printf("mplus %s %f\n",  NICK(sub), sub->mpp.mMplus[1]);
       //      crash();
       SERR("integral of positive part of submodel unkown");
     }
 
     //PMI(sub, "sub");
 
-    if (!R_FINITE(sub->mpp.log_zhou_c) )
+    if (!R_FINITE(pgs->zhou_c) && !R_FINITE(pgs->sum_zhou_c))
       SERR("maximal height of submodel unkown or the set of locations exceeds possibilities of the programme");
   } else if (role == ROLE_POISSON_GAUSS) {
-    if (ISNA(sub->mpp.M[2]) || !R_FINITE(sub->mpp.M[2] || sub->mpp.M[2] <=0.0)){
+    if (ISNAN(sub->mpp.mM[2]) || !R_FINITE(sub->mpp.mM[2] || sub->mpp.mM[2] <=0.0)){
       SERR("second moment unkown");
     }
   } // else role == ROLE_POISSON -- nothing to do
@@ -238,74 +238,92 @@ int init_mpp(cov_model *cov, storage *S) {
   return err;
 }
 
-void dompp(cov_model *cov, storage *s) {
+#define SET_SUB	{							\
+  sub = (cov->key != NULL) ? cov->key : /* if changed, change do_max_pgs! */ \
+    cov->sub[0] != NULL ? cov->sub[0] : cov->sub[1];			\
+  if (sub == NULL) ERR("substructure could be detected");		\
+  pgs = sub->Spgs;							\
+  assert(pgs != NULL);							\
+  gridlen = pgs->gridlen;						\
+  end = pgs->end;							\
+  start = pgs->start;							\
+  delta = pgs->delta;							\
+  nx = pgs->nx;							\
+  xstart = pgs->xstart; /* nach DO gesetzt */				\
+  x = pgs->x;           /* nach DO gesetzt */				\
+  inc = pgs->inc;}
+
+ 
+
+void dompp(cov_model *cov, storage *s, double *simuxi) {
+
+  // printf("here\n");
+
   assert(cov->simu.active);
   location_type *loc = Loc(cov);	
   if (loc->caniso != NULL) BUG;
 
-  // window_info *w = &(s->window);
-  cov_model  
-    *sub = (cov->key != NULL) ? cov->key : 
-    cov->sub[0] != NULL ? cov->sub[0] : cov->sub[1];
-  if (sub == NULL) ERR("substructure could be detected");
-  /*  mpp_model randomcoin = C->randomcoin; */	
-  //
-  pgs_storage *pgs = sub->Spgs;
-
-  assert(pgs != NULL);
- 
-  if (!isPointShape(sub)) BUG;
-
-  //  PMI(cov);
-  
-  int i, k, d, 
-    *gridlen = pgs->gridlen,
-    *end = pgs->end,
-    *start = pgs->start,
-    *delta = pgs->delta,
-    *nx = pgs->nx,
+  cov_model *sub = NULL;
+  pgs_storage *pgs = NULL;
+  int i, k, d, err,
+    *gridlen = NULL,
+    *end = NULL,
+    *start = NULL,
+    *delta = NULL,
+    *nx = NULL,
     dim = cov->tsdim,
     spatial = loc->totalpoints,
     every = GLOBAL.general.every, //
     nthreshold = (every>0) ? every : MAXINT,	
     //    covrole = cov->role,
-    subrole = sub->role,
+    subrole = ROLE_FAILED,
     deltathresh = nthreshold;			
 
-  double logdens,  factor, summand, 
-    sign[2], value[2], logthreshold, 
-    logM1 = RF_NAN,
-    logM2 = RF_NAN,
-    gumbel = RF_NAN,
-    *xstart = pgs->xstart, // nach DO gesetzt
-    *x = pgs->x,           // nach DO gesetzt
-    *inc = pgs->inc,
-    threshold = RF_NAN,
-    *rf=NULL, 
-     poisson=0.0;
-  res_type
-    *res = cov->rf;
+  double logdens,  factor, summand, sign[2], value[2], logthreshold, 
+    *xstart = NULL, // nach DO gesetzt
+    *x = NULL,           // nach DO gesetzt
+    *inc = NULL,
+    *rf = NULL, 
+    //M1 = RF_NA,
+    logM2 = RF_NA,
+    gumbel = RF_NA,
+    threshold = RF_NA,
+    poisson=0.0;
+  res_type *res = cov->rf;
   assert(res != NULL);
-  bool fieldreturn,
+  ext_bool fieldreturn;
+  bool
+    compoundpoisson, poissongauss,
     maxstable = hasMaxStableRole(cov),
-    compoundpoisson = subrole == ROLE_POISSON,
-    poissongauss = subrole == ROLE_POISSON_GAUSS,
     simugrid = loc->grid,
+    partialfield = false,
     // AVERAGE braucht Sonderbehandlung:
      randomcoin = cov->method == RandomCoin //only for ROLE_POISSON_GAUSS
     ;
-  long zaehler, n, cumgridlen[MAXMPPDIM +1],
-    Total_n = maxstable ? -1 : rpois(pgs->intensity),			
+  long zaehler, n, cumgridlen[MAXMPPDIM +1], Total_n,			
     total_pts = loc->totalpoints, 
-    vdimtot = total_pts * cov->vdim,
+    vdim = cov->vdim2[0],
+    vdimtot = total_pts * vdim,
     control = 0;
+ assert(cov->vdim2[0] == cov->vdim2[1]);
 
-  assert(maxstable || Total_n > 0);
-    
   cov_model *key = cov->key;
-  ext_bool loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
+  ext_bool loggiven;
   double Minimum = RF_NEGINF; // -10 // TO DO
+
+  if (vdim != 1)
+    error("Poisson point process based methods only work in the univariate case");
+
+  SET_SUB;
+  if (!isPointShape(sub)) BUG;					       
+  subrole = sub->role;
+  compoundpoisson = subrole == ROLE_POISSON;
+  poissongauss = subrole == ROLE_POISSON_GAUSS;
+  Total_n = maxstable ? -1 : rpois(pgs->intensity);
+  assert(maxstable || Total_n > 0);
+  loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
   if (!loggiven) Minimum = exp(Minimum);
+
 
   //  assert(covrole != ROLE_POISSON_GAUSS || subrole == ROLE_POISSON_GAUSS);
   //  assert(loc->caniso == NULL);
@@ -320,7 +338,7 @@ void dompp(cov_model *cov, storage *s) {
       gridlen[d] =  loc->length[d]; 
       cumgridlen[d+1] = loc->length[d] * cumgridlen[d];
 
-      //printf("set d=%d inc=%f gridlen=%d cum=%d\n", d, inc[d], gridlen[d],
+      // printf("set d=%d inc=%f gridlen=%d cum=%d\n", d, inc[d], gridlen[d],
       //     (int) cumgridlen[d]);
     }
   }
@@ -330,28 +348,36 @@ void dompp(cov_model *cov, storage *s) {
       for (i=0; i<vdimtot; i++) res[i] = R_NegInf;
     }
     else for (i=0; i<vdimtot; i++) res[i] = 0.0;
-    if (sub->mpp.moments < 1 || !R_FINITE(sub->mpp.Mplus[1]) || 
-      sub->mpp.Mplus[1] == 0.0)
+    if (sub->mpp.moments < 1 || !R_FINITE(sub->mpp.mMplus[1]) || 
+      sub->mpp.mMplus[1] == 0.0)
       ERR("integral of positive part of the submodel is unknown or not finite");
-    logM1 = log(sub->mpp.Mplus[1]);
+    //    M1 = sub->mpp.mMplus[1];
     threshold = logthreshold = RF_INF;
     pgs->globalmin = Minimum;
     pgs->currentthreshold =
       loggiven ? pgs->globalmin - threshold : pgs->globalmin / threshold;
+    if (simuxi != NULL) {
+      // to do : RPstudent, extremal t process
+    }
   } else if (compoundpoisson){
+    assert(simuxi == NULL);
     for (i=0; i<vdimtot; i++) res[i] = 0.0;
   } else {
-    for (i=0; i<vdimtot; i++) res[i] = 0.0;
-    logM2 = log(sub->mpp.M[2]);
+    assert(simuxi == NULL);
+     for (i=0; i<vdimtot; i++) res[i] = 0.0;
+    logM2 = log(sub->mpp.mM[2]);
     pgs->currentthreshold = 1e-8;
    }
 
   //  APMI(sub);
  
  
-  for (n=0; ; n++) {    
-    //     printf("n=%d tot=%d contr=%d: %f < %f; res[0]=%f\n", (int) n, (int) Total_n, (int) control, res[control], threshold, res[0]);// assert(n <= 10);
+  for(n=0; ; n++) {    
+    //       if (n % 1000 == 0) printf("n=%d tot=%d mh=%f, contr=%d: %f < %f; res[0]=%f\n", (int) n, (int) Total_n,  sub->mpp.maxheight, (int) control, res[control], threshold, res[0]);// assert(n <= 10);
 
+    //    printf("n=%d\n", n);
+    
+    //    assert(n < 1200);
 
     //    assert(res[0] < 1e-4);
     //    assert(res[0] < 80);
@@ -360,25 +386,38 @@ void dompp(cov_model *cov, storage *s) {
     
     // for (d=0; d<dim; d++) info->min[d] = info->max[d] = 0.0;
 
-    // printf(".\n");
+    //assert(n < 2   );
 
+    //      printf("XX.\n");  APMI(sub);
+    if (!sub->deterministic && 
+	(err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
     DO(sub, s);   
-    //    printf("here!!!\n");
+
+   //printf("PL =%d\n", PL);
+
+    // APMI(sub);
+
+    if (!sub->deterministic) SET_SUB;
+
+    //       printf("here!!!\n");
 
     // PMI(sub);
 
     fieldreturn = sub->fieldreturn;
-    if (subrole == ROLE_BROWNRESNICK) {
-      assert(sub->SBR != NULL);
-      n += sub->SBR->hatnumber;
-    }
+    // MARCO: hattest Du dies reingenommen?
+    //   if (subrole == ROLE_BROWNRESNICK) {
+    //      assert(sub->SBR != NULL);
+    //      n += sub->SBR->hatnumber;
+    //    }
     
+    //    PMI(sub, -1);
+    //printf("log_den %f\n",  pgs->log_density);
     logdens = pgs->log_density;
 
     //    PMI(sub, -1);
 
     if (!R_FINITE(logdens)) {
-      // PMI(sub, -1);
+      // PMI(sub);
       BUG;
     //    get_shape = CovList[sub->gatternr].cov;
     //   get_logshape = CovList[sub->gatternr].log;
@@ -388,9 +427,7 @@ void dompp(cov_model *cov, storage *s) {
       summand = 0.0;
     } else if (poissongauss) {
       summand = -0.5 * (logdens + logM2);
-    } else { // max-stable field    
-      //PMI(cov);
-      
+    } else { // max-stable field          
       assert(subrole == ROLE_SMITH || subrole == ROLE_SCHLATHER ||
 	     subrole == ROLE_BROWNRESNICK);
 
@@ -401,41 +438,47 @@ void dompp(cov_model *cov, storage *s) {
 	//	printf("break1 %d %d\n",  n, ((int*) cov->p[MAXSTABLE_POINTS])[0]);
 	break;
       }
-      poisson += rexp(1.0); 
+      poisson += rexp(1.0); // Poisson, not Frechet
       gumbel = -log(poisson);
       // MARCO, habe ich am 17.11.13 geaendert
-      summand = gumbel + sub->mpp.log_zhou_c - logdens - logM1;
 
-      //printf("logM1 = %f\n", logM1);
-      
+      // pgs->log_zhou_c = 0.0; // wrong! to do
+
+      summand = gumbel - logdens;
+     
       
       //   threshold = sub->loggiven ? GumbelThreshold : FrechetThreshold;
-      double diff = gumbel + sub->mpp.log_zhou_c - logM1;
-      threshold = logthreshold = 
-	(res_type) (diff + sub->mpp.maxheight); //Gumbel
-      if (!loggiven) {
+       threshold = logthreshold = 
+	 (res_type) (gumbel + log(sub->mpp.maxheights[0])); //Gumbel
+    //   
+       if (!loggiven) {
 	threshold = exp(threshold); // Frechet
       }
 
- 
-      // printf("for thres=%e %d res=%e log.zhou=%f(%f) logden=%f logM1=%e gumbel=%f loggiven=%d summand=%f\n", threshold, (int) control, res[control], sub->mpp.log_zhou_c, sub->mpp.maxheight, logdens, logM1, gumbel, loggiven, summand);
+      //  
+       //  APMI(sub);
 
-      //   PMI(sub);
+       //      printf("Max = %f gumbel=%f %f %d logdens=%f\n", sub->mpp.maxheights[0], gumbel, threshold, loggiven, logdens);
 
-      assert(R_FINITE(threshold ));
+
+      //printf("for thres=%e %d res=%e zhou=%f(%f) logden=%f  gumbel=%f loggiven=%d summand=%f\n", threshold, (int) control, res[control], pgs->zhou_c, sub->mpp.maxheights[0], logdens, gumbel, loggiven, summand);// assert(false);
+
+      //        assert(R_FINITE(threshold ));
 
 // {   int i; for (i=0; i<total_pts; i++) printf("%e ", res[i]); }
 
       //APMI(cov);
       while ((control<total_pts) && (res[control]>=threshold)) {
-	//   print("control: %d %f %f\n", control, res[control], threshold);
+	// 	print("control: %d %f %f\n", control, res[control], threshold); assert(false);
 	control++;
       }
-      if (control >= total_pts) {
+     if (control >= total_pts) {
 	//printf("break2\n");
 	break;
       }
     
+     //printf("n=%d every =%d %d %d\n", n, GLOBAL.extreme.check_every, PL, PL_STRUCTURE);
+     
       if (n % GLOBAL.extreme.check_every == 0) {
 	pgs->globalmin = res[control];
 	
@@ -443,13 +486,21 @@ void dompp(cov_model *cov, storage *s) {
 	  if (res[i] < pgs->globalmin) pgs->globalmin = res[i];
 
 	if (pgs->globalmin < Minimum) pgs->globalmin = Minimum;	
+
+	//	APMI(cov);
+
+	if (PL >= PL_STRUCTURE) 
+	  PRINTF("control: %d %f %f global=%f n=%d every=%d %f log.max=%f\n", 
+		 control, res[control], threshold, pgs->globalmin,
+		 n, GLOBAL.extreme.check_every, sub->mpp.maxheights[0],
+		 log(sub->mpp.maxheights[0]));    
       }
  
  
       // Marco:
       pgs->currentthreshold = loggiven
-	? pgs->globalmin - diff
-	: pgs->globalmin * exp(-diff);
+	? pgs->globalmin - gumbel
+	: pgs->globalmin * poisson;  // Frechet :  / exp(-gumbel)
      
 
       //printf("loggiven =%d %e %f cur.thr=%e\n",
@@ -457,6 +508,7 @@ void dompp(cov_model *cov, storage *s) {
 
     }
     factor = exp(summand);
+    //    APMI(cov);
 
   //
   //printf("factor %4.4f sumd=%4.4f logdens=%4.4f logM2=%4.4f th=%4.4f %d<%d \n", factor, summand, logdens, logM2, threshold, control, total_pts);  //  assert(false);
@@ -467,16 +519,19 @@ void dompp(cov_model *cov, storage *s) {
     //printf("A=%d\n", n);
     zaehler = 0;
     if (simugrid) {
-
+      partialfield = false;
       for (d=0; d<dim; d++) {	
 	double
 	  step = inc[d] == 0.0 ? 1.0 : inc[d], 
-	  dummy = ceil((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step);
-	start[d] = (dummy < 0) ? 0 : (int) dummy;
+	  dummy = ceil((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step);	
+	start[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int)dummy;
+	partialfield |= start[d] > 0;
 	dummy = 1.0 + ((pgs->supportmax[d] - loc->xgr[d][XSTART]) / step);
-	end[d] = (dummy >= gridlen[d]) ? gridlen[d] : (int) dummy;
+	end[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int) dummy;
+	partialfield |= end[d] < gridlen[d];
 
-	//printf("window [%f %f] [%d %d]\n", pgs->supportmin[d], pgs->supportmax[d], start[d], end[d]);
+	//printf("dummy %f %d %d len=%d\n", dummy, gridlen[d], end[d], loc->length[d]);
+	// 	printf("window [%f %f] [%d %d] %d %d\n", pgs->supportmin[d], pgs->supportmax[d], start[d], end[d], gridlen[d], partialfield);  //assert(n < 150); //APMI(cov);
 
 
 	if (start[d] >= end[d]) { // 
@@ -491,47 +546,53 @@ void dompp(cov_model *cov, storage *s) {
 	nx[d] = start[d];
 	zaehler += start[d] * cumgridlen[d];
 	x[d] = xstart[d] = loc->xgr[d][XSTART] + (double) start[d] * inc[d]; 
-	
-	if (false) 
-	   printf("d=%d start=%d, end=%d xstart=%f %f pgs=[%4.3f, %4.3f] xgr=%f %f %f inc=%3.2f\n", //
+
+	if (false || zaehler < 0) {
+	  PRINTF("d=%d start=%d, end=%d xstart=%f %f pgs=[%4.3f, %4.3f] xgr=%f %f %f inc=%3.2f\n", //
 	  	 d, start[d], end[d], xstart[d], pgs->xstart[d], pgs->supportmin[d], pgs->supportmax[d],
 	 	 loc->xgr[d][XSTART], loc->xgr[d][XSTEP], loc->xgr[d][XLENGTH],
 	  	 inc[d]);
-	// assert(false);
-	
+	   // 	  assert(false);
 	}
+      }
 
-      //     APMI(cov);
-      if (d < dim) continue;
+      //          APMI(cov);
+      if (d < dim) {
+	//printf("cont: d=%d\n", d);
+	continue;
+      }
     }
 
-    //  printf("simugrid %d\n", simugrid);
+    //  
+    //printf("simugrid %d\n", simugrid);
     //  assert(false);
     //    APMI(cov);
  
 
-#define STANDARDINKREMENT_ZAEHLER		\
-  d = 0;			\
-  nx[d]++;			\
-  x[d] += inc[d];		\
-  zaehler += cumgridlen[d];	\
-  while (nx[d] >= end[d]) {	\
-    nx[d] = start[d];		\
-    x[d] = xstart[d];		\
+#define STANDARDINKREMENT_ZAEHLER			\
+    d = 0;						\
+    nx[d]++;						\
+    x[d] += inc[d];					\
+    zaehler += cumgridlen[d];				\
+    while (nx[d] >= end[d]) {				\
+    nx[d] = start[d];					\
+    x[d] = xstart[d];					\
     zaehler -= delta[d]; /* delta is positive */	\
-    if (++d >= dim) break;	\
-    nx[d]++;			\
-    x[d] += inc[d];		\
-    zaehler += cumgridlen[d];					\
-  }								\
-  /* printf("nx=%d %d %d\n", nx[0], nx[1], zaehler); // */	\
-  if (d >= dim) break;		
+    if (++d >= dim) break;				\
+    nx[d]++;						\
+    x[d] += inc[d];					\
+    zaehler += cumgridlen[d];				\
+    }							\
+    if (d >= dim) { break;}	
     // end define StandardInkrement
 
  
 #define GET SHAPE(x, sub, value); /*printf("%f : %f fctr=%f %ld \n", x[0], *value, factor, zaehler); // */
 #define LOGGET LOGSHAPE(x, sub, value, sign);
 #define LOGGETPOS LOGGET if (sign[0] > 0)
+#define GETRF *value = (res_type) (rf[zaehler]);
+
+    //   printf("%d\n", total_pts); assert(false);
 
 #define RFMAX(OP) {				\
       rf = sub->rf;				\
@@ -549,39 +610,79 @@ void dompp(cov_model *cov, storage *s) {
       }						\
     }
 
-    //  gridlcoations/not;
-#define MAXAPPLY(G,OP)	{					\
+
+
+#define MAXAPPLY(GET, OP)						\
+      assert(zaehler >=0 && zaehler<total_pts);				\
+      /* if (zaehler<0 || zaehler>=total_pts) { PMI(cov);  printf("//z=%d n=%d\n", zaehler, n); } */ \
+      GET {								\
+	OP;								\
+	/*  assert( {if (*value > sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)) {  printf("//r=%f %f delta=%e %d %e\n", *value / exp(gumbel), sub->mpp.maxheights[0], *value / exp(gumbel) - sub->mpp.maxheights[0], loggiven, factor); };true;}); */ \
+	/*assert(loggiven || *value <= sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)); */ \
+	if (res[zaehler] < *value) res[zaehler]=*value;			\
+      }								       
+   
+#define SUMAPPLY(GET,OP) GET; res[zaehler] += OP;
+
+#define APPLY(GET, OP, WHAT)	{				\
       if (simugrid) {						\
-	while (true) {						\
-	  assert(zaehler >=0 && zaehler < total_pts);		\
-	  G {							\
-	    OP;							\
-	    if (res[zaehler] < *value) res[zaehler]=*value;	\
-	    STANDARDINKREMENT_ZAEHLER;				\
-	  }							\
+	while(true) {						\
+	  WHAT(GET, OP);					\
+	  STANDARDINKREMENT_ZAEHLER;				\
 	}							\
       } else {							\
-	x=loc->x;						\
-	for(; zaehler<spatial; zaehler++, x += dim) {		\
-	  G {							\
-	    OP;							\
-	    if (res[zaehler] < *value) res[zaehler] = *value;	\
-	  }							\
+	for(x=loc->x; zaehler<spatial; zaehler++, x += dim) {	\
+	  WHAT(GET, OP);					\
 	}							\
       }								\
     }
  
-    // printf("%d %f %f res=%f %ld\n", n, *value, OP, res[zaehler], zaehler);
-#define SUMAPPLY(G,OP) {						\
-      if (simugrid) {							\
-	while (true) {G; res[zaehler]+=OP; STANDARDINKREMENT_ZAEHLER;}	\
+
+#define OG_BASIC(OP)						\
+    assert(zaehler >=0 && zaehler < total_pts);			\
+    int jj, idx, index=0;					\
+    for (jj=0; jj<dim; jj++) {					\
+      idx = round((x[jj] - ogstart[jj]) / ogstep[jj]);		\
+      if (idx < 0 || idx >= pgs->own_grid_length[jj]) break;	\
+      index += pgs->own_grid_cumsum[jj] * idx;			\
+    }								\
+    if (jj >= dim) {  OP;  } else if (false) printf("%d %f %f %f len=%f %d %d\n", jj, x[jj],  ogstart[jj], ogstep[jj], pgs->own_grid_length[jj], pgs->own_grid_cumsum[jj], idx);  /* // */  \
+   
+  				
+
+#define OG_MAXAPPLY(NONE, OP)						\
+    rf = sub->rf;							\
+    OG_BASIC(*value = rf[index];					\
+	     OP; if (res[zaehler] < *value) res[zaehler]=*value;)
+    
+#define OG_SUMAPPLY(NONE, OP)				\
+    rf = sub->rf;					\
+    OG_BASIC(*value = rf[index]; res[zaehler] += OP;) 
+    
+    //   OWNGRIDAPPLY(OP, OG_SUMAPPLY_BASIC)
+#define OWNGRIDAPPLY(NONE, OP, WHAT) {		\
+      double *ogstart = pgs->own_grid_start,	\
+	*ogstep = pgs->own_grid_step;		\
+      APPLY(NONE, OP, WHAT);			\
+    }
+
+
+#define	ALL_APPLY(APPLY, MGET, MAPPLY, SGET, SAPPLY, NONLOGGET)		\
+    if (loggiven == true) {						\
+      if (maxstable) APPLY(MGET, (*value) += summand, MAPPLY)		\
+	else APPLY(SGET, sign[0] * exp(*value + summand), SAPPLY);	\
+    } else { /* not loggiven */						\
+      if (sub->loggiven){						\
+	if (maxstable)							\
+	  APPLY(MGET, *value=sign[0] * exp(*value+summand), MAPPLY)	\
+	else APPLY(SGET, sign[0] * exp(*value + summand), SAPPLY);	\
       } else {								\
-	x=loc->x;						\
-	for(; zaehler<spatial; zaehler++, x += dim) {			\
-	  G; res[zaehler] += OP;					\
-	}								\
+	assert(R_FINITE(factor));					\
+	if (maxstable) APPLY(NONLOGGET, (*value) *= factor, MAPPLY)	\
+	  else APPLY(NONLOGGET, *value * factor, SAPPLY);		\
       }									\
     }
+
 
 #define AVEAPPLY(G,OP0,OP1) {						\
       warning(" * timescale ?!");					\
@@ -615,6 +716,8 @@ void dompp(cov_model *cov, storage *s) {
       }									\
     }	
 
+    //printf("%d %d %d\n", fieldreturn, loggiven, sub->loggiven);
+
     // *atomdependent rfbased/not; (( recurrent/dissipative: min/max gesteuert))
     if (poissongauss  && !randomcoin) { // AVERAGE
       if (sub->loggiven) {
@@ -626,45 +729,35 @@ void dompp(cov_model *cov, storage *s) {
 	     subrole ==ROLE_BROWNRESNICK || subrole==ROLE_POISSON || 
 	     subrole==ROLE_POISSON_GAUSS);
 
-      if (fieldreturn) { // atomdependent rfbased/not;     
+      if (fieldreturn == HUETCHEN_OWN_GRIDSIZE) { // atomdependent rfbased/not;
+	ALL_APPLY(OWNGRIDAPPLY, NULL, OG_MAXAPPLY, NULL, OG_SUMAPPLY, NULL);	
+      } else if (fieldreturn == true) { // extended boolean
 	// todo : !simugrid! && Bereiche einengen!!     
 	// note ! no sign may be given currently when fieldreturn and loggiven!!
-	if (sub->loggiven) {
-	  if (maxstable) {RFMAX(rf[i] + summand);}
-	  else RFSUM(exp(rf[i] + summand));	  
-	} else {
-	  if (maxstable) {RFMAX(rf[i] * factor);}
-	  else RFSUM(rf[i] * factor);
-	}
-      } else { // not field return
-	if (loggiven == true) {
-	  if (maxstable) {MAXAPPLY(LOGGETPOS, (*value) += summand);}
-	  else SUMAPPLY(LOGGET, sign[0] * exp(*value + summand));
-	} else { // not loggiven
-	  if (sub->loggiven){ 
-	    if (maxstable) {
- 	      MAXAPPLY(LOGGETPOS, *value=sign[0] * exp(*value+summand));
-	    } else SUMAPPLY(LOGGET, sign[0] * exp(*value + summand));
+	if (partialfield) {
+	  if (!simugrid) BUG;
+	  ALL_APPLY(APPLY, GETRF, MAXAPPLY, GETRF, SUMAPPLY, GETRF);
+	} else { // !partialfield
+	  if (sub->loggiven) {
+	    if (maxstable) RFMAX(rf[i] + summand)
+	    else RFSUM(exp(rf[i] + summand));	  
 	  } else {
-
- 	    //
-	    //
-	    // printf("factor %f %f \n", factor, *value);
-	    assert(R_FINITE(factor));
-	    if (maxstable) { MAXAPPLY(GET, (*value) *= factor); }
-	    else SUMAPPLY(GET, *value * factor);
+	    if (maxstable) RFMAX(rf[i] * factor)
+	    else RFSUM(rf[i] * factor);
 	  }
 	}
-      }
+      } else if (fieldreturn == false) { // not field return
+	ALL_APPLY(APPLY, LOGGETPOS, MAXAPPLY, LOGGET, SUMAPPLY, GET);
+      } else BUG; // neither HUETCHEN_OWN_GRIDSIZE, nor true nor false
     }
   
     // printf("B=%d\n", n);
     if (n >= nthreshold) {
       if (maxstable) {
-	LPRINT("%d-th position: value=%f threshold=%f gu=%f %f %d (%d %d %d)\n",
+	LPRINT("%d-th pos.: value=%1.3f threshold=%1.3f gu=%1.3f %1.3f %d (%d %d)\n",
 	       control, (double) res[control], (double) threshold,
 	       gumbel, logdens, loggiven,
-	       n, nthreshold, deltathresh); 
+	       n, nthreshold); //, deltathresh); 
    	nthreshold += deltathresh;
       } else {
 	PRINTF("n=%d Total=%d\n", (int) (n / 1000), (int)(Total_n));
@@ -685,69 +778,117 @@ void dompp(cov_model *cov, storage *s) {
 
   // printf("%d frechet %d \n", sub->loggiven, ev_p->Frechet);
  
-  /*
-  double finalc;
-  finalc = GetTotal(sub);
-  
-  printf("finalc = %f\n", finalc); //
-  
-  if (fabs(finalc - 1.0) > 1e-15) {
-    assert(false);
-    if (maxstable) {
-      if (loggiven) {
-	finalc = log(finalc);
-	for (k=0; k<total_pts; k++) res[k] += finalc;
-      } else for (k=0; k<total_pts; k++) res[k] *= finalc;
-    } else { // gauss
-      BUG; // to do
-    }
-  }
-  */
-
+ 
   if (maxstable){
+    double meansq, var, 
+      mean = RF_NA, 
+      n_min = RF_INF,      
+      eps = GLOBAL.extreme.eps_zhou;
+
+    //    APMI(cov);
+
+    if (pgs->estimated_zhou_c) {
+      if (PL > 5) PRINTF("zhou_c: %ld %d",pgs->n_zhou_c, GLOBAL.extreme.min_n_zhou);
+      while (pgs->n_zhou_c < GLOBAL.extreme.min_n_zhou) {
+	if ((err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
+	DO(sub, s);   
+	SET_SUB;
+      }
+
+      while (pgs->n_zhou_c < n_min) {
+	for (k=0; k<10; k++) {
+	  if ((err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
+	  DO(sub, s);   
+	  SET_SUB; 
+	}
+	mean = (double) (pgs->sum_zhou_c / (long double) pgs->n_zhou_c);
+	meansq = mean * mean;
+	var = (double) (pgs->sq_zhou_c / (long double) pgs->n_zhou_c 
+			- meansq);
+	n_min = var / (meansq * eps * eps);
+	
+	if (n_min > GLOBAL.extreme.max_n_zhou) n_min =GLOBAL.extreme.max_n_zhou;
+ 
+
+	//
+	if (PL > 5) PRINTF(" n=%ld, min=%f %f mean=%f zhou=%f eps=%f\n", pgs->n_zhou_c, n_min, (double) pgs->sum_zhou_c, mean, pgs->zhou_c, eps);
+  
+      }
+      //
+    } else {
+      mean = pgs->zhou_c;
+    }
+
+
+
+    // mean /= M1;
+
+    //printf(" n=%ld, min=%f %f mean=%f zhou=%f eps=%f %f max=%f\n", pgs->n_zhou_c, n_min, (double) pgs->sum_zhou_c, mean, pgs->zhou_c, eps, M1, sub->mpp.maxheights[0]);
+
+    
+
+    // printf("loggiven = %d %f %f\n", loggiven, mean, pgs->zhou_c);
+    //    APMI(cov);
+
+    //     mean = 250; // 2 statt 11
 
     double xi = P0(GEV_XI);
-    if (loggiven) { // 3.6.13 sub->loggiven geaendert zu loggiven
- 
-      //  printf("here %e %f\n", xi, res[0]);
-      //      APMI(cov->calling);
 
+    //    printf("xi=%f %d logmean=%d %f\n", xi, loggiven, pgs->logmean, mean);
+
+    if (loggiven) { // 3.6.13 sub->loggiven geaendert zu loggiven
+      if (!pgs->logmean) mean = log(mean);
+      for (k=0; k<total_pts; k++) res[k] += mean;
       if (xi != 0.0) 
-	for (k=0; k<total_pts; k++) res[k] = (exp(xi * res[k]) - 1.0) / xi;
+	for (k=0; k<total_pts; k++) res[k] = exp(xi * res[k]) - 1.0;
     } else {
+      for (k=0; k<total_pts; k++) res[k] *= mean;  
       if (xi==0.0) for (k=0; k<total_pts; k++) res[k] = log(res[k]);
       else if (xi == 1.0) for (k=0; k<total_pts; k++) res[k] -= 1.0;
       else for (k=0; k<total_pts; k++) res[k] = pow(res[k], xi) - 1.0;
     }
     
+    
+
     // muss das vorletzte sein !
     if (cov->kappasub[GEV_S] != NULL) {
       error("'s' cannot be chosen as a function yet.");
       // check whether s is positive !!
     } else {
       double ss = xi == 0 ? P0(GEV_S) : (P0(GEV_S) / xi);
+      //printf("s=%f\n", ss);
+
       if (ss != 1.0) for (k=0; k<total_pts; k++) res[k] *= ss;
-    }  
+    }
+
 
     // muss das letzte sein !
     if (cov->kappasub[GEV_MU] != NULL) {
       error("mu cannot be chosen as a function yet.");
     } else {
       double mu = P0(GEV_MU);
-      if (mu != 0.0) for (k=0; k<total_pts; k++) res[k] += mu;
+      //   printf("mu=%f xi=%f %f\n", mu, xi, s);
+      //printf("mu=%f\n", mu);
+    if (mu != 0.0) for (k=0; k<total_pts; k++) res[k] += mu;
     }
-  } 
+  }
   //printf("n=%d %f %f %f 0:%f\n", n, res[0], res[1], res[2], res[3]);
   // for (k=0; k<total_pts; k++) printf("%f ", res[k]); printf("\n");
+  if (PL >= PL_SUBIMPORTANT) {
+    PRINTF("number of shape functions used: %d\n", n);
+  }
 
   return;
 } // end dompp
 
 
+void dompp(cov_model *cov, storage *s) {
+  dompp(cov, s, NULL);
+}
 
 //void calculate_integral(int d, double R, cov_model *cov,
 //			integral_type *integral) {
-//  error("calculate_integral not programmed yet.\n");
+// 
 //}
 
 
@@ -851,7 +992,7 @@ int init_poisson(cov_model *cov, storage *S) {
   else {
   int i, d,
   vdim = cov->vdim;
-  for (i=0; i<vdim; i++) v[i] = RF_NAN;
+  for (i=0; i<vdim; i++) v[i] = RF_NA;
   for (d=0; d<cov->xdimown; d++) {
   if (x[d] != 0.0) {
   return;
@@ -870,7 +1011,7 @@ int init_poisson(cov_model *cov, storage *S) {
   else {
   int i, 
   vdim = cov->vdim;
-  for (i=0; i<vdim; i++) x[i] = RF_NAN;
+  for (i=0; i<vdim; i++) x[i] = RF_NA;
   }
   }
 */
@@ -888,7 +1029,8 @@ int check_randomcoin(cov_model *cov) {
   //PMI(cov->calling, "check_randomcoin!");
   
   //PMI(cov, "check random coins");
-  SERR("Currently not programmed yet.");
+  return ERRORNOTPROGRAMMEDYET;
+  NotProgrammedYet("'random coin'");
  
   ROLE_ASSERT(ROLE_POISSON_GAUSS || (cov->role==ROLE_GAUSS && cov->key!=NULL));
   ASSERT_ONE_SUBMODEL(cov);
@@ -896,7 +1038,6 @@ int check_randomcoin(cov_model *cov) {
   if (cov->sub[COIN_COV] != NULL && cov->sub[COIN_SHAPE]!=NULL)
     SERR("either 'tcf' or 'shape' must be given");
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
   kdefault(cov, RANDOMCOIN_INTENSITY, gp->intensity[dim]);
   if ((err = checkkappas(cov, true)) != NOERROR) {
     //AERR(err);
@@ -951,14 +1092,11 @@ int check_randomcoin(cov_model *cov) {
     //      paramcpy(intern, cov, true, false);
     //    }
     
-    //CHECK(key, dim, dim, PosDefType, XONLY, SYMMETRIC, 
-    //		   SUBMODEL_DEP, ROLE_COV)
-    
     if ((err = cov->role == ROLE_BASE || cov->role == ROLE_GAUSS
-	 ? CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
+	 ? CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, //err
     		   SUBMODEL_DEP, ROLE_POISSON_GAUSS)
 	 : cov->role == ROLE_POISSON_GAUSS 
-	 ? CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD, 
+	 ? CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD, //err
 		   SUBMODEL_DEP, ROLE_POISSON_GAUSS)
 	 : ERRORFAILED
 	 ) != NOERROR) {
@@ -976,9 +1114,7 @@ int check_randomcoin(cov_model *cov) {
   return NOERROR;
 }
 
-void range_randomcoin(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
-
+void range_randomcoin(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->min[RANDOMCOIN_INTENSITY] = RF_NEGINF;
   range->max[RANDOMCOIN_INTENSITY] = RF_INF;
   range->pmin[RANDOMCOIN_INTENSITY] = -10;
@@ -1094,7 +1230,7 @@ int init_randomcoin(cov_model *cov, storage *S) {
 
   //  PMI(cov, "randmcoin");
   assert(sub->mpp.moments >= 2);
-  if (!R_FINITE(sub->Spgs->totalmass) || !R_FINITE(sub->mpp.M[2]))
+  if (!R_FINITE(sub->Spgs->totalmass) || !R_FINITE(sub->mpp.mM[2]))
     SERR("Moments of submodels not known");
 
   sub->role = ROLE_POISSON_GAUSS;
@@ -1105,14 +1241,14 @@ int init_randomcoin(cov_model *cov, storage *S) {
 
 void do_randomcoin(cov_model *cov, storage *s) {   
   assert(cov->simu.active);
-  bool loggauss = (bool) P0INT(LOG_GAUSS);
+  bool loggauss = GLOBAL.gauss.loggauss;
   location_type *loc = Loc(cov);
   int i;
   double *res = cov->rf;
 
   dompp(cov, cov->stor==NULL ? s : cov->stor);// letzteres falls shape gegeben
   if (loggauss) {
-    int vdimtot = loc->totalpoints * cov->vdim;
+    int vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }
@@ -1145,8 +1281,11 @@ int SetGEVetc(cov_model *cov, int role) {
     SERR("either 'tcf' or a shape definition must be given");
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
   kdefault(cov, GEV_XI, ep->GEV_xi);
-  kdefault(cov, GEV_S, 1.0);
-  kdefault(cov, GEV_MU, P0(GEV_XI) / P0(GEV_S));
+  kdefault(cov, GEV_S, P0(GEV_XI) == 0.0 ? 1.0 : fabs(P0(GEV_XI)));
+  kdefault(cov, GEV_MU, P0(GEV_XI) == 0.0 ? 0.0 : 1.0);
+
+  // print("xi s mu %f %f %f\n",  P0(GEV_XI), P0(GEV_S), P0(GEV_MU)); assert(false);
+
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) {
     return ERRORDIM;
@@ -1187,10 +1326,13 @@ int check_schlather(cov_model *cov) {
     ASSERT_ROLE_DEFINED(sub);
 
     if ((err = isPosDef(next)
-	 ? CHECK(next, dim, dim, PosDefType, XONLY, ISOTROPIC,
+	 ? CHECK(next, dim, dim, PosDefType, XONLY, ISOTROPIC, //err
 		   SCALAR, role)
-	 : CHECK(next, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
-		   SCALAR, role)) != NOERROR)  return err;
+	 : CHECK(next, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, //err, 
+		 SCALAR, role)) != NOERROR)  return err;
+
+    if (sub->vdim2[0] != 1) SERR("only univariate processes are allowed");
+    assert(cov->vdim2[0] == cov->vdim2[1]);
 
     setbackward(cov, sub);
 
@@ -1252,17 +1394,17 @@ int struct_schlather(cov_model *cov, cov_model **newmodel){
 
   if ((err = CHECK(cov->key, cov->tsdim, cov->xdimown, ProcessType, 
 		     cov->domown,
-		     cov->isoown, cov->vdim, role)) != NOERROR) return err;  
+		     cov->isoown, cov->vdim2, role)) != NOERROR) return err;  
 
   // APMI(cov->key);
  
-  if ((ErrNoInit = STRUCT(cov->key, NULL)) > NOERROR) return ErrNoInit;
+  if ((ErrNoInit = STRUCT(cov->key, NULL)) > NOERROR) return ErrNoInit; //err
   
   addModel(&(cov->key), STATIONARY_SHAPE);
   
   if ((err = CHECK(cov->key, cov->tsdim, cov->xdimown, PointShapeType, 
 		     cov->domown,
-		     cov->isoown, cov->vdim, ROLE_SCHLATHER)) != NOERROR)
+		     cov->isoown, cov->vdim2, ROLE_SCHLATHER)) != NOERROR)
     return err;
   
   return ErrNoInit;
@@ -1287,7 +1429,7 @@ int check_smith(cov_model *cov) {
 
   ASSERT_ONE_SUBMODEL(cov);
   
-  if ((err = SetGEVetc(cov, ROLE_MAXSTABLE)) != NOERROR) return err;
+  if ((err = SetGEVetc(cov, ROLE_SMITH)) != NOERROR) return err;
 
   if (key != NULL) {
     if ((err = CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD,
@@ -1313,7 +1455,7 @@ int check_smith(cov_model *cov) {
 
     } else { // shape
       role = // (isNegDef(sub) && !isPosDef(sub)) ?  ROLE_COV  //Marco, 29.5.13
-	isShape(sub) ? ROLE_MAXSTABLE
+	isShape(sub) ? ROLE_MAXSTABLE // 23.4.14
 	: isPointShape(sub) ? ROLE_SMITH
 	: isGaussProcess(sub) ? ROLE_GAUSS
 	: isBernoulliProcess(sub) ? ROLE_BERNOULLI
@@ -1325,7 +1467,7 @@ int check_smith(cov_model *cov) {
 	return err;
       }
       if (next->full_derivs < 0) 
-	SERR1("'%s' requires a an explicit submodel.", NICK(cov));
+	SERR1("'%s' requires an explicit submodel.", NICK(cov));
     }
   } 
   
@@ -1368,7 +1510,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
 
   if (key->sub[PGS_LOC] != NULL) return NOERROR;
   if ((err = covcpy(key->sub + PGS_FCT, shape)) != NOERROR) return err;
-
+ 
   if (nr == PTS_GIVEN_SHAPE) {   
     //PMI(shape, -1);
     //printf("here %ld %d %d %d\n", key->sub[PGS_LOC], ScaleOnly(shape),
@@ -1379,32 +1521,19 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
 	if ((err = covcpyWithoutRandomParam(key->sub + PGS_LOC, shape->sub[0]))
 	    != NOERROR) return err;
 	addModel(key->sub + PGS_LOC, RECTANGULAR);	
-	assert(SETPARAM_TO == 0);
 	addModel(key->sub + PGS_LOC, LOC);
-	addModel(key->sub + PGS_LOC, SET_DISTR);
+	addSetDistr(key->sub + PGS_LOC, shape, ScaleDollarToLoc, true, 0);
+
 	key->sub[PGS_LOC]->calling = key;
-	if (key->sub[PGS_LOC]->Sset != NULL) 
-	  SET_DELETE(&(key->sub[PGS_LOC]->Sset));
-	key->sub[PGS_LOC]->Sset = (set_storage *) MALLOC(sizeof(set_storage));
-	SET_NULL(key->sub[PGS_LOC]->Sset);
-	set_storage *S = key->sub[PGS_LOC]->Sset;
-	S->remote = shape;
-	S->set = ScaleDollarToLoc;
-	S->variant = 0;      
-      } else { 
+     } else { 
 	if ((err = covcpyWithoutRandomParam(key->sub + PGS_LOC, shape)) 
 	    != NOERROR) return err;
-	if (!shape->deterministic) {
-	  addModel(key->sub + PGS_LOC, SETPARAM);
-	  cov_model *set = key->sub[PGS_LOC];
-	  assert(SETPARAM_TO == 0);
-	  if (set->Sset != NULL) SET_DELETE(&(set->Sset));
-	  set->Sset = (set_storage *) MALLOC(sizeof(set_storage));
-	  SET_NULL(set->Sset);
-	  set_storage *S = set->Sset;
-	  S->remote = key->sub[PGS_FCT];
-	  S->set = param_set_identical;    
-	  S->variant = MAXINT;
+	if (!shape->deterministic) {	
+	  //APMI(key);
+	  addSetDistr(key->sub + PGS_LOC, key->sub[PGS_FCT], 
+		      param_set_identical, true, MAXINT);
+	  
+
 	}
 	addModel(key->sub + PGS_LOC, RECTANGULAR);
  	key->sub[PGS_LOC]->calling = key;
@@ -1417,17 +1546,21 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
     if (key->sub[PGS_LOC] == NULL)
       SERR("simple enlarging of the simulation window does not work");
   } else BUG;
+
+  //  APMI(key);
+
   return NOERROR;
 }
 
 int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts, 
+		  cov_model *local_pts,
 		  int dim, int vdim) {
 #define PGS_N 2
   int i,
     err = NOERROR,
     pgs[PGS_N] = {PTS_GIVEN_SHAPE, STANDARD_SHAPE};
   char msg[PGS_N][200];
-  
+  assert(shape != NULL);
   assert(*Key == NULL);
 
   // to do: strokorbball: raeumlich waere Standard/Uniform besser;
@@ -1439,36 +1572,72 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
       XERR(err);
     }
     //    if (i > 0) XERR(err); assert(i ==0);
-    if (*Key != NULL) COV_DELETE(Key);
+    if (*Key != NULL) {
+      COV_DELETE(Key);
+      //      (*Key)->sub + PGS_LOC, pts
+    }
     addModel(Key, pgs[i]);
     (*Key)->calling = shape->calling;
     assert(shape->calling != NULL);
     assert((*Key)->sub[PGS_LOC] == NULL && (*Key)->sub[PGS_FCT] == NULL); 
+
+    //   PMI(shape); 
+    //   PMI(pts);
+ 
     if (pts != NULL) {
-     if ((err = covcpy((*Key)->sub + PGS_FCT, shape)) != NOERROR ||
+      if ((err = covcpy((*Key)->sub + PGS_FCT, shape)) != NOERROR ||
 	  (err = covcpy((*Key)->sub + PGS_LOC, pts)) != NOERROR
  	  ) return err;
-    } else {
-      //printf("here A\n");
-     if ((err = PointShapeLocations(*Key, shape)) != NOERROR) continue;
-    }
-    (*Key)->calling = shape->calling;
+      Ssetcpy((*Key)->sub[PGS_FCT], (*Key)->sub[PGS_LOC], shape, pts);
+      Ssetcpy((*Key)->sub[PGS_LOC], (*Key)->sub[PGS_FCT], pts, shape);
+      
+      //     PMI((*Key)->sub[PGS_FCT]); 
+      //    APMI((*Key)->sub[PGS_LOC]);
+ 
 
-    //PMI((*Key)->calling);
+    } else {
+      //
+      if ((err = PointShapeLocations(*Key, shape)) != NOERROR) continue;
+      if (local_pts != NULL) { // only in plusmalS.cc
+	if ((*Key)->nr != PTS_GIVEN_SHAPE) continue;
+	cov_model *local, *dummy;
+	if ((err = covcpy(&local, false, local_pts, shape->prevloc, NULL, 
+			  true)) != NOERROR) return err;
+	local->calling = (*Key)->calling;
+	dummy = local;
+	while (dummy->sub[DOLLAR_SUB] != NULL) dummy = dummy->sub[DOLLAR_SUB];
+	if (dummy->nr != LOC) BUG;
+	dummy->sub[DOLLAR_SUB] = *Key;
+	(*Key)->calling = dummy;
+      }
+    }
+
+    (*Key)->calling = shape->calling;
+    (*Key)->sub[PGS_FCT]->calling = (*Key)->sub[PGS_LOC]->calling = *Key;
+
+     //PMI((*Key)->calling);
     assert((*Key)->sub[PGS_LOC] != NULL && (*Key)->sub[PGS_FCT] != NULL);
+
+    //    APMI(*Key);
 
     //    printf(">>>>>>> KEY start %d %s \n", i, NICK((*Key)));
     if ((err = CHECK(*Key, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,
 		     vdim, ROLE_MAXSTABLE)) != NOERROR) {
-      //printf(">>>>>>> KEY break %d %s \n", i, NICK((*Key)));
+      //        printf(">>>>>>> KEY break %d %s %d\n", i, Nick(*Key), dim);  
+      //PMI(*Key);
+    
       XERR(err);
       continue; 
     }
     //printf(">>>>>>> KEY done %d \n", i);
     (*Key)->stor = (storage *) MALLOC(sizeof(storage)); 
     STORAGE_NULL((*Key)->stor);
-    if ((err = INIT(*Key, 1, (*Key)->stor)) == NOERROR) break;
-  }
+
+
+    //  APMI(*Key);
+
+     if ((err = INIT(*Key, 1, (*Key)->stor)) == NOERROR) break;
+  } // for i_pgs
   if (err != NOERROR) {
     errorMSG(err, msg[i-1]);
     sprintf(ERRORSTRING, 
@@ -1479,18 +1648,93 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
   return NOERROR;
 }
 
+int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts, 
+		  int dim, int vdim) {
+  return addPointShape(Key, shape, pts, NULL, dim, vdim);
+}
+
+int struct_smith_pts(cov_model **Key, cov_model *shape, 
+		     cov_model *calling,
+		     int tsdim, int vdim) {
+  cov_model
+    *dummy = NULL;
+  int err = NOERROR;
+
+  if ((err = STRUCT(shape, Key)) == NOERROR && *Key != NULL) {
+    (*Key)->calling = calling;
+    //   PMI(shape); 
+    //APMI(*Key);
+    Types type = TypeConsistency(PointShapeType, *Key) ? PointShapeType :
+      TypeConsistency(RandomType, *Key) ? RandomType :
+      TypeConsistency(ShapeType, *Key) ? ShapeType :
+      OtherType;
+
+    //PMI(*Key);  
+  
+    //PMI(*Key);
+ 
+    if (type == RandomType) { // random locations given;
+      // so, it must be of pgs type (or standard):
+      if ((err = CHECK_R(*Key, shape->tsdim)) != NOERROR) {
+	goto ErrorHandling;
+      }
+      dummy = *Key;
+      *Key = NULL;     
+      if ((err = addPointShape(Key, shape, dummy, tsdim, vdim)) != NOERROR) 
+	goto ErrorHandling; 
+      if (*Key == NULL) BUG;
+      (*Key)->calling = calling;
+      // APMI(cov);
+    } else {
+      if ((err = CHECK(*Key, shape->tsdim, shape->xdimprev, type, 
+		       shape->domprev, shape->isoprev, shape->vdim2, 
+		       ROLE_MAXSTABLE))
+	  != NOERROR) {
+	goto ErrorHandling;
+      }
+ 
+      if (type==PointShapeType) {
+	if ((err = PointShapeLocations(*Key, shape)) != NOERROR) 
+	  goto ErrorHandling;
+      } else if (type == ShapeType) {
+	dummy = *Key;
+	*Key = NULL;
+ 	  // suche nach geeigneten locationen
+	if ((err = addPointShape(Key, dummy, NULL, tsdim, vdim)) != NOERROR) 
+	  goto ErrorHandling; 
+ 	//printf("e ddd\n");
+      } else BUG;
+    } // ! randomtype
+  } else { // S-TRUCT does not return anything
+    int err2;
+    //assert(false);
+    // XERR(err);
+    //	APMI(*Key);
+    if ((err2 = addPointShape(Key, shape, NULL, tsdim, vdim)) != NOERROR) {
+      if (err == NOERROR) err = err2;
+      goto ErrorHandling; 
+    }
+    err = NOERROR;
+  }
+ ErrorHandling:
+  if (dummy != NULL) COV_DELETE(&dummy);
+  return err;
+}
+
 
 int struct_smith(cov_model *cov,  cov_model **newmodel){
   cov_model
     *tmp_shape = NULL,
     *shape = cov->sub[MPP_SHAPE],
     *tcf =  cov->sub[MPP_TCF],
-    *dummy = NULL,
     *tcf_shape = NULL,
     *sub = shape != NULL ? shape : tcf;
   location_type *loc = Loc(cov);
   int err = NOERROR;
   if (newmodel != NULL) SERR("unexpected call of struct_smith");
+  
+  //APMI(shape);
+
 
   if (cov->role != ROLE_SMITH) BUG;  
 
@@ -1508,69 +1752,121 @@ int struct_smith(cov_model *cov,  cov_model **newmodel){
     addModel(&tcf_shape, STROKORB_MONO);
 
     if ((err = CHECK(tcf_shape, tcf->tsdim, tcf->xdimprev, ShapeType, 
-		     tcf->domprev, tcf->isoprev, tcf->vdim, 
+		     tcf->domprev, tcf->isoprev, tcf->vdim2, 
 		     ROLE_MAXSTABLE)) != NOERROR) goto ErrorHandling;
     tmp_shape = tcf_shape; 
   } else {
     tmp_shape = shape;
-  }
+   }
 
   //  	APMI(tmp_shape);
+  if ((err = struct_smith_pts(&(cov->key), tmp_shape, cov,
+			      cov->tsdim, cov->vdim2[0]))
+      != NOERROR) goto ErrorHandling;
 
-  if ((err = STRUCT(tmp_shape, &(cov->key))) == NOERROR && cov->key != NULL) {
-    cov->key->calling = cov;
-    //   PMI(tmp_shape); 
-    //APMI(cov->key);
-    Types type = TypeConsistency(PointShapeType, cov->key) ? PointShapeType :
-      TypeConsistency(RandomType, cov->key) ? RandomType :
-      TypeConsistency(ShapeType, cov->key) ? ShapeType :
-      OtherType;
-
-
-    //PMI(cov->key);
-  
-    if ((err = CHECK(cov->key, tmp_shape->tsdim, tmp_shape->xdimprev, type, 
-		     tmp_shape->domprev, tmp_shape->isoprev, tmp_shape->vdim, 
-		     type == PointShapeType? ROLE_MAXSTABLE :
-		     type == ShapeType ? ROLE_MAXSTABLE :
-		     type == RandomType ? ROLE_DISTR : ROLE_FAILED		     )) != NOERROR) goto ErrorHandling;
-  
-    if (type==PointShapeType) {
-      if ((err = PointShapeLocations(cov->key, tmp_shape)) != NOERROR) 
-	goto ErrorHandling;
-    } else {
-      dummy = cov->key;
-      cov->key = NULL;
-      if (type == RandomType) { // random locations given;
-	// so, it must be of pgs type (or standard):
-
-	if ((err = addPointShape(&(cov->key), tmp_shape, dummy, cov->tsdim, 
-				 cov->vdim)) != NOERROR) goto ErrorHandling; 
-	if (cov->key == NULL) BUG;
-	cov->key->calling = cov;
-	// APMI(cov);
-      } else if (type == ShapeType) {
-	  // suche nach geeigneten locationen
-	if ((err = addPointShape(&(cov->key), dummy, NULL, cov->tsdim, 
-				   cov->vdim)) != NOERROR) goto ErrorHandling; 
- 	//printf("e ddd\n");
-      } else BUG;
-    } // !PointShapeType
-  } else { // STRUCT does not return anything
-    //assert(false);
- 
-    //	PMI(cov);
-   if ((err = addPointShape(&(cov->key), tmp_shape, NULL, cov->tsdim,
-			     cov->vdim)) != NOERROR) goto ErrorHandling; 
-  }
-
-  // APMI(cov);
+  //   APMI(cov);
 
   err = NOERROR;
 
  ErrorHandling:
   if (tcf_shape != NULL) COV_DELETE(&tcf_shape);
-  if (dummy != NULL) COV_DELETE(&dummy);
- 
   return err;
+}
+
+
+
+
+typedef double (*logDfct)(double *data, double gamma);
+
+double HueslerReisslogD(double *data, double gamma) {  
+  double 
+    g = sqrt(2.0 * gamma),
+    logy2y1 = log(data[1] / data[0]);
+  return -pnorm(0.5 * g + logy2y1 / g, 0.0, 1.0, 1.0, false) / data[0] 
+    -pnorm(0.5 * g - logy2y1 / g, 0.0, 1.0, 1.0, false) / data[1];
+}
+
+
+double schlatherlogD(double *data, double gamma) {  
+  double 
+    sum = data[0] + data[1],
+    prod = data[0] * data[1];
+  return 0.5 * sum / prod * 
+    (1.0 + sqrt(1.0 - 2.0 * (2.0 - gamma) * prod / (sum * sum)));
+}
+
+#define LL_AUTO 0
+#define LL_FULL 1
+#define LL_COMPOSITE 2
+#define LL_SELECTION 3
+#define LL_UNKNOWN error("unknown value for 'likelihood' -- please contact author");
+
+
+void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
+			    double *v) {
+
+  cov_model *sub = cov;
+  while (isProcess(sub))
+    sub = sub->key != NULL ? sub->key : sub->sub[0];
+
+  if (cov->q == NULL) {
+    location_type *loc = Loc(cov);
+    int len = loc->totalpoints;    
+    cov->qlen = len;
+   // transform everything towards standard Frechet
+    if ((cov->q = (double*) MALLOC(sizeof(double) * len)) == NULL)
+      error("memory allocation error");
+    if (loc->grid || loc->Time) Transform2NoGrid(sub, false, true);   
+  }
+
+  location_type *loc = Loc(cov);
+  double *x, *y;
+  int i,j,
+    dim = cov->xdimown,
+    len = loc->totalpoints;    
+    
+  if (data != NULL) {
+    double 
+      xi = P0(GEV_XI),
+      mu = P0(GEV_MU),
+      s = P0(GEV_S);    
+    if (xi == 0) {
+      for (i=0; i<len; i++) cov->q[i] = exp((data[i] - mu) / s);
+    } else {
+      double 
+	xiinv = 1.0 / xi,
+	xis = xi / s;      
+      for (i=0; i<len; i++) cov->q[i] = pow(1.0 + xis * (data[i] - mu), xiinv);
+    }
+  }
+
+  switch(GLOBAL.fit.likelihood) {
+  case LL_AUTO: case LL_COMPOSITE: 
+    double z[2], gamma, gamma0;
+    COV(ZERO, sub, &gamma0);
+    x = loc->x;
+    for (i=0; i<len; i++, x += dim) {
+      y = x + dim;
+      for (j=i+1; j<len; j++) {
+	NONSTATCOV(x, y, sub, &gamma);
+	z[0] = cov->q[i];
+	z[1] = cov->q[j];
+	*v += logD(z, gamma0 - gamma);
+      }
+    }
+    break;
+  case LL_FULL: error("full MLE not available for Brown Resnick");
+    break;
+  case LL_SELECTION: NotProgrammedYet("LL_SELECTION");
+  default : LL_UNKNOWN;
+  }
+}
+
+
+void loglikelihoodBR(double *data, cov_model *cov, double *v) {
+  loglikelihoodMaxstable(data, cov, HueslerReisslogD, v);
+}
+
+void loglikelihoodSchlather(double *data, cov_model *cov, double *v) {
+  loglikelihoodMaxstable(data, cov, schlatherlogD, v);
 }

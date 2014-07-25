@@ -21,14 +21,14 @@
  If \eqn{\kappa = 2}
  \deqn{C(r) = \left(1 + \beta r + \frac{\beta^{2} -
  1}{3}r^{2} \right)(1-r)^{\beta} 1_{[0,1]}(r), \qquad
- \beta = \mu+2\kappa+1/2.}{ C(r) = (1 + \beta r + (\beta^2 - 1) r^(2) / 3) (1 - r)^\beta
+ \beta = \mu+2\kappa+1/2.}{ C(r) = (1 + \beta r + (\beta^2 - 1) r^2 / 3) (1 - r)^\beta
  1_{[0,1]}(r), \beta = \mu + 2\kappa + 1/2.} 
  In the case \eqn{\kappa = 3}
  \deqn{ C(r) = \left( 1 + \beta r + \frac{(2\beta^{2}-3)}{5} r^{2}+
  \frac{(\beta^2 - 4)\beta}{15} r^{3} \right)(1-r)^\beta 1_{[0,1]}(r),
  \qquad \beta = \mu+2\kappa + 1/2.}{ C(r) = (1 + \beta r + (2 \beta^2 - 3
- )r^(2) / 5 + (\beta^2 - 4) \beta
- r^(3) / 1 (1-r)^\beta 1_{[0,1]}(r), \beta = \mu + 2\kappa + 1/2.}
+ )r^2 / 5 + (\beta^2 - 4) \beta
+ r^3 / 15)(1-r)^\beta 1_{[0,1]}(r), \beta = \mu + 2\kappa + 1/2.}
  A special case of this model is \command{\link{RMgneiting}}.
  \eqn{\ell}
 }
@@ -36,12 +36,12 @@
 RMgengneiting(kappa, mu, var, scale, Aniso, proj)
 }
 \arguments{
- \item{kappa}{parameter that chooses between the three different covariance
- models and may take values \eqn{0,\ldots,3}{0,...,3}}
+ \item{kappa}{\eqn{0,\ldots,3}{0,...,3}}; it chooses between the three
+ different covariance models above
  \item{mu}{\code{mu} has to be greater than or equal to
  \eqn{\frac{d}{2}}{d / 2} where \eqn{d} is the dimension of the
  random field.} 
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -80,7 +80,8 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMgengneiting(kappa=1, mu=1.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
@@ -92,6 +93,6 @@ model <- RMgengneiting(kappa=3, mu=1.5, scale= 1 / 0.301187465825 * scale)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 points(x,  RFcov(RMgneiting(scale = scale), x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }

@@ -7,13 +7,14 @@
  
  }
  \usage{
-RRloc(phi, mu, scale) 
+RRloc(phi, mu, scale, pow) 
 }
 
 \arguments{
   \item{phi}{distribution \command{\link{RMmodel}}.}
   \item{mu}{location shift}
- \item{scale}{scale modification}
+  \item{scale}{scale modification}
+  \item{pow}{argument for internal use only} % 
 }
 
 \value{
@@ -35,10 +36,11 @@ RRloc(phi, mu, scale)
  }
 
  \examples{
-RFoptions(seed=0)
-hist(RFrdistr(RRspherical(balldim=2), n=1000), 50)
-hist(RFrdistr(RRloc(mu=3, RRspherical(balldim=2)), n=1000), 50)
-\dontshow{RFoptions(seed=NA)}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+hist(RFrdistr(RRspheric(balldim=2), n=1000), 50)
+hist(RFrdistr(RRloc(mu=3, RRspheric(balldim=2)), n=1000), 50)
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

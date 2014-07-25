@@ -91,7 +91,8 @@
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 x <- runif(100)
 f <- RFsimulate(model=RMexp(), x=x, n=3)
@@ -103,8 +104,10 @@ str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 
 plot(f, nmax=2)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 
 \keyword{classes}
+\keyword{print}
+\keyword{hplot}

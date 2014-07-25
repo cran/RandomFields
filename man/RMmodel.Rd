@@ -8,16 +8,7 @@
 \description{
 Summary of implemented covariance and variogram models% in \link{RFformula}
 }
-%\usage{
-%RMmodel(..., var, scale, Aniso, proj)
-%}
-%\arguments{
-% \item{...}{Parameter corresponding to specific covariance model}
-% \item{var}{Variance parameter}
-% \item{scale}{Scale parameter}
-% \item{Aniso}{Anisotropy matrix}
-% \item{proj}{Projection}
-%}
+
 \details{
  To generate a covariance or variogram model for use within
  \pkg{RandomFields}, calls of the form
@@ -26,14 +17,14 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  where _name_ has to be replaced by a valid model name,
  \itemize{
  \item
- \code{...} can take model specific parameters. %Parameter
+ \code{...} can take model specific arguments. %Argument
  %corresponding to specific covariance model
  \item
- \code{var} is the optional variance parameter \eqn{v},
+ \code{var} is the optional variance argument \eqn{v},
  \item
- \code{scale} the optional scale parameter \eqn{s},
+ \code{scale} the optional scale argument \eqn{s},
  \item
- \code{Aniso} the optional anisotropy matrix \eqn{A}, and
+ \code{Aniso} an optional anisotropy matrix \eqn{A} or given by \command{\link{RMangle}}, and
  \item
  \code{proj} is the optional projection vector which defines a
  diagonal matrix of zeros and ones and \code{proj} gives the
@@ -76,8 +67,8 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \bold{Basic Operations}
 
  \tabular{ll}{
- \command{\link{RMmult}} \tab product of covariance models \cr
- \command{\link{RMplus}} \tab sum of covariance models \cr
+ \command{\link{RMmult}}, \code{*} \tab product of covariance models \cr
+ \command{\link{RMplus}}, \code{+} \tab sum of covariance models or variograms\cr
  }
 
 
@@ -93,11 +84,14 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  %model\cr % gibts nur noch intern
  }
 
- \bold{Trend}
+ \bold{Others}
  \tabular{ll}{
- \command{\link{RMtrend}} \tab trend \cr
+   \command{\link{RMtrend}} \tab trend \cr
+   \command{\link{RMangle}} \tab defines a 2x2 anisotropy matrix by
+   rotation and stretch arguments.
  }
 
+  
  \bold{See \link{RMmodelsAdvanced} for many more, advanced models.
  }
 }
@@ -130,15 +124,30 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
  
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 \examples{
-RFoptions(seed=0)
+% library(RandomFields, lib="~/TMP")
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames(type="positive definite", domain="single variable",
                 isotropy="isotropic", operator=FALSE)
-\dontshow{RFoptions(seed=NA)}
+
+## an example of a simple model
+model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget
+plot(model)
+
+\dontshow{FinalizeExample()}
 }
 
-\seealso{\command{\link{RFformula}}, \command{\link{RMmodelsAdvanced}},
- \command{\link{RMmodelsAuxiliary}}
+\seealso{
+  \link{RC}, \link{RF},  \link{RP}, \link{RR},
+  \command{\link{RFcov}},
+  \command{\link{RFformula}},
+  \command{\link{RMmodelsAdvanced}},
+  \command{\link{RMmodelsAuxiliary}}
 }
+
+\keyword{spatial}
+\keyword{models}

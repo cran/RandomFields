@@ -31,10 +31,21 @@
 
 \section{Slots}{
  \describe{
- \item{\code{.RFparams}:}{list of 2; \code{.RFparams$n} is the number
- of repetitions of the random field contained in the \code{data} slot,
- \code{.RFparams$vdim} gives the dimension of the values of the random
- field, equals 1 in most cases}
+   \item{\code{.RFparams}:}{list of up to 5 elements;
+     \itemize{
+       \item{n} is the number
+       of repetitions of the random field contained in the \code{data} slot
+       \item \code{vdim} gives the dimension of the values of
+       the random 
+       field, equals 1 in most cases
+       \item \code{has.variance}
+       indicates whether information on the variance is available,
+       \item \code{coord.units} gives the names of the
+       units for the coordinates
+       \item \code{variab.units} gives the names of the
+     units for the variables
+   }
+}
  \item{\code{data}:}{object of class \code{\link[methods:data.frame-class]{data.frame}},
  containing attribute data } 
  \item{\code{grid}:}{object of class \code{\link[sp:GridTopology-class]{GridTopology}}.}
@@ -94,7 +105,8 @@
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 x <- seq(0,10,length=100)
 f <- RFsimulate(model=RMgauss(), x=x, n=3)
@@ -106,8 +118,10 @@ str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 
 plot(f, nmax=2)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 
 \keyword{classes}
+\keyword{print}
+\keyword{hplot}

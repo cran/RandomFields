@@ -10,7 +10,7 @@
 }
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de};
+ \url{http://ms.math.uni-mannheim.de/de/publications/software};
 }
 \references{
  \itemize{ 
@@ -27,7 +27,8 @@
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 
 \dontshow{\dontrun{
@@ -72,8 +73,7 @@ for (modelname in c("divfree", "curlfree")) {
  if (!eps) {
  cf <- RFcov(model=model, x=cbind(xx, 0))
  do.call(getOption("device"), list(height=5, width=5))
- par(mfcol=c(1,1))
- j <- 3
+  j <- 3
  plot(xx, cf[(j-1) * length(xx) + (1 : length(xx)), j])
  }
 
@@ -87,8 +87,7 @@ for (modelname in c("divfree", "curlfree")) {
  
  if (eps) {
  do.call(getOption("device"), list(height=5, width=5))
- par(mfcol=c(1,1)) 
- } else {
+  } else {
  do.call(getOption("device"), list(height=5, width=10))
  par(mfcol=c(1,2))
  }
@@ -122,7 +121,7 @@ par(mfcol=c(1,1))
 
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

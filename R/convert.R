@@ -28,8 +28,7 @@ rfSplitTrendAndCov <-
            remaining.name="cov") {
   ## splittet additives modell in trend-Teil und cov-Teil auf
 
-  
-   info <- .Call("SetAndGetModelInfo",
+    info <- .Call("SetAndGetModelInfo",
                  GetModelRegister("split"), list("Dummy", model),
                  as.integer(spatialdim),
                  FALSE,
@@ -101,7 +100,7 @@ StandardSimpleModel <- function(model, tsdim, aniso=TRUE, addnugget=TRUE, ...) {
  # userdefined <- GetParameterModelUser(model)
   
   vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE)
-  if (!is.numeric(vdim) || vdim > 1) return("model not univariate")
+  if (!is.numeric(vdim) || any(vdim > 1)) return("model not univariate")
   model <- GetModel(register=MODEL.USER, GETMODEL_DEL_NATSC) # , do.notreturnparam=TRUE)
   .C("DeleteKey", MODEL.USER)
 
@@ -169,8 +168,10 @@ PrepareModel2 <- function(model, ...) {
         message(paste("The '1' in the mixed model definition has been replaced by '", ZF_TREND[1], "(mean=", m[[i]]$mean, ")'.", sep=""))
       }
   }
-    
-  return(if (notplus) m[[2]] else m)
+
+  if (notplus) m <- m[[2]]
+  class(m) <- "RM_model"
+  return(m)
 
 #  if (class(model) != "formula") {
 #    if (is.list(model)) return(model)
@@ -268,7 +269,7 @@ PrepareModel <-  function(model, param, trend=NULL,
   missing.param <- missing(param) || is.null(param)
 
   if (full.model <- missing.param && is.null(model$param)) { ## full model
-    if (RFoptions()$warn$oldstyle)
+    if (RFoptions()$internal$warn_oldstyle)
       warning("the sequential list format is depreciated.")
     if (missing.model || (length(model)==0)) model <- list()
     else if (!is.list(model))
@@ -377,7 +378,7 @@ PrepareModel <-  function(model, param, trend=NULL,
 }
 
 
-seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
+seq2grid <- function(x, name, grid, warn_ambiguous, gridtolerance) {
   xx <- matrix(nrow=3, ncol=length(x))
   step0 <- rep(FALSE, length(x))
   gridnotgiven <- missing(grid) || length(grid) == 0
@@ -389,16 +390,18 @@ seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
     }
     step <- diff(x[[i]])
     if (step[1] == 0.0) {
-      ok <- step0[i] <- all(step == 0.0)
-    } else {      
+      
+      ok <- step0[i] <- all(step == 0.0)      
+    } else {
       ok <- max(abs(step / step[1] - 1.0)) <= gridtolerance
     }
 
     if (!ok) {
-      if ( gridnotgiven) return(FALSE)
-
-      Print(x[[i]][1:min(100, length(x[[i]]))], step[1:min(100,length(step))],#
-            range(diff(step[1:min(100,length(step))])))
+      if (gridnotgiven) return(FALSE)
+      if (!TRUE)
+        Print(i, x[[i]][1:min(100, length(x[[i]]))], #
+              step[1:min(100,length(step))],
+              range(diff(step[1:min(100,length(step))])))
       stop("Different grid distances detected, but the grid must ",
            "have equal distances in each direction -- if sure that ",
            "it is a grid, increase the value of 'gridtolerance' which equals ",
@@ -410,8 +413,8 @@ seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
     xx[,i] <- c(x[[i]][1], step[1], if (step0[i]) 1 else length(x[[i]]))
   }
 
-  if (gridnotgiven && warn.ambiguous && length(x) > 1) {
-    RFoptions(warn.ambiguous = FALSE)
+  if (FALSE && gridnotgiven && warn_ambiguous && length(x) > 1) {
+    RFoptions(internal.warn_ambiguous = FALSE)
     message("Ambiguous interpretation of coordinates. Better give 'grid=TRUE' explicitly. (This message appears only once per session.)")
   }
 
@@ -420,14 +423,38 @@ seq2grid <- function(x, name, grid, warn.ambiguous, gridtolerance) {
       if (gridnotgiven) return(FALSE)
       else stop("Within a grid, the coordinates must be distinguishable")
     } else {
-      if (gridnotgiven && warn.ambiguous) {
-        RFoptions(warn.ambiguous = FALSE)
+      if (gridnotgiven && warn_ambiguous) {
+        RFoptions(internal.warn_ambiguous = FALSE)
         warning("Interpretation as degenerated grid. Better give 'grid' explicitely. (This warning appears only once per session.)")
       }
     }
   }
 
   return(xx)
+}
+
+
+earth_coordinate_names<- function(names) {
+  n <- substr(tolower(names), 1, 6)
+  nc <- nchar(n)
+  lon <- lat <- integer(length(n))
+  for (i in 1:length(n)) {
+    lon <- substr("longit", 1, nc[i]) == n
+    lat <- substr("latitu", 1, nc[i]) == n
+  }
+  lonORlat <- lon | lat  
+  earth <- all(nc[lonORlat] >= 2) && sum(lon==1) && sum(lat == 1)
+  return(if (length(names)==2 | !earth) earth else which(lonORlat))
+}
+
+cartesian_coordinate_names <- function(names) {
+  n <- substr(tolower(names), 1, 1)
+  coords <-  c("T", "x", "y", "z")
+  Txyz <- outer(n, coords, "==")
+  cs <- colSums(Txyz)
+  if (any(cs > 1) || sum(cs[1:2]) == 0 || any(diff(cs[-1]) > 0))
+    return (integer(0))
+  return(which(cs > 0))
 }
 
 
@@ -439,10 +466,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   ## (one for arbitrarily given locations and one for grid points)
   
   RFopt <- RFoptions()
-  curunits <- RFopt$general$coord_units
-  newunits <-  RFopt$general$new_coord_units
- 
-  if (!missing(x) && is.raster(x)) x <- as(x, 'GridTopology')
+  curunits <- RFopt$coords$coord_units
+  newunits <-  RFopt$coords$new_coord_units
 
   if (!missing(distances) && length(distances) > 0) {
     stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
@@ -488,7 +513,14 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
            )
   }
 
+ 
   stopifnot(!missing(x))
+  if (is(x, "RFsp")) {
+    return(CheckXT(x=coordinates(x), y=y, z=z, T=T, grid=grid,
+                   distances=distances, spdim=spdim, length.data=length.data,
+                   y.ok=y.ok, printlevel=printlevel))
+  }    
+  if (is.raster(x)) x <- as(x, 'GridTopology')
   
  
   if ((missing(grid) || length(grid) == 0) && !missing(length.data)) {
@@ -537,10 +569,14 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     if (ncol(x)==1) x <- as.vector(x) else x <- as.matrix(x)
   }
   
-  stopifnot(all(unlist(lapply(as.list(x), FUN=function(li) is.numeric(li)))))
-  stopifnot(length(x) != 0) 
-  stopifnot(all(is.finite(x)), all(is.finite(y)), all(is.finite(z)))
-            
+  stopifnot(length(x) != 0)
+#  stopifnot(all(unlist(lapply(as.list(x), FUN=function(li) is.numeric(li))))) ## wann benoetigt???
+
+  stopifnot(is.numeric(x))# um RFsimulte(model, data) statt data=data abzufangen
+  
+  
+#  stopifnot(all(is.finite(x)), all(is.finite(y)), all(is.finite(z))) ; s.u. unlist
+    
   
   if (is.matrix(x)) {
     if (!is.numeric(x)) stop("x is not numeric.")
@@ -554,24 +590,30 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         stop("y does not match x (it must be a matrix)")
     }
     
-    if (RFopt$general$coordinate_system == "auto" && ncol(x) >= 2
+    if (RFopt$coords$coordinate_system == "auto" && ncol(x) >= 2
         && !is.null(n <- dimnames(x)[[2]])) {
-      n <- tolower(n)[1:2]
-      nc <- nchar(n)
-      if (all(nc >= 2 & substr(c("longitu", "latitu"), 1, nc) == n)) {
-        if (RFopt$warn$warn_coordinates)
-          message("\nEarth coordinates detected; current units are '",
-                  curunits[1],
-                  "'.\nChange options 'coordinate_system' and/or 'units' if ",
-                  "necessary.\n(This message appears only once per session.)\n")
-        curunits <- newunits <- RFopt$general$new_coord_units
+      if (earth_coordinate_names(n[1:2])) {       
+        cur <- curunits[1]
+        curunits <- newunits <- RFopt$coords$new_coord_units
+        curunits <- RFopt$coords$coord_units
         curunits[1:2] <- c("longitude", "latitude")
         if (newunits[1] == "") newunits[1] <- "km"
-        newunits[2:3] <- newunits[1]        
-        RFoptions(general.coordinate_system = "earth",
-                  general.coord_units = curunits,
-                  general.new_coord_units = newunits,
-                   warn.warn_coordinates=FALSE)
+        newunits[2:3] <- newunits[1]                
+        if (RFopt$internal$warn_coordinates)
+          message("\n\nNOTE: current units are ",
+                  if (cur=="") "not given and" else paste("'", cur, "', but"),
+                  " earth coordinates detected:\n",
+                  "earth coordinates will be transformed into units of '",
+                  newunits[1],
+                  "'.\nIn particular, the values of all scale parameters of ",
+                  "any model defined\nin R^3 (currently all models!) are ",
+                  "understood in units of '", newunits[1],
+                  "'.\nChange options 'coordinate_system' and/or 'units' if ",
+                  "necessary.\n(This message appears only once per session.)\n")
+        RFoptions(coords.coordinate_system = "earth",
+                  coords.coord_units = curunits,
+                  coords.new_coord_units = newunits,
+                  internal.warn_coordinates=FALSE)
 
        }
     }
@@ -592,17 +634,18 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                   > RFopt$general$gridtolerance))) {
       grid <- FALSE
     }
+
     if ((missing(grid) || length(grid) == 0) || !is.logical(grid)) {
       grid <- TRUE
-      if (spacedim > 1 && RFopt$warn$ambiguous) {
-        RFoptions(warn.ambiguous = FALSE)
+      if (spacedim > 1 && RFopt$internal$warn_ambiguous) {
+        RFoptions(internal.warn_ambiguous = FALSE)
         warning("Ambiguous interpretation of the coordinates. Better give the logical parameter 'grid=TRUE' explicitely. (This warning appears only once per session.)")
       }
     }
 
     if (grid && !is.GridTopology) {
       if (gridtriple <- len==3) {
-        if (printlevel >= PL.SUBIMPORPANT && RFopt$warn$oldstyle) {
+        if (printlevel >= PL.SUBIMPORPANT && RFopt$internal$warn_oldstyle) {
           message("x was interpreted as a gridtriple; the new gridtriple notation is:\n  1st row of x is interpreted as starting values of sequences,\n  2nd row as step,\n 3rd row as number of points (i.e. length),\n  in each of the ", ncol(x), " directions.")
         } 
       } else len <- rep(len, times=spacedim)   # Alex 8.10.2011
@@ -635,9 +678,11 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         newgrid <- max(abs(diff(dx))) < dx[1] * RFopt$general$gridtolerance
       }
       if ((missing(grid) || length(grid) == 0)) grid <- newgrid
-      else if (xor(newgrid, grid))
+      else if (xor(newgrid, grid) && RFopt$internal$warn_on_grid) {
+        RFoptions(internal.warn_on_grid = FALSE)
         message("coordinates", if (grid) " do not",
-                " seem to be on a grid, but grid =", grid)
+                " seem to be on a grid, but grid = ", grid)
+      }
     }
     len <- c(length(x), length(y), length(z))[1:spacedim]
     
@@ -672,11 +717,12 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         stop("the grids of x and y do not match ")        
     } else {     
       xx <- seq2grid(x, "x",  grid,
-                     RFopt$warn$ambiguous, RFopt$general$gridtolerance)
+                     RFopt$internal$warn_ambiguous, RFopt$general$gridtolerance)
   #    Print(xx, x, grid); ddd
       if (!is.null(y)) {
         yy <- seq2grid(y, "y", grid,
-                       RFopt$warn$ambiguous, RFopt$general$gridtolerance)
+                       RFopt$internal$warn_ambiguous,
+                       RFopt$general$gridtolerance)
         if (xor(is.logical(xx), is.logical(yy)) ||
             (!is.logical(xx) && !all(yy[3,] == xx[3,])))
           stop("the grids for x and y do not match")      

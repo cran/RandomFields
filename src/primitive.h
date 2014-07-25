@@ -77,6 +77,7 @@ int checkdampedcosine(cov_model *cov);
 /* De Wijsian */
 void dewijsian(double *x, cov_model *cov, double *v);
 void Ddewijsian(double *x, cov_model *cov, double *v);
+void DDdewijsian(double *x, cov_model *cov, double *v);
 void rangedewijsian(cov_model *cov, range_type* ra);
 int checkdewijsian(cov_model *cov);
 void Inversedewijsian(double *x, cov_model *cov, double *v); 
@@ -94,6 +95,7 @@ void TBM2exponential(double *x, cov_model *cov, double *v);
 void Dexponential(double *x, cov_model *cov, double *v);
 void DDexponential(double *x, cov_model *cov, double *v);
 void Inverseexponential(double *x, cov_model *cov, double *v);
+void nonstatLogInvExp(double *x, cov_model *cov, double *left, double *right);
 int initexponential(cov_model *cov, storage *s);
 void spectralexponential(cov_model *cov,storage *s, double *e);
 int checkexponential(cov_model *cov);
@@ -120,6 +122,7 @@ void rangefractalBrownian(cov_model *cov, range_type* ra);
 void ieinitBrownian(cov_model *cov, localinfotype *li);
 void InversefractalBrownian(double *x, cov_model *cov, double *v);
 int checkfractalBrownian(cov_model *cov);
+int initfractalBrownian(cov_model *cov, storage *s); 
 
 
 
@@ -145,6 +148,8 @@ void spectralGauss(cov_model *cov, storage *s, double *e);
 void DrawMixGauss(cov_model *cov, double *random);
 double LogMixDensGauss(double *x, double logV, cov_model *cov);
 void InverseGauss(double *x, cov_model *cov, double *v);
+void nonstatLogInvGauss(double *x, cov_model VARIABLE_IS_NOT_USED *cov, 
+			double *left, double *right);
 int struct_Gauss(cov_model *cov, cov_model **);
 int initGauss(cov_model *cov, storage *s);
 void do_Gauss(cov_model *cov, storage *s) ; 
@@ -181,6 +186,17 @@ void rangegeneralisedCauchy(cov_model *cov, range_type* ra);
 void coinitgenCauchy(cov_model *cov, localinfotype *li);
 void ieinitgenCauchy(cov_model *cov, localinfotype *li);
 void InversegeneralisedCauchy(double *x, cov_model *cov, double *v);
+
+void bcw(double *x, cov_model *cov, double *v);
+//void logbcw(double *x, cov_model *cov, double *v, double *sign);
+void Dbcw(double *x, cov_model *cov, double *v);
+void DDbcw(double *x, cov_model *cov, double *v);
+int checkbcw(cov_model *cov);
+bool Typebcw(Types required, cov_model *cov);
+void rangebcw(cov_model *cov, range_type* ra);
+void coinitbcw(cov_model *cov, localinfotype *li);
+void ieinitbcw(cov_model *cov, localinfotype *li);
+void Inversebcw(double *x, cov_model *cov, double *v);
 
 
 /* gengneiting */
@@ -307,6 +323,7 @@ void rangestable(cov_model *cov, range_type* ra);
 void coinitstable(cov_model *cov, localinfotype *li);
 void ieinitstable(cov_model *cov, localinfotype *li);
 void Inversestable(double *x, cov_model *cov, double *v);
+void nonstatLogInversestable(double *x, cov_model *cov, double *L, double *R);
 
 
 /* SPACEISOTROPIC stable model for testing purposes only */

@@ -10,8 +10,8 @@ where \eqn{t_{i,j}:=t_{i}-t_{j}}{t_{i,j}:=t_{i}-t_{j}}, and where \eqn{N(r)}{N(r
 
 }
 \usage{
-RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
- bin, phi, theta, deltaT, distances, ...)
+RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
+ bin, phi, theta, deltaT, distances, vdim, ...)
 }
 \arguments{
  \item{x}{matrix of coordinates, or vector of x coordinates, or object
@@ -35,7 +35,8 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
  \item{T}{optional vector of time coordinates, 
  \code{T} must always be an equidistant vector or given in a
  gridtriple format (see \code{grid}); for each component
- of \code{T}, the random field is simulated at all location points
+ of \code{T}, the random field is simulated at all location points;
+ the argument \code{T} is in an experimental stage. % to do
  }
  \item{grid}{logical; determines whether the vectors \code{x},
  \code{y}, and \code{z} or the columns of \code{x} should be
@@ -50,8 +51,6 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
  \command{\link[=RFsp-class]{RFsp}};
  
  } 
- \item{data2}{realisations of random field Y; If not specified, then
- data2=data which gives the variogram} 
  \item{bin}{a vector giving the borders of the bins; If not specified
  an array describing the empirical (pseudo-)(cross-) variogram 
  in every direction is returned.}
@@ -70,17 +69,23 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
  \code{dim} must be given and \code{x}, \code{y}, \code{z} and
  \code{T} must be missing or \code{NULL}. 
  }
- \item{...}{further options and control parameters for the simulation
+ \item{vdim}{the number of variables of a multivariate data set.   
+   If not given and \code{data} is an \code{RFsp} object
+   created by \pkg{RandomFields}, the information there is
+   taken from there. Otherwise \code{vdim} is assumed to be one.
+
+   NOTE: still the argument \code{vdim} is an experimental stage. %to do
+ }
+ \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}.}
 }
 \details{ \command{\link{RFempiricalvariogram}} computes the empirical
- cross-variogram for given realisations of two random fields (X= data,
- Y= data2). If data2 is missing the variogram of X will be calucalted
- (Y=X). 
+ cross-variogram for given (multivariate) spatial data. 
 
  
- The spatial coordinates x,y,z should be vectors. For random fields of
- spatial dimension d > 3 write all vectors as colums of matrix x. In
+ The spatial coordinates \code{x}, \code{y}, \code{z}
+   should be vectors. For random fields of
+ spatial dimension \eqn{d > 3} write all vectors as colums of matrix x. In
  this case do neither use y, nor z and write the colums in
  \code{gridtriple} notation.
 
@@ -90,7 +95,7 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, data2, grid,
  data (see \command{\link{RFoptions}}.)
  
  It is also possible to use \command{\link{RFempiricalvariogram}} to calulate
- the pseudovariogram(see \command{\link{RFoptions}}).
+ the pseudovariogram (see \command{\link{RFoptions}}).
 
 }
 \value{
@@ -115,7 +120,7 @@ Johannes Martini, \email{jmartin2@gwdg.de}
 \url{http://stochastik.math.uni-goettingen.de}
 
 Martin Schlather, \email{schlather@math.uni-mannheim.de}
-\url{http://ms.math.uni-mannheim.de}
+\url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
  
 \seealso{
@@ -126,27 +131,55 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+n <- 1 ## use n <- 2 for better results
+
+## isotropic model
 model <- RMexp()
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-z <- RFsimulate(model, x=x)
+z <- RFsimulate(model, x=x, n=n)
 emp.vario <- RFempiricalvariogram(data=z)
 plot(emp.vario, model=model)
 
+
+## anisotropic model
 model <- RMexp(Aniso=cbind(c(2,1), c(1,1)))
 x <- seq(0, 10, if (interactive()) 0.05 else 1)
-z <- RFsimulate(x=x, y=x, model=model)
+z <- RFsimulate(model, x=x, y=x, n=n)
 emp.vario <- RFempiricalvariogram(data=z, phi=4)
 plot(emp.vario, model=model)
 
+
+## space-time model
 model <- RMexp()
 x <- seq(0, 10, if (interactive()) 0.05 else 1)
 T <- c(0, if (interactive()) 0.1 else 1, if (interactive()) 100 else 10)
-z <- RFsimulate(x=x, T=T, model=model)
+z <- RFsimulate(x=x, T=T, model=model, n=n)
 emp.vario <- RFempiricalvariogram(data=z, deltaT=c(10, 1))
 plot(emp.vario, model=model, nmax.T=3)
 
-\dontshow{RFoptions(seed=NA)}
+
+## multivariate model
+model <- RMbiwm(nudiag=c(1, 2), nured=1, rhored=1, cdiag=c(1, 5), 
+                s=c(1, 1, 2))
+x <- seq(0, 20, if (interactive()) 0.1 else 2)
+z <- RFsimulate(model, x=x, y=x, n=n)
+emp.vario <- RFempiricalvariogram(data=z)
+plot(emp.vario, model=model)
+
+
+## multivariate and anisotropic model
+model <- RMbiwm(A=matrix(c(1,1,1,2), nc=2),
+                nudiag=c(0.5,2), s=c(3, 1, 2), c=c(1, 0, 1))
+x <- seq(0, 20, if (interactive()) 0.1 else 2)
+data <- RFsimulate(model, x, x, n=n)
+ev <- RFempiricalvariogram(data=data, phi=4)
+plot(ev, model=model, boundaries=FALSE)
+
+
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

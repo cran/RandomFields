@@ -24,12 +24,13 @@ RPpoisson(phi, intensity)
 
  
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 # example 1
 x <- seq(0,25, if (interactive()) 0.02 else 5)
@@ -39,8 +40,6 @@ plot(z)
 par(mfcol=c(2,1))
 plot(z@data[,1:min(length(z@data), 1000)], type="l")
 hist(z@data[,1], breaks=0.5 + (-1 : max(z@data)))
-par(mfcol=c(1,1))
-
 
 
 # example 2
@@ -50,7 +49,7 @@ z <- RFsimulate(model=RPpoisson(RMtruncsupport(radius=5, model)),
                  x=x, mpp.intensity = 100)
 plot(z)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

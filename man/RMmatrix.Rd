@@ -13,7 +13,7 @@ RMmatrix(phi, M, var, scale, Aniso, proj)
 \arguments{
  \item{phi}{a k-variate covariance \command{\link{RMmodel}}.}
  \item{M}{a k times k matrix}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -41,7 +41,8 @@ RMmatrix(phi, M, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 # bivariate Linear Model of Coregionalisation
 model <- RMmatrix(M = c(0.9, 0.43), RMwhittle(nu = 0.3)) + 
          RMmatrix(M = c(0.6, 0.8), RMwhittle(nu = 2))
@@ -49,6 +50,6 @@ x <- y <- seq(-10, 10, 0.2)
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }

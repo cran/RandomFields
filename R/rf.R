@@ -32,6 +32,37 @@
 }
  
 
+
+xRFloglikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid, data,
+                            distances, dim, likelihood, ...) {
+  ## note: * if x is a matrix, the points are expected to be given row-wise
+  ##       * if not anisotropic Covariance expects distances as values of x
+  ##
+  ## here, in contrast to Covariance, nonstatCovMatrix needs only x
+  relax <- isFormulaModel(model)
+  RFoptOld <-
+    if (missing(likelihood)) internal.rfoptions(..., RELAX=relax)
+    else internal.rfoptions(likelihood=likelihood, ..., RELAX=relax)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  RFopt <- RFoptOld[[2]]
+
+  Reg <- as.integer(MODEL.USER)
+  all <- rfPrepare(model=model, x=x, y=y, z=z, T=T,
+                   distances=distances, grid=grid, data=data,
+                   reg = Reg, fillall = FALSE, names.only=FALSE, ...)
+  
+  model <- list("loglikelihood",  all$model, data=double(all$data),
+                len=length(all$data))
+
+  #Print(all, model)
+
+  rfInit(model=model, x=as.double(t(all$given)),
+         y=NULL, z=NULL, T=all$T, grid=all$grid,
+         reg = MODEL.USER, dosimulate=FALSE)
+  
+  return(.Call("EvaluateModel", double(0),  Reg, PACKAGE="RandomFields"))
+}
+
 RFdistr <- function(model, x, q, p, n, dim=1, ...) {
   ## note: * if x is a matrix, the points are expected to be given row-wise
   ##       * if not anisotropic Covariance expects distances as values of x
@@ -54,10 +85,11 @@ RFdistr <- function(model, x, q, p, n, dim=1, ...) {
     model$n <- n
   }
 
-  rfInitSimulation(model=model, x=matrix(0, ncol=dim, nrow=1),
-                   y=NULL, z=NULL, T=NULL, grid=TRUE,
-                   reg = MODEL.USER,
-                   dosimulate=FALSE)
+#  Print(model)
+
+  rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
+         y=NULL, z=NULL, T=NULL, grid=TRUE, reg = MODEL.USER,  dosimulate=FALSE)
+
   return(.Call("EvaluateModel", double(0), as.integer(MODEL.USER),
                   PACKAGE="RandomFields"))
 }
@@ -83,9 +115,9 @@ RFrdistr <- function(model, n, dim=1,...) {
 
 RFcov <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
                   distances, dim, 
-#                  dim = ifelse(is.matrix(x), ncol(x), 1),
-                   fctcall=c("Cov", "CovMatrix", "Variogram",
-                           "Pseudovariogram", "Fctn"), ...) {
+                  ##                  dim = ifelse(is.matrix(x), ncol(x), 1),
+                  fctcall=c("Cov", "CovMatrix", "Variogram",
+                    "Pseudovariogram", "Fctn"), ...) {
 
   ## note: * if x is a matrix, the points are expected to be given row-wise
   ##       * if not anisotropic Covariance expects distances as values of x
@@ -99,10 +131,8 @@ RFcov <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
   
   p <- list(fctcall, PrepareModel2(model));
   
-  rfInitSimulation(model=p,
-                   x=x, y=y, z=z, T=T, grid=grid,
-                   distances=distances, spdim=dim, reg = MODEL.USER,
-                   dosimulate=FALSE)
+  rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
+         distances=distances, spdim=dim, reg = MODEL.USER, dosimulate=FALSE)
 
   result <- .Call("EvaluateModel", double(0), as.integer(MODEL.USER),
                   PACKAGE="RandomFields")
@@ -130,7 +160,7 @@ RFfctn <- function(...) {
 ######################################################################
 
 
-prepare4RFspDataFrame <- function(model.orig=NULL,
+prepare4RFspDataFrame <- function(model=NULL,
                                   info, x, y, z, T, grid, data, RFopt) {
   
   vdim <- info$vdim
@@ -138,10 +168,11 @@ prepare4RFspDataFrame <- function(model.orig=NULL,
   
   ## names 
   if (missing(data))
-    names <- rfPrepareNames(model=model.orig, locinfo=locinfo)
+    names <- rfPrepareNames(model=model, locinfo=locinfo)
   else
-    names <- rfPrepareData(model.orig, x, y, z, T, grid, data,
-                           cathegories=NULL, names.only=TRUE)
+    names <- rfPrepare(model=model, x=x, y=y, z=z, T=T,
+                       grid=grid, data=data,
+                       names.only=TRUE)
    
   if (!is.null(names$variab.names)) {
     if (vdim != length(names$variab.names))
@@ -163,19 +194,19 @@ prepare4RFspDataFrame <- function(model.orig=NULL,
     gridTopology <- NULL
     
     # cbind of locations from x-matrix and T (if given)
-    coords <- apply(t(locinfo$x), 2, rep,
-                    times=(locinfo$totpts/locinfo$spatialtotpts))
+    coords <- as.matrix(apply(t(locinfo$x), 2, rep,
+                              times=(locinfo$totpts/locinfo$spatialtotpts)))
     if (locinfo$Time) {
       T <- locinfo$T
-      coord <- cbind(coord, rep(seq(T[1], by=T[2], len=T[3]),
+      coords <- cbind(coords, rep(seq(T[1], by=T[2], len=T[3]),
                                 each=locinfo$spatialtotpts))
     }
-    colnames(coords) <- coord.names.incl.T
+    if (is.matrix(coords)) colnames(coords) <- coord.names.incl.T
   }
 
 #  Print(RFopt)
-  if (RFopt$general$printlevel>0 && RFopt$warn$newstyle) {
-    RFoptions(warn.newstyle = FALSE)
+  if (RFopt$general$printlevel>0 && RFopt$internal$warn_newstyle) {
+    RFoptions(internal.warn_newstyle = FALSE)
     message("New output format of RFsimulate: object of class 'RFsp';\n",
             "for conventional array format use 'RFoptions(spConform=FALSE)'.")
   }
@@ -192,7 +223,7 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   if (RFopt$gauss$paired && (n %% 2 != 0))
     stop("if paired, then n must be an even number")
 
-  info <- RFgetModelInfo(RFopt$general$register)
+  info <- RFgetModelInfo(RFopt$registers$register)
 
   # Print(info); str(info$loc); xxx
 
@@ -200,37 +231,48 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   vdim <- info$vdim
   total <- info$loc$totpts
   if (is.null(total) || total <= 0)
-    stop("register ", RFopt$general$register, " does not look initialized")
+    stop("register ", RFopt$registers$register, " does not look initialized")
  
   error <- integer(1)
 #  result <- double(total * n * vdim)
 
  # Print(info,  total, vdim, len, info$simu$distr, n);  xxx
 
+ # Print("EvaluateModel", as.double(n), as.integer(reg), #userdefined,
+ #                 PACKAGE="RandomFields")
+
   result <- .Call("EvaluateModel", as.double(n), as.integer(reg), #userdefined,
-                  PACKAGE="RandomFields", DUP=FALSE)
+                  PACKAGE="RandomFields")
   
   if (!spConform) return(result)
   
-  prep <- prepare4RFspDataFrame(model.orig=NULL, info=info, RFopt=RFopt)
+  prep <- prepare4RFspDataFrame(model=NULL, info=info, RFopt=RFopt)
   attributes(result)$variab.names <- prep$names$variab.names
   
   res2 <- conventional2RFspDataFrame(result, coords=prep$coords,
                                      gridTopology=prep$gridTopology,
-                                     n=n, vdim=prep$vdim)
+                                     n=n, vdim=prep$vdim,
+                                     vdim_close_together=RFopt$general$vdim_close_together)
   return(res2)
 }
 
 
 
-rfInitSimulation <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
-                             distances, spdim,
-                             reg, dosimulate=TRUE) {
+rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
+                   distances, spdim, reg, dosimulate=TRUE) {
+  
   stopifnot(xor(missing(x) || length(x)==0,
                 missing(distances) || length(distances)==0))
 
   RFopt <- RFoptions()
-  if (!is.na(RFopt$general$seed)) set.seed(RFopt$general$seed)
+  if (!is.na(RFopt$general$seed)) {
+    if (dosimulate && RFopt$general$printlevel >= PL.IMPORPANT) {
+       message("NOTE: simulation is performed with fixed random seed ",
+               RFopt$general$seed,
+              ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
+    }
+    set.seed(RFopt$general$seed)
+  }
   
   
   neu <- CheckXT(x, y, z, T, grid=grid, distances=distances, spdim=spdim,
@@ -238,12 +280,12 @@ rfInitSimulation <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
 
   ts.xdim <- as.integer(ncol(neu$x) + neu$Time)
 
-  if (missing(reg)) stop("rfInitSimulation may not be called by the user")
+  if (missing(reg)) stop("'rfInit' may not be called by the user")
  # userdefined <- GetParameterModelUser(model)
 
-#  Print(userdefined)
 
-  
+  ##  Print(userdefined)
+
   vdim <- .Call("Init",
                 as.integer(reg),
                 model, 
@@ -258,12 +300,60 @@ rfInitSimulation <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
                 as.logical(neu$Time),
                 NAOK=TRUE,
                 PACKAGE="RandomFields")
-
-  
-  
 }
 
 
+FinishImputing <- function(data, res, n, spConform) {
+  
+  #Print(data, res, tail(res$simu), spConform);
+  if (is(data, "RFsp")) {
+    if (spConform) {
+      rows <- nrow(data@data)
+      simu <- res$simu
+      sum.idx <- start <- 0
+      for (i in 1:length(data@data)) {          
+        idx <- which(res$data.na > start & res$data.na <= start + rows)
+        len.idx <- length(idx)
+        data@data[res$data.na[idx] - start, i] <- simu[sum.idx + 1:len.idx]
+        start <- start + rows
+        sum.idx <- sum.idx + len.idx
+      }
+      
+      # Print(data) 
+      return(data)
+    } else {
+      values <- as.matrix(data@data)
+      values[is.na(values)] <- res$simu
+      
+      #print(cbind(coordinates(data), values))
+      return(cbind(coordinates(data), values))
+    }
+  } else { ## not RFsp
+    #Print("for testing")
+    coords <- res$fullgiven
+    ##  coords <- res$x
+    colnames(coords) <- res$coord.names
+    
+    values <- data[, res$data.col]
+    values[is.na(values)] <- res$simu
+
+    #Print(values)
+    
+    if (!spConform)  return(cbind(coords, values))
+    
+    tmp.res <- conventional2RFspDataFrame(data=values, coords=coords,
+                                          gridTopology=NULL,
+                                          n=n, vdim=res$vdim,
+                                          vdim_close_together=FALSE)
+    res <- tmp.res@data         
+    if (is(tmp.res, "RFspatialPointsDataFrame"))
+      try(tmp.res <- as(tmp.res, "RFspatialGridDataFrame"), silent=TRUE)
+    if (is(tmp.res, "RFpointsDataFrame"))
+      try(tmp.res <- as(tmp.res, "RFgridDataFrame"), silent=TRUE)
+    
+    return(tmp.res)
+  }
+}
 
     
 RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
@@ -284,8 +374,9 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
   RFopt <- RFoptOld[[2]]
   
   cond.simu <- !missing(data) && !is.null(data)  
-  reg <- if (cond.simu) RFopt$general$condregister else RFopt$general$register
-  
+  reg <-
+    if (cond.simu) RFopt$registers$condregister else RFopt$registers$register
+
   ### simulate from stored register ########################################
   mc <- as.list(match.call(expand.dots=FALSE))
   if (length(mc)==1 ||
@@ -309,6 +400,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
   err.model <-  if (missing(err.model)) NULL else PrepareModel2(err.model, ...)
  
   ### conditional simulation ###############################################
+  #Print(cond.simu)
   
   if (cond.simu) {
     #Print(RFoptions()$general)
@@ -333,17 +425,12 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
       x.tmp <- x
     }
 
-    p <- list("Simulate", model);
-    rfInitSimulation(model=p, x=x.tmp, y=y, z=z, T=T, grid=grid,
-                     distances=distances, spdim=dim,
-                     reg=reg, dosimulate=-1)
-
+    rfInit(model=list("Simulate", checkonly=TRUE, model),
+           x=x.tmp, y=y, z=z, T=T, grid=grid, distances=distances, spdim=dim,
+           reg=reg, dosimulate=-1)
     info <- RFgetModelInfo(reg)
     grid <- info$loc$grid
 
-#    xxxx
-#    Print(info$type, info)
-    
     res <- switch(info$role,
                   Gauss = 
                   rfCondGauss(model=model.orig, x=x, y=y, z=z, T=T,
@@ -361,63 +448,41 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
                   )
 
     ## if (missing.x==TRUE), result can already be returned here
-    ## but rfPrepareData has to be called again to get the full vector
+    ## but rfPrepare has to be called again to get the full vector
     ## of given locations and the given data
     if (missing.x) {
-      all <- rfPrepareData(model.orig=model.orig,
-                           x, y, z, T, grid, data, cathegories=NULL)
+
+#      Print(data=data, res=res, n=n,
+#                            spConform=RFopt$general$spConform)
       
-      coords <- all$x 
-      colnames(coords) <- all$coord.names
-      
-      tmp.res <- conventional2RFspDataFrame(data=res, coords=coords,
-                                            gridTopology=NULL,
-                                            n=n, vdim=info$vdim)
-      res <- tmp.res@data
-      tmp.res@coords <- all$fullgiven
-      tmp.res@data <- as.data.frame(all$fulldata)
-      tmp.res@data[all$data.na, ] <- res
-      
-      if (is(tmp.res, "RFspatialPointsDataFrame"))
-        try(tmp.res <- as(tmp.res, "RFspatialGridDataFrame"), silent=TRUE)
-      if (is(tmp.res, "RFpointsDataFrame"))
-        try(tmp.res <- as(tmp.res, "RFgridDataFrame"), silent=TRUE)
-      
-      return(if (RFopt$general$spConform) tmp.res else tmp.res@data)
+      return(FinishImputing(data=data, res=res, n=n,
+                            spConform=RFopt$general$spConform))      
+    } else {
+      res <- res$simu
+    ## end of cond simu
     }
-    ## end of cond simu 
 
     
-  } else { 
-
-    ## unconditional simulation #############################################
+  } else { ## unconditional simulation ####
     if(!is.null(err.model))
       warning("model for measurement error is ignored in unconditional simulation")
-    stat <- (!missing(distances) && length(distances) > 0) || !is.matrix(x) || is.null(y)
-   
-    p <- list("Simulate", model);
- 
-    #Print(unix.time(
-    rfInitSimulation(model=p, x=x, y=y, z=z, T=T, grid=grid,
-                     distances=distances, spdim=dim, 
-                     reg=reg)#)) #$userdefined
-    info <- RFgetModelInfo(reg)
-  
-    #Print(info$simu)
-    #
-    #  Print(info);xxxxxx
 
-    ## perform simulation ###################################################
-    #Print(unix.time(
+    rfInit(model=list("Simulate",
+             setseed=eval(parse(text="quote(set.seed(seed=seed))")),
+             env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
+           grid=grid, distances=distances, spdim=dim, reg=reg)
+
     if (n < 1) return(NULL)
-    res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)#))
+    
+    res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
+    info <- RFgetModelInfo(reg)
+
   } # end of uncond simu
 
 
   ## output: either conventional or RFsp   #################################
 
-  if (!RFopt$general$spConform)
-    return(res)
+  if (!RFopt$general$spConform) return(res)
 
   
   prep <- prepare4RFspDataFrame(model.orig, info, x, y, z, T,
@@ -425,12 +490,15 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
   attributes(res)$variab.names <- prep$names$variab.names
  
 #  Print(res, coords=prep$coords,
-#                                     gridTopology=prep$gridTopology,
-#                                     n=n, vdim=prep$vdim)
+#       gridTopology=prep$gridTopology,
+#       n=n, vdim=prep$vdim)
 
-  res2 <- conventional2RFspDataFrame(res, coords=prep$coords,
-                                     gridTopology=prep$gridTopology,
-                                     n=n, vdim=prep$vdim)
+   res2 <- conventional2RFspDataFrame(data=res, coords=prep$coords,
+                                      gridTopology=prep$gridTopology,
+                                      n=n, vdim=prep$vdim,
+                                      vdim_close_together=
+                                      RFopt$general$vdim_close_together)
+
       
   if (is.raster(x)) {
     res2 <- raster::raster(res2)
@@ -447,8 +515,9 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
 ### rausgenommen, da bei jeglicher Aenderung in Methods-RFsp.R ich
 ### komplett neu installieren muss. Bei rf.R muss ich es nicht.
 conventional2RFspDataFrame <-
-  function(data, coords=NULL, gridTopology=NULL, n=1, vdim=1)
-{
+  function(data, coords=NULL, gridTopology=NULL, n=1, vdim=1,
+           vdim_close_together) {
+  
   
   if (!xor(is.null(coords), is.null(gridTopology)))
     stop("one and only one of 'coords' and 'gridTopology' must be NULL")
@@ -472,15 +541,15 @@ conventional2RFspDataFrame <-
     if (is.null(dim(data))) {
       stopifnot(1 == timespacedim + (n > 1) + (vdim > 1))
     } else {
+     
       if (length(dim(data)) != timespacedim + (n>1) + (vdim > 1)){          
         stop(paste(length(dim(data)),
                    "= length(dim(data)) != timespacedim + (n>1) + (vdim>1) =",
                    timespacedim, '+', (n>1), '+', (vdim > 1)))
       }
     } 
-    
- 
-    if (vdim>1){
+        
+    if (vdim>1 && vdim_close_together){
       ## new order of dimensions: space-time-dims, vdim, n
       perm <- c( 1+(1:timespacedim), 1, if (n>1) timespacedim+2 else NULL)
       data <- aperm(data, perm=perm)
@@ -491,13 +560,11 @@ conventional2RFspDataFrame <-
       data <- reflection(data, 2, drop=FALSE)
       call <- "RFspatialGridDataFrame"
     }
-    
-    
   }
   
   ## coords case
   if (is.null(gridTopology)){
-    if (vdim>1){
+    if (vdim>1 && vdim_close_together){
       n.dims <- length(dim(data))
       perm <- c(2:(n.dims - (n>1)), 1, if (n>1) n.dims else NULL)
       data <- aperm(data, perm=perm)
@@ -506,6 +573,8 @@ conventional2RFspDataFrame <-
       call <- "RFpointsDataFrame"
     else call <- "RFspatialPointsDataFrame"
   }
+
+  
   
   ## in both cases:
   dim(data) <- NULL
@@ -522,18 +591,19 @@ conventional2RFspDataFrame <-
     else names(data) <- NULL
   
   ##  Print(variab.names, names(data), coords)
-  
+
   if (is.null(coords)){
     do.call(call, args=list(data=data, grid=grid,
                     RFparams=list(n=n, vdim=vdim)))
   } else {
-    do.call(call, args=list(data=data, coords=coords,
+    #Print(call, args=list(data=data, coords=coords,RFparams=list(n=n, vdim=vdim)))
+     do.call(call, args=list(data=data, coords=coords,
                     RFparams=list(n=n, vdim=vdim)))
   }
 }
 
 
-list2RMmodelExt <- function(x, isRFsp=FALSE,
+list2RMmodelFit <- function(x, isRFsp=FALSE,
                             coords, gridTopology, data.RFparams) {
   stopifnot(is.list(x),
             all(c("model", "trend", "ml.value", "residuals") %in% names(x)))
@@ -557,7 +627,8 @@ list2RMmodelExt <- function(x, isRFsp=FALSE,
                                              coords=co,
                                              gridTopology=gT,
                                              n=data.RFparams[[i]]$n,
-                                             vdim=data.RFparams[[i]]$vdim)
+                                             vdim=data.RFparams[[i]]$vdim,
+                                             vdim_close_together=FALSE)
           }
         }
       }
@@ -570,9 +641,14 @@ list2RMmodelExt <- function(x, isRFsp=FALSE,
   return(new(ZF_MODELEXT,
              list2RMmodel(x$model),
              trend = list2RMmodel(x$trend),
+             variab = x$variab,
+             param = x$param,
+             covariab = x$covariab,
              likelihood = x$ml.value,
-             AICc = x$aicc,
-             residuals = x$residuals)) 
+             AIC = x$AIC,
+             AICc = x$AICc,
+             BIC = x$BIC,
+             residuals = x$residuals))
 }
   
 

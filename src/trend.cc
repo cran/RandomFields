@@ -72,10 +72,11 @@ void mixed(double *x, cov_model *cov, double *v) {
   int i, err, // Xnrow, 
     //    err=NOERROR,
     element = P0INT(MIXED_ELMNT),
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     vdimsq = vdim * vdim;
-  
-  error("mixed not programmed yet");
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+
+  NotProgrammedYet("");
 
  if (cov->nsub == 0) {
     for (i=0; i<vdimsq; i++) v[i] = 0.0;
@@ -93,7 +94,7 @@ void mixed(double *x, cov_model *cov, double *v) {
 
   // PMI(cov->calling);
   // crash(cov);
-  assert(false); // hier irgendwo stehen geblieben
+  NotProgrammedYet("");  // hier irgendwo stehen geblieben
 
   if (cov->q[MIXED_CONSTANT]) {
     // Xu , u ~ N(0, C)
@@ -132,7 +133,7 @@ void mixed_nonstat(double *x, double *y, cov_model *cov, double *v){
   int 
     element = P0INT(MIXED_ELMNT);
 
-  error("mixed_constant not programmed yet");
+  NotProgrammedYet("");
   
   if (element < 0 || element >= cov->nrow[MIXED_X]) { 
     // relax element <0 ??
@@ -290,7 +291,7 @@ int checkmixed(cov_model *cov) {
   for (i=0; i<nkappa; i++) // NEVER; cf kriging.R, for instance
     if (cov->kappasub[i] != NULL) SERR("parameters may not be random")
 
-  cov->vdim=1; //falls kein submodel vorhanden (Marco)
+  cov->vdim2[0] = cov->vdim2[1] = 1; //falls kein submodel vorhanden (Marco)
   cov->maxdim=INFDIM;
   cov->matrix_indep_of_x = true;
 
@@ -339,7 +340,7 @@ int checkmixed(cov_model *cov) {
     setbackward(cov, next);
   }
 
-  if (cov->vdim > 1) 
+  if (cov->vdim2[0] > 1) 
     SERR("multivariate version of mixed not programmed yet");
 
   if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_DIM))
@@ -398,7 +399,7 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     Cdim = -1, 
     list_element=0,
     err = NOERROR,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     dim = coord!=NULL ? cov->ncol[MIXED_COORD] : P0INT(MIXED_DIM),
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
@@ -406,6 +407,7 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
   listoftype *X = PLIST(MIXED_X);
   bool distTF;
 
+  assert(cov->vdim2[0] == cov->vdim2[1]);
 
   return ERRORFAILED; // muss in zerlegt werden in init und struct
   // und unten struct aufrufen richtig praeparieren.
@@ -427,7 +429,8 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
   }  
   s = cov->Smixed;
   MIXED_NULL(s);
-  assert(false);
+
+  NotProgrammedYet("");
 
   if (s->Xb != NULL) free(s->Xb);
   if (cov->ncol[MIXED_BETA] > 0) { // b is given
@@ -444,7 +447,7 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
 
   } else { // submodel is given
 
-    assert(false) ; //if (cov->q[MIXED_CONSTANT]) error("not 'constant'").
+    NotProgrammedYet(""); //if (cov->q[MIXED_CONSTANT]) error("not 'constant'").
 
     cov_model *sub, *next = cov->sub[0];
     
@@ -484,7 +487,7 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     if ((err = INIT(cov->key, 0, cov->stor)) != NOERROR) goto ErrorHandling;
    
     int Xnrow, Xncol;
-    Xnrow = Xncol = Cn * sub->vdim;
+    Xnrow = Xncol = Cn * sub->vdim2[0];
     if (loc->i_row==0 && loc->i_col==0) {
       if (s->mixedcov != NULL) free(s->mixedcov);   
       s->mixedcov = (double*) MALLOC(sizeof(double) * Xnrow * Xnrow);
@@ -496,10 +499,10 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
 
   } // end of submodel
  
-  cov->initialised = true;
   FieldReturn(cov);
 
  ErrorHandling: 
+  cov->initialised = err == NOERROR;
   return err;
 }
 
@@ -511,10 +514,11 @@ void domixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S){
   double *res  = cov->rf;
   int i,
     list_element=0,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
- 
+   assert(cov->vdim2[0] == cov->vdim2[1]);
+
   listoftype 
     *X = PLIST(MIXED_X);
 
@@ -562,14 +566,16 @@ void trend(double  VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
   // nein: model kann auch nur aus Trend bestehen!
 
   int i,
-    vSq = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vSq = vdim * vdim;
   for (i=0; i<vSq; i++) v[i]=0.0;
   //print("trend %d %f\n", vSq, *v);
 }
 
 void trend_nonstat(double  VARIABLE_IS_NOT_USED *x, double  VARIABLE_IS_NOT_USED *y, cov_model *cov, double *v){
   int i,
-    vSq = cov->vdim * cov->vdim;
+    vdim = cov->vdim2[0],
+    vSq = vdim * vdim;
  
   if (cov->role == ROLE_COV)  for (i=0; i<vSq; i++) v[i]=0.0;
 
@@ -635,8 +641,7 @@ int checktrend(cov_model *cov){
   //    || cov->ncol[TREND_PARAM_FCT] > 0)
   //  return(ERRORNOTPROGRAMMED);
   double *mu = P(TREND_MEAN),
-    *plane = P(TREND_LINEAR),
-    *arbitraryfct = P(TREND_FCT);
+    *plane = P(TREND_LINEAR);
   int i, 
      nkappa = CovList[cov->nr].kappas,
    *polydeg = PINT(TREND_POLY),
@@ -677,12 +682,12 @@ int checktrend(cov_model *cov){
     cov->matrix_indep_of_x = false;
   }
   
-  if (arbitraryfct != NULL) { //brauche hier: construct.fct$vdim
+  if (!PisNULL(TREND_FCT)) { //brauche hier: construct.fct$vdim
     cov->matrix_indep_of_x = false;
 
-    error("arbitrary function not programmed yet");
+    NotProgrammedYet("arbitrary function");
 
-    assert(false);
+    
 //     kdefault(cov, TREND_PARAM_FCT, 1.0);
 //     PROTECT(envir = allocSExp(ENVSXP));
 //     SET_ENCLOS(envir, R_GlobalEnv);
@@ -709,17 +714,23 @@ int checktrend(cov_model *cov){
   }
   
   if (vdim <= 0) {
-    vdim = cov->calling->vdim;
+    vdim = cov->calling->vdim2[0];
     if (vdim <= 0) 
       SERR("multivariate dimension for trend cannot be determined.");
     PALLOC(TREND_MEAN, vdim, 1);
     for(i=0; i<vdim; i++) P(TREND_MEAN)[i] = 0.0;
   }
-  cov->vdim = vdim;
+  cov->vdim2[0] = cov->vdim2[1] = vdim;
   cov->isoown = cov->matrix_indep_of_x ? ISOTROPIC : CARTESIAN_COORD;
   
  return NOERROR;
 
+}
+
+
+
+int checktrendproc(cov_model *cov){
+  return checktrend(cov);
 }
 
 
@@ -776,38 +787,40 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 				
-double GetInternalMean(cov_model *cov){
+void GetInternalMeanI(cov_model *cov, int vdim, double *mean){
+  // assuming that mean[i]=0.0 originally for all i
+  int i;
   if (cov->nr == TREND) {
     if (cov->ncol[TREND_MEAN]==1) {
-      if (cov->nrow[TREND_MEAN] != 1) {
-	return(RF_NAN); // only scalar allowed !
+      if (cov->nrow[TREND_MEAN] != vdim) {
+	for (i=0; i<vdim; i++) mean[i] = RF_NA;
+	return; // only scalar allowed !
       }
-      return P0(TREND_MEAN);
+      for (i=0; i<vdim; i++) mean[i] += P(TREND_MEAN)[i];
     } 
   }
-  double sum=0.0;
   if (cov->nr == PLUS || cov->nr == TREND) {
-    int i;
-    for (i=0; i<cov->nsub; i++)
-      sum += GetInternalMean(cov->sub[i]);
+    for (i=0; i<cov->nsub; i++) GetInternalMeanI(cov->sub[i], vdim, mean);
   }
-  return sum;
 }
 
-
+void GetInternalMean(cov_model *cov, int vdim, double *mean){
+  int i;
+  for (i=0; i<vdim; i++) mean[i]=0.0;
+  GetInternalMeanI(cov, vdim, mean);
+}
 
 int init_trend(cov_model *cov, storage *S) {
   
   long err = NOERROR;
   trend_storage *s;
-  double
-    *arbitraryfct = P(TREND_FCT);
   int i, 
     *polydeg = PINT(TREND_POLY),
     basislen=0,
     tsdim = cov->tsdim,
-    vdim = cov->vdim;
+    vdim = cov->vdim2[0];
   //SEXP fctformals, argnames;
+  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
 
   //assert(false);
 
@@ -840,8 +853,8 @@ int init_trend(cov_model *cov, storage *S) {
   //the j-th column consists of the power of the j-th space-time-dimension
   
   
-  if (arbitraryfct != NULL) { //hier werden Argumente von arbitraryfct ueberprueft
-    assert(false);
+  if (!PisNULL(TREND_FCT)) { //hier werden Argumente von arbitraryfct ueberprueft
+    NotProgrammedYet("");
 //       fctformals = getAttrib(FORMALS(*((SEXP *) arbitraryfct)), R_NamesSymbol);
 //       nargs = length(fctformals);
 //       PROTECT(argnames = allocVector(STRSXP,1));
@@ -894,7 +907,6 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
     *mu = P(TREND_MEAN),
     *plane   = P(TREND_LINEAR),
     *polycoeff = P(TREND_PARAM_POLY),
-    *arbitraryfct = P(TREND_FCT),
     //    *fctcoeff = P(TREND_PARAM_FCT),
     **xgr = loc->xgr,
     *x = S->x,
@@ -903,7 +915,7 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
     basislen, startindex,
     *polydeg = PINT(TREND_POLY),
     totalpoints = loc->totalpoints,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     tsdim = cov->tsdim,
     spatialdim = loc->spatialdim,
     *len = loc->length,
@@ -913,7 +925,8 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
   //SEXP fctbody, tempres, envir, Rx;
   res_type *res = cov->rf;
   
- 
+  assert(cov->vdim2[0] == cov->vdim2[1]);
+
   strcpy(errorloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
  
@@ -1031,8 +1044,8 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
     }
   }
   
-  if (arbitraryfct != NULL) { //muss hier arbitraryfct auswerten
-    BUG;
+  if (!PisNULL(TREND_FCT)) { //muss hier arbitraryfct auswerten
+    NotProgrammedYet("");
 //      if (isnan(fctcoeff[0])) {
 // 	ERR("Error: cannot evaluate function without coefficient.\n");
 //      }
@@ -1142,11 +1155,12 @@ void poly_basis(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s) {
   trend_storage *S = cov->Strend;
   int basislen=0, powsum, d, i, j, k, v,
     dim = cov->tsdim,
-    vdim = cov->vdim,
+    vdim = cov->vdim2[0],
     *powmatrix = S->powmatrix,
       *dimi=NULL,
       err=NOERROR;
   int *polydeg = PINT(TREND_POLY);
+  assert(cov->vdim2[0] == cov->vdim2[1]);
   
   dimi = (int *) MALLOC(dim * sizeof(int));
   if (dimi == NULL) {
@@ -1201,3 +1215,20 @@ double evalpoly(double *x, int *powmatrix, double *polycoeff, int basislen,
   return(res);
 }
 
+
+
+void likelihood_trend(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USED invmatrix, cov_model *cov, 
+		      double VARIABLE_IS_NOT_USED *v){ 
+  if (cov->role == ROLE_GAUSS) {
+    
+    NotProgrammedYet("");
+      //C = covarianzmatrix
+      // b = (X^T C^{-1} X)^{-1} X^top C^{-1} y
+      // Baysiean mit b ~ N(b_0, C_B) :
+      //  b = (X^T C^{-1} X + C_b^{-1})^{-1} [X^top C^{-1} y + C_b^{-1} b_0
+  } else {
+    // deterministic is OK
+    NotProgrammedYet("");
+  }
+
+}

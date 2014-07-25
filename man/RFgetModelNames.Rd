@@ -3,26 +3,31 @@
 %\alias{PrintModelList}
 \title{Names of implemented covariance and variogram models}
 \description{Displays the names of covariance and
- variogram models (see \command{\link{RMmodel}}) and returns them as a
- list. The user may
- specify and group the models according to the following properties:
- \itemize{
- \item types of stationarity and isotropy
- \item whether the model is an operator
- \item whether the model is a normal scale mixture
- \item whether the model has a finite range covariance
- \item validity in certain dimensions of the coordinate space 
- \item maximal possible dimension of the coordinate space
- \item uni- or multivariety
- }
- See \command{Details} for an explanation and
- \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
- for possible states (values) of these properties.
+  variogram models (see \command{\link{RMmodel}}) and returns them as a
+  list. The user may
+  specify and group the models according to the following properties:
+  \itemize{
+    \item type of function (\code{"positive definite"}, \code{"negative
+      definite"}, etc.
+    \item whether the function depends on two arguments
+    (\code{"kernel"}) or on one argument only (\code{"single variable"}) 
+    \item types of isotropy
+    \item whether the model is an operator
+    \item whether the model is a normal scale mixture
+    \item whether the model has a finite range covariance
+    \item validity in certain dimensions of the coordinate space 
+    \item maximal possible dimension of the coordinate space
+    \item uni- or multivariety
+  }
+  See \command{Details} for an explanation and
+  \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
+  for possible states (values) of these properties.
 }
 
-\usage{RFgetModelNames(type = ZF_TYPE, domain = ZF_DOMAIN,
-                       isotropy = ZF_ISOTROPY, operator = c(TRUE, FALSE),
-                       normalmix = c(TRUE, FALSE),
+\usage{RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
+                       isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
+                       monotone = RC_MONOTONE,
+                       implied_monotonicities = length(monotone) == 1,
                        finiterange = c(TRUE, FALSE),
                        valid.in.dim = c(1, Inf), 
                        vdim = c(1, 5),
@@ -32,15 +37,20 @@
 }
 
 \arguments{
-  \item{type, domain, isotropy, operator, normalmix, finiterange, vdim}{
-    see \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
-    and \link{constants}.
+  \item{type, domain, isotropy, operator, monotone, finiterange, vdim}{
+    see \link{constants} for the definition of \code{RC_TYPE},
+    \code{RC_DOMAIN}, etc.
+    See also \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
+  }
+  \item{implied_monotonicities}{logical. If \code{TRUE} then 
+    all the models with a stronger monotonocity than the required one
+    are also shown.
   }
   \item{valid.in.dim}{an optional integer indicating the dimension of
   the space where the model is valid}
   \item{group.by}{an optional character string; must be one of
-    \code{'stationarity'}, \code{'isotropy'}, \code{'operator'},
-    \code{'normalmix'},
+    \code{'domain'}, \code{'isotropy'}, \code{'operator'},
+    \code{'monotone'},
     \code{'finiterange'},\code{'maxdim'},\code{'vdim'}}
   \item{internal, newnames}{both logical;
     \code{internal} might be also integer valued.
@@ -54,7 +64,7 @@
   In case \code{internal} or \code{newnames} is given,
   only the values of \code{internal},
   \code{newnames} and \code{operator} are considered.
-  All the other parameters are ignored and
+  All the other arguments are ignored and
   \command{\link{RFgetModelNames}} prints a table of the currently
   implemented covariance functions and the matching methods:
   \itemize{
@@ -112,9 +122,10 @@
      \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
    }
    
-   \item{\code{normalmix}}{indicates whether the model is a normal
-     scale mixture, e.g. \command{\link{RMexp}} or
-     \command{\link{RMcauchy}} are normal scale mixtures; see
+   \item{\code{monotone}}{indicates what kind of monotonicity is known,
+     e.g., whether the model is a normal
+     scale mixture, the latter including \command{\link{RMexp}} or
+     \command{\link{RMcauchy}}; see
      \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
    }
    
@@ -161,22 +172,22 @@
    }
  }
 
- All parameters allow also for vectors of values. In case of
+ All arguments allow also for vectors of values. In case of
  \code{valid.in.dim} the smallest value is taken.
  The interpretation is canonical.
  
  
- Note that the arguments \command{stationarity}, \command{isotropy},
- \command{operator}, \command{normalmix}, \command{finiterange},
- \command{maxdim}, \command{vdim}
+ Note that the arguments \code{stationarity}, \code{isotropy},
+ \code{operator}, \code{monotone}, \code{finiterange},
+ \code{maxdim}, \code{vdim}
  are also slots (attributes) of the SP4-class
- \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
+ \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
 }
 
 \value{
   Either a vector of model names if the argument
- \command{group.by} is not used;
- or a list of vectors of model names if the argument \command{group.by} is
+ \code{group.by} is not used;
+ or a list of vectors of model names if the argument \code{group.by} is
  used
  (with list elements specified by the categories of the grouping
  argument).
@@ -191,18 +202,20 @@
 %}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 \seealso{
   \link{constants},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
- \command{\link{RMmodel}},
- \code{\link[=RandomFields-package]{RandomFields}}.
+ \code{\link{RMmodel}},
+ \code{\link[=RandomFields-package]{RandomFields}},
+ \link{RC_DOMAIN}, \link{RC_ISOTROPY}
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 # get vector of names of all functions
 RFgetModelNames()
 
@@ -233,7 +246,7 @@ str(RFgetModelNames(type=c("positive definite", "negative definite", "process"),
                     group.by=c("type", "domain", "isotropy")))
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}

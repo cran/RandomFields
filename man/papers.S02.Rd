@@ -6,7 +6,7 @@
  random fields} is given.
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de};
+ \url{http://ms.math.uni-mannheim.de/de/publications/software};
 }
 \references{
   \itemize{ 
@@ -17,41 +17,25 @@
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0, xi=1)
+## seed = 0 : *ANY* simulation will have the random seed 0; set
+##            RFoptions(seed=NA) to make them all random again
+## xi = 0.5: Frechet margins with alpha=2
 
-\dontshow{\dontrun{
-% library(RandomFields, lib="~/TMP"); runif(1)
-col=grey((100:0)/100)
-pts <- if (interactive()) 512 else 32
-x <- (1:pts) / pts * 10
-scalegauss <- 1.5
-runif(1)
-root <- 1/2
-RFoptions(mpp.plus=2*scalegauss, CE.force=TRUE)
+## Due to change in the handling the seeds here are different from the
+## seed in the paper.
 
-save.seed <- .Random.seed
-ms1 <- MaxStableRF(x, x, model="gauss", param=c(0, 1, 0, scalegauss), 
- maxstable="Bool", grid=TRUE, Print=3)
-image(x, x, ms1^root, col=col)
 
-.Random.seed <- save.seed 
-scalecirc<- 3.3 # 0.16 0.00 0.18 0.00 0.00 
-ms2 <- MaxStableRF(x, x, model="sph", param=c(0, 1, 0, scalecirc), 
- maxstable="Bool", grid=TRUE, Print=3)
-image(x, x, ms2^root, col=col)
- 
-.Random.seed <- save.seed 
-ms3 <- MaxStableRF(x, x, model="exponen", param=c(0, 1, 0, 1),
- maxstable="extr", grid=TRUE, Print=3, method="ci")
-image(x, x, ms3^root, col=col)
+x <- seq(0, 10, length=if (interactive()) 128  else 4)
 
-.Random.seed <- save.seed 
-ms4 <- MaxStableRF(x, x, model="gauss", param=c(0, 1, 0, 1),
- maxstable="extr", grid=TRUE, Print=3, method="ci")
-image(x, x, ms4^root, col=col)
-}}
+# Fig. 1-4
+plot(RFsimulate(RPsmith(RMgauss(s=1.5)), x, x))   # < 1 sec
+\dontrun{plot(RFsimulate(RPsmith(RMball(s=RRspheric(2, 3, R=3.3))), x, x))} # 30  sec
+plot(RFsimulate(RPschlather(RMexp()), x, x))      #   1 sec
+plot(RFsimulate(RPschlather(RMgauss()), x, x))    #  17 sec
 
-\dontshow{RFoptions(seed=NA)}
+
+\dontshow{FinalizeExample()}
 }
 
 

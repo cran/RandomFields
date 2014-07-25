@@ -87,7 +87,7 @@ void GetNAPosition(cov_model *cov,
   
   //  print("SHORT %d %s\n", SHORTlen, CC->name);
 
-  strcopyN(shortname, CC->name, SHORTlen);
+  strcopyN(shortname, CC->nick + 2, SHORTlen);
 
   if (covzaehler[cov->nr] >= 2) {
     char dummy[255];
@@ -134,7 +134,7 @@ void GetNAPosition(cov_model *cov,
 	} else if (type[i] == INTSXP) {
 	  v = PINT(i)[idx] == NA_INTEGER 
 	    ? NA_REAL : (double) PINT(i)[idx];
-	  if ((ISNA(v) || ISNAN(v)) && !allowforintegerNA) {
+	  if (ISNAN(v) && !allowforintegerNA) {
 	    // crash(cov);
 	    ERR("integer variables currently do not allow for NA"); // !!!
 	  }
@@ -147,21 +147,21 @@ void GetNAPosition(cov_model *cov,
 	  p = q->p[r];
 	  end = q->nrow[r] * q->ncol[r];
 	  for (j=0; j<end; j++)
-	    if (ISNA(p[j]) || ISNAN(p[j])) ERR("no NAs allowed in regression ");
+	    if (ISNAN(p[j])) ERR("no NAs allowed in regression ");
 	  v = 0.0; // dummy
 	} else if (type[i] == CLOSXP) {
 	  v = 0.0; //dummy
 	} else if (type[i] == LANGSXP) {
 	  v = 0.0; //dummy
 	} else {
-	  v = RF_NAN;
+	  v = RF_NA;
 	  BUG;
 	}
 
  	isnan[*NAs] = ISNAN(v) && !ISNA(v);
-	if (ISNA(v) || ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
+	if (ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
 	  if (isRandom(cov)){
-	    error("NA in random functions not programmed yet");
+	    NotProgrammedYet("NA in random functions");
 	  }
 	  if (printing > 0) {
 	    if (nv>1 || (c>0 && printing > 1)) PRINTF(", "); else leer(depth+1);
@@ -173,10 +173,10 @@ void GetNAPosition(cov_model *cov,
 	    if (covzaehler[next->nr] == 0) { // next wurde noch nicht
 	      // untersucht, somit ist covzaehler[next->nr] um 1 niedriger
 	      // als covzaehler[cov->nr] !
-	      strcopyN(shortD, NAME(next), SHORTlen);
+	      strcopyN(shortD, NICK(next) + 2, SHORTlen);
 	    } else {
 	      char dummy[255];
-	      strcopyN(dummy, NAME(next), SHORTlen-1);
+	      strcopyN(dummy, NICK(next) + 2, SHORTlen-1);
 	      sprintf(shortD, "%s%d", dummy, covzaehler[next->nr]+1);
 	      //	      print("$$ > %d:%s %d %s\n", next->nr, NICK(to), 
 	      //		     covzaehler[next->nr], shortD);
@@ -373,13 +373,13 @@ int countnas(cov_model *cov, int level) {
     endfor = nrow[i] * ncol[i];
     if (type[i] == REALSXP) { 
       double *p = P(i);
-      for (r=0; r<endfor; r++) if (ISNAN(p[r]) || ISNA(p[r])) count++;
+      for (r=0; r<endfor; r++) if (ISNAN(p[r])) count++;
     } else if (type[i] == INTSXP) {
       int *p = PINT(i);
       for (r=0; r<endfor; r++) if (p[r] == NA_INTEGER) count++;
     } else if (type[i] == LISTOF + REALSXP) {
 	continue; // no NAs allowed
-    } else assert(false);
+    } else BUG;
   }
   
   cov_model *sub;
@@ -409,7 +409,7 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
   
-  if (strcmp(CovList[cov->nr].nick, CovList[cov_bound->nr].nick) != 0) {
+  if (strcmp(Nick(cov), Nick(cov_bound)) != 0) {
     // print("%s %s\n", CovList[cov->nr].nick, CovList[cov_bound->nr].nick);  
     ERR("models do not match.");
   }
@@ -432,8 +432,8 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
     
     for (r=0; r<nrow[i]; r++) {
       for (c=0; c<ncol[i]; c++) {
-	  double v=RF_NAN,
-	      w=RF_NAN; // value in aktuellem parameter
+	  double v=RF_NA,
+	      w=RF_NA; // value in aktuellem parameter
 	int idx = c * nrow[i] + r;
 	
 // print("%d %d idx=%d %d %d %d nv=%d %d\n", r,c, idx, type[i], REALSXP, INTSXP,
@@ -450,7 +450,7 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 	}
 	     
 
-	if (ISNA(v) || ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
+	if (ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
 	  if ((!isDollar(cov) || 
 	       i == DVAR ||
 	       (i== DSCALE && cov->q == NULL) || // ! natscaling 
@@ -563,12 +563,12 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
 	dmin = 0.0;
 	dmax = 0.0;
     } else {
-      dmin = dmax = RF_NAN;
-      assert(false);
-    }
+      BUG;
+      dmin = dmax = RF_NA;
+     }
     
     for (r=0; r<end; r++) {
-      v = RF_NAN;
+      v = RF_NA;
       if (type[i] == REALSXP) {
 	v = P(i)[r];
       }
@@ -580,9 +580,9 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
           continue;  // !!!!!!!!!!!
       } else if (type[i] == LANGSXP) {
           continue;  // !!!!!!!!!!!
-      } else assert(false);
+      } else BUG;
 
-      if ((ISNA(v) || ISNAN(v)) && C->paramtype(i, 0, 0) != IGNOREPARAM
+      if (ISNAN(v) && C->paramtype(i, 0, 0) != IGNOREPARAM
 	  && C->paramtype(i, 0, 0) != DONOTRETURNPARAM
 	  && cov->nr!=MIXEDEFFECT && cov->nr!=TREND) {// cov->nr!=MLEMIXEDEFFECT
 	if (!isDollar(cov) || (i!=DALEFT && i!=DPROJ)) {
@@ -634,21 +634,20 @@ int CheckEffect(cov_model *cov) {
   if (cov->nr == MIXEDEFFECT) {    
     // cov->nr = MLEMIXEDEFFECT;  
     if (cov->nsub == 0) {
-      return (cov->nrow[MIXED_BETA] > 0 && 
-	      (ISNA(P0(MIXED_BETA)) || ISNAN(P0(MIXED_BETA))))
+      return (cov->nrow[MIXED_BETA] > 0 && ISNAN(P0(MIXED_BETA)))
 	? fixedeffect : deteffect;
     }
     next = cov->sub[0];
     if (isDollar(next)) { 
       if (next->ncol[DVAR] == 1 && next->nrow[DVAR] == 1) {
-        na_var = (ISNA(PARAM0(next, DVAR)) || ISNAN(PARAM0(next, DVAR)));
+        na_var = ISNAN(PARAM0(next, DVAR));
       }
       for (i=0; i<=DMAX; i++) { 
         if (i!=DVAR) {
 	  end = next->ncol[i] * next->nrow[i];
 	  p = PARAM(next, i);
 	  for (j=0; j<end; j++) {
-	    if (ISNA(p[j]) || ISNAN(p[j])) {
+	    if (ISNAN(p[j])) {
 	      return next->nr == CONSTANT ? eff_error :
 		na_var ? spvareffect : spaceeffect;
 		  // NA in e.g. scale for constant matrix -- does not make sense
@@ -689,12 +688,12 @@ int CheckEffect(cov_model *cov) {
 
       if ( (nr = cov->nrow[trend] * cov->ncol[trend]) > 0) {
 	p = P(trend);
-	isna = ISNA(p[0]) || ISNAN(p[0]);
+	isna = ISNAN(p[0]);
 	if ((effect != eff_error) && ((effect == fixedtrend) xor isna))
 	  SERR1("do not mix deterministic effect with fixed effects in '%s'", 
 		NICK(cov));
 	for (i = 1; i<nr; i++) {
-	  if ( (ISNA(p[i]) || ISNAN(p[i])) xor isna) 
+	  if (ISNAN(p[i]) xor isna) 
 	    SERR("mu and linear trend:  all coefficient must be deterministic or all must be estimated");
 	}
 	effect = isna ? fixedtrend : dettrend;
@@ -713,9 +712,9 @@ int CheckEffect(cov_model *cov) {
 	nr = cov->nrow[param] * cov->ncol[param];
 	if (nr > 0) {
 	  p = P(param);
-	  isna = ISNA(p[0]) || ISNAN(p[0]);
+	  isna = ISNAN(p[0]);
 	  for (i = 1; i<nr; i++) {
-	    if ( (ISNA(p[i]) || ISNAN(p[i])) xor isna) 
+	    if (ISNAN(p[i]) xor isna) 
 	      SERR("the coefficients in trend must be all deterministic or all coefficient are estimated");
 	  }
 	  effect = isna ? fixedtrend : dettrend;
@@ -975,13 +974,13 @@ void expliciteDollarMLE(int* ModelNr, double *values) { //
   // Then get the values out of the model
   for (un=i=0; un<NAs; i++) {
     values[un++] = MEMORY[modelnr][i][0];
-    MEMORY[modelnr][i][0] = RF_NAN;
+    MEMORY[modelnr][i][0] = RF_NA;
   }
 }
 
 
 
-void PutValuesAtNA(int *reg, double *values){
+void PutValuesAtNAintern(int *reg, double *values, bool init){
   int i, un,
     NAs = MEM_NAS[*reg];
   cov_fct *C = NULL;
@@ -998,6 +997,7 @@ void PutValuesAtNA(int *reg, double *values){
   //print("%ld %f %ld %f\n", cov->p[DVAR], cov->p[DVAR][0],
   //	 cov->p[DSCALE], cov->p[DSCALE][0]);
 
+  // printf("putvaluesatna\n");
   for (un=i=0; i<NAs; i++) {
  //   print("reg=%d i=%d %d %ld %f\n", *reg, i, NAs, MEMORY[*reg][i], values[un]);
     //     print("mem=%ld %f\n", (long int) MEMORY[*reg][i], values[un]) ;  
@@ -1006,22 +1006,34 @@ void PutValuesAtNA(int *reg, double *values){
     MEMORY[*reg][i][0] = values[un++];
   }
 
-  
-  for (i=0; i<NAs; i++) {
-    cov = MEM_COVMODELS[*reg][i];
-    C = CovList + cov->nr;    
-    if (i==0 || cov != MEM_COVMODELS[*reg][i-1]) {
-      if (!isDummyInit(C->Init)) {
-	C->Init(cov, &s);
-	//print("i=%d %s initalised (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),  
-	//   MEMORY[*reg][i][0]);
+  if (init)
+    for (i=0; i<NAs; i++) {
+      cov = MEM_COVMODELS[*reg][i];
+      C = CovList + cov->nr;       
+      if (i==0 || cov != MEM_COVMODELS[*reg][i-1]) {
+	if (!isDummyInit(C->Init)) {
+	  //	print("i=%d %s initalising (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),   MEMORY[*reg][i][0]);
+	  
+	  C->Init(cov, &s);
+	  //print("i=%d %s initalised (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),  
+	  //   MEMORY[*reg][i][0]);
+	}
       }
+      //  
     }
-  //  
-  }
+  
+  //printf("done\n");
 
   int one = 1;
   setListElements(reg, &one, &one, &one);
+}
+
+void PutValuesAtNA(int *reg, double *values){
+  PutValuesAtNAintern(reg, values, true);
+}
+
+void PutValuesAtNAnoInit(int *reg, double *values){
+  PutValuesAtNAintern(reg, values, false);
 }
 
 

@@ -12,7 +12,7 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
 }
 \arguments{ 
  \item{phi, fulldim, reduceddim, layers}{see \command{\link{RPtbm}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -25,8 +25,8 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
  (1999).
 
  The standard case \code{reduceddim=1} and \code{fulldim=3}.
- If only one of the parameters are given, then the difference of two
- parameters equals 2.
+ If only one of the arguments are given, then the difference of the two
+ arguments equals 2.
  
  For \code{d == n + 2}, where \code{n=reduceddim} and 
  \code{d==fulldim} the original dimension, we have
@@ -69,12 +69,13 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
  \command{\link{RFsimulate}}.
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- seq(0,25, if (interactive()) 0.02 else 5)
 model <- RPtbm(RMspheric())
 z <- RFsimulate(model, x, x)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }

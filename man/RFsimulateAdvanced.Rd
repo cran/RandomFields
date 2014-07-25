@@ -91,7 +91,7 @@
  is a matrix}
  \item{T}{optional vector of time coordinates, 
  \code{T} must always be an equidistant vector or given in a
- gridtriple format (see parameter \code{grid}); for each component
+ gridtriple format (see argument \code{grid}); for each component
  of \code{T}, the random field is simulated at all location points
  }
  \item{grid}{logical; determines whether the vectors \code{x},
@@ -145,7 +145,7 @@
  integer; space or space-time dimension of the field
  }
  \item{n}{number of realizations to generate}
- \item{...}{further options and control parameters for the simulation
+ \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}
  }
 }
@@ -268,15 +268,18 @@
  \code{\link{RFoptions}(spConform=FALSE)} or by passing \code{spConform=FALSE}
  in the call of \command{\link{RFsimulate}}.
  Then the object returned by \command{\link{RFsimulate}}
- depends on the parameters \code{n} and \code{grid} in the following way:\cr
+ depends on the arguments \code{n} and \code{grid} in the following way:\cr
 
  if \code{vdim > 1} the \code{vdim}-variate vector makes the first dimension
 
  if \code{grid=TRUE} an array of the dimension of the
- random field makes the next dimensions.
+ random field makes the next dimensions. Here, the dimensions
+ are ordered in the sequence \code{x}, \code{y}, \code{z}, \code{T}
+ (if given).
+ 
  Else if no time component is given, then the values are passed as a
  single vector. Else if the time component is given the next 2
- dimensions give space and time.
+ dimensions give the space and the time, respectively.
  
  if \code{n > 1} the repetitions make the last dimension
 
@@ -290,18 +293,33 @@
 
 }
 
-\references{
- Gneiting, T. and Schlather, M. (2004)
- Statistical modeling with covariance functions.
- \emph{In preparation.}
+\note{Advanced options are
+  \itemize{
+    \item \code{spConform} (suppressed return of S4 objects)
+    \item \code{practicalrange} (forces range of covariances to be one)
+    \item \code{exactness} (chooses the simulation method by precision)
+    \item \code{seed} (sets \code{\link[base]{.Random.seed}} locally or
+    globally)
+  }
+  See \command{\link{RFoptions}} for further options.
+}
 
+\references{
+% Gneiting, T. and Schlather, M. (2004)
+% Statistical modeling with covariance functions.
+% \emph{In preparation.}
+General
+\itemize{
+  \item
  Lantuejoul, Ch. (2002) \emph{Geostatistical simulation.}
  \bold{New York:} Springer.
- 
+
+ \item
  Schlather, M. (1999) \emph{An introduction to positive definite
  functions and to unconditional simulation of random fields.}
  Technical report ST 99-10, Dept. of Maths and Statistics,
- Lancaster University. 
+ Lancaster University.
+ }
 
  Original work:
  \itemize{
@@ -379,7 +397,7 @@
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{
  \command{\link{RFoptions}},
@@ -396,7 +414,8 @@
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontshow{\dontrun{
 
@@ -443,8 +462,7 @@ plot(z)
  par(mfcol=c(2,1))
  plot(z@data[,1:min(length(z@data), 1000)], type="l")
  hist(z@data[,1])
- par(mfcol=c(1,1))
-
+ 
  
  z <- RFsimulate(x=x, model=RPpoisson(RMball()), mpp.intensity = 0.1)
  
@@ -452,8 +470,7 @@ plot(z)
  par(mfcol=c(2,1))
  plot(z@data[,1:min(length(z@data), 1000)], type="l")
  hist(z@data[,1])
- par(mfcol=c(1,1))
-
+ 
 
 
 
@@ -495,7 +512,7 @@ z <- RFsimulate(x=x, y=x, z=x, grid=TRUE,
 %for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
 
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 
 }

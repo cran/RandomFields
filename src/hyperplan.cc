@@ -68,7 +68,6 @@ int check_hyperplane(cov_model *cov) {
 
   ROLE_ASSERT(ROLE_GAUSS);
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
   kdefault(cov, HYPER_SUPERPOS, gp->superpos);
   kdefault(cov, HYPER_MAXLINES, gp->maxlines);
   kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
@@ -94,7 +93,8 @@ int check_hyperplane(cov_model *cov) {
     }
     if (intern == NULL || intern->nr != HYPERPLANE_INTERN) {
       BUG;
-    } else if (intern != cov) paramcpy(intern, cov, true, false);
+    } else if (intern != cov) 
+      paramcpy(intern, cov, true, true, false, false, false);
  
     if ((err = CHECK(sub, dim,  dim, ProcessType, XONLY, CARTESIAN_COORD, 
 		       SCALAR, cov->role)) != NOERROR) {
@@ -120,7 +120,6 @@ int check_hyperplane_intern(cov_model *cov) {
   
   ROLE_ASSERT(ROLE_GAUSS);
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
 
@@ -140,10 +139,8 @@ int check_hyperplane_intern(cov_model *cov) {
 }
 
 
-void range_hyperplane(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
-
-   range->min[HYPER_SUPERPOS] = 1;
+void range_hyperplane(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  range->min[HYPER_SUPERPOS] = 1;
   range->max[HYPER_SUPERPOS] = RF_INF;
   range->pmin[HYPER_SUPERPOS] = 100;
   range->pmax[HYPER_SUPERPOS] = 1000;
@@ -393,8 +390,8 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     mar_distr = P0INT(HYPER_MAR_DISTR);
   double *res = cov->rf;
   double gx, gy, *hx, *hy, *hr, variance,
-    E=RF_NAN,
-    sd=RF_NAN,
+    E=RF_NA,
+    sd=RF_NA,
     mar_param = P0(HYPER_MAR_PARAM);
   int resindex, integers, bits, q, endfor, i, err, j,
     superpos = P0INT(HYPER_SUPERPOS);
@@ -404,7 +401,7 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   bool add = true;
   avltr_tree *tree;
   cell_type *cell;
-  bool loggauss = (bool) P0INT(LOG_GAUSS);
+  bool loggauss = GLOBAL.gauss.loggauss;
 
   hx = hy = hr = NULL;
   s = (hyper_storage*) cov->Shyper;
@@ -523,7 +520,7 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       break;
     case HYPER_FRECHET :
       assert(mar_param > 2);
-      error("frechet not programmed yet");
+      NotProgrammedYet("frechet");
       break;
     case HYPER_BERNOULLI : 
       E = mar_param;
@@ -536,7 +533,7 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       res[i] = (res_type) (((double) res[i] - superpos * E) * sd);    
     
     if (loggauss) {
-      int vdimtot = loc->totalpoints * cov->vdim;
+      int vdimtot = loc->totalpoints * cov->vdim2[0];
       for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
     }
     break;

@@ -16,7 +16,7 @@ RMschlather(phi, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -29,14 +29,15 @@ RMschlather(phi, var, scale, Aniso, proj)
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de}}
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 \seealso{
  \command{\link{RPschlather}}
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 #Example 1
 x <- if (interactive()) 0:1000 else 0:10
@@ -60,7 +61,7 @@ y  <- if (interactive()) 0:100 else 0:10
 cov <- RFcov(model, y)
 ecf <- RFcov(RMschlather(model), y)
 matplot(y, cbind(cov, ecf), type="l")
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

@@ -383,7 +383,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
        !!!!!                 !!!!!
   */
 
-  //  print("1st gmi %s\n", NICK(cov));
+  //  print("1st gmi %s\n", Nick(cov));
   if (cov == NULL) return allocVector(VECSXP, 0);
   SEXP model, submodels, nameMvec, param, pnames;
   int i, j, nmodelinfo, k = 0;
@@ -474,8 +474,11 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     SET_VECTOR_ELT(model, k++, ScalarInteger(cov->nr));
 
     SET_STRING_ELT(nameMvec, k, mkChar("vdim"));
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->vdim));
-
+    SET_VECTOR_ELT(model, k++, cov->vdim2[0] == cov->vdim2[1] 
+		   ? ScalarInteger(cov->vdim2[0]) 
+		   : Int(cov->pref, 2)
+		   );
+ 
     //  SET_STRING_ELT(nameMvec, k, mkChar("naturalscaling"));  
     //  SET_VECTOR_ELT(model, k++, ScalarInteger(cov->naturalscaling));
 
@@ -538,8 +541,15 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     SET_VECTOR_ELT(model, k++, ScalarLogical(cov->loggiven));
 
     SET_STRING_ELT(nameMvec, k, mkChar("monotone"));  
-    SET_VECTOR_ELT(model, k++,
-		   Char(MONOTONE_NAMES + cov->monotone - MISMATCH, 1));
+
+    // printf("%d %d\n",  cov->monotone - MISMATCH, BERNSTEIN - MISMATCH +1);
+    int idx = cov->monotone - (int) MISMATCH;
+    if (idx < 0 || idx > BERNSTEIN - (int) MISMATCH) {
+      PRINTF("monotone %d %d %d\n",  cov->monotone,  MISMATCH,
+	     cov->monotone - (int) MISMATCH);
+      BUG;
+    }
+    SET_VECTOR_ELT(model, k++, Char(MONOTONE_NAMES + idx, 1));
             
     SET_STRING_ELT(nameMvec, k, mkChar("MLE"));  
     SET_VECTOR_ELT(model, k++, ScalarLogical(cov->MLE != NULL));
@@ -568,20 +578,24 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
   if (prlevel>=4) {
 
     mpp_properties *mpp = &(cov->mpp);
+    int
+      vdim = cov->vdim2[0],
+      nm = cov->mpp.moments,
+      nmvdim = (nm + 1) * vdim;
  
     //   SET_STRING_ELT(nameMvec, k, mkChar("mpp.refradius"));  
     //  SET_VECTOR_ELT(model, k++, ScalarReal(mpp->refradius));
  
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.maxheight"));  
-    SET_VECTOR_ELT(model, k++, ScalarReal(mpp->maxheight));
+    SET_VECTOR_ELT(model, k++, Num(mpp->maxheights, vdim, MAX_INT));
   
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.M"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(mpp->M, cov->mpp.moments,  MAX_INT));
+		   Num(mpp->mM, nmvdim, MAX_INT)); 
 
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.Mplus"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(mpp->Mplus, cov->mpp.moments,  MAX_INT));
+		   Num(mpp->mMplus, nmvdim, MAX_INT));
   } 
    		 
 
@@ -616,7 +630,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     //    print("gmi 2\n");
     for (i=0; i<MAXSUB; i++) {
       //	print("gmi x %d %d\n", i, MAXSUB);
-      // print("\n\n %d %i %s\n", zaehler, i, NICK(cov));
+      // print("\n\n %d %i %s\n", zaehler, i, Nick(cov));
       if (cov->sub[i] != NULL) {
 	//	print("gmi a\n");
 	//	SET_STRING_ELT(namesubmodels, zaehler, mkChar(C->subnames[i]));
@@ -813,10 +827,10 @@ void PrintLoc(int level, location_type *loc, bool own) {
 
 static bool PMI_print_dollar = !true,
   PMI_print_mpp = true,
-  PMI_print_pgs = !true, 
-  PMI_print_details = !true,
+  PMI_print_pgs = true, 
+  PMI_print_details = true,
   PMI_print_loc = true;
-static int  PMI_print_rect = 0;  // 0, 1, 2
+static int  PMI_print_rect = 1;  // 0, 1, 2
 
 void pmi(cov_model *cov, char all, int level) {     
   int i, j, endfor;
@@ -891,9 +905,9 @@ void pmi(cov_model *cov, char all, int level) {
 	  PRINTF(" %d", PINT(i)[j]); 
       }
     } else if (C->kappatype[i] == CLOSXP) {
-      PRINTF("arbitrary function...");      
+      PRINTF("< arbitrary function >");      
     } else if (C->kappatype[i] == LANGSXP) {
-      PRINTF("arbitrary language expression ...");      
+      PRINTF("< language expression >");      
     } else if (C->kappatype[i] == LISTOF + REALSXP) {
       int k, ende=0;
       listoftype *p= PLIST(i);	
@@ -920,7 +934,7 @@ void pmi(cov_model *cov, char all, int level) {
 	if (k<cov->nrow[i]-1)  PRINTF("\n"); 
       }
     } else {
-      assert(false);
+      BUG;
     }
     if (cov->kappasub[i] != NULL) {
       PRINTF("  <=");
@@ -930,7 +944,7 @@ void pmi(cov_model *cov, char all, int level) {
   if (cov->Sset != NULL) {
     cov_model *from = cov->Sset->remote;
     leer(level + 1); 
-    PRINTF("%-10s%s [%d]\n", "<remote>", NICK(from), from->zaehler);     
+    PRINTF("%-10s%s [%d]\n", "<remote>", Nick(from), from->zaehler);     
   }
 
   //  for (; i<MAXPARAM; i++) if (cov->kappasub[i] != NULL) 
@@ -944,8 +958,10 @@ void pmi(cov_model *cov, char all, int level) {
   PRINTF("\n");
 
   if (cov->calling == NULL && level != 0) BUG;
-  leer(level); PRINTF("%-10s %s\n","calling", cov->calling==NULL ?
-		      "NULL" : NICK(cov->calling));  
+  leer(level); 
+  if (cov->calling==NULL)  PRINTF("%-10s %s\n","calling", "NULL");
+  else PRINTF("%-10s %s [%d]\n","calling", 
+	      Nick(cov->calling), cov->calling->zaehler);  
   leer(level); PRINTF("%-10s %s (%d)\n","gatter",
 		      cov->gatternr >=0 ? CovList[cov->gatternr].name : "none",
 		      cov->gatternr);  
@@ -962,8 +978,8 @@ void pmi(cov_model *cov, char all, int level) {
 		      cov->isoprev, cov->isoown,
 		      ISONAMES[(int) cov->isoprev],
 		      ISONAMES[(int) cov->isoown]);
-  leer(level); PRINTF("%-10s %d, %d:%d, %d/%d/%d\n","ts-x-v-dim",
-		      cov->tsdim, cov->xdimprev, cov->xdimown, cov->vdim,
+  leer(level); PRINTF("%-10s %d, %d:%d, %d/%d\n","ts-x-v-dim",
+		      cov->tsdim, cov->xdimprev, cov->xdimown,
 		      cov->vdim2[0], cov->vdim2[1]);  
    leer(level); PRINTF("%-10s %d\n","maxdim", cov->maxdim);  
   leer(level); PRINTF("%-10s %s (%d)\n", "type", TYPENAMES[cov->typus],
@@ -975,13 +991,14 @@ void pmi(cov_model *cov, char all, int level) {
   leer(level); PRINTF("%-10s %s\n","fieldret", FT[cov->fieldreturn]);
   leer(level); PRINTF("%-10s %s\n","origrf", FT[cov->origrf]);
   leer(level); PRINTF("%-10s %d\n","rf", addressbits(cov->rf));
-  leer(level); PRINTF("%-10s ", "pref");  
+   leer(level); PRINTF("%-10s %s\n","checked", FT[cov->checked]);
+ leer(level); PRINTF("%-10s ", "pref");  
   for (i=0; i<=Sequential; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
   PRINTF("\n"); leer(level); PRINTF("%-10s ", "");  
   for (; i<=Nothing; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
   PRINTF("\n");
+  leer(level); PRINTF("%-10s %s\n","determinst", FT[cov->deterministic]);  
   if (PMI_print_details) {
-    leer(level); PRINTF("%-10s %s\n","determinst", FT[cov->deterministic]);  
     leer(level); PRINTF("%-10s %s\n","user_given", 
 		      cov->user_given == ug_internal ? "internal" :
 		      cov->user_given == ug_explicit ? "explicit" : "implicit");
@@ -989,9 +1006,14 @@ void pmi(cov_model *cov, char all, int level) {
     leer(level); PRINTF("%-10s %d, %d\n","full/rese deriv's", 
 			cov->full_derivs, cov->rese_derivs);  
     leer(level); PRINTF("%-10s %s\n","loggiven", FT[cov->loggiven]);  
+    int idx = cov->monotone - (int) MISMATCH;
+    if (idx < 0 || idx > BERNSTEIN - (int) MISMATCH) {
+      PRINTF("monotone %d %d %d\n",  cov->monotone,  MISMATCH,
+	     cov->monotone - (int) MISMATCH);
+      BUG;
+    }
     leer(level); PRINTF("%-10s %s (%d)\n","monotone", 
-			MONOTONE_NAMES[cov->monotone - MISMATCH], 
-			cov->monotone);  
+			MONOTONE_NAMES[idx], cov->monotone);  
     leer(level); PRINTF("%-10s %s\n","finiterng", 
 			TriNames[cov->finiterange - MISMATCH]);  
     leer(level); PRINTF("%-10s %d\n","storage", addressbits(cov->stor));
@@ -1014,24 +1036,31 @@ void pmi(cov_model *cov, char all, int level) {
     leer(level); PRINTF("%-10s %d\n","$:y", addressbits(cov->Sdollar->y));
   }
 
-
   if (PMI_print_mpp) {
-    if (R_FINITE(cov->mpp.log_zhou_c)) {
-      leer(level); PRINTF("%-10s %f\n","mpp:zhou_c", cov->mpp.log_zhou_c);
-    } 
-    leer(level); PRINTF("%-10s %f\n","mpp:maxhgt", cov->mpp.maxheight);    
+    int 
+      nm = cov->mpp.moments,
+      vdim = cov->vdim2[0],
+      nmvdim = (nm + 1) * vdim;
+    if (R_FINITE(cov->mpp.maxheights[0])) {
+      leer(level); PRINTF("%-10s ","mpp:maxhgt"); 
+      for (i=0; i<=vdim; i++) PRINTF("%f, ",cov->mpp.maxheights[i]);
+      PRINTF("\n");    
+    }
+    if (R_FINITE(cov->mpp.unnormedmass)) {
+      leer(level); PRINTF("%-10s %f\n","mpp:u-mass", cov->mpp.unnormedmass);    
+    }
     leer(level); PRINTF("%-10s ","mpp:M+");
-    if (cov->mpp.Mplus == NULL) PRINTF("not initialized yet (size=%d)\n",
-				       cov->mpp.moments);
+    if (cov->mpp.mMplus == NULL) 
+      PRINTF("not initialized yet (size=%d)\n", cov->mpp.moments);
     else {
-      for (i=0; i<=cov->mpp.moments; i++) PRINTF("%f, ", cov->mpp.Mplus[i]);
+      for (i=0; i<nmvdim; i++) PRINTF("%f, ", cov->mpp.mMplus[i]);
       PRINTF("\n");    
     }
     leer(level); PRINTF("%-10s ","mpp:M");
-    if (cov->mpp.Mplus == NULL) PRINTF("not initialized yet (size=%d)\n",
-				       cov->mpp.moments);
+    if (cov->mpp.mM == NULL)
+      PRINTF("not initialized yet (size=%d)\n", cov->mpp.moments);
     else {
-      for (i=0; i<=cov->mpp.moments; i++) PRINTF("%f, ", cov->mpp.M[i]);
+      for (i=0; i<nmvdim; i++)  PRINTF("%f, ", cov->mpp.mM[i]);
       PRINTF("\n");    
     }
     leer(level); PRINTF("%-10s %s\n","mpp:log",
@@ -1060,10 +1089,15 @@ void pmi(cov_model *cov, char all, int level) {
       for (d=0; d<dim; d++) PRINTF(Y, pgs->X[d]); PRINTF("\n");}
 #define SHOW(Z, X) SHOWDEFAULT(Z, X, "%f ")
 #define SHOWINT(Z, X) SHOWDEFAULT(Z, X, "%d ")
-
-
+    
+    if (R_FINITE(pgs->zhou_c)) {
+      leer(level); PRINTF("%-10s %f\n","mpp:zhou_c", pgs->zhou_c);
+    } 
+   
     SHOW("pgs:v", v);    
     SHOW("pgs:x", x);
+    SHOW("pgs:own_start", own_grid_start);
+    SHOW("pgs:own_step", own_grid_step);
     SHOW("pgs:xstart", xstart);
     SHOW("pgs:inc", inc);
     SHOW("pgs:suppmin", supportmin);
@@ -1071,7 +1105,7 @@ void pmi(cov_model *cov, char all, int level) {
     SHOWINT("pgs:gridlen", gridlen);
     SHOWINT("pgs:start", start);
     SHOWINT("pgs:end", end);
-    SHOW("pgs:delta", delta);
+    //  SHOW("pgs:delta", delta);  // fuehrt zu Fehler in valgrind ?!
     SHOWINT("pgs:nx", nx);
     if (pgs->pos != NULL) { // gauss
       location_type *loc = Loc(cov);
@@ -1081,10 +1115,9 @@ void pmi(cov_model *cov, char all, int level) {
       SHOWINT("pgs:pos", pos);
       SHOWINT("pgs:min", min);
       SHOWINT("pgs:max", max);
-    }      
+    }
     if (pgs->halfstepvector != NULL) { // max-stable 
       leer(level); PRINTF("%-10s %s\n","pgs:flat", FT[pgs->flat]);
-      leer(level); PRINTF("%-10s %f\n","pgs:orig", pgs->value_orig);
       leer(level); PRINTF("%-10s %f\n","pgs:globmin", pgs->globalmin);
       leer(level); PRINTF("%-10s %f\n","pgs:cur.thres",pgs->currentthreshold);
       SHOW("pgs:half", halfstepvector);
@@ -1098,6 +1131,10 @@ void pmi(cov_model *cov, char all, int level) {
       }
     } else { // gauss oder poisson
       leer(level); PRINTF("%-10s %f\n","pgs:intens", pgs->intensity);
+    }
+    if (pgs->cov != NULL) {
+      leer(level); 
+      PRINTF("%-10s %s [%d]\n","pgs:cov", Nick(pgs->cov), pgs->cov->zaehler);
     }
   }
   
@@ -1120,6 +1157,7 @@ void pmi(cov_model *cov, char all, int level) {
       leer(level); PRINTF("%-10s %f\n","rct:step", p->step);
       leer(level); PRINTF("%-10s %d\n","rct:nstep", p->nstep);
       leer(level); PRINTF("%-10s %d\n","rct:ntmp", p->tmp_n);
+      leer(level); PRINTF("%-10s %f\n","rct:total", p->weight[1 + p->nstep]);
       
       if (PMI_print_rect > 1 && p->value != NULL) {
 	leer(level); { PRINTF("%-10s ","rct:val"); 
@@ -1180,7 +1218,10 @@ void pmi(cov_model *cov, char all, int level) {
       } else if (cov->prevloc == cov->calling->ownloc) {
 	PRINTF("%-10s (%d)\n", "loc:calling->own", addressbits(cov->prevloc));
 	PrintLoc(level, cov->prevloc, false);
-      } else  PRINTF("%-10s (%d)\n", "loc:MISMATCH", addressbits(cov->prevloc));
+      } else {
+	PRINTF("%-10s (%d)\n", "loc:MISMATCH", addressbits(cov->prevloc));
+	//	crash();
+      }
     }
   }
  
@@ -1229,6 +1270,7 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
   double *p, invscale;
   cov_model *dollar = cov->calling;
 
+ 
   bool solve = (cov->nr == NATSC_INTERN ||
 		(cov->nr == NATSC_USER && !MLEnatsc_only))
     && dollar != NULL && isDollar(dollar);
@@ -1239,13 +1281,14 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
     assert(dollar!=NULL && isDollar(dollar));
 
     INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
-    if (ISNA(invscale)) error("inverse function of in 'iexplDollar' unknown");
+    //invscale = 1.0;
+    if (ISNAN(invscale)) error("inverse function of in 'iexplDollar' unknown");
     
     p = PARAM(dollar, DSCALE);
     if (p != NULL) {
-      p[0] /= invscale;
+       p[0] /= invscale;
     } else {
-      p = PARAM(dollar, DANISO);      
+       p = PARAM(dollar, DANISO);      
       if (p != NULL) { 	
 	int i,
 	  n = dollar->nrow[DANISO] * dollar->ncol[DANISO];
@@ -1255,11 +1298,13 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
       }
     }
   } else {
-    int i;
+     int i;
+     // PMI(cov);
     for (i=0; i<MAXSUB; i++) { // cov->sub[i]: luecken erlaubt bei PSgen !
       if (cov->sub[i] != NULL) iexplDollar(cov->sub[i], MLEnatsc_only);
     }
   }
+
 }
 
 
@@ -1282,8 +1327,11 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
     k = 0; 
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   bool plus_mixed_models;
+
+  //printf("model %s (%d %d %d)  %d %d \n",Nick(cov),cov->nr, NATSC_INTERN,
+  //	 NATSC_USER, modus, GETMODEL_AS_SAVED);
   
-  if ((cov->nr == NATSC_INTERN && cov->nr != GETMODEL_AS_SAVED) ||
+  if ((cov->nr == NATSC_INTERN && modus != GETMODEL_AS_SAVED) ||
       (cov->nr == NATSC_USER && modus == GETMODEL_DEL_NATSC)) { 
     return IGetModel(cov->sub[0], modus, spConform, do_notreturnparam);
   }
@@ -1339,7 +1387,7 @@ SEXP IGetModel(cov_model *cov, int modus, bool spConform, bool do_notreturnparam
 //  SET_STRING_ELT(nameMvec, k, mkChar("user"));  
 //  SET_VECTOR_ELT(model, k++, Int(cov->user, Nothing + 1));
 
-//  print("a %d %d %d %s\n",cov->nsub, k, nmodelinfo, NICK(cov));
+//  print("a %d %d %d %s\n",cov->nsub, k, nmodelinfo, Nick(cov));
 
   int zaehler = 0;
   for (i=0; i<MAXSUB; i++) {
@@ -1378,40 +1426,70 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
 //      * extern practical range definieren
 //      * intern practical range verwenden lassen (use.naturalscaling)
 
-  int knr = INTEGER(keynr)[0],
+  int err = NOERROR,
+    knr = INTEGER(keynr)[0],
     modus = INTEGER(Modus)[0] % 10;
   bool
     delete_call = INTEGER(Modus)[0] < 10,
     spConform = (bool) INTEGER(SpConform)[0],
-    do_notreturnparam = (bool) INTEGER(Do_notreturnparam)[0];
+    do_notreturnparam = (bool) INTEGER(Do_notreturnparam)[0],
+    na_ok = NAOK_RANGE;
+
+   SEXP value = R_NilValue;
 
   //printf("modus=%d %d %d %d\n", modus, delete_call, spConform, do_notreturnparam);
-  cov_model *cov;
-  if (knr < 0 || knr  > MODEL_MAX || KEY[knr] == NULL) 
-    return allocVector(VECSXP, 0);
+   cov_model *cov,
+     *dummy = NULL; //ACHTUNG: "=NULL" hinzugefuegt
 
-  cov = KEY[knr];
+  if (knr < 0 || knr  > MODEL_MAX || KEY[knr] == NULL) {
+    err = ERRORREGISTER;
+    goto ErrorHandling;
+  }
+
+
+  if ((cov = KEY[knr]) == NULL) goto ErrorHandling; // return noerror, nil
   if (delete_call && isInterface(cov)) {    
     cov = cov->key == NULL ? cov->sub[0] : cov->key;
+    if (cov == NULL) {
+      GERR("model is not a correct interface model");
+    }
   }
-  //PMI(cov);
-
+  //
+ 
   if (modus == GETMODEL_DEL_NATSC || modus == GETMODEL_DEL_MLE) {
-     return IGetModel(cov, modus, spConform, do_notreturnparam);
+     value = IGetModel(cov, modus, spConform, do_notreturnparam);
   } else {
-    cov_model *dummy = NULL; //ACHTUNG: "=NULL" hinzugefuegt
-    SEXP value;
-    if (covcpy(&dummy, cov) != NOERROR) return R_NilValue;
-    iexplDollar(dummy, modus == GETMODEL_SOLVE_MLE);
+    // 
+    if (isInterface(cov)) { 
+      if ((err = covcpy(&dummy, true, cov, cov->prevloc, NULL, true, true,
+			true)) != NOERROR) goto ErrorHandling;
+      dummy->calling = NULL;
+    } else {
+	  if ((err = covcpy(&dummy, cov)) != NOERROR) goto ErrorHandling;
+   }
+    NAOK_RANGE = true;
+    if ((err = CHECK(dummy, cov->tsdim, cov->xdimprev, cov->typus,
+		     cov->domprev, cov->isoprev, cov->vdim2, cov->role)) 
+	!= NOERROR) {
+      goto ErrorHandling;
+    }
+     iexplDollar(dummy, modus == GETMODEL_SOLVE_MLE);
+
     if (modus == GETMODEL_SOLVE_NATSC) {
       modus = GETMODEL_DEL_NATSC;
     } else if (modus == GETMODEL_SOLVE_MLE) {
       modus = GETMODEL_DEL_MLE;
     }
     value = IGetModel(dummy, modus, spConform, do_notreturnparam);
-    COV_DELETE(&dummy);
-    return(value);
-  }
+   }
+
+ ErrorHandling:
+  NAOK_RANGE = na_ok;
+  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy);
+  if (err != NOERROR) XERR(err);
+
+  return(value);
+
 }
 
 
@@ -1419,22 +1497,24 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
 
 void Path(cov_model *cov, cov_model *sub) {
   //  printf("%ld\n", cov);
-  //  printf("covnr =%d %s\n", cov->nr, NICK(cov));
+  //  printf("covnr =%d %s\n", cov->nr, Nick(cov));
   cov_fct *C = CovList + cov->nr;
+  const char *sep="-> ";
   if (cov->calling == NULL) {
     PRINTF(" *** "); 
   } else {
     //    printf("calling\n");
     Path(cov->calling, cov);
   }
-
+ 
   if (sub == NULL) return; 
-  if (cov->key == sub) { PRINTF("%s.key.%d->", C->nick, cov->zaehler); return; }
+  if (cov->key == sub) { PRINTF("%s.key.%d%s", C->nick, cov->zaehler, sep); return; }
 
   int i;
   for (i=0; i<C->maxsub; i++) {
     if (cov->sub[i] == sub) {
-      PRINTF("%s.sub[%d].%d->", C->nick, i, cov->zaehler);
+      //      PRINTF("%s.sub[%d].%d%s", C->nick, i, cov->zaehler, sep);
+      PRINTF("%s[%s,%d].%d%s", C->nick, C->subnames[i], i, cov->zaehler, sep);
       return;
     }
   }
@@ -1442,7 +1522,7 @@ void Path(cov_model *cov, cov_model *sub) {
   if (cov->Splus != NULL) {
     for (i=0; i<C->maxsub; i++) {
       if (cov->Splus->keys[i] == sub) {
-	PRINTF("%s.S[%d].zaehler->", C->nick, i, cov->zaehler);
+	PRINTF("%s.S[%d].%d%s", C->nick, i, cov->zaehler, sep);
 	return;
       }
     }
@@ -1450,13 +1530,13 @@ void Path(cov_model *cov, cov_model *sub) {
 
   for (i=0; i<C->kappas; i++) {
     if (cov->kappasub[i] == sub) {
-      PRINTF("%s.%s.%d->", C->nick, C->kappanames[i], cov->zaehler);
-      return;
+      PRINTF("%s.%s.%d%s", C->nick, C->kappanames[i], cov->zaehler, sep);
+       return;
     }
   }
 
 
-  PRINTF("%s (UNKNOWN,%d)->", C->nick, cov->zaehler);
+  PRINTF("%s (UNKNOWN,%d)%s", C->nick, cov->zaehler, sep);
 }
 
 void pmi(cov_model *cov) { // OK
@@ -1520,8 +1600,23 @@ void pmi(cov_model *cov, char all) {
 		      (int) meth->expected_number_simu);  
 */
 
- 
+void ple_intern(cov_fct *C){
+  int i;
+  PRINTF("pref: ");
+  for (i=0; i<Nothing; i++) PRINTF("%d ", C->pref[i]);
+  PRINTF("\n");
+}
 
+void ple(cov_model *cov) {
+  PRINTF("  %s\n", NAME(cov));
+  ple_intern(CovList + cov->nr);
+}
+ 
+void ple(char *name) {
+  PRINTF("PLE %s\n", name);
+  ple_intern(CovList + getmodelnr(name));
+}
+ 
 
 void PSTOR(cov_model *cov, storage *x) {  
   
@@ -1537,7 +1632,7 @@ void PSTOR(cov_model *cov, storage *x) {
     //   PRINTF("%d. win:[%3.3f, %3.3f] c=%3.3f info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
    PRINTF("%d. c=%3.3f info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
 	   d, //x->window.min[d], x->window.max[d], x->window.centre[d],
-	   RF_NAN, RF_NAN, // pgs->mppinfo.min[d], x->mppinfo.max[d],
+	   RF_NA, RF_NA, // pgs->mppinfo.min[d], x->mppinfo.max[d],
 	   x->spec.E[d], x->spec.sub_sd_cum[d]);  
   }
 
@@ -1546,3 +1641,7 @@ void PSTOR(cov_model *cov, storage *x) {
 	 FT[x->Sspectral.grid], FT[x->Sspectral.ergodic], 
 	 x->spec.sigma, x->spec.density, x->spec.nmetro);
 }
+
+
+void NoCurrentRegister() { currentRegister=-1; }
+void GetCurrentRegister(int *reg) {  *reg = currentRegister; }

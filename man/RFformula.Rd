@@ -62,8 +62,8 @@
  identity matrix of corresponding dimension.
  
  \item error term/nugget effect\cr
- optional, should be of the form \code{\link{RMnugget}(...)}, see
- \command{\link{RMnugget}}. \command{\link{RMnugget}} describes a vector
+ optional, should be of the form \code{\link{RMnugget}(...)}.
+ \command{\link{RMnugget}} describes a vector
  of iid Gaussian random variables.
 
  Please note that the character \dQuote{@} in the RFformula-context can only
@@ -75,7 +75,7 @@
 }
 
 \note{
-  (additional) parameter names should always start with a capital
+  (additional) argument names should always start with a capital
   letter. Small initial letters are reserved  for \command{\link{RFoptions}}.
 }
 
@@ -103,7 +103,8 @@
  \code{\link[=RandomFields-package]{RandomFields}}.}
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 \dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {
 RFoptions(modus_operandi="sloppy")
@@ -243,7 +244,7 @@ fit <- RFfit(model=model.na, data=multi.simulated)
 RFoptions(modus_operandi="normal")
 }
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

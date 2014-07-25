@@ -26,35 +26,37 @@
  }
 
 \usage{
-RPspectral(phi, loggauss, sp_lines, sp_grid, prop_factor, sigma) 
+RPspectral(phi, sp_lines, sp_grid, prop_factor, sigma) 
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated.}
- \item{loggauss}{see \command{\link{RPgauss}}.}
+% \item{loggauss}{see \command{\link{RPgauss}}.}
  \item{sp_lines}{
  Number of lines used (in total for all additive components of the
  covariance function).
 
- Default: \code{500}.
+ Default: \code{2500}.
  }
  \item{sp_grid}{Logical.
  The angle of the lines is random if
  \code{grid=FALSE}, 
- and \eqn{k\pi/}{k*pi/}\code{sp_lines}
+ and \eqn{k\pi/}\code{sp_lines}
  for \eqn{k}{k} in \code{1:sp_lines},
- otherwise. This parameter is only considered
+ otherwise. This argument is only considered
  if the spectral measure, not the density is used.
  
  Default: \code{TRUE}.
  }
- \item{prop_factor}{
+ \item{prop_factor}{ % to do: use RRrectangular
    positive real value.
    Sometimes, the spectral density must be samples by MCMC.
    Let \eqn{p} the average rejection rate. Then
    the chain is sampled every \eqn{n}th point where
    \eqn{n = |log(p)| *}\code{prop_factor}
+
+   Default: \code{50}.
  }
  \item{sigma}{real. Considered if the Metropolis
  algorithm is used. It gives the standard deviation of the
@@ -111,12 +113,13 @@ RPspectral(phi, loggauss, sp_lines, sp_grid, prop_factor, sigma)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RPspectral(RMmatern(nu=1))
 y <- x <- seq(0,10,len=if (interactive()) 400 else 3)
 z <- RFsimulate(model, x, y, n=2, grid=TRUE)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

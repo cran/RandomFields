@@ -85,7 +85,7 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
 	block.sequ, fft.m, fft.max.length, mode,
 	cex, cex.main, height, vario.n, fft.max.regr, fft.shift,
 	lower, upper, sill, nr}{
-	as the functions are obsolete, all these parameters
+	as the functions are obsolete, all these arguments
 	are not documented anymore.
  }
 }
@@ -93,6 +93,7 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
  not given anymore.
 }
 \seealso{
+  The functions that should be used instead are, for instance,
  \command{\link{RFcov}}, \command{\link{RFcovmatrix}},
  \command{\link{RFvariogram}}, \command{\link{RFsimulate}},
  \command{\link{RFinterpolate}},
@@ -102,12 +103,13 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 \examples{
-RFoptions(seed=0)
-\dontshow{RFoptions(warn.newstyle=FALSE, warn.oldstyle=FALSE)}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+\dontshow{RFoptions(internal.warn_newstyle=FALSE, internal.warn_oldstyle=FALSE)}
 
 ## no examples given, as command is obsolete
 \dontshow{\dontrun{
@@ -143,7 +145,7 @@ estparam <- rep(NA, 4)
 v <- fitvario(x=g1, y=g2, grid=FALSE, model=model, param=estparam, data=z)
 Print(v$ml, v$ml$ml.value)
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{spatial}

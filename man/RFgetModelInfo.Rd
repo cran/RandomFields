@@ -106,12 +106,13 @@ RFgetModelInfo(register, level = 3,
  List of internal information is returned.
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \seealso{\command{\link{RFsimulate}}
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
 RFsimulate(model, 1:4, grid=TRUE, storing=TRUE)
 str(RFgetModelInfo(RFsimulate), list.len=5, max.level=5)
@@ -122,7 +123,7 @@ str(RFgetModelInfo(RFsimulate), list.len=5, max.level=5)
 
 str(RFgetModel(RFsimulate, show.call=FALSE))
 str(RFgetModel(RFsimulate, show.call=TRUE))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}

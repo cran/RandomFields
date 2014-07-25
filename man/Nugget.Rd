@@ -10,16 +10,13 @@
 }
 
 \usage{
-RPnugget(phi, loggauss, tol, vdim)
+RPnugget(phi, tol, vdim)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated. The only possible
  model for \code{phi} is \command{\link{RMnugget}}.}
- \item{loggauss}{optional parameters;
- same meaning as for 
- \command{\link{RPgauss}}.}
  \item{tol}{
    points at a distance less than or equal to \code{nugget.tol}
  are considered as being identical. This strategy applies to
@@ -46,7 +43,7 @@ RPnugget(phi, loggauss, tol, vdim)
  This method only allows \command{\link{RMnugget}} as a submodel.
 
  The method also allows for zonal nugget effects. Only there the
- parameter \code{tol} becomes important.
+ argument \code{tol} becomes important.
  For the zonal nugget effect, the anisotropy matrix \code{Aniso}
  should be given in \command{\link{RMnugget}}. There, only the kernal of the
  matrix is important.
@@ -71,7 +68,8 @@ RPnugget(phi, loggauss, tol, vdim)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMnugget()
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
@@ -79,7 +77,7 @@ plot(z)
 model <- RPnugget(RMnugget(var=0.01, Aniso=matrix(nc=2, rep(1,4))))
 z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
 plot(z)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \seealso{

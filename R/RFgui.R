@@ -27,8 +27,10 @@ RFgui <- function(data, x, y,
     if (RFoptions()$general$spConform) { 
       RFvariogram(model=res, x=0)
       res <- list2RMmodel(GetModel(RFvariogram))
+    } else {
+      class(res) <- "RM_model"
+      invisible(res)
     }
-    invisible(res)
   } else invisible(NULL)
 }
 
@@ -40,7 +42,6 @@ rfgui.intern <- function(data, x, y,
                          sim_only1dim=FALSE,                         
                          parent.ev=NULL,
                          printlevel=0,...) {
-  simuMethod <- "circulant"
   circ.trials <- 1
   circ.force <- TRUE
   circ.min <- -2
@@ -50,8 +51,8 @@ rfgui.intern <- function(data, x, y,
   if (missing(xcov)) xcov <- NULL
   if (missing(ycov)) ycov <- NULL
   
-  if (!do.call("require", list("tcltk", quietly=TRUE)) ||
-      !do.call("require", list("tkrplot", quietly=TRUE)))
+  if (!do.call(base::require, list("tcltk", quietly=TRUE)) ||
+      !do.call(base::require, list("tkrplot", quietly=TRUE)))
     stop("To use 'RFgui' the tcl/tk packages 'tcltk' and 'tkrplot' must be installed.")
   
   tclRequire("BWidget", warn=!FALSE)
@@ -62,9 +63,10 @@ rfgui.intern <- function(data, x, y,
   RFoptOld <- if (same.alg)
     internal.rfoptions(storing=FALSE, printlevel=printlevel - 10,
                        circulant.trials=circ.trials,
-                       gui.simu_method = simuMethod,
                        circulant.force=circ.force,
-                       circulant.mmin=circ.min, ...)
+                       circulant.mmin=circ.min, ...,
+                       graphics.height=-1
+                       )
   else  internal.rfoptions(storing=FALSE, printlevel=printlevel - 10, ...)
   #Print(same.alg, RFoptOld)
   assign("RFopt.old", RFoptOld[[1]], envir=ENVIR)
@@ -74,7 +76,7 @@ rfgui.intern <- function(data, x, y,
   
   guiReg <- GetModelRegister("gui")
   guiOpt <- RFopt$gui
-  stopifnot(guiReg == RFopt$general$guiregister)
+  stopifnot(guiReg == RFopt$registers$guiregister)
   
   OnModelSelected <- function(...)
   { 
@@ -106,7 +108,7 @@ rfgui.intern <- function(data, x, y,
     assign("selModelNum",selModelNum, envir=ENVIR)
   
     selModelCountPar <- .C("GetNrParameters", selModelNum, k=integer(1),
-                           PACKAGE="RandomFields", DUP = FALSE)$k
+                           PACKAGE="RandomFields", DUP = DUPFALSE)$k
 
     ##Print(selModelCountPar, newmodel)
     
@@ -132,7 +134,7 @@ rfgui.intern <- function(data, x, y,
     for (i in 1:selModelCountPar) {
       baseParam[i] <- 
         if (!is.na(baseParam[i])) baseParam[i] else
-        if (modelParam[i,3] == INTEGERLARAM) modelParam[i,2] else
+        if (modelParam[i,3] == INTEGERPARAM) modelParam[i,2] else
         if (modelParam[i,1] >=0) 0.25 * sum(sqrt(modelParam[i,1:2]))^2 + 0.1
         else 0.5 * (modelParam[i,1] + modelParam[i,2])
  
@@ -146,7 +148,7 @@ rfgui.intern <- function(data, x, y,
       slParam <- tkscale(tt, command = plotDensity, from=modelParam[i,1],
                          to=modelParam[i,2],
                          showvalue=FALSE, variable=slParamValue,
-                         resolution=if (modelParam[i,3] == INTEGERLARAM) 1 else
+                         resolution=if (modelParam[i,3] == INTEGERPARAM) 1 else
                                 (modelParam[i,2]-modelParam[i,1])/numberSteps, 
                          orient="horizontal", length=length.slider, width=18)
       entryParam <- tkentry(tt,width=size.entry,textvariable=entryParamValue)
@@ -171,21 +173,27 @@ rfgui.intern <- function(data, x, y,
 
   OnPlotVarCovChanged <- function(...)
   {
-    if((as.character(tclvalue(plotVarCov)) == "Variogram") && !is.null(ev))
-      tkconfigure(cbPlotEV, disabled=FALSE)
-    else
-      tclvalue(plotEV) = "0" 
+    if((as.character(tclvalue(plotVarCov)) == "Variogram") && !is.null(ev)) {
+      #Print("here", cbPlotEV);
+      
+      ## tkconfigure(cbPlotEV, disabled=FALSE)
+      #Print("here end")
+    } else {
+    #
+      #Print("XXX here end")
+      tclvalue(plotEV) <- "0"
+    }
   #    tkconfigure(cbPlotEV, disabled=TRUE)
+    
+    #Print("OK")
     tkrreplot(imgVar)
   }
 
   OnplotEVChanged <- function(...)
   {
     if((as.character(tclvalue(plotVarCov)) == "Covariance") || is.null(ev))
-      tclvalue(plotEV) = "0"
-    else {
-       tkrreplot(imgVar)
-    }
+      tclvalue(plotEV) <- "0"
+    tkrreplot(imgVar)
   }
 
   OnScaleEntryChanged <- function(...)
@@ -299,6 +307,8 @@ rfgui.intern <- function(data, x, y,
   plotFunction <- function(...)
   {
 
+    #Print(tclvalue(plotEV), cbPlotEV)
+
     plotev = as.numeric(tclvalue(plotEV))
     par(cex=0.6, bg="lightgrey", mar=c(3,3,1,1))
     if(!exists("baseModel",envir=ENVIR)) {
@@ -333,7 +343,7 @@ rfgui.intern <- function(data, x, y,
     newmodel <- GetGuiModel()
     assign("RFgui.model", newmodel, envir=parent.ev)
     
-    if(as.numeric(tclvalue(showAniso))) {
+     if(as.numeric(tclvalue(showAniso))) {
       x1 <- rep(xcov, each=length(ycov))
       x2 <- rep(ycov, times=length(xcov))
       cv <- RFvariogram(x=as.matrix(expand.grid(xcov, ycov)),
@@ -366,21 +376,26 @@ rfgui.intern <- function(data, x, y,
       cv <- RFcov(x=xcov, model=newmodel,
                   practicalrange = tclvalue(cbPracRangeVal) != "0")
     }
-    if(as.character(tclvalue(plotVarCov)) == "Variogram") {
+    if(as.character(tclvalue(plotVarCov)) == "Variogram") {      
       pr.dummy <- tclvalue(cbPracRangeVal) != "0"
       ##    save(file="~/xxxx", xcov, newmodel, pr.dummy)
-      ##    Print(x=xcov, model=newmodel, practicalrange = pr.dummy )
+      ##      Print(x=xcov, model=newmodel, practicalrange = pr.dummy )
       cv <- RFvariogram(x=xcov, model=newmodel,
                         practicalrange = pr.dummy)
+      # Print(RFgetModelInfo(RFvariogram, level=19))
     }
 
-    xm <- c(min(xcov),max(xcov))
-    ym <- c(min(cv), max(cv)*1.1)
     if(!is.null(ev) && plotev) {
-      notNA <- !is.nan(ev@emp.vario)
-      xm <- c(min(ev@centers[notNA]), max(ev@centers[notNA]))
-      ym <- c(min(ev@emp.vario[notNA]), max(ev@emp.vario[notNA])*1.1)
+      xm <- range(ev@centers, na.rm=TRUE)
+      ym <- range(ev@emp.vario, na.rm=TRUE) * c(1, 1.1)
+    } else {
+      xm <- range(xcov, na.rm=TRUE)
+      ym <- range(cv, na.rm=TRUE) * c(1, 1.1)
     }
+
+#    Print(xm, xcov, min(xcov),max(xcov), ev@centers, ym,  c(min(xcov),max(xcov)), c(min(cv), max(cv)*1.1))
+
+    
     lab <- xylabs("", NULL)
     plot(xcov[2:length(xcov)], cv[2:length(xcov)], type="l",
          xlab=lab$x, ylab="", xlim=xm, ylim=ym)
@@ -391,9 +406,9 @@ rfgui.intern <- function(data, x, y,
       points(ev@centers[!is.nan(ev@emp.vario)],
              ev@emp.vario[!is.nan(ev@emp.vario)], pch=19)
 
-    # Print(newmodel, "hierx")
+    #    Print(newmodel, "hierx")
      assign("model", newmodel, envir = ENVIR)
-  }
+  } # function
 
   plotSimulation <- function(...)
   {
@@ -422,15 +437,17 @@ rfgui.intern <- function(data, x, y,
       save(file="model", x, simu.model, yy, guiReg, pr)
 
       z <- try(RFsimulate(x=x, grid=TRUE, model=simu.model,
-                          y=if (get("simDim", envir = ENVIR) =="sim1Dim") NULL
+                          y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
                           else if (is.null(y)) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
                           practicalrange = tclvalue(cbPracRangeVal) != "0"),
                silent=!TRUE)
-
-      if (class(z) == "RFspatialGridDataFrame") plot(z, cex=.5)
-      else {
+ 
+      if (class(z) == "RFspatialGridDataFrame" ||
+          class(z) == "RFgridDataFrame") {
+        plot(z, cex=.5, legend=FALSE)
+      } else {
         plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="", ylab="",
              cex.main=2, col.main="brown",
               main=paste("\n\n\n\n\n\n\n\n",
@@ -450,8 +467,8 @@ rfgui.intern <- function(data, x, y,
   }
 
   
-  plotDensity <- function(...)
-  {
+  plotDensity <- function(...) {    
+#    Print("Y")
     #tkconfigure(labelOccupancy,textvariable=tclVar("Busy"))
     tkrreplot(imgVar)
     if(as.numeric(tclvalue(simAlways)))
@@ -663,9 +680,6 @@ rfgui.intern <- function(data, x, y,
     } else {      
       stopifnot(is(data, "RFsp"))
       if (!is.null(y)) stop("'x' and 'y' may not be given if 'data' is given.")
-
-      str(data)
-      
       r <- apply(data@coords, 2, range)
       len <- guiOpt$size[if (length(r) == 2) 1 else 2] 
       x <- seq(r[1], r[2], len=len)
@@ -710,15 +724,16 @@ rfgui.intern <- function(data, x, y,
   ##  if (exists("model", where=ENVIR)) remove("model", envir=ENVIR)
 
              
-  if(is.null(fixed.rs))
-    fixed.rs <- ifelse(exists(".Random.seed"), .Random.seed, runif(1,0,100000)) 
-
+  if(is.null(fixed.rs)) {
+    if (!exists(".Random.seed")) runif(1)
+    fixed.rs <- .Random.seed 
+  }
 
   # get all model names
   models <-
-    RFgetModelNames(type=ZF_TYPE[c(TcfType, PosDefType, UndefinedType) + 1],
-                    domain=ZF_DOMAIN[TRANS_INV + 1],
-                    isotropy=ZF_ISOTROPY[ISOTROPIC + 1],
+    RFgetModelNames(type=RC_TYPE[c(TcfType, PosDefType, UndefinedType) + 1],
+                    domain=RC_DOMAIN[TRANS_INV + 1],
+                    isotropy=RC_ISOTROPY[RC_ISOTROPIC + 1],
                     operator=FALSE, 
                     vdim=1)#, multivariate = 1)  
   
@@ -728,6 +743,8 @@ rfgui.intern <- function(data, x, y,
   cbPracRangeVal <- tclVar(RFopt$general$practicalrange)
   simAlways <- tclVar(as.integer(guiOpt$alwaysSimulate))
   plotVarCov <- tclVar("Variogram")
+
+  ##Print("TTT")
   plotEV <- tclVar(ifelse(is.null(ev) && tclvalue(plotVarCov)=="Variogram",
                           "0", "1"))
   showAniso <- tclVar("0")
@@ -843,6 +860,8 @@ rfgui.intern <- function(data, x, y,
   labelVariogram <- tklabel(tt,text="Variogram")
 
   #--- Checkbox plot empirical variogram    --------------------------
+  ## checkbuttion setzt die variable und fuehrt dann noch zusaetzlich
+  ## command aus.
   cbPlotEV <- tkcheckbutton(tt, variable=plotEV, command=OnplotEVChanged)
   labelPlotEV <- tklabel(tt,text="Plot empirical variogram")
 
@@ -867,7 +886,7 @@ rfgui.intern <- function(data, x, y,
   labelSimAlways <- tklabel(tt,text="Simulate always")
 
   #--- Checkbox Practical Range --------------------------------------
-  cbPracRange <- tkcheckbutton(tt, command=plotDensity)
+  cbPracRange <- tkcheckbutton(tt, variable=cbPracRangeVal, command=plotDensity)
   tkconfigure(cbPracRange,variable=cbPracRangeVal)
   labelPracRange <- tklabel(tt,text="Practical Range")
 

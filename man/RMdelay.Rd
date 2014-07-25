@@ -22,7 +22,7 @@ RMdelay(phi,s,var, scale, Aniso, proj)
  shift matrix, where \eqn{d} is the
  dimension of the space, giving the components \eqn{s=(s_1,\ldots,
  s_m)}{s=(s_1,..., s_m)} where the \eqn{s_i} are vectors.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -52,14 +52,15 @@ RMdelay(phi,s,var, scale, Aniso, proj)
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 x <- y <- seq(-10,10,0.2)
 model <- RMdelay(RMstable(alpha=1.9, scale=2), s=c(4,4))
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu, zlim="joint")
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

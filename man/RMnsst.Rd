@@ -13,7 +13,7 @@ RMnsst(phi, psi, delta, var, scale, Aniso, proj)
  \item{phi}{is normal mixture \command{\link{RMmodel}}.}
  \item{psi}{is a variogram \command{\link{RMmodel}}.}
  \item{delta}{a numerical value; must be greater than or equal to the spatial dimension of the field}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -64,10 +64,11 @@ RMnsst(phi, psi, delta, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMnsst(phi=RMgauss(), psi=RMfbm(alpha=1), delta=2)
 x <- seq(0, 10, if (interactive()) 0.2 else 1) 
-plot(model, ylim=c(0,1), dim=2)
+plot(model, ylim=c(-1,1), dim=2)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

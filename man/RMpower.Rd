@@ -19,7 +19,7 @@ RMpower(phi, alpha, var, scale, Aniso, proj)
  \item{phi}{a valid \command{\link{RMmodel}}; either a variogram model or a
  covariance model}
  \item{alpha}{a numerical value in the interval [0,1]}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
 }
 \details{
  If \eqn{\gamma} is a variogram, then \eqn{\gamma^\alpha} is a valid
@@ -47,10 +47,11 @@ RMpower(phi, alpha, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMpower(RMgauss(), alpha=0.5)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,1))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

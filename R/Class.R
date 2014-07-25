@@ -48,8 +48,14 @@ setValidity("RFpointsDataFrame",
 
 
 
+
+setClassUnion("RFspatialDataFrame",
+              c("RFspatialGridDataFrame", "RFspatialPointsDataFrame"))
+setClassUnion("RFdataFrame", c("RFgridDataFrame", "RFpointsDataFrame"))
 setClassUnion("RFsp", c("RFspatialGridDataFrame", "RFspatialPointsDataFrame",
                         "RFgridDataFrame", "RFpointsDataFrame"))
+              #c("RFspatialDataFrame", "RFdataFrame")) ## waere natuerlich,
+## dann funktioniert haber dimensions() nicht mehr.
 
 
 
@@ -158,7 +164,7 @@ setClass('RMmodelgenerator', contains ="function",
                         domain = "character",
                         isotropy = "character",
                         operator = "logical",
-                        normalmix = "logical", # is normal mixture?
+                        monotone = "character",
                         finiterange = "logical",
                         maxdim = "numeric",      # max possible dimension
                         vdim = "numeric"         # ??
@@ -166,10 +172,15 @@ setClass('RMmodelgenerator', contains ="function",
          )
 
 
-## definition of class 'RMmodelExt'
-setClass('RMmodelExt',  contains='RMmodel',
+## definition of class 'RMmodelFit'
+setClass('RMmodelFit',  contains='RMmodel',
          representation(likelihood = "numeric",
+                        variab = "matrix",
+                        param = "matrix",
+                        covariab = "ANY",
+                        AIC = "numeric",
                         AICc = "numeric",
+                        BIC = "numeric",
                         trend = "numeric",
                         residuals = "ANY"
                         )
@@ -186,6 +197,7 @@ setClass("RFempVariog",
                         phi.centers = "ANY",
                         theta.centers = "ANY",
                         T = "ANY",
+                        vdim = "ANY",
                         coord.units = "character",
                         variab.units = "character",
                         call = "ANY"
@@ -205,8 +217,14 @@ setValidity("RFempVariog",
 
 ## definition of class 'RFfit'
 setClass("RFfit", 
-         representation(ev="list",
-                        table = "matrix",
+         representation(Z = "list",
+                        ev="list",
+                        table = "data.frame",
+                        n.variab = "integer",
+                        n.param = "integer",
+                        n.covariates = "integer",
+                        boxcox = "logical",
+                        deleted = "integer",
                         lowerbounds ='RMmodel',
                         upperbounds ='RMmodel',
                         transform = "list",
@@ -214,25 +232,29 @@ setClass("RFfit",
                         coord.units = "character",
                         variab.units = "character",
                         number.of.data = "integer",
+                        modelinfo = "data.frame",
                         number.of.parameters = "integer",
-                        autostart = 'RMmodelExt',
-                        users.guess = 'RMmodelExt', # Martin: 2.4.: eingefuegt
-                        self = 'RMmodelExt',
-                        plain = 'RMmodelExt',
-                        sqrt.nr = 'RMmodelExt',
-                        sd.inv = 'RMmodelExt',
-                        internal1 = 'RMmodelExt',
-                        internal2 = 'RMmodelExt',
-                        internal3 = 'RMmodelExt',
-                        ml = 'RMmodelExt'
+                        p.proj = "integer",
+                        v.proj = "integer",
+                        x.proj = "ANY",  ## integer or logical
+                        fixed = "ANY",
+                        true.tsdim = "integer",
+                        true.vdim = "integer",
+                        report = "character",
+                        submodels = "ANY",
+                        autostart = 'RMmodelFit',
+                        users.guess = 'RMmodelFit', # Martin: 2.4.: eingefuegt
+                        self = 'RMmodelFit',
+                        plain = 'RMmodelFit',
+                        sqrt.nr = 'RMmodelFit',
+                        sd.inv = 'RMmodelFit',
+                        internal1 = 'RMmodelFit',
+                        internal2 = 'RMmodelFit',
+                        internal3 = 'RMmodelFit',
+                        ml = 'RMmodelFit'
                         #ml.residuals = "ANY" # matrix or RFsp
                         )
          )
-
-
-
-
-
 
 ## generic S4 method for 'plot'
 

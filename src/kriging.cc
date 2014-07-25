@@ -76,7 +76,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
     rep = INTEGER(Rep)[0],						\
     nx = INTEGER(Nx)[0],						\
     err = NOERROR,							\
-    vdim = KEY[reg]->vdim,						\
+    vdim = KEY[reg]->vdim2[0],						\
     vdimng = vdim * ngiven,						\
     /*   len_tgiven = dim * ngiven,	*/				\
     divachtzig = (nx<79) ? 1 : (nx / 79),				\
@@ -110,7 +110,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   if (err != NOERROR) {				\
     int endforX;				\
     endforX = nx * vdim * rep;			\
-    for (i=0; i<endforX; krig[i++]=RF_NAN);	\
+    for (i=0; i<endforX; krig[i++]=RF_NA);	\
   }						\
   return NULL;
   

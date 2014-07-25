@@ -22,16 +22,19 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{a covariance model which is a normal mixture, that means an
- \command{\link{RMmodel}} whose \command{normalmix} equals TRUE.}
+   \command{\link{RMmodel}} whose \code{monotone} property equals
+   \code{'normal mixture'}, see
+   \code{\link{RFgetModelNames}(monotone="normal mixture")}
+ }
  \item{A}{a symmetric \eqn{d-1 \times d-1}{d-1 x d-1}-matrix
- if the corresponding random field is in the \eqn{d}{d}-dimensional space}
+   if the corresponding random field is in the \eqn{d}{d}-dimensional space}
  \item{z}{a \eqn{d-1} dimensional vector if the corresponding random
- field is on \eqn{d}-dimensional space}
+   field is on \eqn{d}-dimensional space}
  \item{spacetime}{logical. If FALSE then the model is interpreted as
- if \eqn{h=0}, i.e. the spatial dimension is \eqn{d}. Default is \code{TRUE}}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
- \command{\link{RMmodel}}. If not passed, the above
- covariance function remains unmodified.}
+   if \eqn{h=0}, i.e. the spatial dimension is \eqn{d}. Default is \code{TRUE}}
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
+   \command{\link{RMmodel}}. If not passed, the above
+   covariance function remains unmodified.}
 }
 \details{See Schlather, M. (2010), Example 13 with l=1)
 }
@@ -41,7 +44,7 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
 \references{
  \itemize{
  \item Schlather, M. (2010)
- On some covariance models based on normal scale mixtures.
+ Some covariance models based on normal scale mixtures.
  \emph{Bernoulli}, \bold{16}, 780-797. 
  }
 }
@@ -49,9 +52,10 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
- \command{\link{RMmodel}},
- \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
+ \command{\link{RFsimulate}},
+ \code{\link{RMmodel}},
+ \code{\link{RMstp}}
 }
 
 
@@ -63,7 +67,8 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 ## Example of an evaluation of the ave2-covariance function
 ## in three different ways
@@ -88,7 +93,7 @@ z3 <- ( (det(E+2*B))^(-1/2) ) *
 ##
 stopifnot(abs(z1-z2)<1e-12, abs(z2-z3)<1e-12)
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 

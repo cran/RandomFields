@@ -17,7 +17,7 @@
 }
 \usage{
 RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
- lower = NULL, upper = NULL, BC.lambda, methods,
+ lower = NULL, upper = NULL, bc_lambda, methods,
  sub.methods, optim.control = NULL, users.guess = NULL,
  distances = NULL, dim, transform = NULL, ...)
 }
@@ -62,7 +62,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  See also lower.
  }
  \item{grid}{boolean. Whether coordinates give a grid}
- \item{BC.lambda}{a vector of at most two numerical components (just
+ \item{bc_lambda}{a vector of at most two numerical components (just
  one component 
  corresponds to two identical ones) which are the parameters of the 
  box-cox-transformation:
@@ -94,7 +94,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
    e.g. a parameter is supposed to be twice another one.
    This option should not be used yet.
  }
- \item{...}{further options and control parameters for the simulation
+ \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}.}
 }
  
@@ -143,7 +143,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \note{This function does not depend on the value of
  \command{\link{RFoptions}}\code{()$PracticalRange}. 
@@ -157,9 +157,10 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  \command{\link{weather}}.
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 % options(error=recover)
-% source("randomfields_2/tests/source.R")
+% source("RandomFields/tests/source.R")
 
 \dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
 RFoptions(modus_operandi="sloppy")
@@ -181,7 +182,7 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
  RMtrend(mean=NA)
 v <- RFfit(estmodel, data=d, spC=FALSE)
-Print(v$ml, v$ml$ml.value)
+print(v)
 
 
 \dontshow{\dontrun{
@@ -191,7 +192,7 @@ Print(v$ml, v$ml$ml.value)
 ## given constant)
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
  RMnugget(var=NA) + RMtrend(mean=NA)
-v1 <- RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_estimation="try",
+v1 <- RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try",
             spC=FALSE)
 Print(v1$ml, v1$ml$ml.value)
 
@@ -258,18 +259,9 @@ Print(v6$ml, v6$ml$ml.value)
 RFoptions(modus_operandi="normal")
 }}
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }
 \keyword{spatial}
+\keyword{optimize}
 
-
-
-
-
-
-
-% LocalWords: fitvario mleRF LSQ param NA naturalscaling PrintLevel optim pch
-% LocalWords: RFoptions nphi ntheta ntime lowerbound minbounddistance var
-% LocalWords: minboundreldist functioncalls eqn coord RMmodel emph cr
-% LocalWords: RFgetModelNames cov variogram uote parampositions NaN kappas MLE

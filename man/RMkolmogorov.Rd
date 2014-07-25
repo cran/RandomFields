@@ -17,7 +17,7 @@
 }
 
 \arguments{
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -44,12 +44,13 @@
 }
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- y <- seq(-2, 2, len=if (interactive()) 20 else 2)
 model <- RMkolmogorov()
 simu <- RFsimulate(model, x, y, z=0, grid=TRUE)
 plot(simu, select.variables=list(c(1,2)), col=c("red"))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 

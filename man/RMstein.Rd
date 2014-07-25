@@ -24,7 +24,7 @@ RMstein(nu, z, var, scale, Aniso, proj)
  \item{nu}{numerical value; greater than 1; smoothness parameter of the
  RMwhittle model}
  \item{z}{a vector; the norm of \eqn{z}{z} must be less or equal to 1.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -56,9 +56,10 @@ RMstein(nu, z, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 model <- RMstein(nu=1.5, z=0.9)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

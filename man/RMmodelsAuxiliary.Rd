@@ -28,33 +28,59 @@
   used as shape functions.
  \tabular{ll}{
     \command{\link{RMangle}} \tab defines an anisotropy matrix by angle
-    and a diagonal matrix. \cr
+    and a diagonal matrix.
+    \cr
     \command{\link{RMball}} \tab Indicator of a ball of radius
-    \eqn{1/2}. \cr
-    \command{\link{RMeaxxa}} \tab shape function used in the Bernoulli
-    paper given in the references\cr
-    \command{\link{RMetaxxa}} \tab shape function used in the Bernoulli
-    paper given in the references\cr
-    \command{\link{RMpolygon}} \tab Indicator of a typical Poisson polygon. \cr
+    \eqn{1/2}.
+    \cr
+    \command{\link{RMm2r}} \tab spectral function belonging to a
+    tail correlation function of the Gneiting class \eqn{H_n}
+    \cr 
+    \command{\link{RMm3b}}  \tab spectral function belonging to a tail
+    correlation function of the Gneiting class \eqn{H_n}
+    \cr 
+    \command{\link{RMmppplus}} \tab operator to define mixed moving
+    maxima (M3) processes
+    \cr 
+    \command{\link{RMmps}} \tab spectral functions belonging to a tail
+    correlation function of the Gneiting class \eqn{H_n}
+    \cr 
+    \command{\link{RMpolygon}} \tab Indicator of a typical Poisson
+    polygon. 
+    \cr
     \command{\link{RMrational}} \tab shape function used in the Bernoulli
-    paper given in the references\cr
+    paper given in the references
+    \cr
     \command{\link{RMrotat}} \tab shape function used in the Bernoulli
-    paper given in the references\cr
-    \command{\link{RMrotation}} \tab shape function used in the Bernoulli
-    paper given in the references\cr
-    \command{\link{RMsign}} \tab random sign\cr
-    \command{\link{RMstrokorb}} \tab spectral functions belonging
-    to a tail correlation function of the Gneiting class \eqn{H_n}\cr
+    paper given in the references
+    \cr
+    \command{\link{RMsign}} \tab random sign
+    \cr
     \command{\link{RMtruncsupport}} \tab truncates the support of a shape in
-    a Poisson based model \cr
+    a Poisson based model
+    \cr
   }
 
-
+  \bold{Special transformations}
+  \tabular{ll}{
+    \command{\link{RMeaxxa}} \tab shape function used in the Bernoulli
+    paper given in the references
+    \cr
+    \command{\link{RMetaxxa}} \tab shape function used in the Bernoulli
+    paper given in the references
+    \cr
+   \command{\link{RMrotation}} \tab shape function used in the Bernoulli
+   paper given in the references
+   \cr
+}
  
   \bold{Other models}
   \tabular{ll}{
-    \command{\link{RMcoord}} \tab passing new coordinates in a mixed model \cr
-    \command{\link{RMuser}} \tab User defined covariance model \cr
+    \command{\link{RMcoord}} \tab passing new coordinates in a mixed
+    model 
+    \cr
+    \command{\link{RMuser}} \tab User defined covariance model
+    \cr
   }
 
 
@@ -82,20 +108,11 @@
 }
 
 \examples{
-RFoptions(seed=0)
-type <- c("tail correlation function",
-          "positive definite",
-          "negative definite",
-          "process",
-          "method for Gauss processes",
-          "method for Brown-Resnick processes",
-          "shifted shape function",
-          "distribution family",
-          "shape function",
-          "trend",
-          "interface")
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+(type <- RC_TYPE[(0:1) -length(RC_TYPE)])
 RFgetModelNames(type=type, group.by="type")
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \author{

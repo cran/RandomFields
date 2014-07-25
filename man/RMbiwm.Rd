@@ -43,7 +43,7 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  If logical then the formula for the \command{\link{RMmatern}} model
  applies. See there for details.
  }
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -98,11 +98,12 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x <- y <- seq(-10, 10, if (interactive()) 0.2 else 5)
 model <- RMbiwm(nudiag=c(1, 2), nured=1, rhored=1, cdiag=c(1, 5), 
                 s=c(1, 1, 2))
 simu <- RFsimulate(model, x, y, grid=TRUE)
 plot(simu)
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

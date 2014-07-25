@@ -89,10 +89,15 @@ const char *NLOPTR_NAMES[nNLOPTR] =
    "NLOPT_GN_ISRES" // aehnlich NLOPT_GN_CRS2_LM
   }; 
 
+#define nLikelihood 4
+const char * LIKELIHOOD_NAMES[nLikelihood] = 
+  {"auto", "full", "composite", "selection"}; 
+
 void ResetWarnings() {
-  warn_param *w = &(GLOBAL.warn);
-  w->oldstyle = w->newstyle = w->Aniso = w->ambiguous = w->normal_mode =
-    w->warn_mode = w->warn_colour = w->warn_coordinates = true;
+  internal_param *w = &(GLOBAL.internal);
+  w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
+    w->warn_normal_mode = w->warn_mode = w->warn_colour = w->warn_coordinates =
+    w->warn_on_grid = true;
 }
 
 #define MaxMaxInts 9
@@ -132,7 +137,7 @@ void GetrfParametersI(int *covmaxchar, int *methodmaxchar, int *typemaxchar,
 		  covnr, methodnr, typenr, maxdim, maxmodels);
 }
 
-
+//       {careless, sloppy, easygoing, normal, precise, pedantic, neurotic}
 bool skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
   allowdistance0[nr_modes] = {true, false, false, false, false, false, false},
   ce_force[nr_modes] =       {true, true, true, false, false, false, false},
@@ -140,7 +145,9 @@ bool skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
   grid[nr_modes] =           {true, true, true, true, true, false, false},
   fit_split[nr_modes] =      {false,  true,  true, true, true, true, true},
   fit_refine[nr_modes] =     {false, false, false, true, true, true, true},
-  fit_reoptimise[nr_modes] = {false, false, false, true, true, true, true}
+  fit_reoptimise[nr_modes] = {false, false, false, true, true, true, true},
+  fit_ratiotest_approx[nr_modes]={true, true, true, true, false, false, false},
+  fit_cross_refit[nr_modes] = {false, false, false, false, true, true, true}
   ;
 char pch[nr_modes] =         {'\0',  '\0',  '\0',  '.',   '.',   '.',   '.'}
   ;
@@ -204,21 +211,25 @@ void SetDefaultModeValues(int old, int m){
   f->split = fit_split[m];
   f->refine_onborder = fit_refine[m];
   f->reoptimise = fit_reoptimise[m];
+  f->ratiotest_approx = fit_ratiotest_approx[m];
+  f->cross_refit = fit_cross_refit[m];
   f->critical = fit_critical[m];
   f->n_crit = fit_ncrit[m];
   f->optim_var_estim = fit_optim_var[m];
-  char dummy[10];
+   char dummy[10];
   strcpy(dummy, f_opt[m]);
   f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
 
   //  printf("optimiser %d %s\n", f->optimiser,  OPTIMISER_NAMES[f->optimiser]);
 
-  warn_param *w = &(GLOBAL.warn);
+  internal_param *w = &(GLOBAL.internal);
   w->stored_init = false;
-  if (m < normal) w->oldstyle = w->newstyle = w->Aniso = w->ambiguous = false;
-  else if (m>old) w->oldstyle = w->Aniso = w->ambiguous = true;
+  if (m < normal) 
+    w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
+      w->warn_on_grid = false;
+  else if (m>old) w->warn_oldstyle = w->warn_Aniso = w->warn_ambiguous = true;
   if (m != normal && w->warn_mode) {
-    PRINTF("Note that the option 'mode' is still in an experimental stage, so that the behaviour may change (slightly) in future.");
+    PRINTF("Note that the option 'modus_operandi' is still in an experimental stage, so that the behaviour may change (slightly) in future.");
     w->warn_mode = false;
   }
 }
@@ -284,13 +295,21 @@ void GetMethodName(int *nr, char **name)
 void PrintMethods()
 { 
   int i;
-  PRINTF("\n\n  Methods for generating Gaussian random fields\n  =============================================\n\n");  
-  for (i=0;i<(int) Nothing;i++) { PRINTF("  * %s\n",METHODNAMES[i]); }
-  PRINTF("\n\n  Methods for non-Gaussian random fields\n  ======================================\n");
-  for (i=1+(int) Nothing;i<(int) Forbidden; i++) { 
-    PRINTF("  * %s\n",METHODNAMES[i]); }
-  if (i==1+(int) Nothing) PRINTF("  * no methods implemented yet\n");
-  PRINTF("\n\n  == end of method list ================\n\n");
+    PRINTF("\n\n  Processes \n  ==========\n");
+  for (i=0; i<currentNrCov; i++)
+    if (CovList[i].Type == ProcessType && !CovList[i].internal)
+      PRINTF("  * %s\n", CovList[i].nick);
+
+  
+  PRINTF("\n\n  Methods for generating Gaussian random fields\n  =============================================\n");  
+  for (i=0; i<currentNrCov; i++)
+    if (CovList[i].Type == GaussMethodType && !CovList[i].internal)
+      PRINTF("  * %s\n", CovList[i].nick);
+  PRINTF("\n\n  Methods for max-stable random fields\n  ====================================\n");
+  for (i=0; i<currentNrCov; i++)
+    if (CovList[i].Type == BrMethodType && !CovList[i].internal)
+      PRINTF("  * %s\n", CovList[i].nick);
+ 
   PRINTF("\n");
 }
 
@@ -393,7 +412,7 @@ SEXP GetRange(){
   return;
 
 ErrorHandling : 
-  for (i=0; i<*lrange; i++) range[i]=RF_NAN;
+  for (i=0; i<*lrange; i++) range[i]=RF_NA;
  *index = -100;
  return;
 */
@@ -402,7 +421,7 @@ ErrorHandling :
 
 void PMLheader(char* firstcolumn, int nick) {
   int i;
-  char header1[]=" #    cir cut int TBM spe dir seq ave coi hyp spe\n";
+  char header1[]=" #    cir cut int TBM spe tdir seq ave coi hyp spe\n";
   char header2[]=" p    cul off rin     ctr ect uen rag ns  erp cif\n";
   for (i=0; i<=nick; i++) PRINTF(firstcolumn, ""); 
   PRINTF("%4s", ""); PRINTF(header1);  
@@ -584,11 +603,10 @@ void GetAttr(int *type, int *op, int *monotone, int *finiterange,
 //  range_type *range;
   cov_fct *C = CovList;
 
-
-  for (p=0; p<C->kappas; p++) 
+  for (p=0; p<MAXPARAM; p++) 
     cov->px[p] = (double*) CALLOC(MAXPN, sizeof(double));
   Cov.tsdim = 1;
-  Cov.vdim = 1;
+  Cov.vdim2[0] = Cov.vdim2[1] = 1;
   Cov.nsub = 2;
  
   for (nr=0; nr<currentNrCov; nr++, C++){   
@@ -604,7 +622,7 @@ void GetAttr(int *type, int *op, int *monotone, int *finiterange,
     iso[nr] = C->isotropy;
     vdim[nr] = C->vdim;
   }
-  for (p=0; p<C->kappas; p++) free(cov->px[p]);
+  for (p=0; p<MAXPARAM; p++) free(cov->px[p]);
 }
 
 //static int ZZ = 0;
@@ -697,7 +715,7 @@ bool Logical(SEXP p, char *name, int idx) {
   char msg[200];
   if (p != R_NilValue)
     switch (TYPEOF(p)) {
-    case REALSXP : return ISNA(REAL(p)[idx]) ? NA_LOGICAL : (bool) REAL(p)[idx];
+    case REALSXP: return ISNAN(REAL(p)[idx]) ? NA_LOGICAL : (bool) REAL(p)[idx];
     case INTSXP :
       return INTEGER(p)[idx]==NA_INTEGER ? NA_LOGICAL : (bool) INTEGER(p)[idx];
     case LGLSXP : return LOGICAL(p)[idx];
@@ -919,7 +937,7 @@ void CE_set(SEXP el, int j, char *name, ce_param *cp) {
  
 
 
-#define prefixN 20
+#define prefixN 24
 const char * prefixlist[prefixN] = 
   {"",  // -1
    "general", "gauss", "krige", 
@@ -928,20 +946,20 @@ const char * prefixlist[prefixN] =
    "mpp", "hyper", "maxstable",  // 12
    "br", "distr", "fit",         // 15
    "empvario", "gui", "graphics",// 18 
-   "warn", // ACHTUNG warn wird nicht pauschal zurueckgesetzt
+   "registers", "internal", "coords", "special",
+   "obsolete"// 21
 };
-#define generalN 28
+#define generalN 19
 // IMPORTANT: all names of general must be at least 3 letters long !!!
 const char *general[generalN] =
   { "modus_operandi", "printlevel", "storing", 
-    "skipchecks", "every", "register", 
-    "interpolregister", "condregister", "errregister", 
-    "guiregister", "gridtolerance", "pch", 
-    "practicalrange", "spConform", "cPrintlevel", 
-    "exactness", "matrix_inversion", "matrix_tolerance",
-    "allowdistanceZero", "na_rm_lines", "vdim_close_together",
-    "expected_number_simu", "xyz_notation", "coordinate_system", 
-    "new_coord_units", "coord_units", "variab_units", "seed"};
+    "skipchecks", "every", "gridtolerance",
+    "pch", "practicalrange", "spConform",
+    "cPrintlevel", "exactness", "matrix_inversion", 
+    "matrix_tolerance",  "allowdistanceZero", "na_rm_lines",
+    "vdim_close_together", "expected_number_simu", "seed", 
+    "detailed_output"};
+
 
 #define gaussN 5
 const char *gauss[gaussN]= {"paired", "stationary_only", "approx_zero", 
@@ -982,21 +1000,25 @@ const char * mpp[mppN] = {"n_estim_E", // n to determine E by simulation
                          };
 #define hyperN 4
 const char * hyper[hyperN] = {"superpos", "maxlines", "mar_distr", "mar_param"};
-#define extremeN 6
+#define extremeN 10
 const char * extreme[extremeN] = 
-  {"max_gauss", "maxpoints", "xi", "density_ratio", "check_every", "flat"};
-#define brN 8
+  {"max_gauss", "maxpoints", "xi",
+   "density_ratio", "check_every", "flat",
+   "min_n_zhou", "max_n_zhou", "eps_zhou",
+   "mcmc_zhou"};
+#define brN 9
 const char * br[brN] = 
-  {"maxtrendmem", "meshsize", "lowerbound_optimarea", "vertnumber", 
-   "optim_mixed", "optim_mixed_tol", "optim_mixed_maxpoints",
-   "variobound"};
+  {"maxtrendmem", "meshsize", 
+   "vertnumber", "optim_mixed", "optim_mixed_tol", 
+   "optim_mixed_maxpoints", "variobound", "deltaAM", "corr_factor"};
 
 #define distrN 9
 const char * distr[distrN] = 
-  {"safety", "minsteplen", "maxsteps", "parts", "maxit", 
-   "innermin", "outermax", "mcmc_n", "repetitions"};
+  {"safety", "minsteplen", "maxsteps", 
+   "parts", "maxit",  "innermin", 
+   "outermax", "mcmc_n", "repetitions"};
 
-#define fitN 39
+#define fitN 43
 const char * fit[fitN] = 
   {"bin_dist_factor", "upperbound_scale_factor", "lowerbound_scale_factor", 
    "lowerbound_scale_ls_factor","upperbound_var_factor","lowerbound_var_factor",
@@ -1006,11 +1028,13 @@ const char * fit[fitN] =
    "bc_lambda_lb", "bc_lambda_ub", "use_naturalscaling", 
    "bins", "nphi", "ntheta", 
    "ntime", "sill", "only_users", 
-   "optim_var_estimation", "shortnamelength", "use_spam",
+   "optim_var_elimination", "shortnamelength", "use_spam",
    "split", "scale_ratio",  "critical",
    "n_crit", "max_neighbours", "splitn_neighbours",
    "splitfactor_neighbours", "smalldataset", "min_diag",
-   "reoptimise", "optimiser", "algorithm"
+   "reoptimise", "optimiser", "algorithm",
+   "likelihood", "ratiotest_approx", "split_refined",
+   "cross_refit"
   };
 
 #define empvarioN 5
@@ -1023,24 +1047,53 @@ const char * gui[guiN] =
   {"alwaysSimulate", "simu_method", "size"};
 
 #define graphicsN 4
-const char *graphics[graphicsN]= {"always_close_screen" ,"grPrintlevel", "height", "increase_upto"};
+const char *graphics[graphicsN]= {"always_close_screen" ,"grPrintlevel", 
+				  "height", "increase_upto"};
 
-#define warnN 9
-const char * warns[warnN] =  { // Achtung ! warn parameter werden nicht
+#define registersN 5
+const char *registers[registersN] = 
+  {"register", "interpolregister", "condregister", 
+   "errregister", "guiregister"};
+
+
+#define internalN 11
+const char * internals[internalN] =  { // Achtung ! warn parameter werden nicht
   // pauschal zurueckgesetzt
-  "oldstyle", "newstyle", "newAniso", "ambiguous", "normal_mode", 
-  "colour_palette", "warn_colour", "stored.init", "warn_coordinates"};
+  "warn_oldstyle", "warn_newstyle", "warn_newAniso", 
+  "warn_ambiguous", "warn_normal_mode",  "warn_mode",
+  "warn_colour_palette", "stored.init",  "warn_scale", 
+  "on_grid", "warn_coordinates"
+};
+
+
+#define coordsN 5
+const char *coords[coordsN] =
+  { "xyz_notation", "coordinate_system", 
+    "new_coord_units", "coord_units", "variab_units"
+  };
+
+#define specialN 1
+const char * special[specialN] = {"multicopies"};
+
+#define obsoleteN 6
+const char * obsolete[obsoleteN] = 
+  { "oldstyle", "newstyle",  "newAniso", 
+    "ambiguous", "normal_mode", "colour_palette"
+};
+
+
 
 const char **all[] = {general, gauss, krige, CE, direct, // markov,
 		      pnugget, sequ, spectral, pTBM, mpp,
-		      hyper, extreme, br, distr,
-		      fit, empvario, gui, 
-		      graphics, warns};
+		      hyper, extreme, br, distr, fit, 
+		      empvario, gui, graphics, registers, internals, 
+		      coords, special, obsolete};
 
 int allN[] = {generalN, gaussN, krigeN, CEN, directN,// markovN,
 	      pnuggetN,  sequN, spectralN, pTBMN, mppN,
 	      hyperN, extremeN, brN, distrN, fitN, 
-	      empvarioN, guiN, graphicsN, warnN};
+	      empvarioN, guiN, graphicsN, registersN, internalN, 
+	      coordsN, specialN, obsoleteN};
 
 void RelaxUnknownRFoption(int *relax) {
   RELAX_UNKNOWN_RFOPTION = (bool) *relax;
@@ -1116,7 +1169,6 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     ERR(msg);
   }
 
-
   switch(i) {
   case 0: {// general
     general_param *gp;
@@ -1177,52 +1229,19 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       break;
     case 3: gp->skipchecks = LOG;    break;
     case 4: gp->every = POS0INT;      break;
-    case 5: { // simu
-      int keynr = INT;
-      if ((keynr<0) || (keynr>MODEL_MAX)) ERR("register number out of range");
-      gp->keynr=keynr; }
-      break;
-    case 6: { // interpol
-      int keynr;
-      keynr = INT;
-      if ((keynr<0) || (keynr>MODEL_MAX)) 
-	ERR("interpolregister number out of range");
-      gp->interpolregister=keynr;}
-      break;
-    case 7: { // cond
-      int keynr;
-      keynr = INT;
-      if ((keynr<0) || (keynr>MODEL_MAX)) 
-	ERR("condregister number out of range");
-      gp->condregister=keynr;}
-      break;
-    case 8: { // err 
-      int keynr;
-      keynr = INT;
-      if ((keynr<0) || (keynr>MODEL_MAX))
-	ERR("errregister number out of range");
-      gp->errregister=keynr;}
-      break;
-    case 9: { // gui
-      int keynr;
-      keynr = INT;
-      if ((keynr<0) || (keynr>=MODEL_MAX)) 
-	ERR("guiregister number out of range");
-      gp->guiregister=keynr;}
-      break;
-    case 10: gp->gridtolerance = NUM; break;
-    case 11: gp->pch = CHR;           break;
-    case 12: 
+    case 5: gp->gridtolerance = NUM; break;
+    case 6: gp->pch = CHR;           break;
+    case 7: 
       int n;
       n =INT;  
       if (n!=0 && n!=1 && n!=2 && n!=3)
 	ERR("PracticalRange out of range. It should be TRUE or FALSE.");
       NS = gp->naturalscaling = n;
       break;
-    case 13: gp->sp_conform = LOG;       break;
-    case 14: PL = gp->Cprintlevel = INT;        break;
-    case 15: gp->exactness = NUM;        break; 
-    case 16: {
+    case 8: gp->sp_conform = LOG;       break;
+    case 9: PL = gp->Cprintlevel = INT;        break;
+    case 10: gp->exactness = NUM;        break; 
+    case 11: {
       int old[MAXINVERSIONS],
 	l = length(el);
       if (l > MAXINVERSIONS) ERR("matrix_inversion: vector too long");
@@ -1239,29 +1258,19 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       }
       break;
     }
-    case 17: gp->matrixtolerance = NUM; break;
-    case 18: gp->allowdist0 = LOG; break;
-    case 19: gp->na_rm_lines = LOG; break;
-    case 20: gp->vdim_close_together = LOG;    
+    case 12: gp->matrixtolerance = NUM; break;
+    case 13: gp->allowdist0 = LOG; break;
+    case 14: gp->na_rm_lines = LOG; break;
+    case 15: gp->vdim_close_together = LOG;    
       if (gp->vdim_close_together) {
 	gp->vdim_close_together = false;
  	ERR("'vdim_close_together' not programmed yet");
       }
       break;
-    case 21: gp->expected_number_simu = POS0INT; break;
-    case 22: gp->xyz_notation = INT; break;
-    case 23: gp->coord_system =
-	(coord_sys_enum) GetName(el, name, COORD_SYS_NAMES, nr_coord_sys,
-				 coord_auto);
-      break; 
-    case 24: getUnits(el, name, gp->newunits, NULL);
-      break;
-    case 25: getUnits(el, name, gp->curunits, isList ? NULL : gp->newunits);
-      break;
-    case 26: getUnits(el, name, gp->varunits, NULL);      
-    break;
-    case 27: gp->seed = Integer(el, name, 0, true); break;
-    break;
+    case 16: gp->expected_number_simu = POS0INT; break;
+    case 17: gp->seed = Integer(el, name, 0, true); break;
+    case 18: gp->detailed_output = LOG; break;
+   break;
   default: ERR("unknown option  for 'general'");
     }}
     break;
@@ -1454,7 +1463,13 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case 4: ep->check_every = POS0INT; break;
     case 5: ep->flat = INT; 
       if (ep->flat < -1 || ep->flat > 1) ERR("illegal value for 'flat'");
+      if (ep->flat != FALSE) error("currently only 'flat=FALSE' allowed\n");
+      // Programmierfehler in Huetchen.c
       break;
+    case 6: ep->min_n_zhou = POSINT; break;
+    case 7: ep->max_n_zhou = POSINT; break;
+    case 8: ep->eps_zhou = POSNUM; break;
+    case 9: ep->mcmc_zhou = POSINT; break;
     default: ERR("unknown option for 'maxstable'"); 
     }}
     break;
@@ -1464,12 +1479,13 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     switch(j) {
     case 0: ep->BRmaxmem = POSINT; break;
     case 1: ep->BRmeshsize = POSNUM; break;
-    case 2: ep->BR_LB_optim_area = NUM; break;
-    case 3: ep->BRvertnumber = POSINT; break;
-    case 4: ep->BRoptim = POS0INT; break;
-    case 5: ep->BRoptimtol = POS0NUM; break;
-    case 6: ep->BRoptimmaxpoints = POS0INT; break;
-    case 7: ep->variobound = NUM; break;
+    case 2: ep->BRvertnumber = POSINT; break;
+    case 3: ep->BRoptim = POS0INT; break;
+    case 4: ep->BRoptimtol = POS0NUM; break;
+    case 5: ep->BRoptimmaxpoints = POS0INT; break;
+    case 6: ep->variobound = NUM; break;
+    case 7: ep->deltaAM = POSINT; break;
+    case 8: ep->corr_factor = POSNUM; break; // in [0,1]
     default: ERR("unknown option for 'maxstable'"); 
     }}	  
     break;
@@ -1551,7 +1567,12 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       default: ef->algorithm = -1;
       }
       break;
+    case 39: ef->likelihood =
+	GetName(el, name, LIKELIHOOD_NAMES, nLikelihood); ; break; 
     default: ERR("unknown option for 'fit'");
+    case 40: ef->ratiotest_approx = LOG; break;
+    case 41: ef->split_refined = LOG; break;
+    case 42: ef->cross_refit = LOG; break;
     }}
     break;
   case 15: { // empvario
@@ -1618,21 +1639,111 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
    }}
     break;
     */ 
-  case 18: if (!isList) {
-    warn_param *wp = &(GLOBAL.warn);
+  case 18 : {
+    registers_param *rp = &(GLOBAL.registers);
     switch(j) {
-    case 0: wp->oldstyle = LOG;       break;
-    case 1: wp->newstyle = LOG;       break;
-    case 2: wp->Aniso = LOG;       break;
-    case 3: wp->ambiguous = LOG;       break;
-    case 4: wp->normal_mode = LOG;       break;
-    case 5: wp->warn_mode = LOG;       break;
-    case 6: wp->warn_colour = LOG;       break;
-    case 7: wp->stored_init = LOG;       break;
-    case 8: wp->warn_coordinates = LOG;       break;
-    default: ERR("unknown option for 'general'");
+    case 0: { // simu
+      int keynr = INT;
+      if ((keynr<0) || (keynr>MODEL_MAX)) ERR("register number out of range");
+      rp->keynr=keynr; }
+      break;
+    case 1: { // interpol
+      int keynr;
+      keynr = INT;
+      if ((keynr<0) || (keynr>MODEL_MAX)) 
+	ERR("interpolregister number out of range");
+      rp->interpolregister=keynr;}
+      break;
+    case 2: { // cond
+      int keynr;
+      keynr = INT;
+      if ((keynr<0) || (keynr>MODEL_MAX)) 
+	ERR("condregister number out of range");
+      rp->condregister=keynr;}
+      break;
+    case 3: { // err 
+      int keynr;
+      keynr = INT;
+      if ((keynr<0) || (keynr>MODEL_MAX))
+	ERR("errregister number out of range");
+      rp->errregister=keynr;}
+      break;
+    case 4: { // gui
+      int keynr;
+      keynr = INT;
+      if ((keynr<0) || (keynr>=MODEL_MAX)) 
+	ERR("guiregister number out of range");
+      rp->guiregister=keynr;}
+      break;
+   default: ERR("unknown option  for 'registers'");
+    }}
+   break;
+
+  case 19: {
+    internal_param *wp = &(GLOBAL.internal);
+    // ACHTUNG internal wird nicht pauschal zurueckgesetzt !
+    if (!isList) {
+      switch(j) {
+      case 0: wp->warn_oldstyle = LOG;       break;
+      case 1: wp->warn_newstyle = LOG;       break;
+      case 2: wp->warn_Aniso = LOG;       break;
+      case 3: wp->warn_ambiguous = LOG;       break;
+      case 4: wp->warn_normal_mode = LOG;       break;
+      case 5: wp->warn_mode = LOG;       break;
+      case 6: wp->warn_colour = LOG;       break;
+      case 7: wp->stored_init = LOG;       break;
+      case 8: wp->warn_scale = LOG;       break;
+      case 9: wp->warn_coordinates = LOG;       break;
+      case 10: wp->warn_on_grid = LOG;       break;
+      default: ERR("unknown option for 'warn'");
+      }
+    } else {
+      if (j==10)  wp->warn_on_grid = LOG;
+    }
+  }
+    break;
+
+  case 20: {
+    coords_param *cp = &(GLOBAL.coords);
+    switch(j) {
+    case 0: cp->xyz_notation = INT; break;
+    case 1: cp->coord_system =
+	(coord_sys_enum) GetName(el, name, COORD_SYS_NAMES, nr_coord_sys,
+				 coord_auto);
+      break; 
+    case 2: getUnits(el, name, cp->newunits, NULL);
+      break;
+    case 3: getUnits(el, name, cp->curunits, isList ? NULL : cp->newunits);
+      break;
+    case 4: getUnits(el, name, cp->varunits, NULL);      
+      break;
+    default: ERR("unknown option for 'coords'");
     }}
     break;
+
+  case 21: {
+    special_param *sp = &(GLOBAL.special);
+    switch(j) {
+    case 0: sp->multcopies = POSINT;
+	break;      
+    default: ERR("unknown option for 'special'");
+    }}
+    break;
+
+  case 22: { // obsolete
+    internal_param *wp = &(GLOBAL.internal);
+    switch(j) {
+      case 0: wp->warn_oldstyle = LOG;       break;
+      case 1: wp->warn_newstyle = LOG;       break;
+      case 2: wp->warn_Aniso = LOG;       break;
+      case 3: wp->warn_ambiguous = LOG;       break;
+      case 4: wp->warn_normal_mode = LOG;       break;
+      case 5: wp->warn_mode = LOG;       break;
+      case 6: wp->warn_colour = LOG;       break;
+      default: ERR("unknown obsolete option");
+      }}
+    break;
+    
 
   default: ERR("unknown option.");  
   }
@@ -1668,7 +1779,7 @@ SEXP ExtendedInteger(double x) {
 }
 
 SEXP ExtendedBoolean(double x) {
-  return ScalarLogical(ISNA(x) || ISNAN(x) ? NA_LOGICAL : x != 0.0);
+  return ScalarLogical(ISNAN(x) ? NA_LOGICAL : x != 0.0);
 }
 
 SEXP getRFoptions() {
@@ -1676,13 +1787,15 @@ SEXP getRFoptions() {
   
   int i, k = 0;
   char x[2]=" ";
-  int trueprefixN = prefixN - 1;
+  int trueprefixN = prefixN - 1 - 1;// general has two options for prefixes
+  //                               and #22 obsolete is not shown
   //  cov_fct *C = CovList + cov->nr;
 
   PROTECT(list = allocVector(VECSXP, trueprefixN));
   PROTECT(names = allocVector(STRSXP, trueprefixN));
   
-  for (i=0; i<trueprefixN; i++) {    
+  for (i=0; i<trueprefixN; i++) {   
+    if (strcmp(prefixlist[i+1], "obsolete") == 0) continue;
     SET_STRING_ELT(names, i, mkChar(prefixlist[i+1]));
     PROTECT(sublist[i] = allocVector(VECSXP, allN[i]));
     PROTECT(subnames[i] = allocVector(STRSXP, allN[i]));
@@ -1704,11 +1817,6 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->storing));
     ADD(ScalarLogical(p->skipchecks));
     ADD(ScalarInteger(p->every));    
-    ADD(ScalarInteger(p->keynr));    
-    ADD(ScalarInteger(p->interpolregister));    
-    ADD(ScalarInteger(p->condregister));    
-    ADD(ScalarInteger(p->errregister));    
-    ADD(ScalarInteger(p->guiregister));    
     ADD(ScalarReal(p->gridtolerance));
     ADDCHAR(p->pch);
     if (p->naturalscaling==0 || p->naturalscaling==1) 
@@ -1727,15 +1835,10 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->na_rm_lines));   
     ADD(ScalarLogical(p->vdim_close_together));
     ADD(ScalarInteger(p->expected_number_simu));    
-    ADD(ExtendedInteger(p->xyz_notation));    
-    ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->coord_system])));
-    ADD(UNITS(p->newunits));
-    ADD(UNITS(p->curunits));
-    ADD(UNITS(p->varunits));
-    ADD(ScalarInteger(p->seed));
-   
+    ADD(ScalarInteger(p->seed));    
+    ADD(ScalarLogical(p->detailed_output));   
   }
-
+  
   //  printf("OK %d\n", i);
 
   i++; {
@@ -1759,7 +1862,7 @@ SEXP getRFoptions() {
     ADD(ScalarInteger(p->locsplitfactor));
     ADD(ScalarLogical(p->fillall));   
     ADD(ScalarLogical(p->cholesky));   
- }
+  }
 
   i++; {
     k = 0;
@@ -1792,17 +1895,6 @@ SEXP getRFoptions() {
     // ADD(ScalarLogical(p->meth));
   }
 
-  /*
-   i++; {
-    k = 0;
-    markov_param *p = &(GLOBAL.markov);
-    ADD(ScalarInteger(p->neighbours));    
-    ADD(ScalarReal(p->precision));   
-    ADD(ScalarInteger(p->cyclic));    
-  }
-  */
-
- 
   i++; {
     k = 0;
     sequ_param *p = &(GLOBAL.sequ);
@@ -1819,7 +1911,7 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->ergodic));
     ADD(ScalarReal(p->prop_factor));
     ADD(ScalarReal(p->sigma));
-   }
+  }
 
   i++; {
     k = 0;
@@ -1873,6 +1965,10 @@ SEXP getRFoptions() {
     ADD(ScalarInteger(p->check_every));
     ADD(p->flat == 0 || p->flat == 1 ? ScalarLogical(p->flat) :
 	ScalarInteger(p->flat));
+    ADD(ScalarInteger(p->min_n_zhou));
+    ADD(ScalarInteger(p->max_n_zhou));
+    ADD(ScalarReal(p->eps_zhou));
+    ADD(ScalarInteger(p->mcmc_zhou));
   }
 
   i++; {
@@ -1880,12 +1976,13 @@ SEXP getRFoptions() {
     br_param *p = &(GLOBAL.br);
     ADD(ScalarInteger(p->BRmaxmem)); 
     ADD(ScalarReal(p->BRmeshsize));
-    ADD(ScalarReal(p->BR_LB_optim_area));
     ADD(ScalarInteger(p->BRvertnumber));
     ADD(ScalarInteger(p->BRoptim));
     ADD(ScalarReal(p->BRoptimtol));
     ADD(ScalarInteger(p->BRoptimmaxpoints));
     ADD(ScalarReal(p->variobound));
+    ADD(ScalarInteger(p->deltaAM));
+    ADD(ScalarReal(p->corr_factor));
   }
 
   i++; {
@@ -1948,9 +2045,13 @@ SEXP getRFoptions() {
 	ScalarString(mkChar(p->optimiser == 3 ? NLOPTR_NAMES[p->algorithm]
 			    : "")
 		     ));
+    ADD(ScalarString(mkChar(LIKELIHOOD_NAMES[p->likelihood])));
+    ADD(ScalarLogical(p->ratiotest_approx));
+    ADD(ScalarLogical(p->split_refined));
+    ADD(ScalarLogical(p->cross_refit));
   } 
 
-   i++; {
+  i++; {
     k = 0;
     empvario_param *p = &(GLOBAL.empvario);   
     ADD(ScalarReal(p->phi0));
@@ -1960,43 +2061,68 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->fft));
   }
 
-   i++; {
+  i++; {
     k = 0;
     gui_param *p = &(GLOBAL.gui);   
     ADD(ScalarLogical(p->alwaysSimulate));
     ADD(p->method>=0 ? ScalarString(mkChar(METHODNAMES[p->method])) 
 	: R_NilValue);
     SET_VECTOR_ELT(sublist[i], k++, Int(p->size, 2, 2));
+  }
+
+  i++; {
+    k = 0;
+    graphics_param *p = &(GLOBAL.graphics);   
+    ADD(ScalarLogical(p->always_close));
+    ADD(ScalarInteger(p->PL));
+    ADD(ScalarReal(p->height));
+    SET_VECTOR_ELT(sublist[i], k++, Int(p->increase_upto, 2, 2));
    }
 
-   i++; {
-     k = 0;
-     graphics_param *p = &(GLOBAL.graphics);   
-     ADD(ScalarLogical(p->always_close));
-     ADD(ScalarInteger(p->PL));
-     ADD(ScalarReal(p->height));
-     SET_VECTOR_ELT(sublist[i], k++, Int(p->increase_upto, 2, 2));
- }
+  i++; {
+    k = 0;
+    registers_param *p = &(GLOBAL.registers);
+    ADD(ScalarInteger(p->keynr));    
+    ADD(ScalarInteger(p->interpolregister));    
+    ADD(ScalarInteger(p->condregister));    
+    ADD(ScalarInteger(p->errregister));    
+    ADD(ScalarInteger(p->guiregister));    
+  }
+  
+  i++; {
+    k = 0;
+    internal_param *p = &(GLOBAL.internal);
+    ADD(ScalarLogical(p->warn_oldstyle));
+    ADD(ScalarLogical(p->warn_newstyle));
+    ADD(ScalarLogical(p->warn_Aniso));
+    ADD(ScalarLogical(p->warn_ambiguous));
+    ADD(ScalarLogical(p->warn_normal_mode));
+    ADD(ScalarLogical(p->warn_mode));
+    ADD(ScalarLogical(p->warn_colour));
+    ADD(ScalarLogical(p->stored_init));
+    ADD(ScalarLogical(p->warn_scale));
+    ADD(ScalarLogical(p->warn_coordinates));
+    ADD(ScalarLogical(p->warn_on_grid));
+  }
 
 
   i++; {
     k = 0;
-    warn_param *p = &(GLOBAL.warn);
-    ADD(ScalarLogical(p->oldstyle));
-    ADD(ScalarLogical(p->newstyle));
-    ADD(ScalarLogical(p->Aniso));
-    ADD(ScalarLogical(p->ambiguous));
-    ADD(ScalarLogical(p->normal_mode));
-    ADD(ScalarLogical(p->warn_mode));
-    ADD(ScalarLogical(p->warn_colour));
-    ADD(ScalarLogical(p->stored_init));
-    ADD(ScalarLogical(p->warn_coordinates));
+    coords_param *p = &(GLOBAL.coords);
+    ADD(ExtendedInteger(p->xyz_notation));    
+    ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->coord_system])));
+    ADD(UNITS(p->newunits));
+    ADD(UNITS(p->curunits));
+    ADD(UNITS(p->varunits));
   }
 
-
+  i++; {
+    k = 0;
+    special_param *p = &(GLOBAL.special);
+    ADD(ScalarInteger(p->multcopies));    
+ }
   //   print("%d %d\n", i, prefixN -1);
-   assert (i == trueprefixN - 1); // general has two options for prefixes
-
+  assert (i == trueprefixN - 1); 
     /*
 
     ADD(ScalarReal(p->));
@@ -2013,12 +2139,12 @@ SEXP getRFoptions() {
 
       */
 
-   for (i=0; i<trueprefixN; i++) {
+  for (i=0; i<trueprefixN; i++) {
     setAttrib(sublist[i], R_NamesSymbol, subnames[i]);
     SET_VECTOR_ELT(list, i, sublist[i]);
- }
+  }
   setAttrib(list, R_NamesSymbol, names);
-
+  
   UNPROTECT(2 + 2 * trueprefixN);
 
   return list;

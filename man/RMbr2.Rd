@@ -27,7 +27,7 @@ RMbr2eg(phi, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -61,16 +61,17 @@ RMbr2eg(phi, var, scale, Aniso, proj)
  Strokorb, K. (2012) PhD thesis.
 }
 \seealso{
+  \command{\link{RMmodel}},
+  \command{\link{RMm2r}}
  \command{\link{RPbernoulli}},
  \command{\link{RPbrownresnick}},
  \command{\link{RPschlather}},
- \command{\link{RMmodel}}.
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \keyword{spatial}
 \examples{
 ## see 'maxstableAdvanced' for some examples
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }

@@ -51,6 +51,7 @@ void DD_2(double *x, cov_model *cov, double *v);
 //int check2(cov_model *cov);
 void inverse2(double *x, cov_model *cov, double *v);
 void nonstatinverse2(double *v, cov_model *cov, double *left, double *right);
+void nonstat_loginverse2(double *v, cov_model *cov, double *x, double *y);
 //int struct2(cov_model *cov, cov_model **newmodel);
 int struct2(cov_model *cov, cov_model **newmodel);
 int init2(cov_model *cov, storage *s);
@@ -132,11 +133,16 @@ extern int SSTAT, SNONSTAT;
 void coinitS(cov_model *cov, localinfotype *li);
 void ieinitS(cov_model *cov, localinfotype *li);
 void inverseS(double *x, cov_model *cov, double *v);
+void nonstatinverseS(double *x, cov_model *cov, double *left, double*right);
+void nonstat_loginverseS(double *v, cov_model *cov, double *x, double *y);
 void nablaS(double *x, cov_model *cov, double *v);
 void hessS(double *x, cov_model *cov, double *v);
 int structS(cov_model *cov, cov_model **newmodel);
 int initS(cov_model *cov, storage *s);
 void doS(cov_model *cov, storage *s);
+
+
+
 
 
 void binary(double *x, cov_model *cov, double *v);
@@ -288,6 +294,9 @@ void spectralnatsc(cov_model *cov, storage *s, double *e);
 int initnatsc(cov_model *cov, storage *s);
 void donatsc(cov_model *cov, storage *s);
 
+void NullModel(double *x, cov_model *cov, double *v);
+bool TypeNullModel(Types required, cov_model *cov);
+void rangeNullModel(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 
 
 void Pow(double *x, cov_model *cov, double *v);
@@ -296,6 +305,23 @@ void DDPow(double *x, cov_model *cov, double *v);
 int checkPow(cov_model *cov);
 void rangePow(cov_model *cov, range_type* ra); 
 void InversePow(double *x, cov_model *cov, double *v);
+
+
+void PowSstat(double *x, cov_model *cov, double *v);
+void logPowSstat(double *x, cov_model *cov, double *v, double *sign);
+void PowSnonstat(double *x, double *y, cov_model *cov, double *v);
+void logPowSnonstat(double *x, double *y, cov_model *cov, double *v, 
+		 double *sign);
+void inversePowS(double *x, cov_model *cov, double *v) ;
+int checkPowS(cov_model *cov) ;
+bool TypePowS(Types required, cov_model *cov) ;
+void rangePowS(cov_model *cov, range_type* range);
+void PowScaleToLoc(cov_model *to, cov_model *from, int VARIABLE_IS_NOT_USED depth) ;
+int structPowS(cov_model *cov, cov_model **newmodel) ;
+int initPowS(cov_model *cov, storage *s);
+void doPowS(cov_model *cov, storage *s);
+
+
 
 void kappaqam(int i, cov_model *cov, int *nr, int *nc);
 void qam(double *x, cov_model *cov, double *v);
@@ -344,6 +370,8 @@ int checkstrokorbBall(cov_model *cov);
 int struct_strokorbBall(cov_model *cov, cov_model **newmodel);  
 //int init_strokorbBall(cov_model *cov,  storage *s);
 //void do_strokorbBall(cov_model *cov, storage *s);
+void rangestrokorbball(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range);
+
 
 void strokorbBallInner(double *x, cov_model *cov, double *v);
 int check_strokorbBallInner(cov_model *cov);
@@ -352,8 +380,9 @@ int init_strokorbBallInner(cov_model *cov,  storage *s);
 void do_strokorbBallInner(cov_model *cov, storage *s);
 
 
+void strokorbPoly(double *x, cov_model *cov, double *v);
 int checkstrokorbPoly(cov_model *cov);
-  int struct_strokorbPoly(cov_model *cov, cov_model **newmodel); 
+int struct_strokorbPoly(cov_model *cov, cov_model **newmodel); 
 
 
 void mult_inverse(double *x, cov_model *cov, double *v);
@@ -361,6 +390,10 @@ void mult_inverseNonstat(double *x, double *y, cov_model *cov, double *v);
 int checkmult_inverse(cov_model *cov);
 
 
+void addSetParam(cov_model **newmodel, cov_model * remote, 
+		 param_set_fct set,  bool performdo, int variant);
+void addSetDistr(cov_model **newmodel, cov_model * remote, 
+		 param_set_fct set,  bool performdo, int variant);
 void setparamStat(double *x, cov_model *cov, double *v);
 void setparamNonStat(double *x,  double *y, cov_model *cov, double *v);
 void covmatrix_setparam(cov_model *cov, double *v);
@@ -369,6 +402,7 @@ int checksetparam(cov_model *cov);
 void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void Inverse_setparam(double *v, cov_model *cov, double *x);
 void NonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y);
+void LogNonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y);
 bool Typesetparam(Types required, cov_model *cov);
 void Dsetparam(double *x, cov_model *cov, double *v);
 void DDsetparam(double *x, cov_model *cov, double *v);
@@ -380,6 +414,12 @@ void dosetparam(cov_model *cov, storage *s);
 void covmatrix_setparam(cov_model *cov, double *v);
 
 
+void oesting(double *x, cov_model *cov, double *v);
+void Doesting(double *x, cov_model *cov, double *v);
+void DDoesting(double *x, cov_model *cov, double *v); 
+int checkoesting(cov_model *cov);
+int initoesting(cov_model *cov, storage VARIABLE_IS_NOT_USED *s);
+void rangeoesting(cov_model *cov, range_type *range);
 
 void idcoord(double *x, cov_model *cov, double *v);
 int checkidcoord(cov_model *cov);

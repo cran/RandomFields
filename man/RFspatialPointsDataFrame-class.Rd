@@ -31,22 +31,24 @@
 }
 
 \section{Slots}{
- \describe{
- \item{\code{.RFparams}:}{list of 2; \code{.RFparams$n} is the number
- of repetitions of the random field contained in the \code{data} slot,
- \code{.RFparams$vdim} gives the dimension of the values of the random
- field, equals 1 in most cases}
- \item{\code{data}:}{object of class \code{\link[methods:data.frame-class]{data.frame}},
- containing attribute data } 
- \item{\code{coords.nrs}:}{ } 
- \item{\code{coords}:}{matrix of coordinates (each row is a 
- point); in case of SpatialPointsDataFrame an object of class
- \code{\link[=SpatialPoints-class]{SpatialPoints}} is also allowed
- see \link{SpatialPoints}}
- \item{\code{bbox}:}{matrix specifying the bounding box }
- \item{\code{proj4string}:}{object of class \code{\link[=CRS-class]{CRS};
+  \describe{
+    \item{\code{.RFparams}:}{list of 2; \code{.RFparams$n} is the number
+      of repetitions of the random field contained in the \code{data} slot,
+      \code{.RFparams$vdim} gives the dimension of the values of the random
+      field, equals 1 in most cases}
+    \item{\code{data}:}{object of class
+      \code{\link[methods:data.frame-class]{data.frame}}, 
+      containing attribute data } 
+    \item{\code{coords.nrs}:}{See \code{\link{SpatialPointsDataFrame}}
+    }    
+    \item{\code{coords}:}{matrix of coordinates (each row is a 
+      point); in case of SpatialPointsDataFrame an object of class
+      \code{\link[=SpatialPoints-class]{SpatialPoints}} is also allowed
+      see \link{SpatialPoints}}
+    \item{\code{bbox}:}{matrix specifying the bounding box }
+    \item{\code{proj4string}:}{object of class \code{\link[sp:CRS-class]{CRS};
 	projection }} 
- }
+  }
 }
 
 \section{Extends}{
@@ -121,7 +123,8 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 
 x <- cbind(runif(50), runif(50))
 f <- RFsimulate(model=RMexp(), x=x, n=3)
@@ -142,7 +145,9 @@ f.sp <- RFsimulate(model=RMexp(), x=x, n=3, seed=0)
 f.old <- RFsimulate(model=RMexp(), x=x, n=3, spConform=FALSE, seed=0)
 all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
 
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
 
 \keyword{classes}
+\keyword{print}
+\keyword{hplot}

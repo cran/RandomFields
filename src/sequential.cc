@@ -47,7 +47,6 @@ int check_sequential(cov_model *cov) {
 
   ROLE_ASSERT(ROLE_GAUSS);
 
-  if ((err = check_common_gauss(cov)) != NOERROR) return err;
   kdefault(cov, SEQU_MAX, gp->max);
   kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
@@ -65,8 +64,7 @@ int check_sequential(cov_model *cov) {
 }
 
 
-void range_sequential(cov_model *cov, range_type *range) {
-  range_common_gauss(cov, range);
+void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
   range->min[SEQU_MAX] = 0;
   range->max[SEQU_MAX] = RF_INF;
@@ -114,17 +112,19 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   int withoutlast, d, endfor, l, store,
     dim=cov->tsdim,
     spatialdim = dim - 1,
+    vdim = next->vdim2[0],
     spatialpnts = loc->totalpoints / loc->length[spatialdim],
     max = P0INT(SEQU_MAX),
     back= P0INT(SEQU_BACK), 
     initial= P0INT(SEQU_INIT);
+  assert(next->vdim2[0] == next->vdim2[1]);
   sequential_storage* S = NULL;
   long totpntsSQ, i, spatialpntsSQback,
     err=NOERROR,
     totpnts = back * spatialpnts, 
     spatialpntsSQ=spatialpnts * spatialpnts;
   bool 
-    storing = GLOBAL.warn.stored_init,
+    storing = GLOBAL.internal.stored_init,
     Time = loc->Time;
  
   if (cov->role == ROLE_COV) {
@@ -145,7 +145,7 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
     goto ErrorHandling;
   }
   
-  if (cov->vdim > 1) {
+  if (cov->vdim2[0] > 1) {
       err=ERRORNOMULTIVARIATE; 
       goto ErrorHandling;   
   }
@@ -171,7 +171,7 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
       (U11 = (double *) MALLOC(sizeof(double) * spatialpntsSQ))==NULL ||
       (MuT = (double *) MALLOC(sizeof(double) * spatialpntsSQback))==NULL ||
       (G = (double *) MALLOC(sizeof(double) * totpnts))==NULL ||
-      (res0 = (res_type *) MALLOC(sizeof(res_type) * 
+      (res0 = (res_type *) MALLOC(sizeof(res_type) * vdim *
 				  (totpnts + spatialpnts * initial))) ==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
@@ -499,16 +499,19 @@ void sequentialpart(res_type *res, long totpnts, int spatialpnts, int ntime,
 
 void do_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) 
 {  
+  cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   sequential_storage
     *S = cov->Sseq;
   assert(S != NULL); 
+  
+  int vdim = next->vdim2[0];
   long  i, j, k,
     totpnts = S->totpnts;
   double *G,*U22, *U11, *MuT;
   res_type *res0,
     *res = cov->rf; 
-  bool loggauss = (bool) (P0INT(LOG_GAUSS));
+  bool loggauss = GLOBAL.gauss.loggauss;
 
   assert(res != NULL);
 
@@ -539,12 +542,12 @@ void do_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s)
   
   sequentialpart(res0, totpnts, S->spatialpnts, S->initial, U11, MuT, G);
   res0 += S->initial * S->spatialpnts;
-  MEMCOPY(res, res0, sizeof(res_type) * totpnts);
+  MEMCOPY(res, res0, sizeof(res_type) * totpnts * vdim);
   sequentialpart(res, totpnts, S->spatialpnts, S->ntime - S->back, 
 		 U11, MuT, G);
 
   if (loggauss) {
-    int vdimtot = loc->totalpoints * cov->vdim;
+    int vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 

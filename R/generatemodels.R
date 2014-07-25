@@ -27,7 +27,7 @@ param.text.fct <- function(catheg, names, havedistr=TRUE){
 }
 
 rfGenerateModels <- function(assigning,
-                             RFpath = "~/R/RF/svn/randomfields_2",
+                             RFpath = "~/R/RF/svn/RandomFields",
                              RMmodels.file = paste(RFpath, "R/RMmodels.R",
                                sep="/")
                              ) {
@@ -53,18 +53,19 @@ rfGenerateModels <- function(assigning,
   domains <- integer(.p$covnr)
   isos <- integer(.p$covnr)
   operator <- integer(.p$covnr)
-  normalmix <- integer(.p$covnr)
+  monotone <- integer(.p$covnr)
   finiterange <- integer(.p$covnr)
   internal    <- integer(.p$covnr)
   maxdim <- integer(.p$covnr)
   vdim <- integer(.p$covnr)
   # get attribute parameter
-  .C("GetAttr", type, operator, normalmix, finiterange, internal,
-     domains, isos, maxdim, vdim, DUP=FALSE, PACKAGE="RandomFields")
+  .C("GetAttr", type, operator, monotone, finiterange, internal,
+     domains, isos, maxdim, vdim, DUP=DUPFALSE, PACKAGE="RandomFields")
   #
   
   idx <- integer(.p$covnr * .p$covnr)
-  .C("GetModelList", idx, as.integer(TRUE), PACKAGE="RandomFields", DUP=FALSE)
+  .C("GetModelList", idx, as.integer(TRUE), PACKAGE="RandomFields",
+     DUP=DUPFALSE)
   dim(idx) <- c(.p$covnr, .p$covnr)
   # Print(domains, isos) # test
 
@@ -107,7 +108,8 @@ rfGenerateModels <- function(assigning,
      
     ex.par <- length(paramnames)>0
     ex.std <- ((nick != ZF_DOLLAR[1] && isNegDef(type[i])) ||
-               nick == ZF_PLUS[1] || nick[1] == ZF_MULT[1])
+               nick == "RMball"
+               || nick == ZF_PLUS[1] || nick[1] == ZF_MULT[1])
     
     cat(i, "\t", nick, ",\t\told name ", ret$name, "\t", ex.std, "\t",
         type[i], "\n", sep="")
@@ -187,11 +189,12 @@ rfGenerateModels <- function(assigning,
     text.assign.class <-
       paste(nick, " <- new('", ZF_MODEL_FACTORY,                   "',", "\n\t",
             ".Data = ",        nick,                                ",", "\n\t",
-            "type = ",         "'", ZF_TYPE[type[i]+1],            "',", "\n\t",
-            "domain = ",       "'", ZF_DOMAIN[domains[i]+1],       "',", "\n\t",
-            "isotropy = ",     "'", ZF_ISOTROPY[isos[i]+1],        "',", "\n\t",
+            "type = ",         "'", RC_TYPE[type[i]+1],            "',", "\n\t",
+            "domain = ",       "'", RC_DOMAIN[domains[i]+1],       "',", "\n\t",
+            "isotropy = ",     "'", RC_ISOTROPY[isos[i]+1],        "',", "\n\t",
             "operator = ",     as.logical(operator[i]),             ",", "\n\t",
-            "normalmix = ",    as.logical(normalmix[i]),            ",", "\n\t",
+            "monotone = ",    "'", RC_MONOTONE[monotone[i] + MON_MISMATCH],
+                                                                   "',", "\n\t",
             "finiterange = ",  as.logical(finiterange[i]),          ",", "\n\t",
             "maxdim = ",   if(maxdim[i]>diminf) Inf else maxdim[i], ",", "\n\t",
             "vdim = ",         vdim[i],                                  "\n\t",

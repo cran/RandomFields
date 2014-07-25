@@ -4,7 +4,7 @@
 \title{Further Examples for the Simulation of Random Fields}
 
 \description{
- This man page gives a collection of basic examples for the use of
+ This man page will give a collection of basic examples for the use of
  \code{\link{RFsimulate}}.
 
  For other kind of random fields (binary, max-stable, etc.) or
@@ -22,7 +22,8 @@
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 \dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 
 \dontshow{\dontrun{
@@ -38,56 +39,56 @@ RFoptions(seed=0)
 
 RFgetModelNames(type="CovType") ## the complete list covariance models
 ## and variogram models
- ## our choice is RMstable
+## our choice is RMstable
 
- ## define the model:
- model <- RMtrend(mean=0.5) + # mean
- RMstable(alpha=1, var=4, scale=10) +
- # see help("RMstable")
- # for additional parameters
- RMnugget(var=1) # nugget
+## define the model:
+model <- RMtrend(mean=0.5) + # mean
+RMstable(alpha=1, var=4, scale=10) +
+# see help("RMstable")
+# for additional arguments
+RMnugget(var=1) # nugget
 
- ## define the locations:
- from <- 0
- to <- 20
- step <- 1 ## nicer, but also time consuming if step <- 0.1
- x.seq <- seq(from, to, step) 
- y.seq <- seq(from, to, step)
+## define the locations:
+from <- 0
+to <- 20
+step <- 1 ## nicer, but also time consuming if step <- 0.1
+x.seq <- seq(from, to, step) 
+y.seq <- seq(from, to, step)
 
 ## simulate and get image of output:
- simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE)
- plot(simulated)
+simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE)
+plot(simulated)
 ## for comparison only:
- image(x.seq, y.seq, RFspDataFrame2conventional(simulated)$data)
+image(x.seq, y.seq, RFspDataFrame2conventional(simulated)$data)
 
 #############################################################
 ## ... using seq(from, by, length.out) notation
- len <- 21 ## more generally len <- (to-from)/step+1
- x.short <- y.short <- c(from, step, len)
- short.matrix <- cbind(x.short, y.short)
- simulated <- RFsimulate(model = model, x=short.matrix, grid=TRUE)
- plot(simulated) 
- 
-#############################################################
-## ... using GridTopology for the locations:
- len <- 21 ## more generally len <- (to-from)/step+1
- gridtop <- GridTopology(c(from,from), c(step,step), c(len,len))
- simulated <- RFsimulate(model = model, x=gridtop, grid=TRUE)
- plot(simulated) 
+len <- 21 ## more generally len <- (to-from)/step+1
+x.short <- y.short <- c(from, step, len)
+short.matrix <- cbind(x.short, y.short)
+simulated <- RFsimulate(model = model, x=short.matrix, grid=TRUE)
+plot(simulated) 
 
 #############################################################
+## ... using GridTopology for the locations:
+len <- 21 ## more generally len <- (to-from)/step+1
+gridtop <- GridTopology(c(from,from), c(step,step), c(len,len))
+simulated <- RFsimulate(model = model, x=gridtop, grid=TRUE)
+plot(simulated) 
+
+############################################################
 ## arbitrary points
- x <- runif(100, max=20) 
- y <- runif(100, max=20) # 100 points in 2 dimensional space
- simulated <- RFsimulate(model = model, x=x, y=y)
- plot(simulated)
+x <- runif(100, max=20) 
+y <- runif(100, max=20) # 100 points in 2 dimensional space
+simulated <- RFsimulate(model = model, x=x, y=y)
+plot(simulated)
 
 #############################################################
 ## using the 1-dimensional plot routine
 ## simulate 1-dimensional random field first
- x.seq <- seq(from, to, step) # grid
- simulated <- RFsimulate(model = model, x=x.seq, grid=TRUE)
- plot(simulated) 
+x.seq <- seq(from, to, step) # grid
+simulated <- RFsimulate(model = model, x=x.seq, grid=TRUE)
+plot(simulated) 
 
 
 #############################################################
@@ -95,50 +96,50 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
 ## Access to simulated data                                ##
 #############################################################
 
- model <- RMstable(alpha=1.5)
- step <- 1 ## nicer, but also time consuming if step <- 0.1
- x.seq <- seq(0, 20, step) 
- y.seq <- seq(0, 20, step) # grid
- simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE,
- n=4) # 4 realizations at once
- plot(simulated) 
- summary(simulated@data$variable1.n2)
- # summary of simulated univariate data of 2nd realization
+model <- RMstable(alpha=1.5)
+step <- 1 ## nicer, but also time consuming if step <- 0.1
+x.seq <- seq(0, 20, step) 
+y.seq <- seq(0, 20, step) # grid
+simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE,
+n=4) # 4 realizations at once
+plot(simulated) 
+summary(simulated@data$variable1.n2)
+# summary of simulated univariate data of 2nd realization
 
 
 #############################################################
 ## Example 3: simulating with trend                        ##
 #############################################################
 
- ## as function 
- model <- RMexp(var=0.3) +
- RMtrend(arbitraryfct = function(x,y) 2*sin(x)*cos(y))
- x.seq <- y.seq <- seq(-5,5,0.1)
- simulated <- RFsimulate(model, x=x.seq,y=y.seq, grid=TRUE)
- plot(simulated)
+##s function 
+model <- RMexp(var=0.3) +
+RMtrend(arbitraryfct = function(x,y) 2*sin(x)*cos(y))
+x.seq <- y.seq <- seq(-5,5,0.1)
+simulated <- RFsimulate(model, x=x.seq,y=y.seq, grid=TRUE)
+plot(simulated)
 
 #############################################################
 ## with linear trend surface: 3x-y 
 
- model1 <- RMexp() + RMtrend(plane=c(3,-1), fctcoeff=1)
- # or equivalently:
- model2 <- RMexp() + RMtrend(arbitraryfct=function(x,y) 3*x-y)
+model1 <- RMexp() + RMtrend(plane=c(3,-1), fctcoeff=1)
+# or equivalently:
+model2 <- RMexp() + RMtrend(arbitraryfct=function(x,y) 3*x-y)
 
- simulated <- RFsimulate(model1, x=x.seq, y=y.seq, grid=TRUE)
- persp(x.seq,y.seq, RFspDataFrame2conventional(simulated)$data,
- phi=30, theta=-3)
+simulated <- RFsimulate(model1, x=x.seq, y=y.seq, grid=TRUE)
+persp(x.seq,y.seq, RFspDataFrame2conventional(simulated)$data,
+phi=30, theta=-3)
 
 
 #############################################################
 ## Example 4: Brownian motion (using Stein's method) ##
 #############################################################
 
- # Brownian motion (1 dimensional)
- alpha <- 1 # in [0,2)
- x.seq <- seq(0, 10, 0.001)
- simulated <- RFsimulate(model = RMfbm(alpha=alpha),
- x=x.seq, grid=TRUE) 
- plot(simulated) 
+# Brownian motion (1 dimensional)
+alpha <- 1 # in [0,2)
+x.seq <- seq(0, 10, 0.001)
+simulated <- RFsimulate(model = RMfbm(alpha=alpha),
+x=x.seq, grid=TRUE) 
+plot(simulated) 
 
  
 #############################################################
@@ -146,63 +147,55 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
 ## Combining models / Operators on models ##
 #############################################################
  
- RFgetModelNames(operator=TRUE) ## list all models
- ## that are an operator;
- ## our choice is RMcoxisham
- D <- as.matrix(1) # parameter of RMcoxisham
- # a 1x1-correlation matrix
- model <- RMcoxisham(RMwhittle(nu=0.3),
- # submodel on which the operator model
- # RMcoxisham is applied
- mu=0, D=D, beta=2)
- x.seq <- y.seq <- seq(-10,10,0.1)
- simulated <- RFsimulate(model = model,
- x=x.seq, y=y.seq, grid=TRUE) 
- plot(simulated)
+RFgetModelNames(operator=TRUE) ## list all models
+## that are an operator;
+## our choice is RMcoxisham
+D <- as.matrix(1) # a 1x1-correlation matrix for RMcoxisham
+submodel <- RMwhittle(nu=0.3)  # submodel on which the operator
+##                                model RMcoxisham will be applied
+model <- RMcoxisham(submodel, mu=0, D=D, beta=2)
+x.seq <- y.seq <- seq(-10,10,0.1)
+simulated <- RFsimulate(model = model,
+x=x.seq, y=y.seq, grid=TRUE) 
+plot(simulated)
 
 #############################################################
- ## further nesting of models is possible: 
+## further nesting of models is possible: 
 
- #model2 <- RMcoxisham(RMintexp(RMdewijsian(alpha=1)),
- # mu=0, D=D, beta=2)
- #simulated <- RFsimulate(model = model2,
- # x=x.seq, y=y.seq, grid=TRUE) 
- #plot(simulated)
+#model2 <- RMcoxisham(RMintexp(RMdewijsian(alpha=1)),
+# mu=0, D=D, beta=2)
+#simulated <- RFsimulate(model = model2,
+# x=x.seq, y=y.seq, grid=TRUE) 
+#plot(simulated)
 
 #############################################################
- ## addition of random fields using RMplus
+## addition of random fields using RMplus
 
- model1 <- RMexp(var=10) + RMwhittle(nu=1, var=15)
- # or eqivalently (note the "global" variance parameter (here
- # \code{var=5}) which multiplies the variances of both
- # submodels): 
- model2 <- RMplus(C0 = RMexp(var=2),
- C1 = RMwhittle(nu=1, var=3), var=5)
- x.seq <- y.seq <- seq(-10,10,0.5)
+model1 <- RMexp(var=5) + RMwhittle(nu=1, var=5)
+## Alternatively, the common variance argument var=5
+## can be included in the RMplus model:
+model2 <- RMplus(C0 = RMexp(), C1 = RMwhittle(nu=1), var=5)
+x.seq <- y.seq <- seq(-10,10,0.5)
 
-
- simulated1 <- RFsimulate(model = model1,
- x=x.seq, y=y.seq, grid=TRUE) 
-
- simulated2 <- RFsimulate(model = model2,
- x=x.seq, y=y.seq, grid=TRUE)
- # compare
- plot(simulated1)
- plot(simulated2)
- sum(abs(simulated1@data - simulated2@data)) # should be zero
+simulated1 <- RFsimulate(model = model1, x=x.seq, y=y.seq, grid=TRUE) 
+simulated2 <- RFsimulate(model = model2, x=x.seq, y=y.seq, grid=TRUE)
+# compare (should give the same
+plot(simulated1)
+plot(simulated2)
+sum(abs(simulated1@data - simulated2@data)) # should be numerically zero
  
 
 #############################################################
 ## Example 6: A bivariate random field ##
 #############################################################
 
- RFgetModelNames(vdim=2) ## list all bivariate models
- ## our choice is RMbiWM
- model <- RMbiwm(nudiag=c(1.3, 0.7), nured=2.5,
- s=c(1, 1, 1), cdiag=c(0.7, 0.8), rhored=1)
- x.seq <- y.seq <- seq(-10,10,0.5)
- simulated <- RFsimulate(model = model, x=x.seq, y=y.seq, grid=TRUE) 
- plot(simulated)
+RFgetModelNames(vdim=2) ## list all bivariate models
+## our choice is RMbiWM
+model <- RMbiwm(nudiag=c(1.3, 0.7), nured=2.5,
+s=c(1, 1, 1), cdiag=c(0.7, 0.8), rhored=1)
+x.seq <- y.seq <- seq(-10,10,0.5)
+simulated <- RFsimulate(model = model, x=x.seq, y=y.seq, grid=TRUE) 
+plot(simulated)
 
 
 
@@ -216,67 +209,65 @@ RFgetModelNames(type="CovType") ## the complete list covariance models
 ## Example 7: ways to pass given data ##
 #############################################################
 
- # simulate given locations and corresponding data
- # (simulate measurements)
- x <- runif(n=100, min=-1, max=1)
- y <- runif(n=100, min=-1, max=1)
- data <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
-
- # locations for conditional simulation
- x.seq.cond <- y.seq.cond <- seq(-1.5,1.5,length=100)
+# simulate given locations and corresponding data
+# (simulate measurements)
+x <- runif(n=100, min=-1, max=1)
+y <- runif(n=100, min=-1, max=1)
+data <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
+# locations for conditional simulation
+x.seq.cond <- y.seq.cond <- seq(-1.5,1.5,length=100)
 
 #############################################################
 ## pass given data and locations as SP4-object
 ## given.data is an SP4-object
 
- cond.simulated <- RFsimulate(model = RMexp(),
- x=x.seq.cond, y=y.seq.cond,
- grid=TRUE, data=data)
+cond.simulated <- RFsimulate(model = RMexp(),
+x=x.seq.cond, y=y.seq.cond,
+grid=TRUE, data=data)
 
 #############################################################
 ## or equivalently: pass given data and locations as a matrix
 
- cond.simulated.2 <- RFsimulate(model = RMexp(),
- x=x.seq.cond, y=y.seq.cond,
- grid=TRUE,
- data = cbind(x, y, data@data))
+cond.simulated.2 <- RFsimulate(model = RMexp(),
+x=x.seq.cond, y=y.seq.cond,
+grid=TRUE,
+data = cbind(x, y, data@data))
 
- all.equal(cond.simulated, cond.simulated.2) ## TRUE
- plot(cond.simulated, data)
+all.equal(cond.simulated, cond.simulated.2) ## TRUE
+plot(cond.simulated, data)
  
 
 #############################################################
 ## multiple realizations
 
- # simulate corresponding data twice (2 measurements)
- given.data.2realize <- RFsimulate(model = RMwhittle(nu=1.1),
- x=x.seq.cond, y=y.seq.cond,
- data=data, n=2)
- plot(given.data.2realize, data)
+# simulate corresponding data twice (2 measurements)
+given.data.2realize <- RFsimulate(model = RMwhittle(nu=1.1),
+x=x.seq.cond, y=y.seq.cond,
+data=data, n=2)
+plot(given.data.2realize, data)
  
 #############################################################
 ## simulation not on a grid
 
- x.cond <- runif(1000, -2, 2)
- y.cond <- runif(1000, -2, 2)
- cond.simulated <- RFsimulate(model=RMwhittle(nu=1.4),
- x=x.cond, y=y.cond, grid=FALSE,
- data=data)
- plot(cond.simulated, data)
+x.cond <- runif(1000, -2, 2)
+y.cond <- runif(1000, -2, 2)
+cond.simulated <- RFsimulate(model=RMwhittle(nu=1.4),
+x=x.cond, y=y.cond, grid=FALSE, data=data)
+plot(cond.simulated, data)
 
 
 #############################################################
 ## Example 8: allow measurement errors ##
 #############################################################
 
- # err.model specifies the error model, typically RMnugget
- cond.simulated <- RFsimulate(model=RMexp(),
- x=x.seq.cond, y=y.seq.cond,
- data=data,
- err.model=RMnugget(var=1))
- plot(cond.simulated, data)
+# err.model specifies the error model, typically RMnugget
+cond.simulated <- RFsimulate(model=RMexp(),
+x=x.seq.cond, y=y.seq.cond,
+data=data,
+err.model=RMnugget(var=1))
+plot(cond.simulated, data)
 
 }}
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 
 }

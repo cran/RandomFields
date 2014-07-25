@@ -20,7 +20,7 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
  \item{diameter}{a numerical value; positive; should be the diameter of
  the domain on which simulation is done}
  \item{rawR}{a numerical value; greater or equal to 1}
- \item{var,scale,Aniso,proj}{optional parameters; same meaning for any
+ \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
@@ -35,7 +35,7 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
  only about some few necessary conditions.
  Hence it is not ensured that
  the Stein-model is a valid covariance function for any
- choice of phi and the parameters. 
+ choice of \eqn{\phi} and the parameters. 
  
  For certain models \eqn{\phi}{phi}, i.e. \code{stable},
  \code{whittle}, \code{gencauchy}, and the variogram
@@ -72,11 +72,12 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
 
 
 \examples{
-RFoptions(seed=0)
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
 x.max <- 10
 model <- RMintrinsic(RMfbm(alpha=1), diameter=x.max)
 x <- seq(0, x.max, if (interactive()) 0.02 else 1) 
 plot(model, ylim=c(0,6))
 plot(RFsimulate(model, x=x))
-\dontshow{RFoptions(seed=NA)}
+\dontshow{FinalizeExample()}
 }
