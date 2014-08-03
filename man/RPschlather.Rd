@@ -79,7 +79,7 @@ plot(z2, type="l")
 all.equal(z, z2) # true
 
 
-\dontshow{if (.C("isAuthor", a=integer(1))$a) {
+\dontshow{if (.C("isAuthor", a=integer(1))$a) { # OK
 
 model <- RMgauss()
 x <- seq(0,10, 0.02)

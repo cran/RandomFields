@@ -54,8 +54,8 @@ void nonstatinverse2(double *v, cov_model *cov, double *left, double *right);
 void nonstat_loginverse2(double *v, cov_model *cov, double *x, double *y);
 //int struct2(cov_model *cov, cov_model **newmodel);
 int struct2(cov_model *cov, cov_model **newmodel);
-int init2(cov_model *cov, storage *s);
-void do2(cov_model *cov, storage *s);
+int init2(cov_model *cov, gen_storage *s);
+void do2(cov_model *cov, gen_storage *s);
 void dorandom2(cov_model *cov, double *v);
 
 void plusStat(double *x, cov_model *cov, double *v);
@@ -66,10 +66,10 @@ int checkplus(cov_model *cov);
 bool Typeplus(Types required, cov_model *cov);
 void Dplus(double *x, cov_model *cov, double *v);
 void DDplus(double *x, cov_model *cov, double *v);
-void spectralplus(cov_model *cov, storage *s, double *e);
+void spectralplus(cov_model *cov, gen_storage *s, double *e);
 int structplus(cov_model *cov, cov_model **newmodel);
-int initplus(cov_model *cov, storage *s);
-void doplus(cov_model *cov, storage *s);
+int initplus(cov_model *cov, gen_storage *s);
+void doplus(cov_model *cov, gen_storage *s);
 void covmatrix_plus(cov_model *cov, double *v);
 
 
@@ -81,8 +81,8 @@ void logmalNonStat(double *x, double *y, cov_model *cov, double *v,
 int checkmal(cov_model *cov);
 bool Typemal(Types required, cov_model *cov);
 void Dmal(double *x, cov_model *cov, double *v);
-int initmal(cov_model *cov, storage *s);
-void domal(cov_model *cov, storage *s);
+int initmal(cov_model *cov, gen_storage *s);
+void domal(cov_model *cov, gen_storage *s);
 
 void kappaM(int i, cov_model *cov, int *nr, int *nc);
 void Mstat(double *x, cov_model *cov, double *v);
@@ -104,8 +104,8 @@ int checkId(cov_model *cov);
 void DId(double *x, cov_model *cov, double *v);
 void DDId(double *x, cov_model *cov, double *v);
 void TBM2Id(double *x, cov_model *cov, double *v);
-int initId(cov_model *cov, storage *s);
-void spectralId(cov_model *cov, storage *s, double *e);
+int initId(cov_model *cov, gen_storage *s);
+void spectralId(cov_model *cov, gen_storage *s, double *e);
 void coinitId(cov_model *cov, localinfotype *li);
 void ieinitId(cov_model *cov, localinfotype *li);
 void rangeId(cov_model *cov, range_type* ra); 
@@ -128,7 +128,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *);
 int checkS(cov_model *cov);
 bool TypeS(Types required, cov_model *cov);
 void rangeS(cov_model *cov, range_type* ra);
-void spectralS(cov_model *cov, storage *s, double *e);
+void spectralS(cov_model *cov, gen_storage *s, double *e);
 extern int SSTAT, SNONSTAT;
 void coinitS(cov_model *cov, localinfotype *li);
 void ieinitS(cov_model *cov, localinfotype *li);
@@ -138,8 +138,8 @@ void nonstat_loginverseS(double *v, cov_model *cov, double *x, double *y);
 void nablaS(double *x, cov_model *cov, double *v);
 void hessS(double *x, cov_model *cov, double *v);
 int structS(cov_model *cov, cov_model **newmodel);
-int initS(cov_model *cov, storage *s);
-void doS(cov_model *cov, storage *s);
+int initS(cov_model *cov, gen_storage *s);
+void doS(cov_model *cov, gen_storage *s);
 
 
 
@@ -155,8 +155,8 @@ void Dbrownresnick(double *x, cov_model *cov, double *v);
 void DDbrownresnick(double *x, cov_model *cov, double *v);
 void D3brownresnick(double *x, cov_model *cov, double *v);
 int struct_brownresnick(cov_model *cov, cov_model **newmodel);
-int init_brownresnick(cov_model *cov, storage *s);
-void do_brownresnick(cov_model *cov, storage *s);
+int init_brownresnick(cov_model *cov, gen_storage *s);
+void do_brownresnick(cov_model *cov, gen_storage *s);
 
 void BR2BG(double *x, cov_model *cov, double *v);
 int check_BR2BG(cov_model *cov);
@@ -169,8 +169,8 @@ void kappa_cox(int i, cov_model *cov, int *nr, int *nc);
 void cox(double *x, cov_model *cov, double *v);
 void rangecox(cov_model *cov, range_type* ra);
 int checkcox(cov_model *cov);
-int initcox(cov_model *cov, storage *s);
-void spectralcox(cov_model *cov, storage *s, double *e); 
+int initcox(cov_model *cov, gen_storage *s);
+void spectralcox(cov_model *cov, gen_storage *s, double *e); 
 void coxnabla(double *x, cov_model *cov, double *v);
 void coxhess(double *x, cov_model *cov, double *v);
 
@@ -290,9 +290,9 @@ void ieinitnatsc(cov_model *cov, localinfotype *li);
 void tbm2natsc(double *x, cov_model *cov, double *v);
 int checknatsc(cov_model *cov);
 int initnatsc(cov_model *cov);
-void spectralnatsc(cov_model *cov, storage *s, double *e);
-int initnatsc(cov_model *cov, storage *s);
-void donatsc(cov_model *cov, storage *s);
+void spectralnatsc(cov_model *cov, gen_storage *s, double *e);
+int initnatsc(cov_model *cov, gen_storage *s);
+void donatsc(cov_model *cov, gen_storage *s);
 
 void NullModel(double *x, cov_model *cov, double *v);
 bool TypeNullModel(Types required, cov_model *cov);
@@ -318,8 +318,8 @@ bool TypePowS(Types required, cov_model *cov) ;
 void rangePowS(cov_model *cov, range_type* range);
 void PowScaleToLoc(cov_model *to, cov_model *from, int VARIABLE_IS_NOT_USED depth) ;
 int structPowS(cov_model *cov, cov_model **newmodel) ;
-int initPowS(cov_model *cov, storage *s);
-void doPowS(cov_model *cov, storage *s);
+int initPowS(cov_model *cov, gen_storage *s);
+void doPowS(cov_model *cov, gen_storage *s);
 
 
 
@@ -361,23 +361,23 @@ void range_Stein(cov_model *cov, range_type* ra);
 
 void strokorb(double *x, cov_model *cov, double *v);
 int checkstrokorb(cov_model *cov);
-int init_strokorb(cov_model *cov,  storage *s);
-void do_strokorb(cov_model *cov, storage *s);
+int init_strokorb(cov_model *cov, gen_storage *s);
+void do_strokorb(cov_model *cov, gen_storage *s);
 
 
 //void strokorbBall(double *x, cov_model *cov, double *v);
 int checkstrokorbBall(cov_model *cov);
 int struct_strokorbBall(cov_model *cov, cov_model **newmodel);  
-//int init_strokorbBall(cov_model *cov,  storage *s);
-//void do_strokorbBall(cov_model *cov, storage *s);
+//int init_strokorbBall(cov_model *cov, gen_storage *s);
+//void do_strokorbBall(cov_model *cov, gen_storage *s);
 void rangestrokorbball(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range);
 
 
 void strokorbBallInner(double *x, cov_model *cov, double *v);
 int check_strokorbBallInner(cov_model *cov);
 void range_strokorbBallInner(cov_model *cov, range_type *range);
-int init_strokorbBallInner(cov_model *cov,  storage *s);
-void do_strokorbBallInner(cov_model *cov, storage *s);
+int init_strokorbBallInner(cov_model *cov, gen_storage *s);
+void do_strokorbBallInner(cov_model *cov, gen_storage *s);
 
 
 void strokorbPoly(double *x, cov_model *cov, double *v);
@@ -408,9 +408,9 @@ void Dsetparam(double *x, cov_model *cov, double *v);
 void DDsetparam(double *x, cov_model *cov, double *v);
 void D3setparam(double *x, cov_model *cov, double *v);
 void D4setparam(double *x, cov_model *cov, double *v);
-void spectralsetparam(cov_model *cov, storage *s, double *e);
-int initsetparam(cov_model *cov, storage *s);
-void dosetparam(cov_model *cov, storage *s);
+void spectralsetparam(cov_model *cov, gen_storage *s, double *e);
+int initsetparam(cov_model *cov, gen_storage *s);
+void dosetparam(cov_model *cov, gen_storage *s);
 void covmatrix_setparam(cov_model *cov, double *v);
 
 
@@ -418,7 +418,7 @@ void oesting(double *x, cov_model *cov, double *v);
 void Doesting(double *x, cov_model *cov, double *v);
 void DDoesting(double *x, cov_model *cov, double *v); 
 int checkoesting(cov_model *cov);
-int initoesting(cov_model *cov, storage VARIABLE_IS_NOT_USED *s);
+int initoesting(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
 void rangeoesting(cov_model *cov, range_type *range);
 
 void idcoord(double *x, cov_model *cov, double *v);

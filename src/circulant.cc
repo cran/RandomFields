@@ -120,7 +120,7 @@ int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
 #define LOCPROC_R LOCPROC_A // always last of LOCPROC_*
 
 
-int init_circ_embed(cov_model *cov, VARIABLE_IS_NOT_USED storage *S){
+int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   int err=NOERROR;
   if (!Getgrid(cov)) SERR("circ embed requires a grid");
 
@@ -175,13 +175,9 @@ int init_circ_embed(cov_model *cov, VARIABLE_IS_NOT_USED storage *S){
   cov->method = CircEmbed;
   
   if (loc->distances) return ERRORFAILED;
- 
-  if (cov->SCE != NULL) CE_DELETE(&(cov->SCE));
-  if ((cov->SCE = (CE_storage*) MALLOC(sizeof(CE_storage)))==0){
-    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  } 
+
+  NEW_STORAGE(SCE, CE, CE_storage);
   s = cov->SCE;
-  CE_NULL(s);  
 
   if (dim > MAXCEDIM) {
     err=ERRORMAXDIMMETH ; goto ErrorHandling;
@@ -989,7 +985,7 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
  
 
-void do_circ_embed(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
+void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   assert(cov != NULL);
   assert(Getgrid(cov));
       
@@ -1212,7 +1208,7 @@ void do_circ_embed(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
     //	   s->cur_square[i], s->max_squares[i],
     //	   (int) s->square_seg[i], cumm[i], s->nn[i]);
   }
-  int totpts = loc->totalpoints; // MULT
+  long L, totpts = loc->totalpoints; // MULT
 
   /*
     for(l=0; l<vdim; l++) { // MULT
@@ -1234,25 +1230,11 @@ void do_circ_embed(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   for(k=0; k<dim; k++) index[k] = start[k];
 
   bool vdim_close_together = GLOBAL.general.vdim_close_together;
-  for (i=0; i<totpts; i++) {
+  for (L=0; L<totpts; L++) {
     j=0; for (k=0; k<dim; k++) {j+=index[k];}
     for (l=0; l<vdim; l++) { // MULT
-      res[vdim_close_together ? vdim*i+l : i+l*totpts] = 
-	(res_type) (d[l][2 * j + !(s->cur_call_odd)] * invsqrtmtot);
-      
-      //      if (false)
-      //	if ( !( res[vdim*i+l] < 10) || i==0 && l==0)
-      //	    print("!! %d %d %d %f -- %d %f %f\n",
-      //		 i, l, vdim, res[vdim*i+l],
-      //		 2 * j + !(s->cur_call_odd),
-      //		 d[l][2 * j + !(s->cur_call_odd)],
-      //		 invsqrtmtot);
-      
-      //res[vdim*i+l] += d[l][2 * j] * invsqrtmtot;
-      
-      //LPRINT("2*j+..=%d\n", 2 * j + !(s->cur_call_odd));
-      //LPRINT("i=%d, l=%d, assigning %f to res[%d]\n", 
-      //         i, l, d[l][2 * j] * invsqrtmtot, vdim*i+l);
+      res[vdim_close_together ? vdim * L + l : L + l * totpts] = 
+	(res_type) (d[l][2 * j + !(s->cur_call_odd)] * invsqrtmtot);      
     }
     for(k=0; (k<dim) && ((index[k] += cumm[k]) >= end[k]); k++) {
       index[k]=start[k];
@@ -1261,8 +1243,8 @@ void do_circ_embed(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   }
 
   if (loggauss) {
-    int vdimtot = loc->totalpoints * cov->vdim2[0];
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
+    long vdimtot = loc->totalpoints * cov->vdim2[0];
+    for (L=0; L<vdimtot; L++) res[L] = exp(res[L]);
   }
 
 
@@ -1450,7 +1432,7 @@ int check_local_proc(cov_model *cov) {
   return NOERROR;
 }
 
-int init_circ_embed_local(cov_model *cov, storage *S){
+int init_circ_embed_local(cov_model *cov, gen_storage *S){
   // being here, leadin $ have already been put away
   // so a new $ is included below
 
@@ -1487,11 +1469,8 @@ int init_circ_embed_local(cov_model *cov, storage *S){
 
   if (loc->distances) return ERRORFAILED;
 
-  if (cov->SlocalCE!=NULL) LOCAL_DELETE(&(cov->SlocalCE));
-  if ((cov->SlocalCE=(localCE_storage*) MALLOC(sizeof(localCE_storage)))==0) 
-    return ERRORMEMORYALLOCATION; 
-  s = (localCE_storage*) cov->SlocalCE;
-  LOCAL_NULL(s);
+  NEW_STORAGE(SlocalCE, LOCAL, localCE_storage);
+  s = cov->SlocalCE;
   
   if (loc->caniso != NULL) {
     if (loc->cani_ncol != loc->cani_nrow || 
@@ -1636,7 +1615,7 @@ int struct_ce_local(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
 }
 
 
-void do_circ_embed_cutoff(cov_model *cov, storage *S) {  
+void do_circ_embed_cutoff(cov_model *cov, gen_storage *S) {  
   // localCE_storage *s = (localCE_storage*) cov->SlocalCE;
   // assert(s->correction == NULL);
   do_circ_embed(cov->key, S);
@@ -1690,7 +1669,7 @@ void range_intrinCE(cov_model *cov, range_type *range) {
 }
 
 
-void do_circ_embed_intr(cov_model *cov, storage *S) {  
+void do_circ_embed_intr(cov_model *cov, gen_storage *S) {  
   cov_model *key = cov->key;
   assert(key != NULL);
   location_type *loc = Loc(cov);
@@ -1764,7 +1743,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
   // assert(!Getgrid(cov));
  
   if (!Getgrid(cov)) {    
-    assert(newmodel == NULL);
+    ASSERT_NEWMODEL_NOT_NULL;
     location_type *loc = Loc(cov);  
     double max[MAXCEDIM], min[MAXCEDIM],  centre[MAXCEDIM], 
       x[3 * MAXCEDIM],
@@ -1832,7 +1811,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 
 
 
-int init_ce_approx(cov_model *cov, storage *S) {  
+int init_ce_approx(cov_model *cov, gen_storage *S) {  
   if (Getgrid(cov)) {
     return cov->nr==CIRCEMBED ? init_circ_embed(cov, S)
       : init_circ_embed_local(cov, S); 
@@ -1846,9 +1825,10 @@ int init_ce_approx(cov_model *cov, storage *S) {
   double //max[MAXCEDIM],
     //min[MAXCEDIM],
     cumgridlen[MAXCEDIM];
-  int d, i, err,
+  long i,
+    totpts = loc->totalpoints;
+  int d, err,
     // maxgridsize = P0INT(CE_APPROXMAXGRID),
-    totpts = loc->totalpoints,
     dim = loc->timespacedim;
   
   if (cov->xdimown != loc->timespacedim)
@@ -1857,11 +1837,8 @@ int init_ce_approx(cov_model *cov, storage *S) {
     : cov->nr== CE_CUTOFFPROC_INTERN ? CircEmbedCutoff : CircEmbedIntrinsic;
 
   if (loc->distances) return ERRORFAILED;
-  if (cov->SapproxCE != NULL) CE_APPROX_DELETE(&(cov->SapproxCE));
-  if ((cov->SapproxCE = (ce_approx_storage*) MALLOC(sizeof(ce_approx_storage)))
-      ==NULL) return ERRORMEMORYALLOCATION;  
+  NEW_STORAGE(SapproxCE, CE_APPROX, ce_approx_storage);
   ce_approx_storage *s = cov->SapproxCE;
-  CE_APPROX_NULL(s);
 
   if ((s->idx = (int*) MALLOC(totpts * sizeof(int)))==NULL)
     return ERRORMEMORYALLOCATION;
@@ -1898,7 +1875,7 @@ int init_ce_approx(cov_model *cov, storage *S) {
   return NOERROR;
 }
 
-void do_ce_approx(cov_model *cov, storage *S){
+void do_ce_approx(cov_model *cov, gen_storage *S){
   if (Getgrid(cov)) {
     if (cov->nr==CIRCEMBED) do_circ_embed(cov, S);
     else if (cov->nr== CE_CUTOFFPROC_INTERN) do_circ_embed_cutoff(cov, S);
@@ -1913,14 +1890,15 @@ void do_ce_approx(cov_model *cov, storage *S){
   location_type *loc = Loc(cov);
   ce_approx_storage *s = cov->SapproxCE;
   //cov_model *cov = meth->cov;
-  int t, i, j, 
-    gridpoints = loc->totalpoints,
+  long i,
     totpts = loc->spatialtotalpoints,
-    instances = loc->T[XLENGTH],
+    gridpoints = loc->totalpoints;
+ int t, j, 
+      instances = loc->T[XLENGTH],
     *idx = s->idx;
   double 
     *res = cov->rf,
-    *internalres = key->rf;
+     *internalres = key->rf;
 
   // APMI(key);
 

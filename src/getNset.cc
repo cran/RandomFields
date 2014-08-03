@@ -136,6 +136,7 @@ void removeOnly(cov_model **Cov) {
 void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   cov_model *cov = *Cov;
 
+
   assert(cov != NULL);
 
   int i, j,
@@ -208,6 +209,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   RECT_DELETE(&(cov->Srect));
   DOLLAR_DELETE(&(cov->Sdollar));
   GATTER_DELETE(&(cov->S2));
+  EXTRA_DELETE(&(cov->Sextra));
   BIWM_DELETE(&(cov->Sbiwm));
   INV_DELETE(&(cov->Sinv));
   GET_STORAGE_DELETE(&(cov->Sget));
@@ -262,7 +264,7 @@ void COV_DELETE(cov_model **Cov) {
 
   assert(*Cov != NULL);
 
-  //  PMI(cov, -1);
+  //    BUG;PMI(cov);
   // printf("del %s\n", NAME(cov));
 
   if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc));
@@ -310,6 +312,7 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Srect = NULL;
   cov->Sdollar = NULL;
   cov->S2 = NULL;
+  cov->Sextra = NULL;
   cov->Sbiwm = NULL;
   cov->Sinv = NULL;
   //cov->Sselect = NULL;
@@ -915,6 +918,7 @@ void DOLLAR_DELETE(dollar_storage **S)
     if (x->z != NULL) free(x->z);
     if (x->z2 != NULL) free(x->z2);
     if (x->y != NULL) free(x->y);
+    if (x->y2 != NULL) free(x->y2);
     if (x->save_aniso != NULL) free(x->save_aniso);
     if (x->inv_aniso != NULL) free(x->inv_aniso);
     if (x->nx != NULL) free(x->nx);
@@ -928,7 +932,7 @@ void DOLLAR_DELETE(dollar_storage **S)
 
 void DOLLAR_NULL(dollar_storage* x) {
   if (x == NULL) return;
-  x->z = x->z2 = x->y = x->save_aniso = x->inv_aniso = NULL;
+  x->z = x->z2 = x->y =  x->y2 = x->save_aniso = x->inv_aniso = NULL;
   x->cumsum = x->nx = x->total = x->len = NULL;
 }
 
@@ -939,7 +943,6 @@ void GATTER_DELETE(gatter_storage **S)
   gatter_storage *x = *S;
   if (x!=NULL) {
     if (x->z != NULL) free(x->z);
-    if (x->zsys != NULL) free(x->zsys);
     free(*S);
     *S = NULL;
   }
@@ -948,7 +951,26 @@ void GATTER_DELETE(gatter_storage **S)
 void GATTER_NULL(gatter_storage* x) {
   if (x == NULL) return;
   x->z = NULL;
-  x->zsys = NULL;
+  //  x->zsys = NULL;
+}
+
+
+
+void EXTRA_DELETE(extra_storage **S) 
+{
+  extra_storage *x = *S;
+  if (x!=NULL) {
+    if (x->a != NULL) free(x->a);
+    if (x->b != NULL) free(x->b);
+    if (x->c != NULL) free(x->c);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void EXTRA_NULL(extra_storage* x) {
+  if (x == NULL) return;
+  x->a = x->b = x->c = NULL;
 }
 
 
@@ -1001,7 +1023,7 @@ void GET_STORAGE_DELETE(get_storage **S){
 }
 
 
-void STORAGE_NULL(storage *x) {
+void STORAGE_NULL(gen_storage *x) {
   int d;
   if (x == NULL) return;
   //  x->mpp.newx = NULL;
@@ -1022,15 +1044,15 @@ void STORAGE_NULL(storage *x) {
   }
 }
 
-void STORAGE_DELETE(storage **S) {
-  storage *x = *S;
+void STORAGE_DELETE(gen_storage **S) {
+  gen_storage *x = *S;
   if (x!=NULL) {
     free(*S);
     *S = NULL;
   }
 }
 
-void addModel(cov_model **pcov, int covnr) {
+void addModel(cov_model **pcov, int covnr, cov_model *calling, bool nullOK) {
   cov_model *cov;
   int i;
   
@@ -1040,6 +1062,7 @@ void addModel(cov_model **pcov, int covnr) {
   COV_NULL(cov);
   //assert(cov->calling == NULL);
   cov->nr = covnr;
+
   if (*pcov != NULL) {
     cov->nsub = 1;
     cov->calling = (*pcov)->calling;
@@ -1050,19 +1073,44 @@ void addModel(cov_model **pcov, int covnr) {
       cov->pref[i] = cov->sub[0]->pref[i];
     }
   }
+  if (calling != NULL) cov->calling = calling;
+  else if (!nullOK && *pcov == NULL) {
+    PRINTF("Missing link for model '%s'.\n", NICK(cov));
+    BUG;
+  }
+  
   *pcov = cov;
 }
 
+void addModel(cov_model **pcov, int covnr) {
+  addModel(pcov, covnr, NULL, false);
+}
 
-int setgrid(coord_type xgr, double *x, int lx, int spatialdim) {
-  int d,
-    totalBytes = sizeof(double) * lx * spatialdim;
+void addModel(cov_model *pcov, int subnr, int covnr) {
+  assert(pcov != NULL);
+  addModel(pcov->sub + subnr, covnr, pcov, false);
+}
+
+void addModelKappa(cov_model *pcov, int subnr, int covnr) {
+  assert(pcov != NULL);
+  addModel(pcov->kappasub + subnr, covnr, pcov, false);
+}
+
+void addModel(cov_model **pcov, int covnr, cov_model *calling) {
+  addModel(pcov, covnr, calling, false);
+}
+
+int setgrid(coord_type xgr, double *x, long lx, int spatialdim) {
   if (lx!=3) {      
     //    PRINTF("%d\n", lx);
     //    crash();
     SERR("Problem with the coordinates (non-integer number of locations or non-positive step)")      
   }
   
+  int d;
+  unsigned long
+    totalBytes = sizeof(double) * lx * spatialdim;
+ 
   if (xgr[0] == NULL && (xgr[0] =(double*) MALLOC(totalBytes))==NULL)
     return ERRORMEMORYALLOCATION; 
 
@@ -1105,7 +1153,7 @@ int add_y_zero(location_type *loc) {
 }
 
 int partial_loc_set(location_type *loc, double *x, double *y,
-		    int lx, int ly, bool dist, int xdimOZ, double *T,
+		    long lx, long ly, bool dist, int xdimOZ, double *T,
 		    bool grid, bool cpy){
   int d, err;
   unsigned long totalBytes;
@@ -1124,6 +1172,8 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   //crash();
   SERR("domain structure of the first and second call do not match");
   }
+
+  assert(x != NULL);
 
   loc->xdimOZ = xdimOZ; // ohne Zeit !!
   loc->lx = lx;
@@ -1192,6 +1242,9 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
 	return ERRORMEMORYALLOCATION; 
       }
+
+      //printf("%d %d\n", loc->x==NULL, x==NULL);
+
       MEMCOPY(loc->x, x, totalBytes);
       if (loc->ly>0) {
 	if (x == y) {
@@ -1243,7 +1296,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
 int loc_set(double *x, double *y, double *T, 
 	    int spatialdim, /* spatial dim only ! */
 	    int xdimOZ,
-	    int lx, int ly, bool Time, bool grid,
+	    long lx, long ly, bool Time, bool grid,
 	    bool distances,
 	    location_type **Loc) {
   int d, err;
@@ -1259,6 +1312,9 @@ int loc_set(double *x, double *y, double *T,
   loc->spatialdim = spatialdim;
   loc->Time = Time; 
   if (spatialdim<1 || loc->timespacedim>MAXSIMUDIM) return ERRORDIM;
+
+  //printf("loc %ld %d\n", lx, xdimOZ);
+  assert(x != NULL);
   
   if ((err = partial_loc_set(*Loc, x, y, lx, ly, distances, xdimOZ,
 			     Time ? T : NULL,
@@ -1270,7 +1326,7 @@ int loc_set(double *x, double *y, double *T,
 }
 
 
-int loc_set(cov_model *cov, int totalpoints) {
+int loc_set(cov_model *cov, long totalpoints) {
   location_type *loc;
   if (cov->ownloc == NULL) {
     loc = cov->ownloc = (location_type*) MALLOC(sizeof(location_type));
@@ -1287,7 +1343,7 @@ int loc_set(cov_model *cov, int totalpoints) {
 int loc_set(double *x, double *T, 
 	    int spatialdim, /* spatial dim only ! */
 	    int xdimOZ, /* original ! */
-	    int lx, bool Time, bool grid,
+	    long lx, bool Time, bool grid,
 	    bool distances,
 	    location_type **Loc) {
   return loc_set(x, NULL, T, spatialdim, xdimOZ, lx, 0, Time, grid,
@@ -1713,9 +1769,13 @@ void paramcpy(cov_model *to, cov_model *from, bool freeing,
   if (freeing && !allocating) BUG;
 
   for (i=0; i<MAXPARAM; i++) {
+
+ 
     if (pfrom[i] == NULL) {
       continue;
     }
+   
+    //    printf("param %s.%d %d\n", NICK(from), i, freeing);
 
     if (freeing) {
       // if (strcmp(to->kappanames[i], from->kappanames[i]) != 0 ||
@@ -1903,13 +1963,18 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
 int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
 	   location_type *prevloc, location_type *ownloc,
 	   bool copy_lists) {
-  return covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, true); //err
+  
+  int 
+    err =covcpy(localcov, sub, cov, prevloc, ownloc, copy_lists, true); //err
+  return err;
 }
  
 int covcpy(cov_model **localcov, cov_model *cov) { //err
   bool cov2key = &(cov->key)==localcov;
+  //  PMI(cov); 
   int 
     err = covcpy(localcov, true, cov, cov->prevloc, NULL, true, true);//err
+  //  PMI(*localcov);
   if (err == NOERROR) 
     (*localcov)->calling = cov2key || cov->calling==NULL ? cov : cov->calling;
   // falls !cov2key && cov->calling == NULL; dann gibt es nur einen Verweis
@@ -1947,7 +2012,7 @@ int covcpy(cov_model **localcov, cov_model *cov, bool copy_lists) {//err
 }
 
 int covcpy(cov_model **localcov, cov_model *cov, //err
-	   double *x, double *T, int spatialdim, int xdimOZ, int lx, bool Time, 
+	   double *x, double *T, int spatialdim, int xdimOZ, long lx, bool Time, 
 	   bool grid, bool distances) {
   bool cov2key = &(cov->key)==localcov;
   int err;
@@ -2019,11 +2084,11 @@ void Ssetcpy(cov_model *localcov, cov_model *remotecov, cov_model *cov,
 int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov, //err
 		    double *x, double *y, double *T, 
 	            int spatialdim, /* spatial dim only ! */
-	            int xdimOZ, int lx, int ly, bool Time, bool grid,
+	            int xdimOZ, long lx, long ly, bool Time, bool grid,
 	            bool distances) {
   int i, err;
   assert(*localcov == NULL);
-  addModel(localcov, model);
+  addModel(localcov, model, NULL, true);
   cov_model *neu = *localcov;
   Types type;
   
@@ -2033,7 +2098,6 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov, //err
 
   // PMI(neu, "hier");
 
-  assert(neu->calling == NULL);
   neu->sub[0]->calling = neu;
 
   //   PMI(neu);
@@ -2348,9 +2412,12 @@ unsigned long NiceFFTNumber(unsigned long n) {
 void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
   double *x=NULL, *y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
-  int pts, w, k, total, i, d, dimM1 = nrow - 1,
-      *yi=NULL, /* counter for the current position in the grid */
-      ncol = nrow;
+  int 
+    dimM1 = nrow - 1,
+    *yi=NULL, /* counter for the current position in the grid */
+    ncol = nrow;
+
+  long d, pts, w, k, total, i; 
   for (pts=1, i=0; i<nrow; i++) {
     pts *= len[i];
   }
@@ -2392,10 +2459,10 @@ void expandgrid(coord_type xgr, int *len, double **xx, double* aniso,
 		int nrow, int ncol){
   double *x=NULL, * y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
-  int pts, w, k, total, n, i, d, 
-      *yi=NULL,   /* counter for the current position in the grid */
-      dimM1 = nrow - 1; 
-
+  int
+    *yi=NULL,   /* counter for the current position in the grid */
+    dimM1 = nrow - 1; 
+  long pts, w, k, total, n, i, d;
 
   if (aniso == NULL) {
     expandgrid(xgr, len, xx, nrow);
@@ -2689,7 +2756,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
 
   if (loc->caniso != NULL) {    
     if (aniso == NULL) {
-      int bytes = sizeof(double) * loc->cani_nrow * loc->cani_ncol;
+      unsigned long bytes = sizeof(double) * loc->cani_nrow * loc->cani_ncol;
       aniso =(double*) MALLOC(bytes);
       MEMCOPY(aniso, loc->caniso, bytes);
       nrow = loc->cani_nrow;
@@ -2708,6 +2775,8 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
   type = aniso == NULL ? TypeMiso : Type(aniso, origdim, dim);
   *Time = loc->Time;
   *grid = loc->grid && !gridexpand;
+
+  //print("grid %d %d %d\n", *grid, loc->grid, gridexpand);
   
   //  printf("nrow %d origdim=%d dim=%d %d type=%d grid=%d type=%d\n",
   //	 nrow, origdim, dim, ncol, type, loc->grid, isMproj(type)); 
@@ -2724,13 +2793,16 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
       } else {
 	// nur aniso auf grid multipliziert
 	grid2grid(*xgr, grani, aniso, nrow, ncol);
+	*grid = true;	
       }
     } else if (gridexpand) {
       if (!loc->Time) { // grid no time
 	expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
       } else { // grid and time 
 	if (timesep && isMtimesep(type)) {
+	  // space
 	  expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol - 1); 
+	  // time
 	  grid2grid(*xgr + loc->spatialdim, grani, 
 		    aniso + nrow * nrow - 1, 1, 1);
 	} else {
@@ -2795,11 +2867,15 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand) {
     ERR("unexpected y coordinates");
   }
 
+  // APMI(cov->calling);
+  //print("spacedim %d time=%d %f\n", spacedim, Time, (double) loc->totalpoints);
+
   assert(cov->prevloc != NULL);
   Transform2NoGridExt(cov, timesep, gridexpand, &xgr, &x, 
 		      &caniso, &nrow, &ncol, &Time, &grid, &spacedim, true);
   
-  // print("spacedim %d time=%d\n", spacedim, Time);
+  //   print("spacedim %d time=%d %ld %d\n", spacedim, Time, loc->totalpoints, grid);  assert(false);
+  //APMI(cov->calling);
 
   //  PMI(cov, "trafo");
 
@@ -2811,6 +2887,9 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand) {
 		spacedim,
 		grid ? 3 : loc->totalpoints, 
 		Time, grid, false, &(cov->ownloc));
+  //print("AA spacedim %d time=%d\n", spacedim, Time);
+
+
   assert(cov->ownloc->caniso == NULL);
   cov->ownloc->caniso = caniso;
   cov->ownloc->cani_nrow = nrow;
@@ -3072,7 +3151,26 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       dopenmin = (double) range.openmin[i];
       dopenmax = (double) range.openmax[i];
 
-      //    print("i=%d %d %s %f %d %d\n", i, len, C->name, 
+      if (type[i] == INTSXP) {
+	if (dmin < -MAXINT) {
+#ifdef RANDOMFIELDS_DEBUGGING
+	  PRINTF("%s <min %s\n", NICK(cov), KNAME(i));
+	  BUG;
+#else 
+	  dmin = (double) -MAXINT;
+#endif
+	}
+	if (dmax > MAXINT) {
+#ifdef RANDOMFIELDS_DEBUGGING
+	  PRINTF("%s >max %s\n", NICK(cov), KNAME(i));
+	  BUG;
+#else 
+	  dmax = (double) MAXINT;	  
+#endif
+	}
+	
+      }
+     //    print("i=%d %d %s %f %d %d\n", i, len, C->name, 
       //	   PisNULL(i) ? RF_NA : P0(i][0], type[i], REALSXP);
       
       for (k=0; k<len; k++) {
@@ -3332,9 +3430,9 @@ int FieldReturn(cov_model *cov) {
     if (cov->origrf) {
       free(cov->rf);
     }
-  }
+  } 
 
-  //     printf("FieldReturn %d %d %d %s\n",sizeof(res_type), loc->totalpoints, cov->vdim, NICK(cov));
+  //   printf("FieldReturn %d %d (%d %d)  %s\n",sizeof(res_type), loc->totalpoints, cov->vdim2[0], cov->vdim2[1], NICK(cov));
   if ((cov->rf = 
        (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim2[0]))
       == NULL) return ERRORMEMORYALLOCATION;

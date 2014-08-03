@@ -515,6 +515,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     mean *= mean; 
     for (jj = 0; jj< * nbin; jj++) { vario[jj] /= mean; }
     break; 
+  default : BUG;    
   }
 
   if (BinSq!=NULL) free(BinSq); 

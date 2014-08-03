@@ -54,12 +54,18 @@ int check_spectral(cov_model *cov) {
   // printf("\n\ncheck_spectral %d %s %d\n", key==NULL, NICK(sub), cov->role);
  
   if (key == NULL) {
+#define loops 3
+    int i, err2[loops],
+      iso[loops] = {ISOTROPIC, SPACEISOTROPIC, ZEROSPACEISO};
     //
-    if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, ISOTROPIC,
-		       SUBMODEL_DEP, cov->role)) != NOERROR) {
-      //PMI(cov);      printf("fhler hier %d\n", cov->role);
-      return err;
+    for (i=0; i<loops; i++) {
+      if ((err2[i] = CHECK(next, dim,  dim, PosDefType, XONLY, iso[i],
+			   SUBMODEL_DEP, cov->role)) == NOERROR) break;
+      //PMI(cov);    
+      // printf("fhler hier %d\n", cov->role);
     }
+    if (i >= loops) return err2[0];
+    
   
     if (cov->role != ROLE_BASE && sub->pref[SpectralTBM] == PREF_NONE) 
       return ERRORPREFNONE;    
@@ -70,15 +76,15 @@ int check_spectral(cov_model *cov) {
     //PMI(cov, "here");
  
     if ((err = CHECK(sub, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
-		       SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
-       return err;
+		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
+      return err;
     }
   }
 
-  // A  PMI(cov->calling);
+  // APMI(cov);
   //printf("spectral role=%d %d\n", cov->role, ROLE_BASE);
 
-   setbackward(cov, sub);
+  setbackward(cov, sub);
 
   return NOERROR;
 }
@@ -125,19 +131,19 @@ int struct_spectral(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
 }
 
 
-int init_spectral(cov_model *cov, storage *S){
+int init_spectral(cov_model *cov, gen_storage *S){
   cov_model *next = cov->sub[0],
     *key =cov->key,
     *sub = key == NULL ? next : key;
   int err=NOERROR;
   spec_properties *s = &(S->spec);
   location_type *loc = Loc(cov);
- //  if ((meth->S=MALLOC(sizeof(spectral_storage)))==0){
-//    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-//  }
-//  s = (spectral_storage*)meth->S;
+  //  if ((meth->S=MALLOC(sizeof(spectral_storage)))==0){
+  //    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+  //  }
+  //  s = (spectral_storage*)meth->S;
 
-//  assert(false); printf("\n\nsdrfsjfd\n");
+  //  assert(false); printf("\n\nsdrfsjfd\n");
 
   if (cov->role == ROLE_COV) {
     return NOERROR;
@@ -155,12 +161,12 @@ int init_spectral(cov_model *cov, storage *S){
   s->sigma = P0(SPECTRAL_SIGMA);
   s->nmetro = 0;
   s->density = NULL;
-// 13.10. the following does not seem to be necessary,
-// since subsequently it checked for reduceddim<=2;
-//  if (key->Time) {err=ERRORTIME NOTALLOWED; goto ErrorHandling;}
+  // 13.10. the following does not seem to be necessary,
+  // since subsequently it checked for reduceddim<=2;
+  //  if (key->Time) {err=ERRORTIME NOTALLOWED; goto ErrorHandling;}
   if (cov->tsdim >= 4) {
-      err = ERRORWRONGDIM;
-      goto ErrorHandling;
+    err = ERRORWRONGDIM;
+    goto ErrorHandling;
   }
  
   if (cov->vdim2[0] > 1) {
@@ -172,6 +178,7 @@ int init_spectral(cov_model *cov, storage *S){
  
   if ((err = INIT(sub, 0, S)) != NOERROR) 
     goto ErrorHandling;
+
 
   err = FieldReturn(cov);
 
@@ -197,10 +204,10 @@ void E2(spectral_storage *s, double A, double *e) {
   //print("%f\n", e[1]);
   e[0] = A * cos(phi);
   e[1] = A * sin(phi);
-//  print("phi=%f A=%f grid=%d step=%f phi2d=%f %f %f\n", 
-//	 phi, A, (int) s->grid, 
-//	 s->phistep2d, s->phi2d,
-//	 e[0], e[1]);
+  //  print("phi=%f A=%f grid=%d step=%f phi2d=%f %f %f\n", 
+  //	 phi, A, (int) s->grid, 
+  //	 s->phistep2d, s->phi2d,
+  //	 e[0], e[1]);
 }
 void E12(spectral_storage *s, int dim, double A, double *e) {
   if (dim==2) E2(s, A, e); 
@@ -231,8 +238,8 @@ void E(int dim, spectral_storage *s, double A, double *e) {
 }
 
 
-void do_spectral(cov_model *cov, storage *S) 
-    // in two dimensions only!
+void do_spectral(cov_model *cov, gen_storage *S) 
+// in two dimensions only!
 {  
   //  gauss_param *dp = &(gp->gauss);
   double exact = GLOBAL.general.exactness;
@@ -244,7 +251,7 @@ void do_spectral(cov_model *cov, storage *S)
   assert(S != NULL);
   spec_properties *cs = &(S->spec);
   spectral_storage *s = &(S->Sspectral);
-  int nt, d, n, nx, gridlenx, gridleny, gridlenz, gridlent,
+  int d, n, gridlenx, gridleny, gridlenz, gridlent,
     ntot = P0INT(SPECTRAL_LINES),
     origdim = loc->timespacedim,
     spatialdim = loc->spatialdim,
@@ -258,7 +265,7 @@ void do_spectral(cov_model *cov, storage *S)
     // might use higher dimensional components
     inc[MAXTBMSPDIM], VV,
     *res = cov->rf;
-  long total = loc->totalpoints,
+  long nt, nx, total = loc->totalpoints,
     spatialpoints = loc->spatialtotalpoints;
   bool loggauss = GLOBAL.gauss.loggauss;
 

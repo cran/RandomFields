@@ -180,7 +180,7 @@ summary.RM_model <- function(object, ...) {
 }
 
 print.summary.RMmodel <- function(x, max.level=3, ...) {
-  str(x, no.list=TRUE, max.level = max.level) #
+  str(x, no.list=TRUE, max.level = max.level, give.attr=FALSE) #
   invisible(x)
 }
 
@@ -203,7 +203,7 @@ setMethod(f="show", signature='RMmodel',
 print.RMmodelgenerator <- function(x, ...) {
   cat("*** object of Class '", ZF_MODEL_FACTORY,
       "' ***\n  ** str(object):\n  ", sep="") #
-  str(x)#
+  str(x, give.attr=FALSE)#
   cat("*** end of '", ZF_MODEL_FACTORY, "' ***\n", sep="")#
 }
   
@@ -295,7 +295,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   }
 
 #  fctcall.vec <- c("Cov", "Variogram")
-  covinfo <- RFgetModelInfo(register=MODEL.USER, level=2, spConform=TRUE)
+  #covinfo <- RFgetModelInfo(register=MODEL.USER, level=3, spConform=TRUE)
   ### Print((covinfo))
 #  Print(covinfo$domown, TRANS_INV , covinfo$type, isPosDef(covinfo$type),
  #       is.null(fct.type), fct.type,"Variogram") ; xxx

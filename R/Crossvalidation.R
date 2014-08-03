@@ -173,7 +173,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                 error=error, std.error=std.error,
                 p = 2 * pnorm(-abs(std.error)))
     if (details) res[[i]]$fitted <- fitted
-    class(res) <- "RFcrossvalidate"
+    class(res[[i]]) <- "RFcrossvalidate"
   }
   
 
@@ -181,8 +181,8 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   else {
      names(res) <- c(as.character(result$model1.name),
                      as.character(result$model2.name)[1])
-    class(res) <- "RFcrossvalidate"
-  }
+     class(res) <- "RFcrossvalidate"
+   }
 
   res
 }

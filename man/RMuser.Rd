@@ -105,7 +105,10 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## (which is, however, much slower and cannot use all features of
 ## RandomFields)
 
-\dontshow{RFoptions(storing = FALSE)}
+\dontshow{if (RFoptions()$general$storing)
+cat("This examples requires 'RFoptions(storing=FALSE)', what is set now.\n");
+RFoptions(storing=FALSE)
+}
 
 model <- RMuser(type="positive definite", domain="single variable",
                 iso="isotropic", fctn=exp(-x))

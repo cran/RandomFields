@@ -417,9 +417,10 @@ void InvChol(double *C, int dim) {
 
 int invertMatrix(double *M, int size, int* Methods, int nMeth) {
   // http://www.nag.com/numeric/fl/nagdoc_fl23/xhtml/F01/f01intro.xml
-  int err, m, j, i,
+  int err, m, i,
     method = -1,
     sizeSq = size * size;
+  long j;
   double *SICH = NULL;
 
   if (nMeth > 1) {
@@ -437,7 +438,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
     }
     switch(method) {
     case Cholesky : // cholesky
-       F77_CALL(dpotrf)("Upper", &size, M, &size, &err);  
+      F77_CALL(dpotrf)("Upper", &size, M, &size, &err);  
        if (err != 0) {
 	if (PL >= PL_COV_STRUCTURE) 
 	  PRINTF("cholesky decomposition failed; the matrix does not seem to be strictly positive definite\n");
@@ -449,7 +450,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
 	  PRINTF("Cholesky decomposition failed; matrix does not seem to be strictly positive definite\n");
 	continue;
       }
-      int  i2, i3;
+      long  i2, i3;
       for (i2=i=0; i<size; i++, i2+=size + 1) {	
 	for (i3 = i2 + 1, j = i2 + size; j<sizeSq; j+=size) M[i3++] = M[j];
       }
@@ -715,9 +716,10 @@ SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {
 */
 
 void strcopyN(char *dest, const char *src, int n) {
-  n--; assert(n > 0);
-  //  printf("%ld %ld %d\n", dest, src, n);
-  strncpy(dest, src, n);
+  if (n > 1) {
+    n--; 
+    strncpy(dest, src, n);
+  }
   dest[n] = '\0';
 }
 
@@ -1174,8 +1176,8 @@ double incomplete_gamma(double start, double end, double s) {
     s += 1.0;
   }
   
-  w = pgamma(start, s, 1.0, 0, 0);  // q, shape, scale, lower, log
-  if (R_FINITE(end)) w -= pgamma(end, s, 1.0, 0, 0);
+  w = pgamma(start, s, 1.0, false, false);  // q, shape, scale, lower, log
+  if (R_FINITE(end)) w -= pgamma(end, s, 1.0, false, false);
 
   //  print("incomplete s=%f e=%f s=%f v=%f g=%f w=%f\n", start, end, s, v, gammafn(s), w);
 
@@ -1184,7 +1186,7 @@ double incomplete_gamma(double start, double end, double s) {
 
 
 int addressbits(void VARIABLE_IS_NOT_USED *addr) {
-#ifndef RF_DEBUGGING  
+#ifndef RANDOMFIELDS_DEBUGGING  
   return 0;
 #else
   double x = (intptr_t) addr,

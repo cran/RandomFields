@@ -2,7 +2,6 @@
 ## Usual Functions
 
 ##
-#
 #exportPattern("^[^\\.]")
 exportPattern("^R")
 export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
@@ -56,55 +55,83 @@ exportMethods(RFspDataFrame2conventional,
 
 ## S3 Methods
 
-S3method(summary, RFsp)
-
-S3method(print, RMmodelgenerator)
-
-S3method(print, RMmodel)
-S3method(points,RMmodel)
-S3method(lines, RMmodel)
-
-S3method(print, RFspatialPointsDataFrame)
-
-S3method(cbind, RFspatialGridDataFrame)
-S3method(print, RFspatialGridDataFrame)
-
-S3method(print, RFpointsDataFrame)
-
-S3method(cbind, RFgridDataFrame)
-S3method(print, RFgridDataFrame)
-S3method(as.matrix, RFgridDataFrame)
-
-
-S3method(print, RFopt)
-S3method(summary, RFopt)
-#S3method(print, summary.RFopt)
-S3method(print, RFoptElmnt)
-S3method(summary, RFoptElmnt)
-#S3method(print, summary.RFoptElmnt)
-
-
-S3method(anova, RFfit)
-S3method(print, RFfit)
-S3method(summary, RFfit)
-#S3method(print, summary.RFfit)
-
-S3method(anova, RMmodelFit)
-#S3method(AIC, RFmodelfit)
-#S3method(AICc, RFmodelfit)
-#S3method(BIC, RFmodelfit)
-#S3method(logLik, RFmodelfit)
-S3method(print, RMmodelFit)
-S3method(summary, RMmodelFit)
-#S3method(print, summary.RFmodelfit)
-
-S3method(print, RFratiotest)
-
 S3method(summary, RFcrossvalidate)
 S3method(print, RFcrossvalidate)
 S3method(print, summary.RFcrossvalidate)
 
+S3method(contour, RFempVariog)
+S3method(print, RFempVariog)
+S3method(print, RF_empVariog)
+S3method(summary, RFempVariog)
+S3method(summary, RF_empVariog)
+S3method(print, summary.RFempVariog)
 
-#S3method(summary, )
-#S3method(print, )
+S3method(AIC, RFfit)
+S3method(AIC, RF_fit)
+#S3method(AICc, RFmodelfit)
+S3method(anova, RFfit)
+S3method(anova, RF_fit)
+#S3method(BIC, RFfit)
+#S3method(BIC, RF_fit)
+S3method(logLik, RFfit)
+S3method(logLik, RF_fit)
+S3method(print, RFfit)
+S3method(print, RF_fit)
+S3method(summary, RFfit)
+S3method(summary, RF_fit)
+
+S3method(print, RFgetModelInfo)
+
+S3method(as.matrix, GridTopology)
+S3method(as.matrix, RFgridDataFrame)
+S3method(cbind, RFgridDataFrame)
+S3method(print, RFgridDataFrame)
+S3method(summary, RFgridDataFrame)
+
+
+S3method(print, RFopt)
+S3method(summary, RFopt)
+S3method(print, summary.RFopt)
+S3method(print, RFoptElmnt)
+S3method(summary, RFoptElmnt)
+S3method(print, summary.RFoptElmnt)
+
+S3method(cbind, RFpointsDataFrame)
+S3method(print, RFpointsDataFrame)
+S3method(summary, RFpointsDataFrame)
+S3method(print, summary.RFpointsDataFrame)
+
+S3method(print, RFratiotest)
+
+S3method(print, RFsp)
+S3method(summary, RFsp)
+S3method(print, summary.RFsp)
+
+S3method(cbind, RFspatialGridDataFrame)
+S3method(print, RFspatialGridDataFrame)
+S3method(contour, RFspatialGridDataFrame)
+
+S3method(cbind, RFspatialPointsDataFrame)
+S3method(print, RFspatialPointsDataFrame)
+S3method(summary, RFspatialPointsDataFrame)
+
+
+S3method(lines, RMmodel)
+S3method(points,RMmodel)
+S3method(print, RMmodel)
+S3method(print, RM_model)
+S3method(summary, RMmodel)
+S3method(summary, RM_model)
+S3method(print, summary.RMmodel)
+
+S3method(print, RMmodelgenerator)
+
+
+S3method(anova, RMmodelFit)
+S3method(anova, RM_modelFit)
+S3method(print, RMmodelFit)
+S3method(print, RM_modelFit)
+S3method(summary, RMmodelFit)
+S3method(summary, RM_modelFit)
+S3method(print, summary.RMmodelFit)
 

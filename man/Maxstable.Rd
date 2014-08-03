@@ -54,13 +54,16 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 model <- RMfbm(alpha=1.5)
-x <- if (interactive()) seq(0, 10, 0.1) else seq(0, 2, 1) 
+x <-  seq(0, 8, if (interactive()) 0.02 else 4) 
 z <- RFsimulate(RPbrownresnick(model), x=x, n=if (interactive()) 4 else 1)
 plot(z)
+\dontrun{\dontshow{
+## to do : seq(0, 10, 0.02) oben ist furchtbar langsam. Warum?
+}}
 
 \dontrun{\dontshow{
 model <- RMball()
-x <- seq(0, 10, if (interactive()) 0.02 else 5)
+x <- seq(0, 10, 5) # nice for   x <- seq(0, 10, 0.02)
 n <- if (interactive()) 1000 else 1
 z <- RFsimulate(RPsmith(model, xi=0), x, n=n, every=1000)
 plot(z)

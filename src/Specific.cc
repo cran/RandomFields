@@ -139,7 +139,7 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
 
 
 
-int init_specificGauss(cov_model *cov, storage *S) {
+int init_specificGauss(cov_model *cov, gen_storage *S) {
   cov_model *key = cov->key;
   int err;
 
@@ -163,7 +163,7 @@ int init_specificGauss(cov_model *cov, storage *S) {
 }
 
 
-void do_specificGauss(cov_model *cov, storage *S) {  
+void do_specificGauss(cov_model *cov, gen_storage *S) {  
   cov_model *key = cov->key;
   location_type *loc = Loc(cov);
   bool loggauss = GLOBAL.gauss.loggauss;
@@ -172,7 +172,7 @@ void do_specificGauss(cov_model *cov, storage *S) {
   assert(key != NULL);
   DO(key, S);
   if (loggauss) {
-    int i, vdimtot = loc->totalpoints * cov->vdim2[0];
+    long i, vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }

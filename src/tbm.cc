@@ -314,7 +314,7 @@ int checktbmproc(cov_model *cov) {
 int struct_tbmproc(cov_model *cov, cov_model **newmodel) { 
   cov_model
     *next = cov->sub[TBM_COV];
-  if (newmodel != NULL) SERR("unexpected call of struct_tbm");
+  ASSERT_NEWMODEL_NULL;
   if (next->pref[TBM] == PREF_NONE) {
     return ERRORPREFNONE;
   }
@@ -339,7 +339,9 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     tbmdim = P0INT(TBM_TBMDIM),
     //  endaniso = origdim * origdim - 1,
     *points = PINT(TBM_POINTS),
-    user_dim = loc_user->timespacedim,
+    user_dim = loc_user->timespacedim;
+
+  long
     user_spatialpoints = loc_user->spatialtotalpoints,
     user_spatialdim = loc_user->spatialdim
     // the isotropic part (i.e. time might be not considered)
@@ -390,12 +392,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   if (user_dim == 1) 
     SERR("dimension must currently be at least 2 and at most 4 for TBM");
 
-  if (cov->Stbm != NULL) TBM_DELETE(&(cov->Stbm));
-  if ((cov->Stbm = (TBM_storage*) MALLOC(sizeof(TBM_storage)))==NULL)
-    return ERRORMEMORYALLOCATION;
+  NEW_STORAGE(Stbm, TBM, TBM_storage);
   TBM_storage *s = cov->Stbm;
-  TBM_NULL(s);
-
 
   // nutzer can ueber tbm_center den centre vorgeben.
   // tbm_center muss auch wieder zurueckgegeben werden.
@@ -471,7 +469,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 	}
       }
     } else {
-      int j, i, k0, k1, k2;	
+      long j, i, k0, k1, k2;	
       if (user_spatialpoints > 10000) {
 	SERR("too many points to determine smallest distance between the points in a reasonable time; try TBM*.linesimustep with a positive value");
 	  /* algorithmus kann verbessert werden, so dass diese Fehlermeldung 
@@ -661,7 +659,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     modelB1 = modelB1->calling;
   }
  
-  addModel(modelB1->sub+0, DOLLAR);
+  addModel(modelB1, 0, DOLLAR);
   if (modelB1->nr==BROWNIAN){
     // &(cov->key))->calling = key;
     kdefault(cov, DVAR, 1.0 + PARAM0(next, BROWN_ALPHA) / tbmdim);
@@ -676,7 +674,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
       PARAM(dollar, DANISO)[1] = PARAM(dollar, DANISO)[2] = 0.0;
       PARAM(dollar, DANISO)[3] = loc->T[XSTEP];
     } 
-    addModel(modelB1->sub+0, TBM_OP);
+    addModel(modelB1, 0, TBM_OP);
     if (!PisNULL(TBMOP_TBMDIM))
       kdefault(modelB1->sub[0], TBMOP_TBMDIM, P0INT(TBM_TBMDIM));
     if (!PisNULL(TBMOP_FULLDIM))
@@ -749,8 +747,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     }
   }
   
-  if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));    
-  STORAGE_NULL(cov->stor);
+  NEW_STORAGE(stor, STORAGE, gen_storage);
+
   if ((err = INIT(key, 0, cov->stor)) != NOERROR) goto ErrorHandling;  
 
   s->err = err;
@@ -767,7 +765,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 //               ( 0 0 1 )
 
 
-int init_tbmproc(cov_model *cov, storage *S) {
+int init_tbmproc(cov_model *cov, gen_storage *S) {
   location_type *loc = Loc(cov);
   int err=NOERROR;
   char errorloc_save[nErrorLoc];
@@ -881,7 +879,7 @@ void GetE(int fulldim, TBM_storage *s, int origdim, int tsdim, bool Time,
 
 
 
-void do_tbmproc(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) { 
+void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) { 
   cov_model 
     *key = cov->key; 
   assert(key != NULL); // == NULL ? cov->sub[0] : cov->key;

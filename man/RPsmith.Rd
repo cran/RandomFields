@@ -107,10 +107,6 @@ z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)
 
 
-\dontshow{if (!.C("isAuthor", a=integer(1))$a) {
-}}
-
-
 ## for some more sophisticated models see 'maxstableAdvanced'
 
 \dontshow{FinalizeExample()}

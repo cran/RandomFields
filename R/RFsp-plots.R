@@ -289,7 +289,6 @@ PlotTitle <- function(x, main) {
 
 
 
-
 plotRFspatialDataFrame <-  
   function(x, y,
            MARGIN, #=c(1,2),      # which dimensions are to be plotted
@@ -301,28 +300,31 @@ plotRFspatialDataFrame <-
            select, #1:vdim,
            zlim, # default: missing,
            legend, #=TRUE,
-          ..., plotmethod="image")
-{
+           MARGIN.movie,
+          ..., plotmethod="image") {    
   x.grid <- is(x, "RFspatialGridDataFrame")
   do.slices <- !is.null(MARGIN.slices)
+  do.movie <- !is.null(MARGIN.slices)
+  if (length(MARGIN.slices) > 1) stop("MARGIN.slices must be a scalar.")
+  if (length(MARGIN.movie) > 1) stop("MARGIN.movie must be a scalar.")
   if (!x.grid) {
     if (is(x, "RFspatialPointsDataFrame")) {
-      if (do.slices || n.slices != 1)
+      if (do.slices || n.slices[length(n.slices)] != 1)
         stop("'MARGIN.slices' must be 'NULL' and 'n.slices' must be 1.")
     } else {
       stop("method only for objects of class 'RFspatialPointsDataFrame' and 'RFspatialGridDataFrame'")
     }
   }
- 
+
   has.variance <-
     !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
   if (!has.variance) plot.variance <- FALSE
-
+  
   if (x.grid) {
     conventional <- RFspDataFrame2conventional(x)
     x.grid.vectors <-
       GridTopology2gridVectors(cbind(conventional$x,conventional$T))
-      
+    
     ## array with  dims  (space-time-dims, vdim, n)  AND drop=FALSE!! 
     timespacedim <- length(x.grid.vectors)
     if (timespacedim!=length(x@grid@cellsize))
@@ -335,24 +337,67 @@ plotRFspatialDataFrame <-
         stop("MARGIN.slices must be different from MARGIN")
     }
     
-    if (length(n.slices)!=1) stop("n.slices must be an integer of length 1")
+    if (length(n.slices)!=1 && length(n.slices)!=3)
+      stop("n.slices must be an integer of length 1 or 3")
    
     data.arr <- RFspDataFrame2dataArray(x)
     vdim <- dim(data.arr)[timespacedim+1]
     n.orig <- dim(data.arr)[timespacedim+2] ## including the kriging variance as one repet
-     n.ohne.var <- n.orig - has.variance
+    n.ohne.var <- n.orig - has.variance
     n <- min(n.ohne.var, nmax) + plot.variance
 
     ## want to have at least 3 space-time dims, if only 2,
     ## generate artificial dim
-    if (timespacedim==2){
-      dim(data.arr) <- c(dim(data.arr)[1:2], 1, dim(data.arr)[3:4])
-      timespacedim <- 3
-    } 
-    
     dimdata <- dim(data.arr)  # new dims
-    if (do.slices){
-      if (n != 1){
+
+
+    if (timespacedim <= 3){
+      if (timespacedim == 3)
+        dim(data.arr) <- c(dimdata[1:3], 1, dimdata[4:5])
+      else if (timespacedim==2)
+        dim(data.arr) <- c(dimdata[1:2], 1, 1, dimdata[3:4])
+      else stop("dimension too small: dim=", timespacedim)
+      timespacedim <- 4
+    }
+   if (!all(MARGIN %in% 1:(length(dimdata) - 2))) stop("MARGIN out of range.")
+    
+    if (any(MARGIN.slices %in% MARGIN.movie))
+      stop("MARGIN.slices and MARGIN.movie are not disjoint.")
+    if (length(MARGIN.slices) < 1)
+      MARGIN.slices <-
+        (1:(max(MARGIN, MARGIN.movie) + 1))[-c(MARGIN, MARGIN.movie)][1]
+    if (length(MARGIN.movie) < 1)
+      MARGIN.movie <-
+        (1:(max(MARGIN, MARGIN.slices) + 1))[-c(MARGIN, MARGIN.slices)][1]
+    
+    dimdata <- dim(data.arr)
+    vdimrep <- dimdata[(-1:0) + length(dimdata)]
+    if (!all(c(MARGIN.movie, MARGIN.slices) %in%
+             1:(length(dimdata) - 2))) stop("MARGINs out of range.")
+
+
+    xx <- x.grid.vectors[[MARGIN[1]]]
+    xy <- x.grid.vectors[[MARGIN[2]]]
+
+    ## reduce the data array by taking a section with respect
+    ## to the dimensions not covered by MARGIN*
+    mar.vec <- c(MARGIN, MARGIN.slices, MARGIN.movie)
+    ind <- as.list(rep(1, length(dimdata) - 2))
+    ind[mar.vec] <- TRUE
+    data.arr <- do.call("[", c(list(data.arr), ind, TRUE, TRUE, drop=FALSE))
+    dim(data.arr) <- c(dimdata[sort(mar.vec)], vdimrep)
+
+    ## re-oredered dimensions such that MARGIN and MARGIN.slices
+    ## and MARGIN.movie are the first 4 dimensions
+    perm.tmp <- c(mar.vec, (-1:0) + length(dimdata))
+    data.arr <- aperm(data.arr, perm.tmp)
+    dimdata <- dim(data.arr)
+    MARGIN <- 1:2
+    MARGIN.slices <- 3
+    MARGIN.movie <- 4
+
+    if (do.slices) {
+      if (n != 1) {
         n <- 1
         message("only first realization is shown")
       }
@@ -360,51 +405,28 @@ plotRFspatialDataFrame <-
         plot.variance <- FALSE
         message("plot.variance was set to FALSE")
       }
-      n.slices <- min(n.slices, dimdata[MARGIN.slices])
-      slices.ind <- unique(round(seq(1, dimdata[MARGIN.slices],
-                                     length=n.slices)))
+      mar.len <- dimdata[MARGIN.slices]
+      if (n.slices[length(n.slices)] > mar.len)
+        n.slices[length(n.slices)] <- mar.len
+      slices.ind <-
+        if (length(n.slices) == 1) seq(1, mar.len, length=n.slices)
+        else seq(n.slices[1], n.slices[2], length=n.slices[3])
+      slices.ind <- unique(round(slices.ind))
+      slices.ind <- slices.ind[slices.ind >= 1 & slices.ind <= mar.len]
       ## which indices in the slices dimension are taken
-      n.slices <- length(slices.ind)
-      
     } else {
       slices.ind <- 1
-      MARGIN.slices <- (1:100)[-MARGIN][1]
       ## the first dimension which is not in MARGIN
-    }
-   
-    xx <- x.grid.vectors[[MARGIN[1]]]
-    xy <- x.grid.vectors[[MARGIN[2]]]
-    
-    mar.vec <- sort(c(MARGIN, MARGIN.slices))
-    rep.vec <- diff(c(0, mar.vec, timespacedim+1)) - 1
-  
-    ## crop data array 
-    ind1.str <- if (MARGIN.slices==mar.vec[1]) "slices.ind," else ","
-    ind2.str <- if (MARGIN.slices==mar.vec[2]) "slices.ind," else ","
-    ind3.str <- if (MARGIN.slices==mar.vec[3]) "slices.ind," else ","
-    text <- paste("data.arr <- data.arr[",
-                  paste(rep("1,", times=rep.vec[1]), collapse=" "),
-                  ind1.str,
-                  paste(rep("1,", times=rep.vec[2]), collapse=" "),
-                  ind2.str,
-                  paste(rep("1,", times=rep.vec[3]), collapse=" "),
-                  ind3.str,
-                  paste(rep("1,", times=rep.vec[4]), collapse=" "),
-                  ", , drop=FALSE]" )
-    eval(parse(text=text))
-    perm.tmp <- c(MARGIN, MARGIN.slices, length(dimdata)-1, length(dimdata))
-    data.arr <- aperm(data.arr,
-                      perm=c(perm.tmp, (1:length(dimdata))[-perm.tmp]))
-    ## re-oredered dimensions such that MARGIN and MARGIN.slices are the first
-    ## 3 dimensions
-    rest.dim <- length(dimdata)-length(perm.tmp) 
-        
-    data.idx <- ((n.orig-1)*vdim+1) : (n.orig*vdim) ## ??
-    data.idx <- 1 : (n.ohne.var*vdim)
-    
+    }  
+    n.slices <- length(slices.ind)
+           
+   ## ersten n.orig-1 sind wiederholungen, die letzte 'Spalte'
+    ## ist die Varianz falls existent
+    data.idx <- 1 : (n.ohne.var*vdim)    
     
     all.i <- as.matrix(expand.grid(1:n.slices, 1:n)[2:1]) ## i, ii
     coords <- as.matrix(expand.grid(xx, xy))
+    m.range <- if (do.movie) 1:dimdata[MARGIN.movie] else 1
   } else { ## not grid
     vdim <- x@.RFparams$vdim
     n <- min(x@.RFparams$n, nmax) + plot.variance
@@ -413,13 +435,12 @@ plotRFspatialDataFrame <-
     if (n==1) vdim <- nc else if (vdim==1) n <- nc else {
       stop("ncol(x@data) does not match 'x@.RFparams'; change 'x@.RFparams'")
     }
-
     data.idx <- 1:(x@.RFparams$n*vdim)
     all.i <- cbind(1:n, 1)
     coords <- x@coords[, MARGIN]
+    m.range <- 1
   }
 
- 
   if (!(missing.y <- missing(y))) {
      if (do.slices)
       stop("'y' and 'MARGIN.slices' may not be given at the same time")
@@ -457,7 +478,7 @@ plotRFspatialDataFrame <-
                                zlim=zlim,
                               ...)
 
-  image.par$names.vdim <-
+ image.par$names.vdim <-
     add.units(image.par$names.vdim, x@.RFparams$variab.units)
   
 
@@ -468,183 +489,179 @@ plotRFspatialDataFrame <-
     nx.vectors <- min(nrow(coords), image.par$arrow$nx.vectors^2)
     thinning <- as.integer( (nrow(coords)-1) / nx.vectors^2)
   }
-   
+
   ## split the left part according to 'split.main' for different vdims and
   ## repetitions
-  for (jx in 1:length(select)) { 
-        
-    j <- if (is.list(select)) select[[jx]] else select[jx]
-    for (ix in 1:nrow(all.i)) {
-      i <- all.i[ix, ]
-      #browser()
-      dots <- dots.with.main.lab <- image.par$dots
-      main <- dots$main
-      dots$main <- NULL
-      lab <- xylabs("", "", units=x@.RFparams$coord.units)
-      dots$xlab <- lab$x
-      dots$ylab <- lab$y
-      if (do.plot.var <- (plot.variance && i[1]==n)){
-        k <- if (x.grid) n.orig else x@.RFparams$n + 1;
-        dv <- "var"
-      } else {
-        k <- i[1]
-        dv <- "data"
-      }
-      
-      screen(image.par$scr.main[ix, jx])
-      par(mar=image.par$mar, oma=image.par$oma)
-
-      col <- image.par[[dv]]$col[[1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
-      breaks <- image.par[[dv]]$breaks[, j[1]]
-
-      genuine.image <- (length(j) == 1 || length(j)==3)
-      if (x.grid) {
-        dots$type <- NULL
-        dots$col <- if (genuine.image) col else par()$bg
-                
-        z.text <- paste("data.arr[,,i[2],j[1],k",
-                        paste(rep(",", times=rest.dim), collapse=""),
-                        "]")
-               
-        plot.return <- do.call(plotmethod,
-                               args=c(dots, list(
-                                 x=xx, y=xy, z=eval(parse(text=z.text)),
-                                 zlim = image.par[[dv]]$range[, j[1]],
-                                 axes=plotmethod == "persp"))
-                               )
-      } else {
-        #Print(str(x))
-        idx <- if (n==1) j else if (vdim==1) k else (k-1)*vdim+j
-        dots$col <- if (genuine.image)
-          col[ cut(x@data[,idx[1]], breaks=breaks) ] else par()$bg
- 
-        do.call(graphics::plot,
-                args=c(dots, list(x=coords[, 1], y=coords[, 2],
-                  axes=FALSE)))
- 
-   #Print(col, dots$col, breaks)
-        box()
-      }
-    
-      if (n.slices > 1)
-       legend("bottomright", bty="n",
-             legend=paste(image.par$names.coords[MARGIN.slices], "=",
-               x.grid.vectors[[MARGIN.slices]][slices.ind[i[2]]]))
-   
-      if (do.plot.arrows <- length(j) >= 2 && !do.plot.var) {
-        jj <-  if (length(j) == 3) j[-1] else jj <- j
-        rx <- range(coords[, 1])
-        ry <- range(coords[, 2])
-        col.arrow <- if (length(image.par[["data"]]$col) >= jj[1] &&
-                         length(image.par[["data"]]$col[[jj[1]]]) == 1)
-          image.par[["data"]]$col[[jj[1]]] else "black"
-        
-        if (ix == 1) {
-          factor <- image.par$arrow$reduction *
-            sqrt(diff(rx) * diff(ry) / max(x@data[jj[1]]^2 + x@data[jj[2]]^2)) /
-              nx.vectors
-        }
-        my.arrows(coords, x@data[jj], r = factor, thinning = thinning,
-                  col = col.arrow, 
-                  nrow = if (x.grid) length(xx))
-      }
-
-      if (!do.plot.var && !missing.y && (length(j) == 1 || (length(j)==3))) {
-        idx <- if (n==1) j else if (vdim==1) i[1] else (i[1]-1)*vdim+j
-        if (ncol(y.data) < idx) idx <- 1
-        if (plotmethod == "persp") {
-          # theta = 30, phi = 30, expand = 0.5, 
-          xy <- trans3d(y.coords[, MARGIN[1]], y.coords[, MARGIN[2]],
-                        data[ , idx], pmat=plot.return)
-          points(xy, pch=16, col="black")          
+  for (m in m.range) {  
+    for (jx in 1:length(select)) {       
+      j <- if (is.list(select)) select[[jx]] else select[jx]
+      for (ix in 1:nrow(all.i)) {
+        i <- all.i[ix, ]
+        dots <- dots.with.main.lab <- image.par$dots
+        main <- dots$main
+        dots$main <- NULL
+        lab <- xylabs("", "", units=x@.RFparams$coord.units)
+        dots$xlab <- lab$x
+        dots$ylab <- lab$y
+        if (do.plot.var <- (plot.variance && i[1]==n)){
+          k <- if (x.grid) n.orig else x@.RFparams$n + 1;
+          dv <- "var"
         } else {
-          col2 <- col[ cut(y.data[ , idx], breaks=breaks) ]
-          dots2 <- dots
-          dots2[c("type", "pch", "lty", "col", "bg", "cex", "lwd")] <- NULL
-          addpoints <- function(pch, col, cex) {
-            do.call(graphics::plot.xy,
-                    args=c(dots2,
-                      list(xy=xy.coords(y.coords[, MARGIN[1]],
-                             y.coords[, MARGIN[2]]),
-                           type="p", pch=pch, lty=1, col=col, bg=NA, cex=cex,
-                           lwd=1)))
-          }
-          if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
-          addpoints(dots$pch, col2, dots$cex)
+          k <- i[1]
+          dv <- "data"
         }
-      }
+        
+        screen(image.par$scr.main[ix, jx])
+        par(mar=image.par$mar, oma=image.par$oma)
+        
+        col <-
+          image.par[[dv]]$col[[1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
+        breaks <- image.par[[dv]]$breaks[, j[1]]
 
-      if (ix==1 ||
-          ((image.par$split.main[1] != nrow(all.i)) &&
-           (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
-        axis(1, outer=TRUE)#image.par$always.close)
-      }
-      if (jx==1 &&
-          ((image.par$split.main[2] == length(select)) ||
-           ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
-        axis(2, outer=TRUE)#image.par$always.close)
-     #if (!image.par$always.close){
-      #  dots2 <- dots.with.main.lab
-      #  dots2$xlab <- dots2$ylab <- ""
-      #  do.call(graphics::title, args=c(dots2, list(outer=TRUE, line=NA)))
-      #}
-      ## if (!image.par$always.close) {
-      ##   if (x.grid) do.call(graphics::title, args=c(dots, list(outer=FALSE, line=NA)))
-      ##   else do.call(graphics::title, args=c(dots, line=2))  # line=-1 (ersetzt (AM))
-      ##   ##if (i==1) axis(1, outer=image.par$always.close)
-      ##   ##if (j==1) axis(2, outer=image.par$always.close)
-      ## }
-      
-      if (all(i==1) && (image.par$grPrintlevel > 1 || vdim>1)) {
-        mtext(text = image.par$names.vdim[jx],  # names(x)[j[1]]
-              side=3, line=-1,
-              col = image.par$text.col, cex=dots$cex)
-        #legend("topleft", bty="n", legend=c("", image.par$names.vdim[jx]),
-        #      text.col=image.par$text.col)
-      }
-      if (n>1 && jx==1){
-        mtext(text = image.par$names.rep[ix], side=3, line=-2, cex=dots$cex)
-        #legend.pos <- "topright" #if (vdim==1) "topright" else "left"
-        #legend(legend.pos, bty="n", legend=c("", image.par$names.rep[ix]))
-      }
-      
-      if (do.plot.arrows && ix == 1) {
-        ## do not merge with ix==1 above !!
-        ## reason: screen is changed here and going back
-        ## is not a good idea
-      
-        if (image.par$legend) {
-          screen(image.par$scr.legends[jx])
-          do.call(graphics::plot, args=c(dots, list(x=Inf, y=Inf,
-                          xlim=rx, ylim=c(0,1), axes=FALSE)))
-          len <- max(pretty(diff(rx) / image.par$arrows$nx.vectors/2 / factor) )
-          x.arrow <- cbind(mean(rx), image.par$arrows$leg.pos[1+genuine.image])
-          my.arrows(x.arrow, cbind(len, 0), r = factor,
-                    thinning=0, col=col.arrow)
-          text(x.arrow, pos=1, labels = len)
+        genuine.image <- (length(j) == 1 || length(j)==3)
+        if (x.grid) {
+          dots$type <- NULL
+          dots$col <- if (genuine.image) col else par()$bg
+          
+          plot.return <- do.call(plotmethod,
+                                 args=c(dots, list(
+                                   x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
+                                   zlim = image.par[[dv]]$range[, j[1]],
+                                   axes=plotmethod == "persp"))
+                                 )
+        } else {
+          idx <- if (n==1) j else if (vdim==1) k else (k-1)*vdim+j
+          dots$col <- if (genuine.image)
+            col[ cut(x@data[,idx[1]], breaks=breaks) ] else par()$bg
+          
+          do.call(graphics::plot,
+                  args=c(dots, list(x=coords[, 1], y=coords[, 2],
+                    axes=FALSE)))
+          box()
         }
-      }            
+        
+        if (n.slices > 1)
+          legend("bottomright", bty="n",
+                 legend=paste(image.par$names.coords[MARGIN.slices], "=",
+                   x.grid.vectors[[MARGIN.slices]][slices.ind[i[2]]]))
+        
+        if (do.plot.arrows <- length(j) >= 2 && !do.plot.var) {
+          jj <-  if (length(j) == 3) j[-1] else jj <- j
+          rx <- range(coords[, 1])
+          ry <- range(coords[, 2])
+          col.arrow <- if (length(image.par[["data"]]$col) >= jj[1] &&
+                           length(image.par[["data"]]$col[[jj[1]]]) == 1)
+            image.par[["data"]]$col[[jj[1]]] else "black"
+          
+          if (ix == 1) {
+            factor <- image.par$arrow$reduction *
+              sqrt(diff(rx) * diff(ry) / max(x@data[jj[1]]^2 +
+                                             x@data[jj[2]]^2)) / nx.vectors
+          }
+          my.arrows(coords, x@data[jj], r = factor, thinning = thinning,
+                    col = col.arrow, 
+                    nrow = if (x.grid) length(xx))
+        }
+        
+        if (!do.plot.var && !missing.y && (length(j) == 1 || (length(j)==3))) {
+          idx <- if (n==1) j else if (vdim==1) i[1] else (i[1]-1)*vdim+j
+          if (ncol(y.data) < idx) idx <- 1
+          if (plotmethod == "persp") {
+                                        # theta = 30, phi = 30, expand = 0.5, 
+            xy <- trans3d(y.coords[, MARGIN[1]], y.coords[, MARGIN[2]],
+                          data[ , idx], pmat=plot.return)
+            points(xy, pch=16, col="black")          
+          } else {
+            col2 <- col[ cut(y.data[ , idx], breaks=breaks) ]
+            dots2 <- dots
+            dots2[c("type", "pch", "lty", "col", "bg", "cex", "lwd")] <- NULL
+            addpoints <- function(pch, col, cex) {
+              do.call(graphics::plot.xy,
+                      args=c(dots2,
+                        list(xy=xy.coords(y.coords[, MARGIN[1]],
+                               y.coords[, MARGIN[2]]),
+                             type="p", pch=pch, lty=1, col=col, bg=NA, cex=cex,
+                             lwd=1)))
+            }
+            if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
+            addpoints(dots$pch, col2, dots$cex)
+          }
+        }
+        
+        if (ix==1 ||
+            ((image.par$split.main[1] != nrow(all.i)) &&
+             (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
+          axis(1, outer=TRUE)#image.par$always.close)
+        }
+        if (jx==1 &&
+            ((image.par$split.main[2] == length(select)) ||
+             ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
+          axis(2, outer=TRUE)#image.par$always.close)
+        ##if (!image.par$always.close){
+        ##  dots2 <- dots.with.main.lab
+        ##  dots2$xlab <- dots2$ylab <- ""
+        ##  do.call(graphics::title, args=c(dots2, list(outer=TRUE, line=NA)))
+        ##}
+        ## if (!image.par$always.close) {
+        ##   if (x.grid) do.call(graphics::title, args=c(dots, list(outer=FALSE, line=NA)))
+        ##   else do.call(graphics::title, args=c(dots, line=2))  # line=-1 (ersetzt (AM))
+        ##   ##if (i==1) axis(1, outer=image.par$always.close)
+        ##   ##if (j==1) axis(2, outer=image.par$always.close)
+        ## }
+        
+        if (all(i==1) && (image.par$grPrintlevel > 1 || vdim>1)) {
+          mtext(text = image.par$names.vdim[jx],  # names(x)[j[1]]
+                side=3, line=-1,
+                col = image.par$text.col, cex=dots$cex)
+          ##legend("topleft", bty="n", legend=c("", image.par$names.vdim[jx]),
+          ##      text.col=image.par$text.col)
+        }
+        if (n>1 && jx==1){
+          mtext(text = image.par$names.rep[ix], side=3, line=-2, cex=dots$cex)
+          ##legend.pos <- "topright" #if (vdim==1) "topright" else "left"
+          ##legend(legend.pos, bty="n", legend=c("", image.par$names.rep[ix]))
+        }
+        
+        if (do.plot.arrows && ix == 1) {
+          ## do not merge with ix==1 above !!
+          ## reason: screen is changed here and going back
+          ## is not a good idea
+          
+          if (image.par$legend) {
+            screen(image.par$scr.legends[jx])
+            do.call(graphics::plot, args=c(dots, list(x=Inf, y=Inf,
+                                      xlim=rx, ylim=c(0,1), axes=FALSE)))
+            len <- max(pretty(diff(rx) / image.par$arrows$nx.vectors/2 /factor))
+            x.arrow<- cbind(mean(rx), image.par$arrows$leg.pos[1+genuine.image])
+            my.arrows(x.arrow, cbind(len, 0), r = factor,
+                      thinning=0, col=col.arrow)
+            text(x.arrow, pos=1, labels = len)
+          }
+        }            
+      }
+    }
+  
+    
+                                        #if (image.par$always.close) {
+                                        #if (x.grid){
+    dots.with.main.lab$type <- NULL # woher kommt dieses type??
+    ##      falls nicht auf NULL gesetzt gibt es einen Fehler. Warum?
+    do.call(graphics::title,
+            args=list(main=dots.with.main.lab$main,
+              outer=TRUE, line=image.par$oma[3]-1.5))
+    dots.with.main.lab$main <- NULL
+    do.call(graphics::title, args=c(dots.with.main.lab, list(outer=TRUE, line=NA)))
+    ##} else {
+    ##  do.call(graphics::title, args=c(dots, list(outer=TRUE)))      
+    ##}
+    
+
+    if (image.par$grPrintlevel > 0) {
+      screen(image.par$scr[1 + image.par$legend], new=FALSE)
+      PlotTitle(x, if (is.null(main)) "" else main)
     }
   }
- 
-  #if (image.par$always.close) {
-    #if (x.grid){
-  dots.with.main.lab$type <- NULL # woher kommt dieses type??
-  ##      falls nicht auf NULL gesetzt gibt es einen Fehler. Warum?
-  do.call(graphics::title,
-          args=list(main=dots.with.main.lab$main,
-            outer=TRUE, line=image.par$oma[3]-1.5))
-  dots.with.main.lab$main <- NULL
-  do.call(graphics::title, args=c(dots.with.main.lab, list(outer=TRUE, line=NA)))
-    #} else {
-    #  do.call(graphics::title, args=c(dots, list(outer=TRUE)))      
-    #}
 
-
-  if (image.par$grPrintlevel > 0) {
-    screen(image.par$scr[1 + image.par$legend], new=FALSE)
-    PlotTitle(x, if (is.null(main)) "" else main)
-  }
   
   
   graphics <- RFoptions()$graphics

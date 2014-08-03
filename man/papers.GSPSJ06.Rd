@@ -30,16 +30,14 @@
 }
 
 \examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
 
 ## Figure 1 
 stabletest <- function(alpha, theta, size=if (interactive()) 512 else 20) {
   RFoptions(trials=1, tolIm = 1e-8, tolRe=0, force = FALSE,
             useprimes=TRUE, strategy=0, skipchecks=!FALSE,
-            printlevel=2, storing=TRUE)
+             storing=TRUE)
   model <- RMcutoff(diameter=theta, a=1, RMstable(alpha=alpha))
-  RFcov(dist=0, model=model, dim=2)
+  RFcov(dist=0, model=model, dim=2, seed=0)
   r <- RFgetModelInfo(RFcov, modelname="RMcutoff")$internalq[5] # theor R
   x <- seq(0, r, by= r / (size - 1)) * theta
   err <- try(RFsimulate(x, x, grid=TRUE, model=RPcirculant(model), n=0))
@@ -56,7 +54,7 @@ for (it in 1:length(thetas)) {
   for (ia in 1:length(alphas)) {
   alpha <- alphas[ia]
   cat("alpha=", alpha, "theta=", theta,"\n")
-  print(unix.time(m[it, ia] <- stabletest(alpha=alpha, theta=theta)))
+  m[it, ia] <- stabletest(alpha=alpha, theta=theta)
   if (is.na(m[it, ia])) break
   }
   if (any(is.finite(m))) image(thetas, alphas, m, col=rainbow(100))

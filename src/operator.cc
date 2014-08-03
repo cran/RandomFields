@@ -218,7 +218,7 @@ void brownresnick(double *x, cov_model *cov, double *v) {
 
   COV(ZERO, next, &z);
   COV(x, next, v);
-  *v = 2.0 * pnorm(sqrt((z - *v) * BR_FACTOR), 0.0, 1.0, 0, 0);
+  *v = 2.0 * pnorm(sqrt((z - *v) * BR_FACTOR), 0.0, 1.0, false, false);
 }
 
 void Dbrownresnick(double *x, cov_model *cov, double *v) {
@@ -256,7 +256,7 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
 
     abl *= BR_FACTOR;
     s = sqrt((z - *v) * BR_FACTOR); // sqrt(c * gamma)
-    *v = dnorm(s, 0.0, 1.0, 0) * abl / s; // -\varphi * \gamma' / sqrt\gamma
+    *v = dnorm(s, 0.0, 1.0, false) * abl / s; // -\varphi * \gamma' / sqrt\gamma
     //                                      =-2 \varphi * (-C') / (2 sqrt\gamma)
     //                              mit C= c_0 -\gamma
  
@@ -304,7 +304,7 @@ void DDbrownresnick(double *x, cov_model *cov, double *v) {
     s = sqrt(s0); // sqrt(c * gamma)
     abl  *= BR_FACTOR;
     abl2 *= BR_FACTOR;
-    *v = dnorm(s, 0.0, 1.0, 0) / s * (abl2 + abl * abl * 0.5 * (1/s0 + 1));
+    *v = dnorm(s, 0.0, 1.0, false) / s * (abl2 + abl * abl * 0.5 * (1/s0 + 1));
     
     //printf("br x=%f v=%e s=%f abl=%f s0=%f abl2=%f\n", *x, *v, s, abl, s0, abl2);
     assert(*v >= 0);
@@ -347,7 +347,7 @@ void D3brownresnick(double *x, cov_model *cov, double *v) {
     abl  *= BR_FACTOR;
     abl2 *= BR_FACTOR;
     abl3 *= BR_FACTOR;
-    *v = dnorm(s, 0.0, 1.0, 0) / s * 
+    *v = dnorm(s, 0.0, 1.0, false) / s * 
       (abl3 + 
        1.5 * abl2 * abl * (1/s0 + 1) +
        abl * abl * abl * (0.25 + 0.5 / s0 + 0.75 / (s0 * s0)));
@@ -512,14 +512,14 @@ int struct_brownresnick(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmode
   return NOERROR;
 }
 
-int init_brownresnick(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
+int init_brownresnick(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int err;
   // cov_model *next = cov->sub[0];
   if ((err = TaylorBrownresnick(cov)) != NOERROR) return err;
   return NOERROR;
 }
 
-void do_brownresnick(cov_model *cov, storage *s) {
+void do_brownresnick(cov_model *cov, gen_storage *s) {
   cov_model *next = cov->sub[0];
   DO(next, s); // nicht gatternr
 }
@@ -579,7 +579,7 @@ void range_randomsign(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[SIGN_P] = false;
 }
 
-int init_randomsign(cov_model *cov, storage *s) {
+int init_randomsign(cov_model *cov, gen_storage *s) {
   cov_model *next = cov->sub[0];
   int err;
   double Eminus;
@@ -606,7 +606,7 @@ int init_randomsign(cov_model *cov, storage *s) {
   return err;
 }
 
-void do_randomsign(cov_model *cov, storage *s) {
+void do_randomsign(cov_model *cov, gen_storage *s) {
   cov_model *next = cov->sub[0];
   assert(next != NULL);
   DO(next, s); // nicht gatternr
@@ -639,7 +639,8 @@ void BR2BG(double *x, cov_model *cov, double *v) {
   double z;
   COV(ZERO, next, &z);
   COV(x, next, v);
-  *v = cos(M_PI * (1.0 - 2.0 * pnorm(sqrt( (z - *v) / 8.0), 0.0, 1.0, 0, 0 )));
+  *v = cos(M_PI * (1.0 - 2.0 *
+		   pnorm(sqrt( (z - *v) / 8.0), 0.0, 1.0, false, false)));
 }
 
 int check_BR2BG(cov_model *cov) {
@@ -656,7 +657,7 @@ int check_BR2BG(cov_model *cov) {
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
 
   COV(ZERO, next, &v);
-  t = qnorm(0.5 * (1.0 - 0.5), 0.0, 1.0, 0, 0);
+  t = qnorm(0.5 * (1.0 - 0.5), 0.0, 1.0, false, false);
 
   if (v > 8.0 * t * t)
     SERR("variance must be less than 8(erf^{-1}(1/sqrt 2))^2 = 1.8197");
@@ -670,7 +671,7 @@ void BR2EG(double *x, cov_model *cov, double *v) {
   double z;
   COV(ZERO, next, &z);
   COV(x, next, v);
-  z = 1.0 - 2.0 * pnorm(sqrt( (z - *v) / 8.0), 0.0, 1.0, 0, 0 );
+  z = 1.0 - 2.0 * pnorm(sqrt( (z - *v) / 8.0), 0.0, 1.0, false, false);
   *v = 1.0 - 2.0 * z * z;
 }
 
@@ -688,7 +689,7 @@ int check_BR2EG(cov_model *cov) {
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
   COV(ZERO, next, &v);
-  t = qnorm(0.5 * (1.0 - INVSQRTTWO), 0.0, 1.0, 0, 0);
+  t = qnorm(0.5 * (1.0 - INVSQRTTWO), 0.0, 1.0, false, false);
   if (v > 8.0 * t * t)
     SERR("variance must be less than 8(erf^{-1}(1/2))^2 = 4.425098");
   return NOERROR;  
@@ -909,7 +910,7 @@ void vectorAniso(double *x, cov_model *cov, double *v) {
     xdimP1 = tsxdim + 1,
     dimxdim = dim * tsxdim;
 
-  ALLOC_EXTRA1(D, xdimsq);
+  ALLOC_EXTRA(D, xdimsq);
  
   // should pass back the hessian
   HESSE(x, next, D);
@@ -1456,14 +1457,14 @@ void M(cov_model *cov, double *Z, double *V) {
 void Mstat(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   int    ncol = cov->ncol[M_M];
-  ALLOC_EXTRA1(z, ncol * ncol);
+  ALLOC_EXTRA(z, ncol * ncol);
   COV(x, next, z);  
   M(cov, z, v);
 }
 void Mnonstat(double *x, double *y, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   int    ncol = cov->ncol[M_M];
-  ALLOC_EXTRA1(z, ncol * ncol);
+  ALLOC_EXTRA(z, ncol * ncol);
   NONSTATCOV(x, y, next, z);  
   M(cov, z, v);
 }
@@ -1716,11 +1717,11 @@ void IdInverse(double *x, cov_model *cov, double *v){
   INVERSE(x, next, v);
 }
 
-int initId(cov_model *cov, storage *S) {
+int initId(cov_model *cov, gen_storage *S) {
   cov_model *next = cov->sub[0];
   return INIT(next, cov->mpp.moments, S);
 }
-void spectralId(cov_model *cov, storage *S, double *e) { 
+void spectralId(cov_model *cov, gen_storage *S, double *e) { 
   //  spectral_storage *s = &(S->Sspectral);
   cov_model *next = cov->sub[0];
   SPECTRAL(next, S, e); // nicht nr
@@ -2247,7 +2248,7 @@ int checknatsc(cov_model *cov) {
 }
 
 
-int initnatsc(cov_model *cov, storage *s){
+int initnatsc(cov_model *cov, gen_storage *s){
   //  location_type *loc = Loc(cov);
 
   if (cov->role == ROLE_GAUSS) {
@@ -2268,12 +2269,12 @@ int initnatsc(cov_model *cov, storage *s){
   return NOERROR;
 }
 
-void donatsc(cov_model *cov, storage *s){
+void donatsc(cov_model *cov, gen_storage *s){
   cov_model *next = cov->sub[0];
   DO(next, s);
 }
 
-void spectralnatsc(cov_model *cov, storage *S, double *e) {
+void spectralnatsc(cov_model *cov, gen_storage *S, double *e) {
   //  spectral_storage *s = &(S->Sspectral);
   cov_model *next = cov->sub[0];
   int d,
@@ -2385,6 +2386,7 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel) {
 
   switch (cov->role) {
   case ROLE_POISSON_GAUSS :
+    BUG; // was denn das da?
     double invscale;
     addModel(newmodel, GAUSS);       
     addModel(newmodel, DOLLAR);
@@ -2404,7 +2406,7 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel) {
   return NOERROR;
 }
 
-int init_truncsupport(cov_model *cov,  storage *s) {
+int init_truncsupport(cov_model *cov, gen_storage *s) {
   int i, err,
     vdim = cov->vdim2[0];
   assert(cov->vdim2[0] == cov->vdim2[1]);
@@ -2430,7 +2432,7 @@ int init_truncsupport(cov_model *cov,  storage *s) {
 }
 
 
-void do_truncsupport(cov_model *cov, storage *s) {
+void do_truncsupport(cov_model *cov, gen_storage *s) {
   //  mppinfotype *info = &(s->mppinfo);
   cov_model *next = cov->sub[0];
   int i, 
@@ -3119,7 +3121,7 @@ int checkstrokorb(cov_model *cov) {
 
 
 
-int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
+int init_strokorb(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (cov->role == ROLE_MAXSTABLE || hasNoRole(cov) || hasDistrRole(cov)) {
     
     //cov_model *next = cov->sub[0];
@@ -3156,7 +3158,7 @@ int init_strokorb(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
 }
 
 
-void do_strokorb(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
+void do_strokorb(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   BUG;
 }
 
@@ -3224,18 +3226,15 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
     dim = cov->tsdim;
   
   ASSERT_NEWMODEL_NOT_NULL;
-  assert(*newmodel == NULL);
   //PMI(cov, "strokorbBall");
   
   if (cov->role == ROLE_MAXSTABLE) {
-    addModel(newmodel, BALL);
-    
+    addModel(newmodel, BALL, cov);    
     addModel(newmodel, POWER_DOLLAR);
     kdefault(*newmodel, POWSCALE, 1.0);    
     kdefault(*newmodel, POWPOWER, -dim);    
     kdefault(*newmodel, POWVAR,  1.0 / VolumeBall(dim, BALL_RADIUS));    
     cov_model *pts=NULL, *scale=NULL;
-    (*newmodel)->calling = cov;
     if ((err = covcpy(&pts, *newmodel)) != NOERROR) return err;
     
 
@@ -3244,16 +3243,14 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
       // !! inverse scale gegenueber paper
       scale->nr = STROKORB_BALL_INNER;
       kdefault(scale, STROKORBBALL_DIM, dim);
-      addModel(&scale, RECTANGULAR); 
+      addModel(&scale, RECTANGULAR, *newmodel); 
       kdefault(scale, RECT_APPROX, false);
       kdefault(scale, RECT_ONESIDED, true);
       (*newmodel)->kappasub[POWSCALE] = scale;
-      scale->calling = *newmodel;
     } else { // for testing only
-      addModel((*newmodel)->kappasub + POWSCALE, UNIF); 
+      addModelKappa(*newmodel, POWSCALE, UNIF); 
       kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MIN, P0(0));
       kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MAX, P0(1));
-      (*newmodel)->kappasub[POWSCALE]->calling = *newmodel;
     }
     
     //    printf("%f %f %d\n", P0(0), P0(1), dim);
@@ -3263,9 +3260,8 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
     addModel(&pts, LOC);
     kdefault(pts, LOC_SCALE, 1.0);
     kdefault(pts, LOC_POWER, -dim);
-    addModel(pts->kappasub + LOC_SCALE, NULL_MODEL); 
+    addModelKappa(pts, LOC_SCALE, NULL_MODEL); 
     kdefault(pts->kappasub[LOC_SCALE], NULL_TYPE, RandomType);
-    pts->kappasub[LOC_SCALE]->calling = pts;
 
     addSetParam(newmodel, pts, ScaleToVar, true, 0);
     addModel(newmodel, PTS_GIVEN_SHAPE); // to do : unif better ?!
@@ -3296,7 +3292,7 @@ void rangestrokorbball(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[1] = false;
 }
 /*
-int init_strokorbBall(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
+int init_strokorbBall(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (cov->role == ROLE_MAXSTABLE) {
     
     //cov_model *next = cov->sub[0];
@@ -3323,7 +3319,7 @@ int init_strokorbBall(cov_model *cov,  storage VARIABLE_IS_NOT_USED *s) {
 }
 
 
-void do_strokorbBall(cov_model VARIABLE_IS_NOT_USED *cov, storage VA// RIABLE_IS_NOT_USED *s) {
+void do_strokorbBall(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VA// RIABLE_IS_NOT_USED *s) {
 //   assert(false);
 // }
 
@@ -3445,7 +3441,7 @@ int check_strokorbBallInner(cov_model *cov) {
   return NOERROR;
 }
 
-int init_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {
+int init_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   // 
   cov_model *next = cov->sub[0];
   //  int err,
@@ -3472,7 +3468,7 @@ int init_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE
   return NOERROR;
 }
 
-void do_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) {  
+void do_strokorbBallInner(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) {  
   //cov_model *next = cov->sub[0];  
   //DO(next, s); // nicht gatternr
 }
@@ -3552,7 +3548,6 @@ int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {
   cov_model *pts=NULL, *shape=NULL;
 
   ASSERT_NEWMODEL_NOT_NULL;
-  assert(*newmodel == NULL);
   //PMI(cov, "strokorbPoly");
     
   if (cov->role == ROLE_MAXSTABLE) {
@@ -3569,16 +3564,15 @@ int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {
 	    CovList[BROWNIAN].kappanames[BROWN_ALPHA]);
     }
     
-    addModel(&pts, UNIF);
+    addModel(&pts, UNIF, NULL, true);
     kdefault(pts, UNIF_NORMED, (int) false);
     PARAMALLOC(pts, UNIF_MIN, dim, 1);
     PARAMALLOC(pts, UNIF_MAX, dim, 1);
    
    
-    addModel(&shape, POLYGON);
-    addModel(shape->kappasub + POLYGON_BETA, ARCSQRT_DISTR);
+    addModel(&shape, POLYGON, NULL, true);
+    addModelKappa(shape, POLYGON_BETA, ARCSQRT_DISTR);
     kdefault(shape->kappasub[POLYGON_BETA], ARCSQRT_SCALE, 1.0 / var);
-    shape->kappasub[POLYGON_BETA]->calling = shape;
     addSetParam(&shape, pts, poly2unif, true, 0);
    
     addModel(newmodel, PTS_GIVEN_SHAPE);
@@ -3638,9 +3632,8 @@ void addSetParam(cov_model **newmodel, cov_model* remote,
   assert(SETPARAM_LOCAL == 0);
   addModel(newmodel, nr);
   kdefault(*newmodel, SET_PERFORMDO, performdo);
-  if ((*newmodel)->Sset != NULL) SET_DELETE(&((*newmodel)->Sset));
-  S = (*newmodel)->Sset = (set_storage *) MALLOC(sizeof(set_storage));
-  SET_NULL(S);
+  NEW_COV_STORAGE(*newmodel, Sset, SET, set_storage);
+  S = (*newmodel)->Sset;
   // S->from wird unten gesetzt !
   S->remote = remote;
   S->set = set;  
@@ -3734,11 +3727,11 @@ bool Typesetparam(Types required, cov_model *cov) {
   return TypeConsistency(required, cov->sub[SETPARAM_LOCAL]);
 }
 
-void spectralsetparam(cov_model *cov, storage *s, double *e){
+void spectralsetparam(cov_model *cov, gen_storage *s, double *e){
    SPECTRAL(cov->sub[SETPARAM_LOCAL], s, e);  // nicht gatternr
 }
 
-int initsetparam(cov_model *cov, storage *s){
+int initsetparam(cov_model *cov, gen_storage *s){
   cov_model *next= cov->sub[SETPARAM_LOCAL];
   set_storage *X = cov->Sset;
 
@@ -3761,7 +3754,7 @@ int initsetparam(cov_model *cov, storage *s){
 }
 
 
-void dosetparam(cov_model *cov, storage *s) {
+void dosetparam(cov_model *cov, gen_storage *s) {
   bool performDo = P0INT(SET_PERFORMDO);
   if (performDo) DO(cov->sub[SETPARAM_LOCAL], s); 
 }

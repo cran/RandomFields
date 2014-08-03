@@ -170,13 +170,13 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED  *x, cov_model *cov, double VA
   // search true covariance function
   location_type *loc = Loc(cov);
   int 
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim2[0];
+  long
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints,
     totalsq = total * total;
-  double *M = cov->S2->z;						  
-  if (M == NULL) M = cov->S2->z = (double*) MALLOC(totalsq * sizeof(double)); 
 
+  ALLOC_EXTRA(M, totalsq);
   invertMatrix(M, total);  
 }
 
@@ -265,11 +265,7 @@ int checkgaussprocess(cov_model *cov) {
   cov_model *sub = cov->key==NULL ? next : key;
   setbackward(cov, sub);
 
-  if (cov->S2 == NULL) {					
-    cov->S2 = (gatter_storage*) MALLOC(sizeof(gatter_storage));	
-    GATTER_NULL(cov->S2);					
-  }								
-
+  EXTRA_STORAGE;
  
   // print("\n\n\nEND Check GAUSS\n\n\n");
 
@@ -345,7 +341,7 @@ int gauss_init_settings(cov_model *cov) {
     var = sigma * INVSQRTTWOPI * exp(-0.5 * meanDsigma * meanDsigma) +
       mean[v] * /* correct next lines the 2nd factor is given */
       // pnorm(meanDsigma, key->mean, sigma, 1, 0));
-      pnorm(0.0, mean[v], sigma, 0, 0);
+      pnorm(0.0, mean[v], sigma, false, false);
     var = 1.0 / (var * var);
     cov->q[v] = var;
     
@@ -364,7 +360,7 @@ int gauss_init_settings(cov_model *cov) {
     cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0;       
     cov->mpp.mMplus[idx + 1] = 
       sigma * INVSQRTTWOPI * exp(-0.5 * mean[v] * mean[v]) 
-      + mean[v] * pnorm(-mean[v], 0.0, 1.0, 0,0);
+      + mean[v] * pnorm(-mean[v], 0.0, 1.0, false, false);
     //(2pi)^-0.5 int x exp(-(x-m)/2s^2)
     cov->mpp.mM[idx + 1] = 0.0;
     cov->mpp.mM[idx + 2] = variance[w];
@@ -397,7 +393,7 @@ int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
   assert((loc->distances && xdim==1) || xdim == dim);
 
   cov->fieldreturn = true;
-  if (newmodel != NULL) SERR("unexpected call of struct_gauss "); /// ?????
+  ASSERT_NEWMODEL_NULL;
   assert(cov!=NULL);
   // print("extract dollar A\n");
   ROLE_ASSERT_GAUSS;
@@ -525,7 +521,8 @@ int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
 int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
 
-  if (newmodel != NULL) SERR("unexpected call of struct_gauss "); /// ?????
+
+  ASSERT_NEWMODEL_NULL;
   assert(cov!=NULL);
   
   //  cov_model *alt = cov;
@@ -563,7 +560,6 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   // int statselect[nsel]={STATIONARY, VARIOGRAM, COVARIANCE, GEN_VARIOGRAM};
 
 
- 
   if (cov->role != ROLE_GAUSS){
     //     APMI(cov);
     return ERRORFAILED;
@@ -581,7 +577,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   if (!isNegDef(next) && !isTrend(next)) {
     SERR("submodel must be a covariance function");
   }
-  
+ 
 
   //////////////////////////////////////////////////////////////////////
   // ROLE_GAUSS; cov->key not given
@@ -610,14 +606,11 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       LPRINT("%-15s: base=%1d  covprev=%1d   locpref=%4d   totpref=%6d\n", 
 	     METHODNAMES[i], N->pref[i], next->pref[i], 
 	     (locpref[i] < -9000) ? -999 : locpref[i], pref[i]);
-    }  
+     }  
     LPRINT("initstandard %s (%d) [pref value %d]\n", 
 	   CovList[nr].name, nr, pref[order[Nothing -1]]);
   }
-  //  assert(false);
 
-
-  //  assert(false);
 
   all_PREF_NONE = true;
   for (i=0; i<Nothing; i++) all_PREF_NONE &= pref[i] == PREF_NONE;
@@ -679,12 +672,13 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 	  if ((err = CHECK(key, dim, xdim, GaussMethodType, cov->domown,
 			   cov->isoown, cov->vdim2, role)) == NOERROR){
 	    key->method = unimeth;
-	    if (cov->stor == NULL) 
-	      cov->stor = (storage *) MALLOC(sizeof(storage));    
-	    STORAGE_NULL(cov->stor);
+	    
+	    NEW_STORAGE(stor, STORAGE, gen_storage);
 	    
 	    // 	    PMI(key);
 	    err = INIT(key, role == ROLE_POISSON_GAUSS ? 2 : 0, cov->stor);
+
+	    // printf("err ===== %d\n", err); if (err > 0) {XERR(err);}
 	    
 	    if (err == NOERROR) {
 	      if (PL >= PL_REC_DETAILS) {
@@ -742,7 +736,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       } else {
 	sprintf(pd, "%s (pref)", FailureMsg[-p]);
       }
-      strncpy(names, METHODNAMES[i], NMAX-1);
+      strcopyN(names, METHODNAMES[i], NMAX-1);
       sprintf(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
       strcpy(PREF_FAILURE, dummy);
     }
@@ -790,7 +784,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 }
 
 
-int init_gaussprocess(cov_model *cov, storage *s) {
+int init_gaussprocess(cov_model *cov, gen_storage *s) {
   /// ACHTUNG struct_gaussprocess hat bereits init aufgerufen!
 
   // direkter Aufruf, u.a. durch RPtbm, average, cutoff, intrinsic, hyperplane,
@@ -804,17 +798,6 @@ int init_gaussprocess(cov_model *cov, storage *s) {
   ROLE_ASSERT_GAUSS;
   assert(key != NULL);
 
-  //  if (key == NULL) {
-  //    if ((err = INIT(next, s)) != NOERROR) {
-  //      //APMI(next);
-  //      return err;
-  //    }
-  //    next->simu.active = true;
-  //  } else {    
-
-  // if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));    
-  //STORAGE_NULL(cov->stor);
-  //print("init gauss here\n");
 
   if ((err = INIT(key, 0, s)) != NOERROR) return err;
 
@@ -833,7 +816,7 @@ int init_gaussprocess(cov_model *cov, storage *s) {
 
 
 
-void do_gaussprocess(cov_model *cov, storage *s) {
+void do_gaussprocess(cov_model *cov, gen_storage *s) {
   //  if (s == NULL) crash(cov);
   assert(s != NULL);
   // reopened by internal_dogauss
@@ -939,9 +922,17 @@ int struct_binaryprocess(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   ROLE_ASSERT(ROLE_BERNOULLI);
   if (isNegDef(next)) {
     assert(cov->key == NULL);
-    if ((err = covcpy(&(cov->key), cov)) != NOERROR) {
-      return err; //!!cov
+    err = covcpy(&(cov->key), cov);
+
+    // darauffolgende Zeile absichern:
+    if (CovList[cov->nr].kappas != 2 || CovList[GAUSSPROC].kappas != 1) BUG;
+    if (cov->key != NULL && PARAM(cov->key, BINARY_THRESHOLD) != NULL) {
+      free(PARAM(cov->key, BINARY_THRESHOLD));
+      cov->key->px[BINARY_THRESHOLD] = NULL;
     }
+
+    if (err != NOERROR)  return err; //!!cov
+
     cov->key->nr = GAUSSPROC;
     err = CHECK(cov->key, cov->tsdim, cov->xdimprev, ProcessType, 
 		cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS);
@@ -952,7 +943,7 @@ int struct_binaryprocess(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   else return STRUCT(next, NULL);
 }
 
-int init_binaryprocess( cov_model *cov, storage *s) {
+int init_binaryprocess( cov_model *cov, gen_storage *s) {
   double sigma, 
     *mean = NULL, 
     *variance = NULL,
@@ -995,7 +986,7 @@ int init_binaryprocess( cov_model *cov, storage *s) {
 	    GERR("Vanishing sill not allowed in 'gaussprocess'");
 	  sigma = sqrt(variance[w]);
 	  cov->mpp.mM[idx + 1] = cov->mpp.mMplus[idx + 1] = 
-	    pnorm(p[pi], mean[v], sigma, 0, 0);
+	    pnorm(p[pi], mean[v], sigma, false, false);
 	  int i;
 	  for (i=2; i<= cov->mpp.moments; i++)
 	    cov->mpp.mM[idx + i] = cov->mpp.mMplus[idx + i] = cov->mpp.mM[idx + 1];
@@ -1016,13 +1007,14 @@ int init_binaryprocess( cov_model *cov, storage *s) {
 
 
 
-void do_binaryprocess(cov_model *cov, storage *s){
+void do_binaryprocess(cov_model *cov, gen_storage *s){
   // reopened by internal_dogauss
-  int  i, j,
+  long j,
+    tot = cov->prevloc->totalpoints,
+    endfor = tot;
+  int  i,
     pi, 
     npi = cov->nrow[BINARY_THRESHOLD],
-    tot = cov->prevloc->totalpoints,
-    endfor = tot,
     vdim = cov->vdim2[0];
   double 
     threshold,
@@ -1157,7 +1149,7 @@ int struct_chisqprocess(cov_model *cov,
   }
 }
 
-int init_chisqprocess(cov_model *cov, storage *s) {
+int init_chisqprocess(cov_model *cov, gen_storage *s) {
   double // sigma,
     mean, m2, 
     variance;
@@ -1207,7 +1199,7 @@ int init_chisqprocess(cov_model *cov, storage *s) {
 
 
 
-void do_chisqprocess(cov_model *cov, storage *s){
+void do_chisqprocess(cov_model *cov, gen_storage *s){
   // reopened by internal_dogauss
   int  i, f,
     degree = P0INT(CHISQ_DEGREE),

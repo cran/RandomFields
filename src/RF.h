@@ -12,18 +12,21 @@
 #define ASSERT_GATTER(Cov) assert(TrafoOK(Cov, true))
 #define ASSERT_CHECKED(Cov) assert(Cov->checked)
 
-#define DOPRINT !true
+#define DOPRINT true
 
-// #define RF_DEBUGGING 1
+// // 1
 
 
 
-#ifndef RF_DEBUGGING
+#ifndef RANDOMFIELDS_DEBUGGING
 
-//#define ERRLINE 
+#define ERRLINE 
+// #define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
+
+
 #define NICK(COV) (isDollar(COV) ? CovList[(COV)->sub[0]->nr].nick : CovList[(COV)->nr].nick)
 
-#define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
+
 
 #define MEMCOPY(A,B,C) memcpy(A,B,C)
 //#define MEMCOPY(A,B,C) memory_copy(A, B, C)
@@ -39,7 +42,7 @@
 #define INIT_RANDOM(M, Moments, S, P) INIT_RANDOM_intern(M, Moments, S, P)
 #define STRUCT(Cov, NM) CovList[(Cov)->gatternr].Struct(Cov, NM)
 
-#define PARAM(P, IDX) (P)->px[IDX]
+#define PARAM(P, IDX) ((double *) (P)->px[IDX])
 #define PARAMINT(P, IDX) ((int *) (P)->px[IDX])
 #define PARAMENV(P, IDX) ((sexp_type *) (P)->px[IDX])
 #define PARAMLIST(P, IDX) ((listoftype *) (P)->px[IDX])
@@ -59,14 +62,14 @@
 
 #else
 #define NICK(COV) (CovList[(COV)->nr].nick)
-#define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
+#define ERRLINE assert({PRINTF("(ERROR in %s, line %d)\n", __FILE__, __LINE__); true;})
 
 
 #define MEMCOPY(A,B,C) ({ assert((A)!=NULL && (B)!=NULL); memcpy(A,B,C); })
 //#define MEMCOPY(A,B,C) memory_copy(A, B, C)
 
 //
-#define MALLOC(X) ({DOPRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);assert(X>0 && X<=536870912);malloc(X);})
+#define MALLOC(X) ({DOPRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);assert(X>0 && X<=668467200);malloc(X);})
 //
 #define CALLOC(X, Y) ({DOPRINTF("(CALLOC %s, line %d)\n",__FILE__, __LINE__);assert(X>0 && X<1e8 && Y>0 && Y<=64); calloc(X,Y);})
 //#define MALLOC malloc
@@ -87,20 +90,19 @@
       PMI(cov);						\
       assert(false);					\
     }							\
-  }DOPRINTF("(");DOPRINTF("%s", Z);DOPRINTF(" %s, line %d : %s\n", __FILE__, __LINE__, NAME(cov))
+  }DOPRINTF("(");DOPRINTF("%s", Z);DOPRINTF(" %s, line %d : %s)\n", __FILE__, __LINE__, NAME(cov))
 
 #define CHECKSIGN "_"
 #define INITSIGN "_"
 #define STRUCTSIGN "_"
 #define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert(type!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
-#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R);YY(C); _x;})
-#define CHECKPD2ND(N,D1,D2,I,V,R) ({LLPRINT(CHECKSIGN, N, "CHECKPD2ND"); XX(N); int _x = CheckPD2ND(N,D1,D2,I,V,R);YY(N); _x;})
-#define INIT(M, Moments, S) ({LLPRINT(INITSIGN, M, "INIT");  XX(M); int _x = INIT_intern(M, Moments, S);YY(M); LLPRINT(INITSIGN, M, "INIT DONE"); _x;})
-#define REINIT(M, Moments, S) ({LLPRINT(INITSIGN, M, "INIT");  XX(M); int _x = REINIT_intern(M, Moments, S); YY(M); _x;})
+#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
+#define CHECKPD2ND(C,D1,D2,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECKPD2ND"); XX(C); int _x = CheckPD2ND(C,D1,D2,I,V,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
+#define INIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = INIT_intern(C, Moments, S);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
+#define REINIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = REINIT_intern(C, Moments, S); YY(C); _x;})
 
-#define INIT_RANDOM(M, Moments, S, P) ({LLPRINT(INITSIGN, M, "INITRANDOM");  XX(M); int _x = INIT_RANDOM_intern(M, Moments, S, P);YY(M); _x;})
-
-#define STRUCT(Cov, NM)  ({LLPRINT(STRUCTSIGN, Cov, "STRUCT"); ASSERT_GATTER(Cov);  XX(Cov); int _x = CovList[(Cov)->gatternr].Struct(Cov, NM);YY(Cov); if (_x==NOERROR){LLPRINT(STRUCTSIGN, Cov, "STRUCT DONE\n");}else{LLPRINT(STRUCTSIGN, Cov, "STRUCT FAILED");}_x;})
+#define INIT_RANDOM(C, Moments, S, P) ({LLPRINT(INITSIGN, C, "INITRANDOM");  XX(C); int _x = INIT_RANDOM_intern(C, Moments, S, P);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
+#define STRUCT(C, NM)  ({LLPRINT(STRUCTSIGN, C, "STRUCT"); ASSERT_GATTER(C);  XX(C); int _x = CovList[(C)->gatternr].Struct(C, NM);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "STRUCT DONE");}else{LLPRINT(STRUCTSIGN, C, "STRUCT FAILED");}_x;})
 
 
 #define PARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP); (P)->px[IDX];})
@@ -132,7 +134,7 @@
     char dummy[MAXERRORSTRING]; strcpy(dummy, ERRORSTRING);		\
     sprintf(ERRORSTRING, "%s (%s, line %d)\n", dummy, __FILE__, __LINE__); \
   }
-#define DEBUGINFO DOPRINTF("(info:  %s, line %d)\n", __FILE__, __LINE__)
+#define DEBUGINFO DOPRINTF("(currently at  %s, line %d)\n", __FILE__, __LINE__)
 
 #endif
 
@@ -686,8 +688,8 @@ typedef enum BRmethod {
 #define HUETCHEN_OWN_GRIDSIZE 2
 typedef signed char ext_bool; // PARAM_DEP, SUBMODEL_DEP, false, true
 //                               HUETCHEN_OWN_GRIDSIZE 
-typedef char domain_type;
-typedef char isotropy_type;
+typedef int domain_type;
+typedef int isotropy_type;
 
 typedef enum TaylorCoeff {TaylorConst, TaylorPow, TaylorExpConst, 
 			  TaylorExpPow} TaylorCoeff;
@@ -962,15 +964,15 @@ typedef struct location_type {
     length[MAXSIMUDIM], /* grid==true: number of pixels of each direction 
 		       grid==false: length[0]=number of spatial points in total
 		     */
-    lx, ly, /*
+    spatialdim, 
+    xdimOZ; // physical xdim, without time
+  long lx, ly, /*
 	      the total number of locations of the user's x vector, i.e.
 	      * except for grids where lx=3
               * physical length = xdimOZ * lx * (lx - 1) /2 for distances
 	      * physical length = xdimOZ * lx else
 	     */
-    spatialdim, 
-    xdimOZ; // physical xdim, without time
-  long spatialtotalpoints,
+    spatialtotalpoints,
     totalpoints;      /* number of pixels in total;
 			    == lx if grid==false
 			    == lengthx * lengthy * lengthz if grid==true
@@ -1030,7 +1032,7 @@ extern globalparam GLOBAL;
 //  bool set;
 //  globalparam param;
 //} globalorig;
-//extern globalorig GLOBALORIG;
+//extern globalorig GLOBALRIG;
 
 
 
@@ -1054,10 +1056,10 @@ extern bool NAOK_RANGE;
   meth->destruct = A;
 
 typedef struct cov_model cov_model;
-typedef struct storage storage;
+typedef struct gen_storage gen_storage;
 typedef int (*structfct)(cov_model *cov, cov_model **newcov);
-typedef int (*initfct)(cov_model *cov, storage *s);
-typedef void (*dofct)(cov_model *cov, storage *s);
+typedef int (*initfct)(cov_model *cov, gen_storage *s);
+typedef void (*dofct)(cov_model *cov, gen_storage *s);
 typedef void (*do_random_fct)(cov_model *cov, double *v);
 typedef void (*param_set_fct)(cov_model *to, cov_model *from, int variant);
 typedef bool (*type_fct)(Types required, cov_model *cov);
@@ -1191,12 +1193,12 @@ typedef bool (*altlocalparam)(cov_model *);
 typedef void (*minmaxfct)(cov_model *, double *);
 
 
-typedef void (*spectral_do)(cov_model *, storage *, double *);
+typedef void (*spectral_do)(cov_model *, gen_storage *, double *);
 
 typedef void (*draw_random) (cov_model *cov, double *random);
 typedef double (*log_mixdens)(double *x, double logV, cov_model *cov);
 
-typedef void (*sd_fct)(storage *s, cov_model *cov);
+typedef void (*sd_fct)(gen_storage *s, cov_model *cov);
 		       				   
 typedef int (*hyper_pp_fct)(double, double*, double*, cov_model *, bool, 
 			    double**, double**, double**);
@@ -1209,7 +1211,7 @@ typedef sortsofparam  (*paramtype_fct)(int k, int row, int col);
 
 typedef struct cov_fct {  
   char name[MAXCHAR], nick[MAXCHAR];
-  char kappas, /* number of parameters  */
+  int kappas, /* number of parameters  */
     minsub, maxsub; // ==0
   domain_type domain;
   isotropy_type isotropy;
@@ -1343,14 +1345,14 @@ int IncludePrim(const char *name, Types type, int kappas, size_fct kappasize,
 void make_internal();
 
 
-int IncludeModel(const char *name, Types type, char minsub, char maxsub,
+int IncludeModel(const char *name, Types type, int minsub, int maxsub,
 		 int kappas,
 		  size_fct kappasize,
 		  domain_type domain, isotropy_type isotropy,
 		  checkfct check, rangefct range, pref_type pref, 
 		  bool internal, int vdim, int maxdim, ext_bool finiterange,
 		 int monotonicity);
-int IncludeModel(const char *name, Types type, char minsub, char maxsub, 
+int IncludeModel(const char *name, Types type, int minsub, int maxsub, 
 		 int kappas, 
 		  domain_type domain, isotropy_type isotropy,
 		  checkfct check, rangefct range, pref_type pref, 
@@ -1536,8 +1538,8 @@ typedef struct TBM_storage {
 
 // see spectral.cc
 
-void metropolis(cov_model *cov, storage *S, double *x);
-int search_metropolis(cov_model *cov, storage *S);
+void metropolis(cov_model *cov, gen_storage *S, double *x);
+int search_metropolis(cov_model *cov, gen_storage *S);
 // see direct.cc
 typedef struct direct_storage {
   InversionMethod method;
@@ -1662,10 +1664,12 @@ typedef struct set_storage {
 typedef struct vertex {
   double x[2];				// vertex coordinates
 } vertex;
+
 typedef struct edge {
   double u[2];				// normal vector
   double p;	       			// distance from the origin
 } edge;
+
 typedef struct polygon {
 	int n;			// number of vertices = number of edges
         vertex *v;		// array of vertices
@@ -1673,14 +1677,13 @@ typedef struct polygon {
 	double box0[2];		// coordinates of the left lower vertex of smallest box containing the polygon
 	double box1[2];		// coordinates of the right upper vertex of smallest box containing the polygon
 } polygon;
+
 typedef struct polygon_storage {
   polygon *P;
   double **vdual;
   vertex *vprim;
   int n_vdual, n_vertex, n_v;
 } polygon_storage;
-
-
 
 
 typedef struct rect_storage {
@@ -1694,13 +1697,17 @@ typedef struct rect_storage {
 
 
 typedef struct dollar_storage {
-  double *z, *z2, *y, *save_aniso, *inv_aniso;
+  double *z, *y, *z2, *y2, *save_aniso, *inv_aniso;
   int *cumsum, *nx, *total, *len;
 } dollar_storage;
 
 typedef struct gatter_storage {
-  double *z, *zsys;
+  double *z;
 } gatter_storage;
+
+typedef struct extra_storage {
+  double *a, *b, *c;
+} extra_storage;
 
 typedef struct biwm_storage {
   bool nudiag_given, cdiag_given;
@@ -1711,7 +1718,7 @@ typedef struct biwm_storage {
 
 typedef struct inv_storage {
   double *v, *wert;
-} inv__storage;
+} inv_storage;
 
 
 typedef struct spec_properties {
@@ -1742,13 +1749,13 @@ typedef struct mpp_properties {
 } mpp_properties;
 
 
-typedef struct storage { // cov_storage, do_storage, init_storage
+typedef struct gen_storage { // cov_storage, do_storage, init_storage
   // wird in Struct initialisiert, sofern INIT aufgerufen wird;
   // abgespeichert wird es immer im aktuell aufrufenden (fuer next oder key)
   bool check; // used in biWM, BiGneiting
   spec_properties spec;       // used in init
   spectral_storage Sspectral; // used in do
-} storage;
+} gen_storage;
 
 ///////////////////////////////////////////////////////////////////////
 // POSITIONS OF X-VALUES
@@ -1860,7 +1867,7 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov,
 int covcpy(cov_model **localcov, bool sub, cov_model *cov, 
 	   location_type *prevloc, location_type *ownloc, bool copy_lists);
 int covcpy(cov_model **localcov, cov_model *cov,
-	   double *x, double *T, int spatialdim, int xdim, int lx, bool Time, 
+	   double *x, double *T, int spatialdim, int xdim, long lx, bool Time, 
 	   bool grid, bool distances);
 int covcpyWithoutRandomParam(cov_model **localcov, cov_model *cov);
 int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
@@ -1873,7 +1880,7 @@ void Ssetcpy(cov_model *localcov, cov_model *remotecov, cov_model *cov,
 int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov);
 int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov,
 		    double *x, double *y, double *T, int spatialdim,
-	            int xdim, int lx, int ly, bool Time, bool grid,
+	            int xdim, long lx, long ly, bool Time, bool grid,
 	            bool distances);
 
 void TaylorCopy(cov_model *to, cov_model *from);
@@ -1974,22 +1981,22 @@ void setAniso(cov_model *cov);
 
 void orderingInt(int *d, int len, int dim, int *pos);
 int partial_loc_set(location_type *loc, double *x, double *y,
-		    int lx, int ly, bool dist, int xdim, double *T, 
+		    long lx, long ly, bool dist, int xdim, double *T, 
 		    bool grid, bool cpy);
 //void partial_loc_set(cov_model *cov, double *x, double *y,
-//		     int lx, bool dist, int xdim, double *T);
+//		     long lx, bool dist, int xdim, double *T);
 int loc_set(double *x, double *T, 
 	    int spatialdim, /* spatial dim only ! */
-	    int xdim, int lx, bool Time, bool grid,
+	    int xdim, long lx, bool Time, bool grid,
 	    bool distances,
 	    location_type **loc);
 int loc_set(double *x, double *y, double *T, 
 	    int spatialdim, /* spatial dim only ! */
 	    int xdim,
-	    int lx, int ly, bool Time, bool grid,
+	    long lx, long ly, bool Time, bool grid,
 	    bool distances,
 	    location_type **Loc);
-int loc_set(cov_model *cov, int totalpoints);
+int loc_set(cov_model *cov, long totalpoints);
 int add_y_zero(location_type *loc);
 
 
@@ -2021,6 +2028,11 @@ double GetDiameter(location_type *loc,
 		   double *min, double *max, double *center);
 double * matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3);
 void addModel(cov_model **pcov, int covnr);
+void addModel(cov_model *pcov, int subnr, int covnr);
+void addModelKappa(cov_model *pcov, int subnr, int covnr);
+void addModel(cov_model **pcov, int covnr, cov_model *calling);
+void addModel(cov_model **pcov, int covnr, cov_model *calling, bool nullOK); 
+
 int addUnifModel(cov_model *cov, double radius, cov_model **newmodel);
 
 void addVariable(char *name, double *x, int nrow, int ncol, SEXP env);
@@ -2114,9 +2126,9 @@ extern "C" double *OutX, *OutY;
 void CovVario(cov_model *cov, bool is_cov, bool pseudo, 
 	      double *value);
 void CovIntern(int reg, double *x, double *value);
-void CovIntern(int reg, double *x, double *y, int lx, int ly, double *value);
+void CovIntern(int reg, double *x, double *y, long lx, long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *y,
-			   int lx, int ly, double *value);
+			   long lx, long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *value);
 void CovarianceMatrix(cov_model *cov,double *COV);
 void InverseCovMatrix(cov_model *cov, double *v);
@@ -2181,7 +2193,7 @@ int Integer(SEXP p, char *name, int idx);
 bool Logical(SEXP p, char *name, int idx);
 
 int binomialcoeff(int n, int k);
-void poly_basis(cov_model *cov, storage *s);
+void poly_basis(cov_model *cov, gen_storage *s);
 double evalpoly(double *x, int *powmatrix, double *polycoeff, int basislen,
 	      int dim);
 
@@ -2328,10 +2340,11 @@ typedef struct cov_model {
   rect_storage *Srect;
   dollar_storage *Sdollar;
   gatter_storage *S2;
+  extra_storage *Sextra;
   biwm_storage *Sbiwm;
   inv_storage *Sinv;
   //select_storage *Sselect;
-  storage *stor; // only once for the whole model tree
+  gen_storage *stor; // only once for the whole model tree
 } cov_model;
 
 
@@ -2384,6 +2397,9 @@ void DOLLAR_NULL(dollar_storage* x);
 void GATTER_DELETE(gatter_storage **S); 
 void GATTER_NULL(gatter_storage* x);
 
+void EXTRA_DELETE(extra_storage **S); 
+void EXTRA_NULL(extra_storage* x);
+
 void BIWM_DELETE(biwm_storage **S); 
 void BIWM_NULL(biwm_storage* x);
 
@@ -2395,8 +2411,8 @@ void TREND_DELETE(trend_storage ** S);
 void TREND_NULL(trend_storage* x);
 void MIXED_DELETE(mixed_storage **S);
 void MIXED_NULL(mixed_storage* x);
-void STORAGE_NULL(storage *x);
-void STORAGE_DELETE(storage **S);
+void STORAGE_NULL(gen_storage *x);
+void STORAGE_DELETE(gen_storage **S);
 
 //void SELECT_NULL(select_storage *S);
 //void SELECT_DELETE(select_storage **S);
@@ -2433,10 +2449,10 @@ void ErrLogCov(double *x, cov_model *cov, double *v, double *sign);
 void ErrLogCovNonstat(double *x, double *y, cov_model *cov, double *v, 
 		      double *sign);
 int struct_failed(cov_model *cov, cov_model **atom);
-int init_failed(cov_model *cov, storage *s);
-int init_statiso(cov_model *cov, storage *s);
-void do_failed(cov_model *cov, storage *s);
-void do_statiso(cov_model *cov, storage VARIABLE_IS_NOT_USED *s);
+int init_failed(cov_model *cov, gen_storage *s);
+int init_statiso(cov_model *cov, gen_storage *s);
+void do_failed(cov_model *cov, gen_storage *s);
+void do_statiso(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
 int checkOK(cov_model *cov);
 int checkplusmal(cov_model *cov);
 void ErrInverse(double *v, cov_model *cov, double *x);
@@ -2465,19 +2481,19 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only);
 
 
 void BRtrend_destruct(double **BRtrend, int trendlen);
-int StructBR(cov_model *cov, storage *s, cov_model **atom);
+int StructBR(cov_model *cov, gen_storage *s, cov_model **atom);
 
 sortsofparam uncritical_paramtype(int k, int row, int col);
 
-void indextrafo(int onedimindex, int *length, int dim, int *multidimindex);
+void indextrafo(long onedimindex, int *length, int dim, int *multidimindex);
 
 int check_within_range(cov_model *cov, bool NAOK);
 extern bool RELAX_UNKNOWN_RFOPTION;
 
 
-int INIT_RANDOM_intern(cov_model *M, int moments, storage *s, double *p);
-int INIT_intern(cov_model *M, int moments, storage *s);
-int REINIT_intern(cov_model *M, int moments, storage *s);
+int INIT_RANDOM_intern(cov_model *M, int moments, gen_storage *s, double *p);
+int INIT_intern(cov_model *M, int moments, gen_storage *s);
+int REINIT_intern(cov_model *M, int moments, gen_storage *s);
 void set_initialised_false(cov_model *cov, bool init_deterministic);
   
 int alloc_mpp_M(cov_model *cov, int moments);
@@ -2557,12 +2573,17 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols);
 #define ROLE_ASSERT_GAUSS if (cov->role != ROLE_GAUSS) ILLEGAL_ROLE 
    
 #define ASSERT_GAUSS_METHOD(METHOD) DEBUGINFO;				\
-  if(cov->role != GAUSS || cov->method != Average)			\
-    SERR2("Gaussian field for '%s' only possible with '%s' as specific method",\
+  if(cov->role != ROLE_GAUSS || cov->method != METHOD) 			\
+    SERR4("Gaussian field for '%s' only possible with '%s' as method. Got role '%s' and method '%s'.", \
 	 NICK(cov),							\
 	 CovList[METHOD == RandomCoin ? RANDOMCOIN_USER	:		\
 		 gaussmethod[METHOD] -					\
-		 CovList[gaussmethod[METHOD]].internal].nick)
+		 CovList[gaussmethod[METHOD]].internal].nick,		\
+	  ROLENAMES[cov->role],						\
+	  CovList[cov->method == RandomCoin ? RANDOMCOIN_USER	:	\
+		  gaussmethod[cov->method] -				\
+		  CovList[gaussmethod[cov->method]].internal].nick	\
+	  )
 
 #define ASSERT_NEWMODEL_NOT_NULL\
   if (newmodel == NULL) {\
@@ -2584,10 +2605,10 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols);
   if (role == ROLE_UNDEFINED)					\
     SERR1("'%s' not allowed as shape function.", NICK(SUB));	\
 
-void PSTOR(cov_model *cov, storage *x);
+void PSTOR(cov_model *cov, gen_storage *x);
 int structOK(cov_model *cov, cov_model **newmodel);
-int initOK(cov_model *cov, storage *s);
-void doOK(cov_model *cov, storage *s);
+int initOK(cov_model *cov, gen_storage *s);
+void doOK(cov_model *cov, gen_storage *s);
 void do_random_ok(cov_model *cov, double *v);
 void do_random_failed(cov_model *cov, double *v);
 
@@ -2738,26 +2759,58 @@ int addressbits(void *addr);
 #define MIN(A,B) ((A) < (B) ? (A) : (B));
 #define MAX(A,B) ((A) > (B) ? (A) : (B));
 
-
-#define EXTRA_STORAGE						\
-  if (cov->S2 != NULL && cov->S2->z != NULL)			\
-    GATTER_DELETE(&(cov->S2));					\
-  if (cov->S2 == NULL) {					\
-    cov->S2 = (gatter_storage*) MALLOC(sizeof(gatter_storage));	\
-    GATTER_NULL(cov->S2);					\
+#define NEW_COV_STORAGE(cov, Snew, NEW, new_storage) {		\
+  if ((cov)->Snew != NULL) {					\
+    NEW##_DELETE(&((cov)->Snew));					\
+    assert((cov)->Snew == NULL);					\
   }								\
-  assert(cov->S2->z == NULL);
+  if ((cov)->Snew == NULL) {					\
+    (cov)->Snew = (new_storage *) MALLOC(sizeof(new_storage));	\
+    NEW##_NULL((cov)->Snew);					\
+    if ((cov)->Snew == NULL) BUG;				\
+  }}								
+
+#define NEW_STORAGE(Snew, NEW, new_storage)	\
+  NEW_COV_STORAGE(cov, Snew, NEW, new_storage)
 
 
-#define ALLOC_EXTRA1(Z, SIZE)						\
-  double *Z = cov->S2->z;						\
-  if (Z == NULL) Z = cov->S2->z = (double*) MALLOC(sizeof(double)* SIZE)
+#define COND_NEW_STORAGE(Snew, NEW, new_storage, WHAT) {	\
+  if (cov->Snew != NULL && cov->Snew->WHAT != NULL) {		\
+    NEW##_DELETE(&(cov->Snew));					\
+    assert(cov->Snew == NULL);					\
+  }								\
+  if (cov->Snew == NULL) {					\
+    cov->Snew = (new_storage *) MALLOC(sizeof(new_storage));	\
+    NEW##_NULL(cov->Snew);					\
+    if (cov->Snew == NULL) BUG;					\
+  }								\
+  assert(cov->Snew->WHAT == NULL);				\
+  }
 
 
-// hier keine klammern drum rum
-#define ALLOC_EXTRA2(Z, SIZE)						\
-  double *Z = cov->S2->zsys;						\
-  if (Z == NULL) Z = cov->S2->zsys = (double*) MALLOC(sizeof(double)* (SIZE))
+#define ALLOC_NEW(Snew, Z, SIZE, WHAT)					\
+  assert(cov->Snew != NULL);						\
+  double *Z = cov->Snew->WHAT;						\
+  if (Z == NULL) Z = cov->Snew->WHAT = (double*) MALLOC(sizeof(double)* SIZE) \
+  
+
+
+#define EXTRA_STORAGE COND_NEW_STORAGE(Sextra, EXTRA, extra_storage,  a)
+#define ALLOC_EXTRA(Z, SIZE) ALLOC_NEW(Sextra, Z, SIZE, a) 
+#define ALLOC_EXTRA2(Z, SIZE) ALLOC_NEW(Sextra, Z, SIZE, b)     
+#define ALLOC_EXTRA3(Z, SIZE) ALLOC_NEW(Sextra, Z, SIZE, c)     
+
+
+#define DOLLAR_STORAGE COND_NEW_STORAGE(Sdollar, DOLLAR, dollar_storage, z)
+#define ALLOC_DOLLAR(Z, SIZE) ALLOC_NEW(Sdollar, Z, SIZE, z) 
+#define ALLOC_DOLLARY(Z1, Z2, SIZE) \
+     ALLOC_DOLLAR(Z1, SIZE); ALLOC_NEW(Sdollar, Z2, SIZE, y)
+
+#define ALLOC_DOLLAR2(Z, SIZE) ALLOC_NEW(Sdollar, Z, SIZE, z2)     
+#define ALLOC_DOLLAR3(Z, SIZE) ALLOC_NEW(Sdollar, Z, SIZE, y)     
+#define ALLOC_DOLLAR4(Z, SIZE) ALLOC_NEW(Sdollar, Z, SIZE, y2)     
+
+
 
 
 // Polygon Functions

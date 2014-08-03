@@ -1,6 +1,6 @@
 ## modify if necessary
 
-#PKG_CXXFLAGS = -O2 -Wall -pedantic -g
+PKG_CFLAGS = -DNDEBUG
 PKG_LIBS =  $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 

@@ -223,7 +223,7 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   if (RFopt$gauss$paired && (n %% 2 != 0))
     stop("if paired, then n must be an even number")
 
-  info <- RFgetModelInfo(RFopt$registers$register)
+  info <- RFgetModelInfo(RFopt$registers$register, level=3)
 
   # Print(info); str(info$loc); xxx
 
@@ -428,7 +428,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
     rfInit(model=list("Simulate", checkonly=TRUE, model),
            x=x.tmp, y=y, z=z, T=T, grid=grid, distances=distances, spdim=dim,
            reg=reg, dosimulate=-1)
-    info <- RFgetModelInfo(reg)
+    info <- RFgetModelInfo(reg, level=3)
     grid <- info$loc$grid
 
     res <- switch(info$role,
@@ -475,7 +475,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
     if (n < 1) return(NULL)
     
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
-    info <- RFgetModelInfo(reg)
+    info <- RFgetModelInfo(reg, level=3)
 
   } # end of uncond simu
 

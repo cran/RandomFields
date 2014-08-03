@@ -143,7 +143,6 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
   double 
     var = P0(DVAR),
     *scale =P(DSCALE), 
-    *z = cov->Sdollar->z,
     *aniso=P(DANISO);
   int i,
     nproj = cov->nrow[DPROJ],
@@ -152,8 +151,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
  
   if (nproj > 0) {
     int *proj = PINT(DPROJ);
-    if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(nproj*sizeof(double));
-
+    ALLOC_DOLLAR(z, nproj);
     if (scale == NULL || scale[0] > 0.0) {
       if (scale == NULL)  for (i=0; i<nproj; i++) z[i] = x[proj[i] - 1];
       else {
@@ -168,8 +166,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
     if (sign==NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
   } else if (Aniso != NULL) {
     int dim = Aniso->vdim2[0];
-    if (z == NULL) 
-      z = cov->Sdollar->z =(double*) MALLOC(dim * sizeof(double));
+    ALLOC_DOLLAR(z, dim);
     FCTN(x, Aniso, z);
     if (sign == NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
   } else if (aniso==NULL && (scale == NULL || scale[0] == 1.0)) {
@@ -177,8 +174,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
   } else {
     int xdimown = cov->xdimown;
     double *xz;
-    if (z == NULL) 
-      z = cov->Sdollar->z =(double*) MALLOC(xdimown * sizeof(double)); 
+    ALLOC_DOLLAR(z, xdimown);
     if (aniso!=NULL) {
       int j, k,
 	nrow=cov->nrow[DANISO], 
@@ -221,9 +217,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
   cov_model 
     *next = cov->sub[DOLLAR_SUB],
     *Aniso = cov->kappasub[DALEFT];
-  double 
-    *z1 = cov->Sdollar->z,
-    *z2 = cov->Sdollar->z2,
+  double *z1, *z2,
     var = P0(DVAR),
     *scale =P(DSCALE),
     *aniso=P(DANISO);
@@ -236,10 +230,9 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
   
   if (nproj > 0) {
     int *proj = PINT(DPROJ);
-    if (z1 == NULL) 
-      z1 = cov->Sdollar->z = (double*) MALLOC(nproj * sizeof(double));
-    if (z2 == NULL) 
-      z2 = cov->Sdollar->z2 = (double*) MALLOC(nproj * sizeof(double));
+    ALLOC_DOLLARY(Z1, Z2, nproj);
+    z1 = Z1;
+    z2 = Z2;
     if (scale==NULL || scale[0] > 0.0) {
       double invscale = scale==NULL ? 1.0 :  1.0 / scale[0];
       for (i=0; i<nproj; i++) {
@@ -255,11 +248,10 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     }
   } else if (Aniso != NULL) {
     int dim = Aniso->vdim2[0];
-    if (z1 == NULL) 
-      z1 = cov->Sdollar->z =(double*) MALLOC(dim * sizeof(double));
-    if (z2 == NULL) 
-      z2 = cov->Sdollar->z2 =(double*) MALLOC(dim * sizeof(double));
-    FCTN(x, Aniso, z1);
+    ALLOC_DOLLARY(Z1, Z2, dim);
+    z1 = Z1;
+    z2 = Z2;
+   FCTN(x, Aniso, z1);
     FCTN(y, Aniso, z2);
     if (sign == NULL) NONSTATCOV(z1, z2, next, v)
       else LOGNONSTATCOV(z1, z2, next, v, sign);
@@ -269,10 +261,9 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
   } else {
     int xdimown = cov->xdimown;
     double *xz1, *xz2;
-    if (z1 == NULL) 
-      z1 = cov->Sdollar->z = (double*) MALLOC(xdimown * sizeof(double));
-    if (z2 == NULL) 
-      z2 = cov->Sdollar->z2 = (double*) MALLOC(xdimown * sizeof(double));
+    ALLOC_DOLLARY(Z1, Z2, xdimown);
+    z1 = Z1;
+    z2 = Z2;
     if (aniso != NULL) {
       int j, k,
 	nrow=cov->nrow[DANISO],
@@ -520,9 +511,6 @@ void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
     xdimown = cov->xdimown,
     nproj = cov->nrow[DPROJ];
   double *xy, *vw,
-    *y = cov->Sdollar->y,
-    *z = cov->Sdollar->z,
-    *w = cov->Sdollar->z2,
     *scale =P(DSCALE),
     *aniso=P(DANISO),
     var = P0(DVAR);
@@ -532,10 +520,8 @@ void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
 	  
   
   if (aniso != NULL) {  
-    if (z == NULL) 
-      z = cov->Sdollar->z = (double*) MALLOC(sizeof(double) * xdimown);
-    if (w == NULL) 
-      w = cov->Sdollar->z2 = (double*) MALLOC(sizeof(double) * xdimown);
+    ALLOC_DOLLAR(z, xdimown);
+    ALLOC_DOLLAR2(w, xdimown);
     xA(x, aniso, xdimown, xdimown, z);
     xy = z;
     vw = w;
@@ -545,8 +531,7 @@ void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
   }
 
   if (scale != NULL) {
-    if (y == NULL) 
-      y = cov->Sdollar->y =(double*) MALLOC(sizeof(double) * xdimown);
+    ALLOC_DOLLAR3(y, xdimown);
     assert(scale[0] > 0.0);
     double spinvscale = 1.0 / scale[0];
     var *= spinvscale;
@@ -667,8 +652,7 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
 	S->save_aniso = (double *) MALLOC(bytes);
 	S->inv_aniso = (double *) MALLOC(bytes);
       }
-      double *LR = cov->Sdollar->z;
-      if (LR == NULL) LR = cov->Sdollar->z = (double*) MALLOC(size);
+      ALLOC_DOLLAR4(LR, ncol);
       double *save = S->save_aniso,
 	*inv = S->inv_aniso;
       if (!redo) {
@@ -699,12 +683,11 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
     int 
       nrow = Aniso->vdim2[0],
       ncol = Aniso->vdim2[1],
-       size = nrow * sizeof(double);
+      size = nrow * sizeof(double);
     //      printf("ncol %d %d\n", ncol, nrow);
     if (cov->xdimown != ncol || ncol != 1)
       error("anisotropy function not of appropriate form");
-    double *LR = cov->Sdollar->z;
-    if (LR == NULL) LR = cov->Sdollar->z = (double*) MALLOC(size);
+    ALLOC_DOLLAR4(LR, nrow);
     
     MEMCOPY(LR, right, size);
     INVERSE(LR, Aniso, right);
@@ -876,9 +859,10 @@ int checkS(cov_model *cov) {
     }
     // here for the first time
     if (!PisNULL(DANISO)) return ERRORANISO_T; 
-    int j, k,
+    int k,
       lnrow = cov->nrow[DALEFT],
-      lncol = cov->ncol[DALEFT],
+      lncol = cov->ncol[DALEFT];
+    long j, 
       total = lncol * lnrow;
 	
     double
@@ -1110,13 +1094,7 @@ int checkS(cov_model *cov) {
   if ((err = TaylorS(cov)) != NOERROR) return err;
   // printf("here2\n");
   
-  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
+  DOLLAR_STORAGE;
   
   if (isProcess(cov->typus)) {
     MEMCOPY(cov->pref, PREF_NOTHING, sizeof(pref_shorttype)); 
@@ -1156,7 +1134,7 @@ bool TypeS(Types required, cov_model *cov) {
 }
 
 
-void spectralS(cov_model *cov, storage *s, double *e) {
+void spectralS(cov_model *cov, gen_storage *s, double *e) {
   cov_model *next = cov->sub[DOLLAR_SUB];
   int d,
     ncol = PisNULL(DANISO) ? cov->tsdim : cov->ncol[DANISO];
@@ -1174,8 +1152,9 @@ void spectralS(cov_model *cov, storage *s, double *e) {
   // print("sube %f %f %f %d %d\n", sube[0], sube[1], invscale, cov->tsdim, ncol);
   
   if (!PisNULL(DANISO)) {
-    int j, k, m,
-      nrow = cov->nrow[DANISO],
+    int 
+      nrow = cov->nrow[DANISO];
+    long j, k, m,
       total = ncol * nrow;
     double
       *A = P(DANISO); 
@@ -1340,8 +1319,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
   
     if (cov->calling->nr == SMITHPROC) {
       if ((err = STRUCT(next, newmodel)) == NOERROR && *newmodel != NULL) {
-
-	(*newmodel)->calling = cov;
+	assert(	(*newmodel)->calling == cov);
 	//   PMI(shape); 
 	//APMI(*newmodel);
 	Types type = 
@@ -1373,7 +1351,8 @@ int structS(cov_model *cov, cov_model **newmodel) {
 				   cov->vdim2[0])) != NOERROR) {
 	    goto ErrorHandling; 
 	  }
-	  if (*newmodel == NULL) BUG;
+
+	  ASSERT_NEWMODEL_NOT_NULL;
 	  (*newmodel)->calling = cov;
 	  // APMI(cov);
 	} else {
@@ -1469,7 +1448,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
 
 
 
-int initS(cov_model *cov, storage *s){
+int initS(cov_model *cov, gen_storage *s){
   // am liebsten wuerde ich hier die Koordinaten transformieren;
   // zu grosser Nachteil ist dass GetDiameter nach trafo 
   // grid def nicht mehr ausnutzen kann -- umgehbar?!
@@ -1660,7 +1639,7 @@ int initS(cov_model *cov, storage *s){
 }
 
 
-void doS(cov_model *cov, storage *s){
+void doS(cov_model *cov, gen_storage *s){
    cov_model
      *varM = cov->kappasub[DVAR],
      *scaleM = cov->kappasub[DSCALE];
@@ -1819,8 +1798,7 @@ void select(double *x, cov_model *cov, double *v) {
     int i, m,
       vdim = cov->vdim2[0],
       vsq = vdim * vdim;
-    double *z = cov->Sdollar->z;
-    if (z == NULL) z = cov->Sdollar->z =(double*) MALLOC(sizeof(double) * vsq);
+    ALLOC_EXTRA(z, vsq);
     for (i=1; i<len; i++) {
       sub = cov->sub[element[i]];
       COV(x, sub, z);
@@ -1862,13 +1840,7 @@ int checkselect(cov_model *cov) {
 
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
-  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
+  EXTRA_STORAGE;
 
   return NOERROR;
 }
@@ -1893,9 +1865,7 @@ void plusStat(double *x, cov_model *cov, double *v){
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
   assert(cov->vdim2[0] == cov->vdim2[1]);
-  assert(cov->Sdollar != NULL);
-  double *z = cov->Sdollar->z;
-    if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(sizeof(double) * vsq);
+  ALLOC_EXTRA(z, vsq);
   
   //PMI(cov->calling);
   //print("%d %s %s\n", vsq, NICK(cov->sub[0])),
@@ -1922,9 +1892,7 @@ void plusNonStat(double *x, double *y, cov_model *cov, double *v){
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
   assert(cov->vdim2[0] == cov->vdim2[1]);
-  assert(cov->Sdollar != NULL);
-  double *z = cov->Sdollar->z;
-  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(sizeof(double) * vsq);
+  ALLOC_EXTRA(z, vsq);
   for (m=0; m<vsq; m++) v[m] = 0.0;
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
@@ -1990,13 +1958,8 @@ int checkplus(cov_model *cov) {
     }
   } else cov->logspeed = RF_NA;
 
- if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
+  EXTRA_STORAGE;
+
   return NOERROR;
 
   // spectral mit "+" funktioniert, falls alle varianzen gleich sind,
@@ -2022,7 +1985,7 @@ bool Typeplus(Types required, cov_model *cov) {
   return false;
 }
 
-void spectralplus(cov_model *cov, storage *s, double *e){
+void spectralplus(cov_model *cov, gen_storage *s, double *e){
   int nr;
   double dummy;
   spec_properties *cs = &(s->spec);
@@ -2070,7 +2033,7 @@ int structplus(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
 }
 
 
-int initplus(cov_model *cov, storage *s){
+int initplus(cov_model *cov, gen_storage *s){
   int i, err,
     vdim = cov->vdim2[0];
   if (cov->vdim2[0] != cov->vdim2[1]) BUG;
@@ -2092,7 +2055,7 @@ int initplus(cov_model *cov, storage *s){
 	COV(ZERO, sub, sd_cum + i);
 	if (i>0) sd_cum[i] += sd_cum[i-1];
       }
-      cov->sub[i]->stor = (storage *) MALLOC(sizeof(storage));
+      cov->sub[i]->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
       if ((err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
 	//  AERR(err);
 	return err;
@@ -2138,7 +2101,7 @@ int initplus(cov_model *cov, storage *s){
 }
 
 
-void doplus(cov_model *cov, storage *s) {
+void doplus(cov_model *cov, gen_storage *s) {
   int i;
   
   if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
@@ -2157,17 +2120,17 @@ void doplus(cov_model *cov, storage *s) {
 void covmatrix_plus(cov_model *cov, double *v) {
   location_type *loc = Loc(cov);
   //  cov_fct *C = CovList + cov->nr; // nicht gatternr
-  int i, 
+  long i, 
     totalpoints = loc->totalpoints,
     vdimtot = totalpoints * cov->vdim2[0],
-    vdimtotSq = vdimtot * vdimtot,
+    vdimtotSq = vdimtot * vdimtot;
+  int
     nsub = cov->nsub;
   bool is = iscovmatrix_plus(cov) >= 2;
   double *mem = NULL;
-  if (is && nsub>1) {
-    mem = cov->Sdollar->y;
-    if (mem == NULL) 
-      mem = cov->Sdollar->y = (double*) MALLOC(sizeof(double) * vdimtotSq);
+  if (is && nsub > 1) {
+    ALLOC_EXTRA2(MEM, vdimtotSq);
+    mem = MEM;
     is = mem != NULL;
   }
   
@@ -2207,9 +2170,7 @@ void malStat(double *x, cov_model *cov, double *v){
     nsub=cov->nsub,
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
-  assert(cov->Sdollar != NULL);
-  double *z = cov->Sdollar->z;
-  if (z == NULL) z = cov->Sdollar->z =(double*) MALLOC(sizeof(double) * vsq);
+  ALLOC_EXTRA(z, vsq);
   
   assert(x[0] >= 0.0 || cov->xdimown > 1);
   for (m=0; m<vsq; m++) v[m] = 1.0;
@@ -2226,13 +2187,10 @@ void logmalStat(double *x, cov_model *cov, double *v, double *sign){
     nsub=cov->nsub,
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
-  double *z = cov->Sdollar->z,
-    *zsign = cov->Sdollar->z2;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
-  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(sizeof(double) * vsq);
-  if (zsign == NULL) 
-    zsign = cov->Sdollar->z2 = (double*) MALLOC(sizeof(double) * vsq);
-  
+  ALLOC_EXTRA(z, vsq);
+  ALLOC_EXTRA(zsign, vsq);
+
+  assert(cov->vdim2[0] == cov->vdim2[1]); 
   assert(x[0] >= 0.0 || cov->xdimown > 1);
   for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
   for(i=0; i<nsub; i++) {
@@ -2250,13 +2208,11 @@ void malNonStat(double *x, double *y, cov_model *cov, double *v){
   int i, m, nsub=cov->nsub,
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
+  ALLOC_EXTRA(z, vsq);
 
   assert(cov->vdim2[0] == cov->vdim2[1]);
-
-  assert(cov->Sdollar != NULL);
-  double *z = cov->Sdollar->z;
   assert(cov->vdim2[0] == cov->vdim2[1]);
-  if (z == NULL) z = cov->Sdollar->z =(double*) MALLOC(sizeof(double) * vsq);
+
   for (m=0; m<vsq; m++) v[m] = 1.0;
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
@@ -2271,13 +2227,9 @@ void logmalNonStat(double *x, double *y, cov_model *cov, double *v,
   int i, m, nsub=cov->nsub,
     vdim = cov->vdim2[0],
     vsq = vdim * vdim;
-  assert(cov->Sdollar != NULL);
   assert(cov->vdim2[0] == cov->vdim2[1]);
-  double *z = cov->Sdollar->z,
-    *zsign = cov->Sdollar->z2;
-  if (z == NULL) z = cov->Sdollar->z = (double*) MALLOC(sizeof(double) * vsq);
-  if (zsign == NULL) 
-    zsign = cov->Sdollar->z2 = (double*) MALLOC(sizeof(double) * vsq);
+  ALLOC_EXTRA(z, vsq);
+  ALLOC_EXTRA(zsign, vsq);
   for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
@@ -2333,13 +2285,9 @@ int checkmal(cov_model *cov) {
       }
     }
   }
- if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
+  
+  EXTRA_STORAGE;
+
   return NOERROR;
 }
 
@@ -2356,7 +2304,7 @@ bool Typemal(Types required, cov_model *cov) {
 }
 
 
-int initmal(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+int initmal(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 //  int err;
 //  return err;
   return ERRORFAILED;
@@ -2366,7 +2314,7 @@ int initmal(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = RF_NA;
 }
-void domal(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s){
+void domal(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   BUG;
 }
 
@@ -2417,9 +2365,8 @@ void mppplus(double *x, cov_model *cov, double *v) {
   int i, n,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim;
-  double *z = cov->Sdollar->z;
-  if (z == NULL) z = cov->Sdollar->z =(double*) MALLOC(sizeof(double) * vdimSq);
   cov_model *sub;
+  ALLOC_EXTRA(z, vdimSq);
 
   if (cov->role == ROLE_COV) {  
     for (i=0; i<vdimSq; i++) v[i] = 0.0;
@@ -2451,13 +2398,8 @@ int checkmppplus(cov_model *cov) {
       return ERRORMEMORYALLOCATION;
     cov->qlen = size;
   }
- if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
+
+  EXTRA_STORAGE;
   
   return NOERROR;
 }
@@ -2489,24 +2431,22 @@ int struct_mppplus(cov_model *cov, cov_model **newmodel){
   // Ausnahme: mppplus wird separat behandelt:
   // if (nr == MPPPLUS) return S TRUCT(shape, NULL);
  
-  if (newmodel == NULL) BUG;  
-  if (cov->Splus == NULL) {
-    cov->Splus = (plus_storage*) MALLOC(sizeof(plus_storage));
-    PLUS_NULL(cov->Splus);
-  }
+  ASSERT_NEWMODEL_NOT_NULL;
+  NEW_STORAGE(Splus, PLUS, plus_storage);
+  plus_storage *s = cov->Splus;
 
   for (m=0; m<cov->nsub; m++) {
     cov_model *sub = cov->sub[m];          
-    if (cov->Splus->keys[m] != NULL) COV_DELETE(cov->Splus->keys + m);    
-    if ((err = covcpy(cov->Splus->keys + m, sub)) != NOERROR) return err;
-    if ((err = addShapeFct(cov->Splus->keys + m)) != NOERROR) return err;
-    cov->Splus->keys[m]->calling = cov;
+    if (s->keys[m] != NULL) COV_DELETE(s->keys + m);    
+    if ((err = covcpy(s->keys + m, sub)) != NOERROR) return err;
+    if ((err = addShapeFct(s->keys + m)) != NOERROR) return err;
+    s->keys[m]->calling = cov;
   }
   return NOERROR;
 }
 
 
-int init_mppplus(cov_model *cov, storage *S) {
+int init_mppplus(cov_model *cov, gen_storage *S) {
   cov_model  *sub;
   double M2[MAXMPPVDIM], M2plus[MAXMPPVDIM], Eplus[MAXMPPVDIM], 
     maxheight[MAXMPPVDIM];
@@ -2522,11 +2462,9 @@ int init_mppplus(cov_model *cov, storage *S) {
     maxheight[i] = RF_NEGINF;
     M2[i] = M2plus[i] = Eplus[i] = 0.0;
   }
-  
-  if (cov->Spgs != NULL) PGS_DELETE(&(cov->Spgs));
-  if ((pgs = cov->Spgs = (pgs_storage*) MALLOC(sizeof(pgs_storage))) == NULL) 
-    return ERRORMEMORYALLOCATION;
-  PGS_NULL(pgs);
+    
+  NEW_STORAGE(Spgs, PGS, pgs_storage);
+  pgs = cov->Spgs;
   pgs->totalmass = 0.0;
   
   for (n=0; n<cov->nsub; n++) {
@@ -2598,7 +2536,7 @@ int init_mppplus(cov_model *cov, storage *S) {
   return NOERROR;
 }
 
-void do_mppplus(cov_model *cov, storage *s) {
+void do_mppplus(cov_model *cov, gen_storage *s) {
   cov_model *sub;
   double subselect = UNIFORM_RANDOM;
   int i, subnr,
@@ -2645,8 +2583,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
 
   switch (cov->role) {
   case ROLE_GAUSS :
-    if (newmodel != NULL) 
-      SERR1("unexpected call to structure of '%s'", NICK(cov));
+    ASSERT_NEWMODEL_NULL;
     if (cov->key != NULL) COV_DELETE(&(cov->key));
 
     if (cov->prevloc->distances) 
@@ -2659,8 +2596,9 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
       
       location_type *loc = Loc(cov);
       dim = loc->timespacedim;
-      int i,
-	bytes = dim * sizeof(double),
+      int 
+	bytes = dim * sizeof(double);
+      long i,
 	total = loc->totalpoints;
       if (dim != Aniso->vdim2[0]) BUG;
       double *v = NULL,
@@ -2715,7 +2653,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
 
 
 
-int initSproc(cov_model *cov, storage *s){
+int initSproc(cov_model *cov, gen_storage *s){
   // am liebsten wuerde ich hier die Koordinaten transformieren;
   // zu grosser Nachteil ist dass GetDiameter nach trafo 
   // grid def nicht mehr ausnutzen kann -- umgehbar?!
@@ -2752,9 +2690,7 @@ int initSproc(cov_model *cov, storage *s){
     cov->rf = (res_type*) MALLOC(sizeof(res_type) *
 				 cov->vdim2[0] * 
 				 prevloc->totalpoints);
-    if (cov->Sdollar != NULL) DOLLAR_DELETE(&(cov->Sdollar));
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
+    DOLLAR_STORAGE;
  
     int d,
       *proj = PINT(DPROJ),
@@ -2807,7 +2743,7 @@ int initSproc(cov_model *cov, storage *s){
 }
 
 
-void doSproc(cov_model *cov, storage *s){
+void doSproc(cov_model *cov, gen_storage *s){
 
   if (hasMaxStableRole(cov) || hasPoissonRole(cov)) {
     cov_model *next = cov->sub[DOLLAR_SUB];
@@ -2954,46 +2890,42 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
   case ROLE_GAUSS : 
     {
       location_type *loc = Loc(cov);
-      
-      if (cov->Splus == NULL) {
-	cov->Splus = (plus_storage*) MALLOC(sizeof(plus_storage));
-	PLUS_NULL(cov->Splus);
-      }
-      
+      NEW_STORAGE(Splus, PLUS, plus_storage);
+      plus_storage *s =cov->Splus;
       for (m=0; m<cov->nsub; m++) {
 
 	cov_model *sub = cov->sub[m];
 
-	if (cov->Splus->keys[m] != NULL) COV_DELETE(cov->Splus->keys + m);
-	if ((err =  covcpy(cov->Splus->keys + m, sub)) != NOERROR) {
+	if (s->keys[m] != NULL) COV_DELETE(s->keys + m);
+	if ((err =  covcpy(s->keys + m, sub)) != NOERROR) {
 	  return err;
 	}
-	assert(cov->Splus->keys[m] != NULL);
-	assert(cov->Splus->keys[m]->calling == cov);
+	assert(s->keys[m] != NULL);
+	assert(s->keys[m]->calling == cov);
 	
 	if (PL >= PL_STRUCTURE) {
 	  LPRINT("plus: trying initialisation of submodel #%d (%s).\n", m+1, 
 		 NICK(sub));
 	}
 	
-	addModel(cov->Splus->keys + m, GAUSSPROC);
-	cov->Splus->keys[m]->calling = cov;
+	addModel(s->keys + m, GAUSSPROC);
+	s->keys[m]->calling = cov;
 	//	cov_model *fst = cov; while (fst->calling != NULL) fst = fst->calling; 
 
 	//	assert(false);
 
-	err = CHECK(cov->Splus->keys[m], loc->timespacedim, loc->timespacedim,
+	err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
 		    ProcessType, XONLY, CARTESIAN_COORD, cov->vdim2, ROLE_GAUSS);
 	if (err != NOERROR) {
 	  //	  
 	  return err;
 	}
-	//APMI(cov->Splus->keys[m]);
+	//APMI(s->keys[m]);
 	
-	//if (m==1) APMI(cov->Splus->keys[m]);
-	if ((cov->Splus->struct_err[m] =
-	     err = STRUCT(cov->Splus->keys[m], NULL))  > NOERROR) {
-	  //	PMI(cov->Splus->keys[m]);
+	//if (m==1) APMI(s->keys[m]);
+	if ((s->struct_err[m] =
+	     err = STRUCT(s->keys[m], NULL))  > NOERROR) {
+	  //	PMI(s->keys[m]);
 	  //	assert(false);
 	  //printf("end plus\n");
 	  //	  	  AERR(err);
@@ -3002,7 +2934,7 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
 	//AERR(err);
 	
 	//     printf("structplusmal %d %d\n", m, cov->nsub);
-	// PMI(cov->Splus->keys[m]);
+	// PMI(s->keys[m]);
       }
   
     
@@ -3030,7 +2962,7 @@ int structmultproc(cov_model *cov, cov_model **newmodel){
   return structplusmalproc(cov, newmodel);
 }
 
-int initplusmalproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+int initplusmalproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int i, err,
     vdim = cov->vdim2[0];
  assert(cov->vdim2[0] == cov->vdim2[1]);
@@ -3045,7 +2977,7 @@ int initplusmalproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
       //printf("i=%d\n", i);
       cov_model *sub = cov->Splus == NULL ? cov->sub[i] : cov->Splus->keys[i];
       assert(cov->sub[i]->stor==NULL);
-      cov->sub[i]->stor = (storage *) MALLOC(sizeof(storage));
+      cov->sub[i]->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
       if ((err = INIT(sub, 0, cov->sub[i]->stor)) != NOERROR) {
 	return err;
       }
@@ -3065,7 +2997,7 @@ int initplusmalproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 }
 
  
-int initplusproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+int initplusproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int err;
   if ((err = initplusmalproc(cov, s)) != NOERROR) return err;
 
@@ -3085,7 +3017,7 @@ int initplusproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 }
 
 
-void doplusproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+void doplusproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int m, i,
     total = cov->prevloc->totalpoints * cov->vdim2[0];
   double *res = cov->rf;
@@ -3120,7 +3052,7 @@ int checkmultproc(cov_model *cov) {
 }
 
 
-int initmultproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+int initmultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int  err;
 
   if ((err = initplusmalproc(cov, s)) != NOERROR) {
@@ -3142,7 +3074,7 @@ int initmultproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 
 
 
-void domultproc(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int m, i,
     total = cov->prevloc->totalpoints * cov->vdim2[0];
   double *res = cov->rf;
@@ -3194,13 +3126,13 @@ void logPowSstat(double *x, cov_model *cov, double *v, double *sign){
     var = P0(POWVAR),
     scale =P0(POWSCALE), 
     p = P0(POWPOWER),
-    *z = cov->Sdollar->z,
     invscale = 1.0 / scale;
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim *vdim,
     xdimown = cov->xdimown;
- assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim2[0] == cov->vdim2[1]);
+  ALLOC_DOLLAR(z, xdimown);
 
   // if (cov->calling->nr != RECTANGULAR)
   //   printf("%s\n",  NICK((cov->calling->calling->sub[PGS_LOC])));
@@ -3208,8 +3140,6 @@ void logPowSstat(double *x, cov_model *cov, double *v, double *sign){
   //	 (cov->calling->calling->sub[PGS_LOC]->nr == LOC &&
   //	  scale == PARAM0(cov->calling->calling->sub[PGS_LOC], LOC_SCALE)));
 
-  if (z == NULL) 
-    z = cov->Sdollar->z =(double*) MALLOC(xdimown * sizeof(double)); 
   for (i=0; i < xdimown; i++) z[i] = invscale * x[i];
   if (sign==NULL) {
     COV(z, next, v);
@@ -3237,19 +3167,13 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
     var = P0(POWVAR),
     scale =P0(POWSCALE), 
     p = P0(POWPOWER),
-    *z1 = cov->Sdollar->z,
-    *z2 = cov->Sdollar->z2,
-    invscale = 1.0 / scale;
+     invscale = 1.0 / scale;
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim,
     xdimown = cov->xdimown;
   assert(cov->vdim2[0] == cov->vdim2[1]);
- 
-  if (z1 == NULL) 
-    z1 = cov->Sdollar->z = (double*) MALLOC(xdimown * sizeof(double));
-  if (z2 == NULL) 
-    z2 = cov->Sdollar->z2 = (double*) MALLOC(xdimown * sizeof(double));
+  ALLOC_DOLLARY(z1, z2, xdimown);
 
   for (i=0; i<xdimown; i++) {
     z1[i] = invscale * x[i];
@@ -3338,13 +3262,7 @@ int checkPowS(cov_model *cov) {
   setbackward(cov, next);
   if ((err = TaylorPowS(cov)) != NOERROR) return err;
 
-  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  }
-  assert(cov->Sdollar->z == NULL);
+  DOLLAR_STORAGE;
   
   return NOERROR;
 }
@@ -3445,7 +3363,7 @@ int structPowS(cov_model *cov, cov_model **newmodel) {
 
 
 
-int initPowS(cov_model *cov, storage *s){
+int initPowS(cov_model *cov, gen_storage *s){
   // am liebsten wuerde ich hier die Koordinaten transformieren;
   // zu grosser Nachteil ist dass GetDiameter nach trafo 
   // grid def nicht mehr ausnutzen kann -- umgehbar?!
@@ -3591,7 +3509,7 @@ int initPowS(cov_model *cov, storage *s){
 }
 
 
-void doPowS(cov_model *cov, storage *s){
+void doPowS(cov_model *cov, gen_storage *s){
  
   if (hasAnyShapeRole(cov)) {
     cov_model *next = cov->sub[POW_SUB];

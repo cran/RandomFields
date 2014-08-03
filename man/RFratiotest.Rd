@@ -120,9 +120,7 @@ distances = NULL, dim, transform = NULL, ...)
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
 RFoptions(modus_operandi="sloppy")
-}}
 
 \dontrun{
 % library(RandomFields, lib="~/TMP");  source("RandomFields/private/source.R")
@@ -147,9 +145,7 @@ test <- RFratiotest(submodel, model, data=soil["moisture"], n=20)
 str(test)
 }
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
-RFoptions(modus_operandi="normal")
-}}
+\dontshow{RFoptions(modus_operandi="normal")}
 
 \dontshow{FinalizeExample()}
 

@@ -162,9 +162,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
+
 RFoptions(modus_operandi="sloppy")
-}}
+
 
 n <- if (interactive()) 100 else 5
 
@@ -255,10 +255,7 @@ Print(v6$ml, v6$ml$ml.value)
 
 
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
-RFoptions(modus_operandi="normal")
-}}
-
+\dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}
 
 }

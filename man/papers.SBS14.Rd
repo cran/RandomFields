@@ -24,10 +24,11 @@ among max-stable processes
 }
 
 \examples{
-\dontrun{
+
+\dontshow{\dontrun{
+\donttest{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{if (!.C("isAuthor", a=integer(1))$a) {}}
 %  library(RandomFields, lib="~/TMP")
 
 H <- c(0:9, LETTERS[1:6])
@@ -48,67 +49,94 @@ bm <- RMbrownresnick(model)
 # Fig. 2, Brown-Resnick
 z1 <- RFsimulate(RPbrownresnick(model), x, x)
 plot(z1, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_BRorig.pdf");  dev.print(device=jpeg,
-file="SBS_BRorig.jpg", height=1000, width=1000, quality=100)}}
+file="SBS_BRorig.jpg", height=1000, width=1000, quality=100)
+}}
 
 
+
+\dontshow{\dontrun{
+\donttest{
 # Fig. 2, Monotone functions
 z2 <- RFsimulate(RPsmith(RMm2r(bm), xi=0), x, x, 0)
 plot(z2, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_mono.pdf"); dev.print(device=jpeg,
-file="SBS_mono.jpg", height=1000, width=1000, quality=100)}}
+file="SBS_mono.jpg", height=1000, width=1000, quality=100)
+}}
 
 
+\dontshow{\dontrun{
+\donttest{
 # Fig. 2, balls
 z3 <- RFsimulate(RPsmith(RMm3b(bm)), x, x, 0, eps_zhou=0.1)
 plot(z3, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+\dontshow{\dontrun{
   dev.copy2pdf(file="SBS_ball.pdf"); dev.print(device=jpeg,
-file="SBS_ball.jpg", height=1000, width=1000, quality=100)}}
+file="SBS_ball.jpg", height=1000, width=1000, quality=100)
+}}
 
-
+\dontshow{\dontrun{
+\donttest{
 # Fig. 2,
 z4 <- RFsimulate(RPsmith(RMmps(bm)), x, x, eps_zhou=0.1)
 plot(z4, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_poly.pdf"); dev.print(device=jpeg,
-file="SBS_poly.jpg", height=1000, width=1000, quality=100)}}
+file="SBS_poly.jpg", height=1000, width=1000, quality=100)
+}}
 
 
+\dontshow{\dontrun{
+\donttest{
 ## Figure 4
 model <- RMexp(var=1.62) 
 bm <- RMbrownresnick(model)
+}}}
 
-
+\dontshow{\dontrun{
+\donttest{
 # Fig. 4, Brown-Resnick
 z5 <- RFsimulate(RPbrownresnick(model), x, x)
 plot(z5, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_BRexp.pdf"); dev.print(device=jpeg,
-file="SBS_BRexp.jpg", height=1000, width=1000, quality=100)}}
+file="SBS_BRexp.jpg", height=1000, width=1000, quality=100)
+}}
 
 
+\dontshow{\dontrun{
+\donttest{
 # Fig. 4, extremal Gaussian
 z6 <- RFsimulate(RPschlather(bm), x, x)
 plot(z6, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_schlather.pdf");
 dev.print(device=jpeg, file="SBS_schlather.jpg",
-height=1000, width=1000, quality=100)}}
+height=1000, width=1000, quality=100)
+}}
 
 
+\dontshow{\dontrun{
+\donttest{
 # Fig. 4, extremal binary 
 z7 <- RFsimulate(RPschlather(RPbernoulli(bm)), x, x)
 plot(z7, col=col)
-\dontshow{if (.C("isAuthor", a=integer(1))$a && interactive()) {
+}}}
+\dontshow{\dontrun{
 dev.copy2pdf(file="SBS_binary.pdf");
 dev.print(device=jpeg, file="SBS_binary.jpg",
-height=1000, width=1000, quality=100)}}
-
-}
-
+height=1000, width=1000, quality=100)
+}}
 
 
 

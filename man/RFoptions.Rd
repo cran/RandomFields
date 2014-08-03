@@ -1854,7 +1854,7 @@ for (exactness in c(NA, FALSE, TRUE)) {
   readline(paste("\n\nexactness: `", exactness, "'; press return"))
   z <- RFsimulate(model, x, x, grid=TRUE, exactness=exactness,
                   stationary_only=NA, storing=TRUE)
-  Print(RFgetModelInfo(which="keys")$key$name)
+  print(RFgetModelInfo(which="internal")$internal$name)
 }
 
 
@@ -1951,7 +1951,7 @@ par(mar=mar)
 image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
         border="red", lwd=3)
-tbm.points <- RFgetModelInfo(RFsimulate)$loc$totpts
+tbm.points <- RFgetModelInfo(RFsimulate)kkey$loc$totpts
 Print(tbm.points, empty.lines=0) # number of points on the line
 }}
 

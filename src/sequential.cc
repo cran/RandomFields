@@ -93,7 +93,7 @@ void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
 // start mit S_22; dann nur zeilenweise + Einschwingen
 
-int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
+int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   cov_model *next = cov->sub[0];
   // cov_fct *C=CovList + next->gatternr;
   // covfct cf = C->cov;
@@ -113,13 +113,13 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
     dim=cov->tsdim,
     spatialdim = dim - 1,
     vdim = next->vdim2[0],
-    spatialpnts = loc->totalpoints / loc->length[spatialdim],
     max = P0INT(SEQU_MAX),
     back= P0INT(SEQU_BACK), 
     initial= P0INT(SEQU_INIT);
   assert(next->vdim2[0] == next->vdim2[1]);
   sequential_storage* S = NULL;
-  long totpntsSQ, i, spatialpntsSQback,
+  long totpntsSQ, i, spatialpntsSQback, 
+    spatialpnts = loc->totalpoints / loc->length[spatialdim],
     err=NOERROR,
     totpnts = back * spatialpnts, 
     spatialpntsSQ=spatialpnts * spatialpnts;
@@ -151,8 +151,8 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   }
 
   if (totpnts > max) {
-    sprintf(ERRORSTRING_OK, "number of points larger than 'max' (%d)", max);
-    sprintf(ERRORSTRING_WRONG,"%d * %d = %ld", back, spatialpnts, totpnts);
+    sprintf(ERRORSTRING_OK, "number of points less than 'max' (%d)", max);
+    sprintf(ERRORSTRING_WRONG,"%d * %ld = %ld", back, spatialpnts, totpnts);
     err=ERRORCOVFAILED; goto ErrorHandling;
   }
 
@@ -162,10 +162,7 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
 
   if (initial < 0) initial = back - initial;
    
-  if (cov->Sseq != NULL) free(cov->Sseq);
-  if ((cov->Sseq = (sequential_storage*) MALLOC(sizeof(sequential_storage))) 
-       == NULL ||
-      (U22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
+  if ((U22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (Inv22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (COV21 = (double *) MALLOC(sizeof(double) * spatialpntsSQback))==NULL ||
       (U11 = (double *) MALLOC(sizeof(double) * spatialpntsSQ))==NULL ||
@@ -176,9 +173,8 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }
+  NEW_STORAGE(Sseq, SEQU, sequential_storage);
   S = cov->Sseq;
-  SEQU_NULL(S);
-  S->res0 = NULL;
 
   if (loc->length[spatialdim] <= back) {
     GERR("the grid in the last direction is too small; use method `direct' instead of `sequential'");
@@ -199,8 +195,8 @@ int init_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s){
   /* ********************* */
   /* matrix creation part  */
   /* ********************* */
-  long j, k, segment;
-  int  row, f77err, k0, k1, k2;
+  long j, k, k0, k1, k2, segment;
+  int  row, f77err;
   double *y;
   y = (double*) MALLOC(loc->timespacedim * sizeof(double));
 
@@ -497,7 +493,7 @@ void sequentialpart(res_type *res, long totpnts, int spatialpnts, int ntime,
 }
 
 
-void do_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) 
+void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) 
 {  
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
@@ -547,7 +543,7 @@ void do_sequential(cov_model *cov, storage VARIABLE_IS_NOT_USED *s)
 		 U11, MuT, G);
 
   if (loggauss) {
-    int vdimtot = loc->totalpoints * cov->vdim2[0];
+    long vdimtot = loc->totalpoints * cov->vdim2[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 

@@ -8,7 +8,7 @@ void arcsqrtP(double *x, cov_model *cov, double *v);
 void arcsqrtQ(double *x, cov_model *cov, double *v);
 void arcsqrtR(double *x, cov_model *cov, double *v);
 int check_arcsqrt_distr(cov_model *cov);
-int init_arcsqrt(cov_model *cov, storage VARIABLE_IS_NOT_USED *s);
+int init_arcsqrt(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
 void do_arcsqrt(cov_model *cov, double *v);
 void range_arcsqrt(cov_model *cov, range_type* range);
 
@@ -23,7 +23,7 @@ void determR(double *x, cov_model *cov, double *v);
 void determR2sided(double *x, double *y, cov_model *cov, double *v);
 void kappa_determ(int i, cov_model *cov, int *nr, int *nc);
 int check_determ(cov_model *cov);
-int init_determ(cov_model *cov, storage *s);
+int init_determ(cov_model *cov, gen_storage *s);
 void do_determ(cov_model *cov, double *);
 void range_determ(cov_model *cov, range_type *range);
 
@@ -37,7 +37,7 @@ void distrQ(double *x, cov_model *cov, double *v);
 void distrR(double *x, cov_model *cov, double *v);
 void distrR2sided(double *x, double *y, cov_model *cov, double *v);
 int check_distr(cov_model *cov);
-int init_distr(cov_model *cov, storage *s);
+int init_distr(cov_model *cov, gen_storage *s);
 void do_distr_do(cov_model *cov, double *);
 void range_distr(cov_model *cov, range_type *range);
 
@@ -50,7 +50,7 @@ void sphericP(double *x, cov_model *cov, double *v);
 void sphericQ(double *x, cov_model *cov, double *v);
 void sphericR(double *x, cov_model *cov, double *v);
 int check_RRspheric(cov_model *cov);
-int init_RRspheric(cov_model *cov, storage *s);
+int init_RRspheric(cov_model *cov, gen_storage *s);
 void do_RRspheric(cov_model *cov, double *);
 void range_RRspheric(cov_model *cov, range_type *range);
 
@@ -65,7 +65,7 @@ void gaussR(double *x, cov_model *cov, double *v);
 void gaussR2sided(double *x, double *y, cov_model *cov, double *v);
 void kappa_gauss_distr(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc);
 int check_gauss_distr(cov_model *cov);
-int init_gauss_distr(cov_model *cov, storage *s);
+int init_gauss_distr(cov_model *cov, gen_storage *s);
 void do_gauss_distr(cov_model *cov, double *v);
 void range_gauss_distr(cov_model *cov, range_type *range);
 
@@ -80,7 +80,7 @@ void locR(double *x, cov_model *cov, double *v);
 void locR2sided(double *x, double *y, cov_model *cov, double *v);
 void kappa_loc(int i, cov_model *cov, int *nr, int *nc);
 int check_loc(cov_model *cov);
-int init_loc(cov_model *cov, storage *s);
+int init_loc(cov_model *cov, gen_storage *s);
 void do_loc(cov_model *cov, double *v);
 void range_loc(cov_model *cov, range_type *range);
 
@@ -95,7 +95,7 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v);
 //void kappa_rectangular(int i, cov_model *cov, int *nr, int *nc);
 int check_rectangular(cov_model *cov);
 void do_rectangular(cov_model *cov, double *v);
-int init_rectangular(cov_model *cov, storage *s);
+int init_rectangular(cov_model *cov, gen_storage *s);
 void range_rectangular(cov_model *cov, range_type *range);
 
 
@@ -109,7 +109,7 @@ void setParamR(double *x, cov_model *cov, double *v);
 void setParamR2sided(double *x, double *y, cov_model *cov, double *v);   
 int check_setParam(cov_model *cov);
 void range_setParam(cov_model *cov, range_type *range);
-int init_setParam(cov_model *cov, storage *s);
+int init_setParam(cov_model *cov, gen_storage *s);
 void do_setParam(cov_model *cov, double *v);
 
 
@@ -126,7 +126,7 @@ void unifR2sided(double *x, double *y, cov_model *cov, double *v);
 void kappa_unif(int i, cov_model *cov, int *nr, int *nc);
 int check_unif(cov_model *cov);
 void do_unif(cov_model *cov, double *v);
-int init_unif(cov_model *cov, storage *s);
+int init_unif(cov_model *cov, gen_storage *s);
 void range_unif(cov_model *cov, range_type *range);
 
 #endif /* Families_H*/

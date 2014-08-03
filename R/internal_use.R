@@ -14,7 +14,7 @@ search.model.name <- function(cov, name, level) {
     found <- search.model.name(cov$submodels[[i]], name, 1)
     if (!is.null(found)) return(found)      
   }
-  found <- search.model.name(cov$key, name, 1)
+  found <- search.model.name(cov$internal, name, 1)
   if (!is.null(found)) return(found)
   if (level == 0) stop("model name not found")
   return(NULL)
@@ -230,37 +230,6 @@ resolve.register <- function(register){
   stopifnot(is.numeric(register))
   if (register < 0) stop("'register' does not have a non-negative value.")
   return(register)
-}
-
-RFgetModelInfo <-
-  function(register, level=3, 
-           spConform=RFoptions()$general$spConform,
-           which.submodels = c("submodels", "keys", "both"),
-           modelname=NULL) {  
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register)) register else
-                               deparse(substitute(register)))
-  which.submodels <- match.arg(which.submodels)
-  ## positive values refer the covariance models in the registers
-  ##define MODEL_USER : 0  /* for user call of Covariance etc. */
-  ##define MODEL_SIMU : 1  /* for GaussRF etc */ 
-  ##define MODEL_INTERN  : 2 /* for kriging, etc; internal call of covariance */
-  ##define MODEL_MLE  : 3
-  ##define MODEL_BOUNDS  4 : - /* MLE, lower, upper */
-  ## level + 10: auch die call fctn !
-  ## [ in RF.h we have the modulus minus 1 ]
-  
-  cov <- .Call("GetExtModelInfo", as.integer(register), as.integer(level),
-               as.integer(spConform),
-               as.integer(if (which.submodels=="submodels") 0 else
-                          1 + (which.submodels=="both")),
-               PACKAGE="RandomFields")
-
-  if (!is.null(modelname)) {
-    cov <- search.model.name(cov, modelname, 0)
-  }
-
-  return(cov)
 }
 
 

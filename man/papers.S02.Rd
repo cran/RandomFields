@@ -29,11 +29,12 @@ RFoptions(seed=0, xi=1)
 x <- seq(0, 10, length=if (interactive()) 128  else 4)
 
 # Fig. 1-4
-plot(RFsimulate(RPsmith(RMgauss(s=1.5)), x, x))   # < 1 sec
-\dontrun{plot(RFsimulate(RPsmith(RMball(s=RRspheric(2, 3, R=3.3))), x, x))} # 30  sec
+\dontrun{\dontshow{plot(RFsimulate(RPsmith(RMgauss(s=1.5)), x, x))   # < 1 sec
+plot(RFsimulate(RPsmith(RMball(s=RRspheric(2, 3,
+R=3.3))), x, x)) # 30  sec
 plot(RFsimulate(RPschlather(RMexp()), x, x))      #   1 sec
 plot(RFsimulate(RPschlather(RMgauss()), x, x))    #  17 sec
-
+}}
 
 \dontshow{FinalizeExample()}
 }

@@ -594,7 +594,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
     }
   } else {
     if (krige.meth.nr==0) {
-      info <- RFgetModelInfo(reg)
+      info <- RFgetModelInfo(reg, level=3)
       abbr <- if (isNegDef(info$type) && !isPosDef(info$type)) "I" else "S"
       krige.meth.nr <- pmatch(abbr, krige.methlist) - 1
     }
@@ -1133,7 +1133,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         xgr[is.na(xgr)] <- 0
         gridTopology <- GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
       } else {
-        info <- RFgetModelInfo(reg)
+        info <- RFgetModelInfo(reg, level=3)
         prep <- prepare4RFspDataFrame(model, info, x, y, z, T,
                                       all$grid, data, RFopt)
         attributes(Res)$variab.names <- prep$names$variab.names

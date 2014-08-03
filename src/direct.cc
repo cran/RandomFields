@@ -97,7 +97,7 @@ void range_direct(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
 }
 
 
-int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
+int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   cov_model *next = cov->sub[0];
   double //*xx,
     svdtol = P0(DIRECT_SVDTOL), 
@@ -134,8 +134,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
 
   if ((err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR) return err;
 
-  if (cov->Sdirect != NULL) DIRECT_DELETE(&cov->Sdirect);
-  if (vdimtot > maxvariab) {
+   if (vdimtot > maxvariab) {
     sprintf(ERRORSTRING_OK, 
 	    "number of columns less than or equal to %d", maxvariab);
     sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
@@ -143,25 +142,18 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     goto ErrorHandling;
   }
    
-  if (cov->Sdirect != NULL) free(cov->Sdirect);
-  cov->Sdirect = NULL;
-  
- 
   //printf("vdim = %d %d %d %d\n", vdim, locpts, vdimtot, vdimSqtotSq); 
   //  PMI(cov);
 
   if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
       (U =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
    //for SVD/Chol intermediate r esults AND  memory space for do_directGauss:
-      (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL ||
-      (cov->Sdirect = (direct_storage*) MALLOC(sizeof(direct_storage)))==NULL) {
+      (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }  
+  NEW_STORAGE(Sdirect, DIRECT, direct_storage);
   s = cov->Sdirect;
-  DIRECT_NULL(s);
-  s->U = s->G = NULL;
-
 
   /* ********************* */
   /* matrix creation part  */
@@ -171,7 +163,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   assert(R_FINITE(Cov[0]));
  
   if (false) {
-    int i,j;
+    long i,j;
     PRINTF("\n");
     for (i=0; i<locpts * vdim; i++) {
        for (j=0; j<locpts * vdim; j++) {
@@ -185,7 +177,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   
   if (!isPosDef(next)) {
     if (isNegDef(next)) {
-      int i, j, v;
+      long i, j, v;
       double min,
 	*C = Cov;
       min = RF_INF;
@@ -205,7 +197,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   }
 
   if (false) {
-    int i,j,
+    long i,j,
       endfor = locpts * vdim
       // endfor = 40
       ;
@@ -245,7 +237,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       double *sq  = (double *) MALLOC(sizeof(double) * vdimtot * vdimtot);
       AtA(U, vdimtot, vdimtot, sq);
       
-      int i,j;
+      long i,j;
       PRINTF("AtA \n");
       for (i=0; i<locpts * vdim; i++) {
 	for (j=0; j<locpts * vdim; j++) {
@@ -381,7 +373,7 @@ int init_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
   return err;
 }
 
-void do_directGauss(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {  
+void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {  
   location_type *loc = Loc(cov);
   direct_storage *s = cov->Sdirect;
   long i, j, k,

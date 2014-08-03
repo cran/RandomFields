@@ -10,11 +10,11 @@
  of a random field and the calculation of covariance functions
 }
 \usage{
-RFgetModel(register, explicite.natscale, show.call=FALSE) 
+RFgetModel(register, explicite.natscale, show.call=FALSE)
 
 RFgetModelInfo(register, level = 3,
                spConform = RFoptions()$general$spConform,
-               which.submodels = c("submodels", "keys", "both"),
+               which.submodels = c("user", "internal", "both"),
                modelname = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -35,10 +35,10 @@ RFgetModelInfo(register, level = 3,
    is shown as interpreted. If \code{TRUE} then the user's input
    including the calling function is returned. See example below.
  }
- \item{level}{integer [0..9]; level of details, i.e. the higher the
- number the more details are given.
- If \code{level >= 10} then the leading internal model is also given
- (which is, in general, not of interest by the user).
+ \item{level}{integer [0..5]; level of details, i.e. the higher the
+   number the more details are given. 
+   If \code{level >= 10} then the leading internal model is also given
+   (which is, in general, not of interest by the user).
  }
 
 % \item{max.elements}{integer; since \command{\link{RFgetModelInfo}}
@@ -53,8 +53,8 @@ RFgetModelInfo(register, level = 3,
  }
  \item{which.submodels}{
    Internally, the sub-models are represented in two different ways
-   \sQuote{keys} and \sQuote{submodels}. The latter is very close to
-   want the model defined the user.
+   \sQuote{internal} and \sQuote{user}. The latter is very close to
+   the model defined by the user.
  }
  \item{modelname}{ string. If \code{modelname} is given then
  it returns the first appearance of the
@@ -114,15 +114,12 @@ RFgetModelInfo(register, level = 3,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
-RFsimulate(model, 1:4, grid=TRUE, storing=TRUE)
-str(RFgetModelInfo(RFsimulate), list.len=5, max.level=5)
+z <- RFsimulate(model, 1:4, grid=TRUE, storing=TRUE)
+RFgetModelInfo(RFsimulate, level=1)
 
-### finally, a register that could not be successfully initialised
-##try(RFsimulate(Circulant(model), runif(4), grid=FALSE, storing=TRUE))
-##if (interactive()) Print(RFgetModelInfo(RFsimulate, TRUE))
 
-str(RFgetModel(RFsimulate, show.call=FALSE))
-str(RFgetModel(RFsimulate, show.call=TRUE))
+RFgetModel(RFsimulate, show.call=FALSE)
+RFgetModel(RFsimulate, show.call=TRUE)
 \dontshow{FinalizeExample()}
 
 }

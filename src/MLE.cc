@@ -985,7 +985,7 @@ void PutValuesAtNAintern(int *reg, double *values, bool init){
     NAs = MEM_NAS[*reg];
   cov_fct *C = NULL;
   cov_model *cov = NULL;
-  storage s;
+  gen_storage s;
   STORAGE_NULL(&s);
   s.check = false;
   // set ordinary parameters for all (sub)models

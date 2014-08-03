@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
  
 
-void metropolis(cov_model *cov, storage *S, double *x) {
+void metropolis(cov_model *cov, gen_storage *S, double *x) {
   spec_properties *s = &(S->spec);
   spectral_density density = s->density;
   int i,d, dim = cov->tsdim,
@@ -63,7 +63,7 @@ void metropolis(cov_model *cov, storage *S, double *x) {
 #define Factor 1.5
 #define nBase2 150000
 
-int search_metropolis(cov_model *cov, storage *S) {
+int search_metropolis(cov_model *cov, gen_storage *S) {
   spec_properties *s = &(S->spec);
   double Sigma[maxSearch], x[MAXTBMSPDIM], oldx[MAXTBMSPDIM], log_s, p,
     prop_factor = S->Sspectral.prop_factor,

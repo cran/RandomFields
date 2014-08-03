@@ -48,8 +48,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PGS_3D_EDGE3 PGS_SIDES + 5
 
 
-int addUnifModel(cov_model VARIABLE_IS_NOT_USED *cov, double radius, cov_model **newmodel) {
-  addModel(newmodel, UNIF);
+int addUnifModel(cov_model *cov, double radius, cov_model **newmodel) {
+  addModel(newmodel, UNIF, cov);
   kdefault(*newmodel, UNIF_MIN, -radius);
   kdefault(*newmodel, UNIF_MAX, radius);
   return NOERROR;
@@ -166,7 +166,7 @@ int struct_pts_given_shape(cov_model *cov, cov_model **newmodel){
   //  location_type *loc = Loc(cov);
   int err = NOERROR;
 
-  if (newmodel != NULL) BUG;
+  ASSERT_NEWMODEL_NULL;
   if (cov->Spgs != NULL)  PGS_DELETE(&(cov->Spgs));
 
   if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
@@ -235,8 +235,6 @@ int calculate_mass_gauss(cov_model *cov) {
   cov_model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   double zx, zy, 
-    //   *single = pgs->single,   // out
-    //  *total = pgs->total,     // out
     **xgr = pgs->xgr, // out
     *v = pgs->v,             // dummy
     *x = pgs->x,             // dummy  
@@ -497,12 +495,9 @@ int complete_copy(cov_model **newmodel, cov_model *cov) {
 		      prev->domprev, prev->isoprev, prev->vdim2, role)) 
 	!= NOERROR) return err;  
  
-    assert((*newmodel)->stor == NULL);
-    (*newmodel)->stor = (storage *) MALLOC(sizeof(storage)); 
-    STORAGE_NULL((*newmodel)->stor);
-    
-    //APMI(*newmodel);
-    if ((err = INIT(*newmodel, 0, (*newmodel)->stor)) != NOERROR) {
+    NEW_COV_STORAGE(*newmodel, stor, STORAGE, gen_storage);
+   //APMI(*newmodel);
+    if ((err = INIT(*newmodel, 0, cov->stor)) != NOERROR) {
       //APMI(cov); // !!! ?? hier weitermachen
       return err; 
     }
@@ -515,7 +510,7 @@ int complete_copy(cov_model **newmodel, cov_model *cov) {
   return NOERROR;
 }
 
-int init_pts_given_shape(cov_model *cov, storage *S) {  
+int init_pts_given_shape(cov_model *cov, gen_storage *S) {  
   cov_model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   cov_fct *Cshape = CovList + shape->nr;
@@ -724,13 +719,14 @@ int DrawCathegory(int size, double *single,
 }
 
 static double gauss_eps = 1e-10;
-void do_pgs_gauss(cov_model *cov, storage *S) {
+void do_pgs_gauss(cov_model *cov, gen_storage *S) {
   pgs_storage *pgs = cov->Spgs;
   cov_model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
   location_type *loc = Loc(cov);
   //  window_info *w = &(S->window);
-  int i, d, 
+  long i;
+  int d, 
     *min = pgs->min, // dummy
     *max = pgs->max, // dummy
     *pos = pgs->pos, // dummy
@@ -831,7 +827,8 @@ void do_pgs_gauss(cov_model *cov, storage *S) {
     for (d=0; d<dim; d++) cov->q[d] = v[d] + xx[d];
     // todo : mit Unterteilung des Feldes viel schneller
     xx = loc->x;
-    for (i=0; i<loc->totalpoints; i++, xx+=dim) {
+    long endfor = loc->totalpoints;
+    for (i=0; i<endfor; i++, xx+=dim) {
       for (d=0; d<dim; d++) y[d] = cov->q[d] - xx[d];
       VTLG_D(y, pts, &value);
       total += value;
@@ -870,7 +867,7 @@ void do_pgs_gauss(cov_model *cov, storage *S) {
 
  
 //static double sumArea = 0.0;
-void do_pgs_maxstable(cov_model *cov, storage *S) {
+void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
   pgs_storage *pgs = NULL;
   cov_model *shape = NULL,
     *pts = NULL;
@@ -1027,8 +1024,8 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
     // frage: lohnt sich 'flat=TRUE' ueberhaupt noch hinsichtlich Aufwand
     //        und Rechenzeitersparnis?
     // Bsp das nicht funktioniert fuer flat=FLAT_UNDETERMINED
-    //    x <- seq(1, 10, 0.01)
-    //      z <- RFsimulate(RPsmith(RMgauss(), xi=0), x, x, grid=T, print=20)
+    //    x _ seq(1, 10, 0.01)
+    //      z _ RFsimulate(RPsmith(RMgauss(), xi=0), x, x, grid=T, print=20)
     //      Print(exp(-exp(range(-z[[1]]))))
     //      plot(z); X11(); hist(z[[1]], freq=FALSE, 50)
     //			curve(exp(-x-2) * exp(-exp(-x-2)), -5, 2, add=TRUE)
@@ -1125,7 +1122,7 @@ void do_pgs_maxstable(cov_model *cov, storage *S) {
 
 
 
-void do_pts_given_shape(cov_model *cov, storage *S) {
+void do_pts_given_shape(cov_model *cov, gen_storage *S) {
   // muss zu allerst stehen, da cov sich aendern kann!
   if (cov->role == ROLE_POISSON_GAUSS) {
     do_pgs_gauss(cov, S);
@@ -1324,7 +1321,7 @@ int struct_standard_shape(cov_model *cov, cov_model **newmodel){
 
   // printf("ttt\n");
 
-  if (newmodel != NULL) BUG;
+  ASSERT_NEWMODEL_NULL;
 
 
   if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
@@ -1340,7 +1337,7 @@ int struct_standard_shape(cov_model *cov, cov_model **newmodel){
 }
  
 
-int init_standard_shape(cov_model *cov, storage *S) {  
+int init_standard_shape(cov_model *cov, gen_storage *S) {  
   cov_model *shape = cov->sub[PGS_FCT];
   //  location_type *loc = Loc(cov);
 
@@ -1423,7 +1420,7 @@ int init_standard_shape(cov_model *cov, storage *S) {
 }
 
 
-void do_standard_shape(cov_model *cov, storage *S) {
+void do_standard_shape(cov_model *cov, gen_storage *S) {
   cov_model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC]; 
   assert(cov->sub[PGS_LOC] != NULL);
@@ -1523,8 +1520,7 @@ int struct_stationary_shape(cov_model *cov, cov_model **newmodel){
   cov_model *shape = cov->sub[STAT_SHAPE_FCT];
   //  location_type *loc = Loc(cov);
 
-  if (newmodel != NULL) BUG;
-
+  ASSERT_NEWMODEL_NULL;
 
   if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
     ILLEGAL_ROLE;
@@ -1535,7 +1531,7 @@ int struct_stationary_shape(cov_model *cov, cov_model **newmodel){
 }
 
 
-int init_stationary_shape(cov_model *cov, storage *S) {  
+int init_stationary_shape(cov_model *cov, gen_storage *S) {  
   cov_model *shape = cov->sub[STAT_SHAPE_FCT];
   int d, i,
     err = NOERROR,
@@ -1589,7 +1585,7 @@ int init_stationary_shape(cov_model *cov, storage *S) {
 }
 
 
-void do_stationary_shape(cov_model *cov, storage *S) {
+void do_stationary_shape(cov_model *cov, gen_storage *S) {
   cov_model *shape = cov->sub[STAT_SHAPE_FCT]; 
   DO(shape, S);
   cov->mpp.maxheights[0] = shape->mpp.maxheights[0];

@@ -177,7 +177,7 @@ void covmatrix_mixed(cov_model *cov, double *v) {
   // PMI(cov);
   
   /*
-  int i,j,k, tot=Loc(cov)->totalpoints;
+    long i,j,k, tot=Loc(cov)->totalpoints;
   printf("\nStart mixed C %d  ---- check within comment\n", element); //
   for (k=i=0; i<ncol * ncol; i+=tot) {
      for (j=0; j<ncol; j++) printf("%f ", C[k++]); //
@@ -206,8 +206,9 @@ int set_mixed_constant(cov_model *cov) {
     *sub = next;   
   bool simple = true;
   location_type *loc=Loc(cov);
-  int i,
-    totalpoints = loc->totalpoints,
+  long i,
+    totalpoints = loc->totalpoints;
+  int
     *ncol = cov->ncol,
     *nrow = cov->nrow; 
   listoftype *X = PLIST(MIXED_X);
@@ -237,13 +238,13 @@ int set_mixed_constant(cov_model *cov) {
       constant_size = PARAMLIST(sub, CONSTANT_M)->nrow[i];
       
       if (ncol[MIXED_X] > 0 && X->ncol[i] != constant_size) {
-	SERR5("%dth matrix 'X' (%d x %d) and (%d x %d) constant matrix 'M' do not match", i, X->nrow[i], X->ncol[i], constant_size, constant_size);
+	SERR5("%ldth matrix 'X' (%d x %d) and (%d x %d) constant matrix 'M' do not match", i, X->nrow[i], X->ncol[i], constant_size, constant_size);
       }
     }
   } else {
     for (i=0; i<nrow[MIXED_X]; i++) {
       if (X->nrow[i] != X->ncol[i])
-	SERR3("%dth  matrix is not symmetric (%d x %d)",
+	SERR3("%ldth  matrix is not symmetric (%d x %d)",
 	      i+1, X->nrow[i], X->ncol[i]);
     }
   }
@@ -252,7 +253,7 @@ int set_mixed_constant(cov_model *cov) {
     for (i=0; i<nrow[MIXED_X]; i++) {
       if (X->nrow[i] != totalpoints) {
 	//PMI(cov);
-	SERR3("number of rows of entry %d of 'X' (%d) are different from the number of locations (%d)", i+1, X->nrow[i], totalpoints);
+	SERR3("number of rows of entry %ld of 'X' (%d) are different from the number of locations (%ld)", i+1, X->nrow[i], totalpoints);
       }
     }
   return NOERROR;
@@ -280,8 +281,7 @@ int checkmixed(cov_model *cov) {
   //location_type *loc=Loc(cov);
   int i, err, 
     nkappa = CovList[cov->nr].kappas,
-    //totalpoints = loc->totalpoints,
-    nsub = cov->nsub,
+     nsub = cov->nsub,
     *ncol = cov->ncol,
     *nrow = cov->nrow; // taken[MAX DIM],
   char msg[300];
@@ -386,7 +386,7 @@ int checkmixed(cov_model *cov) {
 }
 
 
-int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
+int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   location_type *loc = Loc(cov);
   mixed_storage *s;
   char errorloc_save[nErrorLoc];
@@ -400,7 +400,8 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     list_element=0,
     err = NOERROR,
     vdim = cov->vdim2[0],
-    dim = coord!=NULL ? cov->ncol[MIXED_COORD] : P0INT(MIXED_DIM),
+    dim = coord!=NULL ? cov->ncol[MIXED_COORD] : P0INT(MIXED_DIM);
+  long
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
 
@@ -421,14 +422,9 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
   sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "init mixed model");
   
   assert(cov->nr = MIXEDEFFECT);
- 
 
-  // submodel exists:
-  if ((cov->Smixed = (mixed_storage*) MALLOC(sizeof(mixed_storage)))==NULL){
-      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }  
+  NEW_STORAGE(Smixed, MIXED, mixed_storage);
   s = cov->Smixed;
-  MIXED_NULL(s);
 
   NotProgrammedYet("");
 
@@ -482,8 +478,8 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
     }
     if (cov->key->nr != GAUSSPROC) addModel(&(cov->key), GAUSSPROC);   
     cov->key->calling = cov->key;
-    cov->stor = (storage *) MALLOC(sizeof(storage));
-    STORAGE_NULL(cov->stor);
+    
+    NEW_STORAGE(stor, STORAGE, gen_storage);
     if ((err = INIT(cov->key, 0, cov->stor)) != NOERROR) goto ErrorHandling;
    
     int Xnrow, Xncol;
@@ -508,13 +504,14 @@ int initmixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S) {
 
 
 static int keeprandomeffect = false;
-void domixed(cov_model *cov, storage  VARIABLE_IS_NOT_USED *S){
+void domixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S){
   location_type *loc = Loc(cov);
   mixed_storage *s = cov->Smixed;
   double *res  = cov->rf;
-  int i,
+  int 
     list_element=0,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim2[0];
+  long i,
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
    assert(cov->vdim2[0] == cov->vdim2[1]);
@@ -755,7 +752,7 @@ void rangetrend(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   
   //P(TREND_POLY]: polydeg / polynomial degree
   range->min[TREND_POLY] = 0;
-  range->max[TREND_POLY] = RF_INF;
+  range->max[TREND_POLY] = MAXINT;
   range->pmin[TREND_POLY] = 0;
   range->pmax[TREND_POLY] = 10;
   range->openmin[TREND_POLY] = false;
@@ -810,7 +807,7 @@ void GetInternalMean(cov_model *cov, int vdim, double *mean){
   GetInternalMeanI(cov, vdim, mean);
 }
 
-int init_trend(cov_model *cov, storage *S) {
+int init_trend(cov_model *cov, gen_storage *S) {
   
   long err = NOERROR;
   trend_storage *s;
@@ -831,13 +828,8 @@ int init_trend(cov_model *cov, storage *S) {
       basislen += binomialcoeff(polydeg[i]+tsdim,tsdim);
   }
 
-  if (cov->Strend != NULL) free(cov->Strend);
-  if ((cov->Strend = (trend_storage *) MALLOC(sizeof(trend_storage)))==NULL) {
-    err=ERRORMEMORYALLOCATION;   
-    goto ErrorHandling;
-  }
+  NEW_STORAGE(Strend, TREND, trend_storage);
   s = cov->Strend;
-  TREND_NULL(s);
 
   if ((s->x = (double *) MALLOC(sizeof(double) * tsdim))==NULL ||
       (s->xi = (int *) MALLOC(sizeof(int) * tsdim))==NULL ||
@@ -897,7 +889,7 @@ int init_trend(cov_model *cov, storage *S) {
 }
 
 
-void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
+void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   location_type *loc = Loc(cov);
   char errorloc_save[nErrorLoc];
   trend_storage *S = cov->Strend;
@@ -911,18 +903,22 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
     **xgr = loc->xgr,
     *x = S->x,
     *evalplane = S->evalplane;
-  int i, j, k, v, w,
+
+  int  v, w, 
     basislen, startindex,
     *polydeg = PINT(TREND_POLY),
-    totalpoints = loc->totalpoints,
     vdim = cov->vdim2[0],
     tsdim = cov->tsdim,
     spatialdim = loc->spatialdim,
     *len = loc->length,
-    total = totalpoints * vdim,
     *xi = S->xi,
     *powmatrix = S->powmatrix;
   //SEXP fctbody, tempres, envir, Rx;
+
+  long i, j, k,
+    totalpoints = loc->totalpoints,
+    total = totalpoints * vdim;
+ 
   res_type *res = cov->rf;
   
   assert(cov->vdim2[0] == cov->vdim2[1]);
@@ -946,7 +942,7 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
 	x[w]=xgr[w][XSTART];
 	xi[w]=0;
       }
-      int endfor = totalpoints * vdim;
+      long endfor = totalpoints * vdim;
       for (k=0; k<endfor; ) {
 	xA(x, plane, cov->nrow[TREND_LINEAR], cov->ncol[TREND_LINEAR],
 	   evalplane);
@@ -968,11 +964,12 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
 	}
       }	
     } else if (loc->Time) {
-      int m, 
-	endfor= loc->length[loc->timespacedim-1];
+      long m, 
+	endfor= loc->length[loc->timespacedim-1],
+	endfor2 = loc->spatialtotalpoints;
       for(k=m=0, t=loc->T[XSTART]; m<endfor; m++, t+=loc->T[XSTEP]) {
 	// for(t=loc->T[XSTART], i=0; t < loc->T[XEND]; t += loc->T[XSTEP]) {
-	for(m=0, j=0; m < loc->spatialtotalpoints; m++) {
+	for(m=0, j=0; m < endfor2; m++) {
 	  for(w=0; w<spatialdim; w++) x[w] = (loc->x)[j++];
 	  x[spatialdim] = t;
 	  xA(x, plane, cov->nrow[TREND_LINEAR], cov->ncol[TREND_LINEAR],
@@ -993,7 +990,7 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
   
   if(polydeg != NULL) {
     startindex=0;
-    int end_k = totalpoints * vdim;
+    long end_k = totalpoints * vdim;
     for(v=0; v<vdim; v++) { 
       basislen = binomialcoeff(polydeg[v] + tsdim, tsdim);
       if(isnan(polycoeff[0])) {
@@ -1025,7 +1022,8 @@ void do_trend(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s){
 	}	
       } else if(loc->Time) {
 	 for(t=loc->T[XSTART], k=v; k<end_k; t+=loc->T[XSTEP]) {
-	   for(i=0, j=0; i<loc->spatialtotalpoints; i++, k+=vdim) {
+	   long endfor = loc->spatialtotalpoints;
+	   for(i=0, j=0; i<endfor; i++, k+=vdim) {
              for(w=0; w<spatialdim; w++)  x[w] = (loc->x)[j++];
 	     x[spatialdim] = t;
 	     //evaluation of trend polynomial
@@ -1150,7 +1148,7 @@ int binomialcoeff(int n, int k) {
   return res;
 }
 
-void poly_basis(cov_model *cov, storage  VARIABLE_IS_NOT_USED *s) {
+void poly_basis(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s) {
   
   trend_storage *S = cov->Strend;
   int basislen=0, powsum, d, i, j, k, v,

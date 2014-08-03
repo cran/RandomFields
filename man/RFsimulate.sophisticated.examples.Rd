@@ -21,7 +21,6 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{if (!.C("isAuthor", a=integer(1))$a) { }}
 
 \dontshow{\dontrun{
 

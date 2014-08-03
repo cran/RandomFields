@@ -8,7 +8,7 @@ summary.RFopt <- function(object, ...) {
 
 
 print.summary.RFopt <- function(x, ...) {
-  str(x, ...) #
+  str(x, give.attr=FALSE, ...) #
   invisible(x)
 }
 
@@ -24,7 +24,7 @@ summary.RFoptElmnt <- function(object, ...) {
 }
 
 print.summary.RFoptElmnt <- function(x, ...) {
-  str(x, ...) #
+  str(x, give.attr=FALSE, ...) #
   invisible(x)
 }
 
@@ -86,6 +86,52 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
   }
   return(RFopt)
 }
+
+
+print_RFgetModelInfo <- function(x, max.level=10-attr(x, "level"),
+                                 give.attr=FALSE, ...) {
+  str(object = x,  max.level=max.level, give.attr=give.attr, ...) #
+}
+
+print.RFgetModelInfo <- function(x, ...) {
+  print_RFgetModelInfo(x, ...) 
+}
+
+
+RFgetModelInfo <-
+  function(register, level=3, 
+           spConform=RFoptions()$general$spConform,
+           which.submodels = c("user", "internal", "both"),
+           modelname=NULL) {  
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register)) register else
+                               deparse(substitute(register)))
+  which.submodels <- match.arg(which.submodels)
+  ## positive values refer the covariance models in the registers
+  ##define MODEL_USER : 0  /* for user call of Covariance etc. */
+  ##define MODEL_SIMU : 1  /* for GaussRF etc */ 
+  ##define MODEL_INTERN  : 2 /* for kriging, etc; internal call of covariance */
+  ##define MODEL_MLE  : 3
+  ##define MODEL_BOUNDS  4 : - /* MLE, lower, upper */
+  ## level + 10: auch die call fctn !
+  ## [ in RF.h we have the modulus minus 1 ]
+  
+  cov <- .Call("GetExtModelInfo", as.integer(register), as.integer(level),
+               as.integer(spConform),
+               as.integer(if (which.submodels=="user") 0 else
+                          1 + (which.submodels=="both")),
+               PACKAGE="RandomFields")
+
+  if (!is.null(modelname)) {
+    cov <- search.model.name(cov, modelname, 0)
+  }
+  class(cov) <- "RFgetModelInfo"
+  attr(cov, "level") <- level
+ 
+  return(cov)
+}
+
+
 
 RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
                             isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),

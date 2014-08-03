@@ -5,8 +5,8 @@
 
 
 void Bessel(double *x, cov_model *cov, double *v);
-int initBessel(cov_model *cov, storage *s);
-void spectralBessel(cov_model *cov, storage *s, double *e); 
+int initBessel(cov_model *cov, gen_storage *s);
+void spectralBessel(cov_model *cov, gen_storage *s, double *e); 
 int checkBessel(cov_model *cov);
 void rangeBessel(cov_model *cov, range_type *ra);
 
@@ -96,8 +96,8 @@ void Dexponential(double *x, cov_model *cov, double *v);
 void DDexponential(double *x, cov_model *cov, double *v);
 void Inverseexponential(double *x, cov_model *cov, double *v);
 void nonstatLogInvExp(double *x, cov_model *cov, double *left, double *right);
-int initexponential(cov_model *cov, storage *s);
-void spectralexponential(cov_model *cov,storage *s, double *e);
+int initexponential(cov_model *cov, gen_storage *s);
+void spectralexponential(cov_model *cov, gen_storage *s, double *e);
 int checkexponential(cov_model *cov);
 int hyperexponential(double radius, double *center, double *rx,
 		     cov_model *cov, bool simulate, 
@@ -106,8 +106,8 @@ void coinitExp(cov_model *cov, localinfotype *li);
 void ieinitExp(cov_model *cov, localinfotype *li);
 void DrawMixExp(cov_model *cov, double *random);
 double LogMixDensExp(double *x, double logV, cov_model *cov);
-int init_exp(cov_model *cov, storage *s); 
-void do_exp(cov_model *cov, storage *s);
+int init_exp(cov_model *cov, gen_storage *s); 
+void do_exp(cov_model *cov, gen_storage *s);
 
 
 // Brownian motion 
@@ -122,7 +122,7 @@ void rangefractalBrownian(cov_model *cov, range_type* ra);
 void ieinitBrownian(cov_model *cov, localinfotype *li);
 void InversefractalBrownian(double *x, cov_model *cov, double *v);
 int checkfractalBrownian(cov_model *cov);
-int initfractalBrownian(cov_model *cov, storage *s); 
+int initfractalBrownian(cov_model *cov, gen_storage *s); 
 
 
 
@@ -144,15 +144,15 @@ void DGauss(double *x, cov_model *cov, double *v);
 void DDGauss(double *x, cov_model *cov, double *v);
 void D3Gauss(double *x, cov_model *cov, double *v);
 void D4Gauss(double *x, cov_model *cov, double *v);
-void spectralGauss(cov_model *cov, storage *s, double *e);   
+void spectralGauss(cov_model *cov, gen_storage *s, double *e);   
 void DrawMixGauss(cov_model *cov, double *random);
 double LogMixDensGauss(double *x, double logV, cov_model *cov);
 void InverseGauss(double *x, cov_model *cov, double *v);
 void nonstatLogInvGauss(double *x, cov_model VARIABLE_IS_NOT_USED *cov, 
 			double *left, double *right);
 int struct_Gauss(cov_model *cov, cov_model **);
-int initGauss(cov_model *cov, storage *s);
-void do_Gauss(cov_model *cov, storage *s) ; 
+int initGauss(cov_model *cov, gen_storage *s);
+void do_Gauss(cov_model *cov, gen_storage *s) ; 
 //void getMassGauss(double *a, cov_model *cov, double *kappas, double *m);
 //void densGauss(double *x, cov_model *cov, double *v);
 //void simuGauss(cov_model *cov, int dim, double *v);
@@ -260,8 +260,8 @@ void rangeWM(cov_model *cov, range_type* ra);
 void ieinitWM(cov_model *cov, localinfotype *li);
 void coinitWM(cov_model *cov, localinfotype *li);
 double densityMatern(double *x, cov_model *cov);
-int initMatern(cov_model *cov, storage *s);
-void spectralMatern(cov_model *cov, storage *s, double *e); 
+int initMatern(cov_model *cov, gen_storage *s);
+void spectralMatern(cov_model *cov, gen_storage *s, double *e); 
 void InverseMatern(double *x, cov_model *cov, double *v);
 
 
@@ -308,8 +308,8 @@ void TBM2spherical(double *x, cov_model *cov, double *v);
 void Dspherical(double *x, cov_model *cov, double *v);
 void DDspherical(double *x, cov_model *cov, double *v);
 int structspherical(cov_model *cov, cov_model **);
-int initspherical(cov_model *cov, storage *s);
-void dospherical(cov_model *cov, storage *s);
+int initspherical(cov_model *cov, gen_storage *s);
+void dospherical(cov_model *cov, gen_storage *s);
 
 
 /* stable model */
@@ -336,8 +336,8 @@ void DstableX(double *x, cov_model *cov, double *v);
 /* stein space-time model */
 void kappaSteinST1(int i, cov_model *cov, int *nr, int *nc);
 void SteinST1(double *x, cov_model *cov, double *v);
-int initSteinST1(cov_model *cov, storage *s);
-void spectralSteinST1(cov_model *cov, storage *s, double *e);
+int initSteinST1(cov_model *cov, gen_storage *s);
+void spectralSteinST1(cov_model *cov, gen_storage *s, double *e);
 void rangeSteinST1(cov_model *cov, range_type* ra);
 int checkSteinST1(cov_model *cov);  
 
@@ -345,8 +345,8 @@ int checkSteinST1(cov_model *cov);
 /* wave */
 void wave(double *x, cov_model *cov, double *v);
 void Inversewave(double *x, cov_model *cov, double *v);
-int initwave(cov_model *cov, storage *s);
-void spectralwave(cov_model *cov, storage *s, double *e); 
+int initwave(cov_model *cov, gen_storage *s);
+void spectralwave(cov_model *cov, gen_storage *s, double *e); 
 
 extern double Besselupperbound[Nothing + 1];
 
@@ -360,8 +360,8 @@ void D3Whittle(double *x, cov_model *cov, double *v);
 void D4Whittle(double *x, cov_model *cov, double *v);
 int checkWM(cov_model *cov);
 double densityWhittle(double *x, cov_model *cov);
-int initWhittle(cov_model *cov, storage *s);
-void spectralWhittle(cov_model *cov, storage *s, double *e); 
+int initWhittle(cov_model *cov, gen_storage *s);
+void spectralWhittle(cov_model *cov, gen_storage *s, double *e); 
 void DrawMixWM(cov_model *cov, double *random);
 double LogMixDensW(double *x, double logV, cov_model *cov);
 void InverseWhittle(double *x, cov_model *cov, double *v);
@@ -377,7 +377,7 @@ void DDbiGneiting(double *x, cov_model *cov, double *v);
 int checkbiGneiting(cov_model *cov);
 sortsofparam paramtype_biGneiting(int k, int row, int col) ;
 void rangebiGneiting(cov_model *cov, range_type* ra);
-int initbiGneiting(cov_model *cov, storage *s);
+int initbiGneiting(cov_model *cov, gen_storage *s);
 
 
 /* User defined model */
@@ -408,7 +408,7 @@ void biWM2D(double *x, cov_model *cov, double *v);
 int checkbiWM2(cov_model *cov);
 sortsofparam paramtype_biWM(int k, int row, int col);
 void rangebiWM2(cov_model *cov, range_type* ra);
-int initbiWM2(cov_model *cov, storage *s);
+int initbiWM2(cov_model *cov, gen_storage *s);
 
 
 sortsofparam paramtype_biWM(int k, int row, int col);

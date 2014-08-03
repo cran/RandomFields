@@ -143,7 +143,7 @@ globalparam GLOBAL = {
   {true, CircEmbed, {1024, 64}},  // gui
   {true, 6, 1, {3, 4}}, // graphics
   {0, MODEL_KRIGE, MODEL_COND, MODEL_ERR, MODEL_GUI}, // registers
-  {true, true, true, true, true, 
+  {true, true, true, false, true, 
    true, true, false, true, true, true}, // warnings
   {NA_REAL, coord_auto, {""}, {""}, {""}}, // coords
   {10}, // special
@@ -262,7 +262,7 @@ void errorMSG(int err, char* m, int len) {
   case ERRORNOTDEFINED :       
     strcpy(m,"specified method undefined for the given model or no simulation method found for the given model");break;
   case ERRORNOTPROGRAMMEDYET :    
-    strcpy(m,"Not programmed yet. Sorry."); break;
+    strcpy(m,"Not programmed yet in RandomFields Version 3. Sorry."); break;
   case ERRORVDIMNOTPROGRAMMEDYET :    
     strcpy(m,"multivariate version not programmed yet. Sorry."); break;
   case ERRORTYPECONSISTENCY :
@@ -918,8 +918,8 @@ void InitModelList() {
   addReturns(NULL, NULL, covmatrix_constant, iscovmatrix_constant, 
 	     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-  pref_type pcox={2, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
-  //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  pref_type pcox={2, 0, 0,  0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
+  //              CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   IncludeModel("coxisham",  PosDefType, 1, 1, 3, kappa_cox, 
 	       XONLY, ZEROSPACEISO, 
 	       checkcox, rangecox, pcox,
@@ -1693,7 +1693,7 @@ void InitModelList() {
 		 check_gauss_distr, range_gauss_distr, PREF_AUX, 
 		 false, PARAM_DEP, INFDIM-1, false, MISMATCH);
   nickname("gauss");
-  kappanames("mu", REALSXP, "sd", REALSXP, "log", REALSXP);
+  kappanames("mu", REALSXP, "sd", REALSXP, "log", INTSXP);
   RandomShape(INFTY, structOK, init_gauss_distr, do_gauss_distr);
   addCov(gaussD, gaussDlog, gaussDinverse, 
 	 gaussP, gaussP2sided, gaussQ, gaussR, gaussR2sided);
@@ -2323,9 +2323,8 @@ void InitModelList() {
   // Markovgauss, Markovgneiting, Markovgengneiting, Markovhyperbolic, Markovpenta, 
   // Markovpower, Markovqexponential, Markovspherical, Markovstable, 
  
-  // addusersfunctions();
 
-
+  
     int nr;
   for (nr=0; nr<currentNrCov; nr++) { 
     cov_fct *C = CovList + nr; // nicht gatternr

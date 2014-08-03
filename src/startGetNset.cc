@@ -408,7 +408,7 @@ void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x,
   ERR("unallowed or undefined call of non-domain function (log)");
 }
 void Errspectral(cov_model *cov,
-		 storage VARIABLE_IS_NOT_USED *s, 
+		 gen_storage VARIABLE_IS_NOT_USED *s, 
 		 double VARIABLE_IS_NOT_USED *e) {
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
  if (PL >= PL_ERRORS) {
@@ -489,7 +489,7 @@ int struct_failed(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
 	NICK(cov), cov->nr, cov->calling == NULL ? "<null>" : NICK(cov->calling)); 
 }
 
-int initOK(cov_model *cov, storage *s) {
+int initOK(cov_model *cov, gen_storage *s) {
   cov_fct *C = CovList + cov->nr; // nicht gatternr  
   int i, err = NOERROR,
     nk = C->kappas;
@@ -510,13 +510,13 @@ int initOK(cov_model *cov, storage *s) {
   return err; 
 }
 
-int init_failed(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int init_failed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (PL >= PL_ERRORS) PRINTF("init failed cov=%s:\n", NICK(cov));
   SERR("Init failed. Compound Poisson fields are essentially only programmed for simple and isotropic shape functions (not kernels)");
   return ERRORFAILED;
 }
 
-int init_statiso(cov_model *cov, storage *s) {
+int init_statiso(cov_model *cov, gen_storage *s) {
   // only domain and isotropic models
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   int err;
@@ -583,10 +583,10 @@ void standard_likelihood(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 }
 
 
-void doOK(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s){
+void doOK(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 }
 
-void do_failed(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+void do_failed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   //PMI(cov->calling);
   if (PL >= PL_ERRORS) PRINTF("do failed for %s:\n", NICK(cov));
   ERR("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
@@ -599,7 +599,7 @@ void do_random_failed(cov_model *cov, double VARIABLE_IS_NOT_USED *v) {
 void do_random_ok(cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
 }
 
-void do_statiso(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+void do_statiso(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   
   if (cov->role == ROLE_POISSON || cov->role == ROLE_MAXSTABLE) return;
 
@@ -720,18 +720,11 @@ void InverseIsotropic(double *U, cov_model *cov, double *inverse){
   if (cov->vdim2[0] != cov->vdim2[1]) BUG;
   int vdim = cov->vdim2[0],
     vdimSq = vdim * vdim;
-  if (cov->Sinv == NULL) {
-    if ((cov->Sinv = (inv_storage *) MALLOC(sizeof(inv_storage))) == NULL)
-      error("inverseIsotropic: memory allocation error");
-    INV_NULL(cov->Sinv);
-    if ((cov->Sinv->v = (double *) MALLOC(sizeof(double) * vdimSq)) == NULL ||
-	(cov->Sinv->wert = (double *) MALLOC(sizeof(double) * vdimSq)) == NULL)
-      error("InverseIsotropic: memory allocation error");
-  }
+  if (cov->Sinv == NULL) NEW_STORAGE(Sinv, INV, inv_storage);
+  ALLOC_NEW(Sinv, v, vdimSq, v);
+  ALLOC_NEW(Sinv, wert, vdimSq, wert);
  
   double left, right, middle, leftinverse,
-    *v = cov->Sinv->v,
-    *wert = cov->Sinv->wert,
     x = 0.0,
     u = *U;
   bool greater;
@@ -1012,7 +1005,7 @@ void make_internal() {
 
 // extern ?!
 int IncludeModel(const char *name, Types type, 
-		 char minsub, char maxsub, int kappas,
+		 int minsub, int maxsub, int kappas,
 		 size_fct kappasize,
 		 domain_type domain, isotropy_type isotropy,
 		 checkfct check, rangefct range, pref_type pref, 
@@ -1068,7 +1061,7 @@ int IncludeModel(const char *name, Types type,
 }
 
 int IncludeModel(const char *name, Types type, 
-		 char minsub, char maxsub, int kappas, 
+		 int minsub, int maxsub, int kappas, 
 		 domain_type domain, isotropy_type isotropy,
 		 checkfct check, rangefct range, pref_type pref, 
 		 int maxdim, ext_bool finiterange, int monotonicity) {
@@ -1444,11 +1437,27 @@ int addTBM(covfct tbm2) {
 	   C->isotropy==PREVMODELI);
     assert(C->D != ErrCov);
     C->implemented[TBM] = IMPLEMENTED;
+    if (C->pref[TBM] == PREF_NONE) C->pref[TBM] = PREF_BEST;
   }
   // IMPLEMENTED must imply the NUM_APPROX to simplify the choice
   // between TBM2 and Tbm2Num
   return nr;
 }
+
+void addTBM(covfct tbm2, initfct Init, spectral_do spectral) {
+  int nr = addTBM(tbm2);
+  cov_fct *C = CovList + nr; // nicht gatternr
+  ASSERT_TBM;
+  C->spectral=spectral;
+  C->Init=Init;
+  C->implemented[SpectralTBM] = true;
+  if (C->pref[SpectralTBM] == PREF_NONE) C->pref[SpectralTBM] = PREF_BEST;
+  }
+
+void addTBM(initfct Init, spectral_do spectral) {
+  addTBM((covfct) NULL, Init, spectral);
+}
+	
 
 void addSpecific(int cov) {
   int nr = currentNrCov - 1;
@@ -1462,7 +1471,7 @@ void addSpecific(int cov) {
   while (true) {
     assert(X->Specific == MISMATCH);
     X->Specific = nr;
-    if (X->pref[Specific] == PREF_NONE) X->pref[Specific] = 5;
+    if (X->pref[Specific] == PREF_NONE) X->pref[Specific] = PREF_BEST;
     X->implemented[Specific] = IMPLEMENTED;
     X++;
     if (X->name[0] != InternalName[0]) break;
@@ -1470,20 +1479,6 @@ void addSpecific(int cov) {
 
   //  assert(false);
 }
-
-void addTBM(covfct tbm2, initfct Init, spectral_do spectral) {
-  int nr = addTBM(tbm2);
-  cov_fct *C = CovList + nr; // nicht gatternr
-  ASSERT_TBM;
-  C->spectral=spectral;
-  C->Init=Init;
-  C->implemented[SpectralTBM] = true;
-}
-
-void addTBM(initfct Init, spectral_do spectral) {
-  addTBM((covfct) NULL, Init, spectral);
-}
-	
 	
 void addHyper(hyper_pp_fct hyper_pp) {
   int nr = currentNrCov - 1;
@@ -1491,6 +1486,7 @@ void addHyper(hyper_pp_fct hyper_pp) {
   assert((nr>=0) && (nr<currentNrCov));
   C->hyperplane=hyper_pp;
   C->implemented[Hyperplane] = hyper_pp!=NULL;
+  if (C->pref[Hyperplane] == PREF_NONE) C->pref[Hyperplane] = PREF_BEST;
 }
 		   
 //void addSpecialMeth(initstandard initspecial, dometh special)  {

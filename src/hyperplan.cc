@@ -179,7 +179,7 @@ int struct_hyperplane(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel)
   return NOERROR;
 }
 
-int init_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
+int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   hyper_storage *s = NULL;
@@ -201,7 +201,7 @@ int init_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
  
 
   if (loc->distances) return ERRORFAILED;
-   if (dim > MAXHYPERDIM) {
+  if (dim > MAXHYPERDIM) {
     err=ERRORMAXDIMMETH; goto ErrorHandling;
   } 
  
@@ -218,15 +218,12 @@ int init_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   
   /* cells are coded by a sequence of binary information.
      Each binary unit indicates if the cell is on the "left"
-     hand side or the "right" hand side of a line */
+     hand side or the "right" hand side of a line 
+  */
 
 
-   if ((cov->Shyper= (hyper_storage*) MALLOC(sizeof(hyper_storage)))==NULL) {
-    err=ERRORMEMORYALLOCATION;
-    goto ErrorHandling;
-  } 
+  NEW_STORAGE(Shyper, HYPER, hyper_storage);
   s = cov->Shyper;
-  HYPER_NULL(s);
     
   
 /****************************************************************/
@@ -382,7 +379,7 @@ cell_type *determine_cell(double gx, double gy, double* hx, double* hy,
   return NULL;
 }
 
-void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
+void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type
     *loc = Loc(cov);
   int 
@@ -393,7 +390,8 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
     E=RF_NA,
     sd=RF_NA,
     mar_param = P0(HYPER_MAR_PARAM);
-  int resindex, integers, bits, q, endfor, i, err, j,
+  long i, j, resindex;
+  int  integers, bits, q, endfor, err, 
     superpos = P0INT(HYPER_SUPERPOS);
     mar_distr = P0INT(HYPER_MAR_DISTR);
    randomvar_type randomvar=NULL;
@@ -533,7 +531,7 @@ void do_hyperplane(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       res[i] = (res_type) (((double) res[i] - superpos * E) * sd);    
     
     if (loggauss) {
-      int vdimtot = loc->totalpoints * cov->vdim2[0];
+      long vdimtot = loc->totalpoints * cov->vdim2[0];
       for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
     }
     break;

@@ -184,9 +184,9 @@ print.summary.RMmodelFit <- function(x, ...) {
 }
 
 print.RMmodelFit <- function(x, ...)
-  print.summary.RMmodelFit(summary.RMmodelFit(x=x, ...))#
+  print.summary.RMmodelFit(summary.RMmodelFit(x, ...))#
 print.RM_modelFit <- function(x, ...)
-  print.summary.RMmodelFit(summary.RM_modelFit(x=x, ...))#
+  print.summary.RMmodelFit(summary.RM_modelFit(x, ...))#
 
 setMethod(f="show", signature='RMmodelFit',
           definition=function(object) print.RMmodelFit(object))#
@@ -227,6 +227,8 @@ summary.RF_fit <- function(object, ..., method="ml", full=FALSE) {
   s
 }
 
+
+
 print.RFfit <- function(x, ...,  method="ml", full=FALSE) {
   print.summary.RMmodelFit(summary.RFfit(x, ..., method=method, full=full))
 }
@@ -235,7 +237,7 @@ setMethod(f="show", signature='RFfit',
           definition=function(object) print.RFfit(object))#
 
 print.RF_fit <- function(x, ...,  method="ml", full=FALSE) {
-  print.summary.RMmodelFit(summary.RF_fit(x, ..., method=method, full=full))
+   print.summary.RMmodelFit(summary.RF_fit(x, ..., method=method, full=full))
 }
 
 
@@ -364,7 +366,7 @@ AIC.RF_fit <- function(object, ..., k=2, method="ml", full=TRUE) {
   }
 }
 
-AICc.RFfit <- function(object, ..., k=2, method="ml", full=FALSE) {
+AICc.RFfit <- function(object, ...,  method="ml", full=FALSE) {
   if (full) {
     stop("for 'AICc' the option 'full=TRUE' has not been programmed yet.")
     fullAIC(object, method=method)
@@ -374,7 +376,7 @@ AICc.RFfit <- function(object, ..., k=2, method="ml", full=FALSE) {
     AIC
   }
 }
-AICc.RF_fit <- function(object, ..., k=2, method="ml", full=TRUE) {
+AICc.RF_fit <- function(object, ..., method="ml", full=TRUE) {
   if (full) {
     stop("for 'AICc' the option 'full=TRUE' has not been programmed yet.")
     fullAIC(object, method=method)
@@ -383,17 +385,6 @@ AICc.RF_fit <- function(object, ..., k=2, method="ml", full=TRUE) {
     names(AIC) <- "AICc"
     AIC
   }
-}
-
-AICc.RFfit <- function(object, ..., method="ml") {
-  AICc <- object[method]@AICc
-  names(AICc) <- "AICc"
-  AICc
-}
-AICc.RF_fit <- function(object, ..., method="ml") {
-  AICc <- object[[method]]$AICc
-  names(AICc) <- "AICc"
-  AICc
 }
 
 BIC.RFfit <- function(object, ..., method="ml", full=TRUE) {
@@ -405,6 +396,7 @@ BIC.RFfit <- function(object, ..., method="ml", full=TRUE) {
     BIC
   }
 }
+
 BIC.RF_fit <- function(object, ..., method="ml", full=TRUE) {
   if (full) {
     fullAIC(object, method=method, AIC="BIC")
@@ -576,6 +568,8 @@ setMethod(f="persp", signature(x="RFfit"),
                           model = model, variogram=variogram,
                           boundaries = boundaries,
                           ..., plotmethod="persp"))
+
+
 
 
 contour.RFfit <- contour.RFempVariog <- 

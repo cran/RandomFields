@@ -92,7 +92,7 @@ plot(model)
 plot(RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4))
 ## The following function shows the internal structure of the model.
 ## In particular, it can be seen that RPspecific is applied to RMplus.
-str(RFgetModelInfo(level=0, which="keys"))
+RFgetModelInfo(level=0, which="internal")
 
 ## example for explicite used
 model <- RPspecific(RMS(var=unif(min=0, max=10), RMgauss()))

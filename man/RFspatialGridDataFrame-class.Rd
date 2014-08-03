@@ -6,7 +6,6 @@
 \alias{RFspDataFrame2conventional,RFspatialGridDataFrame-method}
 \alias{RFspDataFrame2dataArray,RFspatialGridDataFrame-method}
 \alias{show,RFspatialGridDataFrame-method}
-\alias{persp,RFspatialGridDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame,ANY-method}
 \alias{GridTopology2gridVectors,GridTopology-method}
@@ -21,6 +20,7 @@
 \alias{print.RFspatialGridDataFrame}
 \alias{as.matrix.RFspatialGridDataFrame}
 \alias{cbind.RFspatialGridDataFrame}
+\alias{contour.RFspatialGridDataFrame}
 
 \title{Class "RFspatialGridDataFrame" }
 \description{ Class for spatial attributes that have spatial or
@@ -75,6 +75,10 @@
 
 \section{Methods}{
  \describe{
+\item{contour}{code{signature(obj =
+    "RFspatialGridDataFrame")}:
+  generates \command{\link[graphics]{contour}} plots
+  }
  \item{plot}{\code{signature(obj =
 	"RFspatialGridDataFrame")}: generates nice \command{image} plots
  of the random field; if \eqn{space-time-dim2}, a two-dimensional

@@ -50,7 +50,6 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-Print(RFoptions())
 ## a very toy example to understand the use
 model <- RRdistr(norm())
 v <- 0.5

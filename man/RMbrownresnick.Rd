@@ -52,7 +52,7 @@ plot(RMbrownresnick(RMmodel))
 
 #simulate and plot corresponding Gaussian random field
 x <- if (interactive()) seq(-5, 5, 0.05) else seq(-5, 5, 5)
-z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE, print=6)
+z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE)
 plot(z)
 \dontshow{FinalizeExample()}
 }

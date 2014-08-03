@@ -109,7 +109,8 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{RFoptions(internal.warn_newstyle=FALSE, internal.warn_oldstyle=FALSE)}
+
+%\dontshow{RFoptions(internal.warn_newstyle=FALSE, internal.warn_oldstyle=FALSE)}
 
 ## no examples given, as command is obsolete
 \dontshow{\dontrun{

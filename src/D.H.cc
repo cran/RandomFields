@@ -38,7 +38,7 @@ void boxcounting(double *z,  // data
   // in sum, the boxcounting result for the first lx data values is given 
   // according to the box lengths given by eps; then the boxes are counted
   // for the next lx data values, etc. Hence, sum must have dimension
-  int i,  k, lastbox, j, e, r, s, truelx, total;
+  long i,  k,  j, e, s, truelx, r, lastbox, total;
   double zz, min, max, f; 
   // boxcounting expects that the first and the last values are repeated
   // in the first dimension, see D.H.R; accordingly the total length in
@@ -81,7 +81,7 @@ void periodogram(double *dat, // data
                  //             over all these parts
 		 double *lambda // (fftm[1] - fftm[0] + 1) * repet
     ){ 
-  int seg_dat, err, k, j, total_seg, segment_r, start_k, end_k,
+  long seg_dat, err, k, j, total_seg, segment_r, start_k, end_k,
       segm_l, lenMpart, delta_l, r, end_l;
   double factor, *compl_number, n_inv, *taper, taper_fact, cos_factor;
   FFT_storage FFT;
@@ -159,7 +159,7 @@ void detrendedfluc(double *dat, // data
 		   double *dfavar,   // repet * ldfa
 		   double *varmethvar// repet * ldfa
   ){
-  int i, j, m, nbox, ex, endfor, r, total, last, e, k;
+  long i, j, m, nbox, ex, endfor, r, total, last, e, k;
   double var, a, b, residual, Yt, realm, sumt, meanY, t, 
     VarMeth_old, VarMeth_mean, VarMeth_var, delta, realnbox;
 

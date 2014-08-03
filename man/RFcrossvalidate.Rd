@@ -114,9 +114,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
 RFoptions(modus_operandi="sloppy")
-}}
 
 n <- if (interactive()) 100 else 5
 
@@ -132,9 +130,8 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 #########################################################
 ## estimation; 'NA' means: "to be estimated"
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
- RMtrend(mean=NA)
-v <- RFcrossvalidate(estmodel, data=d, spC=FALSE)
-Print(v$ml, v$ml$ml.value)
+            RMtrend(mean=NA)
+RFcrossvalidate(estmodel, data=d, spC=FALSE)
 
 
 \dontshow{\dontrun{
@@ -144,9 +141,8 @@ Print(v$ml, v$ml$ml.value)
 ## given constant)
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
  RMnugget(var=NA) + RMtrend(mean=NA)
-v1 <- RFcrossvalidate(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try",
+RFcrossvalidate(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try",
             spC=FALSE)
-Print(v1$ml, v1$ml$ml.value)
 
 
 
@@ -157,8 +153,7 @@ model <- RMexp(Aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5)
 z <- RFsimulate(model, x=x, y=y, grid=TRUE, n=n, spC=TRUE)
 estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
  RMtrend(mean=NA)
-v2 <- RFcrossvalidate(estmodel, data=z, fit.nphi=20, spC=FALSE)
-Print(v2$ml, v2$ml$ml.value)
+RFcrossvalidate(estmodel, data=z, fit.nphi=20, spC=FALSE)
 }}
 
 
@@ -169,9 +164,8 @@ Print(v2$ml, v2$ml$ml.value)
 # source("RandomFields/tests/source.R")
 f <- function(param) param[c(1,2,3,3,4)]
 RFcrossvalidate(estmodel, data=d, transform=list(), spC=FALSE)# shows positions of the NAs
-v3 <- RFcrossvalidate(estmodel, data=d, spC=FALSE,
+RFcrossvalidate(estmodel, data=d, spC=FALSE,
  transform=list(c(rep(TRUE, 3), FALSE, TRUE), f))
-Print(v3$ml, v3$ml$ml.value)
 
 ########################################################
 ## estimation of anisotropy matrix ##
@@ -180,8 +174,8 @@ model <- RMexp(var=1, scale=1)
 z <- RFsimulate(model, x, x, x, grid=TRUE, n=n, spC=TRUE)
 estmodel <- RMexp(var=NA, Aniso=diag(rep(NA, 3))) +
  RMnugget(var=NA) + RMtrend(mean=NA)
-v4 <- RFcrossvalidate(estmodel, data=z, spC=FALSE)
-Print(v4$ml, v4$ml$ml.value)
+RFcrossvalidate(estmodel, data=z, spC=FALSE)
+
 
 ########################################################
 ## estimation of anisotropy matrix where the two first##
@@ -189,28 +183,24 @@ Print(v4$ml, v4$ml$ml.value)
 RFcrossvalidate(estmodel, data=z, transform=list(), spC=FALSE)
  ## shows the positions of the NAs
 trafo <- function(variab) { variab[c(1, 2, 2, 3, 4)] }
-v5 <- RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
+RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
  transform=list(c(TRUE, TRUE, FALSE, TRUE, TRUE),
  trafo))
-Print(v5$ml, v5$ml$ml.value)
+
 
 ########################################################
 ## estimation of anisotropy matrix where all ##
 ## diagonal elements are identical ##
 trafo <- function(variab) { variab[c(1, 2, 2, 2, 3)] }
-v6 <- RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
+RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
  transform=list(c(TRUE, TRUE, FALSE, FALSE, TRUE),
  trafo),
  split=FALSE)
-Print(v6$ml, v6$ml$ml.value)
 }}
 
 
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {}
-RFoptions(modus_operandi="normal")
-}}
-
+\dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}
 
 }

@@ -256,7 +256,7 @@ void Bessel(double *x, cov_model *cov, double *v){
   }
   *v = gamma  * pow(2.0 / y, nuOld) * bessel_j(y, nuOld);
 }
-int initBessel(cov_model *cov, storage 
+int initBessel(cov_model *cov, gen_storage 
 	       VARIABLE_IS_NOT_USED *s) {
   ASSERT_GAUSS_METHOD(SpectralTBM);
   return NOERROR;
@@ -274,7 +274,7 @@ int checkBessel(cov_model *cov) {
 
   return NOERROR;
 }
-void spectralBessel(cov_model *cov, storage *S, double *e) { 
+void spectralBessel(cov_model *cov, gen_storage *S, double *e) { 
   spectral_storage *s = &(S->Sspectral);
   double 
     nu =  P0(BESSEL_NU);
@@ -459,9 +459,9 @@ int structCircSph(cov_model *cov, cov_model **newmodel, int dim) {
     //case ROLE_SMITH : 
   case ROLE_POISSON_GAUSS :
     {
-      addModel(newmodel, BALL);      
+      addModel(newmodel, BALL, cov);      
       addModel(newmodel, DOLLAR);
-      addModel((*newmodel)->kappasub + DSCALE, SCALESPHERICAL);
+      addModelKappa(*newmodel, DSCALE, SCALESPHERICAL);
       kdefault((*newmodel)->kappasub[DSCALE], SPHERIC_SPACEDIM,
 	       (double) cov->tsdim);
       kdefault((*newmodel)->kappasub[DSCALE], SPHERIC_BALLDIM, (double) dim);
@@ -531,8 +531,9 @@ void covmatrix_constant(cov_model *cov, double *v) {
 char iscovmatrix_constant(cov_model VARIABLE_IS_NOT_USED *cov) {  return 2; }
 
 int checkconstant(cov_model *cov) {
-  listoftype *list = PLIST(CONSTANT_M);
-  int info, err, total, i, vdim, totpts,
+  listoftype *list = PLIST(CONSTANT_M); 
+  long total;
+  int info, err, i, vdim, totpts,
     m = cov->nrow[CONSTANT_M],
     *q,
     *ncol = list->ncol,
@@ -841,11 +842,14 @@ double densityexponential(double *x, cov_model *cov) {
   return gammafn(dim12) * pow(M_PI * (1.0 + x2), -dim12);
 }
 
-int initexponential(cov_model *cov, storage *s) {
+#define HAS_SPECTRAL_ROLE(cov)\
+  cov->role == ROLE_GAUSS && cov->method==SpectralTBM
+
+int initexponential(cov_model *cov, gen_storage *s) {
   int dim = cov->tsdim;
   double D = (double) dim;
 
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     spec_properties *cs = &(s->spec);
     if (cov->tsdim <= 2) return NOERROR;
     cs->density = densityexponential;
@@ -900,12 +904,12 @@ int initexponential(cov_model *cov, storage *s) {
 
   return NOERROR;
 }
-void do_exp(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) { 
+void do_exp(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   //mppinfotype *info = &(s->mppinfo);
   //info->radius = cov->mpp.refradius;
 }
 
-void spectralexponential(cov_model *cov, storage *S, double *e) {
+void spectralexponential(cov_model *cov, gen_storage *S, double *e) {
   spectral_storage *s = &(S->Sspectral);
   if (cov->tsdim <= 2) {
     double A = 1.0 - UNIFORM_RANDOM;
@@ -1068,7 +1072,7 @@ int checkfractalBrownian(cov_model *cov){
   return NOERROR;
 }
 
-int initfractalBrownian(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int initfractalBrownian(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   double alpha = P0(BROWN_ALPHA);
   cov->taylor[0][TaylorPow] = cov->tail[0][TaylorPow] = alpha;  
   return NOERROR;
@@ -1206,7 +1210,7 @@ int struct_Gauss(cov_model *cov, cov_model **newmodel) {
   switch (cov->role) {
   case ROLE_POISSON_GAUSS :// optimierte density fuer den Gauss-Fall
     double invscale;
-    addModel(newmodel, GAUSS);       
+    addModel(newmodel, GAUSS, cov);       
     addModel(newmodel, DOLLAR);
     kdefault(*newmodel, DSCALE, INVSQRTTWO);
     addModel(newmodel, TRUNCSUPPORT);
@@ -1215,7 +1219,7 @@ int struct_Gauss(cov_model *cov, cov_model **newmodel) {
     break;  
   case ROLE_MAXSTABLE :   // optimierte density fuer den Gauss-Fall
     // crash();
-    addModel(newmodel, GAUSS_DISTR); // to
+    addModel(newmodel, GAUSS_DISTR, cov); // to
     kdefault(*newmodel, GAUSS_DISTR_MEAN, 0.0);
     kdefault(*newmodel, GAUSS_DISTR_SD, INVSQRTTWO);
     return NOERROR;
@@ -1227,7 +1231,7 @@ int struct_Gauss(cov_model *cov, cov_model **newmodel) {
 
 double IntUdeU2_intern(int d, double R, double expMR2) {
   // int_0^R u^{d-1} exp(-u^2) \D u
-  return d == 0 ? (pnorm(R, 0.0, INVSQRTTWO, 1.0, 0.0) - 0.5)  * SQRTPI
+  return d == 0 ? (pnorm(R, 0.0, INVSQRTTWO, true, false) - 0.5)  * SQRTPI
     : d == 1 ? 0.5  * (1.0 - expMR2)
     : 0.5 * (expMR2 + (d - 1.0) * IntUdeU2_intern(d - 2, R, expMR2));    
 }
@@ -1237,11 +1241,11 @@ double IntUdeU2(int d, double R) {
   return IntUdeU2_intern(d, R, exp(-R*R));
 }
 
-int initGauss(cov_model *cov, storage *s) {
+int initGauss(cov_model *cov, gen_storage *s) {
 
   if (hasNoRole(cov)) return NOERROR;
 
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     //  APMI(cov);
 
    spec_properties *cs = &(s->spec);
@@ -1294,12 +1298,12 @@ int initGauss(cov_model *cov, storage *s) {
 
 }
 
-void do_Gauss(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) { 
+void do_Gauss(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   //mppinfotype *info = &(s->mppinfo);
   //info->radius = cov->mpp.refradius;
 }
 
-void spectralGauss(cov_model *cov, storage *S, double *e) {   
+void spectralGauss(cov_model *cov, gen_storage *S, double *e) {   
   spectral_storage *s = &(S->Sspectral);
   if (cov->tsdim <= 2) {
     E12(s, cov->tsdim, 2.0 * sqrt(-log(1.0 - UNIFORM_RANDOM)), e);
@@ -1341,7 +1345,7 @@ void getMassGauss(double *a, cov_model *cov, double *kappas, double *m) {
   
   val[0] = 1.0;
   for (i=1; i<=dim; i++) 
-    val[i] = (2.0 * pnorm(SQRT2 * a[i], 0.0, 1.0, 0, 0) - 1.0) * M_SQRT_PI;
+    val[i] = (2.0 * pnorm(SQRT2 * a[i], 0.0, 1.0, false, false) - 1.0) * M_SQRT_PI;
   for (k=kold=i=0; i<dim; i++) {
     m[k++] = val[i];
     for (j=1; j< kold; j++) m[k++] = val[i] * m[j];
@@ -1823,7 +1827,7 @@ void biGneitingbasic(cov_model *cov,
 }
 
 
-int initbiGneiting(cov_model *cov, storage *stor) {
+int initbiGneiting(cov_model *cov, gen_storage *stor) {
   double  
     //mu = P0(GENGNEITING_MU), 
     *rho = P(GNEITING_RHORED),
@@ -1992,7 +1996,7 @@ void DDbiGneiting(double *x, cov_model *cov, double *v){
 
 int checkbiGneiting(cov_model *cov) { 
   int err;
-  storage s;
+  gen_storage s;
   STORAGE_NULL(&s);
   s.check = true;
   
@@ -2001,14 +2005,9 @@ int checkbiGneiting(cov_model *cov) {
   if (PisNULL(GNEITING_MU)) QERRC(GNEITING_MU, "'mu' must be given.");
   if (PisNULL(GNEITING_GAMMA)) QERRC(GNEITING_GAMMA,"'gamma' must be given.");
 
-  if (cov->Sbiwm == NULL) {
-    cov->Sbiwm = (biwm_storage*) MALLOC(sizeof(biwm_storage));
-    BIWM_NULL(cov->Sbiwm);
-  } 
+  NEW_STORAGE(Sbiwm, BIWM, biwm_storage);
   biwm_storage *S = cov->Sbiwm;
-  assert(S != NULL);
   S->cdiag_given = !PisNULL(GNEITING_CDIAG) || !PisNULL(GNEITING_RHORED);
-  
  
   if ((err=initbiGneiting(cov, &s)) != NOERROR) return err;
 
@@ -2750,8 +2749,8 @@ double densityMatern(double *x, cov_model *cov) {
   return densityWM(x, cov, SQRT2);
 }
 
-int initMatern(cov_model *cov, storage *s) {
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+int initMatern(cov_model *cov, gen_storage *s) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     spec_properties *cs = &(s->spec);
     if (cov->tsdim <= 2) return NOERROR;
     cs->density = densityMatern;
@@ -2762,7 +2761,7 @@ int initMatern(cov_model *cov, storage *s) {
 
 }
 
-void spectralMatern(cov_model *cov, storage *S, double *e) { 
+void spectralMatern(cov_model *cov, gen_storage *S, double *e) { 
   spectral_storage *s = &(S->Sspectral);
   /* see Yaglom ! */
   if (cov->tsdim <= 2) {
@@ -2808,7 +2807,7 @@ int checkoesting(cov_model *cov){
   cov->full_derivs = cov->rese_derivs;
   return NOERROR;
 }
-int initoesting(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int initoesting(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   double Beta = P0(OESTING_BETA);
   cov->taylor[1][TaylorConst] = + Beta;
   cov->taylor[2][TaylorConst] = - 0.5 * Beta * (Beta + 1);  
@@ -2961,7 +2960,7 @@ void DDspherical(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
 int structspherical(cov_model *cov, cov_model **newmodel) {
   return structCircSph( cov, newmodel, 3);
 }
-void dospherical(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) { 
+void dospherical(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   // todo diese void do... in Primitive necessary??
   //  mppinfotype *info = &(s->mppinfo);
   //info->radius = cov->mpp.refradius;
@@ -2974,7 +2973,7 @@ double alphaIntSpherical(int a) {
   return 1.0 / (A + 1.0) - 1.5 / (A + 2.0) + 0.5 / (A + 4.0);
 }
 
-int initspherical(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int initspherical(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int  dim = cov->tsdim;
 
   if (hasNoRole(cov)) {
@@ -3205,8 +3204,8 @@ double densitySteinST1(double *x, cov_model *cov) {
 }
 
 
-int initSteinST1(cov_model *cov, storage *s) {
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+int initSteinST1(cov_model *cov, gen_storage *s) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     spec_properties *cs = &(s->spec);
     cs->density = densitySteinST1;
     return search_metropolis(cov, s);
@@ -3216,7 +3215,7 @@ int initSteinST1(cov_model *cov, storage *s) {
   else ILLEGAL_ROLE;
 
 }
-void spectralSteinST1(cov_model *cov, storage *S, double *e){
+void spectralSteinST1(cov_model *cov, gen_storage *S, double *e){
   //  spectral_storage *s = &(S->Sspectral);
   metropolis(cov, S, e);
 }
@@ -3246,15 +3245,15 @@ void wave(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
 void Inversewave(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   *v = (*x==0.05) ? 1.0/0.302320850755833 : RF_NA;
 }
-int initwave(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+int initwave(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     return (cov->tsdim <= 2) ? NOERROR : ERRORFAILED;
   } 
 
   else ILLEGAL_ROLE;
 
 }
-void spectralwave(cov_model *cov, storage *S, double *e) { 
+void spectralwave(cov_model *cov, gen_storage *S, double *e) { 
   spectral_storage *s = &(S->Sspectral);
   /* see Yaglom ! */
   double x;  
@@ -3329,8 +3328,8 @@ void TBM2Whittle(double *x, cov_model *cov, double *v)
 double densityWhittle(double *x, cov_model *cov) {
   return densityWM(x, cov, PisNULL(WM_NOTINV) ? 0.0 : SQRT2);
 }
-int initWhittle(cov_model *cov, storage *s) {
-  if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
+int initWhittle(cov_model *cov, gen_storage *s) {
+  if (HAS_SPECTRAL_ROLE(cov)) {
     if (PisNULL(WM_NU)) {
       spec_properties *cs = &(s->spec);
       if (cov->tsdim <= 2) return NOERROR;
@@ -3344,7 +3343,7 @@ int initWhittle(cov_model *cov, storage *s) {
 
 }
 
-void spectralWhittle(cov_model *cov, storage *S, double *e) { 
+void spectralWhittle(cov_model *cov, gen_storage *S, double *e) { 
   spectral_storage *s = &(S->Sspectral);
   /* see Yaglom ! */
   if (PisNULL(WM_NOTINV)) {
@@ -3528,7 +3527,7 @@ void biWM2basic(cov_model *cov,
  
 }
 
-int initbiWM2(cov_model *cov, storage *stor) {
+int initbiWM2(cov_model *cov, gen_storage *stor) {
   double a[3], lg[3], aorig[3], nunew[3], 
     *c = P(BIc),
     *cdiag = P(BIcdiag),
@@ -3711,26 +3710,17 @@ int checkbiWM2(cov_model *cov) {
   // !! nudiag, nured has priority over nu
   // !! cdiag, rhored has priority over c
   int err;
-  storage s;
+  gen_storage s;
   STORAGE_NULL(&s);
   s.check = true;
  
   assert(PisNULL(BIrhored) || ISNAN(P0(BIrhored)) || P0(BIrhored) <= 1);
-
-  //kdefault(cov, 5, 1); // 
-
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
-  if (cov->Sbiwm == NULL) {
-    cov->Sbiwm = (biwm_storage*) MALLOC(sizeof(biwm_storage));
-    BIWM_NULL(cov->Sbiwm);
-  } 
-
+  NEW_STORAGE(Sbiwm, BIWM, biwm_storage);
   biwm_storage *S = cov->Sbiwm;
-  assert(S != NULL);
   S->nudiag_given = !PisNULL(BInudiag);
   S->cdiag_given = !PisNULL(BIcdiag);
-
-   if ((err=initbiWM2(cov, &s)) != NOERROR) return err;
+  if ((err=initbiWM2(cov, &s)) != NOERROR) return err;
 
   cov->vdim2[0] = cov->vdim2[1] = 2;
  
@@ -4003,7 +3993,7 @@ void Inverseball(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
 
 
 int struct_ball(cov_model *cov, cov_model **newmodel){
-  assert(newmodel != NULL);
+  ASSERT_NEWMODEL_NOT_NULL;
   if (hasMaxStableRole(cov)) {
     return addUnifModel(cov, BALL_RADIUS, newmodel);
   } else {
@@ -4014,7 +4004,7 @@ int struct_ball(cov_model *cov, cov_model **newmodel){
   return NOERROR;
 }
 
-int init_ball(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int init_ball(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   assert(s != NULL);
 
   //  printf("init ball\n"); APMI(cov);
@@ -4039,7 +4029,7 @@ int init_ball(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
 }
 
 
-void do_ball(cov_model VARIABLE_IS_NOT_USED *cov, storage VARIABLE_IS_NOT_USED *s) { 
+void do_ball(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   assert(s != NULL);
  
   // mppinfotype *info = &(s->mppinfo);
@@ -4154,7 +4144,7 @@ void range_polygon(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 int struct_polygon(cov_model VARIABLE_IS_NOT_USED *cov,
 		   cov_model VARIABLE_IS_NOT_USED **newmodel){
   /*
-  assert(newmodel != NULL);
+  ASSERT_NEWMODEL_NOT_NULL;
   double beta = P0(POLYGON_BETA);
   if (hasAnyShapeRole(cov)) {
     double 
@@ -4186,7 +4176,7 @@ polygon_storage *create_polygon() {
   return ps;
 }
 
-int init_polygon(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int init_polygon(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int i, err,
     dim = cov->tsdim;
   double beta = P0(POLYGON_BETA),

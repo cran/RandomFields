@@ -71,8 +71,9 @@ void nugget(double *x, cov_model *cov, double *v) {
 
 void covmatrix_nugget(cov_model *cov, double *v) {
   location_type *loc = Loc(cov);
-  int i,
-    vdim   = cov->vdim2[0],
+  int 
+    vdim   = cov->vdim2[0];
+  long i,
     n = loc->totalpoints * vdim,
     nP1 = n + 1,
     n2 = n * n;
@@ -130,7 +131,7 @@ void range_nugget(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->openmax[NUGGET_TOL] = true; 
 
   range->min[NUGGET_VDIM]  = 1.0;
-  range->max[NUGGET_VDIM]  = RF_INF;
+  range->max[NUGGET_VDIM]  = MAXINT;
   range->pmin[NUGGET_VDIM] = 1.0;
   range->pmax[NUGGET_VDIM] = 10.0;
   range->openmin[NUGGET_VDIM] = false;
@@ -232,7 +233,7 @@ void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) 
 }
 
 // uses global RANDOM !!!
-int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
+int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   location_type 
     *loc=cov->prevloc; 
   if (cov->ownloc!=NULL) {
@@ -255,12 +256,8 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   ROLE_ASSERT_GAUSS;
 
   cov->method = Nugget;
-  if (cov->Snugget != NULL) NUGGET_DELETE(&(cov->Snugget));
-  if ((cov->Snugget = (nugget_storage*) MALLOC(sizeof(nugget_storage)))==NULL){
-    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }
-  s = (nugget_storage*) cov->Snugget;
-  NUGGET_NULL(s);
+  NEW_STORAGE(Snugget, NUGGET, nugget_storage);
+  s = cov->Snugget;
   s->pos = NULL;
   s->red_field = NULL;
 
@@ -377,7 +374,7 @@ int init_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S){
   return err;
 }
 
-void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
+void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type *loc = Loc(cov);
 ///  double sqrtnugget;
   nugget_storage* s;
@@ -433,7 +430,7 @@ void do_nugget(cov_model *cov, storage VARIABLE_IS_NOT_USED *S) {
       }
     } else {
       int p;
-      ALLOC_EXTRA1(dummy, vdim);
+      ALLOC_EXTRA(dummy, vdim);
       assert(s->pos[0]>=0);
       for (v=0; v<vdim; v++) dummy[v] = RF_NA; // just to avoid warnings 
       //                                           from the compiler

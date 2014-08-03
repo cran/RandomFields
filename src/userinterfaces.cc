@@ -227,7 +227,10 @@ void SetDefaultModeValues(int old, int m){
   if (m < normal) 
     w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
       w->warn_on_grid = false;
-  else if (m>old) w->warn_oldstyle = w->warn_Aniso = w->warn_ambiguous = true;
+  else if (m>old) { 
+    w->warn_oldstyle = w->warn_Aniso = true;
+    if (m > normal) w->warn_ambiguous = true;
+  }
   if (m != normal && w->warn_mode) {
     PRINTF("Note that the option 'modus_operandi' is still in an experimental stage, so that the behaviour may change (slightly) in future.");
     w->warn_mode = false;
@@ -559,40 +562,6 @@ void GetModelList(int* idx, int*internal) {
 
 
 
-
-/*
-void GetKeyInfo(int *keyNr, int *total, int *lengths, int *spatialdim, 
-		int *timespacedim, 
-		int *grid, int *role, int *maxdim, int *vdim)
-{
-    // check with DoSimulateRF and subsequently with extremes.cc, l.170
-    // if any changings !
-  int d;
-  cov_model *key;
-  simu_type *simu;
-  location_type *loc;
-
-  if (*maxdim<MAXSIMUDIM) { *total=-3; *maxdim=MAXSIMUDIM; return;} 
-  if ((*keyNr<0) || (*keyNr>MODEL_MAX)) {*total=-1; return;} 
-  if ((key = KEY[*keyNr]) == NULL) {*total=-3; return;}  
-  simu = &(key->simu);
-  loc = key->prevloc;
-
-  if (!simu->active) {*total=-2;} 
-  else { 
-    *total=loc->totalpoints;
-    *spatialdim = loc->spatialdim;
-    *timespacedim = loc->timespacedim;
-    for (d=0; d<loc->timespacedim; d++) lengths[d]=loc->length[d];
-    *grid = (int) loc->grid;
-    *role = (int) key->role; 
-    *maxdim = MAXSIMUDIM;
-    *vdim = key->vdim;
-  }
-}
-*/
-
-
 void GetAttr(int *type, int *op, int *monotone, int *finiterange, 
 	     int *internal, int *dom, int *iso, int *maxdim, int *vdim) {
 #define MAXPN 10 /* only used for testing purposes */
@@ -636,6 +605,7 @@ double Real(SEXP p, char *name, int idx) {
 	? NA_REAL : (double) INTEGER(p)[idx];
     case LGLSXP : return LOGICAL(p)[idx]==NA_LOGICAL ? NA_REAL 
 	: (double) LOGICAL(p)[idx];
+    default : {}
     }
   // MEMCOPY(msg, p, 300); print("%s\n", msg);
   sprintf(msg, "'%s' cannot be transformed to double! (type=%d)\n",
@@ -683,6 +653,7 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
       }
     case LGLSXP :
       return  LOGICAL(p)[idx]==NA_LOGICAL ? NA_INTEGER : (int) LOGICAL(p)[idx];
+    default : {}
     }
   } else if (nulltoNA) return NA_INTEGER;
   sprintf(msg, "%s: unmatched type of parameter [type=%d]", name, TYPEOF(p));
@@ -719,6 +690,7 @@ bool Logical(SEXP p, char *name, int idx) {
     case INTSXP :
       return INTEGER(p)[idx]==NA_INTEGER ? NA_LOGICAL : (bool) INTEGER(p)[idx];
     case LGLSXP : return LOGICAL(p)[idx];
+    default : {}
     }
   sprintf(msg, "'%s' cannot be transformed to logical.\n", name);  
   ERR(msg);
@@ -827,10 +799,10 @@ void getUnits(SEXP el, char VARIABLE_IS_NOT_USED *name,
     l = length(el);
   if (TYPEOF(el) != NILSXP && TYPEOF(el) == STRSXP && l >= 1) {
     for (i=j=0; i<MAXUNITS; i++, j=(j + 1) % l) {
-      strncpy(units[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
+      strcopyN(units[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
       units[i][MAXUNITSCHAR - 1] ='\0';		    
       if (units2!=NULL) {
-	strncpy(units2[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
+	strcopyN(units2[i], CHAR(STRING_ELT(el, j)), MAXUNITSCHAR);
         units2[i][MAXUNITSCHAR - 1] ='\0';		    
       }
     }
@@ -1186,6 +1158,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       gp->Rprintlevel = INT;
       PL = gp->Cprintlevel = 
 	gp->Rprintlevel <= threshold ? gp->Rprintlevel : threshold;
+
+
     }
       break;
     case 2: {
@@ -2165,9 +2139,9 @@ void splitAndSet(SEXP el, char *name, bool isList) {
   if (i==0) ERR(msg);
   if (i==len) {
     strcpy(prefix, "");
-    strncpy(mainname, name, 200);
+    strcopyN(mainname, name, 200);
   } else {
-    strncpy(prefix, name, i);
+    strcopyN(prefix, name, i);
     prefix[i] = '\0';
     strcpy(mainname, name+i+1);
   }

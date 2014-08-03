@@ -453,7 +453,7 @@ summary.RFspatialPointsDataFrame <- function(object, ...) summary(object@data)
 print.RFspatialPointsDataFrame <- function(x, ...){
   if (!hasArg("silent") || !list(...)$silent) {
     cat("Object of class 'RFspatialPointsDataFrame'\n")
-    str(x@data, no.list=TRUE)#
+    str(x@data, no.list=TRUE, give.attr=FALSE)#
   }
   invisible(x@data)
 }
@@ -465,7 +465,7 @@ summary.RFspatialGridDataFrame <- function(object, ...) summary(object@data)
 print.RFspatialGridDataFrame <- function(x,...) {
  if (!hasArg("silent") || !list(...)$silent) {
     cat("Object of class 'RFspatialGridDataFrame'\n")
-    utils::str(x@data, no.list=TRUE)#
+    utils::str(x@data, no.list=TRUE, give.attr=FALSE)#
   }
   invisible(x@data)
 }
@@ -526,7 +526,7 @@ summary.RFsp <- function(object, ...) {
 
 print.summary.RFsp <- function(x, ...){
   x <- summary.RFsp(x)
-  str(x) #
+  str(x, give.attr=FALSE) #
   invisible(x)
 }
 
@@ -569,13 +569,13 @@ setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
 	  definition=function(
             x, y, MARGIN = c(1, 2),
             MARGIN.slices = NULL,
-            n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
             nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE, ...)
+            legend=TRUE,  MARGIN.movie = NULL, ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -583,6 +583,7 @@ setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
                                  select=select.variables,
                                  zlim=zlim,
                                  legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
                                  ...))
 
 setMethod(f="plot",
@@ -590,13 +591,15 @@ setMethod(f="plot",
 	  definition=function(
             x, y, MARGIN = c(1, 2),
             MARGIN.slices = NULL,
-            n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
             nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE, ...)
+            legend=TRUE,
+            MARGIN.movie = NULL,
+            ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -604,6 +607,7 @@ setMethod(f="plot",
                                  select=select.variables,
                                  zlim=zlim,
                                  legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
                                  ...))
 
 setMethod(f="plot",
@@ -611,13 +615,15 @@ setMethod(f="plot",
 	  definition=function(
             x, y, MARGIN = c(1, 2),
             MARGIN.slices = NULL,
-            n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
             nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE, ...)
+            legend=TRUE,
+            MARGIN.movie = NULL,
+            ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -625,6 +631,7 @@ setMethod(f="plot",
                                  select=select.variables,
                                  zlim=zlim,
                                  legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
                                  ...))
 
 setMethod(f="persp",
@@ -632,13 +639,13 @@ setMethod(f="persp",
 	  definition=function(
             x, y, MARGIN = c(1, 2),
             MARGIN.slices = NULL,
-            n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
             nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE, ...)
+            legend=TRUE, MARGIN.movie = NULL, ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -646,25 +653,26 @@ setMethod(f="persp",
                                  select=select.variables,
                                  zlim=zlim,
                                  legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
                                  ..., plotmethod="persp"))
 
 contour.RFspatialGridDataFrame <-
-  function( x, y, MARGIN = c(1, 2),
+  function( x, y, zlim,
+           MARGIN = c(1, 2),
            MARGIN.slices = NULL,
            n.slices = if (is.null(MARGIN.slices)) 1 else 10,
            nmax = 6,
            plot.variance = (!is.null(x@.RFparams$has.variance) &&
                             x@.RFparams$has.variance),
            select.variables, # = 1:vdim,
-           zlim,
-           legend=TRUE, ...)
+            legend=TRUE,  MARGIN.movie = NULL, ...)
   plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                          MARGIN.slices=MARGIN.slices,
                          n.slices=n.slices, nmax=nmax,
                          plot.variance = plot.variance,
                          select=select.variables,
                          zlim=zlim,
-                         legend=legend,
+                         legend=legend,MARGIN.movie = MARGIN.movie,
                          ..., plotmethod="contour")
 
 

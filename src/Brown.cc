@@ -46,8 +46,9 @@ int checkBrownResnickProc(cov_model *cov) {
     *key = cov->key,
     *sub = key != NULL ? key :
             cov->sub[cov->sub[MPP_SHAPE] != NULL ? MPP_SHAPE: MPP_TCF];
-  int err, role, isoprev,
+  int err, role, 
       dim = cov->tsdim;
+  isotropy_type isoprev;
   Types type;
 
   
@@ -80,7 +81,7 @@ int checkBrownResnickProc(cov_model *cov) {
 }
 
 #define ORIG_IDX 0
-int init_BRorig(cov_model *cov, storage *s){
+int init_BRorig(cov_model *cov, gen_storage *s){
   cov_model *key = cov->key;
   location_type *keyloc = NULL;
   int err, d, 
@@ -149,7 +150,7 @@ int init_BRorig(cov_model *cov, storage *s){
   return err;
 }
 
-void do_BRorig(cov_model *cov, storage *s) {
+void do_BRorig(cov_model *cov, gen_storage *s) {
   cov_model *key = cov->key;
   assert(key != NULL);
   BR_storage *sBR = cov->SBR;
@@ -157,7 +158,8 @@ void do_BRorig(cov_model *cov, storage *s) {
   res_type *res = cov->rf;
 #define ORIG_IDX 0
   int i,
-    zeropos = sBR->zeropos[ORIG_IDX],
+    zeropos = sBR->zeropos[ORIG_IDX];
+  long
     totalpoints = Loc(cov)->totalpoints;
   assert(totalpoints > 0);
   assert(zeropos >= 0 && zeropos <totalpoints);
@@ -176,12 +178,11 @@ void do_BRorig(cov_model *cov, storage *s) {
   }
 }
 
-int init_BRshifted(cov_model *cov, storage *s) {
+int init_BRshifted(cov_model *cov, gen_storage *s) {
   cov_model *key=cov->key;
   location_type *keyloc = NULL;
-  int d, j, err, dim,
-      shiftedloclen, keytotal,
-      trendlenmax, trendlenneeded;
+  int d, dim, err;
+  long j, shiftedloclen, keytotal, trendlenmax, trendlenneeded;
   bool keygrid;
   BR_storage *sBR = NULL;
   
@@ -227,7 +228,7 @@ int init_BRshifted(cov_model *cov, storage *s) {
 	  ) {
         err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
-
+      
       trendlenmax = (int) ceil((double) GLOBAL.br.BRmaxmem / keytotal);
       trendlenneeded = MIN(keytotal, cov->simu.expected_number_simu);
       sBR->trendlen = MIN(trendlenmax, trendlenneeded);
@@ -282,20 +283,19 @@ int init_BRshifted(cov_model *cov, storage *s) {
 
 }
 
-void do_BRshifted(cov_model *cov, storage *s) {
+void do_BRshifted(cov_model *cov, gen_storage *s) {
   BR_storage *sBR = cov->SBR;
   cov_model *key = cov->key;
   assert(cov->key != NULL);
   
   location_type *keyloc = Loc(key);
-  int d, i, k, trendindex,
-     zeropos, zeroposMdim,
-     dim = cov->tsdim,
-     keytotal = keyloc->totalpoints,
-     trendlen = sBR->trendlen,
-     *locindex = sBR->locindex,
-     *mem2loc = sBR->mem2loc,
-     *loc2mem = sBR->loc2mem;
+  long i, k, zeropos, zeroposMdim, keytotal = keyloc->totalpoints;
+  int d,  trendindex,
+    dim = cov->tsdim,
+    trendlen = sBR->trendlen,
+    *locindex = sBR->locindex,
+    *mem2loc = sBR->mem2loc,
+    *loc2mem = sBR->loc2mem;
   bool keygrid = keyloc->grid;
   double *shiftedloc = sBR->shiftedloc,
          **trend = sBR->trend;
@@ -304,7 +304,7 @@ void do_BRshifted(cov_model *cov, storage *s) {
   res_type *lgres = cov->key->rf;
 
   DO(key, s);
-  zeropos = (int) floor(UNIFORM_RANDOM * keytotal);
+  zeropos = (long) floor(UNIFORM_RANDOM * keytotal);
   
   if (loc2mem[zeropos] > -1) {
     trendindex = loc2mem[zeropos];
@@ -342,7 +342,7 @@ void do_BRshifted(cov_model *cov, storage *s) {
     //assert(false); 
     Variogram(NULL, sBR->vario, sBR->trend[trendindex]);
     
-    mem2loc[trendindex] = zeropos;
+    mem2loc[trendindex] = zeropos; // todo ? long instead of int
     loc2mem[zeropos] = trendindex;      
   }
   
@@ -428,7 +428,7 @@ void kappaBRmixed(int i, cov_model *cov, int *nr, int *nc){
 
 
 
-int OptimArea(cov_model *cov, int idx) {
+void OptimArea(cov_model *cov, int idx) {
   // side effect auf P(BR_OPTIMAREA) !!
   BR_storage *sBR = cov->SBR;
   cov_model *key = sBR->sub[idx];
@@ -545,10 +545,10 @@ int OptimArea(cov_model *cov, int idx) {
     Error = 0.0;
     cellcounter = 0;
     for (d=0; d<radiusP1; d++) {
-      double addnumber = (d==0) ? 1 : ((dim==1) ? 2 : 4*d);
+      long addnumber = (d==0) ? 1 : ((dim==1) ? 2 : 4*d);
       for (j=0; j<vertnumber; j++) {
 	if (am[j][d] <= Errorboundtmp + 1e-6) {
-	  Error += addnumber*am[j][d]; // geaendert
+	  Error += (double) addnumber * am[j][d]; // geaendert
 	  cellcounter += addnumber;
 	}
       }
@@ -558,8 +558,8 @@ int OptimArea(cov_model *cov, int idx) {
   //Error = PP(U_i < x_0 | (U_i + M_i, T_i) \in x_0 + E)
   // = EE(#{i: U_i<0, (U_i + M_i, T_i) \in E})/EE(#{i: (U_i + M_i, T_i) \in E})
   
-  zeroxpos = floor(len[0] / 2.0);
-  zeroypos = (dim==1) ? 0 : floor(len[1] / 2.0);
+  zeroxpos = (int) floor(len[0] / 2.0);
+  zeroypos = (dim==1) ? 0 : (int) floor(len[1] / 2.0);
   newlambda = 0.0;
   cellcounter = 0;
   //printf("optimarea: (%d, %d)\n", cov->nrow[BR_OPTIMAREA], cov->ncol[BR_OPTIMAREA]);
@@ -587,12 +587,12 @@ int OptimArea(cov_model *cov, int idx) {
 
 
   
-  return newlambda / cellcounter; // not used
+  // return newlambda / cellcounter; // not used
 }
 
 
 
-int prepareBRoptim(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
+int prepareBRoptim(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   BR_storage *sBR = cov->SBR;
   int idx = 0; // first is the largest
   cov_model *key = sBR->sub[idx];
@@ -646,7 +646,7 @@ int prepareBRoptim(cov_model *cov, storage VARIABLE_IS_NOT_USED *s) {
  return NOERROR;	
 }
 
-void indextrafo(int onedimindex, int *length, int dim, int *multidimindex) {
+void indextrafo(long onedimindex, int *length, int dim, int *multidimindex) {
   int d;
   for (d=0; d<dim; d++) {
     multidimindex[d] = onedimindex % length[d];
@@ -663,7 +663,7 @@ void set_lowerbounds(cov_model *cov) {
     *optimarea = P(BR_OPTIMAREA);
   //  assert(optimarea[0] == 1.0); Marco: wann ist dies erfuellt ???
   int 
-    i, j, l, ii, k,
+    i, l, ii,
     xbound = (int) floor(cov->ncol[BR_OPTIMAREA] * 0.5),
     ybound = (int) floor(cov->nrow[BR_OPTIMAREA] * 0.5);
 
@@ -672,7 +672,7 @@ void set_lowerbounds(cov_model *cov) {
   for (i=0; i<=sBR->maxidx; i++) {
     cov_model *key = sBR->sub[i];
     location_type *keyloc = Loc(key);
-    int keytotal = keyloc->totalpoints,  
+    long j, k, keytotal = keyloc->totalpoints,  
       len = keyloc->length[0];
  
     for (j=0; j<keytotal; j++) sBR->lowerbounds[i][j] = RF_INF;    
@@ -692,7 +692,7 @@ void set_lowerbounds(cov_model *cov) {
  
 
 
-int init_BRmixed(cov_model *cov, storage *s) {
+int init_BRmixed(cov_model *cov, gen_storage *s) {
 
   //printf("entering init_brmixed\n");
 
@@ -836,7 +836,7 @@ int IdxDistance(int maxind, int zeropos, int *length, int dim) {
 }
 
 
-void do_BRmixed(cov_model *cov, storage *s) {
+void do_BRmixed(cov_model *cov, gen_storage *s) {
   // to do: improve simulation speed by dynamic sizes
   assert(cov->key!=NULL);
   BR_storage *sBR = cov->SBR;
@@ -1121,8 +1121,8 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
     centreloc[MAXMPPDIM], 
     minloc[MAXMPPDIM], 
     maxloc[MAXMPPDIM];
-  
-  if (newmodel != NULL) SERR("unexpected call of structBRuser"); /// ?????
+
+  ASSERT_NEWMODEL_NULL;
   if (cov->role != ROLE_BROWNRESNICK) BUG;
   
   assert(isBRuserProcess(cov));  
@@ -1141,9 +1141,8 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
                : BRORIGINAL_USER;
 	       
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));    
-  STORAGE_NULL(cov->stor);
- 
+  if (cov->stor == NULL) NEW_STORAGE(stor, STORAGE, gen_storage);
+  
   GetDiameter(loc, minloc, maxloc, centreloc);
   newxlen = loc->lx;
   if ((newx = (double*) MALLOC(dim * newxlen * sizeof(double))) == NULL) {
@@ -1170,7 +1169,7 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
   
   if (cov->sub[MPP_TCF] != NULL) {
      if ((err = STRUCT(sub, &(cov->key))) > NOERROR) goto ErrorHandling;
-     cov->key->calling = cov;
+     assert(cov->key->calling == cov);
   } 
 
   addModel(&(cov->key), model_intern);
@@ -1239,24 +1238,18 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
     norm, step,
     mindist, dist;
   BR_storage *sBR = NULL;
-
   //printf("xxxxxxxxxxx\n\n\nxxxxxxxxxxxxxx\n");
   
-  if (newmodel != NULL) SERR("unexpected call of structBR"); /// ?????
+  ASSERT_NEWMODEL_NULL;
   if (cov->role != ROLE_BROWNRESNICK) BUG;
 
   assert(isPointShape(cov));
     
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));    
-  STORAGE_NULL(cov->stor);
-  
-  if (cov->SBR != NULL) BR_DELETE(&(cov->SBR));
-  if ((cov->SBR = (BR_storage*) MALLOC(sizeof(BR_storage)))==NULL) {
-     err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }
+  if (cov->stor == NULL) NEW_STORAGE(stor, STORAGE, gen_storage);
+  NEW_STORAGE(SBR, BR, BR_storage);
   sBR = cov->SBR;
-  BR_NULL(sBR);
+
   
   if (cov->sub[MPP_TCF] != NULL) {
     if ((err = STRUCT(sub, &(cov->key))) > NOERROR) goto ErrorHandling;
@@ -1274,8 +1267,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       goto ErrorHandling;
   if ((err = alloc_cov(sBR->vario, dim, 1, 1)) != NOERROR) goto ErrorHandling;
 	
-  addModel(&(cov->key), GAUSSPROC);
-  cov->key->calling = cov;
+  addModel(&(cov->key), GAUSSPROC, cov);
   assert(cov->key->ownloc == NULL);
   
   if (cov->nr == BRORIGINAL_INTERN) {
@@ -1405,8 +1397,8 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, 
                   false, &(sBR->sub[i]->ownloc));
       length = Loc(sBR->sub[i])->length;
-      for (zeropos = 0, d=dim; d>0; d--)
-	zeropos = zeropos*length[d-1] + ceil(length[d-1] * 0.5) - 1;
+      for (zeropos = 0, d = dim; d > 0; d--)
+	zeropos = zeropos * length[d-1] + (int) ceil(length[d-1] * 0.5) - 1;
       sBR->zeropos[i] = zeropos;
 
       //printf("i=%d\n", i);assert(false);
@@ -1443,7 +1435,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
   if (grid) {
     length = Loc(cov->key)->length;
     for (d=dim; d>0; d--)
-      zeropos = zeropos*length[d-1] + ceil(length[d-1] * 0.5) - 1;
+      zeropos = zeropos*length[d-1] + (int) ceil(length[d-1] * 0.5) - 1;
   }
   sBR->zeropos[0] = zeropos;
    
@@ -1492,20 +1484,11 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
     double newscale, 
       factor =  INVSQRTTWO;
       
-    if (newmodel != NULL) SERR("unexpected call of structBR "); /// ?????
+    ASSERT_NEWMODEL_NULL;
     if (next->full_derivs < 0) SERR("given submodel does not make sense");
  
     while (isDollar(next)) {
       addModel(&(cov->key), DOLLAR);
-      //     cov->key->calling = 
-      //      calling->sub[ATOMSHAPE]->calling = calling;
-      //      calling = (*shape)->sub[0];
-      // shape = calling->sub + 0;
-      // print("here2\n");
-       
-      //  printf("model %s %d %d \n", CovList[(*shape)->nr].name,
-      //	     next->p[DSCALE] != NULL, next->p[DVAR] != NULL);
-
       newscale = 1.0;
       if (!PARAMisNULL(next, DSCALE) ) newscale *= PARAM0(next, DSCALE);
       if (!PARAMisNULL(next, DVAR) )  newscale /= sqrt(PARAM0(next, DVAR));
@@ -1587,8 +1570,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
 	meth = BRMIXED_USER;
       }
 
-      addModel(&(cov->key), meth);
-      cov->key->calling = cov;
+      addModel(&(cov->key), meth, cov);
       cov_model *key = cov->key;
       key->prevloc = loc;
       
@@ -1618,7 +1600,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
   
 }
 
-int initBrownResnick (cov_model *cov, storage *S) {
+int initBrownResnick (cov_model *cov, gen_storage *S) {
 
   cov_model *sub = cov->key != NULL ? cov->key :
                    cov->sub[cov->sub[MPP_SHAPE] != NULL ? MPP_SHAPE: MPP_TCF]; 
@@ -1641,7 +1623,7 @@ int initBrownResnick (cov_model *cov, storage *S) {
 
 }
 
-void doBrownResnick(cov_model *cov, storage *s) {
+void doBrownResnick(cov_model *cov, gen_storage *s) {
 
   assert(!cov->origrf);
   assert(cov->key != NULL);
@@ -1654,7 +1636,7 @@ void doBrownResnick(cov_model *cov, storage *s) {
 }
 
 
-int initBRuser (cov_model *cov, storage *S) {
+int initBRuser (cov_model *cov, gen_storage *S) {
   location_type *loc = Loc(cov);
   cov_model *sub = cov->key != NULL ? cov->key :
                   cov->sub[cov->sub[MPP_SHAPE] != NULL ? MPP_SHAPE: MPP_TCF];   
@@ -1668,7 +1650,7 @@ int initBRuser (cov_model *cov, storage *S) {
     if (cov->key != NULL) {
       sub->simu.active = true;
       double ens = ((double) cov->simu.expected_number_simu) * maxpoints;
-      sub->simu.expected_number_simu = MIN(ens, MAXINT);
+      sub->simu.expected_number_simu = (int) MIN(ens, (double) MAXINT);
 
       if ((err = INIT(sub, 1, S)) != NOERROR) return err;
       FieldReturn(cov); 

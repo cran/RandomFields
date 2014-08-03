@@ -42,7 +42,8 @@
 %logLik.RF_fit(object, REML = FALSE, ..., method="ml")
 
 \usage{
-AICc.RF_fit(object, ..., method="ml") 
+AICc.RFfit(object, ..., method="ml", full=FALSE)
+AICc.RF_fit(object, ..., method="ml", full=TRUE)
 }
 
 \arguments{  
@@ -53,6 +54,10 @@ AICc.RF_fit(object, ..., method="ml")
   \item{method}{ string.
     selects that set of parameters which has been obtained through a specific
     fitting method
+  }
+%  \item{k}{integer, see \command{\link[stats]{AIC}}. Unused here.  }
+  \item{full}{logical.
+    if \code{TRUE} submodels are reported as well (if available).
   }
 }
 

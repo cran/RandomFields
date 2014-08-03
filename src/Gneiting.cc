@@ -134,7 +134,8 @@ int checkave(cov_model *cov) {
   if (cov->xdimprev != cov->tsdim || cov->xdimprev != cov->tsdim)
     return ERRORDIM;
   if ((err = CHECK(next, dim, 1, PosDefType, XONLY, ISOTROPIC,
-		     SCALAR, ROLE_COV)) != NOERROR) return err;
+		   SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		   )) != NOERROR) return err;
   next->delflag = DEL_COV; // set gatternr=nr, since non-negativity ensured
   if (!isNormalMixture(next->monotone)) return ERRORNORMALMIXTURE;
   if (CovList[next->nr].spectral == NULL) return ERRORSPECTRAL; // nicht gatter
@@ -172,7 +173,7 @@ void rangeave(cov_model VARIABLE_IS_NOT_USED *cov, range_type* ra){
 
 
 
-void sd_avestp(cov_model *cov, storage VARIABLE_IS_NOT_USED *S, int dim, double *sd){
+void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, double *sd){
   /////  window_info *w = &(S->window);
   int d;
   double b, alphamin, x2, InvSqrt2a, EmA,
@@ -224,7 +225,7 @@ int structAve(cov_model *cov, cov_model **newmodel) {
   if ((err = covcpy(newmodel, cov)) != NOERROR) return err;
   shape = *newmodel;
   shape->nr = SHAPEAVE;
-  addModel(shape->sub + AVE_GAUSS, GAUSS);
+  addModel(shape, AVE_GAUSS, GAUSS);
   gauss = shape->sub[AVE_GAUSS];
   gauss->tsdim = 1;
   gauss->role = ROLE_GAUSS;
@@ -276,7 +277,7 @@ int check_shapeave(cov_model *cov) {
   return checkave(cov); // !! not next
 }
 
-int init_shapeave(cov_model *cov, storage *s) { 
+int init_shapeave(cov_model *cov, gen_storage *s) { 
   ASSERT_GAUSS_METHOD(Average);
   cov_model
     *gauss = cov->sub[AVE_GAUSS];
@@ -311,7 +312,7 @@ int init_shapeave(cov_model *cov, storage *s) {
 }
 
 
-void do_shapeave(cov_model *cov, storage *S) { 
+void do_shapeave(cov_model *cov, gen_storage *S) { 
   // Simulation of V; sopee Bernoulli Sec. 4.2
    cov_model    
     *aveGAUSS = cov->sub[AVE_GAUSS],
@@ -370,6 +371,7 @@ void GetEu2Dinv(cov_model *cov, double *x, int dim,
   }
   
   for (d=0; d<dimsq; d++) {
+    // printf("%d %d\n", d, dimsq);
       Eu2Dinv[d] = t2 * D[d];
   }
   for (d=0; d<dimsq; d+=dimP1)  Eu2Dinv[d] += 1.0; // D + E
@@ -435,13 +437,12 @@ void cox(double *x, cov_model *cov, double *v) {
  
   //PMI(cov, "cox");
 
-  ALLOC_EXTRA1(Eu2Dinv, dimsq);
-
+  ALLOC_EXTRA(Eu2Dinv, dimsq);
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, NULL);
    
   COV(&newx, next, v);
   *v /= sqrt(det);
-}
+} 
 
 void coxhess(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
@@ -450,7 +451,8 @@ void coxhess(double *x, cov_model *cov, double *v) {
       dimsq = dim * dim;
   double z[CoxMaxDim], det, newx, newxsq, phiD, phiD2;
 
-  ALLOC_EXTRA1(Eu2Dinv, dimsq);
+  ALLOC_EXTRA(Eu2Dinv, dimsq);
+
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z);
 
   Abl2(&newx, next, &phiD2);  
@@ -461,8 +463,8 @@ void coxhess(double *x, cov_model *cov, double *v) {
     cpyUf(Eu2Dinv, phiD / (sqrt(det) * newx), dim, tsdim, v);
     addzzT(v, (phiD2 - phiD/newx) / (sqrt(det) * newxsq), z, dim, tsdim);
   }
-}
-
+} 
+ 
 
 void coxnabla(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
@@ -472,7 +474,7 @@ void coxnabla(double *x, cov_model *cov, double *v) {
       dimsq=dim * dim;
   double z[CoxMaxDim], det, newx, newxsq, phiD, factor;
   
-  ALLOC_EXTRA1(Eu2Dinv, dimsq);
+  ALLOC_EXTRA(Eu2Dinv, dimsq);
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z); 
 
   if (newxsq == 0.0) {
@@ -526,7 +528,8 @@ int checkcox(cov_model *cov) {
 
   if ((err = checkkappas(cov)) != NOERROR) return err;
   if ((err = CHECK(next, dim,  1, PosDefType, XONLY, ISOTROPIC,
-		     SCALAR, ROLE_COV)) != NOERROR)
+		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		   )) != NOERROR)
     return err;
 
   if (cov->tsdim != 3)  cov->pref[SpectralTBM] = PREF_NONE;;
@@ -543,7 +546,7 @@ int checkcox(cov_model *cov) {
 
   EXTRA_STORAGE;	 
   return NOERROR;
-}
+} 
 
 void rangecox(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
@@ -569,13 +572,14 @@ void rangecox(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
   range->openmax[COX_BETA] = false;  
 }
 
-int initcox(cov_model *cov, storage *s) {
+int initcox(cov_model *cov, gen_storage *s) {
+  // PMI(cov);
   ASSERT_GAUSS_METHOD(SpectralTBM);
   cov_model *next = cov->sub[0];
   return INIT(next, 0, s);
 }
 
-void spectralcox(cov_model *cov, storage *s, double *e) { 
+void spectralcox(cov_model *cov, gen_storage *s, double *e) { 
   cov_model *next = cov->sub[0];
   int d,
     dim = cov->tsdim - 1;
@@ -621,9 +625,6 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     Syh[StpMaxDim], xi2x, xi2y, 
     detA, hMh, cxy, zh, Q, Amux[StpMaxDim], Amuy[StpMaxDim],
     // Q2, Q3, 
-    *Sx = cov->Sdollar->z, 
-    *Sy = cov->Sdollar->z2, 
-    *A = cov->Sdollar->y,
     *Sc = P(STP_S),
     *M = P(STP_M),
     *z = P(STP_Z);
@@ -631,12 +632,10 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
 
-
-  if (Sx == NULL) Sx = cov->Sdollar->z = (double*) MALLOC(sizeof(double)*dimsq);
-  if (Sy == NULL) Sy = cov->Sdollar->z2= (double*) MALLOC(sizeof(double)*dimsq);
-  if (A == NULL) A = cov->Sdollar->y = (double*) MALLOC(sizeof(double)*dimsq);
-  //  APMI(cov);
-
+  ALLOC_EXTRA(Sx, dimsq);
+  ALLOC_EXTRA2(Sy, dimsq);
+  ALLOC_EXTRA3(A, dimsq);
+    
   if (Sf != NULL) {
     FCTN(x, Sf, Sx); // symmetric, pos definite !!
     FCTN(y, Sf, Sy);
@@ -761,7 +760,8 @@ int checkstp(cov_model *cov){
     return ERRORDIM;
    
   if ((err = CHECK(phi, dim,  1, PosDefType, XONLY, ISOTROPIC,
-		     SCALAR, ROLE_COV)) != NOERROR)
+		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		   )) != NOERROR)
     return err;
   if (!isNormalMixture(phi->monotone)) return ERRORNORMALMIXTURE;
 
@@ -769,27 +769,22 @@ int checkstp(cov_model *cov){
 
   if (Sf != NULL) {
     if ((err = CHECK(Sf, dim,  dim, ShapeType, XONLY, CARTESIAN_COORD,
-		       dim, ROLE_COV)) != NOERROR) 
+		       dim, cov->role // ROLE_COV changed 20.7.14 wg spectral
+)) != NOERROR) 
       return err;
   }
   
 
   if (xi2 != NULL) {
    if ((err = CHECK(xi2, dim, dim,  ShapeType, XONLY, CARTESIAN_COORD,
-		    SCALAR, ROLE_COV)) != NOERROR)
+		    SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		    )) != NOERROR)
      return err;
   }
 
   // kein setbackward??
 
-  if (cov->Sdollar != NULL && cov->Sdollar->z != NULL)
-    DOLLAR_DELETE(&(cov->Sdollar));
-  if (cov->Sdollar == NULL) {
-    cov->Sdollar = (dollar_storage*) MALLOC(sizeof(dollar_storage));
-    DOLLAR_NULL(cov->Sdollar);
-  } 
-  assert(cov->Sdollar->z == NULL);
-
+  EXTRA_STORAGE;
 
   cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
@@ -820,7 +815,7 @@ int structStp(cov_model *cov, cov_model **newmodel) {
   if ((err = covcpy(newmodel, cov)) != NOERROR) return err;
   shape = *newmodel;
   shape->nr = SHAPESTP;
-  addModel(shape->sub + STP_GAUSS, GAUSS);
+  addModel(shape, STP_GAUSS, GAUSS);
   shape->sub[STP_GAUSS]->tsdim = 1;
   return NOERROR;
 }
@@ -834,7 +829,7 @@ int check_shapestp(cov_model *cov) {
 }
 
 
-int init_shapestp(cov_model *cov, storage *s) {
+int init_shapestp(cov_model *cov, gen_storage *s) {
   ASSERT_GAUSS_METHOD(Average);
 
   cov_model
@@ -895,7 +890,7 @@ int init_shapestp(cov_model *cov, storage *s) {
   return err;
 }
 
-void do_shapestp(cov_model *cov, storage *s) {
+void do_shapestp(cov_model *cov, gen_storage *s) {
   // Simulation of V; see Bernoulli Sec. 4.2
   cov_model 
     *stpGAUSS = cov->sub[STP_GAUSS],
@@ -940,7 +935,7 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
     *z = P(STP_Z),
     *q = cov->q;
   
-  ALLOC_EXTRA1(Sx, dimsq); 
+  ALLOC_EXTRA(Sx, dimsq); 
 
   if (Sf == NULL) {
     MEMCOPY(Sx, Sc, bytes);
@@ -1420,7 +1415,8 @@ int checkNonStWM(cov_model *cov) {
   
   if (nu != NULL) {
     if ((err = CHECK(nu, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
-		       SCALAR, ROLE_COV)) != NOERROR) 
+		       SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		     )) != NOERROR) 
       return err;
     if (nu->tsdim != cov->tsdim) return ERRORWRONGDIM;
   }
@@ -1521,7 +1517,7 @@ void rangeNonStWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
   if (!(z < 7.0)) {
     static double storage = 0.0; 
-    if (storage != logV) {
+    if (gen_storage != logV) {
       if (PL >= PL_DETAILS) 
 	PRINTF("alpha=%f, is=%f, cnst=%f logi=%f lgam=%f loga=%f invlogs=%f pow=%f z=%f\n",
 	       alpha,V,
@@ -1597,7 +1593,8 @@ int checknsst(cov_model *cov) {
   if ((err = checkkappas(cov)) != NOERROR) return err;
   cov->finiterange = false;
   if ((err = CHECK(subphi, cov->tsdim, 1, PosDefType, XONLY, ISOTROPIC, 
-		     SCALAR, ROLE_COV)) != NOERROR) 
+		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		   )) != NOERROR) 
     return err;
   
   if (!isNormalMixture(subphi->monotone)) return(ERRORNORMALMIXTURE);
@@ -1605,7 +1602,8 @@ int checknsst(cov_model *cov) {
   assert(cov->finiterange != true); //
 
   if ((err = CHECK(subpsi, 1, 1, NegDefType, XONLY, ISOTROPIC, 
-		     SCALAR, ROLE_COV)) != NOERROR) 
+		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		   )) != NOERROR) 
     return err;
 
   subphi->delflag = subpsi->tsdim = DEL_COV-20;

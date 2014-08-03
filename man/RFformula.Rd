@@ -106,9 +106,7 @@
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-\dontshow{{ %if (!.C("isAuthor", a=integer(1))$a) {
 RFoptions(modus_operandi="sloppy")
-}}
 
 \dontshow{\dontrun{
 ##############################################################
@@ -240,9 +238,7 @@ fit <- RFfit(model=model.na, data=multi.simulated)
 
 
 
-\dontshow{%if (!.C("isAuthor", a=integer(1))$a) 
-RFoptions(modus_operandi="normal")
-}
+\dontshow{RFoptions(modus_operandi="normal")}
 
 \dontshow{FinalizeExample()}
 }

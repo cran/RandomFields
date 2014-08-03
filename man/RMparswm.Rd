@@ -78,7 +78,7 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 \dontshow{\dontrun{
-RFoptions(circulant.maxmem=6e7, pri=5)
+RFoptions(circulant.maxmem=6e7)
 model <- RMparswmX(nudiag=c(1.3, 0.7, 2),
  rho=matrix(nc=3, c(1, 0.5, 0.2, 0.5, 1, 0.6, 0.2, 0.6, 1)))
 x.seq <- y.seq <- seq(-10,10,0.05)

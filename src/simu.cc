@@ -274,7 +274,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   int covnr, i, j, nkappas, //, meth, // methNr,  // old
     elt=0,
     len = length(model);
-  char format[30], name[MAXCHAR], param_name[PARAMMAXCHAR], ERR_LOC[nErrorLoc];
+#define NLEER 80
+  char leer[NLEER], name[MAXCHAR], param_name[PARAMMAXCHAR], ERR_LOC[nErrorLoc];
   //  methname[METHODMAXCHAR], 
   // msg[200];
   SEXP m, p,
@@ -286,7 +287,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 
   // print("hier\n");
 
-  if (TYPEOF(model) != VECSXP) { // not list
+  if (TYPEOF(model) != VECSXP) { // not list8
     ERR("list expected")
       }
   PROTECT(m = VECTOR_ELT(model, elt++));
@@ -296,8 +297,11 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   if (length(m) != 1) ERR("model name must be a single word");
   strcopyN(name, (char*) CHAR(STRING_ELT(m, 0)), MAXCHAR);
 
-  sprintf(format, "%%s\n%%%ds%%s... ", -level);
-  sprintf(ERR_LOC, format, ERROR_LOC, "", name);
+  // printf("%d\n", (2 * level < NLEER) ? 2 * level : NLEER); assert(false);
+
+  strcopyN(leer, "                                                           ", 
+	   (2 * level < NLEER) ? 2 * level : NLEER);
+  sprintf(ERR_LOC, "%s\n%s%s... ", ERROR_LOC, leer, name);
   strcpy(ERROR_LOC, ERR_LOC);
   covnr = getmodelnr(name);
 
@@ -308,7 +312,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   }
 
   *Cov = NULL;
-  addModel(Cov, covnr);
+  addModel(Cov, covnr, NULL, true);
   
   cov = *Cov;
   cov->user_given = ug_explicit;
@@ -325,7 +329,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   for (i=0; i<C->maxsub; i++) subleft[i] = true;
   
   for ( ; elt < len; elt++) {
-    //    if (elt == methNr) continue;  // former definition, 26.8.2011
+  //    if (elt == methNr) continue;  // former definition, 26.8.2011
     p = VECTOR_ELT(model, elt);
     strcopyN(param_name, names == R_NilValue ? "" 
 	     : CHAR(STRING_ELT(names, elt)), PARAMMAXCHAR);     
@@ -335,8 +339,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	i = Match(param_name, STANDARDPARAM, nkappas);
       }
 
-      //      printf("i=%d %s %s kappas=%d %s\n", i, name, param_name, nkappas, 
-      // C->kappanames[nkappas - 1]);
+      //      printf("i=%d %s %s kappas=%d %s\n", i, name, param_name, nkappas,  C->kappanames[nkappas - 1]);
       
  
       if (i<0 && !strcmp(C->kappanames[nkappas - 1], FREEVARIABLE)) {
@@ -465,7 +468,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
       }
       
       if (strcmp(param_name, "") == 0) {
-	//printf("name %s\n", NICK(cov));
+	//printf("XX name %s\n", NICK(cov));
 	if (nkappas == 1) i = 0; else ERR("parameters must be named");
       } else {
 	// i set before the submodels
@@ -499,7 +502,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   
       //     printf("model %d %s %d %s %d %d = %f\n", elt, C->nick, i, C->kappanames[i], cov->p[i] != NULL, cov->kappasub[i] != NULL, Real(p, C->kappanames[i], 0));
 
-      //  print("include %d %d %s %ld %ld\n", i, C->kappatype[i], param_name, cov->p[i],   cov->p[i+1]);
        
       if (isVectorList(p) && isString(VECTOR_ELT(p, 0))) {
 	PFREE(i);
@@ -556,8 +558,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	cov_model *prev = cov->calling;
 	while (prev != NULL && prev->nr != RFGET) prev = prev->calling;
 	if (prev == NULL) ERR("not enough submodels");      
-	//  for ( ; j < C->minsub; j++)
-	//	if (subleft[j]) addModel(cov->sub + j, MISSING_COV);
       }
       if (PL >= PL_SUBIMPORTANT && !shape_process)  {
 	// da darf von 2 untermodellen nur 1 angegeben werden
@@ -591,7 +591,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  if (idx == DALEFT) break;
 	  idx = DALEFT;
 	}
-	if (natsc) addModel(cov->sub + 0, NATSC_INTERN); 
+	if (natsc) addModel(cov, 0, NATSC_INTERN); 
       } else {
 	//	printf("aa %s %s\n", NICK(cov), cov->calling == NULL ? "none" : NICK(cov->calling));
 	addModel(Cov, NATSC_USER); 
@@ -747,8 +747,6 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 		       distances, &(cov->prevloc))) != NOERROR)
       goto ErrorHandling;
 
-     
-    
    strcpy(ERROR_LOC, "Checking the model:");
     if (PL >= PL_DETAILS) {
       //   assert(cov->isoprev != 6);
@@ -767,7 +765,6 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
       goto ErrorHandling;
     }
 
-
    if (PL >= PL_DETAILS) {
       PMI(cov, "CheckModelInternal, after checking:"); // OK
     }
@@ -782,7 +779,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
     assert(CallingSet(cov));
   
-    err = STRUCT(cov, NULL);
+   err = STRUCT(cov, NULL);
  
     //   APMI(cov);
 
@@ -818,7 +815,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
   // Fehlermeldung vom ersten Durchgang wird angezeigt.
   if (err != NOERROR) { 
-    // printf("%d %s\n", err, EM2);
+    //  printf("%d '%s'\n", err, EM2);
     // APMI(cov);
     ERR(EM2); 
   }
@@ -846,6 +843,7 @@ SEXP Init(SEXP model_reg, SEXP model,
 
   NAOK_RANGE = naok; 
   PROTECT (ans = allocVector(INTSXP, 2));
+
 
   //  print("real x %d grid=%d %d time=%d lx=%d %d ncols nc=%d nr=%d  xdimOZ%d\n", isReal(x), grid, distances, time, lx, ly, ncols(x), nrows(x), xdimOZ);
 
@@ -894,6 +892,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
   SEXP result=NULL, 
     dummy=NULL;
   
+
   //  {double x[5]={1,2,3,6,5}; 
   //   return evaluate(x, 5);
   // }
@@ -932,7 +931,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
   //   printf("len =%d  %f %f %f=%f\n", len, cov->q[0], cov->q[1], cov->q[2], *REAL(X));
   //APMI(cov);
   //PMI(cov, "last");
-
+ 
   GetRNGstate();
   FCTN(REAL(X), cov, REAL(result)); 
   PutRNGstate();
@@ -1227,9 +1226,8 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
 
   //  APMI(sub);
   assert(cov->stor == NULL);
-  cov->stor = (storage *) MALLOC(sizeof(storage)); 
-  STORAGE_NULL(cov->stor);
-  
+  NEW_STORAGE(stor, STORAGE, gen_storage);
+
   if (!sub->initialised) {
     if (PL >= PL_DETAILS) PRINTF("Struct Simulate C\n");
    
@@ -1242,8 +1240,7 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
 		     cov->domprev, cov->isoprev, cov->vdim2,
 		     subrole)) != NOERROR) {
       //
-      // 
-XERR(err);
+      // XERR(err);
       // APMI(sub);
       // assert(false);
       return err;
@@ -1280,7 +1277,7 @@ void range_simulate(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
   range->openmax[SIMU_CHECKONLY] = true;
 }
 
-//void do_simulate(cov_model *cov, storage *s){
+//void do_simulate(cov_model *cov, gen_storage *s){
 //  assert(false);
 //}
 
@@ -1372,7 +1369,9 @@ int struct_likelihood(cov_model *cov,
     nr = next->nr;
 
   //APMI(next);
-
+  //printf("PL %d \n", PL);
+  //ssert(PL == 20);
+  
   if (isNegDef(next)) {
     if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
     addModel(&(cov->key), GAUSSPROC);
@@ -1599,8 +1598,7 @@ int struct_EvalDistr(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
   }
   
   assert(cov->stor == NULL);
-  cov->stor = (storage *) MALLOC(sizeof(storage)); 
-  STORAGE_NULL(cov->stor);
+  NEW_STORAGE(stor, STORAGE, gen_storage);
 
   if ((err = INIT(sub, 0, cov->stor)) != NOERROR) {
     //APMI(cov); // !!! ?? hier weitermachen
@@ -1623,7 +1621,7 @@ int struct_EvalDistr(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
 }
 
 
-//void do_EvalDistr(cov_model *cov, storage *s){
+//void do_EvalDistr(cov_model *cov, gen_storage *s){
 //  assert(false);
 //}
 
@@ -1723,9 +1721,8 @@ int alloc_pgs(cov_model *cov, int dim) { // all what is necessary for dompp
   pgs_storage *pgs = NULL;
 
   assert(cov->Spgs == NULL); // NIE PGS_DELETE(&(cov->Spgs)) in Huetchen, da sonst dompp durcheinander kommt;
-  if ((pgs = cov->Spgs = (pgs_storage*) MALLOC(sizeof(pgs_storage))) == NULL) 
-    return ERRORMEMORYALLOCATION;
-  PGS_NULL(pgs);
+  NEW_STORAGE(Spgs, PGS, pgs_storage);
+  pgs = cov->Spgs;
 
   //    printf("here dim=%d\n", dim);
   //assert(dim == 2); 
@@ -2141,7 +2138,6 @@ int check_RFget(cov_model *cov) {
 
   BUG; /// todo:  Code ist noch nicht ausgegoren !!
 
-  get_storage *s = cov->Sget;
   //cov_model *orig, *sub;
   int i, err;
     //    len = ((idx != NULL) ? cov->nrow[RFGET_IDX]
@@ -2149,11 +2145,9 @@ int check_RFget(cov_model *cov) {
   if (cov->Sget != NULL) return NOERROR;
 
   kdefault(cov, RFGET_UP, 0);
-  if ((cov->Sget = (get_storage*) MALLOC(sizeof(get_storage)))==NULL) {
-    return ERRORMEMORYALLOCATION;
-  }
-  s = cov->Sget;
-  GET_STORAGE_NULL(s);
+  NEW_STORAGE(Sget, GET_STORAGE, get_storage);
+  get_storage *s = cov->Sget;
+
   if ((err = SearchParam(cov, s)) != NOERROR) return err;
   for (i=0; i<2; i++) cov->vdim2[i] = s->vdim2[i];
   return NOERROR;
@@ -2179,14 +2173,9 @@ void range_RFget(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 int struct_RFget(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
   int i, err;
-  get_storage *s;
   
-  if (cov->Sget != NULL) GET_STORAGE_DELETE(&cov->Sget);
-  if ((cov->Sget = (get_storage*) MALLOC(sizeof(get_storage)))==NULL) {
-    return ERRORMEMORYALLOCATION;
-  }
-  s = cov->Sget;
-  GET_STORAGE_NULL(s);
+  NEW_STORAGE(Sget, GET_STORAGE, get_storage);
+  get_storage *s = cov->Sget;
   if ((err = SearchParam(cov, s)) != NOERROR) return err;
   for (i=0; i<2; i++) {
     if (cov->vdim2[i] != s->vdim2[i])
@@ -2199,7 +2188,7 @@ int struct_RFget(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
 
 
 
-//void do_Rfget(cov_model *cov, storage *s){
+//void do_Rfget(cov_model *cov, gen_storage *s){
 //  assert(false);
 //}
 

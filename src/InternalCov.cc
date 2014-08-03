@@ -252,7 +252,7 @@ int checkkappas(cov_model *cov, bool errornull){
 	     (ks->vdim2[0] != len || ks->vdim2[1] != 1) )
 	  QERR("required size of random parameter does not match the model");
      
-	if (cov->stor == NULL) cov->stor = (storage *) MALLOC(sizeof(storage));
+	if (cov->stor == NULL) cov->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
 	
 	if (PisNULL(i)) {
 	  PALLOC(i, nr, nc);
@@ -396,7 +396,7 @@ int UpdateMPPprev(cov_model * cov, int moments) {
 }
 
 
-int INIT_intern(cov_model *cov, int moments, storage *s) { // kein err  
+int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err  
   if (!cov->checked) BUG;
   if (cov->initialised) return NOERROR;
   assert(cov != NULL);
@@ -459,7 +459,7 @@ void set_initialised_false(cov_model *cov, bool init_deterministic){
 }
 
 
-int REINIT_intern(cov_model *cov, int moments, storage *s) { // kein err
+int REINIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
   int err;
   set_initialised_false(cov);
   err = INIT_intern(cov, moments, s);
@@ -467,7 +467,7 @@ int REINIT_intern(cov_model *cov, int moments, storage *s) { // kein err
 }
 
 
-int INIT_RANDOM_intern(cov_model *cov, int moments, storage *s, // kein err
+int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
 		       double *p) {
   if (!cov->checked) BUG;
   if (!cov->initialised) {
@@ -822,8 +822,12 @@ int struct2(cov_model *cov, cov_model **newmodel) {
   sprintf(ERROR_LOC, "in %s: ", NICK(cov));
 
   // printf("\nstart struct %s\n", CovList[cov->nr].nick);
+  
 
- err = CovList[cov->nr].Struct(cov, newmodel);
+  err = CovList[cov->nr].Struct(cov, newmodel);
+  if (newmodel != NULL && (*newmodel) != NULL) {
+    (*newmodel)->calling = cov->calling != NULL ? cov->calling : cov;
+  }
 
   //  assert(cov->nr != || cov->key->nr != );
   //  
@@ -834,7 +838,7 @@ int struct2(cov_model *cov, cov_model **newmodel) {
   return err;
 }
 
-int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
+int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
 
   // printf("init2 %s %s\n", NICK(cov), ROLENAMES[cov->role]);
 
@@ -861,12 +865,11 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
     }
   }
 
-  //  printf("prev %s %d %d %ld\n", C->nick, prev->method,
-  //	 Forbidden, (long int) s);
+  //  printf("prev %s %d %d %ld\n", C->nick, prev->method,  Forbidden, (long int) s);
 
   if (cov->method == Forbidden) cov->method = prev->method;
 
-  //   printf("role == %d", cov->role);
+  //    printf("role == %d %d", cov->role, ROLE_COV);
   //  PMI(cov);
 
   if (cov->role == ROLE_GAUSS) {
@@ -929,7 +932,7 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
 
   else {
     //     printf("here D\n");
-    //PMI(cov->calling);
+    // APMI(cov->calling);
     ILLEGAL_ROLE;
   }
 
@@ -942,7 +945,7 @@ int init2(cov_model *cov, storage *s){ // s wird durchgereicht!
   return err;
 }
 
-void do2(cov_model *cov, storage *s){
+void do2(cov_model *cov, gen_storage *s){
   //   cov_model *prev = cov->calling == NULL ? cov : cov->calling;
   //
   //  int i,
@@ -1117,7 +1120,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     // printf("last %d %d prev=%d %s %d\n", last_iso, first_iso, isoprev, C->name, C->isotropy);
     //  crash();
     if (PL >= PL_COV_STRUCTURE) 
-      PRINTF("error as non-isotropic model cannot be called from isotropic one (%s -> %s)", ISONAMES[(int) isoprev], ISONAMES[(int) cov->isoown]);
+      PRINTF("error as non-isotropic model cannot be called from isotropic one (%s -> %s)\n", ISONAMES[(int) isoprev], ISONAMES[(int) cov->isoown]);
 
     // APMI(cov);
     if (cov->calling == NULL) SERR("basic isotropy assumption does not match");
@@ -1127,7 +1130,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     } else {
       // PMI(cov, "cannot be called");
       //  crash();
-      SERR4("model has property '%s'. It cannot be called by '%s' which requires the property '%s' (%d)",
+      SERR5("model '%s' has property '%s'. It cannot be called by '%s' which requires the property '%s' (%d)",
+	    NICK(cov),
 	    ISONAMES[(int) first_iso], Nick(prev), ISONAMES[(int) last_iso],
 	    (int) last_iso);
     }
@@ -1182,10 +1186,10 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   }
   
   err = ERRORNOSTATMATCH;
-  //  if (PL >= PL_STRUCTURE) 
-  // 
-  LPRINT("(dom.start=%d, end=%d)\n",first_dom, last_dom);
-  LPRINT("(iso.start=%d, end=%d)\n",first_iso, last_iso);
+  if (PL >= PL_STRUCTURE) {
+    LPRINT("(dom.start=%d, end=%d, iso.start=%d, end=%d)\n",
+	   first_dom, last_dom, first_iso, last_iso);
+  }
 
  
   int *nr = NULL;
@@ -1380,9 +1384,9 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	  : Nick(prev));
 
   // printf("end err = %d\n", err);
-  EXTRA_STORAGE;
+  COND_NEW_STORAGE(S2, GATTER, gatter_storage, z);
 
-  // printf("2err = %d %s<-%s\n", err, NICK(cov), cov->calling == NULL ? "----" : NICK(cov->calling));
+  // printf("2err = %d %s <= %s\n", err, NICK(cov), cov->calling == NULL ? "----" : NICK(cov->calling));
   cov->checked = err == NOERROR;
   assert(err == NOERROR || (cov->vdim2[0] > 0 && cov->vdim2[1] > 0));
   

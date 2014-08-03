@@ -1421,7 +1421,7 @@ rffit.gauss <-
     .Call("VariogramIntern", Reg, bin.centers, bins, model.values,
        PACKAGE="RandomFields")
 
-#    Print( RFgetModelInfo(reg=Reg, lev=1, spC=F),
+#    Print( RFgetModelInfo(reg=Reg, level=2, spC=F),
 #          bin.centers, bins, model.values, length(bin.centers),length(model.values))
   
  
@@ -1698,7 +1698,7 @@ rffit.gauss <-
     
     if (printlevel >= PL.FCTN.SUBDETAILS) {
       cat("\n\nAufruf von MLtarget\n===================\n")
-      Print(RFgetModelInfo(register=Reg, level=13))#
+      Print(RFgetModelInfo(register=Reg, level=14))#
     }
 
         
@@ -2042,11 +2042,9 @@ rffit.gauss <-
 #  Print(model); xxxx
  
   
-  modelinfo <- RFgetModelInfo(register=Reg, level=1, spConform=FALSE)
+  modelinfo <- RFgetModelInfo(register=Reg, level=2, spConform=FALSE)
   vdim <- modelinfo$vdim
  ## -- wichtig fuer GetValuesAtNA
-
- 
    
   NAs <-  info.cov$NAs
   trans.inv <- info.cov$trans.inv ## note: only with respect to the
@@ -2216,7 +2214,7 @@ rffit.gauss <-
                       time, xdimOZ,
                       fit$short, FALSE, TRUE,
                       PACKAGE="RandomFields")
-    modelinfo <- RFgetModelInfo(register=Reg, level=1, spConform=FALSE)
+    modelinfo <- RFgetModelInfo(register=Reg, level=2, spConform=FALSE)
     
     model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                       do.notreturnparam=TRUE)
@@ -2263,6 +2261,7 @@ rffit.gauss <-
   SIGN.VAR.IDX <- ptype == SIGNEDVARPARAM
   SIGN.SD.IDX <- ptype == SIGNEDSDPARAM
   ALL.SDVAR <- SDVAR.IDX | SIGN.VAR.IDX | SIGN.SD.IDX
+
   if (is.null(sdvar)) sdvar <- matrix(SDVAR.IDX, nrow=ncovparam, ncol=vdim)
   else stopifnot(all(rowSums(sdvar[SDVAR.IDX, ]) >= 1))
   SCALE.IDX <- ptype == SCALEPARAM  ## large capitals 

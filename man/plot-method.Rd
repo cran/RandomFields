@@ -6,6 +6,7 @@
 \alias{plot,RFspatialDataFrame,missing-method}
 \alias{plot,RFdataFrame,missing-method}
 \alias{plot,RFdataFrame,RFdataFrame-method}
+\alias{persp,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,missing-method}
 \alias{plot,RFspatialDataFrame,RFspatialPointsDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
@@ -140,21 +141,32 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
+ MARGIN.movie = NULL, ...)
 
 \S4method{plot}{RFspatialDataFrame,RFspatialGridDataFrame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
  n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
+  MARGIN.movie = NULL,...)
 
 \S4method{plot}{RFspatialDataFrame,RFspatialPointsDataFrame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
  n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, ...)
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, 
+  MARGIN.movie = NULL,...)
+
+\S4method{persp}{RFspatialGridDataFrame}(x, y,
+ MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+ nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, 
+ MARGIN.movie = NULL,...)
 
 
 \S4method{plot}{RFdataFrame,missing}(x, y, nmax=6, 
@@ -182,113 +194,123 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
 \S3method{points}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 
 \S3method{lines}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
+
+%\S3method{contour}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 }
 
 
 \arguments{
- \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
- \command{\link[=RFempVariog-class]{RFempVario}} or
- \command{\link[=RFfit-class]{RFfit}} or
- \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
- be any sophisticated model but it must be either stationary or a
- variogram model} 
- \item{y}{ignored in most methods}
- \item{MARGIN}{vector of two; two integer values giving the coordinate dimensions
- w.r.t. which the field or the covariance model
- is to be plotted; in all other directions,
- the first index is taken}
- \item{MARGIN.slices}{integer value; if \eqn{[space-time-dimension>2]},
- \code{MARGIN.slices} can specify a third dimension w.r.t. which a
- sequence of slices is plotted} 
- \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
- \code{dim > 2}; a vector of length \code{dim}-2 with distance values
- for the coordinates that are not displayed} 
- \item{n.slices}{integer value; the number of slices to be plotted; if
- \code{n.slices>1}, \code{nmax} is set to 1}
- \item{nmax}{the maximal number of the \code{x@.RFparams$n} iid copies
- of the field that are to be plotted}
- \item{...}{arguments to be passed to methods; mainly graphical
-   arguments; internally, \code{...} are passed to \code{image} and
- \code{plot.default}, respectively; if, by default, multiple colors,
- xlabs or ylabs are used, also vectors of suitable length can be
- passed as \code{col}, \code{xlab} and \code{ylab}, respectively}
- \item{fit.method}{character; only for \code{class(x)=="RFfit"}; a
- vector of slot names for which the fitted covariance or variogram model is to be plotted; should be a subset of
- \code{slotNames(x)} for which the corresponding slots are of class
- \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
- plotted} 
- \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
- the maximal number of bins of angle phi that are to be
- plotted}
- \item{nmax.theta}{integer; only for \code{class(x)=="RFempVario"};
- the maximal number of bins of angle theta that are to be
- plotted} 
- \item{nmax.T}{integer; only for \code{class(x)=="RFempVario"};
- the maximal number of different time bins that are to be
- plotted} 
- \item{plot.nbin}{logical; only for \code{class(x)=="RFempVario"};
- indicates whether the number of pairs per bin are to be plotted}
- \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
- indicates whether the calculated standard deviation (\code{x@sd}) is
- to be plotted (in form of arrows of length +-1*sd)}
- \item{variogram}{logical; This argument should currently not be set
- by the user. If \code{TRUE} then the empirical variogram
- is plotted, else an estimate for the covariance function} 
- \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
-   the anisotropic case where \code{model} is given.
-   As the empirical variogram is calculated on a sector of angles,
-   no exact variogram curve corresponds to the mean values in this
-   sector.
-   If \code{boundaries=TRUE} the values of the variogram on the sector
-   boundaries are plotted. If \code{FALSE} some kind of mean
-   model values are plotted. Neither the boundaries may contain
-   the values of emprical variogram nor does the mean values
-   need to be close the emprical variogram.  
- } 
- \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
- covariance function and the variogram are plotted as a function of
- \eqn{\R^\code{dim}}{R^\code{dim}}.}
- \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
- number of points at which the model 
- evaluated (in each dimension); defaults to 200} 
- \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
- equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
- whether the covariance (\code{fct.type="Cov"}) or the
- variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
- implies automatic choice, where \code{"Cov"} is chosen whenever the model is
- stationary} 
- \item{model}{object of class
- \command{\link[=RMmodel-class]{RMmodel}}; only for
- \code{class(x)=="RFempVario"} or \code{class(x)=="RFfit"}; a list of
- covarianve or variogram models that are to be plotted into the same
- plot as the empirical variogram (and the fitted models)}
- \item{plot.variance}{logical, whether variances should be plotted if
- available}
- \item{select.variables}{vector of integers or list of vectors.
- The argument is only of interest for multivariate models.
- Here, \code{length(select.variables)} gives the number of pictures shown
- (excuding the plot for the variances, if applicable).
- If \code{select.variables} is a vector of integers then exactly these
- components are shown. If \code{select.variables} is a list, each element
- should be a vector up to length \eqn{l\le 3}{l <= 3}:
- \itemize{
- \item \eqn{l=1}\cr the component is shown in the usual way
- \item \eqn{l=2} \cr the two components are interpreted as vector and
- arrows are plotted
- \item \eqn{l=3} \cr the first component is shown as single component;
- the remaining two component are interpreted as a vector and
- plotted into the picture of the first component 
- }
- }
- \item{legend}{logical, whether a legend should be plotted}
- \item{zlim}{vector of length 2 with the usual meaning.
- In case of multivariate random fields, \code{zlim} can also be a character
- wih the value \sQuote{joint} indicating that all plotted compoments shall
- have the same zlim OR a matrix with two rows, where the i-th column
- gives the zlim of the i-th variable OR a list with entries named
- \code{data} and \code{var} if a separate \code{zlim}
- for the Kriging variance is to
- be used.}
+  \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
+    \command{\link[=RFempVariog-class]{RFempVario}} or
+    \command{\link[=RFfit-class]{RFfit}} or
+    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
+    be any sophisticated model but it must be either stationary or a
+    variogram model} 
+  \item{y}{ignored in most methods}
+  \item{MARGIN}{vector of two; two integer values giving the coordinate
+    dimensions 
+    w.r.t. which the field or the covariance model
+    is to be plotted; in all other directions,
+    the first index is taken}
+  \item{MARGIN.slices}{integer value; if \eqn{[space-time-dimension>2]},
+    \code{MARGIN.slices} can specify a third dimension w.r.t. which a
+    sequence of slices is plotted. Currently only works for grids.} 
+  \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
+    \code{dim > 2}; a vector of length \code{dim}-2 with distance values
+    for the coordinates that are not displayed} 
+  \item{n.slices}{integer value. 
+    The number of slices to be plotted; if
+    \code{n.slices>1}, \code{nmax} is set to 1. Or \code{n.slices} is a
+    vector of 3 elements: start, end, length. Currently only works for grids.}
+  \item{nmax}{the maximal number of the \code{x@.RFparams$n} iid copies
+    of the field that are to be plotted}
+  \item{MARGIN.movie}{integer. If given a sequence of figures is shown for this
+    direction. This option is in an experimental stage.
+    It works only for grids.
+  }
+  \item{...}{arguments to be passed to methods; mainly graphical
+    arguments; internally, \code{...} are passed to \code{image} and
+    \code{plot.default}, respectively; if, by default, multiple colors,
+    xlabs or ylabs are used, also vectors of suitable length can be
+    passed as \code{col}, \code{xlab} and \code{ylab}, respectively}
+  \item{fit.method}{character; only for \code{class(x)=="RFfit"}; a
+    vector of slot names for which the fitted covariance or variogram
+    model is to be plotted; should be a subset of 
+    \code{slotNames(x)} for which the corresponding slots are of class
+    \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
+    plotted} 
+  \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of bins of angle phi that are to be
+    plotted}
+  \item{nmax.theta}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of bins of angle theta that are to be
+    plotted} 
+  \item{nmax.T}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of different time bins that are to be
+    plotted} 
+  \item{plot.nbin}{logical; only for \code{class(x)=="RFempVario"};
+    indicates whether the number of pairs per bin are to be plotted}
+  \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
+    indicates whether the calculated standard deviation (\code{x@sd}) is
+    to be plotted (in form of arrows of length +-1*sd)}
+  \item{variogram}{logical; This argument should currently not be set
+    by the user. If \code{TRUE} then the empirical variogram
+    is plotted, else an estimate for the covariance function} 
+  \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
+    the anisotropic case where \code{model} is given.
+    As the empirical variogram is calculated on a sector of angles,
+    no exact variogram curve corresponds to the mean values in this
+    sector.
+    If \code{boundaries=TRUE} the values of the variogram on the sector
+    boundaries are plotted. If \code{FALSE} some kind of mean
+    model values are plotted. Neither the boundaries may contain
+    the values of emprical variogram nor does the mean values
+    need to be close the emprical variogram.  
+  } 
+  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
+    covariance function and the variogram are plotted as a function of
+    \eqn{\R^\code{dim}}{R^\code{dim}}.}
+  \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
+    number of points at which the model 
+    evaluated (in each dimension); defaults to 200} 
+  \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
+    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
+    whether the covariance (\code{fct.type="Cov"}) or the
+    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
+    implies automatic choice, where \code{"Cov"} is chosen whenever the model is
+    stationary} 
+  \item{model}{object of class
+    \command{\link[=RMmodel-class]{RMmodel}}; only for
+    \code{class(x)=="RFempVario"} or \code{class(x)=="RFfit"}; a list of
+    covarianve or variogram models that are to be plotted into the same
+    plot as the empirical variogram (and the fitted models)}
+  \item{plot.variance}{logical, whether variances should be plotted if
+    available}
+  \item{select.variables}{vector of integers or list of vectors.
+    The argument is only of interest for multivariate models.
+    Here, \code{length(select.variables)} gives the number of pictures shown
+    (excuding the plot for the variances, if applicable).
+    If \code{select.variables} is a vector of integers then exactly these
+    components are shown. If \code{select.variables} is a list, each element
+    should be a vector up to length \eqn{l\le 3}{l <= 3}:
+    \itemize{
+      \item \eqn{l=1}\cr the component is shown in the usual way
+      \item \eqn{l=2} \cr the two components are interpreted as vector and
+      arrows are plotted
+      \item \eqn{l=3} \cr the first component is shown as single component;
+      the remaining two component are interpreted as a vector and
+      plotted into the picture of the first component 
+    }
+  }
+  \item{legend}{logical, whether a legend should be plotted}
+  \item{zlim}{vector of length 2 with the usual meaning.
+    In case of multivariate random fields, \code{zlim} can also be a character
+    wih the value \sQuote{joint} indicating that all plotted compoments shall
+    have the same zlim OR a matrix with two rows, where the i-th column
+    gives the zlim of the i-th variable OR a list with entries named
+    \code{data} and \code{var} if a separate \code{zlim}
+    for the Kriging variance is to
+    be used.}
 }
 
 \author{Alexander Malinowski
