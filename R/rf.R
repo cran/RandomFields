@@ -58,7 +58,7 @@ xRFloglikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid, data,
 
   rfInit(model=model, x=as.double(t(all$given)),
          y=NULL, z=NULL, T=all$T, grid=all$grid,
-         reg = MODEL.USER, dosimulate=FALSE)
+         reg = MODEL.USER, dosimulate=FALSE, old.seed=RFoptOld[[1]]$general$seed)
   
   return(.Call("EvaluateModel", double(0),  Reg, PACKAGE="RandomFields"))
 }
@@ -88,7 +88,8 @@ RFdistr <- function(model, x, q, p, n, dim=1, ...) {
 #  Print(model)
 
   rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
-         y=NULL, z=NULL, T=NULL, grid=TRUE, reg = MODEL.USER,  dosimulate=FALSE)
+         y=NULL, z=NULL, T=NULL, grid=TRUE, reg = MODEL.USER,
+         dosimulate=FALSE, old.seed=RFoptOld[[1]]$general$seed)
 
   return(.Call("EvaluateModel", double(0), as.integer(MODEL.USER),
                   PACKAGE="RandomFields"))
@@ -132,7 +133,8 @@ RFcov <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
   p <- list(fctcall, PrepareModel2(model));
   
   rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, spdim=dim, reg = MODEL.USER, dosimulate=FALSE)
+         distances=distances, spdim=dim, reg = MODEL.USER, dosimulate=FALSE,
+         old.seed=RFoptOld[[1]]$general$seed)
 
   result <- .Call("EvaluateModel", double(0), as.integer(MODEL.USER),
                   PACKAGE="RandomFields")
@@ -259,18 +261,23 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
 
 
 rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
-                   distances, spdim, reg, dosimulate=TRUE) {
+                   distances, spdim, reg, dosimulate=TRUE, old.seed=NULL) {
   
   stopifnot(xor(missing(x) || length(x)==0,
                 missing(distances) || length(distances)==0))
 
-  RFopt <- RFoptions()
+  RFopt <- RFoptions() 
   if (!is.na(RFopt$general$seed)) {
-    if (dosimulate && RFopt$general$printlevel >= PL.IMPORPANT) {
+    allequal <- all.equal(old.seed, RFopt$general$seed)
+    allequal <- is.logical(allequal) && allequal
+    if (dosimulate && RFopt$general$printlevel >= PL.IMPORPANT &&
+        (is.null(old.seed) || (!is.na(old.seed) && allequal)
+         )
+        ) {
        message("NOTE: simulation is performed with fixed random seed ",
                RFopt$general$seed,
-              ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
-    }
+               ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
+     }
     set.seed(RFopt$general$seed)
   }
   
@@ -427,7 +434,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
 
     rfInit(model=list("Simulate", checkonly=TRUE, model),
            x=x.tmp, y=y, z=z, T=T, grid=grid, distances=distances, spdim=dim,
-           reg=reg, dosimulate=-1)
+           reg=reg, dosimulate=-1, old.seed=RFoptOld[[1]]$general$seed)
     info <- RFgetModelInfo(reg, level=3)
     grid <- info$loc$grid
 
@@ -470,7 +477,8 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
     rfInit(model=list("Simulate",
              setseed=eval(parse(text="quote(set.seed(seed=seed))")),
              env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
-           grid=grid, distances=distances, spdim=dim, reg=reg)
+           grid=grid, distances=distances, spdim=dim, reg=reg,
+           old.seed=RFoptOld[[1]]$general$seed)
 
     if (n < 1) return(NULL)
     

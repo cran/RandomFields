@@ -1,5 +1,5 @@
 Package: RandomFields
-Version: 3.0.32
+Version: 3.0.34
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Peter Menck [aut], Sebastian Gross [aut], Ulrike Ober [ctb], Katharina Burmeister [ctb], Juliane Manitz [ctb], Paulo Ribeiro [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
@@ -10,7 +10,7 @@ Description: Simulation of Gaussian and extreme value random fields;
 	      conditional simulation; kriging; maximum likelihood estimation
 License: GPL (>= 3)
 URL: http://ms.math.uni-mannheim.de/de/publications/software
-Packaged: 2014-08-03 20:36:45 UTC; schlather
+Packaged: 2014-08-10 19:40:42 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-08-04 09:25:40
+Date/Publication: 2014-08-11 07:40:27

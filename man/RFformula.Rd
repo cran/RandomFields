@@ -102,16 +102,20 @@
  \command{\link{RFfit}},
  \code{\link[=RandomFields-package]{RandomFields}}.}
 
+
+
+\keyword{spatial}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 RFoptions(modus_operandi="sloppy")
 
-\dontshow{\dontrun{
 ##############################################################
 #
-# Example 1: Simulation and fitting of a two-dimensional
+# Example  : Simulation and fitting of a two-dimensional
 # Gaussian random field with exponential covariance function
 #
 ###############################################################
@@ -119,20 +123,20 @@ RFoptions(modus_operandi="sloppy")
 V <- 10
 S <- 0.3
 model <- RMexp(var=V, scale=S)
-# Simulate from model
-x <- y <- seq(1,3, by=0.1) # grid coordinates
-simulated <- RFsimulate(model = model, x=x, y=y, grid=TRUE)
+x <- y <- seq(1, 3, by= if (interactive()) 0.1 else 1)
+
+simulated <- RFsimulate(model = model, x=x, y=y)
+# add overall mean/trend of 3 to the response/simulated data 
+simulated@data <- simulated@data + 3
 #returns an object of class RFspatialPointsDataFrame including
 #coordinates and the simulated response vector
 plot(simulated)
 
-# add overall mean/trend of 3 to the response/simulated data 
-simulated@data <- simulated@data + 3
 
-# alternative:
-simulated <- RFsimulate(model = ~ 1@RMfixed(beta=3) +
- RMexp(var=V, scale=S),
- x=x, y=y, grid=TRUE, V=V, S=S)
+# an alternative code to the above code:
+simulated2 <- RFsimulate(model = ~ 1@RMfixed(beta=3) +
+               RMexp(var=V, scale=S),x=x, y=y, V=V, S=S)
+plot(simulated2)
 
 # Estimate parameters of underlying covariance function via
 # maximum likelihood
@@ -142,7 +146,7 @@ fitted <- RFfit(model=model.na, data=simulated)
 # compare sample mean of data with ML estimate:
 mean(simulated@data[,1]) 
 fitted@ml@trend
-}}
+
 
 \dontshow{\dontrun{
 ##############################################################
@@ -189,16 +193,14 @@ model <- ~ RMtrend(mean=2) +
  RMplus(RMexp(var=3), RMgauss(var=1.5),
  Aniso=matrix(c(2,0,0,1),nrow=2))
 
-simulated <- RFsimulate(model=model,x=seq(0,2,0.1),y=seq(-1,3,0.2),
- grid=TRUE)
+simulated <- RFsimulate(model=model,x=seq(0,2,0.1),y=seq(-1,3,0.2))
 
 # equivalent model
 model <- RMtrend(polydeg=1, polycoeff=c(2, 1.5, .3)) +
  RMplus(RMexp(var=3), RMgauss(var=1.5),
  Aniso=matrix(c(2,0,0,1), nrow=2))
 
-simulated <- RFsimulate(model=model, x=seq(0,2,0.1), y=seq(-1,3,0.2),
- grid=TRUE)
+simulated <- RFsimulate(model=model, x=seq(0,2,0.1), y=seq(-1,3,0.2))
 
 # Estimate trend (polynomial of degree 1) and variance components such
 # that var_exp = 2*var_gauss as in the true model used for simulation
@@ -227,7 +229,7 @@ fit <- RFfit(model=model.na, data=simulated)
 x <- y <- 0:10
 model <- ~ RMtrend(plane=matrix(c(1,2,3,4), ncol=2)) +
            RMnugget(var=0.5, vdim=2)
-multi.simulated <- RFsimulate(model=model, x=x, y=y, grid=TRUE)
+multi.simulated <- RFsimulate(model=model, x=x, y=y)
 
 # Fit the Gaussian random field with unknown trend for the second
 # response variable and unknown variances
@@ -242,5 +244,3 @@ fit <- RFfit(model=model.na, data=multi.simulated)
 
 \dontshow{FinalizeExample()}
 }
-
-\keyword{spatial}

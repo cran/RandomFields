@@ -160,6 +160,9 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFhurst}}
 }
+
+\keyword{ spatial }%-- one or more ...
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -168,7 +171,3 @@ z <- RFsimulate(RMexp(), x)
 if (interactive()) str(RFfractaldim(data=z))
 \dontshow{FinalizeExample()}
 }
-\keyword{ spatial }%-- one or more ...
-
-% LocalWords: gridtriple sequ exp len fft Inf variogram pch cex printlevel NA
-% LocalWords: RFoptions vario eqn WOSA nographics itemize

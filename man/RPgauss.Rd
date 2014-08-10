@@ -79,17 +79,6 @@ By default, all Gaussian random fields have zero mean.
 }
 
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-model <- RMexp()
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,1))
-plot(RFsimulate(model, x=x, seed=0))
-plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
-\dontshow{FinalizeExample()}
-}
-
 
 \seealso{
   \link{RP},
@@ -105,8 +94,16 @@ plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
 }
 
 
-
-
 \keyword{spatial}
 
 
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+model <- RMexp()
+x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+plot(model)
+plot(RFsimulate(model, x=x, seed=0))
+plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
+\dontshow{FinalizeExample()}
+}

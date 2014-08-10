@@ -4,10 +4,14 @@
 ##
 #exportPattern("^[^\\.]")
 exportPattern("^R")
+
 export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
+       as.array.RFspatialGridDataFrame, as.array.RFgridDataFrame, 
+       as.vector.RFspatialGridDataFrame, as.vector.RFgridDataFrame, 
        conventional2RFspDataFrame,
 # internal fcts used for maintainance 
        Print, rfGenerateModels, checkExamples, FinalizeExample, Dependencies,
+       ScreenDevice,
 # obsolete       
        CondSimu, Covariance, CovarianceFct, CovMatrix,
        DeleteAllRegisters, DeleteRegister, DoSimulateRF,

@@ -13,16 +13,14 @@
 #define ASSERT_CHECKED(Cov) assert(Cov->checked)
 
 #define DOPRINT true
-
+#define SHOW_ADDRESSES 1
 // // 1
-
 
 
 #ifndef RANDOMFIELDS_DEBUGGING
 
 #define ERRLINE 
 // #define ERRLINE assert({PRINTF("(ERROR %s, line %d)\n", __FILE__, __LINE__); true;})
-
 
 #define NICK(COV) (isDollar(COV) ? CovList[(COV)->sub[0]->nr].nick : CovList[(COV)->nr].nick)
 
@@ -61,6 +59,7 @@
 #define DEBUGINFO 
 
 #else
+
 #define NICK(COV) (CovList[(COV)->nr].nick)
 #define ERRLINE assert({PRINTF("(ERROR in %s, line %d)\n", __FILE__, __LINE__); true;})
 
@@ -508,6 +507,15 @@ typedef char NAname_type[MAX_NA][255];
 
 ///////////////////////////////////////////////////////////////////////
 // Families
+#define DISTR_DX 0
+#define DISTR_PX 1
+#define DISTR_QX 2
+#define DISTR_RX 3
+#define DISTR_NCOL 4
+#define DISTR_NROW 5
+#define DISTR_ENV 6
+#define DISTR_NAME 7
+#define DISTR_LAST DISTR_NAME
 
 #define GAUSS_DISTR_MEAN 0
 #define GAUSS_DISTR_SD 1
@@ -945,7 +953,7 @@ typedef struct internal_param{
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool warn_oldstyle, warn_newstyle, warn_Aniso, warn_ambiguous, 
     warn_normal_mode, warn_mode, warn_colour, stored_init, warn_scale,
-    warn_coordinates, warn_on_grid
+    warn_coordinates, warn_on_grid, warn_new_definitions, warn_aspect_ratio
     ;// 
 } internal_param;
 
@@ -1803,7 +1811,7 @@ extern char NEWMSG[LENERRMSG];
 #define QERRC(NR,X) {sprintf(ERRORSTRING, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); DEBUGINFOERR; return ERRORM;}
 #define SERR(X) { strcpy(ERRORSTRING, X); /* PRINTF("serr:%s\n", X); */ DEBUGINFOERR; return ERRORM;}
 #define SERR1(X,Y) { sprintf(ERRORSTRING, X, Y); /* PRINTF("serr:%s\n", X); */DEBUGINFOERR;  return ERRORM;}
-#define SERR2(X, Y, Z) { sprintf(ERRORSTRING, X, Y, Z); /* PRINTF("serr:%s\n", X); */ DEBUGINFOERR; return ERRORM;}
+#define SERR2(X, Y, Z) { sprintf(ERRORSTRING, X, Y, Z); /* PRINTF("serr:%s\n", ERRORSTRING); */  DEBUGINFOERR; return ERRORM;}
 #define SERR3(X, Y, Z, A) { sprintf(ERRORSTRING, X, Y, Z, A); /* PRINTF("serr:%s\n", X); */ DEBUGINFOERR; return ERRORM;}
 #define SERR4(X, Y, Z, A, B) { sprintf(ERRORSTRING, X, Y, Z, A, B); /* PRINTF("serr:%s\n", X); */DEBUGINFOERR;  return ERRORM;}
 #define SERR5(X, Y, Z, A, B, C) { sprintf(ERRORSTRING, X, Y, Z, A, B, C); /* PRINTF("serr:%s\n", X); */ DEBUGINFOERR; return ERRORM;}
@@ -1816,7 +1824,6 @@ extern char NEWMSG[LENERRMSG];
 #define GERR4(X,Y,Z,A,B) { sprintf(ERRORSTRING, X, Y, Z, A, B); /* PRINTF("gerr:%s\n", X); */ err = ERRORM; DEBUGINFOERR; goto ErrorHandling;}
 #define GERR5(X,Y,Z,A,B,C) { sprintf(ERRORSTRING, X, Y, Z, A, B, C); /* PRINTF("gerr:%s\n", X); */ err = ERRORM; DEBUGINFOERR; goto ErrorHandling;}
 
-extern char BUG_MSG[250];
 #define BUG {								\
     sprintf(BUG_MSG, "Severe error occured in function '%s' (file '%s', line %d). Please contact maintainer martin.schlather@math.uni-mannheim.de .", \
 	    __FUNCTION__, __FILE__, __LINE__);				\
@@ -2811,6 +2818,11 @@ int addressbits(void *addr);
 #define ALLOC_DOLLAR4(Z, SIZE) ALLOC_NEW(Sdollar, Z, SIZE, y2)     
 
 
+#define WARN_NEWDEFINITIONS						\
+  if (GLOBAL.internal.warn_new_definitions) {				\
+  warning("Note that in Version 3.0.33 some definitions have changed (and some typos corrected), see 'RMbernoulli', 'RMbrownresnick', 'RMbr2bg' and 'RMbr2eg'"); \
+  GLOBAL.internal.warn_new_definitions = false;				\
+  }
 
 
 // Polygon Functions

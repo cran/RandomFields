@@ -91,8 +91,13 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  \item{transform}{
    this is an attempt to allow binding between
    parameters,
-   e.g. a parameter is supposed to be twice another one.
-   This option should not be used yet.
+   e.g. one parameter value is supposed to equal another one,
+   See examples below.
+
+   \code{transform=list()} is not valid for estimating, but returns
+   structural information to set up the correct function.
+  See examples below.
+
  }
  \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}.}
@@ -169,7 +174,7 @@ RFoptions(modus_operandi="sloppy")
 n <- if (interactive()) 100 else 5
 
 #########################################################
-## simulate some data first
+## simulate some data first                            ## 
 points <- if (interactive()) 100 else 40
 x <- runif(points, 0, 3)
 y <- runif(points, 0, 3) ## random points in square [0, 3]^2
@@ -178,81 +183,43 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 
 
 #########################################################
-## estimation; 'NA' means: "to be estimated"
+## estimation; 'NA' means: "to be estimated"           ##
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
- RMtrend(mean=NA)
-v <- RFfit(estmodel, data=d, spC=FALSE)
-print(v)
+            RMtrend(mean=NA)
+RFfit(estmodel, data=d)
 
-
-\dontshow{\dontrun{
-
+\donttest{
 #########################################################
-## Estimation with fixed sill (variance + nugget equals a
-## given constant)
+## Estimation with fixed sill (variance + nugget       ##
+## equals a given constant)                            ##
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
- RMnugget(var=NA) + RMtrend(mean=NA)
-v1 <- RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try",
-            spC=FALSE)
-Print(v1$ml, v1$ml$ml.value)
+            RMnugget(var=NA) + RMtrend(mean=NA)
+RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try")
 
 
 
 #########################################################
-## estimation in a anisotropic framework
+## estimation in a anisotropic framework               ##
 x <- y <- (1:3)/4
 model <- RMexp(Aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5)
-z <- RFsimulate(model, x=x, y=y, grid=TRUE, n=n, spC=TRUE)
+d <- RFsimulate(model, x=x, y=y, n=n)
 estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
- RMtrend(mean=NA)
-v2 <- RFfit(estmodel, data=z, fit.nphi=20, spC=FALSE)
-Print(v2$ml, v2$ml$ml.value)
-}}
+            RMtrend(mean=NA)
+RFfit(estmodel, data=d, fit.nphi=20)
 
 
-\dontshow{ \dontrun{
 
 #########################################################
-## estimation of coupled parameters (alpha = beta, here)
+## AN EXAMPLE HOW TO USE OF PARAMETER 'transform'      ##
+## estimation of coupled parameters (first column of   ##
+##           the matrix 'Aniso' has identical entries) ##
 # source("RandomFields/tests/source.R")
-f <- function(param) param[c(1,2,3,3,4)]
-RFfit(estmodel, data=d, transform=list(), spC=FALSE)# shows positions of the NAs
-v3 <- RFfit(estmodel, data=d, spC=FALSE,
- transform=list(c(rep(TRUE, 3), FALSE, TRUE), f))
-Print(v3$ml, v3$ml$ml.value)
+RFfit(estmodel, data=d, transform=list()) # shows positions of NAs
+f <- function(param) param[c(1,2,2)]
+RFfit(estmodel, data=d, transform=list(c(TRUE, TRUE, FALSE), f))
 
-########################################################
-## estimation of anisotropy matrix ##
-x <- seq(0, 5, 1.5)
-model <- RMexp(var=1, scale=1)
-z <- RFsimulate(model, x, x, x, grid=TRUE, n=n, spC=TRUE)
-estmodel <- RMexp(var=NA, Aniso=diag(rep(NA, 3))) +
- RMnugget(var=NA) + RMtrend(mean=NA)
-v4 <- RFfit(estmodel, data=z, spC=FALSE)
-Print(v4$ml, v4$ml$ml.value)
 
-########################################################
-## estimation of anisotropy matrix where the two first##
-## diagonal elements are identical ##
-RFfit(estmodel, data=z, transform=list(), spC=FALSE)
- ## shows the positions of the NAs
-trafo <- function(variab) { variab[c(1, 2, 2, 3, 4)] }
-v5 <- RFfit(estmodel, data=z, critical=0, spC=FALSE,
- transform=list(c(TRUE, TRUE, FALSE, TRUE, TRUE),
- trafo))
-Print(v5$ml, v5$ml$ml.value)
-
-########################################################
-## estimation of anisotropy matrix where all ##
-## diagonal elements are identical ##
-trafo <- function(variab) { variab[c(1, 2, 2, 2, 3)] }
-v6 <- RFfit(estmodel, data=z, critical=0, spC=FALSE,
- transform=list(c(TRUE, TRUE, FALSE, FALSE, TRUE),
- trafo),
- split=FALSE)
-Print(v6$ml, v6$ml$ml.value)
-}}
-
+}
 
 
 \dontshow{RFoptions(modus_operandi="normal")}

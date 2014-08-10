@@ -29,18 +29,6 @@ RPchi2(phi, f)
 }
 
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-
-model <- RPchi2(RMexp(), f=2)
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
-
-\dontshow{FinalizeExample()}
-}
-
-
 \seealso{
   \command{\link{Auxiliary RMmodels}},
   \command{\link{RP}},
@@ -48,8 +36,17 @@ plot(z)
 }
 
 
-
-
 \keyword{spatial}
 
 
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+model <- RPchi2(RMexp(), f=2)
+x <- seq(0, 10, if (interactive()) 0.01 else 2)
+z <- RFsimulate(model=model, x, x, n=4)
+plot(z)
+
+\dontshow{FinalizeExample()}
+}

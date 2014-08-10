@@ -142,8 +142,11 @@ height=1000, width=1000, quality=100)
 
 \dontshow{\dontrun{
 
+# gamma_strokorb = 2 gamma_RandomFields
+# -> ecf = erfc(sqrt(gamma_RandomFields / 4))
+
 strokorb <- function(t) {
-  ( 1 + 1 * t ) / (4 * (2 * pi)^1.5 * t^2.5) * exp(- 0.5 * t)
+  ( 1 + 4 * t ) / ((2 * pi)^1.5 * (2 * t)^2.5) * exp(- 2 * t)
 }
 
 
@@ -155,13 +158,16 @@ density <- function(x, u) {
 
 
 RFoptions(xi=0)
-model <- RMfbm(var=4, alpha=0.65) ## not 8 as in the paper
-model <- RMfbm(var=4,alpha=1) ## not 8 as in the paper
-model <- RMfbm(alpha=1) ## not 8 as in the paper
+
+
+model <- RMfbm(var=4, alpha=1) ## not 8 as in the paper as
+## SEMI-variograms are used in RandomFields, not variograms
+## as in several theoretical papers.
+
 sm <- RMm2r(RMbrownresnick(model))
 
 x <- seq(0, 10, 0.02)
-
+ 
 
 z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 x, x, 0, n=1, print=10)
@@ -173,9 +179,9 @@ col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) %% 16)], sep=""),
          )
 plot(z, type="p", pch=20, cex=0.4, col=col)
 
-# dev.copy2pdf(file="strokorb.pdf")
+# dev.copy2pdf(file="strokorb.pdf") 
 
-getOption("device")()
+readline()
 y <- as.double(as.matrix(z@data))
 Print(range(y))
 hist(y, 200, freq=FALSE)
@@ -189,7 +195,7 @@ if (!interactive()) .C("sleepMicro", as.integer(3e6))
 unix.time(
 z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 seq(0, len=400, by=0.02), seq(0, len=400, by=0.02), 0, n=1,
-                spC=FALSE, every=0)
+                spConform=FALSE, every=0)
 )
 
 ###
@@ -197,7 +203,7 @@ z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
 ### Hintergrundbild
 z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 seq(0, 1920/100, 0.02), seq(0, 1280/100, 0.02), 0, n=1,
-                spC=FALSE, every=0)
+                spConform=FALSE, every=0)
                
 H <- c(0:9, LETTERS[1:6])
 numbers <- rep(0:240, each=1)

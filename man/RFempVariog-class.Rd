@@ -97,7 +97,7 @@
 }
  
 \examples{
-#  see ?RFempiricalvariogram
+#  see 'RFempiricalvariogram'
 \dontshow{FinalizeExample()}
 }
 

@@ -43,6 +43,7 @@ extern "C" {
   SEXP GetParameterNames(SEXP nr);
   SEXP GetSubNames(SEXP nr);
   void GetAttr(int *type, int *op, int *monotone, int *finiterange, 
+	       int * simpleArguments,
 	       int *internal, int *stat, int *iso, int *maxdim, int *vdim);
   void GetRange(int *nr, int *dim, int *index, double *params, int *lparam,
 		double *range, int *lrange);

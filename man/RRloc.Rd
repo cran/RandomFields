@@ -38,8 +38,14 @@ RRloc(phi, mu, scale, pow)
  \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-hist(RFrdistr(RRspheric(balldim=2), n=1000), 50)
-hist(RFrdistr(RRloc(mu=3, RRspheric(balldim=2)), n=1000), 50)
+
+## empirical density of the distribution 'RRspheric'
+model <- RRspheric(balldim=2)
+hist(RFrdistr(model, n=1000), 50)
+
+## empirical density of the distribution 'RRspheric', shifted by 3
+model <- RRloc(mu=3, RRspheric(balldim=2))
+hist(RFrdistr(model, n=1000), 50)
 \dontshow{FinalizeExample()}
 }
 

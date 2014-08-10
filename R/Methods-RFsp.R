@@ -106,7 +106,6 @@ setAs("RFgridDataFrame", "RFpointsDataFrame",
       })
 
 
-
 brack <- function(x, i, j, ..., drop=FALSE) {
   dots = list(...)
   if (length(dots)>0) warning("dots are ignored")
@@ -142,21 +141,34 @@ brack <- function(x, i, j, ..., drop=FALSE) {
 
 ## methods 'as.matrix' and 'cbind' as in the 'sp' package
 
-as.matrix.RFspatialGridDataFrame = function(x, ..., byrow = FALSE) {
-  if (ncol(x@data) > 1)
-    warning("as.matrix.RFspatialGridDataFrame uses first column;
-            \n pass subset or [] for other columns;
-            \n only the first two space dimensions are used")
-  matrix(x@data[[1]], x@grid@cells.dim[1], x@grid@cells.dim[2], byrow=byrow)
+as.matrix.RFgridDataFrame <- 
+ as.matrix.RFspatialGridDataFrame <- function(x, ...) {
+  z <- as.array.RFgridDataFrame(x, ...) 
+  if (length(dim(z)) > 2)
+    stop("the data set cannot be turned into a matrix. Try 'as.array'")
+  z
 }
 
-as.matrix.RFgridDataFrame = function(x, ..., byrow = FALSE) {
-  if (ncol(x@data) > 1)
-    warning("as.matrix.RFgridDataFrame uses first column;
-            \n pass subset or [] for other columns;
-            \n only the first two space dimensions are used")
-  matrix(x@data[[1]], x@grid@cells.dim[1], 1, byrow=byrow)
-}
+as.array.RFgridDataFrame <-
+  as.array.RFspatialGridDataFrame <- function(x, ...) {
+    z <- as.matrix(x@data)
+    dim <- c(x@grid@cells.dim, x@.RFparams$vdim, x@.RFparams$n)
+    dim <- dim[dim > 1]
+    if (length(dim) == 1) return(as.vector(z)) 
+    dim(z) <- dim
+    z
+  }
+
+
+as.vector.RFgridDataFrame <-
+  as.vector.RFspatialGridDataFrame <- function(x, ...) {
+    as.vector(as.matrix(x@data))
+  }
+
+#setAs("RFgridDataFrame", "matrix", gridtomatrix)
+#setAs("RFspatialGridDataFrame", "matrix", gridtomatrix)
+
+
 
 cbind_RFsp = function(...) {  ##copied from sp package
   stop.ifnot.equal = function(a, b) {
@@ -550,17 +562,19 @@ print.RFsp <- function(x, ...) print.summary.RFsp(summary.RFsp(x, ...))#
 setMethod(f="plot", signature(x="RFdataFrame", y="missing"),
           definition=function(x, y, nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
+                             x@.RFparams$has.variance),legend=TRUE, 
             ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance, ...)
+          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
+                          legend=legend, ...)
           )
 
 setMethod(f="plot", signature(x="RFdataFrame", y="RFdataFrame"),
           definition=function(x, y, nmax = 6,
             plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
+                             x@.RFparams$has.variance),legend=TRUE, 
             ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance, ...)
+          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
+                          legend=legend, ...)
           )
 
 
@@ -690,7 +704,7 @@ setMethod(f="plot", signature(x="RFspatialPointsDataFrame",
 # plotRFgridDataFrame <- function(x, y, nmax, plot.variance, ...)
 # siehe nicht.nachladbar.R
           
-plotRFdataFrame <-  function(x, y, nmax=6, plot.variance=plot.variance, ...) {
+plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
   ## grid   : sorted = TRUE
   ## points : sorted = FALSE
 
@@ -815,7 +829,7 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance=plot.variance, ...) {
       }
       
       if (i==1) {
-        if (!TRUE || vdim > 1) {
+        if ( (!TRUE || vdim > 1) && legend) {
           legend("topright", col=col, lty=1, legend = c(names.vdim))
         }
       }

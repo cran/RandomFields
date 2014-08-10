@@ -32,7 +32,8 @@ RRgauss(mu, sd, log)
  \command{\link{RRdistr}},
  \command{\link{RRunif}}.
 
- Do not mix up with \command{\link{RMgauss}} or \command{\link{RPgauss}}.
+ Do not mix up \command{RRgauss} with \command{\link{RMgauss}} or
+ \command{\link{RPgauss}}. 
  }
 
 \examples{

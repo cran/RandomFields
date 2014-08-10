@@ -620,6 +620,10 @@ int prepareBRoptim(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     sBR->vertnumber = vertnumber; 
     sum_directions  = 0;
     for (d=0; d<dim; sum_directions += len[d++]);
+    /*
+    printf("dim=%d %d\n", dim, sum_directions);
+    PMI(key);
+    */
 
     if (sBR->countvector != NULL || sBR->areamatrix != NULL) BUG;
     if ((sBR->countvector = (int**) CALLOC(vertnumber, sizeof(int*))) == NULL || 
@@ -750,7 +754,8 @@ int init_BRmixed(cov_model *cov, gen_storage *s) {
   }
   
 
-  if ((err = prepareBRoptim(cov, s)) != NOERROR) {
+
+ if ((err = prepareBRoptim(cov, s)) != NOERROR) {
     //printf("err %d\n", err);
      goto ErrorHandling;
   }
@@ -984,11 +989,11 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
 	  if (PL > 5) {
 	    int dd;
 	    for (dd=0; dd<75; dd++) {
-	      if (sBR->countvector[j][dd]<=9) PRINTF("%d", sBR->countvector[j][dd]);
-	      else if (sBR->countvector[j][dd]<=50) {
-		PRINTF(sBR->countvector[j][dd]<=20 ? "A" :
-		       sBR->countvector[j][dd]<=30 ? "B" :
-		       sBR->countvector[j][dd]<=40 ? "C" : "D"
+	      int value = sBR->countvector[j][dd];
+	      if (value < 0) BUG; // memory zugriffs-fehler ueber valgrind sichtbar
+	      if (value<=9) PRINTF("%d", value);
+	      else if (value<=50) {
+		PRINTF(value<=20 ? "A" : value<=30 ? "B" : value<=40 ? "C" : "D"
 		       );
 	      }
 	      else PRINTF("#");
@@ -1121,6 +1126,8 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
     centreloc[MAXMPPDIM], 
     minloc[MAXMPPDIM], 
     maxloc[MAXMPPDIM];
+
+  //  SERR("Brown Resnick not available in version 3.0.34");
 
   ASSERT_NEWMODEL_NULL;
   if (cov->role != ROLE_BROWNRESNICK) BUG;
@@ -1367,14 +1374,19 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
     if (sBR->maxidx < 0) sBR->maxidx = 0; // to do!!
     else if (sBR->maxidx >= MAXSUB) sBR->maxidx = MAXSUB - 1;
   
-    //     printf("maxidx %d  %f r=%f step=%f red=%f %f relste=%f red=%f %f %f\n", sBR->maxidx, smallest_grid_lengths, sBR->radii[0], step, reduction_factor, min_reduction_factor, rel_steps, pow(rel_steps, (double) dim / ((double) MAXSUB - 1.0)), (sBR->radii[0] / step) / smallest_grid_lengths, sBR->radii[0] / step);
-    //
+    /*
+  printf("maxidx %d  %f r=%f step=%f red=%f %f relste=%f red=%f %f %f\n", sBR->maxidx, smallest_grid_lengths, sBR->radii[0], step, reduction_factor, min_reduction_factor, rel_steps, pow(rel_steps, (double) dim / ((double) MAXSUB - 1.0)), (sBR->radii[0] / step) / smallest_grid_lengths, sBR->radii[0] / step);
+    */
+ 
  
     for (i=1; i<=sBR->maxidx; i++) {
       // to do gleichmaessige reduktion ist vermutlich nicht optimal
       // mitte vermutlich groessere Schritte und dafuer kleiner runter
       // bis zum minimum.
       // to do optimale groesse fuer reduction_factor z.Zt. in [2,3]?!
+
+      //printf("i=%d %d %f\n", i, sBR->maxidx, sBR->radii[i-1]); assert(false);
+
        sBR->radii[i] = round(sBR->radii[i-1] * pow(2.0, -1.0/dim) / step) * step;
        
        //   printf("radii %f \n",    sBR->radii[i] /step);
@@ -1383,6 +1395,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
     }
     
     //xassert(false);
+    
 
    if ((sBR->newx = (double*) MALLOC(newxlen*dim*sizeof(double))) == NULL) {
       err = ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -1393,7 +1406,18 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
 	sBR->newx[3*d+XSTART] = -sBR->radii[i];
 	sBR->newx[3*d+XLENGTH] = 2 * ((int) round(sBR->radii[i] / step)) + 1;
 	sBR->newx[3*d+XSTEP] = step;
+
+	/*
+	printf("dim=%d %f %f %f radii=%f step=%f\n", dim, sBR->newx[3*d+XSTART],
+	       sBR->newx[3*d+XLENGTH], sBR->newx[3*d+XSTEP],
+	       sBR->radii[i], step
+	       );
+	*/
+	
       }
+
+      // assert(false);
+
       err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, 
                   false, &(sBR->sub[i]->ownloc));
       length = Loc(sBR->sub[i])->length;
@@ -1412,8 +1436,8 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       if (err > NOERROR) goto ErrorHandling;
       assert(sBR->sub[i]->calling == cov);
     }
-    
-    goto ErrorHandling; // ueberspringe immer den shifted & original teil !
+
+   goto ErrorHandling; // ueberspringe immer den shifted & original teil !
 
   } else { //  END BRMIXED;  START SHIFTED    
     assert(cov->nr == BRSHIFTED_INTERN);

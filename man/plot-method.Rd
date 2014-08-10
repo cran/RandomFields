@@ -171,11 +171,11 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
 
 \S4method{plot}{RFdataFrame,missing}(x, y, nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), ...)
+ x@.RFparams$has.variance), legend=TRUE, ...)
 
 \S4method{plot}{RFdataFrame,RFdataFrame}(x, y, nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), ...)
+ x@.RFparams$has.variance), legend=TRUE, ...)
 
 
 
@@ -229,10 +229,9 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
     It works only for grids.
   }
   \item{...}{arguments to be passed to methods; mainly graphical
-    arguments; internally, \code{...} are passed to \code{image} and
-    \code{plot.default}, respectively; if, by default, multiple colors,
-    xlabs or ylabs are used, also vectors of suitable length can be
-    passed as \code{col}, \code{xlab} and \code{ylab}, respectively}
+    arguments, or further models in case of class \code{'RMmodel'},
+    see Details.
+  }
   \item{fit.method}{character; only for \code{class(x)=="RFfit"}; a
     vector of slot names for which the fitted covariance or variogram
     model is to be plotted; should be a subset of 
@@ -313,114 +312,137 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
     be used.}
 }
 
+\details{
+  Internally, \code{...} are passed to \code{image} and
+  \code{plot.default}, respectively; if, by default, multiple colors,
+  xlabs or ylabs are used, also vectors of suitable length can be
+  passed as \code{col}, \code{xlab} and \code{ylab}, respectively.
+
+  One exception is the use of \code{...} in \command{plot} for class
+  \code{'RMmodel'}.
+  Here, further models might be passed. All models must have names
+  starting with \code{model}. If \code{'.'} is following in the name,
+  the part of the name after the dot is shown in the legend. Otherwise
+  the name is ignored and a standardized name derived from the model
+  definition is shown in the legend. Note that for the first argument
+  a name cannot be specified.
+}
+
 \author{Alexander Malinowski
   \email{alexander.malinowski@math.uni-goettingen.de},
   Martin Schlather
 }
 
 
+\keyword{methods}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-\dontrun{%\dontshow?
+\donttest{
 
- ## define the model:
- model <- RMtrend(mean=0.5) + # mean
- RMstable(alpha=1, var=4, scale=10) +
- # see help("RMstable")
- # for additional arguments
- RMnugget(var=1) # nugget
+## define the model:
+model <- RMtrend(mean=0.5) + # mean
+RMstable(alpha=1, var=4, scale=10) +
+# see help("RMstable")
+# for additional arguments
+RMnugget(var=1) # nugget
 
- #############################################################
- ## Plot of covariance structure
 
- plot(model, xlim=c(0, 30))
- plot(model, xlim=c(0, 30), fct.type="Variogram")
- plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
+#############################################################
+## Plot of covariance structure
 
- #############################################################
- ## Plot of simulation results
+plot(model)
+plot(model, xlim=c(0, 30))
+plot(model, xlim=c(0, 30), fct.type="Variogram")
+plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
 
- ## define the locations:
- from <- 0
- step <- .1 
- len <- if (interactive()) 50 else 5 ## nicer, but also time consuming if len <- 200
- x1D <- GridTopology(from, step, len)
- x2D <- GridTopology(rep(from, 2), rep(step, 2), rep(len, 2))
- x3D <- GridTopology(rep(from, 3), rep(step, 3), rep(len, 3))
+#############################################################
+## Plot of simulation results
 
- ## 1-dimensional
- sim1D <- RFsimulate(model = model, x=x1D, n=6) 
- plot(sim1D, nmax=4)
+## define the locations:
+from <- 0
+step <- .1 
+len <- if (interactive()) 50 else 5 ## nicer, but also time consuming if len <- 00
+x1D <- GridTopology(from, step, len)
+x2D <- GridTopology(rep(from, 2), rep(step, 2), rep(len, 2))
+x3D <- GridTopology(rep(from, 3), rep(step, 3), rep(len, 3))
 
- ## 2-dimensional
- sim2D <- RFsimulate(model = model, x=x2D, n=6) 
- plot(sim2D, nmax=4)
- plot(sim2D, nmax=4, col=terrain.colors(64),
- main="My simulation", xlab="my_xlab")
+## 1-dimensional
+sim1D <- RFsimulate(model = model, x=x1D, n=6) 
+plot(sim1D, nmax=4)
 
- ## 3-dimensional
- model <- RMmatern(nu=1.5, var=4, scale=2)
- sim3D <- RFsimulate(model = model, x=x3D) 
- plot(sim3D, MARGIN=c(2,3), MARGIN.slices=1, n.slices=4)
+## 2-dimensional
+sim2D <- RFsimulate(model = model, x=x2D, n=6) 
+plot(sim2D, nmax=4)
+plot(sim2D, nmax=4, col=terrain.colors(64),
+main="My simulation", xlab="my_xlab")
+
+## 3-dimensional
+model <- RMmatern(nu=1.5, var=4, scale=2)
+sim3D <- RFsimulate(model = model, x=x3D) 
+plot(sim3D, MARGIN=c(2,3), MARGIN.slices=1, n.slices=4)
 
  
- #############################################################
- ## empirical variogram plots
+#############################################################
+## empirical variogram plots
 
- x <- c(0,.05,200)
- bin <- seq(from=0, by=.2, to=3)
+x <- seq(0, 10, 0.05)
+bin <- seq(from=0, by=.2, to=3)
 
- model <- RMexp()
- X <- RFsimulate(x=cbind(x), model=model, grid=TRUE)
- ev1 <- RFempiricalvariogram(data=X, bin=bin)
- plot(ev1)
+model <- RMexp()
+X <- RFsimulate(x=cbind(x), model=model)
+ev1 <- RFempiricalvariogram(data=X, bin=bin)
+plot(ev1)
 
- model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
- X <- RFsimulate(x=cbind(x,x), model=model, grid=TRUE)
- ev2 <- RFempiricalvariogram(data=X, bin=bin, phi=3)
- plot(ev2, model=list(Exp = model))
-
-
- #############################################################
- ## plot Fitting results
- x <- c(0,.1,20)
- model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
- X <- RFsimulate(x=cbind(x,x), model=model, grid=TRUE)
- fit <- RFfit(~RMexp(Aniso=matrix(nc=2, nr=2, NA)), data=X, fit.nphi = 2)
- plot(fit) 
+model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
+X <- RFsimulate(x=cbind(x,x), model=model)
+ev2 <- RFempiricalvariogram(data=X, bin=bin, phi=3)
+plot(ev2, model=list(exp = model))
 
 
- #############################################################
- ## plot Kriging results 
+#############################################################
+## plot Fitting results
+x <- c(0,.1,20)
+x <- seq(0, 10, 0.05)
  
- model <- RMwhittle(nu=1.2, scale=2)
- x <- runif(200, max=step*len/2) 
- y <- runif(200, max=step*len/2) # 200 points in 2 dimensional space
- sim <- RFsimulate(model = model, x=x, y=y)
+model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
+X <- RFsimulate(x=cbind(x,x), model=model)
+fit <- RFfit(~RMexp(Aniso=matrix(nc=2, nr=2, NA)), data=X, fit.nphi = 2)
+plot(fit) 
 
- interpolate <- RFinterpolate(model=model, x=x2D, data=sim)
- plot(interpolate)
- plot(interpolate, sim)
+
+#############################################################
+## plot Kriging results 
+ 
+model <- RMwhittle(nu=1.2, scale=2)
+x <- runif(200, max=step*len/2) 
+y <- runif(200, max=step*len/2) # 200 points in 2 dimensional space
+sim <- RFsimulate(model = model, x=x, y=y)
+
+interpolate <- RFinterpolate(model=model, x=x2D, data=sim)
+plot(interpolate)
+plot(interpolate, sim)
+
 
 
 #############################################################
 ## plotting vector-valued results
 model <- RMdivfree(RMgauss(), scale=4)
 x <- y <- seq(-10,10, if (interactive()) 0.5 else 5)
-simulated <- RFsimulate(model = model, x=x, y=y, grid=TRUE, n=1)
+simulated <- RFsimulate(model = model, x=x, y=y, n=1)
 plot(simulated)
 plot(simulated, select.variables=list(1, 1:3, 4))
-
 
 
 
 #############################################################
 ## options for the zlim argument
 model <- RMdelay(RMstable(alpha=1.9, scale=2), s=c(0, 4)) +
- RMdelay(RMstable(alpha=1.9, scale=2), s=c(4, 0))
-simu <- RFsimulate(model, x, y, grid=TRUE)
+         RMdelay(RMstable(alpha=1.9, scale=2), s=c(4, 0))
+simu <- RFsimulate(model, x, y)
 
 plot(simu, zlim=list(data=cbind(c(-6,2), c(-2,1)), var=c(5,6)))
 plot(simu, zlim=cbind(c(-6,2), c(-2,1)))
@@ -432,6 +454,3 @@ plot(simu, zlim="joint")
 
 }
 
-
-
-\keyword{methods}

@@ -84,15 +84,15 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
  \code{\link{soil}} for a further example
 }
 
+\keyword{spatial}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgui()
 \dontshow{FinalizeExample()}
 }
-
-\keyword{spatial}
-
 
 
 

@@ -109,11 +109,11 @@
   \command{\link{RFfit}}
 }
  
+\keyword{classes}
+\keyword{print}
+\keyword{hplot}
+
 \examples{
 # see RFfit
 \dontshow{FinalizeExample()}
 }
-
-\keyword{classes}
-\keyword{print}
-\keyword{hplot}

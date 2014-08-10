@@ -114,7 +114,7 @@ model <- ~ RMtrend(mean=1, plane = c(1,-1)) + RMexp(var=0.01)
 model <- ~ RMtrend(polydeg=1,polycoeff=c(1,1,-1)) + RMexp(var=0.01)
 #Simulation
 x <- 0:10
-simulated <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
+simulated <- RFsimulate(model=model, x=x, y=x)
 plot(simulated)
 
 
@@ -133,7 +133,7 @@ plot(simulated)
 x <- y <- 0:10
 model <- RMtrend(plane=matrix(c(1,2,3,4), ncol=2)) + 
          RMparswm(nu=c(1,1)) + RMnugget(var=0.5)
-multi.simulated <- RFsimulate(model=model, x=x, y=y, grid=TRUE)
+multi.simulated <- RFsimulate(model=model, x=x, y=y)
 plot(multi.simulated)
 
 \dontshow{\dontrun{
@@ -160,7 +160,7 @@ model <- ~ RMtrend(arbitraryfct=function(x) sin(x),
  fctcoeff=0.5) +
  RMspheric(scale=3)
 x <- seq(-4*pi, 4*pi, pi/10)
-simulated <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
+simulated <- RFsimulate(model=model, x=x, y=x)
 plot(simulated)
 
 ################# ?? !!
@@ -169,7 +169,7 @@ plot(simulated)
 model.est <- ~ RMtrend(arbitraryfct=function(x) sin(x), fctcoeff=1) +
  RMtrend(arbitraryfct=function(y) cos(y), fctcoeff=1) +
  RMspheric(scale=NA)
-estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
+estimated <- RFfit(model=model.est, x=x, y=x,
  data=simulated@data, mle.methods="ml")
 
 
@@ -178,7 +178,7 @@ estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
 model.est <- ~ RMtrend(arbitraryfct=function(x) sin(x)) +
  RMtrend(arbitraryfct=function(y) cos(y)) +
  RMspheric(scale=NA)
-estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
+estimated <- RFfit(model=model.est, x=x, y=x,
  data=simulated@data, mle.methods="ml")
 
 
@@ -197,14 +197,14 @@ model <- ~ RMtrend(arbitraryfct=function(x) 2*x^2 - 3*y^2,
 # equivalent model:
 model <- ~ RMtrend(polydeg=2, polycoeff=c(0,0,2,0,0,-3))
 x <- 0:20		 
-simulated <- RFsimulate(model=model, x=x, y=x, grid=TRUE)
+simulated <- RFsimulate(model=model, x=x, y=x)
 plot(simulated)
 
 #Estimation
 # estimate nu and the trend term assuming that it is a polynomial
 # of degree 2
 model.est <- ~ RMtrend(polydeg=2) + RMwhittle(nu=NA, scale=0.5)
-estimated <- RFfit(model=model.est, x=x, y=x, grid=TRUE,
+estimated <- RFfit(model=model.est, x=x, y=x,
  data=simulated@data, mle.methods="ml")
 }}
 \dontshow{FinalizeExample()}

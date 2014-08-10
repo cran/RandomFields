@@ -245,7 +245,7 @@ int checktbmproc(cov_model *cov) {
 
       //    PMI(sub);
 
-      if ((err = CHECK(sub, dim,  dim, PosDefType, 
+      if ((err = CHECK(sub, dim,  dim, NegDefType, 
 		       cov->role == ROLE_BASE ? KERNEL : XONLY, // wegen
 		       // nutzer eingabe aniso und dem allerersten check
 		       isoselect[i],

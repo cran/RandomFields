@@ -47,15 +47,11 @@ RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-model <- RMgauss() + RMnugget(var=0.01)
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
 
+model <- RMplus(RMgauss(), RMnugget(var=0.1))
+model2<- RMgauss() + RMnugget(var=0.1)
+plot(model, "model.+"=model2, type=c("p", "l"), pch=20, xlim=c(0,3)) # the same
 
-# gives the same model as 
-model <- RMplus(RMgauss(), RMnugget(var=0.01))
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
 \dontshow{FinalizeExample()}
 }
 

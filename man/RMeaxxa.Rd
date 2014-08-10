@@ -50,14 +50,12 @@ RMetaxxa(E, A, alpha)
   \link{S10}
  }
 
-\examples{
-# see S10
-\dontshow{FinalizeExample()}
-}
-
 \keyword{spatial}
 \keyword{models}
 
 
-
+\examples{
+# see S10
+\dontshow{FinalizeExample()}
+}
 

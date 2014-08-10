@@ -34,6 +34,7 @@ RMcoord <- new('RMmodelgenerator',
                isotropy = RC_ISOTROPY[RC_CARTESIAN_COORD + 1],
                operator = TRUE,
                monotone = RC_MONOTONE[NOTMONOTONE],
+               simpleArguments = FALSE,
                finiterange = TRUE,
                maxdim = Inf,
                vdim = -2
@@ -75,6 +76,7 @@ internalRMmixed <- new('RMmodelgenerator',
                        operator = TRUE,
                        monotone =  RC_MONOTONE[NOTMONOTONE],
                        finiterange = TRUE,
+                       simpleArguments = FALSE,
                        maxdim = Inf,
                        vdim = -2
                        )
@@ -157,6 +159,7 @@ RRdistr <- new('RMmodelgenerator',
                operator = FALSE,
                monotone =  RC_MONOTONE[NOTMONOTONE],
                finiterange = FALSE,
+               simpleArguments = FALSE,
                maxdim = Inf,
                vdim = 1
                )
@@ -186,10 +189,12 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
         if (is.numeric(type)) par.model[['type']] <- type
         else if (is.character(type))
           par.model[['type']] <- pmatch(type, RC_TYPE) - 1
-        if (type < ProcessType)
-          message("It is likely that the defined function is already available in 'RandomFields'. Using predefined functions leads to (much) shorter computing times. See ?RMmodels for an overview over the implemented models. Further, some simulation methods do not work at all for user defined functions.")
-        else if (type == TrendType)
-          message("Please make sure that the defined function is not available in 'RandomFields'. Using predefined functions leads to (much) shorter computing times. Further, some simulation methods do not work at all for user defined functions.");
+
+        
+        if (par.model[['type']] < ProcessType)
+          message("It is likely that the defined function is already available in 'RandomFields'.\nUsing predefined functions leads to (much!) shorter computing times.\nSee ?RMmodels for an overview over the implemented models. Further,\nsome simulation methods do not work at all for user defined functions.")
+        else if (par.model[['type']] == TrendType)
+          message("Please make sure that the defined function is not available in 'RandomFields'.\nUsing predefined functions leads to (much!) shorter computing times. Further,\nsome simulation methods do not work at all for user defined functions.");
 
 	if (hasArg(domain)) {
 	  if (is.numeric(domain)) par.model[['domain']] <- domain
@@ -262,6 +267,7 @@ RMuser <- new('RMmodelgenerator',
               operator = FALSE,
               monotone =  RC_MONOTONE[NOTMONOTONE], # [MON_PARAMETER]
               finiterange = TRUE,
+              simpleArguments = FALSE,
               maxdim = Inf,
               vdim = -1
               )

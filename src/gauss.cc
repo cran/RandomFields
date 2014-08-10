@@ -973,7 +973,8 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
     if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
       GERR("'binaryprocess' currently only allows scalar fields - NA returned");
     // cov->mpp.refradius = RF_INF; 
-    if (cov->mpp.moments >= 1) COV(ZERO, next, variance);
+    if (cov->mpp.moments >= 1) 
+      COV(ZERO, next->nr==GAUSSPROC ? next->sub[0]: next, variance);
     nmP1 = cov->mpp.moments + 1;
     for (pi=v=w=0; w<vdimSq; w+=vdimP1, v++, pi = (pi + 1) % npi ) { 
       int idx = v * nmP1;

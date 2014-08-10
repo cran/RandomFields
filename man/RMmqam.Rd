@@ -63,11 +63,11 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{\dontrun{
+\dontshow{\dontrun{ ## irgendo ein Fehler
 model <- RMmqam(phi=RMgauss(), RMexp(), RMgauss(), theta=c(0.7, 0.3))
-x <- seq(0, 10, if (interactive()) 0.2 else 1) 
-plot(model, ylim=c(0,1))
-plot(RFsimulate(model, x=x))
+x <- seq(0, 4, if (interactive()) 0.3 else 1) 
+plot(model)
+plot(RFsimulate(model, x=x, print=10))
 }}
 \dontshow{FinalizeExample()}
 }

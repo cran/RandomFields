@@ -19,6 +19,8 @@
 %% S3 methodsgr
 \alias{print.RFspatialGridDataFrame}
 \alias{as.matrix.RFspatialGridDataFrame}
+\alias{as.array.RFspatialGridDataFrame}
+\alias{as.vector.RFspatialGridDataFrame}
 \alias{cbind.RFspatialGridDataFrame}
 \alias{contour.RFspatialGridDataFrame}
 
@@ -125,6 +127,10 @@
  topology, combine their attribute values}
  \item{as.matrix}{\code{signature(x = "RFspatialGridDataFrame")}:
  converts \code{data}-slot to matrix }
+ \item{as.array}{\code{signature(x = "RFspatialGridDataFrame")}:
+ converts \code{data}-slot to array }
+ \item{as.vector}{\code{signature(x = "RFspatialGridDataFrame")}:
+ converts \code{data}-slot to vector }
  }
 }
 
@@ -152,6 +158,13 @@
  locations,
  \code{\link[=RFsp-class]{RFsp}} 
 }
+
+
+\keyword{classes}
+\keyword{print}
+\keyword{hplot}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -179,7 +192,8 @@ x2 <- rbind(c(0, 0, 0, 0),
  c(1, 0.2, 2, 5),
  steps)
 scale <- if (interactive()) 10 else 1
-f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, grid=TRUE, n=n)
+f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, n=n,
+                 grid = TRUE)
 plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)
 
 f.sp <- RFsimulate(model=RMexp(), x=x, n=n, seed=0)
@@ -188,7 +202,3 @@ all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
 \dontshow{FinalizeExample()}
 
 }
-
-\keyword{classes}
-\keyword{print}
-\keyword{hplot}

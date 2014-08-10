@@ -47,6 +47,22 @@ OldMethod <- function(method) {
 }
 
 
+Variogram <- function(x,
+                      model, param=NULL,
+              dim=if (!missing(Distances)) {if (is.matrix(x)) ncol(x) else 1},
+                      ## y=NULL,
+                      Distances) {
+  if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFvariogram' instead.")
+  if (!missing(param) && is.na(param[1])) param[1] <- 0
+
+##  Print(model, param)
+  model <- PrepareModel(model, param)
+  RFcov(x=x, model=model, dim=dim, distances=Distances,
+        fctcall="Variogram")
+}
+
+
 Covariance <- CovarianceFct <-
   function(x, y=NULL,
            model, param=NULL,
@@ -182,22 +198,6 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
  ##   str(RFoptions())
  
 }
-
-Variogram <- function(x,
-                      model, param=NULL,
-              dim=if (!missing(Distances)) {if (is.matrix(x)) ncol(x) else 1},
-                      ## y=NULL,
-                      Distances) {
-  if (RFoptions()$interal$warn_oldstyle)
-    warning("The function is obsolete. Use 'RFvariogram' instead.")
-  if (!missing(param) && is.na(param[1])) param[1] <- 0
-
-##  Print(model, param)
-  model <- PrepareModel(model=model, param=param)
-  RFcov(x=x, y=NULL, model=model, dim=dim, distances=Distances,
-        fctcall="Variogram")
-}
-
 
 
 
@@ -344,6 +344,7 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   
   data <- cbind(given, data)
   colnames(data) <- c(rep("", ncol(given)), "data")
+  
   RFinterpolate(krige.method=krige.method, x=x, y=y, z=z, T=T,
             grid=grid, model=model, data=data)
  
@@ -623,7 +624,7 @@ fitvario.default <-
   }
    
   RFfit(x=x, y=y, z=z, T=T, data=data, model=model,
-        lower=lower, upper=upper, grid=grid, BC.lambda=BC.lambda,
+        lower=lower, upper=upper, grid=grid, bc_lambda=BC.lambda,
         sub.methods=lsq.methods, methods=mle.methods,
         users.guess=users.guess, distances=distances,
         dim= truedim,

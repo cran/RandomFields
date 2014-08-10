@@ -79,7 +79,7 @@ Dev <- function(on, dev, ps=NULL, cur.cex=TRUE, paper="special",
         dev.set(dev)
       } else {
         stopifnot(is.finite(height+width))
-        do.call(getOption("device"), list(height=height, width=width))
+        ScreenDevice(height=height, width=width)
       }
       keep <- dev < 3
     }
@@ -185,7 +185,9 @@ Print <- function(..., digits=6, empty.lines=2) { #
       if (L==0) cat(" = <zero>")#
       else {
         cat(" [", L, "] = ", sep="")
-        cat(l[[i]][1:min(L , max.elements)]) #
+        cat(if (is.numeric(l[[i]]))
+            round(l[[i]][1:min(L , max.elements)], digits=digits)#
+            else l[[i]][1:min(L , max.elements)]) #
         if (max.elements < L) cat(" ...")
       }
     } else {
@@ -193,11 +195,15 @@ Print <- function(..., digits=6, empty.lines=2) { #
         cat(" =  ") #
         str(l[[i]], digits.d=digits) #
       } else {
-        cat("=\n")
+        cat(" =")
         if (length(l[[i]]) <= 100 && FALSE) {
-          print(if (is.numeric(l[[i]])) round(l[[i]],digits=digits)#
+          print(if (is.numeric(l[[i]])) round(l[[i]], digits=digits)#
                 else l[[i]])
-        } else str(l[[i]]) #
+        } else {
+          if (length(l[[i]]) > 1 && !is.vector(l[[i]]) && !is.matrix(l[[i]])
+              && !is.array(l[[i]])) cat("\n")
+          str(l[[i]]) #
+        }
       }
     }
     cat("\n")
@@ -232,6 +238,26 @@ add.units <- function(x,  units=NULL) {
   return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
 }
 
+
+ScreenDevice <- function(height, width) {
+  if (height > 0  && width > 0) {
+    GD <- getOption("device")
+    if (is.function(GD)) {
+      args <- names(as.list(args(GD)))
+      if (all(c("width", "height") %in% args) &&
+          !any(c("file", "filename") %in% args)) {
+        GD(height=height, width=width)
+        return()
+      }
+    }
+    if (RFoptions()$internal$warn_aspect_ratio) {
+      RFoptions(warn_aspect_ratio = FALSE)
+      cat("The graphical device does not seem to be a standard screen device. Hence the\naspect ratio might not be correct. (This message appears only one per session.)")
+    }
+  }
+}
+
+
 ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
                          dw = 2.5, w.outer=0.7) {
 
@@ -252,11 +278,10 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
     W <- H * (dw + w.outer) / (dh + h.outer)
     DW <- W * dw / (dw + w.outer)
     WO <- W - DW
-    curW <-  figs[2] * DW + WO    
-    getOption("device")(height=curH, width=curW)
+    curW <-  figs[2] * DW + WO   
+    ScreenDevice(height=curH, width=curW)
     return(c(curH, curW)) 
   } else {
     return(rep(NA, 2))
   }
 }
-

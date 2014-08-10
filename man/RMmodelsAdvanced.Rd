@@ -20,7 +20,6 @@
 \command{\link{RMdagum}} \tab Dagum model \cr
 \command{\link{RMdampedcos}} \tab exponentially damped cosine \cr
 \command{\link{RMqexp}} \tab Variant of the exponential model \cr
-\command{\link{RMid}} \tab identity \cr
 \command{\link{RMfractdiff}} \tab fractionally differenced process \cr
 \command{\link{RMfractgauss}} \tab fractional Gaussian noise \cr
 \command{\link{RMgengneiting}} \tab generalized Gneiting model \cr
@@ -44,7 +43,7 @@ always smooth at the origin\cr
 
 \bold{General composed models (operators)}
 
-Here, composed models are given that can be of any kind, depending on the submodel.
+Here, composed models are given that can be of any kind (stationary/non-stationary), depending on the submodel.
 
 \tabular{ll}{
 % \command{\link{RMCauchy}} \tab Cauchy like transform -- TO BE PROGRAMMED (includes \code{ma1})) \cr
@@ -54,7 +53,7 @@ based on a Gaussian field \cr
  \command{\link{RMintexp}} \tab integrated exponential of a covariance model (INCLUDES \code{ma2})\cr
  \command{\link{RMpower}} \tab powered variograms\cr
  \command{\link{RMqam}} \tab Porcu's quasi-arithmetric-mean model\cr
- \command{\link{RMS}} \tab for details on the optional transformation
+ \command{\link{RMS}} \tab details on the optional transformation
  arguments (\code{var}, \code{scale}, \code{Aniso}, \code{proj}).
 }
 
@@ -63,11 +62,11 @@ based on a Gaussian field \cr
 \tabular{ll}{
  \command{\link{RMcutoff}} \tab Gneiting's modification towards finite range\cr
  \command{\link{RMintrinsic}} \tab Stein's modification towards finite range\cr
- \command{\link{RMnatsc}} \tab natural pratical range operator\cr
+ \command{\link{RMnatsc}} \tab practical range\cr
  \command{\link{RMstein}} \tab Stein's modification towards finite range\cr 
 % \command{\link{RMtbm2}} \tab Turning bands operator in two (spatial)
 % dimensions\cr % nicht an user exportiert
- \command{\link{RMtbm}}\tab Turning bands operator in three (spatial) dimensions
+ \command{\link{RMtbm}}\tab Turning bands operator
 }
 
 \bold{Stationary space-time models}
@@ -113,7 +112,6 @@ matrix\cr
 \tabular{ll}{
 \command{\link{RMaskey}} \tab Askey model (generalized test or triangle
 model) with \eqn{\alpha \ge [dim / 2] +1}\cr
-\command{\link{RMbessel}} \tab Bessel family \cr
  \command{\link{RMbernoulli}} \tab Correlation function of a binary field
  based on a Gaussian field \cr
  \command{\link{RMbr2bg}} \tab Operator relating a Brown-Resnick process
@@ -123,12 +121,12 @@ model) with \eqn{\alpha \ge [dim / 2] +1}\cr
  \command{\link{RMbrownresnick}} \tab tail correlation function
  of Brown-Resnick process\cr
 \command{\link{RMgencauchy}} \tab generalized Cauchy family with  \eqn{\alpha\le 1/2}\cr
-\command{\link{RMm2r}} \tab shapes functions related max-stable
+\command{\link{RMm2r}} \tab shape functions related to max-stable
  processes\cr 
-\command{\link{RMm3b}} \tab shapes functions related max-stable
+\command{\link{RMm3b}} \tab shape functions related to max-stable
  processes\cr 
  \command{\link{RMmatern}} \tab Whittle-Matern model with \eqn{\nu\le 1}\cr
- \command{\link{RMmps}} \tab shapes functions related max-stable
+ \command{\link{RMmps}} \tab shape functions related to max-stable
  processes\cr 
 \command{\link{RMschlather}} \tab tail correlation function of the
  extremal Gaussian field \cr
@@ -266,16 +264,16 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
  \command{\link{RMmodelsAuxiliary}}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-RFgetModelNames(type="positive", group.by=c("domain", "isotropy"))
-\dontshow{FinalizeExample()}
-}
-
 \author{
  Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
  
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \keyword{spatial}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+RFgetModelNames(type="positive", group.by=c("domain", "isotropy"))
+\dontshow{FinalizeExample()}
+}

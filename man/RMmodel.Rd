@@ -127,6 +127,19 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
+
+\seealso{
+  \link{RC}, \link{RF},  \link{RP}, \link{RR},
+  \command{\link{RFcov}},
+  \command{\link{RFformula}},
+  \command{\link{RMmodelsAdvanced}},
+  \command{\link{RMmodelsAuxiliary}}
+}
+
+\keyword{spatial}
+\keyword{models}
+
+
 \examples{
 % library(RandomFields, lib="~/TMP")
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
@@ -140,14 +153,3 @@ plot(model)
 
 \dontshow{FinalizeExample()}
 }
-
-\seealso{
-  \link{RC}, \link{RF},  \link{RP}, \link{RR},
-  \command{\link{RFcov}},
-  \command{\link{RFformula}},
-  \command{\link{RMmodelsAdvanced}},
-  \command{\link{RMmodelsAuxiliary}}
-}
-
-\keyword{spatial}
-\keyword{models}

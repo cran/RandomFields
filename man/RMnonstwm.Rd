@@ -55,7 +55,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 x <- seq(-1.2, 1.2, len=if (interactive()) 70 else 3)
 model <- RMnonstwm(nu=RMgauss())
 %plot(model, dim=2, xlim=c(-1,1))
-z <- RFsimulate(model=model, x, x, grid=TRUE, n=4)
+z <- RFsimulate(model=model, x, x, n=4)
 plot(z)
 }}
 \dontshow{FinalizeExample()}

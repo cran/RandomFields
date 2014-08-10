@@ -40,7 +40,7 @@
 \alias{RFCov}
 \alias{RFCovMatrix}
 \alias{RFDummy}
-\alias{RFget}
+%\alias{RFget}
 \alias{RFFctn}
 \alias{RFDistr}
 \alias{RFPseudovariogram}
@@ -52,7 +52,7 @@
 \alias{RPplusproc}
 \alias{RPmultproc}
 \alias{RPmppplusproc}
-\alias{RPtrend}
+\alias{RPtrendproc}
 
 \title{Internal models}
 \description{

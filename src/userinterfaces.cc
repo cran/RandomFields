@@ -97,7 +97,8 @@ void ResetWarnings() {
   internal_param *w = &(GLOBAL.internal);
   w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
     w->warn_normal_mode = w->warn_mode = w->warn_colour = w->warn_coordinates =
-    w->warn_on_grid = true;
+    w->warn_on_grid = w->warn_new_definitions = w->warn_aspect_ratio = 
+    true;
 }
 
 #define MaxMaxInts 9
@@ -226,9 +227,10 @@ void SetDefaultModeValues(int old, int m){
   w->stored_init = false;
   if (m < normal) 
     w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
-      w->warn_on_grid = false;
+      w->warn_on_grid = w->warn_aspect_ratio = false;
   else if (m>old) { 
-    w->warn_oldstyle = w->warn_Aniso = true;
+    w->warn_oldstyle = w->warn_Aniso = w->warn_new_definitions = 
+      w->warn_aspect_ratio = true;
     if (m > normal) w->warn_ambiguous = true;
   }
   if (m != normal && w->warn_mode) {
@@ -442,7 +444,8 @@ void PrintModelList(int *intern, int *operat, int* Nick)
   char firstcolumn[20], name[MAXCHAR];
   int maxchar=10; // <= MAXCHAR=14
   int type[MAXNRCOVFCTS], op[MAXNRCOVFCTS], monotone[MAXNRCOVFCTS], 
-    finite[MAXNRCOVFCTS], internal[MAXNRCOVFCTS], dom[MAXNRCOVFCTS], 
+    finite[MAXNRCOVFCTS], simpleArguments[MAXNRCOVFCTS], 
+    internal[MAXNRCOVFCTS], dom[MAXNRCOVFCTS], 
     iso[MAXNRCOVFCTS], vdim[MAXNRCOVFCTS], maxdim[MAXNRCOVFCTS],
     nick = *Nick;
   
@@ -455,7 +458,8 @@ void PrintModelList(int *intern, int *operat, int* Nick)
   else {
     cov_fct *C;
 
-    GetAttr(type, op, monotone, finite, internal, dom, iso, maxdim, vdim);
+    GetAttr(type, op, monotone, finite, simpleArguments,
+	    internal, dom, iso, maxdim, vdim);
  
     sprintf(firstcolumn,"%%%ds", -maxchar);
     PRINTF("\n\n");
@@ -563,9 +567,10 @@ void GetModelList(int* idx, int*internal) {
 
 
 void GetAttr(int *type, int *op, int *monotone, int *finiterange, 
+	     int *simpleArguments,
 	     int *internal, int *dom, int *iso, int *maxdim, int *vdim) {
 #define MAXPN 10 /* only used for testing purposes */
-  int nr, p;
+  int nr, p, k;
   cov_model Cov,
     *cov = &Cov;
   range_type range;
@@ -585,6 +590,12 @@ void GetAttr(int *type, int *op, int *monotone, int *finiterange,
     C->range(cov, &range);
     maxdim[nr] = C->maxdim;
     finiterange[nr] = C->finiterange;
+    simpleArguments[nr] = true;
+    for (k=0; k<C->kappas; k++) 
+      if (C->kappatype[k] != INTSXP && C->kappatype[k] != REALSXP) {
+	simpleArguments[nr] = false;
+	break;
+      }
     monotone[nr] = C->Monotone;
     internal[nr] = C->internal;
     dom[nr] = C->domain;
@@ -1028,13 +1039,14 @@ const char *registers[registersN] =
    "errregister", "guiregister"};
 
 
-#define internalN 11
+#define internalN 13
 const char * internals[internalN] =  { // Achtung ! warn parameter werden nicht
   // pauschal zurueckgesetzt
   "warn_oldstyle", "warn_newstyle", "warn_newAniso", 
   "warn_ambiguous", "warn_normal_mode",  "warn_mode",
   "warn_colour_palette", "stored.init",  "warn_scale", 
-  "on_grid", "warn_coordinates"
+  "warn_on_grid", "warn_coordinates", "warn_new_definitions",
+  "warn_aspect_ratio"
 };
 
 
@@ -1669,6 +1681,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       case 8: wp->warn_scale = LOG;       break;
       case 9: wp->warn_coordinates = LOG;       break;
       case 10: wp->warn_on_grid = LOG;       break;
+      case 11: wp->warn_new_definitions = LOG;       break;
+      case 12: wp->warn_aspect_ratio = LOG;       break;
       default: ERR("unknown option for 'warn'");
       }
     } else {
@@ -2077,6 +2091,8 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->warn_scale));
     ADD(ScalarLogical(p->warn_coordinates));
     ADD(ScalarLogical(p->warn_on_grid));
+    ADD(ScalarLogical(p->warn_new_definitions));
+    ADD(ScalarLogical(p->warn_aspect_ratio));
   }
 
 

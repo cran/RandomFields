@@ -3,7 +3,10 @@
 \title{User Defined Function}
 \description{
   \command{RMuser} allows for a user defined covariance function, variogram
- model, or arbitrary function
+  model, or arbitrary function.
+
+  \bold{RMuser is very slow -- users should avoid it whenever possible.}
+  
 }
 \usage{
 RMuser(type, domain, isotropy, vdim, beta,
@@ -11,18 +14,36 @@ RMuser(type, domain, isotropy, vdim, beta,
        var, scale, Aniso, proj)
 }
 \arguments{
-  \item{type, domain, isotropy, vdim}{
-    The default value of \code{type} is \code{"shape function"}.
-    The default value
-    for the \code{domain} is \code{XONLY}. The default
-    value of \code{isotropy} is \code{'isotropic'} if \code{type}
-    equals \code{'tail correlation function'}, \code{'positive definite'}
-    or \code{'negative definite'}; \code{'cartesian system'} if
-      \code{type} indicates a process or simulation method or a shape
-      function. \code{vdim} is identified from \code{beta} if given;
-      otherwise the default value is \code{1}.
-      See \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}} for
+  \item{type}{ See \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}} for
       the range of values of the arguments.
+
+    Default: \code{"shape function"}.
+  }
+  \item{domain}{ See \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}} for
+    the range of values of the arguments.
+
+    Default:  \code{XONLY}.
+  }
+  \item{isotropy}{See
+    \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}} for 
+    the range of values of the arguments.
+    
+    Default:
+    \itemize{
+      \item  \code{'isotropic'} if \code{type}
+      equals \code{'tail correlation function'}, \code{'positive definite'}
+      or \code{'negative definite'};
+    
+      \item
+      \code{'cartesian system'} if
+      \code{type} indicates a process or simulation method or a shape
+      function. 
+    }
+  }
+  \item{vdim}{multivariability.
+    
+      Default:  \code{vdim} is identified from \code{beta} if given;
+      otherwise the default value is \code{1}.
     }
   \item{beta}{a fixed matrix that is multiplied to the return value of the
     given function; the dimension must match.
@@ -31,7 +52,7 @@ RMuser(type, domain, isotropy, vdim, beta,
     is, however,  not established yet.
   }
   \item{variab.names}{
-    Just the namees of the variables. More variable names might
+    Just the names of the variables. More variable names might
     be given here than used in the function.
     See Detail for the interpretation of variables.
   }
@@ -98,6 +119,10 @@ RMuser(type, domain, isotropy, vdim, beta,
   \link{RC_ISOTROPY}, \link{RC_DOMAIN}
 }
 
+\keyword{spatial}
+\keyword{models}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -110,26 +135,20 @@ cat("This examples requires 'RFoptions(storing=FALSE)', what is set now.\n");
 RFoptions(storing=FALSE)
 }
 
+## user-defined exponential covariance model
 model <- RMuser(type="positive definite", domain="single variable",
                 iso="isotropic", fctn=exp(-x))
 x <- y <- seq(1, 10, len=10^(1+interactive()))
 plot(model)
-z <- RFsimulate(RPcirculant(model), x=x, y=y, grid=TRUE)
+z <- RFsimulate(RPcirculant(model), x=x, y=y)
 plot(z)
 
-%z1 <- RFsimulate(model = RPcirculant(model), x=x, y=y, grid=TRUE, seed=0)
-%plot(z1)
-%stopifnot(sum(abs(z@data-z1@data)) == 0) ## 0
 
 model <- RMnugget(var=1e-5) +
          RMuser(type="positive definite", domain="kernel",
                 iso="symmetric", fctn=sum(x * y))
 x <- y <- seq(1, 10, len=7^(1+interactive()))
-z <- RFsimulate(model, x=x, y=y, grid=TRUE, n=6)
+z <- RFsimulate(model, x=x, y=y, n=6)
 plot(z)
 \dontshow{FinalizeExample()}
 }
-
-\keyword{spatial}
-\keyword{models}
-

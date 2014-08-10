@@ -225,6 +225,9 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  \command{\link{RFsimulate.more.examples}}
 }
 
+\keyword{spatial}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -264,7 +267,7 @@ len <- if (interactive()) 200 else 2
 x.seq <- seq(from, to, length=len) 
 y.seq <- seq(from, to, length=len)
 
-simu <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE)
+simu <- RFsimulate(model, x=x.seq, y=y.seq)
 plot(simu)
 
 
@@ -286,11 +289,7 @@ plot(data)
 # let simulate a field conditional on the above data
 x.seq.cond <- y.seq.cond <- seq(-1.5, 1.5, length=n)
 model <- RMexp()
-cond <- RFsimulate(model = model, x=x.seq.cond, y=y.seq.cond,
- grid=TRUE, data=data)
+cond <- RFsimulate(model, x=x.seq.cond, y=y.seq.cond, data=data)
 plot(cond, data)
 \dontshow{FinalizeExample()}
 }
-
-\keyword{spatial}
-

@@ -272,27 +272,34 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
                                MARGIN, fixed.MARGIN){
   types <- c("Cov", "Variogram", "Fctn")
   verballist <- paste("'", types, "'", sep="", collapse="")
-  if (missing(fct.type) || length(fct.type) == 0) {
-    fct.type <- types
-  } else {
+  if (!missing(fct.type) && length(fct.type) > 0) {
     if (!(fct.type %in% types))
       stop("fct.type must be NULL or of the types ", verballist)
+    types <- fct.type
   }
 
-  model <- list("", PrepareModel2(x))
-  while (length(fct.type) > 0 &&
-         { model[[1]] <- fct.type[1];
-           !is.numeric(vdim <- try( InitModel(MODEL.USER, model, dim),
-                           silent=TRUE))})
-    fct.type <- fct.type[-1]
-
-  fct.type <- fct.type[1]
+  all.fct.types <- character(length(x))
+  all.vdim <- numeric(length(x))
+  for (i in 1:length(x)) {
+    fct.type <- types
+    m <- list("", PrepareModel2(x[[i]]))
+    while (length(fct.type) > 0 &&
+           { m[[1]] <- fct.type[1];
+             !is.numeric(vdim <- try( InitModel(MODEL.USER, m, dim),
+                                     silent=TRUE))})
+      fct.type <- fct.type[-1]
+    if (!is.numeric(vdim)) {
+      ##    Print(vdim, model)
+      ##   stop("'vdim' is not numerical")
+      stop(attr(vdim, "condition")$message)
+    }
+    if (vdim[1] != vdim[2]) stop("only simple models can be plotted")
+    all.vdim[i] <- vdim[1]
+    all.fct.types[i] <- fct.type[1]
+  }
+  if (!all(all.vdim == all.vdim[1]))
+    stop("models have different multivariability")
   
-  if (!is.numeric(vdim)) {
-#    Print(vdim, model)
- #   stop("'vdim' is not numerical")
-    stop(attr(vdim, "condition")$message)
-  }
 
 #  fctcall.vec <- c("Cov", "Variogram")
   #covinfo <- RFgetModelInfo(register=MODEL.USER, level=3, spConform=TRUE)
@@ -316,21 +323,36 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 #  if(covinfo$domown != TRANS_INV)
 #    stop("method only implemented for models that are not kernels")
 
-  switch(fct.type,
+ 
+  if (all(all.fct.types[1] == all.fct.types)) {
+    switch(all.fct.types[1],
          "Cov" = {
-           main<- paste("Covariance fct plot for\n", rfConvertRMmodel2string(x))
+           main <-"Covariance function"
            ylab <- "C(distance)"
          },
          "Variogram" = {
-           main <- paste("Variogram plot for\n", rfConvertRMmodel2string(x))
+           main <- "Variogram"
            ylab <- expression(gamma(distance))
          },
          "Fctn" = {
-           main<- paste("plot for shape function\n", rfConvertRMmodel2string(x))
+           main<- "Shape function"
            ylab <- "f(distance)"
          },
          stop("method only implemented for ", verballist)
        )
+  } else {
+    main <- ""
+    ylab <- "f(distance)"
+  }
+
+  if (length(x) == 1) {
+    for.what <- rfConvertRMmodel2string(x[[1]])
+  } else {
+    for.what <- "various models"
+  }
+
+  main <- paste(main, " plot for ", for.what, "\n", sep="")
+  
   if (dim >= 3)
     main <- paste(sep="", main, ";  component", if (dim>3) "s", " ",
                   paste((1:dim)[-MARGIN], collapse=", "), 
@@ -340,9 +362,47 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   .C("DeleteKey", MODEL.USER)
 
   
-  return(list(main=main, fctcall=fct.type, ylab=ylab, distance=distance,
+  return(list(main=main, fctcall=all.fct.types, ylab=ylab, distance=distance,
               distanceY = if (dim > 1) distanceY))
 }
+
+
+singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {    
+  if (dim==1) {
+    D <- li$distance             
+    if (plotfctcall == "matplot")  {
+      iszero <- D == 0
+      D[iszero] <- NA
+      plotpoint <- any(iszero)
+    }  
+    liXY <-
+      if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
+      else list(x=D, y=cov)
+    
+    ##       Print(plotfctcall, args=c(dots, liXY))
+    
+    do.call(plotfctcall, args=c(dots, liXY))   
+    if (plotpoint) {
+      for (i in 1:ncol(cov))
+        points(0, cov[iszero, i], pch=19 + i, col = dots$col[i])
+    }
+    
+  } else {
+    if (!("zlim" %in% dotnames)) dots$zlim <- range(unlist(cov), finite=TRUE)
+    addgiven <- "add" %in% dotnames
+    local.dots <- dots
+    local.dots$col <- NULL
+    local.dots$lty <- NULL
+    for (i in 1:ncol(cov)) {
+      if (!addgiven) local.dots$add <- i > 1
+       do.call(graphics::contour,
+              args=c(list(x=li$distance, y=li$distanceY, col=dots$col[i],
+                lty = dots$lty[i],
+                z=matrix(cov[, i], nrow=length(li$distance))), local.dots))
+    }
+  }
+}
+
 
 plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
                         ...) {
@@ -361,14 +421,25 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   }
   dots <- list(...)
   dotnames <- names(dots)
+  models <- substr(dotnames, 1, 5) == "model"
+  x <- c(list(x), dots[models])
+  mnames <- c("", substr(dotnames[models], 6, 100))
+  idx <- substr(mnames, 1, 1) == "."
+  mnames[idx] <- substr(mnames[idx], 2, 100)
+  for (i in which(!idx)) 
+    mnames[i] <- rfConvertRMmodel2string(x[[i]])
+  mnames <- substr(mnames, 1, 15)
+
+  dots <- dots[!models]
+  dotnames <- dotnames[!models]
   
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
   plotfctcall <- if ("plotfctcall" %in% dotnames)
-    dots$plotfctcall else "plot.default"
+    dots$plotfctcall else "matplot"
   dots$plotfctcall <- NULL
 
   if (!("xlim" %in% dotnames)) {
-    dots$xlim <- c(-1, 1)
+    dots$xlim <- c(-1, 1) * 1.5
   }
   if (!("ylim" %in% dotnames) && dim > 1) dots$ylim <- dots$xlim
   if (!("type" %in% dotnames)) dots$type <- "l"
@@ -383,17 +454,17 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   if (!("cex" %in% dotnames)) dots$cex <- 1
   if (!("cex.main" %in% dotnames)) dots$cex.main <- 0.8 * dots$cex
   if (!("cex.axis" %in% dotnames)) dots$cex.axis <- 0.8 * dots$cex
-  if (!("col" %in% dotnames)) 
-    dots$col <- default.image.par(dots$ylim, NULL, FALSE)$data$default.col[1]
+  if (!("col" %in% dotnames)) dots$col <- rep(1:7, length.out=length(x))
  
-  
+  cov <- list()
   if (dim==1) {
-    cov <- RFcov(x=li$distance, model=x, fctcall=li$fctcall)
+    for (i in 1:length(x)) 
+      cov[[i]] <- RFcov(x=li$distance, model=x[[i]], fctcall=li$fctcall[i])
 
     #print(cov, li$distance)
     lab <- xylabs("distance", li$ylab)
     ## strokorb monotone ist z.B. nicht ueberall finite:
-    if (!("ylim" %in% dotnames)) dots$ylim <- range(0, cov[is.finite(cov)])
+    if (!("ylim" %in% dotnames)) dots$ylim <- range(0, unlist(cov), finite=TRUE)
     if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
     if (!("ylab" %in% dotnames)) dots$ylab <- lab$y
   } else {  
@@ -402,17 +473,21 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     if (!("ylab" %in% dotnames)) dots$ylab <- lab$y
     dots$type <- NULL
  
-    if (dim==2)
-      cov <- RFcov(x=as.matrix(expand.grid(li$distance, li$distanceY)),
-                   model=x, fctcall=li$fctcall)
+    if (dim==2) {
+      di <- as.matrix(expand.grid(li$distance, li$distanceY))
 
-    if (dim>=3) {
+      
+      for (i in 1:length(x)) {
+        cov[[i]] <- RFcov(x=di, model=x[[i]], fctcall=li$fctcall[i])
+      }
+    } else if (dim>=3) {
       m1 <- expand.grid(li$distance, li$distanceY)
       m2 <- matrix(NA, ncol=dim, nrow=nrow(m1))
       m2[,MARGIN] <- as.matrix(m1)
       m2[,-MARGIN] <- rep(fixed.MARGIN, each=nrow(m1))
-      cov <- RFcov(x=m2, model=x, fctcall=li$fctcall)      
-    }
+      for (i in 1:length(x))
+        cov[[i]] <- RFcov(x=m2, model=x[[i]], fctcall=li$fctcall[i])
+    } else stop("this error should never appear")
   }
 
   if ((is.null(dots$xlab) || dots$xlab=="") &&
@@ -422,56 +497,39 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     margins <- c(5, 5, if (dots$main=="") 0 else 2, 0) + 0.2
   }
 
-  if (is.null(dim(cov))) { ## i.e. vdim == 1
-    if (dim==1){
-       D <- li$distance             
-       if (plotfctcall == "plot.default")  {
-         iszero <- D == 0
-         D[iszero] <- NA
-         plotpoint <- any(iszero)
-       }  
-       liXY <-
-        if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
-        else list(x=D, y=cov)
-
-  #       Print(plotfctcall, args=c(dots, liXY))
-      
-       do.call(plotfctcall, args=c(dots, liXY))
-      if (plotpoint) points(0, cov[iszero], pch=20, col = dots$col)
-      
-    } else {
-      do.call(graphics::contour, args=c(list(x=li$distance, y=li$distanceY,
-                         z=matrix(cov, nrow=length(li$distance))), dots))
-    }
+  dimcov <-  dim(cov[[1]])
+  if (is.null(dimcov)) { ## i.e. vdim == 1
+    cov <- sapply(cov, function(x) x)
+    if (!("lty" %in% dotnames)) dots$lty <- 1:5
+    singleplot(cov=cov, dim=dim, li=li, plotfctcall, dots=dots,
+               dotnames=dotnames)
+ #   Print(mnames, dots$col, dots$lty)
+    
+    if (length(x) > 1) legend(x="topright", legend=mnames,
+                             col=dots$col, lty=dots$lty)
   } else { ## multivariate 
     graphics <- RFoptions()$graphics
-    ArrangeDevice(graphics, dim(cov)[2:3])
-    scr <- matrix(split.screen(figs=dim(cov)[2:3]),
-                  ncol=dim(cov)[2], byrow=TRUE)
+    figs <- dimcov[2:3]
+    ArrangeDevice(graphics, figs)
+    scr <- matrix(split.screen(figs=figs), ncol=dimcov[2], byrow=TRUE)
     par(oma=margins)
     title(main=dots$main, xlab=dots$xlab, ylab=dots$ylab,
           outer=TRUE, cex.main=dots$cex.main)
     dots.axis = dots[names(dots) != "type"]
     dots.axis$col = dots.axis$col.axis
+    if (!("axes" %in% dotnames)) dots$axes <- FALSE
+    
     for (i in 1:ncol(scr)) {
       for (j in 1:nrow(scr)) {
         dots$main <-
           eval(parse(text=paste("expression(C[", i, j,"])", sep="")))
         screen(scr[i,j])
         par(mar=c(0,0,2,1))
-        covij <- cov[,i,j]
-        if (dim==1) {
-          liXY <-
-            if (plotfctcall=="plot.xy")
-              list(xy = xy.coords(x=li$distance, y=covij))
-            else
-              list(x=li$distance, y=covij)
-          do.call(plotfctcall, args=c(dots, liXY, axes=FALSE))
-        } else {
-          do.call(graphics::contour, args=c(dots, list(axes=FALSE,
-                             x=li$distance, y=li$distanceY,
-                             z=matrix(covij, nrow=length(li$distance)))))
-        }
+
+        singleplot(cov = sapply(cov, function(x) x[, i,j]),
+                   dim = dim, li=li, plotfctcall=plotfctcall, dots=dots,
+                   dotnames = dotnames)
+
         box()
         if (i==1) do.call(graphics::axis,
               args=c(dots.axis, list(side=1, outer = TRUE, line=1)))

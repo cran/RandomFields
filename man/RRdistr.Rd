@@ -57,9 +57,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
 n <- if (interactive()) 10 else 1
-for (i in 1:n) {
+for (i in 1:n) {  
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x))
+  plot(RFsimulate(model, x=x, seed=i))
 }
 
 ## another possibility to define exactly the same model above is
@@ -73,22 +73,17 @@ for (i in 1:n) {
 
 ## here, just two other examples:
 ## fst
-\dontshow{FinalizeExample()}
 model <- RMmatern(nu=unif(min=0.1, max=2)) # random
 for (i in 1:n) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x))
+  plot(RFsimulate(model, x=x, seed=i))
 }
 
 ## snd
 ## note that the fist 'exp' refers to the exponential function,
 ## the second to the exponential distribution.
-model <- RMgauss(var=exp(3), scale=exp(rate=1))
-Print(model)
+(model <- RMgauss(var=exp(3), scale=exp(rate=1)))
 plot(z <- RFsimulate(model=model, x=1:100/10))
-
-%#all.equal(parseModel(model), parseModel(list2RMmodel(parseModel(model))))
-
 
 \dontshow{FinalizeExample()}
 }

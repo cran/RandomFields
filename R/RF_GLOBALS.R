@@ -114,25 +114,7 @@ ZF_MODEL_PREFIX <- "RM"
 ###############################################################################
 ##                        STATIONARITY AND ISOTROPY                          ##
 ###############################################################################
-
-
-
-#ZF_NULL <- '<null>'
-#RC_TYPE_DOMAINS <-
-#  cbind(c('domain', 'variogram', 'process', 'gauss method',
-#          'point-shape function', 'distribution', 'shape function',
-#          'trend', 'interface', 'undefined', 'of other type'),
-#        c('covariance', 'gen. variogram', ZF_NULL, ZF_NULL,
-#          ZF_NULL, ZF_NULL, ZF_NULL,
-#          ZF_NULL, 'kernel interface', 'undefined kernel', 'of other kernel'),
-#        c('param dep., pos. definite', 'param dep., neg. definite',
-#          ZF_NULL, ZF_NULL,
-#          ZF_NULL, ZF_NULL, ZF_NULL,
-#          ZF_NULL, 'param. dep. interface', 'undefined, parametric function',
-#          'of other param. dep. function')       
-#        )        
-#RC_TYPE_DOM <- RC_TYPE_DOMAINS[RC_TYPE_DOMAINS != ZF_NULL]
-
+# @AUTHOR      M. Schlather <schlather@math.uni-mannheim.de>
 
 TRANS_INV <- as.integer(0)
 KERNEL <- as.integer(1)

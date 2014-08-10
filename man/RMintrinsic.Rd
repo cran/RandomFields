@@ -77,7 +77,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 x.max <- 10
 model <- RMintrinsic(RMfbm(alpha=1), diameter=x.max)
 x <- seq(0, x.max, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,6))
+plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

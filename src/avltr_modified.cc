@@ -45,7 +45,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include "basic.h" // must be before assert.h
+#include "basic.h"
  
 //#include "avltr.h"
 #include "avltr_modified.h"

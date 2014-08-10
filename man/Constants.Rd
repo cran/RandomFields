@@ -12,7 +12,7 @@
 \title{Constants used in RandomFields}
 \description{
   Several constants are provided that might make
-  the use of some functions easier, e.g.\ \command{\link{RFgetModelNames}}
+  the use of some functions easier, e.g. \command{\link{RFgetModelNames}}
 }
 \value{
   \code{RC_TYPE = c("tail correlation function", "positive definite",
@@ -63,11 +63,15 @@
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
+
 \keyword{spatial}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
+RC_ISOTROPY[1:5]
 RFgetModelNames(isotropy=RC_ISOTROPY[1:5])
 \dontshow{FinalizeExample()}
 }

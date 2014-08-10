@@ -133,17 +133,18 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 
 }
 
+
+\keyword{spatial}
+\keyword{models}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 x <- seq(0, 1, len=if (interactive()) 100 else 3)
 model <- RMwhittle(nu=1, Aniso=matrix(nc=2, c(1.5, 3, -3, 4)))
 plot(model, dim=2, xlim=c(-1,1))
-z <- RFsimulate(model=model, x, x, grid=TRUE)
+z <- RFsimulate(model=model, x, x)
 plot(z)
 \dontshow{FinalizeExample()}
 }
-
-
-\keyword{spatial}
-\keyword{models}

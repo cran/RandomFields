@@ -19,7 +19,7 @@
  \item
   Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2014)
  Analysis, simulation and prediction of
- multivariate random fields with package RandomFields \emph{JSS}
+ multivariate random fields with package \pkg{RandomFields} \emph{JSS}
  \emph{Submitted}
 
  }
@@ -30,7 +30,7 @@
 \examples{
 
 
-\dontrun{
+\donttest{
 
 # This skript is based on version 3.0.28 available at
 # http://ms.math.uni-mannheim.de/de/publications/software/
@@ -55,20 +55,20 @@ M2 <- c(sqrt(0.19), 0.8)
 model <- RMmatrix(M = M1, RMwhittle(nu = 0.3)) + 
          RMmatrix(M = M2, RMwhittle(nu = 2))
 x <- y <- seq(-10, 10, 0.2)
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu)
 
 
 ## Fig. 2: Wackernagel's delay model
 model <- RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(4, 4))
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu, zlim = 'joint')
 
 
 ## Fig. 3: extended Wackernagel's delay model
 model <- RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(0, 4)) + 
          RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(4, 0))
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu, zlim = 'joint')
 plot(model, dim = 2, xlim = c(-5, 5), main = "Covariance function", 
      cex = 1.25, cex.lab = 1, xlab = " ")
@@ -79,14 +79,14 @@ plot(model, dim = 2, xlim = c(-5, 5), main = "Covariance function",
 ##               as latend dimension
 ## n.slices has the effect of choosing a bivariate model
 model <- RMgencauchy(alpha = 1.5, beta = 3)
-simu <- RFsimulate(model, x, y, z = c(0,1), grid = TRUE)
+simu <- RFsimulate(model, x, y, z = c(0,1))
 plot(simu, MARGIN.slices = 3, n.slices = 2)
 
 
 ## Fig. 5: Gneiting's bivariate Whittle-Matern model
 model <- RMbiwm(nudiag = c(1, 2), nured = 1, rhored = 1, cdiag = c(1, 5), 
                 s = c(1, 1, 2))
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu)
 
 
@@ -98,7 +98,7 @@ A2 <- RMangle(angle = 0, diag = c(0.1, 0.5))
 model <- RMmatrix(M = M1, RMgengneiting(kappa = 0, mu = 2, Aniso = A1)) +
          RMmatrix(M = M2, RMgengneiting(kappa = 3, mu = 2, Aniso = A2))
 x <- y <- seq(-10, 10, 0.2)
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu)
 
 
@@ -108,7 +108,7 @@ plot(simu)
 ## to the curl free vector field and the forth component to the
 ## field of sinks and sources
 model <- RMcurlfree(RMmatern(nu = 5), scale = 4)
-simu <- RFsimulate(model, x, y, grid = TRUE)
+simu <- RFsimulate(model, x, y)
 plot(simu, select.variables = list(1, 2 : 3, 4))
 plot(model, dim = 2, xlim = c(-3, 3), main = "") 
 
@@ -117,7 +117,7 @@ plot(model, dim = 2, xlim = c(-3, 3), main = "")
 ## See the physical literature for its derivation and details
 x <- y <- seq(-2, 2, len = 20)
 model <- RMkolmogorov()
-simu <- RFsimulate(model, x, y, z = 1, grid = TRUE)
+simu <- RFsimulate(model, x, y, z = 1)
 plot(simu, select.variables = list(1 : 2), col = c("red"))
 plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, fixed.MARGIN = 1.0,
      main = "")
@@ -181,8 +181,7 @@ P <- cbind(c(-sin(a[1]), cos(a[1]), 0),
            c(-cos(a[1]) * sin(a[2]), -sin(a[1]) * sin(a[2]), cos(a[2])),
            c(cos(a[1]) * cos(a[2]), sin(a[1]) * cos(a[2]), sin(a[2])))
 x <- RFearth2cartesian(weather[ , 3 : 4])
-plane <- (x %*% P)[ , 1 : 2]
-
+plane <- (x \%*\%P)[ , 1 : 2]
 
 ## here, kriging is performed on a rectangular that covers the 
 ## the projected points above. The rectangular is approximated
@@ -196,22 +195,19 @@ z <- RFinterpolate(pars, data = data, dim = 2,
                    variab_units = c("Pa", "K"), spConform = TRUE)
 plot(z)
 
+}
 
-
-\dontshow{
+\dontshow{\dontrun{ # OK
 dip <- dimnames(installed.packages())
 version <- installed.packages()[which(dip[[1]] == "RandomFields")[1],
                                 dip[[2]] == "Version"]
 information <- list(date=date(), version=version) # version auf /usr/local !
 
-save(file="/home/schlather/svn/RandomFields/RandomFields/data/weather.rda",
+save(file="/home/schlather/svn/RandomFields/RandomFields/data/weather.rda",# OK
      pars.model, pars, whole.model, whole,
      weather, information=information)
-}
+}}
 
-
-
-}
 
 \dontshow{FinalizeExample()}
 }

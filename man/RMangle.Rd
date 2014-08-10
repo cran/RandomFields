@@ -39,9 +39,11 @@ RMangle(angle, ratio, diag)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-x <- seq(0, 2, 0.05)
 model <- RMexp(Aniso=RMangle(angle=pi/4, ratio=3))
-z <- RFsimulate(x, x, grid=TRUE, model=model)
+plot(model, dim=2)
+
+x <- seq(0, 2, if (interactive()) 0.05 else 1)
+z <- RFsimulate(x, x, model=model)
 plot(z)
 
 

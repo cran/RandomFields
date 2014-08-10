@@ -131,73 +131,7 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 ## estimation; 'NA' means: "to be estimated"
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
-RFcrossvalidate(estmodel, data=d, spC=FALSE)
-
-
-\dontshow{\dontrun{
-
-#########################################################
-## Estimation with fixed sill (variance + nugget equals a
-## given constant)
-estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
- RMnugget(var=NA) + RMtrend(mean=NA)
-RFcrossvalidate(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try",
-            spC=FALSE)
-
-
-
-#########################################################
-## estimation in a anisotropic framework
-x <- y <- (1:3)/4
-model <- RMexp(Aniso=matrix(nc=2, c(4,2,-2,1)), var=1.5)
-z <- RFsimulate(model, x=x, y=y, grid=TRUE, n=n, spC=TRUE)
-estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
- RMtrend(mean=NA)
-RFcrossvalidate(estmodel, data=z, fit.nphi=20, spC=FALSE)
-}}
-
-
-\dontshow{ \dontrun{
-
-#########################################################
-## estimation of coupled parameters (alpha = beta, here)
-# source("RandomFields/tests/source.R")
-f <- function(param) param[c(1,2,3,3,4)]
-RFcrossvalidate(estmodel, data=d, transform=list(), spC=FALSE)# shows positions of the NAs
-RFcrossvalidate(estmodel, data=d, spC=FALSE,
- transform=list(c(rep(TRUE, 3), FALSE, TRUE), f))
-
-########################################################
-## estimation of anisotropy matrix ##
-x <- seq(0, 5, 1.5)
-model <- RMexp(var=1, scale=1)
-z <- RFsimulate(model, x, x, x, grid=TRUE, n=n, spC=TRUE)
-estmodel <- RMexp(var=NA, Aniso=diag(rep(NA, 3))) +
- RMnugget(var=NA) + RMtrend(mean=NA)
-RFcrossvalidate(estmodel, data=z, spC=FALSE)
-
-
-########################################################
-## estimation of anisotropy matrix where the two first##
-## diagonal elements are identical ##
-RFcrossvalidate(estmodel, data=z, transform=list(), spC=FALSE)
- ## shows the positions of the NAs
-trafo <- function(variab) { variab[c(1, 2, 2, 3, 4)] }
-RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
- transform=list(c(TRUE, TRUE, FALSE, TRUE, TRUE),
- trafo))
-
-
-########################################################
-## estimation of anisotropy matrix where all ##
-## diagonal elements are identical ##
-trafo <- function(variab) { variab[c(1, 2, 2, 2, 3)] }
-RFcrossvalidate(estmodel, data=z, critical=0, spC=FALSE,
- transform=list(c(TRUE, TRUE, FALSE, FALSE, TRUE),
- trafo),
- split=FALSE)
-}}
-
+RFcrossvalidate(estmodel, data=d)
 
 
 \dontshow{RFoptions(modus_operandi="normal")}

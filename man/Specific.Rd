@@ -89,7 +89,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## example for implicite use
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.1)
 plot(model)
-plot(RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4))
+plot(RFsimulate(model=model, 0:10, 0:10, n=4))
 ## The following function shows the internal structure of the model.
 ## In particular, it can be seen that RPspecific is applied to RMplus.
 RFgetModelInfo(level=0, which="internal")
@@ -99,10 +99,9 @@ model <- RPspecific(RMS(var=unif(min=0, max=10), RMgauss()))
 n <- if (interactive()) 6 else 1
 k <- if (interactive()) 10 else 1
 x <- seq(0,10,0.02)
-RFoptions(seed=NA)
 for (i in 1:k) {
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x, n=n), ylim=c(-5,5))
+  plot(RFsimulate(model, x=x, n=n, seed=i), ylim=c(-5,5))
 }
 
 \dontshow{FinalizeExample()}

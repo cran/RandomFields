@@ -156,16 +156,7 @@ void addVariable(char *name, double *x, int nrow, int ncol, SEXP env) {
 
 
 
-
-#define DISTR_DX 0
-#define DISTR_PX 1
-#define DISTR_QX 2
-#define DISTR_RX 3
-#define DISTR_NCOL 4
-#define DISTR_NROW 5
-#define DISTR_ENV 6
-#define DISTR_NAME 7
-#define DISTR_LAST DISTR_NAME
+ 
 void evaluateDistr(cov_model *cov, int which, double *Res) {
   SEXP  res,
     env = PENV(DISTR_ENV)->sexp;
@@ -188,7 +179,10 @@ void evaluateDistr(cov_model *cov, int which, double *Res) {
 
   res = eval(PSEXP(which)->sexp, env);
   size = P0INT(DISTR_NROW) * P0INT(DISTR_NCOL);
-  for (i=0; i<size; i++) Res[i] = REAL(res)[i]; 
+  for (i=0; i<size; i++) {
+    // printf("i=%d %d\n", i, size);
+    Res[i] = REAL(res)[i]; 
+  }
 }
 
 void distrD(double *x, cov_model *cov, double *v) {
@@ -1142,22 +1136,7 @@ void range_loc(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
  
 // Abgeschlossene Intervalle!! wichtig !!
 void unifD(double *x, cov_model *cov, double *v) {
-  double					
-  VARIABLE_IS_NOT_USED *min,			
-    VARIABLE_IS_NOT_USED *max;			
-  min = (double*) P(UNIF_MIN);			
-  max = (double*) P(UNIF_MAX);
-
-  int VARIABLE_IS_NOT_USED i,						
-    VARIABLE_IS_NOT_USED mini,						
-    VARIABLE_IS_NOT_USED maxi,						
-    VARIABLE_IS_NOT_USED len_min = cov->nrow[UNIF_MIN],			
-    VARIABLE_IS_NOT_USED len_max = cov->nrow[UNIF_MAX],		
-    VARIABLE_IS_NOT_USED dim = cov->xdimown;				
-  assert(dim == cov->tsdim);				
-
-
-   
+  UNIF_PARAMETERS;
   double area = 1.0;
   bool normed = P0INT(UNIF_NORMED);
   UNIFOR {

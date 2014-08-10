@@ -337,12 +337,15 @@ void covmatrixS(cov_model *cov, double *v) {
   }
 
   int next_gatter = next->gatternr,
+    next_xdimgatter = next->xdimgatter,
     next_xdim = next->xdimprev;
  
   next->gatternr = cov->gatternr;
   next->xdimprev = cov->xdimprev;
+  next->xdimgatter = cov->xdimgatter;
   CovList[next->nr].covmatrix(next, v);//hier wird uU next->totalpoints gesetzt
   next->gatternr = next_gatter;
+  next->xdimgatter = next_xdimgatter;
   next->xdimprev = next_xdim;
 
   // PMI(cov, "covmatrix S");

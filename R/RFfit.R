@@ -59,9 +59,6 @@
 ## !!! Mixed Model Equations !!! ##
 ###################################
 
-# load("UKFALSE.rda")
-# load("UKTRUE.rda")
-
 
 RFfit <-
   function(model, x, y=NULL, z=NULL, T=NULL,  grid, data, 

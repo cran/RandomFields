@@ -55,7 +55,7 @@ x.seq <- seq(from, to, step)
 y.seq <- seq(from, to, step)
 
 ## simulate and get image of output:
-simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE)
+simulated <- RFsimulate(model, x=x.seq, y=y.seq)
 plot(simulated)
 ## for comparison only:
 image(x.seq, y.seq, RFspDataFrame2conventional(simulated)$data)
@@ -65,14 +65,14 @@ image(x.seq, y.seq, RFspDataFrame2conventional(simulated)$data)
 len <- 21 ## more generally len <- (to-from)/step+1
 x.short <- y.short <- c(from, step, len)
 short.matrix <- cbind(x.short, y.short)
-simulated <- RFsimulate(model = model, x=short.matrix, grid=TRUE)
+simulated <- RFsimulate(model = model, x=short.matrix)
 plot(simulated) 
 
 #############################################################
 ## ... using GridTopology for the locations:
 len <- 21 ## more generally len <- (to-from)/step+1
 gridtop <- GridTopology(c(from,from), c(step,step), c(len,len))
-simulated <- RFsimulate(model = model, x=gridtop, grid=TRUE)
+simulated <- RFsimulate(model = model, x=gridtop)
 plot(simulated) 
 
 ############################################################
@@ -86,7 +86,7 @@ plot(simulated)
 ## using the 1-dimensional plot routine
 ## simulate 1-dimensional random field first
 x.seq <- seq(from, to, step) # grid
-simulated <- RFsimulate(model = model, x=x.seq, grid=TRUE)
+simulated <- RFsimulate(model = model, x=x.seq)
 plot(simulated) 
 
 
@@ -99,7 +99,7 @@ model <- RMstable(alpha=1.5)
 step <- 1 ## nicer, but also time consuming if step <- 0.1
 x.seq <- seq(0, 20, step) 
 y.seq <- seq(0, 20, step) # grid
-simulated <- RFsimulate(model, x=x.seq, y=y.seq, grid=TRUE,
+simulated <- RFsimulate(model, x=x.seq, y=y.seq,
 n=4) # 4 realizations at once
 plot(simulated) 
 summary(simulated@data$variable1.n2)
@@ -114,7 +114,7 @@ summary(simulated@data$variable1.n2)
 model <- RMexp(var=0.3) +
 RMtrend(arbitraryfct = function(x,y) 2*sin(x)*cos(y))
 x.seq <- y.seq <- seq(-5,5,0.1)
-simulated <- RFsimulate(model, x=x.seq,y=y.seq, grid=TRUE)
+simulated <- RFsimulate(model, x=x.seq,y=y.seq)
 plot(simulated)
 
 #############################################################
@@ -124,7 +124,7 @@ model1 <- RMexp() + RMtrend(plane=c(3,-1), fctcoeff=1)
 # or equivalently:
 model2 <- RMexp() + RMtrend(arbitraryfct=function(x,y) 3*x-y)
 
-simulated <- RFsimulate(model1, x=x.seq, y=y.seq, grid=TRUE)
+simulated <- RFsimulate(model1, x=x.seq, y=y.seq)
 persp(x.seq,y.seq, RFspDataFrame2conventional(simulated)$data,
 phi=30, theta=-3)
 
@@ -137,7 +137,7 @@ phi=30, theta=-3)
 alpha <- 1 # in [0,2)
 x.seq <- seq(0, 10, 0.001)
 simulated <- RFsimulate(model = RMfbm(alpha=alpha),
-x=x.seq, grid=TRUE) 
+x=x.seq) 
 plot(simulated) 
 
  
@@ -155,7 +155,7 @@ submodel <- RMwhittle(nu=0.3)  # submodel on which the operator
 model <- RMcoxisham(submodel, mu=0, D=D, beta=2)
 x.seq <- y.seq <- seq(-10,10,0.1)
 simulated <- RFsimulate(model = model,
-x=x.seq, y=y.seq, grid=TRUE) 
+x=x.seq, y=y.seq) 
 plot(simulated)
 
 #############################################################
@@ -164,7 +164,7 @@ plot(simulated)
 #model2 <- RMcoxisham(RMintexp(RMdewijsian(alpha=1)),
 # mu=0, D=D, beta=2)
 #simulated <- RFsimulate(model = model2,
-# x=x.seq, y=y.seq, grid=TRUE) 
+# x=x.seq, y=y.seq) 
 #plot(simulated)
 
 #############################################################
@@ -176,8 +176,8 @@ model1 <- RMexp(var=5) + RMwhittle(nu=1, var=5)
 model2 <- RMplus(C0 = RMexp(), C1 = RMwhittle(nu=1), var=5)
 x.seq <- y.seq <- seq(-10,10,0.5)
 
-simulated1 <- RFsimulate(model = model1, x=x.seq, y=y.seq, grid=TRUE) 
-simulated2 <- RFsimulate(model = model2, x=x.seq, y=y.seq, grid=TRUE)
+simulated1 <- RFsimulate(model = model1, x=x.seq, y=y.seq) 
+simulated2 <- RFsimulate(model = model2, x=x.seq, y=y.seq)
 # compare (should give the same
 plot(simulated1)
 plot(simulated2)
@@ -193,7 +193,7 @@ RFgetModelNames(vdim=2) ## list all bivariate models
 model <- RMbiwm(nudiag=c(1.3, 0.7), nured=2.5,
 s=c(1, 1, 1), cdiag=c(0.7, 0.8), rhored=1)
 x.seq <- y.seq <- seq(-10,10,0.5)
-simulated <- RFsimulate(model = model, x=x.seq, y=y.seq, grid=TRUE) 
+simulated <- RFsimulate(model = model, x=x.seq, y=y.seq) 
 plot(simulated)
 
 
@@ -220,17 +220,12 @@ x.seq.cond <- y.seq.cond <- seq(-1.5,1.5,length=100)
 ## pass given data and locations as SP4-object
 ## given.data is an SP4-object
 
-cond.simulated <- RFsimulate(model = RMexp(),
-x=x.seq.cond, y=y.seq.cond,
-grid=TRUE, data=data)
+cond.simulated <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond, data=data)
 
 #############################################################
 ## or equivalently: pass given data and locations as a matrix
 
-cond.simulated.2 <- RFsimulate(model = RMexp(),
-x=x.seq.cond, y=y.seq.cond,
-grid=TRUE,
-data = cbind(x, y, data@data))
+cond.simulated.2 <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond, data = cbind(x, y, data@data))
 
 all.equal(cond.simulated, cond.simulated.2) ## TRUE
 plot(cond.simulated, data)

@@ -79,18 +79,6 @@ RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-\dontshow{\dontrun{
-model <- RPhyperplane(RMexp(s=2), superpos=1)
-x <- seq(0, 3, if (interactive()) 0.04 else 1)
-z <- RFsimulate(x=x, x, grid=TRUE, model=model, n=1)
-plot(z)
-}}
-\dontshow{FinalizeExample()}
-}
-
 
 \seealso{
   \link{RP},
@@ -100,3 +88,15 @@ plot(z)
 }
 
 \keyword{methods}
+
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+model <- RPhyperplane(RMexp(s=2), superpos=1)
+x <- seq(0, 3, if (interactive()) 0.04 else 1)
+z <- RFsimulate(x=x, x, model=model, n=1)
+plot(z)
+
+\dontshow{FinalizeExample()}
+}

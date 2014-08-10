@@ -1,10 +1,18 @@
 
 
-print.RFratiotest <- function(x, ...) {
-  if (is.null(x$model1.df) && is.null(x$loglik)) print.default(t(as.matrix(x)))#
-  else {
-    cat("\nApprox. likelihood ratio test\n")
-    cat("=============================\n")
+print.RFratiotest <- function(x, ...) {  
+  if (!is.null(x$simu.ratios)) {
+    ## MC ratio test
+     cat("\nMonte Carlo likelihood ratio test",
+         "\n=================================",
+         "\nnull model:", rfConvertRMmodel2string(x$model.list$nullmodel), 
+         "\nalt. model:", rfConvertRMmodel2string(x$model.list$alternative),
+         "\n",x$msg)
+ # } else if (is.null(x$model1.df) && is.null(x$loglik)) {
+#    ## wann wird diese if-Anweiung verwendet?
+ #     print.default(t(as.matrix(x)))
+  } else {
+    cat("\nApprox. likelihood ratio test\n=============================\n")
     if (is.null(x$model1.df)) {
       cat("null model: df=", x$df[1], "  loglik=", x$loglik[1], "\n", sep="")
       cat("alt. model: df=", x$df[2], "  loglik=", x$loglik[2], "\n", sep="")
@@ -58,20 +66,20 @@ mess <- function(alpha, p, df, nullmodelname=0, altmodelname=1:length(df)) {
 approx_test <- function(modellist, alpha) {
   n <- length(modellist)
   loglik <- df <- numeric()
+  
   for (m in 1:n) {
     if (class(modellist[[m]]) == "RF_fit") {
       df[m] <- modellist[[m]]$number.of.parameters
       loglik[m] <- modellist[[m]]$ml$ml.value
-    } else {
+    } else if (class(modellist[[m]]) == "RFfit") {
       df[m] <- modellist[[m]]@number.of.parameters
       loglik[m] <- modellist[[m]]["ml"]@likelihood
-    }
+    } else stop("wrong class ('", class(modellist), "') in approx_test.")
   }
   if (length(df) > 2 && (!missing(alpha) || length(alpha) > 1))
     stop("'alpha' must be a scalar")
   p <- pchisq(diff(loglik),  diff(df), lower.tail = FALSE)   
   txt <- mess(alpha=alpha, p=p, df=diff(df))
-  cat(txt)
   return(invisible(list(df=df, loglik=loglik, p=p, txt=txt)))
 }
 
@@ -265,7 +273,7 @@ RFratiotest <-
            n = 5 / alpha, ## number of simulations to do
            seed = 0,
            lower=NULL, upper=NULL, 
-           BC.lambda, ## if missing then no BoxCox-Trafo
+           bc_lambda, ## if missing then no BoxCox-Trafo
            methods, # "reml", "rml1"),
            sub.methods,
            ## "internal" : name should not be changed; should always be last
@@ -344,30 +352,32 @@ RFratiotest <-
   if (!isSubmodel && printlevel >= PL.IMPORPANT)
     message("'nullmodel' cannot be automatically detected as being a nullmodel of 'alternative'")
   
-  model.list <- list(nullmodel, alternative)
+  model.list <- list(nullmodel=nullmodel, alternative=alternative)
   data.fit <- list()
   guess <- users.guess
 
   for (m in 1:length(model.list)) {
     data.fit[[m]] <-
       RFfit(model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
-            lower=lower, upper=upper, BC.lambda=BC.lambda,
+            lower=lower, upper=upper, bc_lambda=bc_lambda,
              methods=methods,
             sub.methods=sub.methods, optim.control=optim.control,
             users.guess=guess,
             distances=distances, dim=dim,
             transform=transform,
-            ..., spConform = FALSE)$ml
-    guess <- if (isSubmodel) data.fit[[m]]$model else NULL
+            ..., spConform = FALSE)
+    guess <- if (isSubmodel) data.fit[[m]]$ml$model else NULL
   }
 
 
   if (RFopt$fit$ratiotest_approx) {
-    return(approx_test(data.fit))
+    ats <- approx_test(data.fit)
+    class(ats) <- "RFratiotest"
+    return(ats)
   }
   
-  model <- data.fit[[1]]$model
-  data.ratio <- -diff(sapply(data.fit, function(x) x$ml.value))
+  model <- data.fit[[1]]$ml$model
+  data.ratio <- -diff(sapply(data.fit, function(x) x$ml$ml.value))
   stopifnot(!isSubmodel || data.ratio <= 0) # should never appear
 
   simu.n <- n - 1
@@ -393,7 +403,7 @@ RFratiotest <-
       simufit <-
         RFfit(model.list[[m]], x=newx, T=newT, grid=grid,
               data=simu,
-              lower=lower, upper=upper, BC.lambda=BC.lambda,
+              lower=lower, upper=upper, bc_lambda=bc_lambda,
               methods=methods,
               sub.methods=sub.methods, optim.control=optim.control,
               users.guess=guess,
@@ -419,11 +429,9 @@ RFratiotest <-
   msg <-
     paste("\nThe likehood ratio test ranks the likelihood of the data on rank",
           r, "among", simu.n, "simulations:", mess(alpha=alpha, p=p))
-  
-  if (printlevel > 0) {
-    cat(msg)
-  }
-  invisible(list(p=p, n=n, data.ratio=data.ratio, simu.ratios=ratio,
-                 data.fit=data.fit, msg=msg)
-            )
+
+  ret <- list(p=p, n=n, data.ratio=data.ratio, simu.ratios=ratio,
+              data.fit=data.fit, msg=msg, model.list=model.list)
+  class(ret) <- "RFratiotest"
+
 }

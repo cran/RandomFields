@@ -50,7 +50,11 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
  (\Gamma(\nu_{11}) \Gamma(\nu_{22}) \Gamma(\nu_{12}+d/2))^2)}
  where \eqn{\Gamma} is the Gamma function and \eqn{d} is the dimension
  of the space.
+
+ Note that the definition of \command{RMparswmX} is
+ \code{RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj))} .
 }
+
 
 \value{
  \command{\link{RMparswm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
@@ -75,25 +79,16 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 
 
 \examples{
+
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{\dontrun{
-RFoptions(circulant.maxmem=6e7)
-model <- RMparswmX(nudiag=c(1.3, 0.7, 2),
- rho=matrix(nc=3, c(1, 0.5, 0.2, 0.5, 1, 0.6, 0.2, 0.6, 1)))
-x.seq <- y.seq <- seq(-10,10,0.05)
-simulated <- RFsimulate(model = model, x=x.seq, y=y.seq, grid=TRUE, n=1, spC=F)
-par(mfcol=c(1, dim(simulated)[1]))
-for (i in 1: dim(simulated)[1]) image(simulated[i,,])
-par(mfcol=c(1,1))
 
+rho <- matrix(nc=3, c(1, 0.5, 0.2, 0.5, 1, 0.6, 0.2, 0.6, 1))
+model <- RMparswmX(nudiag=c(1.3, 0.7, 2), rho=rho)
+x.seq <- y.seq <- seq(-10, 10, if (interactive()) 0.1 else 5)
+z <- RFsimulate(model = model, x=x.seq, y=y.seq)
+plot(z)
 
-## the definition of RMparswmX is
-RMparswmX <- function(nudiag, rho, var, scale, Aniso, proj) {
-  return(RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj)))
-}
-
-}}
 \dontshow{FinalizeExample()}
 } % examples
 

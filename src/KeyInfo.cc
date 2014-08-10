@@ -255,7 +255,7 @@ SEXP Param(void* p, int nrow, int ncol, SEXPTYPE type, bool drop) {
       return String((char*) p);
     case LANGSXP : 
       {
-	const char *msg[1] = {"expression given by the user"};
+	const char *msg[1] = {"R object"};
 	return Char(msg, 1);
       }
       break; // 
@@ -763,7 +763,7 @@ int MAX_PMI = 5;
 
 void PrintPoints(location_type *loc, char *name, 
 		 double *x, coord_type xgr, long lx) {
-#ifndef RANDOMFIELDS_DEBUGGING  
+#ifndef SHOW_ADDRESSES  
   return; // unclear error below on CRAN
 #endif
 
@@ -818,7 +818,7 @@ void PrintLoc(int level, location_type *loc, bool own) {
   leer(level); PRINTF("%-10s %s\n","loc:grid", FT[loc->grid]);
   leer(level); PRINTF("%-10s %s\n","loc:dist", FT[loc->distances]);
   leer(level); PRINTF("%-10s %s\n","loc:Time", FT[loc->Time]);
-#ifdef RANDOMFIELDS_DEBUGGING  
+#ifdef SHOW_ADDRESSES  
   leer(level); PrintPoints(loc, (char *) "x", loc->x, loc->xgr, loc->lx);
   if (loc->y!=NULL || loc->ygr[0]!=NULL) {  
     // printf("not null\n");
@@ -999,8 +999,8 @@ void pmi(cov_model *cov, char all, int level) {
 		      cov->isoprev, cov->isoown,
 		      ISONAMES[(int) cov->isoprev],
 		      ISONAMES[(int) cov->isoown]);
-  leer(level); PRINTF("%-10s %d, %d:%d, %d/%d\n","ts-x-v-dim",
-		      cov->tsdim, cov->xdimprev, cov->xdimown,
+  leer(level); PRINTF("%-10s %d, %d:%d:%d, %d/%d\n","ts-x-v-dim",
+		      cov->tsdim, cov->xdimprev, cov->xdimgatter, cov->xdimown,
 		      cov->vdim2[0], cov->vdim2[1]);  
    leer(level); PRINTF("%-10s %d\n","maxdim", cov->maxdim);  
   leer(level); PRINTF("%-10s %s (%d)\n", "type", TYPENAMES[cov->typus],
@@ -1132,7 +1132,7 @@ void pmi(cov_model *cov, char all, int level) {
     //  SHOW("pgs:delta", delta);  // fuehrt zu Fehler in valgrind ?!
     SHOWINT("pgs:nx", nx);
     if (pgs->pos != NULL) { // gauss
-#ifdef RANDOMFIELDS_DEBUGGING  
+#ifdef SHOW_ADDRESSES
       location_type *loc = Loc(cov);
       leer(level); PrintPoints(loc, (char *) "pgs.x", loc->x, pgs->xgr,loc->lx);
 #endif

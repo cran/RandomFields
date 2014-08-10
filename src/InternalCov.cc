@@ -227,47 +227,89 @@ int checkkappas(cov_model *cov, bool errornull){
     *nrow = cov->nrow;
   char param_name[PARAMMAXCHAR]; // used in QERR
 
-  //  printf("checkkappas %s\n", NICK(cov));
-
+  //   printf("checkkappas %s\n", NICK(cov));
+ 
   for (i=0; i<kappas; i++) {
-    strcpy(param_name, C->kappanames[i]);
+    strcpy(param_name, 
+	   cov->ownkappanames != NULL && cov->ownkappanames[i]!=NULL 
+	   ? cov->ownkappanames[i]
+	   : C->kappanames[i]);
     cov_model *ks = cov->kappasub[i];     
-    //printf("%s\n", param_name);
-   if (ks != NULL) {
-     //printf("%d %d\n", isRandom(C->kappaParamType[i]), isRandom(ks));
-     if (//isRandom(C->kappaParamType[i]) ||  // auskommentiert wegen Aniso==nonstationary
-	 isRandom(ks)) {
+    //
+    if (ks != NULL) {
+      //printf("%d %d\n", isRandom(C->kappaParamType[i]), isRandom(ks));
+      if (isRandom(ks)) {
+	//	PMI(cov);
+	//printf("isRsndom %s %d %d %s %d \n", param_name, nrow[i], ncol[i], NICK(cov), i);
 	cov->deterministic = false;
-	int err, len;
+	int err, len;       
+	
 	nr = nrow[i];
 	nc = ncol[i];
 	if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED) 
 	  C->kappasize(i, cov, &nr, &nc); 
-	if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED)
-	  QERR("size of random parameter could not be determined -- please give the size explicitely");	
-	len = nr * nc;	
-	if ((err = CHECK_R(ks, len)) != NOERROR)
-	QERRX(err, "random parameter not well defined");	
+	if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED) {
+	  int d;
+	  //printf("size: %s %d %d %s\n", param_name, nrow[i], ncol[i], NICK(cov));
+	  for (d=9; d>=1; d--) {
+	    //printf("d=%d\n", d);
+	    err = CHECK_R(ks, d);
+	    if (err != NOERROR && ks->vdim2[0] > 0 && ks->vdim2[0] != d) {
+	      err = CHECK_R(ks, ks->vdim2[0]);
+	      d = 0;
+	      //printf("d==%d %d\n", d, err);
+	    }
+	    if (err == NOERROR) {
+	      nr = ks->vdim2[0];
+	      nc = ks->vdim2[1];
+	      len = nr * nc;
+	      if (ks->nr == DISTRIBUTION) {
+		if (PARAMINT(ks, DISTR_NROW) != NULL) 
+		  nr = PARAM0INT(ks, DISTR_NROW);
+		if (PARAMINT(ks, DISTR_NCOL) != NULL) 
+		  nc = PARAM0INT(ks, DISTR_NCOL);
+	      }
+	      break;
+	    }
+	  }
+	  if (err != NOERROR) return err;
+	} else {
+	  //if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED)
+	  // QERR("size of random parameter could not be determined -- please give the size explicitely");	
+	  len = nr * nc;	
+	  if ((err = CHECK_R(ks, len)) != NOERROR)
+	    QERRX(err, "random parameter not well defined");
+	}
+	
 	if ( (ks->vdim2[0] != nr || ks->vdim2[1] != nc) &&
 	     (ks->vdim2[0] != len || ks->vdim2[1] != 1) )
 	  QERR("required size of random parameter does not match the model");
      
-	if (cov->stor == NULL) cov->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
+	if (cov->stor == NULL)
+	  cov->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
 	
 	if (PisNULL(i)) {
 	  PALLOC(i, nr, nc);
-	  if ((err = INIT_RANDOM(ks, 0, cov->stor, P(i))) != NOERROR) { 
-	    // wird spaeter
-	    // gegebememfalls nochmals initialisiert mit richtigen moments
-	    //X4
-	    //PMI(ks); XERR(err);
-	    QERRX(err, "random parameter cannot be initialized");	  
-	  }
 	}
-      } else {
-	// none // BUG; // ??
+
+	
+	// APMI(cov); 	
+	//printf("nr=%d %d %f %s.%s\n", nr, nc, P(i)[0], NICK(cov), NICK(ks));
+	
+	if (!cov->initialised && 
+	    (err = INIT_RANDOM(ks, 0, cov->stor, P(i))) != NOERROR) { 
+	  // wird spaeter
+	  // gegebememfalls nochmals initialisiert mit richtigen moments
+	  //X4
+	  //PMI(ks); XERR(err);
+	  QERRX(err, "random parameter cannot be initialized");	  
+	}	
+      } else { // not random, e.g. Aniso
+	// no automatic check possible
+	// if (!ks->checked) BUG; // fails
+	// ks->checked = false; // fails as well
       }
-    }
+    } // end ks != NULL (function given)
 
 
     if (PisNULL(i)) {
@@ -275,9 +317,10 @@ int checkkappas(cov_model *cov, bool errornull){
       else continue;    
     }
     
-
+ 
     C->kappasize(i, cov, &nr, &nc);   
-    if (nc < 0 || nr < 0) {
+    if ( (nc < 1 && nc != SIZE_NOT_DETERMINED) || 
+	 (nr < 1 && nr != SIZE_NOT_DETERMINED)) { 
       BUG;
     }
     
@@ -301,7 +344,10 @@ int checkkappas(cov_model *cov, bool errornull){
       QERR(msg);
     }
     // if nc==0 (nr==0) then this is undetermined.
-  }
+  } // for i < kappas
+
+  // printf("end checkkappas\n");
+
   return NOERROR;
 }
 
@@ -505,7 +551,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
 
   //  switch (CovList[cov->nr].kappatype[param_nr]) {
   //  case REALSXP :   
-    DORANDOM(cov, p);
+  DORANDOM(cov, p);
     
 
     //    break;
@@ -853,6 +899,8 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
    
   PrInL++;
 
+  //  PMI(cov);
+
   for (i=0; i<kappas; i++) {
     cov_model *param  = cov->kappasub[i];
     if (param != NULL && isRandom(param)) {
@@ -1050,7 +1098,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   cov->xdimprev = cov->xdimgatter = tsxdim; //if cov is isotropy or 
   //                                          spaceisotropic it is set to 1 or 2
   
-  
+ 
   if (tsxdim < 1) { 
     //APMI(cov);
     SERR("dimension less than 1"); 
@@ -1284,7 +1332,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
        checkerror = err != NOERROR;
        if (checkerror) {
-	 errorMSG(err, checkmsg, 50);
+	 errorMSG(err, checkmsg, LENERRMSG);
        } else {
 
 	 if (C->maxdim>=0 && cov->maxdim > C->maxdim) {
@@ -1295,14 +1343,16 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	   // 
 	   //	   PMI(cov);
 	   //	   printf("%d %d\n", vdim0, vdim1);
-	   SERR("m-dimensionality could not be detected");
+	   return ERRORBADVDIM;
 	 } 
 	
 	if ((vdim0 > 0 && cov->vdim2[0] != vdim0) || 
 	    (vdim1 > 0 && cov->vdim2[1] != vdim1)) {
-	  SERR7("multivariate dimension (of submodel '%s'), which is %d x %d, does not match the specification of '%s', which is %d x %d and is required by '%s'",
+	  sprintf(ERRORSTRING,
+		  "multivariate dimension (of submodel '%s'), which is %d x %d, does not match the specification of '%s', which is %d x %d and is required by '%s'",
 		NICK(cov), cov->vdim2[0], cov->vdim2[1], C->name, vdim0, vdim1, 
 		cov->calling == NULL ? "-- none --" :  P->name); 
+	  return ERRORWRONGVDIM; // needed as value!
 	  checkerror = true;
 	}
 	

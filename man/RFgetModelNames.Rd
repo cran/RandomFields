@@ -24,16 +24,18 @@
   for possible states (values) of these properties.
 }
 
-\usage{RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
-                       isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
-                       monotone = RC_MONOTONE,
-                       implied_monotonicities = length(monotone) == 1,
-                       finiterange = c(TRUE, FALSE),
-                       valid.in.dim = c(1, Inf), 
-                       vdim = c(1, 5),
-                       group.by=NULL,
-                       internal, newnames
-)
+\usage{
+
+RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
+                isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
+                monotone = RC_MONOTONE,
+                implied_monotonicities = length(monotone) == 1,
+                finiterange = c(TRUE, FALSE),
+                valid.in.dim = c(1, Inf), 
+                vdim = c(1, 5),
+                group.by=NULL,
+                simpleArguments = FALSE,
+                internal, newnames)
 }
 
 \arguments{
@@ -52,6 +54,9 @@
     \code{'domain'}, \code{'isotropy'}, \code{'operator'},
     \code{'monotone'},
     \code{'finiterange'},\code{'maxdim'},\code{'vdim'}}
+  \item{simpleArguments}{logical. if \code{TRUE}, only models
+    are considered whose arguments are all integer or real valued.
+    }
   \item{internal, newnames}{both logical;
     \code{internal} might be also integer valued.
     If any of them are given,

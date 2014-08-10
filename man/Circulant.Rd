@@ -267,7 +267,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 model <- RMstable(s=1, alpha=1.8)
 x <- seq(-3,3,0.1)
-z <- RFsimulate(model=RPcirculant(model), x=x, y=x, grid=TRUE, n=1)
+z <- RFsimulate(model=RPcirculant(model), x=x, y=x, n=1)
 plot(z)
 
 model <- RMexp(var=10, s=10)
@@ -275,7 +275,7 @@ z <- RFsimulate(model=RPcirculant(model), 1:10)
 plot(z)
 
 model <- RMfbm(Aniso=diag(c(1,2)), alpha=1.5)
-z <- RFsimulate(model, x=1:10, y=1:10, grid=TRUE)
+z <- RFsimulate(model, x=1:10, y=1:10)
 plot(z)
 
 \dontshow{FinalizeExample()}

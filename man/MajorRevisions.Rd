@@ -99,8 +99,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 x <- seq(0, 10, if (interactive()) 0.1 else 2)
 model <- RMexp()
 plot(RFsimulate(model, x)) ## S4
-plot(RFsimulate(model, x, spConform=FALSE)) ## S3
-
+plot(RFsimulate(model, x, spConform=FALSE)) ## no class
 
 \dontshow{FinalizeExample()}
 }

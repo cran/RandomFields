@@ -3,7 +3,8 @@
 \alias{Baysian}
 \title{Baysian Spatial Modelling}
 \description{
-  Baysian modelling is a future project.
+  Baysian modelling is a future project. However, some kind of
+  hierarchical modelling is already available, see \link{RRmodels}.
 }
 %\usage{}
 %\arguments{}
@@ -19,6 +20,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 
 # to do
 

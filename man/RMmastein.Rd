@@ -89,8 +89,10 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
+##                   RFoptions(seed=NA) to make plotthem all random again
 model <- RMmastein(RMgauss(), nu=1, delta=10)
+plot(RMexp(), model.mastein=model, dim=2)
+
 x <- seq(0, 10, if (interactive()) 0.1 else 3) 
 plot(RFsimulate(model, x=x, y=x))
 \dontshow{FinalizeExample()}

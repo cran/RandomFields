@@ -55,12 +55,14 @@ rfGenerateModels <- function(assigning,
   operator <- integer(.p$covnr)
   monotone <- integer(.p$covnr)
   finiterange <- integer(.p$covnr)
+  simpleArguments <- integer(.p$covnr)
   internal    <- integer(.p$covnr)
   maxdim <- integer(.p$covnr)
   vdim <- integer(.p$covnr)
   # get attribute parameter
-  .C("GetAttr", type, operator, monotone, finiterange, internal,
-     domains, isos, maxdim, vdim, DUP=DUPFALSE, PACKAGE="RandomFields")
+  .C("GetAttr", type, operator, monotone, finiterange, simpleArguments,
+     internal, domains, isos, maxdim, vdim,
+     DUP=DUPFALSE, PACKAGE="RandomFields")
   #
   
   idx <- integer(.p$covnr * .p$covnr)
@@ -196,6 +198,7 @@ rfGenerateModels <- function(assigning,
             "monotone = ",    "'", RC_MONOTONE[monotone[i] + MON_MISMATCH],
                                                                    "',", "\n\t",
             "finiterange = ",  as.logical(finiterange[i]),          ",", "\n\t",
+            "simpleArguments = ",  as.logical(simpleArguments[i]), ",", "\n\t",
             "maxdim = ",   if(maxdim[i]>diminf) Inf else maxdim[i], ",", "\n\t",
             "vdim = ",         vdim[i],                                  "\n\t",
             ")",

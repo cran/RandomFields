@@ -77,7 +77,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-## to do
+## see 'RFfit'
 \dontshow{FinalizeExample()}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

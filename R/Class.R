@@ -55,6 +55,7 @@ setClassUnion("RFdataFrame", c("RFgridDataFrame", "RFpointsDataFrame"))
 setClassUnion("RFsp", c("RFspatialGridDataFrame", "RFspatialPointsDataFrame",
                         "RFgridDataFrame", "RFpointsDataFrame"))
               #c("RFspatialDataFrame", "RFdataFrame")) ## waere natuerlich,
+
 ## dann funktioniert haber dimensions() nicht mehr.
 
 
@@ -167,6 +168,7 @@ setClass('RMmodelgenerator', contains ="function",
                         monotone = "character",
                         finiterange = "logical",
                         maxdim = "numeric",      # max possible dimension
+                        simpleArguments = "logical",
                         vdim = "numeric"         # ??
                         )
          )

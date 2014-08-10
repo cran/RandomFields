@@ -755,7 +755,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         if (printlevel>PL.FCTN.ERRORS)
           Print(x, dim(d), idx , cbind( 1 + ((idx-1)%% nrow(d)), #
                                        1 + as.integer((idx - 1)  / nrow(d))) )
-        stop("locations must be distinguishable")
+        warning("locations are not distinguishable")
       }
       ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
     }

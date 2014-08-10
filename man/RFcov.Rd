@@ -84,25 +84,20 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 # locations:
-X <- matrix(runif(15), ncol=3)
+x <- matrix(runif(15), ncol=3)
  # coordinate matrix of 5 arbitrary points
  # p1, p2, p3, p4, p5 in 3-dimensional space
-Y <- matrix(runif(15),ncol=3)
+y <- matrix(runif(15),ncol=3)
  # coordinate matrix of 5 arbitrary points
  # q1, q2, q3, q4, q5 in 3-dimensional space
 
 
 #####################################################
-# evaluate covariance function C(x,y) #
-# or variogram gamma(x,y) #
-# at given locations #
-#####################################################
-
-RFgetModelNames() # returns available models
-
+# get available models
+RFgetModelNames() 
 
 #####################################################
-# a stationary covariance model
+# Example 1: a stationary covariance model
 
 model <- RMexp()
 
@@ -110,65 +105,42 @@ model <- RMexp()
 # of locations hi=pi-qi in 3-dimensional space
 # therefore, the following 2 commands yield the same
 
-RFcov(model=model, x=X, y=Y)
-RFcov(model=model, x=X-Y)
+RFcov(model=model, x=x, y=y)
+RFcov(model=model, x=x-y)
  # yields 5 values C(hi)=C(pi,qi) for i=1,2,3,4,5
 
-#####################################################
-# get covariance matrix C(x_i,x_j) #
-# at given locations x_i, i=1,...,n #
-#####################################################
 
 
-#####################################################
-# in particular compare the following two evaluations
+##################################################
+# Example 2: get covariance matrix C(x_i,x_j)    
+# at given locations x_i, i=1,...,n 
+#
+# here for an isotropic stationary covariance model
+# yields a 4 times 4 covariance matrix of the form
+# C(0)   C(5)   C(3)   C(2.5)
+# C(5)   C(0)   C(4)   C(2.5)
+# C(3)   C(4)   C(0)   C(2.5)
+# C(2.5) C(2.5) C(2.5) C(0)
+
+model <- RMexp() # the covariance function C(x,y)=C(r) of this model
+#                  depends only on the distance r between x and y
+RFcovmatrix(model=model, distances=c(5,3,2.5,4,2.5,2.5), dim=4)
+
+
+
+######################################################
+# Example 3: distinguish the different uses of x and y
 
 x <- c(1,2,1)
 y <- c(4,5,6)
-RFcov(model=model,
- x=as.matrix(x), y=as.matrix(y), grid=FALSE)
- # coord space 1-dim'l
- # evaluate at 3 points
-RFcov(model=model,
- x=t(x),y=t(y)) # coord space 3-dim'l
- # evaluate at 1 point
 
-#####################################################
-# an isotropic stationary covariance model
+# coordinate space 1-dimensional, evaluated at 3 points:
+RFcov(model=model, x=as.matrix(x), y=as.matrix(y))
+# coordinate space is 3-dimensional, evaluated at a pair of points
+RFcov(model=model, x=t(x), y=t(y))
 
-model <- RMexp()
-# the covariance function C(x,y)=C(r) of this model
-# depends only on the distance r between x and y
 
-RFcovmatrix(model=model, distances=c(5,3,2.5,4,2.5,2.5),
- dim=4)
 
-## yields a 4 times 4 covariance matrix of the form
-## C(0) C(5) C(3) C(2.5)
-## C(5) C(0) C(4) C(2.5)
-## C(3) C(4) C(0) C(2.5)
-## C(2.5) C(2.5) C(2.5) C(0)
-
-#####################################################
-# a variogram model
-
-model <- RMfbm(alpha=1)
- # fractal Brownian Motion is a variogram model
-
-RFvariogram(model=model, x=X, y=Y)
- # yields 5 values gamma(pi,qi) for i=1,2,3,4,5
-RFvariogram(model=model, x=X-Y)
- # gives same output
-
-\dontshow{\dontrun{
-#####################################################
-# a non-isotropic covariance model
-
-model <- RMnonstwm(nu=RMexp())
-C <- RFcovmatrix(model=model, x=X)
-# yields covariance matrix C(xi,xj) for i,j=1,2,3,4,5
-C
-}}
 \dontshow{FinalizeExample()}
 
 }

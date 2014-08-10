@@ -1,20 +1,20 @@
-\name{RMbr2eg}
-\alias{RMbr2eg}
-\title{Transformation from Brown-Resnick to Gauss}
+\name{RMbr2bg}
+\alias{RMbr2bg}
+\title{Transformation from Brown-Resnick to Bernoulli}
 \description{
   This function can be used to model a max-stable process
   based on the a binary field,  with the same extremal correlation
   function as a Brown-Resnick process
-   \deqn{
-    C_{eg}(h) = 1 - 2 (1 - 2 \Phi(\sqrt{\gamma(h) / 2}) )^2 
+  \deqn{
+    C_{bg}(h) = \cos(\pi (2\Phi(\sqrt{\gamma(h) / 2}) -1) )
   }
   Here, \eqn{\Phi} is the standard normal distribution
   function, and \eqn{\gamma} is a \bold{semi-}variogram with sill
-  \deqn{ 4(erf^{-1}(1/\sqrt 2))^2 = 2 * [\Phi^{-1}( [1 + 1/\sqrt 2] /
-    2)]^2  = 4.425098 / 2 = 2.212549} 
+  \deqn{4(erf^{-1}(1/2))^2 = 2 * { \Phi^{-1}( 3 / 4  ) }^2 =
+    1.819746 / 2 = 0.9098728}
 }
 \usage{
-RMbr2eg(phi, var, scale, Aniso, proj)
+RMbr2bg(phi, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
@@ -26,13 +26,19 @@ RMbr2eg(phi, var, scale, Aniso, proj)
  object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \details{
-  \command{\link{RMbr2eg}} \cr
-  The extremal Gaussian model \command{\link{RPschlather}}
-  simulated with \code{\link{RMbr2eg}(\link{RMmodel}())} has
-  tail correlation function that equals
-  the tail correlation function of Brown-Resnick process with
-  variogram \command{\link{RMmodel}}.
-
+  \command{\link{RMbr2bg}} \cr
+  binary random field \command{\link{RPbernoulli}}
+  simulated with \code{\link{RMbr2bg}(\link{RMmodel}())} has
+  a uncentered covariance function that equals
+  \enumerate{
+    \item 
+    the tail correlation function of
+    the max-stable process constructed with this binary random field
+    \item
+    the tail correlation function of Brown-Resnick process with
+    variogram \command{\link{RMmodel}}.
+  }
+ 
   Note that the reference paper is based on the notion of the
   (genuine) variogram, whereas the package \pkg{RandomFields}
   is based on the notion of semi-variogram. So formulae
@@ -43,7 +49,7 @@ RMbr2eg(phi, var, scale, Aniso, proj)
 }
 \seealso{
   \link{maxstableAdvanced},
-  \command{\link{RMbr2bg}},
+  \command{\link{RMbr2eg}},
   \command{\link{RMmodel}},
   \command{\link{RMm2r}},
   \command{\link{RPbernoulli}},
@@ -59,10 +65,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 model <- RMexp(var=1.62 / 2) 
-binary.model <- RPbernoulli(RMbr2bg(model))
 step <- if (interactive()) 0.05 else 2
 y <- seq(0, 10, step)
-z <- RFsimulate(RPschlather(binary.model), y, y)
+z <- RFsimulate(RPschlather(RMbr2eg(model)), y, y)
 plot(z)
 
 \dontshow{FinalizeExample()}

@@ -85,13 +85,13 @@
   \link{RMmodel}
 }
 
+\keyword{classes}
+\keyword{print}
+\keyword{hplot}
+
+
 \examples{
 # see RMmodel for examples
 \dontshow{FinalizeExample()}
 }
-
-
-\keyword{classes}
-\keyword{print}
-\keyword{hplot}
 

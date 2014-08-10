@@ -149,7 +149,7 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
  #   if (missing(repet)) repet <- 1
   }
 
-  # Print(given, data); ppp
+  #  Print(given, data); # ppp
  
   if (is.vector(data)) dimdata <- c(length(data), 1)
   else {
@@ -158,9 +158,9 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   }
   base::dim(data) <- c(dimdata[1], prod(dimdata[-1]))
 
-  if (missing.x) { ## generate locations for kriging
+   if (missing.x) { ## generate locations for kriging
     ## then data cannot have repeated meseasurements
-#  Print("QBB")    
+#
     stopifnot(is.null(y), is.null(z), is.null(T))
     if (isRFsp) {
       ## standard: data where at least 1 component or repetition
@@ -378,12 +378,10 @@ rfPrepareData <- function(model, x, y, z, T,
   }
 #
 
-  neu$pm <- pm
   neu$vdim <- vdim
   neu$repet <- repet
-  neu$trend <- trend
 
-  return(neu)
+  return(c(neu, pm))
 }
 
 
@@ -468,7 +466,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                        data=data, cathegories=cathegories, reg=reg,
                        fillall=fillall, ...)
 
-#  Print(all)
+#  Print(all); kkk
 
    #userdefined <- all$userdefined
   
@@ -585,7 +583,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       
       switch(trendparnr ,{ ##mean
       },{ ## plane
-        polydeg <- rep(1, times=ncol(all$pm$estimtrend$plane))
+        polydeg <- rep(1, times=ncol(all$estimtrend$plane))
       },{ ##  polydeg
         polydeg <- all$estimtrend$polydeg
       },{ ## arbitraryfct
@@ -603,7 +601,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   if (krige.meth.nr==0) stop("auto kriging detecting cannot be resolved") 
   ##old.data <- data
 
-
+  
   ## die zu interpolierenden Orte
   xx <- t(all$x)
   nx <- as.integer(ncol(xx))
@@ -785,7 +783,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
     } else {
       Res <- matrix(nrow=nx, ncol=repet * vdim)
     }
-    
+
+
     for (p in 1:totalparts) {
       stopifnot((Nx <- as.integer(length(idx[[3]][[p]]))) > 0)
       if (pr && p %% 5==0) cat(RFopt$general$pch)
@@ -854,6 +853,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
             PACKAGE="RandomFields")
        base::dim(covmatrix) <- c(ngvdim, ngvdim)
 
+      
+
       covmatrix <- covmatrix[notna, notna]
 
       XX <- as.double(xx[, idx[[3]][[p]], drop=FALSE])
@@ -874,7 +875,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
              invcov, notna, Nx, Ngiven, ts.xdim, repet,
              res, sigma2, #userdefined,
              PACKAGE = "RandomFields")
-        } else {
+        } else {          
           if (!(is.numeric(try(invcov <- SOLVE(covmatrix, dat),
                                silent = silent)))) {
 #            print(covmatrix)
@@ -886,7 +887,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
           } 
 
           #     Print(XX, length(XX), given, notna, Nx, Ngiven, ts.xdim, repet)
-          
+
          .Call("simpleKriging", reg, given, XX, invcov,
              notna, Nx, Ngiven, ts.xdim, repet, res, #userdefined,             
                PACKAGE = "RandomFields")

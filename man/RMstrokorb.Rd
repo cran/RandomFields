@@ -13,9 +13,9 @@
   tail correlation function
 }
 \usage{
-RMm2r(phi);
-RMm3b(phi);
-RMmps(phi);
+RMm2r(phi)
+RMm3b(phi)
+RMmps(phi)
 }
 \arguments{
   \item{phi}{a model for a tail correlation function belonging to the
@@ -24,7 +24,7 @@ RMmps(phi);
 
 \details{
   \command{RMm2r} used with \command{\link{RPsmith}} defines
-  a monotone shape function that corresponds a tail correlaton
+  a monotone shape function that corresponds to a tail correlation
   function belonging to Gneiting's class \eqn{H_d}. Currently, the
   function is implemented for dimensions 1 and 3.
   Called as such it returns the corresponding monotone function.
@@ -56,7 +56,7 @@ RMmps(phi);
 \references{
   \itemize{
     \item Strokorb, K. (2013) \emph{Properties of the Extremal Coefficient
-    Functions.} Univ.\ G\"ottingen. PhD thesis. 
+    Functions.} Univ. Goettingen. PhD thesis. 
 
    \item
    Strokorb, K., Ballani, F. and Schlather, M. (2014)
@@ -67,6 +67,13 @@ RMmps(phi);
  \command{\link{RFsimulate}},
  \command{\link{RMmodel}}.
 }
+
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
+}
+\keyword{spatial}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -79,7 +86,3 @@ plot(z, type="p", pch=20)
 
 \dontshow{FinalizeExample()}
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-\keyword{spatial}

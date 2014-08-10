@@ -1681,7 +1681,7 @@ should change the values.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{22. \code{internal}: Internal options mostly for warnings and messages}\cr
 \describe{
-
+ 
   \item{\code{stored.init}}{internally used logical argument.
     \code{general.storing} controls whether intermediate calculations
     should be stored to have faster repeated simulations.
@@ -1700,7 +1700,14 @@ should change the values.
     
     Default: \code{TRUE}.
   }
-  
+  \item{\code{warn_aspect_ratio}}{internally used logical argument.
+    if \code{TRUE} then a warning is given not a standard graphical
+    device is used and the package plots try to keep a certain aspect
+    ratio. 
+    
+    Default: \code{TRUE}
+  }
+      
   \item{\code{warn_colour_palette}}{internally used logical argument.
     If none of the packages \pkg{RColorBrewer} and \pkg{colorspace}
     are available and graphics are displayed, a message is displayed.
@@ -1725,6 +1732,13 @@ should change the values.
     Default: \code{TRUE}.
   }
   
+  \item{\code{warn_new_definitions}}{internally used logical argument.
+    If \code{warn_new_defintions=TRUE} then a warning is returned when 
+    models are used whose definition has changed recently.
+    
+    Default: \code{TRUE}.
+  }
+
   \item{\code{warn_newstyle}}{internally used logical argument.
     If \code{TRUE} a message is displayed the by the argument
     \code{spConform=FALSE} oldstyle return values are obtained instead
@@ -1741,6 +1755,13 @@ should change the values.
      Default: \code{TRUE}.
    }
    
+  \item{\code{warn_scale}}{internally used logical argument.
+    If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
+    if earth coordinates are transformed to cartesian coordinates.
+    
+    Default: \code{TRUE}.
+  }
+  
   \item{\code{warn_oldstyle}}{internally used logical argument.
     If \code{TRUE} a warning is given if an obsolete function
     from Version 2 is used.
@@ -1757,12 +1778,7 @@ should change the values.
     Default: \code{TRUE}.
   }
 
-  \item{\code{warn_scale}}{internally used logical argument.
-    If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
-    if earth coordinates are transformed to cartesian coordinates.
-    
-    Default: \code{TRUE}.
-  }
+
 }
 
 \bold{General comments}\cr 
@@ -1831,129 +1847,30 @@ important only if \code{general.storing = TRUE} and
  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \seealso{\command{\link{RFsimulate}},
+  \link{RFoptionsAdvanced},
  \code{\link[=RandomFields-package]{RandomFields}},
  and \command{\link{RFgetMethodNames}}.}
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-RFoptions(storing=TRUE)
-str(RFoptions())
+RFoptions()
 
 
 ############################################################
-## ##
-## use of exactness ##
-## ## 
+##                                                        ## 
+## use of exactness                                       ##
+##                                                        ##
 ############################################################
-% library(RandomFields, lib="~/TMP")
 x <- seq(0, 1, if (interactive()) 1/30 else 0.5)
 model <- RMgauss()
 
 for (exactness in c(NA, FALSE, TRUE)) { 
   readline(paste("\n\nexactness: `", exactness, "'; press return"))
-  z <- RFsimulate(model, x, x, grid=TRUE, exactness=exactness,
+  z <- RFsimulate(model, x, x, exactness=exactness,
                   stationary_only=NA, storing=TRUE)
   print(RFgetModelInfo(which="internal")$internal$name)
 }
-
-
-\dontshow{\dontrun{
- #############################################################
- ## The following gives a tiny example on the advantage of  ##
- ## local.dependent=TRUE (and dependent=TRUE) if in a       ##
- ## study most of the time is spent with simulating the     ##
- ## Gaussian random fields. Here, the covariance at a pair  ##
- ## of points is estimated for n independentent repetitions ##
- ## and 2*n locally dependent dependent repetitions .       ##
- ## To get the precision, the procedure is repeated m times.##
- #############################################################
-
-# In the example below, local.dependent speeds up the simulation
-# by about factor 16 at the price of an increased variance of
-# factor 1.5
-
-x <- seq(0, 1, len=10)
-y <- seq(0, 1, len=10)
-grid.size <- c(length(x), length(y))
-meth <- RPcirculant
-model <- RMexp(var=1.1, Aniso=matrix(nc=2, c(2,0.1,1.5,1)))
-#(RMmodel(matrix(c(1, -1), ncol=2), model=model)) 
-
-m <- if (interactive()) 100 else 2
-n <- if (interactive()) 100 else 10
-
-# using local.dependent=FALSE (which is the default)
-c1 <- numeric(m)
-time <- unix.time(
-  for (i in 1:m) {
-    cat("", i)
-    z <- RFsimulate(meth(model), x, y, grid=TRUE, n=n, pch="", 
-                    dependent=FALSE, spConform=FALSE, trials=5)
-    c1[i] <- cov(z[1,length(y), ], z[length(x), 1, ])
-}) # many times slower than with local.dependent=TRUE below
-Print(time, mean(c1), sd(c1))
-
-# using local.dependent=TRUE...
-c2 <- numeric(m)
-time <- unix.time(
-  for (i in 1:m) {
-    cat("", i)
-    z <- RFsimulate(meth(model), x, y, grid=TRUE, n=2 * n, pch="", 
-                    dependent=TRUE, spConform=FALSE, trials=5)
-    c2[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
-})
-Print(time, mean(c2), sd(c2))
-# the sd is samller (using more locally dependent realisations)
-## but it is (much) faster! Note that for n=n2 instead of n=2 * n, 
-## the value of sd(c2) would be larger due to the local dependencies 
-## in the realisations.
-}}
-
-
-
-\dontshow{\dontrun{
-############################################################
-## ##
-## use of points and center ##
-## ##
-############################################################
-## The following example shows that the same realisation 
-## can be obtained on different grid geometries (or point 
-## configurations, i.e. grid, non-grid) using TBM3 (or TBM2)
-
-
-
-x1 <- seq(-150,150,1)
-y1 <- seq(-15, 15, 1)
-x2 <- seq(-50, 50, 1)
-model <- RPtbm(RMexp(scale=10))
-
-RFoptions(storing=TRUE)
-mar <- c(2.2, 2.2, 0.1, 0.1)
-points <- 700
-
-###### simulation of a random field on long thin stripe
-z1 <- RFsimulate(model, x1, y1, grid=TRUE, center=0, seed=0,
-                 points=points, storing=TRUE, spConform=FALSE)
-do.call(getOption("device"), list(height=1.55, width=12))
-par(mar=mar)
-image(x1, y1, z1, col=rainbow(100))
-polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
-        border="red", lwd=3)
-
-
-###### definition of a random field on a square of shorter diagonal
-z2 <- RFsimulate(model, x2, x2, grid=TRUE, register=1, seed=0,
-                 center=0, points=points, spConform=FALSE)
-do.call(getOption("device"), list(height=4.3, width=4.3))
-par(mar=mar)
-image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
-polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
-        border="red", lwd=3)
-tbm.points <- RFgetModelInfo(RFsimulate)kkey$loc$totpts
-Print(tbm.points, empty.lines=0) # number of points on the line
-}}
 
 \dontshow{FinalizeExample()}
 

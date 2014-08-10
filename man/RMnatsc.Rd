@@ -37,10 +37,10 @@ RMnatsc(phi, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 model <- RMnatsc(RMexp())
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,1)) 
-print(RFcov(model, 1)) 
-plot(RFsimulate(model, x=x))
+plot(RMexp(), model=model)
+RFcov(model, 1)
 \dontshow{FinalizeExample()}
 }

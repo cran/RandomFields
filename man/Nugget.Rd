@@ -67,19 +67,6 @@ RPnugget(phi, tol, vdim)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-model <- RMnugget()
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
-
-model <- RPnugget(RMnugget(var=0.01, Aniso=matrix(nc=2, rep(1,4))))
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
-\dontshow{FinalizeExample()}
-}
-
 \seealso{
   \link{RP},
  \command{\link{RPcoins}},
@@ -89,3 +76,16 @@ plot(z)
 }
 
 \keyword{methods}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+model <- RMnugget()
+z <- RFsimulate(model=model, 0:10, 0:10, n=4)
+plot(z)
+
+model <- RPnugget(RMnugget(var=0.01, Aniso=matrix(nc=2, rep(1,4))))
+z <- RFsimulate(model=model, 0:10, 0:10, n=4)
+plot(z)
+\dontshow{FinalizeExample()}
+}

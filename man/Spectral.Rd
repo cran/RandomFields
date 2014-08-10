@@ -112,16 +112,6 @@ RPspectral(phi, sp_lines, sp_grid, prop_factor, sigma)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-model <- RPspectral(RMmatern(nu=1))
-y <- x <- seq(0,10,len=if (interactive()) 400 else 3)
-z <- RFsimulate(model, x, y, n=2, grid=TRUE)
-plot(z)
-\dontshow{FinalizeExample()}
-}
-
 \seealso{
  \command{\link{RPcoins}},
  \command{\link{RPhyperplane}},
@@ -130,3 +120,13 @@ plot(z)
 }
 
 \keyword{methods}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+model <- RPspectral(RMmatern(nu=1))
+y <- x <- seq(0,10,len=if (interactive()) 400 else 3)
+z <- RFsimulate(model, x, y, n=2)
+plot(z)
+\dontshow{FinalizeExample()}
+}

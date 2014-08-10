@@ -37,7 +37,7 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
  Most user will never call \command{\link{RMS}} directly.
 }
 \note{At most one of the arguments,
- \code{Aniso} and \code{proj} may be given at the same time.
+ \code{Aniso}, \code{anisoT} and \code{proj} may be given at the same time.
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

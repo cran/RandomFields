@@ -16,6 +16,8 @@
 \alias{print.RFgridDataFrame}
 \alias{cbind.RFgridDataFrame}
 \alias{as.matrix.RFgridDataFrame}
+\alias{as.array.RFgridDataFrame}
+\alias{as.vector.RFgridDataFrame}
 
 \title{Class \code{RFgridDataFrame} }
 \description{ Class for attributes in one-dimensional space.}
@@ -32,8 +34,7 @@
 \section{Slots}{
  \describe{
    \item{\code{.RFparams}:}{list of up to 5 elements;
-     \itemize{
-       \item{n} is the number
+     \itemize{       \item{n} is the number
        of repetitions of the random field contained in the \code{data} slot
        \item \code{vdim} gives the dimension of the values of
        the random 
@@ -87,6 +88,10 @@
  topology, combine their attribute values}
  \item{as.matrix}{\code{signature(x = "RFgridDataFrame")}: converts
           \code{data}-slot to matrix}
+ \item{as.array}{\code{signature(x = "RFgridDataFrame")}: converts
+          \code{data}-slot to array}
+ \item{as.vector}{\code{signature(x = "RFgridDataFrame")}: converts
+          \code{data}-slot to vector}
  }
 }
 
@@ -104,6 +109,13 @@
  locations in higher dimensional spaces,
  \code{\link[=RFsp-class]{RFsp}} 
 }
+
+
+\keyword{classes}
+\keyword{print}
+\keyword{hplot}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -121,7 +133,3 @@ plot(f, nmax=2)
 \dontshow{FinalizeExample()}
 
 }
-
-\keyword{classes}
-\keyword{print}
-\keyword{hplot}

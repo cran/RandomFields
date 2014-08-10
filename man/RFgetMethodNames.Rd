@@ -305,14 +305,6 @@ RFgetMethodNames(show=TRUE)
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-RFgetMethodNames()
-\dontshow{FinalizeExample()}
-}
-
-
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -320,5 +312,12 @@ RFgetMethodNames()
 }
 \keyword{spatial}
 
+
+
+
+\examples{
+RFgetMethodNames()
+\dontshow{FinalizeExample()}
+}
 
 

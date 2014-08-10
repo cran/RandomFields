@@ -101,9 +101,10 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 x <- y <- seq(-10, 10, if (interactive()) 0.2 else 5)
-model <- RMbiwm(nudiag=c(1, 2), nured=1, rhored=1, cdiag=c(1, 5), 
+model <- RMbiwm(nudiag=c(0.3, 2), nured=1, rhored=1, cdiag=c(1, 1.5), 
                 s=c(1, 1, 2))
-simu <- RFsimulate(model, x, y, grid=TRUE)
-plot(simu)
+plot(model)
+plot(RFsimulate(model, x, y))
+
 \dontshow{FinalizeExample()}
 }

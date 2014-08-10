@@ -3,6 +3,7 @@
 \alias{checkExamples}
 \alias{FinalizeExample}
 \alias{Dependencies}
+\alias{ScreenDevice}
 \alias{plotWithCircles}
 \alias{showManpages}
 \title{Internal functions}
@@ -20,9 +21,13 @@ checkExamples(exclude = NULL, include=1:length(.fct.list),
                path="RandomFields", package = "RandomFields",
                           read.rd.files=TRUE)
 
+ScreenDevice(height, width)
+
 FinalizeExample()
 
-Dependencies(install = all(pkgs == c(depends, imports, suggests)),
+Dependencies(install = length(pkgs) ==
+                     length(c(depends, imports, suggests)) &&
+                     all(pkgs == c(depends, imports, suggests)),
              check=TRUE,
              pkgs = c(depends, imports, suggests),
              lib.loc ="/usr/local/lib64/R/library")
@@ -47,6 +52,7 @@ plotWithCircles(data, factor=1.0,
     search in the environments) are run.
   }
   \item{install, check, pkgs, lib.loc}{internal}
+  \item{height,width}{window sizes}
   \item{data, factor, xlim, ylim, col, fill, ...}{internal}
  % \item{REGISTER, COVREGISTER, RELAX}{internal}
 }
@@ -59,7 +65,9 @@ plotWithCircles(data, factor=1.0,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{\dontrun{
+
+## internal functions: no examples given
+\dontshow{\dontrun{ ## OK
 ## check own examples
 checkExamples(ignore.all=TRUE, halt=!TRUE)
 

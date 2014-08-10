@@ -529,6 +529,8 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     .files <- dir(.path, pattern="d$")
     .fct.list <- character(length(.files))
     for (i in 1:length(.files)) {
+      cat(i, .files[i], "\n")
+      if (i == 152) {cat("jumped\n"); next}
       .content <- scan(paste(.path, .files[i], sep="/") , what=character(),
                        quiet=TRUE)
       .content <- strsplit(.content, "alias\\{")
@@ -593,13 +595,17 @@ FinalizeExample <- function() {
 }
 
 
-Dependencies <- function(install= all(pkgs == c(depends, imports, suggests)),
-                         check=TRUE,
-                         pkgs = c(depends, imports, suggests),
-                         lib.loc ="/usr/local/lib64/R/library" ) {
-  depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat", "MarkedPointProcess", "ProbForecastGOP", "Sunder")
-  imports <- c("constrainedKriging", "geoR", "georob", "lgcp", "spatsurv")
-  suggests <- c("CompRandFld", "fractaldim", "geostatsp", "rpanel", "spatstat")
+Dependencies <-
+  function(install= length(pkgs) == length(c(depends, imports, suggests)) &&
+           all(pkgs == c(depends, imports, suggests)),
+           check=TRUE,
+           pkgs = c(depends, imports, suggests),
+           lib.loc ="/usr/local/lib64/R/library" ) {
+   depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat", "MarkedPointProcess", "ProbForecastGOP", "Sunder")
+  imports <- c("constrainedKriging", # "geoR",
+               "georob", "lgcp", "spatsurv")
+  suggests <- c("CompRandFld", "fractaldim", # "geostatsp",
+                "rpanel", "spatstat")
  
   PKGS <- character(length(pkgs))
   ip <- installed.packages(lib.loc = lib.loc)

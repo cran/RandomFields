@@ -106,7 +106,7 @@ RPbrshifted(phi, tcf, xi, mu, s)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
   model <- RPbrshifted(RMfbm(alpha=1.5), xi=0)
-  z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
+  z <- RFsimulate(model=model, 0:10, 0:10, n=4)
   plot(z)
 \dontshow{FinalizeExample()}
 }

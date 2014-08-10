@@ -50,8 +50,9 @@
 
  \item
  Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2014)
- Analysis, simulation and prediction of
- multivariate random fields with package RandomFields \emph{JSS}
+ Analysis, simulation and prediction of multivariate
+    Random Fields with package \pkg{RandomFields}. \emph{Submitted to JSS}
+  
  \emph{Submitted}
 
  See \link{jss14} for the code.

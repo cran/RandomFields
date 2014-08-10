@@ -141,8 +141,13 @@ void fetchParam(cov_model *cov, cov_model *next, int i, char *name) {
   } 
 }
 
-void includeparam(void **qq,  SEXPTYPE type, int len, SEXP p, int base,
-		  char *param_name) {
+void includeparam(void **qq,       // px
+		  SEXPTYPE type,   // internal type
+		  int len,         // future internal length
+		  SEXP p,          // user's values
+		  int base,     
+		  char *param_name // name used in error messages
+		  ) {
   int j;
   switch(type) {
   case REALSXP : 
@@ -150,8 +155,8 @@ void includeparam(void **qq,  SEXPTYPE type, int len, SEXP p, int base,
       *qq = MALLOC(sizeof(double) * len);      
       double *q = (double *) *qq;   
       for (j=0; j<len; j++) {
-	q[j] = Real(p, param_name, base + j);
-      }    
+	q[j] = Real(p, param_name, base + j); // p[base + j]
+      } 
     }
     break;
   case INTSXP :
@@ -242,8 +247,8 @@ void includeparam(void **qq,  SEXPTYPE type, int len, SEXP p, int base,
 	//     param_name, i, TYPEOF(p), VECSXP,
 	//	ncols(pi), nrows(pi), isMatrix(pi),  pi == p);
 
-	includeparam((void**) (q->p + i), REALSXP, length(pi), pi, base,
-		     param_name); 
+	includeparam((void**) (q->p + i), REALSXP, length(pi), 
+		     pi, base, param_name); 
        
 	
 	if (isMatrix(pi)) {
@@ -263,11 +268,6 @@ void includeparam(void **qq,  SEXPTYPE type, int len, SEXP p, int base,
   }
 }
 
-
-void includeparam(void **qq,  SEXPTYPE type, int len, SEXP p, 
-		  char *param_name) {
-  includeparam(qq,  type, len, p, 0, param_name);
-}
 
 
 void CMbuild(SEXP model, int level, cov_model **Cov) {
@@ -455,13 +455,17 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	// ERR("short form 'k' of parameter name not allowed for sophistacted models");
 	for (j=0; j<l; j++) {
 	  if (!PisNULL(j)) PERR("parameter given twice"); // p[0] OK
-	  if (C->kappatype[j] != INTSXP ||
+	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call("SetAndGetModelInfo",
+	      C->kappatype[j] != INTSXP ||
 	      Integer(p, param_name, j) != NA_INTEGER) {
-	    cov->ncol[j] = cov->nrow[j] = 1;	    
+	    cov->ncol[j] = cov->nrow[j] = 1;	  
+
+	    if ( C->kappatype[j] != INTSXP && C->kappatype[j] != REALSXP)
+	      PERR("model has too complicated arguments to allow abbreviations");
 	    
 	    // printf("include %s %d %s\n", Nick(cov), j, KNAME(j));
-	    includeparam((void**) (cov->px + j), C->kappatype[j], 1, p, j, 
-			 param_name);
+	    includeparam((void**) (cov->px + j), C->kappatype[j], 1, 
+			 p, j, param_name);
 	  }
 	}
 	continue;
@@ -514,8 +518,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  ERR("parameter given twice");
 
 	//printf("Include %s %d %s\n", Nick(cov), i, KNAME(i));
-	includeparam((void**) (cov->px + i), 
-		     C->kappatype[i], l, p, param_name);
+	includeparam((void**) (cov->px + i), C->kappatype[i], l, 
+		     p, 0, param_name);
 	
 	//    print("danach %d %d %s %ld %ld\n", i, C->kappatype[i], param_name, cov->p[i],    cov->p[i+1]);
 		
@@ -1016,12 +1020,14 @@ void simulate(double *N, cov_model *cov, double *v){
  
     R_CheckUserInterrupt();
 
-    if (ni % each == 0) {
-      if (pch == '!')  
+    if (PL > 0) {
+      if (ni % each == 0) {
+	if (pch == '!')  
 	PRINTF(format, back, ni / each);
-      else if (pch == '%')
-	PRINTF(format, back, (int) (ni / realeach), prozent);
-      else PRINTF("%c", pch);
+	else if (pch == '%')
+	  PRINTF(format, back, (int) (ni / realeach), prozent);
+	else PRINTF("%c", pch);
+      }
     }
     //
 

@@ -68,16 +68,19 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
  \command{\link{RPtbm}},
  \command{\link{RFsimulate}}.
 }
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-x <- seq(0,25, if (interactive()) 0.02 else 5)
-model <- RPtbm(RMspheric())
-z <- RFsimulate(model, x, x)
-plot(z)
-\dontshow{FinalizeExample()}
-}
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \keyword{spatial}
 \keyword{models}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+x <- seq(0, 10, if (interactive()) 0.02 else 2)
+model <- RMspheric()
+plot(model, model.on.the.line=RMtbm(RMspheric()), xlim=c(-1.5, 1.5))
+
+z <- RFsimulate(RPtbm(model), x, x)
+plot(z)
+\dontshow{FinalizeExample()}
+}

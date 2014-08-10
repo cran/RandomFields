@@ -402,7 +402,8 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
 
 
 void CovarianceMatrix(cov_model *cov, double *v) {
-  domain_type domown;
+
+   domain_type domown;
   Types type;
   genuineStatOwn(cov, &domown, &type);
   if (cov->pref[Nothing] == PREF_NONE ||
@@ -498,6 +499,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
     for (loc->i_col=0; loc->i_col<tot; loc->i_col++, x+=tsxdim) {
       for (y=x, loc->i_row=loc->i_col; loc->i_row<tot; 
 	   loc->i_row++, y+=tsxdim) {
+
 	if (dist) {	  	  
 	  // here x and y are ignored	  
 	  
@@ -511,16 +513,8 @@ void CovarianceMatrix(cov_model *cov, double *v) {
 
 
 	    //	 PMI(cov->calling->calling->calling);
-	    //	  printf("loc=%d %d idx=%d %f z=%f\n", loc->i_row, loc->i_col, 
-	    //	 (loc->i_col * totM1 - 
-	    //	  (loc->i_col * (loc->i_col + 1)) / 2
-	    //	  + loc->i_row -1) * tsxdim, 
-	    //	 x0[ (loc->i_col * totM1 - 
-	    //	      (loc->i_col * (loc->i_col + 1)) / 2
-	    //	      + loc->i_row -1) * tsxdim], *z);
-	   
-	    //	 
-	    assert(tsxdim == 1);
+	    //		    int idx = (loc->i_col * totM1 - (loc->i_col * (loc->i_col + 1)) / 2  + loc->i_row -1) * tsxdim;
+	    //  printf("loc=%d %f %f %f\n", idx, x[idx], x[idx +1], z);
 
 	  }
 
@@ -539,6 +533,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
 
 	  NONSTATCOV(x, y, cov, z);
 	  //	 printf("x=%f %f y=%f %f z=%f\n", x[0], x[1], y[0], y[1], z[0]);
+
 	  //PMI(cov);
 	  assert(R_FINITE(z[0]));
 	}

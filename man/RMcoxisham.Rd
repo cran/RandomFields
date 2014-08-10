@@ -79,7 +79,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMcoxisham(RMgauss(), mu=1, D=1)
 x <- seq(0, 10, if (interactive()) 0.3 else 1) 
-plot(model, ylim=c(0, 1), dim=2)
+plot(model, dim=2)
 plot(RFsimulate(model, x=x, y=x))
 \dontshow{FinalizeExample()}
 }

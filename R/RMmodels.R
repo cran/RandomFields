@@ -63,6 +63,7 @@ RMtrend <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = FALSE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -125,6 +126,7 @@ RMplus <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -187,6 +189,7 @@ RMmult <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -248,6 +251,7 @@ RMS <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -322,6 +326,7 @@ RMave <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 10,
 	vdim = 1
 	)
@@ -388,6 +393,7 @@ RMbcw <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -447,6 +453,7 @@ RMbessel <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -555,13 +562,14 @@ RMbigneiting <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -1,
 	vdim = 2
 	)
 
 
 
-RMbernoulli <- function(phi, threshold, var, scale, Aniso, proj) {
+RMbernoulli <- function(phi, threshold, correlation, centred, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -572,6 +580,20 @@ RMbernoulli <- function(phi, threshold, var, scale, Aniso, proj) {
     if (is.logical(u) && u) par.model[['threshold']] <- threshold
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['threshold']] <- threshold
     else par.model[['threshold']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(correlation) && !is.null(subst <- substitute(correlation))) {
+    u <- try(is.numeric(correlation) || is.logical(correlation) || is.language(correlation)
+	 || is.list(correlation) || is(correlation, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['correlation']] <- correlation
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['correlation']] <- correlation
+    else par.model[['correlation']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(centred) && !is.null(subst <- substitute(centred))) {
+    u <- try(is.numeric(centred) || is.logical(centred) || is.language(centred)
+	 || is.list(centred) || is(centred, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['centred']] <- centred
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['centred']] <- centred
+    else par.model[['centred']] <- do.call('RRdistr', list(subst))
   }
   if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
@@ -615,6 +637,7 @@ RMbernoulli <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -723,6 +746,7 @@ RMbiwm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 2
 	)
@@ -776,6 +800,7 @@ RMbrownresnick <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -829,6 +854,7 @@ RMbr2bg <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -882,6 +908,7 @@ RMbr2eg <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -941,6 +968,7 @@ RMcauchy <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -993,6 +1021,7 @@ RMcircular <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'Gneiting-Schaback class',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 2,
 	vdim = 1
 	)
@@ -1066,6 +1095,7 @@ RMconstant <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'completely monotone',
 	finiterange = FALSE,
+	simpleArguments = FALSE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -1140,6 +1170,7 @@ RMcoxisham <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -1192,6 +1223,7 @@ RMcubic <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -1245,6 +1277,7 @@ RMcurlfree <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -1312,6 +1345,7 @@ RMcutoff <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 13,
 	vdim = 1
 	)
@@ -1378,6 +1412,7 @@ RMdagum <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -1437,6 +1472,7 @@ RMdampedcos <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -1,
 	vdim = 1
 	)
@@ -1496,6 +1532,7 @@ RMdewijsian <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -1549,6 +1586,7 @@ RMdivfree <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -1622,6 +1660,7 @@ RMepscauchy <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -1674,6 +1713,7 @@ RMexp <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'completely monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -1741,6 +1781,7 @@ RMexponential <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -1794,6 +1835,7 @@ RMschlather <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -1853,6 +1895,7 @@ RMfractdiff <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 1,
 	vdim = 1
 	)
@@ -1912,6 +1955,7 @@ RMfbm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'Bernstein',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -1971,6 +2015,7 @@ RMfractgauss <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 1,
 	vdim = 1
 	)
@@ -2023,6 +2068,7 @@ RMgauss <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2089,6 +2135,7 @@ RMgenfbm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2155,6 +2202,7 @@ RMgencauchy <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2221,6 +2269,7 @@ RMgengneiting <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2273,6 +2322,7 @@ RMgneiting <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -2346,6 +2396,7 @@ RMhyperbolic <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2419,6 +2470,7 @@ RMiaco <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2479,6 +2531,7 @@ RMid <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -2531,6 +2584,7 @@ RMkolmogorov <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 3
 	)
@@ -2597,6 +2651,7 @@ RMlgd <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -1,
 	vdim = 1
 	)
@@ -2664,6 +2719,7 @@ RMmastein <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -2731,6 +2787,7 @@ RMma <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -2784,6 +2841,7 @@ RMintexp <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -2844,6 +2902,7 @@ RMmatrix <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -2910,6 +2969,7 @@ RMmatern <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -2979,6 +3039,7 @@ RMmqam <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -3032,6 +3093,7 @@ RMnatsc <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -3091,6 +3153,7 @@ RMnonstwm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -3152,6 +3215,7 @@ RMnsst <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -3218,6 +3282,7 @@ RMnugget <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -2
 	)
@@ -3277,6 +3342,7 @@ RMflatpower <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'Bernstein',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -3336,6 +3402,7 @@ RMparswm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -3388,6 +3455,7 @@ RMpenta <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -3447,6 +3515,7 @@ RMaskey <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -3507,6 +3576,7 @@ RMpower <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -3576,6 +3646,7 @@ RMqam <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -3635,6 +3706,7 @@ RMqexp <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -3709,6 +3781,7 @@ RMschur <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -3769,6 +3842,7 @@ RMdelay <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -3821,6 +3895,7 @@ RMspheric <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'Gneiting-Schaback class',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -3880,6 +3955,7 @@ RMstable <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -3947,6 +4023,7 @@ RMintrinsic <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 13,
 	vdim = 1
 	)
@@ -4013,6 +4090,7 @@ RMstein <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -4088,6 +4166,7 @@ RMstp <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 10,
 	vdim = 1
 	)
@@ -4162,6 +4241,7 @@ RMtbm <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -1,
 	vdim = -3
 	)
@@ -4229,6 +4309,7 @@ RMvector <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -4281,6 +4362,7 @@ RMwave <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -4347,6 +4429,7 @@ RMwhittle <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -4393,6 +4476,7 @@ RMangle <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -4445,6 +4529,7 @@ RMball <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -4484,6 +4569,7 @@ RMeaxxa <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 10,
 	vdim = -1
 	)
@@ -4530,6 +4616,7 @@ RMetaxxa <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 10,
 	vdim = 3
 	)
@@ -4562,6 +4649,7 @@ RMtrafo <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -4594,6 +4682,7 @@ RMpolygon <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 2,
 	vdim = 1
 	)
@@ -4633,6 +4722,7 @@ RMrational <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -4672,6 +4762,7 @@ RMrotat <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -4704,6 +4795,7 @@ RMrotation <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = -1
 	)
@@ -4737,6 +4829,7 @@ RMsign <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -4763,6 +4856,7 @@ RMm2r <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -4789,6 +4883,7 @@ RMm3b <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
 	)
@@ -4815,6 +4910,7 @@ RMmps <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 2,
 	vdim = 1
 	)
@@ -4848,6 +4944,7 @@ RMtruncsupport <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
 	)
@@ -4880,6 +4977,7 @@ RRdeterm <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -3
 	)
@@ -4926,6 +5024,7 @@ RRgauss <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -4973,6 +5072,7 @@ RRloc <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -5076,6 +5176,7 @@ RRrectangular <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -5122,6 +5223,7 @@ RRspheric <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = 1,
 	vdim = 1
 	)
@@ -5168,6 +5270,7 @@ RRunif <- new('RMmodelgenerator',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -1
 	)
@@ -5210,6 +5313,7 @@ RMmppplus <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
 	)
@@ -5244,6 +5348,7 @@ RPaverage <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = 1
 	)
@@ -5347,6 +5452,7 @@ RPcirculant <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 13,
 	vdim = -3
 	)
@@ -5464,6 +5570,7 @@ RPcutoff <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 13,
 	vdim = 1
 	)
@@ -5581,6 +5688,7 @@ RPintrinsic <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 13,
 	vdim = 1
 	)
@@ -5628,6 +5736,7 @@ RPdirect <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -3
 	)
@@ -5682,6 +5791,7 @@ RPhyperplane <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 2,
 	vdim = 1
 	)
@@ -5722,6 +5832,7 @@ RPnugget <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -2
 	)
@@ -5756,6 +5867,7 @@ RPcoins <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = 1
 	)
@@ -5803,6 +5915,7 @@ RPsequential <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
 	)
@@ -5857,6 +5970,7 @@ RPspectral <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = 1
 	)
@@ -5883,6 +5997,7 @@ RPspecific <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -5965,6 +6080,7 @@ RPtbm <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
 	)
@@ -6013,6 +6129,7 @@ RPbrorig <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -6117,6 +6234,7 @@ RPbrmixed <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -6165,6 +6283,7 @@ RPbrshifted <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -6205,6 +6324,7 @@ RPbernoulli <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 11000,
 	vdim = -3
 	)
@@ -6253,6 +6373,7 @@ RPbrownresnick <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -6286,6 +6407,7 @@ RPgauss <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 11000,
 	vdim = -3
 	)
@@ -6319,6 +6441,7 @@ RPpoisson <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = -3
 	)
@@ -6367,6 +6490,7 @@ RPschlather <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 11000,
 	vdim = 1
 	)
@@ -6415,6 +6539,7 @@ RPsmith <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 4,
 	vdim = 1
 	)
@@ -6448,6 +6573,7 @@ RPchi2 <- new('RMmodelgenerator',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
+	simpleArguments = TRUE,
 	maxdim = 11000,
 	vdim = -3
 	)

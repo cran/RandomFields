@@ -69,7 +69,8 @@
     \command{\link{RMetaxxa}} \tab shape function used in the Bernoulli
     paper given in the references
     \cr
-   \command{\link{RMrotation}} \tab shape function used in the Bernoulli
+    \command{\link{RMid}} \tab identity \cr
+  \command{\link{RMrotation}} \tab shape function used in the Bernoulli
    paper given in the references
    \cr
 }

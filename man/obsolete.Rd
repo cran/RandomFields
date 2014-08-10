@@ -20,7 +20,7 @@
 \alias{RFparameters}
 \alias{Variogram}
 \description{
- This part gives the obsolete functions of RandomFields
+ This part gives the obsolete functions of RandomFields Version 2
 }
 \usage{
 Covariance(x, y = NULL, model, param = NULL, dim = if
@@ -115,24 +115,24 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## no examples given, as command is obsolete
 \dontshow{\dontrun{
 
-x <- seq(0, 5, if (interactive()) 0.2 else 2)
+x <- seq(0, 5, if (interactive()) 0.05 else 2)
 model <- "exp"
 param <- c(0, 1, 0, 1)
 
 plot(x, Covariance(x, model=model, param=param))
 plot(x, Variogram(x, model=model, param=param))
 
-z <- GaussRF(x, grid=TRUE, model=model, param=param)
+z <- GaussRF(x, model=model, param=param)
 plot(x, z, type="l")
 
-z <- GaussRF(x, x, grid=TRUE, model=model, param=param)
+z <- GaussRF(x=x, y=x, model=model, param=param, grid=TRUE)
 image(x, x, z)
-EmpiricalVariogram(x, x, grid=TRUE, data=z)
+EmpiricalVariogram(x, x, data=z)
 
 g1 <- runif(5) * 2
 g2 <- runif(5) * 2
 z <- GaussRF(g1, g2, grid=FALSE, model=model, param=param)
-k <- Kriging("S", x, x, grid=TRUE, given=cbind(g1, g2),
+k <- Kriging("S", x, x, given=cbind(g1, g2),
         data=z, model=model, param=param)
 Print(range(z), range(k))
 col <- rainbow(20)

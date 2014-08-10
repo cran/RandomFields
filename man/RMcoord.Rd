@@ -2,7 +2,7 @@
 \alias{RMcoord}
 \title{Coordinates in the mixed model representation}
 \description{
- This function is used to define, in the extremely rare case,
+ This function is used to define, in the (rare) case,
  coordinates that differ from the original coordinates to define
  a covariance matrix for a random effect model
 
@@ -42,5 +42,8 @@ RMcoord(C0, coord, dist)
 
 \examples{
  ## For examples see the help page of 'RFformula' ##
+
+## todo
+
 \dontshow{FinalizeExample()}
 }

@@ -64,11 +64,7 @@ the optimal one was used: \eqn{s=\frac{10 \sqrt(2)}{47}}{s=10 sqrt(2)/47}.
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-scale <- 0.4
-model <- RMgneiting(scale = scale)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,1))
-points(x, RFcov(RMgauss(scale = scale), x), col="red")
-plot(RFsimulate(model, x=x))
+
+plot(RMgneiting(), model2=RMgauss(), type=c("p", "l"), pch=20, xlim=c(-3,3))
 \dontshow{FinalizeExample()}
 }

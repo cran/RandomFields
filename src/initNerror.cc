@@ -144,7 +144,7 @@ globalparam GLOBAL = {
   {true, 6, 1, {3, 4}}, // graphics
   {0, MODEL_KRIGE, MODEL_COND, MODEL_ERR, MODEL_GUI}, // registers
   {true, true, true, false, true, 
-   true, true, false, true, true, true}, // warnings
+   true, true, false, true, true, true, true, true}, // warnings
   {NA_REAL, coord_auto, {""}, {""}, {""}}, // coords
   {10}, // special
 };
@@ -340,7 +340,13 @@ void errorMSG(int err, char* m, int len) {
   case ERRORWRONG:
     sprintf(m, "%s", ERRORSTRING_WRONG);
     break;
-    
+  case ERRORWRONGVDIM: 
+    strcpy(m, ERRORSTRING);
+    break;
+  case ERRORBADVDIM: 
+    strcpy(m, "m-dimensionality could not be detected");
+    break;
+
     // extremes:
   case ERRORSUBMETHODFAILED:
     sprintf(m, "no good submethods exist");
@@ -820,10 +826,10 @@ void InitModelList() {
   pref_type
     pbernoulli = {5, 0, 0,  0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //             CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludeModel("bernoulli", TcfType, 1, 1, 1, NULL, PREVMODELD, PREVMODELI,
+  IncludeModel("bernoulli", TcfType, 1, 1, 3, NULL, PREVMODELD, PREVMODELI,
 	       checkbinary, rangebinary, pbernoulli,
 	       false, SCALAR, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP);
-  kappanames("threshold", REALSXP);
+  kappanames("threshold", REALSXP, "correlation", INTSXP, "centred", INTSXP);
   addCov(binary, NULL, NULL);
   
 
@@ -1323,8 +1329,8 @@ void InitModelList() {
 	       checkSchur, rangeSchur, PREF_ALL,
 	       false, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
   kappanames("M", REALSXP, "diag", REALSXP, "rhored", REALSXP);
-  addCov(Mstat, NULL, NULL);
-  addCov(Mnonstat);
+  addCov(Schurstat, NULL, NULL);
+  addCov(Schurnonstat);
   add_paramtype(paramtype_M); 
  
 
@@ -2738,7 +2744,11 @@ bool TrafoOK(cov_model *cov, bool all) {// check other things, too, besides gatt
 	(cov->secondarygatternr >= FIRST_TRAFO &&
 	 cov->secondarygatternr <= LAST_TRAFO)) && 
     (!all || cov->checked);  
-  //printf("ok = %d %d\n", ok, all);
+  //
+  // printf("ok = %d %d gatterNr=%d %d %d snd=%d %d %d %d \n", ok, all, 
+  //	 cov->gatternr,  FIRST_TRAFO, LAST_TRAFO,
+  //	 cov->secondarygatternr, MISMATCH, FIRST_TRAFO, LAST_TRAFO,
+  //	 );
   if (!ok) {
     PMI(cov); //
     //PMI(cov->calling->calling->calling->calling);

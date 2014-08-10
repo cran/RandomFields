@@ -77,5 +77,8 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
 
 \examples{
  ## For examples see the help page of 'RFsimulateAdvanced' ##
+model <- RMexp()
+plot(model, model.cutoff=RMcutoff(model, diameter=1), xlim=c(0, 4))
+
 \dontshow{FinalizeExample()}
 }

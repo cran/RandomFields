@@ -184,7 +184,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   {
     cat("\nuse left mouse for locator and right mouse to exit\n")
     plots <- do.dfa + do.fft + do.var
-    do.call(getOption("device"), list(height=height, width=height * plots))
+    ScreenDevice(height=height, width=height * plots)
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))

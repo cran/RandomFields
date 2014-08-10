@@ -157,6 +157,10 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFfractaldim}}
 }
+
+\keyword{ spatial }%-- one or more ...
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -171,8 +175,6 @@ if (interactive()) {
 
 \dontshow{FinalizeExample()}
 }
-\keyword{ spatial }%-- one or more ...
-
 
 
 

@@ -28,7 +28,17 @@ RFspDataFrame2dataArray(obj)
 }
 
 \examples{
-## for examples, see the links in section 'See Also'
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+n <- 3
+x <- GridTopology(cellcentre.offset=c(0, 0),
+ cellsize=c(1, 0.2),
+ cells.dim=c(10, 30))
+f <- RFsimulate(model=RMexp(), x=x, n=n)
+str(f)
+str(RFspDataFrame2conventional(f))
+
 \dontshow{FinalizeExample()}
 }
 

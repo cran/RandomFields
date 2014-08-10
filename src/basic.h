@@ -5,16 +5,8 @@
 #include <Rinternals.h>
 #include <Rmath.h>
 #include <errno.h>
-// NDEBUG /* uncomment to stop assert working */
-#define N_DEBUG 1
-#include <assert.h>
 #include <R_ext/Complex.h>
 
-#ifdef __GNUC__
-#define VARIABLE_IS_NOT_USED __attribute__ ((unused))
-#else
-#define VARIABLE_IS_NOT_USED
-#endif
 
 // Formerly in <R_ext/Applic.h>
 void fft_factor_(int n, int *pmaxf, int *pmaxp);
@@ -64,7 +56,23 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 extern double EIGENVALUE_EPS; // used in GetTrueDim
 
 
+//
+// 1
 
+extern char BUG_MSG[250];
+#ifdef ENABLEASSERT
+// __extension__ unterdrueckt Fehlermeldung wegen geklammerter Argumente
+#define assert(X) if (!__extension__ (X )) {				\
+    sprintf(BUG_MSG,							\
+	    "'assert(%s) failed in function '%s' (file '%s', line %d).", \
+	    #X,__FUNCTION__, __FILE__, __LINE__);			\
+    error(BUG_MSG);							\
+  }
+#define VARIABLE_IS_NOT_USED __attribute__ ((unused))
+#else 
+#define assert(X) {}
+#define VARIABLE_IS_NOT_USED
+#endif
 
 #endif /* GSL_VS_R_H */
 

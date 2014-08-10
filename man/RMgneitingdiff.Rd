@@ -63,7 +63,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMgneitingdiff(nu=2, taper.scale=1, scale=0.2)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,1))
+plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

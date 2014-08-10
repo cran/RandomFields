@@ -38,9 +38,12 @@
  \item{\code{monotone}:}{character string; specifies the kind of monotonicity
  of the model}
  \item{\code{finiterange}:}{logical; specifies whether the underlying
- covariance model has finite range, see Details}
+   covariance model has finite range, see Details}
  % finiterange waere wuenschenswert an Abhaengigkeit von parametern
  % und submodellen anzupassen, siehe maxdim und vdim
+ \item{\code{simpleArguments}:}{logical. If \code{TRUE} than all the
+   parameters are real valued (or integer valued).
+ }
  \item{\code{maxdim}:}{numeric; the maximal dimension, in which the
  corresponding model is a valid covariance model, see Details} 
  \item{\code{vdim}:}{numeric; dimension of the value of the random
@@ -210,12 +213,12 @@
  \code{\link{RFgetModelNames}}
 }
 
+\keyword{classes}
+\keyword{hplot}
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames(group="type")
 \dontshow{FinalizeExample()}
 }
-
-\keyword{classes}
-\keyword{hplot}

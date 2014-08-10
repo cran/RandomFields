@@ -127,20 +127,6 @@ RPsequential(phi, max_variables, back_steps, initial)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-model <- RMgauss(var=10, s=10) + RMnugget(var=0.01)
-z <- RFsimulate(model=RPdirect(model), 0:10, 0:10, grid=TRUE, n=4)
-plot(z)
-
-cov <- RFcov(model=model, 1:10)
-Print(cov)
-\dontshow{FinalizeExample()}
-
-
-}
-
 \seealso{
   \link{RP},
  \command{\link{RPcoins}},
@@ -150,3 +136,15 @@ Print(cov)
 }
 
 \keyword{methods}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+model <- RMgauss(var=10, s=10) + RMnugget(var=0.01)
+plot(model, xlim=c(-25, 25))
+
+z <- RFsimulate(model=RPdirect(model), 0:10, 0:10, n=4)
+plot(z)
+
+\dontshow{FinalizeExample()}
+}

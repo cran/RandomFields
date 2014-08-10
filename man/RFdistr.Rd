@@ -64,11 +64,12 @@ set.seed(0); Print(r, rnorm(n=n))
 
 ## note that a conditional covariance function given the
 ## random parameters is given here:
-\dontshow{FinalizeExample()}
 model <- RMgauss(scale=exp())
 for (i in 1:3) {
-  readline(paste("Simulation no.", i, ": press return", sep=""))
+  RFoptions(seed = i + 10)
+  readline(paste("Model no.", i, ": press return", sep=""))
   plot(model)
+  readline(paste("Simulation no.", i, ": press return", sep=""))  
   plot(RFsimulate(model, x=seq(0,10,0.1)))
 }
 \dontshow{FinalizeExample()}

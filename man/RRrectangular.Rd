@@ -69,6 +69,9 @@ RRrectangular(phi, safety, minsteplen, maxsteps, parts, maxit,
 \command{\link{RRgauss}},
  }
 
+\keyword{spatial}
+\keyword{models}
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -87,14 +90,11 @@ distr <- RRrectangular(RMspheric(), approx=FALSE)
 z <- RFrdistr(distr, n=if (interactive()) 1000000 else 10)
 hist(z, 200, freq=!TRUE)
 x <- seq(-10, 10, 0.01)
-lines(x, 4/3*RFcov(RMspheric(), x, spConform=FALSE))
+lines(x, 4/3 * RFcov(RMspheric(), x))
 \dontshow{FinalizeExample()}
 
 }
  
-\keyword{spatial}
-\keyword{models}
-
 
 
 

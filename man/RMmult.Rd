@@ -57,7 +57,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 # separable, multiplicative model
 model <- RMgauss(proj=1) * RMexp(proj=2, scale=5)
-z <- RFsimulate(model=model, 0:10, 0:10, grid=TRUE, n=4)
+z <- RFsimulate(model=model, 0:10, 0:10, n=4)
 plot(z)
 
 \dontshow{FinalizeExample()}

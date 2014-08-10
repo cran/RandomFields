@@ -74,7 +74,8 @@
     \item  Oesting, M., Kabluchko, Z. and Schlather M. (2012)
     Simulation of {B}rown-{R}esnick Processes, \emph{Extremes},
     \bold{15}, 89-107.
-}}
+  }
+}
 
 % TO DO: ueberall diese notes einfuegen
 \note{Advanced options
@@ -87,33 +88,6 @@
   found in the paragraph \sQuote{Specific method options for Brown-Resnick
     Fields} in \command{\link{RFoptions}}.}
 
-  \examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-
-\dontshow{\dontrun{
-model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
-x <- seq(0, 10, if (interactive()) 0.1 else 1)
-z <- RFsimulate(model=model, x, x, grid=TRUE, n=4, A=0.9)
-plot(z)
-
-z <- RFsimulate(model, x=x, n=4, A=1.9)
-plot(z)
-
-
-## basic model in Buishand, de Haan, Zhou (2008)
-model <- RMfbm(proj=1, alpha=1, var=0.5) + RMfbm(proj=2, alpha=1, var=0.5) 
-x <- seq(0, 5, if (interactive()) 0.05 else 1)
-z <- RFsimulate(RPbrownresnick(model, xi=0), x, x, every=1000)
-plot(z)
-
-
-}}
-
-## for some more sophisticated models see 'maxstamableAdvanced'
-
-\dontshow{FinalizeExample()}
-}
 
 \seealso{
  \command{\link{RPbrorig}},
@@ -128,3 +102,31 @@ plot(z)
 \keyword{spatial}
 
 
+
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+\dontshow{\dontrun{
+model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
+x <- seq(0, 10, if (interactive()) 0.2 else 1)
+z <- RFsimulate(model=model, x, x, n=4, A=0.9) # about 1 min on a fast machine
+plot(z)
+
+z <- RFsimulate(model, x=x, n=4, A=1.9)
+plot(z)
+
+
+## basic model in Buishand, de Haan, Zhou (2008)
+model <- RMfbm(proj=1, alpha=1, var=0.5) + RMfbm(proj=2, alpha=1, var=0.5) 
+x <- seq(0, 5, if (interactive()) 0.05 else 1)
+z <- RFsimulate(RPbrownresnick(model, xi=0), x, x, every=1000)
+plot(z)
+
+
+}}
+## for some more sophisticated models see 'maxstamableAdvanced'
+
+\dontshow{FinalizeExample()}
+}

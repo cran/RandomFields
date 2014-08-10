@@ -11,7 +11,7 @@
 \usage{
 RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL, grid, data,
 alpha, n = 5 / alpha, seed = 0, 
-lower = NULL, upper = NULL, BC.lambda, methods,
+lower = NULL, upper = NULL, bc_lambda, methods,
 sub.methods, optim.control = NULL, users.guess = NULL,
 distances = NULL, dim, transform = NULL, ...)
 }
@@ -32,7 +32,7 @@ distances = NULL, dim, transform = NULL, ...)
    \code{RFoptions{}$general$seed}
    if the latter is not \code{NA}.
  }
- \item{x, y, z, T, grid, data, lower, upper, BC.lambda, methods,
+ \item{x, y, z, T, grid, data, lower, upper, bc_lambda, methods,
    sub.methods, optim.control, users.guess, distances, dim, transform,
    ...}{see \command{\link{RFfit}}}
 }
@@ -117,20 +117,12 @@ distances = NULL, dim, transform = NULL, ...)
  \command{\link{weather}}.
 }
 \examples{
-% options(error=recover)
-% source("RandomFields/tests/source.R")
 
-RFoptions(modus_operandi="sloppy")
-
-\dontrun{
-% library(RandomFields, lib="~/TMP");  source("RandomFields/private/source.R")
-
+\donttest{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-## see also ?soil
-data(soil)
-str(soil)
+data(soil)  ## see also ?soil
 soil <- RFspatialPointsDataFrame(
  coords = soil[, c("x.coord", "y.coord")],
  data = soil[, c("moisture", "NO3.N", "Total.N",
@@ -141,11 +133,9 @@ soil <- RFspatialPointsDataFrame(
 model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
 submodel <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=0))
 
-test <- RFratiotest(submodel, model, data=soil["moisture"], n=20)
-str(test)
+RFratiotest(submodel, model, data=soil["moisture"],
+            modus_operandi="sloppy")
 }
-
-\dontshow{RFoptions(modus_operandi="normal")}
 
 \dontshow{FinalizeExample()}
 

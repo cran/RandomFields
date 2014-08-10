@@ -443,7 +443,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 #############################################################
 model <- RMstable(alpha=1.5)
 x <- seq(0, 10, if (interactive()) 0.01, 1)
-z <- RFsimulate(model = RPtbm(model), x=x, y=x, grid=TRUE)
+z <- RFsimulate(model = RPtbm(model), x=x, y=x)
 plot(z)
 
 
@@ -484,7 +484,7 @@ plot(z)
 x <- seq(0, 2, 0.1)
 model <- RMfbm(alpha=0.5, Aniso=matrix(nrow=1, c(1, 0))) + 
          RMfbm(alpha=0.9, Aniso=matrix(nrow=1, c(0, 1)))
-z <- RFsimulate(x, x, grid=TRUE, model=model)
+z <- RFsimulate(x, x, model=model)
 plot(z)
 
 
@@ -500,12 +500,12 @@ plot(z)
 step <- 0.3 ## nicer, but also time consuming if step = 0.1
 x <- seq(0, 5, step)
 alpha <- 1 # in [0,2)
-z <- RFsimulate(x=x, y=x, grid=TRUE, model=RMfbm(alpha=alpha))
+z <- RFsimulate(x=x, y=x, model=RMfbm(alpha=alpha))
 plot(z)
 
 
 # 3d
-z <- RFsimulate(x=x, y=x, z=x, grid=TRUE,
+z <- RFsimulate(x=x, y=x, z=x,
  model=RMfbm(alpha=alpha))
 
 %rl <- function() if (interactive()) readline("Press return")

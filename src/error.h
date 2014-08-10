@@ -17,7 +17,10 @@
 #define ERRORMEND 11         /* a single error message -- und alles dazwischen */
 #define ERRORWRONG 13           /* same as ERRORMSG, but showing only
 				   ERRORSTRING_WRONG */
-#define ERRORTYPE 14
+
+#define ERRORWRONGVDIM 15
+#define ERRORBADVDIM 16
+
 
 #define ERRORNOTDEFINED 20       /* the specification for the  covariance and 
 				    method is not given/known, e.g. TBM2 for 

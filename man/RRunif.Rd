@@ -41,6 +41,11 @@ RRunif(min, max, normed)
  }
 
  
+ 
+\keyword{spatial}
+\keyword{models}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -50,11 +55,6 @@ RFpdistr(RRunif(c(0, -2), c(2, -1)), q=c(1, -1.5), dim=2)
 RFddistr(RRunif(c(0, -2), c(2, -1)), x=c(1, -1.5), dim=2)
 \dontshow{FinalizeExample()}
 }
-
- 
-\keyword{spatial}
-\keyword{models}
-
 
 
 

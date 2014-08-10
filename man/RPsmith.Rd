@@ -83,6 +83,19 @@ RPsmith(shape, tcf, xi, mu, s)
     Unpublished Manuscript.
     }
 }
+
+\seealso{
+  \command{\link{Advanced RMmodels}},
+  \command{\link{Auxiliary RMmodels}},
+  \command{\link{RMmodel}},
+  \command{\link{RPbernoulli}},
+  \command{\link{RPgauss}},
+  \link{maxstable}
+  \command{\link{maxstableAdvanced}}
+}
+
+\keyword{spatial}
+
  
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
@@ -111,20 +124,4 @@ plot(z)
 
 \dontshow{FinalizeExample()}
 }
-
-\seealso{
-  \command{\link{Advanced RMmodels}},
-  \command{\link{Auxiliary RMmodels}},
-  \command{\link{RMmodel}},
-  \command{\link{RPbernoulli}},
-  \command{\link{RPgauss}},
-  \link{maxstable}
-  \command{\link{maxstableAdvanced}}
-}
-
-
-
-
-\keyword{spatial}
-
 

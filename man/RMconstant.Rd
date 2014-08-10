@@ -45,6 +45,8 @@ RMconstant(M, vdim, element, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 \examples{
- ## For examples see the help page of 'RFformula' ##
+
+## to do
+
 \dontshow{FinalizeExample()}
 }

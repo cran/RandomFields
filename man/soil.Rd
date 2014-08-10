@@ -40,6 +40,8 @@
  Master thesis, University of Bayreuth, Germany.
 }
 \examples{
+
+\donttest{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -52,7 +54,6 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## ##
 ################################################################
 
-%   library(RandomFields, lib="~/TMP")
 
 data(soil)
 str(soil)
@@ -93,7 +94,7 @@ plot(fit, fit.method=c("ml", "plain", "sqrt.nr", "sd.inv"),
 ## Kriging ...
 x <- seq(min(data@coords[, 1]), max(data@coords[, 1]),
          l=if (interactive()) 121 else 4)
-k <- RFinterpolate(fit["ml"], x=x, y=x, grid=TRUE, data=data)
+k <- RFinterpolate(fit["ml"], x=x, y=x, data=data)
 plot(x=k, col=colour)
 plot(x=k, y=data, col=colour)
 
@@ -107,6 +108,7 @@ plot(cs, col=colour)
 plot(cs, y=data, col=colour)
 Print(mean(apply(as.matrix(cs@data) <= 24, 2, all))) ## about 40 percent
 ##...
+}
 
 \dontshow{FinalizeExample()}
 }

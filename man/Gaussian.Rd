@@ -2,22 +2,22 @@
 \alias{Gaussian}
 \title{Methods for Gaussian Random Fields}
 \description{
-  Hier all the methods (models) for simulating
+  Here, all the methods (models) for simulating
   Gaussian random fields are listed
 }
-\section{Implemented models}{
+\section{Implemented simulation methods}{
   \tabular{ll}{
- \command{\link{RPcirculant}} \tab simulation by circulant embedding \cr
- \command{\link{RPcutoff}} \tab simulation by a variant of circulant embedding \cr
- \command{\link{RPcoins}} \tab simulation by random coin / shot noise
+ \command{\link{RPcirculant}} \tab  circulant embedding \cr
+ \command{\link{RPcutoff}} \tab  variant of circulant embedding \cr
+ \command{\link{RPcoins}} \tab  random coin / shot noise
  \cr
  \command{\link{RPgauss}} \tab generic model that chooses automatically
  among the specific methods
  \cr
- \command{\link{RPhyperplane}} \tab simulation by hyperplane tessellation \cr
- \command{\link{RPintrinsic}} \tab simulation by a variant of circulant
+ \command{\link{RPhyperplane}} \tab  hyperplane tessellation \cr
+ \command{\link{RPintrinsic}} \tab variant of circulant
  embedding \cr 
- \command{\link{RPnugget}} \tab simulation of (anisotropic) nugget effects \cr
+ \command{\link{RPnugget}} \tab (anisotropic) nugget effects \cr
  \command{\link{RPsequential}} \tab sequential method \cr
  \command{\link{RPspecific}} \tab model specific methods (very advanced)\cr
  \command{\link{RPspectral}} \tab spectral method \cr
@@ -68,7 +68,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 x <- seq(0, 10, 0.01)
 z <- RFsimulate(RMexp(), x)
 RFgetModelInfo(RFsimulate, level=0, which="internal")
- # circulant embedding is chosen
+# i.e., circulant embedding has been chosen
 \dontshow{FinalizeExample()}
 
 }

@@ -95,9 +95,8 @@ Plot <- function(basicname, x, y, z, pixels=200, col=col, delay=1,
 }
 
 basicname <- "coxisham"
-# load(paste(basicname, ".dat", sep=""))
 Plot(basicname, x, y, z, col=col, T=T)
-save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
+save(file=paste(basicname, "/", basicname, ".dat", sep=""), z) # OK
 
 }}
 
@@ -116,9 +115,8 @@ plot(z)
 
 \dontshow{\dontrun{
 basicname <- "moving"
-# load(paste(basicname, ".dat", sep=""))
 Plot(basicname, x, y, z, col=col, T=T)
-save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
+save(file=paste(basicname, "/", basicname, ".dat", sep=""), z) # OK
 }}
 
 
@@ -146,10 +144,9 @@ for (i in 1:time) {Print(i);image(x, y, z[,,i], add=i>1, col=col, zlim=zlim)}
 
 \dontshow{\dontrun{
 basicname <- "cyclone"
-# load(paste(basicname, ".dat", sep=""))
 Plot(basicname, x, y, z, col=col, T=T, pixels=256, zi=0.5 + dim(z)[2]/2,
  speed=0.2, zlim=zlim)
-save(file=paste(basicname, "/", basicname, ".dat", sep=""), z)
+save(file=paste(basicname, "/", basicname, ".dat", sep=""), z) # OK
 }}
 
 

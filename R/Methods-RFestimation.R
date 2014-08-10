@@ -38,7 +38,7 @@ boundary_values <- function(variab) {
                   paste("'", names(variab[lidx]), "'",
                         sep="", collapse=", "),
                   " ", if (nl == 1)  "is" else "are",                  
-                  " close to or on the effective lower boundary"),
+                  " close to or on the effective lower boundary", sep=""),
             if (nl > 0 && nu > 0) " and the variable",
             if (nu > 0)
             paste(if (nu > 1) "s", " ",
@@ -63,7 +63,8 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
             residuals=if (length(residuals) == 1) residuals[[1]] else residuals)
   if (missing(isna.param)) isna.param <- any(is.na(object@param)) 
   l$boundary <- boundary_values(object@variab)
-  if (!isna.param) l$param <- cbind(object@param, object@covariab)
+  if (!any(is.na(object@param[1, ])) )
+    l$param <- cbind(object@param, object@covariab)
   if (isna.param || !is.null(l$boundary)) {
 #   print(object@variab)
 #    print(object@covariab)
@@ -91,7 +92,8 @@ summary.RM_modelFit <- function(object, ..., isna.param) {
             residuals=if (length(residuals) == 1) residuals[[1]] else residuals)
   if (missing(isna.param)) isna.param <- any(is.na(object$param))
   l$boundary <- boundary_values(object$variab)
-  if (!isna.param) l$param <- cbind(object$param, object$covariab)
+  if (!any(is.na(object$param[1,])))
+      l$param <- cbind(object$param, object$covariab)
   if (isna.param || !is.null(l$boundary))
     l$variab <-
       cbind(object$variab,
@@ -109,8 +111,16 @@ print.summary.RMmodelFit <- function(x, ...) {
     if (is.null(x$boundary)) print(x$variab[1:2, ], ..., na.print="-")#
     else print(x$variab, ..., na.print="-")#
     cat("\n")
+    return(ncol(x$variab))
   }
 
+
+  printParam <- function(x) {
+    cat("User's variables:\n")
+    print(x$param, ..., na.print="-")#
+    return(ncol(x$param))
+  }
+  
   printRest <- function(...) {
     x <- unlist(list(...))
     stopifnot(length(x) == 3)
@@ -163,20 +173,16 @@ print.summary.RMmodelFit <- function(x, ...) {
       AIC <- AIC + x$submodels[[i]]$AIC
       nm <- nm + 1;
     }
-    if (!is.null(x$param)) print(cparam, ..., na.print="-") #
+
+    if (!is.null(x$param)) printParam(x)
 
     printRest(np, ll, AIC) #
     cat("\nuser's model\n", paste(rep("=", 12), collapse=""), "\n", sep="")
   }
  
-  if (!is.null(x$variab)) {
-    printVariab(x)
-    np <- ncol(x$variab)
-  }
-  if (!is.null(x$param)) {
-    print(x$param, ..., na.print="-")#
-    np <- ncol(x$param)
-  }
+  if (!is.null(x$variab)) np <- printVariab(x)
+  if (!is.null(x$param)) np <- printParam(x)
+  
   printRest(np, x[c("loglikelihood", "AIC")])#
 
   if (!is.null(x$boundary)) cat(x$boundary, "\n\n")
@@ -198,9 +204,10 @@ summary.RFfit <- function(object, ...,  method="ml", full=FALSE) {
 #  str(object@submodels, 2)
   if (full && length(object@submodels) > 0) {
     submodels <- list()
-    for (i in 1:len) {      
-      submodels[[i]] <- summary.RM_modelFit(object@submodels[[i]][[method]],
-                                            isna.param=is.null(s$param))
+    for (i in 1:len) {
+      ## war summary.RM_modelFit
+      submodels[[i]] <- summary(object@submodels[[i]][[method]],
+                                isna.param=is.null(s$param))
       submodels[[i]]$report <- object@submodels[[i]]$report
       submodels[[i]]$p.proj <- object@submodels[[i]]$p.proj
       submodels[[i]]$fixed  <- object@submodels[[i]]$fixed
@@ -796,10 +803,14 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
                                     model = method.model,
                                     grid = FALSE),
                         silent = FALSE)
+      
       if(!is(vario.vals, "try-error")) {
-        if (is.vector(vario.vals)) return(vario.vals)
-        else return(vario.vals[, v1, v2])
-      }
+        if (is.vector(vario.vals)) {
+          return(vario.vals)
+        } else {
+          return(vario.vals[, v1, v2])
+        }
+      }      
       x.space <- cbind(x.space, 0)    
     }
     return(NULL)
@@ -935,8 +946,7 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
                 dummy.vals <- apply(x.radial, 1, FUN = dir2vario,
                                     x.eval=x.eval, x.time=x.time,
                                     method.model=method.model,
-                                    v1=v1, v2=v2)
-                 
+                                    v1=v1, v2=v2)                
                 if(!is.null(dummy.vals)){
                   if (n.phi>1 && boundaries)
                     do.call(graphics::matplot,

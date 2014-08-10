@@ -39,28 +39,28 @@ RMschlather(phi, var, scale, Aniso, proj)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-#Example 1
-x <- if (interactive()) 0:1000 else 0:10
-model <- RMgauss(scale=50)
+## This examples considers an extremal Gaussian random field
+## with Gneiting's correlation function.
+
+## first consider the covriance model and its corresponding tail
+## corrlation function
+model <- RMgneiting()
+plot(model, model.tail.corr.fct=RMschlather(model),  xlim=c(0, 5))
+
+
+## the extremal Gaussian field with the above underlying
+## correlation function that has the above tail correlation function tcf
+x <- seq(0, 10, if (interactive()) 0.1 else 3)
 z <- RFsimulate(RPschlather(model), x)
 plot(z)
 
-y  <- if (interactive()) 0:100 else 0:10
-cov <- RFcov(model, y)
-ecf <- RFcov(RMschlather(model), y)
-matplot(y, cbind(cov, ecf), type="l")
-
-
-# Example 2
-x <- if (interactive()) 0:1000 else 0:10
-model <- RMschlather(model)
-z <- RFsimulate(RPschlather(model), x)
+## Note that in RFsimulate R-P-schlather was called, not R-M-schlather.
+## The following lines give a Gaussian random field with corrlation
+## function equal to the above tail correlation function.
+z <- RFsimulate(RMschlather(model), x)
 plot(z)
 
-y  <- if (interactive()) 0:100 else 0:10
-cov <- RFcov(model, y)
-ecf <- RFcov(RMschlather(model), y)
-matplot(y, cbind(cov, ecf), type="l")
+
 \dontshow{FinalizeExample()}
 
 }

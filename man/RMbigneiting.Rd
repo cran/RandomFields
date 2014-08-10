@@ -156,7 +156,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 %# gamma is mainly a scale effect
 model <- RMbigneiting(kappa=2, mu=0.5, gamma=c(0, 3, 6), rhored=1)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
-plot(model, ylim=c(0,1))
+plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

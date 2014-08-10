@@ -53,6 +53,9 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
 
 
 \examples{
- ## For an example see the help page of 'RMparswmX' ##
+model <- RMschur(M=matrix(c(2, 1, 1, 1), ncol=2), RMparswm(nudiag=c(0.5, 2)))
+plot(model)
+x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

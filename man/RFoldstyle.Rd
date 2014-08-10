@@ -32,7 +32,12 @@ RFoldstyle(old=TRUE)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-  RFoldstyle()
+
+GaussRF(x=1:10, model="exp", param=c(0,1,0,1), grid=TRUE)
+
+RFoldstyle()
+GaussRF(x=1:10, model="exp", param=c(0,1,0,1), grid=TRUE)
+
 \dontshow{RFoldstyle(FALSE)}
 \dontshow{FinalizeExample()}
 }

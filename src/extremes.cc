@@ -1351,7 +1351,7 @@ int check_schlather(cov_model *cov) {
       if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
       COV(ZERO, next, &v);
       if (v != 1.0) 
-	SERR("extremalgaussian requires a correlation function as submodel.");
+	SERR2("a correlation function is required as submodel, but '%s' has variance %f.", NICK(next), v);
     }
     
   } else { // key != NULL

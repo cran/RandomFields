@@ -77,17 +77,16 @@ for (modelname in c("divfree", "curlfree")) {
  }
 
  .Random.seed <- seed
- z <- RFsimulate(x, x,
- grid=TRUE, gridtr=TRUE, model=model, n=1, CE.trial=2,
+ z <- RFsimulate(x, x, model=model, n=1, CE.trial=2,
  Stor=TRUE, me="ci", Print=3, CE.force=!TRUE)
  ## z[1,,] : Potentialfeld
  ## z[2:3,,] : vectorfeld
  ## z[4,,] : div bzw. rot
  
  if (eps) {
- do.call(getOption("device"), list(height=5, width=5))
+ ScreenDevice(height=5, width=5)
   } else {
- do.call(getOption("device"), list(height=5, width=10))
+ ScreenDevice(height=5, width=10)
  par(mfcol=c(1,2))
  }
  par(mar=c(2.2,2.5,0.5,0.5), cex.axis=2, bg="white")

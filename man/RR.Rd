@@ -76,12 +76,18 @@
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
  }
 
+\keyword{spatial}
+\keyword{distribution}
+
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 ## here, the scale is given by an exponential variable:
 model <- RMgauss(scale=exp())
 for (i in 1:4) {
+  RFoptions(seed = i)
   # each leads to a simulation with a different scale parameter
   plot(model) ## random !
   plot(RFsimulate(model, x=seq(0,10,0.1)))
@@ -89,18 +95,16 @@ for (i in 1:4) {
 }
 
 # but here, all 4 simulation have same (but random) scale:
-  plot(RFsimulate(model, x=seq(0,10,0.1), n=4)) 
+plot(RFsimulate(model, x=seq(0,10,0.1), n=4)) 
 
-\dontshow{\dontrun{
+
 ## hierarchical models are also possible:
 ## here, the scale is given by an exponential variable whose
 ## rate is given by a uniform variable
 model <- RMgauss(scale=exp(rate=unif()))
 plot(model)
 plot(RFsimulate(model, x=seq(0,10,0.1)))
-}}
+
 \dontshow{FinalizeExample()}
 
 }
-\keyword{spatial}
-\keyword{distribution}

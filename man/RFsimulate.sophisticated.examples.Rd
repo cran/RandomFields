@@ -136,7 +136,7 @@ x <- y <- seq(0, 7, if (interactive()) 0.05 else 0.2)
 T <- c(1,32,1) * 10 ## note necessarily gridtriple definition
 model <- RMnsst(aniso=diag(c(3, 3, 0.02)), delta=2,
                 phi=RMgauss(), psi=RMgenfbm(alpha=1, delta=0.5))
-z <- RFsimulate(x=x, y=y, T=T, grid=TRUE, model=model,
+z <- RFsimulate(x=x, y=y, T=T, model=model,
                 method="ci", CE.strategy=1,
                 CE.trials=if (interactive()) 4 else 1)
 rl <- function() if (interactive()) readline("Press return")
@@ -156,8 +156,7 @@ for (i in 1:dim(z)[1]) { image(z[i,,], zlim=range(z)); rl();}
 RFoptions(storing=TRUE)
 y <- x <- seq(0, 50, 0.1)
 (p <- c(runif(3), runif(1)+1))
-ut <- system.time(f <- RFsimulate(x=x,y=y,grid=TRUE,
-                  model=RPcirculant(RMexp())))
+ut <- system.time(f <- RFsimulate(RPcirculant(RMexp())), x=x, y=y)
 % method="circ", param=p))
 plot(f) 
 %hist(f)
@@ -191,7 +190,7 @@ x <- seq(0, 1, 1/24) # nicer pictures with 1/240
 scale <- 1.0
 model1 <- RPcutoff(RMstable(alpha=1, scale=scale))
 rs <- get(".Random.seed", envir=.GlobalEnv, inherits = FALSE)
-z1 <- RFsimulate(x, x, grid=TRUE, model=model1, n=1, storing=TRUE)
+z1 <- RFsimulate(x, x, model=model1, n=1, storing=TRUE)
 (size <- RFgetRegisterInfo(meth=c("cutoff", "circ"))$S$size)
 cut.off.param <- RFgetRegisterInfo(meth=c("cutoff", "circ"),
                                    modelname="cutoff")$param
@@ -204,7 +203,7 @@ model2 <- RMcutoff(scale = scale, diam=cut.off.param$diam, a=cut.off.param$a,
                    RMstable(alpha=1.0))
 		 
 assign(".Random.seed", rs, envir=.GlobalEnv)
-z2 <- RFsimulate(x, x, grid=TRUE, gridtriple=FALSE, model=model2,
+z2 <- RFsimulate(x, x, gridtriple=FALSE, model=model2,
                  meth="circulant", n=1, CE.mmin=size, Storing=TRUE)
 image(x, x, z2)
 Print(range(z1-z2)) ## essentially no difference between the fields!
@@ -229,19 +228,19 @@ grid.size <- c(length(x), length(y))
 model <- RMexp(var=1.1, aniso=matrix(nc=2, c(2, 1, 0.5, 1)))
 
 # determination of the (minimal) size of the torus
-InitRFsimulate(x, y, model=model, grid=TRUE, method="cutoff")
+InitRFsimulate(x, y, model=model, method="cutoff")
 ce.info.size <- RFgetRegisterInfo(meth=c("cutoff", "circ"))$S$size
 blocks <- ceiling(ce.info.size / grid.size / 4) *4
 (size <- blocks * grid.size)
 
 # simulation and plot of the torus 
-z <- RFsimulate(x, y, model=model, grid=TRUE, method="cu",
+z <- RFsimulate(x, y, model=model, method="cu",
                 n=prod(blocks) * 2,
                 local.dependent=TRUE, local.mmin=size)[,,c(TRUE, FALSE)]
-hei <- 8
-do.call(getOption("device"),
-        list(hei=hei, wid=hei / blocks[2] / diff(range(y)) *
-             blocks[1] * diff(range(x))))
+height <- 8
+ScreenDevice(height=height,
+             width=height / blocks[2] / diff(range(y)) *
+                   blocks[1] * diff(range(x))))
 
 close.screen(all = TRUE)
 sc <- matrix(nc=blocks[1], split.screen(rev(blocks)), byrow=TRUE)

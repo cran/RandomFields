@@ -9,7 +9,7 @@
  Here, all the classes of random fields are described that can be
  simulated
 }
-\section{Implemented models}{
+\section{Implemented processes}{
  \tabular{ll}{
     Gaussian Random fields \tab see \link{Gaussian}\cr
     Max-stable Random Fields \tab see \link{Maxstable}\cr
@@ -35,13 +35,16 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 x <- seq(0, 10, 0.1)
 model <- RMexp()
 
+## a Gaussian field with exponential covaraince function
 z <- RFsimulate(model, x)
 plot(z)
 
+## a binary field obtained as a thresholded Gaussian field
 b <- RFsimulate(RPbernoulli(model), x)
 plot(b)
 
-sum( abs((z@data$variabl1 >=0 ) - b@data$variable1)) == 0 ## TRUE
+sum( abs((z@data$variabl1 >=0 ) - b@data$variable1)) == 0 ## TRUE,
+## i.e. RPbernoulli is indeed a thresholded Gaussian process
 
 \dontshow{FinalizeExample()}
 }

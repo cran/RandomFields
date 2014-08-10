@@ -195,10 +195,6 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## Preparation of graphics
 if (interactive()) dev.new(height=7, width=16)
 RFoptions(always_close_screen=FALSE)
-close.screen(all=TRUE)
-split.screen(c(2, 4))
-scr <- 0
-
 
 ## creating random variables first
 ## here, a grid is chosen, but does not matter
@@ -206,29 +202,23 @@ p <- 3:8
 points <- as.matrix(expand.grid(p,p))
 model <- RMexp() + RMtrend(mean=1)
 data <- RFsimulate(model, x=points)
-screen(scr <- scr+1)
 plot(data)
 x <- seq(0, 9, 0.25)
 
-
 ## Simple kriging with the exponential covariance model
 model <- RMexp()
-z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
-screen(scr <- scr+1)
+z <- RFinterpolate(model, x=x, y=x, data=data)
 plot(z, data)
-
 
 ## Simple kriging with mean=4 and scaled covariance
 model <- RMexp(scale=2) + RMtrend(mean=4)
-z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
-screen(scr <- scr+1)
+z <- RFinterpolate(model, x=x, y=x, data=data)
 plot(z, data)
 
 
 ## Ordinary kriging
 model <- RMexp() + RMtrend(mean=NA)
-z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
-screen(scr <- scr+1)
+z <- RFinterpolate(model, x=x, y=x, data=data)
 plot(z, data)
 
 
@@ -238,14 +228,14 @@ plot(z, data)
 
 ## Intrinsic kriging
 model <- RMfbm(a=1)
-z <- RFinterpolate(model, x, x, grid=TRUE, data=data)
+z <- RFinterpolate(krige.meth="U", model, x, x, data=data)
 screen(scr <- scr+1); plot(z, data)
 
 
 ## Interpolation nicht korrekt
 ## Intrinsic kriging with Polynomial Trend
 model <- RMfbm(a=1) + RMtrend(polydeg=2)
-z <- RFinterpolate(model, x, x, grid=TRUE, data=data)
+z <- RFinterpolate(model, x, x, data=data)
 screen(scr <- scr+1); plot(z, data)
 }}
 
@@ -253,13 +243,13 @@ screen(scr <- scr+1); plot(z, data)
 ## Universal kriging with trend as formula
 model <- RMexp() + RMtrend(arbit=function(X1,X2) sin(X1+X2)) +
  RMtrend(mean=1)
-z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
+z <- RFinterpolate(model, x=x, y=x, data=data)
 screen(scr <- scr+1); plot(z, data)
 
 ## Universal kriging with several arbitrary functions
 model <- RMexp() + RMtrend(arbit=function(x,y) x^2 + y^2) +
  RMtrend(arbit=function(x,y) (x^2 + y^2)^0.5) + RMtrend(mean=1)
-z <- RFinterpolate(model, x=x, y=x, grid=TRUE, data=data)
+z <- RFinterpolate(model, x=x, y=x, data=data)
 screen(scr <- scr+1); plot(z, data)
 }}
 

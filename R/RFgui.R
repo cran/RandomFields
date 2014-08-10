@@ -24,7 +24,8 @@ RFgui <- function(data, x, y,
   if (wait >= 0) {
     while (!exists(".RFgui.exit", envir=Env)) .C("sleepMicro", as.integer(wait))
     res <- get("RFgui.model", envir=Env)
-    if (RFoptions()$general$spConform) { 
+    if (is.null(res)) return(res) #; Print(res)
+    if (RFoptions()$general$spConform) {
       RFvariogram(model=res, x=0)
       res <- list2RMmodel(GetModel(RFvariogram))
     } else {
@@ -96,41 +97,42 @@ rfgui.intern <- function(data, x, y,
       }
     }
 
-    if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)
     modelChoiceNum <- as.numeric(tclvalue(tcl(comboBox,"current")))
-    if(modelChoiceNum == -1) 
-      return(0)
+    if(modelChoiceNum == -1) return(0)
 
     # nun zum neuen Model
     modelChoice <- models[modelChoiceNum+1]
-      selModelNum <- .C("GetModelNr", as.character(modelChoice), nr=integer(1),
+    selModelNum <- .C("GetModelNr", as.character(modelChoice), nr=integer(1),
 		      PACKAGE="RandomFields")$nr
-    assign("selModelNum",selModelNum, envir=ENVIR)
-  
+
     selModelCountPar <- .C("GetNrParameters", selModelNum, k=integer(1),
                            PACKAGE="RandomFields", DUP = DUPFALSE)$k
+    dim <- as.integer(2 - sim_only1dim)  
+    newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
+    ##  Print(selModelCountPar, modelChoice, newmodel)
+    modelParam <- try(.Call("SetAndGetModelInfo", guiReg,
+                        list("Dummy", newmodel), dim,
+                        FALSE, FALSE, FALSE, dim,
+                        as.integer(10), ## ehemals RFoptions(short=10)
+                        TRUE, TRUE, PACKAGE="RandomFields")$minmax)
+    if (class(modelParam) == "try-error") return(0)
 
-    ##Print(selModelCountPar, newmodel)
     
+    assign("selModelNum",selModelNum, envir=ENVIR)
+    if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)
     if (selModelCountPar == 0) {
       assign("baseModel", list(modelChoice), ENVIR)
       plotDensity()
       return(0)
     }
     
-    dim <- as.integer(2 - sim_only1dim)     
-    newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
-    modelParam <- .Call("SetAndGetModelInfo", guiReg,
-                        list("Dummy", newmodel), dim,
-                        FALSE, FALSE, FALSE, dim,
-                        as.integer(10), ## ehemals RFoptions(short=10)
-                        TRUE, TRUE, PACKAGE="RandomFields")$minmax
    
     baseParam <- rep(NA, times=selModelCountPar)
-    if(exists(paste("remember",selModelNum,sep=""), envir=ENVIR)) 
-      baseParam <- get(paste("remember",selModelNum,sep=""), envir=ENVIR)
+    if(exists(paste("remember", selModelNum, sep=""), envir=ENVIR)) 
+      baseParam <- get(paste("remember", selModelNum, sep=""), envir=ENVIR)
 
     ## selModelCountPar > 0 hier !!
+    openeps <- 1e-10
     for (i in 1:selModelCountPar) {
       baseParam[i] <- 
         if (!is.na(baseParam[i])) baseParam[i] else
@@ -145,10 +147,11 @@ rfgui.intern <- function(data, x, y,
       # slParamName <- tklabel(tt,text=paste(toupper(substring(name, 1,1)), substring(name, 2), sep=""))
       txt <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
       slParamName <- tklabel(tt, text=txt)
-      slParam <- tkscale(tt, command = plotDensity, from=modelParam[i,1],
-                         to=modelParam[i,2],
+      slParam <- tkscale(tt, command = plotDensity,
+                         from= modelParam[i,1], 
+                         to = modelParam[i,2],
                          showvalue=FALSE, variable=slParamValue,
-                         resolution=if (modelParam[i,3] == INTEGERPARAM) 1 else
+                         resolution=if (modelParam[i, 3] == INTEGERPARAM) 1 else
                                 (modelParam[i,2]-modelParam[i,1])/numberSteps, 
                          orient="horizontal", length=length.slider, width=18)
       entryParam <- tkentry(tt,width=size.entry,textvariable=entryParamValue)
@@ -346,6 +349,9 @@ rfgui.intern <- function(data, x, y,
      if(as.numeric(tclvalue(showAniso))) {
       x1 <- rep(xcov, each=length(ycov))
       x2 <- rep(ycov, times=length(xcov))
+
+     # Print(newmodel, "hier")
+      
       cv <- RFvariogram(x=as.matrix(expand.grid(xcov, ycov)),
                         model=newmodel, 
                         practicalrange = tclvalue(cbPracRangeVal) != "0")
@@ -372,14 +378,17 @@ rfgui.intern <- function(data, x, y,
     }
     
     cv <- xcov
+   # Print(newmodel, xcov, as.character(tclvalue(plotVarCov)))
     if(as.character(tclvalue(plotVarCov)) == "Covariance") {
+     
       cv <- RFcov(x=xcov, model=newmodel,
                   practicalrange = tclvalue(cbPracRangeVal) != "0")
     }
     if(as.character(tclvalue(plotVarCov)) == "Variogram") {      
       pr.dummy <- tclvalue(cbPracRangeVal) != "0"
-      ##    save(file="~/xxxx", xcov, newmodel, pr.dummy)
-      ##      Print(x=xcov, model=newmodel, practicalrange = pr.dummy )
+ 
+    #  Print(newmodel, "xxx")
+      
       cv <- RFvariogram(x=xcov, model=newmodel,
                         practicalrange = pr.dummy)
       # Print(RFgetModelInfo(RFvariogram, level=19))
@@ -434,21 +443,21 @@ rfgui.intern <- function(data, x, y,
       yy <- (if (get("simDim", envir = ENVIR) =="sim1Dim") NULL else
              if (is.null(y)) x else y)
       pr <-  tclvalue(cbPracRangeVal) != "0"
-      save(file="model", x, simu.model, yy, guiReg, pr)
 
-      z <- try(RFsimulate(x=x, grid=TRUE, model=simu.model,
+  #    Print("A")
+
+      z <- try(RFsimulate(simu.model,x=x, grid=TRUE, 
                           y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
                           else if (is.null(y)) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
                           practicalrange = tclvalue(cbPracRangeVal) != "0"),
                silent=!TRUE)
+
  
-      if (class(z) == "RFspatialGridDataFrame" ||
-          class(z) == "RFgridDataFrame") {
-        plot(z, cex=.5, legend=FALSE)
-      } else {
-        plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="", ylab="",
+      if (class(z) == "try-error") {
+          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
+               ylab="",
              cex.main=2, col.main="brown",
               main=paste("\n\n\n\n\n\n\n\n",
                if (guiOpt$simu_method == "any method")
@@ -456,12 +465,13 @@ rfgui.intern <- function(data, x, y,
                else paste("Simulation method '", guiOpt$simu_method,
                           "'\ndoes not work for this specification", sep=""),
                ".\n\nSet 'simu_method = \"any method\"'",
-               "\nor set 'same.algorithm=TRUE'",
+               "\nor set 'same.algorithm=FALSE'",
               "\nor see RFoptions() for controlling parameters",
                if (guiOpt$simu_method != "any method")
-               paste("\nof '", guiOpt$simu_method, "'"),
+               paste("\nof '", guiOpt$simu_method, "'", sep=""),
                sep=""))
-        return(0)
+      } else {
+        plot(z, cex=.5, legend=FALSE)
       }
     }
   }
@@ -511,17 +521,18 @@ rfgui.intern <- function(data, x, y,
 
   OnSimDimChanged <- function(...)
   {
+  
+    if(!sim_only1dim) {
+      assign("simDim", tclvalue(rb2DimValue), envir = ENVIR) 
+      tkrreplot(imgSim)
+      return (0)
+    }
+
     if(as.numeric(tclvalue(showAniso))) 
     {
       tclvalue(rb2DimValue) <-"sim2Dim"
       return(0)
     } 
-
-    if(!sim_only1dim) 
-    {
-      assign("simDim", tclvalue(rb2DimValue), envir = ENVIR) 
-      tkrreplot(imgSim)
-    }
   }
 
   OnReturn <- function(...)
@@ -734,8 +745,11 @@ rfgui.intern <- function(data, x, y,
     RFgetModelNames(type=RC_TYPE[c(TcfType, PosDefType, UndefinedType) + 1],
                     domain=RC_DOMAIN[TRANS_INV + 1],
                     isotropy=RC_ISOTROPY[RC_ISOTROPIC + 1],
-                    operator=FALSE, 
-                    vdim=1)#, multivariate = 1)  
+                    operator=FALSE,
+                    valid.in.dim = if (sim_only1dim) 1 else 2,
+                    simpleArguments = TRUE,
+                    vdim=1)#, multivariate = 1)
+  models <- models[models != "RMnugget"]
   
   #-------------------------------------------------------------------
   # Start Values and ranges
@@ -832,8 +846,6 @@ rfgui.intern <- function(data, x, y,
   #--- DropDown-ComboBox for model selection -------------------------
   labModelSelect <- tklabel(tt,text="Adjust Model:")
   textModell <- tclVar("Please select a model...")
-  #if(!is.null(model))
-  #  textModel <- 
   comboBox <- ttkcombobox(tt,textvariable=textModell, state="readonly",
                           values=models)
   tkbind(comboBox, "<<ComboboxSelected>>", OnModelSelected)
@@ -868,12 +880,13 @@ rfgui.intern <- function(data, x, y,
   #--- Radiobutton: select dimension for simulation ------------------
   rbSim1Dim <- tkradiobutton(tt, command=OnSimDimChanged)
   rbSim2Dim <- tkradiobutton(tt, command=OnSimDimChanged)
-  rb2DimValue <- tclVar(ifelse((sim_only1dim), "sim1Dim", "sim2Dim"))
+  rb2DimValue <- tclVar(if (sim_only1dim) "sim1Dim" else "sim2Dim")
   tkconfigure(rbSim1Dim,variable=rb2DimValue, value="sim1Dim")
   tkconfigure(rbSim2Dim,variable=rb2DimValue, value="sim2Dim")
   labelSim1Dim <- tklabel(tt,text="1 dim")
-  labelSim2Dim <- tklabel(tt,text="2 dim")
-  assign("simDim", as.character(tclvalue(plotVarCov)), envir=ENVIR)
+  labelSim2Dim <- tklabel(tt,text=if (sim_only1dim) "1 dim" else "2 dim")
+  assign("simDim", as.character(tclvalue(rb2DimValue)), envir=ENVIR)
+#  Print(get("simDim", envir=ENVIR)); 
 
   #--- Button - new simulation (new seed) ----------------------------
   buttonNewSimu <- tkbutton(tt,text="New Simulation",command=OnNewSimu)

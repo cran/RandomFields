@@ -39,18 +39,19 @@
       including conditional simulation. For a list of all covariance
       functions and variogram models see \command{\link{RMmodel}}.
       Use \command{\link{plot}} for visualisation of the result.
-      
-      \item \bold{ Estimation} of parameters
-      \itemize{ 
-	\item \command{\link{RFfit}} : general function for estimating
-	parameters; 
-	\item \command{\link{RFhurst}} : estimation of the Hurst parameter
-	\item \command{\link{RFfractaldim}} : estimation of the fractal
-	dimension  
-	\item \command{\link{RFempiricalvariogram}} : calculates
-	the empirical variogram 
-      }
     }
+      
+    \item \bold{ Estimation} of parameters
+    \itemize{ 
+      \item \command{\link{RFfit}} : general function for estimating
+      parameters; 
+      \item \command{\link{RFhurst}} : estimation of the Hurst parameter
+      \item \command{\link{RFfractaldim}} : estimation of the fractal
+      dimension  
+      \item \command{\link{RFempiricalvariogram}} : calculates
+      the empirical variogram 
+    }
+   
     
     
     \item \bold{Prediction (for Gaussian random fields)} 
@@ -81,7 +82,7 @@
       \command{\link{RFformula}}.
       \item models are evaluated by \command{\link{RFcov}},
       \command{\link{RFvariogram}} and \command{\link{RFcovmatrix}}.
-      For a quick impression use \code{\link{plot}()model}.
+      For a quick impression use \code{\link{plot}(model)}.
     } 
     
     
@@ -113,7 +114,7 @@
       
       
       If \code{\link[=RFoptions]{spConform=FALSE}},
-      simple objects as in version 2 are returned.
+      simple or simpler objects as in version 2 are returned.
       These simple objects are frequently provided with an S3 class
       
       \item \command{\link[graphics]{plot}},
@@ -125,25 +126,25 @@
       Further generic functions are available for fitted models,
       see \sQuote{Inference} above. 
       
-      \item \bold{Note} that, in many cases, \command{print} will return
-      an invisible list.  This list contains the main information of the
-      S4 object in an accessible way and is in many cases the
-      information obtained from \code{summary}. See examples below.
+%   \item \bold{Note} that, in many cases, \command{print} will return
+%      an invisible list.  This list contains the main information of the
+%      S4 object in an accessible way and is in many cases the
+%      information obtained from \code{summary}. See examples below.
     }
       
     
     \item \bold{Advanced} users, package programmers
     \itemize{
-      \item may use \sQuote{./configure
-	--with-tcl-config=/usr/lib/tcl8.5/tclConfig.sh
-	--with-tk-config=/usr/lib/tk8.5/tkConfig.sh} to configure R
       \item might  decide on a large variety of arguments of the 
       simulation and estimation procedures using the function
       \command{\link{RFoptions}}
+      \item may use \sQuote{./configure
+	--with-tcl-config=/usr/lib/tcl8.5/tclConfig.sh
+	--with-tk-config=/usr/lib/tk8.5/tkConfig.sh} to configure R
     }
   }
 
-  A list of changings from  Version 2 to Version 3 can be found
+  A list of major changings from  Version 2 to Version 3 can be found
   in \link{MajorRevisions}.
 }
 
@@ -159,7 +160,7 @@
 
 
 \seealso{
-  See also  \link{RC}, \link{RF}, \link{RM}, \link{RP}, \link{RR}
+  See also  \link{RF}, \link{RM}, \link{RP}, \link{RR}, \link{RC}
 }
  
  
@@ -187,8 +188,8 @@
     \item
     Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
     Strokorb, K. (2013) 
-    \R package \pkg{RandomFields}: Analysis and simulation of
-    multivariate random fields and more. \emph{Submitted to JSS}
+    Analysis, simulation and prediction of multivariate
+    Random Fields with package \pkg{RandomFields}. \emph{Submitted to JSS}
   } 
  }
 \section{Contributions}{
@@ -205,7 +206,8 @@
     2011-12)\cr
     Ulrike Ober (Univ. Goettingen; help pages, testing, 2011-12)\cr
     Marco Oesting (Univ. Mannheim; Brown-Resnick processes, Kriging, Trend,
-    2011-13)\cr 
+    2011-13)\cr
+    Paulo Ribeiro (Unversidade Federal do Parana; code adopted from \pkg{geoR}, 2014)\cr
     Kirstin Strokorb (Univ. Mannheim; help pages, 2011-13)\cr
     \item Contributions to version 2.0 and following:\cr
     Peter Menck (Univ. Goettingen; multivariate circulant embedding)\cr
@@ -216,8 +218,7 @@
   }
 }
 \section{Thanks}{
-  Paulo Ribeiro : many comments on Version 3.0.27 and code delivered by
-  means of \pkg{geoR}\cr
+  Paulo Ribeiro : suggestions for Version 3\cr
   Patrick Brown : comments on Version 3\cr
   Paulo Riberio : comments on Version 1\cr
   Martin Maechler : advice for Version 1
@@ -248,6 +249,10 @@
  data'' in 1999.
  }
 }
+
+
+\keyword{spatial}
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -256,12 +261,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMexp(scale=2) + RMnugget(var=3)
 str(model)  ## S4 object
 
-model <- summary(RMexp(scale=2) + RMnugget(var=3))
+model <- summary(model)
 str(model)  ## list style as in version 2 of RandomFields
 
 \dontshow{FinalizeExample()}
 }
-
-\keyword{spatial}
-
 

@@ -141,6 +141,7 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
                             valid.in.dim = c(1, Inf), 
                             vdim = c(1, 5),
                             group.by=NULL,
+                            simpleArguments = FALSE,
                             internal,
                             newnames
                             ){ #, .internal=FALSE) {
@@ -216,13 +217,13 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
   for (i in 1:len){
     fun <- get(ls.RFmg[i], envir=envir)
     idx[i] <- is.function(fun) && is(fun, class2="RMmodelgenerator")
-    if (!idx[i]) next
-    
+    if (!idx[i]) next   
     idx[i] <- (!all(is.na(pmatch(type, fun["type"]))) &&
                !all(is.na(pmatch(domain, fun["domain"]))) &&
                !all(is.na(pmatch(isotropy, fun["isotropy"]))) &&
                fun["operator"] %in% operator &&
                !all(is.na(pmatch(monotone, fun["monotone"]))) &&
+               (!simpleArguments || fun["simpleArguments"]) &&
                fun["finiterange"] %in% finiterange &&
                (fun["maxdim"] < 0 ||
                 (fun["maxdim"] >= valid.in.dim[1] &&

@@ -370,7 +370,7 @@ void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   }
   ERR("unallowed or undefined call of function");
 }
-void ErrCov(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "cov");}
+void ErrCov(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "Cov");}
 void ErrD(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "D");}
 void ErrRnd(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "Rnd");}
 

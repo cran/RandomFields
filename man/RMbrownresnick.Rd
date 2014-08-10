@@ -4,7 +4,7 @@
 \description{
   \command{RMbrownresnick} defines
   the tail correlation function of the Brown-Resnick process.
-  \deqn{C(h) = 2 - 2\Phi(\sqrt{\gamma(h) / 2})}
+  \deqn{C(h) = 2 - 2\Phi(\sqrt{\gamma(h)} / 2)}
   where \eqn{\phi} is the standard normal distribution function
   and \eqn{\gamma} is the \bold{semi-}variogram.
 }
@@ -25,6 +25,8 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
     the variogram instead of the semi-variogram is considered, so the
     formulae differ slightly.}
 
+  \bold{In Version 3.0.33 a typo has been corrected.}
+
   Here, a definition is used that is consistend with the rest of the package.
 }
 
@@ -43,21 +45,23 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
  \command{\link{RMm2r}}, \command{\link{RMm3b}}, \command{\link{RMmps}},
  \command{\link{RMmodel}}.
 }
+
+\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
+}
+\keyword{spatial}
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 #plot covariance model of type RMbrownresnick
 RMmodel <- RMfbm(alpha=1.5, scale=0.2)
 plot(RMbrownresnick(RMmodel))
 
 #simulate and plot corresponding Gaussian random field
 x <- if (interactive()) seq(-5, 5, 0.05) else seq(-5, 5, 5)
-z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x, grid=TRUE)
+z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x)
 plot(z)
 \dontshow{FinalizeExample()}
 }
-
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-\keyword{spatial}

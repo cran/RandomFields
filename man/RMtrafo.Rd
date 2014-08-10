@@ -94,8 +94,7 @@ dist(t(z))
 d - dist(t(z)) ## 0, i.e., d and dist(t(z)) are the same
 
 
-\dontshow{\dontrun{
-
+\dontshow{\dontrun{ # OK
 
 ## RFearth2dist is more precise !!!
 library("fields")

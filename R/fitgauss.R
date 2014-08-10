@@ -60,9 +60,6 @@
 ## !!! Mixed Model Equations !!! ##
 ###################################
 
-# load("UKFALSE.rda")
-# load("UKTRUE.rda")
-
 
 StandardizeData <- function(x, y, z, T, grid, data, distances, dimensions,
                             RFopt) {
@@ -994,12 +991,8 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
           submodels[[submodels_n]] <- res
         }
         
-#        save(file=file, res, sp)
-        
       } else {
         stop("forbidden area. contact author")
-        #Print("loading", file)
-        load(file)
       }
 
       table <- if (general_spConform) res@table else res$table  
@@ -1725,6 +1718,7 @@ rffit.gauss <-
                PACKAGE="RandomFields");
 
             dim(S) <- rep(lc[i] * vdim, 2)
+
 
             .Call("CovMatrixLoc", Reg, Xdistances[[i]], is.dist.vector,
                xdimOZ, as.integer(lc[i]), S, PACKAGE="RandomFields")
@@ -3657,7 +3651,6 @@ rffit.gauss <-
 ###################  AUTOSTART  ##################
   if (printlevel>=PL.FCTN.STRUCTURE) cat("\ncovariab...")
 
- 
   ## see above for the trafo definitions
   ##
   ## zuerst regression fit fuer variogram,
@@ -3673,8 +3666,7 @@ rffit.gauss <-
 #    }
 #  }
 
-     
-  ##****************    autostart    *****************
+    ##****************    autostart    *****************
   
   MLEVARIAB <- autostart
   assign("LINEARLARPS2", rep(1, length(MIXED.IDX)), envir=ENVIR)
