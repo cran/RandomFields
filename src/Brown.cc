@@ -571,7 +571,7 @@ void OptimArea(cov_model *cov, int idx) {
     *optimarea = P(BR_OPTIMAREA);
   for (l=i=0; i<cov->nrow[BR_OPTIMAREA]; i++) {
     for (k=0; k<cov->ncol[BR_OPTIMAREA]; k++, l++) {
-      d = (int) abs(k-zeroxpos) + (int) abs(i-zeroypos);
+      d = abs(k-zeroxpos) + abs(i-zeroypos); // abs OK
       optimarea[l] = 0.0;
       for (j=0; j<vertnumber; j++) {
 	if (d<radiusP1 && (am[j][d] <= Errorbound + 1e-6)) {
@@ -620,10 +620,8 @@ int prepareBRoptim(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     sBR->vertnumber = vertnumber; 
     sum_directions  = 0;
     for (d=0; d<dim; sum_directions += len[d++]);
-    /*
-    printf("dim=%d %d\n", dim, sum_directions);
-    PMI(key);
-    */
+    //    printf("dim=%d %d\n", dim, sum_directions); PMI(key);
+   
 
     if (sBR->countvector != NULL || sBR->areamatrix != NULL) BUG;
     if ((sBR->countvector = (int**) CALLOC(vertnumber, sizeof(int*))) == NULL || 
@@ -833,7 +831,7 @@ int IdxDistance(int maxind, int zeropos, int *length, int dim) {
     x = maxind,
     y = zeropos;
   for (d=0; d<dim; d++) {
-    delta += abs( (x % length[d]) - (y % length[d]));
+    delta += abs( (x % length[d]) - (y % length[d])); // abs OK
     x /= length[d];
     y /= length[d];
   }
@@ -986,7 +984,7 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
 	  (sBR->countvector[j][idxdist])++;
 	  
 
-	  if (PL > 5) {
+	  if (false && PL > 5) {
 	    int dd;
 	    for (dd=0; dd<75; dd++) {
 	      int value = sBR->countvector[j][dd];
@@ -1374,9 +1372,9 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
     if (sBR->maxidx < 0) sBR->maxidx = 0; // to do!!
     else if (sBR->maxidx >= MAXSUB) sBR->maxidx = MAXSUB - 1;
   
-    /*
-  printf("maxidx %d  %f r=%f step=%f red=%f %f relste=%f red=%f %f %f\n", sBR->maxidx, smallest_grid_lengths, sBR->radii[0], step, reduction_factor, min_reduction_factor, rel_steps, pow(rel_steps, (double) dim / ((double) MAXSUB - 1.0)), (sBR->radii[0] / step) / smallest_grid_lengths, sBR->radii[0] / step);
-    */
+  
+//  printf("maxidx %d  %f r=%f step=%f red=%f %f relste=%f red=%f %f %f\n", sBR->maxidx, smallest_grid_lengths, sBR->radii[0], step, reduction_factor, min_reduction_factor, rel_steps, pow(rel_steps, (double) dim / ((double) MAXSUB - 1.0)), (sBR->radii[0] / step) / smallest_grid_lengths, sBR->radii[0] / step);
+  
  
  
     for (i=1; i<=sBR->maxidx; i++) {
@@ -1407,12 +1405,12 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
 	sBR->newx[3*d+XLENGTH] = 2 * ((int) round(sBR->radii[i] / step)) + 1;
 	sBR->newx[3*d+XSTEP] = step;
 
-	/*
-	printf("dim=%d %f %f %f radii=%f step=%f\n", dim, sBR->newx[3*d+XSTART],
-	       sBR->newx[3*d+XLENGTH], sBR->newx[3*d+XSTEP],
-	       sBR->radii[i], step
-	       );
-	*/
+
+//	printf("dim=%d %f %f %f radii=%f step=%f\n", dim, sBR->newx[3*d+XSTART],
+//	       sBR->newx[3*d+XLENGTH], sBR->newx[3*d+XSTEP],
+//	       sBR->radii[i], step
+//	       );
+	
 	
       }
 

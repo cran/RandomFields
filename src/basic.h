@@ -31,8 +31,6 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define SQRT2 M_SQRT2
 #define SQRTPI M_SQRT_PI
 #define INVPI M_1_PI
-#define RF_M_SQRT_3 M_SQRT_3
-//#define TWOPI M_2PI
 #define PIHALF M_PI_2 
 #define T_PI M_2_PI
 #define ONETHIRD 0.333333333333333333
@@ -60,7 +58,7 @@ extern double EIGENVALUE_EPS; // used in GetTrueDim
 // 1
 
 extern char BUG_MSG[250];
-#ifdef ENABLEASSERT
+#ifdef LOCAL_MACHINE
 // __extension__ unterdrueckt Fehlermeldung wegen geklammerter Argumente
 #define assert(X) if (!__extension__ (X )) {				\
     sprintf(BUG_MSG,							\

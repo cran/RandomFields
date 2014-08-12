@@ -13,8 +13,11 @@
 #define ASSERT_CHECKED(Cov) assert(Cov->checked)
 
 #define DOPRINT true
-#define SHOW_ADDRESSES 1
-// // 1
+//
+// 1
+//
+// 1
+
 
 
 #ifndef RANDOMFIELDS_DEBUGGING
@@ -338,7 +341,6 @@
 
 
 // #define MAXINTERNALPARAM 2
-#define UNKNOWN RF_NAN;
 extern double ZERO[MAXSIMUDIM], ONE;
 extern int True;
 extern int False;
@@ -838,10 +840,6 @@ typedef struct sequ_param{
 } sequ_param;
 
 
-typedef struct special_param {
-   int multcopies;
-} special_param;
-
 typedef struct spectral_param {
   bool grid, ergodic;
   double prop_factor, sigma;
@@ -965,6 +963,45 @@ typedef struct coords_param{
     varunits[MAXUNITS][MAXUNITSCHAR];
 } coords_param;
 
+
+typedef struct special_param {
+   int multcopies;
+} special_param;
+
+
+
+typedef struct globalparam{
+  general_param general;
+  gauss_param gauss;
+  krige_param krige;
+  ce_param ce;
+  spectral_param spectral;
+  tbm_param tbm;
+  direct_param direct;
+  sequ_param sequ;
+  markov_param markov;
+  ave_param ave;
+  nugget_param nugget;
+  mpp_param mpp;
+  hyper_param hyper;
+  extremes_param extreme;
+  br_param br;
+  distr_param distr;
+  fit_param fit;
+  empvario_param empvario;
+  gui_param gui;
+  graphics_param graphics;
+  registers_param registers;
+  internal_param internal;
+  coords_param coords;
+  special_param special;
+} globalparam;
+extern globalparam GLOBAL;
+
+
+
+
+
 typedef double *coord_type[MAXSIMUDIM];
 typedef struct location_type {
   int 
@@ -1008,33 +1045,7 @@ typedef struct location_type {
 
 } location_type;
 
-typedef struct globalparam{
-  general_param general;
-  gauss_param gauss;
-  krige_param krige;
-  ce_param ce;
-  spectral_param spectral;
-  tbm_param tbm;
-  direct_param direct;
-  sequ_param sequ;
-  markov_param markov;
-  ave_param ave;
-  nugget_param nugget;
-  mpp_param mpp;
-  hyper_param hyper;
-  extremes_param extreme;
-  br_param br;
-  distr_param distr;
-  fit_param fit;
-  empvario_param empvario;
-  gui_param gui;
-  graphics_param graphics;
-  registers_param registers;
-  internal_param internal;
-  coords_param coords;
-  special_param special;
-} globalparam;
-extern globalparam GLOBAL;
+
 
 //typedef struct globalorig{
 //  bool set;
@@ -2856,6 +2867,16 @@ typedef int (*inituser)(double *x, double *T, int dim, int lx, bool grid,
 			bool distances, bool Time, globalparam *gp,
 			int expected_number_simu, cov_model **COV);
 typedef void (*douser)(int *n, double *res);
+
+
+#define AVL_FUNC_TYPES 1
+typedef struct cell_type {
+    unsigned int *code;
+    res_type colour;
+} cell_type;
+typedef int (*avl_comparison_func) (cell_type *, cell_type *, int *);
+typedef void (*avl_node_func) (cell_type*, int *);
+typedef cell_type *(*avl_copy_func) (cell_type*, int *);
 
 
 #endif

@@ -742,7 +742,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	LPRINT("\tsmallest real part has been %e \n", r);
       }
     }
-    s->smallestRe = (r > 0.0) ? NA_REAL : r;
+    s->smallestRe = (r > 0.0) ? RF_NA : r;
     s->largestAbsIm = 0.0; // REMOVE THIS
   } else {
     GERR("embedded matrix has (repeatedly) negative eigenvalues and approximation is not allowed (force=FALSE)");
@@ -938,7 +938,7 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CE_TOLIM] = false;
   range->openmax[CE_TOLIM] = false;
   
-  range->min[CE_TOLRE] = -RF_INF; 
+  range->min[CE_TOLRE] = RF_NEGINF; 
   range->max[CE_TOLRE] = RF_INF;
   range->pmin[CE_TOLRE] = 1e-2;
   range->pmax[CE_TOLRE] = 0;

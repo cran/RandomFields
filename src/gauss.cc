@@ -972,8 +972,7 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
     GetInternalMean(next, vdim, mean);
     if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
       GERR("'binaryprocess' currently only allows scalar fields - NA returned");
-    // cov->mpp.refradius = RF_INF; 
-    if (cov->mpp.moments >= 1) 
+     if (cov->mpp.moments >= 1) 
       COV(ZERO, next->nr==GAUSSPROC ? next->sub[0]: next, variance);
     nmP1 = cov->mpp.moments + 1;
     for (pi=v=w=0; w<vdimSq; w+=vdimP1, v++, pi = (pi + 1) % npi ) { 
@@ -1176,7 +1175,6 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
     if (variance==0.0) SERR("Vanishing sill not allowed in 'gaussprocess'");
     if (ISNAN(mean)) // GetInternalMean currently only allows ...
       SERR("'chisqprocess' currently only allows scalar fields -- NA returned");
-    // cov->mpp.refradius = RF_INF;
     cov->mpp.maxheights[i] = GLOBAL.extreme.standardmax * 
       GLOBAL.extreme.standardmax * m2;
 

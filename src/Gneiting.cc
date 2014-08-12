@@ -356,17 +356,17 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
 void GetEu2Dinv(cov_model *cov, double *x, int dim, 
 		double *det, double *Eu2Dinv,
 		double *newxsq, double *newx, double *z) {
-    double t, t2,
+    double 
 	y[CoxMaxDim],
       *V = P(COX_MU),
       *D= P(COX_D),
-      beta = P0(COX_BETA);
+      beta = P0(COX_BETA),
+      t = x[dim],
+      t2 = pow(fabs(t), beta); // standard t^2
     int d,
 	dimP1 = dim + 1,
 	dimsq = dim * dim;
-  t = x[dim];
-  t2 = pow(fabs(t), beta); // standard t^2
-  for (d=0; d<dim; d++) {
+    for (d=0; d<dim; d++) {
       y[d] = x[d] - t * V[d];
   }
   
@@ -1109,7 +1109,7 @@ void minmaxEigenEAxxA(cov_model *cov, double *mm) {
     *E = P(EAXXA_E);
   int i,
     dim = cov->tsdim;
-  for (mm[0] = RF_INF, mm[1]=-RF_INF, i=0; i<dim; i++) {
+  for (mm[0] = RF_INF, mm[1]=RF_NEGINF, i=0; i<dim; i++) {
     if (E[i] < mm[0]) mm[0] = E[i];
     if (E[i] > mm[1]) mm[1] = E[i];
   }
@@ -1212,7 +1212,7 @@ void minmaxEigenEtAxxA(cov_model *cov, double *mm) {
     *E = P(EAXXA_E);
   int i,
     dim = cov->tsdim;
-  for (mm[0] = RF_INF, mm[1]=-RF_INF, i=0; i<dim; i++) {
+  for (mm[0] = RF_INF, mm[1]=RF_NEGINF, i=0; i<dim; i++) {
     if (E[i] < mm[0]) mm[0] = E[i];
     if (E[i] > mm[1]) mm[1] = E[i];
   }

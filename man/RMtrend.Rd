@@ -118,6 +118,11 @@ simulated <- RFsimulate(model=model, x=x, y=x)
 plot(simulated)
 
 
+
+\dontshow{\dontrun{
+
+## PLOT SIEHT NICHT OK AUS !!
+
 ####################################################################
 #
 # Example 2: Simulate and fit a multivariate geostatistical model
@@ -131,10 +136,13 @@ plot(simulated)
 # the covariance function is the sum of a bivariate Whittle-Matern model
 # and a multivariate nugget effect
 x <- y <- 0:10
+x <- y <- seq(0, 10, 0.1)
 model <- RMtrend(plane=matrix(c(1,2,3,4), ncol=2)) + 
          RMparswm(nu=c(1,1)) + RMnugget(var=0.5)
 multi.simulated <- RFsimulate(model=model, x=x, y=y)
 plot(multi.simulated)
+
+}}
 
 \dontshow{\dontrun{
 # Fit the Gaussian random field with unknown trend for the second

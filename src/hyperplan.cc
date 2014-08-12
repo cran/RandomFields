@@ -27,8 +27,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 //#include <string.h>
 #include "RF.h"
-#include "avltr_modified.h"
 #include "randomshape.h"
+
+
+#include "avltr_modified.h"
+
+
 
 //#include <unistd.h>
 
@@ -289,24 +293,12 @@ ErrorHandling:
 }
 
 
-typedef struct cell_type {
-    unsigned int *code;
-    res_type colour;
-} cell_type;
 
-
-int cmpcells(void *a, void *b, void *param) {
-    cell_type *aa, *bb;
-    int *n;
-    aa = (cell_type*) a;
-    bb = (cell_type*) b;
-    n = (int*) param;
+int cmpcells(cell_type *aa, cell_type *bb, int *n) {
     return memcmp(aa->code,  bb->code, *n * sizeof(unsigned int));
 }
 
-void delcell(void *a, void VARIABLE_IS_NOT_USED *param) {
-    cell_type *aa;
-    aa = (cell_type*) a;
+void delcell(cell_type* aa, int VARIABLE_IS_NOT_USED *n) {
     free(aa->code);
     free(aa);
 }
@@ -425,7 +417,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   if (add) for (i=0; i < loc->totalpoints; res[i++]=0.0);
   else // max-stable 
-      for (i=0; i < loc->totalpoints; res[i++]= (res_type) R_NegInf);
+      for (i=0; i < loc->totalpoints; res[i++]= (res_type) RF_NEGINF);
   /* how many Poisson Hyperplanes maximal (on circle x [0,rmax]) ?  --> p */
   
 

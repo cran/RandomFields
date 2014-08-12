@@ -530,7 +530,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     .fct.list <- character(length(.files))
     for (i in 1:length(.files)) {
       cat(i, .files[i], "\n")
-      if (i == 152) {cat("jumped\n"); next}
+      #if (i == 152) {cat("jumped\n"); next}
       .content <- scan(paste(.path, .files[i], sep="/") , what=character(),
                        quiet=TRUE)
       .content <- strsplit(.content, "alias\\{")
@@ -554,7 +554,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
         " (total=", length(.fct.list), ") \n", sep="")
     RFoptions(LIST=.RFopt)
-    .C("ResetWarnings")
+    .C("ResetWarnings", as.integer(FALSE))
     if (.echo) cat(.idx, "")
     .tryok <- TRUE
     if (.halt) {

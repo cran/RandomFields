@@ -256,6 +256,9 @@ screen(scr <- scr+1); plot(z, data)
 % folgender Befehl muss unbedingt drin bleiben
 close.screen(all = TRUE)
 
+\dontshow{RFoptions(always_close_screen=TRUE);
+          close.screen(all.screens=TRUE);
+          while (length(dev.list()) >= 2) dev.off()}
 \dontshow{FinalizeExample()}
 
 }

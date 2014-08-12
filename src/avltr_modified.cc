@@ -72,7 +72,7 @@ void *xmalloc (size_t);
 #else /* !HAVE_Xmalloc */
 /* Allocates SIZE bytes of space using 'malloc'.  Aborts if out of
    memory. */
-static void *xmalloc (size_t size) {
+void *xmalloc (size_t size) {
   void *vp;
   if (size == 0)
     return NULL;
@@ -92,7 +92,7 @@ static void *xmalloc (size_t size) {
    function for the data to be stored in the tree.  PARAM is arbitrary
    data that becomes an argument to the comparison function. */
 avltr_tree *
-avltr_create (avl_comparison_func cmp, void *param)
+avltr_create (avl_comparison_func cmp, int *param)
 {
   avltr_tree *tree;
 
@@ -181,7 +181,7 @@ avltr_free (avltr_tree *tree)
 
 /* Return the number of nodes in TREE. */
 int
-avltr_count (const avltr_tree *tree)
+avltr_count (avltr_tree *tree)
 {
   assert (tree != NULL);
   return tree->count;
@@ -193,7 +193,7 @@ avltr_count (const avltr_tree *tree)
    are copied verbatim from the old tree to the new tree.  Returns the
    new tree. */
 avltr_tree *
-avltr_copy (const avltr_tree *tree, avl_copy_func copy)
+avltr_copy (avltr_tree *tree, avl_copy_func copy)
 {
   /* Knuth's Algorithm 2.3.1C (copying a binary tree).  Additionally
      uses Algorithm 2.3.1I (insertion into a threaded binary tree) and
@@ -202,7 +202,7 @@ avltr_copy (const avltr_tree *tree, avl_copy_func copy)
 
   avltr_tree *new_tree;
 
-  const avltr_node *p;
+  avltr_node *p;
   avltr_node *q;
   
   assert (tree != NULL);
@@ -407,9 +407,9 @@ avltr_unthread (avltr_tree *tree)
 /* Walk tree TREE in inorder, calling WALK_FUNC at each node.  Passes
    PARAM to WALK_FUNC.  */
 void
-avltr_walk (const avltr_tree *tree, avl_node_func walk_func, void *param)
+avltr_walk (avltr_tree *tree, avl_node_func walk_func, int *param)
 {
-  const avltr_node *p = &tree->root;
+  avltr_node *p = &tree->root;
 
   /* Uses Knuth's algorithm 2.3.1D (threaded inorder successor). */
   assert (tree && walk_func);
@@ -436,10 +436,10 @@ avltr_walk (const avltr_tree *tree, avl_node_func walk_func, void *param)
    next item in the tree in inorder.  Initialize the first element of
    TRAV (init) to 0 before calling the first time.  Returns NULL when
    out of elements.  */
-void *
-avltr_traverse (const avltr_tree *tree, avltr_traverser *trav)
+cell_type *
+avltr_traverse (avltr_tree *tree, avltr_traverser *trav)
 {
-  const avltr_node *p;
+  avltr_node *p;
   
   assert (tree && trav);
 
@@ -469,17 +469,17 @@ avltr_traverse (const avltr_tree *tree, avltr_traverser *trav)
   else
     {
       trav->p = p;
-      return (void *) p->data;
+      return p->data;
     }
 }
 
 /* Given ITEM, a pointer to a data item in TREE (or NULL), returns a
    pointer to the next item in the tree in comparison order, or NULL
    if ITEM is the last item. */
-void **
-avltr_next (const avltr_tree *tree, void **item)
+cell_type **
+avltr_next ( avltr_tree *tree, cell_type **item)
 {
-  const avltr_node *p;
+  avltr_node *p;
 
   assert (tree != NULL);
   if (item == NULL)
@@ -500,7 +500,7 @@ avltr_next (const avltr_tree *tree, void **item)
   if (p == &tree->root)
     return NULL;
 
-  return (void **) &p->data;
+  return &p->data;
 }
 
 /* Search TREE for an item matching ITEM.  If found, returns a pointer
@@ -509,8 +509,7 @@ avltr_next (const avltr_tree *tree, void **item)
    In either case, the pointer returned can be changed by the caller,
    or the returned data item can be directly edited, but the key data
    in the item must not be changed. */
-void **
-avltr_probe (avltr_tree *tree, void *item)
+cell_type **avltr_probe (avltr_tree *tree, cell_type *item)
 {
   /* Uses Knuth's Algorithm 6.2.3A (balanced tree search and
      insertion), modified for a right-threaded binary tree.  Caches
@@ -737,10 +736,9 @@ avltr_probe (avltr_tree *tree, void *item)
   
 /* Search TREE for an item matching ITEM, and return a pointer to it
    if found. */
-void **
-avltr_find (const avltr_tree *tree, const void *item)
+cell_type **avltr_find (avltr_tree *tree,  cell_type *item)
 {
-  const avltr_node *p;
+  avltr_node *p;
 
   assert (tree != NULL);
   p = tree->root.link[0];
@@ -764,16 +762,15 @@ avltr_find (const avltr_tree *tree, const void *item)
 	  p = p->link[1];
 	}
       else
-	return (void **) &p->data;
+	return &p->data;
     }
 }
 
 /* Search TREE for an item close to the value of ITEM, and return it.
    This function will return a null pointer only if TREE is empty. */
-void **
-avltr_find_close (const avltr_tree *tree, const void *item)
+cell_type **avltr_find_close (avltr_tree *tree,  cell_type *item)
 {
-  const avltr_node *p;
+  avltr_node *p;
 
   assert (tree != NULL);
   p = tree->root.link[0];
@@ -789,16 +786,16 @@ avltr_find_close (const avltr_tree *tree, const void *item)
 	  if (p->link[0])
 	    p = p->link[0];
 	  else
-	    return (void **) &p->data;
+	    return &p->data;
 	}
       else if (diff > 0)
 	{
 	  if (p->rtag == MINUS)
-	    return (void **) &p->data;
+	    return  &p->data;
 	  p = p->link[1];
 	}
       else
-	return (void **) &p->data;
+	return &p->data;
     }
 }
 
@@ -806,8 +803,7 @@ avltr_find_close (const avltr_tree *tree, const void *item)
    item is removed from the tree and the actual item found is returned
    to the caller.  If no item matching ITEM exists in the tree,
    returns NULL. */
-void *
-avltr_delete (avltr_tree *tree, const void *item)
+cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 {
   /* Uses my Algorithm DTR, which can be found at
      http://www.msu.edu/user/pfaffben/avl.  Algorithm DT is based on
@@ -875,7 +871,7 @@ avltr_delete (avltr_tree *tree, const void *item)
       {
 	if (t->link[0] != NULL)
 	  {
-	    avltr_node *const x = t->link[0];
+	    avltr_node *x = t->link[0];
 
 	    *q = x;
 	    (*q)->bal = 0;
@@ -953,11 +949,11 @@ avltr_delete (avltr_tree *tree, const void *item)
   /* D10. */
   while (--k)
     {
-      avltr_node *const s = pa[k];
+      avltr_node * s = pa[k];
 
       if (a[k] == 0)
 	{
-	  avltr_node *const r = s->link[1];
+	  avltr_node * r = s->link[1];
 	  
 	  /* D10. */
 	  if (s->bal == -1)
@@ -1034,7 +1030,7 @@ avltr_delete (avltr_tree *tree, const void *item)
 	}
       else
 	{
-	  avltr_node *const r = s->link[0];
+	  avltr_node * r = s->link[0];
 	  
 	  /* D10. */
 	  if (s->bal == +1)
@@ -1106,15 +1102,13 @@ avltr_delete (avltr_tree *tree, const void *item)
 	}
     }
       
-  return (void *) item;
+  return item;
 }
 
 /* Inserts ITEM into TREE.  Returns NULL if the item was inserted,
    otherwise a pointer to the duplicate item. */
-void *
-avltr_insert (avltr_tree *tree, void *item)
-{
-  void **p;
+cell_type *avltr_insert (avltr_tree *tree, cell_type *item) {
+  cell_type **p;
   
   assert (tree != NULL);
   
@@ -1126,10 +1120,8 @@ avltr_insert (avltr_tree *tree, void *item)
    matching item does exist, it is replaced by ITEM and the item
    replaced is returned.  The caller is responsible for freeing the
    item returned. */
-void *
-avltr_replace (avltr_tree *tree, void *item)
-{
-  void **p;
+cell_type *avltr_replace (avltr_tree *tree, cell_type *item){
+  cell_type **p;
 
   assert (tree != NULL);
   
@@ -1138,7 +1130,7 @@ avltr_replace (avltr_tree *tree, void *item)
     return NULL;
   else
     {
-      void *r = *p;
+      cell_type *r = *p;
       *p = item;
       return r;
     }
@@ -1146,10 +1138,9 @@ avltr_replace (avltr_tree *tree, void *item)
 
 /* Delete ITEM from TREE when you know that ITEM must be in TREE.  For
    debugging purposes. */
-void *
-(avltr_force_delete) (avltr_tree *tree, void *item)
+cell_type *(avltr_force_delete) (avltr_tree *tree, cell_type *item)
 {
-  void *found = avltr_delete (tree, item);
+  cell_type *found = avltr_delete (tree, item);
   assert (found != NULL);
   return found;
 }
@@ -1219,14 +1210,14 @@ print_structure (avltr_tree *tree, avltr_node *node, int level)
 
 /* Compare two integers A and B and return a strcmp()-type result. */
 int
-compare_ints (const void *a, const void *b, void *param unused)
+compare_ints (int *a, int *b, int *param unused)
 {
-  return ((int) a) - ((int) b);
+  return ( a -  b);
 }
 
 /* Print the value of integer A. */
 void
-print_int (void *a, void *param unused)
+print_int (int *a, int *param unused)
 {
   Rprint (" %d", (int) a);
 }
@@ -1369,7 +1360,7 @@ verify_tree (avltr_tree *tree)
   {
     int count = 0;
     int last = INT_MIN;
-    void **data = NULL;
+    cell_type **data = NULL;
   
     while (NULL != (data = avltr_next (tree, data)))
       {
@@ -1506,7 +1497,7 @@ main (int argc, char **argv)
       
       tree = avltr_create (compare_ints, NULL);
       for (i = 0; i < TREE_SIZE; i++)
-	  avltr_force_insert (tree, (void *) (array[i]));
+	  avltr_force_insert (tree, array[i]);
       verify_tree (tree);
 
       shuffle (array, TREE_SIZE);
@@ -1514,7 +1505,7 @@ main (int argc, char **argv)
 	{
 	  avltr_tree *copy;
 
-	  avltr_delete (tree, (void *) (array[i]));
+	  avltr_delete (tree, array[i]);
 	  verify_tree (tree);
 
 	  copy = avltr_copy (tree, NULL);

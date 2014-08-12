@@ -93,12 +93,13 @@ const char *NLOPTR_NAMES[nNLOPTR] =
 const char * LIKELIHOOD_NAMES[nLikelihood] = 
   {"auto", "full", "composite", "selection"}; 
 
-void ResetWarnings() {
+void ResetWarnings(int * all) {
   internal_param *w = &(GLOBAL.internal);
-  w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
+  w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = 
     w->warn_normal_mode = w->warn_mode = w->warn_colour = w->warn_coordinates =
     w->warn_on_grid = w->warn_new_definitions = w->warn_aspect_ratio = 
     true;
+  if (*all) w->warn_ambiguous = true;
 }
 
 #define MaxMaxInts 9
@@ -162,7 +163,7 @@ int locmaxn[nr_modes] =      {3000, 4000, 6000, 8000, 9000, 10000000, 10000000},
   fit_ncrit[nr_modes] =      { 2,   4,    5,   5,   10,  10,  20}, 
   fit_optim_var[nr_modes] =  { 2,   2,    2,   2,   1,   1,   1} 
   ;
-double exactness[nr_modes] = {false, false, false, NA_REAL, true, true, true},
+double exactness[nr_modes] = {false, false, false, RF_NA, true, true, true},
   matrixtolerance[nr_modes] ={1e-6,  1e-6,  1e-6,  1e-12,   1e-14, 0, 0},
   ce_tolIm[nr_modes] =       {1e6,  1e6,  1e-1,  1e-3,   1e-7, 0, 0},
   ce_tolRe[nr_modes] =       {-1e6,  -1e6,  -1e-3, -1e-7,  -1e-14, 0, 0},
@@ -613,8 +614,8 @@ double Real(SEXP p, char *name, int idx) {
     switch (TYPEOF(p)) {
     case REALSXP :  return REAL(p)[idx];
     case INTSXP : return INTEGER(p)[idx]==NA_INTEGER  
-	? NA_REAL : (double) INTEGER(p)[idx];
-    case LGLSXP : return LOGICAL(p)[idx]==NA_LOGICAL ? NA_REAL 
+	? RF_NA : (double) INTEGER(p)[idx];
+    case LGLSXP : return LOGICAL(p)[idx]==NA_LOGICAL ? RF_NA 
 	: (double) LOGICAL(p)[idx];
     default : {}
     }
@@ -623,7 +624,7 @@ double Real(SEXP p, char *name, int idx) {
 	  name, TYPEOF(p));  
   //printf("\n>>>> '%s'\n", CHAR(STRING_ELT(p, 0)));
   ERR(msg);
-  return NA_REAL;  // to avoid warning from compiler
+  return RF_NA;  // to avoid warning from compiler
 }
 
 

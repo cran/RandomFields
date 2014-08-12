@@ -5,12 +5,9 @@
 // #include <f2c.h> /* otherwise false/true not define or conflicting... */
 
 // 
-#define DoublePrecision 1
-#ifdef DoublePrecision
 typedef double res_type;
-#else
-typedef float res_type;
-#endif
+// typedef float res_type; // should not be used anymore as feature is not
+//                            maintained.
 
 
 #define NATSCALE_EXACT 1 /* or approx or mle */
@@ -66,7 +63,7 @@ extern "C" {
   
   SEXP RFoptions(SEXP options);
   void RelaxUnknownRFoption(int *relax);
-  void ResetWarnings();
+  void ResetWarnings(int *all);
   
   //  void GetKeyInfo(int *keyNr, int *total, int *lengths, int *dim, 
   //		  int *timespacedim,int *grid,int *type,int *maxdim,int *vdim);

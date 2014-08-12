@@ -59,11 +59,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 double BesselUpperB[Nothing + 1] =
 {80, 80, 80, // circulant
- 80, R_PosInf, // TBM
+ 80, RF_INF, // TBM
  80, 80,    // direct & sequ
- NA_REAL, NA_REAL, NA_REAL,  // GMRF, ave, nugget
- NA_REAL, NA_REAL, NA_REAL,  // exotic
- R_PosInf   // Nothing
+ RF_NA, RF_NA, RF_NA,  // GMRF, ave, nugget
+ RF_NA, RF_NA, RF_NA,  // exotic
+ RF_INF   // Nothing
 };
 
 
@@ -246,7 +246,8 @@ void ieinitbcw(cov_model *cov, localinfotype *li) {
 void Bessel(double *x, cov_model *cov, double *v){
   static double nuOld=RF_INF;
   static double gamma;
-  double nu = P0(BESSEL_NU), y=*x;
+  double nu = P0(BESSEL_NU), 
+    y=*x;
 
   if  (y <= LOW_BESSELJ) {*v = 1.0; return;}
   if (y == RF_INF)  {*v = 0.0; return;} // also for cosine i.e. nu=-1/2
@@ -689,7 +690,7 @@ void logdampedcosine(double *x, cov_model *cov, double *v, double *sign){
     y = *x, 
     lambda = P0(DC_LAMBDA);
   if (y==RF_INF) {
-    *v = - RF_INF;
+    *v = RF_NEGINF;
     *sign = 0.0;
   } else {
     double cosy=cos(y);
@@ -941,7 +942,9 @@ int hyperexponential(double radius, double *center, double *rx,
   // the function expects scale = 1;
   double lambda, phi, lx, ly, *hx, *hy, *hr;
   long i, p, 
-    q=RF_NA;
+    //
+    q=0;
+    //   q = RF_NA; assert(false);
   int k,
     err;
   
@@ -970,8 +973,7 @@ int hyperexponential(double radius, double *center, double *rx,
      (it is checked if all the corners of the rectangle are on one 
      side (?) )
   */
-  q=0;
-  for(i=0; i<p; i++) {
+   for(i=0; i<p; i++) {
     phi = UNIFORM_RANDOM * TWOPI;
     hx[q] = cos(phi);     hy[q] = sin(phi);    
     hr[q] = UNIFORM_RANDOM * radius;
@@ -2143,7 +2145,7 @@ void loghyperbolic(double *x, cov_model *cov, double *v, double *sign){
     *v = 0.0;
     return;
   } else if (y==RF_INF) {
-    *v = -RF_INF;
+    *v = RF_NEGINF;
     *sign = 0.0;
     return;
   }
@@ -3786,7 +3788,7 @@ void rangebiWM2(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[BIrhored] = false;    
 
   //    *c = P0(BIc]; 
-  range->min[BIc] = -RF_INF;
+  range->min[BIc] = RF_NEGINF;
   range->max[BIc] = RF_INF;
   range->pmin[BIc] = 0.001;
   range->pmax[BIc] = 1000;
@@ -4362,7 +4364,8 @@ int checkUser(cov_model *cov){
 
   if (variab[0] != 1 && (variab[0] != 4 || nvar > 1)) SERR("'x' not given");
   if (nvar > 1) {
-    variab[1] = abs(variab[1]); // it is set to its negativ value
+    variab[1] = abs(variab[1]); // integer!
+    //                              it is set to its negativ value
     //                              below, when a kernel is defined
     if (variab[1] == 3) SERR("'z' given but not 'y'"); 
   } 

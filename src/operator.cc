@@ -303,7 +303,7 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
 
   } else {
     if (cov->taylor[1][TaylorPow] < 1.0) {     
-      *v = -RF_INF;
+      *v = RF_NEGINF;
     } else if (cov->taylor[1][TaylorPow] == 1.0) {
       *v = fabs(cov->taylor[1][TaylorConst]);
       assert(*v > 0.0);
@@ -876,7 +876,7 @@ int checkshift(cov_model *cov) {
 }
 
 void rangeshift(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[SHIFT_DELAY] = -RF_INF;
+  range->min[SHIFT_DELAY] = RF_NEGINF;
   range->max[SHIFT_DELAY] = RF_INF;
   range->pmin[SHIFT_DELAY] = -1000;
   range->pmax[SHIFT_DELAY] = 1000;
@@ -2880,7 +2880,7 @@ int check_local(cov_model *cov,
       if (li.instances == 0) {
 	SERR("parameter values do not allow for finding second parameter");
       }
-      q[LOCAL_R] = R_PosInf;
+      q[LOCAL_R] = RF_INF;
 
       // print("%f\n", d); assert(false);
 

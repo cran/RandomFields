@@ -102,18 +102,18 @@ globalparam GLOBAL = {
   {'.', false, false, false, false, false, true, false,
    normal, R_PRINTLEVEL, C_PRINTLEVEL, NAT_SCALE, 1, 0, 
     {0, 2} /* chol, SVD */, NA_INTEGER,
-   1e-6, 1e-6, NA_REAL,
+   1e-6, 1e-6, RF_NA,
   },// general;
-  {NA_REAL, 0.05, false, false, 800},  // gauss
+  {RF_NA, 0.05, false, false, 800},  // gauss
   {'A', false, false, true,
    8000, {5000, 200, 1000}, 2}, // krige
   {false, true, false, TRIVIALSTRATEGY, 3, MAX_CE_MEM, MAX_CE_MEM,
    -1e-7, 1e-3, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
    RF_NA}, //ce_param ce, 13 NULLEN
   {true, false, 50, 0.0, {2500, 2500, 2500, 2500}},  // spectral_param
-   {false, -2, 3, 0, {1, 60, 500}, RF_NA, 2.0, 0.0, 
+  {false, -2, 3, 0, {1, 60, 500}, RF_NA, 2.0, 0.0, 
    {RF_NA, RF_NA, RF_NA, RF_NA}},  // TBM 
- {Cholesky, 1e-12, 8192 },// direct_param direct;
+  {Cholesky, 1e-12, 8192 },// direct_param direct;
   {5000, 5, -10}, //sequ_param sequ;
   {2, false, 250000, 1.0}, //markov_param markov; 
   {}, // ave
@@ -132,7 +132,7 @@ globalparam GLOBAL = {
   {0.08, 0, 1e-20, 1e5, 1000, 8, 20, 15, 1000}, // distr (rectangular) // todo should be 500 and better algorithm for approximation!
   {0.5, 3.0, 5.0, 3.0, 10.0, 1e4, // 6
    1E-10, 1000.0, 0.001, 0.02, 1/1000, 1000,  // 12
-   false, -10.0, 10.0, NA_REAL, NA_REAL, 0.1,  // 18 
+   false, -10.0, 10.0, RF_NA, RF_NA, 0.1,  // 18 
    1e-7, 
    50, 20, 1, 1, 20, 0 /* critical */,            // 6
    5 /* ncrit */ , 5000, {3000, 200, 1000}, 2, 2000,  // 12
@@ -145,7 +145,7 @@ globalparam GLOBAL = {
   {0, MODEL_KRIGE, MODEL_COND, MODEL_ERR, MODEL_GUI}, // registers
   {true, true, true, false, true, 
    true, true, false, true, true, true, true, true}, // warnings
-  {NA_REAL, coord_auto, {""}, {""}, {""}}, // coords
+  {RF_NA, coord_auto, {""}, {""}, {""}}, // coords
   {10}, // special
 };
  

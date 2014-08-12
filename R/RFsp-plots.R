@@ -541,7 +541,7 @@ plotRFspatialDataFrame <-
         }
         
         if (n.slices > 1)
-          legend("topright", bty="n",
+          legend("bottomright", bty="n",
                  legend=paste(image.par$names.coords[MARGIN.slices], "=",
                    x.grid.vectors[[MARGIN.slices]][slices.ind[i[2]]]))
         

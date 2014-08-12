@@ -242,11 +242,18 @@ add.units <- function(x,  units=NULL) {
 ScreenDevice <- function(height, width) {
   if (height > 0  && width > 0) {
     GD <- getOption("device")
+
+#    Print(GD, args(pdf), args(GD), all.equal(args(pdf), args(GD)),
+#          is.function(GD))
+    
     if (is.function(GD)) {
       args <- names(as.list(args(GD)))
+      ispdf <- all.equal(args(pdf), args(GD))
+      ispdf <- is.logical(ispdf) && ispdf
       if (all(c("width", "height") %in% args) &&
-          !any(c("file", "filename") %in% args)) {
+         ( !any(c("file", "filename") %in% args) || ispdf)) {
         GD(height=height, width=width)
+#        Print("OK", height, width, RFoptions()$graphics)
         return()
       }
     }

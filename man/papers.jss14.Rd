@@ -29,6 +29,9 @@
 
 \examples{
 
+\dontshow{
+if (!interactive()) RFoptions(modus_operandi="sloppy")
+}
 
 \donttest{
 
@@ -63,7 +66,7 @@ plot(simu)
 model <- RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(4, 4))
 simu <- RFsimulate(model, x, y)
 plot(simu, zlim = 'joint')
-
+%dev.copy2pdf(file="delay0.pdf")
 
 ## Fig. 3: extended Wackernagel's delay model
 model <- RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(0, 4)) + 
@@ -71,8 +74,8 @@ model <- RMdelay(RMstable(alpha = 1.9, scale = 2), s = c(0, 4)) +
 simu <- RFsimulate(model, x, y)
 plot(simu, zlim = 'joint')
 plot(model, dim = 2, xlim = c(-5, 5), main = "Covariance function", 
-     cex = 1.25, cex.lab = 1, xlab = " ")
-
+     cex = 1.5, col = "brown")
+%dev.copy2pdf(file="delay_cov.pdf")
 
 ## Fig. 4: latent dimension model
 ## MARGIN.slices has the effect of choosing the third dimension
@@ -110,7 +113,8 @@ plot(simu)
 model <- RMcurlfree(RMmatern(nu = 5), scale = 4)
 simu <- RFsimulate(model, x, y)
 plot(simu, select.variables = list(1, 2 : 3, 4))
-plot(model, dim = 2, xlim = c(-3, 3), main = "") 
+plot(model, dim = 2, xlim = c(-3, 3), main = "", cex = 2.3, col="brown") 
+%dev.copy2pdf(file="curlfree_cov.pdf")
 
 
 ## Fig. 8: Kolmogorov's model of turbulence
@@ -119,8 +123,10 @@ x <- y <- seq(-2, 2, len = 20)
 model <- RMkolmogorov()
 simu <- RFsimulate(model, x, y, z = 1)
 plot(simu, select.variables = list(1 : 2), col = c("red"))
-plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, fixed.MARGIN = 1.0,
-     main = "")
+plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, cex = 2.3,
+     fixed.MARGIN = 1.0, main = "", col = "brown")
+%dev.copy2pdf(file="kolmogorov_cov.pdf")
+
 
 
 
@@ -130,7 +136,7 @@ plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, fixed.MARGIN = 1.0,
                ###########################################
 
 ## get the data     
-data(weather)
+data("weather")
 PT <- weather[ , 1 : 2]
 ## transformation of earth coordinates to Euclidean coordinates
 Dist.mat <- as.vector(RFearth2dist(weather[ , 3 : 4]))
@@ -209,6 +215,7 @@ save(file="/home/schlather/svn/RandomFields/RandomFields/data/weather.rda",# OK
 }}
 
 
+\dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}
 }
 

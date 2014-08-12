@@ -404,7 +404,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   if (false) { 
     int i,j;
     double xmin[2] = {RF_INF, RF_INF},
-      xmax[2] = {-RF_INF, -RF_INF};
+      xmax[2] = {RF_NEGINF, RF_NEGINF};
       
       //      PMI(cov);
       for (i=0; i<loc_user->totalpoints; i++) {
@@ -711,7 +711,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     T[XSTART] = loc->T[XSTART];
     T[XSTEP] = loc->T[XSTEP];
     T[XLENGTH] = (double) loc->length[dim-1];
-  } else T[XSTART] = T[XSTEP] = T[XLENGTH] = NA_REAL;
+  } else T[XSTART] = T[XSTEP] = T[XLENGTH] = RF_NA;
 
   loc_set(xline, T, 1, 1, 3, ce_dim2 /* time */, 
 	  true /* grid */, false, &(cov->key->ownloc));

@@ -133,7 +133,7 @@ void GetNAPosition(cov_model *cov,
 	  covModels[*NAs] = cov;
 	} else if (type[i] == INTSXP) {
 	  v = PINT(i)[idx] == NA_INTEGER 
-	    ? NA_REAL : (double) PINT(i)[idx];
+	    ? RF_NA : (double) PINT(i)[idx];
 	  if (ISNAN(v) && !allowforintegerNA) {
 	    // crash(cov);
 	    ERR("integer variables currently do not allow for NA"); // !!!
@@ -444,9 +444,9 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 	  w = PARAM(cov_bound, i)[idx];
 	}
 	else if (type[i] == INTSXP) {
-	  v = PINT(i)[idx] == NA_INTEGER ? NA_REAL : (double) PINT(i)[idx];
+	  v = PINT(i)[idx] == NA_INTEGER ? RF_NA : (double) PINT(i)[idx];
 	  w = PARAMINT(cov_bound, i)[idx] == NA_INTEGER 
-	    ? NA_REAL : (double) PARAMINT(cov_bound, i)[idx];	  
+	    ? RF_NA : (double) PARAMINT(cov_bound, i)[idx];	  
 	}
 	     
 
@@ -550,9 +550,9 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
       dmax = PARAM0(max, i);
     } else if (type[i] == INTSXP) {
       dmin = PARAM0INT(min, i) == NA_INTEGER 
-	? NA_REAL : (double) PARAM0INT(min, i);
+	? RF_NA : (double) PARAM0INT(min, i);
       dmax = PARAM0INT(max, i) == NA_INTEGER 
-	? NA_REAL : (double) PARAM0INT(max, i);
+	? RF_NA : (double) PARAM0INT(max, i);
     } else if (type[i] == LISTOF + REALSXP) {
       dmin = PARAM0(min, i);
       dmax = PARAM0(max, i);
@@ -573,7 +573,7 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
 	v = P(i)[r];
       }
       else if (type[i] == INTSXP) {
-        v = PINT(i)[r] == NA_INTEGER ? NA_REAL : (double) PINT(i)[r];
+        v = PINT(i)[r] == NA_INTEGER ? RF_NA : (double) PINT(i)[r];
       } else if (type[i] == LISTOF + REALSXP) {
 	  continue;  // !!!!!!!!!!!
       } else if (type[i] == CLOSXP) {

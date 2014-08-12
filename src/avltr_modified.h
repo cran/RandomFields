@@ -30,6 +30,7 @@
    is still valid.
 */
 
+#include"RF.h"
 
 #if !avltr_h
 #define avltr_h 1
@@ -46,7 +47,7 @@
 /* Structure for a node in a right-threaded AVL tree. */
 typedef struct avltr_node
   {
-    void *data;			/* Pointer to data. */
+    cell_type  *data;			/* Pointer to data. */
     struct avltr_node *link[2];	/* Subtrees or threads. */
     signed char bal;		/* Balance factor. */
     char cache;			/* Used during insertion. */
@@ -59,7 +60,7 @@ avltr_node;
 typedef struct avltr_traverser
   {
     int init;				/* Initialized? */
-    const avltr_node *p;		/* Last node returned. */
+    avltr_node *p;		/* Last node returned. */
   }
 avltr_traverser;
 
@@ -80,54 +81,54 @@ typedef struct avltr_tree
     avltr_node root;		/* Tree root node. */
     avl_comparison_func cmp;	/* Used to compare keys. */
     int count;			/* Number of nodes in the tree. */
-    void *param;		/* Arbitary user data. */
+    int *param;		/* Arbitary user data. */
   }
 avltr_tree;
 
 /* General functions. */
-extern avltr_tree *avltr_create (avl_comparison_func, void *param);
-extern void avltr_destroy (avltr_tree *, avl_node_func);
-extern void avltr_free (avltr_tree *);
-extern int avltr_count (const avltr_tree *);
-extern avltr_tree *avltr_copy (const avltr_tree *, avl_copy_func);
+ avltr_tree *avltr_create (avl_comparison_func, int *param);
+ void avltr_destroy (avltr_tree *, avl_node_func);
+ void avltr_free (avltr_tree *);
+ int avltr_count (avltr_tree *);
+ avltr_tree *avltr_copy (avltr_tree *, avl_copy_func);
 struct avl_tree;
-extern avltr_tree *avltr_thread (struct avl_tree *);
-extern struct avl_tree *avltr_unthread (avltr_tree *);
+ avltr_tree *avltr_thread (struct avl_tree *);
+ struct avl_tree *avltr_unthread (avltr_tree *);
 
 /* Walk the tree. */
-extern void avltr_walk (const avltr_tree *, avl_node_func, void *param);
-extern void *avltr_traverse (const avltr_tree *, avltr_traverser *);
+ void avltr_walk (avltr_tree *, avl_node_func, int *param);
+ cell_type *avltr_traverse (avltr_tree *, avltr_traverser *);
 #define avlt_init_traverser(TRAVERSER) ((TRAVERSER)->init = 0)
-extern void **avltr_next (const avltr_tree *tree, void **item);
+ cell_type **avltr_next (avltr_tree *tree, cell_type **item);
 
 /* Search for a given item. */
-extern void **avltr_probe (avltr_tree *, void *);
-extern void *avltr_delete (avltr_tree *, const void *);
-extern void **avltr_find (const avltr_tree *, const void *);
-extern void **avltr_find_close (const avltr_tree *, const void *);
+ cell_type **avltr_probe (avltr_tree *, cell_type *);
+ cell_type *avltr_delete (avltr_tree *, cell_type *);
+ cell_type **avltr_find (avltr_tree *, cell_type *);
+ cell_type **avltr_find_close (avltr_tree *, cell_type *);
 
 #if __GCC__ >= 2
-extern inline void *avltr_insert (avltr_tree *tree, void *item)
+ inline cell_type *avltr_insert (avltr_tree *tree, cell_type *item)
 {
-  void **p = avltr_probe (tree, item);
+  cell_type **p = avltr_probe (tree, item);
   return (*p == item) ? NULL : *p;
 }
 
-extern inline void *avltr_replace (avltr_tree *tree, void *item)
+ inline cell_type *avltr_replace (avltr_tree *tree, cell_type *item)
 {
-  void **p = avltr_probe (tree, item);
+  cell_type **p = avltr_probe (tree, item);
   if (*p == item)
     return NULL;
   else
     {
-      void *r = *p;
+      cell_type *r = *p;
       *p = item;
       return r;
     }
 }
 #else /* not gcc */
-extern void *avltr_insert (avltr_tree *tree, void *item);
-extern void *avltr_replace (avltr_tree *tree, void *item);
+ cell_type *avltr_insert (avltr_tree *tree,  cell_type *item);
+ cell_type *avltr_replace (avltr_tree *tree, cell_type *item);
 #endif /* not gcc */
 
 /* Easy assertions on insertion & deletion. */
@@ -142,7 +143,7 @@ extern void *avltr_replace (avltr_tree *tree, void *item);
 	    assert (r == NULL);			\
 	  }					\
 	while (0)
-extern void *avltr_force_delete (avltr_tree *, void *);
+ void *avltr_force_delete (avltr_tree *, void *);
 #else
 #define avltr_force_insert(A, B)		\
 	avltr_insert (A, B)

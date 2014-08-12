@@ -35,6 +35,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 
 
+// important check !!
+#ifndef LOCAL_MACHINE
+#ifdef SHOW_ADDRESSES
+SHOW_ADRESSES IS NOT ALLOWED
+#endif
+#ifdef RANDOMFIELDS_DEBUGGING
+RANDOMFIELDS_DEBUGGING IS NOT ALLOWED
+#endif
+#endif
+
+
+
 double intpow(double x, int p) {
   //int p0 = p;
   // double x0 = x;
@@ -537,7 +549,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
       /* calculate SQRT of covariance matrix */
       for (k=0, j=0; j<size; j++) {
 	double dummy;
-	dummy = abs(D[j]) < tol ? 0.0 : 1.0 / D[j];
+	dummy = fabs(D[j]) < tol ? 0.0 : 1.0 / D[j];
 	for (i=0; i<size; i++) U[k++] *= dummy;
       }
       matmult(U, VT, M, size, size, size); // U * V
@@ -652,7 +664,7 @@ void distInt(int *X, int*N, int *Genes, double *dist) {
 
 SEXP GetChar(SEXP N, SEXP Choice, SEXP Shorter, SEXP Beep, SEXP Show) {  
     int i, j, 
-      start = RF_NA,
+      start = NA_INTEGER,
       milli = 500,
       len = length(Choice), 
       n = INTEGER(N)[0],

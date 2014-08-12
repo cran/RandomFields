@@ -468,7 +468,6 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   RFopt <- RFoptions()
   curunits <- RFopt$coords$coord_units
   newunits <-  RFopt$coords$new_coord_units
-
   if (!missing(distances) && length(distances) > 0) {
     stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
               (missing(grid) || length(grid) == 0),

@@ -54,7 +54,11 @@ void kdefault(cov_model *cov, int i, double v) {
       P(i)[0] = v;
     } else if (C->kappatype[i]==INTSXP) {
       PALLOC(i, 1, 1); 
-      PINT(i)[0] = (int) v;
+      if (ISNAN(v)) { BUG }
+      else if (ISNA(v)) PINT(i)[0] = NA_INTEGER;
+      else if (v > MAXINT) {BUG}
+      else if (v < -MAXINT) {BUG}
+      else PINT(i)[0] = (int) v;
     } else if (C->kappatype[i] == LISTOF + REALSXP) {
       //char msg[100];      
       PRINTF("%s:%s (%d) unexpected list\n", NICK(cov), C->kappanames[i], i);

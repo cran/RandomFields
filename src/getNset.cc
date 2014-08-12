@@ -428,7 +428,7 @@ void CE_NULL(CE_storage* x){
   x->positivedefinite = FALSE;
   x->trials = -1;
   x->c = x->d = NULL;
-  x->smallestRe = x->largestAbsIm = NA_REAL;
+  x->smallestRe = x->largestAbsIm = RF_NA;
   x->aniso = NULL;
   x->stop = false;
   x->gauss1 = x->gauss2 = NULL;
@@ -792,7 +792,8 @@ void PGS_NULL(pgs_storage* x) {
   x->totalmass = RF_NA;
 
   x->size = -1;
-  x->zhou_c = x->sq_zhou_c = x->sum_zhou_c = RF_NA;
+  x->zhou_c = RF_NA;
+  x->sq_zhou_c = x->sum_zhou_c = 0;
   x->n_zhou_c = 0;
 
   x->single = x->total = x->v = x->x = x->xstart = x->inc =
@@ -2255,8 +2256,8 @@ double GetDiameter(location_type *loc,
       j[origdim] = false;
       
       for (d=0; d<spatialdim; d++) {
-	min[d] = R_PosInf;
-	max[d] = R_NegInf;
+	min[d] = RF_INF;
+	max[d] = RF_NEGINF;
       }
       
       while(true) {
@@ -3183,7 +3184,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	  PARAM(openmin, i)[k] = dopenmin;
 	  PARAM(openmax, i)[k] = dopenmax;
 	} else if (type[i] == INTSXP) {
-	  value = PINT(i)[k] == NA_INTEGER ? NA_REAL : (double) PINT(i)[k];
+	  value = PINT(i)[k] == NA_INTEGER ? RF_NA : (double) PINT(i)[k];
 	  PARAMINT(min, i)[k] = dmin;
 	  PARAMINT(max, i)[k] = dmax;
 	  PARAMINT(pmin, i)[k] = dpmin;
@@ -3347,7 +3348,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
     for (k=0; k<len; k++) {
       if (type[i] == REALSXP) value = P(i)[k];
       else if (type[i] == INTSXP)
-	value = PINT(i)[k] == NA_INTEGER ? NA_REAL : (double) PINT(i)[k];
+	value = PINT(i)[k] == NA_INTEGER ? RF_NA : (double) PINT(i)[k];
       else if (type[i] == CLOSXP) continue;
       else if (type[i] == LANGSXP) continue;
       else GERR2("%s [%d] is not finite", C->kappanames[i], k+1);

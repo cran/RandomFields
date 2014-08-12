@@ -348,7 +348,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
   if (maxstable) {
     if (loggiven) {
-      for (i=0; i<vdimtot; i++) res[i] = R_NegInf;
+      for (i=0; i<vdimtot; i++) res[i] = RF_NEGINF;
     }
     else for (i=0; i<vdimtot; i++) res[i] = 0.0;
     if (sub->mpp.moments < 1 || !R_FINITE(sub->mpp.mMplus[1]) || 
@@ -1035,7 +1035,11 @@ int check_randomcoin(cov_model *cov) {
   //PMI(cov, "check random coins");
   //APMI(cov);
 
+#ifdef LOCAL_MACHINE
+  warning("coin running only locally");
+#else
   return ERRORNOTPROGRAMMEDYET;
+#endif
 
  
   ROLE_ASSERT(ROLE_POISSON_GAUSS || (cov->role==ROLE_GAUSS && cov->key!=NULL));

@@ -674,7 +674,7 @@ int checktrend(cov_model *cov){
       for (i=0; i<vdim; i++) 
 	basislen += binomialcoeff(polydeg[i] + tsdim, tsdim);      
       PALLOC(TREND_PARAM_POLY, basislen, 1);
-      for(i=0; i<basislen; i++) P(TREND_PARAM_POLY)[i] = NA_REAL;
+      for(i=0; i<basislen; i++) P(TREND_PARAM_POLY)[i] = RF_NA;
     }
     cov->matrix_indep_of_x = false;
   }

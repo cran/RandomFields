@@ -46,7 +46,7 @@ boundary_values <- function(variab) {
                         sep="", collapse=", "),
                   " ", if (nu == 1) "is" else "are",
                   " close to or on the effective upper boundary"),
-            ".\nHence the gradient of the likelihood function might not be zero and\nnone of the reported 'sd' values might be reliable.")
+            ".\nHence the gradient of the likelihood function might not be zero and none of the\nreported 'sd' values might be reliable.")
   } else txt <- NULL
   return(txt)
 }
@@ -115,10 +115,10 @@ print.summary.RMmodelFit <- function(x, ...) {
   }
 
 
-  printParam <- function(x) {
+  printParam <- function(param) {
     cat("User's variables:\n")
-    print(x$param, ..., na.print="-")#
-    return(ncol(x$param))
+    print(param, ..., na.print="-")#
+    return(ncol(param))
   }
   
   printRest <- function(...) {
@@ -132,60 +132,82 @@ print.summary.RMmodelFit <- function(x, ...) {
 
  if (RFoptions()$general$detailed_output) str(x$model, no.list=TRUE) #
   cat("\n")
-  np <- AIC <- ll <- NA  
+  np <- AIC <- ll <- nm <- NA  
   if (!is.null(x$submodels)) {
     cur_name <- ""
-    for (i in 1:length(x$submodels)) {
-      n <- x$submodels[[i]]$report
+    len <- length(x$submodels)
+    
+    for (i in 1:len) {
+      sm <- x$submodels[[i]]
+      n <- sm$report
+      nnxt <- if (i==len) "" else x$submodels[[i+1]]      
       if (n != cur_name) {
-        if (i > 1) {
-          if (!is.null(x$param)) print(cparam, ..., na.print="-") #
+        if (i > 1) {         
+          if (!is.null(sm$param)) printParam(cparam)
           printRest(np, ll, AIC) #
+          if (!is.null(sm$boundary)) cat(sm$boundary, "\n\n")
         }
-        cat(n, "\n", paste(rep("=", nchar(n)), collapse=""), "\n", sep="")
-        cur_name <- n
+
+        if (nnxt != n && length(sm$fixed) > 0) {
+          
+          nX <- paste(sep="", n, " (",
+                      paste(c(if (length(sm$fixed$zero) > 0)
+                              paste(colnames(x$param)[sm$fixed$zero], "= 0"),
+                              if (length(sm$fixed$one) > 0)
+                              paste(colnames(x$param)[sm$fixed$one], "= 1")),
+                            sep=", "),
+                      ")")
+        } else nX <- n
+        cat(if (!is.na(nm)) cat("\n"), nX, "\n",
+            paste(rep("=", min(80, nchar(nX))), collapse=""),
+            "\n", sep="")
         np <- 0
         AIC <- 0
         ll <- 0
         cparam <- NULL
         nm <- 1
       }
-      if (!is.null(x$variab)) {
-        if (nm>1 || (i<length(x$submodels) && n==x$submodels[[i=1]]$report))
-          cat("model", nm, "\n")
-        printVariab(x$submodels[[i]])
+      if (!is.null(sm$variab)) {
+        if (nm > 1 || (i<len && n==nnxt)) cat("model", nm, ", ")
+        printVariab(sm)
       }
-      if (!is.null(x$param)) {
+      if (!is.null(sm$param)) {
         param <- x$param * NA
-#        Print(i,  x,x$submodels[[i]]$p.proj, param, x$submodels[[i]], x$submodels[[i]]$param)
+#        Print(i, sm$p.proj, param, sm, sm$param)
         
-        param[, x$submodels[[i]]$p.proj] <- x$submodels[[i]]$param
-        fixed <- x$submodels[[i]]$fixed
-         if (length(fixed) > 0) {
+        param[, sm$p.proj] <- sm$param
+        fixed <- sm$fixed
+        if (length(fixed) > 0) {
           param[1, fixed$zero] <- 0
           param[1, fixed$one] <- 1
         }
+      
       #  if (!is.null(cparam)) cparam <- rbind(cparam, NA)
         cparam <- rbind(cparam, param)
+  
+ #       Print(param, cparam)
+        
       }
-      np <- np + length(x$submodels[[i]]$p.proj)
-      ll <- ll + x$submodels[[i]]$loglikelihood
-      AIC <- AIC + x$submodels[[i]]$AIC
+      np <- np + length(sm$p.proj)
+      ll <- ll + sm$loglikelihood
+      AIC <- AIC + sm$AIC
       nm <- nm + 1;
-    }
+      cur_name <- n
+   }
 
-    if (!is.null(x$param)) printParam(x)
-
+    if (!is.null(sm$param)) printParam(param)
     printRest(np, ll, AIC) #
+    if (!is.null(sm$boundary)) cat(sm$boundary, "\n\n")
+     
     cat("\nuser's model\n", paste(rep("=", 12), collapse=""), "\n", sep="")
   }
  
   if (!is.null(x$variab)) np <- printVariab(x)
-  if (!is.null(x$param)) np <- printParam(x)
+  if (!is.null(x$param)) np <- printParam(x$param)
   
   printRest(np, x[c("loglikelihood", "AIC")])#
-
   if (!is.null(x$boundary)) cat(x$boundary, "\n\n")
+  
   invisible(x)
 }
 
@@ -206,9 +228,11 @@ summary.RFfit <- function(object, ...,  method="ml", full=FALSE) {
     submodels <- list()
     for (i in 1:len) {
       ## war summary.RM_modelFit
-      submodels[[i]] <- summary(object@submodels[[i]][[method]],
-                                isna.param=is.null(s$param))
-      submodels[[i]]$report <- object@submodels[[i]]$report
+#      Print(object@submodels[[i]][[method]])
+      
+      submodels[[i]] <- summary(object@submodels[[i]][[method]],# 'summary'
+                                isna.param=is.null(s$param))    # nicht
+      submodels[[i]]$report <- object@submodels[[i]]$report     # spezifizieren!
       submodels[[i]]$p.proj <- object@submodels[[i]]$p.proj
       submodels[[i]]$fixed  <- object@submodels[[i]]$fixed
     }     

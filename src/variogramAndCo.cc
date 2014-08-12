@@ -631,8 +631,8 @@ void SelectedCovMatrix(cov_model *cov,
   domain_type domown;
   Types type;
   int l,vrow, vcol, 
-    oldCMC = RF_NA, 
-    oldCMR = RF_NA;
+    oldCMC = NA_INTEGER, 
+    oldCMR = NA_INTEGER;
   //   vdimselrow, vdimselcol, selrow, selcol, 
 
   genuineStatOwn(cov, &domown, &type);
