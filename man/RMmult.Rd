@@ -28,9 +28,13 @@ RMmult(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
 
  The global arguments \code{scale,Aniso,proj} of \command{\link{RMmult}}
  are multiplied to the corresponding argument of the submodels
- (from the right side). E.g., \code{RMmult(Aniso=A1, RMexp(Aniso=A2),
- RMspheric(Aniso=A3))} equals \code{RMexp(Aniso=A2 \%*\% A1),
- RMspheric(Aniso=A3 \%*\% A1)}
+ (from the right side). E.g.,
+\cr
+ \code{RMmult(Aniso=A1, RMexp(Aniso=A2), RMspheric(Aniso=A3))}
+ \cr
+ equals
+ \cr
+ \code{RMexp(Aniso=A2 \%*\% A1), RMspheric(Aniso=A3 \%*\% A1)}
  
  In case that all submodels are given through a covariance function,
  the global argument \code{var} of \command{\link{RMmult}}

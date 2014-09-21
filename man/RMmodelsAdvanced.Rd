@@ -86,18 +86,22 @@ Here, most of the models are composed models (operators).
  \command{\link{RMtbm}} \tab Turning bands operator}
 
 \bold{Multivariate/Multivariable and vector valued models}
+See also the vignette \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}.
 \tabular{ll}{
  \command{\link{RMbiwm}} \tab full bivariate Whittle-Matern model (stationary and isotropic)\cr
  \command{\link{RMbigneiting}} \tab bivariate Gneiting model (stationary and isotropic)\cr
 \command{\link{RMcurlfree}} \tab curlfree (spatial) vector-valued field (stationary and anisotropic)\cr
 \command{\link{RMdelay}} \tab bivariate delay effect model (stationary)\cr
-\command{\link{RMdivfree}} \tab divergence free (spatial) vector valued field, (stationary and anisotropic)\cr
+\command{\link{RMdivfree}} \tab divergence free (spatial) vector valued
+field, (stationary and anisotropic)\cr
+\command{\link{RMexponential}} \tab functional returning \eqn{e^C}{exp(C)}\cr
  \command{\link{RMkolmogorov}} \tab Kolmogorov's model of turbulence\cr
 \command{\link{RMmatrix}} \tab trivial multivariate model\cr
 \command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
  \command{\link{RMparswm}} \tab multivariate Whittle-Matern model (stationary and isotropic)\cr
 \command{\link{RMschur}} \tab element-wise product with a positive definite
 matrix\cr 
+\command{\link{RMtbm}} \tab turning bands operator\cr
 \command{\link{RMvector}} \tab vector-valued field (combining \command{\link{RMcurlfree}} and \command{\link{RMdivfree}})
 }
 
@@ -164,23 +168,34 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
     \item
     Note also that a completely different possibility exists to define a
     model, namely by a list. This format allows for easy flexible models
-    and modifications. Here, the argument \code{var}, \code{scale},
+    and modifications (and some few more options, as well as some
+    abbreviations to the model names, see \command{PrintModelList()}).
+    Here, the argument \code{var}, \code{scale},
     \code{Aniso} and \code{proj} must be passed by the model
     \command{\link{RMS}}. 
     For instance,
     \itemize{
       \item
-      \code{model <- RMexp(scale=2, var=5)} is equivalent to
-      \code{model <- list("RMS", scale=2, var=5, list("RMexp"))}.
+      \code{model <- RMexp(scale=2, var=5)}
+      \cr
+      is equivalent to
+      \cr
+      \code{model <- list("RMS", scale=2, var=5, list("RMexp"))}
+      \cr
+      The latter definition can be also obtained by
+      
+      \code{summary(RMexp(scale=2, var=5))}
+      
       \item
       \code{model <- RMnsst(phi=RMgauss(var=7), psi=RMfbm(alpha=1.5),
 	scale=2, var=5)}
-      is equivalent to
-      \code{model <- list("RMS", scale=2, var=5,
-	list("RMnsst",
-      phi=list("RMS", var=7, list("RMgauss")),
-      psi=list("RMfbm", alpha=1.5))
-    )}.
+       \cr
+       is equivalent to
+        \cr
+	\code{model <- list("RMS", scale=2, var=5,} \cr
+	\code{list("RMnsst", phi=list("RMS", var=7, list("RMgauss")),} \cr
+	\code{psi=list("RMfbm", alpha=1.5))
+	)}.
   }
   
   \item
@@ -261,7 +276,10 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 }
 
 \seealso{\command{\link{RFformula}}, \command{\link{RMmodels}},
- \command{\link{RMmodelsAuxiliary}}
+  \command{\link{RMmodelsAuxiliary}}
+
+ \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}, a vignette
+ for multivariate geostatistics
 }
 
 \author{

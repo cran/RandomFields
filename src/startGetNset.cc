@@ -37,20 +37,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void addkappa(int i, const char *n, SEXPTYPE t, Types ParamType) {
   cov_fct *C = CovList + currentNrCov - 1;
 
-  // printf("%s\n", C->name);
+  //  printf("%s %s\n", C->name, n);
 
   assert(n[0] != '\0' && 
-	 (n[0] != 'k' || n[1] != '\0') // reserved for standard parameter names
-	 && (n[0] != 'C' || (n[1] != '\0' && (n[1] < '1' ||  n[1] > '9')))
-                                        // reserved for standard submodel names
+	 (n[0] != ONEARGUMENT_NAME || n[1] != '\0') // reserved for standard parameter names
+	 && (n[0] != DEFAULT_SUBNAME || 
+	     (n[1] != '\0' && (n[1] < '1' ||  n[1] > '9')))
+	 // reserved for standard submodel names
 	 );
   assert(i < C->kappas);
+  assert(strcmp(n, ELEMENT) || C->check == checkconstant || 
+	 C->check == checkmixed);
   strcopyN(C->kappanames[i], n, PARAMMAXCHAR);
   C->kappatype[i] = t;
   C->kappaParamType[i] = ParamType;
   assert(strcmp(n, FREEVARIABLE) || C->internal);
-  if (t >= LISTOF) assert(strcmp(C->kappanames[0], "element") == 0 
-			  ||  strcmp(C->name, "select") == 0
+  if (t >= LISTOF) assert(strcmp(C->kappanames[0], ELEMENT) == 0 
+			  ||  C->check == checkselect
 			  );
 }
 
@@ -302,7 +305,7 @@ void add_paramtype(paramtype_fct paramtype) {
 void addsub(int i, const char *n) {
   cov_fct *C = CovList + currentNrCov - 1;
   int j;
-  assert(n[0] != 'k' && n[0] != 'C');
+  assert(n[0] != ONEARGUMENT_NAME && n[0] != DEFAULT_SUBNAME);
   assert(i < MAXSUB);
 
   strcopyN(C->subnames[i], n, PARAMMAXCHAR);
@@ -353,11 +356,20 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 
 
 int xxx(int x) {return (int) pow(10, (double) x);}
-void crash(cov_model *cov) {
-    PRINTF("crash!!!!\n");
-    char m[1]; memcpy(m, cov, xxx(3));  PRINTF("%s\n", m); // not MEMCOPY
+
+void crash(int i) {  
+  PRINTF("crash!!!!\n");
+ #ifdef LOCAL_MACHINE
+  char m[1];
+  m[i] = m[i-9] + 4;
+  PRINTF("%s\n", m); // not MEMCOPY
+#endif
 }
-void crash() {cov_model *cov=NULL; crash(cov);}
+
+void crash() {
+  crash(10);
+}
+
 
 void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	     double VARIABLE_IS_NOT_USED *v, const char *name) {
@@ -366,7 +378,7 @@ void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	 NICK(cov), cov->nr, cov->gatternr); // ok
   if (PL >= PL_ERRORS){
     PMI(cov, "ErrCov");//
-    crash(cov);
+    crash();
   }
   ERR("unallowed or undefined call of function");
 }
@@ -381,7 +393,7 @@ void ErrLogCov(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   PRINTF("\nErrlogCov %s:\n", NICK(cov));
   if (PL >=  PL_ERRORS) {
     PMI(cov, "ErrlogCov");//
-    crash(cov); 
+    crash(); 
   }
   ERR("unallowed or undefined call of function (log)");
 }
@@ -392,7 +404,7 @@ void ErrCovNonstat(double VARIABLE_IS_NOT_USED *x,
   //  APMI(cov->calling);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling, "ErrCovNonstat"); //
-    crash(cov);
+    crash();
   }
   ERR("unallowed or undefined call of non-domain function");
 }
@@ -403,7 +415,7 @@ void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x,
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling, "ErrLogCovNonstat"); //
-    crash(cov);
+    crash();
   }
   ERR("unallowed or undefined call of non-domain function (log)");
 }
@@ -413,7 +425,7 @@ void Errspectral(cov_model *cov,
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
  if (PL >= PL_ERRORS) {
    PMI(cov->calling, "Errspectral"); //
-    crash(cov);
+    crash();
   }
   ERR("unallowed or undefined call of spectral function");
 } 
@@ -427,7 +439,7 @@ void ErrInverseNonstat(double VARIABLE_IS_NOT_USED *v, cov_model *cov,
   //  APMI(cov->calling);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling, "ErrCovNonstat"); //
-    crash(cov);
+    crash();
   }
   ERR("unallowed or undefined call of non-domain function (inverse)");
 }
@@ -468,7 +480,7 @@ int struct_statiso(cov_model *cov, cov_model **newmodel) {
 
   switch (cov->role) {
   case ROLE_POISSON_GAUSS :
-    SERR1("Unexpected call of'struct' by '%s'", NICK(cov));
+    SERR1("Unexpected call of 'struct' by '%s'", NICK(cov));
     break;      
   case ROLE_POISSON :
     if (C->finiterange == true) {
@@ -1444,18 +1456,18 @@ int addTBM(covfct tbm2) {
   return nr;
 }
 
-void addTBM(covfct tbm2, initfct Init, spectral_do spectral) {
+void addTBM(covfct tbm2, initfct Init, spectral_do spectralDo) {
   int nr = addTBM(tbm2);
   cov_fct *C = CovList + nr; // nicht gatternr
   ASSERT_TBM;
-  C->spectral=spectral;
+  C->spectral=spectralDo;
   C->Init=Init;
   C->implemented[SpectralTBM] = true;
   if (C->pref[SpectralTBM] == PREF_NONE) C->pref[SpectralTBM] = PREF_BEST;
   }
 
-void addTBM(initfct Init, spectral_do spectral) {
-  addTBM((covfct) NULL, Init, spectral);
+void addTBM(initfct Init, spectral_do spectralDo) {
+  addTBM((covfct) NULL, Init, spectralDo);
 }
 	
 

@@ -39,7 +39,13 @@ RMbr2eg(phi, var, scale, Aniso, proj)
   differ by factor 2.
 }
 \references{
- Strokorb, K. (2012) PhD thesis. Goettingen.
+  \itemize{
+    \item    Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable processes
+    with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+  }
 }
 \seealso{
   \link{maxstableAdvanced},

@@ -159,6 +159,7 @@ void binary(double *x, cov_model *cov, double *v) {
 
 
 int checkbinary(cov_model *cov) {
+  // to do extend to multivariate
 
   WARN_NEWDEFINITIONS;
 
@@ -223,6 +224,7 @@ void extrgauss(double *x, cov_model *cov, double *v) {
 
 
 int check_extrgauss(cov_model *cov) {
+  // to do extend to multivariate
   cov_model
     *next = cov->sub[0];
   double v;
@@ -498,6 +500,7 @@ int TaylorBrownresnick(cov_model *cov) {
 }
 
 int checkbrownresnick(cov_model *cov) {
+  // to do extend to multivariate
   cov_model  
    *next = cov->sub[0];
   int i, err, 
@@ -573,7 +576,9 @@ void BR2EG(double *x, cov_model *cov, double *v) {
 }
 
 int check_BR2EG(cov_model *cov) {
-  cov_model *next = cov->sub[0];
+  // to do extend to multivariate
+  cov_model  
+   *next = cov->sub[0];
   double v, t, alpha;
   int err, i,
     vdim = cov->vdim2[0];
@@ -619,6 +624,7 @@ void BR2BG(double *x, cov_model *cov, double *v) {
  }
 
 int check_BR2BG(cov_model *cov) {
+  // to do extend to multivariate
   cov_model *next = cov->sub[0];
   double v, t, alpha;
   int err, i,
@@ -757,7 +763,7 @@ int struct_randomsign(cov_model *cov, cov_model **newmodel) {
     //  assert(cov->sub[0]->mpp.maxheights[0] == 1.0);
     return err;
   }
-  SERR("'RMsign' not allowed in this context.");
+  SERR1("'%s' not allowed in this context.", NICK(cov));
 }
 
 
@@ -1026,7 +1032,8 @@ int checkvector(cov_model *cov) {
 
   if ( (isotropy==SPACEISOTROPIC || isotropy==ZEROSPACEISO) 
        && P0INT(VECTOR_D) != dim - 1) {
-    SERR("for spatiotemporal models 'vector' must be applied to spatial part");
+    SERR1("for spatiotemporal submodels '%s' must be applied to spatial part",
+	 NICK(cov));
   }
   
   if (cov->tsdim != cov->xdimown || cov->tsdim != cov->xdimprev)
@@ -1653,8 +1660,10 @@ int checkSchur(cov_model *cov) {
 
   if (M == NULL) {
     if (diag == NULL || red == NULL)
-      SERR("either 'diag' and 'red' or 'M' must be given");
-    for (i=0; i<vdim; i++) if (diag[i]<0) SERR("elements of 'diag' negative.");
+      SERR3("either '%s' and '%s' or '%s' must be given", 
+	    KNAME(SCHUR_DIAG), KNAME(SCHUR_RED), KNAME(SCHUR_M));
+    for (i=0; i<vdim; i++) 
+      if (diag[i]<0) SERR1("elements of '%s' negative.", KNAME(SCHUR_DIAG));
     C = (double*) MALLOC(bytes);
     for (k=l=i=0; i<vdim; i++, l+=vdimP1) {
       for (j=0; j<vdim; j++, k++) {
@@ -1664,19 +1673,20 @@ int checkSchur(cov_model *cov) {
     }
     F77_CALL(dpofa)(C, ncol, ncol, &err); // C i s now cholesky
     if (err != 0)
-      SERR2("%d x %d matrix M is not (strictly) positive definite",
-	    nrow[SCHUR_M], ncol[SCHUR_M]);   
+      SERR3("%d x %d matrix '%s' is not (strictly) positive definite",
+	    nrow[SCHUR_M], ncol[SCHUR_M], KNAME(SCHUR_M));   
     cov->q = (double*)  MALLOC(vdim * sizeof(double));
     cov->qlen = vdim;
   } else {
     if (diag != NULL || red != NULL)
-      SERR("if 'M' is given, neither 'diag' nor 'red' might be given.")
+      SERR3("if '%s' is given, neither '%s' nor '%s' might be given.",
+	   KNAME(SCHUR_M),  KNAME(SCHUR_DIAG), KNAME(SCHUR_RED))
     C = (double*) MALLOC(bytes);
     MEMCOPY(C, M, bytes);
     F77_CALL(dpofa)(C, ncol, ncol, &err); // C i s now cholesky
     if (err != 0)
-      SERR2("%d x %d matrix M is not (strictly) positive definite",
-	    nrow[SCHUR_M], ncol[SCHUR_M]);
+      SERR3("%d x %d matrix '%s' is not (strictly) positive definite",
+	    nrow[SCHUR_M], ncol[SCHUR_M], KNAME(SCHUR_M));
   }
     
   free(C);
@@ -1689,13 +1699,13 @@ int checkSchur(cov_model *cov) {
  for (vdiag = i=0; i<vdim; i++, vdiag+=vdimP1) {
     if (rhored[vdiag] != 1.0) SERR("diagonal elements do not equal 1.0");
     if (value[i]  <  -GLOBAL.direct.svdtolerance) {
-      SERR("'rhored' has negative eigenvalues");
+      SERR("' r  hored' has negative eigenvalues");
     }
   }
   for (vdiag=i=0; i<vdim; i++, vdiag+=vdimP1) {
     for (j=i+1; j<vdim; j++) {
       if (rhored[ vdiag + j - i] != rhored[vdiag + vdim * (j-i)]) 
-	SERR("'rhored' not symmetric");
+	SERR("' rh ored' not symmetric");
     }
   }
   */
@@ -1936,7 +1946,7 @@ int checkExp(cov_model *cov) {
 
   setbackward(cov, next);
   if (cov->vdim2[0] > 1 && P0INT(EXP_N) != -1)
-    SERR("'n' must be '-1' in the multivariate case");
+    SERR1("'%s' must be '-1' in the multivariate case", KNAME(EXP_N));
   if (cov->vdim2[0] > 1) SERR("multivariate case not programmed yet");
  
   if (next->domown == XONLY) {
@@ -2529,6 +2539,9 @@ void tbm3(double *x, cov_model *cov, double *v, double tbmdim){
   COV(x, next, v); // x has dim 2, if turning planes
   //   print(" cov=%4.4f %f %f %f %f\n ", x[0], v[0], v[1], v[2], v[3]);
   if (x[0] != 0.0) {
+
+    //I(next);
+    
     Abl1(x, next, v1);
     //  print(" D=%4.4f ", v1);
     for (i=0; i<vdim2; i++) v[i] += *x * v1[i] / tbmdim;
@@ -2626,6 +2639,9 @@ int checktbmop(cov_model *cov) {
   tbm_param *gp  = &(GLOBAL.tbm);
   int err; 
 
+
+  //  printf("here\n");
+
   kdefault(cov, TBMOP_FULLDIM, PisNULL(TBMOP_TBMDIM) || gp->tbmdim >= 0
 	   ? gp->fulldim : P0INT(TBMOP_TBMDIM) - gp->tbmdim);
   kdefault(cov, TBMOP_TBMDIM, gp->tbmdim > 0 
@@ -2643,8 +2659,8 @@ int checktbmop(cov_model *cov) {
     cov->xdimown == tbmdim + 1 && cov->isoown == SPACEISOTROPIC;
   if(cov->vdim2[0] != cov->vdim2[1]) BUG;
   if (tbmdim >= fulldim)
-     SERR2("'reduceddim (=%d)' must be less than 'fulldim' (=%d)", 
-	   tbmdim, fulldim);
+     SERR4("'%s' (=%d) must be less than '%s' (=%d)", 
+	   KNAME(TBMOP_TBMDIM), tbmdim, KNAME(TBMOP_FULLDIM), fulldim);
   if (cov->tsdim > fulldim + layers) return ERRORWRONGDIM;
    //printf("%d %d %d %d\n",cov->xdimown,tbmdim,layers, cov->isoown);
   if (cov->xdimown > tbmdim + layers) {
@@ -2654,10 +2670,12 @@ int checktbmop(cov_model *cov) {
 
   if ((err = CHECK(next,  cov->tsdim, cov->xdimown, PosDefType, cov->domown,
 		     cov->isoown, SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
-    // PMI(cov); printf("errr=%d %d %d\n", err, cov->tsdim, cov->xdimown);
+    //     PMI(cov); printf("errr=%d %d %d\n", err, cov->tsdim, cov->xdimown);
     //XERR(err);
+    // if (cov->xdimown != 1) XERR(err);
     return err;
   }
+
   if (next->pref[TBM] == PREF_NONE) return ERRORPREFNONE;
 
   if (cov->isoown != ISOTROPIC && cov->isoown != SPACEISOTROPIC) {
@@ -2688,6 +2706,7 @@ int checktbmop(cov_model *cov) {
   // But difficult to get around for MLE calls that do not allow 
   // for NAs values in integer variables.
   P(TBMOP_LAYERS)[0] = layers;
+
   return NOERROR;
 }
 
@@ -2830,6 +2849,7 @@ int check_local(cov_model *cov,
   //  print("entering check local from %d:%s\n", cov->calling->nr,
   //	 CovList[cov->calling->nr].name);
 
+ 
   if ((err = CHECK(next, dim,  1,
 		     method == CircEmbedCutoff ? PosDefType : NegDefType, 
 		     cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR)
@@ -2914,7 +2934,7 @@ int check_local(cov_model *cov,
 
   } else {
     if (cov->ncol[pLOC_A] != 1 || cov->nrow[pLOC_A] != 1) 
-      SERR("`a' must be a scale");
+      SERR1("'%s' must be a scale", KNAME(pLOC_A));
     //   print("here 2\n");
     err = set_local(next, P0(pLOC_A), d, q2);
     MEMCOPY(q, q2, sizeof(double) * maxq);

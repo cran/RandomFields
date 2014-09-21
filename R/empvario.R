@@ -28,10 +28,10 @@ RFempiricalvariogram <- function(
   if( missing(bin) ) bin <- NULL
   if( missing(deltaT) ) deltaT <- NULL 
   
-  variab.units <- RFopt$coords$variab_units
+  variab.units <- RFopt$coords$varunits
 
-  if (is(data, "RFsp") && !missing(x))
-    stop("x, y, z, T may not be given if 'data' is of class 'RFsp'")
+  if ((is(data, "RFsp") || isSpObj(data)) && !missing(x))
+    stop("x, y, z, T may not be given if 'data' is of class 'RFsp' or an 'sp' object")
 
 
   ## to do: distances
@@ -41,6 +41,9 @@ RFempiricalvariogram <- function(
   
   new <- rfPrepare(x=x, y=y, z=z, T=T, distances=distances, grid=grid,
                    data=data, fillall=TRUE, unconditional=TRUE, vdim=vdim)
+
+#  options(str=list(strict.width="no", digits.d=3, vec.len=200))
+# Print(new)
   
   if (missing(vdim)) {
     vdim <- if (!is.null(new$vdim)) new$vdim else 1
@@ -50,6 +53,8 @@ RFempiricalvariogram <- function(
   }
   
   data <- new$fulldata
+
+#  Print(vdim, new$given,new$variab.names, new$fullgiven, new$total)
 
 #  Print(data)
  # xxxx
@@ -82,14 +87,14 @@ RFempiricalvariogram <- function(
   if(is.null(bin) || length(bin)==0) bin <- 20
   if (length(bin) == 1) {
     ## automatic bin depending on coords
-    #Print(new)
+    #    Print(new$x)
     if(new$grid)
       bin <- seq(0, max(new$x[2, ] * new$x[3, ]) / 2, len = bin) 
     else {
       bin <- seq(0, sqrt(sum((apply(new$x, 2, max)-apply(new$x, 2, min))^2))/2,
                  len = bin)
     }
-    if (RFopt$general$printlevel >= PL.IMPORPANT)
+    if (RFopt$general$printlevel >= PL.SUBIMPORPANT)
       message("Bins in RFempiricalvariogram are chosen automatically:\n", 
               paste(signif(bin, 2), collapse=" "))
   }
@@ -160,8 +165,9 @@ RFempiricalvariogram <- function(
 
   totalbinsOhnevdim <- as.integer(n.bins * n.phibin * n.theta * n.delta)
   totalbins <- totalbinsOhnevdim * vdim^2
-  emp.vario <- double(totalbins)
-  n.bin <- if (fft) double(totalbins) else integer(totalbins)
+
+  ##emp.vario <- double(totalbins)
+  ##  n.bin <- if (fft) double(totalbins) else integer(totalbins)
 
   phibins <- thetabins <- Tbins <- NULL
 
@@ -205,33 +211,20 @@ RFempiricalvariogram <- function(
     crossvar <- doVario(X=data, asVector=TRUE, pseudo=pseudo, time=time)
     sumvals <- crossvar[[1]]
     nbvals <- crossvar[[2]]
-
-#    Print("doVario", crossvar, data);
-#    print(crossvar)
-
- #   xxxxxxxAAAA
-
-#    Print("fftVario3D")
-#    d <- c(length(sumvals) / 4 , 4)
-#    dim(sumvals) <- d;   dim(nbvals) <- d
- #    print(sumvals);  print(nbvals)
-
-#dddd
     
-    .C("fftVario3D", as.double(new$x), 
-       as.double(sumvals), as.double(nbvals), 
-       as.double(bin), as.integer(n.bins), 
-       as.integer(T[3]), 
-       as.integer(stepT), as.integer(nstepT),       
-       as.double(phi), 
-       as.double(theta), 
-       as.integer(repetitions),
-       as.integer(vdim),
-       emp.vario, 
-         n.bin, 
-       totalbinsOhnevdim,
-       as.integer(pseudo), 
-       PACKAGE="RandomFields", DUP = DUPFALSE)
+    back <- .Call("fftVario3D", as.double(new$x), 
+                  as.double(sumvals), as.double(nbvals), 
+                  as.double(bin), as.integer(n.bins), 
+                  as.integer(T[3]), 
+                  as.integer(stepT), as.integer(nstepT),       
+                  as.double(phi), 
+                  as.double(theta), 
+                  as.integer(repetitions),
+                  as.integer(vdim),
+                  totalbinsOhnevdim,
+                  as.logical(pseudo), 
+                  PACKAGE="RandomFields")
+   
     ## the results are now reformatted into arrays
     ## the angles are given in clear text
  
@@ -240,9 +233,9 @@ RFempiricalvariogram <- function(
 #    dim(n.bin) <- c(length(n.bin) / 4 , 4)
 #    print(emp.vario);    print(n.bin)
        
-    emp.vario <- emp.vario / n.bin ## might cause 0/0, but OK
-    n.bin <- as.integer(round(n.bin))
-  
+    emp.vario <- back[, 1] / back[, 2] ## might cause 0/0, but OK
+    n.bin <- as.integer(round(back[, 2]))
+ 
  #   Print("Xend fftVario3D")
    
   } else {   
@@ -255,18 +248,20 @@ RFempiricalvariogram <- function(
 
     if (vdim > 1) stop("multivariat only progrmmed for fft up to now")
 
-    emp.vario.sd <- double(totalbins)
-
-    if (basic) {           
-      .C("empiricalvariogram", 
-         as.double(new$x), ## new definition
-         as.integer(new$spacedim), as.integer(new$l), 
-         as.double(data), as.integer(repetitions), as.integer(new$grid), 
-         as.double(bin), as.integer(n.bins), as.integer(0), 
-         emp.vario, emp.vario.sd, 
-         n.bin, PACKAGE="RandomFields", NAOK=TRUE, DUP = DUPFALSE)
+     if (basic) {           
+      back <- .C("empiricalvariogram", 
+                 as.double(new$x), ## new definition
+                 as.integer(new$spacedim), as.integer(new$l), 
+                 as.double(data),
+                 as.integer(repetitions), as.integer(new$grid), 
+                 as.double(bin), as.integer(n.bins), as.integer(0), 
+                 emp.vario = double(totalbins), emp.vario.sd=double(totalbins), 
+                 n.bin= integer(totalbins), PACKAGE="RandomFields")
+      n.bin <- back$n.bin
+      emp.vario.sd <- back$emp.vario.sd
+      emp.vario <- back$emp.vario      
       emp.vario[is.na(emp.vario) & (centers==0)] <- 0
-        
+      rm("back")
     } else { ## anisotropic space-time
       ## always transform to full 3 dimensional space-time coordinates
       ## with all angles given. Otherwise there would be too many special
@@ -278,18 +273,23 @@ RFempiricalvariogram <- function(
         new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x), ncol=3-ncol(new$x)))
       ##    new$x <- rfConvertToOldGrid(new$x)
       
-      .C("empvarioXT", as.double(new$x), as.double(T), as.integer(new$l), 
-         as.double(data), as.integer(repetitions), as.integer(new$grid), 
-         as.double(bin), as.integer(n.bins), 
-         as.double(c(phi[1], phi[2])), 
-         as.double(c(theta[1], theta[2])), 
-         as.integer(c(stepT, nstepT)), 
-         ## input : deltaT[1] max abstand, deltaT[2] : echter gitterabstand, 
-         ##   c   : delta[1] : index gitterabstand, deltaT[2] : # of bins -1
-         ##                   (zero is the additional distance)
-         emp.vario, emp.vario.sd, 
-         n.bin,  PACKAGE="RandomFields", NAOK=TRUE,  DUP = DUPFALSE)
-   
+      back <-
+        .C("empvarioXT", as.double(new$x), as.double(T), as.integer(new$l), 
+           as.double(data), as.integer(repetitions), as.integer(new$grid), 
+           as.double(bin), as.integer(n.bins), 
+           as.double(c(phi[1], phi[2])), 
+           as.double(c(theta[1], theta[2])), 
+           as.integer(c(stepT, nstepT)), 
+           ## input : deltaT[1] max abstand, deltaT[2] : echter gitterabstand, 
+           ##   c   : delta[1] : index gitterabstand, deltaT[2] : # of bins -1
+           ##                   (zero is the additional distance)
+           emp.vario=double(totalbins), emp.vario.sd = double(totalbins),  
+           n.bin = integer(totalbins),  PACKAGE="RandomFields")
+      n.bin <- back$n.bin
+      emp.vario.sd <- back$emp.vario.sd
+      emp.vario <- back$emp.vario
+      rm("back")
+      
       if (!time && vdim == 1) {
         ## vario is symmetric in phi;
         ## so the number of phi's can be halfened in this case
@@ -374,7 +374,7 @@ RFempiricalvariogram <- function(
             theta.centers=thetabins,
             T=Tbins,
             vdim = vdim,
-            coord.units = new$coord_units,
+            coord.units = new$coordunits,
             variab.units = variab.units,
             call=call)
   else {
@@ -387,7 +387,7 @@ RFempiricalvariogram <- function(
               theta.centers=thetabins,
               T=Tbins,
               vdim = vdim,
-              coord.units =  new$coord_units,
+              coord.units =  new$coordunits,
               variab.units = variab.units
            )
     class(l) <- "RF_empVariog"
@@ -401,16 +401,6 @@ RFempiricalvariogram <- function(
 ## ############################################
 ## END OF MAIN FUNCTION 
 ## ############################################
-
-reflection <- function(data, orth, drop=FALSE)
-  ##IMPORPANT NOTE! DO NOT CHANGE THE VARIABLE NAMES IN THIS SIGNATURE
-  ## why ???
-  ## since the variable data is pasted by its name
-{
-  d <- dim(data)
-  return(do.call("[", c(list(data), rep(TRUE, orth-1), list(d[orth]:1),
-                        rep(TRUE, length(d) - orth), drop=drop)))
-}
 
 
 

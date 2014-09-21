@@ -4,39 +4,45 @@
 \alias{RFmodels}
 \alias{RFfunction}
 \alias{RFfunctions}
-\title{Evaluation operators}
+\title{Evaluation operators (RF commands)}
 \description{
   Here, all the \command{RF_name_} commands are listed.
 }
 \section{Models that are treated internally as operators
   on \code{\link{RMmodels}}}{
-    The users \code{\link{RMmodel}} is supplemented internally by
+    The user's \code{\link{RMmodel}} is supplemented internally by
     operators that are tacitely assumed, e.g. \command{\link{RPgauss}}.
 
     Further completions of the user's model determine what should be
-    done with the model, e.g. calculation \command{\link{RFcov}}.
+    done with the model, e.g. calculation of the covariance
+    (\command{\link{RFcov}}).
     The following list gives those \code{RFfunctions} that have
     an internal represenation as completion to the user's model.
-  \tabular{ll}{
+    \tabular{ll}{
+      \bold{User's function} \tab \bold{Internal task}
+      \cr
     \command{\link{RFcov}} \tab assigns to a covariance model the
     covariance values
     at given locations
     \cr
     \command{\link{RFcovmatrix}} \tab assigns to a covariance model the
-    cross covariance values at given locations
+    matrix of covariance values at given locations
     \cr
     %   \command{\link{RFget}} \tab not implemented yet\cr
-    \command{\link{RFfctn}} \tab assigns to a covariance model the
-    value of the function at given locations
+    \command{\link{RFfctn}} \tab assigns to a model the
+    value of the function at given locations. In case of a covariance
+    model \command{\link{RFfctn}} is identical to \command{\link{RFcov}}.
     \cr
     \command{\link{RFdistr}} \tab generic function
-    assigning to distribution family various characteristics of the
-    distribution
+    assigning to a distribution family various values of the
+    distribution % (density function, distribution function, quantile,
+    random sample)
     \cr
     \command{\link{RFpseudovariogram}} \tab assigns to a  model the
     values of the pseudo variogram
     at given locations\cr
-    \command{\link{RFsimulate}} \tab simulation of random fields
+    \command{\link{RFsimulate}} \tab assigns to a model
+    a realisation of the corresponding random field
     \cr
     \command{\link{RFvariogram}} \tab assigns to a  model the
     values of the (cross-)variogram
@@ -46,7 +52,9 @@
 
 \section{Estimation and Inference}{
  \tabular{ll}{
-    \command{\link{RFcrossvalidate}} \tab cross validation for Gaussian fields
+      \bold{User's function} \tab \bold{Description}
+      \cr
+     \command{\link{RFcrossvalidate}} \tab cross validation for Gaussian fields
     \cr
     \command{\link{RFempiricalvariogram}} \tab
     empirical variogram
@@ -56,8 +64,7 @@
     \cr
     \command{\link{RFinterpolate}} \tab \code{'kriging' and 'imputing'}
     \cr
-%    \command{\link{RFlikelihood}} \tab not coded yet % to do 
-\cr
+%    \command{\link{RFlikelihood}} \tab not coded yet % to do \cr
     \command{\link{RFratiotest}} \tab likelihood ratio test for Gaussian fields
     \cr
   }
@@ -97,8 +104,9 @@
     \cr
     \command{\link{RFgetModel}} \tab
     returns the model used in a \code{\link{RFfunction}}, with some
-    more details on the implementation, including the default values of
-    the arguments of the model
+    more details
+    %on the implementation
+   % \cr\tab  including the default values of the arguments of the model
     \cr	  
     \command{\link{RFgetModelInfo}} \tab
     similar to \command{\link{RFgetModel}}, but with detailed
@@ -110,13 +118,6 @@
     \command{\link{RFoptions}} \tab
     options of package RandomFields
   }
-}
-
-
-\note{
-  Note not all the functions starting with \code{RF}
-  possess a corresponding implementation as operator, e.g. not
-  \command{\link{RFfit}} and \command{\link{RFinterpolate}}.
 }
 
 \seealso{

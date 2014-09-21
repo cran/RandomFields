@@ -44,8 +44,7 @@ if (!interactive()) RFoptions(modus_operandi="sloppy")
                ##  SECTION 4: UNCONDITIONAL SIMULATION  ##
                ###########################################
 
-
-RFoptions(seed = 0, height = 4, always_close_screen = FALSE)
+RFoptions(seed = 0, height = 4, always_close_screen = TRUE)
 ## seed=0:  *ANY* simulation will have the random seed 0; set
 ##          RFoptions(seed=NA) to make them all random again
 ## height : height of X11
@@ -130,7 +129,6 @@ plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, cex = 2.3,
 
 
 
-
                ###########################################
                ## SECTION 5: DATA ANALYSIS              ##
                ###########################################
@@ -198,7 +196,7 @@ data <- cbind(plane, weather[ , 1 : 2])
 z <- RFinterpolate(pars, data = data, dim = 2,
                    x = seq(r[1, 1], r[2, 1], length = n),
                    y = seq(r[1, 2], r[2, 2], length = n),
-                   variab_units = c("Pa", "K"), spConform = TRUE)
+                   varunits = c("Pa", "K"), spConform = TRUE)
 plot(z)
 
 }

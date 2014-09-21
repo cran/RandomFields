@@ -9,7 +9,7 @@
 \alias{RC_SPACEISOTROPIC}
 \alias{RC_CARTESIAN_COORD}
 
-\title{Constants used in RandomFields}
+\title{Constants used in RandomFields (RC constants)}
 \description{
   Several constants are provided that might make
   the use of some functions easier, e.g. \command{\link{RFgetModelNames}}

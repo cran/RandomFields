@@ -24,155 +24,189 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <math.h>  
 #include <stdio.h>  
- 
+#include <Rdefines.h>
+
 #include "RF.h"
 
-void boxcounting(double *z,  // data
-		 int *lx,    // basic length of data 
-		 int *repet, // "independent" repetitions of data 
-		 double *factor, // rescalin of data values by factor
-		 int *eps,   // box lengths
-		 int *leps,  // length of eps
-		 double *sum // leps * repet
+SEXP boxcounting(SEXP Z,  // data
+		 SEXP LX,    // basic length of data 
+		 SEXP Repet, // "independent" repetitions of data 
+		 SEXP Factor, // rescalin of data values by factor
+		 SEXP Eps   // box lengths
     ) {
   // in sum, the boxcounting result for the first lx data values is given 
   // according to the box lengths given by eps; then the boxes are counted
   // for the next lx data values, etc. Hence, sum must have dimension
-  long i,  k,  j, e, s, truelx, r, lastbox, total;
-  double zz, min, max, f; 
+  int 
+    *eps = INTEGER(Eps),
+    leps = length(Eps),
+    repet = INTEGER(Repet)[0],
+    lx = INTEGER(LX)[0];
+  long i,  k,  j, e,   r, lastbox, s, // 0 to leps * repet -1
+    truelx = 2 + lx, 
+    total = repet * truelx;
+  double zz, min, max, f, *sum,
+    factor = REAL(Factor)[0],
+    *z = REAL(Z); 
+
+  SEXP Sum;
+  PROTECT(Sum = allocVector(REALSXP, leps * repet));
+  sum = REAL(Sum);
+
   // boxcounting expects that the first and the last values are repeated
   // in the first dimension, see D.H.R; accordingly the total length in
   // the first direction is increased by 2:
-  truelx = 2 + *lx;
-  total = *repet * truelx; 
-  s = 0; // 0 to leps * repet -1
-  for (r=0; r<total; r+=truelx) {
-    for (k=0; k<*leps; k++, s++) {
+  for (s=r=0; r<total; r+=truelx) {
+    for (k=0; k<leps; k++, s++) {
       sum[s] = 0;
       e = eps[k]; // box size
-      assert(e <= *lx); 
-      lastbox = r + (e * (*lx / e)) + 1 - e;
+      assert(e <= lx); 
+      lastbox = r + (e * (lx / e)) + 1 - e;
       for (i = 1 + r; i <= lastbox; ) {
 	// # boxen um  Daten von 0.5 * (i + i-1) bis 0.5 * (i + i+1)
 	// zu ueberdecken
 	min = max = 0.5 * (z[i] + z[i-1]);
 	for (j=0; j<e; j++, i++) 
 	  if (z[i] < min) min = z[i]; else if (z[i] > max) max = z[i];
-	assert(i <= r + *lx + 1);
+	assert(i <= r + lx + 1);
 	if ((zz = 0.5 * (z[i-1] + z[i])) < min) min = zz; 
 	else if (zz > max) max = zz;
-	f = *factor / (double) e;
+	f = factor / (double) e;
 	sum[s] += floor(max * f) - floor(min * f) + 1.0;
       }
     }
   }
-  return;
+  UNPROTECT(1);
+  return Sum;
 }
 
-void periodogram(double *dat, // data
-		 int *len,    // basic length of data
-		 int *repet,  // # of "independent" repetitions
-		 int *fftm,  // fftm[0] >=1 not >=1 (R indexing assumed)
+SEXP periodogram(SEXP Dat, // data
+		 SEXP Len,    // basic length of data
+		 SEXP Repet,  // # of "independent" repetitions
+		 SEXP FFTM,  // fftm[0] >=1 not >=1 (R indexing assumed)
 		 //             interval of the vector given by fft of part
-		 int *part,  // not the basic length but only a part is
+		 SEXP Part,  // not the basic length but only a part is
                  //             transformed
-		 int *shift, // part is then shifted by shift until end of
-		 //             vector is reached; fft values are averaged
+		 SEXP Shift // part is then shifted by shift until end of
+		 //            vector is reached; fft values are averaged
                  //             over all these parts
-		 double *lambda // (fftm[1] - fftm[0] + 1) * repet
     ){ 
-  long seg_dat, err, k, j, total_seg, segment_r, start_k, end_k,
-      segm_l, lenMpart, delta_l, r, end_l;
-  double factor, *compl_number, n_inv, *taper, taper_fact, cos_factor;
+  int *fftm = INTEGER(FFTM),
+    part = INTEGER(Part)[0];
+  assert((fftm[0]>=1) && (fftm[1] <=part) && (fftm[1] >= fftm[0]));
+  long seg_dat,  k, j, total_seg, segment_r, 
+    repet = INTEGER(Repet)[0],
+    start_k = 2 * (fftm[0] - 1), // of complex numbers
+    end_k = 2 * (fftm[1] - 1),  // of complex numbers
+    segm_l,   r, 
+    delta_l = fftm[1] - fftm[0] + 1,
+    end_l = delta_l * repet,
+    err = ERRORFAILED,
+    len = INTEGER(Len)[0],
+    lenMpart = len - part,
+    shift = INTEGER(Shift)[0];
+  assert(lenMpart >= 0);
+  assert(shift>=1);
+ 
+  double 
+    taper_fact = sqrt( 2.0 / (3.0 * ((double) part + 1.0)) ),
+    cos_factor = 2.0 * PI / ((double) part + 1.0),
+    *compl_number = NULL, 
+    *taper = NULL,
+    *lambda = NULL,
+     n_inv = 1.0 / (double) ((int) (1.0 + lenMpart / (double) shift)),
+    *dat = REAL(Dat),
+    factor = log(2 * PI * len)
+    ; 
+
   FFT_storage FFT;
+  SEXP Lambda;
   
-  assert(*len >= *part);
-  assert((fftm[0]>=1) && (fftm[1] <=*part) && (fftm[1] >= fftm[0]));
-  assert(*shift>=1);
+  PROTECT(Lambda = allocVector(REALSXP, end_l)); 
+  lambda = REAL(Lambda);
+  for (j=0; j<end_l; j++) lambda[j]=0.0;
   
-  factor = log(2 * PI * *len);
-  lenMpart = *len - *part;
-  start_k = 2 * (fftm[0] - 1); // of complex numbers
-  end_k = 2 * (fftm[1] - 1);   // of complex numbers
-  delta_l = fftm[1] - fftm[0] + 1;
-  end_l = delta_l * *repet;
-  n_inv = 1.0 / (double) ((int) (1.0 + (*len - *part) / *shift));
   FFT_NULL(&FFT);
-  compl_number = NULL;
-  taper = NULL;
-  if ((compl_number = (double*) MALLOC(sizeof(double) * 2 * *part))==NULL || 
-      (taper = (double*) MALLOC(sizeof(double) * *part))==NULL){
+  if ((compl_number = (double*) MALLOC(sizeof(double) * 2 * part))==NULL || 
+      (taper = (double*) MALLOC(sizeof(double) * part))==NULL){
     goto ErrorHandling;
   }
   
-  for (j=0; j<end_l; j++) lambda[j]=0.0;
-  taper_fact = sqrt( 2.0 / (3.0 * ((double) *part + 1.0)) );
-  cos_factor = 2.0 * PI / ((double) *part + 1.0);
-  for (j=0; j<*part; j++) {
+  for (j=0; j<part; j++) {
     // taper is used to reduce bias for high frequencies by smoothing start 
     // and end of series towards zero
     // However a high bias for the smallest one or two frequencies is introduced 
     taper[j] = taper_fact * ( 1.0 - cos (cos_factor * (double) (j + 1)));
   }
 
-  for (segment_r=segm_l=r=0; r<*repet; r++, segment_r+=*len, segm_l+=delta_l) {
+  for (segment_r=segm_l=r=0; r<repet; r++, segment_r+=len, segm_l+=delta_l) {
     // repet
-    for (seg_dat=0; seg_dat<=lenMpart; seg_dat+=*shift) {
+    for (seg_dat=0; seg_dat<=lenMpart; seg_dat+=shift) {
       // shifts
       total_seg = seg_dat + segment_r;
-      for (k=0, j=0; j<*part ; j++) {
+      for (k=0, j=0; j<part ; j++) {
 	compl_number[k++] = dat[total_seg + j] * taper[j];
 	compl_number[k++] = 0.0;
       }
       if ((err=fastfourier(compl_number,
-			      part,   // length
+			   &part,   // length
 			      1,      // dim 
 			      (total_seg==0), // start? 
 			      false,  // inverse?  
-			      &FFT))!=0)     // aux 
+			   &FFT))!=0) {    // aux 
 	goto ErrorHandling;
+      }
       for (j=segm_l, k=start_k; k<end_k; j++, k+=2) {
 	lambda[j] += log(compl_number[k] * compl_number[k] + 
 			 compl_number[k+1] * compl_number[k+1]) - factor;
       }
     }
   }
-  for (j=0; j<end_l; j++) lambda[j] *= n_inv; // averaging over shifts
-  free(compl_number);
-  free(taper);
-  FFT_destruct(&FFT);
-  return;
+ 
+
  ErrorHandling:
   if (compl_number!=NULL) free(compl_number);
   if (taper!=NULL) free(taper);
-  for (j=0; j<end_l; j++) lambda[j] = RF_NA;
   FFT_destruct(&FFT);
-  return;
+  UNPROTECT(1);
+  if (err != NOERROR) error("error occured when calculating the periodogram");
+    // for (j=0; j<end_l; j++) lambda[j] *= n_inv; // averaging over shifts
+  
+  for (j=0; j<end_l; j++) lambda[j] *= n_inv;
+  return Lambda;
 }
 
 // both detrended fluctuation and aggreated variation  
-void detrendedfluc(double *dat, // data
-		   int *lx,     // basic length of data
-		   int *repet,  // # of "independent" repetitions
-		   int* blocks, // block (box) lengths
-		   int *ldfa,   // # of blocks
-		   double *dfavar,   // repet * ldfa
-		   double *varmethvar// repet * ldfa
-  ){
-  long i, j, m, nbox, ex, endfor, r, total, last, e, k;
-  double var, a, b, residual, Yt, realm, sumt, meanY, t, 
-    VarMeth_old, VarMeth_mean, VarMeth_var, delta, realnbox;
-
-  assert(*lx > 1);
-  total = *lx * *repet;
-  for (e = r = 0; r < total; r += *lx, e+=*ldfa) {
-    last = r + *lx;
-    for (j=r+1; j<last; j++) { dat[j] += dat[j-1]; }
-    for (i=0; i<*ldfa; i++){
-      var = 0.0;
-      m = blocks[i];
+SEXP detrendedfluc(SEXP Dat, // data
+		   SEXP LX,     // basic length of data
+		   SEXP Repet,  // # of "independent" repetitions
+		   SEXP Blocks, // block (box) lengths
+		   SEXP Ldfa   // # of blocks
+		   ){
+  int *blocks = INTEGER(Blocks);
+  long i, j, m, nbox, ex, endfor, r,  last, e, k,
+    lx = INTEGER(LX)[0],
+    repet = INTEGER(Repet)[0],
+    ldfa = INTEGER(Ldfa)[0],
+    total = lx * repet
+    ;
+   assert(lx > 1);
+ double var, a, b, residual, Yt, realm, sumt, meanY, t, 
+    VarMeth_old, VarMeth_mean, VarMeth_var, delta, realnbox, *lvar,
+    *dat = REAL(Dat);
+  SEXP Lvar; // ## rbind(l.varmeth.var, l.dfa.var) 2 * (repet * ldfa)
+  PROTECT(Lvar = allocMatrix(REALSXP, 2, ldfa * repet));
+  lvar = REAL(Lvar);
+  
+  for (e = r = 0; r < total; r += lx, e+=ldfa) {
+  last = r + lx;
+  for (j=r+1; j<last; j++) { dat[j] += dat[j-1]; }
+  for (i=0; i<ldfa; i++){
+  int idx = 2 *(e + i);
+    var = 0.0;
+     m = blocks[i];
       realm = (double) m;
-      nbox = *lx / m;      
+      nbox = lx / m;      
       realnbox = (double) nbox;
       ex = r + m * nbox;
       sumt = 0.5 * realm * (realm + 1.0); // sum_i^m i
@@ -188,10 +222,10 @@ void detrendedfluc(double *dat, // data
 	  VarMeth_var += delta * delta;
 	  VarMeth_old = dat[j];
 	}
-        varmethvar[e + i] = log(VarMeth_var / ((realnbox - 1.0)));
+        lvar[idx] = log(VarMeth_var / ((realnbox - 1.0)));
         // varmethvar[e + i] = log(VarMeth_var / ((realnbox)));
       } else {
-	varmethvar[e + i] = RF_NA;
+	lvar[idx] = RF_NA;
       }
 
       // detrended fluctuation
@@ -206,34 +240,44 @@ void detrendedfluc(double *dat, // data
 	b = (Yt - meanY * sumt) * 12 / (realm * (realm + 1.0) * (realm - 1.0));
 	a = meanY - b * sumt / realm;
 	for (k=j, t=1.0; k<endfor; k++, t+=1.0) {
-	  residual = dat[k] - (a + b * t);
+          residual = dat[k] - (a + b * t);
 	  var += residual * residual;
 	}
       }
-      dfavar[e + i] = log(var / ((realm - 1.0) * (double) nbox));
-    }
+      lvar[idx + 1] = log(var / ((realm - 1.0) * (double) nbox));
+    }  
   }
+  UNPROTECT(1);
+  return Lvar;
 }
 
 
 // range method
 #define FRACT_MAXDIM 10
-void minmax(double *dat,  // data
-	    int *lx,      // basic length
-	    int *repet,   // repetitions
-	    int *boxes,   // box lengths
-	    int *lb,      // # of box lengths
-	    double *count // repet * lb
-  ) {
-  int b, tb, cb, r, totalblocks, epsilon, idx, start, end;
-  double min, max;
-  for (start=cb=r=0; r<*repet; r++, start += *lx) {
-    for (b=0; b<*lb; b++, cb++) {
+SEXP minmax(SEXP Dat,  // data
+    SEXP LX,      // basic length
+    SEXP Repet,   // repetitions
+    SEXP Boxes,   // box lengths
+    SEXP LB      // # of box lengths
+    ) {
+  int b, tb, cb, r, totalblocks, epsilon, idx, start, end,
+    lx = INTEGER(LX)[0],
+    repet = INTEGER(Repet)[0],
+    *boxes = INTEGER(Boxes),
+    lb = INTEGER(LB)[0];
+  double min, max, *count,
+    *dat = REAL(Dat);
+  SEXP Count;
+  PROTECT(Count = allocVector(REALSXP, repet * lb));
+  count = REAL(Count);
+
+  for (start=cb=r=0; r<repet; r++, start += lx) {
+    for (b=0; b<lb; b++, cb++) {
       epsilon = boxes[b];
-      // boxes always overlap by one point, thus *lx - 1
+      // boxes always overlap by one point, thus lx - 1
       // i.e. epsilon gives the length of the interval and
       // both marginal points are taken into account
-      totalblocks = (*lx-1) / epsilon;
+      totalblocks = (lx-1) / epsilon;
       idx = start;
       end = start + epsilon;
       count[cb] = 0.0;
@@ -249,4 +293,7 @@ void minmax(double *dat,  // data
       count[cb] = log(count[cb] / (double) epsilon);
     } // b
   } // r
+
+  UNPROTECT(1);
+  return Count;
 }

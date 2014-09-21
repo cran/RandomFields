@@ -6,7 +6,7 @@
     
   \deqn{f(h) = (a_1 + a_2 z(h)) / (1 + z(h))}
   where
-  \deqn{z(h) = h^top A A^\top h}
+  \deqn{z(h) = h^\top A A^\top h}
 }
  
 

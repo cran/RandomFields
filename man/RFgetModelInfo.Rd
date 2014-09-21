@@ -21,9 +21,8 @@ RFgetModelInfo(register, level = 3,
 \arguments{
  \item{register}{\eqn{0,...,21} or an evaluating function,
    e.g. \command{\link{RFsimulate}}.
-   Place where intermediate calculations are stored;
-   The user should only use the registers \eqn{0,..,9}
-   for the user's own purpose.
+   Place where intermediate calculations are stored.
+   See also section \code{Registers} in \command{\link{RFoptions}}.
  }
  \item{explicite.natscale}{logical. Advanced option.
    If missing, then the model is returned as stored.

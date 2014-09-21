@@ -151,7 +151,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   }
 
   if (totpnts > max) {
-    sprintf(ERRORSTRING_OK, "number of points less than 'max' (%d)", max);
+    sprintf(ERRORSTRING_OK, "number of points less than '%s' (=%d)", 
+	    KNAME(SEQU_MAX), max);
     sprintf(ERRORSTRING_WRONG,"%d * %ld = %ld", back, spatialpnts, totpnts);
     err=ERRORCOVFAILED; goto ErrorHandling;
   }
@@ -177,7 +178,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   S = cov->Sseq;
 
   if (loc->length[spatialdim] <= back) {
-    GERR("the grid in the last direction is too small; use method `direct' instead of `sequential'");
+   GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",
+	 CovList[DIRECT].nick, CovList[SEQUENTIAL].nick);
   } else err = NOERROR;
 
   /* ************************* */
@@ -316,7 +318,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // F77_NAME(dchdc)(U22, &row, &row, G, NULL, &choljob, &f77err);
   if (f77err!=NOERROR) {
     if (PL>=PL_SUBIMPORTANT) 
-      {LPRINT("Error code F77_CALL(dpotrf) = %d\n", f77err);}
+      {INDENT; PRINTF("Error code F77_CALL(dpotrf) = %d\n", f77err);}
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   } 
@@ -331,7 +333,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   MEMCOPY(Inv22, U22, sizeof(double) * totpntsSQ);
   F77_CALL(dpotri)("Upper", &row, Inv22, &row, &f77err);
   if (f77err!=NOERROR) {
-    if (PL>=PL_SUBIMPORTANT) { LPRINT("Error code F77_CALL(dpotri) = %d\n", f77err); }
+    if (PL>=PL_SUBIMPORTANT) { INDENT; PRINTF("Error code F77_CALL(dpotri) = %d\n", f77err); }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   }

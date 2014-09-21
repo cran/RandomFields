@@ -78,7 +78,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
     sub.methods <- LSQMETHODS
     methods <- method
   } else stop("unknown method")
-
+  
   res <- list()
   if (full) {
     ats <- approx_test_single(model, method=method)
@@ -93,7 +93,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       models <- list(model)
     }
   }
-  
+
   
   for (i in 1:length(models)) {
     if (class(model) == "RFfit" || class(model) == "RF_fit") {
@@ -125,7 +125,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                            distances=distances, dimensions=dim,
                            RFopt=RFopt)
     }
-    
+   
     if (length(Z$data) > 1)
       stop("cross-valdation currently only works for single sets")
 
@@ -133,7 +133,11 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
     fitted <- list()
     len <- Z$dimdata[1, 1]
     Zcoord <- t(Z$coord[[1]])
+
+    #oldRF <- RFoptions(); Print("A")
+    
     for (nr in 1:len) {
+#      Print(nr, len, RFoptions(), all.equal(oldRF, RFoptions()));     
        if (length(base::dim(Z$data[[1]])) == 2)
         Daten <- Z$data[[1]][-nr,   , drop=FALSE] ## nicht data -- inferiert!!
       else # dim == 3 assumed
@@ -154,7 +158,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
           if (details) fitted[[nr]] <- fit
         }
       }
-       
+      
       interpol <- RFinterpolate(fit, x = Zcoord[nr, , drop=FALSE],
                                 grid=FALSE,
                                 data = cbind(coords, Daten),

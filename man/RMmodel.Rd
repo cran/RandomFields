@@ -4,7 +4,7 @@
 \alias{RMmodels}
 \alias{[,RMmodel,ANY,ANY-method} %]
 \alias{[<-,RMmodel,ANY,ANY-method} %]
-\title{Covariance and Variogram Models in \pkg{RandomFields}}
+\title{Covariance and Variogram Models in \pkg{RandomFields} (RM commands)}
 \description{
 Summary of implemented covariance and variogram models% in \link{RFformula}
 }

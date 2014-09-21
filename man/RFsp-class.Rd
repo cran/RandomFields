@@ -113,7 +113,8 @@
  \command{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}},
  \command{\link[=RFspatialPointsDataFrame-class]{RFspatialPointsDataFrame}},
  \command{\link[=RFgridDataFrame-class]{RFgridDataFrame}},
- \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
+ \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}},
+ \command{\link{sp2RF}}
 }
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

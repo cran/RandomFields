@@ -282,5 +282,3 @@ GETMODEL_SOLVE_MLE <- as.integer(4)
 
 LSQMETHODS <- c("self", "plain", "sqrt.nr", "sd.inv", "internal") 
 MLMETHODS <- c("ml") # "reml", "rml1"),
-
-DUPFALSE <- FALSE

@@ -13,27 +13,28 @@
  values.}
  \item{no.readonly}{If \command{\link{RFoptions}} is called without
    argument then all arguments are returned in a list. If
- \code{no.readonly=TRUE} then only rewritable arguments are returned.
+   \code{no.readonly=TRUE} then only rewritable arguments are returned.
  }
 }
 \details{
-  The subsections below comment on options for\cr
+  The subsections below comment on\cr
   \bold{1. \code{general}: General options}\cr
   \bold{2. \code{br}: Options for Brown-Resnick
     Fields}\cr
-  \bold{3. \code{circulant}: Options for circulant embedding methods, cf.\command{\link{RPcirculant}}}\cr
-  \bold{4. \code{coords}: Options for coordinates and units}
+  \bold{3. \code{circulant}: Options for circulant embedding methods
+    \command{\link{RPcirculant}}}\cr
+  \bold{4. \code{coords}: Options for coordinates and units}\cr
   \bold{5. \code{direct}: Options for simulating by simple matrix decomposition}\cr
-  \bold{6. \code{distr}: Options for distributions, in particular \command{\link{RRrectangular}}}
+  \bold{6. \code{distr}: Options for distributions, in particular \command{\link{RRrectangular}}}\cr
   \bold{7. \code{empvario}: Options for calculating the empirical variogram}\cr
   \bold{8. \code{fit}: Options for \command{\link{RFfit}},
-    \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}
-  \bold{9. \code{gauss}: Options for simulating Gaussian random fields}
+    \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}\cr
+  \bold{9. \code{gauss}: Options for simulating Gaussian random fields}\cr
   \bold{10. \code{graphics}: Options for graphical output}\cr
-  \bold{11. \code{gui}: Options for c\command{\link{RFgui}}}\cr
+  \bold{11. \code{gui}: Options for \command{\link{RFgui}}}\cr
   \bold{12. \code{hyper}: Options for simulating hyperplane tessellations}\cr
   \bold{13. \code{krige}: Options for Kriging}\cr
-  \bold{14. \code{maxstable}: Options for simulating max-stable random fields}
+  \bold{14. \code{maxstable}: Options for simulating max-stable random fields}\cr
   \bold{15. \code{mpp}: Options for the random coins (shot noise) methods}\cr
   \bold{16. \code{nugget}: Options for the nugget effect}\cr
   \bold{17. \code{registers}: Register numbers}\cr
@@ -55,7 +56,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{1. General options}\cr
+\bold{1. General options}
 \describe{
  % only works for RFsimulate, not for RFsimulate
  \item{\code{allowdistanceZero}}{boolean. Only used in
@@ -70,10 +71,10 @@
  }
 
   
- \item{\code{cPrintlevel}}{\code{printlevel} above works
- on the R level whereas \code{cPrintlevel} works on the C level.
- \code{cPrintlevel} is automatically set when \code{printlevel}
- is changed, namely as \code{min(printlevel, 5)}. 
+ \item{\code{cPrintlevel}}{
+   \code{cPrintlevel} is automatically set to \code{printlevel}
+   when \code{printlevel}
+   is changed. %, namely as \code{min(printlevel, 5)}. 
  
  0 : no message\cr
  1 : important (error) messages and warnings\cr
@@ -86,8 +87,11 @@
  8 : details on taking the square root of the covariance matrix\cr
  9 : details on intermediate calculations\cr
  10 : further details on intermediate calculations\cr
+
+ Note that \code{printlevel} works
+ on the R level whereas \code{cPrintlevel} works on the C level.
  
- Default: 1 [also  do].\cr
+ Default: 1 \cr % [also  do].\cr
  }
 
  \item{\code{detailed_output}}{logical.
@@ -100,7 +104,7 @@
    printed if simulated by TBM or random coin method. The value zero
    means that nothing is printed.
  
-   Default: \code{0} [do].
+   Default: \code{0} % [do].
  }
 
  
@@ -126,7 +130,7 @@
    internally as the value of the argument \code{n} in
    \command{\link{RFsimulate}}. The argument \code{expected_number_simu}
    should be set only by an advanced users and only if 
-   \command{\link{RFsimulate}} will be called with argument \code{n} allone.
+   \command{\link{RFsimulate}} will be called with argument \code{n} alone.
  }
 
  
@@ -138,6 +142,14 @@
  a grid.
  
  Default: \code{1e-6}
+ }
+
+ \item{asList}{logical. Lists of arguments are treated slightly
+ different from non-lists. If \code{asList=FALSE} they are treated the
+ same way as non-lists. This options being set to \code{FALSE} after
+ calling \command{RFoptions} it should be set as first element of a list.
+
+ Default: \code{TRUE}
  }
 
  \item{\code{matrix_inversion}}{
@@ -158,6 +170,8 @@
    In case of SVD, it is checked whether the eigenvalue is less than
    \code{matrix_tolerance}. Then the eigenvalue is not inverted, but
    the inverse is set to zero.
+
+   Default: 1e-6.
  }
  
 
@@ -207,7 +221,7 @@
  which may have undesirable interactions with some few other R
  functions, e.g. \command{\link[utils]{Sweave}}.
 
- Default: \code{'*'} [do]. 
+ Default: \code{'*'}. % [do]. 
  }
  
  
@@ -222,8 +236,11 @@
  
  The value of cov(1) is about 0.05 (for \code{scale=1})
  for models without range. See \command{\link{RMmodel}} or type
- \code{\link{RFgetModelNames}(type="positive definite",
-   domain="single variable", isotropy="isotropic", operator=FALSE, vdim=1)}
+ \cr
+\code{\link{RFgetModelNames}(type="positive definite",domain="single variable",
+}\cr
+\code{isotropy="isotropic", operator=FALSE, vdim=1)}
+ \cr
  for the list of primitive models.
  \itemize{
    \item \code{FALSE} : the practical range ajustment is not used.
@@ -251,26 +268,26 @@
  7 : details on intermediate calculations\cr
  8 : further details on intermediate calculations\cr
  
- Default: 1 [also do].\cr
+ Default: 1 %[also do].\cr
  }
 
-  \item{seed}{integer. If not \code{NULL} and not \code{NA}
-    the \code{\link[base]{set.seed}(seed)} is set
+ \item{seed}{integer. If \code{NULL} or \code{NA}
+   \command{\link{set.seed}} is \bold{not} called.
+   Otherwise, \code{\link[base]{set.seed}(seed)} is set
     before simulations are performed, e.g. by
     \command{\link{RFsimulate}} or \command{\link{RFdistr}}.
-    Otherwise  \command{\link{set.seed}} is \bold{not} called.
-
-    If the argument is set locally, i.e. within a function,
+  
+    If the argument is set locally, i.e., within a function,
     it has the usual local effect. If it is set globally, i.e. by
     \command{RFoptions} the \code{seed} is fixed
-    for all subsequent calls.
+    for \bold{all subsequent} calls.
     
     If the number of simulations \code{n} is greater than one
     and if \code{RFoptions(seed=seed)} is set, the \eqn{i}th
-    simulation is started the seed \code{seed}\eqn{+i-1}.
-    The function \code{set.seed} should not be used in case \code{n}
-    is greater than 1.
-
+    simulation is started with the seed \sQuote{\code{seed}\eqn{+i-1}}.
+ %   The function \code{set.seed} should not be used in case \code{n}
+%    is greater than 1.
+%
 %Vgle!   
 %set.seed(5)
 %RFsimulate(RPschlather(RMmatern(nu=2), xi=1, mu=1, s=1), x, grid=F, n=5)@data
@@ -287,17 +304,24 @@
 
 
  \item{\code{spConform}}{logical.
- If \code{TRUE} then \command{\link{RFsimulate}} and many other functions
- return an \code{sp}-object. Otherwise matrices or lists are
- returned as defined in RandomFields 2.0, see the manuals for the
- specific functions.
-
- Briefly, \code{spConform=TRUE} should be used by
+ \code{spConform=TRUE} might be used by
  a standard user as this allows the comfortable use of \command{plot},
- for instance, while \code{spConform=FALSE} is much faster and might
- be used by programmers.
+ for instance, while \code{spConform=FALSE} is \bold{much} faster and
+ and consumes \bold{much less memory}, hence might
+ be used by programmers or advanced users.
 
- Default: \code{TRUE} [do].
+ Details: if \code{spConform=TRUE} then \command{\link{RFsimulate}} and
+ many other functions 
+ return an \code{sp}-object (which is an S4 object). Otherwise, matrices
+ or lists are 
+ returned as defined in RandomFields 2.0, see the manuals for the
+ specific functions. Frequently, the latter have now a class attribute
+ to make the output nicer.
+
+ Note: for large data sets (to be generated),
+ \code{spConform=TRUE} should \bold{not} be used.
+
+ Default: \code{TRUE} %[do].
  }
 
 
@@ -307,7 +331,7 @@
  Do not change the value of this variable except you really
  know what you do.
  
- Default: \code{FALSE} [also do]. 
+ Default: \code{FALSE} $ %[also do]. 
  }
   
  \item{\code{storing}}{Logical.
@@ -327,7 +351,15 @@
 	model_register))}
  single registers can be deleted.
  
- Default: \code{FALSE} [do]. 
+ Default: \code{FALSE} %[do]. 
+ }
+
+ \item{\code{Ttriple}}{Logical or \code{NA}.
+   If \code{TRUE}, then triple for the time argument \code{T} is
+   expected, containing start, step (by), length.
+   If \code{FALSE} a sequence on a grid is expected.
+   If \code{NA} then the decision is automatic, but will lead to an
+   error if ambiguous.
  }
  
 \item{\code{vdim_close_together}}{logical. Used especially in functions that
@@ -347,9 +379,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{2. Options for Brown-Resnick Fields}
 \describe{
-  \item{\code{corr_factorr}}{
+  \item{\code{corr_factorr}}{ to do
   }
-  \item{\code{deltaAM}}{
+  \item{\code{deltaAM}}{ to do
   }
   
   \item{\code{maxtrendmem}}{
@@ -425,7 +457,7 @@
 
  
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \bold{3. \code{circulant}: Options for circulant embedding methods, cf. \command{\link{RPcirculant}}}
+ \bold{3. \code{circulant}: Options for circulant embedding methods, cf. \command{\link{RPcirculant}}}\cr
    These options influence the standard circulant embedding
    method, cutoff circulant embedding  intrinsic circulant embedding.
    It can also influence \command{\link{RPtbm}} if the line is simulated
@@ -436,6 +468,7 @@
  \item{\code{approx_step}}{See \command{\link{RPcirculant}}}
  \item{\code{dependent}}{See \command{\link{RPcirculant}}}
  \item{\code{force}}{See \command{\link{RPcirculant}}}
+ \item{\code{maxGB}}{See \command{\link{RPcirculant}}}
  \item{\code{maxmem}}{See \command{\link{RPcirculant}}}
  \item{\code{mmin}}{See \command{\link{RPcirculant}}}
  \item{\code{strategy}}{See \command{\link{RPcirculant}}}
@@ -452,16 +485,27 @@
 \bold{4. \code{coords}: Options for coordinates and units}
 \describe{
   \item{\code{coordinate_system}}{
-    One of the values \code{"auto"}, \code{"cartesian"},
+    One of the values \code{"auto"}, \code{"cartesian"}, \code{"earth"}
     %   \code{"polar"}, \code{"cylindric"}, \code{"spherical"},
-    \code{"earth"}
+   
     
     Default: \code{"auto"}
   }
   
-  \item{\code{coord_units}}{any string.     
+  \item{\code{coordnames}}{integer vector of length 2 or an increasing
+    sequence of integers or character.
+    This parameter gives the coordinate columns in a data frame, either
+    by starting column and ending column or the sequence or by names.
+    In the first case, single code{NA}s might be included, meaning
+    \sQuote{from the beginning} or \sQuote{until the end}. If both
+    values are \code{NA}, then, depending on the context, either
+    an error message is returned or it is assumed that the first
+    columns give the coordinates.    
+  }
+  
+  \item{\code{coordunits}}{any string.     
     If \code{coordinate_system = "earth"} and longitude and latitude
-    are transformed to 3d cartesian coordinates, \code{coord_units}
+    are transformed to 3d cartesian coordinates, \code{coordunits}
     determines 
     whether the radius is given in kilometers (\code{"km"}) or miles
     (\code{"miles"}).
@@ -469,19 +513,33 @@
     
     Default: \code{""}
   }
-  \item{\code{new_coord_units}}{internal and should not be set
-    internal.
+  
+  \item{\code{varnames}}{integer vector of length 2 or an increasing
+    sequence of integers or character.
+    This parameter gives the data columns in a data frame, either
+    by starting column and ending column or the sequence or by names.
+    In the first case, single code{NA}s might be included, meaning
+    \sQuote{from the beginning} or \sQuote{until the end}. If both
+    values are \code{NA}, then for keywords \sQuote{data},
+    \sQuote{value} and \sQuote{variable} will be searched for.
+    If none of them are found, depending on the context, either
+    an error message is returned or it is assumed that the last
+    columns give the data.    
+  }
+  \item{\code{new_coordunits}}{internal and should not be set by the user.
     
     Default: \code{""}
   }
      
-  \item{\code{variab_units}}{vector of characters.
-    The default units of the variables
+  \item{\code{varunits}}{vector of characters.
+    The default units of the variables.
     
     Default: \code{""}
   }
 
-  \item{\code{xyz_notation}}{logical, NA
+
+  \item{\code{xyz_notation}}{logical or \code{NA}. Used by
+    \code{\link{RMuser}} only.  
 
     \code{NA} : automatic choice (if possible)
    
@@ -500,7 +558,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{5. \code{direct}: Options for simulating by simple matrix decomposition}\cr
+\bold{5. \code{direct}: Options for simulating by simple matrix decomposition}
 \describe{
   \item{\code{max_variab}}{See \command{\link{RPdirect}}}
   \item{\code{root_method}}{See \command{\link{RPdirect}}}
@@ -586,10 +644,10 @@
 
   \item{\code{repetitions}}{
     Minimal number of realisations to determine a quantity of the
-    distribution by MCMC. E.g. zu determine integral \eqn{c}
+    distribution by MCMC. E.g. to determine the integral value \eqn{c}
     in the paper of Oesting, Schlather, Zhou.
     
-    Default: 1000
+    Default: 1000.
   }
   
   \item{\code{safety}}{ 
@@ -624,7 +682,7 @@
 
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{7. \code{empvario}: Options for calculating the empirical variogram}\cr
+\bold{7. \code{empvario}: Options for calculating the empirical variogram}
 \describe{ 
   \item{\code{fft}}{
     Logical. Determines whether FFT should be used for data on a grid
@@ -667,11 +725,9 @@
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  \bold{8. \code{fit}: Options for \command{\link{RFfit}},
    \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}
-The following comments on \command{\link{RFfit}} apply
-also to \command{\link{RFratiotest}}.
 
 \describe{
-  \item{\code{algorithm}}{
+  \item{\code{algorithm}}{ % to do
     Default: \code{-1}.
   }
   
@@ -761,9 +817,9 @@ also to \command{\link{RFratiotest}}.
 
   \item{\code{lowerbound_scale_factor}}{
     The lower bound for the scale is determined as
-    \eqn{(minimum distance
-      between different pairs of points) / }
-    \code{lowerbound_scale_factor}.
+    
+    (minimum distance between different pairs of points) /\cr
+     \code{lowerbound_scale_factor}.
     
     Default: \code{3}.
   }
@@ -771,7 +827,8 @@ also to \command{\link{RFratiotest}}.
   \item{\code{lowerbound_scale_ls_factor}}{ For the LSQ target
     function a different lower bound 
     for the scale is used. It is determined as
-    \eqn{(minimum distance between different pairs of points) / }
+    
+    (minimum distance between different pairs of points) / \cr
     \code{lowerbound_scale_ls_factor}.
     
     Default: \code{5}.
@@ -894,7 +951,8 @@ also to \command{\link{RFratiotest}}.
  \item{\code{optim_var_elimination}}{This argument takes the values
     \code{'never'}, \code{'respect bound'}, \code{'try'},
     \code{'yes'}, and should only be 
-    set by the advanced user.
+    set by the advanced user. Background of this option is that
+    a global variance can optimized analytically.
     
     The meaning of the values is as follows.
     \itemize{
@@ -912,7 +970,7 @@ also to \command{\link{RFratiotest}}.
       }
       \item{\code{'yes'}}{
 	A global variance is tried to be eliminated altough
-	the algorithm dis not find an indication. Here, the full
+	the algorithm did not find an indication. Here, the full
 	responsibility is left to the user. (This option might
 	make sense if \code{transform} is given.)
 	This option is only overwritten when it does not make sense,
@@ -923,14 +981,23 @@ also to \command{\link{RFratiotest}}.
   }
 
   
- \item{\code{refine_onborder}}{
+  \item{\code{refine_onborder}}{logical.
+    If \code{TRUE} and an estimated parameter of the model
+    is close to the boundary, a second search for the optimum
+    is started.
+
+    Default: \code{TRUE}
+    
   }
+ 
   \item{\code{minmixedvar}}{
     lower bound for variance in a mixed model;
     so, the covariance model for mixed model part might
     be calibrated appropriately
+
+    Default:  1/1000
   }
-  \item{\code{solvesigma}}{Boolean -- experimental stage!
+  \item{\code{solvesigma}}{Logical. -- experimental stage!
     If a mixed effect part is present where the variance
     has to be estimated, then this variance parameter is solved
     iteratively within the profile likelihood function, if
@@ -938,6 +1005,8 @@ also to \command{\link{RFratiotest}}.
     if the number of independent variables is very small.
     If \code{solvesigma=FALSE} then the variance parameter is
     treated as any other parameter to be estimated.
+
+    Default: \code{FALSE}.
   }
   \item{\code{ratiotest_approx}}{logical.
     if \code{TRUE} the approximative formula that twice the
@@ -945,6 +1014,8 @@ also to \command{\link{RFratiotest}}.
     distribution is used. The parameter of freedom equals
     the number of parameters to be estimated for the covariance
     function, including those for the covariates.
+
+    Default: \code{TRUE}
   }
   \item{\code{reoptimise}}{logical.
     If \code{TRUE && !only_users} then at a very last step,
@@ -1008,6 +1079,9 @@ also to \command{\link{RFratiotest}}.
   }
 
   \item{\code{smalldataset}}{
+    If the number of locations is considered as small, then some more data
+    are kept in the storage to accelerate the estimation algorithm.
+    
     Default: \code{2000}.
   }
   
@@ -1046,8 +1120,10 @@ also to \command{\link{RFratiotest}}.
   
   \item{\code{upperbound_scale_factor}}{
     The upper bound for the scale is determined
-    as \code{upperbound_scale_factor}\eqn{ * (maximum distance
-      between all pairs of points)}.
+    as
+
+    \code{upperbound_scale_factor} * (maximum distance
+      between all pairs of points).
     
     Default: \code{3}.
   }
@@ -1098,6 +1174,9 @@ also to \command{\link{RFratiotest}}.
   \item{\code{use_spam}}{
     Should the package \code{spam} (sparse matrices)
     be used for matrix calculations?
+    If \code{TRUE} \pkg{spam} is always used. If \code{FALSE},
+    it is never used. If \code{NA} its use is determined by
+    the size and the sparsity of the matrix.
     
     Default: \code{NA}. 
   }
@@ -1149,7 +1228,7 @@ also to \command{\link{RFratiotest}}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{10. \code{graphics}: Options for graphical output}\cr
+\bold{10. \code{graphics}: Options for graphical output}
 \describe{
   \item{\code{always_close_screen}}{logical.
     If \code{FALSE} the current device is kept as it is.
@@ -1159,10 +1238,20 @@ also to \command{\link{RFratiotest}}.
     is performed on the current device.
     Else the current device is closed.
     
+    Default: \code{FALSE}.
+  }
+  \item{\code{always_open_screen}}{logical.
+    if \code{TRUE} a new graphical window is opened for every
+    \command{\link[graphics]{plot}} if a standard graphical output is
+    used. If \code{NA} then the value is set
+    to \code{\link[base]{interactive}()}
+    
     Default: \code{TRUE}.
   }
   \item{\code{grPrintlevel}}{
-    integer values 0, 1, 2. The higher the more text is shown in the plot.
+    integer values 0, 1, 2. The higher the more text is shown in the
+    plot.
+    
     Default: \code{1}.
   }
   
@@ -1178,6 +1267,29 @@ also to \command{\link{RFratiotest}}.
        
     Default: \code{6}.
   }
+
+  \code{pdffile}{ argument \code{file} in \command{\link{pdf}}
+    If \code{""} then no internal naming is performed.
+
+    Default: \code{""}.
+  }
+  \code{jpegfile}{ argument \code{file} in \command{\link{jpeg}}
+    If \code{""} then no internal naming is performed.
+
+    Default: \code{""}.
+  }
+  \code{filenumber}{integer. Starting number of the file if
+    \code{onefile=FALSE}. It is set to 0 whenever \code{pdffile} is
+    changed and \code{onefile=FALSE}. 
+
+    Default 0.
+  }
+  \code{onefile}{about the behaviour of argument \code{onefile} in
+    \command{\link{pdf}}
+
+    Default: \code{FALSE}.
+  }
+
   
   \item{\code{increase_upto}}{
     See \code{height}.
@@ -1189,7 +1301,7 @@ also to \command{\link{RFratiotest}}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{11. \code{gui}: Options for c\command{\link{RFgui}}}\cr
+\bold{11. \code{gui}: Options for c\command{\link{RFgui}}}
 \describe{
   \item{\code{alwaysSimulate}}{
     logical. If \code{TRUE} then a new random field is simulated
@@ -1222,14 +1334,14 @@ also to \command{\link{RFratiotest}}.
     The two components of the vector correspond to one-dimensional and
     two-dimensional processes, respectively.
     
-    Default: \code{c(512, 64)}.
+    Default: \code{c(1024, 64)}.
   }
 }
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{12. \code{hyper}: Options for simulating hyperplane tessellations}\cr
+\bold{12. \code{hyper}: Options for simulating hyperplane tessellations}
 \describe{
   \item{\code{mar_distr}}{integer.
     This argument should not be changed yet.
@@ -1268,7 +1380,7 @@ also to \command{\link{RFratiotest}}.
 
 
  
-\bold{13. \code{krige}: Options for Kriging}\cr
+\bold{13. \code{krige}: Options for Kriging}
 \describe{
   
   \item{\code{cholesky_R}}{
@@ -1394,10 +1506,12 @@ also to \command{\link{RFratiotest}}.
     The simulation of the max-stable process based on random fields uses
     a stopping rule that necessarily needs a finite upper endpoint
     of the marginal distribution of the random field.
-    In the case of Brown-Resnick processes and extremal Gaussian fields
-    (\command{\link{RPbrownresnick}} and
-    \command{\link{RPschlather}}, respectively), the upper endpoint is
-    approximated by \code{standardmax}. 
+    In the case of
+    \command{\link[=RPbrownresnick]{Brown-Resnick processes}},
+    \command{\link[=RPschlather]{extremal Gaussian fields}},
+    and
+    \command{\link[=RPopitz]{extremal t fields}},
+    the upper endpoint is approximated by \code{standardmax}. 
     
     Default: \code{3.0} .
   }
@@ -1448,7 +1562,7 @@ also to \command{\link{RFratiotest}}.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{15. \code{mpp}: Options for the random coins (shot noise) methods}\cr
+\bold{15. \code{mpp}: Options for the random coins (shot noise) methods}
 \describe{
   \item{\code{n_estim_E}}{integer. Number of draws from the
     distribution of the scale to estimate the mean of the distribution.
@@ -1502,33 +1616,34 @@ should change the values.
 \describe{
   \item{\code{condregister}}{Register number for conditional simulation
     
-    Default: \code{20} [also do].
+    Default: \code{20} %[also do].
   }
   \item{\code{errregister}}{Additional register for conditional
     simulation if error term is envolved.
     
-    Default: \code{21} [also do].
+    Default: \code{21} %[also do].
   }
   \item{\code{guiregister}}{Register number for \command{\link{RFgui}}.
     
-    Default: \code{14} [also do].
+    Default: \code{14} %[also do].
   }
   \item{\code{interpolregister}}{Register number for kriging
     
-    Default: \code{19} [also do].
+    Default: \code{19} %[also do].
   }
   
-  \item{\code{register}}{0:9; place where intermediate calculation
+  \item{\code{register}}{number in 0:9; place where intermediate calculation
     for random field simulation are stored; 
     the number refers to 10 internal registers 0..9.
     
     Changing the register number only makes sense, when
-    two different random fields, say, are to simulated in
+    two different random fields, say, are to be simulated
     alternatingly, several times in a row. Then the
     simlulation speed can be increased if several registers
-    are used and \code{storing=TRUE}.
+    are used, \code{storing=TRUE} and \command{\link{RFsimulate}}
+    is used with the only argument \code{n}.
      
-    Default: \code{0} [also do].
+    Default: \code{0} %[also do].
   } 
 }
 
@@ -1536,7 +1651,7 @@ should change the values.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{18. \code{sequ}: Options for the sequential method}\cr
+\bold{18. \code{sequ}: Options for the sequential method}
 \describe{
   \item{\code{back_steps}}{See \command{\link{RPsequential}}}
   \item{\code{initial}}{See \command{\link{RPsequential}}}
@@ -1545,9 +1660,9 @@ should change the values.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{19. \code{special}: Options for the turning bands method}\cr
+\bold{19. \code{special}: Options for specific methods}
 \describe{
-  \item{\code{multicopies}}{
+  \item{\code{multicopies}}{Only used by \command{\link{RMmult}}.
     The covariance functions are multiplied if the corresponding
     independent random fields are multiplied. To get
     an approximative Gaussian random fields with a multiplicative
@@ -1557,7 +1672,7 @@ should change the values.
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{20. \code{spectral}: Options for the spectral (turning bands) method}\cr
+\bold{20. \code{spectral}: Options for the spectral (turning bands) method}
 \describe{
   \item{\code{ergodic}}{
     In case of an additive model and \code{ergodic=FALSE},
@@ -1589,8 +1704,7 @@ should change the values.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{21. \code{tbm}: Options for the turning bands method}\cr
-
+\bold{21. \code{tbm}: Options for the turning bands method}
 \describe{
   \item{\code{center}}{Scalar or vector.
     If not \code{NA}, the \code{center} is used as the center of
@@ -1603,7 +1717,11 @@ should change the values.
   }
 
   \item{\code{fulldim}}{
-    positiv integer.
+    positiv integer. The dimension of the space into which the
+    simulated field is embedded. So, the value \code{fulldim}
+    must be at least the dimension of the field.
+
+    Default: 3.
   }
   
   \item{\code{grid}}{Logical.
@@ -1666,12 +1784,14 @@ should change the values.
     The use of \code{center} and \code{points} is highlighted
     in an example below.
     
-    Default: \code{0} .
+    Default: \code{0}.
   }
 
-  \item{\code{tbmdim}}{
+  \item{\code{reduceddim}}{
     if positiv integer, then the value itself. If negativ, then
     the value is substracted from fulldim.
+
+    Default: \code{-2}.
   }
   
 }
@@ -1679,26 +1799,37 @@ should change the values.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{22. \code{internal}: Internal options mostly for warnings and messages}\cr
+\bold{22. \code{internal}: Internal options mostly for warnings and
+  messages}
+
+All these options should not be changed by the user unless
+he/she really known what he/she is doing.
+
+Most of the options below change their value in a session
+without the user's notice.
+
+
 \describe{
  
   \item{\code{stored.init}}{internally used logical argument.
-    \code{general.storing} controls whether intermediate calculations
+    This option is closely related to 
+    \code{storing} which controls whether intermediate calculations
     should be stored to have faster repeated simulations.
 
     This user option is internally overwritten if the user calls several
-    simulation at once. This current value is stored in \code{stored.init}.
+    simulations at once. This current value is stored in \code{stored.init}.
   
-    Default: \code{TRUE}.
+    Default: \code{FALSE}.
   }
   
   \item{\code{warn_ambiguous}}{internally used logical argument.
     Usually, the argument \code{grid} in \command{\link{RFsimulate}},
-    for instance, should be given. If not, the system usually guesses
-    correctly what was meant by the user, and displays a message if
+    for instance, can or should be given. If not given,
+    the system takes a default definition.
+    Additionally a message is displayed in this case if
     \code{ambiguous=TRUE}.
     
-    Default: \code{TRUE}.
+    Default: \code{FALSE}.
   }
   \item{\code{warn_aspect_ratio}}{internally used logical argument.
     if \code{TRUE} then a warning is given not a standard graphical
@@ -1781,26 +1912,26 @@ should change the values.
 
 }
 
-\bold{General comments}\cr 
-Most of the global arguments determine the basic settings of a
-simulation, e.g. \code{root_method} (which chooses the method to
-calculate a square
-root of a positive definite matrix). The values of
-such arguments are read by
-\command{\link{RFsimulate}} and stored in an internal register
-and used in preliminary, deterministic calculations (e.g. calculation
-of the square of a covariance matrix)
-Some few other arguments like \code{lines} (which determines the number of
-i.i.d. processes to be simulated on the line)
-are only relevant when generating
-random numbers.
-These arguments are read only when actually simulations are performed, and
-are marked by \dQuote{[do]}.
+%\bold{General comments}\cr
+%Most of the above arguments determine the basic settings of a
+%simulation, e.g. \code{root_method} (which chooses the method to
+%calculate a square
+%root of a positive definite matrix). The values of
+%such arguments are read by
+%\command{\link{RFsimulate}} and stored in an internal register
+%and used in preliminary, deterministic calculations (e.g. calculation
+%of the square of a covariance matrix)
+%Some few other arguments like \code{lines} (which determines the number of
+%i.i.d. processes to be simulated on the line)
+%are only relevant when generating
+%random numbers.
+%These arguments are read only when actually simulations are performed, and
+%are marked by \dQuote{[do]}.
 
-The difference of these two classes of arguments might become
-important only if \code{general.storing = TRUE} and
-\command{\link{RFsimulate}} is called only if with the argument
-\code{n}.
+%The difference of these two classes of arguments might become
+%important only if\code{general.storing = TRUE} and
+%\command{\link{RFsimulate}} is called with the only argument
+%\code{n}.
 
 }
 
@@ -1810,9 +1941,10 @@ important only if \code{general.storing = TRUE} and
  \code{NULL} if any argument is given, and the full list of
  arguments, otherwise.
 
- if \code{no.readonly=FALSE} then additionally, the last element
- of the list is itself a list containing
+ if \code{no.readonly=FALSE} then additionally,
+ a list called \code{readonly} is included containing
  \cr
+ * \code{covmaxchar}: the maximum length of a model name
  * \code{covnr}: number of currently implemented
  variogram/covariance models (-1 means that none of the functions like
  \command{\link{RFsimulate}}, \command{\link{RFfit}}

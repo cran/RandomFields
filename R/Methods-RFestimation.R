@@ -20,10 +20,10 @@ setMethod(f="anova", signature='RMmodelFit',
           definition=function(object, ...) anova.RFfit(object, ...))#
 
 boundary_values <- function(variab) {
-  upper.bound <- variab[4, ]
-  lower.bound <- variab[3, ]
+  upper.bound <- variab[4, , drop=FALSE]
+  lower.bound <- variab[3, , drop=FALSE]
   # sd <- variab[2, ]
-  variab <- variab[1, ]
+  variab <- variab[1, , drop=FALSE]
   lidx <- variab < lower.bound + 1e-8
   uidx <- variab > upper.bound - 1e-8
   nl <- sum(lidx, na.rm=TRUE)
@@ -108,7 +108,7 @@ print.summary.RMmodelFit <- function(x, ...) {
 
   printVariab <- function(x) {
     cat("Internal variables:\n")
-    if (is.null(x$boundary)) print(x$variab[1:2, ], ..., na.print="-")#
+    if (is.null(x$boundary)) print(x$variab[1:2, , drop=FALSE], ..., na.print="-")#
     else print(x$variab, ..., na.print="-")#
     cat("\n")
     return(ncol(x$variab))
@@ -541,8 +541,8 @@ list2RFempVariog <- function(li) {
              theta.centers=li$theta.centers,
              T=li$Tbins,
              vdim = li$vdim,
-             coord.units = RFopt.coords$coord_units,
-             variab.units = RFopt.coords$variab_units,
+             coord.units = RFopt.coords$coordunits,
+             variab.units = RFopt.coords$varunits,
              call=li$call ))
 }
 

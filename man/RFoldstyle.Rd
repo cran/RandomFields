@@ -19,9 +19,13 @@ RFoldstyle(old=TRUE)
  \code{NULL}
 }
 
-\note{
-  see \sQuote{doc/version2.pdf} for partial documentation of the former
-  functions. Note that the documentation is not maintained.
+%\note{
+%  see for partial documentation of the former
+%  functions. Note that the documentation is not maintained.
+%}
+\seealso{
+ See \sQuote{\href{../doc/version.pdf}{version2}}
+ for details on the commands of version 2.
 }
 
 \author{

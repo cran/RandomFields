@@ -51,12 +51,8 @@ rfgui.intern <- function(data, x, y,
   if (missing(ev)) ev <- NULL
   if (missing(xcov)) xcov <- NULL
   if (missing(ycov)) ycov <- NULL
-  
-  if (!do.call(base::require, list("tcltk", quietly=TRUE)) ||
-      !do.call(base::require, list("tkrplot", quietly=TRUE)))
-    stop("To use 'RFgui' the tcl/tk packages 'tcltk' and 'tkrplot' must be installed.")
-  
-  tclRequire("BWidget", warn=!FALSE)
+    
+  tcltk::tclRequire("BWidget", warn=!FALSE)
 
   ENVIR <- environment()
   assign("model", NULL, envir = ENVIR) # orignal: model als parameter uebergeben
@@ -86,18 +82,18 @@ rfgui.intern <- function(data, x, y,
       baseParam <- get("baseModel", envir=ENVIR)$k
       if(length(baseParam) > 0) {
       for (i in 1:length(baseParam)) 
-        baseParam[i] <- as.numeric(tclvalue(get(paste("slParam", i, "Value",
+        baseParam[i] <- as.numeric(tcltk::tclvalue(get(paste("slParam", i, "Value",
                                                       sep=""), envir=ENVIR)))
         assign(paste("remember",selModelNum,sep=""), baseParam, envir=ENVIR)
         for (i in 1:length(baseParam)) {
-          tkdestroy(get(paste("slParam", i, sep=""), envir=ENVIR))
-          tkdestroy(get(paste("slParam", i, "Name", sep=""), envir=ENVIR))
-          tkdestroy(get(paste("entryParam", i, sep=""), envir=ENVIR))
+          tcltk::tkdestroy(get(paste("slParam", i, sep=""), envir=ENVIR))
+          tcltk::tkdestroy(get(paste("slParam", i, "Name", sep=""), envir=ENVIR))
+          tcltk::tkdestroy(get(paste("entryParam", i, sep=""), envir=ENVIR))
         }
       }
     }
 
-    modelChoiceNum <- as.numeric(tclvalue(tcl(comboBox,"current")))
+    modelChoiceNum <- as.numeric(tcltk::tclvalue(tcltk::tcl(comboBox,"current")))
     if(modelChoiceNum == -1) return(0)
 
     # nun zum neuen Model
@@ -106,7 +102,7 @@ rfgui.intern <- function(data, x, y,
 		      PACKAGE="RandomFields")$nr
 
     selModelCountPar <- .C("GetNrParameters", selModelNum, k=integer(1),
-                           PACKAGE="RandomFields", DUP = DUPFALSE)$k
+                           PACKAGE="RandomFields")$k
     dim <- as.integer(2 - sim_only1dim)  
     newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
     ##  Print(selModelCountPar, modelChoice, newmodel)
@@ -141,21 +137,21 @@ rfgui.intern <- function(data, x, y,
         else 0.5 * (modelParam[i,1] + modelParam[i,2])
  
       #Slider fuer den neuen Parameter 
-      slParamValue <- tclVar(baseParam[i])
-      entryParamValue <- tclVar(tclvalue(slParamValue))
+      slParamValue <- tcltk::tclVar(baseParam[i])
+      entryParamValue <- tcltk::tclVar(tcltk::tclvalue(slParamValue))
       # name <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
-      # slParamName <- tklabel(tt,text=paste(toupper(substring(name, 1,1)), substring(name, 2), sep=""))
+      # slParamName <- tcltk::tklabel(tt,text=paste(toupper(substring(name, 1,1)), substring(name, 2), sep=""))
       txt <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
-      slParamName <- tklabel(tt, text=txt)
-      slParam <- tkscale(tt, command = plotDensity,
+      slParamName <- tcltk::tklabel(tt, text=txt)
+      slParam <- tcltk::tkscale(tt, command = plotDensity,
                          from= modelParam[i,1], 
                          to = modelParam[i,2],
                          showvalue=FALSE, variable=slParamValue,
                          resolution=if (modelParam[i, 3] == INTEGERPARAM) 1 else
                                 (modelParam[i,2]-modelParam[i,1])/numberSteps, 
                          orient="horizontal", length=length.slider, width=18)
-      entryParam <- tkentry(tt,width=size.entry,textvariable=entryParamValue)
-      tkbind(entryParam, "<Return>", OnAddParamEntryChanged)
+      entryParam <- tcltk::tkentry(tt,width=size.entry,textvariable=entryParamValue)
+      tcltk::tkbind(entryParam, "<Return>", OnAddParamEntryChanged)
       
       assign("slParam", slParam, envir=ENVIR)
       assign(paste("slParam", i, sep=""), slParam, envir=ENVIR)
@@ -176,84 +172,84 @@ rfgui.intern <- function(data, x, y,
 
   OnPlotVarCovChanged <- function(...)
   {
-    if((as.character(tclvalue(plotVarCov)) == "Variogram") && !is.null(ev)) {
+    if((as.character(tcltk::tclvalue(plotVarCov)) == "Variogram") && !is.null(ev)) {
       #Print("here", cbPlotEV);
       
-      ## tkconfigure(cbPlotEV, disabled=FALSE)
+      ## tcltk::tkconfigure(cbPlotEV, disabled=FALSE)
       #Print("here end")
     } else {
     #
       #Print("XXX here end")
-      tclvalue(plotEV) <- "0"
+      tcltk::tclvalue(plotEV) <- "0"
     }
-  #    tkconfigure(cbPlotEV, disabled=TRUE)
+  #    tcltk::tkconfigure(cbPlotEV, disabled=TRUE)
     
     #Print("OK")
-    tkrreplot(imgVar)
+    tkrplot::tkrreplot(imgVar)
   }
 
   OnplotEVChanged <- function(...)
   {
-    if((as.character(tclvalue(plotVarCov)) == "Covariance") || is.null(ev))
-      tclvalue(plotEV) <- "0"
-    tkrreplot(imgVar)
+    if((as.character(tcltk::tclvalue(plotVarCov)) == "Covariance") || is.null(ev))
+      tcltk::tclvalue(plotEV) <- "0"
+    tkrplot::tkrreplot(imgVar)
   }
 
   OnScaleEntryChanged <- function(...)
   { 
-    newscale <- log(as.numeric(tclvalue(entryScaleValue)))
-    tkconfigure(slScale, to=newscale+abs(newscale),
+    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleValue)))
+    tcltk::tkconfigure(slScale, to=newscale+abs(newscale),
                 from=min(scaleMin,newscale-2),
                 resolution=0.01 *
                 ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2)))
-    tclvalue(slScaleValue) <- log(as.numeric(tclvalue(entryScaleValue)))
+    tcltk::tclvalue(slScaleValue) <- log(as.numeric(tcltk::tclvalue(entryScaleValue)))
   }  
 
   OnVarEntryChanged <- function(...)
   { 
-    newvariance <- log(as.numeric(tclvalue(entryVarianceValue)))
-    tkconfigure(slVariance,
+    newvariance <- log(as.numeric(tcltk::tclvalue(entryVarianceValue)))
+    tcltk::tkconfigure(slVariance,
                 to=newvariance+abs(newvariance),
                 from=min(varianceMin,newvariance-2),
                 resolution=0.01 *
                 (2 * newvariance - varianceMin) -
                 min(varianceMin, newvariance - 2))
-    tclvalue(slVarianceValue) <- newvariance
+    tcltk::tclvalue(slVarianceValue) <- newvariance
   } 
 
    OnNuggetEntryChanged <- function(...)
   { 
-    newnugget <- max(0,as.numeric(tclvalue(entryNuggetValue)))
-    tkconfigure(slNugget, to=if(newnugget==0) 1 else 2*newnugget,
+    newnugget <- max(0,as.numeric(tcltk::tclvalue(entryNuggetValue)))
+    tcltk::tkconfigure(slNugget, to=if(newnugget==0) 1 else 2*newnugget,
                 from=0, resolution=0.02*newnugget)
-    tclvalue(slNuggetValue) <- newnugget
+    tcltk::tclvalue(slNuggetValue) <- newnugget
   } 
 #  XX_OnNuggetEntryChanged <- function(...)
 #  { 
-##    newnugget <- max(0,as.numeric(tclvalue(entryNuggetValue)))
-  ##   tkconfigure(slNugget, to=2*newnugget, from=0, resolution=0.02*newnugget)
-#    tclvalue(slNuggetValue) <- newnugget
+##    newnugget <- max(0,as.numeric(tcltk::tclvalue(entryNuggetValue)))
+  ##   tcltk::tkconfigure(slNugget, to=2*newnugget, from=0, resolution=0.02*newnugget)
+#    tcltk::tclvalue(slNuggetValue) <- newnugget
 #  } 
 
   OnRotationEntryChanged <- function(...)
   { 
-    tclvalue(slRotationValue) <- as.numeric(tclvalue(entryRotationValue))
+    tcltk::tclvalue(slRotationValue) <- as.numeric(tcltk::tclvalue(entryRotationValue))
   }  
 
   OnRadiusEntryChanged <- function(...)
   { 
-    newscale <- log(as.numeric(tclvalue(entryScaleAValue)))
-    tkconfigure(slScaleA, to=newscale+abs(newscale),
+    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleAValue)))
+    tcltk::tkconfigure(slScaleA, to=newscale+abs(newscale),
                 from=min(scaleMin,newscale-2),
                 resolution=0.01*
                 ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2))) 
-    tclvalue(slScaleAValue) <-newscale
-    newscale <- log(as.numeric(tclvalue(entryScaleBValue)))
-    tkconfigure(slScaleB, to=newscale+abs(newscale),
+    tcltk::tclvalue(slScaleAValue) <-newscale
+    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleBValue)))
+    tcltk::tkconfigure(slScaleB, to=newscale+abs(newscale),
                 from=min(scaleMin,newscale-2),
                 resolution=0.01*
                 ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2)))
-    tclvalue(slScaleBValue) <- newscale
+    tcltk::tclvalue(slScaleBValue) <- newscale
   }  
 
   OnAddParamEntryChanged <- function(...)
@@ -263,38 +259,38 @@ rfgui.intern <- function(data, x, y,
       for (i in 1:length(baseModel$k)) {
         slParamValue <- get(paste("slParam", i, "Value", sep=""), envir=ENVIR)
         value <- get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tclvalue(slParamValue) <- round(as.numeric(tclvalue(value)), digits=2)
+        tcltk::tclvalue(slParamValue) <- round(as.numeric(tcltk::tclvalue(value)), digits=2)
       }
     plotDensity()
   } 
     
   GetGuiModel <- function() {
-    variance <- exp(as.numeric(tclvalue(slVarianceValue)))
-    nugget <- as.numeric(tclvalue(slNuggetValue))
+    variance <- exp(as.numeric(tcltk::tclvalue(slVarianceValue)))
+    nugget <- as.numeric(tcltk::tclvalue(slNuggetValue))
 
     #Print(baseModel)
     
     baseParam <- baseModel$k
     if(length(baseModel$k) > 0)
       for (i in 1:length(baseModel$k)) { 
-        baseParam[i] <- as.numeric(tclvalue(get(paste("slParam", i, "Value",
+        baseParam[i] <- as.numeric(tcltk::tclvalue(get(paste("slParam", i, "Value",
                                                       sep=""), envir=ENVIR)))
         entryParamValue <-
           get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tclvalue(entryParamValue) <- round(baseParam[i], digits=2)
+        tcltk::tclvalue(entryParamValue) <- round(baseParam[i], digits=2)
       }
 
     baseModel$k <- baseParam
    
-    if(!as.numeric(tclvalue(showAniso))) {
-      scale <- exp(as.numeric(tclvalue(slScaleValue)))
+    if(!as.numeric(tcltk::tclvalue(showAniso))) {
+      scale <- exp(as.numeric(tcltk::tclvalue(slScaleValue)))
       newmodel <- list(ZF_SYMBOLS_PLUS,
                     list(DOLLAR[1], var=variance, scale=scale, baseModel),
                     list(DOLLAR[1], var=nugget, list(ZF_NUGGET[1])))
     } else {
-      a <-  as.numeric(tclvalue(slRotationValue))
-      r <- c(exp(as.numeric(tclvalue(slScaleAValue))),
-             exp(as.numeric(tclvalue(slScaleBValue))))
+      a <-  as.numeric(tcltk::tclvalue(slRotationValue))
+      r <- c(exp(as.numeric(tcltk::tclvalue(slScaleAValue))),
+             exp(as.numeric(tcltk::tclvalue(slScaleBValue))))
       u <- matrix(c(cos(a), sin(a), -sin(a), cos(a)), ncol=2 )
       aniso <- u %*% (1/r * t(u))
       newmodel <- list(ZF_SYMBOLS_PLUS,
@@ -310,9 +306,9 @@ rfgui.intern <- function(data, x, y,
   plotFunction <- function(...)
   {
 
-    #Print(tclvalue(plotEV), cbPlotEV)
+    #Print(tcltk::tclvalue(plotEV), cbPlotEV)
 
-    plotev = as.numeric(tclvalue(plotEV))
+    plotev = as.numeric(tcltk::tclvalue(plotEV))
     par(cex=0.6, bg="lightgrey", mar=c(3,3,1,1))
     if(!exists("baseModel",envir=ENVIR)) {
       if(!is.null(ev) && plotev) {
@@ -329,24 +325,24 @@ rfgui.intern <- function(data, x, y,
     }
 
     #baseModel <- get("baseModel",envir=ENVIR)
-    tclvalue(entryScaleValue) <-
-      round(exp(as.numeric(tclvalue(slScaleValue))), digits=2)
-    tclvalue(entryVarianceValue) <-
-      round(exp(as.numeric(tclvalue(slVarianceValue))), digits=2)
-    tclvalue(entryNuggetValue) <-
-      round(as.numeric(tclvalue(slNuggetValue)), digits=2)
-    tclvalue(entryScaleAValue) <-
-      round(exp(as.numeric(tclvalue(slScaleAValue))), digits=2)
-    tclvalue(entryScaleBValue) <-
-      round(exp(as.numeric(tclvalue(slScaleBValue))), digits=2)
-    tclvalue(entryRotationValue) <-
-      round(as.numeric(tclvalue(slRotationValue)), digits=2)
+    tcltk::tclvalue(entryScaleValue) <-
+      round(exp(as.numeric(tcltk::tclvalue(slScaleValue))), digits=2)
+    tcltk::tclvalue(entryVarianceValue) <-
+      round(exp(as.numeric(tcltk::tclvalue(slVarianceValue))), digits=2)
+    tcltk::tclvalue(entryNuggetValue) <-
+      round(as.numeric(tcltk::tclvalue(slNuggetValue)), digits=2)
+    tcltk::tclvalue(entryScaleAValue) <-
+      round(exp(as.numeric(tcltk::tclvalue(slScaleAValue))), digits=2)
+    tcltk::tclvalue(entryScaleBValue) <-
+      round(exp(as.numeric(tcltk::tclvalue(slScaleBValue))), digits=2)
+    tcltk::tclvalue(entryRotationValue) <-
+      round(as.numeric(tcltk::tclvalue(slRotationValue)), digits=2)
 
 
     newmodel <- GetGuiModel()
     assign("RFgui.model", newmodel, envir=parent.ev)
     
-     if(as.numeric(tclvalue(showAniso))) {
+     if(as.numeric(tcltk::tclvalue(showAniso))) {
       x1 <- rep(xcov, each=length(ycov))
       x2 <- rep(ycov, times=length(xcov))
 
@@ -354,7 +350,7 @@ rfgui.intern <- function(data, x, y,
       
       cv <- RFvariogram(x=as.matrix(expand.grid(xcov, ycov)),
                         model=newmodel, 
-                        practicalrange = tclvalue(cbPracRangeVal) != "0")
+                        practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0")
       dim(cv) <- c(length(ycov),length(xcov))
 
       cv00 <- cv[1,1]
@@ -363,9 +359,9 @@ rfgui.intern <- function(data, x, y,
         cv[1,1] <- NA
       }
       tranMatrix <- persp(x=xcov, y=ycov, z=cv,
-                          theta = as.numeric(tclvalue(slTurnPlotValue)),
+                          theta = as.numeric(tcltk::tclvalue(slTurnPlotValue)),
                           zlim = zlim, phi = 0, xlab = "x", ylab = "y",
-                          zlab = as.character(tclvalue(plotVarCov)),
+                          zlab = as.character(tcltk::tclvalue(plotVarCov)),
                           col = "lightblue", ltheta = 120, shade = 0.75,
                           ticktype = "detailed")
       if (xcov[1] == 0 && ycov[1] == 0)
@@ -378,14 +374,14 @@ rfgui.intern <- function(data, x, y,
     }
     
     cv <- xcov
-   # Print(newmodel, xcov, as.character(tclvalue(plotVarCov)))
-    if(as.character(tclvalue(plotVarCov)) == "Covariance") {
+   # Print(newmodel, xcov, as.character(tcltk::tclvalue(plotVarCov)))
+    if(as.character(tcltk::tclvalue(plotVarCov)) == "Covariance") {
      
       cv <- RFcov(x=xcov, model=newmodel,
-                  practicalrange = tclvalue(cbPracRangeVal) != "0")
+                  practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0")
     }
-    if(as.character(tclvalue(plotVarCov)) == "Variogram") {      
-      pr.dummy <- tclvalue(cbPracRangeVal) != "0"
+    if(as.character(tcltk::tclvalue(plotVarCov)) == "Variogram") {      
+      pr.dummy <- tcltk::tclvalue(cbPracRangeVal) != "0"
  
     #  Print(newmodel, "xxx")
       
@@ -442,7 +438,7 @@ rfgui.intern <- function(data, x, y,
       ## Print(newmodel)
       yy <- (if (get("simDim", envir = ENVIR) =="sim1Dim") NULL else
              if (is.null(y)) x else y)
-      pr <-  tclvalue(cbPracRangeVal) != "0"
+      pr <-  tcltk::tclvalue(cbPracRangeVal) != "0"
 
   #    Print("A")
 
@@ -451,7 +447,7 @@ rfgui.intern <- function(data, x, y,
                           else if (is.null(y)) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
-                          practicalrange = tclvalue(cbPracRangeVal) != "0"),
+                          practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0"),
                silent=!TRUE)
 
  
@@ -479,30 +475,30 @@ rfgui.intern <- function(data, x, y,
   
   plotDensity <- function(...) {    
 #    Print("Y")
-    #tkconfigure(labelOccupancy,textvariable=tclVar("Busy"))
-    tkrreplot(imgVar)
-    if(as.numeric(tclvalue(simAlways)))
-      tkrreplot(imgSim)
-    #tkconfigure(labelOccupancy,textvariable=tclVar("Free"))
+    #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Busy"))
+    tkrplot::tkrreplot(imgVar)
+    if(as.numeric(tcltk::tclvalue(simAlways)))
+      tkrplot::tkrreplot(imgSim)
+    #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Free"))
   }
 
   OnChangeIsotropie <- function(...)
   {
-    if(as.numeric(tclvalue(showAniso))) {
-      tkgrid.remove(slScale)
-      tkgrid.remove(entryScale)
-      tkgrid.remove(labelScale)
+    if(as.numeric(tcltk::tclvalue(showAniso))) {
+      tcltk::tkgrid.remove(slScale)
+      tcltk::tkgrid.remove(entryScale)
+      tcltk::tkgrid.remove(labelScale)
     }else {
-      tkgrid.remove(slScaleA)
-      tkgrid.remove(entryScaleA)
-      tkgrid.remove(labelScaleA)
-      tkgrid.remove(slScaleB)
-      tkgrid.remove(entryScaleB)
-      tkgrid.remove(labelScaleB)
-      tkgrid.remove(slRotation)
-      tkgrid.remove(entryRotation)
-      tkgrid.remove(labelRotation)
-      tkgrid.remove(slTurnplot)
+      tcltk::tkgrid.remove(slScaleA)
+      tcltk::tkgrid.remove(entryScaleA)
+      tcltk::tkgrid.remove(labelScaleA)
+      tcltk::tkgrid.remove(slScaleB)
+      tcltk::tkgrid.remove(entryScaleB)
+      tcltk::tkgrid.remove(labelScaleB)
+      tcltk::tkgrid.remove(slRotation)
+      tcltk::tkgrid.remove(entryRotation)
+      tcltk::tkgrid.remove(labelRotation)
+      tcltk::tkgrid.remove(slTurnplot)
     }
     position()
     plotDensity()
@@ -510,27 +506,27 @@ rfgui.intern <- function(data, x, y,
 
   OnTurnPlot <- function(...)
   {
-    tkrreplot(imgVar)
+    tkrplot::tkrreplot(imgVar)
   }
 
   OnNewSimu <- function(...) 
   {
     assign("fixed.rs", round(runif(1,1,100000)), envir=ENVIR)  
-    tkrreplot(imgSim)
+    tkrplot::tkrreplot(imgSim)
   }
 
   OnSimDimChanged <- function(...)
   {
   
     if(!sim_only1dim) {
-      assign("simDim", tclvalue(rb2DimValue), envir = ENVIR) 
-      tkrreplot(imgSim)
+      assign("simDim", tcltk::tclvalue(rb2DimValue), envir = ENVIR) 
+      tkrplot::tkrreplot(imgSim)
       return (0)
     }
 
-    if(as.numeric(tclvalue(showAniso))) 
+    if(as.numeric(tcltk::tclvalue(showAniso))) 
     {
-      tclvalue(rb2DimValue) <-"sim2Dim"
+      tcltk::tclvalue(rb2DimValue) <-"sim2Dim"
       return(0)
     } 
   }
@@ -542,112 +538,112 @@ rfgui.intern <- function(data, x, y,
     RFoptions(LIST=get("RFopt.old", envir=ENVIR))
     ##remove("RFopt.old", envir=ENVIR)
     assign(".RFgui.exit", TRUE, envir=parent.ev)
-    tkdestroy(tt)    
+    tcltk::tkdestroy(tt)    
   }
 
   position <- function(...)
   {  
     #--- DropDown-ComboBox for model selection -------------------------
-    tkgrid.configure(labModelSelect, column=col.sl, row=row.sl)
+    tcltk::tkgrid.configure(labModelSelect, column=col.sl, row=row.sl)
     row.sl <- row.sl+1
-    tkgrid.configure(comboBox, column=col.sl, row=row.sl, sticky = "e")
+    tcltk::tkgrid.configure(comboBox, column=col.sl, row=row.sl, sticky = "e")
     row.sl <- row.sl+1
 
     #--- PLOT  ---------------------------------------------------------
-   tkgrid.configure(imgVar, rowspan=image.rowspan, columnspan=image.colspan,
+   tcltk::tkgrid.configure(imgVar, rowspan=image.rowspan, columnspan=image.colspan,
                      column=col.var, row=1,sticky="w") 
-    tkgrid.configure(imgSim, rowspan=image.rowspan, columnspan=image.colspan,
+    tcltk::tkgrid.configure(imgSim, rowspan=image.rowspan, columnspan=image.colspan,
                      column=col.sim, row=1,sticky="w")
 
     #--- Radiobutton zur Frage Variogram oder Covarianzfunktion --------
-    tkgrid.configure(rbCovariance, column=col.var+image.colspan-1,
+    tcltk::tkgrid.configure(rbCovariance, column=col.var+image.colspan-1,
                      row=image.rowspan+1, sticky="w")
-    tkgrid.configure(labelCovariance, column=col.var+image.colspan-1,
+    tcltk::tkgrid.configure(labelCovariance, column=col.var+image.colspan-1,
                      row=image.rowspan+1, sticky="e")
-    tkgrid.configure(rbVariogram, column=col.var+image.colspan-1,
+    tcltk::tkgrid.configure(rbVariogram, column=col.var+image.colspan-1,
                      row=image.rowspan+2, sticky="w") 
-    tkgrid.configure(labelVariogram, column=col.var+image.colspan-1,
+    tcltk::tkgrid.configure(labelVariogram, column=col.var+image.colspan-1,
                      row=image.rowspan+2, sticky="e")
 
     #--- Checkbox show the empirical variogram --------------------------
-    tkgrid.configure(cbPlotEV, column=col.var, row=image.rowspan+1, sticky="w")
-    tkgrid.configure(labelPlotEV, column=col.var, row=image.rowspan+1,
+    tcltk::tkgrid.configure(cbPlotEV, column=col.var, row=image.rowspan+1, sticky="w")
+    tcltk::tkgrid.configure(labelPlotEV, column=col.var, row=image.rowspan+1,
                      sticky="e")
     
     #--- Radiobutton: select dimension for simulation -------------------
-    tkgrid.configure(rbSim1Dim, column=col.sim+image.colspan-1,
+    tcltk::tkgrid.configure(rbSim1Dim, column=col.sim+image.colspan-1,
                      row=image.rowspan+1, sticky="w")
-    tkgrid.configure(labelSim1Dim, column=col.sim+image.colspan-1,
+    tcltk::tkgrid.configure(labelSim1Dim, column=col.sim+image.colspan-1,
                      row=image.rowspan+1, sticky="e")
-    tkgrid.configure(rbSim2Dim, column=col.sim+image.colspan-1,
+    tcltk::tkgrid.configure(rbSim2Dim, column=col.sim+image.colspan-1,
                      row=image.rowspan+2, sticky="w") 
-    tkgrid.configure(labelSim2Dim, column=col.sim+image.colspan-1,
+    tcltk::tkgrid.configure(labelSim2Dim, column=col.sim+image.colspan-1,
                      row=image.rowspan+2, sticky="e")
 
     #--- Checkbox simulate on slider movement --------------------------
-    tkgrid.configure(cbSimAlways, column=col.sim, row=image.rowspan+1,
+    tcltk::tkgrid.configure(cbSimAlways, column=col.sim, row=image.rowspan+1,
                      sticky="w")
-    tkgrid.configure(labelSimAlways, column=col.sim, row=image.rowspan+1,
+    tcltk::tkgrid.configure(labelSimAlways, column=col.sim, row=image.rowspan+1,
                      sticky="e")
   
     #--- Checkboxes Practical Range  and anisotropy option -------------
     if(!is.null(y)) {
-      tkgrid.configure(cbAnisotropy, column=col.sl, row=row.sl, sticky="w")
-      tkgrid.configure(labelAniso, column=col.sl, row=row.sl)
+      tcltk::tkgrid.configure(cbAnisotropy, column=col.sl, row=row.sl, sticky="w")
+      tcltk::tkgrid.configure(labelAniso, column=col.sl, row=row.sl)
       row.sl=row.sl+1
     }
   
-    tkgrid.configure(cbPracRange, column=col.sl, row=row.sl, sticky="w")
-    tkgrid.configure(labelPracRange, column=col.sl, row=row.sl)
+    tcltk::tkgrid.configure(cbPracRange, column=col.sl, row=row.sl, sticky="w")
+    tcltk::tkgrid.configure(labelPracRange, column=col.sl, row=row.sl)
     row.sl=row.sl+1
 
     #--- Parameterwaehler ----------------------------------------------
    
-    if(!as.numeric(tclvalue(showAniso))) {
+    if(!as.numeric(tcltk::tclvalue(showAniso))) {
       #Slider Scale
-      tkgrid.configure(labelScale,  column=col.sl, row=row.sl)
+      tcltk::tkgrid.configure(labelScale,  column=col.sl, row=row.sl)
       row.sl <- row.sl+1
-      tkgrid.configure(slScale,  column=col.sl, row=row.sl, sticky="w")
-      tkgrid.configure(entryScale, column=col.sl, row=row.sl, sticky="e")
+      tcltk::tkgrid.configure(slScale,  column=col.sl, row=row.sl, sticky="w")
+      tcltk::tkgrid.configure(entryScale, column=col.sl, row=row.sl, sticky="e")
       row.sl <- row.sl+1
     }else {
       #Slider Rotation
-      tkgrid.configure(labelRotation,  column=col.sl, row=row.sl)
+      tcltk::tkgrid.configure(labelRotation,  column=col.sl, row=row.sl)
       row.sl <- row.sl+1
-      tkgrid.configure(slRotation,  column=col.sl, row=row.sl, sticky="w")
-      tkgrid.configure(entryRotation, column=col.sl, row=row.sl, sticky="e")
+      tcltk::tkgrid.configure(slRotation,  column=col.sl, row=row.sl, sticky="w")
+      tcltk::tkgrid.configure(entryRotation, column=col.sl, row=row.sl, sticky="e")
       row.sl <- row.sl+1
 
       #Slider Radius
-      tkgrid.configure(labelScaleA,  column=col.sl, row=row.sl)
+      tcltk::tkgrid.configure(labelScaleA,  column=col.sl, row=row.sl)
       row.sl <- row.sl+1
-      tkgrid.configure(slScaleA,  column=col.sl, row=row.sl, sticky="w")
-      tkgrid.configure(entryScaleA, column=col.sl, row=row.sl, sticky="e")
+      tcltk::tkgrid.configure(slScaleA,  column=col.sl, row=row.sl, sticky="w")
+      tcltk::tkgrid.configure(entryScaleA, column=col.sl, row=row.sl, sticky="e")
       row.sl <- row.sl+1
 
-      tkgrid.configure(labelScaleB,  column=col.sl, row=row.sl)
+      tcltk::tkgrid.configure(labelScaleB,  column=col.sl, row=row.sl)
       row.sl <- row.sl+1
-      tkgrid.configure(slScaleB,  column=col.sl, row=row.sl, sticky="w")
-      tkgrid.configure(entryScaleB, column=col.sl, row=row.sl, sticky="e")
+      tcltk::tkgrid.configure(slScaleB,  column=col.sl, row=row.sl, sticky="w")
+      tcltk::tkgrid.configure(entryScaleB, column=col.sl, row=row.sl, sticky="e")
       row.sl <- row.sl+1
 
       #Slider turn the now 2dim covarianz plot
-      tkgrid.configure(slTurnplot, column=col.var,columnspan=image.colspan,
+      tcltk::tkgrid.configure(slTurnplot, column=col.var,columnspan=image.colspan,
                        row=image.rowspan+3)
     }
 
     #Slider variance
-    tkgrid.configure(labelVariance,  column=col.sl, row=row.sl)
+    tcltk::tkgrid.configure(labelVariance,  column=col.sl, row=row.sl)
     row.sl <- row.sl+1
-    tkgrid.configure(slVariance,  column=col.sl, row=row.sl, sticky="w")
-    tkgrid.configure(entryVariance, column=col.sl, row=row.sl, sticky="e")
+    tcltk::tkgrid.configure(slVariance,  column=col.sl, row=row.sl, sticky="w")
+    tcltk::tkgrid.configure(entryVariance, column=col.sl, row=row.sl, sticky="e")
     row.sl <- row.sl+1
 
     #Slider nugget
-    tkgrid.configure(labelNugget,  column=col.sl, row=row.sl)
+    tcltk::tkgrid.configure(labelNugget,  column=col.sl, row=row.sl)
     row.sl <- row.sl+1
-    tkgrid.configure(slNugget,  column=col.sl, row=row.sl, sticky="w")
-    tkgrid.configure(entryNugget, column=col.sl, row=row.sl, sticky="e")
+    tcltk::tkgrid.configure(slNugget,  column=col.sl, row=row.sl, sticky="w")
+    tcltk::tkgrid.configure(entryNugget, column=col.sl, row=row.sl, sticky="e")
     row.sl <- row.sl+1
 
     if(exists("baseModel", envir=ENVIR)) {
@@ -655,15 +651,15 @@ rfgui.intern <- function(data, x, y,
       baseParam <- baseModel$k
       if(length(baseModel$k) > 0)
         for (i in 1:length(baseModel$k)) { 
-          tkgrid.configure(get(paste("slParam",i,"Name",sep=""),
+          tcltk::tkgrid.configure(get(paste("slParam",i,"Name",sep=""),
                                get("slParam", envir=ENVIR),
                                envir=ENVIR), column=col.sl, row=row.sl)
           row.sl <- row.sl+1 
-          tkgrid.configure(get(paste("slParam", i, sep=""),
+          tcltk::tkgrid.configure(get(paste("slParam", i, sep=""),
                                get("slParam", envir=ENVIR),
                                envir=ENVIR),
                            column=col.sl, row=row.sl, sticky="w")  
-          tkgrid.configure(get(paste("entryParam", i, sep=""),
+          tcltk::tkgrid.configure(get(paste("entryParam", i, sep=""),
                                get("entryParam", envir=ENVIR),
                                envir=ENVIR),
                            column=col.sl, row=row.sl, sticky="e")
@@ -672,14 +668,14 @@ rfgui.intern <- function(data, x, y,
     }
 
     #--- Buttons - new simulation (new seed), return ---------------
-    tkgrid.configure(buttonNewSimu, column=col.sl,
+    tcltk::tkgrid.configure(buttonNewSimu, column=col.sl,
                      row=max(row.sl,image.rowspan+1), sticky="e")
     row.sl=row.sl+1
-    tkgrid.configure(buttonReturn, column=col.sl,
+    tcltk::tkgrid.configure(buttonReturn, column=col.sl,
                      row=max(row.sl,image.rowspan+2), sticky="e")
     row.sl=row.sl+1
     #--- Beschäftigungsindikator ---------------------------------------
-#    tkgrid.configure(labelOccupancy, row=row.last, column=col.sl, sticky="e")
+#    tcltk::tkgrid.configure(labelOccupancy, row=row.last, column=col.sl, sticky="e")
   } ## end fct position
 
   PRINT <- FALSE
@@ -689,7 +685,8 @@ rfgui.intern <- function(data, x, y,
     if (missing(data)) {
       x <- seq(1, 5, len=guiOpt$size[if (sim_only1dim) 1 else 2] )
     } else {      
-      stopifnot(is(data, "RFsp"))
+      if (isSpObj(data)) data <- sp2RF(data)
+       stopifnot(is(data, "RFsp"))
       if (!is.null(y)) stop("'x' and 'y' may not be given if 'data' is given.")
       r <- apply(data@coords, 2, range)
       len <- guiOpt$size[if (length(r) == 2) 1 else 2] 
@@ -754,15 +751,15 @@ rfgui.intern <- function(data, x, y,
   #-------------------------------------------------------------------
   # Start Values and ranges
   #-------------------------------------------------------------------
-  cbPracRangeVal <- tclVar(RFopt$general$practicalrange)
-  simAlways <- tclVar(as.integer(guiOpt$alwaysSimulate))
-  plotVarCov <- tclVar("Variogram")
+  cbPracRangeVal <- tcltk::tclVar(RFopt$general$practicalrange)
+  simAlways <- tcltk::tclVar(as.integer(guiOpt$alwaysSimulate))
+  plotVarCov <- tcltk::tclVar("Variogram")
 
   ##Print("TTT")
-  plotEV <- tclVar(ifelse(is.null(ev) && tclvalue(plotVarCov)=="Variogram",
+  plotEV <- tcltk::tclVar(ifelse(is.null(ev) && tcltk::tclvalue(plotVarCov)=="Variogram",
                           "0", "1"))
-  showAniso <- tclVar("0")
-  slTurnPlotValue <- tclVar("0")
+  showAniso <- tcltk::tclVar("0")
+  slTurnPlotValue <- tcltk::tclVar("0")
   numberSteps <- 50
 
   if (is.null(ev)) {
@@ -788,40 +785,40 @@ rfgui.intern <- function(data, x, y,
     scale <-  0.3*max(ev@centers)
   }
   ## Nugget  
-  slNuggetValue <- tclVar(nugget)
+  slNuggetValue <- tcltk::tclVar(nugget)
    ## Variance
   varianceMin <- round(log(0.01), digits=2)
   varianceMax <- log(max(1e-10, nuggetMax))
-  slVarianceValue <- tclVar(log(variance))
+  slVarianceValue <- tcltk::tclVar(log(variance))
   ## Scale
   scaleMin <- round(log(0.1*scale), digits=2)  
   scaleMax <- round(log(10*scale), digits=2)   
-  slScaleValue <- tclVar(log(scale))
+  slScaleValue <- tcltk::tclVar(log(scale))
   
   ## die direkte eingabe muss als variable getrennt von den schiebern laufen
-  entryScaleValue <- tclVar(scale)
-  entryVarianceValue <- tclVar(variance)
-  entryNuggetValue <- tclVar(nugget) 
+  entryScaleValue <- tcltk::tclVar(scale)
+  entryVarianceValue <- tcltk::tclVar(variance)
+  entryNuggetValue <- tcltk::tclVar(nugget) 
   ## die direkte eingabe muss als variable getrennt von den schiebern laufen
-  entryScaleValue <- tclVar(scale)
-  entryVarianceValue <- tclVar(variance)
-  entryNuggetValue <- tclVar(nugget) 
+  entryScaleValue <- tcltk::tclVar(scale)
+  entryVarianceValue <- tcltk::tclVar(variance)
+  entryNuggetValue <- tcltk::tclVar(nugget) 
 
   # die anisotropie tierchen
-  slRotationValue <- tclVar("0")
-  entryRotationValue <- tclVar("0")
+  slRotationValue <- tcltk::tclVar("0")
+  entryRotationValue <- tcltk::tclVar("0")
   anisoScale = "1"
-  slScaleAValue <- tclVar(anisoScale)
-  slScaleBValue <- tclVar(anisoScale)
-  entryScaleAValue <- tclVar(anisoScale)
-  entryScaleBValue <- tclVar(anisoScale)
+  slScaleAValue <- tcltk::tclVar(anisoScale)
+  slScaleBValue <- tcltk::tclVar(anisoScale)
+  entryScaleAValue <- tcltk::tclVar(anisoScale)
+  entryScaleBValue <- tcltk::tclVar(anisoScale)
   radiusMax <- 2
 
   #------------------------------------------------------------------
   # GUI
   #------------------------------------------------------------------
-  tt <- tktoplevel()#title="RFgui")
-  tktitle(tt) <- "RFgui"
+  tt <- tcltk::tktoplevel()#title="RFgui")
+  tcltk::tktitle(tt) <- "RFgui"
   # some position variables
   # assuming all sliders are in the same column and consecutive rows
   image.rowspan <- 15
@@ -838,132 +835,132 @@ rfgui.intern <- function(data, x, y,
   plothscale <- 0.8    # Horizontal scaling
   plotvscale <- 0.8    # Vertical scaling
 
-  tkgrid(tklabel(tt, text="", width=1, height=0), column=0, row=0)
-  tkgrid(tklabel(tt, text="", width=1), column=col.sim+image.colspan, row=1)
-  tkgrid(tklabel(tt, text="", width=1), column=col.var+image.colspan, row=1)
-  tkgrid(tklabel(tt, text="", width=1), column=col.sl+image.colspan, row=1)
+  tcltk::tkgrid(tcltk::tklabel(tt, text="", width=1, height=0), column=0, row=0)
+  tcltk::tkgrid(tcltk::tklabel(tt, text="", width=1), column=col.sim+image.colspan,row=1)
+  tcltk::tkgrid(tcltk::tklabel(tt, text="", width=1), column=col.var+image.colspan,row=1)
+  tcltk::tkgrid(tcltk::tklabel(tt, text="", width=1), column=col.sl+image.colspan, row=1)
 
   #--- DropDown-ComboBox for model selection -------------------------
-  labModelSelect <- tklabel(tt,text="Adjust Model:")
-  textModell <- tclVar("Please select a model...")
-  comboBox <- ttkcombobox(tt,textvariable=textModell, state="readonly",
+  labModelSelect <- tcltk::tklabel(tt,text="Adjust Model:")
+  textModell <- tcltk::tclVar("Please select a model...")
+  comboBox <- tcltk::ttkcombobox(tt,textvariable=textModell, state="readonly",
                           values=models)
-  tkbind(comboBox, "<<ComboboxSelected>>", OnModelSelected)
+  tcltk::tkbind(comboBox, "<<ComboboxSelected>>", OnModelSelected)
 
   #--- PLOT  ---------------------------------------------------------
-  imgVar <- tkrplot(tt,fun=plotFunction,hscale=plothscale,vscale=plotvscale)
-  imgSim <- tkrplot(tt,fun=plotSimulation,hscale=plothscale,vscale=plotvscale)
+  imgVar <- tkrplot::tkrplot(tt,fun=plotFunction,hscale=plothscale,vscale=plotvscale)
+  imgSim <- tkrplot::tkrplot(tt,fun=plotSimulation,hscale=plothscale,vscale=plotvscale)
     
   #--- Beschäftigungsindikator -------------------------------------
-  labelOccText <- tclVar("Free")
-  labelOccupancy <- tklabel(tt,text=tclvalue(labelOccText))
+  labelOccText <- tcltk::tclVar("Free")
+  labelOccupancy <- tcltk::tklabel(tt,text=tcltk::tclvalue(labelOccText))
 
   #--- anistropy -----------------------------------------------------
-  cbAnisotropy <- tkcheckbutton(tt, variable=showAniso,
+  cbAnisotropy <- tcltk::tkcheckbutton(tt, variable=showAniso,
                                 command=OnChangeIsotropie)
-  labelAniso <-  tklabel(tt,text="Anisotropy")
+  labelAniso <-  tcltk::tklabel(tt,text="Anisotropy")
 
   #--- Radiobutton zur Frage Variogram oder Covarianzfunktion --------
-  rbVariogram <- tkradiobutton(tt, command=OnPlotVarCovChanged)
-  rbCovariance <- tkradiobutton(tt, command=OnPlotVarCovChanged)
-  tkconfigure(rbVariogram,variable=plotVarCov,value="Variogram")
-  tkconfigure(rbCovariance,variable=plotVarCov,value="Covariance")
-  labelCovariance <- tklabel(tt,text="Covariance")
-  labelVariogram <- tklabel(tt,text="Variogram")
+  rbVariogram <- tcltk::tkradiobutton(tt, command=OnPlotVarCovChanged)
+  rbCovariance <- tcltk::tkradiobutton(tt, command=OnPlotVarCovChanged)
+  tcltk::tkconfigure(rbVariogram,variable=plotVarCov,value="Variogram")
+  tcltk::tkconfigure(rbCovariance,variable=plotVarCov,value="Covariance")
+  labelCovariance <- tcltk::tklabel(tt,text="Covariance")
+  labelVariogram <- tcltk::tklabel(tt,text="Variogram")
 
   #--- Checkbox plot empirical variogram    --------------------------
   ## checkbuttion setzt die variable und fuehrt dann noch zusaetzlich
   ## command aus.
-  cbPlotEV <- tkcheckbutton(tt, variable=plotEV, command=OnplotEVChanged)
-  labelPlotEV <- tklabel(tt,text="Plot empirical variogram")
+  cbPlotEV <- tcltk::tkcheckbutton(tt, variable=plotEV, command=OnplotEVChanged)
+  labelPlotEV <- tcltk::tklabel(tt,text="Plot empirical variogram")
 
   #--- Radiobutton: select dimension for simulation ------------------
-  rbSim1Dim <- tkradiobutton(tt, command=OnSimDimChanged)
-  rbSim2Dim <- tkradiobutton(tt, command=OnSimDimChanged)
-  rb2DimValue <- tclVar(if (sim_only1dim) "sim1Dim" else "sim2Dim")
-  tkconfigure(rbSim1Dim,variable=rb2DimValue, value="sim1Dim")
-  tkconfigure(rbSim2Dim,variable=rb2DimValue, value="sim2Dim")
-  labelSim1Dim <- tklabel(tt,text="1 dim")
-  labelSim2Dim <- tklabel(tt,text=if (sim_only1dim) "1 dim" else "2 dim")
-  assign("simDim", as.character(tclvalue(rb2DimValue)), envir=ENVIR)
+  rbSim1Dim <- tcltk::tkradiobutton(tt, command=OnSimDimChanged)
+  rbSim2Dim <- tcltk::tkradiobutton(tt, command=OnSimDimChanged)
+  rb2DimValue <- tcltk::tclVar(if (sim_only1dim) "sim1Dim" else "sim2Dim")
+  tcltk::tkconfigure(rbSim1Dim,variable=rb2DimValue, value="sim1Dim")
+  tcltk::tkconfigure(rbSim2Dim,variable=rb2DimValue, value="sim2Dim")
+  labelSim1Dim <- tcltk::tklabel(tt,text="1 dim")
+  labelSim2Dim <- tcltk::tklabel(tt,text=if (sim_only1dim) "1 dim" else "2 dim")
+  assign("simDim", as.character(tcltk::tclvalue(rb2DimValue)), envir=ENVIR)
 #  Print(get("simDim", envir=ENVIR)); 
 
   #--- Button - new simulation (new seed) ----------------------------
-  buttonNewSimu <- tkbutton(tt,text="New Simulation",command=OnNewSimu)
+  buttonNewSimu <- tcltk::tkbutton(tt,text="New Simulation",command=OnNewSimu)
   
   #--- Button - Return -----------------------------------------------
-  buttonReturn <- tkbutton(tt,text="      Return       ",command=OnReturn)
+  buttonReturn <- tcltk::tkbutton(tt,text="      Return       ",command=OnReturn)
 
   #--- Checkbox simulate on slider movement --------------------------
-  cbSimAlways <- tkcheckbutton(tt, variable=simAlways)
-  labelSimAlways <- tklabel(tt,text="Simulate always")
+  cbSimAlways <- tcltk::tkcheckbutton(tt, variable=simAlways)
+  labelSimAlways <- tcltk::tklabel(tt,text="Simulate always")
 
   #--- Checkbox Practical Range --------------------------------------
-  cbPracRange <- tkcheckbutton(tt, variable=cbPracRangeVal, command=plotDensity)
-  tkconfigure(cbPracRange,variable=cbPracRangeVal)
-  labelPracRange <- tklabel(tt,text="Practical Range")
+  cbPracRange <- tcltk::tkcheckbutton(tt, variable=cbPracRangeVal, command=plotDensity)
+  tcltk::tkconfigure(cbPracRange,variable=cbPracRangeVal)
+  labelPracRange <- tcltk::tklabel(tt,text="Practical Range")
 
   #--- Slider turn covariance plot in anisotropic case ----------------
-  slTurnplot <- tkscale(tt, command = OnTurnPlot, from=0, to=360,
+  slTurnplot <- tcltk::tkscale(tt, command = OnTurnPlot, from=0, to=360,
                         showvalue=TRUE, variable=slTurnPlotValue,
                         resolution=360/numberSteps, orient="horizontal",
                         length=2*length.slider, width=18)
- # labelRotation <- tklabel(tt,text="Rotation")
+ # labelRotation <- tcltk::tklabel(tt,text="Rotation")
 
   #--- Parameterwaehler ----------------------------------------------
   # Aniso Rotation
-  slRotation <- tkscale(tt, command = plotDensity, from=0, to=0.5*pi,
+  slRotation <- tcltk::tkscale(tt, command = plotDensity, from=0, to=0.5*pi,
                         showvalue=FALSE, variable=slRotationValue,
                         resolution=0.5*pi/numberSteps, orient="horizontal",
                         length=length.slider, width=18)
-  labelRotation <- tklabel(tt,text="Rotation")
-  entryRotation <- tkentry(tt,width=size.entry, textvariable=entryRotationValue)
-  tkbind(entryRotation, "<Return>", OnRotationEntryChanged)
+  labelRotation <- tcltk::tklabel(tt,text="Rotation")
+  entryRotation <- tcltk::tkentry(tt,width=size.entry, textvariable=entryRotationValue)
+  tcltk::tkbind(entryRotation, "<Return>", OnRotationEntryChanged)
 
   # Aniso Scales in first and second axis
-  slScaleA <- tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
+  slScaleA <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
                       showvalue=FALSE, variable=slScaleAValue,
                       resolution=radiusMax/numberSteps, orient="horizontal",
                       length=length.slider, width=18)
-  labelScaleA <- tklabel(tt,text="first axis scale")
-  entryScaleA <- tkentry(tt,width=size.entry, textvariable=entryScaleAValue)
-  tkbind(entryScaleA, "<Return>", OnRadiusEntryChanged)
+  labelScaleA <- tcltk::tklabel(tt,text="first axis scale")
+  entryScaleA <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleAValue)
+  tcltk::tkbind(entryScaleA, "<Return>", OnRadiusEntryChanged)
 
-  slScaleB <- tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
+  slScaleB <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
                       showvalue=FALSE, variable=slScaleBValue,
                       resolution=radiusMax/numberSteps, orient="horizontal",
                       length=length.slider, width=18)
-  labelScaleB <- tklabel(tt,text="second axis scale")
-  entryScaleB <- tkentry(tt,width=size.entry, textvariable=entryScaleBValue)
-  tkbind(entryScaleB, "<Return>", OnRadiusEntryChanged)
+  labelScaleB <- tcltk::tklabel(tt,text="second axis scale")
+  entryScaleB <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleBValue)
+  tcltk::tkbind(entryScaleB, "<Return>", OnRadiusEntryChanged)
 
   # Scale
-  slScale <- tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
-                     showvalue=FALSE, variable=slScaleValue,
-                     resolution=(scaleMax-scaleMin)/numberSteps,
-                     orient="horizontal", length=length.slider, width=18)
-  labelScale <- tklabel(tt,text="Scale")
-  entryScale <- tkentry(tt,width=size.entry, textvariable=entryScaleValue)
-  tkbind(entryScale, "<Return>", OnScaleEntryChanged)
+  slScale <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
+                            showvalue=FALSE, variable=slScaleValue,
+                            resolution=(scaleMax-scaleMin)/numberSteps,
+                            orient="horizontal", length=length.slider, width=18)
+  labelScale <- tcltk::tklabel(tt,text="Scale")
+  entryScale <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleValue)
+  tcltk::tkbind(entryScale, "<Return>", OnScaleEntryChanged)
 
   #Slider variance
-  slVariance <- tkscale(tt, command = plotDensity, from=varianceMin,
-                        to=varianceMax,
-                        showvalue=FALSE, variable=slVarianceValue,
-                        resolution=(varianceMax-varianceMin)/numberSteps,
-                        orient="horizontal", length=length.slider, width=18)
-  labelVariance <- tklabel(tt,text="Variance")
-  entryVariance <- tkentry(tt,width=size.entry, textvariable=entryVarianceValue)
-  tkbind(entryVariance, "<Return>", OnVarEntryChanged)
+  slVariance <- tcltk::tkscale(tt, command = plotDensity, from=varianceMin,
+                               to=varianceMax,
+                               showvalue=FALSE, variable=slVarianceValue,
+                               resolution=(varianceMax-varianceMin)/numberSteps,
+                               orient="horizontal", length=length.slider, width=18)
+  labelVariance <- tcltk::tklabel(tt,text="Variance")
+  entryVariance <- tcltk::tkentry(tt,width=size.entry, textvariable=entryVarianceValue)
+  tcltk::tkbind(entryVariance, "<Return>", OnVarEntryChanged)
 
   #Slider nugget
-  slNugget <- tkscale(tt, command = plotDensity, from=nuggetMin, to=nuggetMax,
-                      showvalue=FALSE, variable=slNuggetValue,
-                      resolution=(nuggetMax-nuggetMin)/numberSteps,
-                      orient="horizontal", length=length.slider, width=18)
-  labelNugget <- tklabel(tt,text="Nugget")
-  entryNugget <- tkentry(tt,width=size.entry, textvariable=entryNuggetValue)
-  tkbind(entryNugget, "<Return>", OnNuggetEntryChanged)
+  slNugget <- tcltk::tkscale(tt, command = plotDensity, from=nuggetMin, to=nuggetMax,
+                             showvalue=FALSE, variable=slNuggetValue,
+                             resolution=(nuggetMax-nuggetMin)/numberSteps,
+                             orient="horizontal", length=length.slider, width=18)
+  labelNugget <- tcltk::tklabel(tt,text="Nugget")
+  entryNugget <- tcltk::tkentry(tt,width=size.entry, textvariable=entryNuggetValue)
+  tcltk::tkbind(entryNugget, "<Return>", OnNuggetEntryChanged)
 
   position()
 }

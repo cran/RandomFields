@@ -11,7 +11,7 @@
     of random fields, including
     \itemize{
       \item multivariate, spatial, spatio-temporal Gaussian random fields,
-      \item Poisson fields, binary fields, Chi2 fields and
+      \item Poisson fields, binary fields, Chi2 fields, t fields and
       \item max-stable fields.
     }
     It can also deal with non-stationarity and anisotropy of these
@@ -19,11 +19,15 @@
     currently). 
     
   
-    \item{\bold{model estimation (ML) and inference (tests)
-	for regionalizd variables}} and data analysis,
+    \item{\bold{model estimation (ML) and inference (tests)}}
+	for regionalizd variables and data analysis,
 
-    \item{\bold{model estimation for (geostatistical) linear (mixed) models}}
+    \item{\bold{model estimation}} for (geostatistical) linear (mixed) models
   }
+
+  See \url{http://ms.math.uni-mannheim.de/de/publications/software/}
+  for \bold{intermediate updates}.
+  
 }
 
 
@@ -41,10 +45,10 @@
       Use \command{\link{plot}} for visualisation of the result.
     }
       
-    \item \bold{ Estimation} of parameters
+    \item \bold{ Estimation of parameters (for second-order random fields)}
     \itemize{ 
       \item \command{\link{RFfit}} : general function for estimating
-      parameters; 
+      parameters; (for Gaussian random fields)
       \item \command{\link{RFhurst}} : estimation of the Hurst parameter
       \item \command{\link{RFfractaldim}} : estimation of the fractal
       dimension  
@@ -54,7 +58,7 @@
    
     
     
-    \item \bold{Prediction (for Gaussian random fields)} 
+    \item \bold{Prediction (for second-order random fields)} 
     \itemize{
       \item \command{\link{RFinterpolate}} : kriging, including imputing
     }
@@ -109,18 +113,25 @@
     \item \bold{S3 and S4 objects}
     \itemize{      
       \item The functions return S4 objects
+      based on the package \pkg{sp},
       if \code{\link[=RFoptions]{spConform=TRUE}}.
       This is the default.
       
       
       If \code{\link[=RFoptions]{spConform=FALSE}},
-      simple or simpler objects as in version 2 are returned.
-      These simple objects are frequently provided with an S3 class
+      simple objects as in version 2 are returned. 
+      These simple objects are frequently provided with an S3 class.
+      This options makes the returning procedure much faster, but
+      currently does not allow for the comfortable use of
+      \command{\link[=plot-method]{plot}}.
       
       \item \command{\link[graphics]{plot}},
       \command{\link[base]{print}}, \command{\link[base]{summary}},
       sometimes also \command{\link[utils]{str}} recognise these S3 and S4
-      objects.
+      objects
+
+      \item use \command{\link{sp2RF}} for an explicite transformation
+      of \pkg{sp} objects to S4 objects of \pkg{RandomFields}.
       
       \item
       Further generic functions are available for fitted models,
@@ -143,9 +154,13 @@
 	--with-tk-config=/usr/lib/tk8.5/tkConfig.sh} to configure R
     }
   }
-
+}
+\section{Changings}{
   A list of major changings from  Version 2 to Version 3 can be found
   in \link{MajorRevisions}.
+
+  \link{Changings} lists some further changings, in particular of
+  argument and argument names.
 }
 
 % In the beta version, the following functionalities are currently
@@ -189,7 +204,8 @@
     Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
     Strokorb, K. (2013) 
     Analysis, simulation and prediction of multivariate
-    Random Fields with package \pkg{RandomFields}. \emph{Submitted to JSS}
+    Random Fields with package \pkg{RandomFields}. \emph{Submitted to
+      JSS}, see the corresponding \href{../doc/multivariate_jss.pdf}{vignette}.
   } 
  }
 \section{Contributions}{
@@ -207,7 +223,8 @@
     Ulrike Ober (Univ. Goettingen; help pages, testing, 2011-12)\cr
     Marco Oesting (Univ. Mannheim; Brown-Resnick processes, Kriging, Trend,
     2011-13)\cr
-    Paulo Ribeiro (Unversidade Federal do Parana; code adopted from \pkg{geoR}, 2014)\cr
+    Paulo Ribeiro (Unversidade Federal do Parana; code adopted
+    from \pkg{geoR}, 2014)\cr
     Kirstin Strokorb (Univ. Mannheim; help pages, 2011-13)\cr
     \item Contributions to version 2.0 and following:\cr
     Peter Menck (Univ. Goettingen; multivariate circulant embedding)\cr
@@ -218,7 +235,6 @@
   }
 }
 \section{Thanks}{
-  Paulo Ribeiro : suggestions for Version 3\cr
   Patrick Brown : comments on Version 3\cr
   Paulo Riberio : comments on Version 1\cr
   Martin Maechler : advice for Version 1
@@ -257,12 +273,26 @@
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-# Compare:
-model <- RMexp(scale=2) + RMnugget(var=3)
-str(model)  ## S4 object
+# simulate some data first (Gaussian random field with exponential
+# covariance; 6 realisations)
+model <- RMexp()
+x <- seq(0, 10, if (interactive()) 0.1 else 1)
+z <- RFsimulate(model, x, x, n=6)
 
-model <- summary(model)
-str(model)  ## list style as in version 2 of RandomFields
+## select some data from the simulated data
+xy <- as.matrix(expand.grid(x=x, y=x))
+pts <- sample(nrow(xy), 100)
+data <- matrix(ncol=6, as.vector(z))[pts, ]
+data <- cbind(xy[pts, ], data)
+plot(z, data)
+
+## re-estimate the parameter (true values are 1)
+estmodel <- RMexp(var=NA, scale=NA)
+(fit <- RFfit(estmodel, data=data))
+
+## show a kriged field based on the estimated parameters
+kriged <- RFinterpolate(fit, x, x, data=data)
+plot(kriged, data)
 
 \dontshow{FinalizeExample()}
 }

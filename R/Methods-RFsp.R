@@ -1,100 +1,39 @@
 
-
-AddUnits <- function(params) {
-  ## see also empvario.R and fitgauss.R, if changed
-  coords <- RFoptions()$general
-  return(c(params, list(coord.units=coords$coord_units,
-                        variab.units=coords$variab_units)))
-}
-
-compareGridBooleans <- function(grid, gridtmp) {
-  if (!missing(grid) && length(grid)>0 && grid!=gridtmp)
-    message(paste("you specified grid=", as.character(grid),
-                  " but isGridded(data)=", as.character(gridtmp),
-                  ";  grid is set to ", as.character(gridtmp), sep=""))
-}
-
-
-## Generate Objects ########################################################
-
-RFspatialGridDataFrame <- function(grid, data,
-                                   proj4string = CRS(as.character(NA)),
-                                   RFparams=list()) {
-  grid <- convert2GridTopology(grid)
-  tmp <- SpatialGridDataFrame(grid=grid, data=data, proj4string=proj4string)
-  tmp <- as(tmp, "RFspatialGridDataFrame")
-  tmp@.RFparams <- AddUnits(RFparams)
-  validObject(tmp)
-  return(tmp)
-}
-
-RFspatialPointsDataFrame <- function(coords, data, coords.nrs = numeric(0),
-                                     proj4string = CRS(as.character(NA)), 
-                                     match.ID = TRUE, bbox = NULL,
-                                     coord.units = NULL,
-                                     variab.units = NULL,
-                                     RFparams=list()) {
-  if (is.null(bbox)) {
-    bbox <- t(apply(coords, 2, range))
-    colnames(bbox) <- c("min", "max")
-  }
-  tmp <- SpatialPointsDataFrame(coords=coords, data=data, coords.nrs=coords.nrs,
-                                proj4string=proj4string, 
-                                match.ID=match.ID, bbox=bbox)
-  tmp <- as(tmp, "RFspatialPointsDataFrame")
-  tmp@.RFparams <- AddUnits(RFparams)
-
-#  if (!is.null(dimnames(coords)))
-#    dimnames(tmp@coords) <- dimnames(coords)
-  validObject(tmp)
-  return(tmp)
-}
-
-RFgridDataFrame <- function(data, grid,
-                            RFparams=list()){
-  grid <- convert2GridTopology(grid)
-  data <- as.data.frame(data)
-  return(new("RFgridDataFrame", data=data, grid=grid,
-             .RFparams=AddUnits(RFparams)))
-}
-
-RFpointsDataFrame <- function(data=data.frame(NULL), coords=as.numeric(NULL),
-                              RFparams=list()){
-  data <- as.data.frame(data)
-  if (is.null(dim(coords))) coords <- matrix(coords)
-  return(new("RFpointsDataFrame", data=data, coords=coords,
-             .RFparams=AddUnits(RFparams)))
-}
-
-
-convert2GridTopology <- function(grid){
-  if (!is(grid, "GridTopology")) {
-    if (is.null(dim(grid)))
-      grid <- matrix(grid, ncol=1)
-    stopifnot(nrow(grid)==3)
-    grid <- GridTopology(cellcentre.offset=grid[1,],
-                         cellsize=grid[2,],
-                         cells.dim=grid[3,])
-  }
-  return(grid)
-}
-
-
 ## Coerce Objects #########################################################
+
+as.data.frame.RFspatialPointsDataFrame <- function(x, ...) {
+  #str(x); kkkk
+  cbind(x@data, x@coords)
+}
+as.data.frame.RFspatialGridDataFrame <- function(x, ...) 
+  spatialGridObject2conventional(x, TRUE)
+
+setAs("RFspatialPointsDataFrame", "data.frame",
+      function(from, to) from@data
+)
+setAs("RFspatialGridDataFrame", "data.frame",
+      function(from, to) spatialGridObject2conventional(from, TRUE)$data
+)
+
+
+setAs("SpatialPointsDataFrame", "RFspatialPointsDataFrame",
+      function(from, to) sp2RF(from))
+setAs("SpatialGridDataFrame", "RFspatialGridDataFrame",
+      function(from, to) sp2RF(from))
 
 setAs("RFspatialGridDataFrame", "RFspatialPointsDataFrame",
       function(from, to) RFspatialPointsDataFrame(coords=coordinates(from),
                                                   data=from@data,
                                                   RFparams=from@.RFparams))
 setAs("RFspatialPointsDataFrame", "RFspatialGridDataFrame",
-      function(from, to) RFspatialGridDataFrame(grid=points2grid(from),
+      function(from, to) RFspatialGridDataFrame(grid=sp::points2grid(from),
                                                 data=from@data,
                                                 RFparams=from@.RFparams))
 
 setAs("RFpointsDataFrame", "RFgridDataFrame",
       function(from, to) {
-        tmp.coord <- SpatialPoints(cbind(from@coords, 1:length(from@coords)))
-        tmp.grid <- points2grid(tmp.coord)
+        tmp.coord <- sp::SpatialPoints(cbind(from@coords, 1:length(from@coords)))
+        tmp.grid <- sp::points2grid(tmp.coord)
         grid <- convert2GridTopology(tmp.grid[,1, drop=FALSE])
         RFgridDataFrame(data=from@data, grid=grid, RFparams=from@.RFparams)
       })
@@ -104,38 +43,6 @@ setAs("RFgridDataFrame", "RFpointsDataFrame",
         RFpointsDataFrame(data=from@data, coords=coords,
                           RFparams=from@.RFparams)
       })
-
-
-brack <- function(x, i, j, ..., drop=FALSE) {
-  dots = list(...)
-  if (length(dots)>0) warning("dots are ignored")
-  has.variance <- !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
-  if (missing(j)) {
-    x@data <- x@data[i]#, drop=drop]
-    n <- x@.RFparams$n
-    v <- x@.RFparams$vdim
-    if (!is.numeric(i)) {
-      if (is.logical(i)) {
-        i <- which(i)
-      } else {
-        stopifnot(all(i %in% colnames(x@data)))
-        i <- match(i, colnames(x@data))
-      }
-    }
-    if (! (length(unique(table(i%%v, rep(0, length(i)))))==1) )
-      stop(paste("for each variable selected, the same number of repetitions ",
-                 "must be selected; you selected columns ",
-                 paste(i, collapse=","), " but vdim=",v," and n=",n, sep=""))
-    x@.RFparams$vdim <- v.new <- length(unique(i%%v))
-    if (ret.has.var <- has.variance && any(i > n*v))
-      x@.RFparams$has.variance <- ret.has.var
-    x@.RFparams$n <- length(i) / v.new - ret.has.var
-    
-  }
-  else
-    x@data <- x@data[i,j]
-  return(x)
-}
 
 
 
@@ -151,68 +58,28 @@ as.matrix.RFgridDataFrame <-
 
 as.array.RFgridDataFrame <-
   as.array.RFspatialGridDataFrame <- function(x, ...) {
-    z <- as.matrix(x@data)
+    z <- as.matrix(x@data)    
     dim <- c(x@grid@cells.dim, x@.RFparams$vdim, x@.RFparams$n)
     dim <- dim[dim > 1]
-    if (length(dim) == 1) return(as.vector(z)) 
+    if (length(dim) == 1) return(as.vector(z))
     dim(z) <- dim
-    z
+    if ((l <- length(x@grid@cells.dim)) > 1) {
+      idx <- as.list(rep(TRUE, length(dim)))
+      idx[[2]] <- (dim[2]) : 1
+      #Print(idx, c(list(z), drop=FALSE, idx))
+      do.call("[", c(list(z), drop=FALSE, idx))
+    } else z
   }
 
 
 as.vector.RFgridDataFrame <-
   as.vector.RFspatialGridDataFrame <- function(x, ...) {
-    as.vector(as.matrix(x@data))
+    as.vector(as.array.RFgridDataFrame(x))
   }
 
 #setAs("RFgridDataFrame", "matrix", gridtomatrix)
 #setAs("RFspatialGridDataFrame", "matrix", gridtomatrix)
 
-
-
-cbind_RFsp = function(...) {  ##copied from sp package
-  stop.ifnot.equal = function(a, b) {
-    res = all.equal(a@grid, b@grid)
-    if (!is.logical(res) || !res)
-      stop("grid topology is not equal")
-  }
-  grds = list(...)
-  ngrds = length(grds)
-  if (ngrds < 1)
-    stop("no arguments supplied")
-  if (ngrds == 1)
-    return(grds[[1]])
-  ## verify matching topology:
-  sapply(grds[2:ngrds], function(x) stop.ifnot.equal(x, grds[[1]]))
-  gr = grds[[1]]
-  gr@data = do.call(base::cbind, lapply(grds, function(x) x@data))
-  ##for (i in 2:ngrds)
-  ##	gr@data = cbind(gr@data, grds[[i]]@data)
-  if (is(gr, "RFspatialGridDataFrame"))
-    proj4string(gr) = CRS(proj4string(grds[[1]]))
-  gr
-}
-
-cbind_RFspPoints = function(...) {  ##copied from sp package
-  stop.ifnot.equal = function(a, b) {
-    res = all.equal(a@coords, b@coords)
-    if (!is.logical(res) || !res)
-      stop("coords are not equal")
-  }
-  grds = list(...)
-  ngrds = length(grds)
-  if (ngrds < 1)
-    stop("no arguments supplied")
-  if (ngrds == 1)
-    return(grds[[1]])
-  ## verify matching topology:
-  sapply(grds[2:ngrds], function(x) stop.ifnot.equal(x, grds[[1]]))
-  gr = grds[[1]]
-  gr@data = do.call(base::cbind, lapply(grds, function(x) x@data))
-  ##for (i in 2:ngrds)
-  ##	gr@data = cbind(gr@data, grds[[i]]@data)
-  gr
-}
 
 cbind.RFspatialGridDataFrame <- function(...)
   cbind_RFsp(...)
@@ -229,114 +96,18 @@ cbind.RFpointsDataFrame <- function(...)
 ## convert 'RFsp' objects to conventional format of 'RFsimulate',
 ## i.e. data is an array and x a matrix of coordinates or gridtriple defs.
 
-spatialGridObject2conventional <- function(obj) {
-
-  timespacedim <- length(obj@grid@cells.dim)
-  data <- as.matrix(obj@data)
-
-  has.variance <- !is.null(obj@.RFparams$has.variance) &&
-                           obj@.RFparams$has.variance
- 
-  dim(data) <- NULL
-  dim(data) <- c(obj@grid@cells.dim,
-                 obj@.RFparams$vdim,
-                 obj@.RFparams$n + has.variance)
-  
-  if (timespacedim > 1)
-    data <- reflection(data, 2, drop=FALSE)
-  ## re-ordering of 2nd space dimension since in sp objects, the 2nd dimension
-  ## is in decreasing order
-
-  vdim_close_together <- FALSE
-  if (vdim_close_together) {
-    perm <- c(timespacedim+1, 1:timespacedim, timespacedim+2) 
-    data <- aperm(data, perm=perm)
-  }
-  ## new order of dimensions: vdim, space-time-dims, n
-  
-  is.dim <- dim(data) != 1
-  if (sum(is.dim) > 1)
-    dim(data) <- dim(data)[is.dim] # drop dimensions length 1
-  else
-    dim(data) <- NULL
-  
-  x <- rbind(obj@grid@cellcentre.offset,
-             obj@grid@cellsize,
-             obj@grid@cells.dim)
-
- # Print(obj, "TTTT", is(obj, "RFsp"))
-  
-  if (dimensions(obj)==1 ||
-      !("coords.T1" %in% names(obj@grid@cellcentre.offset)))
-    T <- NULL
-  else {
-    idxT1 <- which("coords.T1" == names(obj@grid@cellcentre.offset))
-    T <- x[,  idxT1]
-    x <- x[, -idxT1, drop=FALSE]
-  }
-
-  .RFparams <- obj@.RFparams
-  
-  return(list(data=data, x=x, T=T, .RFparams=.RFparams))
-}
-
-spatialPointsObject2conventional <- function(obj) {
-  data <- as.matrix(obj@data)
-  has.variance <- !is.null(obj@.RFparams$has.variance) && obj@.RFparams$has.variance
-  dim(data) <- NULL
-  dim(data) <- c(nrow(obj@data), obj@.RFparams$vdim, obj@.RFparams$n + has.variance)
-  
-  vdim_close_together <- FALSE
-  if (vdim_close_together) {
-    perm <- c(2,1,3)
-    data <- aperm(data, perm=perm)
-  }
-  
-  is.dim <- dim(data) != 1
-  dim(data) <- if (sum(is.dim) > 1)  dim(data)[is.dim] else NULL
-
-  x <- obj@coords
-  dimnames(x) <- NULL
-  if (dimensions(obj)==1 || !("coords.T1" %in% colnames(obj@coords)))
-    T <- NULL
-  else {
-    idxT1 <- which("coords.T1" == colnames(obj@coords))
-    T <- points2grid(RFpointsDataFrame(coords=unique(x[, idxT1]),
-                                       data=double(length(unique(x[, idxT1]))),
-                                       RFparams=obj@.RFparams))
-    dimdata <- dim(data)
-    if (obj@.RFparams$vdim==1)
-      dim(data) <- c(dimdata[1]/T@cells.dim, T@cells.dim, dimdata[-1])
-    else
-      dim(data) <- c(dimdata[1], dimdata[2]/T@cells.dim,
-                     T@cells.dim, dimdata[-c(1,2)])
-    x <- x[1:(nrow(x)/T@cells.dim), -idxT1, drop=FALSE]
-    T <- c(T@cellcentre.offset, T@cellsize, T@cells.dim)
-   }
-
-  
-  return(list(data=data, x=x, T=T, .RFparams=obj@.RFparams))
-}
-
 setGeneric(name = "RFspDataFrame2conventional", 
-           def = function(obj)
-           standardGeneric("RFspDataFrame2conventional") )
-
-setMethod("RFspDataFrame2conventional", signature=c("RFspatialGridDataFrame"),
-          function(obj)
-          spatialGridObject2conventional(obj))
+           def = function(obj) standardGeneric("RFspDataFrame2conventional"))
+setMethod("RFspDataFrame2conventional",
+          signature=c("RFspatialGridDataFrame"),
+          function(obj) spatialGridObject2conventional(obj))
 setMethod("RFspDataFrame2conventional", signature=c("RFgridDataFrame"),
-          function(obj)
-          spatialGridObject2conventional(obj))
-
+          function(obj) spatialGridObject2conventional(obj))
 setMethod("RFspDataFrame2conventional",
           signature=c("RFspatialPointsDataFrame"),
-          function(obj)
-          spatialPointsObject2conventional(obj))
-setMethod("RFspDataFrame2conventional",
-          signature=c("RFpointsDataFrame"),
-          function(obj)
-          spatialPointsObject2conventional(obj))
+          function(obj) spatialPointsObject2conventional(obj))
+setMethod("RFspDataFrame2conventional", signature=c("RFpointsDataFrame"),
+          function(obj) spatialPointsObject2conventional(obj))
 
 
 rfspDataFrame2dataArray_generic <- function(obj) {
@@ -367,8 +138,7 @@ setMethod("RFspDataFrame2dataArray", signature=c("RFgridDataFrame"),
 
 ##  convert GridTopology or 3-row matrix to list of vectors
 setGeneric(name = "GridTopology2gridVectors", 
-           def = function(grid)
-           standardGeneric("GridTopology2gridVectors"))
+           def = function(grid) standardGeneric("GridTopology2gridVectors"))
 setMethod("GridTopology2gridVectors",
           signature=c("GridTopology"),
           function(grid) {
@@ -647,6 +417,30 @@ setMethod(f="plot",
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
                                  ...))
+setMethod(f="plot",
+          signature(x="RFspatialDataFrame", y="matrix"),
+	  definition=function(
+            x, y, MARGIN = c(1, 2),
+            MARGIN.slices = NULL,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
+            nmax = 6,
+            plot.variance = (!is.null(x@.RFparams$has.variance) &&
+                             x@.RFparams$has.variance),
+            select.variables, # = 1:vdim,
+            zlim,
+            legend=TRUE,
+            MARGIN.movie = NULL,
+            ...)
+          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
+                                 MARGIN.slices=MARGIN.slices,
+                                 n.slices=n.slices, nmax=nmax,
+                                 plot.variance = plot.variance,
+                                 select=select.variables,
+                                 zlim=zlim,
+                                 legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
+                                 ...))
+
 
 setMethod(f="persp",
           signature(x="RFspatialGridDataFrame"),
@@ -707,6 +501,7 @@ setMethod(f="plot", signature(x="RFspatialPointsDataFrame",
 plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
   ## grid   : sorted = TRUE
   ## points : sorted = FALSE
+#  Print(close.screen(), dev.cur()); print(dev.list())
 
   stopifnot(!missing(x))
   x <- trafo_pointsdata(x)
@@ -727,13 +522,16 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
       stop("ncol(x@data) does not match 'x@.RFparams'; change 'x@.RFparams'")
     }
   }
-  
-  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
-  graphics <- RFoptions()$graphics
-  always.close <- n > 1 || graphics$always_close_screen
-  ##  Print("A", always.close)
-  
 
+  
+  graphics <- RFoptions()$graphics
+#  Print(graphics, close.screen(), dev.cur()); print(dev.list())
+  ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
+
+#  Print(close.screen(), dev.cur()); print(dev.list())
+
+  always.close <- n > 1 || graphics$always_close_screen
+  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
   dots <- list(...)
   dotnames <- names(dots)
   if ("bg" %in% dotnames) {
@@ -779,8 +577,6 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     dots$col <- NULL
   }
 
-  
-  ArrangeDevice(graphics, c(1, n))
   split.screen(c(n,1))
   
 #  if (always.close) {
@@ -836,6 +632,5 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     }
   }
   if (always.close) close.screen(all.screens=TRUE)
-
 }
 

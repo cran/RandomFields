@@ -99,7 +99,7 @@ int get_subdim(cov_model *cov, bool Time, bool *ce_dim2, int *ce_dim,
       *effectivedim == 1 + fulldim;
     *effectivedim -= *ce_dim2;  
     if (*ce_dim2 && !ISNA(layers) && !layers) {
-      SERR("value of 'layers' does not match the situation")
+      SERR1("value of '%s' does not match the situation", KNAME(TBM_LAYERS))
     }
   } else {
     *ce_dim2 = false;
@@ -183,7 +183,7 @@ int checktbmproc(cov_model *cov) {
     return ERRORDIM;
   
   if (GLOBAL.general.vdim_close_together && cov->vdim2[0] > 1)
-    SERR("TBM only allowed if `vdim_close_together=FALSE'");
+    SERR1("TBM only allowed if '%s=FALSE'", general[GENERAL_CLOSE]);
 
   ROLE_ASSERT(ROLE_GAUSS);
   
@@ -204,8 +204,8 @@ int checktbmproc(cov_model *cov) {
     tbmdim = P0INT(TBM_TBMDIM),
     fulldim = P0INT(TBM_FULLDIM);
   if (tbmdim >= fulldim) {
-     SERR2("'reduceddim (=%d)' must be less than 'fulldim' (=%d)", 
-	   tbmdim, fulldim);
+     SERR4("'%s' (=%d) must be less than '%s' (=%d)", 
+	   KNAME(TBMOP_TBMDIM), tbmdim, KNAME(TBM_FULLDIM), fulldim);
   }
   kdefault(cov, TBM_LINES, gp->lines[fulldim-1]);
   kdefault(cov, TBM_LINESIMUFACTOR, gp->linesimufactor); 
@@ -219,7 +219,8 @@ int checktbmproc(cov_model *cov) {
       P(TBM_CENTER)[i] = gp->center[i];
     }
   } else {
-    if (cov->nrow[TBM_CENTER] < dim) SERR("vector for 'center' too short");
+    if (cov->nrow[TBM_CENTER] < dim) 
+      SERR1("vector for '%s' too short", KNAME(TBM_CENTER));
   }
 
   // PMI(cov);
@@ -379,8 +380,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   */
  
   if (tbmdim != 1 || (fulldim != 2 && fulldim != 3))
-    SERR3("'%s' only works for reduceddim =1 and fulldim=2 or 3. Got %d %d",
-	  NICK(cov), tbmdim, fulldim);
+    SERR5("'%s' only works for %s =1 and %s=2 or 3. Got %d %d",
+	  NICK(cov), KNAME(TBM_TBMDIM), KNAME(TBM_FULLDIM), tbmdim, fulldim);
   if (cov->tsdim > MAXTBMSPDIM) return ERRORMAXDIMMETH;
 
 
@@ -456,10 +457,9 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   linesimufactor = -1.0;
   if (tbm_linesimustep  > 0.0) linesimufactor = 1.0 / tbm_linesimustep;
   else if (tbm_linesimufactor > 0) {
-    double mindelta;
+    double mindelta = RF_INF;
     int spDim = user_dim - (int) ce_dim2; // eigentlich muesste man
     // es das Urbild der Zeitachse abziehen... Egal. Fuer den Ausbau reicht es.
-    mindelta = RF_INF; 
     if (loc_user->grid) {
       // if linesimufactor, the fine grid scale is proportional to smallest 
       // distance in the grid. 
@@ -625,7 +625,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
     SERR("The number of points on the line is too large. Check your parameters and make sure that none of the locations are given twice");
   } else if (diameter < 10) {
-    SERR("too few points on the line -- modify 'linesimufactor' or 'linesimustep'");
+    SERR2("too few points on the line -- modify '%s' or '%s'",
+	  KNAME(TBM_LINESIMUFACTOR), KNAME(TBM_LINESIMUSTEP));
   }
   
 
@@ -805,19 +806,22 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
 }
 
 
-void GetE(int fulldim, TBM_storage *s, int origdim, int tsdim, bool Time, 
+void GetE(int fulldim, TBM_storage *s, int origdim, bool Time, 
 	  double *phi, double deltaphi,	 double *aniso,
 	  double *offset, double *ex, double *ey, double *ez, double *et) {
   double sube[MAXTBMSPDIM], e[MAXTBMSPDIM];
   int d, j, idx, k,
-      spatialdim = s->simuspatialdim;
+    spatialdim = s->simuspatialdim;
+
 //      total = spatialdim * dim;
   // dim is the users's dim of the field
   // this might be reduced by zonal anisotropies leading to spatialdim
 
+  //  printf("gete fulldim=%d %d %d\n", fulldim, origdim, spatialdim);
+
   // for debugging only
   for(d=0; d<MAXTBMSPDIM; d++) sube[d] = e[d] = RF_NEGINF;
-  assert(fulldim >= tsdim);
+  assert(fulldim >= spatialdim); 
 
   if (fulldim == 2) {
     // no choice between random and non-random
@@ -840,10 +844,10 @@ void GetE(int fulldim, TBM_storage *s, int origdim, int tsdim, bool Time,
 
 
   if (aniso == NULL) {
-    for (d=0; d<tsdim; d++) e[d] = sube[d];    
+    for (d=0; d<spatialdim; d++) e[d] = sube[d];    
   } else {
-    for (d=0; d<tsdim; d++) e[d] = 0.0;
-    for (k=j=0; j<tsdim; j++) {
+    for (d=0; d<spatialdim; d++) e[d] = 0.0;
+    for (k=j=0; j<spatialdim; j++) {
       for (d=0; d<origdim; d++) {
 	e[d] += sube[j] * aniso[k++];
 	//      print("e,s,a, (%d, %d) %f     %f     %f\n",
@@ -851,9 +855,10 @@ void GetE(int fulldim, TBM_storage *s, int origdim, int tsdim, bool Time,
       }
     }
   }
-  for (d=0; d<origdim; d++) {
+  for (d=0; d<spatialdim; d++) {
     e[d] *= s->linesimufactor;
     *offset -= s->center[d] * e[d];    
+    //   printf("d=%d %f sube=%f %f %f\n", d, e[d], sube[d],s->linesimufactor, s->center[d]);
     //  
   }
 
@@ -929,6 +934,8 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   assert(cov->stor != NULL);
      
 
+  // printf("%d %d\n", P0INT(TBM_FULLDIM), s->ce_dim);
+
   //  APMI(cov);
 
   for (n=0; n<totvdim; n++) {
@@ -978,7 +985,8 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       double inittoffset;
       R_CheckUserInterrupt();
       if (every>0  && n > 0 && (n % every == 0)) PRINTF("%d \n",n);
-      GetE(fulldim, s, origdim, tsdim, loc->Time, &phi, deltaphi,
+
+      GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,
 	   loc->caniso, &inittoffset, &incx, &incy, &incz, &inct);
       incx *= stepx;
       incy *= stepy;
@@ -1047,7 +1055,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       for (n=0; n<tbm_lines; n++){/*printf("n=%ld tbm.lines%d\n",n,tbm_lines);//*/ \
 	R_CheckUserInterrupt();						\
         if (every>0  && (n % every == 0)) PRINTF("%ld \n",n);		\
-        GetE(fulldim, s, origdim, tsdim, loc->Time, &phi, deltaphi,	\
+        GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,	\
 	     loc->caniso, &offsetinit, &incx, &incy, &incz, &inct);		\
         offset += UNIFORM_RANDOM - 0.5; 				\
 	DO(key, cov->stor);						\

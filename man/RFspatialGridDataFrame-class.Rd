@@ -21,6 +21,7 @@
 \alias{as.matrix.RFspatialGridDataFrame}
 \alias{as.array.RFspatialGridDataFrame}
 \alias{as.vector.RFspatialGridDataFrame}
+\alias{as.data.frame.RFspatialGridDataFrame}
 \alias{cbind.RFspatialGridDataFrame}
 \alias{contour.RFspatialGridDataFrame}
 
@@ -29,7 +30,8 @@
  spatio-temporal locations (at least of dimension 2) 
  on a (full) regular grid. Direct extension of class
  \command{\link[sp:SpatialGridDataFrame-class]{SpatialGridDataFrame}
-   from the \pkg{sp}-package.}
+   from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
+ transformation.}
  }
 
 \section{Creating Objects}{
@@ -131,7 +133,9 @@
  converts \code{data}-slot to array }
  \item{as.vector}{\code{signature(x = "RFspatialGridDataFrame")}:
  converts \code{data}-slot to vector }
- }
+\item{as.data.frame}{\code{signature(x = "RFspatialGridDataFrame")}:
+ converts \code{data}-slot and coordinates to a data.frame}
+  }
 }
 
 \section{Details}{
@@ -148,7 +152,11 @@
  \command{isGridded} are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski
+  \email{alexander.malinowski@math.uni-goettingen.de},
+  Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
 
 
 \seealso{
@@ -156,7 +164,8 @@
  locations that are not on a grid,
  \code{\link{RFgridDataFrame-class}} which is for one-dimensional
  locations,
- \code{\link[=RFsp-class]{RFsp}} 
+ \code{\link[=RFsp-class]{RFsp}},
+ \command{\link{sp2RF}}
 }
 
 

@@ -260,9 +260,10 @@ rfConvertRMmodel2string <- function(model){
 
 setMethod(f="plot", signature(x='RMmodel', y="missing"),
 	  definition=function(x, y, dim=1, n.points=200, fct.type=NULL,
-            MARGIN, fixed.MARGIN, ...)
+            MARGIN, fixed.MARGIN, maxchar=15, ...)
           plotRMmodel(x, dim=dim, n.points=n.points, fct.type=fct.type,
-                      MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN, ...))
+                      MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN,
+                      maxchar=maxchar, ...))
 #setMethod(f="points", signature(x='RMmodel', y="missing"),
 #	  definition=function(x, y, ...) pointsRMmodel(x, ...))
 #setMethod(f="lines", signature(x='RMmodel', y="missing"),
@@ -370,11 +371,12 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {    
   if (dim==1) {
     D <- li$distance             
+    iszero <- D == 0
     if (plotfctcall == "matplot")  {
-      iszero <- D == 0
-      D[iszero] <- NA
-      plotpoint <- any(iszero)
-    }  
+      plotpoint <- any(iszero) && diff(range(dots$ylim)) * 1e-3 <
+        diff(range(cov)) - diff(range(cov[!iszero]))
+      if (plotpoint) D[iszero] <- NA
+    } else plotpoint <- FALSE
     liXY <-
       if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
       else list(x=D, y=cov)
@@ -394,8 +396,8 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
     local.dots$col <- NULL
     local.dots$lty <- NULL
     for (i in 1:ncol(cov)) {
-      if (!addgiven) local.dots$add <- i > 1
-       do.call(graphics::contour,
+      if (!addgiven) local.dots$add <- i > 1      
+      do.call(graphics::contour,
               args=c(list(x=li$distance, y=li$distanceY, col=dots$col[i],
                 lty = dots$lty[i],
                 z=matrix(cov[, i], nrow=length(li$distance))), local.dots))
@@ -405,7 +407,7 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
 
 
 plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
-                        ...) {
+                        maxchar=15, ...) {
   stopifnot(length(dim)==1)
   if (!(dim %in% 1:10))
     stop("only 'dim==1', 'dim==2' and 'dim==3' are allowed")
@@ -425,15 +427,21 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   x <- c(list(x), dots[models])
   mnames <- c("", substr(dotnames[models], 6, 100))
   idx <- substr(mnames, 1, 1) == "."
-  mnames[idx] <- substr(mnames[idx], 2, 100)
-  for (i in which(!idx)) 
+  mnames[idx] <- substr(mnames[idx], 2, 1000)
+  for (i in which(!idx)) {
     mnames[i] <- rfConvertRMmodel2string(x[[i]])
-  mnames <- substr(mnames, 1, 15)
+    nmn <- nchar(mnames[i]) - 1 
+    if (substr(mnames[i], nmn, nmn) == "(") {
+      mnames[i] <- substr(mnames[i], 1, nmn - 1)
+    }
+    msplit <- strsplit(mnames[i], "RM")[[1]]
+    if (length(msplit) == 2 && msplit[1]=="")  mnames[i] <- msplit[2]
+  }
+  mnames <- substr(mnames, 1, maxchar)
 
   dots <- dots[!models]
   dotnames <- dotnames[!models]
   
-  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
   plotfctcall <- if ("plotfctcall" %in% dotnames)
     dots$plotfctcall else "matplot"
   dots$plotfctcall <- NULL
@@ -498,6 +506,16 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   }
 
   dimcov <-  dim(cov[[1]])
+  graphics <- RFoptions()$graphics
+  if (is.null(dimcov)) { ## i.e. vdim == 1
+    ArrangeDevice(graphics, c(1,1))
+  } else {
+    figs <- dimcov[2:3]
+    ArrangeDevice(graphics, figs)
+  }
+  
+  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## noch noetig??
+  
   if (is.null(dimcov)) { ## i.e. vdim == 1
     cov <- sapply(cov, function(x) x)
     if (!("lty" %in% dotnames)) dots$lty <- 1:5
@@ -508,9 +526,6 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     if (length(x) > 1) legend(x="topright", legend=mnames,
                              col=dots$col, lty=dots$lty)
   } else { ## multivariate 
-    graphics <- RFoptions()$graphics
-    figs <- dimcov[2:3]
-    ArrangeDevice(graphics, figs)
     scr <- matrix(split.screen(figs=figs), ncol=dimcov[2], byrow=TRUE)
     par(oma=margins)
     title(main=dots$main, xlab=dots$xlab, ylab=dots$ylab,

@@ -108,6 +108,9 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
     \item \code{locmaxm} (maximum number of conditional values before
     neighbourhood kriging is performed)
     \item \code{fillall} imputing estimates location by default
+    \item \code{varnames} and \code{coordnames} in case
+    \code{data.frame}s are used to tell which column contains the data
+    and the coordinates, respectively.
 }}
 
 \details{

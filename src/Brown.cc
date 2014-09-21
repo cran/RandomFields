@@ -951,6 +951,7 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
     for (i=0; i<lgtotalpoints; i++) {
       // MARCO: hier wird trend abgezogen; 
       lgres[i] -= trend[i];
+      //      printf("%f ", lgres[i]);
       if (lgres[i] > maxval) {
 	maxval = lgres[i];
 	maxind = i;
@@ -959,10 +960,9 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
     if (maxind == zeropos) {
       pgs->sq_zhou_c += invstepdim * invstepdim;
       pgs->sum_zhou_c += invstepdim;
-
     }
 
-    //  printf("maxind = %d\n", maxind);
+    //     printf("maxind = %d %d\n", maxind, lgtotalpoints);
 
   
 
@@ -1017,7 +1017,7 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
     //  printf("while unif 3 %f\n", UNIFORM_RANDOM); assert(false);
 
     //  assert(maxind != zeropos);
-    if (maxind == zeropos && PL > 5) {
+    if (maxind == zeropos && PL > 5 && false) {
       PRINTF("zeropos maxval=%f lower=%f hat=%d zhou_n=%d optim=%d\n",
 	     maxval, lowerbounds[maxind], hatnumber, pgs->n_zhou_c, P0INT(BR_OPTIM));
       //assert(false);

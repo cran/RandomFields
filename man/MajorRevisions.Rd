@@ -102,4 +102,5 @@ plot(RFsimulate(model, x)) ## S4
 plot(RFsimulate(model, x, spConform=FALSE)) ## no class
 
 \dontshow{FinalizeExample()}
+
 }

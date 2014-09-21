@@ -69,8 +69,9 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
   }
   RFopt[[1]]$general$storing <-
     c(RFopt[[1]]$general$storing, REGISTER, COVREGISTER)
-  l <- list(...)
-  if (length(l) > 0) {
+  l <- list(asList=FALSE, ...)
+#  l <- list(...)
+  if (length(l) > 1) { ## wegen asList; sonst  > 0 !!
     storing <- (substr(names(l), 1, 3) == "sto" |
                 substr(names(l), 1, 9) == "general.sto")
     if (any(storing)) last <- rev(which(storing))[1]
@@ -242,19 +243,7 @@ RFformula <- function(f)
   return(parseModel(f))
 
 
-RFgetMethodNames <-function (show=TRUE) {
-
-  # frueher: PrintMethodList
-  if (show)  .C("PrintMethods", PACKAGE="RandomFields")
-  #invisible()
-
-  # frueher: GetMethodNames
-  assign(".p", GetrfParameters(TRUE))
-  l <- character(.p$methodnr)
-  for (i in 1:.p$methodnr) {
-    l[i] <- .C("GetMethodName", as.integer(i - 1),
-               n = paste(rep(" ", .p$methodmaxchar), collapse = ""),
-               PACKAGE = "RandomFields")$n
-  }
-  invisible(l)
+RFgetMethodNames <-function () {
+  RFgetModelNames(type=c("method for Gauss processes", "method for Brown-Resnick processes"), group.by="type")
 }
+

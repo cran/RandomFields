@@ -33,10 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 bool debug=false;
 
 
-#define DIRECT_METHOD (COMMON_GAUSS + 1)
-#define DIRECT_SVDTOL (COMMON_GAUSS + 2)
-#define DIRECT_MAXVAR (COMMON_GAUSS + 3)
-
 int check_directGauss(cov_model *cov) {
 #define nsel 4
   cov_model *next=cov->sub[0];
@@ -208,10 +204,9 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
        }
        PRINTF("\n");
     }
-    //    assert(false); 
+    //   assert(false); 
   }
    
-
   //APMI(cov);
    
   /* ********************** */
@@ -252,7 +247,8 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     // F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
     if (Err!=NOERROR) {
       if (PL>=PL_SUBIMPORTANT) { 
-	LPRINT("Error code F77_CALL(dpotrf) = %d\n", Err); }
+	INDENT; PRINTF("Error code F77_CALL(dpotrf) = %d\n", Err); 
+      }
       err=ERRORDECOMPOSITION;
     } else break;
     // try next method : 
@@ -336,7 +332,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 		      Cov[i * vdimtot +k] - sum, i, k, Cov[i* vdimtot +k ], 
 		      sum);
 	     }
-	     GERR("required precision not attained: probably invalid model.\nSee also parameter 'svdtolerance'.");
+	     GERR1("required precision not attained: probably invalid model.\nSee also parameter '%s'.", direct[DIRECT_SVDTOL]);
 	     goto ErrorHandling;
 	   }
 	 }

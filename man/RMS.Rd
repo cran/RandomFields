@@ -4,7 +4,7 @@
 \description{
  \command{\link{RMS}} is an operator that modifies the variance and the
  coordinates or distances of a submodel \eqn{\phi} by 
- \deqn{C(h) = v * phi(A*h/s).}
+ \deqn{C(h) = v * \phi(A*h/s).}
  
  \bold{Most users will never call \command{\link{RMS}} directly, see the
  details.}

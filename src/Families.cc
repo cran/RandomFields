@@ -2313,7 +2313,7 @@ int GetMajorant(cov_model *cov) {
     INNER *= inner_factor;
     if (INNER > x) INNER = x;
     if (++i > max_iterations) 
-      SERR1("max. iterations of %d performed without success. Increase the value of 'maxit'", max_iterations);
+      SERR2("%d iterations performed without success. Increase the value of '%s'", max_iterations, distr[RECT_MAXIT]);
   }
 
   //printf("inner j=%d (%d) inner=%4.3f m=%4.3f\n", 
@@ -2349,7 +2349,7 @@ int GetMajorant(cov_model *cov) {
     OUTER_DENSITY(m, OUTER);
     while (m < v && OUTER < outer_max) {
       if (++i > max_iterations) 
-	SERR("No majorant found. Function does not allow for a majorant or increase 'maxit'");
+	SERR1("No majorant found. Function does not allow for a majorant or increase '%s'", distr[RECT_MAXIT]);
       OUTER_CONST *= safetyP1;
       OUTER_POW /= safetyP1;
       OUTER *= outer_factor;

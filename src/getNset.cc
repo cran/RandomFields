@@ -113,23 +113,23 @@ void removeOnly(cov_model **Cov) {
   COV_DELETE_WITHOUTSUB(&cov);
 }
 
- void MPPPROPERTIES_NULL(mpp_properties *mpp) {
-   // mpp->refradius= 
+ void MPPPROPERTIES_NULL(mpp_properties *Mpp) {
+   // Mpp->refradius= 
    int i;
-   for (i=0; i<MAXMPPVDIM; i++) mpp->maxheights[i] = RF_INF;
-   mpp->unnormedmass = RF_NA;
-   mpp->mM = mpp->mMplus = NULL;
-   //   mpp->refsd = 
-   //mpp->totalmass = RF_NA;
-   //mpp->methnr = -1;
-   //mpp->loc_done = false;
+   for (i=0; i<MAXMPPVDIM; i++) Mpp->maxheights[i] = RF_INF;
+   Mpp->unnormedmass = RF_NA;
+   Mpp->mM = Mpp->mMplus = NULL;
+   //   Mpp->refsd = 
+   //Mpp->totalmass = RF_NA;
+   //Mpp->methnr = -1;
+   //Mpp->loc_done = false;
  }
 
- void MPPPROPERTIES_DELETE(mpp_properties *mpp) {   
-   if (mpp->mM != NULL) free(mpp->mM);
-   mpp->mM = NULL;
-   if (mpp->mMplus != NULL) free(mpp->mMplus);
-   mpp->mMplus = NULL;  
+ void MPPPROPERTIES_DELETE(mpp_properties *Mpp) {   
+   if (Mpp->mM != NULL) free(Mpp->mM);
+   Mpp->mM = NULL;
+   if (Mpp->mMplus != NULL) free(Mpp->mMplus);
+   Mpp->mMplus = NULL;  
  }
 
 
@@ -645,74 +645,74 @@ void BRTREND_DELETE(double **BRtrend, int trendlen) {
  }
 
 void BR_DELETE(BR_storage **S) {
-  BR_storage *br = *S;  
-  if (br != NULL) {
+  BR_storage *brS = *S;  
+  if (brS != NULL) {
     int i;
-    if (br->trend != NULL) {
-      BRTREND_DELETE(br->trend, br->trendlen); 
-      free(br->trend);
+    if (brS->trend != NULL) {
+      BRTREND_DELETE(brS->trend, brS->trendlen); 
+      free(brS->trend);
     }
-    if (br->shiftedloc != NULL) free(br->shiftedloc);     
-    if (br->loc2mem != NULL) free(br->loc2mem);
+    if (brS->shiftedloc != NULL) free(brS->shiftedloc);     
+    if (brS->loc2mem != NULL) free(brS->loc2mem);
 
     
-    if (br->countvector != NULL) {
-      for (i=0; i<br->vertnumber; i++) {
-	if (br->countvector[i] != NULL) free(br->countvector[i]);
+    if (brS->countvector != NULL) {
+      for (i=0; i<brS->vertnumber; i++) {
+	if (brS->countvector[i] != NULL) free(brS->countvector[i]);
       }
-      free(br->countvector);
+      free(brS->countvector);
     }
  
-   if (br->areamatrix != NULL) {
-      for (i=0; i<br->vertnumber; i++) {
-	if (br->areamatrix[i] != NULL) free(br->areamatrix[i]);
+   if (brS->areamatrix != NULL) {
+      for (i=0; i<brS->vertnumber; i++) {
+	if (brS->areamatrix[i] != NULL) free(brS->areamatrix[i]);
       }
-      free(br->areamatrix);
+      free(brS->areamatrix);
     }
-   if (br->logvertnumber != NULL) free(br->logvertnumber);
+   if (brS->logvertnumber != NULL) free(brS->logvertnumber);
 
-   if (br->locindex != NULL) free(br->locindex);
-    if (br->suppmin != NULL) free(br->suppmin);
-    if (br->suppmax != NULL) free(br->suppmax);
-    if (br->locmin != NULL) free(br->locmin);
-    if (br->locmax != NULL) free(br->locmax);
-    if (br->loccentre != NULL) free(br->loccentre);
+   if (brS->locindex != NULL) free(brS->locindex);
+    if (brS->suppmin != NULL) free(brS->suppmin);
+    if (brS->suppmax != NULL) free(brS->suppmax);
+    if (brS->locmin != NULL) free(brS->locmin);
+    if (brS->locmax != NULL) free(brS->locmax);
+    if (brS->loccentre != NULL) free(brS->loccentre);
 
-    if (br->mem2loc != NULL) free(br->mem2loc);
-    if (br->newx != NULL) free(br->newx);
-    if (br->vario != NULL) COV_DELETE(&(br->vario));
+    if (brS->mem2loc != NULL) free(brS->mem2loc);
+    if (brS->newx != NULL) free(brS->newx);
+    if (brS->vario != NULL) COV_DELETE(&(brS->vario));
      for(i=0; i<MAXSUB; i++) {
-      if (br->lowerbounds[i] != NULL) free(br->lowerbounds[i]);
-      if (br->sub[i] != NULL) COV_DELETE(br->sub + i);
+      if (brS->lowerbounds[i] != NULL) free(brS->lowerbounds[i]);
+      if (brS->sub[i] != NULL) COV_DELETE(brS->sub + i);
      }
-    if (br->submodel != NULL) COV_DELETE(&(br->submodel));
+    if (brS->submodel != NULL) COV_DELETE(&(brS->submodel));
      free(*S);
     *S = NULL;
   }
 }
 
-void BR_NULL(BR_storage *br) {
-  br->trend = NULL;
-  br->trendlen = 0;
-  br->next_am_check = NA_INTEGER;
-  br->shiftedloc = NULL;
-  br->mem2loc = br->locindex = br->loc2mem = NULL;
-  br->memcounter = 0;
-  br->newx = br->suppmin = br->suppmax = 
-    br->locmin = br->locmax = br->loccentre = NULL;
+void BR_NULL(BR_storage *brS) {
+  brS->trend = NULL;
+  brS->trendlen = 0;
+  brS->next_am_check = NA_INTEGER;
+  brS->shiftedloc = NULL;
+  brS->mem2loc = brS->locindex = brS->loc2mem = NULL;
+  brS->memcounter = 0;
+  brS->newx = brS->suppmin = brS->suppmax = 
+    brS->locmin = brS->locmax = brS->loccentre = NULL;
   int i;
   for (i=0; i<MAXSUB; i++) {
-    br->lowerbounds[i] = NULL;
-    br->radii[i] = RF_NA;
-    br->thresholds[i] = RF_INF;
-    br->sub[i] = NULL;
-    br->zeropos[i] = NA_INTEGER;
+    brS->lowerbounds[i] = NULL;
+    brS->radii[i] = RF_NA;
+    brS->thresholds[i] = RF_INF;
+    brS->sub[i] = NULL;
+    brS->zeropos[i] = NA_INTEGER;
   }
-  br->vario = br->submodel = NULL;  
-  br->idx = 0;
-  br->countvector = NULL;
-  br->areamatrix = NULL;
-  br->logvertnumber = NULL;
+  brS->vario = brS->submodel = NULL;  
+  brS->idx = 0;
+  brS->countvector = NULL;
+  brS->areamatrix = NULL;
+  brS->logvertnumber = NULL;
 }
 
 
@@ -790,6 +790,7 @@ void PGS_NULL(pgs_storage* x) {
     RF_NEGINF;
   x->flat = x->estimated_zhou_c = x->logmean = false;
   x->totalmass = RF_NA;
+  x->alpha = 1.0; // !! standard
 
   x->size = -1;
   x->zhou_c = RF_NA;
@@ -1286,7 +1287,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
     
     loc->length[loc->spatialdim] = (int) loc->T[XLENGTH];
     if (loc->length[loc->spatialdim]<=0) {
-      SERR("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of 'RFsimulate'.")
+      SERR1("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of '%s'.", CovList[SIMULATE].nick)
 	}
     loc->totalpoints *= loc->length[loc->spatialdim];
   }
@@ -2675,38 +2676,71 @@ matrix_type Type(double *M, int nrow, int ncol) {
 
   matrix_type type = TypeMiso; // default
   //  double elmt;
-  int i, j, k; //, endfor2;
+  int i, j, k,
+    endfor = nrow * ncol;
+
   double *m = M;
 
-  if (m==NULL) {
-      assert(ncol == nrow);
-      return TypeMiso;
+  if (m==NULL || (ncol == 1 && nrow == 1)) {
+    assert(ncol == nrow);
+    return type;
   }
-  
-  if (ncol == 1 &&  nrow == 1) return TypeMiso;
-  
+   
   if (ncol > nrow) {
-    int endfor = nrow * ncol;
     for (i=ncol * ncol; i < endfor; i++) 
       if (m[i]!= 0.0) return TypeMany;
     ncol = nrow; // !!
   }
 
-  for (k=0; k<ncol; k++, m += nrow) {
-    for (i=0; i<nrow; i++) if (m[i] != 0.0) break;
-    for (j=i+1; j<nrow; j++) {
-      if (m[j] != 0.0) type = TypeMany;
-      if (k == ncol - 1) return type;
-      k = ncol - 1; // bestenfalls noch 
-      m = M + k * nrow;
-    }
-    matrix_type newtype = i!=k ? TypeMproj : m[i] == 1.0 ? TypeMiso : TypeMdiag;
+  //  for(i=0; i<ncol * nrow; i++) printf("%f ", M[i]);
+  //  print("\n%d %d\n", ncol, nrow);
 
-    if (newtype <= TypeMdiag && nrow > 1 && k==ncol-1 && type >= TypeMproj) {
-      return type == TypeMproj ? TypeMtimesepproj : TypeMproj;
-    } else {
-      if (newtype > type) type = newtype;
+  for (k=0; k<ncol; ) {
+    for (i=0; i<nrow; i++) if (!R_FINITE(m[i]) || m[i] != 0.0) break;
+    for (j=i+1; j<nrow; j++) 
+      if (!R_FINITE(m[j]) || m[j] != 0.0) goto TimeInvestigation;
+    if (k == ncol - 1) { 
+      /* // nur fuer strikte projektion auf kleinere Koordinaten
+	 if (type == TypeMproj) {
+	int ii, kk;
+	for (ii=0; ii<nrow; ii++) {
+	  double sum = 0.0;
+	  for (kk=ii; kk<endfor; kk+= nrow) sum += M[kk];
+	  printf("sum %d %f %d\n", ii, sum, type); //
+	  if (sum != 1.0 && sum != 0.0) {
+	    type = TypeMany;
+	    break;
+	  }
+	}
+      }
+      */
+      if (i != k && (!R_FINITE(m[i]) || m[i] != 0.0))
+	return type == TypeMproj && R_FINITE(m[i]) && m[i] == 1.0 
+	  ? TypeMproj : TypeMany;
+      else return type == TypeMproj 
+	     ? (R_FINITE(m[i]) && (m[i] == 0.0 || m[i] == 1.0)
+		? TypeMtimesepproj : TypeMany)
+	     : type == TypeMiso && (!R_FINITE(m[i]) || m[i] != M[0])
+	     ? TypeMdiag : type;
     }
+
+    // k < ncol - 1; type != timesep and != timesepproj garantied
+    matrix_type newtype;
+    if ( i!=k && m[i] != 0.0) {
+      if (m[i] != 1.0) goto TimeInvestigation; 
+      newtype = TypeMproj;
+    } else newtype = R_FINITE(m[i]) && m[i]==M[0] ? TypeMiso : TypeMdiag;
+    if (newtype > type) type = newtype;
+
+    k++;
+    m += nrow;
+    continue;
+
+  TimeInvestigation: 
+    if (k == ncol - 1) return TypeMany;
+    type = TypeMtimesep;
+    k = ncol - 1;
+    m = M + k * nrow;
   }
   return type;
 }

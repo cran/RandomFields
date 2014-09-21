@@ -31,9 +31,17 @@ RMgauss(var, scale, Aniso, proj)
  \command{\link{RMstable}}) for the choice \eqn{\alpha = 2}{alpha = 2}.
 }
 \value{
- \command{\link{RMgauss}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
-
+ \command{\link{RMgauss}} returns an object of class
+ \code{\link[=RMmodel-class]{RMmodel}}
 }
+
+\note{
+  The use of \command{RMgauss} is questionable from both a theoretical
+  (analytical paths) and a practical point of view (e.g., speed of
+  algorithms).
+  Instead, \command{\link{RMgneiting}} should be used.
+}
+
 \references{
  Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
  P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}

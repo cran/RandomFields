@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include "RF.h"
 #include "Covariance.h"
+#include "randomshape.h"
+
 
 
 
@@ -685,6 +687,8 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 		LPRINT("returning to higher level...\n");
 	      }
 	      goto Initialized;
+	    } else {
+	      if (PL >= PL_SUBIMPORTANT) MERR(err)
 	    }
 	  }
 	}
@@ -694,11 +698,12 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       
       if (PL >= PL_REC_DETAILS) {  
 	LPRINT("back from %s: err =%d [%d, %s]\n",
-	       METHODNAMES[unimeth], err, unimeth, METHODNAMES[unimeth]);
-      }
-      if (PL > PL_ERRORS) {
-	char msg[2000]; errorMSG(err, msg); PRINTF("error in init: %s\n",msg);
-      }
+	       METHODNAMES[unimeth], err, unimeth, METHODNAMES[unimeth]);     
+	
+	if (PL > PL_ERRORS) {
+	  char msg[2000]; errorMSG(err, msg); PRINTF("error in init: %s\n",msg);
+	}
+      } else if (PL >= PL_SUBIMPORTANT) MERR(err)
     } else {
       if (PL > PL_ERRORS) {
 	char msg[2000]; errorMSG(err,msg); PRINTF("error in check: %s\n",msg);
@@ -971,7 +976,8 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
   if (isNegDef(next) || next->nr == GAUSSPROC) {
     GetInternalMean(next, vdim, mean);
     if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
-      GERR("'binaryprocess' currently only allows scalar fields - NA returned");
+      GERR1("'%s' currently only allows scalar fields - NA returned",
+	    NICK(cov));
      if (cov->mpp.moments >= 1) 
       COV(ZERO, next->nr==GAUSSPROC ? next->sub[0]: next, variance);
     nmP1 = cov->mpp.moments + 1;
@@ -983,7 +989,7 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
 	cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0; 
 	if (cov->mpp.moments >= 1) {
 	  if (variance[w]==0.0)
-	    GERR("Vanishing sill not allowed in 'gaussprocess'");
+	    GERR1("Vanishing sill not allowed in '%s'", NICK(next));
 	  sigma = sqrt(variance[w]);
 	  cov->mpp.mM[idx + 1] = cov->mpp.mMplus[idx + 1] = 
 	    pnorm(p[pi], mean[v], sigma, false, false);
@@ -1052,6 +1058,7 @@ void rangebinaryprocess(cov_model *cov, range_type *range) {
 //////////////////////////////////////////////////////////////////////
 // Chisq Gauss
 #define CHISQ_DEGREE 0
+#define T_NU CHISQ_DEGREE
 
 
 int checkchisqprocess(cov_model *cov) {
@@ -1162,7 +1169,10 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
     vdim = cov->vdim2[0];
 
   cov->simu.active = false;
-  if ((err = INIT(sub, 2, s)) != NOERROR) return err;		  
+  if ((err = INIT(sub, 
+		  CovList[cov->nr].range == rangechisqprocess ? 2 :
+		  CovList[cov->nr].range == rangetprocess ? 1 : 9999
+		  , s)) != NOERROR) return err;		  
  
   nmP1 = cov->mpp.moments + 1;
   for (i=0; i<vdim; i++) { 
@@ -1172,9 +1182,11 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
     mean = sub->mpp.mM[idxsub + 1];
     m2 = sub->mpp.mM[idxsub + 2];
     variance =  m2 - mean * mean; 
-    if (variance==0.0) SERR("Vanishing sill not allowed in 'gaussprocess'");
+    if (variance==0.0) 
+      SERR1("Vanishing sill not allowed in '%s'", NICK(sub));
     if (ISNAN(mean)) // GetInternalMean currently only allows ...
-      SERR("'chisqprocess' currently only allows scalar fields -- NA returned");
+      SERR1("'%s' currently only allows scalar fields -- NA returned", 
+	   NICK(cov));
     cov->mpp.maxheights[i] = GLOBAL.extreme.standardmax * 
       GLOBAL.extreme.standardmax * m2;
 
@@ -1182,7 +1194,10 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
       assert(cov->mpp.mM != NULL);
       cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0; 
       if (cov->mpp.moments >= 1) {
-	cov->mpp.mMplus[idx + 1] = m2;
+	cov->mpp.mMplus[idx + 1] = 		  
+	  CovList[cov->nr].range == rangechisqprocess ? m2 
+	  : CovList[cov->nr].range == rangetprocess ? RF_NAN
+	  : RF_NAN;
 	cov->mpp.mM[idx + 1] = RF_NA; // to do: richtiger Wert
 	if (cov->mpp.moments >= 2)
 	  cov->mpp.mM[idx + 2] = 3 * variance * RF_NA;//check the 4th moment of a Gaussian, to do
@@ -1190,7 +1205,13 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
     }
   }
 
-  FieldReturn(cov);
+
+  if (CovList[cov->nr].range == rangechisqprocess) FieldReturn(cov);
+  else if (CovList[cov->nr].range == rangetprocess){
+    cov->fieldreturn = true;
+    cov->origrf = false;
+    cov->rf = sub->rf;
+  } else BUG;
   cov->simu.active = true;
  
   return NOERROR;
@@ -1202,7 +1223,7 @@ void do_chisqprocess(cov_model *cov, gen_storage *s){
   // reopened by internal_dogauss
   int  i, f,
     degree = P0INT(CHISQ_DEGREE),
-    n = cov->prevloc->totalpoints * cov->vdim2[0];
+    totvdim = cov->prevloc->totalpoints * cov->vdim2[0];
   cov_model 
     *next=cov->sub[0],
     *key = cov->key,
@@ -1211,14 +1232,14 @@ void do_chisqprocess(cov_model *cov, gen_storage *s){
     *subrf = sub->rf,
     *rf = cov->rf;
 
-  for (i=0; i<n; i++) rf[i] = 0.0;
+  for (i=0; i<totvdim; i++) rf[i] = 0.0;
 
   //  APMI(cov);
 
   for (f=0; f<degree; f++) {
     //  printf("f=%d %d\n", f, degree);
     DO(sub, s);   
-    for (i=0; i<n; i++) {
+    for (i=0; i<totvdim; i++) {
       double dummy = subrf[i];
       rf[i] += dummy * dummy;
     }
@@ -1233,6 +1254,42 @@ void rangechisqprocess(cov_model *cov, range_type *range) {
   range->pmax[CHISQ_DEGREE] = 1000;
   range->openmin[CHISQ_DEGREE] = false;
   range->openmax[CHISQ_DEGREE] = true;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
+//  multivariate t distribution
+
+
+
+
+
+void do_tprocess(cov_model *cov, gen_storage *s){
+  // reopened by internal_dogauss
+  int  i,
+     n = cov->prevloc->totalpoints * cov->vdim2[0];
+  cov_model 
+    *next=cov->sub[0],
+    *key = cov->key,
+    *sub = key == NULL ? next : key;
+  double 
+    nu = P0(T_NU),
+    factor = sqrt(nu / rgamma(0.5 * nu, 0.5)), // note inverse!! see def rgamma
+    *rf = cov->rf;
+
+  DO(sub, s);  
+  for (i=0; i<n; rf[i++] *= factor);
+}
+
+void rangetprocess(cov_model *cov, range_type *range) {
+  rangegaussprocess(cov, range);
+  range->min[T_NU] = 0;
+  range->max[T_NU] = RF_INF;
+  range->pmin[T_NU] = 1;
+  range->pmax[T_NU] = 1000;
+  range->openmin[T_NU] = true;
+  range->openmax[T_NU] = true;
 }
 
 

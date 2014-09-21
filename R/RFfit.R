@@ -41,7 +41,7 @@
 ## NAs in data mit trend (derzeit) nicht kombinierbar
 
 ## zentrale C -Schnittstellen
-##    .C("PutValuesAtNA", RegNr, param, PACKAGE="RandomFields", DUP=FALSE)
+##    .C("PutValuesAtNA", RegNr, param, PACKAGE="RandomFields")
 
 ## bins bei Distances automatisch
 

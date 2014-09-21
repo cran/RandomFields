@@ -287,7 +287,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       }
     } else {    
      if (dim > MAXNUGGDIM) {
-	GERR("dim larger then MAXNUGGDIM");
+       GERR2("dim=%d larger than MAXNUGGDIM=%d", dim, MAXNUGGDIM);
       } 
       anisotype = Type(loc->caniso, loc->cani_nrow, loc->cani_ncol);
       A = (double*) MALLOC(dimSq * sizeof(double));
@@ -301,7 +301,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 		      dummy, &ndummy, &err);
       if (err != 0) {
 	free(A);
-	GERR("dgeev failed in nugget.cc");
+	GERR1("dgeev failed for '%s'", NICK(cov));
       }
       for (d=0; d<origdim; d++) {
 	//	print("simple %d %e %e %e  %d\n",

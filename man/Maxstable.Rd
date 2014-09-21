@@ -13,6 +13,18 @@
 
 
 \section{Implemeted models and methods}{
+  Models
+\tabular{ll}{
+ \command{\link{RPbrownresnick}} \tab Brown-Resnick process
+ using an automatic choice of the below 3 \code{RPbr*} methods\cr
+ \command{\link{RPopitz}} \tab  extremal t
+ process \cr 
+ \command{\link{RPschlather}} \tab extremal Gaussian
+ process \cr 
+ \command{\link{RPsmith}} \tab M3 processes \cr
+}
+
+Methods
 \tabular{ll}{
  \command{\link{RPbrmixed}} \tab simulation of Brown-Resnick processes
  using M3 representation\cr
@@ -20,13 +32,7 @@
  the original definition\cr
  \command{\link{RPbrshifted}} \tab simulation of Brown-Resnick processes using
  a random shift\cr
- \command{\link{RPbrownresnick}} \tab simulation of Brown-Resnick process
- using automatic choice of the previous 3 methods\cr
- \command{\link{RPschlather}} \tab simulation of the extremal Gaussian
- process \cr 
- \command{\link{RPsmith}} \tab simulation of M3 processes \cr
 }
-
 }
 
 

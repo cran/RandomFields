@@ -1,5 +1,5 @@
 
-InitModel <- function(reg, model, dim, NAOK=FALSE){
+InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
   for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
     vdim <- try(.Call("Init",
                       MODEL.USER,
@@ -11,7 +11,7 @@ InitModel <- function(reg, model, dim, NAOK=FALSE){
                       FALSE, # grid
                       FALSE, # distances
                       FALSE, # Time
-                      NAOK=NAOK,
+                      NAOK=NAOK, # ok
                       PACKAGE="RandomFields"), silent=TRUE)
     
     if (is.numeric(vdim)) return(vdim)
@@ -99,7 +99,7 @@ StandardSimpleModel <- function(model, tsdim, aniso=TRUE, addnugget=TRUE, ...) {
   storage.mode(tsdim) <- "integer"
  # userdefined <- GetParameterModelUser(model)
   
-  vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE)
+  vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE) # ok
   if (!is.numeric(vdim) || any(vdim > 1)) return("model not univariate")
   model <- GetModel(register=MODEL.USER, GETMODEL_DEL_NATSC) # , do.notreturnparam=TRUE)
   .C("DeleteKey", MODEL.USER)
@@ -452,9 +452,17 @@ cartesian_coordinate_names <- function(names) {
   coords <-  c("T", "x", "y", "z")
   Txyz <- outer(n, coords, "==")
   cs <- colSums(Txyz)
+#  Print(Txyz, cs, which(cs > 0))
   if (any(cs > 1) || sum(cs[1:2]) == 0 || any(diff(cs[-1]) > 0))
     return (integer(0))
-  return(which(cs > 0))
+  Txyz <- Txyz[, c(2:4, 1), drop=FALSE]
+  ord <- apply(Txyz, 2, function(x) which(x > 0))
+  ord <- order(unlist(ord))
+  rs <- which(rowSums(Txyz) > 0)
+       #                          rs <- apply(Txyz[, c(2:4, 1)], 
+ # Print(names, ord, rs, rs[ord])
+        
+  return(rs[ord])
 }
 
 
@@ -466,8 +474,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   ## (one for arbitrarily given locations and one for grid points)
   
   RFopt <- RFoptions()
-  curunits <- RFopt$coords$coord_units
-  newunits <-  RFopt$coords$new_coord_units
+  curunits <- RFopt$coords$coordunits
+  newunits <-  RFopt$coords$new_coordunits
   if (!missing(distances) && length(distances) > 0) {
     stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
               (missing(grid) || length(grid) == 0),
@@ -506,15 +514,15 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                 spacedim=spdim,
                 grid = FALSE,
                 distances = TRUE,
-                coord_units = curunits,
-                new_coord_units = newunits
+                coordunits = curunits,
+                new_coordunits = newunits
                 )
            )
   }
 
  
   stopifnot(!missing(x))
-  if (is(x, "RFsp")) {
+  if (is(x, "RFsp") || isSpObj(x)) {
     return(CheckXT(x=coordinates(x), y=y, z=z, T=T, grid=grid,
                    distances=distances, spdim=spdim, length.data=length.data,
                    y.ok=y.ok, printlevel=printlevel))
@@ -593,8 +601,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         && !is.null(n <- dimnames(x)[[2]])) {
       if (earth_coordinate_names(n[1:2])) {       
         cur <- curunits[1]
-        curunits <- newunits <- RFopt$coords$new_coord_units
-        curunits <- RFopt$coords$coord_units
+        curunits <- newunits <- RFopt$coords$new_coordunits
+        curunits <- RFopt$coords$coordunits
         curunits[1:2] <- c("longitude", "latitude")
         if (newunits[1] == "") newunits[1] <- "km"
         newunits[2:3] <- newunits[1]                
@@ -610,8 +618,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                   "'.\nChange options 'coordinate_system' and/or 'units' if ",
                   "necessary.\n(This message appears only once per session.)\n")
         RFoptions(coords.coordinate_system = "earth",
-                  coords.coord_units = curunits,
-                  coords.new_coord_units = newunits,
+                  coords.coordunits = curunits,
+                  coords.new_coordunits = newunits,
                   internal.warn_coordinates=FALSE)
 
        }
@@ -761,9 +769,25 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   }
   
   if (Time <- !is.null(T)) {
-    if (length(T)!=3) stop("length(T) == 3 is not TRUE. Note that for the time component R,\nthe gridtriple notation c(start, step, length) must be used.")
-    #lT <- length(seq(T[1],T[2],T[3]))
-    #T[2] <- T[1] + (lT - 0.999) * T[3]
+    Ttriple <- length(T) == 3;
+    if (length(T) <= 2) Tgrid <- TRUE
+      else {
+        dT <- diff(T)
+        Tgrid <- max(abs(diff(dT))) < dT[1] * RFopt$general$gridtolerance
+      }
+    if (is.na(RFopt$general$Ttriple)) {
+      if (Ttriple && Tgrid) stop("ambiguous definition of 'T'. Set RFoptions(Ttriple=TRUE) or RFoptions(Ttriple=FALSE)")
+      if (!Ttriple && !Tgrid) stop("'T' does not have a valid format")
+    } else if (RFopt$general$Ttriple) {
+      if (!Ttriple) stop("'T' is not given in triple format 'c(start, step, length)'")
+      Tgrid <- FALSE
+    } else {
+      if (!Tgrid) stop("'T' does not define a grid")
+      Ttriple <- FALSE
+    }
+    if (Tgrid)
+      T <- as.vector(seq2grid(list(T), "T", Tgrid, RFopt$internal$warn_ambiguous,
+                              RFopt$general$gridtolerance))
     restotal <- restotal * T[3]
   }
 
@@ -775,12 +799,12 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   if (is.null(y)) {
     return(list(x=x, T=T, Time=Time, restotal=restotal, l=len,
                 spacedim=spacedim, grid=grid, distances=FALSE,
-                coord_units = curunits,  new_coord_units = newunits))
+                coordunits = curunits,  new_coordunits = newunits))
   } else {
     storage.mode(y) <- "double"
     return(list(x=x, y=y, T=T, Time=Time, restotal=restotal, l=len,
                 spacedim=spacedim, grid=grid, distances=FALSE,
-                coord_units = curunits, new_coord_units = newunits))
+                coordunits = curunits, new_coordunits = newunits))
   }
   
 }

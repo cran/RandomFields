@@ -55,16 +55,16 @@
 
 \usage{
 RPcirculant(phi, force, mmin, strategy,
- maxmem, tolIm, tolRe, trials, useprimes, dependent,
+ maxGB, maxmem,  tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid)
 
 RPcutoff(phi, force, mmin, strategy,
- maxmem, tolIm, tolRe, trials, useprimes, dependent,
+ maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, a) 
  
 
 RPintrinsic(phi, force, mmin, strategy,
- maxmem, tolIm, tolRe, trials, useprimes, dependent,
+ maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, rawR) 
 }
 
@@ -110,24 +110,38 @@ RPintrinsic(phi, force, mmin, strategy,
  
  Default: \code{0}
  }
+
+ \item{maxGB}{Maximal memory used for the circulant matrix in units of
+   GB.
+   If this argument is set then \code{maxmem} is set to MAXINT.
+ 
+   Default: 0.5.   
+ }
  
  \item{maxmem}{Integer.
    maximal number of entries in a row of the circulant matrix. 
    The total amount of memory needed for the internal calculations
-   is about 16 (=2 * sizeof(double))
-   times as large as \code{maxmem}
-   if \code{\link{RFoptions}}\code{()$Storing=FALSE},
-   and 32 (=4 * sizeof(double)) time as large if \code{Storing=TRUE}.
+   is %about 16 (=2 * sizeof(double))
+   %   times as large as \code{maxmem}
+   %   if \code{\link{RFoptions}}\code{()$Storing=FALSE}, and
+   is
+   32 (=4 * sizeof(double)) time as large (factor 2 is needed as complex numbers
+   must be considered for calculating the fft of the covariance matrix;
+   another factor 2 is needed for storing the simulated result).
+   %if \code{Storing=TRUE}.
    
-   The value of \code{maxmem} must be at least twice as large as
-   the number of points to be simulated. In some case even much larger.
+   The value of \code{maxmem} must be at least \eqn{2^d} times as large as
+   the number of points to be simulated. Here \eqn{d} is the
+   space dimension. In some cases even much larger.
    
    Note that \code{maxmem} can be used to control the automatic
    choice of the simulation algorithm. Namely, in case of huge
    circulant matrices, other simulation
-   methods (TBM) are faster and might be preferred by the user.
+   methods (TBM) might be faster and might be preferred by the user.
+
+  If this argument is set then \code{maxGB} is set to \code{Inf}.
    
-   Default: \code{4096^2 = 16777216}
+   Default: \code{MAXINT}
  }
  
  \item{tolIm}{

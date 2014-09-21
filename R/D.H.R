@@ -139,16 +139,16 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     fft.len <- min(dimen[1], fft.max.length)
     fft.m <- round(fft.m)
     stopifnot(diff(fft.m)>0, all(fft.m>0), all(fft.m<=fft.len))
-    l.I.lambda <- double(repet * (fft.m[2] - fft.m[1] + 1));
-    .C("periodogram",
-       data,
-       as.integer(dimen[1]), 
-       as.integer(repet),## Produkt der anderen Dimensionen
-       as.integer(fft.m),## Ausschnitt aus Fourier-Trafo aus Stueck nachf. Laenge
-       as.integer(fft.len),## Reihe zerhackt in Stuecke dieser Laenge 
-       as.integer(fft.len / 2), ## WOSO(?)-Sch\"aetzer
-       l.I.lambda,
-       PACKAGE="RandomFields", DUP=DUPFALSE)
+    l.I.lambda <-
+      .Call("periodogram",
+            data,
+            as.integer(dimen[1]), 
+            as.integer(repet),# Produkt der anderen Dimensionen
+            as.integer(fft.m),# Ausschnitt aus Fourier-Trafo aus Stueck
+            ##                  nachf. Laenge
+            as.integer(fft.len),# Reihe zerhackt in Stuecke dieser Laenge 
+            as.integer(fft.len / 2), ## WOSO(?)-Sch\"aetzer
+            PACKAGE="RandomFields")
     l.lambda <-  log((2 * pi * (fft.m[1]:fft.m[2])) / fft.len)
   } 
 
@@ -163,17 +163,20 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     stopifnot(all(diff(block.sequ)>0))
     l.block.sequ <- log(block.sequ)
     dfa.len <- length(block.sequ)
-    l.dfa.var <- double(dfa.len * repet)
-    l.varmeth.var <- double(dfa.len * repet)
+    ##    l.dfa.var <- double(dfa.len * repet)
+    ##    l.varmeth.var <- double(dfa.len * repet)
     ## wird data zerstoert ?!
     ## log already returned!
-    .C("detrendedfluc", as.double(data), as.integer(dimen[1]), as.integer(repet),
-       as.integer(block.sequ), as.integer(dfa.len),
-       l.dfa.var, l.varmeth.var, PACKAGE="RandomFields", DUP=DUPFALSE)
+    l.var <- ## rbind(l.varmeth.var, l.dfa.var)
+      .Call("detrendedfluc", as.double(data), as.integer(dimen[1]),
+            as.integer(repet),
+            as.integer(block.sequ), as.integer(dfa.len),
+            PACKAGE="RandomFields")
     ## 1:dfa.len since data could be a matrix; l.block.sequ has length dfa.len
     ## and is then shorter than l.varmeth.var!
-    varmeth.idx <- is.finite(l.varmeth.var[1:dfa.len])
-    l.varmeth.var <- l.varmeth.var[varmeth.idx]
+    l.dfa.var <- l.var[2, ]
+    varmeth.idx <- is.finite(l.var[1, 1:dfa.len])
+    l.varmeth.var <- l.var[1, varmeth.idx]
     l.varmeth.sequ <- l.block.sequ[varmeth.idx]
   }
 
@@ -299,13 +302,14 @@ RFfractaldim <-
   if (any(is.na(mode <- modes[pmatch(mode, modes)])))
     stop("unknown values of `mode'")
 
+  if (isSpObj(data)) data <- sp2RF(data)
   if (is(data, "RFsp")) {
     if (!(missing(x) && is.null(y) && is.null(z) && is.null(T)))
       stop("x, y, z, T may not be given if 'data' is of class 'RFsp'")
     gridtmp <- isGridded(data)
     compareGridBooleans(grid, gridtmp)
     grid <- gridtmp
-    tmp <- RFspDataFrame2conventional(data)
+    tmp <- rfspDataFrame2conventional(data)
     x <- tmp$x
     y <- NULL
     z <- NULL
@@ -349,11 +353,13 @@ RFfractaldim <-
     if (do.range) {
       if (printlevel>=PL.FCTN.STRUCTURE) cat("ranges")
       lrs <- length(range.sequ) ## range.sequ is bound right here!
-      l.range.count <- double(lrs * repet)
+      #   l.range.count <- double(lrs * repet)
       ## logarithm is already taken within minmax
-      .C("minmax", as.double(data), as.integer(dimen[1]),
-         as.integer(repet), as.integer(range.sequ), as.integer(lrs),
-         l.range.count, PACKAGE="RandomFields", DUP=DUPFALSE, NAOK=TRUE)
+      storage.mode(data) <- "double"
+      l.range.count <-
+        .Call("minmax", data, as.integer(dimen[1]),
+              as.integer(repet), as.integer(range.sequ), as.integer(lrs),
+              PACKAGE="RandomFields")
       box.length.correction <- 0 ## might be set differently
       ##                            for testing or development
       Ml.range.sequ <- -log(range.sequ + box.length.correction)
@@ -366,13 +372,14 @@ RFfractaldim <-
       factor <- diff(x[c(1,2)]) / diff(range(data)) * box.enlarge.y
       ## note: data changes its shape! -- should be irrelevant to any procedure!
       data <- matrix(data, nrow=dimen[1])
-      l.box.count <- double(length(box.sequ) * repet)
-      .C("boxcounting",
-         as.double(rbind(data[1,], data, data[nrow(data),])),
-         as.integer(dimen[1]),
-         as.integer(repet), as.double(factor),
-         as.integer(box.sequ), as.integer(length(box.sequ)),
-         l.box.count, PACKAGE="RandomFields", DUP=DUPFALSE)
+     # l.box.count <- double(length(box.sequ) * repet)
+      l.box.count <-
+        .Call("boxcounting",
+              as.double(rbind(data[1,], data, data[nrow(data),])),
+              as.integer(dimen[1]),
+              as.integer(repet), as.double(factor),
+              as.integer(box.sequ),
+              PACKAGE="RandomFields")
       gc()
       
       box.length.correction <- 0 ## might be set differently
@@ -395,16 +402,15 @@ RFfractaldim <-
       fft.m <- round(2 * pi / exp(spann[1] + diff(spann) * (1 - fft.m / 100)))
      
       l.lambda <- log((2 * pi * (fft.m[1]:fft.m[2])) / fft.len)
-      l.I.lambda <- double(repet * (fft.m[2] - fft.m[1] + 1));
-      .C("periodogram",
+      # l.I.lambda <- double(repet * (fft.m[2] - fft.m[1] + 1));
+      l.I.lambda <- .Call("periodogram",
          data,
          as.integer(dimen[1]),
          as.integer(repet),## Produkt der anderen Dimensionen
          as.integer(fft.m),## Ausschnitt aus Fourier-Tr aus Stueck nachf. Laenge
          as.integer(fft.len),## Reihe zerhackt in Stuecke dieser Laenge 
          as.integer(fft.len / 100 * fft.shift), ## shift (WOSA-Sch\"aetzer)
-         l.I.lambda,
-         PACKAGE="RandomFields", DUP=DUPFALSE)
+         PACKAGE="RandomFields")
     }
   } else { # not grid
     if (do.box || do.range || do.fft) {
@@ -422,8 +428,7 @@ RFfractaldim <-
 
   if (any(mode=="plot" | mode=="interactive")) {
     plots <- do.vario + do.box + do.range + do.fft
-    do.call(getOption("device"),
-            list(height=height, width = height * min(3.4, plots)))
+    ScreenDevice(height=height, width = height * min(3.4, plots))
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))

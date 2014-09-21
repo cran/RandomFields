@@ -5,8 +5,8 @@
 \title{Simulation of Gaussian Random Fields}
 \description{
  This function is used to specify a Gaussian random field that
- is to be estimated or simulated.
- Return an object of class \code{\link[=RMmodel-class]{RMmodel}}.
+ is to be simulated or estimated.
+ Returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 
 \usage{
@@ -32,7 +32,8 @@ RPgauss(phi, stationary_only)
  actually it's the first one considered in the automatic
  selection algorithm.
  \item \code{NA}: the simulation of the Brownian motion allowed,
- but intrinsic embedding is not used for stationary random fields.
+ but intrinsic embedding is not used for translation invariant
+ (\dQuote{stationary}) covariance models.
  }
  Default: \code{NA}
  }
@@ -87,6 +88,8 @@ By default, all Gaussian random fields have zero mean.
  \command{\link{RFoptions}},
  \command{\link{RPbrownresnick}},
  \command{\link{RPchi2}},
+ \command{\link{RPopitz}}.
+ \command{\link{RPt}},
  \command{\link{RPschlather}}.
 
  Do not mix up with \command{\link{RMgauss}} or \command{\link{RRgauss}}.

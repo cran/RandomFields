@@ -45,13 +45,9 @@ extern "C" {
   void GetRange(int *nr, int *dim, int *index, double *params, int *lparam,
 		double *range, int *lrange);
   void GetNrParameters(int *covnr, int* kappas);
-  void PrintModelList(int *local, int *operat, int *nick);
-  void GetModelList(int* idx, int*internal);
-  void PrintMethods();
-  void GetMethodName(int *nr, char **name);
+  void PrintModelList(int *local, int *operat, int *nick); // used in Roger's book
+  void GetModelList(int* idx, int*internal); // used in generate.R
   SEXP GetAllModelNames();
-  void GetMethodNr(char **name, int *nr);
-  //void GetGridSize(double*,double *,double *,int *,int *,int *,int *); 
 
   /* Natural Scaling -- in contrast to the RFparameters(PracticalRange)
      GENERAL_NATURALSCALING may take the following values (furthermore,
@@ -134,22 +130,20 @@ extern "C" {
 		  double *sum,   // \sum (a-b)^2 / 2
 		  double *sq,   // \sum (a-b)^4 / 4
 		  int *n);
-  void fftVario3D(double *coord,
-		  double *sumvals,
-		  double *nbvals,
-		  double *bin,
-		  int *nbin,
-		  int *lenT,
-		  int *stepT,
-		  int *nstepT,
-		  double *phi,
-		  double *theta,
-		  int *repet,
-		  int *vdim,
-		  double *empvario,	
-		  double *n,
-		  int *segmentEmpVario,
-		  int *pseudo);
+  SEXP fftVario3D(SEXP coord,
+		  SEXP sumvals,
+		  SEXP nbvals,
+		  SEXP bin,
+		  SEXP nbin,
+		  SEXP lenT,
+		  SEXP stepT,
+		  SEXP nstepT,
+		  SEXP phi,
+		  SEXP theta,
+		  SEXP repet,
+		  SEXP vdim,
+		  SEXP segmentEmpVario,
+		  SEXP pseudo);
   
   // kriging methods
   SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
@@ -183,14 +177,11 @@ extern "C" {
   void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   
   // fractal dimension, 
-  void boxcounting(double *z, int *lx, int * repet, double *factor,
-		   int *eps, int *leps, double *sum);
-  void detrendedfluc(double *dat, int *lx, int *repet, int* boxes,
-		     int *ldfa, double *dfavar, double *varmethvar);
-  void periodogram(double *dat, int *len, int *repet, int *fftm, 
-		   int *part, int *shift, double *lambda);
-  void minmax(double *dat, int *dim, int *ldim, int *boxes, int *lb, 
-	      double *count);
+  SEXP boxcounting(double *z, int *lx, int * repet, double *factor, int *eps);
+  SEXP detrendedfluc(SEXP dat, SEXP lx, SEXP repet, SEXP boxes, SEXP ldfa);
+  SEXP periodogram(SEXP dat, SEXP len, SEXP repet, SEXP fftm, 
+		   SEXP part, SEXP shift);
+  SEXP minmax(SEXP dat, SEXP dim, SEXP ldim, SEXP boxes, SEXP lb, SEXP count);
   
 
   //  void Cov(int *reg, double *result);
@@ -249,7 +240,7 @@ extern "C" {
   
   
   
-  void distInt(int *x, int*N, int *Genes, double *res);
+  SEXP distInt(SEXP XX, SEXP N, SEXP Genes);
   // void MLEMakeExplicite(double *dist, int *Lx, int *idx, int *totald);
 
 
@@ -259,9 +250,9 @@ extern "C" {
   void GetModelRegister(char **name, int* nr);
   
   void MultiDimRange(int *model_nr, double *natscale);
-  void countelements(int *idx, int *N, int *boxes);
-  void countneighbours(int *Xdim, int *parts, int *Squarelength, int*cumgridlen,
-		       int *boxes, int * neighbours, int *OK);
+  SEXP countelements(SEXP idx, SEXP N, SEXP Totparts);
+  SEXP countneighbours(SEXP Xdim, SEXP parts, SEXP Squarelength, 
+		       SEXP cumgridlen, SEXP boxes);
   SEXP getelements(SEXP Idx, SEXP Xdim, SEXP N, SEXP Cumgridlen, SEXP Boxes);
   SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength, SEXP Cumgridlen,
 		     SEXP Neighbours);

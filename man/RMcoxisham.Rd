@@ -27,7 +27,11 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
  mixture, that means an
  \command{\link{RMmodel}} whose \code{monotone} property equals
  \code{'normal mixture'},
- see \code{\link{RFgetModelNames}(monotone="normal mixture")} and whose \code{maxdim} is at least 2.}
+ see
+ \cr
+ \code{\link{RFgetModelNames}(monotone="normal mixture")}
+ \cr
+ and whose \code{maxdim} is at least 2.}
  \item{mu}{a vector in \eqn{d}-dimensional space}
  \item{D}{a \eqn{d \times d}{d x d}-correlation matrix with \eqn{|D| >
  0}}

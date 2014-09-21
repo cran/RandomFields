@@ -22,10 +22,11 @@
 RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
 }
 \arguments{
-  \item{phi}{a univariate stationary isotropic covariance model
-    (see \code{RFgetModelNames(type="positive definite",
-      domain="single variable", isotropy="isotropy",  vdim=1)})
-    which is valid in dimension \code{fulldim}.
+  \item{phi}{a univariate stationary isotropic covariance model.    
+    See, for instance,
+
+    \code{RFgetModelNames(type="positive definite",
+      domain="single variable", isotropy="isotropy",  vdim=1)}.
  }
  \item{diameter}{a numerical value; should be greater than 0; the
    diameter of the domain on which the simulation is done}

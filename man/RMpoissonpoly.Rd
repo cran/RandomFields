@@ -3,7 +3,8 @@
 \title{RMpolygon}
 \description{
   \command{RMpolygon} referes to the indicator function of
-  a typical Poisson polygon
+  a typical Poisson polygon, used for instance in the
+  (mixed) Storm process.
 }
 \usage{
 RMpolygon(lambda)
@@ -18,11 +19,11 @@ RMpolygon(lambda)
 
 
 
-    \seealso{
+\seealso{
   \command{\link{RMball}}
   \command{\link{RMspheric}},
- \command{\link{RFsimulate}},
- \command{\link{RMmodel}}.
+  \command{\link{RFsimulate}},
+  \command{\link{RMmodel}}.
 }
 
 \author{
@@ -32,6 +33,32 @@ RMpolygon(lambda)
   Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
+
+\references{
+  Poission polygons / Poisson hyperplane tesselation
+  \itemize{
+    \item Lantuejoul, C. (2002)
+    \emph{Geostatistical Simulation: Models and Algorithms.}
+    Springer.
+  }
+
+  Poisson storm process
+  \itemize{
+    \item Lantu\'ejoul, C., Bacro, J.N., Bel L. (2011)
+    Storm processes and stochastic geometry. \emph{Extremes},
+    \bold{14}(4), 413-428.
+  }
+
+  Mixed Poisson storm process
+  \itemize{
+    \item  Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+  }
+}
+
 \keyword{spatial}
 
 \examples{

@@ -475,8 +475,9 @@ int structCircSph(cov_model *cov, cov_model **newmodel, int dim) {
     return addUnifModel(cov, 1.0, newmodel);
       //PMI(cov->calling->calling);
   default:
-    SERR1("ball currently only allowed for role 'Gauss' and 'Smith' Got %s.", 
-	   ROLENAMES[cov->role]);
+    BUG;
+    //    SERR1("ball currently only allowed for role 'Gauss' and 'Smith' Got %s.", 
+    //	   ROLENAMES[cov->role]);
   }
   return NOERROR;
 }
@@ -712,7 +713,7 @@ int checkdampedcosine(cov_model *cov){
   return NOERROR;
 }
 void rangedampedcosine(cov_model *cov, range_type *range){
-  range->min[DC_LAMBDA]  = 1.0 / tan(PIHALF / cov->tsdim);
+  range->min[DC_LAMBDA]  = 1.0 / tan(PIHALF / cov->tsdim); // ??  1.0 / tan(0.5 * PIHALF / cov->tsdim) ?? to do
   range->max[DC_LAMBDA] = RF_INF;
   range->pmin[DC_LAMBDA] = range->min[DC_LAMBDA] + 1e-10;
   range->pmax[DC_LAMBDA] = 10;
@@ -1681,6 +1682,7 @@ void DgenGneiting(double *x, cov_model *cov, double *v)
   default : BUG;
   }
   *v *=  -pow(1.0 - y, s-1.0);
+  
 }
 void DDgenGneiting(double *x, cov_model *cov, double *v){
   int kk = P0INT(GENGNEITING_K);
@@ -1859,7 +1861,10 @@ int initbiGneiting(cov_model *cov, gen_storage *stor) {
     if (s[0] <= s[1]) sum += p_gamma[0];
     if (s[1] <= s[0]) sum += p_gamma[2];
     if (sum > 2.0 * p_gamma[1]) {
-      SERR("if sred=1, then 2 * gamma_{12} must be greater than the (sum of) the values where 's' takes the minimal value.");
+      SERR7("if '%s'=1, then %s[2] must be greater than min(%s[1], %s[3]) / 2 if%s[1] and %s[3] differ and %s[1] otherwise.", KNAME(GNEITING_SRED),
+	    KNAME(GNEITING_GAMMA), KNAME(GNEITING_GAMMA),
+	    KNAME(GNEITING_GAMMA), KNAME(GNEITING_GAMMA), 
+	    KNAME(GNEITING_GAMMA), KNAME(GNEITING_GAMMA));
     }
   }
 
@@ -1870,15 +1875,16 @@ int initbiGneiting(cov_model *cov, gen_storage *stor) {
       cdiag[0] = cdiag[1] = 1.0;
     }
     if (rho == NULL) 
-      QERRC(GNEITING_RHORED, 
-	    "'cdiag' and 'rhored' must be set at the same time ");
+      QERRC2(GNEITING_RHORED, 
+	     "'%s' and '%s' must be set at the same time ", GNEITING_CDIAG,
+	     GNEITING_RHORED);
     if (check && c != NULL) {
       if (cov->nrow[GNEITING_C] != 3 || cov->ncol[GNEITING_C] != 1)
-	QERRC(GNEITING_C, "'c' must be a 3 x 1 vector");
+	QERRC(GNEITING_C, "must be a 3 x 1 vector");
       if (fabs(c[i11] - cdiag[0]) > c[i11] * epsilon || 
 	  fabs(c[i22] - cdiag[1]) > c[i22] * epsilon ) {
 	//	printf("c %f %f %f %f\n", c[i11], c[i22], cdiag[0], cdiag[1]);
-	QERRC(GNEITING_C, "'c' does not match 'cdiag'.");
+	QERRC1(GNEITING_C, "does not match '%s'.", GNEITING_CDIAG);
       }
       double savec12 = c[i21];
       biGneitingbasic(cov, S->scale, S->gamma, S->c);
@@ -1886,7 +1892,7 @@ int initbiGneiting(cov_model *cov, gen_storage *stor) {
       //	    c[i21], savec12, eps, fabs(c[i21] - savec12), c[i21] * epsilon,
       //	    fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon);
       if (fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon)
- 	QERRC(GNEITING_C, "'c' does not match 'rhored'.");
+ 	QERRC1(GNEITING_C, "does not match '%s'.", GNEITING_RHORED);
     } else {
       if (PisNULL(GNEITING_C)) PALLOC(GNEITING_C, 3, 1);
       c = P(GNEITING_C);
@@ -1894,9 +1900,11 @@ int initbiGneiting(cov_model *cov, gen_storage *stor) {
     }
   } else {
     if (c == NULL) 
-      QERRC(GNEITING_C, "either 'c' or 'rhored' must be set");
+      QERRC2(GNEITING_C, "either '%s' or '%s' must be set", 
+	    GNEITING_C, GNEITING_RHORED);
     if (!ISNAN(c[i11]) && !ISNAN(c[i22]) && (c[i11] < 0.0 || c[i22] < 0.0))
-      QERRC(GNEITING_C, "variance parameter c[0], c[2] must be non-negative.");
+      QERRC2(GNEITING_C, "variance parameter %s[0], %s[2] must be non-negative",
+	     GNEITING_C, GNEITING_C);
     if (PisNULL(GNEITING_CDIAG)) PALLOC(GNEITING_CDIAG, 2, 1);
     if (PisNULL(GNEITING_RHORED)) PALLOC(GNEITING_RHORED, 1, 1);
     cdiag = P(GNEITING_CDIAG);
@@ -2003,9 +2011,9 @@ int checkbiGneiting(cov_model *cov) {
   s.check = true;
   
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
-  if (PisNULL(GNEITING_K)) QERRC(GNEITING_K, "'kappa' must be given.");
-  if (PisNULL(GNEITING_MU)) QERRC(GNEITING_MU, "'mu' must be given.");
-  if (PisNULL(GNEITING_GAMMA)) QERRC(GNEITING_GAMMA,"'gamma' must be given.");
+  if (PisNULL(GNEITING_K)) QERRC(GNEITING_K, "must be given.");
+  if (PisNULL(GNEITING_MU)) QERRC(GNEITING_MU, "must be given.");
+  if (PisNULL(GNEITING_GAMMA)) QERRC(GNEITING_GAMMA,"must be given.");
 
   NEW_STORAGE(Sbiwm, BIWM, biwm_storage);
   biwm_storage *S = cov->Sbiwm;
@@ -2094,29 +2102,74 @@ void rangebiGneiting(cov_model *cov, range_type *range){
 
 /* Gneiting's functions -- alternative to Gaussian */
 // #define Sqrt2TenD47 0.30089650263257344820 /* approcx 0.3 ?? */
+#define GNEITING_ORIG 0
 #define NumericalScale 0.301187465825
+#define kk_gneiting 3.0
+#define mu_gneiting 2.683509
+#define s_gneiting 0.2745640815
 void Gneiting(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){ 
-  double y=*x * NumericalScale, oneMy8;
-  if (y >= 1.0) {
-    *v = 0.0;
-  } else {
-    oneMy8 = 1.0-y; oneMy8*=oneMy8; oneMy8*=oneMy8; oneMy8*=oneMy8;
-    *v =((1.0+y * ( 8.0 + y * (25.0 + 32.0 *y)))*oneMy8);
+  double y; 
+  if (P0INT(GNEITING_ORIG)) {
+    y= *x * NumericalScale;
+    if (y >= 1.0) {
+      *v = 0.0;
+    } else {
+      double oneMy8 = 1.0-y; oneMy8*=oneMy8; oneMy8*=oneMy8; oneMy8*=oneMy8;
+      *v =((1.0+y * ( 8.0 + y * (25.0 + 32.0 *y)))*oneMy8);
+    }
+  } else {    
+    y = *x * s_gneiting;
+    if (y >= 1.0) {
+      *v = 0.0; 
+    } else {
+      double s = mu_gneiting + 2.0 * kk_gneiting + 0.5;
+      *v = 1 + y * (s + y * (0.2 * (2.0*s*s - 3 + y * (s*s-4) * s * ONETHIRD)));
+      *v *=  pow(1.0 - y, s);
+    }
   }
- 
 }
 //void InverseGneiting(cov_model *cov, int scaling) {return 0.5854160193;}
 void DGneiting(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){ 
-  double y=*x * NumericalScale, oneMy7;
-  if (y >= 1.0) {
-    *v = 0.0;
+  double y;
+  // printf("%f %d", *x, P0INT(GNEITING_ORIG));
+  if (P0INT(GNEITING_ORIG)) {
+    y=*x * NumericalScale;
+    if (y >= 1.0) {
+      *v = 0.0;
+    } else { 
+      double oneMy7 = 1.0-y; oneMy7 *= oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
+      *v = (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7 * NumericalScale;
+    }
   } else {
-    oneMy7 = 1.0-y; oneMy7 *= oneMy7; oneMy7 *= oneMy7 * oneMy7 * (1.0-y);
-    *v = (-y) * ( 22.0 + y * (154.0 + y * 352.0)) * oneMy7 * NumericalScale;
+    y = *x * s_gneiting;
+    if (y >= 1.0) {
+      *v = 0.0; 
+      return;
+    } else {
+      double s = mu_gneiting + 2.0 * kk_gneiting + 0.5;
+      *v = y * (s * (s + 5) + 6) * (y * (s * (s-2) * y + 3 * s - 3) + 3) / 15.0;
+      *v *= -pow(1.0 - y, s-1.0) * s_gneiting;
+    }
   }
+
 }
 
+int checkGneiting(cov_model *cov) { 
+  int err;
+  kdefault(cov, GNEITING_ORIG, 1);
+  if ((err = checkkappas(cov)) != NOERROR) return err;
+  cov->maxdim = P0INT(GNEITING_ORIG) ? 3 : 5;
+  return NOERROR;
+}
 
+void rangeGneiting(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+ // *n = P0(GNEITING_ORIG], 
+  //  printf("range\n");
+  range->min[GNEITING_ORIG] = range->pmin[GNEITING_ORIG] = 0;
+  range->max[GNEITING_ORIG] = range->pmax[GNEITING_ORIG] = 1;
+  range->openmin[GNEITING_ORIG] = false;
+  range->openmax[GNEITING_ORIG] = false;
+}
 
 /* hyperbolic */
 #define BOLIC_NU 0
@@ -2652,20 +2705,6 @@ void rangeWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 
-void ieinitWM(cov_model *cov, localinfotype *li) {
-  double nu = (PINT(WM_NOTINV) == NULL || P0INT(WM_NOTINV))
-    ? P0(WM_NU) : 1.0 / P0(WM_NU);
-  // intrinsic_rawr
-  li->instances = 1;
-  if (nu <= 0.5) {
-    li->value[0] = 1.0;
-    li->msg[0] = MSGLOCAL_OK;
-  } else {
-    li->value[0] = 1.5;
-    li->msg[0] = MSGLOCAL_JUSTTRY;
-  }
-}
-
 void coinitWM(cov_model *cov, localinfotype *li) {
   // cutoff_A
   double thres[2] = {0.25, 0.5},
@@ -2681,6 +2720,20 @@ void coinitWM(cov_model *cov, localinfotype *li) {
     li->value[0] = 1.0; //  q[CUTOFF_A] 
     li->msg[0] = (nu <= thres[1]) ? MSGLOCAL_OK : MSGLOCAL_JUSTTRY;
   } 
+}
+
+void ieinitWM(cov_model *cov, localinfotype *li) {
+  double nu = (PINT(WM_NOTINV) == NULL || P0INT(WM_NOTINV))
+    ? P0(WM_NU) : 1.0 / P0(WM_NU);
+  // intrinsic_rawr
+  li->instances = 1;
+  if (nu <= 0.5) {
+    li->value[0] = 1.0;
+    li->msg[0] = MSGLOCAL_OK;
+  } else {
+    li->value[0] = 1.5;
+    li->msg[0] = MSGLOCAL_JUSTTRY;
+  }
 }
 
 double densityWM(double *x, cov_model *cov, double factor) {
@@ -3544,13 +3597,13 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
     kdefault(cov, BInured, 1.0);
     if (check && !PisNULL(BInu)) {
       if (cov->nrow[BInu] != 3 || cov->ncol[BInu] != 1)
-	QERRC(BInu, "'nu' must be a 3 x 1 vector");
+	QERRC(BInu, "must be a 3 x 1 vector");
       if (fabs(nu[i11] - nudiag[0]) > nu[i11] * epsilon || 
 	  fabs(nu[i22] - nudiag[1]) > nu[i22] * epsilon ||
 	  fabs(nu[i21] - 0.5 * (nudiag[i11] + nudiag[1]) * P0(BInured))
 	  > nu[i21] * epsilon) {
 	//PMI(cov);
-	QERRC(BInu, "'nu' does not match 'nudiag' and 'nured12'.");
+	QERRC2(BInu, "does not match '%s' and '%s'.", BInudiag, BInured);
       }
     } else {
       if (PisNULL(BInu)) PALLOC(BInu, 3, 1);
@@ -3561,9 +3614,9 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
     }
   } else {
     if (check && !PisNULL(BInured)) 
-      QERRC(BInured, "'nured12' may not be set if 'nu' is given");
+      QERRC1(BInured, "may not be set if '%s' is given", BInu);
     if (PisNULL(BInu)) 
-      QERRC(BInu, "either 'nu' or 'nured12' must be set");
+      QERRC2(BInu, "either '%s' or '%s' must be set", BInu, BInured);
     if (PisNULL(BInudiag)) PALLOC(BInudiag, 2, 1);
     nudiag = P(BInudiag);
     nudiag[0] = nu[i11]; ///
@@ -3588,17 +3641,18 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
   }
   
   if  (S->cdiag_given) {
-    if (PisNULL(BIrhored)) QERRC(BIrhored, "'cdiag' and 'rhored' must be set");
+    if (PisNULL(BIrhored))
+      QERRC2(BIrhored, "'%s' and '%s' must be set", BIcdiag, BIrhored);
     if (check && !PisNULL(BIc)) {
       if (cov->nrow[BIc] != 3 || cov->ncol[BIc] != 1)
-	QERRC(BIc, "'c' must be a 3 x 1 vector");
+	QERRC(BIc, "must be a 3 x 1 vector");
       if (fabs(c[i11] - cdiag[0]) > c[i11] * epsilon || 
 	  fabs(c[i22] - cdiag[1]) > c[i22] * epsilon ) {
 	//	printf("c %f %f %f %f diff=%e eps=%e diff1=%e eps=%e\n",
 	//c[i11], c[i22], cdiag[0], cdiag[1],
 	//	       c[i11] - cdiag[0], c[i11] * epsilon,
 	//	       c[i22] - cdiag[1], c[i22] * epsilon );
-	QERRC(BIc, "'c' does not match 'cdiag'.");
+	QERRC1(BIc, "does not match '%s'.", BIcdiag);
       }
       double savec12 = c[i21];
       biWM2basic(cov, a, lg, aorig, nunew);
@@ -3608,7 +3662,7 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
       //    c[i21], savec12, epsilon, fabs(c[i21] - savec12), c[i21] * epsilon,
       //	    fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon);
       if (fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon)
- 	QERRC(BIc, "'c' does not match 'rhored'.");
+ 	QERRC1(BIc, "does not match '%s'.", BIrhored);
     } else {
       if (PisNULL(BIc)) PALLOC(BIc, 3, 1);
       c = P(BIc);
@@ -3616,10 +3670,12 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
    }
   } else {
     if (check && !PisNULL(BIrhored)) 
-      QERRC(BIrhored, "'rhored' may not be set if 'cdiag' is not given");
-    if (PisNULL(BIc)) QERRC(BIc, "either 'c' or 'cdiag' must be set");
+      QERRC1(BIrhored, "may not be set if '%s' is not given", BIcdiag);
+    if (PisNULL(BIc)) QERRC2(BIc, "either '%s' or '%s' must be set",
+			    BIc, BIcdiag);
     if (!ISNAN(c[i11]) && !ISNAN(c[i22]) && (c[i11] < 0.0 || c[i22] < 0.0))
-      QERRC(BIc, "variance parameter c[0], c[2] must be non-negative.");
+      QERRC2(BIc, "variance parameter %s[0], %s[2] must be non-negative.",
+	     BIc, BIc);
     if (PisNULL(BIcdiag)) PALLOC(BIcdiag, 2, 1);
     if (PisNULL(BIrhored)) PALLOC(BIrhored, 1, 1);
     cdiag = P(BIcdiag);
@@ -3910,7 +3966,7 @@ int checkparsWM(cov_model *cov) {
     vdimSq = vdim * vdim;
  
   cov->vdim2[0] = cov->vdim2[1] = vdim;
-  if (vdim == 0) SERR("'nudiag' not given");
+  if (vdim == 0) SERR1("'%s' not given", KNAME(PARSnudiag));
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   cov->qlen = vdimSq;
   if (cov->q == NULL) cov->q = (double*) CALLOC(sizeof(double), cov->qlen);
@@ -4059,7 +4115,7 @@ void Polygon(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   assert(ps != NULL);
   *v = (double) isInside(ps->P, x);
 }
-
+ 
 void Inversepolygon(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
   polygon_storage *ps = cov->Spolygon;
   int d,
@@ -4350,7 +4406,8 @@ int checkUser(cov_model *cov){
   if (!PisNULL(USER_BETA)) {
     if (vdim == NULL) kdefault(cov, USER_VDIM, nrow[USER_BETA]);
     else if (*vdim != nrow[USER_BETA]) 
-      SERR("number of columns of 'beta' does not equal 'vdim'");
+      SERR4("number of columns of '%s' (=%d) does not equal '%s' (=%d)",
+	    KNAME(USER_BETA), nrow[USER_BETA], KNAME(USER_VDIM), *vdim);
     cov->vdim2[0] = nrow[USER_BETA];
     cov->vdim2[1] = 1;
   } else {
@@ -4384,14 +4441,16 @@ int checkUser(cov_model *cov){
     SERR("If 'T' is given, it must be given both as coordinates and as variable 'T' in the function 'fctn'");
 
   if ((nvar > 2 || (nvar == 2 && variab[1] != 2)) && cov->domown == KERNEL)
-    SERR("'xyz_notation' not valid for anisotropic models");
+    SERR1("'%s' not valid for anisotropic models", coords[COORDS_XYZNOTATION]);
   
   if (nvar == 2 && variab[1] == 2) {
     // sowohl nonstat also auch x, y Schreibweise moeglich
     if (ISNA(GLOBAL.coords.xyz_notation))
-      SERR("'xyz_notation' equals 'NA', but should be a logical value.");     
+      SERR1("'%s' equals 'NA', but should be a logical value.", 
+	   coords[COORDS_XYZNOTATION]);     
     if (cov->domown == KERNEL && GLOBAL.coords.xyz_notation==2) // RFcov
-      SERR("'xyz_notation' is not valid for anisotropic models");
+      SERR1("'%s' is not valid for anisotropic models", 
+	   coords[COORDS_XYZNOTATION]);
   }
  
   if (nvar > 1) {
@@ -4441,10 +4500,13 @@ int checkUser(cov_model *cov){
 	//if (trd) SERR("'trd' given but not 'snd'");
       }
     } else { // !fst
-      if (snd) SERR("'snd' or 'trd' given but not 'fst'");
+      if (snd) SERR2("'%s' given but not '%s'",
+		     KNAME(USER_SND), KNAME(USER_FST));
     }
   } else { // !fctn
-    if (fst || snd) SERR("'fst' or 'snd' or 'trd' given but not 'fctn'");
+    if (fst || snd) 
+      SERR3("'%s' or '%s' given but not '%s'", 
+	    KNAME(USER_SND), KNAME(USER_FST), KNAME(USER_FCTN));
   }
 
   //  APMI(cov);
@@ -4511,39 +4573,74 @@ void rangeUser(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 // Sigma(x) = diag>0 + A'xx'A
 void kappa_Angle(int i, cov_model *cov, int *nr, int *nc){
   int dim = cov->xdimown;
-  *nr = i == ANGLE_DIAG ? dim : dim-1;
-  *nc = i <= ANGLE_DIAG ? dim-1 : -1;
+  *nr = i == ANGLE_DIAG ? dim : 1;
+  *nc = i <= ANGLE_DIAG && (dim==3 || i != ANGLE_LATANGLE) &&  
+    (dim==2 || i != ANGLE_RATIO)  ? 1 : -1;
 }
 void Angle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
   double A[9],
     c = cos(P0(ANGLE_ANGLE)),
     s = sin(P0(ANGLE_ANGLE)),
     *diag = P(ANGLE_DIAG);
+  int 
+    dim = cov->xdimown ;
+
+  // int d;  for (d=0; d<dim; d++) v[d] = x[d]; return;
+ 
+  assert(dim ==2 || dim == 3);
   
-  A[0] = c;
-  A[1] = s;
-  A[2] = -s;
-  A[3] = c;
+  if (dim == 2) {
+    A[0] = c;
+    A[1] = s;
+    A[2] = -s;
+    A[3] = c;
+    //  int d; for (d=0; d<4; d++) printf("%f ", A[d]); printf("\n");assert(false);
+  } else {
+    double 
+      pc = cos(P0(ANGLE_LATANGLE)),
+      ps = sin(P0(ANGLE_LATANGLE));
+    /*
+    c -s 0    pc 0 -ps   c*pc  -s  -c*ps
+    s  c 0  *  0 1  0  = s*pc   c  -s*ps
+    0  0 1    ps 0  pc     ps   0   pc 
+    */
+    A[0] = c * pc;
+    A[1] = s * pc;
+    A[2] = ps;
+    A[3] = -s;
+    A[4] = c;
+    A[5] = 0.0;
+    A[6] = -c * ps;
+    A[7] = -s * ps;
+    A[8] = pc;
+    // int d; for (d=0; d<9; d++) printf("%f ", A[d]); printf("\n");//assert(false);
+
+  }
 
   if (diag!= NULL) {
-    A[0] *= diag[0];
-    A[1] *= diag[1];
-    A[2] *= diag[0];
-    A[3] *= diag[1];
+
+    //  printf("%f %f %f\n",  diag[0], diag[1], diag[2]);assert(false);
+
+    int k,d,j;
+    for (k=d=0; d<dim; d++) {
+      for (j=0; j<dim; j++) {
+	A[k++] *= diag[j];
+      }
+    }
+
+    //    A[0] *= diag[0];
+    ///    A[1] *= diag[1];
+    //    A[2] *= diag[0];
+    //    A[3] *= diag[1];
   } else {
     double ratio = 1.0 / P0(ANGLE_RATIO);
     A[1] *= ratio;
     A[3] *= ratio;
   }
 
-  v[0] = A[0] * x[0] + A[2] * x[1];
-  v[1] = A[1] * x[0] + A[3] * x[1];
-  
-  //  printf("%f %f %f %f\n", A[0], A[1], A[2], A[3], v[0], v[1]);
-  //0.000000 2.500000 -1.000000 0.000000
-  //0.707107 0.176777 -0.707107 0.176777
+  Ax(A, x, dim, dim, v); 
 
-  //  assert(false);
+  //
 
 }
 
@@ -4553,35 +4650,63 @@ void invAngle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
     c = cos(P0(ANGLE_ANGLE)),
     s = sin(P0(ANGLE_ANGLE)),
     *diag = P(ANGLE_DIAG);
-
-  if (x[0] == RF_INF && x[1] == RF_INF) {
-    v[0] = v[1] = RF_INF;
+  int d, 
+      dim = cov->xdimown ;
+  
+  bool inf = x[0] == RF_INF;
+  for (d=1; d<dim; d++) inf &= x[d] == RF_INF;
+  if (inf) {
+    for (d=0; d<dim; v[d++] = RF_INF);
     return;
   }
 
-  if (x[0] == RF_NEGINF && x[1] == RF_NEGINF) {
-    v[0] = v[1] = RF_NEGINF;
+  bool neginf = x[0] == RF_NEGINF;
+  for (d=1; d<dim; d++) neginf &= x[d] == RF_NEGINF;
+  if (neginf) {
+    for (d=0; d<dim; v[d++] = RF_NEGINF);
     return;
   }
   
-  A[0] = c;
-  A[1] = -s;
-  A[2] = s;
-  A[3] = c;
+  if (dim == 2) {
+    A[0] = c;
+    A[1] = -s;
+    A[2] = s;
+    A[3] = c;
+  } else {
+    double pc = cos(P0(ANGLE_LATANGLE)),
+      ps = sin(P0(ANGLE_LATANGLE));
+
+    A[0] = c * pc;
+    A[1] = -s;
+    A[2] = -c * ps;
+    A[3] = s * pc;
+    A[4] = c;
+    A[5] = -s * ps;
+    A[6] = ps;
+    A[7] = 0.0;
+    A[8] = pc;
+  }
 
   if (diag!= NULL) {
-    A[0] /= diag[0];
-    A[1] /= diag[0];
-    A[2] /= diag[1];
-    A[3] /= diag[1];
+    int  j, k;
+    for (k=d=0; d<dim; d++) {
+      for (j=0; j<dim; j++) {
+	A[k++] /= diag[d];
+      }
+    }
+    //    A[0] /= diag[0];
+    //    A[1] /= diag[0];
+    //    A[2] /= diag[1];
+    //    A[3] /= diag[1];
   } else {
     double ratio = P0(ANGLE_RATIO);
     A[2] *= ratio;
     A[3] *= ratio;
   }
 
-  v[0] = A[0] * x[0] + A[2] * x[1];
-  v[1] = A[1] * x[0] + A[3] * x[1];
+  Ax(A, x, dim, dim, v);
+  // v[0] = A[0] * x[0] + A[2] * x[1];
+  // v[1] = A[1] * x[0] + A[3] * x[1];
   
   //  printf("%f %f %f %f\n", A[0], A[1], A[2], A[3], v[0], v[1]);
   //  assert(false);
@@ -4594,16 +4719,23 @@ int checkAngle(cov_model *cov){
   //    {5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 5};
   // CE CO CI TBM Sp di sq Ma av n mpp Hy any
   //  MEMCOPY(cov->pref, pref, sizeof(pref_type));  
-  if (PisNULL(ANGLE_DIAG)) kdefault(cov, ANGLE_RATIO, 1.0);
-  else if (!PisNULL(ANGLE_RATIO)) 
-    SERR2("'%s' and '%s' may not given at the same time",
-	 CovList[cov->nr].kappanames[ANGLE_RATIO], 
-	 CovList[cov->nr].kappanames[ANGLE_DIAG]);
- 
+  int dim = cov->xdimown;
+
+  if (dim != 2 && dim != 3)
+    SERR1("'%s' only works for 2 and 3 dimensions", NICK(cov));
+
+  if (PisNULL(ANGLE_DIAG)) {
+    kdefault(cov, ANGLE_RATIO, 1.0);
+  } else {
+    if (!PisNULL(ANGLE_RATIO)) 
+      SERR2("'%s' and '%s' may not given at the same time",
+	    CovList[cov->nr].kappanames[ANGLE_RATIO], 
+	    CovList[cov->nr].kappanames[ANGLE_DIAG]);
+  }
+  cov->vdim2[0] = dim;
+  cov->vdim2[1] = 1;
   cov->mpp.maxheights[0] = RF_NA;
   cov->matrix_indep_of_x = true;
-  cov->vdim2[0] = 2;
-  cov->vdim2[1] = 1;
   return NOERROR;
 }
  
@@ -4614,6 +4746,13 @@ void rangeAngle(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
   range->pmax[ANGLE_ANGLE] = TWOPI;
   range->openmin[ANGLE_ANGLE] = false;
   range->openmax[ANGLE_ANGLE] = true;
+
+  range->min[ANGLE_LATANGLE] = 0.0;
+  range->max[ANGLE_LATANGLE] = PI;
+  range->pmin[ANGLE_LATANGLE] = 0.0;
+  range->pmax[ANGLE_LATANGLE] = PI;
+  range->openmin[ANGLE_LATANGLE] = false;
+  range->openmax[ANGLE_LATANGLE] = true;
 
   range->min[ANGLE_RATIO] = 0;
   range->max[ANGLE_RATIO] = RF_INF;

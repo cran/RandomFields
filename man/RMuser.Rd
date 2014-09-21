@@ -5,7 +5,7 @@
   \command{RMuser} allows for a user defined covariance function, variogram
   model, or arbitrary function.
 
-  \bold{RMuser is very slow -- users should avoid it whenever possible.}
+  \bold{RMuser is very slow -- users should avoid this model whenever possible.}
   
 }
 \usage{
@@ -126,15 +126,15 @@ RMuser(type, domain, isotropy, vdim, beta,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
+
 ## Alternatively to 'model <- RMexp()' one may define the following
 ## (which is, however, much slower and cannot use all features of
 ## RandomFields)
-
 \dontshow{if (RFoptions()$general$storing)
 cat("This examples requires 'RFoptions(storing=FALSE)', what is set now.\n");
 RFoptions(storing=FALSE)
 }
-
 ## user-defined exponential covariance model
 model <- RMuser(type="positive definite", domain="single variable",
                 iso="isotropic", fctn=exp(-x))
@@ -143,7 +143,8 @@ plot(model)
 z <- RFsimulate(RPcirculant(model), x=x, y=y)
 plot(z)
 
-
+## the kernel, which is the scalar product (not programmed (yet) in
+## RandomFields) %to do
 model <- RMnugget(var=1e-5) +
          RMuser(type="positive definite", domain="kernel",
                 iso="symmetric", fctn=sum(x * y))

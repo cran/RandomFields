@@ -11,6 +11,7 @@
     spatial and spatio-temporal Gaussian random fields
     \item \link[=RPpoisson]{stationary Poisson fields}
     \item \link[=RPchi2]{Chi2 fields}
+    \item \link[=RPt]{t fields}
     \item \link[=RPbernoulli]{Binary fields}
     \item \link[=RPmaxstable]{stationary max-stable random fields}.
   }
@@ -46,6 +47,7 @@
 	 indicator field, based on a Gaussian field
 	 \item \command{\link{RPpoisson}}: shot noise model
 	 \item \command{\link{RPbrownresnick}}: Brown-Resnick processes
+	 \item \command{\link{RPopitz}}: Extremal t process
 	 \item \command{\link{RPsmith}}: Smith model
 	 \item \command{\link{RPschlather}}: Extremal Gaussian process
 	 (also called Schlather model)
@@ -63,7 +65,8 @@
 	available models
 	
 	\item the main structural element of a max-stable field
-	(\command{\link{RPbrownresnick}}, \command{\link{RPsmith}} and \command{\link{RPschlather}})	
+	(\command{\link{RPbrownresnick}}, \command{\link{RPopitz}},
+	\command{\link{RPsmith}} and \command{\link{RPschlather}})	
  }
  
  \item if of class \code{\link{RFformula}} or \command{\link[stats]{formula}},

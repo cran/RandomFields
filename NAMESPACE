@@ -1,11 +1,40 @@
 
-## Usual Functions
-
-##
+#
 #exportPattern("^[^\\.]")
 exportPattern("^R")
 
-export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
+
+importFrom('colorspace', heat_hcl, rainbow_hcl)
+
+import(graphics)
+
+import(methods)
+
+#importFrom('raster', raster, projection)
+
+importClassesFrom('sp',
+#                  "CRS",
+                  "SpatialGridDataFrame",
+                  "SpatialPointsDataFrame",
+                  "SpatialGrid",
+                  "SpatialPixels",
+                  "SpatialPoints",
+                  "Spatial")
+importMethodsFrom("sp", "dimensions")  #"gridded"gibts nicht!
+importFrom('sp', coordinates, CRS, GridTopology, points2grid,
+           SpatialPoints, SpatialGridDataFrame, SpatialPointsDataFrame
+           )
+#import(sp)
+
+importFrom('spam', as.spam, solve.spam, chol.spam)
+
+import(tcltk2, tcltk, tkrplot)
+
+
+
+export(as.data.frame.RFspatialPointsDataFrame,
+       as.data.frame.RFspatialGridDataFrame,
+       as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
        as.array.RFspatialGridDataFrame, as.array.RFgridDataFrame, 
        as.vector.RFspatialGridDataFrame, as.vector.RFgridDataFrame, 
        conventional2RFspDataFrame,
@@ -21,28 +50,16 @@ export(as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame,
        plotWithCircles, 
 #others:
        ## never delete PrintModelList as it is used in Roger's book!
-       PrintModelList
+       PrintModelList,
+       sp2RF
        )
 
 useDynLib(RandomFields)
 
 # Classes
 
-importClassesFrom('sp',
-                  "SpatialGridDataFrame",
-                  "SpatialPointsDataFrame",
-                  "SpatialGrid",
-                  "SpatialPixels",
-                  "SpatialPoints",
-                  "Spatial")
-#importClassesFrom('raster', "Raster")
 
 exportClasses()
-
-## S4 methods
-
-importMethodsFrom('sp', "dimensions")  #"gridded"gibts nicht!
-#importMethodsFrom('raster', '[')
 
 exportMethods("[", "[<-", "+", show, plot, persp, anova, summary)
 #, logLik, AIC, BIC)
@@ -55,7 +72,6 @@ exportMethods(RFspDataFrame2conventional,
               isGridded,
               dimensions)
 
-#importFrom("raster", raster)
 
 ## S3 Methods
 

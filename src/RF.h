@@ -14,10 +14,9 @@
 
 #define DOPRINT true
 //
-// 1
-//
-// 1
-
+// # define RANDOMFIELDS_DEBUGGING 1
+ 
+//// 1
 
 
 #ifndef RANDOMFIELDS_DEBUGGING
@@ -168,7 +167,7 @@
     }									\
   }
 #define PALLOC(IDX, ROW, COL) PARAMALLOC(cov, IDX, ROW, COL)
-#define PINRALLOC(IDX, ROW, COL) PARAMINTALLOC(cov, IDX, ROW, COL)
+#define PINTALLOC(IDX, ROW, COL) PARAMINTALLOC(cov, IDX, ROW, COL)
 
 #define PFREE(IDX) PARAMFREE(cov, IDX)
 #define PARAMisNULL(P, IDX) ((P)->px[IDX] == NULL)
@@ -292,7 +291,7 @@
 ///////////////////////////////////////////////////////////////////////
 // BASIC DIMENSIONS AND VARIABLES
 ///////////////////////////////////////////////////////////////////////
-#define MAXCHAR 17 /* max number of characters for covariance name  */
+#define MAXCHAR 18 /* max number of characters for covariance name  */
 #define PARAMMAXCHAR MAXCHAR
 #define METHODMAXCHAR MAXCHAR /* max number of character to describe a Method (including \0)*/
 #define MAXLONGCHAR 40 // for RFoptions that are string
@@ -403,8 +402,9 @@ typedef char NAname_type[MAX_NA][255];
 ///////////////////////////////////////////////////////////////////////
 // Angle
 #define ANGLE_ANGLE 0
-#define ANGLE_RATIO 1
-#define ANGLE_DIAG 2
+#define ANGLE_LATANGLE 1
+#define ANGLE_RATIO 2
+#define ANGLE_DIAG 3
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -447,6 +447,9 @@ typedef char NAname_type[MAX_NA][255];
 #define MIXED_DIST 4
 #define MIXED_DIM 5
 
+#define ELEMENT "element"
+#define RFOPTIONS "RFoptions"
+
 ///////////////////////////////////////////////////////////////////////
 // gaussproc
 #define COMMON_GAUSS -1
@@ -481,6 +484,29 @@ typedef char NAname_type[MAX_NA][255];
 #define COIN_SHAPE 1
 
 ///////////////////////////////////////////////////////////////////////
+// hyper
+#define HYPER_UNIFORM 0   
+#define HYPER_FRECHET 1
+#define HYPER_BERNOULLI 2
+
+///////////////////////////////////////////////////////////////////////
+// CE
+#define CE_FORCE (COMMON_GAUSS + 1)
+#define CE_MMIN  (COMMON_GAUSS + 2)
+#define CE_STRATEGY  (COMMON_GAUSS + 3)
+#define CE_MAXGB  (COMMON_GAUSS + 4)
+#define CE_MAXMEM  (COMMON_GAUSS + 5)
+#define CE_TOLIM  (COMMON_GAUSS + 6)
+#define CE_TOLRE  (COMMON_GAUSS + 7)
+#define CE_TRIALS (COMMON_GAUSS +  8)
+#define CE_USEPRIMES  (COMMON_GAUSS + 9)
+#define CE_DEPENDENT  (COMMON_GAUSS + 10)
+#define CE_APPROXSTEP  (COMMON_GAUSS + 11)
+#define CE_APPROXMAXGRID  (COMMON_GAUSS + 12) // alway last of CE_*
+#define CE_LAST CE_APPROXMAXGRID 
+
+
+///////////////////////////////////////////////////////////////////////
 // local ce covariance operator und q-values for ce method / ce operator
 #define pLOC_DIAM 0 // parameter p
 #define pLOC_A 1 // always last of pLOC_*
@@ -499,6 +525,14 @@ typedef char NAname_type[MAX_NA][255];
 #define INTRINSIC_B (INTRINSIC_A2 + 1)
 #define INTRINSIC_MAX (INTRINSIC_B + 1) /* size of vector q */
 #define LOCAL_MAX INTRINSIC_MAX
+
+
+///////////////////////////////////////////////////////////////////////
+// direct
+#define DIRECT_METHOD (COMMON_GAUSS + 1)
+#define DIRECT_SVDTOL (COMMON_GAUSS + 2)
+#define DIRECT_MAXVAR (COMMON_GAUSS + 3)
+
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -726,6 +760,15 @@ typedef enum coord_sys_enum {
 typedef enum modes {careless, sloppy, easygoing, normal, precise, 
 		    pedantic, neurotic} modes;
 #define nr_modes (neurotic + 1)
+
+
+#define generalN 21
+// IMPORTANT: all names of general must be at least 3 letters long !!!
+extern const char *general[generalN];
+#define GENERAL_MODUS 0 
+#define GENERAL_STORING 2
+#define GENERAL_CPRINT 9
+#define GENERAL_CLOSE 15
 typedef struct general_param {
   char pch; /*  character shown after each simulation
     just for entertainment of the user
@@ -756,7 +799,8 @@ typedef struct general_param {
     sp_conform, /* should the simulation result be return in 
 		   as an sp class or in the old form ?
 		*/
-    detailed_output;
+    detailed_output,
+    asList;
  
   int  mode, /* hightailing, fast, normal, save, pedantic */
     Rprintlevel,
@@ -784,7 +828,7 @@ typedef struct general_param {
   int expected_number_simu,
     every,  // every `every' line is announced if every>0
 
-    // bool aniso;  // currently cannot be changed by the user !!
+    // bool aniso;  // currerntly cannot be changed by the user !!
 
   // siehe InternalCov.cc line 350, simu.cc line 394
   /* expand scale immediately to aniso;
@@ -793,12 +837,15 @@ typedef struct general_param {
 		 but it is slower
 	      */
     matrix_inversion[MAXINVERSIONS], // 0:cholesky, 1:QR, 2:SVD; negativ
-    seed;
+    seed,
+    Ttriple;
  
   double gridtolerance, matrixtolerance, exactness;
 
 } general_param;
 
+#define gaussN 5
+extern const char *gauss[gaussN];
 typedef struct gauss_param{
   double stationary_only, // logical + NA
     approx_zero;
@@ -806,6 +853,8 @@ typedef struct gauss_param{
   int direct_bestvariables;
 } gauss_param;
 
+#define krigeN 7
+extern const char *krige[krigeN];
 typedef struct krige_param{
   char method;
   bool cholesky, ret_variance,  fillall;
@@ -814,39 +863,61 @@ typedef struct krige_param{
     locsplitfactor;
 } krige_param;
 
+#define CEN 12
+extern const char *CE[CEN];
 typedef struct ce_param {
   bool force, useprimes, dependent;
   char strategy;
-  int trials, maxgridsize;
-  double maxmem, tol_re, tol_im, mmin[MAXCEDIM],
+  int trials, maxgridsize, maxmem;
+  double maxGB,
+     tol_re, tol_im, mmin[MAXCEDIM],
     approx_grid_step;
 } ce_param;
 
 
 typedef enum InversionMethod { Cholesky, SVD, NoFurtherInversionMethod } 
 InversionMethod;
+#define directN 3
+extern const char *direct[directN];
 typedef struct direct_param {
   InversionMethod inversionmethod;
   double svdtolerance;
   int maxvariables;
 } direct_param;
 
+
+#define markovN 4
+extern const char * markov[markovN];
+typedef struct markov_param{
+  int neighbours, cyclic, maxmem;
+  double precision;
+} markov_param;
+
+
+#define pnuggetN 1
+extern const char * pnugget[pnuggetN];
 typedef struct nugget_param {
   double tol;
 } nugget_param;
 
+
+#define sequN 3
+extern const char * sequ[sequN];
 typedef struct sequ_param{
   int max, back, initial;
 } sequ_param;
 
-
+#define spectralN 5
+#define SPECTRAL_PROPFACTOR 3
+extern const char * spectral[spectralN];
 typedef struct spectral_param {
   bool grid, ergodic;
   double prop_factor, sigma;
   int lines[MAXTBMSPDIM];
 } spectral_param;
 
- 
+#define pTBMN 9
+extern const char * pTBM[pTBMN];
 typedef struct tbm_param {
   bool grid;
   int tbmdim, fulldim, points,
@@ -861,40 +932,41 @@ typedef struct tbm_param {
 
 
 
-typedef struct markov_param{
-  int neighbours, cyclic, maxmem;
-  double precision;
-} markov_param;
-
 typedef struct ave_param {
 } ave_param;
 
-
+#define mppN 3
+extern const char * mpp[mppN];
 typedef struct mpp_param {
   int  n_estim_E;
   double intensity[MAXMPPDIM], // intensity factor for e.g. unif_initu
     about_zero;
 } mpp_param;	
 
-#define HYPER_UNIFORM 0   
-#define HYPER_FRECHET 1
-#define HYPER_BERNOULLI 2
+#define hyperN 4
+extern const char * hyper[hyperN];
 typedef struct hyper_param {
   int superpos, maxlines, mar_distr;
   double mar_param;
 } hyper_param;
 
-
+#define extremeN 10
+extern const char * extreme[extremeN];
+#define EXTREME_FLAT 5
 typedef struct extremes_param {
   int maxpoints, check_every, flat, min_n_zhou, max_n_zhou, mcmc_zhou;
   double standardmax, GEV_xi, density_ratio, eps_zhou;
 } extremes_param;
 
+#define brN 9
+extern const char * br[brN];
 typedef struct br_param {
   int BRmaxmem, BRvertnumber, BRoptimmaxpoints, BRoptim, deltaAM;
   double BRmeshsize, BRoptimtol, variobound, corr_factor;
 } br_param;
 
+#define distrN 9
+extern const char * distr[distrN];
 typedef struct distr_param{
   double safety, minsteplen, innermin, outermax;
   int maxsteps, parts, maxit, mcmc_n, repetitions;
@@ -904,7 +976,8 @@ typedef struct distr_param{
 
 #define FLAT_UNDETERMINED -1
 #define GRIDEXPAND_AVOID -1
-
+#define fitN 43
+extern const char * fit[fitN];
 typedef struct fit_param{
   double bin_dist_factor, upperbound_scale_factor, lowerbound_scale_factor, 
     lowerbound_scale_LS_factor, upperbound_var_factor, lowerbound_var_factor, 
@@ -925,51 +998,71 @@ typedef struct fit_param{
 } fit_param;
 
 
+#define empvarioN 5
+extern const char * empvario[empvarioN];
 typedef struct empvario_param{
   double phi0, theta0, tol;
   bool pseudovariogram, fft;
 } empvario_param;
 
+#define guiN 3
+extern const char * gui[guiN];
+#define GUI_SIZE 2
 typedef struct gui_param{
   bool alwaysSimulate;
   int method, size[2];
 } gui_param;
 
+#define graphicsN 9
+extern const char *graphics[graphicsN];
+#define GRAPHICS_UPTO 3
 typedef struct graphics_param{
-  bool always_close;
-  double height;
-  int PL, increase_upto[2];
+  bool onefile;
+  double height, resolution;
+  int PL, increase_upto[2], always_open, always_close, number;
+  char filename[100];
 } graphics_param;
 
-
+#define registersN 5
+extern const char *registers[registersN];
 typedef struct registers_param {
    int keynr, interpolregister, condregister, errregister, guiregister;
 } registers_param;
 
-
+#define internalN 12
+extern const char * internals[internalN];
+#define INTERNALS_NEWANISO 2
 typedef struct internal_param{
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
-  bool warn_oldstyle, warn_newstyle, warn_Aniso, warn_ambiguous, 
-    warn_normal_mode, warn_mode, warn_colour, stored_init, warn_scale,
-    warn_coordinates, warn_on_grid, warn_new_definitions, warn_aspect_ratio
+  bool warn_oldstyle, warn_newstyle, warn_Aniso, warn_ambiguous, warn_normal_mode, 
+    warn_mode, stored_init, warn_scale, warn_coordinates, warn_on_grid, 
+    warn_new_definitions, warn_aspect_ratio
     ;// 
 } internal_param;
 
-
+#define coordsN 7
+#define COORDS_XYZNOTATION 0
+extern const char *coords[coordsN];
 typedef struct coords_param{
   double xyz_notation;
   coord_sys_enum coord_system;
-  char newunits[MAXUNITS][MAXUNITSCHAR], curunits[MAXUNITS][MAXUNITSCHAR],
+  char newunits[MAXUNITS][MAXUNITSCHAR], 
+    curunits[MAXUNITS][MAXUNITSCHAR],
     varunits[MAXUNITS][MAXUNITSCHAR];
+  // 2 user variables for data.frames
+  char data_names[MAXUNITS][MAXCHAR], x_names[MAXUNITS][MAXCHAR];
+  int data_nr_names, x_nr_names, data_idx[2], x_idx[2];
+
 } coords_param;
 
-
+#define specialN 1
+extern const char * special[specialN];
 typedef struct special_param {
    int multcopies;
 } special_param;
 
-
-
+#define obsoleteN 5
+extern const char * obsolete[obsoleteN];
 typedef struct globalparam{
   general_param general;
   gauss_param gauss;
@@ -1066,6 +1159,7 @@ extern bool NAOK_RANGE;
 #define Nick(COV) (CovList[(COV)->nr].nick)
 #define NAME(COV) CovList[(COV)->nr].name
 #define KNAME(NAME) CovList[cov->nr].kappanames[NAME]
+#define SNAME(NAME) CovList[cov->nr].subnames[NAME]
 
 
 
@@ -1084,7 +1178,10 @@ typedef void (*param_set_fct)(cov_model *to, cov_model *from, int variant);
 typedef bool (*type_fct)(Types required, cov_model *cov);
 
 //typedef double static_grid[MAXSIMUDIM][3];
-typedef enum matrix_type {TypeMiso, TypeMdiag, TypeMtimesepproj, TypeMtimesep,
+typedef enum matrix_type {//TypeMid,
+                          TypeMiso, TypeMdiag, 
+			  TypeMtimesepproj, // TypeMtimesep and TypeMproj
+			  TypeMtimesep, // last columns has zero, but last entry
 			  TypeMproj, 
 			  TypeMany} matrix_type;
 
@@ -1227,7 +1324,8 @@ typedef sortsofparam  (*paramtype_fct)(int k, int row, int col);
 // here all the different method for simulating a RF of a specified covariance
 // function are stored
 
-
+#define ONEARGUMENT_NAME 'k'
+#define DEFAULT_SUBNAME 'C'
 typedef struct cov_fct {  
   char name[MAXCHAR], nick[MAXCHAR];
   int kappas, /* number of parameters  */
@@ -1311,7 +1409,7 @@ extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
   STROKORB_MONO, STROKORB_BALL_INNER, POLYGON, RECTANGULAR, MULT_INVERSE,
   SHAPESTP, SHAPEAVE, SPHERICAL, UNIF, MPPPLUS, PTS_GIVEN_SHAPE,
   STATIONARY_SHAPE, STANDARD_SHAPE,
-  VARIOGRAM_CALL, 
+  VARIOGRAM_CALL, SIMULATE,
   BRORIGINAL_USER, BRMIXED_USER, BRSHIFTED_USER,
   ARCSQRT_DISTR,
   
@@ -1319,7 +1417,7 @@ extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
   MISSING_COV, NULL_MODEL, TBM_OP, USER, 
   DOLLAR_PROC, PLUS_PROC,
   BINARYPROC, BROWNRESNICKPROC, GAUSSPROC, POISSONPROC,
-  SCHLATHERPROC, SMITHPROC, CHI2PROC,
+  SCHLATHERPROC, SMITHPROC, CHI2PROC, EXTREMALTPROC,
   NUGGET_USER,  NUGGET_INTERN,
   CIRCEMBED, CUTOFF, STEIN, SPECTRAL_PROC_USER, SPECTRAL_PROC_INTERN, 
   DIRECT, SEQUENTIAL, 
@@ -1560,6 +1658,8 @@ typedef struct TBM_storage {
 void metropolis(cov_model *cov, gen_storage *S, double *x);
 int search_metropolis(cov_model *cov, gen_storage *S);
 // see direct.cc
+
+
 typedef struct direct_storage {
   InversionMethod method;
   double *U, *G;
@@ -1653,7 +1753,7 @@ typedef struct pgs_storage {
     *localmin, *localmax, // local
     *minmean, *maxmean, // standard_shape
     *xstart, *inc,// local dompp
-    intensity;
+    intensity, alpha;
   int 
     own_grid_cumsum[MAXMPPDIM],
     size, *len, // global
@@ -1802,24 +1902,33 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
 
 #define LENERRMSG 2000
 extern char MSG[LENERRMSG];
+extern char MSG2[LENERRMSG];
 extern char NEWMSG[LENERRMSG];
 
-
+#define INDENT if (PL >= PL_RECURSIVE) LPRINT("")
 
 #define STOP // assert(false)
+#define WARNING1(X, Y) {sprintf(MSG, X, Y); warning(MSG); }
 #define ERR(X) {ERRLINE;sprintf(MSG, "%s %s", ERROR_LOC, X); STOP; error(MSG);}
+#define ERR1(X, Y) {ERRLINE;sprintf(MSG, "%s %s", ERROR_LOC, X); \
+    sprintf(MSG2, MSG, Y);					 \
+    STOP; error(MSG);}
 #define XXERR(X) {/* UERR; */ ERRLINE;errorMSG(X, MSG); 	\
  sprintf(NEWMSG, "in `%s' error %d: %s", ERROR_LOC, X, MSG); STOP; error(NEWMSG);}
 #define AERR(X) {ERRLINE; PRINTF("AERR: "); errorMSG(X, MSG); 	\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG); assert(false);}
-#define MERR(X) { PRINTF("MERR: "); errorMSG(X, MSG, 50);		\
+#define MERR(X) {INDENT; PRINTF("error: ");				\
+    errorMSG(X, MSG, LENERRMSG);					\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG);}
 #define XERR(X) {/* UERR; */ ERRLINE;errorMSG(X, MSG); 	\
     sprintf(NEWMSG, "%s%s", ERROR_LOC, MSG); STOP; error(NEWMSG);}
 #define PERR(X) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, param_name, X); STOP;error(MSG);}
+#define PERR1(X,Y) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, param_name, X); sprintf(MSG2, MSG, Y); STOP;error(MSG2);}
 #define QERR(X) {sprintf(ERRORSTRING, "'%s' %s", param_name, X); DEBUGINFOERR; return ERRORM;}
 #define QERRX(ERR, X) {errorMSG(ERR, MSG); sprintf(ERRORSTRING, "'%s' %s (%s)", param_name, X, MSG); DEBUGINFOERR; return ERRORM;}
 #define QERRC(NR,X) {sprintf(ERRORSTRING, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); DEBUGINFOERR; return ERRORM;}
+#define QERRC1(NR,X,Y) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); sprintf(ERRORSTRING, MSG, KNAME(Y)); DEBUGINFOERR; return ERRORM;}
+#define QERRC2(NR,X,Y,Z) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); sprintf(ERRORSTRING, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; return ERRORM;}
 #define SERR(X) { strcpy(ERRORSTRING, X); /* PRINTF("serr:%s\n", X); */ DEBUGINFOERR; return ERRORM;}
 #define SERR1(X,Y) { sprintf(ERRORSTRING, X, Y); /* PRINTF("serr:%s\n", X); */DEBUGINFOERR;  return ERRORM;}
 #define SERR2(X, Y, Z) { sprintf(ERRORSTRING, X, Y, Z); /* PRINTF("serr:%s\n", ERRORSTRING); */  DEBUGINFOERR; return ERRORM;}
@@ -2102,6 +2211,8 @@ SEXP Char(const char **V, int n, int max) ;
 SEXP Mat(double* V, int row, int col, int max);
 SEXP MatInt(int* V, int row, int col, int max) ;
 SEXP Array3D(int** V, int depth, int row, int col, int max) ;
+SEXP String(char [MAXUNITS][MAXCHAR], int n, int max);
+
 
 SEXP Logi(bool* V, int n) ;
 SEXP Num(double* V, int n) ;
@@ -2447,7 +2558,6 @@ void STORAGE_DELETE(gen_storage **S);
 		      cov->prevloc != NULL ? cov->prevloc->grid : false)
 #define Loc(cov) (cov->ownloc != NULL ? cov->ownloc : cov->prevloc)
 
-void crash(cov_model *cov);
 void crash();
 
 sortsofparam ignoreall_paramtype(int k, int row, int col);

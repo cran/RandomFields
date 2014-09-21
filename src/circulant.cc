@@ -104,19 +104,8 @@ int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
 }
 
 
-#define CE_FORCE (COMMON_GAUSS + 1)
-#define CE_MMIN  (COMMON_GAUSS + 2)
-#define CE_STRATEGY  (COMMON_GAUSS + 3)
-#define CE_MAXMEM  (COMMON_GAUSS + 4)
-#define CE_TOLIM  (COMMON_GAUSS + 5)
-#define CE_TOLRE  (COMMON_GAUSS + 6)
-#define CE_TRIALS (COMMON_GAUSS +  7)
-#define CE_USEPRIMES  (COMMON_GAUSS + 8)
-#define CE_DEPENDENT  (COMMON_GAUSS + 9)
-#define CE_APPROXSTEP  (COMMON_GAUSS + 10)
-#define CE_APPROXMAXGRID  (COMMON_GAUSS + 11) // alway last of CE_*
-#define LOCPROC_DIAM  (COMMON_GAUSS + 12) // parameter p
-#define LOCPROC_A  (COMMON_GAUSS + 13) // always last of LOCPROC_*
+#define LOCPROC_DIAM  (CE_LAST + 1)// parameter p
+#define LOCPROC_A  (CE_LAST + 2) // always last of LOCPROC_*
 #define LOCPROC_R LOCPROC_A // always last of LOCPROC_*
 
 
@@ -150,6 +139,7 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   double
+    maxGB = P0(CE_MAXGB),
     tolRe = P0(CE_TOLRE),
     tolIm = P0(CE_TOLIM),
     *caniso = loc->caniso,
@@ -319,13 +309,17 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     s->mtot = mtot = cumm[dim];
 
     if (PL>=PL_SUBIMPORTANT) {
+      INDENT;
       for (i=0;i<dim;i++) { PRINTF("mm[%d]=%d, ",i, mm[i]); }
-      PRINTF("mtot=%d\n ", mtot  * vdimSQ);
+      PRINTF("mtot=%d\n", mtot  * vdimSQ);
     }
 
-    if (realmtot > maxmem)
-      GERR2("total real numbers needed=%.0f > allowed max real numbers=%d -- increase CE.maxmem and/or local.maxmem using RFoptions",
-	    realmtot, maxmem); 
+    if ( (maxmem != NA_INTEGER && realmtot * vdimSQ > maxmem))
+      GERR4("total real numbers needed=%.0f > '%s'=%d -- increase '%s'",
+	    realmtot * vdimSQ, CE[CE_MAXMEM], maxmem, CE[CE_MAXMEM])
+    else if (R_FINITE(maxGB) && realmtot * vdimSQ * 32e-9 > maxGB)
+      GERR4("total memory needed=%4.4f GB > '%s'=%4.4f GB -- increase '%s'",
+	    realmtot* vdimSQ * 32e-9, CE[CE_MAXGB], maxGB, CE[CE_MAXGB]);
 
     if (c != NULL) {
       for(l=0; l<vdimSQ; l++) if(c[l]!=NULL) free(c[l]);
@@ -364,7 +358,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	COV(z, next, tmp);
       } else COV(hx, next, tmp);
 
-      // print("hx %f %f tmp %f\n", hx[0], hx[1], *tmp);
+      //     PMI(next);
+      //print("hx %f %f tmp %f\n", hx[0], hx[1], *tmp);
 
   
       for(l=0; l<vdimSQ; l++) {
@@ -372,7 +367,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  c[l][dummy+1] = 0.0;
 
 	  if (ISNAN(c[l][dummy]) || ISNAN(c[l][dummy + 1])) {
-	    // PMI(cov);
+	    //
+	    //PMI(cov);
 	    // PRINTF("i=%d %d tri=%d %d vdim2=$d ani=%d %f %f c=%f %f \n",
 	    //	   i, l, trials, dummy, vdimSQ, isaniso,
 	    //	   hx[0], hx[1], c[l][dummy], c[l][dummy]);
@@ -609,12 +605,13 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	if ( !s->positivedefinite) {
 	  if (PL>=PL_SUBIMPORTANT) {
-	    if (Lambda[l][i] < 0.0) {LPRINT("There are complex eigenvalues\n");}
+	    INDENT;
+	    if (Lambda[l][i] < 0.0) {PRINTF("There are complex eigenvalues\n");}
 	    else if (vdim==1) {	      
-	      LPRINT("non-positive eigenvalue: Lambda[%d]=%e.\n",
+	      PRINTF("non-positive eigenvalue: Lambda[%d]=%e.\n",
 		     i, Lambda[l][i]);
 	    } else {
-	      LPRINT("non-pos. eigenvalue in dim %d: Lambda[%d][%d]=%e.\n",
+	      PRINTF("non-pos. eigenvalue in dim %d: Lambda[%d][%d]=%e.\n",
 		     l, i, l, Lambda[l][i]);
 	    }
 	  }
@@ -694,14 +691,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	      }
 	      hx[i] = 0.0;
 	    }
-	    assert(maxi>=0);
+	    assert(maxi>=0); 
 	    hilfsm[maxi] *= multivariate ? 3 : 2;
 	    break;
 	  default:
 	    error("unknown strategy for circulant embedding");
 	}
       }
-    } else {if (PL>=PL_SUBIMPORTANT) { LPRINT("forced\n");} }
+    } else {if (PL>=PL_SUBIMPORTANT) { INDENT; PRINTF("forced.\n");} }
     R_CheckUserInterrupt();
   } // while (!s->positivedefinite && (s->trials<trials)) 354-719
 
@@ -738,8 +735,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     }
     if (PL>=PL_SUBIMPORTANT) {
       if (r < -GENERAL_PRECISION) {
-	LPRINT("using approximating circulant embedding:\n");
-	LPRINT("\tsmallest real part has been %e \n", r);
+	INDENT; PRINTF("using approximating circulant embedding:\n");
+	INDENT; PRINTF("\tsmallest real part has been %e \n", r);
       }
     }
     s->smallestRe = (r > 0.0) ? RF_NA : r;
@@ -845,6 +842,7 @@ int check_ce_basic(cov_model *cov) {
     }
   } 
   kdefault(cov, CE_STRATEGY, (int) gp->strategy);
+  kdefault(cov, CE_MAXGB, gp->maxGB);
   kdefault(cov, CE_MAXMEM, (int) gp->maxmem);
   kdefault(cov, CE_TOLIM, gp->tol_im);
   kdefault(cov, CE_TOLRE, gp->tol_re);
@@ -853,7 +851,7 @@ int check_ce_basic(cov_model *cov) {
   kdefault(cov, CE_DEPENDENT, (int) gp->dependent);
   kdefault(cov, CE_APPROXSTEP, gp->approx_grid_step);
   kdefault(cov, CE_APPROXMAXGRID, gp->maxgridsize);
-  
+
   return NOERROR;
 }
 
@@ -924,8 +922,15 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CE_STRATEGY] = false;
   range->openmax[CE_STRATEGY] = false;
   
+  range->min[CE_MAXGB] = 0; 
+  range->max[CE_MAXGB] = RF_INF;
+  range->pmin[CE_MAXGB] = 0;
+  range->pmax[CE_MAXGB] = 10;
+  range->openmin[CE_MAXGB] = false;
+  range->openmax[CE_MAXGB] = false;
+
   range->min[CE_MAXMEM] = 0; 
-  range->max[CE_MAXMEM] = RF_INF;
+  range->max[CE_MAXMEM] = MAXINT;
   range->pmin[CE_MAXMEM] = 0;
   range->pmax[CE_MAXMEM] = 50000000;
   range->openmin[CE_MAXMEM] = false;
@@ -1376,7 +1381,8 @@ int check_local_proc(cov_model *cov) {
   if (key != NULL) {
     // falls nicht intern muessen die parameter runter und rauf kopiert
     // werden, ansonsten sind die kdefaults leer.
-    // falls hier gelandet, ruft CE*INTERN CE auf.
+    // falls hier gelandet, wird RP*INTERN von RP* aufgerufen.
+    // oder RP*INTERN wird Circulant aufrufen
     cov_model *intern = cov,
       *RMintrinsic = key->sub[0];
     while (intern != NULL && intern->nr != CE_INTRINPROC_INTERN &&
@@ -1392,6 +1398,9 @@ int check_local_proc(cov_model *cov) {
       paramcpy(intern, cov, true, true, false, false, false);  // i.e. INTERN
     else { 
       if (RMintrinsic->nr != CUTOFF && RMintrinsic->nr != STEIN) BUG;
+
+      //PMI(cov);     printf("%s %d\n", NICK(cov), !PisNULL(LOCPROC_DIAM));
+
       if (!PisNULL(LOCPROC_DIAM)) 
 	kdefault(RMintrinsic, pLOC_DIAM, P0(LOCPROC_DIAM));
       if (!PisNULL(LOCPROC_R)) 
@@ -1493,6 +1502,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
   PCOPY(key, cov, CE_MMIN);
   
   kdefault(key, CE_STRATEGY, P0INT(CE_STRATEGY));
+  kdefault(key, CE_MAXGB, P0(CE_MAXGB));
   kdefault(key, CE_MAXMEM, P0INT(CE_MAXMEM));
   kdefault(key, CE_TOLIM, P0(CE_TOLIM));
   kdefault(key, CE_TOLRE, P0(CE_TOLRE));
@@ -1693,14 +1703,14 @@ void do_circ_embed_intr(cov_model *cov, gen_storage *S) {
   double *stein_aniso = (double*) s->correction;
   if (loc->caniso == NULL) {
     for (l=0; l<row; l++) {
-      double gauss = GAUSS_RANDOM(1.0);
-      dx[l] += *stein_aniso * gauss;
+      double normal = GAUSS_RANDOM(1.0);
+      dx[l] += *stein_aniso * normal;
     }
   } else {
     for (i=0; i<rowcol; ) {
-      double gauss = GAUSS_RANDOM(1.0);
+      double normal = GAUSS_RANDOM(1.0);
       for (l=0; l<row; l++)
-	dx[l] += stein_aniso[i++] * gauss;
+	dx[l] += stein_aniso[i++] * normal;
     }
   }
   for (k=0; k<row; k++) dx[k] *= loc->xgr[k][XSTEP];
@@ -1802,6 +1812,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 	 ) != NOERROR) return err;
  
   }
+
 
   if (cov->nr == CIRCEMBED) return NOERROR;
   else return struct_ce_local(Getgrid(cov) ? cov : cov->key, newmodel);

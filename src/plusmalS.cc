@@ -571,8 +571,12 @@ void hessS(double *x, cov_model *cov, double *v){
 
 void inverseS(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[DOLLAR_SUB];
-  if (cov->kappasub[DALEFT] != NULL)
-    ERR("inverse can only be calculated if 'Aniso' not an arbitrary function"); 
+  if (cov->kappasub[DALEFT] != NULL) {
+    char Msg[100];
+    sprintf(Msg, "inverse can only be calculated if '%s' is not an arbitrary function",
+	    KNAME(DALEFT)); 
+    ERR(Msg);
+  }
   int i,
     dim = cov->xdimown,
     nproj = cov->nrow[DPROJ];
@@ -612,7 +616,7 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
     *Aniso = cov->kappasub[DALEFT];
  
   // if (cov->kappasub[DALEFT] != NULL)
-  //  ERR("inverse can only be calculated if 'Aniso' not an arbitrary function"); 
+  //  ERR("inverse can only be calculated if 'An  iso' not an arbitrary function"); 
   int i,
     dim = cov->tsdim,
     nproj = cov->nrow[DPROJ];
@@ -858,7 +862,7 @@ int checkS(cov_model *cov) {
   if (cov->q == NULL && !PisNULL(DALEFT)) {
     if (GLOBAL.internal.warn_Aniso && print_warn_Aniso) {
       print_warn_Aniso = false;
-      PRINTF("NOTE! Starting with RandomFields 3.0, the use of 'Aniso' is different from\n the former 'aniso' insofar that 'Aniso' is multiplied from the right by 'x'\n(whereas 'aniso' had been multiplied from the left by 'x').\nSet RFoptions(newAniso=FALSE) to avoid this message.\n");
+      PRINTF("NOTE! Starting with RandomFields 3.0, the use of '%s' is different from\n the former 'aniso' insofar that '%s' is multiplied from the right by 'x'\n(whereas 'aniso' had been multiplied from the left by 'x').\nSet %s(%s=FALSE) to avoid this message.\n", KNAME(DALEFT), KNAME(DALEFT), RFOPTIONS, internals[INTERNALS_NEWANISO]);
     }
     // here for the first time
     if (!PisNULL(DANISO)) return ERRORANISO_T; 
@@ -888,7 +892,7 @@ int checkS(cov_model *cov) {
       cov->domown = KERNEL;
 
     if (!PisNULL(DANISO) || !PisNULL(DPROJ) || !PisNULL(DSCALE))
-      SERR("if Aniso is an arbitrary function, only 'var' may be given as additional parameter"); 
+      SERR2("if '%s' is an arbitrary function, only '%s' may be given as additional parameter", KNAME(DANISO), KNAME(DVAR)); 
     if (cov->isoown != SYMMETRIC && cov->isoown != CARTESIAN_COORD) {
       //      printf("iso = %d\n", cov->isoown);
       //PMI(cov, -1);
@@ -951,20 +955,23 @@ int checkS(cov_model *cov) {
     free(idx); idx=NULL;
     type = Type(P(DANISO), nrow, ncol);
     
-    cov->full_derivs = cov->rese_derivs 
-      = (xdimown == 1 || nrow == ncol) ? 2 : 0;
+    cov->full_derivs = cov->rese_derivs = 0;
     cov->loggiven = true;
   
-    // printf("hiere\n");
- 
     switch (cov->isoown) {
-    case ISOTROPIC : 
+    case ISOTROPIC :   
       if (cov->tsdim != 1) return ERRORANISO;
+      cov->full_derivs = cov->rese_derivs = 2;
       break;
     case SPACEISOTROPIC :  
-      cov->full_derivs =  cov->rese_derivs = 2;
-      if (nrow != 2 || !isMdiag(type))
+      cov->full_derivs =  cov->rese_derivs = 
+	isMdiag(Type(P(DANISO), nrow, ncol)) ? 2 : 0;
+      if (nrow != 2 || !isMdiag(type)) {
+	//	printf("nrow %d %d %d\n", nrow, type, isMdiag(type));
+	//	int h; for (h = 0; h<cov->nrow[DANISO] * cov->ncol[DANISO]; h++)
+	//		 printf("h=%d %f %d\n", h, P(DANISO)[h], P(DANISO)[h]==0);
 	SERR("spaceisotropy needs a 2x2 diagonal matrix");
+      }
       break;      
     case ZEROSPACEISO : 
       if (!isMdiag(type)) return ERRORANISO;
@@ -1013,7 +1020,8 @@ int checkS(cov_model *cov) {
       for (i=0; i<nproj; i++) {
 	int idx = proj[i] - 1;
 	if (idx >= xdimown)
-	  SERR2("%d-th value of 'proj' (%d) out of range", i, proj[i]);
+	  SERR3("%d-th value of '%s' (%d) out of range", 
+		i, KNAME(DPROJ), proj[i]);
       }
       xdimNeu = nproj;
       tsdim = nproj;
@@ -1272,13 +1280,13 @@ int structS(cov_model *cov, cov_model **newmodel) {
 
   
   if (cov->kappasub[DVAR] != NULL) {
-    GERR("models including arbitrary functions for 'var' cannot be simulated yet");
+    GERR1("models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DVAR));
     } 
 
   switch (cov->role) {
    case ROLE_SMITH : 
      if (Aniso != NULL && CovList[Aniso->nr].check != checkAngle)
-       GERR("complicated models including arbitrary functions for 'Aniso' cannot be simulated yet for Smith models");
+       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DALEFT));
 
 
     ASSERT_NEWMODEL_NOT_NULL;
@@ -1298,7 +1306,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
   case ROLE_MAXSTABLE : // eigentlich nur von RPSmith moeglich !
     ASSERT_NEWMODEL_NOT_NULL;
     if (Aniso != NULL && CovList[Aniso->nr].check != checkAngle)
-       GERR("complicated models including arbitrary functions for 'Aniso' cannot be simulated yet for Smith models");
+       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DALEFT));
 
     if (!next->deterministic) GERR("random shapes not programmed yet");
     if (!PisNULL(DPROJ)) GERR("projections not allowed yet");
@@ -1398,7 +1406,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
       }
 
     } else { // not from RPsmith
-      GERR("unexpected call of 'structS'. Please contact author.");
+      BUG;
       // 
      if ((err = STRUCT(next, newmodel)) > NOERROR) return err;
     }
@@ -1416,7 +1424,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
 
     ASSERT_NEWMODEL_NOT_NULL;
     if (Aniso!= NULL) {
-      GERR("complicated models including arbitrary functions for Aniso cannot be simulated yet");
+      GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DALEFT));
     } 
 
     if (cov->key != NULL) COV_DELETE(&(cov->key));
@@ -1678,7 +1686,7 @@ void doS(cov_model *cov, gen_storage *s){
     int 
       totalpoints = Gettotalpoints(cov);
     assert(res != NULL);
-    if (cov->key == NULL) error("Unknown structure in 'doS'.");
+    if (cov->key == NULL) BUG;
 
     DO(cov->key, s); 
 
@@ -1692,7 +1700,7 @@ void doS(cov_model *cov, gen_storage *s){
   //PMI(cov->calling->calling);
   //crash();
 
-  ERR("unknown option in 'doS' "); 
+  BUG;
 }
 
 
@@ -2273,6 +2281,8 @@ int checkmal(cov_model *cov) {
   if (cov->domown == STAT_MISMATCH || !isPosDef(cov)) {
     return ERRORNOVARIOGRAM;
   }
+  // to do istcftype und allgemeiner typ zulassen
+
   cov->logspeed = cov->domown == XONLY ? 0 : RF_NA;
   
   if (cov->xdimown >= 2) cov->pref[TBM] = PREF_NONE;
@@ -2349,9 +2359,12 @@ int  CheckAndSetP(cov_model *cov){
 	P(PLUS_P)[0] = 1.0;
       } else {
 	//printf("%e\n", 1-P(PLUS_P)[nsub-1] );
-	if (cump < 1.0 && P(PLUS_P)[nsub-1] == 0)
-	  warning("The value of the last component of 'p' is increased."); 
-	else SERR("The components of 'p' do not sum up to 1.");
+	if (cump < 1.0 && P(PLUS_P)[nsub-1] == 0) {
+	  WARNING1("The value of the last component of '%s' is increased.",
+		   KNAME(PLUS_P)); 
+
+	}
+	else SERR1("The components of '%s' do not sum up to 1.", KNAME(PLUS_P));
 	P(PLUS_P)[nsub-1] = 1.0 - (cump - P(PLUS_P)[nsub-1]);
       }  
     }
@@ -2430,7 +2443,10 @@ int struct_mppplus(cov_model *cov, cov_model **newmodel){
     SERR("method is not based on Poisson point process");
   }
 
-  SERR("'mppplus not programmed yet");
+
+  return ERRORNOTPROGRAMMEDYET;
+
+  
   // Ausnahme: mppplus wird separat behandelt:
   // if (nr == MPPPLUS) return S TRUCT(shape, NULL);
  
@@ -2579,7 +2595,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
    //printf("her %d %d\n", cov->role, ROLE_GAUSS);
 
   if (Aniso != NULL && !Aniso->deterministic) {
-     SERR("complicated models including arbitrary functions for 'Aniso' cannot be simulated yet");
+     SERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DALEFT));
   }
 
 
@@ -2792,8 +2808,7 @@ void doSproc(cov_model *cov, gen_storage *s){
 
   }
   
-  else ERR("unknown option in 'doSproc' "); 
-
+  else BUG;
  
   if (cov->origrf) {
     assert(cov->prevloc->grid);
@@ -3527,5 +3542,5 @@ void doPowS(cov_model *cov, gen_storage *s){
     return;
   }
   
-  ERR("unknown option in 'doPowS' "); 
+  BUG;
 }

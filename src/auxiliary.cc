@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 #include "RF.h"
+#include <Rdefines.h>
 
 
 // important check !!
@@ -48,23 +49,16 @@ RANDOMFIELDS_DEBUGGING IS NOT ALLOWED
 
 
 double intpow(double x, int p) {
-  //int p0 = p;
-  // double x0 = x;
-
   double res = 1.0;
   if (p < 0) {
     p = -p;
     x = 1.0 / x;
   } 
   while (p != 0) {
-    //    printf("  ... %e %d : %e\n" , x, p, res);
-  if (p % 2 == 1) res *= x;
+    if (p % 2 == 1) res *= x;
     x *= x;
     p /= 2;
   }
-
-  // printf("%e^%d = %e\n" , x0, p0, res);
-
   return res;
 }
 
@@ -115,6 +109,8 @@ void Ax(double *A, double*x, int nrow, int ncol, double *y) {
     }
   }
 }
+
+
 
 
 void AxResType(double *A, res_type *x, int nrow, int ncol, double *y) {
@@ -638,12 +634,17 @@ void memory_copy(void *dest, void *src, int bytes) {
 }
 
 
-void distInt(int *X, int*N, int *Genes, double *dist) {
-    int i,j, k, di, diff, *x, *y, ve, ho, endfor,
-	n = *N,
-	nP1 = n + 1,
-	genes = *Genes;
+SEXP distInt(SEXP XX, SEXP N, SEXP Genes) {
+  int i,j, k, di, diff, *x, *y, ve, ho, endfor,
+    *X = INTEGER(XX),
+    n = INTEGER(N)[0],
+    nP1 = n + 1,
+    genes = INTEGER(Genes)[0];
  
+  SEXP Dist;
+  PROTECT(Dist = allocMatrix(REALSXP, n, n));
+  double *dist = REAL(Dist);
+
   x = y = X;
   for (j=0, i=0;  j<n;  i += nP1, j++, y += genes) {
     dist[i] = 0.0;
@@ -658,6 +659,8 @@ void distInt(int *X, int*N, int *Genes, double *dist) {
       dist[ve] = dist[ho] = sqrt((double) di);
     }
   }
+  UNPROTECT(1);
+  return Dist;
 }
 
 /*
@@ -859,27 +862,36 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
   return value;
 }
 
-void vectordist(double *v, int *Dim, double *Dist, int *diag){
-  int d, dim, dr;
-  double *v1, *v2, *end;
-  bool notdiag = (*diag==0);
-  dim = Dim[0];
-  end = v + Dim[1] * dim; 
+SEXP vectordist(SEXP V, SEXP DIAG){
+  bool notdiag = !LOGICAL(DIAG)[0];
+  int 
+    d, dr, 
+    rows = nrows(V), 
+    cols = ncols(V),
+    rescols = (int) (cols * (cols - 1 + 2 * (int) !notdiag) / 2);
+  double *v1, *v2, *end, *Dist,
+    *v = REAL(V);
+  
+  end = v + cols * rows; 
+  SEXP DIST;
+  
+  PROTECT(DIST = allocMatrix(REALSXP, rows, rescols));
+  Dist = REAL(DIST);
 
-//  print("%d %d %f %f\n", dim , Dim[0], v, end);
-
-  for (dr=0, v1=v; v1<end; v1+=dim) { // loop is one to large??
+  for (dr=0, v1=v; v1<end; v1+=rows) { // loop is one to large??
     v2 = v1;
     if (notdiag) {
-       v2 += dim;
+       v2 += rows;
     }
     for (; v2<end; ) {
-      for (d=0; d<dim; v2++) {
+      for (d=0; d<rows; v2++) {
 	Dist[dr++] = v1[d++] - *v2;
       }
     }
   }
-} 
+  UNPROTECT(1);
+  return DIST;
+}
 
 static int ORDERDIM;
 static double *ORDERD;

@@ -7,6 +7,10 @@
 \alias{show,RFspatialPointsDataFrame-method}
 \alias{coerce,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{coerce,RFspatialPointsDataFrame,RFspatialGridDataFrame,ANY-method}
+\alias{coerce,RFspatialGridDataFrame,data.frame-method}
+\alias{coerce,RFspatialPointsDataFrame,data.frame-method}
+\alias{coerce,SpatialGridDataFrame,RFspatialGridDataFrame-method}
+\alias{coerce,SpatialPointsDataFrame,RFspatialPointsDataFrame-method}
 \alias{[,RFspatialPointsDataFrame-method}
 \alias{[,RFspatialPointsDataFrame,ANY,ANY-method}
 \alias{[,RFspatialPointsDataFrame,ANY,ANY,ANY-method}
@@ -14,12 +18,15 @@
 %% S3 methods
 \alias{print.RFspatialPointsDataFrame}
 \alias{cbind.RFspatialPointsDataFrame}
+\alias{as.data.frame.RFspatialPointsDataFrame}
 
 \title{Class "RFspatialPointsDataFrame" }
 \description{ Class for spatial attributes that have spatial or
  spatio-temporal locations (at least of dimension 2) 
  that are not on a grid. Direct extension of class
- \code{\link[sp:SpatialPointsDataFrame-class]{SpatialPointsDataFrame}} from the \pkg{sp}-package.}
+ \code{\link[sp:SpatialPointsDataFrame-class]{SpatialPointsDataFrame}}
+ from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
+ transformation.}
 
 \section{Creating Objects}{
  Objects can be created by using the functions
@@ -93,7 +100,9 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  converts into other formats, only implemented for target class
  \code{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
- topology, combine their attribute values}
+   topology, combine their attribute values}
+\item{as.data.frame}{\code{signature(x = "RFspatialGridDataFrame")}:
+ converts \code{data}-slot and coordinates to a data.frame}
  }
 }
 
@@ -120,7 +129,8 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  locations that are on a grid,
  \code{\link{RFpointsDataFrame-class}} which is for one-dimensional
  locations,
- \code{\link[=RFsp-class]{RFsp}} 
+ \code{\link[=RFsp-class]{RFsp}},
+ \command{\link{sp2RF}}
 }
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

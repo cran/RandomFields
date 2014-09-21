@@ -64,24 +64,21 @@ double get(double *sumvals, int jj) {
 }
 
 
-void fftVario3D(	
-	double *coord,
-	double *Sumvals,
-	double *Nbvals,
-	double *bin,
-	int *Nbin,
-	int *lenT,
-	int *stepT,
-	int *nstepT,
-	double *phi,
-	double *theta,
-	int *Repet,
-	int *Vdim,
-	double *Empvario,	
-	double *N,
-	int *SegmentEmpVario,
-	int *Pseudo
-)
+SEXP fftVario3D(SEXP Coord,
+		SEXP Sumvals,
+		SEXP Nbvals,
+		SEXP Bin,
+		SEXP Nbin,
+		SEXP LenT,
+		SEXP StepT,
+		SEXP NstepT,
+		SEXP Phi,
+		SEXP Theta,
+		SEXP Repet,
+		SEXP Vdim,
+		SEXP SegmentEmpVario,
+		SEXP Pseudo
+		) {
 
 /*    coord   : 3x3 matrix of coordinates of the 3 space dimension
  *              in (new) gridtriple notation, (start,by,length)
@@ -103,30 +100,43 @@ void fftVario3D(
  *    n       : number of pairs in each bin
  *    pseudo  : if pseudo == 1, then the pseudo (cross)-variogram is computed
  */
-{  
+
   long rep;
-  int i, binidx, halfnbin, totalbins, totalbinsvdimSq,
+  int i, binidx, halfnbin, totalbinsvdimSq,
     Nphi, NphiNbin, Ntheta, nbinNphiNtheta, Nphihalf, maxi[3],
     ix, iy, iz, startX, startY, startZ, startT, startrep, low, cur,
     ktheta, kthetaz, kphi, kphixy, kphix, kphiy, kT, nstepTstepT, deltaT, 
     x, y, z, v1, v2,
     timecomp, k,
     err = NOERROR, 
-    nbin = *Nbin,
-    vdim = *Vdim,
-    repet = *Repet,
-    segmentEmpVario = *SegmentEmpVario;
-  bool pseudo = (bool) (*Pseudo);
+    nbin = INTEGER(Nbin)[0],
+    vdim = INTEGER(Vdim)[0],
+    repet = INTEGER(Repet)[0],
+    segmentEmpVario = INTEGER(SegmentEmpVario)[0],
+    totalbins = segmentEmpVario * vdim * vdim,
+    nstepT = INTEGER(NstepT)[0],
+    stepT = INTEGER(StepT)[0],
+    lenT = INTEGER(LenT)[0]
+   ;
+  bool pseudo = LOGICAL(Pseudo)[0];
   double tolerance, *xx[3], maxbinsquare, step[3], 
     d0, d1, d2,  // delta0
     psq0, psq1, psq2,
     startphi, starttheta, thetadata, phidata, phixdata,
     phiydata, phixydata, binshift,
+    *phi = REAL(Phi),
+    *theta = REAL(Theta),
     *BinSq = NULL,  
-    *sumvals = Sumvals,
-    *nbvals=  Nbvals,
-    *empvario = Empvario,
-    *n = N
+    *sumvals = REAL(Sumvals),
+    *nbvals=  REAL(Nbvals),
+    *bin = REAL(Bin),
+    *coord = REAL(Coord);
+  
+  SEXP back;
+  back = PROTECT(allocMatrix(REALSXP, totalbins, 2) );
+  
+  double *emp_vario = REAL(back),
+    *n = emp_vario + totalbins
     ;
 
 #define SUMVALS_JJ sumvals[jj]
@@ -138,7 +148,7 @@ void fftVario3D(
   kphiy = 0;
   Nphihalf = 0;
 
-  nstepTstepT = *stepT * *nstepT;
+  nstepTstepT = stepT * nstepT;
   timecomp = nstepTstepT==0 ? 1 : 2;
 
   if((!pseudo) && (timecomp==1)){
@@ -159,7 +169,7 @@ void fftVario3D(
   // invsegtheta = theta[1] / PI; // note that theta[1] can be zero
   nbinNphiNtheta = NphiNbin * Ntheta;
   //print("2,..");
-  for (rep=i=0; i<3; i++, rep+=3) xx[i] = &(coord[rep]);
+  for (rep=i=0; i<3; i++, rep+=3) xx[i] = coord + rep;
     if (xx[0]==NULL) {err=TOOLS_XERROR; goto ErrorHandling;}
   for (i=0; i<nbin;i++) {
     if (bin[i]>=bin[i+1])  {err=TOOLS_BIN_ERROR; goto ErrorHandling;}
@@ -171,11 +181,11 @@ void fftVario3D(
     err=TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
   //print("3,..");
-  totalbins = nbinNphiNtheta * (*nstepT + 1);
+  totalbins = nbinNphiNtheta * (nstepT + 1);
   totalbinsvdimSq = totalbins * vdim * vdim;
   for (i=0; i<totalbinsvdimSq; i++){
     //printf("%d ", i);
-    empvario[i]= n[i]=0.0;
+    emp_vario[i]= n[i]=0.0;
   }
 
   //print("sizeof double: %d ", (int) sizeof(res_type));
@@ -199,7 +209,7 @@ void fftVario3D(
     segmentbase[i+1] =  segmentbase[i] * maxi[i];
   }
   
-  segmentbase[4] = segmentbase[3] * *lenT; 
+  segmentbase[4] = segmentbase[3] * lenT; 
   if (!pseudo) {
     segmentbase[5] = 4 * segmentbase[4];
     segmentbase[6] = segmentbase[5] * timecomp;
@@ -221,7 +231,7 @@ void fftVario3D(
     for (v2=0; v2<vdim; v2++,
 	   sumvals += segmentbase[7], 
 	   nbvals += segmentbase[7],
-	   empvario += segmentEmpVario,
+	   emp_vario += segmentEmpVario,
 	   n += segmentEmpVario) {
   
       //
@@ -290,7 +300,7 @@ void fftVario3D(
 	    kthetaz = GetAngleBin(PI - thetadata, starttheta, theta[1], PI);
 	    
 	    for (deltaT=0, kT=0; deltaT<=nstepTstepT; 
-		 deltaT += *stepT, kT += nbinNphiNtheta) {
+		 deltaT += stepT, kT += nbinNphiNtheta) {
 	      //print("kT %d, stepT %d, nsteptT %d, deltaT %d", kT, *stepT, *nstepT, deltaT); 	 
 	      //print("kT %d --", kT);
 	      //timecomp = x==0 ? 1 : 2;
@@ -320,24 +330,24 @@ void fftVario3D(
 		    //rep, startrep, segmentbase[7], segmentbase[6],
 		    //v1, v2, vdim, x, y, z, deltaT, k);
 		    
-		    empvario[base + Idx] += SUMVALS_JJ;
+		    emp_vario[base + Idx] += SUMVALS_JJ;
 		    n[base + Idx] += nbvals[jj];	
 		    jj += segmentbase[4];
 		    if (ix > 0 && (iy > 0 || iz > 0)) {
 		      basX = binidx + (kphix + Nphihalf * kM1) * nbin;
-		      empvario[basX + Idx] += SUMVALS_JJ;
+		      emp_vario[basX + Idx] += SUMVALS_JJ;
 		      n[basX + Idx] += nbvals[jj];
 		    }
 		    if (iy > 0 && iz > 0){
 		      Idx = ((Ntheta -1 - kthetaz) * kM1 + kthetaz * TkM2) * 
 			NphiNbin;
 		      jj += segmentbase[4];
-		      empvario[base + Idx] += SUMVALS_JJ;
+		      emp_vario[base + Idx] += SUMVALS_JJ;
 		      n[base + Idx] += nbvals[jj];
 		      
 		      if (ix > 0){
 			jj += segmentbase[4];
-			empvario[basX + Idx] += SUMVALS_JJ;
+			emp_vario[basX + Idx] += SUMVALS_JJ;
 			n[basX + Idx] += nbvals[jj];
 		      }
 		    }
@@ -349,24 +359,24 @@ void fftVario3D(
 		      kN = ktheta * NphiNbin,
 		      kzN = kthetaz * NphiNbin,
 		      Idx = knbin + kN;
-		    empvario[Idx] += SUMVALS_JJ;
+		    emp_vario[Idx] += SUMVALS_JJ;
 		    n[Idx] += nbvals[jj];
 		    jj += segmentbase[4];
 		    if (ix > 0) {
 		      Idx = kxnbin + kN;
-		      empvario[Idx] += SUMVALS_JJ;
+		      emp_vario[Idx] += SUMVALS_JJ;
 		      n[Idx] += nbvals[jj];
 		    }
 		    if (iz > 0) {
 		      Idx = knbin + kzN;
 		      jj += segmentbase[4];
-		      empvario[Idx] += SUMVALS_JJ;
+		      emp_vario[Idx] += SUMVALS_JJ;
 		      n[Idx] += nbvals[jj]; 
 		      
 		      if (ix > 0) {
 			Idx = kxnbin + kzN;
 			jj += segmentbase[4];
-			empvario[Idx] += SUMVALS_JJ;
+			emp_vario[Idx] += SUMVALS_JJ;
 			n[Idx] += nbvals[jj];
 		      }
 		    }
@@ -376,25 +386,25 @@ void fftVario3D(
 			kynbin = binidx + kphiy * nbin;
 		      Idx = kynbin + kN;
 		      jj = rep + 4 * segmentbase[4];
-		      empvario[Idx] += SUMVALS_JJ;
+		      emp_vario[Idx] += SUMVALS_JJ;
 		      n[Idx] += nbvals[jj];	
 		      jj += segmentbase[4];
 		      if (ix > 0){ // vor ix>0 && iz > 0 !
 			kxynbin = binidx +  kphixy * nbin;
 			Idx = kxynbin + kN;
-			empvario[Idx] += SUMVALS_JJ;
+			emp_vario[Idx] += SUMVALS_JJ;
 			n[Idx] += nbvals[jj];
 		      }
 		      if (iz > 0){
 			Idx = kynbin + kzN;
 			jj += segmentbase[4];
-			empvario[Idx] += SUMVALS_JJ;
+			emp_vario[Idx] += SUMVALS_JJ;
 			n[Idx] += nbvals[jj];  
 			
 			if (ix > 0) {
 			  Idx = kxynbin + kzN;
 			  jj += segmentbase[4];
-			  empvario[Idx] += SUMVALS_JJ;
+			  emp_vario[Idx] += SUMVALS_JJ;
 			  n[Idx] += nbvals[jj];
 			}
 		      } // iz > 0
@@ -409,7 +419,7 @@ void fftVario3D(
   
       tolerance = GLOBAL.empvario.tol * segmentbase[3];  // to do. Warum?
       for(i=0; i < totalbins ;i++){
-	if (fabs(empvario[i]) < tolerance) empvario[i] = 0.0; 
+	if (fabs(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
       }
     } // vdim1
   } // vdim2
@@ -431,7 +441,8 @@ void fftVario3D(
   }
 
   if (BinSq!=NULL) free(BinSq);
-  return;
+  UNPROTECT(1);
+  return back;
 }
 
 

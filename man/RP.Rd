@@ -4,7 +4,7 @@
 \alias{RPmodels}
 \alias{RPprocess}
 \alias{RPprocesses}
-\title{Models for classes of random fields}
+\title{Models for classes of random fields (RP commands)}
 \description{
  Here, all the classes of random fields are described that can be
  simulated
@@ -17,7 +17,8 @@
     \tab \link[=RPbernoulli]{Binary field} \cr
     \tab \link[=RPchi2]{chi2 field}\cr
     \tab \link[=RPpoisson]{composed Poisson} (shot noise, random coin) \cr
-  }
+   \tab \link[=RPt]{t field}\cr
+ }
 }
 \seealso{
   \link{RC}, \link{RR}, \link{RM}, \link{RF}

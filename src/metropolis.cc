@@ -63,6 +63,9 @@ void metropolis(cov_model *cov, gen_storage *S, double *x) {
 #define Factor 1.5
 #define nBase2 150000
 
+
+// to do ?! in rectangle umschreiben ?!
+
 int search_metropolis(cov_model *cov, gen_storage *S) {
   spec_properties *s = &(S->spec);
   double Sigma[maxSearch], x[MAXTBMSPDIM], oldx[MAXTBMSPDIM], log_s, p,
@@ -80,10 +83,11 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
     s->sigma = 1.0;
     optzaehler = (int) (nBase1 * percent);
     minzaehler = (int) (optzaehler * nBase1percent);
-    if (minzaehler < 10)
-      GERR("please increase 'spectral.percent' and/or nBase1");
+    if (minzaehler < 10) GERR("internal variables insufficient. Please contact author.");
+    // GERR("please increase 'spectral.percent' and/or nBase1");
     maxzaehler = nBase1 - minzaehler;
-    if (maxzaehler < minzaehler) GERR("please decrease 'spectral.percent'");
+    if (maxzaehler < minzaehler) GERR("Internal variables insufficient. Please contact author.");
+    //GERR("please decrease 'spectral.percent'");
     min = nBase1 + 1;
     for (i=0; i < maxSearch; i++) {
       Sigma[i] = s->sigma;

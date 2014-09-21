@@ -54,20 +54,24 @@ setClassUnion("RFspatialDataFrame",
 setClassUnion("RFdataFrame", c("RFgridDataFrame", "RFpointsDataFrame"))
 setClassUnion("RFsp", c("RFspatialGridDataFrame", "RFspatialPointsDataFrame",
                         "RFgridDataFrame", "RFpointsDataFrame"))
-              #c("RFspatialDataFrame", "RFdataFrame")) ## waere natuerlich,
-
-## dann funktioniert haber dimensions() nicht mehr.
-
-
-
 
 check.validity.n.vdim <- function(object) {
   if (!all(c("n", "vdim") %in% names(object@.RFparams)))
     return("slot '.RFparams' must contain 'n' and 'vdim'")
-  stopifnot((object@.RFparams$n +
-             (!is.null(object@.RFparams$has.variance) && object@.RFparams$has.variance)
-             ) *
-            object@.RFparams$vdim == ncol(object@data))
+  var.given <- !is.null(object@.RFparams$has.variance) &&
+    object@.RFparams$has.variance
+  nc <- (object@.RFparams$n + var.given) *
+                                 object@.RFparams$vdim
+  if (nc != ncol(object@data)) {
+    stop("number of data at each location (=", ncol(object@data),
+         ") does not match the expected ones (=", nc,
+         ").\n  The latter is based on the information or assumption that there are\n  ",
+         object@.RFparams$n, " repetition(s) of ",
+         object@.RFparams$vdim, " variable(s)",
+         if (var.given) " and the variances",
+         " given.",
+         if (object@.RFparams$n * object@.RFparams$vdim == 1) "\nEither wrong parameters have been given for 'RFspatialGridDataFrame' or 'RFspatialPointsDataFrame' or an explicite transformation of the data from 'sp' objects to 'RFsp' objects has not been performed with 'sp2RF'.")
+  }
   return(TRUE)
 }
 

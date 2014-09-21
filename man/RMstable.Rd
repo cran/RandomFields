@@ -1,5 +1,6 @@
 \name{RMstable}
 \alias{RMstable}
+\alias{powered exponential}
 \alias{RMpoweredexp}
 \alias{RMpoweredexponential}
 \title{Stable Family / Powered Exponential Model}
@@ -47,24 +48,32 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
 
 }
 \references{
- \itemize{
- \item Chiles, J.-P. and Delfiner, P. (1999)
- \emph{Geostatistics. Modeling Spatial Uncertainty.}
- New York: Wiley.
- 
- \item Diggle, P. J., Tawn, J. A. and Moyeed, R. A. (1998) Model-based
- geostatistics (with discussion). \emph{Applied Statistics} \bold{47},
- 299--350.
- 
- \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp, P. (eds.)
- (2010) \emph{Handbook of Spatial Statistics.}
- Boca Raton: Chapman & Hall/CRL.
+  Covariance function
+  \itemize{
+    \item Chiles, J.-P. and Delfiner, P. (1999)
+    \emph{Geostatistics. Modeling Spatial Uncertainty.}
+    New York: Wiley.
+    
+    \item Diggle, P. J., Tawn, J. A. and Moyeed, R. A. (1998) Model-based
+    geostatistics (with discussion). \emph{Applied Statistics} \bold{47},
+    299--350.
+    
+    \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp, P. (eds.)
+    (2010) \emph{Handbook of Spatial Statistics.}
+    Boca Raton: Chapman & Hall/CRL.
+  }
 
- \item Strokorb, K., Ballani, F., and Schlather, M. (2014)
- In Preparation.
- }
-
+  Tail correlation function (for \eqn{\alpha \in (0,1]}{0 < \alpha \le 1})
+  \itemize{
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+  }
+  
 }
+
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }

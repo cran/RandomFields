@@ -1305,7 +1305,8 @@ int check_standard_shape(cov_model *cov) {
 		     SCALAR, role)) != NOERROR)  return err;
   setbackward(cov, shape);
   
-  if (!shape->deterministic) SERR("random shapes for 'standard' not allowed yet");
+  if (!shape->deterministic) 
+    SERR1("random shapes for '%s' not allowed yet", NICK(cov));
 
   if (pts != NULL) {
     if ((err = CHECK_R(pts, dim)) != NOERROR) return err;
@@ -1395,7 +1396,7 @@ int init_standard_shape(cov_model *cov, gen_storage *S) {
     min[d] = pgs->localmin[d] - y[d];
     max[d] = pgs->localmax[d] - x[d];
     if (!(R_FINITE(min[d]) && R_FINITE(max[d])))
-      SERR("simulation window does not have compact support. Should 'RMtruncsupport' be used?");
+      SERR1("simulation window does not have compact support. Should '%s' be used?", CovList[TRUNCSUPPORT].nick);
     pgs->totalmass *= max[d] - min[d];
   }
   

@@ -49,32 +49,23 @@ rfGenerateModels <- function(assigning,
   empty <- paste(rep(" ", .p$covmaxchar), collapse="")
   empty2 <- paste(rep(" ", .p$covmaxchar), collapse="")
   # inialized attribute parameter
-  type <- integer(.p$covnr)
-  domains <- integer(.p$covnr)
-  isos <- integer(.p$covnr)
-  operator <- integer(.p$covnr)
-  monotone <- integer(.p$covnr)
-  finiterange <- integer(.p$covnr)
-  simpleArguments <- integer(.p$covnr)
-  internal    <- integer(.p$covnr)
-  maxdim <- integer(.p$covnr)
-  vdim <- integer(.p$covnr)
+  nr <- .p$covnr
   # get attribute parameter
-  .C("GetAttr", type, operator, monotone, finiterange, simpleArguments,
-     internal, domains, isos, maxdim, vdim,
-     DUP=DUPFALSE, PACKAGE="RandomFields")
+  A <- .C("GetAttr", type=integer(nr), operator=integer(nr),
+          monotone=integer(nr), finiterange=integer(nr),
+          simpleArguments=integer(nr), internal=integer(nr),
+          domains=integer(nr), isos=integer(nr),
+          maxdim=integer(nr), vdim=integer(nr), PACKAGE="RandomFields")
   #
   
-  idx <- integer(.p$covnr * .p$covnr)
-  .C("GetModelList", idx, as.integer(TRUE), PACKAGE="RandomFields",
-     DUP=DUPFALSE)
-  dim(idx) <- c(.p$covnr, .p$covnr)
-  # Print(domains, isos) # test
+  idx <- .C("GetModelList", idx=integer(nr^2), as.integer(TRUE),
+            PACKAGE="RandomFields")$idx
+  dim(idx) <- c(nr, nr)
 
-  for (i in 1:.p$covnr) {
+  for (i in 1:nr) {
   # sequential steps for each model
     
-    if (internal[i]) {
+    if (A$internal[i]) {
         #Print("internal", .C("GetModelName",as.integer(i-1),
         #         name=empty, nick=empty2, PACKAGE="RandomFields"))
       next
@@ -109,12 +100,12 @@ rfGenerateModels <- function(assigning,
     ex.sub <- length(subnames.notintern)>0
      
     ex.par <- length(paramnames)>0
-    ex.std <- ((nick != ZF_DOLLAR[1] && isNegDef(type[i])) ||
+    ex.std <- ((nick != ZF_DOLLAR[1] && isNegDef(A$type[i])) ||
                nick == "RMball"
                || nick == ZF_PLUS[1] || nick[1] == ZF_MULT[1])
     
     cat(i, "\t", nick, ",\t\told name ", ret$name, "\t", ex.std, "\t",
-        type[i], "\n", sep="")
+        A$type[i], "\n", sep="")
     
     if(nick == ZF_DOLLAR[1]){ 
       text.fct.head <-
@@ -141,7 +132,7 @@ rfGenerateModels <- function(assigning,
      
     if (ex.par) {
       par.body <- param.text.fct("par.model", paramnames,
-                                 isNegDef(type[i]) || type[i]==ShapeType)
+                                 isNegDef(A$type[i]) || A$type[i]==ShapeType)
       idx <- paramnames == 'envir'
       if (any(idx))
         par.body[idx] <-
@@ -189,20 +180,20 @@ rfGenerateModels <- function(assigning,
     # to the function:
    
     text.assign.class <-
-      paste(nick, " <- new('", ZF_MODEL_FACTORY,                   "',", "\n\t",
-            ".Data = ",        nick,                                ",", "\n\t",
-            "type = ",         "'", RC_TYPE[type[i]+1],            "',", "\n\t",
-            "domain = ",       "'", RC_DOMAIN[domains[i]+1],       "',", "\n\t",
-            "isotropy = ",     "'", RC_ISOTROPY[isos[i]+1],        "',", "\n\t",
-            "operator = ",     as.logical(operator[i]),             ",", "\n\t",
-            "monotone = ",    "'", RC_MONOTONE[monotone[i] + MON_MISMATCH],
-                                                                   "',", "\n\t",
-            "finiterange = ",  as.logical(finiterange[i]),          ",", "\n\t",
-            "simpleArguments = ",  as.logical(simpleArguments[i]), ",", "\n\t",
-            "maxdim = ",   if(maxdim[i]>diminf) Inf else maxdim[i], ",", "\n\t",
-            "vdim = ",         vdim[i],                                  "\n\t",
-            ")",
-            sep="")
+      paste(nick, " <- new('", ZF_MODEL_FACTORY,                  "',", "\n\t",
+         ".Data = ",        nick,                                  ",", "\n\t",
+         "type = ",         "'", RC_TYPE[A$type[i]+1],            "',", "\n\t",
+         "domain = ",       "'", RC_DOMAIN[A$domains[i]+1],       "',", "\n\t",
+         "isotropy = ",     "'", RC_ISOTROPY[A$isos[i]+1],        "',", "\n\t",
+         "operator = ",     as.logical(A$operator[i]),             ",", "\n\t",
+         "monotone = ",    "'", RC_MONOTONE[A$monotone[i] + MON_MISMATCH],
+                                                                  "',", "\n\t",
+         "finiterange = ",  as.logical(A$finiterange[i]),          ",", "\n\t",
+         "simpleArguments = ",  as.logical(A$simpleArguments[i]),  ",", "\n\t",
+         "maxdim = ", if(A$maxdim[i]>diminf) Inf else A$maxdim[i], ",", "\n\t",
+         "vdim = ",         A$vdim[i],                                  "\n\t",
+         ")",
+         sep="")
  
     text <- paste(text.fct, "\n", text.assign.class, "\n\n\n", sep="")
   
@@ -213,7 +204,7 @@ rfGenerateModels <- function(assigning,
       #sink()
       #unlink(RMmodels.file)
     }
-  }  ## matches for (i in 1:.p$covnr) {
+  }  ## matches for (i in 1:nr) {
  
 
 

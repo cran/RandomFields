@@ -20,8 +20,9 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 }
 \arguments{
   \item{phi}{a valid covariance \command{\link{RMmodel}}
-    that is a normal scale mixture,
-    cf. \code{\link{RFgetModelNames}(monotone="normal mixture")}
+    that is a normal scale mixture. See, for instance,
+    \cr
+    \code{\link{RFgetModelNames}(monotone="normal mixture")}
   }
  \item{C1, C2, C3, C4, C5, C6, C7, C8, C9}{optional further stationary \command{\link{RMmodel}}}
  \item{theta}{is a vector of values in \eqn{[0,1]}, summing up to \eqn{1}.}

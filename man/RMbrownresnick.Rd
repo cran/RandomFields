@@ -1,5 +1,7 @@
 \name{RMbrownresnick}
 \alias{RMbrownresnick}
+\alias{powered error function}
+\alias{error function model}
 \title{Tail correlation function of the Brown-Resnick process}
 \description{
   \command{RMbrownresnick} defines
@@ -36,9 +38,18 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
  function of a Brown-Resnick process with variogram \command{\link{RMmodel}}.
 }
 \references{
-  Kabluchko, Z., Schlather, M. & de Haan, L (2009)
-  Stationary max-stable random fields associated to negative definite functions
-  \emph{Ann. Probab.} \bold{37}, 2042-2065.
+  \itemize{
+    \item Kabluchko, Z., Schlather, M. & de Haan, L (2009)
+    Stationary max-stable random fields associated to negative definite
+    functions 
+    \emph{Ann. Probab.} \bold{37}, 2042-2065.
+
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.    
+  }
 }
 \seealso{
  \command{\link{RFsimulate}},

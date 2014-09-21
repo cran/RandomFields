@@ -1,8 +1,10 @@
 \name{RMintern}
 \alias{RMintern}
 
+% to do: check the list with the make_internal and internal=TRUE
+
 \alias{RMmixed}
-\alias{RMmissing}
+\alias{ROmissing}
 \alias{RMnull}
 \alias{RMnatsc_intern}
 
@@ -23,9 +25,8 @@
 \alias{RO>}
 
 \alias{RMselect}
-\alias{RM$pow}
-\alias{RMU}
-\alias{RMmult_inverse}
+\alias{RMSpower}
+\alias{RMmult_inverse} 
 \alias{RMsetparam}
 \alias{RMshape.ave}
 \alias{RMshape.stp}
@@ -37,22 +38,11 @@
 \alias{RMstandardShape}
 \alias{RMstatShape}
 
-\alias{RFCov}
-\alias{RFCovMatrix}
-\alias{RFDummy}
-%\alias{RFget}
-\alias{RFFctn}
-\alias{RFDistr}
-\alias{RFPseudovariogram}
-\alias{RFSimulate}
-\alias{RFVariogram}
-\alias{RFloglikelyhood}
-
-\alias{RP$proc}
-\alias{RPplusproc}
-\alias{RPmultproc}
-\alias{RPmppplusproc}
-\alias{RPtrendproc}
+\alias{RPS}
+\alias{RPplus}
+\alias{RPmult}
+\alias{RPmppplus}
+\alias{RPtrend}
 
 \title{Internal models}
 \description{
@@ -71,20 +61,21 @@ The following and many more internal models exist
    \item \code{RO>} : model for transforming earth coordinates to cartesian
    coordinates  
 
-   \item \code{RMmissing} : for error messages only
+   \item \code{ROmissing} : for error messages only
 
    \item \code{RMmixed} : internal representation of a \link[=formula]{mixed model}
 
    \item \code{RMselect} : will be obsolete in future
 
-   \item \code{RMsetparam}, \code{RMptsGivenShape}, \code{RMstandardShape}, \code{RMpoissonShape} :
+   \item \code{RMsetparam}, \code{RMptsGivenShape}, \code{RMstandardShape}, \code{RMstatShape} :
    for max-stable processes and Poisson processes:
    models that combine shape functions with corresponding point processes
 
-   \item \code{RP__name__Intern} : internal representations of \link[=RP]{processes}
+   \item \code{RP__name__Intern} : internal representations of some \link[=RP]{processes}
 
-   \item \code{RP$proc}, \code{RPplusproc}, etc. : specific processes for \link{RMS} and
-   \link{RMplus} etc
+   \item \code{RPS}, \code{RPplusp}, etc. : specific processes for
+   \link{RMS} and  \link{RMplus} etc. (For those covariance models that
+   have specific simulation processes programmed.)
 
    \item \command{\link{RMS}} : internal representation of
    the modifying arguments \code{var}, \code{scale}, \code{Aniso},

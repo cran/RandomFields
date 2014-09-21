@@ -7,8 +7,8 @@
   list. The user may
   specify and group the models according to the following properties:
   \itemize{
-    \item type of function (\code{"positive definite"}, \code{"negative
-      definite"}, etc.
+    \item type of function (\code{"positive definite"},
+    \code{"negative definite"}, etc.)
     \item whether the function depends on two arguments
     (\code{"kernel"}) or on one argument only (\code{"single variable"}) 
     \item types of isotropy

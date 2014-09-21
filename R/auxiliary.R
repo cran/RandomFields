@@ -118,7 +118,7 @@ pid <- function() {.C("pid", i=integer(1), PACKAGE="RandomFields")$i}
 
 
 FileExists <- function(file, printlevel=RFoptions()$general$printlevel) {
-  ## for parallel simulation studies: the same data output file should not
+    ## for parallel simulation studies: the same data output file should not
   ## be created twice. So:
   ## 1. if file exists then assume another process has done the work already
   ## 2. if file.lock existss then assume another process is doing the work
@@ -174,7 +174,7 @@ plotWithCircles <- function(data, factor=1.0,
 
 
 Print <- function(..., digits=6, empty.lines=2) { #
-   max.elements <- 99
+  max.elements <- 99
   l <- list(...)
   n <- as.character(match.call())[-1]
   cat(paste(rep("\n", empty.lines), collapse="")) #
@@ -212,17 +212,14 @@ Print <- function(..., digits=6, empty.lines=2) { #
 
 
 vectordist <- function(x, diag=FALSE) {
-  size <- c(ncol(x), 0.5 * (nrow(x) * (nrow(x) - 1 + 2 * diag)))
-  res <- double(prod(size))
-  .C("vectordist", as.double(t(x)), rev(dim(x)), res, diag, DUP=DUPFALSE)
-  dim(res) <- size
-  #Print(dimnames(x)[[2]], dim(res))
+  storage.mode(x) <- "double"
+  res <- .Call("vectordist", t(x), diag)
   dimnames(res) <- list(dimnames(x)[[2]], NULL)
   return(t(res));
 }
 
 xylabs <- function(x, y, T=NULL, units=NULL) {
-  if (is.null(units)) units <- RFoptions()$coords$coord_units
+  if (is.null(units)) units <- RFoptions()$coords$coordunits
   xlab <- if (is.null(x)) NULL
           else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
   ylab <- if (is.null(y)) NULL
@@ -233,8 +230,8 @@ xylabs <- function(x, y, T=NULL, units=NULL) {
 }
 
 add.units <- function(x,  units=NULL) {
-  if (is.null(x)) return(NULL)
-  if (is.null(units)) units <- RFoptions()$coords$variab_units
+    if (is.null(x)) return(NULL)
+  if (is.null(units)) units <- RFoptions()$coords$varunits
   return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
 }
 
@@ -243,21 +240,61 @@ ScreenDevice <- function(height, width) {
   if (height > 0  && width > 0) {
     GD <- getOption("device")
 
-#    Print(GD, args(pdf), args(GD), all.equal(args(pdf), args(GD)),
-#          is.function(GD))
+    ispdf <- is.logical(all.equal(GD, "pdf"))
+    isjpg <- is.logical(all.equal(GD, "jpeg"))
+    if (ispdf) {
+      GD <- pdf
+    } else if (isjpg) {
+      GD <- jpeg
+    } else {
+      ispdf <- is.function(GD) && is.logical(all.equal(args(pdf), args(GD)))
+      isjpg <- is.function(GD) && is.logical(all.equal(args(jpeg), args(GD)))
+    }
+
+   
+#   Print(args(pdf), args(GD), all.equal(args(pdf), args(GD)),
+  #        all.equal(args(jpeg), args(GD)),
+  #        is.function(GD), RFoptions()$graphics)
     
-    if (is.function(GD)) {
+    if (ispdf || isjpg) {
       args <- names(as.list(args(GD)))
-      ispdf <- all.equal(args(pdf), args(GD))
-      ispdf <- is.logical(ispdf) && ispdf
-      if (all(c("width", "height") %in% args) &&
-         ( !any(c("file", "filename") %in% args) || ispdf)) {
-        GD(height=height, width=width)
-#        Print("OK", height, width, RFoptions()$graphics)
-        return()
+      
+      ##     Print(ispdf, isjpg)
+      ##     Print(ispdf, RFoptions()$graphics        )
+      
+      graphics <- RFoptions()$graphics        
+      if (graphics$filenumber == 999)
+        stop("number of pictures exceeds max. number of pictures")        
+      file <- graphics$file
+      ext <- c(".pdf", ".jpg")[isjpg + 1]
+      
+       if (file != "") {
+        if (!graphics$onefile) {
+         file <- paste(file,
+                        formatC(format="d", flag="0", graphics$filenumber,
+                                width=3),
+                        ext, sep="")
+         RFoptions(graphics.filenumber = graphics$filenumber + 1)
+        } else file <- paste(file, ext, sep="")
+        ##            Print(file, dev.list())
+         if (ispdf) GD(height=height, width=width, onefile=FALSE, file=file)
+        else if (isjpg) GD(height=height, width=width,
+                           file=file, units="in", res=graphics$resolution)
+        else stop("device not recognized by 'RandomFields'")
+       return()
+      } else {
+        if (isjpg) stop("'file' in 'RFoptions' not set.")
       }
     }
-    if (RFoptions()$internal$warn_aspect_ratio) {
+     
+     if (all(c("width", "height") %in% args) &&
+        ( !any(c("file", "filename") %in% args)) || ispdf) {
+      GD(height=height, width=width)        
+      ##        Print("OK", height, width, RFoptions()$graphics)
+      return()
+    }
+    
+   if (RFoptions()$internal$warn_aspect_ratio) {
       RFoptions(warn_aspect_ratio = FALSE)
       cat("The graphical device does not seem to be a standard screen device. Hence the\naspect ratio might not be correct. (This message appears only one per session.)")
     }
@@ -266,15 +303,20 @@ ScreenDevice <- function(height, width) {
 
 
 ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
-                         dw = 2.5, w.outer=0.7) {
+                          dw = 2.5, w.outer=0.7) {
+  if (is.na(graphics$always_open_screen)) {
+      open <- interactive()
+      RFoptions(graphics.always_open_screen = open)
+  } else open <- graphics$always_open_screen
 
+  
   if (graphics$always_close_screen) {
     close.screen(all.screens=TRUE)
     if (is.finite(graphics$height) && graphics$height>0) {
       if (length(dev.list()) > 0) dev.off() ## OK
     }
   }
-
+ 
   H <-  graphics$height
   if (is.finite(H) && H>0) {
     H <- H * pmin(1, graphics$increase_upto[1] / figs[1],
@@ -285,8 +327,8 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
     W <- H * (dw + w.outer) / (dh + h.outer)
     DW <- W * dw / (dw + w.outer)
     WO <- W - DW
-    curW <-  figs[2] * DW + WO   
-    ScreenDevice(height=curH, width=curW)
+    curW <-  figs[2] * DW + WO
+    if (open) ScreenDevice(height=curH, width=curW)
     return(c(curH, curW)) 
   } else {
     return(rep(NA, 2))

@@ -2276,10 +2276,17 @@ RMgengneiting <- new('RMmodelgenerator',
 
 
 
-RMgneiting <- function(var, scale, Aniso, proj) {
+RMgneiting <- function(orig, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
+  if (hasArg(orig) && !is.null(subst <- substitute(orig))) {
+    u <- try(is.numeric(orig) || is.logical(orig) || is.language(orig)
+	 || is.list(orig) || is(orig, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['orig']] <- orig
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['orig']] <- orig
+    else par.model[['orig']] <- do.call('RRdistr', list(subst))
+  }
   if (hasArg(var) && !is.null(subst <- substitute(var))) {
     u <- try(is.numeric(var) || is.logical(var) || is.language(var)
 	 || is.list(var) || is(var, class2='RMmodel'), silent=TRUE)
@@ -2323,7 +2330,7 @@ RMgneiting <- new('RMmodelgenerator',
 	monotone = 'monotone',
 	finiterange = TRUE,
 	simpleArguments = TRUE,
-	maxdim = 3,
+	maxdim = -1,
 	vdim = 1
 	)
 
@@ -4436,7 +4443,7 @@ RMwhittle <- new('RMmodelgenerator',
 
 
 
-RMangle <- function(angle, ratio, diag) {
+RMangle <- function(angle, lat.angle, ratio, diag) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -4446,6 +4453,13 @@ RMangle <- function(angle, ratio, diag) {
     if (is.logical(u) && u) par.model[['angle']] <- angle
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['angle']] <- angle
     else par.model[['angle']] <- do.call('RRdistr', list(subst))
+  }
+  if (hasArg(lat.angle) && !is.null(subst <- substitute(lat.angle))) {
+    u <- try(is.numeric(lat.angle) || is.logical(lat.angle) || is.language(lat.angle)
+	 || is.list(lat.angle) || is(lat.angle, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['lat.angle']] <- lat.angle
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['lat.angle']] <- lat.angle
+    else par.model[['lat.angle']] <- do.call('RRdistr', list(subst))
   }
   if (hasArg(ratio) && !is.null(subst <- substitute(ratio))) {
     u <- try(is.numeric(ratio) || is.logical(ratio) || is.language(ratio)
@@ -5355,7 +5369,7 @@ RPaverage <- new('RMmodelgenerator',
 
 
 
-RPcirculant <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
+RPcirculant <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5379,6 +5393,13 @@ RPcirculant <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(maxGB) && !is.null(subst <- substitute(maxGB))) {
+    u <- try(is.numeric(maxGB) || is.logical(maxGB) || is.language(maxGB)
+	 || is.list(maxGB) || is(maxGB, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['maxGB']] <- maxGB
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxGB']] <- maxGB
     else  stop('random parameter not allowed')
   }
   if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
@@ -5459,7 +5480,7 @@ RPcirculant <- new('RMmodelgenerator',
 
 
 
-RPcutoff <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
+RPcutoff <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, a) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5483,6 +5504,13 @@ RPcutoff <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, u
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(maxGB) && !is.null(subst <- substitute(maxGB))) {
+    u <- try(is.numeric(maxGB) || is.logical(maxGB) || is.language(maxGB)
+	 || is.list(maxGB) || is(maxGB, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['maxGB']] <- maxGB
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxGB']] <- maxGB
     else  stop('random parameter not allowed')
   }
   if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
@@ -5577,7 +5605,7 @@ RPcutoff <- new('RMmodelgenerator',
 
 
 
-RPintrinsic <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
+RPintrinsic <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent, approx_step, approx_maxgrid, diameter, rawR) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5601,6 +5629,13 @@ RPintrinsic <- function(phi, force, mmin, strategy, maxmem, tolIm, tolRe, trials
 	 || is.list(strategy) || is(strategy, class2='RMmodel'), silent=TRUE)
     if (is.logical(u) && u) par.model[['strategy']] <- strategy
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['strategy']] <- strategy
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(maxGB) && !is.null(subst <- substitute(maxGB))) {
+    u <- try(is.numeric(maxGB) || is.logical(maxGB) || is.language(maxGB)
+	 || is.list(maxGB) || is(maxGB, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['maxGB']] <- maxGB
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxGB']] <- maxGB
     else  stop('random parameter not allowed')
   }
   if (hasArg(maxmem) && !is.null(subst <- substitute(maxmem))) {
@@ -6136,7 +6171,7 @@ RPbrorig <- new('RMmodelgenerator',
 
 
 
-RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, optim_mixed_maxp, lambda, areamat, variobound) {
+RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, optim_mixed_maxpo, lambda, areamat, variobound) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -6191,11 +6226,11 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, op
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed_tol']] <- optim_mixed_tol
     else  stop('random parameter not allowed')
   }
-  if (hasArg(optim_mixed_maxp) && !is.null(subst <- substitute(optim_mixed_maxp))) {
-    u <- try(is.numeric(optim_mixed_maxp) || is.logical(optim_mixed_maxp) || is.language(optim_mixed_maxp)
-	 || is.list(optim_mixed_maxp) || is(optim_mixed_maxp, class2='RMmodel'), silent=TRUE)
-    if (is.logical(u) && u) par.model[['optim_mixed_maxp']] <- optim_mixed_maxp
-    else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed_maxp']] <- optim_mixed_maxp
+  if (hasArg(optim_mixed_maxpo) && !is.null(subst <- substitute(optim_mixed_maxpo))) {
+    u <- try(is.numeric(optim_mixed_maxpo) || is.logical(optim_mixed_maxpo) || is.language(optim_mixed_maxpo)
+	 || is.list(optim_mixed_maxpo) || is(optim_mixed_maxpo, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['optim_mixed_maxpo']] <- optim_mixed_maxpo
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['optim_mixed_maxpo']] <- optim_mixed_maxpo
     else  stop('random parameter not allowed')
   }
   if (hasArg(lambda) && !is.null(subst <- substitute(lambda))) {
@@ -6497,6 +6532,61 @@ RPschlather <- new('RMmodelgenerator',
 
 
 
+RPopitz <- function(phi, xi, mu, s, alpha) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  if (hasArg(phi)) submodels[['phi']] <- phi
+  
+  if (hasArg(xi) && !is.null(subst <- substitute(xi))) {
+    u <- try(is.numeric(xi) || is.logical(xi) || is.language(xi)
+	 || is.list(xi) || is(xi, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['xi']] <- xi
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['xi']] <- xi
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(mu) && !is.null(subst <- substitute(mu))) {
+    u <- try(is.numeric(mu) || is.logical(mu) || is.language(mu)
+	 || is.list(mu) || is(mu, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['mu']] <- mu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mu']] <- mu
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(s) && !is.null(subst <- substitute(s))) {
+    u <- try(is.numeric(s) || is.logical(s) || is.language(s)
+	 || is.list(s) || is(s, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['s']] <- s
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['s']] <- s
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(alpha) && !is.null(subst <- substitute(alpha))) {
+    u <- try(is.numeric(alpha) || is.logical(alpha) || is.language(alpha)
+	 || is.list(alpha) || is(alpha, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['alpha']] <- alpha
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['alpha']] <- alpha
+    else  stop('random parameter not allowed')
+  }
+  
+  model <- new('RMmodel', call = cl, name = 'RPopitz', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RPopitz <- new('RMmodelgenerator',
+	.Data = RPopitz,
+	type = 'process',
+	domain = 'single variable',
+	isotropy = 'non-dimension-reducing',
+	operator = TRUE,
+	monotone = 'mismatch in monotonicity',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = 11000,
+	vdim = 1
+	)
+
+
+
 RPsmith <- function(shape, tcf, xi, mu, s) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
@@ -6567,6 +6657,40 @@ RPchi2 <- function(phi, f) {
 
 RPchi2 <- new('RMmodelgenerator',
 	.Data = RPchi2,
+	type = 'process',
+	domain = 'single variable',
+	isotropy = 'non-dimension-reducing',
+	operator = TRUE,
+	monotone = 'mismatch in monotonicity',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = 11000,
+	vdim = -3
+	)
+
+
+
+RPt <- function(phi, nu) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  if (hasArg(phi)) submodels[['phi']] <- phi
+  
+  if (hasArg(nu) && !is.null(subst <- substitute(nu))) {
+    u <- try(is.numeric(nu) || is.logical(nu) || is.language(nu)
+	 || is.list(nu) || is(nu, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['nu']] <- nu
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['nu']] <- nu
+    else  stop('random parameter not allowed')
+  }
+  
+  model <- new('RMmodel', call = cl, name = 'RPt', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RPt <- new('RMmodelgenerator',
+	.Data = RPt,
 	type = 'process',
 	domain = 'single variable',
 	isotropy = 'non-dimension-reducing',

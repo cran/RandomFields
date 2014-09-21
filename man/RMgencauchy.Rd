@@ -49,6 +49,7 @@ RMgencauchy(alpha, beta, var, scale, Aniso, proj)
  \command{\link{RMgencauchy}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \references{
+  Covariance function
   \itemize{
     % \item Gneiting, T. (2002) Compactly supported correlation
     % functions. \emph{J. Multivariate Anal.} \bold{83} 493--508.
@@ -56,9 +57,15 @@ RMgencauchy(alpha, beta, var, scale, Aniso, proj)
     \item Gneiting, T. and Schlather, M. (2004)
     Stochastic models which separate fractal dimension and Hurst effect.
     \emph{SIAM review} \bold{46}, 269--282.
-    
-    \item Strokorb, K., Ballani, F., and Schlather, M. (2014)
-    In Preparation.
+  }
+
+  Tail correlation function (for \eqn{\alpha \in (0,1]}{0 < \alpha \le 1})
+  \itemize{
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
   }
 }
 

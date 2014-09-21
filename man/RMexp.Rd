@@ -6,7 +6,7 @@
  corresponding covariance function only depends 
  on the distance \eqn{r \ge 0}{r \ge 0} between
  two points and is given by
- \deqn{C(r) = e^(-r).}{C(r) = exp(-r).}
+ \deqn{C(r) = e^{-r}.}{C(r) = exp(-r).}
 }
 \usage{
 RMexp(var, scale, Aniso, proj)
@@ -26,9 +26,24 @@ RMexp(var, scale, Aniso, proj)
 \value{
  \command{\link{RMexp}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
-\references{ Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
- P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
- Boca Raton: Chapman & Hall/CRL.
+\references{
+  Covariance model
+  \itemize{
+    \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
+    P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
+    Boca Raton: Chapman & Hall/CRL.
+  }
+
+  Tail correlation function
+  \itemize{
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+
+  }
+  
  }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}

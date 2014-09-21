@@ -20,7 +20,8 @@
 \alias{RFparameters}
 \alias{Variogram}
 \description{
- This part gives the obsolete functions of RandomFields Version 2
+  This part gives the obsolete functions of RandomFields Version 2
+  that are \bold{not maintained} anymore.
 }
 \usage{
 Covariance(x, y = NULL, model, param = NULL, dim = if
@@ -90,7 +91,8 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
  }
 }
 \value{
- not given anymore.
+ See \sQuote{\href{../doc/version.pdf}{version2}}
+ for details on these obsolete commands.
 }
 \seealso{
   The functions that should be used instead are, for instance,
@@ -99,18 +101,26 @@ fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
  \command{\link{RFinterpolate}},
  \command{\link{RFempiricalvariogram}}, \command{\link{RFfit}},
  \command{\link{RFoptions}}, \command{\link{RFhurst}},
- \command{\link{RFfractaldim}} 
+ \command{\link{RFfractaldim}}
+
+ See \sQuote{\href{../doc/version.pdf}{version2}}
+ for details on the obsolete commands.
+ 
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
+
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-%\dontshow{RFoptions(internal.warn_newstyle=FALSE, internal.warn_oldstyle=FALSE)}
+%\dontshow{RFoptions(internal.warn_newstyle=FALSE,
+%internal.warn_oldstyle=FALSE)}
+
+
 
 ## no examples given, as command is obsolete
 \dontshow{\dontrun{

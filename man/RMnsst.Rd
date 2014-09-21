@@ -10,7 +10,9 @@
 RMnsst(phi, psi, delta, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{is normal mixture \command{\link{RMmodel}}.}
+ \item{phi}{is normal mixture \command{\link{RMmodel}},  cf.\cr
+    \code{RFgetModelNames(monotone="normal mixture")}
+  }
  \item{psi}{is a variogram \command{\link{RMmodel}}.}
  \item{delta}{a numerical value; must be greater than or equal to the spatial dimension of the field}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any

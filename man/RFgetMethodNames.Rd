@@ -4,14 +4,12 @@
 \description{
  \command{\link{RFgetMethodNames}} prints and returns a list of currently
  implemented methods for simulating Gaussian random fields
+ and max stable random fields
 }
 \usage{
-RFgetMethodNames(show=TRUE)
+RFgetMethodNames()
 }
-\arguments{
-  \item{show}{logical. Whether the methods are shown.
-  }
-}
+
 \value{
   an invisible string vector of the Gaussian methods.
 }
@@ -313,6 +311,8 @@ RFgetMethodNames(show=TRUE)
 \keyword{spatial}
 
 
+
+% to do: max-stable beschreiben??
 
 
 \examples{

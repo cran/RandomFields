@@ -158,7 +158,9 @@ void covmatrix_mixed(cov_model *cov, double *v) {
     CovList[sub->nr].covmatrix(sub, v);
     return;
   }
-  if (element >= cov->nrow[MIXED_X]) ERR("value of 'element' is too large");
+  if (element >= cov->nrow[MIXED_X]) {
+    ERR1("value of '%s' is too large", ELEMENT);
+  }
 
   listoftype *X = PLIST(MIXED_X);
   double *C=NULL;
@@ -238,7 +240,7 @@ int set_mixed_constant(cov_model *cov) {
       constant_size = PARAMLIST(sub, CONSTANT_M)->nrow[i];
       
       if (ncol[MIXED_X] > 0 && X->ncol[i] != constant_size) {
-	SERR5("%ldth matrix 'X' (%d x %d) and (%d x %d) constant matrix 'M' do not match", i, X->nrow[i], X->ncol[i], constant_size, constant_size);
+	SERR7("%ldth matrix '%s' (%d x %d) and (%d x %d) constant matrix '%s' do not match", i, KNAME(MIXED_X), X->nrow[i], X->ncol[i], constant_size, constant_size, NICK(sub));
       }
     }
   } else {
@@ -253,7 +255,7 @@ int set_mixed_constant(cov_model *cov) {
     for (i=0; i<nrow[MIXED_X]; i++) {
       if (X->nrow[i] != totalpoints) {
 	//PMI(cov);
-	SERR3("number of rows of entry %ld of 'X' (%d) are different from the number of locations (%ld)", i+1, X->nrow[i], totalpoints);
+	SERR4("number of rows of entry %ld of '%s' (%d) are different from the number of locations (%ld)", i+1, KNAME(MIXED_X),  X->nrow[i], totalpoints);
       }
     }
   return NOERROR;
@@ -300,19 +302,22 @@ int checkmixed(cov_model *cov) {
   if (ncol[MIXED_BETA] > 0) { // b is given  
     if (nsub != 0) 
       SERR("b and a covariance model may not be given at the same time");
-    if (ncol[MIXED_X] == 0) SERR("if 'b' is given 'X' must be given");
+    if (ncol[MIXED_X] == 0) SERR2("if '%s' is given '%s' must be given",
+				  KNAME(MIXED_BETA), KNAME(MIXED_X));
     for (i=0; i<nrow[MIXED_X]; i++) {
       if (X->ncol[i] != nrow[MIXED_BETA]) {
 	sprintf(msg,
-       	"%dth set: (%d x %d) matrix X and (%d x %d) vector b do not match",
-	i, X->nrow[0], X->ncol[i], nrow[MIXED_BETA], ncol[MIXED_BETA]);
+		"%dth set: (%d x %d) matrix '%s' and (%d x %d) vector '%s' do not match",
+		i, X->nrow[0], X->ncol[i], KNAME(MIXED_X),
+		nrow[MIXED_BETA], ncol[MIXED_BETA], KNAME(MIXED_BETA));
 	SERR(msg);
       }
     }
   } else if (nsub == 0) { // only X is given -- then only a deterministic 
 	//                                 constant is given
     if (ncol[MIXED_BETA] == 0) 
-      SERR("if no covariance model is given then 'b' must be given");
+      SERR1("if no covariance model is given then '%s' must be given",
+	    KNAME(MIXED_BETA));
     if (ncol[MIXED_X] != 1) // deterministic effect
       SERR("X must have one column");
     kdefault(cov, MIXED_BETA, 1);
@@ -344,9 +349,11 @@ int checkmixed(cov_model *cov) {
     SERR("multivariate version of mixed not programmed yet");
 
   if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_DIM))
-    SERR("if 'dim' and 'dist' must be given at the same time");
+    SERR2("if '%s' and '%s' must be given at the same time",
+	  KNAME(MIXED_DIM), KNAME(MIXED_DIST));
   if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_COORD))
-    SERR("'dist' and 'coord' may not be given together");
+    SERR2("'%s' and '%s' may not be given together", 
+	  KNAME(MIXED_DIST), KNAME(MIXED_COORD));
 
   // incorrect. but save !!
   cov->semiseparatelast = false; // taken[tsxdim - 1] <= 1;

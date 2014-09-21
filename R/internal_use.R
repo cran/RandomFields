@@ -52,9 +52,8 @@ GetNeighbourhoods <- function(model.nr, all,
   n <- as.integer(d[2])
 
   if (model.nr >= 0) {
-    natsc <- double(ts.xdim)
-    .C("MultiDimRange", as.integer(model.nr), natsc,
-       DUP=DUPFALSE, PACKAGE="RandomFields")
+    natsc <- .C("MultiDimRange", as.integer(model.nr), natsc = double(ts.xdim),
+                PACKAGE="RandomFields")$natsc
   } else natsc <- rep(1, ts.xdim)
 
  
@@ -89,29 +88,26 @@ GetNeighbourhoods <- function(model.nr, all,
     coord.idx <- floor((all$given - Range[1,]) / (len / parts))
     
     cumparts <- cumprod(parts)
-    totparts <- cumparts[length(cumparts)]
+    totparts <- as.integer(cumparts[length(cumparts)])
     Ccumparts <- as.integer(c(1, cumparts))
     cumparts <- Ccumparts[-length(Ccumparts)]
     
-    elms.in.boxes <- integer(totparts)    
-    neighbours <- integer(totparts)
+    ## elms.in.boxes <- integer(totparts)  
+    ## neighbours <- integer(totparts)
     cumidx <- as.integer(colSums(coord.idx * cumparts))
 
- 
-    .C("countelements", cumidx, n, elms.in.boxes, 
-       DUP=DUPFALSE, PACKAGE="RandomFields")
-
-     
-    .C("countneighbours", ts.xdim, parts, locfactor, Ccumparts,
-       elms.in.boxes, neighbours, OK,
-       DUP=DUPFALSE, PACKAGE="RandomFields")
+    elms.in.boxes <- .Call("countelements", cumidx, n, totparts,
+                           PACKAGE="RandomFields")
+    
+    neighbours <- .Call("countneighbours", ts.xdim, parts, locfactor, Ccumparts,
+                     elms.in.boxes, PACKAGE="RandomFields")
 
     ## if there too many points within all the neighbours, then split
     ## into smaller boxes
     zaehler <- zaehler * 2
 
     ## image(neighbours, zlim=c(0:(prod(parts)-1)))
-    if (OK) break;
+    if (!is.null(neighbours)) break;
   }
     
 
@@ -127,10 +123,9 @@ GetNeighbourhoods <- function(model.nr, all,
     i <- pmax(0, pmin(parts-1, floor((t(all$x) - Range[1,]) / (len / parts)) ))
     dim(i) <- rev(dim(all$x))
     i <- as.integer(colSums(i * cumparts))
-    res.in.boxes <- integer(totparts)
     
-    .C("countelements", i, nrow(all$x), res.in.boxes,
-       DUP=DUPFALSE, PACKAGE="RandomFields")
+    res.in.boxes <- .C("countelements", i, nrow(all$x), totparts,
+                       PACKAGE="RandomFields")
     
     notzeros <- res.in.boxes > 0
     l[[3]] <- .Call("getelements", i, ts.xdim, as.integer(nrow(all$x)),
@@ -296,8 +291,8 @@ GetPracticalRange <- function(model, param, dim=1) {
   model <- PrepareModel(model, param)
 #  userdefined <- GetParameterModelUser(model)
   InitModel(MODEL.USER, list("Dummy", model), dim) 
-  natscl <- double(1)
-  .C("UserGetNatScaling", natscl, PACKAGE="RandomFields", DUP=DUPFALSE)
+  natscl <- 
+    .C("UserGetNatScaling", natscl = double(1), PACKAGE="RandomFields")$natscl
   .C("DeleteKey", MODEL.USER)# to do : nicht sauber
   return(1.0 / natscl)
 }
@@ -309,8 +304,8 @@ GetrfParameters <- function(initcov=TRUE){
   ## values are return (necessary to get covnr right, but should
   ## not be done for RFoptions (debugging reasons)
 
-  maxints <- integer(1)
-  .C("GetMaxDims", maxints, DUP=DUPFALSE, PACKAGE="RandomFields")
+  maxints <-
+    .C("GetMaxDims", maxints = integer(1), PACKAGE="RandomFields")$maxints
   name <- c("GetrfParameters", "GetrfParametersI")[1 + (initcov != 0) ]
   
   p <- .C(name, covmaxchar=integer(1), methodmaxchar=integer(1),
@@ -323,18 +318,6 @@ GetrfParameters <- function(initcov=TRUE){
                        "vario")
   return(p)
 }
-
-GetMethodNames <- function() {
-  assign(".p", GetrfParameters(TRUE))
-  l <- character(.p$methodnr)
-  for (i in 1:.p$methodnr) {
-    l[i] <- .C("GetMethodName", as.integer(i-1),
-               n=paste(rep(" ", .p$methodmaxchar), collapse=""),
-               PACKAGE="RandomFields")$n
-  }
-  return(l)
-}
-
 
 
 GetDistributionNames <- function() {
@@ -361,11 +344,6 @@ PrintModelList <-function (operators=FALSE, internal=FALSE,
 }
 
 
-PrintMethodList <-function () {
-    .C("PrintMethods", PACKAGE="RandomFields")
-    invisible()
-}
-
 
 
 distInt <- function(x) {
@@ -375,10 +353,7 @@ distInt <- function(x) {
   stopifnot(is.matrix(x), is.integer(x))
   n <- nrow(x)
   genes <- ncol(x)
-  res <- double(n * n)
-  .C("distInt", t(x), n, genes, res, PACKAGE="RandomFields", DUP=DUPFALSE)
-  dim(res) <- rep(n, 2)
-  res
+  .Call("distInt", t(x), n, genes, PACKAGE="RandomFields")
 }
 
 
@@ -483,7 +458,8 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     importFrom <- exportClasses <-
       importMethodsFrom <- exportMethods <- S3method <- function(...) NULL
   .env <- new.env()
-  if (!require(.package, character.only=TRUE)) return(NA)
+
+  ##  if (!require(.package, character.only=TRUE)) return(NA)
   exportPattern <- function(p) {
     all.pattern <- p %in% c("^[^\\.]", "^[^.]", ".") | get("all.pattern", .env)
     if (!.ignore.all) assign("all.pattern", all.pattern, .env)
@@ -541,6 +517,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   }
   Print(.fct.list, length(.fct.list)) #
   .include <- include
+  RFoptions(graphics.always_close_screen = TRUE) 
   .RFopt <- RFoptions()
   .not_working_no <- .not_working <- NULL
   .included.fl <- .fct.list[.include]
@@ -560,7 +537,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     if (.halt) {
       do.call(utils::example, list(.fct.list[.idx], ask=.ask, echo=.echo))
     } else {
-      if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
+       if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
                                          echo=.echo))), "try-error")) {
         .not_working_no<- c(.not_working_no, .idx)
         .not_working <- c(.not_working, .fct.list[.idx])
@@ -583,8 +560,9 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
 
 FinalizeExample <- function() {
   if (!interactive()) {
-    close.screen(all.screens = TRUE)
-    n <- length(dev.list()) - 5
+    close.screen(all.screens = TRUE)    
+    n <- length(dev.list()) - 2 ## otherwise R CMD check complains
+    ##                             for missing graphic device
     if (n > 0) {
       for (i in 1:n) {      
         dev.off() ## OK
@@ -601,11 +579,9 @@ Dependencies <-
            check=TRUE,
            pkgs = c(depends, imports, suggests),
            lib.loc ="/usr/local/lib64/R/library" ) {
-   depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat", "MarkedPointProcess", "ProbForecastGOP", "Sunder")
-  imports <- c("constrainedKriging", # "geoR",
-               "georob", "lgcp", "spatsurv")
-  suggests <- c("CompRandFld", "fractaldim", # "geostatsp",
-                "rpanel", "spatstat")
+   depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat",  "ProbForecastGOP")
+  imports <- c("constrainedKriging", "geoR",  "georob", "lgcp", "spatsurv")
+  suggests <- c("CompRandFld", "fractaldim", "geostatsp", "rpanel", "spatstat")
  
   PKGS <- character(length(pkgs))
   ip <- installed.packages(lib.loc = lib.loc)
@@ -656,3 +632,23 @@ showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man
   return(result)
 }
 # showManpages()
+
+compareVersions <- function(path = "~/sicherung/randomfields_3") {
+  l <- list(list(subpath="RandomFields/R", pattern="*R"),
+            list(subpath="RandomFields/src", pattern="*\\.h"),
+            list(subpath = "RandomFields/src", pattern = "*\\.cc"))
+  
+  for (i in 1:length(l)) {
+    subpath <- l[[i]]$subpath
+    pattern <- l[[i]]$pattern
+    files <- dir(path=subpath, pattern=pattern)
+    
+    for (f in files) {
+      cmd <- paste("diff ",  path, "/", subpath, "/", f, " ",
+                   subpath,"/", f, sep="")
+      Print(cmd)  #
+      system(cmd)
+    }
+  }
+}
+

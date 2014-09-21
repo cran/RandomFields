@@ -41,10 +41,6 @@
 %print.RF_fit(x, ...,  method="ml", full=FALSE)
 %logLik.RF_fit(object, REML = FALSE, ..., method="ml")
 
-\usage{
-AICc.RFfit(object, ..., method="ml", full=FALSE)
-AICc.RF_fit(object, ..., method="ml", full=TRUE)
-}
 
 \arguments{  
   \item{object,  ...}{
@@ -76,7 +72,7 @@ AICc.RF_fit(object, ..., method="ml", full=TRUE)
    parameter of a Box Cox tranformation has been estimated
  }
  \item{\code{coord.units}:}{string giving the units of the coordinates,
-   see also option \code{coord_units} of \command{\link{RFoptions}}.
+   see also option \code{coordunits} of \command{\link{RFoptions}}.
  }
  \item{\code{deleted}:}{integer vector.
    positions of the parameters that has been deleted to get the set of
@@ -157,7 +153,7 @@ AICc.RF_fit(object, ..., method="ml", full=TRUE)
    The components selected in one of the submodels
  }
  \item{\code{variab.units}:}{string giving the units of the variables,
-   see also option \code{variab_units} of \command{\link{RFoptions}}.
+   see also option \code{varunits} of \command{\link{RFoptions}}.
  }
  \item{\code{x.proj}:}{
    logical or integer. If logial, it means that no
@@ -205,10 +201,21 @@ AICc.RF_fit(object, ..., method="ml", full=TRUE)
   }
 }
 
+\section{Further 'methods'}{
+  
+  \code{AICc.RFfit(object, ..., method="ml", full=FALSE)}]
+  
+  \code{AICc.RF_fit(object, ..., method="ml", full=TRUE)}
+}
+
 %\section{Details}{
 %}
 
-\author{Alexander Malinowski \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski
+  \email{alexander.malinowski@math.uni-goettingen.de},
+  Martin Schlather, \email{schlather@math.uni-mannheim.de}
+  \url{http://ms.math.uni-mannheim.de/de/publications/software}
+}
 
 \seealso{
  \code{\link{RFfit}},

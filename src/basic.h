@@ -55,6 +55,9 @@ extern double EIGENVALUE_EPS; // used in GetTrueDim
 
 
 //
+// 
+// # define LOCAL_MACHINE 1
+
 // 1
 
 extern char BUG_MSG[250];
@@ -67,6 +70,7 @@ extern char BUG_MSG[250];
     error(BUG_MSG);							\
   }
 #define VARIABLE_IS_NOT_USED __attribute__ ((unused))
+#define SHOW_ADDRESSES 1
 #else 
 #define assert(X) {}
 #define VARIABLE_IS_NOT_USED

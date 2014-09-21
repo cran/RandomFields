@@ -5,14 +5,13 @@
 \description{
  \command{\link{RMexponential}} yields a covariance model 
  from a given variogram or covariance model.
- The covariance \eqn{C} of the model is given by
+ The covariance \eqn{C} is given as
  \deqn{
  C(h) = \frac{\exp(\phi(h)) -\sum_{k=0}^n \phi^k(h)/k!}{\exp(\phi(0))
  -\sum_{k=0}^n \phi^k(0)/k!}}{ 
  C(h) = (\exp(\phi(h)) -\sum_{k=0}^n \phi^k(h)/k!) / (\exp(\phi(0))
  -\sum_{k=0}^n \phi^k(0)/k!)}
- if \eqn{\phi} is a covariance model.
- The covariance \eqn{C} of the model is given by
+ if \eqn{\phi} is a covariance model, and as
  \deqn{ C(h) = \exp(-\phi(h))}
  if \eqn{\phi} is a variogram model.
 }

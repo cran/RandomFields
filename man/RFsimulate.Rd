@@ -207,8 +207,11 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  See \link{RFsimulateAdvanced} for more specific literature.
 }
 
-\note{Several advanced options can be found in section \sQuote{General
-    options} of \command{\link{RFoptions}}.}
+\note{Several advanced options can be found in sections \sQuote{General
+    options} and \sQuote{coords} of \command{\link{RFoptions}}.
+  In particular, option \code{spConform=FALSE} leads to a simpler
+  (and faster!) output, see  \command{\link{RFoptions}} for details.
+}
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}

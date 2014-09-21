@@ -78,20 +78,100 @@ rfPrepareNames <- function(model, coords, chkXT, locinfo) {
   return(list(coord.names=coord.names, variab.names=variab.names))
 }
 
-data.starting.col <- function(data, halt=TRUE) {
-  # str(data)
-  if (is.null(colnames(data))) {
-    if (halt) stop('colnames of data argument must contain "data" or "variable"')
-    else return(-1);
+data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
+  #  Print("data.col", data)
+  if (xdim>0 && xdim >= ncol(data)) stop("not enough columns in 'data'.")
+  RFopt <- RFoptions()
+  info <- RFoptions()$coords
+  cn <- colnames(data)
+
+  if (all(is.na(info$varnames))) {
+    if (all(is.na(info$coordnames))) {
+      if (is.null(cn)) {
+        if (force) return(list(data=(xdim+1):ncol(data), x=1:xdim))
+        if (halt)
+          stop('colnames of data argument must contain "data" or "variable"')
+        else return(NULL);
+      }
+      is.data <- (tolower(substr(cn, 1, 4)) == "data" |
+                  tolower(substr(cn, 1, 4)) == "value" |
+                  tolower(substr(cn, 1, 8)) == "variable")
+      if (!any(is.data)) {
+        if (force) return(list(data=(xdim+1):ncol(data), x=1:xdim))
+        if (halt) stop('no colname starts with "data" or "variable"')
+        else return(NULL);
+      }
+      is.data <- which(is.data)
+      if (is.data[1] > 1) is.data <- is.data[1] : ncol(data)# coord am Anfang
+      ##     dann wird Rest alles als data angenommen, egal welcher Name
+    }
+  } else {
+    if (is.numeric(info$varnames)) {
+      is.data <- rep(info$varnames, length.out=2)
+      if (is.na(is.data[1])) is.data[1] <- 1
+      if (is.na(is.data[2])) is.data[2] <- ncol(data)
+      is.data <- is.data[1] : is.data[2]
+    } else {
+      if (RFopt$general$vdim_close_together)
+        stop("'vdim_close_together' must be FALSE")
+      l <- list()
+      vdim <- length(info$varnames)
+      for (v in 1:vdim)
+        l[[v]] <-
+          substring(cn, 1, nchar(info$varnames[v])) == info$varnames[v]
+      repet <- sapply(l, sum)
+      if (repet[1] == 0) stop("data names could not be detected") 
+      if (any(repet != repet[1]))
+        stop("detected repetitions are not equal for all components")
+      m <- matrix(unlist(l), ncol=vdim)
+      if (any(rowSums(m) > 1))
+        stop("names of multivariate components not unique")
+      is.data <- as.vector(t(apply(m, 2, which)))
+    }
   }
-  is.data <- (tolower(substr(colnames(data), 1, 4)) == "data" |
-              tolower(substr(colnames(data), 1, 4)) == "value" |
-              tolower(substr(colnames(data), 1, 8)) == "variable")
-  if (!any(is.data)) {
-    if (halt) stop('no colname starts with "data" or "variable"')
-    else return(-2);
+
+  if (all(is.na(info$coordnames))) {
+    is.x <- (1:ncol(data))[-is.data]
+    if (xdim > 0) {
+      if (length(is.x) < xdim)
+        stop("not enough columns for coordinates found ")
+      if (xdim < length(is.x) &&
+          RFopt$general$printLevel >= PL.SUBIMPORPANT)
+        message("column(s) '", paste(is.x[-1:-xdim], collapse=","),
+                "' not used.\n")
+      is.x <- is.x[1:xdim]
+    }
+  } else {
+    if (is.numeric(info$coordnames)) {
+      is.x <- rep(info$coordnames, length.out=2)
+      if (is.na(is.x[1])) is.x[1] <- 1
+      if (is.na(is.x[2])) is.x[2] <- ncol(data)
+      is.x <- is.x[1] : is.x[2]
+    } else {
+      l <- list()
+      len <- length(info$coordnames)
+      for (i in 1:len)
+        l[[v]] <-
+          substring(cn, 1, nchar(info$coordnames[v])) == info$coordnames[v]
+      is.x <- unlist(l)
+      if (xdim > 0 && xdim != length(l))
+        stop("expected dimension of coordinates does not match the found coordinates")
+    }
+     
+    if (all(is.na(info$varnames))) {
+      is.data <-  (1:ncol(data))[-is.x]
+      if (length(is.data) == 0) stop("no columns for data found")
+    } else {
+     if (any(is.x %in% is.data))
+       stop("column names and data names overlap.")
+     if (length(is.x) + length(is.data) < ncol(data) &&
+         RFopt$general$printLevel >= PL.SUBIMPORPANT)
+       message("column(s) '",
+               paste(1:ncol[c(-is.x, -is.data)], collapse=","),
+               "' not used.\n")
+    }
   }
-  return(which(is.data)[1])
+  return(list(data=is.data, x=is.x) )
 }
 
 
@@ -99,7 +179,8 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
                       fillall, names.only=FALSE,
                       na.rm = "any", # "all", "none"
                       unconditional = FALSE,
-                      ...) {  
+                      ...) {
+  
   missing.x <- missing(x)
   if (missing(data)) stop("missing data")
   if (!missing(distances) && length(distances)>0)
@@ -111,6 +192,10 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   
   T.tmp <- NULL
 
+  if (isSpObj(data)) {
+#    str(data)
+    data <- sp2RF(data)
+  }
   if (isRFsp <- is(data, "RFsp")) {
     if (hasArg(given))
       stop("the coordinates for the measured data are given ambigiously (by 'given' and within 'data')")
@@ -123,20 +208,15 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
     }
     variab.names <- colnames(data@data)
 
-  #  Print(data, coordinates(data), RFspDataFrame2conventional(data)); kkkkkk
-    
     grid.data <- isGridded(data)
     if (grid.data) {
-      data <- RFspDataFrame2conventional(data) ## zeitkritisch ! to do
+      data <- rfspDataFrame2conventional(data) ## zeitkritisch ! to do
       x.tmp <- data$x
       given <- apply(x.tmp, 2, function(x) seq(x[1], by=x[2], length.out=x[3]))
       if (!is.list(given)) {
         given <- unlist(apply(given, 2, list), recursive=FALSE)
       }
-
-      #Print(given)      
-      given <- as.matrix(do.call("expand.grid", given))
-      
+      given <- as.matrix(do.call("expand.grid", given))      
       T.tmp <- data$T
       data <- as.matrix(data$data)
     } else {
@@ -148,17 +228,22 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
  #    if (missing(vdim)) vdim <- 1
  #   if (missing(repet)) repet <- 1
   }
-
-  #  Print(given, data); # ppp
- 
-  if (is.vector(data)) dimdata <- c(length(data), 1)
-  else {
-    if (!is.array(data)) data <- as.matrix(data)
-    dimdata <-  base::dim(data)
+  if (is.vector(data)) {
+    dimdata <- c(length(data), 1)
+  } else {
+    if (!is.array(data)) {
+      data <- as.matrix(data)
+    }
+    dimdata <-  base::dim(data) 
   }
-  base::dim(data) <- c(dimdata[1], prod(dimdata[-1]))
-
-   if (missing.x) { ## generate locations for kriging
+  
+  if (length(dim(data)) != 2) {
+    ## Achtung! data verliert die Row-/col-Namen mit der
+    ## naechsten Anweisung!!
+    base::dim(data) <- c(dimdata[1], prod(dimdata[-1]))
+  }
+  
+  if (missing.x) { ## generate locations for kriging
     ## then data cannot have repeated meseasurements
 #
     stopifnot(is.null(y), is.null(z), is.null(T))
@@ -167,10 +252,7 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
       ##           is NA is reestimated
       ## This is overwritten by two facts: fillall=TRUE or no NAs at all
       ## In this case all the data are reestimated.
-
-      
       data.na <- rowSums(is.na(data)) > 0
-      ## Print(data.na, length(data.na), given, grid)
       complete <- fillall || !any(data.na)
       if (complete) data.na <- rep(TRUE, length(data.na))
       else grid.data <- FALSE
@@ -179,18 +261,21 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
       T <- T.tmp
       if (!grid) x.tmp <- if (fillall) given else given[data.na, , drop=FALSE]
     } else {
-      grid <- FALSE    ## Beibehaltung von grid, falls grid waere besser !
-      data.col <- data.starting.col(data) : ncol(data)
-      data.na <-  rowSums(is.na(data[, data.col, drop=FALSE])) > 0
+      grid <- FALSE  ## Beibehaltung von grid, falls grid waere besser !
+      data.col <- data.columns(data)      
+      data.na <-  rowSums(is.na(data[, data.col$data, drop=FALSE])) > 0
       if (fillall || !any(data.na)) data.na <- data.na | TRUE
-      x.tmp <- data[data.na, -data.col, drop=FALSE]
+      x.tmp <- data[data.na, data.col$x, drop=FALSE]
+
     }
     # if (!any(data.na)) stop("neither 'x' is given nor are there NAs in 'data' to be filled")
   } else {
-     x.tmp <- x
+    x.tmp <- x
   }
 
 #  Print(missing.x, grid.data)
+#  Print(x = x.tmp, y = y, z = z, T = T, grid = grid, unconditional )
+
 
   neu <- CheckXT(x = x.tmp, y = y, z = z, T = T, grid = grid, 
                  distances=distances, 
@@ -204,35 +289,23 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   if (!isRFsp) {
     if (hasArg(given)) {
       given <- list(...)$given  ## stehend
-      variab.names <- try(silent = TRUE, colnames(data))      
     } else {
       if (unconditional) {
+        if (missing.x) data <- data[ , data.col$data, drop=FALSE]
         vdimrepet <- as.integer(length(data) / neu$restotal)
         if (vdimrepet * neu$restotal != length(data))
           stop("dimension of data does not match coordinates")
-        dim(data) <- c(neu$restotal, vdimrepet)
+        if (length(dim(data)) != 2) dim(data) <- c(neu$restotal, vdimrepet)
         given <- NULL
-        variab.names <- try(silent = TRUE, colnames(data))
       } else {
-        given <- data[, 1:ts.xdim, drop=FALSE]
-        idx <- try(silent = TRUE, data.starting.col(data):ncol(data))
-        data2 <- try(silent = TRUE, data[, idx, drop=FALSE])
-        variab.names <- try(silent = TRUE, colnames(data[ , idx, drop=FALSE]))
-        if (class(data2) == "try-error" || class(variab.names) == "try-error") {
-          idx <- -(1:ts.xdim)
-          if (class(data2) == "try-error") {
-            data2 <- try(data[, idx, drop=FALSE])
-            if (class(data2) == "try-error")
-              stop("columns of 'data' cannot be identified")
-          }
-          if (class(variab.names) == "try-error") {
-            variab.names <- try(silent = TRUE, colnames(data[,idx, drop=FALSE]))
-          }         
-        }
-        data <- data2
-        rm("data2")
+        if (!missing.x)
+          data.col <- data.columns(data, ts.xdim, force=TRUE, halt=FALSE)
+        given <- data[, data.col$x, drop=FALSE]
+        data <- data[ , data.col$data, drop=FALSE]
       }
     }
+    #variab.names <- try(silent = TRUE, colnames(data))
+    variab.names <- colnames(data)
   }
   if (ncol(given) != ts.xdim && !unconditional) {
     #Print(given, ts.xdim, unconditional)
@@ -535,7 +608,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       }
       if (is.raster(x)) {
         res <- raster::raster(res)
-        projection(res) <- projection(x)
+        raster::projection(res) <- raster::projection(x)
       }
       return(res)
     } else {
@@ -801,12 +874,12 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       
       covmatrix <- double(ngvdim^2)
 
-      pos <- integer(Ngiven)
       ## lexicographical ordering of vectors --- necessary to check
       ## whether any location is given twice, but with different value of
       ## the data
-      .C("Ordering", given, Ngiven, ts.xdim,
-         pos, PACKAGE = "RandomFields", DUP = DUPFALSE)
+      pos <- .C("Ordering", given, Ngiven, ts.xdim, pos=integer(Ngiven),
+                PACKAGE = "RandomFields")$pos
+      
       pos <- pos + 1
       
       ## are locations given twice with different data values?
@@ -1023,9 +1096,9 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         } else {
           ##Initializing Fmatrix
           nfct <- choose(polydeg + ts.xdim, ts.xdim)
-          powers <- integer(ts.xdim * nfct)
-          .C("poly_basis_extern", ts.xdim, as.integer(polydeg),
-             powers, PACKAGE = "RandomFields", DUP = DUPFALSE)
+          powers <-
+            .C("poly_basis_extern", ts.xdim, as.integer(polydeg),
+               powers=integer(ts.xdim * nfct), PACKAGE = "RandomFields")$powers
           powers <- matrix(powers, nrow=nfct, ncol=ts.xdim, byrow=TRUE)
           smallFmatrix <- matrix(0, nrow=Ngiven, ncol=nfct)
           for (j in 1:nfct)
@@ -1132,7 +1205,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         xgr <- all$xgr
         colnames(xgr) <- coord.names.incl.T
         xgr[is.na(xgr)] <- 0
-        gridTopology <- GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
+        gridTopology <- sp::GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
       } else {
         info <- RFgetModelInfo(reg, level=3)
         prep <- prepare4RFspDataFrame(model, info, x, y, z, T,
@@ -1172,7 +1245,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
 
   if (is.raster(x)) {
     Res <- raster::raster(Res)
-    projection(Res) <- projection(x)
+    raster::projection(Res) <- raster::projection(x)
   }
    
   return(Res)

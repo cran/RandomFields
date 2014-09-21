@@ -9,6 +9,7 @@
 \alias{persp,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,missing-method}
 \alias{plot,RFspatialDataFrame,RFspatialPointsDataFrame-method}
+\alias{plot,RFspatialDataFrame,matrix-method}
 \alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
 \alias{plot,RFspatialDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
@@ -37,6 +38,11 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  repeated iid simulations (\code{.RFparams$vdim>n}).}
 \item{\code{signature(x = "RFspatialGridDataFrame", y =
  "RFspatialPointsDataFrame")}}{
+ Similar to method for \code{y="missing"}, but additionally adds the
+ points of \code{y}. Requires \code{MARGIN.slices=NULL} and 
+ \code{all.equal(x@.RFparams, y@.RFparams)}.}
+\item{\code{signature(x = "RFspatialGridDataFrame", y =
+ "matrix")}}{
  Similar to method for \code{y="missing"}, but additionally adds the
  points of \code{y}. Requires \code{MARGIN.slices=NULL} and 
  \code{all.equal(x@.RFparams, y@.RFparams)}.}
@@ -189,7 +195,7 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
  plot.nbin=TRUE, plot.sd=FALSE, variogram = TRUE, boundaries = TRUE,...)
 
 \S4method{plot}{RMmodel,missing}(x, y, dim=1, n.points=200,
- fct.type=NULL, MARGIN, fixed.MARGIN, ...)
+ fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...)
 
 \S3method{points}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 
@@ -310,6 +316,9 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
     \code{data} and \code{var} if a separate \code{zlim}
     for the Kriging variance is to
     be used.}
+  \item{maxchar}{maximum number of characters used in the legend
+    (for multiplots only)
+  }
 }
 
 \details{
@@ -328,9 +337,8 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
   a name cannot be specified.
 }
 
-\author{Alexander Malinowski
-  \email{alexander.malinowski@math.uni-goettingen.de},
-  Martin Schlather
+\author{Alexander Malinowski,
+  Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 
 

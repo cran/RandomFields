@@ -308,7 +308,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   //  if (covnr == NATSC && NS) ERR("natsc model and RFparameters(PracticalRange=TRUE) may not be given at the same time");
   if (covnr == -2) { ERR("multiple matching of covariance name") }
   else if (covnr == -1) { 
-    ERR("unknown covariance model. type 'PrintModelList(TRUE, FALSE)' to get the list of models");
+    ERR("unknown covariance model.  'RFgetModelNames()' yields the list of models");
   }
 
   *Cov = NULL;
@@ -446,13 +446,15 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
  
       // parameter identification
       int l = length(p);
-      //      if (param_name[0]=='k' && strlen(param_name) == 1) { 
-      if (strcmp(param_name, "k") == 0) {
+      //      if (param_name[0]==ONEARGUMENT_NAME && strlen(param_name) == 1) { 
+      //     if (strcmp(param_name, "k") == 0) {
+      if (param_name[0] == ONEARGUMENT_NAME && param_name[1] ==  '\0') {
 	if (TYPEOF(p) != REALSXP && TYPEOF(p) != INTSXP && TYPEOF(p) != LGLSXP) 
-	  PERR("if 'k' is used as parameter name then only a numerical vector is allowed as value");
-	if (l != C->kappas) PERR("length of vector does not match number of parameters. Do not use short name 'k' in complex situtations either.");
+	  PERR1("if '%c' is used as parameter name then only a numerical vector is allowed as value", ONEARGUMENT_NAME);
+	if (l != C->kappas) 
+	  PERR1("length of vector does not match number of parameters. Do not use short name '%c' in complex situtations either.", ONEARGUMENT_NAME);
 	// if (C->maxsub!=0)
-	// ERR("short form 'k' of parameter name not allowed for sophistacted models");
+	// ERR("short form k of parameter name not allowed for sophistacted models");
 	for (j=0; j<l; j++) {
 	  if (!PisNULL(j)) PERR("parameter given twice"); // p[0] OK
 	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call("SetAndGetModelInfo",
@@ -901,6 +903,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
   //   return evaluate(x, 5);
   // }
 
+  strcpy(ERROR_LOC, "");
   if (cov == NULL) GERR("register not initialised");
   if ( (len = cov->qlen) == 0) {
     BUG;
@@ -931,7 +934,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
     PROTECT(result=allocArray(REALSXP, dummy));
   }
 
-  //  printf("%d %ld %d\n",  len, REAL(result), length(result)); 
+  //   printf(">> %d %ld %d\n",  len, REAL(result), length(result)); 
   //   printf("len =%d  %f %f %f=%f\n", len, cov->q[0], cov->q[1], cov->q[2], *REAL(X));
   //APMI(cov);
   //PMI(cov, "last");
@@ -1015,13 +1018,12 @@ void simulate(double *N, cov_model *cov, double *v){
       }
     }
 
-
-    sprintf(ERROR_LOC, "%s %d: ", errorloc_save, ni);
+  sprintf(ERROR_LOC, "%s %d: ", errorloc_save, ni);
  
-    R_CheckUserInterrupt();
+  R_CheckUserInterrupt();
 
     if (PL > 0) {
-      if (ni % each == 0) {
+     if (ni % each == 0) {
 	if (pch == '!')  
 	PRINTF(format, back, ni / each);
 	else if (pch == '%')
@@ -1039,7 +1041,6 @@ void simulate(double *N, cov_model *cov, double *v){
     assert(cov->stor != NULL);
     DO(sub, cov->stor);
 
-
     if (sizeof(double) == sizeof(res_type) && false) {
       // printf("\n\n\n\n\n **********  %ld %ld !!\n", vdimtot, res);
       // APMI(cov);
@@ -1047,6 +1048,8 @@ void simulate(double *N, cov_model *cov, double *v){
       //printf("!!!  ********** !!\n");
     } else {
       //  printf("heredd \n");
+
+      // printf("++ %d %ld %ld\n", vdimtot, res, cov->rf);
 
       int i; for (i=0; i<vdimtot; i++) {
 	//printf("i=%d %f\n", i, cov->rf[i]);
@@ -1057,7 +1060,8 @@ void simulate(double *N, cov_model *cov, double *v){
     }
      
     if (!sub->simu.active) 
-      GERR("could not perform multiple simulations. Is storing == FALSE'?");
+      GERR1("could not perform multiple simulations. Is '%s == FALSE'?",
+	   general[GENERAL_STORING]);
      
   }
 
@@ -1207,6 +1211,7 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   else if (isBrownResnickProcess(next)) subrole = ROLE_BROWNRESNICK;    
   else if (nr == POISSONPROC) subrole = ROLE_POISSON;
   else if (nr == SCHLATHERPROC) subrole = ROLE_SCHLATHER;
+  else if (nr == EXTREMALTPROC) subrole = ROLE_SCHLATHER;
   else if (nr == SMITHPROC) subrole = ROLE_SMITH;
   else {
     //PMI(cov, -1);
@@ -2065,12 +2070,12 @@ int SearchParam(cov_model *cov, get_storage *s) {
       orig = orig->calling;
       while (orig != NULL && orig->user_given == ug_internal)
 	orig = orig->calling;
-      if (orig == NULL) SERR("value of 'up' too high");
+      if (orig == NULL) SERR1("value of '%s' too high", KNAME(RFGET_UP));
     }
   } else {
     int nr = P0INT(RFGET_REGISTER);
     if (nr<0 || nr>MODEL_MAX) SERR("invalid register number");
-    if (up != 0) SERR("'up' may not be given.");
+    if (up != 0) SERR1("'%s' may not be given.", KNAME(RFGET_UP));
     orig = KEY[nr];
   }
   s->orig = orig;

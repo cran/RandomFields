@@ -290,6 +290,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     //M1 = RF_NA,
     logM2 = RF_NA,
     gumbel = RF_NA,
+    frechet = RF_NA,
     threshold = RF_NA,
     poisson=0.0;
   res_type *res = cov->rf;
@@ -326,6 +327,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   assert(maxstable || Total_n > 0);
   loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
   if (!loggiven) Minimum = exp(Minimum);
+  
 
 
   //  assert(covrole != ROLE_POISSON_GAUSS || subrole == ROLE_POISSON_GAUSS);
@@ -441,8 +443,9 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	//	printf("break1 %d %d\n",  n, ((int*) cov->p[MAXSTABLE_POINTS])[0]);
 	break;
       }
-      poisson += rexp(1.0); // Poisson, not Frechet
-      gumbel = -log(poisson);
+      poisson += rexp(1.0);
+      frechet = pow(poisson, - 1.0 / pgs->alpha);
+      gumbel = log(frechet);
       // MARCO, habe ich am 17.11.13 geaendert
 
       // pgs->log_zhou_c = 0.0; // wrong! to do
@@ -503,7 +506,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       // Marco:
       pgs->currentthreshold = loggiven
 	? pgs->globalmin - gumbel
-	: pgs->globalmin * poisson;  // Frechet :  / exp(-gumbel)
+	: pgs->globalmin / frechet; 
      
 
       //printf("loggiven =%d %e %f cur.thr=%e\n",
@@ -791,6 +794,11 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     //    APMI(cov);
 
+    if (pgs->alpha != 1.0) {
+      if (loggiven) for (k=0; k<total_pts; k++) res[k] *= pgs->alpha; 
+      else for (k=0; k<total_pts; k++) res[k] = pow(res[k], pgs->alpha);      
+    }
+
     if (pgs->estimated_zhou_c) {
       if (PL > 5) PRINTF("zhou_c: %ld %d",pgs->n_zhou_c, GLOBAL.extreme.min_n_zhou);
       while (pgs->n_zhou_c < GLOBAL.extreme.min_n_zhou) {
@@ -822,7 +830,6 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     } else {
       mean = pgs->zhou_c;
     }
-
 
 
     // mean /= M1;
@@ -1046,7 +1053,8 @@ int check_randomcoin(cov_model *cov) {
   ASSERT_ONE_SUBMODEL(cov);
 
   if (cov->sub[COIN_COV] != NULL && cov->sub[COIN_SHAPE]!=NULL)
-    SERR("either 'tcf' or 'shape' must be given");
+    SERR2("either '%s' or '%s' must be given", 
+	  SNAME(COIN_COV), SNAME(COIN_SHAPE));
 
   kdefault(cov, RANDOMCOIN_INTENSITY, gp->intensity[dim]);
   if ((err = checkkappas(cov, true)) != NOERROR) {
@@ -1293,7 +1301,8 @@ int SetGEVetc(cov_model *cov, int role) {
   if (cov->role != ROLE_COV) cov->role = role;
 
   if (cov->sub[MPP_TCF] != NULL && cov->sub[MPP_SHAPE]!=NULL)
-    SERR("either 'tcf' or a shape definition must be given");
+    SERR2("either '%s' or '%s' must be given",
+	  SNAME(MPP_TCF), SNAME(MPP_SHAPE));
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
   kdefault(cov, GEV_XI, ep->GEV_xi);
   kdefault(cov, GEV_S, P0(GEV_XI) == 0.0 ? 1.0 : fabs(P0(GEV_XI)));
@@ -1310,16 +1319,17 @@ int SetGEVetc(cov_model *cov, int role) {
 
 
 int check_schlather(cov_model *cov) {
-
   //print("check schlather\n");
-
-  cov_model
+  if (!((cov->sub[MPP_TCF] == NULL) xor (cov->sub[MPP_SHAPE] == NULL)))
+    SERR("two submodels given instead of one.");
+ cov_model
     *key = cov->key,
-    *next = cov->sub[cov->sub[MPP_SHAPE] != NULL ? MPP_SHAPE:MPP_TCF];
+    *next = cov->sub[cov->sub[MPP_TCF] != NULL ? MPP_TCF : MPP_SHAPE];
   int err,
     dim = cov->tsdim; // taken[MAX DIM],
   // mpp_param *gp  = &(GLOBAL.mpp);
   double v;
+  bool schlather = CovList[cov->nr].Init == init_mpp;
 
   //  printf("A \n");
  
@@ -1334,9 +1344,9 @@ int check_schlather(cov_model *cov) {
   if (key == NULL) {
     // printf("key=NULL\n");
     int  role = isNegDef(sub) ? ROLE_COV  //Marco, 29.5.13
-      : isShape(sub) ? ROLE_SCHLATHER
+      : isShape(sub) && schlather ? ROLE_SCHLATHER
       : isGaussProcess(sub) ? ROLE_GAUSS
-      : isBernoulliProcess(sub) ? ROLE_BERNOULLI
+      : isBernoulliProcess(sub) && schlather ? ROLE_BERNOULLI
       : ROLE_UNDEFINED;    
     ASSERT_ROLE_DEFINED(sub);
 
@@ -1375,8 +1385,9 @@ int check_schlather(cov_model *cov) {
 
 int struct_schlather(cov_model *cov, cov_model **newmodel){
   cov_model
-    *sub = cov->sub[cov->sub[MPP_SHAPE] != NULL ? MPP_SHAPE:MPP_TCF];
+    *sub = cov->sub[cov->sub[MPP_TCF] != NULL ? MPP_TCF : MPP_SHAPE];
   int err, role, ErrNoInit;
+  bool schlather = CovList[cov->nr].Init == init_mpp; // else opitz
 
   if (cov->role != ROLE_SCHLATHER) BUG;
   ASSERT_NEWMODEL_NULL;
@@ -1394,7 +1405,8 @@ int struct_schlather(cov_model *cov, cov_model **newmodel){
     else {
       if (isGaussProcess(cov->key)) {
 	SERR("invalid model specification");
-      } else SERR("schlather process currently only allowed for gaussian processes and binary gaussian processes");
+      } else SERR2("'%s' currently only allowed for gaussian processes %s", 
+		   NICK(cov), schlather ? "and binary gaussian processes" : "");
     }
   }
   assert(cov->key->calling == cov);
@@ -1424,6 +1436,34 @@ int struct_schlather(cov_model *cov, cov_model **newmodel){
   return ErrNoInit;
 }
 
+#define OPITZ_ALPHA (LAST_MAXSTABLE + 1)
+int init_opitzprocess(cov_model *cov, gen_storage *S) {
+  int err;
+  if ( (err = init_mpp(cov, S)) != NOERROR) return err;
+
+  cov_model *key = cov->key;
+  assert(key != NULL);
+  assert(key->mpp.moments == 1);
+  pgs_storage *pgs = key->Spgs;
+  assert(pgs != NULL);
+  key->mpp.mMplus[1] = INVSQRTTWOPI * pow(2, 0.5 * P0(OPITZ_ALPHA) - 0.5) * 
+    gammafn(0.5 * P0(OPITZ_ALPHA) + 0.5); 
+  pgs->zhou_c = 1.0 / key->mpp.mMplus[1];
+  pgs->alpha = P0(OPITZ_ALPHA);
+
+  return NOERROR;
+}
+void range_opitz(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+    //   assert(cov != NULL);
+  range_mpp(cov, range);
+
+  range->min[OPITZ_ALPHA] = 0;
+  range->max[OPITZ_ALPHA] = RF_INF;
+  range->pmin[OPITZ_ALPHA] = 0.1;
+  range->pmax[OPITZ_ALPHA] = 5;
+  range->openmin[OPITZ_ALPHA] = true;
+  range->openmax[OPITZ_ALPHA] = true; 
+}
 
 ////////////////////////////////////////////////////////////////////
 // Smith
@@ -1489,8 +1529,6 @@ int check_smith(cov_model *cov) {
 
   return NOERROR;
 }
-
- 
 
 
 void param_set_identical(cov_model *to, cov_model *from, int depth) {

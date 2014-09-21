@@ -28,23 +28,23 @@ RMtent <- function(var, scale, Aniso, proj) {
 
 RFearth2cartesian <- function(coord, units=NULL) {
   if (is.null(units)) {
-    global.units <- RFoptions()$coords$new_coord_units[1]
+    global.units <- RFoptions()$coords$new_coordunits[1]
     units <- if (global.units[1] == "") "km" else global.units 
   }
   if (!is.matrix(coord)) coord <- t(coord)
   return(t(RFfctn(RMtrafo(RC_CARTESIAN_COORD), coord, grid=FALSE,
-                  coords.new_coord_units=units,
+                  coords.new_coordunits=units,
                   coords.coordinate_system="earth")))
 }
 
 RFearth2dist <- function(coord, units=NULL, ...) {
   if (is.null(units)) {
-    global.units <- RFoptions()$coords$new_coord_units[1]
+    global.units <- RFoptions()$coords$new_coordunits[1]
     units <- if (global.units[1] == "") "km" else global.units 
   }
   if (!is.matrix(coord)) coord <- t(coord)
   z <- t(RFfctn(RMtrafo(RC_CARTESIAN_COORD), coord, grid=FALSE,
-                coords.new_coord_units=units,
+                coords.new_coordunits=units,
                 coords.coordinate_system="earth"))
   return(dist(z, ...))
 }

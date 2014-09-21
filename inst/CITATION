@@ -1,0 +1,51 @@
+
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("R package version %s", meta$Version)
+
+bibentry(bibtype="Manual",
+         header="For general purposes please refer to",
+         footer="",
+         title = "{RandomFields}: Simulation and Analysis of Random Fields",
+         author = c(person("Martin", "Schlather"),
+             person("Alexander", "Malinowski"),
+             person("Marco", "Oesting"),
+             person("Daphne", "Boecker"),
+             person("Kirstin", "Strokorb"),
+             person("Sebastian", "Engelke"),
+             person("Johannes", "Martini"),
+             person("Felix", "Ballani"),
+             person("Peter", "Menck", middle="J"),
+             person("Sebastian", "Gross"),
+             person("Ulrike", "Ober"),
+             person("Katharina", "Burmeister"),
+             person("Juliane", "Manitz"),
+             person("Paulo", "Ribeiro"),
+             person("Richard", "Singleton"),
+             person("Ben", "Pfaff"),
+             person("R Core Team")),
+         year = year,
+         note = note,
+         url = "http://ms.math.uni-mannheim.de/de/publications/software *OR*
+           http://CRAN.R-project.org/package=RandomFields"
+         )
+
+
+
+bibentry(bibtype="Article",
+         header="For multivariate features please refer to",
+         footer ="",
+         author = c(person("Martin", "Schlather"),
+             person("Alexander", "Malinowski"),
+             person("Peter", "Menck", middle="J"),
+             person("Marco", "Oesting"),
+             person("Kirstin", "Strokorb")),
+         title = "Analysis, Simulation and Prediction of Multivariate Random Fields with  Package {RandomFields}",
+         journal = 	 "Journal of Statistical Software",
+         year = 	 "2014",
+#         key = 	 "",
+#         volume = 	 "",
+#         number = 	 "",
+#         pages = 	 "",
+#         month = 	 "",
+         note = 	 "Submitted",
+       )

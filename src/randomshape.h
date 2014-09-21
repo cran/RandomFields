@@ -340,6 +340,12 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) ;
 void do_chisqprocess(cov_model *cov, gen_storage *s);
 
  
+void rangetprocess(cov_model *cov, range_type *range) ;
+void do_tprocess(cov_model *cov, gen_storage *s);
+
+int init_opitzprocess(cov_model *cov, gen_storage *s);
+void range_opitz(cov_model *cov, range_type *range);
+
 void dompp(cov_model *cov, gen_storage *S); 
 int init_mpp(cov_model *cov, gen_storage *S);
 void range_mpp(cov_model *cov, range_type *range);

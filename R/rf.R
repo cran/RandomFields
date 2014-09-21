@@ -138,7 +138,7 @@ RFcov <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
 
   result <- .Call("EvaluateModel", double(0), as.integer(MODEL.USER),
                   PACKAGE="RandomFields")
- 
+
   return(result)
 }
 
@@ -191,7 +191,7 @@ prepare4RFspDataFrame <- function(model=NULL,
     xgr <- cbind(locinfo$xgr, locinfo$T)
     colnames(xgr) <- coord.names.incl.T
     xgr[is.na(xgr)] <- 0
-    gridTopology <- GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
+    gridTopology <- sp::GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
   } else { ## grid == FALSE
     gridTopology <- NULL
     
@@ -276,7 +276,7 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
         ) {
        message("NOTE: simulation is performed with fixed random seed ",
                RFopt$general$seed,
-               ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
+               ".\nSet 'RFoptions(seed=NA)' to make the seed arbitrary.")
      }
     set.seed(RFopt$general$seed)
   }
@@ -305,7 +305,7 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
                 as.logical(neu$grid),
                 as.logical(neu$distances),
                 as.logical(neu$Time),
-                NAOK=TRUE,
+                NAOK=TRUE, # ok
                 PACKAGE="RandomFields")
 }
 
@@ -411,30 +411,33 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
   
   if (cond.simu) {
     #Print(RFoptions()$general)
+    if (isSpObj(data)) data <- sp2RF(data)
     if (missing.x <- missing(x)) {
       if (is(data, "RFsp")) {
         if (!missing(dim)) 
           stop("'dim' may not be given when 'data' is an RFsp object")
         x.tmp <- coordinates(data)
       } else { ## data not RFsp
-        start <- data.starting.col(data, halt=FALSE)
+        nc <- ncol(data)
+        col.data <- data.columns(data, halt=FALSE)
         if (missing(dim)) {
           if (ncol(data) == 2) dim <- 1
-          else if (start<0) stop("Please give 'dim' explicitely since x is missing and data is not an RFsp object.")
-          else dim <- start - 1
+          else if (length(col.data) == 0) stop("Please give 'dim' explicitely since x is missing and data is not an RFsp object.")
+          else dim <- nc - length(col.data)
+          x.tmp <- data[, -col.data]
         } else {  
-          if (start < 0) colnames(data)[dim+1] <- "data"
-          else if (start - 1 != dim) stop(paste("value of 'dim' does not match the column name convention of the data: the name 'data' is found in position", start, "which does not equal 'dim'+1 (dim=", dim, ")"))
+          if (length(col.data) == 0) colnames(data)[dim+1] <- "data"
+          else if (length(col.data) + dim != nc) stop(paste("value of 'dim' does not match the column name convention of the data: the name 'data' is found in", length(col.data), "positions (", paste(col.data, collapse=","), ") which does not match 'dim' (=", dim, ")"))
+         x.tmp <- data[, 1:dim]
         }
-        x.tmp <- data[, 1:dim]
       }
     } else {
       x.tmp <- x
     }
 
     rfInit(model=list("Simulate", checkonly=TRUE, model),
-           x=x.tmp, y=y, z=z, T=T, grid=grid, distances=distances, spdim=dim,
-           reg=reg, dosimulate=-1, old.seed=RFoptOld[[1]]$general$seed)
+           x=x.tmp, y=y, z=z, T=T, grid=grid, distances=distances, spdim=dim, 
+           reg=reg, dosimulate=FALSE, old.seed=RFoptOld[[1]]$general$seed)
     info <- RFgetModelInfo(reg, level=3)
     grid <- info$loc$grid
 
@@ -487,10 +490,15 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
 
   } # end of uncond simu
 
+ # print(res); kkk
 
   ## output: either conventional or RFsp   #################################
 
   if (!RFopt$general$spConform) return(res)
+  if (length(res) > 1e7) {
+    message("Too big data set (more than 1e7 entries) to allow for 'spConform=TRUE'. So the data are returned as if 'spConform=FALSE'")
+    return(res)
+  }
 
   
   prep <- prepare4RFspDataFrame(model.orig, info, x, y, z, T,
@@ -510,7 +518,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid,
       
   if (is.raster(x)) {
     res2 <- raster::raster(res2)
-    projection(res2) <- projection(x)
+    raster::projection(res2) <- raster::projection(x)
   }
  
   return(res2)

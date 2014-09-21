@@ -47,10 +47,23 @@ name_type FT = {"false", "true"},
 
 
 SEXP String(char *V) {
-  //int i;
+  // int i;
   SEXP str;
   PROTECT(str = allocVector(STRSXP, 1)); 
   SET_STRING_ELT(str, 1, mkChar(V));
+  UNPROTECT(1);
+  return str;
+}
+
+SEXP String(char V[MAXUNITS][MAXCHAR], int n, int max) {
+  int i;
+  SEXP str;
+  if (V==NULL) return allocVector(VECSXP, 0);
+  if (n>max) return TooLarge(&n, 1);
+  PROTECT(str = allocVector(STRSXP, n)); 
+  for (i=0; i<n; i++) {
+    SET_STRING_ELT(str, i, mkChar(V[i]));
+  }
   UNPROTECT(1);
   return str;
 }
@@ -589,7 +602,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 
   if (prlevel>=5) {
 
-    mpp_properties *mpp = &(cov->mpp);
+    mpp_properties *Mpp = &(cov->mpp);
     int
       vdim = cov->vdim2[0],
       nm = cov->mpp.moments,
@@ -599,15 +612,15 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     //  SET_VECTOR_ELT(model, k++, ScalarReal(mpp->refradius));
  
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.maxheight"));  
-    SET_VECTOR_ELT(model, k++, Num(mpp->maxheights, vdim, MAX_INT));
+    SET_VECTOR_ELT(model, k++, Num(Mpp->maxheights, vdim, MAX_INT));
   
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.M"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(mpp->mM, nmvdim, MAX_INT)); 
+		   Num(Mpp->mM, nmvdim, MAX_INT)); 
 
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.Mplus"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(mpp->mMplus, nmvdim, MAX_INT));
+		   Num(Mpp->mMplus, nmvdim, MAX_INT));
   } 
    		 
 

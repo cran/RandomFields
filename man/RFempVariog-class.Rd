@@ -54,10 +54,10 @@
  \item{\code{T}:}{the bin centres of the time axis} 
  \item{\code{vdim}:}{the multivariate dimension}
  \item{\code{coord.units}:}{string giving the units of the coordinates,
-   see also option \code{coord_units} of \command{\link{RFoptions}}.
+   see also option \code{coordunits} of \command{\link{RFoptions}}.
  }
  \item{\code{variab.units}:}{string giving the units of the variables,
-   see also option \code{variab_units} of \command{\link{RFoptions}}.
+   see also option \code{varunits} of \command{\link{RFoptions}}.
  }
  \item{\code{call}:}{language object; the function call by which the
    object was generated}

@@ -6,21 +6,37 @@
   argument \code{Aniso} in \command{\link{RMmodel}} in two dimensions.
   \command{RMangle} requires one two strechting values, passed by
   \code{ratio} or \code{diag}, and an \command{angle}.
-  For \code{angle} \eqn{a} and code{diag} equal to \eqn{(d_1, d_2)} the
+
+  In two dimensions and with
+  \code{angle} equal to \eqn{a} and \code{diag} equal to \eqn{(d1, d2)} the
   anisotropy matrix \eqn{A} is
   
-  \code{A = diag(d_1, d_2) \%*\% matrix(ncol=2, c(cos(a), sin(a),
+  \code{A = diag(d1, d2) \%*\% matrix(ncol=2, c(cos(a), sin(a),
     -sin(a), cos(a)))}
+
+  In three dimensions and with
+  \code{angle} equal to \eqn{a}, second angle \eqn{L}
+  and \code{diag} equal to \eqn{(d1, d2, d3)} the
+  anisotropy matrix \eqn{A} is
+ 
+  \code{A = diag(d1, d2, d3) \%*\% matrix(ncol=3,
+    c(cos(a) * cos(L), sin(a) * cos(L), sin(L),
+      -sin(a), cos(a), 0,
+      -cos(a) * sin(L), -sin(a) * sin(L), cos(L)
+    ))}
+  i.e. \eqn{Ax} turns a vector x first in \eqn{x-z} plane, then
+  in the \eqn{x-y} plane.
 }
  
 
 \usage{
-RMangle(angle, ratio, diag) 
+RMangle(angle, lat.angle, ratio, diag) 
 }
 
 \arguments{
- \item{angle}{angle \code{a}}
- \item{ratio}{equivalent to \code{diag=c(1, 1/ratio)}}
+  \item{angle}{angle\code{a}}
+  \item{lat.angle}{second angle; in 3 dimensions only}
+ \item{ratio}{equivalent to \code{diag=c(1, 1/ratio)}; in 2 dimensions only}
  \item{diag}{the diagonal components of the matrix}
 }
 
@@ -46,6 +62,11 @@ x <- seq(0, 2, if (interactive()) 0.05 else 1)
 z <- RFsimulate(x, x, model=model)
 plot(z)
 
+
+model <- RMexp(Aniso=RMangle(angle=pi/4, lat.angle=pi/8, diag=c(1,2,3)))
+x <- seq(0, 2, if (interactive()) 0.2 else 1)
+z <- RFsimulate(x, x, x, model=model)
+plot(z, MARGIN.slices=3)
 
 \dontshow{FinalizeExample()}
 

@@ -210,8 +210,10 @@ int checkgenGneiting(cov_model *cov);
 /* Gneiting's functions -- alternative to Gaussian */
 // #define Sqrt2TenD47 0.30089650263257344820 /* approcx 0.3 ?? */
 void Gneiting(double *x, cov_model *cov, double *v); 
-void InverseGneiting(double *x, cov_model *cov, double *v);
+//void InverseGneiting(double *x, cov_model *cov, double *v);
 void DGneiting(double *x, cov_model *cov, double *v); 
+int checkGneiting(cov_model *cov);
+void rangeGneiting(cov_model *cov, range_type *range);
 
 
 /* hyperbolic */

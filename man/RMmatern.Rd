@@ -86,27 +86,40 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 
 }
 \references{
- \itemize{
- \item Chiles,
- J.-P. and Delfiner, P. (1999)
- \emph{Geostatistics. Modeling Spatial Uncertainty.}
- New York: Wiley.
- 
- \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
- P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
- Boca Raton: Chapman & Hall/CRL.
- 
- \item Guttorp, P. and Gneiting, T. (2006) Studies in the
- history of probability and statistics. XLIX. On the Matern
- correlation family. \emph{Biometrika} \bold{93}, 989--995.
- 
- \item Handcock, M. S. and Wallis, J. R. (1994) An approach to
- statistical spatio-temporal modeling of meteorological fields.
- \emph{JASA} \bold{89}, 368--378.
+  Covariance function
+  \itemize{
+    \item Chiles,
+    J.-P. and Delfiner, P. (1999)
+    \emph{Geostatistics. Modeling Spatial Uncertainty.}
+    New York: Wiley.
+    
+    \item Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
+    P. (eds.) (2010) \emph{Handbook of Spatial Statistics.}
+    Boca Raton: Chapman & Hall/CRL.
+    
+    \item Guttorp, P. and Gneiting, T. (2006) Studies in the
+    history of probability and statistics. XLIX. On the Matern
+    correlation family. \emph{Biometrika} \bold{93}, 989--995.
+    
+    \item Handcock, M. S. and Wallis, J. R. (1994) An approach to
+    statistical spatio-temporal modeling of meteorological fields.
+    \emph{JASA} \bold{89}, 368--378.
+    
+    \item Stein, M. L. (1999) \emph{Interpolation of Spatial Data --
+      Some Theory for Kriging.} New York: Springer.
+  }
 
- \item Stein, M. L. (1999) \emph{Interpolation of Spatial Data --
-   Some Theory for Kriging.} New York: Springer.
- }
+  
+
+  Tail correlation function (for \eqn{\nu \in (0,1/2]}{0 < \nu \le 1/2})
+  \itemize{
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+  }
+
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

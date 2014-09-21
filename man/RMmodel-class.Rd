@@ -91,7 +91,19 @@
 
 
 \examples{
-# see RMmodel for examples
+# see RMmodel for introductory examples
+
+
+# Compare:
+model <- RMexp(scale=2) + RMnugget(var=3)
+str(model)  ## S4 object as default in version 3 of RandomFields
+
+model <- summary(model)
+str(model)  ## list style as in version 2 of RandomFields
+            ## see also 'spConform' in 'RFoptions' to make this style
+            ## the default
+
+
 \dontshow{FinalizeExample()}
 }
 

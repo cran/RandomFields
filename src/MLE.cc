@@ -106,10 +106,10 @@ void GetNAPosition(cov_model *cov,
     if (printing > 0) {
       leer(depth); PRINTF("%s\n", C->kappanames[i]);
     }
-    if (i==0 && type[i] == INTSXP && strcmp(C->kappanames[i], "element") == 0){
+    if (i==0 && type[i] == INTSXP && strcmp(C->kappanames[i], ELEMENT) == 0){
       if (*elmnts >= MAX_MLE_ELMNTS ) 
 	ERR("maximum number of models with variable elements reached");
-      if (P0INT(i) == NA_INTEGER) ERR("'elements' may not be NA");
+      if (P0INT(i) == NA_INTEGER) ERR1("'%s' may not be NA", ELEMENT);
       mem_elmnts[(*elmnts)++] = PINT(i);
       // to do!! covModels[*NAs] hierher uebertragen !! s.u.
 
@@ -1042,7 +1042,7 @@ void setListElements(int *reg, int *i, int *k, int* len_k) {
   if (*reg < 0 || *reg > MODEL_MAX) XERR(ERRORREGISTER);
   cov_model *cov = KEY[*reg];
 
-  if (cov==NULL) ERR("register is not initialised bei 'RFfit'");
+  if (cov==NULL) ERR("register is not initialised by 'RFfit'");
   if (isInterface(cov)) {
     cov = cov->key == NULL ? cov->sub[0] : cov->key;
   }

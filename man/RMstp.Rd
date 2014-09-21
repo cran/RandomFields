@@ -4,7 +4,7 @@
 \title{Single temporal process}
 \description{
   \command{\link{RMstp}} is a univariate covariance model which depends on
-  a submodel \eqn{\phi}{phi} wich is a normal mixture model.
+  a normal mixture submodel \eqn{\phi}{phi}.
   The covariance is given by
   \deqn{ 
     C(x,y) = |S_x|^{1/4} |S_y|^{1/4} |A|^{-1/2}
@@ -33,7 +33,10 @@ RMstp(xi, phi, S, z, M, var, scale, Aniso, proj)
 }
 \arguments{
  \item{xi}{arbitrary univariate function on \eqn{R^d}}
- \item{phi}{an \command{\link{RMmodel}} that is a normal mixture model}
+ \item{phi}{an \command{\link{RMmodel}} that is a normal mixture model,
+   cf.\cr
+    \code{RFgetModelNames(monotone="normal mixture")}
+ }
  \item{S}{functions that returns strictly positive definite
    \eqn{d\times d}{d x d}}
  \item{z}{arbitrary vector, \eqn{z \in R^d}}

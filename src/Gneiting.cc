@@ -215,7 +215,7 @@ void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, dou
 
 
 int structAve(cov_model *cov, cov_model **newmodel) { 
-  cov_model *shape, *gauss;
+  cov_model *shape, *gaussmix;
   int err;
  
   ASSERT_NEWMODEL_NOT_NULL;
@@ -226,10 +226,10 @@ int structAve(cov_model *cov, cov_model **newmodel) {
   shape = *newmodel;
   shape->nr = SHAPEAVE;
   addModel(shape, AVE_GAUSS, GAUSS);
-  gauss = shape->sub[AVE_GAUSS];
-  gauss->tsdim = 1;
-  gauss->role = ROLE_GAUSS;
-  gauss->method = SpectralTBM;
+  gaussmix = shape->sub[AVE_GAUSS];
+  gaussmix->tsdim = 1;
+  gaussmix->role = ROLE_GAUSS;
+  gaussmix->method = SpectralTBM;
   return NOERROR;
 }
 
@@ -280,7 +280,7 @@ int check_shapeave(cov_model *cov) {
 int init_shapeave(cov_model *cov, gen_storage *s) { 
   ASSERT_GAUSS_METHOD(Average);
   cov_model
-    *gauss = cov->sub[AVE_GAUSS];
+    *gaussmix = cov->sub[AVE_GAUSS];
   double sd,
     *q = cov->q;
   bool 
@@ -299,7 +299,7 @@ int init_shapeave(cov_model *cov, gen_storage *s) {
   if (cov->mpp.moments >= 0) {
     cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
-      if ((err = INIT(gauss, cov->mpp.moments, s)) != NOERROR) return err;
+      if ((err = INIT(gaussmix, cov->mpp.moments, s)) != NOERROR) return err;
       if (cov->mpp.moments >= 2) {
 	cov->mpp.mM[2] = 1.0;
       }
@@ -317,7 +317,7 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
    cov_model    
     *aveGAUSS = cov->sub[AVE_GAUSS],
     *phi = cov->sub[AVE_PHI];
-  double spectral[StpMaxDim], sd,
+  double spec_ret[StpMaxDim], sd,
     *q = cov->q;
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
@@ -329,8 +329,8 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
   
   BUG;
 
-  SPECTRAL(aveGAUSS, S, spectral);  // nicht gatternr
-  q[AVERAGE_YFREQ] = *spectral * q[AVESTP_V];  
+  SPECTRAL(aveGAUSS, S, spec_ret);  // nicht gatternr
+  q[AVERAGE_YFREQ] = *spec_ret * q[AVESTP_V];  
   q[AVERAGE_YPHASE] = TWOPI * UNIFORM_RANDOM;
 
   
@@ -834,7 +834,7 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
 
   cov_model
     *Sf = cov->kappasub[STP_S],
-    *gauss = cov->sub[STP_GAUSS];
+    *gaussmix = cov->sub[STP_GAUSS];
   double sd,
     *q = cov->q;
   int err = NOERROR;
@@ -879,7 +879,7 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
   if (cov->mpp.moments >= 0) {
     cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; //// ??? notwendig 
     if (cov->mpp.moments >= 1) {
-      if ((err = INIT(gauss, 2, s)) != NOERROR) return err;
+      if ((err = INIT(gaussmix, 2, s)) != NOERROR) return err;
       if (cov->mpp.moments >= 2) cov->mpp.mM[2] = 1.0; 
     }
   }
@@ -895,7 +895,7 @@ void do_shapestp(cov_model *cov, gen_storage *s) {
   cov_model 
     *stpGAUSS = cov->sub[STP_GAUSS],
     *phi = cov->sub[STP_PHI];
-  double  spectral[StpMaxDim], sd,
+  double  spec_ret[StpMaxDim], sd,
     *q = cov->q;
 
   CovList[phi->nr].drawmix(phi, &(q[AVESTP_V]));
@@ -903,8 +903,8 @@ void do_shapestp(cov_model *cov, gen_storage *s) {
   
   BUG;
 
-  SPECTRAL(stpGAUSS, s, spectral);  // nicht gatternr
-  q[AVERAGE_YFREQ] = *spectral * sqrt(q[AVESTP_V]);  
+  SPECTRAL(stpGAUSS, s, spec_ret);  // nicht gatternr
+  q[AVERAGE_YFREQ] = *spec_ret * sqrt(q[AVESTP_V]);  
   q[AVERAGE_YPHASE] = TWOPI * UNIFORM_RANDOM;
 
 
@@ -1409,9 +1409,9 @@ int checkNonStWM(cov_model *cov) {
   NotProgrammedYet("");
  
 
-  if (PisNULL(WM_NU) && nu==NULL) SERR("'nu' is missing");
+  if (PisNULL(WM_NU) && nu==NULL) SERR1("'%s' is missing", KNAME(WM_NU));
   if (isRandom(CovList[cov->nr].kappaParamType[WM_NU])) 
-    SERR("only deterministic models for 'nu' are allowed.\nHowever these models can have random parameters.");
+    SERR1("only deterministic models for '%s' are allowed.\nHowever these models can have random parameters.", KNAME(WM_NU));
   
   if (nu != NULL) {
     if ((err = CHECK(nu, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,

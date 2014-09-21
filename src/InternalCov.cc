@@ -239,7 +239,10 @@ int checkkappas(cov_model *cov, bool errornull){
 	   ? cov->ownkappanames[i]
 	   : C->kappanames[i]);
     cov_model *ks = cov->kappasub[i];     
-    //
+  
+    //    printf("checkkappas %s %s %d %d %d %d\n", NICK(cov), param_name, ks==NULL,
+    //	   PisNULL(i), cov->nrow[i], cov->ncol[i]);
+   //
     if (ks != NULL) {
       //printf("%d %d\n", isRandom(C->kappaParamType[i]), isRandom(ks));
       if (isRandom(ks)) {
@@ -761,7 +764,8 @@ void D_2(double *x, cov_model *cov, double *v){
 
   //printf("\n here %d %s \n", cov->isoown, NAME(cov)); 
 
-  if (cov->isoown == ISOTROPIC) {
+  if (cov->xdimprev == 1) {
+    assert(cov->isoown == ISOTROPIC);
     double y = fabs(*x);
 
     //   cov_model *prev = cov;
@@ -771,19 +775,16 @@ void D_2(double *x, cov_model *cov, double *v){
     // dollar + scale // aniso > 0 und dim = 1
     // nach tbm eigentlich auch nicht
 
-    
-
     C->D(&y, cov, v);// nicht gatternr
   } else {
-    assert(cov->isoown == SPACEISOTROPIC);
     assert(cov->xdimprev == 2);
-   
-    if (C->isotropy==ISOTROPIC) {
+    if (cov->xdimown == 1) {
+      assert(cov->isoown==ISOTROPIC);
       double y=sqrt(x[0] * x[0] + x[1] * x[1]);    
       C->D(&y, cov, v);
-      if (y!=0.0) *v = x[0] / y;
+      if (y!=0.0) *v *= x[0] / y;
     } else {
-      assert(C->isotropy == SPACEISOTROPIC);
+      assert(cov->xdimown == 2);
       double y[2];
       y[0] = fabs(x[0]);
       y[1] = fabs(x[1]);
@@ -817,9 +818,9 @@ void DD_2(double *x, cov_model *cov, double *v) {
 	C->D(&y, cov, &w);
 	w /= y;
 	*v = (*v - w) * xSq / ySq + w;
-      }
-      else {      
-	*v = x[0] / y;
+      } else {    
+	// nothing to do ?
+	// *v = x[0] / y;
       }
     } else {
       assert(C->isotropy == SPACEISOTROPIC);

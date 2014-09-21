@@ -535,7 +535,6 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     error("Bin components not an increasing sequence.\n"); 
   case TOOLS_UNKNOWN_CHAR:
     error("unknown type of second order characteristic"); 
-  default : 
-    error("Unkown Error options in EmpVario."); 
+  default : BUG;
   }
 }

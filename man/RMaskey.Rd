@@ -1,6 +1,7 @@
 \name{RMaskey}
 \alias{RMaskey}
 \alias{RMtent}
+\alias{truncated power function}
 \title{Askey model}
 \description{
  Askey's model
@@ -26,39 +27,47 @@ RMtent(var, scale, Aniso, proj)
  \command{\link{RMaskey}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \references{
+  Covariance function
+  \itemize{
+    \item Askey, R. (1973) \emph{Radial characteristic functions.}
+    Technical report, Research Center, University of Wisconsin-Madison.
+    
+    \item
+    Golubov, B. I. (1981) On Abel-Poisson type and Riesz means,
+    \emph{Anal. Math.} 7, 161-184. 
+  }
 
- \itemize{
- \item Askey, R. (1973) \emph{Radial characteristic functions.}
- Technical report, Research Center, University of Wisconsin-Madison.
 
- \item
- Golubov, B. I. (1981) On Abel-Poisson type and Riesz means,
- \emph{Anal. Math.} 7, 161-184. 
- }
+  Applications as covariance function
+  \itemize{
+    \item Gneiting, T. (1999) Correlation functions for atmospheric data
+    analysis. \emph{Quart. J. Roy. Meteor. Soc.}, 125:2449-2464.
+    
+    \item
+    Gneiting, T. (2002) Compactly supported correlation functions.
+    \emph{J. Multivar. Anal.}, 83:493-508.
+    
+    \item
+    Wendland, H. (1994) \emph{Ein Beitrag zur Interpolation mit radialen
+      Basisfunktionen.} Diplomarbeit, Goettingen.
+    
+    \item
+    Wendland, H.
+    Piecewise polynomial, positive definite and compactly supported radial
+    functions of minimal degree. Adv. Comput. Math., 4:389-396, 1995.
+    
+  }
 
+  Tail correlation function (for \eqn{\alpha \ge [d / 2] + 1})
+  \itemize{
+    \item Strokorb, K., Ballani, F., and  Schlather, M. (2014)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable
+    processes with identical TCF. 
+    \emph{Extremes}, \bold{} Submitted.
+  }
 
- Applications can be found in
- \itemize{
- \item Gneiting, T. (1999) Correlation functions for atmospheric data
- analysis. \emph{Quart. J. Roy. Meteor. Soc.}, 125:2449-2464.
-
- \item
- Gneiting, T. (2002) Compactly supported correlation functions.
- \emph{J. Multivar. Anal.}, 83:493-508.
-
- \item Strokorb, K., Ballani, F., and Schlather, M. (2014)
- In Preparation.
- 
- \item
- Wendland, H. (1994) \emph{Ein Beitrag zur Interpolation mit radialen
- Basisfunktionen.} Diplomarbeit, Goettingen.
-
- \item
- Wendland, H.
- Piecewise polynomial, positive definite and compactly supported radial
- functions of minimal degree. Adv. Comput. Math., 4:389-396, 1995.
-
- }
+  
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
