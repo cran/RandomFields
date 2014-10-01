@@ -86,9 +86,28 @@ void xA(double *x, double*A, int nrow, int ncol, double *y) {
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
     for (k=i=0; i<ncol; i++) {
-      y[i] =0.0;
+      y[i] = 0.0;
       for (j=0; j<nrow; j++) {
 	y[i] += A[k++] * x[j];
+      }
+    }
+  }	
+}
+
+
+void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
+	double *y2) {
+  int i,j,k;
+  if (A == NULL) {
+    if (nrow != ncol || nrow <= 0) BUG;
+    MEMCOPY(y1, x1, sizeof(double) * nrow);
+    MEMCOPY(y2, x2, sizeof(double) * nrow);
+  } else {
+    for (k=i=0; i<ncol; i++) {
+      y1[i] = y2[i] = 0.0;
+      for (j=0; j<nrow; j++) {
+	y1[i] += A[k] * x1[j];
+	y2[i] += A[k++] * x2[j];
       }
     }
   }	
@@ -105,6 +124,25 @@ void Ax(double *A, double*x, int nrow, int ncol, double *y) {
     for (k=i=0; i<ncol; i++) { 
       for (j=0; j<nrow; j++) {
 	y[j] += A[k++] * x[i];
+      }
+    }
+  }
+}
+
+
+void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
+	double *y2) {
+  int i,j,k;
+  if (A == NULL) {
+    if (nrow != ncol || nrow <= 0) BUG;
+    MEMCOPY(y1, x1, sizeof(double) * nrow);
+    MEMCOPY(y2, x2, sizeof(double) * nrow);
+  } else {
+    for (i=0; i<nrow; i++) y1[i]=y2[i]=0.0;
+    for (k=i=0; i<ncol; i++) { 
+      for (j=0; j<nrow; j++) {
+	y1[j] += A[k] * x1[i];
+	y2[j] += A[k++] * x2[i];
       }
     }
   }

@@ -173,7 +173,7 @@ void covmatrix_mixed(cov_model *cov, double *v) {
   }
   
   CovList[sub->nr].covmatrix(sub, C);
-  XCXt(X->p[element], C, v, nrow, ncol);
+  XCXt(X->p[element], C, v, nrow, ncol); BUG;//todo:?reprogramm XCXt with alloc here ?
   Loc(cov)->totalpoints = nrow;
 
   // PMI(cov);
@@ -356,8 +356,8 @@ int checkmixed(cov_model *cov) {
 	  KNAME(MIXED_DIST), KNAME(MIXED_COORD));
 
   // incorrect. but save !!
-  cov->semiseparatelast = false; // taken[tsxdim - 1] <= 1;
-  cov->separatelast = false;     // taken[tsxdim - 1] <= 1; ?? 
+  //  cov->semiseparatelast = false; // taken[tsxdim - 1] <= 1;
+  // cov->separatelast = false;     // taken[tsxdim - 1] <= 1; ?? 
   return NOERROR;
 }
 

@@ -50,7 +50,8 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
   }
   \item{valid.in.dim}{an optional integer indicating the dimension of
   the space where the model is valid}
-  \item{group.by}{an optional character string; must be one of
+\item{group.by}{an optional character string; must be one of
+  \code{'type'},
     \code{'domain'}, \code{'isotropy'}, \code{'operator'},
     \code{'monotone'},
     \code{'finiterange'},\code{'maxdim'},\code{'vdim'}}
@@ -97,12 +98,22 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
 }
 
 \details{ 
- The plain call \code{\link{RFgetModelNames}()} simply gives back a vector of
+ The plain call \code{\link{RFgetModelNames}()} simply gives back a
+ vector of
  the names of all implemented covariance and variogram models and operators,
  i.e. members of the class
  \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
 
- The following arguments can be specified:
+ The following arguments can be specified. Then exact matches are
+ returned.
+ 
+ E.g. \code{type="negative definite"} returns only models that are
+ negative definite, but not positive definite. To get all negative
+ definite models including the positive definite one, use
+ \code{
+   RFgetModelNames(type="positive definite", group.by="type")
+ }. This structure also applies for type="tail correlation fucntion" and
+ type="negative definite".
  
  \describe{
    \item{\code{type}}{specifies the class of functions; for
@@ -221,10 +232,14 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 # get vector of names of all functions
 RFgetModelNames()
 
-# get vector of names of all stationary objects of class RMmodelgenerator
+# any kind of positive definite functions
+RFgetModelNames(type="positive definite", group.by="type")
+
+# get vector of names of all stationary models
 RFgetModelNames(type="positive definite", domain="single variable")
 
 # get list of models grouped by the stationarity attribute
@@ -232,6 +247,8 @@ RFgetModelNames(group.by=c("type"))
 
 
 \dontshow{\dontrun{
+
+
 # get list of all univariate stationary models
 # additionally grouped by the isotropy attribute
 str(RFgetModelNames(type="positive definite", domain="single variable",
@@ -250,6 +267,8 @@ RFgetModelNames(type=c("tail correlation function",
 str(RFgetModelNames(type=c("positive definite", "negative definite", "process"),
                     group.by=c("type", "domain", "isotropy")))
 }}
+
+
 
 \dontshow{FinalizeExample()}
 

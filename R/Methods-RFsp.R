@@ -347,6 +347,25 @@ setMethod(f="plot", signature(x="RFdataFrame", y="RFdataFrame"),
                           legend=legend, ...)
           )
 
+setMethod(f="plot", signature(x="RFdataFrame", y="matrix"),
+          definition=function(x, y, nmax = 6,
+            plot.variance = (!is.null(x@.RFparams$has.variance) &&
+                             x@.RFparams$has.variance),legend=TRUE, 
+            ...)
+          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
+                          legend=legend, ...)
+          )
+
+
+setMethod(f="plot", signature(x="RFdataFrame", y="data.frame"),
+          definition=function(x, y, nmax = 6,
+            plot.variance = (!is.null(x@.RFparams$has.variance) &&
+                             x@.RFparams$has.variance),legend=TRUE, 
+            ...)
+          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
+                          legend=legend, ...)
+          )
+
 
 
 setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
@@ -441,6 +460,29 @@ setMethod(f="plot",
                                  MARGIN.movie = MARGIN.movie,
                                  ...))
 
+setMethod(f="plot",
+          signature(x="RFspatialDataFrame", y="data.frame"),
+	  definition=function(
+            x, y, MARGIN = c(1, 2),
+            MARGIN.slices = NULL,
+            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
+            nmax = 6,
+            plot.variance = (!is.null(x@.RFparams$has.variance) &&
+                             x@.RFparams$has.variance),
+            select.variables, # = 1:vdim,
+            zlim,
+            legend=TRUE,
+            MARGIN.movie = NULL,
+            ...)
+          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
+                                 MARGIN.slices=MARGIN.slices,
+                                 n.slices=n.slices, nmax=nmax,
+                                 plot.variance = plot.variance,
+                                 select=select.variables,
+                                 zlim=zlim,
+                                 legend=legend,
+                                 MARGIN.movie = MARGIN.movie,
+                                 ...))
 
 setMethod(f="persp",
           signature(x="RFspatialGridDataFrame"),
@@ -508,7 +550,7 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
   nc <- ncol(x$data)
 
   if (!missing(y)) {
-    y <- trafo_pointsdata(y)
+    y <- trafo_pointsdata(y, dimensions(dim))
     y$data <- rep(y$data, length.out=nrow(y$data) * nc)
     dim(y$data) <- c(length(y$coords), nc)
   }

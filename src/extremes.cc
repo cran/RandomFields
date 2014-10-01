@@ -100,7 +100,7 @@ int addStandard(cov_model **Cov) {
 }
 
 
-int addPGS(cov_model **Cov) {
+int addPGS(cov_model **Cov, bool addRandomSign) {
   // for m3 & random coin
   cov_model *shape = *Cov;
   assert(shape->calling != NULL);
@@ -111,15 +111,13 @@ int addPGS(cov_model **Cov) {
     vdim = shape->vdim2[0],
     role = shape->role;
   assert(shape->vdim2[0] == shape->vdim2[1]);
-
-
+ 
   //PMI(shape);
   
   assert(dim == shape->tsdim);
   assert(vdim == 1);
   
     
-
   // most models split into a shape function and location distribution
   // given the shape function, see oesting, schlather, chen
   //
@@ -135,12 +133,67 @@ int addPGS(cov_model **Cov) {
   // location
 
   
+  assert(!isPointShape(*Cov));
   addModel(Cov, PTS_GIVEN_SHAPE);
   cov_model *cov = *Cov;
   assert(cov->sub[PGS_LOC] == NULL && cov->sub[PGS_FCT] != NULL);
+  if (addRandomSign) {
+    if (cov->sub[PGS_FCT]->nr != RANDOMSIGN) 
+      addModel(cov->sub + PGS_FCT, RANDOMSIGN);
+  }
+
   if ((err = CHECK(cov, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,
-		     vdim, role)) != NOERROR) return err; 
-  if ((err = STRUCT(cov, cov->sub + PGS_FCT)) != NOERROR) return err;
+		     vdim, role)) != NOERROR) return err;
+  //  APMI(cov); 
+  if ((err = STRUCT(cov, cov->sub + PGS_LOC)) != NOERROR) return err;
+ 
+ /*
+  alloc_pgs(cov, dim);
+  pgs_storage *pgs = cov->Spgs;
+  location_type *loc = Loc(cov);
+
+  if (pgs->minmean == NULL && 
+      (pgs->minmean = (double*) CALLOC(dim, sizeof(double))) == NULL)
+    return ERRORMEMORYALLOCATION;
+  if (pgs->maxmean == NULL && 
+      (pgs->maxmean = (double*) CALLOC(dim, sizeof(double))) == NULL)
+      return ERRORMEMORYALLOCATION;    
+ if (pgs->localmin == NULL && 
+      (pgs->localmin = (double*) CALLOC(dim, sizeof(double))) == NULL)
+    return ERRORMEMORYALLOCATION;
+  if (pgs->localmax == NULL && 
+      (pgs->localmax = (double*) CALLOC(dim, sizeof(double))) == NULL)
+      return ERRORMEMORYALLOCATION;    
+  
+  double
+    *x = pgs->minmean, // !! wird gespeichert
+    *y = pgs->maxmean;
+  NONSTATINVERSE(ZERO, shape, x, y);
+  if (ISNAN(x[0]) || x[0] > y[0])
+    SERR1("inverse of '%s' unknown", NICK(shape));
+  addModel(cov, PGS_LOC, UNIF);
+  cov_model *loc_model = cov->sub[PGS_LOC];
+  PARAMALLOC(loc_model, UNIF_MIN, dim, 1);
+  PARAMALLOC(loc_model, UNIF_MAX, dim, 1);
+  assert(shape->vdim2[0] == 1);
+  if (shape->mpp.moments < 2) 
+    SERR1("not enough moments known for '%s'", NICK(shape));
+  pgs->totalmass = shape->mpp.mM[2];
+  GetDiameter(loc, pgs->localmin, pgs->localmax, pgs->supportcentre);
+  for (d=0; d<dim; d++) {
+    p rintf("d=%d %f %f\n", d, x[d], y[d]);
+    PARAM(loc_model, UNIF_MIN)[d] = pgs->localmin[d] + x[d];
+    PARAM(loc_model, UNIF_MAX)[d] = pgs->localmax[d] + y[d];
+    pgs->totalmass *= PARAM(loc_model, UNIF_MAX)[d] - 
+      PARAM(loc_model, UNIF_MIN)[d];
+  }
+  if (!R_FINITE(pgs->totalmass)) {
+    SERR("infinite extension not programmed yet.")
+  }
+
+  // if ((err = STRUCT(cov, NULL)) != NOERROR) return err;
+  */
+
   cov->sub[PGS_FCT]->calling = cov;
   if ((err = CHECK(cov, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD, 
 		     vdim, role)) != NOERROR) return err;
@@ -1043,7 +1096,9 @@ int check_randomcoin(cov_model *cov) {
   //APMI(cov);
 
 #ifdef LOCAL_MACHINE
-  warning("coin running only locally");
+  static bool warn = true;
+  if (warn) warning("coin running only locally");
+  warn = false;
 #else
   return ERRORNOTPROGRAMMEDYET;
 #endif
@@ -1150,9 +1205,6 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
   int err,
     dim = cov->tsdim; // taken[MAX DIM],
 
-  assert(shape == NULL); // delete
-  // APMI(cov);
-
   ROLE_ASSERT(ROLE_POISSON_GAUSS);
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
@@ -1169,28 +1221,18 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
     }
     if ((err = CHECK(cov->key, dim, dim, ShapeType, XONLY, CARTESIAN_COORD, 
 		     SCALAR, ROLE_POISSON)) != NOERROR) {
-      // APMI(cov)
       return err;
     }
-    if ((err = addPGS(&(cov->key))) != NOERROR) return err;
-   
-    // APMI(cov);
-    return NOERROR;
   } else { // shape == NULL, i.e. covariance given
     if (next == NULL) BUG;
-    // next not NULL
     if (next->pref[Average] == PREF_NONE && next->pref[RandomCoin]==PREF_NONE) {
       // if (next->nr > LASTDOLLAR) AERR(ERRORPREFNONE);
       return ERRORPREFNONE;
     }
-
-    //    printf("%d \n", dim);
-    //    PMI(next, "randomcoins");
     
     if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, SYMMETRIC, 
 		       SCALAR, ROLE_POISSON_GAUSS))
 	!= NOERROR) {
-      // APMI(cov)
       return err;
     }
 
@@ -1198,20 +1240,12 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
     if (cov->key == NULL)
       SERR("no structural information for random coins given");
     cov->key->calling = cov;
-    
-    //    PMI(next);
-    // APMI(cov);
-
-
-    if ( cov->pref[Average] == PREF_NONE ) {
-      if (cov->key->nr != RANDOMSIGN) addModel(&(cov->key), RANDOMSIGN);
-      assert(!isPointShape(cov->key));
-      if ((err = addPGS(&(cov->key))) != NOERROR) return err;
-    }
-    
-    // APMI(cov);
-    return NOERROR;
   }
+
+  if ((err = addPGS(&(cov->key), cov->pref[Average] == PREF_NONE)) != NOERROR)
+    return err;
+    
+  return NOERROR;
 }
 
 
@@ -1235,7 +1269,7 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
 
   cov->method = covshape->pref[Average] == PREF_NONE ? RandomCoin : Average;
     
-  if (cov->method == Average &&  loc->caniso != NULL) {
+  if (cov->method == Average && loc->caniso != NULL) {
     bool diag, quasidiag, semiseparatelast, separatelast;
     int idx[MAXMPPDIM];
     assert(loc->timespacedim <= MAXMPPDIM);
@@ -1251,6 +1285,7 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
 
   sub->Spgs->intensity = 
     sub->Spgs->totalmass * P0(RANDOMCOIN_INTENSITY); 
+  sub->Spgs->log_density = log(P0(RANDOMCOIN_INTENSITY));
 
   //  PMI(cov, "randmcoin");
   assert(sub->mpp.moments >= 2);

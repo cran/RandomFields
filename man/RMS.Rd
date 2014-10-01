@@ -16,14 +16,17 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
  \item{phi}{submodel}
  \item{var}{is the optional variance parameter \eqn{v},}
  \item{scale}{scaling parameter \eqn{s} which is positive}
- \item{Aniso}{the optional anisotropy matrix \eqn{A}, multiplied from
- the left, or an arbitrary function
+ \item{Aniso}{matrix or \code{\link{RMmodel}}.
+   The optional anisotropy matrix \eqn{A}, multiplied from
+   the right by a distance vector \eqn{x}, i.e. \eqn{Ax}
  } 
  \item{proj}{is the optional projection vector which defines a diagonal
  matrix of zeros and ones and \code{proj} gives the 
  positions of the ones (integer values between 1 and teh dimension of
  \eqn{x}).}
- \item{anisoT}{the transpose of the anisotropy matrix \eqn{A}, multiplied from the right
+ \item{anisoT}{the transpose of the anisotropy matrix \eqn{B},
+ multiplied from the left by a distance vector \eqn{x}, i.e. \eqn{x^\top
+ B}.
  }
 }
 \value{

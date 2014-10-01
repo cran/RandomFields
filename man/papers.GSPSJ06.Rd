@@ -38,7 +38,7 @@ stabletest <- function(alpha, theta, size=if (interactive()) 512 else 20) {
              storing=TRUE)
   model <- RMcutoff(diameter=theta, a=1, RMstable(alpha=alpha))
   RFcov(dist=0, model=model, dim=2, seed=0)
-  r <- RFgetModelInfo(RFcov, modelname="RMcutoff")$internalq[5] # theor R
+  r <- RFgetModelInfo(RFcov, modelname="RMcutoff", level=3)$internalq[5] # theor R
   x <- seq(0, r, by= r / (size - 1)) * theta
   err <- try(RFsimulate(x, x, model=RPcirculant(model), n=0))
   return(if (class(err) == "try-error") NA else r)

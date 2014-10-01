@@ -72,6 +72,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMgauss(scale=0.4)
 x <- seq(0, 10, if (interactive()) 0.02 else 1) 
 plot(model)
+lines(RMgauss(), col="red")
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

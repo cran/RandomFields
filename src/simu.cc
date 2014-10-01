@@ -594,8 +594,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	      break;
 	    }
 	  }
-	  if (idx == DALEFT) break;
-	  idx = DALEFT;
+	  if (idx == DAUSER || natsc) break;
+	  idx = DAUSER;
 	}
 	if (natsc) addModel(cov, 0, NATSC_INTERN); 
       } else {
@@ -793,6 +793,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
     //    printf("\n>> %d ly=%d zaehler=%d lx=%d\n\n", err, ly, zaehler, lx);
 
+   
     if (err == NOERROR || zaehler>=1) {
       break;    
     } 
@@ -806,25 +807,29 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     sprintf(EM2, "%s%s", PREF_FAILURE, EM);
     if (lx == 0 || distances) break;
 
+    //   printf(">> %d '%s'\n", err, EM2);
+
     y = x;
     ly = lx;
     zaehler++;
   }
 
-  assert(CallingSet(cov));
-
+ 
   //printf("end  checkmodelinternal\n");
   PutRNGstate();
 
   // AERR(err);
   //PMI(cov);
-
   // Fehlermeldung vom ersten Durchgang wird angezeigt.
   if (err != NOERROR) { 
-    //  printf("%d '%s'\n", err, EM2);
+    //     printf("%d '%s'\n", err, EM2);
     // APMI(cov);
-    ERR(EM2); 
+    error(EM2); 
   }
+  
+  // muss ganz zum Schluss stehen, da Fehler zu einer unvollstaendigen
+  // Struktur fuehren koennen
+  assert(CallingSet(cov));
   //APMI(cov);
 }
 

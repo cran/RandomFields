@@ -56,7 +56,10 @@ RFspatialGridDataFrame <- function(grid, data,
                                    proj4string = sp::CRS(as.character(NA)),
                                    RFparams=list(n=1, vdim=1)) {
   grid <- convert2GridTopology(grid)
-  tmp <- sp::SpatialGridDataFrame(grid=grid, data=data, proj4string=proj4string)
+  tmp <- sp::SpatialGridDataFrame(grid=grid,
+                                  data = if (is.data.frame(data)) data else
+                                  data.frame(data),
+                                  proj4string=proj4string)
   return(sp2RF(tmp, RFparams))
 #  tmp <- as(tmp, "RFspatialGridDataFrame")
 #  tmp@.RFparams <- AddUnits(RFparams)
@@ -74,7 +77,10 @@ RFspatialPointsDataFrame <- function(coords, data, coords.nrs = numeric(0),
     bbox <- t(apply(coords, 2, range))
     colnames(bbox) <- c("min", "max")
   }
-  tmp <- sp::SpatialPointsDataFrame(coords=coords, data=data, coords.nrs=coords.nrs,
+  tmp <- sp::SpatialPointsDataFrame(coords=coords,
+                                    data=if (is.data.frame(data)) data else
+                                    data.frame(data),
+                                    coords.nrs=coords.nrs,
                                     proj4string=proj4string, 
                                     match.ID=match.ID, bbox=bbox)
 #  if (!is.null(dimnames(coords)))

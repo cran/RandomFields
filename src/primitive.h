@@ -4,6 +4,14 @@
 #define UNIT_EPSILON 1E-13
 
 
+void AngleMatrix(cov_model *cov, double *A);
+void kappa_Angle(int i, cov_model *cov, int *nr, int *nc);
+void Angle(double *x, cov_model *cov, double *v);
+int checkAngle(cov_model *cov);
+void rangeAngle(cov_model *cov, range_type* ra);
+void invAngle(double *x, cov_model *cov, double *v);
+
+
 void Bessel(double *x, cov_model *cov, double *v);
 int initBessel(cov_model *cov, gen_storage *s);
 void spectralBessel(cov_model *cov, gen_storage *s, double *e); 

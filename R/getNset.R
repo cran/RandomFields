@@ -100,7 +100,7 @@ print.RFgetModelInfo <- function(x, ...) {
 
 
 RFgetModelInfo <-
-  function(register, level=3, 
+  function(register, level=1, 
            spConform=RFoptions()$general$spConform,
            which.submodels = c("user", "internal", "both"),
            modelname=NULL) {  
@@ -147,6 +147,9 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
                             newnames
                             ){ #, .internal=FALSE) {
 
+  group.names <- c("type", "domain", "isotropy", "operator",
+                   "monotone", "finiterange", "valid.in.dim", "vdim")
+
   if (hasArg(internal)) {
     return(PrintModelList(operators=operator, internal = internal,
                           newstyle=missing(newnames) || newnames))
@@ -167,14 +170,24 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
   if (length(vdim) == 1) vdim <- rep(vdim, 2)
 
   debug <- !TRUE
+  if (hasArg(type)) type <- RC_TYPE[pmatch(type, RC_TYPE)]
+  if (length(group.by) > 0) {
+    group.idx <- pmatch(group.by, group.names)
+    if (any(is.na(group.idx)))
+      stop("'group.by' can be equal to '",
+           paste(group.names, collapse="', '"), "'")
+    group.by <- group.names[group.idx]
+    group.idx <- group.idx[1]
+  }
+
+  
+  if (length(type) == 1 && length(group.by)==1 && group.by=="type") {
+    if (type == RC_TYPE[1]) type <- c(RC_TYPE[1], "undefined") # to do
+    else if (type == RC_TYPE[2]) type <- c(RC_TYPE[1:2], "undefined") # to do
+    else if (type == RC_TYPE[3]) type <- c(RC_TYPE[1:3], "undefined")  # to do  
+  }
   
   if (group <- !is.null(group.by)) {  
-    names <- c("type", "domain", "isotropy", "operator",
-               "monotone", "finiterange", "valid.in.dim", "vdim")
-    idx <- pmatch(group.by[1], names)
-    if (is.na(idx))
-      stop("'group.by' can be equal to '", paste(names, collapse="', '"), "'")
-    
     FUN <- function(string){
       args <- list(type=type, domain=domain, isotropy=isotropy,
                    operator=operator, monotone=monotone,
@@ -183,7 +196,7 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
                    finiterange=finiterange, valid.in.dim=valid.in.dim,
                    vdim=vdim,
                    if (group && length(group.by) > 1) group.by=group.by[-1])
-      args[[idx]] <- string
+      args[[group.idx]] <- string
       list(do.call("RFgetModelNames", args))
     }
     li <- sapply(get(group.by[1]), FUN=FUN)

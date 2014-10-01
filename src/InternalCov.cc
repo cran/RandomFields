@@ -77,7 +77,7 @@ void kdefault(cov_model *cov, int i, double v) {
 	LPRINT("%f\n", P(i)[j]);
       }
       char param_name[100]; 
-      strcpy(param_name, CovList[cov->nr].kappanames[i]); 
+      strcpy(param_name, KNAME(i)); 
       PERR("parameter not scalar -- contact author.");
     }
   }
@@ -127,9 +127,9 @@ void setdefault(cov_model *cov) {
   cov->finiterange = C->finiterange;  
   cov->monotone=C->Monotone;
 
-  cov->diag = 
-    cov->semiseparatelast = 
-    cov->separatelast = true;
+  //   cov->diag = 
+  //   cov->semiseparatelast = 
+  //   cov->separatelast = isIsotropic(cov->isoown); // war false vor 27.9.14
 
   MEMCOPY(cov->pref, C->pref, sizeof(pref_shorttype)); 
 
@@ -197,10 +197,10 @@ void setbackward(cov_model *cov, cov_model *sub) {
   //printf("range %d %d\n", (cov->finiterange), sub->finiterange);
   set_extbool(&(cov->finiterange), sub->finiterange);
   
-  cov->diag &= sub->diag;
+  //  cov->diag &= sub->diag;
 //  cov->quasidiag &= sub->quasidiag;
-  cov->separatelast &= sub->separatelast;
-  cov->semiseparatelast &= sub->semiseparatelast;  
+//  cov->separatelast &= sub->separatelast;
+//  cov->semiseparatelast &= sub->semiseparatelast;  
   if (sub->full_derivs < cov->full_derivs)
       cov->full_derivs = sub->full_derivs;
   //  PMI(cov);
@@ -475,7 +475,7 @@ int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
 	    C->maxmoments, NICK(cov), moments);
   }
   
-  sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "initiating the model"
+  sprintf(ERROR_LOC, "%s : ", cov->calling == NULL ? "initiating the model"
 	  : NICK(cov->calling));
   ASSERT_GATTER(cov);
   if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) {
@@ -526,7 +526,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
   if (!cov->initialised) {
     int err = NOERROR;
     
-    sprintf(ERROR_LOC, "in %s: ", NICK(cov));
+    sprintf(ERROR_LOC, "in %s : ", NICK(cov));
      
     assert(cov != NULL);
     if (moments < 0) SERR("moments expected to be positive");
@@ -540,7 +540,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
       if (cov->mpp.moments == PARAM_DEP) cov->mpp.moments = moments;
     }
     
-    sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "initiating the model"
+    sprintf(ERROR_LOC, "%s:", cov->calling == NULL ? "initiating the model"
 	    : NICK(cov->calling));
     //PMI(cov);
     ASSERT_GATTER(cov);
@@ -870,7 +870,7 @@ int struct2(cov_model *cov, cov_model **newmodel) {
     BUG;
   }
   strcpy(errloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "in %s: ", NICK(cov));
+  sprintf(ERROR_LOC, "In %s : ", NICK(cov));
 
   // printf("\nstart struct %s\n", CovList[cov->nr].nick);
   
@@ -962,7 +962,7 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
       //alloc_mpp_M(cov);
     //    }
     
-    sprintf(ERROR_LOC, "in %s: ", NICK(cov));
+    sprintf(ERROR_LOC, "In %s: ", NICK(cov));
     // if (C->maxsub == 0) cov->mpp.loc_done = false;
 
     //APMI(cov);
@@ -971,7 +971,7 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
  	goto ErrorHandling;
     }
  
-    sprintf(ERROR_LOC, "%s: ", NICK(prev));//  nicht gatternr   
+    sprintf(ERROR_LOC, "'%s': ", NICK(prev));//  nicht gatternr   
     err = NOERROR;  
   }
 
@@ -1089,8 +1089,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   char msg[1000] = "";
 
   // erst bei check unten
-  sprintf(ERROR_LOC, "%s: ", NICK(cov));
-  if (PL >= PL_COV_STRUCTURE ) { 
+  sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+  if (PL >= PL_COV_STRUCTURE) { 
     if (cov->calling == NULL) PRINTF("\n");
     LPRINT("%s\n", ERROR_LOC); 
   }
@@ -1264,7 +1264,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       cov->isoown = iso0;
       cov->vdim2[0] = vdim0;
       cov->vdim2[1] = vdim1;
-      setdefault(cov);
+      setdefault(cov); // braucht cov->isoown!
  
       if ((err = checkkappas(cov, C->primitive)) != NOERROR)  return err;
 
@@ -1435,7 +1435,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	   err, cov->full_derivs, cov->rese_derivs);
   }
 
-  sprintf(ERROR_LOC, "%s: ", cov->calling == NULL ? "parsing the model"
+  sprintf(ERROR_LOC, "\"%s\": ", cov->calling == NULL ? "parsing the model"
 	  : Nick(prev));
 
   // printf("end err = %d\n", err);

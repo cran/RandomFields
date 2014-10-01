@@ -367,8 +367,9 @@ void COV_NULL(cov_model *cov) {
   cov->monotone = MISMATCH; 
   //  cov->total_n = MISMATCH;
   //  cov->total_sum = 0.0;
-  cov->finiterange = cov->loggiven =  cov->diag = cov->semiseparatelast
-    = cov->separatelast = cov->matrix_indep_of_x = false;
+  cov->finiterange = cov->loggiven =  
+    // cov->diag = cov->semiseparatelast  = cov->separatelast = 
+    cov->matrix_indep_of_x = false;
   cov->hess = cov->tbm2num = NOT_IMPLEMENTED;
   for (i=0; i<=Nothing; i++) cov->pref[i] = PREF_BEST;
   // mpp und extrG muessen auf NONE sein !
@@ -1367,18 +1368,17 @@ void analyse_matrix(double *aniso, int row, int col,
      -> i
      |  * 0 0
      j  0 0 *
-     0 * 0
+        0 * 0
   */
   bool notquasidiag=true, *taken=NULL;
   int j, k, startidx, i, last;
 
   if (aniso == NULL) {
-    *diag = *quasidiag = *separatelast = *semiseparatelast;
+    *diag = *quasidiag = *separatelast = *semiseparatelast = true;
     for (i=0; i<col; i++) idx[i] = i;
     return;
   }
 
-  
   taken = (bool *) MALLOC(row * sizeof(bool));
 
   for (j=0; j<row; j++) {
@@ -1407,16 +1407,24 @@ void analyse_matrix(double *aniso, int row, int col,
     *diag = j >= row;
   }
   if (!(*semiseparatelast = *diag)) {
+    /*
+     * * 0
+     * * 0
+     * * *
+     */
     last = col * row - 1;
     for (k=last - row + 1; k<last; k++)
-      if (!(*separatelast = aniso[k++] == 0.0)) break;
+      if (!(*separatelast = aniso[k] == 0.0)) break;
   }
   if (!(*separatelast = *semiseparatelast)) {
-    // entered here only if last is set!
+    /*
+     * * 0
+     * * 0
+     0 0 *
+     */  
     for (k=row - 1; k<last; k+=row)
-      if (!(*separatelast = aniso[k++] == 0.0)) break;
+      if (!(*separatelast = aniso[k] == 0.0)) break;
   }
-
   free(taken);
 }
 
@@ -3495,3 +3503,21 @@ void SetLoc2NewLoc(cov_model *cov, location_type *loc) {
 }
 
 
+
+bool verysimple(cov_model *cov) {
+  assert(cov != NULL);
+  cov_fct *C = CovList + cov->nr; // kein gatternr, da isotrop
+  int i, k, total,
+    kappas = C->kappas;
+  for (k=0; k<kappas; k++) {
+    if (cov->kappasub[k] != NULL) return false;
+    total = cov->ncol[k] * cov->nrow[k];
+    if (C->kappatype[k] == REALSXP) {
+      for (i=0; i<total; i++) 
+	if (ISNAN(P(k)[i]) || ISNA(P(k)[i])) return false;
+    } else  if (C->kappatype[k] == INTSXP) {
+      for (i=0; i<total; i++) if (P(k)[i] == NA_INTEGER) return false;
+    } else return false;
+  }
+  return true;
+}

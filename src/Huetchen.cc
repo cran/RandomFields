@@ -528,7 +528,7 @@ int init_pts_given_shape(cov_model *cov, gen_storage *S) {
   assert(dim == cov->sub[PGS_LOC]->xdimprev);
   assert(dim == Loc(cov)->timespacedim);
   
-  if (Cshape->inverse == ErrCov)
+  if (Cshape->inverse == ErrCov) // && Cshape->nonstat_inverse == ErrCovNonstat)
     SERR1("support of the model is unknown. Use '%s' to determine the support",
 	  CovList[TRUNCSUPPORT].nick);
  
@@ -584,7 +584,7 @@ int init_pts_given_shape(cov_model *cov, gen_storage *S) {
 	 )) return ERRORMEMORYALLOCATION;
     for (i=3, d=1; d<dim; d++, i+=3) pgs->xgr[d] = pgs->xgr[0] + i;
     // printf("%d\n", pgs->xgr[1] - pgs->xgr[0]); assert(false);
-   if ((err = calculate_mass_gauss(cov)) != NOERROR) return err;
+    if ((err = calculate_mass_gauss(cov)) != NOERROR) return err;
   } else if (hasMaxStableRole(cov)) {
     if (pgsnull &&
 	(
@@ -1131,6 +1131,8 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
   } else {
     PMI(cov); BUG; //
   }
+
+  // do_gs_maxstable might break links of the cov structure:
   cov_model *prev=cov->calling;		
   assert(prev != NULL);				
   if (prev->key != NULL) cov = prev->key;		
@@ -1203,7 +1205,7 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
     pgs->supportmin[d] = cov->q[d] - y[d]; // 4 * for debugging...
     pgs->supportmax[d] = cov->q[d] - x[d];
 
-     //     printf("do d=%d q=%f x=%f y=%f eps=%e thr=%e %f %f\n",
+    //     printf("do d=%d q=%f x=%f y=%f eps=%e thr=%e %f %f\n",
     //	  	  d, cov->q[d], x[d], y[d], eps, pgs->currentthreshold, pgs->supportmin[d], pgs->supportmax[d]);
 
   if (ISNAN(pgs->supportmin[d]) || ISNAN(pgs->supportmax[d]) ||
@@ -1220,7 +1222,6 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
   
 
   //  BUG;
-
   //   APMI(cov);
 
   cov->fieldreturn = shape->fieldreturn;

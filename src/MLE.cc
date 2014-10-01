@@ -585,7 +585,7 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
       if (ISNAN(v) && C->paramtype(i, 0, 0) != IGNOREPARAM
 	  && C->paramtype(i, 0, 0) != DONOTRETURNPARAM
 	  && cov->nr!=MIXEDEFFECT && cov->nr!=TREND) {// cov->nr!=MLEMIXEDEFFECT
-	if (!isDollar(cov) || (i!=DALEFT && i!=DPROJ)) {
+	if (!isDollar(cov) || (i!=DANISO && i!=DPROJ)) {
 	    minpile[*NAs] = dmin;
 	    maxpile[*NAs] = dmax;
 //	    print("%s %d %f %f\n", C->kappanames[i],r, dmin, dmax);
@@ -728,8 +728,7 @@ int CheckEffect(cov_model *cov) {
   cov_model *sub = cov;
   bool Simple = true;
   if (isDollar(sub)) {
-    Simple = PARAMisNULL(sub, DPROJ) && PARAMisNULL(sub, DANISO) && 
-      PARAMisNULL(sub, DALEFT);
+    Simple = PARAMisNULL(sub, DPROJ) && PARAMisNULL(sub, DANISO);
     sub = sub->sub[0];
   }
   

@@ -7,9 +7,9 @@
   \itemize{
     \item univariate and multivariat,
     spatial and spatio-temporal \link[=Gaussian]{Gaussian random fields}
+    \item fields based on Gaussian fields such as \link[=RPchi2]{Chi2 fields}
+    or \link[=RPbernoulli]{Binary fields}, see \link{RP}.
     \item \link[=RPpoisson]{stationary Poisson fields}
-    \item \link[=RPchi2]{Chi2 fields}
-    \item \link[=RPbernoulli]{Binary fields}
     \item \link[=RPmaxstable]{stationary max-stable random fields}.
   }
 

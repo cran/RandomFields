@@ -2160,6 +2160,7 @@ rffit.gauss <-
   
   trafoidx <- trafo <- NULL
   if (!is.null(transform)) {
+    if (!recall) message("Note: if 'transform' is used, 'anisoT' within 'RMS' should be used instead of 'Aniso', if elemens of an anisotropy matrix are estimated")
     if (trafo <- is.list(transform) && length(transform)>0) {
       trafoidx <- transform[[1]]
       if (length(transform)==2 && nrow(minmax) == length(trafoidx) &&

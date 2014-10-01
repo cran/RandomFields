@@ -1420,8 +1420,7 @@ int check_local_proc(cov_model *cov) {
     if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : NegDefType,
 		     XONLY, ISOTROPIC, SCALAR, ROLE_COV))
 	!= NOERROR) {
-      if (isDollar(next) && 
-	  (PARAM(next, DANISO) != NULL || PARAM(next, DALEFT) != NULL)) {
+      if (isDollar(next) && PARAM(next, DANISO) != NULL) {
 	// if aniso is given then xdimprev 1 does not make sense
 	err = CHECK(sub, dim, dim, cutoff ? PosDefType : NegDefType,
 		    XONLY, ISOTROPIC, SCALAR, ROLE_COV);

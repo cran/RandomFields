@@ -1437,7 +1437,7 @@ int checkma1(cov_model *cov) {
 		     cov->isoown, SCALAR, ROLE_COV)) 
 	!= NOERROR) return err;
 
-  cov->semiseparatelast = false;
+  //cov->semiseparatelast = cov->separatelast =false;
   cov->logspeed = 0.0;
   //  updatepref(cov, next);
   setbackward(cov, next);
@@ -1481,7 +1481,7 @@ int checkma2(cov_model *cov) {
 		     cov->isoown, SCALAR, ROLE_COV)) 
 	!= NOERROR) return err;
 
-  cov->semiseparatelast = false;
+  // cov->semiseparatelast = cov->separatelast =false;
   cov->logspeed = 0.0;
  //  updatepref(cov, next);
   setbackward(cov, next);

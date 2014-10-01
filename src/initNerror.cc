@@ -394,7 +394,7 @@ void errorMSG(int err, char* m, int len) {
   case ERRORANISO_T :
     sprintf(m, "'%s' may not be given at the same time with '%s' or '%s'", 
 	    CovList[DOLLAR].kappanames[DANISO], 
-	    CovList[DOLLAR].kappanames[DALEFT], 
+	    CovList[DOLLAR].kappanames[DAUSER], 
 	    CovList[DOLLAR].kappanames[DPROJ]);
     break;
   case ERRORDIAMETERNOTGIVEN:
@@ -1478,10 +1478,10 @@ void InitModelList() {
   IncludeModel("angle", ShapeType, 0, 0, 4, kappa_Angle, XONLY, CARTESIAN_COORD,
 	       checkAngle, rangeAngle, PREF_NOTHING, 
 	       false, PARAM_DEP, INFDIM, false, NOT_MONOTONE);
-     nickname("angle");
-     addCov(Angle, NULL, NULL, invAngle, NULL);
-     kappanames("angle", REALSXP, "lat.angle", REALSXP, "ratio", 
-		REALSXP, "diag", REALSXP);
+  nickname("angle");
+  addCov(Angle, NULL, NULL, invAngle, NULL);
+  kappanames("angle", REALSXP, "lat.angle", REALSXP, "ratio", 
+	     REALSXP, "diag", REALSXP);
  
   BALL= IncludePrim("ball",  ShapeType, 0,  NULL, 
 		    XONLY, ISOTROPIC, checkOK, NULL, PREF_NOTHING, 

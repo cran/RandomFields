@@ -12,8 +12,8 @@
  #############################################################
  ##                      EXAMPLE 1                          ##
  ## The following gives an example on the advantage of      ##
- ## local.dependent=TRUE (and dependent=TRUE) if in a       ##
- ## study most of the time is spent with simulating the     ##
+ ## dependent=TRUE for simulating with RPcirculant if, in a ##
+ ## study, most of the time is spent with simulating the    ##
  ## Gaussian random fields. Here, the covariance at a pair  ##
  ## of points is estimated for n independentent repetitions ##
  ## and 2*n locally dependent dependent repetitions .       ##
@@ -102,7 +102,7 @@ par(mar=mar)
 image(x2, x2, z2, zlim=range(z1), col=rainbow(100))
 polygon(range(x2)[c(1,2,2,1)], range(y1)[c(1,1,2,2)],
         border="red", lwd=3)
-tbm.points <- RFgetModelInfo(RFsimulate)$loc$totpts
+tbm.points <- RFgetModelInfo(level=3)$loc$totpts
 Print(tbm.points, empty.lines=0) # number of points on the line
 
 

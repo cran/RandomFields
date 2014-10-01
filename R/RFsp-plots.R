@@ -332,7 +332,7 @@ plotRFspatialDataFrame <-
     
     if (length(n.slices)!=1 && length(n.slices)!=3)
       stop("n.slices must be an integer of length 1 or 3")
-   
+
     data.arr <- RFspDataFrame2dataArray(x)
     vdim <- dim(data.arr)[timespacedim+1]
     n.orig <- dim(data.arr)[timespacedim+2] ## including the kriging variance as one repet
@@ -439,35 +439,21 @@ plotRFspatialDataFrame <-
   }
 
   if (!(missing.y <- missing(y))) {
-     if (do.slices)
+    if (do.slices)
       stop("'y' and 'MARGIN.slices' may not be given at the same time")
     #
     if (is(y,  'RFspatialGridDataFrame')) {
       y.coords <- as(y, "RFspatialPointsDataFrame")@coords
       y.data <- y@data
-    } else if (is(y, "matrix")) {
-      y.coords <- NULL
-      if (!is.null(dnames <- dimnames(y)[[2]])) {
-        if ((length(xi <- earth_coordinate_names(dnames)) == 2) ||
-            (length(xi <- cartesian_coordinate_names(dnames)) > 0)) {
-          y.coords <- y[ , xi, drop=FALSE]
-          y.data <- y[ , -xi, drop=FALSE]
-          
-    #      Print(y.coords, y.data, xi, timespacedim, range(y.data))
-          
-          if (length(xi) != genuine.timespacedim)
-            stop("dimensions of coordinates do not match (arguments 'x' and 'y')")
-         }
-       }
-        if (is.null(y.coords)) {
-          stop("could not identify the coordinates of the data (argument 'y')")
-       }
-     } else  {
-       y.coords <- y@coords
-       y.data <- y@data
-    }
-     #Print(y, y.coords, y.data); ooopp
-   }
+    } else if (is(y, "matrix") || is(y, "data.frame")) {
+      dc <- data.columns(y, xdim = dimensions(x), force=TRUE)
+      y.coords <- y[, dc$x, drop=FALSE]
+      y.data <- y[, dc$data, drop=FALSE]
+    } else  {
+      y.coords <- y@coords
+      y.data <- y@data
+    }     
+  }
 
     
 

@@ -184,7 +184,7 @@ RPintrinsic(phi, force, mmin, strategy,
  then at least 4 non-overlapping rectangles are taken out of the
  the expanded grid defined by the circulant matrix.
  These simulations are dependent.
- See below for an example.
+ See \link{RFoptionsAdvanced} for an example.
  See \code{trials} for some
  more information on the circulant matrix.
 

@@ -307,15 +307,21 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   ### Print((covinfo))
 #  Print(covinfo$domown, TRANS_INV , covinfo$type, isPosDef(covinfo$type),
  #       is.null(fct.type), fct.type,"Variogram") ; xxx
+
+  if (is.null(xlim)) {
+    xlim <- if (dim > 1 || all.vdim[1] > 1) c(-1, 1) * 1.75 else c(0, 1.75)    
+  }
+  if (is.null(ylim) && dim > 1) ylim <- xlim
+ 
   
   distance <- seq(xlim[1], xlim[2], length=n.points)
   
-  if (xlim[1] * xlim[2] < 0 & !(any(distance==0)))
-    distance <- sort(c(0, distance))
+  if (prod(xlim) <= 0)
+    distance <- sort(c(if (!any(distance==0)) 0, 1e-5, distance))
 
   if (dim > 1) {
     distanceY <- seq(ylim[1], ylim[2], length=n.points)
-    if (ylim[1]*ylim[2] < 0 & !(any(distanceY==0)))
+    if (prod(ylim) < 0 & !(any(distanceY==0)))
       distanceY <- sort(c(0, distanceY))
   }
 
@@ -336,7 +342,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
            ylab <- expression(gamma(distance))
          },
          "Fctn" = {
-           main<- "Shape function"
+           main<- ""
            ylab <- "f(distance)"
          },
          stop("method only implemented for ", verballist)
@@ -364,7 +370,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 
   
   return(list(main=main, fctcall=all.fct.types, ylab=ylab, distance=distance,
-              distanceY = if (dim > 1) distanceY))
+              distanceY = if (dim > 1) distanceY, xlim=xlim, ylim=ylim))
 }
 
 
@@ -373,9 +379,9 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
     D <- li$distance             
     iszero <- D == 0
     if (plotfctcall == "matplot")  {
-      plotpoint <- any(iszero) && diff(range(dots$ylim)) * 1e-3 <
-        diff(range(cov)) - diff(range(cov[!iszero]))
-      if (plotpoint) D[iszero] <- NA
+        plotpoint <- any(iszero) && diff(range(dots$ylim)) * 1e-3 <
+          diff(range(cov)) - diff(range(cov[!iszero]))
+        if (plotpoint) D[iszero] <- NA
     } else plotpoint <- FALSE
     liXY <-
       if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
@@ -446,18 +452,15 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     dots$plotfctcall else "matplot"
   dots$plotfctcall <- NULL
 
-  if (!("xlim" %in% dotnames)) {
-    dots$xlim <- c(-1, 1) * 1.5
-  }
-  if (!("ylim" %in% dotnames) && dim > 1) dots$ylim <- dots$xlim
-  if (!("type" %in% dotnames)) dots$type <- "l"
 
-  
+  if (!("type" %in% dotnames)) dots$type <- "l"
   li <- preparePlotRMmodel(x=x, xlim=dots$xlim, ylim=dots$ylim,
                            n.points=n.points, dim=dim,
                            fct.type=fct.type,
                            MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN)
-  
+
+  dots$xlim <- li$xlim
+  if (!is.null(li$ylim)) dots$ylim <- li$ylim
   if (!("main" %in% dotnames)) dots$main <- li$main
   if (!("cex" %in% dotnames)) dots$cex <- 1
   if (!("cex.main" %in% dotnames)) dots$cex.main <- 0.8 * dots$cex
@@ -507,12 +510,15 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
 
   dimcov <-  dim(cov[[1]])
   graphics <- RFoptions()$graphics
-  if (is.null(dimcov)) { ## i.e. vdim == 1
-    ArrangeDevice(graphics, c(1,1))
-  } else {
-    figs <- dimcov[2:3]
-    ArrangeDevice(graphics, figs)
+  if (plotfctcall != "plot.xy") { ### points and lines !!
+     if (is.null(dimcov)) { ## i.e. vdim == 1
+      ArrangeDevice(graphics, c(1,1))
+    } else {
+      figs <- dimcov[2:3]
+      ArrangeDevice(graphics, figs)
+    }
   }
+  
   
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## noch noetig??
   

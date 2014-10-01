@@ -1,10 +1,10 @@
 \name{jss14}
 \alias{jss14}
-\alias{information}
-\alias{pars}
-\alias{pars.model}
-\alias{whole}
-\alias{whole.model}
+%\alias{information}
+%\alias{pars}
+%\alias{pars.model}
+%\alias{whole}
+%\alias{whole.model}
 \title{Covariance models for multivariate and vector valued fields}
 \description{
  Here the code of the paper on \sQuote{Analysis, simulation and prediction of

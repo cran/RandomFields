@@ -39,34 +39,35 @@
  specifies
  
  \itemize{
-	\item the type of random field by using one of the functions
-	\itemize{ 
-	 \item \command{\link{RPgauss}}: Gaussian random field (default
-	 if none of the function in the list are given)
-	 \item \command{\link{RPbernoulli}}:
-	 indicator field, based on a Gaussian field
-	 \item \command{\link{RPpoisson}}: shot noise model
-	 \item \command{\link{RPbrownresnick}}: Brown-Resnick processes
-	 \item \command{\link{RPopitz}}: Extremal t process
-	 \item \command{\link{RPsmith}}: Smith model
-	 \item \command{\link{RPschlather}}: Extremal Gaussian process
-	 (also called Schlather model)
-	}
-	\item the simulation method by using one of the functions given
-	by \code{\link{RFgetModelNames}(type='MethodType')}
-	\item the covariance or variogram model in case of a Gaussian random
-	field (\command{\link{RPgauss}}) and for fields based on Gaussian fields
-	(e.g. \command{\link{RPbernoulli}});
-	type \code{\link{RFgetModelNames}(type='CovType')} for a list of
-	available models; see also \command{\link{RMmodel}}
-	
-	\item the shape function in case of a shot noise process; type
-	\code{\link{RFgetModelNames}(type='ShapeType')} for a list of
-	available models
-	
-	\item the main structural element of a max-stable field
-	(\command{\link{RPbrownresnick}}, \command{\link{RPopitz}},
-	\command{\link{RPsmith}} and \command{\link{RPschlather}})	
+   \item the type of random field by using \code{RP}functions,
+   e.g.,
+   \itemize{ 
+     \item \command{\link{RPgauss}}: Gaussian random field (default
+     if none of the function in the list are given)
+     %	 \item \command{\link{RPbernoulli}}:
+     %	 indicator field, based on a Gaussian field
+     %	 \item \command{\link{RPpoisson}}: shot noise model
+     %	 \item \command{\link{RPbrownresnick}}: Brown-Resnick processes
+     %	 \item \command{\link{RPopitz}}: Extremal t process
+     \item \command{\link{RPsmith}}: Smith model
+     %	 \item \command{\link{RPschlather}}: Extremal Gaussian process
+     %	 (also called Schlather model)
+     See\code{ \link{RP}} for an overview.
+   }
+   
+   \item the covariance or variogram model inm case of a Gaussian random
+   field (\command{\link{RPgauss}}) and for fields based on Gaussian fields
+   (e.g. \command{\link{RPbernoulli}});
+   type \code{\link{RFgetModelNames}(type="negative definite", group.by="type")}
+   for a list of available models; see also \command{\link{RMmodel}}
+   
+   \item the shape function in case of a shot noise process; type
+   \code{\link{RFgetModelNames}(type='shape')} for a list of
+   available models
+   
+%   \item the main structural element of a max-stable field
+%   (\command{\link{RPbrownresnick}}, \command{\link{RPopitz}},
+%   \command{\link{RPsmith}} and \command{\link{RPschlather}})	
  }
  
  \item if of class \code{\link{RFformula}} or \command{\link[stats]{formula}},
@@ -160,7 +161,8 @@
 
  If the wrapping function of the \code{model} argument is a covariance
  or variogram model (i.e., one of list obtained by
- \code{\link{RFgetModelNames}(type='CovType')}), by default, a Gaussian field
+ \code{\link{RFgetModelNames}(type="negative definite",
+ group.by="type")}, by default, a Gaussian field 
  with the corresponding covariance structure is simulated.
  By default, the simulation method is chosen automatically through internal algorithms.
  The simulation method can be set explicitly by enclosing the

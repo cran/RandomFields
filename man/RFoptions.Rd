@@ -1273,18 +1273,21 @@
 
     Default: \code{""}.
   }
-  \code{jpegfile}{ argument \code{file} in \command{\link{jpeg}}
+
+  \item{\code{jpegfile}}{ argument \code{file} in \command{\link{jpeg}}
     If \code{""} then no internal naming is performed.
 
     Default: \code{""}.
   }
-  \code{filenumber}{integer. Starting number of the file if
+
+  \item{\code{filenumber}}{integer. Starting number of the file if
     \code{onefile=FALSE}. It is set to 0 whenever \code{pdffile} is
     changed and \code{onefile=FALSE}. 
 
     Default 0.
   }
-  \code{onefile}{about the behaviour of argument \code{onefile} in
+  
+  \item{\code{onefile}}{about the behaviour of argument \code{onefile} in
     \command{\link{pdf}}
 
     Default: \code{FALSE}.

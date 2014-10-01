@@ -388,7 +388,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 #define ninfo0 1
 #define ninfo1 6
 #define ninfo2 8
-#define ninfo3 10
+#define ninfo3 7
 #define ninfo4 3
 
   /*   !!!!!     ACHTUNG     !!!!!
@@ -582,17 +582,17 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     SET_STRING_ELT(nameMvec, k, mkChar("finiterange"));  
     SET_VECTOR_ELT(model, k++, ScalarLogical(cov->finiterange));
       
-    SET_STRING_ELT(nameMvec, k, mkChar("diag"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->diag));
+    //    SET_STRING_ELT(nameMvec, k, mkChar("diag"));  
+    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->diag));
   
     //  SET_STRING_ELT(nameMvec, k, mkChar("quasidiag"));  
     //  SET_VECTOR_ELT(model, k++, ScalarLogical(cov->quasidiag));
 
-    SET_STRING_ELT(nameMvec, k, mkChar("semisep.last"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->semiseparatelast));
+    //    SET_STRING_ELT(nameMvec, k, mkChar("semisep.last"));  
+    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->semiseparatelast));
       
-    SET_STRING_ELT(nameMvec, k, mkChar("sep.last"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->separatelast));
+    //    SET_STRING_ELT(nameMvec, k, mkChar("sep.last"));  
+    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->separatelast));
          
     //  SET_STRING_ELT(nameMvec, k, mkChar("idx"));  
     //  SET_VECTOR_ELT(model, k++, Int(cov->idx, cov->tsdim));
@@ -1631,12 +1631,12 @@ void ple_intern(cov_fct *C){
   PRINTF("\n");
 }
 
-void ple(cov_model *cov) {
+void ple_(cov_model *cov) {
   PRINTF("  %s\n", NAME(cov));
   ple_intern(CovList + cov->nr);
 }
  
-void ple(char *name) {
+void ple_(char *name) {
   PRINTF("PLE %s\n", name);
   ple_intern(CovList + getmodelnr(name));
 }

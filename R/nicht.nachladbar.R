@@ -14,15 +14,19 @@ setMethod("[<-", signature=c("RFsp"),
             return(x)
           })
 
-trafo_pointsdata <- function(x) {
+trafo_pointsdata <- function(x, dim) {
   if (isgrid <- is(x, "RFgridDataFrame")) {
  #   Print(x)
     x <- as(x, "RFpointsDataFrame")  ## funktioniert nicht
-#    Print(x)
+    ##    Print(x)
+  } else if ((is(x, "matrix") || is(x, "data.frame")) && !missing(dim)) {
+    dc <- data.columns(x, xdim = dim, force=TRUE)
+    x <- list(coords=x[, dc$x, drop=FALSE], data=x[, dc$data, drop=FALSE])
   } else {
     if (!is(x, "RFpointsDataFrame"))
       stop("method only for objects of class 'RFpointsDataFrame' and 'RFgridDataFrame'")
   }
+             
   dummy <- dimnames(x@coords)[[2]][1]
   lab <- xylabs(if (is.null(dummy)) "" else dummy, "",
                 units=x@.RFparams$coord.units)

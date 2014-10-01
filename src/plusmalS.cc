@@ -52,10 +52,10 @@ void kappaS(int i, cov_model *cov, int *nr, int *nc){
     *nr = *nc = 1;
     break;
   case DANISO :
-    *nc = SIZE_NOT_DETERMINED;
     *nr = cov->xdimown;
+    *nc = SIZE_NOT_DETERMINED;
     break;
-  case DALEFT :
+  case DAUSER :
     *nr = SIZE_NOT_DETERMINED;
     *nc = cov->xdimown;
     break;
@@ -63,7 +63,7 @@ void kappaS(int i, cov_model *cov, int *nr, int *nc){
     *nr = SIZE_NOT_DETERMINED;
     *nc = 1;
     break;
-  default : *nr = *nc = -1;
+  default : *nr = *nc = -1; 
   }
 }
 
@@ -139,7 +139,7 @@ void Sstat(double *x, cov_model *cov, double *v){
 
 void logSstat(double *x, cov_model *cov, double *v, double *sign){
   cov_model *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT];
+    *Aniso = cov->kappasub[DAUSER];
   double 
     var = P0(DVAR),
     *scale =P(DSCALE), 
@@ -176,15 +176,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
     double *xz;
     ALLOC_DOLLAR(z, xdimown);
     if (aniso!=NULL) {
-      int j, k,
-	nrow=cov->nrow[DANISO], 
-	ncol=cov->ncol[DANISO];
-      for (k=i=0; i<ncol; i++) {
-	z[i] = 0.0;
-	for (j=0; j<nrow; j++) {
-	  z[i] += aniso[k++] * x[j];
-	}
-      }
+      xA(x, aniso, cov->nrow[DANISO], cov->ncol[DANISO], z);
       xz = z;
     } else xz = x;    
     if (scale != NULL) {
@@ -216,7 +208,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
 		 double *sign){
   cov_model 
     *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT];
+    *Aniso = cov->kappasub[DAUSER];
   double *z1, *z2,
     var = P0(DVAR),
     *scale =P(DSCALE),
@@ -251,7 +243,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     ALLOC_DOLLARY(Z1, Z2, dim);
     z1 = Z1;
     z2 = Z2;
-   FCTN(x, Aniso, z1);
+    FCTN(x, Aniso, z1);
     FCTN(y, Aniso, z2);
     if (sign == NULL) NONSTATCOV(z1, z2, next, v)
       else LOGNONSTATCOV(z1, z2, next, v, sign);
@@ -265,16 +257,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     z1 = Z1;
     z2 = Z2;
     if (aniso != NULL) {
-      int j, k,
-	nrow=cov->nrow[DANISO],
-	ncol=cov->ncol[DANISO];
-      for (k=i=0; i<ncol; i++) {
-	z1[i] = z2[i] =0.0;
-	for (j=0; j<nrow; j++, k++) {
-	  z1[i] += aniso[k] * x[j];
-	  z2[i] += aniso[k] * y[j];
-	}
-      }
+      xA( x, y, aniso,cov->nrow[DANISO], cov->ncol[DANISO], z1, z2);
       xz1 = z1;
       xz2 = z2;
     } else {
@@ -324,12 +307,18 @@ void covmatrixS(cov_model *cov, double *v) {
     error("memory allocation error in 'covmatrixS'");
 
   if ((!PisNULL(DSCALE) && P0(DSCALE) != 1.0) || 
-      !PisNULL(DANISO) || !PisNULL(DPROJ)) {
+      !PisNULL(DANISO) || !PisNULL(DPROJ) || 
+      cov->kappasub[DSCALE] != NULL ||
+      cov->kappasub[DAUSER] != NULL ||
+       cov->kappasub[DPROJ] != NULL
+      ) {
     CovarianceMatrix(cov, v); 
     return;
   }
 
   if (next->xdimprev != next->xdimown) {
+    //printf("%d %d\n",  !PisNULL(DANISO), DANISO);
+    //    PMI(cov, -1);
     BUG; // fuehrt zum richtigen Resultat, sollte aber nicht
     // vorkommen!
     CovarianceMatrix(cov, v); 
@@ -347,26 +336,26 @@ void covmatrixS(cov_model *cov, double *v) {
   next->gatternr = next_gatter;
   next->xdimgatter = next_xdimgatter;
   next->xdimprev = next_xdim;
+  if (var == 1.0) return;
 
   // PMI(cov, "covmatrix S");
-  if (locnext==NULL) loc_set(cov, locnext->totalpoints);
+  // if (locnext==NULL) loc_set(cov, locnext->totalpoints);
   tot = cov->vdim2[0] * locnext->totalpoints;
   totSq = tot * tot;
-  if (var == 1.0) return;
   for (i=0; i<totSq; v[i++] *= var);
 }
 
 char iscovmatrixS(cov_model *cov) {
   cov_model *sub = cov->sub[DOLLAR_SUB];
-  return (int) ((PisNULL(DSCALE) || P0(DSCALE) ==1.0) &&
-		cov->kappasub[DALEFT]==NULL &&
+  return (int) ((PisNULL(DSCALE) || P0(DSCALE) ==1.0) &&	
+		cov->kappasub[DAUSER]==NULL &&
 		PARAMisNULL(sub, DPROJ) &&
 		PARAMisNULL(sub, DANISO)) * CovList[sub->nr].is_covariance(cov);
 }
 
 void DS(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
-  assert(cov->kappasub[DALEFT] == NULL);
+  assert(cov->kappasub[DAUSER] == NULL);
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim,
@@ -399,7 +388,7 @@ void DS(double *x, cov_model *cov, double *v){
 
 void DDS(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
-  assert(cov->kappasub[DALEFT] == NULL);
+  assert(cov->kappasub[DAUSER] == NULL);
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim,
@@ -435,7 +424,7 @@ void DDS(double *x, cov_model *cov, double *v){
 
 void D3S(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
-  assert(cov->kappasub[DALEFT] == NULL);
+  assert(cov->kappasub[DAUSER] == NULL);
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim,
@@ -470,7 +459,7 @@ void D3S(double *x, cov_model *cov, double *v){
 
 void D4S(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
-  assert(cov->kappasub[DALEFT] == NULL);
+  assert(cov->kappasub[DAUSER] == NULL);
   int i,
     vdim = cov->vdim2[0],
     vdimSq = vdim * vdim,
@@ -504,11 +493,10 @@ void D4S(double *x, cov_model *cov, double *v){
 }
 
 
-
 void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
   cov_model *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT];
-  assert(cov->kappasub[DALEFT] == NULL);
+    *Aniso = cov->kappasub[DAUSER];
+  if (Aniso != NULL) BUG;
   int i, endfor,
     dim = cov->nrow[DANISO],// == ncol == x d i m ?
     xdimown = cov->xdimown,
@@ -518,7 +506,6 @@ void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
     *aniso=P(DANISO),
     var = P0(DVAR);
   if (nproj != 0) BUG;
-  if (Aniso != NULL) BUG;
   if (dim != xdimown) BUG;
 	  
   
@@ -552,8 +539,10 @@ void nablahessS(double *x, cov_model *cov, double *v, bool nabla){
   }
      
   if (aniso != NULL) {  
-    if (nabla) Ax(aniso, vw, xdimown, xdimown, v);
-    else XCXt(aniso, vw, v, xdimown, xdimown);
+    if (nabla) Ax(aniso, vw, xdimown, xdimown, v); 
+    else {
+      XCXt(aniso, vw, v, xdimown, xdimown); //todo:?reprogramm XCXt with alloc here ?
+    }
   }
 
   for (i=0; i<endfor; i++) v[i] *= var; 
@@ -571,19 +560,31 @@ void hessS(double *x, cov_model *cov, double *v){
 
 void inverseS(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[DOLLAR_SUB];
-  if (cov->kappasub[DALEFT] != NULL) {
-    char Msg[100];
-    sprintf(Msg, "inverse can only be calculated if '%s' is not an arbitrary function",
-	    KNAME(DALEFT)); 
-    ERR(Msg);
-  }
   int i,
+    idx[2] = {DAUSER, DPROJ};
+  double 
+    scale;
+  
+  for (i=0; i<2; i++) {
+    if (cov->kappasub[idx[i]] != NULL) {
+      char Msg[100];
+      sprintf(Msg, "inverse can only be calculated if '%s' is not an arbitrary function",
+  	      KNAME(idx[i])); 
+      ERR(Msg);
+    }
+  }
+  if (cov->kappasub[DSCALE] != NULL) {
+    double left;
+    NONSTATINVERSE(ZERO, cov->kappasub[DSCALE], &left, &scale);
+    if (left < 0.0) ERR("scale not defined to be non-negative.");
+  } else scale = PisNULL(DSCALE) ? 1.0 : P0(DSCALE);
+ 
+  int
     dim = cov->xdimown,
     nproj = cov->nrow[DPROJ];
   //    *proj = (int *)P(DPROJ];
   double y, 
     s = 1.0,
-    *scale =P(DSCALE),
     *aniso=P(DANISO),
     var = P0(DVAR);
 
@@ -594,7 +595,7 @@ void inverseS(double *x, cov_model *cov, double *v) {
       s /= aniso[0];
     else NotProgrammedYet(""); // to do
   }
-  if (scale != NULL) s *= scale[0];  
+  s *= scale;  
   if (nproj == 0) {
     y= *x / var; // inversion, so variance becomes scale
   } else {
@@ -613,11 +614,8 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
 		     bool log){
   cov_model
     *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT];
- 
-  // if (cov->kappasub[DALEFT] != NULL)
-  //  ERR("inverse can only be calculated if 'An  iso' not an arbitrary function"); 
-  int i,
+    *Aniso = cov->kappasub[DAUSER];
+   int i,
     dim = cov->tsdim,
     nproj = cov->nrow[DPROJ];
   //    *proj = (int *)P(DPROJ];
@@ -747,7 +745,7 @@ void tbm2S(double *x, cov_model *cov, double *v){
   double y[2],  *xy,
     *scale =P(DSCALE),
     *aniso = P(DANISO);
-  assert(cov->kappasub[DALEFT] == NULL);
+  assert(cov->kappasub[DAUSER] == NULL);
   
   assert(cov->nrow[DPROJ] == 0);
   if (aniso!=NULL) {
@@ -810,7 +808,7 @@ int TaylorS(cov_model *cov) {
     *sub = cov->key == NULL ? next : cov->key;
   int i;
 
-  if (PisNULL(DPROJ) && PisNULL(DALEFT) && PisNULL(DANISO)) {
+  if (PisNULL(DPROJ) && PisNULL(DANISO)) {
     double scale = PisNULL(DSCALE) ? 1.0 : P0(DSCALE);
     cov->taylorN = sub->taylorN;  
     for (i=0; i<cov->taylorN; i++) {
@@ -835,12 +833,11 @@ int TaylorS(cov_model *cov) {
 }
 
 int checkS(cov_model *cov) {
-  static bool print_warn_Aniso = true;
 
   // hier kommt unerwartet  ein scale == nan rein ?!!
   cov_model 
     *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT],
+    *Aniso = cov->kappasub[DAUSER],
     *sub = cov->key == NULL ? next : cov->key;
   int i, err,
     xdimown = cov->xdimown,
@@ -849,6 +846,7 @@ int checkS(cov_model *cov) {
     nproj = cov->nrow[DPROJ];
   // bool skipchecks = GLOBAL.general.skipchecks;
   matrix_type type = TypeMany;
+
   
   
   assert(isAnyDollar(cov));
@@ -859,40 +857,59 @@ int checkS(cov_model *cov) {
   // if (cov->method == SpectralTBM && cov->xdimown != next->xdimprev)
   //  return ERRORDIM;
   
-  if (cov->q == NULL && !PisNULL(DALEFT)) {
-    if (GLOBAL.internal.warn_Aniso && print_warn_Aniso) {
-      print_warn_Aniso = false;
-      PRINTF("NOTE! Starting with RandomFields 3.0, the use of '%s' is different from\n the former 'aniso' insofar that '%s' is multiplied from the right by 'x'\n(whereas 'aniso' had been multiplied from the left by 'x').\nSet %s(%s=FALSE) to avoid this message.\n", KNAME(DALEFT), KNAME(DALEFT), RFOPTIONS, internals[INTERNALS_NEWANISO]);
-    }
-    // here for the first time
-    if (!PisNULL(DANISO)) return ERRORANISO_T; 
-    int k,
-      lnrow = cov->nrow[DALEFT],
-      lncol = cov->ncol[DALEFT];
-    long j, 
-      total = lncol * lnrow;
-	
-    double
-      *pA = P(DALEFT); 
-    PALLOC(DANISO, lncol, lnrow); // !! ACHTUNG col, row gekreuzt
-    for (i=k=0; i<lnrow; i++) {
-      for (j=i; j<total; j+=lnrow) P(DANISO)[k++] = pA[j];
-    }
-    PFREE(DALEFT);
-    cov->q = (double*) CALLOC(1, sizeof(double));
-    cov->qlen = 1;
-  }
- 
   if ((err = checkkappas(cov, false)) != NOERROR) {
     return err;
   }
   kdefault(cov, DVAR, 1.0);
+
+  bool angle = Aniso!=NULL && CovList[Aniso->nr].check == checkAngle;
+  if (angle && PisNULL(DANISO) && PisNULL(DAUSER) && cov->xdimown == cov->tsdim) {
+    int dim  = cov->tsdim;
+    if ((err = CHECK(Aniso, dim, dim, ShapeType, XONLY,
+		    CARTESIAN_COORD, SUBMODEL_DEP, cov->role)) == NOERROR) {
+      if (verysimple(Aniso)) {     
+	 PALLOC(DAUSER, dim, dim);
+ 	 AngleMatrix(Aniso, P(DAUSER));
+	 COV_DELETE(cov->kappasub + DAUSER);
+	 Aniso = cov->kappasub[DAUSER] = NULL;
+	 angle = false;
+	 //PMI(cov, -1); 
+      }
+    } 
+  }
+
+
+  if (cov->kappasub[DANISO] != NULL)
+    SERR1("'%s' may not be a function.", KNAME(DANISO));
+  if (!PisNULL(DAUSER)) {
+    if (GLOBAL.internal.warn_Aniso) {
+      PRINTF("NOTE! Starting with RandomFields 3.0, the use of '%s' is different from\n the former 'aniso' insofar that '%s' is multiplied from the right by 'x'\n(whereas 'aniso' had been multiplied from the left by 'x').\n", KNAME(DAUSER), KNAME(DAUSER), RFOPTIONS, internals[INTERNALS_NEWANISO]);
+    }
+    GLOBAL.internal.warn_Aniso = false;
+    // here for the first time
+    if (!PisNULL(DANISO)) return ERRORANISO_T; 
+    int k,
+      lnrow = cov->nrow[DAUSER],
+      lncol = cov->ncol[DAUSER];
+    long j, 
+      total = lncol * lnrow;
+	
+    double
+      *pA = P(DAUSER); 
+    PALLOC(DANISO, lncol, lnrow); // !! ACHTUNG col, row gekreuzt
+    for (i=k=0; i<lnrow; i++) {
+      for (j=i; j<total; j+=lnrow) P(DANISO)[k++] = pA[j];
+    }
+    PFREE(DAUSER);
+  }
+ 
+
   if (Aniso != NULL) {
-    if (!isDollarProc(cov) && CovList[Aniso->nr].check!=checkAngle)
-      cov->domown = KERNEL;
+
+    if (!isDollarProc(cov) && !angle) cov->domown = KERNEL;
 
     if (!PisNULL(DANISO) || !PisNULL(DPROJ) || !PisNULL(DSCALE))
-      SERR2("if '%s' is an arbitrary function, only '%s' may be given as additional parameter", KNAME(DANISO), KNAME(DVAR)); 
+      SERR2("if '%s' is an arbitrary function, only '%s' may be given as additional parameter.", KNAME(DAUSER), KNAME(DVAR));
     if (cov->isoown != SYMMETRIC && cov->isoown != CARTESIAN_COORD) {
       //      printf("iso = %d\n", cov->isoown);
       //PMI(cov, -1);
@@ -924,19 +941,16 @@ int checkS(cov_model *cov) {
       cov->pref[Hyperplane] = cov->pref[SpectralTBM] = cov->pref[TBM] = 
       PREF_NONE;
 
-    if (CovList[Aniso->nr].cov != Angle) {
-      sub->pref[CircEmbed] = sub->pref[CircEmbedCutoff] = 
-	sub->pref[CircEmbedIntrinsic] = sub->pref[Sequential] = 
-	sub->pref[Markov] = sub->pref[Specific] = PREF_NONE;
-    }
+    sub->pref[CircEmbed] = sub->pref[CircEmbedCutoff] = 
+      sub->pref[CircEmbedIntrinsic] = sub->pref[Sequential] = 
+      sub->pref[Markov] = sub->pref[Specific] = PREF_NONE;
+
  
   } else if (!PisNULL(DANISO)) { // aniso given
-    int *idx=NULL,
+    int 
       nrow = cov->nrow[DANISO],
       ncol = cov->ncol[DANISO];
-    bool quasidiag;
-
-    idx = (int *) MALLOC((nrow > ncol ? nrow : ncol) * sizeof(int));
+ 
     if (nrow==0 || ncol==0) SERR("dimension of the matrix is 0");
     if (!PisNULL(DPROJ)) return ERRORANISO_T;
     if (xdimown < nrow) {
@@ -946,13 +960,6 @@ int checkS(cov_model *cov) {
     if (xdimown != cov->tsdim && nrow != ncol)
       SERR("non-quadratic anisotropy matrices only allowed if dimension of coordinates equals spatio-temporal dimension");
 
-    analyse_matrix(P(DANISO), nrow, ncol, 
-		   &(cov->diag),
-		   &quasidiag, // &(cov->quasidiag), 
-		   idx, // cov->idx
-		   &(cov->semiseparatelast),
-		   &(cov->separatelast));
-    free(idx); idx=NULL;
     type = Type(P(DANISO), nrow, ncol);
     
     cov->full_derivs = cov->rese_derivs = 0;
@@ -964,8 +971,7 @@ int checkS(cov_model *cov) {
       cov->full_derivs = cov->rese_derivs = 2;
       break;
     case SPACEISOTROPIC :  
-      cov->full_derivs =  cov->rese_derivs = 
-	isMdiag(Type(P(DANISO), nrow, ncol)) ? 2 : 0;
+      cov->full_derivs =  cov->rese_derivs = isMdiag(type) ? 2 : 0;
       if (nrow != 2 || !isMdiag(type)) {
 	//	printf("nrow %d %d %d\n", nrow, type, isMdiag(type));
 	//	int h; for (h = 0; h<cov->nrow[DANISO] * cov->ncol[DANISO]; h++)
@@ -990,7 +996,7 @@ int checkS(cov_model *cov) {
 
     //  printf(" A hiere\n");
     
-    if (!cov->diag) 
+    if (!isMdiag(type)) 
       cov->pref[Nugget] = cov->pref[RandomCoin] = cov->pref[Average] = cov->pref[Hyperplane] = PREF_NONE;
     if (cov->isoown != SPACEISOTROPIC && !isMiso(type))
       cov->pref[SpectralTBM] = cov->pref[TBM] = PREF_NONE;
@@ -1199,7 +1205,7 @@ void rangeS(cov_model *cov, range_type* range){
   range->openmin[DSCALE] = true;
   range->openmax[DSCALE] = true;
 
-  for (i=DANISO; i<= DALEFT; i++) {
+  for (i=DANISO; i<= DAUSER; i++) {
     range->min[i] = RF_NEGINF;
     range->max[i] = RF_INF;
     range->pmin[i] = -10000;
@@ -1228,9 +1234,8 @@ void ScaleDollarToLoc(cov_model *to, cov_model *from,
 
 bool ScaleOnly(cov_model *cov) {
   return isDollar(cov) && 
-    PisNULL(DALEFT) && cov->kappasub[DALEFT] == NULL && 
     PisNULL(DPROJ) && cov->kappasub[DPROJ] == NULL &&
-    PisNULL(DANISO) &&  cov->kappasub[DANISO] == NULL &&
+    PisNULL(DANISO) &&  cov->kappasub[DAUSER] == NULL &&
     (PisNULL(DVAR) || P0(DVAR)==1.0) && cov->kappasub[DVAR] == NULL;
 }
 
@@ -1266,9 +1271,10 @@ int structS(cov_model *cov, cov_model **newmodel) {
   cov_model *local = NULL,
     *dummy = NULL,
     *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT],
+    *Aniso = cov->kappasub[DAUSER],
     *scale = cov->kappasub[DSCALE];
   int err = NOERROR; 
+  bool generalAniso = Aniso != NULL && CovList[Aniso->nr].check != checkAngle;
   // cov_model *sub;
 
   //   printf("%s %d %s\n", ROLENAMES[cov->role], cov->role, TYPENAMES[cov->typus]);
@@ -1285,14 +1291,13 @@ int structS(cov_model *cov, cov_model **newmodel) {
 
   switch (cov->role) {
    case ROLE_SMITH : 
-     if (Aniso != NULL && CovList[Aniso->nr].check != checkAngle)
-       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DALEFT));
+     if (generalAniso)
+       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DAUSER));
 
 
     ASSERT_NEWMODEL_NOT_NULL;
      
-    if (!PisNULL(DANISO) || !PisNULL(DALEFT))
-      GERR("anisotropy parameter not allowed yet");
+    if (!PisNULL(DANISO)) GERR("anisotropy parameter not allowed yet");
     if (!PisNULL(DPROJ)) GERR("projections not allowed yet");
 
     if ((err = STRUCT(next, newmodel)) > NOERROR) return err;
@@ -1305,13 +1310,13 @@ int structS(cov_model *cov, cov_model **newmodel) {
     break;
   case ROLE_MAXSTABLE : // eigentlich nur von RPSmith moeglich !
     ASSERT_NEWMODEL_NOT_NULL;
-    if (Aniso != NULL && CovList[Aniso->nr].check != checkAngle)
-       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DALEFT));
+    if (generalAniso)
+       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DAUSER));
 
     if (!next->deterministic) GERR("random shapes not programmed yet");
     if (!PisNULL(DPROJ)) GERR("projections not allowed yet");
     // P(DVAR) hat keine Auswirkungen
-    if (!PisNULL(DANISO) || !PisNULL(DALEFT)) {
+    if (!PisNULL(DANISO)) {
       if (!isMonotone(next) || !isIsotropic(next->isoown) ||
 	  PisNULL(DANISO) || cov->ncol[DANISO] != cov->nrow[DANISO])
 	GERR("anisotropy parameter only allowed for simple models up to now");
@@ -1424,7 +1429,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
 
     ASSERT_NEWMODEL_NOT_NULL;
     if (Aniso!= NULL) {
-      GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DALEFT));
+      GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DAUSER));
     } 
 
     if (cov->key != NULL) COV_DELETE(&(cov->key));
@@ -1466,8 +1471,7 @@ int initS(cov_model *cov, gen_storage *s){
   cov_model *next = cov->sub[DOLLAR_SUB],
     *varM = cov->kappasub[DVAR],
     *scaleM = cov->kappasub[DSCALE],
-    *anisoM = cov->kappasub[DANISO],
-    *anisoleftM = cov->kappasub[DALEFT],
+    *anisoM = cov->kappasub[DAUSER],
     *projM = cov->kappasub[DPROJ];
   int 
     vdim = cov->vdim2[0],
@@ -1475,6 +1479,7 @@ int initS(cov_model *cov, gen_storage *s){
     nmvdim = (nm + 1) * vdim,
     err = NOERROR;
   bool 
+    angle = anisoM != NULL && CovList[anisoM->nr].check == checkAngle,
     maxstable = hasExactMaxStableRole(cov);// Realisationsweise 
 
   if (hasAnyShapeRole(cov)) { // Average  !! ohne maxstable selbst !!
@@ -1485,12 +1490,8 @@ int initS(cov_model *cov, gen_storage *s){
       dim = cov->tsdim;
     
 
-    if (!PisNULL(DPROJ) || !PisNULL(DALEFT) || projM!= NULL || 
-	anisoM!=NULL||
-	(anisoleftM != NULL && 
-	 (CovList[anisoleftM->nr].check != checkAngle || !anisoleftM->deterministic)
-			     )) {
-
+    if (!PisNULL(DPROJ) || !PisNULL(DANISO) || 
+	projM!= NULL || (anisoM != NULL && (!angle || !anisoM->deterministic))){
        //      APMI(cov);
 
        SERR("(complicated) anisotropy ond projection not allowed yet in Poisson related models");
@@ -1573,20 +1574,25 @@ int initS(cov_model *cov, gen_storage *s){
 
     }
 
-    if (anisoleftM != NULL) {  
-      assert(anisoM == NULL && CovList[anisoleftM->nr].check == checkAngle);
-      int 
-	ncol = anisoleftM->vdim2[0],
-	nrow = anisoleftM->vdim2[1];
-      if (nrow != ncol) SERR("only square anisotropic matrices allowed");
-      double invdet,
-	*diag = PARAM(anisoleftM, ANGLE_DIAG);
-      if (diag != NULL) {
-	invdet = 1.0;
-	for (i=0; i<ncol; i++) invdet /= diag[i];
+    if (anisoM != NULL) {  
+      double invdet;
+      if (angle) {
+	int 
+	  ncol = anisoM->vdim2[0],
+	  nrow = anisoM->vdim2[1];
+	if (nrow != ncol) SERR("only square anisotropic matrices allowed");
+	double 
+	  *diag = PARAM(anisoM, ANGLE_DIAG);
+	if (diag != NULL) {
+	  invdet = 1.0;
+	  for (i=0; i<ncol; i++) invdet /= diag[i];
+	} else {
+	  invdet = PARAM0(anisoM, ANGLE_RATIO);
+	}
       } else {
-	invdet = PARAM0(anisoleftM, ANGLE_RATIO);
+	SERR("general anisotropy matrices not allowed yet");
       }
+      
       invdet = fabs(invdet);      
       if (!R_FINITE(invdet))
 	SERR("determinant of the anisotropy matrix could not be calculated.");
@@ -1595,7 +1601,6 @@ int initS(cov_model *cov, gen_storage *s){
 	cov->mpp.mM[i] *= invdet;
 	cov->mpp.mMplus[i] *= invdet;
       }
-
     }
 
     
@@ -1784,8 +1789,8 @@ int checkplusmal(cov_model *cov) {
   }
 
   // !! incorrect  !!
-  cov->semiseparatelast = false; 
-  cov->separatelast = false; 
+  // cov->semiseparatelast = false; 
+  //cov->separatelast = false; 
 
   //  printf("OK err=%d ende\n", err);
    //  PMI(cov, -1);
@@ -2581,7 +2586,7 @@ void do_mppplus(cov_model *cov, gen_storage *s) {
 int structSproc(cov_model *cov, cov_model **newmodel) {
   cov_model
     *next = cov->sub[DOLLAR_SUB],
-    *Aniso = cov->kappasub[DALEFT];
+    *Aniso = cov->kappasub[DAUSER];
   int dim, err; 
   // cov_model *sub;
 
@@ -2595,7 +2600,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
    //printf("her %d %d\n", cov->role, ROLE_GAUSS);
 
   if (Aniso != NULL && !Aniso->deterministic) {
-     SERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DALEFT));
+     SERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DAUSER));
   }
 
 

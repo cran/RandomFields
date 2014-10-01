@@ -368,7 +368,7 @@ typedef char NAname_type[MAX_NA][255];
 #define DVAR 0
 #define DSCALE 1
 #define DANISO 2 /* internal */
-#define DALEFT 3 /* user defined */
+#define DAUSER 3 /* user defined */
 #define DPROJ 4
 #define DMAX DPROJ
 
@@ -1181,7 +1181,7 @@ typedef bool (*type_fct)(Types required, cov_model *cov);
 typedef enum matrix_type {//TypeMid,
                           TypeMiso, TypeMdiag, 
 			  TypeMtimesepproj, // TypeMtimesep and TypeMproj
-			  TypeMtimesep, // last columns has zero, but last entry
+			  TypeMtimesep, // last column is zero, but last entry
 			  TypeMproj, 
 			  TypeMany} matrix_type;
 
@@ -1816,6 +1816,7 @@ typedef struct rect_storage {
 
 
 typedef struct dollar_storage {
+  matrix_type type;
   double *z, *y, *z2, *y2, *save_aniso, *inv_aniso;
   int *cumsum, *nx, *total, *len;
 } dollar_storage;
@@ -2294,7 +2295,11 @@ double XkCXtl(double *X, double *C, int nrow, int dim, int k, int l);
 void XCXt(double *X, double *C, double *V, int nrow, int dim);
 void AtA(double *a, int nrow, int ncol, double *A);
 void xA(double *x, double*A, int nrow, int ncol, double *y);
+void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
+	double *y2);
 void Ax(double *A, double*x, int nrow, int ncol, double *y);
+void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
+	double *y2);
 void AxResType(double *A, res_type *x, int nrow, int ncol, double *y);
 
 SEXP Param(void* p, int nrow, int ncol, SEXPTYPE type, bool drop, long* mem);
@@ -2404,9 +2409,9 @@ typedef struct cov_model {
 		  */
   bool deterministic,
     matrix_indep_of_x,  
-    diag,       /*  */
-    semiseparatelast, /*  */
-    separatelast,     /*  */
+  // diag,       /*  */
+  //    semiseparatelast, /*  */
+  //   separatelast,     /*  */
     tbm2num,  /* "time" component separately?  */
     hess;  /* can a hessian matrix be provided? */
     
@@ -2585,6 +2590,7 @@ int checkOK(cov_model *cov);
 int checkplusmal(cov_model *cov);
 void ErrInverse(double *v, cov_model *cov, double *x);
 void InverseIsotropic(double *U, cov_model *cov, double *inverse);
+bool verysimple(cov_model *cov);
 
 
 void AtA(double *a, int nrow, int ncol, double *A) ;
@@ -2756,11 +2762,9 @@ void do_random_failed(cov_model *cov, double *v);
   pmi
 
 
-#define PLE \
-  PRINTF("\n(PLE '%s', line %d)", __FILE__, __LINE__);	\
-  ple
-void ple(cov_model *cov);
-void ple(char *name);
+#define PLE PRINTF("\n(PLE '%s', line %d)", __FILE__, __LINE__); ple_
+void ple_(cov_model *cov);
+void ple_(char *name);
 
 
 
@@ -2941,7 +2945,7 @@ int addressbits(void *addr);
 
 #define WARN_NEWDEFINITIONS						\
   if (GLOBAL.internal.warn_new_definitions) {				\
-  warning("Note that in Version 3.0.33 some definitions have changed (and some typos corrected), see 'RMbernoulli', 'RMbrownresnick', 'RMbr2bg' and 'RMbr2eg'"); \
+  warning("Note that in Version 3.0.33 some definitions have changed (and some typos corrected), see 'RMbernoulli', 'RMbrownresnick', 'RMbr2bg' and 'RMbr2eg'.\nNote that in Version 3.0.43 some typos have been corrected in 'RMS' influencing the result."); \
   GLOBAL.internal.warn_new_definitions = false;				\
   }
 

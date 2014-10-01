@@ -25,8 +25,7 @@ bibentry(bibtype="Manual",
              person("R Core Team")),
          year = year,
          note = note,
-         url = "http://ms.math.uni-mannheim.de/de/publications/software *OR*
-           http://CRAN.R-project.org/package=RandomFields"
+         url = "http://CRAN.R-project.org/package=RandomFields"
          )
 
 

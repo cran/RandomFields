@@ -4051,6 +4051,9 @@ void Inverseball(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
 
 
 int struct_ball(cov_model *cov, cov_model **newmodel){
+
+  //  PMI(cov->calling);
+
   ASSERT_NEWMODEL_NOT_NULL;
   if (hasMaxStableRole(cov)) {
     return addUnifModel(cov, BALL_RADIUS, newmodel);
@@ -4577,16 +4580,14 @@ void kappa_Angle(int i, cov_model *cov, int *nr, int *nc){
   *nc = i <= ANGLE_DIAG && (dim==3 || i != ANGLE_LATANGLE) &&  
     (dim==2 || i != ANGLE_RATIO)  ? 1 : -1;
 }
-void Angle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
-  double A[9],
+
+void AngleMatrix(cov_model *cov, double *A) {
+  double
     c = cos(P0(ANGLE_ANGLE)),
     s = sin(P0(ANGLE_ANGLE)),
     *diag = P(ANGLE_DIAG);
   int 
     dim = cov->xdimown ;
-
-  // int d;  for (d=0; d<dim; d++) v[d] = x[d]; return;
- 
   assert(dim ==2 || dim == 3);
   
   if (dim == 2) {
@@ -4594,7 +4595,6 @@ void Angle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
     A[1] = s;
     A[2] = -s;
     A[3] = c;
-    //  int d; for (d=0; d<4; d++) printf("%f ", A[d]); printf("\n");assert(false);
   } else {
     double 
       pc = cos(P0(ANGLE_LATANGLE)),
@@ -4613,35 +4613,30 @@ void Angle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
     A[6] = -c * ps;
     A[7] = -s * ps;
     A[8] = pc;
-    // int d; for (d=0; d<9; d++) printf("%f ", A[d]); printf("\n");//assert(false);
-
   }
 
   if (diag!= NULL) {
-
-    //  printf("%f %f %f\n",  diag[0], diag[1], diag[2]);assert(false);
-
     int k,d,j;
     for (k=d=0; d<dim; d++) {
       for (j=0; j<dim; j++) {
 	A[k++] *= diag[j];
       }
     }
-
-    //    A[0] *= diag[0];
-    ///    A[1] *= diag[1];
-    //    A[2] *= diag[0];
-    //    A[3] *= diag[1];
   } else {
     double ratio = 1.0 / P0(ANGLE_RATIO);
     A[1] *= ratio;
     A[3] *= ratio;
-  }
+  }  
+}
 
+
+
+void Angle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
+  double A[9];
+  int 
+    dim = cov->xdimown ;
+  AngleMatrix(cov, A);
   Ax(A, x, dim, dim, v); 
-
-  //
-
 }
 
 
@@ -4725,12 +4720,16 @@ int checkAngle(cov_model *cov){
     SERR1("'%s' only works for 2 and 3 dimensions", NICK(cov));
 
   if (PisNULL(ANGLE_DIAG)) {
-    kdefault(cov, ANGLE_RATIO, 1.0);
+    if (PisNULL(ANGLE_RATIO)) {
+      SERR2("either '%s' or '%s' must be given",
+	    KNAME(ANGLE_RATIO), KNAME(ANGLE_DIAG))
+    } else if (dim != 2) { 
+      SERR1("'%s' may be given only if dim=2",  KNAME(ANGLE_RATIO))
+    }
   } else {
     if (!PisNULL(ANGLE_RATIO)) 
       SERR2("'%s' and '%s' may not given at the same time",
-	    CovList[cov->nr].kappanames[ANGLE_RATIO], 
-	    CovList[cov->nr].kappanames[ANGLE_DIAG]);
+	    KNAME(ANGLE_RATIO), KNAME(ANGLE_DIAG));
   }
   cov->vdim2[0] = dim;
   cov->vdim2[1] = 1;

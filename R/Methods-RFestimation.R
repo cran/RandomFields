@@ -30,19 +30,19 @@ boundary_values <- function(variab) {
   nu <- sum(uidx, na.rm=TRUE)
   if (nl + nu > 0) {
     lidx[is.na(lidx)] <- FALSE
-    uidx[is.na(uidx)] <- FALSE
+    uidx[is.na(uidx)] <- FALSE    
     txt <-
       paste(sep="", "Note that the (internal) fitted variable",
             if (nl > 0)
             paste(if (nl > 1) "s", " ",
-                  paste("'", names(variab[lidx]), "'",
+                  paste("'", colnames(variab)[lidx], "'",
                         sep="", collapse=", "),
                   " ", if (nl == 1)  "is" else "are",                  
                   " close to or on the effective lower boundary", sep=""),
             if (nl > 0 && nu > 0) " and the variable",
             if (nu > 0)
             paste(if (nu > 1) "s", " ",
-                  paste("'", names(variab[uidx]), "'",
+                  paste("'", colnames(variab)[uidx], "'",
                         sep="", collapse=", "),
                   " ", if (nu == 1) "is" else "are",
                   " close to or on the effective upper boundary"),
@@ -369,7 +369,7 @@ fullAIC <- function(x, method="ml", AIC="AIC") {
   ats <- ats[, paste("model1.", values, sep="")]
   colnames(ats) <- values
   ats <- unique(rbind(ats, ats2))
-  dimnames(ats) <- list(1:nrow(ats), dimnames(ats)[[2]])
+  dimnames(ats) <- list(1:nrow(ats), colnames(ats))
 
   names  <- as.character(ats$name)
   ats <- ats[-1]

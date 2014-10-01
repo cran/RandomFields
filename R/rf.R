@@ -209,8 +209,8 @@ prepare4RFspDataFrame <- function(model=NULL,
 #  Print(RFopt)
   if (RFopt$general$printlevel>0 && RFopt$internal$warn_newstyle) {
     RFoptions(internal.warn_newstyle = FALSE)
-    message("New output format of RFsimulate: object of class 'RFsp';\n",
-            "for conventional array format use 'RFoptions(spConform=FALSE)'.")
+    message("New output format of RFsimulate: S4 object of class 'RFsp';\n",
+            "for a bare, but faster array format use 'RFoptions(spConform=FALSE)'.")
   }
 
   return(list(coords=coords, gridTopology=gridTopology, vdim=vdim, names=names))

@@ -5,11 +5,14 @@
 \alias{plot,RFpointsDataFrame,missing-method}
 \alias{plot,RFspatialDataFrame,missing-method}
 \alias{plot,RFdataFrame,missing-method}
+\alias{plot,RFdataFrame,matrix-method}
+\alias{plot,RFdataFrame,data.frame-method}
 \alias{plot,RFdataFrame,RFdataFrame-method}
 \alias{persp,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,missing-method}
 \alias{plot,RFspatialDataFrame,RFspatialPointsDataFrame-method}
 \alias{plot,RFspatialDataFrame,matrix-method}
+\alias{plot,RFspatialDataFrame,data.frame-method}
 \alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
 \alias{plot,RFspatialDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
@@ -163,8 +166,24 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, 
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
   MARGIN.movie = NULL,...)
+
+\S4method{plot}{RFspatialDataFrame,matrix}(x, y,
+ MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+ nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
+  MARGIN.movie = NULL,...)
+\S4method{plot}{RFspatialDataFrame,data.frame}(x, y,
+ MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+ nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
+  MARGIN.movie = NULL,...)
+
 
 \S4method{persp}{RFspatialGridDataFrame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
@@ -183,7 +202,13 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), legend=TRUE, ...)
 
+\S4method{plot}{RFdataFrame,matrix}(x, y, nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), legend=TRUE, ...)
 
+\S4method{plot}{RFdataFrame,data.frame}(x, y, nmax=6, 
+ plot.variance = (!is.null(x@.RFparams$has.variance) &&
+ x@.RFparams$has.variance), legend=TRUE, ...)
 
 \S4method{plot}{RFempVariog,missing}(x, model=NULL,
 %nmax.phi=6, nmax.theta=3, nmax.T=3,
@@ -424,7 +449,6 @@ plot(fit)
 
 #############################################################
 ## plot Kriging results 
- 
 model <- RMwhittle(nu=1.2, scale=2)
 x <- runif(200, max=step*len/2) 
 y <- runif(200, max=step*len/2) # 200 points in 2 dimensional space

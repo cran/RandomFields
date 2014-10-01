@@ -533,7 +533,11 @@ double random_spheric(int tsdim, int balldim) {
 void sphericD(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED  *v) {
   error("density of 'RRspheric' cannot be calculated yet");
 }
-void sphericDinverse(double VARIABLE_IS_NOT_USED  *v, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *left, double VARIABLE_IS_NOT_USED  *right) {
+void sphericDinverse(double *v, cov_model  *cov, double *left, double  *right) {
+  if (*v <= 0.0) {
+    *left = 0.0;
+    *right = (0.5 * P0(SPHERIC_RADIUS));
+  }
   //v is here INPUT variable !!
   error("density of 'RRspheric' cannot be calculated yet");
 }

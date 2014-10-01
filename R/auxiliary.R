@@ -257,7 +257,6 @@ ScreenDevice <- function(height, width) {
   #        is.function(GD), RFoptions()$graphics)
     
     if (ispdf || isjpg) {
-      args <- names(as.list(args(GD)))
       
       ##     Print(ispdf, isjpg)
       ##     Print(ispdf, RFoptions()$graphics        )
@@ -287,7 +286,8 @@ ScreenDevice <- function(height, width) {
       }
     }
      
-     if (all(c("width", "height") %in% args) &&
+    args <- names(as.list(args(GD)))
+    if (all(c("width", "height") %in% args) &&
         ( !any(c("file", "filename") %in% args)) || ispdf) {
       GD(height=height, width=width)        
       ##        Print("OK", height, width, RFoptions()$graphics)
