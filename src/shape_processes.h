@@ -15,6 +15,14 @@ void mppplus(double *x, cov_model *cov, double *v);
 //void logmppplus(double *x, cov_model *cov, double *v, double *sign); 
 
 
+void mcmc_pgs(double *x, cov_model *cov, double *v); 
+void logmcmc_pgs(double *x, cov_model *cov, double *v, double *sign); 
+int check_mcmc_pgs(cov_model *cov);
+int struct_mcmc_pgs(cov_model *cov, cov_model **newmodel);
+int init_mcmc_pgs(cov_model *cov, gen_storage *S);  
+void do_mcmc_pgs(cov_model *cov, gen_storage *S);
+void range_mcmc_pgs(cov_model *cov, range_type *range);
+
 void pts_given_shape(double *x, cov_model *cov, double *v); 
 void logpts_given_shape(double *x, cov_model *cov, double *v, double *sign); 
 int check_pts_given_shape(cov_model *cov);
@@ -22,7 +30,6 @@ int struct_pts_given_shape(cov_model *cov, cov_model **newmodel);
 int init_pts_given_shape(cov_model *cov, gen_storage *S);  
 void do_pts_given_shape(cov_model *cov, gen_storage *S);
 void range_pts_given_shape(cov_model *cov, range_type *range);
-
 
 void standard_shape(double *x, cov_model *cov, double *v); 
 void logstandard_shape(double *x, cov_model *cov, double *v, double *sign); 
@@ -50,7 +57,7 @@ int  checkmixed(cov_model *cov);
 void rangemixed(cov_model *cov, range_type* ra);
 int  initmixed(cov_model *cov, gen_storage *s);
 void domixed(cov_model *cov, gen_storage *s);
-void covmatrix_mixed(cov_model *cov, double *v);
+void covmatrix_mixed(cov_model *cov, double *v, int*);
 char iscovmatrix_mixed(cov_model *cov);
 
 void trend(double *x, cov_model *cov, double *v);
@@ -356,6 +363,14 @@ int init_simulate(cov_model *cov, gen_storage *S);
 // void do_simulate(cov_model *cov, gen_storage *S);
 void range_simulate(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
 
+void density(double *x, cov_model *cov, double *v);
+int check_density(cov_model *cov); 
+void range_density(cov_model *cov, range_type *range);  
+int struct_density(cov_model *cov, cov_model **newmodel);
+int init_density(cov_model *cov, gen_storage *S);
+// void do_density(cov_model *cov, gen_storage *S);
+void range_density(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
+
 void likelihood(double *data, cov_model *cov, double *v);
 int check_likelihood(cov_model *cov);
 int struct_likelihood(cov_model *cov, cov_model **newmodel);
@@ -368,7 +383,7 @@ int struct_cov(cov_model *cov, cov_model **newmodel);
 void Fctn(double *x, cov_model *cov, double *value);
 int check_fctn(cov_model *cov);
 
-void CovMatrix(double *x, cov_model *cov, double *value) ;
+void CovMatrix(double *x, cov_model *cov, double *value);
 int check_covmatrix(cov_model *cov) ;
 
 void EvalDistr(double *x, cov_model *cov, double *v);

@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Linpack.h>
 #include "RF.h"
 #include <Rdefines.h>
+//#include <curses.h>
 
 
 // important check !!
@@ -372,7 +373,6 @@ void det_UpperInv(double *C, double *det, int dim) {
     dimsq = dim * dim;
   F77_CALL(dpofa)(C, &dim, &dim, &info); // C i s now cholesky
   if (info != 0) {
-    //printf("C=%f %f %f %f\n", C[0], C[1], C[2], C[3]);
     ERR("det_UpperInv: dpofa failed -- is matrix positive definite?");
   }
 
@@ -604,7 +604,6 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
   }
   
   if (SICH != NULL) free(SICH);
-  // printf("method %d %d %d\n", method, m, nMeth);
   if (method<0 || m>=nMeth) SERR("matrix inversion failed");
   return NOERROR; //  -method;
 }
@@ -665,7 +664,6 @@ void memory_copy(void *dest, void *src, int bytes) {
     *d = (int*) dest,
     *s = (int *) src;
   if ((len * (int) sizeof(int)) != bytes) {
-    //printf("%d %d\n", bytes, len);
     ERR("size not a multiple of int");
   }
   for (i=0; i<len; i++) d[i] = s[i];
@@ -966,8 +964,11 @@ bool smallerInt(int i, int j)
   int d;
   x = ORDERDINT + i * ORDERDIM;
   y = ORDERDINT + j * ORDERDIM;
-  for(d=0; d<ORDERDIM; d++)
-     if (x[d] != y[d]) return x[d] < y[d];
+  for(d=0; d<ORDERDIM; d++) {
+    if (x[d] != y[d]) {
+     return x[d] < y[d];
+    }
+  }
   return false;
 }
 
@@ -1009,7 +1010,10 @@ void order(int *pos, int start, int end) {
     left = start;
     right=end+1;   
     while (left < right) {      
-      while (++left < right && SMALLER(pos[left], pivot)) pivotpos++;
+      //printf("order > %ld start=%d %d left=%d %d %d pivot=%d\n", pos, start, end, left, right, pos[left], pivot);
+      while (++left < right && SMALLER(pos[left], pivot)) {
+	pivotpos++;
+      }
       while (--right > left && GREATER(pos[right], pivot));      
       if (left < right) {
 	swap=pos[left]; pos[left]=pos[right]; pos[right]=swap;
@@ -1032,6 +1036,7 @@ void ordering(double *d, int len, int dim, int *pos)
      the variable d)
   */  
   int i;
+
   for (i=0; i<len;i++) pos[i]=i;
   ORDERD = d;
   ORDERDIM = dim;
@@ -1049,9 +1054,6 @@ void Ordering(double *d, int *len, int *dim, int *pos)
   ORDERDIM = *dim;
   SMALLER = smaller;
   GREATER = greater;
-
-  //intf("%d %d %d \n", pos[0], pos[1], *len - 1);assert(false);
-
   order(pos, 0, *len-1 );
 }
 
@@ -1064,12 +1066,14 @@ void orderingInt(int *d, int len, int dim, int *pos)
      (orderdouble is a kind of sorting pos according to
      the variable d)
   */  
+  
+ 
   int i;
   for (i=0; i<len;i++) pos[i]=i;
   ORDERDINT = d;
   ORDERDIM = dim;
   SMALLER = smallerInt;
-  GREATER = greaterInt;
+  GREATER = greaterInt; 
   order(pos, 0, len-1);
 }
 
@@ -1084,7 +1088,9 @@ int xMatch(char *name, char **list, unsigned int llen)  {
 
   nr=0;
   ln=(unsigned int) strlen(name);
-  while ((nr < llen) && strncmp(name, list[nr], ln)) nr++;
+  while ((nr < llen) && strncmp(name, list[nr], ln)) {
+    nr++;
+  }
   if (nr < llen) { 
     // a matching method is found. Are there other methods that match?
     unsigned int j; 
@@ -1257,4 +1263,368 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
   return (int) x;
 #endif
 
+}
+
+int Match(char *name, name_type List, int n) {
+  // == -1 if no matching name is found
+  // == -2 if multiple matching fctns are found, without one matching exactly
+  unsigned int ln;
+  int Nr;
+  Nr=0;
+  ln=strlen(name);
+  //  print("Match %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+
+  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
+    Nr++;
+  }
+  if (Nr < n) { 
+    if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
+      return Nr;
+    // a matching function is found. Are there other functions that match?
+    int j; 
+    bool multiplematching=false;
+    j=Nr+1; // if two or more covariance functions have the same name 
+    //            the last one is taken 
+    while (j<n) {
+      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
+      if (j<n) {
+	if (ln==strlen(List[j])) { // exactmatching -- take first 
+	  return j;
+	}
+	else {multiplematching=true;}
+      }
+      j++;
+    }
+    if (multiplematching) {return MULTIPLEMATCHING;}
+  } else return NOMATCHING;
+  return Nr;
+}
+
+int Match(char *name, const char * List[], int n) {
+  // == -1 if no matching name is found
+  // == -2 if multiple matching fctns are found, without one matching exactly
+  unsigned int ln;
+  int Nr;
+  Nr=0;
+  ln=strlen(name);
+  //    print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+
+  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
+    // print("       %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+    //   printf("%s\n", List[Nr]);
+    Nr++;
+  }
+  if (Nr < n) { 
+    if (ln==strlen(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
+      //      print(" found  X    %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+      return Nr;
+    }
+    // a matching function is found. Are there other functions that match?
+    int j; 
+    bool multiplematching=false;
+    j=Nr+1; // if two or more covariance functions have the same name 
+    //            the last one is taken 
+    while (j<n) {
+      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
+      if (j<n) {
+	if (ln==strlen(List[j])) { // exactmatching -- take first 
+	  return j;
+	}
+	else {multiplematching=true;}
+      }
+      j++;
+    }
+    if (multiplematching) {return MULTIPLEMATCHING;}
+  } else return NOMATCHING;
+
+  //  print(" found      %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+ 
+  return Nr;
+}
+
+
+//static int ZZ = 0;
+double Real(SEXP p, char *name, int idx) {
+  char msg[200];
+  // if(++ZZ==65724){printf("type=%d %d '%s'\n",ZZ,TYPEOF(p), CHAR(STRING_ELT(p,0)));cov_model *cov;crash(cov);}
+  if (p != R_NilValue)
+    switch (TYPEOF(p)) {
+    case REALSXP :  return REAL(p)[idx];
+    case INTSXP : return INTEGER(p)[idx]==NA_INTEGER  
+	? RF_NA : (double) INTEGER(p)[idx];
+    case LGLSXP : return LOGICAL(p)[idx]==NA_LOGICAL ? RF_NA 
+	: (double) LOGICAL(p)[idx];
+    default : {}
+    }
+  // MEMCOPY(msg, p, 300); print("%s\n", msg);
+  sprintf(msg, "'%s' cannot be transformed to double! (type=%d)\n",
+	  name, TYPEOF(p));  
+  //printf("\n>>>> '%s'\n", CHAR(STRING_ELT(p, 0)));
+  ERR(msg);
+  return RF_NA;  // to avoid warning from compiler
+}
+
+
+
+void Real(SEXP el,  char *name, double *vec, int maxn) {
+  char msg[200];
+   int i, j, n;
+  if (el == R_NilValue) {
+    sprintf(msg,"'%s' cannot be transformed to double.\n", name);
+    ERR(msg);
+  }
+  n = length(el);
+  for (j=i=0; i<maxn; i++) {
+    vec[i] = Real(el, name, j);
+    if (++j >= n) j=0;
+  }
+  return;
+}
+
+int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
+  char msg[200];
+  if (p != R_NilValue) {
+    switch(TYPEOF(p)) {
+    case INTSXP : 
+      return INTEGER(p)[idx]; 
+    case REALSXP : 
+      double value;
+      value = REAL(p)[idx];      
+      if (ISNAN(value)) {
+	return NA_INTEGER;
+	//sprintf(msg, "%s: NAs not allowed for integer valued parameters", name);
+	//	ERR(msg);
+      }
+      if (value == trunc(value)) return (int) value; 
+      else {
+	sprintf(msg, "%s: integer value expected", name);
+	ERR(msg);
+      }
+    case LGLSXP :
+      return  LOGICAL(p)[idx]==NA_LOGICAL ? NA_INTEGER : (int) LOGICAL(p)[idx];
+    default : {}
+    }
+  } else if (nulltoNA) return NA_INTEGER;
+  sprintf(msg, "%s: unmatched type of parameter [type=%d]", name, TYPEOF(p));
+  ERR(msg);
+  return NA_INTEGER; // compiler warning vermeiden
+}
+
+int Integer(SEXP p, char *name, int idx) {
+  return Integer(p, name, idx, false);
+}
+
+
+void Integer(SEXP el, char *name, int *vec, int maxn) {
+  char msg[200];
+  int i, j, n;
+  if (el == R_NilValue) {
+    sprintf(msg, "'%s' cannot be transformed to integer.\n",name);
+    ERR(msg);
+  }
+  n = length(el);
+  for (j=i=0; i<maxn; i++) {
+    vec[i] = Integer(el, name, j);
+    if (++j >= n) j=0;
+  }
+}
+
+
+
+
+void Integer2(SEXP el, char *name, int *vec) {
+  char msg[200];
+  int n;
+  if (el == R_NilValue || (n = length(el))==0) {
+    sprintf(msg, "'%s' cannot be transformed to integer.\n",name);
+    ERR(msg);
+  }
+ 
+  vec[0] = Integer(el, name, 0);
+  if (n==1) vec[1] = vec[0];
+  else {
+    vec[1] = Integer(el, name, n-1);
+    if (n > 2) {
+      int i, 
+	v = vec[0] + 1;
+      for (i = 1; i<n; i++, v++)
+	if (Integer(el, name, i) != v) ERR("not a sequence of numbers"); 
+    }
+  }
+}
+
+
+
+
+
+bool Logical(SEXP p, char *name, int idx) {
+  char msg[200];
+  if (p != R_NilValue)
+    switch (TYPEOF(p)) {
+    case REALSXP: return ISNAN(REAL(p)[idx]) ? NA_LOGICAL : (bool) REAL(p)[idx];
+    case INTSXP :
+      return INTEGER(p)[idx]==NA_INTEGER ? NA_LOGICAL : (bool) INTEGER(p)[idx];
+    case LGLSXP : return LOGICAL(p)[idx];
+    default : {}
+    }
+  sprintf(msg, "'%s' cannot be transformed to logical.\n", name);  
+  ERR(msg);
+  return NA_LOGICAL;  // to avoid warning from compiler
+}
+
+
+char Char(SEXP el, char *name) {
+  char msg[200];
+  SEXPTYPE type;
+  if (el == R_NilValue) goto ErrorHandling;
+  type = TYPEOF(el);
+  if (type == CHARSXP) return CHAR(el)[0];
+  if (type == STRSXP) {
+    if (length(el)==1) {
+      if (strlen(CHAR(STRING_ELT(el,0))) == 1)
+	return (CHAR(STRING_ELT(el,0)))[0];
+      else if (strlen(CHAR(STRING_ELT(el,0))) == 0)
+	return '\0';
+    }
+  }
+ 
+ ErrorHandling:
+  sprintf(msg, "'%s' cannot be transformed to character.\n",  name);  
+  ERR(msg);
+  return 0; // to avoid warning from compiler
+}
+
+
+void String(SEXP el, char *name, char names[MAXUNITS][MAXCHAR]) {
+  int i,
+    l = length(el);
+  char msg[200];
+  SEXPTYPE type;  
+  if (el == R_NilValue) goto ErrorHandling;
+  if (l > MAXUNITS)  {
+    ERR1("number of variable names exceeds %d. Take abbreviations?",
+	 MAXUNITS);
+  }
+  type = TYPEOF(el);
+  //  printf("type=%d %d %d %d\n", TYPEOF(el), INTSXP, REALSXP, LGLSXP);
+  if (type == CHARSXP) {
+    for (i=0; i<l; i++) {
+      names[i][0] = CHAR(el)[i];
+      names[i][1] = '\0';
+    }
+  } else if (type == STRSXP) {
+    for (i=0; i<l; i++) {
+      //print("%d %d\n", i, l);
+      strcopyN(names[i], CHAR(STRING_ELT(el, i)), MAXCHAR);
+    }
+  } else goto ErrorHandling;
+  return;
+ 
+ ErrorHandling:
+  sprintf(msg, "'%s' cannot be transformed to character.\n",  name);  
+  ERR(msg);
+}
+
+
+
+double NonNegInteger(SEXP el, char *name) {
+  int num;
+
+  num = INT;
+  if (num<0) {
+    num=0; 
+    char msg[200];
+    sprintf(msg,"'%s' which has been negative is set 0.\n",name);
+    warning(msg);
+  }
+  return num;
+}
+
+double NonNegReal(SEXP el, char *name) {
+  double num;
+  num = NUM;
+  if (num<0.0) {
+    num=0.0; 
+    char msg[200];
+    sprintf(msg,"%s which has been negative is set 0.\n",name);
+    warning(msg);
+   }
+  return num;
+}
+
+double NonPosReal(SEXP el, char *name) {
+  double num;
+  num = NUM;
+  if (num>0.0) {
+    num=0.0; 
+    char msg[200];
+    sprintf(msg,"%s which has been positive is set 0.\n",name);
+    warning(msg);
+  }
+  return num;
+}
+
+double PositiveInteger(SEXP el, char *name) {
+  int num;
+  num = INT;
+  if (num<=0) {
+    num=0; 
+    char msg[200];
+    sprintf(msg,"'%s' which has been negative is set 0.\n",name);
+    warning(msg);
+  }
+  return num;
+}
+
+double PositiveReal(SEXP el, char *name) {
+  double num;
+  num = NUM;
+  if (num<=0.0) {
+    num=0.0; 
+    char msg[200];
+    sprintf(msg,"%s which has been negative is set 0.\n",name);
+    warning(msg);
+   }
+  return num;
+}
+
+int GetName(SEXP el, char *name, const char * List[], int n,
+	    int defaultvalue) {
+  char msg[1000], dummy[1000];
+  int i,
+    nM1 = n - 1;
+
+  if (TYPEOF(el) == NILSXP) goto ErrorHandling;
+ 
+
+  if (TYPEOF(el) == STRSXP) {
+    int m = Match((char*) CHAR(STRING_ELT(el, 0)), List, n);
+
+    if (m >= 0) return m; else {
+      if (strcmp((char*) CHAR(STRING_ELT(el, 0)), " ") == 0 ||
+	  strcmp((char*) CHAR(STRING_ELT(el, 0)), "") == 0) {
+	goto ErrorHandling;
+      }
+    }
+  }
+  sprintf(dummy, "'%s': unknown value '%s'. Possible values are:", 
+	  name, CHAR(STRING_ELT(el, 0)));
+  for (i=0; i<nM1; i++) {
+    sprintf(msg, "%s '%s',", dummy, List[i]);    
+    strcpy(dummy, msg);
+  }
+  sprintf(msg,"%s '%s'.", dummy, List[i]);  
+  ERR(msg);
+ 
+ ErrorHandling:
+  if (defaultvalue >= 0) return defaultvalue;
+  
+  sprintf(msg, "'%s': no value given.", name);
+  ERR(msg);
+
+  return 999;// to avoid warning from compiler
+}
+
+int GetName(SEXP el, char *name, const char * List[], int n) {
+ return GetName(el, name, List, n, -1);
 }

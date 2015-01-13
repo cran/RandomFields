@@ -23,7 +23,7 @@ RPtbm(phi, fulldim, reduceddim, layers, lines,
     specifies the covariance function to be simulated;
     a univariate stationary isotropic covariance model
     (see \code{RFgetModelNames(type="positive definite",
-      domain="single variable", isotropy="isotropy",  vdim=1)})
+      domain="single variable", isotropy="isotropic",  vdim=1)})
     which is valid in dimension \code{fulldim}.
   }
   % \item{loggauss}{see \command{\link{RPgauss}}.}

@@ -294,7 +294,7 @@ int init_shapeave(cov_model *cov, gen_storage *s) {
   q[AVESTP_LOGDET] = 0.0;
   sd_avestp(cov, s, dim, &sd); // sd->gauss
 
-  assert(cov->vdim2[0] == 1);  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == 1);  assert(cov->vdim[0] == cov->vdim[1]);
 
   if (cov->mpp.moments >= 0) {
     cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
@@ -874,7 +874,7 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
   q[AVESTP_LOGMIXDENS] = 0.0;
   sd_avestp(cov, s, cov->tsdim, &sd); // sd->gauss
 
-  assert(cov->vdim2[0] == 1);  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == 1);  assert(cov->vdim[0] == cov->vdim[1]);
 
   if (cov->mpp.moments >= 0) {
     cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; //// ??? notwendig 
@@ -1127,7 +1127,7 @@ int checkEAxxA(cov_model *cov){
     
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
-  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
+  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
   cov->mpp.maxheights[0] = RF_NA;
  return NOERROR;
 }
@@ -1225,7 +1225,7 @@ int checkEtAxxA(cov_model *cov){
   // CE CO CI TBM Sp di sq Ma av n mpp Hy any
 //  MEMCOPY(cov->pref, pref, sizeof(pref_type));  
   if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
-  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
+  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
   if ((err = checkkappas(cov)) != NOERROR) return err;
   cov->mpp.maxheights[0] = RF_NA;
  return NOERROR;
@@ -1338,7 +1338,7 @@ int checkRotat(cov_model *cov){
   int err;
   if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->vdim2[0] = cov->vdim2[1] = cov->tsdim;
+  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
   cov->mpp.maxheights[0] = RF_NA;
   return NOERROR;
 }
@@ -1546,41 +1546,43 @@ void rangeNonStWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 void nsst(double *x, cov_model *cov, double *v) {
   cov_model *subphi = cov->sub[0];
   cov_model *subpsi = cov->sub[1];
-  double v1, v2, psi, phi, y;
+  double v1, v2, psi, y;
   
   COV(ZERO, subpsi, &v1);
   COV(x + 1, subpsi, &v2);
   psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
-  COV(&y, subphi, &phi);
-  *v = pow(psi, -P0(NSST_DELTA)) * phi;
-}
-
-void TBM2nsst(double *x, cov_model *cov, double *v) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
-  double v1, v2, psi, phi, y;
-
-  COV(ZERO, subpsi, &v1);
-  COV(x + 1, subpsi, &v2);
-  psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
-  y = x[0] / psi;
-  TBM2CALL(&y, subphi, &phi);
-  *v = pow(psi, -P0(NSST_DELTA)) * phi;
+  COV(&y, subphi, v);
+  *v *= pow(psi, -P0(NSST_DELTA));
 }
 
 void Dnsst(double *x, cov_model *cov, double *v) {
   cov_model *subphi = cov->sub[0];
   cov_model *subpsi = cov->sub[1];
-  double v1, v2, psi, phi, y;
+  double v1, v2, psi, y;
 
   COV(ZERO, subpsi, &v1);
   COV(x + 1, subpsi, &v2);
   psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
-  Abl1(&y, subphi, &phi);
-  *v = pow(psi, -P0(NSST_DELTA) - 1) * phi;
+  Abl1(&y, subphi, v);
+  *v *= pow(psi, -P0(NSST_DELTA) - 1.0);
   // print("(%f %f %f)",  psi, y, *v);
+}
+
+void TBM2nsst(double *x, cov_model *cov, double *v) {
+  cov_model *subphi = cov->sub[0];
+  cov_model *subpsi = cov->sub[1];
+  double v1, v2, psi, y;
+
+  assert(false);
+
+  COV(ZERO, subpsi, &v1);
+  COV(x + 1, subpsi, &v2);
+  psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
+  y = x[0] / psi;
+  TBM2CALL(&y, subphi, v);
+  *v *= pow(psi, -P0(NSST_DELTA));
 }
 
 int checknsst(cov_model *cov) {

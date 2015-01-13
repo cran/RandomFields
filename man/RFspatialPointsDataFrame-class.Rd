@@ -7,9 +7,8 @@
 \alias{show,RFspatialPointsDataFrame-method}
 \alias{coerce,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{coerce,RFspatialPointsDataFrame,RFspatialGridDataFrame,ANY-method}
-\alias{coerce,RFspatialGridDataFrame,data.frame-method}
 \alias{coerce,RFspatialPointsDataFrame,data.frame-method}
-\alias{coerce,SpatialGridDataFrame,RFspatialGridDataFrame-method}
+\alias{coerce,SpatialPointsDataFrame,RFspatialPointsDataFrame-method}
 \alias{coerce,SpatialPointsDataFrame,RFspatialPointsDataFrame-method}
 \alias{[,RFspatialPointsDataFrame-method}
 \alias{[,RFspatialPointsDataFrame,ANY,ANY-method}
@@ -18,6 +17,9 @@
 %% S3 methods
 \alias{print.RFspatialPointsDataFrame}
 \alias{cbind.RFspatialPointsDataFrame}
+\alias{as.matrix.RFspatialPointsDataFrame}
+\alias{as.array.RFspatialPointsDataFrame}
+\alias{as.vector.RFspatialPointsDataFrame}
 \alias{as.data.frame.RFspatialPointsDataFrame}
 
 \title{Class "RFspatialPointsDataFrame" }
@@ -101,8 +103,14 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
    topology, combine their attribute values}
-\item{as.data.frame}{\code{signature(x = "RFspatialGridDataFrame")}:
- converts \code{data}-slot and coordinates to a data.frame}
+ \item{as.matrix}{\code{signature(x = "RFspatialPointsDataFrame")}:
+   converts \code{data}-slot to matrix }
+ \item{as.array}{\code{signature(x = "RFspatialPointsDataFrame")}:
+   converts \code{data}-slot to array }
+ \item{as.vector}{\code{signature(x = "RFspatialPointsDataFrame")}:
+   converts \code{data}-slot to vector }
+ \item{as.data.frame}{\code{signature(x = "RFspatialPointsDataFrame")}:
+   converts \code{data}-slot and coordinates to a data.frame}
  }
 }
 

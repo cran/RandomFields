@@ -9,7 +9,8 @@
   Gaussian random fields.
 }    
 \usage{
-RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL, grid, data,
+RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
+grid=NULL, data,
 alpha, n = 5 / alpha, seed = 0, 
 lower = NULL, upper = NULL, bc_lambda, methods,
 sub.methods, optim.control = NULL, users.guess = NULL,
@@ -46,7 +47,7 @@ distances = NULL, dim, transform = NULL, ...)
   \itemize{
     \item
     a covariance model, see \command{\link{RMmodel}} or
-    type \code{\link{RFgetModelNames}()} to get all options.
+    type \code{\link{RFgetModelNames}(type="negative")} to get all options.
 
     Depending weather the \command{\link{RFoptions}}
     \code{ratiotest_approx} is TRUE the
@@ -118,7 +119,7 @@ distances = NULL, dim, transform = NULL, ...)
 }
 \examples{
 
-\donttest{
+\dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -135,7 +136,7 @@ submodel <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=0))
 
 RFratiotest(submodel, model, data=soil["moisture"],
             modus_operandi="sloppy")
-}
+}}
 
 \dontshow{FinalizeExample()}
 

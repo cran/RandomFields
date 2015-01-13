@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
  
 #include "RF.h"
-#include "randomshape.h"
+#include "shape_processes.h"
 #include <R_ext/Lapack.h>
 //#include <R_ext/Linpack.h>
 
@@ -44,8 +44,11 @@ int check_sequential(cov_model *cov) {
   int err,
     dim = cov->tsdim; // taken[MAX DIM],
   sequ_param *gp  = &(GLOBAL.sequ);
+  location_type *loc = Loc(cov);
 
   ROLE_ASSERT(ROLE_GAUSS);
+  if (!loc->grid && !loc->Time) 
+    SERR1("'%s' only possible if at least one direction is a grid", NICK(cov));
 
   kdefault(cov, SEQU_MAX, gp->max);
   kdefault(cov, SEQU_BACK, gp->back);
@@ -98,9 +101,24 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // cov_fct *C=CovList + next->gatternr;
   // covfct cf = C->cov;
   location_type *loc = Loc(cov);
+  if (loc->distances) return ERRORFAILED;
+
+  int withoutlast, d, endfor, l, 
+    err = NOERROR,
+    dim = cov->tsdim,
+    spatialdim = dim - 1,
+    vdim = next->vdim[0],
+    max = P0INT(SEQU_MAX),
+    back= P0INT(SEQU_BACK), 
+    initial= P0INT(SEQU_INIT);
+  assert(dim == loc->timespacedim);
+  assert(next->vdim[0] == next->vdim[1]);
+  if (initial < 0) initial = back - initial;
+
   double 
     //*caniso = loc->caniso,
-     *xx = NULL,
+    *timecomp = loc->grid ? loc->xgr[spatialdim] : loc->T,
+    *xx = NULL,
     *G = NULL, 
     *U11 = NULL, 
     *COV21 = NULL,
@@ -109,20 +127,15 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     *Inv22 = NULL;
   res_type
     *res0 = NULL;
-  int withoutlast, d, endfor, l, store,
-    dim=cov->tsdim,
-    spatialdim = dim - 1,
-    vdim = next->vdim2[0],
-    max = P0INT(SEQU_MAX),
-    back= P0INT(SEQU_BACK), 
-    initial= P0INT(SEQU_INIT);
-  assert(next->vdim2[0] == next->vdim2[1]);
-  sequential_storage* S = NULL;
-  long totpntsSQ, i, spatialpntsSQback, 
-    spatialpnts = loc->totalpoints / loc->length[spatialdim],
-    err=NOERROR,
+  sequ_storage* S = NULL;
+  long  i, 
+    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] :loc->T[XLENGTH],
+    spatialpnts = loc->totalpoints / timelength,
     totpnts = back * spatialpnts, 
-    spatialpntsSQ=spatialpnts * spatialpnts;
+    totpntsSQ =  totpnts * totpnts,
+    spatialpntsSQ = spatialpnts * spatialpnts,
+    spatialpntsSQback = totpnts * spatialpnts;
+
   bool 
     storing = GLOBAL.internal.stored_init,
     Time = loc->Time;
@@ -133,10 +146,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   
   ROLE_ASSERT_GAUSS;
   cov->method = Sequential;
- 
-  if (loc->distances) return ERRORFAILED;
-  if (back < 1) back = max / spatialpnts;
-    
+     
   if (!loc->grid && !Time) 
     GERR("last component must be truely given by a non-trivial grid");
 
@@ -145,11 +155,11 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     goto ErrorHandling;
   }
   
-  if (cov->vdim2[0] > 1) {
+  if (cov->vdim[0] > 1) {
       err=ERRORNOMULTIVARIATE; 
       goto ErrorHandling;   
   }
-
+  
   if (totpnts > max) {
     sprintf(ERRORSTRING_OK, "number of points less than '%s' (=%d)", 
 	    KNAME(SEQU_MAX), max);
@@ -157,12 +167,12 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     err=ERRORCOVFAILED; goto ErrorHandling;
   }
 
- 
-  totpntsSQ = totpnts * totpnts;
-  spatialpntsSQback = totpnts * spatialpnts;
+ if (timelength <= back) {
+    GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",
+	  CovList[DIRECT].nick, CovList[SEQUENTIAL].nick);
+  } 
+  if (back < 1) back = max / spatialpnts;
 
-  if (initial < 0) initial = back - initial;
-   
   if ((U22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (Inv22 = (double *) MALLOC(sizeof(double) * totpntsSQ))==NULL ||
       (COV21 = (double *) MALLOC(sizeof(double) * spatialpntsSQback))==NULL ||
@@ -174,25 +184,22 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }
-  NEW_STORAGE(Sseq, SEQU, sequential_storage);
-  S = cov->Sseq;
+  NEW_STORAGE(sequ);
+  S = cov->Ssequ;
 
-  if (loc->length[spatialdim] <= back) {
-   GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",
-	 CovList[DIRECT].nick, CovList[SEQUENTIAL].nick);
-  } else err = NOERROR;
-
+ 
   /* ************************* */
   /* create matrix of explicit */
   /*       x-coordinates       */
   /* ************************* */
 
  
-  store = loc->length[spatialdim];
-  loc->length[spatialdim] = back;
+  if (loc->grid) loc->xgr[spatialdim][XLENGTH] = back; 
+  else loc->T[XLENGTH] = back;
   Transform2NoGrid(cov, &xx);
   assert(loc->caniso == NULL);
-  loc->length[spatialdim] = store;
+  if (loc->grid) loc->xgr[spatialdim][XLENGTH]=timelength; 
+  else loc->T[XLENGTH] = timelength;
  
   /* ********************* */
   /* matrix creation part  */
@@ -200,12 +207,9 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   long j, k, k0, k1, k2, segment;
   int  row, f77err;
   double *y;
-  y = (double*) MALLOC(loc->timespacedim * sizeof(double));
+  y = (double*) MALLOC(dim * sizeof(double));
 
   // *** S22
-
-//  print
-
   if (PL==PL_SUBDETAILS) { LPRINT("covariance matrix...\n"); }
   k = 0;
   for (k0 =i=0; i<totpnts; i++, k0+=dim) {
@@ -214,11 +218,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       k1 = k0;
       for (d=0; d<dim; d++) {
 	y[d] = xx[k1++] - xx[k2++];
-//	print("%f ", y[d]);
       }
       COV(y, next, U22 + segment);
-
-//      print("cov=%f\n", U22[segment]);
       U22[k++] = U22[segment];
       segment += totpnts;
     }
@@ -260,9 +261,10 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   }
   
 
+  
   // *** S21 rest
   k = 0;
-  y[spatialdim] = loc->xgr[spatialdim][XSTEP] * back;
+  y[spatialdim] = timecomp[XSTEP] * back;
   for (k0 =i=0; i<spatialpnts; i++, k0+=dim) { // t_{n+1}
       for (k2=j=0; j<spatialpnts; j++) { // t_1
 	k1 = k0;
@@ -435,7 +437,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       S->spatialpnts = spatialpnts;
       S->back = back;
       S->initial = initial;
-      S->ntime = loc->length[spatialdim];
+      S->ntime = timecomp[XLENGTH];
   }
   if (!storing && err!=NOERROR) {
     if (MuT!=NULL) free(MuT);
@@ -499,11 +501,11 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
 {  
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
-  sequential_storage
-    *S = cov->Sseq;
+  sequ_storage
+    *S = cov->Ssequ;
   assert(S != NULL); 
   
-  int vdim = next->vdim2[0];
+  int vdim = next->vdim[0];
   long  i, j, k,
     totpnts = S->totpnts;
   double *G,*U22, *U11, *MuT;
@@ -545,7 +547,7 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
 		 U11, MuT, G);
 
   if (loggauss) {
-    long vdimtot = loc->totalpoints * cov->vdim2[0];
+    long vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 

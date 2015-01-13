@@ -58,7 +58,7 @@
    \item the covariance or variogram model inm case of a Gaussian random
    field (\command{\link{RPgauss}}) and for fields based on Gaussian fields
    (e.g. \command{\link{RPbernoulli}});
-   type \code{\link{RFgetModelNames}(type="negative definite", group.by="type")}
+   type \code{\link{RFgetModelNames}(type="negative definite")}
    for a list of available models; see also \command{\link{RMmodel}}
    
    \item the shape function in case of a shot noise process; type

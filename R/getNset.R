@@ -45,19 +45,23 @@ RFoptions <- function(..., no.readonly=TRUE) {
   if (length(opt)!=0) {      
     class(opt) <-  "RFopt"
     if (!no.readonly) {
-      assign(".p", GetrfParameters(FALSE))
-      opt$readonly <- list(covmaxchar=.p$covmaxchar,
-                           covnr=.p$covnr,
-                           distrmaxchar=.p$distrmaxchar,
-                           distrnr=.p$distrnr,
-                           maxdim=.p$maxdim,
-                           maxmodels=.p$maxmodels,
-                           methodmaxchar=.p$methodmaxchar,
-                           methodnr=.p$methodnr
+      opt$readonly <- list(covmaxchar=MAXCHAR,
+                           covnr=GetCurrentNrOfModels(FALSE),
+                           maxdim=c(cov=MAXCOVDIM, mle=MAXMLEDIM,
+                               simu=MAXSIMUDIM, ce=MAXCEDIM, tbm=MAXTBMSPDIM,
+                               mpp=MAXMPPDIM, hyper=MAXHYPERDIM,
+                               nug=MAXNUGGETDIM, vario=MAXVARIODIM),
+                           maxmodels=MAXFIELDS,
+                           methodmaxchar=METHODMAXCHAR,
+                           methodnr=Forbidden
                            )
     }
   }
   if (length(opt)==0) invisible(opt) else opt
+}
+
+GetCurrentNrOfModels <- function(init=TRUE) {
+  res<- .C("GetCurrentNrOfModels", as.integer(init), nr=as.integer(1))$nr
 }
 
 internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
@@ -134,14 +138,14 @@ RFgetModelInfo <-
 
 
 
-RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
-                            isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
-                            monotone = RC_MONOTONE,
+RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
+                            isotropy = RC_ISONAMES, operator = c(TRUE, FALSE),
+                            monotone = RC_MONOTONE_NAMES,
                             implied_monotonicities = length(monotone) == 1,
-                            finiterange = c(TRUE, FALSE),
+                            finiterange = c(TRUE, FALSE, NA),
                             valid.in.dim = c(1, Inf), 
                             vdim = c(1, 5),
-                            group.by=NULL,
+                            group.by,
                             simpleArguments = FALSE,
                             internal,
                             newnames
@@ -166,11 +170,36 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
   if (!(length(valid.in.dim) %in% 1:2)) stop("'valid.in.dim' has wrong size.")
   if (length(valid.in.dim) == 1) valid.in.dim <- c(valid.in.dim, Inf)
   
- if (!(length(vdim) %in% 1:2)) stop("'vdim' has wrong size.")
+  if (!(length(vdim) %in% 1:2)) stop("'vdim' has wrong size.")
   if (length(vdim) == 1) vdim <- rep(vdim, 2)
 
   debug <- !TRUE
-  if (hasArg(type)) type <- RC_TYPE[pmatch(type, RC_TYPE)]
+  if (hasArg(type)) type <- TYPENAMES[pmatch(type, TYPENAMES)]
+  if (hasArg(domain)) domain <- DOMAIN_NAMES[pmatch(domain, DOMAIN_NAMES)]
+  if (hasArg(isotropy)) isotropy <- ISONAMES[pmatch(isotropy, ISONAMES)]
+  if (hasArg(monotone)) monotone <- MONOTONE_NAMES[pmatch(monotone,
+                                                           MONOTONE_NAMES)]
+  if (any(is.na(pmatch(type, TYPENAMES))))
+    stop(paste("'", type, "'", " is not a valid category", sep=""))
+  if (any(is.na(pmatch(domain, DOMAIN_NAMES))))
+    stop(paste("'", domain, "'", " is not a valid category", sep=""))
+  if (any(is.na(pmatch(isotropy, ISONAMES))))
+    stop(paste("'", isotropy, "'", " is not a valid category", sep=""))
+  if (any(is.na(pmatch(monotone, MONOTONE_NAMES))))
+    stop(paste("'", monotone, "'", " is not a valid category", sep=""))
+
+
+  if (missing(group.by)) {
+    if (length(type) == 1) {
+      if (type == TYPENAMES[TcfType + 1]) type <- c(type, "undefined") # to do
+      else if (type == TYPENAMES[PosDefType + 1])
+        type <- c(TYPENAMES[TcfType + 1], type, "undefined") # to do
+      else if (type == TYPENAMES[NegDefType + 1])
+        type <- c(TYPENAMES[c(TcfType, PosDefType) + 1], type,"undefined")#to do
+     }
+     if (!hasArg("group.by")) group.by <- if (length(type) == 1) NULL else 'type'
+  }
+ 
   if (length(group.by) > 0) {
     group.idx <- pmatch(group.by, group.names)
     if (any(is.na(group.idx)))
@@ -181,12 +210,6 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
   }
 
   
-  if (length(type) == 1 && length(group.by)==1 && group.by=="type") {
-    if (type == RC_TYPE[1]) type <- c(RC_TYPE[1], "undefined") # to do
-    else if (type == RC_TYPE[2]) type <- c(RC_TYPE[1:2], "undefined") # to do
-    else if (type == RC_TYPE[3]) type <- c(RC_TYPE[1:3], "undefined")  # to do  
-  }
-  
   if (group <- !is.null(group.by)) {  
     FUN <- function(string){
       args <- list(type=type, domain=domain, isotropy=isotropy,
@@ -195,7 +218,9 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
                    group.by[1] != "monotone",
                    finiterange=finiterange, valid.in.dim=valid.in.dim,
                    vdim=vdim,
-                   if (group && length(group.by) > 1) group.by=group.by[-1])
+                   group.by =
+                     if (group && length(group.by) > 1) group.by[-1] else NULL
+                   )
       args[[group.idx]] <- string
       list(do.call("RFgetModelNames", args))
     }
@@ -207,48 +232,44 @@ RFgetModelNames <- function(type = RC_TYPE, domain = RC_DOMAIN,
     return(li)
   } # matches  if (hasArg(group.by)) {
   
-  if (any(is.na(pmatch(type, RC_TYPE))))
-    stop(paste("'", type, "'", " is not a valid category", sep=""))
-  if (any(is.na(pmatch(domain, RC_DOMAIN))))
-    stop(paste("'", domain, "'", " is not a valid category", sep=""))
-  if (any(is.na(pmatch(isotropy, RC_ISOTROPY))))
-    stop(paste("'", isotropy, "'", " is not a valid category", sep=""))
-  if (any(is.na(pmatch(monotone, RC_MONOTONE))))
-    stop(paste("'", monotone, "'", " is not a valid category", sep=""))
-
-  envir <- as.environment("package:RandomFields")
-  ls.RFmg <- ls(envir=envir)
-  idx <- logical(len <- length(ls.RFmg))
   if (implied_monotonicities) {
-    if (RC_MONOTONE[MON_MISMATCH] %in% monotone)
-      monotone <- c(monotone, RC_MONOTONE[c(MON_MISMATCH + 1, BERNSTEIN)])
-    for (i in 1:3)
-      if (RC_MONOTONE[MON_MISMATCH + i] %in% monotone)
-        monotone <- c(monotone, RC_MONOTONE[MON_MISMATCH + i + 1])
+    mon <- MONOTONE_NAMES[-1 : (MISMATCH - 1)]
+    for (i in MONOTONE:NORMAL_MIXTURE)
+      if (mon[i] %in% monotone) monotone <- c(monotone, mon[i + 1])
+    if (mon[BERNSTEIN] %in% monotone) monotone <- c(monotone, mon[MONOTONE])
     monotone <- unique(monotone)
   }
-  
-  for (i in 1:len){
+
+ 
+  envir <- as.environment("package:RandomFields")
+  ls.RFmg <- ls(envir=envir)
+  ls.RFmg <- ls.RFmg[substr(ls.RFmg, 1, 1) == "R"]
+  idx <- logical(len <- length(ls.RFmg))
+   for (i in 1:len){
     fun <- get(ls.RFmg[i], envir=envir)
     idx[i] <- is.function(fun) && is(fun, class2="RMmodelgenerator")
-    if (!idx[i]) next   
-    idx[i] <- (!all(is.na(pmatch(type, fun["type"]))) &&
-               !all(is.na(pmatch(domain, fun["domain"]))) &&
-               !all(is.na(pmatch(isotropy, fun["isotropy"]))) &&
-               fun["operator"] %in% operator &&
-               !all(is.na(pmatch(monotone, fun["monotone"]))) &&
-               (!simpleArguments || fun["simpleArguments"]) &&
-               fun["finiterange"] %in% finiterange &&
-               (fun["maxdim"] < 0 ||
-                (fun["maxdim"] >= valid.in.dim[1] &&
-                 fun["maxdim"] <= valid.in.dim[2]))  &&
-               (fun["vdim"] < 0 ||
-                (fun["vdim"] >= vdim[1] && fun["vdim"] <= vdim[2]))  &&
-               ls.RFmg[i] != ZF_INTERNALMIXED               
-               )
-  }
+    if (!idx[i]) next
+     idx[i] <- (!all(is.na(pmatch(fun["type"], type, 
+                                        duplicates.ok=TRUE) &
+                           pmatch(fun["isotropy"], isotropy, 
+                                  duplicates.ok=TRUE))) &&
+          #      !any(pt[!is.na(pt)] %in% pi[!is.na(pi)]) &&
+                !all(is.na(pmatch(domain, fun["domain"]))) &&
+                fun["operator"] %in% operator &&
+                !all(is.na(pmatch(monotone, fun["monotone"]))) &&
+                (!simpleArguments || fun["simpleArguments"]) &&
+                fun["finiterange"] %in% finiterange &&
+                (fun["maxdim"] < 0 ||
+                 (fun["maxdim"] >= valid.in.dim[1] &&
+                  fun["maxdim"] <= valid.in.dim[2]))  &&
+                (fun["vdim"] < 0 ||
+                 (fun["vdim"] >= vdim[1] && fun["vdim"] <= vdim[2]))  &&
+                ls.RFmg[i] != ZF_INTERNALMIXED                
+                )
+   }
 
-  return(sort(ls.RFmg[idx]))
+  
+  return(unique(sort(ls.RFmg[idx])))
 }
 
 
@@ -257,6 +278,11 @@ RFformula <- function(f)
 
 
 RFgetMethodNames <-function () {
-  RFgetModelNames(type=c("method for Gauss processes", "method for Brown-Resnick processes"), group.by="type")
+  RFgetModelNames(type=TYPENAMES[c(GaussMethodType, BrMethodType) + 1])
 }
 
+
+GetProcessType <- function(model) {
+  stopifnot(is.list(model))
+  return(.Call("GetProcessType", MODEL_INTERN, model))
+}

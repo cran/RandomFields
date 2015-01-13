@@ -29,11 +29,11 @@ RMcoord <- function(C0, coord, dist)
 
 RMcoord <- new('RMmodelgenerator',
                .Data = RMcoord,
-               type = RC_TYPE[OtherType + 1],
-               domain = RC_DOMAIN[PREVMODELD + 1],
-               isotropy = RC_ISOTROPY[RC_CARTESIAN_COORD + 1],
+               type = TYPENAMES[OtherType + 1],
+               domain = DOMAIN_NAMES[PREVMODELD + 1],
+               isotropy = ISONAMES[CARTESIAN_COORD + 1],
                operator = TRUE,
-               monotone = RC_MONOTONE[NOTMONOTONE],
+               monotone = MONOTONE_NAMES[NOT_MONOTONE],
                simpleArguments = FALSE,
                finiterange = TRUE,
                maxdim = Inf,
@@ -70,11 +70,11 @@ internalRMmixed <- function(X, beta, cov, coord, dist, element)
 
 internalRMmixed <- new('RMmodelgenerator',
                        .Data = internalRMmixed,
-                       type = RC_TYPE[OtherType + 1],
-                       domain = RC_DOMAIN[PREVMODELD + 1],
-                       isotropy = RC_ISOTROPY[RC_CARTESIAN_COORD + 1],
+                       type = TYPENAMES[OtherType + 1],
+                       domain = DOMAIN_NAMES[PREVMODELD + 1],
+                       isotropy = ISONAMES[CARTESIAN_COORD + 1],
                        operator = TRUE,
-                       monotone =  RC_MONOTONE[NOTMONOTONE],
+                       monotone =  MONOTONE_NAMES[NOT_MONOTONE],
                        finiterange = TRUE,
                        simpleArguments = FALSE,
                        maxdim = Inf,
@@ -153,11 +153,11 @@ RRdistr <- function(fct, nrow, ncol, envir) {
 
 RRdistr <- new('RMmodelgenerator',
                .Data = RRdistr,
-               type = RC_TYPE[.RandomType + 1],
-               domain = RC_DOMAIN[PREVMODELD + 1],
-               isotropy = RC_ISOTROPY[PREVMODELI + 1],
+               type = TYPENAMES[RandomType + 1],
+               domain = DOMAIN_NAMES[PREVMODELD + 1],
+               isotropy = ISONAMES[PREVMODELI + 1],
                operator = FALSE,
-               monotone =  RC_MONOTONE[NOTMONOTONE],
+               monotone =  MONOTONE_NAMES[NOT_MONOTONE],
                finiterange = FALSE,
                simpleArguments = FALSE,
                maxdim = Inf,
@@ -185,10 +185,10 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 	cl <- match.call()
 	submodels <- par.general <- par.model <- list() 
 	
-	if (!hasArg(type)) type <- RC_TYPE[ShapeType + 1]
+	if (!hasArg(type)) type <- TYPENAMES[ShapeType + 1]
         if (is.numeric(type)) par.model[['type']] <- type
         else if (is.character(type))
-          par.model[['type']] <- pmatch(type, RC_TYPE) - 1
+          par.model[['type']] <- pmatch(type, TYPENAMES) - 1
 
         
         if (par.model[['type']] < ProcessType)
@@ -199,18 +199,18 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 	if (hasArg(domain)) {
 	  if (is.numeric(domain)) par.model[['domain']] <- domain
 	  else if (is.character(domain))
-                   par.model[['domain']] <- pmatch(domain, RC_DOMAIN) - 1
+                   par.model[['domain']] <- pmatch(domain, DOMAIN_NAMES) - 1
 	  else stop("wrong value for 'domain'")
 	}
 	if (hasArg(isotropy)) {
 	  if (is.numeric(isotropy)) par.model[['isotropy']] <- isotropy
 	  else if (is.character(isotropy))
-                   par.model[['isotropy']] <- pmatch(isotropy, RC_ISOTROPY) - 1
+                   par.model[['isotropy']] <- pmatch(isotropy, ISONAMES) - 1
 	  else stop("wrong value for 'isotropy'")
 	}
 
         
-   #     Print(par.model, type, domain, isotropy, RC_TYPE, RC_DOMAIN, RC_ISOTROPY); xxx        
+   #     Print(par.model, type, domain, isotropy, TYPENAMES, DOMAIN_NAMES, ISONAMES); xxx        
 	if (hasArg(vdim)) {
 	  if (is.numeric(vdim)) par.model[['vdim']] <- vdim
 	  else stop("wrong value for 'vdim'")
@@ -261,11 +261,11 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
 
 RMuser <- new('RMmodelgenerator',
               .Data = RMuser,
-              type = RC_TYPE[PosDefType + 1],
-              domain = RC_DOMAIN[PREVMODELD + 1],
-              isotropy = RC_ISOTROPY[PREVMODELI + 1],
+              type = TYPENAMES[PosDefType + 1],
+              domain = DOMAIN_NAMES[PREVMODELD + 1],
+              isotropy = ISONAMES[PREVMODELI + 1],
               operator = FALSE,
-              monotone =  RC_MONOTONE[NOTMONOTONE], # [MON_PARAMETER]
+              monotone =  MONOTONE_NAMES[NOT_MONOTONE], # [MON_PARAMETER]
               finiterange = TRUE,
               simpleArguments = FALSE,
               maxdim = Inf,

@@ -108,7 +108,13 @@
       \item the generic function \command{\link[graphics]{plot}}
     }
       
-  
+    \item \bold{Coordinate systems}
+    \itemize{
+      \item Cartesian, earth and spherical coordinates are
+      recognized, see \link{coordinate systems} for details.
+      \item a list of valid models is given by
+      \link{spherical models}.
+    }
       
     \item \bold{S3 and S4 objects}
     \itemize{      

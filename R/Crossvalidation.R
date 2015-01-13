@@ -45,7 +45,7 @@ print.summary.RFcrossvalidate <- function(x, ...) {
   }
 }
 
-RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,   
+RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                             lower=NULL, upper=NULL,
                             bc_lambda, ## if missing then no BoxCox-Trafo
                             method="ml", # "reml", "rml1"),
@@ -188,6 +188,10 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
      class(res) <- "RFcrossvalidate"
    }
 
+  if (RFopt$general$returncall)
+    attr(res, "call") <- as.character(deparse(match.call())) 
+  attr(res, "coord_system") <- c(orig=RFopt$coords$coord_system,
+                                 model=RFopt$coords$new_coord_system)
   res
 }
 

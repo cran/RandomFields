@@ -13,27 +13,46 @@
  
 
 \usage{
-RMtrafo(isotropy)
-RFearth2cartesian(coord, units=NULL)
-RFearth2dist(coord, units=NULL, ...)
+% to do: auch fuer die 'plane' transformationen
+RMtrafo(phi, isotropy)
+RFearth2cartesian(coord, units=NULL, system="cartesian", grid=FALSE)
+RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
 }
 
 \arguments{
-  \item{isotropy}{one of the values
-    \code{\link{RC_ISOTROPIC}},
-    \code{\link{RC_SPACEISOTROPIC}},
-    %    ZERORC_SPACEISOTROPIC,
-    %    VECTORRC_ISOTROPIC,
+  \item{isotropy}{integer or character. One of the values
+    \code{\link[=constants]{RC_ISOTROPIC}},
+    \code{\link[=constants]{RC_SPACEISOTROPIC}},
+    %    ZEROSPACEISO,
+    %    VECTORISOTROPIC,
     %    SYMMETRIC,
-    \code{\link{RC_CARTESIAN_COORD}},
+    \code{\link[=constants]{RC_CARTESIAN_COORD}},
+    \code{\link[=constants]{RC_GNOMONIC_PROJ}},
+    \code{\link[=constants]{RC_ORTHOGRAPHIC_PROJ}},
     %   EARTH_COORD,
     %    SPHERICAL_COORD,
     %    CYLINDER_COORD
+    
+    Or the corresponding \code{\link[=constants]{RC_ISONAMES}}.
+
+    Note that \command{RMtrafo} only allows for integer values.
+
+    Default: \code{RC_CARTESIAN_COORD}
+    
   }
+  \item{phi}{optional submodel}
   \item{coord}{matrix or vector of earth coordinates}
   \item{units}{"km" or "miles"; if not given and 
     \code{RFoptions()$general$units != ""} the latter is used.
     Otherwise \code{"km"}.
+  }
+  \item{system}{integer or character. The coordinate system, e.g.
+    \code{"cartesian"}, \code{"gnomonic"}, or \code{"orthographic"}.
+    }
+  \item{grid}{logical. Whether the given coordinates are considered to
+    be on a grid given by \code{c(start, step, length)}.
+
+    Default: FALSE
   }
   \item{...}{the optional arguments of \command{\link[stats]{dist}}    
   }
@@ -69,6 +88,9 @@ RFearth2dist(coord, units=NULL, ...)
 \note{
   Important options are \code{units} and \code{coordinate_system}, see
   \command{\link{RFoptions}}.
+
+  Note also that the zenit must be given explicitely for projection onto
+  a plane. See the examples below.
 }
 
 
@@ -84,7 +106,7 @@ RFearth2dist(coord, units=NULL, ...)
 data(weather)
 (coord <- weather[1:5, 3:4])
 
-(z <- RFfctn(RMtrafo(RC_CARTESIAN_COORD), coord))
+(z <- RFfctn(RMtrafo(isotropy=RC_CARTESIAN_COORD), coord))
 (z1 <- RFearth2cartesian(coord)) ## equals t(z)
 z1 - t(z) ## 0, i.e., z1 and t(z) are the same
 dist(t(z))
@@ -93,6 +115,11 @@ dist(t(z))
 (d <- RFearth2dist(coord)) 
 d - dist(t(z)) ## 0, i.e., d and dist(t(z)) are the same
 
+
+## projecction onto planes
+RFoptions(zenit=c(-122,   47))
+RFearth2cartesian(coord, system="gnomonic")
+RFearth2cartesian(coord, system="orthographic")
 
 \dontshow{\dontrun{ # OK
 
@@ -116,7 +143,7 @@ xx <- matrix(weather[, 3:4], ncol=2) [ 1:5, ]
 
 xx <- weather[, 3:4][ 1:5, ]
 Print(xx)
-Print(yy <- RFfctn(RMtrafo(iso=RC_CARTESIAN_COORD), xx), units="miles")
+Print(yy <- RFfctn(RMtrafo(isotropy=RC_CARTESIAN_COORD), xx), units="miles")
 
 (z1 <- as.matrix(dist(t(yy))))
 

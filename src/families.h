@@ -113,8 +113,6 @@ int init_setParam(cov_model *cov, gen_storage *s);
 void do_setParam(cov_model *cov, double *v);
 
 
-
-
 void unifD(double *x, cov_model *cov, double *v);
 void unifDlog(double *x, cov_model *cov, double *v);
 void unifDinverse(double *v, cov_model *cov, double *left, double *right);
@@ -128,5 +126,22 @@ int check_unif(cov_model *cov);
 void do_unif(cov_model *cov, double *v);
 int init_unif(cov_model *cov, gen_storage *s);
 void range_unif(cov_model *cov, range_type *range);
+
+
+void kappa_mcmc(int i, cov_model *cov, int *nr, int *nc);
+void mcmcD(double *x, cov_model *cov, double *v);
+void mcmcDlog(double *x, cov_model *cov, double *v);
+void mcmcDinverse(double *v, cov_model *cov, double *left,double *right);
+void mcmcP(double *x, cov_model *cov, double *v);
+void mcmcP2sided(double *x, double *y, cov_model *cov, double *v);
+void mcmcQ(double *x, cov_model *cov, double *v);
+void mcmcR(double *x, cov_model *cov, double *v); 
+void mcmcR2sided(double *x, double *y, cov_model *cov, double *v); 
+//void kappa_mcmc(int i, cov_model *cov, int *nr, int *nc);
+int check_mcmc(cov_model *cov);
+void do_mcmc(cov_model *cov, double *v);
+int init_mcmc(cov_model *cov, gen_storage *s);
+void range_mcmc(cov_model *cov, range_type *range);
+
 
 #endif /* Families_H*/

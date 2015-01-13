@@ -268,7 +268,7 @@ approx_test_single <- function(model, method, alpha, modelinfo) {
 
 RFratiotest <-
   function(nullmodel, alternative,
-           x, y=NULL, z=NULL, T=NULL,  grid, data,
+           x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
            alpha,
            n = 5 / alpha, ## number of simulations to do
            seed = 0,
@@ -318,11 +318,19 @@ RFratiotest <-
                    "delta.df", "p", "txt"
                    ), drop=FALSE]
       class(ats) <- "RFratiotest"
-      return(ats)
+      if (RFopt$general$returncall)
+        attr(ats, "call") <- as.character(deparse(match.call()))
+      attr(ats, "coord_system") <- c(orig=RFopt$coords$coord_system,
+                                     model=RFopt$coords$new_coord_system)
+    return(ats)
     } else {
       ats <- approx_test(list(nullmodel, alternative), alpha)
       class(ats) <- "RFratiotest"
-      return(ats)
+      if (RFopt$general$returncall)
+        attr(ats, "call") <- as.character(deparse(match.call()))
+      attr(ats, "coord_system") <- c(orig=RFopt$coords$coord_system,
+                                     model=RFopt$coords$new_coord_system)
+     return(ats)
     }
   } else if (missing(alternative) || (class(alternative) %in% classes))
     stop("alternative model is not given or not of model type")
@@ -330,7 +338,7 @@ RFratiotest <-
   
   if (!is.null(seed) && !is.na(seed)) set.seed(seed)
   else if (!is.na(RFopt$general$seed)) {
-    if (printlevel >= PL.IMPORPANT)
+    if (printlevel >= PL_IMPORTANT)
       message("NOTE: 'RFratiotest' is performed with fixed random seed ",
               RFopt$general$seed,
               ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
@@ -349,7 +357,7 @@ RFratiotest <-
   remove("Z")
 
   isSubmodel <- is.numeric(values) && all(is.na(values))
-  if (!isSubmodel && printlevel >= PL.IMPORPANT)
+  if (!isSubmodel && printlevel >= PL_IMPORTANT)
     message("'nullmodel' cannot be automatically detected as being a nullmodel of 'alternative'")
   
   model.list <- list(nullmodel=nullmodel, alternative=alternative)
@@ -373,7 +381,11 @@ RFratiotest <-
   if (RFopt$fit$ratiotest_approx) {
     ats <- approx_test(data.fit)
     class(ats) <- "RFratiotest"
-    return(ats)
+    if (RFopt$general$returncall)
+      attr(ats, "call") <- as.character(deparse(match.call()))
+    attr(ats, "coord_system") <- c(orig=RFopt$coords$coord_system,
+                                   model=RFopt$coords$new_coord_system)
+   return(ats)
   }
   
   model <- data.fit[[1]]$ml$model
@@ -393,7 +405,7 @@ RFratiotest <-
   
   pch <- if (RFopt$general$pch=="") "" else '@'
   for (i in 1:simu.n) {
-    if (printlevel>=PL.SUBIMPORPANT)
+    if (printlevel>=PL_SUBIMPORTANT)
       cat("\n ", i, "th simulation out of", simu.n)
     else cat(pch)
     simu <- RFsimulate(model, x=newx, T=newT, grid=grid, 
@@ -418,7 +430,7 @@ RFratiotest <-
 
     stopifnot(!isSubmodel || ratio[i] <= 0)# should never appear
     
-    if (printlevel > PL.SUBIMPORPANT)
+    if (printlevel > PL_SUBIMPORTANT)
       Print(c(data.ratio, ratio), fit, rank(c(data.ratio, ratio))[1])#
   }
   
@@ -430,8 +442,13 @@ RFratiotest <-
     paste("\nThe likehood ratio test ranks the likelihood of the data on rank",
           r, "among", simu.n, "simulations:", mess(alpha=alpha, p=p))
 
-  ret <- list(p=p, n=n, data.ratio=data.ratio, simu.ratios=ratio,
+  res <- list(p=p, n=n, data.ratio=data.ratio, simu.ratios=ratio,
               data.fit=data.fit, msg=msg, model.list=model.list)
-  class(ret) <- "RFratiotest"
+  class(res) <- "RFratiotest"
+  if (RFopt$general$returncall)
+    attr(res, "call") <- as.character(deparse(match.call()))
+  attr(res, "coord_system") <- c(orig=RFopt$coords$coord_system,
+                                 model=RFopt$coords$new_coord_system)
+  return(res)
 
 }

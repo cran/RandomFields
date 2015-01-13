@@ -36,10 +36,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void LOC_NULL(location_type *loc) {
   int d;
-  loc->spatialdim = loc->timespacedim = loc->lx = -1;
+  loc->spatialdim = loc->timespacedim = loc->lx = loc->xdimOZ = -1;
   for (d=0; d<MAXSIMUDIM; d++) {
     loc->xgr[d] = loc->ygr[d] = NULL;
-    loc->length[d] = -1;
   }
   loc->totalpoints = loc->spatialtotalpoints = 0;
   loc->grid = loc->distances = loc->Time = false;
@@ -136,7 +135,6 @@ void removeOnly(cov_model **Cov) {
 void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   cov_model *cov = *Cov;
 
-
   assert(cov != NULL);
 
   int i, j,
@@ -189,32 +187,35 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   }
   if (cov->rf != NULL && cov->origrf) free(cov->rf);
 
-  CE_DELETE(&(cov->SCE));
-  LOCAL_DELETE(&(cov->SlocalCE));
-  CE_APPROX_DELETE(&(cov->SapproxCE));
-  DIRECT_DELETE(&(cov->Sdirect));
-  HYPER_DELETE(&(cov->Shyper));  
-  MIXED_DELETE(&(cov->Smixed));
-  NUGGET_DELETE(&(cov->Snugget));
+  ce_DELETE(&(cov->Sce));
+  localCE_DELETE(&(cov->SlocalCE));
+  approxCE_DELETE(&(cov->SapproxCE));
+  direct_DELETE(&(cov->Sdirect));
+  hyper_DELETE(&(cov->Shyper));  
+  mixed_DELETE(&(cov->Smixed));
+  nugget_DELETE(&(cov->Snugget));
 
-  PLUS_DELETE(&(cov->Splus));
-  SEQU_DELETE(&(cov->Sseq));
+  plus_DELETE(&(cov->Splus));
+  sequ_DELETE(&(cov->Ssequ));
   //  SPECTRAL_DELETE(&(cov->Sspectral));
-  TREND_DELETE(&(cov->Strend));
-  TBM_DELETE(&(cov->Stbm));
-  BR_DELETE(&(cov->SBR));
-  PGS_DELETE(&(cov->Spgs));
-  SET_DELETE(&(cov->Sset));
-  POLYGON_DELETE(&(cov->Spolygon));
-  RECT_DELETE(&(cov->Srect));
-  DOLLAR_DELETE(&(cov->Sdollar));
-  GATTER_DELETE(&(cov->S2));
-  EXTRA_DELETE(&(cov->Sextra));
-  BIWM_DELETE(&(cov->Sbiwm));
-  INV_DELETE(&(cov->Sinv));
-  GET_STORAGE_DELETE(&(cov->Sget));
+  trend_DELETE(&(cov->Strend));
+  tbm_DELETE(&(cov->Stbm));
+  br_DELETE(&(cov->Sbr));
+  pgs_DELETE(&(cov->Spgs));
+  set_DELETE(&(cov->Sset));
+  polygon_DELETE(&(cov->Spolygon));
+  rect_DELETE(&(cov->Srect));
+  dollar_DELETE(&(cov->Sdollar));
+  gatter_DELETE(&(cov->Sgatter));
+  earth_DELETE(&(cov->Searth));
+  extra_DELETE(&(cov->Sextra));
+  biwm_DELETE(&(cov->Sbiwm));
+  inv_DELETE(&(cov->Sinv));
+  scatter_DELETE(&(cov->Sscatter));
+  mcmc_DELETE(&(cov->Smcmc));
+  get_DELETE(&(cov->Sget));
   //  SELECT_DELETE(&(cov->Sselect));
-  STORAGE_DELETE(&(cov->stor));  
+  gen_DELETE(&(cov->Sgen));  
   
   simu_type *simu = &(cov->simu);
   simu->active = simu->pair = false;
@@ -293,7 +294,7 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->mpp.mM = cov->mpp.mMplus = NULL;
   cov->mpp.moments = MISMATCH;
   
-  cov->SCE = NULL;
+  cov->Sce = NULL;
   cov->SlocalCE = NULL;
   cov->SapproxCE = NULL;
   cov->Sdirect = NULL;
@@ -301,23 +302,25 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Smixed = NULL;
   cov->Snugget = NULL;
   cov->Splus = NULL;
-  cov->Sseq = NULL;
+  cov->Ssequ = NULL;
   cov->Stbm = NULL;
   cov->Strend = NULL;
-  cov->SBR = NULL;
+  cov->Sbr = NULL;
   cov->Sget = NULL;
   cov->Spgs = NULL;
   cov->Sset = NULL;
   cov->Spolygon = NULL;
   cov->Srect = NULL;
   cov->Sdollar = NULL;
-  cov->S2 = NULL;
+  cov->Sgatter = NULL;
+  cov->Searth = NULL;
   cov->Sextra = NULL;
   cov->Sbiwm = NULL;
   cov->Sinv = NULL;
+  cov->Sscatter = NULL;
+  cov->Smcmc = NULL;
   //cov->Sselect = NULL;
-  //cov->Sselect = NULL;
-  cov->stor = NULL;
+  cov->Sgen = NULL;
 
   cov->fieldreturn = cov->origrf = false;
   cov->initialised = false;
@@ -329,7 +332,7 @@ void COV_NULL(cov_model *cov) {
 
   cov->nr = cov->gatternr =  cov->secondarygatternr = MISMATCH;
   for (i=0; i<MAXPARAM; i++) {
-    cov->px[i] = NULL;
+    PtoNULL(i);
     cov->ncol[i] = cov->nrow[i] = 0; 
     cov->kappasub[i] = NULL;
   }
@@ -352,12 +355,12 @@ void COV_NULL(cov_model *cov) {
   cov->method = Forbidden;
   cov->tsdim = cov->xdimprev = cov->xdimown =cov->maxdim = cov->xdimgatter = 
     UNSET;
-  cov->vdim2[0] = cov->vdim2[1] = MISMATCH;
+  cov->vdim[0] = cov->vdim[1] = MISMATCH;
 
  
   cov->ownkappanames = NULL;
 
-  cov->domown = cov->domprev = STAT_MISMATCH;
+  cov->domown = cov->domprev = DOMAIN_MISMATCH;
   cov->isoown = cov->isoprev = ISO_MISMATCH;
   cov->logspeed = RF_NA;
   cov->delflag = 0;
@@ -400,8 +403,8 @@ void FFT_destruct(FFT_storage *FFT)
 }
 
 
-void CE_DELETE(CE_storage **S) {
-  CE_storage *x = *S;
+void ce_DELETE(ce_storage **S) {
+  ce_storage *x = *S;
   if (x != NULL) {
     int l,       
       vdim = x->vdim,      
@@ -423,7 +426,7 @@ void CE_DELETE(CE_storage **S) {
   }
 }
 
-void CE_NULL(CE_storage* x){
+void ce_NULL(ce_storage* x){
   if (x == NULL) return;
   FFT_NULL(&(x->FFT));  
   x->positivedefinite = FALSE;
@@ -439,7 +442,7 @@ void CE_NULL(CE_storage* x){
 
 
 
-void LOCAL_DELETE(localCE_storage**S) 
+void localCE_DELETE(localCE_storage**S) 
 {
   localCE_storage* x = *S;
   if (x!=NULL) {
@@ -449,15 +452,15 @@ void LOCAL_DELETE(localCE_storage**S)
   }
 }
 
-void LOCAL_NULL(localCE_storage* x){
+void localCE_NULL(localCE_storage* x){
   // int i;  for (i=0; i<MAXCEDIM; i++) 
   if (x == NULL) return;
   x->correction = NULL;
 }
 
 
-void CE_APPROX_DELETE(ce_approx_storage **S) {
-  ce_approx_storage* x = * S;
+void approxCE_DELETE(approxCE_storage **S) {
+  approxCE_storage* x = * S;
   if (x != NULL) {
     if (x->idx != NULL) free(x->idx);
     free(*S);
@@ -465,13 +468,13 @@ void CE_APPROX_DELETE(ce_approx_storage **S) {
   }
 }
 
-void CE_APPROX_NULL(ce_approx_storage* x){
+void approxCE_NULL(approxCE_storage* x){
   if (x == NULL) return;
   x->idx = NULL;
 }
 
 
-void DIRECT_DELETE(direct_storage  ** S) {
+void direct_DELETE(direct_storage  ** S) {
   direct_storage *x = *S;
   if (x!=NULL) {
     if (x->U!=NULL) free(x->U); 
@@ -481,7 +484,7 @@ void DIRECT_DELETE(direct_storage  ** S) {
   }
 }
 
-void DIRECT_NULL(direct_storage  *x) {
+void direct_NULL(direct_storage  *x) {
   if (x == NULL) return;
   x->U = NULL;
   x->G = NULL;
@@ -490,7 +493,7 @@ void DIRECT_NULL(direct_storage  *x) {
 
 
 
-void HYPER_DELETE(hyper_storage  **S) {
+void hyper_DELETE(hyper_storage  **S) {
   hyper_storage *x = *S; 
   if (x != NULL) {
     free(*S);
@@ -498,12 +501,12 @@ void HYPER_DELETE(hyper_storage  **S) {
   }
 }
 
-void HYPER_NULL(hyper_storage* x) {
+void hyper_NULL(hyper_storage* x) {
   if (x == NULL) return;
 }
 
 
-void MIXED_DELETE(mixed_storage ** S) {
+void mixed_DELETE(mixed_storage ** S) {
   mixed_storage *x = *S;
   if (x!=NULL) {
    if (x->Xb != NULL) free(x->Xb);
@@ -513,20 +516,20 @@ void MIXED_DELETE(mixed_storage ** S) {
   }
 }
 
-void MIXED_NULL(mixed_storage* x) {
+void mixed_NULL(mixed_storage* x) {
   x->Xb = NULL;
   x->mixedcov = NULL;
   x->initialized = false;
 }
 
 
-void NUGGET_NULL(nugget_storage *x){
+void nugget_NULL(nugget_storage *x){
   if (x == NULL) return;
   x->pos = NULL;
   x->red_field = NULL;
 }
 
-void NUGGET_DELETE(nugget_storage ** S)
+void nugget_DELETE(nugget_storage ** S)
 {
   nugget_storage *x = *S;
   if (x != NULL) {
@@ -537,14 +540,14 @@ void NUGGET_DELETE(nugget_storage ** S)
   }
 }
 
-void PLUS_NULL(plus_storage *x){
+void plus_NULL(plus_storage *x){
   if (x != NULL) {
     int i;
     for (i=0; i<MAXSUB; i++) x->keys[i] = NULL;
   }
 }
 
-void PLUS_DELETE(plus_storage ** S){
+void plus_DELETE(plus_storage ** S){
   plus_storage *x = *S;
   if (x != NULL) {
     int i;
@@ -555,7 +558,7 @@ void PLUS_DELETE(plus_storage ** S){
   }
 }
 
-void SEQU_NULL(sequential_storage *x){
+void sequ_NULL(sequ_storage *x){
   if (x == NULL) return;
   x->U11 = NULL;
   x->U22 = NULL;
@@ -566,8 +569,8 @@ void SEQU_NULL(sequential_storage *x){
   x->res0 = NULL;
 }
 
-void SEQU_DELETE(sequential_storage ** S){
-  sequential_storage *x = *S;
+void sequ_DELETE(sequ_storage ** S){
+  sequ_storage *x = *S;
   if (x!=NULL) {
     if (x->U11!=NULL) free(x->U11); 
     if (x->U22!=NULL) free(x->U22); 
@@ -581,7 +584,7 @@ void SEQU_DELETE(sequential_storage ** S){
   }
 }
 
-void SPECTRAL_DELETE(spectral_storage **S) 
+void spectral_DELETE(spectral_storage **S) 
 { 
   spectral_storage *x = *S;
   if (x!=NULL) {
@@ -593,14 +596,14 @@ void SPECTRAL_DELETE(spectral_storage **S)
 }
 
 
-void SPECTRAL_NULL(spectral_storage *x) 
+void spectral_NULL(spectral_storage *x) 
 { 
   if (x!=NULL) {
   }
 }
 
 
-void TREND_DELETE(trend_storage ** S) {
+void trend_DELETE(trend_storage ** S) {
   trend_storage *x = *S;
   if (x!=NULL) {
     if (x->x!=NULL) free(x->x);
@@ -612,23 +615,23 @@ void TREND_DELETE(trend_storage ** S) {
   }
 }
 
-void TREND_NULL(trend_storage* x) {
+void trend_NULL(trend_storage* x) {
   x->x = NULL;
   x->xi = NULL;
   x->evalplane = NULL;
   x->powmatrix = NULL;
 }
 
-void TBM_DELETE(TBM_storage **S) 
+void tbm_DELETE(tbm_storage **S) 
 {
-  TBM_storage *x = *S;
+  tbm_storage *x = *S;
   if (x!=NULL) {
      free(*S);
     *S = NULL;
   }
 }
 
-void TBM_NULL(TBM_storage* x) {
+void tbm_NULL(tbm_storage* x) {
   if (x == NULL) return;
   x->ce_dim =  0;
   x->err = ERRORFAILED;
@@ -645,8 +648,8 @@ void BRTREND_DELETE(double **BRtrend, int trendlen) {
    }
  }
 
-void BR_DELETE(BR_storage **S) {
-  BR_storage *brS = *S;  
+void br_DELETE(br_storage **S) {
+  br_storage *brS = *S;  
   if (brS != NULL) {
     int i;
     if (brS->trend != NULL) {
@@ -692,7 +695,7 @@ void BR_DELETE(BR_storage **S) {
   }
 }
 
-void BR_NULL(BR_storage *brS) {
+void br_NULL(br_storage *brS) {
   brS->trend = NULL;
   brS->trendlen = 0;
   brS->next_am_check = NA_INTEGER;
@@ -717,13 +720,13 @@ void BR_NULL(BR_storage *brS) {
 }
 
 
-void PGS_DELETE(pgs_storage **S) 
+void pgs_DELETE(pgs_storage **S) 
 {
   pgs_storage *x = *S;
   if (x!=NULL) {
     if (x->own_grid_start != NULL) free(x->own_grid_start);
     if (x->own_grid_step != NULL) free(x->own_grid_step);
-    if (x->own_grid_length != NULL) free(x->own_grid_length);
+    if (x->own_grid_len != NULL) free(x->own_grid_len);
    if (x->supportmin != NULL) free(x->supportmin);
     if (x->supportmax != NULL) free(x->supportmax);
     if (x->supportcentre != NULL) free(x->supportcentre);   
@@ -785,7 +788,7 @@ void PGS_DELETE(pgs_storage **S)
 }
 
 
-void PGS_NULL(pgs_storage* x) {
+void pgs_NULL(pgs_storage* x) {
   if (x == NULL) return;
    x->log_density = x->intensity = x->globalmin = x->currentthreshold = 
     RF_NEGINF;
@@ -800,7 +803,7 @@ void PGS_NULL(pgs_storage* x) {
 
   x->single = x->total = x->v = x->x = x->xstart = x->inc =
     x->localmin = x->localmax =x->minmean = x->maxmean =
-    x->own_grid_start = x->own_grid_step =  x->own_grid_length = 
+    x->own_grid_start = x->own_grid_step =  x->own_grid_len = 
     x->supportmin = x->supportmax = x->supportcentre = NULL;
 
   x->xgr[0] = NULL;
@@ -826,7 +829,7 @@ void PGS_NULL(pgs_storage* x) {
 }
 
 
-void SET_DELETE(set_storage **S) {
+void set_DELETE(set_storage **S) {
   set_storage *x = *S;
   if (x!=NULL) {
     //    if (x->valueRemote != NULL) free(x->valueRemote);
@@ -837,7 +840,7 @@ void SET_DELETE(set_storage **S) {
   }
 }
 
-void SET_NULL(set_storage* x) {
+void set_NULL(set_storage* x) {
   if (x == NULL) return;
   x->remote = NULL;
   x->set = NULL;
@@ -846,7 +849,7 @@ void SET_NULL(set_storage* x) {
   x->variant = 0;
 }
 
-void POLYGON_DELETE(polygon_storage **S) 
+void polygon_DELETE(polygon_storage **S) 
 {
   polygon_storage *x = *S;
   if (x != NULL) {
@@ -865,7 +868,7 @@ void POLYGON_DELETE(polygon_storage **S)
   *S = NULL;
 }
 
-void POLYGON_NULL(polygon_storage* x) {
+void polygon_NULL(polygon_storage* x) {
   if (x == NULL) return;
   x->vprim = NULL;
   x->vdual = NULL;
@@ -878,7 +881,7 @@ void POLYGON_NULL(polygon_storage* x) {
   P->n = 0;
 }
 
-void RECT_DELETE(rect_storage **S){
+void rect_DELETE(rect_storage **S){
   rect_storage *x = *S;
   if (x!=NULL) {
     if (x->value != NULL) free(x->value);
@@ -897,9 +900,7 @@ void RECT_DELETE(rect_storage **S){
   }
 }
 
-
-
-void RECT_NULL(rect_storage* x) {
+void rect_NULL(rect_storage* x) {
   if (x == NULL) return;
   x->tmp_n = x->nstep = -999;
   x->value = x->weight = x->tmp_weight = 
@@ -914,7 +915,7 @@ void RECT_NULL(rect_storage* x) {
 }
 
 
-void DOLLAR_DELETE(dollar_storage **S) 
+void dollar_DELETE(dollar_storage **S) 
 {
   dollar_storage *x = *S;
   if (x!=NULL) {
@@ -933,7 +934,7 @@ void DOLLAR_DELETE(dollar_storage **S)
   }
 }
 
-void DOLLAR_NULL(dollar_storage* x) {
+void dollar_NULL(dollar_storage* x) {
   if (x == NULL) return;
   x->z = x->z2 = x->y =  x->y2 = x->save_aniso = x->inv_aniso = NULL;
   x->cumsum = x->nx = x->total = x->len = NULL;
@@ -941,7 +942,7 @@ void DOLLAR_NULL(dollar_storage* x) {
 
 
 
-void GATTER_DELETE(gatter_storage **S) 
+void gatter_DELETE(gatter_storage **S) 
 {
   gatter_storage *x = *S;
   if (x!=NULL) {
@@ -951,15 +952,34 @@ void GATTER_DELETE(gatter_storage **S)
   }
 }
 
-void GATTER_NULL(gatter_storage* x) {
+void gatter_NULL(gatter_storage* x) {
   if (x == NULL) return;
   x->z = NULL;
   //  x->zsys = NULL;
 }
 
 
+void earth_DELETE(earth_storage **S) 
+{
+  earth_storage *x = *S;
+  if (x!=NULL) {
+    if (x->X != NULL) free(x->X);
+    if (x->Y != NULL) free(x->Y);
+    if (x->U != NULL) free(x->U);
+    if (x->V != NULL) free(x->V);
+    free(*S);
+    *S = NULL;
+  }
+}
 
-void EXTRA_DELETE(extra_storage **S) 
+void earth_NULL(earth_storage* x) {
+  if (x == NULL) return;
+  x->X = x->Y = x->U = x->V = NULL;
+}
+
+
+
+void extra_DELETE(extra_storage **S) 
 {
   extra_storage *x = *S;
   if (x!=NULL) {
@@ -971,14 +991,14 @@ void EXTRA_DELETE(extra_storage **S)
   }
 }
 
-void EXTRA_NULL(extra_storage* x) {
+void extra_NULL(extra_storage* x) {
   if (x == NULL) return;
   x->a = x->b = x->c = NULL;
 }
 
 
 
-void BIWM_DELETE(biwm_storage **S) 
+void biwm_DELETE(biwm_storage **S) 
 {
   biwm_storage *x = *S;
   if (x!=NULL) {
@@ -987,12 +1007,12 @@ void BIWM_DELETE(biwm_storage **S)
   }
 }
 
-void BIWM_NULL(biwm_storage* x) {
+void biwm_NULL(biwm_storage* x) {
   if (x == NULL) return;  
 }
 
 
-void INV_DELETE(inv_storage **S) {
+void inv_DELETE(inv_storage **S) {
   inv_storage *x = *S;
   if (x!=NULL) {
     if (x->v != NULL) free(x->v);
@@ -1002,21 +1022,62 @@ void INV_DELETE(inv_storage **S) {
   }
 }
 
-
-void INV_NULL(inv_storage* x) {
+void inv_NULL(inv_storage* x) {
   if (x == NULL) return;  
   x->v = NULL;
   x->wert = NULL;
 }
 
 
-void GET_STORAGE_NULL(get_storage *s){
+void scatter_DELETE(scatter_storage **S) {
+  scatter_storage *x = *S;
+  if (x!=NULL) {
+    if (x->nx != NULL) free(x->nx);
+    if (x->min != NULL) free(x->min);
+    if (x->max != NULL) free(x->max);
+    if (x->step != NULL) free(x->step);
+    if (x->x != NULL) free(x->x);
+    if (x->xmin != NULL) free(x->xmin);
+    if (x->value != NULL) free(x->value);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void scatter_NULL(scatter_storage* x) {
+  if (x == NULL) return; 
+  x->dim = x->vdim = -1; 
+  x->min = x->max = x->nx = NULL;
+  x->step = x->value = x->xmin = x->x = NULL;
+}
+
+void mcmc_DELETE(mcmc_storage **S) {
+  mcmc_storage *x = *S;
+  if (x!=NULL) {
+    if (x->pos != NULL) free(x->pos);
+    if (x->deltapos != NULL) free(x->deltapos);
+    if (x->propdelta != NULL) free(x->propdelta);
+   if (x->proposed != NULL) free(x->proposed);
+    free(*S);
+    *S = NULL;
+  }
+}
+
+void mcmc_NULL(mcmc_storage* x) {
+  if (x == NULL) return; 
+  x->pos = x->deltapos = x->propdelta = x->proposed = NULL;
+  //x->done = false;
+  x->integral = 0.0;
+}
+
+
+void get_NULL(get_storage *s){
   s->orig = s->get_cov = NULL;
   s->idx = NULL;
   s->param_nr = -1;
 }
 
-void GET_STORAGE_DELETE(get_storage **S){
+void get_DELETE(get_storage **S){
   get_storage *x = *S;
   if (x != NULL) {
     if (x->idx != NULL) free(x->idx);
@@ -1026,7 +1087,7 @@ void GET_STORAGE_DELETE(get_storage **S){
 }
 
 
-void STORAGE_NULL(gen_storage *x) {
+void gen_NULL(gen_storage *x) {
   int d;
   if (x == NULL) return;
   //  x->mpp.newx = NULL;
@@ -1037,7 +1098,7 @@ void STORAGE_NULL(gen_storage *x) {
 
   x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
     = RF_NA;
-  x->Sspectral.grid = x->Sspectral.ergodic = false;
+  x->Sspectral.grid = false;
 
   x->spec.nmetro = -1;
   x->spec.sigma = -1.0;
@@ -1047,7 +1108,7 @@ void STORAGE_NULL(gen_storage *x) {
   }
 }
 
-void STORAGE_DELETE(gen_storage **S) {
+void gen_DELETE(gen_storage **S) {
   gen_storage *x = *S;
   if (x!=NULL) {
     free(*S);
@@ -1121,7 +1182,15 @@ int setgrid(coord_type xgr, double *x, long lx, int spatialdim) {
   MEMCOPY(xgr[0], x, totalBytes);
   
   // folgende Zeile nur beim ersten Mal zu setzen, aber egal
-  for (d=1; d<spatialdim; d++) xgr[d] = &(xgr[0][d * lx]); 
+  for (d=1; d<spatialdim; d++) {
+    xgr[d] = &(xgr[0][d * lx]); 
+    if (xgr[d][XLENGTH] != (int) xgr[d][XLENGTH])
+      SERR2("grid length must be integer valued. Got %f in dimension %d.",
+	    xgr[d][XLENGTH], d);
+    if (xgr[d][XLENGTH] < 1.0) 
+      SERR2("grid length must be positive. Got %f in dimension %d.",
+	    xgr[d][XLENGTH], d);
+  }
   for (; d<MAXSIMUDIM; d++)  xgr[d]=NULL;    
   
   return NOERROR;
@@ -1196,6 +1265,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
     if (loc->x != NULL) { free(loc->x); loc->x = NULL; }
   }
   loc->delete_x = cpy;
+  if (lx == 0) return NOERROR;
   
   if (grid) {
     if ((err = setgrid(loc->xgr, x, lx, loc->spatialdim)) !=NOERROR) return err;
@@ -1207,10 +1277,8 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       }
     }
     
-    for (d=0; d<loc->spatialdim; d++) 
-      loc->length[d] = (int) loc->xgr[d][XLENGTH]; 
     for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
-      loc->spatialtotalpoints *= loc->length[d];
+      loc->spatialtotalpoints *= (int) loc->xgr[d][XLENGTH];
     }
     loc->totalpoints = loc->spatialtotalpoints;
   } 
@@ -1218,17 +1286,18 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   else if (dist) {
     // lx : anzahl der Puntke involviert, d.h. x muss die Laenge lx ( lx -1) / 2
     // haben.
-    
-    if (cpy) {
-      totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
-      if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
-	return ERRORMEMORYALLOCATION; 
-     }
-      MEMCOPY(loc->x, x, totalBytes);
-    } else {
-      loc->x = x;
+    if (lx > 0) {
+      if (cpy) {
+	totalBytes =  sizeof(double) * lx * (lx - 1) / 2 * xdimOZ;
+	if ((loc->x=(double*) MALLOC(totalBytes))==NULL){
+	  return ERRORMEMORYALLOCATION; 
+	}
+	MEMCOPY(loc->x, x, totalBytes);
+      } else {
+	loc->x = x;
+      }
     }
-    loc->totalpoints = loc->spatialtotalpoints = loc->length[0] = lx;
+    loc->totalpoints = loc->spatialtotalpoints = lx;
     //     (int) (1e-9 + 0.5 * (1.0 + sqrt(1.0 + 8.0 * lx)));
     //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
     //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
@@ -1268,10 +1337,8 @@ int partial_loc_set(location_type *loc, double *x, double *y,
     
     //printf("getnset %d\n", lx);
     
-    loc->totalpoints = loc->spatialtotalpoints = loc->length[0]= lx;
+    loc->totalpoints = loc->spatialtotalpoints = lx;
     // just to say that considering these values does not make sense
-    for (d=1; d<loc->spatialdim; d++) loc->length[d]=0; 
-    // correct value for higher dimensions (never used)
   }
   
   if ((loc->Time) xor (T!=NULL)) {    
@@ -1286,11 +1353,10 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       if (ly>0) loc->ygr[loc->spatialdim] = loc->T;
     }
     
-    loc->length[loc->spatialdim] = (int) loc->T[XLENGTH];
-    if (loc->length[loc->spatialdim]<=0) {
+    if (loc->T[XLENGTH] <= 0) {
       SERR1("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of '%s'.", CovList[SIMULATE].nick)
 	}
-    loc->totalpoints *= loc->length[loc->spatialdim];
+    loc->totalpoints *= (int) loc->T[XLENGTH];
   }
 
   return NOERROR;
@@ -1302,12 +1368,13 @@ int loc_set(double *x, double *y, double *T,
 	    long lx, long ly, bool Time, bool grid,
 	    bool distances,
 	    location_type **Loc) {
-  int d, err;
+  int err;
   //unsigned long totalBytes;
   // preference lists, distinguished by grid==true/false and dimension
   // lists must end with Nothing!
  
   if (*Loc != NULL) LOC_DELETE(Loc);
+ 
   location_type *loc = *Loc = (location_type*) MALLOC(sizeof(location_type));
   LOC_NULL(loc);
 
@@ -1323,8 +1390,6 @@ int loc_set(double *x, double *y, double *T,
 			     Time ? T : NULL,
 			     grid, true)) != NOERROR) XERR(err);
  
-  for (d=loc->timespacedim; d<MAXSIMUDIM; d++) loc->length[d] = -1;// 1
-
   return NOERROR;
 }
 
@@ -1442,85 +1507,10 @@ int getmodelnr(char *name) {
   return Match(name, CovNames, currentNrCov);
 }
 
-int Match(char *name, name_type List, int n) {
-  // == -1 if no matching name is found
-  // == -2 if multiple matching fctns are found, without one matching exactly
-  unsigned int ln;
-  int Nr;
-  Nr=0;
-  ln=strlen(name);
-  //  print("Match %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
-
-  while ( Nr < n  && strncmp(name, List[Nr], ln)) Nr++;
-  if (Nr < n) { 
-    if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
-      return Nr;
-    // a matching function is found. Are there other functions that match?
-    int j; 
-    bool multiplematching=false;
-    j=Nr+1; // if two or more covariance functions have the same name 
-    //            the last one is taken 
-    while (j<n) {
-      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
-      if (j<n) {
-	if (ln==strlen(List[j])) { // exactmatching -- take first 
-	  return j;
-	}
-	else {multiplematching=true;}
-      }
-      j++;
-    }
-    if (multiplematching) {return MULTIPLEMATCHING;}
-  } else return NOMATCHING;
-  return Nr;
-}
-
-int Match(char *name, const char * List[], int n) {
-  // == -1 if no matching name is found
-  // == -2 if multiple matching fctns are found, without one matching exactly
-  unsigned int ln;
-  int Nr;
-  Nr=0;
-  ln=strlen(name);
-  //    print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
-
-  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
-    // print("       %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
-    Nr++;
-  }
-  if (Nr < n) { 
-    if (ln==strlen(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
-      //      print(" found  X    %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
-      return Nr;
-    }
-    // a matching function is found. Are there other functions that match?
-    int j; 
-    bool multiplematching=false;
-    j=Nr+1; // if two or more covariance functions have the same name 
-    //            the last one is taken 
-    while (j<n) {
-      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
-      if (j<n) {
-	if (ln==strlen(List[j])) { // exactmatching -- take first 
-	  return j;
-	}
-	else {multiplematching=true;}
-      }
-      j++;
-    }
-    if (multiplematching) {return MULTIPLEMATCHING;}
-  } else return NOMATCHING;
-
-  //  print(" found      %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
- 
-  return Nr;
-}
-
-
 void MultiDimRange(cov_model *cov, double *natscale) {
   int wave, i, redxdim, d, idx, 
     xdimprev = cov->xdimprev,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     err = NOERROR;
   double y, yold, x[MAXGETNATSCALE], threshold, natsc, factor, sign,
     newx, xsave, newy, 
@@ -1679,8 +1669,10 @@ void GetNaturalScaling(cov_model *cov, double *natscale)
 
   if (C->maxsub!=0) XERR(ERRORFAILED); 
  
-  if (C->isotropy != ISOTROPIC || C->domain != XONLY ||
-      !isPosDef(C->Type) || C->vdim != SCALAR) 
+  if (!is_any(ISOTROPIC, C) || cov->isoown != ISOTROPIC
+      || C->domain != XONLY ||
+      !isPosDef(cov->typus) 
+      || C->vdim != SCALAR) 
     ERR("anisotropic function not allowed");
 	 
   if (C->finiterange == true) {
@@ -1858,7 +1850,7 @@ void paramcpy(cov_model *to, cov_model *from, bool freeing,
     assert(To != NULL &&  From != NULL);
     //    To->sum_zhou_c = From->sum_zhou_c;
     //    To->sq_zhou_c = From->sq_zhou_c;
-    int vdim = from->vdim2[0];
+    int vdim = from->vdim[0];
     for (v=0; v<vdim; v++) To->maxheights[v] = From->maxheights[v];
     To->unnormedmass = From->unnormedmass;
     //    To->zhou_c = From->zhou_c;    
@@ -1926,9 +1918,9 @@ int covcpy(cov_model **localcov, bool sub, cov_model *cov, // err
 
   //  PMI(current, "err = covcpy");
   
-  if (cov->q != NULL) {
+  if (cov->q != NULL) {    
     n = sizeof(double) * current->qlen;
-    current->q = (double*) MALLOC(n);
+    current->q = (double*) MALLOC(n); // QALLOC NOT APPROPRIATE
     MEMCOPY(current->q, cov->q, n);
   } else assert(current->qlen==0);
 
@@ -2113,8 +2105,8 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov, //err
   //   PMI(neu);
   //printf("newmodel %s %s\n", NICK(cov), TYPENAMES[CovList[cov->nr].Type]);
 
-  type = CovList[neu->nr].Type;
-  assert(type == InterfaceType); // anderes z.zt nicht benutzt
+  type = CovList[neu->nr].Typi[0];
+  assert(type == InterfaceType && CovList[neu->nr].variants == 1); // anderes z.zt nicht benutzt
   for (i=0; i<2; i++) {
     //print("i=%d %s\n", i, TYPENAMES[cov->typus]);
     if ((err = CHECK(neu, cov->tsdim, cov->xdimprev,
@@ -2123,7 +2115,7 @@ int newmodel_covcpy(cov_model **localcov, int model, cov_model *cov, //err
 		     type,
 		     type == InterfaceType ? XONLY : cov->domprev, 
 		     type == InterfaceType ? CARTESIAN_COORD : cov->isoprev, 
-		     cov->vdim2, ROLE_BASE)) != NOERROR) {
+		     cov->vdim, ROLE_BASE)) != NOERROR) {
       return err;
     }
     if (i==0 && (err =  STRUCT(neu, NULL)) != NOERROR) return err;
@@ -2221,7 +2213,7 @@ double GetDiameter(location_type *loc,
   int d,
     origdim = loc->timespacedim,  
     spatialdim = loc->spatialdim;
- double distsq, dummy,
+  double distsq, dummy,
     *lx=NULL, *sx=NULL, 
    diameter=0.0;
  
@@ -2235,10 +2227,10 @@ double GetDiameter(location_type *loc,
       if (loc->xgr[d][XSTEP] > 0) {
 	origmin[d] = loc->xgr[d][XSTART];
 	origmax[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
-	    (double) (loc->length[d] - 1);
+	  (loc->xgr[d][XLENGTH] - 1.0);
       } else {
 	origmin[d] = loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] * 
-	  (double) (loc->length[d] - 1);
+	  (double) (loc->xgr[d][XLENGTH] - 1.0);
 	origmax[d] = loc->xgr[d][XSTART];
       }
       origcenter[d] = 0.5 * (origmin[d] + origmax[d]);
@@ -2252,7 +2244,7 @@ double GetDiameter(location_type *loc,
 	dummy = max[d] - min[d];
 	diameter += dummy * dummy;
       }
-    } else {      
+    } else { // caniso != NULL
       j = (bool*) MALLOC( (origdim + 1) * sizeof(double));
       lx = (double*) MALLOC( origdim * sizeof(double));
       sx = (double*) MALLOC(spatialdim * sizeof(double));
@@ -2307,7 +2299,7 @@ double GetDiameter(location_type *loc,
 
     double *xx=loc->x; 
     int i,
-      endfor = loc->length[0] * loc->timespacedim;
+      endfor = loc->spatialtotalpoints * spatialdim;
 
     for (d=0; d<spatialdim; d++) {
       min[d]=RF_INF; 
@@ -2318,9 +2310,10 @@ double GetDiameter(location_type *loc,
     // componentwise min and max corner
     for (i=0; i<endfor; ) {
       for (d=0; d<spatialdim; d++, i++) {
-        //temporal part need not be considered, but for ease included
-	if (xx[i]<min[d]) min[d] = xx[i];
-	if (xx[i]>max[d]) max[d] = xx[i];
+        //temporal part need not be considered, but for ease included#
+	//	printf("i=%d %d %d\n", i, d, endfor);
+	if (xx[i] < min[d]) min[d] = xx[i];
+	if (xx[i] > max[d]) max[d] = xx[i];
       }
     }
        
@@ -2328,10 +2321,9 @@ double GetDiameter(location_type *loc,
       assert(d == origdim - 1);
       if (loc->T[XSTEP] > 0) {
 	min[d] = loc->T[XSTART];
-	max[d] = loc->T[XSTART] + loc->T[XSTEP] * 
-	  (double) (loc->length[d] - 1);
+	max[d] = loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0);
       } else {
-	min[d] = loc->T[XSTART] + loc->T[XSTEP] * (double) (loc->length[d] - 1);
+	min[d] = loc->T[XSTART] + loc->T[XSTEP] * (loc->T[XLENGTH] - 1.0);
 	max[d] = loc->T[XSTART];
       }
     }
@@ -2343,7 +2335,7 @@ double GetDiameter(location_type *loc,
       // print("%d center %f %f %f %f\n", d, center[d], min[d], max[d], diameter);
     }
   } // !simugrid
-   
+    
   return 2.0 * sqrt(diameter);
 }
 
@@ -2419,7 +2411,7 @@ unsigned long NiceFFTNumber(unsigned long n) {
 }
 
 
-void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
+void expandgrid(coord_type xgr, double **xx, int nrow){
   double *x=NULL, *y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
   int 
@@ -2429,7 +2421,7 @@ void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
 
   long d, pts, w, k, total, i; 
   for (pts=1, i=0; i<nrow; i++) {
-    pts *= len[i];
+    pts *= (long int) xgr[i][XLENGTH];
   }
 
   y = (double*) MALLOC(ncol * sizeof(double));
@@ -2447,7 +2439,7 @@ void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
     i = 0;
     (yi[i])++;
     y[i] += xgr[i][XSTEP];
-    while(yi[i]>=len[i]) {
+    while(yi[i]>= xgr[i][XLENGTH]) {
       yi[i]=0;
       y[i] = xgr[i][XSTART];
       if (i<dimM1) {
@@ -2465,8 +2457,7 @@ void expandgrid(coord_type xgr, int *len, double **xx, int nrow){
 
 
 
-void expandgrid(coord_type xgr, int *len, double **xx, double* aniso, 
-		int nrow, int ncol){
+void expandgrid(coord_type xgr, double **xx, double* aniso, int nrow, int ncol){
   double *x=NULL, * y=NULL; /* current point within grid, but without
 		       anisotropy transformation */
   int
@@ -2475,12 +2466,12 @@ void expandgrid(coord_type xgr, int *len, double **xx, double* aniso,
   long pts, w, k, total, n, i, d;
 
   if (aniso == NULL) {
-    expandgrid(xgr, len, xx, nrow);
+    expandgrid(xgr, xx, nrow);
     return;
   }
 
   for (pts=1, i=0; i<nrow; i++) {
-    pts *= len[i];
+    pts *= (long int) xgr[i][XLENGTH];
   }
 
   total = ncol * pts;
@@ -2504,7 +2495,7 @@ void expandgrid(coord_type xgr, int *len, double **xx, double* aniso,
     i = 0;
     (yi[i])++;
     y[i] += xgr[i][XSTEP];
-    while(yi[i]>=len[i]) {
+    while(yi[i]>=xgr[i][XLENGTH]) {
       yi[i]=0;
       y[i] = xgr[i][XSTART];
       if (i<dimM1) {
@@ -2556,12 +2547,13 @@ void grid2grid(coord_type xgr, double **grani, double *aniso, int origdim,
 }
 
 
-void xtime2x(double *x, int nx, double *T, int timelen, 
+void xtime2x(double *x, int nx, double *T,
 	     double **newx, int timespacedim) {
   double *y, // umhaengen zwingend notwendig, da u.U. **xx und *newx
     // der gleiche aufrufende Pointer ist, d.h. es wird "ueberschrieben"
     *z,  t;
   int j, k, i, d, 
+    timelen = (int) T[XLENGTH],
     spatialdim = timespacedim - 1;
   z = *newx = (double*) MALLOC(sizeof(double) * timespacedim * nx * timelen);
   for (k=j=0, t=T[XSTART]; j<timelen; j++, t += T[XSTEP]){
@@ -2576,18 +2568,19 @@ void xtime2x(double *x, int nx, double *T, int timelen,
 }
 
 
-void xtime2x(double *x, int nx, double *T, int timelen, 
+void xtime2x(double *x, int nx, double *T,
 	     double **newx, double *aniso, int nrow, int ncol) {
   double *y, // umhaengen zwingend notwendig, da u.U. **xx und *newx
     // der gleiche aufrufende Pointer ist, d.h. es wird "ueberschrieben"
     *z, dummy, t;
   int j, k, i, d, n, endfor, w,
     spatialdim = nrow - 1,
+    timelen = T[XLENGTH],
     nxspdim = nx * spatialdim;
 
   if (aniso == NULL) {
     assert(nrow == ncol);
-    xtime2x(x, nx, T, timelen, newx, nrow);
+    xtime2x(x, nx, T, newx, nrow);
     return;
   }
 
@@ -2761,6 +2754,9 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
 			 bool *Time, bool *grid, int *newdim, bool takeX) {
   // this function transforms the coordinates according to the anisotropy
   // matrix 
+
+  if (!isCartesian(cov->isoown)) 
+    ERR("transformation only possible within Cartesian system");
   
   location_type *loc = Loc(cov);
   bool isdollar = isAnyDollar(cov);
@@ -2773,8 +2769,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     dim = (isdollar ? (!PisNULL(DANISO) ? cov->ncol[DANISO] : 
 		       !PisNULL(DPROJ) ? cov->nrow[DPROJ] : origdim )
 	   : origdim
-	   ),
-    *length = loc->length;
+	   );
   double *aniso,
     *T = loc->T, *x = takeX ? loc->x : loc->y;
   coord_type 
@@ -2831,7 +2826,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     assert(*xgr != NULL);
     if (isMproj(type)) {
       if (gridexpand == true) {
-	expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+	expandgrid(*xgr, SpaceTime, aniso, nrow, ncol);
 	*Time = false;
       } else {
 	// nur aniso auf grid multipliziert
@@ -2840,16 +2835,16 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
       }
     } else if (gridexpand) {
       if (!loc->Time) { // grid no time
-	expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+	expandgrid(*xgr, SpaceTime, aniso, nrow, ncol);
       } else { // grid and time 
 	if (timesep && isMtimesep(type)) {
 	  // space
-	  expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol - 1); 
+	  expandgrid(*xgr, SpaceTime, aniso, nrow, ncol - 1); 
 	  // time
 	  grid2grid(*xgr + loc->spatialdim, grani, 
 		    aniso + nrow * nrow - 1, 1, 1);
 	} else {
-	  expandgrid(*xgr, length, SpaceTime, aniso, nrow, ncol);
+	  expandgrid(*xgr, SpaceTime, aniso, nrow, ncol);
 	  *Time = false;
 	}
       }
@@ -2872,14 +2867,15 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     }
   } else { // nogrid
     if (!loc->Time) { // no grid no time
-	 x2x(x, length[0], SpaceTime, aniso, nrow, ncol); 
+	 x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, ncol); 
     } else { // no grid but time
       if (timesep && isMtimesep(type)) {
-	x2x(x, length[0], SpaceTime, aniso, nrow, ncol-1);
+	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, ncol-1);
 	grid2grid((*xgr) + loc->spatialdim, grani, 
 		  aniso + nrow * nrow - 1, 1, 1);
       } else {
-	xtime2x(x, length[0], T, length[dim-1], SpaceTime, aniso, nrow,ncol);
+	xtime2x(x, loc->spatialtotalpoints, T, SpaceTime,
+		aniso, nrow, ncol);
 	*Time = false;
       }
     }
@@ -3022,140 +3018,185 @@ bool TypeConsistency(Types requiredtype, Types deliveredtype) {
   case ShapeType :     return isShape(deliveredtype);
   case TrendType :     return isTrend(deliveredtype);
   case InterfaceType:  return isInterface(deliveredtype);
-  case OtherType :     return isOtherType(deliveredtype);
+  case OtherType :     return isOther(deliveredtype);
   default : BUG;
   }
   BUG;
   return FALSE;
 }
 
-bool TypeConsistency(Types requiredtype, cov_model *cov) {
+int TypeConsistency(Types requiredtype, cov_model *cov, int depth) {
   //  if (cov == NULL) crash();
   assert(cov != NULL);
   cov_fct *C = CovList + cov->nr; // nicht gatternr
-  if (C->Type == UndefinedType) {
+  if (isUndefined(C)) {
     assert(C->TypeFct != NULL);
-
-    //  printf("consist %s\n", NICK(cov));
-
-    return C->TypeFct(requiredtype, cov);
+    return C->TypeFct(requiredtype, cov, depth);
   }
   //   printf("not consist %s type=%d, %d;   %s %d\n", NAME(cov), C->Type, cov->typus,	 CovList[150].name, CovList[150].Type);
-  return TypeConsistency(requiredtype, C->Type);
+  int i;
+  for (i=0; i<C->variants; i++) {
+    //    printf("TC %d %d %s %s %d %d \n", i, TypeConsistency(requiredtype, C->Typi[i]), TYPENAMES[requiredtype], TYPENAMES[C->Typi[i]],  depth, depth<=0 );
+    if (TypeConsistency(requiredtype, C->Typi[i])
+	&& (depth <= 0 || atleastSpecialised(cov->isoown, C->Isotropy[i]))
+	) {
+      return i + 1;
+    }
+ }
+  return false;
 }
 
 
-int change_coordinate_system(isotropy_type callingprev, isotropy_type isoprev,
+int change_coordinate_system(isotropy_type callingisoown, isotropy_type isoprev,
+			     int tsdimprev, int xdimprev,
 			     int *nr, isotropy_type  *newisoprev,
 			     int *newtsdim, int *newxdim) {
-  switch(callingprev) {
+  // isoprev is replaced by a coordinate transformation and a nwe 
+
+  // printf("ISO calling %s; prev %s\n", ISONAMES[callingisoown], ISONAMES[isoprev]);
+
+  switch(callingisoown) {
   case EARTH_COORD :
     if (isCartesian(isoprev)) {
-      if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0) {
-	*nr = EARTHKM2CART;
+      if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
+	*nr = isoprev == GNOMONIC_PROJ ? EARTHKM2GNOMONIC  
+	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHKM2ORTHOGRAPHIC
+	  : EARTHKM2CART;
       } else if (strcmp(GLOBAL.coords.newunits[0], 
 			UNITS_NAMES[units_miles]) == 0) {
-	*nr = EARTHMILES2CART;
+	*nr = isoprev == GNOMONIC_PROJ ? EARTHMILES2GNOMONIC  
+	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHMILES2ORTHOGRAPHIC
+	  :EARTHMILES2CART;
       } else {
 	SERR4("only units '%s' and '%s' are allowed. Got '%s' (user's '%s').",
 	      UNITS_NAMES[units_km], UNITS_NAMES[units_miles], 
 	      GLOBAL.coords.newunits[0], GLOBAL.coords.curunits[0]);
       }
-      *newisoprev = CARTESIAN_COORD;
-      *newtsdim =  *newxdim = 3;
-    } else if (isSpherical(isoprev)) {
-      NotProgrammedYet("");
+      if (isoprev == GNOMONIC_PROJ || isoprev == ORTHOGRAPHIC_PROJ) {
+	*newtsdim = tsdimprev;
+	*newxdim = xdimprev;
+	*newisoprev = isoprev;
+      } else {
+	*newisoprev = CARTESIAN_COORD;
+	*newtsdim = 
+	  *newxdim = 3;
+      }
     } else {
-      NotProgrammedYet("");
-      }      
+      return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
+    }      
     break;
+  case EARTH_ISOTROPIC : case SPHERICAL_ISOTROPIC :
+    return ERRORWRONGISO;
   default:    
-     NotProgrammedYet("");
-  }    
+     return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
+  }
   return NOERROR;
 }
 
 
-int SetGatter(domain_type domprev, domain_type statnext, 
+int SetGatter(domain_type domprev, domain_type domnext, 
 	      isotropy_type isoprev, isotropy_type isonext, 
+	      //	      bool first, 
 	      int *nr, int *delflag) {  
-
-  // printf("gatter %d %d %d %d\n",  domprev, statnext, isoprev,isonext);
-  
-  if (domprev < statnext) 
+  if (domprev < domnext) 
     SERR2("Cannot call more complex models ('%s') from simpler ones ('%s')",
-	  STATNAMES[(int) statnext], STATNAMES[(int) domprev]);
-  bool isoOK = (isoprev == VECTORISOTROPIC && isonext == VECTORISOTROPIC) ||
-    isoprev >= isonext;
-  if (!isoOK) 
-    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
-	  ISONAMES[(int) statnext], ISONAMES[(int) domprev]);
+	  DOMAIN_NAMES[(int) domnext], DOMAIN_NAMES[(int) domprev]);
 
-  if (isoprev == SPHERICAL_COORD || isonext == SPHERICAL_COORD ||
-      isoprev == CYLINDER_COORD || isonext ==  CYLINDER_COORD)
+  //   printf("gatter dom=%d %d %s %s anySph=%d\n", domprev, domnext, ISONAMES[isoprev], ISONAMES[isonext], isAnySpherical(isonext));
+  if (isAnySpherical(isonext)) {
+    if (isoprev == UNREDUCED) {
+      *nr = isEarth(isoprev) ? E2E : Sph2Sph;
+      return NOERROR;
+    }
+    if(!isAnySpherical(isoprev)) BUG;
+ 
+    if (domnext== XONLY) {
+      if ((isoprev == EARTH_COORD || isoprev == SPHERICAL_COORD) 
+	  && domprev == XONLY) {
+	if (isonext == EARTH_ISOTROPIC || isoprev == SPHERICAL_ISOTROPIC)
+	  SERR("Change to isotropic earth coordinates not possible");
+	*nr = isEarth(isoprev) 
+	  ? (isSpherical(isonext) ? E2Sph : E2E)
+	  : (isSpherical(isonext) ? Sph2Sph : ISO_MISMATCH);
+	return NOERROR;
+      }
+      *nr = isEarth(isoprev) 
+       ? (isSpherical(isonext) ? E2SphIso : E2EIso) 
+       : (isSpherical(isonext) ? Sph2SphIso : ISO_MISMATCH);
+    } else { // domnext == KERNEL, d.h. auch == domprev
+      *nr = isEarth(isoprev) 
+	? (isSpherical(isonext) ? E2Sph : E2E)
+	: (isSpherical(isonext) ? Sph2Sph : ISO_MISMATCH);
+    }
+    if (domprev == XONLY && isoprev == isonext) *delflag=DEL_COV - 4;
+    if (*nr == ISO_MISMATCH)
+      SERR("change from spherical coordinates to earth coord's not possible");
+    return NOERROR;
+  }
+    
+  if (isoprev == CYLINDER_COORD || isonext ==  CYLINDER_COORD)
     SERR("general sphericaUNREDUCED,UNREDUCED,UNREDUCED,l coordinates not programmed yet");
 
-  if (domprev == XONLY) {
+  //////////////
+  // cartesian
+  //////////////
+
+  assert(isCartesian(isoprev) || isoprev == UNREDUCED);
+  bool isoOK = isoprev == isonext || 
+    (isoprev > isonext && isonext <= CARTESIAN_COORD); // keine Trafo innerhalb
+  // der projektionen -- bislang zumindest. ? to do
+  if (!isoOK) 
+    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
+	  ISONAMES[(int) domnext], ISONAMES[(int) domprev]);
+  // if (isoprec == GNOMONIC_PROJ &&
+     
+  if (domnext == XONLY && 
+      (domprev == KERNEL || 
+       isoprev ==  CARTESIAN_COORD || 
+       isoprev == SYMMETRIC ||
+       isoprev == VECTORISOTROPIC || 
+       isoprev == GNOMONIC_PROJ || 
+       isoprev == ORTHOGRAPHIC_PROJ ||
+       isoprev ==  ZEROSPACEISO)) {	
+    switch (isonext) {
+    case ISOTROPIC :
+      *nr = S2ISO;
+      break;
+    case SPACEISOTROPIC :
+      *nr = S2SP;
+      break;
+    case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
+    case CARTESIAN_COORD: case GNOMONIC_PROJ: case ORTHOGRAPHIC_PROJ:
+      *nr = S2S;
+      // *delflag = DEL_COV - 5; ///
+      break;
+    case UNREDUCED:
+      *nr = SId;
+      break;
+    default: BUG;
+    }
+  } else {    
+    if (domprev == XONLY) {
       switch(isoprev) {
       case ISOTROPIC :
 	*nr = ISO2ISO; 
 	break;
       case SPACEISOTROPIC :
 	*nr = (isonext == ISOTROPIC) ? SP2ISO : SP2SP;
-	break;	      
-      case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC : 
-      case CARTESIAN_COORD:
-	switch (isonext) {
-	case ISOTROPIC :
-	  *nr = S2ISO;
-	  break;
-	case SPACEISOTROPIC :
-	  *nr = S2SP;
-	  break;
-	case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
-	case CARTESIAN_COORD:
-	  *nr = S2S;
-	  *delflag = DEL_COV - 5; ///
-	  break;
-	default : BUG;
-	}
-	break;	
-      case EARTH_COORD:
-	if (isonext != EARTH_COORD) BUG;
-	*nr = S2S;
-	*delflag = DEL_COV - 8; ///
-	break;
-       default: 
-	PRINTF("GetGatter %d %d\n", domprev, isoprev);
+	break;	 
+      default: 
+	PRINTF("GetGatter prev=%s; %s\n          next=%s %s\n",
+	       DOMAIN_NAMES[domprev], ISONAMES[isoprev], 
+	       DOMAIN_NAMES[domnext], ISONAMES[isonext]);
 	BUG;
       }
-  } else { // KERNEL
-    if (statnext == XONLY) {
-      switch(isonext) {
-      case ISOTROPIC :
-	*nr = S2ISO;
-	break;
-      case SPACEISOTROPIC : 
-	*nr = S2SP;
-	break;
-      case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
-      case CARTESIAN_COORD:
-	*nr = S2S; 
-	break;
-      case EARTH_COORD:
-	if (isonext != EARTH_COORD) BUG;
-	*nr = S2S;
-	*delflag = DEL_COV - 8; ///
-	break;
-      default: BUG;
-      }
-    } else { // still non-domain: cannot be simplified
+    } else { // KERNEL domprev und domnext
       *nr = SId;
       *delflag = DEL_COV - 4;//
     }
-  } 
+  }
 
-  // printf("prev %d %d ; next %d %d nr = %d\n", domprev, isoprev, statnext, isonext, *nr);
+  // printf("prev %d %d ; next %d %d nr = %d\n", domprev, isoprev, domnext, isonext, *nr);
 
   return NOERROR;
 }
@@ -3475,9 +3516,9 @@ int FieldReturn(cov_model *cov) {
     }
   } 
 
-  //   printf("FieldReturn %d %d (%d %d)  %s\n",sizeof(res_type), loc->totalpoints, cov->vdim2[0], cov->vdim2[1], NICK(cov));
+  //   printf("FieldReturn %d %d (%d %d)  %s\n",sizeof(res_type), loc->totalpoints, cov->vdim[0], cov->vdim[1], NICK(cov));
   if ((cov->rf = 
-       (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim2[0]))
+       (res_type*) MALLOC(sizeof(res_type) * loc->totalpoints * cov->vdim[0]))
       == NULL) return ERRORMEMORYALLOCATION;
   cov->fieldreturn = cov->origrf = true;
   return NOERROR;

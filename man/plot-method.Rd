@@ -374,14 +374,12 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-\donttest{
 
 ## define the model:
 model <- RMtrend(mean=0.5) + # mean
-RMstable(alpha=1, var=4, scale=10) +
-# see help("RMstable")
-# for additional arguments
-RMnugget(var=1) # nugget
+         RMstable(alpha=1, var=4, scale=10) + # see help("RMstable")
+                                        ## for additional arguments
+         RMnugget(var=1) # nugget
 
 
 #############################################################
@@ -398,7 +396,7 @@ plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
 ## define the locations:
 from <- 0
 step <- .1 
-len <- if (interactive()) 50 else 5 ## nicer, but also time consuming if len <- 00
+len <- if (interactive()) 50 else 3 # nicer, but also time consuming if len=100
 x1D <- GridTopology(from, step, len)
 x2D <- GridTopology(rep(from, 2), rep(step, 2), rep(len, 2))
 x3D <- GridTopology(rep(from, 3), rep(step, 3), rep(len, 3))
@@ -438,20 +436,21 @@ plot(ev2, model=list(exp = model))
 
 #############################################################
 ## plot Fitting results
-x <- c(0,.1,20)
-x <- seq(0, 10, 0.05)
+x <- seq(0, 2, len=if (interactive()) 21 else 6)
  
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
 X <- RFsimulate(x=cbind(x,x), model=model)
-fit <- RFfit(~RMexp(Aniso=matrix(nc=2, nr=2, NA)), data=X, fit.nphi = 2)
+fit <- RFfit(~RMexp(Aniso=diag(c(NA, NA))), data=X, fit.nphi = 2,
+             modus="easygoing")
 plot(fit) 
 
 
 #############################################################
 ## plot Kriging results 
 model <- RMwhittle(nu=1.2, scale=2)
-x <- runif(200, max=step*len/2) 
-y <- runif(200, max=step*len/2) # 200 points in 2 dimensional space
+n <- if (interactive()) 200 else 5
+x <- runif(n, max=step*len/2) 
+y <- runif(n, max=step*len/2) # 200 points in 2 dimensional space
 sim <- RFsimulate(model = model, x=x, y=y)
 
 interpolate <- RFinterpolate(model=model, x=x2D, data=sim)
@@ -459,11 +458,10 @@ plot(interpolate)
 plot(interpolate, sim)
 
 
-
 #############################################################
 ## plotting vector-valued results
 model <- RMdivfree(RMgauss(), scale=4)
-x <- y <- seq(-10,10, if (interactive()) 0.5 else 5)
+x <- y <- seq(-10,10, if (interactive()) 0.5 else 10)
 simulated <- RFsimulate(model = model, x=x, y=y, n=1)
 plot(simulated)
 plot(simulated, select.variables=list(1, 1:3, 4))
@@ -481,7 +479,6 @@ plot(simu, zlim=cbind(c(-6,2), c(-2,1)))
 plot(simu, zlim=c(-6,2))
 plot(simu, zlim="joint")
 
-}
 \dontshow{FinalizeExample()}
 
 }

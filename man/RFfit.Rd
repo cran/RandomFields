@@ -16,7 +16,7 @@
   has not been implemented yet.
 }
 \usage{
-RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
+RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  lower = NULL, upper = NULL, bc_lambda, methods,
  sub.methods, optim.control = NULL, users.guess = NULL,
  distances = NULL, dim, transform = NULL, ...)
@@ -25,7 +25,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
 \arguments{
  \item{model}{
  covariance model, see \command{\link{RMmodel}} or
- type \code{\link{RFgetModelNames}()} to get all options.
+ type \code{\link{RFgetModelNames}(type="negative")} to get all options.
 % See also t
  
  All parameters that are set to \code{NA} will be estimated;
@@ -61,7 +61,11 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  \item{upper}{list or vector. Upper bounds for the parameters.
  See also lower.
  }
- \item{grid}{boolean. Whether coordinates give a grid}
+ \item{grid}{boolean. Whether coordinates build a grid. In nearly all cases
+   the value of \code{grid}
+   is self-detected, so that \code{grid} need not be given,
+   in general}
+ 
  \item{bc_lambda}{a vector of at most two numerical components (just
  one component 
  corresponds to two identical ones) which are the parameters of the 
@@ -171,7 +175,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 RFoptions(modus_operandi="sloppy")
 
 
-n <- if (interactive()) 100 else 5
+n <- if (interactive()) 100 else 3
 
 #########################################################
 ## simulate some data first                            ## 
@@ -188,7 +192,7 @@ estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
 RFfit(estmodel, data=d)
 
-\donttest{
+\dontshow{\dontrun{
 #########################################################
 ## Estimation with fixed sill (variance + nugget       ##
 ## equals a given constant)                            ##
@@ -219,7 +223,7 @@ f <- function(param) param[c(1,2,2)]
 RFfit(estmodel, data=d, transform=list(c(TRUE, TRUE, FALSE), f))
 
 
-}
+}}
 
 
 \dontshow{RFoptions(modus_operandi="normal")}

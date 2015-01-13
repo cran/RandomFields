@@ -1,5 +1,7 @@
 \name{Internal functions}
 \alias{rfGenerateModels}
+\alias{rfGenerateConstants}
+\alias{rfGenerateTest}
 \alias{checkExamples}
 \alias{FinalizeExample}
 \alias{Dependencies}
@@ -13,9 +15,14 @@
 \usage{
 rfGenerateModels(assigning,
  RFpath = "~/R/RF/svn/RandomFields",
- RMmodels.file = paste(RFpath, "R/RMmodels.R", sep="/")
+ RMmodels.file = paste(RFpath, "RandomFields/R/RMmodels.R", sep="/")
  )
- 
+rfGenerateConstants(
+           RFpath = "~/R/RF/svn/RandomFields",
+           RCauto.file = paste(RFpath, "RandomFields/R/RCauto.R", sep="/")
+           )
+rfGenerateTest(files = NULL,
+               RFpath = "~/R/RF/svn/RandomFields/RandomFields")
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path="RandomFields", package = "RandomFields",
@@ -25,12 +32,8 @@ ScreenDevice(height, width)
 
 FinalizeExample()
 
-Dependencies(install = length(pkgs) ==
-                     length(c(depends, imports, suggests)) &&
-                     all(pkgs == c(depends, imports, suggests)),
-             check=TRUE,
-             pkgs = c(depends, imports, suggests),
-             lib.loc ="/usr/local/lib64/R/library")
+Dependencies(install = all(pkgs == all.pkgs),
+             check=TRUE, pkgs = all.pkgs, dir = "Dependencies")
 
 showManpages(path="/home/schlather/svn/RandomFields/RandomFields/man")
 
@@ -40,7 +43,7 @@ plotWithCircles(data, factor=1.0,
                 col=1, fill=0, ...)
 }
 \arguments{
-  \item{assigning, RFpath, RMmodels.file}{internal}
+  \item{assigning, RFpath, RMmodels.file,RCauto.file,files}{internal}
   \item{exclude, include, ask, echo, halt, ignore.all, path, package,
     read.rd.files
   }{internal; 
@@ -51,7 +54,7 @@ plotWithCircles(data, factor=1.0,
     then ignored. If \code{FALSE} only examples of functions (which are
     search in the environments) are run.
   }
-  \item{install, check, pkgs, lib.loc}{internal}
+  \item{install, check, pkgs, dir}{internal}
   \item{height,width}{window sizes}
   \item{data, factor, xlim, ylim, col, fill, ...}{internal}
  % \item{REGISTER, COVREGISTER, RELAX}{internal}

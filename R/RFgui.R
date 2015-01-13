@@ -12,15 +12,13 @@ RFgui <- function(data, x, y,
   Env <- if (wait >= 0) environment() else .GlobalEnv
   assign("RFgui.model", NULL, envir=Env)
   if (exists(".RFgui.exit", .GlobalEnv)) rm(".RFgui.exit", envir=.GlobalEnv)
-
-  #Print(same.algorithm)
-  
+ 
   rfgui.intern(x=x, y=y, same.alg=same.algorithm,
                ev=ev, xcov=xcov, ycov=ycov,
                data=data, sim_only1dim=sim_only1dim, 
                parent.ev = Env,
               ...)
-  
+
   if (wait >= 0) {
     while (!exists(".RFgui.exit", envir=Env)) .C("sleepMicro", as.integer(wait))
     res <- get("RFgui.model", envir=Env)
@@ -71,9 +69,8 @@ rfgui.intern <- function(data, x, y,
   rm("RFoptOld")
 
   
-  guiReg <- GetModelRegister("gui")
+  guiReg <- MODEL_GUI
   guiOpt <- RFopt$gui
-  stopifnot(guiReg == RFopt$registers$guiregister)
   
   OnModelSelected <- function(...)
   { 
@@ -739,10 +736,11 @@ rfgui.intern <- function(data, x, y,
 
   # get all model names
   models <-
-    RFgetModelNames(type=RC_TYPE[c(TcfType, PosDefType, UndefinedType) + 1],
-                    domain=RC_DOMAIN[TRANS_INV + 1],
-                    isotropy=RC_ISOTROPY[RC_ISOTROPIC + 1],
+    RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
+                    domain=DOMAIN_NAMES[XONLY + 1],
+                    isotropy=ISONAMES[ISOTROPIC + 1],
                     operator=FALSE,
+                    group.by=NULL,
                     valid.in.dim = if (sim_only1dim) 1 else 2,
                     simpleArguments = TRUE,
                     vdim=1)#, multivariate = 1)

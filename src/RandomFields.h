@@ -26,29 +26,24 @@ extern "C" {
   
   void RNGtest();
   
-  void GetrfParameters(int *covmaxchar, int *methodmaxchar,
-		       int *typemaxchar,
-		       int *covnr, int *methodnr, int *typenr,
-		       int *maxdim, int *maxmodels);
-  void GetrfParametersI(int *covmaxchar, int *methodmaxchar,
-			int *typemaxchar,
-			int *covnr, int *methodnr, int *typenr,
-			int *maxdim, int *maxmodels);
+  void GetCurrentNrOfModels(int *init, int *nr);
   void GetModelNr(char **name, int *n); /* transforms string "covfct" 
 					   into covnr of CovList */
   void GetModelName(int *nr, char **name, char **nick); /* transforms covnr into string */
   SEXP GetParameterNames(SEXP nr);
   SEXP GetSubNames(SEXP nr);
-  void GetAttr(int *type, int *op, int *monotone, int *finiterange, 
+  void GetAttr(int *nr, int *type, int *op, int *monotone, int *finiterange, 
 	       int * simpleArguments,
-	       int *internal, int *stat, int *iso, int *maxdim, int *vdim);
+	       int *internal, int *stat, int *iso, int *maxdim, int *vdim,
+	       int *includevariants, int*n);
   void GetRange(int *nr, int *dim, int *index, double *params, int *lparam,
 		double *range, int *lrange);
   void GetNrParameters(int *covnr, int* kappas);
   void PrintModelList(int *local, int *operat, int *nick); // used in Roger's book
-  void GetModelList(int* idx, int*internal); // used in generate.R
+  //  void GetModelList(int* idx, int*internal); // used in generate.R
   SEXP GetAllModelNames();
-
+  SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem);
+ 
   /* Natural Scaling -- in contrast to the RFparameters(PracticalRange)
      GENERAL_NATURALSCALING may take the following values (furthermore,
      0: no rescaling, +10 numerical determination allowed
@@ -80,6 +75,7 @@ extern "C" {
   
   SEXP EvaluateModel(SEXP X, SEXP Covnr);
   
+  SEXP GetProcessType(SEXP model_reg, SEXP model);
   // storing : current value
   // printlevel : current value
   // naturalscaling : fixed value
@@ -189,18 +185,20 @@ extern "C" {
   // void Variogram(int *reg, double *value);
   // void Pseudovariogram(int* reg, double *result);
   SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
-		       SEXP lx, SEXP result);
+		       SEXP lx, SEXP result, SEXP nonzeros);
 
   SEXP VariogramIntern(SEXP reg, SEXP x, SEXP lx, SEXP result);
   SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
-		    SEXP result);
+		    SEXP result, SEXP nonzeros);
   SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdim, SEXP lx, SEXP result);
 	      
 
   SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
-			    SEXP selected, SEXP nsel, SEXP result);
+			    SEXP selected, SEXP nsel, SEXP result,
+			    SEXP nonzeros);
 
-  SEXP CovMatrixSelected(SEXP reg, SEXP selected, SEXP nsel, SEXP result);
+  SEXP CovMatrixSelected(SEXP reg, SEXP selected, SEXP nsel, SEXP result,
+			 SEXP nonzeros);
 
   SEXP Delete_y(SEXP reg);
   void DeleteKey(int *reg);
@@ -278,7 +276,7 @@ extern "C" {
   void sleepMilli(int *milli);
   void hostname(char **h, int *i);
   void pid(int *i);
-
+  SEXP getChar();
 
 
 }

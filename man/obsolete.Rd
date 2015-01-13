@@ -45,16 +45,16 @@ GaussRF(x, y = NULL, z = NULL, T=NULL, grid=!missing(gridtriple), model,
  paired=FALSE, PrintLevel=1, Storing=TRUE, ...) 
 Variogram(x, model, param = NULL, dim = if (!missing(Distances))
  { if (is.matrix(x)) ncol(x) else 1}, Distances)
-InitMaxStableRF(x, y = NULL, z = NULL, grid, model, param, maxstable,
+InitMaxStableRF(x, y = NULL, z = NULL, grid=NULL, model, param, maxstable,
  method = NULL, register = 0, gridtriple = FALSE)
-MaxStableRF(x, y = NULL, z = NULL, grid, model, param, maxstable,
+MaxStableRF(x, y = NULL, z = NULL, grid=NULL, model, param, maxstable,
  method = NULL, n = 1, register = 0, gridtriple = FALSE, ...)
-EmpiricalVariogram(x, y = NULL, z = NULL, T=NULL, data, grid, bin,
+EmpiricalVariogram(x, y = NULL, z = NULL, T=NULL, data, grid=NULL, bin,
  gridtriple = FALSE, phi, theta, deltaT)
-Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid, gridtriple=FALSE,
+Kriging(krige.method, x, y=NULL, z=NULL, T=NULL, grid=NULL, gridtriple=FALSE,
  model, param, given, data, trend=NULL,pch=".", return.variance=FALSE,
  allowdistanceZero = FALSE, cholesky=FALSE) 
-CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid, gridtriple=FALSE,
+CondSimu(krige.method, x, y=NULL, z=NULL, T=NULL, grid=NULL, gridtriple=FALSE,
  model, param, method=NULL, given, data, trend=NULL, n=1, register=0, 
  err.model=NULL, err.param=NULL, err.method=NULL, err.register=1, 
  tol=1E-5, pch=".", paired=FALSE, na.rm=FALSE) 
@@ -123,8 +123,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 
 ## no examples given, as command is obsolete
-\dontshow{\dontrun{
-
+\dontshow{\dontrun{ # ok
 x <- seq(0, 5, if (interactive()) 0.05 else 2)
 model <- "exp"
 param <- c(0, 1, 0, 1)

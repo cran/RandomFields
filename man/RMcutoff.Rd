@@ -26,7 +26,7 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
     See, for instance,
 
     \code{RFgetModelNames(type="positive definite",
-      domain="single variable", isotropy="isotropy",  vdim=1)}.
+      domain="single variable", isotropy="isotropic",  vdim=1)}.
  }
  \item{diameter}{a numerical value; should be greater than 0; the
    diameter of the domain on which the simulation is done}

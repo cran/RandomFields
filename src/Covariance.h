@@ -2,8 +2,8 @@
 #define Operators_H 1
 
 #include "primitive.h"
-#include "randomshape.h"
-#include "families.h"
+#include "shape_processes.h"
+#include "Families.h"
 
 void iso2iso(double *x, cov_model *cov, double *v);
 void spaceDiso2iso(double *x, cov_model *cov, double *v);
@@ -33,17 +33,75 @@ void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v);
 void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
 			double *sign);
 
+void EarthIso2EarthIso(double *x, cov_model *cov, double *v);
+void logEarthIso2EarthIso(double *x, cov_model *cov, double *v, double *sign);
+void NonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v);
+void logNonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v, 
+			      double *sign);
+void Earth2Earth(double *x, cov_model *cov, double *v);
+void logEarth2Earth(double *x, cov_model *cov, double *v, double *sign);
+void NonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v);
+void logNonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v, 
+			   double *sign);
+
+void EarthIso2SphereIso(double *x, cov_model *cov, double *v);
+void logEarthIso2SphereIso(double *x, cov_model *cov, double *v, double *sign);
+void NonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v);
+void logNonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v, 
+			       double *sign);
+void Earth2Sphere(double *x, cov_model *cov, double *v);
+void logEarth2Sphere(double *x, cov_model *cov, double *v, double *sign);
+void NonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v);
+void logNonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v, 
+			    double *sign);
+
+void SphereIso2SphereIso(double *x, cov_model *cov, double *v);
+void logSphereIso2SphereIso(double *x, cov_model *cov, double *v, double *sign);
+void NonstatSphere2SphereIso(double *x, double *y, cov_model *cov,double *v);
+void logNonstatSphere2SphereIso(double *x, double *y, cov_model *cov, 
+				double *v, double *sign);
+void Sphere2Sphere(double *x, cov_model *cov, double *v);
+void logSphere2Sphere(double *x, cov_model *cov, double *v, double *sign);
+void NonstatSphere2Sphere(double *x, double *y, cov_model *cov, double *v);
+void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
+			     double *v, double *sign);
+
+
 void EarthKM2CartStat(double *x, cov_model *cov, double *v);
 void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign);
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v);
 void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
 		     double *sign);
 void EarthMiles2CartStat(double *x, cov_model *cov, double *v);
-void logEarthMiles2CartStat(double *x, cov_model *cov, double *v,double *sign); 
+void logEarthMiles2CartStat(double *x, cov_model *cov, double *v,double*sign);
 void EarthMiles2Cart(double *x, double *y, cov_model *cov, double *v);
 void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
 		     double *sign);
 int checkEarth(cov_model *cov);
+
+void EarthKM2OrthogStat(double *x, cov_model *cov, double *v);
+void logEarthKM2OrthogStat(double *x, cov_model *cov, double *v, double *sign);
+void EarthKM2Orthog(double *x, double *y, cov_model *cov, double *v);
+void logEarthKM2Orthog(double *x, double *y, cov_model *cov, double *v,
+		     double *sign);
+void EarthMiles2OrthogStat(double *x, cov_model *cov, double *v);
+void logEarthMiles2OrthogStat(double *x, cov_model *cov, double *v,double*sign);
+void EarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v);
+void logEarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v,
+		     double *sign);
+
+
+void EarthKM2GnomonicStat(double *x, cov_model *cov, double *v);
+void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v, double*sign);
+void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v);
+void logEarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v,
+		     double *sign);
+void EarthMiles2GnomonicStat(double *x, cov_model *cov, double *v);
+void logEarthMiles2GnomonicStat(double *x, cov_model*cov, double*v,double*sign);
+void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v);
+void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
+			    double *sign);
+
 
 
 void D_2(double *x, cov_model *cov, double *v);
@@ -60,17 +118,16 @@ void dorandom2(cov_model *cov, double *v);
 
 void plusStat(double *x, cov_model *cov, double *v);
 void plusNonStat(double *x,  double *y, cov_model *cov, double *v);
-void covmatrix_plus(cov_model *cov, double *v);
+void covmatrix_plus(cov_model *cov, double *v, int*);
 char iscovmatrix_plus(cov_model *cov);
 int checkplus(cov_model *cov);
-bool Typeplus(Types required, cov_model *cov);
+bool Typeplus(Types required, cov_model *cov, int depth);
 void Dplus(double *x, cov_model *cov, double *v);
 void DDplus(double *x, cov_model *cov, double *v);
 void spectralplus(cov_model *cov, gen_storage *s, double *e);
 int structplus(cov_model *cov, cov_model **newmodel);
 int initplus(cov_model *cov, gen_storage *s);
 void doplus(cov_model *cov, gen_storage *s);
-void covmatrix_plus(cov_model *cov, double *v);
 
 
 void malStat(double *x, cov_model *cov, double *v);
@@ -79,7 +136,7 @@ void logmalStat(double *x, cov_model *cov, double *v, double *sign);
 void logmalNonStat(double *x, double *y, cov_model *cov, double *v, 
 		   double *sign);
 int checkmal(cov_model *cov);
-bool Typemal(Types required, cov_model *cov);
+bool Typemal(Types required, cov_model *cov, int depth);
 void Dmal(double *x, cov_model *cov, double *v);
 int initmal(cov_model *cov, gen_storage *s);
 void domal(cov_model *cov, gen_storage *s);
@@ -115,7 +172,7 @@ void kappaS(int i, cov_model *cov, int *nr, int *nc);
 void Siso(double *x, cov_model *cov, double *v);
 void logSiso(double *x, cov_model *cov, double *v, double * sign);
 void Sstat(double *x, cov_model *cov, double *v);
-void covmatrixS(cov_model *cov, double *v);
+void covmatrixS(cov_model *cov, double *v, int*);
 char iscovmatrixS(cov_model *cov);
 void logSstat(double *x, cov_model *cov, double *v, double * sign);
 void DS(double *x, cov_model *cov, double *v);
@@ -126,7 +183,7 @@ void tbm2S(double *x, cov_model *cov, double *v);
 void Snonstat(double *x, double *y, cov_model *cov, double *v);  
 void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *);  
 int checkS(cov_model *cov);
-bool TypeS(Types required, cov_model *cov);
+bool TypeS(Types required, cov_model *cov, int depth);
 void rangeS(cov_model *cov, range_type* ra);
 void spectralS(cov_model *cov, gen_storage *s, double *e);
 extern int SSTAT, SNONSTAT;
@@ -295,7 +352,7 @@ int initnatsc(cov_model *cov, gen_storage *s);
 void donatsc(cov_model *cov, gen_storage *s);
 
 void NullModel(double *x, cov_model *cov, double *v);
-bool TypeNullModel(Types required, cov_model *cov);
+bool TypeNullModel(Types required, cov_model *cov, int depth);
 void rangeNullModel(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 
 
@@ -306,6 +363,12 @@ int checkPow(cov_model *cov);
 void rangePow(cov_model *cov, range_type* ra); 
 void InversePow(double *x, cov_model *cov, double *v);
 
+void shapePow(double *x, cov_model *cov, double *v);
+void DshapePow(double *x, cov_model *cov, double *v);
+void DDshapePow(double *x, cov_model *cov, double *v);
+void InverseShapePow(double *x, cov_model *cov, double *v);
+
+
 
 void PowSstat(double *x, cov_model *cov, double *v);
 void logPowSstat(double *x, cov_model *cov, double *v, double *sign);
@@ -314,7 +377,7 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
 		 double *sign);
 void inversePowS(double *x, cov_model *cov, double *v) ;
 int checkPowS(cov_model *cov) ;
-bool TypePowS(Types required, cov_model *cov) ;
+bool TypePowS(Types required, cov_model *cov, int depth) ;
 void rangePowS(cov_model *cov, range_type* range);
 void PowScaleToLoc(cov_model *to, cov_model *from, int VARIABLE_IS_NOT_USED depth) ;
 int structPowS(cov_model *cov, cov_model **newmodel) ;
@@ -336,7 +399,7 @@ void rangemqam(cov_model *cov, range_type* ra);
 
 
 void select(double *x, cov_model *cov, double *v);
-void covmatrix_select(cov_model *cov, double *v);
+void covmatrix_select(cov_model *cov, double *v, int*);
 char iscovmatrix_select(cov_model *cov);
 int checkselect(cov_model *cov);
 void rangeselect(cov_model *cov, range_type *range);
@@ -396,14 +459,14 @@ void addSetDistr(cov_model **newmodel, cov_model * remote,
 		 param_set_fct set,  bool performdo, int variant);
 void setparamStat(double *x, cov_model *cov, double *v);
 void setparamNonStat(double *x,  double *y, cov_model *cov, double *v);
-void covmatrix_setparam(cov_model *cov, double *v);
+void covmatrix_setparam(cov_model *cov, double *v, int *nonzeros);
 char iscovmatrix_setparam(cov_model *cov);
 int checksetparam(cov_model *cov);
 void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void Inverse_setparam(double *v, cov_model *cov, double *x);
 void NonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y);
 void LogNonstatInverse_setparam(double *v, cov_model *cov, double *x, double *y);
-bool Typesetparam(Types required, cov_model *cov);
+bool Typesetparam(Types required, cov_model *cov, int depth);
 void Dsetparam(double *x, cov_model *cov, double *v);
 void DDsetparam(double *x, cov_model *cov, double *v);
 void D3setparam(double *x, cov_model *cov, double *v);
@@ -411,7 +474,13 @@ void D4setparam(double *x, cov_model *cov, double *v);
 void spectralsetparam(cov_model *cov, gen_storage *s, double *e);
 int initsetparam(cov_model *cov, gen_storage *s);
 void dosetparam(cov_model *cov, gen_storage *s);
-void covmatrix_setparam(cov_model *cov, double *v);
+
+void kappaScatter(int i, cov_model *cov, int *nr, int *nc);
+void Scatter(double *xx, cov_model *cov, double *v);
+int checkScatter(cov_model *cov);
+void rangeScatter(cov_model *cov, range_type *range); 
+int struct_scatter(cov_model *cov, cov_model **newmodel);
+int init_scatter(cov_model *cov, gen_storage *s);
 
 
 void oesting(double *x, cov_model *cov, double *v);
@@ -423,7 +492,16 @@ void rangeoesting(cov_model *cov, range_type *range);
 
 void idcoord(double *x, cov_model *cov, double *v);
 int checkidcoord(cov_model *cov);
-void rangeidcoord(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+
+void trafo(double *x, cov_model *cov, double *v);  
+void logtrafo(double *x, cov_model *cov, double *v, 
+		     double *sign);  
+void nonstattrafo(double *x, double *y, cov_model *cov, double *v);  
+void lognonstattrafo(double *x, double *y, cov_model *cov, double *v, 
+		     double *sign);  
+int checktrafo(cov_model *cov);
+void rangetrafo(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+
 
 #endif /* Operators_H */
  

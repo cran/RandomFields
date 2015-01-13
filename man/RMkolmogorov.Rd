@@ -30,8 +30,8 @@
 \references{
  The above formula is from eq. (6.32) of section 6.2 in
  
- Pope, S.B. (2011) \emph{Turbulent Flows.}
- \bold{Cambridge:} Cambridge University Press.
+ Pope, S.B. (2000) \emph{Turbulent Flows.}
+ \bold{Cambridge:} Cambridge University Pess.
 }
 
 

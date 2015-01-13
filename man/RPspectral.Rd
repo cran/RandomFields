@@ -69,26 +69,7 @@ RPspectral(phi, sp_lines, sp_grid, prop_factor, sigma)
  
  Default: \code{0}.
  }
-
- }
- 
- \details{
- old args:
- \itemize{
-	\item{ergodic}{
-	 In case of an additive model and \code{ergodic=FALSE},
-	 the additive component are chosen proportional to their
-	 variance. In total \code{sp_lines} are simulated. If
-	 \code{ergodic=TRUE}, the components are simulated
-	 separately and then added.
-	 
-	 Default: \code{FALSE}.
-	}
-	\item{identical}{
-	 Default: \code{1e-25}.
-	}
- }
- }
+}
  
  
 

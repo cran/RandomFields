@@ -14,17 +14,16 @@
 }
 \usage{
 RFcov(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim,
-      fctcall = c("Cov", "CovMatrix", "Variogram", "Pseudovariogram",
-                  "Fctn"),
+ %     fctcall = c("Cov", "CovMatrix", "Variogram", "Pseudovariogram", "Fctn"),
        ...)
 
-RFvariogram(model, x, y = NULL, ...)
+RFvariogram(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim, ...)
 
-RFpseudovariogram(model, x, y = NULL, ...) 
+RFpseudovariogram(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim, ...) 
 
-RFcovmatrix(...)
+RFcovmatrix(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim,...)
 
-RFfctn(...)
+RFfctn(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim,...)
 
 }
 \arguments{
@@ -46,8 +45,8 @@ RFfctn(...)
  equivalently the upper triangular part of the distance matrix row-wise;
  either \code{x} or \code{distances} must be missing}
  \item{dim}{dimension of the coordinate space in which the model is applied}
- \item{fctcall}{internal. This argument should not be considered by
- the user}
+% \item{fctcall}{internal. This argument should not be considered by
+% the user}
  \item{...}{arguments passed to \command{\link{RFcov}} (\command{\link{RFcovmatrix}})
  and arguments passed to \command{\link{RFoptions}}}
 }
@@ -94,7 +93,8 @@ y <- matrix(runif(15),ncol=3)
 
 #####################################################
 # get available models
-RFgetModelNames() 
+RFgetModelNames(type=c("tail correlation", "positive definite",
+               "negative definite", "shape function", "trend"))
 
 #####################################################
 # Example 1: a stationary covariance model

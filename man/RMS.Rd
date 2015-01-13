@@ -37,7 +37,7 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
  \code{phi(..., var, scale, anisoT, Aniso, proj)}, where \code{phi} has
  to be replaced by a valid \command{\link{RMmodel}}
 
- Most user will never call \command{\link{RMS}} directly.
+ Most users will never call \command{\link{RMS}} directly.
 }
 \note{At most one of the arguments,
  \code{Aniso}, \code{anisoT} and \code{proj} may be given at the same time.

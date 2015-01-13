@@ -20,7 +20,8 @@
 
 #define ERRORWRONGVDIM 15
 #define ERRORBADVDIM 16
-
+#define ERRORNOTCARTESIAN 17
+#define ERRORODDCOORDTRAFO 18
 
 #define ERRORNOTDEFINED 20       /* the specification for the  covariance and 
 				    method is not given/known, e.g. TBM2 for 
@@ -45,7 +46,7 @@
 #define ERROROUTOFMETHODLIST 35 /* no further method we can try is available */
 
 #define ERRORREGISTER 36
-#define ERRORINCORRECTSTATISO 37
+#define ERRORWRONGISO 37
 #define ERRORKERNEL 38
 
 #define ERRORWRONGDIM 40        /* (tbm) dimension couldn't be reduced to be 
@@ -57,9 +58,6 @@
 				   ci and direct */
 #define ERRORSPECTRAL 44
 #define ERRORTBMCOMBI 45
-#define ERRORONLYISOTROPIC 48   /* only isotropic random fields -- only
-				   for Markov implementation */
-#define ERRORMARKOVPARAMETER 49 /*parameter set not available for GMRF method */ 
 
 
 
@@ -101,7 +99,7 @@
 #define ERRORUNKNOWNMAXTYPE 204 
 
 //#define ERRORONLYATOMS 250   /* Poisson distribution */
-#define ERRORANISOnDOLLARNOTALLOWED_YET 251
+#define ERRORANISODOLLARNOTALLOWED_YET 251
 //#define ERRORATOMNOTPROGRAMMED_YET 252
 #define ERRORATOMP 253
 

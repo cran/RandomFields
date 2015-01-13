@@ -1,0 +1,294 @@
+# This file is created automatically by 'rfGenerateConstants'
+
+
+ MAXCHAR 	<- as.integer(18)
+ METHODMAXCHAR 	<- as.integer(MAXCHAR)
+
+
+ MAXCOVDIM 	<- as.integer(11000)
+ MAXMLEDIM 	<- as.integer(MAXCOVDIM)
+ MAXSIMUDIM 	<- as.integer(MAXCOVDIM)
+
+ MAXCEDIM 	<- as.integer(13)
+ MAXTBMSPDIM 	<- as.integer(4)
+ MAXMPPDIM 	<- as.integer(4)
+ MAXMPPVDIM 	<- as.integer(10)
+ MAXHYPERDIM 	<- as.integer(4)
+ MAXNUGGETDIM 	<- as.integer(20)
+ MAXVARIODIM 	<- as.integer(20)
+ MAXTBMVDIM 	<- as.integer(5)
+ MAXGETNATSCALE 	<- as.integer(5)
+
+
+
+
+ MAXUNITS 	<- as.integer(4)
+ units_none 	<- as.integer(0)
+ units_km 	<- as.integer(1)
+ units_miles 	<- as.integer(2)
+ units_time 	<- as.integer(3)
+ units_user 	<- as.integer(4)
+
+ nr_units 	<- as.integer((units_user+1))
+
+ coord_auto 	<- as.integer(0)
+ coord_keep 	<- as.integer(1)
+ cartesian 	<- as.integer(2)
+ earth 	<- as.integer(3)
+ sphere 	<- as.integer(4)
+ gnomonic 	<- as.integer(5)
+ orthographic 	<- as.integer(6)
+ coord_mix 	<- as.integer(7)
+
+
+ nr_coord_sys 	<- as.integer((coord_mix+1))
+
+ reportcoord_always 	<- as.integer(0)
+ reportcoord_warnings_orally 	<- as.integer(1)
+ reportcoord_warnings 	<- as.integer(2)
+ reportcoord_none 	<- as.integer(3)
+
+ nr_reportcoord_modes 	<- as.integer((reportcoord_none+1))
+
+ careless 	<- as.integer(0)
+ sloppy 	<- as.integer(1)
+ easygoing 	<- as.integer(2)
+ normal 	<- as.integer(3)
+ precise 	<- as.integer(4)
+ pedantic 	<- as.integer(5)
+ neurotic 	<- as.integer(6)
+
+ nr_modes 	<- as.integer((neurotic+1))
+
+ output_sp 	<- as.integer(0)
+ output_rf 	<- as.integer(1)
+ output_geor 	<- as.integer(2)
+
+ nr_output_modes 	<- as.integer((output_geor+1))
+
+
+
+ PARAM_DEP 	<- as.integer(-1)
+ PREVMODEL_DEP 	<- as.integer(-2)
+ SUBMODEL_DEP 	<- as.integer(-3)
+
+ MISMATCH 	<- as.integer(-4)
+
+
+
+
+ XONLY 	<- as.integer(0)
+ KERNEL 	<- as.integer(1)
+
+ PREVMODELD 	<- as.integer(2)
+ DOMAIN_MISMATCH 	<- as.integer(3)
+ LAST_DOMAIN 	<- as.integer(DOMAIN_MISMATCH)
+
+
+
+RC_ISOTROPIC <- ISOTROPIC 	<- as.integer(0)
+RC_SPACEISOTROPIC <- SPACEISOTROPIC 	<- as.integer(1)
+ ZEROSPACEISO 	<- as.integer(2)
+ VECTORISOTROPIC 	<- as.integer(3)
+ SYMMETRIC 	<- as.integer(4)
+RC_CARTESIAN_COORD <- CARTESIAN_COORD 	<- as.integer(5)
+RC_GNOMONIC_PROJ <- GNOMONIC_PROJ 	<- as.integer(6)
+RC_ORTHOGRAPHIC_PROJ <- ORTHOGRAPHIC_PROJ 	<- as.integer(7)
+ LAST_CARTESIAN 	<- as.integer(ORTHOGRAPHIC_PROJ)
+ SPHERICAL_ISOTROPIC 	<- as.integer(8)
+RC_SPHERICAL_COORD <- SPHERICAL_COORD 	<- as.integer(9)
+ EARTH_ISOTROPIC 	<- as.integer(10)
+RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
+ LAST_SPHERICAL 	<- as.integer(EARTH_COORD)
+ CYLINDER_COORD 	<- as.integer(12)
+ UNREDUCED 	<- as.integer(13)
+ PREVMODELI 	<- as.integer(14)
+ ISO_MISMATCH 	<- as.integer(15)
+ LAST_ISO 	<- as.integer(ISO_MISMATCH)
+
+ MON_PARAMETER 	<- as.integer(-1)
+ NOT_MONOTONE 	<- as.integer(0)
+ MONOTONE 	<- as.integer(1)
+ GNEITING_MON 	<- as.integer(2)
+ NORMAL_MIXTURE 	<- as.integer(3)
+ COMPLETELY_MON 	<- as.integer(4)
+ BERNSTEIN 	<- as.integer(5)
+
+
+ MAXFIELDS 	<- as.integer(10)
+ MODEL_USER 	<- as.integer((MAXFIELDS+0))
+ MODEL_UNUSED 	<- as.integer((MAXFIELDS+1))
+ MODEL_INTERN 	<- as.integer((MAXFIELDS+2))
+ MODEL_SPLIT 	<- as.integer((MAXFIELDS+3))
+ MODEL_GUI 	<- as.integer((MAXFIELDS+4))
+ MODEL_MLE 	<- as.integer((MAXFIELDS+5))
+ MODEL_MLESPLIT 	<- as.integer((MAXFIELDS+6))
+ MODEL_MLETREND 	<- as.integer((MAXFIELDS+7))
+ MODEL_BOUNDS 	<- as.integer((MAXFIELDS+8))
+ MODEL_KRIGE 	<- as.integer((MAXFIELDS+9))
+ MODEL_COND 	<- as.integer((MAXFIELDS+10))
+ MODEL_ERR 	<- as.integer((MAXFIELDS+11))
+ MODEL_MAX 	<- as.integer(MODEL_ERR)
+
+
+
+
+
+ PL_IMPORTANT 	<- as.integer(1)
+ PL_SUBIMPORTANT 	<- as.integer(2)
+ PL_RECURSIVE 	<- as.integer(3)
+ PL_REC_DETAILS 	<- as.integer(4)
+ PL_STRUCTURE 	<- as.integer(5)
+ PL_ERRORS 	<- as.integer(6)
+
+ PL_FCTN_DETAILS 	<- as.integer(7)
+ PL_FCTN_SUBDETAILS 	<- as.integer(8)
+
+ PL_COV_STRUCTURE 	<- as.integer(7)
+ PL_DIRECT_SEQU 	<- as.integer(8)
+ PL_DETAILS 	<- as.integer(9)
+ PL_SUBDETAILS 	<- as.integer(10)
+
+ TcfType 	<- as.integer(0)
+ PosDefType 	<- as.integer(1)
+ NegDefType 	<- as.integer(2)
+ ProcessType 	<- as.integer(3)
+ GaussMethodType 	<- as.integer(4)
+ BrMethodType 	<- as.integer(5)
+ PointShapeType 	<- as.integer(6)
+ RandomType 	<- as.integer(7)
+ ShapeType 	<- as.integer(8)
+ TrendType 	<- as.integer(9)
+ InterfaceType 	<- as.integer(10)
+ UndefinedType 	<- as.integer(11)
+ OtherType 	<- as.integer(12)
+
+
+
+
+ DetTrendEffect 	<- as.integer(0)
+ DeterministicEffect 	<- as.integer(1)
+ FixedTrendEffect 	<- as.integer(2)
+ FixedEffect 	<- as.integer(3)
+ RandomEffect 	<- as.integer(4)
+ RvarEffect 	<- as.integer(5)
+ LargeEffect 	<- as.integer(6)
+ LVarEffect 	<- as.integer(7)
+ SpaceEffect 	<- as.integer(8)
+ SpVarEffect 	<- as.integer(9)
+ PrimitiveModel 	<- as.integer(10)
+ SimpleModel 	<- as.integer(11)
+ RemainingError 	<- as.integer(12)
+ effect_error 	<- as.integer(13)
+
+
+
+
+
+ VARPARAM 	<- as.integer(0)
+ SIGNEDVARPARAM 	<- as.integer(1)
+ SDPARAM 	<- as.integer(2)
+ SIGNEDSDPARAM 	<- as.integer(3)
+ SCALEPARAM 	<- as.integer(4)
+ DIAGPARAM 	<- as.integer(5)
+ ANISOPARAM 	<- as.integer(6)
+ INTEGERPARAM 	<- as.integer(7)
+ ANYPARAM 	<- as.integer(8)
+ TRENDPARAM 	<- as.integer(9)
+ NUGGETVAR 	<- as.integer(10)
+ MIXEDVAR 	<- as.integer(11)
+ MIXEDPARAM 	<- as.integer(12)
+ CRITICALPARAM 	<- as.integer(13)
+ IGNOREPARAM 	<- as.integer(14)
+ LISTPARAM 	<- as.integer(15)
+ DONOTRETURNPARAM 	<- as.integer(16)
+
+
+
+
+
+
+
+
+
+
+
+ CircEmbed 	<- as.integer(0)
+ CircEmbedCutoff 	<- as.integer(1)
+ CircEmbedIntrinsic 	<- as.integer(2)
+ TBM 	<- as.integer(3)
+ SpectralTBM 	<- as.integer(4)
+ Direct 	<- as.integer(5)
+ Sequential 	<- as.integer(6)
+ Markov 	<- as.integer(7)
+ Average 	<- as.integer(8)
+ Nugget 	<- as.integer(9)
+ RandomCoin 	<- as.integer(10)
+ Hyperplane 	<- as.integer(11)
+ Specific 	<- as.integer(12)
+ Nothing 	<- as.integer(13)
+ Forbidden 	<- as.integer(14)
+
+
+
+
+
+
+
+
+
+
+
+
+
+ INTERNAL_PARAM 	<- "internal"
+
+ MAXVARIANTS 	<- as.integer(5)
+
+
+ GETMODEL_AS_SAVED 	<- as.integer(0)
+ GETMODEL_DEL_NATSC 	<- as.integer(1)
+ GETMODEL_SOLVE_NATSC 	<- as.integer(2)
+ GETMODEL_DEL_MLE 	<- as.integer(3)
+ GETMODEL_SOLVE_MLE 	<- as.integer(4)
+
+
+
+
+
+
+RC_DOMAIN_NAMES <- DOMAIN_NAMES <-
+c(     "single variable", "kernel", "framework dependent", "mismatch" )
+
+RC_ISONAMES <- ISONAMES <-
+c(       "isotropic", "space-isotropic", "zero-space-isotropic",      "vector-isotropic", "symmetric", "cartesian system",     "gnomonic projection", "orthographic projection",     "spherical isotropic", "spherical system",      "earth isotropic", "earth system",      "cylinder system",     "non-dimension-reducing", "parameter dependent", "<mismatch>" )
+
+RC_TYPENAMES <- TYPENAMES <-
+c(       "tail correlation", "positive definite", "negative definite",      "process",      "method for Gauss process", "method for Brown-Resnick process",     "point-shape function",     "distribution family", "shape function", "trend", "interface",     "undefined", "other type" )
+
+RC_MONOTONE_NAMES <- MONOTONE_NAMES <-
+c(       "mismatch in monotonicity", "submodel dependent monotonicity",     "previous model dependent monotonicity",     "parameter dependent monotonicity",     "not monotone", "monotone", "Gneiting-Schaback class",      "normal mixture",      "completely monotone",       "Bernstein" )
+
+ MODENAMES <-
+c(      "careless", "sloppy", "easygoing", "normal",      "precise", "pedantic", "neurotic" )
+
+ OUTPUTMODENAMES <-
+c(      "sp", "RandomFields", "geoR" )
+
+ REPORTCOORDNAMES <-
+c(      "always", "warn", "important", "never" )
+
+ UNITS_NAMES <-
+c(      "", "km", "miles", "<time>", "<user defined>" )
+
+ COORD_SYS_NAMES <-
+c(      "auto", "keep", "cartesian", "earth",     "sphere", "gnomonic", "orthographic", "coordinate system mix" )
+
+ CARTESIAN_SYSTEMS <-
+c(      "cartesian", "gnomonic", "orthographic" )
+
+ TYPEOF_PARAM_NAMES <-
+c(      "var", "signed var", "sd", "signed sd", "scale",     "diag", "aniso", "integer", "unspecfd", "trend",       "nugget", "mixed var", "regress", "any" )
+
+
+

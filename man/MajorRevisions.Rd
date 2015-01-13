@@ -3,7 +3,16 @@
 \title{Documentation of major changings} 
 
 \description{
-  Major Revision: changings from  Version 2 to Version 3
+  This man pages documents some major changings in RandomFields.
+}
+
+\section{Corrections done in 3.0.50 (Jan 2015)}{
+  \itemize{
+    \item Kriging several severe typos corrected.
+  }
+}
+
+\section{Major Revision: changings from  Version 2 to Version 3 (Jan 2014)}{
   \itemize{
     \item \bold{S4 objects}
     \itemize{

@@ -1,0 +1,114 @@
+\name{Spherical models}
+\alias{spherical models}
+\alias{Spherical models}
+\title{Covariance models valid on a sphere}
+\description{
+  This page summarizes the covariance models that can be used
+  for spherical coordinates (and earth coordinates)
+}
+
+\details{
+  The following models are available
+  
+  \bold{Completely monotone function allowing for arbitray scale}
+  \tabular{ll}{
+     \command{\link{RMbcw}} \tab Model bridging stationary and
+    intrinsically stationary processes for \code{alpha <= 1}
+    and \code{beta < 0}\cr
+    \command{\link{RMconstant}}\tab identically constant \cr
+       \command{\link{RMcubic}} \tab cubic model\cr
+   \command{\link{RMdagum}} \tab Dagum model with \eqn{\beta < \gamma}
+    and \eqn{\gamma \le 1}\cr
+    \command{\link{RMexp}} \tab exponential model \cr
+    \command{\link{RMgencauchy}} \tab generalized Cauchy family with
+    \eqn{\alpha \le 1} (and arbitrary \eqn{\beta> 0})\cr
+    \command{\link{RMmatern}} \tab Whittle-Matern model with
+    \eqn{\nu \le 1/2}\cr
+    %multiquadric todo
+    %sine power todo
+    \command{\link{RMstable}} \tab symmetric stable family or powered
+    exponential model with \eqn{\alpha \le 1}\cr
+    \command{\link{RMwhittle}} \tab Whittle-Matern model, alternative
+    parametrization with \eqn{\nu \le 1/2}\cr 
+  }
+  
+  \bold{Other isotropic models with arbitray scale}
+  \tabular{ll}{
+    \command{\link{RMnugget}} \tab nugget effect model \cr
+  }
+  
+  \bold{Compactly supported covariance functions allowing for scales up
+    \eqn{\pi} (or \eqn{180} degree)}
+    \tabular{ll}{
+      \command{\link{RMaskey}} \tab Askey's model\cr
+      \command{\link{RMcircular}} \tab circular model\cr
+     \command{\link{RMgengneiting}} \tab Wendland-Gneiting model;
+      differentiable models with compact support \cr
+   \command{\link{RMgneiting}} \tab differentiable model with compact
+    support \cr 
+    \command{\link{RMspheric}} \tab spherical model \cr
+  }
+  
+  \bold{Anisotropic models}
+  \tabular{ll}{
+    none up to now.
+  }
+  
+  \bold{Basic Operators}
+  \tabular{ll}{
+    \command{\link{RMmult}}, \code{*} \tab product of covariance models \cr
+    \command{\link{RMplus}}, \code{+} \tab sum of covariance models or variograms\cr
+  }
+
+ \bold{See \link{RMmodels} for cartesian models.}
+}
+
+\author{
+ Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ \url{http://ms.math.uni-mannheim.de/de/publications/software}
+}
+
+\seealso{
+  \link{coordinate systems},
+  \command{\link{RMmodels}},
+  \command{\link{RMtrafo}}
+}
+
+\keyword{spatial}
+\keyword{models}
+
+
+\examples{
+% library(RandomFields, lib="~/TMP")
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+RFgetModelNames(isotropy=c("spherical isotropic"))
+
+## an example of a simple model valid on a sphere
+model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget
+plot(model)
+
+
+## a simple simulation
+l <- if (interactive()) seq(0, 85, 1.2) else seq(0, 10, 2)
+coord <- cbind(lon=l, lat=l)
+coord <- cbind(l, l)
+
+
+z <- RFsimulate(RPdirect(RMwhittle(s=30, nu=0.45)), coord, grid=TRUE)
+plot(z)
+
+
+z <- RFsimulate(RPdirect(RMwhittle(s=500, nu=0.5)), coord, grid=TRUE,
+                new_coord_sys="orthographic", zenit=c(25, 25))
+plot(z)
+
+
+z <- RFsimulate(RPdirect(RMwhittle(s=500, nu=0.5)), coord, grid=TRUE,
+                new_coord_sys="gnomonic", zenit=c(25, 25))
+plot(z)
+
+
+
+\dontshow{FinalizeExample()}
+}

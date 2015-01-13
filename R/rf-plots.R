@@ -4,8 +4,25 @@
 ## 'plotRFspatialPointsDataFrame'
 
 default.image.par <- function(data.range, var.range, legend=TRUE) {
-  data.col <- colorspace::heat_hcl(12, c. =c(80, 30), l = c(30, 90), power = c(1/5, 1.5))
-  var.col <- colorspace::rainbow_hcl(12, c = 50, l = 70)
+  ip <- installed.packages()
+  if ("colorspace" %in% ip) {
+    data.col <- colorspace::heat_hcl(12, c. = c(80, 30), l = c(30, 90),
+                             power = c(1/5, 1.5))
+    var.col <- colorspace::rainbow_hcl(12, c = 50, l = 70)  
+  } else if ("RColorBrewer" %in% ip) {
+    data.col <- RColorBrewer::brewer.pal(9, "Reds")
+    var.col <- RColorBrewer::brewer.pal(9, "Blues")
+  } else {
+    if (RFoptions()$warn$colour_palette) {
+      RFoptions(warn.colour_palette = FALSE)
+      message("Better install the package 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
+    }
+    data.col <- heat.colors(36)
+    var.col <- cm.colors(36)
+  }
+
+  #data.col <- colorspace::heat_hcl(12, c. =c(80, 30), l = c(30, 90), power = c(1/5, 1.5))
+ # var.col <- colorspace::rainbow_hcl(12, c = 50, l = 70)
 
   list(data=list(dot.name="col", default.col=data.col,
          pch=16, cex=1, range=data.range),
@@ -176,7 +193,8 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   }
   
   ArrangeDevice(graphics, figs=split.main) ## NIE par() o.ae. vor ArrangeDevice !!!!
-  
+
+   
   if (length(dev.list()) > 0 &&
       any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## first figure appears
   par(cex=dots$cex) ## NIE par() o.ae. vor ArrangeDevice !!!!
@@ -253,7 +271,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   }
   
   #close.screen(scr)
-
+ 
   return(c(image.par,
            dots=list(dots),
            list(names.coords = names.coords, names.rep = names.rep,
@@ -498,7 +516,7 @@ plotRFspatialDataFrame <-
   ## repetitions
 
  # Print(dim(data.arr))
-  
+   
   for (m in m.range) {  
     for (jx in 1:length(select)) {       
       j <- if (is.list(select)) select[[jx]] else select[jx]
@@ -563,7 +581,7 @@ plotRFspatialDataFrame <-
                            length(image.par[["data"]]$col[[jj[1]]]) == 1)
             image.par[["data"]]$col[[jj[1]]] else "black"
           
-          if (ix == 1) {
+          if (ix == 1) { ## to do: document in a paper?
             factor <- image.par$arrow$reduction *
               sqrt(diff(rx) * diff(ry) / max(x@data[jj[1]]^2 +
                                              x@data[jj[2]]^2)) / nx.vectors
@@ -688,6 +706,146 @@ plotRFspatialDataFrame <-
 
   
   
+
+
+# plotRFgridDataFrame <- function(x, y, nmax, plot.variance, ...)
+# siehe nicht.nachladbar.R
+          
+plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
+  ## grid   : sorted = TRUE
+  ## points : sorted = FALSE
+#  Print(close.screen(), dev.cur()); print(dev.list())
+
+  stopifnot(!missing(x))
+  x <- trafo_pointsdata(x)
+  nc <- ncol(x$data)
+
+  if (!missing(y)) {
+    y <- trafo_pointsdata(y, dimensions(dim))
+    y$data <- rep(y$data, length.out=nrow(y$data) * nc)
+    dim(y$data) <- c(length(y$coords), nc)
+  }
+  has.variance <- !is.null(x$RFparams$has.variance) && x$RFparams$has.variance
+  if (!has.variance) plot.variance <- FALSE
+  n <- min(x$RFparams$n, nmax) + plot.variance
+  vdim <- x$RFparams$vdim
+
+  if (nc < n*vdim) {
+    if (n==1) vdim <- nc else if (vdim==1) n <- nc else {
+      stop("ncol(x@data) does not match 'x@.RFparams'; change 'x@.RFparams'")
+    }
+  }
+
+  
+  graphics <- RFoptions()$graphics
+#  Print(graphics, close.screen(), dev.cur()); print(dev.list())
+  ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
+
+#  Print(close.screen(), dev.cur()); print(dev.list())
+
+  always.close <- n > 1 || graphics$always_close_screen
+  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
+  dots <- list(...)
+  dotnames <- names(dots)
+  if ("bg" %in% dotnames) {
+    par(bg=dots$bg)
+    dots$bg <- NULL
+  }
+ 
+  if (!("xlab" %in% dotnames)) dots$xlab <- x$lab$x
+  if (!("type" %in% dotnames)) dots$type <- "l"
+
+  make.small.mar <- ("xlab" %in% dotnames &&
+                     is.null(dots$xlab) && is.null(dots$ylab))
+
+  ## variable names
+
+##  Print(x); lll
+  
+  if (!is.null(x$labdata) && all(nchar(x$labdata)>0))
+    names.vdim <- unlist(lapply(strsplit(x$labdata[1:vdim], ".n"),
+                                FUN=function(li) li[[1]]))
+  else {
+    names.vdim <- paste("variable", 1:vdim)
+    x$labdata <- names.vdim
+  }
+
+  if (n>1){
+    ylab.vec <- c(paste("realization ", 1:(n-plot.variance), sep=""),
+                  if (plot.variance) "kriging variance")
+  } else {
+    ylab.vec <- if (vdim==1) x$colnames else ""
+  }
+
+  if ("ylab" %in% dotnames) {
+    if (!is.null(dots$ylab))
+      ylab.vec[1:length(ylab.vec)] <- dots$ylab
+    dots$ylab <- NULL
+  }
+
+  col <- 1:vdim
+  if ("col" %in% dotnames) {
+    if (!is.null(dots$col))
+      col[1:length(col)] <- dots$col
+    dots$col <- NULL
+  }
+
+  split.screen(c(n,1))
+  
+#  if (always.close) {
+#    close.screen(all.screens=TRUE)
+#    par(mfrow=c(1,1))
+#    split.screen(c(n,1))
+#  }
+                
+  for (i in 1:n){
+    screen(i)
+    if (make.small.mar)
+      par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
+    else
+      par(oma=c(4,0,1,1)+.1, mar=c(0,4,0,0))
+    ylab <- ylab.vec[i]
+    
+    if (tmp.idx <- (plot.variance && i==n)){
+      i <- x$RFparams$n + plot.variance
+    }
+
+    do.call(graphics::plot,
+            args=c(dots, list(
+              x=x$coords, y=x$data[ , vdim*(i-1)+1],
+              xaxt="n", yaxt="n", ylab=ylab, col=col[1]))
+            )
+
+    if (!missing(y)) {
+      points(x=y$coords, y=y$data[ , vdim*(i-1)+1], pch=22, col="red")
+    }
+    axis(2)
+    if (tmp.idx) i <- n
+    
+    if(i==n){
+      axis(1, outer=always.close)
+      title(xlab=dots$xlab, outer=TRUE) # always.close) 
+    }
+    else axis(1, labels=FALSE)
+    for (j in 1:vdim){
+      if (j==1) next
+      do.call(graphics::points, quote=TRUE,
+              args=c(dots, list(
+                x=x$coords, y=x$data[ , vdim*(i-1)+j], col=col[j]))
+              )
+      if (!missing(y)) {
+        points(x=y$coords, y=y$data[ , vdim*(i-1)+j], pch=22, col="red")
+      }
+      
+      if (i==1) {
+        if ( (!TRUE || vdim > 1) && legend) {
+          legend("topright", col=col, lty=1, legend = c(names.vdim))
+        }
+      }
+    }
+  }
+  if (always.close) close.screen(all.screens=TRUE)
+}
 
 
 

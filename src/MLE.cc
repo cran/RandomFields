@@ -71,7 +71,9 @@ void GetNAPosition(cov_model *cov,
   cov_fct *C = CovList + cov->nr, // nicht gatternr
     *CC = C;
   SEXPTYPE *type = C->kappatype;
-	  
+	 
+  if (SHORTlen >= 255) SHORTlen = 254;
+
   if (isRandom(cov)) {
     error("Random functions not allowed in models of RFfit, yet");
   }
@@ -207,7 +209,7 @@ void GetNAPosition(cov_model *cov,
 		      shortD); // for R level only
 	    } else  {
 	      if (i==DSCALE) {
-		//	        lastmem = mem[*NAs]; // used for all diagonal elements of
+		//   lastmem = mem[*NAs]; // used for all diagonal elements of
 		//                          aniso
 		sorts[*NAs] = SCALEPARAM;	
 		sprintf(names[*NAs], "%s.s", shortD);// for R level only
@@ -228,7 +230,7 @@ void GetNAPosition(cov_model *cov,
 		}	
 	      }
 	    }
-	  } else {
+	  } else { // not $
 	    // standard setting !
 	    if (cov->nr==MIXEDEFFECT || cov->nr==TREND) {
 	      // || cov->nr==MLEMIXEDEFFECT)
@@ -565,35 +567,38 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
     } else {
       BUG;
       dmin = dmax = RF_NA;
-     }
+    }
     
     for (r=0; r<end; r++) {
       v = RF_NA;
       if (type[i] == REALSXP) {
 	v = P(i)[r];
-      }
-      else if (type[i] == INTSXP) {
+      } else if (type[i] == INTSXP) {
         v = PINT(i)[r] == NA_INTEGER ? RF_NA : (double) PINT(i)[r];
       } else if (type[i] == LISTOF + REALSXP) {
-	  continue;  // !!!!!!!!!!!
+	break; //continue;  // !!!!!!!!!!!
       } else if (type[i] == CLOSXP) {
-          continue;  // !!!!!!!!!!!
+	break;//  continue;  // !!!!!!!!!!!
       } else if (type[i] == LANGSXP) {
-          continue;  // !!!!!!!!!!!
+        break; //  continue;  // !!!!!!!!!!!
       } else BUG;
 
-      if (ISNAN(v) && C->paramtype(i, 0, 0) != IGNOREPARAM
-	  && C->paramtype(i, 0, 0) != DONOTRETURNPARAM
-	  && cov->nr!=MIXEDEFFECT && cov->nr!=TREND) {// cov->nr!=MLEMIXEDEFFECT
-	if (!isDollar(cov) || (i!=DANISO && i!=DPROJ)) {
-	    minpile[*NAs] = dmin;
-	    maxpile[*NAs] = dmax;
-//	    print("%s %d %f %f\n", C->kappanames[i],r, dmin, dmax);
-	    (*NAs)++;
-	} else {
-	  // maybe NAs and internpile should be set here
+      if (ISNAN(v)) {
+	if (C->paramtype(i, 0, 0) == IGNOREPARAM
+	    || C->paramtype(i, 0, 0) == DONOTRETURNPARAM
+	    || cov->nr==MIXEDEFFECT
+	    || cov->nr==TREND) {
 	  continue;
 	}
+
+	if (isDollar(cov)) {
+	  assert(i!=DAUSER && i!=DPROJ);
+	}
+
+	minpile[*NAs] = dmin;
+	maxpile[*NAs] = dmax;
+//	    print("%s %d %f %f\n", C->kappanames[i],r, dmin, dmax);
+	(*NAs)++;
       } // isna
     } // r
   } // kappas
@@ -635,7 +640,7 @@ int CheckEffect(cov_model *cov) {
     // cov->nr = MLEMIXEDEFFECT;  
     if (cov->nsub == 0) {
       return (cov->nrow[MIXED_BETA] > 0 && ISNAN(P0(MIXED_BETA)))
-	? fixedeffect : deteffect;
+	? FixedEffect : DeterministicEffect;
     }
     next = cov->sub[0];
     if (isDollar(next)) { 
@@ -648,8 +653,8 @@ int CheckEffect(cov_model *cov) {
 	  p = PARAM(next, i);
 	  for (j=0; j<end; j++) {
 	    if (ISNAN(p[j])) {
-	      return next->nr == CONSTANT ? eff_error :
-		na_var ? spvareffect : spaceeffect;
+	      return next->nr == CONSTANT ? effect_error :
+		na_var ? SpVarEffect : SpaceEffect;
 		  // NA in e.g. scale for constant matrix -- does not make sense
 	    }
 	  }
@@ -660,26 +665,26 @@ int CheckEffect(cov_model *cov) {
   
     int xx =  next->nr == CONSTANT  
       ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
-	 ? (na_var ? rvareffect : randomeffect)
-	 : (na_var ? lvareffect : largeeffect)
+	 ? (na_var ? RvarEffect : RandomEffect)
+	 : (na_var ? LVarEffect : LargeEffect)
 	 )
-      : (na_var ? spvareffect : spaceeffect);
-    if (xx == spvareffect || xx == spaceeffect) {
+      : (na_var ? SpVarEffect : SpaceEffect);
+    if (xx == SpVarEffect || xx == SpaceEffect) {
       BUG; //APMI(next);
     }
 
 
     return next->nr == CONSTANT  
       ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
-	 ? (na_var ? rvareffect : randomeffect)
-	 : (na_var ? lvareffect : largeeffect)
+	 ? (na_var ? RvarEffect : RandomEffect)
+	 : (na_var ? LVarEffect : LargeEffect)
 	 )
-      : (na_var ? spvareffect : spaceeffect);
+      : (na_var ? SpVarEffect : SpaceEffect);
   }
 
   if (cov->nr == TREND) {
     int trend,
-      effect = eff_error;
+      effect = effect_error;
     bool isna ;
 
     for (j=0; j<2; j++) {
@@ -689,14 +694,14 @@ int CheckEffect(cov_model *cov) {
       if ( (nr = cov->nrow[trend] * cov->ncol[trend]) > 0) {
 	p = P(trend);
 	isna = ISNAN(p[0]);
-	if ((effect != eff_error) && ((effect == fixedtrend) xor isna))
+	if ((effect != effect_error) && ((effect == FixedTrendEffect) xor isna))
 	  SERR1("do not mix deterministic effect with fixed effects in '%s'", 
 		NICK(cov));
 	for (i = 1; i<nr; i++) {
 	  if (ISNAN(p[i]) xor isna) 
 	    SERR("mu and linear trend:  all coefficient must be deterministic or all must be estimated");
 	}
-	effect = isna ? fixedtrend : dettrend;
+	effect = isna ? FixedTrendEffect : DetTrendEffect;
       }
     }
 
@@ -706,7 +711,7 @@ int CheckEffect(cov_model *cov) {
       //print("trend %d\n", trend);
       param = (j==0) ? TREND_PARAM_POLY : TREND_PARAM_FCT;
       if (cov->nrow[trend] > 0) {
-	if (effect != eff_error)
+	if (effect != effect_error)
 	  SERR("polynomials and free functions in trend may not be mixed with other trend definitions. Please use a sum of trends.");
 
 	nr = cov->nrow[param] * cov->ncol[param];
@@ -717,8 +722,8 @@ int CheckEffect(cov_model *cov) {
 	    if (ISNAN(p[i]) xor isna) 
 	      SERR("the coefficients in trend must be all deterministic or all coefficient are estimated");
 	  }
-	  effect = isna ? fixedtrend : dettrend;
-	} else effect = fixedtrend;
+	  effect = isna ? FixedTrendEffect : DetTrendEffect;
+	} else effect = FixedTrendEffect;
       }
     }
 
@@ -736,14 +741,14 @@ int CheckEffect(cov_model *cov) {
   cov_fct *C = CovList + sub->nr; // nicht gatternr
   
   if (C->maxsub == 0) {
-    if (isPosDef(C->Type) && 
-	C->domain == XONLY && C->isotropy == ISOTROPIC &&
+    if (is_all(isPosDef, C) && 
+	C->domain == XONLY && is_all(isAnyIsotropic, C) &&
 	(C->vdim == 1 || C->cov==nugget) && Simple) {
-      return simple; 
+      return SimpleModel; 
     }
-    return primitive;
+    return PrimitiveModel;
   }
-  return remaining;
+  return RemainingError;
 }
 
 
@@ -860,12 +865,17 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
 		           (PL >= PL_SUBDETAILS), 
 		0, false, LOGICAL(excludetrend)[0]); 
 
-// print("XX modelnr=%d\n", modelnr);
+//   print("XX modelnr=%d %d\n", modelnr, MEM_NAS[modelnr]);
+
   NAs = 0; GetNARanges(cov, min, max, mle_min, mle_max, &NAs);
-  //print("XXz modelnr=%d\n", modelnr);
+  //  print("XXz modelnr=%d $s\n", modelnr, NAs);
+  if (NAs != MEM_NAS[modelnr]) BUG;
   NAs = 0; GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &NAs);
-  //print("XX-------- amodelnr=%d\n", modelnr);
+  // print("XX-------- amodelnr=%d %d\n", modelnr, NAs);
+ if (NAs != MEM_NAS[modelnr]) BUG;
   NAs = 0; GetNARanges(cov, openmin, openmax, mle_openmin, mle_openmax, &NAs);
+  if (NAs != MEM_NAS[modelnr]) BUG;
+ //  print("XX-------- amodelnr=%d %d\n", modelnr, NAs);
  
   anyeffect=false;
   if (cov->nr == PLUS || cov->nr == SELECT) {  
@@ -875,11 +885,11 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
        effect[i] = CheckEffect(cov->sub[i]);
        nas[i] = countnas(cov->sub[i], 0);
        
-       // print("i=%d nsub=%d eff=%d remain=%d nas=%d\n", i, cov->nsub, effect[i], remaining, nas[i]);
+       // print("i=%d nsub=%d eff=%d remain=%d nas=%d\n", i, cov->nsub, effect[i], RemainingError, nas[i]);
        
-       if (effect[i] == eff_error) GERR("scaling parameter appears with constant matrix in the mixed effect part");
+       if (effect[i] == effect_error) GERR("scaling parameter appears with constant matrix in the mixed effect part");
 
-       anyeffect |= (effect[i] != remaining && effect[i] != primitive);
+       anyeffect |= (effect[i] != RemainingError && effect[i] != PrimitiveModel);
      }
   } else {
     effect[0] = CheckEffect(cov);
@@ -905,8 +915,8 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
   PROTECT(RownameMatrix = allocVector(STRSXP, MEM_NAS[modelnr]));
   PROTECT(nameMatrix = allocVector(VECSXP, 2));
   for (i=0; i<MEM_NAS[modelnr]; i++) {
-    REAL(matrix)[i] = mle_pmin[i];
-    REAL(matrix)[i + MEM_NAS[modelnr]] = mle_pmax[i];
+    REAL(matrix)[i                       ] = mle_pmin[i];
+    REAL(matrix)[i +     MEM_NAS[modelnr]] = mle_pmax[i];
     REAL(matrix)[i + 2 * MEM_NAS[modelnr]] = MEM_SORTS[i];
     REAL(matrix)[i + 3 * MEM_NAS[modelnr]] = (int) MEM_ISNAN[i];
     REAL(matrix)[i + 4 * MEM_NAS[modelnr]] = mle_min[i];
@@ -914,8 +924,11 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
     REAL(matrix)[i + 6 * MEM_NAS[modelnr]] = mle_openmin[i];
     REAL(matrix)[i + 7 * MEM_NAS[modelnr]] = mle_openmax[i];
     SET_STRING_ELT(RownameMatrix, i, mkChar(names[i]));
-    // print("i=%d %s %e %e\n", i, names[i], mle_pmin[i], mle_pmax[i]);
-   }
+    // 
+    //    for (int jj=0; jj<=7; jj++) 
+    //    print("i=%d %d %e\n", i, jj, REAL(matrix)[i + jj * MEM_NAS[modelnr]]);
+    //print("i=%d %s %e %e\n", i, names[i], mle_pmin[i], mle_pmax[i]);
+  }
       
   SET_VECTOR_ELT(nameMatrix, 0, RownameMatrix);
   SET_VECTOR_ELT(nameMatrix, 1, Char(colnames, 8));
@@ -985,7 +998,7 @@ void PutValuesAtNAintern(int *reg, double *values, bool init){
   cov_fct *C = NULL;
   cov_model *cov = NULL;
   gen_storage s;
-  STORAGE_NULL(&s);
+  gen_NULL(&s);
   s.check = false;
   // set ordinary parameters for all (sub)models
  

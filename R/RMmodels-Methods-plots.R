@@ -198,8 +198,6 @@ setMethod(f="show", signature='RMmodel',
 
 
 
-
-
 print.RMmodelgenerator <- function(x, ...) {
   cat("*** object of Class '", ZF_MODEL_FACTORY,
       "' ***\n  ** str(object):\n  ", sep="") #
@@ -286,7 +284,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
     m <- list("", PrepareModel2(x[[i]]))
     while (length(fct.type) > 0 &&
            { m[[1]] <- fct.type[1];
-             !is.numeric(vdim <- try( InitModel(MODEL.USER, m, dim),
+             !is.numeric(vdim <- try( InitModel(MODEL_USER, m, dim),
                                      silent=TRUE))})
       fct.type <- fct.type[-1]
     if (!is.numeric(vdim)) {
@@ -303,7 +301,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
   
 
 #  fctcall.vec <- c("Cov", "Variogram")
-  #covinfo <- RFgetModelInfo(register=MODEL.USER, level=3, spConform=TRUE)
+  #covinfo <- RFgetModelInfo(register=MODEL_USER, level=3, spConform=TRUE)
   ### Print((covinfo))
 #  Print(covinfo$domown, TRANS_INV , covinfo$type, isPosDef(covinfo$type),
  #       is.null(fct.type), fct.type,"Variogram") ; xxx
@@ -354,11 +352,13 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 
   if (length(x) == 1) {
     for.what <- rfConvertRMmodel2string(x[[1]])
+    if (nchar(for.what) > 20) for.what <- strsplit(for.what,"\\(")[[1]][1]
   } else {
     for.what <- "various models"
   }
-
-  main <- paste(main, " plot for ", for.what, "\n", sep="")
+   
+ # main <- paste(main, " plot for ", for.what, "\n", sep="")
+  main <- paste("plot for ", for.what, "\n", sep="")
   
   if (dim >= 3)
     main <- paste(sep="", main, ";  component", if (dim>3) "s", " ",
@@ -366,7 +366,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
                   " fixed to the value", if (dim>3) "s", " ",
                   paste(format(fixed.MARGIN, digits=4), collapse=", "))
 
-  .C("DeleteKey", MODEL.USER)
+  .C("DeleteKey", MODEL_USER)
 
   
   return(list(main=main, fctcall=all.fct.types, ylab=ylab, distance=distance,
@@ -463,14 +463,15 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   if (!is.null(li$ylim)) dots$ylim <- li$ylim
   if (!("main" %in% dotnames)) dots$main <- li$main
   if (!("cex" %in% dotnames)) dots$cex <- 1
-  if (!("cex.main" %in% dotnames)) dots$cex.main <- 0.8 * dots$cex
-  if (!("cex.axis" %in% dotnames)) dots$cex.axis <- 0.8 * dots$cex
+  if (!("cex.main" %in% dotnames)) dots$cex.main <- 1.3 * dots$cex
+  if (!("cex.axis" %in% dotnames)) dots$cex.axis <- 1.0 * dots$cex
+  if (!("cex.lab" %in% dotnames)) dots$cex.lab <- 1.0 * dots$cex
   if (!("col" %in% dotnames)) dots$col <- rep(1:7, length.out=length(x))
- 
+
   cov <- list()
   if (dim==1) {
     for (i in 1:length(x)) 
-      cov[[i]] <- RFcov(x=li$distance, model=x[[i]], fctcall=li$fctcall[i])
+      cov[[i]] <- rfeval(x=li$distance, model=x[[i]], fctcall=li$fctcall[i])
 
     #print(cov, li$distance)
     lab <- xylabs("distance", li$ylab)
@@ -489,7 +490,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
 
       
       for (i in 1:length(x)) {
-        cov[[i]] <- RFcov(x=di, model=x[[i]], fctcall=li$fctcall[i])
+        cov[[i]] <- rfeval(x=di, model=x[[i]], fctcall=li$fctcall[i])
       }
     } else if (dim>=3) {
       m1 <- expand.grid(li$distance, li$distanceY)
@@ -497,7 +498,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
       m2[,MARGIN] <- as.matrix(m1)
       m2[,-MARGIN] <- rep(fixed.MARGIN, each=nrow(m1))
       for (i in 1:length(x))
-        cov[[i]] <- RFcov(x=m2, model=x[[i]], fctcall=li$fctcall[i])
+        cov[[i]] <- rfeval(x=m2, model=x[[i]], fctcall=li$fctcall[i])
     } else stop("this error should never appear")
   }
 
@@ -518,8 +519,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
       ArrangeDevice(graphics, figs)
     }
   }
-  
-  
+    
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## noch noetig??
   
   if (is.null(dimcov)) { ## i.e. vdim == 1
@@ -558,9 +558,12 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
               args=c(dots.axis, list(side=2, outer = TRUE, line=1)))
       }
     }
-    if (graphics$always_close_screen)
-      close.screen(all.screens=TRUE)
-  } 
+  }
+
+  if (graphics$always_close_screen || !is.null(dimcov))
+    close.screen(all.screens=TRUE)
+
+  return(NULL)
 }
 
 
@@ -573,7 +576,7 @@ points.RMmodel <- function(x, y, n.points = 200, fct.type = NULL, ...) {
           )
   ##  li <- preparePlotRMmodel(x=x, xlim=xlim, n.points=n.points, dim=dim,
   ##                           fct.type=fct.type)
-  ##  cov <- RFcov(x=li$distance, model=x, fctcall=li$fctcall)
+  ##  cov <- rfeval(x=li$distance, model=x, fctcall=li$fctcall)
   ##  plot.xy(xy.coords(x=li$distance, y=cov), xlim=xlim, type="p",
   ##          pch=pch, lty=lty, col=col, bg=bg, cex=cex, lwd=lwd, ...)
 }
@@ -625,9 +628,11 @@ list2RMmodel <- function(x, skip.prefix.check=FALSE) {
 
   ## add prefix 'RM' if necessary
   if (!skip.prefix.check){
-    if (!(name %in% c(RFgetModelNames(), ZF_INTERNALMIXED, ZF_TREND))) {
+    if (!(name %in% c(RFgetModelNames(group.by=NULL),
+                      ZF_INTERNALMIXED, ZF_TREND))) {
       name2 <- paste(ZF_MODEL_PREFIX, name, sep="")
-      if (!(name2 %in% c(RFgetModelNames(), ZF_INTERNALMIXED, ZF_TREND)))
+      if (!(name2 %in% c(RFgetModelNames(group.by=NULL),
+                         ZF_INTERNALMIXED, ZF_TREND)))
         stop(paste("'", name, "' is not the name of a valid cov model", sep=""))
       else
         name <- name2

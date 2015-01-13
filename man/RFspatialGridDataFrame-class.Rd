@@ -6,6 +6,8 @@
 \alias{RFspDataFrame2conventional,RFspatialGridDataFrame-method}
 \alias{RFspDataFrame2dataArray,RFspatialGridDataFrame-method}
 \alias{show,RFspatialGridDataFrame-method}
+\alias{coerce,RFspatialGridDataFrame,data.frame-method}
+\alias{coerce,SpatialGridDataFrame,RFspatialGridDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
 \alias{coerce,RFspatialGridDataFrame,RFspatialPointsDataFrame,ANY-method}
 \alias{GridTopology2gridVectors,GridTopology-method}
@@ -18,12 +20,12 @@
 \alias{[<-,RFspatialGridDataFrame,ANY,ANY,ANY-method}
 %% S3 methodsgr
 \alias{print.RFspatialGridDataFrame}
+\alias{contour.RFspatialGridDataFrame}
+\alias{cbind.RFspatialGridDataFrame}
 \alias{as.matrix.RFspatialGridDataFrame}
 \alias{as.array.RFspatialGridDataFrame}
 \alias{as.vector.RFspatialGridDataFrame}
 \alias{as.data.frame.RFspatialGridDataFrame}
-\alias{cbind.RFspatialGridDataFrame}
-\alias{contour.RFspatialGridDataFrame}
 
 \title{Class "RFspatialGridDataFrame" }
 \description{ Class for spatial attributes that have spatial or
@@ -39,7 +41,7 @@
  \code{\link{RFspatialGridDataFrame}} or
  \code{\link{conventional2RFspDataFrame}} or by calls of the form
  \code{as(x, "RFspatialGridDataFrame")}, where \code{x} is of class
- \command{\link[=RFspatialPointsDataFrame-class]{RFspatialPointsDataFrame}}. 
+ \command{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}}. 
  %Ordered full grids are stored instead or unordered non-NA cells; 
 }
 

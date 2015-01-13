@@ -26,12 +26,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
- 
 #include <string.h>
+#include <R_ext/Linpack.h>
+
 #include "RF.h"
 #include "primitive.h"
-#include <R_ext/Linpack.h>
 #include "Covariance.h"
+#include "variogramAndCo.h"
 
 
 void addkappa(int i, const char *n, SEXPTYPE t, Types ParamType) {
@@ -460,6 +461,7 @@ void kappasize1(int VARIABLE_IS_NOT_USED i,
 
 void rangeOK(cov_model VARIABLE_IS_NOT_USED *cov, 
 	     range_type VARIABLE_IS_NOT_USED *range) { 
+  //  printf("rangeOK %s\n", NAME(cov));
   assert(CovList[cov->nr].kappas == 0);
 }
 
@@ -474,7 +476,7 @@ int struct_statiso(cov_model *cov, cov_model **newmodel) {
   
   if (hasAnyShapeRole(cov)) {
     int i,
-      vdim = cov->vdim2[0];
+      vdim = cov->vdim[0];
     for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   }
 
@@ -568,10 +570,10 @@ void standard_likelihood(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   *v = 0.0;
   for (i=0; i<kappas; i++) {
     if ( (sub = cov->kappasub[i]) != NULL) {
-      if (TypeConsistency(ProcessType, sub) && 
-	  !TypeConsistency(TrendType, sub))
+      if (TypeConsistency(ProcessType, sub, MAXINT) && 
+	  !TypeConsistency(TrendType, sub, MAXINT))
 	error("Baysian modelling currently only works with simple models");
-      if (TypeConsistency(RandomType, sub)) {
+      if (TypeConsistency(RandomType, sub, MAXINT)) {
 	if (CovList[sub->nr].kappatype[i]!=REALSXP)
 	  error("currently only real-valued parameters can be random");
 	VTLG_DLOG(P(i), sub, &dummy);
@@ -586,7 +588,7 @@ void standard_likelihood(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   for (i=0; i<nsub; i++) {
     sub = cov->sub[i];
     if (sub->deterministic) continue;
-    if (TypeConsistency(RandomType, sub)) {
+    if (TypeConsistency(RandomType, sub, MAXINT)) {
       error("Baysian modelling only works with simple models.");
     }    
     VTLG_DLOG(NULL, sub, &dummy);
@@ -628,16 +630,16 @@ void nickname(const char *name, int nr) {
   char dummy[MAXCHAR];
   cov_fct *C = CovList + nr; // nicht gatternr 
   
-  int sl = strlen(CAT_TYPENAMES[C->Type]);  
+  int sl = strlen(CAT_TYPENAMES[C->Typi[0]]);  
   strcopyN(dummy, name, MAXCHAR-sl);
-  sprintf(C->nick, "%s%s", CAT_TYPENAMES[C->Type], dummy);
+  sprintf(C->nick, "%s%s", CAT_TYPENAMES[C->Typi[0]], dummy);
   strcpy(CovNickNames[nr], C->nick);
 
   if ((int) strlen(name) >= (int) MAXCHAR - sl) {
     badname = nr;
   } else {
     if (badname >= 0 && badname != nr) 
-      PRINTF("Warning! Nick name is truncated to `%s'.\n", 
+      PRINTF("Warning! Nick name is truncated to '%s'.\n", 
 	     CovList[badname].nick);
     badname = -1;
   }
@@ -650,7 +652,7 @@ void insert_name(int curNrCov, const char *name) {
   strcpy(CovNames[curNrCov], dummy);
   strcpy(C->name, dummy);
   if (strlen(name)>=MAXCHAR) {
-    PRINTF("Warning! Covariance name is truncated to `%s'.\n", C->name);
+    PRINTF("Warning! Covariance name is truncated to '%s'.\n", C->name);
   }
   assert(strcmp(InternalName, name));
   nickname(name, curNrCov);
@@ -659,8 +661,8 @@ void insert_name(int curNrCov, const char *name) {
 void StandardCovariance(cov_model *cov, double *v){
   CovVario(cov, true, false, v); 
 }
-void StandardCovMatrix(cov_model *cov, double *v) { 
-  CovarianceMatrix(cov, v); 
+void StandardCovMatrix(cov_model *cov, double *v, int *nonzeros) { 
+  CovarianceMatrix(cov, v, nonzeros); 
 }
 void StandardInverseCovMatrix(cov_model *cov, double *v) { 
   InverseCovMatrix(cov, v); 
@@ -672,8 +674,9 @@ void StandardVariogram(cov_model *cov, double *v) {
 void StandardPseudoVariogram(cov_model *cov, double *v) {
   CovVario(cov, false, true, v); 
 }
-void StandardSelectedCovMatrix(cov_model *cov, int *sel, int nsel, double *v) { 
-  SelectedCovMatrix(cov, sel, nsel, v); 
+void StandardSelectedCovMatrix(cov_model *cov, int *sel, int nsel, double *v,
+			       int *nonzeros) { 
+  SelectedCovMatrix(cov, sel, nsel, v, nonzeros); 
 }
 
 void StandardInverseNonstat(double *v, cov_model *cov,
@@ -729,10 +732,10 @@ void InverseIsotropic(double *U, cov_model *cov, double *inverse){
 #define tol 1e-8
 #define max_it 30
   
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
-  int vdim = cov->vdim2[0],
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
+  int vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
-  if (cov->Sinv == NULL) NEW_STORAGE(Sinv, INV, inv_storage);
+  if (cov->Sinv == NULL) NEW_STORAGE(inv);
   ALLOC_NEW(Sinv, v, vdimSq, v);
   ALLOC_NEW(Sinv, wert, vdimSq, wert);
  
@@ -801,14 +804,23 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
     sprintf(msg, "maximum number of covariance models reached. Last included  model is '%s'.", CovList[MAXNRCOVFCTS-1].name);
     warning(msg);
   }
-  
+
   if (PL >= PL_DETAILS)
     PRINTF("%d %s vdim=%d statiso=%d iso=%d\n", currentNrCov, name, vdim, stat_iso, isotropy); 
-  C->Type = type; // ganz vorne 
+  C->TypeFct = NULL;
+  assert(type >=0 && type <= OtherType);
+
+  C->Typi[0] = type; // ganz vorne 
   //  printf("%d %s vdim=%d statiso=%d iso=%d\n", currentNrCov, name, vdim, stat_iso, isotropy); 
   // printf("type = %d\n", type);
-  assert(type >=0 && type <= OtherType);
-  C->TypeFct = NULL;
+  C->Isotropy[0] = isotropy;
+  C->variants = 1;
+  if ((finiterange == true && isPosDef(type) && vdim == SCALAR) || 
+      monotone == COMPLETELY_MON) {
+    C->Isotropy[C->variants] = SPHERICAL_ISOTROPIC;
+    C->Typi[C->variants] = PosDefType;
+    C->variants++;
+  }
 
   insert_name(currentNrCov, name);
 
@@ -822,9 +834,12 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   assert(kappas >= 0 && kappas <= MAXPARAM);
   C->minsub = C->maxsub = 0;
   C->domain = domain; 
-  C->isotropy = isotropy;
   C->vdim = vdim; assert(vdim != MISMATCH);
-
+ 
+  assert(!(isotropy < 0 ||
+	   (isotropy == ISO_MISMATCH && type != RandomType) ||
+	   isotropy > ISO_MISMATCH));
+ 
   //  if (vdim == SUBMODEL_DEP) printf("SUBMODELDEP %s\n", name);
   //  if (vdim == PREVMODEL_DEP) printf("prevMODELDEP %s\n", name);
 
@@ -860,7 +875,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 				   || type== GaussMethodType
 				   || type== BrMethodType 
 				   || type==ProcessType)));
-  assert(monotone != PARAM_DEP);
+  // assert(monotone != PARAM_DEP);
   C->Monotone = monotone;
 
 
@@ -912,6 +927,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   currentNrCov++;
 }
 
+
 bool isDummyInit(initfct Init) {
   return Init == init_statiso || Init == init_failed;
 }
@@ -928,7 +944,8 @@ int CopyModel(const char *name, int which) {
 int CopyModel(const char *name, int which, Types type) {
   CopyModel(name, which);
   int nr = currentNrCov - 1;
-  CovList[nr].Type = type;
+  assert(CovList[nr].variants == 1);
+  CovList[nr].Typi[0] = type;
   return nr;
 }
 
@@ -1026,6 +1043,9 @@ int IncludeModel(const char *name, Types type,
   createmodel(name, type, kappas, kappasize, domain, isotropy, check, range,
 	      vdim, pref, maxdim, finiterange, monotonicity);
   //    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
+  assert(!(isotropy == PREVMODELI && maxsub == 0 
+       && strcmp("U", name) != 0 && strcmp("idcoord", name) != 0));
+
   assert(maxsub >= minsub && maxsub <= MAXSUB);
   assert(check != checkOK || maxsub==0);
   int i, 
@@ -1084,13 +1104,34 @@ int IncludeModel(const char *name, Types type,
 		 SCALAR, maxdim, finiterange, monotonicity);
 }
 
+void AddVariant(Types type, isotropy_type iso) {
+  int nr = currentNrCov - 1;
+  cov_fct *C = CovList + nr; // nicht gatternr
+
+  // printf("%s %d %s %s\n", C->name, C->variants, ISONAMES[iso], TYPENAMES[type]);
+  assert(C->variants < MAXVARIANTS);
+  assert(C->Isotropy[0] != PREVMODELI && type != PREVMODELI);
+  assert(C->Isotropy[C->variants - 1] <= iso || C->check == checkpower);  // see check2x
+  assert((C->Isotropy[C->variants - 1] == iso &&  // see check2x
+	  !TypeConsistency(type, C->Typi[C->variants - 1]))
+	 ||
+	 !equal_coordinate_system(C->Isotropy[C->variants - 1], iso));
+  assert(C->Typi[0] <= NegDefType || C->Typi[0] == type);// see also e.g. 
+  //                                      newmodel _cov cpy in getNset.cc
+  assert(iso != SPHERICAL_ISOTROPIC ||
+	 (!C->finiterange && C->Monotone != COMPLETELY_MON));
+  C->Typi[C->variants] = type;
+  C->Isotropy[C->variants] = iso;
+  C->variants++;
+}
+
 #define IMPLEMENTED_SEQUENTIAL C->vdim <= 1 &&				\
      (C->domain == PREVMODELD ||	\
-      ((isPosDef(C->Type) || isUndefinedType(C->Type)) && C->domain == XONLY))
+      ((is_any(isPosDef, C) || is_any(UndefinedType, C)) && C->domain == XONLY))
 
 #define IMPLEMENTED_CE							\
-  (((isPosDef(C->Type) || isUndefinedType(C->Type)) && C->domain == XONLY) \
-   || C->domain == PREVMODELD)
+  (((is_any(isPosDef, C) || is_any(UndefinedType, C)) && C->domain == XONLY) \
+  || C->domain == PREVMODELD)
 
 void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
 	    nonstat_inv nonstat_inverse) {
@@ -1098,7 +1139,7 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
 
   assert(nr>=0 && nr<currentNrCov && cf!=NULL);
   cov_fct *C = CovList + nr; // nicht gatternr
-  bool stat_iso = C->domain == XONLY && C->isotropy == ISOTROPIC;
+  bool stat_iso = C->domain == XONLY && C->Isotropy[0] == ISOTROPIC;
 
   C->cov = cf;  
   if (C->RS_derivs < 0) C->RS_derivs = 0;
@@ -1108,8 +1149,8 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
     assert(cf != NULL);
     if (C->cov!=NULL && C->RS_derivs < 1) C->RS_derivs = 1;
     C->D=D;    
-    assert(C->isotropy == ISOTROPIC || C->isotropy == SPACEISOTROPIC ||
-	   C->isotropy == PREVMODELI || C->isotropy == PARAM_DEP);
+    assert(C->Isotropy[0] == ISOTROPIC || C->Isotropy[0] == SPACEISOTROPIC ||
+	   C->Isotropy[0] == PREVMODELI || C->Isotropy[0] == PARAM_DEP);
     // C->implemented[TBM2] = NUM_APPROX;
     C->implemented[TBM] = true; 
   }
@@ -1119,7 +1160,7 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct inverse,
    if (C->cov!=NULL && C->D != NULL && C->RS_derivs < 2)  C->RS_derivs = 2;
   }
   if (inverse != NULL) C->inverse = inverse;
-  else if (isMonotone(C->Monotone) && C->isotropy == ISOTROPIC && 
+  else if (isMonotone(C->Monotone) && C->Isotropy[0] == ISOTROPIC && 
 	   C->inverse==ErrCov)
     C->inverse = InverseIsoMon;
   if (stat_iso && C->inverse != ErrInverse) 
@@ -1177,9 +1218,9 @@ void addCov(int F_derivs, covfct cf, covfct D, covfct D2, covfct D3, covfct D4,
   } else {
     C->RS_derivs = 4;
     C->D4 = D4;
-    C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
-    assert(C->F_derivs <= C->RS_derivs);
   }
+  C->F_derivs = F_derivs >= 0 ?  F_derivs : C->RS_derivs;
+  assert(C->F_derivs <= C->RS_derivs);
 }
 
 
@@ -1229,8 +1270,8 @@ void addCov(covfct distrD, covfct logdistrD, nonstat_inv Dinverse,
   int nr = currentNrCov - 1;
   cov_fct *C = CovList + nr; // nicht gatternr
   assert(nr>=0 && nr<currentNrCov);
-  assert(C->domain == STAT_MISMATCH);
-  assert(C->isotropy == ISO_MISMATCH);
+  assert(C->domain == DOMAIN_MISMATCH);
+  assert(C->Isotropy[0] == ISO_MISMATCH);
   assert(distrD != NULL && logdistrD!=NULL && Dinverse != NULL &&
 	 distrP != NULL && distrQ != NULL &&
 	 distrR != NULL);
@@ -1254,7 +1295,7 @@ void addCov(covfct distrD, covfct logdistrD, nonstat_inv Dinverse,
     assert(distrP2sided == NULL && distrR2sided ==NULL);
     C->domain = XONLY;
   }
-  C->isotropy = CARTESIAN_COORD;
+  C->Isotropy[0] = CARTESIAN_COORD;
 }
 
 
@@ -1262,9 +1303,9 @@ void addlogD(covfct logdistrD) {
   int nr = currentNrCov - 1;
   cov_fct *C = CovList + nr; // nicht gatternr
   assert(nr>=0 && nr<currentNrCov);
-  assert(isProcess(C->Type));
+  assert(isProcess(C->Typi[0]));
   assert(C->domain == XONLY);
-  assert(C->isotropy == UNREDUCED);
+  assert(C->Isotropy[0] == UNREDUCED);
   assert(logdistrD!=NULL);
   assert(C->Struct != struct_failed);
   assert( C->Init !=init_failed);
@@ -1327,9 +1368,9 @@ int addFurtherCov(int F_derivs, covfct cf, covfct D, covfct D2) {
     C->D = D;
     C->RS_derivs = 1;
 
-    assert(C->isotropy == ISOTROPIC || C->isotropy == SPACEISOTROPIC ||
-	   C->isotropy == ZEROSPACEISO ||
-	   C->isotropy == PREVMODELI);
+    assert(C->Isotropy[0] == ISOTROPIC || C->Isotropy[0] == SPACEISOTROPIC ||
+	   C->Isotropy[0] == ZEROSPACEISO ||
+	   C->Isotropy[0] == PREVMODELI);
  
     //C->implemented[TBM2] = NUM_APPROX;
     C->implemented[TBM] = IMPLEMENTED; 
@@ -1431,9 +1472,10 @@ void addCallLocal(altlocalparam alt) {
 
 #define ASSERT_TBM  \
   assert(C->domain == PREVMODELD ||					\
-     ((isPosDef(C->Type)|| isUndefinedType(C->Type)) && C->domain == XONLY)); \
+	 ((is_any(isPosDef, C) || is_any(isUndefined, C))		\
+	  && C->domain == XONLY));					\
   assert(C->vdim == SCALAR || C->vdim == SUBMODEL_DEP ||		\
-	 C->vdim == PARAM_DEP)
+	 C->vdim == PARAM_DEP)					
 
 int addTBM(covfct tbm2) {
   // must be called always AFTER addCov !!!!
@@ -1445,8 +1487,8 @@ int addTBM(covfct tbm2) {
   if (tbm2 != NULL) {
     // addTBM is called from the other addTBM's -- so tbm2 might
     // be NULL
-    assert(C->isotropy==ISOTROPIC || C->isotropy==SPACEISOTROPIC || 
-	   C->isotropy==PREVMODELI);
+    assert(C->Isotropy[0]==ISOTROPIC || C->Isotropy[0]==SPACEISOTROPIC || 
+	   C->Isotropy[0]==PREVMODELI);
     assert(C->D != ErrCov);
     C->implemented[TBM] = IMPLEMENTED;
     if (C->pref[TBM] == PREF_NONE) C->pref[TBM] = PREF_BEST;
@@ -1475,7 +1517,7 @@ void addSpecific(int cov) {
   int nr = currentNrCov - 1;
   assert((nr>=0) && (nr<currentNrCov));
   cov_fct *X = CovList + cov; // nicht gatternr
-  assert((CovList[nr].Type == ProcessType &&
+  assert((CovList[nr].Typi[0] == ProcessType &&
 	  CovList[nr].kappas == X->kappas) ||
 	 ( X->check == checkmal && CovList[nr].check==checkmultproc));
   // to do ... und die namen sollten auch gleich sein...
@@ -1511,12 +1553,6 @@ void addHyper(hyper_pp_fct hyper_pp) {
 //  C->implemented[Special] = true;
 //}
 
-void addMarkov(int *variable) {
-  int nr = currentNrCov - 1;
-  cov_fct *C = CovList + nr; // nicht gatternr
-  C->implemented[Markov] = true; 
-  *variable = nr;
-}
 
 void RandomShape(int maxmoments, structfct Struct, initfct Init, 
 		 dofct Do, do_random_fct DoRandom, 
@@ -1597,11 +1633,11 @@ void addGaussMixture(draw_random drawmix,
 }
 
 void addReturns(return_fct Covariance, ext_bool_ret_fct isCovariance, 
-		return_fct CovMatrix, ext_bool_ret_fct isCovMatrix,
+		return_covmat CovMatrix, ext_bool_ret_fct isCovMatrix,
 		return_fct InverseCovMatrix,ext_bool_ret_fct isInverseCovMatrix,
 		return_fct Variogram, ext_bool_ret_fct isVariogram,
 		return_fct PseudoVariogram, ext_bool_ret_fct isPseudoVariogram,
-		returnX_fct SelectedCovMatrix,
+		returnX_covmat SelectedCovMatrix,
 		ext_bool_ret_fct isSelectedCovMatrix) {
   int nr = currentNrCov - 1;
   cov_fct *C = CovList + nr; // nicht gatternr
@@ -1642,7 +1678,7 @@ void Taylor(double c, double pow) {
 
 
   C->TaylorN = 0;
-  if (isPosDef(C->Type) || isUndefinedType(C->Type)) {
+  if (isPosDef(C->Typi[0]) || isUndefined(C->Typi[0])) {
     assert(pow != 0.0);
     C->Taylor[C->TaylorN][TaylorConst] = 1.0;
     C->Taylor[C->TaylorN][TaylorPow] = 0.0;    

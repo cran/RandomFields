@@ -42,12 +42,9 @@ RMbcw(alpha, beta, var, scale, Aniso, proj)
 }
 \references{
  \itemize{
- \item Schilling, R.L., Song, R., Vondracek, Z. (2010) Berstein
- functions. Theory and Applications. De Gruyter
- 
  \item Schlather, M (2014) A parameteric variogram model bridging
- between stationary 
-and intrinsically stationary processes. \emph{Submitted} \bold{}, --
+ between stationary and intrinsically stationary processes. \emph{arxiv}
+ \bold{1412.1914}.
  % \item Martin's Toledo-Chapter: Construction of covariance functions
  % and unconditional simulation of random fields, Application to variograms
  }

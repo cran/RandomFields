@@ -57,9 +57,9 @@ RMtrend <- function(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff) {
 
 RMtrend <- new('RMmodelgenerator',
 	.Data = RMtrend,
-	type = 'trend',
+	type = c('trend', 'trend'),
+	isotropy = c('isotropic', 'non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -120,12 +120,12 @@ RMplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
 
 RMplus <- new('RMmodelgenerator',
 	.Data = RMplus,
-	type = 'undefined',
+	type = c('undefined'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -183,12 +183,12 @@ RMmult <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, pr
 
 RMmult <- new('RMmodelgenerator',
 	.Data = RMmult,
-	type = 'tail correlation function',
+	type = c('undefined'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -245,12 +245,12 @@ RMS  <- function(phi, var, scale, Aniso, proj, anisoT) {
 
 RMS <- new('RMmodelgenerator',
 	.Data = RMS,
-	type = 'undefined',
+	type = c('undefined', 'undefined'),
+	isotropy = c('parameter dependent', 'parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -320,9 +320,9 @@ RMave <- function(phi, A, z, spacetime, var, scale, Aniso, proj) {
 
 RMave <- new('RMmodelgenerator',
 	.Data = RMave,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -387,9 +387,9 @@ RMbcw <- function(alpha, beta, var, scale, Aniso, proj) {
 
 RMbcw <- new('RMmodelgenerator',
 	.Data = RMbcw,
-	type = 'undefined',
+	type = c('negative definite', 'positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -447,9 +447,9 @@ RMbessel <- function(nu, var, scale, Aniso, proj) {
 
 RMbessel <- new('RMmodelgenerator',
 	.Data = RMbessel,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -556,9 +556,9 @@ RMbigneiting <- function(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, sca
 
 RMbigneiting <- new('RMmodelgenerator',
 	.Data = RMbigneiting,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
@@ -631,12 +631,12 @@ RMbernoulli <- function(phi, threshold, correlation, centred, var, scale, Aniso,
 
 RMbernoulli <- new('RMmodelgenerator',
 	.Data = RMbernoulli,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -740,9 +740,9 @@ RMbiwm <- function(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var, scal
 
 RMbiwm <- new('RMmodelgenerator',
 	.Data = RMbiwm,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -794,9 +794,9 @@ RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
 
 RMbrownresnick <- new('RMmodelgenerator',
 	.Data = RMbrownresnick,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
@@ -848,9 +848,9 @@ RMbr2bg <- function(phi, var, scale, Aniso, proj) {
 
 RMbr2bg <- new('RMmodelgenerator',
 	.Data = RMbr2bg,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
@@ -902,9 +902,9 @@ RMbr2eg <- function(phi, var, scale, Aniso, proj) {
 
 RMbr2eg <- new('RMmodelgenerator',
 	.Data = RMbr2eg,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
@@ -962,9 +962,9 @@ RMcauchy <- function(gamma, var, scale, Aniso, proj) {
 
 RMcauchy <- new('RMmodelgenerator',
 	.Data = RMcauchy,
-	type = 'tail correlation function',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -1015,9 +1015,9 @@ RMcircular <- function(var, scale, Aniso, proj) {
 
 RMcircular <- new('RMmodelgenerator',
 	.Data = RMcircular,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'Gneiting-Schaback class',
 	finiterange = FALSE,
@@ -1089,9 +1089,9 @@ RMconstant <- function(M, vdim, element, var, scale, Aniso, proj) {
 
 RMconstant <- new('RMmodelgenerator',
 	.Data = RMconstant,
-	type = 'tail correlation function',
+	type = c('tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'completely monotone',
 	finiterange = FALSE,
@@ -1164,9 +1164,9 @@ RMcoxisham <- function(phi, mu, D, beta, var, scale, Aniso, proj) {
 
 RMcoxisham <- new('RMmodelgenerator',
 	.Data = RMcoxisham,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('zero-space-isotropic'),
 	domain = 'single variable',
-	isotropy = 'zero-space-isotropic',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -1217,9 +1217,9 @@ RMcubic <- function(var, scale, Aniso, proj) {
 
 RMcubic <- new('RMmodelgenerator',
 	.Data = RMcubic,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
@@ -1271,12 +1271,12 @@ RMcurlfree <- function(phi, var, scale, Aniso, proj) {
 
 RMcurlfree <- new('RMmodelgenerator',
 	.Data = RMcurlfree,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -1339,9 +1339,9 @@ RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
 
 RMcutoff <- new('RMmodelgenerator',
 	.Data = RMcutoff,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -1406,11 +1406,11 @@ RMdagum <- function(beta, gamma, var, scale, Aniso, proj) {
 
 RMdagum <- new('RMmodelgenerator',
 	.Data = RMdagum,
-	type = 'positive definite',
+	type = c('positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
-	monotone = 'monotone',
+	monotone = 'parameter dependent monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -1466,9 +1466,9 @@ RMdampedcos <- function(lambda, var, scale, Aniso, proj) {
 
 RMdampedcos <- new('RMmodelgenerator',
 	.Data = RMdampedcos,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -1526,9 +1526,9 @@ RMdewijsian <- function(alpha, var, scale, Aniso, proj) {
 
 RMdewijsian <- new('RMmodelgenerator',
 	.Data = RMdewijsian,
-	type = 'negative definite',
+	type = c('negative definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
@@ -1580,12 +1580,12 @@ RMdivfree <- function(phi, var, scale, Aniso, proj) {
 
 RMdivfree <- new('RMmodelgenerator',
 	.Data = RMdivfree,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -1654,9 +1654,9 @@ RMepscauchy <- function(alpha, beta, eps, var, scale, Aniso, proj) {
 
 RMepscauchy <- new('RMmodelgenerator',
 	.Data = RMepscauchy,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -1707,9 +1707,9 @@ RMexp <- function(var, scale, Aniso, proj) {
 
 RMexp <- new('RMmodelgenerator',
 	.Data = RMexp,
-	type = 'tail correlation function',
+	type = c('tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'completely monotone',
 	finiterange = FALSE,
@@ -1775,9 +1775,9 @@ RMexponential <- function(phi, n, standardised, var, scale, Aniso, proj) {
 
 RMexponential <- new('RMmodelgenerator',
 	.Data = RMexponential,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -1829,12 +1829,12 @@ RMschlather <- function(phi, var, scale, Aniso, proj) {
 
 RMschlather <- new('RMmodelgenerator',
 	.Data = RMschlather,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -1889,9 +1889,9 @@ RMfractdiff <- function(a, var, scale, Aniso, proj) {
 
 RMfractdiff <- new('RMmodelgenerator',
 	.Data = RMfractdiff,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -1949,9 +1949,9 @@ RMfbm <- function(alpha, var, scale, Aniso, proj) {
 
 RMfbm <- new('RMmodelgenerator',
 	.Data = RMfbm,
-	type = 'negative definite',
+	type = c('negative definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'Bernstein',
 	finiterange = FALSE,
@@ -2009,9 +2009,9 @@ RMfractgauss <- function(alpha, var, scale, Aniso, proj) {
 
 RMfractgauss <- new('RMmodelgenerator',
 	.Data = RMfractgauss,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2062,9 +2062,9 @@ RMgauss <- function(var, scale, Aniso, proj) {
 
 RMgauss <- new('RMmodelgenerator',
 	.Data = RMgauss,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -2129,9 +2129,9 @@ RMgenfbm <- function(alpha, beta, var, scale, Aniso, proj) {
 
 RMgenfbm <- new('RMmodelgenerator',
 	.Data = RMgenfbm,
-	type = 'negative definite',
+	type = c('negative definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
@@ -2196,11 +2196,11 @@ RMgencauchy <- function(alpha, beta, var, scale, Aniso, proj) {
 
 RMgencauchy <- new('RMmodelgenerator',
 	.Data = RMgencauchy,
-	type = 'undefined',
+	type = c('positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
-	monotone = 'normal mixture',
+	monotone = 'parameter dependent monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -2263,9 +2263,9 @@ RMgengneiting <- function(kappa, mu, var, scale, Aniso, proj) {
 
 RMgengneiting <- new('RMmodelgenerator',
 	.Data = RMgengneiting,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -2323,9 +2323,9 @@ RMgneiting <- function(orig, var, scale, Aniso, proj) {
 
 RMgneiting <- new('RMmodelgenerator',
 	.Data = RMgneiting,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -2397,9 +2397,9 @@ RMhyperbolic <- function(nu, lambda, delta, var, scale, Aniso, proj) {
 
 RMhyperbolic <- new('RMmodelgenerator',
 	.Data = RMhyperbolic,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -2471,9 +2471,9 @@ RMiaco <- function(nu, lambda, delta, var, scale, Aniso, proj) {
 
 RMiaco <- new('RMmodelgenerator',
 	.Data = RMiaco,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('space-isotropic'),
 	domain = 'single variable',
-	isotropy = 'space-isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2532,12 +2532,12 @@ RMid <- function(phi, vdim, var, scale, Aniso, proj) {
 
 RMid <- new('RMmodelgenerator',
 	.Data = RMid,
-	type = 'undefined',
+	type = c('undefined'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -2585,9 +2585,9 @@ RMkolmogorov <- function(var, scale, Aniso, proj) {
 
 RMkolmogorov <- new('RMmodelgenerator',
 	.Data = RMkolmogorov,
-	type = 'negative definite',
+	type = c('negative definite'),
+	isotropy = c('vector-isotropic'),
 	domain = 'single variable',
-	isotropy = 'vector-isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2652,9 +2652,9 @@ RMlgd <- function(alpha, beta, var, scale, Aniso, proj) {
 
 RMlgd <- new('RMmodelgenerator',
 	.Data = RMlgd,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = FALSE,
@@ -2720,9 +2720,9 @@ RMmastein <- function(phi, nu, delta, var, scale, Aniso, proj) {
 
 RMmastein <- new('RMmodelgenerator',
 	.Data = RMmastein,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('space-isotropic'),
 	domain = 'single variable',
-	isotropy = 'space-isotropic',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2788,9 +2788,9 @@ RMma <- function(phi, alpha, theta, var, scale, Aniso, proj) {
 
 RMma <- new('RMmodelgenerator',
 	.Data = RMma,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2842,9 +2842,9 @@ RMintexp <- function(phi, var, scale, Aniso, proj) {
 
 RMintexp <- new('RMmodelgenerator',
 	.Data = RMintexp,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -2903,12 +2903,12 @@ RMmatrix <- function(phi, M, var, scale, Aniso, proj) {
 
 RMmatrix <- new('RMmodelgenerator',
 	.Data = RMmatrix,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -2970,11 +2970,11 @@ RMmatern <- function(nu, notinvnu, var, scale, Aniso, proj) {
 
 RMmatern <- new('RMmodelgenerator',
 	.Data = RMmatern,
-	type = 'undefined',
+	type = c('positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
-	monotone = 'normal mixture',
+	monotone = 'submodel dependent monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -3040,9 +3040,9 @@ RMmqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, A
 
 RMmqam <- new('RMmodelgenerator',
 	.Data = RMmqam,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3094,12 +3094,12 @@ RMnatsc <- function(phi, var, scale, Aniso, proj) {
 
 RMnatsc <- new('RMmodelgenerator',
 	.Data = RMnatsc,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -3154,9 +3154,9 @@ RMnonstwm <- function(nu, var, scale, Aniso, proj) {
 
 RMnonstwm <- new('RMmodelgenerator',
 	.Data = RMnonstwm,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'kernel',
-	isotropy = 'symmetric',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3216,9 +3216,9 @@ RMnsst <- function(phi, psi, delta, var, scale, Aniso, proj) {
 
 RMnsst <- new('RMmodelgenerator',
 	.Data = RMnsst,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('space-isotropic'),
 	domain = 'single variable',
-	isotropy = 'space-isotropic',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3283,9 +3283,9 @@ RMnugget <- function(tol, vdim, var, scale, Aniso, proj) {
 
 RMnugget <- new('RMmodelgenerator',
 	.Data = RMnugget,
-	type = 'tail correlation function',
+	type = c('tail correlation'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -3343,9 +3343,9 @@ RMflatpower <- function(alpha, var, scale, Aniso, proj) {
 
 RMflatpower <- new('RMmodelgenerator',
 	.Data = RMflatpower,
-	type = 'negative definite',
+	type = c('negative definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'Bernstein',
 	finiterange = FALSE,
@@ -3403,9 +3403,9 @@ RMparswm <- function(nudiag, var, scale, Aniso, proj) {
 
 RMparswm <- new('RMmodelgenerator',
 	.Data = RMparswm,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3456,9 +3456,9 @@ RMpenta <- function(var, scale, Aniso, proj) {
 
 RMpenta <- new('RMmodelgenerator',
 	.Data = RMpenta,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -3516,9 +3516,9 @@ RMaskey <- function(alpha, var, scale, Aniso, proj) {
 
 RMaskey <- new('RMmodelgenerator',
 	.Data = RMaskey,
-	type = 'undefined',
+	type = c('positive definite', 'positive definite', 'tail correlation'),
+	isotropy = c('isotropic', 'spherical isotropic', 'isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -3577,9 +3577,9 @@ RMpower <- function(phi, alpha, var, scale, Aniso, proj) {
 
 RMpower <- new('RMmodelgenerator',
 	.Data = RMpower,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('parameter dependent', 'parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3647,9 +3647,9 @@ RMqam <- function(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, An
 
 RMqam <- new('RMmodelgenerator',
 	.Data = RMqam,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3707,9 +3707,9 @@ RMqexp <- function(alpha, var, scale, Aniso, proj) {
 
 RMqexp <- new('RMmodelgenerator',
 	.Data = RMqexp,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -3782,12 +3782,12 @@ RMschur <- function(phi, M, diag, rhored, var, scale, Aniso, proj) {
 
 RMschur <- new('RMmodelgenerator',
 	.Data = RMschur,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -3843,12 +3843,12 @@ RMdelay <- function(phi, s, var, scale, Aniso, proj) {
 
 RMdelay <- new('RMmodelgenerator',
 	.Data = RMdelay,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -3896,9 +3896,9 @@ RMspheric <- function(var, scale, Aniso, proj) {
 
 RMspheric <- new('RMmodelgenerator',
 	.Data = RMspheric,
-	type = 'tail correlation function',
+	type = c('tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'Gneiting-Schaback class',
 	finiterange = TRUE,
@@ -3956,11 +3956,11 @@ RMstable <- function(alpha, var, scale, Aniso, proj) {
 
 RMstable <- new('RMmodelgenerator',
 	.Data = RMstable,
-	type = 'undefined',
+	type = c('positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
-	monotone = 'normal mixture',
+	monotone = 'parameter dependent monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -4024,9 +4024,9 @@ RMintrinsic <- function(phi, diameter, rawR, var, scale, Aniso, proj) {
 
 RMintrinsic <- new('RMmodelgenerator',
 	.Data = RMintrinsic,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = TRUE,
@@ -4091,9 +4091,9 @@ RMstein <- function(nu, z, var, scale, Aniso, proj) {
 
 RMstein <- new('RMmodelgenerator',
 	.Data = RMstein,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4167,9 +4167,9 @@ RMstp <- function(xi, phi, S, z, M, var, scale, Aniso, proj) {
 
 RMstp <- new('RMmodelgenerator',
 	.Data = RMstp,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('symmetric'),
 	domain = 'kernel',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4242,12 +4242,12 @@ RMtbm <- function(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj) {
 
 RMtbm <- new('RMmodelgenerator',
 	.Data = RMtbm,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -1,
 	vdim = -3
@@ -4310,12 +4310,12 @@ RMvector <- function(phi, a, Dspace, var, scale, Aniso, proj) {
 
 RMvector <- new('RMmodelgenerator',
 	.Data = RMvector,
-	type = 'positive definite',
+	type = c('positive definite', 'positive definite'),
+	isotropy = c('symmetric', 'symmetric'),
 	domain = 'single variable',
-	isotropy = 'symmetric',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -1
@@ -4363,9 +4363,9 @@ RMwave <- function(var, scale, Aniso, proj) {
 
 RMwave <- new('RMmodelgenerator',
 	.Data = RMwave,
-	type = 'positive definite',
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4430,9 +4430,9 @@ RMwhittle <- function(nu, notinvnu, var, scale, Aniso, proj) {
 
 RMwhittle <- new('RMmodelgenerator',
 	.Data = RMwhittle,
-	type = 'undefined',
+	type = c('positive definite', 'tail correlation', 'positive definite'),
+	isotropy = c('isotropic', 'isotropic', 'spherical isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'normal mixture',
 	finiterange = FALSE,
@@ -4484,9 +4484,9 @@ RMangle <- function(angle, lat.angle, ratio, diag) {
 
 RMangle <- new('RMmodelgenerator',
 	.Data = RMangle,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4537,9 +4537,9 @@ RMball <- function(var, scale, Aniso, proj) {
 
 RMball <- new('RMmodelgenerator',
 	.Data = RMball,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -4577,9 +4577,9 @@ RMeaxxa <- function(E, A) {
 
 RMeaxxa <- new('RMmodelgenerator',
 	.Data = RMeaxxa,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4624,9 +4624,9 @@ RMetaxxa <- function(E, A, alpha) {
 
 RMetaxxa <- new('RMmodelgenerator',
 	.Data = RMetaxxa,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4637,9 +4637,10 @@ RMetaxxa <- new('RMmodelgenerator',
 
 
 
-RMtrafo <- function(isotropy) {
+RMtrafo <- function(phi, isotropy) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
+  if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg(isotropy) && !is.null(subst <- substitute(isotropy))) {
     u <- try(is.numeric(isotropy) || is.logical(isotropy) || is.language(isotropy)
@@ -4657,10 +4658,10 @@ RMtrafo <- function(isotropy) {
 
 RMtrafo <- new('RMmodelgenerator',
 	.Data = RMtrafo,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
-	operator = FALSE,
+	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
@@ -4690,9 +4691,9 @@ RMpolygon <- function(lambda) {
 
 RMpolygon <- new('RMmodelgenerator',
 	.Data = RMpolygon,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -4730,9 +4731,9 @@ RMrational <- function(A, a) {
 
 RMrational <- new('RMmodelgenerator',
 	.Data = RMrational,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4770,9 +4771,9 @@ RMrotat <- function(speed, phi) {
 
 RMrotat <- new('RMmodelgenerator',
 	.Data = RMrotat,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4803,9 +4804,9 @@ RMrotation <- function(phi) {
 
 RMrotation <- new('RMmodelgenerator',
 	.Data = RMrotation,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -4837,12 +4838,12 @@ RMsign <- function(phi, p) {
 
 RMsign <- new('RMmodelgenerator',
 	.Data = RMsign,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'not monotone',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -4864,12 +4865,12 @@ RMm2r <- function(phi) {
 
 RMm2r <- new('RMmodelgenerator',
 	.Data = RMm2r,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = 3,
 	vdim = 1
@@ -4891,9 +4892,9 @@ RMm3b <- function(phi) {
 
 RMm3b <- new('RMmodelgenerator',
 	.Data = RMm3b,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('isotropic'),
 	domain = 'single variable',
-	isotropy = 'isotropic',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -4918,9 +4919,9 @@ RMmps <- function(phi) {
 
 RMmps <- new('RMmodelgenerator',
 	.Data = RMmps,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
@@ -4952,12 +4953,12 @@ RMtruncsupport <- function(phi, radius) {
 
 RMtruncsupport <- new('RMmodelgenerator',
 	.Data = RMtruncsupport,
-	type = 'shape function',
+	type = c('shape function'),
+	isotropy = c('parameter dependent'),
 	domain = 'single variable',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'submodel dependent monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = 1
@@ -4985,12 +4986,12 @@ RRdeterm <- function(mean) {
 
 RRdeterm <- new('RMmodelgenerator',
 	.Data = RRdeterm,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'framework dependent',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = -3
@@ -5032,9 +5033,9 @@ RRgauss <- function(mu, sd, log) {
 
 RRgauss <- new('RMmodelgenerator',
 	.Data = RRgauss,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'framework dependent',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5080,15 +5081,84 @@ RRloc <- function(phi, mu, scale, pow) {
 
 RRloc <- new('RMmodelgenerator',
 	.Data = RRloc,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'framework dependent',
-	isotropy = 'cartesian system',
+	operator = TRUE,
+	monotone = 'mismatch in monotonicity',
+	finiterange = NA,
+	simpleArguments = TRUE,
+	maxdim = -3,
+	vdim = -3
+	)
+
+
+
+RRmcmc <- function(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  if (hasArg(phi)) submodels[['phi']] <- phi
+  
+  if (hasArg(mcmc_n) && !is.null(subst <- substitute(mcmc_n))) {
+    u <- try(is.numeric(mcmc_n) || is.logical(mcmc_n) || is.language(mcmc_n)
+	 || is.list(mcmc_n) || is(mcmc_n, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['mcmc_n']] <- mcmc_n
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['mcmc_n']] <- mcmc_n
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(sigma) && !is.null(subst <- substitute(sigma))) {
+    u <- try(is.numeric(sigma) || is.logical(sigma) || is.language(sigma)
+	 || is.list(sigma) || is(sigma, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['sigma']] <- sigma
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['sigma']] <- sigma
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(normed) && !is.null(subst <- substitute(normed))) {
+    u <- try(is.numeric(normed) || is.logical(normed) || is.language(normed)
+	 || is.list(normed) || is(normed, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['normed']] <- normed
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['normed']] <- normed
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(maxdensity) && !is.null(subst <- substitute(maxdensity))) {
+    u <- try(is.numeric(maxdensity) || is.logical(maxdensity) || is.language(maxdensity)
+	 || is.list(maxdensity) || is(maxdensity, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['maxdensity']] <- maxdensity
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['maxdensity']] <- maxdensity
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(rand.loc) && !is.null(subst <- substitute(rand.loc))) {
+    u <- try(is.numeric(rand.loc) || is.logical(rand.loc) || is.language(rand.loc)
+	 || is.list(rand.loc) || is(rand.loc, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['rand.loc']] <- rand.loc
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['rand.loc']] <- rand.loc
+    else  stop('random parameter not allowed')
+  }
+  if (hasArg(gibbs) && !is.null(subst <- substitute(gibbs))) {
+    u <- try(is.numeric(gibbs) || is.logical(gibbs) || is.language(gibbs)
+	 || is.list(gibbs) || is(gibbs, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['gibbs']] <- gibbs
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['gibbs']] <- gibbs
+    else  stop('random parameter not allowed')
+  }
+  
+  model <- new('RMmodel', call = cl, name = 'RRmcmc', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RRmcmc <- new('RMmodelgenerator',
+	.Data = RRmcmc,
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
+	domain = 'framework dependent',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
 	simpleArguments = TRUE,
-	maxdim = -3,
-	vdim = -3
+	maxdim = Inf,
+	vdim = -1
 	)
 
 
@@ -5184,9 +5254,9 @@ RRrectangular <- function(phi, safety, minsteplen, maxsteps, parts, maxit, inner
 
 RRrectangular <- new('RMmodelgenerator',
 	.Data = RRrectangular,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'framework dependent',
-	isotropy = 'cartesian system',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
@@ -5231,9 +5301,9 @@ RRspheric <- function(spacedim, balldim, R) {
 
 RRspheric <- new('RMmodelgenerator',
 	.Data = RRspheric,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'single variable',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
@@ -5278,9 +5348,9 @@ RRunif <- function(min, max, normed) {
 
 RRunif <- new('RMmodelgenerator',
 	.Data = RRunif,
-	type = 'distribution family',
+	type = c('distribution family'),
+	isotropy = c('cartesian system'),
 	domain = 'framework dependent',
-	isotropy = 'cartesian system',
 	operator = FALSE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
@@ -5321,12 +5391,12 @@ RMmppplus <- function(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p) {
 
 RMmppplus <- new('RMmodelgenerator',
 	.Data = RMmppplus,
-	type = 'shifted shape function',
+	type = c('point-shape function'),
+	isotropy = c('parameter dependent'),
 	domain = 'framework dependent',
-	isotropy = 'parameter dependent',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
-	finiterange = TRUE,
+	finiterange = NA,
 	simpleArguments = TRUE,
 	maxdim = -3,
 	vdim = -3
@@ -5334,7 +5404,7 @@ RMmppplus <- new('RMmodelgenerator',
 
 
 
-RPaverage <- function(phi, shape, intensity) {
+RPaverage <- function(phi, shape, intensity, method) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5347,6 +5417,13 @@ RPaverage <- function(phi, shape, intensity) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['intensity']] <- intensity
     else  stop('random parameter not allowed')
   }
+  if (hasArg(method) && !is.null(subst <- substitute(method))) {
+    u <- try(is.numeric(method) || is.logical(method) || is.language(method)
+	 || is.list(method) || is(method, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['method']] <- method
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['method']] <- method
+    else  stop('random parameter not allowed')
+  }
   
   model <- new('RMmodel', call = cl, name = 'RPaverage', 
   		submodels = submodels, 
@@ -5356,9 +5433,9 @@ RPaverage <- function(phi, shape, intensity) {
 
 RPaverage <- new('RMmodelgenerator',
 	.Data = RPaverage,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5467,9 +5544,9 @@ RPcirculant <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe,
 
 RPcirculant <- new('RMmodelgenerator',
 	.Data = RPcirculant,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5592,9 +5669,9 @@ RPcutoff <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe, tr
 
 RPcutoff <- new('RMmodelgenerator',
 	.Data = RPcutoff,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5717,9 +5794,9 @@ RPintrinsic <- function(phi, force, mmin, strategy, maxGB, maxmem, tolIm, tolRe,
 
 RPintrinsic <- new('RMmodelgenerator',
 	.Data = RPintrinsic,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5765,9 +5842,9 @@ RPdirect <- function(phi, root_method, svdtolerance, max_variab) {
 
 RPdirect <- new('RMmodelgenerator',
 	.Data = RPdirect,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5778,7 +5855,7 @@ RPdirect <- new('RMmodelgenerator',
 
 
 
-RPhyperplane <- function(phi, superpos, maxlines, mar_distr, mar_param) {
+RPhyperplane <- function(phi, superpos, maxlines, mar_distr, mar_param, additive) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5811,6 +5888,13 @@ RPhyperplane <- function(phi, superpos, maxlines, mar_distr, mar_param) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['mar_param']] <- mar_param
     else  stop('random parameter not allowed')
   }
+  if (hasArg(additive) && !is.null(subst <- substitute(additive))) {
+    u <- try(is.numeric(additive) || is.logical(additive) || is.language(additive)
+	 || is.list(additive) || is(additive, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['additive']] <- additive
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['additive']] <- additive
+    else  stop('random parameter not allowed')
+  }
   
   model <- new('RMmodel', call = cl, name = 'RPhyperplane', 
   		submodels = submodels, 
@@ -5820,9 +5904,9 @@ RPhyperplane <- function(phi, superpos, maxlines, mar_distr, mar_param) {
 
 RPhyperplane <- new('RMmodelgenerator',
 	.Data = RPhyperplane,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5861,9 +5945,9 @@ RPnugget <- function(phi, tol, vdim) {
 
 RPnugget <- new('RMmodelgenerator',
 	.Data = RPnugget,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = TRUE,
@@ -5874,7 +5958,7 @@ RPnugget <- new('RMmodelgenerator',
 
 
 
-RPcoins <- function(phi, shape, intensity) {
+RPcoins <- function(phi, shape, intensity, method) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -5887,6 +5971,13 @@ RPcoins <- function(phi, shape, intensity) {
     else if (substr(deparse(subst), 1, 1)=='R') par.model[['intensity']] <- intensity
     else  stop('random parameter not allowed')
   }
+  if (hasArg(method) && !is.null(subst <- substitute(method))) {
+    u <- try(is.numeric(method) || is.logical(method) || is.language(method)
+	 || is.list(method) || is(method, class2='RMmodel'), silent=TRUE)
+    if (is.logical(u) && u) par.model[['method']] <- method
+    else if (substr(deparse(subst), 1, 1)=='R') par.model[['method']] <- method
+    else  stop('random parameter not allowed')
+  }
   
   model <- new('RMmodel', call = cl, name = 'RPcoins', 
   		submodels = submodels, 
@@ -5896,9 +5987,9 @@ RPcoins <- function(phi, shape, intensity) {
 
 RPcoins <- new('RMmodelgenerator',
 	.Data = RPcoins,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5944,9 +6035,9 @@ RPsequential <- function(phi, max_variables, back_steps, initial) {
 
 RPsequential <- new('RMmodelgenerator',
 	.Data = RPsequential,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -5999,9 +6090,9 @@ RPspectral <- function(phi, sp_lines, sp_grid, prop_factor, sigma) {
 
 RPspectral <- new('RMmodelgenerator',
 	.Data = RPspectral,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6026,9 +6117,9 @@ RPspecific <- function(phi) {
 
 RPspecific <- new('RMmodelgenerator',
 	.Data = RPspecific,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6109,9 +6200,9 @@ RPtbm <- function(phi, fulldim, reduceddim, layers, lines, linessimufactor, line
 
 RPtbm <- new('RMmodelgenerator',
 	.Data = RPtbm,
-	type = 'method for Gauss processes',
+	type = c('method for Gauss process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6158,9 +6249,9 @@ RPbrorig <- function(phi, tcf, xi, mu, s) {
 
 RPbrorig <- new('RMmodelgenerator',
 	.Data = RPbrorig,
-	type = 'method for Brown-Resnick processes',
+	type = c('method for Brown-Resnick process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6263,9 +6354,9 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, op
 
 RPbrmixed <- new('RMmodelgenerator',
 	.Data = RPbrmixed,
-	type = 'method for Brown-Resnick processes',
+	type = c('method for Brown-Resnick process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6312,9 +6403,9 @@ RPbrshifted <- function(phi, tcf, xi, mu, s) {
 
 RPbrshifted <- new('RMmodelgenerator',
 	.Data = RPbrshifted,
-	type = 'method for Brown-Resnick processes',
+	type = c('method for Brown-Resnick process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6353,9 +6444,9 @@ RPbernoulli <- function(phi, stationary_only, threshold) {
 
 RPbernoulli <- new('RMmodelgenerator',
 	.Data = RPbernoulli,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6402,9 +6493,9 @@ RPbrownresnick <- function(phi, tcf, xi, mu, s) {
 
 RPbrownresnick <- new('RMmodelgenerator',
 	.Data = RPbrownresnick,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6436,9 +6527,9 @@ RPgauss <- function(phi, stationary_only) {
 
 RPgauss <- new('RMmodelgenerator',
 	.Data = RPgauss,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6470,9 +6561,9 @@ RPpoisson <- function(phi, intensity) {
 
 RPpoisson <- new('RMmodelgenerator',
 	.Data = RPpoisson,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6519,9 +6610,9 @@ RPschlather <- function(phi, tcf, xi, mu, s) {
 
 RPschlather <- new('RMmodelgenerator',
 	.Data = RPschlather,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6574,9 +6665,9 @@ RPopitz <- function(phi, xi, mu, s, alpha) {
 
 RPopitz <- new('RMmodelgenerator',
 	.Data = RPopitz,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6623,9 +6714,9 @@ RPsmith <- function(shape, tcf, xi, mu, s) {
 
 RPsmith <- new('RMmodelgenerator',
 	.Data = RPsmith,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6657,9 +6748,9 @@ RPchi2 <- function(phi, f) {
 
 RPchi2 <- new('RMmodelgenerator',
 	.Data = RPchi2,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
@@ -6691,9 +6782,9 @@ RPt <- function(phi, nu) {
 
 RPt <- new('RMmodelgenerator',
 	.Data = RPt,
-	type = 'process',
+	type = c('process'),
+	isotropy = c('non-dimension-reducing'),
 	domain = 'single variable',
-	isotropy = 'non-dimension-reducing',
 	operator = TRUE,
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,

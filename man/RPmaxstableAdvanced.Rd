@@ -47,10 +47,13 @@ auswertung <- function(simu, model, threshold=2) {
   plot(x, ecf)
 
   ## alle 3 Linien ergeben das Gleiche:
+  spC <- RFoptions()$general$spConform
+  RFoptions(spConform = FALSE)
   lines(x, m1 <- RFcov(RMbrownresnick(model), x), col="yellow")
   lines(x, m2 <- RFcov(RMschlather(RMbr2eg(model)), x), col="red", lty=2) # OK
   m3 <- RFcov(RMbernoulli(RMbr2bg(model), centred=FALSE), x)
   lines(x, m3, col="blue", lty=3)
+  RFoptions(spConform = spC)
 
   erfc <- function(x) 2 * pnorm(x, 0, sd=1/sqrt(2), lower=FALSE)
   lines(x, m4 <- erfc(0.45 * sqrt(1-exp(-x))), lty=4)

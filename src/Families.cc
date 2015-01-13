@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suix2te 330, Boston, MA  02111-1307, USA.
 
 
 #include "RF.h"
-#include "families.h"
+#include "Families.h"
 #include "Covariance.h"
 
 
@@ -84,7 +84,10 @@ void arcsqrtDlog(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
 }
 
 void arcsqrtDinverse(double VARIABLE_IS_NOT_USED *v, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *left, double VARIABLE_IS_NOT_USED *right) {
-  error("Dinverse of arcsqrt unknown");
+  if (v == NULL || *v <=0 ) {
+    left[0] = 0;
+    right[0] = RF_INF;
+  } else error("Dinverse of arcsqrt unknown");
 }
 
 void arcsqrtQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
@@ -258,8 +261,8 @@ int check_distr(cov_model *cov) {
 
   kdefault(cov, DISTR_NROW, 1);
   kdefault(cov, DISTR_NCOL, 1);
-  cov->vdim2[0] = P0INT(DISTR_NROW);
-  cov->vdim2[1] = P0INT(DISTR_NCOL);
+  cov->vdim[0] = P0INT(DISTR_NROW);
+  cov->vdim[1] = P0INT(DISTR_NCOL);
  
   EXTRA_STORAGE;
 
@@ -404,7 +407,7 @@ void gaussQ(double *x, cov_model *cov, double *v) {
   if (*x < 0 || *x > 1) {*v = RF_NA; return;}
   GAUSS_PARAMETER_BASICS; 
   int returnlog = P0INT(GAUSS_DISTR_LOG);
-  *v *= qnorm(x[0], m[0], sd[0], true, returnlog);
+  *v = qnorm(x[0], m[0], sd[0], true, returnlog);
 }		   
 
 void gaussR(double *x, cov_model *cov, double *v) {
@@ -448,8 +451,8 @@ int check_gauss_distr(cov_model *cov) {
   if (sd == NULL) kdefault(cov, GAUSS_DISTR_SD, 1.0);
   kdefault(cov, GAUSS_DISTR_LOG, false);
 
-  cov->vdim2[0] = cov->xdimprev;
-  cov->vdim2[1] = 1;
+  cov->vdim[0] = cov->xdimprev;
+  cov->vdim[1] = 1;
 
   return NOERROR;
 }
@@ -534,12 +537,13 @@ void sphericD(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *co
   error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericDinverse(double *v, cov_model  *cov, double *left, double  *right) {
-  if (*v <= 0.0) {
+  if (v==NULL || *v <= 0.0) {
     *left = 0.0;
     *right = (0.5 * P0(SPHERIC_RADIUS));
+  } else {
+    //v is here INPUT variable !!
+    error("density of 'RRspheric' cannot be calculated yet");
   }
-  //v is here INPUT variable !!
-  error("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericDlog(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
   error("density of 'RRspheric' cannot be calculated yet");
@@ -570,8 +574,8 @@ int check_RRspheric(cov_model *cov) {
 
   if (cov->tsdim != 1) SERR("only dimension 1 allowed");
 
-  cov->vdim2[0] = cov->xdimprev;
-  cov->vdim2[1] = 1;
+  cov->vdim[0] = cov->xdimprev;
+  cov->vdim[1] = 1;
 
   return NOERROR;
 }
@@ -754,8 +758,8 @@ int check_determ(cov_model *cov) {
   
   if (PisNULL(DETERM_MEAN)) kdefault(cov, DETERM_MEAN, 0.0);
   
-  cov->vdim2[0] = dim;
-  cov->vdim2[1] = 1;
+  cov->vdim[0] = dim;
+  cov->vdim[1] = 1;
 
   return NOERROR;
 }
@@ -832,8 +836,8 @@ int check_setParam(cov_model *cov) {
   if ((err = CHECK_R(next, dim)) != NOERROR) return err;
 
   setbackward(cov, next);
-  cov->vdim2[0] = next->vdim2[0];
-  cov->vdim2[1] = next->vdim2[1];
+  cov->vdim[0] = next->vdim[0];
+  cov->vdim[1] = next->vdim[1];
 
   TaylorCopy(cov, next);
   cov->mpp.maxheights[0] = next->mpp.maxheights[0];
@@ -1040,8 +1044,8 @@ int check_loc(cov_model *cov) {
   if (loc == NULL) kdefault(cov, LOC_LOC, 0.0);
   if (scale == NULL) kdefault(cov, LOC_SCALE, 1.0);
  
-  cov->vdim2[0] = next->vdim2[0];
-  cov->vdim2[1] = next->vdim2[1];
+  cov->vdim[0] = next->vdim[0];
+  cov->vdim[1] = next->vdim[1];
 
   DOLLAR_STORAGE;
   return NOERROR;
@@ -1278,8 +1282,8 @@ int check_unif(cov_model *cov) {
   if (PisNULL(UNIF_MAX)) kdefault(cov, UNIF_MAX, 1.0);
   kdefault(cov, UNIF_NORMED, true);
 
-  cov->vdim2[0] = cov->tsdim;
-  cov->vdim2[1] = 1;
+  cov->vdim[0] = cov->tsdim;
+  cov->vdim[1] = 1;
 
   //PMI(cov->calling);
 
@@ -2041,7 +2045,7 @@ void rectangularQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov,
       max = RF_NEGINF;							\
     RECTFOR {double z=fabs(v[i]); if (z > max) max = z;}		\
     evaluate_rectangular(&max, cov, &approx);				\
-    FCTN(v, next, &truevalue);						\
+    ABSFCTN(v, next, &truevalue);						\
     newquot = truevalue / approx;					\
     assert(quot < cov->qlen + 2);					\
     if (isMonotone(next->monotone)) { /* rejection sampling */		\
@@ -2092,7 +2096,7 @@ void rectangularQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov,
 void rectangularR(double *x, cov_model *cov, double *v) { 
   //printf("rectR %lu\n", x);
 
- if (x != NULL) {
+  if (x != NULL) {
    //crash();
     error("put 'flat = false'");
   }
@@ -2270,7 +2274,7 @@ int GetMajorant(cov_model *cov) {
   // INNER
   i = 0;
   INNER = starting_point;
-  FCTN(&(INNER), next, &v);
+  ABSFCTN(&(INNER), next, &v);
   m = INNER_CONST * pow(INNER, INNER_POW);
   //   PMI(next, -1);
   //  printf("inner=%e m=%e v=%e inner_c=%4.3f (%4.3f) inner_p=%4.3f (%4.3f)\n",  INNER, m, v, INNER_CONST, next->taylor[0][TaylorConst], INNER_POW, in_pow);
@@ -2279,7 +2283,7 @@ int GetMajorant(cov_model *cov) {
     INNER *= inner_factor;
     INNER_CONST *= safetyP1;
     if (inpownot0) INNER_POW = INNER_POW * EMsafety - dimsafety;
-    FCTN(&(INNER), next, &v);
+    ABSFCTN(&(INNER), next, &v);
     m = INNER_CONST * pow(INNER, INNER_POW);
     // printf("inner=%e m=%e v=%e i=%d, maxit=%d\n", 
     //	INNER, m, v, i, max_iterations);
@@ -2302,7 +2306,7 @@ int GetMajorant(cov_model *cov) {
     for (j=1; j<parts; j++, x-=delta) {
       //      printf("j=%d parts=%d max_it=%d\n", j, parts, max_iterations);
 
-      FCTN(&x, next, &v);
+      ABSFCTN(&x, next, &v);
       m = INNER_CONST * pow(x, INNER_POW);
       double ratio = m / v;
 
@@ -2346,7 +2350,7 @@ int GetMajorant(cov_model *cov) {
     assert(next->tail[0][TaylorConst] > 0.0);
     i = 0;
     OUTER = starting_point * safetyP1;
-    FCTN(&(OUTER), next, &v);
+    ABSFCTN(&(OUTER), next, &v);
     
     //    m = OUTER_CONST * (OUTER_POW <= 0 ? pow(OUTER, OUTER_POW) 
     //		       : exp(- OUTER_POW_CONST *  pow(OUTER, OUTER_POW)));
@@ -2357,7 +2361,7 @@ int GetMajorant(cov_model *cov) {
       OUTER_CONST *= safetyP1;
       OUTER_POW /= safetyP1;
       OUTER *= outer_factor;
-      FCTN(&(OUTER), next, &v);
+      ABSFCTN(&(OUTER), next, &v);
       OUTER_DENSITY(m, OUTER);
       // printf("i =%d  outer %f m=%e v=%e\n", i, OUTER, m, v); assert(false);
   }
@@ -2378,7 +2382,7 @@ int GetMajorant(cov_model *cov) {
       delta = OUTER / parts;
       double x = OUTER + delta;
       for (j=1; j<parts; j++, x+=delta) {
-	FCTN(&x, next, &v);
+	ABSFCTN(&x, next, &v);
 	OUTER_DENSITY(m, x);
 	double ratio = m / v;
 	if (ratio < old_ratio) break;
@@ -2427,8 +2431,7 @@ int check_rectangular(cov_model *cov) {
   kdefault(cov, RECT_ONESIDED, false);
   //  int onesided = P0INT(RECT_ONESIDED);
   
-  if (cov->q == NULL) cov->q = (double *) CALLOC(dim + 2, sizeof(double));
-  cov->qlen = dim + 2; // 1
+  if (cov->q == NULL) QALLOC(dim + 2);
   cov->q[dim] = RF_NA;
 
   if ((err = CHECK(next, dim, dim, ShapeType, XONLY, 
@@ -2471,8 +2474,8 @@ int check_rectangular(cov_model *cov) {
   
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
 
-  cov->vdim2[0] = cov->tsdim;
-  cov->vdim2[1] = 1;
+  cov->vdim[0] = cov->tsdim;
+  cov->vdim[1] = 1;
 
   //PMI(cov);
 
@@ -2484,7 +2487,7 @@ int check_rectangular(cov_model *cov) {
 int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int  err;
 
-  NEW_STORAGE(Srect, RECT, rect_storage);
+  NEW_STORAGE(rect);
   RECTANGULAR_PARAMETERS; // muss nach obigen stehen und vor allem anderen
 
   if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR) {
@@ -2516,7 +2519,7 @@ int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  
   x = INNER;
   for (d=0; d<NSTEP; d++, x+=STEP) {
-    FCTN(&x, next, &(VALUE(d)));
+    ABSFCTN(&x, next, &(VALUE(d)));
     //printf("x=%f %f\n", x, VALUE(d));
     assert(VALUE(d) >= 0);
   }
@@ -2559,7 +2562,7 @@ int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       if (k==n+1) end *= 5;
       u = t = 0.0;
       while (xx < end) {
-	FCTN(&xx, next, &w);
+	ABSFCTN(&xx, next, &w);
 	double y = xx + 1e-10;
 	assert(y >= 0.0);
 	evaluate_rectangular(&y, cov, &e);
@@ -2593,7 +2596,7 @@ void do_rectangular(cov_model *cov, double *v){
   RECTANGULAR_PARAMETERS;
   //int err;
   gen_storage s;
-  STORAGE_NULL(&s);  
+  gen_NULL(&s);  
   DO(next, &s);  
   rectangularR(NULL, cov, v);
 }
@@ -2676,5 +2679,286 @@ void range_rectangular(cov_model *cov, range_type *range){
 }
 
 
+
+
+#define MCMC_FCTN 0
+
+#define MCMC_MCMC_N 0
+#define MCMC_MCMC_SIGMA 1
+#define MCMC_NORMED 2
+#define MCMC_MAXDENSITY 3
+#define MCMC_RANDLOC 4
+#define MCMC_GIBBS 5
+#define MCMC_LAST_PARAM MCMC_GIBBS
+
+void kappa_mcmc(int i, cov_model  VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
+  *nc = 1;
+  *nr = (i == MCMC_MCMC_SIGMA) ? 0 : (i <= MCMC_LAST_PARAM) ? 1 : -1;
+}
+
+void mcmcIntegral(cov_model  VARIABLE_IS_NOT_USED *cov) {
+  NotProgrammedYet("mcmcIntegral");
+  /*
+    int n = ;
+  bool normed = P0INT(MCMC_NORMED);
+  double value;
+  PINT(MCMC_NORMED)[0] = false;
+  while (cov->q[MCMC_CURR_N] >= 1.0) {
+    cov->q[MCMC_CURR_SUM] -= 1.0;
+    mcmcR(NULL, unklar welche Funktion, &value);    
+  }
+  */
+}
+
+
+void mcmcD(double *x, cov_model *cov, double *v) {
+  cov_model *next = cov->sub[MCMC_FCTN];
+  //  int mcmc_n =  P0INT(MCMC_MCMC_N);
+  FCTN(x, next, v);
+  *v = fabs(*v);
+  if (P0INT(MCMC_NORMED)) {
+    BUG; // not programmed yet
+  }
+}
+
+void mcmcDlog(double *x, cov_model *cov, double *v) {
+  mcmcD(x, cov, v);
+  *v = log(*v);
+}
+
+void mcmcDinverse(double  VARIABLE_IS_NOT_USED *V, cov_model  VARIABLE_IS_NOT_USED *cov, double  VARIABLE_IS_NOT_USED *left,
+			 double  VARIABLE_IS_NOT_USED *right) {
+  NotProgrammedYet("mcmcDinverse");
+}
+
+
+void mcmcP(double VARIABLE_IS_NOT_USED *x, 
+		  cov_model VARIABLE_IS_NOT_USED *cov, 
+		  double VARIABLE_IS_NOT_USED *v) {
+ NotProgrammedYet("mcmcP");
+}
+
+void mcmcP2sided(double  VARIABLE_IS_NOT_USED *x, double  VARIABLE_IS_NOT_USED *y, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
+  NotProgrammedYet("mcmcP2sided");
+}
+
+
+void mcmcQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov, 
+		  double  VARIABLE_IS_NOT_USED *v) {
+  if (*x < 0 || *x > 1) {*v = RF_NA; return;}
+  NotProgrammedYet("mcmcQ");
+}
+
+void mcmcR(double *x, cov_model *cov, double *v) { 
+  if (x != NULL) {
+    error("put 'flat = false'");
+  }
+
+  cov_model *next = cov->sub[MCMC_FCTN];
+  location_type *loc=Loc(cov);
+  int i, d,
+    vdim = cov->tsdim,
+    n = P0INT(MCMC_MCMC_N);
+  double proposedvalue, 
+    maxdens = P0(MCMC_MAXDENSITY),
+    *sigma = P(MCMC_MCMC_SIGMA),
+    posvalue = cov->Smcmc->posvalue,
+    *delta = cov->Smcmc->deltapos,
+    *pos = cov->Smcmc->pos;
+  assert(delta != NULL && pos != NULL);
+  bool
+    gibbs = (bool) P0INT(MCMC_GIBBS),
+    randloc = (bool) P0INT(MCMC_RANDLOC);
+  ALLOC_NEW(Smcmc, proposed, vdim, proposed);
+  ALLOC_NEW(Smcmc, propdelta, vdim, propdelta);
+
+ 
+  for (i=0; i<n; i++) {
+    for (d = 0; d < vdim; d++) propdelta[d] = delta[d];
+    if (gibbs) {
+      int idx = (int) (UNIFORM_RANDOM * (double) vdim);
+      proposed[idx] = (propdelta[idx] += 
+			rnorm(0.0, sigma[idx % cov->nrow[MCMC_MCMC_SIGMA]]));
+    } else {
+      for (d=0; d < vdim; d++) {
+	//	printf("%d %d %f %f\n", d, d % cov->nrow[MCMC_MCMC_SIGMA], 
+	//	       sigma[d % cov->nrow[MCMC_MCMC_SIGMA]], proposed[d]);	
+	proposed[d] = (propdelta[d] 
+		       += rnorm(0.0, sigma[d % cov->nrow[MCMC_MCMC_SIGMA]]));
+      }
+    }
+    
+    if (loc != NULL && randloc) { // to do
+      if (loc->grid) {  
+	for (d = 0; d < vdim; d++) {   
+	  proposed[d] += loc->xgr[d][XSTART] + loc->xgr[d][XSTEP] *
+	    (double) ((int) UNIFORM_RANDOM * (loc->xgr[d][XLENGTH] - 1.0));
+	}
+      } else {
+	double
+	  *xx = loc->x + vdim * (int) (loc->spatialtotalpoints*UNIFORM_RANDOM);
+	if (loc->Time) {
+	  int vM1 = vdim - 1;
+	  for (d = 0; d < vM1; d++) proposed[d] += xx[d];
+	  proposed[d] += loc->T[XSTART] + loc->T[XSTEP] *
+	    (double) ((int) UNIFORM_RANDOM * (loc->T[XLENGTH] - 1.0));
+	} else {
+	  for (d = 0; d < vdim; d++) proposed[d] += xx[d];
+	}
+      }         
+    }
+
+ 
+   FCTN(proposed, next, &proposedvalue);
+ 
+   if (proposedvalue > maxdens) { proposedvalue = maxdens; }
+    if (proposedvalue > posvalue || proposedvalue > posvalue*UNIFORM_RANDOM) {
+    posvalue = proposedvalue;
+     for (d = 0; d < vdim; d++) {
+       pos[d] = proposed[d];
+       delta[d] = propdelta[d];
+     }
+   }
+ } // for i<n
+
+  cov->Smcmc->posvalue = posvalue;
+  for (d = 0; d < vdim; d++) v[d] = pos[d];
+}
+
+void mcmcR2sided(double VARIABLE_IS_NOT_USED  *x, double  VARIABLE_IS_NOT_USED *y, cov_model  VARIABLE_IS_NOT_USED *cov, double  VARIABLE_IS_NOT_USED *v) { 
+  
+}
+
+int check_mcmc(cov_model *cov) {
+  cov_model *next = cov->sub[MCMC_FCTN];
+  int err, vdim; 
+
+  ROLE_ASSERT(ROLE_DISTR);
+
+  kdefault(cov, MCMC_NORMED, false);
+  if (P0INT(MCMC_NORMED)) NotProgrammedYet("mcmc (normed=TRUE)");
+
+  vdim = cov->tsdim;
+  if (vdim != cov->xdimown) SERR("inconsistent dimensions given.");
+  if ((err = CHECK(next, vdim, vdim, ShapeType, XONLY, 
+		   CARTESIAN_COORD, SCALAR, ROLE_DISTR)) != NOERROR) {
+    return err;
+  }
+   
+  cov->vdim[0] = vdim;
+  cov->vdim[1] = 1;
+  
+  if (PisNULL(MCMC_MCMC_SIGMA)) {
+    location_type  *loc = Loc(next);
+    if (loc != NULL && loc->grid) {
+      PALLOC(MCMC_MCMC_SIGMA, vdim, 1);
+      for (int d=0; d<vdim; d++)
+	P(MCMC_MCMC_SIGMA)[d] = loc->xgr[d][XSTEP] * 0.1;
+    } else {
+      SERR1("'%s' must be given.", KNAME(MCMC_MCMC_SIGMA));
+    }
+  }
+
+  kdefault(cov, MCMC_MCMC_N, GLOBAL.distr.mcmc_n);
+  kdefault(cov, MCMC_MAXDENSITY, 1000);
+  kdefault(cov, MCMC_RANDLOC, false); // scattering among 
+  //                                the locations if on a grid?
+  kdefault(cov, MCMC_GIBBS, false);
+
+  NEW_STORAGE(mcmc);
+ 
+  return NOERROR;
+}
+
+
+
+int init_mcmc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
+  cov_model *next = cov->sub[MCMC_FCTN];
+  location_type *loc=Loc(cov);
+  int  d, err,
+    vdim = cov->tsdim;
+  double 
+    maxdens = P0(MCMC_MAXDENSITY);
+  if ((err = INIT(next, cov->mpp.moments, s)) != NOERROR) return err;
+  ALLOC_NEW(Smcmc, pos, vdim, pos);
+  ALLOC_NEW(Smcmc, delta, vdim, deltapos);
+  
+  //PMI(cov);
+  for (d=0; d<vdim; d++) pos[d] = delta[d] = 0.0;
+  if (loc != NULL && loc->lx > 0) { 
+    if (loc->grid) {
+      assert(loc->xgr[0]!= NULL);
+      for (d=0; d<vdim; d++) pos[d] = loc->xgr[d][XSTART];
+    } else if (loc->Time) {
+      int vM1 = vdim - 1;
+      assert(loc->x != NULL);
+      for (d=0; d<vM1; d++) pos[d] = loc->x[d];
+      pos[d] = loc->T[XSTART];
+    } else {
+      assert(loc->x != NULL);
+      for (d=0; d<vdim; d++) pos[d] = loc->x[d];
+    }
+  }
+
+  FCTN(pos, next, &(cov->Smcmc->posvalue));
+
+  if (cov->Smcmc->posvalue > maxdens) cov->Smcmc->posvalue = maxdens;
+  return NOERROR;
+}
+
+
+void do_mcmc(cov_model *cov, double *v){
+  cov_model *next = cov->sub[MCMC_FCTN];//int err;
+  gen_storage s;
+  gen_NULL(&s);  
+  DO(next, &s);  
+  mcmcR(NULL, cov, v);
+}
+
+
+void range_mcmc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[MCMC_MCMC_N] = 1;
+  range->max[MCMC_MCMC_N] = RF_INF;
+  range->pmin[MCMC_MCMC_N] = 20;
+  range->pmax[MCMC_MCMC_N] = 50;
+  range->openmin[MCMC_MCMC_N] = false;
+  range->openmax[MCMC_MCMC_N] = true;
+  
+  range->min[MCMC_MCMC_SIGMA] = 0;
+  range->max[MCMC_MCMC_SIGMA] = RF_INF;
+  range->pmin[MCMC_MCMC_SIGMA] = 1e-7;
+  range->pmax[MCMC_MCMC_SIGMA] = 1e7;
+  range->openmin[MCMC_MCMC_SIGMA] = true;
+  range->openmax[MCMC_MCMC_SIGMA] = true;
+  
+  range->min[MCMC_NORMED] = 0;
+  range->max[MCMC_NORMED] = 1;
+  range->pmin[MCMC_NORMED] = 0;
+  range->pmax[MCMC_NORMED] = 1;
+  range->openmin[MCMC_NORMED] = false;
+  range->openmax[MCMC_NORMED] = false;
+
+  range->min[MCMC_MAXDENSITY] = 0;
+  range->max[MCMC_MAXDENSITY] = RF_INF;
+  range->pmin[MCMC_MAXDENSITY] = 1e-7;
+  range->pmax[MCMC_MAXDENSITY] = 1e7;
+  range->openmin[MCMC_MAXDENSITY] = true;
+  range->openmax[MCMC_MAXDENSITY] = true;
+
+  range->min[MCMC_RANDLOC] = 0;
+  range->max[MCMC_RANDLOC] = 1;
+  range->pmin[MCMC_RANDLOC] = 0;
+  range->pmax[MCMC_RANDLOC] = 1;
+  range->openmin[MCMC_RANDLOC] = false;
+  range->openmax[MCMC_RANDLOC] = false;
+
+  range->min[MCMC_GIBBS] = 0;
+  range->max[MCMC_GIBBS] = 1;
+  range->pmin[MCMC_GIBBS] = 0;
+  range->pmax[MCMC_GIBBS] = 1;
+  range->openmin[MCMC_GIBBS] = false;
+  range->openmax[MCMC_GIBBS] = false;
+
+ }
 
 

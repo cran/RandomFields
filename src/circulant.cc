@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include "RF.h"
-#include "randomshape.h"
+#include "shape_processes.h"
   
 #include <R_ext/Linpack.h>
 #include <R_ext/Utils.h>     
@@ -76,7 +76,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
    }
    FFT->nseg = nseg;
-   //  nseg = length(z); see loop above
+   //  nseg = leng th(z); see loop above
   }
   inv = (inverse) ? 2 : -2;
   n = 1;
@@ -135,7 +135,7 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   long int i,k,twoi,twoi_plus1, mtot, hilfsm[MAXCEDIM],
       *idx = NULL;
   bool cur_crit;
-  CE_storage *s = NULL;
+  ce_storage *s = NULL;
   cov_model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   double
@@ -145,7 +145,7 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
     *caniso = loc->caniso,
     *mmin = P(CE_MMIN);
   int dim = cov->tsdim,
-    vdim   = cov->vdim2[0],
+    vdim   = cov->vdim[0],
     cani_ncol = loc->cani_ncol,
     cani_nrow = loc->cani_nrow,
     lenmmin = cov->nrow[CE_MMIN],
@@ -160,20 +160,20 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
     dependent = (bool) P0INT(CE_DEPENDENT);
  
   ROLE_ASSERT_GAUSS;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   cov->method = CircEmbed;
   
   if (loc->distances) return ERRORFAILED;
 
-  NEW_STORAGE(SCE, CE, CE_storage);
-  s = cov->SCE;
+  NEW_STORAGE(ce);
+  s = cov->Sce;
 
   if (dim > MAXCEDIM) {
     err=ERRORMAXDIMMETH ; goto ErrorHandling;
   } 
   for (d=0; d<dim; d++) {
-    s->nn[d]=loc->length[d]; 
+    s->nn[d]=(int) loc->xgr[d][XLENGTH]; 
     steps[d]=loc->xgr[d][XSTEP];
   }
   s->vdim = vdim;
@@ -218,8 +218,8 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   //  }
 
   bool multivariate;
-  multivariate = cov->vdim2[0] > 1;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  multivariate = cov->vdim[0] > 1;
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   // multivariate = !true; // checken !!
 
@@ -261,7 +261,7 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
      so only the first two rows of (3.9) (without the taking the
      modulus of h in the first row)
-     The following variable `index' corresponds to h(l) in the following
+     The following variable 'index' corresponds to h(l) in the following
 way: index[l]=h[l]        if 0<=h[l]<=mm[l]/2
 index[l]=h[l]-mm[l]   if mm[l]/2+1<=h[l]<=mm[l]-1     
 Then h[l]=(index[l]+mm[l]) % mm[l] !!
@@ -310,8 +310,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
     if (PL>=PL_SUBIMPORTANT) {
       INDENT;
-      for (i=0;i<dim;i++) { PRINTF("mm[%d]=%d, ",i, mm[i]); }
-      PRINTF("mtot=%d\n", mtot  * vdimSQ);
+      for (i=0;i<dim;i++) { PRINTF("mm[%ld]=%d, ", i, mm[i]); }
+      PRINTF("mtot=%ld\n", mtot  * vdimSQ);
     }
 
     if ( (maxmem != NA_INTEGER && realmtot * vdimSQ > maxmem))
@@ -369,7 +369,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  if (ISNAN(c[l][dummy]) || ISNAN(c[l][dummy + 1])) {
 	    //
 	    //PMI(cov);
-	    // PRINTF("i=%d %d tri=%d %d vdim2=$d ani=%d %f %f c=%f %f \n",
+	    // PRINTF("i=%d %d tri=%d %d vdim=$d ani=%d %f %f c=%f %f \n",
 	    //	   i, l, trials, dummy, vdimSQ, isaniso,
 	    //	   hx[0], hx[1], c[l][dummy], c[l][dummy]);
 	    error("fourier transform returns NAs");
@@ -608,10 +608,10 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    INDENT;
 	    if (Lambda[l][i] < 0.0) {PRINTF("There are complex eigenvalues\n");}
 	    else if (vdim==1) {	      
-	      PRINTF("non-positive eigenvalue: Lambda[%d]=%e.\n",
+	      PRINTF("non-positive eigenvalue: Lambda[%ld]=%e.\n",
 		     i, Lambda[l][i]);
 	    } else {
-	      PRINTF("non-pos. eigenvalue in dim %d: Lambda[%d][%d]=%e.\n",
+	      PRINTF("non-pos. eigenvalue in dim %d: Lambda[%ld][%d]=%e.\n",
 		     l, i, l, Lambda[l][i]);
 	    }
 	  }
@@ -871,7 +871,7 @@ int check_ce(cov_model *cov) {
    
   if (cov->key != NULL) {
     if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		     XONLY, CARTESIAN_COORD, cov->vdim2, ROLE_GAUSS)) 
+		     XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) 
 	 != NOERROR) {
        //PMI(cov->key); XERR(err);
        //printf("specific ok\n");
@@ -957,12 +957,12 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CE_TRIALS] = false;
   range->openmax[CE_TRIALS] = true;
   
-  range->min[CE_USEPRIMES] = 0.0; 
-  range->max[CE_USEPRIMES] = RF_INF;
-  range->pmin[CE_USEPRIMES] = 0.5;
-  range->pmax[CE_USEPRIMES] = 2.0;
-  range->openmin[CE_USEPRIMES] = true;
-  range->openmax[CE_USEPRIMES] = true;
+  range->min[CE_USEPRIMES] = 0; 
+  range->max[CE_USEPRIMES] = 1;
+  range->pmin[CE_USEPRIMES] = 0;
+  range->pmax[CE_USEPRIMES] = 1;
+  range->openmin[CE_USEPRIMES] = false;
+  range->openmax[CE_USEPRIMES] = false;
   
   range->min[CE_DEPENDENT] = 0; 
   range->max[CE_DEPENDENT] = 1;
@@ -1005,7 +1005,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   bool vfree[MAXCEDIM+1], noexception, // MULT varname free->vfree
     loggauss = GLOBAL.gauss.loggauss;
   long mtot, start[MAXCEDIM], end[MAXCEDIM];
-  CE_storage *s = cov->SCE;
+  ce_storage *s = cov->Sce;
   location_type *loc = Loc(cov);
   
   complex *gauss1 = s->gauss1, *gauss2 = s->gauss2;
@@ -1248,7 +1248,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   }
 
   if (loggauss) {
-    long vdimtot = loc->totalpoints * cov->vdim2[0];
+    long vdimtot = loc->totalpoints * cov->vdim[0];
     for (L=0; L<vdimtot; L++) res[L] = exp(res[L]);
   }
 
@@ -1477,7 +1477,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
 
   if (loc->distances) return ERRORFAILED;
 
-  NEW_STORAGE(SlocalCE, LOCAL, localCE_storage);
+  NEW_STORAGE(localCE);
   s = cov->SlocalCE;
   
   if (loc->caniso != NULL) {
@@ -1511,10 +1511,10 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
  
   //  APMI(key);
  
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   err = CHECK(key, cov->tsdim, cov->xdimprev,
 	      GaussMethodType,
-	      cov->domown, cov->isoown, cov->vdim2[0], ROLE_GAUSS);
+	      cov->domown, cov->isoown, cov->vdim[0], ROLE_GAUSS);
   if ((err < MSGLOCAL_OK && err != NOERROR) 
       || err >=MSGLOCAL_ENDOFLIST // 30.5.13 : neu
       ) {
@@ -1551,7 +1551,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
       if (old_mmin[d]==0.0) {
 	
 	mmin[d] = - q[LOCAL_R] / 
-	  (grid_ext[d] * (double) (loc->length[d] - 1) * loc->xgr[d][XSTEP]);
+	  (grid_ext[d] * (loc->xgr[d][XLENGTH] - 1.0) * loc->xgr[d][XSTEP]);
 	if (mmin[d] > -1.0) mmin[d] = -1.0;
 	
       }
@@ -1721,7 +1721,7 @@ void do_circ_embed_intr(cov_model *cov, gen_storage *S) {
     }
     r++;
     k=0;
-    while( (k<row) && (++index[k]>=loc->length[k])) {
+    while( (k<row) && (++index[k]>=loc->xgr[k][XLENGTH])) {
       index[k]=0;
       x[k] = 0.0;
       k++;
@@ -1744,7 +1744,6 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     return ERRORPREFNONE;
   }
 
-
   //PMI(cov);
   if (cov->role != ROLE_GAUSS) BUG;
 
@@ -1752,7 +1751,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
   // assert(!Getgrid(cov));
  
   if (!Getgrid(cov)) {    
-    ASSERT_NEWMODEL_NOT_NULL;
+    ASSERT_NEWMODEL_NULL;
     location_type *loc = Loc(cov);  
     double max[MAXCEDIM], min[MAXCEDIM],  centre[MAXCEDIM], 
       x[3 * MAXCEDIM],
@@ -1760,7 +1759,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     int k, d, len, err,
       maxgridsize = P0INT(CE_APPROXMAXGRID),
       //   totpts = loc->totalpoints,
-    spatialdim = loc->timespacedim;
+    spatialdim = loc->spatialdim;
     // vdim   = cov->vdim,
     // vdimSQ = vdim * vdim
     
@@ -1771,17 +1770,15 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
       SERR("the dimensions of the coordinates and those of the process differ");
     
     GetDiameter(loc, min, max, centre);
-    
+  
     if (loc->Time) {
       if (loc->T[XLENGTH] > maxgridsize) SERR("temporal grid too long");
-      spatialdim--;
-      d = spatialdim;
       maxgridsize /= loc->T[XLENGTH];
     }
     //   printf("app %f %d\n", approx_gridstep, maxgridsize); assert(false);
 
-
     if (ISNA(approx_gridstep)) {
+      // hier assert(false);
       double size = loc->spatialtotalpoints * 3;
       if (size > maxgridsize) size = maxgridsize;
       for (k=d=0; d<spatialdim; d++, k+=3) {
@@ -1790,7 +1787,8 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 	x[k+XSTEP] = (max[d] - min[d]) / (x[k+XLENGTH] - 1.0);
       }
     } else {
-      len = 1;
+      //      assert(false);
+     len = 1;
       for (k=d=0; d<spatialdim; d++, k+=3) {
 	x[k+XSTART] = min[d];
 	len *= 
@@ -1799,7 +1797,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
       }
       if (len > maxgridsize) SERR("userdefined, approximate grid is too large");
     }
-    
+  
     if (cov->key!=NULL) COV_DELETE(&(cov->key));
     err = covcpy(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
 		 3, loc->Time, true, false);
@@ -1807,11 +1805,10 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     cov->key->calling = cov;
 
     if ((err = CHECK(cov, cov->tsdim, cov->xdimprev, cov->typus,
-		     cov->domprev, cov->isoprev, cov->vdim2[0], cov->role)  
+		     cov->domprev, cov->isoprev, cov->vdim[0], cov->role)  
 	 ) != NOERROR) return err;
  
   }
-
 
   if (cov->nr == CIRCEMBED) return NOERROR;
   else return struct_ce_local(Getgrid(cov) ? cov : cov->key, newmodel);
@@ -1822,6 +1819,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 
 
 int init_ce_approx(cov_model *cov, gen_storage *S) {  
+
   if (Getgrid(cov)) {
     return cov->nr==CIRCEMBED ? init_circ_embed(cov, S)
       : init_circ_embed_local(cov, S); 
@@ -1831,49 +1829,38 @@ int init_ce_approx(cov_model *cov, gen_storage *S) {
 
   location_type *loc = Loc(cov),
     *keyloc = Loc(cov->key);  
-  assert(keyloc != NULL);
-  double //max[MAXCEDIM],
-    //min[MAXCEDIM],
-    cumgridlen[MAXCEDIM];
-  long i,
-    totpts = loc->totalpoints;
+  assert(cov->key != NULL && keyloc != NULL);
+ long i, cumgridlen[MAXCEDIM], 
+   totspatialpts = loc->spatialtotalpoints;
   int d, err,
     // maxgridsize = P0INT(CE_APPROXMAXGRID),
-    dim = loc->timespacedim;
-  
-  if (cov->xdimown != loc->timespacedim)
+    spatialdim = loc->spatialdim,
+    tsdim = loc->timespacedim;
+
+  if (cov->xdimown != tsdim)
     SERR("dimensions of the coordinates and those of the process differ");
   cov->method = cov->nr==CIRCEMBED ? CircEmbed 
     : cov->nr== CE_CUTOFFPROC_INTERN ? CircEmbedCutoff : CircEmbedIntrinsic;
 
   if (loc->distances) return ERRORFAILED;
-  NEW_STORAGE(SapproxCE, CE_APPROX, ce_approx_storage);
-  ce_approx_storage *s = cov->SapproxCE;
-
-  if ((s->idx = (int*) MALLOC(totpts * sizeof(int)))==NULL)
-    return ERRORMEMORYALLOCATION;
-
+  NEW_STORAGE(approxCE);
+  ALLOC_NEWINT(SapproxCE, idx, totspatialpts, idx);
   
   cumgridlen[0] = 1;
-  for (d=1; d<dim; d++) {
-    cumgridlen[d] =  cumgridlen[d-1] * keyloc->length[d-1];
+  for (d=1; d<tsdim; d++) {
+    cumgridlen[d] =  cumgridlen[d-1] * (int) keyloc->xgr[d-1][XLENGTH];    
   }
 
   double *xx = loc->x;
-  for (i=0; i<totpts; i++) {
-    int dummy;
-    for (dummy = d = 0; d<dim; d++, xx++) {
-      //  printf("i=%d %d d=%d %f\n", i, dummy, d, *xx);
-      //  printf("%f\n", keyloc->xgr[d][XSTART]);
-      //  printf("%f\n", keyloc->xgr[d][XSTEP]);
-    
-      dummy += ((int) ((*xx - keyloc->xgr[d][XSTART]) / keyloc->xgr[d][XSTEP]))
-	* cumgridlen[d];      
-      // printf("i=%d %d d=%d\n", i, dummy,  d);
+
+  for (i=0; i<totspatialpts; i++) {
+    int dummy;    
+    for (dummy = d = 0; d<spatialdim; d++, xx++) {
+      dummy += cumgridlen[d] *
+	(int) round((*xx - keyloc->xgr[d][XSTART]) / keyloc->xgr[d][XSTEP]);
     }    
-    //
-    // printf("i=%d idx=%d\n", i, dummy);
-    s->idx[i] = dummy;
+    idx[i] = dummy;
+    assert(dummy >= 0);
   }
  
   if ((err = cov->nr==CIRCEMBED ? init_circ_embed(cov->key, S)
@@ -1898,13 +1885,10 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
 
   cov_model *key=cov->key;
   location_type *loc = Loc(cov);
-  ce_approx_storage *s = cov->SapproxCE;
+  approxCE_storage *s = cov->SapproxCE;
   //cov_model *cov = meth->cov;
-  long i,
-    totpts = loc->spatialtotalpoints,
-    gridpoints = loc->totalpoints;
- int t, j, 
-      instances = loc->T[XLENGTH],
+  long i;
+  int
     *idx = s->idx;
   double 
     *res = cov->rf,
@@ -1914,23 +1898,24 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
 
   DO(key, S);
   if (key->ownloc->Time) { // time separately given   
+    long j, t,
+      instances = (long) loc->T[XLENGTH],
+      totspatialpts = loc->spatialtotalpoints,
+      gridpoints = Loc(key)->spatialtotalpoints;
+    
     for (j=t=0; t<instances; t++, internalres += gridpoints) {
-      for (i=0; i<totpts; i++) {
+      for (i=0; i<totspatialpts; i++) {
 	res[j++] = internalres[idx[i]];
       }
     }
   } else { // no time separately given
-
-    //      APMI(cov);
-    
+    long totpts = loc->totalpoints;
     for (i=0; i<totpts; i++) {
       //    printf("i=%d %f %d\n", i, loc->x[i], idx[i]);
       // print(" %d %d %f %f", i, idx[i], loc->x[i*2], loc->x[i*2 +1]);
       // print("    %f\n", internalres[idx[i]]);
 
       res[i] = internalres[idx[i]];
-
-      // assert(i < 70);
     }
   }
 

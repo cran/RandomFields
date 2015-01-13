@@ -23,7 +23,8 @@
     Fields}\cr
   \bold{3. \code{circulant}: Options for circulant embedding methods
     \command{\link{RPcirculant}}}\cr
-  \bold{4. \code{coords}: Options for coordinates and units}\cr
+  \bold{4. \code{coords}: Options for coordinates and units, see
+    \link{coordinate systems}}\cr
   \bold{5. \code{direct}: Options for simulating by simple matrix decomposition}\cr
   \bold{6. \code{distr}: Options for distributions, in particular \command{\link{RRrectangular}}}\cr
   \bold{7. \code{empvario}: Options for calculating the empirical variogram}\cr
@@ -58,225 +59,265 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{1. General options}
 \describe{
- % only works for RFsimulate, not for RFsimulate
- \item{\code{allowdistanceZero}}{boolean. Only used in
- \command{\link{RFinterpolate}} and in \command{\link{RFfit}}.
- If true, then
- multiple observations or identical locations
- are allowed within a single data set.
- In this case, the coordinates are slightly scattered, so that
- the points have some tiny distances.
-
- Default: \code{FALSE}. 
- }
-
+  % only works for RFsimulate, not for RFsimulate
+  \item{\code{allowdistanceZero}}{boolean. Only used in
+    \command{\link{RFinterpolate}} and in \command{\link{RFfit}}.
+    If true, then
+    multiple observations or identical locations
+    are allowed within a single data set.
+    In this case, the coordinates are slightly scattered, so that
+    the points have some tiny distances.
+    
+    Default: \code{FALSE}. 
+  }
   
- \item{\code{cPrintlevel}}{
-   \code{cPrintlevel} is automatically set to \code{printlevel}
-   when \code{printlevel}
-   is changed. %, namely as \code{min(printlevel, 5)}. 
- 
- 0 : no message\cr
- 1 : important (error) messages and warnings\cr
- 2 : less important messages\cr
- 3 : recursive call tracing\cr
- 4 : details of recursive call tracing\cr
- 5 : function flow information of large functions\cr
- 6 : errors that are internally treated\cr
- 7 : details on building up the covariance structure\cr
- 8 : details on taking the square root of the covariance matrix\cr
- 9 : details on intermediate calculations\cr
- 10 : further details on intermediate calculations\cr
+  
+  \item{\code{cPrintlevel}}{
+    \code{cPrintlevel} is automatically set to \code{printlevel}
+    when \code{printlevel}
+    is changed. %, namely as \code{min(printlevel, 5)}. 
+    
+    0 : no message\cr
+    1 : important (error) messages and warnings\cr
+    2 : less important messages\cr
+    3 : recursive call tracing\cr
+    4 : details of recursive call tracing\cr
+    5 : function flow information of large functions\cr
+    6 : errors that are internally treated\cr
+    7 : details on building up the covariance structure\cr
+    8 : details on taking the square root of the covariance matrix\cr
+    9 : details on intermediate calculations\cr
+    10 : further details on intermediate calculations\cr
+    
+    Note that \code{printlevel} works
+    on the R level whereas \code{cPrintlevel} works on the C level.
+    
+    Default: 1 \cr % [also  do].\cr
+  }
+  
+  \item{\code{detailed_output}}{logical.
+    if \code{TRUE} some function, e.g. \code{\link{RFcrossvalidate}}
+    will return additional information.
+  }
+  
+  \item{\code{every}}{integer.
+    if greater than zero, then every \code{every}th iteration is
+    printed if simulated by TBM or random coin method. The value zero
+    means that nothing is printed.
+    
+    Default: \code{0} % [do].
+  }
+  
+  
+  \item{\code{exactness}}{logical or NA. Currently only used when simulating
+    Gaussian random fields.
+    \itemize{
+      \item \code{TRUE}: \command{\link{RPcoins}},
+      \command{\link{RPhyperplane}}, \command{\link{RPsequential}},
+      \command{\link{RPspectral}} and \command{\link{RPtbm}} and
+      \emph{approximative} circulant embedding  are excluded.
+      If the circulant embedding method is considered as badly
+      behaved, then the matrix decomposition methods are preferred.
+      
+      \item \code{FALSE}: all the methods are allowed.
+      If the circulant embedding method is
+      considered as badly behaved or the number of points to be
+      simulated is large, the turning bands methods are
+      rather preferred.
+      
+      \item \code{NA}: Similar to \code{FALSE}, but
+      some inexact algorithms get less preference.
+    }
+    
+    Default: \code{NA} .
+  }
+  
+  \item{\code{expected_number_simu}}{positive integer which is usally set
+    internally as the value of the argument \code{n} in
+    \command{\link{RFsimulate}}. The argument \code{expected_number_simu}
+    should be set only by an advanced users and only if 
+    \command{\link{RFsimulate}} will be called with argument \code{n} alone.
+  }
+  
+  
+  \item{\code{gridtolerance}}{
+    used in \command{\link{RFsimulate}} to see if the coordinates build a
+    grid for x, y, z, T-values. This argument is also used
+    in case of conditional
+    simulation where the data locations might ly on
+    a grid.
+    
+    Default: \code{1e-6}
+  }
 
- Note that \code{printlevel} works
- on the R level whereas \code{cPrintlevel} works on the C level.
- 
- Default: 1 \cr % [also  do].\cr
- }
-
- \item{\code{detailed_output}}{logical.
-   if \code{TRUE} some function, e.g. \code{\link{RFcrossvalidate}}
-   will return additional information.
- }
-
- \item{\code{every}}{integer.
-   if greater than zero, then every \code{every}th iteration is
-   printed if simulated by TBM or random coin method. The value zero
-   means that nothing is printed.
- 
-   Default: \code{0} % [do].
- }
-
- 
- \item{\code{exactness}}{logical or NA.
- \itemize{
-	\item \code{TRUE}: add.MPP, hyperplanes and
-	all turning bands methods are excluded.
-	If the circulant embedding method is considered as badly
-	behaved, then the matrix decomposition methods are preferred.
-	\item \code{FALSE}: if the circulant embedding method is
-	considered as badly behaved or the number of points to be
-	simulated is large, the turning bands methods are
-	rather preferred.
-	\item \code{NA}: approximative non-exact methods are excluded,
-	i.e. TBM2 if the Abel transform of the covariance function
-	cannot be given explicitely.
- }
- 
- Default: \code{NA} .
- }
-
- \item{\code{expected_number_simu}}{positive integer which is usally set
-   internally as the value of the argument \code{n} in
-   \command{\link{RFsimulate}}. The argument \code{expected_number_simu}
-   should be set only by an advanced users and only if 
-   \command{\link{RFsimulate}} will be called with argument \code{n} alone.
- }
-
- 
- \item{\code{gridtolerance}}{
- used in \command{\link{RFsimulate}} to see if the coordinates build a
- grid for x, y, z, T-values. This argument is also used
- in case of conditional
- simulation where the data locations might ly on
- a grid.
- 
- Default: \code{1e-6}
- }
-
- \item{asList}{logical. Lists of arguments are treated slightly
- different from non-lists. If \code{asList=FALSE} they are treated the
- same way as non-lists. This options being set to \code{FALSE} after
- calling \command{RFoptions} it should be set as first element of a list.
-
- Default: \code{TRUE}
- }
-
- \item{\code{matrix_inversion}}{
-   vector of integers gives the methods (and their sequence)
-   to inverse a matrix: 
-
-     0 : Choleskey decomposition \cr
-     1 : QR decomposition\cr
-     2 : SVD\cr
+  \item{asList}{logical. Lists of arguments are treated slightly
+    different from non-lists. If \code{asList=FALSE} they are treated the
+    same way as non-lists. This options being set to \code{FALSE} after
+    calling \command{RFoptions} it should be set as first element of a list.
+    
+    Default: \code{TRUE}
+  }
+  
+  \item{\code{matrix_inversion}}{
+    vector of integers gives the methods (and their sequence)
+    to inverse a matrix: 
+    
+    0 : Choleskey decomposition \cr
+    1 : QR decomposition\cr
+    2 : SVD\cr
+    
+    This option is currently used only in  \command{\link{RFinterpolate}}.% to
+    % do  
    
-   This option is currently used only in  \command{\link{RFinterpolate}}.% to
-   % do  
+    Default: \code{c(0, 2)}.
+  }
+  
+  \item{\code{matrix_tolerance}}{
+    In case of SVD, it is checked whether the eigenvalue is less than
+    \code{matrix_tolerance}. Then the eigenvalue is not inverted, but
+    the inverse is set to zero.
+
+    Default: 1e-6.
+  }
+  
+  
+  \item{\code{modus_operandi}}{character. One of the values
+    \code{"careless"}, \code{"sloppy"}, \code{"easygoing"},
+    \code{"normal"}, \code{"precise"}, \code{"pedantic"},
+    \code{"neurotic"} .
+    \bold{This argument is in an experimental stage and its definition
+      and effects will change very likely in near future.}%to do
+    This argument sets a lot of argument at once related to estimation
+    and simulation. \code{"careless"} prefers rather fast algorithms,
+    but the results
+    might be very rough approximations. By way of contrast,
+    \code{"neurotic"} will try very
+    hard to return exact result at the cost of hugh computing times.
+    
+    Default: \code{"normal"}
+  }
+  
+  
+  \item{\code{na_rm_lines}}{
+    logical. If \code{TRUE} then a line of the data that contains a
+    \code{NA} value is deleted. Otherwise it is tried to deal with the
+    \code{NA} value at higher costs of computing time.
+    
+    Default: \code{FALSE}.
+  }
+  
+  \item{\code{output}}{character.
+    one of the values \code{"sp"} (if and only if
+    \code{spConform=TRUE}), 
+    \code{"RandomFields"} (if and only if \code{spConform=FALSE}),
+    \code{"geoR"}.
+
+    The output mode \code{geoR} currently adds some attributes such as
+    the call of the function.
+
+    NOTE: \code{output} is in an experimental stage, whose effects might
+    change in future. Currently, \code{output} changes the values of
+    \code{reportcoord}, \code{returncall} and \code{spConform}.
+  }
+  
+  \item{\code{pch}}{character.
+    \command{\link{RFfit}}: shown before evaluating any method;
+    if \code{pch!=""} then one or two
+    additional steps in the MLE methods are
+    marked by \dQuote{+} and \dQuote{#}.
+    
+    Simulation: 
+    
+    The character is printed after each
+    performed simulation if more than one simulation is performed at
+    once. If \code{pch='!'} then an absolute
+    counter is shown instead of the character.
+    If \code{pch='\%'} then a
+    counter of percentages is shown instead of the character.
+    Note that also \sQuote{\eqn{\mbox{\textasciicircum}}{^}H}s are printed in
+    the last two cases, 
+    which may have undesirable interactions with some few other R
+    functions, e.g. \command{\link[utils]{Sweave}}.
+    
+    Default: \code{'*'}. % [do]. 
+  }
+ 
+ 
+ 
+
+  \item{\code{practicalrange}}{logical or integer.
+    If not \code{FALSE} the range of primitive
+    covariance functions is
+    adjusted so that cov(1) is zero for models with finite range.
+    (Operators are too complex to be adjusted; for anisotropic
+    covariance the practical range is not well defined.)
+    
+    The value of cov(1) is about 0.05 (for \code{scale=1})
+    for models without range. See \command{\link{RMmodel}} or type
+    \cr
+    \code{\link{RFgetModelNames}(type="positive definite",
+      domain="single variable", isotropy="isotropic", operator=FALSE, vdim=1)}
+    \cr
+    for the list of primitive models.
+    \itemize{
+      \item \code{FALSE} : the practical range ajustment is not used.
+      \item \code{TRUE} : \code{practicalrange} is applicable only if
+      the value is known exactly, or, at least, can be approximated by
+      a closed formula.
+      \item \code{2} : if the practical range is not known exactly it
+      is approximated numerically.	
+    }
+    
+    Default: \code{FALSE} .
+  }
+  
+  \item{\code{printlevel}}{If \code{printlevel}\eqn{\le0}{<=0}
+    there is not any output on the screen. The
+    higher the number the more tracing information is given. 
+    
+    0 : no message\cr
+    1 : important (error) messages and warnings\cr
+    2 : less important messages\cr
+    3 : recursive call tracing\cr
+    4 : details of recursive call tracing\cr
+    5 : function flow information of large functions\cr
+    6 : errors that are internally treated\cr
+    7 : details on intermediate calculations\cr
+    8 : further details on intermediate calculations\cr
+    
+    Default: 1 %[also do].\cr
+  }
+
+  \item{reportcoord}{character.
+    Current values are \code{"always"}, \code{"important"},
+    \code{"warn"}, \code{"never"},
+
+    Both \code{"warn"} and \code{"important"} have any effect only
+    if the coordinate system is changed internally. In this case
+    \code{"warn"} yields a displayed warning message whereas
+    \code{"important"} adds an attribute to the result as in the
+    case \code{"always"}.
+    
+    If \code{"always"} or \code{"important"}
+    the reports are added as attribute to the results.
+    Note that in this case the class of the result may change
+    (e.g. from \code{"numeric"} to \code{"atomic"}.
+
+    Default: \code{"warn"}
+  }
+
+  \item{returncall}{logical. If \code{TRUE}
+    then the call is returned as an attribute
+
+    Default: \code{TRUE}
+  }
    
-   Default: \code{c(0, 2)}.
- }
- 
- \item{\code{matrix_tolerance}}{
-   In case of SVD, it is checked whether the eigenvalue is less than
-   \code{matrix_tolerance}. Then the eigenvalue is not inverted, but
-   the inverse is set to zero.
-
-   Default: 1e-6.
- }
- 
-
- \item{\code{modus_operandi}}{character. One of the values
-   \code{"careless"}, \code{"sloppy"}, \code{"easygoing"},
-   \code{"normal"}, \code{"precise"}, \code{"pedantic"},
-   \code{"neurotic"} .
-   \bold{This argument is in an experimental stage and its definition
-     and effects will change very likely in near future.}%to do
-   This argument sets a lot of argument at once related to estimation
-   and simulation. \code{"careless"} prefers rather fast algorithms,
-   but the results
-   might be very rough approximations. By way of contrast,
-   \code{"neurotic"} will try very
-   hard to return exact result at the cost of hugh computing times.
-
-   Default: \code{"normal"}
- }
-
-
- \item{\code{na_rm_lines}}{
-   logical. If \code{TRUE} then a line of the data that contains a
-   \code{NA} value is deleted. Otherwise it is tried to deal with the
-   \code{NA} value at higher costs of computing time.
-
-   Default: \code{FALSE}.
- }
-
- 
- 
- \item{\code{pch}}{character.
- \command{\link{RFfit}}: shown before evaluating any method;
- if \code{pch!=""} then one or two
- additional steps in the MLE methods are
- marked by \dQuote{+} and \dQuote{#}.
-
- Simulation: 
-
- The character is printed after each
- performed simulation if more than one simulation is performed at
- once. If \code{pch='!'} then an absolute
- counter is shown instead of the character.
- If \code{pch='\%'} then a
- counter of percentages is shown instead of the character.
- Note that also \sQuote{\eqn{\mbox{\textasciicircum}}{^}H}s are printed in
- the last two cases, 
- which may have undesirable interactions with some few other R
- functions, e.g. \command{\link[utils]{Sweave}}.
-
- Default: \code{'*'}. % [do]. 
- }
- 
- 
- 
-
- \item{\code{practicalrange}}{logical or integer.
- If not \code{FALSE} the range of primitive
- covariance functions is
- adjusted so that cov(1) is zero for models with finite range.
- (Operators are too complex to be adjusted; for anisotropic
- covariance the practical range is not well defined.)
- 
- The value of cov(1) is about 0.05 (for \code{scale=1})
- for models without range. See \command{\link{RMmodel}} or type
- \cr
-\code{\link{RFgetModelNames}(type="positive definite",domain="single variable",
-}\cr
-\code{isotropy="isotropic", operator=FALSE, vdim=1)}
- \cr
- for the list of primitive models.
- \itemize{
-   \item \code{FALSE} : the practical range ajustment is not used.
-   \item \code{TRUE} : \code{practicalrange} is applicable only if
-   the value is known exactly, or, at least, can be approximated by
-   a closed formula.
-   \item \code{2} : if the practical range is not known exactly it
-   is approximated numerically.	
- }
- 
- Default: \code{FALSE} .
- }
- 
- \item{\code{printlevel}}{If \code{printlevel}\eqn{\le0}{<=0}
- there is not any output on the screen. The
- higher the number the more tracing information is given. 
- 
- 0 : no message\cr
- 1 : important (error) messages and warnings\cr
- 2 : less important messages\cr
- 3 : recursive call tracing\cr
- 4 : details of recursive call tracing\cr
- 5 : function flow information of large functions\cr
- 6 : errors that are internally treated\cr
- 7 : details on intermediate calculations\cr
- 8 : further details on intermediate calculations\cr
- 
- Default: 1 %[also do].\cr
- }
-
- \item{seed}{integer. If \code{NULL} or \code{NA}
-   \command{\link{set.seed}} is \bold{not} called.
-   Otherwise, \code{\link[base]{set.seed}(seed)} is set
+  \item{seed}{integer. If \code{NULL} or \code{NA}
+    \command{\link{set.seed}} is \bold{not} called.
+    Otherwise, \code{\link[base]{set.seed}(seed)} is set
     before simulations are performed, e.g. by
     \command{\link{RFsimulate}} or \command{\link{RFdistr}}.
-  
+    
     If the argument is set locally, i.e., within a function,
     it has the usual local effect. If it is set globally, i.e. by
     \command{RFoptions} the \code{seed} is fixed
@@ -285,94 +326,97 @@
     If the number of simulations \code{n} is greater than one
     and if \code{RFoptions(seed=seed)} is set, the \eqn{i}th
     simulation is started with the seed \sQuote{\code{seed}\eqn{+i-1}}.
- %   The function \code{set.seed} should not be used in case \code{n}
-%    is greater than 1.
-%
-%Vgle!   
-%set.seed(5)
-%RFsimulate(RPschlather(RMmatern(nu=2), xi=1, mu=1, s=1), x, grid=F, n=5)@data
-%set.seed(5)
-%RFsimulate(RPschlather(RMmatern(nu=2.01), xi=1, mu=1, s=1), x,grid=F,n=5)@data
-%RFoptions(cPr=3, seed=5)
-%RFsimulate(RPschlather(RMmatern(nu=2), xi=1, mu=1, s=1), x, grid=F, n=5)@data
-%RFsimulate(RPschlather(RMmatern(nu=2.01), xi=1, mu=1, s=1), x, grid=F,n=5)@data
+    %   The function \code{set.seed} should not be used in case \code{n}
+    %    is greater than 1.
+    %
+    %Vgle!   
+    %set.seed(5)
+    %RFsimulate(RPschlather(RMmatern(nu=2), xi=1, mu=1, s=1), x, grid=F, n=5)@data
+    %set.seed(5)
+    %RFsimulate(RPschlather(RMmatern(nu=2.01), xi=1, mu=1, s=1), x,grid=F,n=5)@data
+    %RFoptions(cPr=3, seed=5)
+    %RFsimulate(RPschlather(RMmatern(nu=2), xi=1, mu=1, s=1), x, grid=F, n=5)@data
+    %RFsimulate(RPschlather(RMmatern(nu=2.01), xi=1, mu=1, s=1), x, grid=F,n=5)@data
 
-
+    
     Note also that \command{\link{RFratiotest}} has its own argument
     \code{seed} with a slightly different meaning.
   }
-
-
- \item{\code{spConform}}{logical.
- \code{spConform=TRUE} might be used by
- a standard user as this allows the comfortable use of \command{plot},
- for instance, while \code{spConform=FALSE} is \bold{much} faster and
- and consumes \bold{much less memory}, hence might
- be used by programmers or advanced users.
-
- Details: if \code{spConform=TRUE} then \command{\link{RFsimulate}} and
- many other functions 
- return an \code{sp}-object (which is an S4 object). Otherwise, matrices
- or lists are 
- returned as defined in RandomFields 2.0, see the manuals for the
- specific functions. Frequently, the latter have now a class attribute
- to make the output nicer.
-
- Note: for large data sets (to be generated),
- \code{spConform=TRUE} should \bold{not} be used.
-
- Default: \code{TRUE} %[do].
- }
-
-
- \item{\code{skipchecks}}{logical.
- If \code{TRUE}, several checks whether the given parameter values
- and the dimension are within the allowed range is skipped.
- Do not change the value of this variable except you really
- know what you do.
- 
- Default: \code{FALSE} $ %[also do]. 
- }
   
- \item{\code{storing}}{Logical.
- If \code{FALSE} then the intermediate results are
- destroyed after the simulation of the random field(s)
- or if an error had occured.
- If \code{storing=TRUE}, then
- additional simulations can be performed by calling
- \command{\link{RFsimulate}} with at most the argument \code{n}.
- This call can then be much faster, but the a rather large
- amount of memory could be kept.
- 
- When \code{storing} turned from \code{TRUE} to \code{FALSE} by
- global call then all registers are deleted.
- Advanced:
- With \code{\link{RFoptions}(storing=list(FALSE, register,
-	model_register))}
- single registers can be deleted.
- 
- Default: \code{FALSE} %[do]. 
- }
 
- \item{\code{Ttriple}}{Logical or \code{NA}.
-   If \code{TRUE}, then triple for the time argument \code{T} is
-   expected, containing start, step (by), length.
-   If \code{FALSE} a sequence on a grid is expected.
-   If \code{NA} then the decision is automatic, but will lead to an
-   error if ambiguous.
- }
- 
-\item{\code{vdim_close_together}}{logical. Used especially in functions that
-  create covariance matrices. If the model is multivariate, then two
-  ways of ordering the matrix exist. To consider first all variables at
-  a certain location (\code{vdim_close_together=TRUE}) or to consider first
-  all locations keeping the variable fixed
-  (\code{vdim_close_together=FALSE}).
-  Note that several simulation methods rely on the value \code{FALSE},
-  so that these methods will not work anymore if \code{vdim_close_together=TRUE}.
+  \item{\code{spConform}}{logical.
+    \code{spConform=TRUE} might be used by
+    a standard user as this allows the comfortable use of \command{plot},
+    for instance, while \code{spConform=FALSE} is \bold{much} faster and
+    and consumes \bold{much less memory}, hence might
+    be used by programmers or advanced users.
+    
+    Details: if \code{spConform=TRUE} then \command{\link{RFsimulate}} and
+    many other functions 
+    return an \code{sp}-object (which is an S4 object). Otherwise, matrices
+    or lists are 
+    returned as defined in RandomFields 2.0, see the manuals for the
+    specific functions. Frequently, the latter have now a class attribute
+    to make the output nicer.
+    
+    Note: for large data sets (to be generated),
+    \code{spConform=TRUE} should \bold{not} be used.
 
-   Default: \code{FALSE}.
- }
+    See also \code{output}.
+    
+    Default: \code{TRUE} %[do].
+  }
+  
+
+  \item{\code{skipchecks}}{logical.
+    If \code{TRUE}, several checks whether the given parameter values
+    and the dimension are within the allowed range is skipped.
+    Do not change the value of this variable except you really
+    know what you do.
+    
+    Default: \code{FALSE} $ %[also do]. 
+  }
+  
+  \item{\code{storing}}{Logical.
+    If \code{FALSE} then the intermediate results are
+    destroyed after the simulation of the random field(s)
+    or if an error had occured.
+    If \code{storing=TRUE}, then
+    additional simulations can be performed by calling
+    \command{\link{RFsimulate}} with at most the argument \code{n}.
+    This call can then be much faster, but the a rather large
+    amount of memory could be kept.
+    
+    When \code{storing} turned from \code{TRUE} to \code{FALSE} by
+    global call then all registers are deleted.
+    Advanced:
+    With \code{\link{RFoptions}(storing=list(FALSE, register,
+      model_register))}
+    single registers can be deleted.
+    
+    Default: \code{FALSE} %[do]. 
+  }
+  
+  \item{\code{Ttriple}}{Logical or \code{NA}.
+    If \code{TRUE}, then triple for the time argument \code{T} is
+    expected, containing start, step (by), length.
+    If \code{FALSE} a sequence on a grid is expected.
+    If \code{NA} then the decision is automatic, but will lead to an
+    error if ambiguous.
+  }
+  
+  \item{\code{vdim_close_together}}{logical. Used especially in functions that
+    create covariance matrices. If the model is multivariate, then two
+    ways of ordering the matrix exist. To consider first all variables at
+    a certain location (\code{vdim_close_together=TRUE}) or to consider first
+    all locations keeping the variable fixed
+    (\code{vdim_close_together=FALSE}).
+    Note that several simulation methods rely on the value \code{FALSE},
+    so that these methods will not work anymore if
+    \code{vdim_close_together=TRUE}. 
+    
+    Default: \code{FALSE}.
+  }
 }
 
 
@@ -484,12 +528,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{4. \code{coords}: Options for coordinates and units}
 \describe{
-  \item{\code{coordinate_system}}{
-    One of the values \code{"auto"}, \code{"cartesian"}, \code{"earth"}
-    %   \code{"polar"}, \code{"cylindric"}, \code{"spherical"},
-   
-    
-    Default: \code{"auto"}
+  \item{\code{coord_system}}{character. See \link{coordinate systems}
   }
   
   \item{\code{coordnames}}{integer vector of length 2 or an increasing
@@ -503,17 +542,21 @@
     columns give the coordinates.    
   }
   
-  \item{\code{coordunits}}{any string.     
-    If \code{coordinate_system = "earth"} and longitude and latitude
-    are transformed to 3d cartesian coordinates, \code{coordunits}
-    determines 
-    whether the radius is given in kilometers (\code{"km"}) or miles
-    (\code{"miles"}).
-    If empty, then \code{"km"} is chosen.
-    
-    Default: \code{""}
+  \item{\code{coordunits}}{ See \link{coordinate systems}
+  }
+
+  \item{\code{earth_proj}}{See \link{coordinate systems}
   }
   
+ 
+  
+  
+  \item{\code{new_coord_system}}{See \link{coordinate systems}
+  }
+
+  \item{\code{new_coordunits}}{See \link{coordinate systems}
+}
+
   \item{\code{varnames}}{integer vector of length 2 or an increasing
     sequence of integers or character.
     This parameter gives the data columns in a data frame, either
@@ -525,10 +568,6 @@
     If none of them are found, depending on the context, either
     an error message is returned or it is assumed that the last
     columns give the data.    
-  }
-  \item{\code{new_coordunits}}{internal and should not be set by the user.
-    
-    Default: \code{""}
   }
      
   \item{\code{varunits}}{vector of characters.
@@ -551,6 +590,10 @@
     % \code{2}:this value is only used by calls of RFcov and should not
     % be used by a user
   }
+
+  \item{\code{zenit}}{See \link{coordinate systems}
+  }
+  
 }
 
 
@@ -1202,7 +1245,7 @@
     is preferred if the number of variables is less than or equal to 
     \code{direct_bestvariables}.
     
-    Default is \code{800}.
+    Default is \code{1200}.
   }
 
   \item{\code{loggauss}}{
@@ -1555,11 +1598,24 @@
   \item{\code{min_n_zhou}}{see \code{max_n_zhou}}
 
   \item{\code{xi}}{
+    Extreme value index.    Default: \code{2e9} .
+  }
+
+  \item{\code{mcmc_zhou}}{positive integer.
+    In case of random shape functions, an MCMC step is required.
+    \code{mcmc_zhou}-1 equals the number of members of the MCMC chain
+    that are left out before the next value of the chain is returned.
+    
+    Default: 20
+  }
+  
+  \item{\code{min_n_zhou}}{see \code{max_n_zhou}}
+
+  \item{\code{xi}}{
     Extreme value index.
     
     Default: \code{1.0} .
   }
-  
 }
  
  
@@ -1567,29 +1623,59 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{15. \code{mpp}: Options for the random coins (shot noise) methods}
 \describe{
+\item{\code{about_zero}}{
+    In certain cases (\link{Coins},\link{RMtruncsupport}),
+    functions are assumed to zero if the value is less than \code{about_zero}.
+    
+    Default: \code{0.001} .
+  }
   \item{\code{n_estim_E}}{integer. Number of draws from the
     distribution of the scale to estimate the mean of the distribution.
     This is used only if the mean of the scale distribution
     is not explicitely given.
     Default: \code{50000} .
   }
-  \item{\code{intensity}}{real.
-    Number of superposed
-    realisations (to approximate the normal distribution; total number
-    for all (additive) components with same anisotropy);
-    if \code{intensity<=0.0} then only a single
-    value is simulated (for checking).
-    
-    Default: \code{100} .
-  }
   
-  \item{\code{about_zero}}{
-    In certain cases (\link{Coins},\link{RMtruncsupport}),
-    functions are assumed to zero if the value is less than \code{about_zero}.
     
-    Default: \code{0.001} .
+ 
+  \item{\code{scatter_size}, \code{scatter_max}}{
+    Used in function \code{RMscatter} that calculates
+    \eqn{\sum_{i=1}^n f(x + h_i)} for some function \eqn{f} and
+    for some distances \eqn{h_i}.
+      
+    %    see \code{size} and \code{max} in \code{\link{RMscatter}}.
+    Real valued and integer valued, respectively, or \code{NA}.
+    Let \eqn{\varepsilon=}\code{about_zero}, \eqn{s=}\code{scatter_size} and \eqn{m=}\code{scatter_max}.
+    We distinguish 4 cases:
+    \itemize{
+      \item \code{scatter_size > 0} and \code{scatter_max >= 0}\cr
+      Here, \eqn{n} equals \eqn{(2m)^d}.
+      and \eqn{h_i \in M = \{ (k s, \ldots, k s),\ldots, (m s, \ldots, m
+	s)\}}
+      with \eqn{k=-m}.
+      
+      \item \code{scatter_size > 0} and \code{scatter_max < 0}\cr
+       same as the previous case, but \eqn{m} is chosen such that
+      \eqn{f(k_i e_i s_i) \approx \varepsilon}, \eqn{-k_i\in N},
+      \eqn{i=1,\ldots,d} and 
+      \eqn{f(m_i e_i s_i) \approx \varepsilon}, \eqn{m \in N}.
+      
+      \item \code{scatter_size <= 0} and \code{scatter_max >= 0}\cr
+      This option is possible only for grids.
+      Here \eqn{h_i} runs on the given grid \eqn{i=1,\ldots,d},
+      but at most \code{scatter_max} steps.
+      
+      \item \code{scatter_size <= 0} and \code{scatter_max < 0}\cr
+      this option is possible only for grids.
+      Here, \eqn{h_i} runs over the whole grid.
+    }
   }
-  
+  \item{\code{shape_power}}{
+    Shape functions are powered by \code{shape_power} before used as
+    intensity function for the point process.
+    
+    Default: \code{2.0}.
+  }
 }
 
 
@@ -1613,28 +1699,9 @@ same subspace of eigenvalue 0 of the anisotropy matrix.
 \bold{17. \code{registers}: Register numbers}\cr
 Model for different purposes are or can be stored at
 different places. They are called registers and have non-negative
-numbers up to 21 (currently). Some of these predefined registers
-are given here. Except for \code{register} it is hard to see why users
-should change the values.
+numbers up to 21 (currently).
+The user can use the registers 0..9.
 \describe{
-  \item{\code{condregister}}{Register number for conditional simulation
-    
-    Default: \code{20} %[also do].
-  }
-  \item{\code{errregister}}{Additional register for conditional
-    simulation if error term is envolved.
-    
-    Default: \code{21} %[also do].
-  }
-  \item{\code{guiregister}}{Register number for \command{\link{RFgui}}.
-    
-    Default: \code{14} %[also do].
-  }
-  \item{\code{interpolregister}}{Register number for kriging
-    
-    Default: \code{19} %[also do].
-  }
-  
   \item{\code{register}}{number in 0:9; place where intermediate calculation
     for random field simulation are stored; 
     the number refers to 10 internal registers 0..9.
@@ -1727,13 +1794,15 @@ should change the values.
     Default: 3.
   }
   
-  \item{\code{grid}}{Logical.
+  \item{\code{grid}}{Logical. 
     The angle of the lines is random if
     \code{grid=FALSE}, 
     and \eqn{k\pi/}{k*pi/}\code{lines}
     for \eqn{k}{k} in \code{1:lines},
-    otherwise. This argument is only considered
-    ift he spectral measure, not the density is used.
+    otherwise.
+    
+    This option is used by both \command{\link{RPspectral}}
+    and \command{\link{RPtbm}}, the latter only when the dimension is 2.
     
     Default: \code{TRUE} .
   }
@@ -1970,13 +2039,36 @@ without the user's notice.
 }
 
 \references{
- Schlather, M. (1999) \emph{An introduction to positive definite
- functions and to unconditional simulation of random fields.}
- Technical report ST 99-10, Dept. of Maths and Statistics,
- Lancaster University.
+  \itemize{
+    \item General
+    \itemize{
+      \item
+      Schlather, M. (1999) \emph{An introduction to positive definite
+	functions and to unconditional simulation of random fields.}
+      Technical report ST 99-10, Dept. of Maths and Statistics,
+      Lancaster University.
 
- Oesting, M., Schlather, M. and Zhou, C. (2013) On the Normalized Spectral Representation of Max-Stable Processes on a compact set.
- \emph{arXiv},  \bold{1310.1813}
+      \item Schlather, M. (2011) Construction of covariance functions and
+      unconditional simulation of random fields. In Porcu, E., Montero, J.M.
+      and Schlather, M., \emph{Space-Time Processes and Challenges Related
+	to Environmental Problems.} New York: Springer.
+      % \item Schlather, M. (2002) Models for stationary max-stable
+    }
+
+    \item rectangular distribution; \code{eps_zhou}
+    \itemize{
+      \item
+      Oesting, M., Schlather, M. and Zhou, C. (2013) On the Normalized
+      Spectral Representation of Max-Stable Processes on a compact set. 
+      \emph{arXiv},  \bold{1310.1813}
+    }
+
+    \item \code{shape_power}
+    \itemize{
+      \item
+      Ballani, F. and Schlather, M. (2015) In preparation.
+    }
+  }
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}}

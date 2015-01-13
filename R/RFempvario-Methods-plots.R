@@ -130,7 +130,7 @@ print.summary.RMmodelFit <- function(x, ...) {
     cat("\n")
   }
 
- if (RFoptions()$general$detailed_output) str(x$model, no.list=TRUE) #
+  if (RFoptions()$general$detailed_output) str(x$model, no.list=TRUE) #
   cat("\n")
   np <- AIC <- ll <- nm <- NA  
   if (!is.null(x$submodels)) {
@@ -704,8 +704,9 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
                             boundaries = TRUE,
                             ...) {
   
-  if (!variogram)
+ if (!variogram)
     stop("plot of estimated covariance functions not programmed yet.")
+  
 
   newx <- list()
   methodnames <- double()
@@ -827,12 +828,11 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
                                     model = method.model,
                                     grid = FALSE),
                         silent = FALSE)
-      
       if(!is(vario.vals, "try-error")) {
-        if (is.vector(vario.vals)) {
-          return(vario.vals)
-        } else {
+        if (is.array(vario.vals)) {
           return(vario.vals[, v1, v2])
+        } else {
+          return(vario.vals)
         }
       }      
       x.space <- cbind(x.space, 0)    
@@ -1047,4 +1047,5 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
     do.call(graphics::title, args=c(dots, xlab=xlab, outer=TRUE))
 
   close.screen(all.screens=TRUE)
+  
 }

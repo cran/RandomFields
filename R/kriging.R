@@ -136,7 +136,7 @@ data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
       if (length(is.x) < xdim)
         stop("not enough columns for coordinates found ")
       if (xdim < length(is.x) &&
-          RFopt$general$printLevel >= PL.SUBIMPORPANT)
+          RFopt$general$printLevel >= PL_SUBIMPORTANT)
         message("column(s) '", paste(is.x[-1:-xdim], collapse=","),
                 "' not used.\n")
       is.x <- is.x[1:xdim]
@@ -165,7 +165,7 @@ data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
      if (any(is.x %in% is.data))
        stop("column names and data names overlap.")
      if (length(is.x) + length(is.data) < ncol(data) &&
-         RFopt$general$printLevel >= PL.SUBIMPORPANT)
+         RFopt$general$printLevel >= PL_SUBIMPORTANT)
        message("column(s) '",
                paste(1:ncol[c(-is.x, -is.data)], collapse=","),
                "' not used.\n")
@@ -176,11 +176,12 @@ data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
 
 
 rfPrepare <- function(model, x, y, z, T, distances, grid, data,
+                      given=NULL,
                       fillall, names.only=FALSE,
                       na.rm = "any", # "all", "none"
                       unconditional = FALSE,
                       ...) {
-  
+
   missing.x <- missing(x)
   if (missing(data)) stop("missing data")
   if (!missing(distances) && length(distances)>0)
@@ -189,7 +190,6 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   if (missing.orig.model <- missing(model)) model <- list("null")
   else model <- PrepareModel2(model, ...)
 
-  
   T.tmp <- NULL
 
   if (isSpObj(data)) {
@@ -197,7 +197,7 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
     data <- sp2RF(data)
   }
   if (isRFsp <- is(data, "RFsp")) {
-    if (hasArg(given))
+    if (length(given) != 0)
       stop("the coordinates for the measured data are given ambigiously (by 'given' and within 'data')")
     data <- selectDataAccordingFormula(data, model=model)
     if (!is.null(data@.RFparams)) {
@@ -240,12 +240,12 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   if (length(dim(data)) != 2) {
     ## Achtung! data verliert die Row-/col-Namen mit der
     ## naechsten Anweisung!!
+    datanames <- dimnames(data)
     base::dim(data) <- c(dimdata[1], prod(dimdata[-1]))
   }
   
   if (missing.x) { ## generate locations for kriging
     ## then data cannot have repeated meseasurements
-#
     stopifnot(is.null(y), is.null(z), is.null(T))
     if (isRFsp) {
       ## standard: data where at least 1 component or repetition
@@ -286,9 +286,11 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
   
   ts.xdim <- as.integer(neu$spacedim + neu$Time)
 
-  if (!isRFsp) {
-    if (hasArg(given)) {
-      given <- list(...)$given  ## stehend
+  if (!isRFsp) {    
+    if (length(given) > 0) {
+      if (is.list(given))
+        stop("sorry, 'list' is not yet programmed for given ") # to do
+      ## given <- list(...)$given  ## stehend
     } else {
       if (unconditional) {
         if (missing.x) data <- data[ , data.col$data, drop=FALSE]
@@ -358,15 +360,15 @@ rfPrepare <- function(model, x, y, z, T, distances, grid, data,
 
 
 
-rfPrepareData <- function(model, x, y, z, T,
-                          distances,                          
-                          grid, data,
+rfPrepareData <- function(model, x, y, z, T, distances,
+                          grid, data, given=NULL,
                           cathegories, reg, fillall, names.only=FALSE, ...) {
 
 
   
   neu <- rfPrepare(model=model, x=x, y=y, z=z, T=T, distances=distances,
-                   grid=grid, data=data, reg=reg, fillall=fillall,
+                   grid=grid, data=data, given=given,
+                   reg=reg, fillall=fillall,
                    names.only = names.only, ...)
   ts.xdim <- neu$ts.xdim
 
@@ -458,8 +460,9 @@ rfPrepareData <- function(model, x, y, z, T,
 }
 
 
-RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
-                          distances, dim, err.model, method="ml", ...) {
+RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
+                          distances, dim, data, given=NULL,
+                          err.model, method="ml", ...) {
   #Print("entering interpolate")
                                         #  str(data)
 
@@ -470,7 +473,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   ## currently only univariate Kriging possible
 
   opt <- list(...)
-  i <- pmatch(names(opt), c("MARGIN", "given"))
+  i <- pmatch(names(opt), c("MARGIN"))
   opt <- opt[is.na(i)]
   
   RFoptOld <- do.call("internal.rfoptions",
@@ -492,14 +495,14 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
  #maxn <- 70
 #  split <- 40
 
-  reg <- RFopt$registers$interpolregister
+  reg <- MODEL_KRIGE
   return.variance <- RFopt$krige$return_variance
   
   ##  MINV <<- NULL
   SOLVE <- if (RFopt$krige$cholesky_R) {
     function(M, v) {
       sqrtM <- chol(M)
-      if (RFopt$general$printlevel>=PL.FCTN.SUBDETAILS)
+      if (RFopt$general$printlevel>=PL_FCTN_SUBDETAILS)
         Print(range(diag(sqrtM))^2) #
       if (missing(v)) chol2inv(sqrtM) else chol2inv(sqrtM) %*% v
     }
@@ -517,7 +520,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       new.model <- list(ZF_SYMBOLS_PLUS, new.model,  list(ZF_TREND[2], mean=NA))
     }
     return(RFinterpolate(new.model, x=x, y=y, z=z, T=T, grid=grid, data=data,
-                         ..., krige.method="U"))
+                         given=given, ..., krige.method="U"))
   } # end FALSE
   
   if (is.na(krige.meth.nr))
@@ -536,7 +539,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   else if (class(model) == "RFfit") model <- PrepareModel2(model[method])
  #  Print(model)
   all <- rfPrepareData(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                       data=data, cathegories=cathegories, reg=reg,
+                       data=data, given=given,
+                       cathegories=cathegories, reg=reg,
                        fillall=fillall, ...)
 
 #  Print(all); kkk
@@ -551,14 +555,13 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   if (!RFopt$general$na_rm_lines && repet > 1 && all$missing.x) {
      base::dim(all$fulldata) <- c(length(all$fulldata) / repet, repet)
     for (i in 1:repet) {
-      dummy <- if (hasArg(given)) {
+      dummy <- if (length(given) > 0) {
         RFinterpolate(model=model, x=x, y=y, z=z, T=T, all$grid,
-                      data = all$fulldata[, i], 
+                      data = all$fulldata[, i], given=given, 
                       ..., spC=if (i==1) spConform else FALSE)
       } else {
         RFinterpolate(model=model, x=x, y=y, z=z, T=T, all$grid,
-                      data = all$fulldata[, i],
-                      given = all$given,
+                      data = all$fulldata[, i], given = all$given,
                       ..., spC=if (i==1) spConform else FALSE)
         
       }
@@ -592,6 +595,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                                         gridTopology=gridTopology,
                                         n=repet,
                                         vdim=vdim,
+                                        T = all$T,
                                         vdim_close_together =
                                         RFopt$general$vdim_close_together)
       if (return.variance){
@@ -600,6 +604,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                                           gridTopology=gridTopology,
                                           n=1,
                                           vdim=vdim,
+                                          T = all$T,
                                           vdim_close_together =
                                           RFopt$general$vdim_close_together)
         names(var@data) <- paste("var.", names(var@data), sep="")
@@ -610,8 +615,10 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         res <- raster::raster(res)
         raster::projection(res) <- raster::projection(x)
       }
+      
       return(res)
-    } else {
+    } else { ## !spConform
+      #class(res) <- "RandomFieldsReturn"
       return(if (return.variance) list(res, var) else res)
     }
   }  # end !na_rm_lines   
@@ -619,6 +626,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
 
   trendfct <- NULL
   polydeg <- NULL
+  nonzeros <- integer(1)
   
   if (!is.null(all$random))
     stop("random effects cannot be treated within kriging")
@@ -684,11 +692,11 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
     ## neighbourhood kriging !
     if (!is.na(exact) && exact)
       stop("number of conditioning locations too large for an exact result.")
-    if (ngiven > maxn && is.na(exact) && RFopt$general$printlevel>=PL.IMPORPANT)
+    if (ngiven > maxn && is.na(exact) && RFopt$general$printlevel>=PL_IMPORTANT)
       message("performing neighbourhood kriging")
 
     ## calculate the boxes for the locations where we will interpolate
-    idx <- GetNeighbourhoods (MODEL.INTERN, all,
+    idx <- GetNeighbourhoods (MODEL_INTERN, all,
                               RFopt$krige$locsplitfactor,
                               RFopt$krige$locmaxn,
                               RFopt$krige$locsplitn)
@@ -768,7 +776,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       covmatrix <- double(ngvdim^2)
 
       .Call("CovMatrixIntern", reg, given, FALSE, FALSE, # no dist, no grid
-            Ngiven, covmatrix, # userdefined,
+            Ngiven, covmatrix, nonzeros, # userdefined,
             PACKAGE="RandomFields")
        
        base::dim(covmatrix) <- c(ngvdim, ngvdim)
@@ -845,9 +853,11 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         Res[,] <- res[1]
       }
     } else {
-      return(list(x=if (length(not.const) > 0) expand.grid(U),
+       res <- list(x=if (length(not.const) > 0) expand.grid(U),
                   estim = res,
-                  var = if (return.variance) sigma2))
+                  var = if (return.variance) sigma2)
+       #class(res) <- "RandomFieldsReturn"
+       return(res)
     }
   ############## END KRIGING THE MEAN ######
   } else {    
@@ -922,7 +932,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       
 
       .Call("CovMatrixIntern", reg, given, FALSE, FALSE,  Ngiven, covmatrix,
-            #userdefined,
+            nonzeros, #userdefined,
             PACKAGE="RandomFields")
        base::dim(covmatrix) <- c(ngvdim, ngvdim)
 
@@ -931,7 +941,6 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       covmatrix <- covmatrix[notna, notna]
 
       XX <- as.double(xx[, idx[[3]][[p]], drop=FALSE])
-
 
       switch(krige.meth.nr, {
          ## simple kriging
@@ -1047,7 +1056,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         ## cross variogram 
         ## nullx <- matrix(0, nrow=ts.xdim, ncol=Ngiven)
         ## nullcov <- double(ngvdim^2)
-        ## .Call("CovMatrixIntern", reg, nullx, FALSE,
+        ## .Call("Cov MatrixIntern", reg, nullx, FALSE,
         ##    FALSE, Ngiven, nullcov, userdefined,
         ##    PACKAGE="RandomFields")
         ##  base::dim(nullcov) <- c(ngvdim, ngvdim)
@@ -1057,7 +1066,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
         nullx <- matrix(0, nrow=ts.xdim, ncol=Ngiven)
         nullcov <- double(ngvdim^2)
         .Call("CovMatrixIntern", reg, nullx, FALSE, FALSE, Ngiven, nullcov,
-#              userdefined,
+             nonzeros,  # userdefined,
               PACKAGE="RandomFields")
 
          base::dim(nullcov) <- c(ngvdim, ngvdim)
@@ -1170,8 +1179,9 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
       if (return.variance)
         sigma2 <- aperm(sigma2, perm=Resperm[1:(length(dimension)+1)])
     }
-   
-    return(if (return.variance) list(estim = Res, var = sigma2) else Res)
+    if (return.variance) Res <- list(estim = Res, var = sigma2)
+    #class(Res) <- "RandomFieldsReturn"    
+    return(Res)
   }
 
   coord.names.incl.T <- c(if (!is.null(all$coord.names)) all$coord.names
@@ -1216,14 +1226,14 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
 
     Res <- conventional2RFspDataFrame(Res, coords=coords,
                                       gridTopology=gridTopology,
-                                      n=repet, vdim=vdim,
+                                      n=repet, vdim=vdim, T = all$T,
                                       vdim_close_together =
                                       RFopt$general$vdim_close_together)
   
     if (return.variance){
       var <- conventional2RFspDataFrame(sigma2, coords=coords,
                                         gridTopology=gridTopology,
-                                        n=1, vdim=vdim,
+                                        n=1, vdim=vdim, T = all$T,
                                         vdim_close_together =
                                         RFopt$general$vdim_close_together)
       names(var@data) <- paste("var.", names(var@data), sep="")
@@ -1255,7 +1265,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
 
 
 rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
-                        data,  # first coordinates, then data
+                        data,   # first coordinates, then data
+                        given=NULL, ## alternative for coordinates of data
                         err.model=NULL, ...) { # ... wegen der Variablen  
   dots <- list(...)
   if ("spConform" %in% names(dots))
@@ -1266,15 +1277,15 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   RFoptOld <- internal.rfoptions(..., RELAX=isFormulaModel(model)) 
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
-  cond.reg <- RFopt$registers$condregister
-  interpol.reg <- RFopt$registers$interpolregister
+  cond.reg <- MODEL_COND
+  interpol.reg <- MODEL_KRIGE
 
   cathegories <- list(trend=c(DetTrendEffect, DeterministicEffect),
                       random=c(FixedTrendEffect:SpVarEffect))
 
 
-  all <- rfPrepareData(model=model,
-                       x=x, y=y, z=z, T=T, grid=grid, data=data,
+  all <- rfPrepareData(model=model, x=x, y=y, z=z, T=T, grid=grid,
+                       data=data, given=given,
                        cathegories=cathegories,
                        reg=interpol.reg, fillall=FALSE, ...)
   ##  userdefined <- all$userdefined
@@ -1284,12 +1295,12 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   ##  krige.mean <- 0 ## all$mean + err$mean ?? 
   stopifnot(length(all$random) ==0)
  
-  krige <- all$model
+  krige <- all$cov ## not all$model !!
   vdim <- all$vdim
   ts.xdim <- all$ts.xdim
   
   if (vdim > 1) stop("multivariate version not programmed yet")
-  
+
   if (!is.null(err.model)) {
     err <- rfSplitTrendAndCov(model=err.model, spatialdim=ts.xdim,
                               xdimOZ=ts.xdim, Time=FALSE)
@@ -1361,7 +1372,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
       ## data points are all lying on the grid
       simu <- do.call(RFsimulate, args=c(list(x=x, y=y, z=z, T=T,
                                     grid=all$grid,
-                                    model=all$model, n=n, 
+                                    model=all$cov, n=n, 
                                     register=cond.reg,
                                     seed = NA,
                                     spConform=FALSE),
@@ -1403,7 +1414,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
 
     xx <- rbind(t(xx), all$given[notfound, , drop=FALSE])
     simu <- do.call(RFsimulate,
-                    args=c(list(x=xx, grid=FALSE, model=all$model, n=n,
+                    args=c(list(x=xx, grid=FALSE, model=all$cov, n=n,
                       register = cond.reg, seed = NA,  spConform=FALSE), dots))
 
     xx <- NULL
@@ -1433,7 +1444,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   if (!is.null(err.model)) {
       error <- do.call(RFsimulate, args=c(list(model=err.model, all$given,
                                      grid=FALSE, n=n,
-                                     register = RFopt$registers$errregister,
+                                     register = MODEL_ERR,
                                      seed = NA,
                                      spConform=FALSE),
                                      dots))
@@ -1445,8 +1456,8 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
 
   ## to do: als Naeherung bei UK, OK:
   ## kriging(data, method="A") + simu - kriging(simu, method="O") !
-
-  simu <- simu + RFinterpolate(krige.method="O",
+ 
+  simu <- simu + RFinterpolate(krige.method="S",
                                x=if (!all$missing.x) x else all$x,
                                y=if (!all$missing.x) y else all$y,
                                z=if (!all$missing.x) z else all$z,

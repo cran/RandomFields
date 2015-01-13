@@ -47,12 +47,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
  
 #include <string.h>
-#include "RF.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 #include <R.h>
 #include <Rdefines.h>
 #include <Rinternals.h>
+
+#include "RF.h"
+#include "variogramAndCo.h"
 
 #define KRIGE_TOLERANCE -1e-10
 
@@ -76,7 +78,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
     rep = INTEGER(Rep)[0],						\
     nx = INTEGER(Nx)[0],						\
     err = NOERROR,							\
-    vdim = KEY[reg]->vdim2[0],						\
+    vdim = KEY[reg]->vdim[0],						\
     vdimng = vdim * ngiven,						\
     /*   len_tgiven = dim * ngiven,	*/				\
     divachtzig = (nx<79) ? 1 : (nx / 79),				\

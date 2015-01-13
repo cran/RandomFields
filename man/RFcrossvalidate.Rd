@@ -19,7 +19,7 @@
   has not been implemented yet.
 }
 \usage{D
-RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
+RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  lower = NULL, upper = NULL, bc_lambda, method="ml",
  users.guess = NULL,
  distances = NULL, dim, optim.control = NULL,transform = NULL,
@@ -132,7 +132,6 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
 RFcrossvalidate(estmodel, data=d)
-
 
 \dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}

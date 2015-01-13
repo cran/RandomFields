@@ -94,7 +94,7 @@ RFempiricalvariogram <- function(
       bin <- seq(0, sqrt(sum((apply(new$x, 2, max)-apply(new$x, 2, min))^2))/2,
                  len = bin)
     }
-    if (RFopt$general$printlevel >= PL.SUBIMPORPANT)
+    if (RFopt$general$printlevel >= PL_SUBIMPORTANT)
       message("Bins in RFempiricalvariogram are chosen automatically:\n", 
               paste(signif(bin, 2), collapse=" "))
   }

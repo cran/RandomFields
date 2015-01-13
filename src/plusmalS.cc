@@ -34,9 +34,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <math.h>
 #include <stdio.h> 
+#include <R_ext/Lapack.h>
+
 #include "RF.h"
 #include "Covariance.h"
-#include <R_ext/Lapack.h>
+#include "variogramAndCo.h"
 //#include <R_ext/Applic.h>
 //#include <R_ext/Utils.h>     
 //#include <R_ext/BLAS.h> 
@@ -78,7 +80,7 @@ void Siso(double *x, cov_model *cov, double *v){
 
   cov_model *next = cov->sub[DOLLAR_SUB];
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
   double y,
     *aniso=P(DANISO),
@@ -115,7 +117,7 @@ void Siso(double *x, cov_model *cov, double *v){
 void logSiso(double *x, cov_model *cov, double *v, double *sign){
   cov_model *next = cov->sub[DOLLAR_SUB];
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
   double y, 
     *aniso=P(DANISO),
@@ -146,7 +148,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
     *aniso=P(DANISO);
   int i,
     nproj = cov->nrow[DPROJ],
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
  
   if (nproj > 0) {
@@ -165,7 +167,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
     } 
     if (sign==NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
   } else if (Aniso != NULL) {
-    int dim = Aniso->vdim2[0];
+    int dim = Aniso->vdim[0];
     ALLOC_DOLLAR(z, dim);
     FCTN(x, Aniso, z);
     if (sign == NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
@@ -215,7 +217,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     *aniso=P(DANISO);
   int i,
     nproj = cov->nrow[DPROJ],
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
 
   //  PMI(cov, "$$$$");
@@ -239,7 +241,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
       }
     }
   } else if (Aniso != NULL) {
-    int dim = Aniso->vdim2[0];
+    int dim = Aniso->vdim[0];
     ALLOC_DOLLARY(Z1, Z2, dim);
     z1 = Z1;
     z2 = Z2;
@@ -292,14 +294,14 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
 }
 
 
-void covmatrixS(cov_model *cov, double *v) {
+void covmatrixS(cov_model *cov, double *v, int *nonzeros) {
   location_type *loc = Loc(cov);	      
   cov_model *next = cov->sub[DOLLAR_SUB];
   location_type *locnext = Loc(next);
   assert(locnext != NULL);
   int i, err, tot, totSq,
     dim = loc->timespacedim,
-    vdim = cov->vdim2[0];
+    vdim = cov->vdim[0];
   double var = P0(DVAR);
   assert(dim == cov->tsdim);
     
@@ -312,7 +314,7 @@ void covmatrixS(cov_model *cov, double *v) {
       cov->kappasub[DAUSER] != NULL ||
        cov->kappasub[DPROJ] != NULL
       ) {
-    CovarianceMatrix(cov, v); 
+    CovarianceMatrix(cov, v, nonzeros); 
     return;
   }
 
@@ -321,7 +323,7 @@ void covmatrixS(cov_model *cov, double *v) {
     //    PMI(cov, -1);
     BUG; // fuehrt zum richtigen Resultat, sollte aber nicht
     // vorkommen!
-    CovarianceMatrix(cov, v); 
+    CovarianceMatrix(cov, v, nonzeros); 
     return;
   }
 
@@ -332,7 +334,7 @@ void covmatrixS(cov_model *cov, double *v) {
   next->gatternr = cov->gatternr;
   next->xdimprev = cov->xdimprev;
   next->xdimgatter = cov->xdimgatter;
-  CovList[next->nr].covmatrix(next, v);//hier wird uU next->totalpoints gesetzt
+  CovList[next->nr].covmatrix(next, v, nonzeros);//hier wird uU next->totalpoints gesetzt
   next->gatternr = next_gatter;
   next->xdimgatter = next_xdimgatter;
   next->xdimprev = next_xdim;
@@ -340,7 +342,7 @@ void covmatrixS(cov_model *cov, double *v) {
 
   // PMI(cov, "covmatrix S");
   // if (locnext==NULL) loc_set(cov, locnext->totalpoints);
-  tot = cov->vdim2[0] * locnext->totalpoints;
+  tot = cov->vdim[0] * locnext->totalpoints;
   totSq = tot * tot;
   for (i=0; i<totSq; v[i++] *= var);
 }
@@ -348,16 +350,16 @@ void covmatrixS(cov_model *cov, double *v) {
 char iscovmatrixS(cov_model *cov) {
   cov_model *sub = cov->sub[DOLLAR_SUB];
   return (int) ((PisNULL(DSCALE) || P0(DSCALE) ==1.0) &&	
-		cov->kappasub[DAUSER]==NULL &&
-		PARAMisNULL(sub, DPROJ) &&
-		PARAMisNULL(sub, DANISO)) * CovList[sub->nr].is_covariance(cov);
+		PARAMisNULL(cov, DAUSER) &&
+		PARAMisNULL(cov, DPROJ) &&
+		PARAMisNULL(cov, DANISO)) * CovList[sub->nr].is_covariance(sub);
 }
 
 void DS(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
   assert(cov->kappasub[DAUSER] == NULL);
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim,
     nproj = cov->nrow[DPROJ];
   double y[2], varSc,
@@ -390,7 +392,7 @@ void DDS(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
   assert(cov->kappasub[DAUSER] == NULL);
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim,
     nproj = cov->nrow[DPROJ],
     *proj = PINT(DPROJ);
@@ -426,7 +428,7 @@ void D3S(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
   assert(cov->kappasub[DAUSER] == NULL);
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim,
     nproj = cov->nrow[DPROJ],
     *proj = PINT(DPROJ);
@@ -461,7 +463,7 @@ void D4S(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[DOLLAR_SUB];
   assert(cov->kappasub[DAUSER] == NULL);
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim,
     nproj = cov->nrow[DPROJ],
     *proj = PINT(DPROJ);
@@ -686,8 +688,8 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
     if (CovList[Aniso->nr].inverse == ErrInverse) 
       error("inverse of anisotropy matrix function unknown");
     int 
-      nrow = Aniso->vdim2[0],
-      ncol = Aniso->vdim2[1],
+      nrow = Aniso->vdim[0],
+      ncol = Aniso->vdim[1],
       size = nrow * sizeof(double);
     //      printf("ncol %d %d\n", ncol, nrow);
     if (cov->xdimown != ncol || ncol != 1)
@@ -848,7 +850,6 @@ int checkS(cov_model *cov) {
   matrix_type type = TypeMany;
 
   
-  
   assert(isAnyDollar(cov));
   if (!isDollarProc(cov)) cov->nr = DOLLAR; // wegen nr++ unten !
   
@@ -865,6 +866,7 @@ int checkS(cov_model *cov) {
   bool angle = Aniso!=NULL && CovList[Aniso->nr].check == checkAngle;
   if (angle && PisNULL(DANISO) && PisNULL(DAUSER) && cov->xdimown == cov->tsdim) {
     int dim  = cov->tsdim;
+    if (!isCartesian(cov->isoown))  return ERRORANISO;
     if ((err = CHECK(Aniso, dim, dim, ShapeType, XONLY,
 		    CARTESIAN_COORD, SUBMODEL_DEP, cov->role)) == NOERROR) {
       if (verysimple(Aniso)) {     
@@ -875,15 +877,17 @@ int checkS(cov_model *cov) {
 	 angle = false;
 	 //PMI(cov, -1); 
       }
-    } 
+    }
   }
 
 
   if (cov->kappasub[DANISO] != NULL)
     SERR1("'%s' may not be a function.", KNAME(DANISO));
   if (!PisNULL(DAUSER)) {
+    if (!isCartesian(cov->isoown))  return ERRORANISO;
+    
     if (GLOBAL.internal.warn_Aniso) {
-      PRINTF("NOTE! Starting with RandomFields 3.0, the use of '%s' is different from\n the former 'aniso' insofar that '%s' is multiplied from the right by 'x'\n(whereas 'aniso' had been multiplied from the left by 'x').\n", KNAME(DAUSER), KNAME(DAUSER), RFOPTIONS, internals[INTERNALS_NEWANISO]);
+      PRINTF("NOTE! Starting with RandomFields 3.0, the use of '%s' is different from\nthe former '%s' insofar that '%s' is multiplied from the right by 'x' (i.e. Ax),\nwhereas '%s' had been multiplied from the left by 'x' (i.e. xA).\n", KNAME(DAUSER), KNAME(DANISO), KNAME(DANISO), KNAME(DAUSER));
     }
     GLOBAL.internal.warn_Aniso = false;
     // here for the first time
@@ -924,14 +928,14 @@ int checkS(cov_model *cov) {
       return err;
     }
 
-    if (Aniso->vdim2[1] != 1)
+    if (Aniso->vdim[1] != 1)
       SERR4("'%s' returns a matrix of dimension %d x %d, but dimension %d x 1 is need.",
-	    KNAME(DANISO), Aniso->vdim2[0], Aniso->vdim2[1], cov->xdimown);
+	    KNAME(DANISO), Aniso->vdim[0], Aniso->vdim[1], cov->xdimown);
 
     // PMI(cov);
 
     if (cov->key==NULL) {
-      if ((err = CHECK(sub, Aniso->vdim2[0], Aniso->vdim2[0], cov->typus,  
+      if ((err = CHECK(sub, Aniso->vdim[0], Aniso->vdim[0], cov->typus,  
 		       cov->domown, 
 		       cov->isoown, SUBMODEL_DEP, cov->role)) != NOERROR) {
 	return err;
@@ -943,7 +947,7 @@ int checkS(cov_model *cov) {
 
     sub->pref[CircEmbed] = sub->pref[CircEmbedCutoff] = 
       sub->pref[CircEmbedIntrinsic] = sub->pref[Sequential] = 
-      sub->pref[Markov] = sub->pref[Specific] = PREF_NONE;
+      sub->pref[Specific] = PREF_NONE;
 
  
   } else if (!PisNULL(DANISO)) { // aniso given
@@ -959,12 +963,13 @@ int checkS(cov_model *cov) {
     }
     if (xdimown != cov->tsdim && nrow != ncol)
       SERR("non-quadratic anisotropy matrices only allowed if dimension of coordinates equals spatio-temporal dimension");
-
+ 
     type = Type(P(DANISO), nrow, ncol);
     
     cov->full_derivs = cov->rese_derivs = 0;
     cov->loggiven = true;
-  
+
+
     switch (cov->isoown) {
     case ISOTROPIC :   
       if (cov->tsdim != 1) return ERRORANISO;
@@ -988,10 +993,12 @@ int checkS(cov_model *cov) {
     case SYMMETRIC: 
       break;
     case PREVMODELI : BUG;      
-    case CARTESIAN_COORD : 
+    case CARTESIAN_COORD : case GNOMONIC_PROJ :  case ORTHOGRAPHIC_PROJ:
       if (!isProcess(cov->typus)) return ERRORANISO;
       break;
-    default : BUG;
+    default : 
+      if (isCartesian(cov->isoown)) { BUG; }
+      else return  ERRORANISO;
     }
 
     //  printf(" A hiere\n");
@@ -1001,12 +1008,16 @@ int checkS(cov_model *cov) {
     if (cov->isoown != SPACEISOTROPIC && !isMiso(type))
       cov->pref[SpectralTBM] = cov->pref[TBM] = PREF_NONE;
    
+    //    PMI(cov);
+    //printf("ncol=%d %d %s %s\n", ncol, isProcess(cov->typus),  NICK(cov), 
+    //	   ISONAMES[cov->isoown]);
     if (cov->key==NULL) {
       if ((err = CHECK(next, ncol, ncol, cov->typus, cov->domown, 
 		 ncol==1 && !isProcess(cov->typus) ? ISOTROPIC : cov->isoown, 
 		 SUBMODEL_DEP, cov->role))
 	  != NOERROR) {
-	return err;
+	// assert(false); 
+ 	return err;
       }
       if (next->domown == cov->domown && next->isoown == cov->isoown &&
 	  xdimown > 1) next->delflag = DEL_COV - 7;
@@ -1043,20 +1054,22 @@ int checkS(cov_model *cov) {
 	break;      
       case VECTORISOTROPIC : return ERRORANISO; 
 	break;
-      case SYMMETRIC: case CARTESIAN_COORD: 
+      case SYMMETRIC: case CARTESIAN_COORD: case GNOMONIC_PROJ :
+      case ORTHOGRAPHIC_PROJ :
 	break;
       case PREVMODELI : BUG;      
 	break;
-      default : BUG;
+      default : 
+	if (isCartesian(cov->isoown)) {BUG;}
+	else return  ERRORANISO;  // todo
       }
- 
     }
 
     if (cov->key==NULL) {
       //PMI(next);
       if ((err = CHECK(next, tsdim, xdimNeu, cov->typus, cov->domown,
 		       cov->isoown, 
-		       cov->vdim2[0], // SUBMODEL_DEP; geaendert 20.7.14
+		       cov->vdim[0], // SUBMODEL_DEP; geaendert 20.7.14
 		       cov->role)) != NOERROR) {
 	return err;
       }
@@ -1086,7 +1099,7 @@ int checkS(cov_model *cov) {
   if ((Aniso != NULL || !PisNULL(DANISO) || !PisNULL(DPROJ)) && 
       cov->maxdim < cov->xdimown) cov->maxdim = cov->xdimown;
  	
-  if (cov->isoown != ISOTROPIC && !isDollarProc(cov)) { // multivariate kann auch xdimNeu == 1 problematisch sein
+  if (!isAnyIsotropic(cov->isoown) && !isDollarProc(cov)) { // multivariate kann auch xdimNeu == 1 problematisch sein
     cov->nr++;
   }
   
@@ -1111,6 +1124,16 @@ int checkS(cov_model *cov) {
   if ((err = TaylorS(cov)) != NOERROR) return err;
   // printf("here2\n");
   
+  if (cov->finiterange && isAnySpherical(cov->isoown)) {
+    double range;
+    INVERSE(ZERO, cov, &range);
+    bool ok = (isSpherical(cov->isoown) && range <= M_PI) ||
+      (isEarth(cov->isoown) && range <= 180);
+    if (!ok)
+      SERR2("model '%s' does not allow for required coordinate system '%s'",
+	    NICK(next), COORD_SYS_NAMES[cov->isoown]);
+  }
+  
   DOLLAR_STORAGE;
   
   if (isProcess(cov->typus)) {
@@ -1118,7 +1141,7 @@ int checkS(cov_model *cov) {
   }
  
   if (GLOBAL.coords.coord_system == earth && 
-      isCartesian(CovList[next->nr].domain) &&
+      is_all(isCartesian, CovList + next->nr) &&
       GLOBAL.internal.warn_scale &&
       P0(DSCALE) < (strcmp(GLOBAL.coords.newunits[0], "km") == 0 ? 10 : 6.3)) {
     char msg[300];
@@ -1137,17 +1160,52 @@ int checkS(cov_model *cov) {
 
 
 
-bool TypeS(Types required, cov_model *cov) {
+void rangeS(cov_model *cov, range_type* range){
+  int i;
+
+  range->min[DVAR] = 0.0;
+  range->max[DVAR] = RF_INF;
+  range->pmin[DVAR] = 0.0;
+  range->pmax[DVAR] = 100000;
+  range->openmin[DVAR] = false;
+  range->openmax[DVAR] = true;
+
+  range->min[DSCALE] = 0.0;
+  range->max[DSCALE] = RF_INF;
+  range->pmin[DSCALE] = 0.0001;
+  range->pmax[DSCALE] = 10000;
+  range->openmin[DSCALE] = true;
+  range->openmax[DSCALE] = true;
+
+  for (i=DANISO; i<= DAUSER; i++) {
+    range->min[i] = RF_NEGINF;
+    range->max[i] = RF_INF;
+    range->pmin[i] = -10000;
+    range->pmax[i] = 10000;
+    range->openmin[i] = true;
+    range->openmax[i] = true;
+  }
+  
+  range->min[DPROJ] = 1;
+  range->max[DPROJ] = cov->tsdim;
+  range->pmin[DPROJ] = 1;
+  range->pmax[DPROJ] =  cov->tsdim;
+  range->openmin[DPROJ] = false;
+  range->openmax[DPROJ] = false;
+}
+
+
+bool TypeS(Types required, cov_model *cov, int depth) {
   cov_model *sub = cov->key==NULL ? cov->sub[0] : cov->key;
 
-  // printf("\n\n\nxxxxxxxxxxxx %d %s %s\n\n", TypeConsistency(required, sub), TYPENAMES[required], NICK(sub));
+  // printf("\n\n\nxxxxxxxxxxxx %d %s %s\n\n", TypeConsistency(required, sub, 0), TYPENAMES[required], NICK(sub));
   
   // if (required == ProcessType) crash(); //assert(false);
 
   return (required==TcfType || required==PosDefType || required==NegDefType
 	  || required==ShapeType || required==TrendType 
 	  || required==ProcessType || required==GaussMethodType)
-    && TypeConsistency(required, sub);
+    && TypeConsistency(required, sub, depth-1);
 }
 
 
@@ -1185,41 +1243,6 @@ void spectralS(cov_model *cov, gen_storage *s, double *e) {
     for (d=0; d<ncol; d++) e[d] = sube[d] * invscale;
   }
 
-}
-
-
-void rangeS(cov_model *cov, range_type* range){
-  int i;
-
-  range->min[DVAR] = 0.0;
-  range->max[DVAR] = RF_INF;
-  range->pmin[DVAR] = 0.0;
-  range->pmax[DVAR] = 100000;
-  range->openmin[DVAR] = false;
-  range->openmax[DVAR] = true;
-
-  range->min[DSCALE] = 0.0;
-  range->max[DSCALE] = RF_INF;
-  range->pmin[DSCALE] = 0.0001;
-  range->pmax[DSCALE] = 10000;
-  range->openmin[DSCALE] = true;
-  range->openmax[DSCALE] = true;
-
-  for (i=DANISO; i<= DAUSER; i++) {
-    range->min[i] = RF_NEGINF;
-    range->max[i] = RF_INF;
-    range->pmin[i] = -10000;
-    range->pmax[i] = 10000;
-    range->openmin[i] = true;
-    range->openmax[i] = true;
-  }
-  
-  range->min[DPROJ] = 1;
-  range->max[DPROJ] = cov->tsdim;
-  range->pmin[DPROJ] = 1;
-  range->pmax[DPROJ] =  cov->tsdim;
-  range->openmin[DPROJ] = false;
-  range->openmax[DPROJ] = false;
 }
 
 
@@ -1268,6 +1291,11 @@ int addScales(cov_model **newmodel, double anisoScale, cov_model *scale,
 }
 
 int structS(cov_model *cov, cov_model **newmodel) {
+  if (cov->role == ROLE_GAUSS && isProcess(cov->typus)) {
+    cov->nr = DOLLAR_PROC;
+    return structSproc(cov, newmodel); // kein S-TRUCT(...) !!
+  } 
+
   cov_model *local = NULL,
     *dummy = NULL,
     *next = cov->sub[DOLLAR_SUB],
@@ -1275,44 +1303,33 @@ int structS(cov_model *cov, cov_model **newmodel) {
     *scale = cov->kappasub[DSCALE];
   int err = NOERROR; 
   bool generalAniso = Aniso != NULL && CovList[Aniso->nr].check != checkAngle;
-  // cov_model *sub;
 
-  //   printf("%s %d %s\n", ROLENAMES[cov->role], cov->role, TYPENAMES[cov->typus]);
-  //  if (cov->role != ROLE_GAUSS) {
-  //  APMI(cov->calling);
-  //crash();
-  //  }
-  // assert(false);
-
-  
+   
+  ASSERT_NEWMODEL_NOT_NULL;
+ 
   if (cov->kappasub[DVAR] != NULL) {
     GERR1("models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DVAR));
-    } 
+  } 
 
+  if (generalAniso)
+    GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DAUSER));
+
+  //APMI(cov->calling->calling->calling);
+  
   switch (cov->role) {
-   case ROLE_SMITH : 
-     if (generalAniso)
-       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DAUSER));
-
-
-    ASSERT_NEWMODEL_NOT_NULL;
-     
+  case ROLE_POISSON_GAUSS : 
+  case ROLE_SMITH : 
+    if (!next->deterministic) GERR("random shapes not programmed yet");
     if (!PisNULL(DANISO)) GERR("anisotropy parameter not allowed yet");
     if (!PisNULL(DPROJ)) GERR("projections not allowed yet");
-
     if ((err = STRUCT(next, newmodel)) > NOERROR) return err;
 
     addModel(newmodel, DOLLAR);
     if (!PisNULL(DVAR)) kdefault(*newmodel, DVAR, P0(DVAR));
     if (!PisNULL(DSCALE)) kdefault(*newmodel, DSCALE, P0(DSCALE));
-    if (!next->deterministic) GERR("random shapes not programmed yet");
-    
     break;
-  case ROLE_MAXSTABLE : // eigentlich nur von RPSmith moeglich !
-    ASSERT_NEWMODEL_NOT_NULL;
-    if (generalAniso)
-       GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet for Smith models", KNAME(DAUSER));
 
+  case ROLE_MAXSTABLE : // eigentlich nur von RPSmith moeglich !
     if (!next->deterministic) GERR("random shapes not programmed yet");
     if (!PisNULL(DPROJ)) GERR("projections not allowed yet");
     // P(DVAR) hat keine Auswirkungen
@@ -1339,9 +1356,9 @@ int structS(cov_model *cov, cov_model **newmodel) {
 	//   PMI(shape); 
 	//APMI(*newmodel);
 	Types type = 
-	  TypeConsistency(PointShapeType, *newmodel) ? PointShapeType :
-	  TypeConsistency(RandomType, *newmodel) ? RandomType :
-	  TypeConsistency(ShapeType, *newmodel) ? ShapeType :
+	  TypeConsistency(PointShapeType, *newmodel, 0) ? PointShapeType :
+	  TypeConsistency(RandomType, *newmodel, 0) ? RandomType :
+	  TypeConsistency(ShapeType, *newmodel, 0) ? ShapeType :
 	  OtherType;
 	double Scale =  PisNULL(DSCALE) ? 1.0 : P0(DSCALE);
 	
@@ -1358,25 +1375,25 @@ int structS(cov_model *cov, cov_model **newmodel) {
 	  }	  
 
 	  *newmodel = NULL;     
-	  assert(cov->vdim2[0] == cov->vdim2[1]);
+	  assert(cov->vdim[0] == cov->vdim[1]);
 
 	  
 	  //APMI(dummy);
 
 	  if ((err = addPointShape(newmodel, cov, dummy, cov->tsdim, 
-				   cov->vdim2[0])) != NOERROR) {
+				   cov->vdim[0])) != NOERROR) {
 	    goto ErrorHandling; 
 	  }
 
 	  ASSERT_NEWMODEL_NOT_NULL;
 	  (*newmodel)->calling = cov;
 	  // APMI(cov);
-	} else {
+	} else { // type not RandomType
 	  if (type == PointShapeType && 
 	      (err = addScales((*newmodel)->sub + PGS_LOC, anisoScale, scale, 
 			       Scale)) != NOERROR) goto ErrorHandling;
 	  if ((err = CHECK(*newmodel, cov->tsdim, cov->xdimprev, type, 
-			   cov->domprev, cov->isoprev, cov->vdim2, 
+			   cov->domprev, cov->isoprev, cov->vdim, 
 			   ROLE_MAXSTABLE))
 	      != NOERROR) {
 	    goto ErrorHandling;
@@ -1391,7 +1408,7 @@ int structS(cov_model *cov, cov_model **newmodel) {
 	    if ((err = addScales(&local, anisoScale, scale, Scale))!=NOERROR)
 	      goto ErrorHandling;
 	    if ((err = addPointShape(newmodel, dummy, NULL, local,
-				     cov->tsdim, cov->vdim2[0]))
+				     cov->tsdim, cov->vdim[0]))
 		!= NOERROR) 
 	      goto ErrorHandling; 
 	    //printf("e ddd\n");
@@ -1402,7 +1419,8 @@ int structS(cov_model *cov, cov_model **newmodel) {
 	//assert(false);
 	// XERR(err);
 	//		APMI(*newmodel);
-	if ((err2 = addPointShape(newmodel, cov, NULL, cov->tsdim, cov->vdim2[0]))
+	if ((err2 = addPointShape(newmodel, cov, NULL, cov->tsdim,
+				  cov->vdim[0]))
 	    != NOERROR) {
 	  if (err == NOERROR) err = err2;
 	  goto ErrorHandling; 
@@ -1422,16 +1440,6 @@ int structS(cov_model *cov, cov_model **newmodel) {
    
     break;
   case ROLE_GAUSS :
-    if (isProcess(cov->typus)) {
-      cov->nr = DOLLAR_PROC;
-      return structSproc(cov, newmodel); // kein S-TRUCT !!
-    } 
-
-    ASSERT_NEWMODEL_NOT_NULL;
-    if (Aniso!= NULL) {
-      GERR1("complicated models including arbitrary functions for '%s' cannot be simulated yet", KNAME(DAUSER));
-    } 
-
     if (cov->key != NULL) COV_DELETE(&(cov->key));
 
     if (cov->prevloc->distances) 
@@ -1448,8 +1456,8 @@ int structS(cov_model *cov, cov_model **newmodel) {
  
   default :
     //  PMI(cov, "structS");
-    GERR1("changes in scale/variance not programmed yet for '%s'", 
-	  ROLENAMES[cov->role]);      
+    GERR2("%s : changes in scale/variance not programmed yet for '%s'", 
+	  NICK(cov), ROLENAMES[cov->role]);      
     }
   
   ErrorHandling:
@@ -1474,7 +1482,7 @@ int initS(cov_model *cov, gen_storage *s){
     *anisoM = cov->kappasub[DAUSER],
     *projM = cov->kappasub[DPROJ];
   int 
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     nm = cov->mpp.moments,
     nmvdim = (nm + 1) * vdim,
     err = NOERROR;
@@ -1578,8 +1586,8 @@ int initS(cov_model *cov, gen_storage *s){
       double invdet;
       if (angle) {
 	int 
-	  ncol = anisoM->vdim2[0],
-	  nrow = anisoM->vdim2[1];
+	  ncol = anisoM->vdim[0],
+	  nrow = anisoM->vdim[1];
 	if (nrow != ncol) SERR("only square anisotropic matrices allowed");
 	double 
 	  *diag = PARAM(anisoM, ANGLE_DIAG);
@@ -1660,7 +1668,7 @@ void doS(cov_model *cov, gen_storage *s){
      *varM = cov->kappasub[DVAR],
      *scaleM = cov->kappasub[DSCALE];
    int i,
-     vdim = cov->vdim2[0];
+     vdim = cov->vdim[0];
 
     if (varM != NULL && !varM->deterministic && !isRandom(varM)) {
       assert(!PisNULL(DVAR));
@@ -1718,8 +1726,11 @@ int checkplusmal(cov_model *cov) {
   dim = cov->tsdim;
   xdim = cov->xdimown;
   role = cov->role;
+
+  //  PMI(cov, -1);
+  //  assert(cov->typus == PosDefType);
   
-  for (i=0; i<cov->nsub; i++) {
+  for (i=0; i<cov->nsub; i++) { 
 
     sub = cov->sub[i];
      
@@ -1727,63 +1738,49 @@ int checkplusmal(cov_model *cov) {
       SERR("+ or *: named submodels are not given in a sequence!");
 
     Types type = cov->typus;
+    if (CovList[cov->nr].check == checkmal && type==NegDefType) type=PosDefType;
     domain_type dom = cov->domown;
     isotropy_type iso = cov->isoown;
 
     //    printf("start\n");
     err = ERRORTYPECONSISTENCY;
     for (j=0; j<=1; j++) { // nur trend als abweichender typus erlaubt
-      // 
-      //printf("type = %s %s %d\n", TYPENAMES[type], NICK(sub), j);
-  
-      //  if (dom == XONLY) { printf("loeschen\n");continue;}
-
-    if (TypeConsistency(type, sub) &&
+      if (TypeConsistency(type, sub, 0) &&
 	  (err = CHECK(sub, dim, xdim, type, dom, iso, 
-		       i == 0 ? SUBMODEL_DEP : cov->vdim2[0], role))
+		       i == 0 ? SUBMODEL_DEP : cov->vdim[0], role))
 	  == NOERROR) break;
-
-    //assert(err == ERRORTYPECONSISTENCY);
-
       type = TrendType;
       dom = XONLY;
       iso = CARTESIAN_COORD;
     }
-    //      printf("OK err=%d\n", err);
-    // MERR(err);
     
-   if (err != NOERROR) {
-      //printf("sub %d %s\n", i, NICK(sub));
-      //      APMI(cov);
+    if (err != NOERROR) {
       return err;
     }
 
-   //   printf("A OK err=%d\n", err);
-
     if (cov->typus == sub->typus) {
-      //printf("cov->iso = %d %d\n", cov->isoown, sub->isoprev);
       setbackward(cov, sub);
     } else {  
       updatepref(cov, sub);
       cov->tbm2num |= sub->tbm2num;
       if (CovList[cov->nr].vdim == SUBMODEL_DEP && 
 	  (sub==cov->sub[0] || sub==cov->key)) { // strange todo
-	cov->vdim2[0] = sub->vdim2[0];
-	cov->vdim2[1] = sub->vdim2[1];
+	cov->vdim[0] = sub->vdim[0];
+	cov->vdim[1] = sub->vdim[1];
       }
       cov->deterministic &= sub->deterministic;
     };
     //  printf("C OK err=%d\n", err);
 
     if (i==0) {
-      cov->vdim2[0]=sub->vdim2[0];  // to do: inkonsistent mit vorigen Zeilen !!
-      cov->vdim2[1]=sub->vdim2[1];  // to do: inkonsistent mit vorigen Zeilen !!
-      if (cov->vdim2[0] <= 0) BUG;
+      cov->vdim[0]=sub->vdim[0];  // to do: inkonsistent mit vorigen Zeilen !!
+      cov->vdim[1]=sub->vdim[1];  // to do: inkonsistent mit vorigen Zeilen !!
+      if (cov->vdim[0] <= 0) BUG;
       cov->matrix_indep_of_x = sub->matrix_indep_of_x;
     } else {
       cov->matrix_indep_of_x &= sub->matrix_indep_of_x;
-      if (cov->vdim2[0] != sub->vdim2[0] || cov->vdim2[1] != sub->vdim2[1]) {
-	SERR4("multivariate dimensionality is different in the submodels (%s is %d-variate; %s is %d-variate)", NICK(cov->sub[0]), cov->vdim2[0], NICK(sub), sub->vdim2[0]);
+      if (cov->vdim[0] != sub->vdim[0] || cov->vdim[1] != sub->vdim[1]) {
+	SERR4("multivariate dimensionality is different in the submodels (%s is %d-variate; %s is %d-variate)", NICK(cov->sub[0]), cov->vdim[0], NICK(sub), sub->vdim[0]);
       }
     }
   }
@@ -1807,12 +1804,12 @@ void select(double *x, cov_model *cov, double *v) {
   int len,
     *element = PINT(SELECT_SUBNR);
   cov_model *sub = cov->sub[*element];
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   if (*element >= cov->nsub) error("select: element out of range");
   COV(x, sub, v);
   if ( (len = cov->nrow[SELECT_SUBNR]) > 1) {
     int i, m,
-      vdim = cov->vdim2[0],
+      vdim = cov->vdim[0],
       vsq = vdim * vdim;
     ALLOC_EXTRA(z, vsq);
     for (i=1; i<len; i++) {
@@ -1824,14 +1821,14 @@ void select(double *x, cov_model *cov, double *v) {
 }
   
 
-void covmatrix_select(cov_model *cov, double *v) {
+void covmatrix_select(cov_model *cov, double *v, int *nonzeros) {
   int len = cov->nrow[SELECT_SUBNR];
   
   if (len == 1) {
     int element = P0INT(SELECT_SUBNR);
     cov_model *next = cov->sub[element];
     if (element >= cov->nsub) error("select: element out of range");
-    CovList[next->nr].covmatrix(next, v);
+    CovList[next->nr].covmatrix(next, v, nonzeros);
 
     // {  int i,j,k, tot=Loc(cov)->totalpoints; printf("\nXcovmat select\n");
     //  for (k=i=0; i<tot*tot; i+=tot) {
@@ -1841,7 +1838,7 @@ void covmatrix_select(cov_model *cov, double *v) {
     // crash();
     //  PMI(next);
       
-  }  else StandardCovMatrix(cov, v);
+  }  else StandardCovMatrix(cov, v, nonzeros);
 }
 
 char iscovmatrix_select(cov_model VARIABLE_IS_NOT_USED *cov) {  return 2; }
@@ -1851,6 +1848,7 @@ int checkselect(cov_model *cov) {
 
   assert(cov->Splus == NULL);
 
+  if (!isCartesian(cov->isoown)) return ERRORNOTCARTESIAN;
   kdefault(cov, SELECT_SUBNR, 0);
   if ((err = checkplus(cov)) != NOERROR) return err;
 
@@ -1878,13 +1876,11 @@ void plusStat(double *x, cov_model *cov, double *v){
   cov_model *sub;
   int i, m,
     nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_EXTRA(z, vsq);
   
-  //PMI(cov->calling);
-  //print("%d %s %s\n", vsq, NICK(cov->sub[0])),
   for (m=0; m<vsq; m++) v[m] = 0.0;
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
@@ -1892,22 +1888,16 @@ void plusStat(double *x, cov_model *cov, double *v){
       COV(x, sub, z);
       for (m=0; m<vsq; m++) v[m] += z[m]; 
     }
-
-    // if (cov->calling != NULL) printf("stat i=%d %f %f\n", i, v[m], z[m]);
-    //  crash(cov);
-    //  APMI(cov);
   }
-  
-  //  printf("plus x=%f %f\n", *x, *v);
 }
 
 void plusNonStat(double *x, double *y, cov_model *cov, double *v){
   cov_model *sub;
   int i, m,
     nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_EXTRA(z, vsq);
   for (m=0; m<vsq; m++) v[m] = 0.0;
   for(i=0; i<nsub; i++) {
@@ -1957,7 +1947,7 @@ int checkplus(cov_model *cov) {
     return err;
   }
   
-  if (cov->domown == STAT_MISMATCH) return ERRORNOVARIOGRAM;
+  if (cov->domown == DOMAIN_MISMATCH) return ERRORNOVARIOGRAM;
   if (cov->nsub == 0) cov->pref[SpectralTBM] = PREF_NONE;
 
   if (isPosDef(cov) && cov->domown == XONLY) cov->logspeed = 0.0;
@@ -1984,7 +1974,7 @@ int checkplus(cov_model *cov) {
 }
 
 
-bool Typeplus(Types required, cov_model *cov) {
+bool Typeplus(Types required, cov_model *cov, int depth) {
   // assert(false);
   bool allowed = TypeConsistency(ShapeType, required) || required==TrendType;
     //||required==ProcessType ||required==GaussMethodType; not yet allowed;to do
@@ -1994,7 +1984,7 @@ bool Typeplus(Types required, cov_model *cov) {
   int i;
   for (i=0; i<cov->nsub; i++) {
     //printf("type plus %s %s\n",TYPENAMES[required], NICK(cov->sub[i]));
-    if (TypeConsistency(required, cov->sub[i])) return true;
+    if (TypeConsistency(required, cov->sub[i], depth-1)) return true;
   }  
   // printf("none\n");
   
@@ -2051,8 +2041,8 @@ int structplus(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
 
 int initplus(cov_model *cov, gen_storage *s){
   int i, err,
-    vdim = cov->vdim2[0];
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+    vdim = cov->vdim[0];
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
 
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = RF_NA;
 
@@ -2071,7 +2061,7 @@ int initplus(cov_model *cov, gen_storage *s){
 	COV(ZERO, sub, sd_cum + i);
 	if (i>0) sd_cum[i] += sd_cum[i-1];
       }
-      cov->sub[i]->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
+      cov->sub[i]->Sgen = (gen_storage *) MALLOC(sizeof(gen_storage));
       if ((err = INIT(sub, cov->mpp.moments, s)) != NOERROR) {
 	//  AERR(err);
 	return err;
@@ -2133,12 +2123,12 @@ void doplus(cov_model *cov, gen_storage *s) {
 
 
 
-void covmatrix_plus(cov_model *cov, double *v) {
+void covmatrix_plus(cov_model *cov, double *v, int *nonzeros) {
   location_type *loc = Loc(cov);
   //  cov_fct *C = CovList + cov->nr; // nicht gatternr
   long i, 
     totalpoints = loc->totalpoints,
-    vdimtot = totalpoints * cov->vdim2[0],
+    vdimtot = totalpoints * cov->vdim[0],
     vdimtotSq = vdimtot * vdimtot;
   int
     nsub = cov->nsub;
@@ -2157,14 +2147,17 @@ void covmatrix_plus(cov_model *cov, double *v) {
     int j;
     if (PisNULL(SELECT_SUBNR)) PALLOC(SELECT_SUBNR, 1, 1);
     P(SELECT_SUBNR)[0] = 0;
-    CovList[SELECT].covmatrix(cov, v);
+    CovList[SELECT].covmatrix(cov, v, nonzeros);
     for (i=1; i<nsub; i++) {
       if (Loc(cov->sub[i])->totalpoints != totalpoints) BUG;
       P(SELECT_SUBNR)[0] = i;
-      CovList[SELECT].covmatrix(cov, mem);
+      CovList[SELECT].covmatrix(cov, mem, nonzeros);
       for (j=0; j<vdimtotSq; j++) v[j] += mem[j];
     }
-  } else StandardCovMatrix(cov, v);  
+    int nz = 0;
+    for (j=0; j<vdimtotSq; nz += v[j++] != 0.0);
+    *nonzeros = nz;
+  } else StandardCovMatrix(cov, v, nonzeros);  
 }
 
 char iscovmatrix_plus(cov_model *cov) {
@@ -2184,7 +2177,7 @@ void malStat(double *x, cov_model *cov, double *v){
   cov_model *sub;
   int i, m,
     nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
   ALLOC_EXTRA(z, vsq);
   
@@ -2201,12 +2194,12 @@ void logmalStat(double *x, cov_model *cov, double *v, double *sign){
   cov_model *sub;
   int i, m,
     nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
   ALLOC_EXTRA(z, vsq);
   ALLOC_EXTRA(zsign, vsq);
 
-  assert(cov->vdim2[0] == cov->vdim2[1]); 
+  assert(cov->vdim[0] == cov->vdim[1]); 
   assert(x[0] >= 0.0 || cov->xdimown > 1);
   for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
   for(i=0; i<nsub; i++) {
@@ -2222,12 +2215,12 @@ void logmalStat(double *x, cov_model *cov, double *v, double *sign){
 void malNonStat(double *x, double *y, cov_model *cov, double *v){
   cov_model *sub;
   int i, m, nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
   ALLOC_EXTRA(z, vsq);
 
-  assert(cov->vdim2[0] == cov->vdim2[1]);
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   for (m=0; m<vsq; m++) v[m] = 1.0;
   for(i=0; i<nsub; i++) {
@@ -2241,9 +2234,9 @@ void logmalNonStat(double *x, double *y, cov_model *cov, double *v,
 		   double *sign){
   cov_model *sub;
   int i, m, nsub=cov->nsub,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vsq = vdim * vdim;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_EXTRA(z, vsq);
   ALLOC_EXTRA(zsign, vsq);
   for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
@@ -2283,7 +2276,7 @@ int checkmal(cov_model *cov) {
   
   if ((err = checkplusmal(cov)) != NOERROR) return err;
 
-  if (cov->domown == STAT_MISMATCH || !isPosDef(cov)) {
+  if (cov->domown == DOMAIN_MISMATCH || !isPosDef(cov)) {
     return ERRORNOVARIOGRAM;
   }
   // to do istcftype und allgemeiner typ zulassen
@@ -2309,14 +2302,11 @@ int checkmal(cov_model *cov) {
   return NOERROR;
 }
 
-bool Typemal(Types required, cov_model *cov) {
-  bool allowed = required==PosDefType || required==ShapeType;
-  //||required==NegDefType ||required==TcfType; to do; ist erlaubt unter
-  // gewissen Bedingungen
-  if (!allowed) return false;
+bool Typemal(Types required, cov_model *cov, int depth) {
+  if (!isShape(required)) return false;
   int i;
   for (i=0; i<cov->nsub; i++) {
-    if (!TypeConsistency(required, cov->sub[i])) return false;
+    if (!TypeConsistency(required, cov->sub[i], depth-1)) return false;
   }
   return true;
 }
@@ -2327,8 +2317,8 @@ int initmal(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 //  return err;
   return ERRORFAILED;
   int i, 
-    vdim = cov->vdim2[0];
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+    vdim = cov->vdim[0];
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
 
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = RF_NA;
 }
@@ -2384,7 +2374,7 @@ void kappamppplus(int i, cov_model *cov, int *nr, int *nc){
 
 void mppplus(double *x, cov_model *cov, double *v) { 
   int i, n,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
   cov_model *sub;
   ALLOC_EXTRA(z, vdimSq);
@@ -2414,12 +2404,7 @@ int checkmppplus(cov_model *cov) {
 
   if ((err = CheckAndSetP(cov)) != NOERROR) return(err);
 
-  if (cov->q == NULL) {
-    if ((cov->q  = (double*) CALLOC(sizeof(double), size)) == NULL)
-      return ERRORMEMORYALLOCATION;
-    cov->qlen = size;
-  }
-
+  if (cov->q == NULL) QALLOC(size);
   EXTRA_STORAGE;
   
   return NOERROR;
@@ -2456,7 +2441,7 @@ int struct_mppplus(cov_model *cov, cov_model **newmodel){
   // if (nr == MPPPLUS) return S TRUCT(shape, NULL);
  
   ASSERT_NEWMODEL_NOT_NULL;
-  NEW_STORAGE(Splus, PLUS, plus_storage);
+  NEW_STORAGE(plus);
   plus_storage *s = cov->Splus;
 
   for (m=0; m<cov->nsub; m++) {
@@ -2475,8 +2460,8 @@ int init_mppplus(cov_model *cov, gen_storage *S) {
   double M2[MAXMPPVDIM], M2plus[MAXMPPVDIM], Eplus[MAXMPPVDIM], 
     maxheight[MAXMPPVDIM];
   int i,n, err,
-    vdim = cov->vdim2[0];
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+    vdim = cov->vdim[0];
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
   if (vdim > MAXMPPVDIM) BUG;
   ext_bool 
     loggiven = SUBMODEL_DEP,
@@ -2487,7 +2472,7 @@ int init_mppplus(cov_model *cov, gen_storage *S) {
     M2[i] = M2plus[i] = Eplus[i] = 0.0;
   }
     
-  NEW_STORAGE(Spgs, PGS, pgs_storage);
+  NEW_STORAGE(pgs);
   pgs = cov->Spgs;
   pgs->totalmass = 0.0;
   
@@ -2564,8 +2549,8 @@ void do_mppplus(cov_model *cov, gen_storage *s) {
   cov_model *sub;
   double subselect = UNIFORM_RANDOM;
   int i, subnr,
-    vdim = cov->vdim2[0];
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+    vdim = cov->vdim[0];
+  assert(cov->vdim[0] == cov->vdim[1]);
   for (subnr=0; (subselect -= PARAM0(cov->sub[subnr], PLUS_P)) > 0; subnr++);
   cov->q[0] = (double) subnr;
   sub = cov->sub[subnr];
@@ -2624,7 +2609,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
 	bytes = dim * sizeof(double);
       long i,
 	total = loc->totalpoints;
-      if (dim != Aniso->vdim2[0]) BUG;
+      if (dim != Aniso->vdim[0]) BUG;
       double *v = NULL,
 	*x = loc->x;
       assert(x != NULL);
@@ -2658,7 +2643,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     
     dim = key->prevloc->timespacedim;
     if ((err = CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD,
-		     cov->vdim2, cov->role)) != NOERROR) return err;
+		     cov->vdim, cov->role)) != NOERROR) return err;
     err = STRUCT(cov->key, NULL);
     //    cov->initialised = err==NOERROR && key->initialised;
 
@@ -2667,8 +2652,8 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     return err;
   default :
     //  PMI(cov, "structS");
-    SERR1("changes in scale/variance not programmed yet for '%s'", 
-	  ROLENAMES[cov->role]);      
+    SERR2("%s: changes in scale/variance not programmed yet for '%s'", 
+	  NICK(cov), ROLENAMES[cov->role]);      
   }
      
   return NOERROR;
@@ -2710,9 +2695,9 @@ int initSproc(cov_model *cov, gen_storage *s){
        cov->ownloc->totalpoints != prevloc->totalpoints)) {
     assert(prevloc->grid);
     int dim = prevloc->timespacedim;
-    if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+    if (cov->vdim[0] != cov->vdim[1]) BUG;
     cov->rf = (res_type*) MALLOC(sizeof(res_type) *
-				 cov->vdim2[0] * 
+				 cov->vdim[0] * 
 				 prevloc->totalpoints);
     DOLLAR_STORAGE;
  
@@ -2777,8 +2762,8 @@ void doSproc(cov_model *cov, gen_storage *s){
       *scaleM = cov->kappasub[DSCALE];
  
     int i,
-      vdim = cov->vdim2[0];
-    assert(cov->vdim2[0] == cov->vdim2[1]);
+      vdim = cov->vdim[0];
+    assert(cov->vdim[0] == cov->vdim[1]);
 
     if (varM != NULL && !varM->deterministic) {
       assert(!PisNULL(DVAR));
@@ -2875,16 +2860,15 @@ int checkplusmalproc(cov_model *cov) {
     if (sub == NULL) 
       SERR("named submodels are not given in a sequence.");
 
-
-    if (!TypeConsistency(type, sub)) return ERRORTYPECONSISTENCY;
+    if (!TypeConsistency(type, sub, 0)) return ERRORTYPECONSISTENCY;
     if ((err= CHECK(sub, dim, xdim, type, dom, iso, SUBMODEL_DEP, role))
 	!= NOERROR) return err;
 
    if (i==0) {
-      cov->vdim2[0]=sub->vdim2[0];  // to do: inkonsistent mit vorigen Zeilen !!
-      cov->vdim2[1]=sub->vdim2[1];  // to do: inkonsistent mit vorigen Zeilen !!
+      cov->vdim[0]=sub->vdim[0];  // to do: inkonsistent mit vorigen Zeilen !!
+      cov->vdim[1]=sub->vdim[1];  // to do: inkonsistent mit vorigen Zeilen !!
     } else {
-      if (cov->vdim2[0] != sub->vdim2[0] || cov->vdim2[1] != sub->vdim2[1]) {
+      if (cov->vdim[0] != sub->vdim[0] || cov->vdim[1] != sub->vdim[1]) {
 	SERR("multivariate dimensionality must be equal in the submodels");
       }
     }
@@ -2913,7 +2897,7 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
   case ROLE_GAUSS : 
     {
       location_type *loc = Loc(cov);
-      NEW_STORAGE(Splus, PLUS, plus_storage);
+      NEW_STORAGE(plus);
       plus_storage *s =cov->Splus;
       for (m=0; m<cov->nsub; m++) {
 
@@ -2938,7 +2922,7 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
 	//	assert(false);
 
 	err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
-		    ProcessType, XONLY, CARTESIAN_COORD, cov->vdim2, ROLE_GAUSS);
+		    ProcessType, XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS);
 	if (err != NOERROR) {
 	  //	  
 	  return err;
@@ -2987,8 +2971,8 @@ int structmultproc(cov_model *cov, cov_model **newmodel){
 
 int initplusmalproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int i, err,
-    vdim = cov->vdim2[0];
- assert(cov->vdim2[0] == cov->vdim2[1]);
+    vdim = cov->vdim[0];
+ assert(cov->vdim[0] == cov->vdim[1]);
 
   for (i=0; i<vdim; i++)   
     cov->mpp.maxheights[i] = RF_NA;
@@ -2999,9 +2983,9 @@ int initplusmalproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     for (i=0; i<cov->nsub; i++) {
       //printf("i=%d\n", i);
       cov_model *sub = cov->Splus == NULL ? cov->sub[i] : cov->Splus->keys[i];
-      assert(cov->sub[i]->stor==NULL);
-      cov->sub[i]->stor = (gen_storage *) MALLOC(sizeof(gen_storage));
-      if ((err = INIT(sub, 0, cov->sub[i]->stor)) != NOERROR) {
+      assert(cov->sub[i]->Sgen==NULL);
+      cov->sub[i]->Sgen = (gen_storage *) MALLOC(sizeof(gen_storage));
+      if ((err = INIT(sub, 0, cov->sub[i]->Sgen)) != NOERROR) {
 	return err;
       }
       sub->simu.active = true;
@@ -3042,9 +3026,9 @@ int initplusproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 void doplusproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int m, i,
-    total = cov->prevloc->totalpoints * cov->vdim2[0];
+    total = cov->prevloc->totalpoints * cov->vdim[0];
   double *res = cov->rf;
- assert(cov->vdim2[0] == cov->vdim2[1]);
+ assert(cov->vdim[0] == cov->vdim[1]);
 
   if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
     ERR("error in doplus with spectral");
@@ -3055,7 +3039,7 @@ void doplusproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     cov_model *key = cov->Splus->keys[m],
       *sub = cov->sub[m];
     double *keyrf = key->rf;
-    DO(key, sub->stor);
+    DO(key, sub->Sgen);
     if (m > 0)
       for(i=0; i<total; i++) res[i] += keyrf[i];
   }
@@ -3099,9 +3083,9 @@ int initmultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   int m, i,
-    total = cov->prevloc->totalpoints * cov->vdim2[0];
+    total = cov->prevloc->totalpoints * cov->vdim[0];
   double *res = cov->rf;
- assert(cov->vdim2[0] == cov->vdim2[1]);
+ assert(cov->vdim[0] == cov->vdim[1]);
 
   if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
     ERR("error in do_mult with spectral");
@@ -3115,7 +3099,7 @@ void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     cov_model *key = cov->Splus->keys[m],
       *sub = cov->sub[m];
     double *keyrf = key->rf;
-    DO(key, sub->stor);
+    DO(key, sub->Sgen);
       for(i=0; i<total; i++) res[i] += keyrf[i];
   }
   return;
@@ -3151,17 +3135,11 @@ void logPowSstat(double *x, cov_model *cov, double *v, double *sign){
     p = P0(POWPOWER),
     invscale = 1.0 / scale;
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim *vdim,
     xdimown = cov->xdimown;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_DOLLAR(z, xdimown);
-
-  // if (cov->calling->nr != RECTANGULAR)
-  //   printf("%s\n",  NICK((cov->calling->calling->sub[PGS_LOC])));
-  //  assert(cov->calling->nr == RECTANGULAR || 
-  //	 (cov->calling->calling->sub[PGS_LOC]->nr == LOC &&
-  //	  scale == PARAM0(cov->calling->calling->sub[PGS_LOC], LOC_SCALE)));
 
   for (i=0; i < xdimown; i++) z[i] = invscale * x[i];
   if (sign==NULL) {
@@ -3192,10 +3170,10 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
     p = P0(POWPOWER),
      invscale = 1.0 / scale;
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim,
     xdimown = cov->xdimown;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_DOLLARY(z1, z2, xdimown);
 
   for (i=0; i<xdimown; i++) {
@@ -3218,13 +3196,13 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
 void inversePowS(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[POW_SUB];
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
   double y, 
     scale =P0(POWSCALE),
     p = P0(POWPOWER),
     var = P0(POWVAR);
- assert(cov->vdim2[0] == cov->vdim2[1]);
+ assert(cov->vdim[0] == cov->vdim[1]);
 
   y= *x / (var * pow(scale, p)); // inversion, so variance becomes scale
   if (CovList[next->nr].inverse == ErrCov) BUG;
@@ -3269,6 +3247,8 @@ int checkPowS(cov_model *cov) {
     tsdim = cov->tsdim,
     xdimown = cov->xdimown,
     xdimNeu = xdimown;
+
+  if (!isCartesian(cov->isoown)) return ERRORNOTCARTESIAN;
     
   kdefault(cov, POWVAR, 1.0);
   kdefault(cov, POWSCALE, 1.0);
@@ -3292,7 +3272,7 @@ int checkPowS(cov_model *cov) {
 
 
 
-bool TypePowS(Types required, cov_model *cov) {
+bool TypePowS(Types required, cov_model *cov, int depth) {
   cov_model *next = cov->sub[0];
 
   // printf("\n\n\nxxxxxxxxxxxx %d %s %s\n\n", TypeConsistency(required, next), TYPENAMES[required], NICK(next));
@@ -3302,7 +3282,7 @@ bool TypePowS(Types required, cov_model *cov) {
   return (required==TcfType || required==PosDefType || required==NegDefType
 	  || required==ShapeType || required==TrendType 
 	  || required==ProcessType || required==GaussMethodType)
-    && TypeConsistency(required, next);
+    && TypeConsistency(required, next, depth-1);
 }
 
 
@@ -3376,8 +3356,8 @@ int structPowS(cov_model *cov, cov_model **newmodel) {
     break;
   default :
     //  PMI(cov, "structS");
-    SERR1("changes in scale/variance not programmed yet for '%s'", 
-	  ROLENAMES[cov->role]);      
+    SERR2("'%s': changes in scale/variance not programmed yet for '%s'", 
+	  NICK(cov), ROLENAMES[cov->role]);      
   }  
    
   return NOERROR;
@@ -3394,13 +3374,13 @@ int initPowS(cov_model *cov, gen_storage *s){
     *varM = cov->kappasub[POWVAR],
     *scaleM = cov->kappasub[POWSCALE];
   int 
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     nm = cov->mpp.moments,
     nmvdim = (nm + 1) * vdim,
     err = NOERROR;
   bool 
     maxstable = hasExactMaxStableRole(cov);// Realisationsweise 
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
 
   assert(cov->key == NULL || ({PMI(cov);false;}));//   
@@ -3474,7 +3454,7 @@ int initPowS(cov_model *cov, gen_storage *s){
     if (scaleM != NULL && !maxstable) {
       if (dim + nm * intp < 0 || dim + intp * nm > scaleM->mpp.moments) 
 	SERR("moments cannot be calculated");
-      assert(scaleM->vdim2[0] == 1 && scaleM->vdim2[1] == 1 );
+      assert(scaleM->vdim[0] == 1 && scaleM->vdim[1] == 1 );
       for (i=0; i <= nm; i++) {
 	int idx = dim + i * intp;
 	cov->mpp.mM[i] *= scaleM->mpp.mM[idx];
@@ -3540,8 +3520,8 @@ void doPowS(cov_model *cov, gen_storage *s){
     DO(next, s);// nicht gatternr
     double factor = P0(POWVAR) / pow(P0(POWSCALE), P0(POWPOWER));
     int i,
-      vdim = cov->vdim2[0];
-    assert(cov->vdim2[0] == cov->vdim2[1]);
+      vdim = cov->vdim[0];
+    assert(cov->vdim[0] == cov->vdim[1]);
     for (i=0; i<vdim; i++)   
       cov->mpp.maxheights[i] = next->mpp.maxheights[i] * factor;
     return;

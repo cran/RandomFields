@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Lapack.h>
 #include "RF.h"
 #include "primitive.h"
-#include "randomshape.h"
+#include "shape_processes.h"
 
 #define NUGGET_TOL 0
 #define NUGGET_VDIM 1
@@ -57,9 +57,9 @@ void nugget(double *x, cov_model *cov, double *v) {
 
   double diag = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
-    vdim   = cov->vdim2[0],
+    vdim   = cov->vdim[0],
     vdimsq = vdim * vdim;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   v[0] = diag;
   for (i = 1; i<vdimsq; v[i++] = diag) {
@@ -69,16 +69,17 @@ void nugget(double *x, cov_model *cov, double *v) {
 }
 
 
-void covmatrix_nugget(cov_model *cov, double *v) {
+void covmatrix_nugget(cov_model *cov, double *v, int*nonzeros) {
   location_type *loc = Loc(cov);
   int 
-    vdim   = cov->vdim2[0];
+    vdim   = cov->vdim[0];
   long i,
     n = loc->totalpoints * vdim,
     nP1 = n + 1,
     n2 = n * n;
   for (i=0; i<n2; v[i++]=0.0);
   for (i=0; i<n2; i += nP1) v[i]=1.0;
+  *nonzeros = n;
 
   //  {  int i,j,k, tot=Loc(cov)->totalpoints; printf("\nnugget %d %d %d\n", n, n2, nP1);
   //   for (k=i=0; i<tot*tot; i+=tot) {
@@ -108,10 +109,10 @@ int check_nugget(cov_model *cov) {
   kdefault(cov, NUGGET_TOL, gp->tol);
   if (PisNULL(NUGGET_VDIM)) {
 
-    if (cov->vdim2[0] <= 0) cov->vdim2[0] = cov->vdim2[1] = 1;
-    kdefault(cov, NUGGET_VDIM, cov->vdim2[0]);
+    if (cov->vdim[0] <= 0) cov->vdim[0] = cov->vdim[1] = 1;
+    kdefault(cov, NUGGET_VDIM, cov->vdim[0]);
   } else {
-    cov->vdim2[0] = cov->vdim2[1] = P0INT(NUGGET_VDIM);
+    cov->vdim[0] = cov->vdim[1] = P0INT(NUGGET_VDIM);
   }
 
   cov->matrix_indep_of_x = true;
@@ -203,8 +204,8 @@ int check_nugget_proc(cov_model *cov) {
    
 
 
-  cov->vdim2[0] = next->vdim2[0];  
-  cov->vdim2[1] = next->vdim2[1];  
+  cov->vdim[0] = next->vdim[0];  
+  cov->vdim[1] = next->vdim[1];  
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
     return ERRORDIM;
   cov->role = ROLE_GAUSS;
@@ -244,7 +245,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   cov_model *next = cov->sub[0];
   nugget_storage *s;
   int d, //
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     err = NOERROR,
     origdim = loc->timespacedim,
     dim = cov->tsdim,
@@ -256,7 +257,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   ROLE_ASSERT_GAUSS;
 
   cov->method = Nugget;
-  NEW_STORAGE(Snugget, NUGGET, nugget_storage);
+  NEW_STORAGE(nugget);
   s = cov->Snugget;
   s->pos = NULL;
   s->red_field = NULL;
@@ -270,7 +271,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   
 
   if ((s->simple = origdim == dim)) {
-    double value[MAXNUGGDIM], ivalue[MAXNUGGDIM], dummy[5 * MAXNUGGDIM], *A;
+    double value[MAXNUGGETDIM], ivalue[MAXNUGGETDIM], dummy[5 * MAXNUGGETDIM], *A;
     int 
       ndummy = 5 * origdim;
     char No = 'N';
@@ -286,8 +287,8 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 	  }
       }
     } else {    
-     if (dim > MAXNUGGDIM) {
-       GERR2("dim=%d larger than MAXNUGGDIM=%d", dim, MAXNUGGDIM);
+     if (dim > MAXNUGGETDIM) {
+       GERR2("dim=%d larger than MAXNUGGETDIM=%d", dim, MAXNUGGETDIM);
       } 
       anisotype = Type(loc->caniso, loc->cani_nrow, loc->cani_ncol);
       A = (double*) MALLOC(dimSq * sizeof(double));
@@ -329,7 +330,8 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       s->prod_dim[0] = 1; 
 
       for (d=0; d<dim; d++) {
-	s->reduced_dim[d] = fabs(loc->xgr[d][XSTEP]) <= tol ? 1 : loc->length[d];
+	s->reduced_dim[d] = 
+	  fabs(loc->xgr[d][XSTEP]) <= tol ? 1 : loc->xgr[d][XLENGTH];
 	s->prod_dim[d + 1] = s->prod_dim[d] * s->reduced_dim[d];
 	
       //print("d=%d %d %d %d\n",d,s->prod_dim[0],s->prod_dim[1],s->prod_dim[2]);
@@ -380,7 +382,7 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   nugget_storage* s;
   long nx, endfor;
   int v, 
-    vdim = cov->vdim2[0];
+    vdim = cov->vdim[0];
   double 
     *res = cov->rf;
   bool loggauss = GLOBAL.gauss.loggauss;
@@ -394,7 +396,7 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     }
   } else {
     if (s->simugrid) {
-      int d, i, dim, dimM1, index[MAXNUGGDIM], *red_dim, *prod_dim;
+      int d, i, dim, dimM1, index[MAXNUGGETDIM], *red_dim, *prod_dim;
       long totpnts, idx;
       res_type *field;
       totpnts = loc->totalpoints;
@@ -415,13 +417,12 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       for (d=0; d<dim; index[d++] = 0);
       for (i=0; i<totpnts; i++) {
 	for(idx=d=0; d<dim; d++) idx += (index[d] % red_dim[d]) * prod_dim[d];
-	//	print("for %d %d %f d=%d %d len=%d %d \n", i, idx, (double) field[idx], index[0], index[1], loc->length[0], loc->length[1]);
 	for (v=0; v<vdim; v++) {
 	  res[i + v] = field[idx + v];
 	}
 	d = 0; 
 	(index[d])++; 
-	while (d < dimM1 && index[d] >= loc->length[d]) { 
+	while (d < dimM1 && index[d] >= loc->xgr[d][XLENGTH]) { 
 	  assert(d<dim); // assert(d>=0);
 	  index[d] = 0; 
 	  d++;   
@@ -449,7 +450,7 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   if (loggauss) {
     int i, 
-      vdimtot = loc->totalpoints * cov->vdim2[0];
+      vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }

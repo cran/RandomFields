@@ -15,9 +15,11 @@
 %% S3 methods
 \alias{print.RFgridDataFrame}
 \alias{cbind.RFgridDataFrame}
+\alias{as.data.frame.RFgridDataFrame}
 \alias{as.matrix.RFgridDataFrame}
 \alias{as.array.RFgridDataFrame}
 \alias{as.vector.RFgridDataFrame}
+\alias{as.data.frame.RFgridDataFrame}
 
 \title{Class \code{RFgridDataFrame} }
 \description{ Class for attributes in one-dimensional space.}
@@ -91,7 +93,9 @@
  \item{as.array}{\code{signature(x = "RFgridDataFrame")}: converts
           \code{data}-slot to array}
  \item{as.vector}{\code{signature(x = "RFgridDataFrame")}: converts
-          \code{data}-slot to vector}
+   \code{data}-slot to vector}
+ \item{as.data.frame}{\code{signature(x = "RFgridDataFrame")}:
+   converts \code{data}-slot and coordinates to a data.frame}
  }
 }
 
@@ -107,6 +111,8 @@
  \code{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}},
  which is for point 
  locations in higher dimensional spaces,
+ \code{\link{RFpointsDataFrame-class}} which is for one-dimensional
+ arbitray locations,
  \code{\link[=RFsp-class]{RFsp}} 
 }
 

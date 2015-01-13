@@ -259,7 +259,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
 
     case 1 :
       /*  idea: 
-	 1) fix a vector `delta' of positive components
+	 1) fix a vector 'delta' of positive components
 	 2) search for any pair of points whose distSqance vector dv equals
 	    |dv[i]|=delta
 	    and some the f(value1, value2) up.

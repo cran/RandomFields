@@ -1,5 +1,6 @@
 \name{Hyperplane}
 \alias{Hyperplane}
+\alias{Hyperplanes}
 \alias{RPhyperplane}
 \title{Hyperplane method}
 \description{
@@ -15,7 +16,7 @@
 }
 
 \usage{
-RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param)
+RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param ,additive)
 }
 
 \arguments{
@@ -52,6 +53,13 @@ RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param)
  distribution. The argument should not be changed yet.
  
  Default: \code{NA}.
+ }
+
+ \item{additive}{logical.
+   If \code{TRUE} independent realisations are added, else
+   the maximum is taken.
+
+   Default: \code{TRUE}.
  }
  }
 

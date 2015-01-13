@@ -19,24 +19,29 @@
 }
 
 \usage{
-RPcoins(phi, shape, intensity) 
+RPcoins(phi, shape, intensity, method) 
 
-RPaverage(phi, shape, intensity) 
+RPaverage(phi, shape, intensity, method) 
 
 }
 
 \arguments{
- \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
-   specifies the covariance function of the Poisson process;
-   either \code{phi} or \code{shape} must be given.
- }
- \item{shape}{object of class \code{\link[=RMmodel-class]{RMmodel}};
- specifies the function which is attached to the Poisson points;
- note that this is not the covariance function of the simulated
- random field.}
-\item{intensity}{positive number, intensity of the underlying Poisson
- point process.
- }
+  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
+    specifies the covariance function of the Poisson process;
+    either \code{phi} or \code{shape} must be given.
+  }
+  \item{shape}{object of class \code{\link[=RMmodel-class]{RMmodel}};
+    specifies the function which is attached to the Poisson points;
+    note that this is not the covariance function of the simulated
+    random field.}
+  \item{intensity}{positive number, intensity of the underlying Poisson
+    point process.
+  }
+  \item{method}{integer.
+    Default is the value \code{0} which addresses the current standard
+    procedure. There might be further methods implemented mainly for
+    internal purposes.
+  }
 }
  
 

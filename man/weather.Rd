@@ -61,6 +61,7 @@ of Washington Department of Atmospheric Sciences.
 
 \examples{
 ## see 'jss14'
+\dontshow{FinalizeExample()}
 }
 
 \keyword{datasets}

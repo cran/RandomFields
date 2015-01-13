@@ -115,7 +115,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   if (block.sequ[1] < 2500)
     warning("results may show high variation due to short sequence(s).")
 
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("(formatting) ")
+  if (printlevel>=PL_STRUCTURE) cat("(formatting) ")
   if (ncol(ct$x)>1) {
     if (!is.array(data)) data <- array(as.double(data), dim=dimen)
     if (sort) { ## so that the first dimension gives the side with
@@ -135,10 +135,14 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
 
   ## periodogram, code taken from jean-francois coeurjolly
   if (do.fft) {
-    if (printlevel>=PL.FCTN.STRUCTURE) cat("periodogramm")
+
+
+     
+    if (printlevel>=PL_STRUCTURE) cat("periodogramm")
     fft.len <- min(dimen[1], fft.max.length)
     fft.m <- round(fft.m)
     stopifnot(diff(fft.m)>0, all(fft.m>0), all(fft.m<=fft.len))
+#    Print("periodogramm")
     l.I.lambda <-
       .Call("periodogram",
             data,
@@ -155,7 +159,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
 
   ## detrended fluctuation analysis
   if (do.dfa || do.var) {
-    if (printlevel>=PL.FCTN.STRUCTURE) {
+    if (printlevel>=PL_STRUCTURE) {
       if (do.dfa) cat("detrended fluctuation; ")
       if (do.var) cat("aggregated variation; ")
     }
@@ -167,6 +171,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     ##    l.varmeth.var <- double(dfa.len * repet)
     ## wird data zerstoert ?!
     ## log already returned!
+#Print("detrendedfluc")
     l.var <- ## rbind(l.varmeth.var, l.dfa.var)
       .Call("detrendedfluc", as.double(data), as.integer(dimen[1]),
             as.integer(repet),
@@ -181,7 +186,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   }
 
   gc() 
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\n")
+  if (printlevel>=PL_STRUCTURE) cat("\n")
 
   if (any(mode=="plot" | mode=="interactive"))
   {
@@ -224,7 +229,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     }
   }
   
-  if (printlevel>PL.SUBIMPORPANT ) {
+  if (printlevel>PL_SUBIMPORTANT ) {
     cat("#################### Hurst #################### \n")
     cat(c(dfa.H=dfa$val, varmeth.H=varmeth$val, fft.H=fft$val))
     cat("---- by interactively defined regression interval:\n")
@@ -322,7 +327,7 @@ RFfractaldim <-
 
   ## variogram method (grid or arbitray locations)
   if (do.vario) {
-    if (printlevel>PL.FCTN.STRUCTURE) cat("variogram; ")    
+    if (printlevel>PL_STRUCTURE) cat("variogram; ")    
     ev <- RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=ct$grid,
                              bin=bin, spConform=FALSE)
     idx <-  is.finite(l.binvario <- log(ev$emp))
@@ -333,7 +338,7 @@ RFfractaldim <-
   if (ct$grid) {
     dimen <- cbind(ct$x, ct$T)[3, ] 
     
-    if (printlevel>=PL.FCTN.STRUCTURE) cat("(formatting) ")
+    if (printlevel>=PL_STRUCTURE) cat("(formatting) ")
     if (ncol(ct$x)>1) {
       if (!is.array(data)) data <- array(as.double(data), dim=dimen)
       if (sort) { ## see fractal
@@ -351,7 +356,7 @@ RFfractaldim <-
     gc()
     
     if (do.range) {
-      if (printlevel>=PL.FCTN.STRUCTURE) cat("ranges")
+      if (printlevel>=PL_STRUCTURE) cat("ranges")
       lrs <- length(range.sequ) ## range.sequ is bound right here!
       #   l.range.count <- double(lrs * repet)
       ## logarithm is already taken within minmax
@@ -367,7 +372,7 @@ RFfractaldim <-
     
     if (do.box) {
       stop("this point cannot be reached")
-      if (printlevel>=PL.FCTN.STRUCTURE) cat("box counting; ")
+      if (printlevel>=PL_STRUCTURE) cat("box counting; ")
       x <- ct$x[,1] / ct$x[3,1] ## alles auf integer
       factor <- diff(x[c(1,2)]) / diff(range(data)) * box.enlarge.y
       ## note: data changes its shape! -- should be irrelevant to any procedure!
@@ -390,7 +395,7 @@ RFfractaldim <-
 
     if (do.fft) {
       ## periodogram, code taken from jean-francois coeurjolly and WOSA
-      if (printlevel>=PL.FCTN.STRUCTURE) cat("periodogramm; ")
+      if (printlevel>=PL_STRUCTURE) cat("periodogramm; ")
       fft.len <- min(dimen[1],  fft.max.length) ## the virtual length
      
       ## fft.m is given in percent [in log-scale]; it is now rewriten
@@ -414,7 +419,7 @@ RFfractaldim <-
     }
   } else { # not grid
     if (do.box || do.range || do.fft) {
-      if (printlevel>=PL.IMPORPANT) {
+      if (printlevel>=PL_IMPORTANT) {
         cat("\nThe following methods are available only for grids:\n")
         if (do.box)   cat("  * box counting\n")
         if (do.range) cat("  * max-min method\n")
@@ -423,7 +428,7 @@ RFfractaldim <-
       do.box <- do.range <- do.fft <- FALSE
     }
   }
-  if (printlevel>PL.FCTN.STRUCTURE) cat("\n")
+  if (printlevel>PL_STRUCTURE) cat("\n")
 
 
   if (any(mode=="plot" | mode=="interactive")) {
@@ -462,7 +467,7 @@ RFfractaldim <-
     }
     if (do.fft) {
       scr <- scr + 1
-      if (length(l.lambda)>fft.max.regr && printlevel>=PL.IMPORPANT)
+      if (length(l.lambda)>fft.max.regr && printlevel>=PL_IMPORTANT)
         cat("too large data set; no fft regression fit")
       else
         fft <- regression(l.lambda, l.I.lambda, main="periodogram", pch=pch[4],
@@ -475,7 +480,7 @@ RFfractaldim <-
   }
 
   
-  if (printlevel>=PL.SUBIMPORPANT) {
+  if (printlevel>=PL_SUBIMPORTANT) {
     cat("##################### fractal D ############### \n")
     cat(c(D.vario=vario$val,# D.box=box$val, D.range=rnge$val,
           D.fft=fft$val))

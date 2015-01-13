@@ -26,7 +26,6 @@ among max-stable processes
 \examples{
 
 \dontshow{\dontrun{
-\donttest{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 %  library(RandomFields, lib="~/TMP")
@@ -40,7 +39,6 @@ col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) \%\% 16)],sep=""),
 RFoptions(every=1000, xi=0)
 x <- seq(0, 5, if (interactive()) 0.01 else 1)
 
-
 ## Figure 2
 model <- RMfbm(alpha=1, var=4) ## not 8 as in the paper, since semi-variogram
 bm <- RMbrownresnick(model)
@@ -49,7 +47,7 @@ bm <- RMbrownresnick(model)
 # Fig. 2, Brown-Resnick
 z1 <- RFsimulate(RPbrownresnick(model), x, x)
 plot(z1, col=col)
-}}}
+}}
 
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_BRorig.pdf");  dev.print(device=jpeg,
@@ -59,11 +57,10 @@ file="SBS_BRorig.jpg", height=1000, width=1000, quality=100)
 
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 2, Monotone functions
 z2 <- RFsimulate(RPsmith(RMm2r(bm), xi=0), x, x, 0)
 plot(z2, col=col)
-}}}
+}}
 
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_mono.pdf"); dev.print(device=jpeg,
@@ -72,22 +69,20 @@ file="SBS_mono.jpg", height=1000, width=1000, quality=100)
 
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 2, balls
 z3 <- RFsimulate(RPsmith(RMm3b(bm)), x, x, 0, eps_zhou=0.1)
 plot(z3, col=col)
-}}}
+}}
 \dontshow{\dontrun{
   dev.copy2pdf(file="SBS_ball.pdf"); dev.print(device=jpeg,
 file="SBS_ball.jpg", height=1000, width=1000, quality=100)
 }}
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 2,
 z4 <- RFsimulate(RPsmith(RMmps(bm)), x, x, eps_zhou=0.1)
 plot(z4, col=col)
-}}}
+}}
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_poly.pdf"); dev.print(device=jpeg,
 file="SBS_poly.jpg", height=1000, width=1000, quality=100)
@@ -95,18 +90,16 @@ file="SBS_poly.jpg", height=1000, width=1000, quality=100)
 
 
 \dontshow{\dontrun{
-\donttest{
 ## Figure 4
 model <- RMexp(var=1.62) 
 bm <- RMbrownresnick(model)
-}}}
+}}
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 4, Brown-Resnick
 z5 <- RFsimulate(RPbrownresnick(model), x, x)
 plot(z5, col=col)
-}}}
+}}
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_BRexp.pdf"); dev.print(device=jpeg,
 file="SBS_BRexp.jpg", height=1000, width=1000, quality=100)
@@ -114,11 +107,10 @@ file="SBS_BRexp.jpg", height=1000, width=1000, quality=100)
 
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 4, extremal Gaussian
 z6 <- RFsimulate(RPschlather(bm), x, x)
 plot(z6, col=col)
-}}}
+}}
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_schlather.pdf");
 dev.print(device=jpeg, file="SBS_schlather.jpg",
@@ -127,11 +119,10 @@ height=1000, width=1000, quality=100)
 
 
 \dontshow{\dontrun{
-\donttest{
 # Fig. 4, extremal binary 
 z7 <- RFsimulate(RPschlather(RPbernoulli(bm)), x, x)
 plot(z7, col=col)
-}}}
+}}
 \dontshow{\dontrun{
 dev.copy2pdf(file="SBS_binary.pdf");
 dev.print(device=jpeg, file="SBS_binary.jpg",

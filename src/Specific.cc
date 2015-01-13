@@ -75,8 +75,8 @@ int check_specificGauss(cov_model *cov) {
   }
   cov_model *sub = cov->key == NULL ? next : key;
   setbackward(cov, sub);
-  cov->vdim2[0] = sub->vdim2[0];
-  cov->vdim2[1] = sub->vdim2[1];
+  cov->vdim[0] = sub->vdim[0];
+  cov->vdim[1] = sub->vdim[1];
 
   //PMI(cov);
 
@@ -100,7 +100,7 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   if (cov->key != NULL) COV_DELETE(&(cov->key));
   if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
   if ((err = CHECK(cov->key, next->tsdim, next->xdimprev, next->typus, 
-		   next->domprev, next->isoprev, next->vdim2,
+		   next->domprev, next->isoprev, next->vdim,
 		   next->role))!= NOERROR) {
     //PMI(cov->key); XERR(err);
     //printf("specific ok\n");
@@ -124,7 +124,7 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   //   APMI(cov->key);
 
   if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		   XONLY, CARTESIAN_COORD, cov->vdim2, ROLE_GAUSS)) != NOERROR) {
+		   XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) != NOERROR) {
     //PMI(cov->key); XERR(err);
     //printf("specific ok\n");
     // crash();
@@ -172,7 +172,7 @@ void do_specificGauss(cov_model *cov, gen_storage *S) {
   assert(key != NULL);
   DO(key, S);
   if (loggauss) {
-    long i, vdimtot = loc->totalpoints * cov->vdim2[0];
+    long i, vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 }

@@ -169,7 +169,7 @@ int init_spectral(cov_model *cov, gen_storage *S){
     goto ErrorHandling;
   }
  
-  if (cov->vdim2[0] > 1) {
+  if (cov->vdim[0] > 1) {
     err = ERRORNOMULTIVARIATE;
     goto ErrorHandling;
   }
@@ -279,20 +279,22 @@ void do_spectral(cov_model *cov, gen_storage *S)
   for (n=0; n<total; n++) res[n]=0.0;
   //the very procedure:
   gridlenx = gridleny = gridlenz = gridlent = 1;
-  switch (origdim) {
-  case 4 : 
-    gridlent = loc->length[3];
-    // no break;
-  case 3 : 
-    gridlenz = loc->length[2];
-    // no break;
-  case 2 : 
-    gridleny = loc->length[1];
-    // no break;
-  case 1 : 
-    gridlenx = loc->length[0];
-    break;
-  default: BUG;
+  if (loc->grid) {
+    switch (origdim) {
+    case 4 : 
+      gridlent = (int) loc->xgr[3][XLENGTH];
+      // no break;
+    case 3 : 
+      gridlenz = (int) loc->xgr[2][XLENGTH];
+      // no break;
+    case 2 : 
+      gridleny = (int) loc->xgr[1][XLENGTH];
+      // no break;
+    case 1 : 
+      gridlenx = (int) loc->xgr[0][XLENGTH];
+      break;
+    default: BUG;
+    }
   }
 
 

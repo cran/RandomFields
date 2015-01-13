@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 //#include <unistd.h>
 #include "Covariance.h"
+#include "variogramAndCo.h"
 
 void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
   cov_model *sub = cov;
@@ -61,7 +62,7 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
     err = NOERROR;							\
   int d,								\
     tsdim VARIABLE_IS_NOT_USED = loc->timespacedim,			\
-    vdim VARIABLE_IS_NOT_USED = cov->vdim2[0],				\
+    vdim VARIABLE_IS_NOT_USED = cov->vdim[0],				\
    VARIABLE_IS_NOT_USED vdimSq = vdim * vdim,				\
     *gridlen=pgs->gridlen,						\
     *end=pgs->end,							\
@@ -79,7 +80,7 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
     VARIABLE_IS_NOT_USED vdimSqtot = vdim * vdimtot,			\
     VARIABLE_IS_NOT_USED vdimtotSq = vdimtot * tot,			\
     VARIABLE_IS_NOT_USED vdimSqtotSq = vdimtot * vdimtot;		\
-  assert(cov->vdim2[0] == cov->vdim2[1]);				\
+  assert(cov->vdim[0] == cov->vdim[1]);				\
   double *x = pgs->x,							\
     *xstart= pgs->xstart,						\
     *inc=pgs->inc,							\
@@ -95,7 +96,7 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
     cumgridlen[0] = 1;							\
     for (d=0; d<tsxdim; d++) {						\
       inc[d] = loc->xgr[d][XSTEP];					\
-      gridlen[d] = loc->length[d];					\
+      gridlen[d] = loc->xgr[d][XLENGTH];				\
       cumgridlen[d+1] = gridlen[d] * cumgridlen[d];			\
 									\
       start[d] = 0;							\
@@ -105,66 +106,7 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
     }									\
   }									\
   loc->i_col = loc->i_row = 0					
-									
-
-// ny wird nur inv CovMatrix verwendet! Stattdessen dort weder
-// ystart noch incy!
-#define STANDARDSTART_Y_SUPPL						\
-  for (d=0; d<tsxdim; d++){						\
-    incy[d] = loc->ygr[d]==NULL ? loc->xgr[d][XSTEP] : loc->ygr[d][XSTEP]; \
-    y[d] = ystart[d] =							\
-      loc->ygr[d]==NULL ? loc->xgr[d][XSTART] : loc->ygr[d][XSTART];	\
-    endy[d] = loc->ygr[d]==NULL ? loc->xgr[d][XLENGTH]:loc->ygr[d][XLENGTH]; \
-    startny[d] = 0;							\
-    ny[d] = startny[d];							\
-  }
-
-
-
-#define STANDARDINKREMENT	\
-  d = 0;			\
-  nx[d]++;			\
-  x[d] += inc[d];		\
-  while (nx[d] >= end[d]) {	\
-    nx[d] = start[d];		\
-    x[d] = xstart[d];		\
-    if (++d >= tsxdim) break;	\
-    nx[d]++;			\
-    x[d] += inc[d];		\
-   }				\
-  if (d >= tsxdim) break;		
-  // end define StandardInkrement
-
-				
-// Achtung hier *nicht* incy, starty
-#define STANDARDINKREMENT_Y	\
-  d = 0;			\
-  ny[d]++;			\
-  y[d] += incy[d];		\
-   while (ny[d] >= endy[d]) {	\
-     ny[d] = startny[d];	\
-     y[d] = ystart[d];		\
-     if (++d >= tsxdim) break;	\
-    ny[d]++;			\
-    y[d] += incy[d];		\
-   }				\
-  // end define StandardInkrement_Y
-
-#define RECYCLE_Y					\
-  if (d>tsxdim)						\
-    for (d=0; d<tsxdim; d++) {				\
-      y[d] = ystart[d] = loc->ygr[d][XSTART];		\
-      ny[d] = startny[d];				\
-    }
-				
-
-// loc->grid bei SelectedCovMatrix notwendig
-#define STANDARD_ENDE				\
-  if (xx != NULL) free(xx);			\
-  if (yy != NULL) free(yy);			\
-   loc->i_col = loc->i_row = 0;
-  // standard ende
-
+	
  
 
 void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) { 
@@ -295,7 +237,7 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
     }									\
   }									\
   
-  if (grid && (!kernel || ygiven)) {
+ if (grid && (!kernel || ygiven)) {
     // Notbremse !
     if (ygiven) {							
       STANDARDSTART_Y_SUPPL;
@@ -355,7 +297,6 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
  
     if (ygiven || kernel) {
       double *y0, *yend;
-      
       if (ygiven) {
 	yend = y + tsxdim * loc->ly;
       } else {
@@ -401,8 +342,7 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
 
 
 
-void CovarianceMatrix(cov_model *cov, double *v) {
-
+void CovarianceMatrix(cov_model *cov, double *v, int *nonzeros) {
    domain_type domown;
   Types type;
   genuineStatOwn(cov, &domown, &type);
@@ -415,6 +355,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
     error("covariance matrix: given model is not a covariance function");
   }
   long l,n,m, VDIM, NEND, NINCR, MINCR, ENDFORINCR;
+  int nz = 0;
   double *C = NULL;
   bool vdim_closetogether = GLOBAL.general.vdim_close_together;
   //assert(false);
@@ -453,6 +394,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
   for (l=n=0; n<NEND; n+=NINCR) {					\
     long endfor = n + ENDFORINCR;					\
     for (m=n; m<endfor; m+=MINCR) {  /* int k= VDIM * (loc->i_col + loc->i_row * vdimtot) + m ; 	printf("MULTICOV %d,%d k=%d z=%d s=%d l=%d %f\n", loc->i_row,loc->i_col, k, k % vdimtot, (int) (k / vdimtot), l, z[l]); assert(R_FINITE(C[0])); // */  \
+      nz += z[l] != 0.0;						\
       C[m] = z[l++];							\
     }									\
   }									\
@@ -461,6 +403,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
     C = v + VDIM * (loc->i_row + loc->i_col * vdimtot);			\
     for (l=m=0; m<ENDFORINCR; m+=MINCR) {				\
       for (n=m; n<NEND; n+=NINCR) { /*int k= VDIM * (loc->i_row + loc->i_col * vdimtot) + n ; 	printf("MULTICOV %d,%d k=%d z=%d s=%d l=%d %f\n", loc->i_row,loc->i_col, k, k % vdimtot, (int) (k / vdimtot), l, z[l]); // */ \
+	nz += z[l] != 0.0;						\
 	C[n] = z[l++];							\
       }									\
     }									\
@@ -532,7 +475,7 @@ void CovarianceMatrix(cov_model *cov, double *v) {
 	  // PMI(cov->calling);
 
 	  NONSTATCOV(x, y, cov, z);
-	  //	 printf("x=%f %f y=%f %f z=%f\n", x[0], x[1], y[0], y[1], z[0]);
+	  //		  printf("x=%f %f y=%f %f z=%f\n", x[0], x[1], y[0], y[1], z[0]);
 
 	  //PMI(cov);
 	  assert(R_FINITE(z[0]));
@@ -552,6 +495,8 @@ void CovarianceMatrix(cov_model *cov, double *v) {
     }
   }
   //assert(false);
+
+  *nonzeros = nz;
   
  ErrorHandling: 
   STANDARD_ENDE;
@@ -626,11 +571,13 @@ void split(int i, int tsxdim, long int *cum, double *inc, double *x) {
 }
 
 void SelectedCovMatrix(cov_model *cov,
-		       int *selected /* nr! */, int nsel, double *v) {
+		       int *selected /* nr! */, int nsel, double *v,
+		       int *nonzeros) {
   bool vdim_close_together = GLOBAL.general.vdim_close_together;
   domain_type domown;
   Types type;
   int l,vrow, vcol, 
+    nz = 0,
     oldCMC = NA_INTEGER, 
     oldCMR = NA_INTEGER;
   //   vdimselrow, vdimselcol, selrow, selcol, 
@@ -715,7 +662,8 @@ void SelectedCovMatrix(cov_model *cov,
 	    //		  ptrcol[vcol] * nsel + ptrrow[vrow],
 	    //	  ptrcol[vcol] + ptrrow[vrow] * nsel );
 	    if (ptrrow[vrow] >= 0 && 
-		selected[ptrrow[vrow]] % tot == loc->i_row) {
+		selected[ptrrow[vrow]] % tot == loc->i_row) {	      
+	      nz += z[l] != 0.0;
 	      v[ptrcol[vcol] * nsel + ptrrow[vrow]] = 
 		v[ptrcol[vcol] + ptrrow[vrow] * nsel] = z[l++];
 	      //   print("%d %d %d %d \n", loc->i_col, loc->i_row,
@@ -733,9 +681,14 @@ void SelectedCovMatrix(cov_model *cov,
   if (cov->domown==XONLY && isNegDef(cov->typus) && 
       !isPosDef(cov->typus)) {
     double first=v[0];
-    for (l=0; l<vdimSqtotSq; l++) v[l] = first - v[l];
+    nz = 0;
+    for (l=0; l<vdimSqtotSq; l++) {
+      v[l] = first - v[l];
+      nz += v[l] != 0.0;
+    }
   }
 
+  *nonzeros = nz;
   
  ErrorHandling:
   STANDARD_ENDE; // 	ErrorHandling:
@@ -856,8 +809,8 @@ void partial_loc_null(cov_model *cov) {
 
 void InverseCovMatrix(cov_model *cov, double *v) {
   location_type *loc = Loc(cov);
-  long vdimtot = loc->totalpoints * cov->vdim2[0];  
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  long vdimtot = loc->totalpoints * cov->vdim[0];  
+  assert(cov->vdim[0] == cov->vdim[1]);
   CovList[cov->nr].covariance(cov, v);
   invertMatrix(v, vdimtot);
 }
@@ -917,12 +870,13 @@ SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdimOZ, SEXP lx,
 
 SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdimOZ, SEXP lx,
 			  SEXP selected, SEXP nsel, 
-			  SEXP result) {
+			  SEXP result, SEXP nonzeros) {
   STANDARDINTERN_SEXP;
   partial_loc_set_matrixOZ(cov, REAL(x), INTEGER(lx)[0], LOGICAL(dist)[0], 
 			   INTEGER(xdimOZ));
   CovList[truecov->nr].selectedcovmatrix(truecov, INTEGER(selected), 
-					 INTEGER(nsel)[0], REAL(result));
+					 INTEGER(nsel)[0], REAL(result),
+					 INTEGER(nonzeros));
   partial_loc_null(cov);
   if (Loc(cov)->xdimOZ != INTEGER(xdimOZ)[0]) BUG;
   
@@ -931,11 +885,12 @@ SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdimOZ, SEXP lx,
 
 
 SEXP CovMatrixSelected(SEXP reg, SEXP selected, SEXP nsel,
-		       SEXP result) {
+		       SEXP result, SEXP nonzeros) {
   
   STANDARDINTERN_SEXP;
   CovList[truecov->nr].selectedcovmatrix(truecov, INTEGER(selected), 
-					 INTEGER(nsel)[0], REAL(result));
+					 INTEGER(nsel)[0], REAL(result),
+					 INTEGER(nonzeros));
   
   return NULL;
 }
@@ -970,14 +925,14 @@ void CovIntern(int reg, double *x, double *value) {
 
 
 SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdimOZ,
-		  SEXP lx, SEXP result) {
+		  SEXP lx, SEXP result, SEXP nonzeros) {
   STANDARDINTERN_SEXP;
   partial_loc_set_matrixOZ(cov, REAL(x), INTEGER(lx)[0], LOGICAL(dist)[0], 
 			 INTEGER(xdimOZ)); //
 
   //  PMI(cov, "covmatrixloc");
 
-  CovList[truecov->nr].covmatrix(truecov, REAL(result));
+  CovList[truecov->nr].covmatrix(truecov, REAL(result), INTEGER(nonzeros));
  
  //  printf("***************************************************\n");
   //  { int i,j,k, tot=Loc(cov)->totalpoints;
@@ -994,7 +949,7 @@ SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdimOZ,
 
 
 SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
-		     SEXP lx, SEXP result) {
+		     SEXP lx, SEXP result, SEXP nonzeros) {
   
   STANDARDINTERN_SEXP;
   //PMI(truecov);
@@ -1003,7 +958,7 @@ SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
   //PMI(cov);  
   //PMI(truecov);
   //assert(cov->xdimprev == 2);
-  CovList[truecov->nr].covmatrix(truecov, REAL(result));
+  CovList[truecov->nr].covmatrix(truecov, REAL(result), INTEGER(nonzeros));
   partial_loc_null(cov);
   return(NULL);
 }
@@ -1046,119 +1001,3 @@ void PseudovariogramIntern(int reg, double *x, double *value) {
   partial_loc_null(cov);
 }
 
-
-
-
-
-
-// bool close = GLOBAL.general.vdim_close_together;
-
-void Fctn(double VARIABLE_IS_NOT_USED *X, cov_model *cov, double *value){
-  if (value==NULL) return; // EvaluateModel needs information about size
-  //                      of result array
-  cov_model *sub =  cov->sub[0];
-  assert(cov->key == NULL);
-  int 
-    vdim12 = cov->vdim2[0] * cov->vdim2[1];
- 
-  assert(cov->Spgs != NULL);						
-  pgs_storage *pgs= cov->Spgs;						
-  assert(pgs->x != NULL);						
-  location_type *loc = Loc(cov);					
-  assert(loc != NULL);							
-  bool grid =loc->grid && !loc->Time && loc->caniso==NULL;		
-  bool trafo = (loc->Time || loc->caniso != NULL) && !loc->distances;	
-  bool ygiven = loc->y != NULL || loc->ygr[0] != NULL;			
-  long cumgridlen[MAXMPPDIM +1],					
-    err = NOERROR;							
-  int d,								
-    *gridlen=pgs->gridlen,						
-    *end=pgs->end,							
-    *endy =pgs->endy,				
-    *start=pgs->start,							
-    *startny =pgs->startny,			
-    *nx=pgs->nx,							
-    *ny = pgs->delta,				
-    tsxdim = cov->xdimown; /* weicht u.U. von tsdim bei dist=true ab */ 
-  long
-    tot = loc->totalpoints;					
-  double *x = pgs->x,/* freed only if grid */				
-    *xstart= pgs->xstart,						
-    *inc=pgs->inc,							
-    *y = pgs->supportmin,	/* freed only if grid */		
-    *ystart =pgs->supportmax,			
-    *yy = NULL,		/* set by Transform2NoGrid */			
-    *xx = NULL,		/* dito			   */			
-    *incy =pgs->supportcentre;
-  if (grid) {								
-    cumgridlen[0] = 1;							
-    for (d=0; d<tsxdim; d++) {						
-      inc[d] = loc->xgr[d][XSTEP];					
-      gridlen[d] = loc->length[d];					
-      cumgridlen[d+1] = gridlen[d] * cumgridlen[d];			
-									
-      start[d] = 0;							
-      end[d] = gridlen[d];						
-      nx[d] = start[d];							
-      x[d] = xstart[d] = loc->xgr[d][XSTART];				
-    }									
-  }									
-  loc->i_col = loc->i_row = 0;
-	      
-
-  //  assert(false);
-
-#define FUNCTION FCTN(x, sub, value)
-#define FUNCTION_Y NONSTATCOV(x, y, sub, value)
-
-  if (grid) {
-    if (ygiven) {							
-      STANDARDSTART_Y_SUPPL;
-      assert(loc->i_row==0);
-      while (true) {
-	FUNCTION_Y; 
-	loc->i_row ++;
-	value += vdim12;
-	STANDARDINKREMENT_Y;
-	RECYCLE_Y;
-	STANDARDINKREMENT; 
-      }
-    } else {	// grid, y not given
-      assert(loc->i_row==0);
-      while (true) {
-	FUNCTION;
-	loc->i_row ++;;  
-	value += vdim12;
-	STANDARDINKREMENT; 
-      } 
-    }
-  } else { // not a grid
-    //   PMI(cov);
-    if (trafo) {
-      Transform2NoGrid(cov, &xx, &yy);   
-      x = xx;
-      y = yy;
-    } else { x=loc->x; y=loc->y;  }
-
-    if (ygiven) {
-      double *y0, *yend;
-      y0 = y;
-      yend = y + tsxdim * loc->ly;
-
-      for (; loc->i_row<tot; value+=vdim12, x+=tsxdim, y+=tsxdim, loc->i_row++){
-	// todo loc->i_row besser long int
-	if (y >= yend) y = y0;
-	FUNCTION_Y;
-      }
-    } else {
-      for (; loc->i_row < tot; value+=vdim12, x+=tsxdim, loc->i_row++) {
-	FUNCTION;
-	//printf("x=%f %f %d\n", x[0], x[1], tsxdim, *value);
-	//	assert(loc->i_row < 5);
-      }
-    }
-  }
-
-  STANDARD_ENDE;
-  if (err != NOERROR) XERR(err); 
-}

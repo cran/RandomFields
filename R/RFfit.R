@@ -61,7 +61,7 @@
 
 
 RFfit <-
-  function(model, x, y=NULL, z=NULL, T=NULL,  grid, data, 
+  function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data, 
            lower=NULL, upper=NULL, 
            bc_lambda, ## if missing then no BoxCox-Trafo
            methods, # "reml", "rml1"),
@@ -99,18 +99,18 @@ RFfit <-
 
     
   if (model[[1]] %in% c("RPpoisson", "poisson")) {
-    fit.poisson()
+    res <- fit.poisson()
   } else if (model[[1]] %in% c("BRmixed", "BRshifted", "BRmixedIntern",
                                "RFbrownresnick")) {
-    fit.br()
+    res <- fit.br()
   } else if (model[[1]] %in% c("RPschlather", "extremalgauss")) {
-    fit.extremal.gauss()
+    res <- fit.extremal.gauss()
   } else if (model[[1]] %in% c("RPsmith", "smith")) {
-    fit.smith()
+    res <- fit.smith()
   } else if (model[[1]] %in% c("RPbernoulli", "binaryprocess")) {
-    fit.bernoulli()    
+    res <- fit.bernoulli()    
   } else {
-    do.call("rffit.gauss",
+    res <- do.call("rffit.gauss",
             c(list(model=model, y=y, z=z, T=T, data=data,
                    lower=lower, upper=upper, 
                    users.guess=users.guess,  
@@ -119,7 +119,7 @@ RFfit <-
                    transform=transform,
                    recall = FALSE),
               if (!missing(x)) list(x=x),
-              if (!missing(grid)) list(grid = grid),
+              if (!missing(grid) && length(grid) > 0) list(grid = grid),
               if (!missing(bc_lambda)) list(bc_lambda=bc_lambda),
               if (!missing(methods))  list(mle.methods = methods),
               if (!missing(sub.methods)) list(lsq.methods=sub.methods),
@@ -128,4 +128,11 @@ RFfit <-
               if (!missing(dim)) list(dimensions=dim)
               ))
   }
+  if (RFopt$general$returncall)
+    attr(res, "call") <- as.character(deparse(match.call()))
+  attr(res, "coord_system") <- .Call("GetCoordSystem",
+                                     as.integer(MODEL_MLE),
+                                     RFopt$coords$coord_system,
+                                     RFopt$coords$new_coord_system)
+  return(res)
 }

@@ -63,7 +63,7 @@ RPsequential(phi, max_variables, back_steps, initial)
    If less than one then the number of previous instances
    equals \code{max} / (number of spatial points).
    
-   Default: \code{5} .
+   Default: \code{10} .
    
  }
  \item{initial}{

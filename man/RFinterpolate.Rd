@@ -7,12 +7,13 @@
   Currently only various kinds of kriging are installed.
 }
 \usage{
-RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
-              distances, dim, err.model, method = "ml", ...)
+RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
+              distances, dim, data, given=NULL, err.model, method =
+              "ml", ...) 
 }
 \arguments{
  \item{model}{string; covariance model, see \command{\link{RMmodel}}, or
- type \code{\link{RFgetModelNames}()} to get all options.}
+ type \code{\link{RFgetModelNames}(type="negative")} to get all options.}
  
  \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of x
  coordinates, or object of class
@@ -34,10 +35,19 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  find itself the correct value in nearly all cases.
  See also \link{RFsimulateAdvanced}.
  }
+ \item{distances}{another alternative to pass the (relative)
+ coordinates,
+ see \link{RFsimulateAdvanced}.
+ }
+ \item{dim}{
+ Only used if \code{distances} are given.
+ }
  \item{data}{
  Matrix, data.frame or object of class \command{\link[=RFsp-class]{RFsp}};
  coordinates and response values of measurements;
- If a matrix or a data.frame, the first columns are
+  \code{given} is not given
+  and \code{data} is a matrix or \code{data} is
+  a data.frame, the first columns are
  interpreted as coordinate vectors, and the last column(s) as
  (multiple) measurement(s) of the field which are kriged 
  \emph{separately}; if the argument \code{x} is missing,
@@ -46,12 +56,17 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
  for details on matching of variable names see 
  \link{RFsimulateAdvanced}; if of class \command{\link[=RFsp-class]{RFsp}}
  }
- \item{distances}{another alternative to pass the (relative)
- coordinates,
- see \link{RFsimulateAdvanced}.
- }
- \item{dim}{
- Only used if \code{distances} are given.
+ \item{given}{optional, matrix or list.
+   If \code{given} matrix then the coordinates
+   can be given separately, namely by \code{given} where, in each row,
+   a single location is given.
+ 
+   If \code{given} is a
+   list, it may consist of \code{x}, \code{y}, \code{z}, \code{T},
+   \code{grid}.
+   
+   If \code{given} is provided,
+   \code{data} must be a matrix or an array containing the data only.
  }
  \item{err.model}{For conditional simulation and random imputing only.\cr
  Usually \code{err.model=RMnugget(var=var)}, or not given at all
@@ -63,11 +78,8 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid, data,
    see \command{\link{RFfit}}.
  }
  \item{...}{
- Two intrinsic arguements can be given:
+ An intrinsic arguements can be given:
  \describe{
- \item{given}{matrix. If \code{data} is a matrix, then the coordinates
- can be given separately, namely by \code{given} where, in each row,
- a single location is given}
  \item{MARGIN}{character or integer.
 	This argument is only given when the mean is kriged, i.e.
 	\code{method='M'} (see \command{\link{RFoptions}}).

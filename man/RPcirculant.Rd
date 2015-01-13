@@ -115,7 +115,7 @@ RPintrinsic(phi, force, mmin, strategy,
    GB.
    If this argument is set then \code{maxmem} is set to MAXINT.
  
-   Default: 0.5.   
+   Default: 1.   
  }
  
  \item{maxmem}{Integer.

@@ -2,7 +2,7 @@
 InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
   for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
     vdim <- try(.Call("Init",
-                      MODEL.USER,
+                      MODEL_USER,
                       model,
                       matrix(nrow=dim, ncol=3, as.double(1:3)), ## nur dummies
                       y, #y
@@ -16,7 +16,7 @@ InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
     
     if (is.numeric(vdim)) return(vdim)
     msg <- strsplit(vdim[[1]], "\n")[[1]][2]
-    if (RFoptions()$general$printlevel >= PL.FCTN.ERRORS) cat(msg, "\n")
+    if (RFoptions()$general$printlevel >= PL_ERRORS) cat(msg, "\n")
   }
   stop(msg)
   ##  stop("model could not be initialized")
@@ -29,13 +29,13 @@ rfSplitTrendAndCov <-
   ## splittet additives modell in trend-Teil und cov-Teil auf
 
     info <- .Call("SetAndGetModelInfo",
-                 GetModelRegister("split"), list("Dummy", model),
+                 MODEL_SPLIT, list("Dummy", model),
                  as.integer(spatialdim),
                  FALSE,
                  TRUE, ## in case it is a non-domain model
                  as.logical(Time), 
                  as.integer(xdimOZ), 
-                 MaxNameCharacter, FALSE, TRUE,
+                 as.integer(254), FALSE, TRUE,
                  PACKAGE="RandomFields")
 
     
@@ -99,21 +99,17 @@ StandardSimpleModel <- function(model, tsdim, aniso=TRUE, addnugget=TRUE, ...) {
   storage.mode(tsdim) <- "integer"
  # userdefined <- GetParameterModelUser(model)
   
-  vdim <- InitModel(MODEL.USER, list("Dummy", model), tsdim, NAOK=TRUE) # ok
+  vdim <- InitModel(MODEL_USER, list("Dummy", model), tsdim, NAOK=TRUE) # ok
   if (!is.numeric(vdim) || any(vdim > 1)) return("model not univariate")
-  model <- GetModel(register=MODEL.USER, GETMODEL_DEL_NATSC) # , do.notreturnparam=TRUE)
-  .C("DeleteKey", MODEL.USER)
+  model <- GetModel(register=MODEL_USER, GETMODEL_DEL_NATSC) # , do.notreturnparam=TRUE)
+  .C("DeleteKey", MODEL_USER)
 
   s <- rfSplitTrendAndCov(model=model, spatialdim=tsdim, xdimOZ=tsdim,
                           Time=FALSE, forcedplus=TRUE,
-                          cathegories=list(simple=c(Primitive:Simple),
+                          cathegories=list(simple=c(PrimitiveModel:SimpleModel),
                             trend=DetTrendEffect:FixedTrendEffect),
                           remaining.name="cov")
-  
-  ##  Print(model, s, s$cov, s$simple)
-  
-  ## Print(model, s); #hhhh
-  
+    
   if (!is.null(s$cov) || length(s$simple)>3)
     return("model is too complex to be simple")
   if (length(s$simple) <= 1) return("model is too primitive")
@@ -164,7 +160,7 @@ PrepareModel2 <- function(model, ...) {
     if ((m[[i]][[1]] %in% ZF_MIXED) && length(m[[i]]$X)==1 &&
         is.numeric(m[[i]]$X) && m[[i]]$X==1 && !is.null(m[[i]]$b)) {        
       m[[i]] <- list(ZF_TREND[2], mean=m[[i]]$b)
-      if (RFoptions()$general$printlevel > PL.IMPORPANT)
+      if (RFoptions()$general$printlevel > PL_IMPORTANT)
         message(paste("The '1' in the mixed model definition has been replaced by '", ZF_TREND[1], "(mean=", m[[i]]$mean, ")'.", sep=""))
       }
   }
@@ -212,7 +208,7 @@ PrepareModel <-  function(model, param, trend=NULL,
     
   printlevel <- RFoptions()$general$printlevel
   STOP <- function(txt) {
-    if (printlevel>=PL.FCTN.ERRORS) {
+    if (printlevel>=PL_ERRORS) {
       cat("model: ")
       if (!missing.model) Print(model) else cat(" missing.\n") #
       cat("param: ")
@@ -233,10 +229,9 @@ PrepareModel <-  function(model, param, trend=NULL,
 ##    model <- c(model, if (!is.null(model$a))
 ##               list(aniso=model$a) else list(scale=model$s)) ## ???
 
-## Print(m, model, lm)
     
     if (!is.na(p <- pmatch("meth", names(model), duplicates.ok=TRUE))) {
-      if (printlevel>=PL.FCTN.ERRORS)  Print(p, model) #
+      if (printlevel>=PL_ERRORS)  Print(p, model) #
       stop("method cannot be given with the model anymore. It must be given as a parameter to the function. See 'RFoptions' and 'RFsimulate'")
      }
   
@@ -254,12 +249,11 @@ PrepareModel <-  function(model, param, trend=NULL,
       }
     }
     if (lm != 0) {
-      if (printlevel>=PL.FCTN.ERRORS) Print(lm, model) #
+      if (printlevel>=PL_ERRORS) Print(lm, model) #
       stop("some parameters do not fit")
     }
     m <- c(m, list(m1))
 
-    ##    Print(m)
     return(m)
     
   } # end transform
@@ -408,8 +402,6 @@ seq2grid <- function(x, name, grid, warn_ambiguous, gridtolerance) {
            gridtolerance,".\n")
     }
 
-    ## return(c(x[1], x[length(x)]+0.001*step[1], step[1]))
-    ##       Print(c(x[1], step[1], length(x)))
     xx[,i] <- c(x[[i]][1], step[1], if (step0[i]) 1 else length(x[[i]]))
   }
 
@@ -435,16 +427,20 @@ seq2grid <- function(x, name, grid, warn_ambiguous, gridtolerance) {
 
 
 earth_coordinate_names<- function(names) {
+  ## Earth coordinates + possibly radius
   n <- substr(tolower(names), 1, 6)
   nc <- nchar(n)
   lon <- lat <- integer(length(n))
   for (i in 1:length(n)) {
-    lon <- substr("longit", 1, nc[i]) == n
-    lat <- substr("latitu", 1, nc[i]) == n
+    lon[i] <- substr("longit", 1, nc[i]) == n[i]
+    lat[i] <- substr("latitu", 1, nc[i]) == n[i]
   }
   lonORlat <- lon | lat  
   earth <- all(nc[lonORlat] >= 2) && sum(lon==1) && sum(lat == 1)
-  return(if (length(names)==2 | !earth) earth else which(lonORlat))
+  return(if (length(names)==2 | !earth) earth else
+         
+         if ( (lo <- which(lon)) < (la <- which(lat)))
+         which(lonORlat[]))
 }
 
 cartesian_coordinate_names <- function(names) {
@@ -452,16 +448,12 @@ cartesian_coordinate_names <- function(names) {
   coords <-  c("T", "x", "y", "z")
   Txyz <- outer(n, coords, "==")
   cs <- colSums(Txyz)
-#  Print(Txyz, cs, which(cs > 0))
   if (any(cs > 1) || sum(cs[1:2]) == 0 || any(diff(cs[-1]) > 0))
     return (integer(0))
   Txyz <- Txyz[, c(2:4, 1), drop=FALSE]
   ord <- apply(Txyz, 2, function(x) which(x > 0))
   ord <- order(unlist(ord))
   rs <- which(rowSums(Txyz) > 0)
-       #                          rs <- apply(Txyz[, c(2:4, 1)], 
- # Print(names, ord, rs, rs[ord])
-        
   return(rs[ord])
 }
 
@@ -476,6 +468,8 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   RFopt <- RFoptions()
   curunits <- RFopt$coords$coordunits
   newunits <-  RFopt$coords$new_coordunits
+  coord_system <-  RFopt$coords$coord_system
+  new_coord_system <-  RFopt$coords$new_coord_system
   if (!missing(distances) && length(distances) > 0) {
     stopifnot(is.matrix(distances) || (!missing(spdim) && !is.null(spdim)),
               (missing(grid) || length(grid) == 0),
@@ -484,7 +478,9 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
               missing(z) || is.null(z),
               missing(T) || is.null(T))
 
-    
+    if (coord_system != new_coord_system && new_coord_system != "keep")
+      stop("coordinate systems differ")
+
     if (class(distances) == "dist") {
       x <- as.vector(distances)
       l <- length(x)
@@ -520,7 +516,6 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
            )
   }
 
- 
   stopifnot(!missing(x))
   if (is(x, "RFsp") || isSpObj(x)) {
     return(CheckXT(x=coordinates(x), y=y, z=z, T=T, grid=grid,
@@ -528,7 +523,6 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                    y.ok=y.ok, printlevel=printlevel))
   }    
   if (is.raster(x)) x <- as(x, 'GridTopology')
-  
  
   if ((missing(grid) || length(grid) == 0) && !missing(length.data)) {
     new <-  try(CheckXT(x=x, y=y, z=z, T=T, grid=TRUE, distances=distances,
@@ -539,27 +533,23 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     if (grid <- (class(new) != "try-error")) {
       ratio <- length.data / new$restotal
 
-   # Print(new, ratio, length.data, x)
-      
       if (grid <- ratio == as.integer(ratio)) {
-        if (printlevel>=PL.IMPORPANT && new$spacedim > 1)
+        if (printlevel>=PL_IMPORTANT && new$spacedim > 1)
           message("Grid detected. If it is not a grid, set grid=FALSE.\n")
       }
     }
-    return(if (grid) new else { CheckXT(x, y, z, T, grid=FALSE, distances,
-                                        if (!missing(distances) &&
-                                            length(distances) > 0) spdim=1,
-                                        length.data = length.data,
-                                        printlevel = printlevel) }
+    return(if (grid) new else {
+      CheckXT(x, y, z, T, grid=FALSE, distances,
+              if (!missing(distances) &&
+                  length(distances) > 0) spdim=1,
+              length.data = length.data,
+              printlevel = printlevel) }
            )
   } # if (missing(grid) && !missing(length.data))
   
 
-  
   gridtriple <- FALSE
 
-  ## if (!missing(x)) {  ## missing(x) ist hier immer FALSE 
-  ##  Print(x)
   if (is.GridTopology <- is(x, "GridTopology")){
     x <- rbind(x@cellcentre.offset,
                x@cellsize,
@@ -583,7 +573,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   
   
 #  stopifnot(all(is.finite(x)), all(is.finite(y)), all(is.finite(z))) ; s.u. unlist
-    
+     
   
   if (is.matrix(x)) {
     if (!is.numeric(x)) stop("x is not numeric.")
@@ -593,18 +583,21 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       if (!is.null(T))
         stop("If x is a matrix and y is given, then T may not be given")
       if (!is.matrix(y) || ncol(y) != ncol(x) ||
-          nrow(x)==3 && nrow(y)!=3 && ((missing(grid) || length(grid) == 0) || grid))
+          nrow(x)==3 && nrow(y)!=3 && ((missing(grid) || length(grid) == 0) ||
+                                grid))
         stop("y does not match x (it must be a matrix)")
     }
-    
-    if (RFopt$coords$coordinate_system == "auto" && ncol(x) >= 2
-        && !is.null(n <- dimnames(x)[[2]])) {
-      if (earth_coordinate_names(n[1:2])) {       
+
+    if (coord_system == COORD_SYS_NAMES[coord_auto + 1] && ncol(x) >= 2
+        && ncol(x) <= 3 && !is.null(n <- dimnames(x)[[2]])) {
+      if (any(idx <- earth_coordinate_names(n))) {
+        if (length(idx) == 2 && !all(idx == 1:2))
+          stop("earth coordinates not in order longitude/latitude")
         cur <- curunits[1]
-        curunits <- newunits <- RFopt$coords$new_coordunits
+        newunits <- RFopt$coords$new_coordunits
         curunits <- RFopt$coords$coordunits
         curunits[1:2] <- c("longitude", "latitude")
-        if (newunits[1] == "") newunits[1] <- "km"
+        if (newunits[1] == "") newunits[1] <-  UNITS_NAMES[units_km + 1]
         newunits[2:3] <- newunits[1]                
         if (RFopt$internal$warn_coordinates)
           message("\n\nNOTE: current units are ",
@@ -615,18 +608,20 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                   "'.\nIn particular, the values of all scale parameters of ",
                   "any model defined\nin R^3 (currently all models!) are ",
                   "understood in units of '", newunits[1],
-                  "'.\nChange options 'coordinate_system' and/or 'units' if ",
+                  "'.\nChange options 'coord_system' and/or 'units' if ",
                   "necessary.\n(This message appears only once per session.)\n")
-        RFoptions(coords.coordinate_system = "earth",
+        coord_system <- COORD_SYS_NAMES[earth + 1]
+        RFoptions(coords.coord_system = coord_system,
                   coords.coordunits = curunits,
                   coords.new_coordunits = newunits,
                   internal.warn_coordinates=FALSE)
 
-       }
-    }
-        
+      } else {
+         RFoptions(coords.coord_system =  COORD_SYS_NAMES[cartesian + 1])
+      }
+    }    
+   
     spacedim <- ncol(x)
-
     len <- nrow(x)
     if (spacedim==1 && len != 3 && (missing(grid) || length(grid) == 0)) {
       if (length(x) <= 2) grid <- TRUE
@@ -652,24 +647,25 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
 
     if (grid && !is.GridTopology) {
       if (gridtriple <- len==3) {
-        if (printlevel >= PL.SUBIMPORPANT && RFopt$internal$warn_oldstyle) {
+        if (printlevel >= PL_SUBIMPORTANT && RFopt$internal$warn_oldstyle) {
           message("x was interpreted as a gridtriple; the new gridtriple notation is:\n  1st row of x is interpreted as starting values of sequences,\n  2nd row as step,\n 3rd row as number of points (i.e. length),\n  in each of the ", ncol(x), " directions.")
         } 
       } else len <- rep(len, times=spacedim)   # Alex 8.10.2011
     }
+
     if (grid && !gridtriple) {
       ## list with columns as list elements -- easier way to
       ## do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
       if (!is.null(y)) y <- lapply(apply(y, 2, list), function(r) r[[1]])
     }
-  } else { ## x, y, z given separately 
-   if (is.null(y) && !is.null(z)) stop("y is not given, but z")
+  } else { ## x, y, z given separately
+    if (is.null(y) && !is.null(z)) stop("y is not given, but z")
     xyzT <- list(x=if (!missing(x)) x, y=if (!missing(y)) y,
                  z=if (!missing(z)) z, T=if (!missing(T)) T)
     for (i in 1:4) {
       if (!is.null(xyzT[[i]]) && !is.numeric(xyzT[[i]])) {
-        if (printlevel>PL.IMPORPANT) 
+        if (printlevel>PL_IMPORTANT) 
           message(names(xyzT)[i],
                   " not being numeric it is converted to numeric")
         assign(names(xyzT)[i], as.numeric(xyzT[[i]]))
@@ -699,13 +695,12 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       ## make a matrix out of the list
       len <- len[1]
     } else {
-      if ((missing(grid) || length(grid) == 0) && any(len != len[1])) grid <- TRUE
+      if ((missing(grid) || length(grid) == 0) && any(len != len[1]))
+        grid <- TRUE
       x <- list(x, y, z)[1:spacedim]
     }
     y <- z <- NULL ## wichtig dass y = NULL ist, da unten die Abfrage
   }  ## end of x, y, z given separately 
-
-  ##Print(grid,  gridtriple, tryCatch(dim(x), error=function(e) "err"), len)
   
   if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
 
@@ -725,8 +720,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
     } else {     
       xx <- seq2grid(x, "x",  grid,
                      RFopt$internal$warn_ambiguous, RFopt$general$gridtolerance)
-  #    Print(xx, x, grid); ddd
-      if (!is.null(y)) {
+     if (!is.null(y)) {
         yy <- seq2grid(y, "y", grid,
                        RFopt$internal$warn_ambiguous,
                        RFopt$general$gridtolerance)
@@ -750,7 +744,6 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                  paste(x[3,], collapse=",")))
     ##if (len == 1) stop("Use grid=FALSE if only a single point is simulated")
   }
-
  
   if (!grid) { ## not grid
     restotal <- nrow(x)
@@ -759,7 +752,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         d <- as.matrix(dist(x))
         diag(d) <- 1
         idx <-  which(as.matrix(d) ==0)
-        if (printlevel>PL.FCTN.ERRORS)
+        if (printlevel>PL_ERRORS)
           Print(x, dim(d), idx , cbind( 1 + ((idx-1)%% nrow(d)), #
                                        1 + as.integer((idx - 1)  / nrow(d))) )
         warning("locations are not distinguishable")
@@ -767,7 +760,44 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
       ## fuer hoehere Werte con total ist ueberpruefung nicht mehr praktikabel
     }
   }
-  
+
+  if (coord_system == "earth") {
+    # if (ncol(x) > 4) stop("earth coordinates have maximal 3 components")
+    global.units <- RFoptions()$coords$new_coordunits[1]
+    if (global.units[1] == "") global.units <- "km"
+
+    Raumdim <- if (grid) ncol(x) else nrow(x)
+    new_is_cartesian <- new_coord_system %in% CARTESIAN_SYSTEMS
+    if (new_is_cartesian) {
+      if (!is.null(y))
+        stop("cannot take 'y' as an argument if 'x' is a (internal) matrix")
+      code <- switch(new_coord_system,
+                     "cartesian" = CARTESIAN_COORD,
+                     "gnomonic" = GNOMONIC_PROJ,
+                     "orthographic" = ORTHOGRAPHIC_PROJ,
+                     stop("unknown projection method")
+                     )
+      x <- RFfctn(RMtrafo(isotropy=code), x, grid=grid, 
+                  coords.new_coordunits=global.units,
+                  coords.new_coord_system = "keep")
+        
+      if (new_coord_system == "cartesian") {
+        Raumdim <- max(3, Raumdim)
+        spacedim <- Raumdim
+      }
+      dim(x) <- c(Raumdim, length(x) /Raumdim)
+      x <- t(x)
+
+      ## never try to set the following lines outside the 'if (new_coord_system'
+      ## as in case of ..="keep" none of the following lines should be set
+      RFoptions(coords.coord_system = 
+                if (new_is_cartesian) "cartesian" else new_coord_system)
+      grid <- FALSE
+    } else if (!(new_coord_system %in% c("keep", "sphere", "earth"))) {
+      warning("unknown new coordinate system")
+    }
+  }
+
   if (Time <- !is.null(T)) {
     Ttriple <- length(T) == 3;
     if (length(T) <= 2) Tgrid <- TRUE
@@ -776,17 +806,21 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
         Tgrid <- max(abs(diff(dT))) < dT[1] * RFopt$general$gridtolerance
       }
     if (is.na(RFopt$general$Ttriple)) {
-      if (Ttriple && Tgrid) stop("ambiguous definition of 'T'. Set RFoptions(Ttriple=TRUE) or RFoptions(Ttriple=FALSE)")
+      if (Ttriple && Tgrid)
+        stop("ambiguous definition of 'T'. Set RFoptions(Ttriple=TRUE) or ",
+             "RFoptions(Ttriple=FALSE)")
       if (!Ttriple && !Tgrid) stop("'T' does not have a valid format")
     } else if (RFopt$general$Ttriple) {
-      if (!Ttriple) stop("'T' is not given in triple format 'c(start, step, length)'")
+      if (!Ttriple)
+        stop("'T' is not given in triple format 'c(start, step, length)'")
       Tgrid <- FALSE
     } else {
       if (!Tgrid) stop("'T' does not define a grid")
       Ttriple <- FALSE
     }
     if (Tgrid)
-      T <- as.vector(seq2grid(list(T), "T", Tgrid, RFopt$internal$warn_ambiguous,
+      T <- as.vector(seq2grid(list(T), "T", Tgrid,
+                              RFopt$internal$warn_ambiguous,
                               RFopt$general$gridtolerance))
     restotal <- restotal * T[3]
   }
@@ -796,6 +830,7 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
   }
   
   storage.mode(x) <- "double"
+
   if (is.null(y)) {
     return(list(x=x, T=T, Time=Time, restotal=restotal, l=len,
                 spacedim=spacedim, grid=grid, distances=FALSE,
@@ -807,4 +842,40 @@ CheckXT <- function(x, y, z, T, grid, distances, spdim=NULL, length.data,
                 coordunits = curunits, new_coordunits = newunits))
   }
   
+}
+
+
+
+RFearth2cartesian <- function(coord, units=NULL, system = "cartesian",
+                              grid=FALSE) {
+  if (is.character(system)) system <- pmatch(system, ISONAMES) - 1
+  stopifnot(system %in%
+            c(CARTESIAN_COORD, GNOMONIC_PROJ, ORTHOGRAPHIC_PROJ))
+  if (is.null(units)) {
+    global.units <- RFoptions()$coords$new_coordunits[1]
+    units <- if (global.units[1] == "") "km" else global.units 
+  }
+  if (!is.matrix(coord)) coord <- t(coord)
+  res <- RFfctn(RMtrafo(isotropy=system), coord, grid=grid,
+                coords.new_coord_system = "keep",
+                coords.new_coordunits=units,
+                coords.coord_system="earth")
+  return(t(res))
+}
+
+RFearth2dist <- function(coord, units=NULL, system="cartesian",
+                         grid=FALSE, ...) {
+  if (is.character(system)) system <- pmatch(system, ISONAMES) - 1
+  stopifnot(system %in%
+            c(CARTESIAN_COORD, GNOMONIC_PROJ, ORTHOGRAPHIC_PROJ))
+  if (is.null(units)) {
+    global.units <- RFoptions()$coords$new_coordunits[1]
+    units <- if (global.units[1] == "") "km" else global.units 
+  }
+  if (!is.matrix(coord)) coord <- t(coord)
+  z <- t(RFfctn(RMtrafo(isotropy=system), coord, grid=grid,
+                coords.new_coord_system = "keep",
+                coords.new_coordunits=units,
+                coords.coord_system="earth"))
+  return(dist(z, ...))
 }

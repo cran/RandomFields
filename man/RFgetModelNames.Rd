@@ -26,22 +26,22 @@
 
 \usage{
 
-RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
-                isotropy = RC_ISOTROPY, operator = c(TRUE, FALSE),
-                monotone = RC_MONOTONE,
+RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
+                isotropy = RC_ISONAMES, operator = c(TRUE, FALSE),
+                monotone = RC_MONOTONE_NAMES,
                 implied_monotonicities = length(monotone) == 1,
-                finiterange = c(TRUE, FALSE),
+                finiterange = c(TRUE, FALSE, NA),
                 valid.in.dim = c(1, Inf), 
                 vdim = c(1, 5),
-                group.by=NULL,
+                group.by,
                 simpleArguments = FALSE,
                 internal, newnames)
 }
 
 \arguments{
   \item{type, domain, isotropy, operator, monotone, finiterange, vdim}{
-    see \link{constants} for the definition of \code{RC_TYPE},
-    \code{RC_DOMAIN}, etc.
+    see \link{constants} for the definition of \code{RC_TYPENAMES},
+    \code{RC_DOMAIN_NAMES}, etc.
     See also \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
   }
   \item{implied_monotonicities}{logical. If \code{TRUE} then 
@@ -50,11 +50,14 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
   }
   \item{valid.in.dim}{an optional integer indicating the dimension of
   the space where the model is valid}
-\item{group.by}{an optional character string; must be one of
+\item{group.by}{an optional character string or \code{NULL}; must be one of
   \code{'type'},
     \code{'domain'}, \code{'isotropy'}, \code{'operator'},
     \code{'monotone'},
-    \code{'finiterange'},\code{'maxdim'},\code{'vdim'}}
+    \code{'finiterange'},\code{'maxdim'},\code{'vdim'}.
+    If \code{group.by} is not given, the result is grouped by
+    \code{'type'} if more than one type is given.    
+  }
   \item{simpleArguments}{logical. if \code{TRUE}, only models
     are considered whose arguments are all integer or real valued.
     }
@@ -104,16 +107,14 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
  i.e. members of the class
  \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
 
- The following arguments can be specified. Then exact matches are
- returned.
- 
- E.g. \code{type="negative definite"} returns only models that are
- negative definite, but not positive definite. To get all negative
- definite models including the positive definite one, use
- \code{
-   RFgetModelNames(type="positive definite", group.by="type")
- }. This structure also applies for type="tail correlation fucntion" and
- type="negative definite".
+ The following arguments can be specified.
+ In general, only exact matches are returned. One exception exists:
+ If the length of \code{type} equals 1 and if \code{group.by} is not
+ given, then  types included in \code{type} are also returned.
+ E.g. if \code{type="negative definite"}  and  \code{group.by} is not given
+ then only models are returned that are negative definite.
+ Howeveralso positive definite functions and tail correlaton
+ functions are returned if \code{"type"} is included in \code{group.by}.
  
  \describe{
    \item{\code{type}}{specifies the class of functions; for
@@ -148,7 +149,8 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
    \item{\code{finiterange}}{indicates whether the covariance of the
      model has finite range, e.g. \command{\link{RMcircular}} or
      \command{\link{RMnugget}} have covariances with finite range; see
-     \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
+     \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
+     \code{NA} is used if the finiteness depends on the submodel, 
    }
    
    \item{\code{valid.in.dim}}{If \code{valid.in.dim=n} is
@@ -226,24 +228,24 @@ RFgetModelNames(type = RC_TYPE, domain = RC_DOMAIN,
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
  \code{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
- \link{RC_DOMAIN}, \link{RC_ISOTROPY}
+ \link{RC_DOMAIN_NAMES}, \link{RC_ISONAMES}
 }
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-# get vector of names of all functions
+# get list of names of all functions
 RFgetModelNames()
 
 # any kind of positive definite functions
-RFgetModelNames(type="positive definite", group.by="type")
+RFgetModelNames(type="positive definite")
 
-# get vector of names of all stationary models
+# get a list of names of all stationary models
 RFgetModelNames(type="positive definite", domain="single variable")
 
-# get list of models grouped by the stationarity attribute
-RFgetModelNames(group.by=c("type"))
+# get a vector of all model names
+RFgetModelNames(group.by=NULL)
 
 
 \dontshow{\dontrun{

@@ -24,10 +24,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>  
 #include <stdlib.h>
- 
-#include "RF.h"
-#include "randomshape.h"
 #include <R_ext/Lapack.h>
+
+#include "RF.h"
+#include "shape_processes.h"
+#include "variogramAndCo.h"
 //#include <R_ext/Linpack.h>
 
 bool debug=false;
@@ -49,21 +50,28 @@ int check_directGauss(cov_model *cov) {
   if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
       (!loc->distances || cov->xdimprev!=1)) {
     return ERRORDIM;
-  }
+  } 
 
-  Types type = PosDefType;
-
-  for (j=0; j<=1; j++) {
-    if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, 
-		     type, KERNEL, SYMMETRIC,
-		     SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
-    type = NegDefType;
+  int jj, isotropy[2], 
+    endjj = 0;
+  if (!isCartesian(cov->isoown)) isotropy[endjj++] = cov->isoown;
+  else isotropy[endjj++] = SYMMETRIC;
+  Types type[2] = {PosDefType, NegDefType};
+  for (jj=0; jj<endjj; jj++) {
+     for (j=0; j<=1; j++) {    
+       //printf("direct:: %s %s\n", ISONAMES[isotropy[jj]], TYPENAMES[type[j]]);
+      if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, 
+		       type[j], KERNEL, isotropy[jj],
+		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
+     }
+     if (err == NOERROR) break;
   }
-  if (err != NOERROR) return err;
-  
+  if (err != NOERROR) return err;  
   if (next->pref[Direct] == PREF_NONE) return ERRORPREFNONE;
 
+
   setbackward(cov, next);
+
   return NOERROR;
 }
 
@@ -104,7 +112,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *work=NULL,
     *D=NULL, 
     *SICH=NULL;
-  int err,
+  int err, nonzeros,
     maxvariab = P0INT(DIRECT_MAXVAR),
     *iwork=NULL;
   int dim=cov->tsdim;
@@ -115,7 +123,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   bool storing = GLOBAL.internal.stored_init; //
   // nonstat_covfct cf;
   long 
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     locpts = loc->totalpoints,
 //    loctot = locpts *dim,
     vdimtot = vdim * locpts,
@@ -124,38 +132,35 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     vdimSqtotSq = vdimtot * vdimtot;
 
   ROLE_ASSERT_GAUSS;
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   cov->method = Direct;
 
   if ((err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR) return err;
 
    if (vdimtot > maxvariab) {
-    sprintf(ERRORSTRING_OK, 
-	    "number of columns less than or equal to %d", maxvariab);
-    sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
-    err=ERRORCOVFAILED;
-    goto ErrorHandling;
-  }
+     GERR3(" '%s' valid only for less than or equal to %d data. Got %ld data.",
+	  NICK(cov), maxvariab, vdimtot);
+   }
    
   //printf("vdim = %d %d %d %d\n", vdim, locpts, vdimtot, vdimSqtotSq); 
-  //  PMI(cov);
+  //    PMI(cov);
 
-  if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
+   if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
       (U =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
    //for SVD/Chol intermediate r esults AND  memory space for do_directGauss:
       (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }  
-  NEW_STORAGE(Sdirect, DIRECT, direct_storage);
+  NEW_STORAGE(direct);
   s = cov->Sdirect;
 
   /* ********************* */
   /* matrix creation part  */
   /* ********************* */
-
-  CovarianceMatrix(next, Cov);
+  
+  CovarianceMatrix(next, Cov, &nonzeros);
   assert(R_FINITE(Cov[0]));
  
   if (false) {
@@ -260,7 +265,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      double sum;
      method = SVD; // necessary if the value of method has been Cholesky.
      //               originally
-     if (vdimtot>maxvariab * 0.8) {
+     if (vdimtot > maxvariab * 0.8) {
        sprintf(ERRORSTRING_OK, 
 	       "number of points less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD",
 	       maxvariab);
@@ -374,7 +379,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   direct_storage *s = cov->Sdirect;
   long i, j, k,
     locpts = loc->totalpoints,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimtot = locpts * vdim;
   double dummy,
     *G = NULL,
@@ -384,7 +389,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   bool loggauss = GLOBAL.gauss.loggauss;
     // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
-  // APMI(cov);
+  //   APMI(cov);
 
 
   U = s->U;// S^{1/2}
@@ -405,7 +410,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	  dummy += G[j] * Uk[j];
 	}
 	res[i] = (res_type) dummy; 
-	//printf("i=%d %f %lu\n", i, res[i], res);
+	//	printf("i=%d %f %lu\n", i, res[i], res);
       }
       //   } else {
       //    //printf("vdim %d vdimtot %d\n", vdim, vdimtot);

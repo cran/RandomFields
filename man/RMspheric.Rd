@@ -1,6 +1,6 @@
 \name{RMspheric}
 \alias{RMspheric}
-\title{Spherical Covariance Model}
+\title{The Spherical Covariance Model}
 \description{
  \command{\link{RMspheric}} is a stationary isotropic covariance model
  which is only valid up to dimension 3.
@@ -34,10 +34,14 @@ RMspheric(var, scale, Aniso, proj)
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
+ \note{Although this temodel is valid on a sphere, do not mix up this model
+ with valid models on a sphere, see \link{spherical models}
+ for a list of the latter.}
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
- \command{\link{RFfit}}.
+ \command{\link{RFfit}},
+ link{spherical models}
 }
 
 

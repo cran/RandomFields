@@ -422,7 +422,7 @@ SEXP fftVario3D(SEXP Coord,
 	if (fabs(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
       }
     } // vdim1
-  } // vdim2
+  } // vdim
   
     
   // print("C SCRIPT END !!!!!!!!! \n");

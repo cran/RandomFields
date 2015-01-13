@@ -2,7 +2,7 @@
 \alias{Gaussian}
 \title{Methods for Gaussian Random Fields}
 \description{
-  Hier all the methods (models) for simulating
+  Here, all the methods (models) for simulating
   Gaussian random fields are listed
 }
 \section{Implemented models}{

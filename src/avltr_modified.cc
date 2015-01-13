@@ -1349,7 +1349,7 @@ verify_tree (avltr_tree *tree)
 
 	if (thread && !node)
 	  {
-	    Rprint (" A thread leads to ``node'' %d, "
+	    Rprint (" A thread leads to 'node' %d, "
 		    "which is not in the tree.", i);
 	    done = 1;
 	  }

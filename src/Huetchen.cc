@@ -94,12 +94,7 @@ int check_pts_given_shape(cov_model *cov) {
  
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
-  if (cov->q == NULL) {
-    // zwingend CALLOC !
-    if ((cov->q  = (double*) CALLOC(sizeof(double), dim)) == NULL)
-      return ERRORMEMORYALLOCATION;
-    cov->qlen = dim;
-  }
+  if (cov->q == NULL) QALLOC(dim);
   
   if (cov->xdimprev != cov->xdimown || cov->xdimprev != cov->tsdim) 
     return ERRORDIM;
@@ -167,7 +162,7 @@ int struct_pts_given_shape(cov_model *cov, cov_model **newmodel){
   int err = NOERROR;
 
   ASSERT_NEWMODEL_NULL;
-  if (cov->Spgs != NULL)  PGS_DELETE(&(cov->Spgs));
+  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs));
 
   if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
     ILLEGAL_ROLE;
@@ -487,17 +482,17 @@ int complete_copy(cov_model **newmodel, cov_model *cov) {
   (*newmodel)->calling = cov;
   int role = prev->role ;// role_of_process(prev->nr);
   if ((err = CHECK(*newmodel, prev->tsdim, prev->xdimprev, prev->typus, 
-		   prev->domprev, prev->isoprev, prev->vdim2, role)) 
+		   prev->domprev, prev->isoprev, prev->vdim, role)) 
       != NOERROR)  return err;  
    if ((err = STRUCT(*newmodel, NULL)) != NOERROR) { return err; }
   if (!(*newmodel)->initialised) {
     if ((err =  CHECK(*newmodel, prev->tsdim, prev->xdimprev, prev->typus, 
-		      prev->domprev, prev->isoprev, prev->vdim2, role)) 
+		      prev->domprev, prev->isoprev, prev->vdim, role)) 
 	!= NOERROR) return err;  
  
-    NEW_COV_STORAGE(*newmodel, stor, STORAGE, gen_storage);
+    NEW_COV_STORAGE(*newmodel, gen);
    //APMI(*newmodel);
-    if ((err = INIT(*newmodel, 0, cov->stor)) != NOERROR) {
+    if ((err = INIT(*newmodel, 0, cov->Sgen)) != NOERROR) {
       //APMI(cov); // !!! ?? hier weitermachen
       return err; 
     }
@@ -1268,6 +1263,133 @@ void range_pts_given_shape(cov_model VARIABLE_IS_NOT_USED *cov, range_type *rang
 
 
 
+
+
+#define STAT_SHAPE_FCT 0
+void stationary_shape(double *x, cov_model *cov, double *v) { 
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  FCTN(x, shape, v);
+  //  if (cov->q[0] < 1) {
+  //   printf("x=%f q=%f v=%f\n", x[0], cov->q[0], v[0]);
+  //   assert(false);
+  // } 
+  //  APMI(cov);
+}
+
+void logstationary_shape(double *x, cov_model *cov, double *v, double *sign) { 
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  LOGCOV(x, shape, v, sign);
+}
+
+int check_stationary_shape(cov_model *cov) {
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  int err, role,
+    dim = cov->tsdim; 
+  
+  if (cov->xdimprev != cov->xdimown || cov->xdimprev != cov->tsdim) 
+    return ERRORDIM;
+  
+  if (cov->role == ROLE_GAUSS) {
+    role = isGaussProcess(shape) ? ROLE_GAUSS
+      : shape->nr == BINARYPROC ? ROLE_GAUSS
+      : ROLE_UNDEFINED; 
+    ASSERT_ROLE_DEFINED(shape);
+  } else if (hasPoissonRole(cov)) {
+    role = ROLE_POISSON;
+  } else if (hasMaxStableRole(cov)) {
+    role = ROLE_MAXSTABLE;
+  } else ILLEGAL_ROLE;
+
+
+  //printf("here\n");
+  
+  if ((err = CHECK(shape, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
+		     SCALAR, role)) != NOERROR)  return err;
+  setbackward(cov, shape);
+
+  return NOERROR;
+}
+
+int struct_stationary_shape(cov_model *cov, cov_model **newmodel){
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  //  location_type *loc = Loc(cov);
+
+  ASSERT_NEWMODEL_NULL;
+
+  if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
+    ILLEGAL_ROLE;
+
+  //printf("here\n");
+
+  return NOERROR;
+}
+
+
+int init_stationary_shape(cov_model *cov, gen_storage *S) {  
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  int d, i,
+    err = NOERROR,
+    dim = shape->xdimprev;
+ 
+  //PMI(cov);
+
+  assert(dim == Loc(cov)->timespacedim);
+  if ((err = alloc_pgs(cov)) != NOERROR) return err;
+  pgs_storage *pgs = cov->Spgs;
+
+  // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
+  // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
+  // schoen abfangen.
+
+  
+  assert(cov->mpp.moments >= 1);
+  if ((err = INIT(shape, 1, S)) != NOERROR) return err; //gatter?
+  assert(shape->mpp.moments >= 1);
+  for (i=0; i<=cov->mpp.moments; i++) {
+    cov->mpp.mM[i] = shape->mpp.mM[i];
+    cov->mpp.mMplus[i] = shape->mpp.mMplus[i];
+  }
+
+   
+  pgs->zhou_c = 1.0 / cov->mpp.mMplus[1]; // passt fuer binary, und auch fuer 
+  if (!R_FINITE(pgs->zhou_c))
+    SERR1("max height of '%s' not finite", NICK(shape));
+  pgs->estimated_zhou_c = false; 
+  if (!cov->deterministic) SERR("not deterministic shapes in stationary modelling -- please contact author");
+  
+  pgs->log_density = 0; 
+   
+  //  printf("dims %d %d\n", cov->xdimown, shape->xdimprev);
+
+  for (d=0; d<dim; d++) {
+    pgs->supportmin[d] = RF_NEGINF; // 4 * for debugging...
+    pgs->supportmax[d] = RF_INF;
+  }
+
+  cov->mpp.maxheights[0] = shape->mpp.maxheights[0];
+  cov->rf = shape->rf;
+  cov->origrf = false;
+  cov->fieldreturn = shape->fieldreturn;
+  if (!cov->fieldreturn) BUG;
+
+
+  // APMI(cov);
+
+  return NOERROR;
+}
+
+
+void do_stationary_shape(cov_model *cov, gen_storage *S) {
+  cov_model *shape = cov->sub[STAT_SHAPE_FCT]; 
+  DO(shape, S);
+  cov->mpp.maxheights[0] = shape->mpp.maxheights[0];
+  assert(shape->fieldreturn);
+}
+
+
+
+ 
+
 void standard_shape(double *x, cov_model *cov, double *v) { 
   cov_model *shape = cov->sub[PGS_FCT];
   NONSTATCOV(x, cov->q, shape, v);
@@ -1285,12 +1407,7 @@ int check_standard_shape(cov_model *cov) {
     dim = cov->tsdim; 
   
 
-  if (cov->q == NULL) {
-    // zwingend CALLOC !
-    if ((cov->q  = (double*) CALLOC(sizeof(double), dim)) == NULL)
-      return ERRORMEMORYALLOCATION;
-    cov->qlen = dim;
-  }
+  if (cov->q == NULL) QALLOC(dim);
 
   if (cov->xdimprev != cov->xdimown || cov->xdimprev != cov->tsdim) 
     return ERRORDIM;
@@ -1316,6 +1433,8 @@ int check_standard_shape(cov_model *cov) {
   return NOERROR;
 }
 
+
+
 int struct_standard_shape(cov_model *cov, cov_model **newmodel){
   cov_model *shape = cov->sub[PGS_FCT];
   //  int    err = NOERROR;
@@ -1338,6 +1457,8 @@ int struct_standard_shape(cov_model *cov, cov_model **newmodel){
   return NOERROR;
 }
  
+
+
 
 int init_standard_shape(cov_model *cov, gen_storage *S) {  
   cov_model *shape = cov->sub[PGS_FCT];
@@ -1473,32 +1594,43 @@ void do_standard_shape(cov_model *cov, gen_storage *S) {
 
 
 
-#define STAT_SHAPE_FCT 0
-void stationary_shape(double *x, cov_model *cov, double *v) { 
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
-  FCTN(x, shape, v);
-  //  if (cov->q[0] < 1) {
-  //   printf("x=%f q=%f v=%f\n", x[0], cov->q[0], v[0]);
-  //   assert(false);
-  // } 
-  //  APMI(cov);
+void mcmc_pgs(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) { 
 }
 
-void logstationary_shape(double *x, cov_model *cov, double *v, double *sign) { 
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
-  LOGCOV(x, shape, v, sign);
-}
+void logmcmc_pgs(double *x, cov_model *cov, double *v, double *sign) { 
+  cov_model *shape = cov->sub[PGS_FCT];
+  LOGNONSTATCOV(x, cov->q, shape, v, sign);
 
-int check_stationary_shape(cov_model *cov) {
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
+  //  printf("x = %f %f log=%f\n", *x, cov->q[0], *v, *sign);
+}
+int check_mcmc_pgs(cov_model *cov) {
+  cov_model *shape = cov->sub[PGS_FCT],
+    *pts = cov->sub[PGS_LOC];
+  location_type *loc = Loc(cov);
   int err, role,
     dim = cov->tsdim; 
+
+  if (loc->Time) SERR("Time component not allowed yet"); // todo
+   
+  kdefault(cov, PGS_RATIO, GLOBAL.extreme.density_ratio); 
+  kdefault(cov, PGS_FLAT, GLOBAL.extreme.flat);
+  kdefault(cov, PGS_INFTY_SMALL, !PINT(PGS_FLAT));
+  kdefault(cov, PGS_NORMED, true);
+  kdefault(cov, PGS_ISOTROPIC, true);
+
+
+  //PMI(cov, "checking");
+ 
+  if ((err = checkkappas(cov)) != NOERROR) return err;
+
+  if (cov->q == NULL) QALLOC(dim);
   
   if (cov->xdimprev != cov->xdimown || cov->xdimprev != cov->tsdim) 
     return ERRORDIM;
   
   if (cov->role == ROLE_GAUSS) {
-    role = isGaussProcess(shape) ? ROLE_GAUSS
+    role = isShape(shape) ? cov->role  //Marco, 29.5.13
+      : isGaussProcess(shape) ? ROLE_GAUSS
       : shape->nr == BINARYPROC ? ROLE_GAUSS
       : ROLE_UNDEFINED; 
     ASSERT_ROLE_DEFINED(shape);
@@ -1509,89 +1641,131 @@ int check_stationary_shape(cov_model *cov) {
   } else ILLEGAL_ROLE;
 
 
-  //printf("here\n");
+  //    printf("here %d\n");
   
-  if ((err = CHECK(shape, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, 
-		     SCALAR, role)) != NOERROR)  return err;
+  // isotropy is the property -- user should not define unisotropic functions!
+  // so !isotropic only for special, internal definitions, e.g. 
+  // strokorbPoly
+  // int err2 = NOERROR;
+  //  if (P0INT(PGS_ISOTROPIC)) 
+  //    err2 = CHECK(shape, dim, dim, ShapeType, XONLY, ISOTROPIC,
+  //		 SCALAR, role);
+
+  //  printf("here2\n");
+  // PMI(shape);
+ // but it must be treated in any case as if it was non-isotropic
+  if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
+		   SCALAR, role)) != NOERROR) {
+    if (P0INT(PGS_ISOTROPIC)) BUG;
+    XERR(err);
+    return err;
+  }
+  // if (err2 != NOERROR) SERR("isotropic shape function expected.");
+
   setbackward(cov, shape);
 
-  return NOERROR;
-}
+  //if (!shape->deterministic) return ERRORNOTPROGRAMMED; // Dichte muss nicht normiert sein und stattdessen durch das mittlere Volumen dividiert werden.
 
-int struct_stationary_shape(cov_model *cov, cov_model **newmodel){
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
-  //  location_type *loc = Loc(cov);
+  if (pts != NULL) {
 
-  ASSERT_NEWMODEL_NULL;
+    //printf("pts %s %s\n", CovList[pts->nr + 1].nick, CovList[pts->nr + 1].name);
+    //PMI(pts);
 
-  if (shape->role != ROLE_POISSON && shape->role != ROLE_MAXSTABLE)
-    ILLEGAL_ROLE;
+    //      assert(dim == 2); print("x");
+    // printf("dim=%d\n", dim);
+    // APMI(pts);
 
-  //printf("here\n");
+    if ((err = CHECK_R(pts, dim)) != NOERROR) return err;
+  }
 
-  return NOERROR;
-}
-
-
-int init_stationary_shape(cov_model *cov, gen_storage *S) {  
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT];
-  int d, i,
-    err = NOERROR,
-    dim = shape->xdimprev;
+  //  printf("done\n");
  
+  return NOERROR;
+}
+
+
+
+int struct_mcmc_pgs(cov_model VARIABLE_IS_NOT_USED *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
+  //  cov_model *shape = cov->sub[PGS_FCT];
+  //  location_type *loc = Loc(cov);
+  //  int err = NOERROR;
+  ASSERT_NEWMODEL_NULL;
+ return NOERROR;
+}
+
+
+int init_mcmc_pgs(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {  
+  cov_model *shape = cov->sub[PGS_FCT],
+    *pts = cov->sub[PGS_LOC];
+  //  cov_fct *Cshape = CovList + shape->nr;
+  //location_type *loc = Loc(cov);
+  int i,
+    //dim = shape->xdimprev,
+    err = NOERROR;
+  // pgs_storage *pgs = cov->Spgs;
+  //  bool 
+  //   grid = Loc(cov)->grid,
+  //  pgsnull = pgs == NULL;
   //PMI(cov);
 
-  assert(dim == Loc(cov)->timespacedim);
-  if ((err = alloc_pgs(cov)) != NOERROR) return err;
-  pgs_storage *pgs = cov->Spgs;
-
-  // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
-  // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
-  // schoen abfangen.
-
-  
-  assert(cov->mpp.moments >= 1);
-  if ((err = INIT(shape, 1, S)) != NOERROR) return err; //gatter?
-  assert(shape->mpp.moments >= 1);
   for (i=0; i<=cov->mpp.moments; i++) {
-    cov->mpp.mM[i] = shape->mpp.mM[i];
-    cov->mpp.mMplus[i] = shape->mpp.mMplus[i];
+    //    printf("%d %f %f %d\n", i, pts->mpp.mM[i], shape->mpp.mMplus[i], cov->mpp.moments);
+
+    //assert(pts->mpp.mMplus[0] == 1.0);
+    
+    cov->mpp.mM[i] = shape->mpp.mM[i] * pts->mpp.mMplus[0];
+    cov->mpp.mMplus[i] = shape->mpp.mMplus[i] * pts->mpp.mMplus[0];
   }
 
-   
-  pgs->zhou_c = 1.0 / cov->mpp.mMplus[1]; // passt fuer binary, und auch fuer 
-  if (!R_FINITE(pgs->zhou_c))
-    SERR1("max height of '%s' not finite", NICK(shape));
-  pgs->estimated_zhou_c = false; 
-  if (!cov->deterministic) SERR("not deterministic shapes in stationary modelling -- please contact author");
   
-  pgs->log_density = 0; 
    
-  //  printf("dims %d %d\n", cov->xdimown, shape->xdimprev);
-
-  for (d=0; d<dim; d++) {
-    pgs->supportmin[d] = RF_NEGINF; // 4 * for debugging...
-    pgs->supportmax[d] = RF_INF;
-  }
-
-  cov->mpp.maxheights[0] = shape->mpp.maxheights[0];
   cov->rf = shape->rf;
   cov->origrf = false;
-  cov->fieldreturn = shape->fieldreturn;
-  if (!cov->fieldreturn) BUG;
-
-
+ 
   // APMI(cov);
 
-  return NOERROR;
+  return err;
 }
 
 
-void do_stationary_shape(cov_model *cov, gen_storage *S) {
-  cov_model *shape = cov->sub[STAT_SHAPE_FCT]; 
-  DO(shape, S);
-  cov->mpp.maxheights[0] = shape->mpp.maxheights[0];
-  assert(shape->fieldreturn);
+void do_mcmc_pgs(cov_model  VARIABLE_IS_NOT_USED *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 }
 
+void range_mcmc_pgs(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  
+  range->min[PGS_RATIO] = 0;
+  range->max[PGS_RATIO] = 1;
+  range->pmin[PGS_RATIO] = 0;
+  range->pmax[PGS_RATIO] = 1;
+  range->openmin[PGS_RATIO] = false;
+  range->openmax[PGS_RATIO] = false; 
+
+  range->min[PGS_FLAT] = -1;
+  range->max[PGS_FLAT] = 1;
+  range->pmin[PGS_FLAT] = -1;
+  range->pmax[PGS_FLAT] = 1;
+  range->openmin[PGS_FLAT] = false;
+  range->openmax[PGS_FLAT] = false; 
+
+  range->min[PGS_INFTY_SMALL] = 0;
+  range->max[PGS_INFTY_SMALL] = 1;
+  range->pmin[PGS_INFTY_SMALL] = 0;
+  range->pmax[PGS_INFTY_SMALL] = 1;
+  range->openmin[PGS_INFTY_SMALL] = false;
+  range->openmax[PGS_INFTY_SMALL] = false; 
+
+  range->min[PGS_NORMED] = 0;
+  range->max[PGS_NORMED] = 1;
+  range->pmin[PGS_NORMED] = 0;
+  range->pmax[PGS_NORMED] = 1;
+  range->openmin[PGS_NORMED] = false;
+  range->openmax[PGS_NORMED] = false; 
+
+  range->min[PGS_ISOTROPIC] = 0;
+  range->max[PGS_ISOTROPIC] = 1;
+  range->pmin[PGS_ISOTROPIC] = 0;
+  range->pmax[PGS_ISOTROPIC] = 1;
+  range->openmin[PGS_ISOTROPIC] = false;
+  range->openmax[PGS_ISOTROPIC] = false; 
+}
 

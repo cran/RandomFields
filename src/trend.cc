@@ -45,12 +45,13 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 #include <Rdefines.h>
 #include <Rinternals.h>
 #include <math.h>
- 
-#include "RF.h"
-#include "primitive.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
+
+#include "RF.h"
+#include "primitive.h"
 #include "Covariance.h"
+#include "variogramAndCo.h"
 
 
 
@@ -72,9 +73,9 @@ void mixed(double *x, cov_model *cov, double *v) {
   int i, err, // Xnrow, 
     //    err=NOERROR,
     element = P0INT(MIXED_ELMNT),
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vdimsq = vdim * vdim;
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
 
   NotProgrammedYet("");
 
@@ -112,8 +113,9 @@ void mixed(double *x, cov_model *cov, double *v) {
   } else {    
     // Xu , u ~ random field
     // random effect, geostatistical covariance model
+    int nonzeros;
 
-    CovarianceMatrix(cov->key, s->mixedcov);
+    CovarianceMatrix(cov->key, s->mixedcov, &nonzeros);
     covmatrix = s->mixedcov;
   } // sub->nr != CONSTANT
 
@@ -150,12 +152,12 @@ void mixed_nonstat(double *x, double *y, cov_model *cov, double *v){
   } else mixed(x, cov, v);
 }
 
-void covmatrix_mixed(cov_model *cov, double *v) {
+void covmatrix_mixed(cov_model *cov, double *v, int* nonzeros) {
   cov_model *sub = cov->sub[0];
   int element = P0INT(MIXED_ELMNT);
   
   if (cov->ncol[MIXED_X] == 0 || element < 0) {
-    CovList[sub->nr].covmatrix(sub, v);
+    CovList[sub->nr].covmatrix(sub, v, nonzeros);
     return;
   }
   if (element >= cov->nrow[MIXED_X]) {
@@ -164,17 +166,20 @@ void covmatrix_mixed(cov_model *cov, double *v) {
 
   listoftype *X = PLIST(MIXED_X);
   double *C=NULL;
-  int nrow = X->nrow[element],
-    ncol=X->ncol[element]; 
-  C = (double*) MALLOC(sizeof(double) * ncol * ncol);
+  int j, nz=0,
+    nrow = X->nrow[element],
+    ncol=X->ncol[element],
+    ncol2 = ncol * ncol; 
+  C = (double*) MALLOC(sizeof(double) * ncol2);
   if (C==NULL) {
-    StandardCovMatrix(cov, v);
+    StandardCovMatrix(cov, v, nonzeros);
     return;
   }
   
-  CovList[sub->nr].covmatrix(sub, C);
+  CovList[sub->nr].covmatrix(sub, C, nonzeros);
   XCXt(X->p[element], C, v, nrow, ncol); BUG;//todo:?reprogramm XCXt with alloc here ?
   Loc(cov)->totalpoints = nrow;
+  for (j=0; j<ncol2; nz += C[j++] != 0.0);
 
   // PMI(cov);
   
@@ -215,10 +220,7 @@ int set_mixed_constant(cov_model *cov) {
     *nrow = cov->nrow; 
   listoftype *X = PLIST(MIXED_X);
 
-  cov->q = (double*) MALLOC(sizeof(double) * 1);
-  cov->qlen = 1;
-
-  // PMI(cov);
+  if (cov->q == NULL) QALLOC(1);
 
   while (sub != NULL && isDollar(sub) &&
 	 ((simple = PARAMisNULL(sub, DPROJ)
@@ -288,12 +290,14 @@ int checkmixed(cov_model *cov) {
     *nrow = cov->nrow; // taken[MAX DIM],
   char msg[300];
   listoftype *X = PLIST(MIXED_X);
-  
+
+  if (!isCartesian(cov->isoown)) return ERRORNOTCARTESIAN;
+
   ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_COV);
   for (i=0; i<nkappa; i++) // NEVER; cf kriging.R, for instance
     if (cov->kappasub[i] != NULL) SERR("parameters may not be random")
 
-  cov->vdim2[0] = cov->vdim2[1] = 1; //falls kein submodel vorhanden (Marco)
+  cov->vdim[0] = cov->vdim[1] = 1; //falls kein submodel vorhanden (Marco)
   cov->maxdim=INFDIM;
   cov->matrix_indep_of_x = true;
 
@@ -339,13 +343,13 @@ int checkmixed(cov_model *cov) {
       return err;
     }
     
-    // warning("some checks in model `mixed' are missing");
+    // warning("some checks in model 'mixed' are missing");
     // ob X mit C zusammengeht.
     
     setbackward(cov, next);
   }
 
-  if (cov->vdim2[0] > 1) 
+  if (cov->vdim[0] > 1) 
     SERR("multivariate version of mixed not programmed yet");
 
   if (PisNULL(MIXED_DIST) xor PisNULL(MIXED_DIM))
@@ -406,7 +410,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     Cdim = -1, 
     list_element=0,
     err = NOERROR,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     dim = coord!=NULL ? cov->ncol[MIXED_COORD] : P0INT(MIXED_DIM);
   long
     totalpoints = loc->totalpoints,
@@ -415,7 +419,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   listoftype *X = PLIST(MIXED_X);
   bool distTF;
 
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   return ERRORFAILED; // muss in zerlegt werden in init und struct
   // und unten struct aufrufen richtig praeparieren.
@@ -430,7 +434,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   
   assert(cov->nr = MIXEDEFFECT);
 
-  NEW_STORAGE(Smixed, MIXED, mixed_storage);
+  NEW_STORAGE(mixed);
   s = cov->Smixed;
 
   NotProgrammedYet("");
@@ -486,11 +490,11 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     if (cov->key->nr != GAUSSPROC) addModel(&(cov->key), GAUSSPROC);   
     cov->key->calling = cov->key;
     
-    NEW_STORAGE(stor, STORAGE, gen_storage);
-    if ((err = INIT(cov->key, 0, cov->stor)) != NOERROR) goto ErrorHandling;
+    NEW_STORAGE(gen);
+    if ((err = INIT(cov->key, 0, cov->Sgen)) != NOERROR) goto ErrorHandling;
    
     int Xnrow, Xncol;
-    Xnrow = Xncol = Cn * sub->vdim2[0];
+    Xnrow = Xncol = Cn * sub->vdim[0];
     if (loc->i_row==0 && loc->i_col==0) {
       if (s->mixedcov != NULL) free(s->mixedcov);   
       s->mixedcov = (double*) MALLOC(sizeof(double) * Xnrow * Xnrow);
@@ -510,18 +514,18 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 }
 
 
-static int keeprandomeffect = false;
+static int keepRandomEffect = false;
 void domixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S){
   location_type *loc = Loc(cov);
   mixed_storage *s = cov->Smixed;
   double *res  = cov->rf;
   int 
     list_element=0,
-    vdim = cov->vdim2[0];
+    vdim = cov->vdim[0];
   long i,
     totalpoints = loc->totalpoints,
     total = vdim * totalpoints;
-   assert(cov->vdim2[0] == cov->vdim2[1]);
+   assert(cov->vdim[0] == cov->vdim[1]);
 
   listoftype 
     *X = PLIST(MIXED_X);
@@ -538,8 +542,8 @@ void domixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S){
     
   } else { // submodel is given
     cov_model *key = cov->key;
-    if (!keeprandomeffect || !s->initialized) {
-      do_gaussprocess(key, cov->stor);
+    if (!keepRandomEffect || !s->initialized) {
+      do_gaussprocess(key, cov->Sgen);
     }
      
     if (X != NULL) {
@@ -570,7 +574,7 @@ void trend(double  VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
   // nein: model kann auch nur aus Trend bestehen!
 
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vSq = vdim * vdim;
   for (i=0; i<vSq; i++) v[i]=0.0;
   //print("trend %d %f\n", vSq, *v);
@@ -578,7 +582,7 @@ void trend(double  VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
 
 void trend_nonstat(double  VARIABLE_IS_NOT_USED *x, double  VARIABLE_IS_NOT_USED *y, cov_model *cov, double *v){
   int i,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     vSq = vdim * vdim;
  
   if (cov->role == ROLE_COV)  for (i=0; i<vSq; i++) v[i]=0.0;
@@ -718,15 +722,17 @@ int checktrend(cov_model *cov){
   }
   
   if (vdim <= 0) {
-    vdim = cov->calling->vdim2[0];
+    vdim = cov->calling->vdim[0];
     if (vdim <= 0) 
       SERR("multivariate dimension for trend cannot be determined.");
     PALLOC(TREND_MEAN, vdim, 1);
     for(i=0; i<vdim; i++) P(TREND_MEAN)[i] = 0.0;
   }
-  cov->vdim2[0] = cov->vdim2[1] = vdim;
+  cov->vdim[0] = cov->vdim[1] = vdim;
   cov->isoown = cov->matrix_indep_of_x ? ISOTROPIC : CARTESIAN_COORD;
-  
+  if (!isCartesian(cov->isoown) && cov->isoown != ISOTROPIC)
+    return ERRORNOTCARTESIAN;
+
  return NOERROR;
 
 }
@@ -822,9 +828,9 @@ int init_trend(cov_model *cov, gen_storage *S) {
     *polydeg = PINT(TREND_POLY),
     basislen=0,
     tsdim = cov->tsdim,
-    vdim = cov->vdim2[0];
+    vdim = cov->vdim[0];
   //SEXP fctformals, argnames;
-  if (cov->vdim2[0] != cov->vdim2[1]) BUG;
+  if (cov->vdim[0] != cov->vdim[1]) BUG;
 
   //assert(false);
 
@@ -835,7 +841,7 @@ int init_trend(cov_model *cov, gen_storage *S) {
       basislen += binomialcoeff(polydeg[i]+tsdim,tsdim);
   }
 
-  NEW_STORAGE(Strend, TREND, trend_storage);
+  NEW_STORAGE(trend);
   s = cov->Strend;
 
   if ((s->x = (double *) MALLOC(sizeof(double) * tsdim))==NULL ||
@@ -914,10 +920,9 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   int  v, w, 
     basislen, startindex,
     *polydeg = PINT(TREND_POLY),
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     tsdim = cov->tsdim,
     spatialdim = loc->spatialdim,
-    *len = loc->length,
     *xi = S->xi,
     *powmatrix = S->powmatrix;
   //SEXP fctbody, tempres, envir, Rx;
@@ -928,7 +933,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
  
   res_type *res = cov->rf;
   
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
 
   strcpy(errorloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
@@ -958,7 +963,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
 	i = 0;
 	(xi[i])++;
 	x[i] += xgr[i][XSTEP];
-	while(xi[i]>=len[i]) {
+	while(xi[i]>=loc->xgr[i][XLENGTH]) {
 	  xi[i] = 0;
 	  x[i] = xgr[i][XSTART];
 	  if (i<tsdim-1) {
@@ -972,7 +977,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
       }	
     } else if (loc->Time) {
       long m, 
-	endfor= loc->length[loc->timespacedim-1],
+	endfor= (long int) loc->xgr[loc->timespacedim-1][XLENGTH],
 	endfor2 = loc->spatialtotalpoints;
       for(k=m=0, t=loc->T[XSTART]; m<endfor; m++, t+=loc->T[XSTEP]) {
 	// for(t=loc->T[XSTART], i=0; t < loc->T[XEND]; t += loc->T[XSTEP]) {
@@ -1015,7 +1020,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
 	  i = 0;
 	  (xi[i])++;
 	  x[i] += xgr[i][XSTEP];
-	  while(xi[i]>=len[i]) {
+	  while(xi[i]>=xgr[i][XLENGTH]) {
 	    xi[i] = 0;
 	    x[i] = xgr[i][XSTART];
 	    if (i<tsdim-1) {
@@ -1098,7 +1103,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
 //          }	
 //      } else if(loc->Time) {
 // 	 int k, 
-// 	   endfor= loc->length[loc->timespacedim-1];
+// 	   endfor= (int) loc->T[XLENGTH];
 // 	 for(k=0, t=loc->T[XSTART], i=0; k<endfor; k++, t += loc->T[XSTEP]) {
 // 	   //	 for(t=loc->T[XSTART], i=0; t < loc->T[XEND]; t+=loc->T[XSTEP]) {
 // 	   for(k=0, j=0; k < loc->spatialtotalpoints; k++, i++) {
@@ -1160,12 +1165,12 @@ void poly_basis(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s) {
   trend_storage *S = cov->Strend;
   int basislen=0, powsum, d, i, j, k, v,
     dim = cov->tsdim,
-    vdim = cov->vdim2[0],
+    vdim = cov->vdim[0],
     *powmatrix = S->powmatrix,
       *dimi=NULL,
       err=NOERROR;
   int *polydeg = PINT(TREND_POLY);
-  assert(cov->vdim2[0] == cov->vdim2[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
   
   dimi = (int *) MALLOC(dim * sizeof(int));
   if (dimi == NULL) {

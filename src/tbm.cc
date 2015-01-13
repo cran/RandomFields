@@ -55,17 +55,17 @@ void unitvector3D(int projectiondim, double *deltax, double *deltay,
 		double *deltaz) {
   switch (projectiondim) { // create random unit vector
   case 1 : 
-    *deltax= UNIFORM_RANDOM;
+    *deltax= 2.0 * UNIFORM_RANDOM - 1.0;
     *deltaz = *deltay = 0.0;
     break;
   case 2 :
     *deltaz = 0.0;
-    *deltax= UNIFORM_RANDOM;// see Martin's tech rep for details
+    *deltax= 2.0 *UNIFORM_RANDOM - 1.0;// see Martin's tech rep for details
     *deltay= sqrt(1.0 - *deltax * *deltax) * sin(UNIFORM_RANDOM*TWOPI);
     break;
   case 3 : 
     double dummy;
-    *deltaz = 2.0 * UNIFORM_RANDOM - 1.0;
+    *deltaz = 2.0 * UNIFORM_RANDOM - 1.0; // ir case of multivariate
     dummy = sqrt(1.0 - *deltaz * *deltaz);
     *deltay = UNIFORM_RANDOM * TWOPI;
     *deltax = cos(*deltay) * dummy;
@@ -89,13 +89,14 @@ cov_model* get_user_input(cov_model *cov) {
 
 int get_subdim(cov_model *cov, bool Time, bool *ce_dim2, int *ce_dim,
 	       int *effectivedim) {
+  cov_model *next = cov->sub[TBM_COV];
   int fulldim = P0INT(TBM_FULLDIM);
   double
     layers = P0(TBM_LAYERS);
   *effectivedim = cov->tsdim;
   if (Time) {
     *ce_dim2 = (!ISNA(layers) && layers) ||
-      cov->isoown==SPACEISOTROPIC ||
+      next->isoown==SPACEISOTROPIC ||
       *effectivedim == 1 + fulldim;
     *effectivedim -= *ce_dim2;  
     if (*ce_dim2 && !ISNA(layers) && !layers) {
@@ -170,7 +171,7 @@ void rangetbmproc(cov_model *cov, range_type *range){
 int checktbmproc(cov_model *cov) {
 #define NSEL 2
   cov_model 
-    *next=cov->sub[0],
+    *next=cov->sub[TBM_COV],
     *key =cov->key,
     *sub = key==NULL ? next : key;
   int i, err = NOERROR,
@@ -179,10 +180,11 @@ int checktbmproc(cov_model *cov) {
     dim = cov->tsdim; // taken[MAX DIM],
   tbm_param *gp  = &(GLOBAL.tbm);
 
+
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
   
-  if (GLOBAL.general.vdim_close_together && cov->vdim2[0] > 1)
+  if (GLOBAL.general.vdim_close_together && cov->vdim[0] > 1)
     SERR1("TBM only allowed if '%s=FALSE'", general[GENERAL_CLOSE]);
 
   ROLE_ASSERT(ROLE_GAUSS);
@@ -300,8 +302,8 @@ int checktbmproc(cov_model *cov) {
     }
   }
   setbackward(cov, sub);
-  cov->vdim2[0] = next->vdim2[0];
-  cov->vdim2[1] = next->vdim2[1];
+  cov->vdim[0] = next->vdim[0];
+  cov->vdim[1] = next->vdim[1];
 
   // PMI(cov);
   // 
@@ -393,8 +395,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   if (user_dim == 1) 
     SERR("dimension must currently be at least 2 and at most 4 for TBM");
 
-  NEW_STORAGE(Stbm, TBM, TBM_storage);
-  TBM_storage *s = cov->Stbm;
+  NEW_STORAGE(tbm);
+  tbm_storage *s = cov->Stbm;
 
   // nutzer can ueber tbm_center den centre vorgeben.
   // tbm_center muss auch wieder zurueckgegeben werden.
@@ -558,6 +560,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     //spatialpoints = loc->spatialtotalpoints,
     //    spatialdim = loc->spatialdim
     ;
+  double 
+    *timecomp = loc->grid ? loc->xgr[dim - 1] : loc->T;
 
 
 
@@ -588,11 +592,14 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   diameter = 2.0 * sqrt(min_center > max_center ? min_center : max_center);
 
   //assert(false);
+  
 
   for (d=0; d<dim; d++) {
     s->center[d] = user_Center[d];
-    if (loc->grid || (loc->Time && d==loc->timespacedim-1)) 
-      s->center[d] -= loc->xgr[d][XSTART];
+    if (loc->grid) s->center[d] -= loc->xgr[d][XSTART]; 
+    else if (loc->Time && d==loc->timespacedim-1) {
+      s->center[d] -= loc->T[XSTART];
+    }
   }
 
   //    print("diam %f pts=%d %f %f\n", diameter, *points, BUFFER, linesimufactor ); //assert(false);
@@ -634,7 +641,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   // only needed for nongrid !
   s->spatialtotalpts = loc->totalpoints;
   if (s->ce_dim == 2) {
-    s->spatialtotalpts /= loc->length[dim - 1];
+    s->spatialtotalpts /= timecomp[XLENGTH];
+    //    assert(false);
   }
  
 
@@ -709,9 +717,9 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   
   double T[3];
   if (ce_dim2) {
-    T[XSTART] = loc->T[XSTART];
-    T[XSTEP] = loc->T[XSTEP];
-    T[XLENGTH] = (double) loc->length[dim-1];
+    T[XSTART] = timecomp[XSTART];
+    T[XSTEP] = timecomp[XSTEP];
+    T[XLENGTH] = timecomp[dim-1];
   } else T[XSTART] = T[XSTEP] = T[XLENGTH] = RF_NA;
 
   loc_set(xline, T, 1, 1, 3, ce_dim2 /* time */, 
@@ -725,7 +733,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
    GLOBAL.general.expected_number_simu = 100;
   if ((err = CHECK(key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
 		     ProcessType, XONLY, CARTESIAN_COORD,
-		     cov->vdim2, ROLE_GAUSS)) != NOERROR) {
+		     cov->vdim, ROLE_GAUSS)) != NOERROR) {
     goto ErrorHandling;  
   }
 
@@ -748,9 +756,9 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     }
   }
   
-  NEW_STORAGE(stor, STORAGE, gen_storage);
+  NEW_STORAGE(gen);
 
-  if ((err = INIT(key, 0, cov->stor)) != NOERROR) goto ErrorHandling;  
+  if ((err = INIT(key, 0, cov->Sgen)) != NOERROR) goto ErrorHandling;  
 
   s->err = err;
 
@@ -772,7 +780,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
   char errorloc_save[nErrorLoc];
   cov_model *key = cov->key; // == NULL ? cov->sub[0] : cov->key;
   assert(key != NULL);  
-  TBM_storage *s = cov->Stbm;
+  tbm_storage *s = cov->Stbm;
    
   //  PMI(cov);
   //  crash();
@@ -806,7 +814,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
 }
 
 
-void GetE(int fulldim, TBM_storage *s, int origdim, bool Time, 
+void GetE(int fulldim, tbm_storage *s, int origdim, bool Time, 
 	  double *phi, double deltaphi,	 double *aniso,
 	  double *offset, double *ex, double *ey, double *ez, double *et) {
   double sube[MAXTBMSPDIM], e[MAXTBMSPDIM];
@@ -824,11 +832,11 @@ void GetE(int fulldim, TBM_storage *s, int origdim, bool Time,
   assert(fulldim >= spatialdim); 
 
   if (fulldim == 2) {
-    // no choice between random and non-random
-    (*phi) += deltaphi;
+    if (deltaphi!=0.0) (*phi) += deltaphi;
+    else (*phi) = UNIFORM_RANDOM * M_2_PI; // not pi, when multivariate
     sube[0] = sin(*phi); 
     sube[1] = cos(*phi);
-  } 
+  }
   
   else if (fulldim == 3) {
     unitvector3D(spatialdim, sube, sube +1, sube + 2);
@@ -891,13 +899,14 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   location_type 
     *loc = Loc(cov),
     *keyloc = Loc(key);
-  TBM_storage *s =  cov->Stbm;
+  tbm_storage *s =  cov->Stbm;
 
- int vdim = cov->vdim2[0];
+ int vdim = cov->vdim[0];
+ double
+   nn = keyloc->spatialtotalpoints;
  long
-    nn = keyloc->length[0],
-    ntot = keyloc->totalpoints * vdim,
-    totvdim = loc->totalpoints * vdim;
+   ntot = keyloc->totalpoints * vdim,
+   totvdim = loc->totalpoints * vdim;
 
 
 
@@ -907,8 +916,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 
   int
     origdim = loc->caniso == NULL ? cov->tsdim : loc->cani_nrow,
-    tsdim = cov->tsdim,
-    spatialdim = s->simuspatialdim, // for non-grids only
+    simuspatialdim = s->simuspatialdim, // for non-grids only
     every = GLOBAL.general.every,
     tbm_lines = P0INT(TBM_LINES);
    
@@ -926,12 +934,12 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     incy=0.0, 
     incz=0.0,
     inct=0.0;
-  long n, totpoints;
+  long n;
   int v, nt, idx, gridlent,
     fulldim = P0INT(TBM_FULLDIM);
   bool loggauss = GLOBAL.gauss.loggauss;
 
-  assert(cov->stor != NULL);
+  assert(cov->Sgen != NULL);
      
 
   // printf("%d %d\n", P0INT(TBM_FULLDIM), s->ce_dim);
@@ -942,8 +950,9 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     //printf("n=%d %ld\n", (int) n, totvdim);
     res[n]=0.0; 
   }
-  deltaphi = PI / (double) tbm_lines; // only used for tbm2
+  deltaphi = PI / (double) tbm_lines;// only used for tbm2
   phi = deltaphi * UNIFORM_RANDOM;     // only used for tbm2
+  if (!GLOBAL.tbm.grid) deltaphi = 0.0;
 
   if (loc->grid) {
     int nx, ny, nz, gridlenx, gridleny, gridlenz;
@@ -955,11 +964,12 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   
     idx = origdim;
     if (s->ce_dim==2) {
-      gridlent = loc->length[--idx]; // could be one !!
+      gridlent = (int) loc->xgr[--idx][XLENGTH]; // could be one !!
       stept = loc->xgr[idx][XSTEP];	    
-      inct = (double) nn; // wegen assert unten
+      inct = nn; // wegen assert unten
     } else if (loc->Time) {
-      gridlent = loc->length[--idx]; // could be one !!
+      idx--;
+      gridlent = (int) loc->T[XLENGTH]; // could be one !!
       stept = loc->T[XSTEP];	    
     }
 
@@ -967,15 +977,15 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 	case 4 : 
 	  BUG;
 	case 3 : 
-	  gridlenz = loc->length[--idx];
+	  gridlenz = (int) loc->xgr[--idx][XLENGTH];
 	  stepz = loc->xgr[idx][XSTEP];	  
 	  // no break;
 	case 2 : 
-	  gridleny = loc->length[--idx];
+	  gridleny = (int) loc->xgr[--idx][XLENGTH];
 	  stepy = loc->xgr[idx][XSTEP];	 
 	  // no break;
 	case 1 : 
-	  gridlenx = loc->length[--idx];
+	  gridlenx = (int) loc->xgr[--idx][XLENGTH];
 	  stepx = loc->xgr[idx][XSTEP];	  
 	  break;
     default: BUG;
@@ -984,7 +994,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     for (n=0; n<tbm_lines; n++) {
       double inittoffset;
       R_CheckUserInterrupt();
-      if (every>0  && n > 0 && (n % every == 0)) PRINTF("%d \n",n);
+      if (every>0  && n > 0 && (n % every == 0)) PRINTF("%ld \n", n);
 
       GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,
 	   loc->caniso, &inittoffset, &incx, &incy, &incz, &inct);
@@ -995,9 +1005,9 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       inittoffset += UNIFORM_RANDOM - 0.5;
       
       //  PMI(key);
-      //  printf("%ld %ld\n", (long int) S, (long int) cov->stor);assert(false);
+      //  printf("%ld %ld\n", (long int) S, (long int) cov->Sgen);assert(false);
 
-      DO(key, cov->stor);
+      DO(key, cov->Sgen);
 
 //      if (n<5) {
 //	  int i;
@@ -1041,13 +1051,18 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       } // vdim
     } // n
 
-  } else { 
+  } else { // not loc->grid
     //     assert(false);
     // not grid, could be time-model!
     // both old and new form included
     double offset, offsetinit;
-    long xi;
-    int i, end;
+    int i, 
+      spatialdim = loc->spatialdim;
+    long xi, 
+      totpoints = s->spatialtotalpts,
+      end = spatialdim * totpoints;
+
+    
 
     // PrintMethodInfo(s->key.meth);
 
@@ -1055,51 +1070,40 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       for (n=0; n<tbm_lines; n++){/*printf("n=%ld tbm.lines%d\n",n,tbm_lines);//*/ \
 	R_CheckUserInterrupt();						\
         if (every>0  && (n % every == 0)) PRINTF("%ld \n",n);		\
-        GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,	\
-	     loc->caniso, &offsetinit, &incx, &incy, &incz, &inct);		\
+        GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,		\
+	     loc->caniso, &offsetinit, &incx, &incy, &incz, &inct);	\
         offset += UNIFORM_RANDOM - 0.5; 				\
-	DO(key, cov->stor);						\
-	i = 0;								\
-	end=totpoints;							\
-    	for (v=0; v<vdim; v++) {					\
+	DO(key, cov->Sgen);						\
+    	for (i=v=0; v<vdim; v++) {					\
 	  offset = offsetinit;						\
-	  for (xi = nt=0; nt<gridlent; nt++, end+=totpoints){ \
-	    for (; i < end; i++) {					\
+	  for (nt=0; nt<gridlent; nt++){				\
+	    for (xi = 0; xi < end; xi+=spatialdim) {			\
 	      long index;						\
 	      index = (long) (offset + INDEX);				\
 	      if (!((index<ntot) && (index>=0))) {			\
-		PRINTF("\n%f %f %f (%f %f %f))\n",			\
-		       loc->x[xi], loc->x[xi+1] , loc->x[xi+2], incx, incy, incz); \
-		PRINTF("n=%ld index=%ld nn=%ld ntot=%ld xi=%ld nt=%d\n OFF=%f IDX=%f inct=%f e=%d\n", \
-		       n, index, nn, ntot, xi, (int) nt, offset, INDEX, inct, (int) end); \
+		PRINTF("\n %f %f %f (%f %f %f))\n",			\
+		       loc->x[xi], loc->x[xi+1] , loc->x[xi+2],		\
+		       incx, incy, incz);				\
+		PRINTF("n=%ld index=%ld nn=%f ntot=%ld xi=%ld nt=%d\n", \
+		       n, index, nn, ntot, xi, (int) nt);		\
+		PRINTF("OFF=%f IDX=%f inct=%flenT=%d spatialdim=%d\n",	\
+		       offset, INDEX, inct, gridlent, spatialdim);	\
 	      }								\
 	      assert((index<ntot) && (index>=0));			\
- 	      res[i] += simuline[index];				\
-	      xi += tsdim;						\
+ 	      res[i++] += simuline[index];				\
 	    }								\
 	    offset += inct;						\
 	  }								\
 	  offsetinit += s->xline_length;				\
         }								\
-     }									\
-   }
-    
-   if (s->ce_dim == 1) {
-      gridlent = 1;
-      totpoints = loc->totalpoints;
-      inct = RF_NA; // should be set by GetE
-    } else { // ce_dim==2 nur erlaubt fuer echte Zeitkomponente
-      assert(s->ce_dim==2); 
-      gridlent = keyloc->length[1];
-      totpoints = s->spatialtotalpts;
-      inct = (double) nn;
+      }									\
     }
-
-    //   printf("%d %ld %ld\n", gridlent, nn, ntot);
-    
+  
+    inct = nn; // number of spatial points
+    gridlent = loc->Time ? loc->T[XLENGTH] : 1; 
     assert(gridlent * nn * vdim == ntot);
     
-    switch (spatialdim) {
+    switch (simuspatialdim) {
     case 1 : //see Martin's techrep f. details
       TBMST(loc->x[xi] * incx);
       break;

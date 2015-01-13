@@ -41,7 +41,6 @@
 }
 \examples{
 
-\donttest{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -54,12 +53,14 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## ##
 ################################################################
 
+All <- if (interactive()) TRUE else 1:8 ## full data set takes about 20 sec
+##                                      to be analysed
 
 data(soil)
 str(soil)
 soil <- RFspatialPointsDataFrame(
- coords = soil[, c("x.coord", "y.coord")],
- data = soil[, c("moisture", "NO3.N", "Total.N",
+ coords = soil[All, c("x.coord", "y.coord")],
+ data = soil[All, c("moisture", "NO3.N", "Total.N",
  "NH4.N", "DOC", "N20N")],
  RFparams=list(vdim=6, n=1)
  )
@@ -93,7 +94,7 @@ plot(fit, fit.method=c("ml", "plain", "sqrt.nr", "sd.inv"),
 
 ## Kriging ...
 x <- seq(min(data@coords[, 1]), max(data@coords[, 1]),
-         l=if (interactive()) 121 else 4)
+         l=if (interactive()) 121 else 2)
 k <- RFinterpolate(fit["ml"], x=x, y=x, data=data)
 plot(x=k, col=colour)
 plot(x=k, y=data, col=colour)
@@ -103,12 +104,11 @@ plot(x=k, y=data, col=colour)
 ## grid given by x and y the moisture is greater than 24 percent?
 % works well since fit$ml:nugget==0!!!!
 cs <- RFsimulate(model=fit["ml"], x=x, y=x, data=data,
-      n=if (interactive()) 50 else 3)
+      n=if (interactive()) 50 else 2)
 plot(cs, col=colour)
 plot(cs, y=data, col=colour)
 Print(mean(apply(as.matrix(cs@data) <= 24, 2, all))) ## about 40 percent
 ##...
-}
 
 \dontshow{FinalizeExample()}
 }

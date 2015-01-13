@@ -58,8 +58,7 @@ Variogram <- function(x,
 
 ##  Print(model, param)
   model <- PrepareModel(model, param)
-  RFcov(x=x, model=model, dim=dim, distances=Distances,
-        fctcall="Variogram")
+  RFvariogram(x=x, model=model, dim=dim, distances=Distances)
 }
 
 
@@ -73,7 +72,7 @@ Covariance <- CovarianceFct <-
     if (!missing(param) && is.na(param[1])) param[1] <- 0
     model <- PrepareModel(model, param)
     fctcall <- match.arg(fctcall)
-    RFcov(x=x, y=y, model=model, dim=dim, distances=Distances, fctcall=fctcall)
+    rfeval(x=x, y=y, model=model, dim=dim, distances=Distances, fctcall=fctcall)
   }
 
 CovMatrix <- function(x, y=NULL,
@@ -84,7 +83,7 @@ CovMatrix <- function(x, y=NULL,
   model <- PrepareModel(model, param)
   if (RFoptions()$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFcovmatrix' instead")
-  RFcov(x=x, y=y, model=model, dim=dim, distances=Distances, fctcall="CovMatrix")
+  RFcovmatrix(x=x, y=y, model=model, dim=dim, distances=Distances)
 }
 
 DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
@@ -141,7 +140,7 @@ InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
 
 
 InitGaussRF <- function(x, y = NULL, z = NULL, T=NULL,
-                        grid=!missing(gridtriple),
+                        grid = !missing(gridtriple),
                         model, param,
                         trend=NULL, method = NULL,
                         register = 0, gridtriple) {
@@ -205,7 +204,7 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
 ## it does not make sense to me at the moment that a space-time model
 ## for extremes is defined.
 
-InitMaxStableRF <- function(x, y = NULL, z = NULL, grid, model, param,
+InitMaxStableRF <- function(x, y = NULL, z = NULL, grid=NULL, model, param,
                             maxstable,
                             method = NULL,
                             register = 0, gridtriple = FALSE) {
@@ -240,7 +239,8 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid, model, param,
 }
 
   
-MaxStableRF <- function (x, y = NULL, z = NULL, grid, model, param, maxstable,
+MaxStableRF <- function (x, y = NULL, z = NULL, grid=NULL,
+                         model, param, maxstable,
                          method = NULL,
                          n = 1, register = 0,
                          gridtriple = FALSE,
@@ -278,7 +278,7 @@ MaxStableRF <- function (x, y = NULL, z = NULL, grid, model, param, maxstable,
 
 
 EmpiricalVariogram <-
-  function (x, y = NULL, z = NULL, T=NULL, data, grid, bin, gridtriple = FALSE,
+  function (x, y = NULL, z = NULL, T=NULL, data, grid=NULL, bin, gridtriple = FALSE,
             phi,  ## phi[1] erste richtung, phi[2] : anzahl der richtungen
             theta, ## aehnlich
             deltaT ##  deltaT[1] max abstand, deltaT[2] : gitterabstand
@@ -310,7 +310,7 @@ EmpiricalVariogram <-
 
 
 Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
-                    grid, gridtriple=FALSE,
+                    grid=NULL, gridtriple=FALSE,
                     model, param, given, data, trend=NULL,            
                     pch=".", return.variance=FALSE,
                     allowdistanceZero = FALSE, cholesky=FALSE) {
@@ -346,13 +346,12 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   colnames(data) <- c(rep("", ncol(given)), "data")
   
   RFinterpolate(krige.method=krige.method, x=x, y=y, z=z, T=T,
-            grid=grid, model=model, data=data)
- 
+                       grid=grid, model=model, data=data)
 }
 
 
 CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
-                     grid, gridtriple=FALSE,
+                     grid=NULL, gridtriple=FALSE,
                      model, param, method=NULL,
                      given, data, trend=NULL,
                      n=1, register=0, 

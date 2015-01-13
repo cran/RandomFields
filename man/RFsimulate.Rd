@@ -25,8 +25,8 @@
 }
 
 \usage{
-RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
- data, distances, dim, err.model, n=1, ...)
+RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
+  distances, dim, data, given=NULL, err.model, n=1, ...)
 }
 
 \arguments{
@@ -40,7 +40,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  specifies a 
  covariance or variogram model of a Gaussian random
  field;
- type \code{\link{RFgetModelNames}(type="CovType")} for a list of
+ type \code{\link{RFgetModelNames}(type="negative")} for a list of
  available models; see also \command{\link{RMmodel}}
  
  \item if of class \code{\link{RFformula}} or
@@ -66,10 +66,18 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  \code{T=c(From, By, Len)}.
  }
  \item{grid}{logical; \code{RandomFields} can
- find itself the correct value in nearly all cases.
- See also \link{RFsimulateAdvanced}.
+   find itself the correct value in nearly all cases, so that
+   usually \code{grid} need not be given.
+   See also \link{RFsimulateAdvanced}.
  }
- \item{data}{For conditional simulation and random imputing only.
+  \item{distances}{another alternative to pass the (relative)
+ coordinates,
+ see \link{RFsimulateAdvanced}.
+ }
+ \item{dim}{
+ Only used if \code{distances} are given.
+ }
+\item{data}{For conditional simulation and random imputing only.
  If \code{data} is missing, unconditional
  simulation is performed.\cr
  
@@ -78,7 +86,9 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  coordinates and response values of
  measurements in case that conditional simulation is to
  be performed;
- If a matrix or a data.frame, the first columns are
+ If \code{given} is not given
+ and \code{data} is a matrix or \code{data} is
+ a data.frame, then the first columns are
  interpreted as coordinate vectors, and the last column(s) as
  (multiple) measurement(s) of the field; if the argument
  \code{x} is missing,
@@ -87,12 +97,17 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid,
  for details on matching of variable names see Details; if of class
  \command{\link[=RFsp-class]{RFsp}}
  }
- \item{distances}{another alternative to pass the (relative)
- coordinates,
- see \link{RFsimulateAdvanced}.
- }
- \item{dim}{
- Only used if \code{distances} are given.
+\item{given}{optional, matrix or list.
+   If \code{given} matrix then the coordinates
+   can be given separately, namely by \code{given} where, in each row,
+   a single location is given.
+ 
+   If \code{given} is a
+   list, it may consist of \code{x}, \code{y}, \code{z}, \code{T},
+   \code{grid}.
+   
+   If \code{given} is provided,
+   \code{data} must be a matrix or an array containing the data only.
  }
  \item{err.model}{For conditional simulation and random imputing only.\cr
  Usually \code{err.model=RMnugget(var=var)}, or not given at all

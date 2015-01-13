@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 //#include <string.h>
 #include "RF.h"
-#include "randomshape.h"
+#include "shape_processes.h"
 
 
 #include "avltr_modified.h"
@@ -48,6 +48,7 @@ typedef double (*randomvar_type)(double p);
 #define HYPER_MAXLINES (COMMON_GAUSS + 2)
 #define HYPER_MAR_DISTR (COMMON_GAUSS + 3)
 #define HYPER_MAR_PARAM (COMMON_GAUSS + 4)
+#define HYPER_ADDITIVE (COMMON_GAUSS + 5)
 
 
 
@@ -76,6 +77,7 @@ int check_hyperplane(cov_model *cov) {
   kdefault(cov, HYPER_MAXLINES, gp->maxlines);
   kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
   kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
+  kdefault(cov, HYPER_ADDITIVE, true);
   if ((err = checkkappas(cov)) != NOERROR) {
     //AERR(err);
     return err;
@@ -171,6 +173,13 @@ void range_hyperplane(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->pmax[HYPER_MAR_PARAM] = 10;
   range->openmin[HYPER_MAR_PARAM] = false;
   range->openmax[HYPER_MAR_PARAM] = false; 
+
+  range->min[HYPER_ADDITIVE] = 0;
+  range->max[HYPER_ADDITIVE] = 1;
+  range->pmin[HYPER_ADDITIVE] = 0;
+  range->pmax[HYPER_ADDITIVE] = 1;
+  range->openmin[HYPER_ADDITIVE] = false;
+  range->openmax[HYPER_ADDITIVE] = false; 
 }
 
 int struct_hyperplane(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
@@ -179,7 +188,9 @@ int struct_hyperplane(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel)
     return ERRORPREFNONE;
   }
   
-  ROLE_ASSERT_GAUSS;
+  //PMI(cov->calling);
+
+  ROLE_ASSERT(ROLE_GAUSS);
   return NOERROR;
 }
 
@@ -226,7 +237,7 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   */
 
 
-  NEW_STORAGE(Shyper, HYPER, hyper_storage);
+  NEW_STORAGE(hyper);
   s = cov->Shyper;
     
   
@@ -375,7 +386,9 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type
     *loc = Loc(cov);
   int 
+    vdim = cov->vdim[0],
     dim = cov->tsdim,
+    totvdim = loc->totalpoints * vdim,
     mar_distr = P0INT(HYPER_MAR_DISTR);
   double *res = cov->rf;
   double gx, gy, *hx, *hy, *hr, variance,
@@ -388,10 +401,12 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     mar_distr = P0INT(HYPER_MAR_DISTR);
    randomvar_type randomvar=NULL;
   hyper_storage *s = cov->Shyper;
-  bool add = true;
   avltr_tree *tree;
   cell_type *cell;
-  bool loggauss = GLOBAL.gauss.loggauss;
+  bool
+    additive = (bool) P0INT(HYPER_ADDITIVE),
+    loggauss = GLOBAL.gauss.loggauss;
+  int len[MAXHYPERDIM];
 
   hx = hy = hr = NULL;
   s = (hyper_storage*) cov->Shyper;
@@ -404,20 +419,10 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       case HYPER_BERNOULLI : randomvar=bernoulli; break;
       default : error("random var of unknown type");
   }
-    
-  switch (cov->role) {
-  case ROLE_GAUSS : case ROLE_POISSON :  case ROLE_POISSON_GAUSS : 
-    break;
-  case ROLE_BROWNRESNICK: case ROLE_SMITH: case ROLE_SCHLATHER : 
-    add = false;
-    break;
-  default : 
-    error("unknown distribution in hyperplane algorthim\n");
-  }
 
-  if (add) for (i=0; i < loc->totalpoints; res[i++]=0.0);
-  else // max-stable 
-      for (i=0; i < loc->totalpoints; res[i++]= (res_type) RF_NEGINF);
+
+  if (additive) for (i=0; i < totvdim; res[i++]=0.0);
+  else for (i=0; i < totvdim; res[i++]= (res_type) RF_NEGINF);// max-stable 
   /* how many Poisson Hyperplanes maximal (on circle x [0,rmax]) ?  --> p */
   
 
@@ -433,6 +438,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
 	deltax = loc->xgr[0][XSTEP];
 	deltay = loc->xgr[1][XSTEP];
+	for (i=0; i<dim; i++) len[i] = (int) loc->xgr[i][XLENGTH];
 
 	for(nn=0; nn<superpos; nn++){
 	  q = s->hyperplane(s->radius, s->center, s->rx,
@@ -456,9 +462,9 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
 	  /* temporary code */
 	  if (isMdiag(Type(loc->caniso, loc->cani_nrow, loc->cani_ncol))) {
-	    for (gy=loc->xgr[1][XSTART], resindex=j=0; j<loc->length[1]; 
+	    for (gy=loc->xgr[1][XSTART], resindex=j=0; j<len[1]; 
 		 j++) {
-	      for (gx= loc->xgr[0][XSTART], i=0; i<loc->length[0]; i++,
+	      for (gx= loc->xgr[0][XSTART], i=0; i<len[0]; i++,
 		     resindex++) {
 //		  print("\n%f %f\n", gx, gy);  
 		if ((cell = determine_cell(gx, gy, hx, hy, hr, &integers,
@@ -470,7 +476,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 // 		print("%d %d %f %d %d %d\n",
 //		       resindex, avltr_count(tree),cell->colour, add, 
 //		       integers, q);
-		if (add) res[resindex] +=  cell->colour;
+		if (additive) res[resindex] +=  cell->colour;
 		  else if (res[resindex] <  cell->colour)
 		      res[resindex] = cell->colour;
 		gx += deltax;
@@ -486,7 +492,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 		  err = ERRORMEMORYALLOCATION;
 		  goto ErrorHandling;
 	      }
-	      if (add) res[resindex] += cell->colour;
+	      if (additive) res[resindex] += cell->colour;
 	      else if (res[resindex] < cell->colour)
 		  res[resindex] = cell->colour;
 	      j += dim;
@@ -501,41 +507,41 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       default:	
 	error("wrong dimension (>2) in hyperplane\n"); 
   } // switch  (dim)
-  switch (cov->role) {
-  case ROLE_GAUSS :   
-    switch (mar_distr) {
-    case HYPER_UNIFORM : 
-      E = 0.5; 
-      sd = 1.0 / 12.0;
-      break;
-    case HYPER_FRECHET :
-      assert(mar_param > 2);
-      NotProgrammedYet("frechet");
-      break;
-    case HYPER_BERNOULLI : 
-      E = mar_param;
-      sd = mar_param * (1.0 - mar_param);
-      break;
-    default : error("distribution unknown in hyperplane\n");
-    }
-    sd = sqrt(variance / (superpos * sd));
-    for(i=0; i<loc->totalpoints; i++) 
-      res[i] = (res_type) (((double) res[i] - superpos * E) * sd);    
+
+
+  return;
+  if (additive) {
+    if (cov->role == ROLE_GAUSS) {
+      switch (mar_distr) {
+      case HYPER_UNIFORM : 
+	E = 0.5; 
+	sd = 1.0 / 12.0;
+	break;
+      case HYPER_FRECHET :
+	assert(mar_param > 2);
+	NotProgrammedYet("frechet");
+	break;
+      case HYPER_BERNOULLI : 
+	E = mar_param;
+	sd = mar_param * (1.0 - mar_param);
+	break;
+      default : error("distribution unknown in hyperplane\n");
+      }
+      sd = sqrt(variance / (superpos * sd));
+      for(i=0; i<loc->totalpoints; i++) 
+	res[i] = (res_type) (((double) res[i] - superpos * E) * sd);    
     
-    if (loggauss) {
-      long vdimtot = loc->totalpoints * cov->vdim2[0];
-      for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
+      if (loggauss) {
+	long vdimtot = loc->totalpoints * cov->vdim[0];
+	for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
+      }
+    } else {
+      // no standardization up to now -- later alpha-stable ?? TODO
     }
-    break;
-  case ROLE_POISSON : case ROLE_POISSON_GAUSS : 
-    error("Poission not allowed in hyperplane\n");
-    break;
-  case ROLE_BROWNRESNICK: case ROLE_SMITH: case ROLE_SCHLATHER : 
-    error("Maxstable not allowed in hyperplane\n");
-    break;
-  default : 
-    error("Distribution unknown in hyperplane\n");
+  } else {
+    // no standardization up to now -- later max-stable ?? TODO
   }
+
   return;
 
  ErrorHandling: 

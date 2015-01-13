@@ -14,6 +14,10 @@
 %% S3 methods
 \alias{print.RFpointsDataFrame}
 \alias{cbind.RFpointsDataFrame}
+\alias{as.matrix.RFpointsDataFrame}
+\alias{as.array.RFpointsDataFrame}
+\alias{as.vector.RFpointsDataFrame}
+\alias{as.data.frame.RFpointsDataFrame}
 
 \title{Class \code{RFpointsDataFrame}}
 \description{ Class for attributes in one-dimensional space 
@@ -73,7 +77,15 @@
  converts into other formats, only implemented for target class
  \code{\link[=RFgridDataFrame-class]{RFgridDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
- topology, combine their attribute values}
+   topology, combine their attribute values}
+ \item{as.matrix}{\code{signature(x = "RFpointsDataFrame")}: converts
+          \code{data}-slot to matrix}
+ \item{as.array}{\code{signature(x = "RFpointsDataFrame")}: converts
+          \code{data}-slot to array}
+ \item{as.vector}{\code{signature(x = "RFpointsDataFrame")}: converts
+          \code{data}-slot to vector}
+ \item{as.data.frame}{\code{signature(x = "RFpointsDataFrame")}:
+   converts \code{data}-slot and coordinates to a data.frame}
  }
 }
 
@@ -88,6 +100,8 @@
 \seealso{
  \code{\link[=RFspatialPointsDataFrame-class]{RFspatialPointsDataFrame}}, which is for point
  locations in higher dimensional spaces,
+ \code{\link{RFpointsDataFrame-class}} which is for one-dimensional
+ locations on a grid,
  \code{\link[=RFsp-class]{RFsp}} 
 }
 \examples{

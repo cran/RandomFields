@@ -116,7 +116,7 @@ RMuser(type, domain, isotropy, vdim, beta,
   \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
   \command{\link{RMmodel}},
   \command{\link{RFsimulate}},
-  \link{RC_ISOTROPY}, \link{RC_DOMAIN}
+  \link{RC_ISONAMES}, \link{RC_DOMAIN_NAMES}
 }
 
 \keyword{spatial}

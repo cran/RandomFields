@@ -1,16 +1,24 @@
 
 #
+##
+#
+#
+#
 #exportPattern("^[^\\.]")
-exportPattern("^R")
+exportPattern("^RM")
+exportPattern("^RP")
+exportPattern("^RF")
+exportPattern("^RC")
+exportPattern("^RR")
 
 
-importFrom('colorspace', heat_hcl, rainbow_hcl)
 
 import(graphics)
-
 import(methods)
 
 #importFrom('raster', raster, projection)
+#importFrom('colorspace', heat_hcl, rainbow_hcl)
+#importFrom('spam', as.spam, solve.spam, chol.spam)
 
 importClassesFrom('sp',
 #                  "CRS",
@@ -26,21 +34,24 @@ importFrom('sp', coordinates, CRS, GridTopology, points2grid,
            )
 #import(sp)
 
-importFrom('spam', as.spam, solve.spam, chol.spam)
 
-import(tcltk2, tcltk, tkrplot)
-
+#import(tcltk2, tcltk, tkrplot)
 
 
-export(as.data.frame.RFspatialPointsDataFrame,
-       as.data.frame.RFspatialGridDataFrame,
-       as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame, 
-       as.array.RFspatialGridDataFrame, as.array.RFgridDataFrame, 
-       as.vector.RFspatialGridDataFrame, as.vector.RFgridDataFrame, 
+
+export(as.data.frame.RFspatialGridDataFrame, as.data.frame.RFgridDataFrame,
+       as.data.frame.RFspatialPointsDataFrame, as.data.frame.RFpointsDataFrame,
+       as.matrix.RFspatialGridDataFrame, as.matrix.RFgridDataFrame,
+       as.matrix.RFspatialPointsDataFrame, as.matrix.RFpointsDataFrame,
+       as.array.RFspatialGridDataFrame, as.array.RFgridDataFrame,
+       as.array.RFspatialPointsDataFrame, as.array.RFpointsDataFrame,
+       as.vector.RFspatialGridDataFrame, as.vector.RFgridDataFrame,
+       as.vector.RFspatialPointsDataFrame, as.vector.RFpointsDataFrame,
        conventional2RFspDataFrame,
 # internal fcts used for maintainance 
-       Print, rfGenerateModels, checkExamples, FinalizeExample, Dependencies,
-       ScreenDevice,
+       Print, rfGenerateModels, rfGenerateConstants, rfGenerateTest,
+       checkExamples, FinalizeExample,
+       Dependencies, ScreenDevice,
 # obsolete       
        CondSimu, Covariance, CovarianceFct, CovMatrix,
        DeleteAllRegisters, DeleteRegister, DoSimulateRF,
@@ -146,6 +157,9 @@ S3method(print, summary.RMmodel)
 
 S3method(print, RMmodelgenerator)
 
+#S3method(print, RandomFieldsReturn)
+#S3method(summary, RandomFieldsReturn)
+#S3method(print, summary.RandomFieldsReturn)
 
 S3method(anova, RMmodelFit)
 S3method(anova, RM_modelFit)

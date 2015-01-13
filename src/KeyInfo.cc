@@ -320,11 +320,11 @@ SEXP GetSimuInfo(simu_type *simu) {
 }
 
 
-#define nlocinfo 14
+#define nlocinfo 13
 SEXP GetLocationInfo(location_type *loc) {
   if (loc == NULL) return allocVector(VECSXP, 0);
   const char *info[nlocinfo] = 
-    {"timespacedim", "xdimOZ", "length", "spatialdim", "spatialtotpts", 
+    {"timespacedim", "xdimOZ", "spatialdim", "spatialtotpts", 
      "totpts", "distances", "grid", "Time", "xgr", "x", "T", "ygr", "y"};
   SEXP namevec, l;
   int k,
@@ -341,7 +341,6 @@ SEXP GetLocationInfo(location_type *loc) {
   k = 0;
   SET_VECTOR_ELT(l, k++, ScalarInteger(tsdim));
   SET_VECTOR_ELT(l, k++, ScalarInteger(loc->xdimOZ));
-  SET_VECTOR_ELT(l, k++, Int(loc->length, tsdim));
   SET_VECTOR_ELT(l, k++, ScalarInteger(loc->spatialdim));
   SET_VECTOR_ELT(l, k++, ScalarInteger((int) loc->spatialtotalpoints));
   SET_VECTOR_ELT(l, k++, ScalarInteger((int) loc->totalpoints));
@@ -380,6 +379,8 @@ SEXP GetLocationInfo(location_type *loc) {
 }
 
 
+//static int AnisoZ = 0;
+
 SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform, 
 		  int whichSub, int Level) {
   // whichSub:  0=submodels, 1=keys, 2=both
@@ -389,7 +390,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 #define ninfo1 6
 #define ninfo2 8
 #define ninfo3 7
-#define ninfo4 3
+#define ninfo4 4
 
   /*   !!!!!     ACHTUNG     !!!!!
        Wenn diese Funktion geaendert wird,
@@ -403,8 +404,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
   int i, j, nmodelinfo, k = 0;
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   location_type
-    *loc = cov->calling == NULL ? cov->prevloc : Loc(cov),
-    *callingloc = cov->calling == NULL || Level == 0 ? NULL : Loc(cov->calling);
+    *loc = cov->calling == NULL ? cov->prevloc : Loc(cov);
   bool
     given_key = cov->Splus != NULL || cov->key != NULL,
     return_key = given_key && whichSub != 0,
@@ -451,18 +451,31 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
       PROTECT(pnames = allocVector(STRSXP, notnull));
       
       for (j=i=0; i<C->kappas; i++) {
+	//printf("kappa=%d\n", i);
 	if (cov->nrow[i]>0 && cov->ncol[i]>0) {
 	  if (isAnyDollar(cov) && i==DANISO) {
 	    SET_STRING_ELT(pnames, j, mkChar("Aniso"));
 	    double
-	      *Aniso = (double*) MALLOC(cov->nrow[i]*cov->ncol[i] * 
+	      *Aniso = (double*) MALLOC(cov->nrow[i] * cov->ncol[i] * 
 					sizeof(double));
 	    int t,l,m;
+
+	    //++AnisoZ;
+	    //	    if (AnisoZ == 6) {
+	    //
+	    //  printf("short cut\n");
+	    //   Aniso[0] = Aniso[3] = RF_NA;
+	    // Aniso[1] = Aniso[2] = 0.0;
+	    // } else {
+
 	    for (t=l=0; l<cov->nrow[i]; l++) {
 	      for (m=0; m<cov->ncol[i]; m++) {
+		//printf(">> %d t=%d %d %d %d %f %s %f %f\n", AnisoZ, t, cov->nrow[i], cov->ncol[i], m * cov->nrow[i] + l, P(DANISO)[m * cov->nrow[i] + l], NAME(cov), RF_NA, RF_NAN);
 		Aniso[t++] = P(DANISO)[m * cov->nrow[i] + l];
 	      }
 	    }
+
+	  //printf("A %d %d \n", REALSXP, C->kappatype[i]); 
 	    SET_VECTOR_ELT(param, j,
 			   Param((void*) Aniso, cov->nrow[i], cov->ncol[i], 
 				 C->kappatype[i], true));    
@@ -492,15 +505,15 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 
   //  goto END;
 
-  //  print("start GMI 1 %d\n", prlevel);
+  //   print("start GMI 1 %d\n", prlevel);
   
   if (prlevel>=2) {      
     SET_STRING_ELT(nameMvec, k, mkChar("covnr"));
     SET_VECTOR_ELT(model, k++, ScalarInteger(cov->nr));
 
     SET_STRING_ELT(nameMvec, k, mkChar("vdim"));
-    SET_VECTOR_ELT(model, k++, cov->vdim2[0] == cov->vdim2[1] 
-		   ? ScalarInteger(cov->vdim2[0]) 
+    SET_VECTOR_ELT(model, k++, cov->vdim[0] == cov->vdim[1] 
+		   ? ScalarInteger(cov->vdim[0]) 
 		   : Int(cov->pref, 2)
 		   );
  
@@ -520,7 +533,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     SET_VECTOR_ELT(model, k++, ScalarLogical(cov->matrix_indep_of_x));
   } 
    
-  //  print("GMI 2\n");
+  //  print("GMI 2, print=%d\n", prlevel);
 
   if (prlevel>=3) {
     SET_STRING_ELT(nameMvec, k, mkChar("type"));  
@@ -528,28 +541,35 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 
     SET_STRING_ELT(nameMvec, k, mkChar("role"));  
     SET_VECTOR_ELT(model, k++, Char(ROLENAMES + cov->role, 1));
-
+ 
     SET_STRING_ELT(nameMvec, k, mkChar("domown"));  
     SET_VECTOR_ELT(model, k++, ScalarInteger(cov->domown));
-      
+  
     SET_STRING_ELT(nameMvec, k, mkChar("isoown"));
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->isoown));
+    SET_VECTOR_ELT(model, k++, mkString(ISONAMES[cov->isoown]));
+  
+    if (prlevel >= 5) {
+    SET_STRING_ELT(nameMvec, k, mkChar("isoprev"));
+      SET_VECTOR_ELT(model, k++, mkString(ISONAMES[cov->isoprev]));
+    }
+   
  
     SET_STRING_ELT(nameMvec, k, mkChar("internalq"));  
     SET_VECTOR_ELT(model, k++, Num(cov->q, cov->qlen));
-
+  
     SET_STRING_ELT(nameMvec, k, mkChar("pref"));  
     SET_VECTOR_ELT(model, k++, Int(cov->pref, Nothing + 1));
-
+   
     SET_STRING_ELT(nameMvec, k, mkChar("simu"));  
     SET_VECTOR_ELT(model, k++, GetSimuInfo(&(cov->simu)));
-	
+  	
     SET_STRING_ELT(nameMvec, k, mkChar("loc"));  
     SET_VECTOR_ELT(model, k++, 
-		   loc == callingloc ? mkString("see calling model, or there are no location information given at all") :
-		   GetLocationInfo(loc));
-
-  } 
+		   Level == 0 || cov->calling == NULL ||
+		   Loc(cov->calling) != Loc(cov) 
+		   ? GetLocationInfo(loc) 
+		   : mkString("same as calling model or no locations given"));
+  }
 
   //  print("GMI 3\n");
   if (prlevel>=4) {
@@ -582,18 +602,6 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
     SET_STRING_ELT(nameMvec, k, mkChar("finiterange"));  
     SET_VECTOR_ELT(model, k++, ScalarLogical(cov->finiterange));
       
-    //    SET_STRING_ELT(nameMvec, k, mkChar("diag"));  
-    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->diag));
-  
-    //  SET_STRING_ELT(nameMvec, k, mkChar("quasidiag"));  
-    //  SET_VECTOR_ELT(model, k++, ScalarLogical(cov->quasidiag));
-
-    //    SET_STRING_ELT(nameMvec, k, mkChar("semisep.last"));  
-    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->semiseparatelast));
-      
-    //    SET_STRING_ELT(nameMvec, k, mkChar("sep.last"));  
-    //    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->separatelast));
-         
     //  SET_STRING_ELT(nameMvec, k, mkChar("idx"));  
     //  SET_VECTOR_ELT(model, k++, Int(cov->idx, cov->tsdim));
     //      SET_STRING_ELT(nameMvec, k, mkChar("user"));  
@@ -604,7 +612,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 
     mpp_properties *Mpp = &(cov->mpp);
     int
-      vdim = cov->vdim2[0],
+      vdim = cov->vdim[0],
       nm = cov->mpp.moments,
       nmvdim = (nm + 1) * vdim;
  
@@ -623,6 +631,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
 		   Num(Mpp->mMplus, nmvdim, MAX_INT));
   } 
    		 
+  // print("GMI 5\n");
 
   if (return_key) {
     if (cov->key != NULL) {
@@ -645,7 +654,8 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, int spConform,
       UNPROTECT(1);
     }
   }
- 
+  // print("GMI 6 return_sub=%d\n", return_sub);
+
   if (return_sub) {
     SET_STRING_ELT(nameMvec, k, mkChar("submodels"));  
     //   print("gmi 1\n");
@@ -767,8 +777,13 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
 
 void leer(int level){
   char format[255];
-  //  print("level=%d\n", level);
+  if (level == 0) return;
   sprintf(format,"%%%ds", -level * 3);
+
+  //  int i=0;
+  // while(format[i] != '\0') { printf("%c(%d)", format[i], format[i]); i++;}
+  // printf("%d\n", i);
+
   PRINTF(format, "");
 }
 
@@ -783,8 +798,8 @@ void PrintPoints(location_type *loc, char *name,
 #define maxpts 100
   int i;
   if (loc->grid) {
-    PRINTF("loc:%sgr    ");
-    for (i=0; i<loc->timespacedim; i++) 
+    PRINTF("loc:%sgr    ", name);
+    for (i=0; i<loc->timespacedim - loc->Time; i++) 
       PRINTF("(%3.3f, %3.3f, %2.0f) ", xgr[i][XSTART], xgr[i][XSTEP], 
 	     xgr[i][XLENGTH]);
   } else {
@@ -805,7 +820,7 @@ void PrintPoints(location_type *loc, char *name,
 	PRINTF(" ");
       }
       if (endfor < total) 
-      PRINTF("... [%d not shown]", total - endfor);
+	PRINTF("... [%ld not shown]", total - endfor);
     }
   }
   PRINTF("\n");
@@ -813,6 +828,8 @@ void PrintPoints(location_type *loc, char *name,
 
 void PrintLoc(int level, location_type *loc, bool own) {
   int i;
+  //printf("print loc entering\n\n");
+
   if (loc == NULL) {
     leer(level); PRINTF("%-10s %s\n", "loc:", "not given");
     return;
@@ -820,13 +837,9 @@ void PrintLoc(int level, location_type *loc, bool own) {
   if (own) {
     leer(level); PRINTF("%-10s %d\n", "own is set:", addressbits(loc));
   }
-
   leer(level); PRINTF("%-10s %d %d %d\n","loc:ts,sp,xdimOZ", 
-		      loc->timespacedim, loc->spatialdim, loc->xdimOZ);
-  leer(level); PRINTF("%-10s ","loc:length");
-  for (i=0; i<loc->timespacedim; i++) PRINTF("%d ", loc->length[i]);
-  PRINTF("\n");
-  leer(level); PRINTF("%-10s %d\n","loc:lx", loc->lx);
+  		      loc->timespacedim, loc->spatialdim, loc->xdimOZ);
+  leer(level); PRINTF("%-10s %ld\n", "loc:lx", loc->lx);
   leer(level); PRINTF("%-10s %ld\n","loc:totpts", loc->totalpoints);
   leer(level); PRINTF("%-10s %s\n","loc:grid", FT[loc->grid]);
   leer(level); PRINTF("%-10s %s\n","loc:dist", FT[loc->distances]);
@@ -842,28 +855,32 @@ void PrintLoc(int level, location_type *loc, bool own) {
     leer(level); PRINTF("%-10s (%f %f %f)\n", "loc:T", 
 			loc->T[0], loc->T[1], loc->T[2]);
   }
+
   leer(level); PRINTF("%-10s ","loc:cansio");
-  if (loc->caniso==NULL) PRINTF("null\n"); 
-  else {
+  if (loc->caniso == NULL) {
+    // assert(false);
+    PRINTF("null\n"); 
+  } else {
     int endfor = loc->cani_nrow * loc->cani_ncol;
     PRINTF(" [%d, %d] ",  loc->cani_nrow, loc->cani_ncol);
     if (endfor > MAX_PMI) endfor = MAX_PMI;
     for (i=0; i<endfor; i++) PRINTF(" %f", loc->caniso[i]); 
     PRINTF("\n");
   }
-  //leer(level); PRINTF("%-10s %d\n","loc:stat", loc->domain);
 
+  // printf("\n\nprint loc done\n\n");
+  //leer(level); PRINTF("%-10s %d\n","loc:stat", loc->domain);
 }
   
 
 static bool PMI_print_dollar = !true,
-  PMI_print_mpp = true,
-  PMI_print_pgs = true, 
+  PMI_print_mpp = !true,
+  PMI_print_pgs = !true, 
   PMI_print_details = true,
   PMI_print_loc = true;
 static int  PMI_print_rect = 1;  // 0, 1, 2
 
-void pmi(cov_model *cov, char all, int level) {     
+void pmi(cov_model *cov, char all, int level) {    
   int i, j, endfor;
   cov_fct *C = CovList + cov->nr; // nicht gatternr
 #define MNlength 4
@@ -984,7 +1001,6 @@ void pmi(cov_model *cov, char all, int level) {
   leer(level); PRINTF("%-10s [%d]","internal-q", cov->qlen);  
 
   endfor = cov->qlen; if (endfor > MAX_PMI) endfor = MAX_PMI;
-  //  printf("qlen %d %d %d\n", cov->qlen, MAX_PMI, endfor);
   for (i=0; i<endfor; i++) PRINTF(" %f", cov->q[i]); 
   PRINTF("\n");
 
@@ -1006,15 +1022,15 @@ void pmi(cov_model *cov, char all, int level) {
   }
   leer(level); PRINTF("%-10s %d/%d (%s/%s)\n","domprev/own", 
 		      cov->domprev, cov->domown,
-		      STATNAMES[(int) cov->domprev],
-		      STATNAMES[(int) cov->domown]);
+		      DOMAIN_NAMES[(int) cov->domprev],
+		      DOMAIN_NAMES[(int) cov->domown]);
   leer(level); PRINTF("%-10s %d/%d (%s/%s)\n","isoprev/own", 
 		      cov->isoprev, cov->isoown,
 		      ISONAMES[(int) cov->isoprev],
 		      ISONAMES[(int) cov->isoown]);
   leer(level); PRINTF("%-10s %d, %d:%d:%d, %d/%d\n","ts-x-v-dim",
 		      cov->tsdim, cov->xdimprev, cov->xdimgatter, cov->xdimown,
-		      cov->vdim2[0], cov->vdim2[1]);  
+		      cov->vdim[0], cov->vdim[1]);  
    leer(level); PRINTF("%-10s %d\n","maxdim", cov->maxdim);  
   leer(level); PRINTF("%-10s %s (%d)\n", "type", TYPENAMES[cov->typus],
 		      (int) cov->typus);
@@ -1051,8 +1067,8 @@ void pmi(cov_model *cov, char all, int level) {
     leer(level); PRINTF("%-10s %s\n","finiterng", 
 			TriNames[cov->finiterange - MISMATCH]);  
     leer(level); PRINTF("%-10s %d/%d/%d\n","stor/2/extra", 
-			addressbits(cov->stor),
-			addressbits(cov->S2),
+			addressbits(cov->Sgen),
+			addressbits(cov->Sgatter),
 			addressbits(cov->Sextra));
     leer(level); PRINTF("%-10s %s\n","simu:activ", FT[cov->simu.active]);
     leer(level); PRINTF("%-10s %s\n","simu:pair", FT[cov->simu.pair]);
@@ -1061,10 +1077,7 @@ void pmi(cov_model *cov, char all, int level) {
   }
   //leer(level); PRINTF("%-10s %d\n","naturalscaling", cov->naturalscaling);  
   //leer(level); PRINTF("%-10s %d\n","init",CovList[cov->nr].init!=init_failed);
-  //leer(level); PRINTF("%-10s %d\n","diag", (int) cov->diag);  
-  //leer(level); PRINTF("%-10s %d\n","ssep.last", (int) cov->semiseparatelast);
-  //leer(level); PRINTF("%-10s %d\n","sep.last", (int) cov->separatelast);  
-  //leer(level); PRINTF("%-10s %d\n","tbm2num", (int) cov->tbm2num);  
+   //leer(level); PRINTF("%-10s %d\n","tbm2num", (int) cov->tbm2num);  
   //leer(level); PRINTF("%-10s %d\n","spec:nmetro", cov->spec.nmetro);
   //leer(level); PRINTF("%-10s %f\n","spec:sigma", cov->spec.sigma);
   if (PMI_print_dollar && cov->Sdollar != NULL) {
@@ -1076,7 +1089,7 @@ void pmi(cov_model *cov, char all, int level) {
   if (PMI_print_mpp) {
     int 
       nm = cov->mpp.moments,
-      vdim = cov->vdim2[0],
+      vdim = cov->vdim[0],
       nmvdim = (nm + 1) * vdim;
     if (R_FINITE(cov->mpp.maxheights[0])) {
       leer(level); PRINTF("%-10s ","mpp:maxhgt"); 
@@ -1243,6 +1256,7 @@ void pmi(cov_model *cov, char all, int level) {
   }
     
   if (PMI_print_loc) {
+
     if (cov->ownloc != NULL) {
       PrintLoc(level, cov->ownloc, true);
     } else {
@@ -1264,7 +1278,7 @@ void pmi(cov_model *cov, char all, int level) {
       }
     }
   }
- 
+
   bool givenkey = false;
   if (cov->key != NULL) {
     leer(level);
@@ -1509,7 +1523,7 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
     }
     NAOK_RANGE = true;
     if ((err = CHECK(dummy, cov->tsdim, cov->xdimprev, cov->typus,
-		     cov->domprev, cov->isoprev, cov->vdim2, cov->role)) 
+		     cov->domprev, cov->isoprev, cov->vdim, cov->role)) 
 	!= NOERROR) {
       goto ErrorHandling;
     }
@@ -1654,18 +1668,119 @@ void PSTOR(cov_model *cov, gen_storage *x) {
  
   for (d=0; d<dim; d++) {
     //   PRINTF("%d. win:[%3.3f, %3.3f] c=%3.3f info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
-   PRINTF("%d. c=%3.3f info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
+   PRINTF("%d. info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
 	   d, //x->window.min[d], x->window.max[d], x->window.centre[d],
 	   RF_NA, RF_NA, // pgs->mppinfo.min[d], x->mppinfo.max[d],
-	   x->spec.E[d], x->spec.sub_sd_cum[d]);  
+	  x->spec.E[d], x->spec.sub_sd_cum[d]);  
   }
 
-  PRINTF("spec:step=%3.3f phi=%3.3f id=%3.3f grid=%s ergo=%s sig=%3.3f dens=%3.3f nmetr=%d\n",       
+  PRINTF("spec:step=%3.3f phi=%3.3f id=%3.3f grid=%s sig=%3.3f nmetr=%d\n",
 	 x->Sspectral.phistep2d, x->Sspectral.phi2d, x->Sspectral.prop_factor,
-	 FT[x->Sspectral.grid], FT[x->Sspectral.ergodic], 
-	 x->spec.sigma, x->spec.density, x->spec.nmetro);
+	 FT[x->Sspectral.grid], x->spec.sigma,x->spec.nmetro);
 }
 
 
 void NoCurrentRegister() { currentRegister=-1; }
 void GetCurrentRegister(int *reg) {  *reg = currentRegister; }
+
+
+bool isSameCoordSystem(isotropy_type iso, coord_sys_enum os) {
+  switch(os) {
+  case cartesian : case gnomonic: case orthographic : return isCartesian(iso);
+  case earth : return isEarth(iso);
+  case sphere : return isSpherical(iso);
+  case coord_mix : return true;
+  default: ERR("Unknown coordinate system");
+  }
+}
+
+coord_sys_enum GetCoordSystem(isotropy_type iso) {
+  if (isCartesian(iso)) return cartesian;
+  if (isEarth(iso)) return earth;
+  if (isSpherical(iso)) return sphere;
+  ERR("Unknown coordinate system");
+}
+
+coord_sys_enum SearchCoordSystem(cov_model *cov, coord_sys_enum os, 
+				 coord_sys_enum n_s) {
+  //printf("%s coviso=%s\n", NAME(cov), ISONAMES[cov->isoown]);
+  if (n_s == coord_keep) {
+    if (!isSameCoordSystem(cov->isoown, os)) n_s = GetCoordSystem(cov->isoown);
+  } else {
+    if (n_s == coord_mix || !isSameCoordSystem(cov->isoown, n_s))
+      return coord_mix;
+  }
+  int i;
+  coord_sys_enum nn_s;
+  for (i=0; i<MAXSUB; i++) {
+    if (cov->sub[i] != NULL) {
+      nn_s = SearchCoordSystem(cov->sub[i], os, n_s);
+      if (nn_s != n_s) {
+	if (n_s == coord_keep) n_s = nn_s;
+	else return coord_mix;
+      }
+    }
+  }
+
+  // printf("%s %s\n", NAME(cov), COORD_SYS_NAMES[n_s]);
+  return n_s;
+}
+
+
+SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
+  int knr = INTEGER(keynr)[0];
+  cov_model *cov;
+  SEXP res;
+  char CS[2][30] = {"coordinate system", "new coordinate system"};
+
+  if (knr>=0 && knr <= MODEL_MAX && KEY[knr] != NULL) {
+    cov = KEY[knr];
+    coord_sys_enum
+      os = (coord_sys_enum) GetName(oldsystem, CS[0], 
+				    COORD_SYS_NAMES, nr_coord_sys, coord_auto),
+      n_s = (coord_sys_enum) GetName(newsystem, CS[1], 
+				    COORD_SYS_NAMES, nr_coord_sys, coord_keep);
+  
+    // printf("sys %s %s \n", COORD_SYS_NAMES[os], COORD_SYS_NAMES[n_s]);
+    if (os == coord_auto) {
+      os = GetCoordSystem(cov->isoprev);
+    }
+    if (n_s == coord_keep) {
+      n_s = SearchCoordSystem(cov, os, n_s);
+      // assert(n_s != coord_keep);
+    }
+
+    if (n_s == coord_mix && GLOBAL.internal.warn_coord_change) {    
+      char msg[300];
+      sprintf(msg, "the covariance model relies on at least two different coordinate systems. In most cases this is caused by a misspecification of the covariance model. To avoid this warning set 'RFoptions(%s=FALSE)'", 
+	      internals[INTERNALS_COORD_CHANGE]);
+      warning(msg);
+    }
+
+    bool warn = ((os != coord_auto && os != cartesian) ||
+		 (n_s != coord_keep && n_s != os));
+
+    switch (GLOBAL.general.reportcoord) {
+    case reportcoord_none :  return R_NilValue;
+    case reportcoord_warnings_orally : 
+      if (warn) {
+	char msg[200];
+	sprintf(msg, "internal change of coordinate system from '%s' to '%s'. To avoid this message change ",
+		COORD_SYS_NAMES[os], COORD_SYS_NAMES[n_s]);
+	warning(msg);
+      } 
+      return R_NilValue;
+    case reportcoord_warnings : if (!warn) return R_NilValue; // no break!
+    case reportcoord_always :     
+      PROTECT(res = allocVector(STRSXP, 2));
+      SET_STRING_ELT(res, 0, mkChar(COORD_SYS_NAMES[os]));    
+      SET_STRING_ELT(res, 1, mkChar(COORD_SYS_NAMES[n_s]));    
+      UNPROTECT(1);
+      break;
+    default : BUG;
+    }
+    return res;
+  }
+  return R_NilValue;
+}
+

@@ -60,6 +60,58 @@
 ## !!! Mixed Model Equations !!! ##
 ###################################
 
+
+list2RMmodelFit <- function(x, isRFsp=FALSE,
+                            coords, gridTopology, data.RFparams, T) {
+  stopifnot(is.list(x),
+            all(c("model", "trend", "ml.value", "residuals") %in% names(x)))
+
+  if (isRFsp) {
+    stopifnot(!missing(coords) &&
+              !missing(gridTopology) &&
+              !missing(data.RFparams))
+
+    ## convert residuals to RFsp class
+    err <-
+      try({
+        lres <- length(x$residuals)
+        if (lres > 0) {
+          for (i in 1:lres) {
+            gT <- if (length(gridTopology) < i) NULL else gridTopology[[i]]
+            co <- if (length(coords)<i) NULL else coords[[i]]
+            if (!is.null(x$residuals[[i]]))
+                x$residuals[[i]]<-
+                  conventional2RFspDataFrame(data=x$residuals[[i]],
+                                             coords=co,
+                                             gridTopology=gT,
+                                             n=data.RFparams[[i]]$n,
+                                             vdim=data.RFparams[[i]]$vdim,
+                                             T = T,
+                                             vdim_close_together=FALSE)
+          }
+        }
+      }
+          , silent=!TRUE)
+    if(class(err)=="try-error")
+      warning(paste("residuals could not be coerced to class'RFsp';",
+                    err))
+  }
+    
+  return(new(ZF_MODELEXT,
+             list2RMmodel(x$model),
+             trend = list2RMmodel(x$trend),
+             variab = x$variab,
+             param = x$param,
+             covariab = x$covariab,
+             likelihood = x$ml.value,
+             AIC = x$AIC,
+             AICc = x$AICc,
+             BIC = x$BIC,
+             residuals = x$residuals))
+}
+  
+
+
 ## used by RFratiotest, fitgauss, Crossvalidation
 StandardizeData <- function(x, y, z, T, grid, data, distances, dimensions,
                             RFopt) {
@@ -241,7 +293,6 @@ StandardizeData <- function(x, y, z, T, grid, data, distances, dimensions,
               lc=lc, spdim=spdim, tsdim=tsdim,
               rangex = rangex, coord.units=coord.units,
               matrix.indep.of.x.assumed = matrix.indep.of.x.assumed))
-
 }
 
 
@@ -371,7 +422,7 @@ GetValuesAtNA <- function(NAmodel, valuemodel, spdim, Time, shortnamelength,
   skipchecks <- as.logical(skipchecks)
   shortnamelength <- as.integer(shortnamelength)
   
-  reg <- MODEL.SPLIT
+  reg <- MODEL_SPLIT
 
   info <- neu <- list()
   models <- list(NAmodel, valuemodel)
@@ -466,6 +517,7 @@ ModelSplitXT <- function(Reg, info.cov, trafo, variab,
       y[-d, ] <- 0
     }
 
+    nonzeros <- integer(1)
     S <- double(ncol(x) * vdim^2)
     for (i in 1:lp) {
 
@@ -475,8 +527,9 @@ ModelSplitXT <- function(Reg, info.cov, trafo, variab,
         for (m1 in 1:ncol(modivar)) {
           var[p.proj[i]] <- modivar[i, m1]
 
-          .C("PutValuesAtNA", Reg, trafo(var), PACKAGE="RandomFields")          
-          .Call("CovLoc", Reg, x, y, xdimOZ, ncol(x), S,
+          .C("PutValuesAtNA", as.integer(Reg),
+             as.double(trafo(var)), PACKAGE="RandomFields")          
+          .Call("CovLoc", Reg, x, y, xdimOZ, ncol(x), S, 
                 PACKAGE="RandomFields")
           dim(S) <- c(ncol(x), vdim, vdim)
          
@@ -749,7 +802,7 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
   dist.given <- missing(x) || is.null(x)
   sets <- length(data)
 
-  if (printlevel >= PL.FCTN.DETAILS) Print(split) #
+  if (printlevel >= PL_FCTN_DETAILS) Print(split) #
   submodels <- NULL
   submodels_n <- 0
   fixed <- FALSE
@@ -757,7 +810,7 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
   for (s in 1:length(split)) {
     sp <- split[[s]]
     if (!is.null(p <- sp$use.new.bounds)) {
-      if (printlevel >= PL.FCTN.STRUCTURE) {
+      if (printlevel >= PL_STRUCTURE) {
         cat("    calculating new lower and upper bounds for the parameters ",
             paste(p, collapse=", "), sep="")
         cat("\n")
@@ -811,12 +864,12 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
         sumodels[[submodels_n]] <- res
       }
     } else { # !is.list(sp[[1]])
-      if (printlevel>=PL.RECURSIVE.CALL) {
+      if (printlevel>=PL_RECURSIVE) {
         cat("splitting (",
             paste(rep(". ", level), collapse=""), format(s, width=2),
             ") : x-coord=", paste(sp$x, collapse=","),
             "; compon.=", paste(sp$v, collapse=","), sep="")
-        if (printlevel>=PL.RECURSIVE.DETAILS)
+        if (printlevel>=PL_REC_DETAILS)
           cat( "; parameters=", paste(sp$p, collapse=", "), sep="")
         cat(" ")
       }
@@ -1033,8 +1086,7 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
 ######################################################################
 
 
-rffit.gauss <-
-  function(model, x, y=NULL, z=NULL, T=NULL, grid, data, 
+rffit.gauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data, 
            lower=NULL, upper=NULL,
            bc_lambda, ## if missing then no BoxCox-Trafo
            mle.methods=MLMETHODS,
@@ -1063,17 +1115,15 @@ rffit.gauss <-
 
 
     #Print(x, y); ooo
-    
-#    Print("entering\n")
-  
+
   RFoptOld <- internal.rfoptions(...)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
 
-  if (RFopt$general$modus_operandi == "normal" &&
+  if (RFopt$general$modus_operandi == MODENAMES[normal + 1] &&
       RFopt$internal$warn_normal_mode) {
     RFoptions(internal.warn_normal_mode = FALSE)
-    message("The modus_operandi='normal' is save, but slow. If you like the MLE running\nfaster (at the price of being slightly less save) choose mode='easygoing' or\neven mode='sloppy'.")
+    message("The modus_operandi='", MODENAMES[normal + 1], "' is save, but slow. If you like the MLE running\nfaster (at the price of being slightly less save) choose mode='easygoing' or\neven mode='", MODENAMES[sloppy + 1], "'.")
   }
 
   debug <- FALSE
@@ -1087,6 +1137,7 @@ rffit.gauss <-
   no.warning <- -1
 #
   no.warning <- 2
+  nonzeros <- integer(1)
   
  
 #  i <- as.integer(.Machine$integer.max / spam.n[length(spam.n)])
@@ -1104,7 +1155,6 @@ rffit.gauss <-
 ###                      Preludium                               ###
 ####################################################################
 
- 
   save.options <- options()
   on.exit(options(save.options), add=TRUE)
   
@@ -1138,10 +1188,10 @@ rffit.gauss <-
     stop("practicalrange must be FALSE if fit$use_naturalscaling=TRUE")
   if (fit$use_naturalscaling) RFoptions(general.practicalrange = 3)
  
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nfunction defintions...\n")
+  if (printlevel>=PL_STRUCTURE) cat("\nfunction defintions...\n")
 
   ##all the following save.* are used for debugging only
-  silent <- printlevel <  PL.FCTN.STRUCTURE   # optimize
+  silent <- printlevel <  PL_STRUCTURE   # optimize
   show.error.message <- TRUE # options
 
   detailpch <- if (pch=="") "" else '+'
@@ -1153,8 +1203,8 @@ rffit.gauss <-
   EffectName <- c("DetTr", "Determ", "FixTr", "FixEff", "RanEff", "RanEff",
                   "XRnEff", "XRnEff", "SpcEff")
 
-  Reg <- MODEL.MLE # GetModelRegister(if (fit$split) "mle" else "mlesplit") 
-  TrendReg <- GetModelRegister("mletrend")
+  Reg <- MODEL_MLE # GetModelRegister(if (fit$split) "mle" else "mlesplit") 
+  TrendReg <- MODEL_MLETREND
   ##
  
   spam.min.n <- as.integer(400) # 400
@@ -1169,7 +1219,7 @@ rffit.gauss <-
 ######################################################################
 ###                function definitions                            ###
 ######################################################################
-
+    
   # Rcpp need gradient
   nloptr <- NULL ## just to avoid the warning of R CMD check
   if (optimiser != "optim") {
@@ -1197,13 +1247,13 @@ rffit.gauss <-
   ## DEoptim: langsam, aber interessant; leider Dauerausgabe
     
   if (is.na(use_spam) || use_spam) {
-#    if (do.call(base::require,
- #                list("spam", quietly=silent, warn.conflicts = FALSE))) {
+    ip <- installed.packages()
+    if ("spam" %in% ip) {
       use_spam <- TRUE
-#    } else {
-#      if (!is.na(use_spam)) stop("package 'spam' could not be loaded")
-#      use_spam <- FALSE
- #   } 
+    } else {
+      if (!is.na(use_spam)) stop("package 'spam' could not be loaded")
+      use_spam <- FALSE
+    } 
   }
 
 
@@ -1212,26 +1262,28 @@ rffit.gauss <-
     if (length(idx <- which("algorithm" == names(control))) > 0)
       control <- control[-idx];
     
-    oH <- optimHess(par=par, fn=fn, control=control)
-    zaehler <- 1
-    while (zaehler <= 3) {
-      e <- eigen(oH)
-      values <- Re(e$values) ## some imaginary small values included in eigen
-      vectors <- Re(e$vectors)
-      if (all(values != 0)) {
-        # solve scheitert am Eigenwert 0
-        ##    Print(vectors, values)
-        invH <- vectors %*% diag(1 / values, nrow=length(values)) %*% t(vectors)
-        diagH <- -diag(invH)        
-        if (any(diagH < 0)) {
-          diagH[diagH<0] <- Inf
+    oH <- try(optimHess(par=par, fn=fn, control=control), silent=TRUE)
+    if (class(oH) != "try-error") {
+      zaehler <- 1
+      while (zaehler <= 3) {
+        e <- eigen(oH)
+        values <- Re(e$values) ## some imaginary small values included in eigen
+        vectors <- Re(e$vectors)
+        if (all(values != 0)) {
+          ## solve scheitert am Eigenwert 0
+          ##    Print(vectors, values)
+          invH <- vectors %*% (1/values * t(vectors))
+          diagH <- -diag(invH)        
+          if (any(diagH < 0)) {
+            diagH[diagH<0] <- Inf
+          }
+          return(sqrt(diagH))
         }
-        return(sqrt(diagH))
+        oH <- oH + rnorm(length(oH), 0, 1e-7)
       }
-      oH <- oH + rnorm(length(oH), 0, 1e-7)
     }
-    Print(optimHess(par=par, fn=fn, control=control)) #
-    stop("The above matrix is strange and not invertable")
+    #Print(optimHess(par=par, fn=fn, control=control)) #
+    stop("The Hessian matrix is strange and not invertable")
   }
 
   OPTIM <- function(par, fn, lower, upper, control, optimiser, silent) {
@@ -1350,7 +1402,7 @@ rffit.gauss <-
       logdet<-2*as.numeric(spam::determinant(spam::chol.spam(S, silent=silent)))
       rm("S")
     } else {
-      logdet <- 2 * as.numeric(determinant(chol(S, silent=silent)))
+      logdet <- 2 * sum(log(diag(chol(S, silent=silent))))
     }
     return(logdet)
   }
@@ -1412,7 +1464,7 @@ rffit.gauss <-
   LStarget <- function(variab) {
     variab <- variab + 0## unbedingt einfuegen, da bei R Fehler
     ##                     der Referenzierung !! 16.2.10
-    if (printlevel>PL.FCTN.DETAILS) Print(LSMIN, format(variab, dig=20))#
+    if (printlevel>PL_FCTN_DETAILS) Print(LSMIN, format(variab, dig=20))#
 
     if (n.variab==0) return(NA)		##trivial case
 
@@ -1420,7 +1472,7 @@ rffit.gauss <-
       ## for safety -- should not happen, older versions of the optimiser
       ## did not stick precisely to the given bounds
       ## 13.12.03 still happens ...
-      if (printlevel>=PL.FCTN.STRUCTURE)
+      if (printlevel>=PL_STRUCTURE)
         WarningMessage(variab, LSQLB, LSQUB, "LSQ")
       assign("BEYOND", BEYOND + 1, envir=ENVIR)
       penalty <- variab
@@ -1447,7 +1499,7 @@ rffit.gauss <-
   
  
     if (any(!is.finite(model.values))) {
-      if (printlevel>=PL.IMPORPANT) {
+      if (printlevel>=PL_IMPORTANT) {
         message("LSQ missing values!")
         Print(format(variab, dig=20), format(param, dig=20)) #
         #print(cbind(bin.centers, as.matrix(model.values, ncol=vdim))) #
@@ -1501,16 +1553,16 @@ rffit.gauss <-
     ML.df <- ntotdata
     assign("MLEtarget", MLtarget, envir=ENVIR)
 
-    assign("DO.REML", M =="reml" && anyfixedeffect, envir=ENVIR)
-    assign("DO.RML1", M =="rml1" && anyfixedeffect, envir=ENVIR)
+    assign("DO.REML", M =="reml" && anyFixedEffectt, envir=ENVIR)
+    assign("DO.RML1", M =="rml1" && anyFixedEffectt, envir=ENVIR)
 
     if (DO.RML1) {
-      ML.df <- ML.df - repet * rowSums(nCoVar[, fixedeffects])
+      ML.df <- ML.df - repet * rowSums(nCoVar[, FixedEffectts])
       rml.a <- rml.x <- rml.data <- vector("list", sets)
       idx <- NULL
       for (i in 1:sets) {
         for (k in mmcomponents)
-          if (fixedeffects[k]) idx <- c(idx, startXges[i, k] : endXges[i, k])
+          if (FixedEffectts[k]) idx <- c(idx, startXges[i, k] : endXges[i, k])
         
         rml.data[[i]] <- rml.a[[i]] <- rml.x[[i]] <-
           vector("list", length(idx.repet[[i]]))
@@ -1537,8 +1589,8 @@ rffit.gauss <-
       assign("MLEtarget", MLtarget, envir=ENVIR)        
     } else if (DO.REML) {       
       ML.df <-
-        ML.df - nCoVar[, fixedeffects]
-      for (k in which(fixedeffects)) {
+        ML.df - nCoVar[, FixedEffectts]
+      for (k in which(FixedEffectts)) {
         XtX <- 0
         for (i in 1:sets) {
           for (m in 1:len.rep[i]) {
@@ -1552,13 +1604,13 @@ rffit.gauss <-
       }
     } else if (M=="rml2") {
       stop("not programmed yet")
-      ML.df <- ML.df - rowSums(nCoVar[, fixedeffects]) 
+      ML.df <- ML.df - rowSums(nCoVar[, FixedEffectts]) 
       ## hier wirklich die riesengrosse Matrix erstellen wo wirklich nur
-      ## rowSums(nCoVar[, fixedeffects]) abgezogen wird und nicht
+      ## rowSums(nCoVar[, FixedEffectts]) abgezogen wird und nicht
       ## das repet-fache ?!
       ## oder per Rechnung klein machen
       for (i in 1:sets) {
-        for (k in mmcomponents) if (fixedeffects[k])
+        for (k in mmcomponents) if (FixedEffectts[k])
           idx <- c(idx, startXges[i, k] : endXges[i, k])
         
         Xfix <- NULL
@@ -1580,7 +1632,7 @@ rffit.gauss <-
     ML.df <- sum(ML.df)
     if (globalsigma)  base <- base + ML.df * (1 - log(ML.df))
     
-    dummy <- rowSums(nCoVar[, effect >= .RandomEffect & effect <= SpVarEffect,
+    dummy <- rowSums(nCoVar[, effect >= RandomEffect & effect <= SpVarEffect,
                             drop=FALSE])
     base <-  base + (sum(dummy) +  ML.df) * log(2 * pi)
     if (solvesigma) {
@@ -1607,7 +1659,7 @@ rffit.gauss <-
         Spalte <- crossprod(if (DO.RML1) RML.Xges[[i]][[m]] else Xges[[i]][[m]],
                             Sinv[[i]][[idx.error[1]]][[m]]) # all k
         for (k in mmcomponents) {
-          if (nCoVar[i, k] > 0 && (!fixedeffects[k] || !DO.RML1)) {
+          if (nCoVar[i, k] > 0 && (!FixedEffectts[k] || !DO.RML1)) {
             idx <- startXges[i, k] : endXges[i, k]
             
             D[, idx] <- D[, idx] + idx.repet[[i]][m] * Spalte %*%
@@ -1622,7 +1674,7 @@ rffit.gauss <-
 
       if (DO.REML) {
         idx <- NULL
-        for (k in mmcomponents) if (fixedeffects[k])
+        for (k in mmcomponents) if (FixedEffectts[k])
           idx <- c(idx, startXges[i, k] : endXges[i, k])
         
         reml.corr <- reml.corr + LogDet(D[idx, idx])      
@@ -1630,9 +1682,9 @@ rffit.gauss <-
 
       j <- 1
       for (k in mmcomponents) {
-        if (effect[k] >= .RandomEffect && effect[k] <= SpVarEffect) {
+        if (effect[k] >= RandomEffect && effect[k] <= SpVarEffect) {
           idx <- startXges[i, k] : endXges[i, k]
-          if (effect[k] == .RVarEffect) {
+          if (effect[k] == RvarEffect) {
             D[idx, idx] <- D[idx, idx] + Sinv[[i]][[k]] / sigma2[j]
             j = j + 1
           } else {
@@ -1643,7 +1695,7 @@ rffit.gauss <-
 
       if (DO.RML1) {
         idx <- NULL
-        for (k in mmcomponents) if (fixedeffects[k])
+        for (k in mmcomponents) if (FixedEffectts[k])
           idx <- c(idx, startXges[i, k] : endXges[i, k])
         D <- D[-idx, -idx]
       }
@@ -1662,7 +1714,7 @@ rffit.gauss <-
     cumsq <- j <- 0
     for (k in mmcomponents) {
       s2est <- 0
-      if (effect[k] == .RVarEffect) {
+      if (effect[k] == RvarEffect) {
         idx <- startCoVar[i, k] : endCoVar[i, k]
         for (i in 1:sets) {
           zi <- z[idx, i]
@@ -1687,15 +1739,15 @@ rffit.gauss <-
     if (n.variab > 0) {
       variab <- variab + 0  ## unbedingt einfuegen, da bei R Fehler der Referenzierung !! 16.2.10
       
-      if (printlevel>=PL.FCTN.DETAILS ) {
+      if (printlevel>=PL_FCTN_DETAILS ) {
         Print(format(variab, dig=20)) #
-        if (printlevel>=PL.FCTN.SUBDETAILS) Print(minmax) #
+        if (printlevel>=PL_FCTN_SUBDETAILS) Print(minmax) #
       }
       if (any((variab < MLELB) | (variab > MLEUB))) {
         ## for safety -- should not happen, older versions of the optimiser
         ## did not stick precisely to the given bounds
         ## 23.12.03 : still happens
-        if (printlevel>=PL.FCTN.STRUCTURE)
+        if (printlevel>=PL_STRUCTURE)
           WarningMessage(variab, MLELB, MLEUB, "MLE")   
         assign("BEYOND", BEYOND + 1, envir=ENVIR)
         penalty <- variab
@@ -1717,7 +1769,7 @@ rffit.gauss <-
       options(show.error.messages = show.error.message)
     } else param <- NULL
     
-    if (printlevel >= PL.FCTN.SUBDETAILS) {
+    if (printlevel >= PL_FCTN_SUBDETAILS) {
       cat("\n\nAufruf von MLtarget\n===================\n")
       Print(RFgetModelInfo(register=Reg, level=14))#
     }
@@ -1732,8 +1784,11 @@ rffit.gauss <-
     
     for (i in 1:sets) {
 
+      stopifnot(lc[i] * vdim < 10000)
+
       S <- double((lc[i] * vdim)^2)
       for (k in allcomponents) {
+
         if (effect[k] >= SpaceEffect) { ## ansonsten muss schon vorher gesetzt
           ##                              werden
 
@@ -1749,7 +1804,8 @@ rffit.gauss <-
 
 
             .Call("CovMatrixLoc", Reg, Xdistances[[i]], is.dist.vector,
-               xdimOZ, as.integer(lc[i]), S, PACKAGE="RandomFields")
+               xdimOZ, as.integer(lc[i]), S, nonzeros,
+                  PACKAGE="RandomFields")
             dim(S) <- rep(lc[i] * vdim, 2)
          
           }
@@ -1762,7 +1818,7 @@ rffit.gauss <-
           if (sp.eff) {
             Sinv[[i]][[k]] <<- Solve(S, LINPACK=TRUE)
             logdet <- logdet + LOGDET # side effect of Solve
-          } else {  ## .RemainingError/Primitive, genau 1x pro i aufgerufen
+          } else {  ## RemainingError/PrimitiveModel, genau 1x pro i aufgerufen
             for (m in 1:len.rep[i]) {
               if (balanced[i]) {
                 Si <- S[idx.na[[i]][[m]], idx.na[[i]][[m]]]
@@ -1778,7 +1834,7 @@ rffit.gauss <-
                 .Call("CovMatrixSelectedLoc", Reg, Xdistances[[i]],
                    is.dist.vector, xdimOZ, as.integer(lc[i]),
                    as.integer(idx.na[[i]][[m]] - 1),
-                      as.integer(nSidx), Si,
+                      as.integer(nSidx), Si, nonzeros,
                    PACKAGE="RandomFields")                
                 dim(Si) <- rep(nSidx, 2)
 
@@ -1786,7 +1842,7 @@ rffit.gauss <-
                   Print("CovMatrixSelectedLoc", Reg, # Xdistances[[i]],
                    is.dist.vector, xdimOZ, as.integer(lc[i]),
                    as.integer(idx.na[[i]][[m]] - 1),
-                      as.integer(nSidx), Si,
+                      as.integer(nSidx), Si, nonzeros,
                    PACKAGE="RandomFields", eigen(Si)$value,
                       GetModel(Reg)) ## OK
 
@@ -1802,9 +1858,9 @@ rffit.gauss <-
               
               if (class(Sinv[[i]][[k]][[m]]) == "try-error") {
                 assign("MLEINF", TRUE, envir=ENVIR)
-                if (printlevel>=PL.SUBIMPORPANT || is.na(MLEVARIAB)) {
+                if (printlevel>=PL_SUBIMPORTANT || is.na(MLEVARIAB)) {
                   cat("\nMLE: error in cholesky decomp. -- matrix pos def?")
-                  if (printlevel>=PL.FCTN.ERRORS) {
+                  if (printlevel>=PL_ERRORS) {
                     Print(variab, MLEVARIAB, S, Si, eigen(Si)$val)#
                   }
                 }
@@ -1885,7 +1941,7 @@ rffit.gauss <-
               (Sinv[[i]][[idx.error[1]]][[m]] %*% MLtargetV[[i]][[m]]))       
       }
       
-      for (k in mmcomponents) if (effect[k] >= .RandomEffect) {
+      for (k in mmcomponents) if (effect[k] >= RandomEffect) {
         idx <- startCoVar[i, k] : endCoVar[i, k]
         quad.effect[k] <- quad.effect[k] +
           sum(LINEARLARPZ[[i]][idx] *
@@ -1908,7 +1964,7 @@ rffit.gauss <-
       warning("NA results appeared")
     }
     
-    if (printlevel >= PL.FCTN.SUBDETAILS) {
+    if (printlevel >= PL_FCTN_SUBDETAILS) {
       Print(globalsigma, variab, param, var.global, ML.df, #
             quadratic / ML.df)
       readline(paste(res, "Bitte return druecken."))
@@ -1932,7 +1988,7 @@ rffit.gauss <-
   
     }
 
-    if (printlevel >= PL.FCTN.SUBDETAILS) Print(logdet, quadratic, res)#
+    if (printlevel >= PL_FCTN_SUBDETAILS) Print(logdet, quadratic, res)#
 
     return(res)
   } # mltarget
@@ -1995,8 +2051,7 @@ rffit.gauss <-
 
   time <- !is.null(T) && (!is.list(T) || !is.null(T[[1]]))
 
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\ninitial settings...\n")
-
+  if (printlevel>=PL_STRUCTURE) cat("\ninitial settings...\n")
 
   variab.units <- RFopt$coords$varunits
 
@@ -2043,7 +2098,7 @@ rffit.gauss <-
 ##### variables needed for analysis of trend, upper and lower input --
 ##### user cannot know what the internal represenatation is
 
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nfirst analysis of model  ...\n")
+  if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
   variable.names <- extractVarNames(model)
   ## gets response part of model, if model is a formula
@@ -2062,17 +2117,15 @@ rffit.gauss <-
   ## hier zum ersten mal model verwendet wichtig,
   ## da interne Darstellung abweichen kann. Z.B. dass ein optionaler Parameter
   ## auf einen Standardwert gesetzt wird
-  model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
+    model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                     do.notreturnparam=TRUE) ##standardisiert
   #userdefined <- GetParameterModelUser(model)
 
-#  Print(model); xxxx
- 
   
   modelinfo <- RFgetModelInfo(register=Reg, level=2, spConform=FALSE)
   vdim <- modelinfo$vdim
  ## -- wichtig fuer GetValuesAtNA
-   
+    
   NAs <-  info.cov$NAs
   trans.inv <- info.cov$trans.inv ## note: only with respect to the
   ##              coordinates, mixed effect koennen andere wirkung haben
@@ -2083,22 +2136,19 @@ rffit.gauss <-
     stop("only domain and isotropic models go along with distances")
   }
   minmax <- info.cov$minmax # 4 Spalten: 1:min, 2:max, 3:type, 4:is.nan, not na
-  ##VARPARAM, SCALEPARAM, DIAGPARAM, ANISOPARAM, // 0..3
-  ##INTERNALPARAM, ANYPARAM, TRENDPARAM, NUGGETVAR, MIXEDVAR, // 4..8
-  ##  .REGRESSION // 9
 
   diag.idx <- which(minmax[, 3] == DIAGPARAM)
   if (length(diag.idx)>0) minmax[diag.idx[1], 1] <- fit$min_diag
- 
+
   ncovparam <- nrow(minmax)
   ptype <- minmax[, 3]
 
-  if (printlevel >= PL.RECURSIVE.CALL) print(minmax) #
+  if (printlevel >= PL_RECURSIVE) print(minmax) #
 
   
   ## identify the effects:
   effect <- info.cov$effect
-  idx.error <- effect >= Primitive
+  idx.error <- effect >= PrimitiveModel
   mmcomponents <- which(!idx.error & effect > DeterministicEffect)
   
   idx.error <- which(idx.error)
@@ -2109,11 +2159,11 @@ rffit.gauss <-
     stop("x-coordinates are neither given by 'x' nor by 'distances' nor by 'data',\n  but the model seem to require them")
 
   stopifnot(sum(NAs) == nrow(minmax))
-    
+   
   eff <- rep(FALSE, nrow(minmax))  ## lokale Hilfsvariable
   csNAs <- cumsum(c(0, NAs))
   for (k in 1:length(effect)) {
-    if (effect[k] >= .RandomEffect && effect[k] <= SpVarEffect && NAs[k] > 0)
+    if (effect[k] >= RandomEffect && effect[k] <= SpVarEffect && NAs[k] > 0)
       eff[(csNAs[k]+1) : csNAs[k]] <- TRUE
   }
 
@@ -2124,24 +2174,25 @@ rffit.gauss <-
   rm("eff")
 
 
-  fixedeffects <- effect == FixedEffect | effect == FixedTrendEffect
+  FixedEffectts <- effect == FixedEffect | effect == FixedTrendEffect
   anymixedeffects <- any(effect >= FixedTrendEffect & effect <= SpVarEffect)
-  anyrandomeffects <- any(effect >= .RandomEffect & effect <= SpVarEffect)
+  anyRandomEffects <- any(effect >= RandomEffect & effect <= SpVarEffect)
  # variogram.known <- trans.inv && !info.cov$matrix.indep.of.x && !anymixedeffects
-  variogram.known <- trans.inv && !anyrandomeffects
+  variogram.known <- trans.inv && !anyRandomEffects
 
-#  Print(variogram.known, trans.inv, !anyrandomeffects)
+#  Print(variogram.known, trans.inv, !anyRandomEffects)
 
-  deteffects <- effect == DeterministicEffect | effect == DetTrendEffect
+  DeterministicEffecs <- effect == DeterministicEffect | effect == DetTrendEffect
   trends <- effect == DetTrendEffect | effect == FixedTrendEffect
-  which.deteff <- which(deteffects)
-  anyfixedeffect <- any(fixedeffects)
-  vareffect <- which(effect == .RVarEffect)
+  which.deteff <- which(DeterministicEffecs)
+  anyFixedEffectt <- any(FixedEffectts)
+  vareffect <- which(effect == RvarEffect)
   if (length(vareffect) == 0) solvesigma <- FALSE
  
   is.dist.vector <- trans.inv && small.dataset || dist.given
-  coordinate_system <- RFoptions()$coords$coordinate_system
-  cartesian <- coordinate_system %in% ZF_CARTESIAN_COORD_NAMES
+  coord_system <- RFoptions()$coords$coord_system
+  cartesian <- coord_system %in% c("auto", CARTESIAN_SYSTEMS)
+
 
   if (is.scalar.dist <- isotropic && is.dist.vector && cartesian) {
     xdimOZ <- as.integer(1)
@@ -2150,11 +2201,10 @@ rffit.gauss <-
 
   
   #Print(is.dist.vector, trans.inv, small.dataset, dist.given)
-
 ######################################################################
 ## model specific settings, upper & lower
 ######################################################################
-   if (printlevel>=PL.FCTN.STRUCTURE) cat("\nupper & lower...\n")
+   if (printlevel>=PL_STRUCTURE) cat("\nupper & lower...\n")
 
 #  xxxxxxxxxxxxxx
   
@@ -2190,7 +2240,7 @@ rffit.gauss <-
 
 
 #######################   upper,lower,user     ########################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nlower and upper ...\n")
+  if (printlevel>=PL_STRUCTURE) cat("\nlower and upper ...\n")
   
   users.lower <- users.upper <- NULL
   if (!is.null(lower)) {
@@ -2199,7 +2249,7 @@ rffit.gauss <-
                                      Time=time, shortnamelength=fit$short,
                                      skipchecks=!is.null(trafo)) )
     if (!is.numeric(users.lower)) {
-      if (printlevel>=PL.IMPORPANT) Print(model, lower, users.lower)
+      if (printlevel>=PL_IMPORTANT) Print(model, lower, users.lower)
       stop("'lower' does not match 'model'")
     }
   }
@@ -2209,7 +2259,7 @@ rffit.gauss <-
                                      Time=time, shortnamelength=fit$short,
                                      skipchecks=!is.null(trafo)))
    if (!is.numeric(users.upper)) {
-      if (printlevel>=PL.IMPORPANT) Print(model, upper, users.upper)
+      if (printlevel>=PL_IMPORTANT) Print(model, upper, users.upper)
       stop("'upper' does not match 'model'")
     }
   }
@@ -2224,29 +2274,29 @@ rffit.gauss <-
                                      skipchecks=!is.null(trafo)))
     
     if (!is.numeric(Users.guess)) {
-      if (printlevel>=PL.IMPORPANT) Print(model, users.guess, Users.guess)
+      if (printlevel>=PL_IMPORTANT) Print(model, users.guess, Users.guess)
       stop("'users.guess' does not match 'model'")
     }
     if (any(is.finite(Users.guess))) users.guess <- Users.guess
     else users.guess <- NULL
   }
  
-  if (anyrandomeffects) {    
+  if (anyRandomEffects) {    
     stopifnot(model[[1]] %in% ZF_PLUSSELECT)
     model[[1]] <- ZF_SELECT[1]
   }
 
-  if (is.dist.vector || anyrandomeffects) {
+  if (is.dist.vector || anyRandomEffects) {
     info.cov <- .Call("SetAndGetModelInfo", Reg, list("Cov", model),
                       spdim, is.dist.vector, !is.dist.vector,
                       time, xdimOZ,
                       fit$short, FALSE, TRUE,
                       PACKAGE="RandomFields")
+
     modelinfo <- RFgetModelInfo(register=Reg, level=2, spConform=FALSE)
-    
+     
     model <- GetModel(register=Reg, modus=GETMODEL_DEL_MLE, spConform=FALSE,
                       do.notreturnparam=TRUE)
-
   }
 
 
@@ -2254,7 +2304,7 @@ rffit.gauss <-
 ## either given bu users.transform + users.min, users.max
 ## DIESER TEIL MUSS IMMER HINTER GetValuesAtNA STEHEN
   
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\ntransform ...\n")
+  if (printlevel>=PL_STRUCTURE) cat("\ntransform ...\n")
   
   lower <- minmax[,1] 
   upper <- minmax[,2]
@@ -2332,7 +2382,7 @@ rffit.gauss <-
 ###    mindistances <- min(dd[dd!=0])  ## notwendig falls !is.null(T)
 ###    rm("dd")
 ###
- if (printlevel>=PL.FCTN.STRUCTURE) cat("\ndistances ...\n")
+ if (printlevel>=PL_STRUCTURE) cat("\ndistances ...\n")
   sets <- length(lc)
   Xdistances <- vector("list", sets)
 
@@ -2383,7 +2433,7 @@ rffit.gauss <-
       
       mindistances[, i] <- range(absdist[!idx])        
   
-      if (printlevel>=PL.FCTN.SUBDETAILS) Print(trans.inv, isotropic)#
+      if (printlevel>=PL_FCTN_SUBDETAILS) Print(trans.inv, isotropic)#
       if (is.dist.vector) {
         ##stopifnot(!isotropic)
         ## if (isotropic) { Xdistances[[i]] <- absdist } else
@@ -2402,7 +2452,7 @@ rffit.gauss <-
  
   
 ##############         Coordinates & data    #################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\ndistances and data...")
+  if (printlevel>=PL_STRUCTURE) cat("\ndistances and data...")
     ## note: the direct C call needs matrix where points are given column-wise
     ##       whereas the R function CovarianceFct need them row-wise,
     ##                   except for fctcall==CovarianceMatrix
@@ -2419,7 +2469,8 @@ rffit.gauss <-
 
   balanced <- rep(TRUE, sets)
 
- 
+
+    ##   Print(ntotdata); ddddd
 
   #Print(isRFsp, dimdata, sets, data)
 
@@ -2445,7 +2496,7 @@ rffit.gauss <-
     
     for (k in which.deteff) {
       ## for the deterministic effects:
-      ## deteffects <- effect == DeterministicEffect | effect == DetTrendEffect
+      ## DeterministicEffecs <- effect == DeterministicEffect | effect == DetTrendEffect
       ## trends <- effect == DetTrendEffect | effect == FixedTrendEffect
       if (!trends[k]) { # i.e. == DeterministicEffect
         size <- nrow(modelinfo$sub[[k]]$param$X[[i]])
@@ -2510,16 +2561,20 @@ rffit.gauss <-
                          rep(t(apply(not.isna, c(1, 3), all)), times=vdim))
     }
 
+    
     if (any(colSums(not.isna) > fit$max_neighbours)) {
-      balanced[i] <- FALSE
+
+      stop("too many points -- currently composite likelihood is not programmed") # to do
       
-      if (printlevel>=PL.IMPORPANT && fit$split)
+      balanced[i] <- FALSE
+    
+      if (printlevel>=PL_IMPORTANT && fit$split)
         message("Too many locations to use standard eliminationation methods.\n",
             "Using approximative methods. However, it is *not* ensured\n",
             "that they will do well in detecting long memory dependencies.")
       if (is.scalar.dist) { ## distances
         j <- 1:lc
-        l <- list()
+        composite <- list()
         li <- 0
         maxi <-  (fit$splitn_neighbours[2] - 1) / vdim 
         # mini <-  fit$splitn_neighbours[3] / vdim
@@ -2536,12 +2591,12 @@ rffit.gauss <-
           locidx <- c(locs[locidx], j[1])    
 
           li <- li + 1
-          l[[li]] <- locidx
+          composites[[li]] <- locidx
            j <- j[is.na(pmatch(j, locidx))]
         }
         if (length(j) > 0) {
           li <- li + 1
-          l[[li]] <- j
+          composite[[li]] <- j
         }
         
         ## kann jetzt noch optimiert werden hinsichtlich schaetzqualitaet durch
@@ -2554,10 +2609,10 @@ rffit.gauss <-
           .C("PutValuesAtNA", Reg, users.guess,PACKAGE="RandomFields")
           modelnr <- Reg         
         }
-         if (ntotdata <= fit$max_neighbours)
-          l <- list(1:ncol(Xdistances[[i]]))
+        if (ntotdata <= fit$max_neighbours)
+          composite <- list(1:ncol(Xdistances[[i]]))
         else 
-          l <- GetNeighbourhoods(modelnr,
+          composite <- GetNeighbourhoods(modelnr,
                                  list(given=Xdistances[[i]], vdim=vdim),
                                  fit$splitfactor_neighbours,
                                  fit$max_neighbours,
@@ -2566,15 +2621,18 @@ rffit.gauss <-
       }
       old.not.na <- not.isna
 
-      not.isna <- matrix(FALSE, nrow=lc[i] * vdim, repet[i] * length(l))
-      save.rep <- numeric(repet * length(l))
-      for (j in 1:length(l)) {
+#      Print(l)
+      
+      not.isna <- matrix(FALSE, nrow=lc[i] * vdim, repet[i] * length(composite))
+      save.rep <- numeric(repet * length(composite))
+      for (j in 1:length(composite)) {
         idx <- rep(FALSE, lc[i])
-        idx[l[[j]]] <- TRUE
+        idx[composite[[j]]] <- TRUE
         not.isna[idx, ( (j-1) * repet + 1 ) : (j * repet)] <-
           old.not.na[idx, ]
         save.rep[ ((j-1)*repet + 1) : (j * repet)] <- repet
       }
+#      Print(save.rep)
     } else {
       # not: any(colSums(not.isna) > fit$max_neighbours)
       save.rep <- 1:repet[i]
@@ -2646,7 +2704,7 @@ rffit.gauss <-
   
  
 
-  if (vdim>1 && printlevel>=PL.IMPORPANT && !recall)
+  if (vdim>1 && printlevel>=PL_IMPORTANT && !recall)
     message("Due to the covariance model a ", vdim,
         "-variate random field is expected. Therefore, \nthe data matrix",
         " is assumed to consist of ", repet,
@@ -2656,7 +2714,7 @@ rffit.gauss <-
 
  
 ##############      find upper and lower bounds      #################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nbounds...")
+  if (printlevel>=PL_STRUCTURE) cat("\nbounds...")
  
   txt <- "lower and upper are both lists or vectors of the same length or NULL"
   lengthmismatch <- "lengths of bound vectors do not match model"
@@ -2759,7 +2817,7 @@ rffit.gauss <-
 #  Print(lower)
   
 ###########################        split       #######################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nsplit...")
+  if (printlevel>=PL_STRUCTURE) cat("\nsplit...")
   if (fit$split && length(autostart)>3) {
     
     Range <- if (is.scalar.dist || dist.given) {
@@ -2774,7 +2832,7 @@ rffit.gauss <-
 
 ### Achtung!! delete.idx darf davor nur fuer trafo gesetzt werden!!
 
-    aux.reg <- MODEL.MLESPLIT
+    aux.reg <- MODEL_MLESPLIT
 
     stopifnot(spdim == tsdim - time)
     
@@ -2804,17 +2862,17 @@ rffit.gauss <-
                           is.dist.vector=is.dist.vector,
                           refined = fit$split_refined),
                         model=model)
-    if (printlevel>=PL.FCTN.STRUCTURE) cat("\nsplitted...")  
+    if (printlevel>=PL_STRUCTURE) cat("\nsplitted...")  
 
     if (length(split) == 1)
       stop("split does not work in this case. Use split=FALSE")
     if (length(split) > 1) {
       coord <- werte <- Xdistances <- NULL
-      if (printlevel>=PL.FCTN.STRUCTURE) {
+      if (printlevel>=PL_STRUCTURE) {
         cat("\n")
       }
 
-      if (printlevel >= PL.RECURSIVE.CALL) Print(split) #
+      if (printlevel >= PL_RECURSIVE) Print(split) #
 
 #      Print(keep, lower, upper)
 
@@ -2877,7 +2935,7 @@ rffit.gauss <-
 ######################################################################
 
 
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nauto...")  
+  if (printlevel>=PL_STRUCTURE) cat("\nauto...")  
   
   autopar <- autostart
   autopar[autopar == 0] <- 1
@@ -2909,7 +2967,7 @@ rffit.gauss <-
   if (length(var.idx) > 1 || sum(SCALE.IDX)>1 || sum(ptype == DIAGPARAM)>0 ||
       sum(ptype==ANISOPARAM)>0 || sum(ptype==INTEGERPARAM)>0 ||
       sum(ptype==TRENDPARAM)>1 || length(nugget.idx)>1 ||
-      length(MIXED.IDX) > 0 || sum(ptype==.REGRESSION)>0) {
+      length(MIXED.IDX) > 0 || sum(ptype==MIXEDPARAM)>0) {
     optim_var_elimination <- "never"
   }
 
@@ -2923,7 +2981,7 @@ rffit.gauss <-
 
   
   if (optim_var_elimination == "yes") {
-    if (printlevel>=PL.FCTN.STRUCTURE) cat("\nstandard style settings...")
+    if (printlevel>=PL_STRUCTURE) cat("\nstandard style settings...")
   
     if (sillbounded) {
       ## only VARIANCE need to be optimised
@@ -3002,8 +3060,8 @@ rffit.gauss <-
               pmax(lower[var.idx], 0)
             #(varmin[var.idx]-nugget) / fit$lowerbound_var_factor)
             if (lower[var.idx] < fit$lowerbound_sill) {
-              if (printlevel>=PL.SUBIMPORPANT) {
-                if (printlevel>=PL.SUBIMPORPANT)
+              if (printlevel>=PL_SUBIMPORTANT) {
+                if (printlevel>=PL_SUBIMPORTANT)
                   cat("low.var=",lower[var.idx]," low_sill",fit$lowerbound_sill,
                       "\ eliminationated variance from data=", varmin[var.idx],
                       "nugget=", nugget, "\n")
@@ -3026,7 +3084,7 @@ rffit.gauss <-
           lower[nugget.idx] <-
             pmax(0, (varmin[nugget.idx] - variance) / fit$lowerbound_var_factor)
           if (lower[nugget.idx] < fit$lowerbound_sill) {
-            if (printlevel>PL.SUBIMPORPANT)
+            if (printlevel>PL_SUBIMPORTANT)
               cat("\nlower nugget bound=", lower[nugget.idx],
                   " < lower sill bound=", fit$lowerbound_sill,
                   " -- is the variance given correctly?\n",sep="")
@@ -3043,7 +3101,7 @@ rffit.gauss <-
       
   } else { ### optim_var_elimination != "yes"
    
-    globalsigma <- !anyrandomeffects &&
+    globalsigma <- !anyRandomEffects &&
     ((modelinfo$name %in% DOLLAR && is.na(modelinfo$param$var)) ||
       (length(idx.error)==1 &&
          (modelinfo$sub[[idx.error]]$name %in% DOLLAR &&
@@ -3121,7 +3179,7 @@ rffit.gauss <-
 
   
   if (any(autostart<lower) || any(autostart>upper)) {
-    if (printlevel >= PL.FCTN.ERRORS)
+    if (printlevel >= PL_ERRORS)
       Print(cbind(lower, autostart, upper)) #, orig.lower,orig.upper)#
     autostart <- pmin(upper, pmax(lower, autostart))
   }
@@ -3165,7 +3223,7 @@ rffit.gauss <-
 ######################################################################
 ###                                 Covariates                     ###
 ######################################################################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nCovariates...")
+  if (printlevel>=PL_STRUCTURE) cat("\nCovariates...")
 
   
 ##############  Sinv, etc              #################
@@ -3191,7 +3249,7 @@ rffit.gauss <-
     for (i in 1:sets) {   
       for (k in allcomponents) {
         s[k] <-
-          if (effect[k] >= Primitive) 0
+          if (effect[k] >= PrimitiveModel) 0
           else {
             stopifnot(effect[k] != DetTrendEffect,
                       effect[k] != DeterministicEffect)
@@ -3291,7 +3349,7 @@ rffit.gauss <-
   } # i in 1:sets
 
    
-  eff <- efftmp <- rep(0, .RemainingError + 1)
+  eff <- efftmp <- rep(0, RemainingError + 1)
   for (k in mmcomponents) {
     if (effect[k] <= SpVarEffect) {
       eff[effect[k] + 1] <- eff[effect[k] + 1] + 1
@@ -3355,7 +3413,7 @@ rffit.gauss <-
 
 
 ###################  preparation  ################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\npreparing fitting...")
+  if (printlevel>=PL_STRUCTURE) cat("\npreparing fitting...")
   ## methods
   formals <- formals()
   allprimmeth <- c("autostart", "users.guess")
@@ -3462,7 +3520,7 @@ rffit.gauss <-
  
  
   ##****************    autostart    *****************
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nautostart...")
+  if (printlevel>=PL_STRUCTURE) cat("\nautostart...")
   M <- "autostart"
   
   default.param <- param.table[[M]][IDX("variab")] <- autostart
@@ -3476,7 +3534,7 @@ rffit.gauss <-
     idx <- users.guess < lower | users.guess > upper
     if (any(idx)) {
       if (recall) users.guess <- NULL
-      else if (general$modus_operandi == "careless") {
+      else if (general$modus_operandi ==  MODENAMES[careless + 1]) {
         lower <- pmin(lower, users.guess)
         upper <- pmax(upper, users.guess)
       } else {
@@ -3507,7 +3565,7 @@ rffit.gauss <-
   ev <- list()
 
   if (variogram.known) {    
-    if (printlevel>=PL.FCTN.STRUCTURE) cat("\nempirical variogram...\n")
+    if (printlevel>=PL_STRUCTURE) cat("\nempirical variogram...\n")
     sd <- vector("list", vdim)
     emp.vario <- vector("list", vdim)
     index.bv <- NULL
@@ -3516,7 +3574,7 @@ rffit.gauss <-
     for (j in 1:vdim) {
       for (i in 1:sets) {
         m <- 1
-        if ((length(idx.na.rep[[i]]) > 1) && printlevel>PL.IMPORPANT)
+        if ((length(idx.na.rep[[i]]) > 1) && printlevel>PL_IMPORTANT)
           message("Only first column(s) used for empirical variogram.")
         
         idx <- idx.na[[i]][[m]][idx.na[[i]][[m]] > (j-1) * lc[i] &
@@ -3680,7 +3738,7 @@ rffit.gauss <-
  
 ##################################################
 ###################  AUTOSTART  ##################
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\ncovariab...")
+  if (printlevel>=PL_STRUCTURE) cat("\ncovariab...")
 
   ## see above for the trafo definitions
   ##
@@ -3729,7 +3787,7 @@ rffit.gauss <-
     ## advantage of the following way is that the for-loop is run through
     ## in an ordered sense -- this might be useful in case partial results
     ## are reused
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\neliminationation part...")
+  if (printlevel>=PL_STRUCTURE) cat("\neliminationation part...")
   if (trans.inv && !is.null(lsq.methods)) {
     
     #Print(is.dist.vector, bin.ts.xdim)
@@ -3768,7 +3826,7 @@ rffit.gauss <-
    firstoptim <- TRUE
    for (M in c(lsqMethods[1], alllsqmeth)) {
       if (!(M %in% lsqMethods)) next;
-      if (printlevel>=PL.FCTN.STRUCTURE) cat("\n", M) else cat(pch)
+      if (printlevel>=PL_STRUCTURE) cat("\n", M) else cat(pch)
 
       param.table[[M]][IDX("variab")] <- default.param
       
@@ -3878,7 +3936,7 @@ rffit.gauss <-
 
 ##################################################
 ### optional parameter grid for MLE and CROSS  ###
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nmle param...")
+  if (printlevel>=PL_STRUCTURE) cat("\nmle param...")
   
   
   idx <- IDX("variab")
@@ -3908,14 +3966,13 @@ rffit.gauss <-
 ##################################################
 ###################   MLE    #####################
 
-   
-  if (printlevel>=PL.FCTN.STRUCTURE) cat("\nMLE...")
+
+  if (printlevel>=PL_STRUCTURE) cat("\nMLE XXX...")
   MLEtarget <- NULL
   mleMethods <- (if (is.null(mle.methods)) NULL else
                  allmlemeth[pmatch(mle.methods, allmlemeth)])
   if ("reml" %in% mleMethods && nCoVarAll == 0)
     mleMethods <- c("ml", "reml", "rml")
-
 
     
   .Call("SetAndGetModelInfo", Reg, list("Cov", model),
@@ -3958,12 +4015,12 @@ rffit.gauss <-
 
   ## fnscale <- -1 : maximisation
   for (M in c(allmlemeth)) {
-  
+ 
     assign("LINEARLARPS2", rep(1, length(MIXED.IDX)), envir=ENVIR)
     if (!(M %in% mleMethods)) next;
-    if (printlevel>=PL.FCTN.STRUCTURE ) cat("\n", M) else cat(pch)
+    if (printlevel>=PL_STRUCTURE ) cat("\n", M) else cat(pch)
     param.table[[M]][IDX("variab")] <- default.param
-    if (M!="ml" && !anyfixedeffect) { 
+    if (M!="ml" && !anyFixedEffectt) { 
       param.table[[M]] <- param.table[["ml"]]
       param.table[[M]][tblidx[[M]][1]] <- param.table[[M]][tblidx[["ml"]][1]]
       next
@@ -3974,7 +4031,7 @@ rffit.gauss <-
 
     MLEsettings(M)
 
-#    Print(trafo, MLELB, MLEUB)
+#    Print(trafo, MLELB, MLEUB, fit$critical)
 # Print(MLEtarget(c(0, 90, 0.6, 6.75))); hhhh
  
 
@@ -3999,7 +4056,7 @@ rffit.gauss <-
 #        Print(i, param.table[IDX("variab"), i], MLEMAX, MLELB, MLEUB, LSQLB, LSQUB)
 
         if (!any(is.na(variab <- param.table[IDX("variab"), i]))) {
-          
+
           value <- MLEtarget(variab) ## !
 
 #        Print(i, variab, value, MLEVARIAB)
@@ -4020,7 +4077,7 @@ rffit.gauss <-
       fnscale <-
         if (is.null(fit.fnscale) || is.na(fit.fnscale[M]))
           -max(abs(max), 0.1) else fit.fnscale[M]
-      #Print("ml", fnscale)
+      #
 
       mle.optim.control <-
         c(opt.control, list(parscale=parscale, fnscale=fnscale))
@@ -4039,12 +4096,12 @@ rffit.gauss <-
               control=mle.optim.control, optimiser=optimiser, silent=silent)
         
         if (MLEINF) {
-          if (printlevel>=PL.FCTN.STRUCTURE )
+          if (printlevel>=PL_STRUCTURE )
             Print("MLEINF", MLEVARIAB, MLEMAX) else cat("#") #
  #         Print("MLE 2")
           OPTIM(MLEVARIAB, MLEtarget, lower = MLELB, upper=MLEUB,
                 control=mle.optim.control,optimiser=optimiser,silent=silent)
-          if (printlevel>=PL.FCTN.STRUCTURE )
+          if (printlevel>=PL_STRUCTURE )
             Print("MLEINF new", MLEVARIAB, MLEMAX) #
         }
               
@@ -4062,11 +4119,11 @@ rffit.gauss <-
       }
     } # length(MLELB) > 0
   
-    if (printlevel>=PL.FCTN.STRUCTURE )
+    if (printlevel>=PL_STRUCTURE )
       Print("mle first round", MLEVARIAB, MLEPARAM, MLEMAX) #
     
     if (!is.finite(MLEMAX)) {
-      if (printlevel>=PL.IMPORPANT ) message(M, ": MLEtarget I failed.")
+      if (printlevel>=PL_IMPORTANT ) message(M, ": MLEtarget I failed.")
       param.table[[M]] <- MLEPARAM <- NaN
       variab <- MLELB ## to call for onborderline
       ml.residuals <- NA
@@ -4096,7 +4153,7 @@ rffit.gauss <-
           MLEgridmax <- gridmax
           
           if (any(is.na(MLEgridmin)) || any(is.na(MLEgridmax))) {
-            if (printlevel >= PL.SUBIMPORPANT ) {
+            if (printlevel >= PL_SUBIMPORTANT ) {
               Print(cbind(MLELB, variab, MLEUB, onborderline), #
                     MLEgridmin, MLEgridmax)
             }
@@ -4104,7 +4161,7 @@ rffit.gauss <-
                           "better performance might be obtained",
                           "when allowing for more lsq.methods"))
           } else {
-            if (printlevel>=PL.FCTN.SUBDETAILS)
+            if (printlevel>=PL_FCTN_SUBDETAILS)
               show(1, M, MLEMAX, MLEVARIAB) else cat(detailpch)
             MLEgridlength <-
               max(3, round(fit$approximate_functioncalls^(1/n.variab)))
@@ -4130,7 +4187,7 @@ rffit.gauss <-
             
             limit <- 10 * fit$approximate_functioncalls
             if ((rn <- nrow(startingvalues)) > limit) {              
-              if (printlevel>=PL.FCTN.STRUCTURE)
+              if (printlevel>=PL_STRUCTURE)
                 cat("using only a random subset of the", rn, "grid points")
               rand <- runif(rn)
               startingvalues <-
@@ -4148,12 +4205,12 @@ rffit.gauss <-
                   ##  if (MLEINF) stop("stop")
                 })
             
-            if (printlevel>=PL.FCTN.SUBDETAILS)
+            if (printlevel>=PL_FCTN_SUBDETAILS)
               Print("mle grid search", MLEVARIAB, MLEPARAM, MLEMAX) #
             
             ## side effect:Maximum is in MLEMAX!
             ##                             and optimal parameter is in MLEVARIAB
-            if (printlevel>=PL.FCTN.SUBDETAILS)
+            if (printlevel>=PL_FCTN_SUBDETAILS)
               show(2, M, MLEMAX, MLEVARIAB)
             
             cat(detailpch)
@@ -4166,14 +4223,14 @@ rffit.gauss <-
                   control=mle.optim.control, optimiser=optimiser,
                   silent=silent)
             options(show.error.messages = TRUE) ##
-            if (!is.finite(MLEMAX) &&(printlevel>=PL.IMPORPANT))
+            if (!is.finite(MLEMAX) &&(printlevel>=PL_IMPORTANT))
               message("MLtarget II failed.\n")
             ## do not check anymore whether there had been convergence or not.
             ## just take the best of the two strategies (initial value given by
             ## LS, initial value given by a grid), and be happy.
-            if (printlevel>=PL.FCTN.SUBDETAILS )
+            if (printlevel>=PL_FCTN_SUBDETAILS )
               show(3, M, MLEMAX, MLEVARIAB) else 
-            if (printlevel>=PL.FCTN.STRUCTURE )
+            if (printlevel>=PL_STRUCTURE )
               Print("mle second round", MLEVARIAB, MLEPARAM, MLEMAX) #
             
             if (is.finite(MLEMAX) && MLEMAX > param.table[[M]][tblidx[[M]][1]]){
@@ -4190,7 +4247,7 @@ rffit.gauss <-
           if (fit$critical>=3 || !any(critical)) critical <- rep(TRUE, n.variab)
           ncrit <- as.integer(fit$n_crit^(1/sum(critical)))
           if (!is.finite(ncrit)) ncrit <- 2
-          if (ncrit^sum(critical) > 100 && printlevel>=PL.IMPORPANT)
+          if (ncrit^sum(critical) > 100 && printlevel>=PL_IMPORTANT)
             message("The optimisation may last a pretty long time!")
           
           if (ncrit > 1 || fit$critical>=2) {
@@ -4235,7 +4292,7 @@ rffit.gauss <-
               new.parscale <- guess <- fnscale <- NULL              
 
               model2 <- model
-              if (anyrandomeffects) {    
+              if (anyRandomEffects) {    
                 stopifnot(model2[[1]] %in% ZF_SELECT)
                 model2[[1]] <- ZF_SYMBOLS_PLUS
                 model2$subnr <- NULL
@@ -4260,7 +4317,7 @@ rffit.gauss <-
                                         spConform=FALSE, do.notreturnparam=TRUE)
                 }
                
-                if (printlevel>=PL.FCTN.STRUCTURE) cat("\nrecall rffit...\n")
+                if (printlevel>=PL_STRUCTURE) cat("\nrecall rffit...\n")
 
              
                 res <-
@@ -4316,7 +4373,7 @@ rffit.gauss <-
 
                 if (is.finite(ml.value)) {
                   if (ml.value > param.table[[M]][tblidx[[M]][1]]) {
-                    if (printlevel > PL.RECURSIVE.CALL && !first.passage)
+                    if (printlevel > PL_RECURSIVE && !first.passage)
                       cat("parscale: table improved by ",
                           ml.value -  param.table[[M]][tblidx[[M]][1]], "\n") 
                     param.table[[M]][tblidx[[M]][1]] <- MLEMAX <- ml.value
@@ -4329,7 +4386,7 @@ rffit.gauss <-
                 if (first.passage) {
                   old.ml.value <- ml.value
                 } else {
-                  if (printlevel > PL.RECURSIVE.DETAILS) {
+                  if (printlevel > PL_REC_DETAILS) {
                     if (ml.value > old.ml.value) {                      
                       cat("parscale: mle improved by", ml.value-old.ml.value,
                           "\n")
@@ -4405,7 +4462,7 @@ rffit.gauss <-
               control=mle.optim.control, optimiser=optimiser, silent=silent)
         
         if (MLEMAX >  param.table[[M]][tblidx[[M]][1]]) {   
-          if (printlevel > PL.SUBIMPORPANT)
+          if (printlevel > PL_SUBIMPORTANT)
             Print(old.control, fnscale, revariab, #
                   param.table[[M]][IDX("param")],
                   MLEMAX, MLEVARIAB,  MLEPARAM, MLELB, MLEUB)
@@ -4734,13 +4791,13 @@ rffit.gauss <-
     cat("\nNote: There are ",
         if (BEYOND > 1000)"very strong" else
         if (BEYOND > 250) "strong" else "some",
-        " indications that the model might be overparametrised\nor that the bounds for the variables are too wide. Try narrower lower and\nupper bounds for the variables in the latter case. One of the critical\nparameters is 'lowerbound_var_factor' whose value (", fit$lowerbound_var_factor, ")\nmight be reduced.\n", sep="")
+        " indications that the model might be overparametrised\nor that the bounds for the variables are too wide. Try narrower lower and\nupper bounds for the variables in the latter case. One of the critical\nparameters is 'lowerbound_var_factor' whose value (", fit$lowerbound_var_factor, ") xmight be reduced.\n", sep="")
   
 
   nice_modelinfo <- function(minmax) {
     minmax <- minmax[, -4, drop=FALSE]
     minmax <- as.data.frame(minmax)
-    minmax$type <- ZF_TYPEOF_PARAM[minmax$type + 1]
+    minmax$type <- TYPEOF_PARAM_NAMES[minmax$type + 1]
     minmax
   }
  
@@ -4774,7 +4831,8 @@ rffit.gauss <-
   } else {
     ev2 <- lapply(ev, FUN=list2RFempVariog)
     res2 <- lapply(res, FUN=list2RMmodelFit, isRFsp=isRFsp, coord=RFsp.coord,
-                   gridTopology=gridTopology, data.RFparams=data.RFparams)
+                   gridTopology=gridTopology, data.RFparams=data.RFparams,
+                   Z$neu[[1]]$T)
     if (is.null(transform)) transform <- list()
 
 #    str(res, 3)

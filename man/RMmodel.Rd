@@ -92,7 +92,9 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  }
 
   
- \bold{See \link{RMmodelsAdvanced} for many more, advanced models.
+ \bold{See \link{RMmodelsAdvanced} for many more, advanced models.\cr
+ \bold{See \link{spherical models} for models valid on spherical
+   coordinate systems.}
  }
 }
 

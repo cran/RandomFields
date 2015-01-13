@@ -111,8 +111,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-(type <- RC_TYPE[(0:1) -length(RC_TYPE)])
-RFgetModelNames(type=type, group.by="type")
+RFgetModelNames()
 \dontshow{FinalizeExample()}
 }
 

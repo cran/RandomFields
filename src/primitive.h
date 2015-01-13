@@ -48,7 +48,7 @@ int structcircular(cov_model *cov,  cov_model **);
 
 void constant(double *x, cov_model *cov, double *v);
 void constant_nonstat(double *x, double *y, cov_model *cov, double *v);
-void covmatrix_constant(cov_model *cov, double *v);
+void covmatrix_constant(cov_model *cov, double *v, int  *nonzeros);
 char iscovmatrix_constant(cov_model *cov);
 void rangeconstant(cov_model *cov, range_type* ra);
 int checkconstant(cov_model *cov) ;
@@ -71,7 +71,9 @@ void dagum(double *x, cov_model *cov, double *v);
 void Inversedagum(double *x, cov_model *cov, double *v); 
 void Ddagum(double *x, cov_model *cov, double *v);
 void rangedagum(cov_model *cov, range_type* ra);
- 
+int checkdagum(cov_model *cov);
+int initdagum(cov_model *cov, gen_storage *stor);
+
 
 /*  damped cosine -- derivative of exponential:*/
 void dampedcosine(double *x, cov_model *cov, double *v);
@@ -165,6 +167,17 @@ void do_Gauss(cov_model *cov, gen_storage *s) ;
 //void densGauss(double *x, cov_model *cov, double *v);
 //void simuGauss(cov_model *cov, int dim, double *v);
 
+void bcw(double *x, cov_model *cov, double *v);
+//void logbcw(double *x, cov_model *cov, double *v, double *sign);
+void Dbcw(double *x, cov_model *cov, double *v);
+void DDbcw(double *x, cov_model *cov, double *v);
+int checkbcw(cov_model *cov);
+void rangebcw(cov_model *cov, range_type* ra);
+void coinitbcw(cov_model *cov, localinfotype *li);
+void ieinitbcw(cov_model *cov, localinfotype *li);
+void Inversebcw(double *x, cov_model *cov, double *v);
+
+
 /* generalised fractal Brownian motion */
 void genBrownian(double *x, cov_model *cov, double *v);
 void loggenBrownian(double *x, cov_model *cov, double *v, double *sign);
@@ -189,23 +202,10 @@ void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *sign);
 void DgeneralisedCauchy(double *x, cov_model *cov, double *v);
 void DDgeneralisedCauchy(double *x, cov_model *cov, double *v);
 int checkgeneralisedCauchy(cov_model *cov);
-bool TypegeneralisedCauchy(Types required, cov_model *cov);
 void rangegeneralisedCauchy(cov_model *cov, range_type* ra);
 void coinitgenCauchy(cov_model *cov, localinfotype *li);
 void ieinitgenCauchy(cov_model *cov, localinfotype *li);
 void InversegeneralisedCauchy(double *x, cov_model *cov, double *v);
-
-void bcw(double *x, cov_model *cov, double *v);
-//void logbcw(double *x, cov_model *cov, double *v, double *sign);
-void Dbcw(double *x, cov_model *cov, double *v);
-void DDbcw(double *x, cov_model *cov, double *v);
-int checkbcw(cov_model *cov);
-bool Typebcw(Types required, cov_model *cov);
-void rangebcw(cov_model *cov, range_type* ra);
-void coinitbcw(cov_model *cov, localinfotype *li);
-void ieinitbcw(cov_model *cov, localinfotype *li);
-void Inversebcw(double *x, cov_model *cov, double *v);
-
 
 /* gengneiting */
 void genGneiting(double *x, cov_model *cov, double *v);
@@ -220,6 +220,7 @@ int checkgenGneiting(cov_model *cov);
 void Gneiting(double *x, cov_model *cov, double *v); 
 //void InverseGneiting(double *x, cov_model *cov, double *v);
 void DGneiting(double *x, cov_model *cov, double *v); 
+void DDGneiting(double *x, cov_model *cov, double *v); 
 int checkGneiting(cov_model *cov);
 void rangeGneiting(cov_model *cov, range_type *range);
 
@@ -265,7 +266,6 @@ void DDMatern(double *x, cov_model *cov, double *v);
 void D3Matern(double *x, cov_model *cov, double *v);
 void D4Matern(double *x, cov_model *cov, double *v);
 int checkMatern(cov_model *cov);
-bool TypeWM(Types required, cov_model *cov);
 void rangeWM(cov_model *cov, range_type* ra);
 void ieinitWM(cov_model *cov, localinfotype *li);
 void coinitWM(cov_model *cov, localinfotype *li);
@@ -277,7 +277,7 @@ void InverseMatern(double *x, cov_model *cov, double *v);
 
 /* nugget effect model */
 void nugget(double *x, cov_model *cov, double *v);
-void covmatrix_nugget(cov_model *cov, double *v);
+void covmatrix_nugget(cov_model *cov, double *v, int *nonzeros);
 char iscovmatrix_nugget(cov_model *cov);
 void Inversenugget(double *x, cov_model *cov, double *v); 
 int check_nugget(cov_model *cov);
@@ -296,7 +296,6 @@ void Inversepower(double *x, cov_model *cov, double *v);
 void TBM2power(double *x, cov_model *cov, double *v);
 void Dpower(double *x, cov_model *cov, double *v);
 int checkpower(cov_model *cov);
-bool Typepower(Types required, cov_model *cov);
 void rangepower(cov_model *cov, range_type* ra);
 
 
@@ -328,7 +327,6 @@ void logstable(double *x, cov_model *cov, double *v, double *sign);
 void Dstable(double *x, cov_model *cov, double *v);
 void DDstable(double *x, cov_model *cov, double *v);
 int checkstable(cov_model *cov);  
-bool Typestable(Types required, cov_model *cov);
 void rangestable(cov_model *cov, range_type* ra);
 void coinitstable(cov_model *cov, localinfotype *li);
 void ieinitstable(cov_model *cov, localinfotype *li);
@@ -398,7 +396,7 @@ void DUser(double *x, cov_model *cov, double *v);
 void DDUser(double *x, cov_model *cov, double *v);
 int checkUser(cov_model *cov);
 void rangeUser(cov_model *cov, range_type *ra);
-bool TypeUser(Types required, cov_model *cov);
+bool TypeUser(Types required, cov_model *cov, int depth);
 
 /*
 void userMatrix(double *x, cov_model *cov, double *v);

@@ -1,6 +1,6 @@
 
 reflection <- function(data, orth, drop=FALSE)
-  ##IMPORPANT NOTE! DO NOT CHANGE THE VARIABLE NAMES IN THIS SIGNATURE
+  ##IMPORTANT NOTE! DO NOT CHANGE THE VARIABLE NAMES IN THIS SIGNATURE
   ## why ???
   ## since the variable data is pasted by its name
 {
@@ -123,6 +123,7 @@ brack <- function(x, i, j, ..., drop=FALSE) {
   if (length(dots)>0) warning("dots are ignored")
   has.variance <- !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
   if (missing(j)) {
+    if (missing(i)) return(x)
     x@data <- x@data[i]#, drop=drop]
     n <- x@.RFparams$n
     v <- x@.RFparams$vdim
@@ -143,9 +144,10 @@ brack <- function(x, i, j, ..., drop=FALSE) {
       x@.RFparams$has.variance <- ret.has.var
     x@.RFparams$n <- length(i) / v.new - ret.has.var
     
+  } else {
+    if(missing(i))  x@data <- x@data[,j]
+    else x@data <- x@data[i,j]
   }
-  else
-    x@data <- x@data[i,j]
   return(x)
 }
 

@@ -25,7 +25,7 @@
  }
 }
 
- 
+  
 
 \examples{
 
@@ -33,13 +33,7 @@
 if (!interactive()) RFoptions(modus_operandi="sloppy")
 }
 
-\donttest{
-
-# This skript is based on version 3.0.28 available at
-# http://ms.math.uni-mannheim.de/de/publications/software/
-
-
-
+\dontrun{
                ###########################################
                ##  SECTION 4: UNCONDITIONAL SIMULATION  ##
                ###########################################
@@ -56,7 +50,7 @@ M1 <- c(0.9, 0.6)
 M2 <- c(sqrt(0.19), 0.8)
 model <- RMmatrix(M = M1, RMwhittle(nu = 0.3)) + 
          RMmatrix(M = M2, RMwhittle(nu = 2))
-x <- y <- seq(-10, 10, 0.2)
+x <- y <- seq(-10, 10,  0.2)
 simu <- RFsimulate(model, x, y)
 plot(simu)
 
@@ -99,7 +93,6 @@ A1 <- RMangle(angle = pi/4, diag = c(0.1, 0.5))
 A2 <- RMangle(angle = 0, diag = c(0.1, 0.5))
 model <- RMmatrix(M = M1, RMgengneiting(kappa = 0, mu = 2, Aniso = A1)) +
          RMmatrix(M = M2, RMgengneiting(kappa = 3, mu = 2, Aniso = A2))
-x <- y <- seq(-10, 10, 0.2)
 simu <- RFsimulate(model, x, y)
 plot(simu)
 
@@ -128,16 +121,17 @@ plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, cex = 2.3,
 
 
 
-
                ###########################################
                ## SECTION 5: DATA ANALYSIS              ##
                ###########################################
 
 ## get the data     
 data("weather")
-PT <- weather[ , 1 : 2]
+All <- if (interactive()) TRUE else 1:10 ## full data set takes more than 
+##                                     half an hour to be analysed
+PT <- weather[All , 1 : 2] 
 ## transformation of earth coordinates to Euclidean coordinates
-Dist.mat <- as.vector(RFearth2dist(weather[ , 3 : 4]))
+Dist.mat <- as.vector(RFearth2dist(weather[All , 3 : 4]))
 
 
 #################################
@@ -158,21 +152,21 @@ whole.model <- nug + RMbiwm(nudiag = c(NA, NA), nured = NA, s = rep(NA, 3),
 ## model fitting and testing   ## 
 #################################
 ## 'parsimoneous model'
-## fitting takes a while; 'pars' is already available within 'data(weather)'
+## fitting takes a while ( > 10 min)
 pars <- RFfit(pars.model, distances = Dist.mat, dim = 3, data = PT)
 print(pars)
 print(pars, full=TRUE)
 RFratiotest(pars)
-RFcrossvalidate(pars, x = weather[ , 3 : 4], data = PT, full = TRUE)
+RFcrossvalidate(pars, x = weather[All , 3 : 4], data = PT, full = TRUE)
 
 ## 'whole model'
-## fitting takes a while; 'whole' is already available within 'data(weather)'
+## fitting takes a while ( > 10 min)
 whole <- RFfit(whole.model, distances = Dist.mat, dim = 3, data = PT)
 print(whole, full=TRUE)
 RFratiotest(whole)
-RFcrossvalidate(whole, x = weather[ , 3 : 4], data = PT, full = TRUE)
+RFcrossvalidate(whole, x = weather[All , 3 : 4], data = PT, full = TRUE)
 
-## compare parsimonous and whole
+## compare parsimonious and whole
 RFratiotest(nullmodel = pars, alternative = whole)
 
 
@@ -180,25 +174,24 @@ RFratiotest(nullmodel = pars, alternative = whole)
 ## kriging                     ##
 #################################
 ## First the coordindates are projected on a plane
-a <- colMeans(weather[ , 3 : 4]) * pi / 180
+a <- colMeans(weather[All , 3 : 4]) * pi / 180
 P <- cbind(c(-sin(a[1]), cos(a[1]), 0),
            c(-cos(a[1]) * sin(a[2]), -sin(a[1]) * sin(a[2]), cos(a[2])),
            c(cos(a[1]) * cos(a[2]), sin(a[1]) * cos(a[2]), sin(a[2])))
-x <- RFearth2cartesian(weather[ , 3 : 4])
+x <- RFearth2cartesian(weather[All , 3 : 4])
 plane <- (x \%*\%P)[ , 1 : 2]
 
 ## here, kriging is performed on a rectangular that covers the 
 ## the projected points above. The rectangular is approximated
 ## by a grid of length 200 in each direction.
-n <- 200
+n <- 200 
 r <- apply(plane, 2, range)
-data <- cbind(plane, weather[ , 1 : 2])
+data <- cbind(plane, weather[All , 1 : 2])
 z <- RFinterpolate(pars, data = data, dim = 2,
                    x = seq(r[1, 1], r[2, 1], length = n),
                    y = seq(r[1, 2], r[2, 2], length = n),
                    varunits = c("Pa", "K"), spConform = TRUE)
 plot(z)
-
 }
 
 \dontshow{\dontrun{ # OK

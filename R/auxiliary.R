@@ -129,19 +129,19 @@ FileExists <- function(file, printlevel=RFoptions()$general$printlevel) {
   ##      no process will do the work...(then the lock file will rest.)
   lock.ext <- ".lock";
   if (file.exists(file)) { #1.
-    if (printlevel>=PL.FCTN.ERRORS ) cat("'", file, "' already exists.\n");
+    if (printlevel>=PL_ERRORS ) cat("'", file, "' already exists.\n");
     return(1)
   } else { 
     LockFile <- paste(file, lock.ext, sep="")
     if (file.exists(LockFile)) { #2.
-      if (printlevel>=PL.FCTN.ERRORS ) cat("'",file,"' is locked.\n");
+      if (printlevel>=PL_ERRORS ) cat("'",file,"' is locked.\n");
       return(2);
     }
     PID <- pid();
     write(file=LockFile,c(PID,hostname()),ncolumns=2,append=TRUE); #3.a.
     Pid <- matrix(scan(LockFile,what=character(0), quiet=TRUE),nrow=2)
     if ((sum(Pid[1,]==PID)!=1) || (sum(Pid[1,]>PID)>0)){ #3.b.
-      if (printlevel>PL.FCTN.ERRORS )
+      if (printlevel>PL_ERRORS )
         cat("Lock file of '", file, "' is knocked out.\n");
       return(3);
     }
@@ -250,7 +250,6 @@ ScreenDevice <- function(height, width) {
       ispdf <- is.function(GD) && is.logical(all.equal(args(pdf), args(GD)))
       isjpg <- is.function(GD) && is.logical(all.equal(args(jpeg), args(GD)))
     }
-
    
 #   Print(args(pdf), args(GD), all.equal(args(pdf), args(GD)),
   #        all.equal(args(jpeg), args(GD)),
@@ -290,8 +289,8 @@ ScreenDevice <- function(height, width) {
     if (all(c("width", "height") %in% args) &&
         ( !any(c("file", "filename") %in% args)) || ispdf) {
       GD(height=height, width=width)        
-      ##        Print("OK", height, width, RFoptions()$graphics)
-      return()
+      ##      Print("OK", height, width, RFoptions()$graphics, par()$cex)
+     return()
     }
     
    if (RFoptions()$internal$warn_aspect_ratio) {
@@ -309,14 +308,13 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
       RFoptions(graphics.always_open_screen = open)
   } else open <- graphics$always_open_screen
 
-  
   if (graphics$always_close_screen) {
     close.screen(all.screens=TRUE)
     if (is.finite(graphics$height) && graphics$height>0) {
       if (length(dev.list()) > 0) dev.off() ## OK
     }
   }
- 
+  
   H <-  graphics$height
   if (is.finite(H) && H>0) {
     H <- H * pmin(1, graphics$increase_upto[1] / figs[1],
@@ -334,3 +332,9 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
     return(rep(NA, 2))
   }
 }
+
+
+#restore_par <- function(oldpar) {
+#  do.call(graphics::par, oldpar)
+#  graphics::par(cex = oldpar$cex) ## muss extra aufgerufen werden. noch mehr?
+#}

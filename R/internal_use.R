@@ -5,9 +5,7 @@
 reps <- function(n, sign=",") paste(rep(sign, n), collapse="")
 
 search.model.name <- function(cov, name, level) {
-  #Print(cov, name, length(cov)); str(cov)
   if (length(name) == 0 || length(cov) ==0) return(cov);
- # Print("A", cov)
   if (!is.na(pmatch(name[1], cov))) return(search.model.name(cov, name[-1], 1))
 
   for (i in 1:length(cov$submodels)) {
@@ -44,8 +42,6 @@ GetNeighbourhoods <- function(model.nr, all,
   maximum <- as.integer(split_vec[3])## maximum number of points when still
   ##                                    neighbours of neighbours are included.
   ##                         Note that, mostly, an additional box is included.
-
-  #  Print(RFoptions(), locfactor, maxn, splitn, minimum, maximum)
 
   d <- dim(all$given)
   ts.xdim <- as.integer(d[1])
@@ -110,9 +106,6 @@ GetNeighbourhoods <- function(model.nr, all,
     if (!is.null(neighbours)) break;
   }
     
-
-#  Print(elms.in.boxes, neighbours)
-
   l <- list()
   l[[1]] <- .Call("getelements", cumidx, ts.xdim, n, Ccumparts, elms.in.boxes,  
                   PACKAGE="RandomFields")
@@ -139,9 +132,6 @@ GetNeighbourhoods <- function(model.nr, all,
   less <- sapply(ll, function(x) sum(elms.in.boxes[x]) < minimum) | !shared
   ##                  if !shared then all(less)==TRUE
 
- # Print(l, less, minimum,sapply(ll, function(x) sum(elms.in.boxes[x])),
-  #sapply(ll, length), elms.in.boxes, sum(elms.in.boxes)) ; 
-  
   if (any(less)) {
     not.considered.yet <- sapply(l[[1]], length) > 0   
     newll <- ll
@@ -187,15 +177,7 @@ GetNeighbourhoods <- function(model.nr, all,
     newll <- newll[sapply(newll, length) > 0]
     l[[2]] <- newll
   } else l[[2]] <- ll
- #l[[4]] <- list(Range=Range, len=len, parts=parts, cumparts=Ccumparts,
- #               locfactor=locfactor, nDsplitn=nDsplitn)
 
-  # Print(l)
- # Print(sapply(newll, length), sapply(newll, function(x) sum(elms.in.boxes[x])), length(ll), length(newll), l, not.considered.yet, l[not.considered.yet]) ;
-  #hhh
-
-# str(l)
- # cccc
   return(if (shared) l else lapply(l[[2]], function(x) unlist(l[[1]][x])))
 }
 
@@ -209,16 +191,16 @@ resolve.register <- function(register){
  #   register <- deparse(substitute(register))   
     register <-
       switch(register,
-             "RFcov" = MODEL.USER,
-             "RFdistr" = MODEL.USER,
-             "RFcovmatrix" = MODEL.USER,
-             "RFvariogram" = MODEL.USER,
-             "RFpseudovariogram" =  MODEL.USER,
+             "RFcov" = MODEL_USER,
+             "RFdistr" = MODEL_USER,
+             "RFcovmatrix" = MODEL_USER,
+             "RFvariogram" = MODEL_USER,
+             "RFpseudovariogram" =  MODEL_USER,
              "RFsimulate" =  RFoptions()$registers$register,
-             "RFinterpolate" =  RFoptions()$registers$interpolregister,
-             "RFgui" =  GetModelRegister("gui"),
-             "RFfit" =  MODEL.MLE,
-             "RFratiotest" =  MODEL.MLE,
+             "RFinterpolate" =  MODEL_KRIGE,
+             "RFgui" =  MODEL_GUI,
+             "RFfit" =  MODEL_MLE,
+             "RFratiotest" =  MODEL_MLE,
              stop("register unknown")
              )
   }
@@ -290,47 +272,13 @@ GetPracticalRange <- function(model, param, dim=1) {
   ## dim=spdim=tsdim
   model <- PrepareModel(model, param)
 #  userdefined <- GetParameterModelUser(model)
-  InitModel(MODEL.USER, list("Dummy", model), dim) 
+  InitModel(MODEL_USER, list("Dummy", model), dim) 
   natscl <- 
     .C("UserGetNatScaling", natscl = double(1), PACKAGE="RandomFields")$natscl
-  .C("DeleteKey", MODEL.USER)# to do : nicht sauber
+  .C("DeleteKey", MODEL_USER)# to do : nicht sauber
   return(1.0 / natscl)
 }
 
-#GetPracticalRange("whittle", 1)
-
-GetrfParameters <- function(initcov=TRUE){
-  ## if initcov then InitModelList is called before
-  ## values are return (necessary to get covnr right, but should
-  ## not be done for RFoptions (debugging reasons)
-
-  maxints <-
-    .C("GetMaxDims", maxints = integer(1), PACKAGE="RandomFields")$maxints
-  name <- c("GetrfParameters", "GetrfParametersI")[1 + (initcov != 0) ]
-  
-  p <- .C(name, covmaxchar=integer(1), methodmaxchar=integer(1),
-          distrmaxchar=integer(1),
-          covnr=integer(1), methodnr=integer(1), distrnr=integer(1),
-          maxdim=integer(maxints), maxmodels=integer(1),
-          type = integer(1),
-          PACKAGE="RandomFields")
-  names(p$maxdim) <- c("cov", "mle", "simu", "ce", "tbm", "mpp", "hyper", "nug",
-                       "vario")
-  return(p)
-}
-
-
-GetDistributionNames <- function() {
-  ## verwendet??
-  assign(".p", GetrfParameters(TRUE))
-  l <- character(.p$distrnr)
-  for (i in 1:.p$distrnr) {
-    l[i] <- .C("GetDistrName", as.integer(i-1),
-               n=paste(rep(" ",.p$distrmaxchar), collapse=""),
-               PACKAGE="RandomFields")$n
-  }
-  return(l)
-}
 
 
 
@@ -374,7 +322,7 @@ parameter.range <- function(model, param, dim=1){
 #  storage.mode(dim) <- "integer"
 #  ResGet <- .Call("SetAnd  ?? GetModelInfo",
 #                  reg,
-#                  pm, dim, Time, dim, FALSE, MaxNameCharacter,
+#                  pm, dim, Time, dim, FALSE, MaxNameCharacter=254,
 #                  TRUE, TRUE,
 #                  PACKAGE="RandomFields")
 #  minmax <- ResGet$minmax[, 1:2]
@@ -417,7 +365,6 @@ cmplists <- function(l, m) {
         else {
           idx <- is.na(l[[i]]) != is.na(m[[i]]) |
                  (!is.na(l[[i]]) && l[[i]] != m[[i]])
-        #  Print(idx, l[[i]] , m[[i]]  )
           n[[i]] <-
             if (!any(idx))
               c(if (is.numeric(l[[i]])) "num =" else "logi=", names(l)[[i]])
@@ -426,7 +373,6 @@ cmplists <- function(l, m) {
       } else
       if (is.character(l[[i]])) {     
         idx <-  l[[i]] != m[[i]]
-     #   Print(idx, l[[i]] , m[[i]])
         n[[i]] <- if (!any(idx)) c("char =", names(l)[[i]], l[[i]])
                   else list(c(names(l)[i], which(idx)), l[[i]], m[[i]])
       } else {
@@ -464,14 +410,8 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     all.pattern <- p %in% c("^[^\\.]", "^[^.]", ".") | get("all.pattern", .env)
     if (!.ignore.all) assign("all.pattern", all.pattern, .env)
     if (all.pattern) return(NULL)
- #   Print(p)
     stopifnot(nchar(p)==2, substr(p,1,1)=="^")
-
- #   Print(substr(p, 2, 1), c(get("p", .env)))
-    
-     assign("p", c(get("p", .env), substring(p, 2)), .env)
- #   Print(get("p", .env))
-     
+    assign("p", c(get("p", .env), substring(p, 2)), .env)
   }
   export <- function(...) {
     ## code from 'rm'
@@ -490,7 +430,6 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   if (is.logical(read.rd.files) && !read.rd.files) {
     .package.env <- parent.env(.GlobalEnv)
     while (attr(.package.env, "name") != paste("package:", .package, sep="")) {
-      ##Print(attr(.package.env, "name"), paste("package:", .package, sep=""))
       .package.env <- parent.env(.package.env)
     }
     .orig.fct.list <- ls(envir=.package.env)
@@ -573,49 +512,66 @@ FinalizeExample <- function() {
 }
 
 
-Dependencies <-
-  function(install= length(pkgs) == length(c(depends, imports, suggests)) &&
-           all(pkgs == c(depends, imports, suggests)),
-           check=TRUE,
-           pkgs = c(depends, imports, suggests),
-           lib.loc ="/usr/local/lib64/R/library" ) {
-   depends <- c("DSpat", "Geneland", "GeoGenetix", "LS2Wstat",  "ProbForecastGOP")
-  imports <- c("constrainedKriging", "geoR",  "georob", "lgcp", "spatsurv")
-  suggests <- c("CompRandFld", "fractaldim", "geostatsp", "rpanel", "spatstat")
- 
-  PKGS <- character(length(pkgs))
-  ip <- installed.packages(lib.loc = lib.loc)
-  
-  rn <- rownames(ip)
-  for (i in 1:length(pkgs)) {
-    idx <- which(pkgs[i] == rn)
-    v <- ip[idx, "Version"]
-    PKGS[i] <- paste(pkgs[i], "_", v, ".tar.gz", sep="")    
+reverse_dependencies_with_maintainers <-
+  function(packages, which = c("Depends", "Imports", "LinkingTo"),
+           recursive = FALSE) {
+    ## function taken from CRAN developer website. 
+    repos <- getOption("repos")["CRAN"]
+    if (substr(repos, 1, 1) == "@") repos <- "http://cran.r-project.org"
+    Print(repos) #
+    contrib.url(repos, "source") # trigger chooseCRANmirror() if required
+    description <- sprintf("%s/web/packages/packages.rds", repos)
+    con <- if(substring(description, 1L, 7L) == "file://")
+      file(description, "rb")
+    else
+      url(description, "rb")
+    on.exit(close(con))
+    db <- readRDS(gzcon(con))
+    rownames(db) <- NULL
+    
+    rdepends <- tools::package_dependencies(packages, db, which,
+                                            recursive = recursive,
+                                            reverse = TRUE)
+    rdepends <- sort(unique(unlist(rdepends)))
+    pos <- match(rdepends, db[, "Package"], nomatch = 0L)
+    
+    db[pos, c("Package", "Version", "Maintainer")]
   }
- 
+
+Dependencies <- function(install = all(pkgs == all.pkgs),
+                         check=TRUE, pkgs = all.pkgs, dir = "Dependencies") {
+  all <- reverse_dependencies_with_maintainers("RandomFields", which="all")
+  all.pkgs <- all[, 1]
+  PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")    
+  
+  ## getOption("repos")["CRAN"]
+  URL <- "http://cran.r-project.org/src/contrib/"
   if (install) {
+    system(paste("rm ", dir, "/*tar.gz*", sep=""))
     for (i in 1:length(pkgs)) {
-      x <- system(paste("(cd Dependencies; wget http://cran.r-project.org/src/contrib/", PKGS[i], ")", sep=""))
-      if (x != 0) {
-        install.packages(pkgs[i], repos="http://ftp5.gwdg.de/pub/misc/cran/")
-        ip <- installed.packages(lib.loc = lib.loc)
-        rn <- rownames(ip)
-        idx <- which(pkgs[i] == rn)
-        v <- ip[idx, "Version"]
-        PKGS[i] <- paste(pkgs[i], "_", v, ".tar.gz", sep="")
-        x <- system(paste("(cd Dependencies; wget http://cran.r-project.org/src/contrib/", PKGS[i], ")", sep=""))
-        stopifnot(x == 0)
-      }
+      cat("PACKAGE:", PKGS[i], ":", i, "out of ", length(pkgs),"\n")
+      x <- system(paste("(cd ", dir, "; wget ", URL, PKGS[i], ")", sep=""))
+      if (x != 0) stop(PKGS[i], "not downloadable")
+    ## extended version see RandomFields V 3.0.51 or earlier     
     }
   }
-  
+ 
   if (check) {
+    tools::check_packages_in_dir(dir=dir)
+    return(NULL)
+
+    ## old:
     for (i in 1:length(pkgs)) {
-      x <- system(paste("(cd Dependencies; R CMD check --as-cran", PKGS[i],")"))
+      command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
+      Print(command) #
+      x <- system(command)
       if (x != 0) stop(PKGS[i], "failed")
     }
   }
 }
+# R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
+
+#Dependencies()
 
 showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
   files <- dir(path)
