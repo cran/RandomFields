@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 
  
 #define POISSON_INTENSITY 0
@@ -49,7 +49,7 @@ double GetTotal(cov_model* cov) {
 	  DORANDOM(cov, r);
 	  assert(cov->total_n > cov->total_n);
 	}
-	free(r);
+	FREE(r);
       }
       v *= cov->total_sum / (double) cov->total_n;
     }
@@ -70,7 +70,7 @@ double GetTotal(cov_model* cov) {
 int addStandard(cov_model **Cov) {
   cov_model *cov = (*Cov)->calling,
     *next = *Cov;
-  int i, err,
+  int  err,
     dim = next->xdimprev,
     vdim = next->vdim[0],
     role = next->role;     
@@ -82,21 +82,21 @@ int addStandard(cov_model **Cov) {
   assert(key->calling == cov);
   assert(key->sub[PGS_LOC] == NULL && key->sub[PGS_FCT] != NULL);
 
-  for (i=0; i<2; i++) {
-    if ((err = CHECK(key, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,
-		     vdim, role)) != NOERROR) return err;   
-    if (i==0) {
-      if (hasPoissonRole(cov)) {
-	addModel(key, PGS_LOC, UNIF);
-	key->sub[PGS_LOC]->calling = cov;
-      } else {
-	if ((err = STRUCT(key, key->sub + PGS_LOC)) != NOERROR) return err;
-	key->sub[PGS_LOC]->calling = key;
-      }
+#define checkstandardnext\
+  if ((err = CHECK(key, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,\
+		   vdim, role)) != NOERROR) return err
 
-    }
-
+  checkstandardnext;
+  if (!CallingSet(*Cov)) BUG;
+ if (hasPoissonRole(cov)) {
+    addModel(key, PGS_LOC, UNIF);
+    assert(key->nsub == 2);
+  } else {
+    if ((err = STRUCT(key, key->sub + PGS_LOC)) != NOERROR) return err;
+    key->sub[PGS_LOC]->calling = key;
   }
+  if (!CallingSet(*Cov)) BUG;
+  checkstandardnext;
   return NOERROR;
 }
 
@@ -989,7 +989,7 @@ int check_schlather(cov_model *cov) {
        
   if (key == NULL) {
     // printf("key=NULL\n");
-    int  role = isNegDef(sub) ? ROLE_COV  //Marco, 29.5.13
+    int  role = isVariogram(sub) ? ROLE_COV  //Marco, 29.5.13
       : isShape(sub) && schlather ? ROLE_SCHLATHER
       : isGaussProcess(sub) ? ROLE_GAUSS
       : isBernoulliProcess(sub) && schlather ? ROLE_BERNOULLI
@@ -1047,7 +1047,7 @@ int struct_schlather(cov_model *cov, cov_model **newmodel){
   assert(cov->key->calling == cov);
  
   if (cov->key->nr != GAUSSPROC && !isBernoulliProcess(cov->key)) {
-    if (isNegDef(cov->key)) addModel(&(cov->key), GAUSSPROC); 
+    if (isVariogram(cov->key)) addModel(&(cov->key), GAUSSPROC); 
     else {
       if (isGaussProcess(cov->key)) {
 	SERR("invalid model specification");
@@ -1167,6 +1167,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
     //PMI(shape, -1);
     //printf("here %ld %d %d %d\n", key->sub[PGS_LOC], ScaleOnly(shape),
     //	   !shape->deterministic, shape->sub[0]->deterministic);
+    key->nsub = 2;
     if (key->sub[PGS_LOC] != NULL) BUG;
     bool randomscale = ScaleOnly(shape) && !shape->deterministic &&
       shape->sub[0]->deterministic;
@@ -1177,6 +1178,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
     if (shape->role == ROLE_POISSON_GAUSS) {
       assert(dim <= MAXMPPDIM);
       addModel(key, PGS_LOC, POW);
+      assert(key->nsub == 2);
       kdefault(key->sub[PGS_LOC], POW_ALPHA, GLOBAL.mpp.shape_power);
       addModel(key, PGS_LOC, SCATTER); 
       PARAMALLOC(key, SCATTER_MAX, dim, 1);
@@ -1192,7 +1194,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
       addSetDistr(key->sub + PGS_LOC, key->sub[PGS_FCT], 
 		  param_set_identical, true, MAXINT);
     }
- 
+    
     addModel(key, PGS_LOC, RECTANGULAR);
 
     if (randomscale) {
@@ -1242,7 +1244,7 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
     if (*Key != NULL) COV_DELETE(Key);
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
-    assert((*Key)->sub[PGS_LOC] == NULL && (*Key)->sub[PGS_FCT] == NULL); 
+     assert((*Key)->sub[PGS_LOC] == NULL && (*Key)->sub[PGS_FCT] == NULL); 
 
     //   PMI(shape); 
     //   PMI(pts);
@@ -1279,6 +1281,7 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
 
      //PMI((*Key)->calling);
     assert((*Key)->sub[PGS_LOC] != NULL && (*Key)->sub[PGS_FCT] != NULL);
+    (*Key)->nsub = 2;
 
     //    APMI(*Key);
 
@@ -1414,7 +1417,7 @@ int check_smith(cov_model *cov) {
       }
 
     } else { // shape
-      role = // (isNegDef(sub) && !isPosDef(sub)) ?  ROLE_COV  //Marco, 29.5.13
+      role = // (isVariogram(sub) && !isPosDef(sub)) ?  ROLE_COV  //Marco, 29.5.13
 	isShape(sub) ? ROLE_MAXSTABLE // 23.4.14
 	: isPointShape(sub) ? ROLE_SMITH
 	: isGaussProcess(sub) ? ROLE_GAUSS
@@ -1820,7 +1823,8 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
 void do_randomcoin(cov_model *cov, gen_storage *s) {   
   assert(cov->simu.active);
   bool loggauss = GLOBAL.gauss.loggauss;
-  location_type *loc = Loc(cov);
+  GLOBAL.gauss.loggauss = false;
+   location_type *loc = Loc(cov);
   double *res = cov->rf;
 
   dompp(cov, cov->Sgen==NULL ? s : cov->Sgen);// letzteres falls shape gegeben
@@ -1828,5 +1832,6 @@ void do_randomcoin(cov_model *cov, gen_storage *s) {
     long i, vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
+  GLOBAL.gauss.loggauss = loggauss;
 }
 

@@ -13,7 +13,7 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 }
 \arguments{
  \item{model}{string; covariance model, see \command{\link{RMmodel}}, or
- type \code{\link{RFgetModelNames}(type="negative")} to get all options.}
+ type \code{\link{RFgetModelNames}(type="variogram")} to get all options.}
  
  \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of x
  coordinates, or object of class

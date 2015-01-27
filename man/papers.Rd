@@ -49,10 +49,14 @@
 
 
  \item
- Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2014)
- Analysis, simulation and prediction of multivariate
-    Random Fields with package \pkg{RandomFields}. \emph{Submitted to JSS}
- 
+   Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/},
+
+    
  See  \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate_jss}} for
  the vignette.
 

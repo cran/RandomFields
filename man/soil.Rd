@@ -29,7 +29,7 @@
 \source{
  The data were collected by Wolfgang Falk,
  Soil Physics Group,
- \url{http://www.geo.uni-bayreuth.de/bodenphysik/Welcome.html},
+% \url{http://www.geo.uni-bayreuth.de/bodenphysik/Welcome.html},
  University of Bayreuth, Germany.
 }
 \references{
@@ -53,7 +53,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## ##
 ################################################################
 
-All <- if (interactive()) TRUE else 1:8 ## full data set takes about 20 sec
+All <- if (interactive()) TRUE else 1:7 ## full data set takes about 20 sec
 ##                                      to be analysed
 
 data(soil)

@@ -25,7 +25,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 \arguments{
  \item{model}{
  covariance model, see \command{\link{RMmodel}} or
- type \code{\link{RFgetModelNames}(type="negative")} to get all options.
+ type \code{\link{RFgetModelNames}(type="variogram")} to get all options.
 % See also t
  
  All parameters that are set to \code{NA} will be estimated;

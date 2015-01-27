@@ -212,7 +212,7 @@
 %}
 
 \author{Alexander Malinowski
-  \email{alexander.malinowski@math.uni-goettingen.de},
+  \email{Alexander.Malinowski@web.de},
   Martin Schlather, \email{schlather@math.uni-mannheim.de}
   \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }

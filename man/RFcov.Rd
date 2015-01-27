@@ -76,6 +76,7 @@ RFfctn(model, x, y = NULL, z = NULL, T = NULL, grid, distances, dim,...)
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
+ \command{\link{RFcalc}}.
 }
 
 \examples{
@@ -94,7 +95,7 @@ y <- matrix(runif(15),ncol=3)
 #####################################################
 # get available models
 RFgetModelNames(type=c("tail correlation", "positive definite",
-               "negative definite", "shape function", "trend"))
+               "variogram", "shape function", "trend"))
 
 #####################################################
 # Example 1: a stationary covariance model

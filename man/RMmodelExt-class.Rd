@@ -102,7 +102,7 @@
 %}
 
 
-\author{Alexander Malinowski \email{malinows@math.uni-goettingen.de},
+\author{Alexander Malinowski \email{Alexander.Malinowski@web.de},
   Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
 \seealso{

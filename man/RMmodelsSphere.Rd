@@ -1,4 +1,5 @@
 \name{Spherical models}
+\alias{sphere}
 \alias{spherical models}
 \alias{Spherical models}
 \title{Covariance models valid on a sphere}
@@ -15,7 +16,6 @@
      \command{\link{RMbcw}} \tab Model bridging stationary and
     intrinsically stationary processes for \code{alpha <= 1}
     and \code{beta < 0}\cr
-    \command{\link{RMconstant}}\tab identically constant \cr
        \command{\link{RMcubic}} \tab cubic model\cr
    \command{\link{RMdagum}} \tab Dagum model with \eqn{\beta < \gamma}
     and \eqn{\gamma \le 1}\cr
@@ -34,7 +34,8 @@
   
   \bold{Other isotropic models with arbitray scale}
   \tabular{ll}{
-    \command{\link{RMnugget}} \tab nugget effect model \cr
+   \command{\link{RMconstant}} \tab spatially constant model \cr
+   \command{\link{RMnugget}} \tab nugget effect model \cr
   }
   
   \bold{Compactly supported covariance functions allowing for scales up
@@ -92,8 +93,6 @@ plot(model)
 ## a simple simulation
 l <- if (interactive()) seq(0, 85, 1.2) else seq(0, 10, 2)
 coord <- cbind(lon=l, lat=l)
-coord <- cbind(l, l)
-
 
 z <- RFsimulate(RPdirect(RMwhittle(s=30, nu=0.45)), coord, grid=TRUE)
 plot(z)

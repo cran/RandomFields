@@ -244,15 +244,16 @@ StandardizeData <- function(x, y, z, T, grid, data, distances, dimensions,
       neu[[i]] <- CheckXT(x[[i]], y[[i]], z[[i]], T[[i]],
                        grid = gridlist[[i]],
                        length.data=length(data[[i]]),
-                       printlevel = 0) 
+                       printlevel = 0)
+
       if (i==1) {
-        spdim <- as.integer(neu[[i]]$spacedim)
+        spdim <- as.integer(neu[[i]]$spatialdim)
         tsdim <- as.integer(spdim + !is.null(T[[i]]))
         if (!missing(dimensions) && !is.null(dimensions)) {          
           stop("dim should be given only when 'distances' are given")
         }
          rangex <- as.matrix(apply(neu[[i]]$x, 2, range))       
-      } else if (spdim != neu[[i]]$spacedim |
+      } else if (spdim != neu[[i]]$spatialdim |
                  tsdim != as.integer(spdim + !is.null(T[[i]])))
         stop("dimensions of all sets must be the same")
 
@@ -642,7 +643,7 @@ ModelSplitXT <- function(Reg, info.cov, trafo, variab,
     modelsplit$report <- NULL
   }
 
-#  Print("B", modelsplit)
+#  Print("B", modelsplit); dsffas
 
   return(modelsplit)
 }
@@ -665,6 +666,7 @@ ModelSplit <- function(Reg, info.cov, trafo, variab,
  # if (xor(is.dist, statiso)) stop("mismatch in ModelSplit -- contact author")
 
   if (vdim == 1) {
+
     if (statiso) return(NULL)
     return(ModelSplitXT(Reg=Reg, info.cov=info.cov, trafo=trafo,
                         variab=variab, lower=lower, upper=upper, rangex=rangex,
@@ -795,7 +797,7 @@ recurs.estim <- function(split, level, Reg, vdim, lc,
                          ) {
   M <- if (length(mle.methods) >= 1) mle.methods[length(mle.methods)]
        else lsq.methods[length(lsq.methods)]
-
+  
 #  Print(lsq.methods, mle.methods, M); kkkk
   
   w <- 0.5
@@ -2862,6 +2864,7 @@ rffit.gauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
                           is.dist.vector=is.dist.vector,
                           refined = fit$split_refined),
                         model=model)
+
     if (printlevel>=PL_STRUCTURE) cat("\nsplitted...")  
 
     if (length(split) == 1)

@@ -31,8 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 #include <R_ext/Applic.h>
 #include "RF.h"
-#include "Covariance.h"
-//#include "Covariance.h"
+#include "Operator.h"
+//#include "Operator.h"
 #include "win_linux_aux.h"
 #include <R_ext/Utils.h>     
 
@@ -238,7 +238,7 @@ int checktbmproc(cov_model *cov) {
   //   PMI(cov);
   //printf("key/next/sub %ld %ld %ld\n", key, next, sub);//  assert(false);
 
-  if (key == NULL && isNegDef(sub)) {
+  if (key == NULL && isVariogram(sub)) {
     // Abfolge Tbm $(Aniso) iso-model braucht Moeglichkeit des 
     // anisotropen Modells
     if (cov->role == ROLE_BASE) nsel++;
@@ -248,7 +248,7 @@ int checktbmproc(cov_model *cov) {
 
       //    PMI(sub);
 
-      if ((err = CHECK(sub, dim,  dim, NegDefType, 
+      if ((err = CHECK(sub, dim,  dim, VariogramType, 
 		       cov->role == ROLE_BASE ? KERNEL : XONLY, // wegen
 		       // nutzer eingabe aniso und dem allerersten check
 		       isoselect[i],
@@ -389,7 +389,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
   // in theory it works also for variograms!
  
-  if (!isNegDef(next->typus) || next->domown != XONLY) 
+  if (!isVariogram(next->typus) || next->domown != XONLY) 
     return ERRORNOVARIOGRAM; 
 
   if (user_dim == 1) 
@@ -527,7 +527,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 	if (aniso != NULL) {
 	  MEMCOPY(dummy, Center, sizeof(double) * ncol);	
 	  xA(dummy, aniso, nrow, ncol, Center);
-	  free(aniso);
+	  FREE(aniso);
 	}
       }
       if (sub->sub[0] == NULL || sub == cov) break;
@@ -715,14 +715,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
   //printf("xline %f %f %f\n", xline[XSTART], xline[XSTEP], xline[XLENGTH]);
   
-  double T[3];
-  if (ce_dim2) {
-    T[XSTART] = timecomp[XSTART];
-    T[XSTEP] = timecomp[XSTEP];
-    T[XLENGTH] = timecomp[dim-1];
-  } else T[XSTART] = T[XSTEP] = T[XLENGTH] = RF_NA;
 
-  loc_set(xline, T, 1, 1, 3, ce_dim2 /* time */, 
+  loc_set(xline, timecomp, 1, 1, 3, ce_dim2 /* time */, 
 	  true /* grid */, false, &(cov->key->ownloc));
  
   //APMI(cov);
@@ -730,7 +724,9 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   int ens = GLOBAL.general.expected_number_simu;
   cov_model *key = cov->key;
 
-   GLOBAL.general.expected_number_simu = 100;
+  // APMI(cov->key);
+
+  GLOBAL.general.expected_number_simu = 100;
   if ((err = CHECK(key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
 		     ProcessType, XONLY, CARTESIAN_COORD,
 		     cov->vdim, ROLE_GAUSS)) != NOERROR) {
@@ -787,7 +783,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
   assert(s != NULL);
 
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s TBM: ", errorloc_save);
+  sprintf(ERROR_LOC, "%s %s: ", errorloc_save, NAME(cov));
   cov->method = TBM;
 
   ROLE_ASSERT_GAUSS;
@@ -938,6 +934,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   int v, nt, idx, gridlent,
     fulldim = P0INT(TBM_FULLDIM);
   bool loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
 
   assert(cov->Sgen != NULL);
      
@@ -1138,5 +1135,6 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 //	     simuline[0], z /loc->totalpoints , res[10] );
 //  }
   
+  GLOBAL.gauss.loggauss = loggauss;
 }
 

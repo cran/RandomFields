@@ -22,9 +22,12 @@ RMmatrix(phi, M, var, scale, Aniso, proj)
  \command{\link{RMmatrix}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \references{
- Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2013)
- \R package \pkg{RandomFields}: Analysis and simulation of
- multivariate random fields and more. \emph{Submitted}
+  Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
 }
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }

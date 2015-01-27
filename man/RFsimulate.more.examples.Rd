@@ -36,7 +36,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## Example 1: Location formats / Plot method ##
 #############################################################
 
-RFgetModelNames(type="negative") ## the complete list covariance models
+RFgetModelNames(type="variogram") ## the complete list covariance models
 ## and variogram models
 ## our choice is RMstable
 

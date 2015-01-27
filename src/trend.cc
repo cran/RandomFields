@@ -50,7 +50,7 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 
 #include "RF.h"
 #include "primitive.h"
-#include "Covariance.h"
+#include "Operator.h"
 #include "variogramAndCo.h"
 
 
@@ -105,7 +105,7 @@ void mixed(double *x, cov_model *cov, double *v) {
       var *= PARAM0(sub, DVAR);
       sub=sub->sub[0];
     }
-    listoftype *list= PARAMLIST(next, CONSTANT_M);
+    listoftype *list= PARAMLIST(next, FIX_M);
     covmatrix = list->p[element];
     if (X->ncol[element] != list->nrow[element]) {
       GERR("mixed model: X and covariance matrix M do not match");
@@ -117,7 +117,7 @@ void mixed(double *x, cov_model *cov, double *v) {
 
     CovarianceMatrix(cov->key, s->mixedcov, &nonzeros);
     covmatrix = s->mixedcov;
-  } // sub->nr != CONSTANT
+  } // sub->nr != FIX
 
   // ab hier vdim =1  
   *v = XkCXtl(X->p[element], covmatrix, 
@@ -204,7 +204,7 @@ void covmatrix_mixed(cov_model *cov, double *v, int* nonzeros) {
   }
   */
   
-  free(C);
+  FREE(C);
 }
 
 int set_mixed_constant(cov_model *cov) {
@@ -227,7 +227,7 @@ int set_mixed_constant(cov_model *cov) {
 	   && (PARAMisNULL(sub, DSCALE) || PARAM0(sub, DSCALE) == 1.0)
 	   && PARAMisNULL(sub, DANISO)))) sub=sub->sub[0];
   
-  if ((cov->q[MIXED_CONSTANT] = sub != NULL && sub->nr == CONSTANT)) {
+  if ((cov->q[MIXED_CONSTANT] = sub != NULL && sub->nr == FIX)) {
     //next->delflag = DEL_COV - 6;
     if (isDollar(next) && next->nrow[DVAR]==0) {
       //next->delflag = DEL_COV - 6;
@@ -239,7 +239,7 @@ int set_mixed_constant(cov_model *cov) {
     int constant_size;
     
     for (i=0; i<nrow[MIXED_X]; i++) {
-      constant_size = PARAMLIST(sub, CONSTANT_M)->nrow[i];
+      constant_size = PARAMLIST(sub, FIX_M)->nrow[i];
       
       if (ncol[MIXED_X] > 0 && X->ncol[i] != constant_size) {
 	SERR7("%ldth matrix '%s' (%d x %d) and (%d x %d) constant matrix '%s' do not match", i, KNAME(MIXED_X), X->nrow[i], X->ncol[i], constant_size, constant_size, NICK(sub));
@@ -432,14 +432,14 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   strcpy(errorloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "init mixed model");
   
-  assert(cov->nr = MIXEDEFFECT);
+  assert(cov->nr == MIXEDEFFECT);
 
   NEW_STORAGE(mixed);
   s = cov->Smixed;
 
   NotProgrammedYet("");
 
-  if (s->Xb != NULL) free(s->Xb);
+  FREE(s->Xb);
   if (cov->ncol[MIXED_BETA] > 0) { // b is given
     // X is given, but no covariance model
     if (cov->nrow[MIXED_X] > 1) {
@@ -496,7 +496,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     int Xnrow, Xncol;
     Xnrow = Xncol = Cn * sub->vdim[0];
     if (loc->i_row==0 && loc->i_col==0) {
-      if (s->mixedcov != NULL) free(s->mixedcov);   
+      FREE(s->mixedcov);   
       s->mixedcov = (double*) MALLOC(sizeof(double) * Xnrow * Xnrow);
       if (s->mixedcov == NULL) {
 	err = ERRORMEMORYALLOCATION;
@@ -1205,8 +1205,7 @@ void poly_basis(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s) {
   //print("\n");
   
   ErrorHandling:
-  if (dimi != NULL) free(dimi);   
-  dimi = NULL;
+  FREE(dimi);   
   if (err != NOERROR) XERR(err);
    
   return;
@@ -1242,3 +1241,40 @@ void likelihood_trend(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USE
   }
 
 }
+
+
+
+
+int checkTrendEval(cov_model *cov) { // auch fuer TrendEval
+   cov_model *next = cov->sub[0];
+   location_type *loc = Loc(cov);
+   int err,
+     dim =  loc->timespacedim;
+
+  if ((err = CHECK(next, cov->tsdim, cov->xdimown, TrendType,
+		     XONLY, cov->isoown,
+		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+  assert(isTrend(cov->sub[0]->typus));
+  setbackward(cov, next);
+  cov->vdim[0] = next->vdim[0]; 
+  cov->vdim[1] = next->vdim[1];
+  if (cov->vdim[0] != 1) NotProgrammedYet("");
+ if ((err = alloc_cov(cov, dim, cov->vdim[0], cov->vdim[1])) != NOERROR) return err;
+
+ // EXTRA_STORAGE;
+  return NOERROR;
+}
+
+
+void do_TrendEval(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
+  res_type
+    *res = cov->rf;
+  assert(res != NULL);
+  char errorloc_save[nErrorLoc];
+  strcpy(errorloc_save, ERROR_LOC);
+  sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
+  Fctn(NULL, cov, res);
+  strcpy(ERROR_LOC, errorloc_save);
+  return;
+}
+

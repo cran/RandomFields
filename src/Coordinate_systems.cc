@@ -2,7 +2,7 @@
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
 
- Copyright (C) 2014 Martin Schlather
+ Copyright (C) 2014-2015 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
  
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 
 /* simplifying functions
    turn vector of x into length ||x|| and similar
@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    (same for preferred methods; bottom-up-analysis needed)
 */
 
-// #
 // keep always the orderung
 void iso2iso(double *x, cov_model *cov, double *v) {
   double y=fabs(*x);
@@ -69,26 +68,13 @@ void Stat2iso(double *x, cov_model *cov, double *v) {
   double b = 0.0;
   int i,
     dim=cov->xdimgatter;  
-  
-  //   print("%d\n", dim); assert(false);
-  //  print("dim=%d, %f %f, %d %ld\n", dim, x[0], x[1], cov->nr, cov->calling);
-  //   print("%s\n", NAME(cov));
-
-  //     PMI(cov->calling);
-  // 
- 
   for (i=0; i<dim; i++) {
     //
     b += x[i] * x[i];
     //  
   }
   b = sqrt(b);
-  //  APMI(cov->calling->calling);  crash(cov);
-  // 
   CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
-  //
-  //printf("aaxxx\n");
-  // print("%f\n", *v);
 }
 void logStat2iso(double *x, cov_model *cov, double *v, double *sign) {
   double b = 0.0;
@@ -99,7 +85,6 @@ void logStat2iso(double *x, cov_model *cov, double *v, double *sign) {
   }
   b = sqrt(b);
   CovList[cov->nr].log(&b, cov, v, sign);// nicht gatternr
-  // print("%f\n", *v);
 }
 void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
   double a, b;
@@ -110,10 +95,7 @@ void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
     b += a * a;
   }
   b = sqrt(b);
-  //if (dim != 2) APMI(cov);
-  //assert(dim == 2);
   CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
-  //printf("b=%f %f %s\n", b, *v, NAME(cov));
 }
 void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
 		    double *sign) {
@@ -207,23 +189,40 @@ void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v,
 // Earth coordinate systems : stay within the system
 //////////////////////////////////////////////////////////////////////
 
-#define Mod(x, modulus) (x - floor(x / modulus) * modulus)
-double mod(double x, double modulus) { return Mod(x, modulus); }
-double negmod(double x, double modulus) {  
+double mod(double x, double modulus) { return (x - floor(x / modulus) * modulus); }
+double isomod(double x, double modulus) {  
+  double 
+    twomodulus = 2.0 * modulus;
+  return modulus - fabs(Mod(x, twomodulus) - modulus);
+}
+double lonmod(double x, double modulus) {  
+  double 
+    halfmodulus = 0.5 * modulus,
+    y = x + halfmodulus;
+  return Mod(y, modulus) - halfmodulus;
+}
+
+double latmod(double x, double modulus) {  
   double 
     halfmodulus = 0.5 * modulus,
     twomodulus = 2.0 * modulus,
     y = x - halfmodulus;
   return fabs(Mod(y, twomodulus) - modulus) - halfmodulus;
 }
-double posmod(double x, double modulus) {  
-  double 
-    twomodulus = 2.0 * modulus;
-  return modulus - fabs(Mod(x, twomodulus) - modulus);
+
+
+#define STATMOD(ZZ, X, lon, lat)				\
+    ALLOC_NEW(Searth, X, dim+1, X);				\
+    STATMODE_BASE(X, ZZ, lon, lat);				\
+    for (d = 2; d < dim; d++) X[d] = ZZ[d]
+
+void statmod2(double *x, double lon, double lat, double *y) {
+  STATMODE_BASE(y, x, lon, lat);
 }
 
-#define piD180 M_PI * 0.00555555555555555555555
-#define H80Dpi 180.0 * INVPI
+
+#define piD180 (M_PI * 0.00555555555555555555555)
+#define H80Dpi (180.0 * INVPI)
 #define ESnonstat2iso(x, y)					\
   int d, dim=cov->xdimgatter;						\
   ALLOC_NEW(Searth, X, dim+1, X);					\
@@ -234,17 +233,12 @@ double posmod(double x, double modulus) {
 	      cos(xx[1]) * cos(yy[1]) );				\
     for (d = 2; d < dim; d++) X[d-1] = x[d] - y[d];	
 			
-#define STATMOD(x, X, lon, lat)				\
-  ALLOC_NEW(Searth, X, dim+1, X);				\
-  X[0]=Mod(x[0], lon);					\
-  X[1]=negmod(x[1], lat);				\
-  for (d = 2; d < dim; d++) X[d] = x[d]
 
-#define ISOMOD(x, X, maxangle)				\
+#define ISOMOD(ZZ, X, maxangle)				\
   int d, dim=cov->xdimgatter;				\
   ALLOC_NEW(Searth, X, dim+1, X);				\
-  X[0]=posmod(x[0], maxangle);					\
-  for (d = 1; d < dim; d++) X[d] = x[d]
+  X[0]=isomod(ZZ[0], maxangle);					\
+  for (d = 1; d < dim; d++) X[d] = ZZ[d]
 
 
 void EarthIso2EarthIso(double *x, cov_model *cov, double *v) {
@@ -295,7 +289,6 @@ void logNonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v,
 // BERRETH ::
 
 void EarthIso2SphereIso(double *x, cov_model *cov, double *v) {
-  //printf("iso angle x=%f\n", *x);
   ISOMOD(piD180 * x, X, M_PI);
   CovList[cov->nr].cov(X, cov, v); // nicht gatternr
 }
@@ -324,7 +317,7 @@ void logEarth2Sphere(double *x, cov_model *cov, double *v, double *sign) {
   CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
 }
 void NonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v) {
-  int d, dim=cov->xdimgatter;			       
+  int d, dim=cov->xdimgatter;	
   STATMOD(piD180 * x, X, M_2_PI, M_PI);
   STATMOD(piD180 * y, Y, M_2_PI, M_PI);
   CovList[cov->nr].nonstat_cov(X, Y, cov, v);// nicht gatternr
@@ -397,24 +390,22 @@ void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
 #define EARTH_LONGITUDE 0
 #define EARTH_LATITUDE 1
 #define pi180 0.017453292519943295474
-#define EARTH_TRAFO(X, x, raequ, rpol)			\
-  Rcos = raequ * cos(x[EARTH_LATITUDE] * pi180);	\
-  X[0] = Rcos * cos(x[EARTH_LONGITUDE] * pi180);	\
-  X[1] = Rcos * sin(x[EARTH_LONGITUDE] * pi180);	\
-  X[2] = rpol * sin(x[EARTH_LATITUDE] * pi180)		
+#define EARTH_TRAFO(X, ZZ, raequ, rpol)			\
+  Rcos = raequ * cos(ZZ[EARTH_LATITUDE] * pi180);	\
+  X[0] = Rcos * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
+  X[1] = Rcos * sin(ZZ[EARTH_LONGITUDE] * pi180);	\
+  X[2] = rpol * sin(ZZ[EARTH_LATITUDE] * pi180)		
 
-//   ; printf("x=%f =%f %f %f\n", x[0], x[1], raequ, rpol)
-
-#define earth2cartInner(raequ, rpol)					\
+#define earth2cartInner(RAEQU, RPOL)					\
  assert(cov->xdimprev >= 2 && cov->xdimgatter >= 2);			\
   double Rcos, X[3], Y[3];			\
-  EARTH_TRAFO(X, x, raequ, rpol);			\
-  EARTH_TRAFO(Y, y, raequ, rpol)
+  EARTH_TRAFO(X, x, RAEQU, RPOL);			\
+  EARTH_TRAFO(Y, y, RAEQU, RPOL)
 
-#define earth2cartInnerStat(raequ, rpol)				\
+#define earth2cartInnerStat(RAEQU, RPOL)				\
   assert(cov->xdimprev >= 2 && cov->xdimgatter >= 2);			\
   double Rcos, X[3];							\
-  EARTH_TRAFO(X, x, raequ, rpol)
+  EARTH_TRAFO(X, x, RAEQU, RPOL)
 
 #define radiuskm_aequ 6378.1
 #define radiuskm_pol 6356.8
@@ -431,7 +422,6 @@ void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign) {
 }
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v) {
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
-  //  printf("earth : %4.4f %4.4f y=%4.4f %4.4f X=%4.4f %4.4f %4.4f  Y=%4.4f %4.4f %4.4f\n", x[0], x[1], y[0], y[1], X[0], X[1], X[2], Y[0], Y[1], Y[2]);
   CovList[cov->secondarygatternr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
@@ -442,7 +432,6 @@ void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
 
 void EarthMiles2CartStat(double *x, cov_model *cov, double *v) {
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
-  //printf("KM x=%f =%f %f %f\n", x[0], x[1], radiuskm_aequ, radiuskm_pol);
   CovList[cov->secondarygatternr].cov(X, cov, v);// nicht gatternr
 }
 void logEarthMiles2CartStat(double *x, cov_model *cov, double *v, double *sign) {
@@ -464,9 +453,6 @@ void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
 #define Qtotal 12
 int checkEarth(cov_model *cov){
   // ACHTUNG! KEIN AUFRUF VON SUB[0] !
-
-  //  print("earth:\n"); printf("%s\n", CovList[cov->gatternr].name);
-
   if (cov->domprev == XONLY// 20.2.14: warum war es vorher cov->domown == XONLY?
       && isSymmetric(cov->isoprev)) {
     // darf nie auf "XONLY-stat" transformiert sein. Es kann aber zB bei 'shape'
@@ -475,8 +461,6 @@ int checkEarth(cov_model *cov){
   }
   
   COND_NEW_STORAGE(earth, X);
-  // 
-  // PMI(cov);
 
   if (cov->gatternr >= FIRST_PLANE && cov->gatternr <= LAST_PLANE) {
     assert(cov->tsdim>=2 && cov->xdimown == cov->tsdim); // oder 3 !! regeln!
@@ -514,6 +498,8 @@ int checkEarth(cov_model *cov){
 	cos0 = cos(Zenit[0]),
 	cos1 = cos(Zenit[1]),
 	*P = cov->Searth->P;
+    
+
     P[0] = -sin0;
     P[1] = cos0;
     P[2] = 0.0;
@@ -523,6 +509,7 @@ int checkEarth(cov_model *cov){
     P[6] = cos0 * cos1; 
     P[7] = sin0 * cos1;
     P[8] = sin1;    
+
   } else {
     assert(cov->gatternr >= EARTHKM2CART && cov->gatternr <= EARTHMILES2CART);
   }
@@ -544,11 +531,11 @@ int checkEarth(cov_model *cov){
   double *P = cov->Searth->P
  
 
-#define orthTrafoStat				\
+#define orthTrafoStat		\
   for (m=d=0; d<3; d++) {			\
     U[d] = 0.0;					\
     for(k=0; k<3; k++, m++) {			\
-       U[d] += P[m] * X[k];			\
+      U[d] += P[m] * X[k];	\
    }						\
   }						\
   if (U[2] < 0.0) ERR("location(s) not in direction of the zenit");\
@@ -734,3 +721,144 @@ void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
   CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, sign);// nicht gatternr
 }
 
+
+
+
+bool is_any(isofct iso, cov_fct *C) {
+  int i;
+  for (i=0; i < C->variants; i++) if (iso(C->Isotropy[i])) return true;
+  return false;
+}
+
+bool is_all(isofct iso, cov_fct *C) {
+  int i;
+  for (i=0; i < C->variants; i++) if (!iso(C->Isotropy[i])) return false;
+  return true;
+}
+
+bool is_any(typusfct t, cov_fct *C) {
+  int i;
+  for (i=0; i < C->variants; i++) if (t(C->Typi[i])) return true;
+  return false;
+}
+
+bool is_all(typusfct t, cov_fct *C) {
+  int i;
+  for (i=0; i < C->variants; i++) if (!t(C->Typi[i])) return false;
+  return true;
+}
+
+
+bool isIsotropic(isotropy_type iso) {
+  return iso == ISOTROPIC;
+}
+bool isAnyIsotropic(isotropy_type iso) {
+  return iso == ISOTROPIC || iso == EARTH_ISOTROPIC || 
+    iso == SPHERICAL_ISOTROPIC;
+}
+
+bool isSpaceIsotropic(isotropy_type iso) {
+  return iso <= SPACEISOTROPIC;
+}
+
+bool isZeroSpaceIsotropic(isotropy_type iso) {
+  return iso <= ZEROSPACEISO;
+}
+
+bool isVectorIsotropic(isotropy_type iso) {
+  return iso == VECTORISOTROPIC;
+}
+
+bool isSymmetric(isotropy_type iso) {
+  return iso <= SYMMETRIC;
+}
+
+bool isCartesian(isotropy_type iso) {
+  //  return iso <= CARTESIAN_COORD;
+  return iso <= LAST_CARTESIAN;
+}
+
+bool isSpherical(isotropy_type iso) {
+  return iso >= SPHERICAL_ISOTROPIC && iso <= SPHERICAL_COORD;
+}
+
+bool isEarth(isotropy_type iso) {
+  return iso >= EARTH_ISOTROPIC && iso <= EARTH_COORD ;
+}
+bool isAnySpherical(isotropy_type iso) {
+  // printf("any %d < %d  <= %d\n",  LAST_CARTESIAN, iso, LAST_SPHERICAL);
+  return iso > LAST_CARTESIAN && iso <= LAST_SPHERICAL;
+}
+bool isAnySphericalIso(isotropy_type iso) {
+  return iso == SPHERICAL_ISOTROPIC || iso == EARTH_ISOTROPIC;
+}
+bool isPrevModelI(cov_fct *C){
+  bool is = C->Isotropy[0] == PREVMODELI;
+  assert(!is || C->variants == 1 ||
+	 (C->variants == 2 &&  C->Isotropy[0] == C->Isotropy[1]));
+  return is;
+}
+bool isUnreduced(cov_fct *C){
+  bool is = C->Isotropy[0] == UNREDUCED;
+  assert(!is || C->variants == 1);
+  return is;
+}
+bool isCoordinateSystem(isotropy_type iso){
+  return iso == CARTESIAN_COORD || iso == SPHERICAL_COORD || iso == EARTH_COORD;
+}
+bool atleastSpecialised(isotropy_type iso, isotropy_type as) {
+  // printf("ATLEAST '%s' at least specialised as '%s'? \n", ISONAMES[iso], ISONAMES[as]);
+  if (isCartesian(as)) return iso <= as; // also iso < 0 OK
+  if (isSpherical(as)) {
+    if (as == SPHERICAL_COORD) return isSpherical(iso); // isCartesian(iso) ||
+    else if (as == SPHERICAL_ISOTROPIC) 
+      return iso == SPHERICAL_ISOTROPIC; // || iso == ISOTROPIC;
+    else {BUG}    
+  }
+  if (isEarth(as)) {
+    //    printf("YYY as=%d %s  %d \n", as == EARTH_COORD, ISONAMES[iso], isAnySpherical(iso));
+    if (as == EARTH_COORD) return isAnySpherical(iso); //isCartesian(iso) || 
+    else if (as == EARTH_ISOTROPIC) {
+      return iso == SPHERICAL_ISOTROPIC || iso == EARTH_ISOTROPIC ;
+    }
+    else {BUG}
+  }
+  if (as == UNREDUCED) {
+    return isCoordinateSystem(iso);
+  }
+  if (as == PREVMODELI) return true;
+
+  //  PRINTF("subsequent coordinate system / isotropy:  %s\n", ISONAMES[as]);
+  //  crash();
+  BUG;
+}
+
+bool isCylinder(isotropy_type iso) {
+  BUG;
+  return iso == CYLINDER_COORD;
+}
+
+bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2) {
+  return (isCartesian(iso1) && isCartesian(iso2))
+    || (isAnySpherical(iso1) && isAnySpherical(iso2))
+    // || (isCylinder(iso1) && isCylinder(iso2)) 
+    || iso1==UNREDUCED;
+}
+
+bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2, 
+			     bool refined) {
+  if (!refined) return equal_coordinate_system(iso1, iso2);
+
+  return (isCartesian(iso1) && isCartesian(iso2))
+    || (isSpherical(iso1) && isSpherical(iso2))
+    || (isEarth(iso1) && isEarth(iso2))
+    // || (isCylinder(iso1) && isCylinder(iso2)) 
+    || iso1==UNREDUCED;
+}
+
+isotropy_type UpgradeToCoordinateSystem( isotropy_type iso) {
+  return iso == SYMMETRIC
+    ? CARTESIAN_COORD 
+    : isCoordinateSystem(iso) ? iso
+    : ISO_MISMATCH;
+}

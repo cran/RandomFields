@@ -15,14 +15,13 @@
  \url{http://ms.math.uni-mannheim.de/de/publications/software};
 }
 \references{
- \itemize{ 
- \item
-  Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and Strokorb, K. (2014)
- Analysis, simulation and prediction of
- multivariate random fields with package \pkg{RandomFields} \emph{JSS}
- \emph{Submitted}
+  Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
 
- }
 }
 
   
@@ -179,7 +178,7 @@ P <- cbind(c(-sin(a[1]), cos(a[1]), 0),
            c(-cos(a[1]) * sin(a[2]), -sin(a[1]) * sin(a[2]), cos(a[2])),
            c(cos(a[1]) * cos(a[2]), sin(a[1]) * cos(a[2]), sin(a[2])))
 x <- RFearth2cartesian(weather[All , 3 : 4])
-plane <- (x \%*\%P)[ , 1 : 2]
+plane <- (t(x) \%*\%P)[ , 1 : 2]
 
 ## here, kriging is performed on a rectangular that covers the 
 ## the projected points above. The rectangular is approximated

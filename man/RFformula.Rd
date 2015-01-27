@@ -165,7 +165,7 @@ response <- W*5 + Z%*%matrix(1:225, nrow=15)%*%rnorm(15, sd=10) + rnorm(10, sd=3
 
 # Estimate beta, (sigma_u)^2 and (sigma_e)^2:
 model <- response ~ W@RMfixed(beta=NA) +
- Z@RMconstant(A, var=NA) +
+ Z@RMfixcov(A, var=NA) +
  RMnugget(var=NA)
 fitted <- RFfit(model=model, data=response, W=W, Z=Z, A=A)
 }}

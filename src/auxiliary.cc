@@ -212,7 +212,7 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
     }
   } 
 
-  free(dummy);
+  UNCONDFREE(dummy);
 }
 
 
@@ -305,10 +305,10 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
   } 
 
  ErrorHandling:
-  if (D != NULL) free(D);
-  if (SICH != NULL) free(SICH);
-  if (work != NULL) free(work);
-  if (iwork != NULL) free(iwork);
+  FREE(D);
+  FREE(SICH);
+  FREE(work);
+  FREE(iwork);
   if (err != NOERROR) XERR(err);
 
   return min;
@@ -341,10 +341,10 @@ double getDet(double *Aniso, int dim) {
   for (dd = 0; dd < dim; det *= D[dd++]);
 
  ErrorHandling:
-  if (D != NULL) free(D);
-  if (SICH != NULL) free(SICH);
-  if (work != NULL) free(work);
-  if (iwork != NULL) free(iwork);
+  FREE(D);
+  FREE(SICH);
+  FREE(work);
+  FREE(iwork);
   if (err != NOERROR) XERR(err);
 
   return det;
@@ -407,6 +407,7 @@ void matmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
 	   C[j*l+i] += A[i*m+k]*B[j*m+k];
      }
 }
+
 
 
 void Xmatmult(double *A, double *B, double *C, int l, int m, int n) {
@@ -529,11 +530,11 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
       if (err != NOERROR) GERR("QR decomposition failed");
      
      ErrorHandling:
-      if (aijmax != NULL) free(aijmax);
-      if (inc != NULL) free(inc);
-      if (workspaceD != NULL) free(workspaceD);
-      if (workspaceU != NULL) free(workspaceU);
-      if (workspaceDU != NULL) free(workspaceDU);
+      FREE(aijmax);
+      FREE(inc);
+      FREE(workspaceD);
+      FREE(workspaceU);
+      FREE(workspaceDU);
       if (err == NOERROR) break;
       
       break;
@@ -589,11 +590,11 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
       matmult(U, VT, M, size, size, size); // U * V
  
      ErrorHandling2:
-      if (VT != NULL) free(VT);
-      if (U != NULL) free(U);
-      if (D != NULL) free(D);
-      if (iwork != NULL) free(iwork);
-      if (work != NULL) free(work);
+      FREE(VT);
+      FREE(U);
+      FREE(D);
+      FREE(iwork);
+      FREE(work);
      
       break;
     }
@@ -603,7 +604,7 @@ int invertMatrix(double *M, int size, int* Methods, int nMeth) {
     if (err==NOERROR) break;
   }
   
-  if (SICH != NULL) free(SICH);
+  FREE(SICH);
   if (method<0 || m>=nMeth) SERR("matrix inversion failed");
   return NOERROR; //  -method;
 }
@@ -992,7 +993,7 @@ int is_positive_definite(double *C, int dim) {
   test = (double*) MALLOC(bytes);
   MEMCOPY(test, C, bytes);
   F77_CALL(dpofa)(test, &dim, &dim, &err); 
-  free(test);
+  UNCONDFREE(test);
   return(err == 0);
 }
 

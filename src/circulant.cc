@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include "RF.h"
 #include "shape_processes.h"
+#include "Coordinate_systems.h"
+
   
 #include <R_ext/Linpack.h>
 #include <R_ext/Utils.h>     
@@ -69,8 +71,8 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
      }
    }
   
-   if (FFT->work != NULL) free (FFT->work);
-   if (FFT->iwork != NULL) free (FFT->iwork);
+   FREE(FFT->work);
+   FREE(FFT->iwork);
    if ((FFT->work = (double*) MALLOC(4 * maxmaxf * sizeof(double)))==NULL || 
        (FFT->iwork = (int*) MALLOC(maxmaxp  * sizeof(int)))==NULL) { 
      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -322,8 +324,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    realmtot* vdimSQ * 32e-9, CE[CE_MAXGB], maxGB, CE[CE_MAXGB]);
 
     if (c != NULL) {
-      for(l=0; l<vdimSQ; l++) if(c[l]!=NULL) free(c[l]);
-      free(c);
+      for(l=0; l<vdimSQ; l++) FREE(c[l]);
+      UNCONDFREE(c);
     }
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
@@ -450,12 +452,12 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 
     if(Lambda!=NULL) {
-      for(l = 0; l<vdim; l++) if(Lambda[l]!=NULL) free(Lambda[l]);
-      free(Lambda);
+      for(l = 0; l<vdim; l++) FREE(Lambda[l]);
+      UNCONDFREE(Lambda);
     }
-    if (rwork != NULL) free(rwork);
-    if (tmpLambda != NULL) free(tmpLambda);
-    if (R != NULL) free(R);
+    FREE(rwork);
+    FREE(tmpLambda);
+    FREE(R);
 
     if( (Lambda = (double **) MALLOC(vdim * sizeof(double *))) == NULL ||
 	(rwork = (double *) MALLOC(sizeof(double) * (3*vdim - 2) )) == NULL ||
@@ -529,7 +531,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	  lwork = (int) optim_lwork.r;
 
-	  if (work != NULL) free(work);
+	  FREE(work);
 	  if( (work = (complex *) CALLOC(lwork, sizeof(complex))) == NULL ) {
 	    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
 	  }
@@ -575,19 +577,15 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
     }
   
-    free(R);
-    R = NULL;
-    free(rwork);
-    rwork = NULL;
-    if (work!=NULL) free(work);
-    work = NULL;
-    free(tmpLambda);
-    tmpLambda = NULL;
+    FREE(R);
+    FREE(rwork);
+    FREE(work);
+    FREE(tmpLambda);
 
     // check if positive definite. If not: enlarge and restart 
     if (!force || (s->trials<trials)) {
 
-      if (isNegDef(next)) {
+      if (isVariogram(next)) {
 	for (l=0; l<vdim; l++) {
 	  if (Lambda[l][0] < 0.0) Lambda[l][0]=0.0;
 	}
@@ -647,12 +645,9 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 		    l, idx[l], l, smallest[l]);
 	      }
 	    }
-	    free(sum);
-	    sum = NULL;
-	    free(smallest);
-	    smallest = NULL;
-	    free(idx);
-	    idx = NULL;
+	    FREE(sum);
+	    FREE(smallest);
+	    FREE(idx);
 	  }
 	  break; // break loop 'for(i=0 ...)'
 	}
@@ -784,24 +779,24 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 ErrorHandling:
   if (Lambda != NULL) {
-    for(l = 0; l<vdim; l++) if(Lambda[l] != NULL) free(Lambda[l]);
-    free(Lambda);
+    for(l = 0; l<vdim; l++) FREE(Lambda[l]);
+    UNCONDFREE(Lambda);
   }
 
-  if (R != NULL) free(R);
-  if (rwork != NULL) free(rwork);
-  if (work!=NULL) free(work);
-  if (tmpLambda != NULL) free(tmpLambda);
-  if (sum != NULL) free(sum);
-  if (smallest != NULL) free(smallest);
-  if (idx != NULL) free(index);
-  if (tmp != NULL) free(tmp);
+  FREE(R);
+  FREE(rwork);
+  FREE(work);
+  FREE(tmpLambda);
+  FREE(sum);
+  FREE(smallest);
+  FREE(idx);
+  FREE(tmp);
   
   if (err != NOERROR) {
       if (s != NULL) s->c = c;
       else if (c!=NULL) {
-	  for(l=0;l<vdimSQ;l++) if(c[l]!=NULL) free(c[l]);
-	  free(c);
+	  for(l=0;l<vdimSQ;l++) FREE(c[l]);
+	  UNCONDFREE(c);
       }
   }
 
@@ -883,7 +878,7 @@ int check_ce(cov_model *cov) {
 		     SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
       //      APMI(cov);
       //    XERR(err); APMI(cov);
-      if ((err = CHECK(next, dim,  dim, NegDefType, XONLY, SYMMETRIC, 
+      if ((err = CHECK(next, dim,  dim, VariogramType, XONLY, SYMMETRIC, 
 		       SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
 	return err;
       }
@@ -1004,6 +999,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     *res = cov->rf; // MULT *c->**c
   bool vfree[MAXCEDIM+1], noexception, // MULT varname free->vfree
     loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
   long mtot, start[MAXCEDIM], end[MAXCEDIM];
   ce_storage *s = cov->Sce;
   location_type *loc = Loc(cov);
@@ -1267,6 +1263,8 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   //  print("dep=%d odd=%d squ=%d %d\n", s->dependent, s->cur_call_odd,
   //	 s->cur_square[0],s->cur_square[1]);
   s->stop |= s->new_simulation_next && s->d == NULL;
+
+  GLOBAL.gauss.loggauss = loggauss;
 }
 
 
@@ -1327,8 +1325,8 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
     }
     grid_ext[k] = fabs(grid_ext[k]);
   }
-  free(V);
-  free(s);
+  FREE(V);
+  FREE(s);
   return NOERROR;
 
  ErrorHandling:
@@ -1336,8 +1334,8 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
     KPRINT("F77 error in GetOrthogonalExtensions: %d\n", -err);
     err = ERRORFAILED;
   }
-  free(V);
-  free(s);
+  FREE(V);
+  FREE(s);
   return err;
 }
 
@@ -1417,12 +1415,12 @@ int check_local_proc(cov_model *cov) {
 	kdefault(cov, LOCPROC_DIAM, PARAM0(RMintrinsic, pLOC_DIAM));  
     }
   } else {
-    if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : NegDefType,
+    if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : VariogramType,
 		     XONLY, ISOTROPIC, SCALAR, ROLE_COV))
 	!= NOERROR) {
       if (isDollar(next) && PARAM(next, DANISO) != NULL) {
 	// if aniso is given then xdimprev 1 does not make sense
-	err = CHECK(sub, dim, dim, cutoff ? PosDefType : NegDefType,
+	err = CHECK(sub, dim, dim, cutoff ? PosDefType : VariogramType,
 		    XONLY, ISOTROPIC, SCALAR, ROLE_COV);
       }
       // 
@@ -1691,6 +1689,7 @@ void do_circ_embed_intr(cov_model *cov, gen_storage *S) {
     rowcol =  row * col;
   localCE_storage *s = cov->SlocalCE;
   bool loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
 
   do_circ_embed(key, S);
 
@@ -1729,6 +1728,7 @@ void do_circ_embed_intr(cov_model *cov, gen_storage *S) {
     if (k>=row) break;
     x[k] += dx[k];
   }
+  GLOBAL.gauss.loggauss = loggauss;
 }
 
 

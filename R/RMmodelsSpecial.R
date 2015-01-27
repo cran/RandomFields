@@ -66,7 +66,7 @@ internalRMmixed <- function(X, beta, cov, coord, dist, element)
 	par.model = par.model, par.general = par.general)
 
 	return(model) 
-} 
+}
 
 internalRMmixed <- new('RMmodelgenerator',
                        .Data = internalRMmixed,

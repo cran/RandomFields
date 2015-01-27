@@ -9,7 +9,31 @@
 \alias{[<-,RMmodel-method}
 \alias{[<-,RMmodel,ANY,ANY,ANY-method}
 \alias{+,RMmodel,RMmodel-method}
+\alias{+,numeric,RMmodel-method}
+\alias{+,logical,RMmodel-method}
+\alias{+,RMmodel,numeric-method}
+\alias{+,RMmodel,logical-method}
 \alias{*,RMmodel,RMmodel-method}
+\alias{*,numeric,RMmodel-method}
+\alias{*,logical,RMmodel-method}
+\alias{*,RMmodel,logical-method}
+\alias{*,RMmodel,numeric-method}
+\alias{-,RMmodel,RMmodel-method}
+\alias{-,numeric,RMmodel-method}
+\alias{-,logical,RMmodel-method}
+\alias{-,RMmodel,logical-method}
+\alias{-,RMmodel,numeric-method}
+\alias{/,RMmodel,RMmodel-method}
+\alias{/,numeric,RMmodel-method}
+\alias{/,logical,RMmodel-method}
+\alias{/,RMmodel,numeric-method}
+\alias{/,RMmodel,logical-method}
+\alias{^,RMmodel,RMmodel-method}
+\alias{^,numeric,RMmodel-method}
+\alias{^,logical,RMmodel-method}
+\alias{^,RMmodel,numeric-method}
+\alias{^,RMmodel,logical-method}
+\alias{c,RMmodel-method}
 %\alias{plot,RMmodel-method}
 %\alias{points.RMmodel}
 %\alias{lines.RMmodel}
@@ -47,8 +71,14 @@
  \describe{
  \item{+}{\code{signature(x = "RMmodel")}: allows to sum up
  covariance models; internally calls \command{\link{RMplus}}.}
+\item{-}{\code{signature(x = "RMmodel")}: allows to substract
+ covariance models; internally calls \command{\link{R.minus}}.}
  \item{*}{\code{signature(x = "RMmodel")}: allows to multiply
- covariance models; internally calls \command{\link{RMmult}}.}
+ covariance models; internally calls \command{\link{R.minus}}.}
+  \item{/}{\code{signature(x = "RMmodel")}: allows to devide
+ covariance models; internally calls \command{\link{R.div}}.}
+ \item{c}{\code{signature(x = "RMmodel")}: concenates
+ covariance functions or variogram models}
  \item{plot}{\code{signature(x = "RMmodel")}: gives a plot of the
  covariance function or of the variogram model, for more details see
  \command{\link{plot-method}}.}
@@ -78,7 +108,7 @@
 %\section{Details}{
 %}
 
-\author{Alexander Malinowski \email{malinows@math.uni-goettingen.de}}
+\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
 
 \seealso{
   \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}

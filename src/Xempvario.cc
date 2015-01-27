@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // z coordinate run the fastest in values, x the slowest   
 
-//#define debug_tools 1
 #define TOOLS_MEMORYERROR 1
 #define TOOLS_XERROR 2
 #define TOOLS_BIN_ERROR 3
@@ -38,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // naechste Zeile nur notwendig, weil atan2 in Windows nicht
 // ordentlich programmiert ist
-#define NEARBYINT(x)  floor((x) * NEARBY + 0.5) / NEARBY
+#define NEARBYINT(x)  (floor((x) * (NEARBY) + 0.5) / (NEARBY))
 // #define NEARBYINT(x)  x
 
 void empvarioXT(double *X, double *T, 
@@ -306,8 +305,8 @@ void empvarioXT(double *X, double *T,
     sum[i] *= 0.5;
     sq[i] *= 0.25;
   }
-  if (BinSq!=NULL) free(BinSq);
 
+  FREE(BinSq);
   return;
 
  ErrorHandling:
@@ -321,7 +320,7 @@ void empvarioXT(double *X, double *T,
     PRINTF("Bin components not an increasing sequence.\n"); break;
   default : BUG;
   }
-  if (BinSq!=NULL) free(BinSq);
+  FREE(BinSq);
   for (i=0;i<*nbin;i++){sq[i]=sum[i]=RF_NA;} 
 } 
 	 

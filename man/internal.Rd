@@ -2,6 +2,7 @@
 \alias{rfGenerateModels}
 \alias{rfGenerateConstants}
 \alias{rfGenerateTest}
+\alias{rfGenerateMaths}
 \alias{checkExamples}
 \alias{FinalizeExample}
 \alias{Dependencies}
@@ -23,6 +24,8 @@ rfGenerateConstants(
            )
 rfGenerateTest(files = NULL,
                RFpath = "~/R/RF/svn/RandomFields/RandomFields")
+rfGenerateMaths(files = "/usr/include/tgmath.h", Cfile = "QMath",
+                        RFpath = "~/R/RF/svn/RandomFields/RandomFields")
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path="RandomFields", package = "RandomFields",
@@ -43,7 +46,7 @@ plotWithCircles(data, factor=1.0,
                 col=1, fill=0, ...)
 }
 \arguments{
-  \item{assigning, RFpath, RMmodels.file,RCauto.file,files}{internal}
+  \item{assigning, RFpath, RMmodels.file,RCauto.file,files,Cfile}{internal}
   \item{exclude, include, ask, echo, halt, ignore.all, path, package,
     read.rd.files
   }{internal; 

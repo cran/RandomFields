@@ -518,11 +518,11 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   default : BUG;    
   }
 
-  if (BinSq!=NULL) free(BinSq); 
+  FREE(BinSq); 
   return; 
   
  ErrorHandling:
-  if (BinSq!=NULL) free(BinSq); 
+  FREE(BinSq); 
   for (i = 0; i< * nbin; i++){sd[i] = vario[i] = RF_NA; } 
   switch (err) {
   case TOOLS_DIM :

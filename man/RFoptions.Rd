@@ -555,7 +555,20 @@
   }
 
   \item{\code{new_coordunits}}{See \link{coordinate systems}
-}
+  }
+
+  \item{\code{polar_coord} }{logical.
+    If \code{FALSE} the spherical coordinates agree with
+    the earth coordinate parametrisation, except that
+    we radians are used for spherical coordinates instead
+    of degrees for the earth coordinates.
+
+    If \code{TRUE} the spherical coordinates signify polar coordinates.
+
+    Default : \code{FALSE}
+  }
+
+
 
   \item{\code{varnames}}{integer vector of length 2 or an increasing
     sequence of integers or character.

@@ -40,7 +40,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
  specifies a 
  covariance or variogram model of a Gaussian random
  field;
- type \code{\link{RFgetModelNames}(type="negative")} for a list of
+ type \code{\link{RFgetModelNames}(type="variogram")} for a list of
  available models; see also \command{\link{RMmodel}}
  
  \item if of class \code{\link{RFformula}} or

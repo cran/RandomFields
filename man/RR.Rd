@@ -67,10 +67,7 @@
 }
 
 \seealso{
-  \link{RC},
-  \link{RF},
-  \link{RM},
-  \link{RP},
+  \link{RC}, \link{RF}, \link{RM}, \link{RP}, \link{R.}
   \command{\link{Other models}},
   \command{\link{RFdistr}},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},

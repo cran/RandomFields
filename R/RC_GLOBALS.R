@@ -114,10 +114,10 @@ isPosDef <- function(type) {
   ##  .C("isPosDef", as.integer(type))$type
   type==TcfType | type == PosDefType | type==UndefinedType
 }
-isNegDef <- function(type) { 
+isVariogram <- function(type) { 
   if (is.character(type)) type <- pmatch(type, TYPENAMES, duplicates.ok=TRUE)-1
   ##  .C("isNefDef", as.integer(type))$type
-  isPosDef(type) | type == NegDefType
+  isPosDef(type) | type == VariogramType
 }
 
 

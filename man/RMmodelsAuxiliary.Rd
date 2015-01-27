@@ -21,6 +21,8 @@
   See \link{RP}.  
 
 
+  \bold{Mathematical functions}
+  See \link{R.}
 
   \bold{Shape functions}
   
@@ -32,6 +34,8 @@
     \cr
     \command{\link{RMball}} \tab Indicator of a ball of radius
     \eqn{1/2}.
+    \cr
+    \command{\link{RMcovariate}} \tab spatial covariates
     \cr
     \command{\link{RMm2r}} \tab spectral function belonging to a
     tail correlation function of the Gneiting class \eqn{H_n}

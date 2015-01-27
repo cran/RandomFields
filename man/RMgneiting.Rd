@@ -93,7 +93,7 @@ plot(RMgneiting(), model2=RMgneiting(orig=FALSE), model3=RMgauss(),
 
 model <- RMgneiting(orig=FALSE, scale=0.4)
 x <- seq(0,10, if (interactive()) 0.1 else 5)
-z <- RFsimulate(model, x=x, y=x, z=x, T=c(1,1,4))
+z <- RFsimulate(model, x=x, y=x, z=x, T=c(1,1,4), maxGB=3)
 plot(z, MARGIN.slices=4, MARGIN.movie=3)
 
 \dontshow{FinalizeExample()}

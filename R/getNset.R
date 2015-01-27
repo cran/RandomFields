@@ -1,4 +1,7 @@
 
+### get&set functions using the C interface
+### and RFgetNset functions
+
 summary.RFopt <- function(object, ...) {
   object <- lapply(object, function(z) z[order(names(z))])
   object <- object[c(1, 1 + order(names(object[-1])))]
@@ -66,6 +69,7 @@ GetCurrentNrOfModels <- function(init=TRUE) {
 
 internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
                                RELAX=FALSE){
+ # Print(list(...))
   RFopt <- list()
   RFopt[[1]] <- .External("RFoptions")
   if (is.logical(REGISTER)) {
@@ -91,6 +95,87 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
   }
   return(RFopt)
 }
+
+xylabs <- function(x, y, T=NULL, units=NULL) {
+  if (is.null(units)) units <- RFoptions()$coords$coordunits
+  xlab <- if (is.null(x)) NULL
+          else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
+  ylab <- if (is.null(y)) NULL
+          else if (units[2]=="") y else paste(y, " [", units[2], "]", sep="")
+  Tlab <- if (is.null(T)) NULL
+          else if (units[3]=="") T else paste(T, " [", units[3], "]", sep="")
+  return (list(xlab=xlab, ylab=ylab, Tlab=Tlab))
+}
+
+add.units <- function(x,  units=NULL) {
+    if (is.null(x)) return(NULL)
+  if (is.null(units)) units <- RFoptions()$coords$varunits
+  return(ifelse(units=="", x, paste(x, " [", units, "]", sep="")))
+}
+
+
+
+
+
+InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
+  for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
+    vdim <- try(.Call("Init",
+                      MODEL_USER,
+                      model,
+                      matrix(nrow=dim, ncol=3, as.double(1:3)), ## nur dummies
+                      y, #y
+                      as.double(0), #T
+                      as.integer(dim), #spatdim
+                      FALSE, # grid
+                      FALSE, # distances
+                      FALSE, # Zeit
+                      NAOK=NAOK, # ok
+                      PACKAGE="RandomFields"), silent=TRUE)
+    
+    if (is.numeric(vdim)) return(vdim)
+    msg <- strsplit(vdim[[1]], "\n")[[1]][2]
+    if (RFoptions()$general$printlevel >= PL_ERRORS) cat(msg, "\n")
+  }
+  stop(msg)
+  ##  stop("model could not be initialized")
+}
+
+
+resolve.register <- function(register){
+  if (missing(register) || length(register) == 0) {
+    register <- .C("GetCurrentRegister", reg=integer(1))$reg
+    if (register < 0) stop("model that has been used right now cannot be determined or no model has been used up to now")
+  }
+  if (!is.numeric(register)) {
+ #   register <- deparse(substitute(register))   
+    register <-
+      switch(register,
+             "RFcov" = MODEL_USER,
+             "RFcovmatrix" = MODEL_USER,
+             "RFfctn" = MODEL_USER,
+             "RFpseudovariogram" =  MODEL_USER,
+             "RFvariogram" = MODEL_USER,
+             
+             "RFdistr" = MODEL_USER,
+             "RFddistr" = MODEL_USER,
+             "RFpdistr" = MODEL_USER,
+             "RFqdistr" = MODEL_USER,
+             "RFrdistr" = MODEL_USER,
+             
+             "RFcrossvalidate" =  MODEL_MLE,
+             "RFfit" =  MODEL_MLE,
+             "RFgui" =  MODEL_GUI,
+             "RFinterpolate" =  MODEL_KRIGE,
+             "RFratiotest" =  MODEL_MLE,
+             "RFsimulate" =  RFoptions()$registers$register,
+             stop("register unknown")
+             )
+  }
+  stopifnot(is.numeric(register))
+  if (register < 0) stop("'register' does not have a non-negative value.")
+  return(register)
+}
+
 
 
 print_RFgetModelInfo <- function(x, max.level=10-attr(x, "level"),
@@ -136,6 +221,69 @@ RFgetModelInfo <-
   return(cov)
 }
 
+
+RFgetModel <- function(register, explicite.natscale, show.call=FALSE)  {
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register)) register else
+                               deparse(substitute(register)))
+  modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
+            if (explicite.natscale)  GETMODEL_DEL_NATSC else
+            GETMODEL_SOLVE_NATSC)
+  if (show.call) modus <- modus + 10
+  m <- GetModel(register=register, modus=modus)
+  class(m) <-  "RM_model"
+  m
+}
+           
+           
+GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
+                     spConform=RFoptions()$general$spConform,
+                     do.notreturnparam=FALSE,
+                     replace.select = FALSE) {
+  ## modus:
+  ##  AS_SAVED : Modell wie gespeichert
+  ##  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
+  ##  SOLVE_NATSC : natscale soweit wie moeglich zusammengezogen (natsc werden
+  ##               drauf multipliziert; Rest wie gespeichert)
+  ##  DEL_MLE : nur natscale_MLE werden geloescht
+  ##  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
+  ##               drauf multipliziert; Rest wie gespeichert)
+  ## 
+  ## modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
+
+  ## do.notreturnparam : if true, then also parameters with the flag
+  ##                      DONOTRETURN are returned
+
+  ## spConform : only the names of the models
+
+  ## replace.select : if TRUE then model "select " is replaced by model
+  ##                  model "plus" -- they should be joined anyway
+  
+
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register))  register else
+                               deparse(substitute(register)))
+  if (missing(register)) register <- 0
+  
+  model <- .Call("GetModel", as.integer(register), as.integer(modus),
+                 as.integer(spConform), as.integer(do.notreturnparam),
+                 PACKAGE="RandomFields")
+
+  if (replace.select) {
+    if (model[[1]] == ZF_SELECT[1]) {
+      model[[1]] <- ZF_SYMBOLS_PLUS
+      stopifnot(names(model)[2]=="subnr")
+      model[[2]] <- NULL
+    }    
+  }
+  return(model)
+}
+
+GetModelRegister <- function(name) { ## obsolete
+  stopifnot(is.character(name))
+  return(as.integer(.C("GetModelRegister", name, integer(1),
+                       PACKAGE="RandomFields")[[2]]))
+}
 
 
 RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
@@ -194,7 +342,7 @@ RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
       if (type == TYPENAMES[TcfType + 1]) type <- c(type, "undefined") # to do
       else if (type == TYPENAMES[PosDefType + 1])
         type <- c(TYPENAMES[TcfType + 1], type, "undefined") # to do
-      else if (type == TYPENAMES[NegDefType + 1])
+      else if (type == TYPENAMES[VariogramType + 1])
         type <- c(TYPENAMES[c(TcfType, PosDefType) + 1], type,"undefined")#to do
      }
      if (!hasArg("group.by")) group.by <- if (length(type) == 1) NULL else 'type'
@@ -273,16 +421,42 @@ RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
 }
 
 
-RFformula <- function(f)
-  return(parseModel(f))
-
-
 RFgetMethodNames <-function () {
   RFgetModelNames(type=TYPENAMES[c(GaussMethodType, BrMethodType) + 1])
 }
+
+
+RFformula <- function(f)
+  return(parseModel(f))
 
 
 GetProcessType <- function(model) {
   stopifnot(is.list(model))
   return(.Call("GetProcessType", MODEL_INTERN, model))
 }
+
+
+parameter.range <- function(model, param, dim=1){
+  cat("sorry not programmed yet\n")
+  return(NULL)
+ 
+
+#parampositions < - function(model, param, trend=NULL, dim, print=1) {
+#  stopifnot(!missing(dim))
+#  model <- PrepareModel(model, param, trend=trend, nugget.remove=FALSE)
+#  .Call("Get NA Positions", reg, model, as.integer(dim), as.integer(dim),
+#        FALSE, FALSE, as.integer(print), PACKAGE="RandomFields")
+#}
+#  pm <- PrepareModel(model=model, param=param, nugget.remove=FALSE)        
+#  storage.mode(dim) <- "integer"
+#  ResGet <- .Call("SetAnd  ?? GetModelInfo",
+#                  reg,
+#                  pm, dim, Zeit, dim, FALSE, MaxNameCharacter=254,
+#                  TRUE, TRUE,
+#                  PACKAGE="RandomFields")
+#  minmax <- ResGet$minmax[, 1:2]
+#  dimnames(minmax) <-
+#    list(attr(ResGet$minmax, "dimnames")[[1]], c("min", "max"))
+#  return(minmax)
+}
+

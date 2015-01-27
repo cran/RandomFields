@@ -8,7 +8,7 @@
   specify and group the models according to the following properties:
   \itemize{
     \item type of function (\code{"positive definite"},
-    \code{"negative definite"}, etc.)
+    \code{"variogram"}, etc.)
     \item whether the function depends on two arguments
     (\code{"kernel"}) or on one argument only (\code{"single variable"}) 
     \item types of isotropy
@@ -111,7 +111,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
  In general, only exact matches are returned. One exception exists:
  If the length of \code{type} equals 1 and if \code{group.by} is not
  given, then  types included in \code{type} are also returned.
- E.g. if \code{type="negative definite"}  and  \code{group.by} is not given
+ E.g. if \code{type="variogram"}  and  \code{group.by} is not given
  then only models are returned that are negative definite.
  Howeveralso positive definite functions and tail correlaton
  functions are returned if \code{"type"} is included in \code{group.by}.
@@ -260,13 +260,13 @@ str(RFgetModelNames(type="positive definite", domain="single variable",
 # and valid in the two-dimensional coordinate space
 RFgetModelNames(type=c("tail correlation function",
                        "positive definite",
-                       "negative definite",
+                       "variogram",
                        "undefined"),
                 operator=TRUE, valid.in.dim=2)
 
 # processes and covariance function grouped by the stationarity
 # argument and subsequently grouped by the isotropy argument
-str(RFgetModelNames(type=c("positive definite", "negative definite", "process"),
+str(RFgetModelNames(type=c("positive definite", "variogram", "process"),
                     group.by=c("type", "domain", "isotropy")))
 }}
 

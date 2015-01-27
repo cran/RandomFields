@@ -5,7 +5,7 @@
  calculation of the Hurst coefficient and the fractal dimension of
  the graph of a random field
 
- Copyright (C) 2002 - 2014 Martin Schlather, 
+ Copyright (C) 2002 - 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -165,13 +165,11 @@ SEXP periodogram(SEXP Dat, // data
  
 
  ErrorHandling:
-  if (compl_number!=NULL) free(compl_number);
-  if (taper!=NULL) free(taper);
+  FREE(compl_number);
+  FREE(taper);
   FFT_destruct(&FFT);
   UNPROTECT(1);
   if (err != NOERROR) error("error occured when calculating the periodogram");
-    // for (j=0; j<end_l; j++) lambda[j] *= n_inv; // averaging over shifts
-  
   for (j=0; j<end_l; j++) lambda[j] *= n_inv;
   return Lambda;
 }
@@ -210,7 +208,6 @@ SEXP detrendedfluc(SEXP Dat, // data
       realnbox = (double) nbox;
       ex = r + m * nbox;
       sumt = 0.5 * realm * (realm + 1.0); // sum_i^m i
-      //sumtsq = realm * (realm + 1.0) * (2.0 * realm + 1.0) / 6.0;// sum_i^m i^2
 
       // aggregated variation
       if (nbox > 1) {
@@ -223,7 +220,6 @@ SEXP detrendedfluc(SEXP Dat, // data
 	  VarMeth_old = dat[j];
 	}
         lvar[idx] = log(VarMeth_var / ((realnbox - 1.0)));
-        // varmethvar[e + i] = log(VarMeth_var / ((realnbox)));
       } else {
 	lvar[idx] = RF_NA;
       }

@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "RF.h"
 #include "primitive.h"
-// #include "Covariance.h"
+// #include "Operator.h"
 
 
 #define nOptimVar 4
@@ -99,6 +99,7 @@ void ResetWarnings(int * all) {
     w->warn_normal_mode = w->warn_mode = w->warn_coordinates =
     w->warn_on_grid = w->warn_new_definitions = w->warn_aspect_ratio = 
     w->warn_coord_change = w->warn_color_palette = w->warn_zenit =
+    w->warn_constant = w->warn_var = 
     true;
   if (*all) w->warn_ambiguous = true;
 }
@@ -148,7 +149,7 @@ double exactness[nr_modes] = {false, false, false, RF_NA, true, true, true},
   max_max_gauss[nr_modes] =  {2,    2,    3,    4,    5,   6,   6}
   ;
 
-const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optimx", "optimx", "optimx"}; // to do optimx
+const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "optimx", "optimx"}; // to do optimx
 
 void SetDefaultOutputModeValues(output_modes mode){
   general_param *gp = &(GLOBAL.general);
@@ -226,7 +227,7 @@ void SetDefaultModeValues(int old, int m){
   else if (m>old) { 
     w->warn_oldstyle = w->warn_Aniso = w->warn_new_definitions = 
       w->warn_aspect_ratio = true;
-    if (m > normal) w->warn_ambiguous = true;
+    if (m > normal) w->warn_ambiguous = w->warn_var = true;
   }
   if (m != normal && w->warn_mode) {
     PRINTF("Note that the option '%s' is still in an experimental stage, so that the behaviour may change (slightly) in future.", general[GENERAL_MODUS]);
@@ -385,8 +386,8 @@ ErrorHandling :
 
 void PMLheader(char* firstcolumn, int nick) {
   int i;
-  const char header1[]=" #    cir cut int TBM spe dir seq ave coi hyp spe\n";
-  const char header2[]=" p    cul off rin     ctr ect uen rag ns  erp cif\n";
+  const char header1[]=" #    cir cut int TBM spe dir seq tre ave coi hyp spe\n";
+  const char header2[]=" p    cul off rin     ctr ect uen nd  rag ns  erp cif\n";
   for (i=0; i<=nick; i++) PRINTF(firstcolumn, ""); 
   PRINTF("%4s", ""); PRINTF(header1);  
   for (i=0; i<=nick; i++) PRINTF(firstcolumn, ""); 
@@ -406,6 +407,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
     finite[MAXNRCOVFCTS], simpleArguments[MAXNRCOVFCTS], 
     internal[MAXNRCOVFCTS], dom[MAXNRCOVFCTS], 
     iso[MAXNRCOVFCTS], vdim[MAXNRCOVFCTS], maxdim[MAXNRCOVFCTS],
+    paramtype[MAXNRCOVFCTS * MAXPARAM],
     nick = *Nick;
   
   last_method = (int) Nothing; // even not special method   
@@ -420,6 +422,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 
     GetAttr(NULL, type, op, monotone, finite, simpleArguments,
 	    internal, dom, iso, maxdim, vdim, &includevariants,
+	    paramtype,
 	    &nr);
  
     sprintf(firstcolumn,"%%%ds", -maxchar);
@@ -530,33 +533,21 @@ void GetModelList(int* idx, int*internal) {
 void GetAttr(int *Nr, int *type, int *op, int *monotone, int *finiterange, 
 	     int *simpleArguments,
 	     int *internal, int *dom, int *iso, int *maxdim, int *vdim,
-	     int *includevariants, int *n) {
+	     int *includevariants, int *paramtype, int *n) {
 #define MAXPN 10 /* only used for testing purposes */
   int nr, p, k, j;
-  cov_model Cov;
-  range_type range;
-//  range_type *range;
   cov_fct *C = CovList;
   assert((*includevariants) xor (Nr == NULL));
 
-  for (p=0; p<MAXPARAM; p++) 
-    Cov.px[p] = (double*) CALLOC(MAXPN, sizeof(double));
-  Cov.tsdim = 1;
-  Cov.vdim[0] = Cov.vdim[1] = 1;
-  Cov.nsub = 2;
- 
-  for (j = nr=0; nr<currentNrCov; nr++, C++){   
+  for (j = nr = 0; nr<currentNrCov; nr++, C++){   
     int v, variants = *includevariants ? C->variants : 1;
-    Cov.nr = nr;
     for (v=0; v<variants; v++, j++) {
-      //printf("%d %d %s kappas=%d variant %d %d\n", j, nr, C->name, C->kappas, v, C->internal);
-      Cov.typus = (Types) ( type[j] = C->Typi[v] );
-      Cov.domprev = Cov.domown = dom[j] = C->domain;
-      Cov.isoprev = Cov.isoown = iso[j] = C->Isotropy[v];
+       type[j] = C->Typi[v]; 
+       dom[j] = C->domain;
+      iso[j] = C->Isotropy[v];
       if (*includevariants) Nr[j] = nr;
       vdim[j] = C->vdim;
       op[j] = (int) C->maxsub > 0;   
-      C->range(&Cov, &range);
       maxdim[j] = C->maxdim;
       finiterange[j] = C->finiterange;
       simpleArguments[j] = true;
@@ -567,11 +558,12 @@ void GetAttr(int *Nr, int *type, int *op, int *monotone, int *finiterange,
 	}
       monotone[j] = C->Monotone;
       internal[j] = C->internal;
+      for (p=0; p<C->kappas; p++) {
+	paramtype[j * MAXPARAM + p] = C->kappaParamType[p];
+      }
     }
   }
   *n = j;
-  for (p=0; p<MAXPARAM; p++) free(Cov.px[p]);
-  //BUG;
 }
 
 
@@ -775,14 +767,14 @@ const char * internals[internalN] =  {
   "stored.init",  "warn_scale",  "warn_on_grid", 
   "warn_coordinates", "warn_new_definitions", "warn_aspect_ratio",
   "warn_coord_change", "warn_colour_palette", "warn_missing_zenit",
-  "do_tests"
+  "do_tests", "warn_constant", "warn_var"
 };
 
 const char *coords[coordsN] =
   { "xyz_notation", "coord_system", "new_coordunits",
     "coordunits", "varunits", "varnames",
     "coordnames", "new_coord_system",
-    "zenit"// for data.frames
+    "zenit", "polar_coord"// for data.frames
   };
 
 const char * special[specialN] = {"multicopies"};
@@ -1432,6 +1424,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       case 13: wp->warn_color_palette = LOG;       break;
       case INTERNALS_ZENIT: wp->warn_zenit = LOG;       break;
       case 15: wp->do_tests = LOG;       break;
+      case 16: wp->warn_constant = LOG;       break;
+      case 17: wp->warn_var = LOG;       break;
     default: BUG;
       }
     } else {
@@ -1495,7 +1489,10 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       Real(el, name, cp->zenit, 2);
     }
     break; 
-    
+ 
+    case 9: cp->polar_coord = LOG; 
+      break;
+   
    default: BUG;
     }}
     break;
@@ -1872,6 +1869,8 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->warn_color_palette));
     ADD(ScalarLogical(p->warn_zenit));
     ADD(ScalarLogical(p->do_tests));
+    ADD(ScalarLogical(p->warn_constant));
+    ADD(ScalarLogical(p->warn_var));
  }
 
 
@@ -1899,6 +1898,7 @@ SEXP getRFoptions() {
     }
     ADD(ScalarString(mkChar(COORD_SYS_NAMES[p->new_coord_system])));
     SET_VECTOR_ELT(sublist[i], k++, Num(p->zenit, 2, 2));     
+    ADD(ScalarLogical(p->polar_coord));
    }
 
   i++; {
@@ -1968,7 +1968,7 @@ int InternalGetProcessType(cov_model *cov) {
   if (isInterface(cov)) return InternalGetProcessType(cov->sub[0]);
   
   switch(CovList[nr].Typi[0]) {
-  case TcfType: case PosDefType: case NegDefType : case TrendType :
+  case TcfType: case PosDefType: case VariogramType : case TrendType :
   case GaussMethodType : return GAUSSPROC;
   case BrMethodType : return BROWNRESNICKPROC;
   case ProcessType :
@@ -1986,21 +1986,29 @@ int InternalGetProcessType(cov_model *cov) {
  BUG;
 }
  
-SEXP GetProcessType(SEXP model_reg, SEXP model) {
+cov_model *Build_cov(SEXP model_reg, SEXP model) {
   if(currentNrCov < 0) InitModelList();
-  currentRegister = INTEGER(model_reg)[0];
-  if (currentRegister < 0 || currentRegister >= MODEL_MAX) BUG;
-  cov_model **Cov = KEY + currentRegister;
+  int nr = INTEGER(model_reg)[0];
+  if (nr < 0 || nr >= MODEL_MAX) BUG;
+  cov_model **Cov = KEY + nr;
   if (*Cov != NULL) COV_DELETE(Cov);
   assert(*Cov == NULL);
   CMbuild(model, 0, Cov);
-  int nr = InternalGetProcessType(*Cov);
+  return *Cov;
+}
+
+SEXP GetProcessType(SEXP model_reg, SEXP model) {
+  cov_model *cov = Build_cov(model_reg, model);
+  int covnr = InternalGetProcessType(cov);
   SEXP ans;
   PROTECT (ans = allocVector(STRSXP, 1));
-  SET_STRING_ELT(ans, 0, mkChar(CovList[nr].nick));
+  SET_STRING_ELT(ans, 0, mkChar(CovList[covnr].nick));
   UNPROTECT(1);
   return ans;
 }
+
+
+
 
 
 SEXP RFoptions(SEXP options) {
@@ -2247,12 +2255,10 @@ SEXP getelements(SEXP Idx, SEXP Xdim, SEXP N, SEXP Cumgridlen, SEXP Boxes) {
  
  ErrorHandling :
   if (elm != NULL) {
-    for (i=0; i<total; i++) {
-      if (elm[i] != NULL) free(elm[i]);
-    }
-    free(elm);
+    for (i=0; i<total; i++) FREE(elm[i]);
+    UNCONDFREE(elm);
   }
-  if (count != NULL) free(count);
+  FREE(count);
  
   if (err!=NOERROR) XERR(err);
 
@@ -2364,10 +2370,8 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
 
  ErrorHandling :
   if (neighb != NULL) {
-    for (i=0; i<total; i++) {
-      if (neighb[i] != NULL) free(neighb[i]);
-    }
-    free(neighb);
+    for (i=0; i<total; i++) FREE(neighb[i]);
+    UNCONDFREE(neighb);
   }
   if (err!=NOERROR) XERR(err);
 

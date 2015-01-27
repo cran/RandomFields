@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 
  
 #define POISSON_INTENSITY 0
@@ -35,17 +35,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define PGS_VOXEL 0
 #define PGS_CORNER 1
-#define PGS_SIDES PGS_CORNER + 1
+#define PGS_SIDES (PGS_CORNER + 1)
 
 #define PGS_2D_SIDE1 PGS_SIDES
-#define PGS_2D_SIDE2 PGS_SIDES + 1
+#define PGS_2D_SIDE2 (PGS_SIDES + 1)
 
 #define PGS_3D_SIDE1 PGS_SIDES
-#define PGS_3D_SIDE2 PGS_SIDES + 1
-#define PGS_3D_SIDE3 PGS_SIDES + 2
-#define PGS_3D_EDGE1 PGS_SIDES + 3
-#define PGS_3D_EDGE2 PGS_SIDES + 4
-#define PGS_3D_EDGE3 PGS_SIDES + 5
+#define PGS_3D_SIDE2 (PGS_SIDES + 1)
+#define PGS_3D_SIDE3 (PGS_SIDES + 2)
+#define PGS_3D_EDGE1 (PGS_SIDES + 3)
+#define PGS_3D_EDGE2 (PGS_SIDES + 4)
+#define PGS_3D_EDGE3 (PGS_SIDES + 5)
 
 
 int addUnifModel(cov_model *cov, double radius, cov_model **newmodel) {
@@ -62,16 +62,11 @@ int addUnifModel(cov_model *cov, double radius, cov_model **newmodel) {
 void pts_given_shape(double *x, cov_model *cov, double *v) { 
   cov_model *shape = cov->sub[PGS_FCT];
   NONSTATCOV(x, cov->q, shape, v);
-
-  //printf("x = %f %f %v\n", *x, cov->q[0], *v);
-
 }
 
 void logpts_given_shape(double *x, cov_model *cov, double *v, double *sign) { 
   cov_model *shape = cov->sub[PGS_FCT];
   LOGNONSTATCOV(x, cov->q, shape, v, sign);
-
-  //  printf("x = %f %f log=%f\n", *x, cov->q[0], *v, *sign);
 }
 
 int check_pts_given_shape(cov_model *cov) {
@@ -89,9 +84,6 @@ int check_pts_given_shape(cov_model *cov) {
   kdefault(cov, PGS_NORMED, true);
   kdefault(cov, PGS_ISOTROPIC, true);
 
-
-  //PMI(cov, "checking");
- 
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   if (cov->q == NULL) QALLOC(dim);
@@ -112,8 +104,6 @@ int check_pts_given_shape(cov_model *cov) {
   } else ILLEGAL_ROLE;
 
 
-  //    printf("here %d\n");
-  
   // isotropy is the property -- user should not define unisotropic functions!
   // so !isotropic only for special, internal definitions, e.g. 
   // strokorbPoly
@@ -122,34 +112,23 @@ int check_pts_given_shape(cov_model *cov) {
   //    err2 = CHECK(shape, dim, dim, ShapeType, XONLY, ISOTROPIC,
   //		 SCALAR, role);
 
-  //  printf("here2\n");
-  // PMI(shape);
- // but it must be treated in any case as if it was non-isotropic
+
+  // but it must be treated in any case as if it was non-isotropic
   if ((err = CHECK(shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
 		   SCALAR, role)) != NOERROR) {
     if (P0INT(PGS_ISOTROPIC)) BUG;
     XERR(err);
     return err;
   }
-  // if (err2 != NOERROR) SERR("isotropic shape function expected.");
 
   setbackward(cov, shape);
 
   //if (!shape->deterministic) return ERRORNOTPROGRAMMED; // Dichte muss nicht normiert sein und stattdessen durch das mittlere Volumen dividiert werden.
 
   if (pts != NULL) {
-
-    //printf("pts %s %s\n", CovList[pts->nr + 1].nick, CovList[pts->nr + 1].name);
-    //PMI(pts);
-
-    //      assert(dim == 2); print("x");
-    // printf("dim=%d\n", dim);
-    // APMI(pts);
-
     if ((err = CHECK_R(pts, dim)) != NOERROR) return err;
   }
 
-  //  printf("done\n");
  
   return NOERROR;
 }

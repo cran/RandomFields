@@ -76,7 +76,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \bold{Basic models for mixed effect modelling}
 
  \tabular{ll}{
- \command{\link{RMconstant}} \tab constant pre-defined covariance \cr
+ \command{\link{RMfixcov}} \tab constant pre-defined covariance \cr
  \command{\link{RMfixed}} \tab fixed or trend effects;
  Caution: \link{RMfixed} is not
  a function and can be used only in \link[=RFformula]{formula notation}\cr
@@ -131,7 +131,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
 
 \seealso{
-  \link{RC}, \link{RF},  \link{RP}, \link{RR},
+  \link{RC}, \link{RF},  \link{RP}, \link{RR}, \link{R.},
   \command{\link{RFcov}},
   \command{\link{RFformula}},
   \command{\link{RMmodelsAdvanced}},
@@ -147,7 +147,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames(type="positive definite", domain="single variable",
-                isotropy="isotropic", operator=FALSE)
+                isotropy="isotropic", operator=!FALSE) ## RMmodel.Rd
 
 ## an example of a simple model
 model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget

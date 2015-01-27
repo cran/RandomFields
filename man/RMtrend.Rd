@@ -109,15 +109,19 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##################################################
 
 #trend: 1 + x - y, cov: exponential with variance 0.01
-model <- ~ RMtrend(mean=1, plane = c(1,-1)) + RMexp(var=0.01)
+model <- ~ RMtrend(mean=1, plane = c(1,-1)) + RMexp(var=0.04)
 #equivalent model:
-model <- ~ RMtrend(polydeg=1,polycoeff=c(1,1,-1)) + RMexp(var=0.01)
+model <- ~ RMtrend(polydeg=1,polycoeff=c(1,1,-1)) + RMexp(var=0.4)
 #Simulation
 x <- 0:10
+simulated0 <- RFsimulate(model=model, x=x, y=x)
+plot(simulated0)
+
+%to do
+## NOTE: the future way of modelling the trend will be:
+model <-  1 + R.p(1) - R.p(2) + RMexp(var=0.4)
 simulated <- RFsimulate(model=model, x=x, y=x)
 plot(simulated)
-
-
 
 \dontshow{\dontrun{
 

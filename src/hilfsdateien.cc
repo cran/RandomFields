@@ -81,6 +81,6 @@ SEXP getChar() {
   PROTECT(str=allocVector(STRSXP, 1));
   SET_STRING_ELT(str, 0, mkChar(s));  
   UNPROTECT(1);
-  free(s);
+  FREE(s);
   return str;
 }

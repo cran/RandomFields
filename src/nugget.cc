@@ -92,8 +92,8 @@ void covmatrix_nugget(cov_model *cov, double *v, int*nonzeros) {
 
 char iscovmatrix_nugget(cov_model VARIABLE_IS_NOT_USED *cov) {  return true; }
 
-void Inversenugget(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) { 
-  *v = (*x==1.0) ? 0.0 : RF_INF; //or better 0.0 => error?
+void Inversenugget(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) { 
+  *v = 0.0; ///(*x==1.0) ? 0.0 : RF_INF; //or better 0.0 => error?
 }
 
 
@@ -301,7 +301,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 		      value, ivalue, NULL, &origdim, NULL, &origdim,
 		      dummy, &ndummy, &err);
       if (err != 0) {
-	free(A);
+	FREE(A);
 	GERR1("dgeev failed for '%s'", NICK(cov));
       }
       for (d=0; d<origdim; d++) {
@@ -311,7 +311,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 	if (!(s->simple = fabs(value[d]) + fabs(ivalue[d]) > EIGENVALUE_EPS))
 	   break;
       }
-      free(A);
+      FREE(A);
     }
   }
 
@@ -386,7 +386,8 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   double 
     *res = cov->rf;
   bool loggauss = GLOBAL.gauss.loggauss;
-
+  GLOBAL.gauss.loggauss = false;
+ 
   s = (nugget_storage*) cov->Snugget;
 //  sqrtnugget = s->sqrtnugget;
 
@@ -453,6 +454,7 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
+  GLOBAL.gauss.loggauss = loggauss;
 }
 
 

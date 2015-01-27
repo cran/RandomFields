@@ -88,8 +88,8 @@
   \command{print} returns also an invisible list that is convenient to access.
 }
 
-\author{Alexander Malinowski
-  \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
+  
 
 \seealso{
  \command{\link{RFempiricalvariogram}},

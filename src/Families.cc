@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suix2te 330, Boston, MA  02111-1307, USA.
 
 #include "RF.h"
 #include "Families.h"
-#include "Covariance.h"
+#include "Operator.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -1366,7 +1366,7 @@ void range_unif(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 }
 
 
-#define SURFACE(dim) (dim * intpow(2.0, dim)) //of a d-dim cube with edge length 2, i.e. a (dim-1) dimensional surface !
+#define SURFACE(dim) ((dim) * intpow(2.0, dim)) //of a d-dim cube with edge length 2, i.e. a (dim-1) dimensional surface !
 
 
 // Ring constanter intensitaet
@@ -1552,7 +1552,7 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
 
 #define IDX_INNER 0
 #define IDX_STEPS 1
-#define IDX_OUTER NSTEP + IDX_STEPS // change also KeyInfo if changed
+#define IDX_OUTER (NSTEP + IDX_STEPS) // change also KeyInfo if changed
 #define ASSIGN_IDX_INNER (-IDX_STEPS)
 #define ASSIGN_IDX_OUTER (-IDX_STEPS - 1)
 #define ASSIGN_IDX_MISMATCH (-IDX_STEPS - 2)

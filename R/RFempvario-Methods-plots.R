@@ -630,7 +630,7 @@ plotRFempVariogUnbinned <- function(x, coord.units, variab.units, variab.names,
                                rep(c(-1, 1), each=length(coords[[1]]))))
     lab.names <- dimnames(x@centers$x)[[2]]
     
-    if (!(x@centers$spacedim==1 && x@centers$Time) &&
+    if (!(x@centers$spatialdim==1 && x@centers$Zeit) &&
         !(x@centers$x[3,2]==dim(x@emp.vario)[2]))
       coords[[2]] <- sort(unique((coords[[2]] - min(coords[[2]])) *
                                  rep(c(-1, 1), each=length(coords[[2]]))))
@@ -767,18 +767,18 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
   
 
   has.sd <- !is.null(x@sd)
-  model <- c(model)
-  if(!is.null(model))
+  
+ if(!is.null(model)) {
+   if (!is.list(model)) model <- list(model)
     if (!all(unlist(lapply(model, FUN=function(x) is(x, ZF_MODEL)))))
       stop("model must be (a list of elements) of class 'ZF_MODEL'")
-  if(!is.null(model)){
     modelnames <-
       if(length(names(model)) > 0) names(model)
       else paste("model", 1:length(model))
     methodnames <- c(methodnames, modelnames)
     names(model) <- modelnames
     newx <- c(newx, model)
-  }
+ }
   n.methods <- length(methodnames)
   
     

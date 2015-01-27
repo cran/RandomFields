@@ -295,9 +295,9 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   // 
   
 ErrorHandling:
-  if (hx != NULL) free(hx);
-  if (hy != NULL) free(hy);
-  if (hz != NULL) free(hz);
+  FREE(hx);
+  FREE(hy);
+  FREE(hz);
 
   cov->simu.active = err == NOERROR;
   return err;
@@ -310,8 +310,8 @@ int cmpcells(cell_type *aa, cell_type *bb, int *n) {
 }
 
 void delcell(cell_type* aa, int VARIABLE_IS_NOT_USED *n) {
-    free(aa->code);
-    free(aa);
+    FREE(aa->code);
+    FREE(aa);
 }
 
 cell_type *determine_cell(double gx, double gy, double* hx, double* hy, 
@@ -376,8 +376,8 @@ cell_type *determine_cell(double gx, double gy, double* hx, double* hy,
   
  ErrorHandling:
   if (cell != NULL) {
-      if (cell->code != NULL) free(cell->code);
-      free(cell);
+     FREE(cell->code);
+     UNCONDFREE(cell);
   }
   return NULL;
 }
@@ -406,6 +406,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   bool
     additive = (bool) P0INT(HYPER_ADDITIVE),
     loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
   int len[MAXHYPERDIM];
 
   hx = hy = hr = NULL;
@@ -498,8 +499,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	      j += dim;
 	    }
 	  }
-	  free(hx); free(hy); free(hr); 
-	  hx = hy = hr = NULL;
+	  FREE(hx); FREE(hy); FREE(hr); 
 	  avltr_destroy(tree, delcell);
 	  tree = NULL;
 	}/* for nn */
@@ -542,13 +542,15 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     // no standardization up to now -- later max-stable ?? TODO
   }
 
+  GLOBAL.gauss.loggauss = loggauss;
   return;
 
  ErrorHandling: 
+  GLOBAL.gauss.loggauss = loggauss;
 //  if (PL>0)
-  if (hx != NULL) free(hx);
-  if (hy != NULL) free(hy);
-  if (hr != NULL) free(hr);
+  FREE(hx);
+  FREE(hy);
+  FREE(hr);
   if (tree!=NULL) avltr_destroy(tree, delcell);
   XERR(err); 
   error("hyperplane failed\n");

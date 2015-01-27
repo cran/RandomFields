@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "RF.h"
 #include "primitive.h"
-// #include "Covariance.h"
+#include "Coordinate_systems.h"
 
 
 bool is_top(cov_model *cov) {
@@ -232,11 +232,11 @@ void GetNAPosition(cov_model *cov,
 	    }
 	  } else { // not $
 	    // standard setting !
-	    if (cov->nr==MIXEDEFFECT || cov->nr==TREND) {
+	    if (isTrend(cov->typus) && isTrend(C->kappaParamType[i])) {
 	      // || cov->nr==MLEMIXEDEFFECT)
 	      if (excludetrends) continue;
 	      assert(type[i] == REALSXP);	      
-	      sorts[*NAs] = cov->nr==TREND ? TRENDPARAM : MIXEDPARAM;
+	      sorts[*NAs] = cov->nr==MIXEDEFFECT ? MIXEDPARAM : TRENDPARAM;
 	    } else {
 	      if (type[i] == INTSXP)
 		sorts[*NAs] = INTEGERPARAM; 
@@ -323,6 +323,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   sortsofparam sorts[MAX_NA];
   bool isnan[MAX_NA];
   NAname_type names;
+  currentRegister = INTEGER(model_reg)[0];
 
   bool skipchecks = GLOBAL.general.skipchecks;
   GLOBAL.general.skipchecks = true;
@@ -330,7 +331,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   CheckModelInternal(model, ZERO, ZERO, ZERO, INTEGER(spatialdim)[0], 
 		     INTEGER(xdimOZ)[0], 1, 1, false, false, 
 		     LOGICAL(Time)[0], 
-		     KEY + INTEGER(model_reg)[0]);  
+		     KEY + currentRegister);  
   sprintf(ERROR_LOC, "getting positions with NA: ");
 
   // print("global=%d\n", GLOBAL.fit.lengthshortname);
@@ -338,7 +339,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   GLOBAL.general.skipchecks = skipchecks;
   NAs = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
-  GetNAPosition(KEY[MODEL_USER], &NAs, mem, &elmnts, mem_elmnts,
+  GetNAPosition(KEY[currentRegister], &NAs, mem, &elmnts, mem_elmnts,
 		names, sorts, isnan,  
 		covModels,
 		covzaehler,
@@ -362,13 +363,11 @@ int countnas(cov_model *cov, int level) {
     cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
 
-  if (cov->nr == MIXEDEFFECT && level==0) { // || cov->nr == MLEMIXEDEFFECT )
-    if (cov->nrow[MIXED_BETA] > 0) return 0; // b is given
-  }
-  if (cov->nr == TREND && level==0) return 0;
-
   count= 0;
   for (i=0; i<C->kappas; i++) {
+    if (level == 0 && isTrend(cov->typus) && isTrend(C->kappaParamType[i])) {
+      if (cov->nr == MIXEDEFFECT && cov->nrow[MIXED_BETA] > 0) continue;
+    }
     if (nrow[i] == 0 || ncol[i] == 0 || C->paramtype(i, 0, 0) == IGNOREPARAM
 	|| C->paramtype(i, 0, 0) == DONOTRETURNPARAM )
       continue;
@@ -422,6 +421,10 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
   for (i=0; i<C->kappas; i++) {
       //       print("i=%d %s %s alt=%s\n", i, C->name, C->kappanames[i], 
     //CovList[cov_bound->nr].name);
+
+    if (isTrend(cov->typus) && isTrend(CovList[cov->nr].kappaParamType[i]))
+	continue;
+
     if (C->kappatype[i] >= LISTOF ||
 	C->paramtype(i, 0, 0) == IGNOREPARAM ||
 	C->paramtype(i, 0, 0) == DONOTRETURNPARAM) continue;
@@ -453,12 +456,11 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
 	     
 
 	if (ISNAN(v)) { // entgegen Arith.h gibt ISNA nur NA an !!
-	  if ((!isDollar(cov) || 
-	       i == DVAR ||
-	       (i== DSCALE && cov->q == NULL) || // ! natscaling 
-		 i == DANISO) &&
-		(cov->nr != MIXEDEFFECT && cov->nr != TREND)
-                ) // aniso ?? ABfrage OK ??
+	  if (!isDollar(cov) || 
+	      i == DVAR ||
+	      (i== DSCALE && cov->q == NULL) || // ! natscaling 
+	      i == DANISO		
+	      ) // aniso ?? ABfrage OK ??
 	   {
 	     //		 print("%s %s, r=%d, c=%d: %d <? %d\n",
 	     //		C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
@@ -568,7 +570,13 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
       BUG;
       dmin = dmax = RF_NA;
     }
-    
+ 
+    if (C->paramtype(i, 0, 0) == IGNOREPARAM
+	|| C->paramtype(i, 0, 0) == DONOTRETURNPARAM
+	|| cov->nr==MIXEDEFFECT
+	|| (isTrend(cov->typus) && isTrend(CovList[cov->nr].kappaParamType[i])))
+      continue;
+   
     for (r=0; r<end; r++) {
       v = RF_NA;
       if (type[i] == REALSXP) {
@@ -584,17 +592,9 @@ void GetNARanges(cov_model *cov, cov_model *min, cov_model *max,
       } else BUG;
 
       if (ISNAN(v)) {
-	if (C->paramtype(i, 0, 0) == IGNOREPARAM
-	    || C->paramtype(i, 0, 0) == DONOTRETURNPARAM
-	    || cov->nr==MIXEDEFFECT
-	    || cov->nr==TREND) {
-	  continue;
-	}
-
 	if (isDollar(cov)) {
 	  assert(i!=DAUSER && i!=DPROJ);
 	}
-
 	minpile[*NAs] = dmin;
 	maxpile[*NAs] = dmax;
 //	    print("%s %d %f %f\n", C->kappanames[i],r, dmin, dmax);
@@ -653,7 +653,7 @@ int CheckEffect(cov_model *cov) {
 	  p = PARAM(next, i);
 	  for (j=0; j<end; j++) {
 	    if (ISNAN(p[j])) {
-	      return next->nr == CONSTANT ? effect_error :
+	      return next->nr == FIX ? effect_error :
 		na_var ? SpVarEffect : SpaceEffect;
 		  // NA in e.g. scale for constant matrix -- does not make sense
 	    }
@@ -663,8 +663,8 @@ int CheckEffect(cov_model *cov) {
       next = next->sub[0]; // ok
     }
   
-    int xx =  next->nr == CONSTANT  
-      ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
+    int xx =  next->nr == FIX  
+      ? (cov->nrow[FIX_M] > cov->ncol[FIX_M]
 	 ? (na_var ? RvarEffect : RandomEffect)
 	 : (na_var ? LVarEffect : LargeEffect)
 	 )
@@ -674,8 +674,8 @@ int CheckEffect(cov_model *cov) {
     }
 
 
-    return next->nr == CONSTANT  
-      ? (cov->nrow[CONSTANT_M] > cov->ncol[CONSTANT_M]
+    return next->nr == FIX  
+      ? (cov->nrow[FIX_M] > cov->ncol[FIX_M]
 	 ? (na_var ? RvarEffect : RandomEffect)
 	 : (na_var ? LVarEffect : LargeEffect)
 	 )
@@ -730,6 +730,26 @@ int CheckEffect(cov_model *cov) {
     return effect;
   }
 
+
+  if (isTrend(cov->typus)) {
+    int nkappa = CovList[cov->nr].kappas;
+ 
+    for (j=0; j<nkappa; j++) {
+      if (isTrend(CovList[cov->nr].kappaParamType[j])) {
+	if (!PisNULL(j)) {
+	  return ISNA(P0(j)) || ISNAN(P0(j)) ?FixedTrendEffect : DetTrendEffect;
+	} else {	  
+	  if (cov->kappasub[j] == NULL) return FixedTrendEffect;
+	  else if (isRandom(cov->kappasub[j])) return RandomEffect;
+	  else error("model too complex");
+	}
+      }
+    }
+  }
+
+
+
+
   cov_model *sub = cov;
   bool Simple = true;
   if (isDollar(sub)) {
@@ -779,13 +799,13 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
     mle_openmin[MAX_NA], mle_openmax[MAX_NA];
   int i,  covzaehler[MAXNRCOVFCTS], effect[MAXSUB], nas[MAXSUB],
     newxdim, neffect, NAs,
-    err = NOERROR, 
-    modelnr = INTEGER(model_reg)[0];
+    err = NOERROR;
   const char *colnames[8] =
     {"pmin", "pmax", "type", "is.nan", "min", "max", "openmin", "openmax"};
  SEXP trans_inv, isotropic, Sxdim,
    matrix, nameAns, nameMatrix, RownameMatrix, 
    ans=NULL;
+  currentRegister = INTEGER(model_reg)[0];
 
 #define total 7
 
@@ -802,11 +822,11 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
 		     false, //grid
 		     LOGICAL(distances)[0], //distances
 		     LOGICAL(Time)[0], 
-		     KEY + modelnr);  
+		     KEY + currentRegister);  
 
-  //  APMI(KEY[modelnr]); //, "setandget");
+  //  APMI(KEY[currentRegister]); //, "setandget");
 
-  cov = key = KEY[modelnr];
+  cov = key = KEY[currentRegister];
   if (isInterface(cov)) {
     cov = cov->key == NULL ? cov->sub[0] : cov->key;
   }
@@ -850,14 +870,14 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
 
   //  print("hier %d\n", INTEGER(shortlen)[0]);
 
-  MEM_ELMNTS[modelnr] = MEM_NAS[modelnr] = 0;
+  MEM_ELMNTS[currentRegister] = MEM_NAS[currentRegister] = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
 
   // !!
-  GetNAPosition(cov, MEM_NAS + modelnr, MEMORY[modelnr], 
-		MEM_ELMNTS + modelnr, MEMORY_ELMNTS[modelnr],
+  GetNAPosition(cov, MEM_NAS + currentRegister, MEMORY[currentRegister], 
+		MEM_ELMNTS + currentRegister, MEMORY_ELMNTS[currentRegister],
 		names, MEM_SORTS, MEM_ISNAN, 		
-		MEM_COVMODELS[modelnr],
+		MEM_COVMODELS[currentRegister],
 		covzaehler,
 		INTEGER(allowforintegerNA)[0],
 		INTEGER(shortlen)[0],
@@ -869,12 +889,12 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
 
   NAs = 0; GetNARanges(cov, min, max, mle_min, mle_max, &NAs);
   //  print("XXz modelnr=%d $s\n", modelnr, NAs);
-  if (NAs != MEM_NAS[modelnr]) BUG;
+  if (NAs != MEM_NAS[currentRegister]) BUG;
   NAs = 0; GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &NAs);
   // print("XX-------- amodelnr=%d %d\n", modelnr, NAs);
- if (NAs != MEM_NAS[modelnr]) BUG;
+ if (NAs != MEM_NAS[currentRegister]) BUG;
   NAs = 0; GetNARanges(cov, openmin, openmax, mle_openmin, mle_openmax, &NAs);
-  if (NAs != MEM_NAS[modelnr]) BUG;
+  if (NAs != MEM_NAS[currentRegister]) BUG;
  //  print("XX-------- amodelnr=%d %d\n", modelnr, NAs);
  
   anyeffect=false;
@@ -911,22 +931,22 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
   INTEGER(Sxdim)[0] = newxdim;
 
   // print("hYere returnx tsdim %d\n", INTEGER(tsdim)[0]);
-  PROTECT(matrix =  allocMatrix(REALSXP, MEM_NAS[modelnr], 8));
-  PROTECT(RownameMatrix = allocVector(STRSXP, MEM_NAS[modelnr]));
+  PROTECT(matrix =  allocMatrix(REALSXP, MEM_NAS[currentRegister], 8));
+  PROTECT(RownameMatrix = allocVector(STRSXP, MEM_NAS[currentRegister]));
   PROTECT(nameMatrix = allocVector(VECSXP, 2));
-  for (i=0; i<MEM_NAS[modelnr]; i++) {
+  for (i=0; i<MEM_NAS[currentRegister]; i++) {
     REAL(matrix)[i                       ] = mle_pmin[i];
-    REAL(matrix)[i +     MEM_NAS[modelnr]] = mle_pmax[i];
-    REAL(matrix)[i + 2 * MEM_NAS[modelnr]] = MEM_SORTS[i];
-    REAL(matrix)[i + 3 * MEM_NAS[modelnr]] = (int) MEM_ISNAN[i];
-    REAL(matrix)[i + 4 * MEM_NAS[modelnr]] = mle_min[i];
-    REAL(matrix)[i + 5 * MEM_NAS[modelnr]] = mle_max[i];
-    REAL(matrix)[i + 6 * MEM_NAS[modelnr]] = mle_openmin[i];
-    REAL(matrix)[i + 7 * MEM_NAS[modelnr]] = mle_openmax[i];
+    REAL(matrix)[i +     MEM_NAS[currentRegister]] = mle_pmax[i];
+    REAL(matrix)[i + 2 * MEM_NAS[currentRegister]] = MEM_SORTS[i];
+    REAL(matrix)[i + 3 * MEM_NAS[currentRegister]] = (int) MEM_ISNAN[i];
+    REAL(matrix)[i + 4 * MEM_NAS[currentRegister]] = mle_min[i];
+    REAL(matrix)[i + 5 * MEM_NAS[currentRegister]] = mle_max[i];
+    REAL(matrix)[i + 6 * MEM_NAS[currentRegister]] = mle_openmin[i];
+    REAL(matrix)[i + 7 * MEM_NAS[currentRegister]] = mle_openmax[i];
     SET_STRING_ELT(RownameMatrix, i, mkChar(names[i]));
     // 
     //    for (int jj=0; jj<=7; jj++) 
-    //    print("i=%d %d %e\n", i, jj, REAL(matrix)[i + jj * MEM_NAS[modelnr]]);
+    //    print("i=%d %d %e\n", i, jj, REAL(matrix)[i + jj * MEM_NAS[currentRegister]]);
     //print("i=%d %s %e %e\n", i, names[i], mle_pmin[i], mle_pmax[i]);
   }
       

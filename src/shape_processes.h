@@ -411,6 +411,8 @@ int check_dummy(cov_model *cov);
 int struct_dummy(cov_model *cov, cov_model **newmodel);
 
 
+int checkTrendEval(cov_model *cov);
+void do_TrendEval(cov_model *cov, gen_storage *s);
 
 //-----------------------------------------------------------------
 // unsorted

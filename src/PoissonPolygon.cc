@@ -186,8 +186,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 		
 		nneu = rpois(2.0*R);		
 		if(nneu>0){
-			if (vprim != NULL) free(vprim); 
-			vprim = NULL;
+		  FREE(vprim); 
 			n += nneu;
 			vdtemp = (double **) realloc(vdual, (n+1)*sizeof(double *));
 			if(vdtemp != NULL) vdual = vdtemp; else {
@@ -274,21 +273,10 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 
  ErrorHandling:
 	
-	// free vdual and vsave
-	for(i=0;i<n;i++)
-	  if(vsave[i] != NULL) {
-	    free(vsave[i]);
-	    vsave[i] = NULL;
-	  }
-	if (vdual != NULL) free(vdual);
-	if (vsave != NULL) free(vsave);
-	vdual = NULL;
-	vsave = NULL;
-
-
-	// free vprim
-	if (vprim != NULL) free(vprim);
-	vprim = NULL;
+	for(i=0;i<n;i++) FREE(vsave[i]);
+	FREE(vdual);
+	FREE(vsave);
+	FREE(vprim);
 	return err;
 }
 
@@ -298,14 +286,8 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
  * frees allocated memory
  ****/
 void freePolygon(struct polygon *P) {
-  if (P->e != NULL) {
-    free (P->e); 
-    P->e = NULL; // neu
-  }
-  if (P->v != NULL) {
-    free (P->v); 
-    P->v = NULL; // neu
-  }	
+  FREE(P->e); 
+  FREE(P->v); 
 }
 
 /*******************************************************************************

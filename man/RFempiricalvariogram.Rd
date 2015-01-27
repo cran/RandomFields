@@ -114,10 +114,9 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
 
 \author{
 Sebastian Engelke, \email{sebastian.engelke@unil.ch}
-\url{https://hec.unil.ch}
+%\url{https://hec.unil.ch}
 
-Johannes Martini, \email{jmartin2@gwdg.de}
-\url{http://stochastik.math.uni-goettingen.de}
+Johannes Martini, \email{jmartin2@uni-goettingen.de}
 
 Martin Schlather, \email{schlather@math.uni-mannheim.de}
 \url{http://ms.math.uni-mannheim.de/de/publications/software}

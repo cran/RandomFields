@@ -652,3 +652,20 @@ RFparameters <- function(...) {
   
 }
 
+
+plotWithCircles <- function(data, factor=1.0,
+                            xlim=range(data[,1])+c(-maxr,maxr),
+                            ylim=range(data[,2])+c(-maxr,maxr),
+                            col=1, fill=0, ...) {
+  ## marked point process: presents positive values of data as radii of circles
+  CIRLLE.X <- cos(seq(0,2*pi,l=20))
+  CIRLLE.Y <- sin(seq(0,2*pi,l=20))
+  circle <- function(x,r) { polygon(x[1]+ r* CIRLLE.X,x[2]+ r* CIRLLE.Y,
+                                    col=fill, border=col) }
+  ##r <- x$NormedData - min(x$NormedData) +1
+  ##r <- r/max(r)/nrow(x$coord) * diff(xlim) * diff(ylim) * 2.5;
+  maxr <- max(data[,3])
+  plot(Inf, Inf, xlim=xlim, ylim=ylim, xlab="", ylab="",...)
+  for (i in 1:nrow(data)) { circle(data[i,c(1,2)], factor*data[i,3]) }
+}
+

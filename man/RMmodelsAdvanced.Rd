@@ -16,6 +16,7 @@
 \command{\link{RMbessel}} \tab Bessel family \cr
 \command{\link{RMcircular}} \tab circular model \cr
 \command{\link{RMcauchy}} \tab modified Cauchy family \cr
+\command{\link{RMconstant}} \tab spatially constant model \cr
 \command{\link{RMcubic}} \tab cubic model (see Chiles \& Delfiner) \cr
 \command{\link{RMdagum}} \tab Dagum model \cr
 \command{\link{RMdampedcos}} \tab exponentially damped cosine \cr
@@ -77,6 +78,7 @@ Here, most of the models are composed models (operators).
  \command{\link{RMcoxisham}} \tab Cox-Isham model \cr
  \command{\link{RMcurlfree}} \tab curlfree (spatial) field (stationary and anisotropic)\cr
  \command{\link{RMdivfree}} \tab divergence free (spatial) vector valued field, (stationary and anisotropic)\cr
+ \command{\link{RMgennsst}} \tab generalization of Gneiting's non-separable space-time model \cr 
  \command{\link{RMiaco}} \tab non-separabel space-time model\cr
  % obsolete -- included by Cauchy --- should be given by an example
  \command{\link{RMmastein}} \tab Ma-Stein model\cr
@@ -107,9 +109,15 @@ matrix\cr
 
 \bold{Non-stationary models}
 \tabular{ll}{
- \command{\link{RMnonstwm}} \tab one of Stein's non-stationary Wittle-Matern model \cr
+ \command{\link{RMnonstwm}} \tab one of Stein's non-stationary
+ Wittle-Matern models \cr
+ \command{\link{RMprod}} \tab scalar product\cr
 }
 
+\bold{Negative definite models that are not variograms}
+\tabular{ll}{
+\command{\link{RMsum}} \tab a non-stationary variogram model\cr
+}
 
 
 \bold{Models related to max-stable random fields (tail correlation functions)}
@@ -267,6 +275,13 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
  to Environmental Problems.} New York: Springer.
  % \item Schlather, M. (2002) Models for stationary max-stable
  % random fields. \emph{Extremes} \bold{5}, 33-44.
+ \item
+   Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
  \item Yaglom, A.M. (1987) \emph{Correlation Theory of Stationary and
  Related Random Functions I, Basic Results.}
  New York: Springer.

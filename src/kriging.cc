@@ -107,8 +107,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   for (i=0; i<dim; i++) origin[i] = 0.0;				\
 
 #define STANDARD_END				\
-  if (C!=NULL) free(C);				\
-  /*  if (dist!=NULL) free(dist);*/		\
+  FREE(C);				\
   if (err != NOERROR) {				\
     int endforX;				\
     endforX = nx * vdim * rep;			\
@@ -117,8 +116,8 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   return NULL;
   
 #define STANDARD_END2				\
-  if (var!=NULL) free(var);			\
-  if (lambda!=NULL) free(lambda);		\
+  FREE(var);					\
+  FREE(lambda);					\
   STANDARD_END					
 
 SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
@@ -259,7 +258,7 @@ SEXP ordinaryKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
   if (pr) PRINTF("\n");
 
  ErrorHandling:
-  if (F!=NULL) free(F);
+  FREE(F);
   STANDARD_END;
 }
 
@@ -341,8 +340,8 @@ SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
   if (pr) PRINTF("\n");
 
  ErrorHandling:
-  if (F!=NULL) free(F);
-  if (mu!=NULL) free(mu);
+  FREE(F);
+  FREE(mu);
   STANDARD_END2;
 }
 
@@ -402,7 +401,7 @@ SEXP universalKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
   if (pr) PRINTF("\n");
 
  ErrorHandling:
-  if (F!=NULL) free(F);
+  FREE(F);
   STANDARD_END;
 }
 
@@ -517,13 +516,13 @@ SEXP universalKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
   if (pr) PRINTF("\n");
   
  ErrorHandling:
-  if (Fmatrix!=NULL) free(Fmatrix);
-  if (fvector!=NULL) free(fvector);
-  if (X1 !=NULL) free(X1);
-  if (lambdak !=NULL) free(lambdak);
-  if (Qmatrix!=NULL) free(Qmatrix);
-  if (Rvector!=NULL) free(Rvector);
-  if (mu!=NULL) free(mu);
+  FREE(Fmatrix);
+  FREE(fvector);
+  FREE(X1);
+  FREE(lambdak);
+  FREE(Qmatrix);
+  FREE(Rvector);
+  FREE(mu);
   STANDARD_END2;
 }
 
@@ -587,8 +586,8 @@ SEXP intrinsicKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
   if (pr) PRINTF("\n");
 
  ErrorHandling:
-  if (F!=NULL) free(F);
-  if (powmatrix!=NULL) free(powmatrix);
+  FREE(F);
+  FREE(powmatrix);
   STANDARD_END;
 }
 
@@ -766,14 +765,14 @@ SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
   if (pr) PRINTF("\n");
   
  ErrorHandling:
-  if (Fmatrix!=NULL) free(Fmatrix);
-  if (fvector!=NULL) free(fvector);
-  if (X1 !=NULL) free(X1);
-  if (lambdak !=NULL) free(lambdak);
-  if (Qmatrix!=NULL) free(Qmatrix);
-  if (Rvector!=NULL) free(Rvector);
-  if (mu!=NULL) free(mu);
-  if (powmatrix!=NULL) free(powmatrix);
+  FREE(Fmatrix);
+  FREE(fvector);
+  FREE(X1);
+  FREE(lambdak);
+  FREE(Qmatrix);
+  FREE(Rvector);
+  FREE(mu);
+  FREE(powmatrix);
   STANDARD_END2;
 }
 
@@ -812,8 +811,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix) {
   }
   
   ErrorHandling :
-  if (dimi != NULL) free(dimi);   
-  dimi = NULL;
+  FREE(dimi);   
   if (err != NOERROR) XERR(err);
 
   return;

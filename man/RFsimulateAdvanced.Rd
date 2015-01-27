@@ -58,7 +58,7 @@
    \item the covariance or variogram model inm case of a Gaussian random
    field (\command{\link{RPgauss}}) and for fields based on Gaussian fields
    (e.g. \command{\link{RPbernoulli}});
-   type \code{\link{RFgetModelNames}(type="negative definite")}
+   type \code{\link{RFgetModelNames}(type="variogram")}
    for a list of available models; see also \command{\link{RMmodel}}
    
    \item the shape function in case of a shot noise process; type
@@ -161,7 +161,7 @@
 
  If the wrapping function of the \code{model} argument is a covariance
  or variogram model (i.e., one of list obtained by
- \code{\link{RFgetModelNames}(type="negative definite",
+ \code{\link{RFgetModelNames}(type="variogram",
  group.by="type")}, by default, a Gaussian field 
  with the corresponding covariance structure is simulated.
  By default, the simulation method is chosen automatically through internal algorithms.
@@ -515,6 +515,22 @@ z <- RFsimulate(x=x, y=x, z=x,
 
 %rl <- function() if (interactive()) readline("Press return")
 %for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
+
+
+
+#############################################################
+##                                                         ##
+## Example 5 : Non-Geometric anisotropy                    ##
+##                                                         ##
+#############################################################
+
+x <- seq(0.1, 6, if (interactive()) 0.12 else 2)
+Aniso <- R.bind(R.p(1)^2, R.p(2)^1.5)
+z <- RFsimulate(RMexp(Aniso = Aniso) + 10, x, x)
+plot(z) 
+
+
+
 
 }}
 \dontshow{FinalizeExample()}

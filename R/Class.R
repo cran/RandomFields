@@ -97,7 +97,7 @@ setClass('RMmodel',
 ## rules for validity checking of ZF_MODEL objects
 setValidity('RMmodel', 
             function(object){
-              #return(TRUE)
+               #return(TRUE)
               isRMmodel <- function(x) is(x, class='RMmodel')
               
               isNUMorDEFAULT <- function(x) {
@@ -126,18 +126,24 @@ setValidity('RMmodel',
               }
                                     
               if(!is.null(object@par.general$var) &&
-                 !isRMmodel(object@par.general$var) &&
-                 !is.na(object@par.general$var) &&
-                 !(object@par.general$var==ZF_DEFAULT_STRING))
+                 !isRMmodel(object@par.general$var)) {
+                if (length(object@par.general$var) > 1)
+                  return("not scalar")
+                if (!is.na(object@par.general$var) &&
+                    (object@par.general$var!=ZF_DEFAULT_STRING))
                 if (object@par.general$var < 0)
                   return("negative variance")
+              }
               
               if(!is.null(object@par.general$scale) &&
-                 !isRMmodel(object@par.general$scale) &&
-                 !is.na(object@par.general$scale) &&
-                 !(object@par.general$scale==ZF_DEFAULT_STRING))
+                 !isRMmodel(object@par.general$scale)) {
+                if (length(object@par.general$scale) > 1)
+                 return("not scalar")
+                if (!is.na(object@par.general$scale) &&
+                    object@par.general$scale!=ZF_DEFAULT_STRING)
                 if(object@par.general$scale < 0)
                   return("negative scale")
+              }
               
               if(!is.null(object@par.general$Aniso) &&
                  !isRMmodel(object@par.general$Aniso) &&
@@ -157,8 +163,7 @@ setValidity('RMmodel',
                    )
                   return("proj must be a vector of non-negative integers")
               }
-              
-              return(TRUE)
+             return(TRUE)
             })
 
 

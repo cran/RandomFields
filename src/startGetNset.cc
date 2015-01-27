@@ -31,14 +31,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "RF.h"
 #include "primitive.h"
-#include "Covariance.h"
+#include "Operator.h"
 #include "variogramAndCo.h"
 
 
 void addkappa(int i, const char *n, SEXPTYPE t, Types ParamType) {
   cov_fct *C = CovList + currentNrCov - 1;
 
-  //  printf("%s %s\n", C->name, n);
+  //   if (ParamType != 7)  printf("%s %s %d\n", C->name, n, ParamType);
 
   assert(n[0] != '\0' && 
 	 (n[0] != ONEARGUMENT_NAME || n[1] != '\0') // reserved for standard parameter names
@@ -47,7 +47,7 @@ void addkappa(int i, const char *n, SEXPTYPE t, Types ParamType) {
 	 // reserved for standard submodel names
 	 );
   assert(i < C->kappas);
-  assert(strcmp(n, ELEMENT) || C->check == checkconstant || 
+  assert(strcmp(n, ELEMENT) || C->check == checkfix || 
 	 C->check == checkmixed);
   strcopyN(C->kappanames[i], n, PARAMMAXCHAR);
   C->kappatype[i] = t;
@@ -358,18 +358,15 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 
 int xxx(int x) {return (int) pow(10, (double) x);}
 
-void crash(int i) {  
-  PRINTF("crash!!!!\n");
- #ifdef LOCAL_MACHINE
-  char m[1];
-  m[i] = m[i-9] + 4;
-  PRINTF("%s\n", m); // not MEMCOPY
+
+void crash() {  
+#ifdef LOCAL_MACHINE
+  //  int i;PRINTF("%d\n", i);char m[1];m[i] = m[i-9] + 4; if (m[0]) i++; else i--; PRINTF("%s\n", m); // not MEMCOPY
+#else 
+  BUG;
 #endif
 }
 
-void crash() {
-  crash(10);
-}
 
 
 void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
@@ -407,7 +404,7 @@ void ErrCovNonstat(double VARIABLE_IS_NOT_USED *x,
     PMI(cov->calling, "ErrCovNonstat"); //
     crash();
   }
-  ERR("unallowed or undefined call of non-domain function");
+  ERR1("unallowed or undefined call of '%s' as a kernel", NAME(cov));
 }
 void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x, 
 		      double VARIABLE_IS_NOT_USED *y, cov_model *cov,
@@ -418,7 +415,7 @@ void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x,
     PMI(cov->calling, "ErrLogCovNonstat"); //
     crash();
   }
-  ERR("unallowed or undefined call of non-domain function (log)");
+  ERR1("unallowed or undefined call of '%s' (log) as a kernel", NAME(cov));
 }
 void Errspectral(cov_model *cov,
 		 gen_storage VARIABLE_IS_NOT_USED *s, 
@@ -511,7 +508,7 @@ int initOK(cov_model *cov, gen_storage *s) {
   for (i=0; i<nk; i++) {
     cov_model *ks = cov->kappasub[i];
     if (ks != NULL) {
-      if (isRandom(C->kappaParamType[i])) {
+      if (isRandom((Types) C->kappaParamType[i])) {
 	random = true;
 	if ((err = INIT(ks, cov->mpp.moments, s)) != NOERROR) return err;
       } else {
@@ -626,13 +623,14 @@ void do_statiso(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 }
 
 static int badname = -1;
-void nickname(const char *name, int nr) {
+void nickname(const char *name, int nr, int type) {
   char dummy[MAXCHAR];
   cov_fct *C = CovList + nr; // nicht gatternr 
   
-  int sl = strlen(CAT_TYPENAMES[C->Typi[0]]);  
+  int sl = strlen(CAT_TYPENAMES[type]);  
   strcopyN(dummy, name, MAXCHAR-sl);
-  sprintf(C->nick, "%s%s", CAT_TYPENAMES[C->Typi[0]], dummy);
+  //printf("%s %s\n",  CAT_TYPENAMES[type], dummy);
+  sprintf(C->nick, "%s%s", CAT_TYPENAMES[type], dummy);
   strcpy(CovNickNames[nr], C->nick);
 
   if ((int) strlen(name) >= (int) MAXCHAR - sl) {
@@ -645,7 +643,7 @@ void nickname(const char *name, int nr) {
   }
 }
 
-void insert_name(int curNrCov, const char *name) {
+void insert_name(int curNrCov, const char *name, int type) {
   cov_fct *C = CovList + curNrCov;
   char dummy[MAXCHAR];
   strcopyN(dummy, name, MAXCHAR);
@@ -655,7 +653,7 @@ void insert_name(int curNrCov, const char *name) {
     PRINTF("Warning! Covariance name is truncated to '%s'.\n", C->name);
   }
   assert(strcmp(InternalName, name));
-  nickname(name, curNrCov);
+  nickname(name, curNrCov, type);
 }
 
 void StandardCovariance(cov_model *cov, double *v){
@@ -802,13 +800,17 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   if (currentNrCov>=MAXNRCOVFCTS) {
     char msg[150];
     sprintf(msg, "maximum number of covariance models reached. Last included  model is '%s'.", CovList[MAXNRCOVFCTS-1].name);
-    warning(msg);
+    error(msg);
   }
 
   if (PL >= PL_DETAILS)
     PRINTF("%d %s vdim=%d statiso=%d iso=%d\n", currentNrCov, name, vdim, stat_iso, isotropy); 
   C->TypeFct = NULL;
   assert(type >=0 && type <= OtherType);
+
+  assert((isotropy >= 0 && (isotropy != ISO_MISMATCH || type == RandomType)) 
+	 || type == MathDefinition);
+
 
   C->Typi[0] = type; // ganz vorne 
   //  printf("%d %s vdim=%d statiso=%d iso=%d\n", currentNrCov, name, vdim, stat_iso, isotropy); 
@@ -820,9 +822,10 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
     C->Isotropy[C->variants] = SPHERICAL_ISOTROPIC;
     C->Typi[C->variants] = PosDefType;
     C->variants++;
-  }
+    //printf("name %s\n", name);
+   }
+  insert_name(currentNrCov, name, type);
 
-  insert_name(currentNrCov, name);
 
   //if (domain == PARAM_DEP) printf("%s\n", C->nick);
 
@@ -835,11 +838,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->minsub = C->maxsub = 0;
   C->domain = domain; 
   C->vdim = vdim; assert(vdim != MISMATCH);
- 
-  assert(!(isotropy < 0 ||
-	   (isotropy == ISO_MISMATCH && type != RandomType) ||
-	   isotropy > ISO_MISMATCH));
- 
+  
   //  if (vdim == SUBMODEL_DEP) printf("SUBMODELDEP %s\n", name);
   //  if (vdim == PREVMODEL_DEP) printf("prevMODELDEP %s\n", name);
 
@@ -877,6 +876,10 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
 				   || type==ProcessType)));
   // assert(monotone != PARAM_DEP);
   C->Monotone = monotone;
+  C->ptwise_definite = !isShape(type) && type != MathDefinition ? pt_mismatch
+    : isTcf(type) || isBernstein(monotone)
+    || (isVariogram(type) && isMonotone(monotone) && C->vdim == 1)
+    ? pt_posdef : pt_unknown;
 
 
   MEMCOPY(C->pref, pref, sizeof(pref_shorttype));
@@ -902,7 +905,8 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->drawmix = NULL;
   C->logmixdens = NULL;
 
-  if (isNegDef(type) || isShape(type)) C->logD = standard_likelihood;
+  if (isVariogram(type) || isShape(type) || 
+      type == MathDefinition) C->logD = standard_likelihood;
 
   C->Struct = stat_iso ? struct_statiso : struct_failed;
   C->Init = stat_iso ? init_statiso : init_failed; // !!!! see isDummyInit below
@@ -925,6 +929,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->TaylorN = C->TailN = MISMATCH;
  
   currentNrCov++;
+
 }
 
 
@@ -934,8 +939,10 @@ bool isDummyInit(initfct Init) {
 
 
 int CopyModel(const char *name, int which) {
-  memcpy(CovList + currentNrCov, CovList + which, sizeof(cov_fct));  
-  insert_name(currentNrCov, name);
+  memcpy(CovList + currentNrCov, CovList + which, sizeof(cov_fct)); 
+  int type = CovList[which].Typi[0];
+  assert(type <= UndefinedType);
+  insert_name(currentNrCov, name, type);
   currentNrCov++;
   return currentNrCov - 1;
 }
@@ -967,7 +974,9 @@ int CopyModel(const char *name, int which, checkfct check) {
 
 void nickname(const char *name) {
   int nr = currentNrCov - 1;
-  nickname(name, nr);
+  int type = CovList[nr].Typi[0];
+  assert(type <= MathDefinition);
+  nickname(name, nr, type);
 }
 
 int IncludePrim(const char *name, Types type,  int kappas, 
@@ -1043,8 +1052,10 @@ int IncludeModel(const char *name, Types type,
   createmodel(name, type, kappas, kappasize, domain, isotropy, check, range,
 	      vdim, pref, maxdim, finiterange, monotonicity);
   //    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
-  assert(!(isotropy == PREVMODELI && maxsub == 0 
-       && strcmp("U", name) != 0 && strcmp("idcoord", name) != 0));
+  // printf("name = %s\n", name);
+  assert(isotropy != PREVMODELI || maxsub != 0 || type == MathDefinition
+	 || strcmp("U", name) == 0 || strcmp("idcoord", name) == 0
+	 || strcmp("constant", name) == 0);
 
   assert(maxsub >= minsub && maxsub <= MAXSUB);
   assert(check != checkOK || maxsub==0);
@@ -1104,22 +1115,36 @@ int IncludeModel(const char *name, Types type,
 		 SCALAR, maxdim, finiterange, monotonicity);
 }
 
+bool addvariantOK(Types type, isotropy_type iso) {
+  int nr = currentNrCov - 1;
+  cov_fct *C = CovList + nr; // nicht gatternr
+  if (C->variants >=  MAXVARIANTS) return false;
+  // printf("A %s\n", C->name);
+  if (C->Isotropy[0] == PREVMODELI || iso == PREVMODELI)
+    if (C->check != checkconstant && C->Typi[0] != MathDefinition) return false;
+  //  printf("B\n");
+  if (equal_coordinate_system(C->Isotropy[C->variants - 1], iso, true)) {
+      if (C->Isotropy[C->variants - 1] > iso &&
+	  C->check != checkpower)  return false;  // see check2x
+      if ((C->Isotropy[C->variants - 1] != iso ||  // see check2x
+	   TypeConsistency(type, C->Typi[C->variants - 1]))) return false;
+    }
+  //  printf("C\n");
+  if (C->Typi[0] > VariogramType && C->Typi[0] != type &&  
+       C->Typi[0] != ShapeType && C->Typi[0] != MathDefinition) 
+    return false;// see also 
+  //                                     e.g.  newmodel _cov cpy in getNset.cc
+  //  printf("D\n");
+     if (iso== SPHERICAL_ISOTROPIC &&
+	 ((C->finiterange == true && isPosDef(type) && C->vdim == SCALAR)
+	 || C->Monotone == COMPLETELY_MON)) return false;
+     return true;
+}
+
 void AddVariant(Types type, isotropy_type iso) {
   int nr = currentNrCov - 1;
   cov_fct *C = CovList + nr; // nicht gatternr
-
-  // printf("%s %d %s %s\n", C->name, C->variants, ISONAMES[iso], TYPENAMES[type]);
-  assert(C->variants < MAXVARIANTS);
-  assert(C->Isotropy[0] != PREVMODELI && type != PREVMODELI);
-  assert(C->Isotropy[C->variants - 1] <= iso || C->check == checkpower);  // see check2x
-  assert((C->Isotropy[C->variants - 1] == iso &&  // see check2x
-	  !TypeConsistency(type, C->Typi[C->variants - 1]))
-	 ||
-	 !equal_coordinate_system(C->Isotropy[C->variants - 1], iso));
-  assert(C->Typi[0] <= NegDefType || C->Typi[0] == type);// see also e.g. 
-  //                                      newmodel _cov cpy in getNset.cc
-  assert(iso != SPHERICAL_ISOTROPIC ||
-	 (!C->finiterange && C->Monotone != COMPLETELY_MON));
+  assert(addvariantOK(type, iso));
   C->Typi[C->variants] = type;
   C->Isotropy[C->variants] = iso;
   C->variants++;
@@ -1742,3 +1767,9 @@ void TailTaylor(double t, double tpow, double texpc, double texppow) {
   assert(C->TailN <= MAXTAYLOR);
 }
 
+
+void setptwise(ptwise_type pt) {
+  int
+    nr = currentNrCov - 1;
+  CovList[nr].ptwise_definite = pt;
+}

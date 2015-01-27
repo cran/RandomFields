@@ -2,9 +2,9 @@
 #ifndef RFsimu_H
 #define RFsimu_H 1
 
-
+#define showfree !true 
 #define DOPRINT true
-//# define RANDOMFIELDS_DEBUGGING 1
+//// 1
 
 
 #include "error.h"
@@ -19,7 +19,7 @@
 #define ASSERT_GATTER(Cov) assert(TrafoOK(Cov, true))
 #define ASSERT_CHECKED(Cov) assert(Cov->checked)
 
-#define DOPRINTF if (DOPRINT) Rprintf
+#define DOPRINTF  if (DOPRINT) Rprintf
 #define KPRINT leer(PrInL);Rprintf
 #define LPRINT {cov_model *lprint_z=cov; int lprint_i=0; while (lprint_z->calling != NULL && lprint_i<10) {lprint_z=lprint_z->calling; if (DOPRINT) {Rprintf(DOT); Rprintf(" ");} lprint_i++;} if (lprint_i==100) {Rprintf("LPRINT i=%d\n", lprint_i);PMI(cov); assert(false);}} if (DOPRINT) Rprintf
 
@@ -29,7 +29,7 @@
 #define ERRLINE 
 
 #define NICK(COV) (isDollar(COV) ? CovList[(COV)->sub[0]->nr].nick : CovList[(COV)->nr].nick)
-
+ 
 
 
 #define MEMCOPY(A,B,C) memcpy(A,B,C)
@@ -37,6 +37,8 @@
 
 #define MALLOC malloc
 #define CALLOC calloc
+#define FREE(X) if ((X) != NULL) {free(X); (X)=NULL;}
+#define UNCONDFREE(X) {free(X); (X)=NULL;}
 
 #define CHECK(C,T,X,type,D,I,V,R) check2X(C,T,X,type,D,I,V,R)
 #define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) check2X(C,T,X,type,D,I,V0,V1,R)
@@ -86,7 +88,8 @@
 #define CALLOC(X, Y) ({DOPRINTF("(CALLOC %s, line %d)\n",__FILE__, __LINE__);assert((X)>0 && X<1e8 && (Y)>0 && (Y)<=64); calloc(X,Y);})
 //#define MALLOC malloc
 //#define CALLOC calloc
-
+#define FREE(X) { if (showfree) DOPRINTF("(free in %s, line %d)\n", __FILE__, __LINE__); if ((X) != NULL) free(X); (X)=NULL; }
+#define UNCONDFREE(X) { if (showfree) DOPRINTF("(free in %s, line %d)\n", __FILE__, __LINE__); free(X); (X)=NULL;}
 #define XX(C) assert((C)->simu.expected_number_simu >= 0|| ({DOPRINTF("Start.\n"); false;}))
 #define YY(C) assert((C)->simu.expected_number_simu >= 0 || ({DOPRINTF("End.\n"); false;}))
 
@@ -167,7 +170,7 @@
 #define PSEXP PENV
 #define PLIST(IDX) PARAMLIST(cov, IDX)
 
-#define PARAMFREE(P, IDX) if ((P)->px[IDX] != NULL) { free((P)->px[IDX]); (P)->px[IDX] = NULL; (P)->ncol[IDX] = (P)->nrow[IDX] = 0;}
+#define PARAMFREE(P, IDX) if ((P)->px[IDX] != NULL) { UNCONDFREE((P)->px[IDX]); (P)->ncol[IDX] = (P)->nrow[IDX] = 0;}
 
 
 #define PARAMALLOC(P, IDX, ROW, COL) {					\
@@ -194,6 +197,12 @@
 #define PtoNULL(IDX) PARAMtoNULL(cov, IDX)
 
 #define QALLOC(nr) QcovALLOC(cov, nr)
+#define QFREE					\
+  if (cov->q != NULL) {				\
+    UNCONDFREE(cov->q);				\
+    cov->qlen = 0;				\
+  }
+
 
 #define FIRST_INIT(init)				\
   int xerr;						\
@@ -256,8 +265,7 @@
 #define MAXLONGCHAR 40 // for RFoptions that are string
 #define MAXUNITSCHAR 10
 
-#define MAXNRCOVFCTS 200
-#define MAXPARAM 20
+#define MAXNRCOVFCTS 300
 #define MAXELEMENTS 100
 #define MAX_NA 30
 #define MAX_MLE_ELMNTS 10
@@ -419,15 +427,22 @@ typedef char NAname_type[MAX_NA][255];
 #define POW_ALPHA 0
 
 ///////////////////////////////////////////////////////////////////////
+// trafo
+#define TRAFO_ISO 0
+
+
+///////////////////////////////////////////////////////////////////////
 // Scatter
 #define SCATTER_STEP 0
 #define SCATTER_MAX 1
 
 ///////////////////////////////////////////////////////////////////////
-// constant
-#define CONSTANT_ELMNT 0
-#define CONSTANT_M 1
-#define CONSTANT_VDIM 2
+// fix
+#define FIX_ELMNT 0
+#define FIX_M 1
+#define FIX_VDIM 2
+#define FIX_VAR 3
+
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -898,7 +913,7 @@ typedef struct registers_param {
   int keynr;
 } registers_param;
 
-#define internalN 16
+#define internalN 18
 extern const char * internals[internalN];
 #define INTERNALS_NEWANISO 2
 #define INTERNALS_ONGRID 9
@@ -911,11 +926,11 @@ typedef struct internal_param{
     stored_init, warn_scale, warn_coordinates, 
     warn_on_grid, warn_new_definitions, warn_aspect_ratio, 
     warn_coord_change, warn_color_palette, warn_zenit,
-    do_tests
+    do_tests, warn_constant, warn_var
     ;// 
 } internal_param;
 
-#define coordsN 9
+#define coordsN 10
 #define COORDS_XYZNOTATION 0
 #define ZENIT 8
 extern const char *coords[coordsN];
@@ -928,6 +943,7 @@ typedef struct coords_param{
   // 2 user variables for data.frames
   char data_names[MAXUNITS][MAXCHAR], x_names[MAXUNITS][MAXCHAR];
   int data_nr_names, x_nr_names, data_idx[2], x_idx[2];
+  bool polar_coord;
 
 } coords_param;
 
@@ -1061,6 +1077,12 @@ typedef enum matrix_type {//TypeMid,
 			  TypeMany} matrix_type;
 
 
+typedef enum ptwise_type {pt_posdef, pt_indef, pt_negdef, 
+			  pt_zero, pt_paramdep, pt_submodeldep,
+			  pt_undefined, pt_unknown, pt_mismatch} 
+  ptwise_type;
+#define last_pt_definite  pt_zero
+
 typedef struct simu_type {
   bool active, pair;   /* has the init_procedure been called successfully? */
   int expected_number_simu;
@@ -1069,7 +1091,7 @@ typedef struct simu_type {
 
 extern const char *METHODNAMES[Forbidden+1],  *ROLENAMES[ROLE_LAST+1], 
   *CAT_TYPENAMES[OtherType + 1],
-  *REGNAMES[MODEL_MAX+1];
+  *REGNAMES[MODEL_MAX+1], *POSITIVITY_NAMES[pt_mismatch + 1] ;
 
 
 // extern int SYS_TO_ISO[nr_coord_sys_proj];
@@ -1219,6 +1241,8 @@ typedef struct cov_fct {
   checkfct check;
   int implemented[Forbidden], Specific;
   ext_bool finiterange;
+  ptwise_type ptwise_definite; 
+
   bool internal, 
     subintern[MAXSUB];   // do any subnames match exactly a parameter name?
   
@@ -1273,9 +1297,9 @@ typedef struct cov_fct {
 extern int currentNrCov, currentRegister;
 typedef struct cov_fct cov_fct;
 extern cov_fct *CovList;
-extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
-  GAUSS, NUGGET, PLUS, MLEPLUS, MIXEDEFFECT, BALL, ECF, MULT,
-  DISTRIBUTION,  DETERM_DISTR, GAUSS_DISTR, SETPARAM, SET_DISTR,
+extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,  GENNSST_INTERN,
+  GAUSS, NUGGET, PLUS, MLEPLUS, MIXEDEFFECT, BALL, ECF, MULT, C_FACTOR,
+  DISTRIBUTION,  DETERM_DISTR, GAUSS_DISTR, SETPARAM, SET_DISTR, PROD,
   COVMATRIX, RFGET, COVFCTN,
   DOLLAR, POWER_DOLLAR,  MLE_ENDCOV,  SPLIT, SCATTER, MCMC_PGS, MCMC,
   ISO2ISO,SP2SP, SP2ISO, S2ISO, S2SP, S2S, SId, E2E, E2EIso, 
@@ -1283,12 +1307,12 @@ extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
   FIRST_PLANE, LAST_PLANE, EARTHKM2CART, EARTHMILES2CART,
   EARTHKM2GNOMONIC, EARTHMILES2GNOMONIC,
   EARTHKM2ORTHOGRAPHIC, EARTHMILES2ORTHOGRAPHIC, 
-  NATSC_USER, NATSC_INTERN, TREND, CONSTANT, 
+  NATSC_USER, NATSC_INTERN, TREND, FIX, 
   LOC, SET_DISTR, SCALESPHERICAL, TRUNCSUPPORT, BROWNRESNICK, 
   STROKORB_MONO, STROKORB_BALL_INNER, POLYGON, RECTANGULAR,
   IDCOORD, MULT_INVERSE,
   SHAPESTP, SHAPEAVE, SPHERICAL, UNIF, MPPPLUS, PTS_GIVEN_SHAPE,
-  STATIONARY_SHAPE, STANDARD_SHAPE,
+  STATIONARY_SHAPE, STANDARD_SHAPE, TRAFO,
   DENSITY, VARIOGRAM_CALL, SIMULATE,
   BRORIGINAL_USER, BRMIXED_USER, BRSHIFTED_USER,
   ARCSQRT_DISTR,SHAPEPOW, POW, SCATTER, GNEITING_INTERN,
@@ -1298,7 +1322,7 @@ extern int GENERALISEDCAUCHY, STABLE, BROWNIAN, CAUCHY,
   DOLLAR_PROC, PLUS_PROC,
   MPPPLUS_PROC, MULT_PROC, TREND_PROC,
   BINARYPROC, BROWNRESNICKPROC, GAUSSPROC, POISSONPROC,
-  SCHLATHERPROC, SMITHPROC, CHI2PROC, EXTREMALTPROC,
+  SCHLATHERPROC, SMITHPROC, CHI2PROC, EXTREMALTPROC, TRENDEVAL,
   NUGGET_USER,  NUGGET_INTERN,
   CIRCEMBED, CUTOFF, STEIN, SPECTRAL_PROC_USER, SPECTRAL_PROC_INTERN, 
   DIRECT, SEQUENTIAL, 
@@ -1550,8 +1574,8 @@ typedef struct direct_storage {
 // see sequential.cc
 typedef struct sequ_storage {
   int back, totpnts, spatialpnts, ntime, initial;
-  double *U22, *G, *MuT, *U11,  *Cov21, *Inv22;
-    res_type *res0;
+  double *U11, *U22, *MuT,  *G,   *Cov21, *Inv22;
+  res_type *res0;
 } sequ_storage;
 
 
@@ -1623,34 +1647,43 @@ typedef struct pgs_storage {
   // urpsprunglich nur fuer pts_given_shape; jedoch allgemein
   // fuer shape functionen
   bool flat, estimated_zhou_c, logmean; 
-  coord_type xgr;
   double old_zhou, // for mcmc only
   totalmass, // (inverser) Normierungsfaktor, um Raeumliche Funktion
   //            zu einer Dichte zu machen
-    currentthreshold, log_density, globalmin,
-    *single, *total, *halfstepvector,  // global
-    *supportmin, *supportmax, *supportcentre, // global inkl. dompp
-    *own_grid_start, *own_grid_step,
-    *own_grid_len, // only for HUETCHEN_OWN_GRIDSIZE
-    *v, *x, *y,  // local
-    *localmin, *localmax, // local
-    *minmean, *maxmean, // standard_shape
-    *xstart, *inc,// local dompp
-    intensity, alpha;
+    currentthreshold, log_density, globalmin, intensity, alpha;
   int 
     own_grid_cumsum[MAXMPPDIM],
-    size, *len, // global
-     *pos, // local
-    *min, *max,  *gridlen, *start, *end, *delta, *nx;// local dompp
-  // not used in pgs, but in variogramAndCo.cc
-  int *endy, *startny, *ptrcol, *ptrrow;
-  double *C0x, *C0y, *z, *cross, **Val;
-  param_set_fct param_set;
-  cov_model *cov;
-
+    size; //  *len, // global
+ 
   long double sum_zhou_c, sq_zhou_c;
   long int n_zhou_c;
   double zhou_c; // c in oesting, s, zhoy
+
+  // Huetchen
+  double *v, *y;  // local
+  coord_type xgr;
+  int *pos, // local
+     *min, *max;// local dompp
+  double *single, *total, *halfstepvector,  // global
+    *localmin, *localmax, // local
+    *minmean, *maxmean; // standard_shape
+
+ 
+  // rf_interface.cc
+   double
+     *supportmin, *supportmax, *supportcentre, // global inkl. dompp
+      *own_grid_start, *own_grid_step,
+     *own_grid_len; // only for HUETCHEN_OWN_GRIDSIZE
+  int *gridlen, *end, *start, *delta, *nx;
+  double *xstart, *x, *inc;// local dompp
+
+
+  // not used in pgs, but in variogramAndCo.cc
+  int *endy, *startny, *ptrcol, *ptrrow;
+  double *C0x, *C0y, *cross, *z,  **Val;
+  // param_set_fct param_set;
+  cov_model *cov;
+
 } pgs_storage;
 
 typedef struct set_storage {
@@ -1702,6 +1735,7 @@ typedef struct dollar_storage {
   matrix_type type;
   double *z, *y, *z2, *y2, *save_aniso, *inv_aniso;
   int *cumsum, *nx, *total, *len;
+  bool simplevar;
 } dollar_storage;
 
 typedef struct gatter_storage {
@@ -1710,7 +1744,7 @@ typedef struct gatter_storage {
 
 typedef struct earth_storage {
   double 
-  *X, *Y, *U, *V,
+  *X, *Y, *U, *V, 
     P[9], cart_zenit[3]; // earth2cart u.ae.
 } earth_storage;
 
@@ -1844,7 +1878,9 @@ extern char NEWMSG[LENERRMSG];
 #define SERR1(X,Y) { FERR1(X, Y); return ERRORM;}
 #define CERR1(X,Y) { FERR1(X, Y); err=ERRORM; continue; }
 #define SERR2(X, Y, Z) { sprintf(ERRORSTRING, X, Y, Z);  DEBUGINFOERR; return ERRORM;}
+#define CERR2(X, Y, Z) { sprintf(ERRORSTRING, X, Y, Z);  err=ERRORM; continue;}
 #define SERR3(X, Y, Z, A) { sprintf(ERRORSTRING, X, Y, Z, A); DEBUGINFOERR; return ERRORM;}
+#define CERR3(X, Y, Z, A) { sprintf(ERRORSTRING, X, Y, Z, A); err=ERRORM; continue;}
 #define SERR4(X, Y, Z, A, B) { sprintf(ERRORSTRING, X, Y, Z, A, B); DEBUGINFOERR;  return ERRORM;}
 #define SERR5(X, Y, Z, A, B, C) { sprintf(ERRORSTRING, X, Y, Z, A, B, C); DEBUGINFOERR; return ERRORM;}
 #define SERR6(X, Y, Z, A, B, C, D) { sprintf(ERRORSTRING, X, Y, Z, A, B, C, D);  DEBUGINFOERR; return ERRORM;}
@@ -2132,7 +2168,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim, Types type,
 void kdefault(cov_model *cov, int i, double v);
 void DeleteGatter(cov_model **Cov);
 
-extern pref_type PREF_ALL, PREF_NOTHING;
+extern pref_type PREF_ALL, PREF_NOTHING, PREF_TREND;
 
 #define MAXDEFMATRIX 3
 //extern double *userdefinedCovMatrix[MAXDEFMATRIX][MAXMAKEEXPLICITE];
@@ -2321,6 +2357,8 @@ typedef struct cov_model {
   int taylorN, // number of summands in the taylor expansion -- whatever the
   // exponents of the terms are
     tailN; // dito
+
+  ptwise_type ptwise_definite;
 
 
   ce_storage *Sce;
@@ -2519,7 +2557,7 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols);
     CovList[(Cov)->gatternr].DoRandom(Cov, S);			      \
     PL++;							      \
   }
-#define COV(X, Cov, V) {  ASSERT_GATTER(Cov); CovList[(Cov)->gatternr].cov(X, Cov, V);}
+#define COV(X, Cov, V) { ASSERT_GATTER(Cov); CovList[(Cov)->gatternr].cov(X, Cov, V);}
 #define LOGCOV(X, Cov, V, S) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].log(X, Cov, V, S);}
 #define SHAPE COV
 #define FCTN COV
@@ -2666,6 +2704,7 @@ bool isNatsc(cov_model *cov);
 
 bool isPosDef(cov_model *cov);
 bool isNegDef(cov_model *cov);
+bool isVariogram(cov_model *cov);
 bool isProcess(cov_model *cov);
 bool isGaussMethod(cov_model *cov);
 bool isBRuserProcess(cov_model *cov);
@@ -2679,8 +2718,9 @@ bool isOther(cov_model *cov);
 
 bool isTcf(Types type);
 bool isPosDef(Types type);
+bool isVariogram(Types type);
 bool isNegDef(Types type);
-bool isDefinite(Types type);
+//bool isDefinite(Types type);
 bool isProcess(Types type);
 bool isGaussMethod(Types type);
 bool isBRuserProcess(Types type);
@@ -2711,30 +2751,6 @@ bool isBrownResnickProcess(cov_model *cov);
 bool isMaxStable(cov_model *cov);
 
 bool isCov(cov_model *cov);
-
-bool isIsotropic(isotropy_type iso);
-bool isAnyIsotropic(isotropy_type iso);
-bool isSpaceIsotropic(isotropy_type iso);
-bool isZeroSpaceIsotropic(isotropy_type iso);
-bool isVectorIsotropic(isotropy_type iso);
-bool isSymmetric(isotropy_type iso);
-bool isCartesian(isotropy_type iso);
-bool isSpherical(isotropy_type iso);
-bool isCylinder(isotropy_type iso);
-bool isEarth(isotropy_type iso);
-bool isAnySpherical(isotropy_type iso);
-bool isAnySphericalIso(isotropy_type iso);
-bool isPrevModelI(cov_fct *C);
-bool isUnreduced(cov_fct *C);
-bool isCoordinateSystem(isotropy_type iso);
-bool atleastSpecialised(isotropy_type iso, isotropy_type as);
-bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2);
-bool TrafoOK(cov_model *cov, bool all);
-bool is_any(isotropy_type iso, cov_fct *C);
-bool is_all(isotropy_type iso, cov_fct *C);
-typedef bool (*isofct)(isotropy_type iso); /* h, cov, result */ 
-bool is_any(isofct iso, cov_fct *C);
-bool is_all(isofct iso, cov_fct *C);
 typedef bool (*typusfct)(Types type); /* h, cov, result */ 
 bool is_any(typusfct t, cov_fct *C);
 bool is_all(typusfct t, cov_fct *C);
@@ -2882,6 +2898,24 @@ typedef int (*avl_comparison_func) (cell_type *, cell_type *, int *);
 typedef void (*avl_node_func) (cell_type*, int *);
 typedef cell_type *(*avl_copy_func) (cell_type*, int *);
 
+bool CallingSet(cov_model *cov);
+void includeStandardMath();
 
+#define I_COL_NA -1
+
+void setptwise(ptwise_type pt);
+
+
+#ifdef LOCAL_MACHINE
+#define STOPAFTER(COND, DO) 				\
+  static bool __stopafter__ = false;			\
+  if (__stopafter__ && !(COND)) { DO; BUG;}		\
+  __stopafter__  = COND;				
+#else 
+#define STOPAFTER(COND, DO) 	
+#endif
+  							
+    
+bool TrafoOK(cov_model *cov, bool all);
 
 #endif

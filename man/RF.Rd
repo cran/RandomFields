@@ -21,6 +21,9 @@
     \tabular{ll}{
       \bold{User's function} \tab \bold{Internal task}
       \cr
+     \command{\link{RFcalc}} \tab performs some simple calculations
+    based on \command{\link{R.models}}
+    \cr
     \command{\link{RFcov}} \tab assigns to a covariance model the
     covariance values
     at given locations
@@ -29,16 +32,16 @@
     matrix of covariance values at given locations
     \cr
     %   \command{\link{RFget}} \tab not implemented yet\cr
-    \command{\link{RFfctn}} \tab assigns to a model the
-    value of the function at given locations. In case of a covariance
-    model \command{\link{RFfctn}} is identical to \command{\link{RFcov}}.
-    \cr
-    \command{\link{RFdistr}} \tab generic function
+   \command{\link{RFdistr}} \tab generic function
     assigning to a distribution family various values of the
     distribution % (density function, distribution function, quantile,
     random sample)
     \cr
-    \command{\link{RFpseudovariogram}} \tab assigns to a  model the
+    \command{\link{RFfctn}} \tab assigns to a model the
+    value of the function at given locations. In case of a covariance
+    model \command{\link{RFfctn}} is identical to \command{\link{RFcov}}.
+    \cr
+     \command{\link{RFpseudovariogram}} \tab assigns to a  model the
     values of the pseudo variogram
     at given locations\cr
     \command{\link{RFsimulate}} \tab assigns to a model
@@ -122,7 +125,7 @@
 
 \seealso{
    \link{RC}, \link{RM}, \link{RP},
- \link{RR},
+ \link{RR}, \link{R.},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
 }
 \examples{

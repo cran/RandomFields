@@ -37,38 +37,35 @@ RFempiricalvariogram <- function(
   ## to do: distances
   if (!missing(distances) && length(distances)>0)
     stop("option distances not programmed yet.")
-#  Print(data)
-  
-  new <- rfPrepare(x=x, y=y, z=z, T=T, distances=distances, grid=grid,
-                   data=data, fillall=TRUE, unconditional=TRUE, vdim=vdim)
+
+  neu <- CheckData(x=x, y=y, z=z, T=T, distances=distances, grid=grid,
+                   data=data, fillall=TRUE, allowFirstCols=FALSE,
+                   vdim=if (missing(vdim)) NULL else vdim)
 
 #  options(str=list(strict.width="no", digits.d=3, vec.len=200))
-# Print(new)
+# Print(neu)
   
-  if (missing(vdim)) {
-    vdim <- if (!is.null(new$vdim)) new$vdim else 1
+  if (missing(vdim) || length(vdim) == 0) {
+    vdim <- if (!is.null(neu$vdim)) neu$vdim else 1
   } else {
-    if (!is.null(new$vdim) && vdim!=new$vdim)
+    if (!is.null(neu$vdim) && vdim!=neu$vdim)
       warning("given multivariate dimension 'vdim' does not match multivariate dimension of the data")
   }
   
-  data <- new$fulldata
-
-#  Print(vdim, new$given,new$variab.names, new$fullgiven, new$total)
-
-#  Print(data)
- # xxxx
   
-  x <- new$x
-  y <- new$y ## will be NULL
-  z <- new$z ## will be NULL
-  stopifnot(is.null(y), is.null(z))
-  T <- new$T
-  repetitions <- as.integer(length(data) / (new$restotal * vdim))
+  data <- neu$fulldata
+  x <- neu$fullgiven$x
+  stopifnot(is.null(neu$fullgiven$y), is.null(neu$fullgiven$z))
+  T <- neu$fullgiven$T
+  restotal <- neu$fullgiven$restotal
+  grid <- neu$fullgiven$grid
+  spatialdim <- neu$fullgiven$spatialdim
+  repetitions <- as.integer(length(data) / (restotal * vdim))
+  
   if (repetitions==0) stop("no data given")
-  if (length(data) != new$restotal * vdim * repetitions)
+  if (length(data) != restotal * vdim * repetitions)
     stop("number of data does not match coordinates")
-  dim.data <- c(new$restotal, vdim, repetitions)
+  dim.data <- c(restotal, vdim, repetitions)
   dim(data) <- dim.data
 
 #  Print(data); lll
@@ -87,11 +84,10 @@ RFempiricalvariogram <- function(
   if(is.null(bin) || length(bin)==0) bin <- 20
   if (length(bin) == 1) {
     ## automatic bin depending on coords
-    #    Print(new$x)
-    if(new$grid)
-      bin <- seq(0, max(new$x[2, ] * new$x[3, ]) / 2, len = bin) 
+    if(grid)
+      bin <- seq(0, max(x[2, ] * x[3, ]) / 2, len = bin) 
     else {
-      bin <- seq(0, sqrt(sum((apply(new$x, 2, max)-apply(new$x, 2, min))^2))/2,
+      bin <- seq(0, sqrt(sum((apply(x, 2, max)-apply(x, 2, min))^2))/2,
                  len = bin)
     }
     if (RFopt$general$printlevel >= PL_SUBIMPORTANT)
@@ -100,16 +96,16 @@ RFempiricalvariogram <- function(
   }
 
 
-#  Print(RFopt$empvario, new)
+#  Print(RFopt$empvario, neu)
     
-  fft <- RFopt$empvario$fft && new$grid
+  fft <- RFopt$empvario$fft && grid
   pseudo <- RFopt$empvario$pseudovariogram
   phi0 <- RFopt$empvario$phi0 # 0 if automatic
   theta0 <- RFopt$empvario$theta0 # 0 if automatic
-  time <- !is.null(new$T)
+  time <- !is.null(T)
 
-  thetagiven <- !is.null(theta) && new$spacedim > 2
-  phigiven <- !is.null(phi) && new$spacedim > 1
+  thetagiven <- !is.null(theta) && spatialdim > 2
+  phigiven <- !is.null(phi) && spatialdim > 1
   deltagiven <- !is.null(deltaT) && all(deltaT > 0)
   basic <- !(time || phigiven || thetagiven)
  
@@ -133,7 +129,7 @@ RFempiricalvariogram <- function(
   n.bins <- length(bin) - 1
   
   
-  T <- if (!time) c(1, 1, 1) else new$T
+  if (!time) T <-  c(1, 1, 1)
   phi <- if (!phigiven) c(0, 0) else c(phi0, phi)        
   theta <- if (!thetagiven) c(0, 0) else c(theta0, theta)
   if (!deltagiven) deltaT <- c(0, 0)
@@ -185,25 +181,24 @@ RFempiricalvariogram <- function(
 
   
   if (fft) {
-    #Print(new)
+    #Print(neu)
 
     ## to do: das liest sich alles irgendwie komisch
     maxspatialdim <- 3
         
-    if (ncol(new$x) > maxspatialdim)
+    if (ncol(x) > maxspatialdim)
       stop("fft does not work yet for spatial dimensions greater than ",
            maxspatialdim)
-    if (ncol(new$x)<maxspatialdim)  # not matrix(0, ...) here!
+    if (ncol(x)<maxspatialdim)  # not matrix(0, ...) here!
       ##                              since x is a triple
-      new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x),
-                                   ncol=maxspatialdim-ncol(new$x)))
+     x <- cbind(x, matrix(1, nrow=nrow(x), ncol=maxspatialdim-ncol(x)))
      
-    newdim <- c(new$x[3, ], if (time) T[3])
+    neudim <- c(x[3, ], if (time) T[3])
       
     ## last: always repetitions
     ## last but: always vdim
     ## previous ones: coordinate dimensions
-    dim(data) <- c(newdim, dim.data[-1])
+    dim(data) <- c(neudim, dim.data[-1])
     
       
     ## to achieve a reflection in x and z instead of y we transpose the
@@ -212,7 +207,7 @@ RFempiricalvariogram <- function(
     sumvals <- crossvar[[1]]
     nbvals <- crossvar[[2]]
     
-    back <- .Call("fftVario3D", as.double(new$x), 
+    back <- .Call("fftVario3D", as.double(x), 
                   as.double(sumvals), as.double(nbvals), 
                   as.double(bin), as.integer(n.bins), 
                   as.integer(T[3]), 
@@ -250,10 +245,10 @@ RFempiricalvariogram <- function(
 
      if (basic) {           
       back <- .C("empiricalvariogram", 
-                 as.double(new$x), ## new definition
-                 as.integer(new$spacedim), as.integer(new$l), 
+                 as.double(x), ## neu definition
+                 as.integer(spatialdim), as.integer(neu$fullgiven$l), 
                  as.double(data),
-                 as.integer(repetitions), as.integer(new$grid), 
+                 as.integer(repetitions), as.integer(grid), 
                  as.double(bin), as.integer(n.bins), as.integer(0), 
                  emp.vario = double(totalbins), emp.vario.sd=double(totalbins), 
                  n.bin= integer(totalbins), PACKAGE="RandomFields")
@@ -268,14 +263,13 @@ RFempiricalvariogram <- function(
       ## cases to treat in the c program. However, there is some lost
       ## of speed in the calculations...
 
-      stopifnot(is.matrix(new$x))
-      if (ncol(new$x)<3)  # not matrix(0, ...) here! since x could be a triple
-        new$x <- cbind(new$x, matrix(1, nrow=nrow(new$x), ncol=3-ncol(new$x)))
-      ##    new$x <- rfConvertToOldGrid(new$x)
-      
+      stopifnot(is.matrix(x))
+      if (ncol(x)<3)  # not matrix(0, ...) here! since x could be a triple
+        x <- cbind(x, matrix(1, nrow=nrow(x), ncol=3-ncol(x)))
+       
       back <-
-        .C("empvarioXT", as.double(new$x), as.double(T), as.integer(new$l), 
-           as.double(data), as.integer(repetitions), as.integer(new$grid), 
+        .C("empvarioXT", as.double(x), as.double(T), as.integer(neu$fullgiven$l), 
+           as.double(data), as.integer(repetitions), as.integer(grid), 
            as.double(bin), as.integer(n.bins), 
            as.double(c(phi[1], phi[2])), 
            as.double(c(theta[1], theta[2])), 
@@ -354,12 +348,12 @@ RFempiricalvariogram <- function(
   #  Print(namedim[i], namedim[i] %in% c("vdim1", "vdim2"))
     name[[i]] <-
       if (namedim[i] %in% c("vdim1", "vdim2")) {
-          if (length(new$variab.names) == 0) NULL
-          else rep(new$variab.names, length.out=dims[i])
+          if (length(neu$variab.names) == 0) NULL
+          else rep(neu$variab.names, length.out=dims[i])
       } else if (namedim[i] != "bins") paste(namedim[i], 1:dims[i], sep="")  
   }
   dimnames(emp.vario) <- name
-#  } else names(emp.vario) <- new$variab.names[1]
+#  } else names(emp.vario) <- neu$variab.names[1]
 
 #  Print(emp.vario, fft)
 
@@ -374,7 +368,7 @@ RFempiricalvariogram <- function(
             theta.centers=thetabins,
             T=Tbins,
             vdim = vdim,
-            coord.units = new$coordunits,
+            coord.units = neu$fullgiven$coordunits,
             variab.units = variab.units,
             call=call)
   else {
@@ -387,7 +381,7 @@ RFempiricalvariogram <- function(
               theta.centers=thetabins,
               T=Tbins,
               vdim = vdim,
-              coord.units =  new$coordunits,
+              coord.units =  neu$fullgiven$coordunits,
               variab.units = variab.units
            )
     class(l) <- "RF_empVariog"

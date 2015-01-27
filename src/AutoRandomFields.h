@@ -20,6 +20,7 @@
 #define MAXTBMVDIM 5
 #define MAXGETNATSCALE 5
 
+#define MAXPARAM 20
 
 
 typedef int domain_type;
@@ -99,18 +100,18 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 
 
 #define MAXFIELDS 10
-#define MODEL_USER (MAXFIELDS+0)  // for user call of Covariance etc. 
-#define MODEL_UNUSED  (MAXFIELDS+1)  // unused  
-#define MODEL_INTERN (MAXFIELDS+2) // for kriging, etc; internal call of cov 
-#define MODEL_SPLIT (MAXFIELDS+3) // split covariance model and other auxiliary methods 
-#define MODEL_GUI (MAXFIELDS+4)   // RFgui 
-#define MODEL_MLE (MAXFIELDS+5) // mle covariance model 
-#define MODEL_MLESPLIT (MAXFIELDS+6)  // ="= 
-#define MODEL_MLETREND (MAXFIELDS+7)  // mle trend model !! 
-#define MODEL_BOUNDS (MAXFIELDS+8)  // MLE, lower, upper 
-#define MODEL_KRIGE  (MAXFIELDS+9)
-#define MODEL_COND  (MAXFIELDS+10)
-#define MODEL_ERR  (MAXFIELDS+11)
+#define MODEL_USER (MAXFIELDS + 0)  // for user call of Covariance etc. 
+#define MODEL_UNUSED  (MAXFIELDS + 1)  // unused  
+#define MODEL_INTERN (MAXFIELDS + 2) // for kriging, etc; internal call of cov 
+#define MODEL_SPLIT (MAXFIELDS + 3) // split covariance model and other auxiliary methods 
+#define MODEL_GUI (MAXFIELDS + 4)   // RFgui 
+#define MODEL_MLE (MAXFIELDS + 5) // mle covariance model 
+#define MODEL_MLESPLIT (MAXFIELDS + 6)  // ="= 
+#define MODEL_MLETREND (MAXFIELDS + 7)  // mle trend model !! 
+#define MODEL_BOUNDS (MAXFIELDS + 8)  // MLE, lower, upper 
+#define MODEL_KRIGE  (MAXFIELDS + 9)
+#define MODEL_COND  (MAXFIELDS + 10)
+#define MODEL_ERR  (MAXFIELDS + 11)
 #define MODEL_MAX MODEL_ERR
 
 
@@ -133,11 +134,14 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 #define PL_SUBDETAILS 10
 
 typedef enum Types {
-  TcfType, PosDefType, NegDefType, ProcessType, GaussMethodType, 
+  TcfType, PosDefType, VariogramType, NegDefType, 
+  ProcessType, GaussMethodType, 
   BrMethodType, // change also rf_globals.R if deleted
   PointShapeType, RandomType, ShapeType, TrendType, InterfaceType, 
   UndefinedType, // Bedeutung: C->Type:TypeFct existiert; cov->typus:ungesetzt
-  OtherType // always last
+  MathDefinition,
+  OtherType, // always last for usual use
+  NN1, NN2, NN3 , NN4 // for use in generateMmodels only
 } Types;
 
 extern const char *ISONAMES[LAST_ISO + 1], 
@@ -182,10 +186,6 @@ typedef enum sortsofparam { // never change ordering; just add new ones !!!!!!
 // never change the ordering -- at least chech nich Standard in location_rules
 //     in gauss.cc
 //
-//     variables: METHODNAMES, Besselupperbound, selectlocal, do_comp_meth,
-//                initmethod, do_incomp_meth, Standard, LastDefault,
-//		DirectFst, DirectLst, raw, 
-//		Allowed, allowed 
 typedef enum Methods {
   CircEmbed,     // Circulant embedding - must always be the first one!  //0
   CircEmbedCutoff,
@@ -194,7 +194,7 @@ typedef enum Methods {
   SpectralTBM,   // Spectral turning bands, only 2 dimensional 
   Direct,        // directly, by matrix inversion  // 5
   Sequential,    // sequential simulation 
-  Markov,        // Gaussian Markov Field -- currently not programmed yet 
+  TrendEval,        // Trend evaluation
   Average,       // Random spatial averages 
   Nugget,        // just simulate independent variables 
   RandomCoin,    // "additive MPP (random coins)"  // 10
@@ -216,7 +216,7 @@ typedef enum Methods {
 		 
 #define INTERNAL_PARAM "internal"
 
-#define MAXVARIANTS 5
+#define MAXVARIANTS 6
 
 
 #define GETMODEL_AS_SAVED 0    

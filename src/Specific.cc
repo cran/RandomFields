@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
  
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 #include <R_ext/Lapack.h>
 //#include <R_ext/Linpack.h>
 
@@ -49,7 +49,7 @@ int check_specificGauss(cov_model *cov) {
   //    APMI(cov); //assert(false);
   if (key == NULL) {
 #define SPEC_TYPES 4
-    Types type[SPEC_TYPES] = {PosDefType, PosDefType, NegDefType, TrendType};
+    Types type[SPEC_TYPES] = {PosDefType, PosDefType, VariogramType, TrendType};
     int i,
       iso[SPEC_TYPES] = {SYMMETRIC, SYMMETRIC, SYMMETRIC, CARTESIAN_COORD},
       dom[SPEC_TYPES] = {XONLY, KERNEL, XONLY, XONLY};    
@@ -167,6 +167,7 @@ void do_specificGauss(cov_model *cov, gen_storage *S) {
   cov_model *key = cov->key;
   location_type *loc = Loc(cov);
   bool loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
   double *res = cov->rf;
 
   assert(key != NULL);
@@ -175,5 +176,6 @@ void do_specificGauss(cov_model *cov, gen_storage *S) {
     long i, vdimtot = loc->totalpoints * cov->vdim[0];
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
+  GLOBAL.gauss.loggauss = loggauss;
 }
 

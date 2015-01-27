@@ -35,7 +35,7 @@ extern "C" {
   void GetAttr(int *nr, int *type, int *op, int *monotone, int *finiterange, 
 	       int * simpleArguments,
 	       int *internal, int *stat, int *iso, int *maxdim, int *vdim,
-	       int *includevariants, int*n);
+	       int *includevariants, int *paramtype, int*n);
   void GetRange(int *nr, int *dim, int *index, double *params, int *lparam,
 		double *range, int *lrange);
   void GetNrParameters(int *covnr, int* kappas);
@@ -109,7 +109,8 @@ extern "C" {
      GENERAL_NATURALSCALING: (boolean)
      is called PracticalRange in R  (see Chiles&Delfiner?!) 
   */
-  
+
+
   // for isotropic spatial data
   void empiricalvariogram(double *x, int *dim, int *lx,
 			  double *values, int *repet,

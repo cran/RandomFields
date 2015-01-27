@@ -4,7 +4,6 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
  (library for simulation of random fields)
-
  Copyright (C) 2001 -- 2014 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
@@ -27,11 +26,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
- 
-#include <string.h>
+ #include <string.h>
+#include <R_ext/Linpack.h>
+
 #include "RF.h"
 #include "primitive.h"
-#include <R_ext/Linpack.h>
+#include "Coordinate_systems.h"
 
 
 void LOC_NULL(location_type *loc) {
@@ -45,7 +45,8 @@ void LOC_NULL(location_type *loc) {
   loc->delete_x = true;
   loc->x = loc->y = loc->caniso = NULL;
   loc->T[0] = loc->T[1] = loc->T[2] = 0.0;
-  loc->i_row = loc->i_col = loc->cani_ncol = loc->cani_nrow = -1;
+  loc->i_row = loc->i_col = I_COL_NA;
+  loc->cani_ncol = loc->cani_nrow = NA_INTEGER;
 }
  
      
@@ -56,21 +57,20 @@ void LOC_DELETE(location_type **Loc) {
     
   if (loc->x != NULL) {
     if (loc->delete_x) {
-      if (loc->y != NULL && loc->y != loc->x) free(loc->y);
-      free(loc->x); 
+      if (loc->y != NULL && loc->y != loc->x) UNCONDFREE(loc->y);
+      UNCONDFREE(loc->x); 
     }     
   }
-  if (loc->caniso != NULL) free(loc->caniso);
+  FREE(loc->caniso);
   // it may happen that both are set ! Especially after calling 
   // partial_loc_set in variogramAndCo.cc
   if (loc->xgr[0] != NULL && loc->spatialdim>0) {
-    if (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0]) free(loc->ygr[0]);
-    free(loc->xgr[0]); ///
+    if (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0]) 
+      UNCONDFREE(loc->ygr[0]);
+    UNCONDFREE(loc->xgr[0]); ///
   }
   
-  free(*Loc);
-  *Loc = NULL;
-
+  UNCONDFREE(*Loc);
 }
 
 
@@ -125,16 +125,15 @@ void removeOnly(cov_model **Cov) {
  }
 
  void MPPPROPERTIES_DELETE(mpp_properties *Mpp) {   
-   if (Mpp->mM != NULL) free(Mpp->mM);
-   Mpp->mM = NULL;
-   if (Mpp->mMplus != NULL) free(Mpp->mMplus);
-   Mpp->mMplus = NULL;  
+   FREE(Mpp->mM);
+   FREE(Mpp->mMplus);
  }
 
 
 void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   cov_model *cov = *Cov;
 
+  //printf("deleting %s\n", NAME(cov));
   assert(cov != NULL);
 
   int i, j,
@@ -149,10 +148,11 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
 	listoftype *list = PLIST(i);
 	if (list->deletelist) {
 	  for (j=0; j<cov->nrow[i]; j++) {
-	    free(list->p[j]);  
+	    UNCONDFREE(list->p[j]);  
 	  }
 	}
       }
+      //printf("    - %d %d\n", i, last);
       PFREE(i);
       cov->ncol[i] = cov->nrow[i] = SIZE_NOT_DETERMINED; // ==0
     }
@@ -162,20 +162,16 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
 
   if (cov->ownkappanames != NULL) {
     int kappas = CovList[cov->nr].kappas;
-    for (j=0; j<kappas; j++) 
-      if (cov->ownkappanames[j] != NULL) free(cov->ownkappanames[j]);
-    free(cov->ownkappanames);
-    cov->ownkappanames = NULL;
+    for (j=0; j<kappas; j++) FREE(cov->ownkappanames[j]);
+    UNCONDFREE(cov->ownkappanames);
   }
   
-  if (cov->q != NULL) {
-    free(cov->q);
-    cov->qlen = 0;
-  }
-   // important check in combination with above; can be easily removed or 
+  QFREE;
+ 
+  // important check in combination with above; can be easily removed or 
   // generalised  !!!!
  
-  if (cov->MLE != NULL) free(cov->MLE);
+  FREE(cov->MLE);
 
   //MPPPROPERTIES_DELETE(&(cov->mpp));
 
@@ -185,7 +181,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
     // printf("deleting key %s\n", CovList[cov->key->nr].name);
     COV_DELETE(&(cov->key));
   }
-  if (cov->rf != NULL && cov->origrf) free(cov->rf);
+  if (cov->rf != NULL && cov->origrf) UNCONDFREE(cov->rf);
 
   ce_DELETE(&(cov->Sce));
   localCE_DELETE(&(cov->SlocalCE));
@@ -221,8 +217,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   simu->active = simu->pair = false;
   simu->expected_number_simu = 0;
 
-  free(*Cov);
-  *Cov = NULL;
+  UNCONDFREE(*Cov);
 }
 
 void COV_DELETE_WITHOUT_LOC(cov_model **Cov) { 
@@ -365,6 +360,7 @@ void COV_NULL(cov_model *cov) {
   cov->logspeed = RF_NA;
   cov->delflag = 0;
   cov->full_derivs = cov->rese_derivs = MISMATCH;
+  cov->ptwise_definite = pt_undefined;
 
   cov->deterministic = true;
   cov->monotone = MISMATCH; 
@@ -397,8 +393,8 @@ void FFT_NULL(FFT_storage *FFT)
 
 void FFT_destruct(FFT_storage *FFT)
 {
-  if (FFT->iwork!=NULL) {free(FFT->iwork);}
-  if (FFT->work!=NULL) {free(FFT->work);} 
+  FREE(FFT->iwork);
+  FREE(FFT->work);
   FFT_NULL(FFT);
 }
 
@@ -410,19 +406,18 @@ void ce_DELETE(ce_storage **S) {
       vdim = x->vdim,      
       vdimSQ = vdim * vdim;
     if (x->c!=NULL) {
-      for(l=0; l<vdimSQ; l++) if(x->c[l]!=NULL) free(x->c[l]);
-      free(x->c);
+      for(l=0; l<vdimSQ; l++) FREE(x->c[l]);
+      UNCONDFREE(x->c);
     }
     if (x->d!=NULL) {
-      for(l=0; l<vdim; l++) if(x->d[l]!=NULL) free(x->d[l]);
-      free(x->d);
+      for(l=0; l<vdim; l++) FREE(x->d[l]);
+      UNCONDFREE(x->d);
     }
     FFT_destruct(&(x->FFT));
-    if (x->aniso != NULL) free(x->aniso);
-    if (x->gauss1 != NULL) free(x->gauss1);
-    if (x->gauss2 != NULL) free(x->gauss2);
-    free(*S);
-    *S = NULL;
+    FREE(x->aniso);
+    FREE(x->gauss1);
+    FREE(x->gauss2);
+    UNCONDFREE(*S);
   }
 }
 
@@ -446,9 +441,8 @@ void localCE_DELETE(localCE_storage**S)
 {
   localCE_storage* x = *S;
   if (x!=NULL) {
-    if (x->correction != NULL) free(x->correction);
-    free(*S);
-    *S = NULL;
+    FREE(x->correction);
+    UNCONDFREE(*S);
   }
 }
 
@@ -462,9 +456,8 @@ void localCE_NULL(localCE_storage* x){
 void approxCE_DELETE(approxCE_storage **S) {
   approxCE_storage* x = * S;
   if (x != NULL) {
-    if (x->idx != NULL) free(x->idx);
-    free(*S);
-    *S = NULL;
+    FREE(x->idx);
+    UNCONDFREE(*S);
   }
 }
 
@@ -477,10 +470,9 @@ void approxCE_NULL(approxCE_storage* x){
 void direct_DELETE(direct_storage  ** S) {
   direct_storage *x = *S;
   if (x!=NULL) {
-    if (x->U!=NULL) free(x->U); 
-    if (x->G!=NULL) free(x->G);
-    free(*S);
-    *S = NULL;
+    FREE(x->U); 
+    FREE(x->G);
+    UNCONDFREE(*S);
   }
 }
 
@@ -496,8 +488,7 @@ void direct_NULL(direct_storage  *x) {
 void hyper_DELETE(hyper_storage  **S) {
   hyper_storage *x = *S; 
   if (x != NULL) {
-    free(*S);
-    *S = NULL; 
+    UNCONDFREE(*S);
   }
 }
 
@@ -509,10 +500,9 @@ void hyper_NULL(hyper_storage* x) {
 void mixed_DELETE(mixed_storage ** S) {
   mixed_storage *x = *S;
   if (x!=NULL) {
-   if (x->Xb != NULL) free(x->Xb);
-   if (x->mixedcov != NULL) free(x->mixedcov);
-   free(*S);
-   *S = NULL;
+    FREE(x->Xb);
+    FREE(x->mixedcov);
+    UNCONDFREE(*S);
   }
 }
 
@@ -533,10 +523,9 @@ void nugget_DELETE(nugget_storage ** S)
 {
   nugget_storage *x = *S;
   if (x != NULL) {
-    if (x->pos!=NULL) free(x->pos);
-    if (x->red_field!=NULL) free(x->red_field);
-    free(*S);
-    *S = NULL;
+    FREE(x->pos);
+    FREE(x->red_field);
+    UNCONDFREE(*S);
   }
 }
 
@@ -553,8 +542,7 @@ void plus_DELETE(plus_storage ** S){
     int i;
     for (i=0; i<MAXSUB; i++)
       if (x->keys[i] != NULL) COV_DELETE(x->keys + i);
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -572,15 +560,14 @@ void sequ_NULL(sequ_storage *x){
 void sequ_DELETE(sequ_storage ** S){
   sequ_storage *x = *S;
   if (x!=NULL) {
-    if (x->U11!=NULL) free(x->U11); 
-    if (x->U22!=NULL) free(x->U22); 
-    if (x->MuT!=NULL) free(x->MuT); 
-    if (x->G!=NULL) free(x->G);
-    if (x->Cov21!=NULL) free(x->Cov21);
-    if (x->Inv22!=NULL) free(x->Inv22);
-    if (x->res0!=NULL) free(x->res0);
-    free(*S);
-    *S = NULL;
+    FREE(x->U11); 
+    FREE(x->U22); 
+    FREE(x->MuT); 
+    FREE(x->G);
+    FREE(x->Cov21);
+    FREE(x->Inv22);
+    FREE(x->res0);
+    UNCONDFREE(*S);
   }
 }
 
@@ -590,8 +577,7 @@ void spectral_DELETE(spectral_storage **S)
   if (x!=NULL) {
     // do NOT delete cov --- only pointer
       // spectral_storage *x; x =  *((spectral_storage**)S);
-    free(*S);   
-    *S = NULL;
+    UNCONDFREE(*S);   
   }
 }
 
@@ -606,12 +592,11 @@ void spectral_NULL(spectral_storage *x)
 void trend_DELETE(trend_storage ** S) {
   trend_storage *x = *S;
   if (x!=NULL) {
-    if (x->x!=NULL) free(x->x);
-    if (x->xi!=NULL) free(x->xi);
-    if (x->evalplane!=NULL) free(x->evalplane);
-    if (x->powmatrix!=NULL) free(x->powmatrix);    
-    free(*S);
-    *S = NULL;
+    FREE(x->x);
+    FREE(x->xi);
+    FREE(x->evalplane);
+    FREE(x->powmatrix);    
+    UNCONDFREE(*S);
   }
 }
 
@@ -626,8 +611,7 @@ void tbm_DELETE(tbm_storage **S)
 {
   tbm_storage *x = *S;
   if (x!=NULL) {
-     free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -640,12 +624,7 @@ void tbm_NULL(tbm_storage* x) {
 void BRTREND_DELETE(double **BRtrend, int trendlen) {
    int j;
    if (BRtrend == NULL) return;
-   for (j=0; j<trendlen; j++) {
-     if (BRtrend[j] != NULL) {
-       free(BRtrend[j]);
-       BRtrend[j] = NULL;
-     }
-   }
+   for (j=0; j<trendlen; j++) FREE(BRtrend[j]);
  }
 
 void br_DELETE(br_storage **S) {
@@ -654,44 +633,38 @@ void br_DELETE(br_storage **S) {
     int i;
     if (brS->trend != NULL) {
       BRTREND_DELETE(brS->trend, brS->trendlen); 
-      free(brS->trend);
+      UNCONDFREE(brS->trend);
     }
-    if (brS->shiftedloc != NULL) free(brS->shiftedloc);     
-    if (brS->loc2mem != NULL) free(brS->loc2mem);
+    FREE(brS->shiftedloc);     
+    FREE(brS->loc2mem);
 
     
     if (brS->countvector != NULL) {
-      for (i=0; i<brS->vertnumber; i++) {
-	if (brS->countvector[i] != NULL) free(brS->countvector[i]);
-      }
-      free(brS->countvector);
+      for (i=0; i<brS->vertnumber; i++) FREE(brS->countvector[i]);
+      UNCONDFREE(brS->countvector);
     }
  
-   if (brS->areamatrix != NULL) {
-      for (i=0; i<brS->vertnumber; i++) {
-	if (brS->areamatrix[i] != NULL) free(brS->areamatrix[i]);
-      }
-      free(brS->areamatrix);
+    if (brS->areamatrix != NULL) {
+      for (i=0; i<brS->vertnumber; i++) FREE(brS->areamatrix[i]);
+      UNCONDFREE(brS->areamatrix);
     }
-   if (brS->logvertnumber != NULL) free(brS->logvertnumber);
-
-   if (brS->locindex != NULL) free(brS->locindex);
-    if (brS->suppmin != NULL) free(brS->suppmin);
-    if (brS->suppmax != NULL) free(brS->suppmax);
-    if (brS->locmin != NULL) free(brS->locmin);
-    if (brS->locmax != NULL) free(brS->locmax);
-    if (brS->loccentre != NULL) free(brS->loccentre);
-
-    if (brS->mem2loc != NULL) free(brS->mem2loc);
-    if (brS->newx != NULL) free(brS->newx);
+    FREE(brS->logvertnumber);
+    FREE(brS->locindex);
+    FREE(brS->suppmin);
+    FREE(brS->suppmax);
+    FREE(brS->locmin);
+    FREE(brS->locmax);
+    FREE(brS->loccentre);
+    
+    FREE(brS->mem2loc);
+    FREE(brS->newx);
     if (brS->vario != NULL) COV_DELETE(&(brS->vario));
-     for(i=0; i<MAXSUB; i++) {
-      if (brS->lowerbounds[i] != NULL) free(brS->lowerbounds[i]);
+    for(i=0; i<MAXSUB; i++) {
+      FREE(brS->lowerbounds[i]);
       if (brS->sub[i] != NULL) COV_DELETE(brS->sub + i);
-     }
+    }
     if (brS->submodel != NULL) COV_DELETE(&(brS->submodel));
-     free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -724,51 +697,56 @@ void pgs_DELETE(pgs_storage **S)
 {
   pgs_storage *x = *S;
   if (x!=NULL) {
-    if (x->own_grid_start != NULL) free(x->own_grid_start);
-    if (x->own_grid_step != NULL) free(x->own_grid_step);
-    if (x->own_grid_len != NULL) free(x->own_grid_len);
-   if (x->supportmin != NULL) free(x->supportmin);
-    if (x->supportmax != NULL) free(x->supportmax);
-    if (x->supportcentre != NULL) free(x->supportcentre);   
-    if (x->gridlen != NULL) free(x->gridlen);
-    if (x->end != NULL) free(x->end);
-    if (x->start != NULL) free(x->start);
-    if (x->delta != NULL) free(x->delta);
-    if (x->nx != NULL) free(x->nx);
 
-    if (x->x != NULL) free(x->x);
-    if (x->xgr[0] != NULL) free(x->xgr[0]);
-    if (x->xstart != NULL) free(x->xstart);    
-    if (x->inc != NULL) free(x->inc);    
+    // Huetchen
+    FREE(x->v);
+    FREE(x->y);
+    FREE(x->xgr[0]);
+    
+    FREE(x->pos);
+    FREE(x->min);
+    FREE(x->max); 
+    
+    FREE(x->single);
+    FREE(x->total);
+    FREE(x->halfstepvector);    
+    
+    FREE(x->localmin);
+    FREE(x->localmax);
+    FREE(x->minmean);
+    FREE(x->maxmean);
+    
+    
+    // rf_interface.cc
+    FREE(x->supportmin);
+    FREE(x->supportmax);
+    FREE(x->supportcentre);   
+    FREE(x->own_grid_start);
+    FREE(x->own_grid_step);
+    FREE(x->own_grid_len);
+    
+    FREE(x->gridlen);
+    FREE(x->end);
+    FREE(x->start);
+    FREE(x->delta);
+    FREE(x->nx);
+
+    FREE(x->xstart);    
+    FREE(x->x);
+    FREE(x->inc);    
  
-    if (x->v != NULL) free(x->v);
-    if (x->y != NULL) free(x->y);
-    if (x->localmin != NULL) free(x->localmin);
-    if (x->localmax != NULL) free(x->localmax);
-    if (x->minmean != NULL) free(x->minmean);
-    if (x->maxmean != NULL) free(x->maxmean);
-
-    if (x->single != NULL) free(x->single);
-    if (x->total != NULL) free(x->total);
-
-    if (x->pos != NULL) free(x->pos);
-    if (x->len != NULL) free(x->len);
-    if (x->min != NULL) free(x->min);
-    if (x->max != NULL) free(x->max); 
-     
-    if (x->halfstepvector != NULL) free(x->halfstepvector);    
 
     // variogramAndCo.cc:
-    if (x->endy != NULL) free(x->endy);
-    if (x->startny != NULL) free(x->startny);
-    if (x->ptrcol != NULL) free(x->ptrcol);
-    if (x->ptrrow != NULL) free(x->ptrrow);
-    if (x->C0x != NULL) free(x->C0x);
-    if (x->C0y != NULL) free(x->C0y);
-    if (x->z != NULL) free(x->z);
-    if (x->cross != NULL) free(x->cross);
-    if (x->Val != NULL) free(x->Val);
-  
+    FREE(x->endy);
+    FREE(x->startny);
+    FREE(x->ptrcol);
+    FREE(x->ptrrow);
+    FREE(x->C0x);
+    FREE(x->C0y);
+    FREE(x->cross);
+    FREE(x->z);
+    FREE(x->Val);
+    
     if (x->cov != NULL) {
       cov_model *dummy = x->cov;
       if (x->cov->Spgs != NULL && x->cov->Spgs->cov != NULL && 
@@ -782,8 +760,7 @@ void pgs_DELETE(pgs_storage **S)
       COV_DELETE(&(dummy));
     }
 
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -800,43 +777,40 @@ void pgs_NULL(pgs_storage* x) {
   x->zhou_c = RF_NA;
   x->sq_zhou_c = x->sum_zhou_c = 0;
   x->n_zhou_c = 0;
-
-  x->single = x->total = x->v = x->x = x->xstart = x->inc =
-    x->localmin = x->localmax =x->minmean = x->maxmean =
-    x->own_grid_start = x->own_grid_step =  x->own_grid_len = 
-    x->supportmin = x->supportmax = x->supportcentre = NULL;
-
-  x->xgr[0] = NULL;
-
-  x->gridlen = x->end = x->start = x->delta = x->nx = NULL;
-
-
-  x->y = NULL;
  
-  x->pos = x->len = x->min = x->max = NULL;
 
-  x->halfstepvector = NULL;  
+  // Huetchen
+  x->v = x->y = x->xgr[0] = NULL;
+  x->pos = x->min = x->max = NULL;
+  x->single = x->total = x->halfstepvector = NULL;  
+ 
+  x->localmin = x->localmax =x->minmean = x->maxmean = NULL;
+
+
+  // rf_interface.cc
+  x->supportmin = x->supportmax = x->supportcentre = //
+    x->own_grid_start = x->own_grid_step =  x->own_grid_len = NULL; //
+
+  x->gridlen = x->end = x->start = x->delta = x->nx = NULL; //
+
+  x->xstart = x->x =  x->inc = NULL;
+
 
   // variogramAndCo.cc
   x->endy = x->startny = x->ptrcol = x->ptrrow = NULL;
   x->C0x = x->C0y = x->cross = x->z = NULL;
   x->Val = NULL;
 
-  x->param_set = NULL;
-
+  //x->param_set = NULL;
   x->cov = NULL;
-  
+
 }
 
 
 void set_DELETE(set_storage **S) {
   set_storage *x = *S;
   if (x!=NULL) {
-    //    if (x->valueRemote != NULL) free(x->valueRemote);
-    //    if (x->valueLocal != NULL) free(x->valueLocal);
-    //if (x->bytes != NULL) free(x->bytes);
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -844,8 +818,6 @@ void set_NULL(set_storage* x) {
   if (x == NULL) return;
   x->remote = NULL;
   x->set = NULL;
-  //  x->valueRemote = x->valueLocal = NULL;
-  //x->bytes = NULL;
   x->variant = 0;
 }
 
@@ -855,17 +827,16 @@ void polygon_DELETE(polygon_storage **S)
   if (x != NULL) {
     if (x->vdual != NULL) {
       int i;
-      for (i=0; i<x->n_vdual; i++) free(x->vdual[i]);
-      free(x->vdual);
+      for (i=0; i<x->n_vdual; i++) FREE(x->vdual[i]);
+      UNCONDFREE(x->vdual);
     }
-    if (x->vprim != NULL) free(x->vprim);
+    FREE(x->vprim);
     if (x->P != NULL) {
       freePolygon(x->P);
-      free(x->P);
+      UNCONDFREE(x->P);
     }
   }
-  free(*S);
-  *S = NULL;
+  UNCONDFREE(*S);
 }
 
 void polygon_NULL(polygon_storage* x) {
@@ -884,19 +855,18 @@ void polygon_NULL(polygon_storage* x) {
 void rect_DELETE(rect_storage **S){
   rect_storage *x = *S;
   if (x!=NULL) {
-    if (x->value != NULL) free(x->value);
-    if (x->weight != NULL) free(x->weight);
-    if (x->tmp_weight != NULL) free(x->tmp_weight);
-    if (x->right_endpoint != NULL) free(x->right_endpoint);
-    if (x->ysort != NULL) free(x->ysort);
-    if (x->z != NULL) free(x->z);
+    FREE(x->value);
+    FREE(x->weight);
+    FREE(x->tmp_weight);
+    FREE(x->right_endpoint);
+    FREE(x->ysort);
+    FREE(x->z);
+    
+    FREE(x->squeezed_dim);
+    FREE(x->assign);
+    FREE(x->i);
 
-     if (x->squeezed_dim != NULL) free(x->squeezed_dim);
-    if (x->assign != NULL) free(x->assign);
-    if (x->i != NULL) free(x->i);
-
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -919,18 +889,17 @@ void dollar_DELETE(dollar_storage **S)
 {
   dollar_storage *x = *S;
   if (x!=NULL) {
-    if (x->z != NULL) free(x->z);
-    if (x->z2 != NULL) free(x->z2);
-    if (x->y != NULL) free(x->y);
-    if (x->y2 != NULL) free(x->y2);
-    if (x->save_aniso != NULL) free(x->save_aniso);
-    if (x->inv_aniso != NULL) free(x->inv_aniso);
-    if (x->nx != NULL) free(x->nx);
-    if (x->len != NULL) free(x->len);
-    if (x->total != NULL) free(x->total);
-    if (x->cumsum != NULL) free(x->cumsum);
-    free(*S);
-    *S = NULL;
+    FREE(x->z);
+    FREE(x->z2);
+    FREE(x->y);
+    FREE(x->y2);
+    FREE(x->save_aniso);
+    FREE(x->inv_aniso);
+    FREE(x->nx);
+    FREE(x->len);
+    FREE(x->total);
+    FREE(x->cumsum);
+    UNCONDFREE(*S);
   }
 }
 
@@ -946,9 +915,8 @@ void gatter_DELETE(gatter_storage **S)
 {
   gatter_storage *x = *S;
   if (x!=NULL) {
-    if (x->z != NULL) free(x->z);
-    free(*S);
-    *S = NULL;
+    FREE(x->z);
+    UNCONDFREE(*S);
   }
 }
 
@@ -963,12 +931,11 @@ void earth_DELETE(earth_storage **S)
 {
   earth_storage *x = *S;
   if (x!=NULL) {
-    if (x->X != NULL) free(x->X);
-    if (x->Y != NULL) free(x->Y);
-    if (x->U != NULL) free(x->U);
-    if (x->V != NULL) free(x->V);
-    free(*S);
-    *S = NULL;
+    FREE(x->X);
+    FREE(x->Y);
+    FREE(x->U);
+    FREE(x->V);
+    UNCONDFREE(*S);
   }
 }
 
@@ -983,11 +950,10 @@ void extra_DELETE(extra_storage **S)
 {
   extra_storage *x = *S;
   if (x!=NULL) {
-    if (x->a != NULL) free(x->a);
-    if (x->b != NULL) free(x->b);
-    if (x->c != NULL) free(x->c);
-    free(*S);
-    *S = NULL;
+    FREE(x->a);
+    FREE(x->b);
+    FREE(x->c);
+    UNCONDFREE(*S);
   }
 }
 
@@ -1002,8 +968,7 @@ void biwm_DELETE(biwm_storage **S)
 {
   biwm_storage *x = *S;
   if (x!=NULL) {
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -1015,10 +980,9 @@ void biwm_NULL(biwm_storage* x) {
 void inv_DELETE(inv_storage **S) {
   inv_storage *x = *S;
   if (x!=NULL) {
-    if (x->v != NULL) free(x->v);
-    if (x->wert != NULL) free(x->wert);
-    free(*S);
-    *S = NULL;
+    FREE(x->v);
+    FREE(x->wert);
+    UNCONDFREE(*S);
   }
 }
 
@@ -1032,15 +996,14 @@ void inv_NULL(inv_storage* x) {
 void scatter_DELETE(scatter_storage **S) {
   scatter_storage *x = *S;
   if (x!=NULL) {
-    if (x->nx != NULL) free(x->nx);
-    if (x->min != NULL) free(x->min);
-    if (x->max != NULL) free(x->max);
-    if (x->step != NULL) free(x->step);
-    if (x->x != NULL) free(x->x);
-    if (x->xmin != NULL) free(x->xmin);
-    if (x->value != NULL) free(x->value);
-    free(*S);
-    *S = NULL;
+    FREE(x->nx);
+    FREE(x->min);
+    FREE(x->max);
+    FREE(x->step);
+    FREE(x->x);
+    FREE(x->xmin);
+    FREE(x->value);
+    UNCONDFREE(*S);
   }
 }
 
@@ -1054,12 +1017,11 @@ void scatter_NULL(scatter_storage* x) {
 void mcmc_DELETE(mcmc_storage **S) {
   mcmc_storage *x = *S;
   if (x!=NULL) {
-    if (x->pos != NULL) free(x->pos);
-    if (x->deltapos != NULL) free(x->deltapos);
-    if (x->propdelta != NULL) free(x->propdelta);
-   if (x->proposed != NULL) free(x->proposed);
-    free(*S);
-    *S = NULL;
+    FREE(x->pos);
+    FREE(x->deltapos);
+    FREE(x->propdelta);
+    FREE(x->proposed);
+    UNCONDFREE(*S);
   }
 }
 
@@ -1080,9 +1042,8 @@ void get_NULL(get_storage *s){
 void get_DELETE(get_storage **S){
   get_storage *x = *S;
   if (x != NULL) {
-    if (x->idx != NULL) free(x->idx);
-    free(*S);
-    *S = NULL;
+    FREE(x->idx);
+    UNCONDFREE(*S);
   }
 }
 
@@ -1111,8 +1072,7 @@ void gen_NULL(gen_storage *x) {
 void gen_DELETE(gen_storage **S) {
   gen_storage *x = *S;
   if (x!=NULL) {
-    free(*S);
-    *S = NULL;
+    UNCONDFREE(*S);
   }
 }
 
@@ -1137,6 +1097,12 @@ void addModel(cov_model **pcov, int covnr, cov_model *calling, bool nullOK) {
       cov->pref[i] = cov->sub[0]->pref[i];
     }
   }
+
+
+  //  if (calling != NULL)   
+  //printf("addmodel calling %s cov %s\n", NAME(calling), NAME(cov));
+
+
   if (calling != NULL) cov->calling = calling;
   else if (!nullOK && *pcov == NULL) {
     PRINTF("Missing link for model '%s'.\n", NICK(cov));
@@ -1152,7 +1118,9 @@ void addModel(cov_model **pcov, int covnr) {
 
 void addModel(cov_model *pcov, int subnr, int covnr) {
   assert(pcov != NULL);
+  bool newsub = pcov->sub[subnr] == NULL;
   addModel(pcov->sub + subnr, covnr, pcov, false);
+  pcov->nsub += (int) newsub;
 }
 
 void addModelKappa(cov_model *pcov, int subnr, int covnr) {
@@ -1259,10 +1227,9 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   loc->distances = dist;
   if (loc->delete_x) {
     if (loc->y != NULL) {
-      if (loc->y != loc->x) free(loc->y); 
-      loc->y = NULL;
+      if (loc->y != loc->x) UNCONDFREE(loc->y); 
     }
-    if (loc->x != NULL) { free(loc->x); loc->x = NULL; }
+    FREE(loc->x);
   }
   loc->delete_x = cpy;
   if (lx == 0) return NOERROR;
@@ -1354,6 +1321,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
     }
     
     if (loc->T[XLENGTH] <= 0) {
+      //crash();
       SERR1("The number of temporal points is not positive. Check the triple definition of 'T' in the man pages of '%s'.", CovList[SIMULATE].nick)
 	}
     loc->totalpoints *= (int) loc->T[XLENGTH];
@@ -1490,7 +1458,7 @@ void analyse_matrix(double *aniso, int row, int col,
     for (k=row - 1; k<last; k+=row)
       if (!(*separatelast = aniso[k] == 0.0)) break;
   }
-  free(taken);
+  UNCONDFREE(taken);
 }
 
 int getmodelnr(char *name) {
@@ -1637,7 +1605,7 @@ void MultiDimRange(cov_model *cov, double *natscale) {
   }
   
  ErrorHandling:
-  if (dummy  != NULL) free(dummy);
+  FREE(dummy);
   switch(err) {
   case NOERROR : break;
   case -1 : 
@@ -1782,8 +1750,7 @@ void paramcpy(cov_model *to, cov_model *from, bool freeing,
     if (freeing) {
       // if (strcmp(to->kappanames[i], from->kappanames[i]) != 0 ||
       //	  type != from->kappatype[i]) return false;
-      if (pto[i] != NULL) free(pto[i]);
-      pto[i] = NULL;
+      FREE(pto[i]);
       to_col[i] = from_col[i];
       to_row[i] = from_row[i];
     }
@@ -2284,14 +2251,14 @@ double GetDiameter(location_type *loc,
 	if (distsq > diameter) diameter = distsq;
       }
 
-      free(j);
-      free(lx);
-      free(sx);
+      UNCONDFREE(j);
+      UNCONDFREE(lx);
+      UNCONDFREE(sx);
     }
   
-    free(origmin);
-    free(origmax);
-    free(origcenter);
+    UNCONDFREE(origmin);
+    UNCONDFREE(origmax);
+    UNCONDFREE(origcenter);
 
   } else { // not loc->grid
 
@@ -2348,9 +2315,9 @@ double GetDiameter(location_type *loc) {
   dummymax = (double*) MALLOC(origdim * sizeof(double));
   dummycenter = (double*) MALLOC(origdim * sizeof(double));
   diam = GetDiameter(loc, dummymin, dummymax, dummycenter);
-  free(dummymin);
-  free(dummymax);
-  free(dummycenter);
+  UNCONDFREE(dummymin);
+  UNCONDFREE(dummymax);
+  UNCONDFREE(dummycenter);
   return diam;
 }
 
@@ -2451,8 +2418,8 @@ void expandgrid(coord_type xgr, double **xx, int nrow){
       }
     }
   }
-  free(y);
-  free(yi);
+  UNCONDFREE(y);
+  UNCONDFREE(yi);
 }
 
 
@@ -2507,8 +2474,8 @@ void expandgrid(coord_type xgr, double **xx, double* aniso, int nrow, int ncol){
       }
     }
   }
-  free(y);
-  free(yi);
+  UNCONDFREE(y);
+  UNCONDFREE(yi);
 }
 
 
@@ -2804,7 +2771,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
       assert(loc->cani_ncol == nrow);
       aniso = matrixmult(loc->caniso, aniso_old, loc->cani_nrow, nrow, ncol);
       nrow = loc->cani_nrow;
-      free(aniso_old);
+      UNCONDFREE(aniso_old);
     }
   }
 
@@ -2881,7 +2848,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep, int gridexpand,
     }
   }
 
-  if (aniso != NULL) free(aniso);
+  FREE(aniso);
   
   // printf("NCOL %d\n", *ncol);
 }
@@ -2941,8 +2908,8 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand) {
 
   caniso = NULL;
 
-  if (x != NULL) free(x);
-  if (xgr != NULL) free(xgr);
+  FREE(x);
+  FREE(xgr);
   if (err != NOERROR) ERR("error when transforming to no grid");
 }
 
@@ -3008,6 +2975,7 @@ bool TypeConsistency(Types requiredtype, Types deliveredtype) {
   switch(requiredtype) {
   case TcfType:        return isTcf(deliveredtype);
   case PosDefType:     return isPosDef(deliveredtype);
+  case VariogramType:  return isVariogram(deliveredtype);
   case NegDefType:     return isNegDef(deliveredtype);
   case ProcessType :   return (isProcess(deliveredtype) ||
 			       isTrend(deliveredtype));
@@ -3029,25 +2997,35 @@ int TypeConsistency(Types requiredtype, cov_model *cov, int depth) {
   //  if (cov == NULL) crash();
   assert(cov != NULL);
   cov_fct *C = CovList + cov->nr; // nicht gatternr
+  // printf("entering TC %s requiredtype=%s undefined!\n", NAME(cov), TYPENAMES[requiredtype]);
   if (isUndefined(C)) {
     assert(C->TypeFct != NULL);
-    return C->TypeFct(requiredtype, cov, depth);
-  }
-  //   printf("not consist %s type=%d, %d;   %s %d\n", NAME(cov), C->Type, cov->typus,	 CovList[150].name, CovList[150].Type);
+
+    // printf(" undefined!\n");
+    int tc = C->TypeFct(requiredtype, cov, depth);
+    //  printf("%d\n", tc);
+    return tc;
+  }  
+  //   printf("not consist %s type=%d, %d;   %s %d\n", NAME(cov), C->Typi[0], cov->typus,	 CovList[150].name, CovList[150].Typi[0]);
   int i;
   for (i=0; i<C->variants; i++) {
-    //    printf("TC %d %d %s %s %d %d \n", i, TypeConsistency(requiredtype, C->Typi[i]), TYPENAMES[requiredtype], TYPENAMES[C->Typi[i]],  depth, depth<=0 );
+    //    printf("TC %d %s: %d %s %s %d %d \n", i, NAME(cov), TypeConsistency(requiredtype, C->Typi[i]), TYPENAMES[requiredtype], TYPENAMES[C->Typi[i]],  depth, depth<=0 );
     if (TypeConsistency(requiredtype, C->Typi[i])
 	&& (depth <= 0 || atleastSpecialised(cov->isoown, C->Isotropy[i]))
 	) {
+      //         printf("ok ? %d \n", i +1);
       return i + 1;
     }
  }
+
+  //  printf("not ok\n");
+
   return false;
 }
 
 
-int change_coordinate_system(isotropy_type callingisoown, isotropy_type isoprev,
+int change_coordinate_system(isotropy_type callingisoown,
+			     isotropy_type isoprev,
 			     int tsdimprev, int xdimprev,
 			     int *nr, isotropy_type  *newisoprev,
 			     int *newtsdim, int *newxdim) {
@@ -3058,6 +3036,7 @@ int change_coordinate_system(isotropy_type callingisoown, isotropy_type isoprev,
   switch(callingisoown) {
   case EARTH_COORD :
     if (isCartesian(isoprev)) {
+      if (xdimprev != tsdimprev) SERR("reduced coordinates not allowed");
       if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
 	*nr = isoprev == GNOMONIC_PROJ ? EARTHKM2GNOMONIC  
 	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHKM2ORTHOGRAPHIC
@@ -3078,14 +3057,20 @@ int change_coordinate_system(isotropy_type callingisoown, isotropy_type isoprev,
 	*newisoprev = isoprev;
       } else {
 	*newisoprev = CARTESIAN_COORD;
-	*newtsdim = 
-	  *newxdim = 3;
+	if (tsdimprev == 2) {
+	  //assert(xdimprev == 2);
+	  *newtsdim = *newxdim = 3;
+	} else {
+	  *newtsdim = tsdimprev;
+	  *newxdim = xdimprev;	  
+	}	
       }
     } else {
       return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
     }      
     break;
   case EARTH_ISOTROPIC : case SPHERICAL_ISOTROPIC :
+    //printf("--- wrong iso\n");
     return ERRORWRONGISO;
   default:    
      return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
@@ -3109,11 +3094,10 @@ int SetGatter(domain_type domprev, domain_type domnext,
       return NOERROR;
     }
     if(!isAnySpherical(isoprev)) BUG;
- 
     if (domnext== XONLY) {
       if ((isoprev == EARTH_COORD || isoprev == SPHERICAL_COORD) 
 	  && domprev == XONLY) {
-	if (isonext == EARTH_ISOTROPIC || isoprev == SPHERICAL_ISOTROPIC)
+	if (isAnySphericalIso(isonext) || isoprev == SPHERICAL_ISOTROPIC)
 	  SERR("Change to isotropic earth coordinates not possible");
 	*nr = isEarth(isoprev) 
 	  ? (isSpherical(isonext) ? E2Sph : E2E)
@@ -3446,6 +3430,11 @@ int check_within_range(cov_model *cov, bool NAOK) {
          // kappas, i, k, range.openmin[i], value, min, max);
       
       err = ERRORUNSPECIFIED;
+ 
+      //  printf("%s %d\n", NAME(cov), i);
+      //  printf("%d\n", range.openmin[i]);
+      // printf("%f %f\n", value, min); 
+
       if (range.openmin[i] && value <= min) { 
 	//crash();
 	addmsg(value, ">", min, Msg);
@@ -3476,7 +3465,7 @@ ErrorHandling:
 	     C->name, i+1, err, Msg);
      if (err == ERRORUNSPECIFIED)
       SERR4("%s[%d] = %s does not hold (dim=%d).",
-	     C->kappanames[i], k+1, Msg, cov->tsdim); // + return
+ 	     C->kappanames[i], k+1, Msg, cov->tsdim); // + return
   }
 
   // print("done %s\n", NICK(cov));
@@ -3512,7 +3501,7 @@ int FieldReturn(cov_model *cov) {
     //PMI(cov, "fieldreturn");
     assert(cov->fieldreturn && cov->origrf);
     if (cov->origrf) {
-      free(cov->rf);
+      UNCONDFREE(cov->rf);
     }
   } 
 

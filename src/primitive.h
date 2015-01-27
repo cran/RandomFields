@@ -2,6 +2,7 @@
 #define Primitives_H 1
 
 #define UNIT_EPSILON 1E-13
+#include "Coordinate_systems.h"
 
 
 void AngleMatrix(cov_model *cov, double *A);
@@ -46,10 +47,10 @@ void Dcircular(double *x, cov_model *cov, double *v);
 int structcircular(cov_model *cov,  cov_model **);
 
 
+
+void kappaconstant(int i, cov_model *cov, int *nr, int *nc);
 void constant(double *x, cov_model *cov, double *v);
-void constant_nonstat(double *x, double *y, cov_model *cov, double *v);
-void covmatrix_constant(cov_model *cov, double *v, int  *nonzeros);
-char iscovmatrix_constant(cov_model *cov);
+void nonstatconstant(double *x, double *y, cov_model *cov, double *v);
 void rangeconstant(cov_model *cov, range_type* ra);
 int checkconstant(cov_model *cov) ;
 
@@ -146,6 +147,13 @@ void rangeFD(cov_model *cov, range_type* ra);
 void fractGauss(double *x, cov_model *cov, double *v);
 void rangefractGauss(cov_model *cov, range_type* ra);
 
+
+void fix(double *x, cov_model *cov, double *v);
+void fix_nonstat(double *x, double *y, cov_model *cov, double *v);
+void covmatrix_fix(cov_model *cov, double *v, int  *nonzeros);
+char iscovmatrix_fix(cov_model *cov);
+void rangefix(cov_model *cov, range_type* ra);
+int checkfix(cov_model *cov) ;
 
 /* Gausian model */
 void Gauss(double *x, cov_model *cov, double *v);
@@ -356,8 +364,6 @@ void Inversewave(double *x, cov_model *cov, double *v);
 int initwave(cov_model *cov, gen_storage *s);
 void spectralwave(cov_model *cov, gen_storage *s, double *e); 
 
-extern double Besselupperbound[Nothing + 1];
-
 /* Whittle-Matern or Whittle or Besset */ 
 void Whittle(double *x, cov_model *cov, double *v);
 void logWhittle(double *x, cov_model *cov, double *v, double *sign);
@@ -431,5 +437,36 @@ sortsofparam paramtype_parsWM(int k, int row, int col);
 void rangeparsWM(cov_model *cov, range_type* ra);
 
  
+void Mathminus(double *x, cov_model *cov, double *v);
+void Mathplus(double *x, cov_model *cov, double *v);
+void Mathmult(double *x, cov_model *cov, double *v);
+void Mathdiv(double *x, cov_model *cov, double *v);
+void Mathc(double *x, cov_model *cov, double *v);
+void rangec(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+int check_c(cov_model *cov);
+void Mathbind(double *x, cov_model *cov, double *v);
+int check_bind(cov_model *cov);
+void proj(double *x, cov_model *cov, double *v);
+int checkproj(cov_model *cov);
+void rangeproj(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+
+
+void kappa_math(int i, cov_model *cov, int *nr, int *nc);
+int checkMath(cov_model *cov);
+void rangeMath(cov_model *cov, range_type *range);
+
+#define MATH_DEFAULT_0(VARIAB)						\
+  int i,								\
+    variables = VARIAB;							\
+  double w[MAXPARAM];							\
+    for (i=0; i<variables; i++) {					\
+    cov_model *sub = cov->kappasub[i];					\
+    if (sub != NULL) {							\
+      COV(x, sub, w + i);						\
+    } else {  w[i] = P0(i);	}		\
+  } \
+  // printf("sin %f w=%f;%f %f %d %d nr = %d %d\n", x[0], w[0], w[1], P0(1), variables, p[1], cov->nrow[0] > 0, cov->nrow[1] > 0);
+
+#define MATH_DEFAULT MATH_DEFAULT_0(CovList[cov->nr].kappas)
 
 #endif /* Primitives_H*/

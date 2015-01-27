@@ -129,7 +129,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
 
 
 \seealso{

@@ -51,8 +51,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include <unistd.h>
 #include <R_ext/Utils.h>     
-#include "Covariance.h"
+#include "Operator.h"
 #include "variogramAndCo.h"
+#include "Coordinate_systems.h"
 
 
 /* 
@@ -162,7 +163,6 @@ void includeparam(void **qq,       // px
     break;
   case INTSXP :
     {
-      //printf("%s, len = %d\n", param_name, len);
       *qq = MALLOC(sizeof(int) * len);
       int * q = (int *) *qq;
       for (j=0; j<len; j++) q[j] = Integer(p, param_name, base + j);
@@ -192,7 +192,6 @@ void includeparam(void **qq,       // px
    case LANGSXP : 
      {
        if (strcmp("setseed", param_name) != 0 && strcmp("env", param_name)!=0){ 
-	 //      printf("here\n");
 	 if (GLOBAL.general.storing) {
 	   char msg[200];
 	   sprintf(msg, "If models with R commands in the parameters (such as '%s') are used then 'storing' must be FALSE.", CovList[USER].nick);
@@ -228,8 +227,6 @@ void includeparam(void **qq,       // px
       
 
       locallen = list ? len : 1;
-      //     print("type=%d,%d %d %d %d\n", 
-      //	    TYPEOF(p), VECSXP, locallen, MAXELEMENTS, type,length(p));
      
       if (locallen > MAXELEMENTS) PERR("too many list elements");
       *qq = MALLOC(sizeof(listoftype));
@@ -242,11 +239,6 @@ void includeparam(void **qq,       // px
       }
       for (i=0; i<locallen; i++) {
 	pi = list ? VECTOR_ELT(p, i) : p;
-
-
-	//	print("%s %d type=%d,%d ncol/nrow %d %d %d %d\n ", 
-	//     param_name, i, TYPEOF(p), VECSXP,
-	//	ncols(pi), nrows(pi), isMatrix(pi),  pi == p);
 
 	includeparam((void**) (q->p + i), REALSXP, length(pi), 
 		     pi, base, param_name); 
@@ -283,10 +275,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
     names = getAttrib(model, R_NamesSymbol);
   cov_fct *C; 
   cov_model *cov;
-  bool subleft[MAXSUB]; //, True=true, False=false;
+  bool subleft[MAXSUB]; //, True=true, False=false; // to do obsolete
 
-
-  // print("hier\n");
 
   if (TYPEOF(model) != VECSXP) { // not list8
     ERR("list expected")
@@ -297,8 +287,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   }
   if (length(m) != 1) ERR("model name must be a single word");
   strcopyN(name, (char*) CHAR(STRING_ELT(m, 0)), MAXCHAR);
-
-  // printf("%d\n", (2 * level < NLEER) ? 2 * level : NLEER); assert(false);
 
   strcopyN(leer, "                                                           ", 
 	   (2 * level < NLEER) ? 2 * level : NLEER);
@@ -340,11 +328,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	i = Match(param_name, STANDARDPARAM, nkappas);
       }
 
-      //      printf("i=%d %s %s kappas=%d %s\n", i, name, param_name, nkappas,  C->kappanames[nkappas - 1]);
-      
- 
       if (i<0 && !strcmp(C->kappanames[nkappas - 1], FREEVARIABLE)) {
-	//print("free variable\n");
 	if ((j = Match(param_name, C->subnames, C->maxsub)) < 0) {
 	  j = Match(param_name, STANDARDSUB, MAXSUB);
 	}
@@ -355,17 +339,9 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  
 	  // ein FREEVARIABLE-Zeichen wird nie verwendet -- Puffer fuer einfachen Algorithmus; deshalb "i-1"
 	  i = nkappas - 1; 
-	  
-	  
-	  //printf("i=%d\n", i);
-	  //	  printf("%s %d\n", C->kappanames[i - 1]
-	  //		 , !strcmp(C->kappanames[i - 1], FREEVARIABLE));
-	  //	  printf("i=%d %s\n", 0, cov->ownkappanames[i] );
-	  
+	  	 	  
 	  while(i>0 && !strcmp(C->kappanames[i - 1], FREEVARIABLE) && 
 		cov->ownkappanames[i] != NULL) {
-	    //printf("i=%d %s %ld\n", i, C->kappanames[i - 1],  
-	    //	   cov->ownkappanames[i] );
 	    i--;
 	  }
 	  if (i <= 0 || cov->ownkappanames[i-1] != NULL) 
@@ -376,10 +352,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	}
       }
     } else {
-      //print("nothing\n");
       i = NOMATCHING;
     }
-    //  printf("%s %s i=%d %d %d \n", name, param_name, i, isVectorList(p), isVectorList(p) && isString(VECTOR_ELT(p, 0)));
 
     if (i<0 // so, no parameter name recognised
 	&& isVectorList(p) && isString(VECTOR_ELT(p, 0))) {
@@ -422,7 +396,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  }
 	}
 	if (j == C->maxsub) {
-	  // PRINTF("%d %d\n", j, C->maxsub);
 	  ERR("too many submodels");
 	}
 	// internal 
@@ -465,7 +438,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	    if ( C->kappatype[j] != INTSXP && C->kappatype[j] != REALSXP)
 	      PERR("model has too complicated arguments to allow abbreviations");
 	    
-	    // printf("include %s %d %s\n", Nick(cov), j, KNAME(j));
 	    includeparam((void**) (cov->px + j), C->kappatype[j], 1, 
 			 p, j, param_name);
 	  }
@@ -474,7 +446,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
       }
       
       if (strcmp(param_name, "") == 0) {
-	//printf("XX name %s\n", NICK(cov));
 	if (nkappas == 1) i = 0; else ERR("parameters must be named");
       } else {
 	// i set before the submodels
@@ -506,9 +477,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	}
       }
   
-      //     printf("model %d %s %d %s %d %d = %f\n", elt, C->nick, i, C->kappanames[i], cov->p[i] != NULL, cov->kappasub[i] != NULL, Real(p, C->kappanames[i], 0));
-
-       
       if (isVectorList(p) && isString(VECTOR_ELT(p, 0))) {
 	PFREE(i);
 	CMbuild(p, level + 1, cov->kappasub + i);
@@ -519,13 +487,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	if (!PisNULL(i) || cov->kappasub[i] != NULL)
 	  ERR("parameter given twice");
 
-	//printf("Include %s %d %s\n", Nick(cov), i, KNAME(i));
 	includeparam((void**) (cov->px + i), C->kappatype[i], l, 
 		     p, 0, param_name);
-	
-	//    print("danach %d %d %s %ld %ld\n", i, C->kappatype[i], param_name, cov->p[i],    cov->p[i+1]);
-		
-	//    print(">>>>>    %s %d\n", param_name, isEnvironment(p));        	
 	
 	if (C->kappatype[i] > LISTOF && TYPEOF(p) != VECSXP) {
 	  if (isMatrix(p) || isVector(p)) {
@@ -546,7 +509,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	    cov->ncol[i] = 1;
 	    cov->nrow[i] = 1;	  
 	  } else  {
-	    //print("type=%d\n", TYP
 	    PERR("neither vector nor matrix");
 	  }
 	}
@@ -572,13 +534,11 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
     }
   }
   
-  //   print("ns=%d %d %d %s\n", NS, NATSCALE_MLE, C->inverse != NULL, C->name);
   cov_model *next = cov->sub[0];
   if (next != NULL) {
     cov_fct *N = CovList + next->nr;
     if (NS > 0 && N->maxsub == 0 && N->inverse != ErrInverse &&
 	N->cov != nugget &&  N->cov != constant) {
-      // printf("here\n");
       if (NS == NATSCALE_MLE && isDollar(cov)) {
 	// natsc wird nur dann eingeschoben, wenn davor scale=NA war
 	bool natsc= !PisNULL(DSCALE) && ISNAN(P0(DSCALE));
@@ -599,7 +559,6 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	}
 	if (natsc) addModel(cov, 0, NATSC_INTERN); 
       } else {
-	//	printf("aa %s %s\n", NICK(cov), cov->calling == NULL ? "none" : NICK(cov->calling));
 	addModel(Cov, NATSC_USER); 
       }
     }
@@ -640,6 +599,7 @@ bool CallingSet(cov_model *cov) {
       }
     } else {
       if (sub->calling != cov) {
+	PRINTF("%dth submodel\n", i);
 	PMI(cov, "Calling point B error"); //
 	return false;
       }
@@ -648,7 +608,18 @@ bool CallingSet(cov_model *cov) {
       }
     }
   }
-  if (cov->key != NULL && !CallingSet(cov->key)) return false;
+    for (; i < MAXSUB; i++) {
+      if (cov->sub[i] != NULL) {
+	char msg[200];
+	sprintf(msg, 
+	       "%s: %dth submodel not NULL although nsub=%d",
+		NAME(cov), i, cov->nsub);
+	warning(msg);
+	BUG;
+      }
+    }
+
+ if (cov->key != NULL && !CallingSet(cov->key)) return false;
   if (cov->Splus != NULL) {
     for (i=0; i<cov->nsub; i++) {
       cov_model *sub = cov->Splus->keys[i];
@@ -686,8 +657,6 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
   GetRNGstate(); // some parts use monte carlo to determine internal values
   if (currentNrCov==-1) InitModelList();  
 
-  // printf("start checkmodelinternal\n");
- 
   while (true) {
     strcpy(ERROR_LOC, "Building the model:");
     cov = NULL;
@@ -722,8 +691,6 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     cov->domprev = XONLY; // formal sind alle Interface Modelle nur von 
     //                              einer (dummy) Variablen abhaengig
    
-
-    //   printf("GLOBAL.coords.coord_system %d\n", GLOBAL.coords.coord_system); BUG;
 
     switch (GLOBAL.coords.coord_system) {
     case coord_auto: 
@@ -796,23 +763,15 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
   ErrorHandling:
 
-    //    printf("\n>> %d ly=%d zaehler=%d lx=%d\n\n", err, ly, zaehler, lx);
-
-   
     if (err == NOERROR || zaehler>=1) {
       break;    
     } 
 
-   //  printf("err=%dn",err);
-    // APMI(cov);
-    
     char EM[500];   
     errorMSG(err, EM);
  
     sprintf(EM2, "%s%s", PREF_FAILURE, EM);
     if (lx == 0 || distances) break;
-
-    //     printf(">> %d '%s'\n", err, EM2); BUG;
 
     y = x;
     ly = lx;
@@ -820,22 +779,15 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
   }
 
  
-  //printf("end  checkmodelinternal\n");
   PutRNGstate();
 
-  // AERR(err);
-  //PMI(cov);
-  // Fehlermeldung vom ersten Durchgang wird angezeigt.
   if (err != NOERROR) { 
-    //     printf("%d '%s'\n", err, EM2);
-    // APMI(cov);
     error(EM2); 
   }
   
   // muss ganz zum Schluss stehen, da Fehler zu einer unvollstaendigen
   // Struktur fuehren koennen
   assert(CallingSet(cov));
-  //APMI(cov);
 }
 
 
@@ -859,11 +811,6 @@ SEXP Init(SEXP model_reg, SEXP model,
 
   NAOK_RANGE = naok; 
   PROTECT (ans = allocVector(INTSXP, 2));
-
-
-  //  print("real x %d grid=%d %d time=%d lx=%d %d ncols nc=%d nr=%d  xdimOZ%d\n", isReal(x), grid, distances, time, lx, ly, ncols(x), nrows(x), xdimOZ);
-
-  //  printf("key = %d\n", currentRegister);
  
   if (isReal(x))
     CheckModelInternal(model, REAL(x), REAL(y), REAL(T), INTEGER(spatialdim)[0],
@@ -878,7 +825,7 @@ SEXP Init(SEXP model_reg, SEXP model,
       CheckModelInternal(model, x, y, T, INTEGER(spatialdim)[0],
       xdimOZ, &lx,
       grid, distances, time,
-      KEY + INTEGER(model_reg)[0]
+      KEY + currentRegister
       );
     */
   }
@@ -921,23 +868,14 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
     if (cov->fieldreturn) GERR("model cannot be evaluated");
     mem = cov->vdim[0] * cov->vdim[1];
   } else {   
-    //   
-    //    printf("ende %f\n", REAL(X)[0]);
-
-    // PMI(cov, -1);
 
      CovList[cov->nr].cov(REAL(X), cov, NULL); // nicht FCTN, COV o.ae.
      // da Trafo des ersten Wertes moeglich !
     if (len > 1 && cov->q[len-1] == 1) len--; // last is for n=#{simulations}
     for (mem=1, d=0; d<len; d++) {
-      //printf("%d %f \n", d, cov->q[d]);
       mem *= (int) cov->q[d];
     }
-    //APMI(cov);
   }
-
-  //      PMI(cov);
-  // printf("len =%d mem=%d %f %f %f=%f\n", len, mem, cov->q[0], cov->q[1], cov->q[2], *REAL(X));//assert(false);
 
   if (len == 1) PROTECT(result = allocVector(REALSXP, mem)); 
   else if (len == 2)  
@@ -946,28 +884,21 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
     PROTECT(dummy=allocVector(INTSXP, len));
     for (d=0; d<len; d++) {
       INTEGER(dummy)[d] = (int) cov->q[d];
-      //    printf("q[%d]=%d %d\n", d, (int) cov->q[d], (int) cov->q[0] * (int) cov->q[1] * (int) cov->q[2]);
     }
     PROTECT(result=allocArray(REALSXP, dummy));
   }
-
-  //   printf(">> %d %ld %d\n",  len, REAL(result), length(result)); 
-  //   printf("len =%d  %f %f %f=%f\n", len, cov->q[0], cov->q[1], cov->q[2], *REAL(X));
-  //APMI(cov);
-  //PMI(cov, "last");
  
   GetRNGstate();
+
   FCTN(REAL(X), cov, REAL(result)); 
   PutRNGstate();
 
-  //printf("done\n");
-  // APMI(cov);
 
  ErrorHandling:
   if (result != NULL) UNPROTECT(1 + (int) (len > 2));
   if (err != NOERROR) XERR(err);
 
-  return result;
+ return result;
 }
 
 
@@ -1008,21 +939,11 @@ void density(double VARIABLE_IS_NOT_USED *value, cov_model *cov, double *v) {
   //  else if (cov->nr == PROBAB) PROBAB(sub, cov->Sgen);
 
   if (sizeof(double) == sizeof(res_type) && false) {
-    // printf("\n\n\n\n\n **********  %ld %ld !!\n", vdimtot, res);
-    // APMI(cov);
     MEMCOPY(res, cov->rf, sizeof(res_type) * vdimtot);
-    //printf("!!!  ********** !!\n");
   } else {
-    //  printf("heredd \n");
-    
-    // printf("++ %d %ld %ld\n", vdimtot, res, cov->rf);
-    
     int i; for (i=0; i<vdimtot; i++) {
-      //printf("i=%d %f\n", i, cov->rf[i]);
       res[i] = cov->rf[i];
     }
-    //  assert(false);
-    //  	 APMI(cov);
   }
   
   if (!sub->simu.active) 
@@ -1072,18 +993,13 @@ int check_density(cov_model *cov) {
 
     err = ERRORTYPECONSISTENCY;
 
-    //printf("\n\nrole= %s\n", ROLENAMES[role]);
-
     for (j=0; j<=2; j++) {
       if ((TypeConsistency(type, sub, 0) && 
 	   (err = CHECK(sub, loc->timespacedim, cov->xdimown, type, 
 			dom, iso, cov->vdim, role)) == NOERROR) 
 	  || isProcess(sub)) break;
 
-      //printf("inconsistent '%s' %s '%s'\n", TYPENAMES[type], NICK(sub),
-      //     TYPENAMES[CovList[sub->nr].Type]);
-
-      if (j==0) type = NegDefType;
+      if (j==0) type = VariogramType;
       else {
 	type = TrendType;
 	dom = XONLY;
@@ -1130,7 +1046,7 @@ int struct_density(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
 
   //APMI(next);
 
-  if (isNegDef(next) || isTrend(next)) {
+  if (isVariogram(next) || isTrend(next)) {
     if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
     addModel(&(cov->key), GAUSSPROC);
     sub = cov->key;
@@ -1150,8 +1066,6 @@ int struct_density(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   else if (nr == EXTREMALTPROC) subrole = ROLE_SCHLATHER;
   else if (nr == SMITHPROC) subrole = ROLE_SMITH;
   else {
-    //    PMI(sub, -1);
-    //    printf("next %d %s %d %d %d\n", nr, NICK(next), isNegDef(next), isPosDef(next), CovList[nr].Type);
     ILLEGAL_ROLE;
   }
   sub->role = subrole; // ansonsten muesste hier C-HECK aufgerufen werden
@@ -1162,22 +1076,17 @@ int struct_density(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   sub->simu.expected_number_simu = cov->simu.expected_number_simu;
 
   if (PL >= PL_DETAILS) PRINTF("Struct Density\n");
-  //  print("%s %ld %ld %ld\n", NICK(sub), (long int) CovList[sub->nr].Struct, (long int)struct_gaussprocess, (long int)struct_spectral);
-  //	A
-  //  PMI(sub, "Internal"); assert(false);
+
   if ((err = STRUCT(sub, NULL)) != NOERROR) { return err; }
   if (PL >= PL_DETAILS) PRINTF("Checking Density\n");
 
 
-  //  APMI(sub);
   assert(cov->Sgen == NULL);
   NEW_STORAGE(gen);
 
   if (!sub->initialised) {
     if (PL >= PL_DETAILS) PRINTF("Struct Density C\n");
    
-    //   APMI(cov); //, "struct simu"); print("key=%ld\n", cov->key);
-    
     if (//cov->key != NULL && // bei sub==next waere der falsche role gesetzt
 	// irgenwie komisch, cov->key abzufragen und check(sub aufzurufen
 	// aufgrund von Beispiel in RTpoisson geloescht
@@ -1185,9 +1094,6 @@ int struct_density(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
 		     cov->domprev, cov->isoprev, cov->vdim,
 		     subrole)) != NOERROR) {
       //
-      // XERR(err);
-      // APMI(sub);
-      // assert(false);
       return err;
     }
     
@@ -1247,9 +1153,6 @@ void simulate(double *N, cov_model *cov, double *v){
   long vdimtot; vdimtot = loc->totalpoints * cov->vdim[0];
   assert(cov->vdim[0] == cov->vdim[1]);
 
-  //printf("len=%d %f\n", (int) cov->qlen, *N);
-
-  
   // die folgenden Zeilen duefen nicht abgeaendert werden!!
   // Grund; *N wird eventuell durch Koordinatentrafo veraendert
   // so dass bei v=NULL ohne Umweg ueber gatter aufgerufen wird
@@ -1315,30 +1218,15 @@ void simulate(double *N, cov_model *cov, double *v){
     }
     //
 
-    //printf("here %d %s %d\n", ni, NICK(cov), sub->stor != NULL);
-    // A    PMI(cov);
-    // PSTOR(cov, cov->Sgen); // assert(false);
-    // crash(cov);
-    
     assert(cov->Sgen != NULL);
     DO(sub, cov->Sgen);
 
     if (sizeof(double) == sizeof(res_type) && false) {
-      // printf("\n\n\n\n\n **********  %ld %ld !!\n", vdimtot, res);
-      // APMI(cov);
       MEMCOPY(res, cov->rf, sizeof(res_type) * vdimtot);
-      //printf("!!!  ********** !!\n");
     } else {
-      //  printf("heredd \n");
-
-      // printf("++ %d %ld %ld\n", vdimtot, res, cov->rf);
-
       int i; for (i=0; i<vdimtot; i++) {
-	//printf("i=%d %f\n", i, cov->rf[i]);
 	res[i] = cov->rf[i];
       }
-      //  assert(false);
-      //  	 APMI(cov);
     }
      
     if (!sub->simu.active) 
@@ -1395,14 +1283,16 @@ int check_simulate(cov_model *cov) {
     } else {
       role = ROLE_COV;
       type = PosDefType;
-      iso = SYMMETRIC;
+      iso = MAX_SYMMETRIC(cov->isoprev);
+
     }
+    assert(isCoordinateSystem(cov->isoprev));
+    
     if (cov->role == ROLE_BASE) role = ROLE_BASE;
 
     err = ERRORTYPECONSISTENCY;
 
     for (j=0; j<=2; j++) {
-      //  printf("simulate:: %s %s %d\n", TYPENAMES[type], NAME(sub), isProcess(sub));
       if ( (TypeConsistency(type, sub, 0) && 
 	   (err = CHECK(sub, loc->timespacedim, cov->xdimown, type, 
 			dom, iso, cov->vdim, role)) == NOERROR) 
@@ -1410,14 +1300,11 @@ int check_simulate(cov_model *cov) {
 	break;
       }
 
-      //printf("inconsistent '%s' %s '%s'\n", TYPENAMES[type], NICK(sub),
-      //     TYPENAMES[CovList[sub->nr].Type]);
-
-      if (j==0) type = NegDefType;
+      if (j==0) type = VariogramType;
       else {
 	type = TrendType;
 	dom = XONLY;
-	iso = CARTESIAN_COORD;
+	iso = cov->isoprev;
       }
     }
     if (err != NOERROR) return err;
@@ -1433,7 +1320,8 @@ int check_simulate(cov_model *cov) {
     }
   }
 
-  setbackward(cov, sub);  
+
+   setbackward(cov, sub);  
   int subvdim = sub->vdim[0];
   cov->vdim[0]=subvdim; 
   cov->vdim[1]=sub->vdim[1]; 
@@ -1471,10 +1359,7 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
     subrole = ROLE_FAILED,
     nr = next->nr;
 
-   // APMI(next, -1); BUG;
-  // printf("%d %d\n", isNegDef(next), isTrend(next)); BUG;
-
-  if (isNegDef(next) || isTrend(next)) {
+  if (isVariogram(next) || isTrend(next)) {
     if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
     addModel(&(cov->key), GAUSSPROC);
     sub = cov->key;
@@ -1495,9 +1380,6 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   else if (nr == SMITHPROC) subrole = ROLE_SMITH;
   // else if (isTrend(next)) subrole = ROLE_GAUSS;
   else {
-    //PMI(cov, -1);
-    //    PMI(sub, -1);
-    //    printf("next %d %s %d %d %s\n", nr, NICK(next), isNegDef(next), isPosDef(next), TYPENAMES[CovList[nr].Typi[0]]);
     ILLEGAL_ROLE;
   }
   sub->role = subrole; // ansonsten muesste hier C-HECK aufgerufen werden
@@ -1509,9 +1391,6 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   if (P0INT(SIMU_CHECKONLY)) return NOERROR;
 
   if (PL >= PL_DETAILS) PRINTF("Struct Simulate\n");
-  //  print("%s %ld %ld %ld\n", NICK(sub), (long int) CovList[sub->nr].Struct, (long int)struct_gaussprocess, (long int)struct_spectral);
-  //	A
-  //  PMI(sub, "Internal"); assert(false);
 
   if ((err = STRUCT(sub, NULL)) != NOERROR) { return err; }
   if (PL >= PL_DETAILS) PRINTF("Checking Simulate\n");
@@ -1524,8 +1403,6 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
   if (!sub->initialised) {
     if (PL >= PL_DETAILS) PRINTF("Struct Simulate C\n");
    
-    //   APMI(cov); //, "struct simu"); print("key=%ld\n", cov->key);
-    
     if (//cov->key != NULL && // bei sub==next waere der falsche role gesetzt
 	// irgenwie komisch, cov->key abzufragen und check(sub aufzurufen
 	// aufgrund von Beispiel in RTpoisson geloescht
@@ -1533,9 +1410,6 @@ int struct_simulate(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel){
 		     cov->domprev, cov->isoprev, cov->vdim,
 		     subrole)) != NOERROR) {
       //
-      // XERR(err);
-      // APMI(sub);
-      // assert(false);
       return err;
     }
     
@@ -1630,10 +1504,7 @@ int check_likelihood(cov_model *cov) {
 		      dom, iso, cov->vdim, role)) == NOERROR) 
 	|| isProcess(sub)) break;
     
-    //printf("inconsistent '%s' %s '%s'\n", TYPENAMES[type], NICK(sub),
-    //     TYPENAMES[CovList[sub->nr].Type]);
-    
-    if (j==0) type = NegDefType;
+    if (j==0) type = VariogramType;
   }
   if (err != NOERROR) return err;
 
@@ -1659,11 +1530,7 @@ int struct_likelihood(cov_model *cov,
     subrole = ROLE_FAILED,
     nr = next->nr;
 
-  //APMI(next);
-  //printf("PL %d \n", PL);
-  //ssert(PL == 20);
-  
-  if (isNegDef(next)) {
+  if (isVariogram(next)) {
     if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
     addModel(&(cov->key), GAUSSPROC);
     sub = cov->key;
@@ -1682,9 +1549,6 @@ int struct_likelihood(cov_model *cov,
   else if (nr == SCHLATHERPROC) subrole = ROLE_SCHLATHER;
   else if (nr == SMITHPROC) subrole = ROLE_SMITH;
   else {
-    //PMI(cov, -1);
-    //    PMI(sub, -1);
-    //    printf("next %d %s %d %d %d\n", nr, NICK(next), isNegDef(next), isPosDef(next), CovList[nr].Type);
     ILLEGAL_ROLE;
   }
 
@@ -1806,10 +1670,7 @@ int check_EvalDistr(cov_model *cov) {
       zaehler++;
     } 
     if (zaehler != 1) SERR("exactly one of the parameters must be given");
-    //printf("+ %d, %d -> %s\n", (int) cov->q[EVALDISTR_Q_TYPE], sub->nr,
-    //	   NICK(sub));  
-    //    printf("= %d, %d -> %s\n", (int) cov->q[EVALDISTR_Q_TYPE], sub->nr,
-    //	   NICK(sub));
+
   }
  
   if (!isRandom(sub)) {
@@ -1929,7 +1790,7 @@ int check_dummy(cov_model *cov) {
   if (loc == NULL) SERR("locations not initialised .");
 
   for (i=0; i<=1; i++) {
-    if ((err = CHECK(sub, loc->timespacedim, cov->xdimown, NegDefType,
+    if ((err = CHECK(sub, loc->timespacedim, cov->xdimown, VariogramType,
 		     i==0 ? XONLY : KERNEL, SYMMETRIC, SUBMODEL_DEP,
 		     ROLE_COV)) == NOERROR) break;
   }
@@ -1959,16 +1820,12 @@ int alloc_pgs(cov_model *cov, int dim) { // all what is necessary for dompp
   NEW_STORAGE(pgs);
   pgs = cov->Spgs;
 
-  //    printf("here dim=%d\n", dim);
-  //assert(dim == 2); 
-  //assert(false);
-  
   if ((pgs->supportmin = (double*) CALLOC(dim, sizeof(double))) == NULL ||
       (pgs->supportmax = (double*) CALLOC(dim, sizeof(double))) == NULL ||
+      (pgs->supportcentre = (double*) CALLOC(dim, sizeof(double))) == NULL || 
       (pgs->own_grid_start = (double*) CALLOC(dim, sizeof(double))) == NULL ||
       (pgs->own_grid_step = (double*) CALLOC(dim, sizeof(double))) == NULL ||
       (pgs->own_grid_len = (double*) CALLOC(dim, sizeof(double))) == NULL ||
-      (pgs->supportcentre = (double*) CALLOC(dim, sizeof(double))) == NULL || 
       
       (pgs->gridlen = (int*) CALLOC(dim, sizeof(int))) == NULL ||
       (pgs->end = (int*) CALLOC(dim, sizeof(int))) == NULL ||
@@ -1981,7 +1838,6 @@ int alloc_pgs(cov_model *cov, int dim) { // all what is necessary for dompp
       (pgs->inc = (double*) CALLOC(dim, sizeof(double))) == NULL)
     return ERRORMEMORYALLOCATION;
 
-  // printf("here end\n");
   return NOERROR;
 }
 
@@ -2018,7 +1874,6 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols) { // all what is nece
       (pgs->Val= (double**) CALLOC(rowscols, sizeof(double*))) == NULL 
       ) return ERRORMEMORYALLOCATION;
 
-  // printf("here end\n");
   return NOERROR;
 }
 
@@ -2284,14 +2139,11 @@ int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel) {
   bool  
     ygiven = loc->ly > 0;
 
-  if (!ygiven && isNegDef(type) && !isCartesian(cov->isoown)) {
+  if (!ygiven && isVariogram(type) && !isCartesian(cov->isoown)) {
     add_y_zero(loc);
     ygiven = true;
     //PMI(cov);
   }
-  //  PMI(cov);
-
-  //   printf("ygiven %d %d %d\n", !ygiven, isNegDef(type), !isCartesian(cov->isoown));
 
   if (cov->isoown == EARTH_COORD) {
     iso[endfor++] = EARTH_COORD;
@@ -2305,27 +2157,24 @@ int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel) {
       }
     }
     */
-    //    printf("%d\n", endfor); BUG;
   } else {
-    iso[endfor++] = type == ShapeType ? CARTESIAN_COORD : SYMMETRIC;
+    iso[endfor++] = type == ShapeType  ? CARTESIAN_COORD : SYMMETRIC;
   }
   
-   // printf("type = %s iso=%d:%s\n", TYPENAMES[type], iso[0], ISONAMES[iso[0]]);
+
+  //  printf("%d %s\n", endfor, ISONAMES[iso[0]]); BUG;
  
   for (i=0; i < endfor; i++) {
     for (k=XONLY; k<=lastdomain; k++) {
-      //       printf("FCTN: %d (%d) %s %s\n", i, endfor, ISONAMES[iso[i]], DOMAIN_NAMES[k]); 
       if ((err = CHECK(sub, dim, cov->xdimown, type, k, iso[i], SUBMODEL_DEP,
-		   sub!=next || isNegDef(sub) ? ROLE_COV : ROLE_BASE))
+		       sub!=next || isVariogram(sub) ? ROLE_COV : ROLE_BASE))
 	  == NOERROR) break;
+
     }
     if (err == NOERROR) break;
   }
   if (err != NOERROR) return err;
   setbackward(cov, sub);  
-
-  //  printf("ende %ld %ld\n", CovList[sub->nr].check, checkcox);
- 
 
   if (sub->pref[Nothing] == PREF_NONE) SERR("given model cannot be evaluated")
   
@@ -2347,13 +2196,15 @@ int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel) {
     if (close) {
       VDIMS;
       LOCS;	
-    } else {
+   } else {
       LOCS;
       VDIMS;
     }
     cov->q[d] = 1;
     assert(d == len-1);
   }
+
+  //PMI(cov);
 
   if ((err = alloc_cov(cov, dim, cov->vdim[0], cov->vdim[1])) != NOERROR) return err;
 
@@ -2414,7 +2265,7 @@ int check_covmatrix(cov_model *cov) {
 		     PosDefType, KERNEL, SYMMETRIC, SUBMODEL_DEP,
 		     ROLE_GAUSS)) != NOERROR) { 
     if ((err = CHECK(sub, loc->timespacedim, cov->xdimown, 
-		     NegDefType, XONLY, SYMMETRIC, SUBMODEL_DEP,
+		     VariogramType, XONLY, SYMMETRIC, SUBMODEL_DEP,
 		     ROLE_GAUSS)) != NOERROR) {
       return err;
     }
@@ -2451,14 +2302,12 @@ void Variogram(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *value){
   if (value==NULL) return; // EvaluateModel needs information about size
   //                      of result array
   cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
-  //  printf("Variogram %s %ld %ld\n", NICK(sub),
-  //	 CovList[sub->nr].variogram, CovList[sub->nr].covariance);
-  // assert(false);
+
   CovList[sub->nr].variogram(sub, value);
 }
 
 int check_vario(cov_model *cov) {
-  return check_cov_intern(cov, NegDefType, GLOBAL.general.vdim_close_together,
+  return check_cov_intern(cov, VariogramType, GLOBAL.general.vdim_close_together,
 			  true);
 }
 
@@ -2474,29 +2323,24 @@ int struct_variogram(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
     if ((err = covcpy(&(cov->key), sub)) != NOERROR) return err;       
     sub = cov->key;
     sub->calling = cov;
-    if (!isNegDef(sub->typus)) SERR("variogram model cannot be determined");
+    if (!isVariogram(sub->typus)) SERR("variogram model cannot be determined");
   } else {
-    if (!isNegDef(sub->typus)) SERR("not a variogram model");
+    if (!isVariogram(sub->typus)) SERR("not a variogram model");
   }
 
   // APMI(sub);
 
-  if ((err = CHECK(sub, loc->timespacedim, cov->xdimown, NegDefType,
+  if ((err = CHECK(sub, loc->timespacedim, cov->xdimown, VariogramType,
 		     loc->y == NULL && loc->ygr[0] == NULL ? XONLY : KERNEL,
 		     SYMMETRIC, cov->vdim,
 		     ROLE_COV)) != NOERROR) {
     return err;
-  }
+  }   
   return NOERROR;
-}
-
-
-
-
-
-
-
-
+} 
+  
+   
+  
 
 // bool close = GLOBAL.general.vdim_close_together;
 
@@ -2504,115 +2348,32 @@ void Fctn(double VARIABLE_IS_NOT_USED *X, cov_model *cov, double *value){
   if (value==NULL) return; // EvaluateModel needs information about size
   //                      of result array
   cov_model *sub =  cov->sub[0];
-  assert(cov->key == NULL);
-  int 
-    vdim12 = cov->vdim[0] * cov->vdim[1];
- 
-  assert(cov->Spgs != NULL);						
-  pgs_storage *pgs= cov->Spgs;						
-  assert(pgs->x != NULL);						
-  location_type *loc = Loc(cov);					
-  assert(loc != NULL);							
-  bool grid =loc->grid && !loc->Time && loc->caniso==NULL;		
-  bool trafo = (loc->Time || loc->caniso != NULL) && !loc->distances;	
-  bool ygiven = loc->y != NULL || loc->ygr[0] != NULL;			
-  long cumgridlen[MAXMPPDIM +1],					
-    err = NOERROR;							
-  int d,								
-    *gridlen=pgs->gridlen,						
-    *end=pgs->end,							
-    *endy =pgs->endy,				
-    *start=pgs->start,							
-    *startny =pgs->startny,			
-    *nx=pgs->nx,							
-    *ny = pgs->delta,				
-    tsxdim = cov->xdimown; /* weicht u.U. von tsdim bei dist=true ab */ 
-  long
-    tot = loc->totalpoints;					
-  double *x = pgs->x,/* freed only if grid */				
-    *xstart= pgs->xstart,						
-    *inc=pgs->inc,							
-    *y = pgs->supportmin,	/* freed only if grid */		
-    *ystart =pgs->supportmax,			
-    *yy = NULL,		/* set by Transform2NoGrid */			
-    *xx = NULL,		/* dito			   */			
-    *incy =pgs->supportcentre;
-  if (grid) {								
-    cumgridlen[0] = 1;							
-    for (d=0; d<tsxdim; d++) {						
-      inc[d] = loc->xgr[d][XSTEP];					
-      gridlen[d] = loc->xgr[d][XLENGTH];					
-      cumgridlen[d+1] = gridlen[d] * cumgridlen[d];			
-									
-      start[d] = 0;							
-      end[d] = gridlen[d];						
-      nx[d] = start[d];							
-      x[d] = xstart[d] = loc->xgr[d][XSTART];				
-    }									
-  }									
-  loc->i_col = loc->i_row = 0;
-	      
+  FINISH_START(cov);  
+  double *y = ygiven ? pgs->supportmin : ZERO;
 
-  //  assert(false);
+  assert(cov->key == NULL);
+  bool kernel = sub->domprev != XONLY;
+  INCLUDE_VAL;			
+
 
 #define FUNCTION FCTN(x, sub, value)
 #define FUNCTION_Y NONSTATCOV(x, y, sub, value)
+#define FUNCTION2 FCTN(x, sub, cross);		\
+  for (v = 0; v<vdimSq; v++) Val[v][loc->i_row] = cross[v];
+#define FUNCTION2_Y						\
+  NONSTATCOV(x, y, sub, cross);				\
+  for (v = 0; v<vdimSq; v++) Val[v][loc->i_row] = cross[v];	
 
-  if (grid) {
-    if (ygiven) {							
-      STANDARDSTART_Y_SUPPL;
-      assert(loc->i_row==0);
-      while (true) {
-	FUNCTION_Y; 
-	loc->i_row ++;
-	value += vdim12;
-	STANDARDINKREMENT_Y;
-	RECYCLE_Y;
-	STANDARDINKREMENT; 
-      }
-    } else {	// grid, y not given
-      assert(loc->i_row==0);
-      while (true) {
-	FUNCTION;
-	loc->i_row ++;;  
-	value += vdim12;
-	STANDARDINKREMENT; 
-      } 
-    }
-  } else { // not a grid
+  //  printf("%d %d\n", ygiven, kernel); APMI(cov);
  
-    if (trafo) {
-      Transform2NoGrid(cov, &xx, &yy);   
-      x = xx;
-      y = yy;
-    } else { x=loc->x; y=loc->y;  }
-
-    if (ygiven) {
-      double *y0, *yend;
-      y0 = y;
-      yend = y + tsxdim * loc->ly;
-
-      for (; loc->i_row<tot; value+=vdim12, x+=tsxdim, y+=tsxdim, loc->i_row++){
-	// todo loc->i_row besser long int
-	if (y >= yend) y = y0;
-	FUNCTION_Y;
-      }
-    } else {
-      for (; loc->i_row < tot; value+=vdim12, x+=tsxdim, loc->i_row++) {
-	FUNCTION;
-	//printf("x=%f %f %d\n", x[0], x[1], tsxdim, *value);
-	//	assert(loc->i_row < 5);
-      }
-    }
-  }
-
-  STANDARD_ENDE;
-  if (err != NOERROR) XERR(err); 
-
-}
+  PERFORM(FUNCTION, FUNCTION2, FUNCTION_Y, FUNCTION2_Y);
+} 
 
 
 int check_fctn(cov_model *cov) {
-  return check_cov_intern(cov, ShapeType, true, false);
+  EXTRA_STORAGE;
+  return check_cov_intern(cov, ShapeType, GLOBAL.general.vdim_close_together, 
+			  true);
 }
 
+ 

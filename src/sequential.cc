@@ -24,10 +24,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h>  
 #include <stdlib.h>
- 
+#include <R_ext/Lapack.h>
+
 #include "RF.h"
 #include "shape_processes.h"
-#include <R_ext/Lapack.h>
+#include "Coordinate_systems.h"
 //#include <R_ext/Linpack.h>
 
 #define SEQU_MAX (COMMON_GAUSS + 1)
@@ -277,8 +278,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     k += withoutlast;
   }
 
-  free(y);
-  y = NULL;
+  FREE(y);
 
 //  for (i=0; i<withoutlast * spatialpnts; i++) {
 //    print("%3.4f ", COV21[i]);
@@ -431,7 +431,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   err = FieldReturn(cov);
 
  ErrorHandling: // and NOERROR...
-  if (xx != NULL) free(xx);
+  FREE(xx);
   if (S!=NULL) {
       S->totpnts = totpnts;
       S->spatialpnts = spatialpnts;
@@ -440,11 +440,11 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       S->ntime = timecomp[XLENGTH];
   }
   if (!storing && err!=NOERROR) {
-    if (MuT!=NULL) free(MuT);
-    if (U11!=NULL) free(U11);
-    if (U22!=NULL) free(U22);
-    if (G!=NULL) free(G); 
-    if (res0!=NULL) free(res0); 
+    FREE(MuT);
+    FREE(U11);
+    FREE(U22);
+    FREE(G); 
+    FREE(res0); 
   } else {
     if (S != NULL) {
       S->U22=U22;
@@ -457,11 +457,11 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   }
   if (COV21!=NULL) {
       if (S != NULL && debugging)  S->Cov21 = COV21;
-      else free(COV21);
+      else UNCONDFREE(COV21);
   }
   if (Inv22!=NULL) {
       if (S != NULL && debugging)  S->Inv22 = Inv22;
-      else free(Inv22);
+      else UNCONDFREE(Inv22);
   }
 
   cov->simu.active = err == NOERROR;
@@ -512,7 +512,8 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
   res_type *res0,
     *res = cov->rf; 
   bool loggauss = GLOBAL.gauss.loggauss;
-
+ GLOBAL.gauss.loggauss = false;
+ 
   assert(res != NULL);
 
   assert(S != NULL); 
@@ -551,5 +552,6 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
 
-  
+  GLOBAL.gauss.loggauss = loggauss;
+
 }

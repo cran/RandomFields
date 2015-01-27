@@ -20,7 +20,7 @@
 }
 \value{
   \code{RC_TYPENAMES = c("tail correlation function", "positive definite",
-    "negative definite", "process", 
+    "variogram", "negative definite", "process", 
     "method for Gauss process", "method for Brown-Resnick process",
     "shifted shape function",
     "distribution family", "shape function", "trend", "interface",
@@ -69,7 +69,7 @@
 }
 
 \seealso{
-  \link{RF},   \link{RM},  \link{RP}, \link{RR}, 
+  \link{RF},   \link{RM},  \link{RP}, \link{RR}, \link{R.},
   \command{\link{RFgetModelNames}},
   \link{RMmodelgenerator-class},
   \command{\link{RMtrafo}}

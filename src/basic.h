@@ -57,7 +57,8 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 // 
 // 
 // 1
-//#define LOCAL_MACHINE 1
+
+#define LOCAL_MACHINE 1
 
 extern char BUG_MSG[250];
 #ifdef LOCAL_MACHINE

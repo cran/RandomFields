@@ -1,3 +1,13 @@
+### Diese Datei wandelt RMmodel in eine Liste um
+
+### Kleinigkeiten geaendert: Jan 2015, M. Schlather
+
+
+reps <- function(n, sign=",") paste(rep(sign, n), collapse="")
+
+
+
+
 ## @FUNCTION-STARP***********************************************************************************
 # @NAME		parseModel
 # @PARAM		$model - list, formula
@@ -8,65 +18,31 @@
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 # @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-parseModel <- function(model, ...)
-{
-	# check whether $model is already in list syntax
-	if (isListModel(model))
-		return(model)
+parseModel <- function(model, ...) {
+  ## check whether $model is already in list syntax
+  if (is.list(model)) return(model)
 	
-	# check whether $model is already in list syntax
-	if (isModel(model))
-		return(buildCovList(model))
+  ## check whether $model is already in list syntax
+  if (isModel(model)) return(buildCovList(model))
 	
-	# check whether $model has correct formula syntax
-	if (!isFormulaModel(model))
-		stop(syntaxError())
+  ## check whether $model has correct formula syntax
+  if (!isFormulaModel(model)) stop(syntaxError)
 	
-	# extract tokens
-	summands <- extractSummands(model)
-	
-	listModel <- list()
-	
-	if (length(summands) == 1)
-	{
-		listModel <- buildFactorList(summands[[1]], ...)#, last=TRUE)
-	}
-	else
-	{
-		listModel <- list(ZF_SYMBOLS_PLUS)
-		
-		#last <- getLastCovIndex(summands)
-		
-		for (i in 1:length(summands))
-		{
-                 listModel <- c(listModel,
-                                       list(buildFactorList(summands[[i]],
-                                                            ...)))
-                                        #,(i == last))))
-                  # Print(summands[[i]], listModel)
- 		}
-                
-                #names(listModel) <- NULL
-	}
-		
-	return(listModel)
+  ## extract tokens
+  summands <- extractSummands(model)
+  listModel <- list()	
+  if (length(summands) == 1) {
+    listModel <- buildFactorList(summands[[1]], ...)#, last=TRUE)
+  } else {
+    listModel <- list(ZF_SYMBOLS_PLUS)		
+    ##last <- getLastCovIndex(summands)
+    for (i in 1:length(summands)) {
+      listModel <- c(listModel, list(buildFactorList(summands[[i]], ...)))
+    }
+  }  
+  return(listModel)
 }
 
-
-# @FUNCTION-STARP***********************************************************************************
-# @NAME		isListModel
-# @PARAM		$model - any r-object
-# @RETURN		TRUE, FALSE
-# @REQUIRE	none
-# @ENSURE		it is confirmed that either $model has a correct model syntax or not
-# @SEE		devel-doc
-# @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		26.08.2011
-# @FUNCTION-END*************************************************************************************
-isListModel <- function(model)
-{
-	return(is.list(model))
-}
 
 
 # @FUNCTION-STARP***********************************************************************************
@@ -85,6 +61,8 @@ isModel <- function(model)
 }
 
 
+
+
 # @FUNCTION-STARP***********************************************************************************
 # @NAME		isFormulaModel
 # @PARAM		$model - any r-object
@@ -97,11 +75,8 @@ isModel <- function(model)
 # @FUNCTION-END*************************************************************************************
 isFormulaModel <- function(model)
 {
-        if (missing(model) || is.null(model))
-                return(FALSE)
-
-        if (!is(model, "formula"))
-		return(FALSE)
+        if (missing(model) || is.null(model)) return(FALSE)
+        if (!is(model, "formula")) return(FALSE)
 		
 	# ensure the @ operator is just bivariate
 	if (regexpr("[[:alnum:]_]+@[[:alnum:]_]*@",
@@ -131,32 +106,30 @@ buildCovList <- function(model)
   if (!is(model, ZF_MODEL))
     stop('model must be of class ZF_MODEL') 
 
-  
   if (model@name==ZF_COORD) model@name <- ZF_MIXED[1]
   
-  li <- c(
-          list(model@name),
+  li <- c(list(model@name),
           lapply(model@par.model[!(model@par.model==ZF_DEFAULT_STRING)],
                  FUN=buildCovList),
           lapply(model@submodels,
                  FUN=buildCovList)
-	)
-        if (li[[1]] == ZF_PLUS[1]) li[[1]] <- ZF_SYMBOLS_PLUS
-        if (li[[1]] == ZF_MULT[1]) li[[1]] <- ZF_SYMBOLS_MULT
+          )
+  if (li[[1]] == ZF_PLUS[1]) li[[1]] <- ZF_SYMBOLS_PLUS
+  if (li[[1]] == ZF_MULT[1]) li[[1]] <- ZF_SYMBOLS_MULT
   
   
-        ##  par.general.is.default <-
-        ##    unlist(lapply(model@par.general, FUN=function(x) x==ZF_DEFAULT_STRING))
-        if (length(model@par.general)>0 &
-            !all(model@par.general==ZF_DEFAULT_STRING)) {
-          li <- c(DOLLAR[1],
-                  lapply(model@par.general[!(model@par.general==ZF_DEFAULT_STRING)], FUN=buildCovList),
-                  list(li))
-          if (length(pos <- which(names(li)=="Aniso")) > 0)
-            ## in c-level, parameter is called 'A'
-            names(li)[pos] <- "A"
-        }
-        ## }
+  ##  par.general.is.default <-
+  ##    unlist(lapply(model@par.general, FUN=function(x) x==ZF_DEFAULT_STRING))
+  if (length(model@par.general)>0 &
+      !all(model@par.general==ZF_DEFAULT_STRING)) {
+    li <- c(DOLLAR[1],
+            lapply(model@par.general[!(model@par.general==ZF_DEFAULT_STRING)],
+                   FUN=buildCovList),
+            list(li))
+    if (length(pos <- which(names(li)=="Aniso")) > 0)
+      ## in c-level, parameter is called 'A'
+      names(li)[pos] <- "A"
+  }
   
   return(li)           
 }
@@ -172,10 +145,7 @@ buildCovList <- function(model)
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 # @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-syntaxError <- function()
-{
-	return("Malformed model expression -- maybe you have used a wrong or obsolete definition, or just used an incorrect option name. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)")
-}
+syntaxError <- "Malformed model expression -- maybe you have used a wrong or obsolete definition, or just used an incorrect option name. See ?RMmodel for the model definition. Check manual for further information (RMmodel, RFsimulate)"
 
 
 
@@ -190,61 +160,42 @@ syntaxError <- function()
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 # @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-extractSummands <- function(model)
-{
-	tmpList <- list()
+extractSummands <- function(model) {
+  tmpList <- list()
 
-	# ignore rest of the formula
-	rightSide <- tail(as.character(model), 1)
+  ## ignore rest of the formula
+  rightSide <- tail(as.character(model), 1)
+  chars <- strsplit(rightSide, "")[[1]]
 	
-	chars <- strsplit(rightSide, "")[[1]]
-	
-	# toggles parenthesis, eg. whether we confront a toplevel plus or not
-	parToggle <- 0
+  ## toggles parenthesis, eg. whether we confront a toplevel plus or not
+  parToggle <- 0
+  
+  token <- ""
+  for (char in chars) {
+    if (char == ZF_SYMBOLS_PLUS && parToggle == 0) {
+      tmpList <- c(tmpList, token)
+      token <- ""			
+    } else {
+      if (char != " ") token <- paste(token, char, sep="")		
+      if (char == ZF_SYMBOLS_L_PAR) parToggle <- parToggle+ 1
+      if (char == ZF_SYMBOLS_R_PAR) parToggle <- parToggle- 1
+    }
+  }
+
+  tmpList <- c(tmpList, token)
+  tokenList <- list()
+  for (token in tmpList) {
+    tokenList <- c(tokenList, removeParenthesis(token))
+  }
         
-	token <- ""
-	for (char in chars)
-	{
-		if (char == ZF_SYMBOLS_PLUS && parToggle == 0) 
-		{
-			tmpList <- c(tmpList, token)
-			token <- ""			
-		}
-		else
-		{
-			if (char != " ")
-				token <- paste(token, char, sep="")
-		
-			if (char == ZF_SYMBOLS_L_PAR)
-				parToggle <- parToggle+ 1
-
-			if (char == ZF_SYMBOLS_R_PAR)
-				parToggle <- parToggle- 1
-		}
-	}
-
- 	tmpList <- c(tmpList, token)
-
-	tokenList <- list()
-
-	for (token in tmpList)
-	{
-		tokenList <- c(tokenList, removeParenthesis(token))
-	}
+  if (length(tokenList)==1) 
+    return(tokenList)  ## sonst steht unten paste(NULL), was "" gibt
         
-        if (length(tokenList)==1) 
-          return(tokenList)  ## sonst steht unten paste(NULL), was "" gibt
-        
-        iscov <- unlist(lapply(tokenList, FUN=isGenuineCovModel))
-        tokenList <- c(tokenList[!iscov],
-                       list(paste(unlist(tokenList[iscov]),
-                                  collapse=ZF_SYMBOLS_PLUS)))
-
- 
-        #print("list of summands returned from 'extractSummands'")
-        #print(str(tokenList))
-
-        return(tokenList)
+  iscov <- unlist(lapply(tokenList, FUN=isGenuineCovModel))
+  tokenList <- c(tokenList[!iscov],
+                 list(paste(unlist(tokenList[iscov]),
+                            collapse=ZF_SYMBOLS_PLUS)))
+  return(tokenList)
 }
 
 
@@ -409,7 +360,7 @@ extractFixed <- function(factor, ...)
 	if (regexpr(paste("^",ZF_FIXED,"\\([[:print:]]*\\)$",sep=""),
                     factor) != 1) {
           stop(paste("Second factor is not a cov model AND does not start with",
-                     ZF_FIXED, "\n", syntaxError()))
+                     ZF_FIXED, "\n", syntaxError))
         }
 
 	# extract the argument of RMfixed
@@ -459,70 +410,6 @@ catch <- function(expr, handler=function(res){stop(res)}, ...)
   return(res)
 }
 
-
-# @FUNCTION-STARP***********************************************************************************
-# @NAME		
-# @PARAM		
-# @RETURN		
-# @REQUIRE	
-# @ENSURE		
-# @SEE		
-# @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		26.08.2011
-# @FUNCTION-END*************************************************************************************
-## rfConvertToOldGrid<- function(grid)
-## {
-##   if (is(grid, "GridTopology"))
-##     grid <- rbind(grid@cellcentre.offset,
-##                   grid@cellsize,
-##                   grid@cells.dim)
-##   if (is.null(dim(grid)))
-##     grid <- matrix(grid, nc=1)
-##   if (!(length(dim(grid))==2 && dim(grid)[1]==3))
-##     stop("grid must be a matrix with 3 rows")
-## 	tmp<-matrix(nrow=dim(grid)[1],ncol=dim(grid)[2])
-	
-## 	tmp[1,]<- grid[1,]
-## 	tmp[2,]<- grid[1,]+grid[2,]*(grid[3,]- 1)
-## 	tmp[3,]<- grid[2,]
-	
-## 	return(tmp)
-## }
-
-## XXrfConvertToNewGrid<- function(grid)
-## {
-##   if (is.null(dim(grid)))
-##     grid <- matrix(grid, nc=1)
-##   if (!(length(dim(grid))==2 && dim(grid)[1]==3))
-##     stop("grid must be a matrix with 3 rows")
-## 	tmp<-matrix(nrow=dim(grid)[1],ncol=dim(grid)[2])
-	
-## 	tmp[1,]<- grid[1,]
-## 	tmp[2,]<- grid[3,]
-## 	tmp[3,]<- floor((grid[2,]-grid[1,])/grid[3,])+1
-	
-## 	return(tmp)
-## }
-
-
-# @FUNCTION-STARP***********************************************************************************
-# @NAME		.insertCoord
-# @REQUIRE	$model is a Covariance Model in list format
-#			$par is a list that has members coord and dist
-# @ENSURE		a coordinate matrix is inserted into the list
-# @SEE		
-# @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		13.09.2011
-# @FUNCTION-END*************************************************************************************
-#.insertCoord <- function(model, par)
-#{       
-#	model<- c(model[1],
-#                  list(dist=par$dist),
-#                  list(coord=par$coord),
-#                  model[-1])
-#	
-#	return(model)
-#}
 
 # @FUNCTION-STARP***********************************************************************************
 # @NAME		prepareData

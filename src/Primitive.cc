@@ -39,15 +39,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 #include "RF.h"
 #include "primitive.h"
+#include "Operator.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
-
-//  {min, max} x {theor, pract}  x length(param) 
-//static double *range_stable[4] = {0, 2, 0.06, 2};
-//double *range_whittle[4]= {0, RF_INF, 1e-2, 10.0};
-//double *range_cauchy[4] = {0, RF_INF, 0.09, 10.0};
-//static double *range_genCauchy[8] = {0, 2, 0.05, 2, 
-//				    0, RF_INF, 0.05, 10.0};
+#include "Coordinate_systems.h"
 
 
 #define i11 0
@@ -111,9 +106,7 @@ void bcw(double *x, cov_model *cov, double *v){
     else {
       *v = dewijs * (1.0 + 0.5 * zetadewijs * (1.0 + ONETHIRD *zetadewijs))
 	/ BCW_TAYLOR_ZETA;
-      //    printf("x=%f v=%f %f dewijs %f %f %f\n", *x, *v, pow(*x, alpha), alpha, dewijs, zeta, BCW_TAYLOR_ZETA);
     }
-    // printf("x=%f %f %f dewijs %f %f %f\n", *x,  pow(*x, alpha), alpha, dewijs, zeta, BCW_TAYLOR_ZETA);
   } 
 }
 
@@ -164,10 +157,7 @@ void DDbcw(double *x, cov_model *cov, double *v){
 }
 
 
-void Inversebcw(double *x, cov_model *cov, double *v) {
-
-  // printf("inverse bcw\n");
-  
+void Inversebcw(double *x, cov_model *cov, double *v) {  
   double 
     alpha = P0(BCW_ALPHA), 
     beta=P0(BCW_BETA),
@@ -186,7 +176,6 @@ int checkbcw(cov_model *cov) {
   double
     alpha = P0(BCW_ALPHA), 
     beta=P0(BCW_BETA);
-  //double alpha = P0(BCW_ALPHA);
   if (cov->tsdim > 2)
     cov->pref[CircEmbedCutoff] = cov->pref[CircEmbedIntrinsic] = PREF_NONE;
   cov->logspeed = beta > 0 ? RF_INF : beta < 0.0 ? 0 : alpha * INVLOG2;
@@ -214,7 +203,6 @@ void rangebcw(cov_model *cov, range_type *range) {
 
 void coinitbcw(cov_model *cov, localinfotype *li) {
   double
-    //alpha = P0(BCW_ALPHA),
     beta=P0(BCW_BETA);
   if (beta < 0) coinitgenCauchy(cov, li);
   else {
@@ -235,11 +223,11 @@ void ieinitbcw(cov_model *cov, localinfotype *li) {
 #define LOW_BESSELK 1e-20
 #define BESSEL_NU 0
 void Bessel(double *x, cov_model *cov, double *v){
+
   static double nuOld=RF_INF;
   static double gamma;
   double nu = P0(BESSEL_NU), 
     y=*x;
-
   if  (y <= LOW_BESSELJ) {*v = 1.0; return;}
   if (y == RF_INF)  {*v = 0.0; return;} // also for cosine i.e. nu=-1/2
   if (nuOld!=nu) {
@@ -342,9 +330,6 @@ void InverseCauchy(double*x, cov_model *cov, double *v){
   else *v = sqrt(pow(*x, -1.0 / gamma) - 1.0);
 }
 int checkCauchy(cov_model VARIABLE_IS_NOT_USED  *cov){
-  //  double gamma = P0(CAUCHY_GAMMA);
-  //  if (gamma != 0.5 && gamma != 1.5 && gamma != 2.5 && gamma != 3.5) 
-  //   cov->pref[TBM2] = PREF_NONE;
   return NOERROR;
 }
 void rangeCauchy(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
@@ -388,13 +373,7 @@ void Cauchytbm(double *x, cov_model *cov, double *v){
     *v = (1.0 + (1.0 - beta / gamma) * ha) * pow(1.0 + ha, -beta / alpha - 1.0);
   }
 }
-//void TBM3Cauchytbm(double *x, cov_model *cov, double *v){
-//  double ha, bg, a = P(CTBM_ALPHA), b = P(CTBM_BETA), c = P(CTBM_GAMMA);
-//  ha=pow(*x, a);
-//  bg=b / c;//  *v = 
-//    (1 + ha * (1 - bg * (1 + a) + (1 - b) * (1 + (1 - bg) * ha))) *
-//    pow(1 + ha, -b / a - 2.0);
-//}
+
 void DCauchytbm(double *x, cov_model *cov, double *v){
   double y= *x, ha, 
     alpha = P0(CTBM_ALPHA), 
@@ -449,7 +428,6 @@ int structCircSph(cov_model *cov, cov_model **newmodel, int dim) {
   ASSERT_NEWMODEL_NOT_NULL;
 
   switch (cov->role) {
-    //case ROLE_SMITH : 
   case ROLE_POISSON_GAUSS :
     {
       addModel(newmodel, BALL, cov);      
@@ -466,8 +444,6 @@ int structCircSph(cov_model *cov, cov_model **newmodel, int dim) {
     return addUnifModel(cov, 1.0, newmodel);
   default:
     BUG;
-    //    SERR1("ball currently only allowed for role 'Gauss' and 'Smith' Got %s.", 
-    //	   ROLENAMES[cov->role]);
   }
   return NOERROR;
 }
@@ -477,127 +453,76 @@ int structcircular(cov_model *cov, cov_model **newmodel) {
 }
 
 
-// constant (matrix); 
+// spatially constant (matrix); 
+#define CONSTANT_M 0
+
+void kappaconstant(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc) {
+  *nr = *nc = i ==  CONSTANT_M ? 0 : -1;
+}
+
 void constant(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
-  location_type *loc = Loc(cov);
-  listoftype *list= PLIST(CONSTANT_M);
-  int i,j,
-    // *ncol = list->ncol,
-    element = P0INT(CONSTANT_ELMNT),
-    *nrow = list->nrow; // anzahl listen elemente
-  int vdim = cov->vdim[0],
-    lx = nrow[element] / vdim, //nrow = #pts * vdim
-    ly = nrow[element] * lx;
-  assert(cov->vdim[0] == cov->vdim[1]);
-  double **p = list->p,
-    *X = (p[element] + loc->i_row + loc->i_col * nrow[element]),
-    *Y=X,
-    *w = v;
-  if (loc->i_row >= lx || loc->i_col >= lx) {
-    PRINTF("size=%d current indices=(%d, %d)\n", lx, loc->i_row, loc->i_col);
-    //  crash(cov);
-    ERR("constant model: indices out of range");
-  }
-  if (element >= cov->nrow[CONSTANT_M])
-    ERR("constant model: list index out of range");
-  for (i=0; i<vdim; i++, Y+=ly) {
-     for (X=Y, j=0; j<vdim; j++, w++, X+=lx) {
-       *w = *X;
-     }
-  }
+  int 
+    vdimSq = cov->vdim[0] * cov->vdim[1];
+  MEMCOPY(v, P(CONSTANT_M), vdimSq * sizeof(double));
 }
 
-void constant_nonstat(double *x, double VARIABLE_IS_NOT_USED *y, cov_model *cov, double *v){
-    constant(x, cov, v);
+void nonstatconstant(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USED *y, cov_model *cov, double *v){
+  int 
+    vdimSq = cov->vdim[0] * cov->vdim[1];
+  MEMCOPY(v, P(CONSTANT_M), vdimSq * sizeof(double));
 }
-
-void covmatrix_constant(cov_model *cov, double *v, int *nonzeros) {
-  int j, nz=0,
-    element = P0INT(CONSTANT_ELMNT);
-  listoftype *M= PLIST(CONSTANT_M);
-  double *p = M->p[element];
-  int n = M->nrow[element] * M->ncol[element];   
-  for (j=0; j<n; j++) nz = (v[j] = p[j]) != 0.0;
-  *nonzeros = nz;
-  loc_set(cov, M->nrow[element]);
-  // printf("const %d\n", cov->totalpoints);
-}
-char iscovmatrix_constant(cov_model VARIABLE_IS_NOT_USED *cov) {  return 2; }
 
 int checkconstant(cov_model *cov) {
-  listoftype *list = PLIST(CONSTANT_M); 
-  long total;
-  int info, err, i, vdim, totpts,
-    m = cov->nrow[CONSTANT_M],
-    *q,
-    *ncol = list->ncol,
-    *nrow = list->nrow; // anzahl listen elemente
-  double *dummy,
-    **p = list->p;
+  int info, err; // anzahl listen elemente
 
+ 
+  if (GLOBAL.internal.warn_constant) {
+    GLOBAL.internal.warn_constant = false;
+    warning("NOTE THAT THE DEFINITION OF 'RMconstant' HAS CHANGED. MAYBE, 'RMfixcov' IS THE CORRECT MODEL");
+  }
+ 
+  cov->vdim[0] = cov->vdim[1] = cov->nrow[CONSTANT_M];
+  if (cov->vdim[0] != cov->vdim[1])  return ERROR_MATRIX_SQUARE;
+
+  if (cov->typus == VariogramType) { // ACHTUNG wirklich genau VariogramType
+    SERR("strange call");
+  }
+
+  
   if (cov->q != NULL) {
-    cov->vdim[0] = cov->vdim[1] = P0INT(CONSTANT_VDIM);
-    return ((int*) cov->q)[0]; 
+    return (int) cov->q[0];
   } else QALLOC(1);
 
-  q = ((int*) cov->q);
-  q[0] = NOERROR;
+  cov->q[0] = NOERROR;
 
-
-  if ((err = checkkappas(cov, false)) != NOERROR) return err;
-  kdefault(cov, CONSTANT_ELMNT, 0);
-  kdefault(cov, CONSTANT_VDIM, 1); // vdim !
-  cov->vdim[0] = cov->vdim[1] = vdim = P0INT(CONSTANT_VDIM);
-  if (vdim > 1) return q[0] = ERRORVDIMNOTPROGRAMMEDYET;      
-  // frag ist hier in welcher Reihenfolde die multivariaten und raeumlichen
-  // korrelationen abfolgen, siehe vario** fuer die 2 Moeglichkeiten
+  cov->monotone = COMPLETELY_MON;
+  cov->ptwise_definite = pt_posdef;
    
-  for (i=0; i<m; i++) {
-    if (nrow[i] != ncol[i] || cov->nrow[i] == 0) {
-	return q[0] = ERROR_MATRIX_SQUARE;      
-    }
-    totpts = nrow[i] / vdim;
-    if (totpts * vdim != nrow[i]) {
-	return q[0] = ERROR_MATRIX_VDIM;      
-    }
-    
-      // check whether positive eigenvalue  
-    total = nrow[i] * ncol[i] * sizeof(double); // NICHT weiter vorne
-    dummy = (double*) MALLOC(total);
-    MEMCOPY(dummy, p[i], total);
-    
-    if (false) {
-      printf("in Primitive.cc; constant\n"); //
-      int k, l, mm;
-      for (mm=k=0; k<nrow[i]; k++) {
-	for (l=0; l<ncol[i]; l++) {
-	  printf("%4.0f ", dummy[mm++]); // /* check of false */
-	}
-	printf("\n");//
-      }
-      printf("i=%d %d %d\n", i, nrow[i], ncol[i]);//
-    }
-
-    F77_CALL(dpofa)(dummy, nrow + i, ncol + i, &info); // cholesky
-    
-    free(dummy);
-    if (info != 0) return q[0] = ERROR_MATRIX_POSDEF;      
+  // check whether positive eigenvalue  
+  long total = cov->nrow[CONSTANT_M] * cov->ncol[CONSTANT_M] * sizeof(double);
+  double *dummy = (double*) MALLOC(total);
+  MEMCOPY(dummy, P(CONSTANT_M), total);
+      
+  F77_CALL(dpofa)(dummy, cov->nrow + CONSTANT_M, cov->ncol + CONSTANT_M, 
+		  &info); // cholesky
+  
+  FREE(dummy);
+  if (info != 0) {
+    if (isPosDef(cov)) return cov->q[0] = ERROR_MATRIX_POSDEF;
+    cov->monotone = MONOTONE;
+    cov->ptwise_definite = pt_indef;
   }
+    
 
   cov->matrix_indep_of_x = true;
   cov->mpp.maxheights[0] = RF_NA;
   err = checkkappas(cov);
 
+ 
   return err;
 }
 
 void rangeconstant(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[CONSTANT_ELMNT] = 0;
-  range->max[CONSTANT_ELMNT] = MAXELEMENTS;
-  range->pmin[CONSTANT_ELMNT] = 0;
-  range->pmax[CONSTANT_ELMNT] = MAXELEMENTS;
-  range->openmin[CONSTANT_ELMNT] = false;
-  range->openmax[CONSTANT_ELMNT] = false;
 
   range->min[CONSTANT_M] = RF_NEGINF;
   range->max[CONSTANT_M] = RF_INF;
@@ -605,14 +530,247 @@ void rangeconstant(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->pmax[CONSTANT_M] = 1e10;
   range->openmin[CONSTANT_M] = true;
   range->openmax[CONSTANT_M] = true;
-  
-  range->min[CONSTANT_VDIM] = 1;
-  range->max[CONSTANT_VDIM] = 9999;
-  range->pmin[CONSTANT_VDIM] = 1;
-  range->pmax[CONSTANT_VDIM] = 9999;
-  range->openmin[CONSTANT_VDIM] = false;
-  range->openmax[CONSTANT_VDIM] = false;
+
+ }
+
+
+
+
+
+
+/* Covariate models */
+#define COVARIATE_C 0
+#define COVARIATE_X 1
+#define COVARIATE_T 2
+#define COVARIATE_GRID 3
+#define COVARIATE_FACTOR 4
+void kappa_covariate(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
+    *nc = *nr = i <= COVARIATE_T ? 0 
+      : i <= COVARIATE_FACTOR ? 1 
+      : -1;
 }
+
+int cutidx(double Idx, int len) {
+  int idx = (int) round(Idx);
+  if (idx < 0) idx = 0;
+  if (idx >= len) idx = len - 1;
+  return idx;
+}
+void covariate(double *x, cov_model *cov, double *v){
+  location_type *loc = Loc(cov);
+  int nr, i, d, idx,
+    vdim = cov->vdim[0],    
+    ntot = loc->totalpoints;
+  double X[2],
+    *p = P(COVARIATE_C),
+    f = P0(COVARIATE_FACTOR);
+
+  assert(cov->vdim[1] == 1);
+  if (loc->i_col == I_COL_NA) { 
+    // interpolate: here nearest neighbour/voronoi
+   int 
+     cummul = 1.0,
+     tsdim = cov->xdimprev;
+   if (loc->grid) {
+     nr = 0;
+     
+     for (d = 0; d<tsdim; d++) {
+       int len = loc->xgr[d][XLENGTH];
+       double
+	 step = loc->xgr[d][XSTEP];      
+          
+       if (d > 1 || !isAnySpherical(cov->isoown)) {
+	 idx = cutidx((x[d] - loc->xgr[d][XSTART]) / step, len);
+       } else {
+
+	 if (d == 0) { // to do: report technique?
+	   double full, half, y[2];
+	   int idx2,
+	     dim = 2;
+	   for (i=0; i<dim; i++) y[i] = loc->xgr[i][XSTART];
+	   if (isSpherical(cov->isoown)) {
+	     full = M_2_PI;
+	     half = M_PI;
+	     if (GLOBAL.coords.polar_coord) NotProgrammedYet("");
+	   } else if (isEarth(cov->isoown)) {
+	     full = 360.0;
+	     half = 180.0;
+	   } else BUG;
+	   statmod2(y, full, half, X);
+
+	   idx = cutidx((x[0] - X[0]) / step, len);
+	   double X0 = X[0] + full * (2.0 * (double) (x[0] > X[0]) - 1);
+	   idx2 = cutidx((x[0] - X0) / step, len);
+	   if (fabs(x[0] - (X0 + idx2 * step)) <
+	       fabs(x[0] - (X[0] + idx * step))) idx = idx2;
+	 } else { 
+	   assert(d==1);
+	   idx = cutidx((x[d] - X[1]) / step, len);
+	 }
+       }
+      
+       nr += cummul * idx;
+       cummul *= len;  
+     } 
+          
+   } else { 
+      cov_model *next = cov->sub[0];
+      double distance,
+	mindist = RF_INF,
+	*given = loc->x;
+      nr = 0;
+      for (i=0; i<ntot; i++, given+=tsdim) {
+	NONSTATCOV(x, given, next, &distance);
+	if (distance < mindist) {
+	  mindist = distance;
+	  nr = i;
+	}	
+      }
+    }
+  } else { // should happen only in a matrix context!
+    nr = loc->i_row;
+  }
+  
+  if (GLOBAL.general.vdim_close_together) {
+    p += nr * vdim;
+    for (i=0; i<vdim; i++, p++) v[i] = *p * f;
+  } else {
+    p += nr;
+    for (i=0; i<vdim; i++, p+=ntot) v[i] = *p * f;
+  }
+}
+
+int checkcovariate(cov_model *cov){
+  cov_model *next = cov->sub[0];
+  int err, 
+    data = cov->nrow[COVARIATE_C] * cov->ncol[COVARIATE_C];
+  location_type *loc = Loc(cov);
+  coord_sys_enum ccs = GLOBAL.coords.coord_system;
+
+  //printf("%s\n",  ISONAMES[cov->isoown]);
+  if ((ccs == cartesian && cov->isoown != CARTESIAN_COORD) ||
+      (ccs == earth && cov->isoown != EARTH_COORD) ||
+      (ccs == sphere && cov->isoown != SPHERICAL_COORD))
+    SERR2("'%s' not the global coordinate system ('%s')",
+	  ISONAMES[cov->isoown], COORD_SYS_NAMES[GLOBAL.coords.coord_system]);
+
+  kdefault(cov, COVARIATE_FACTOR, 1.0);
+  if ((!PisNULL(COVARIATE_X) || !PisNULL(COVARIATE_T)) && cov->ownloc == NULL) {
+    if (cov->ncol[COVARIATE_T] != 3 && cov->ncol[COVARIATE_T] != 0)
+      SERR1("'%s' should have three components", KNAME(COVARIATE_T));
+    if (cov->ncol[COVARIATE_X] != loc->xdimOZ) 
+      SERR1("number of columns of '%s' do not equal the dimension",
+	    KNAME(COVARIATE_X));
+    if ((err = loc_set(P(COVARIATE_X), NULL, P(COVARIATE_T), 
+		       loc->spatialdim, loc->xdimOZ, 
+		       cov->nrow[COVARIATE_X], 0, cov->ncol[COVARIATE_T]==3, 
+		       PINT(COVARIATE_GRID), 
+		       false, &(cov->ownloc))) != NOERROR) {
+      if (cov->ownloc != NULL) BUG;
+      return err;
+    }
+    loc = Loc(cov); // zwingend nochmal!
+  } else {
+    //   kdefault(cov, COVARIATE_X, 0);
+    // kdefault(cov, COVARIATE_T, 0);
+    // kdefault(cov, COVARIATE_GRID, 0);
+  }
+
+  int ntot = loc->totalpoints,
+    vdim = data / ntot;
+  if (vdim * ntot != data) 
+    SERR("number of data not a multiple of the number of locations");
+  cov->vdim[0] = vdim;
+  cov->vdim[1] = 1;
+
+  if (next == NULL) {
+    QALLOC(1);
+    addModel(cov, 0, TRAFO);
+    next = cov->sub[0];
+    kdefault(next, TRAFO_ISO, ISOTROPIC);
+  }
+ 
+  assert(cov->q != NULL);
+  PARAMINT(next, TRAFO_ISO)[0] =
+    isCartesian(cov->isoprev) ? ISOTROPIC
+    : isSpherical(cov->isoprev) ? SPHERICAL_ISOTROPIC
+    : isEarth(cov->isoprev) ? EARTH_ISOTROPIC 
+    : ISO_MISMATCH;
+
+   if ((err = CHECK(next, cov->tsdim,  cov->xdimown, ShapeType,
+		    KERNEL, cov->isoown,
+		   1, cov->role)) != NOERROR) return err;
+  if (cov->vdim[0] != vdim ||  cov->vdim[1] != 1)
+    SERR("mismatch on the number of multivariability");
+
+  if (vdim == 1) {
+    int i;
+    double *c = P(COVARIATE_C);
+    for (i=0; i<ntot; i++) if (c[i] != 0.0) break;
+    cov->ptwise_definite = pt_zero;
+    if (i<ntot) {
+      if (c[i] > 0.0) {
+	cov->ptwise_definite = pt_posdef;
+        for (i++; i<ntot; i++)
+	  if (c[i] < 0.0) {
+	    cov->ptwise_definite = pt_indef;
+	    break;
+	  }
+      } else { // < 0.0
+	cov->ptwise_definite = pt_negdef;
+        for (i++; i<ntot; i++)
+	  if (c[i] > 0.0) {
+	    cov->ptwise_definite = pt_indef;
+	    break;
+	  }
+      }
+    }
+  } else cov->ptwise_definite = pt_unknown; // to do ?! alle Matrizen ueberpruefen...
+
+  if (Loc(cov)->totalpoints <= 0) SERR("no locations given");
+  
+  EXTRA_STORAGE;
+  return NOERROR;
+}
+
+void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[COVARIATE_C] = RF_NEGINF;
+  range->max[COVARIATE_C] = RF_INF;
+  range->pmin[COVARIATE_C] = 1e10;
+  range->pmax[COVARIATE_C] = -1e10;
+  range->openmin[COVARIATE_C] = true;
+  range->openmax[COVARIATE_C] = true;
+
+  range->min[COVARIATE_X] = RF_NEGINF;
+  range->max[COVARIATE_X] = RF_INF;
+  range->pmin[COVARIATE_X] = 1e10;
+  range->pmax[COVARIATE_X] = -1e10;
+  range->openmin[COVARIATE_X] = true;
+  range->openmax[COVARIATE_X] = true;
+
+  range->min[COVARIATE_T] = RF_NEGINF;
+  range->max[COVARIATE_T] = RF_INF;
+  range->pmin[COVARIATE_T] = 1e10;
+  range->pmax[COVARIATE_T] = -1e10;
+  range->openmin[COVARIATE_T] = true;
+  range->openmax[COVARIATE_T] = true;
+
+  range->min[COVARIATE_GRID] = 0;
+  range->max[COVARIATE_GRID] = 1;
+  range->pmin[COVARIATE_GRID] = 0;
+  range->pmax[COVARIATE_GRID] = 1;
+  range->openmin[COVARIATE_GRID] = false;
+  range->openmax[COVARIATE_GRID] = false;
+
+  range->min[COVARIATE_FACTOR] = RF_NEGINF;
+  range->max[COVARIATE_FACTOR] = RF_INF;
+  range->pmin[COVARIATE_FACTOR] = 1e10;
+  range->pmax[COVARIATE_FACTOR] = -1e10;
+  range->openmin[COVARIATE_FACTOR] = true;
+  range->openmax[COVARIATE_FACTOR] = true;
+}
+
+
 
 
 
@@ -754,7 +912,6 @@ void Ddampedcosine(double *x, cov_model *cov, double *v){
 int checkdampedcosine(cov_model *cov){
    cov->maxdim = ISNAN(P0(DC_LAMBDA)) 
      ? INFDIM : (int) (PIHALF / atan(1.0 / P0(DC_LAMBDA)));
- // print("%d %f \n", cov->maxdim, (PIHALF / atan(1.0 / P0(DC_LAMBDA))));
   return NOERROR;
 }
 void rangedampedcosine(cov_model *cov, range_type *range){
@@ -952,8 +1109,6 @@ int initexponential(cov_model *cov, gen_storage *s) {
   return NOERROR;
 }
 void do_exp(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
-  //mppinfotype *info = &(s->mppinfo);
-  //info->radius = cov->mpp.refradius;
 }
 
 void spectralexponential(cov_model *cov, gen_storage *S, double *e) {
@@ -1067,7 +1222,7 @@ void fractalBrownian(double *x, cov_model *cov, double *v) {
   *v = - pow(*x, alpha);//this is an invalid covariance function!
   // keep definition such that the value at the origin is 0
 }
-//begin
+
 void logfractalBrownian(double *x, cov_model *cov, double *v, double *sign) {
   double alpha = P0(BROWN_ALPHA);
   *v = log(*x) * alpha;//this is an invalid covariance function!
@@ -1246,8 +1401,6 @@ double densityGauss(double *x, cov_model *cov) {
     return exp(- 0.25 * x2 - (double) dim * (M_LN2 + M_LN_SQRT_PI));
 }
 int struct_Gauss(cov_model *cov, cov_model **newmodel) {  
-  //int dim = cov->tsdim;
- 
   ASSERT_NEWMODEL_NOT_NULL;
 
   switch (cov->role) {
@@ -1307,7 +1460,6 @@ int initGauss(cov_model *cov, gen_storage *s) {
 
    
    double R = RF_INF;
-    //    InverseGauss(&GLOBAL.mpp.about_zero, NULL, &R);
     int 
       dim = cov->tsdim;
     
@@ -1327,27 +1479,19 @@ int initGauss(cov_model *cov, gen_storage *s) {
   }
 
   else ILLEGAL_ROLE;
-
-
-  // printf("G %f %f %f %f\n",
-  //      cov->mpp.refradius, cov->mpp.maxheights[0], cov->mpp.mMplus,
-	 ///	cov->mpp.mM2);
  
   return NOERROR;
 
 }
 
 void do_Gauss(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
-  //mppinfotype *info = &(s->mppinfo);
-  //info->radius = cov->mpp.refradius;
+
 }
 
 void spectralGauss(cov_model *cov, gen_storage *S, double *e) {   
   spectral_storage *s = &(S->Sspectral);
   if (cov->tsdim <= 2) {
     E12(s, cov->tsdim, 2.0 * sqrt(-log(1.0 - UNIFORM_RANDOM)), e);
-
-    // printf("spg: %d %f %f\n", cov->tsdim, e[0], e[1]);
 
   } else {
     metropolis(cov, S, e);
@@ -1439,7 +1583,6 @@ void InversegenBrownian(double *x, cov_model *cov, double *v) {
 }
 static bool genfbmmsg=true;
 int checkgenBrownian(cov_model *cov){
-  //  double alpha = P0(BROWN_ALPHA);
   if (genfbmmsg) warning("Note that the definition of 'genfbm' has changed. This warning appears only once per session.");
   genfbmmsg = false;
 
@@ -1497,11 +1640,9 @@ void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *sign){
 void InversegeneralisedCauchy(double *x, cov_model *cov, double *v) {
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA);
   *v =  (*x == 0.0) ? RF_INF : pow(pow(*x, -alpha / beta) - 1.0, 1.0 / alpha);
-  //printf("genc %f %f; alpha= %f %f \n", *x, *v, alpha, beta);
   // MLE works much better with 0.01 then with 0.05
 }
 int checkgeneralisedCauchy(cov_model *cov){
-  //double alpha = P0(GENC_ALPHA);
   if (cov->tsdim > 2)
     cov->pref[CircEmbedCutoff] = cov->pref[CircEmbedIntrinsic] = PREF_NONE;
   cov->monotone = P0(GENC_ALPHA) <= 1.0 ? COMPLETELY_MON : NORMAL_MIXTURE;
@@ -1795,7 +1936,6 @@ double biGneitQuot(double t, double* scale, double *gamma) {
 }
 
 void biGneitingbasic(cov_model *cov, 
-		     // double *alpha,
 		     double *scale, 
 		     double *gamma, 
 		     double *cc
@@ -1848,8 +1988,6 @@ void biGneitingbasic(cov_model *cov,
     }    
   }
 
-  //printf("min =%f det=%f\n", min, det);
-
   cc[0] = C[0] = Cdiag[0];
   cc[3] = C[2] = Cdiag[1];
   cc[1] = cc[2] = C[1] = rho * sqrt(C[0] * C[2] * min) *
@@ -1863,7 +2001,6 @@ void biGneitingbasic(cov_model *cov,
 
 int initbiGneiting(cov_model *cov, gen_storage *stor) {
   double  
-    //mu = P0(GENGNEITING_MU), 
     *rho = P(GNEITING_RHORED),
     *s = P(GNEITING_S),
     *sred = P(GNEITING_SRED),
@@ -1913,14 +2050,10 @@ int initbiGneiting(cov_model *cov, gen_storage *stor) {
 	QERRC(GNEITING_C, "must be a 3 x 1 vector");
       if (fabs(c[i11] - cdiag[0]) > c[i11] * epsilon || 
 	  fabs(c[i22] - cdiag[1]) > c[i22] * epsilon ) {
-	//	printf("c %f %f %f %f\n", c[i11], c[i22], cdiag[0], cdiag[1]);
 	QERRC1(GNEITING_C, "does not match '%s'.", GNEITING_CDIAG);
       }
       double savec12 = c[i21];
       biGneitingbasic(cov, S->scale, S->gamma, S->c);
-      //      print("cc c=%f save=%f wpa=%e abs=%e c.eps=%e %d\n", 
-      //	    c[i21], savec12, eps, fabs(c[i21] - savec12), c[i21] * epsilon,
-      //	    fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon);
       if (fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon)
  	QERRC1(GNEITING_C, "does not match '%s'.", GNEITING_RHORED);
     } else {
@@ -1973,9 +2106,6 @@ void biGneiting(double *x, cov_model *cov, double *v) {
   assert(cov->initialised);
    
   for (i=0; i<4; i++) {
-
-    //   print("x=%f i=%d\n", *x, i);    PMI(cov->calling->calling->calling->calling);
-    
     if (i==2) {
       v[2] = v[1];
       continue;
@@ -2183,8 +2313,6 @@ int checkGneiting(cov_model *cov) {
 }
 
 void rangeGneiting(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
- // *n = P0(GNEITING_ORIG], 
-  //  printf("range\n");
   range->min[GNEITING_ORIG] = range->pmin[GNEITING_ORIG] = 0;
   range->max[GNEITING_ORIG] = range->pmax[GNEITING_ORIG] = 1;
   range->openmin[GNEITING_ORIG] = false;
@@ -2370,8 +2498,6 @@ void rangeIacoCesare(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CES_DELTA] = true;
   range->openmax[CES_DELTA] = true;
 }
-//int checkIacoCesare(cov_model *cov) { }
-
 
 
 
@@ -2404,12 +2530,6 @@ void Kolmogorov(double *x, cov_model *cov, double *v){
 
   r23 = -pow(r2, onethird);  // ! -
   for (d=0; d<dimsq; v[d++] *= r23);
-
-  //  printf("\nx=%f %f %f\n", x[0], x[1], x[2]);
-  //  for (i=0; i<3; i++) { 
-  //      for (j=0; j<3; j++) printf("%f ", v[j + i * 3]); 
-  //  printf("\n");
-  // }
 
 }
 
@@ -2495,8 +2615,6 @@ double logWM(double x, double nu, double factor) {
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
     scale = (factor != 0.0) ? factor * sqrt(nuThres) : 1.0;
 
-  //  if (!R_FINITE(nuThres) || nuThres < 0.1 || nuThres > 10)  printf("X %f\n", nuThres);  
-
   if (x > LOW_BESSELK) {
     if (nuThres != nuOld) {
       nuOld = nuThres;
@@ -2515,7 +2633,6 @@ double logWM(double x, double nu, double factor) {
     v = v * g + (1.0 - g) * w;
   }
 
-  // if (!R_FINITE(nuThres) ||nuThres < 0.1 || nuThres > 10)  printf("Xend\n");  
   return v;
 }
 
@@ -2688,10 +2805,6 @@ int checkWM(cov_model *cov) {
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
   if (PisNULL(WM_NU)) QERRC(0, "parameter unset"); 
 
-  // printf("whittle %s -> %s\n", ISONAMES[cov->isoprev], ISONAMES[cov->isoown]);  APMI(cov->calling); return ERRORFAILED;
-
-
-
   nu = (PINT(WM_NOTINV) == NULL 
 	|| ISNAN(notinvnu = (double) (P0INT(WM_NOTINV))) 
 	|| notinvnu != 0.0) ? P0(WM_NU) : 1.0 / P0(WM_NU);
@@ -2719,23 +2832,23 @@ void rangeWM(cov_model *cov, range_type *range){
       range->max[WM_NU] = 0.5;
       range->pmin[WM_NU] = 1e-1;
       range->pmax[WM_NU] = 0.5;
-      range->openmin[WM_NOTINV] = true;
-      range->openmax[WM_NOTINV] = false;
+      range->openmin[WM_NU] = true;
+      range->openmax[WM_NU] = false;
     } else {
       range->min[WM_NU] = 2.0;
       range->max[WM_NU] = RF_INF;
       range->pmin[WM_NU] = 2.0;
       range->pmax[WM_NU] = 10.0;
-      range->openmin[WM_NOTINV] = false;
-      range->openmax[WM_NOTINV] = true;
+      range->openmin[WM_NU] = false;
+      range->openmax[WM_NU] = true;
     }
   } else { // not tcf
     range->min[WM_NU] = 0.0;
     range->max[WM_NU] = RF_INF;
     range->pmin[WM_NU] = 1e-1;
     range->pmax[WM_NU] = 10.0;
-    range->openmin[WM_NOTINV] = true;
-    range->openmax[WM_NOTINV] = false;
+    range->openmin[WM_NU] = true;
+    range->openmax[WM_NU] = false;
   }
  
   range->min[WM_NOTINV] = 0.0;
@@ -2881,7 +2994,6 @@ void oesting(double *x, cov_model *cov, double *v) {
   *v = - x2 * pow(1 + x2, -Beta);//this is an invalid covariance function!
   // keep definition such that the value at the origin is 0
 }
-//begin
 /* oesting: first derivative at t=1 */
 void Doesting(double *x, cov_model *cov, double *v) 
 {// FALSE VALUE FOR *x==0 and  Beta < 1
@@ -2898,7 +3010,6 @@ void DDoesting(double *x, cov_model *cov, double *v)
 	    x2  *x2) * pow(1 + x2, -Beta-2);
 }
 int checkoesting(cov_model *cov){
-  //  double Beta = P0(OESTING_BETA);
   cov->logspeed = RF_INF;
   cov->full_derivs = cov->rese_derivs;
   return NOERROR;
@@ -2919,9 +3030,6 @@ void rangeoesting(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[OESTING_BETA] = false;
 }
 
-// Paciore und Stein 
-// see NonIsoCovFct.cc
-
 
 /* penta */
 void penta(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v)
@@ -2936,7 +3044,7 @@ void penta(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v)
 					  y2 * 0.833333333333333))))));
 }
 void Dpenta(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v)
-{ ///
+{ 
   double y=*x, y2 = y * y;
   *v = (y >= 1.0) ? 0.0 :
     y * (-14.66666666666666667 + 
@@ -2958,10 +3066,6 @@ void power(double *x, cov_model *cov, double *v){
   double alpha = P0(POW_ALPHA), y = *x;
   *v = (y >= 1.0) ? 0.0 : pow(1.0 - y, alpha);
 }
-//void Inversepower(cov_model *cov){ 
-//   double alpha = P0(POW_ALPHA);
-//   return 1.0 / (1.0 - pow(0.05, 1.0 / alpha));
-//}
 void TBM2power(double *x, cov_model *cov, double *v){
   // only alpha=2 up to now !
   double y = *x;
@@ -3187,8 +3291,7 @@ void DstableX(double *x, cov_model *cov, double *v){
 /* END SPACEISOTROPIC stable model for testing purposes only */
 
 
-/* Stein */
-// see Hypermodel.cc
+
 
 /* stein space-time model */
 #define STEIN_NU 0
@@ -3289,14 +3392,12 @@ int initSteinST1(cov_model *cov, gen_storage *s) {
     spec_properties *cs = &(s->spec);
     cs->density = densitySteinST1;
     return search_metropolis(cov, s);
-    //  return (cov->tsdim == 3) ? NOERROR : ERRORFAILED;
   }
 
   else ILLEGAL_ROLE;
 
 }
 void spectralSteinST1(cov_model *cov, gen_storage *S, double *e){
-  //  spectral_storage *s = &(S->Sspectral);
   metropolis(cov, S, e);
 }
 
@@ -3346,7 +3447,6 @@ void spectralwave(cov_model *cov, gen_storage *S, double *e) {
 void Whittle(double *x, cov_model *cov, double *v) {
   *v = WM(*x, PisNULL(WM_NOTINV) || P0INT(WM_NOTINV) 
 	  ? P0(WM_NU) : 1.0 / P0(WM_NU), 0.0);
-  // printf("%f %f \n", *x, *v);
   assert(!ISNAN(*v));
 }
 
@@ -3389,11 +3489,9 @@ void D4Whittle(double *x, cov_model *cov, double *v)
 }
 
 void InverseWhittle(double *x, cov_model *cov, double *v){
-  //  printf("invwhi %f %f %f %d\n", *x, RF_NA, RF_NAN, RF_NA == RF_NAN);
   double 
     nu = (PisNULL(WM_NOTINV) || P0INT(WM_NOTINV)) ? P0(WM_NU) : 1.0 / P0(WM_NU);
   *v = (*x == 0.05) ? 1.0 / ScaleWM(nu) : RF_NA;
-  // printf("invwhi end %f %f %f\n", *x, *v, nu);
 }
 
 void TBM2Whittle(double *x, cov_model *cov, double *v) 
@@ -3455,7 +3553,6 @@ double LogMixDensW(double VARIABLE_IS_NOT_USED *x, double logV, cov_model *cov) 
 void Whittle2(double *x, cov_model *cov, double *v) {
   *v = WM(*x, PisNULL(WM_NOTINV) || P0INT(WM_NOTINV) 
 	  ? P0(WM_NU) : 1.0 / P0(WM_NU), 0.0);
-  //  printf("%f %f     ", *x, *v);
   assert(!ISNAN(*v));
 }
 
@@ -3498,11 +3595,9 @@ void D4Whittle2(double *x, cov_model *cov, double *v)
 }
 
 void InverseWhittle2(double *x, cov_model *cov, double *v){
-  //  printf("invwhi %f %f %f %d\n", *x, RF_NA, RF_NAN, RF_NA == RF_NAN);
   double 
     nu = (PisNULL(WM_NOTINV) || P0INT(WM_NOTINV)) ? P0(WM_NU) : 1.0 / P0(WM_NU);
   *v = (*x == 0.05) ? 1.0 / ScaleWM(nu) : RF_NA;
-  // printf("invwhi end %f %f %f\n", *x, *v, nu);
 }
 
 
@@ -3520,7 +3615,6 @@ static bool Bi = !true;
 #define BIc 6
 #define BInotinvnu 7
 
-//int zaehler = 0;
 
 /* Whittle-Matern or Whittle or Besset */ 
 
@@ -3566,7 +3660,6 @@ void biWM2basic(cov_model *cov,
     }
   }
 
-  //  printf("A\n");
 
   for (i=0; i<3; i++) {
     a2[i] = a[i] * a[i];
@@ -3582,9 +3675,6 @@ void biWM2basic(cov_model *cov,
   // neu berechnet werden muss; verlg. natsc und cutoff (wo es nicht
   // programmiert ist !!)
   
-  // printf("B %f %f %f\n", nunew[i11] + d2, nunew[i22] + d2, nunew[i21] + d2);
-  //printf("here 2\n");
-  
   factor = exp(lgammafn(nunew[i11] + d2) - lg[i11]
 	       + lgammafn(nunew[i22] + d2) - lg[i22]
 		   + 2.0 * (lg[i21]  - lgammafn(nunew[i21] + d2)
@@ -3593,10 +3683,7 @@ void biWM2basic(cov_model *cov,
 	);
 
   
-  // printf("C\n");
-
   // alpha u^2 + beta u + gamma = 0
-
   gamma = (2.0 * nunew[i21] + dim) * a2[i11] * a2[i22] 
     - (nunew[i22] + d2) * a2[i11] * a2[i21]
     - (nunew[i11] + d2) * a2[i22] * a2[i21];
@@ -3640,9 +3727,6 @@ void biWM2basic(cov_model *cov,
     tsq = (i == 0) ? 0.0 
       : (i == 1) ? t1sq
       : t2sq;
-    
-    //      print("discr=%f a2[i22]=%f tsq=%f nu1=%f \ndim=%f a2[i11]=%f nu0=%f a2[i21]=%f nu3=%f d/2=%f\n",discr,
-//	   a2[i22], tsq, nunew[i21], dim, a2[i11],  nunew[i11], a2[i21] , nunew[i22], d2);
     
     infQ = pow(a2[i21] + tsq, 2.0 * nunew[i21] + dim) /
       (pow(a2[i11] + tsq, nunew[i11] + d2) 
@@ -3696,7 +3780,7 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
       QERRC2(BInu, "either '%s' or '%s' must be set", BInu, BInured);
     if (PisNULL(BInudiag)) PALLOC(BInudiag, 2, 1);
     nudiag = P(BInudiag);
-    nudiag[0] = nu[i11]; ///
+    nudiag[0] = nu[i11]; 
     nudiag[1] = nu[i22];
     if (PisNULL(BInured)) PALLOC(BInured, 1, 1);
     P(BInured)[0] =  nu[i21] / (0.5 * (nudiag[i11] + nudiag[1]));
@@ -3725,18 +3809,10 @@ int initbiWM2(cov_model *cov, gen_storage *stor) {
 	QERRC(BIc, "must be a 3 x 1 vector");
       if (fabs(c[i11] - cdiag[0]) > c[i11] * epsilon || 
 	  fabs(c[i22] - cdiag[1]) > c[i22] * epsilon ) {
-	//	printf("c %f %f %f %f diff=%e eps=%e diff1=%e eps=%e\n",
-	//c[i11], c[i22], cdiag[0], cdiag[1],
-	//	       c[i11] - cdiag[0], c[i11] * epsilon,
-	//	       c[i22] - cdiag[1], c[i22] * epsilon );
 	QERRC1(BIc, "does not match '%s'.", BIcdiag);
       }
       double savec12 = c[i21];
       biWM2basic(cov, a, lg, aorig, nunew);
-      //   
-      //print("cc c=%f save=%f wpa=%e abs=%e c.eps=%e %d\n", 
-      //    c[i21], savec12, epsilon, fabs(c[i21] - savec12), c[i21] * epsilon,
-      //	    fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon);
       if (fabs(c[i21] - savec12) > fabs(c[i21]) * epsilon)
  	QERRC1(BIc, "does not match '%s'.", BIrhored);
     } else {
@@ -3803,9 +3879,6 @@ void biWM2(double *x, cov_model *cov, double *v) {
   v[3] = v[i22];
   v[2] = v[i21];
 
-
-  //  assert(false);
-
 }
 
 void biWM2D(double *x, cov_model *cov, double *v) {
@@ -3865,7 +3938,6 @@ sortsofparam paramtype_biWM(int k, int VARIABLE_IS_NOT_USED row, int VARIABLE_IS
 }
   
 void rangebiWM2(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-//  kappanames("nu", REALSXP, "a", REALSXP, "c", REALSXP);
 
   // *nudiag = P0(BInudiag], 
   range->min[BInudiag] = 0.0;
@@ -3938,11 +4010,11 @@ void rangebiWM2(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-/////////// PARS WM
+// PARS WM
 
 
 /* Whittle-Matern or Whittle or Besset */ 
-/// only lower parts of the matrices, including the diagonals are used when estimating !!
+// only lower parts of the matrices, including the diagonals are used when estimating !!
 
 #define PARSnudiag 0
 void kappa_parsWM(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
@@ -3970,10 +4042,7 @@ void parsWMbasic(cov_model *cov) {
   // neu berechnet werden muss; verlg. natsc und cutoff (wo es nicht
   // programmiert ist !!)
 
-  //  printf("in\n");
-   
   for (vdiag=i=0; i<vdim; i++, vdiag+=vdimP1) {
-    //  printf("i=%d %d %ld\n", i, vdiag);
     cov->q[vdiag] = 1.0;
     for (j=i+1; j<vdim; j++) {
       double half = 0.5 * (nudiag[i] + nudiag[j]);
@@ -3983,10 +4052,8 @@ void parsWMbasic(cov_model *cov) {
 		   - lgammafn(nudiag[i]) - lgammafn(nudiag[j])
 		   + 2.0 * (lgammafn(half) - lgammafn(half + d2))
 		   ));
-      //    printf("idx = %d %d %d %f\n", idx, i, j, cov->q[0]);
     }
   }
-  //  printf("out\n");
 }
 
 void parsWM(double *x, cov_model *cov, double *v) {
@@ -4002,11 +4069,8 @@ void parsWM(double *x, cov_model *cov, double *v) {
       double half = 0.5 * (nudiag[i] + nudiag[j]);      
       int idx = vdiag + j - i;
       v[idx] = v[vdiag + vdim * (j-i)] = WM(*x, half, 0.0) * cov->q[idx];
-      //  printf("v=%f %d %d %f half=%f %f\n",  v[idx], idx,vdiag + vdim * (j-i),
-      //	     WM(*x, half, 0.0), half, cov->q[idx]);
     }
   }
-  //printf("x=%f %f\n", *x, v[0]);
 }
 
 
@@ -4034,14 +4098,12 @@ int checkparsWM(cov_model *cov) {
   
   int i, err, 
     vdim = cov->nrow[PARSnudiag],
-    //  vdimP1 = vdim + 1,
     vdimSq = vdim * vdim;
  
   cov->vdim[0] = cov->vdim[1] = vdim;
   if (vdim == 0) SERR1("'%s' not given", KNAME(PARSnudiag));
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   if (cov->q == NULL) QALLOC(vdimSq);
-  // printf("vdimSq = %d\n", vdimSq);
   
   cov->full_derivs = cov->rese_derivs = 1; 
   for (i=0; i<vdim; i++) {
@@ -4050,7 +4112,7 @@ int checkparsWM(cov_model *cov) {
   }
 
   /*
-    #define dummyN 5 * ParsWMMaxVDim
+    #define dummyN (5 * ParsWMMaxVDim)
     double value[ParsWMMaxVDim], ivalue[ParsWMMaxVDim], 
     dummy[dummyN], 
     min = RF_INF;
@@ -4067,7 +4129,6 @@ sortsofparam paramtype_parsWM(int k, int VARIABLE_IS_NOT_USED row, int VARIABLE_
 }
   
 void rangeparsWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-//  kappanames("nu", REALSXP, "a", REALSXP, "c", REALSXP);
 
   // *nudiag = P0(PARSnudiag], 
   range->min[PARSnudiag] = 0.0;
@@ -4080,15 +4141,9 @@ void rangeparsWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-//void Nonestat(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
-//    v[0] = RF_INF;}
-//void Nonenonstat(double *x, double *y, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
-//    v[0] = RF_INF;}
-//void rangeNone(cov_model VARIABLE_IS_NOT_USED *cov, range_type VARIABLE_IS_NOT_USED *range){ }
 
 
-
-////////////////////////////////////// NOT A COVARIANCE FCT
+// ************************* NOT A COVARIANCE FCT
 
 double SurfaceSphere(int d, double r) { 
     // d = Hausdorff-Dimension der Oberflaeche der Sphaere
@@ -4155,13 +4210,6 @@ int init_ball(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 void do_ball(cov_model VARIABLE_IS_NOT_USED *cov, gen_storage VARIABLE_IS_NOT_USED *s) { 
   assert(s != NULL);
  
-  // mppinfotype *info = &(s->mppinfo);
-  // info->logdens = 0.0;
-  //info->radius = cov->mpp.refradius;
-  //info->sd = RF_NA;
-  
-  // printf("info = %f %f\n", safenfo->radius, info->sd);
-
 }
 
 
@@ -4225,7 +4273,6 @@ void InversepolygonNonstat(double VARIABLE_IS_NOT_USED *v, cov_model *cov,
      for (d=0; d<dim; d++) {
       min[d] = P->box0[d];
       max[d] = P->box1[d];   
-      //        printf("d=%d %f %f\n", d, P->box0[d], P->box1[d]);
     }
   } else { // gibt aquivalenzradius eines "mittleres" Polygon zurueck
 
@@ -4291,7 +4338,7 @@ polygon_storage *create_polygon() {
   if ((ps = (polygon_storage*) MALLOC(sizeof(polygon_storage))) == NULL)
     return NULL;
   if ((ps->P = (polygon*)  MALLOC(sizeof(polygon))) == NULL) {
-    free(ps);
+    FREE(ps);
     return NULL;
   }
   polygon_NULL(ps);
@@ -4316,7 +4363,6 @@ int init_polygon(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     freePolygon(ps->P); 
     if ((err=rPoissonPolygon(ps->P, lambda, true)) != NOERROR)
       SERR1("poisson polygon cannot be simulated (error=%d)", err);
-    //    printf("area = %f %f %f %f \n", getArea(ps->P), lambda, ps->P->box0[0],  ps->P->box0[1]);
   } else {
     BUG; // valgrind memalloc loss ! + lange Laufzeiten ?!
     if ((err=rPoissonPolygon2(ps, lambda, true)) != NOERROR)
@@ -4343,7 +4389,6 @@ int init_polygon(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 #define USER_FST 7
 #define USER_SND 8
 #define USER_ENV 9
-//#define USER_TRD 9
 #define USER_LAST USER_ENV
 void evaluateUser(double *x, double *y, bool Time, cov_model *cov,
 		  sexp_type *which, double *Res) {
@@ -4356,10 +4401,6 @@ void evaluateUser(double *x, double *y, bool Time, cov_model *cov,
   double *beta = P(USER_BETA);  
  
   assert(which != NULL);
-  //    error("tried to call a function not defined by the user or functionality not programmed yet");
-
-  //  i = 0;   REAL(xvec)[i] = (double) 1.23234;
- 
   if (cov->nrow[USER_VARIAB] >= 2 && PINT(USER_VARIAB)[1] != -2) {
     if (Time) {
       addVariable( (char *) "T", x + (--n), 1, 1, env); 
@@ -4373,23 +4414,15 @@ void evaluateUser(double *x, double *y, bool Time, cov_model *cov,
       BUG;
     }
   } else {
-
-    //  printf("n=%d %f %f\n", n, x[0], x[1]); assert(false);
-
     addVariable( (char *) "x", x, n, 1, env);	
     if (y != NULL) addVariable( (char *) "y", y, n, 1, env);
   }
 
   res = eval(which->sexp, env);
-
-  //printf("vdim = %d %f\n";
-
   if (beta == NULL) {
     for (i=0; i<vdim; i++) {
       Res[i] = REAL(res)[i]; 
-      //  printf("vdim = %d %f\n", vdim, Res[i]);
     }
-    //assert(false);
   } else {
     Ax(beta, REAL(res), vdim, ncol, Res);
   }
@@ -4407,7 +4440,6 @@ void User(double *x, cov_model *cov, double *v){
   evaluateUser(x, NULL, Loc(cov)->Time, cov, PSEXP(USER_FCTN), v);
 }
 void UserNonStat(double *x, double *y, cov_model *cov, double *v){
-  //  printf("nonstat\n");
   evaluateUser(x, y, false, cov, PSEXP(USER_FCTN), v);
 }
 void DUser(double *x, cov_model *cov, double *v){
@@ -4416,10 +4448,7 @@ void DUser(double *x, cov_model *cov, double *v){
 void DDUser(double *x, cov_model *cov, double *v){
   evaluateUser(x, NULL, Loc(cov)->Time, cov, PSEXP(USER_SND), v);
 }
-//void D3User(double *x, cov_model *cov, double *v){
-// assert(false); // unused
-// evaluateUser(x, cov->xdimown, USER_TRD, v);
-//}
+
 
 int checkUser(cov_model *cov){
   cov_fct *C = CovList + cov->nr;
@@ -4427,13 +4456,12 @@ int checkUser(cov_model *cov){
   kdefault(cov, USER_DOM, XONLY);
   if (PisNULL(USER_ISO)) {
     Types type = (Types) P0INT(USER_TYPE);
-    if (isNegDef(type)) kdefault(cov, USER_ISO, ISOTROPIC);
+    if (isVariogram(type)) kdefault(cov, USER_ISO, ISOTROPIC);
     else if (isProcess(type) || isShape(type)) 
       kdefault(cov, USER_ISO, CARTESIAN_COORD);
     else SERR1("type='%s' not allowed", TYPENAMES[type]);
   }
   int
-    //*type = (int *) P0(USER_TYPE], 
     *dom = PINT(USER_DOM), 
     *iso = PINT(USER_ISO),
     *vdim =PINT(USER_VDIM);
@@ -4442,14 +4470,12 @@ int checkUser(cov_model *cov){
     fctn = !PisNULL(USER_FCTN),
     fst = !PisNULL(USER_FST),
     snd = !PisNULL(USER_SND);
-    //trd = P0(USER_TRD] != NULL;
   int err, 
     *nrow = cov->nrow,
     *variab = PINT(USER_VARIAB), //codierung variab=1:x, 2:y 3:z, 4:T
     nvar = cov->nrow[USER_VARIAB],
     *pref = cov->pref;
 
-  //assert(false);  
 
   if (nvar < 1) SERR("variables not of required form ('x', 'y', 'z', 'T')");
   
@@ -4527,7 +4553,6 @@ int checkUser(cov_model *cov){
     if ((GLOBAL.coords.xyz_notation == 2 && cov->domown == KERNEL)
 	||
 	((nvar > 2 || (nvar == 2 && cov->domown==XONLY)) && variab[1] == -2)) {
-      // printf("variab[1]=%d\n", variab[1]);
       SERR("domain assumption, model and coordinates do not match.");
     }
   }
@@ -4544,11 +4569,6 @@ int checkUser(cov_model *cov){
       pref[TBM] = 5;
       if (snd) {
 	C->F_derivs = C->RS_derivs = 2;
-	//if (trd) {
-	//	  C->F_derivs = C->RS_derivs = 3;
-	//	}
-	//} else { // ! snd
-	//if (trd) SERR("'trd' given but not 'snd'");
       }
     } else { // !fst
       if (snd) SERR2("'%s' given but not '%s'",
@@ -4567,8 +4587,6 @@ bool TypeUser(Types required, cov_model *cov, int VARIABLE_IS_NOT_USED depth) {
   int *type = PINT(USER_TYPE);
   if (type == NULL) return false;
   if (!isShape((Types) type[0])) return false;
-  //   SERR3("currently, only the types '%s', '%s' and '%s' are allowed.",
-  //	 TYPENAMES[PosDefType], TYPENAMES[NegDefType], TYPENAMES[ShapeType]);
   return TypeConsistency(required, (Types) type[0]);
 }
 
@@ -4734,10 +4752,6 @@ void invAngle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
 	A[k++] /= diag[d];
       }
     }
-    //    A[0] /= diag[0];
-    //    A[1] /= diag[0];
-    //    A[2] /= diag[1];
-    //    A[3] /= diag[1];
   } else {
     double ratio = P0(ANGLE_RATIO);
     A[2] *= ratio;
@@ -4745,20 +4759,9 @@ void invAngle(double *x, cov_model *cov, double *v) { /// to do: extend to 3D!
   }
 
   Ax(A, x, dim, dim, v);
-  // v[0] = A[0] * x[0] + A[2] * x[1];
-  // v[1] = A[1] * x[0] + A[3] * x[1];
-  
-  //  printf("%f %f %f %f\n", A[0], A[1], A[2], A[3], v[0], v[1]);
-  //  assert(false);
-
 }
 
 int checkAngle(cov_model *cov){
-  //  int err;
-  //  pref_type pref = 
-  //    {5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 5};
-  // CE CO CI TBM Sp di sq Ma av n mpp Hy any
-  //  MEMCOPY(cov->pref, pref, sizeof(pref_type));  
   int dim = cov->xdimown;
 
   if (dim != 2 && dim != 3)
@@ -4850,4 +4853,334 @@ void rangeNullModel(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[NULL_TYPE] = false;
 }
 
+
+int checkMath(cov_model *cov){
+  int i,
+    variables = CovList[cov->nr].kappas,
+    err = NOERROR;
+  if (CovList[cov->nr].kappas > 2) kdefault(cov, 2, 1.0);
+  if (cov->typus == TrendType && !isCoordinateSystem(cov->isoown))
+    SERR("full coordinates need");
+
+  //printf("checmath: %s %d\n", NAME(cov), variables);
+
+ 
+  for (i=0; i<variables; i++) {
+    cov_model *sub = cov->kappasub[i];
+    //printf("   %d %d\n", i, sub == NULL);
+    if (sub != NULL) {
+      if (i >= 2) SERR("only numerics allowed");
+      bool plus = CovList[sub->nr].cov == Mathplus ||
+	CovList[sub->nr].check == checkplus ||
+	CovList[sub->nr].cov == Mathminus
+	;
+       if ((err = CHECK(sub, cov->tsdim, cov->xdimown, 
+			plus  ? cov->typus : ShapeType, 
+			// auch falls cov = TrendType ist
+			cov->domown, cov->isoown,
+			1, ROLE_COV)) != NOERROR){
+	return err;  
+      }
+      if  (sub->vdim[0] != 1 || sub->vdim[1] != 1)
+	SERR("only scalar functions are allowed");
+      setbackward(cov, sub); 
+    } else if (PisNULL(i)) {
+      if (i==0 || (CovList[cov->nr].cov!=Mathplus && 
+		   CovList[cov->nr].cov!=Mathminus && 
+		   CovList[cov->nr].cov!=Mathbind
+		   )) SERR("not enough arguments given")
+      else break;
+    }
+  }
+
+  cov->pref[TrendEval] = 5;
+  cov->pref[Direct] = 1;
+  return NOERROR;
+}
+
+
+void rangeMath(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  int i,
+    variables = CovList[cov->nr].kappas;
   
+  cov->maxdim = cov->xdimown;
+  assert(cov->maxdim > 0);
+  for (i=0; i<variables; i++) {
+    range->min[i] = RF_NEGINF;
+    range->max[i] = RF_INF;
+    range->pmin[i] = 1e5;
+    range->pmax[i] = -1e5;
+    range->openmin[i] = true;
+    range->openmax[i] = true;
+  }
+}
+
+#define MATH_FACTOR 2
+void Mathminus(double *x, cov_model *cov, double *v){
+  MATH_DEFAULT;
+  double f = P0(MATH_FACTOR); 
+  *v = ( (PisNULL(1) && cov->kappasub[1]==NULL) ? -w[0] : w[0 ]- w[1]) * f;
+  //printf("minus (%f - %f) * %f  = %f %d\n", w[0], w[1], f, *v, (PisNULL(1) && cov->kappasub[1]==NULL));
+  // APMI(cov);
+}
+
+void Mathplus(double *x, cov_model *cov, double *v){
+  MATH_DEFAULT;
+   double f = P0(MATH_FACTOR); 
+  *v = ( (PisNULL(1) && cov->kappasub[1]==NULL)? w[0] : w[0] + w[1]) * f;
+}
+
+void Mathdiv(double *x, cov_model *cov, double *v){
+  MATH_DEFAULT;
+   double f = P0(MATH_FACTOR); 
+ *v =  (w[0] / w[1]) * f;
+
+}
+
+void Mathmult(double *x, cov_model *cov, double *v){
+  MATH_DEFAULT;
+   double f = P0(MATH_FACTOR); 
+  *v = (w[0] * w[1]) * f;
+}
+ 
+
+
+void Mathbind(double *x, cov_model *cov, double *v){
+  int vdim = cov->vdim[0];
+  MATH_DEFAULT_0(vdim); 
+
+  double f = P0(MATH_FACTOR); 
+  for (i=0; i<vdim; i++) v[i] = w[i] * f; 
+}
+
+int check_bind(cov_model *cov) {  
+  int err;
+  int 
+    variables = CovList[cov->nr].kappas - 1; // last is factor !!
+  if ((err = checkMath(cov)) != NOERROR) return err;
+
+  int i;
+  for (i =0; i<variables; i++)
+    // printf("%d %d %d null: %d %d\n", i, cov->nrow[i], cov->ncol[i], PisNULL(i), 	  cov->kappasub[i] == NULL );
+
+
+  while (variables > 0 && cov->nrow[variables - 1] == 0 &&
+	 cov->kappasub[variables - 1] == NULL) variables--;
+  cov->vdim[0] = variables;
+  cov->vdim[1] = 1;
+  cov->ptwise_definite = pt_mismatch;
+  return NOERROR;
+}
+
+
+
+
+#define C_C 0
+void Mathc(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v) {
+  *v = P0(C_C);
+}
+
+void rangec(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[C_C] = RF_NEGINF;
+  range->max[C_C] = RF_INF;
+  range->pmin[C_C] = 1e5;
+  range->pmax[C_C] = -1e5;
+  range->openmin[C_C] = true;
+  range->openmax[C_C] = true;
+}
+
+int check_c(cov_model *cov){
+  if (cov->kappasub[0] != NULL) SERR("only numerics allowed");
+  cov->ptwise_definite =  
+    P0(C_C) > 0 ? pt_posdef : P0(C_C) < 0 ? pt_negdef : pt_zero;
+  return NOERROR;
+}
+
+
+ 
+
+#define PROJ_PROJ 0
+#define PROJ_ISO 1
+#define PROJ_FACTOR 2
+
+void proj(double *x, cov_model *cov, double *v){
+  *v = x[P0INT(PROJ_PROJ) - 1] * P0(PROJ_FACTOR);
+}
+
+int checkproj(cov_model *cov){
+  int
+    isoown = cov->isoown;
+  kdefault(cov, PROJ_PROJ, 1);
+  kdefault(cov, PROJ_FACTOR, 1.0);
+  kdefault(cov, PROJ_ISO, CARTESIAN_COORD);
+  int iso = P0INT(PROJ_ISO);
+  
+  if (isoown != iso && (iso != UNREDUCED || !isCoordinateSystem(isoown))) {
+    SERR2("Offered system ('%s') does not match the required one ('%s')",
+	  ISONAMES[isoown], ISONAMES[iso]);
+  }
+  return NOERROR;
+}
+
+void rangeproj(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[PROJ_PROJ] = 0;
+  range->max[PROJ_PROJ] = cov->xdimown;
+  range->pmin[PROJ_PROJ] = 1;
+  range->pmax[PROJ_PROJ] = cov->xdimown;
+  range->openmin[PROJ_PROJ] = false;
+  range->openmax[PROJ_PROJ] = false;
+
+  range->min[PROJ_FACTOR] = RF_NEGINF;
+  range->max[PROJ_FACTOR] = RF_INF;
+  range->pmin[PROJ_FACTOR] = 1e5;
+  range->pmax[PROJ_FACTOR] = -1e5;
+  range->openmin[PROJ_FACTOR] = true;
+  range->openmax[PROJ_FACTOR] = true;
+
+  range->min[PROJ_ISO] = ISOTROPIC;
+  range->max[PROJ_ISO] = UNREDUCED;
+  range->pmin[PROJ_ISO] = ISOTROPIC;
+  range->pmax[PROJ_ISO] = UNREDUCED;
+  range->openmin[PROJ_ISO] = false;
+  range->openmax[PROJ_ISO] = false;
+}
+
+
+
+// fix (matrix); 
+void fix(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
+  location_type *loc = Loc(cov);
+  listoftype *list= PLIST(FIX_M);
+  int i,j,
+    element = P0INT(FIX_ELMNT),
+    *nrow = list->nrow; // anzahl listen elemente
+  int vdim = cov->vdim[0],
+    lx = nrow[element] / vdim, 
+    ly = nrow[element] * lx;
+  assert(cov->vdim[0] == cov->vdim[1]);
+  double **p = list->p,
+    *X = (p[element] + loc->i_row + loc->i_col * nrow[element]),
+    *Y=X,
+    *w = v;
+  if (loc->i_row >= lx || loc->i_col >= lx) {
+    PRINTF("size=%d current indices=(%d, %d)\n", lx, loc->i_row, loc->i_col);
+    ERR("fix model: indices out of range");
+  }
+  if (element >= cov->nrow[FIX_M])
+    ERR("fix model: list index out of range");
+  for (i=0; i<vdim; i++, Y+=ly) {
+     for (X=Y, j=0; j<vdim; j++, w++, X+=lx) {
+       *w = *X;
+     }
+  }
+}
+
+
+void fix_nonstat(double *x, double VARIABLE_IS_NOT_USED *y, cov_model *cov, double *v){
+    fix(x, cov, v);
+}
+
+void covmatrix_fix(cov_model *cov, double *v, int *nonzeros) {
+  int j, nz=0,
+    element = P0INT(FIX_ELMNT);
+  listoftype *M= PLIST(FIX_M);
+  double *p = M->p[element];
+  int n = M->nrow[element] * M->ncol[element];   
+  for (j=0; j<n; j++) nz = (v[j] = p[j]) != 0.0;
+  *nonzeros = nz;
+  loc_set(cov, M->nrow[element]);
+}
+char iscovmatrix_fix(cov_model VARIABLE_IS_NOT_USED *cov) {  return 2; }
+
+int checkfix(cov_model *cov) {
+  listoftype *list = PLIST(FIX_M); 
+  long total;
+  int info, err, i, vdim, totpts,
+    m = cov->nrow[FIX_M],
+    *q,
+    *ncol = list->ncol,
+    *nrow = list->nrow; // anzahl listen elemente
+  double *dummy,
+    **p = list->p;
+
+
+  if (cov->q != NULL) {
+    cov->vdim[0] = cov->vdim[1] = P0INT(FIX_VDIM);
+    return ((int*) cov->q)[0]; 
+  } else QALLOC(1);
+
+  q = ((int*) cov->q);
+  q[0] = NOERROR;
+
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
+  kdefault(cov, FIX_ELMNT, 0);
+  kdefault(cov, FIX_VDIM, 1); // vdim !
+  cov->vdim[0] = cov->vdim[1] = vdim = P0INT(FIX_VDIM);
+  if (vdim > 1) return q[0] = ERRORVDIMNOTPROGRAMMEDYET;      
+  // frag ist hier in welcher Reihenfolde die multivariaten und raeumlichen
+  // korrelationen abfolgen, siehe vario** fuer die 2 Moeglichkeiten
+   
+  cov->ptwise_definite = pt_posdef;
+  for (i=0; i<m; i++) {
+    if (nrow[i] != ncol[i] || cov->nrow[i] == 0) {
+      return q[0] = ERROR_MATRIX_SQUARE;      
+    }
+    totpts = nrow[i] / vdim;
+    if (totpts * vdim != nrow[i]) {
+	return q[0] = ERROR_MATRIX_VDIM;      
+    }
+    
+    // check whether positive eigenvalue  
+    total = nrow[i] * ncol[i] * sizeof(double); // NICHT weiter vorne
+    dummy = (double*) MALLOC(total);
+    MEMCOPY(dummy, p[i], total);
+    
+    if (false) {
+      printf("in Primitive.cc; fix\n"); //
+      int k, l, mm;
+      for (mm=k=0; k<nrow[i]; k++) {
+	for (l=0; l<ncol[i]; l++) {
+	  printf("%4.0f ", dummy[mm++]); // /* check of false */
+	}
+	printf("\n");//
+      }
+      printf("i=%d %d %d\n", i, nrow[i], ncol[i]);//
+    }
+    
+    F77_CALL(dpofa)(dummy, nrow + i, ncol + i, &info); // cholesky
+    
+    FREE(dummy);
+    if (info != 0)  return q[0] = ERROR_MATRIX_POSDEF;
+  }
+    
+
+  cov->matrix_indep_of_x = true;
+  cov->mpp.maxheights[0] = RF_NA;
+  err = checkkappas(cov);
+
+  return err;
+}
+
+
+void rangefix(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[FIX_ELMNT] = 0;
+  range->max[FIX_ELMNT] = MAXELEMENTS;
+  range->pmin[FIX_ELMNT] = 0;
+  range->pmax[FIX_ELMNT] = MAXELEMENTS;
+  range->openmin[FIX_ELMNT] = false;
+  range->openmax[FIX_ELMNT] = false;
+
+  range->min[FIX_M] = RF_NEGINF;
+  range->max[FIX_M] = RF_INF;
+  range->pmin[FIX_M] = -1e10;
+  range->pmax[FIX_M] = 1e10;
+  range->openmin[FIX_M] = true;
+  range->openmax[FIX_M] = true;
+  
+  range->min[FIX_VDIM] = 1;
+  range->max[FIX_VDIM] = 9999;
+  range->pmin[FIX_VDIM] = 1;
+  range->pmax[FIX_VDIM] = 9999;
+  range->openmin[FIX_VDIM] = false;
+  range->openmax[FIX_VDIM] = false;
+}

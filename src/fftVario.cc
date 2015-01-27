@@ -31,7 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  
 // z coordinate run the fastest in values, x the slowest   
 
-//#define debug_tools 1
 #define TOOLS_MEMORYERROR 501
 #define TOOLS_XERROR 502
 #define TOOLS_BIN_ERROR 503
@@ -39,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // naechste Zeile nur notwendig, weil atan2 in Windows nicht
 // ordentlich programmiert ist
-#define NEARBYINT(x)  floor((x) * NEARBY + 0.5) / NEARBY
+#define NEARBYINT(x)  (floor((x) * (NEARBY) + 0.5) / (NEARBY))
 // #define NEARBYINT(x)  x
 
 
@@ -440,7 +439,7 @@ SEXP fftVario3D(SEXP Coord,
     }
   }
 
-  if (BinSq!=NULL) free(BinSq);
+  FREE(BinSq);
   UNPROTECT(1);
   return back;
 }

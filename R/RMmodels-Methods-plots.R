@@ -33,38 +33,145 @@ setReplaceMethod(f="[", signature = 'RMmodelgenerator',
 
 
 
+
+## summing up RMmodels
+setMethod('c', signature=c('RMmodel'),
+          function(x, ..., recursive = FALSE)  R.bind(x, ...)
+          )
+
+resolve <- function(e1, e2, sign) {
+  d <- list()
+  if (e1@name==sign){
+    len.e1 <- length(e1@submodels)              
+    for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
+  } else {
+    len.e1 <- 1
+    d[[1]] <- e1
+  }
+  d[[len.e1 + 1]] <- e2            
+  if (sign == ZF_MULT[1]) {
+#    print(d)
+    model <- do.call(sign, d)
+  } else model <- do.call(sign, d)
+  return(model)
+}
+
+resolveRight<- function(e1, e2, sign) {
+  d <- list()
+  if (e1@name==sign){
+    len.e1 <- length(e1@submodels)              
+    for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
+  } else {
+    len.e1 <- 1
+    d[[1]] <- e1
+  }
+  d[[len.e1 + 1]] <- do.call("R.c", list( e2))
+  model <- do.call(sign, d)
+  return(model)
+}
+
+resolveLeft<- function(e1, e2, sign) {
+  d <- list()
+  len.e1 <- 1
+  d[[1]] <- do.call("R.c", list(e1))
+  d[[len.e1 + 1]] <-  e2  
+  model <- do.call(sign, d)
+  return(model)
+}
+
 ## summing up RMmodels
 setMethod('+', signature=c('RMmodel', 'RMmodel'),
-          function(e1, e2) {
-            d <- list()
-            if (e1@name==ZF_PLUS[1]){
-              len.e1 <- length(e1@submodels)              
-              for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
-            } else {
-              len.e1 <- 1
-              d[[1]] <- e1
-            }
-            d[[len.e1 + 1]] <- e2            
-            model <- do.call(ZF_PLUS[1], d)
-            return(model)
-          })
+          function(e1, e2) resolve(e1, e2, ZF_PLUS[1]))
+setMethod('+', signature=c('RMmodel', 'numeric'), 
+          function(e1, e2) resolveRight(e1, e2, ZF_PLUS[1]))
+setMethod('+', signature=c('RMmodel', 'logical'),
+          function(e1, e2) resolveRight(e1, e2, ZF_PLUS[1]))
+setMethod('+', signature=c('numeric', 'RMmodel'),
+          function(e1, e2) resolveLeft(e1, e2, ZF_PLUS[1]))
+setMethod('+', signature=c('logical', 'RMmodel'),
+          function(e1, e2) resolveLeft(e1, e2, ZF_PLUS[1]))
 
 
-## summing up RMmodels
+
+## multiplying RMmodels
 setMethod('*', signature=c('RMmodel', 'RMmodel'),
-          function(e1, e2) {
-            d <- list()
-            if (e1@name==ZF_MULT[1]){
-              len.e1 <- length(e1@submodels)              
-              for (i in 1:len.e1)  d[[i]] <-  e1@submodels[[i]]
-            } else {
-              len.e1 <- 1
-              d[[1]] <- e1
-            }
-            d[[len.e1 + 1]] <- e2            
-            model <- do.call(ZF_MULT[1], d)
-            return(model)
-          })
+         function(e1, e2) resolve(e1, e2, ZF_MULT[1]))
+setMethod('*', signature=c('numeric', 'RMmodel'),
+         function(e1, e2) resolveLeft(e1, e2, ZF_MULT[1]))
+setMethod('*', signature=c('logical', 'RMmodel'),
+         function(e1, e2) resolveLeft(e1, e2, ZF_MULT[1]))
+setMethod('*', signature=c('RMmodel', 'logical'),
+          function(e1, e2) resolveRight(e1, e2, ZF_MULT[1]))
+setMethod('*', signature=c('RMmodel', 'numeric'),
+          function(e1, e2) resolveRight(e1, e2, ZF_MULT[1]))
+
+
+Xresolve <- function(e1, e2, model) {
+  d <- list()
+  len.e1 <- 1
+  d[[1]] <- e1
+  d[[len.e1 + 1]] <- e2            
+  model <- do.call(model, d)
+  return(model)
+}
+XresolveLeft <- function(e1, e2, model) {
+  d <- list()
+  len.e1 <- 1
+  d[[1]] <- do.call("R.c", list(e1))
+  d[[len.e1 + 1]] <- e2            
+  model <- do.call(model, d)
+  return(model)
+}
+XresolveRight <- function(e1, e2, model) {
+  d <- list()
+  len.e1 <- 1
+  d[[1]] <- e1
+  d[[len.e1 + 1]] <- do.call("R.c", list(e2))           
+  model <- do.call(model, d)
+  return(model)
+}
+  
+
+## substracting RMmodels
+setMethod('-', signature=c('RMmodel', 'RMmodel'),
+          function(e1, e2) Xresolve(e1, e2, "R.minus"))
+setMethod('-', signature=c('numeric', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.minus"))
+setMethod('-', signature=c('logical', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.minus"))
+setMethod('-', signature=c('RMmodel', 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.minus") )
+setMethod('-', signature=c('RMmodel', 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.minus") )
+
+
+
+## dividing up RMmodels
+setMethod('/', signature=c('RMmodel', 'RMmodel'),
+          function(e1, e2) Xresolve(e1, e2, "R.div"))
+setMethod('/', signature=c('numeric', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.div"))
+setMethod('/', signature=c('logical', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.div"))
+setMethod('/', signature=c('RMmodel', 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.div") )
+setMethod('/', signature=c('RMmodel', 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.div") )
+
+
+
+## powering up RMmodels
+setMethod('^', signature=c('RMmodel', 'RMmodel'),
+          function(e1, e2) Xresolve(e1, e2, "R.pow")) 
+setMethod('^', signature=c('numeric', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.pow"))
+setMethod('^', signature=c('logical', 'RMmodel'),
+          function(e1, e2) XresolveLeft(e1, e2, "R.pow"))
+setMethod('^', signature=c('RMmodel', 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.pow") )
+setMethod('^', signature=c('RMmodel', 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.pow") )
+
 
 
 
@@ -169,7 +276,8 @@ str.RMmodel <-
   }
 }
 
-summary.RMmodel <- function(object, ...) summary(PrepareModel2(object, ...))
+summary.RMmodel <- function(object, max.level=3, ...)
+  summary(PrepareModel2(object, ...), max.level=max.level)
 
 setMethod(f="show", signature='RMmodel',
           definition=function(object) print.RMmodel(object, max.level=8))#
@@ -184,11 +292,13 @@ print.summary.RMmodel <- function(x, max.level=3, ...) {
   invisible(x)
 }
 
-print.RM_model <- function(x, ...) {
-  print.summary.RMmodel(summary.RM_model(x, ...))#
+print.RM_model <- function(x, max.level=3,...) {
+  print.summary.RMmodel(summary.RM_model(x, max.level=max.level,...),
+                        max.level=max.level)#
 }
-print.RMmodel <- function(x, ...) {
-  print.summary.RMmodel(summary.RMmodel(x, ...))#
+print.RMmodel <- function(x, max.level=3,...) {
+  print.summary.RMmodel(summary.RMmodel(x, max.level=max.level, ...),
+                        max.level=max.level)#
 }
 
 setMethod(f="show", signature='RMmodel',
@@ -289,7 +399,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
       fct.type <- fct.type[-1]
     if (!is.numeric(vdim)) {
       ##    Print(vdim, model)
-      ##   stop("'vdim' is not numerical")
+      ##   stop("'vdim' is not numeric")
       stop(attr(vdim, "condition")$message)
     }
     if (vdim[1] != vdim[2]) stop("only simple models can be plotted")

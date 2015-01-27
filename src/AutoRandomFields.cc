@@ -15,12 +15,12 @@ const char
     "non-dimension-reducing", "parameter dependent", "<mismatch>"},
   
   *TYPENAMES[OtherType + 1] = { // RC
-    "tail correlation", "positive definite", "negative definite", 
-    "process", 
+    "tail correlation", "positive definite", "variogram", 
+    "negative definite", "process", 
     "method for Gauss process", "method for Brown-Resnick process",
-    "point-shape function",
-    "distribution family", "shape function", "trend", "interface",
-    "undefined", "other type"},
+    "point-shape function", "distribution family", "shape function",
+    "trend", "interface",  "undefined", 
+    "<math definition>", "other type"},
   
   *MONOTONE_NAMES[BERNSTEIN + 1 - (int) MISMATCH] = { // RC
     "mismatch in monotonicity", "submodel dependent monotonicity",
@@ -54,6 +54,14 @@ const char
   *TYPEOF_PARAM_NAMES[14] = {
     "var", "signed var", "sd", "signed sd", "scale",
     "diag", "aniso", "integer", "unspecfd", "trend",  
-    "nugget", "mixed var", "regress", "any"};
+    "nugget", "mixed var", "regress", "any"},
+
+
+
+  *NAMES_OF_NAMES[11] = {"DOMAIN_NAMES", "ISONAMES",  // never change ordering
+		     "TYPENAMES", "MONOTONE_NAMES",
+		     "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES",
+		     "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS",
+		     "TYPEOF_PARAM_NAMES"};
 
   

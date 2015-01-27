@@ -47,7 +47,7 @@ distances = NULL, dim, transform = NULL, ...)
   \itemize{
     \item
     a covariance model, see \command{\link{RMmodel}} or
-    type \code{\link{RFgetModelNames}(type="negative")} to get all options.
+    type \code{\link{RFgetModelNames}(type="variogram")} to get all options.
 
     Depending weather the \command{\link{RFoptions}}
     \code{ratiotest_approx} is TRUE the

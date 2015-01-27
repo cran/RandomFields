@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "RF.h"
 #include "shape_processes.h"
+#include "Coordinate_systems.h"
 #include "variogramAndCo.h"
 //#include <R_ext/Linpack.h>
 
@@ -56,16 +57,20 @@ int check_directGauss(cov_model *cov) {
     endjj = 0;
   if (!isCartesian(cov->isoown)) isotropy[endjj++] = cov->isoown;
   else isotropy[endjj++] = SYMMETRIC;
-  Types type[2] = {PosDefType, NegDefType};
+  Types type[2] = {PosDefType, VariogramType};
   for (jj=0; jj<endjj; jj++) {
      for (j=0; j<=1; j++) {    
        //printf("direct:: %s %s\n", ISONAMES[isotropy[jj]], TYPENAMES[type[j]]);
+
+       //assert(cov->isoown == EARTH_COORD);
+    
       if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, 
 		       type[j], KERNEL, isotropy[jj],
 		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
      }
      if (err == NOERROR) break;
   }
+
   if (err != NOERROR) return err;  
   if (next->pref[Direct] == PREF_NONE) return ERRORPREFNONE;
 
@@ -177,7 +182,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
    
   
   if (!isPosDef(next)) {
-    if (isNegDef(next)) {
+    if (isVariogram(next)) {
       long i, j, v;
       double min,
 	*C = Cov;
@@ -205,6 +210,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     PRINTF("\n");
     for (i=0; i<endfor; i++) {
        for (j=0; j<endfor; j++) {
+	 if (ISNAN(Cov[i  + locpts * vdim * j])) BUG;
 	 PRINTF("%+2.2f ", Cov[i  + locpts * vdim * j]);
        }
        PRINTF("\n");
@@ -300,6 +306,8 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      lwork = (int) optim_lwork;
      if ((work = (double *) MALLOC(sizeof(double) * lwork))==NULL)
        goto ErrorHandling;
+
+  
      F77_CALL(dgesdd)("A",  &row,  &row, SICH, &row, D, U, &row, VT, &row, 
 		      work, &lwork, iwork, &Err);
      
@@ -337,7 +345,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 		      Cov[i * vdimtot +k] - sum, i, k, Cov[i* vdimtot +k ], 
 		      sum);
 	     }
-	     GERR1("required precision not attained: probably invalid model.\nSee also parameter '%s'.", direct[DIRECT_SVDTOL]);
+	     GERR3("required precision not attained: probably invalid model.\nSee also parameter '%s' (%e !> %e).", direct[DIRECT_SVDTOL], fabs(Cov[i * vdimtot + k] - sum), svdtol );
 	     goto ErrorHandling;
 	   }
 	 }
@@ -354,22 +362,20 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
    if (s != NULL) s->method = method;
    if (!storing && err!=NOERROR) {
-     if (U!=NULL) free(U);
-     if (G!=NULL) free(G); 
-     U = G = NULL;
+     FREE(U);
+     FREE(G); 
    } else {
     if (s != NULL) {
       s->U=U;
       s->G=G;
     }
   }
-  if (SICH!=NULL) free(SICH);
-  SICH = NULL;
-  if (Cov!=NULL) free(Cov);
-  if (D!=NULL) free(D);
-  if (work!=NULL) free(work);
-  if (iwork!=NULL) free(iwork);
-  if (VT!=NULL) free(VT);
+   FREE(SICH);
+   FREE(Cov);
+   FREE(D);
+   FREE(work);
+   FREE(iwork);
+   FREE(VT);
 
   return err;
 }
@@ -387,7 +393,8 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *res = cov->rf;  
   //  int m, n;
   bool loggauss = GLOBAL.gauss.loggauss;
-    // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
+   GLOBAL.gauss.loggauss = false;
+   // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
   //   APMI(cov);
 
@@ -455,6 +462,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   if (loggauss) {
     for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
   }
+  GLOBAL.gauss.loggauss = loggauss;
 
 }
 

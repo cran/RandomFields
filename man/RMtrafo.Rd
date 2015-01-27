@@ -14,13 +14,13 @@
 
 \usage{
 % to do: auch fuer die 'plane' transformationen
-RMtrafo(phi, isotropy)
+RMtrafo(phi, new)
 RFearth2cartesian(coord, units=NULL, system="cartesian", grid=FALSE)
 RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
 }
 
 \arguments{
-  \item{isotropy}{integer or character. One of the values
+  \item{new}{integer or character. One of the values
     \code{\link[=constants]{RC_ISOTROPIC}},
     \code{\link[=constants]{RC_SPACEISOTROPIC}},
     %    ZEROSPACEISO,
@@ -106,14 +106,14 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
 data(weather)
 (coord <- weather[1:5, 3:4])
 
-(z <- RFfctn(RMtrafo(isotropy=RC_CARTESIAN_COORD), coord))
-(z1 <- RFearth2cartesian(coord)) ## equals t(z)
-z1 - t(z) ## 0, i.e., z1 and t(z) are the same
-dist(t(z))
+(z <- RFfctn(RMtrafo(new=RC_CARTESIAN_COORD), coord))
+(z1 <- RFearth2cartesian(coord)) ## equals z
+z1 - z ## 0, i.e., z1 and t(z) are the same
+dist(z)
 
 
 (d <- RFearth2dist(coord)) 
-d - dist(t(z)) ## 0, i.e., d and dist(t(z)) are the same
+d - dist(z) ## 0, i.e., d and dist(z) are the same
 
 
 ## projecction onto planes
@@ -143,7 +143,7 @@ xx <- matrix(weather[, 3:4], ncol=2) [ 1:5, ]
 
 xx <- weather[, 3:4][ 1:5, ]
 Print(xx)
-Print(yy <- RFfctn(RMtrafo(isotropy=RC_CARTESIAN_COORD), xx), units="miles")
+Print(yy <- RFfctn(RMtrafo(new=RC_CARTESIAN_COORD), xx), units="miles")
 
 (z1 <- as.matrix(dist(t(yy))))
 

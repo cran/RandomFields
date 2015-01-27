@@ -1,4 +1,4 @@
-# This file is created automatically by 'rfGenerateConstants'
+# This file has been created automatically by 'rfGenerateConstants'
 
 
  MAXCHAR 	<- as.integer(18)
@@ -19,6 +19,7 @@
  MAXTBMVDIM 	<- as.integer(5)
  MAXGETNATSCALE 	<- as.integer(5)
 
+ MAXPARAM 	<- as.integer(20)
 
 
 
@@ -151,17 +152,23 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
 
  TcfType 	<- as.integer(0)
  PosDefType 	<- as.integer(1)
- NegDefType 	<- as.integer(2)
- ProcessType 	<- as.integer(3)
- GaussMethodType 	<- as.integer(4)
- BrMethodType 	<- as.integer(5)
- PointShapeType 	<- as.integer(6)
- RandomType 	<- as.integer(7)
- ShapeType 	<- as.integer(8)
- TrendType 	<- as.integer(9)
- InterfaceType 	<- as.integer(10)
- UndefinedType 	<- as.integer(11)
- OtherType 	<- as.integer(12)
+ VariogramType 	<- as.integer(2)
+ NegDefType 	<- as.integer(3)
+ ProcessType 	<- as.integer(4)
+ GaussMethodType 	<- as.integer(5)
+ BrMethodType 	<- as.integer(6)
+ PointShapeType 	<- as.integer(7)
+ RandomType 	<- as.integer(8)
+ ShapeType 	<- as.integer(9)
+ TrendType 	<- as.integer(10)
+ InterfaceType 	<- as.integer(11)
+ UndefinedType 	<- as.integer(12)
+ MathDefinition 	<- as.integer(13)
+ OtherType 	<- as.integer(14)
+ NN1 	<- as.integer(15)
+ NN2 	<- as.integer(16)
+ NN3 	<- as.integer(17)
+ NN4 	<- as.integer(18)
 
 
 
@@ -209,10 +216,6 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
 
 
 
-
-
-
-
  CircEmbed 	<- as.integer(0)
  CircEmbedCutoff 	<- as.integer(1)
  CircEmbedIntrinsic 	<- as.integer(2)
@@ -220,7 +223,7 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
  SpectralTBM 	<- as.integer(4)
  Direct 	<- as.integer(5)
  Sequential 	<- as.integer(6)
- Markov 	<- as.integer(7)
+ TrendEval 	<- as.integer(7)
  Average 	<- as.integer(8)
  Nugget 	<- as.integer(9)
  RandomCoin 	<- as.integer(10)
@@ -243,7 +246,7 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
 
  INTERNAL_PARAM 	<- "internal"
 
- MAXVARIANTS 	<- as.integer(5)
+ MAXVARIANTS 	<- as.integer(6)
 
 
  GETMODEL_AS_SAVED 	<- as.integer(0)
@@ -264,7 +267,7 @@ RC_ISONAMES <- ISONAMES <-
 c(       "isotropic", "space-isotropic", "zero-space-isotropic",      "vector-isotropic", "symmetric", "cartesian system",     "gnomonic projection", "orthographic projection",     "spherical isotropic", "spherical system",      "earth isotropic", "earth system",      "cylinder system",     "non-dimension-reducing", "parameter dependent", "<mismatch>" )
 
 RC_TYPENAMES <- TYPENAMES <-
-c(       "tail correlation", "positive definite", "negative definite",      "process",      "method for Gauss process", "method for Brown-Resnick process",     "point-shape function",     "distribution family", "shape function", "trend", "interface",     "undefined", "other type" )
+c(       "tail correlation", "positive definite", "variogram",      "negative definite", "process",      "method for Gauss process", "method for Brown-Resnick process",     "point-shape function", "distribution family", "shape function",     "trend", "interface",  "undefined",      "<math definition>", "other type" )
 
 RC_MONOTONE_NAMES <- MONOTONE_NAMES <-
 c(       "mismatch in monotonicity", "submodel dependent monotonicity",     "previous model dependent monotonicity",     "parameter dependent monotonicity",     "not monotone", "monotone", "Gneiting-Schaback class",      "normal mixture",      "completely monotone",       "Bernstein" )
@@ -289,6 +292,11 @@ c(      "cartesian", "gnomonic", "orthographic" )
 
  TYPEOF_PARAM_NAMES <-
 c(      "var", "signed var", "sd", "signed sd", "scale",     "diag", "aniso", "integer", "unspecfd", "trend",       "nugget", "mixed var", "regress", "any" )
+
+
+
+ NAMES_OF_NAMES <-
+c( "DOMAIN_NAMES", "ISONAMES",   		     "TYPENAMES", "MONOTONE_NAMES", 		     "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES", 		     "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS", 		     "TYPEOF_PARAM_NAMES" )
 
 
 

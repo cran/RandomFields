@@ -84,10 +84,12 @@
       \item To apply the offered package procedures to \bold{mixed models}
       -- e.g. appearing in genetical data analysis-- see
       \command{\link{RFformula}}.
-      \item models are evaluated by \command{\link{RFcov}},
+      \item definite models are evaluated by \command{\link{RFcov}},
       \command{\link{RFvariogram}} and \command{\link{RFcovmatrix}}.
       For a quick impression use \code{\link{plot}(model)}.
-    } 
+      \item non-definte models are evaluated by \command{\link{RFfctn}} and
+      \command{\link{RFcalc}}
+    }
     
     
     \item \bold{Data and example studies}:
@@ -181,7 +183,7 @@
 
 
 \seealso{
-  See also  \link{RF}, \link{RM}, \link{RP}, \link{RR}, \link{RC}
+  See also  \link{RF}, \link{RM}, \link{RP}, \link{RR}, \link{RC}, \link{R.}
 }
  
  
@@ -208,10 +210,13 @@
     IEEE press.
     \item
     Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
-    Strokorb, K. (2013) 
+    Strokorb, K. (2015) 
     Analysis, simulation and prediction of multivariate
-    Random Fields with package \pkg{RandomFields}. \emph{Submitted to
-      JSS}, see the corresponding \href{../doc/multivariate_jss.pdf}{vignette}.
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
+    \item
+    see also the corresponding \href{../doc/multivariate_jss.pdf}{vignette}.
   } 
  }
 \section{Contributions}{

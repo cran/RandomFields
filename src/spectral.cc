@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 
 
 #define SPECTRAL_LINES (COMMON_GAUSS + 1)
@@ -268,6 +268,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
   long nt, nx, total = loc->totalpoints,
     spatialpoints = loc->spatialtotalpoints;
   bool loggauss = GLOBAL.gauss.loggauss;
+ GLOBAL.gauss.loggauss = false;
 
 			
   s->grid = P0INT(SPECTRAL_GRID);
@@ -476,5 +477,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
   if (loggauss) {
     for (nx=0; nx<total; nx++) res[nx] = exp(res[nx]);
   }
+  GLOBAL.gauss.loggauss = loggauss;
 
-}
+} 
+

@@ -35,9 +35,12 @@ RMdelay(phi,s,var, scale, Aniso, proj)
 }
 \references{
  \itemize{
- \item Schlather, M., Malinowski, A., Menck, P.J., Oesting, M., Strokorb,
- K. (2013). \emph{Submitted to J. Statist. Software}
- 
+ \item Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
  \item Wackernagel, H. (2003) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 3nd edition.
  }

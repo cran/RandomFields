@@ -74,7 +74,7 @@ rfgui.intern <- function(data, x, y,
   
   OnModelSelected <- function(...)
   { 
-    # delete die alten Parameterwähler
+    # delete die alten Parameterw*hler
     if(exists("baseModel", envir=ENVIR)) {
       baseParam <- get("baseModel", envir=ENVIR)$k
       if(length(baseParam) > 0) {
@@ -256,7 +256,7 @@ rfgui.intern <- function(data, x, y,
       for (i in 1:length(baseModel$k)) {
         slParamValue <- get(paste("slParam", i, "Value", sep=""), envir=ENVIR)
         value <- get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tcltk::tclvalue(slParamValue) <- round(as.numeric(tcltk::tclvalue(value)), digits=2)
+        tcltk::tclvalue(slParamValue) <- base::round(as.numeric(tcltk::tclvalue(value)), digits=2)
       }
     plotDensity()
   } 
@@ -274,7 +274,7 @@ rfgui.intern <- function(data, x, y,
                                                       sep=""), envir=ENVIR)))
         entryParamValue <-
           get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tcltk::tclvalue(entryParamValue) <- round(baseParam[i], digits=2)
+        tcltk::tclvalue(entryParamValue) <- base::round(baseParam[i], digits=2)
       }
 
     baseModel$k <- baseParam
@@ -323,17 +323,17 @@ rfgui.intern <- function(data, x, y,
 
     #baseModel <- get("baseModel",envir=ENVIR)
     tcltk::tclvalue(entryScaleValue) <-
-      round(exp(as.numeric(tcltk::tclvalue(slScaleValue))), digits=2)
+      base::round(exp(as.numeric(tcltk::tclvalue(slScaleValue))), digits=2)
     tcltk::tclvalue(entryVarianceValue) <-
-      round(exp(as.numeric(tcltk::tclvalue(slVarianceValue))), digits=2)
+      base::round(exp(as.numeric(tcltk::tclvalue(slVarianceValue))), digits=2)
     tcltk::tclvalue(entryNuggetValue) <-
-      round(as.numeric(tcltk::tclvalue(slNuggetValue)), digits=2)
+      base::round(as.numeric(tcltk::tclvalue(slNuggetValue)), digits=2)
     tcltk::tclvalue(entryScaleAValue) <-
-      round(exp(as.numeric(tcltk::tclvalue(slScaleAValue))), digits=2)
+      base::round(exp(as.numeric(tcltk::tclvalue(slScaleAValue))), digits=2)
     tcltk::tclvalue(entryScaleBValue) <-
-      round(exp(as.numeric(tcltk::tclvalue(slScaleBValue))), digits=2)
+      base::round(exp(as.numeric(tcltk::tclvalue(slScaleBValue))), digits=2)
     tcltk::tclvalue(entryRotationValue) <-
-      round(as.numeric(tcltk::tclvalue(slRotationValue)), digits=2)
+      base::round(as.numeric(tcltk::tclvalue(slRotationValue)), digits=2)
 
 
     newmodel <- GetGuiModel()
@@ -508,7 +508,7 @@ rfgui.intern <- function(data, x, y,
 
   OnNewSimu <- function(...) 
   {
-    assign("fixed.rs", round(runif(1,1,100000)), envir=ENVIR)  
+    assign("fixed.rs", base::round(runif(1,1,100000)), envir=ENVIR)  
     tkrplot::tkrreplot(imgSim)
   }
 
@@ -530,7 +530,7 @@ rfgui.intern <- function(data, x, y,
 
   OnReturn <- function(...)
   {
-    # hier muss eine rückgabe stehen, emp vario und model mit parametern
+    # hier muss eine rueckgabe stehen, emp vario und model mit parametern
    #   Print(GetGuiModel())
     RFoptions(LIST=get("RFopt.old", envir=ENVIR))
     ##remove("RFopt.old", envir=ENVIR)
@@ -671,7 +671,7 @@ rfgui.intern <- function(data, x, y,
     tcltk::tkgrid.configure(buttonReturn, column=col.sl,
                      row=max(row.sl,image.rowspan+2), sticky="e")
     row.sl=row.sl+1
-    #--- Beschäftigungsindikator ---------------------------------------
+    #--- Beschaeftigungsindikator ---------------------------------------
 #    tcltk::tkgrid.configure(labelOccupancy, row=row.last, column=col.sl, sticky="e")
   } ## end fct position
 
@@ -785,12 +785,12 @@ rfgui.intern <- function(data, x, y,
   ## Nugget  
   slNuggetValue <- tcltk::tclVar(nugget)
    ## Variance
-  varianceMin <- round(log(0.01), digits=2)
+  varianceMin <- base::round(log(0.01), digits=2)
   varianceMax <- log(max(1e-10, nuggetMax))
   slVarianceValue <- tcltk::tclVar(log(variance))
   ## Scale
-  scaleMin <- round(log(0.1*scale), digits=2)  
-  scaleMax <- round(log(10*scale), digits=2)   
+  scaleMin <- base::round(log(0.1*scale), digits=2)  
+  scaleMax <- base::round(log(10*scale), digits=2)   
   slScaleValue <- tcltk::tclVar(log(scale))
   
   ## die direkte eingabe muss als variable getrennt von den schiebern laufen
@@ -849,7 +849,7 @@ rfgui.intern <- function(data, x, y,
   imgVar <- tkrplot::tkrplot(tt,fun=plotFunction,hscale=plothscale,vscale=plotvscale)
   imgSim <- tkrplot::tkrplot(tt,fun=plotSimulation,hscale=plothscale,vscale=plotvscale)
     
-  #--- Beschäftigungsindikator -------------------------------------
+  #--- Beschaeftigungsindikator -------------------------------------
   labelOccText <- tcltk::tclVar("Free")
   labelOccupancy <- tcltk::tklabel(tt,text=tcltk::tclvalue(labelOccText))
 

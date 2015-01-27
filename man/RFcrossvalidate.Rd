@@ -18,7 +18,7 @@
   The fitting of max-stable random fields and others
   has not been implemented yet.
 }
-\usage{D
+\usage{
 RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  lower = NULL, upper = NULL, bc_lambda, method="ml",
  users.guess = NULL,
@@ -132,6 +132,7 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
 RFcrossvalidate(estmodel, data=d)
+
 
 \dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}

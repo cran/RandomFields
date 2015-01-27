@@ -6,9 +6,19 @@
   This man pages documents some major changings in RandomFields.
 }
 
-\section{Corrections done in 3.0.50 (Jan 2015)}{
+
+
+\section{Corrections done in 3.0.56 (Jan 2015)}{
   \itemize{
-    \item Kriging several severe typos corrected.
+    \item log Gauss field corrected (has been a log log Gauss field)
+    \item \command{RMconstant} is now called \command{\link{RMfixcov}}
+  }
+}
+
+
+\section{Corrections done in 3.0.55 (Jan 2015)}{
+  \itemize{
+    \item Conditional simulation: several severe typos corrected.
   }
 }
 

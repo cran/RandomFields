@@ -42,8 +42,7 @@ conventional2RFspDataFrame(data, coords=NULL, gridTopology=NULL, n=1,
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
 }
 
-\author{Alexander Malinowski
-  \email{alexander.malinowski@math.uni-goettingen.de}}
+\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

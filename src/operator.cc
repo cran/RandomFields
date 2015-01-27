@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
  
 #include "RF.h"
-#include "Covariance.h"
+#include "Operator.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
@@ -285,10 +285,7 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
     COV(ZERO, next, &z);
     COV(x, next, v);
     
-    //     A  PMI(cov);
-    //  printf("%ld %ld %s\n", CovList[next->gatternr].D, D_2, 
-    //	   CovList[next->gatternr].name);
-    assert(CovList[next->gatternr].D != NULL);
+     assert(CovList[next->gatternr].D != NULL);
     assert(CovList[next->gatternr].D != ErrCov);
 
     Abl1(x, next, &abl);   // Vorsicht: abl = -\gamma' 
@@ -300,8 +297,6 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
     //                                      =-2 \varphi * (-C') / (2 sqrt\gamma)
     //                              mit C= c_0 -\gamma
  
-    //     printf("dbrown %f %f %f %e\n", *x, abl, s, v); //assert(false);
-    // 
     assert(*v <= 0);
 
   } else {
@@ -345,8 +340,7 @@ void DDbrownresnick(double *x, cov_model *cov, double *v) {
     abl  *= BR_SEMI_FACTOR;
     abl2 *= BR_SEMI_FACTOR;
     *v = dnorm(s, 0.0, 1.0, false) / s * (abl2 + abl * abl * 0.5 * (1/s0 + 1));
-    
-    //printf("br x=%f v=%e s=%f abl=%f s0=%f abl2=%f\n", *x, *v, s, abl, s0, abl2);
+
     assert(*v >= 0);
 
   } else {
@@ -509,7 +503,7 @@ int checkbrownresnick(cov_model *cov) {
     dim = cov->tsdim;
   if (cov->vdim[0] != cov->vdim[1]) BUG;
 
-  if ((err = CHECK(next, dim,  dim, NegDefType, cov->domown, 
+  if ((err = CHECK(next, dim,  dim, VariogramType, cov->domown, 
 		   cov->isoown, SUBMODEL_DEP, 
 		   hasMaxStableRole(cov) ? ROLE_MAXSTABLE : ROLE_COV))
       != NOERROR) {
@@ -619,10 +613,10 @@ void BR2BG(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
   double z;
   COV(ZERO, next, &z);
-  COV(x, next, v);
+  COV(x, next, v); 
   z = 2.0 * pnorm(sqrt( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1;
   *v = cos(M_PI * z);
- }
+}
 
 int check_BR2BG(cov_model *cov) {
   // to do extend to multivariate
@@ -792,7 +786,7 @@ int check_MaStein(cov_model *cov) {
   if (cov->xdimown != 2) SERR("reduced dimension must be 2");
 
   if ((err = checkkappas(cov)) != NOERROR) return err;
-  if ((err = CHECK(next, 1, 1, NegDefType, XONLY,
+  if ((err = CHECK(next, 1, 1, VariogramType, XONLY,
 		     SYMMETRIC, SCALAR, ROLE_COV)) != NOERROR) return err;
   if (cov->ncol[MASTEIN_NU] != 1 || cov->nrow[MASTEIN_NU] != 1) 
     SERR("nu not scalar");
@@ -1480,7 +1474,7 @@ int checkma2(cov_model *cov) {
 
   if ((err = checkkappas(cov)) != NOERROR) return err;
     
-  if ((err = CHECK(next, cov->tsdim, cov->xdimown, NegDefType, cov->domown,
+  if ((err = CHECK(next, cov->tsdim, cov->xdimown, VariogramType, cov->domown,
 		     cov->isoown, SCALAR, ROLE_COV)) 
 	!= NOERROR) return err;
 
@@ -1515,7 +1509,8 @@ void M(cov_model *cov, double *Z, double *V) {
 // M : rows of op(A)
 // N : cols of op(B)
 // K : cols of op(A)= rows of op(B)
-// LD-X : first dimension of X
+// LD-X : first dimension of X   \command{\link{RMflat}} \tab constant in space \cr
+ 
 
 
  if (next->vdim[0] == 1) {
@@ -1876,7 +1871,7 @@ int checkSchur(cov_model *cov) {
 	    nrow[SCHUR_M], ncol[SCHUR_M], KNAME(SCHUR_M));
   }
     
-  free(C);
+  FREE(C);
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
 
   /*
@@ -2141,7 +2136,7 @@ int checkExp(cov_model *cov) {
     cov->pref[CircEmbed] = C->pref[CircEmbed];
     cov->pref[Direct] = C->pref[Direct];
     cov->pref[Sequential] = C->pref[Sequential];    
-    if (!isNegDef(cov->typus))
+    if (!isVariogram(cov->typus))
       SERR1("negative definite function expected -- got '%s'",
 	    TYPENAMES[cov->typus]);
   } else {
@@ -2150,7 +2145,7 @@ int checkExp(cov_model *cov) {
  
   }
 
-  double height= isNegDef(next->typus) && !isPosDef(next->typus) ? 1.0 : RF_NA;
+  double height= isVariogram(next->typus) && !isPosDef(next->typus) ? 1.0 : RF_NA;
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = height;
 
   cov->monotone = 
@@ -2255,7 +2250,7 @@ int checkPow(cov_model *cov) {
   //print("OK %d %d\n", cov->domown, cov->isoown);
   if ((err = checkkappas(cov)) != NOERROR) return err;
   if (cov->domown != XONLY) return ERRORSTATVARIO;
-  cov->nr = isNegDef(cov) ? POW : SHAPEPOW;
+  cov->nr = isVariogram(cov) ? POW : SHAPEPOW;
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, cov->typus, //PosDefType, 
 		   cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR){
     // print("OK %d\n",err);
@@ -2272,7 +2267,7 @@ int checkPow(cov_model *cov) {
 }
 
 void rangePow(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){ 
-  if (isNegDef(cov)) {
+  if (isVariogram(cov)) {
     range->min[POW_ALPHA] = 0.0;
     range->max[POW_ALPHA] = 1.0;
     range->pmin[POW_ALPHA] = 0.01;
@@ -2942,7 +2937,7 @@ int checktbmop(cov_model *cov) {
   if (cov->isoown != ISOTROPIC && cov->isoown != SPACEISOTROPIC) {
      return ERRORANISO;
   }
-  if (!isNegDef(cov->typus) || cov->domown != XONLY) {
+  if (!isVariogram(cov->typus) || cov->domown != XONLY) {
     return ERRORSTATVARIO;
   }
 
@@ -3060,7 +3055,7 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
   //  if ((err = covcpy(&neu, cov)) != NOERROR) return err;
   // CovList[cov->gatternr].cov(&d, neu, &phi0);
   // CovList[cov->gatternr].D(&d, neu, &phi1);
-  //free(neu);
+  //FREE(neu);
   COV(&d, cov, &phi0);
   Abl1(&d, cov, &phi1);
  
@@ -3112,7 +3107,7 @@ int check_local(cov_model *cov,
 
  
   if ((err = CHECK(next, dim,  1,
-		     method == CircEmbedCutoff ? PosDefType : NegDefType, 
+		     method == CircEmbedCutoff ? PosDefType : VariogramType, 
 		     cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR)
     return err;
  
@@ -3135,7 +3130,7 @@ int check_local(cov_model *cov,
   // cov->variogram = false; 
   // no changing in pref by submodel !!
   if (cov->q != NULL) {
-    free(cov->q);    
+    FREE(cov->q);    
     cov->q = NULL;
     // ERR("q not NULL in check_local -- ask author");
   } 
@@ -4129,12 +4124,10 @@ void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-#define TRAFO_ISO 0
 void trafo(double *x, cov_model *cov, double *v){  
   cov_model *next = cov->sub[0];
   assert(next != NULL);
   COV(x, next, v);
-  assert(P0INT(TRAFO_ISO) == next->isoown); 
 }
 void logtrafo(double *x, cov_model *cov, double *v, 
 		     double *sign){  
@@ -4145,7 +4138,6 @@ void logtrafo(double *x, cov_model *cov, double *v,
 }
 void nonstattrafo(double *x, double *y, cov_model *cov, double *v){  
   cov_model *next = cov->sub[0];
-  assert(P0INT(TRAFO_ISO) == next->isoown); 
   assert(next != NULL);
   NONSTATCOV(x, y, next, v);
 }
@@ -4158,27 +4150,187 @@ void lognonstattrafo(double *x, double *y, cov_model *cov, double *v,
 }
 int checktrafo(cov_model *cov){
   if (PisNULL(TRAFO_ISO)) SERR("parameter not given");
-  kdefault(cov, TRAFO_ISO, ISOTROPIC);
+  // kdefault(cov, TRAFO_ISO, ISOTROPIC);
+  //
+  
   if (cov->nsub == 0) addModel(cov, 0, IDCOORD);
+  assert(cov->nsub == 1);
   cov_model *next = cov->sub[0];
   int err = NOERROR;
+ 
+ 
+  if (equal_coordinate_system(cov->isoown, P0INT(TRAFO_ISO)) &&
+      cov->isoown != P0INT(TRAFO_ISO)) {
+    SERR2("Offered system ('%s') does not match the required one ('%s')",
+	  ISONAMES[cov->isoown], ISONAMES[P0INT(TRAFO_ISO)]);
+  }
+
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, cov->typus, cov->domown, 
-		     P0INT(TRAFO_ISO), -1, ROLE_COV)) != NOERROR){
+		   P0INT(TRAFO_ISO), -1, ROLE_COV)) != NOERROR){
     return err;  
   }
-  if (next->isoown != P0INT(TRAFO_ISO)) {
-    SERR2("offererd system ('%s') does not match the required one ('%s')",
-	 ISONAMES[cov->isoown], ISONAMES[P0INT(TRAFO_ISO)]);
+  if (!atleastSpecialised(next->isoown, P0INT(TRAFO_ISO))) {
+    //PMI(next);
+    SERR2("offered system ('%s') does not match the required one ('%s')",
+	 ISONAMES[next->isoown], ISONAMES[P0INT(TRAFO_ISO)]);
   }
   cov->vdim[0] = next->vdim[0];
   cov->vdim[1] = next->vdim[1];
+  
   return NOERROR;
 }
+bool Typetrafo(Types required, cov_model *cov, int depth) {
+  if (cov->sub[0] == NULL) return required==ShapeType;
+  return TypeConsistency(required, cov->sub[0], depth-1);
+}
+
 void rangetrafo(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[TRAFO_ISO] = ISOTROPIC;
-  range->max[TRAFO_ISO] = SPHERICAL_COORD;
+  range->max[TRAFO_ISO] = UNREDUCED;
   range->pmin[TRAFO_ISO] = ISOTROPIC;
-  range->pmax[TRAFO_ISO] = SPHERICAL_COORD;
+  range->pmax[TRAFO_ISO] = UNREDUCED;
   range->openmin[TRAFO_ISO] = false;
   range->openmax[TRAFO_ISO] = false;
 }
+
+
+
+void nonstatprod(double *x, double *y, cov_model *cov, double *v){  
+  location_type *loc = Loc(cov);
+  cov_model *next = cov->sub[0];
+  int 
+    dummy = loc->i_row,
+    rows = next->vdim[0],
+    cols = next->vdim[1],
+    vdimsq = rows * cols;
+  ALLOC_EXTRA(w, vdimsq);
+  loc->i_row = loc->i_col;
+  FCTN(y, next, w);
+  loc->i_row = dummy;
+
+  if (vdimsq == 1) {
+    FCTN(x, next, v);
+    *v *= *w;
+  } else {
+    ALLOC_EXTRA(u, vdimsq);
+    FCTN(x, next, u); 
+    matmulttransposed(u, w, v, cols, rows, cols);
+  }
+}
+
+
+int checkprod(cov_model *cov) {
+  //  location_type *loc = Loc(cov);
+  if (cov->sub[0]  == NULL) {
+    addModel(cov, 0, IDCOORD);
+  }
+  cov_model *next = cov->sub[0];
+  int err;
+
+  //if (cov->isoown != EARTH_COORD) return ERRORFAILED; printf("loeschen\n");
+
+  // STOPAFTER(cov->isoown == EARTH_COORD,APMI(cov));
+
+  if ((err = CHECK(next, cov->tsdim, cov->xdimown, ShapeType,
+		     XONLY, cov->isoown,
+		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+  
+  setbackward(cov, next);
+  cov->vdim[0] = next->vdim[0]; 
+  cov->vdim[1] = next->vdim[1];
+  EXTRA_STORAGE;
+  cov->pref[Direct] = 1;
+  cov->pref[Specific] = cov->pref[Nothing]= 5;
+  
+  return NOERROR;
+  
+}
+
+
+
+
+int checkprodproc(cov_model *cov) { // auch fuer TrendEval
+  int err;  
+  if ((err = checkprod(cov))) return err;
+  if (cov->vdim[0] != 1) NotProgrammedYet("");
+  return NOERROR;
+}
+
+
+int structprodproc(cov_model  VARIABLE_IS_NOT_USED *cov,
+		   cov_model VARIABLE_IS_NOT_USED **newmodel){// auch fuer TrendEval
+   return NOERROR;
+}
+
+
+int initprodproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer TrendEval
+  int err;
+
+  if (cov->vdim[0] != 1) NotProgrammedYet("");
+
+  ROLE_ASSERT_GAUSS;
+  err = FieldReturn(cov);
+  cov->simu.active = err == NOERROR;
+  if (PL>= PL_STRUCTURE) PRINTF("\n'prodproc' is now initialized.\n");
+  return err;
+}
+
+void doprodproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
+  location_type *loc = Loc(cov);					
+  long i,
+    vdim = cov->vdim[0],
+    totvdim = loc->totalpoints * vdim;
+  bool loggauss = GLOBAL.gauss.loggauss;
+  GLOBAL.gauss.loggauss = false;
+  res_type
+    *res = cov->rf;
+  assert(res != NULL);
+
+  Fctn(NULL, cov, res);
+  double g = GAUSS_RANDOM(1.0);
+  
+  if (loggauss) for(i=0; i<totvdim; i++) res[i] = (res_type) exp(res[i] * g);
+  else for(i=0; i<totvdim; i++) res[i] = (res_type) (res[i] * g);
+  GLOBAL.gauss.loggauss = loggauss;
+}
+
+
+
+
+
+void nonstatsum(double *x, double *y, cov_model *cov, double *v){  
+  location_type *loc = Loc(cov);
+  cov_model *next = cov->sub[0];
+  int i,
+    dummy = loc->i_row,
+    rows = next->vdim[0],
+    cols = next->vdim[1],
+    vdimsq = rows * cols;
+  ALLOC_EXTRA(w, vdimsq);
+  loc->i_row = loc->i_col;
+  FCTN(y, next, w);
+  loc->i_row = dummy;
+  FCTN(x, next, v);
+  for (i=0; i<vdimsq; i++) v[i] += w[i];
+}
+
+int checksum(cov_model *cov) {
+  //  location_type *loc = Loc(cov);
+  if (cov->sub[0] == NULL) {
+    addModel(cov, 0, IDCOORD);
+  }
+  cov_model *next = cov->sub[0];
+  int err;
+
+  if ((err = CHECK(next, cov->tsdim, cov->xdimown, ShapeType,
+		     XONLY, cov->isoown,
+		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+  
+  setbackward(cov, next);
+  if (cov->vdim[0] != cov->vdim[1]) 
+    SERR("sub model must return symmetric a square matrix");
+  EXTRA_STORAGE;
+  return NOERROR;
+  
+}
+

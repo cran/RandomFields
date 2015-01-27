@@ -1,286 +1,9 @@
 ########################################################################
 ## Hier sind Funktionen, die vermutlich kaum ein Anwender interessiert
+## und wohl eher zum internen Gebrauch, wenn auch im NAMESPACE stehend;
+##
+## Ausnahme: rfGenerate* stehen in generatemodels.R
 ########################################################################
-
-reps <- function(n, sign=",") paste(rep(sign, n), collapse="")
-
-search.model.name <- function(cov, name, level) {
-  if (length(name) == 0 || length(cov) ==0) return(cov);
-  if (!is.na(pmatch(name[1], cov))) return(search.model.name(cov, name[-1], 1))
-
-  for (i in 1:length(cov$submodels)) {
-    found <- search.model.name(cov$submodels[[i]], name, 1)
-    if (!is.null(found)) return(found)      
-  }
-  found <- search.model.name(cov$internal, name, 1)
-  if (!is.null(found)) return(found)
-  if (level == 0) stop("model name not found")
-  return(NULL)
-}
-
-
-
-GetNeighbourhoods <- function(model.nr, all,
-                              splitfactor, maxn, split_vec,
-                              shared=FALSE)  {
-  ## model.nr < 0 : standard scales
-  ## MODEL_USER 0  /* for user call of Covariance etc. */
-  ## MODEL_SIMU 1  /* for GaussRF etc */ 
-  ## MODEL_INTERN 2 /* for kriging, etc; internal call of covariance */
-  ## MODEL_SPLIT 3  /* split  covariance model */
-  ## MODEL_GUI 4   /* RFgui */
-  ## MODEL_MLE  5  /* mle covariance model */
-  ## MODEL_MLESPLIT 6 /* ="= */
-  ## MODEL_MLETREND 7  /* mle trend model !! */
-  ## MODEL_BOUNDS 8 /* MLE, lower, upper */
-  
-  locfactor <- as.integer(splitfactor * 2 + 1) ## total number of
-  ##    neighbouring boxes in each direction, including the current box itself
-  maxn <- as.integer(maxn)        ## max number of points, including neighbours
-  splitn <- as.integer(split_vec[1]) ## number of location when split up
-  minimum <- as.integer(split_vec[2])## min. number of points in a neighbourhood
-  maximum <- as.integer(split_vec[3])## maximum number of points when still
-  ##                                    neighbours of neighbours are included.
-  ##                         Note that, mostly, an additional box is included.
-
-  d <- dim(all$given)
-  ts.xdim <- as.integer(d[1])
-  n <- as.integer(d[2])
-
-  if (model.nr >= 0) {
-    natsc <- .C("MultiDimRange", as.integer(model.nr), natsc = double(ts.xdim),
-                PACKAGE="RandomFields")$natsc
-  } else natsc <- rep(1, ts.xdim)
-
- 
-  u <- numeric(ts.xdim)
-  for (i in 1:ts.xdim) {
-    u[i] <- length(unique(all$given[i,]))
-  }
-  
-  Range <- apply(all$given, 1, range)
-  rd <- apply(Range, 2, diff) 
-  len <- pmax(1e-10 * max(rd), rd * (1 + 1e-10))
-  units <- pmax(1, len * natsc)
-  nDsplitn <- n / splitn
-
-  ## * "gerechte" Aufteilung in alle Richtungen waere nDsplitn
-  ## * die Richtung in die viele units sind, soll eher aufgespalten werden
-  ## * ebenso : wo viele Werte sind eher aufspalten
-  idx <- (nDsplitn / prod(units * u))^{1/ts.xdim} * units * u > 0.5 
-  reddim <- sum(idx)
-  units <- units[idx]
-  zaehler <- 1
-  parts <- rep(1, ts.xdim)
-  OK <- integer(1)
-  
-  repeat {
-    parts[idx] <- (nDsplitn / prod(units))^{1/reddim} *
-                  locfactor * zaehler * units * all$vdim
-    parts <- as.integer(ceiling(parts))
-
-    ## zuordnung der coordinaten_Werte zu den jeweiligen "parts"
-    ## given ist liegend
-    coord.idx <- floor((all$given - Range[1,]) / (len / parts))
-    
-    cumparts <- cumprod(parts)
-    totparts <- as.integer(cumparts[length(cumparts)])
-    Ccumparts <- as.integer(c(1, cumparts))
-    cumparts <- Ccumparts[-length(Ccumparts)]
-    
-    ## elms.in.boxes <- integer(totparts)  
-    ## neighbours <- integer(totparts)
-    cumidx <- as.integer(colSums(coord.idx * cumparts))
-
-    elms.in.boxes <- .Call("countelements", cumidx, n, totparts,
-                           PACKAGE="RandomFields")
-    
-    neighbours <- .Call("countneighbours", ts.xdim, parts, locfactor, Ccumparts,
-                     elms.in.boxes, PACKAGE="RandomFields")
-
-    ## if there too many points within all the neighbours, then split
-    ## into smaller boxes
-    zaehler <- zaehler * 2
-
-    ## image(neighbours, zlim=c(0:(prod(parts)-1)))
-    if (!is.null(neighbours)) break;
-  }
-    
-  l <- list()
-  l[[1]] <- .Call("getelements", cumidx, ts.xdim, n, Ccumparts, elms.in.boxes,  
-                  PACKAGE="RandomFields")
-  l1len <- sapply(l[[1]], length)
-
-  if (length(all$x) > 0) {
-    ## now calculate the boxes for the locations where we will interpolate
-    i <- pmax(0, pmin(parts-1, floor((t(all$x) - Range[1,]) / (len / parts)) ))
-    dim(i) <- rev(dim(all$x))
-    i <- as.integer(colSums(i * cumparts))
-    
-    res.in.boxes <- .C("countelements", i, nrow(all$x), totparts,
-                       PACKAGE="RandomFields")
-    
-    notzeros <- res.in.boxes > 0
-    l[[3]] <- .Call("getelements", i, ts.xdim, as.integer(nrow(all$x)),
-                    Ccumparts, res.in.boxes, PACKAGE="RandomFields")[notzeros]
-  } else {
-    notzeros <- TRUE
-  }
-
-  ll <- .Call("getneighbours", ts.xdim, parts, locfactor, Ccumparts,
-              neighbours, PACKAGE="RandomFields")[notzeros]
-  less <- sapply(ll, function(x) sum(elms.in.boxes[x]) < minimum) | !shared
-  ##                  if !shared then all(less)==TRUE
-
-  if (any(less)) {
-    not.considered.yet <- sapply(l[[1]], length) > 0   
-    newll <- ll
-    for (i in which(less)) {
-      current <- ll[[i]]
-      elements <- sum(elms.in.boxes[current] *
-                      (shared | not.considered.yet[current]))# number of pts in a neighbourhood
-      while (elements < minimum) {
-        new <- unique(unlist(ll[current])) # neighbours of neighbours, but not
-        new <- new[which(is.na(pmatch(new, current)))]# neighbours themselves
-        nn <- elms.in.boxes[new] * (shared | not.considered.yet[new]) # how many pts are in each of these boxes?
-        ordr <- order(nn)
-        new <- new[ordr]
-        nn <- nn[ordr]
-        cs <- elements + cumsum(nn)
-        smaller <- sum(cs <= maximum) ## now, check which neighbours of
-        ## the neigbours can be included in the list of neighbours of i
-        ## to increase the number of points in the kriging neighbourhood
-        if (smaller == 0) break; ## none
-        if (smaller == length(cs) || cs[smaller] >= minimum ||
-            cs[smaller+1] > maxn) {
-          if ( (elements <- cs[length(cs)]) <= maxn ) {            
-            current <- c(current, new)            
-          } else {
-            current <- c(current, new[1:smaller])
-            elements <- cs[smaller]
-          }
-          if (smaller != length(cs)) break
-        } else {
-          ## smaller < length(cs) && cs[smaller]<minimum && cs[smaller+1]<=maxn
-          ## i.e., include the next one, but there is no chance to include
-          ## more within the rules.
-          elements <- cs[smaller+1]
-          current <- c(current, new[1:(smaller+1)])
-          break;
-        }
-      }
-      current <- current[l1len[current] > 0]
-      if (!shared) current <- current[not.considered.yet[current]]
-      newll[[i]] <- current
-      not.considered.yet[current] <- FALSE                            
-    }
-    newll <- newll[sapply(newll, length) > 0]
-    l[[2]] <- newll
-  } else l[[2]] <- ll
-
-  return(if (shared) l else lapply(l[[2]], function(x) unlist(l[[1]][x])))
-}
-
-resolve.register <- function(register){
-  stopifnot(!missing(register))
-  if (length(register) == 0) {
-    register <- .C("GetCurrentRegister", reg=integer(1))$reg
-    if (register < 0) stop("model that has been used right now cannot be determined. This happens, for instance, after the use of 'RFfit'")
-  }
-  if (!is.numeric(register)) {
- #   register <- deparse(substitute(register))   
-    register <-
-      switch(register,
-             "RFcov" = MODEL_USER,
-             "RFdistr" = MODEL_USER,
-             "RFcovmatrix" = MODEL_USER,
-             "RFvariogram" = MODEL_USER,
-             "RFpseudovariogram" =  MODEL_USER,
-             "RFsimulate" =  RFoptions()$registers$register,
-             "RFinterpolate" =  MODEL_KRIGE,
-             "RFgui" =  MODEL_GUI,
-             "RFfit" =  MODEL_MLE,
-             "RFratiotest" =  MODEL_MLE,
-             stop("register unknown")
-             )
-  }
-  stopifnot(is.numeric(register))
-  if (register < 0) stop("'register' does not have a non-negative value.")
-  return(register)
-}
-
-
-RFgetModel <- function(register, explicite.natscale, show.call=FALSE)  {
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register)) register else
-                               deparse(substitute(register)))
-  modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
-            if (explicite.natscale)  GETMODEL_DEL_NATSC else
-            GETMODEL_SOLVE_NATSC)
-  if (show.call) modus <- modus + 10
-  m <- GetModel(register=register, modus=modus)
-  class(m) <-  "RM_model"
-  m
-}
-           
-           
-GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
-                     spConform=RFoptions()$general$spConform,
-                     do.notreturnparam=FALSE,
-                     replace.select = FALSE) {
-  ## modus:
-  ##  AS_SAVED : Modell wie gespeichert
-  ##  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
-  ##  SOLVE_NATSC : natscale soweit wie moeglich zusammengezogen (natsc werden
-  ##               drauf multipliziert; Rest wie gespeichert)
-  ##  DEL_MLE : nur natscale_MLE werden geloescht
-  ##  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
-  ##               drauf multipliziert; Rest wie gespeichert)
-  ## 
-  ## modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
-
-  ## do.notreturnparam : if true, then also parameters with the flag
-  ##                      DONOTRETURN are returned
-
-  ## spConform : only the names of the models
-
-  ## replace.select : if TRUE then model "select " is replaced by model
-  ##                  model "plus" -- they should be joined anyway
-  
-
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register))  register else
-                               deparse(substitute(register)))
-  if (missing(register)) register <- 0
-  
-  model <- .Call("GetModel", as.integer(register), as.integer(modus),
-                 as.integer(spConform), as.integer(do.notreturnparam),
-                 PACKAGE="RandomFields")
-
-  if (replace.select) {
-    if (model[[1]] == ZF_SELECT[1]) {
-      model[[1]] <- ZF_SYMBOLS_PLUS
-      stopifnot(names(model)[2]=="subnr")
-      model[[2]] <- NULL
-    }    
-  }
-  return(model)
-}
-
-
-GetPracticalRange <- function(model, param, dim=1) {
-  ## dim=spdim=tsdim
-  model <- PrepareModel(model, param)
-#  userdefined <- GetParameterModelUser(model)
-  InitModel(MODEL_USER, list("Dummy", model), dim) 
-  natscl <- 
-    .C("UserGetNatScaling", natscl = double(1), PACKAGE="RandomFields")$natscl
-  .C("DeleteKey", MODEL_USER)# to do : nicht sauber
-  return(1.0 / natscl)
-}
-
-
-
 
 PrintModelList <-function (operators=FALSE, internal=FALSE,
                            newstyle=TRUE) {
@@ -293,101 +16,43 @@ PrintModelList <-function (operators=FALSE, internal=FALSE,
 
 
 
-
-distInt <- function(x) {
-  ##
-  ## only for gene data where each coordinates takes
-  ## only three neighboured integer values !
-  stopifnot(is.matrix(x), is.integer(x))
-  n <- nrow(x)
-  genes <- ncol(x)
-  .Call("distInt", t(x), n, genes, PACKAGE="RandomFields")
-}
-
-
-
-
-parameter.range <- function(model, param, dim=1){
-  cat("sorry not programmed yet\n")
-  return(NULL)
- 
-
-#parampositions < - function(model, param, trend=NULL, dim, print=1) {
-#  stopifnot(!missing(dim))
-#  model <- PrepareModel(model, param, trend=trend, nugget.remove=FALSE)
-#  .Call("Get NA Positions", reg, model, as.integer(dim), as.integer(dim),
-#        FALSE, FALSE, as.integer(print), PACKAGE="RandomFields")
-#}
-#  pm <- PrepareModel(model=model, param=param, nugget.remove=FALSE)        
-#  storage.mode(dim) <- "integer"
-#  ResGet <- .Call("SetAnd  ?? GetModelInfo",
-#                  reg,
-#                  pm, dim, Time, dim, FALSE, MaxNameCharacter=254,
-#                  TRUE, TRUE,
-#                  PACKAGE="RandomFields")
-#  minmax <- ResGet$minmax[, 1:2]
-#  dimnames(minmax) <-
-#    list(attr(ResGet$minmax, "dimnames")[[1]], c("min", "max"))
-#  return(minmax)
-}
-
-GetModelRegister <- function(name) {
-  stopifnot(is.character(name))
-  return(as.integer(.C("GetModelRegister", name, integer(1),
-                       PACKAGE="RandomFields")[[2]]))
-}
-
-
-cmplists <- function(l, m) {
-  stopifnot(is.list(l) || is.list(m))
-  if (length(l) == 0) {
-    if (length(m)==0) return(c("empty lists =", names(l)))
-    else return(list("empty first list, but not second:", m))
-  } else if (length(m) == 0)
-    return(list("empty second list, but not first:", m))
-  n <- list()
-  for (i in 1:min(length(m), length(l))) {
-     if (xor(is.list(l[[i]]), is.list(m[[i]])) ||
-        xor(is.numeric(l[[i]]), is.numeric(m[[i]])) ||
-        xor(is.logical(l[[i]]), is.logical(m[[i]])) ||
-        xor(is.matrix(l[[i]]), is.matrix(m[[i]])) ||
-        xor(is.array(l[[i]]), is.array(m[[i]])) ||
-        xor(is.character(l[[i]]), is.character(m[[i]]))
-        ) {
-      n[[i]] <- list(first = l[[i]], second = m[[i]])
+Print <- function(..., digits=6, empty.lines=2) { #
+  max.elements <- 99
+  l <- list(...)
+  n <- as.character(match.call())[-1]
+  cat(paste(rep("\n", empty.lines), collapse="")) #
+  for (i in 1:length(l)) {
+    cat(n[i]) #
+    if (!is.list(l[[i]]) && is.vector(l[[i]])) {
+      L <- length(l[[i]])
+      if (L==0) cat(" = <zero>")#
+      else {
+        cat(" [", L, "] = ", sep="")
+        cat(if (is.numeric(l[[i]]))
+            round(l[[i]][1:min(L , max.elements)], digits=digits)#
+            else l[[i]][1:min(L , max.elements)]) #
+        if (max.elements < L) cat(" ...")
+      }
     } else {
-      if (is.list(l[[i]])) n[[i]] <- cmplists(l[[i]], m[[i]]) else 
-      if (is.numeric(l[[i]]) | is.logical(l[[i]])) {
-        if (length(l[[i]]) != length(m[[i]]) ||
-            is.array(l[[i]]) && any(dim(m[[i]]) != dim(n[[i]])))
-          n[[i]] <- list("differ in size", names(l)[[i]],
-                         first=l[[i]], second=l[[i]])
-        else {
-          idx <- is.na(l[[i]]) != is.na(m[[i]]) |
-                 (!is.na(l[[i]]) && l[[i]] != m[[i]])
-          n[[i]] <-
-            if (!any(idx))
-              c(if (is.numeric(l[[i]])) "num =" else "logi=", names(l)[[i]])
-            else list(c(names(l)[i], which(idx)), l[[i]], m[[i]])
-        }
-      } else
-      if (is.character(l[[i]])) {     
-        idx <-  l[[i]] != m[[i]]
-        n[[i]] <- if (!any(idx)) c("char =", names(l)[[i]], l[[i]])
-                  else list(c(names(l)[i], which(idx)), l[[i]], m[[i]])
+       if (is.list(l[[i]])) {
+        cat(" =  ") #
+        str(l[[i]], digits.d=digits) #
       } else {
-        n[[i]] <- c("cannot be compared", names(l)[[i]])
+        cat(" =")
+        if (length(l[[i]]) <= 100 && FALSE) {
+          print(if (is.numeric(l[[i]])) round(l[[i]], digits=digits)#
+                else l[[i]])
+        } else {
+          if (length(l[[i]]) > 1 && !is.vector(l[[i]]) && !is.matrix(l[[i]])
+              && !is.array(l[[i]])) cat("\n")
+          str(l[[i]]) #
+        }
       }
     }
+    cat("\n")
   }
-  if (length(l) > length(m))
-    for (i in (length(m)+1):length(l))
-      n[[i]] <- list("only first list has entry", l[[i]])
-   if (length(m) > length(l))
-    for (i in (length(l)+1):length(m))
-      n[[i]] <- list("only second list has entry", m[[i]])
-  return(n)
 }
+
 
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
@@ -512,6 +177,149 @@ FinalizeExample <- function() {
 }
 
 
+
+showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
+  files <- dir(path)
+  result <- character(length(files))
+  for (i in 1:length(files)) {
+    cat("\n\n\n\n\n")
+    system(paste("grep \"\\examples\" -A 10000 ", path, "/", files[i], sep=""))
+    result[i] <- readline(files[i])
+  }
+  result <- cbind(files, result)
+  result <- result[result[, 2]!= "", ]
+  result[result[, 2]=="t", 2] <- "To Do"
+  result[result[, 2]=="s", 2] <- "dontshow"
+  return(result)
+}
+# showManpages()
+
+compareVersions <- function(path = "~/svn/RandomFields/cran") {
+  l <- list(list(subpath="RandomFields/R", pattern="*R"),
+            list(subpath="RandomFields/src", pattern="*\\.h"),
+            list(subpath = "RandomFields/src", pattern = "*\\.cc"))
+  
+  for (i in 1:length(l)) {
+    subpath <- l[[i]]$subpath
+    pattern <- l[[i]]$pattern
+    files <- dir(path=subpath, pattern=pattern)
+    
+    for (f in files) {
+      cmd <- paste("diff ",  path, "/", subpath, "/", f, " ",
+                   subpath,"/", f, sep="")
+      Print(cmd)  #
+      system(cmd)
+    }
+  }
+}
+
+
+
+ScreenDevice <- function(height, width) {
+  if (height > 0  && width > 0) {
+    GD <- getOption("device")
+
+    ispdf <- is.logical(all.equal(GD, "pdf"))
+    isjpg <- is.logical(all.equal(GD, "jpeg"))
+    if (ispdf) {
+      GD <- pdf
+    } else if (isjpg) {
+      GD <- jpeg
+    } else {
+      ispdf <- is.function(GD) && is.logical(all.equal(args(pdf), args(GD)))
+      isjpg <- is.function(GD) && is.logical(all.equal(args(jpeg), args(GD)))
+    }
+   
+#   Print(args(pdf), args(GD), all.equal(args(pdf), args(GD)),
+  #        all.equal(args(jpeg), args(GD)),
+  #        is.function(GD), RFoptions()$graphics)
+    
+    if (ispdf || isjpg) {
+      
+      ##     Print(ispdf, isjpg)
+      ##     Print(ispdf, RFoptions()$graphics        )
+      
+      graphics <- RFoptions()$graphics        
+      if (graphics$filenumber == 999)
+        stop("number of pictures exceeds max. number of pictures")        
+      file <- graphics$file
+      ext <- c(".pdf", ".jpg")[isjpg + 1]
+      
+       if (file != "") {
+        if (!graphics$onefile) {
+         file <- paste(file,
+                        formatC(format="d", flag="0", graphics$filenumber,
+                                width=3),
+                        ext, sep="")
+         RFoptions(graphics.filenumber = graphics$filenumber + 1)
+        } else file <- paste(file, ext, sep="")
+        ##            Print(file, dev.list())
+         if (ispdf) GD(height=height, width=width, onefile=FALSE, file=file)
+        else if (isjpg) GD(height=height, width=width,
+                           file=file, units="in", res=graphics$resolution)
+        else stop("device not recognized by 'RandomFields'")
+       return()
+      } else {
+        if (isjpg) stop("'file' in 'RFoptions' not set.")
+      }
+    }
+     
+    args <- names(as.list(args(GD)))
+    if (all(c("width", "height") %in% args) &&
+        ( !any(c("file", "filename") %in% args)) || ispdf) {
+      GD(height=height, width=width)        
+      ##      Print("OK", height, width, RFoptions()$graphics, par()$cex)
+     return()
+    }
+    
+   if (RFoptions()$internal$warn_aspect_ratio) {
+      RFoptions(warn_aspect_ratio = FALSE)
+      cat("The graphical device does not seem to be a standard screen device. Hence the\naspect ratio might not be correct. (This message appears only one per session.)")
+    }
+  }
+}
+
+
+#restore_par <- function(oldpar) {
+#  do.call(graphics::par, oldpar)
+#  graphics::par(cex = oldpar$cex) ## muss extra aufgerufen werden. noch mehr?
+#}
+
+ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
+                          dw = 2.5, w.outer=0.7) {
+  if (is.na(graphics$always_open_screen)) {
+      open <- interactive()
+      RFoptions(graphics.always_open_screen = open)
+  } else open <- graphics$always_open_screen
+
+  if (graphics$always_close_screen) {
+    close.screen(all.screens=TRUE)
+    if (is.finite(graphics$height) && graphics$height>0) {
+      if (length(dev.list()) > 0) dev.off() ## OK
+    }
+  }
+  
+  H <-  graphics$height
+  if (is.finite(H) && H>0) {
+    H <- H * pmin(1, graphics$increase_upto[1] / figs[1],
+                  graphics$increase_upto[2] / figs[2])
+    DH <- H * dh / (dh + h.outer)
+    HO <- H - DH
+    curH <- figs[1] * DH + HO
+    W <- H * (dw + w.outer) / (dh + h.outer)
+    DW <- W * dw / (dw + w.outer)
+    WO <- W - DW
+    curW <-  figs[2] * DW + WO
+    if (open) ScreenDevice(height=curH, width=curW)
+    return(c(curH, curW)) 
+  } else {
+    return(rep(NA, 2))
+  }
+}
+
+
+
+
 reverse_dependencies_with_maintainers <-
   function(packages, which = c("Depends", "Imports", "LinkingTo"),
            recursive = FALSE) {
@@ -547,6 +355,7 @@ Dependencies <- function(install = all(pkgs == all.pkgs),
   ## getOption("repos")["CRAN"]
   URL <- "http://cran.r-project.org/src/contrib/"
   if (install) {
+    system(paste("mkdir ", dir))
     system(paste("rm ", dir, "/*tar.gz*", sep=""))
     for (i in 1:length(pkgs)) {
       cat("PACKAGE:", PKGS[i], ":", i, "out of ", length(pkgs),"\n")
@@ -572,39 +381,3 @@ Dependencies <- function(install = all(pkgs == all.pkgs),
 # R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
 
 #Dependencies()
-
-showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
-  files <- dir(path)
-  result <- character(length(files))
-  for (i in 1:length(files)) {
-    cat("\n\n\n\n\n")
-    system(paste("grep \"\\examples\" -A 10000 ", path, "/", files[i], sep=""))
-    result[i] <- readline(files[i])
-  }
-  result <- cbind(files, result)
-  result <- result[result[, 2]!= "", ]
-  result[result[, 2]=="t", 2] <- "To Do"
-  result[result[, 2]=="s", 2] <- "dontshow"
-  return(result)
-}
-# showManpages()
-
-compareVersions <- function(path = "~/sicherung/randomfields_3") {
-  l <- list(list(subpath="RandomFields/R", pattern="*R"),
-            list(subpath="RandomFields/src", pattern="*\\.h"),
-            list(subpath = "RandomFields/src", pattern = "*\\.cc"))
-  
-  for (i in 1:length(l)) {
-    subpath <- l[[i]]$subpath
-    pattern <- l[[i]]$pattern
-    files <- dir(path=subpath, pattern=pattern)
-    
-    for (f in files) {
-      cmd <- paste("diff ",  path, "/", subpath, "/", f, " ",
-                   subpath,"/", f, sep="")
-      Print(cmd)  #
-      system(cmd)
-    }
-  }
-}
-

@@ -58,7 +58,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                             ...) {
 
 
-  RFoptOld <- internal.rfoptions(...)
+  RFoptOld <- internal.rfoptions(seed=NA, ...)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
   refit <- RFopt$fit$cross_refit

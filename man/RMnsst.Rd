@@ -53,7 +53,8 @@ RMnsst(phi, psi, delta, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
- \command{\link{RMmodel}},
+  \command{\link{RMgennsst}},
+\command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }

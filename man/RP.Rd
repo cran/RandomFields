@@ -21,7 +21,7 @@
  }
 }
 \seealso{
-  \link{RC}, \link{RR}, \link{RM}, \link{RF}
+  \link{RC}, \link{RR}, \link{RM}, \link{RF}, \link{R.}
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}

@@ -172,7 +172,7 @@ avltr_destroy (avltr_tree *tree, avl_node_func free_func)
   free (tree);
 }
 
-/* avltr_destroy() with FREE_FUNC hardcoded as free(). */
+/* avltr_destroy() with FREE_FUNC hardcoded as FREE(). */
 void
 avltr_free (avltr_tree *tree)
 {

@@ -1,4 +1,5 @@
 \name{Tail Correlation Funtioncs}
+\alias{tcf}
 \alias{tail correlation functions}
 \title{Covariance models valid for max-stable random fields}
 \description{

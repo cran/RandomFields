@@ -1,4 +1,5 @@
 \name{Coordinate systems}
+\alias{zenit}
 \alias{coordinate system}
 \alias{coordinate systems}
 \title{Coordinate systems}
@@ -91,7 +92,7 @@
       If \code{coord_system} is \code{"earth"} the coordinates are transformed
       to cartesian coordinates before any model is considered.
       
-      \item \code{"plane"} \cr
+      \item \code{"orthographic"}, \code{"genomic"} \cr
       If \code{coord_system} is \code{"earth"} the locations are projected
       to a plane before any
       model is considered.
@@ -219,8 +220,6 @@ RFcov(model=RMexp(s=s), x, x, coord_sys="earth", zenit=c(2.5, 2.4),
 RFcov(model=RMexp(s=s * 6350 / 180 * pi), x, x, coord_sys="earth",
       zenit=c(2.5, 2.5), new_coord_sys="gnomonic") # projection onto a plane
 ##      first. Then the scale is interpreted in usual, i.e. cartesian, sense
-
-
 
 \dontshow{FinalizeExample()}
 }

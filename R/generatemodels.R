@@ -4,23 +4,48 @@
 ## of class 'RMmodels'
 
 #   rfGenerateModels(TRUE)
-param.text.fct <- function(catheg, names, havedistr=TRUE){
-  x <- paste("if (hasArg(", names, ") && !is.null(subst <- substitute(", names,
-             "))) {\n    u <- try(is.numeric(",
-             names,
-             ") || is.logical(", names,
-             ") || is.language(", names,
-             ")\n\t || is.list(", names,
-             ") || is(", names,
-             ", class2='RMmodel'), silent=TRUE)\n",
-             "    if (is.logical(u) && u) ", catheg, "[['", names,
-             "']] <- ", names,
-             "\n    else if (substr(deparse(subst), 1, 1)=='R') ", catheg,
-             "[['", names,  "']] <- ", names,
-             "\n    else ", sep="")
+param.text.fct <- function(catheg, names, havedistr=TRUE, Const=NULL,
+                           ismath=FALSE){
+  ifHasArg <- paste("if (hasArg('", names,
+                    "') && !is.null(subst <- substitute(", names,
+                    "))) {\n", sep="")
+  EndHasArg <- rep("}", length(names))
+  if (ismath && any(idx <- names == "new" & Const == OtherType + 2)) {
+    ifHasArg[idx] <- "if (!(hasArg('new') && !is.null(subst <- substitute(new))))\n  new <- UNREDUCED\n"
+    EndHasArg[idx] <- ""
+  }
+  
+  EndCharacter <- ifCharacter <- rep("", length(names))
+  if (length(Const) > 0 && any(idx <- Const > OtherType) ) {
+    ifCharacter[idx] <- 
+      paste("   if (is.character(", names[idx], ")) {",
+            catheg, "[['", names[idx], "']] <- a <- pmatch(",
+            names[idx],
+            ",", NAMES_OF_NAMES[Const[idx] - OtherType],
+            ") - 1\n",
+            "     if (any(is.na(a))) stop('unknown string value') } else {\n", sep="")
+    EndCharacter[idx] <- "}\n"
+  } 
+   
+
+x <- paste(ifHasArg,
+           ifCharacter,
+           "    u <- try(is.numeric(",
+           names,
+           ") || is.logical(", names,
+           ") || is.language(", names,
+           ")\n\t || is.list(", names,
+           ") || is(", names,
+           ", class2='RMmodel'), silent=TRUE)\n",
+           "    if (is.logical(u) && u) ", catheg, "[['", names,
+           "']] <- ", names,
+           "\n    else if (substr(deparse(subst), 1, 1)=='R') ", catheg,
+           "[['", names,  "']] <- ", names,
+           "\n    else ", sep="")
   if (havedistr) {
     paste(x, catheg, "[['", names,
-          "']] <- do.call('", ZF_DISTR[1], "', list(subst))\n  }", sep="")
+          "']] <- do.call('", ZF_DISTR[1], "', list(subst))\n ", EndCharacter,
+          EndHasArg, sep="")
   } else {
     paste(x, "stop('random parameter not allowed')\n  }");
   }
@@ -35,11 +60,9 @@ rfGenerateModels <- function(assigning,
   # if file already exists, remove it.
   if (assigning && file.exists(RMmodels.file))
     file.remove(RMmodels.file)
-#  Print(RMmodels.file, file.exists(RMmodels.file)) #
-#  Print(RMmodels.file)
   
   write(file = RMmodels.file, append = TRUE,
-        "\n## This file is created automatically by 'rfGenerateModels'.\n\n")
+        "\n## This file has been created automatically by 'rfGenerateModels'.\n\n")
 
   ## defined constants
   diminf <- 999999
@@ -50,23 +73,20 @@ rfGenerateModels <- function(assigning,
   # inialized attribute parameter
   
   nr <- GetCurrentNrOfModels(TRUE)
-  va <- nr * MAXVARIANTS
+  vn <- nr * MAXVARIANTS
 
   # get attribute parameter
-  A <- .C("GetAttr", nr=integer(va), type=integer(va), operator=integer(va),
-          monotone=integer(va), finiterange=integer(va),
-          simpleArguments=integer(va), internal=integer(va),
-          domains=integer(va), isos=integer(va),
-          maxdim=integer(va), vdim=integer(va),
+  A <- .C("GetAttr", nr=integer(vn), type=integer(vn), operator=integer(vn),
+          monotone=integer(vn), finiterange=integer(vn),
+          simpleArguments=integer(vn), internal=integer(vn),
+          domains=integer(vn), isos=integer(vn),
+          maxdim=integer(vn), vdim=integer(vn),
           includevariants= as.integer(TRUE),
+          paramtype = integer(vn * MAXPARAM),
           va = integer(1),
           PACKAGE="RandomFields")
   va <- A$va
-  
-#  idx <- .C("GetModelList", idx=integer(nr^2), as.integer(TRUE),
-#            PACKAGE="RandomFields")$idx
- # dim(idx) <- c(nr, nr)
-#  Print(A)
+  dim(A$paramtype) <- c(MAXPARAM, vn)
 
   i <- 1
   while (i <= va) {
@@ -83,6 +103,8 @@ rfGenerateModels <- function(assigning,
     ret <- .C("GetModelName",as.integer(A$nr[i]),
               name=empty, nick=empty2, PACKAGE="RandomFields")
     nick <- ret$nick
+    ismath <- substr(nick, 1, 2) == "R."
+    
     #cat(i, nick, "\n");
 
     type <- A$type[i]
@@ -110,14 +132,14 @@ rfGenerateModels <- function(assigning,
     paramnames <- .Call("GetParameterNames", as.integer(A$nr[i]),
                         PACKAGE="RandomFields")
     internal <- which(paramnames == INTERNAL_PARAM)
-    if (length(internal) > 0) paramnames <- paramnames[-internal]   
+    if (length(internal) > 0) paramnames <- paramnames[-internal]
     elmnt <- which(paramnames == "element")
     if (length(elmnt) > 0)  {
       stopifnot(length(elmnt) == 1)
       paramnames <- c(paramnames[-elmnt], "element")
     }
+        
     par.intern <- paramnames %in% subnames
- #   Print(subnames, paramnames)
     
     if (any(par.intern)) stop(nick, ": subnames (",
                               paste(subnames, collapse=", "),
@@ -129,10 +151,17 @@ rfGenerateModels <- function(assigning,
     ex.sub <- length(subnames.notintern)>0
      
     ex.par <- length(paramnames)>0
-    ex.std <- ((nick != ZF_DOLLAR[1] && any(isNegDef(type))) ||
-               nick == "RMball"
+    ex.std <- ((nick != ZF_DOLLAR[1] && any(isVariogram(type))) ||
+               nick %in% c("RMball", "RMsum", "RMconstant", "RMfixcov")
                || nick == ZF_PLUS[1] || nick[1] == ZF_MULT[1]) &&
-                 nick != "RMtrafo"
+                 !(nick %in% c("RMtrafo",  "RMsine")
+                  && !ismath)
+    std.variables <-
+      if (nick %in%  c("RMconstant", "RMfixcov")) "var"
+      else c("var", "scale", "Aniso", "proj")
+    
+  # Print(nick %in%  c("RMconstant"), std.variables, ex.std)
+   #stopifnot(i < 50)
     
     
     cat(i, "\t", nick, ",\t\told name ", ret$name, "\t", ex.std, "\t",
@@ -153,9 +182,7 @@ rfGenerateModels <- function(assigning,
                 paste(paste(paramnames, collapse=", "), sep="")
               },
               if (ex.par && ex.std) ", ",
-              if (ex.std){
-                "var, scale, Aniso, proj"
-              }, 
+              if (ex.std) paste(std.variables, collapse =", "), 
               ")",
               sep="")
     }
@@ -163,7 +190,8 @@ rfGenerateModels <- function(assigning,
      
     if (ex.par) {
       par.body <- param.text.fct("par.model", paramnames,
-                                 any(isNegDef(type)) || any(type==ShapeType))
+                                 any(isVariogram(type)) || any(type==ShapeType),
+                                 A$paramtype[1:length(paramnames), i], ismath)
       idx <- paramnames == 'envir'
       if (any(idx))
         par.body[idx] <-
@@ -183,15 +211,14 @@ rfGenerateModels <- function(assigning,
             if (ex.anysub) "\n  ",
             "\n  ",
             ## get model specific parameter
-            if (ex.par) paste(par.body, collapse="\n  "),
+            if (ex.par) paste(par.body, collapse="\n"),
             if (ex.par) "\n  ",
             ## get general model parameter
             if (ex.std) {
-              paste(param.text.fct("par.general",
-                                   c("var", "scale", "Aniso", "proj")),
+              paste(param.text.fct("par.general", std.variables),
                     collapse="\n  ")
             },
-                      "\n  ",
+            "\n  ",
              # create RMmodel object
             "model <- new('", ZF_MODEL, "', ",
             "call = cl, ",
@@ -258,10 +285,8 @@ rfGenerateModels <- function(assigning,
 
 
 kind <- function(Zeilen, i, start, cont="", ignore=" ", endofname=" ") {
- # Print(Zeilen[i], substr(Zeilen[i], 1, nchar(start)) == start, substr(Zeilen[i], 1, nchar(start)) , start)
   if (substr(Zeilen[i], 1, nchar(start)) == start) {
     s <- substring(Zeilen[i], nchar(start) + 1)
- #   Print(s)
     j <- 2
     while (j <= nchar(s) && substr(s, j, j) != endofname) j <- j + 1
     stopifnot(j <= nchar(s)) 
@@ -283,7 +308,6 @@ kind <- function(Zeilen, i, start, cont="", ignore=" ", endofname=" ") {
       }
     }
     res <- list(name=name, value=value, RC=RC, i=i)
- #   Print(res)
     return(res)
   } else return(NULL)
 }
@@ -301,7 +325,6 @@ CC <- function(x) {
     warn <- options()$warn
     options(warn = -1)
     y <- try(as.numeric(x), silent=TRUE)
-#    Print(x, y)  
     options(warn = warn)
     if (Real <- !class(y) == "try-error") {
       Integer <- nchar(strsplit(x, "\\.")[[1]][1]) == nchar(x)
@@ -325,15 +348,13 @@ rfGenerateConstants <-
   i <- 1
   typedef <- character(0)
   write(file = RCauto.file,
-        "# This file is created automatically by 'rfGenerateConstants'")
+        "# This file has been created automatically by 'rfGenerateConstants'")
   while (i <= length(s)) {    
     if (!is.null(k <- kind(s, i, "#define", "\\", ""))) {
       value <- k$value
       if (length(typedef) > 0)
         for (j in 1:length(typedef)) {
-          #Print(value, typedef[j])
           value <- paste(strsplit(value, typedef[j])[[1]], collapse=" ")
-         # Print(value)
         }
       v <- clean(k$name)
       w <- if (k$RC) paste("RC_", v, " <-", sep="") else ""
@@ -363,17 +384,14 @@ rfGenerateConstants <-
   
   s <- scan(paste(RFpath, "RandomFields/src/AutoRandomFields.cc", sep="/"),
             what=character(), sep="\n", blank.lines.skip=FALSE, skip=1)
-  #Print(tail(s))
   i <- 1
   while (i <= length(s)) {
     if (!is.null(k <- kind(s, i, "  *", c(",", "{"), " ", endofname="["))) {
-      #Print(k)
       value <- strsplit((k$value), "\\{")[[1]]
       value <- strsplit(value[2], "\\}")[[1]][1]
       v <- clean(k$name)
       w <- if (k$RC) paste("RC_", v, " <-", sep="") else ""
       line <- paste(w, v, "<-\nc(", value, ")")
-     #cat(line, "\n")
       write(file = RCauto.file, append = TRUE, line)
       write(file = RCauto.file, append = TRUE, "")
    } else write(file = RCauto.file, append = TRUE, "")
@@ -386,29 +404,212 @@ rfGenerateConstants <-
 
 rfGenerateTest <- function(files = NULL,
                            RFpath = "~/R/RF/svn/RandomFields/RandomFields") {
+   start.after <-  "\\dontrun"
+   end.before <- c("\\", "}")
+   initial.text <- "if (RFoptions()$internal$do_tests){"
+   final.text <- "}"
+   comment <- "%"
+
    if (length(files) == 0) return()
+   ncomment <- nchar(comment)[1]
+   nendbefore <- nchar(end.before)[1]
    for (f in 1:length(files)) {
-    cat("creating ", f, ".R", sep="")
+    cat("creating ", f, ".R\n", sep="")
     s <- scan(paste(RFpath, "/man/", files[f], ".Rd", sep=""),
               what=character(), sep="\n", blank.lines.skip=FALSE, skip=2)
     i <- 1
-    while (i <= length(s) && substr(s[i], 1, 8) != "\\dontrun") i <- i + 1
+    while (i <= length(s) && substr(s[i], 1,
+               nchar(start.after)) != start.after) i <- i + 1 
     i <- i + 1
     if (i <= length(s))
       for (j in i:length(s)) {
-        if (substr(s[j], 1, 1) == "%" ) s[j] <- ""
-        if (substr(s[j], 1, 1) %in% c("\\", "}") ) {
+        if (substr(s[j], 1, ncomment) %in% comment) s[j] <- ""
+        if (substr(s[j], 1, nendbefore) %in% end.before) {
           j <- j -1
           break;
         }
       }
     if (j >= i) {
       out <- paste(RFpath, "/tests/", files[f], ".R", sep="")
-      write(file = out, append = FALSE, "if (RFoptions()$internal$do_tests){")
+      write(file = out, append = FALSE, initial.text)
       write(file = out, append = TRUE, s[i:j])
-      write(file = out, append = TRUE, "}")
+      write(file = out, append = TRUE, final.text)
     }
   }
 
-   cat(out, "created")
+  return(NULL)
 }
+
+
+
+
+
+rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
+                            ## copy also in ../private/lit
+                            Cfile = "QMath",
+                            RFpath = "~/R/RF/svn/RandomFields/RandomFields") {
+  prefix <- "R."
+  start.after <-  "/* Unary functions"
+  end.before <- c("#define carg")
+  initial.text <- "if (RFoptions()$internal$do_tests){"
+  final.text <- "}"
+  comment <- c("/*", "#i", "#e")
+  
+  if (length(files) == 0) return()
+  ncomment <- nchar(comment)[1]
+  nendbefore <- nchar(end.before)[1]
+  cfile <-  paste(RFpath, "/src/", Cfile, ".cc", sep="")
+  write(file = cfile,
+        c("// This file has been created automatically by 'rfGenerateMaths'",
+          "#include <math.h>",
+          "#include \"RF.h\"",
+          "#include \"primitive.h\""
+          ))
+  manfile <- paste(RFpath, "/man/", Cfile, ".Rd", sep="")
+  write(file = manfile, 
+        scan(paste(manfile, 0, sep="."),
+             what=character(), sep="\n", blank.lines.skip=FALSE, skip=0))  
+
+  Rfile <- paste(RFpath, "/R/", Cfile, ".R", sep="")
+  write(file = Rfile, 
+          "# This file has been created automatically by 'rfGenerateMaths'")
+  
+  usage <- include <- list()
+  for (f in 1:length(files)) {
+    cat("scanning ", f, files[f],"\n")
+    s <- scan(files[f], what=character(), sep="\n", blank.lines.skip=FALSE,
+              skip=0)
+    i <- 1
+    while (i <= length(s) && substr(s[i], 1, nchar(start.after)) !=start.after){
+      i <- i + 1
+    }
+    i <- i + 1
+ 
+    usage[[f]] <- include[[f]] <- rep("", length(s))
+    while (i <= length(s)) {
+
+       if (substr(s[i], 1, nendbefore) %in% end.before) break
+      if (!is.null(k <- kind(s, i, "#define", "\\", " ", ")"))) {
+        x <- strsplit(k$name, "\\(")
+        name <- clean(x[[1]][1])
+      
+       if (!(name %in% c("frexp", "ldexp", "remquo", "scalbn", "scalbln",
+                          "ilogb", "fma"))) { 
+          args <- length(strsplit(x[[1]][2], ",")[[1]])
+                                        #cat(name, args, k$name, "\n")
+          write(file = cfile, append = TRUE,
+                paste("void Math", name,
+                      "(double *x, cov_model *cov, double *v){",
+                      "\nMATH_DEFAULT\n",
+                      "*v = ", name, "(w[0]",                    
+                      if (args == 2) ", w[1]",
+                      "); \n}\n\n", sep=""))
+          
+          include[[f]][i] <- paste(
+              'IncludeModel(".', name, '", MathDefinition, 0, 0, ', args,
+              ', NULL, XONLY', ## auch fuer kernel schreiben??
+              ',\n\t PREVMODELI,checkMath,rangeMath, PREF_TREND,\n\t',
+              'false, SCALAR, PREVMODEL_DEP, false, false); \n',
+              'nickname("', name, '");\n',
+              'kappanames("a", REALSXP',
+              if (args == 2) ', "b", REALSXP', ');\n',
+              'addCov(Math', name, ', NULL, NULL);\n',
+              'AddVariant(TrendType, PREVMODELI);\n', sep="")
+          
+          write(file = manfile, append = TRUE,
+                paste("\\alias{", prefix, name, "}", sep=""))
+          usage[[f]][i] <- paste(prefix, name, "(a", if (args == 2) ", b",
+                                 ")", sep="")
+
+          if (name %in% c(
+"asin",
+"atan",
+"atan2",
+"cos",
+"sin",
+"tan",
+"acosh",
+"asinh",
+"atanh",
+"cosh",
+"sinh",
+"tanh",
+"exp",
+"log",
+"expm1",
+"log1p",
+"logb",
+#"exp2",
+"log2",
+#"pow",
+"sqrt",
+#"hypot",
+#"cbrt",
+#"ceil",
+"fabs", # abs
+"floor",
+#"fmod",
+#"nearbyint",
+"round",
+"trunc",
+#"lrint",
+#"llrint",
+#"lround",
+#"llround",
+#"copysign",
+#"erf",
+#"erfc",
+"tgamma", # gamma
+"lgamma",
+#"rint",
+#"nextafter",
+#"nexttoward",
+#"remainder",
+#"fdim",
+"fmax",
+"fmin")) {
+           Rname <- if (name == "fabs") "abs" else
+           if (name == "tgamma") "gamma" else
+           if (name == "fmin") "min" else
+           if (name == "fmax") "max" else name
+           
+           write(file = manfile, append = TRUE,
+                paste("\\alias{", Rname, "}", sep=""))
+           args <- (if (Rname == "atan2") "y, x"
+                    else if (Rname %in% c("min", "max")) "..."
+                    else if (Rname %in% c("round")) "x, ..."
+                    else "x")
+           fstarg <- (if (Rname == "atan2") "y"
+                    else if (Rname %in% c("min", "max")) "list(...)[[1]]"
+                    else "x")
+          usage[[f]][i] <- paste(Rname, "(", args, ")\n",
+                                 usage[[f]][i], sep="")
+
+           write(file = Rfile, append=TRUE,
+                paste(Rname,
+                      " <- function(", args, ") if (is(", fstarg,
+                      ", ZF_MODEL)) ", prefix, name, 
+                      "(", args, ") else ", "base::", Rname,"(",
+                      args, ")", sep=""))
+         }
+        } # !name in
+      } # !is.null k
+      i <- if (is.null(k)) i+1 else k$i
+    }
+  }
+
+  write(file = cfile, append=TRUE, "void includeStandardMath() {")
+  write(file = manfile, append=TRUE,
+        scan(paste(manfile, 1, sep="."),
+             what=character(), sep="\n", blank.lines.skip=FALSE, skip=0))  
+  for (f in 1:length(files)) {
+    write(file = cfile, append=TRUE, include[[f]][include[[f]] != ""]);
+    write(file = manfile, append=TRUE, usage[[f]][usage[[f]] != ""]);
+  }
+  write(file = cfile, append=TRUE, "}")
+  write(file = manfile, append=TRUE,
+        scan(paste(manfile, 2, sep="."),
+             what=character(), sep="\n", blank.lines.skip=FALSE, skip=0))
+  
+  return(NULL)
+ }
