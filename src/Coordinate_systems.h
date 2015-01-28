@@ -14,90 +14,90 @@ void Stat2Stat(double *x, cov_model *cov, double *v);
 void Nonstat2iso(double *x, double *y, cov_model *cov, double *v);
 void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v);
 void Nonstat2Stat(double *x, double *y, cov_model *cov, double *v);
-void logiso2iso(double *x, cov_model *cov, double *v, double *sign);
-void logspiso2spiso(double *x, cov_model *cov, double *v, double *sign);
-void logspacetime2iso(double *x, cov_model *cov, double *v, double *sign);
-void logStat2iso(double *x, cov_model *cov, double *v, double *sign);
+void logiso2iso(double *x, cov_model *cov, double *v, double *Sign);
+void logspiso2spiso(double *x, cov_model *cov, double *v, double *Sign);
+void logspacetime2iso(double *x, cov_model *cov, double *v, double *Sign);
+void logStat2iso(double *x, cov_model *cov, double *v, double *Sign);
 void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
-		    double *sign);
-void logStat2spacetime(double *x, cov_model *cov, double *v, double *sign);
+		    double *Sign);
+void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign);
 void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
-			  double *sign);
-void logStat2Stat(double *x, cov_model *cov, double *v, double *sign);
+			  double *Sign);
+void logStat2Stat(double *x, cov_model *cov, double *v, double *Sign);
 void logNonstat2Stat(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign);
+		     double *Sign);
 void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v);
 void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
-			double *sign);
+			double *Sign);
 
 void EarthIso2EarthIso(double *x, cov_model *cov, double *v);
-void logEarthIso2EarthIso(double *x, cov_model *cov, double *v, double *sign);
+void logEarthIso2EarthIso(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v);
 void logNonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v, 
-			      double *sign);
+			      double *Sign);
 void Earth2Earth(double *x, cov_model *cov, double *v);
-void logEarth2Earth(double *x, cov_model *cov, double *v, double *sign);
+void logEarth2Earth(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v);
 void logNonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v, 
-			   double *sign);
+			   double *Sign);
 
 void EarthIso2SphereIso(double *x, cov_model *cov, double *v);
-void logEarthIso2SphereIso(double *x, cov_model *cov, double *v, double *sign);
+void logEarthIso2SphereIso(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v);
 void logNonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v, 
-			       double *sign);
+			       double *Sign);
 void Earth2Sphere(double *x, cov_model *cov, double *v);
-void logEarth2Sphere(double *x, cov_model *cov, double *v, double *sign);
+void logEarth2Sphere(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v);
 void logNonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v, 
-			    double *sign);
+			    double *Sign);
 
 void SphereIso2SphereIso(double *x, cov_model *cov, double *v);
-void logSphereIso2SphereIso(double *x, cov_model *cov, double *v, double *sign);
+void logSphereIso2SphereIso(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatSphere2SphereIso(double *x, double *y, cov_model *cov,double *v);
 void logNonstatSphere2SphereIso(double *x, double *y, cov_model *cov, 
-				double *v, double *sign);
+				double *v, double *Sign);
 void Sphere2Sphere(double *x, cov_model *cov, double *v);
-void logSphere2Sphere(double *x, cov_model *cov, double *v, double *sign);
+void logSphere2Sphere(double *x, cov_model *cov, double *v, double *Sign);
 void NonstatSphere2Sphere(double *x, double *y, cov_model *cov, double *v);
 void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
-			     double *v, double *sign);
+			     double *v, double *Sign);
 
 
 void EarthKM2CartStat(double *x, cov_model *cov, double *v);
-void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign);
+void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *Sign);
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v);
 void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
-		     double *sign);
+		     double *Sign);
 void EarthMiles2CartStat(double *x, cov_model *cov, double *v);
-void logEarthMiles2CartStat(double *x, cov_model *cov, double *v,double*sign);
+void logEarthMiles2CartStat(double *x, cov_model *cov, double *v,double*Sign);
 void EarthMiles2Cart(double *x, double *y, cov_model *cov, double *v);
 void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
-		     double *sign);
+		     double *Sign);
 int checkEarth(cov_model *cov);
 
 void EarthKM2OrthogStat(double *x, cov_model *cov, double *v);
-void logEarthKM2OrthogStat(double *x, cov_model *cov, double *v, double *sign);
+void logEarthKM2OrthogStat(double *x, cov_model *cov, double *v, double *Sign);
 void EarthKM2Orthog(double *x, double *y, cov_model *cov, double *v);
 void logEarthKM2Orthog(double *x, double *y, cov_model *cov, double *v,
-		     double *sign);
+		     double *Sign);
 void EarthMiles2OrthogStat(double *x, cov_model *cov, double *v);
-void logEarthMiles2OrthogStat(double *x, cov_model *cov, double *v,double*sign);
+void logEarthMiles2OrthogStat(double *x, cov_model *cov, double *v,double*Sign);
 void EarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v);
 void logEarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v,
-		     double *sign);
+		     double *Sign);
 
 
 void EarthKM2GnomonicStat(double *x, cov_model *cov, double *v);
-void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v, double*sign);
+void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v, double*Sign);
 void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v);
 void logEarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-		     double *sign);
+		     double *Sign);
 void EarthMiles2GnomonicStat(double *x, cov_model *cov, double *v);
-void logEarthMiles2GnomonicStat(double *x, cov_model*cov, double*v,double*sign);
+void logEarthMiles2GnomonicStat(double *x, cov_model*cov, double*v,double*Sign);
 void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v);
 void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-			    double *sign);
+			    double *Sign);
 
 
 #define Mod(ZZ, modulus) ((ZZ) - floor((ZZ) / (modulus)) * (modulus))

@@ -64,9 +64,9 @@ void pts_given_shape(double *x, cov_model *cov, double *v) {
   NONSTATCOV(x, cov->q, shape, v);
 }
 
-void logpts_given_shape(double *x, cov_model *cov, double *v, double *sign) { 
+void logpts_given_shape(double *x, cov_model *cov, double *v, double *Sign) { 
   cov_model *shape = cov->sub[PGS_FCT];
-  LOGNONSTATCOV(x, cov->q, shape, v, sign);
+  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
 }
 
 int check_pts_given_shape(cov_model *cov) {
@@ -1255,9 +1255,9 @@ void stationary_shape(double *x, cov_model *cov, double *v) {
   //  APMI(cov);
 }
 
-void logstationary_shape(double *x, cov_model *cov, double *v, double *sign) { 
+void logstationary_shape(double *x, cov_model *cov, double *v, double *Sign) { 
   cov_model *shape = cov->sub[STAT_SHAPE_FCT];
-  LOGCOV(x, shape, v, sign);
+  LOGCOV(x, shape, v, Sign);
 }
 
 int check_stationary_shape(cov_model *cov) {
@@ -1374,9 +1374,9 @@ void standard_shape(double *x, cov_model *cov, double *v) {
   NONSTATCOV(x, cov->q, shape, v);
 }
 
-void logstandard_shape(double *x, cov_model *cov, double *v, double *sign) { 
+void logstandard_shape(double *x, cov_model *cov, double *v, double *Sign) { 
   cov_model *shape = cov->sub[PGS_FCT];
-  LOGNONSTATCOV(x, cov->q, shape, v, sign);
+  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
 }
 
 int check_standard_shape(cov_model *cov) {
@@ -1576,11 +1576,11 @@ void do_standard_shape(cov_model *cov, gen_storage *S) {
 void mcmc_pgs(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) { 
 }
 
-void logmcmc_pgs(double *x, cov_model *cov, double *v, double *sign) { 
+void logmcmc_pgs(double *x, cov_model *cov, double *v, double *Sign) { 
   cov_model *shape = cov->sub[PGS_FCT];
-  LOGNONSTATCOV(x, cov->q, shape, v, sign);
+  LOGNONSTATCOV(x, cov->q, shape, v, Sign);
 
-  //  printf("x = %f %f log=%f\n", *x, cov->q[0], *v, *sign);
+  //  printf("x = %f %f log=%f\n", *x, cov->q[0], *v, *Sign);
 }
 int check_mcmc_pgs(cov_model *cov) {
   cov_model *shape = cov->sub[PGS_FCT],

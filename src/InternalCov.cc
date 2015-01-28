@@ -1069,8 +1069,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	  LPRINT("");
 	}
 	if (first_dom==last_dom) {
-	  LPRINT("[%s]; [%s] sys=%d,%d\n", DOMAIN_NAMES[(int) first_dom], 
-		 ISONAMES[iso0], isoprev, cov->isoown );
+	  LPRINT("[%s]; [%s] prev=%s\n", DOMAIN_NAMES[(int) first_dom], 
+		 ISONAMES[iso0], ISONAMES[isoprev]); //, ISONAMES[cov->isoown] );
 	} else {
 	  LPRINT("[%s..%s]:%s; [%s..%s]:%s sys=%d,%d\n",
 	       DOMAIN_NAMES[(int) first_dom], DOMAIN_NAMES[(int) last_dom],  

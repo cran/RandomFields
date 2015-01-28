@@ -229,7 +229,7 @@ int structAve(cov_model *cov, cov_model **newmodel) {
 
 
 
-void  logshapeave(double *x, cov_model *cov, double *v, double *sign) {
+void  logshapeave(double *x, cov_model *cov, double *v, double *Sign) {
     // nur stationaer
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
@@ -257,9 +257,9 @@ void  logshapeave(double *x, cov_model *cov, double *v, double *sign) {
     // zweiter Term fuer logg 
     //+ CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi); /* g */// nicht gatternr
     ;
-  sign[0] = 1.0;
+  Sign[0] = 1.0;
   double phase = q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * (f - t); // Y
-  sign[1] =  phase > 0.0 ? 1.0 : phase < 0.0 ? -1.0 : 0.0;
+  Sign[1] =  phase > 0.0 ? 1.0 : phase < 0.0 ? -1.0 : 0.0;
   v[1] = log(fabs(phase));
 }
 
@@ -877,7 +877,7 @@ void do_shapestp(cov_model *cov, gen_storage *s) {
 }
 
 
-void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
+void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
   // kann um ca. Faktor 2 beschleunigt werden, wenn
   // Sx , logdetU, Hx fuer alle x abgespeichert werden
   // und die Werte dann aus dem Speicher gelesen werden
@@ -952,7 +952,7 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *sign){
  
   double cos_value = cos(q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * xi);
   *v = exponent + log(fabs(cos_value)) ;  // Y 
-  *sign = cos_value > 0.0 ? 1.0 : cos_value < 0.0 ? -1.0 : 0.0;
+  *Sign = cos_value > 0.0 ? 1.0 : cos_value < 0.0 ? -1.0 : 0.0;
 }
 
 

@@ -12,11 +12,11 @@ int struct_mppplus(cov_model *plus, cov_model **newmodel);
 int init_mppplus(cov_model *cov, gen_storage *s);
 void do_mppplus(cov_model *cov, gen_storage *s);
 void mppplus(double *x, cov_model *cov, double *v); 
-//void logmppplus(double *x, cov_model *cov, double *v, double *sign); 
+//void logmppplus(double *x, cov_model *cov, double *v, double *Sign); 
 
 
 void mcmc_pgs(double *x, cov_model *cov, double *v); 
-void logmcmc_pgs(double *x, cov_model *cov, double *v, double *sign); 
+void logmcmc_pgs(double *x, cov_model *cov, double *v, double *Sign); 
 int check_mcmc_pgs(cov_model *cov);
 int struct_mcmc_pgs(cov_model *cov, cov_model **newmodel);
 int init_mcmc_pgs(cov_model *cov, gen_storage *S);  
@@ -24,7 +24,7 @@ void do_mcmc_pgs(cov_model *cov, gen_storage *S);
 void range_mcmc_pgs(cov_model *cov, range_type *range);
 
 void pts_given_shape(double *x, cov_model *cov, double *v); 
-void logpts_given_shape(double *x, cov_model *cov, double *v, double *sign); 
+void logpts_given_shape(double *x, cov_model *cov, double *v, double *Sign); 
 int check_pts_given_shape(cov_model *cov);
 int struct_pts_given_shape(cov_model *cov, cov_model **newmodel);
 int init_pts_given_shape(cov_model *cov, gen_storage *S);  
@@ -32,14 +32,14 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S);
 void range_pts_given_shape(cov_model *cov, range_type *range);
 
 void standard_shape(double *x, cov_model *cov, double *v); 
-void logstandard_shape(double *x, cov_model *cov, double *v, double *sign); 
+void logstandard_shape(double *x, cov_model *cov, double *v, double *Sign); 
 int check_standard_shape(cov_model *cov);
 int struct_standard_shape(cov_model *cov, cov_model **newmodel);
 int init_standard_shape(cov_model *cov, gen_storage *S);  
 void do_standard_shape(cov_model *cov, gen_storage *S);
 
 void stationary_shape(double *x, cov_model *cov, double *v); 
-void logstationary_shape(double *x, cov_model *cov, double *v, double *sign); 
+void logstationary_shape(double *x, cov_model *cov, double *v, double *Sign); 
 int check_stationary_shape(cov_model *cov);
 int struct_stationary_shape(cov_model *cov, cov_model **newmodel);
 int init_stationary_shape(cov_model *cov, gen_storage *S);  
@@ -84,7 +84,7 @@ int structAve(cov_model *cov, cov_model **newmodel);
 int check_shapeave(cov_model *cov);
 int init_shapeave(cov_model *cov, gen_storage *s);
 void do_shapeave(cov_model *cov, gen_storage *s);
-void logshapeave(double *x, cov_model *cov, double *v, double *sign);
+void logshapeave(double *x, cov_model *cov, double *v, double *Sign);
 
 void ball(double *x, cov_model *cov, double *v);
 int init_ball(cov_model *cov, gen_storage *s);
@@ -149,15 +149,15 @@ int struct_truncsupport(cov_model *cov, cov_model **newmodel);
 int init_truncsupport(cov_model *cov, gen_storage *s);
 void do_truncsupport(cov_model *cov, gen_storage *s);
 
-void randomsign(double *x, cov_model *cov, double *v);
-void lograndomsign(double *x, cov_model *cov, double *v, double *sign); 
-void randomsignInverse(double *x, cov_model *cov, double *v);
-void randomsignNonstatInverse(double *v, cov_model *cov, double *x, double *y);
-int check_randomsign(cov_model *cov);
-void range_randomsign(cov_model *cov, range_type *range);
-int init_randomsign(cov_model *cov, gen_storage *s);
-int struct_randomsign(cov_model *cov, cov_model **newmodel);
-void do_randomsign(cov_model *cov, gen_storage *s);
+void randomSign(double *x, cov_model *cov, double *v);
+void lograndomSign(double *x, cov_model *cov, double *v, double *Sign); 
+void randomSignInverse(double *x, cov_model *cov, double *v);
+void randomSignNonstatInverse(double *v, cov_model *cov, double *x, double *y);
+int check_randomSign(cov_model *cov);
+void range_randomSign(cov_model *cov, range_type *range);
+int init_randomSign(cov_model *cov, gen_storage *s);
+int struct_randomSign(cov_model *cov, cov_model **newmodel);
+void do_randomSign(cov_model *cov, gen_storage *s);
 
 
 

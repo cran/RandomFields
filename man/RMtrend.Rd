@@ -78,8 +78,12 @@ RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
  component varies fastest; e.g. the monomial basis functions up to
  degree \eqn{k}{k} in a two-dimensional space are given by
  \deqn{1, x, \ldots, x^k, y, xy, \ldots, x^{k-1}y, y^2, \ldots, x
- y^{k-1}, y^k.} 
- 
+ y^{k-1}, y^k.}  
+}
+\note{
+ Using uncapsulated substraction to build up a covariance
+ function is ambiguous, see the examples below.
+ Best to define the trend separately, or to use \command{\link{R.minus}}.
 }
 \value{
  \command{\link{RMtrend}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
@@ -119,9 +123,18 @@ plot(simulated0)
 
 %to do
 ## NOTE: the future way of modelling the trend will be:
-model <-  1 + R.p(1) - R.p(2) + RMexp(var=0.4)
-simulated <- RFsimulate(model=model, x=x, y=x)
-plot(simulated)
+trend <- 1 + R.p(1) - R.p(2)   
+model <- RMexp(var=0.4) + trend
+
+## IMPORTANT: avoid substractopm in the trend definition
+## or define the trend in a separate definition first
+trend <- -1
+(model0 <- RMexp(var=0.4) + trend)
+(model1 <- RMexp(var=0.4) + -1)## same as model0
+(model2 <- RMexp(var=0.4) - 1) ## different from model0 !!
+plot(RFsimulate(model=model1, x=x, y=x)) ## random with covariance
+##                                   model being the exponential one
+plot(RFsimulate(model=model2, x=x, y=x)) ## purely deterministic trend!
 
 \dontshow{\dontrun{
 

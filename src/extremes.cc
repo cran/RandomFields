@@ -226,7 +226,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     subrole = ROLE_FAILED,
     deltathresh = nthreshold;			
 
-  double logdens,  factor, summand, sign[2], value[2], logthreshold, 
+  double logdens,  factor, summand, Sign[2], value[2], logthreshold, 
     *xstart = NULL, // nach DO gesetzt
     *x = NULL,           // nach DO gesetzt
     *inc = NULL,
@@ -529,8 +529,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
  
 #define GET SHAPE(x, sub, value); /*printf("%f : %f fctr=%f %ld \n", x[0], *value, factor, zaehler); // */
-#define LOGGET LOGSHAPE(x, sub, value, sign);
-#define LOGGETPOS LOGGET if (sign[0] > 0)
+#define LOGGET LOGSHAPE(x, sub, value, Sign);
+#define LOGGETPOS LOGGET if (Sign[0] > 0)
 #define GETRF *value = (res_type) (rf[zaehler]);
 
     //   printf("%d\n", total_pts); assert(false);
@@ -611,12 +611,12 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 #define	ALL_APPLY(APPLY, MGET, MAPPLY, SGET, SAPPLY, NONLOGGET)		\
     if (loggiven == true) {						\
       if (maxstable) APPLY(MGET, (*value) += summand, MAPPLY)		\
-	else APPLY(SGET, sign[0] * exp(*value + summand), SAPPLY);	\
+	else APPLY(SGET, Sign[0] * exp(*value + summand), SAPPLY);	\
     } else { /* not loggiven */						\
       if (sub->loggiven){						\
 	if (maxstable)							\
-	  APPLY(MGET, *value=sign[0] * exp(*value+summand), MAPPLY)	\
-	else APPLY(SGET, sign[0] * exp(*value + summand), SAPPLY);	\
+	  APPLY(MGET, *value=Sign[0] * exp(*value+summand), MAPPLY)	\
+	else APPLY(SGET, Sign[0] * exp(*value + summand), SAPPLY);	\
       } else {								\
 	assert(R_FINITE(factor));					\
 	if (maxstable) APPLY(NONLOGGET, (*value) *= factor, MAPPLY)	\
@@ -663,8 +663,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     // *atomdependent rfbased/not; (( recurrent/dissipative: min/max gesteuert))
     if (poissongauss  && !randomcoin) { // AVERAGE
       if (sub->loggiven) {
-	AVEAPPLY(LOGGET, sign[0] * exp(value[0] + summand), 
-		 sign[1] * exp(value[1]));
+	AVEAPPLY(LOGGET, Sign[0] * exp(value[0] + summand), 
+		 Sign[1] * exp(value[1]));
       } else AVEAPPLY(GET, value[0] * factor, value[1]);
     } else {
       assert(subrole == ROLE_SMITH || subrole == ROLE_SCHLATHER ||
@@ -675,7 +675,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	ALL_APPLY(OWNGRIDAPPLY, NULL, OG_MAXAPPLY, NULL, OG_SUMAPPLY, NULL);	
       } else if (fieldreturn == true) { // extended boolean
 	// todo : !simugrid! && Bereiche einengen!!     
-	// note ! no sign may be given currently when fieldreturn and loggiven!!
+	// note ! no Sign may be given currently when fieldreturn and loggiven!!
 	if (partialfield) {
 	  if (!simugrid) BUG;
 	  ALL_APPLY(APPLY, GETRF, MAXAPPLY, GETRF, SUMAPPLY, GETRF);

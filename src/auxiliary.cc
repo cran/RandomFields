@@ -863,16 +863,16 @@ void StruveL(double *x, double *nu, int * expScaled)
 {
   *x=struve(*x, *nu, 1.0, (bool) *expScaled);
 }
-double struve(double x, double nu, double factor_sign, bool expscaled)
+double struve(double x, double nu, double factor_Sign, bool expscaled)
 { 
-  double sign, value, epsilon=1e-20;
+  double Sign, value, epsilon=1e-20;
   double dummy, logx, x1, x2;
   if ((x==0.0) && (nu>-1.0)) return 0.0;
   if (x<=0) return RF_NA; // not programmed yet
   logx = log(0.5 * x);
   x1=1.5;   
   x2=nu+1.5;   
-  sign=1.0;
+  Sign=1.0;
   if (x2 > 0.0) { 
     dummy = (nu + 1.0) * logx - lgammafn(x1) - lgammafn(x2);
     if (expscaled) dummy -= x;
@@ -883,18 +883,18 @@ double struve(double x, double nu, double factor_sign, bool expscaled)
     if (expscaled) value *= exp(-x);
     if ((dummy= value) <0) {
       dummy = -dummy;
-      sign = -1.0;
+      Sign = -1.0;
     }
     dummy = log(dummy);
   }
   logx *= 2.0;
   do {
-    if (x2<0) { sign = -sign; }    
+    if (x2<0) { Sign = -Sign; }    
     dummy += logx - log(x1) - log(fabs(x2));
-    value +=  sign * exp(dummy);
+    value +=  Sign * exp(dummy);
     x1 += 1.0;
     x2 += 1.0;
-    sign = factor_sign * sign; 
+    Sign = factor_Sign * Sign; 
   } while (exp(dummy) > fabs(value) * epsilon);
   return value;
 }

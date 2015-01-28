@@ -2136,14 +2136,10 @@ int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel) {
     lastdomain = kernel ? KERNEL : XONLY,
     dim =  loc->timespacedim;
   assert(dim == cov->tsdim);
-  bool  
-    ygiven = loc->ly > 0;
 
-  if (!ygiven && isVariogram(type) && !isCartesian(cov->isoown)) {
-    add_y_zero(loc);
-    ygiven = true;
-    //PMI(cov);
-  }
+  //  if (loc->ly == 0 && isVariogram(type) && !isCartesian(cov->isoown)) {
+  //  add_y_zero(loc);
+  // }
 
   if (cov->isoown == EARTH_COORD) {
     iso[endfor++] = EARTH_COORD;
@@ -2169,7 +2165,6 @@ int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel) {
       if ((err = CHECK(sub, dim, cov->xdimown, type, k, iso[i], SUBMODEL_DEP,
 		       sub!=next || isVariogram(sub) ? ROLE_COV : ROLE_BASE))
 	  == NOERROR) break;
-
     }
     if (err == NOERROR) break;
   }

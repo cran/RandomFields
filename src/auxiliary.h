@@ -10,7 +10,7 @@ extern "C" {
   SEXP vectordist(SEXP V, SEXP diag); 
   void sleepMilli(int *milli);
   void I0ML0(double *x, int *n);
-  double struve(double x, double nu,  double factor_sign, bool expscaled);
+  double struve(double x, double nu,  double factor_Sign, bool expscaled);
   void StruveH(double *x, double *nu);
   void StruveL(double *x, double *nu, int * expScaled);
   void ordering(double *d, int len, int dim, int *pos);

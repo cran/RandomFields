@@ -354,7 +354,8 @@ prepare4RFspDataFrame <- function(model=NULL,
   locinfo <- info$loc
   
   names <- GetDataNames(model=model, locinfo=locinfo,
-                          coords=list(x=x,y=y, z=z, T=T, grid=grid))
+                        coords=if (missing(x)) NULL else 
+                        list(x=x,y=y, z=z, T=T, grid=grid))
    
   if (!is.null(names$variab.names)) {
     if (vdim != length(names$variab.names))

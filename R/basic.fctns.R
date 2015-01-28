@@ -252,8 +252,8 @@ data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
 }
 
     
-GetDataNames <- function(model, coords, locinfo, data) {
-  if (!missing(data) && length(data) > 0) {
+GetDataNames <- function(model, coords=NULL, locinfo, data=NULL) {
+  if (length(data) > 0) {
     cd <- try(CheckData(model=model, given=coords, data=data))      
     if (class(cd) != "try-error")
       return(list(coord.names=cd$coord.names, variab.names=cd$variab.names))
@@ -261,7 +261,7 @@ GetDataNames <- function(model, coords, locinfo, data) {
 
   variab.names <- extractVarNames(model)
   coord.names <-
-    if (!missing(coords) && is.matrix(coords)) colnames(coords) else NULL
+    if (!is.null(coords) && is.matrix(coords)) colnames(coords) else NULL
                        # gets response part of model, if model is a formula
 
   Zeit <- locinfo$Zeit

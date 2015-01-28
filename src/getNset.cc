@@ -863,7 +863,7 @@ void rect_DELETE(rect_storage **S){
     FREE(x->z);
     
     FREE(x->squeezed_dim);
-    FREE(x->assign);
+    FREE(x->asSign);
     FREE(x->i);
 
     UNCONDFREE(*S);
@@ -881,7 +881,7 @@ void rect_NULL(rect_storage* x) {
   //  x->inner = x->inner_const = x->inner_pow = x->outer =
   //    x->outer_const = x->outer_pow = x->outer_pow_const = x->step = RF_NA;
 
-  x->squeezed_dim = x->assign = x->i = NULL;
+  x->squeezed_dim = x->asSign = x->i = NULL;
 }
 
 
@@ -1164,33 +1164,39 @@ int setgrid(coord_type xgr, double *x, long lx, int spatialdim) {
   return NOERROR;
 }
 
-
+/*
 int add_y_zero(location_type *loc) {
-  int d;
+  int d,
+    dim = loc->spatialdim;
   if (loc->ly > 0) BUG;
   if (loc->distances) { SERR("distances are allowed only for cartesian systems"); } 
+  if (!loc->delete_x) BUG;
   if (loc->grid) {
     loc->ly = 3;
-    double *ygrid = (double*) MALLOC(sizeof(double) * loc->ly *loc->spatialdim);
+    double *ygrid = (double*) 
+      MALLOC(sizeof(double) * loc->ly * dim); 
     int i;
-    for (i=d=0; d<loc->spatialdim; d++) {
+    for (i=d=0; d<dim; d++) {
       ygrid[i++] = 0.0;
       ygrid[i++] = 0.0;
       ygrid[i++] = 1.0;
     }
-    setgrid(loc->ygr, ygrid, loc->ly, loc->spatialdim);
+    setgrid(loc->ygr, ygrid, loc->ly, dim);
+    FREE(ygrid);
   } else {
     loc->ly = 1;
-    if ((loc->y=(double*) CALLOC(loc->ly * loc->xdimOZ, sizeof(double) ))==NULL)
+    if ((loc->y=(double*)
+	 CALLOC(loc->ly * loc->xdimOZ, sizeof(double) ))==NULL)
       return ERRORMEMORYALLOCATION; 
   } 
 
   if (loc->Time) {
-    if (loc->grid) loc->ygr[loc->spatialdim] = loc->T;
+    if (loc->grid) loc->ygr[dim] = loc->T;
   }
 
   return NOERROR;
 }
+*/
 
 int partial_loc_set(location_type *loc, double *x, double *y,
 		    long lx, long ly, bool dist, int xdimOZ, double *T,
@@ -1480,7 +1486,7 @@ void MultiDimRange(cov_model *cov, double *natscale) {
     xdimprev = cov->xdimprev,
     vdim = cov->vdim[0],
     err = NOERROR;
-  double y, yold, x[MAXGETNATSCALE], threshold, natsc, factor, sign,
+  double y, yold, x[MAXGETNATSCALE], threshold, natsc, factor, Sign,
     newx, xsave, newy, 
     *dummy =  NULL,
     rel_threshold = 0.05;
@@ -1525,10 +1531,10 @@ void MultiDimRange(cov_model *cov, double *natscale) {
     //	   yold > threshold);
     if (yold > threshold) {
       factor = 2.0;
-      sign = 1.0;
+      Sign = 1.0;
     } else {
       factor = 0.5;
-      sign = -1.0;
+      Sign = -1.0;
     } 
     
     double otherx;
@@ -1537,8 +1543,8 @@ void MultiDimRange(cov_model *cov, double *natscale) {
     y = dummy[0];
     
     // print("%f %f : y=%f diff=%f %f\n", x[0], x[1], y, y - threshold,
-    //	   sign * (y - threshold));
-    while (sign * (y - threshold) > 0) {  
+    //	   Sign * (y - threshold));
+    while (Sign * (y - threshold) > 0) {  
       if (yold<y){ 
 	if (wave++>10) { err=ERRORWAVING; goto ErrorHandling; }
       }
@@ -1553,7 +1559,7 @@ void MultiDimRange(cov_model *cov, double *natscale) {
     otherx = x[idx] / factor;
 
     //   print("%f %f : y=%f diff=%f %f\n", x[0], x[1], y, y - threshold,
-    //	   sign * (y - threshold));
+    //	   Sign * (y - threshold));
 
     for (i=0; i<3 /* good choice?? */ ;i++) {       
 
@@ -1570,7 +1576,7 @@ void MultiDimRange(cov_model *cov, double *natscale) {
       newy = dummy[0];
       x[idx] = xsave;
       
-      if (sign * (newy - threshold) > 0) {
+      if (Sign * (newy - threshold) > 0) {
 	otherx = newx;
 	yold  = newy;
       } else {
@@ -3204,7 +3210,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
   if (kappas > 0) {
     getrange(cov, &range); 
     
-    // PMI(cov);
+    //     PMI(cov);    
     assert (cov->maxdim >= cov->tsdim);
       
     err = NOERROR;
@@ -3345,11 +3351,11 @@ void strround(double x, char *s){
 
 
 
-void addmsg(double value, const char *sign, double y, char *msg) {
+void addmsg(double value, const char *Sign, double y, char *msg) {
   char str1[30], str2[30];
   strround(value, str1);
   strround(y, str2);
-  sprintf(msg, "%s %s %s", str1, sign, str2);
+  sprintf(msg, "%s %s %s", str1, Sign, str2);
 }
 
 

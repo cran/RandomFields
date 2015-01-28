@@ -63,13 +63,17 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
   long m, n;
   bool stat;
   double 
-    *y = ygiven ? pgs->supportmin : ZERO,
+    *y = ygiven ? pgs->supportmin : ZERO, // vgl. def von *y bei Matrizen
     *C0x = pgs->C0x,
     *C0y = pgs->C0y;
   bool kernel = cov->domown != XONLY;  
   INCLUDE_VAL;				       
 
   // if(isCartesian(prev->isoown) || ygiven);
+
+  //printf("covvario %s, line %d %d %ld %ld %ld\n",				
+  //     __FILE__, __LINE__, ygiven, y, ZERO, pgs->supportmin) ;	
+
 
 
   genuineStatOwn(cov, &domown, &type);
@@ -147,7 +151,10 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
   for (v=0; v<vdimSq; v++) {						\
     Val[v][loc->i_row] = 0.5 * (C0x[v] + C0y[v]) - cross[v];		\
   }								
- 
+
+  // printf("covvario 2 %s, line %d %d %ld %ld %ld\n",				
+  //     __FILE__, __LINE__, ygiven, y, ZERO, pgs->supportmin) ;	
+
 
   if (is_cov) {
     PERFORM(UNIVAR, MULT, UNIVAR_Y, MULT_Y);
@@ -547,10 +554,11 @@ void partial_loc_set_matrixOZ(cov_model *cov, double *x, long lx, bool dist,
 void partial_loc_set(cov_model *cov, double *x, long lx, bool dist, bool grid){
   location_type *loc = Loc(cov);
   int err;
-  bool cartesian = isCartesian(cov->isoown);
-  if (!cartesian && loc->ly==0) add_y_zero(loc);
-  if ((err = partial_loc_set(loc, x, cartesian ? NULL : ZERO, 
-			     lx, !cartesian, dist, loc->xdimOZ,
+  //  bool cartesian = isCartesian(cov->isoown);
+  //  if (!cartesian && loc->ly==0) add_y_zero(loc);
+  if ((err = partial_loc_set(loc, x, NULL, // cartesian ? NULL : ZERO, 
+			     lx, 0, //!cartesian,
+			     dist, loc->xdimOZ,
 			     NULL, grid, false)) 
       != NOERROR) XERR(err);
 }
@@ -574,13 +582,14 @@ void partial_loc_setOZ(cov_model *cov, double *x, long lx, bool dist, int *xdimO
   // *xdimOZ to distinguish from the previous partial_loc_set definition
   location_type *loc = Loc(cov);
   int err;
-  bool cartesian = isCartesian(cov->isoown);
-  if (!cartesian && loc->ly==0) add_y_zero(loc);
+  //  bool cartesian = isCartesian(cov->isoown);
+  // if (!cartesian && loc->ly==0) add_y_zero(loc);
   
   //  printf("partial_loc_set dist = %d %d \n", dist, loc->ly);
    
-  if ((err = partial_loc_set(loc, x, cartesian ? NULL : ZERO,  
-			     lx, !cartesian, dist, *xdimOZ, 
+  if ((err = partial_loc_set(loc, x, NULL, // cartesian ? NULL : ZERO,  
+			     lx, 0, //!cartesian,
+			     dist, *xdimOZ, 
 			     NULL, loc->grid, false)) 
       != NOERROR) XERR(err);
   //PMI(cov);
@@ -725,21 +734,24 @@ void CovIntern(int reg, double *x, double *y, long lx, long ly, double *value) {
   partial_loc_null(cov);
 }
 
+/*
 void CovIntern(int reg, double *x, double *value) {
   STANDARDINTERN;
   location_type *loc = Loc(cov);
-  bool cartesian = isCartesian(cov->isoown);
-  if (!cartesian && loc->ly==0) add_y_zero(loc);
+  //  bool cartesian = isCartesian(cov->isoown);
+
+  //PMI(cov);
+  //  if (!cartesian && loc->ly==0) add_y_zero(loc);
   
   // PMI(cov);
-
-
-  partial_loc_setXY(cov, x, cartesian ? NULL : ZERO, 1, !cartesian);
+  partial_loc_setXY(cov, x, NULL, // cartesian ? NULL : ZERO, 
+		    1,  0// !cartesian
+		    );
   CovList[truecov->nr].covariance(truecov, value);
   partial_loc_null(cov);
 }
-
-
+*/
+ 
 SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdimOZ,
 		  SEXP lx, SEXP result, SEXP nonzeros) {
   STANDARDINTERN_SEXP;
@@ -809,10 +821,11 @@ void PseudovariogramIntern(int reg, double *x, double *y,
 void PseudovariogramIntern(int reg, double *x, double *value) {
   STANDARDINTERN;
   location_type *loc = Loc(cov);
-  bool cartesian = isCartesian(cov->isoown);
-  if (!cartesian && loc->ly==0) add_y_zero(loc);
-  partial_loc_setOZ(cov, x, cartesian ? NULL : ZERO, 
-		    1, !cartesian, false, &(loc->xdimOZ));
+  // bool cartesian = isCartesian(cov->isoown);
+  // if (!cartesian && loc->ly==0) add_y_zero(loc);
+  partial_loc_setOZ(cov, x, NULL, // cartesian ? NULL : ZERO, 
+		    1, 0, // !cartesian,
+		    false, &(loc->xdimOZ));
   CovList[truecov->nr].pseudovariogram(truecov, value);
   partial_loc_null(cov);
 }

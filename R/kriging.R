@@ -121,8 +121,10 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                           distances, dim, data, given=NULL,
                           err.model, method="ml", ...) {
   #Print("entering interpolate")
-                                        #  str(data)
 
+##  Print(model, x)
+
+  
   if (!missing(err.model)) stop("'err.model' not programmed yet.")
   if (!missing(distances) && length(distances) > 0) stop("'distances' not programmed yet.")
   # if (!missing(dim)) warning("'dim' is ignored.")
@@ -592,16 +594,13 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
             nonzeros, #userdefined,
             PACKAGE="RandomFields")
        base::dim(covmatrix) <- c(ngvdim, ngvdim)
-
-      
-
+ 
       covmatrix <- covmatrix[notna, notna]
 
-      XX <- as.double(xx[, idx[[3]][[p]], drop=FALSE])
+      XX <- as.double(xx[, idx[[3]][[p]] ])
 
       switch(krige.meth.nr, {
         ## simple kriging
-        
         stopifnot(is.null(all$estimtrend))
         if (return.variance) {
           if (!(is.numeric(try(invcov <- SOLVE(covmatrix), silent = silent)))){
@@ -609,8 +608,8 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
           }
           
           sigma2 <- double(Nx*vdim)
-          
-          .Call("simpleKriging2", reg, given, XX, dat,
+
+           .Call("simpleKriging2", reg, given, XX, dat,
                 invcov, notna, Nx, Ngiven, ts.xdim, repet,
                 res, sigma2, #userdefined,
                 PACKAGE = "RandomFields")

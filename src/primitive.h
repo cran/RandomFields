@@ -22,7 +22,7 @@ void rangeBessel(cov_model *cov, range_type *ra);
 
 /* Cauchy models */
 void Cauchy(double *x, cov_model *cov, double *v);
-void logCauchy(double *x, cov_model *cov, double *v, double *sign);
+void logCauchy(double *x, cov_model *cov, double *v, double *Sign);
 void TBM2Cauchy(double *x, cov_model *cov, double *v);
 void DCauchy(double *x, cov_model *cov, double *v);
 void DDCauchy(double *x, cov_model *cov, double *v);
@@ -78,7 +78,7 @@ int initdagum(cov_model *cov, gen_storage *stor);
 
 /*  damped cosine -- derivative of exponential:*/
 void dampedcosine(double *x, cov_model *cov, double *v);
-void logdampedcosine(double *x, cov_model *cov, double *v, double *sign);
+void logdampedcosine(double *x, cov_model *cov, double *v, double *Sign);
 void Inversedampedcosine(double *x, cov_model *cov, double *v); 
 void Ddampedcosine(double *x, cov_model *cov, double *v);
 void rangedampedcosine(cov_model *cov, range_type* ra);
@@ -101,7 +101,7 @@ void InverseDeWijsian(double *x, cov_model *cov, double *v);
 
 /* exponential model */
 void exponential(double *x, cov_model *cov, double *v);
-void logexponential(double *x, cov_model *cov, double *v, double *sign);
+void logexponential(double *x, cov_model *cov, double *v, double *Sign);
 void TBM2exponential(double *x, cov_model *cov, double *v);
 void Dexponential(double *x, cov_model *cov, double *v);
 void DDexponential(double *x, cov_model *cov, double *v);
@@ -123,8 +123,8 @@ void do_exp(cov_model *cov, gen_storage *s);
 
 // Brownian motion 
 void fractalBrownian(double *x, cov_model *cov, double *v);
-void fractalBrownian(double *x, cov_model *cov, double *v, double *sign);
-void logfractalBrownian(double *x, cov_model *cov, double *v, double *sign);
+void fractalBrownian(double *x, cov_model *cov, double *v, double *Sign);
+void logfractalBrownian(double *x, cov_model *cov, double *v, double *Sign);
 void DfractalBrownian(double *x, cov_model *cov, double *v);
 void DDfractalBrownian(double *x, cov_model *cov, double *v);
 void D3fractalBrownian(double *x, cov_model *cov, double *v);
@@ -157,7 +157,7 @@ int checkfix(cov_model *cov) ;
 
 /* Gausian model */
 void Gauss(double *x, cov_model *cov, double *v);
-void logGauss(double *x, cov_model *cov, double *v, double *sign);
+void logGauss(double *x, cov_model *cov, double *v, double *Sign);
 void DGauss(double *x, cov_model *cov, double *v);
 void DDGauss(double *x, cov_model *cov, double *v);
 void D3Gauss(double *x, cov_model *cov, double *v);
@@ -176,7 +176,7 @@ void do_Gauss(cov_model *cov, gen_storage *s) ;
 //void simuGauss(cov_model *cov, int dim, double *v);
 
 void bcw(double *x, cov_model *cov, double *v);
-//void logbcw(double *x, cov_model *cov, double *v, double *sign);
+//void logbcw(double *x, cov_model *cov, double *v, double *Sign);
 void Dbcw(double *x, cov_model *cov, double *v);
 void DDbcw(double *x, cov_model *cov, double *v);
 int checkbcw(cov_model *cov);
@@ -188,7 +188,7 @@ void Inversebcw(double *x, cov_model *cov, double *v);
 
 /* generalised fractal Brownian motion */
 void genBrownian(double *x, cov_model *cov, double *v);
-void loggenBrownian(double *x, cov_model *cov, double *v, double *sign);
+void loggenBrownian(double *x, cov_model *cov, double *v, double *Sign);
 void InversegenBrownian(double *x, cov_model *cov, double *v) ;
 int checkgenBrownian(cov_model *cov);
 void rangegenBrownian(cov_model *cov, range_type* ra);
@@ -196,7 +196,7 @@ void rangegenBrownian(cov_model *cov, range_type* ra);
 
 /* epsC */
 void epsC(double *x, cov_model *cov, double *v);
-void logepsC(double *x, cov_model *cov, double *v, double *sign);
+void logepsC(double *x, cov_model *cov, double *v, double *Sign);
 void DepsC(double *x, cov_model *cov, double *v);
 void DDepsC(double *x, cov_model *cov, double *v);
 int checkepsC(cov_model *cov);
@@ -206,7 +206,7 @@ void inverseepsC(double *x, cov_model *cov, double *v);
 
 /* gencauchy */
 void generalisedCauchy(double *x, cov_model *cov, double *v);
-void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *sign);
+void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *Sign);
 void DgeneralisedCauchy(double *x, cov_model *cov, double *v);
 void DDgeneralisedCauchy(double *x, cov_model *cov, double *v);
 int checkgeneralisedCauchy(cov_model *cov);
@@ -235,7 +235,7 @@ void rangeGneiting(cov_model *cov, range_type *range);
 
 /* hyperbolic */
 void hyperbolic(double *x, cov_model *cov, double *v); 
-void loghyperbolic(double *x, cov_model *cov, double *v, double *sign); 
+void loghyperbolic(double *x, cov_model *cov, double *v, double *Sign); 
 void Dhyperbolic(double *x, cov_model *cov, double *v); 
 int checkhyperbolic(cov_model *cov);
 void rangehyperbolic(cov_model *cov, range_type* ra);
@@ -268,7 +268,7 @@ int checklgd1(cov_model *cov);
 /* Whittle-Matern or Whittle or Besset ---- rescaled form of Whittle-Matern,
     see also there */ 
 void Matern(double *x, cov_model *cov, double *v);
-void logMatern(double *x, cov_model *cov, double *v, double *sign);
+void logMatern(double *x, cov_model *cov, double *v, double *Sign);
 void DMatern(double *x, cov_model *cov, double *v);
 void DDMatern(double *x, cov_model *cov, double *v);
 void D3Matern(double *x, cov_model *cov, double *v);
@@ -331,7 +331,7 @@ void dospherical(cov_model *cov, gen_storage *s);
 
 /* stable model */
 void stable(double *x, cov_model *cov, double *v);
-void logstable(double *x, cov_model *cov, double *v, double *sign);
+void logstable(double *x, cov_model *cov, double *v, double *Sign);
 void Dstable(double *x, cov_model *cov, double *v);
 void DDstable(double *x, cov_model *cov, double *v);
 int checkstable(cov_model *cov);  
@@ -366,7 +366,7 @@ void spectralwave(cov_model *cov, gen_storage *s, double *e);
 
 /* Whittle-Matern or Whittle or Besset */ 
 void Whittle(double *x, cov_model *cov, double *v);
-void logWhittle(double *x, cov_model *cov, double *v, double *sign);
+void logWhittle(double *x, cov_model *cov, double *v, double *Sign);
 void TBM2Whittle(double *x, cov_model *cov, double *v);
 void DWhittle(double *x, cov_model *cov, double *v);
 void DDWhittle(double *x, cov_model *cov, double *v);

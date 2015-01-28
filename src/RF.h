@@ -1191,9 +1191,9 @@ typedef void (*nonstat_covfct)(double *, double*,
 			      cov_model*,  double*); /* x,y, cov, result */
 typedef void (*nonstat_inv)(double *, cov_model*, double*, 
 			       double*); /* fctvalue cov, inv.x inv.y */
-typedef void (*logfct)(double *, cov_model*, double* v, double* sign);
+typedef void (*logfct)(double *, cov_model*, double* v, double* Sign);
 typedef void (*nonstat_logfct)(double *, double*, 
-			      cov_model*,  double* v, double* sign); 
+			      cov_model*,  double* v, double* Sign); 
 typedef void (*aux_covfct)(double *, double*, double, 
 			      cov_model*,  double*); /* x,y, Aux, cov, result */
 typedef void (*return_fct)(cov_model*, double*); /* cov, result */ 
@@ -1726,7 +1726,7 @@ typedef struct rect_storage {
     outer, outer_const, outer_pow, outer_pow_const,
     step, *value, *weight, 
     *tmp_weight, *right_endpoint, *ysort, *z;
-    int nstep, *squeezed_dim, *assign, *i, tmp_n;
+    int nstep, *squeezed_dim, *asSign, *i, tmp_n;
 } rect_storage;
 
 
@@ -2054,7 +2054,7 @@ int loc_set(double *x, double *y, double *T,
 	    bool distances,
 	    location_type **Loc);
 int loc_set(cov_model *cov, long totalpoints);
-int add_y_zero(location_type *loc);
+//int add_y_zero(location_type *loc);
 
 
 int Match(char *name, const char * List[], int n);
@@ -2484,9 +2484,9 @@ int initmpp(double *x, double *T, int dim, int lx, bool grid, bool distances,
 	    bool Time, cov_model  *key, globalparam *gp,
 	    int expected_number_simu, cov_model **COV);
 
-void ErrLogCov(double *x, cov_model *cov, double *v, double *sign);
+void ErrLogCov(double *x, cov_model *cov, double *v, double *Sign);
 void ErrLogCovNonstat(double *x, double *y, cov_model *cov, double *v, 
-		      double *sign);
+		      double *Sign);
 int struct_failed(cov_model *cov, cov_model **atom);
 int init_failed(cov_model *cov, gen_storage *s);
 int init_statiso(cov_model *cov, gen_storage *s);

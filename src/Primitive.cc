@@ -293,10 +293,10 @@ void Cauchy(double *x, cov_model *cov, double *v){
   double gamma = P0(CAUCHY_GAMMA);
   *v = pow(1.0 + *x * *x, -gamma);
 }
-void logCauchy(double *x, cov_model *cov, double *v, double *sign){
+void logCauchy(double *x, cov_model *cov, double *v, double *Sign){
   double gamma = P0(CAUCHY_GAMMA);
   *v = log(1.0 + *x * *x) * -gamma;
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 void TBM2Cauchy(double *x, cov_model *cov, double *v){
   double gamma = P0(CAUCHY_GAMMA), y2, lpy2;
@@ -889,17 +889,17 @@ void dampedcosine(double *x, cov_model *cov, double *v){
   double y = *x, lambda = P0(DC_LAMBDA);
   *v = (y == RF_INF) ? 0.0 : exp(-y * lambda) * cos(y);
 }
-void logdampedcosine(double *x, cov_model *cov, double *v, double *sign){
+void logdampedcosine(double *x, cov_model *cov, double *v, double *Sign){
   double 
     y = *x, 
     lambda = P0(DC_LAMBDA);
   if (y==RF_INF) {
     *v = RF_NEGINF;
-    *sign = 0.0;
+    *Sign = 0.0;
   } else {
     double cosy=cos(y);
     *v = -y * lambda + log(fabs(cosy));
-    *sign = cosy > 0.0 ? 1.0 : cosy < 0.0 ? -1.0 : 0.0;
+    *Sign = cosy > 0.0 ? 1.0 : cosy < 0.0 ? -1.0 : 0.0;
   }
 }
 void Inversedampedcosine(double *x, cov_model *cov, double *v){ 
@@ -1000,9 +1000,9 @@ void rangeDeWijsian(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 void exponential(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
    *v = exp(- *x);
  }
-void logexponential(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v, double *sign){
+void logexponential(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v, double *Sign){
   *v = - *x;
-  *sign = 1.0;
+  *Sign = 1.0;
  }
 void TBM2exponential(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) 
 {
@@ -1223,10 +1223,10 @@ void fractalBrownian(double *x, cov_model *cov, double *v) {
   // keep definition such that the value at the origin is 0
 }
 
-void logfractalBrownian(double *x, cov_model *cov, double *v, double *sign) {
+void logfractalBrownian(double *x, cov_model *cov, double *v, double *Sign) {
   double alpha = P0(BROWN_ALPHA);
   *v = log(*x) * alpha;//this is an invalid covariance function!
-  *sign = -1.0;
+  *Sign = -1.0;
   // keep definition such that the value at the origin is 0
 }
 /* fractalBrownian: first derivative at t=1 */
@@ -1317,7 +1317,7 @@ void FD(double *x, cov_model *cov, double *v){
     sk = 1;
     kold = 0.0;
   }
-  // sign (-1)^k is (kold+d), 16.11.03, checked. 
+  // Sign (-1)^k is (kold+d), 16.11.03, checked. 
   for (; kold<k; kold += 1.0) sk =  sk * (kold + d) / (kold + 1.0 - d);
   dold = d;
   kold = k;
@@ -1360,9 +1360,9 @@ void rangefractGauss(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 void Gauss(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   *v = exp(- *x * *x);
 }
-void logGauss(double *x, cov_model VARIABLE_IS_NOT_USED  *cov, double *v, double *sign) {
+void logGauss(double *x, cov_model VARIABLE_IS_NOT_USED  *cov, double *v, double *Sign) {
   *v = - *x * *x;
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 void DGauss(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
   double y = *x; 
@@ -1569,10 +1569,10 @@ void genBrownian(double *x, cov_model *cov, double *v) {
   // keep definition such that the value at the origin is 0
 }
 
-void loggenBrownian(double *x, cov_model *cov, double *v, double *sign) {
+void loggenBrownian(double *x, cov_model *cov, double *v, double *Sign) {
   genBrownian(x, cov, v);
   *v = log(-*v);
-  *sign = -1.0;
+  *Sign = -1.0;
 }
 void InversegenBrownian(double *x, cov_model *cov, double *v) {
   double 
@@ -1632,10 +1632,10 @@ void DDgeneralisedCauchy(double *x, cov_model *cov, double *v){
       * pow(1.0 + ha, -beta / alpha - 2.0);
   }
 }
-void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *sign){
+void loggeneralisedCauchy(double *x, cov_model *cov, double *v, double *Sign){
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA);
   *v = log(1.0 + pow(*x, alpha)) *  -beta/alpha;
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 void InversegeneralisedCauchy(double *x, cov_model *cov, double *v) {
   double alpha = P0(GENC_ALPHA), beta=P0(GENC_BETA);
@@ -1704,13 +1704,13 @@ void epsC(double *x, cov_model *cov, double *v){
     eps=P0(EPS_EPS);
   *v = pow(eps + pow(*x, alpha), -beta/alpha);
  }
-void logepsC(double *x, cov_model *cov, double *v, double *sign){
+void logepsC(double *x, cov_model *cov, double *v, double *Sign){
   double 
     alpha = P0(EPS_ALPHA),
     beta=P0(EPS_BETA), 
     eps=P0(EPS_EPS);
   *v = log(eps + pow(*x, alpha)) * -beta/alpha;
-  *sign = 1.0;
+  *Sign = 1.0;
  }
 void DepsC(double *x, cov_model *cov, double *v){
   double ha, 
@@ -1941,7 +1941,7 @@ void biGneitingbasic(cov_model *cov,
 		     double *cc
 		     ){ 
   double 
-    sign, x12, min, det, a, b, c, sum,
+    Sign, x12, min, det, a, b, c, sum,
     k = (double) (P0INT(GNEITING_K)),
     kP1 = k + (k >= 1),
     Mu = P0(GNEITING_MU),
@@ -1979,8 +1979,8 @@ void biGneitingbasic(cov_model *cov,
   
   if (det >= 0) {
     det = sqrt(det);
-    for (sign=-1.0; sign<=1.0; sign+=2.0) {
-      x12 = 0.5 / a * (-b + sign * det);
+    for (Sign=-1.0; Sign<=1.0; Sign+=2.0) {
+      x12 = 0.5 / a * (-b + Sign * det);
       if (x12>0 && x12<scale[1]) {
 	double dummy = biGneitQuot(x12, scale, gamma);
 	if (dummy < min) min = dummy;
@@ -2326,11 +2326,11 @@ void rangeGneiting(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 #define BOLIC_XI 1
 #define BOLIC_DELTA 2
 void hyperbolic(double *x, cov_model *cov, double *v){ 
-  double sign;
-  loghyperbolic(x, cov, v, &sign);
+  double Sign;
+  loghyperbolic(x, cov, v, &Sign);
   *v = exp(*v);
 }
-void loghyperbolic(double *x, cov_model *cov, double *v, double *sign){ 
+void loghyperbolic(double *x, cov_model *cov, double *v, double *Sign){ 
   double 
     nu = P0(BOLIC_NU),
     xi=P0(BOLIC_XI), 
@@ -2343,13 +2343,13 @@ void loghyperbolic(double *x, cov_model *cov, double *v, double *sign){
   static double logconst;
   double 
     y=*x;
-  *sign = 1.0;
+  *Sign = 1.0;
   if (y==0.0) { 
     *v = 0.0;
     return;
   } else if (y==RF_INF) {
     *v = RF_NEGINF;
-    *sign = 0.0;
+    *Sign = 0.0;
     return;
   }
   if (delta==0) { // whittle matern
@@ -2357,7 +2357,7 @@ void loghyperbolic(double *x, cov_model *cov, double *v, double *sign){
     *v = logWM(y * xi, nu, 0.0);
   } else if (xi==0) { //cauchy   => NU2 < 0 !
     y /= delta;
-    /* note change in sign as NU2<0 */
+    /* note change in Sign as NU2<0 */
     *v = log(1 + y * y) * 0.5 * nu; 
   } else {
     if ((nu!=nuOld) || (xi!=xiOld) || (delta!=deltaOld)) {
@@ -2399,7 +2399,7 @@ void Dhyperbolic(double *x, cov_model *cov, double *v)
     double ha;
     y /= delta;
     ha = y * y;
-    /* note change in sign as NU2<0 */
+    /* note change in Sign as NU2<0 */
     *v = nu * fabs(y) * pow(1.0 + ha, 0.5 * nu - 1.0) / delta;
   } else {
     if ((nu!=nu) || (xi!=xi) || (delta!=delta)) {
@@ -2611,7 +2611,7 @@ double logWM(double x, double nu, double factor) {
 
   static double nuOld=RF_INF;
   static double loggamma;
-  double v, y, sign,
+  double v, y, Sign,
     nuThres = nu < MATERN_NU_THRES ? nu : MATERN_NU_THRES,
     scale = (factor != 0.0) ? factor * sqrt(nuThres) : 1.0;
 
@@ -2629,7 +2629,7 @@ double logWM(double x, double nu, double factor) {
     double w, 
       g = MATERN_NU_THRES / nu;
     y = x * factor / 2;
-    logGauss(&y, NULL, &w, &sign);
+    logGauss(&y, NULL, &w, &Sign);
     v = v * g + (1.0 - g) * w;
   }
 
@@ -2923,9 +2923,9 @@ void Matern(double *x, cov_model *cov, double *v) {
   *v = WM(*x, P0INT(WM_NOTINV) ? P0(WM_NU) : 1.0 / P0(WM_NU), SQRT2);
 }
 
-void logMatern(double *x, cov_model *cov, double *v, double *sign) {
+void logMatern(double *x, cov_model *cov, double *v, double *Sign) {
   *v = logWM(*x, P0INT(WM_NOTINV) ? P0(WM_NU) : 1.0 / P0(WM_NU), SQRT2);
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 
 void DMatern(double *x, cov_model *cov, double *v) {
@@ -3200,10 +3200,10 @@ void stable(double *x, cov_model *cov, double *v){
   double y = *x, alpha = P0(STABLE_ALPHA);  
   *v = (y==0.0) ? 1.0 : exp(-pow(y, alpha));
 }
-void logstable(double *x, cov_model *cov, double *v, double *sign){
+void logstable(double *x, cov_model *cov, double *v, double *Sign){
   double y = *x, alpha = P0(STABLE_ALPHA);  
   *v = (y==0.0) ? 0.0 : -pow(y, alpha);
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 void Dstable(double *x, cov_model *cov, double *v){
   double z, y = *x, alpha = P0(STABLE_ALPHA);
@@ -3451,12 +3451,12 @@ void Whittle(double *x, cov_model *cov, double *v) {
 }
 
 
-void logWhittle(double *x, cov_model *cov, double *v, double *sign) {
+void logWhittle(double *x, cov_model *cov, double *v, double *Sign) {
   *v = logWM(*x, PisNULL(WM_NOTINV) || P0INT(WM_NOTINV)
 	     ? P0(WM_NU)
 	     : 1.0 / P0(WM_NU), 0.0);
   assert(!ISNA(*v));
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 
 void DWhittle(double *x, cov_model *cov, double *v) {
@@ -3557,12 +3557,12 @@ void Whittle2(double *x, cov_model *cov, double *v) {
 }
 
 
-void logWhittle2(double *x, cov_model *cov, double *v, double *sign) {
+void logWhittle2(double *x, cov_model *cov, double *v, double *Sign) {
   *v = logWM(*x, PisNULL(WM_NOTINV) || P0INT(WM_NOTINV)
 	     ? P0(WM_NU)
 	     : 1.0 / P0(WM_NU), 0.0);
   assert(!ISNA(*v));
-  *sign = 1.0;
+  *Sign = 1.0;
 }
 
 void DWhittle2(double *x, cov_model *cov, double *v) {
@@ -4839,7 +4839,7 @@ void NullModel(double VARIABLE_IS_NOT_USED *x,
 void logNullModel(double VARIABLE_IS_NOT_USED *x, 
 		  cov_model VARIABLE_IS_NOT_USED *cov, 
 		  double VARIABLE_IS_NOT_USED *v, 
-		  int VARIABLE_IS_NOT_USED *sign){ return; }
+		  int VARIABLE_IS_NOT_USED *Sign){ return; }
 bool TypeNullModel(Types required, cov_model *cov, int VARIABLE_IS_NOT_USED depth) {
   Types type = (Types) P0INT(NULL_TYPE);
   return TypeConsistency(required, type); 

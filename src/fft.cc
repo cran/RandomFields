@@ -84,13 +84,13 @@
  * nspn is the spacing of consecutive data values
  *	while indexing the current variable.
  * nseg nseg*n*nspn is the total number of complex data values.
- * isn	the sign of isn determines the sign of the complex
+ * isn	the Sign of isn determines the Sign of the complex
  *	exponential, and the magnitude of isn is normally one.
  *	the magnitude of isn determines the indexing increment for a&b.
  *
- * if fft is called twice, with opposite signs on isn, an
+ * if fft is called twice, with opposite Signs on isn, an
  *	identity transformation is done...calls can be in either order.
- *	the results are scaled by 1/n when the sign of isn is positive.
+ *	the results are scaled by 1/n when the Sign of isn is positive.
  *
  * a tri-variate transform with a(n1,n2,n3), b(n1,n2,n3)
  * is computed by
@@ -119,7 +119,7 @@ static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn,
 {
 /* called from	fft_work() */
 
-/* Design BUG:	One purpose of fft_factor() would be to compute
+/* DeSign BUG:	One purpose of fft_factor() would be to compute
  * ----------	nfac[] once and for all; and fft_work() [i.e. fftmx ]
  *		could reuse the factorization.
  * However: nfac[] is `destroyed' currently in the code below

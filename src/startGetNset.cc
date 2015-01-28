@@ -386,7 +386,7 @@ void ErrRnd(double *x, cov_model *cov, double *v) { ErrCovX(x, cov, v, "Rnd");}
 
 void ErrLogCov(double VARIABLE_IS_NOT_USED *x, cov_model *cov, 
 	       double VARIABLE_IS_NOT_USED *v, 
-	       double VARIABLE_IS_NOT_USED *sign) {
+	       double VARIABLE_IS_NOT_USED *Sign) {
   // 
   PRINTF("\nErrlogCov %s:\n", NICK(cov));
   if (PL >=  PL_ERRORS) {
@@ -409,7 +409,7 @@ void ErrCovNonstat(double VARIABLE_IS_NOT_USED *x,
 void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x, 
 		      double VARIABLE_IS_NOT_USED *y, cov_model *cov,
 		      double VARIABLE_IS_NOT_USED *v, 
-		      double VARIABLE_IS_NOT_USED *sign) {
+		      double VARIABLE_IS_NOT_USED *Sign) {
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
   if (PL >= PL_ERRORS) {
     PMI(cov->calling, "ErrLogCovNonstat"); //

@@ -1574,7 +1574,7 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
 #define TMP_WEIGHT rect->tmp_weight
 #define RIGHT_END(IDX) rect->right_endpoint[IDX]
 #define SQUEEZED(IDX) rect->squeezed_dim[IDX]
-#define ASSIGNMENT(IDX) rect->assign[IDX] // for control only
+#define ASSIGNMENT(IDX) rect->asSign[IDX] // for control only
 
 #define RECTANGULAR_PARAMETER_BASICS		\
   rect_storage *rect = cov->Srect;		\
@@ -2512,7 +2512,7 @@ int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       (rect->ysort = (double*) MALLOC(sizeof(double) * (dim + 1))) == NULL ||
       (rect->z = (double*) MALLOC(sizeof(double) * (dim + 1))) == NULL ||//dummy
       (rect->squeezed_dim = (int*) MALLOC(sizeof(int) * tmp_n)) == NULL ||
-      (rect->assign = (int*) MALLOC(sizeof(int) * tmp_n)) == NULL ||
+      (rect->asSign = (int*) MALLOC(sizeof(int) * tmp_n)) == NULL ||
       (rect->i = (int*) MALLOC(sizeof(int) * (dim + 1))) == NULL)
    return ERRORMEMORYALLOCATION;
 

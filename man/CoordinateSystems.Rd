@@ -200,12 +200,6 @@
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-x <- seq(0, 10, 0.01)
-z <- RFsimulate(RMexp(), x)
-RFgetModelInfo(RFsimulate, level=0, which="internal")
-# i.e., circulant embedding has been chosen
-
-
 
 x <- 1:4
 s <- 2

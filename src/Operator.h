@@ -36,9 +36,9 @@ void doplus(cov_model *cov, gen_storage *s);
 
 void malStat(double *x, cov_model *cov, double *v);
 void malNonStat(double *x,  double *y, cov_model *cov, double *v);
-void logmalStat(double *x, cov_model *cov, double *v, double *sign);
+void logmalStat(double *x, cov_model *cov, double *v, double *Sign);
 void logmalNonStat(double *x, double *y, cov_model *cov, double *v, 
-		   double *sign);
+		   double *Sign);
 int checkmal(cov_model *cov);
 bool Typemal(Types required, cov_model *cov, int depth);
 void Dmal(double *x, cov_model *cov, double *v);
@@ -74,11 +74,11 @@ void rangeId(cov_model *cov, range_type* ra);
 
 void kappaS(int i, cov_model *cov, int *nr, int *nc);
 void Siso(double *x, cov_model *cov, double *v);
-void logSiso(double *x, cov_model *cov, double *v, double * sign);
+void logSiso(double *x, cov_model *cov, double *v, double * Sign);
 void Sstat(double *x, cov_model *cov, double *v);
 void covmatrixS(cov_model *cov, double *v, int*);
 char iscovmatrixS(cov_model *cov);
-void logSstat(double *x, cov_model *cov, double *v, double * sign);
+void logSstat(double *x, cov_model *cov, double *v, double * Sign);
 void DS(double *x, cov_model *cov, double *v);
 void DDS(double *x, cov_model *cov, double *v);
 void D3S(double *x, cov_model *cov, double *v);
@@ -282,10 +282,10 @@ void InverseShapePow(double *x, cov_model *cov, double *v);
 
 
 void PowSstat(double *x, cov_model *cov, double *v);
-void logPowSstat(double *x, cov_model *cov, double *v, double *sign);
+void logPowSstat(double *x, cov_model *cov, double *v, double *Sign);
 void PowSnonstat(double *x, double *y, cov_model *cov, double *v);
 void logPowSnonstat(double *x, double *y, cov_model *cov, double *v, 
-		 double *sign);
+		 double *Sign);
 void inversePowS(double *x, cov_model *cov, double *v) ;
 int checkPowS(cov_model *cov) ;
 bool TypePowS(Types required, cov_model *cov, int depth) ;
@@ -406,10 +406,10 @@ int checkidcoord(cov_model *cov);
 
 void trafo(double *x, cov_model *cov, double *v);  
 void logtrafo(double *x, cov_model *cov, double *v, 
-		     double *sign);  
+		     double *Sign);  
 void nonstattrafo(double *x, double *y, cov_model *cov, double *v);  
 void lognonstattrafo(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign);  
+		     double *Sign);  
 int checktrafo(cov_model *cov);
 void rangetrafo(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 bool Typetrafo(Types required, cov_model *cov, int depth);

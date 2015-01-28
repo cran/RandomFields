@@ -66,7 +66,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
 #define STANDARDKRIGING							\
   double *xx = REAL(X),							\
     *krig = REAL(Krig),							\
-    *C = NULL,								\
+    *Cx = NULL,								\
     *invcov = REAL(Invcov),						\
     *tgiven = REAL(Tgiven);						\
   int *notna = LOGICAL(Notna);						\
@@ -84,7 +84,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
     divachtzig = (nx<79) ? 1 : (nx / 79),				\
     divachtzigM1 = divachtzig - 1;					\
   bool pr=PL > 0 && GLOBAL.general.pch!='\0' && GLOBAL.general.pch!=' ';\
-  if ((C = (double*) MALLOC(sizeof(double) * vdimng * vdim))==NULL	\
+  if ((Cx = (double*) MALLOC(sizeof(double) * vdimng * vdim))==NULL	\
       /* || (dist = (double*) MALLOC(sizeof(double) * len_tgiven))==NULL */ \
       ) {								\
     err = ERRORMEMORYALLOCATION;					\
@@ -107,7 +107,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   for (i=0; i<dim; i++) origin[i] = 0.0;				\
 
 #define STANDARD_END				\
-  FREE(C);				\
+  FREE(Cx);				\
   if (err != NOERROR) {				\
     int endforX;				\
     endforX = nx * vdim * rep;			\
@@ -123,7 +123,7 @@ void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
 SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
 		   SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig) {
   // kriging variance is not calculated
-  // Ngiven : length given = length C vector to be calculated
+  // Ngiven : length given = length Cx vector to be calculated
   // Rep : repetition invcov
   // Nx : number of points in x, length(x) = nx * dim
 
@@ -135,16 +135,16 @@ SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
     // print("%d %d %d \n", i, nx, divachtzig);
     if (pr && (i % divachtzig == divachtzigM1)) PRINTF("%c", GLOBAL.general.pch);
     //for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(reg, tgiven, xx, ngiven, 1, C);//! fnktniert nicht mit mixed model! 
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx);//! fnktniert nicht mit mixed model! 
     // to do: multivariate: stimmt tgiven - xx???
 
-    //   for (r=0; r<ngiven * vdim * vdim; r++) print("%e ", C[r]); print("\n");
+    //   for (r=0; r<ngiven * vdim * vdim; r++) print("%e ", Cx[r]); print("\n");
     krigi = i;
     for (v=0; v<vdim; v++, krigi+=nx) {
       for(j=0, r=0; r<rep; r++) {
 	dummy = 0.0;
 	for (s=v*vdimng, k=0; k<vdimng; k++, s++) {
-	  if (notna[k]) dummy += C[s] * invcov[j++]; // memory problem
+	  if (notna[k]) dummy += Cx[s] * invcov[j++]; // memory problem
 	  // das kann auch inhaltlich ueberhaupt nicht stimmen. Bitte mit
 	  // meinem altem Code abgleichen! DONE!
 
@@ -174,10 +174,15 @@ SEXP simpleKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
 
   STANDARDKRIGING2;
 
-  CovIntern(reg, origin, var);
   for (i=0; i<nx; i++, xx+=dim) {
     //  for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(reg, tgiven, xx, ngiven, 1, C); //! fktniert nicht mit mixed model!
+    CovIntern(reg, xx, xx,  1 ,1, var);
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx); //! fktniert nicht mit mixed model!
+
+    ///printf("var %f %f %f %f\n", var[0], var[1], var[2], var[3]); BUG;
+
+    //printf("%f %f %d\n", Cx[0], Cx[1], vdim);
+
     krigi = i;
     if (pr && (krigi % divachtzig == divachtzigM1))
       PRINTF("%c", GLOBAL.general.pch);    
@@ -186,25 +191,32 @@ SEXP simpleKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
         lambda[k] = 0.0;
         if (notna[k])
           for (j=0; j<vdimng; j++) 
-	    lambda[k] += C[j+v*vdimng] * invcov[s++];
+	    lambda[k] += Cx[j+v*vdimng] * invcov[s++];
+	//printf(">> %d %d %f\n", v, k, lambda[k]);
       }
-      sigma2[krigi] = var[vari];
-      for (j=0; j<vdimng; j++) {
-        sigma2[krigi] -= lambda[j] * C[j+v*vdimng];
+      sigma2[krigi] = var[vari]; /// Cx(0) - lambda^C_x
+      //printf("A %f\n", sigma2[krigi]);
+     for (j=0; j<vdimng; j++) {
+        sigma2[krigi] -= lambda[j] * Cx[j+v*vdimng];
       }
-      if (sigma2[krigi] < 0) {
-	// print("%e", sigma2[krigi]);	
+     //printf("BvNA\n");   print("%e", sigma2[krigi]);	
+     if (sigma2[krigi] < 0) {
+	// 
+	//APMI(KEY[reg]);
+       //	BUG;
+	//print("%e", sigma2[krigi]);	
 	if (sigma2[krigi] < KRIGE_TOLERANCE) {
 	  err =  ERRORKRIGETOL;
 	  goto ErrorHandling;
 	}
 	sigma2[krigi] = 0.0;
       }
+
       for(d=0, r=0; r<rep; r++) {
         krig[krigi + r*vdim*nx] = 0.0;
         for (k=0; k<vdimng; k++)
           if(notna[k]) krig[krigi + r*vdim*nx] += lambda[k] * data[d++];
-      }
+     }
     }
   }
   if (pr) PRINTF("\n");
@@ -237,15 +249,15 @@ SEXP ordinaryKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
   for (i=0; i<nx; i++, xx+=dim) {
     if (pr && (i % divachtzig == divachtzigM1)) PRINTF("%c", GLOBAL.general.pch);
     //for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(reg, tgiven, xx, ngiven, 1, C);//! fnktniert nicht mit mixed model!
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx);//! fnktniert nicht mit mixed model!
     
-    //   for (r=0; r<ngiven * vdim * vdim; r++) print("%e ", C[r]); print("\n");
+    //   for (r=0; r<ngiven * vdim * vdim; r++) print("%e ", Cx[r]); print("\n");
     krigi = i;
     for (v=0; v<vdim; v++, krigi+=nx) {
       for(j=0, r=0; r<rep; r++) {
 	dummy = 0.0;
 	for (s=v*vdimng, k=0; k<vdimng; k++, s++) {
-	  if (notna[k]) dummy += C[s] * invcov[j++];
+	  if (notna[k]) dummy += Cx[s] * invcov[j++];
 	}
 	for(addv=0; addv<vdim; addv++)
 	  dummy += F[v*vdim+addv] * invcov[j++];
@@ -267,7 +279,7 @@ SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
 		    SEXP Invcov, SEXP Notna,
 		   SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
 		    SEXP Sigma2) {
- // Ngiven : length given = length C vector to be calculated
+ // Ngiven : length given = length Cx vector to be calculated
   // Rep : repetition data
   // Nx : number of points in x, length(x) = nx * dim
 
@@ -284,17 +296,17 @@ SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     goto ErrorHandling;
   }
   
-  CovIntern(reg, origin, var);
   for(i=0; i<vdim; i++)
     for(j=0; j<vdim; j++)
        F[i+j*vdim] = (i==j) ? 1.0 : 0.0;
  
   for (i=0; i<nx; i++, xx+=dim) {
+    CovIntern(reg, xx, xx,  1 ,1, var);
     krigi = i;    
     if (pr && (krigi % divachtzig == divachtzigM1)) 
       PRINTF("%c", GLOBAL.general.pch);
     //for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(reg, tgiven, xx, ngiven, 1, C);//!!fktniert nicht mit mixed model!
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx);//!!fktniert nicht mit mixed model!
     if (pr && (krigi % divachtzig == divachtzigM1)) 
       PRINTF("%c", GLOBAL.general.pch);    
     for (vari=v=0; v<vdim; v++, krigi += nx, vari += vdim+1) {
@@ -302,7 +314,7 @@ SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
         lambda[k] = 0.0;
         if (notna[k])
           for (j=0; j<vdimng; j++) 
-	    lambda[k] += C[j+v*vdimng] * invcov[s++];
+	    lambda[k] += Cx[j+v*vdimng] * invcov[s++];
         for(addv=0; addv<vdim; addv++)
 	  lambda[k] += F[addv+v*vdim] * invcov[s++];
       }
@@ -310,14 +322,14 @@ SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
         mu[k] = 0.0;
         if (notna[k])
           for (j=0; j<vdimng; j++) 
-	    mu[k] += C[j+v*vdimng] * invcov[s++];
+	    mu[k] += Cx[j+v*vdimng] * invcov[s++];
         for(addv=0; addv<vdim; addv++)
 	  mu[k] += F[addv+v*vdim] * invcov[s++];	
       }
       
       sigma2[krigi] = var[vari];
       for (j=0; j<vdimng; j++) {
-        sigma2[krigi] -= lambda[j] * C[j+v*vdimng];
+        sigma2[krigi] -= lambda[j] * Cx[j+v*vdimng];
       }
       for(j=0; j<vdim; j++)
 	sigma2[krigi] -= mu[j] * F[j+v*vdim];
@@ -375,8 +387,8 @@ SEXP universalKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
     if (pr && (krigi % divachtzig == divachtzigM1))
       PRINTF("%c", GLOBAL.general.pch);
     //for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    //Initializing C
-    CovIntern(reg, tgiven, xx, ngiven, 1, C);
+    //Initializing Cx
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx);
     //install R variables
     for (d=0; d<dim; d++) REAL(trendargs)[d] = xx[d];
 
@@ -389,7 +401,7 @@ SEXP universalKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
       for (j=0, r=0; r<rep; r++) {
 	dummy = 0.0;
 	for (s=v*vdimng, k=0; k<vdimng; k++, s++) {
-	  if (notna[k]) dummy += C[s] * invcov[j++];
+	  if (notna[k]) dummy += Cx[s] * invcov[j++];
 	}
 	for (f=0; f<nfct; f++)
 	  dummy += F[v*nfct+f] * invcov[j++];
@@ -457,18 +469,19 @@ SEXP universalKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
   if ((err = invertMatrix(Qmatrix, nfct)) > NOERROR) goto ErrorHandling;
 
   //Calculating the variance
-  CovIntern(reg, origin, var);
+  //CovIntern(reg, origin, var);
   
   //Kriging for each kriging point
 
   for (i=0; i<nx; i++, xx+=dim) {
+    CovIntern(reg, xx, xx,  1 ,1, var);
     krigi = i;
     if (pr && (krigi % divachtzig == divachtzigM1))
       PRINTF("%c", GLOBAL.general.pch);
     //Determining x
     //Calculating C vector
     //for(j=d=0; j<len_tgiven; j++, d= (d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    CovIntern(reg, tgiven, xx, ngiven, 1, C); 
+    CovIntern(reg, tgiven, xx, ngiven, 1, Cx); 
     //Calculating fvector
     for (d=0; d<dim; d++) REAL(trendargs)[d] = xx[d];
     defineVar(install("trendargs"), trendargs, trend_envir);
@@ -477,7 +490,7 @@ SEXP universalKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     UNPROTECT(1);
     //Solving the kriging equations
     //Calculating lambak
-    matmult(invcov, C, lambdak, vdimng, vdimng, vdim);
+    matmult(invcov, Cx, lambdak, vdimng, vdimng, vdim);
     //Initializing R
     matmulttransposed(Fmatrix, lambdak, Rvector, vdimng, nfct, vdim);
     int endfor = nfct*vdim;
@@ -491,7 +504,7 @@ SEXP universalKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     for(vari=v=0; v<vdim; v++, vari+=vdim+1, krigi+=nx) {
       sigma2[krigi] = var[vari];
       for (j=0; j<vdimng; j++) {
-	sigma2[krigi] -= lambda[j+v*vdimng] * C[j+v*vdimng];
+	sigma2[krigi] -= lambda[j+v*vdimng] * Cx[j+v*vdimng];
       }
       for (j=0; j<nfct; j++)
 	sigma2[krigi] -= mu[j+v*nfct] * fvector[j+v*nfct];
@@ -532,7 +545,7 @@ SEXP intrinsicKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
 		      SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig,
 		      SEXP Polydeg) { 
   // kriging variance is not calculated
- // Ngiven : length given = length C vector to be calculated
+ // Ngiven : length given = length Cx vector to be calculated
   // Rep : repetition data
   // Nx : number of points in x, length(x) = nx * dim
   int  f,
@@ -562,8 +575,8 @@ SEXP intrinsicKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
       PRINTF("%c", GLOBAL.general.pch);
     //for (j=d=0; j<len_tgiven; j++, d=(d+1) % dim) dist[j] = tgiven[j] - xx[d];
     //Initializing Cf0
-    PseudovariogramIntern(reg, tgiven, xx, ngiven, 1, C);
-    for (j=0; j<vdimng*vdim; j++) C[j] = (-1.0)*C[j];
+    PseudovariogramIntern(reg, tgiven, xx, ngiven, 1, Cx);
+    for (j=0; j<vdimng*vdim; j++) Cx[j] = (-1.0)*Cx[j];
     for (k=0; k<vdimnf*vdim; k++) F[k] = 0.0;
     for (k=0, v=0; v<vdim; v++, k+=vdimnf) {
       for (j=0; j<nfct; j++, k++) {
@@ -575,7 +588,7 @@ SEXP intrinsicKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
       for (j=0, r=0; r<rep; r++) {
 	dummy = 0.0;
 	for (s=v*vdimng, k=0; k<vdimng; k++, s++) {
-	  if (notna[k]) dummy += C[s] * invcov[j++];
+	  if (notna[k]) dummy += Cx[s] * invcov[j++];
 	}
 	for (f=0; f<vdimnf; f++)
 	  dummy += F[v*vdimnf+f] * invcov[j++];
@@ -595,7 +608,7 @@ SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
 		    SEXP Invcov, SEXP Notna,
 		   SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
 		    SEXP Sigma2, SEXP Polydeg) {
- // Ngiven: number of points given = length C vector to be calculated
+ // Ngiven: number of points given = length Cx vector to be calculated
   // Rep: repitition data
   // Nx: number of points in x, length(x) = nx * dim
   // NrowPowers: Number of functions to form the trend
@@ -713,9 +726,9 @@ SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     //Determining x
     //Calculating C vector
     //for(j=d=0; j<len_tgiven; j++, d= (d+1) % dim) dist[j] = tgiven[j] - xx[d];
-    PseudovariogramIntern(reg, tgiven, xx, ngiven, 1, C);
+    PseudovariogramIntern(reg, tgiven, xx, ngiven, 1, Cx);
     endfor = vdimng*vdim;
-    for(j=0; j<endfor; j++) C[j] *= -1.0;
+    for(j=0; j<endfor; j++) Cx[j] *= -1.0;
     //Calculating fvector
     endfor = vdimnf*vdim;
     for(k=0; k<endfor; k++) fvector[k] = 0.0;
@@ -729,7 +742,7 @@ SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     
     //Solving the kriging equations
     //Calculating lambak
-    matmult(invcov, C, lambdak, vdimng, vdimng, vdim);
+    matmult(invcov, Cx, lambdak, vdimng, vdimng, vdim);
     //Initializing R
     matmulttransposed(Fmatrix, lambdak, Rvector, vdimng, vdimnf, vdim);
     endfor = vdimnf*vdim;
@@ -743,7 +756,7 @@ SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
     for(vari=v=0; v<vdim; v++, vari+=vdim+1, krigi+=nx) {
       sigma2[krigi] = var[vari];
       for (k=0; k<vdimng; k++) {
-	if(notna[k]) sigma2[krigi] -= lambda[k+v*vdimng] * C[k+v*vdimng];
+	if(notna[k]) sigma2[krigi] -= lambda[k+v*vdimng] * Cx[k+v*vdimng];
       }
       for (j=0; j<vdimnf; j++)
 	sigma2[krigi] -= mu[j+v*vdimnf] * fvector[j+v*vdimnf];

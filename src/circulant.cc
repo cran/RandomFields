@@ -482,7 +482,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	c[0][2*i+1] = 0.0;
       }
     } else {
-      int index1, index2, sign;
+      int index1, index2, Sign;
       for(i = 0; i<mtot; i++) {
 	twoi=2*i;
 	twoi_plus1=twoi+1;
@@ -493,14 +493,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	      
 	    index1 = vdim * k + l;
 	    if(l>=k) { 
-	      index2=index1; sign=1;
+	      index2=index1; Sign=1;
 	      s->positivedefinite &= k!=l || fabs(c[index2][twoi_plus1])<=tolIm;
 	      //	      c[index2][twoi_plus1].r = 0.0; ?!!!
 	    }  // obtain lower triangular bit of c as well with
-	    else{ index2= vdim * l + k; sign=-1;}  // (-1) times imaginary part of upper triangular bit
+	    else{ index2= vdim * l + k; Sign=-1;}  // (-1) times imaginary part of upper triangular bit
 
 	    R[index1].r = c[index2][twoi];
-	    R[index1].i = sign*c[index2][twoi_plus1];
+	    R[index1].i = Sign*c[index2][twoi_plus1];
 
 ///	if (i < 5) 
 	    //print("%d %f %f; vdim=%d\n", index1, R[index1].r, R[index1].i, vdim);

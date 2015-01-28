@@ -1593,7 +1593,9 @@ void InitModelList() {
 	       false, SUBMODEL_DEP, INFDIM-1, false, NOT_MONOTONE);
   addCov(nonstatsum);
   subnames("phi");  
- 
+  AddVariant(NegDefType, EARTH_COORD);
+  // AddVariant(NegDefType, SPHERICAL_COORD);
+
 
   USER =
     IncludeModel("U", UndefinedType, 0, 0, 16, kappaUser, 
@@ -1745,13 +1747,13 @@ void InitModelList() {
 
   RANDOMSIGN = 
     IncludeModel("sign",  ShapeType, 1, 1, 1, NULL, XONLY, PREVMODELI,
-		 check_randomsign, range_randomsign, PREF_NOTHING,
+		 check_randomSign, range_randomSign, PREF_NOTHING,
 		 false, SCALAR, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
   //nickname("");
   kappanames("p", REALSXP);
-  addCov(randomsign, NULL, NULL, randomsignInverse, randomsignNonstatInverse);
-  addlogCov(lograndomsign);
-  RandomShape(1, struct_randomsign, init_randomsign, do_randomsign,
+  addCov(randomSign, NULL, NULL, randomSignInverse, randomSignNonstatInverse);
+  addlogCov(lograndomSign);
+  RandomShape(1, struct_randomSign, init_randomSign, do_randomSign,
 	      true, true, false); 
  
 

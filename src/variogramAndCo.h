@@ -224,7 +224,7 @@ if (grid) {					\
 
 void CovVario(cov_model *cov, bool is_cov, bool pseudo, 
 	      double *value);
-void CovIntern(int reg, double *x, double *value);
+///void CovIntern(int reg, double *x, double *value);
 void CovIntern(int reg, double *x, double *y, long lx, long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *y,
 			   long lx, long ly, double *value);

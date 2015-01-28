@@ -1125,7 +1125,7 @@ rffit.gauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, data,
   if (RFopt$general$modus_operandi == MODENAMES[normal + 1] &&
       RFopt$internal$warn_normal_mode) {
     RFoptions(internal.warn_normal_mode = FALSE)
-    message("The modus_operandi='", MODENAMES[normal + 1], "' is save, but slow. If you like the MLE running\nfaster (at the price of being slightly less save) choose mode='easygoing' or\neven mode='", MODENAMES[sloppy + 1], "'.")
+    message("The modus_operandi='", MODENAMES[normal + 1], "' is save, but slow. If you like the MLE running\nfaster (at the price of being slightly less save) choose modus='easygoing' or\neven modus='", MODENAMES[sloppy + 1], "'.")
   }
 
   debug <- FALSE

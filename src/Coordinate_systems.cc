@@ -39,9 +39,9 @@ void iso2iso(double *x, cov_model *cov, double *v) {
   double y=fabs(*x);
   CovList[cov->nr].cov(&y, cov, v); // nicht gatternr
 }
-void logiso2iso(double *x, cov_model *cov, double *v, double *sign) {
+void logiso2iso(double *x, cov_model *cov, double *v, double *Sign) {
   double y=fabs(*x);
-  CovList[cov->nr].log(&y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
 }
 void spiso2spiso(double *x, cov_model *cov, double *v) {
   double y[2];
@@ -49,19 +49,19 @@ void spiso2spiso(double *x, cov_model *cov, double *v) {
   y[1] = fabs(x[1]);
   CovList[cov->nr].cov(y, cov, v);// nicht gatternr
 }
-void logspiso2spiso(double *x, cov_model *cov, double *v, double *sign) {
+void logspiso2spiso(double *x, cov_model *cov, double *v, double *Sign) {
   double y[2];
   y[0] = fabs(x[0]);
   y[1] = fabs(x[1]);
-  CovList[cov->nr].log(y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(y, cov, v, Sign);// nicht gatternr
 }
 void spacetime2iso(double *x, cov_model *cov, double *v) {
   double y=sqrt(x[0] * x[0] + x[1] * x[1]);
   CovList[cov->nr].cov(&y, cov, v);// nicht gatternr
 }
-void logspacetime2iso(double *x, cov_model *cov, double *v, double *sign) {
+void logspacetime2iso(double *x, cov_model *cov, double *v, double *Sign) {
   double y=sqrt(x[0] * x[0] + x[1] * x[1]);
-  CovList[cov->nr].log(&y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
 }
 
 void Stat2iso(double *x, cov_model *cov, double *v) {
@@ -76,7 +76,7 @@ void Stat2iso(double *x, cov_model *cov, double *v) {
   b = sqrt(b);
   CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
 }
-void logStat2iso(double *x, cov_model *cov, double *v, double *sign) {
+void logStat2iso(double *x, cov_model *cov, double *v, double *Sign) {
   double b = 0.0;
   int i,
     dim=cov->xdimgatter;  
@@ -84,7 +84,7 @@ void logStat2iso(double *x, cov_model *cov, double *v, double *sign) {
     b += x[i] *x[i];
   }
   b = sqrt(b);
-  CovList[cov->nr].log(&b, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
 }
 void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
   double a, b;
@@ -98,7 +98,7 @@ void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
 }
 void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
-		    double *sign) {
+		    double *Sign) {
   double a, b;
   int d, 
     dim=cov->xdimgatter;  
@@ -107,7 +107,7 @@ void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
     b += a * a;
   }
   b = sqrt(b);
-  CovList[cov->nr].log(&b, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
 }
 void Stat2spacetime(double *x, cov_model *cov, double *v) {
   double b, z[2];
@@ -118,14 +118,14 @@ void Stat2spacetime(double *x, cov_model *cov, double *v) {
   z[1] = fabs(x[dim]);
   CovList[cov->nr].cov(z, cov, v);// nicht gatternr
 }
-void logStat2spacetime(double *x, cov_model *cov, double *v, double *sign) {
+void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign) {
   double b, z[2];
   int i,
     dim=cov->xdimgatter - 1;  
   for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
   z[0] = sqrt(b);
   z[1] = fabs(x[dim]);
-  CovList[cov->nr].log(z, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
 }
 void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
   double a, b, z[2];
@@ -140,7 +140,7 @@ void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].cov(z, cov, v);// nicht gatternr
 }
 void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
-			  double *sign) {
+			  double *Sign) {
   double a, b, z[2];
   int d,
     dim=cov->xdimgatter - 1;  
@@ -150,13 +150,13 @@ void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
   }
   z[0] = sqrt(b);
   z[1] = fabs(x[dim] - y[dim]);
-  CovList[cov->nr].log(z, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
 }
 void Stat2Stat(double *x, cov_model *cov, double *v) {
   CovList[cov->nr].cov(x, cov, v);// nicht gatternr
 }
-void logStat2Stat(double *x, cov_model *cov, double *v, double *sign) {
-  CovList[cov->nr].log(x, cov, v, sign);// nicht gatternr
+void logStat2Stat(double *x, cov_model *cov, double *v, double *Sign) {
+  CovList[cov->nr].log(x, cov, v, Sign);// nicht gatternr
 }
 
 #define nonstat2statInner						\
@@ -170,9 +170,9 @@ void Nonstat2Stat(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].cov(z, cov, v);// nicht gatternr
 }
 void logNonstat2Stat(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign) {
+		     double *Sign) {
   nonstat2statInner;
-  CovList[cov->nr].log(z, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
 }
 
 void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v) {
@@ -180,8 +180,8 @@ void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v) {
 }
 
 void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
-			double *sign) {
-  CovList[cov->nr].nonstatlog(x, y, cov, v, sign);// nicht gatternr
+			double *Sign) {
+  CovList[cov->nr].nonstatlog(x, y, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -245,9 +245,9 @@ void EarthIso2EarthIso(double *x, cov_model *cov, double *v) {
   ISOMOD(x, X, 180);
   CovList[cov->nr].cov(X, cov, v); // nicht gatternr
 }
-void logEarthIso2EarthIso(double *x, cov_model *cov, double *v, double *sign) {
+void logEarthIso2EarthIso(double *x, cov_model *cov, double *v, double *Sign) {
   ISOMOD(x, X, 180);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 void NonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v) {
   ESnonstat2iso(piD180 * x, piD180 * y);
@@ -255,10 +255,10 @@ void NonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logNonstatEarth2EarthIso(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign) {
+		     double *Sign) {
   ESnonstat2iso(piD180 * x, piD180 * y);
   X[0] *= H80Dpi;
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 
 void Earth2Earth(double *x,  cov_model *cov, double *v) {
@@ -267,10 +267,10 @@ void Earth2Earth(double *x,  cov_model *cov, double *v) {
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logEarth2Earth(double *x, cov_model *cov, double *v, 
-		    double *sign) {
+		    double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(x, X, 360, 180);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 void NonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v) {
   int d, dim=cov->xdimgatter;					
@@ -279,11 +279,11 @@ void NonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].nonstat_cov(X, Y, cov, v);// nicht gatternr	
 }
 void logNonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign) {
+		     double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(x, X, 360, 180);
   STATMOD(y, Y, 360, 180);
-  CovList[cov->nr].nonstatlog(X, Y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
 // BERRETH ::
@@ -292,18 +292,18 @@ void EarthIso2SphereIso(double *x, cov_model *cov, double *v) {
   ISOMOD(piD180 * x, X, M_PI);
   CovList[cov->nr].cov(X, cov, v); // nicht gatternr
 }
-void logEarthIso2SphereIso(double *x, cov_model *cov, double *v, double *sign) {
+void logEarthIso2SphereIso(double *x, cov_model *cov, double *v, double *Sign) {
   ISOMOD(piD180 * x, X, M_PI);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 void NonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v) {
   ESnonstat2iso(piD180 * x, piD180 * y);
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logNonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign) {
+		     double *Sign) {
   ESnonstat2iso(piD180 * x, piD180 * y);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 
 void Earth2Sphere(double *x, cov_model *cov, double *v) {
@@ -311,10 +311,10 @@ void Earth2Sphere(double *x, cov_model *cov, double *v) {
   STATMOD(piD180 * x, X, M_2_PI, M_PI);
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
-void logEarth2Sphere(double *x, cov_model *cov, double *v, double *sign) {
+void logEarth2Sphere(double *x, cov_model *cov, double *v, double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(piD180 * x, X, M_2_PI, M_PI);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 void NonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v) {
   int d, dim=cov->xdimgatter;	
@@ -323,11 +323,11 @@ void NonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logNonstatEarth2Sphere(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign) {
+		     double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(piD180 * x, X, M_2_PI, M_PI);
   STATMOD(piD180 * y, Y, M_2_PI, M_PI);
-  CovList[cov->nr].nonstatlog(X, Y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -337,18 +337,18 @@ void SphereIso2SphereIso(double *x, cov_model *cov, double *v) {
   CovList[cov->nr].cov(X, cov, v); // nicht gatternr
 }
 void logSphereIso2SphereIso(double *x, cov_model *cov, double *v, 
-			    double *sign) {
+			    double *Sign) {
   ISOMOD(x, X, M_PI);
-  CovList[cov->nr].log(X, cov, v, sign);// nic+ht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nic+ht gatternr
 }	
 void NonstatSphere2SphereIso(double *x, double *y, cov_model *cov, double *v) {
   ESnonstat2iso(x, y);
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logNonstatSphere2SphereIso(double *x, double *y, cov_model *cov,
-				double *v, double *sign) {
+				double *v, double *Sign) {
   ESnonstat2iso(x, y);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 
 void Sphere2Sphere(double *x, cov_model *cov, double *v) {
@@ -357,10 +357,10 @@ void Sphere2Sphere(double *x, cov_model *cov, double *v) {
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logSphere2Sphere(double *x, cov_model *cov,
-				double *v, double *sign) {
+				double *v, double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(x, X, M_2_PI, M_PI);
-  CovList[cov->nr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].log(X, cov, v, Sign);// nicht gatternr
 }
 void NonstatSphere2Sphere(double *x, double *y, cov_model *cov, double *v) {
   int d, dim=cov->xdimgatter;			       
@@ -369,11 +369,11 @@ void NonstatSphere2Sphere(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->nr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
-				double *v, double *sign) {
+				double *v, double *Sign) {
   int d, dim=cov->xdimgatter;			       
   STATMOD(x, X, M_2_PI, M_PI);
   STATMOD(y, Y, M_2_PI, M_PI);   
-  CovList[cov->nr].nonstatlog(X, Y, cov, v, sign);// nicht gatternr
+  CovList[cov->nr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -416,36 +416,36 @@ void EarthKM2CartStat(double *x, cov_model *cov, double *v) {
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
   CovList[cov->secondarygatternr].cov(X, cov, v);// nicht gatternr
 }
-void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *sign) {
+void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *Sign) {
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
-  CovList[cov->secondarygatternr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].log(X, cov, v, Sign);// nicht gatternr
 }
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v) {
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
   CovList[cov->secondarygatternr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logEarthKM2Cart(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
-  CovList[cov->secondarygatternr].nonstatlog(X, Y, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
 void EarthMiles2CartStat(double *x, cov_model *cov, double *v) {
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
   CovList[cov->secondarygatternr].cov(X, cov, v);// nicht gatternr
 }
-void logEarthMiles2CartStat(double *x, cov_model *cov, double *v, double *sign) {
+void logEarthMiles2CartStat(double *x, cov_model *cov, double *v, double *Sign) {
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
-  CovList[cov->secondarygatternr].log(X, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].log(X, cov, v, Sign);// nicht gatternr
 }
 void EarthMiles2Cart(double *x, double *y, cov_model *cov, double *v) {
   earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
   CovList[cov->secondarygatternr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
 void logEarthMiles2Cart(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
   earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
-  CovList[cov->secondarygatternr].nonstatlog(X, Y, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
 #define QP 0
@@ -564,12 +564,12 @@ void EarthKM2OrthogStat(double *x, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
 }
 void logEarthKM2OrthogStat(double *x, cov_model *cov, double *v,
-			       double *sign) {
+			       double *Sign) {
   assert(cov->gatternr == EARTHKM2ORTHOGRAPHIC);
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
   orthDefStat;
   orthTrafoStat;
-  CovList[cov->secondarygatternr].log(U, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr
 }
 void EarthKM2Orthog(double *x, double *y, cov_model *cov, double *v) {
   assert(cov->gatternr == EARTHKM2ORTHOGRAPHIC);
@@ -579,12 +579,12 @@ void EarthKM2Orthog(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
 }
 void logEarthKM2Orthog(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
   assert(cov->gatternr == EARTHKM2ORTHOGRAPHIC);
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
   orthDef;
   orthTrafo;
-  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -597,12 +597,12 @@ void EarthMiles2OrthogStat(double *x, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
 }
 void logEarthMiles2OrthogStat(double *x, cov_model *cov, double *v,
-			       double *sign) {
+			       double *Sign) {
   assert(cov->gatternr == EARTHMILES2ORTHOGRAPHIC);
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
   orthDefStat;
   orthTrafoStat;
-  CovList[cov->secondarygatternr].log(U, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr
 }
 void EarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v) {
    assert(cov->gatternr == EARTHMILES2ORTHOGRAPHIC);
@@ -612,12 +612,12 @@ void EarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
 }
 void logEarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
   assert(cov->gatternr == EARTHMILES2ORTHOGRAPHIC);
   earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
  orthDef;
   orthTrafo;
-  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -659,13 +659,13 @@ void EarthKM2GnomonicStat(double *x, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
 }
 void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v,
-			       double *sign) {
+			       double *Sign) {
     assert(cov->gatternr == EARTHKM2GNOMONIC);
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
    orthDefStat;
  GnomonicStat;
   orthTrafoStat;
-  CovList[cov->secondarygatternr].log(U, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr
 }
 void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
     assert(cov->gatternr == EARTHKM2GNOMONIC);
@@ -676,13 +676,13 @@ void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
 }
 void logEarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
     assert(cov->gatternr == EARTHKM2GNOMONIC);
  earth2cartInner(radiuskm_aequ, radiuskm_pol);
   orthDef;
   Gnomonic;
   orthTrafo;
-  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
 }
 
 
@@ -695,13 +695,13 @@ void EarthMiles2GnomonicStat(double *x, cov_model *cov, double *v) {
   CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
 }
 void logEarthMiles2GnomonicStat(double *x, cov_model *cov, double *v,
-			       double *sign) {
+			       double *Sign) {
    assert(cov->gatternr == EARTHMILES2GNOMONIC);
   earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
   orthDefStat;
   GnomonicStat;
   orthTrafoStat;
-  CovList[cov->secondarygatternr].log(U, cov, v, sign);// nicht gatternr .
+  CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr .
 }
 void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
    assert(cov->gatternr == EARTHMILES2GNOMONIC);
@@ -712,13 +712,13 @@ void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
  CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
 }
 void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-		     double *sign) {
+		     double *Sign) {
    assert(cov->gatternr == EARTHMILES2GNOMONIC);
   earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
   orthDef;
   Gnomonic;
   orthTrafo;
-  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, sign);// nicht gatternr
+  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
 }
 
 

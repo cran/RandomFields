@@ -191,9 +191,11 @@ RMuser <- function(type, domain, isotropy, vdim, beta,
           par.model[['type']] <- pmatch(type, TYPENAMES) - 1
 
         
-        if (par.model[['type']] < ProcessType)
-          message("It is likely that the defined function is already available in 'RandomFields'.\nUsing predefined functions leads to (much!) shorter computing times.\nSee ?RMmodels for an overview over the implemented models. Further,\nsome simulation methods do not work at all for user defined functions.")
-        else if (par.model[['type']] == TrendType)
+        if (any(par.model[['type']] < ProcessType))
+          message("It is likely that the function you are defining is already available in 'RandomFields', or hasn't got the claimed property ('",
+                  TYPENAMES[par.model[['type']]],
+                  ")'. (If you are not whether your function is positive/negative definite, please contact schlather@math.uni-mannheim.de.)\nUsing predefined functions leads to (much!) shorter computing times.\nSee ?RMmodels for an overview over the implemented models. Further,\nsome simulation methods do not work at all for user defined functions.")
+        else if (any(par.model[['type']] == TrendType))
           message("Please make sure that the defined function is not available in 'RandomFields'.\nUsing predefined functions leads to (much!) shorter computing times. Further,\nsome simulation methods do not work at all for user defined functions.");
 
 	if (hasArg(domain)) {

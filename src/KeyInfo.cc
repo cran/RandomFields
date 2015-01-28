@@ -926,7 +926,7 @@ static bool PMI_print_dollar = !true,
   PMI_print_mpp = !true,
   PMI_print_pgs = !true, 
   PMI_print_details = !true,
-  PMI_print_loc = !true;
+  PMI_print_loc = true;
 static int  PMI_print_rect = 1;  // 0, 1, 2
 
 void pmi(cov_model *cov, char all, int level) {    
@@ -1280,8 +1280,8 @@ void pmi(cov_model *cov, char all, int level) {
 	leer(level); { PRINTF("%-10s ","rct:squeezd"); 
 	  for (d=0; d<p->tmp_n; d++) PRINTF("%d ", p->squeezed_dim[d]);
 	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:assign"); 
-	  for (d=0; d<p->tmp_n; d++) PRINTF("%d ", p->assign[d]);
+	leer(level); { PRINTF("%-10s ","rct:asSign"); 
+	  for (d=0; d<p->tmp_n; d++) PRINTF("%d ", p->asSign[d]);
 	  PRINTF("\n"); }
 	leer(level); { PRINTF("%-10s ","rct:idx"); 
 	  for (d=0; d<dimP1; d++) PRINTF("%d ", p->i[d]); PRINTF("\n"); }

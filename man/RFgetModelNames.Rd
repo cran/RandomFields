@@ -134,7 +134,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
    
    \item{\code{operator}}{indicates whether the model is an operator, 
      i.e. it requires at least one submodel, 
-     e.g. \command{\link{RMplus}} or
+     e.g. \command{\link[=RMplus]{+}} or
      \command{\link{RMdelay}} are operators; see
      \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
    }

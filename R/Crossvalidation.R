@@ -57,7 +57,6 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                             full = FALSE,
                             ...) {
 
-
   RFoptOld <- internal.rfoptions(seed=NA, ...)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
@@ -124,8 +123,10 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
                            distances=distances, dimensions=dim,
                            RFopt=RFopt)
+
     }
    
+ 
     if (length(Z$data) > 1)
       stop("cross-valdation currently only works for single sets")
 
@@ -137,7 +138,6 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
     #oldRF <- RFoptions(); Print("A")
     
     for (nr in 1:len) {
-#      Print(nr, len, RFoptions(), all.equal(oldRF, RFoptions()));     
        if (length(base::dim(Z$data[[1]])) == 2)
         Daten <- Z$data[[1]][-nr,   , drop=FALSE] ## nicht data -- inferiert!!
       else # dim == 3 assumed
@@ -152,18 +152,20 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                        x=coords, grid=grid, data=Daten,
                        lower=lower, upper=upper, bc_lambda = bc_lambda,
                        methods=methods, sub.methods=sub.methods,
-                       optim.control=optim.control, users.guess = users.guess,
+                       optim.control=optim.control, users.guessP = users.guess,
                        distances = distances, dim=dim,
                        transform = transform, spConform=FALSE)
           if (details) fitted[[nr]] <- fit
         }
       }
-      
+
       interpol <- RFinterpolate(fit, x = Zcoord[nr, , drop=FALSE],
                                 grid=FALSE,
                                 data = cbind(coords, Daten),
                                  spConform = FALSE,
                                 return_variance=TRUE, pch="")
+
+
       var[nr, ] <- as.vector(interpol$var)
       predicted[nr, ] <- as.vector(interpol$estim)
     }

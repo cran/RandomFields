@@ -657,7 +657,7 @@ int check_BR2BG(cov_model *cov) {
 
 // #define UNIF_LOGREFAREA dim
 #define SIGN_P 0
-void randomsign(double *x, cov_model *cov, double *v) { 
+void randomSign(double *x, cov_model *cov, double *v) { 
   cov_model *next = cov->sub[0];
   assert(next != NULL);
   COV(x, next, v);
@@ -665,23 +665,23 @@ void randomsign(double *x, cov_model *cov, double *v) {
   // printf("%f ", cov->q[0]);
 }
 
-void lograndomsign(double *x, cov_model *cov, double *v, double *sign) { 
+void lograndomSign(double *x, cov_model *cov, double *v, double *Sign) { 
   cov_model *next = cov->sub[0];
   assert(next != NULL);
-  LOGCOV(x, next, v, sign);
-  (*sign) *= cov->q[0];
+  LOGCOV(x, next, v, Sign);
+  (*Sign) *= cov->q[0];
 }
 
-void randomsignInverse(double *v, cov_model *cov, double *x){
+void randomSignInverse(double *v, cov_model *cov, double *x){
   cov_model *next = cov->sub[0];
   INVERSE(v, next, x);
 }
-void randomsignNonstatInverse(double *v, cov_model *cov, double *x, double *y){
+void randomSignNonstatInverse(double *v, cov_model *cov, double *x, double *y){
   cov_model *next = cov->sub[0];
   NONSTATINVERSE(v, next, x, y);
 }
 
-int check_randomsign(cov_model *cov) {
+int check_randomSign(cov_model *cov) {
   cov_model *next = cov->sub[0];
   int err, 
     size = 1;
@@ -696,7 +696,7 @@ int check_randomsign(cov_model *cov) {
   return NOERROR;
 }
 
-void range_randomsign(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+void range_randomSign(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[SIGN_P] = 0; 
   range->max[SIGN_P] = 1;
   range->pmin[SIGN_P] = 0.0001;
@@ -705,14 +705,14 @@ void range_randomsign(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmax[SIGN_P] = false;
 }
 
-int init_randomsign(cov_model *cov, gen_storage *s) {
+int init_randomSign(cov_model *cov, gen_storage *s) {
   cov_model *next = cov->sub[0];
   int err;
   double Eminus;
   assert(next != NULL);
   if ((err=INIT(next, cov->mpp.moments, s))!= NOERROR) return err;
   if (next->fieldreturn && next->loggiven) 
-    SERR("log return is incompatible with random sign");
+    SERR("log return is incompatible with random Sign");
   
   if (cov->mpp.moments >= 1) {
     cov->mpp.mM[0] = next->mpp.mM[0];
@@ -732,14 +732,14 @@ int init_randomsign(cov_model *cov, gen_storage *s) {
   return err;
 }
 
-void do_randomsign(cov_model *cov, gen_storage *s) {
+void do_randomSign(cov_model *cov, gen_storage *s) {
   cov_model *next = cov->sub[0];
   assert(next != NULL);
   DO(next, s); // nicht gatternr
   cov->q[0] = 2.0 * (UNIFORM_RANDOM <= P0(SIGN_P)) - 1.0;
   if (cov->q[0] != 1.0 && next->fieldreturn) { 
     assert(cov->q[0] == -1.0);
-    if (next->loggiven) ERR("log return is incompatible with random sign");
+    if (next->loggiven) ERR("log return is incompatible with random Sign");
     int i,
       endfor = Loc(next)->totalpoints;
     double *rf = cov->rf;
@@ -748,7 +748,7 @@ void do_randomsign(cov_model *cov, gen_storage *s) {
 }
 
 
-int struct_randomsign(cov_model *cov, cov_model **newmodel) {  
+int struct_randomSign(cov_model *cov, cov_model **newmodel) {  
   if (cov->role == ROLE_GAUSS || hasPoissonRole(cov)) {
     int err = STRUCT(cov->sub[0], newmodel);
     //  assert(cov->sub[0]->mpp.maxheights[0] == 1.0);
@@ -4130,10 +4130,10 @@ void trafo(double *x, cov_model *cov, double *v){
   COV(x, next, v);
 }
 void logtrafo(double *x, cov_model *cov, double *v, 
-		     double *sign){  
+		     double *Sign){  
   cov_model *next = cov->sub[0];
   assert(next != NULL);
-  LOGCOV(x, next, v, sign);
+  LOGCOV(x, next, v, Sign);
   assert(P0INT(TRAFO_ISO) == next->isoown); 
 }
 void nonstattrafo(double *x, double *y, cov_model *cov, double *v){  
@@ -4142,11 +4142,11 @@ void nonstattrafo(double *x, double *y, cov_model *cov, double *v){
   NONSTATCOV(x, y, next, v);
 }
 void lognonstattrafo(double *x, double *y, cov_model *cov, double *v, 
-		     double *sign){  
+		     double *Sign){  
   cov_model *next = cov->sub[0];
   assert(P0INT(TRAFO_ISO) == next->isoown); 
   assert(next != NULL);
-  LOGNONSTATCOV(x, y, next, v, sign);
+  LOGNONSTATCOV(x, y, next, v, Sign);
 }
 int checktrafo(cov_model *cov){
   if (PisNULL(TRAFO_ISO)) SERR("parameter not given");

@@ -97,7 +97,7 @@ void Siso(double *x, cov_model *cov, double *v){
   
 
 // simple transformations as variance, scale, anisotropy matrix, etc.  
-void logSiso(double *x, cov_model *cov, double *v, double *sign){
+void logSiso(double *x, cov_model *cov, double *v, double *Sign){
   cov_model *next = cov->sub[DOLLAR_SUB];
   int i,
     vdim = cov->vdim[0],
@@ -115,7 +115,7 @@ void logSiso(double *x, cov_model *cov, double *v, double *sign){
     y = scale[0]>0.0 ? y / scale[0] 
       : (y == 0.0 && scale[0]==0.0) ? 0.0 : RF_INF;
       
-  LOGCOV(&y, next, v, sign);
+  LOGCOV(&y, next, v, Sign);
   for (i=0; i<vdimSq; i++) v[i] += logvar; 
   
  
@@ -125,19 +125,16 @@ void Sstat(double *x, cov_model *cov, double *v){
   logSstat(x, cov, v, NULL);
 }
 
-void logSstat(double *x, cov_model *cov, double *v, double *sign){
+void logSstat(double *x, cov_model *cov, double *v, double *Sign){
   cov_model *next = cov->sub[DOLLAR_SUB],
     *Aniso = cov->kappasub[DAUSER];
-  double 
-    var = P0(DVAR),
+  double *z1 = NULL,
     *scale =P(DSCALE), 
     *aniso=P(DANISO);
   int i,
     nproj = cov->nrow[DPROJ],
     vdim = cov->vdim[0],
     vdimSq = vdim * vdim;
-
-  assert(cov->Sdollar->simplevar);
 
   if (nproj > 0) {
     int *proj = PINT(DPROJ);
@@ -153,14 +150,14 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
       for (i=0; i<nproj; i++)
 	z[i] = (x[proj[i] - 1] == 0 && scale[0] == 0) ? 0.0 : RF_INF;
     } 
-    if (sign==NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
+    z1 = z;
   } else if (Aniso != NULL) {
     int dim = Aniso->vdim[0];
     ALLOC_DOLLAR(z, dim);
     FCTN(x, Aniso, z);
-    if (sign == NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
+    z1 = z;
   } else if (aniso==NULL && (scale == NULL || scale[0] == 1.0)) {
-    if (sign==NULL) COV(x, next, v) else LOGCOV(x, next, v, sign);
+    z1 = x;
   } else {
     int xdimown = cov->xdimown;
     double *xz;
@@ -178,14 +175,25 @@ void logSstat(double *x, cov_model *cov, double *v, double *sign){
 	  z[i] = (xz[i] == 0.0 && scale[0] == 0.0) ? 0.0 : RF_INF;
       }
     }
-    if (sign==NULL) COV(z, next, v) else LOGCOV(z, next, v, sign);
-  }
+    z1 = z;
+  }  
 
-  if (sign==NULL) {
+
+  double var;
+  if (cov->Sdollar->simplevar) {
+    var = P0(DVAR);
+  } else {
+    FCTN(x, cov->kappasub[DVAR], &var);
+   }
+
+
+  if (Sign==NULL) {
+    COV(z1, next, v);
     for (i=0; i<vdimSq; i++) v[i] *= var; 
   } else {
-    double logvar = log(var);
-    for (i=0; i<vdimSq; i++) v[i] += logvar; 
+    LOGCOV(z1, next, v, Sign);
+    var = log(var);
+    for (i=0; i<vdimSq; i++) v[i] += var; 
   }
 
 }
@@ -195,7 +203,7 @@ void Snonstat(double *x, double *y, cov_model *cov, double *v){
 }
 
 void logSnonstat(double *x, double *y, cov_model *cov, double *v, 
-		 double *sign){
+		 double *Sign){
 
 
   cov_model 
@@ -234,8 +242,8 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     z2 = Z2;
     FCTN(x, Aniso, z1);
     FCTN(y, Aniso, z2);
-    if (sign == NULL) NONSTATCOV(z1, z2, next, v)
-      else LOGNONSTATCOV(z1, z2, next, v, sign);
+    if (Sign == NULL) NONSTATCOV(z1, z2, next, v)
+      else LOGNONSTATCOV(z1, z2, next, v, Sign);
   } else if (aniso==NULL && (scale==NULL || scale[0] == 1.0)) {
     z1 = x;
     z2 = y;
@@ -273,7 +281,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
   double var;
   if (cov->Sdollar->simplevar) {
     var = P0(DVAR);
-    if (sign != NULL) var = log(var);
+    if (Sign != NULL) var = log(var);
   } else {
     double w;
     location_type *loc = Loc(cov);
@@ -283,19 +291,19 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v,
     loc->i_row = dummy;
     FCTN(x, cov->kappasub[DVAR], &var);
     var *= w;
-    var = sign == NULL ?  sqrt(var)  : 0.5 * log(var);
+    var = Sign == NULL ?  sqrt(var)  : 0.5 * log(var);
     
    }
 
 
  
-  if (sign == NULL) {
+  if (Sign == NULL) {
     NONSTATCOV(z1, z2, next, v);
     //  printf("S-dim %d %f %f %f %f\n", vdimSq, v[0], v[1], v[2], v[3]);
    for (i=0; i<vdimSq; i++) v[i] *= var; 
    //  printf("--> S-dim %d %f %f %f %f\n", vdimSq, v[0], v[1], v[2], v[3]);
   } else {
-    LOGNONSTATCOV(z1, z2, next, v, sign);
+    LOGNONSTATCOV(z1, z2, next, v, Sign);
     for (i=0; i<vdimSq; i++) {
       v[i] += var; 
       //printf("%f %f \n", v[i], var);
@@ -926,7 +934,7 @@ int checkS(cov_model *cov) {
   bool simplevar = cov->kappasub[DVAR] == NULL || isRandom(cov->kappasub[DVAR]);
   if (!simplevar) {
 
-    cov->domown = KERNEL;
+    //cov->domown = KERNEL;
     ptwise_type ptt = cov->ptwise_definite;
 
     isotropy_type isonew = UpgradeToCoordinateSystem(cov->isoown);
@@ -2131,24 +2139,24 @@ void malStat(double *x, cov_model *cov, double *v){
   }
 }
 
-void logmalStat(double *x, cov_model *cov, double *v, double *sign){
+void logmalStat(double *x, cov_model *cov, double *v, double *Sign){
   cov_model *sub;
   int i, m,
     nsub=cov->nsub,
     vdim = cov->vdim[0],
     vsq = vdim * vdim;
   ALLOC_EXTRA(z, vsq);
-  ALLOC_EXTRA(zsign, vsq);
+  ALLOC_EXTRA(zSign, vsq);
 
   assert(cov->vdim[0] == cov->vdim[1]); 
   assert(x[0] >= 0.0 || cov->xdimown > 1);
-  for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
+  for (m=0; m<vsq; m++) {v[m] = 0.0; Sign[m]=1.0;}
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    LOGCOV(x, sub, z, zsign);
+    LOGCOV(x, sub, z, zSign);
     for (m=0; m<vsq; m++) {
       v[m] += z[m]; 
-      sign[m] *= zsign[m];
+      Sign[m] *= zSign[m];
     }
   }
 }
@@ -2172,21 +2180,21 @@ void malNonStat(double *x, double *y, cov_model *cov, double *v){
 }
 
 void logmalNonStat(double *x, double *y, cov_model *cov, double *v, 
-		   double *sign){
+		   double *Sign){
   cov_model *sub;
   int i, m, nsub=cov->nsub,
     vdim = cov->vdim[0],
     vsq = vdim * vdim;
   assert(cov->vdim[0] == cov->vdim[1]);
   ALLOC_EXTRA(z, vsq);
-  ALLOC_EXTRA(zsign, vsq);
-  for (m=0; m<vsq; m++) {v[m] = 0.0; sign[m]=1.0;}
+  ALLOC_EXTRA(zSign, vsq);
+  for (m=0; m<vsq; m++) {v[m] = 0.0; Sign[m]=1.0;}
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
-    LOGNONSTATCOV(x, y, sub, z, zsign);
+    LOGNONSTATCOV(x, y, sub, z, zSign);
     for (m=0; m<vsq; m++) {
       v[m] += z[m]; 
-      sign[m] *= zsign[m];
+      Sign[m] *= zSign[m];
     }
   }
 }
@@ -3056,7 +3064,7 @@ void PowSstat(double *x, cov_model *cov, double *v){
   logPowSstat(x, cov, v, NULL);
 }
 
-void logPowSstat(double *x, cov_model *cov, double *v, double *sign){
+void logPowSstat(double *x, cov_model *cov, double *v, double *Sign){
   cov_model *next = cov->sub[POW_SUB];
   double 
     factor,
@@ -3072,12 +3080,12 @@ void logPowSstat(double *x, cov_model *cov, double *v, double *sign){
   ALLOC_DOLLAR(z, xdimown);
 
   for (i=0; i < xdimown; i++) z[i] = invscale * x[i];
-  if (sign==NULL) {
+  if (Sign==NULL) {
     COV(z, next, v);
     factor = var * pow(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
-    LOGCOV(z, next, v, sign);
+    LOGCOV(z, next, v, Sign);
     factor = log(var) + p * log(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
@@ -3088,7 +3096,7 @@ void PowSnonstat(double *x, double *y, cov_model *cov, double *v){
 }
 
 void logPowSnonstat(double *x, double *y, cov_model *cov, double *v, 
-		 double *sign){
+		 double *Sign){
   cov_model *next = cov->sub[POW_SUB];
   double 
     factor,
@@ -3108,12 +3116,12 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
     z2[i] = invscale * y[i];
   }
 
-  if (sign==NULL) {
+  if (Sign==NULL) {
     NONSTATCOV(z1, z2, next, v);
     factor = var * pow(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
-    LOGNONSTATCOV(z1, z2, next, v, sign);
+    LOGNONSTATCOV(z1, z2, next, v, Sign);
     factor = log(var) + p * log(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
