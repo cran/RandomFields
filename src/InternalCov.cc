@@ -293,6 +293,9 @@ int checkkappas(cov_model *cov, bool errornull){
 	  PALLOC(i, nr, nc);
 	}
 
+
+	//PMI(cov->calling);
+
 	if (!cov->initialised && 
 	    (err = INIT_RANDOM(ks, 0, cov->Sgen, P(i))) != NOERROR) { 
 	  // wird spaeter
@@ -424,8 +427,6 @@ int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
   if (!cov->checked) BUG;
   if (cov->initialised) return NOERROR;
   assert(cov != NULL);
-
-  //PMI(cov, -1);
 
   assert(cov->gatternr >= ISO2ISO && cov->gatternr <= LASTGATTER);
 
@@ -825,9 +826,15 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     LPRINT("%s\n", ERROR_LOC); 
   }
 
+  ///  printf("check2x %s\n", NAME(cov));
+
+
+
   //    assert(PL == 1);
   if (type==VariogramType && isAnySpherical(isoprev))
     SERR("variograms do not exist on spheres");
+
+  if (isTrend(type) && domprev == KERNEL) return ERRORFAILED;
   
   cov->domprev = domprev;
   cov->isoprev = isoprev;
@@ -836,7 +843,6 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   cov->typus = type; 
   cov->xdimprev = cov->xdimgatter = tsxdim; //if cov is isotropy or 
   //                                          spaceisotropic it is set to 1 or 2
- 
  
   if (tsxdim < 1) { 
     SERR("dimension less than 1"); 
@@ -1134,9 +1140,6 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	
      err = C->check(cov); // CHECK !
  
-      // assert(C->cov != Fctn || err == NOERROR);
-      //  PMI(cov, -1); assert(C->cov == Fctn);
- 
       if ((checkerror = err != NOERROR)) {
 
 	 errorMSG(err, checkmsg, LENERRMSG);
@@ -1179,12 +1182,10 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       while(cv->calling != NULL) cv = cv->calling;
       
       if (cov->xdimown != 2 && cov->isoown == SPACEISOTROPIC) {
-	//PMI(cov, -1);
 	err = ERRORDIM;
 	continue;
       }
       if (cov->tsdim < 2)  {
-	//	PMI(cov, -1);
 	err = ERRORDIM;
 	continue;
       }

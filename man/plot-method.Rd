@@ -367,6 +367,10 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
 }
 
 
+\seealso{
+   \command{\link{RFpar}}.
+}
+
 \keyword{methods}
 
 

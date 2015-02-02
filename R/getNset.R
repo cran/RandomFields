@@ -460,3 +460,40 @@ parameter.range <- function(model, param, dim=1){
 #  return(minmax)
 }
 
+
+
+mergeWithGlobal <- function(dots) {
+  if (exists(par.storage, envir=par.storage.env )) {
+    current <- dots
+    dots <- get(par.storage, envir=par.storage.env )
+    names.current <- names(current)
+    if (length(current) > 0) {
+      for (i in 1:length(current))
+        dots[[names.current[i]]] <- current[[i]]
+    }
+  }
+  dots
+}
+
+
+RFpar <- function(...) {
+  #l <- eval(substitute(list(...)))
+  
+  l <- list(...)
+  if (length(l) == 1 && is.null(l[[1]]) && length(names(l)) ==0) {
+    assign(par.storage, list(), envir=par.storage.env )
+    return(NULL)
+  }
+
+  if (!exists(par.storage, envir=par.storage.env ))
+    assign(par.storage, list(), envir=par.storage.env)
+
+  par <- get(par.storage, envir=par.storage.env )
+  if (length(l) == 0) return(par)
+
+  n <- names(l)
+  for (i in 1:length(l)) {
+    par[[n[i]]] <- l[[i]]
+  }
+  assign(par.storage, par, envir=par.storage.env ) 
+}

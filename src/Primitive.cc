@@ -478,7 +478,7 @@ int checkconstant(cov_model *cov) {
  
   if (GLOBAL.internal.warn_constant) {
     GLOBAL.internal.warn_constant = false;
-    warning("NOTE THAT THE DEFINITION OF 'RMconstant' HAS CHANGED. MAYBE, 'RMfixcov' IS THE CORRECT MODEL");
+    warning("NOTE that the definition of 'RMconstant' has changed. Maybe  'RMfixcov' is the model your are looking for");
   }
  
   cov->vdim[0] = cov->vdim[1] = cov->nrow[CONSTANT_M];
@@ -499,15 +499,14 @@ int checkconstant(cov_model *cov) {
   cov->ptwise_definite = pt_posdef;
    
   // check whether positive eigenvalue  
-  long total = cov->nrow[CONSTANT_M] * cov->ncol[CONSTANT_M] * sizeof(double);
-  double *dummy = (double*) MALLOC(total);
-  MEMCOPY(dummy, P(CONSTANT_M), total);
+  long vdimSq = cov->nrow[CONSTANT_M] * cov->ncol[CONSTANT_M];
+  EXTRA_STORAGE;
+  ALLOC_EXTRA(dummy, vdimSq);
+  MEMCOPY(dummy, P(CONSTANT_M), vdimSq * sizeof(double));    
+  F77_CALL(dpotrf)("Upper", cov->nrow + CONSTANT_M, dummy,
+		     cov->ncol + CONSTANT_M, &info); // cholesky
       
-  F77_CALL(dpofa)(dummy, cov->nrow + CONSTANT_M, cov->ncol + CONSTANT_M, 
-		  &info); // cholesky
-  
-  FREE(dummy);
-  if (info != 0) {
+  if (info != NOERROR) {
     if (isPosDef(cov)) return cov->q[0] = ERROR_MATRIX_POSDEF;
     cov->monotone = MONOTONE;
     cov->ptwise_definite = pt_indef;
@@ -521,6 +520,7 @@ int checkconstant(cov_model *cov) {
  
   return err;
 }
+
 
 void rangeconstant(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
@@ -736,22 +736,22 @@ int checkcovariate(cov_model *cov){
 void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[COVARIATE_C] = RF_NEGINF;
   range->max[COVARIATE_C] = RF_INF;
-  range->pmin[COVARIATE_C] = 1e10;
-  range->pmax[COVARIATE_C] = -1e10;
+  range->pmin[COVARIATE_C] = -1e10;
+  range->pmax[COVARIATE_C] = 1e10;
   range->openmin[COVARIATE_C] = true;
   range->openmax[COVARIATE_C] = true;
 
   range->min[COVARIATE_X] = RF_NEGINF;
   range->max[COVARIATE_X] = RF_INF;
-  range->pmin[COVARIATE_X] = 1e10;
-  range->pmax[COVARIATE_X] = -1e10;
+  range->pmin[COVARIATE_X] = -1e10;
+  range->pmax[COVARIATE_X] = 1e10;
   range->openmin[COVARIATE_X] = true;
   range->openmax[COVARIATE_X] = true;
 
   range->min[COVARIATE_T] = RF_NEGINF;
   range->max[COVARIATE_T] = RF_INF;
-  range->pmin[COVARIATE_T] = 1e10;
-  range->pmax[COVARIATE_T] = -1e10;
+  range->pmin[COVARIATE_T] = -1e10;
+  range->pmax[COVARIATE_T] = 1e10;
   range->openmin[COVARIATE_T] = true;
   range->openmax[COVARIATE_T] = true;
 
@@ -764,8 +764,8 @@ void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
   range->min[COVARIATE_FACTOR] = RF_NEGINF;
   range->max[COVARIATE_FACTOR] = RF_INF;
-  range->pmin[COVARIATE_FACTOR] = 1e10;
-  range->pmax[COVARIATE_FACTOR] = -1e10;
+  range->pmin[COVARIATE_FACTOR] = -1e10;
+  range->pmax[COVARIATE_FACTOR] = 1e10;
   range->openmin[COVARIATE_FACTOR] = true;
   range->openmax[COVARIATE_FACTOR] = true;
 }
@@ -915,9 +915,13 @@ int checkdampedcosine(cov_model *cov){
   return NOERROR;
 }
 void rangedampedcosine(cov_model *cov, range_type *range){
-  range->min[DC_LAMBDA]  = 1.0 / tan(PIHALF / cov->tsdim); // ??  1.0 / tan(0.5 * PIHALF / cov->tsdim) ?? to do
+  range->min[DC_LAMBDA]  =    
+    cov->tsdim==1 ? 0 :
+    cov->tsdim==2 ? 1 :
+    cov->tsdim==3 ? 1.7320508075688771932 : 
+    1.0 / tan(PIHALF / cov->tsdim); 
   range->max[DC_LAMBDA] = RF_INF;
-  range->pmin[DC_LAMBDA] = range->min[DC_LAMBDA] + 1e-10;
+  range->pmin[DC_LAMBDA] = range->min[DC_LAMBDA] +  1e-10;
   range->pmax[DC_LAMBDA] = 10;
   range->openmin[DC_LAMBDA] = false;
   range->openmax[DC_LAMBDA] = true;
@@ -4858,7 +4862,7 @@ int checkMath(cov_model *cov){
   int i,
     variables = CovList[cov->nr].kappas,
     err = NOERROR;
-  if (CovList[cov->nr].kappas > 2) kdefault(cov, 2, 1.0);
+  if (variables > 2) kdefault(cov, variables-1, 1.0);
   if (cov->typus == TrendType && !isCoordinateSystem(cov->isoown))
     SERR("full coordinates need");
 
@@ -4908,8 +4912,8 @@ void rangeMath(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   for (i=0; i<variables; i++) {
     range->min[i] = RF_NEGINF;
     range->max[i] = RF_INF;
-    range->pmin[i] = 1e5;
-    range->pmax[i] = -1e5;
+    range->pmin[i] = -1e5;
+    range->pmax[i] = 1e5;
     range->openmin[i] = true;
     range->openmax[i] = true;
   }
@@ -4949,7 +4953,7 @@ void Mathbind(double *x, cov_model *cov, double *v){
   int vdim = cov->vdim[0];
   MATH_DEFAULT_0(vdim); 
 
-  double f = P0(MATH_FACTOR); 
+  double f = P0(CovList[cov->nr].kappas - 1); 
   for (i=0; i<vdim; i++) v[i] = w[i] * f; 
 }
 
@@ -4969,33 +4973,53 @@ int check_bind(cov_model *cov) {
   cov->vdim[0] = variables;
   cov->vdim[1] = 1;
   cov->ptwise_definite = pt_mismatch;
+
   return NOERROR;
 }
 
 
 
 
-#define C_C 0
 void Mathc(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v) {
   *v = P0(C_C);
 }
 
-void rangec(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[C_C] = RF_NEGINF;
-  range->max[C_C] = RF_INF;
-  range->pmin[C_C] = 1e5;
-  range->pmax[C_C] = -1e5;
-  range->openmin[C_C] = true;
-  range->openmax[C_C] = true;
-}
-
 int check_c(cov_model *cov){
+  bool tcf = isTcf(cov->typus);
+
+	 
+  if (tcf) {
+    // the following defines a positive constant on the level of a trend 
+    // to be a trend, and not a positive definite function
+    // For spatially constant covariance functions, see RMconstant
+    if (cov->calling == NULL) BUG;
+    cov_model *pp = cov->calling->calling;
+    if (pp == NULL ||
+	(!isNegDef(pp->typus) && !isTrend(pp->typus) && 
+	 cov->calling->nr == PLUS)) {
+      // printf("%d %d %d %s\n", pp==NULL, !isNegDef(pp->typus), !isTrend(pp->typus), TYPENAMES[pp->typus]);
+      // PMI(cov);
+      return ERRORFAILED; // by definition,
+    }
+  }
   if (cov->kappasub[0] != NULL) SERR("only numerics allowed");
   cov->ptwise_definite =  
     P0(C_C) > 0 ? pt_posdef : P0(C_C) < 0 ? pt_negdef : pt_zero;
+  if (tcf) 
+    MEMCOPY(cov->pref, PREF_ALL, sizeof(pref_shorttype));
   return NOERROR;
 }
 
+
+void rangec(cov_model *cov, range_type *range){
+  bool tcf = isTcf(cov->typus);
+  range->min[C_C] = tcf ? 0 :  RF_NEGINF;
+  range->max[C_C] = RF_INF;
+  range->pmin[C_C] = tcf ? 0 : -1e5;
+  range->pmax[C_C] = 1e5;
+  range->openmin[C_C] = !tcf;
+  range->openmax[C_C] = true;
+}
 
  
 
@@ -5014,11 +5038,12 @@ int checkproj(cov_model *cov){
   kdefault(cov, PROJ_FACTOR, 1.0);
   kdefault(cov, PROJ_ISO, CARTESIAN_COORD);
   int iso = P0INT(PROJ_ISO);
-  
+
   if (isoown != iso && (iso != UNREDUCED || !isCoordinateSystem(isoown))) {
     SERR2("Offered system ('%s') does not match the required one ('%s')",
 	  ISONAMES[isoown], ISONAMES[iso]);
   }
+
   return NOERROR;
 }
 
@@ -5032,8 +5057,8 @@ void rangeproj(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
   range->min[PROJ_FACTOR] = RF_NEGINF;
   range->max[PROJ_FACTOR] = RF_INF;
-  range->pmin[PROJ_FACTOR] = 1e5;
-  range->pmax[PROJ_FACTOR] = -1e5;
+  range->pmin[PROJ_FACTOR] = -1e5;
+  range->pmax[PROJ_FACTOR] = 1e5;
   range->openmin[PROJ_FACTOR] = true;
   range->openmax[PROJ_FACTOR] = true;
 

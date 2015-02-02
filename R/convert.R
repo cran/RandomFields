@@ -592,22 +592,25 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     # if (ncol(x) > 4) stop("earth coordinates have maximal 3 components")
     global.units <- RFoptions()$coords$new_coordunits[1]
     if (global.units[1] == "") global.units <- "km"
-
-    Raumdim <- if (grid) ncol(x) else nrow(x)
+   
+    Raumdim <- ncol(x) #if (grid) ncol(x) else
     new_is_cartesian <- new_coord_system %in% CARTESIAN_SYSTEMS
     if (new_is_cartesian) {
-      if (!is.null(y))
-        stop("cannot take 'y' as an argument if 'x' is a (internal) matrix")
-      code <- switch(new_coord_system,
+       code <- switch(new_coord_system,
                      "cartesian" = CARTESIAN_COORD,
                      "gnomonic" = GNOMONIC_PROJ,
                      "orthographic" = ORTHOGRAPHIC_PROJ,
                      stop("unknown projection method")
                      )
-      x <- RFfctn(RMtrafo(new=code), x, grid=grid, 
-                  coords.new_coordunits=global.units,
-                  coords.new_coord_system = "keep")
-        
+       x <- RFfctn(RMtrafo(new=code), x, grid=grid, 
+                   coords.new_coordunits=global.units,
+                   coords.new_coord_system = "keep")
+      
+       if (!is.null(y))         
+         y <- RFfctn(RMtrafo(new=code), y, grid=grid, 
+                   coords.new_coordunits=global.units,
+                   coords.new_coord_system = "keep")
+     
       if (new_coord_system == "cartesian") {
         Raumdim <- max(3, Raumdim)
         spatialdim <- Raumdim

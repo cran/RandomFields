@@ -15,6 +15,8 @@
 %% S3 methods
 \alias{print.RFgridDataFrame}
 \alias{cbind.RFgridDataFrame}
+\alias{range.RFgridDataFrame}
+\alias{hist.RFgridDataFrame}
 \alias{as.data.frame.RFgridDataFrame}
 \alias{as.matrix.RFgridDataFrame}
 \alias{as.array.RFgridDataFrame}
@@ -88,6 +90,10 @@
  \code{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
  topology, combine their attribute values}
+ \item{range}{\code{signature(x = "RFgridDataFrame")}: returns the range
+ }
+ \item{hist}{\code{signature(x = "RFgridDataFrame")}: plots histogram
+ }
  \item{as.matrix}{\code{signature(x = "RFgridDataFrame")}: converts
           \code{data}-slot to matrix}
  \item{as.array}{\code{signature(x = "RFgridDataFrame")}: converts

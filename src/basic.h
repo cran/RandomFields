@@ -58,10 +58,11 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 // 
 // 
 
+// 
 // 1
 
 extern char BUG_MSG[250];
-#ifdef LOCAL_MACHINE
+#ifdef SCHLATHERS_MACHINE
 // __extension__ unterdrueckt Fehlermeldung wegen geklammerter Argumente
 #define PRINTF Rprintf
 #define INTERNAL  \

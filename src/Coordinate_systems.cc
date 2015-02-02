@@ -479,7 +479,7 @@ int checkEarth(cov_model *cov){
      int d;
      double Rcos, X[3];		       
       if (cov->Searth == NULL) NEW_STORAGE(earth);
-      if (EARTHKM2GNOMONIC) {
+      if (cov->gatternr == EARTHKM2GNOMONIC) {
 	EARTH_TRAFO(X, GLOBAL.coords.zenit, radiuskm_aequ, radiuskm_pol); 
       } else {
  	EARTH_TRAFO(X, GLOBAL.coords.zenit, radiusmiles_aequ, radiusmiles_pol);
@@ -650,76 +650,45 @@ void logEarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v,
     Y[d] /= factorY;							\
   }
 
-void EarthKM2GnomonicStat(double *x, cov_model *cov, double *v) {
-  assert(cov->gatternr == EARTHKM2GNOMONIC);
+void Earth2GnomonicStat(double *x, cov_model *cov, double *v) {
+  assert(cov->gatternr == EARTHKM2GNOMONIC || 
+	 cov->gatternr == EARTHMILES2GNOMONIC);
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol); // results in X[0], X[1]
   orthDefStat;
   GnomonicStat;
   orthTrafoStat;
   CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
 }
-void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v,
+void logEarth2GnomonicStat(double *x, cov_model *cov, double *v,
 			       double *Sign) {
-    assert(cov->gatternr == EARTHKM2GNOMONIC);
+  assert(cov->gatternr == EARTHKM2GNOMONIC || 
+	 cov->gatternr == EARTHMILES2GNOMONIC);
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
-   orthDefStat;
- GnomonicStat;
+  orthDefStat;
+  GnomonicStat;
   orthTrafoStat;
   CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr
 }
-void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
-    assert(cov->gatternr == EARTHKM2GNOMONIC);
+void Earth2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
+  assert(cov->gatternr == EARTHKM2GNOMONIC || 
+	 cov->gatternr == EARTHMILES2GNOMONIC);
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
   orthDef;
   Gnomonic;
   orthTrafo;
   CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
 }
-void logEarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v,
+void logEarth2Gnomonic(double *x, double *y, cov_model *cov, double *v,
 		     double *Sign) {
-    assert(cov->gatternr == EARTHKM2GNOMONIC);
- earth2cartInner(radiuskm_aequ, radiuskm_pol);
+  assert(cov->gatternr == EARTHKM2GNOMONIC || 
+	 cov->gatternr == EARTHMILES2GNOMONIC);
+  earth2cartInner(radiuskm_aequ, radiuskm_pol);
   orthDef;
   Gnomonic;
   orthTrafo;
   CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
 }
 
-
-void EarthMiles2GnomonicStat(double *x, cov_model *cov, double *v) {
-   assert(cov->gatternr == EARTHMILES2GNOMONIC);
-  earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);//results in X[0], X[1]
-  orthDefStat;
-  GnomonicStat;
-  orthTrafoStat;
-  CovList[cov->secondarygatternr].cov(U, cov, v);// nicht gatternr
-}
-void logEarthMiles2GnomonicStat(double *x, cov_model *cov, double *v,
-			       double *Sign) {
-   assert(cov->gatternr == EARTHMILES2GNOMONIC);
-  earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);
-  orthDefStat;
-  GnomonicStat;
-  orthTrafoStat;
-  CovList[cov->secondarygatternr].log(U, cov, v, Sign);// nicht gatternr .
-}
-void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v) {
-   assert(cov->gatternr == EARTHMILES2GNOMONIC);
-  earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
-  orthDef;
-  Gnomonic;
-  orthTrafo;
- CovList[cov->secondarygatternr].nonstat_cov(U, V, cov, v);// nicht gatternr
-}
-void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-		     double *Sign) {
-   assert(cov->gatternr == EARTHMILES2GNOMONIC);
-  earth2cartInner(radiusmiles_aequ, radiusmiles_pol);
-  orthDef;
-  Gnomonic;
-  orthTrafo;
-  CovList[cov->secondarygatternr].nonstatlog(U, V, cov, v, Sign);// nicht gatternr
-}
 
 
 
@@ -794,8 +763,8 @@ bool isAnySphericalIso(isotropy_type iso) {
 }
 bool isPrevModelI(cov_fct *C){
   bool is = C->Isotropy[0] == PREVMODELI;
-  assert(!is || C->variants == 1 ||
-	 (C->variants == 2 &&  C->Isotropy[0] == C->Isotropy[1]));
+  //  assert(!is || C->variants == 1 ||
+  //	 (C->variants == 2 &&  C->Isotropy[0] == C->Isotropy[1]));
   return is;
 }
 bool isUnreduced(cov_fct *C){

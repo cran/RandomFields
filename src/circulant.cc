@@ -10,7 +10,7 @@
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2005 Yindeng Jiang & Martin Schlather
  Copyright (C) 2006 -- 2011 Martin Schlather
- Copyright (C) 2011 -- 2014 Peter Menck & Martin Schlather
+ Copyright (C) 2011 -- 2015 Peter Menck & Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

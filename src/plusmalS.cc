@@ -1690,21 +1690,22 @@ int checkplusmal(cov_model *cov) {
     dim = cov->tsdim, 
     xdim = cov->xdimown, 
     role = cov->role;
-  Types covtype = cov->typus;
-  domain_type covdom = cov->domown;
-  int coviso = cov->isoown;
   bool plus = CovList[cov->nr].check == checkplus,
-    linearmodel = cov->typus == TrendType && cov->sub[0]->nr == C_FACTOR &&
-                 !plus;
+    trend = isTrend(cov->typus),
+    linearmodel = !plus && trend && cov->sub[0]->nr == C_FACTOR;
+  Types covtype = cov->typus;
+  domain_type covdom = trend ? XONLY : cov->domown;
+  int trendiso = UpgradeToCoordinateSystem(cov->isoown);
+  if (trendiso == ISO_MISMATCH) trendiso = cov->isoown;
+  assert(trendiso != ISO_MISMATCH);
+  int coviso = trend ? trendiso : cov->isoown;
 
   assert(cov->Splus == NULL);  
 
 
   // printf("\n\n %s %s\n", TYPENAMES[cov->typus], ISONAMES[cov->isoprev]);
-  int variants = 1;
-  if (linearmodel || 
-      (plus && (cov->calling == NULL || !isShape(cov->calling))))
-      variants++;
+  int variants = 1 +
+    (int) (!trend && (cov->calling == NULL || !isShape(cov->calling)));
 
 
   // PMI(cov->calling);
@@ -1714,6 +1715,8 @@ int checkplusmal(cov_model *cov) {
     domain_type dom = covdom;
     int iso = coviso;
     sub = cov->sub[i];
+
+    //    printf("> %s entering\n", NAME(cov));
      
     if (sub == NULL) 
       SERR("+ or *: named submodels are not given in a sequence!");
@@ -1723,24 +1726,28 @@ int checkplusmal(cov_model *cov) {
     err = ERRORTYPECONSISTENCY;
     // printf("unten zu 1 !!");
     for (j=0; j<variants; j++) { // nur trend als abweichender typus erlaubt
-      //       printf("\n\n\n\nplus : %d %d %d type =%s   %s %d %s\n", j, variants, i!=0 || !linearmodel  ,TYPENAMES[type], ISONAMES[ iso], TypeConsistency(type, sub, 0), NAME(sub));      
-      if (i!=0 || !linearmodel) {
-	if (TypeConsistency(type, sub, 0) &&
-	    (err = CHECK(sub, dim, xdim, type, dom, iso, 
-			 i == 0 ? SUBMODEL_DEP : cov->vdim[0], role))
-	    == NOERROR) break;
-      }
 
-      //     printf("trying trend?\n");
+      // printf(">> %s : %d %d  type =%s   %s \n", NAME(cov), j, variants, TYPENAMES[type], ISONAMES[ iso]);
+      /// int tt; printf("%d %s\n", tt=TypeConsistency(type, sub, 0), NAME(sub));
+
+      if (TypeConsistency(type, sub, 0) &&
+	  (err = CHECK(sub, dim, xdim, type, dom, iso, 
+		       i == 0 ? SUBMODEL_DEP : cov->vdim[0], role))
+	  == NOERROR) break;
      
       type = TrendType;
       dom = XONLY;
-      if ((iso = UpgradeToCoordinateSystem(iso)) == ISO_MISMATCH) iso=coviso;
-      //    printf("trying trend !\n");
+      iso = trendiso;
+    
+      
+      //  
+      if (j < variants -1) {
+	//printf("trying trend %s %d of %d  TC=%d %s!\n", NAME(sub), j, variants, tt, ISONAMES[iso]);     PMI(sub, 2);     
+      }
     }
     
     if (err != NOERROR) {
-
+      // printf("here  dddd %s %s %d of %d; %d\n", NAME(cov), NAME(sub), j, variants, TypeConsistency(type, sub, 0)); MERR(err);
       return err;
     }
 
@@ -2135,8 +2142,10 @@ void malStat(double *x, cov_model *cov, double *v){
   for(i=0; i<nsub; i++) {
     sub = cov->sub[i];
     COV(x, sub, z);
-    for (m=0; m<vsq; m++) v[m] *= z[m]; 
+    for (m=0; m<vsq; m++) v[m] *= z[m];  
+    //printf("%f %f\n", *x,  *v);
   }
+
 }
 
 void logmalStat(double *x, cov_model *cov, double *v, double *Sign){
@@ -2223,20 +2232,28 @@ int checkmal(cov_model *cov) {
 
   if (next2 == NULL) next2 = next1;
 
+ 
   if (cov->typus == TrendType && cov->sub[0]->nr != C_FACTOR)
     SERR("misuse as a trend function");
+ 
   
-  if ((err = checkplusmal(cov)) != NOERROR) return err;
+  //  PMI(cov, 1);
 
-  if (cov->domown == DOMAIN_MISMATCH || 
-      (!isPosDef(cov) && !isShape(cov->typus))) {
-    return ERRORNOVARIOGRAM;
-  }
+  if ((err = checkplusmal(cov)) != NOERROR) return err;
+  
+  bool ok = cov->domown != DOMAIN_MISMATCH &&
+    (isTrend(cov->typus) || 
+     (isShape(cov->typus) && (!isNegDef(cov->typus) || isPosDef(cov->typus) )));
+    
+  // PMI(cov, 0);
+
+    if (!ok) return ERRORNOVARIOGRAM;
+
   // to do istcftype und allgemeiner typ zulassen
 
   cov->logspeed = cov->domown == XONLY ? 0 : RF_NA;
       
-  
+
   if (cov->xdimown >= 2) cov->pref[TBM] = PREF_NONE;
   if (cov->xdimown==2 && cov->nsub == 2 && 
       isAnyDollar(next1) && isAnyDollar(next2)) {
@@ -2281,11 +2298,13 @@ int checkmal(cov_model *cov) {
 }
 
 bool Typemal(Types required, cov_model *cov, int depth) {
-  if (!isShape(required)) return false;
+  if (!isShape(required) && !isTrend(required)) return false;
   int i;
   for (i=0; i<cov->nsub; i++) {
+    //    print("Typemal %s %d\n", TYPENAMES[required], TypeConsistency(required, cov->sub[i], depth-1));
     if (!TypeConsistency(required, cov->sub[i], depth-1)) return false;
-  }
+  } 
+  //  print("Typemal OK\n");
   return true;
 }
 
@@ -2575,6 +2594,10 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
 	bytes = dim * sizeof(double);
       long i,
 	total = loc->totalpoints;
+      
+      //      PMI(Aniso);
+      //      printf("%d\n", dim);
+      
       if (dim != Aniso->vdim[0]) BUG;
       double *v = NULL,
 	*x = loc->x;
@@ -2810,10 +2833,11 @@ int checkplusmalproc(cov_model *cov) {
     if (sub == NULL) 
       SERR("named submodels are not given in a sequence.");
 
-    if (!TypeConsistency(type, sub, 0)) return ERRORTYPECONSISTENCY;
+    if (!TypeConsistency(type, sub, 0)) {
+      return ERRORTYPECONSISTENCY;
+    }
     if ((err= CHECK(sub, dim, xdim, type, dom, iso, SUBMODEL_DEP, role))
 	!= NOERROR) {
-
       return err;
     }
 
@@ -2844,6 +2868,7 @@ int checkplusproc(cov_model *cov) {
 
 int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
   int m, err;
+  bool plus = cov->nr==  PLUS_PROC ;
 
   switch(cov->role) {
   case ROLE_GAUSS : 
@@ -2867,16 +2892,26 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
 		 NICK(sub));
 	}
 	
+	if (!plus &&
+	    (sub->nr == C_FACTOR 
+	     //	     || CovList[sub[0]->nr].check==checkconstant ||
+	     //(isDollar(sub) && CovList[sub->sub[0]->nr].check==checkconstant)
+	     )) {
+	  err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
+		      PosDefType, XONLY,
+		      cov->isoown, cov->vdim,  ROLE_GAUSS);
+	  if (err == NOERROR) continue; else  return err;
+	}
+
 	addModel(s->keys + m, GAUSSPROC);
 	s->keys[m]->calling = cov;
 	//	cov_model *fst = cov; while (fst->calling != NULL) fst = fst->calling; 
-
+	
 	//	assert(false);
-
-	err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
-		    ProcessType, XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS);
-	if (err != NOERROR) {
-	  //	  
+	
+	if ((err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
+		    ProcessType, XONLY, CARTESIAN_COORD, cov->vdim,
+			 ROLE_GAUSS)) != NOERROR) {
 	  return err;
 	}
 	if ((s->struct_err[m] =
@@ -2885,10 +2920,7 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
 	}
 
       }
-  
-    
-      //assert(false);
-      return NOERROR;
+       return NOERROR;
     }
     
   default :
@@ -2915,6 +2947,7 @@ int initplusmalproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   int i, err,
     vdim = cov->vdim[0];
  assert(cov->vdim[0] == cov->vdim[1]);
+ bool plus = cov->nr == PLUS_PROC ;
 
   for (i=0; i<vdim; i++)   
     cov->mpp.maxheights[i] = RF_NA;
@@ -2924,6 +2957,12 @@ int initplusmalproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  
     for (i=0; i<cov->nsub; i++) {
       cov_model *sub = cov->Splus == NULL ? cov->sub[i] : cov->Splus->keys[i];
+      if (!plus && 
+	  (sub->nr == C_FACTOR 
+	   //|| CovList[sub[0]->nr].check == checkconstant ||
+	   // (isDollar(sub) && CovList[sub->sub[0]->nr].check == checkconstant)
+	   ))
+	continue;
       assert(cov->sub[i]->Sgen==NULL);
       cov->sub[i]->Sgen = (gen_storage *) MALLOC(sizeof(gen_storage));
       if ((err = INIT(sub, 0, cov->sub[i]->Sgen)) != NOERROR) {
@@ -2996,6 +3035,7 @@ int checkmultproc(cov_model *cov) {
   if ((err = checkplusmalproc(cov)) != NOERROR) {
     return err;
   }
+  EXTRA_STORAGE;
   return NOERROR;
 }
 
@@ -3023,27 +3063,74 @@ int initmultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
-  int m, i,
-    total = cov->prevloc->totalpoints * cov->vdim[0];
   double *res = cov->rf;
- assert(cov->vdim[0] == cov->vdim[1]);
+  assert(cov->vdim[0] == cov->vdim[1]);
+ int  m, i, c,
+   vdim = cov->vdim[0],
+   //  vdimSq= vdim * vdim,
+   total = cov->prevloc->totalpoints,
+   totalvdim = total * vdim,
+   copies = GLOBAL.special.multcopies,
+   factors = 0;
 
   if (cov->role == ROLE_GAUSS && cov->method==SpectralTBM) {
     ERR("error in do_mult with spectral");
   }
+
+
+  ///  APMI(cov);
+
   assert(cov->Splus != NULL);
 
-  for(i=0; i<total; res[i++] = 0.0);
-
-  
-  for (m=0; m<cov->nsub; m++) {
-    cov_model *key = cov->Splus->keys[m],
-      *sub = cov->sub[m];
-    double *keyrf = key->rf;
-    DO(key, sub->Sgen);
-      for(i=0; i<total; i++) res[i] += keyrf[i];
+  for (c=0; c<copies; c++) {
+    for(i=0; i<totalvdim; res[i++] = 1.0);
+    for (m=0; m<cov->nsub; m++) {
+      cov_model *key = cov->Splus->keys[m],
+	*sub = cov->sub[m];
+      double *keyrf = key->rf;
+      if (sub->nr == C_FACTOR) {
+	double sqrtC = sqrt(PARAM0(sub, C_C));
+	for(i=0; i<totalvdim; i++) res[i] *= sqrtC;
+      } 
+      /* else {
+	bool dollar = isDollar(sub);
+	cov_model *Const = dollar ? Const->sub[0] : sub;
+	if (CovList[Check->nr].check == checkconstant) {
+	  if (dollar) {
+	    double var = PARAM0(sub, DVAR);
+	    bool random = false;
+	    if (sub->kappasub[DVAR] != NULL) {
+	      if (random = isRandom(sub->kappasub[DVAR])) {
+		Do(sub->kappasub[DVAR], sub->Sgen);
+	      } else {
+		ALLOC_EXTRA2(VarMem, totalvdim);
+		Fctn(NULL, sub->kappasub[DVAR], VarMem);
+	      }
+	    }
+	    if (var != 1.0) {
+	      double sd = sqrt(var);
+	      for(i=0; i<totalvdim; i++) res[i] *= sd;
+	    }
+	  } else {
+	    ALLOC_EXTRA3(ConstMem, vdimSq);
+	  }
+	  } */
+      else {	  
+	factors ++;
+	DO(key, sub->Sgen);
+	for(i=0; i<totalvdim; i++) res[i] *= keyrf[i];
+      }
+    }
+    if (factors == 1) return;
+    if (c == 0) {      
+      ALLOC_EXTRA(z, totalvdim);
+      res = z;
+    } else {
+      for(i=0; i<totalvdim; i++) cov->rf[i] += res[i];
+    }
   }
-  return;
+  double factor = 1 / sqrt((double) copies);
+  for(i=0; i<totalvdim; i++) cov->rf[i] *= factor;
 }
 
 

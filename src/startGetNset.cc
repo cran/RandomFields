@@ -360,7 +360,7 @@ int xxx(int x) {return (int) pow(10, (double) x);}
 
 
 void crash() {  
-#ifdef LOCAL_MACHINE
+#ifdef SCHLATHERS_MACHINE
   //  int i;PRINTF("%d\n", i);char m[1];m[i] = m[i-9] + 4; if (m[0]) i++; else i--; PRINTF("%s\n", m); // not MEMCOPY
 #else 
   BUG;
@@ -375,7 +375,7 @@ void ErrCovX(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   PRINTF("\nErr%s %s [%d] gatter=%d:\n", name,
 	 NICK(cov), cov->nr, cov->gatternr); // ok
   if (PL >= PL_ERRORS){
-    PMI(cov, "ErrCov");//
+    PMI(cov);//
     crash();
   }
   ERR("unallowed or undefined call of function");
@@ -390,7 +390,7 @@ void ErrLogCov(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   // 
   PRINTF("\nErrlogCov %s:\n", NICK(cov));
   if (PL >=  PL_ERRORS) {
-    PMI(cov, "ErrlogCov");//
+    PMI(cov);//
     crash(); 
   }
   ERR("unallowed or undefined call of function (log)");
@@ -401,7 +401,7 @@ void ErrCovNonstat(double VARIABLE_IS_NOT_USED *x,
   PRINTF("\nErrCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
   //  APMI(cov->calling);
   if (PL >= PL_ERRORS) {
-    PMI(cov->calling, "ErrCovNonstat"); //
+    PMI(cov->calling); //
     crash();
   }
   ERR1("unallowed or undefined call of '%s' as a kernel", NAME(cov));
@@ -412,7 +412,7 @@ void ErrLogCovNonstat(double VARIABLE_IS_NOT_USED *x,
 		      double VARIABLE_IS_NOT_USED *Sign) {
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
   if (PL >= PL_ERRORS) {
-    PMI(cov->calling, "ErrLogCovNonstat"); //
+    PMI(cov->calling);//
     crash();
   }
   ERR1("unallowed or undefined call of '%s' (log) as a kernel", NAME(cov));
@@ -422,7 +422,7 @@ void Errspectral(cov_model *cov,
 		 double VARIABLE_IS_NOT_USED *e) {
   PRINTF("\nErrlogCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
  if (PL >= PL_ERRORS) {
-   PMI(cov->calling, "Errspectral"); //
+   PMI(cov->calling);//
     crash();
   }
   ERR("unallowed or undefined call of spectral function");
@@ -436,7 +436,7 @@ void ErrInverseNonstat(double VARIABLE_IS_NOT_USED *v, cov_model *cov,
   PRINTF("\nErrCovNonstat %s: (%d)\n", NICK(cov), cov->nr);
   //  APMI(cov->calling);
   if (PL >= PL_ERRORS) {
-    PMI(cov->calling, "ErrCovNonstat"); //
+    PMI(cov->calling); //
     crash();
   }
   ERR("unallowed or undefined call of non-domain function (inverse)");
@@ -941,7 +941,7 @@ bool isDummyInit(initfct Init) {
 int CopyModel(const char *name, int which) {
   memcpy(CovList + currentNrCov, CovList + which, sizeof(cov_fct)); 
   int type = CovList[which].Typi[0];
-  assert(type <= UndefinedType);
+  assert(type <= OtherType);
   insert_name(currentNrCov, name, type);
   currentNrCov++;
   return currentNrCov - 1;

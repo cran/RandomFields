@@ -555,8 +555,8 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   }
   mnames <- substr(mnames, 1, maxchar)
 
-  dots <- dots[!models]
-  dotnames <- dotnames[!models]
+  dots <- mergeWithGlobal(dots[!models])
+  dotnames <- names(dots)
   
   plotfctcall <- if ("plotfctcall" %in% dotnames)
     dots$plotfctcall else "matplot"
@@ -598,10 +598,9 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     if (dim==2) {
       di <- as.matrix(expand.grid(li$distance, li$distanceY))
 
-      
-      for (i in 1:length(x)) {
-        cov[[i]] <- rfeval(x=di, model=x[[i]], fctcall=li$fctcall[i])
-      }
+       for (i in 1:length(x)) {
+        cov[[i]] <- rfeval(x=di, model=x[[i]], fctcall=li$fctcall[i])      
+     }
     } else if (dim>=3) {
       m1 <- expand.grid(li$distance, li$distanceY)
       m2 <- matrix(NA, ncol=dim, nrow=nrow(m1))

@@ -201,19 +201,43 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 
-x <- 1:4
-s <- 2
-RFcov(model=RMexp(s=s), x, x, coord_sys="cartesian") ## scale interpreted as
-##                                     for standard (cartesian) models
-RFcov(model=RMexp(s=s), x, x, coord_sys="earth") ## scale measured in degree 
-RFcov(model=RMexp(s=s / 180 * pi), x, x, coord_sys="earth") # now comparable to
-##                                     the cartesian case
-RFcov(model=RMexp(s=s), x, x, coord_sys="earth", zenit=c(2.5, 2.4),
-      new_coord_sys="gnomonic") # projection onto a plane first. Then the
-##                   scale is interpreted in the usual, i.e. cartesian, sense
-RFcov(model=RMexp(s=s * 6350 / 180 * pi), x, x, coord_sys="earth",
-      zenit=c(2.5, 2.5), new_coord_sys="gnomonic") # projection onto a plane
-##      first. Then the scale is interpreted in usual, i.e. cartesian, sense
+z <- 1:4
+x <- cbind(z, 0)
+y <- cbind(0, z)
+model <- RMwhittle(nu=0.5)
+RFcov(model, x, y, grid=FALSE)##  standard is (cartesian) models
+
+## same as above, but explicite:
+RFcov(model, x, y, grid=FALSE, coord_sys="cartesian") 
+
+## model is valid not on a sphere; x,y coordinates are
+## transformed from earth coordinates to sphereical coordinates
+RFcov(model, x, y, grid=FALSE, coord_sys="earth")
+
+## now comparable the scale chosen sucht that the covariance
+## values are comparable to those int the cartesian case
+RFcov(RMS(model, s= 1 / 180 * pi), x, y, grid=FALSE,
+      coord_sys="earth")
+
+
+## projection onto a plane first. Then the scale is interpreted
+## in the usual, i.e. cartesian, sense:
+RFoptions(zenit = c(2.5, 2.5))
+RFcov(model, x, y, grid=FALSE,
+      coord_sys="earth", new_coord_sys="orthographic")
+
+## again, here the scale is chosen to comparable to cartesian case
+## here the (standard) units are [km]
+RFcov(RMS(model, s= 6350 / 180 * pi), x, y, grid=FALSE,
+      coord_sys="earth", new_coord_sys="orthographic")
+
+## as above, but in miles
+RFcov(RMS(model, s= 3750 / 180 * pi), x, y, grid=FALSE,
+      coord_sys="earth", new_coord_sys="orthographic",
+      new_coordunits="miles")
+
+
+
 
 \dontshow{FinalizeExample()}
 }

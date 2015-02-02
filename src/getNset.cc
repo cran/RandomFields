@@ -3009,11 +3009,10 @@ int TypeConsistency(Types requiredtype, cov_model *cov, int depth) {
 
     // printf(" undefined!\n");
     int tc = C->TypeFct(requiredtype, cov, depth);
-    //  printf("%d\n", tc);
+    //     printf("tc=%d %s\n", tc, NAME(cov));
     return tc;
   }  
-  //   printf("not consist %s type=%d, %d;   %s %d\n", NAME(cov), C->Typi[0], cov->typus,	 CovList[150].name, CovList[150].Typi[0]);
-  int i;
+   int i;
   for (i=0; i<C->variants; i++) {
     //    printf("TC %d %s: %d %s %s %d %d \n", i, NAME(cov), TypeConsistency(requiredtype, C->Typi[i]), TYPENAMES[requiredtype], TYPENAMES[C->Typi[i]],  depth, depth<=0 );
     if (TypeConsistency(requiredtype, C->Typi[i])
@@ -3024,7 +3023,7 @@ int TypeConsistency(Types requiredtype, cov_model *cov, int depth) {
     }
  }
 
-  //  printf("not ok\n");
+  //   printf("not ok %s\n", NAME(cov));
 
   return false;
 }

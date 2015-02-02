@@ -88,16 +88,11 @@ void logEarthMiles2Orthog(double *x, double *y, cov_model *cov, double *v,
 		     double *Sign);
 
 
-void EarthKM2GnomonicStat(double *x, cov_model *cov, double *v);
-void logEarthKM2GnomonicStat(double *x, cov_model *cov, double *v, double*Sign);
-void EarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v);
-void logEarthKM2Gnomonic(double *x, double *y, cov_model *cov, double *v,
+void Earth2GnomonicStat(double *x, cov_model *cov, double *v);
+void logEarth2GnomonicStat(double *x, cov_model *cov, double *v, double*Sign);
+void Earth2Gnomonic(double *x, double *y, cov_model *cov, double *v);
+void logEarth2Gnomonic(double *x, double *y, cov_model *cov, double *v,
 		     double *Sign);
-void EarthMiles2GnomonicStat(double *x, cov_model *cov, double *v);
-void logEarthMiles2GnomonicStat(double *x, cov_model*cov, double*v,double*Sign);
-void EarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v);
-void logEarthMiles2Gnomonic(double *x, double *y, cov_model *cov, double *v,
-			    double *Sign);
 
 
 #define Mod(ZZ, modulus) ((ZZ) - floor((ZZ) / (modulus)) * (modulus))

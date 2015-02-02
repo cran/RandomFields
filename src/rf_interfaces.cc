@@ -594,13 +594,13 @@ bool CallingSet(cov_model *cov) {
     cov_model *sub = cov->sub[i];
     if (sub == NULL) {
       if (CovList[cov->nr].range != range_randomcoin) {
-	PMI(cov, "Calling point A error"); //
+	PMI(cov);//
 	return false;
       }
     } else {
       if (sub->calling != cov) {
 	PRINTF("%dth submodel\n", i);
-	PMI(cov, "Calling point B error"); //
+	PMI(cov);//
 	return false;
       }
       if (!CallingSet(sub)) {  
@@ -624,11 +624,11 @@ bool CallingSet(cov_model *cov) {
     for (i=0; i<cov->nsub; i++) {
       cov_model *sub = cov->Splus->keys[i];
       if (sub == NULL) {
-	PMI(cov, "plus A error");//
+	PMI(cov); //
 	return false;
       } else {
 	if (sub->calling != cov) {
-	  PMI(cov, "plus B error"); //
+	  PMI(cov); //
 	  return false;
 	}
 	if (!CallingSet(sub)) return false;
@@ -728,7 +728,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
    strcpy(ERROR_LOC, "Checking the model:");
     if (PL >= PL_DETAILS) {
       //   assert(cov->isoprev != 6);
-      PMI(cov, "\nCheckModelInternal, before checking:");//OK
+      PMI(cov);//OK
     }
 
     if ((err = CHECK(cov, tsdim, xdimOZ + Time, InterfaceType,	 
@@ -737,14 +737,14 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 	!= NOERROR) {
      ////
       if (PL >= PL_ERRORS) {
-	PMI(cov, "CheckModelInternal has failed:"); //
+	PMI(cov); // OK
 	PRINTF("err =%d\n", err);
       }
       goto ErrorHandling;
     }
 
    if (PL >= PL_DETAILS) {
-      PMI(cov, "CheckModelInternal, after checking:"); // OK
+     PMI(cov); // OK
     }
  
     sprintf(ERROR_LOC, "%s process: ", ROLENAMES[cov->role]);
@@ -777,8 +777,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     ly = lx;
     zaehler++;
   }
-
- 
+  
   PutRNGstate();
 
   if (err != NOERROR) { 
@@ -1299,6 +1298,11 @@ int check_simulate(cov_model *cov) {
 	   || isProcess(sub)) {// muss als zweites stehen !! 	
 	break;
       }
+
+      //printf(">>>>>>>>> %s %s %d\n", TYPENAMES[type], ISONAMES[iso], dom);
+      //      BUG;
+
+      //      MERR(err); APMI(cov); printf("A");
 
       if (j==0) type = VariogramType;
       else {

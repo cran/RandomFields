@@ -460,11 +460,11 @@ void rangeMath(cov_model *cov, range_type *range);
     variables = VARIAB;							\
   double w[MAXPARAM];							\
     for (i=0; i<variables; i++) {					\
-    cov_model *sub = cov->kappasub[i];					\
-    if (sub != NULL) {							\
-      COV(x, sub, w + i);						\
-    } else {  w[i] = P0(i);	}		\
-  } \
+      cov_model *sub = cov->kappasub[i];				\
+      if (sub != NULL) {						\
+	COV(x, sub, w + i);						\
+      } else {  w[i] = P0(i);	}					\
+    }									\
   // printf("sin %f w=%f;%f %f %d %d nr = %d %d\n", x[0], w[0], w[1], P0(1), variables, p[1], cov->nrow[0] > 0, cov->nrow[1] > 0);
 
 #define MATH_DEFAULT MATH_DEFAULT_0(CovList[cov->nr].kappas)

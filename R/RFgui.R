@@ -24,7 +24,7 @@ RFgui <- function(data, x, y,
     res <- get("RFgui.model", envir=Env)
     if (is.null(res)) return(res) #; Print(res)
     if (RFoptions()$general$spConform) {
-      RFvariogram(model=res, x=0)
+      RFvariogram(model=res, 0, get(".RFgui.y", envir=Env))
       res <- list2RMmodel(GetModel(RFvariogram))
     } else {
       class(res) <- "RM_model"
@@ -438,7 +438,6 @@ rfgui.intern <- function(data, x, y,
       pr <-  tcltk::tclvalue(cbPracRangeVal) != "0"
 
   #    Print("A")
-
       z <- try(RFsimulate(simu.model,x=x, grid=TRUE, 
                           y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
                           else if (is.null(y)) x else y,
@@ -693,6 +692,7 @@ rfgui.intern <- function(data, x, y,
       }
     }
   }
+  assign(".RFgui.y", if (is.null(y)) NULL else 0, envir=parent.ev)
 
   if(!missing(data) && !is.null(data)) {
     if (!is.null(ev)) stop("if 'data' is given, 'ev' may not be given.")

@@ -674,14 +674,11 @@ void InitModelList() {
 
 
   FIRST_PLANE = 
-     EARTHKM2GNOMONIC = addFurtherCov(EarthKM2GnomonicStat, ErrCov);//16
-  addCov(EarthKM2Gnomonic);// 
-  addlogCov(logEarthKM2GnomonicStat, logEarthKM2Gnomonic, NULL);
+     EARTHKM2GNOMONIC = addFurtherCov(Earth2GnomonicStat, ErrCov);//16
+  addCov(Earth2Gnomonic);// 
+  addlogCov(logEarth2GnomonicStat, logEarth2Gnomonic, NULL);
 
-  EARTHMILES2GNOMONIC = addFurtherCov(EarthMiles2GnomonicStat, ErrCov);//17
-  addCov(EarthMiles2Gnomonic);// 
-  addlogCov(logEarthMiles2GnomonicStat, logEarthMiles2Gnomonic, NULL);
-
+  EARTHMILES2GNOMONIC =  CopyModel(">", EARTHKM2GNOMONIC);
 
   EARTHKM2ORTHOGRAPHIC = addFurtherCov(EarthKM2OrthogStat, ErrCov);//18
   addCov(EarthKM2Orthog);// 
@@ -2744,6 +2741,9 @@ void InitModelList() {
   addkappa(0, "a",  REALSXP, TrendType);
   addCov(Mathc, NULL, NULL);
   AddVariant(TrendType, PREVMODELI);
+  AddVariant(TcfType, PREVMODELI);
+  
+
  
   IncludeModel("p", MathDefinition, 0, 0, 3, NULL, XONLY, PREVMODELI,
 	       checkproj, rangeproj, PREF_TREND, 
@@ -2772,7 +2772,7 @@ void InitModelList() {
   for (i=0; i<currentNrCov; i++) {
     if (CovList[i].Typi[0] == MathDefinition) {
       // printf("%s\n", CovList[i].name);
-      assert(CovList[i].variants <= 2)
+      //assert(CovList[i].variants <= 2)
       CovList[i].Typi[0] = ShapeType;
     }
   }

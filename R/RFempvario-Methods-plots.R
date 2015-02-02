@@ -622,7 +622,7 @@ contour.RFfit <- contour.RFempVariog <-
 
 plotRFempVariogUnbinned <- function(x, coord.units, variab.units, variab.names,
                                     ..., plotmethod="image") {
-  dots = list(...)
+  dots = mergeWithGlobal(list(...))
   dotnames <- names(dots)
   coords <- GridTopology2gridVectors(cbind(x@centers$x, x@centers$T))
   if (length(coords)>1) {

@@ -17,6 +17,8 @@
 %% S3 methods
 \alias{print.RFspatialPointsDataFrame}
 \alias{cbind.RFspatialPointsDataFrame}
+\alias{range.RFspatialPointsDataFrame}
+\alias{hist.RFspatialPointsDataFrame}
 \alias{as.matrix.RFspatialPointsDataFrame}
 \alias{as.array.RFspatialPointsDataFrame}
 \alias{as.vector.RFspatialPointsDataFrame}
@@ -103,6 +105,10 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
    topology, combine their attribute values}
+ \item{range}{\code{signature(x = "RFspatialPointsDataFrame")}: returns the range
+ }
+ \item{hist}{\code{signature(x = "RFspatialPointsDataFrame")}: plots histogram
+ }
  \item{as.matrix}{\code{signature(x = "RFspatialPointsDataFrame")}:
    converts \code{data}-slot to matrix }
  \item{as.array}{\code{signature(x = "RFspatialPointsDataFrame")}:

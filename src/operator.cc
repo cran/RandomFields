@@ -3418,8 +3418,6 @@ int checkstrokorb(cov_model *cov) {
     int idx;
     idx = 1;
     
-    //PMI(next, -1);
-    
     if (next->taylorN <= 1)
       SERR2("%d members of the Taylor expansion of '%s' known, but at least 2 members required.", next->taylorN, NICK(next));
     

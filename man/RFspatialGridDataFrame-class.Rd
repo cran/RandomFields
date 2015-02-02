@@ -22,6 +22,8 @@
 \alias{print.RFspatialGridDataFrame}
 \alias{contour.RFspatialGridDataFrame}
 \alias{cbind.RFspatialGridDataFrame}
+\alias{range.RFspatialGridDataFrame}
+\alias{hist.RFspatialGridDataFrame}
 \alias{as.matrix.RFspatialGridDataFrame}
 \alias{as.array.RFspatialGridDataFrame}
 \alias{as.vector.RFspatialGridDataFrame}
@@ -129,6 +131,10 @@
  \code{\link[=RFspatialPointsDataFrame-class]{RFspatialPointsDataFrame}} } 
  \item{cbind}{\code{signature(...)}: if arguments have identical
  topology, combine their attribute values}
+ \item{range}{\code{signature(x = "RFspatialGridDataFrame")}: returns the range
+ }
+ \item{hist}{\code{signature(x = "RFspatialGridDataFrame")}: plots histogram
+ }
  \item{as.matrix}{\code{signature(x = "RFspatialGridDataFrame")}:
  converts \code{data}-slot to matrix }
  \item{as.array}{\code{signature(x = "RFspatialGridDataFrame")}:

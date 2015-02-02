@@ -351,11 +351,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     //      n += sub->SBR->hatnumber;
     //    }
     
-    //    PMI(sub, -1);
     //printf("log_den %f\n",  pgs->log_density);
     logdens = pgs->log_density;
-
-    //    PMI(sub, -1);
 
     if (!R_FINITE(logdens)) {
       // PMI(sub);
@@ -1164,7 +1161,6 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
   if ((err = covcpy(key->sub + PGS_FCT, shape)) != NOERROR) return err;
  
   if (nr == PTS_GIVEN_SHAPE) {   
-    //PMI(shape, -1);
     //printf("here %ld %d %d %d\n", key->sub[PGS_LOC], ScaleOnly(shape),
     //	   !shape->deterministic, shape->sub[0]->deterministic);
     key->nsub = 2;

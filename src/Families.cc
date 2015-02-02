@@ -1641,7 +1641,6 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
       if (zneu[d] == RF_INF) {
 	cumsum[TMP] = OUTER_CUM;
 	TMP++;
-	//PMI(cov, -1); print("%d %d %f\n",IDX_OUTER, NSTEP, OUTER_CUM);
 	assert(cumsum[TMP-1] >= 0);
 	return;
       }	
@@ -2161,8 +2160,6 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
   end = RIGHT_END(sel);
   assert(start < end);
 
-  // PMI(cov, -1); 
- 
   // printf("%f dim=%d squ=%d sel=%d, %f %f %d\n",
   //	 y[0], dim, SQUEEZED(sel), sel, random, rect->tmp_weight[TMP-1], TMP);
  
@@ -2276,7 +2273,6 @@ int GetMajorant(cov_model *cov) {
   INNER = starting_point;
   ABSFCTN(&(INNER), next, &v);
   m = INNER_CONST * pow(INNER, INNER_POW);
-  //   PMI(next, -1);
   //  printf("inner=%e m=%e v=%e inner_c=%4.3f (%4.3f) inner_p=%4.3f (%4.3f)\n",  INNER, m, v, INNER_CONST, next->taylor[0][TaylorConst], INNER_POW, in_pow);
 
   while (m < v && INNER >= inner_min) {
@@ -2583,8 +2579,7 @@ int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   //  printf("init rect %d %d\n", NSTEP, TMP);
   assert(NSTEP == TMP - 2);
   
-  //  A  PMI(cov, -1);
-  //assert(false);
+
   //cov->total_n = 0;
   // cov->total_sum = 0.0;
 

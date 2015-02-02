@@ -4,8 +4,7 @@
 
 #define showfree !true 
 #define DOPRINT true
-//// 1
-
+//   // 1
 
 #include "error.h"
 #include <string.h>
@@ -15,39 +14,26 @@
 
 //   intptr_t and uintptr_t fuer: umwandlung pointer in int und umgekehrt
 
+
+
+//////////////////////////////////////////////////////////////////////
+// CHECKING 
+//////////////////////////////////////////////////////////////////////
 #define ASSERT_GATTERONLY(Cov) assert(TrafoOK(Cov, false))
 #define ASSERT_GATTER(Cov) assert(TrafoOK(Cov, true))
 #define ASSERT_CHECKED(Cov) assert(Cov->checked)
 
-#define DOPRINTF  if (DOPRINT) Rprintf
-#define KPRINT leer(PrInL);Rprintf
-#define LPRINT {cov_model *lprint_z=cov; int lprint_i=0; while (lprint_z->calling != NULL && lprint_i<10) {lprint_z=lprint_z->calling; if (DOPRINT) {Rprintf(DOT); Rprintf(" ");} lprint_i++;} if (lprint_i==100) {Rprintf("LPRINT i=%d\n", lprint_i);PMI(cov); assert(false);}} if (DOPRINT) Rprintf
 
-
-#ifndef RANDOMFIELDS_DEBUGGING
-
-#define ERRLINE 
-
-#define NICK(COV) (isDollar(COV) ? CovList[(COV)->sub[0]->nr].nick : CovList[(COV)->nr].nick)
- 
-
+#ifndef SCHLATHERS_MACHINE
 
 #define MEMCOPY(A,B,C) memcpy(A,B,C)
 //#define MEMCOPY(A,B,C) memory_copy(A, B, C)
 
 #define MALLOC malloc
 #define CALLOC calloc
-#define FREE(X) if ((X) != NULL) {free(X); (X)=NULL;}
-#define UNCONDFREE(X) {free(X); (X)=NULL;}
 
 #define CHECK(C,T,X,type,D,I,V,R) check2X(C,T,X,type,D,I,V,R)
-#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) check2X(C,T,X,type,D,I,V0,V1,R)
-#define CHECKPD2ND(N,D1,D2,I,V,R) CheckPD2ND(N,D1,D2,I,V,R)
-#define INIT(M, Moments, S) INIT_intern(M, Moments, S)
-#define REINIT(M, Moments, S) REINIT_intern(M, Moments, S)
-#define INIT_RANDOM(M, Moments, S, P) INIT_RANDOM_intern(M, Moments, S, P)
 #define STRUCT(Cov, NM) CovList[(Cov)->gatternr].Struct(Cov, NM)
-
 
 #define PARAM(P, IDX) ((double *) (P)->px[IDX])
 #define PARAMINT(P, IDX) ((int *) (P)->px[IDX])
@@ -63,28 +49,95 @@
 	  (CovList[FROM->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
 	    CovList[FROM->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
 	    -1))
- 
+
 #define QcovALLOC(cov, nr) {\
   cov->qlen = (int) (nr);						\
   if ((cov->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL)	\
     ERR("memory allocation error for local memory");		\
 }
 
+#else
+
+#define MEMCOPY(A,B,C) ({ assert((A)!=NULL && (B)!=NULL); memcpy(A,B,C); })
+//#define MEMCOPY(A,B,C) memory_copy(A, B, C)
+#define MALLOC(X) ({assert(X>0 && X<=668467200);malloc(X);})
+#define CALLOC(X, Y) ({assert((X)>0 && X<1e8 && (Y)>0 && (Y)<=64); calloc(X,Y);})
+
+#define CHECK(C,T,X,type,D,I,V,R) ({assert(type!=RandomType); check2X(C,T,X,type,D,I,V,R);})
+#define STRUCT(C, NM)  ({ASSERT_GATTER(C);  CovList[(C)->gatternr].Struct(C, NM);})
+
+#define PARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP); (P)->px[IDX];})
+#define PARAMINT(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == INTSXP); ((int *) (P)->px[IDX]);})
+#define PARAMENV(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((sexp_type *) (P)->px[IDX]);})
+#define PARAMLIST(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((listoftype *) (P)->px[IDX]);})
+
+#define PARAM0(P, IDX) ({assert(PARAM(P, IDX) != NULL); PARAM(P, IDX)[0];})
+#define PARAM0INT(P, IDX)  ({assert(PARAMINT(P, IDX) != NULL); PARAMINT(P, IDX)[0];})
+
+
+#define PCOPY(TO, FROM, IDX) {						\
+    if (!((TO) != NULL && (FROM) != NULL &&  (TO)->px[IDX] != NULL && (FROM)->px[IDX] &&IDX > 0 && (FROM)->ncol[IDX] == (TO)->ncol[IDX] &&   (FROM)->nrow[IDX] == (TO)->nrow[IDX] && CovList[(FROM)->nr].kappatype[IDX]==CovList[(TO)->nr].kappatype[IDX] &&  (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ||	     CovList[(FROM)->nr].kappatype[IDX]==INTSXP)  )) BUG; \
+    MEMCOPY((TO)->px[IDX], (FROM)->px[IDX],				\
+	    ((FROM)->nrow[IDX]) * ((FROM)->ncol[IDX]) *			\
+	   (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
+	    CovList[(FROM)->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
+	    -1));							\
+}
+
+#define QcovALLOC(cov, nr) {\
+  assert(cov->q == NULL);   \
+  cov->qlen = (int) (nr);						\
+  if ((cov->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL)	\
+    ERR("memory allocation error for local memory");		\
+}
+
+
+#endif
+
+
+
+//////////////////////////////////////////////////////////////////////
+// DEDUGGING INFORMATION
+//////////////////////////////////////////////////////////////////////
+
+#define DOPRINTF  if (DOPRINT) Rprintf
+#define KPRINT leer(PrInL);Rprintf
+#define LPRINT {cov_model *lprint_z=cov; int lprint_i=0; while (lprint_z->calling != NULL && lprint_i<10) {lprint_z=lprint_z->calling; if (DOPRINT) {Rprintf(DOT); Rprintf(" ");} lprint_i++;} if (lprint_i==100) {Rprintf("LPRINT i=%d\n", lprint_i);PMI(cov); assert(false);}} if (DOPRINT) Rprintf
+
+
+#ifndef RANDOMFIELDS_DEBUGGING
+
+#define ERRLINE 
+
+#define NICK(COV) (isDollar(COV) ? CovList[(COV)->sub[0]->nr].nick : CovList[(COV)->nr].nick)
+ 
+
+#define FREE(X) if ((X) != NULL) {free(X); (X)=NULL;}
+#define UNCONDFREE(X) {free(X); (X)=NULL;}
+
+#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) check2X(C,T,X,type,D,I,V0,V1,R)
+#define CHECKPD2ND(N,D1,D2,I,V,R) CheckPD2ND(N,D1,D2,I,V,R)
+#define INIT(M, Moments, S) INIT_intern(M, Moments, S)
+#define REINIT(M, Moments, S) REINIT_intern(M, Moments, S)
+#define INIT_RANDOM(M, Moments, S, P) INIT_RANDOM_intern(M, Moments, S, P)
+ 
+
 #define DEBUGINFOERR
 #define DEBUGINFO 
 
+
 #else
+
+
 #define ERRLINE ERRLINES
 
 #define NICK(COV) (CovList[(COV)->nr].nick)
 
 
-#define MEMCOPY(A,B,C) ({ assert((A)!=NULL && (B)!=NULL); memcpy(A,B,C); })
-//#define MEMCOPY(A,B,C) memory_copy(A, B, C)
-
+#undef MALLOC
+#define MALLOC(X) ({DOPRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);assert(X>0 && X<=3e9);malloc(X);})
 //
-#define MALLOC(X) ({DOPRINTF("(MALLOC %s, line %d)\n", __FILE__, __LINE__);assert(X>0 && X<=668467200);malloc(X);})
-//
+#undef CALLOC
 #define CALLOC(X, Y) ({DOPRINTF("(CALLOC %s, line %d)\n",__FILE__, __LINE__);assert((X)>0 && X<1e8 && (Y)>0 && (Y)<=64); calloc(X,Y);})
 //#define MALLOC malloc
 //#define CALLOC calloc
@@ -110,33 +163,15 @@
 #define CHECKSIGN "_"
 #define INITSIGN "_"
 #define STRUCTSIGN "_"
+#undef CHECK
 #define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert(type!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG, LENERRMSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
 #define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
 #define CHECKPD2ND(C,D1,D2,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECKPD2ND"); XX(C); int _x = CheckPD2ND(C,D1,D2,I,V,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
 #define INIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = INIT_intern(C, Moments, S);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
 #define REINIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = REINIT_intern(C, Moments, S); YY(C); _x;})
-
 #define INIT_RANDOM(C, Moments, S, P) ({LLPRINT(INITSIGN, C, "INITRANDOM");  XX(C); int _x = INIT_RANDOM_intern(C, Moments, S, P);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
+#undef STRUCT
 #define STRUCT(C, NM)  ({LLPRINT(STRUCTSIGN, C, "STRUCT"); ASSERT_GATTER(C);  XX(C); int _x = CovList[(C)->gatternr].Struct(C, NM);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "STRUCT DONE");}else{LLPRINT(STRUCTSIGN, C, "STRUCT FAILED");}_x;})
-
-
-#define PARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP); (P)->px[IDX];})
-#define PARAMINT(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == INTSXP); ((int *) (P)->px[IDX]);})
-#define PARAMENV(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((sexp_type *) (P)->px[IDX]);})
-#define PARAMLIST(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP); ((listoftype *) (P)->px[IDX]);})
-
-#define PARAM0(P, IDX) ({assert(PARAM(P, IDX) != NULL); PARAM(P, IDX)[0];})
-#define PARAM0INT(P, IDX)  ({assert(PARAMINT(P, IDX) != NULL); PARAMINT(P, IDX)[0];})
-
-
-#define PCOPY(TO, FROM, IDX) {						\
-    if (!((TO) != NULL && (FROM) != NULL &&  (TO)->px[IDX] != NULL && (FROM)->px[IDX] &&IDX > 0 && (FROM)->ncol[IDX] == (TO)->ncol[IDX] &&   (FROM)->nrow[IDX] == (TO)->nrow[IDX] && CovList[(FROM)->nr].kappatype[IDX]==CovList[(TO)->nr].kappatype[IDX] &&  (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ||	     CovList[(FROM)->nr].kappatype[IDX]==INTSXP)  )) BUG; \
-    MEMCOPY((TO)->px[IDX], (FROM)->px[IDX],				\
-	    ((FROM)->nrow[IDX]) * ((FROM)->ncol[IDX]) *			\
-	   (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
-	    CovList[(FROM)->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
-	    -1));							\
-}
 
    /*  printf("//%ld %ld %d %d %d idx=%d\n", (TO)->px[IDX], (FROM)->px[IDX], \
        (FROM)->nrow[IDX], (FROM)->ncol[IDX],				\
@@ -145,12 +180,6 @@
        -1, IDX);							\
 				 */
 
-#define QcovALLOC(cov, nr) {\
-  assert(cov->q == NULL);   \
-  cov->qlen = (int) (nr);						\
-  if ((cov->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL)	\
-    ERR("memory allocation error for local memory");		\
-}
 
 #define DEBUGINFOERR {							\
     char dummy[MAXERRORSTRING]; strcpy(dummy, ERRORSTRING);		\
@@ -429,6 +458,11 @@ typedef char NAname_type[MAX_NA][255];
 ///////////////////////////////////////////////////////////////////////
 // trafo
 #define TRAFO_ISO 0
+
+
+///////////////////////////////////////////////////////////////////////
+// constant
+#define C_C 0
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -2075,8 +2109,7 @@ void CheckModel(SEXP model, SEXP tsdim, SEXP xdim, SEXP domain,
 		cov_model **Cov,
 		int maxdim);
 void pmi(cov_model *cov);
-void pmi(cov_model *cov, const char *msg);
-void pmi(cov_model *cov, char all);
+void pmi(cov_model *cov, char maxlevel);
 
 matrix_type Type(double *m, int nrow, int ncol);
 double GetDiameter(location_type *loc);
@@ -2663,11 +2696,6 @@ void do_random_failed(cov_model *cov, double *v);
   pmi
 
 
-#define PMI \
-  PRINTF("\n(PMI '%s', line %d)", __FILE__, __LINE__);	\
-  pmi
-
-
 #define PLE PRINTF("\n(PLE '%s', line %d)", __FILE__, __LINE__); ple_
 void ple_(cov_model *cov);
 void ple_(char *name);
@@ -2906,7 +2934,7 @@ void includeStandardMath();
 void setptwise(ptwise_type pt);
 
 
-#ifdef LOCAL_MACHINE
+#ifdef SCHLATHERS_MACHINE
 #define STOPAFTER(COND, DO) 				\
   static bool __stopafter__ = false;			\
   if (__stopafter__ && !(COND)) { DO; BUG;}		\

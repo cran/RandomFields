@@ -117,11 +117,11 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
     else
       names(x@grid@cellcentre.offset)
      
-   dots <- list(...)
+  dots <- mergeWithGlobal(list(...))
   names.graphics <- names(graphics)
   for (i in 1:length(graphics)) {
     dots[[names.graphics[i]]] <- NULL
-  }  
+  }
   dotnames <- names(dots)
 
   if (bgInDots <- "bg" %in% dotnames) {
@@ -745,7 +745,7 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
 
   always.close <- n > 1 || graphics$always_close_screen
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
-  dots <- list(...)
+  dots <- mergeWithGlobal(list(...))
   dotnames <- names(dots)
   if ("bg" %in% dotnames) {
     par(bg=dots$bg)

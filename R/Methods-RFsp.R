@@ -118,6 +118,24 @@ cbind.RFspatialPointsDataFrame <- function(...)
 cbind.RFpointsDataFrame <- function(...)
   cbind_RFspPoints(...)
 
+range.RFspatialGridDataFrame <- function(..., na.rm = FALSE, finite = FALSE)
+  base::range(as.vector(...), na.rm = na.rm, finite = finite)
+range.RFgridDataFrame <- function(..., na.rm = FALSE, finite = FALSE)
+  base::range(as.vector(...), na.rm = na.rm, finite = finite)
+range.RFspatialPointsDataFrame <- function(..., na.rm = FALSE, finite = FALSE)
+  base::range(as.vector(...), na.rm = na.rm, finite = finite)
+range.RFpointsDataFrame <- function(..., na.rm = FALSE, finite = FALSE)
+  base::range(as.vector(...), na.rm = na.rm, finite = finite)
+
+
+hist.RFspatialGridDataFrame <- function(x, ...)
+  graphics::hist(as.vector(x), ...)
+hist.RFgridDataFrame <- function(x, ...)
+  graphics::hist(as.vector(x), ...)
+hist.RFspatialPointsDataFrame <- function(x, ...)
+  graphics::hist(as.vector(x), ...)
+hist.RFpointsDataFrame <- function(x, ...)
+  graphics::hist(as.vector(x), ...)
 
 
 ## convert 'RFsp' objects to conventional format of 'RFsimulate',

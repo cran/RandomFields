@@ -1472,8 +1472,6 @@ int init_standard_shape(cov_model *cov, gen_storage *S) {
   // schoen abfangen.
   // ROLE_ASSERT(ROLE_POISSON || cov->role == ROLE_MAXSTABLE);
 
-  //PMI(cov->calling, -1);
-  
   assert(cov->mpp.moments == hasMaxStableRole(cov));
   if ((err = INIT(shape, cov->mpp.moments, S)) != NOERROR) return err; //gatter?
 

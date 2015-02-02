@@ -129,3 +129,6 @@ isVariogram <- function(type) {
 
 LSQMETHODS <- c("self", "plain", "sqrt.nr", "sd.inv", "internal") 
 MLMETHODS <- c("ml") # "reml", "rml1"),
+
+par.storage <- ".RandomFields.par"
+par.storage.env <- .GlobalEnv

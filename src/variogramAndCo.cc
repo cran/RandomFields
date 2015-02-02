@@ -83,7 +83,7 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
     assert(({/*PMI(cov, "Cov/vario"); */ cov->pref[Nothing] != PREF_NONE && isShape(type);})); //
   } else {
     if (cov->pref[Nothing] == PREF_NONE || !isVariogram(type)) {
-      assert(({PMI(cov, "cov/Vario"); true;})); //
+      assert(({PMI(cov); true;})); //
       ERR("given model is not a variogram");
     }
     if (stat && isCartesian(prev->isoown)) {
@@ -97,7 +97,7 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
    
 
 #define UNIVAR COV(x, cov, value)
-#define UNIVAR_Y NONSTATCOV(x, y, cov, value)
+#define UNIVAR_Y NONSTATCOV(x, y, cov, value) 
 
 #define MULT 					\
   COV(x, cov, cross);				\
@@ -242,9 +242,11 @@ void CovarianceMatrix(cov_model *cov, double *v, int *nonzeros) {
 	y[d] = x[d];
 	ystart[d] = xstart[d];
 	ny[d] = nx[d];
-      }   
+      }
       while (true) {
 	NONSTATCOV(x, y, cov, z);
+	//	APMI(cov); printf("%f %f %f \n", *x, *y, *z);
+
 	MULTICOV; 
 	loc->i_row++;
 	STANDARDINKREMENT_Y;
@@ -297,7 +299,7 @@ void CovarianceMatrix(cov_model *cov, double *v, int *nonzeros) {
 	  // PMI(cov->calling);
 
 	  NONSTATCOV(x, y, cov, z);
-	  //		  printf("x=%f %f y=%f %f z=%f\n", x[0], x[1], y[0], y[1], z[0]);
+	  //  printf("x=%f %f y=%f %f z=%f\n", x[0], x[1], y[0], y[1], z[0]);
 
 	  //PMI(cov);
 	  assert(R_FINITE(z[0]));
@@ -406,7 +408,7 @@ void SelectedCovMatrix(cov_model *cov,
 
   genuineStatOwn(cov, &domown, &type);
   if (cov->pref[Nothing] == PREF_NONE || !isPosDef(type)) {
-    assert(({PMI(cov, "cov matrix"); true;})); //
+    assert(({PMI(cov); true;})); //
     error("cov. matrix: given model is not a covariance function");
   }
   if (vdim_close_together) {
@@ -803,9 +805,7 @@ SEXP VariogramIntern(SEXP reg, SEXP x, SEXP lx, SEXP result) {
   CovList[truecov->nr].variogram(truecov, REAL(result));
   partial_loc_null(cov);
   
-  //PMI(truecov->calling, -1); 
-  //assert(false);
-return(NULL);
+  return(NULL);
 }
 
 

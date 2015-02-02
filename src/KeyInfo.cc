@@ -824,6 +824,51 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
 
 
 
+void Path(cov_model *cov, cov_model *sub) {
+  //  printf("%ld\n", cov);
+  //  printf("covnr =%d %s\n", cov->nr, Nick(cov));
+  cov_fct *C = CovList + cov->nr;
+  const char *sep="-> ";
+  if (cov->calling == NULL) {
+    PRINTF(" *** "); 
+  } else {
+    //    printf("calling\n");
+    Path(cov->calling, cov);
+  }
+ 
+  if (sub == NULL) return; 
+  if (cov->key == sub) { PRINTF("%s.key.%d%s", C->nick, cov->zaehler, sep); return; }
+
+  int i;
+  for (i=0; i<C->maxsub; i++) {
+    if (cov->sub[i] == sub) {
+      //      PRINTF("%s.sub[%d].%d%s", C->nick, i, cov->zaehler, sep);
+      PRINTF("%s[%s,%d].%d%s", C->nick, C->subnames[i], i, cov->zaehler, sep);
+      return;
+    }
+  }
+  
+  if (cov->Splus != NULL) {
+    for (i=0; i<C->maxsub; i++) {
+      if (cov->Splus->keys[i] == sub) {
+	PRINTF("%s.S[%d].%d%s", C->nick, i, cov->zaehler, sep);
+	return;
+      }
+    }
+  }
+
+  for (i=0; i<C->kappas; i++) {
+    if (cov->kappasub[i] == sub) {
+      PRINTF("%s.%s.%d%s", C->nick, C->kappanames[i], cov->zaehler, sep);
+       return;
+    }
+  }
+
+
+  PRINTF("%s (UNKNOWN,%d)%s", C->nick, cov->zaehler, sep);
+}
+
+
 void leer(int level){
   char format[255];
   if (level == 0) return;
@@ -926,16 +971,20 @@ static bool PMI_print_dollar = !true,
   PMI_print_mpp = !true,
   PMI_print_pgs = !true, 
   PMI_print_details = !true,
-  PMI_print_loc = true;
+  PMI_print_loc = !true,
+  PMI_print_fields = !true;
 static int  PMI_print_rect = 1;  // 0, 1, 2
 
-void pmi(cov_model *cov, char all, int level) {    
+void pmi(cov_model *cov, char all, int level, int maxlevel) {    
   int i, j, endfor;
   cov_fct *C = CovList + cov->nr; // nicht gatternr
 #define MNlength 4
   char MN[Forbidden + 1][MNlength], name[100];
  
   //int n = 2;
+  if (level > maxlevel) {
+    leer(level); PRINTF("'%s' left out\n", NAME(cov)); return;
+  }
 
   for (i=0; i<=Forbidden; i++) {
     strcopyN(MN[i], METHODNAMES[i], MNlength);
@@ -1035,7 +1084,7 @@ void pmi(cov_model *cov, char all, int level) {
     }
     if (cov->kappasub[i] != NULL) {
       PRINTF("  <=");
-      pmi(cov->kappasub[i], all, level + 3);
+      pmi(cov->kappasub[i], all, level + 3, maxlevel);
     } else  PRINTF("\n");
   }
   if (cov->Sset != NULL) {
@@ -1085,18 +1134,20 @@ void pmi(cov_model *cov, char all, int level) {
 		      (int) cov->typus);
   leer(level); PRINTF("%-10s %s (%d)\n","role", ROLENAMES[cov->role],
 		      (int) cov->role);
-  leer(level); PRINTF("%-10s %s\n","method", METHODNAMES[cov->method]);
-  leer(level); PRINTF("%-10s %s\n","initialised", FT[cov->initialised]);
-  leer(level); PRINTF("%-10s %s\n","fieldret", FT[cov->fieldreturn]);
-  leer(level); PRINTF("%-10s %s\n","origrf", FT[cov->origrf]);
-  leer(level); PRINTF("%-10s %d\n","rf", addressbits(cov->rf));
-   leer(level); PRINTF("%-10s %s\n","checked", FT[cov->checked]);
- leer(level); PRINTF("%-10s ", "pref");  
-  for (i=0; i<=Sequential; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
-  PRINTF("\n"); leer(level); PRINTF("%-10s ", "");  
-  for (; i<=Nothing; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
-  PRINTF("\n");
   leer(level); PRINTF("%-10s %s\n","determinst", FT[cov->deterministic]);  
+  if (PMI_print_fields) {
+    leer(level); PRINTF("%-10s %s\n","method", METHODNAMES[cov->method]);
+    leer(level); PRINTF("%-10s %s\n","initialised", FT[cov->initialised]);
+    leer(level); PRINTF("%-10s %s\n","fieldret", FT[cov->fieldreturn]);
+    leer(level); PRINTF("%-10s %s\n","origrf", FT[cov->origrf]);
+    leer(level); PRINTF("%-10s %d\n","rf", addressbits(cov->rf));
+    leer(level); PRINTF("%-10s %s\n","checked", FT[cov->checked]);
+    leer(level); PRINTF("%-10s ", "pref");  
+    for (i=0; i<=Sequential; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
+    PRINTF("\n"); leer(level); PRINTF("%-10s ", "");  
+    for (; i<=Nothing; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
+    PRINTF("\n");
+  }
   if (PMI_print_details) {
     leer(level); PRINTF("%-10s %s\n","user_given", 
 		      cov->user_given == ug_internal ? "internal" :
@@ -1126,6 +1177,25 @@ void pmi(cov_model *cov, char all, int level) {
     leer(level); PRINTF("%-10s %s\n","simu:pair", FT[cov->simu.pair]);
     leer(level); PRINTF("%-10s %d\n","simu:expect", cov->simu.expected_number_simu);    
     leer(level); PRINTF("%-10s %s\n", "MLE", FT[cov->MLE==NULL]); 
+    int d;
+    if (cov->taylorN > 0) {
+      for (d=0; d<cov->taylorN; d++) {
+	leer(level); 
+	PRINTF("%-10s c%d=%f p%d=%f\n", d==0 ? "taylor" : "", 
+	       d, cov->taylor[d][TaylorConst], d, cov->taylor[d][TaylorPow]);
+      }
+    } else {leer(level); PRINTF("%-10s %s\n", "taylor", "undetermined");}
+    if (cov->tailN > 0) {
+	for (d=0; d<cov->tailN; d++) {
+	  leer(level);
+	  PRINTF("%-10s c%d=%4.3f p%d=%4.3f ce%d=%4.3f pe%d=%4.3f\n", 
+		 d==0 ? "tailtlr" : "",
+		 d, cov->tail[d][TaylorConst], 
+		 d, cov->tail[d][TaylorPow],
+		 d, cov->tail[d][TaylorExpConst], 
+		 d, cov->tail[d][TaylorExpPow]);
+	}
+    } else {leer(level); PRINTF("%-10s %s\n", "tailtlr", "undetermined");}
   }
   //leer(level); PRINTF("%-10s %d\n","naturalscaling", cov->naturalscaling);  
   //leer(level); PRINTF("%-10s %d\n","init",CovList[cov->nr].init!=init_failed);
@@ -1287,25 +1357,7 @@ void pmi(cov_model *cov, char all, int level) {
 	  for (d=0; d<dimP1; d++) PRINTF("%d ", p->i[d]); PRINTF("\n"); }
       }
     }
-    if (cov->taylorN > 0) {
-      for (d=0; d<cov->taylorN; d++) {
-	leer(level); 
-	PRINTF("%-10s c%d=%f p%d=%f\n", d==0 ? "taylor" : "", 
-	       d, cov->taylor[d][TaylorConst], d, cov->taylor[d][TaylorPow]);
-      }
-    } else {leer(level); PRINTF("%-10s %s\n", "taylor", "undetermined");}
-    if (cov->tailN > 0) {
-	for (d=0; d<cov->tailN; d++) {
-	  leer(level);
-	  PRINTF("%-10s c%d=%4.3f p%d=%4.3f ce%d=%4.3f pe%d=%4.3f\n", 
-		 d==0 ? "tailtlr" : "",
-		 d, cov->tail[d][TaylorConst], 
-		 d, cov->tail[d][TaylorPow],
-		 d, cov->tail[d][TaylorExpConst], 
-		 d, cov->tail[d][TaylorExpPow]);
-	}
-    } else {leer(level); PRINTF("%-10s %s\n", "tailtlr", "undetermined");}
-  }
+   }
     
   if (PMI_print_loc) {
 
@@ -1336,7 +1388,7 @@ void pmi(cov_model *cov, char all, int level) {
     leer(level);
     givenkey = true;
     PRINTF("%-10s :", "key");  
-    if (all >= 0) pmi(cov->key, all, level + 1);
+    if (all >= 0) pmi(cov->key, all, level + 1, maxlevel);
   }
 
   if (cov->Splus != NULL) {
@@ -1347,7 +1399,8 @@ void pmi(cov_model *cov, char all, int level) {
 	cov_model *key = cov->Splus->keys[ii];
 	leer(level);      
 	if (key != NULL) {
-	    PRINTF("%-10s ++ %d ++:", "plus.key", ii); pmi(key, all, level + 1);
+	    PRINTF("%-10s ++ %d ++:", "plus.key", ii); 
+	    pmi(key, all, level + 1, maxlevel);
 	}  else PRINTF("%-10s ++ %d ++: %s\n","plus.key", ii, "empty");	
       }
     }
@@ -1361,9 +1414,38 @@ void pmi(cov_model *cov, char all, int level) {
       }
       leer(level); 
       PRINTF("%s %d (%s) of '%s':", "submodel", i, C->subnames[i], C->nick);  
-      pmi(cov->sub[i], all, level + 1);
+      pmi(cov->sub[i], all, level + 1, maxlevel);
     }
   }
+}
+
+
+void pmi(cov_model *cov) { // OK
+  PRINTF("\n");
+
+  if (cov == NULL) {
+    PRINTF("\nCovariance model is empty.\n\n");
+  } else {
+    Path(cov, NULL);
+    pmi(cov, false, 0, 9999999);
+  }
+  //printf("pmi done\n");
+}
+
+
+
+
+
+
+void pmi(cov_model *cov, char maxlevel) { 
+  PRINTF("\n");
+  if (cov == NULL) {
+    PRINTF("\nCovariance model is empty.\n\n");
+  } else {
+    Path(cov, NULL);
+    pmi(cov, false, 0, maxlevel);
+  }
+  //printf("pmi done\n"); 
 }
 
 
@@ -1604,96 +1686,6 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP Do_notreturnparam) {
 
 
 
-
-void Path(cov_model *cov, cov_model *sub) {
-  //  printf("%ld\n", cov);
-  //  printf("covnr =%d %s\n", cov->nr, Nick(cov));
-  cov_fct *C = CovList + cov->nr;
-  const char *sep="-> ";
-  if (cov->calling == NULL) {
-    PRINTF(" *** "); 
-  } else {
-    //    printf("calling\n");
-    Path(cov->calling, cov);
-  }
- 
-  if (sub == NULL) return; 
-  if (cov->key == sub) { PRINTF("%s.key.%d%s", C->nick, cov->zaehler, sep); return; }
-
-  int i;
-  for (i=0; i<C->maxsub; i++) {
-    if (cov->sub[i] == sub) {
-      //      PRINTF("%s.sub[%d].%d%s", C->nick, i, cov->zaehler, sep);
-      PRINTF("%s[%s,%d].%d%s", C->nick, C->subnames[i], i, cov->zaehler, sep);
-      return;
-    }
-  }
-  
-  if (cov->Splus != NULL) {
-    for (i=0; i<C->maxsub; i++) {
-      if (cov->Splus->keys[i] == sub) {
-	PRINTF("%s.S[%d].%d%s", C->nick, i, cov->zaehler, sep);
-	return;
-      }
-    }
-  }
-
-  for (i=0; i<C->kappas; i++) {
-    if (cov->kappasub[i] == sub) {
-      PRINTF("%s.%s.%d%s", C->nick, C->kappanames[i], cov->zaehler, sep);
-       return;
-    }
-  }
-
-
-  PRINTF("%s (UNKNOWN,%d)%s", C->nick, cov->zaehler, sep);
-}
-
-void pmi(cov_model *cov) { // OK
-  PRINTF("\n");
-
-  if (cov == NULL) {
-    PRINTF("\nCovariance model is empty.\n\n");
-  } else {
-    Path(cov, NULL);
-    pmi(cov, false, 0);
-  }
-  //printf("pmi done\n");
-}
-
-
-void pmi(cov_model *cov, const char *msg) { 
-  PRINTF("\n%s", msg); pmi(cov);
-}
-
-
-
-void pmi(const char *msg) { 
-  cov_model *cov;
-  int i;
-  PRINTF("\n\n%s\n", msg);
-  for (i=0; i<=MODEL_MAX; i++) {
-    cov = KEY[i];
-    if (cov != NULL) {
-      PRINTF("Register '%s'\n", REGNAMES[i]);
-      pmi(cov);
-    }
-  }
-}
-
-
-void pmi(cov_model *cov, char all) { 
-  PRINTF("\n");
-  if (cov == NULL) {
-    PRINTF("\nCovariance model is empty.\n\n");
-  } else {
-    Path(cov, NULL);
-    pmi(cov, all, 0);
-  }
-  //printf("pmi done\n"); 
-}
-
-
 void ple_intern(cov_fct *C){
   int i;
   PRINTF("pref: ");
@@ -1778,7 +1770,6 @@ coord_sys_enum SearchCoordSystem(cov_model *cov, coord_sys_enum os,
   for (i=0; i<MAXSUB; i++) {
     if (cov->sub[i] != NULL) {
       //      printf("sub %d of %s %d\n", i, NAME(cov), cov->nsub);
-      //      PMI(cov->sub[i], -1);
       nn_s = SearchCoordSystem(cov->sub[i], os, n_s);
       //      printf("sub %s   %s\n", COORD_SYS_NAMES[n_s],COORD_SYS_NAMES[nn_s]);
       if (nn_s != n_s) {
