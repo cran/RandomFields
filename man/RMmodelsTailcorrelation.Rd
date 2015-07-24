@@ -1,6 +1,8 @@
 \name{Tail Correlation Funtioncs}
 \alias{tcf}
 \alias{tail correlation functions}
+\alias{Tail correlation functions}
+\alias{RMmodelsTailCorrelation}
 \title{Covariance models valid for max-stable random fields}
 \description{
   This page summarizes the models that can be use
@@ -71,6 +73,16 @@
  \bold{See \link{RMmodels} for cartesian models.}
 }
 
+\references{
+  \itemize{
+    \item
+    Strokorb, K.,  Ballani, F.,  and Schlather, M. (2015)
+    Tail correlation functions of max-stable processes: Construction
+    principles, recovery and diversity of some mixing max-stable processes
+    with identical TCF. \emph{Extremes}, \bold{18}, 241-271
+  }
+}
+
 \author{
  Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}
@@ -78,6 +90,7 @@
 
 \seealso{
   \link{coordinate systems},
+  \link{RM},
   \command{\link{RMmodels}},
   \command{\link{RMtrafo}}
 }

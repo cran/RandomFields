@@ -82,8 +82,9 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMgengneiting(kappa=1, mu=1.5)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
 

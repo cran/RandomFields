@@ -45,9 +45,9 @@
        field, equals 1 in most cases
        \item \code{has.variance}
        indicates whether information on the variance is available,
-       \item \code{coord.units} gives the names of the
+       \item \code{coordunits} gives the names of the
        units for the coordinates
-       \item \code{variab.units} gives the names of the
+       \item \code{varunits} gives the names of the
      units for the variables
    }
 }

@@ -169,7 +169,7 @@ SEXP periodogram(SEXP Dat, // data
   FREE(taper);
   FFT_destruct(&FFT);
   UNPROTECT(1);
-  if (err != NOERROR) error("error occured when calculating the periodogram");
+  if (err != NOERROR) ERR("error occured when calculating the periodogram");
   for (j=0; j<end_l; j++) lambda[j] *= n_inv;
   return Lambda;
 }

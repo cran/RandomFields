@@ -74,7 +74,15 @@
  
 }
 
-\note{
+\section{IMPORTANT}{
+  Note that in formula constants are interpreted as part of a mixed
+  model, i.e. the corresponding parameter has to be estimated
+  (e.g. \code{~ 1 + ...}) whereas models not given as formula the
+  parameters to be estimated must be given explicitely.
+}
+
+\note{ %to do: make the following point cleares
+  
   (additional) argument names should always start with a capital
   letter. Small initial letters are reserved  for \command{\link{RFoptions}}.
 }
@@ -110,7 +118,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 RFoptions(modus_operandi="sloppy")
 
 ##############################################################
@@ -122,20 +130,17 @@ RFoptions(modus_operandi="sloppy")
 
 V <- 10
 S <- 0.3
-model <- RMexp(var=V, scale=S)
-x <- y <- seq(1, 3, by= if (interactive()) 0.1 else 1)
+M <- 3
+model <- RMexp(var=V, scale=S) + M
+x <- y <- seq(1, 3, 0.1)
 
 simulated <- RFsimulate(model = model, x=x, y=y)
-# add overall mean/trend of 3 to the response/simulated data 
-simulated@data <- simulated@data + 3
-#returns an object of class RFspatialPointsDataFrame including
-#coordinates and the simulated response vector
 plot(simulated)
 
 
 # an alternative code to the above code:
-simulated2 <- RFsimulate(model = ~ 1@RMfixed(beta=3) +
-               RMexp(var=V, scale=S),x=x, y=y, V=V, S=S)
+simulated2 <- RFsimulate(model = ~ 1@RMfixed(beta=M) +
+               RMexp(var=V, scale=S),x=x, y=y, V=V, S=S, M=M)
 plot(simulated2)
 
 # Estimate parameters of underlying covariance function via
@@ -145,7 +150,7 @@ fitted <- RFfit(model=model.na, data=simulated)
 
 # compare sample mean of data with ML estimate:
 mean(simulated@data[,1]) 
-fitted@ml@trend
+fitted
 
 
 \dontshow{\dontrun{

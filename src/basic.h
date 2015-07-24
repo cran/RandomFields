@@ -1,3 +1,31 @@
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+
+
+
 #ifndef GSL_VS_R_H
 #define GSL_VS_R_H 1
 
@@ -7,8 +35,31 @@
 #include <errno.h>
 #include <R_ext/Complex.h>
 
+#ifdef SCHLATHERS_MACHINE
+#undef SCHLATHERS_MACHINE
+#endif
 
-// Formerly in <R_ext/Applic.h>
+#ifdef RANDOMFIELDS_DEBUGGING
+#undef RANDOMFIELDS_DEBUGGING
+#endif
+
+#ifdef showfree
+#undef showfree
+#endif
+
+#ifdef DOPRINT
+#undef DOPRINT
+#endif
+
+
+
+#define MAXCHAR 18 // max number of characters for (covariance) names  
+#define MAXNRCOVFCTS 300
+#define MAXUNITSCHAR 10
+#define MAXINVERSIONS 2
+
+
+// Formerly in <R_ext/Applic.h>LinkedTo: 
 void fft_factor_(int n, int *pmaxf, int *pmaxp);
 Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 		  int isn, double *work, int *iwork);/* TRUE: success */
@@ -19,11 +70,6 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define LENGTH length // safety, in order not to use LENGTH defined by R
 #define complex Rcomplex
 #define DOT "."
-#define print PRINTF /* // */
-#define RF_NA NA_REAL 
-#define RF_NAN R_NaN
-#define RF_NEGINF R_NegInf
-#define RF_INF R_PosInf
 #define GAUSS_RANDOM(SIGMA) rnorm(0.0, SIGMA)
 #define UNIFORM_RANDOM unif_rand()
 #define POISSON_RANDOM(x) rpois(x)
@@ -31,7 +77,6 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define SQRTPI M_SQRT_PI
 #define INVPI M_1_PI
 #define PIHALF M_PI_2 
-#define T_PI M_2_PI
 #define ONETHIRD 0.333333333333333333
 #define TWOTHIRD 0.66666666666666666667
 #define TWOPI 6.283185307179586476925286766559
@@ -51,56 +96,13 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 #define INFTY INFDIM
 
 
-#define ERRLINES assert({PRINTF("(ERROR in %s, line %d)\n", __FILE__, __LINE__); true;})
 
 //
 // 
 // 
 // 
 
-// 
-// 1
 
-extern char BUG_MSG[250];
-#ifdef SCHLATHERS_MACHINE
-// __extension__ unterdrueckt Fehlermeldung wegen geklammerter Argumente
-#define PRINTF Rprintf
-#define INTERNAL  \
-  sprintf(BUG_MSG, \
-	  "made to be an internal function '%s' ('%s', line %d).", /* // */ \
-	  __FUNCTION__, __FILE__, __LINE__);				\
-  warning(BUG_MSG)
- 
-#define assert(X) if (!__extension__ (X )) {				\
-    sprintf(BUG_MSG,							\
-	    "'assert(%s)' failed in function '%s' (file '%s', line %d).", \
-	    #X,__FUNCTION__, __FILE__, __LINE__);			\
-    error(BUG_MSG);							\
-  }
-#define VARIABLE_IS_NOT_USED __attribute__ ((unused))
-#define SHOW_ADDRESSES 1
-#define BUG {								\
-    sprintf(BUG_MSG, "BUG in '%s' ('%s', line %d).", \
-	    __FUNCTION__, __FILE__, __LINE__);				\
-    error(BUG_MSG);							\
-  }									
-#define DO_TESTS true
-
-#else 
-
-
-#define PRINTF Rprintf
-#define INTERNAL SERR("Sorry. This functionality does not exist currently. There is work in progress at the moment by the maintainer.")
-#define assert(X) {}
-#define VARIABLE_IS_NOT_USED
-#define BUG {								\
-    sprintf(BUG_MSG, "Severe error occured in function '%s' (file '%s', line %d). Please contact maintainer martin.schlather@math.uni-mannheim.de .", \
-	    __FUNCTION__, __FILE__, __LINE__);				\
-    error(BUG_MSG);							\
-  }									
-#define DO_TESTS false
-
-#endif
 
 #endif /* GSL_VS_R_H */
 

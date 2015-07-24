@@ -2,6 +2,8 @@
 \alias{sphere}
 \alias{spherical models}
 \alias{Spherical models}
+\alias{earth models}
+\alias{Earth models}
 \title{Covariance models valid on a sphere}
 \description{
   This page summarizes the covariance models that can be used
@@ -83,6 +85,7 @@
 % library(RandomFields, lib="~/TMP")
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 RFgetModelNames(isotropy=c("spherical isotropic"))
 
 ## an example of a simple model valid on a sphere
@@ -91,23 +94,32 @@ plot(model)
 
 
 ## a simple simulation
-l <- if (interactive()) seq(0, 85, 1.2) else seq(0, 10, 2)
+l <- seq(0, 85, 1.2)
 coord <- cbind(lon=l, lat=l)
 
-z <- RFsimulate(RPdirect(RMwhittle(s=30, nu=0.45)), coord, grid=TRUE)
+
+z <- RFsimulate(RMwhittle(s=30, nu=0.45), coord, grid=TRUE) # takes 1 min
 plot(z)
 
 
-z <- RFsimulate(RPdirect(RMwhittle(s=500, nu=0.5)), coord, grid=TRUE,
-                new_coord_sys="orthographic", zenit=c(25, 25))
+z <- RFsimulate(RMwhittle(s=500, nu=0.5), coord, grid=TRUE,
+                new_coord_sys="orthographic", zenit=c(25, 25)) 
 plot(z)
 
 
-z <- RFsimulate(RPdirect(RMwhittle(s=500, nu=0.5)), coord, grid=TRUE,
-                new_coord_sys="gnomonic", zenit=c(25, 25))
+z <- RFsimulate(RMwhittle(s=500, nu=0.5), coord, grid=TRUE,
+                new_coord_sys="gnomonic", zenit=c(25, 25)) 
 plot(z)
 
 
+## space-time modelling on the sphere
+sigma <- 5 * sqrt((R.lat()-30)^2 + (R.lon()-20)^2)
+model <- RMprod(sigma) * RMtrafo(RMexp(s=500, proj="space"), "cartesian") *
+  RMspheric(proj="time") 
 
-\dontshow{FinalizeExample()}
+z <- RFsimulate(model, 0:10, 10:20, T=seq(0, 1, 0.1),
+                coord_system="earth", new_coordunits="km")
+plot(z, MARGIN.slices=3)
+
+\dontshow{FinalizeExample(); }
 }

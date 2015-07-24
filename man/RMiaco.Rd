@@ -53,10 +53,11 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMiaco(nu=1, lambda=1.5, delta=0.5)
 plot(model, dim=2)
 
-x <- seq(0, 10, if (interactive()) 0.1 else 5) 
+x <- seq(0, 10, 0.1)
 plot(RFsimulate(model, x=x, y=x))
 \dontshow{FinalizeExample()}
 }

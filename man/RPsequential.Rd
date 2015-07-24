@@ -13,32 +13,32 @@
 }
 
 \usage{
-RPdirect(phi, root_method, svdtolerance, max_variab) 
+RPdirect(phi, boxcox, root_method, svdtolerance, max_variab) 
 
-RPsequential(phi, max_variables, back_steps, initial)
+RPsequential(phi, boxcox, max_variables, back_steps, initial)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
 
 % \item{loggauss}{optional argument; same meaning as for 
 % \command{\link{RPgauss}}.}
 
- \item{root_method}{Decomposition of the covariance matrix.
- If \code{root_method=1} or \code{3}, Cholesky
- decomposition will not be attempted, but singular value
- decomposition
- performed instead.
- In case of a multivariate random field, \code{root_method = 2}
- or \code{3} orders the covariance such that first all components are
- considered for the first variable, then all components for the
- second one, and so on. If \code{root_method = 0} or \code{1}
- it starts with the first component of all locations, then the
- second components follow, etc.
+\item{root_method}{Decomposition of the covariance matrix:
+  \itemize{
+    \item  \code{root_method=0} Cholesky decomposition
+    \item  \code{root_method=2} SVD
+    }
+    If Cholesky decomposition failes then alway SVD is tried.
 
- Default: \code{0} .}
- \item{svdtolerance}{ If SVD decomposition is used for calculating the square root of
+    Default: \code{0} .
+    }
+    \item{svdtolerance}{ If SVD decomposition is used for calculating the square root of
  the covariance matrix then the absolute componentwise difference between
  the covariance matrix and square of the square root must be less
  than \code{svdtolerance}. No check is performed if

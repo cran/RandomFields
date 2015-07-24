@@ -1,6 +1,7 @@
 /*
  Authors 
  Christoph Berreth, cberreth@mail.uni-mannheim.de
+ Martin Schlather
 
  Definition of spherical correlation functions 
 
@@ -11,7 +12,8 @@ Note:
 
 
 
- Copyright (C) 2014 -- 2014 Christoph Berreth
+ Copyright (C) 2014 -- 2015 Christoph Berreth
+                            Martin Schlather (changing 2015)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -44,7 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /* model of the sine power function of Soubeyrand, Enjalbert and Sache,
    taken out of the paper written by Tilmann Gneiting 
    'Strictly and non-strictly positive definite functions on spheres'
-   (released in Bernoulli 19(4) in 2013) */
+   (released in Bernoulli 19(4) in 2013 -- equation (17) ) */
  
 
 int i=1;
@@ -52,26 +54,7 @@ int i=1;
 void SinePower(double *x, cov_model *cov, double *v){
   double alpha = P0(SINEPOWER_ALPHA);  // Auslesen des Parameters aus cov  
   double y = *x;
-
-  // printf("i= %d   x= %.2f\n",i++,y); // => RFsimu läuft Gitter ab.
-  // => Argument ist Norm(x)
-  // => Übergibt User Punkte auf SPhäre oder Gitter in  R_2??
-
-/* User übergibt Punkte auf SPhäre anhand von Winkeln, bspw. durch
- x = seq(0,pi,length=10); y=x. Hierbei handelt es sich um den oberen
- Kugelauschnitt im 1. Quadranten. Die Cov-Fkt. benötigt zur Berechnung
- den zwischen zweier solcher Gitterpunkte liegenden Innenwinkel. Dieser 
- lässt sich mittels der Formel (siehe Block) berechnen. In Beispiel muss
- dieser (logischerweise) kleiner pi bzw. 90° sein. Möglich sind aber
- auch Innenwinkel jenseits 90°. Zur Berechnung der Cov.-Werte muss der 
- Rest der Division durch pi berechnet werden (mod in C über fmod)... 
-*/ 
-  
-
-//  printf("Remainder of %f / %f is %lf\n", 9.2, 3.7, fmod(9.2,3.7));
-  *v = 1.0;
-  if( y >=  PI ) *v = 0.0;
-  else  *v = 1.0 - pow(sin(y * 0.5), alpha);
+  *v = y >=  PI ? 0.0 : 1.0 - pow(sin(y * 0.5), alpha);
   return;
 }
 
@@ -81,7 +64,7 @@ void SinePower(double *x, cov_model *cov, double *v){
 void rangeSinePower(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[SINEPOWER_ALPHA] = 0.0;  // true range
   range->max[SINEPOWER_ALPHA] = 2.0;   
-  range->pmin[SINEPOWER_ALPHA] = 0.0001; // practical range (assumed)
+  range->pmin[SINEPOWER_ALPHA] = 0.001; // practical range (assumed)
   range->pmax[SINEPOWER_ALPHA] = 2.0; 
   range->openmin[SINEPOWER_ALPHA] = true;  // lower endpoint included 
   range->openmax[SINEPOWER_ALPHA] = false; // upper endpoint excluded  
@@ -90,55 +73,145 @@ void rangeSinePower(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 ////////////////////////////////////////////////////////////////////////
-/* model according to the equation (16), 
+/* model of the multiquadric familiy, 
    taken out of the paper written by Tilmann Gneiting 
    'Strictly and non-strictly positive definite functions on spheres'
-   (released in Bernoulli 19(4) in 2013)
+   (released in Bernoulli 19(4) in 2013 -- equation (16) )
    The special cases with fixed parameter tau at 0.5 and 1.5 are known as
-   the inverse multiquadric and the Poisson spline.
- */
+   the inverse multiquadric and the Poisson spline. */
  
 
-#define EQ16_DELTA 0
-#define EQ16_TAU 1
-#define EQ16_EPS 1e-7
-#define QUAD(a) (a)*(a)
-void Eq16(double *x, cov_model *cov, double *v){
+#define MULTIQUAD_DELTA 0
+#define MULTIQUAD_TAU 1
+#define MULTIQUAD_EPS 1e-7
+void Multiquad(double *x, cov_model *cov, double *v){
   
-  double delta = P0(EQ16_DELTA), // Auslesen der Parameter aus cov  
-         tau = P0(EQ16_TAU); 
+  double delta = P0(MULTIQUAD_DELTA), // Auslesen der Parameter aus cov  
+         tau = P0(MULTIQUAD_TAU); 
   double y = *x;
   
-  *v = 1.0;
-  if( y >=  PI ) *v = 0.0;  // ?? Passt das??
-  else  *v = pow(1.0-delta, 2*tau) / pow(1+QUAD(delta)-2*delta*cos(y), tau);
+  y = y >= PI ? -1 : cos(y);
+  *v = pow(1.0-delta, 2*tau) / pow(1+ delta * delta - 2*delta*y, tau);
   return;
 }
 
 
 /* range der Parameter delta & tau */
-void rangeEq16(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
-  range->min[EQ16_DELTA] = 0.0;  // true range
-  range->max[EQ16_DELTA] = 1.0;   
-  range->pmin[EQ16_DELTA] = EQ16_EPS; // practical range (assumed)
-  range->pmax[EQ16_DELTA] = 1.0 - EQ16_EPS; 
-  range->openmin[EQ16_DELTA] = true;  // lower endpoint included 
-  range->openmax[EQ16_DELTA] = true; // upper endpoint excluded 
+void rangeMultiquad(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
+  range->min[MULTIQUAD_DELTA] = 0.0;  // true range
+  range->max[MULTIQUAD_DELTA] = 1.0;   
+  range->pmin[MULTIQUAD_DELTA] = MULTIQUAD_EPS; // practical range (assumed)
+  range->pmax[MULTIQUAD_DELTA] = 1.0 - MULTIQUAD_EPS; 
+  range->openmin[MULTIQUAD_DELTA] = true;  // lower endpoint included 
+  range->openmax[MULTIQUAD_DELTA] = true; // upper endpoint excluded 
 
- range->min[EQ16_TAU] = 0;  // true range
-  range->max[EQ16_TAU] = RF_INF;   
-  range->pmin[EQ16_TAU] = 0.0001; // practical range (assumed)
-  range->pmax[EQ16_TAU] = 500; 
-  range->openmin[EQ16_TAU] = true;  // lower endpoint included 
-  range->openmax[EQ16_TAU] = true; // upper endpoint excluded  
+  range->min[MULTIQUAD_TAU] = 0;  // true range
+  range->max[MULTIQUAD_TAU] = RF_INF;   
+  range->pmin[MULTIQUAD_TAU] = 0.0001; // practical range (assumed)
+  range->pmax[MULTIQUAD_TAU] = 500; 
+  range->openmin[MULTIQUAD_TAU] = true;  // lower endpoint included 
+  range->openmax[MULTIQUAD_TAU] = true; // upper endpoint excluded  
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+/* Schoenberg's representation for d=2 respectively Choquet's representation, 
+   taken out of the paper written by Tilmann Gneiting 
+   'Strictly and non-strictly positive definite functions on spheres'
+   (released in Bernoulli 19(4) in 2013 -- equation (15) )
+*/ 
+
+
+double Legendre(int n, double x)
+{  
+  /* Idea by Kai Zhang, 
+     Course Math225 Scientific Computing II, 
+     Yale, Spring 2011 
+  */
+  
+  double Pk_1,Pk_2,Pk; // P_{k-1}(x), P_{k-2}(x), P_k(x)
+
+  Pk_2 = 0.0;
+  Pk_1 = 1.0;
+  Pk = 1.0;
+  
+  for(int k=1;k<=n;k++)
+    {
+     Pk = (2.0*k-1.0)/k*x*Pk_1 - (k-1.0)/k*Pk_2; 
+     Pk_2 = Pk_1;
+     Pk_1 = Pk;
+    }
+ 
+  return Pk;
+}
+
+
+/* Bsp. */
+
+//  int N=5;
+//  printf("%lf\n", Legendre(N,-1));
+//  printf("%lf\n", Legendre(N,0.5));
+//  printf("%lf\n", Legendre(N,0));
+//  printf("%lf\n", Legendre(N,0.5));
+//  printf("%lf\n", Legendre(N,1));
+
+
+
+/*
+void kappa_choquet(int i, cov_model *cov, int *nr, int *nc){
+    *nc = SIZE_NOT_DETERMINED;
+      *nr = i < CovList[cov->nr].kappas  ? SIZE_NOT_DETERMINED : -1;
+  }
+
+#define CHOQUET_PARA 0
+void Choquet(double *x, cov_model *cov, double *v){
+  
+  // Benutzer übergibt Gewichte in double-Vektor b, sodass  sum(b)=1
+  // Übergabe mittels cov ??  
+  // Überprüfung summe = 1 ??
+  
+  long int n; 
+  double y = *x;
+  double b[4];
+  b[0]=b[1]=b[2]=b[3]=0.25; //???
+  
+  n = sizeof(*b)/ sizeof(double);
+  
+  *v = 0.0;
+  if(y>=PI) for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,cos(PI));
+  // für y>=PI stetige Fortsetzung mit konstantem Wert psi(PI)!!
+  else for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,cos(y));
+  return;
 }
 
 
 
 
 
+void rangeChoquet(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range)
+{
+
+  range->min[CHOQUET_PARA] = 0.0;  // true range
+  range->max[CHOQUET_PARA] = 1.0;   
+  range->pmin[CHOQUET_PARA] = MULTIQUAD_EPS; // practical range (assumed)
+  range->pmax[CHOQUET_PARA] = 1.0 - MULTIQUAD_EPS; 
+  range->openmin[CHOQUET_PARA] = true;  // lower endpoint included 
+  range->openmax[CHOQUET_PARA] = true; // upper endpoint excluded 
+
+  }
+// * Erklärung:
+// * range-Angaben gelten bei Vektoren für jede Komponente  
+// * true range ist wahrer Definitionsbereich der Parameter
+// * practical range sind Grenzen für Optimierer. (Optimierungsintervall)
+// *
+
+int checkChoquet(cov_model *cov){
+
+  
 
 
+  return NOERROR;
+}
 
-
-
+*/

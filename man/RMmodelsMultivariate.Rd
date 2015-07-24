@@ -1,0 +1,89 @@
+\name{RMmodelsMultivariate}
+\alias{RMmodelsMultivariate}
+\alias{Multivariate RMmodels}
+\title{Multivariate models}
+\description{
+ Here, multivariate and vector-valued covariance models are presented.
+}
+
+\details{
+\bold{Covariance models}
+\tabular{ll}{
+ \command{\link{RMbiwm}} \tab full bivariate Whittle-Matern model (stationary and isotropic)\cr
+ \command{\link{RMbigneiting}} \tab bivariate Gneiting model (stationary and isotropic)\cr
+\command{\link{RMcurlfree}} \tab curlfree (spatial) vector-valued field (stationary and anisotropic)\cr
+\command{\link{RMdelay}} \tab bivariate delay effect model (stationary)\cr
+\command{\link{RMdivfree}} \tab divergence free (spatial) vector valued
+field, (stationary and anisotropic)\cr
+\command{\link{RMexponential}} \tab functional returning \eqn{e^C}{exp(C)}\cr
+ \command{\link{RMkolmogorov}} \tab Kolmogorov's model of turbulence\cr
+\command{\link{RMmatrix}} \tab trivial multivariate model\cr
+\command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
+ \command{\link{RMparswm}} \tab multivariate Whittle-Matern model (stationary and isotropic)\cr
+\command{\link{RMschur}} \tab element-wise product with a positive definite
+matrix\cr 
+\command{\link{RMtbm}} \tab turning bands operator\cr
+\command{\link{RMvector}} \tab vector-valued field (combining \command{\link{RMcurlfree}} and \command{\link{RMdivfree}})
+}
+
+
+\bold{Trend models}
+\tabular{ll}{
+  \command{\link{RMtrend}} \tab for explicite trend modelling\cr
+  \command{\link{R.models}} \tab for implicite trend modelling\cr
+  \command{\link{R.c}} \tab binding univariate trend models into a vector\cr
+}
+ 
+
+}
+
+\references{
+ \itemize{
+ \item Chiles, J.-P. and Delfiner, P. (1999)
+ \emph{Geostatistics. Modeling Spatial Uncertainty.}
+ New York: Wiley.
+ % \item Gneiting, T. and Schlather, M. (2004)
+ % Statistical modeling with covariance functions.
+ % \emph{In preparation.}
+ \item Schlather, M. (2011) Construction of covariance functions and
+ unconditional simulation of random fields. In Porcu, E., Montero, J.M.
+ and Schlather, M., \emph{Space-Time Processes and Challenges Related
+ to Environmental Problems.} New York: Springer.
+ % \item Schlather, M. (2002) Models for stationary max-stable
+ % random fields. \emph{Extremes} \bold{5}, 33-44.
+ \item
+   Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
+    Strokorb, K. (2015) 
+    Analysis, simulation and prediction of multivariate
+    random fields with package \pkg{RandomFields}. \emph{
+      Journal of Statistical Software}, \bold{63} (8), 1-25,
+    url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
+  \item
+  Wackernagel, H. (2003) \emph{Multivariate Geostatistics.} Berlin:
+  Springer, 3rd edition. 
+}
+}
+
+\seealso{\command{\link{RFformula}}, \command{\link{RMmodels}},
+   \command{\link{RM}},
+ \command{\link{RMmodelsAdvanced}}
+
+ \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}, a vignette
+ for multivariate geostatistics
+}
+
+\author{
+ Martin Schlather, \email{schlather@math.uni-mannheim.de}
+}
+\keyword{spatial}
+
+\examples{
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+
+
+# to do
+
+
+\dontshow{FinalizeExample()}
+}

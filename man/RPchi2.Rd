@@ -8,7 +8,7 @@
 
 \usage{
 
-RPchi2(phi, f)
+RPchi2(phi, boxcox, f)
 
 }
 
@@ -16,6 +16,10 @@ RPchi2(phi, f)
  \item{phi}{the \command{\link{RMmodel}}. If a model for the
  distribution is not specified, \command{\link{RPgauss}} is used as
  default and a covariance model is expected.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{f}{integer. Degree of freedom.}
 }
 
@@ -42,9 +46,9 @@ RPchi2(phi, f)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 model <- RPchi2(RMexp(), f=2)
-x <- seq(0, 10, if (interactive()) 0.01 else 2)
+x <- seq(0, 10, 0.1)
 z <- RFsimulate(model=model, x, x, n=4)
 plot(z)
 

@@ -87,7 +87,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
  *    n      : number of pairs for each bin
   */
 { 
-  int i, ii, j, d, halfnbin, gridpoints[MAXVARIODIM], dimM1, EV_METHOD, err, 
+  int i1, ii,  d, halfnbin, gridpoints[MAXVARIODIM], dimM1, EV_METHOD, err, 
     low, cur, up;    
   long totalpoints, totalpointsrepet, segment, 
     factor =  -1; 
@@ -96,10 +96,11 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
      * BinSq = NULL; 
 
   if ( * dim > MAXVARIODIM) {err = TOOLS_DIM; goto ErrorHandling; }
-    
-  for (segment = i = 0; i< * dim; i++, segment += * lx) xx[i] = &(x[segment]); 
+  
+  for (int i = segment = 0; i< * dim; i++, segment += * lx) 
+    xx[i] = &(x[segment]); 
   if (xx[0]==NULL) {err=TOOLS_XERROR; goto ErrorHandling; }
-  for (i=0; i< * nbin; i++) {
+  for (int i=0; i< * nbin; i++) {
     if (bin[i] >= bin[i + 1])  {err = TOOLS_BIN_ERROR; goto ErrorHandling; }
   }
 
@@ -127,11 +128,11 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   if ((BinSq = (double  * ) MALLOC(sizeof(double) *  ( * nbin + 1)))==NULL) {
     err = TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
-  for (i = 0; i< * nbin; i++){
+  for (int i = 0; i< * nbin; i++){
     sd[i] = vario[i] = 0.0; 
     n[i] = 0; 
   }
-  for (i = 0; i <=  * nbin; i++){ 
+  for (int i = 0; i <=  * nbin; i++){ 
     BinSq[i] = bin[i] > 0 ?  bin[i] * bin[i] : bin[i]; 
   }
 
@@ -139,7 +140,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   //////////////////////////////////// GRID ////////////////////////////////////
   if ( * grid) {
     
-    error("use option 'fft' for data on a grid."); 
+    ERR("use option 'fft' for data on a grid."); 
 
     int d1, d2, head, tail, swapstart; 
     double p1[MAXVARIODIM], p2[MAXVARIODIM], distSq, dx[MAXVARIODIM]; 
@@ -157,7 +158,9 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     // totalpoints = gridpoints[0] * gridpoints[1] * gridpoints[2]; 
     //
     // instead :
-    for (dd = 0.0, totalpoints = 1, i = 0; i <= dimM1; i++) {
+    dd = 0.0;
+    totalpoints = 1;
+    for (int i = 0; i <= dimM1; i++) {
       gridpoints[i] = (int) (xx[i][XLENGTH]); 
       totalpoints  *= gridpoints[i]; 
       maxdist[i] = (gridpoints[i] - 1) * xx[i][XSTEP]; 
@@ -165,12 +168,12 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     }
     EV_METHOD = (int) ( ((EV_TIMES_LESS * BinSq[ * nbin]) < dd) ||
 			  (EV_SYSTEM_LARGER<totalpoints)); // ? large system ?
-    for (i = 0; i <= dimM1; i++) { dx[i] = xx[i][XSTEP] * 0.99999999; }
+    for (int i = 0; i <= dimM1; i++) { dx[i] = xx[i][XSTEP] * 0.99999999; }
     totalpointsrepet = totalpoints *  *repet; 
     segmentbase[0] = 1; // here x runs the fastest;  
     SegmentbaseTwo[0] = segmentbase[0] << 1; 
     SegmentbaseFour[0] = segmentbase[0] << 2; 
-    for (i = 1; i <= dimM1; i++) { 
+    for (int i = 1; i <= dimM1; i++) { 
       segmentbase[i] = segmentbase[i - 1] * gridpoints[i - 1]; 
       SegmentbaseTwo[i] = segmentbase[i] << 1; 
       SegmentbaseFour[i] = segmentbase[i] << 2; 
@@ -183,19 +186,19 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     
     switch (EV_METHOD) {
     case 0 :
-      for (i = 0; i <= dimM1; i++) {indexhead[i] = 0; p1[i] = 0.0; }
+      for (int i = 0; i <= dimM1; i++) {indexhead[i] = 0; p1[i] = 0.0; }
        
       // loop through all pair of points, except (head, tail) for head=tail, 
       // which is treated separately at the end, if necessary (not relevant for 
       // variogram itself, but for function E and V)
       for (head = 0; head<totalpoints; ) {
-	for (i = 0; i <= dimM1; i++) {
+	for (int i = 0; i <= dimM1; i++) {
 	  indextail[i] = 0; 
 	  p2[i] = 0.0; 
 	}
 	for (tail = 0; tail<head; ) {
 	  distSq = 0.0; 
-	  for (i = 0; i <= dimM1; i++) {
+	  for (int i = 0; i <= dimM1; i++) {
 	    double dx2; 
 	    dx2 = p1[i] - p2[i]; 
 	    distSq  += dx2 * dx2; 
@@ -247,7 +250,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
       }
       if(PL >= PL_SUBDETAILS) 
 	{
-	for(i = 0; i< * nbin; i++){
+	for(int i = 0; i< * nbin; i++){
 	  PRINTF(" %d:%f(%f, %d)",
 		 i, vario[i]/(double)(factor * n[i]), vario[i], n[i]); 
 	}
@@ -281,7 +284,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
        */
           
       maxbinsquare = BinSq[ * nbin]; 
-      for (i = 0; i <= dimM1; i++) {
+      for (int i = 0; i <= dimM1; i++) {
 	delta[i] = 0; 
 	psq[i] = p[i] = 0.0; 
       }
@@ -290,15 +293,17 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
 	  d = 0;  
 	  delta[d]++;  // this excludes distSq==0 !	
 	  p[d] +=dx[d]; psq[d] = p[d] * p[d]; 
-	  for (distSq = 0.0, i = 0; i<=dimM1; i++) {distSq += psq[i]; }
+	  distSq = 0.0;
+	  for (int i = 0; i<=dimM1; distSq += psq[i++]); 
 	  while ((distSq>maxbinsquare)  || (p[d]>maxdist[d])) {/*  ( * )  */ 
 	    delta[d] = 0; psq[d] = p[d] = 0.0; 
 	    d++;   
 	    if (d<=dimM1) { 
 	      delta[d]++; 
 	      p[d] +=dx[d];
-	      psq[d] = p[d] * p[d]; 
-	      for (distSq = 0.0, i = 0; i<=dimM1; i++) distSq += psq[i];
+	      psq[d] = p[d] * p[d];
+	      distSq = 0.0;
+	      for (int i = 0; i<=dimM1; distSq += psq[i++]);
 	    } else break; 	
 	  }
 	} while ((distSq<=BinSq[0]) && (d<=dimM1)); 
@@ -315,22 +320,23 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
 	}	
 
 	
-	i = 0; 
-	while ((i<dimM1) && (delta[i]==0)) i++; 
-	swapstart = i + 1; 
+	i1 = 0; 
+	while ((i1<dimM1) && (delta[i1]==0)) i1++; 
+	swapstart = i1 + 1; 
 	
-	for(i = 0; i<=dimM1; i++) {
+	for(int i = 0; i<=dimM1; i++) {
 	  deltaTwo[i]=delta[i] << 1; 
 	  DeltaTwoSegmentbase[i]  =  delta[i] * SegmentbaseTwo[i]; 
 	  DeltaFourSegmentbase[i] =  delta[i] * SegmentbaseFour[i]; 
 	}
 
-	for (i = 0; i<=dimM1; i++) indextail[i] = 0;
+	for (int i = 0; i<=dimM1; i++) indextail[i] = 0;
 	valuePtail = valuePointhead = 0; 
 	
 	maxtail = gridpoints[0] - delta[0];  
 	for(; ; ) { // indextail
-	  for (i = 0, valuePointhead = 0; i<=dimM1; i++) {
+	  valuePointhead = 0;
+	  for (int i = 0; i<=dimM1; i++) {
 	    indexhead[i] = indextail[i] + delta[i]; /*  Do not use  - delta[i], as last 
 						   dimension must always be 
 						    + delta[]  */
@@ -338,15 +344,14 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
 	  }  // one point is given by indextail, the other by indexhead	
 	  for (; ; ) {// indexhead
 	    forbid = false; // in case dim=1 ! (???, 21.2.01)
-	    for (i = 0; i<=dimM1; i++) { // for (i = 1; ... ) should be enough...
+	    for (int i = 0; i<=dimM1; i++) { // for (i = 1; ... ) should be enough...
 	      if ((forbid = indexhead[i] < 0) || indexhead[i] >= gridpoints[i]) 
 		break; 
 	    }
 	    if (!forbid) { 	  
-	      long segtail, seghead; 
 	      for (tail = 0; tail<maxtail; tail++) {	
-		segtail = valuePtail + tail; 
-		seghead = valuePointhead + tail; 
+		long segtail = valuePtail + tail,
+		  seghead = valuePointhead + tail; 
 		for (segment=0; segment<totalpointsrepet; segment+=totalpoints){
 		  double x2; 
 		  x2 = characteristic(values[segtail + segment], 
@@ -399,7 +404,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
       }  //for(; ; ), delta
       if(PL >= PL_SUBDETAILS) {
 	PRINTF("\n"); 
-	for(i = 0; i< * nbin; i++){
+	for(int i = 0; i< * nbin; i++){
 	  PRINTF(" %d:%f(%f, %d)  ", 
 		 i, vario[i]/(double)(factor * n[i]), vario[i], n[i]); 
 	}
@@ -412,9 +417,9 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
     ////////////////////////////////////  ARBITRARY /////////////////////////////
     totalpoints =  * lx; 
     totalpointsrepet = totalpoints *  * repet; 
-    for (i = 0; i<totalpoints; i++){ // to have a better performance for large 
+    for (int i = 0; i<totalpoints; i++){ // to have a better performance for large 
       //                            data sets, group the data first into blocks
-      for (j = 0; j<i; j++){
+      for (int j = 0; j<i; j++){
         double distSq; 
       	for (distSq = 0.0, d = 0; d<=dimM1; d++) {
 	  double dx; 
@@ -457,22 +462,22 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   //   for (j=0; j< * nbin; j++) n[j]  *=  * repet; 
   //}
 
-  for (i = 0; i<ii; i++) sd[i] = vario[i] =  RF_NA;
-  for (i++; i< * nbin; i++){
-    if (n[i]>0) { 
-      vario[i] /= (double) (factor * n[i]); 
-      if (n[i]>1) 
-	sd[i] = sqrt(sd[i] / (factor * factor * (double) (n[i] - 1))
-		     - (double) (n[i]) / (double) (n[i] - 1) * 
-		     vario[i] * vario[i]); 
-      else sd[i] = RF_INF; 
+  for (i1 = 0; i1<ii; i1++) sd[i1] = vario[i1] = RF_NA;
+  for (i1++; i1< * nbin; i1++){
+    if (n[i1]>0) { 
+      vario[i1] /= (double) (factor * n[i1]); 
+      if (n[i1]>1) 
+	sd[i1] = sqrt(sd[i1] / (factor * factor * (double) (n[i1] - 1))
+		     - (double) (n[i1]) / (double) (n[i1] - 1) * 
+		     vario[i1] * vario[i1]); 
+      else sd[i1] = RF_INF; 
     } else { 
-      vario[i] =  RF_NA; 
-      sd[i] = RF_INF; 
+      vario[i1] =  RF_NA; 
+      sd[i1] = RF_INF; 
     }
   }
 
-  i = ii; // sicherheitshalber - -  eigentlich sollte unten kein i mehr auftauchen
+
   long jj; 
   switch ( * charact) {
   case 0 :
@@ -492,7 +497,7 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
       }
       n[ii]  += totalpointsrepet; 
       vario[ii] = vario[ii] / (double) n[ii]; 
-      for (i = 0; i< * nbin; i++) sd[i] = RF_NA; // beste Loesung, da sonst
+      for (int i = 0; i< * nbin; i++) sd[i] = RF_NA; // beste Loesung, da sonst
       // nur Chaos gibt - -  da sd falsch berechnet ist.
       // siehe MPP package fuer die richtige Berechnung.
     }
@@ -523,18 +528,18 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   
  ErrorHandling:
   FREE(BinSq); 
-  for (i = 0; i< * nbin; i++){sd[i] = vario[i] = RF_NA; } 
+  for (int i = 0; i< * nbin; i++){sd[i] = vario[i] = RF_NA; } 
   switch (err) {
   case TOOLS_DIM :
-    error("dimension exceed max dimension of empirical variogram estimation"); 
+    ERR("dimension exceed max dimension of empirical variogram estimation"); 
   case TOOLS_MEMORYERROR :  
-    error("Memory alloc failed in empiricalvariogram.\n"); 
+    ERR("Memory alloc failed in empiricalvariogram.\n"); 
   case TOOLS_XERROR :  
-    error("The x coordinate may not be NULL.\n"); 
+    ERR("The x coordinate may not be NULL.\n"); 
   case TOOLS_BIN_ERROR :
-    error("Bin components not an increasing sequence.\n"); 
+    ERR("Bin components not an increasing sequence.\n"); 
   case TOOLS_UNKNOWN_CHAR:
-    error("unknown type of second order characteristic"); 
+    ERR("unknown type of second order characteristic"); 
   default : BUG;
   }
 }

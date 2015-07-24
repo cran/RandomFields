@@ -1,3 +1,23 @@
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
 
 
 ## use only via calls of 'eval(body())' from 'plotRFspatialGridDataFrame' or
@@ -13,8 +33,8 @@ default.image.par <- function(data.range, var.range, legend=TRUE) {
     data.col <- RColorBrewer::brewer.pal(9, "Reds")
     var.col <- RColorBrewer::brewer.pal(9, "Blues")
   } else {
-    if (RFoptions()$warn$colour_palette) {
-      RFoptions(warn.colour_palette = FALSE)
+    if (RFoptions()$internal$warn_colour_palette) {
+      RFoptions(warn_colour_palette = FALSE)
       message("Better install the package 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
     }
     data.col <- heat.colors(36)
@@ -84,8 +104,8 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   }
   
  
-  coord.units=x@.RFparams$coord.units
-  variab.units=x@.RFparams$variab.units;
+  coordunits=x@.RFparams$coordunits
+  varunits=x@.RFparams$varunits;
 
   graphics <- RFoptions()$graphics
  
@@ -130,7 +150,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   }
 
   lab <- xylabs(names.coords[MARGIN[1]], names.coords[MARGIN[2]],
-                units=coord.units )
+                units=coordunits )
                  
   
   if (!("xlab" %in% dotnames)) dots$xlab <- lab$x
@@ -174,6 +194,8 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
     image.par[[i]]$z.legend <-
       as.matrix(apply(image.par[[i]]$range, 2,
                       function(x) seq(x[1], x[2], length=lencol)))
+  #  if (ncol(image.par[[i]]$z.legend) == 1)
+  #    image.par[[i]]$z.legend <- t(image.par[[i]]$z.legend)
     image.par[[i]]$breaks <- 
       as.matrix(apply(image.par[[i]]$range, 2,
                       function(x) seq(x[1]-abs((x[2] - x[1])*1e-3),
@@ -256,13 +278,19 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
         par(oma=oma, mar=image.par[[i]]$mar.leg)
         if (!is.list(select) || length(select[[jx]]) != 2) {
           #Print(i,j,image.par)
-          lab <- xylabs("", "", units=coord.units)
+          lab <- xylabs("", "", units=coordunits)
+         #          Print(image.par)
+         im.col <- image.par[[i]]$col[[1+(jx-1) %% length(image.par[[i]]$col)]]
+
+          
+          
+          if (length(im.col) == 1)
+            stop("number of colours is one -- please choose an appropriate colour palette. Maybe 'RFpar(col=NULL)' will help.")
           image(x=image.par[[i]]$z.legend[, j[1]], y=c(0,1),
                 z=matrix(ncol=2, rep(image.par[[i]]$z.legend[, j[1]], 2)),
-                axes=FALSE,
-                xlab=lab$x, ylab=lab$y,
-                col=image.par[[i]]$col[[1 +(jx-1) %% length(image.par[[i]]$col)]]
+                axes=FALSE, xlab=lab$x, ylab=lab$y, col=im.col                
               )
+          
           axis(3, mgp=if (plot.var) c(3,0,0), hadj=if (plot.var) -0.5 else NA)#1 + 2 * (i =="data"))
           box()
         }
@@ -289,7 +317,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
 
 PlotTitle <- function(x, main) {
   p <- x@.RFparams
-  if (!is.null(p$krige.method))  main <- paste(p$krige.method, "\n", main)
+ # if (!is.null(p$krige.method))  main <- paste(p$krige.method, "\n", main)
   par(mar=rep(0, 4), new=TRUE)
   plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE)
   text(0, 0.5, labels=main, adj=1, xpd=NA, col="blue", cex=0.8) # links davon
@@ -310,6 +338,8 @@ plotRFspatialDataFrame <-
            zlim, # default: missing,
            legend, #=TRUE,
            MARGIN.movie,
+           file=NULL, speed=0.3,
+           height.pixel=height.pixel, width.pixel=width.pixel,
           ..., plotmethod="image") {
 
   x.grid <- is(x, "RFspatialGridDataFrame")
@@ -473,8 +503,6 @@ plotRFspatialDataFrame <-
     }     
   }
 
-    
-
   data.range <-
     apply(as.matrix(1:vdim), 1,  # statt data.idx  # pro vdim eine legend
                     function(z) 
@@ -488,6 +516,7 @@ plotRFspatialDataFrame <-
                           na.rm=TRUE))
 
  # Print(data.range, vdim * 0:(n-plot.variance-1))
+  ##  Print("ok")
  
   var.range <- if (plot.variance) sapply(x@data[-data.idx],
                                          range, na.rm=TRUE) else NULL
@@ -501,7 +530,7 @@ plotRFspatialDataFrame <-
                               ...)
 
  image.par$names.vdim <-
-    add.units(image.par$names.vdim, x@.RFparams$variab.units)
+    add.units(image.par$names.vdim, x@.RFparams$varunits)
   
 
   if (x.grid) {
@@ -515,20 +544,31 @@ plotRFspatialDataFrame <-
   ## split the left part according to 'split.main' for different vdims and
   ## repetitions
 
- # Print(dim(data.arr))
-   
+  current <- dev.cur()
+  if (do.avi <- as.integer(do.movie && length(file) > 0)) {
+    ans <- system("mencoder")
+    if (ans != 0 && ans != 1) stop("'mencoder' needs to be installed first.")
+    digits <- 1 + ceiling(log(max(m.range)) / log(10))
+    fn <- character(max(m.range))
+   }
   for (m in m.range) {  
+    if (do.avi) {
+      fn[m] <- paste(file, "__", formatC(m, width=digits, flag="0",
+                                         format="d"), ".png", sep="")
+      if (file.exists(fn[m])) stop(fn[m], "already exists.");
+      png(height=height.pixel, width=width.pixel, filename=fn[m])
+      filedev <- dev.cur()
+      par(mfcol=image.par$split.main, mar=c(.2, .2, .2, .2))
+      dev.set(current)
+    } else filedev <- dev.cur()
     for (jx in 1:length(select)) {       
       j <- if (is.list(select)) select[[jx]] else select[jx]
       for (ix in 1:nrow(all.i)) {
-
-       # Print(m.range, length(select), all.i)
-        
         i <- all.i[ix, ]
         dots <- dots.with.main.lab <- image.par$dots
         main <- dots$main
         dots$main <- NULL
-        lab <- xylabs("", "", units=x@.RFparams$coord.units)
+        lab <- xylabs("", "", units=x@.RFparams$coordunits)
         dots$xlab <- lab$x
         dots$ylab <- lab$y
         if (do.plot.var <- (plot.variance && i[1]==n)){
@@ -550,105 +590,144 @@ plotRFspatialDataFrame <-
         if (x.grid) {
           dots$type <- NULL
           dots$col <- if (genuine.image) col else par()$bg
-
-          plot.return <- do.call(plotmethod,
-                                 args=c(dots, list(
+          for (devices in 0:do.avi) {
+            plot.return <- do.call(plotmethod,
+                                   args=c(dots, list(
                                    x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
                                    zlim = image.par[[dv]]$range[, j[1]],
                                    axes=plotmethod == "persp"))
                                  )
+            dev.set(filedev)
+          }
+          dev.set(current)
+          
         } else {
           idx <- if (n==1) j else if (vdim==1) k else (k-1)*vdim+j
           dots$col <- if (genuine.image)
             col[ cut(x@data[,idx[1]], breaks=breaks) ] else par()$bg
           
-          do.call(graphics::plot,
-                  args=c(dots, list(x=coords[, 1], y=coords[, 2],
-                    axes=FALSE)))
-          box()
+           for (devices in 0:do.avi) {
+             do.call(graphics::plot,
+                     args=c(dots, list(x=coords[, 1], y=coords[, 2],
+                         axes=FALSE)))
+             box()
+             dev.set(filedev)
+           }
+          dev.set(current)
         }
         
-        if (n.slices > 1)
-          legend("bottomright", bty="n",
-                 legend=paste(image.par$names.coords[MARGIN.slices], "=",
-                   x.grid.vectors[[MARGIN.slices]][slices.ind[i[2]]]))
-        
-        if (do.plot.arrows <- length(j) >= 2 && !do.plot.var) {
-          jj <-  if (length(j) == 3) j[-1] else jj <- j
-          rx <- range(coords[, 1])
-          ry <- range(coords[, 2])
-          col.arrow <- if (length(image.par[["data"]]$col) >= jj[1] &&
-                           length(image.par[["data"]]$col[[jj[1]]]) == 1)
-            image.par[["data"]]$col[[jj[1]]] else "black"
+        for (devices in 0:do.avi) {
+          if (n.slices > 1)
+            legend("bottomright", bty="n",
+                   legend=paste(image.par$names.coords[MARGIN.slices], "=",
+                       x.grid.vectors[[MARGIN.slices]][slices.ind[i[2]]]))
           
-          if (ix == 1) { ## to do: document in a paper?
-            factor <- image.par$arrow$reduction *
-              sqrt(diff(rx) * diff(ry) / max(x@data[jj[1]]^2 +
-                                             x@data[jj[2]]^2)) / nx.vectors
-          }
-          my.arrows(coords, x@data[jj], r = factor, thinning = thinning,
-                    col = col.arrow, 
-                    nrow = if (x.grid) length(xx))
-        }
-        
-        if (!do.plot.var && !missing.y && (length(j) == 1 || (length(j)==3))) {
-          idx <- if (n==1) j else if (vdim==1) i[1] else (i[1]-1)*vdim+j
-          if (ncol(y.data) < idx) idx <- 1
-          if (plotmethod == "persp") {
-                                        # theta = 30, phi = 30, expand = 0.5, 
-            xy <- trans3d(y.coords[, MARGIN[1]], y.coords[, MARGIN[2]],
-                          data[ , idx], pmat=plot.return)
-            points(xy, pch=16, col="black")          
-          } else {
-            col2 <- col[ cut(y.data[ , idx], breaks=breaks) ]
-            dots2 <- dots
-            dots2[c("type", "pch", "lty", "col", "bg", "cex", "lwd")] <- NULL
-            addpoints <- function(pch, col, cex) {
-              do.call(graphics::plot.xy,
-                      args=c(dots2,
-                        list(xy=xy.coords(y.coords[, MARGIN[1]],
-                               y.coords[, MARGIN[2]]),
-                             type="p", pch=pch, lty=1, col=col, bg=NA, cex=cex,
-                             lwd=1)))
+          if (do.plot.arrows <- length(j) >= 2 && !do.plot.var) {
+            jj <-  if (length(j) == 3) j[-1] else jj <- j
+            rx <- range(coords[, 1])
+            ry <- range(coords[, 2])
+            col.arrow <- if (length(image.par[["data"]]$col) >= jj[1] &&
+                             length(image.par[["data"]]$col[[jj[1]]]) == 1)
+              image.par[["data"]]$col[[jj[1]]] else "black"
+            
+            if (ix == 1) { ## to do: document in a paper?
+              factor <- image.par$arrow$reduction *
+                sqrt(diff(rx) * diff(ry) / max(x@data[jj[1]]^2 +
+                                               x@data[jj[2]]^2)) / nx.vectors
             }
-            if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
-            addpoints(dots$pch, col2, dots$cex)
+            my.arrows(coords, x@data[jj], r = factor, thinning = thinning,
+                      col = col.arrow, 
+                      nrow = if (x.grid) length(xx))
           }
+         
+          if (!do.plot.var && !missing.y && (length(j)==1 || (length(j)==3))) {
+            idx <- if (n==1) j else if (vdim==1) i[1] else (i[1]-1)*vdim+j
+            if (ncol(y.data) < idx) idx <- 1
+            if (plotmethod == "persp") {
+                                        # theta = 30, phi = 30, expand = 0.5, 
+              xy <- trans3d(y.coords[, MARGIN[1]], y.coords[, MARGIN[2]],
+                            data[ , idx], pmat=plot.return)
+              points(xy, pch=16, col="black")          
+            } else {
+              col2 <- col[ cut(y.data[ , idx], breaks=breaks) ]
+              dots2 <- dots
+              dots2[c("type", "pch", "lty", "col", "bg", "cex", "lwd")] <- NULL
+              addpoints <- function(pch, col, cex) {
+                do.call(graphics::plot.xy,
+                        args=c(dots2,
+                            list(xy=xy.coords(y.coords[, MARGIN[1]],
+                                     y.coords[, MARGIN[2]]),
+                                 type="p", pch=pch, lty=1, col=col, bg=NA,
+                                 cex=cex, lwd=1)))
+              }
+              if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
+              addpoints(dots$pch, col2, dots$cex)
+              
+              if (FALSE) {
+                zaehler <- 1
+                repeat {               
+                  filename <- paste("/home/schlather/TMP/gr.err", zaehler, ".rda", sep="")
+                  if (!file.exists(filename)) break
+                  zaehler <- zaehler + 1
+                }
+                # p rint(filename)
+                save(file=filename, addpoints, dots2, xy.coords, y.coords,
+                     MARGIN, plotmethod, dots, col2,
+                     plotmethod, xx, xy, data.arr, i, m, j, k, image.par, dv)
+                
+                
+                if (FALSE) {
+                  ##   R -d "valgrind --tool=memcheck --leak-check=full --num-callers=20 " --vanilla
+                  
+                  load("/home/schlather/TMP/gr.err1.rda")
+                  do.call(plotmethod,
+                          args=c(dots, list(
+                              x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
+                              zlim = image.par[[dv]]$range[, j[1]],
+                              axes=FALSE)
+                              ))
+                  addpoints(15, "darkgray", dots$cex*2)
+                }           
+              }
+            } # not persp
+          } # !do.plot.var
+           
+          if (ix==1 ||
+              ((image.par$split.main[1] != nrow(all.i)) &&
+               (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
+            axis(1, outer=TRUE)#image.par$always.close)
+          }
+          if (jx==1 &&
+              ((image.par$split.main[2] == length(select)) ||
+               ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
+            axis(2, outer=TRUE)#image.par$always.close)
+          ##if (!image.par$always.close){
+          ##  dots2 <- dots.with.main.lab
+          ##  dots2$xlab <- dots2$ylab <- ""
+          ##  do.call(graphics::title, args=c(dots2, list(outer=TRUE, line=NA)))
+          ##}
+          ## if (!image.par$always.close) {
+          ##   if (x.grid) do.call(graphics::title, args=c(dots, list(outer=FALSE, line=NA)))
+          ##   else do.call(graphics::title, args=c(dots, line=2))  # line=-1 (ersetzt (AM))
+          ##   ##if (i==1) axis(1, outer=image.par$always.close)
+          ##   ##if (j==1) axis(2, outer=image.par$always.close)
+          ## }
+          
+          if (all(i==1) && (image.par$grPrintlevel > 1 || vdim>1)) {
+            mtext(text = image.par$names.vdim[jx],  # names(x)[j[1]]
+                  side=3, line=-1,
+                  col = image.par$text.col, cex=dots$cex)
+            ##legend("topleft", bty="n", legend=c("", image.par$names.vdim[jx]),
+            ##      text.col=image.par$text.col)
+          }
+          if (n>1 && jx==1){
+            mtext(text = image.par$names.rep[ix], side=3, line=-2, cex=dots$cex)
+            ##legend.pos <- "topright" #if (vdim==1) "topright" else "left"
+            ##legend(legend.pos, bty="n", legend=c("", image.par$names.rep[ix]))
+          }
+          dev.set(filedev)
         }
-        
-        if (ix==1 ||
-            ((image.par$split.main[1] != nrow(all.i)) &&
-             (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
-          axis(1, outer=TRUE)#image.par$always.close)
-        }
-        if (jx==1 &&
-            ((image.par$split.main[2] == length(select)) ||
-             ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
-          axis(2, outer=TRUE)#image.par$always.close)
-        ##if (!image.par$always.close){
-        ##  dots2 <- dots.with.main.lab
-        ##  dots2$xlab <- dots2$ylab <- ""
-        ##  do.call(graphics::title, args=c(dots2, list(outer=TRUE, line=NA)))
-        ##}
-        ## if (!image.par$always.close) {
-        ##   if (x.grid) do.call(graphics::title, args=c(dots, list(outer=FALSE, line=NA)))
-        ##   else do.call(graphics::title, args=c(dots, line=2))  # line=-1 (ersetzt (AM))
-        ##   ##if (i==1) axis(1, outer=image.par$always.close)
-        ##   ##if (j==1) axis(2, outer=image.par$always.close)
-        ## }
-        
-        if (all(i==1) && (image.par$grPrintlevel > 1 || vdim>1)) {
-          mtext(text = image.par$names.vdim[jx],  # names(x)[j[1]]
-                side=3, line=-1,
-                col = image.par$text.col, cex=dots$cex)
-          ##legend("topleft", bty="n", legend=c("", image.par$names.vdim[jx]),
-          ##      text.col=image.par$text.col)
-        }
-        if (n>1 && jx==1){
-          mtext(text = image.par$names.rep[ix], side=3, line=-2, cex=dots$cex)
-          ##legend.pos <- "topright" #if (vdim==1) "topright" else "left"
-          ##legend(legend.pos, bty="n", legend=c("", image.par$names.rep[ix]))
-        }
+        dev.set(current)        
         
         if (do.plot.arrows && ix == 1) {
           ## do not merge with ix==1 above !!
@@ -688,9 +767,22 @@ plotRFspatialDataFrame <-
       screen(image.par$scr[1 + image.par$legend], new=FALSE)
       PlotTitle(x, if (is.null(main)) "" else main)
     }
+    if (do.avi) {
+      dev.off(filedev)
+      dev.set(current)
+    }  
   }
 
-  
+  if (do.avi) {
+    txt <- paste("mencoder -mf fps=30 -ffourcc DX50 -ovc lavc ",
+                " -speed ", speed,
+               " -lavcopts vcodec=mpeg4:vbitrate=9800:aspect=4/3:vhq:keyint=15",
+               " -vf scale=720:576 -o ", file, ".avi mf://",
+                 file, "__*.png", sep="")
+    #print(txt)
+    system(txt)
+    file.remove(fn)
+  }
   
   graphics <- RFoptions()$graphics
   if (graphics$always_close_screen){

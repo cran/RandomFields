@@ -59,10 +59,11 @@ RMcurlfree(phi, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMcurlfree(RMgauss(), scale=4)
 plot(model, dim=2)
 
-x.seq <- y.seq <- seq(-10, 10, if (interactive()) 0.2 else 5)
+x.seq <- y.seq <- seq(-10, 10, 0.2)
 simulated <- RFsimulate(model=model, x=x.seq, y=y.seq)
 plot(simulated, select.variables=list(1, c(1, 2:3), 4))
 \dontshow{FinalizeExample()}

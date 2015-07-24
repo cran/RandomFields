@@ -21,13 +21,12 @@ RFoptions(seed=0, xi=1)
 ## seed = 0 : *ANY* simulation will have the random seed 0; set
 ##            RFoptions(seed=NA) to make them all random again
 ## xi = 0.5: Frechet margins with alpha=2
-
+\dontshow{StartExample()}
 ## Due to change in the handling the seeds here are different from the
 ## seed in the paper.
 
-
-x <- seq(0, 10, length=if (interactive()) 128  else 4)
-
+x <- seq(0, 10, length=128)
+\dontshow{if(RFoptions()$internal$examples_red){warning("reduced 'x'");x<-seq(0,10,length=4)}}
 # Fig. 1-4
 \dontrun{\dontshow{plot(RFsimulate(RPsmith(RMgauss(s=1.5)), x, x))   # < 1 sec
 plot(RFsimulate(RPsmith(RMball(s=RRspheric(2, 3,

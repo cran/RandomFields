@@ -29,6 +29,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
 \dontshow{\dontrun{
 my.legend <- function(lu.x, lu.y, zlim, col, cex=1) {
@@ -54,20 +55,20 @@ my.arrows <- function(xy, z, r, thinning) {
  arrows(x0=startx, y0=starty, x1=endx, y1=endy, length=0.03)
 }
 
-x <- c(-3, 3, if (interactive()) 0.049 else 0.5) 
+x <- c(-3, 3, 0.049)
 nu <- 3
 col <- grey(seq(0, 1, 0.01)) 
 thinning <- 21
 length.arrow <- 1.5 / thinning
 runif(1)
 seed <- .Random.seed
-eps <- interactive() # true falls eps/pdf drucken
-
+eps <- FALSE # true falls eps/pdf drucken
+\dontshow{if(RFoptions()$internal$examples_red){warning("modified 'x'"); x <- c(-3, 3, 0.5)}}
 for (modelname in c("divfree", "curlfree")) {
  cat(modelname, "\n")
  model <- list(modelname, list("matern", nu=nu))
  xx <- seq(x[1], x[2], x[3])
- RFoptions(Print=2)
+ RFoptions(print=2)
 
  if (!eps) {
  cf <- RFcov(model=model, x=cbind(xx, 0))
@@ -78,7 +79,7 @@ for (modelname in c("divfree", "curlfree")) {
 
  .Random.seed <- seed
  z <- RFsimulate(x, x, model=model, n=1, CE.trial=2,
- Stor=TRUE, me="ci", Print=3, CE.force=!TRUE)
+ Stor=TRUE, me="ci", print=3, CE.force=!TRUE)
  ## z[1,,] : Potentialfeld
  ## z[2:3,,] : vectorfeld
  ## z[4,,] : div bzw. rot

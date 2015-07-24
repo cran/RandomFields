@@ -20,14 +20,14 @@
 }
 \usage{
 RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
- lower = NULL, upper = NULL, bc_lambda, method="ml",
+ lower = NULL, upper = NULL, method="ml",
  users.guess = NULL,
  distances = NULL, dim, optim.control = NULL,transform = NULL,
  full = FALSE, ...)
 }
 
 \arguments{
- \item{model, x, y, z, T, grid, data,lower, upper, bc_lambda, users.guess,
+ \item{model, x, y, z, T, grid, data,lower, upper, users.guess,
  distances, dim, optim.control, transform, ...}{see \command{\link{RFfit}}
  }
  \item{method}{
@@ -111,20 +111,26 @@ RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 
+## currently disabled!
+
+\dontshow{\dontrun{
+
+## See also  papers.jss14.rd !!!!
+
 RFoptions(modus_operandi="sloppy")
 
-n <- if (interactive()) 100 else 5
 
 #########################################################
 ## simulate some data first
-points <- if (interactive()) 100 else 40
+points <- 100
 x <- runif(points, 0, 3)
 y <- runif(points, 0, 3) ## random points in square [0, 3]^2
 model <- RMgencauchy(alpha=1, beta=2)
-d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
+d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n=100) #better n=1000
 
 
 #########################################################
@@ -132,6 +138,8 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
 RFcrossvalidate(estmodel, data=d)
+
+}}
 
 
 \dontshow{RFoptions(modus_operandi="normal")}

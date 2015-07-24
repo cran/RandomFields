@@ -70,8 +70,9 @@ RMcauchy(gamma, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMcauchy(gamma=1)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model, xlim=c(-3, 3))
 plot(RFsimulate(model, x=x, n=4))
 \dontshow{FinalizeExample()}

@@ -1,55 +1,52 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
 ## meta-function that generates functions like RMplus, RMwhittle, which
 ## the user will use to generate explicit covariance models, i.e. objects
 ## of class 'RMmodels'
 
-#   rfGenerateModels(TRUE)
 param.text.fct <- function(catheg, names, havedistr=TRUE, Const=NULL,
                            ismath=FALSE){
-  ifHasArg <- paste("if (hasArg('", names,
+  ifHasArg <- paste("  if (hasArg('", names,
                     "') && !is.null(subst <- substitute(", names,
-                    "))) {\n", sep="")
-  EndHasArg <- rep("}", length(names))
-  if (ismath && any(idx <- names == "new" & Const == OtherType + 2)) {
-    ifHasArg[idx] <- "if (!(hasArg('new') && !is.null(subst <- substitute(new))))\n  new <- UNREDUCED\n"
-    EndHasArg[idx] <- ""
+                    "))) \n", sep="")
+  if (ismath && any(idx <- names == "new" & Const == NN2)) {
+    ifHasArg[idx] <- "  if (!(hasArg('new') && !is.null(subst <- substitute(new)))) new <- UNREDUCED\n"
   }
   
-  EndCharacter <- ifCharacter <- rep("", length(names))
-  if (length(Const) > 0 && any(idx <- Const > OtherType) ) {
-    ifCharacter[idx] <- 
-      paste("   if (is.character(", names[idx], ")) {",
-            catheg, "[['", names[idx], "']] <- a <- pmatch(",
-            names[idx],
-            ",", NAMES_OF_NAMES[Const[idx] - OtherType],
-            ") - 1\n",
-            "     if (any(is.na(a))) stop('unknown string value') } else {\n", sep="")
-    EndCharacter[idx] <- "}\n"
-  } 
-   
-
-x <- paste(ifHasArg,
-           ifCharacter,
-           "    u <- try(is.numeric(",
-           names,
-           ") || is.logical(", names,
-           ") || is.language(", names,
-           ")\n\t || is.list(", names,
-           ") || is(", names,
-           ", class2='RMmodel'), silent=TRUE)\n",
-           "    if (is.logical(u) && u) ", catheg, "[['", names,
-           "']] <- ", names,
-           "\n    else if (substr(deparse(subst), 1, 1)=='R') ", catheg,
-           "[['", names,  "']] <- ", names,
-           "\n    else ", sep="")
-  if (havedistr) {
-    paste(x, catheg, "[['", names,
-          "']] <- do.call('", ZF_DISTR[1], "', list(subst))\n ", EndCharacter,
-          EndHasArg, sep="")
-  } else {
-    paste(x, "stop('random parameter not allowed')\n  }");
+  x <- paste(ifHasArg, "\t", catheg, "[['", names, "']] <- ", sep="")
+  for (i in 1:length(names)) {
+    if (!ismath && names[i] == "proj")
+      x[i] <- paste(x[i], "CheckProj(proj, subst)", sep="")
+    else if (length(Const) > 0 && Const[i] >= NN1)
+      x[i] <- paste(x[i], "CheckChar(", names[i], ", subst, ",
+                    NAMES_OF_NAMES[Const[i] - NN1 + 1], ", ",
+                    havedistr, ")", sep="")
+    else x[i] <- paste(x[i], "CheckArg(", names[i], ", subst, ",
+                       havedistr, ")", sep="")
   }
+  x
 }
+
 
 rfGenerateModels <- function(assigning,
                              RFpath = "~/R/RF/svn/RandomFields",
@@ -92,17 +89,20 @@ rfGenerateModels <- function(assigning,
   while (i <= va) {
     step <- 1
     ## sequential steps for each model
-    
-    if (A$internal[i]) {
-        cat(i, "internal", .C("GetModelName",as.integer(A$nr[i]),
-                 name=empty, nick=empty2, PACKAGE="RandomFields")$name,"\n")
-        i <- i + 1
+
+    if (A$internal[i] && A$internal[i] != INTERN_SHOW) {
+      cat(i, "internal", .C("GetModelName",as.integer(A$nr[i]),
+                            name=empty, nick=empty2,
+                            PACKAGE="RandomFields")$name,"\n")      
+      i <- i + 1
       next
     }
+    
     # get model name
     ret <- .C("GetModelName",as.integer(A$nr[i]),
               name=empty, nick=empty2, PACKAGE="RandomFields")
-    nick <- ret$nick
+    nickname <- nick <- ret$nick
+    if (A$internal[i]) nickname <- paste("i", nickname, sep="")
     ismath <- substr(nick, 1, 2) == "R."
     
     #cat(i, nick, "\n");
@@ -152,19 +152,21 @@ rfGenerateModels <- function(assigning,
      
     ex.par <- length(paramnames)>0
     ex.std <- ((nick != ZF_DOLLAR[1] && any(isVariogram(type))) ||
-               nick %in% c("RMball", "RMsum", "RMconstant", "RMfixcov")
+               nick %in% c("RMball", "RMsum", "RMconstant", "RMfixcov",
+                           "RMcovariate")
                || nick == ZF_PLUS[1] || nick[1] == ZF_MULT[1]) &&
-                 !(nick %in% c("RMtrafo",  "RMsine")
-                  && !ismath)
+                 !(nick %in% c("RMtrafo",  "RMsine")) && !ismath
+
     std.variables <-
-      if (nick %in%  c("RMconstant", "RMfixcov")) "var"
+      if (nick %in%  c("RMconstant")) "var"
       else c("var", "scale", "Aniso", "proj")
     
-  # Print(nick %in%  c("RMconstant"), std.variables, ex.std)
+  #
+    cat( std.variables, ex.std)
    #stopifnot(i < 50)
     
     
-    cat(i, "\t", nick, ",\t\told name ", ret$name, "\t", ex.std, "\t",
+    cat(i, "\t", nickname, ",\t\told name ", ret$name, "\t", ex.std, "\t",
         paste(type, collapse="/"), "\n", sep="")
     
     if(nick == ZF_DOLLAR[1]){ 
@@ -172,7 +174,7 @@ rfGenerateModels <- function(assigning,
         paste(nick, " <- function(phi, var, scale, Aniso, proj, anisoT)")
     } else {
       text.fct.head <-
-        paste(nick,
+        paste(nickname,
               " <- function(",
               if (ex.sub) {
                 paste(paste(subnames.notintern, collapse=", "), sep="")
@@ -192,10 +194,11 @@ rfGenerateModels <- function(assigning,
       par.body <- param.text.fct("par.model", paramnames,
                                  any(isVariogram(type)) || any(type==ShapeType),
                                  A$paramtype[1:length(paramnames), i], ismath)
-      idx <- paramnames == 'envir'
-      if (any(idx))
-        par.body[idx] <-
-          "par.model[['envir']] <- if (hasArg(envir)) envir else new.env()"
+      if (any(idx <- paramnames == 'envir'))
+        warning(nickname, ": envir not internal")
+#      if (any(idx))
+#        par.body[idx] <-
+ #         "par.model[['envir']] <- if (hasArg(envir)) envir else new.env()"
     } else par.body <- NULL
  
     text.fct.body <-
@@ -209,7 +212,7 @@ rfGenerateModels <- function(assigning,
                     "']] <- ", subnames, sep="", collapse="\n  ")
             },
             if (ex.anysub) "\n  ",
-            "\n  ",
+            "\n",
             ## get model specific parameter
             if (ex.par) paste(par.body, collapse="\n"),
             if (ex.par) "\n  ",
@@ -238,8 +241,8 @@ rfGenerateModels <- function(assigning,
     # to the function:
 
      text.assign.class <-
-      paste(nick, " <- new('", ZF_MODEL_FACTORY,                  "',", "\n\t",
-         ".Data = ",        nick,                                  ",", "\n\t",
+      paste(nickname, " <- new('", ZF_MODEL_FACTORY,              "',", "\n\t",
+         ".Data = ",        nickname,                                  ",", "\n\t",
          "type = ", "c('", paste(TYPENAMES[type+1], collapse="', '"), "'),",
             "\n\t",
          "isotropy = ", "c('", paste(ISONAMES[iso+1], collapse="', '"), "'),",
@@ -293,7 +296,9 @@ kind <- function(Zeilen, i, start, cont="", ignore=" ", endofname=" ") {
     name <- substr(s, 1, j -1)
     u <- strsplit(substring(s, j + 1), "//")[[1]]
     kommentar <- paste(u[-1], collapse = " ")
-    RC <- nchar(strsplit(kommentar, "RC")[[1]][1]) < nchar(kommentar)
+    
+    RC <- nchar(kommentar) > 0 &&
+      nchar(strsplit(kommentar, "RC")[[1]][1]) < nchar(kommentar)
     value <- u <- u[1]
     i <- i + 1
     if (any(cont != "")) {
@@ -397,6 +402,36 @@ rfGenerateConstants <-
    } else write(file = RCauto.file, append = TRUE, "")
     i <- if (is.null(k)) i+1 else k$i
   }
+
+  define_char <- function(name, value) {
+    write(file = RCauto.file, append = TRUE,
+        paste("\n", name, " <- c('", sep="",
+              paste(value, collapse="', '"),
+              "')")
+          )
+  }
+
+  define_char("list2RMmodel_Names",
+              c(RFgetModelNames(group.by=NULL), ZF_INTERNALMIXED, ZF_TREND))
+ 
+  define_char("rfgui_Names1",
+              RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
+                              domain=DOMAIN_NAMES[XONLY + 1],
+                              isotropy=ISONAMES[ISOTROPIC + 1],
+                              operator=FALSE,
+                              group.by=NULL,
+                              valid.in.dim = 1,#if (sim_only1dim) 1 else 2,
+                              simpleArguments = TRUE,
+                              vdim=1))
+  define_char("rfgui_Names2",
+              RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
+                              domain=DOMAIN_NAMES[XONLY + 1],
+                              isotropy=ISONAMES[ISOTROPIC + 1],
+                              operator=FALSE,
+                              group.by=NULL,
+                              valid.in.dim = 2,#if (sim_only1dim) 1 else 2,
+                              simpleArguments = TRUE,
+                              vdim=1))
  
   return(NULL)
 }

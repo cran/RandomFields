@@ -53,9 +53,13 @@ RMschur(phi, M,  diag, rhored, var, scale, Aniso, proj)
 
 
 \examples{
+\dontshow{StartExample()}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMschur(M=matrix(c(2, 1, 1, 1), ncol=2), RMparswm(nudiag=c(0.5, 2)))
 plot(model)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}
 }

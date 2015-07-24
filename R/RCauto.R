@@ -8,6 +8,7 @@
  MAXCOVDIM 	<- as.integer(11000)
  MAXMLEDIM 	<- as.integer(MAXCOVDIM)
  MAXSIMUDIM 	<- as.integer(MAXCOVDIM)
+ MAXSUB 	<- as.integer(10)
 
  MAXCEDIM 	<- as.integer(13)
  MAXTBMSPDIM 	<- as.integer(4)
@@ -18,6 +19,7 @@
  MAXVARIODIM 	<- as.integer(20)
  MAXTBMVDIM 	<- as.integer(5)
  MAXGETNATSCALE 	<- as.integer(5)
+ MAXGAUSSVDIM 	<- as.integer(10)
 
  MAXPARAM 	<- as.integer(20)
 
@@ -97,14 +99,16 @@ RC_GNOMONIC_PROJ <- GNOMONIC_PROJ 	<- as.integer(6)
 RC_ORTHOGRAPHIC_PROJ <- ORTHOGRAPHIC_PROJ 	<- as.integer(7)
  LAST_CARTESIAN 	<- as.integer(ORTHOGRAPHIC_PROJ)
  SPHERICAL_ISOTROPIC 	<- as.integer(8)
-RC_SPHERICAL_COORD <- SPHERICAL_COORD 	<- as.integer(9)
- EARTH_ISOTROPIC 	<- as.integer(10)
-RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
- LAST_SPHERICAL 	<- as.integer(EARTH_COORD)
- CYLINDER_COORD 	<- as.integer(12)
- UNREDUCED 	<- as.integer(13)
- PREVMODELI 	<- as.integer(14)
- ISO_MISMATCH 	<- as.integer(15)
+ SPHERICAL_SYMMETRIC 	<- as.integer(9)
+RC_SPHERICAL_COORDS <- SPHERICAL_COORDS 	<- as.integer(10)
+ EARTH_ISOTROPIC 	<- as.integer(11)
+ EARTH_SYMMETRIC 	<- as.integer(12)
+RC_EARTH_COORDS <- EARTH_COORDS 	<- as.integer(13)
+ LAST_ANYSPHERICAL 	<- as.integer(EARTH_COORDS)
+ CYLINDER_COORD 	<- as.integer(14)
+ UNREDUCED 	<- as.integer(15)
+ PREVMODELI 	<- as.integer(16)
+ ISO_MISMATCH 	<- as.integer(17)
  LAST_ISO 	<- as.integer(ISO_MISMATCH)
 
  MON_PARAMETER 	<- as.integer(-1)
@@ -118,16 +122,16 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
 
  MAXFIELDS 	<- as.integer(10)
  MODEL_USER 	<- as.integer((MAXFIELDS+0))
- MODEL_UNUSED 	<- as.integer((MAXFIELDS+1))
+ MODEL_AUX 	<- as.integer((MAXFIELDS+1))
  MODEL_INTERN 	<- as.integer((MAXFIELDS+2))
  MODEL_SPLIT 	<- as.integer((MAXFIELDS+3))
  MODEL_GUI 	<- as.integer((MAXFIELDS+4))
  MODEL_MLE 	<- as.integer((MAXFIELDS+5))
  MODEL_MLESPLIT 	<- as.integer((MAXFIELDS+6))
- MODEL_MLETREND 	<- as.integer((MAXFIELDS+7))
+ MODEL_LSQ 	<- as.integer((MAXFIELDS+7))
  MODEL_BOUNDS 	<- as.integer((MAXFIELDS+8))
  MODEL_KRIGE 	<- as.integer((MAXFIELDS+9))
- MODEL_COND 	<- as.integer((MAXFIELDS+10))
+ MODEL_PREDICT 	<- as.integer((MAXFIELDS+10))
  MODEL_ERR 	<- as.integer((MAXFIELDS+11))
  MODEL_MAX 	<- as.integer(MODEL_ERR)
 
@@ -162,33 +166,39 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
  ShapeType 	<- as.integer(9)
  TrendType 	<- as.integer(10)
  InterfaceType 	<- as.integer(11)
- UndefinedType 	<- as.integer(12)
- MathDefinition 	<- as.integer(13)
- OtherType 	<- as.integer(14)
- NN1 	<- as.integer(15)
- NN2 	<- as.integer(16)
- NN3 	<- as.integer(17)
- NN4 	<- as.integer(18)
+ RandomOrShapeType 	<- as.integer(12)
+ UndefinedType 	<- as.integer(13)
+ MathDefinition 	<- as.integer(14)
+ OtherType 	<- as.integer(15)
+ NN1 	<- as.integer(16)
+ NN2 	<- as.integer(17)
+ NN3 	<- as.integer(18)
+ NN4 	<- as.integer(19)
 
 
+
+ nOptimiser 	<- as.integer(8)
+ nNLOPTR 	<- as.integer(15)
+ nLikelihood 	<- as.integer(4)
 
 
  DetTrendEffect 	<- as.integer(0)
- DeterministicEffect 	<- as.integer(1)
- FixedTrendEffect 	<- as.integer(2)
- FixedEffect 	<- as.integer(3)
- RandomEffect 	<- as.integer(4)
- RvarEffect 	<- as.integer(5)
- LargeEffect 	<- as.integer(6)
- LVarEffect 	<- as.integer(7)
- SpaceEffect 	<- as.integer(8)
- SpVarEffect 	<- as.integer(9)
- PrimitiveModel 	<- as.integer(10)
- SimpleModel 	<- as.integer(11)
- RemainingError 	<- as.integer(12)
- effect_error 	<- as.integer(13)
+ FixedTrendEffect 	<- as.integer(1)
+ FixedEffect 	<- as.integer(2)
+ RandomEffect 	<- as.integer(3)
+ RvarEffect 	<- as.integer(4)
+ LargeEffect 	<- as.integer(5)
+ LVarEffect 	<- as.integer(6)
+ SpaceEffect 	<- as.integer(7)
+ SpVarEffect 	<- as.integer(8)
+ DataEffect 	<- as.integer(9)
+ RemainingError 	<- as.integer(10)
+ effect_error 	<- as.integer(11)
 
 
+
+ FirstMixedEffect 	<- as.integer(FixedEffect)
+ LastMixedEffect 	<- as.integer(SpVarEffect)
 
 
 
@@ -204,11 +214,11 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
  TRENDPARAM 	<- as.integer(9)
  NUGGETVAR 	<- as.integer(10)
  MIXEDVAR 	<- as.integer(11)
- MIXEDPARAM 	<- as.integer(12)
- CRITICALPARAM 	<- as.integer(13)
- IGNOREPARAM 	<- as.integer(14)
- LISTPARAM 	<- as.integer(15)
- DONOTRETURNPARAM 	<- as.integer(16)
+ CRITICALPARAM 	<- as.integer(12)
+ IGNOREPARAM 	<- as.integer(13)
+ DONOTVERIFYPARAM 	<- as.integer(14)
+ DONOTRETURNPARAM 	<- as.integer(15)
+ FORBIDDENPARAM 	<- as.integer(16)
 
 
 
@@ -255,6 +265,51 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
  GETMODEL_DEL_MLE 	<- as.integer(3)
  GETMODEL_SOLVE_MLE 	<- as.integer(4)
 
+ MIXED_X_NAME 	<- "X"
+ MIXED_BETA_NAME 	<- "beta"
+
+ COVARIATE_C_NAME 	<- "c"
+ COVARIATE_X_NAME 	<- "x"
+ COVARIATE_ADDNA_NAME 	<- "addNA"
+
+ CONST_A_NAME 	<- "a"
+
+
+ MINMAX_PMIN 	<- as.integer(1)
+ MINMAX_PMAX 	<- as.integer(2)
+ MINMAX_TYPE 	<- as.integer(3)
+ MINMAX_NAN 	<- as.integer(4)
+ MINMAX_MIN 	<- as.integer(5)
+ MINMAX_MAX 	<- as.integer(6)
+ MINMAX_OMIN 	<- as.integer(7)
+ MINMAX_OMAX 	<- as.integer(8)
+ MINMAX_ROWS 	<- as.integer(9)
+ MINMAX_COLS 	<- as.integer(10)
+ MINMAX_BAYES 	<- as.integer(11)
+ MINMAX_ENTRIES 	<- as.integer(MINMAX_BAYES)
+
+
+
+ XLIST_X 	<- as.integer(0)
+ XLIST_Y 	<- as.integer(1)
+ XLIST_T 	<- as.integer(2)
+ XLIST_GRID 	<- as.integer(3)
+ XLIST_SPATIALDIM 	<- as.integer(4)
+ XLIST_TIME 	<- as.integer(5)
+ XLIST_DIST 	<- as.integer(6)
+ XLIST_RESTOT 	<- as.integer(7)
+ XLIST_L 	<- as.integer(8)
+ XLIST_UNITS 	<- as.integer(9)
+ XLIST_NEWUNITS 	<- as.integer(10)
+ XLIST_ENTRIES 	<- as.integer((XLIST_NEWUNITS+1))
+
+
+ PROJ_SPACE 	<- as.integer(-2)
+ PROJ_TIME 	<- as.integer(-1)
+ PROJECTIONS 	<- as.integer(2)
+
+ INTERN_SHOW 	<- as.integer(2)
+
 
 
 
@@ -263,11 +318,21 @@ RC_EARTH_COORD <- EARTH_COORD 	<- as.integer(11)
 RC_DOMAIN_NAMES <- DOMAIN_NAMES <-
 c(     "single variable", "kernel", "framework dependent", "mismatch" )
 
+RC_OPTIMISER_NAMES <- OPTIMISER_NAMES <-
+c(       "optim", "optimx", "soma", "nloptr", "GenSA", "minqa", "pso", "DEoptim" )
+
+RC_NLOPTR_NAMES <- NLOPTR_NAMES <-
+c(       "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L",      "NLOPT_GN_DIRECT_L_RAND", "NLOPT_GN_DIRECT_NOSCAL",      "NLOPT_GN_DIRECT_L_NOSCAL", "NLOPT_GN_DIRECT_L_RAND_NOSCAL",      "NLOPT_GN_ORIG_DIRECT", "NLOPT_GN_ORIG_DIRECT_L",     "NLOPT_LN_PRAXIS", "NLOPT_GN_CRS2_LM",     "NLOPT_LN_COBYLA", "NLOPT_LN_NELDERMEAD",      "NLOPT_LN_SBPLX", "NLOPT_LN_BOBYQA",      "NLOPT_GN_ISRES" )
+
+RC_LIKELIHOOD_NAMES <- LIKELIHOOD_NAMES <-
+c(       "auto", "full", "composite", "tesselation" )
+
+
 RC_ISONAMES <- ISONAMES <-
-c(       "isotropic", "space-isotropic", "zero-space-isotropic",      "vector-isotropic", "symmetric", "cartesian system",     "gnomonic projection", "orthographic projection",     "spherical isotropic", "spherical system",      "earth isotropic", "earth system",      "cylinder system",     "non-dimension-reducing", "parameter dependent", "<mismatch>" )
+c(       "isotropic", "space-isotropic", "zero-space-isotropic",      "vector-isotropic", "symmetric", "cartesian system",     "gnomonic projection", "orthographic projection",     "spherical isotropic", "spherical symmetric", "spherical system",      "earth isotropic", "earth symmetric",  "earth system",      "cylinder system",     "non-dimension-reducing", "parameter dependent", "<mismatch>" )
 
 RC_TYPENAMES <- TYPENAMES <-
-c(       "tail correlation", "positive definite", "variogram",      "negative definite", "process",      "method for Gauss process", "method for Brown-Resnick process",     "point-shape function", "distribution family", "shape function",     "trend", "interface",  "undefined",      "<math definition>", "other type" )
+c(       "tail correlation", "positive definite", "variogram",      "negative definite", "process",      "method for Gauss process", "method for Brown-Resnick process",     "point-shape function", "distribution family", "shape function",     "trend", "interface",  "distribution or shape", "undefined",      "<math definition>", "other type" )
 
 RC_MONOTONE_NAMES <- MONOTONE_NAMES <-
 c(       "mismatch in monotonicity", "submodel dependent monotonicity",     "previous model dependent monotonicity",     "parameter dependent monotonicity",     "not monotone", "monotone", "Gneiting-Schaback class",      "normal mixture",      "completely monotone",       "Bernstein" )
@@ -293,10 +358,23 @@ c(      "cartesian", "gnomonic", "orthographic" )
  TYPEOF_PARAM_NAMES <-
 c(      "var", "signed var", "sd", "signed sd", "scale",     "diag", "aniso", "integer", "unspecfd", "trend",       "nugget", "mixed var", "regress", "any" )
 
+ EQNAMES <-
+c( "==", "!=", "<=", "<", ">=", ">" )
 
 
  NAMES_OF_NAMES <-
-c( "DOMAIN_NAMES", "ISONAMES",   		     "TYPENAMES", "MONOTONE_NAMES", 		     "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES", 		     "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS", 		     "TYPEOF_PARAM_NAMES" )
+c( "EQNAMES", "ISONAMES",   		       "DOMAIN_NAMES",  		       "TYPENAMES", "MONOTONE_NAMES", 		       "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES", 		       "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS", 		       "TYPEOF_PARAM_NAMES" )
+
+ PROJECTION_NAMES <-
+c(      "space", "time" )
 
 
 
+
+
+
+list2RMmodel_Names <- c('R.acos', 'R.acosh', 'R.asin', 'R.asinh', 'R.atan', 'R.atan2', 'R.atanh', 'R.c', 'R.cbrt', 'R.ceil', 'R.const', 'R.copysign', 'R.cos', 'R.cosh', 'R.div', 'R.erf', 'R.erfc', 'R.exp', 'R.exp2', 'R.expm1', 'R.fabs', 'R.fdim', 'R.floor', 'R.fmax', 'R.fmin', 'R.fmod', 'R.hypot', 'R.is', 'R.lgamma', 'R.llrint', 'R.llround', 'R.log', 'R.log1p', 'R.log2', 'R.logb', 'R.lrint', 'R.lround', 'R.minus', 'R.mult', 'R.nearbyint', 'R.nextafter', 'R.nexttoward', 'R.p', 'R.plus', 'R.pow', 'R.remainder', 'R.rint', 'R.round', 'R.sin', 'R.sinh', 'R.sqrt', 'R.tan', 'R.tanh', 'R.tgamma', 'R.trunc', 'RMangle', 'RMaskey', 'RMave', 'RMball', 'RMbcw', 'RMbernoulli', 'RMbessel', 'RMbigneiting', 'RMbiwm', 'RMbr2bg', 'RMbr2eg', 'RMbrownresnick', 'RMcauchy', 'RMcircular', 'RMconstant', 'RMcovariate', 'RMcoxisham', 'RMcubic', 'RMcurlfree', 'RMcutoff', 'RMdagum', 'RMdampedcos', 'RMdelay', 'RMdewijsian', 'RMdivfree', 'RMeaxxa', 'RMepscauchy', 'RMetaxxa', 'RMexp', 'RMexponential', 'RMfbm', 'RMfixcov', 'RMflatpower', 'RMfractdiff', 'RMfractgauss', 'RMgauss', 'RMgencauchy', 'RMgenfbm', 'RMgengneiting', 'RMgennsst', 'RMgneiting', 'RMhyperbolic', 'RMiaco', 'RMid', 'RMintexp', 'RMintrinsic', 'RMkolmogorov', 'RMlgd', 'RMm2r', 'RMm3b', 'RMma', 'RMmastein', 'RMmatern', 'RMmatrix', 'RMmppplus', 'RMmps', 'RMmqam', 'RMmult', 'RMmultiquad', 'RMnatsc', 'RMnsst', 'RMnugget', 'RMparswm', 'RMpenta', 'RMplus', 'RMpolygon', 'RMpower', 'RMprod', 'RMqam', 'RMqexp', 'RMrational', 'RMrotat', 'RMrotation', 'RMS', 'RMschlather', 'RMschur', 'RMsign', 'RMsinepower', 'RMspheric', 'RMstable', 'RMstein', 'RMstp', 'RMsum', 'RMtbm', 'RMtrafo', 'RMtrend', 'RMtruncsupport', 'RMvector', 'RMwave', 'RMwhittle', 'RPaverage', 'RPbernoulli', 'RPbrmixed', 'RPbrorig', 'RPbrownresnick', 'RPbrshifted', 'RPchi2', 'RPcirculant', 'RPcoins', 'RPcutoff', 'RPdirect', 'RPgauss', 'RPhyperplane', 'RPintrinsic', 'RPnugget', 'RPopitz', 'RPpoisson', 'RPschlather', 'RPsequential', 'RPsmith', 'RPspecific', 'RPspectral', 'RPt', 'RPtbm', 'RPtrend', 'RRdeterm', 'RRgauss', 'RRloc', 'RRmcmc', 'RRrectangular', 'RRspheric', 'RRunif', 'internalRMmixed', 'RMtrend', 'trend')
+
+rfgui_Names1 <- c('RMaskey', 'RMbcw', 'RMbessel', 'RMcauchy', 'RMcircular', 'RMcubic', 'RMdagum', 'RMdampedcos', 'RMepscauchy', 'RMexp', 'RMfractdiff', 'RMfractgauss', 'RMgauss', 'RMgencauchy', 'RMgengneiting', 'RMgneiting', 'RMhyperbolic', 'RMlgd', 'RMnugget', 'RMparswm', 'RMpenta', 'RMqexp', 'RMspheric', 'RMstable', 'RMwave')
+
+rfgui_Names2 <- c('RMaskey', 'RMbcw', 'RMbessel', 'RMcauchy', 'RMcircular', 'RMcubic', 'RMdagum', 'RMdampedcos', 'RMepscauchy', 'RMexp', 'RMgauss', 'RMgencauchy', 'RMgengneiting', 'RMgneiting', 'RMhyperbolic', 'RMlgd', 'RMnugget', 'RMparswm', 'RMpenta', 'RMqexp', 'RMspheric', 'RMstable', 'RMwave')

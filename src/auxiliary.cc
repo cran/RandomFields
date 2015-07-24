@@ -6,7 +6,7 @@
 
  Collection of auxiliary functions
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -63,96 +63,9 @@ double intpow(double x, int p) {
   return res;
 }
 
-void AtA(double *a, int nrow, int ncol, double *A) {
-  // A =  a^T %*% a
-  int i, k, j, m,
-    dimSq = ncol * ncol;
-  
-  for (k=i=0; i<dimSq; i+=ncol) {
-    for (j=0; j<dimSq; j+=ncol, k++) {
-      double dummy = 0.0;
-      for (m=0; m<nrow; m++) {
-	dummy += a[i+m] * a[j+m];
-      }
-      A[k] = dummy;
-    }
-  }
-}
- 
-
-void xA(double *x, double*A, int nrow, int ncol, double *y) {
-  int i,j,k;
-  if (A == NULL) {
-    if (nrow != ncol || nrow <= 0) BUG;
-    MEMCOPY(y, x, sizeof(double) * nrow);
-  } else {
-    for (k=i=0; i<ncol; i++) {
-      y[i] = 0.0;
-      for (j=0; j<nrow; j++) {
-	y[i] += A[k++] * x[j];
-      }
-    }
-  }	
-}
 
 
-void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
-	double *y2) {
-  int i,j,k;
-  if (A == NULL) {
-    if (nrow != ncol || nrow <= 0) BUG;
-    MEMCOPY(y1, x1, sizeof(double) * nrow);
-    MEMCOPY(y2, x2, sizeof(double) * nrow);
-  } else {
-    for (k=i=0; i<ncol; i++) {
-      y1[i] = y2[i] = 0.0;
-      for (j=0; j<nrow; j++) {
-	y1[i] += A[k] * x1[j];
-	y2[i] += A[k++] * x2[j];
-      }
-    }
-  }	
-}
-
-
-void Ax(double *A, double*x, int nrow, int ncol, double *y) {
-  int i,j,k;
-  if (A == NULL) {
-    if (nrow != ncol || nrow <= 0) BUG;
-    MEMCOPY(y, x, sizeof(double) * nrow);
-  } else {
-    for (i=0; i<nrow; i++) y[i]=0.0;
-    for (k=i=0; i<ncol; i++) { 
-      for (j=0; j<nrow; j++) {
-	y[j] += A[k++] * x[i];
-      }
-    }
-  }
-}
-
-
-void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
-	double *y2) {
-  int i,j,k;
-  if (A == NULL) {
-    if (nrow != ncol || nrow <= 0) BUG;
-    MEMCOPY(y1, x1, sizeof(double) * nrow);
-    MEMCOPY(y2, x2, sizeof(double) * nrow);
-  } else {
-    for (i=0; i<nrow; i++) y1[i]=y2[i]=0.0;
-    for (k=i=0; i<ncol; i++) { 
-      for (j=0; j<nrow; j++) {
-	y1[j] += A[k] * x1[i];
-	y2[j] += A[k++] * x2[i];
-      }
-    }
-  }
-}
-
-
-
-
-void AxResType(double *A, res_type *x, int nrow, int ncol, double *y) {
+void AxResType(double *A, double *x, int nrow, int ncol, double *y) {
   int i,j,k;
   for (i=0; i<nrow; i++) y[i]=0.0;
   for (k=i=0; i<ncol; i++) { 
@@ -163,118 +76,6 @@ void AxResType(double *A, res_type *x, int nrow, int ncol, double *y) {
 }
 
 
-double XkCXtl(double *X, double *C, int nrow, int dim, int k, int l) {
-  // (k-th row of X) * C * (l-th column of X)
-    double *pX, *pY, scalar, result;
-    int i,j,ci,
-	size = nrow * dim;
-   
-  pX = X + k;
-  pY = X + l;
-  result = 0.0;
-  for (ci=0, j=0; j<size; j+=nrow) {
-      for (i=0, scalar = 0.0; i<size; i+=nrow) {
-	 scalar += pX[i] * C[ci++];
-     }
-     result += scalar * pY[j];
-  }  
-  return result;
-}
-
-
-void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
-    double *pX, *endpX, *dummy, *pdummy, scalar;
-    int i, cd, rv, ci, cv,
-      size = nrow * dim;
-
-  dummy = (double*) MALLOC(sizeof(double) * nrow * dim);
-  if (dummy == NULL) ERR("XCXt: memory allocation error in XCXt");
-  
-
-  // dummy = XC
-  for (pX = X, pdummy=dummy, endpX = pX + nrow;
-       pX < endpX; pX++, pdummy++) {
-    for (ci=0, cd=0; cd<size; cd+=nrow) {
-      for (i=0, scalar = 0.0; i<size; i+=nrow) {
-        scalar += pX[i] * C[ci++];
-      }
-      pdummy[cd] = scalar;
-    }
-  }
-
-  // V = dummy X^t
-  for (rv=0; rv<nrow; rv++) {
-    for (cv=rv; cv<nrow; cv++) {
-      for (scalar=0.0, i=0; i<size; i+=nrow) {
-	scalar += dummy[rv + i] * X[cv + i];
-     }
-      V[rv + cv * nrow] = V[cv + rv * nrow] = scalar;
-    }
-  } 
-
-  UNCONDFREE(dummy);
-}
-
-
-double xUy(double *x, double *U, double *y, int dim) {
-  double dummy,
-    xVy = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = 0.0, i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) {
-      dummy += x[i] * U[j];
-    }
-    xVy += dummy * y[d];
-  }
-  return xVy;
-}
-
-double xUxz(double *x, double *U, int dim, double *z) {
-  double dummy,
-    xVx = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = 0.0, i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) { 
-      dummy += x[i] * U[j];
-    }
-    if (z != NULL) z[d] = dummy;
-    xVx += dummy * x[d];
-  }
-  return xVx;
-}
-
-double xUx(double *x, double *U, int dim) {
-    return xUxz(x, U, dim, NULL);
-}
-
-double x_UxPz(double *x, double *U, double *z, int dim) {
-// x^t (Ux + z); U dreieckmatrix
-  double dummy,
-    xVx = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = z[d], i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) {
-      dummy += x[i] * U[j];
-    }
-    xVx += dummy * x[d];
-  }
-  return xVx;
-}
 
 double getMinimalAbsEigenValue(double *Aniso, int dim) {
   double dummy, 
@@ -385,60 +186,6 @@ void det_UpperInv(double *C, double *det, int dim) {
 
 
 
-void matmult(double *A, double *B, double *C, int l, int m, int n) {
-// multiplying an lxm- and an mxn-matrix, saving krigult in C
-   int i, j, k;
-   for(i=0; i<l; i++)
-     for(j=0; j<n; j++) {
-	C[j*l+i] = 0;
-	for(k=0; k<m; k++)
-	   C[j*l+i] += A[k*l+i]*B[j*m+k];
-     }
-}
-
-void matmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
-// multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
-// saving result in C
-   int i, j, k;
-   for(i=0; i<l; i++)
-     for(j=0; j<n; j++) {
-	C[j*l+i] = 0;
-	for(k=0; k<m; k++)
-	   C[j*l+i] += A[i*m+k]*B[j*m+k];
-     }
-}
-
-
-
-void Xmatmult(double *A, double *B, double *C, int l, int m, int n) {
-// multiplying an lxm- and an mxn-matrix, saving krigult in C
-  int i, j, k, jl, jm, kl, endfor;
-  double dummy;
-  for(i=0; i<l; i++) {
-    for(jl=i, jm=j=0; j<n; j++, jl+=l, jm+=m) {
-       dummy = 0.0;
-       endfor = jm + m;
-       for(kl=i, k=jm; k<endfor; k++, kl+=l) dummy += A[kl] * B[k]; 
-       C[jl] = dummy;
-     }
-  }
-}
-
-void Xmatmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
-// multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
-// saving result in C
-  int i, j, k, jl, im, jm, endfor, jmk;
-  double dummy;
-  for(im=i=0; i<l; i++, im+=m) {
-    for(jl=i, jm=j=0; j<n; j++, jl+=l, jm+=m) {
-      dummy = 0.0;
-      endfor = im + m;
-      for(jmk=jm, k=im; k<endfor; k++) dummy += A[k] * B[jmk++]; 
-      C[jl] = dummy;
-    }
-  }
-}
-
 /*
 void InvChol(double *C, int dim) {
   int i, info, ii, endfor,
@@ -461,202 +208,9 @@ void InvChol(double *C, int dim) {
   }
 }
 */
-
-int invertMatrix(double *M, int size, int* Methods, int nMeth) {
-  // http://www.nag.com/numeric/fl/nagdoc_fl23/xhtml/F01/f01intro.xml
-  int err, m, i,
-    method = -1,
-    sizeSq = size * size;
-  long j;
-  double *SICH = NULL;
-
-  if (nMeth > 1) {
-    if ((SICH = (double*) MALLOC(sizeof(double) * sizeSq)) == NULL) {
-      return ERRORMEMORYALLOCATION;
-    }
-    memcpy(SICH, M, sizeSq);
-  }
-  
-  for (m=0; m<nMeth; m++) {
-    method = Methods[m];
-    if (method<0) break;
-    if (m>0) {
-      memcpy(M, SICH, sizeSq);
-    }
-    switch(method) {
-    case Cholesky : // cholesky
-      F77_CALL(dpotrf)("Upper", &size, M, &size, &err);  
-       if (err != 0) {
-	if (PL >= PL_COV_STRUCTURE) 
-	  PRINTF("cholesky decomposition failed; the matrix does not seem to be strictly positive definite\n");
-	continue;
-      }      
-      F77_CALL(dpotri)("U", &size, M, &size, &err);  
-      if (err != 0) {
-	if (PL >= PL_COV_STRUCTURE) 
-	  PRINTF("Cholesky decomposition failed; matrix does not seem to be strictly positive definite\n");
-	continue;
-      }
-      long  i2, i3;
-      for (i2=i=0; i<size; i++, i2+=size + 1) {	
-	for (i3 = i2 + 1, j = i2 + size; j<sizeSq; j+=size) M[i3++] = M[j];
-      }
-     break;
-
-    case 1 : {// QR returns transposed of the inverse !!
-      int 
-	*inc = NULL;
-      double *aijmax = NULL,
-	*workspaceD = NULL,
-	*workspaceU = NULL,
-	*workspaceDU = NULL;
-      if (//(aijmax = (double*) MALLOC(sizeof(double) * size)) == NULL ||
-	  //(inc = (int*) MALLOC(sizeof(int) * size)) == NULL ||
-	  (workspaceD = (double*) MALLOC(sizeof(double) * size)) == NULL ||
-	  (workspaceU = (double*) MALLOC(sizeof(double) * sizeSq)) == NULL 
-	  // || (workspaceDU = (double*) MALLOC(sizeof(double) * size)) == NULL
-	  ) {
-	err = ERRORMEMORYALLOCATION; goto ErrorHandling;
-      }
-
-
-      // PseudoInverse:
-      //    F77_CALL(f01blf)(&size, &size, &(GLOBAL.general.matrixtolerance),
-       //		       M, &size, aijmax, &irank, inc, workspaceD, 
-      //		       workspaceU, &size, workspaceDU, &err);
-      F77_CALL(dgeqrf)(&size, &size,
-		       M, &size, // aijmax, &irank, inc, workspaceD, 
-		       workspaceU, workspaceD,  &size, &err);
-      if (err != NOERROR) GERR("QR decomposition failed");
-     
-     ErrorHandling:
-      FREE(aijmax);
-      FREE(inc);
-      FREE(workspaceD);
-      FREE(workspaceU);
-      FREE(workspaceDU);
-      if (err == NOERROR) break;
-      
-      break;
-    }
-
-    case 2 : {// SVD
-      double  optim_lwork, 
-	tol = GLOBAL.general.matrixtolerance,
-	*VT = NULL,
-	*work = NULL,
-	*U = NULL,
-	*D = NULL;
-      int k,  
-	lwork = -1,
-	*iwork = NULL;
-      
-      if ((VT =(double *) MALLOC(sizeof(double) * sizeSq))==NULL ||
-	  (U =(double *) MALLOC(sizeof(double) * sizeSq))==NULL ||
-	  (D =(double *) MALLOC(sizeof(double) * size))==NULL ||
-	  (iwork = (int *) MALLOC(sizeof(int) * 8 * size))==NULL) {
-	err=ERRORMEMORYALLOCATION;
-	goto ErrorHandling2;
-      }
-
-      F77_CALL(dgesdd)("A", &size, &size, M, &size, D, M, &size, VT, &size, 
-		       &optim_lwork, &lwork, iwork, &err);
-      if (err != NOERROR) {
-	err=ERRORDECOMPOSITION;
-	goto ErrorHandling2;
-      }
-
-      lwork = (int) optim_lwork;
-      if ((work = (double *) MALLOC(sizeof(double) * lwork))==NULL) {
-	err=ERRORMEMORYALLOCATION;
-	goto ErrorHandling2;
-      }
-      F77_CALL(dgesdd)("A",  &size,  &size, M, &size, D, U, &size, VT, &size, 
-		       work, &lwork, iwork, &err);
-      
-      if (err==NOERROR && ISNAN(D[0])) err=9999;
-      if (err!=NOERROR) {
-	if (PL>PL_ERRORS) PRINTF("Error code F77_CALL(dgesdd) = %d\n", err); 
-	err=ERRORDECOMPOSITION;
-	goto ErrorHandling2;
-      }
-      
-      /* calculate SQRT of covariance matrix */
-      for (k=0, j=0; j<size; j++) {
-	double dummy;
-	dummy = fabs(D[j]) < tol ? 0.0 : 1.0 / D[j];
-	for (i=0; i<size; i++) U[k++] *= dummy;
-      }
-      matmult(U, VT, M, size, size, size); // U * V
  
-     ErrorHandling2:
-      FREE(VT);
-      FREE(U);
-      FREE(D);
-      FREE(iwork);
-      FREE(work);
-     
-      break;
-    }
-    default : BUG;
-      
-    } // switch
-    if (err==NOERROR) break;
-  }
-  
-  FREE(SICH);
-  if (method<0 || m>=nMeth) SERR("matrix inversion failed");
-  return NOERROR; //  -method;
-}
-   
-int invertMatrix(double *M, int size) {
-  return invertMatrix(M, size, GLOBAL.general.matrix_inversion, MAXINVERSIONS);
-}
  
-//void solveMatrix(int method, double *M, double *v, double *res, int size) {
-//  // alles symmetrische matrizen!!
-//  // http://www.nag.com/numeric/fl/nagdoc_fl23/xhtml/F01/f01intro.xml
-//  int i,j, k // err,
-//    //sizeSq = size * size
-//    ;
-//  //  double *U;
-// 
-//  for (i=k=0; i<size; i++) {
-//    double dummy = 0.0;
-//    for (j=0; j<size; j++) dummy += M[k++] * v[j];
-//    res[i] = dummy;
-//  }
 
-  /*
-  switch(method) {
-  case 0 : // cholesky 
-    double dummy;
-    for (i=0; i<size; i++) res[i] = 0.0;
-    for (i=k=0; i<size; i++) {
-      dummy = v[i];
-      for (j=0; j<size; j++) res[j] += M[k++] * dummy;
-    }     
-    break;
-  case 1 : // QR
-    double dummy;
-    for (i=k=0; i++; i<size) {
-      dummy = 0.0;
-      for (j=0; j++; j<size) dummy += M[k++] * v[j];
-      res[i] = dummy;
-      }
-    break;
-  case 2 : // SVD
-    double dummy;
-    for (i=0; i<size; i++) res[i] = 0.0;
-    for (i=k=0; i<size; i++) {
-      dummy = v[i];
-      for (j=0; j<size; j++) res[j] += M[k++] * dummy;
-    } 
-    break;
-  default : BUG;
-  }   
-  */
-//}
 
 
 void memory_copy(void *dest, void *src, int bytes) {
@@ -773,130 +327,6 @@ void strcopyN(char *dest, const char *src, int n) {
     strncpy(dest, src, n);
   }
   dest[n] = '\0';
-}
-
-void I0ML0(double *x, int *n) {
-  int i;
-  for (i=0; i<*n; i++) x[i] = I0mL0(x[i]);
-} 
-
-double I0mL0(double x){
-  /* Bessel I_0 - Struve L_0 for non-negative arguments x */
-  /* see J. MacLeod, Chebyshev expansions for modified {S}truve and 
-     related functions, Mathematics of Computation, 60, 735-747, 1993 */
-  static double g2[24] = {
-	0.52468736791485599138e0,
-	-0.35612460699650586196e0,
-	0.20487202864009927687e0,
-	-0.10418640520402693629e0,
-	0.4634211095548429228e-1,
-	-0.1790587192403498630e-1,
-	0.597968695481143177e-2,
-	-0.171777547693565429e-2,
-	0.42204654469171422e-3,
-	-0.8796178522094125e-4,
-	0.1535434234869223e-4,
-	-0.219780769584743e-5,
-	0.24820683936666e-6,
-	-0.2032706035607e-7,
-	0.90984198421e-9,
-	0.2561793929e-10,
-	-0.710609790e-11,
-	0.32716960e-12,
-	0.2300215e-13,
-	-0.292109e-14,
-	-0.3566e-16,
-	0.1832e-16,
-	-0.10e-18,
-	-0.11e-18
-  };
-  static double g3[24] = {
-	2.00326510241160643125e0,
-	0.195206851576492081e-2,
-	0.38239523569908328e-3,
-	0.7534280817054436e-4,
-	0.1495957655897078e-4,
-	0.299940531210557e-5,
-	0.60769604822459e-6,
-	0.12399495544506e-6,
-	0.2523262552649e-7,
-	0.504634857332e-8,
-	0.97913236230e-9,
-	0.18389115241e-9,
-	0.3376309278e-10,
-	0.611179703e-11,
-	0.108472972e-11,
-	0.18861271e-12,
-	0.3280345e-13,
-	0.565647e-14,
-	0.93300e-15,
-	0.15881e-15,
-	0.2791e-16,
-	0.389e-17,
-	0.70e-18,
-	0.16e-18
-  };
-  double r, x2, ac;
-  int i;
-  
-  if (x < 0.0) {return RF_NA;}
-  if (x < 16.0) {
-    r = 0.5 * g2[0];
-    ac = acos((6.0 * x - 40.0) / (x + 40.0));
-    for (i=1; i<24; i++) {
-      r += g2[i] * cos(i * ac);
-    }
-  } else {
-    r = 0.5 * g3[0];
-    x2 = x * x;
-    ac = acos((800.0 - x2) / (288.0 + x2));
-    for (i=1; i<24; i++) {
-      r += g3[i] * cos(i * ac);
-    }
-    r *= T_PI /* 2/pi */ / x;
-  }
-  return r;
-}
-
-void StruveH(double *x, double *nu) {*x=struve(*x, *nu, -1.0, false);}
-void StruveL(double *x, double *nu, int * expScaled) 
-{
-  *x=struve(*x, *nu, 1.0, (bool) *expScaled);
-}
-double struve(double x, double nu, double factor_Sign, bool expscaled)
-{ 
-  double Sign, value, epsilon=1e-20;
-  double dummy, logx, x1, x2;
-  if ((x==0.0) && (nu>-1.0)) return 0.0;
-  if (x<=0) return RF_NA; // not programmed yet
-  logx = log(0.5 * x);
-  x1=1.5;   
-  x2=nu+1.5;   
-  Sign=1.0;
-  if (x2 > 0.0) { 
-    dummy = (nu + 1.0) * logx - lgammafn(x1) - lgammafn(x2);
-    if (expscaled) dummy -= x;
-    value = exp(dummy);
-  } else {
-    if ( (double) ((int) (x1-0.5)) != x1-0.5 ) return RF_NA;
-    value=pow(0.5 * x, nu + 1.0) / (gammafn(x1) * gammafn(x2));
-    if (expscaled) value *= exp(-x);
-    if ((dummy= value) <0) {
-      dummy = -dummy;
-      Sign = -1.0;
-    }
-    dummy = log(dummy);
-  }
-  logx *= 2.0;
-  do {
-    if (x2<0) { Sign = -Sign; }    
-    dummy += logx - log(x1) - log(fabs(x2));
-    value +=  Sign * exp(dummy);
-    x1 += 1.0;
-    x2 += 1.0;
-    Sign = factor_Sign * Sign; 
-  } while (exp(dummy) > fabs(value) * epsilon);
-  return value;
 }
 
 SEXP vectordist(SEXP V, SEXP DIAG){
@@ -1255,8 +685,8 @@ double incomplete_gamma(double start, double end, double s) {
 
 
 int addressbits(void VARIABLE_IS_NOT_USED *addr) {
-#ifndef RANDOMFIELDS_DEBUGGING  
-  return 0;
+#ifndef SCHLATHERS_MACHINE 
+  return -1;
 #else
   double x = (intptr_t) addr,
     cut = 1e9;
@@ -1302,7 +732,7 @@ int Match(char *name, name_type List, int n) {
 }
 
 int Match(char *name, const char * List[], int n) {
-  // == -1 if no matching name is found
+   // == -1 if no matching name is found
   // == -2 if multiple matching fctns are found, without one matching exactly
   unsigned int ln;
   int Nr;
@@ -1348,7 +778,8 @@ int Match(char *name, const char * List[], int n) {
 double Real(SEXP p, char *name, int idx) {
   char msg[200];
   // if(++ZZ==65724){printf("type=%d %d '%s'\n",ZZ,TYPEOF(p), CHAR(STRING_ELT(p,0)));cov_model *cov;crash(cov);}
-  if (p != R_NilValue)
+  if (p != R_NilValue) {
+    assert(idx < length(p));
     switch (TYPEOF(p)) {
     case REALSXP :  return REAL(p)[idx];
     case INTSXP : return INTEGER(p)[idx]==NA_INTEGER  
@@ -1357,6 +788,7 @@ double Real(SEXP p, char *name, int idx) {
 	: (double) LOGICAL(p)[idx];
     default : {}
     }
+  }
   // MEMCOPY(msg, p, 300); print("%s\n", msg);
   sprintf(msg, "'%s' cannot be transformed to double! (type=%d)\n",
 	  name, TYPEOF(p));  
@@ -1383,8 +815,16 @@ void Real(SEXP el,  char *name, double *vec, int maxn) {
 }
 
 int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
+
+  //  printf("integer!\n");
+  //  if (TYPEOF(p) == REALSXP) for (int y=0; y<length(p); printf("%f ", REAL(p)[y++]));
+  //  if (TYPEOF(p) == INTSXP) for (int y=0; y<length(p); printf("%d ", INTEGER(p)[y++]));
+  //  printf("\n");
+
+
   char msg[200];
   if (p != R_NilValue) {
+    assert(idx < length(p));
     switch(TYPEOF(p)) {
     case INTSXP : 
       return INTEGER(p)[idx]; 
@@ -1398,8 +838,9 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
       }
       if (value == trunc(value)) return (int) value; 
       else {
-	sprintf(msg, "%s: integer value expected", name);
-	ERR(msg);
+	//	printf("%s: integer value expected. Got %e.", name, value);
+	//	crash();
+	ERR2("%s: integer value expected. Got %e.", name, value);
       }
     case LGLSXP :
       return  LOGICAL(p)[idx]==NA_LOGICAL ? NA_INTEGER : (int) LOGICAL(p)[idx];
@@ -1461,6 +902,7 @@ void Integer2(SEXP el, char *name, int *vec) {
 bool Logical(SEXP p, char *name, int idx) {
   char msg[200];
   if (p != R_NilValue)
+    assert(idx < length(p));
     switch (TYPEOF(p)) {
     case REALSXP: return ISNAN(REAL(p)[idx]) ? NA_LOGICAL : (bool) REAL(p)[idx];
     case INTSXP :
@@ -1494,6 +936,40 @@ char Char(SEXP el, char *name) {
   ERR(msg);
   return 0; // to avoid warning from compiler
 }
+
+
+void Abbreviate(char *Old, char *abbr) {
+  char *old = Old;
+  if (old[0] == '.') old++;
+  int 
+    len = GLOBAL.fit.lengthshortname / 3,
+    nold = strlen(old),
+    nabbr = len - 1;
+
+  if (nold <= len) {
+    abbr[len] = '\0';
+    strcpy(abbr, old);
+    //  printf(">%s**%s<\n", Old, abbr);
+    return;
+  }
+  abbr[0] = old[0];
+  abbr[len] = '\0';
+  while (nabbr >= 1 && nabbr < nold) { 
+    char b = old[nold];
+    if (b=='a' || b=='A' || b=='e' || b=='E' || b=='i' || b=='I' ||
+        b =='o' || b=='O' || b=='u' || b=='U') nold--;
+    else abbr[nabbr--] = old[nold--];
+  }
+  if (nabbr > 1) {
+    assert(nabbr==0 || nold == nabbr);
+    for (int i=2; i<=nold; i++) abbr[i] = old[i];
+  }
+  
+  //printf(">%s--%s<\n", Old, abbr);
+
+}
+  
+  
 
 
 void String(SEXP el, char *name, char names[MAXUNITS][MAXCHAR]) {
@@ -1629,3 +1105,7 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 int GetName(SEXP el, char *name, const char * List[], int n) {
  return GetName(el, name, List, n, -1);
 }
+
+bool LOCAL_DEBUG = false;
+void start_debug() { LOCAL_DEBUG = true; }
+void end_debug() { LOCAL_DEBUG = false; }

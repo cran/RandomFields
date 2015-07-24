@@ -4,7 +4,8 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2005 -- 2014 Martin Schlather
+ Copyright (C) 2005 -- 2015 Martin Schlather
+               2015 -- 2015 Olga Moreva (cutoff, modified)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
 #include "variogramAndCo.h"
+#include "cubicsolver.h"
 
 
 
@@ -584,7 +586,7 @@ int check_BR2EG(cov_model *cov) {
 		     SCALAR, cov->role)) != NOERROR)  return err;
   setbackward(cov, next);
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
-  if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
+  if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
   // erfc(x) = 2(1 - Phi(x * sqrt(2)))
   // erf(x) = 2 Phi(x * sqrt(2)) - 1
@@ -630,7 +632,7 @@ int check_BR2BG(cov_model *cov) {
 		     SCALAR, cov->role)) != NOERROR)  return err;
   setbackward(cov, next);
    for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
-  if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONE;
+  if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
   // erfc(x) = 2(1 - Phi(x * sqrt(2)))
   // erf(x) = 2 Phi(x * sqrt(2)) - 1
@@ -837,9 +839,6 @@ void shift(double *x, cov_model *cov, double *v) {
   
   COV(x, next, v);
   for (i=vdimP1; i<vdimSq; i+=vdimP1) v[i] = v[0];
-
-  //printf("%d %d\n", vdim, vdimM1);
-  // APMI(cov->calling);
   
   for (jh=h-tsdim, j=-1; j<vdimM1; j++, jh+=tsdim) {
     if (j < 0) for (d=0; d<tsdim; d++) z[d] = x[d];
@@ -1527,8 +1526,6 @@ void M(cov_model *cov, double *Z, double *V) {
 void Mstat(double *x, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   int    ncol = cov->ncol[M_M];
-  //  PMI(cov);
-  //  printf("%s %d\n", NICK(cov), cov->Sextra !=NULL);		      
   assert(cov->Sextra != NULL);
   ALLOC_EXTRA(z, ncol * ncol);
   COV(x, next, z);  
@@ -1546,8 +1543,6 @@ int checkM(cov_model *cov) {
   cov_model *next = cov->sub[0];
   int err, i,
     nrow = cov->ncol[M_M];
-  //  if (cov->isoown < SYMMETRIC) SERR("sdfkjaskfj"); printf("hh");
-  //  PMI(cov, 1);
 
   if (nrow > MAXMPPVDIM) 
     SERR2("the maximum multivariate dimension is %d, but %d is given by the user", MAXMPPVDIM, nrow);
@@ -1562,8 +1557,6 @@ int checkM(cov_model *cov) {
     return err;
   }
 
-  //APMI(next);
-
   setbackward(cov, next);
   for (i=0; i<nrow; i++) cov->mpp.maxheights[i] = RF_NA;
 
@@ -1572,7 +1565,7 @@ int checkM(cov_model *cov) {
   return NOERROR;
 }
 
-sortsofparam paramtype_M(int k, int row, int col) {
+sortsofparam sortof_M(int k, int row, int col) {
   return k<0 ? VARPARAM : (row==col) ? SDPARAM : SIGNEDSDPARAM;
 }
   
@@ -1613,7 +1606,21 @@ void Scatter(double *xx, cov_model *cov, double *v){
       s->xmin[d] = (double) s->min[d] * s->step[d] + xx[d];
     }
   }
-  STANDARD_START(s->nx, s->min, s->max, s->x, xmin, s->step);
+   
+  int							
+    *nx = s->nx,						
+    *start = s->min,					
+    *end = s->max;						
+  double						
+    *x = s->x,						
+    *xstart = xmin,					
+    *inc = s->step;						
+							
+  for (d=0; d<tsxdim; d++) {				
+    nx[d] = start[d];					
+    x[d] = xstart[d];					
+  }
+
   while (true) {
     COV(x, next, s->value);
     for (i=0; i<vdim; i++) v[i] += s->value[i];
@@ -2346,7 +2353,6 @@ void InverseShapePow(double *x, cov_model *cov, double *v) {
 
 
 /* qam */
-#define QAM_THETA 0
 void kappaqam(int i, cov_model *cov, int *nr, int *nc){
   *nc = 1;
   *nr = i < CovList[cov->nr].kappas  ? cov->nsub-1 : -1;
@@ -2413,9 +2419,6 @@ int checkqam(cov_model *cov) {
   return NOERROR;
 }
 
-sortsofparam paramtype_qam(int k, int VARIABLE_IS_NOT_USED row, int VARIABLE_IS_NOT_USED col) {
-  return k==0 ? CRITICALPARAM : ANYPARAM;
-}
 
 void rangeqam(cov_model *cov, range_type *range){
   double pmax = 2.0 / (double)  (cov->nsub-1);
@@ -2566,8 +2569,6 @@ int checknatsc(cov_model *cov) {
  
   double invscale;
   INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
-
-  //  PMI(cov);  printf("%f %f\n", GLOBAL.gauss.approx_zero, next, invscale);
 
   if (invscale == RF_NAN)
     SERR1("inverse function of '%s' unknown", NICK(next));
@@ -2920,15 +2921,11 @@ int checktbmop(cov_model *cov) {
   if (cov->tsdim > fulldim + layers) return ERRORWRONGDIM;
    //printf("%d %d %d %d\n",cov->xdimown,tbmdim,layers, cov->isoown);
   if (cov->xdimown > tbmdim + layers) {
-    //    APMI(cov);
     SERR("dimension of coordinates does not match reduced dimension of tbm");
   }
 
   if ((err = CHECK(next,  cov->tsdim, cov->xdimown, PosDefType, cov->domown,
 		     cov->isoown, SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
-    //     PMI(cov); printf("errr=%d %d %d\n", err, cov->tsdim, cov->xdimown);
-    //XERR(err);
-    // if (cov->xdimown != 1) XERR(err);
     return err;
   }
 
@@ -2952,10 +2949,6 @@ int checktbmop(cov_model *cov) {
    if (vdim > MAXTBMVDIM) 
     SERR2("vdim (%d) exceeds max. value of vdim in tbm3 (%d)", vdim,MAXTBMVDIM);
 
-  //  printf("gp=%f sto=%d %d %d\n", gp->layers, storedlayer, 
-  //	 layers,  P0INT(TBMOP_LAYERS));
-  // APMI(cov);
-  
   // only after being sure that the subsequent model does not cause
   // problems. So the time dimension should be fixed.
   // This is not absolutely safe programming, but should be OK.
@@ -3036,54 +3029,150 @@ int set_stein_q(cov_model *next, double r, double d, double *q) {
     return MSGLOCAL_INITINTRINSIC;
   }
 
-  
-  
-
   return NOERROR;
 }
 
 
 
-
+//TO DO: choose epsilon properly
+#define EPSILON_C 0.1
 int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
-  // auf modell ebene, d.h. co->sub[0] oder stein->sub[0]
-  double phi0, phi1, a2; //, one=1.0;
-  a2 = a * a;
-  //  cov_model *neu = NULL;
-  //int err;
-
-  //  if ((err = covcpy(&neu, cov)) != NOERROR) return err;
-  // CovList[cov->gatternr].cov(&d, neu, &phi0);
-  // CovList[cov->gatternr].D(&d, neu, &phi1);
-  //FREE(neu);
-  COV(&d, cov, &phi0);
-  Abl1(&d, cov, &phi1);
+    // auf modell ebene, d.h. co->sub[0] oder stein->sub[0]
+  double aa, bb, cc,  //coefficients for cubic polynomial
+    phi0, phi1, 
+    phi2 = RF_NA, 
+    phi3 = RF_NA, 
+    a2 = a * a,
+    d2 = d*d,
+    radius = -1;
  
-  phi1 *= d;
+    //  if ((err = covcpy(&neu, cov)) != NOERROR) return err;
+    // CovList[cov->gatternr].cov(&d, neu, &phi0);
+    // CovList[cov->gatternr].D(&d, neu, &phi1);
+    //FREE(neu);
 
-  //  print("dphi0ph1 %e %e %e\n", d, phi0, phi1);
+    COV(&d, cov, &phi0);
+    Abl1(&d, cov, &phi1);
+ 
+    if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
+    if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
 
-  if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
-  if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
+    //If it is a variogram, then we must determine a constant such that Const - Variogram is a valied covariance
+    // The constant depends on a and d
+    //    cov->calling->typus
 
-//  print("check_co phi0=%f phi1=%f a=%f d=%f a2=%f\n", phi0, phi1, a, d, a2);
-//  assert(false);
-//  print("p %f\n", phi1);
-//  print("a2 %f\n", a2);
-//  print("p0 %f\n", phi0);
-//  print("a %f\n", a);
-//  print("d %f\n", d);
-  q[CUTOFF_B] =//sound qconstant even if variance of submodel is not 1
-    pow(- phi1 / (2.0 * a2 * phi0), 2.0 * a) * phi0 / pow(d, 2.0 * a2);
-//  assert(false);
-  q[CUTOFF_THEOR] = pow(1.0 - 2.0 * a2 * phi0 / phi1, 1.0 / a);
-  q[LOCAL_R] = d * q[CUTOFF_THEOR];
-  q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+    if (cov->typus == VariogramType) {
 
-//  print("phi0=%f %f %f %f\n", phi0, phi1, a, d);
-//   print("%f\n", d); assert(false);
-//  print("%f %f %f %f\n", q[CUTOFF_B], q[CUTOFF_THEOR], q[LOCAL_R], q[CUTOFF_ASQRTR]); //assert(false);
-  return NOERROR;
+        if (a == 0.5) {
+            COV(&d2, cov, &q[CUTOFF_CONSTANT]);
+            q[CUTOFF_CONSTANT] = -q[CUTOFF_CONSTANT] + EPSILON_C;
+            q[CUTOFF_B] = -2*phi1*sqrt(d);
+            q[CUTOFF_THEOR] =
+	      pow(1.0 - 0.5* (q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
+            q[LOCAL_R] = d * q[CUTOFF_THEOR];
+            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+
+	} else if (a == 1 ) {
+            //second derivative
+            Abl2(&d, cov, &phi2);
+            if (phi2 <= 0) {
+                return MSGLOCAL_SIGNPHISND;
+            }
+            //if second derivative is positive at d, then
+            q[CUTOFF_CONSTANT] = -phi0+phi1*phi1/(2*phi2) + EPSILON_C;
+            q[CUTOFF_B] = 0.25*phi1*phi1/(q[CUTOFF_CONSTANT] + phi0);
+            q[CUTOFF_THEOR] = pow(1.0 - 2 * ( q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
+            q[LOCAL_R] = d * q[CUTOFF_THEOR];
+            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+
+         } else if (a == CUTOFF_THIRD_CONDITION) {
+
+            Abl2(&d, cov, &phi2);
+            Abl3(&d, cov, &phi3);
+
+            q[CUTOFF_CONSTANT] = -phi0 + EPSILON_C;
+
+            if (q[CUTOFF_CONSTANT] + phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
+
+            double roots[3][2];
+
+            cubicsolver(phi3, 3*phi2, 6*phi1, 6*(q[CUTOFF_CONSTANT] + phi0),
+			roots);
+
+            //find a positive root of the cubic polynomial
+            for (int i = 0; i < 3; i++) {
+                if (roots[i][1] == 0 && roots[i][0] > radius ) {
+                    radius = roots[i][0];
+                }
+            }
+            //if no positive root, cannot do anything
+            if (radius <= 0.0) return MSGLOCAL_NOPOSITIVEROOT;
+
+            cc = -phi3/6;
+            bb = -3*cc*radius + phi2/2;
+            aa = -2*bb*radius -3*cc*radius*radius - phi1;
+            radius = radius + d;
+
+            q[LOCAL_R] = radius;
+            q[CUTOFF_ASQRTR] = radius;
+            q[CUTOFF_CUBE_A] = aa;
+            q[CUTOFF_CUBE_B] = bb;
+            q[CUTOFF_CUBE_C] = cc;
+
+        } else BUG; // olga
+
+    } else {
+
+        //now we are in a positive definite function case
+        if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
+
+
+        //find  parameters of the method
+        if (a != CUTOFF_THIRD_CONDITION) {
+	    phi1 *= d;
+
+            if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
+
+            q[CUTOFF_B] =//sound qconstant even if variance of submodel is not 1
+	      pow(-phi1 / (2.0 * a2 * phi0), 2.0 * a) * phi0 / pow(d, 2.0 * a2);
+            //  assert(false);
+            q[CUTOFF_THEOR] = pow(1.0 - 2.0 * a2 * phi0 / phi1, 1.0 / a);
+            q[LOCAL_R] = d * q[CUTOFF_THEOR];
+            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+
+        } else if (a == CUTOFF_THIRD_CONDITION){
+
+            //a = CUTOFF_THIRD_CONDITION
+
+            double roots[3][2];
+
+            cubicsolver(phi3, 3*phi2, 6*phi1, 6*phi0, roots);
+
+            //find a positive root of the cubic polynomial
+            for (int i = 0; i < 3; i++) {
+                if (roots[i][1] == 0 && roots[i][0] > radius ) {
+                    radius = roots[i][0];
+                }
+            }
+
+            //if no positive root, cannot do anything
+            if (radius <= 0.0) return MSGLOCAL_NOPOSITIVEROOT;
+
+            cc = -phi3/6;
+            bb = -3*cc*radius + phi2/2;
+            aa = -2*bb*radius -3*cc*radius*radius - phi1;
+            radius = radius + d;
+
+            q[LOCAL_R] = radius;
+            q[CUTOFF_CUBE_A] = aa;
+            q[CUTOFF_CUBE_B] = bb;
+            q[CUTOFF_CUBE_C] = cc;
+
+ 
+        } else
+            BUG;
+    }
+    return NOERROR; // olga
 }
 
 
@@ -3107,9 +3196,14 @@ int check_local(cov_model *cov,
 
  
   if ((err = CHECK(next, dim,  1,
-		     method == CircEmbedCutoff ? PosDefType : VariogramType, 
-		     cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR)
-    return err;
+             method == CircEmbedCutoff ? PosDefType : VariogramType,
+             cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR) {
+      if ( method != CircEmbedCutoff ||
+      (err = CHECK(next, dim,  1,
+                    VariogramType,
+                   cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR)
+              return err;
+  }
  
 
 
@@ -3117,17 +3211,10 @@ int check_local(cov_model *cov,
   setbackward(cov, next); 
   if (next->pref[method] == PREF_NONE) return ERRORPREFNONE;
 
-  //  PMI(cov);
-
   if (init == NULL){
     return ERRORUNKNOWNMETHOD;	  
   }
 
-  //  PMI(cov);
-  // assert(p[pLOC_DIAM] != NULL) ;
-
-  
-  // cov->variogram = false; 
   // no changing in pref by submodel !!
   if (cov->q != NULL) {
     FREE(cov->q);    
@@ -3180,33 +3267,20 @@ int check_local(cov_model *cov,
       }
       cov->q[LOCAL_MSG] = msg;
 
-      //  print("msg %d %d\n", msg, MSGLOCAL_FAILED);
-
-      if (msg == MSGLOCAL_FAILED) err = ERRORFAILED;
+      if (msg == MSGLOCAL_FAILED) SERR2("'%s' did not work out correctly. Likely, invalid parameter values have been chosen for '%s'", NICK(cov), NICK(next));
     } else {
       SERR("2nd parameter is neither given nor can be found automatically");
     }
 
-    // APMI(cov);
-
   } else {
     if (cov->ncol[pLOC_A] != 1 || cov->nrow[pLOC_A] != 1) 
       SERR1("'%s' must be a scale", KNAME(pLOC_A));
-    //   print("here 2\n");
     err = set_local(next, P0(pLOC_A), d, q2);
     MEMCOPY(q, q2, sizeof(double) * maxq);
   }
 
   cov->pref[CircEmbed] = 5;
-  // APMI(cov);
 
-// print("pdq %f %f %f %d\n", p[pLOC_A]==NULL ?RF_NA :p[pLOC_A][0],d,q2, rr);
-//
-  //if (err != NOERROR) { X ERR(err)
-    //   char Msg[255];
-    //   err orMessage(err);
-    //  err or(Msg);
-  //}
   return err;
 }
 
@@ -3219,14 +3293,39 @@ void co(double *x, cov_model *cov, double *v) {
  
   assert(cov->role == ROLE_COV);
 
+  /*
   if (y <= diameter) COV(x, next, v)
   else {
     *v = (y >= q[LOCAL_R]) ? 0.0
       : q[CUTOFF_B] * pow(q[CUTOFF_ASQRTR] - pow(y, a), 2.0 * a);
   }
+*/
+  if (y <= diameter) {
+        //If it is a variogram (actually -variogram), add a constant. If it is positive definite, go below
+        if (cov->sub[0]->typus == VariogramType ) {
+            COV(x, next, v);
+            *v = *v+q[CUTOFF_CONSTANT];
+        } else
+        {
+            COV(x, next, v)
+        }
+
+    }
+
+    else {
+        if (a != CUTOFF_THIRD_CONDITION) {
+            *v = (y >= q[LOCAL_R]) ? 0.0
+                                   : q[CUTOFF_B] * pow(q[CUTOFF_ASQRTR] - pow(y, a), 2.0 * a);
+        }
+        else {
+       //     *v = (y >= q[LOCAL_R]) ? 0.0
+         //                          : q[CUTOFF_CUBE_A]*(q[LOCAL_R] - y) + q[CUTOFF_CUBE_B]*pow((q[CUTOFF_ASQRTR] - y), 2)
+           //                          + q[CUTOFF_CUBE_C]*pow((q[LOCAL_R] - y), 3);
+            BUG;
+        }
+    }
+
 }
-
-
 int check_co(cov_model *cov) {
   cov_model *next = cov->sub[0];
   return check_local(cov, CircEmbedCutoff, CUTOFF_MAX, 
@@ -3375,9 +3474,6 @@ int checkstrokorb(cov_model *cov) {
     SERR("only dimensions 1 and 3 are allowed");
   }
 
-
-  //  PMI(cov);
-
   if (!(hasMaxStableRole(cov) || hasNoRole(cov) || hasDistrRole(cov))) {
     SERR1("'%s' may be used only as a shape function with max-stable field simulation", NICK(cov));
   }
@@ -3406,7 +3502,6 @@ int checkstrokorb(cov_model *cov) {
       if (next->tail[0][TaylorExpConst] != 0.0) BUG;
       if (next->tail[0][TaylorPow] >= 0) {
 	if (next->tail[0][TaylorConst] == 0) SERR("trivial submodel");
-	//APMI(next);
 	SERR1("'%s' is not integrable", NICK(next));
       }
       cov->tail[0][TaylorConst] = 
@@ -3568,7 +3663,6 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
     dim = cov->tsdim;
   
   ASSERT_NEWMODEL_NOT_NULL;
-  //PMI(cov, "strokorbBall");
   
   if (cov->role == ROLE_MAXSTABLE) {
     addModel(newmodel, BALL, cov);    
@@ -3577,11 +3671,11 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
     kdefault(*newmodel, POWPOWER, -dim);    
     kdefault(*newmodel, POWVAR,  1.0 / VolumeBall(dim, BALL_RADIUS));    
     cov_model *pts=NULL, *scale=NULL;
-    if ((err = covcpy(&pts, *newmodel)) != NOERROR) return err;
+    if ((err = covCpy(&pts, *newmodel)) != NOERROR) return err;
     
 
     if (CovList[cov->nr].kappas < 2) {
-      if ((err = covcpy(&scale, cov)) != NOERROR) return err;
+      if ((err = covCpy(&scale, cov)) != NOERROR) return err;
       // !! inverse scale gegenueber paper
       scale->nr = STROKORB_BALL_INNER;
       kdefault(scale, STROKORBBALL_DIM, dim);
@@ -3594,10 +3688,7 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
       kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MIN, P0(0));
       kdefault((*newmodel)->kappasub[POWSCALE], UNIF_MAX, P0(1));
     }
-    
-    //    printf("%f %f %d\n", P0(0), P0(1), dim);
-    //    assert(false);
-  
+      
     addModel(&pts, RECTANGULAR);
     addModel(&pts, LOC);
     kdefault(pts, LOC_SCALE, 1.0);
@@ -3609,8 +3700,6 @@ int struct_strokorbBall(cov_model *cov, cov_model **newmodel) {
     addModel(newmodel, PTS_GIVEN_SHAPE); // to do : unif better ?!
     (*newmodel)->sub[PGS_LOC] = pts;
     pts->calling = *newmodel;
- 
-   //    APMI(*newmodel);
 
   } else ILLEGAL_ROLE_STRUCT;
   
@@ -3851,7 +3940,6 @@ int checkstrokorbPoly(cov_model *cov) {
   
   if (dim != 2) SERR("only dimension 2 currently programmed");
   if (!(hasMaxStableRole(cov) || hasNoRole(cov))) {
-    //  PMI(cov->calling->calling);
     SERR1("'%s' may be used only as a shape function with max-stable field simulation", NICK(cov));
   }
 
@@ -3890,7 +3978,6 @@ int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {
   cov_model *pts=NULL, *shape=NULL;
 
   ASSERT_NEWMODEL_NOT_NULL;
-  //PMI(cov, "strokorbPoly");
     
   if (cov->role == ROLE_MAXSTABLE) {
     if (sub->nr != BROWNRESNICK) 
@@ -3901,7 +3988,6 @@ int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {
       sub = sub->sub[0];
     }
     if (sub->nr != BROWNIAN || PARAM0(sub, BROWN_ALPHA) != 1.0) {
-      //APMI(sub);
       SERR2("Numerical inverse Laplace transform has not been implemented yet. Currently, only '%s' with parameter %s=1 is a valid submodel", CovList[BROWNIAN].nick,
 	    CovList[BROWNIAN].kappanames[BROWN_ALPHA]);
     }
@@ -3926,8 +4012,6 @@ int struct_strokorbPoly(cov_model *cov, cov_model **newmodel) {
     (*newmodel)->sub[PGS_FCT] = shape;
 
   } else ILLEGAL_ROLE_STRUCT;
-
-  // APMI(*newmodel);
 
   return NOERROR;
 }
@@ -4044,7 +4128,6 @@ int checksetparam(cov_model *cov) {
   kdefault(cov, SET_PERFORMDO, true);
 
   if (type == RandomType || next->typus== RandomType) {
-    //PMI(cov);
     BUG;
   }
   if ((err = CHECK(next, dim, xdim, type, dom, iso, 
@@ -4077,8 +4160,6 @@ int initsetparam(cov_model *cov, gen_storage *s){
   cov_model *next= cov->sub[SETPARAM_LOCAL];
   set_storage *X = cov->Sset;
 
-  //  APMI(cov);  crash();
-
   assert(X != NULL);
   int err, i,
     vdim = cov->vdim[0];
@@ -4101,9 +4182,9 @@ void dosetparam(cov_model *cov, gen_storage *s) {
   if (performDo) DO(cov->sub[SETPARAM_LOCAL], s); 
 }
 
-void covmatrix_setparam(cov_model *cov, double *v, int *nonzeros) {
+void covmatrix_setparam(cov_model *cov, double *v) {
   cov_model *next = cov->sub[SETPARAM_LOCAL];
-  CovList[next->nr].covmatrix(next, v, nonzeros);
+  CovList[next->nr].covmatrix(next, v);
 }
 
 char iscovmatrix_setparam(cov_model *cov) {
@@ -4137,6 +4218,7 @@ void logtrafo(double *x, cov_model *cov, double *v,
 void nonstattrafo(double *x, double *y, cov_model *cov, double *v){  
   cov_model *next = cov->sub[0];
   assert(next != NULL);
+  //  printf("%f %f; %f %f\n", x[0], x[1], y[0], y[1]);
   NONSTATCOV(x, y, next, v);
 }
 void lognonstattrafo(double *x, double *y, cov_model *cov, double *v, 
@@ -4156,19 +4238,32 @@ int checktrafo(cov_model *cov){
   cov_model *next = cov->sub[0];
   int err = NOERROR;
  
+  if (!equal_coordinate_system(cov->isoown, P0INT(TRAFO_ISO))) {
+    if (cov->isoown != EARTH_COORDS && cov->isoown != EARTH_SYMMETRIC) {
+       return ERRORWRONGISO; // trafo nicht (mehr) schaffbar 
+    }
+  }
+  
  
-  if (equal_coordinate_system(cov->isoown, P0INT(TRAFO_ISO)) &&
-      cov->isoown != P0INT(TRAFO_ISO)) {
-    SERR2("Offered system ('%s') does not match the required one ('%s')",
+  if ((next->nr == IDCOORD && 
+       equal_coordinate_system(cov->isoown, P0INT(TRAFO_ISO)) &&
+	 cov->isoown != P0INT(TRAFO_ISO))
+      || 
+      (next->nr != IDCOORD &&
+       equal_coordinate_system(cov->isoown, P0INT(TRAFO_ISO)) &&
+       cov->isoown != P0INT(TRAFO_ISO) && 
+       UpgradeToCoordinateSystem(cov->isoown) != P0INT(TRAFO_ISO) )
+      ) {
+    SERR2("offered system ('%s') does not match the required one ('%s')",
 	  ISONAMES[cov->isoown], ISONAMES[P0INT(TRAFO_ISO)]);
   }
-
+  
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, cov->typus, cov->domown, 
 		   P0INT(TRAFO_ISO), -1, ROLE_COV)) != NOERROR){
+
     return err;  
   }
   if (!atleastSpecialised(next->isoown, P0INT(TRAFO_ISO))) {
-    //PMI(next);
     SERR2("offered system ('%s') does not match the required one ('%s')",
 	 ISONAMES[next->isoown], ISONAMES[P0INT(TRAFO_ISO)]);
   }
@@ -4190,6 +4285,136 @@ void rangetrafo(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[TRAFO_ISO] = false;
   range->openmax[TRAFO_ISO] = false;
 }
+
+
+
+
+int checktrafoproc(cov_model *cov) { // auch fuer TrendEval
+  cov_model *next = cov->sub[0],
+    *key = cov->key;  
+  location_type *loc = Loc(cov);
+  int err;  
+  ROLE_ASSERT_GAUSS;
+  assert(cov->nsub == 1);
+  if (cov->key != NULL) {
+    if ((err = CHECK(key, 3 + loc->Time, 3, ProcessType, XONLY, CARTESIAN_COORD,
+		     SUBMODEL_DEP, cov->role == ROLE_BASE ? ROLE_BASE 
+		     : ROLE_GAUSS)) != NOERROR) return err;
+  } else {
+    if ((err = CHECK(next, cov->tsdim, cov->xdimown, cov->typus, cov->domown, 
+		     P0INT(TRAFO_ISO), -1, ROLE_COV)) != NOERROR){
+      return err;  
+    }
+    if (!TypeConsistency(VariogramType, cov, MAXINT)) 
+      SERR("definite function needed");
+  }
+
+  cov->vdim[0] = next->vdim[0];
+  cov->vdim[1] = next->vdim[1];
+  
+  return NOERROR;
+}
+
+
+int structtrafoproc(cov_model  VARIABLE_IS_NOT_USED *cov,
+		   cov_model VARIABLE_IS_NOT_USED **newmodel){// auch fuer TrendEval
+  cov_model *sub = cov->sub[0];
+  int i, k,
+    err;
+  ROLE_ASSERT_GAUSS;
+
+  if (P0INT(TRAFO_ISO) != CARTESIAN_COORD ||
+      cov->calling == NULL || cov->calling->isoown != EARTH_COORDS)
+    SERR("currently only earth-to-cartesian allowed");
+
+  if (cov->key != NULL) BUG;
+ 
+  // ACHTUNG In der Reihenfolge, da (i) Loc einzuverwendet ist
+  // (ii) umgehaengt werden muss da Trafo ownloc verwendet, ownloc
+  // aber durch die Erdtrafo ueberschreiben wird. Somit muss
+  // ownloc gesichert werden. Wird eingehaengt, so dass bei Fehlern
+  // ownloc dennoch zum Schluss geloescht wird.
+
+
+  Transform2NoGrid(cov, true, true, false);
+  
+  location_type *loc = Loc(cov);
+  if (loc->len != 1) SERR("trafo currently only possible for a single data set");
+  int 
+    spatialdim = loc->spatialdim,
+    xdimprev = cov->xdimprev,
+    newdim = spatialdim == 2 || spatialdim == 3 ? 3 : NA_INTEGER,
+    spatialpts = loc->spatialtotalpoints;
+  bool 
+    Time = loc->Time;
+  double aequ, pol, X[4], T[3],
+    *x = loc->x,
+    *y = (double *) MALLOC(sizeof(double) * newdim * spatialpts),
+    *yy = y;
+  
+
+  if (Time) MEMCOPY(T, loc->T, sizeof(double) * 3);
+  if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0) {
+    aequ = 6378.1;
+    pol =  6356.8;
+  } else {
+    aequ = 3963.17;
+    pol = 3949.93;
+  }
+
+  if (loc->grid) BUG;
+
+  loc->Time = false;
+  cov->xdimprev = spatialdim;
+  for (i=0; i<spatialpts; i++, x+=spatialdim) {
+    Earth2Cart(x, cov, aequ, pol, X); 
+    for (k=0; k<3; *(yy++) = X[k++]);
+  }
+  loc->Time = Time;
+  cov->xdimprev = xdimprev;
+
+  //pmi(cov, 0);  printf("\n");  PrintLoc(1, loc, true);  PMI(cov);  assert(!loc->grid);
+
+  loc_set(y, NULL, T, 3, 3, spatialpts, 0, Time, false, false, cov);
+
+  if ((err = covCpy(&(cov->key), sub)) == NOERROR) {
+    if (cov->key != NULL) COV_DELETE(&(cov->key));
+    goto ErrorHandling;
+  }
+  addModel(&(cov->key), GAUSSPROC);
+
+  if ((err = CHECK(cov->key, 3 + loc->Time, 3, ProcessType, 
+		   XONLY, CARTESIAN_COORD,
+		   SUBMODEL_DEP, cov->role == ROLE_BASE ? ROLE_BASE 
+		   : ROLE_GAUSS)) != NOERROR) goto ErrorHandling;
+
+ ErrorHandling :
+  FREE(y);
+  
+  return err;
+}
+
+
+int inittrafoproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer TrendEval
+  cov_model *key = cov->key;
+  int err;
+
+  if (cov->vdim[0] != 1) NotProgrammedYet("");
+  if ((err = INIT(key, 0, s)) != NOERROR) return err;
+  
+  cov->fieldreturn = true;
+  cov->origrf = false;
+  cov->rf = key->rf;
+  cov->simu.active = true;
+  return NOERROR;
+}
+
+
+void dotrafoproc(cov_model *cov, gen_storage *s){
+  cov_model *key = cov->key;
+  DO(key, s);   
+}
+
 
 
 
@@ -4224,14 +4449,16 @@ int checkprod(cov_model *cov) {
   }
   cov_model *next = cov->sub[0];
   int err;
+  isotropy_type iso = UpgradeToCoordinateSystem(cov->isoown);
+  if (iso == ISO_MISMATCH) return ERRORFAILED;
 
   //if (cov->isoown != EARTH_COORD) return ERRORFAILED; printf("loeschen\n");
 
   // STOPAFTER(cov->isoown == EARTH_COORD,APMI(cov));
 
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, ShapeType,
-		     XONLY, cov->isoown,
-		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+		   XONLY, iso, SUBMODEL_DEP, ROLE_BASE
+		   )) != NOERROR) return err;
   
   setbackward(cov, next);
   cov->vdim[0] = next->vdim[0]; 
@@ -4263,33 +4490,31 @@ int structprodproc(cov_model  VARIABLE_IS_NOT_USED *cov,
 
 int initprodproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){// auch fuer TrendEval
   int err;
-
   if (cov->vdim[0] != 1) NotProgrammedYet("");
 
+  if ((err = check_fctn(cov)) != NOERROR) return err;
+  
   ROLE_ASSERT_GAUSS;
   err = FieldReturn(cov);
   cov->simu.active = err == NOERROR;
-  if (PL>= PL_STRUCTURE) PRINTF("\n'prodproc' is now initialized.\n");
+  if (PL>= PL_STRUCTURE) PRINTF("\n'%s' is now initialized.\n", NAME(cov));
   return err;
 }
 
-void doprodproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
+void doprodproc(cov_model *cov, gen_storage *s){
   location_type *loc = Loc(cov);					
   long i,
     vdim = cov->vdim[0],
     totvdim = loc->totalpoints * vdim;
-  bool loggauss = GLOBAL.gauss.loggauss;
-  GLOBAL.gauss.loggauss = false;
-  res_type
-    *res = cov->rf;
+  double *res = cov->rf;
   assert(res != NULL);
 
   Fctn(NULL, cov, res);
-  double g = GAUSS_RANDOM(1.0);
-  
-  if (loggauss) for(i=0; i<totvdim; i++) res[i] = (res_type) exp(res[i] * g);
-  else for(i=0; i<totvdim; i++) res[i] = (res_type) (res[i] * g);
-  GLOBAL.gauss.loggauss = loggauss;
+
+  if (s->prodproc_random) {
+    double g = GAUSS_RANDOM(1.0);  
+    for(i=0; i<totvdim; i++) res[i] *= g;
+  }
 }
 
 

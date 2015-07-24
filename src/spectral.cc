@@ -4,7 +4,7 @@
 
  Simulation of a random field by spectral turning bands
 
- Copyright (C) 2000 -- 2014 Martin Schlather, 
+ Copyright (C) 2000 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@ int check_spectral(cov_model *cov) {
     dim = cov->tsdim; // taken[MAX DIM],
   spectral_param *gp  = &(GLOBAL.spectral);
 
- 
+  ASSERT_CARTESIAN;
   ROLE_ASSERT(ROLE_GAUSS);
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
@@ -48,7 +48,7 @@ int check_spectral(cov_model *cov) {
   kdefault(cov, SPECTRAL_GRID, (int) gp->grid); //ok
   kdefault(cov, SPECTRAL_METRO_FACTOR, gp->prop_factor);
   kdefault(cov, SPECTRAL_SIGMA, gp->sigma); // ok
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
 
   // APMI(cov);
   // printf("\n\ncheck_spectral %d %s %d\n", key==NULL, NICK(sub), cov->role);
@@ -85,12 +85,16 @@ int check_spectral(cov_model *cov) {
   //printf("spectral role=%d %d\n", cov->role, ROLE_BASE);
 
   setbackward(cov, sub);
+  KAPPA_BOXCOX;
+  if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
 }
 
 
 void range_spectral(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
+
   range->min[SPECTRAL_LINES] = 1;
   range->max[SPECTRAL_LINES] = RF_INF;
   range->pmin[SPECTRAL_LINES] = 1;
@@ -267,9 +271,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
     *res = cov->rf;
   long nt, nx, total = loc->totalpoints,
     spatialpoints = loc->spatialtotalpoints;
-  bool loggauss = GLOBAL.gauss.loggauss;
- GLOBAL.gauss.loggauss = false;
-
+  SAVE_GAUSS_TRAFO;
 			
   s->grid = P0INT(SPECTRAL_GRID);
   s->phistep2d = TWOPI/ (double) ntot; 
@@ -356,7 +358,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	    for (segy = segz, ny = 0; ny < gridleny; ny++) {	
 	      for (segx = segy, nx = 0; nx < gridlenx; nx++) {
 		// print("zaehler=%d %f res=%f %f\n", zaehler, segx, res[zaehler], cos(segx) );
-		  res[zaehler++] += (res_type) cos(segx);	  
+		  res[zaehler++] += (double) cos(segx);	  
 		segx += incx;
 	      }
 	      segy += incy;
@@ -384,7 +386,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	    for (cy=cz, sy=sz, ny = 0; ny < gridleny; ny++) {	
 	      for (cx=cy, sx=sy, nx = 0; nx < gridlenx; nx++) {
 		//print("zaehler=%d res=%f %f\n", zaehler, res[zaehler], cx );
-		  res[zaehler++] += (res_type) cx;
+		  res[zaehler++] += (double) cx;
 		dummy = cx * cix - sx * six;
 		sx = cx * six + sx * cix;
 		cx = dummy;
@@ -419,14 +421,14 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	    cx = cos(psi);
 	    sx = sin(psi);
 	    for (nt = nx; nt < total; nt += spatialpoints) {
-		res[nt] += (res_type) cx;
+		res[nt] += (double) cx;
 	      dummy = cx * cit - sx * sit;
 	      sx = cx * sit + sx * cit;
 	      cx = dummy;
 	    }
 	  } else {
 	    for (nt = nx; nt < total; nt += spatialpoints, psi += inct){
-	      res[nt] += (res_type) cos(psi);
+	      res[nt] += (double) cos(psi);
 	    }	  
 	  } // ! exact
 	}
@@ -435,14 +437,14 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	switch (origdim) {
 	    case 1 : 
 	      for (nx=0; nx<total; nx++) {	
-		res[nx] += (res_type) cos(cp * x[nx] + VV);
+		res[nx] += (double) cos(cp * x[nx] + VV);
 	      }
 	      break;
 	    case 2 :
 	      int twonx;
 	      for (nx=0; nx<total; nx++) {	
 		twonx = nx << 1;
-		res[nx] += (res_type) cos(cp * x[twonx] + sp * x[twonx+1] + VV);
+		res[nx] += (double) cos(cp * x[twonx] + sp * x[twonx+1] + VV);
 	      }
 	      break;
 	    default :
@@ -450,7 +452,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	      for (j=nx=0; nx<total; nx++) {	
 		psi = VV;
 		for (d=0; d<origdim; d++) psi += E[d] * x[j++];
-		res[nx] += (res_type) cos(psi);
+		res[nx] += (double) cos(psi);
 	      }
 	}
       }
@@ -471,13 +473,9 @@ void do_spectral(cov_model *cov, gen_storage *S)
 		       / (double) ntot);
   for (nx=0; nx<total; nx++) { 
     //printf("%f %f\n", res[nx], sqrttwodivbyn);
-    res[nx]  *= (res_type) sqrttwodivbyn; 
+    res[nx]  *= (double) sqrttwodivbyn; 
   }
 
-  if (loggauss) {
-    for (nx=0; nx<total; nx++) res[nx] = exp(res[nx]);
-  }
-  GLOBAL.gauss.loggauss = loggauss;
-
+  BOXCOX_INVERSE;
 } 
 

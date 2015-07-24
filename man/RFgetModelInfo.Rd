@@ -12,10 +12,12 @@
 \usage{
 RFgetModel(register, explicite.natscale, show.call=FALSE)
 
-RFgetModelInfo(register, level = 1,
-               spConform = RFoptions()$general$spConform,
-               which.submodels = c("user", "internal", "both"),
-               modelname = NULL)
+RFgetModelInfo(register, level = 1, spConform =
+                 RFoptions()$general$spConform, which.submodels =
+                 c("user", "internal", "call+user", "call+internal",
+                 "user.but.once", "internal.but.once",
+                 "user.but.once+jump", "internal.but.once+jump",
+                 "all"), modelname = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,15 +32,16 @@ RFgetModelInfo(register, level = 1,
    If \code{TRUE} then any  \command{\link{RMnatsc}} is tried to be
    combined with leading \command{\link{RMS}}, or returned as such.
  }
- \item{show.call}{logical. If \code{FALSE} then the model
+ \item{show.call}{logical or character. If \code{FALSE} then the model
    is shown as interpreted. If \code{TRUE} then the user's input
    including the calling function is returned. See example below.
+
+   If \code{show.call} is a character it behaves as
+   \code{which.submodels}, see below.
  }
  \item{level}{integer [0..5]; level of details, i.e. the higher the
    number the more details are given. 
-   If \code{level >= 10} then the leading internal model is also given
-   (which is, in general, not of interest by the user).
- }
+  }
 
 % \item{max.elements}{integer; since \command{\link{RFgetModelInfo}}
 % might be a dump of simulation that needs a huge amount of
@@ -54,6 +57,26 @@ RFgetModelInfo(register, level = 1,
    Internally, the sub-models are represented in two different ways
    \sQuote{internal} and \sQuote{user}. The latter is very close to
    the model defined by the user.
+
+   Most models have a leading internal model.
+   The values \code{"call+user"}, \code{"call+internal"} return also
+   this leading model if existent.
+
+   The values \code{"user.but.once"}, \code{"internal.but.once"}
+   \code{"user.but.once"} returns the user path of the internal model
+   following the leading model.  \code{"internal.but.once"} would return the
+   internal path of the user model following the leading model, but this
+   path should never exist. So as all the other options if a certain
+   direction does not exist, the alternative path is taken.
+
+   The values \code{"user.but.once+jump"},
+   \code{"internal.but.once+jump"}
+   same as \code{"user.but.once"} and \code{"internal.but.once"},
+   except that the first submodel below the leading model is not given.
+
+
+
+   The value \code{"all"} returns the whole tree of models (very advanced).
  }
  \item{modelname}{ string. If \code{modelname} is given then
  it returns the first appearance of the
@@ -114,11 +137,9 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
 z <- RFsimulate(model, 1:4, storing=TRUE)
-RFgetModelInfo(RFsimulate)
-
-
-RFgetModel(RFsimulate, show.call=FALSE)
-RFgetModel(RFsimulate, show.call=TRUE)
+RFgetModelInfo()
+RFgetModel(show.call=FALSE)
+RFgetModel(show.call=TRUE)
 \dontshow{FinalizeExample()}
 
 }

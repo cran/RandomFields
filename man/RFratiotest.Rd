@@ -12,7 +12,7 @@
 RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
 grid=NULL, data,
 alpha, n = 5 / alpha, seed = 0, 
-lower = NULL, upper = NULL, bc_lambda, methods,
+lower = NULL, upper = NULL, methods,
 sub.methods, optim.control = NULL, users.guess = NULL,
 distances = NULL, dim, transform = NULL, ...)
 }
@@ -33,7 +33,7 @@ distances = NULL, dim, transform = NULL, ...)
    \code{RFoptions{}$general$seed}
    if the latter is not \code{NA}.
  }
- \item{x, y, z, T, grid, data, lower, upper, bc_lambda, methods,
+ \item{x, y, z, T, grid, data, lower, upper, methods,
    sub.methods, optim.control, users.guess, distances, dim, transform,
    ...}{see \command{\link{RFfit}}}
 }

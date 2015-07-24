@@ -19,9 +19,9 @@
 }
 
 \usage{
-RPcoins(phi, shape, intensity, method) 
+RPcoins(phi, shape, boxcox, intensity, method) 
 
-RPaverage(phi, shape, intensity, method) 
+RPaverage(phi, shape, boxcox, intensity, method) 
 
 }
 
@@ -34,7 +34,11 @@ RPaverage(phi, shape, intensity, method)
     specifies the function which is attached to the Poisson points;
     note that this is not the covariance function of the simulated
     random field.}
-  \item{intensity}{positive number, intensity of the underlying Poisson
+ \item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
+ \item{intensity}{positive number, intensity of the underlying Poisson
     point process.
   }
   \item{method}{integer.
@@ -76,9 +80,9 @@ RPaverage(phi, shape, intensity, method)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 \dontshow{\dontrun{
-x <- seq(0,25, if (interactive()) 0.02 else 5)
+x <- seq(0,25, 0.02)
 model <- RPcoins(RMspheric())
 z <- RFsimulate(model, x, x, spConform=FALSE) # takes 20 sec
 Print(sd(as.vector(z)), mean(z))
@@ -86,7 +90,7 @@ image(z)
 
 
 ### Gaussian field approximates by Poisson fields
-x <- seq(0,10, if (interactive()) 0.02 else 5)
+x <- seq(0,10, 0.02)
 for (intensity in c(1, 10, 100)) {
  z <- RFsimulate(x=x, model=RPcoins(RMspheric(), intensity = intensity))
  plot(z)

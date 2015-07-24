@@ -3,6 +3,9 @@
 \alias{RMmodel-class}
 \alias{show,RMmodel-method}
 \alias{print.RMmodel}
+\alias{plot,RMmodel,missing-method}
+\alias{points.RMmodel}
+\alias{lines.RMmodel}
 \alias{str.RMmodel}
 \alias{[,RMmodel-method}
 \alias{[,RMmodel,ANY,ANY,ANY-method}
@@ -41,6 +44,58 @@
 \title{Class \code{RMmodel}}
 \description{ Class for \pkg{RandomField}'s representation of explicit
  covariance models 
+}
+
+
+\usage{
+\S4method{plot}{RMmodel,missing}(x, y, dim=1, n.points=200,
+ fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...)
+
+\S3method{points}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
+
+\S3method{lines}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
+}
+
+
+
+\arguments{
+  \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
+    \command{\link[=RFempVariog-class]{RFempVario}} or
+    \command{\link[=RFfit-class]{RFfit}} or
+    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
+    be any sophisticated model but it must be either stationary or a
+    variogram model} 
+  \item{y}{ignored in most methods}
+  \item{MARGIN}{vector of two; two integer values giving the coordinate
+    dimensions 
+    w.r.t. which the field or the covariance model
+    is to be plotted; in all other directions,
+    the first index is taken}
+%  \item{MARGIN.slices}{integer value; if \eqn{[space-time-dimension>2]},
+%    \code{MARGIN.slices} can specify a third dimension w.r.t. which a
+%    sequence of slices is plotted. Currently only works for grids.} 
+  \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
+    \code{dim > 2}; a vector of length \code{dim}-2 with distance values
+    for the coordinates that are not displayed}
+  \item{maxchar}{integer. Maximum number of characters to print the
+    model in the legend.
+  }
+  \item{...}{arguments to be passed to methods; mainly graphical
+    arguments, or further models in case of class \code{'RMmodel'},
+    see Details.
+  }
+  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
+    covariance function and the variogram are plotted as a function of
+    \eqn{\R^\code{dim}}{R^\code{dim}}.}
+  \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
+    number of points at which the model 
+    evaluated (in each dimension); defaults to 200} 
+  \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
+    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
+    whether the covariance (\code{fct.type="Cov"}) or the
+    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
+    implies automatic choice, where \code{"Cov"} is chosen whenever the model is
+    stationary} 
 }
 
 
@@ -102,6 +157,10 @@
  \item{[<-}{\code{signature(x = "RMmodel")}: enables replacing
  the slots via the \code{"["}-operator}
  
+\item{\code{signature(x = "RMmodel", y = "missing")}}{Generates
+ covariance function or variogram function plots in one or two
+ dimensions.}
+
  }
 }
 

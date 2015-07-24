@@ -10,7 +10,7 @@
 }
 \usage{
 RMuser(type, domain, isotropy, vdim, beta,
-       variab.names = c("x", "y", "z", "T"), fctn, fst, snd, envir,  
+       varnames = c("x", "y", "z", "T"), fctn, fst, snd, envir,  
        var, scale, Aniso, proj)
 }
 \arguments{
@@ -51,7 +51,7 @@ RMuser(type, domain, isotropy, vdim, beta,
     an arbitrary linear model can be defined. Estimation of \code{beta}
     is, however,  not established yet.
   }
-  \item{variab.names}{
+  \item{varnames}{
     Just the names of the variables. More variable names might
     be given here than used in the function.
     See Detail for the interpretation of variables.
@@ -73,10 +73,10 @@ RMuser(type, domain, isotropy, vdim, beta,
   scalar quantities.
  
   Alternatively, the function might depend only on the first argument
-  given by \code{variab.names}.
+  given by \code{varnames}.
 
   A kernel should depend on the first two arguments
-  given by \code{variab.names}.
+  given by \code{varnames}.
 }  
 
 \value{
@@ -112,6 +112,8 @@ RMuser(type, domain, isotropy, vdim, beta,
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{
+  \command{\link{RMcovariate}},
+  \command{\link{RMfixcov}},
   \command{\link{RFfit}},
   \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
   \command{\link{RMmodel}},
@@ -126,21 +128,21 @@ RMuser(type, domain, isotropy, vdim, beta,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 
 ## Alternatively to 'model <- RMexp()' one may define the following
 ## (which is, however, much slower and cannot use all features of
 ## RandomFields)
-\dontshow{if (RFoptions()$general$storing)
-cat("This examples requires 'RFoptions(storing=FALSE)', what is set now.\n");
-RFoptions(storing=FALSE)
-}
+\dontshow{if (RFoptions()$general$storing) {
+  cat("This examples requires 'RFoptions(storing=FALSE)', what is set now.\n");
+  RFoptions(storing=FALSE)
+}}
 ## user-defined exponential covariance model
 model <- RMuser(type="positive definite", domain="single variable",
                 iso="isotropic", fctn=exp(-x))
-x <- y <- seq(1, 10, len=10^(1+interactive()))
+x <- y <- seq(1, 10, len=100)
 plot(model)
-z <- RFsimulate(RPcirculant(model), x=x, y=y)
+z <- RFsimulate(model, x=x, y=y)
 plot(z)
 
 ## the kernel, which is the scalar product (not programmed (yet) in
@@ -148,8 +150,8 @@ plot(z)
 model <- RMnugget(var=1e-5) +
          RMuser(type="positive definite", domain="kernel",
                 iso="symmetric", fctn=sum(x * y))
-x <- y <- seq(1, 10, len=7^(1+interactive()))
-z <- RFsimulate(model, x=x, y=y, n=6)
+x <- y <- seq(1, 10, len=35)
+z <- RFsimulate(model, x=x, y=y, n=6, svdtol=1e-9) 
 plot(z)
 \dontshow{FinalizeExample()}
 }

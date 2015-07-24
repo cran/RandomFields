@@ -27,11 +27,8 @@
   
 
 \examples{
-
-\dontshow{
-if (!interactive()) RFoptions(modus_operandi="sloppy")
-}
-
+\dontshow{StartExample()}
+\dontshow{if (RFoptions()$internal$examples_reduced) RFoptions(modus_operandi="sloppy")}
 \dontrun{
                ###########################################
                ##  SECTION 4: UNCONDITIONAL SIMULATION  ##
@@ -126,11 +123,16 @@ plot(model, dim = 3, xlim = c(-3, 3), MARGIN = 1 : 2, cex = 2.3,
 
 ## get the data     
 data("weather")
-All <- if (interactive()) TRUE else 1:10 ## full data set takes more than 
+PT <- weather[ , 1 : 2]  ## full data set takes more than 
 ##                                     half an hour to be analysed
-PT <- weather[All , 1 : 2] 
 ## transformation of earth coordinates to Euclidean coordinates
+Dist.mat <- as.vector(RFearth2dist(weather[ , 3 : 4]))
+\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced data set")
+All <- 1:10
+PT <- weather[All , 1 : 2] 
 Dist.mat <- as.vector(RFearth2dist(weather[All , 3 : 4]))
+}}
+
 
 
 #################################
@@ -156,14 +158,14 @@ pars <- RFfit(pars.model, distances = Dist.mat, dim = 3, data = PT)
 print(pars)
 print(pars, full=TRUE)
 RFratiotest(pars)
-RFcrossvalidate(pars, x = weather[All , 3 : 4], data = PT, full = TRUE)
+#RFcrossvalidate(pars, x = weather[All , 3 : 4], data = PT, full = TRUE)
 
 ## 'whole model'
 ## fitting takes a while ( > 10 min)
 whole <- RFfit(whole.model, distances = Dist.mat, dim = 3, data = PT)
 print(whole, full=TRUE)
 RFratiotest(whole)
-RFcrossvalidate(whole, x = weather[All , 3 : 4], data = PT, full = TRUE)
+#RFcrossvalidate(whole, x = weather[All , 3 : 4], data = PT, full = TRUE)
 
 ## compare parsimonious and whole
 RFratiotest(nullmodel = pars, alternative = whole)

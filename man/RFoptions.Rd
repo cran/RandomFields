@@ -40,13 +40,14 @@
   \bold{16. \code{nugget}: Options for the nugget effect}\cr
   \bold{17. \code{registers}: Register numbers}\cr
   \bold{18. \code{sequ}: Options for the sequential method}\cr
-  \bold{19. \code{special}: Options for some special methods}\cr
-  \bold{20. \code{spectral}: Options for the spectral (turning bands) method}\cr
-  \bold{21. \code{tbm}: Options for the turning bands method}\cr
-  \bold{22. \code{internal}: Internal}\cr
+  \bold{19. \code{solve}: Options for solving linear systems}\cr
+  \bold{20. \code{special}: Options for some special methods}\cr
+  \bold{21. \code{spectral}: Options for the spectral (turning bands) method}\cr
+  \bold{22. \code{tbm}: Options for the turning bands method}\cr
+  \bold{23. \code{internal}: Internal}\cr
   \bold{General comments}\cr\cr\cr
   
- 
+
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \bold{16. Options for RFloglikelihood}\cr
@@ -161,15 +162,18 @@
   \item{\code{matrix_inversion}}{
     vector of integers gives the methods (and their sequence)
     to inverse a matrix: 
-    
+
+    <0: auto (if not sparse: cholesky then LU)\cr
     0 : Choleskey decomposition \cr
-    1 : QR decomposition\cr
+    1 : QR decomposition (not programmed yet)\cr
     2 : SVD\cr
+    3 : LU (default, except sparsity)
+%    4 : sparse
     
     This option is currently used only in  \command{\link{RFinterpolate}}.% to
     % do  
    
-    Default: \code{c(0, 2)}.
+    Default: \code{-1}.
   }
   
   \item{\code{matrix_tolerance}}{
@@ -301,7 +305,7 @@
     If \code{"always"} or \code{"important"}
     the reports are added as attribute to the results.
     Note that in this case the class of the result may change
-    (e.g. from \code{"numeric"} to \code{"atomic"}.
+    (e.g. from \code{"numeric"} to \code{"atomic"}).
 
     Default: \code{"warn"}
   }
@@ -341,6 +345,14 @@
     
     Note also that \command{\link{RFratiotest}} has its own argument
     \code{seed} with a slightly different meaning.
+  }
+
+  \item{\code{set}}{integer.
+    Certain models (e.g. \command{\link{RMfixcov}} and
+    \command{\link{RMcovariate}}) 
+      allow for lists as arguments.
+    \code{set} selects a certain list element.
+    If necessary the list is recycled.
   }
   
 
@@ -531,25 +543,12 @@
   \item{\code{coord_system}}{character. See \link{coordinate systems}
   }
   
-  \item{\code{coordnames}}{integer vector of length 2 or an increasing
-    sequence of integers or character.
-    This parameter gives the coordinate columns in a data frame, either
-    by starting column and ending column or the sequence or by names.
-    In the first case, single code{NA}s might be included, meaning
-    \sQuote{from the beginning} or \sQuote{until the end}. If both
-    values are \code{NA}, then, depending on the context, either
-    an error message is returned or it is assumed that the first
-    columns give the coordinates.    
-  }
-  
   \item{\code{coordunits}}{ See \link{coordinate systems}
   }
-
-  \item{\code{earth_proj}}{See \link{coordinate systems}
-  }
-  
  
-  
+  \item{\code{coordnames}}{See \link{coordinate systems}
+  }
+
   
   \item{\code{new_coord_system}}{See \link{coordinate systems}
   }
@@ -557,53 +556,18 @@
   \item{\code{new_coordunits}}{See \link{coordinate systems}
   }
 
-  \item{\code{polar_coord} }{logical.
-    If \code{FALSE} the spherical coordinates agree with
-    the earth coordinate parametrisation, except that
-    we radians are used for spherical coordinates instead
-    of degrees for the earth coordinates.
-
-    If \code{TRUE} the spherical coordinates signify polar coordinates.
-
-    Default : \code{FALSE}
+  \item{\code{polar_coord} }{See \link{coordinate systems}
   }
 
+  \item{\code{varnames}}{See \link{coordinate systems}
+  }  
 
-
-  \item{\code{varnames}}{integer vector of length 2 or an increasing
-    sequence of integers or character.
-    This parameter gives the data columns in a data frame, either
-    by starting column and ending column or the sequence or by names.
-    In the first case, single code{NA}s might be included, meaning
-    \sQuote{from the beginning} or \sQuote{until the end}. If both
-    values are \code{NA}, then for keywords \sQuote{data},
-    \sQuote{value} and \sQuote{variable} will be searched for.
-    If none of them are found, depending on the context, either
-    an error message is returned or it is assumed that the last
-    columns give the data.    
+  \item{\code{varunits}}{See \link{coordinate systems}
   }
-     
-  \item{\code{varunits}}{vector of characters.
-    The default units of the variables.
     
-    Default: \code{""}
+  \item{\code{xyz_notation}}{See \link{coordinate systems}
   }
-
-
-  \item{\code{xyz_notation}}{logical or \code{NA}. Used by
-    \code{\link{RMuser}} only.  
-
-    \code{NA} : automatic choice (if possible)
-   
-    \code{false} : notation (x, y) should not be understood as
-    as kernel definition, not as xyz notation
-    
-    \code{true}: xyz notation used
-
-    % \code{2}:this value is only used by calls of RFcov and should not
-    % be used by a user
-  }
-
+ 
   \item{\code{zenit}}{See \link{coordinate systems}
   }
   
@@ -746,8 +710,7 @@
   }
   \item{\code{phi0}}{
     numeric. In case of anisotropic fields directional cones are
-    considered. The argument \code{phi0} determines one of the
-    boundaries, hence all boundaries for a given fixed number of cones.
+    considered. The argument \code{phi0} determines the starting angle.
     
     Default: \code{0}.
   }
@@ -761,8 +724,8 @@
     numeric. In case of anisotropic fields directional cones are
     considered. The argument \code{theta0} determines one of the
     boundaries, hence all boundaries for a given fixed number of cones.
-    The argument \code{theta0} refers to the second angle in a polar
-    coordinate representation in 3 dimensions.
+    The argument \code{theta0} determines the starting value of the
+    second anglue in polar coordinate representation in 3 dimensions.
      
     Default: \code{0}.
   }
@@ -783,8 +746,10 @@
    \command{\link{RFratiotest}}, and \command{\link{RFcrossvalidate}}}
 
 \describe{
-  \item{\code{algorithm}}{ % to do
-    Default: \code{-1}.
+  \item{\code{algorithm}}{
+    See \link{RFfitOptimiser}.
+
+    Default: \code{NULL}
   }
   
   \item{\code{approximate_functioncalls}}{
@@ -797,12 +762,12 @@
     Default: \code{50}
   }
 
-  \item{\code{bc_lambda_lb}}{
+  \item{\code{boxcox_lb}}{
     lower bound for the Box-Cox transformation
     
     Default: \code{-10}.
   }
-  \item{\code{bc_lambda_ub}}{
+  \item{\code{boxcox_ub}}{
     upper bound for the Box-Cox transformation
     
     Default: \code{10}.
@@ -863,10 +828,19 @@
     
     Default: \code{FALSE}.
   }
+
+  \item{estimate_variance}{
+    see \command{\link{RFlikelihood}}.
+  }
+
+  \item{factr, factr_recall}{
+    See the argument \code{control} in \link[stats]{optim}.
+    \code{factr_recall} is used for intermediate calculations.
+  }
   
-  \item{likelihood}{character.
+  \item{likelihood}{character -- not programmed yet.
     types of likelihood are \code{"auto"}, \code{"full"},
-    \code{"composite"}, \code{"selection"}; 
+    \code{"composite"}, \code{"tesselation"}; 
     
     Default: \code{"auto"}    
   }
@@ -890,11 +864,11 @@
     Default: \code{5}.
   }
 
-  \item{\code{lowerbound_sill}}{absolute lower bound for variance
-    and nugget. See \code{lowerbound_var_factor}.
-    
-    Default: \code{1E-10}.
-  }
+ % \item{\code{lowerbound_sill}}{absolute lower bound for variance
+%    and nugget. See \code{lowerbound_var_factor}.
+%    
+%    Default: \code{1E-10}.
+%  }
   
   \item{\code{lowerbound_var_factor}}{
     The lower bound for the nugget and the variance is determined
@@ -995,47 +969,47 @@
   }
 
   \item{\code{optimiser}}{
-    Optimiser used in \command{\link{RFfit}} and takes
-    one of the values
-    \code{"optim"}, \code{"optimx"}, \code{"soma"}, \code{"nloptr"},
-    \code{"GenSA"}, \code{"minqa"}, \code{"pso"} or \code{"DEoptim"}.
-      
+    See \link{RFfitOptimiser}.
     
     Default: \code{"optim"}.
   }
- 
- \item{\code{optim_var_elimination}}{This argument takes the values
-    \code{'never'}, \code{'respect bound'}, \code{'try'},
-    \code{'yes'}, and should only be 
-    set by the advanced user. Background of this option is that
-    a global variance can optimized analytically.
-    
-    The meaning of the values is as follows.
-    \itemize{
-      \item{\code{'never'}}{
-	A global variance is never tried to be eliminated
-      }
-      \item{\code{'respect bound'}}{
-	A global variance is eliminated if such a variance
-	is detected and the user did not indicate bounds
-	for the parameters.
-      }
-      \item{\code{'try'}}{
-	A global variance is eliminated if such a variance
-	is detected.
-      }
-      \item{\code{'yes'}}{
-	A global variance is tried to be eliminated altough
-	the algorithm did not find an indication. Here, the full
-	responsibility is left to the user. (This option might
-	make sense if \code{transform} is given.)
-	This option is only overwritten when it does not make sense,
-	e.g. no variance is estimated.
-      }
-    }
-    Default: \code{'respect bound'}.
-  }
+  
+% \item{\code{optim_var_elimination}}{This argument takes the values
+%    \code{'never'}, \code{'respect bound'}, \code{'try'},
+%    \code{'yes'}, and should only be 
+%    set by the advanced user. Background of this option is that
+%    a global variance can optimized analytically.
+%    
+%    The meaning of the values is as follows.
+%    \itemize{
+%      \item{\code{'never'}}{
+%	A global variance is never tried to be eliminated
+%      }
+%      \item{\code{'respect bound'}}{
+%	A global variance is eliminated if such a variance
+%	is detected and the user did not indicate bounds
+%	for the parameters.
+%      }
+%      \item{\code{'try'}}{
+%	A global variance is eliminated if such a variance
+%	is detected.
+%      }
+%      \item{\code{'yes'}}{
+%	A global variance is tried to be eliminated altough
+%	the algorithm did not find an indication. Here, the full
+%	responsibility is left to the user. (This option might
+%	make sense if \code{transform} is given.)
+%	This option is only overwritten when it does not make sense,
+%	e.g. no variance is estimated.
+%      }
+%    }
+%    Default: \code{'respect bound'}.
+%  }
 
+  \item{pgtol, pgtol_recall}{
+    See the argument \code{control} in \link[stats]{optim}.
+    \code{pgtol_recall} is used for intermediate calculations.
+  }
   
   \item{\code{refine_onborder}}{logical.
     If \code{TRUE} and an estimated parameter of the model
@@ -1053,17 +1027,18 @@
 
     Default:  1/1000
   }
-  \item{\code{solvesigma}}{Logical. -- experimental stage!
-    If a mixed effect part is present where the variance
-    has to be estimated, then this variance parameter is solved
-    iteratively within the profile likelihood function, if
-    \code{solvesigma=TRUE}.This makes sense
-    if the number of independent variables is very small.
-    If \code{solvesigma=FALSE} then the variance parameter is
-    treated as any other parameter to be estimated.
-
-    Default: \code{FALSE}.
-  }
+  
+%  \item{\code{solvesigma}}{Logical. -- experimental stage!
+%    If a mixed effect part is present where the variance
+%    has to be estimated, then this variance parameter is solved
+%    iteratively within the profile likelihood function, if
+%    \code{solvesigma=TRUE}.This makes sense
+%    if the number of independent variables is very small.
+%    If \code{solvesigma=FALSE} then the variance parameter is
+%    treated as any other parameter to be estimated.
+%    Default: \code{FALSE}.
+%  }
+  
   \item{\code{ratiotest_approx}}{logical.
     if \code{TRUE} the approximative formula that twice the
     difference of the likelihoods follow about a \eqn{\chi^2}
@@ -1122,17 +1097,17 @@
     Default: \code{4}. 
   }
  
-  \item{\code{sill}}{
-    Additionally to estimating \code{nugget} and \code{variance}
-    separately, they may also be estimated together under the
-    condition that \code{nugget} + \code{variance} = \code{sill}.
-    For the latter a finite value for \code{sill} has to be supplied,
-    and \code{nugget} and \code{variance} are set to \code{NA}.
-    
-    \code{sill} is only used for the standard model. 
-    
-    Default: \code{NA}. 
-  }
+%  \item{\code{sill}}{ currently not maintained anymore.    
+%    Additionally to estimating \code{nugget} and \code{variance}
+%    separately, they may also be estimated together under the
+%    condition that \code{nugget} + \code{variance} = \code{sill}.
+%    For the latter a finite value for \code{sill} has to be supplied,
+%    and \code{nugget} and \code{variance} are set to \code{NA}.
+%    
+%    \code{sill} is only used for the standard model. 
+%    
+%    Default: \code{NA}. 
+%  }
 
   \item{\code{smalldataset}}{
     If the number of locations is considered as small, then some more data
@@ -1141,22 +1116,23 @@
     Default: \code{2000}.
   }
   
-  \item{\code{split}}{logical.
-    If \code{TRUE} then \command{\link{RFfit}} checks whether a
+  \item{\code{split}}{integer.
+    If the number of parameters to be numerically optimised is larger
+    than or equal to \code{split} then \command{\link{RFfit}} checks whether a
     space-time covariance model or a multivariate covariance model
     can be split into components, so that certain parameters
     can be estimated separately.
     
-    Default: \code{TRUE}. 
+    Default: \code{4}. 
   }
    
-  \item{\code{splitn_neighbours}}{integer.
-    In case the maximum number of locations \code{maxn}
-    is exceeded, then \command{\link{RFfit}} tries to split the data set
-    into parts of size \code{split} or less, but never more than 
-    \code{maxn}. 
+  \item{\code{cliquesize}}{integer.
+    \command{\link{RFfit}} tries to split the data set
+    into parts of size splitn_neighbours[2] or less, but never more than 
+    \code{splitn_neighbours[3]} and never less than
+    splitn_neighbours[1].     
     
-    Default: \code{c(3000, 200, 1000)}.
+    Default: \code{c(200, 1000, 3000)}.
   }
   
   \item{\code{splitfactor_neighbours}}{
@@ -1227,16 +1203,6 @@
     Default: \code{TRUE}.
   }
 
-  \item{\code{use_spam}}{
-    Should the package \code{spam} (sparse matrices)
-    be used for matrix calculations?
-    If \code{TRUE} \pkg{spam} is always used. If \code{FALSE},
-    it is never used. If \code{NA} its use is determined by
-    the size and the sparsity of the matrix.
-    
-    Default: \code{NA}. 
-  }
-
 }
 
 
@@ -1252,6 +1218,18 @@
     Default: \code{0.05}
   }
  
+ \item{\code{boxcox}}{
+   real vector of one or two components.
+   If the first component is \code{Inf} then no transformation
+   is performed. Otherwise the BoxCox transformation is performed.
+   Note that Box Cox only works in a Gaussian framework.
+   Note further that either \code{boxcox} or \code{loggauss}
+   may be given.
+  
+   Default \code{c(Inf, 0)}
+  }
+
+
   \item{\code{direct_bestvar}}{integer.
     When searching for an appropriate simuation method
     the matrix decomposition method (\code{method="direct"})
@@ -1262,7 +1240,8 @@
   }
 
   \item{\code{loggauss}}{
-    See \command{\link{RPgauss}}
+    logical. Whether a log-Gauss random fields should be returned.
+    See also \code{boxcox} for a generalisation.
   }
 
   \item{\code{paired}}{
@@ -1300,7 +1279,7 @@
     if \code{TRUE} a new graphical window is opened for every
     \command{\link[graphics]{plot}} if a standard graphical output is
     used. If \code{NA} then the value is set
-    to \code{\link[base]{interactive}()}
+    to \code{\link[base]{interactive}()}. %ok
     
     Default: \code{TRUE}.
   }
@@ -1442,11 +1421,7 @@
 \bold{13. \code{krige}: Options for Kriging}
 \describe{
   
-  \item{\code{cholesky_R}}{
-    if \code{TRUE} cholesky decomposition is used instead of LU.
-    
-    Default: \code{FALSE}. 
-  }
+  \item{\code{cholesky_R}}{ obsolete }
 
   \item{\code{fillall}}{
     logical value for imputing.
@@ -1472,29 +1447,23 @@
     Default: \code{2}. 
   }
   
-  \item{\code{locsplitn}}{vector of 3 components.
-    A box should contain no more than \code{locsplitn[1]}
-    points, but never less than \code{locsplitn[2]}. If
-    a box had originally less than \code{locsplitn[2]} points,
-    then the box is increased until at least \code{locsplitn[3]}
+%  \item{\code{locsplitn}}{vector of 3 components.
+%    A box should contain no more than \code{locsplitn[1]}
+%    points, but never less than \code{locsplitn[2]}. If
+%    a box had originally less than \code{locsplitn[2]} points,
+%    then the box is increased until at least \code{locsplitn[3]}
+%    points are in the box.    
+   \item{\code{locsplitn}}{vector of 3 components.
+    A box should contain no more than \code{locsplitn[3]}
+    points, but never less than \code{locsplitn[1]}. If
+    a box had originally less than \code{locsplitn[1]} points,
+    then the box is increased until at least \code{locsplitn[2]}
     points are in the box.
-    
-    
-    Default: \code{c(5000, 200, 1000)}. 
+   
+    Default: \code{c(200, 1000, 5000)}. 
   }
   
-  \item{\code{method}}{
-    \code{'S'} : simple kriging\cr
-    \code{'O'} : ordinary kriging\cr
-    \code{'M'} : kriging the mean\cr
-    \code{'U'} : universal kriging\cr
-    \code{'I'} : intrinsic kriging\cr
-    \code{'A'} : automatic choice determined on the given
-    model. In some situation an automatic choice is not possible and
-    the \code{method} must be given explicitely.
-    
-    Default: \code{'A'}.
-  }
+  \item{\code{method}}{ obsolete }
   
   \item{\code{return.variance}}{logical.
     If \code{FALSE} the kriged field is
@@ -1703,10 +1672,14 @@ where sets of points have to be identified that belong to the
 same subspace of eigenvalue 0 of the anisotropy matrix.
 \describe{
   \item{\code{tol}}{
-    see \command{\link{RPnugget}}
-  } 
+    The nugget tolerance influences two different kind of models
+    \itemize{
+      \item \command{\link{RPnugget}}
+      \item \command{\link{R.is}}
+    }
+    See there for more information.
+  }
 }
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{17. \code{registers}: Register numbers}\cr
@@ -1742,8 +1715,73 @@ The user can use the registers 0..9.
 }
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bold{19. \code{solve}: Options for solving linear systems}
+
+
+\describe{ % to do
+  \item{\code{spam_factor}}{
+    integer. See argument \code{spam_sample_n}.
+
+    Default: 4294967
+  }
+  \item{\code{spam_methods}}{
+
+    Default: \code{c(-1, -1)}
+  }
+  \item{\code{spam_min_n}}{
+    integer. Has the matrix 
+    
+    Default: 400
+  }
+  \item{\code{spam_min_p}}{
+    number in \eqn{(0,1)} giving the proportion of
+    zero about which an sparse matrix algorithm is used.
+
+    Default: \code{0.8}
+  }
+  \item{\code{spam_pivot}}{
+    integer. Pivoting algorithm for sparse matrices:
+    0:none; 1:MMD, 2:RCM
+
+    See package \code{spam} for details.
+
+    Default: 1
+  }
+  \item{\code{spam_sample_n}}{
+    Whether a matrix is sparse or not is tested by a
+    \sQuote{random} sample of size \code{spam_sample_n};
+    The selection of the sample is iteratively
+    obtained by multiplying the index by \code{spam_factor}
+    modulo the size of the matrix.
+
+    Default: 500. 
+  }
+  \item{\code{spam_tol}}{
+    largest absolute value being considered as zero.
+    Default: \code{DBL_EPSILON}
+  }
+  \item{\code{svd_tol}}{
+    positive number, determining what is considered as being numerically
+    zero. \code{svd_tol} gives the proportionality to the mean of the
+    diagonal.
+    
+    Default: \code{1e-8}
+  }
+  \item{\code{use_spam}}{
+    Should the package \code{spam} (sparse matrices)
+    be used for matrix calculations?
+    If \code{TRUE} \pkg{spam} is always used. If \code{FALSE},
+    it is never used. If \code{NA} its use is determined by
+    the size and the sparsity of the matrix.
+    
+    Default: \code{NA}. 
+  }
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{19. \code{special}: Options for specific methods}
+\bold{20. \code{special}: Options for specific methods}
 \describe{
   \item{\code{multicopies}}{Only used by \command{\link{RMmult}}.
     The covariance functions are multiplied if the corresponding
@@ -1754,8 +1792,9 @@ The user can use the registers 0..9.
   }
 }
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{20. \code{spectral}: Options for the spectral (turning bands) method}
+\bold{21. \code{spectral}: Options for the spectral (turning bands) method}
 \describe{
   \item{\code{ergodic}}{
     In case of an additive model and \code{ergodic=FALSE},
@@ -1764,7 +1803,7 @@ The user can use the registers 0..9.
     \code{ergodic=TRUE}, the components are simulated
     separately and then added.
     
-    Default: \code{FALSE} .
+    Default: \code{FALSE}.
   }
 
  \item{\code{prop_factor}}{see \command{\link{RPspectral}}
@@ -1787,7 +1826,7 @@ The user can use the registers 0..9.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{21. \code{tbm}: Options for the turning bands method}
+\bold{22. \code{tbm}: Options for the turning bands method}
 \describe{
   \item{\code{center}}{Scalar or vector.
     If not \code{NA}, the \code{center} is used as the center of
@@ -1884,7 +1923,7 @@ The user can use the registers 0..9.
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bold{22. \code{internal}: Internal options mostly for warnings and
+\bold{23. \code{internal}: Internal options mostly for warnings and
   messages}
 
 All these options should not be changed by the user unless
@@ -1895,6 +1934,19 @@ without the user's notice.
 
 
 \describe{
+
+  \item{\code{do_tests}}{
+    Internal variable. Do not use it.
+    Default: \code{FALSE}.
+  }
+
+  \item{\code{examples_reduced}}{non-negative integer.
+    If positve, then the design of any simulation in \pkg{RandomFields}
+    is internally reduced in size (roughly downto the given value in each
+    direction). Warnings report this behaviour.
+    This option is necessary to run the examples of \pkg{RandomFields}
+    under the time constraint of CRAN.
+    }
  
   \item{\code{stored.init}}{internally used logical argument.
     This option is closely related to 
@@ -1930,6 +1982,13 @@ without the user's notice.
 
     Default: \code{TRUE}.
   }
+  \item{\code{warn_constant}}{
+    The definition of \command{\link{RMconstant}} has changed.
+    A warning is displayed if the command is used. \code{warn_constant}
+    will become obsolete in future versions.
+    
+    Default: \code{TRUE}.
+  }
   
   \item{\code{warn_coordinates}}{internally used logical argument.
     If \code{TRUE} then a transformation from earth coordinates to
@@ -1938,7 +1997,16 @@ without the user's notice.
     Default: \code{TRUE}.
   }
  
-  \item{\code{warn_newAniso}}{internally used logical argument.
+  \item{\code{warn_missing_zenit}}{ % to do
+    Only for Earth systems: a missing zenit is frequently a cause
+    for errors that are difficult to understand. Therefore, in such
+    cases an additional warning message is displayed.
+    
+    Default: \code{TRUE}
+  }
+  
+  \item{\code{warn_newAniso}}{ obsolete.\cr
+    internally used logical argument.
     If \code{newAniso=TRUE} and the argument \code{Aniso} is used in the model
     definition, then a message is displayed that the matrix \code{Aniso}
     is multiplied from the right by \eqn{x}, where up to Version 2.0
@@ -1971,13 +2039,6 @@ without the user's notice.
      Default: \code{TRUE}.
    }
    
-  \item{\code{warn_scale}}{internally used logical argument.
-    If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
-    if earth coordinates are transformed to cartesian coordinates.
-    
-    Default: \code{TRUE}.
-  }
-  
   \item{\code{warn_oldstyle}}{internally used logical argument.
     If \code{TRUE} a warning is given if an obsolete function
     from Version 2 is used.
@@ -1993,9 +2054,24 @@ without the user's notice.
     
     Default: \code{TRUE}.
   }
-
-
+  \item{\code{warn_scale}}{internally used logical argument.
+    If \code{warn_scale=TRUE} then a scale less than 10 [km] is reported
+    if earth coordinates are transformed to cartesian coordinates.
+    
+    Default: \code{TRUE}.
+  }
+  
+  \item{\code{warn_var}}{
+    In some cases, \pkg{RandomFields} cannot detect whether the
+    variance is non-negative. If \code{TRUE} then a warning is displayed
+    in such a case.
+    Default: \code{TRUE}.
+  }
+ 
 }
+
+
+
 
 %\bold{General comments}\cr
 %Most of the above arguments determine the basic settings of a
@@ -2094,6 +2170,7 @@ without the user's notice.
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 RFoptions()
 
 
@@ -2102,7 +2179,7 @@ RFoptions()
 ## use of exactness                                       ##
 ##                                                        ##
 ############################################################
-x <- seq(0, 1, if (interactive()) 1/30 else 0.5)
+x <- seq(0, 1, 1/30)
 model <- RMgauss()
 
 for (exactness in c(NA, FALSE, TRUE)) { 

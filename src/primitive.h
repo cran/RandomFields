@@ -1,3 +1,30 @@
+
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+
 #ifndef Primitives_H
 #define Primitives_H 1
 
@@ -55,6 +82,17 @@ void rangeconstant(cov_model *cov, range_type* ra);
 int checkconstant(cov_model *cov) ;
 
 
+void covariate(double *x, cov_model *cov, double *v);
+int checkcovariate(cov_model *cov);
+void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+void kappa_covariate(int i, cov_model *cov, int *nr, int *nc);
+
+void fix(double *x, double *y, cov_model *cov, double *v);
+int checkfix(cov_model *cov);
+void rangefix(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+void kappa_fix(int i, cov_model *cov, int *nr, int *nc);
+
+
 /* coxgauss, cmp with nsst1 !! */
 // see NonIsoCovFct.cc
 
@@ -89,9 +127,12 @@ int checkdampedcosine(cov_model *cov);
 void dewijsian(double *x, cov_model *cov, double *v);
 void Ddewijsian(double *x, cov_model *cov, double *v);
 void DDdewijsian(double *x, cov_model *cov, double *v);
+void D3dewijsian(double *x, cov_model *cov, double *v);
+void D4dewijsian(double *x, cov_model *cov, double *v);
 void rangedewijsian(cov_model *cov, range_type* ra);
 int checkdewijsian(cov_model *cov);
 void Inversedewijsian(double *x, cov_model *cov, double *v); 
+void coinitdewijsian(cov_model *cov, localinfotype *li);
 
 /* De Wijsian */
 void DeWijsian(double *x, cov_model *cov, double *v);
@@ -147,13 +188,14 @@ void rangeFD(cov_model *cov, range_type* ra);
 void fractGauss(double *x, cov_model *cov, double *v);
 void rangefractGauss(cov_model *cov, range_type* ra);
 
-
+/*
 void fix(double *x, cov_model *cov, double *v);
 void fix_nonstat(double *x, double *y, cov_model *cov, double *v);
-void covmatrix_fix(cov_model *cov, double *v, int  *nonzeros);
+void covmatrix_fix(cov_model *cov, double *v);
 char iscovmatrix_fix(cov_model *cov);
-void rangefix(cov_model *cov, range_type* ra);
 int checkfix(cov_model *cov) ;
+*/
+void rangefix(cov_model *cov, range_type* ra);
 
 /* Gausian model */
 void Gauss(double *x, cov_model *cov, double *v);
@@ -268,6 +310,9 @@ int checklgd1(cov_model *cov);
 /* Whittle-Matern or Whittle or Besset ---- rescaled form of Whittle-Matern,
     see also there */ 
 void Matern(double *x, cov_model *cov, double *v);
+void NonStMatern(double *x, double *y, cov_model *cov, double *v);
+void logNonStMatern(double *x, double*y, 
+		    cov_model *cov, double *v, double *Sign);
 void logMatern(double *x, cov_model *cov, double *v, double *Sign);
 void DMatern(double *x, cov_model *cov, double *v);
 void DDMatern(double *x, cov_model *cov, double *v);
@@ -285,7 +330,7 @@ void InverseMatern(double *x, cov_model *cov, double *v);
 
 /* nugget effect model */
 void nugget(double *x, cov_model *cov, double *v);
-void covmatrix_nugget(cov_model *cov, double *v, int *nonzeros);
+void covmatrix_nugget(cov_model *cov, double *v);
 char iscovmatrix_nugget(cov_model *cov);
 void Inversenugget(double *x, cov_model *cov, double *v); 
 int check_nugget(cov_model *cov);
@@ -366,6 +411,9 @@ void spectralwave(cov_model *cov, gen_storage *s, double *e);
 
 /* Whittle-Matern or Whittle or Besset */ 
 void Whittle(double *x, cov_model *cov, double *v);
+void NonStWhittle(double *x, double *y, cov_model *cov, double *v);
+void logNonStWhittle(double *x, double*y, 
+		    cov_model *cov, double *v, double *Sign);
 void logWhittle(double *x, cov_model *cov, double *v, double *Sign);
 void TBM2Whittle(double *x, cov_model *cov, double *v);
 void DWhittle(double *x, cov_model *cov, double *v);
@@ -381,7 +429,7 @@ double LogMixDensW(double *x, double logV, cov_model *cov);
 void InverseWhittle(double *x, cov_model *cov, double *v);
 
 double WM(double x, double nu, double factor);
-double logWM(double x, double nu, double factor);
+double logWM(double x, double nu1, double nu2, double factor);
 double DWM(double x, double nu, double factor);
 
 void kappa_biGneiting(int i, cov_model *cov, int *nr, int *nc);
@@ -389,7 +437,6 @@ void biGneiting(double *x, cov_model *cov, double *v);
 void DbiGneiting(double *x, cov_model *cov, double *v);
 void DDbiGneiting(double *x, cov_model *cov, double *v);
 int checkbiGneiting(cov_model *cov);
-sortsofparam paramtype_biGneiting(int k, int row, int col) ;
 void rangebiGneiting(cov_model *cov, range_type* ra);
 int initbiGneiting(cov_model *cov, gen_storage *s);
 
@@ -420,12 +467,10 @@ void kappa_biWM(int i, cov_model *cov, int *nr, int *nc);
 void biWM2(double *x, cov_model *cov, double *v);
 void biWM2D(double *x, cov_model *cov, double *v);
 int checkbiWM2(cov_model *cov);
-sortsofparam paramtype_biWM(int k, int row, int col);
 void rangebiWM2(cov_model *cov, range_type* ra);
 int initbiWM2(cov_model *cov, gen_storage *s);
 
 
-sortsofparam paramtype_biWM(int k, int row, int col);
 void rangebiWM2(cov_model *cov, range_type* ra);
 
 
@@ -433,7 +478,6 @@ void kappa_parsWM(int i, cov_model *cov, int *nr, int *nc);
 void parsWM(double *x, cov_model *cov, double *v);
 void parsWMD(double *x, cov_model *cov, double *v);
 int checkparsWM(cov_model *cov);
-sortsofparam paramtype_parsWM(int k, int row, int col);
 void rangeparsWM(cov_model *cov, range_type* ra);
 
  
@@ -444,6 +488,8 @@ void Mathdiv(double *x, cov_model *cov, double *v);
 void Mathc(double *x, cov_model *cov, double *v);
 void rangec(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 int check_c(cov_model *cov);
+void Mathis(double *x, cov_model *cov, double *v);
+void rangeMathIs(cov_model *cov, range_type *range);
 void Mathbind(double *x, cov_model *cov, double *v);
 int check_bind(cov_model *cov);
 void proj(double *x, cov_model *cov, double *v);

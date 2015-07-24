@@ -4,6 +4,7 @@
 #
 #
 #
+#
 #exportPattern("^[^\\.]")
 exportPattern("^RM")
 exportPattern("^RP")
@@ -14,8 +15,13 @@ exportPattern("^R\\.")
 
 
 
-import(graphics)
-import(methods)
+import("graphics")
+import("methods")
+import("grDevices")
+import("stats")
+import("utils")
+
+
 
 #importFrom('raster', raster, projection)
 #importFrom('colorspace', heat_hcl, rainbow_hcl)
@@ -33,6 +39,7 @@ importMethodsFrom("sp", "dimensions")  #"gridded"gibts nicht!
 importFrom('sp', coordinates, CRS, GridTopology, points2grid,
            SpatialPoints, SpatialGridDataFrame, SpatialPointsDataFrame
            )
+importFrom('RandomFieldsUtils', Print)
 #import(sp)
 
 
@@ -43,9 +50,9 @@ importFrom('sp', coordinates, CRS, GridTopology, points2grid,
 export(
 ### internal fcts used for maintainance 
     rfGenerateModels, rfGenerateConstants, rfGenerateTest, rfGenerateMaths,
-    checkExamples, FinalizeExample, Dependencies,
+    checkExamples, StartExample, FinalizeExample, Dependencies,
 ### some functions used in the examples       
-    Print, ScreenDevice,
+    ScreenDevice,
 ### obsolete       
     CondSimu, Covariance, CovarianceFct, CovMatrix,
     DeleteAllRegisters, DeleteRegister, DoSimulateRF,
@@ -63,6 +70,7 @@ export(
     conventional2RFspDataFrame, sp2RF    
        )
 
+## useDynLib(RFutils)
 useDynLib(RandomFields)
 
 # Classes

@@ -8,7 +8,7 @@
 
 \usage{
 
-RPt(phi, nu)
+RPt(phi, boxcox, nu)
 
 }
 
@@ -16,6 +16,10 @@ RPt(phi, nu)
  \item{phi}{the \command{\link{RMmodel}}. If a model for the
  distribution is not specified, \command{\link{RPgauss}} is used as
  default and a covariance model is expected.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{nu}{non-negative number. Degree of freedom.}
 }
 
@@ -51,9 +55,9 @@ RPt(phi, nu)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 model <- RPt(RMexp(), nu=2)
-x <- seq(0, 10, if (interactive()) 0.1 else 2)
+x <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x, x, n=4)
 plot(z)
 

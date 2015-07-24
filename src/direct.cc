@@ -4,7 +4,7 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,28 +42,28 @@ int check_directGauss(cov_model *cov) {
   int j, err ; // taken[MAX DIM],
   direct_param *gp  = &(GLOBAL.direct); //
   
-  ROLE_ASSERT(ROLE_GAUSS);
+  ROLE_ASSERT(ROLE_GAUSS); 
 
   kdefault(cov, DIRECT_METHOD, (int) gp->inversionmethod);
   kdefault(cov, DIRECT_SVDTOL, gp->svdtolerance);
   kdefault(cov, DIRECT_MAXVAR, gp->maxvariables);
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
   if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
       (!loc->distances || cov->xdimprev!=1)) {
     return ERRORDIM;
   } 
 
-  int jj, isotropy[2], 
+  int jj, isotropy[2],  
     endjj = 0;
   if (!isCartesian(cov->isoown)) isotropy[endjj++] = cov->isoown;
-  else isotropy[endjj++] = SYMMETRIC;
+  else isotropy[endjj++] = SymmetricOf(cov->isoown);
   Types type[2] = {PosDefType, VariogramType};
   for (jj=0; jj<endjj; jj++) {
      for (j=0; j<=1; j++) {    
        //printf("direct:: %s %s\n", ISONAMES[isotropy[jj]], TYPENAMES[type[j]]);
 
        //assert(cov->isoown == EARTH_COORD);
-    
+     
       if ((err = CHECK(next, cov->tsdim,  cov->xdimprev, 
 		       type[j], KERNEL, isotropy[jj],
 		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
@@ -76,6 +76,8 @@ int check_directGauss(cov_model *cov) {
 
 
   setbackward(cov, next);
+  KAPPA_BOXCOX;
+  if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
 }
@@ -83,6 +85,8 @@ int check_directGauss(cov_model *cov) {
 
 
 void range_direct(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
+
   range->min[DIRECT_METHOD] = Cholesky;
   range->max[DIRECT_METHOD] = NoFurtherInversionMethod;
   range->pmin[DIRECT_METHOD] = Cholesky;
@@ -117,7 +121,8 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *work=NULL,
     *D=NULL, 
     *SICH=NULL;
-  int err, nonzeros,
+  int 
+    err = NOERROR,
     maxvariab = P0INT(DIRECT_MAXVAR),
     *iwork=NULL;
   int dim=cov->tsdim;
@@ -154,7 +159,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
    if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
       (U =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
    //for SVD/Chol intermediate r esults AND  memory space for do_directGauss:
-      (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL) {
+       (G = (double *)  CALLOC(vdimtot + 1, sizeof(double)))==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
   }  
@@ -165,21 +170,22 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   /* matrix creation part  */
   /* ********************* */
   
-  CovarianceMatrix(next, Cov, &nonzeros);
+  CovarianceMatrix(next, Cov); 
   assert(R_FINITE(Cov[0]));
  
+  //PMI(cov->calling->calling->calling->calling);   
   if (false) {
     long i,j;
     PRINTF("\n");
     for (i=0; i<locpts * vdim; i++) {
        for (j=0; j<locpts * vdim; j++) {
-	 PRINTF("%+2.3f ", Cov[i  + locpts * vdim * j]);
+	 PRINTF("%+2.3e ", Cov[i  + locpts * vdim * j]);
+	 assert(R_FINITE( Cov[i  + locpts * vdim * j]));
        }
        PRINTF("\n");
     }
     assert(false); //
   }
-   
   
   if (!isPosDef(next)) {
     if (isVariogram(next)) {
@@ -237,6 +243,13 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     if (debug) {
       err = ERRORDECOMPOSITION; goto ErrorHandling;
     }   
+
+    //  printf("aaaa\n");
+    //  printf("%d\n", row);
+    // for (int y=0; y< row * row; y++) printf("%d %f ", y, U[y]); printf("\n");
+    //APMI(cov);
+    //BUG;
+
     F77_CALL(dpotrf)("Upper", &row, U, &row, &Err);  
 
     if (false)  {
@@ -258,19 +271,20 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     // F77_NAME(dchdc)(U, &row, &row, G, NULL, &choljob, &err);
     if (Err!=NOERROR) {
       if (PL>=PL_SUBIMPORTANT) { 
-	INDENT; PRINTF("Error code F77_CALL(dpotrf) = %d\n", Err); 
+	INDENT; PRINTF("Error code Cholesky (dpotrf) = %d\n", Err); 
       }
       err=ERRORDECOMPOSITION;
     } else break;
     // try next method : 
     // most common error: singular matrix 
-       
+          
     if (svdtol <= 0.0) break;
     
    case SVD :  // works for any positive semi-definite matrix
      double sum;
      method = SVD; // necessary if the value of method has been Cholesky.
      //               originally
+
      if (vdimtot > maxvariab * 0.8) {
        sprintf(ERRORSTRING_OK, 
 	       "number of points less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD",
@@ -286,6 +300,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
        err=ERRORMEMORYALLOCATION;
        goto ErrorHandling;
      }
+ 
      MEMCOPY(SICH, Cov, sizeof(double) * vdimSqtotSq);
      row=vdimtot;
      // dsvdc destroys the input matrix !!!!!!!!!!!!!!!!!!!!
@@ -300,14 +315,15 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      F77_CALL(dgesdd)("A", &row, &row, SICH, &row, D, U, &row, VT, &row, 
 		      &optim_lwork, &lwork, iwork, &Err);
      if ((err=Err) != NOERROR) {
-       err=ERRORDECOMPOSITION;
+        err=ERRORDECOMPOSITION;
        goto ErrorHandling;
      }
      lwork = (int) optim_lwork;
      if ((work = (double *) MALLOC(sizeof(double) * lwork))==NULL)
        goto ErrorHandling;
+ 
+     //   for (int y=0; y<row * row; y++) printf("%d:%f ", y, SICH[y]);
 
-  
      F77_CALL(dgesdd)("A",  &row,  &row, SICH, &row, D, U, &row, VT, &row, 
 		      work, &lwork, iwork, &Err);
      
@@ -315,7 +331,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      if (err==NOERROR && ISNAN(D[0])) err=9999;
      if (err!=NOERROR) {
        if (PL>PL_ERRORS) { 
-	 LPRINT("Error code F77_CALL(dgesdd) = %d\n", err); 
+	 LPRINT("Error code SVD (dgesdd) = %d\n", err); 
 	   }
        err=ERRORDECOMPOSITION;
        goto ErrorHandling;
@@ -331,7 +347,9 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	     U[k++] *= dummy;
        }
      }
-     
+ 
+     //for (k=0; k<16; k++) printf("%f\n", U[k]); printf("\n");
+
      /* check SVD */
      if (svdtol >=0) {
        for (i=0; i<vdimtot; i++) {
@@ -345,11 +363,16 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 		      Cov[i * vdimtot +k] - sum, i, k, Cov[i* vdimtot +k ], 
 		      sum);
 	     }
-	     GERR3("required precision not attained: probably invalid model.\nSee also parameter '%s' (%e !> %e).", direct[DIRECT_SVDTOL], fabs(Cov[i * vdimtot + k] - sum), svdtol );
+	     GERR3("required precision not attained  (%e !> %e): probably invalid model.\nSee also argument '%s'.", fabs(Cov[i * vdimtot + k] - sum), svdtol, direct[DIRECT_SVDTOL - COMMON_GAUSS- 1] );
 	     goto ErrorHandling;
 	   }
 	 }
        }
+     }
+
+    if ((InversionMethod) P0INT(DIRECT_METHOD)==Cholesky && 
+	PL>=PL_SUBIMPORTANT) {
+       INDENT; PRINTF("SVD ok\n"); 
      }
      break;
   default : BUG;
@@ -391,9 +414,10 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *G = NULL,
     *U = NULL,
     *res = cov->rf;  
+
+
+  SAVE_GAUSS_TRAFO;
   //  int m, n;
-  bool loggauss = GLOBAL.gauss.loggauss;
-   GLOBAL.gauss.loggauss = false;
    // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
   //   APMI(cov);
@@ -416,7 +440,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	for (j=0; j<=i; j++){
 	  dummy += G[j] * Uk[j];
 	}
-	res[i] = (res_type) dummy; 
+	res[i] = (double) dummy; 
 	//	printf("i=%d %f %lu\n", i, res[i], res);
       }
       //   } else {
@@ -428,7 +452,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       //	  for (j=0; j<=i; j++){
       //	    dummy += G[j] * Uk[j];
       //	  }
-      //	  res[n] = (res_type) dummy; 
+      //	  res[n] = (double) dummy; 
       //	  //	printf("%d %f\n", n, res[n]);
       //	}
       //      }
@@ -442,7 +466,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
 	dummy += U[k] * G[j];
       }
-      res[i] = (res_type) dummy; 
+      res[i] = (double) dummy; 
       }
       // } else {
       ///      for (i=m=0; m<vdim; m++) {
@@ -451,7 +475,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       //	  for (j=0, k=i; j<vdimtot; j++, k+=vdimtot){
       //	    dummy += U[k] * G[j];
       //	  }
-      //	  res[n] = (res_type) dummy; 
+      //	  res[n] = (double) dummy; 
       //	}
       //      }
       //    }
@@ -459,10 +483,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   default : BUG;
   }
 
-  if (loggauss) {
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-  }
-  GLOBAL.gauss.loggauss = loggauss;
+  BOXCOX_INVERSE;
 
 }
 

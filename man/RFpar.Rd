@@ -38,7 +38,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 RFpar(col="red")
 plot(RMexp())
 
-\dontshow{FinalizeExample()}
+\dontshow{FinalizeExample(); RFpar(col=NULL)}
 }
 
 \keyword{spatial}

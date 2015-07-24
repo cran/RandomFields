@@ -7,10 +7,14 @@
   
   The package \code{RandomFields} offers various tools for
   \enumerate{
+    \item{\bold{model estimation (ML) and inference (tests)}}
+    for regionalized variables and data analysis,
+
     \item{\bold{simulation}} of different kinds
     of random fields, including
     \itemize{
-      \item multivariate, spatial, spatio-temporal Gaussian random fields,
+      \item multivariate, spatial, spatio-temporal, and non-stationary
+      Gaussian random fields,
       \item Poisson fields, binary fields, Chi2 fields, t fields and
       \item max-stable fields.
     }
@@ -18,11 +22,8 @@
     processes and conditional simulation (for Gaussian random fields,
     currently). 
     
-  
-    \item{\bold{model estimation (ML) and inference (tests)}}
-	for regionalizd variables and data analysis,
-
-    \item{\bold{model estimation}} for (geostatistical) linear (mixed) models
+ 
+   % \item{\bold{model estimation}} for (geostatistical) linear (mixed) models
   }
 
   See \url{http://ms.math.uni-mannheim.de/de/publications/software/}
@@ -36,15 +37,31 @@
   The following features are provided by the package:
   
   \enumerate{
-    \item \bold{Simulation}
+    \item \bold{Bayesian Modelling}
     \itemize{
-      \item \command{\link{RFsimulate}}: Simulation
-      of random fields,
-      including conditional simulation. For a list of all covariance
-      functions and variogram models see \command{\link{RMmodel}}.
-      Use \command{\link{plot}} for visualisation of the result.
+      \item See \link{Bayesian Modelling} for an introduction to
+      hierarchical modelling 
     }
-      
+
+        
+     \item \bold{Coordinate systems}
+    \itemize{
+      \item Cartesian, earth and spherical coordinates are
+      recognized, see \link{coordinate systems} for details.
+      \item a list of valid models is given by
+      \link{spherical models}.
+    }
+     
+    \item \bold{Data and example studies}:
+    Some data sets and published code are provided to illustrate the
+    syntax and structure of the package functions. 
+    \itemize{
+      \item \code{\link{soil}} : soil physical data
+      \item \code{\link{weather}} : UWME weather data
+      \item \code{\link{papers}} : code used in the papers published by
+      the author(s)
+    }
+     
     \item \bold{ Estimation of parameters (for second-order random fields)}
     \itemize{ 
       \item \command{\link{RFfit}} : general function for estimating
@@ -55,19 +72,20 @@
       \item \command{\link{RFempiricalvariogram}} : calculates
       the empirical variogram 
     }
-   
     
-    
-    \item \bold{Prediction (for second-order random fields)} 
+   \item \bold{Graphics}
     \itemize{
-      \item \command{\link{RFinterpolate}} : kriging, including imputing
+      \item Fitting a covariance function manually
+      \command{\link{RFgui}}
+      \item the generic function \command{\link[graphics]{plot}}
+      \item global graphical parameters with \command{\link{RFpar}}
     }
-    
-    
+
     \item \bold{Inference (for Gaussian random fields)} 
     \itemize{
       \item \command{\link{RFcrossvalidate}} : cross validation
-      \item \command{\link{RFratiotest}} : likelihood ratio test
+      \item \command{\link{RFlikelihood}} : likelihood
+     \item \command{\link{RFratiotest}} : likelihood ratio test
       \item \command{\link[=AIC.RF_fit]{AIC}}, 
       \command{\link[=AICc.RF_fit]{AICc}},
       \command{\link[=BIC.RF_fit]{BIC}}, \command{\link[=anova.RF_fit]{anova}},
@@ -76,9 +94,12 @@
    
     
     \item \bold{Models}
-    \itemize{ 
-      \item For a list of covariance and variogram models --e.g. for
-      \bold{geostatistical} purposes-- see \command{\link{RMmodel}}. More
+    \itemize{
+      \item For an introduction an general properties, see
+      \link{RMmodels}.
+      \item For an overview over classes of
+      covariance and variogram models --e.g. for
+      \bold{geostatistical} purposes-- see \link{RM}. More
       sophisticated models 
       and covariance function operators are included. 
       \item To apply the offered package procedures to \bold{mixed models}
@@ -89,36 +110,26 @@
       For a quick impression use \code{\link{plot}(model)}.
       \item non-definte models are evaluated by \command{\link{RFfctn}} and
       \command{\link{RFcalc}}
+      \item \command{\link{RFlinearpart}} returns the linear part of a
+      model
+      \item \command{\link{RFboxcox}} deals explicitely with Box-Cox
+      transformations. In many cases it is performed implicitely.
     }
     
+    \item \bold{Prediction (for second-order random fields)} 
+    \itemize{
+      \item \command{\link{RFinterpolate}} : kriging, including imputing
+    }
     
-    \item \bold{Data and example studies}:
-    Some data sets and published code are provided to illustrate the
-    syntax and structure of the package functions. 
+    \item \bold{Simulation}
     \itemize{
-      \item \code{\link{soil}} : soil physical data
-      \item \code{\link{weather}} : UWME weather data
-      \item \code{\link{papers}} : code used in the papers published by
-      the author(s)
+      \item \command{\link{RFsimulate}}: Simulation
+      of random fields,
+      including conditional simulation. For a list of all covariance
+      functions and variogram models see \command{\link{RM}}.
+      Use \command{\link{plot}} for visualisation of the result.
     }
-
-
-    \item \bold{Graphics}
-    \itemize{
-      \item Fitting a covariance function manually
-      \command{\link{RFgui}}
-      \item the generic function \command{\link[graphics]{plot}}
-      \item global graphical parameters with \command{\link{RFpar}}
-    }
-      
-    \item \bold{Coordinate systems}
-    \itemize{
-      \item Cartesian, earth and spherical coordinates are
-      recognized, see \link{coordinate systems} for details.
-      \item a list of valid models is given by
-      \link{spherical models}.
-    }
-      
+    
     \item \bold{S3 and S4 objects}
     \itemize{      
       \item The functions return S4 objects
@@ -152,8 +163,7 @@
 %      information obtained from \code{summary}. See examples below.
     }
       
-    
-    \item \bold{Advanced} users, package programmers
+    \item  \bold{Xtended} features, especially for package programmers
     \itemize{
       \item might  decide on a large variety of arguments of the 
       simulation and estimation procedures using the function
@@ -164,6 +174,7 @@
     }
   }
 }
+
 \section{Changings}{
   A list of major changings from  Version 2 to Version 3 can be found
   in \link{MajorRevisions}.
@@ -181,16 +192,14 @@
 % }
 
 
-
-
 \seealso{
   See also  \link{RF}, \link{RM}, \link{RP}, \link{RR}, \link{RC}, \link{R.}
 }
  
  
 \note{
-  The following packages enable further
-  features in RandomFields:
+  The following packages enable further choices for the optimizer
+  (instead of \command{optim}) in RandomFields:
   \pkg{optimx}, \pkg{soma}, \pkg{GenSA}, \pkg{minqa}, \pkg{pso},
   \pkg{DEoptim}, \pkg{nloptr}, \pkg{RColorBrewer}, \pkg{colorspace}
 }
@@ -284,17 +293,17 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 # simulate some data first (Gaussian random field with exponential
 # covariance; 6 realisations)
 model <- RMexp()
-x <- seq(0, 10, if (interactive()) 0.1 else 1)
+x <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x, x, n=6)
 
 ## select some data from the simulated data
-xy <- as.matrix(expand.grid(x=x, y=x))
-pts <- sample(nrow(xy), 100)
-data <- matrix(ncol=6, as.vector(z))[pts, ]
+xy <- coordinates(z)
+pts <- sample(nrow(xy), min(100, nrow(xy) / 2))
+data <- matrix(nrow=nrow(xy), as.vector(z))[pts, ]
 data <- cbind(xy[pts, ], data)
 plot(z, data)
 

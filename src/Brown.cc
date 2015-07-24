@@ -42,6 +42,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Brown Resnick
 
 int checkBrownResnickProc(cov_model *cov) {
+
+  NotProgrammedYet("at the moment Brown-Resnick processes");
+
   cov_model  
     *key = cov->key,
     *sub = key != NULL ? key :
@@ -51,7 +54,8 @@ int checkBrownResnickProc(cov_model *cov) {
   isotropy_type isoprev;
   Types type;
 
-  
+  ASSERT_CARTESIAN;
+
   ASSERT_ONE_SUBMODEL(cov);
   if ((err = SetGEVetc(cov, ROLE_BROWNRESNICK)) != NOERROR) return err;
   
@@ -103,8 +107,7 @@ int init_BRorig(cov_model *cov, gen_storage *s){
   
   keyloc = Loc(key);
   keygrid = keyloc->grid;
-  
-  GLOBAL.gauss.loggauss = false; 
+
   key->simu.active = true;
   key->simu.expected_number_simu = cov->simu.expected_number_simu;
   
@@ -135,10 +138,10 @@ int init_BRorig(cov_model *cov, gen_storage *s){
   
   if ((err = loc_set(keygrid ? keyloc->xgr[0] : keyloc->x, NULL, NULL, dim,
 	             dim, keygrid ? 3 : keyloc->totalpoints, 0, false, keygrid,
-		     keyloc->distances, &Loc(cov->Sbr->vario))) > NOERROR)
+		     keyloc->distances, cov->Sbr->vario)) > NOERROR)
     goto ErrorHandling;
   if (sBR->vario->sub[0] != NULL) 
-    SetLoc2NewLoc(sBR->vario->sub[0], Loc(sBR->vario));
+    SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));
   Variogram(NULL, sBR->vario, sBR->trend[ORIG_IDX]);
   
   if ((err = FieldReturn(cov)) != NOERROR)  // must be later than INIT !
@@ -154,7 +157,7 @@ void do_BRorig(cov_model *cov, gen_storage *s) {
   assert(key != NULL);
   br_storage *sBR = cov->Sbr;
   assert(sBR != NULL && sBR->trend != NULL);
-  res_type *res = cov->rf;
+  double *res = cov->rf;
 #define ORIG_IDX 0
   int i,
     zeropos = sBR->zeropos[ORIG_IDX];
@@ -167,7 +170,7 @@ void do_BRorig(cov_model *cov, gen_storage *s) {
 
   
   DO(key, s); // nicht gatternr,
-  res_type *lgres = key->rf;
+  double *lgres = key->rf;
   double lgreszeropos = (double) lgres[zeropos]; // wird durch DO veraendert!
   for (i=0; i<totalpoints; i++) {
     res[i] = lgres[i] - lgreszeropos - trend[i];
@@ -177,13 +180,13 @@ void do_BRorig(cov_model *cov, gen_storage *s) {
 int init_BRshifted(cov_model *cov, gen_storage *s) {
   cov_model *key=cov->key;
   location_type *keyloc = NULL;
-  int d, dim, err;
+  int d, dim,
+    err = NOERROR;
   long j, shiftedloclen, keytotal, trendlenmax, trendlenneeded;
   bool keygrid;
   br_storage *sBR = NULL;
   
-  
-    if (cov->role == ROLE_BROWNRESNICK) {
+  if (cov->role == ROLE_BROWNRESNICK) {
     
     if (key != NULL) {
       dim = cov->tsdim; 
@@ -200,7 +203,6 @@ int init_BRshifted(cov_model *cov, gen_storage *s) {
       keygrid = keyloc->grid;
       keytotal = keyloc->totalpoints;
       
-      GLOBAL.gauss.loggauss = false;
       key->simu.active = true;
       key->simu.expected_number_simu = cov->simu.expected_number_simu; 
       assert(cov->mpp.moments >= 1);
@@ -254,22 +256,23 @@ int init_BRshifted(cov_model *cov, gen_storage *s) {
       
       if ((err = loc_set(keygrid ? keyloc->xgr[0] : keyloc->x, NULL, NULL, dim,
 	                 dim, keygrid ? 3 : keytotal, 0, false, keygrid,
-	                 keyloc->distances, &Loc(sBR->vario))) > NOERROR)
+	                 keyloc->distances, sBR->vario)) > NOERROR)
         return err;
       if (sBR->vario->sub[0] != NULL) 
-        SetLoc2NewLoc(sBR->vario->sub[0], Loc(sBR->vario));   
+        SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));   
       
       if ((err = FieldReturn(cov)) != NOERROR)  // must be later than INIT !
         return err;
     }
         
-    return NOERROR;
+    goto ErrorHandling; // no error
+    
   }
   
   else ILLEGAL_ROLE;
   
   ErrorHandling:
-    br_DELETE(&(cov->Sbr));
+    if (err != NOERROR) br_DELETE(&(cov->Sbr));
     return err;
 
 }
@@ -300,8 +303,8 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
     **xgr = keyloc->xgr,
     **trend = sBR->trend;
   assert(cov->origrf);
-  res_type *res = cov->rf;
-  res_type *lgres = cov->key->rf;
+  double *res = cov->rf;
+  double *lgres = cov->key->rf;
 
   DO(key, s);
   zeropos = (long) floor(UNIFORM_RANDOM * keytotal);
@@ -338,7 +341,7 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
 		    keygrid ? 3: keytotal, 0, keyloc->distances,
 		    dim, NULL, keygrid, true);
     if (sBR->vario->sub[0] != NULL) 
-        SetLoc2NewLoc(sBR->vario->sub[0], Loc(sBR->vario));
+        SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));
     Variogram(NULL, sBR->vario, sBR->trend[trendindex]);
     
     mem2loc[trendindex] = zeropos; // todo ? long instead of int
@@ -352,6 +355,7 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
 }
 
 int check_BRmixed(cov_model *cov) {
+  NotProgrammedYet("at the moment Brown-Resnick processes");
   
   int err;
   br_param *bp = &(GLOBAL.br);
@@ -660,14 +664,14 @@ void set_lowerbounds(cov_model *cov) {
 int init_BRmixed(cov_model *cov, gen_storage *s) {
   location_type 
     *loc = Loc(cov);
-  int  i, d, err, 
-     dim = cov->tsdim,
+  int  i, d, 
+    err = NOERROR, 
+    dim = cov->tsdim,
     bytes = sizeof(double) * dim;
   br_storage *sBR = cov->Sbr;
   assert(sBR != NULL);
   assert(sBR->sub[0] != NULL);
   pgs_storage *pgs = NULL;
-
   
   assert(isPointShape(cov));
   if (cov->role != ROLE_BROWNRESNICK) ILLEGAL_ROLE;
@@ -714,7 +718,7 @@ int init_BRmixed(cov_model *cov, gen_storage *s) {
     assert(keyloc->grid);
  
     assert(key->nr == GAUSSPROC);
-    GLOBAL.gauss.loggauss = false;
+
     key->simu.expected_number_simu = cov->simu.expected_number_simu;     
     assert(cov->mpp.moments >= 1);
     if ((err = INIT(key, 1, s)) != NOERROR) goto ErrorHandling;
@@ -733,10 +737,10 @@ int init_BRmixed(cov_model *cov, gen_storage *s) {
     
     if ((err = loc_set(keyloc->xgr[0], NULL, NULL, dim, dim, 3, 0,
 		       false, true, keyloc->distances, 
-		       &Loc(sBR->vario))) > NOERROR) goto ErrorHandling;
+		       sBR->vario)) > NOERROR) goto ErrorHandling;
 
     if (sBR->vario->sub[0] != NULL)
-      SetLoc2NewLoc(sBR->vario->sub[0], Loc(sBR->vario));
+      SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));
     Variogram(NULL, sBR->vario, sBR->trend[i]);
 
    
@@ -757,10 +761,9 @@ int init_BRmixed(cov_model *cov, gen_storage *s) {
   pgs->n_zhou_c = 0;
   sBR->next_am_check = GLOBAL.br.deltaAM;
 
-  return NOERROR;
-
+ 
  ErrorHandling:
-  br_DELETE(&(cov->Sbr));
+  if (err != NOERROR) br_DELETE(&(cov->Sbr));
 
   return err;
 
@@ -855,7 +858,7 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
     set_lowerbounds(cov);
   }
 
-  res_type  
+  double  
     *lgres = key->rf; // == cov->rf
   assert(cov->rf == key->rf);
   assert(keyloc->grid);
@@ -1039,8 +1042,8 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
   assert(isBRuserProcess(cov));  
   
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID);
-    SetLoc2NewLoc(sub, Loc(cov));
+    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    SetLoc2NewLoc(sub, PLoc(cov));
   }
   
   loc = Loc(cov);
@@ -1072,11 +1075,11 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
   }
 
   if ((err = loc_set(newx, NULL, dim, dim, newxlen, false, loc->grid,
-                     loc->distances,  &(cov->ownloc))) > NOERROR)
+                     loc->distances,  cov)) > NOERROR)
     goto ErrorHandling;
-  SetLoc2NewLoc(sub, cov->ownloc);
+  SetLoc2NewLoc(sub, PLoc(cov));
 
-  if ((err=covcpy(&(cov->key), sub)) > NOERROR) goto ErrorHandling;
+  if ((err=covCpy(&(cov->key), sub)) > NOERROR) goto ErrorHandling;
   
   if (cov->sub[MPP_TCF] != NULL) {
      if ((err = STRUCT(sub, &(cov->key))) > NOERROR) goto ErrorHandling;
@@ -1158,16 +1161,16 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
   if (cov->sub[MPP_TCF] != NULL) {
     if ((err = STRUCT(sub, &(cov->key))) > NOERROR) goto ErrorHandling;
     cov->key->calling = cov;
-  } else if ((err=covcpy(&(cov->key), sub)) > NOERROR) goto ErrorHandling;
+  } else if ((err=covCpy(&(cov->key), sub)) > NOERROR) goto ErrorHandling;
  
   if ((err = CHECK(cov->key, dim, dim, VariogramType, cov->domown, SYMMETRIC, 
 		   1, ROLE_COV)) != NOERROR) goto ErrorHandling;  
 
-  if ((err = covcpy(&(sBR->submodel), cov->key)) != NOERROR) goto ErrorHandling;
+  if ((err = covCpy(&(sBR->submodel), cov->key)) != NOERROR) goto ErrorHandling;
   if ((err = CHECK(sBR->submodel, 1, 1, VariogramType, XONLY, 
 		   ISOTROPIC, 1, ROLE_COV)) != NOERROR) goto ErrorHandling;
   
-  if ((err = newmodel_covcpy(&(sBR->vario), VARIOGRAM_CALL, cov->key))!=NOERROR)
+  if ((err = newmodel_covCpy(&(sBR->vario), VARIOGRAM_CALL, cov->key))!=NOERROR)
       goto ErrorHandling;
   if ((err = alloc_cov(sBR->vario, dim, 1, 1)) != NOERROR) goto ErrorHandling;
 	
@@ -1284,7 +1287,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       err = ERRORMEMORYALLOCATION; goto ErrorHandling;
    }
    for (i=0; i<=sBR->maxidx; i++) {
-      if ((err = covcpy(sBR->sub + i, cov->key)) != NOERROR) goto ErrorHandling;
+      if ((err = covCpy(sBR->sub + i, cov->key)) != NOERROR) goto ErrorHandling;
       for (d=0; d<dim; d++) {
 	sBR->newx[3*d+XSTART] = -sBR->radii[i];
 	sBR->newx[3*d+XLENGTH] = 2 * ((int) round(sBR->radii[i] / step)) + 1;
@@ -1292,7 +1295,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       }
 
       err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, 
-                  false, &(sBR->sub[i]->ownloc));
+		    false, sBR->sub[i]);
       double **subxgr = Loc(sBR->sub[i])->xgr;
       for (zeropos = 0, d = dim; d > 0; d--) {
 	double len =  subxgr[d-1][XLENGTH];
@@ -1321,11 +1324,11 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
   if (sBR->newx == NULL) {
     if ((err = loc_set(grid ? * loc->xgr : loc->x, NULL, dim, dim,
 		       grid ? 3 : loc->totalpoints, false, grid,
-		       loc->distances, &(cov->key->ownloc))) != NOERROR)
+		       loc->distances, cov->key)) != NOERROR)
       goto ErrorHandling;
   } else {
     if ((err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, false,
-		       &(cov->key->ownloc))) != NOERROR) goto ErrorHandling;
+		       cov->key)) != NOERROR) goto ErrorHandling;
   }
   xgr = loc->xgr;
 
@@ -1368,8 +1371,8 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
   
   if (cov->role != ROLE_BROWNRESNICK) BUG;
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID);
-    SetLoc2NewLoc(next, Loc(cov));
+    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    SetLoc2NewLoc(next, PLoc(cov));
   }
   loc = Loc(cov);
   
@@ -1425,7 +1428,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
       role = isVariogram(next) ? ROLE_COV : ROLE_UNDEFINED;
 	
       ASSERT_ROLE_DEFINED(next);  
-      if (((err = covcpy(&(cov->key), next)) != NOERROR)
+      if (((err = covCpy(&(cov->key), next)) != NOERROR)
          || ((err = CHECK(cov->key, dim, dim, VariogramType, XONLY,
 			  SYMMETRIC, 1, role)) != NOERROR)) {
 	return err;
@@ -1435,11 +1438,11 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
       for (d=0; d<MAXMPPDIM; d++) maxdist[d] = 0.5*(maxloc[d] - minloc[d]);
    
       cov_model *K = NULL;
-      if ((err = newmodel_covcpy(&K, VARIOGRAM_CALL, cov->key, maxdist, NULL,
+      if ((err = newmodel_covCpy(&K, VARIOGRAM_CALL, cov->key, maxdist, NULL,
 				 NULL, dim, dim, 1, 0, false, false, false))
 	  != NOERROR) return err;
       if ((err = alloc_cov(K, dim, 1, 1)) != NOERROR) return err;
-      if (K->sub[0] != NULL) SetLoc2NewLoc(K->sub[0], Loc(K));
+      if (K->sub[0] != NULL) SetLoc2NewLoc(K->sub[0], PLoc(K));
       Variogram(NULL, K, &maxcov);
       COV_DELETE(&K);
       if (isPosDef(next) || maxcov <= 4.0) {
@@ -1452,7 +1455,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
 
       addModel(&(cov->key), meth, cov);
       cov_model *key = cov->key;
-      key->prevloc = loc;
+      key->prevloc = PLoc(cov);
       
       kdefault(key, GEV_XI, P0(GEV_XI));
       kdefault(key, GEV_MU, P0(GEV_MU));

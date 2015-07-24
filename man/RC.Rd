@@ -10,8 +10,11 @@
 \alias{RC_CARTESIAN_COORD}
 \alias{RC_GNOMONIC_PROJ}
 \alias{RC_ORTHOGRAPHIC_PROJ}
-\alias{RC_EARTH_COORD}
-\alias{RC_SPHERICAL_COORD}
+\alias{RC_EARTH_COORDS}
+\alias{RC_SPHERICAL_COORDS}
+\alias{RC_OPTIMISER_NAMES}
+\alias{RC_NLOPTR_NAMES}
+\alias{RC_LIKELIHOOD_NAMES}
 
 \title{Constants used in RandomFields (RC constants)}
 \description{
@@ -61,12 +64,25 @@
   the  orthographic
   projection, see also \code{zenit} in \code{\link{RFoptions}}.
 
-  \code{RC_EARTH_COORD} gives the numerical code for option
+  \code{RC_EARTH_COORDS} gives the numerical code for option
   \code{"earth coordinates"}
 
-  \code{RC_SPHERICAL_COORD} gives the numerical code for option
+  \code{RC_SPHERICAL_COORDS} gives the numerical code for option
   \code{"earth coordinates"}
+
+  \code{RC_OPTIMISER_NAMES} and \code{RC_NLOPTR_NAMES} give the
+  names for the options \code{optimiser} and \code{algorithm},
+  respectively, \code{RFfitoptimiser}.
+
+  \code{RC_LIKELIHOOD_NAMES = c("auto", "full", "composite",
+    "tesselation")}
+  gives the names of the ML variants: (i) internal
+  choice according to the
+  number of data, (ii) full likelihood, (iii) (pairwise) composite likelihood,
+  and (iv) composite likelihood based on a tesselation of the space.
+    
 }
+
 
 \seealso{
   \link{RF},   \link{RM},  \link{RP}, \link{RR}, \link{R.},
@@ -85,7 +101,8 @@
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-RC_ISONAMES[1:5]
+RC_ISONAMES
+RC_ISONAMES[RC_ISOTROPIC:RC_CARTESIAN_COORD + 1]
 RFgetModelNames(isotropy=RC_ISONAMES[RC_ISOTROPIC:RC_CARTESIAN_COORD + 1])
 \dontshow{FinalizeExample()}
 }

@@ -54,16 +54,16 @@
 }
 
 \usage{
-RPcirculant(phi, force, mmin, strategy,
+RPcirculant(phi, boxcox, force, mmin, strategy,
  maxGB, maxmem,  tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid)
 
-RPcutoff(phi, force, mmin, strategy,
+RPcutoff(phi, boxcox, force, mmin, strategy,
  maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, a) 
  
 
-RPintrinsic(phi, force, mmin, strategy,
+RPintrinsic(phi, boxcox, force, mmin, strategy,
  maxGB, maxmem, tolIm, tolRe, trials, useprimes, dependent,
  approx_step, approx_maxgrid, diameter, rawR) 
 }
@@ -71,6 +71,10 @@ RPintrinsic(phi, force, mmin, strategy,
 \arguments{
  \item{phi}{See \command{\link{RPgauss}}}
 % \item{loggauss}{See \command{\link{RPgauss}}}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{force}{
    Logical. Circulant embedding does not work
    if the constructed circulant

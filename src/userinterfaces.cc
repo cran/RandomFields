@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,67 +39,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 const char * OPTIM_VAR_NAMES[nOptimVar] = 
   {"never", "respect bounds", "try", "yes"}; // keep yes last !!
 
-#define nOptimiser 8
-const char * OPTIMISER_NAMES[nOptimiser] = 
-  {"optim", "optimx", "soma", "nloptr", "GenSA", "minqa", "pso", "DEoptim"
-  }; 
-
-
-#define nNLOPTR 15
-const char *NLOPTR_NAMES[nNLOPTR] = 
-  //                     Zeiten fuer ein Bsp; besser als optim?
-  // optim 3.6
-  // optimx 3.5
-  {"NLOPT_GN_DIRECT", //  4.1 ; +- ; laufen nicht an den Rand heran!!
-   "NLOPT_GN_DIRECT_L", //
-   "NLOPT_GN_DIRECT_L_RAND", // 
-   "NLOPT_GN_DIRECT_NOSCAL", //
-   "NLOPT_GN_DIRECT_L_NOSCAL", //
-   "NLOPT_GN_DIRECT_L_RAND_NOSCAL", //
-   "NLOPT_GN_ORIG_DIRECT", // 3.
-   "NLOPT_GN_ORIG_DIRECT_L", //
-   //"NLOPT_GD_STOGO", // benoetigt gradienten (b. g.)
-   // "NLOPT_GD_STOGO_RAND", // b. g.
-   // "NLOPT_LD_SLSQP", //   b. g.
-   //"NLOPT_LD_LBFGS_NOCEDAL", // b. g.
-   // "NLOPT_LD_LBFGS", //   b. g.
-   "NLOPT_LN_PRAXIS", // 3.1; eher schlechter als optim
-   // "NLOPT_LD_VAR1", // b. g.
-   // "NLOPT_LD_VAR2", //  b. g.
-   // "NLOPT_LD_TNEWTON", // b. g.
-   // "NLOPT_LD_TNEWTON_RESTART", //  b. g.
-   //"NLOPT_LD_TNEWTON_PRECOND", // b. g.
-   //"NLOPT_LD_TNEWTON_PRECOND_RESTART", // b. g.
-   "NLOPT_GN_CRS2_LM",// 3.8; gut; viel naeher am Rand als die obigen _GN_
-   // "NLOPT_GN_MLSL", //  b. g.
-   //"NLOPT_GD_MLSL", // b. g.
-   //"NLOPT_GN_MLSL_LDS", //  b. g.
-   // "NLOPT_GD_MLSL_LDS", // b. g.
-   //"NLOPT_LD_MMA", //  b. g.
-   "NLOPT_LN_COBYLA", // 1.9; laeuft vollstaendig ran
-   //  "NLOPT_LN_NEWUOA", // funktioniert nicht. Grund nicht nachgeschaut
-   //"NLOPT_LN_NEWUOA_BOUND", // funktioniert nicht. Grund nicht nachgeschaut
-   "NLOPT_LN_NELDERMEAD", // 0.8 !!  laeuft vollstaendig ran
-   "NLOPT_LN_SBPLX", // 2.6;   laeuft vollstaendig ran
-   // "NLOPT_LN_AUGLAG", // b. g.
-   // "NLOPT_LD_AUGLAG", // b. g.
-   //   "NLOPT_LN_AUGLAG_EQ", //  b. g.
-   //   "NLOPT_LD_AUGLAG_EQ", // b. g.
-   "NLOPT_LN_BOBYQA", // 1.8 !! Und ist genauso gut wie optim im Bsp!!
-   "NLOPT_GN_ISRES" // aehnlich NLOPT_GN_CRS2_LM
-  }; 
-
-#define nLikelihood 4
-const char * LIKELIHOOD_NAMES[nLikelihood] = 
-  {"auto", "full", "composite", "selection"}; 
-
 void ResetWarnings(int * all) {
   internal_param *w = &(GLOBAL.internal);
   w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = 
     w->warn_normal_mode = w->warn_mode = w->warn_coordinates =
     w->warn_on_grid = w->warn_new_definitions = w->warn_aspect_ratio = 
     w->warn_coord_change = w->warn_color_palette = w->warn_zenit =
-    w->warn_constant = w->warn_var = 
+    w->warn_constant = w->warn_negvar = w->warn_onlyvar =
     true;
   if (*all) w->warn_ambiguous = true;
 }
@@ -109,47 +55,84 @@ void GetCurrentNrOfModels(int *init, int *nr) {
   *nr = currentNrCov;
 }
 
-
-
+#define startmode normal
+#define NM ((int) startmode)   /* normal mode */
 //       {careless, sloppy, easygoing, normal, precise, pedantic, neurotic}
-bool skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
+bool 
   allowdistance0[nr_modes] = {true, false, false, false, false, false, false},
+  skipchecks[nr_modes] =  {true, false, false, false, false, false, false},
   ce_force[nr_modes] =       {true, true, true, false, false, false, false},
   ce_dependent[nr_modes] =   {true, true, true, false, false, false, false},
-  grid[nr_modes] =           {true, true, true, true, true, false, false},
-  fit_split[nr_modes] =      {false,  true,  true, true, true, true, true},
-  fit_refine[nr_modes] =     {false, false, false, true, true, true, true},
-  fit_reoptimise[nr_modes] = {false, false, false, true, true, true, true},
+  sp_grid[nr_modes] =           {true, true, true, true, true, false, false},
+  fit_reoptimise[nr_modes] = {false, false, false, false, true, true, true},
   fit_ratiotest_approx[nr_modes]={true, true, true, true, false, false, false},
   fit_cross_refit[nr_modes] = {false, false, false, false, true, true, true}
   ;
 char pch[nr_modes] =         {'\0',  '\0',  '\0',  '.',   '.',   '.',   '.'}
   ;
 int locmaxn[nr_modes] =      {3000, 4000, 6000, 8000, 9000, 10000000, 10000000},
-  ce_trials[nr_modes] =      {1,    1,    2,    3,    4,    5,   6},
+  ce_trials[nr_modes] =      {1,    2,    3,    3,    4,    5,   6},
   spectral_lines[nr_modes] = {300, 500, 1500,  2500, 3500, 5000, 10000},
-  tbm_lines[nr_modes] =      {40,   40,   50,   60,   80,   100,   200},
+  tbm_lines[nr_modes] =      {30,   40,   50,   60,   80,   100,   200},
   mpp_n_estim_E[nr_modes] =  {10000, 10000, 20000,50000,80000,100000,1000000},
   hyper_superpos[nr_modes] = {200, 300, 450, 700, 1000, 2000, 5000},
+  maxclique[nr_modes] =      {1000, 2000, 3500, 5000, 6000, 7000, 10000000},
   fit_critical[nr_modes] =   {-1,  -1,   -1,   0,   1,   2,   3}, 
-  fit_ncrit[nr_modes] =      { 2,   4,    5,   5,   10,  10,  20}, 
-  fit_optim_var[nr_modes] =  { 2,   2,    2,   2,   1,   1,   1} ,
+  fit_ncrit[nr_modes] =      { 2,   4,    5,   5,   5,  10,  20}, 
+  //  fit_optim_var[nr_modes] =  { 2,   2,    2,   2,   1,   1,   1} ,
+  fit_split[nr_modes] =      {10000,  5,  4, 4, 4, 3, 3},
   sequ_back_initial[nr_modes]={3,   3,    5,  10,  20,  30,  40}
   ;
-double exactness[nr_modes] = {false, false, false, RF_NA, true, true, true},
+double 
   matrixtolerance[nr_modes] ={1e-6,  1e-6,  1e-6,  1e-12,   1e-14, 0, 0},
-  ce_tolIm[nr_modes] =       {1e2,  1e1,  1e-1,  1e-3,   1e-7, 0, 0},
+  exactness[nr_modes] = {false, false, false, RF_NA, true, true, true},
   ce_tolRe[nr_modes] =       {-1e2,  -1e1,  -1e-3, -1e-7,  -1e-14, 0, 0},
-  ce_approx_step[nr_modes] = {1.0,  1.0,   1.0, 1.0, 0.0, 0.0, 0.0},
-  direct_tol[nr_modes] =     {1e-5, 1e-8, 1e-10, 1e-12, 1e-14, 0, 0},
+  ce_tolIm[nr_modes] =       {1e2,  1e1,  1e-1,  1e-3,   1e-7, 0, 0},
+  ce_approx_step[nr_modes] = {1.0,  1.0,   RF_NA, RF_NA, RF_NA, 0.0, 0.0},
+  direct_tol[nr_modes] =     {1e-5, 1e-7, 1e-8, 1e-9, 1e-11, 1e-13, 0},
   nugget_tol[nr_modes] =     {1e-8, 1e-8, 1e-12, 0,     0,     0,     0},
   tbm_linefactor[nr_modes] = {1.5,  1.5,  1.7,   2.0,  3.0,  5.0,  6.0},
   mpp_intensity[nr_modes] =  {50, 50, 80, 100, 200, 500, 1000},
   mpp_zero[nr_modes] =       {1e-2, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7},
-  max_max_gauss[nr_modes] =  {2,    2,    3,    4,    5,   6,   6}
-  ;
+  max_max_gauss[nr_modes] =  {2,    2,    3,    4,    5,   6,   6},
+  fit_pgtol[nr_modes]       ={10, 1e-2, 1e-3, 1e-4, 1e-4, 1e-6, 0},
+  fit_pgtol_recall[nr_modes]={10, 1e-1, 1e-2, 1e-3, 1e-3, 1e-4, 0},
+  fit_factr[nr_modes]       ={1e14, 1e13, 1e12, 1e11, 1e11, 1e9, 1e7},
+  fit_factr_recall[nr_modes]={1e15, 1e14, 1e13, 1e12, 1e12, 1e10, 1e8}
+   ;
 
-const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "optimx", "optimx"}; // to do optimx
+const char *f_opt[nr_modes] = {"optim", "optim", "optim", "optim", "optim", "optim", "optim"}; // to do optimx
+
+
+int PL=C_PRINTLEVEL, 
+    NS=NAT_SCALE;
+globalparam GLOBAL = {
+  general_START,
+  gauss_START,
+  krige_START, 
+  ce_START,
+  spectral_START,
+  tbm_START,
+  direct_START,
+  sequ_START,
+  ave_START,
+  nugget_START,
+  mpp_START,
+  hyper_START,
+  extreme_START,
+  br_START,
+  distr_START,
+  fit_START, 
+  empvario_START, 
+  gui_START,  
+  graphics_START,
+  register_START,
+  internal_START,
+  coords_START, 
+  special_START,
+  solve_param_default // solve
+};
+ 
 
 void SetDefaultOutputModeValues(output_modes mode){
   general_param *gp = &(GLOBAL.general);
@@ -172,6 +155,7 @@ void SetDefaultOutputModeValues(output_modes mode){
   */
 }
 
+
 void SetDefaultModeValues(int old, int m){
   int i;
   //                      high  fast, normal, save, pedantic
@@ -181,9 +165,9 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.general.matrixtolerance = matrixtolerance[m];
   GLOBAL.general.allowdist0 = allowdistance0[m];
   GLOBAL.krige.locmaxn = locmaxn[m];
-  GLOBAL.krige.locsplitn[0]  = (locmaxn[m] * 5) / 8;
-  GLOBAL.krige.locsplitn[1]  = locmaxn[m] / 40;
-  GLOBAL.krige.locsplitn[2]  = locmaxn[m] / 8;
+  GLOBAL.krige.locsplitn[0]  = MINSPLITN(locmaxn[m]);
+  GLOBAL.krige.locsplitn[1]  = MEDSPLITN(locmaxn[m]);
+  GLOBAL.krige.locsplitn[2]  = MAXSPLITN(locmaxn[m]);
   GLOBAL.ce.force = ce_force[m];
   GLOBAL.ce.tol_im = ce_tolIm[m];
   GLOBAL.ce.tol_re = ce_tolRe[m];
@@ -193,25 +177,32 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.direct.svdtolerance = direct_tol[m];
   GLOBAL.nugget.tol = nugget_tol[m];
   for(i=0; i<4; GLOBAL.spectral.lines[i++] = spectral_lines[m]);
-  GLOBAL.spectral.grid = grid[m];
+  GLOBAL.spectral.grid = sp_grid[m];
   GLOBAL.tbm.lines[1] = tbm_lines[m];
   GLOBAL.tbm.lines[2] = (tbm_lines[m] * 25) / 6;
   GLOBAL.tbm.linesimufactor = tbm_linefactor[m];
-  GLOBAL.tbm.grid = grid[m];
+  GLOBAL.tbm.grid = sp_grid[m];
   GLOBAL.mpp.n_estim_E = mpp_n_estim_E[m];
   for(i=0; i<4; GLOBAL.mpp.intensity[i++] = mpp_intensity[m]);
   GLOBAL.mpp.about_zero = mpp_zero[m];
   GLOBAL.hyper.superpos = hyper_superpos[m];
   GLOBAL.extreme.standardmax = max_max_gauss[m];
+ GLOBAL.fit.locmaxn = maxclique[m];
+  GLOBAL.fit.locsplitn[0] = MINCLIQUE(maxclique[m]);
+  GLOBAL.fit.locsplitn[1] = MEDCLIQUE(maxclique[m]);
+  GLOBAL.fit.locsplitn[2] = MAXCLIQUE(maxclique[m]);
   fit_param *f = &(GLOBAL.fit);
   f->split = fit_split[m];
-  f->refine_onborder = fit_refine[m];
   f->reoptimise = fit_reoptimise[m];
   f->ratiotest_approx = fit_ratiotest_approx[m];
   f->cross_refit = fit_cross_refit[m];
   f->critical = fit_critical[m];
   f->n_crit = fit_ncrit[m];
-  f->optim_var_estim = fit_optim_var[m];
+  f->pgtol = fit_pgtol[m];
+  f->pgtol_recall = fit_pgtol_recall[m];
+  f->factr = fit_factr[m];
+  f->factr_recall = fit_factr_recall[m];
+  //  f->optim_var_estim = fit_optim_var[m];
    char dummy[10];
   strcpy(dummy, f_opt[m]);
   f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
@@ -222,12 +213,12 @@ void SetDefaultModeValues(int old, int m){
   internal_param *w = &(GLOBAL.internal);
   w->stored_init = false;
   if (m < normal) 
-    w->warn_oldstyle = w->warn_newstyle = w->warn_Aniso = w->warn_ambiguous =
+    w->warn_Aniso = w->warn_ambiguous =
       w->warn_on_grid = w->warn_aspect_ratio = w->warn_color_palette = false;
   else if (m>old) { 
     w->warn_oldstyle = w->warn_Aniso = w->warn_new_definitions = 
       w->warn_aspect_ratio = true;
-    if (m > normal) w->warn_ambiguous = w->warn_var = true;
+    if (m > normal) w->warn_ambiguous = w->warn_negvar = true;
   }
   if (m != normal && w->warn_mode) {
     PRINTF("Note that the option '%s' is still in an experimental stage, so that the behaviour may change (slightly) in future.", general[GENERAL_MODUS]);
@@ -326,7 +317,7 @@ SEXP GetSubNames(SEXP nr) {
     INTEGER(subintern)[i] = C->subintern[i];
     SET_STRING_ELT(subnames, j++, mkChar(C->subnames[i]));
   
-
+ 
     // formely:
     //if (!C->subintern[i]) SET_STRING_ELT(subnames, j++,
     //                                     mkChar(C->subnames[i]));
@@ -647,7 +638,7 @@ void CE_set(SEXP el, int j, char *name, ce_param *cp, bool isList) {
  
 
 
-#define prefixN 24
+#define prefixN 25
 const char * prefixlist[prefixN] = 
   {"",  // -1
    "general", "gauss", "krige", 
@@ -657,7 +648,8 @@ const char * prefixlist[prefixN] =
    "br", "distr", "fit",         // 15
    "empvario", "gui", "graphics",// 18 
    "registers", "internal", "coords", "special",
-   "obsolete"// 21
+   "solve",
+   "obsolete"// 24
 };
 
 
@@ -670,15 +662,14 @@ const char *general[generalN] =
     "matrix_tolerance",  "allowdistanceZero", "na_rm_lines",
     "vdim_close_together", "expected_number_simu", "seed", 
     "detailed_output", "asList", "Ttriple",
-    "returncall", "output", "reportcoord"};
+    "returncall", "output", "reportcoord", "set"};
 
 
 const char *gauss[gaussN]= {"paired", "stationary_only", "approx_zero", 
-			    "direct_bestvar", "loggauss"};
+			    "direct_bestvar", "loggauss", "boxcox"};
 
-const char *krige[krigeN] = {"method", "return_variance", "locmaxn",
-			     "locsplitn", "locsplitfactor", "fillall", 
-			     "cholesky_R"};
+const char *krige[krigeN] = { "return_variance", "locmaxn",
+			     "locsplitn", "locsplitfactor", "fillall"};
 
 const char *CE[CEN] = {"force", "mmin", "strategy", "maxGB",
 		       "maxmem", "tolIm","tolRe", 
@@ -728,20 +719,22 @@ const char * distr[distrN] =
    "outermax", "mcmc_n", "repetitions"};
 
 const char * fit[fitN] = 
-  {"bin_dist_factor", "upperbound_scale_factor", "lowerbound_scale_factor",     "lowerbound_scale_ls_factor","upperbound_var_factor","lowerbound_var_factor",
-   "lowerbound_sill", "scale_max_relative_factor", "minbounddistance",
-   "minboundreldist",  "approximate_functioncalls", "refine_onborder",
-   "minmixedvar", "maxmixedvar", "solvesigma",
-   "bc_lambda_lb", "bc_lambda_ub", "use_naturalscaling", 
-   "bins", "nphi", "ntheta", 
-   "ntime", "sill", "only_users", 
-   "optim_var_elimination", "shortnamelength", "use_spam",
-   "split", "scale_ratio",  "critical",
-   "n_crit", "max_neighbours", "splitn_neighbours",
-   "splitfactor_neighbours", "smalldataset", "min_diag",
-   "reoptimise", "optimiser", "algorithm",
-   "likelihood", "ratiotest_approx", "split_refined",
-   "cross_refit"
+  {"bin_dist_factor", "upperbound_scale_factor", "lowerbound_scale_factor", //2
+   "lowerbound_scale_ls_factor","upperbound_var_factor","lowerbound_var_factor",
+   //"lowerbound_sill",
+   "scale_max_relative_factor", "minbounddistance", "minboundreldist",  //8
+   "approximate_functioncalls", "minmixedvar",  "maxmixedvar",  //11
+   "boxcox_lb",  "boxcox_ub", //13
+   "use_naturalscaling",  "bins",  "nphi", //16
+   "ntheta", "ntime", "only_users", //19
+   "shortnamelength",  "split",   "scale_ratio", //22
+   "critical",  "n_crit",  "max_neighbours",  //25
+   "cliquesize",  "splitfactor_neighbours",  "smalldataset", 
+   "min_diag",  "reoptimise",   "optimiser", 
+   "algorithm",  "likelihood",  "ratiotest_approx", 
+   "split_refined",  "cross_refit",  "estimate_variance", 
+   "pgtol", "pgtol_recall",  "factr",
+   "factr_recall"
   };
 
 
@@ -758,7 +751,7 @@ const char *graphics[graphicsN]=
    "onefile", "filenumber", "resolution"};
 
 const char *registers[registersN] = 
-  {"register"};
+  {"register", "predict_register", "likelihood_register"};
 
 const char * internals[internalN] =  {
   // Achtung ! warn parameter werden nicht pauschal zurueckgesetzt
@@ -767,21 +760,27 @@ const char * internals[internalN] =  {
   "stored.init",  "warn_scale",  "warn_on_grid", 
   "warn_coordinates", "warn_new_definitions", "warn_aspect_ratio",
   "warn_coord_change", "warn_colour_palette", "warn_missing_zenit",
-  "do_tests", "warn_constant", "warn_var"
+  "do_tests", "warn_constant", "warn_negvar", "warn_onlyvar",
+  "examples_reduced"
 };
 
 const char *coords[coordsN] =
   { "xyz_notation", "coord_system", "new_coordunits",
     "coordunits", "varunits", "varnames",
-    "coordnames", "new_coord_system",
-    "zenit", "polar_coord"// for data.frames
-  };
+    "coordnames", "new_coord_system", "zenit", 
+    "polar_coord"};
 
 const char * special[specialN] = {"multicopies"};
 
+const char * solve[solveN] = 
+  { "use_spam", "spam_tol", "spam_min_p", "svd_tol",
+    "spam_methods", "spam_min_n", "spam_sample_n", "spam_factor",
+    "spam_pivot"
+  };
+
 const char * obsolete[obsoleteN] = 
   { "oldstyle", "newstyle",  "newAniso", 
-    "ambiguous", "normal_mode"
+    "ambiguous", "normal_mode", "solvesigma","optim_var_elimination", "sill"
 };
 
 
@@ -790,13 +789,13 @@ const char **all[] = {general, gauss, krige, CE, direct,
 		      pnugget, sequ, spectral, pTBM, mpp,
 		      hyper, extreme, br, distr, fit, 
 		      empvario, gui, graphics, registers, internals, 
-		      coords, special, obsolete};
+		      coords, special, solve, obsolete};
 
 int allN[] = {generalN, gaussN, krigeN, CEN, directN,
 	      pnuggetN,  sequN, spectralN, pTBMN, mppN,
 	      hyperN, extremeN, brN, distrN, fitN, 
 	      empvarioN, guiN, graphicsN, registersN, internalN, 
-	      coordsN, specialN, obsoleteN};
+	      coordsN, specialN, solveN, obsoleteN};
 
 void RelaxUnknownRFoption(int *relax) {
   RELAX_UNKNOWN_RFOPTION = (bool) *relax;
@@ -805,7 +804,9 @@ void RelaxUnknownRFoption(int *relax) {
 
 void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {  
   int i,j,ii;
-  char msg[200], name[200];
+  char msg[LENMSG], name[200];
+
+  //  printf("setting\n");
 
   isList &= GLOBAL.general.asList;
   
@@ -875,6 +876,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     ERR(msg);
   }
 
+  //printf("i=%d %d\n", i, j);
+
   switch(i) {
   case 0: {// general
     general_param *gp;
@@ -882,9 +885,13 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     switch(j) {
     case GENERAL_MODUS: {
       int old_mode = gp->mode;
-      SetDefaultModeValues(old_mode,
-			   gp->mode = GetName(el, name, MODENAMES, nr_modes,
-					      normal));
+      static bool warned = false;
+      gp->mode = GetName(el, name, MODENAMES, nr_modes, normal);
+      if (old_mode != gp->mode && !warned) {
+	warned = true;
+	warning("Note that behaviour of 'modus_operandi' has changed within 'RFfit' in version 3.1.0 of RandomFields. Roughly:\nwhat was called 'careless' is now called 'sloppy';\nwhat was called 'sloppy' is now called 'easygoing';\nwhat was called 'easygoing' is now called 'normal';\nwhat was called 'normal' is now called 'precise';\netc.");
+      }
+      SetDefaultModeValues(old_mode, gp->mode);
       break;
     }
     case 1: {
@@ -958,7 +965,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       for (ii=0; ii<l; ii++) {
 	old[ii] = gp->matrix_inversion[ii];
 	gp->matrix_inversion[ii] = Integer(el, name, ii); 
-	if (gp->matrix_inversion[ii] < 0 || gp->matrix_inversion[ii] > 2) break;
+	if (gp->matrix_inversion[ii] > 3) break;
       }
       if (ii<l) {
 	for (; ii>=0; ii--) gp->matrix_inversion[ii] = old[ii];
@@ -974,7 +981,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case GENERAL_CLOSE: gp->vdim_close_together = LOG;    
       if (gp->vdim_close_together) {
 	gp->vdim_close_together = false;
- 	ERR1("'%s' not programmed yet", general[GENERAL_CLOSE]);
+ 	ERR1("'%s' will likely not be programmed", general[GENERAL_CLOSE]);
+	// Achtung! gausslikeli.cc waere stark betroffen!!
       }
       break;
     case 16: gp->expected_number_simu = POS0INT; break;
@@ -992,6 +1000,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       gp->reportcoord = GetName(el, name, REPORTCOORDNAMES, 
 				nr_reportcoord_modes, gp->reportcoord);
       break;
+    case 24: gp->set = POSINT - 1; break;
     default: BUG;
     }}
     break;
@@ -1003,53 +1012,62 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case 1: gp->stationary_only = NUM; break;
     case 2: gp->approx_zero = POS0NUM; break;
     case 3: gp->direct_bestvariables = POS0INT;    break;
-    case 4: gp->loggauss = LOG; break;
+    case 4: gp->loggauss = LOG;
+      if (gp->loggauss) gp->boxcox[0] = RF_INF;
+      break;
+    case GAUSS_BOXCOX_OPTION: {
+      int len = length(el);
+      double boxcox[2 * MAXGAUSSVDIM];      
+      if (len < 1 || (len > 2 && len % 2 != 0)) 
+	ERR1("'%s' not a scalar or vector/matrix of multiple of length 2", 
+	     gauss[GAUSS_BOXCOX_OPTION]);
+      boxcox[1] = 0.0;
+      for (int L=0; L<len; L++) boxcox[L] = Real(el, name, L);
+      if (len == 1) len = 2;
+      for (int k=0; k<len; k++) {
+	if (R_FINITE(boxcox[k])) {
+	  if (boxcox[k] < GLOBAL.fit.BC_lambdaLB[k]) 
+	    ERR6("%s=%s[%d] < %s[%d]=%f.", 
+		 boxcox[k], gauss[GAUSS_BOXCOX_OPTION], k, fit[FIT_BC_LB],k,
+		 GLOBAL.fit.BC_lambdaLB[k]);
+	  if (boxcox[k] > GLOBAL.fit.BC_lambdaUB[k]) 
+	    ERR6("%f=%s[%d] > %s[%d]=%f.", 
+		 boxcox[k],gauss[GAUSS_BOXCOX_OPTION], k, fit[FIT_BC_UB], k,
+		 GLOBAL.fit.BC_lambdaUB[k]); 
+	}
+      }
+      for (int k=0; k<len; k++) gp->boxcox[k] = boxcox[k];
+      if (ISNA(gp->boxcox[0]) || gp->boxcox[0] != RF_INF) gp->loggauss = false;	
+      break;
+    }
     default: BUG;
     }}
     break;
   case 2: { // krige
     krige_param *kp;
-    char ret;
     kp = &(GLOBAL.krige);
-    switch(j) {
-    case 0: 
-      ret = CHR;
-
-      //      print("%d: %d %d %d %d; %d %d %d >%s<\n", 
-      //	     ret , 'O', 'S', 'I', 'A',
-      //	     TYPEOF(el), CHARSXP, STRSXP, CHAR(STRING_ELT(el,0))
-      //     );
-
-      if (ret != 'A' && // auto
-	  ret != 'S' && // simple
-	  ret != 'O' && // ordinary	  
-	  ret != 'M' && // mean	  
-	  ret != 'U' && // universal
-	  ret != 'I'    // intrinsic
-	  ) {  
-	ERR("krige.method not in S)imple O)rdinary U)niversal I)ntrinsic and A)utomatic");
+    switch(j) { 
+    case 0: kp->ret_variance = LOG; break;
+    case 1: kp->locmaxn = POS0INT; break;
+    case KRIGE_SPLITN: {
+      int  newval[3],
+	len = length(el);
+      if (len < 3) ERR1("'%s' must have 3 components", krige[KRIGE_SPLITN]);
+      for (ii=0; ii<len; ii++) {
+	newval[ii] = Integer(el, name, ii); 
+	// printf("%d %d %d\n", ii, kp->locsplitn[ii],	newval[ii]);
       }
-      kp->method = ret;
-      break;
-    case 1: kp->ret_variance = LOG; break;
-    case 2: kp->locmaxn = POS0INT; break;
-    case 3: {
-      int  old[3];
-      if (length(el) < 3) ERR("krige.locsplitn must have 3 components");
-      for (ii=0; ii<3; ii++) {
-	old[ii] = kp->locsplitn[ii];
-	kp->locsplitn[ii] = Integer(el, name, ii); 
-      }
-      if (kp->locsplitn[0] < kp->locsplitn[2] || 
-	  kp->locsplitn[2] < kp->locsplitn[1]) {
-	for (ii=0; ii<3; ii++) kp->locsplitn[i] = old[ii];
-	error("locsplitn[1] >= locsplitn[3] >= locsplitn[2] not satisfied");
-      }
+      if (newval[0] > newval[1] || newval[1] > newval[2]) {
+	ERR6("%s[1] <= %s[2] <= %s[3] not satisfied [ %d %d %d ]",
+	     krige[KRIGE_SPLITN], krige[KRIGE_SPLITN], krige[KRIGE_SPLITN],
+	     newval[0], newval[1], newval[2]
+	     ); 
+      } 
+      for (ii=0; ii<len; ii++) kp->locsplitn[ii] = newval[ii];
       break;
     }
-    case 4: kp->locsplitfactor = POS0INT; break;
-    case 5: kp->fillall = LOG; break;
-    case 6: kp->cholesky = LOG; break;
+    case 3: kp->locsplitfactor = POS0INT; break;
+    case 4: kp->fillall = LOG; break;
     default: BUG;
     }}
     break;
@@ -1241,69 +1259,86 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     fit_param *ef;
     ef = &(GLOBAL.fit);
     switch(j) {
-    case 0: ef->bin_dist_factor = POS0NUM; break;
-    case 1: ef->upperbound_scale_factor = POS0NUM; break; 
-    case 2: ef->lowerbound_scale_factor = POS0NUM; break; 
-    case 3: ef->lowerbound_scale_LS_factor = POS0NUM; break; 
-    case 4: ef->upperbound_var_factor = POS0NUM; break; 
-    case 5: ef->lowerbound_var_factor = POS0NUM; break;
-    case 6: ef->lowerbound_sill = POS0NUM; break; 
-    case 7: ef->scale_max_relative_factor = POS0NUM; break; 
-    case 8: ef->minbounddistance = POS0NUM; break;
-    case 9: ef->minboundreldist = POS0NUM; break;  
-    case 10: ef->approximate_functioncalls = POS0INT; break; 
-    case 11: ef->refine_onborder = LOG; break;
-    case 12: ef->minmixedvar = POS0NUM; break; 
-    case 13: ef->maxmixedvar = POS0NUM; break; 
-    case 14: ef->solvesigma = NUM; break;
-    case 15: ef->BC_lambdaLB = NUM; break;
-    case 16: ef->BC_lambdaUB = NUM; break; 
-    case 17: ef->use_naturalscaling = LOG; break;
-    case 18: ef->bins = POS0INT; break;
-    case 19: ef->nphi = POS0INT; break;
-    case 20: ef->ntheta = POS0INT; break; 
-    case 21: ef->ntime = POS0INT; break;
-    case 22: ef->sill = POS0NUM; break;
-    case 23: ef->onlyuser = LOG; break;
-    case 24: ef->optim_var_estim =
-	GetName(el, name, OPTIM_VAR_NAMES, nOptimVar); ; break; 
-    case 25: { // mle
+    case 0: ef->bin_dist_factor = POS0NUM; break; //
+    case 1: ef->upperbound_scale_factor = POS0NUM; break; //
+    case 2: ef->lowerbound_scale_factor = POS0NUM; break; //
+    case 3: ef->lowerbound_scale_LS_factor = POS0NUM; break; //
+    case 4: ef->upperbound_var_factor = POS0NUM; break; //
+    case 5: ef->lowerbound_var_factor = POS0NUM; break;//
+      //    case 6: ef->lowerbound_sill = POS0NUM; break; 
+    case 6: ef->scale_max_relative_factor = POS0NUM; break; //
+    case 7: ef->minbounddistance = POS0NUM; break;//
+    case 8: ef->minboundreldist = POS0NUM; break;// 
+    case 9: ef->approximate_functioncalls = POS0INT; break; //
+    case 10: ef->minmixedvar = POS0NUM; break; //
+    case 11: ef->maxmixedvar = POS0NUM; break; //
+      //    case 14: ef->solvesigma = NUM; break;
+    case 12: Real(el, name, ef->BC_lambdaLB, 2 * MAXGAUSSVDIM); break;//
+    case 13: Real(el, name, ef->BC_lambdaUB, 2 * MAXGAUSSVDIM); break;//
+    case 14: ef->use_naturalscaling = LOG; break;
+    case 15: ef->bins = POS0INT; break;//
+    case 16: ef->nphi = POS0INT; break;//
+    case 17: ef->ntheta = POS0INT; break; //
+    case 18: ef->ntime = POS0INT; break;//
+    case 19: ef->onlyuser = LOG; break;
+    case 20: { // mle
       ii=POS0INT; 
       if (ii==0) { ii = 1; warning("shortnamelength set to 1"); }
-      if (ii>255) { ii = 255; warning("shortnamelength set to 255"); }
+      if (ii >= LENMSG) {
+	ii = LENMSG - 1;  
+	sprintf(msg, "shortnamelength set to %d", ii); 
+	warning(msg);
+      }
       ef->lengthshortname=ii;
     }
     break;
-    case 26: ef->usespam = NUM; break;
-    case 27: ef->split = LOG; break;
-    case 28: ef->scale_ratio = NUM; break;
-    case 29: ef->critical = INT; break;
-    case 30: ef->n_crit = POS0INT; break;
-    case 31: ef->locmaxn = POS0INT; break;
-    case 32: {
-      if (length(el) < 3) ERR("fit.locsplitn must have 3 components");
-      for (ii=0; ii<3; ii++)
-	ef->locsplitn[ii] = Integer(el, name, ii); 
+    case 21: ef->split = INT; break;
+    case 22: ef->scale_ratio = NUM; break;//
+    case 23: ef->critical = INT; break;//
+    case 24: ef->n_crit = POS0INT; break;///
+    case FIT_MAXNEIGHBOUR: ef->locmaxn = POS0INT; break;//
+    case FIT_CLIQUE: {
+      int  newval[3],
+	len = length(el);      
+      if (len < 1 || len > 3) 
+	ERR1("'%s' must have between 1 and 3 components", fit[FIT_CLIQUE]);
+      for (ii=0; ii<len; ii++) newval[ii] = Integer(el, name, ii); 
+      if (len == 1) newval[1] = newval[2] = newval[0];
+      else {
+	newval[2] = newval[1];
+	newval[1] = (int) sqrt(newval[1] * newval[0]);
+      }
+
+      if (newval[0] > newval[1] || newval[1] > newval[2]) 
+   	ERR3("%s[1] <= %s[2] <= %s[3] not satisfied",
+	     fit[FIT_CLIQUE], fit[FIT_CLIQUE], fit[FIT_CLIQUE]
+	     );      
+      for (ii=0; ii<3; ii++) ef->locsplitn[ii] = newval[ii];
       break;
     }
-    case 33: ef->locsplitfactor = POS0INT; break;
-    case 34: ef->smalldataset = POS0INT; break;
-    case 35: ef->min_diag = NUM; break;
-    case 36: ef->reoptimise = LOG; break;
-    case 37: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); 
+    case 27: ef->locsplitfactor = POS0INT; break;//
+    case 28: ef->smalldataset = POS0INT; break;//
+    case 29: ef->min_diag = NUM; break;//
+    case 30: ef->reoptimise = LOG; break;
+    case 31: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
       break;
-    case 38: 
+    case 32: 
       switch(ef->optimiser) {
-      case 3 : ef->algorithm = GetName(el, name, NLOPTR_NAMES, nNLOPTR); 
+      case 3 : ef->algorithm = GetName(el, name, NLOPTR_NAMES, nNLOPTR); //
 	break;
       default: ef->algorithm = -1;
       }
       break;
-    case 39: ef->likelihood =
+    case 33: ef->likelihood =
 	GetName(el, name, LIKELIHOOD_NAMES, nLikelihood); ; break; 
-    case 40: ef->ratiotest_approx = LOG; break;
-    case 41: ef->split_refined = LOG; break;
-    case 42: ef->cross_refit = LOG; break;
+    case 34: ef->ratiotest_approx = LOG; break;
+    case 35: ef->split_refined = LOG; break;
+    case 36: ef->cross_refit = LOG; break;
+    case 37: ef->estimate_variance = INT; break;
+    case 38: ef->pgtol = POSNUM; break;//
+    case 39: ef->pgtol_recall = POSNUM; break;//
+    case 40: ef->factr = POSNUM; break;//
+    case 41: ef->factr_recall = POSNUM; break;//
     default:  BUG;
     }}
     break;
@@ -1399,6 +1434,18 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       if ((keynr<0) || (keynr>MODEL_MAX)) ERR("register number out of range");
       rp->keynr=keynr; }
       break;
+   case 1: { //  predict
+      int predict = INT;
+      if ((predict<0) || (predict>MODEL_MAX))
+	ERR("register number out of range");
+      rp->predict=predict; }
+      break;
+    case 2: { //  likelihood
+      int likelihood = INT;
+      if ((likelihood<0) || (likelihood>MODEL_MAX))
+	ERR("register number out of range");
+      rp->likelihood=likelihood; }
+      break;
    default: BUG;
     }}
    break;
@@ -1425,11 +1472,29 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       case INTERNALS_ZENIT: wp->warn_zenit = LOG;       break;
       case 15: wp->do_tests = LOG;       break;
       case 16: wp->warn_constant = LOG;       break;
-      case 17: wp->warn_var = LOG;       break;
+      case 17: wp->warn_negvar = LOG;       break;
+      case 18: wp->warn_onlyvar = LOG;       break;
+      case 19: wp->examples_reduced= POS0INT;  
+	if (wp->examples_reduced > 0 && 
+	    wp->examples_reduced < MAX_LEN_EXAMPLES)
+	  wp->examples_reduced = MAX_LEN_EXAMPLES;
+	break;
     default: BUG;
       }
     } else {
-      if (j==INTERNALS_ONGRID)  wp->warn_on_grid = LOG;
+      switch(j) {
+      case 6: wp->stored_init = LOG;       break;
+      case INTERNALS_ONGRID :  wp->warn_on_grid = LOG; break;
+      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOG;       break;
+      case INTERNALS_ZENIT: wp->warn_zenit = LOG;       break;
+      case 15: wp->do_tests = LOG;       break;
+      case 19: wp->examples_reduced= POS0INT;  
+	if (wp->examples_reduced > 0 && 
+	    wp->examples_reduced < MAX_LEN_EXAMPLES)
+	  wp->examples_reduced = MAX_LEN_EXAMPLES;
+	break;
+    default : {} // none
+      }      
     }
   }
     break;
@@ -1506,7 +1571,35 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     }}
     break;
 
-  case 22: { // obsolete
+  case 22: {
+    solve_param *so = &(GLOBAL.solve);
+    switch(j) {
+    case 0: so->sparse = NUM; break;
+    case 1: so->spam_tol = POS0NUM; break;      
+    case 2: so->spam_min_p = POS0NUM; break;      
+    case 3: so->svd_tol = POS0NUM; break;      
+    case 4: {
+      int 
+	len = length(el),
+	ende = len;
+      if (len > 0) {
+	if (ende > SOLVE_METHODS) ende = SOLVE_METHODS;
+	for (ii=0; ii<ende; ii++) so->Methods[ii] = Integer(el, name, ii);
+	for ( ; ii<SOLVE_METHODS; ii++) so->Methods[ii] = so->Methods[ii-1];
+      }
+    }
+      break;
+    case 5: so->spam_min_n = POSINT; break;      
+    case 6: so->spam_sample_n = POSINT; break;      
+    case 7: so->spam_factor = POSINT; break;      
+    case 8: so->pivot = POSINT; 
+      if (so->pivot > 2) so->pivot = PIVOT_NONE;
+      break;    
+    default: BUG;
+    }}
+    break;
+
+  case 23: { // obsolete
     internal_param *wp = &(GLOBAL.internal);
     switch(j) {
       case 0: wp->warn_oldstyle = LOG;       break;
@@ -1514,15 +1607,17 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       case 2: wp->warn_Aniso = LOG;       break;
       case 3: wp->warn_ambiguous = LOG;       break;
       case 4: wp->warn_normal_mode = LOG;       break;
-      case 5: wp->warn_mode = LOG;       break;
-      default: BUG;
-      }}
+    default:
+      sprintf(MSG, "RFoption '%s' has been removed.", obsolete[j]);
+      warning(MSG);
+    }}
     break;
     
 
   default: BUG;
   }
 }
+
 
 SEXP ExtendedInteger(double x) {
   return ScalarInteger(R_FINITE(x) ? x : NA_INTEGER);
@@ -1531,6 +1626,7 @@ SEXP ExtendedInteger(double x) {
 SEXP ExtendedBoolean(double x) {
   return ScalarLogical(ISNAN(x) ? NA_LOGICAL : x != 0.0);
 }
+
 
 SEXP getRFoptions() {
   SEXP list, names, sublist[prefixN-1], subnames[prefixN-1];
@@ -1556,9 +1652,10 @@ SEXP getRFoptions() {
     }
   }
 
-#define ADD(ELT) SET_VECTOR_ELT(sublist[i], k++, ELT)
+  //#define ADD(ELT) {printf(#ELT"\n");SET_VECTOR_ELT(sublist[i], k++, ELT);}
+#define ADD(ELT) SET_VECTOR_ELT(sublist[i], k++, ELT);
 #define ADDCHAR(ELT) x[0] = ELT; ADD(ScalarString(mkChar(x)));
-  i = 0; {
+  i = 0; { 
     // printf("OK %d\n", i);
     k = 0;
     general_param *p = &(GLOBAL.general);
@@ -1569,10 +1666,11 @@ SEXP getRFoptions() {
     ADD(ScalarInteger(p->every));    
     ADD(ScalarReal(p->gridtolerance));
     ADDCHAR(p->pch);
-    if (p->naturalscaling==0 || p->naturalscaling==1) 
+    if (p->naturalscaling==0 || p->naturalscaling==1) {
       ADD(ScalarLogical(p->naturalscaling));
-    else
+    } else {
       ADD(ScalarInteger(p->naturalscaling));
+    }
     ADD(ScalarLogical(p->sp_conform));
     ADD(ScalarInteger(p->Cprintlevel));
     ADD(ExtendedBoolean(p->exactness));    
@@ -1593,6 +1691,7 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->returncall));   
     ADD(ScalarString(mkChar(OUTPUTMODENAMES[p->output])));
     ADD(ScalarString(mkChar(REPORTCOORDNAMES[p->reportcoord])));
+    ADD(ScalarInteger(p->set + 1));   
  }
   
   //  printf("OK %d\n", i);
@@ -1606,18 +1705,18 @@ SEXP getRFoptions() {
     ADD(ScalarReal(p->approx_zero));    
     ADD(ScalarInteger(p->direct_bestvariables));    
     ADD(ScalarLogical(p->loggauss));   
+    SET_VECTOR_ELT(sublist[i], k++, Num(p->boxcox, 2 * MAXGAUSSVDIM, 
+					2 * MAXGAUSSVDIM)); 
   }
 
   i++; {
     k = 0;
     krige_param *p = &(GLOBAL.krige);
-    ADDCHAR(p->method);
     ADD(ScalarLogical(p->ret_variance));   
     ADD(ScalarInteger(p->locmaxn));
     SET_VECTOR_ELT(sublist[i], k++, Int(p->locsplitn, 3, 3));
     ADD(ScalarInteger(p->locsplitfactor));
     ADD(ScalarLogical(p->fillall));   
-    ADD(ScalarLogical(p->cholesky));   
   }
 
   i++; {
@@ -1767,33 +1866,33 @@ SEXP getRFoptions() {
     ADD(ScalarReal(p->lowerbound_scale_LS_factor)); 
     ADD(ScalarReal(p->upperbound_var_factor)); 
     ADD(ScalarReal(p->lowerbound_var_factor));
-    ADD(ExtendedBoolean(p->lowerbound_sill)); 
+    //  ADD(ExtendedBoolean(p->lowerbound_sill)); 
     ADD(ScalarReal(p->scale_max_relative_factor)); 
     ADD(ScalarReal(p->minbounddistance));
     ADD(ScalarReal(p->minboundreldist));  
     ADD(ScalarInteger(p->approximate_functioncalls)); 
-    ADD(ScalarLogical(p->refine_onborder));
     ADD(ScalarReal(p->minmixedvar)); 
     ADD(ScalarReal(p->maxmixedvar)); 
-    ADD(ScalarReal(p->solvesigma));
-    ADD(ScalarReal(p->BC_lambdaLB));
-    ADD(ScalarReal(p->BC_lambdaUB)); 
+    //  ADD(ScalarReal(p->solvesigma));
+    SET_VECTOR_ELT(sublist[i], k++, Num(p->BC_lambdaLB, 2 * MAXGAUSSVDIM, 
+					2 * MAXGAUSSVDIM));
+    SET_VECTOR_ELT(sublist[i], k++, Num(p->BC_lambdaUB, 2 * MAXGAUSSVDIM, 
+					2 * MAXGAUSSVDIM));
     ADD(ScalarLogical(p->use_naturalscaling));
     ADD(ScalarInteger(p->bins));
     ADD(ScalarInteger(p->nphi));
     ADD(ScalarInteger(p->ntheta)); 
     ADD(ScalarInteger(p->ntime));
-    ADD(ScalarReal(p->sill));
+    //   ADD(ScalarReal(p->sill));
     ADD(ScalarLogical(p->onlyuser));
-    ADD(ScalarString(mkChar(OPTIM_VAR_NAMES[p->optim_var_estim])));
+    //    ADD(ScalarString(mkChar(OPTIM_VAR_NAMES[p->optim_var_estim])));
     ADD(ScalarInteger(p->lengthshortname));
-    ADD(ExtendedBoolean(p->usespam));
-    ADD(ScalarLogical(p->split));
+    ADD(ScalarInteger(p->split));
     ADD(ScalarReal(p->scale_ratio));
     ADD(ScalarInteger(p->critical));
     ADD(ScalarInteger(p->n_crit));
     ADD(ScalarInteger(p->locmaxn));
-    SET_VECTOR_ELT(sublist[i], k++, Int(p->locsplitn, 3, 3));
+    SET_VECTOR_ELT(sublist[i], k++, Int(p->locsplitn,3, 3));
     ADD(ScalarInteger(p->locsplitfactor));
     ADD(ScalarInteger(p->smalldataset));
     ADD(ScalarReal(p->min_diag));
@@ -1808,7 +1907,12 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->ratiotest_approx));
     ADD(ScalarLogical(p->split_refined));
     ADD(ScalarLogical(p->cross_refit));
-  } 
+    ADD(ScalarInteger(p->estimate_variance));
+    ADD(ScalarReal(p->pgtol)); 
+    ADD(ScalarReal(p->pgtol_recall)); 
+    ADD(ScalarReal(p->factr)); 
+    ADD(ScalarReal(p->factr_recall)); 
+   } 
 
   i++; {
     k = 0;
@@ -1848,6 +1952,8 @@ SEXP getRFoptions() {
     k = 0;
     registers_param *p = &(GLOBAL.registers);
     ADD(ScalarInteger(p->keynr));    
+    ADD(ScalarInteger(p->predict));    
+    ADD(ScalarInteger(p->likelihood));    
   }
   
   i++; {
@@ -1870,7 +1976,9 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->warn_zenit));
     ADD(ScalarLogical(p->do_tests));
     ADD(ScalarLogical(p->warn_constant));
-    ADD(ScalarLogical(p->warn_var));
+    ADD(ScalarLogical(p->warn_negvar));
+    ADD(ScalarLogical(p->warn_onlyvar));
+    ADD(ScalarInteger(p->examples_reduced));
  }
 
 
@@ -1905,7 +2013,23 @@ SEXP getRFoptions() {
     k = 0;
     special_param *p = &(GLOBAL.special);
     ADD(ScalarInteger(p->multcopies));    
- }
+  }
+
+  i++; {
+    k = 0;
+    solve_param *p = &(GLOBAL.solve);
+    ADD(ExtendedBoolean(p->sparse));
+    ADD(ScalarReal(p->spam_tol));    
+    ADD(ScalarReal(p->spam_min_p));    
+    ADD(ScalarReal(p->svd_tol));    
+    SET_VECTOR_ELT(sublist[i], k++, Int(p->Methods, SOLVE_METHODS, 
+					SOLVE_METHODS)); 
+    ADD(ScalarInteger(p->spam_min_n));    
+    ADD(ScalarInteger(p->spam_sample_n));    
+    ADD(ScalarInteger(p->spam_factor));    
+    ADD(ScalarInteger(p->pivot));    
+  }
+ 
   //   print("%d %d\n", i, prefixN -1);
   assert (i == trueprefixN - 1); 
     /*
@@ -1959,7 +2083,7 @@ void splitAndSet(SEXP el, char *name, bool isList) {
 
   //  printf("i=%d %d\n", i, len);
   setparameter(el, prefix, mainname, isList);
-  // printf("ende\n");
+  //   printf("ende\n");
 }
 
 
@@ -1973,7 +2097,8 @@ int InternalGetProcessType(cov_model *cov) {
   case BrMethodType : return BROWNRESNICKPROC;
   case ProcessType :
     if (nr == DOLLAR_PROC) return InternalGetProcessType(cov->sub[0]);
-    else if (nr == PLUS_PROC || nr == MULT_PROC || nr == TREND_PROC) 
+    else if (nr == PLUS_PROC || nr == MULT_PROC //|| nr == TREND_PROC
+	     ) 
       return GAUSSPROC;
     return cov->nr;
   case UndefinedType:
@@ -2071,6 +2196,9 @@ SEXP RFoptions(SEXP options) {
     //    print("end1 %f\n", GLOBAL.TBM.linesimufactor);
   } else {
     for(i = 0; options != R_NilValue; i++, options = CDR(options)) {
+
+      //printf("set opt i=%d\n", i);
+
       el = CAR(options);
       name = (char*) (isNull(TAG(options)) ? "" :CHAR(PRINTNAME(TAG(options))));
       splitAndSet(el, name, isList);
@@ -2087,12 +2215,12 @@ void GetModelRegister(char **name, int* nr) {
 
   //  print("%d\n", *nr);
 
-  if (*nr<0 || *nr > MODEL_MAX) error("name for model register unknown");
+  if (*nr<0 || *nr > MODEL_MAX) ERR("name for model register unknown");
 }
   
 
-void MultiDimRange(int *model_nr, double *natscale) { 
-  MultiDimRange(KEY[*model_nr], natscale); 
+void MultiDimRange(int *model_nr, int *set, double *natscale) { 
+  MultiDimRange(*set, KEY[*model_nr], natscale); 
 }
 
 SEXP countelements(SEXP Idx, SEXP N, SEXP Totparts) {
@@ -2384,7 +2512,7 @@ void DeleteKey(int *reg) {
 }
 
 
-
+/*
 void isAuthor(int *is) {
 #ifdef WIN32
   *is = false;
@@ -2396,6 +2524,7 @@ void isAuthor(int *is) {
   *is = strcmp("viti", host) == 0;
 #endif
 }
+*/
 
 
 SEXP allintparam() {

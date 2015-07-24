@@ -63,20 +63,23 @@ RMbernoulli(phi, threshold, correlation, centred, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
 threshold <- 0
-x <- seq(0, 5, if (interactive()) 0.02 else 1)
+x <- seq(0, 5, 0.02)
 GaussModel <- RMgneiting()
 
-n <- if (interactive()) 1000 else 2
+n <- 1000
 z <- RFsimulate(RPbernoulli(GaussModel, threshold=threshold), x=x, n=n)
 plot(z)
 
 model <- RMbernoulli(RMgauss(), threshold=threshold, correlation=FALSE)
 plot(model, xlim=c(0,5))
-z <- as.matrix(z)
-estim.cov <- apply(z, 1, function(x) cov(x, z[1,]))
-points(x, estim.cov, col="red")
+z1 <- as.matrix(z)
+estim.cov <- apply(z1, 1, function(x) cov(x, z1[1,]))
+points(coordinates(z), estim.cov, col="red")
+
+
 
 \dontshow{FinalizeExample()}
 }

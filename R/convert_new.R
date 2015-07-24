@@ -1,3 +1,26 @@
+
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Alexander Malinowski, Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 ### Diese Datei wandelt RMmodel in eine Liste um
 
 ### Kleinigkeiten geaendert: Jan 2015, M. Schlather
@@ -18,28 +41,37 @@ reps <- function(n, sign=",") paste(rep(sign, n), collapse="")
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 # @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-parseModel <- function(model, ...) {
+parseModel <- function(model, ..., x=NULL) {
+
+#Print(model)
+  
   ## check whether $model is already in list syntax
   if (is.list(model)) return(model)
 	
   ## check whether $model is already in list syntax
-  if (isModel(model)) return(buildCovList(model))
+  if (isModel(model)) return(buildCovList(model, x=x))
 	
   ## check whether $model has correct formula syntax
   if (!isFormulaModel(model)) stop(syntaxError)
-	
+
+  
   ## extract tokens
   summands <- extractSummands(model)
+  #  Print(summands)
+  
   listModel <- list()	
   if (length(summands) == 1) {
-    listModel <- buildFactorList(summands[[1]], ...)#, last=TRUE)
+    listModel <- buildFactorList(summands[[1]], ..., x=x)#, last=TRUE)
   } else {
     listModel <- list(ZF_SYMBOLS_PLUS)		
     ##last <- getLastCovIndex(summands)
     for (i in 1:length(summands)) {
-      listModel <- c(listModel, list(buildFactorList(summands[[i]], ...)))
+       listModel <- c(listModel, list(buildFactorList(summands[[i]], ..., x=x)))
     }
-  }  
+  }
+
+#  Print(listModel); kkk
+  
   return(listModel)
 }
 
@@ -95,10 +127,10 @@ isFormulaModel <- function(model)
 # @ENSURE		isListModel(output) == TRUE
 # @SEE		RMmodel, devel-doc
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		26.08.2011
+#                        modified 2015 by Martin Schlather
+## @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-buildCovList <- function(model)
-{
+buildCovList <- function(model, x=NULL) {
   if (is.atomic(model) || is.list(model) ||
       is.language(model) || is.environment(model))
     return(model) ## for recursive calling
@@ -109,13 +141,17 @@ buildCovList <- function(model)
   if (model@name==ZF_COORD) model@name <- ZF_MIXED[1]
   
   li <- c(list(model@name),
-          lapply(model@par.model[!(model@par.model==ZF_DEFAULT_STRING)],
-                 FUN=buildCovList),
+          lapply(model@par.model[model@par.model != ZF_DEFAULT_STRING],
+                 FUN=buildCovList, x=x),
           lapply(model@submodels,
-                 FUN=buildCovList)
+                 FUN=buildCovList, x=x)
           )
   if (li[[1]] == ZF_PLUS[1]) li[[1]] <- ZF_SYMBOLS_PLUS
   if (li[[1]] == ZF_MULT[1]) li[[1]] <- ZF_SYMBOLS_MULT
+  if (li[[1]] == ZF_COVARIATE && length(x) > 0 &&
+      all(names(li) != "x")) {
+    li$x <- x
+  }
   
   
   ##  par.general.is.default <-
@@ -123,8 +159,8 @@ buildCovList <- function(model)
   if (length(model@par.general)>0 &
       !all(model@par.general==ZF_DEFAULT_STRING)) {
     li <- c(DOLLAR[1],
-            lapply(model@par.general[!(model@par.general==ZF_DEFAULT_STRING)],
-                   FUN=buildCovList),
+            lapply(model@par.general[model@par.general != ZF_DEFAULT_STRING],
+                   FUN=buildCovList, x=x),
             list(li))
     if (length(pos <- which(names(li)=="Aniso")) > 0)
       ## in c-level, parameter is called 'A'
@@ -192,9 +228,13 @@ extractSummands <- function(model) {
     return(tokenList)  ## sonst steht unten paste(NULL), was "" gibt
         
   iscov <- unlist(lapply(tokenList, FUN=isGenuineCovModel))
+
+#  Print(iscov)
+  
   tokenList <- c(tokenList[!iscov],
                  list(paste(unlist(tokenList[iscov]),
                             collapse=ZF_SYMBOLS_PLUS)))
+
   return(tokenList)
 }
 
@@ -241,65 +281,78 @@ removeParenthesis <- function(string)
 # @ENSURE		the output is a correct list
 # @SEE		RMModel, devel-doc
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		29.08.2011
+## @DATE		29.08.2011
+## changed by Martin Schlather 2015
 # @FUNCTION-END*************************************************************************************
-buildFactorList <- function(summand, ...)#, last)
-{
-	factorList <- strsplit(summand, ZF_SYMBOLS_AT)[[1]]
-        
-	factorsNr <- length(factorList)
+buildFactorList <- function(summand, ..., x=x) { #, last)
 
-	# remove parenthesis
-	factorA <- removeParenthesis(factorList[[1]])
-	if (factorsNr == 2)
-        {
-                factorB <- removeParenthesis(factorList[[2]])
-                if (isFormalCovModel(factorA))
-                  stop(paste(factorA, "must NOT be a covariance model"))
+  factorList <- strsplit(summand, ZF_SYMBOLS_AT)[[1]]  
+  factorsNr <- length(factorList)
+
+  ## remove parenthesis
+  factorA <- removeParenthesis(factorList[[1]])
+  if (factorsNr == 2) {
+    factorB <- removeParenthesis(factorList[[2]])
+    if (isFormalCovModel(factorA))
+      stop(paste(factorA, "must NOT be a covariance model"))
+  }
+
+  ##  Print(summand, factorsNr, isFormalCovModel(factorA), factorA)
+
+  ## do we have a mixed model
+  X <- catch(factorA, ...)    
+  if (!(factorsNr == 1 && isFormalCovModel(factorA))) {# && last))
+    if (factorsNr == 1) {
+      #str(X)
+      #     Print(X, is.factor(X))
+      if (is.factor(X)) {        
+        lev <- levels(X)
+        m <- matrix(nrow=length(X), ncol=length(lev) - 1)
+        for (i in 2:length(lev)) m[, i - 1] <- as.numeric(X == lev[i])
+        tmpList <- list(ZF_COVARIATE)         
+        tmpList[[COVARIATE_C_NAME]] <- m
+        tmpList[[COVARIATE_X_NAME]] <- x
+        tmpList[[COVARIATE_ADDNA_NAME]] <- TRUE
+      } else if (is.vector(X)) {
+        if (length(X) == 1) {
+          tmpList <- list(ZF_SYMBOLS_CONST)
+          tmpList[[CONST_A_NAME]] <-
+            if (is.finite(X) && X == 1) NA else as.numeric(X)
+        } else {
+          tmpList <- list(ZF_COVARIATE)         
+          tmpList[[COVARIATE_C_NAME]] <- as.numeric(X)
+          tmpList[[COVARIATE_X_NAME]] <- x
+          tmpList[[COVARIATE_ADDNA_NAME]] <- TRUE
         }
-
-        # Print(summand, factorsNr, isFormalCovModel(factorA), factorA)
-
-	# do we have a mixed model
-	if (!(factorsNr == 1 && isFormalCovModel(factorA)))# && last))
-	{
-		tmpList <- list(ZF_MIXED[1])
-
-		tmpList[["X"]] <- catch(factorA, ...)
-		
-		if (factorsNr == 1)
-			tmpList[["b"]] <- NA
-		else
-		{
-			if (isGenuineCovModel(factorB))
-			{
-				model <- catch(factorB, ...)
-                                if (model@name==ZF_COORD) {
-                                  tmpList[["coord"]] <- model@par.model$coord
-                                  tmpList[["dist"]] <- model@par.model$dist
-                                  tmpList[["cov"]] <-
-                                    (buildCovList(model@submodels[[1]]))
-                                } else {
-                                  tmpList[["cov"]] <-
-                                    (buildCovList(model))
-                                }
-			}
-			else
-			{
-				tmpList[["b"]] <- extractFixed(factorB, ...)
-			}
-		}
-
-		return(tmpList)
-	}
-	else
-	{
-		model <- catch(factorA, ...)
-                
-		tmpList <- buildCovList(model)
-
-		return(tmpList)
-	}
+      } else {
+        tmpList <- list(ZF_MIXED[1])
+        tmpList[[MIXED_X_NAME]] <- X
+        tmpList[[MIXED_BETA_NAME]] <- NA
+      }
+    } else {
+      tmpList <- list(ZF_MIXED[1])
+      tmpList[[MIXED_X_NAME]] <- X
+      if (isGenuineCovModel(factorB)) {
+        model <- catch(factorB, ...)
+        if (model@name==ZF_COORD) {
+          tmpList[["coord"]] <- model@par.model$coord
+          tmpList[["dist"]] <- model@par.model$dist
+          tmpList[["cov"]] <-
+            (buildCovList(model@submodels[[1]], x=x))
+        } else {
+          tmpList[["cov"]] <-
+            (buildCovList(model, x=x))
+        }
+      } else {
+        tmpList[["b"]] <- extractFixed(factorB, ...)
+      }
+    }
+   # Print(tmpList)
+    return(tmpList)
+  } else {
+    tmpList <- buildCovList(X, x=x)
+    return(tmpList)
+  }
 }
 
 # @FUNCTION-STARP***********************************************************************************
@@ -420,31 +473,55 @@ catch <- function(expr, handler=function(res){stop(res)}, ...)
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 # @DATE		26.08.2011
 # @FUNCTION-END*************************************************************************************
-selectDataAccordingFormula <- function(simObj, model)
-{
+selectDataAccordingFormula <- function(simObj, model) {
   varNames <- extractVarNames(model)
   #Print(varNames)
 
   ## are there any variablenames given
-  if (is.null(varNames))
-    {
-      #warning("'model' is not given as a formula or model formula contains an empty left side --> all colums of the data matrix in 'data' are selected")
-      return (simObj)
-    }
-	
-  cleanNames <- if (simObj@.RFparams$n == 1) colnames(simObj@data)
-  	else sapply(colnames(simObj@data), FUN=cleanse)
+  if (is.null(varNames)) {
+    ##warning("'model' is not given as a formula or model formula contains an empty left side --> all colums of the data matrix in 'data' are selected")
+    coord <- RFoptions()$coord
+    if (is.na(coord$varnames[1])) return (simObj)
+    varnames <- coord$varnames
+  }
 
+  cleanNames <- (if (simObj@.RFparams$n == 1) colnames(simObj@data) else 
+                 sapply(colnames(simObj@data), FUN=cleanse))
+    
+    mymatch <- match(cleanNames, varNames)#, dup=TRUE)
+    if (!all(varNames %in% cleanNames))
+      stop("response variable names could not be found in colnames of data object")
+
+  #Print(simObj, mymatch)
   
-  mymatch <- match(cleanNames, varNames)#, dup=TRUE)
-  if (!all(varNames %in% cleanNames))
-    stop("response variable names could not be found in colnames of data object")
-  simObj <- simObj[!is.na(mymatch)]
-  
-  simObj@.RFparams$vdim <- length(varNames)
-	
-  return(simObj)
+    simObj <- simObj[!is.na(mymatch)]
+    
+    simObj@.RFparams$vdim <- length(varNames)
+   
+    return(simObj)
 }
+  
+selectAccordingFormula <- function(data, model)
+{
+  varNames <- extractVarNames(model)
+  #Print(varNames)
+
+  if (is.null(varNames)) {
+    coord <- RFoptions()$coord
+    if (is.na(coord$varnames[1])) return(NULL)
+    varNames <- coord$varnames
+  }
+  
+  ## are there any variablenames given
+  if (is.matrix(data) || is.data.frame(data)) {
+    cleanNames <- colnames(data)
+    if (!all(varNames %in% cleanNames))
+      stop("response variable names could not be found in colnames of data object")
+    mymatch <- !is.na(match(cleanNames, varNames))#, dup=TRUE)
+    return(mymatch)
+  }
+}
+
 
 
 # @FUNCTION-STARP***********************************************************************************
@@ -454,12 +531,12 @@ selectDataAccordingFormula <- function(simObj, model)
 #			or NULL if no left side given
 # @SEE		
 # @AUTHOR		Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
-# @DATE		26.08.2011
+# @DATE		26.08.2011; 2014 Martin Schlather modified
 # @FUNCTION-END*************************************************************************************
 extractVarNames <- function(model)
 {
-	if ((!is(model, "formula")) || (length(model) == 2))
-		return (NULL)
+	if (missing(model) ||
+            length(model) <= 2 || !is(model, "formula")) return (NULL)
 			
 	tmp <- as.character(model)[2]
 	tmp <- strsplit(tmp, "c\\(")[[1]]

@@ -3,7 +3,7 @@
 %\alias{AIC}
 %\alias{AICc}
 %\alias{logLik}
-\title{Details on fitting Gaussian random fields}
+\title{Details on fitting Gaussian random fields, including Box-Cox transformation}
 \description{
  Here some details of \command{\link{RFfit}} are given
  concerning the fitting of models for Gaussian random fields

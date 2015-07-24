@@ -14,7 +14,7 @@
 }
 
 \usage{
-RPtbm(phi, fulldim, reduceddim, layers, lines,
+RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
       linessimufactor, linesimustep, center, points)
 }
 
@@ -26,6 +26,10 @@ RPtbm(phi, fulldim, reduceddim, layers, lines,
       domain="single variable", isotropy="isotropic",  vdim=1)})
     which is valid in dimension \code{fulldim}.
   }
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
   % \item{loggauss}{see \command{\link{RPgauss}}.}
   \item{fulldim}{a positive integer. The dimension of the space of the
     random field to be simulated}
@@ -164,7 +168,7 @@ RPtbm(phi, fulldim, reduceddim, layers, lines,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 ## isotropic example that forces the use of the turning bands method
 model <- RPtbm(RMstable(s=1, alpha=1.8))
 x <- seq(-3, 3, 0.1)
@@ -178,7 +182,7 @@ plot(z)
 
 ## isotropic example that uses the turning layers method
 model <- RMgneiting(orig=FALSE, scale=0.4)
-x <- seq(0,10, if (interactive()) 0.1 else 5)
+x <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x=x, y=x, z=x, T=c(1,1,5))
 plot(z, MARGIN.slices=4, MARGIN.movie=3)
 

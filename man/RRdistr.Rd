@@ -31,32 +31,35 @@ RRdistr(fct, nrow, ncol, envir)
  \command{\link{RRdistr}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \note{
+  See \link{Bayesian Modelling} for some less technical introduction to
+  hierarchical modelling. 
+
  The use of \command{RRdistr} is completely on the risk of the user. There is no
- way to check whether the expressions of the user are statistically
+ way to check whether the expressions of the user are mathematically
  correct.
 
  Further, \command{\link{RRdistr}} may not be used in connection of obsolete
  commands of RandomFields.
-
- 
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
 }
 \seealso{
   \command{\link{RMmodel}},
-  \link{RR}, \command{\link{RRdistr}},
+  \link{RR},
   \command{\link{RFsimulate}},
-  \command{\link{RRdistr}}
+  \command{\link{RFdistr}}
 }
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 ## here a model with random scale parameter
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
-n <- if (interactive()) 10 else 1
+n <- 10
+\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'n'"); n<-1}} 
 for (i in 1:n) {  
   readline(paste("Simulation no.", i, ": press return", sep=""))
   plot(RFsimulate(model, x=x, seed=i))

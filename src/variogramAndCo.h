@@ -1,71 +1,102 @@
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+
 #ifndef variogramAndCo_H
 #define variogramAndCo_H 1
 
+#define STANDARDSTART_X							\
+  assert(loc != NULL && loc->xgr[0] != NULL);				\
+  cumgridlen[0] = 1;							\
+  for (d=0; d<tsxdim; d++) {						\
+    inc[d] = loc->xgr[d][XSTEP];					\
+    gridlen[d] = loc->xgr[d][XLENGTH];					\
+    cumgridlen[d+1] = gridlen[d] * cumgridlen[d];			\
+    									\
+    start[d] = 0;							\
+    end[d] = gridlen[d];						\
+    nx[d] = start[d];							\
+    x[d] = xstart[d] = loc->xgr[d][XSTART];				\
+  }									\
 
-#define FINISH_START(whereSpgs)						\
-  assert(whereSpgs->Spgs != NULL);					\
+
+/*
+    VARIABLE_IS_NOT_USED isposdef = isPosDef(cov),	
+    tsdim VARIABLE_IS_NOT_USED = loc->timespacedim,			
+    VARIABLE_IS_NOT_USED xdimOZ = loc->xdimOZ, // weicht u.U. von tsdim bei dist=true ab  
+    VARIABLE_IS_NOT_USED vdim0P1 = vdim0 + 1,				
+
+*/
+
+#define FINISH_START(whereSpgs, whereVdim, ignore_y, vdim2)		\
+  if (whereSpgs->Spgs == NULL) BUG;					\
   pgs_storage *pgs= whereSpgs->Spgs;					\
   assert(pgs->x != NULL);						\
   location_type *loc = Loc(cov);					\
   assert(loc != NULL);							\
-  bool grid =loc->grid && !loc->Time && loc->caniso==NULL,		\
+  /*bool grid =loc->grid && !loc->Time && loc->caniso==NULL, why !time ?? 10.3.15*/		\
+  bool grid =loc->grid && loc->caniso==NULL,		\
     trafo = (loc->Time || loc->caniso != NULL) && !loc->distances,	\
-    VARIABLE_IS_NOT_USED dist = loc->distances,				\
-    VARIABLE_IS_NOT_USED isposdef = isPosDef(cov),			\
-    ygiven = loc->y != NULL || loc->ygr[0] != NULL;/* might be changed !*/ \
+    ygiven = !(ignore_y) && (loc->y != NULL || loc->ygr[0] != NULL);/* might be changed !*/ \
   long cumgridlen[MAXMPPDIM +1],					\
-    err = NOERROR;							\
+    err = NOERROR,							\
+    tot = loc->totalpoints;						\
   int d,								\
-    tsdim VARIABLE_IS_NOT_USED = loc->timespacedim,			\
-    vdim0 VARIABLE_IS_NOT_USED = cov->vdim[0],				\
-    VARIABLE_IS_NOT_USED vdimSq =cov->vdim[0]*cov->vdim[1], /*not nec. squ!!*/ \
+    vdim0  = whereVdim->vdim[0],			\
+    vdimSq = vdim0 * whereVdim->vdim[vdim2], /*not nec. squ!!*/ \
     *gridlen=pgs->gridlen,						\
-    *end=pgs->end,							\
-    *endy VARIABLE_IS_NOT_USED =pgs->endy,				\
     *start=pgs->start,							\
-    *startny VARIABLE_IS_NOT_USED =pgs->startny,			\
+    *end=pgs->end,							\
+    *endy =pgs->endy,				\
+    *startny =pgs->startny,			\
+    *ny = pgs->delta,				\
     *nx=pgs->nx,							\
-    *ny VARIABLE_IS_NOT_USED = pgs->delta,				\
-    VARIABLE_IS_NOT_USED xdimOZ = loc->xdimOZ, /* weicht u.U. von tsdim bei dist=true ab */ \
     tsxdim = cov->xdimprev; /* weicht u.U. von tsdim bei dist=true ab */ \
-  long tot = loc->totalpoints,						\
-    VARIABLE_IS_NOT_USED totM1 = tot - 1,				\
-    VARIABLE_IS_NOT_USED vdim0P1 = vdim0 + 1,				\
-    vdim0tot = vdim0 * tot,						\
-    VARIABLE_IS_NOT_USED vdimSqtot = vdimSq * tot,			\
-    VARIABLE_IS_NOT_USED vdim0totSq = vdim0tot * tot,			\
-    VARIABLE_IS_NOT_USED vdimSqtotSq = vdimSq * tot * tot;		\
+  long vdim0tot = vdim0 * tot,						\
+    vdimSqtot = vdimSq * tot;						\
   double *x = pgs->x,							\
-    *xstart= pgs->xstart,						\
-    *inc=pgs->inc,							\
-    *ystart VARIABLE_IS_NOT_USED =pgs->supportmax,			\
-    *yy = NULL,		/* set by Transform2NoGrid; freed */		\
-    *xx = NULL,		/* dito			   */			\
-    *x0 VARIABLE_IS_NOT_USED = NULL,	/* never free it  */		\
-    *incy VARIABLE_IS_NOT_USED =pgs->supportcentre,			\
-    *z VARIABLE_IS_NOT_USED = pgs->z;					\
-  if (grid) {								\
-    cumgridlen[0] = 1;							\
-    for (d=0; d<tsxdim; d++) {						\
-      inc[d] = loc->xgr[d][XSTEP];					\
-      gridlen[d] = loc->xgr[d][XLENGTH];				\
-      cumgridlen[d+1] = gridlen[d] * cumgridlen[d];			\
-									\
-      start[d] = 0;							\
-      end[d] = gridlen[d];						\
-      nx[d] = start[d];							\
-      x[d] = xstart[d] = loc->xgr[d][XSTART];				\
-    }									\
+     *xstart= pgs->xstart,						\
+     *inc=pgs->inc,							\
+     *ystart =pgs->supportmax,						\
+     *yy = NULL,		/* set by Transform2NoGrid; freed */	\
+     *xx = NULL,		/* dito			   */		\
+     *incy =pgs->supportcentre;						\
+   if (grid) {								\
+    STANDARDSTART_X;							\
   }									\
   loc->i_row = 0;							\
   loc->i_col = I_COL_NA
+
+
 
 
 #define INCLUDE_VAL							\
   long i, ii, v, j;							\
   double **Val= pgs->Val,						\
     *cross=pgs->cross;							\
-  if (vdim0 > 1) {							\
+  if (vdimSq > 1) {							\
     for (v = i = 0; i<vdimSqtot ; i+=vdim0tot) {			\
       for (ii=i, j=0; j<vdim0; ii+=tot, v++, j++) {			\
 	Val[v] = value + ii;						\
@@ -78,23 +109,6 @@
     warning(wrn);							\
   }
  
-
-
-#define STANDARD_START(NX, START, END, X, XSTART, INC)	\
-  int 						\
-    *nx = NX,						\
-    *start = START,					\
-    *end = END;						\
-  double						\
-    *x = X,						\
-    *xstart = XSTART,					\
-    *inc = INC;						\
-							\
-  for (d=0; d<tsxdim; d++) {				\
-    nx[d] = start[d];					\
-    x[d] = xstart[d];					\
-  }
-
 
 
 #define STANDARDINKREMENT	\
@@ -149,7 +163,6 @@
     }
 				
 
-// loc->grid bei SelectedCovMatrix notwendig
 #define STANDARD_ENDE				\
   FREE(xx);			\
   FREE(yy);			\
@@ -175,9 +188,9 @@
 #define DO_RECYCLY if (y >= yend) y = y0;
 #define EMPTY 
 #define NONGRIDCYCLE(INCREMENTY, RECYCLY, FCTN1, FCTN2)			\
-  if (vdim0 == 1) {							\
+  if (vdimSq == 1) {							\
     for (; loc->i_row<tot; loc->i_row++, x+=tsxdim INCREMENTY){		\
-      RECYCLY			\
+      RECYCLY								\
       FCTN1;								\
     }									\
   } else {								\
@@ -189,18 +202,18 @@
 
 #define PERFORM(UNIVAR_FCTN, MULTIVAR_FCTN, UNIVAR_FCTN_Y, MULTIVAR_FCTN_Y)  \
 if (grid) {					\
-  if (ygiven || kernel) { 		\
+  if (ygiven || kernel) { 			\
       STANDARDSTART_Y_SUPPL;			\
-      if (vdim0 == 1) { GRIDCYCLE_Y(UNIVAR_FCTN_Y; value+=vdimSq);	\
+      if (vdimSq == 1) { GRIDCYCLE_Y(UNIVAR_FCTN_Y; value+=vdimSq);	\
       } else { GRIDCYCLE_Y(MULTIVAR_FCTN_Y); }				\
     } else { /* grid, y not given */					\
-      if (vdim0 == 1) {							\
+    if (vdimSq == 1) {							\
 	GRIDCYCLE(UNIVAR_FCTN; value+=vdimSq);				\
       } else {GRIDCYCLE(MULTIVAR_FCTN); }				\
     }									\
   } else { /* not a grid */						\
     if (trafo) {							\
-      Transform2NoGrid(cov, &xx, &yy);					\
+      Transform2NoGrid(cov, &xx, &yy, false);				\
       x = xx;								\
       if (ygiven) y = yy;						\
     } else {								\
@@ -214,7 +227,9 @@ if (grid) {					\
       y0 = y;								\
       NONGRIDCYCLE(DO_INCREMENTY, DO_RECYCLY, UNIVAR_FCTN_Y; value+=vdimSq,\
 		   MULTIVAR_FCTN_Y);					\
-    } else { NONGRIDCYCLE(EMPTY, EMPTY, UNIVAR_FCTN; value+=vdimSq, MULTIVAR_FCTN); } \
+    } else {								\
+      NONGRIDCYCLE(EMPTY, EMPTY, UNIVAR_FCTN; value+=vdimSq, MULTIVAR_FCTN); \
+    }									\
     STANDARD_ENDE;							\
     if (err != NOERROR) XERR(err);					\
   }
@@ -229,17 +244,13 @@ void CovIntern(int reg, double *x, double *y, long lx, long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *y,
 			   long lx, long ly, double *value);
 void PseudovariogramIntern(int reg, double *x, double *value);
-void CovarianceMatrix(cov_model *cov,double *COV, int *nonzeros);
-void InverseCovMatrix(cov_model *cov, double *v);
-void SelectedCovMatrix(cov_model *cov, int *selected /* nr! */, int nsel, 
-		       double *v, int *nonzeros);
+void CovarianceMatrix(cov_model *cov,double *COV);
+void InverseCovMatrix(cov_model *cov, double *v, double *det);
 void StandardCovariance(cov_model *cov, double *v);
-void StandardCovMatrix(cov_model *cov, double *v, int *nonzeros);
-void StandardInverseCovMatrix(cov_model *cov, double *v);
+void StandardCovMatrix(cov_model *cov, double *v);
+void StandardInverseCovMatrix(cov_model *cov, double *inverse, double *det);
 void StandardVariogram(cov_model *cov, double *v);
 void StandardPseudoVariogram(cov_model *cov, double *v);
-void StandardSelectedCovMatrix(cov_model *cov, int *sel, int nsel, double *v,
-			       int* nonzeros);
 
 
 #endif

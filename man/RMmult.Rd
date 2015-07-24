@@ -34,7 +34,7 @@ RMmult(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
  \cr
  equals
  \cr
- \code{RMexp(Aniso=A2 \%*\% A1), RMspheric(Aniso=A3 \%*\% A1)}
+ \code{RMexp(Aniso=A2 \%*\% A1) * RMspheric(Aniso=A3 \%*\% A1)}
  
  In case that all submodels are given through a covariance function,
  the global argument \code{var} of \command{\link{RMmult}}

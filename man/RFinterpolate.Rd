@@ -8,8 +8,8 @@
 }
 \usage{
 RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
-              distances, dim, data, given=NULL, err.model, method =
-              "ml", ...) 
+              distances, dim, data, given=NULL, err.model,
+                 ignore.trend = FALSE, ...) 
 }
 \arguments{
  \item{model}{string; covariance model, see \command{\link{RMmodel}}, or
@@ -72,24 +72,28 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
  Usually \code{err.model=RMnugget(var=var)}, or not given at all
  (error-free measurements).
  }
- \item{method}{
-   character. A single method out of \code{methods} or
-   \code{sub.methods},
-   see \command{\link{RFfit}}.
+
+ \item{ignore.trend}{logical. If \code{TRUE} only the
+   covariance model of the given model is considered, without the trend
+   part.
  }
+ 
  \item{...}{
- An intrinsic arguements can be given:
- \describe{
- \item{MARGIN}{character or integer.
-	This argument is only given when the mean is kriged, i.e.
-	\code{method='M'} (see \command{\link{RFoptions}}).
-	Then it has a similar meaning as in \command{\link{apply}}:
-	e.g. if \code{MARGIN="T"} in a space-time model, then spatial
-	means are calculated for each temporal instance.
+   for options, etc.
+
+%   An intrinsic arguements can be given:
+%   \describe{
+%     \item{MARGIN}{character or integer.
+%       This argument is only given when the mean is kriged, i.e.
+%       \code{method='M'} (see \command{\link{RFoptions}}).
+%       Then it has a similar meaning as in \command{\link{apply}}:
+%       e.g. if \code{MARGIN="T"} in a space-time model, then spatial
+%	means are calculated for each temporal instance.
+%      }
+%    }
+%    For further optional arguments, see \command{\link{RFoptions}}.
  }
- }
- For further optional arguments, see \command{\link{RFoptions}}.
- }
+
  % \item{trend}{only used for universal and intrinsic kriging. In case of
  % universal kriging \code{trend} is a non-negative integer (monomials
  % up to order k as trend functions), a list of functions or a formula (the
@@ -206,9 +210,9 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 ## Preparation of graphics
-if (interactive()) dev.new(height=7, width=16)
+dev.new(height=7, width=16)  %if (interactive ()) dev.new(height=7, width=16) 
 RFoptions(always_close_screen=FALSE)
 
 ## creating random variables first

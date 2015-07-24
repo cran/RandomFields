@@ -77,10 +77,11 @@ RMmps(phi)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMbrownresnick(RMfbm(alpha=1.5, s=0.2))
 plot(RMm2r(model))
 
-x <- seq(0, 10, if (interactive()) 0.005 else 1)
+x <- seq(0, 10, 0.005)
 z <- RFsimulate(RPsmith(RMm2r(model), xi=0), x)
 plot(z, type="p", pch=20)
 

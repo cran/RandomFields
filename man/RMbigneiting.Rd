@@ -120,19 +120,27 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
  \command{\link{RMgengneiting}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \references{
- \itemize{
- \item Bevilacqua, M., Daley, D.J., Porcu, E., Schlather, M. (2012)
- Classes of compactly supported correlation functions for multivariate
- random fields. Arxiv.
-
- 
- \item Gneiting, T. (1999)
- Correlation functions for atmospherical data analysis.
- \emph{Q. J. Roy. Meteor. Soc} Part A \bold{125}, 2449-2464.
-
- \item Wendland, H. (2005) \emph{Scattered Data Approximation.}
- {Cambridge Monogr. Appl. Comput. Math.}
- }
+  \itemize{
+    \item Bevilacqua, M., Daley, D.J., Porcu, E., Schlather, M. (2012)
+    Classes of compactly supported correlation functions for multivariate
+    random fields. Technical report.
+    
+    \code{RMbigeneiting} is based on this original work.
+    D.J. Daley, E. Porcu and M. Bevilacqua have published end of 
+    2014 an article intentionally
+    without clarifying the genuine authorship of \code{RMbigneiting},
+    in particular,
+    neither referring to this original work nor to \pkg{RandomFields},
+    which has included \code{RMbigneiting} since version 3.0.5 (05 Dec
+    2013).
+    
+    \item Gneiting, T. (1999)
+    Correlation functions for atmospherical data analysis.
+    \emph{Q. J. Roy. Meteor. Soc} Part A \bold{125}, 2449-2464.
+    
+    \item Wendland, H. (2005) \emph{Scattered Data Approximation.}
+    {Cambridge Monogr. Appl. Comput. Math.}
+  }
 }
 
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
@@ -153,9 +161,10 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 %# gamma is mainly a scale effect
 model <- RMbigneiting(kappa=2, mu=0.5, gamma=c(0, 3, 6), rhored=1)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}

@@ -4,7 +4,7 @@
 
  Simulation of a random field by sequential method
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -54,21 +54,25 @@ int check_sequential(cov_model *cov) {
   kdefault(cov, SEQU_MAX, gp->max);
   kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
  
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
 
-  if ((err = CHECK(next, dim, dim, PosDefType, XONLY, SYMMETRIC,
-		     SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
+  if ((err = CHECK(next, dim, dim, PosDefType, XONLY, 
+		   SymmetricOf(cov->isoown),
+		   SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
   if (next->pref[Sequential] == PREF_NONE) return ERRORPREFNONE;
   setbackward(cov, next);
+  KAPPA_BOXCOX;
+  if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
 }
 
 
 void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
 
   range->min[SEQU_MAX] = 0;
   range->max[SEQU_MAX] = RF_INF;
@@ -126,7 +130,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     *MuT = NULL, 
     *U22 = NULL, 
     *Inv22 = NULL;
-  res_type
+  double
     *res0 = NULL;
   sequ_storage* S = NULL;
   long  i, 
@@ -180,7 +184,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       (U11 = (double *) MALLOC(sizeof(double) * spatialpntsSQ))==NULL ||
       (MuT = (double *) MALLOC(sizeof(double) * spatialpntsSQback))==NULL ||
       (G = (double *) MALLOC(sizeof(double) * totpnts))==NULL ||
-      (res0 = (res_type *) MALLOC(sizeof(res_type) * vdim *
+      (res0 = (double *) MALLOC(sizeof(double) * vdim *
 				  (totpnts + spatialpnts * initial))) ==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
@@ -197,7 +201,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
  
   if (loc->grid) loc->xgr[spatialdim][XLENGTH] = back; 
   else loc->T[XLENGTH] = back;
-  Transform2NoGrid(cov, &xx);
+  Transform2NoGrid(cov, &xx, false);
   assert(loc->caniso == NULL);
   if (loc->grid) loc->xgr[spatialdim][XLENGTH]=timelength; 
   else loc->T[XLENGTH] = timelength;
@@ -472,16 +476,16 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 }
 
 
-void sequentialpart(res_type *res, long totpnts, int spatialpnts, int ntime,
+void sequentialpart(double *res, long totpnts, int spatialpnts, int ntime,
 		    double *U11, double *MuT, double *G) {
-  res_type *rp, *oldrp;
+  double *rp, *oldrp;
   int n, i, k, j, mutj;
   rp = res + totpnts;
   oldrp = res;
   for (n=0; n<ntime; n++, rp += spatialpnts, oldrp += spatialpnts) {
     for (i=0; i<spatialpnts; i++) G[i] = GAUSS_RANDOM(1.0);
     for (mutj=k=0, i=0; i<spatialpnts; i++, k+=spatialpnts) {
-      res_type dummy;
+      double dummy;
       double *Uk;
       Uk = &U11[k]; 
       dummy =0.0;
@@ -491,7 +495,7 @@ void sequentialpart(res_type *res, long totpnts, int spatialpnts, int ntime,
       for (j=0; j<totpnts; j++) {
 	  dummy += MuT[mutj++] * (double) oldrp[j];
       }
-      rp[i] = (res_type) dummy; 
+      rp[i] = (double) dummy; 
     }
   }
 }
@@ -500,7 +504,6 @@ void sequentialpart(res_type *res, long totpnts, int spatialpnts, int ntime,
 void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) 
 {  
   cov_model *next = cov->sub[0];
-  location_type *loc = Loc(cov);
   sequ_storage
     *S = cov->Ssequ;
   assert(S != NULL); 
@@ -509,13 +512,11 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
   long  i, j, k,
     totpnts = S->totpnts;
   double *G,*U22, *U11, *MuT;
-  res_type *res0,
+  double *res0,
     *res = cov->rf; 
-  bool loggauss = GLOBAL.gauss.loggauss;
- GLOBAL.gauss.loggauss = false;
+  SAVE_GAUSS_TRAFO;
  
   assert(res != NULL);
-
   assert(S != NULL); 
 
  
@@ -538,20 +539,14 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
     for (j=0; j<=i; j++){
       dummy += G[j] * Uk[j];
     }
-    res0[i] = (res_type) dummy; 
+    res0[i] = (double) dummy; 
   }
   
   sequentialpart(res0, totpnts, S->spatialpnts, S->initial, U11, MuT, G);
   res0 += S->initial * S->spatialpnts;
-  MEMCOPY(res, res0, sizeof(res_type) * totpnts * vdim);
+  MEMCOPY(res, res0, sizeof(double) * totpnts * vdim);
   sequentialpart(res, totpnts, S->spatialpnts, S->ntime - S->back, 
 		 U11, MuT, G);
-
-  if (loggauss) {
-    long vdimtot = loc->totalpoints * cov->vdim[0];
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-  }
-
-  GLOBAL.gauss.loggauss = loggauss;
+  BOXCOX_INVERSE;
 
 }

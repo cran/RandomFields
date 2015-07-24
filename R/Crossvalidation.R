@@ -1,4 +1,39 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+DeleteCoord <- function(coord, nr) {
+  if (coord$grid || length(coord$T)>0)
+    stop("deleting from a grid not possible")
+  if (length(coord$y))
+    stop("deleting within a kernel definition not allowed")
+  if (coord$dist.given) {
+    stop("deleting from distances not programmed yet")
+  } else {
+    coord$restotal <- coord$restotal - 1
+    coord$l <- coord$l - 1
+    coord$x <- coord$x[-nr, , drop=FALSE]
+  }
+  coord
+}
+
 
 summary.RFcrossvalidate <- function(object, ...) {
   ## cf geoR
@@ -47,7 +82,6 @@ print.summary.RFcrossvalidate <- function(x, ...) {
 
 RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
                             lower=NULL, upper=NULL,
-                            bc_lambda, ## if missing then no BoxCox-Trafo
                             method="ml", # "reml", "rml1"),
                             users.guess=NULL,  
                             distances=NULL,
@@ -68,7 +102,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
   if (general$modus_operandi == "neurotic") stop("crossvalidation is not a precise method")
   if (length(method) != 1) stop("exactly 1 method must be given")
    pch <- general$pch
-  if (printlevel < 1) pch <- ""
+  if (printlevel < PL_IMPORTANT) pch <- ""
  
   if (method %in%LSQMETHODS){
     sub.methods <- method
@@ -87,7 +121,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
     if (class(model) == "RF_fit") {
       models <- list(model[[method]])
     } else if (class(model) == "RFfit") {
-      models <- list(PrepareModel2(model[method]))
+      models <- list(PrepareModel2(model[method], ...))
     } else {
       models <- list(model)
     }
@@ -95,74 +129,64 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
 
   
   for (i in 1:length(models)) {
+
     if (class(model) == "RFfit" || class(model) == "RF_fit") {
       fit <- models[[i]]
       if (details) fitted <- list(fit)
       refit <- FALSE
-   #   if (missing(dim))
-   #     dim <- if (class(model) == "RFfit") model@true.tsdim else model$true.dim
-    }
-    if (class(model) == "RFfit") {
-      if (missing(data)) Z <- model@Z
-      else {
-        Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
-                             distances=distances, dimensions=dim,
-                             RFopt=RFopt)
-      }
-    } else { # class(model) == "RF_fit" || just !refit
-      if (!refit && class(model) != "RF_fit") {
-        fit <- RFfit(model=model, x=x, y=y, z=z, T=T, grid=grid, data=data,
-                     lower=lower, upper=upper, bc_lambda = bc_lambda,
-                     methods=methods, sub.methods=sub.methods,
-                     optim.control=optim.control, users.guess = users.guess,
+    } else if (!refit) {
+      fit <- RFfit(model=model, x=x, y=y, z=z, T=T, grid=grid, data=data,
+                   lower=lower, upper=upper, 
+                   methods=methods, sub.methods=sub.methods,
+                   optim.control=optim.control, users.guess = users.guess,
                      distances = distances, dim=dim,
-                     transform = transform, spConform=FALSE)
-        if (details) fitted <- list(fit)
-      }
-      
-      Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
-                           distances=distances, dimensions=dim,
-                           RFopt=RFopt)
-
+                   transform = transform, spConform=FALSE)
+      if (details) fitted <- list(fit)
     }
-   
+    
+    if (class(model) == "RFfit" && missing(data)) Z <- model@Z
+    else Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+                              distances=distances, dim=dim, RFopt=RFopt)
  
     if (length(Z$data) > 1)
       stop("cross-valdation currently only works for single sets")
+    dta <- Z$data[[1]]
+    
 
-    predicted <- var <- error <- std.error <- Z$data[[1]]
+    predicted <- var <- error <- std.error <-
+      matrix(NA, ncol=ncol(dta), nrow=nrow(dta)) ## just the size
     fitted <- list()
     len <- Z$dimdata[1, 1]
-    Zcoord <- t(Z$coord[[1]])
-
-    #oldRF <- RFoptions(); Print("A")
     
-    for (nr in 1:len) {
-       if (length(base::dim(Z$data[[1]])) == 2)
-        Daten <- Z$data[[1]][-nr,   , drop=FALSE] ## nicht data -- inferiert!!
+    Coords <- Z$coord[[1]]
+    if (Coords$grid) Coords <- ExpandGrid(Coords)
+     for (nr in 1:len) {
+      if (length(base::dim(dta)) == 2)
+        Daten <- dta[-nr,   , drop=FALSE] ## nicht data -- inferiert!!
       else # dim == 3 assumed
-        Daten <- Z$data[[1]][-nr, ,  , drop=FALSE]
-      coords <- Zcoord[-nr, , drop=FALSE]
-      if (printlevel >= 1 && pch!="") cat(pch)
+        Daten <- dta[-nr, ,  , drop=FALSE]
+      coords <- DeleteCoord(Coords, nr)
+      if (printlevel >= PL_IMPORTANT && pch!="") cat(pch)
       if (refit) {
-        if (!is.null(Z$distances)) {
+        if (Z$dist.given) {
           stop("not programmed yet. Please contact author") # to do
         } else {
           fit <- RFfit(model=model,
                        x=coords, grid=grid, data=Daten,
-                       lower=lower, upper=upper, bc_lambda = bc_lambda,
+                       lower=lower, upper=upper, 
                        methods=methods, sub.methods=sub.methods,
                        optim.control=optim.control, users.guessP = users.guess,
-                       distances = distances, dim=dim,
+                       dim=dim,
                        transform = transform, spConform=FALSE)
           if (details) fitted[[nr]] <- fit
         }
       }
-
-      interpol <- RFinterpolate(fit, x = Zcoord[nr, , drop=FALSE],
+      
+      interpol <- RFinterpolate(fit, x = coords,
                                 grid=FALSE,
-                                data = cbind(coords, Daten),
-                                 spConform = FALSE,
+                                given = coords,
+                                data =  Daten,
+                                spConform = FALSE,
                                 return_variance=TRUE, pch="")
 
 
@@ -170,9 +194,9 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       predicted[nr, ] <- as.vector(interpol$estim)
     }
     
-    if (printlevel <= 1 && pch!="") cat("\n")
+    if (printlevel <= PL_IMPORTANT && pch!="") cat("\n")
 
-    error <- Z$data[[1]] - predicted
+    error <- dta - predicted
     std.error <- error / sqrt(var)
     
     res[[i]] <- list(data=Z$data, predicted=predicted, krige.var=var,

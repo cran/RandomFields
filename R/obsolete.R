@@ -1,4 +1,26 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 RFoldstyle <- function(old=TRUE) {
   RFoptions(general.spConform = !old,
             internal.warn_newstyle = old,
@@ -125,13 +147,13 @@ InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
   p <- list("Simulate", PrepareModel2(model))
   rfInit(model=p, x=x, y =y, z = z, T=T, grid=grid) 
@@ -174,13 +196,13 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
   RFoptOld <-
     internal.rfoptions(register=register, gauss.paired=paired,
@@ -221,13 +243,13 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid=NULL, model, param,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
          }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
   RFoptOld <-
     internal.rfoptions(register=register, #gauss.method=method,
@@ -258,8 +280,8 @@ MaxStableRF <- function (x, y = NULL, z = NULL, grid=NULL,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
@@ -295,13 +317,13 @@ EmpiricalVariogram <-
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
   
   RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=grid,
                        bin=bin, phi=phi, theta=theta, deltaT=deltaT)
@@ -327,26 +349,23 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
-  RFoptOld <- internal.rfoptions(method=krige.method,
-                                 general.pch=pch, spConform=FALSE,
+  RFoptOld <- internal.rfoptions(general.pch=pch, spConform=FALSE,
                                  return_variance=return.variance,
-                                 allowdistanceZero=allowdistanceZero,
-                                 cholesky_R = cholesky)
+                                 allowdistanceZero=allowdistanceZero)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   
   data <- cbind(given, data)
   colnames(data) <- c(rep("", ncol(given)), "data")
   
-  RFinterpolate(krige.method=krige.method, x=x, y=y, z=z, T=T,
-                       grid=grid, model=model, data=data)
+  RFinterpolate(x=x, y=y, z=z, T=T, grid=grid, model=model, data=data)
 }
 
 
@@ -364,7 +383,6 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   RFoptOld <- internal.rfoptions(register=register, gauss.paired=paired,
                                         # gauss.method=method,
                                  general.errregister=err.register,
-                                 krige.method=krige.method,
                                  spConform=FALSE)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   
@@ -393,13 +411,13 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
   
  
   data <- cbind(given, data)
@@ -443,8 +461,8 @@ hurst <- function(x, y = NULL, z = NULL, data,
                    function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
       } else {
         x <- seq(x[1], x[2], x[3])
-        if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-        if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+        if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+        if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
       }
     }
   }
@@ -496,8 +514,8 @@ fractal.dim <-
                      function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
         } else {
           x <- seq(x[1], x[2], x[3])
-          if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-          if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+          if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+          if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
         }
       }
     }
@@ -545,7 +563,7 @@ fitvario.default <-
            upperbound.var.factor=10, lowerbound.var.factor=100,     
            lowerbound.sill=1E-10, scale.max.relative.factor=1000,
            minbounddistance=0.001, minboundreldist=0.02,
-           approximate.functioncalls=50, refine.onborder=TRUE,
+           approximate.functioncalls=50, 
            minmixedvar=1/1000, maxmixedvar=1000,
            pch=RFoptions()$general$pch, 
            transform=NULL,  standard.style=NA,
@@ -564,9 +582,9 @@ fitvario.default <-
 
      
   RFoptOld <-
-    internal.rfoptions(fit.bc_lambda_lb=BC.lambdaLB,
-            fit.bc_lambda_ub=BC.lambdaUB,
-            fit.sill=sill,
+    internal.rfoptions(fit.boxcox_lb=BC.lambdaLB,
+            fit.boxcox_ub=BC.lambdaUB,
+     #       fit.sill=sill,
             fit.use_naturalscaling= use.naturalscaling,
             printlevel=PrintLevel, 
             fit.bins=bins,
@@ -579,20 +597,19 @@ fitvario.default <-
             fit.lowerbound_scale_ls_factor=lowerbound.scale.LS.factor,
             fit.upperbound_var_factor=upperbound.var.factor,
             fit.lowerbound_var_factor=lowerbound.var.factor,     
-            fit.lowerbound_sill=lowerbound.sill,
+     #       fit.lowerbound_sill=lowerbound.sill,
             fit.scale_max_relative_factor=scale.max.relative.factor,
             fit.minbounddistance=minbounddistance,
             fit.minboundreldist=minboundreldist,
             fit.approximate_functioncalls=approximate.functioncalls,
-            fit.refine_onborder=refine.onborder,
             fit.minmixedvar=minmixedvar, fit.maxmixedvar=maxmixedvar,
             pch=pch, 
-            fit.optim_var_elimination=
-                       if(is.na(standard.style)) 'try' else if (standard.style)
-                       'yes' else 'never',
+    #        fit.optim_var_elimination=
+    #                   if(is.na(standard.style)) 'try' else if (standard.style)
+    #                   'yes' else 'never',
             ## var.name="X", time.name="T",
             fit.only_users = only.users,
-            fit.solvesigma = solvesigma , 
+    #        fit.solvesigma = solvesigma , 
             allowdistanceZero = allowdistanceZero,
                        na_rm = na.rm)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
@@ -609,12 +626,12 @@ fitvario.default <-
                    function(s) {c(s[1], s[3], length(seq(s[1], s[2], s[3])))})
       } else {
         x <- seq(x[1], x[2], x[3])
-        if (!is.null(y))  y <- seq(y[1], y[2], y[3])
-        if (!is.null(z))  z <- seq(z[1], z[2], z[3])
+        if (length(y)!=0)  y <- seq(y[1], y[2], y[3])
+        if (length(z)!=0)  z <- seq(z[1], z[2], z[3])
        }
     }
   }
-  if (!is.null(T))  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
+  if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
  
 
   if (!missing(param)) {
@@ -623,7 +640,7 @@ fitvario.default <-
   }
    
   RFfit(x=x, y=y, z=z, T=T, data=data, model=model,
-        lower=lower, upper=upper, grid=grid, bc_lambda=BC.lambda,
+        lower=lower, upper=upper, grid=grid,boxcox=BC.lambda,
         sub.methods=lsq.methods, methods=mle.methods,
         users.guess=users.guess, distances=distances,
         dim= truedim,

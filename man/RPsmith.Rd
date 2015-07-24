@@ -100,21 +100,21 @@ RPsmith(shape, tcf, xi, mu, s)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample(reduced=10)}
 model <- RMball()
-x <- if (interactive()) seq(0, 1000, 0.02) else seq(0, 100, 10)
+x <- seq(0, 1000, 0.2)
 z <- RFsimulate(RPsmith(model, xi=0), x)
 plot(z)
 hist(z@data$variable1, 50, freq=FALSE)
 curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
 ## 2-dim
-x <- seq(0, 10, if (interactive()) 0.05 else 1) 
+x <- seq(0, 10, 0.1) 
 z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)
 
 ## original Smith model
-x <- seq(0, 10, if (interactive()) 0.05 else 1)
+x <- seq(0, 10, 0.05)
 model <- RMgauss(scale = sqrt(2)) # !! cf. definition of RMgauss
 z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)

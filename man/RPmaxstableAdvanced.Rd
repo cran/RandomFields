@@ -1,5 +1,7 @@
-\name{Advanced Max-stable random fields}
+\name{Max-stable random fields, advanced }
 \alias{maxstableAdvanced}
+\alias{RPmaxstableAdvanced}
+
 
 \title{Simulation examples of advanced Max-Stable Random Fields}
 \description{
@@ -25,18 +27,17 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+%\dontshow{StartExample(reduced=50)}
 
-
-n <- if (interactive()) 5000 else 3
-step <- if (interactive()) 0.2 else 2
-
+n <- 100
 
 model <- RMexp(var=1.62 / 2) 
-x <- seq(0, 5, step)
-y <- seq(0, 10, step)
+x <- seq(0, 5, 0.2)
+y <- seq(0, 10, 0.2)
 
 
 auswertung <- function(simu, model, threshold=2) {
+  x <- as.vector(coordinates(simu))
   simu <- as.array(simu)
   below <- simu <= threshold
   freq <- rowMeans(below)
@@ -84,20 +85,21 @@ auswertung <- function(simu, model, threshold=2) {
 }
 
 
+## BR currently not programmed
+\dontshow{\dontrun{ ## to to
 ## Brown-Resnick
 z <- RFsimulate(RPbrownresnick(model), y, y)
 plot(z)
 simu <- RFsimulate(RPbrownresnick(model), x, n=n,  max_gauss=5)
 auswertung(simu, model)
+}}
 
-
-
+%\dontshow{\dontrun{ ## Windows hat Fehler. Unklar wieso
 ## Extremal Gaussian
 z <- RFsimulate(RPschlather(RMbr2eg(model)), y, y)
 plot(z)
 simu <- RFsimulate(RPschlather(RMbr2eg(model)), x,  n=n)
 auswertung(simu, model)
-
 
 ## Extremal Binary Gaussian
 binary.model <- RPbernoulli(RMbr2bg(model))

@@ -9,6 +9,7 @@
 #define MAXCOVDIM 11000
 #define MAXMLEDIM MAXCOVDIM
 #define MAXSIMUDIM MAXCOVDIM
+#define MAXSUB 10
 
 #define MAXCEDIM 13
 #define MAXTBMSPDIM 4
@@ -19,6 +20,7 @@
 #define MAXVARIODIM 20
 #define MAXTBMVDIM 5
 #define MAXGETNATSCALE 5
+#define MAXGAUSSVDIM 10
 
 #define MAXPARAM 20
 
@@ -71,7 +73,7 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 // NOTE!!
 // !!! CHANGE ALSO RF_GLOBALS.R !!!
 #define ISOTROPIC (isotropy_type) 0 // RC genauer : rotation invariant!!
-#define SPACEISOTROPIC (isotropy_type) 1 // RC fully symmertric 
+#define SPACEISOTROPIC (isotropy_type) 1 // RC fully symmetric 
 #define ZEROSPACEISO (isotropy_type) 2   // isotropic if time diff is zero 
 #define VECTORISOTROPIC (isotropy_type) 3
 #define SYMMETRIC (isotropy_type) 4 //"stationary" only if XONLY; in the covariance sense if multivariate!
@@ -80,14 +82,16 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 #define ORTHOGRAPHIC_PROJ (isotropy_type) 7 // RC dito; to do: implement further projections
 #define LAST_CARTESIAN ORTHOGRAPHIC_PROJ // danach MUSS sphaerisch kommen!!
 #define SPHERICAL_ISOTROPIC (isotropy_type) 8
-#define SPHERICAL_COORD (isotropy_type) 9 // RC
-#define EARTH_ISOTROPIC (isotropy_type) 10
-#define EARTH_COORD (isotropy_type) 11 // RC 
-#define LAST_SPHERICAL EARTH_COORD
-#define CYLINDER_COORD (isotropy_type) 12 // unused
-#define UNREDUCED (isotropy_type) 13  //CARTESIAN_COORD or EARTH_COORD  
-#define PREVMODELI (isotropy_type) 14  // type taken from submodels 
-#define ISO_MISMATCH  (isotropy_type) 15 // always last ! 
+#define SPHERICAL_SYMMETRIC (isotropy_type) 9
+#define SPHERICAL_COORDS (isotropy_type) 10 // RC
+#define EARTH_ISOTROPIC (isotropy_type) 11
+#define EARTH_SYMMETRIC (isotropy_type) 12
+#define EARTH_COORDS (isotropy_type) 13 // RC 
+#define LAST_ANYSPHERICAL EARTH_COORDS
+#define CYLINDER_COORD (isotropy_type) 14 // unused
+#define UNREDUCED (isotropy_type) 15  //CARTESIAN_COORD or EARTH_COORD  
+#define PREVMODELI (isotropy_type) 16  // type taken from submodels 
+#define ISO_MISMATCH  (isotropy_type) 17 // always last ! 
 #define LAST_ISO ISO_MISMATCH
 
 #define MON_PARAMETER -1
@@ -101,16 +105,16 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 
 #define MAXFIELDS 10
 #define MODEL_USER (MAXFIELDS + 0)  // for user call of Covariance etc. 
-#define MODEL_UNUSED  (MAXFIELDS + 1)  // unused  
+#define MODEL_AUX  (MAXFIELDS + 1)  // auxiliary in fitgauss.R
 #define MODEL_INTERN (MAXFIELDS + 2) // for kriging, etc; internal call of cov 
 #define MODEL_SPLIT (MAXFIELDS + 3) // split covariance model and other auxiliary methods 
 #define MODEL_GUI (MAXFIELDS + 4)   // RFgui 
 #define MODEL_MLE (MAXFIELDS + 5) // mle covariance model 
 #define MODEL_MLESPLIT (MAXFIELDS + 6)  // ="= 
-#define MODEL_MLETREND (MAXFIELDS + 7)  // mle trend model !! 
+#define MODEL_LSQ (MAXFIELDS + 7)  // unused
 #define MODEL_BOUNDS (MAXFIELDS + 8)  // MLE, lower, upper 
 #define MODEL_KRIGE  (MAXFIELDS + 9)
-#define MODEL_COND  (MAXFIELDS + 10)
+#define MODEL_PREDICT  (MAXFIELDS + 10) 
 #define MODEL_ERR  (MAXFIELDS + 11)
 #define MODEL_MAX MODEL_ERR
 
@@ -138,13 +142,20 @@ typedef enum Types {
   ProcessType, GaussMethodType, 
   BrMethodType, // change also rf_globals.R if deleted
   PointShapeType, RandomType, ShapeType, TrendType, InterfaceType, 
+  RandomOrShapeType, // only for parameters, e.g. nu in Whittle
   UndefinedType, // Bedeutung: C->Type:TypeFct existiert; cov->typus:ungesetzt
   MathDefinition,
   OtherType, // always last for usual use
-  NN1, NN2, NN3 , NN4 // for use in generateMmodels only
+  NN1, NN2, NN3, NN4 // for use in generateMmodels only
 } Types;
 
+#define nOptimiser 8
+#define nNLOPTR 15
+#define nLikelihood 4
+
 extern const char *ISONAMES[LAST_ISO + 1], 
+  *OPTIMISER_NAMES[nOptimiser], *NLOPTR_NAMES[nNLOPTR],
+  *LIKELIHOOD_NAMES[nLikelihood],
   *DOMAIN_NAMES[LAST_DOMAIN + 1], *TYPENAMES[OtherType + 1],
   *MONOTONE_NAMES[BERNSTEIN + 1 - MISMATCH] ,
   *MODENAMES[nr_modes], *OUTPUTMODENAMES[nr_output_modes], 
@@ -154,8 +165,7 @@ extern const char *ISONAMES[LAST_ISO + 1],
 
 typedef enum sortsofeffect { // ! always compare with convert.R!
   DetTrendEffect, // trend, nichts wird geschaetzt
-  DeterministicEffect, //  nichts wird geschaetzt
-  FixedTrendEffect, // 
+  FixedTrendEffect, // linearer Parameter wird geschaetzt  
   FixedEffect, // trend is also converted to FixedEffect ?
   RandomEffect, // b is random, no variance is estimated; cov. matrix
   RvarEffect, // b is random, variance is estimated; covariance matrix
@@ -163,11 +173,13 @@ typedef enum sortsofeffect { // ! always compare with convert.R!
   LVarEffect, //   wie RVarEffekt, aber gross, somit keine Optimierung
   SpaceEffect, // spatial covariance model for random effect
   SpVarEffect, //spatial covariance model for random effect
-  PrimitiveModel, // (but not simple) primitive and remaining might be worth to distinguish
-  SimpleModel, // if C->primitive and domain and isotropic  and vdim=1
-  RemainingError, // 
+  DataEffect, // box cox
+  RemainingError, // error term:
   effect_error //
 } sortsofeffect;
+
+#define FirstMixedEffect FixedEffect
+#define LastMixedEffect SpVarEffect
 
 //////////////////////////////////////////////////////////////////////
 // the different types of parameters
@@ -175,11 +187,12 @@ typedef enum sortsofparam { // never change ordering; just add new ones !!!!!!
   VARPARAM, SIGNEDVARPARAM, SDPARAM, SIGNEDSDPARAM, // 0..3
   SCALEPARAM, DIAGPARAM, ANISOPARAM, // 4..6
   INTEGERPARAM, ANYPARAM, TRENDPARAM, // unused , // 7..9
-  NUGGETVAR, MIXEDVAR,  MIXEDPARAM, // unused   // 10..12
+  NUGGETVAR, MIXEDVAR,  // unused   // 10..12
   CRITICALPARAM, 
-  IGNOREPARAM, //  not recognised in mle, when some parameter is doubled by another, e.g. biWM
-  LISTPARAM, 
-  DONOTRETURNPARAM // some as IGNOREPARAM, but also not returned by key
+  IGNOREPARAM, //  not recognised in mle, e.g. when some parameter is doubled by another, e.g. biWM
+  DONOTVERIFYPARAM, 
+  DONOTRETURNPARAM, // some as IGNOREPARAM, but also not returned by key
+  FORBIDDENPARAM
 } sortsofparam;
 
 
@@ -224,6 +237,51 @@ typedef enum Methods {
 #define GETMODEL_SOLVE_NATSC 2
 #define GETMODEL_DEL_MLE 3
 #define GETMODEL_SOLVE_MLE 4
+
+#define MIXED_X_NAME "X"
+#define MIXED_BETA_NAME "beta"
+
+#define COVARIATE_C_NAME "c"
+#define COVARIATE_X_NAME "x"
+#define COVARIATE_ADDNA_NAME "addNA"
+
+#define CONST_A_NAME "a"
+
+
+#define MINMAX_PMIN 1
+#define MINMAX_PMAX 2
+#define MINMAX_TYPE 3
+#define MINMAX_NAN 4
+#define MINMAX_MIN 5
+#define MINMAX_MAX 6
+#define MINMAX_OMIN 7
+#define MINMAX_OMAX 8
+#define MINMAX_ROWS 9
+#define MINMAX_COLS 10
+#define MINMAX_BAYES 11
+#define MINMAX_ENTRIES MINMAX_BAYES
+
+
+
+#define XLIST_X 0
+#define XLIST_Y 1
+#define XLIST_T 2
+#define XLIST_GRID 3
+#define XLIST_SPATIALDIM 4
+#define XLIST_TIME 5
+#define XLIST_DIST 6
+#define XLIST_RESTOT 7
+#define XLIST_L 8
+#define XLIST_UNITS 9
+#define XLIST_NEWUNITS 10
+#define XLIST_ENTRIES  (XLIST_NEWUNITS + 1)
+
+
+#define PROJ_SPACE -2 
+#define PROJ_TIME -1
+#define PROJECTIONS 2
+
+#define INTERN_SHOW 2
 
 
 #endif

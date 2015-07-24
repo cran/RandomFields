@@ -61,8 +61,9 @@ Here, the random field has fractal dimension \deqn{D = d+1 - \alpha/2}{D = d+1
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMlgd(alpha=0.7, beta=4, scale=0.5)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}

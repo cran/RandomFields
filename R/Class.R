@@ -1,3 +1,26 @@
+
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 ##########################################################################
 ## classes for 2- and higher-dimensional data objects, based on ##########
 ## Spatial classes from 'sp'-package                            ##########
@@ -97,7 +120,6 @@ setClass('RMmodel',
 ## rules for validity checking of ZF_MODEL objects
 setValidity('RMmodel', 
             function(object){
-               #return(TRUE)
               isRMmodel <- function(x) is(x, class='RMmodel')
               
               isNUMorDEFAULT <- function(x) {
@@ -157,7 +179,8 @@ setValidity('RMmodel',
                  !is.na(object@par.general$proj) &&
                  !all(object@par.general$proj==ZF_DEFAULT_STRING)){
                 if(!is.vector(object@par.general$proj) ||
-                   any(object@par.general$proj <= 0) ||
+                   any(object@par.general$proj == 0) ||
+                   any(object@par.general$proj < -2) ||
                    any(object@par.general$proj !=
                        as.integer(object@par.general$proj))
                    )
@@ -185,16 +208,19 @@ setClass('RMmodelgenerator', contains ="function",
 
 ## definition of class 'RMmodelFit'
 setClass('RMmodelFit',  contains='RMmodel',
-         representation(likelihood = "numeric",
-                        variab = "matrix",
-                        param = "matrix",
-                        covariab = "ANY",
-                        AIC = "numeric",
-                        AICc = "numeric",
-                        BIC = "numeric",
-                        trend = "numeric",
-                        residuals = "ANY"
-                        )
+         representation(
+             formel = "ANY",
+             likelihood = "numeric",
+             variab = "matrix",
+             param = "matrix",
+             globalvariance  = "ANY",
+             covariat = "ANY",
+             hessian = "ANY",
+             AIC = "numeric",
+             AICc = "numeric",
+             BIC = "numeric",
+             residuals = "ANY"
+             )
          )
 
 
@@ -209,8 +235,8 @@ setClass("RFempVariog",
                         theta.centers = "ANY",
                         T = "ANY",
                         vdim = "ANY",
-                        coord.units = "character",
-                        variab.units = "character",
+                        coordunits = "character",
+                        varunits = "character",
                         call = "ANY"
                         )
          )
@@ -229,19 +255,18 @@ setValidity("RFempVariog",
 ## definition of class 'RFfit'
 setClass("RFfit", 
          representation(Z = "list",
-                        ev="list",
+                        ev="RFempVariog",
                         table = "data.frame",
                         n.variab = "integer",
                         n.param = "integer",
                         n.covariates = "integer",
-                        boxcox = "logical",
                         deleted = "integer",
                         lowerbounds ='RMmodel',
                         upperbounds ='RMmodel',
                         transform = "list",
                         #vario = "character",
-                        coord.units = "character",
-                        variab.units = "character",
+                        coordunits = "character",
+                        varunits = "character",
                         number.of.data = "integer",
                         modelinfo = "data.frame",
                         number.of.parameters = "integer",

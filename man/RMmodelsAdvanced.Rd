@@ -15,7 +15,6 @@
 \command{\link{RMaskey}} \tab Askey model (generalized test or triangle model) \cr
 \command{\link{RMbessel}} \tab Bessel family \cr
 \command{\link{RMcircular}} \tab circular model \cr
-\command{\link{RMcauchy}} \tab modified Cauchy family \cr
 \command{\link{RMconstant}} \tab spatially constant model \cr
 \command{\link{RMcubic}} \tab cubic model (see Chiles \& Delfiner) \cr
 \command{\link{RMdagum}} \tab Dagum model \cr
@@ -71,48 +70,12 @@ based on a Gaussian field \cr
 }
 
 \bold{Stationary space-time models}
-
-Here, most of the models are composed models (operators).
-\tabular{ll}{
- \command{\link{RMave}} \tab space-time moving average model \cr
- \command{\link{RMcoxisham}} \tab Cox-Isham model \cr
- \command{\link{RMcurlfree}} \tab curlfree (spatial) field (stationary and anisotropic)\cr
- \command{\link{RMdivfree}} \tab divergence free (spatial) vector valued field, (stationary and anisotropic)\cr
- \command{\link{RMgennsst}} \tab generalization of Gneiting's non-separable space-time model \cr 
- \command{\link{RMiaco}} \tab non-separabel space-time model\cr
- % obsolete -- included by Cauchy --- should be given by an example
- \command{\link{RMmastein}} \tab Ma-Stein model\cr
- \command{\link{RMnsst}} \tab Gneiting's non-separable space-time model \cr 
- \command{\link{RMstein}} \tab Stein's non-separabel space-time model\cr
- \command{\link{RMstp}} \tab Single temporal process\cr
- \command{\link{RMtbm}} \tab Turning bands operator}
-
-\bold{Multivariate/Multivariable and vector valued models}
-See also the vignette \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}.
-\tabular{ll}{
- \command{\link{RMbiwm}} \tab full bivariate Whittle-Matern model (stationary and isotropic)\cr
- \command{\link{RMbigneiting}} \tab bivariate Gneiting model (stationary and isotropic)\cr
-\command{\link{RMcurlfree}} \tab curlfree (spatial) vector-valued field (stationary and anisotropic)\cr
-\command{\link{RMdelay}} \tab bivariate delay effect model (stationary)\cr
-\command{\link{RMdivfree}} \tab divergence free (spatial) vector valued
-field, (stationary and anisotropic)\cr
-\command{\link{RMexponential}} \tab functional returning \eqn{e^C}{exp(C)}\cr
- \command{\link{RMkolmogorov}} \tab Kolmogorov's model of turbulence\cr
-\command{\link{RMmatrix}} \tab trivial multivariate model\cr
-\command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
- \command{\link{RMparswm}} \tab multivariate Whittle-Matern model (stationary and isotropic)\cr
-\command{\link{RMschur}} \tab element-wise product with a positive definite
-matrix\cr 
-\command{\link{RMtbm}} \tab turning bands operator\cr
-\command{\link{RMvector}} \tab vector-valued field (combining \command{\link{RMcurlfree}} and \command{\link{RMdivfree}})
-}
+\cr
+See \link{RMmodelsSpaceTime}
 
 \bold{Non-stationary models}
-\tabular{ll}{
- \command{\link{RMnonstwm}} \tab one of Stein's non-stationary
- Wittle-Matern models \cr
- \command{\link{RMprod}} \tab scalar product\cr
-}
+\cr
+See \link{RMmodelsNonstationary}
 
 \bold{Negative definite models that are not variograms}
 \tabular{ll}{
@@ -120,44 +83,33 @@ matrix\cr
 }
 
 
-\bold{Models related to max-stable random fields (tail correlation functions)}
-\tabular{ll}{
-\command{\link{RMaskey}} \tab Askey model (generalized test or triangle
-model) with \eqn{\alpha \ge [dim / 2] +1}\cr
- \command{\link{RMbernoulli}} \tab Correlation function of a binary field
- based on a Gaussian field \cr
- \command{\link{RMbr2bg}} \tab Operator relating a Brown-Resnick process
- to a Bernoulli process\cr
- \command{\link{RMbr2eg}} \tab Operator relating a Brown-Resnick process
- to an extremal Gaussian process\cr
- \command{\link{RMbrownresnick}} \tab tail correlation function
- of Brown-Resnick process\cr
-\command{\link{RMgencauchy}} \tab generalized Cauchy family with  \eqn{\alpha\le 1/2}\cr
-\command{\link{RMm2r}} \tab shape functions related to max-stable
- processes\cr 
-\command{\link{RMm3b}} \tab shape functions related to max-stable
- processes\cr 
- \command{\link{RMmatern}} \tab Whittle-Matern model with \eqn{\nu\le 1}\cr
- \command{\link{RMmps}} \tab shape functions related to max-stable
- processes\cr 
-\command{\link{RMschlather}} \tab tail correlation function of the
- extremal Gaussian field \cr
- \command{\link{RMstable}} \tab symmetric stable family or powered
- exponential model with \eqn{\alpha\le 1}\cr
-  \command{\link{RMwhittle}} \tab Whittle-Matern model, alternative
- parametrization with \eqn{\nu\le 1/2}\cr
-
- }
+\bold{Models related to max-stable random fields (tail correlation
+  functions)}
+\cr
+See \link{RMmodelsTailCorrelation}.
 
 
 \bold{Other covariance models}
 \tabular{ll}{
- \command{\link{RMuser}} \tab User defined model \cr
+  \command{\link{RMuser}} \tab User defined model \cr
+  \command{\link{RMfixcov}} \tab User defined covariance structure\cr 
 }
 
-\bold{Auxiliary models}
-There are models or better function that are not covariance functions,
-but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
+\bold{Trend models}
+\tabular{ll}{
+  \code{\link[=RMS]{Aniso}} \tab for space transformation (not really
+  trend, but similiar)\cr
+  \command{\link{RMcovariate}} \tab spatial covariates\cr
+  \command{\link{RMprod}} \tab to model variability of the variance\cr
+  \command{\link{RMpolynome}} \tab easy modelling of polynomial trends \cr
+  \command{\link{RMtrend}} \tab for explicite trend modelling\cr
+  \command{\link{R.models}} \tab for implicite trend modelling\cr
+  \command{\link{R.c}} \tab for multivariate trend modelling \cr
+}
+ 
+
+\bold{Auxiliary models}\cr
+ See \bold{\link{Auxiliary RMmodels}.}
 }
 
 \note{
@@ -165,14 +117,14 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
     \item
     Note that, instead of the named arguments, a single argument \code{k}
     can be passed. This is possible if all the arguments
-    are scalar. Then \code{k} must have length equal to the number of
+    are scalar. Then \code{k} must have a length equal to the number of
     arguments.
     \item
-    If a argument equals \code{NULL} the
-    argument is not set (but must be a valid name).
+    If an argument equals \code{NULL} the
+    argument is not set (but must have a valid name).
     \item
     \code{Aniso} can be given also by \command{\link{RMangle}}
-    instead by a matrix
+    or any other \command{\link{RMmodel}} instead by a matrix
     \item
     Note also that a completely different possibility exists to define a
     model, namely by a list. This format allows for easy flexible models
@@ -192,7 +144,7 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
       \cr
       The latter definition can be also obtained by
       
-      \code{summary(RMexp(scale=2, var=5))}
+      \code{print(RMexp(scale=2, var=5))}
       
       \item
       \code{model <- RMnsst(phi=RMgauss(var=7), psi=RMfbm(alpha=1.5),
@@ -204,43 +156,15 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 	\code{list("RMnsst", phi=list("RMS", var=7, list("RMgauss")),} \cr
 	\code{psi=list("RMfbm", alpha=1.5))
 	)}.
-  }
-  
-  \item
-  Instead of a deterministic value, a distribution family might be
-  given, see \command{\link{RRmodels}}.
-  The latter starts with \code{RR} or is distribution family,
-  e.g. \code{norm}, \code{exp}, or \code{unif}. Note that the
-  effect of the distribution family varies between the different processes:
-
-  \itemize{
-    \item in Max-stable fields and
-    \command{\link{RPpoisson}}, a new realisation of the
-    distribution is drawn for each shape function
-    \item in all the other cases: a realisation is only drawn once.
-    This effects, in particular, Gaussian fields with argument
-    \code{n>1}, where all the realisations are based on the same
-    realisation out of the distribution.
-  }
-  
-  MLE ist not programmed yet.
-
-  Very advanced:
-  In case of a distribution family, its arguments might be again given
-  by a \link{RMmodel}. Note that checking the validity of the
-  arguments is rather limited for such complicated models, in general.
-  
-  See also
-  \link{RMmodelsAuxiliary} and \link{Baysian}.
-  }
-  
-  All models have secondary names that stem from 
-  \pkg{RandomFields} versions 2 and earlier and
-  that can also be used as strings in the list notation.
-  See \code{\link{RFgetModelNames}(internal=FALSE)} for
-  the full list. 
+    }
+ 
+    All models have secondary names that stem from 
+    \pkg{RandomFields} versions 2 and earlier and
+    that can also be used as strings in the list notation.
+    See \code{\link{RFgetModelNames}(internal=FALSE)} for
+    the full list.     
+ }
 }
-
 
 %\section{Methods}{
 % \describe{
@@ -282,19 +206,22 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
     random fields with package \pkg{RandomFields}. \emph{
       Journal of Statistical Software}, \bold{63} (8), 1-25,
     url          = \sQuote{http://www.jstatsoft.org/v63/i08/}
+
+    \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}, the
+    corresponding vignette.
+
  \item Yaglom, A.M. (1987) \emph{Correlation Theory of Stationary and
  Related Random Functions I, Basic Results.}
- New York: Springer.
- \item Wackernagel, H. (2003) \emph{Multivariate Geostatistics.} Berlin:
+ New York: Springer. \item Wackernagel, H. (2003) \emph{Multivariate Geostatistics.} Berlin:
  Springer, 3nd edition.
  }
 }
 
-\seealso{\command{\link{RFformula}}, \command{\link{RMmodels}},
+\seealso{\command{\link{RFformula}},
+  \link{RM},
+  \command{\link{RMmodels}},
   \command{\link{RMmodelsAuxiliary}}
 
- \sQuote{\href{../doc/multivariate_jss.pdf}{multivariate}}, a vignette
- for multivariate geostatistics
 }
 
 \author{
@@ -307,6 +234,14 @@ but can be part of a model definition. See \bold{\link{Auxiliary RMmodels}.}
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-RFgetModelNames(type="positive", group.by=c("domain", "isotropy"))
+\dontshow{StartExample()}
+## a non-stationary field with a sharp boundary of
+## of the differentiabilities
+x <- seq(-0.6, 0.6, len=50)
+model <- RMwhittle(nu=0.8 + 1.5 * R.is(R.p(new="isotropic"), "<=", 0.5))
+z <- RFsimulate(model=model, x, x, n=4)
+plot(z)
+
+
 \dontshow{FinalizeExample()}
 }

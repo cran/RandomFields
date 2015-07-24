@@ -1,89 +1,37 @@
 \name{RMtrend}
 \alias{RMtrend}
+\alias{trend}
 \title{Trend Model}
 \description{
  \command{\link{RMtrend}} is a pure trend model with covariance 0.
 }
 \usage{
-RMtrend(mean, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
+RMtrend(mean) %, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 }
 \arguments{ % to do orthogonale Polynome
- \item{mean}{optional; should be a vector of length \eqn{p}{p}, where
- \eqn{p}{p} is the number of variables taken into account by the
- corresponding multivariate random field
- \eqn{(Z_1(\cdot),\ldots,Z_p(\cdot))}{(Z_1(.),\ldots,Z_p(.))}; 
- the \eqn{i}{i}-th component of \code{mean} is interpreted as constant
- mean of \eqn{Z_i(\cdot)}{Z_i(.)}.
+  \item{mean}{numeric or \link{RMmodel}.
+    If it is numerical, it should be a vector of length \eqn{p}{p}, where
+    \eqn{p}{p} is the number of variables taken into account by the
+    corresponding multivariate random field
+    \eqn{(Z_1(\cdot),\ldots,Z_p(\cdot))}{(Z_1(.),\ldots,Z_p(.))}; 
+    the \eqn{i}{i}-th component of \code{mean} is interpreted as constant
+    mean of \eqn{Z_i(\cdot)}{Z_i(.)}.
  }
- \item{plane}{optional; should be a \eqn{d \times p}{d x p}-matrix where
- \eqn{d} is the dimension of the random field and \eqn{p} the number
- of variables considered; corresponds to a trend described by \eqn{p}{p}
- hyperplanes. The mean of \eqn{Z_i(x)} with \eqn{x= (x_1,\ldots,x_d)}
- is given by
- \deqn{plane_{1i} x_1 + plane_{2i} x_2 + \ldots + plane_{di} x_d.}
- }
- \item{polydeg}{optional; should be an integer vector of length \eqn{p};
- indicates that the mean of \eqn{Z_i(\cdot)}{Z_i(.)} is given by a
- multivariate polynomial of degree less than or equal to the
- \eqn{i}-th component of \code{polydeg}; the coefficients are either assumed
- to be unknown or to be given by \code{polycoeff}.
- }
- \item{polycoeff}{optional; should be a vector of length
- \deqn{{polydeg_1+d\choose d} + \ldots + {polydeg_p+d\choose d}}
- which is the number of monomial basis functions up to degree
- \code{polydeg_1}, \ldots, \code{polydeg_p} in a
- \eqn{d}{d}-dimensional space. Each component of \code{polycoeff}
- gives the coefficient to one basis function; these products are added
- providing \eqn{p}{p} trend polynomials.\cr
- For the order of the monomial basis functions see details.
- CAUTION: This argument should be used by advanced users only as the
- order might be sophisticated. In many cases it is recommended to use
- \code{arbitraryfct} and \code{fctcoeff} instead.
- } 
- \item{arbitraryfct}{optional; should be a \eqn{p}-variate
- function; the \eqn{i}-th component of \code{arbitraryfct}
- describes the trend surface of \eqn{Z_i(\cdot)}{Z_i(.)};
- the arguments of this function should be location (and
- time) corresponding to the random field to be modelled. If
- \command{\link{RMtrend}} is used in the model definition of the functions
- \command{\link{RFsimulate}}, \command{\link{RFfit}} or
- \command{\link{RFinterpolate}}, the names of the arguments should be
- given by \code{x, y, z, T}.
- }
- \item{fctcoeff}{optional; should be numerical; determines the
- coefficient belonging to \code{arbitraryfct}, i.e. the trend
- is given by \code{fctcoeff * arbitraryfct}. Note that the
- coefficient is the same for each component of
- \code{arbitraryfct};
- \code{fctcoeff} is ignored if \code{arbitraryfct=NULL}.
- } 
+% \item{plane, polydeg, polycoeff,arbitraryfct,fctcoeff}{
+%   argument currently not maintained anymore.} 
 }
-\details{
- If different trend arguments are given, the corresponding trend
- components are added. Equivalently, \code{+} (see
- \command{\link{RFformula}}) or \command{\link{RMplus}} can be used
- to add trend terms.
 
+\details{ 
  Note that this function refers to trend surfaces in the geostatistical
- framework. Fixed effects in the mixed models framework are
- implemented, as well (see \command{\link{RFformula}}).
-
- The order of the monomial basis functions and the corresponding
- coefficients given by \code{polycoeff} is the following:\cr
- The first \eqn{{polydeg_1+d\choose d}} components belong to the
- trend polynomial of the first variable, the following
- \eqn{{polydeg_2+d\choose d}} ones to the second one, and so on.
- Within one trend polynomial the monomial basis functions are ordered
- by the powers in an ascending way such that the power of the first
- component varies fastest; e.g. the monomial basis functions up to
- degree \eqn{k}{k} in a two-dimensional space are given by
- \deqn{1, x, \ldots, x^k, y, xy, \ldots, x^{k-1}y, y^2, \ldots, x
- y^{k-1}, y^k.}  
+ framework. Fixed effects in the mixed models framework are also being
+ implemented, see \command{\link{RFformula}}.
 }
 \note{
  Using uncapsulated substraction to build up a covariance
  function is ambiguous, see the examples below.
- Best to define the trend separately, or to use \command{\link{R.minus}}.
+ Best to define the trend separately, or to use
+ \command{\link{R.minus}}.
+
 }
 \value{
  \command{\link{RMtrend}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
@@ -107,6 +55,44 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
+## first simulate some data with a sine and a mean as trend
+repet <- 100
+\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); repet <- 3}} 
+x <- seq(0, pi, len=10)
+trend <- 2 * sin(R.p(new="isotropic")) + 3
+model <- RMexp(var=2, scale=1) + trend
+data <- RFsimulate(model, x=x, n=repet)
+
+## now, let us estimate variance, scale, and two parameters of the trend
+model2 <- RMexp(var=NA, scale=NA) + NA * sin(R.p(new="isotropic")) + NA
+\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); model2 <- RMexp(var=NA) + NA * sin(R.p(new="isotropic")) + NA}}
+print(RFfit(model2, data=data))
+
+## model2 can be made explicite by enclosing the trend parts by
+## 'RMtrend'
+model3 <- RMexp(var=NA, scale=NA) + NA *
+          RMtrend(sin(R.p(new="isotropic"))) + RMtrend(NA)
+print(RFfit(model2, data=data))
+
+
+## IMPORTANT:  substraction is not a way to combine definite models
+##             with trends
+trend <- -1
+(model0 <- RMexp(var=0.4) + trend) ## exponential covariance with mean -1
+(model1 <- RMexp(var=0.4) + -1)    ## same as model0
+(model2 <- RMexp(var=0.4) + RMtrend(-1)) ## same as model0
+(model3 <- RMexp(var=0.4) - 1) ## this is a purely deterministic model
+                               ## with exponential trend
+plot(RFsimulate(model=model0, x=x, y=x)) ## exponential covariance
+                               ##           and mean -1
+plot(RFsimulate(model=model1, x=x, y=x)) ## dito
+plot(RFsimulate(model=model2, x=x, y=x)) ## dito
+plot(RFsimulate(model=model3, x=x, y=x)) ## purely deterministic model!
+
+
+
+\dontshow{\dontrun{
 ##################################################
 # Example 1: # 
 # Simulate from model with a plane trend surface #
@@ -120,21 +106,8 @@ model <- ~ RMtrend(polydeg=1,polycoeff=c(1,1,-1)) + RMexp(var=0.4)
 x <- 0:10
 simulated0 <- RFsimulate(model=model, x=x, y=x)
 plot(simulated0)
+}}
 
-%to do
-## NOTE: the future way of modelling the trend will be:
-trend <- 1 + R.p(1) - R.p(2)   
-model <- RMexp(var=0.4) + trend
-
-## IMPORTANT: avoid substractopm in the trend definition
-## or define the trend in a separate definition first
-trend <- -1
-(model0 <- RMexp(var=0.4) + trend)
-(model1 <- RMexp(var=0.4) + -1)## same as model0
-(model2 <- RMexp(var=0.4) - 1) ## different from model0 !!
-plot(RFsimulate(model=model1, x=x, y=x)) ## random with covariance
-##                                   model being the exponential one
-plot(RFsimulate(model=model2, x=x, y=x)) ## purely deterministic trend!
 
 \dontshow{\dontrun{
 

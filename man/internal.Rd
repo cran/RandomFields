@@ -4,6 +4,7 @@
 \alias{rfGenerateTest}
 \alias{rfGenerateMaths}
 \alias{checkExamples}
+\alias{StartExample}
 \alias{FinalizeExample}
 \alias{Dependencies}
 \alias{ScreenDevice}
@@ -28,12 +29,13 @@ rfGenerateMaths(files = "/usr/include/tgmath.h", Cfile = "QMath",
                         RFpath = "~/R/RF/svn/RandomFields/RandomFields")
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
-               path="RandomFields", package = "RandomFields",
-                          read.rd.files=TRUE)
+               path="RandomFields", package = "RandomFields", 
+               read.rd.files=TRUE, libpath = NULL, single.runs = FALSE)
 
 ScreenDevice(height, width)
 
 FinalizeExample()
+StartExample(reduced = TRUE)
 
 Dependencies(install = all(pkgs == all.pkgs),
              check=TRUE, pkgs = all.pkgs, dir = "Dependencies")
@@ -48,7 +50,7 @@ plotWithCircles(data, factor=1.0,
 \arguments{
   \item{assigning, RFpath, RMmodels.file,RCauto.file,files,Cfile}{internal}
   \item{exclude, include, ask, echo, halt, ignore.all, path, package,
-    read.rd.files
+    read.rd.files, libpath, single.runs
   }{internal; 
     ignore.all referes to the \sQuote{all} export statement in the
     namespace -- whether this should be ignored.
@@ -60,6 +62,7 @@ plotWithCircles(data, factor=1.0,
   \item{install, check, pkgs, dir}{internal}
   \item{height,width}{window sizes}
   \item{data, factor, xlim, ylim, col, fill, ...}{internal}
+  \item{reduced}{internal}
  % \item{REGISTER, COVREGISTER, RELAX}{internal}
 }
 

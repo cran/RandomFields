@@ -187,9 +187,9 @@ SEXP fftVario3D(SEXP Coord,
     emp_vario[i]= n[i]=0.0;
   }
 
-  //print("sizeof double: %d ", (int) sizeof(res_type));
-  if (sizeof(res_type) == 8 )
-    binshift = bin[nbin] * bin[nbin] * (sizeof(res_type) == 8 ? 1e-12 : 1e-4);
+  //print("sizeof double: %d ", (int) sizeof(double));
+  if (sizeof(double) == 8 )
+    binshift = bin[nbin] * bin[nbin] * (sizeof(double) == 8 ? 1e-12 : 1e-4);
   // shift all bins to the right to overcome rounding errors
   for (i=0; i<=nbin; i++) {
     BinSq[i] = bin[i]>0 ? bin[i] * bin[i] + binshift : bin[i];
@@ -430,11 +430,11 @@ SEXP fftVario3D(SEXP Coord,
   if (err != NOERROR) {
     switch (err) {
     case TOOLS_MEMORYERROR :  
-      error("Memory alloc failed in empiricalvariogram.\n");
+      ERR("Memory alloc failed in empiricalvariogram.\n");
     case TOOLS_XERROR :  
-      error("The x coordinate may not be NULL.\n"); break;
+      ERR("The x coordinate may not be NULL.\n"); break;
     case TOOLS_BIN_ERROR :
-      error("Bin components not an increasing sequence.\n"); break;
+      ERR("Bin components not an increasing sequence.\n"); break;
     default : BUG;
     }
   }

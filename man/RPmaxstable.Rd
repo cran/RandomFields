@@ -58,11 +58,23 @@ Methods
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
+### currently not programmed
+
+\dontshow{\dontrun{ ## to do !!
 model <- RMfbm(alpha=1.5)
-x <-  seq(0, 8, if (interactive()) 0.02 else 4) 
-z <- RFsimulate(RPbrownresnick(model), x=x, n=if (interactive()) 4 else 1)
+x <-  seq(0, 8, 0.02)
+z <- RFsimulate(RPbrownresnick(model), x=x, n=4)
 plot(z)
+}}
+
+
+
+
+
+
+
 \dontrun{\dontshow{
 ## to do : seq(0, 10, 0.02) oben ist furchtbar langsam. Warum?
 }}
@@ -70,17 +82,15 @@ plot(z)
 \dontrun{\dontshow{
 model <- RMball()
 x <- seq(0, 10, 5) # nice for   x <- seq(0, 10, 0.02)
-n <- if (interactive()) 1000 else 1
-z <- RFsimulate(RPsmith(model, xi=0), x, n=n, every=1000)
+z <- RFsimulate(RPsmith(model, xi=0), x, n=1000, every=1000)
 plot(z)
 hist(unlist(z@data), 150, freq=FALSE) #not correct; to do; sqrt(2) wrong
 curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE, col=3)
 }}
 
 model <- RMgauss()
-n <- if (interactive()) 100 else 1
-x <- seq(0, 10, if (interactive()) 0.05 else 5)
-z <- RFsimulate(RPschlather(model, xi=0), x, n=n)
+x <- seq(0, 10, 0.05)
+z <- RFsimulate(RPschlather(model, xi=0), x, n=1000)
 plot(z)
 hist(unlist(z@data), 50, freq=FALSE)
 curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)

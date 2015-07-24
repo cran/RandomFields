@@ -1,10 +1,10 @@
- /* 
+/* 
  Authors
  Martin Schlather, schlather@math.uni-mannheim.de
 
  simulation of max-stable random fields
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -76,6 +76,7 @@ int check_pts_given_shape(cov_model *cov) {
   int err, role,
     dim = cov->tsdim; 
 
+  ASSERT_CARTESIAN;
   if (loc->Time) SERR("Time component not allowed yet"); // todo
    
   kdefault(cov, PGS_RATIO, GLOBAL.extreme.density_ratio); 
@@ -457,7 +458,7 @@ int complete_copy(cov_model **newmodel, cov_model *cov) {
   prev = start->key != NULL ? start->key : start->sub[0];
   if (prev->typus != ProcessType) BUG;
   
-  if ((err = covcpy(newmodel, prev)) != NOERROR) return err;
+  if ((err = covCpy(newmodel, prev)) != NOERROR) return err;
   (*newmodel)->calling = cov;
   int role = prev->role ;// role_of_process(prev->nr);
   if ((err = CHECK(*newmodel, prev->tsdim, prev->xdimprev, prev->typus, 
@@ -724,7 +725,7 @@ void do_pgs_gauss(cov_model *cov, gen_storage *S) {
     DORANDOM(pts, cov->q);  // cov->q nur dummy. Wird ueberschrieben
     if (cov->role == ROLE_POISSON_GAUSS || !grid) { 
       if (calculate_mass_gauss(cov) != NOERROR) 
-	error("unexpected error in 'do_pts_given_shape' (maxstable)");
+	ERR("unexpected error in 'do_pts_given_shape' (maxstable)");
     } else BUG;
   }
 
@@ -866,7 +867,7 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
       if ((err = REINIT(cov, cov->mpp.moments, S)) != NOERROR) BUG;
       DO(shape, S);     
       if (calculate_mass_maxstable(cov) != NOERROR) 
-	error("unexpected error in 'do_pts_given_shape' (maxstable)");
+	ERR("unexpected error in 'do_pts_given_shape' (maxstable)");
 
       cmaxDmu = pgs->totalmass / shape->mpp.mMplus[1];
       if (pgs->n_zhou_c < GLOBAL.extreme.max_n_zhou) {
@@ -917,7 +918,7 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
     if (prev->key != NULL) prev->key = cov;		
     else if (prev->sub[0] != NULL) prev->sub[0] = cov;	
     else if (prev->sub[1] != NULL) prev->sub[1] = cov;	
-    else error("structure mismatch");			
+    else ERR("structure mismatch");			
 
     // APMI(cov);
 
@@ -1112,7 +1113,7 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
   if (prev->key != NULL) cov = prev->key;		
   else if (prev->sub[0] != NULL) cov = prev->sub[0];	
   else if (prev->sub[1] != NULL) cov = prev->sub[1];	
-  else error("structure mismatch");			
+  else ERR("structure mismatch");			
   
   cov_model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
@@ -1264,7 +1265,9 @@ int check_stationary_shape(cov_model *cov) {
   cov_model *shape = cov->sub[STAT_SHAPE_FCT];
   int err, role,
     dim = cov->tsdim; 
-  
+
+   ASSERT_CARTESIAN;
+ 
   if (cov->xdimprev != cov->xdimown || cov->xdimprev != cov->tsdim) 
     return ERRORDIM;
   
@@ -1385,6 +1388,7 @@ int check_standard_shape(cov_model *cov) {
   int err, role,
     dim = cov->tsdim; 
   
+  ASSERT_CARTESIAN;
 
   if (cov->q == NULL) QALLOC(dim);
 
@@ -1587,6 +1591,7 @@ int check_mcmc_pgs(cov_model *cov) {
   int err, role,
     dim = cov->tsdim; 
 
+  ASSERT_CARTESIAN;
   if (loc->Time) SERR("Time component not allowed yet"); // todo
    
   kdefault(cov, PGS_RATIO, GLOBAL.extreme.density_ratio); 

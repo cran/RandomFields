@@ -1,5 +1,4 @@
 \name{RMmodel}
-\alias{RM}
 \alias{RMmodel}
 \alias{RMmodels}
 \alias{[,RMmodel,ANY,ANY-method} %]
@@ -28,7 +27,8 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \item
  \code{proj} is the optional projection vector which defines a
  diagonal matrix of zeros and ones and \code{proj} gives the
- positions of the ones (integer values).
+ positions of the ones (integer values). In a space-time framework, also
+ \code{"space"} and  \code{"time"} are valid values.
  }
  With \eqn{\phi} denoting the original model, the transformed model is
  \eqn{C(h) = v * \phi(A*h/s)}.
@@ -74,7 +74,6 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
 
  \bold{Basic models for mixed effect modelling}
-
  \tabular{ll}{
  \command{\link{RMfixcov}} \tab constant pre-defined covariance \cr
  \command{\link{RMfixed}} \tab fixed or trend effects;
@@ -92,10 +91,10 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  }
 
   
- \bold{See \link{RMmodelsAdvanced} for many more, advanced models.\cr
- \bold{See \link{spherical models} for models valid on spherical
-   coordinate systems.}
- }
+% \bold{See \link{RMmodelsAdvanced} for many more, advanced models.\cr
+% \bold{See \link{spherical models} for models valid on spherical
+%coordinate systems.}
+% }
 }
 
 \references{
@@ -131,11 +130,13 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
 
 \seealso{
-  \link{RC}, \link{RF},  \link{RP}, \link{RR}, \link{R.},
+  \link{RM} for an overview over more advanced classes of models\cr
+  \link{RC}, \link{RF}, \link{RP}, \link{RR}, \link{R.},
   \command{\link{RFcov}},
   \command{\link{RFformula}},
   \command{\link{RMmodelsAdvanced}},
-  \command{\link{RMmodelsAuxiliary}}
+  \command{\link{RMmodelsAuxiliary}},
+  \link{trend modelling}
 }
 
 \keyword{spatial}
@@ -146,8 +147,6 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 % library(RandomFields, lib="~/TMP")
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-RFgetModelNames(type="positive definite", domain="single variable",
-                isotropy="isotropic", operator=!FALSE) ## RMmodel.Rd
 
 ## an example of a simple model
 model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget

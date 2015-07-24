@@ -215,7 +215,7 @@ int structAve(cov_model *cov, cov_model **newmodel) {
   
   if (cov->role != Average) ILLEGAL_ROLE;
 
-  if ((err = covcpy(newmodel, cov)) != NOERROR) return err;
+  if ((err = covCpy(newmodel, cov)) != NOERROR) return err;
   shape = *newmodel;
   shape->nr = SHAPEAVE;
   addModel(shape, AVE_GAUSS, GAUSS);
@@ -582,9 +582,6 @@ void spectralcox(cov_model *cov, gen_storage *s, double *e) {
 // GenPS (generalisation of paciore and stein)
 // Q = (x-y) Sy (Sx + Sy)^{-1} Sx (x-y) (weicht etwas von Stein ab)
 
-#define STP_S 0
-#define STP_Z 1
-#define STP_M 2
 
 #define STP_XI2 0
 #define STP_PHI 1
@@ -700,9 +697,12 @@ int checkstp(cov_model *cov){
     *phi = cov->sub[STP_PHI],
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
-  int err;
-  
-  int dim = cov->tsdim;
+  int err,
+    dim = cov->tsdim;
+
+
+  ASSERT_CARTESIAN;
+
  if (dim > StpMaxDim)
     SERR2("For technical reasons max. dimension for ave is %d. Got %d.", 
 	  StpMaxDim, cov->xdimprev);
@@ -777,7 +777,7 @@ int structStp(cov_model *cov, cov_model **newmodel) {
   
   if (cov->role != Average) ILLEGAL_ROLE;
   
-  if ((err = covcpy(newmodel, cov)) != NOERROR) return err;
+  if ((err = covCpy(newmodel, cov)) != NOERROR) return err;
   shape = *newmodel;
   shape->nr = SHAPESTP;
   addModel(shape, STP_GAUSS, GAUSS);
@@ -808,7 +808,7 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
     double minmax[2];
     assert(CovList[Sf->nr].minmaxeigenvalue != NULL);
     CovList[Sf->nr].minmaxeigenvalue(Sf, minmax);
-    if (minmax[0] <= 0.0) error("neg eigenvalue in shape function of 'stp'");
+    if (minmax[0] <= 0.0) ERR("neg eigenvalue in shape function of 'stp'");
     q[AVESTP_MINEIGEN] = minmax[0];
     q[AVESTP_LOGDET] = (double) cov->xdimprev * log(minmax[1]);
   } else {
@@ -1297,189 +1297,8 @@ void rangeRotat(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 }
 
 
-
-/* Whittle-Matern or Whittle or Besset */ 
-// statt 0 Parameter: 2 Parameter, M und z fuer xi
-void kappaNonStWM(int i, cov_model *cov, int *nr, int *nc){
-  *nc =  1;
-  *nr = i < CovList[cov->nr].kappas ? 1 : -1;
-}
-
-void NonStWMQ(double *x, double *y, double sqrtQ, cov_model *cov, double *v){
-// check calling functions, like hyperbolic and gneiting if any changings !!
-  double loggamma, nuxy, nux, nuy;
-  cov_model *nu = cov->kappasub[WM_NU];
-
-  if (nu == NULL) {
-    nuxy = P0(WM_NU);
-    loggamma = lgammafn(nuxy);
-  } else {
-    FCTN(x, nu, &nux);
-    FCTN(y, nu, &nuy);
-    nuxy = 0.5 * (nux + nuy);
-    loggamma = 0.5 * (lgammafn(nux) + lgammafn(nuy));
-  }
-    
-  if (sqrtQ == 0.0) {
-    *v = 1.0;
-    return;
-  }
- 
-  *v = 2.0 * exp(nuxy * log(0.5 * sqrtQ) - loggamma
-		 + log(bessel_k(sqrtQ, nuxy, 2.0)) - sqrtQ);
-}
-
-void NonStWM(double *x, double *y, cov_model *cov, double *v){
-// check calling functions, like hyperbolic and gneiting if any changings !!
-  int d,
-    dim = cov->tsdim;
-  double Q=0.0;
-  for (d=0; d<dim; d++) {
-    double delta = x[d] - y[d];
-    Q += delta * delta;
-  }
-  NonStWMQ(x, y, sqrt(Q), cov, v);
-}
-
-int checkNonStWM(cov_model *cov) { 
-  cov_model *nu = cov->kappasub[WM_NU];
-  int err,
-    dim = cov->tsdim;
-
-  NotProgrammedYet("");
- 
-
-  if (PisNULL(WM_NU) && nu==NULL) SERR1("'%s' is missing", KNAME(WM_NU));
-  if (isRandom((Types) CovList[cov->nr].kappaParamType[WM_NU])) 
-    SERR1("only deterministic models for '%s' are allowed.\nHowever these models can have random parameters.", KNAME(WM_NU));
-  
-  if (nu != NULL) {
-    if ((err = CHECK(nu, dim, dim, ShapeType, XONLY, CARTESIAN_COORD,
-		       SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
-		     )) != NOERROR) 
-      return err;
-    if (nu->tsdim != cov->tsdim) return ERRORWRONGDIM;
-  }
-  // no setbackard !!
-  return NOERROR;
-}
-
-sortsofparam paramtype_nonstWM(int VARIABLE_IS_NOT_USED  k, int VARIABLE_IS_NOT_USED  row, int VARIABLE_IS_NOT_USED col) {
-  return CRITICALPARAM;
-}
-
-
-void rangeNonStWM(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){ 
-  range->min[WM_NU] = 0.0;
-  range->max[WM_NU] = RF_INF;
-  range->pmin[WM_NU] = 1e-2;
-  range->pmax[WM_NU] = 10.0;
-  range->openmin[WM_NU] = true;
-  range->openmax[WM_NU] = true;
-}
-
-// using nu^(-1-nu+a)/2 for g and v^-a e^{-1/4v} as density instead of frechet
-// the bound 1/3 can be dropped
-// static double eM025 = exp(-0.25);
-//void DrawMixNonStWM(cov_model *cov, double *random) { // inv scale
-//  // V ~ F in stp
-//  cov_model *nu = cov->sub[WM_NU];  
-//  double minnu;
-//  double alpha;
-//
-//  if (nu == NULL) {
-//    minnu = P(WM_NU][0];
-//  } else {
-//    double minmax[2];
-//    CovList[nu->nr].minmaxeigenvalue(nu, minmax);
-//    minnu = minmax[0];
-//  }
-//  alpha = 1.0 + 0.5 /* 0< . < 1*/ * (3.0 * minnu - 0.5 * cov->tsdim);
-//  if (alpha > 2.0) alpha = 2.0; // original choice
-//  if (alpha <= 1.0) ERR("minimal nu too low or dimension too high");
-//
-// error("logmixdensnonstwm not programmed yet");
- /* 
-  double beta = GLOBAL.mpp.beta,
-    p = GLOBAL.mpp.p,
-    logU;
-  if (UNIFORM_RANDOM < p){
-    cov_a->WMalpha = beta;
-    logU =  log(UNIFORM_RANDOM * eM025);
-    cov_a->WMfactor = -0.5 * log(0.25 * p * (beta - 1.0)) + 0.25;
-  } else {
-    cov_a->WMalpha = alpha;
-    logU = log(eM025 + UNIFORM_RANDOM * (1.0 - eM025));
-    cov_a->WMfactor = -0.5 * log(0.25 * (1.0 - p) * (alpha - 1.0));
-  } 
-  
-  logmix!!
-
-  *random = log(-0.25 / logU) / (cov_a->WMalpha - 1.0); //=invscale
-  */
-//}
-
-
-
-
-//double LogMixDensNonStWM(double *x, double logV, cov_model *cov) {
-//  // g(v,x) in stp
-//  double z = 0.0;
-//  error("logmixdensnonstwm not programmed yet");
-  // wmfactor ist kompletter unsinn; die 2 Teildichten muessen addiert werden
-  /*
-  cov_model *calling = cov->calling,
-    *Nu = cov->sub[0];
-  if (calling == NULL) BUG;
-   double nu,
-    alpha = cov_a->WMalpha,
-    logV = cov_a->logV,
-    V = cov_a->V;
-  
-  if (Nu == NULL) 
-    nu = P(WM_NU][0];
-  else 
-     FCTN(x, Nu, &nu);
-
-
-   z = - nu  * M_LN2 // in g0  // eine 2 kuerzt sich raus
-    + 0.5 * ((1.0 - nu) // in g0
-    + alpha // lambda
-    - 2.0 //fre*
-    ) * logV
-    - 0.5 * lgammafn(nu)  // in g0
-    + cov_a->WMfactor // lambda
-    - 0.125 / V   // g: Frechet
-    + 0.125 * pow(V, 1.0 - alpha); // lambda: frechet
-
-  if (!(z < 7.0)) {
-    static double storage = 0.0; 
-    if (gen_storage != logV) {
-      if (PL >= PL_DETAILS) 
-	PRINTF("alpha=%f, is=%f, cnst=%f logi=%f lgam=%f loga=%f invlogs=%f pow=%f z=%f\n",
-	       alpha,V,
-	       (1.0 - nu) * M_LN2 
-	       , + ((1.0 - nu) * 0.5 + alpha - 2.0) * logV
-	       ,- 0.5 * lgammafn(nu) 
-	       , -cov_a->WMfactor
-	       ,- 0.25 / V 
-	       , + 0.25 * pow(V, - alpha)
-	       , z);
-      storage = logV;
-    }
-    //assert(z < 10.0);
-  }
-*/
-//  return z;
-//				      
-//}
-
-
-
-
 /* nsst */
 /* Tilmann Gneiting's space time models, part I */
-#define NSST_DELTA 0
 void nsst(double *x, cov_model *cov, double *v) {
   cov_model *subphi = cov->sub[0];
   cov_model *subpsi = cov->sub[1];
@@ -1550,9 +1369,6 @@ int checknsst(cov_model *cov) {
   return NOERROR;
 }
 
-sortsofparam paramtype_nsst(int k, int VARIABLE_IS_NOT_USED row, int VARIABLE_IS_NOT_USED col) {
-  return k==-1 ? VARPARAM : k==0 ? CRITICALPARAM : ANYPARAM;
-}
 
 void rangensst(cov_model *cov, range_type* range){ 
   range->min[NSST_DELTA] = cov->tsdim - 1;
@@ -1688,7 +1504,7 @@ int checkgennsst(cov_model *cov) {
    //   assert(cov->isoown ==EARTH_ISOTROPIC || __stopafter__ ==1);
  
    if (cov->key == NULL) {
-     if ((err = covcpy(&(cov->key), subphi)) != NOERROR) return err;
+     if ((err = covCpy(&(cov->key), subphi)) != NOERROR) return err;
      addModel(&(cov->key), GENNSST_INTERN);
    }
 
@@ -1721,7 +1537,7 @@ int checkgennsst(cov_model *cov) {
   EXTRA_STORAGE;
 
   COV_DELETE(cov->sub + 0);
-  if ((err = covcpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
+  if ((err = covCpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
   cov->sub[0]->calling = cov;
 
   // PMI(cov->calling);   assert(err == NOERROR);BUG;

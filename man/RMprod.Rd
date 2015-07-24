@@ -19,8 +19,15 @@ RMprod(phi, var, scale, Aniso, proj)
 \value{
  \command{\link{RMprod}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
+\details{
+  This model defines 
+}
+
 \note{
-   Do not mix up this model with  \command{\link{RMmult}}.
+  Do not mix up this model with  \command{\link{RMmult}}.
+
+  See also \command{RMS} for a simple, alternative method to set
+  an arbitrary, i.e. location dependent, univariate variance.  
  }
 \references{
   Wendland, H. \emph{Scattered Data Approximation} (2005) Cambridge: Cambridge

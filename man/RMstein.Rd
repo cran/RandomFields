@@ -58,8 +58,9 @@ RMstein(nu, z, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMstein(nu=1.5, z=0.9)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.05)
 plot(RFsimulate(model, x=x, y=x))
 \dontshow{FinalizeExample()}
 }

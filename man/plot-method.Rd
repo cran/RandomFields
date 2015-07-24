@@ -18,16 +18,22 @@
 \alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,missing-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialPointsDataFrame-method}
-\alias{plot,RFempVariog,missing-method}
-\alias{plot,RFfit,missing-method}
-\alias{plot,RMmodel,missing-method}
-\alias{points.RMmodel}
-\alias{lines.RMmodel}
 \title{Methods for function \code{plot} in package \pkg{RandomFields}}
+
 \description{
-Plot methods are implemented for simulated random fields (objects of
-class \code{\link[=RFsp-class]{RFsp}}), explicit covariance models (objects of class \code{\link[=RMmodel-class]{RMmodel}}),
-empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVariog}}) and fitted models (objects of class \code{\link[=RFfit]{RFfit}}).
+  Plot methods are implemented for simulated random fields (objects of
+  class \code{\link[=RFsp-class]{RFsp}}), explicit covariance models
+  (objects of class \code{\link[=RMmodel-class]{RMmodel}}),  
+  empirical variograms (objects of class
+  \code{\link[=RFempVariog-class]{RFempVariog}}) and fitted models
+  (objects of class \code{\link[=RFfit-class]{RFfit}}).
+  
+  The plot methods not described here are described together with the
+  class itself, for instance,
+  %\code{\link[=RFempVariog-class]{RFempVariog}})
+  \code{\link[=RFfit-class]{RFfit}},
+  \code{\link[=RFempVariog-class]{RFempVariog}}
+  \code{\link[=RMmodel-class]{RMmodel}}.
 }
 
 \section{Methods}{
@@ -72,25 +78,6 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
 
 \item{\code{signature(x = "RFpointsDataFrame", y = "missing")}}{Similar
  to method for class \code{\link[=RFgridDataFrame-class]{RFgridDataFrame}}, but for non-gridded data.}
-
-\item{\code{signature(x = "RFempVario", y = "missing")}}{Gives nice
- plots of the empirical variogram; handles binning in up to three
- space-dimensions and a time-dimension, where the empirical variogram
- is plotted along lines which are directed according to the
- angle-centers given in \code{x@phi.centers} and
- \code{x@theta.centers}; arbitrary theoretical model curves
- can be added to the plot by using the argument \code{model}.
- If no bins are given, i.e. (\code{x@bin=NULL}),
- \command{\link[graphics]{image}}-plots are generated.}
-
-\item{\code{signature(x = "RFfit", y = "missing")}}{Combines the plot of
- the empirical variogram with the estimated covariance or variogram
- model (theoretical) curves; further models can be added via the
- argument \code{model}.}
-
-\item{\code{signature(x = "RMmodel", y = "missing")}}{Generates
- covariance function or variogram function plots in one or two
- dimensions.}
 
 }
 
@@ -151,7 +138,8 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
- MARGIN.movie = NULL, ...)
+ MARGIN.movie = NULL, file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+ ...)
 
 \S4method{plot}{RFspatialDataFrame,RFspatialGridDataFrame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
@@ -159,7 +147,8 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,...)
+  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+...)
 
 \S4method{plot}{RFspatialDataFrame,RFspatialPointsDataFrame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
@@ -167,7 +156,8 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,...)
+  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+...)
 
 \S4method{plot}{RFspatialDataFrame,matrix}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
@@ -175,14 +165,16 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,...)
+  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+...)
 \S4method{plot}{RFspatialDataFrame,data.frame}(x, y,
  MARGIN=c(1,2), MARGIN.slices=NULL,
  n.slices = if (is.null(MARGIN.slices)) 1 else 10,
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,...)
+  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+...)
 
 
 \S4method{persp}{RFspatialGridDataFrame}(x, y,
@@ -191,7 +183,8 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  nmax=6, 
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, 
- MARGIN.movie = NULL,...)
+ MARGIN.movie = NULL, file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+...)
 
 
 \S4method{plot}{RFdataFrame,missing}(x, y, nmax=6, 
@@ -210,21 +203,6 @@ empirical variograms (objects of class \code{\link[=RFempVariog-class]{RFempVari
  plot.variance = (!is.null(x@.RFparams$has.variance) &&
  x@.RFparams$has.variance), legend=TRUE, ...)
 
-\S4method{plot}{RFempVariog,missing}(x, model=NULL,
-%nmax.phi=6, nmax.theta=3, nmax.T=3,
-nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
- plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE, boundaries = TRUE,...)
-
-\S4method{plot}{RFfit,missing}(x, model=NULL,  fit.method="ml",
- nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
- plot.nbin=TRUE, plot.sd=FALSE, variogram = TRUE, boundaries = TRUE,...)
-
-\S4method{plot}{RMmodel,missing}(x, y, dim=1, n.points=200,
- fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...)
-
-\S3method{points}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
-
-\S3method{lines}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 
 %\S3method{contour}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 }
@@ -232,9 +210,7 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
 
 \arguments{
   \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
-    \command{\link[=RFempVariog-class]{RFempVario}} or
-    \command{\link[=RFfit-class]{RFfit}} or
-    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
+     \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
     be any sophisticated model but it must be either stationary or a
     variogram model} 
   \item{y}{ignored in most methods}
@@ -246,9 +222,9 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
   \item{MARGIN.slices}{integer value; if \eqn{[space-time-dimension>2]},
     \code{MARGIN.slices} can specify a third dimension w.r.t. which a
     sequence of slices is plotted. Currently only works for grids.} 
-  \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
-    \code{dim > 2}; a vector of length \code{dim}-2 with distance values
-    for the coordinates that are not displayed} 
+ % \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
+ %   \code{dim > 2}; a vector of length \code{dim}-2 with distance values
+ %   for the coordinates that are not displayed} 
   \item{n.slices}{integer value. 
     The number of slices to be plotted; if
     \code{n.slices>1}, \code{nmax} is set to 1. Or \code{n.slices} is a
@@ -259,61 +235,39 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
     direction. This option is in an experimental stage.
     It works only for grids.
   }
+  \item{file, speed, height.pixel, width.pixel}{
+    In case \code{MARGIN.movie} and \code{file} is given an 'avi' movie
+    is stored using the \command{mencoder} command with speed argument
+    \code{speed}. As temporary files \code{file__###.png}  
+    of size \code{width.pixel} x \code{height.pixel} are created.
+  }
   \item{...}{arguments to be passed to methods; mainly graphical
     arguments, or further models in case of class \code{'RMmodel'},
     see Details.
   }
-  \item{fit.method}{character; only for \code{class(x)=="RFfit"}; a
-    vector of slot names for which the fitted covariance or variogram
-    model is to be plotted; should be a subset of 
-    \code{slotNames(x)} for which the corresponding slots are of class
-    \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
-    plotted} 
-  \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of bins of angle phi that are to be
-    plotted}
-  \item{nmax.theta}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of bins of angle theta that are to be
-    plotted} 
-  \item{nmax.T}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of different time bins that are to be
-    plotted} 
-  \item{plot.nbin}{logical; only for \code{class(x)=="RFempVario"};
-    indicates whether the number of pairs per bin are to be plotted}
-  \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
-    indicates whether the calculated standard deviation (\code{x@sd}) is
-    to be plotted (in form of arrows of length +-1*sd)}
-  \item{variogram}{logical; This argument should currently not be set
-    by the user. If \code{TRUE} then the empirical variogram
-    is plotted, else an estimate for the covariance function} 
-  \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
-    the anisotropic case where \code{model} is given.
-    As the empirical variogram is calculated on a sector of angles,
-    no exact variogram curve corresponds to the mean values in this
-    sector.
-    If \code{boundaries=TRUE} the values of the variogram on the sector
-    boundaries are plotted. If \code{FALSE} some kind of mean
-    model values are plotted. Neither the boundaries may contain
-    the values of emprical variogram nor does the mean values
-    need to be close the emprical variogram.  
-  } 
-  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
-    covariance function and the variogram are plotted as a function of
-    \eqn{\R^\code{dim}}{R^\code{dim}}.}
-  \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
-    number of points at which the model 
-    evaluated (in each dimension); defaults to 200} 
-  \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
-    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
-    whether the covariance (\code{fct.type="Cov"}) or the
-    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
-    implies automatic choice, where \code{"Cov"} is chosen whenever the model is
-    stationary} 
-  \item{model}{object of class
-    \command{\link[=RMmodel-class]{RMmodel}}; only for
-    \code{class(x)=="RFempVario"} or \code{class(x)=="RFfit"}; a list of
-    covarianve or variogram models that are to be plotted into the same
-    plot as the empirical variogram (and the fitted models)}
+%  \item{f i tmethod}{character; only for \code{class(x)=="RFfit"}; a
+%    vector of slot names for which the fitted covariance or variogram
+%    model is to be plotted; should be a subset of 
+%    \code{slotNames(x)} for which the corresponding slots are of class
+%    \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
+%    plotted} 
+ %  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
+%    covariance function and the variogram are plotted as a function of
+%    \eqn{\R^\code{dim}}{R^\code{dim}}.}
+%  \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
+ %   number of points at which the model 
+ %   evaluated (in each dimension); defaults to 200} 
+%  \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
+%    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
+%    whether the covariance (\code{fct.type="Cov"}) or the
+%    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
+%  implies automatic choice, where \code{"Cov"} is chosen whenever the model is
+%    stationary} 
+%  \item{model}{object of class
+%    \command{\link[=RMmodel-class]{RMmodel}}; only for
+%    \code{class(x)=="RFempVario"} or \code{class(x)=="RFfit"}; a list of
+%    covarianve or variogram models that are to be plotted into the same
+%    plot as the empirical variogram (and the fitted models)}
   \item{plot.variance}{logical, whether variances should be plotted if
     available}
   \item{select.variables}{vector of integers or list of vectors.
@@ -341,9 +295,8 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
     \code{data} and \code{var} if a separate \code{zlim}
     for the Kriging variance is to
     be used.}
-  \item{maxchar}{maximum number of characters used in the legend
-    (for multiplots only)
-  }
+%  \item{maxchar}{maximum number of characters used in the legend
+%    (for multiplots only)  }
 }
 
 \details{
@@ -377,6 +330,7 @@ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
 
 ## define the model:
@@ -400,7 +354,8 @@ plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
 ## define the locations:
 from <- 0
 step <- .1 
-len <- if (interactive()) 50 else 3 # nicer, but also time consuming if len=100
+len <- 50  # nicer if len=100 %ok
+\dontshow{if(RFoptions()$internal$examples_red){warning("reduced 'len'"); len<-3}} 
 x1D <- GridTopology(from, step, len)
 x2D <- GridTopology(rep(from, 2), rep(step, 2), rep(len, 2))
 x3D <- GridTopology(rep(from, 3), rep(step, 3), rep(len, 3))
@@ -437,10 +392,10 @@ X <- RFsimulate(x=cbind(x,x), model=model)
 ev2 <- RFempiricalvariogram(data=X, bin=bin, phi=3)
 plot(ev2, model=list(exp = model))
 
-
+\dontshow{StartExample()}
 #############################################################
 ## plot Fitting results
-x <- seq(0, 2, len=if (interactive()) 21 else 6)
+x <- seq(0, 1, len=21)
  
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
 X <- RFsimulate(x=cbind(x,x), model=model)
@@ -452,7 +407,7 @@ plot(fit)
 #############################################################
 ## plot Kriging results 
 model <- RMwhittle(nu=1.2, scale=2)
-n <- if (interactive()) 200 else 5
+n <- 200
 x <- runif(n, max=step*len/2) 
 y <- runif(n, max=step*len/2) # 200 points in 2 dimensional space
 sim <- RFsimulate(model = model, x=x, y=y)
@@ -465,7 +420,7 @@ plot(interpolate, sim)
 #############################################################
 ## plotting vector-valued results
 model <- RMdivfree(RMgauss(), scale=4)
-x <- y <- seq(-10,10, if (interactive()) 0.5 else 10)
+x <- y <- seq(-10,10, 0.5)
 simulated <- RFsimulate(model = model, x=x, y=y, n=1)
 plot(simulated)
 plot(simulated, select.variables=list(1, 1:3, 4))

@@ -421,7 +421,7 @@ General
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 \dontshow{\dontrun{
 
 #############################################################
@@ -435,8 +435,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
  model <- RMstable(alpha=1.5)
  x <- runif(100, max=20) 
  y <- runif(100, max=20) # 100 points in 2 dimensional space
- simulated <- RFsimulate(model = RPdirect(model), x=x, y=y, 
- cPrint=3) # direct matrix decomposition
+ simulated <- RFsimulate(model = RPdirect(model), x=x, y=y) # cholesky
  plot(simulated)
 
 
@@ -447,7 +446,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                                                         ##
 #############################################################
 model <- RMstable(alpha=1.5)
-x <- seq(0, 10, if (interactive()) 0.01, 1)
+x <- seq(0, 10, 0.01)
 z <- RFsimulate(model = RPtbm(model), x=x, y=x)
 plot(z)
 
@@ -513,10 +512,6 @@ plot(z)
 z <- RFsimulate(x=x, y=x, z=x,
  model=RMfbm(alpha=alpha))
 
-%rl <- function() if (interactive()) readline("Press return")
-%for (i in 1:dim(z)[1]) { image(z[i,,]); rl();}
-
-
 
 #############################################################
 ##                                                         ##
@@ -524,8 +519,8 @@ z <- RFsimulate(x=x, y=x, z=x,
 ##                                                         ##
 #############################################################
 
-x <- seq(0.1, 6, if (interactive()) 0.12 else 2)
-Aniso <- R.bind(R.p(1)^2, R.p(2)^1.5)
+x <- seq(0.1, 6, 0.12)
+Aniso <- R.c(R.p(1)^2, R.p(2)^1.5)
 z <- RFsimulate(RMexp(Aniso = Aniso) + 10, x, x)
 plot(z) 
 

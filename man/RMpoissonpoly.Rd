@@ -64,9 +64,10 @@ RMpolygon(lambda)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 \dontshow{\dontrun{
 model <- RPcoins(shape=RMpolygon())
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
 }}
 \dontshow{FinalizeExample()}

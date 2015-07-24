@@ -18,6 +18,10 @@
 }
 
 \details{
+  See \link{Bayesian Modelling} for some less technical introduction to
+  hierarchical modelling. 
+
+  
   When simulating Gaussian random fields, the random parameters
   are drawn only once at the very beginning.
   So, if the argument \code{n} in \command{\link{RFsimulate}}
@@ -29,7 +33,7 @@
   distributions families implemented. Further, \bold{any} distribution
   family defined in R can be used, see the examples below
   
-  These function will allow for Baysian modelling. (Future project).
+  These function will allow for Bayesian modelling. (Future project).
 }
 
 \section{Implemented models}{

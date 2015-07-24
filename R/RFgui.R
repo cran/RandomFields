@@ -1,4 +1,24 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
 
 RFgui <- function(data, x, y,
                   same.algorithm = TRUE,
@@ -7,7 +27,10 @@ RFgui <- function(data, x, y,
                   sim_only1dim=FALSE,
                   wait = 0,
                   ...) {
-  if (!interactive()) return("'RFgui' can be used only in an interactive mode")
+  if (!interactive()) {
+    warning("'RFgui' can be used only in an interactive mode")
+    return(NULL)
+  }
   wait <- as.integer(wait)
   Env <- if (wait >= 0) environment() else .GlobalEnv
   assign("RFgui.model", NULL, envir=Env)
@@ -384,8 +407,7 @@ rfgui.intern <- function(data, x, y,
       
       cv <- RFvariogram(x=xcov, model=newmodel,
                         practicalrange = pr.dummy)
-      # Print(RFgetModelInfo(RFvariogram, level=19))
-    }
+     }
 
     if(!is.null(ev) && plotev) {
       xm <- range(ev@centers, na.rm=TRUE)
@@ -434,13 +456,13 @@ rfgui.intern <- function(data, x, y,
       
       ## Print(newmodel)
       yy <- (if (get("simDim", envir = ENVIR) =="sim1Dim") NULL else
-             if (is.null(y)) x else y)
+             if (length(y)==0) x else y)
       pr <-  tcltk::tclvalue(cbPracRangeVal) != "0"
 
   #    Print("A")
       z <- try(RFsimulate(simu.model,x=x, grid=TRUE, 
                           y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
-                          else if (is.null(y)) x else y,
+                          else if (length(y)==0) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
                           practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0"),
@@ -583,7 +605,7 @@ rfgui.intern <- function(data, x, y,
                      sticky="e")
   
     #--- Checkboxes Practical Range  and anisotropy option -------------
-    if(!is.null(y)) {
+    if(length(y)!=0) {
       tcltk::tkgrid.configure(cbAnisotropy, column=col.sl, row=row.sl, sticky="w")
       tcltk::tkgrid.configure(labelAniso, column=col.sl, row=row.sl)
       row.sl=row.sl+1
@@ -677,13 +699,13 @@ rfgui.intern <- function(data, x, y,
   PRINT <- FALSE
 
   if (missing(x)) {
-    stopifnot(is.null(y))    
+    stopifnot(length(y)==0)    
     if (missing(data)) {
       x <- seq(1, 5, len=guiOpt$size[if (sim_only1dim) 1 else 2] )
     } else {      
       if (isSpObj(data)) data <- sp2RF(data)
        stopifnot(is(data, "RFsp"))
-      if (!is.null(y)) stop("'x' and 'y' may not be given if 'data' is given.")
+      if (length(y)!=0) stop("'x' and 'y' may not be given if 'data' is given.")
       r <- apply(data@coords, 2, range)
       len <- guiOpt$size[if (length(r) == 2) 1 else 2] 
       x <- seq(r[1], r[2], len=len)
@@ -692,7 +714,7 @@ rfgui.intern <- function(data, x, y,
       }
     }
   }
-  assign(".RFgui.y", if (is.null(y)) NULL else 0, envir=parent.ev)
+  assign(".RFgui.y", if (length(y)==0) NULL else 0, envir=parent.ev)
 
   if(!missing(data) && !is.null(data)) {
     if (!is.null(ev)) stop("if 'data' is given, 'ev' may not be given.")
@@ -703,7 +725,7 @@ rfgui.intern <- function(data, x, y,
   if (any(diff(x) <= 0)) 
     stop("x should be a sequence of increasing numbers")
 
-  if (!is.null(y) && any(diff(y) <= 0))
+  if (length(y)!=0 && any(diff(y) <= 0))
     stop("y should be a sequence of increasing numbers")
   
   if(is.null(xcov)) {
@@ -714,7 +736,7 @@ rfgui.intern <- function(data, x, y,
                  by=diff(range(ev@centers))/100)
   }
   
-  if(is.null(ycov) && !is.null(y)) {
+  if(is.null(ycov) && length(y)!=0) {
     if(is.null(ev))
       ycov <- seq(0,15,by=0.1)
     else
@@ -735,15 +757,7 @@ rfgui.intern <- function(data, x, y,
   }
 
   # get all model names
-  models <-
-    RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
-                    domain=DOMAIN_NAMES[XONLY + 1],
-                    isotropy=ISONAMES[ISOTROPIC + 1],
-                    operator=FALSE,
-                    group.by=NULL,
-                    valid.in.dim = if (sim_only1dim) 1 else 2,
-                    simpleArguments = TRUE,
-                    vdim=1)#, multivariate = 1)
+  models <- if (sim_only1dim) rfgui_Names1 else rfgui_Names2
   models <- models[models != "RMnugget"]
   
   #-------------------------------------------------------------------

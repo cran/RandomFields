@@ -64,8 +64,9 @@ stationary increments.
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 model <- RMflatpower(alpha=0.5)
-x <- seq(0, 10, if (interactive()) 0.1 else 1) 
+x <- seq(0, 10, 0.1)
 plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}

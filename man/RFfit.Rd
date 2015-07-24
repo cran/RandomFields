@@ -17,7 +17,7 @@
 }
 \usage{
 RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
- lower = NULL, upper = NULL, bc_lambda, methods,
+ lower = NULL, upper = NULL, methods,
  sub.methods, optim.control = NULL, users.guess = NULL,
  distances = NULL, dim, transform = NULL, ...)
 }
@@ -66,14 +66,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
    is self-detected, so that \code{grid} need not be given,
    in general}
  
- \item{bc_lambda}{a vector of at most two numerical components (just
- one component 
- corresponds to two identical ones) which are the parameters of the 
- box-cox-transformation:
- \eqn{\frac{x^\lambda_1-1}\lambda_1+\lambda_2}{(x^\lambda_1-1)/\lambda_1+\lambda_2}
- If the model is univariate, the first parameter can be estimated by
- using \code{NA}.
- }
+
  \item{methods}{
   Main methods to be used for estimating. If several methods,
    estimation will be performed with each method and the results reported.
@@ -125,9 +118,31 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
   \code{"ml"} and \code{c("self", "plain", "sqrt.nr", "sd.inv",
     "internal")},
   respectively.
-  
 }
 
+
+\note{
+  \itemize{
+    \item
+    An important optional argument is \code{boxcox} which indicates
+    A Box-Cox transformation see \code{boxcox} in \command{\link{RFoptions}}
+    and \code{RFboxcox} for details.
+    \item
+    Instead of \command{\link[stats]{optim}}, other optimiser can be used,
+    see \link{RFfitOptimiser}.
+    \item
+    Several advanced options can be found in sections \sQuote{General
+      options} and \sQuote{fit} of \command{\link{RFoptions}}.
+    \item
+    In particular, \code{boxcox}, \code{boxcox_lb},  \code{boxcox_ub}
+    allow Box-Cox transformation.
+    \item
+    This function does not depend on the value of
+    \command{\link{RFoptions}}\code{()$PracticalRange}. 
+    The function \code{RFfit} always uses the standard specification
+    of the covariance model as given in \command{\link{RMmodel}}
+  }
+  }
 
 \value{
   The result depends on the logical value of
@@ -154,13 +169,11 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
-\note{This function does not depend on the value of
- \command{\link{RFoptions}}\code{()$PracticalRange}. 
- The function \code{RFfit} always uses the standard specification
- of the covariance model as given in \command{\link{RMmodel}}.
-}
+
 \seealso{
-  \command{\link{RFratiotest}}
+ \link{RFfitOptimiser}
+  \command{\link{RFlikelihood}},
+ \command{\link{RFratiotest}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.
@@ -168,22 +181,22 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 % options(error=recover)
 % source("RandomFields/tests/source.R")
-
+% to do bsp mit box cox
 
 RFoptions(modus_operandi="sloppy")
 
 
-n <- if (interactive()) 100 else 3
 
 #########################################################
 ## simulate some data first                            ## 
-points <- if (interactive()) 100 else 40
+points <- 100
 x <- runif(points, 0, 3)
 y <- runif(points, 0, 3) ## random points in square [0, 3]^2
 model <- RMgencauchy(alpha=1, beta=2)
-d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
+d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=100) #1000
 
 
 #########################################################
@@ -191,6 +204,22 @@ d <- RFsimulate(model, x=x, y=y, grid=FALSE, n=n) #1000
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=2) +
             RMtrend(mean=NA)
 RFfit(estmodel, data=d)
+
+
+#########################################################
+## coupling alpha and beta                             ##
+estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) + 
+            RMtrend(NA)
+RFfit(estmodel, data=d, transform = NA) ## just for information
+trafo <- function(a) c(a[1], rep(a[2], 2))
+fit <- RFfit(estmodel, data=d,
+             transform = list(c(TRUE, TRUE, FALSE), trafo))
+print(fit)
+print(fit, full=TRUE)
+
+
+
+
 
 \dontshow{\dontrun{
 #########################################################

@@ -35,8 +35,6 @@
     \command{\link{RMball}} \tab Indicator of a ball of radius
     \eqn{1/2}.
     \cr
-    \command{\link{RMcovariate}} \tab spatial covariates
-    \cr
     \command{\link{RMm2r}} \tab spectral function belonging to a
     tail correlation function of the Gneiting class \eqn{H_n}
     \cr 
@@ -108,9 +106,8 @@
 %}
 
 
-\seealso{\command{\link{RFformula}}, \command{\link{RMmodels}},
- \command{\link{RMmodelsAdvanced}}
-}
+\seealso{
+  \link{RM}}
 
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set

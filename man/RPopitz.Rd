@@ -64,8 +64,8 @@ RFoptions(seed=0, xi=0)
 ## seed=0: *ANY* simulation will have the random seed 0; set
 ##         RFoptions(seed=NA) to make them all random again
 ## xi=0: any simulated max-staable random field has extreme value index 0
-
-x <- seq(0, 2, if (interactive()) 0.01 else 1)
+\dontshow{StartExample()}
+x <- seq(0, 2, 0.01)
 model <- RPopitz(RMgauss(), alpha=2)
 z1 <- RFsimulate(model, x)
 plot(z1, type="l")

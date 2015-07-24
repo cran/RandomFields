@@ -16,7 +16,7 @@
 }
 
 \usage{
-RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param ,additive)
+RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
 }
 
 \arguments{
@@ -26,6 +26,10 @@ RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param ,additive)
  of it are allowed.
  }
 % \item{loggauss}{see  \command{\link{RPgauss}}.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{superpos}{integer. number of superposed hyperplane tessellations.
  Default: \code{300}.}
  
@@ -63,13 +67,6 @@ RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param ,additive)
  }
  }
 
- 
-
- 
-
-%\details{}
-
-
 
 \value{
  \code{RPhyperplane} returns an object of class
@@ -101,8 +98,9 @@ RPhyperplane(phi, superpos, maxlines, mar_distr, mar_param ,additive)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RPhyperplane(RMexp(s=2), superpos=1)
-x <- seq(0, 3, if (interactive()) 0.04 else 1)
+x <- seq(0, 3, 0.04)
 z <- RFsimulate(x=x, x, model=model, n=1)
 plot(z)
 

@@ -21,6 +21,7 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
 \dontshow{\dontrun{
 
@@ -132,14 +133,13 @@ print(summary(z))
 ## non-separable space-time model applied for two space dimensions
 ## note that tbm method works in some special cases.
 #% library(RandomFields, lib="~/TMP")
-x <- y <- seq(0, 7, if (interactive()) 0.05 else 0.2) 
+x <- y <- seq(0, 7, 0.05)
 T <- c(1,32,1) * 10 ## note necessarily gridtriple definition
 model <- RMnsst(aniso=diag(c(3, 3, 0.02)), delta=2,
                 phi=RMgauss(), psi=RMgenfbm(alpha=1, delta=0.5))
 z <- RFsimulate(x=x, y=y, T=T, model=model,
-                method="ci", CE.strategy=1,
-                CE.trials=if (interactive()) 4 else 1)
-rl <- function() if (interactive()) readline("Press return")
+                method="ci", CE.strategy=1, CE.trials=4)
+rl <- function() readline("Press return")
 for (i in 1:dim(z)[3]) { image(z[,,i], zlim=range(z)); rl();}
 for (i in 1:dim(z)[2]) { image(z[,i,], zlim=range(z)); rl();}
 for (i in 1:dim(z)[1]) { image(z[i,,], zlim=range(z)); rl();}
@@ -185,7 +185,6 @@ cat("system time (second call)", format(ut,dig=3),"\n")
 
 #% library(RandomFields, lib="~/TMP");source("~/R/RF/RandomFields/tests/source.R")
 ## simuation of the stable model using the cutoff method
-#RFoptions(print=8, storing=FALSE)
 x <- seq(0, 1, 1/24) # nicer pictures with 1/240
 scale <- 1.0
 model1 <- RPcutoff(RMstable(alpha=1, scale=scale))

@@ -5,7 +5,7 @@
 
  all around the nugget effect -- needs special treatment 
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,10 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "primitive.h"
 #include "shape_processes.h"
 
-#define NUGGET_TOL 0
-#define NUGGET_VDIM 1
-#define NUGGET_PROC_TOL (COMMON_GAUSS + 1)
-#define NUGGET_PROC_VDIM (COMMON_GAUSS + 2)
 
 bool equal(cov_model *cov, int i, int j, double *X, int dim)
 {
@@ -54,22 +50,23 @@ bool equal(cov_model *cov, int i, int j, double *X, int dim)
 
 /* nugget effect model */
 void nugget(double *x, cov_model *cov, double *v) {
-
   double diag = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
     vdim   = cov->vdim[0],
     vdimsq = vdim * vdim;
   assert(cov->vdim[0] == cov->vdim[1]);
 
+
   v[0] = diag;
   for (i = 1; i<vdimsq; v[i++] = diag) {
     endfor = i + vdim;
     for (; i<endfor; v[i++] = 0.0);
   }
+  //  printf("%f %f %d\n", *x, *v, PisNULL(NUGGET_TOL));
 }
 
 
-void covmatrix_nugget(cov_model *cov, double *v, int*nonzeros) {
+void covmatrix_nugget(cov_model *cov, double *v) {
   location_type *loc = Loc(cov);
   int 
     vdim   = cov->vdim[0];
@@ -79,7 +76,6 @@ void covmatrix_nugget(cov_model *cov, double *v, int*nonzeros) {
     n2 = n * n;
   for (i=0; i<n2; v[i++]=0.0);
   for (i=0; i<n2; i += nP1) v[i]=1.0;
-  *nonzeros = n;
 
   //  {  int i,j,k, tot=Loc(cov)->totalpoints; printf("\nnugget %d %d %d\n", n, n2, nP1);
   //   for (k=i=0; i<tot*tot; i+=tot) {
@@ -153,9 +149,10 @@ int check_nugget_proc(cov_model *cov) {
 
   // print("NUGGET PROC !!!! \n");
 
+  ASSERT_CARTESIAN;
   ROLE_ASSERT(ROLE_GAUSS);
  
-  if (key == NULL) { 
+   if (key == NULL) { 
     intern = sub;
     while (intern != NULL && isDollar(intern)) {
       intern = intern->key != NULL ? intern->key : intern->sub[0];
@@ -209,6 +206,7 @@ int check_nugget_proc(cov_model *cov) {
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
     return ERRORDIM;
   cov->role = ROLE_GAUSS;
+  KAPPA_BOXCOX;
   
   // printf("OK nugget\n");
   EXTRA_STORAGE;
@@ -218,6 +216,8 @@ int check_nugget_proc(cov_model *cov) {
 
 
 void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
+
   range->min[NUGGET_PROC_TOL] = 0;
   range->max[NUGGET_PROC_TOL] = RF_INF;
   range->pmin[NUGGET_PROC_TOL] = 0;
@@ -235,8 +235,7 @@ void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) 
 
 // uses global RANDOM !!!
 int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
-  location_type 
-    *loc=cov->prevloc; 
+  location_type *loc=PrevLoc(cov); 
   if (cov->ownloc!=NULL) {
     LOC_DELETE(&(cov->ownloc));
     //PMI(cov);
@@ -276,7 +275,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       ndummy = 5 * origdim;
     char No = 'N';
 //	Upper = 'U';
-    //   PMI(cov);
+    //      APMI(cov->calling->calling);
     
     if (loc->caniso == NULL) {
       if (loc->grid) {
@@ -287,7 +286,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 	  }
       }
     } else {    
-     if (dim > MAXNUGGETDIM) {
+      if (dim > MAXNUGGETDIM) {
        GERR2("dim=%d larger than MAXNUGGETDIM=%d", dim, MAXNUGGETDIM);
       } 
       anisotype = Type(loc->caniso, loc->cani_nrow, loc->cani_ncol);
@@ -318,7 +317,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   s->simugrid = loc->grid && isMdiag(anisotype);
   assert(!s->simugrid || loc->caniso == NULL);
 
-//   print("simple %d %d\n", s->simple, s->simugrid); //assert(false);
+//    print("simple %d %d; %d %d %f\n", s->simple, s->simugrid, PL, PL_IMPORTANT, tol); 
 
   if (!s->simple) {
     int *pos, oldpos;
@@ -337,7 +336,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       //print("d=%d %d %d %d\n",d,s->prod_dim[0],s->prod_dim[1],s->prod_dim[2]);
       }
 
-      if ((s->red_field=(res_type *) MALLOC(sizeof(res_type) * vdim *
+      if ((s->red_field=(double *) MALLOC(sizeof(double) * vdim *
 					    s->prod_dim[dim]))
 	  == NULL){
 	  err=ERRORMEMORYALLOCATION; goto ErrorHandling;
@@ -347,8 +346,8 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       if ((pos = (int*) MALLOC(sizeof(int) * loc->totalpoints)) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
-      Transform2NoGrid(cov, false, true);
-      loc = cov->ownloc;
+      Transform2NoGrid(cov, false, true, true);
+      loc = Loc(cov); 
       ordering(loc->x, loc->totalpoints, dim, pos);
 
       //      for (i=0; i<loc->totalpoints; i++) {
@@ -385,21 +384,20 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     vdim = cov->vdim[0];
   double 
     *res = cov->rf;
-  bool loggauss = GLOBAL.gauss.loggauss;
-  GLOBAL.gauss.loggauss = false;
+  SAVE_GAUSS_TRAFO;
  
   s = (nugget_storage*) cov->Snugget;
 //  sqrtnugget = s->sqrtnugget;
 
   if (s->simple) {
     for (nx=0, endfor=loc->totalpoints * vdim; nx<endfor; nx++) {
-      res[nx] = (res_type) GAUSS_RANDOM(1.0);
+      res[nx] = (double) GAUSS_RANDOM(1.0);
     }
   } else {
     if (s->simugrid) {
       int d, i, dim, dimM1, index[MAXNUGGETDIM], *red_dim, *prod_dim;
       long totpnts, idx;
-      res_type *field;
+      double *field;
       totpnts = loc->totalpoints;
       dim = cov->tsdim;
       dimM1 = dim -1;
@@ -413,7 +411,7 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       //print("reddim %d %d dim=%d %d %d %d endfor=%d\n", red_dim[0], red_dim[1], dim, s->prod_dim[0], s->prod_dim[1], s->prod_dim[2], endfor);
 
       for (i=0; i<endfor; i++) {
-	field[i] = (res_type) GAUSS_RANDOM(1.0);
+	field[i] = (double) GAUSS_RANDOM(1.0);
       }
       for (d=0; d<dim; index[d++] = 0);
       for (i=0; i<totpnts; i++) {
@@ -449,12 +447,8 @@ void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     }
   }
 
-  if (loggauss) {
-    int i, 
-      vdimtot = loc->totalpoints * cov->vdim[0];
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-  }
-  GLOBAL.gauss.loggauss = loggauss;
+  BOXCOX_INVERSE;
+
 }
 
 

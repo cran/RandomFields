@@ -1,4 +1,26 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 ### get&set functions using the C interface
 ### and RFgetNset functions
 
@@ -100,9 +122,9 @@ xylabs <- function(x, y, T=NULL, units=NULL) {
   if (is.null(units)) units <- RFoptions()$coords$coordunits
   xlab <- if (is.null(x)) NULL
           else if (units[1]=="") x else paste(x, " [", units[1], "]", sep="")
-  ylab <- if (is.null(y)) NULL
+  ylab <- if (length(y)==0) NULL
           else if (units[2]=="") y else paste(y, " [", units[2], "]", sep="")
-  Tlab <- if (is.null(T)) NULL
+  Tlab <- if (length(T)==0) NULL
           else if (units[3]=="") T else paste(T, " [", units[3], "]", sep="")
   return (list(xlab=xlab, ylab=ylab, Tlab=Tlab))
 }
@@ -122,16 +144,16 @@ InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
     vdim <- try(.Call("Init",
                       MODEL_USER,
                       model,
-                      matrix(nrow=dim, ncol=3, as.double(1:3)), ## nur dummies
-                      y, #y
-                      as.double(0), #T
-                      as.integer(dim), #spatdim
-                      FALSE, # grid
-                      FALSE, # distances
-                      FALSE, # Zeit
+                      list(x=matrix(nrow=dim, ncol=3, as.double(1:3)), #0 nur dummies
+                           y=y, #1 y 
+                           as.double(0), #2 T
+                           FALSE, #3 grid
+                           as.integer(dim), #4 spatdim
+                           FALSE, #5 Zeit
+                           FALSE #6 distances
+                           ),
                       NAOK=NAOK, # ok
                       PACKAGE="RandomFields"), silent=TRUE)
-    
     if (is.numeric(vdim)) return(vdim)
     msg <- strsplit(vdim[[1]], "\n")[[1]][2]
     if (RFoptions()$general$printlevel >= PL_ERRORS) cat(msg, "\n")
@@ -178,7 +200,7 @@ resolve.register <- function(register){
 
 
 
-print_RFgetModelInfo <- function(x, max.level=10-attr(x, "level"),
+print_RFgetModelInfo <- function(x, max.level=99,
                                  give.attr=FALSE, ...) {
   str(object = x,  max.level=max.level, give.attr=give.attr, ...) #
 }
@@ -191,12 +213,11 @@ print.RFgetModelInfo <- function(x, ...) {
 RFgetModelInfo <-
   function(register, level=1, 
            spConform=RFoptions()$general$spConform,
-           which.submodels = c("user", "internal", "both"),
+           which.submodels = c("user", "internal",
+               "call+user", "call+internal",
+               "user.but.once", "internal.but.once",
+               "user.but.once+jump", "internal.but.once+jump", "all"),
            modelname=NULL) {  
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register)) register else
-                               deparse(substitute(register)))
-  which.submodels <- match.arg(which.submodels)
   ## positive values refer the covariance models in the registers
   ##define MODEL_USER : 0  /* for user call of Covariance etc. */
   ##define MODEL_SIMU : 1  /* for GaussRF etc */ 
@@ -205,11 +226,18 @@ RFgetModelInfo <-
   ##define MODEL_BOUNDS  4 : - /* MLE, lower, upper */
   ## level + 10: auch die call fctn !
   ## [ in RF.h we have the modulus minus 1 ]
-  
+  register <- resolve.register(if (missing(register)) NULL else
+                               if (is.numeric(register)) register else
+                               deparse(substitute(register)))
+#  Print(which.submodels, as.list(RFgetModelInfo)$which.submodels[-1])
+  w<-pmatch(match.arg(which.submodels),
+            as.list(RFgetModelInfo)$which.submodels[-1]) - 1
+   if (is.na(w) || length(w) ==0)
+    stop("the value for 'which.submodels' does not match. Note that the definitoin has been changed in version 3.0.70")
+
   cov <- .Call("GetExtModelInfo", as.integer(register), as.integer(level),
                as.integer(spConform),
-               as.integer(if (which.submodels=="user") 0 else
-                          1 + (which.submodels=="both")),
+               as.integer(w),
                PACKAGE="RandomFields")
 
   if (!is.null(modelname)) {
@@ -229,17 +257,27 @@ RFgetModel <- function(register, explicite.natscale, show.call=FALSE)  {
   modus <- (if (missing(explicite.natscale)) GETMODEL_AS_SAVED else
             if (explicite.natscale)  GETMODEL_DEL_NATSC else
             GETMODEL_SOLVE_NATSC)
-  if (show.call) modus <- modus + 10
-  m <- GetModel(register=register, modus=modus)
+
+  which <- if (is.logical(show.call)) {
+    if (show.call) "call+user" else "user"
+  } else {
+    show.call
+  }
+  
+  m <- GetModel(register=register, modus=modus, which.submodels = which)
   class(m) <-  "RM_model"
   m
 }
            
            
 GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
-                     spConform=RFoptions()$general$spConform,
-                     do.notreturnparam=FALSE,
-                     replace.select = FALSE) {
+                     spConform=RFoptions()$general$spConform,      
+                     which.submodels = c("user", "internal",
+                         "call+user", "call+internal",
+                         "user.but.once", "internal.but.once",
+                         "user.but.once+jump", "internal.but.once+jump", "all"),
+                     do.notreturnparam=FALSE, solve_random = FALSE){
+  
   ## modus:
   ##  AS_SAVED : Modell wie gespeichert
   ##  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
@@ -249,33 +287,27 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   ##  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
   ##               drauf multipliziert; Rest wie gespeichert)
   ## 
-  ## modus: 10+ : wie oben, jedoch ohne CALL_FCT zu loeschen 
 
   ## do.notreturnparam : if true, then also parameters with the flag
   ##                      DONOTRETURN are returned
 
   ## spConform : only the names of the models
+  ##              if > 1 than also "+" is forced to be "RMplus"
 
-  ## replace.select : if TRUE then model "select " is replaced by model
-  ##                  model "plus" -- they should be joined anyway
-  
-
+   
   register <- resolve.register(if (missing(register)) NULL else
                                if (is.numeric(register))  register else
                                deparse(substitute(register)))
+   w<-pmatch(match.arg(which.submodels),
+            as.list(RFgetModelInfo)$which.submodels[-1]) - 1
   if (missing(register)) register <- 0
   
   model <- .Call("GetModel", as.integer(register), as.integer(modus),
-                 as.integer(spConform), as.integer(do.notreturnparam),
+                 as.integer(spConform),
+                 as.integer(w),
+                 as.logical(solve_random),
+                 as.integer(do.notreturnparam),
                  PACKAGE="RandomFields")
-
-  if (replace.select) {
-    if (model[[1]] == ZF_SELECT[1]) {
-      model[[1]] <- ZF_SYMBOLS_PLUS
-      stopifnot(names(model)[2]=="subnr")
-      model[[2]] <- NULL
-    }    
-  }
   return(model)
 }
 
@@ -388,16 +420,18 @@ RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
     monotone <- unique(monotone)
   }
 
- 
+  internals <-  c("RMcovariate", "RMfixcov")
   envir <- as.environment("package:RandomFields")
   ls.RFmg <- ls(envir=envir)
-  ls.RFmg <- ls.RFmg[substr(ls.RFmg, 1, 1) == "R"]
+  ls.RFmg <- c(ls.RFmg[substr(ls.RFmg, 1, 1) == "R"],
+               paste("i", internals, sep=""))
   idx <- logical(len <- length(ls.RFmg))
-   for (i in 1:len){
-    fun <- get(ls.RFmg[i], envir=envir)
+  for (i in 1:len) {
+    fun <-  do.call(":::", list("RandomFields", ls.RFmg[i]))  ##get(ls.RFmg[i], envir=envir)
     idx[i] <- is.function(fun) && is(fun, class2="RMmodelgenerator")
+    
     if (!idx[i]) next
-     idx[i] <- (!all(is.na(pmatch(fun["type"], type, 
+       idx[i] <- (!all(is.na(pmatch(fun["type"], type, 
                                         duplicates.ok=TRUE) &
                            pmatch(fun["isotropy"], isotropy, 
                                   duplicates.ok=TRUE))) &&
@@ -414,14 +448,14 @@ RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
                  (fun["vdim"] >= vdim[1] && fun["vdim"] <= vdim[2]))  &&
                 ls.RFmg[i] != ZF_INTERNALMIXED                
                 )
-   }
-
+  }
+  ls.RFmg[(len-length(internals) + 1):len] <- internals
   
   return(unique(sort(ls.RFmg[idx])))
 }
 
 
-RFgetMethodNames <-function () {
+RFgetMethodNames <- function() {
   RFgetModelNames(type=TYPENAMES[c(GaussMethodType, BrMethodType) + 1])
 }
 

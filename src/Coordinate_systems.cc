@@ -35,154 +35,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 // keep always the orderung
-void iso2iso(double *x, cov_model *cov, double *v) {
-  double y=fabs(*x);
-  CovList[cov->nr].cov(&y, cov, v); // nicht gatternr
-}
-void logiso2iso(double *x, cov_model *cov, double *v, double *Sign) {
-  double y=fabs(*x);
-  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
-}
-void spiso2spiso(double *x, cov_model *cov, double *v) {
-  double y[2];
-  y[0] = fabs(x[0]);
-  y[1] = fabs(x[1]);
-  CovList[cov->nr].cov(y, cov, v);// nicht gatternr
-}
-void logspiso2spiso(double *x, cov_model *cov, double *v, double *Sign) {
-  double y[2];
-  y[0] = fabs(x[0]);
-  y[1] = fabs(x[1]);
-  CovList[cov->nr].log(y, cov, v, Sign);// nicht gatternr
-}
-void spacetime2iso(double *x, cov_model *cov, double *v) {
-  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
-  CovList[cov->nr].cov(&y, cov, v);// nicht gatternr
-}
-void logspacetime2iso(double *x, cov_model *cov, double *v, double *Sign) {
-  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
-  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
-}
-
-void Stat2iso(double *x, cov_model *cov, double *v) {
-  double b = 0.0;
-  int i,
-    dim=cov->xdimgatter;  
-  for (i=0; i<dim; i++) {
-    //
-    b += x[i] * x[i];
-    //  
-  }
-  b = sqrt(b);
-  CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
-}
-void logStat2iso(double *x, cov_model *cov, double *v, double *Sign) {
-  double b = 0.0;
-  int i,
-    dim=cov->xdimgatter;  
-  for (i=0; i<dim; i++) {
-    b += x[i] *x[i];
-  }
-  b = sqrt(b);
-  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
-}
-void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
-  double a, b;
-  int d,
-    dim=cov->xdimgatter;  
-  for (b=0.0, d=0; d<dim; d++) {
-    a = x[d] - y[d];
-    b += a * a;
-  }
-  b = sqrt(b);
-  CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
-}
-void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
-		    double *Sign) {
-  double a, b;
-  int d, 
-    dim=cov->xdimgatter;  
-  for (b=0.0, d=0; d<dim; d++) {
-    a = x[d] - y[d];
-    b += a * a;
-  }
-  b = sqrt(b);
-  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
-}
-void Stat2spacetime(double *x, cov_model *cov, double *v) {
-  double b, z[2];
-  int i,
-    dim=cov->xdimgatter - 1;  
-  for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim]);
-  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
-}
-void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign) {
-  double b, z[2];
-  int i,
-    dim=cov->xdimgatter - 1;  
-  for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim]);
-  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
-}
-void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
-  double a, b, z[2];
-  int d,
-    dim=cov->xdimgatter - 1;  
-  for (b=0.0, d=0; d<dim; d++) {
-    a = x[d] - y[d];
-    b += a * a;
-  }
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim] - y[dim]);
-  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
-}
-void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
-			  double *Sign) {
-  double a, b, z[2];
-  int d,
-    dim=cov->xdimgatter - 1;  
-  for (b=0.0, d=0; d<dim; d++) {
-    a = x[d] - y[d]; 
-    b += a * a;
-  }
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim] - y[dim]);
-  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
-}
-void Stat2Stat(double *x, cov_model *cov, double *v) {
-  CovList[cov->nr].cov(x, cov, v);// nicht gatternr
-}
-void logStat2Stat(double *x, cov_model *cov, double *v, double *Sign) {
-  CovList[cov->nr].log(x, cov, v, Sign);// nicht gatternr
-}
-
-#define nonstat2statInner						\
-  int d,								\
-    dim=cov->xdimgatter;						\
-  ALLOC_NEW(Sgatter, z, dim, z);					\
-  for (d=0; d<dim; d++) z[d] = x[d] - y[d]
- 
-void Nonstat2Stat(double *x, double *y, cov_model *cov, double *v) {
-  nonstat2statInner;
-  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
-}
-void logNonstat2Stat(double *x, double *y, cov_model *cov, double *v, 
-		     double *Sign) {
-  nonstat2statInner;
-  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
-}
-
-void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v) {
-  CovList[cov->nr].nonstat_cov(x, y, cov, v);// nicht gatternr
-}
-
-void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
-			double *Sign) {
-  CovList[cov->nr].nonstatlog(x, y, cov, v, Sign);// nicht gatternr
-}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -223,14 +75,16 @@ void statmod2(double *x, double lon, double lat, double *y) {
 
 #define piD180 (M_PI * 0.00555555555555555555555)
 #define H80Dpi (180.0 * INVPI)
-#define ESnonstat2iso(x, y)					\
+#define ESnonstat2iso(x, y)						\
   int d, dim=cov->xdimgatter;						\
   ALLOC_NEW(Searth, X, dim+1, X);					\
-  double xx[2] = {x[0], x[1]},			\
-    yy[2] = {y[0], y[1]};				\
-    X[0] = acos(sin(xx[1]) * sin(yy[1]) +				\
-	      (cos(xx[0]) * cos(yy[0]) + sin(xx[0]) * sin(yy[0])) *	\
-	      cos(xx[1]) * cos(yy[1]) );				\
+  double xx[2] = {x[0], x[1]},						\
+    yy[2] = {y[0], y[1]},						\
+    cosine = sin(xx[1]) * sin(yy[1]) +					\
+             (cos(xx[0]) * cos(yy[0]) + sin(xx[0]) * sin(yy[0])) *      \
+             cos(xx[1]) * cos(yy[1]);				       	\
+    cosine = cosine <= 1.0 ? (cosine < -1.0 ? -1.0 : cosine) : 1.0;	\
+    X[0] = acos(cosine);						\
     for (d = 2; d < dim; d++) X[d-1] = x[d] - y[d];	
 			
 
@@ -286,7 +140,13 @@ void logNonstatEarth2Earth(double *x, double *y, cov_model *cov, double *v,
   CovList[cov->nr].nonstatlog(X, Y, cov, v, Sign);// nicht gatternr
 }
 
-// BERRETH ::
+// BERRETH :: sphere2earth
+void Sphere2Earth(double *x, cov_model *cov, double *v) {
+  int d, dim=cov->xdimgatter;			       
+  STATMOD(H80Dpi * x, X, 360, 180);
+  CovList[cov->nr].cov(X, cov, v);// nicht gatternr
+}
+
 
 void EarthIso2SphereIso(double *x, cov_model *cov, double *v) {
   ISOMOD(piD180 * x, X, M_PI);
@@ -308,7 +168,15 @@ void logNonstatEarth2SphereIso(double *x, double *y, cov_model *cov, double *v,
 
 void Earth2Sphere(double *x, cov_model *cov, double *v) {
   int d, dim=cov->xdimgatter;			       
-  STATMOD(piD180 * x, X, M_2_PI, M_PI);
+  //  STATMOD(piD180 * x, X, M_2_PI, M_PI);
+  
+  //  PMI(cov->calling);
+
+     ALLOC_NEW(Searth, X, dim+1, X);				
+      STATMODE_BASE(X, piD180 * x, M_2_PI, M_PI);
+      for (d = 2; d < dim; d++) X[d] = piD180 * x[d];
+
+ 
   CovList[cov->nr].cov(X, cov, v);// nicht gatternr
 }
 void logEarth2Sphere(double *x, cov_model *cov, double *v, double *Sign) {
@@ -389,38 +257,60 @@ void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
 
 #define EARTH_LONGITUDE 0
 #define EARTH_LATITUDE 1
+#define EARTH_HEIGHT 2
 #define pi180 0.017453292519943295474
 #define EARTH_TRAFO(X, ZZ, raequ, rpol)			\
-  Rcos = raequ * cos(ZZ[EARTH_LATITUDE] * pi180);	\
-  X[0] = Rcos * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
+  Rcos = (raequ) * cos(ZZ[EARTH_LATITUDE] * pi180);	\
+  X[0] = Rcos * 1.0 * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
   X[1] = Rcos * sin(ZZ[EARTH_LONGITUDE] * pi180);	\
-  X[2] = rpol * sin(ZZ[EARTH_LATITUDE] * pi180)		
+  X[2] = (rpol) * sin(ZZ[EARTH_LATITUDE] * pi180)		
 
 #define earth2cartInner(RAEQU, RPOL)					\
- assert(cov->xdimprev >= 2 && cov->xdimgatter >= 2);			\
-  double Rcos, X[3], Y[3];			\
-  EARTH_TRAFO(X, x, RAEQU, RPOL);			\
-  EARTH_TRAFO(Y, y, RAEQU, RPOL)
+  assert(cov->xdimprev >= 2 && cov->xdimgatter >=2);/*not necessarily equal*/ \
+  int origdim=cov->xdimprev;						\
+  bool Time =  Loc(cov)->Time,						\
+    height = origdim > 2 + (int) Time;					\
+  double Rcos, X[4], Y[4];						\
+  EARTH_TRAFO(X, x, height ? ((RAEQU) + x[EARTH_HEIGHT]) : (RAEQU),	\
+	      height ? ((RPOL) + x[EARTH_HEIGHT]) : (RPOL));		\
+  EARTH_TRAFO(Y, y, height ? ((RAEQU) + y[EARTH_HEIGHT]) : (RAEQU),	\
+	      height ? ((RPOL) + y[EARTH_HEIGHT]) : (RPOL));		\
+  if (Time) X[3] = x[origdim - 1];
+
+
+ // !!! if anything is changed here change also structtrafoproc !!!!
+#define earth2cartInnerStatX(RAEQU, RPOL)				\
+   assert(cov->xdimprev >= 2 && cov->xdimgatter >= 2);			\
+  int origdim=cov->xdimprev;						\
+  bool Time =  Loc(cov)->Time,						\
+    height = origdim > 2 + (int) Time;					\
+  double Rcos;							\
+  EARTH_TRAFO(X, x, height ? ((RAEQU) + x[EARTH_HEIGHT]) : (RAEQU),	\
+	      height ? ((RPOL) + x[EARTH_HEIGHT]) : (RPOL));		\
+  if (Time) X[3] = x[origdim - 1];
+
 
 #define earth2cartInnerStat(RAEQU, RPOL)				\
-  assert(cov->xdimprev >= 2 && cov->xdimgatter >= 2);			\
-  double Rcos, X[3];							\
-  EARTH_TRAFO(X, x, RAEQU, RPOL)
+  double X[4];								\
+  earth2cartInnerStatX(RAEQU, RPOL)
 
-#define radiuskm_aequ 6378.1
-#define radiuskm_pol 6356.8
-#define radiusmiles_aequ 3963.17
-#define radiusmiles_pol 3949.93
+ 
+void Earth2Cart(double *x, cov_model *cov,double RAEQU, double RPOL, 
+		double *X){
+  // !!! if anything is changed here change also structtrafoproc !!!!
+  earth2cartInnerStatX(RAEQU, RPOL)
+}
 
 void EarthKM2CartStat(double *x, cov_model *cov, double *v) {
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
   CovList[cov->secondarygatternr].cov(X, cov, v);// nicht gatternr
 }
 void logEarthKM2CartStat(double *x, cov_model *cov, double *v, double *Sign) {
-  earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
-  CovList[cov->secondarygatternr].log(X, cov, v, Sign);// nicht gatternr
+   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol);
+   CovList[cov->secondarygatternr].log(X, cov, v, Sign);// nicht gatternr
 }
 void EarthKM2Cart(double *x, double *y, cov_model *cov, double *v) {
+  //PMI(cov->calling);
   earth2cartInner(radiuskm_aequ, radiuskm_pol);
   CovList[cov->secondarygatternr].nonstat_cov(X, Y, cov, v);// nicht gatternr
 }
@@ -463,7 +353,7 @@ int checkEarth(cov_model *cov){
   COND_NEW_STORAGE(earth, X);
 
   if (cov->gatternr >= FIRST_PLANE && cov->gatternr <= LAST_PLANE) {
-    assert(cov->tsdim>=2 && cov->xdimown == cov->tsdim); // oder 3 !! regeln!
+    assert(cov->tsdim>=2 && cov->xdimown == cov->tsdim); // oder 3, 4 !! regeln!
     if (!R_FINITE(GLOBAL.coords.zenit[0]) || !R_FINITE(GLOBAL.coords.zenit[1])){
       if (GLOBAL.internal.warn_zenit) {
 	GLOBAL.internal.warn_zenit = false;
@@ -477,7 +367,7 @@ int checkEarth(cov_model *cov){
    if (cov->gatternr == EARTHKM2GNOMONIC || 
        cov->gatternr == EARTHMILES2GNOMONIC) {
      int d;
-     double Rcos, X[3];		       
+     double Rcos, X[4];		       
       if (cov->Searth == NULL) NEW_STORAGE(earth);
       if (cov->gatternr == EARTHKM2GNOMONIC) {
 	EARTH_TRAFO(X, GLOBAL.coords.zenit, radiuskm_aequ, radiuskm_pol); 
@@ -512,6 +402,7 @@ int checkEarth(cov_model *cov){
 
   } else {
     assert(cov->gatternr >= EARTHKM2CART && cov->gatternr <= EARTHMILES2CART);
+    
   }
 
   return NOERROR;
@@ -743,23 +634,25 @@ bool isSymmetric(isotropy_type iso) {
 }
 
 bool isCartesian(isotropy_type iso) {
-  //  return iso <= CARTESIAN_COORD;
   return iso <= LAST_CARTESIAN;
 }
 
 bool isSpherical(isotropy_type iso) {
-  return iso >= SPHERICAL_ISOTROPIC && iso <= SPHERICAL_COORD;
+  return iso >= SPHERICAL_ISOTROPIC && iso <= SPHERICAL_COORDS;
 }
 
 bool isEarth(isotropy_type iso) {
-  return iso >= EARTH_ISOTROPIC && iso <= EARTH_COORD ;
+  return iso >= EARTH_ISOTROPIC && iso <= EARTH_COORDS ;
 }
 bool isAnySpherical(isotropy_type iso) {
   // printf("any %d < %d  <= %d\n",  LAST_CARTESIAN, iso, LAST_SPHERICAL);
-  return iso > LAST_CARTESIAN && iso <= LAST_SPHERICAL;
+  return iso > LAST_CARTESIAN && iso <= LAST_ANYSPHERICAL;
 }
 bool isAnySphericalIso(isotropy_type iso) {
   return iso == SPHERICAL_ISOTROPIC || iso == EARTH_ISOTROPIC;
+}
+bool isAnySphericalNotIso(isotropy_type iso) {
+  return iso != SPHERICAL_ISOTROPIC && iso != EARTH_ISOTROPIC ;
 }
 bool isPrevModelI(cov_fct *C){
   bool is = C->Isotropy[0] == PREVMODELI;
@@ -773,32 +666,34 @@ bool isUnreduced(cov_fct *C){
   return is;
 }
 bool isCoordinateSystem(isotropy_type iso){
-  return iso == CARTESIAN_COORD || iso == SPHERICAL_COORD || iso == EARTH_COORD;
+  return iso == CARTESIAN_COORD || iso == SPHERICAL_COORDS || 
+    iso == EARTH_COORDS;
 }
 bool atleastSpecialised(isotropy_type iso, isotropy_type as) {
   // printf("ATLEAST '%s' at least specialised as '%s'? \n", ISONAMES[iso], ISONAMES[as]);
-  if (isCartesian(as)) return iso <= as; // also iso < 0 OK
-  if (isSpherical(as)) {
-    if (as == SPHERICAL_COORD) return isSpherical(iso); // isCartesian(iso) ||
-    else if (as == SPHERICAL_ISOTROPIC) 
-      return iso == SPHERICAL_ISOTROPIC; // || iso == ISOTROPIC;
-    else {BUG}    
-  }
+  bool less = iso <= as;
+  if (isCartesian(as)) return less; // also iso < 0 OK
+  if (isSpherical(as)) return isSpherical(iso) && less; //
   if (isEarth(as)) {
-    //    printf("YYY as=%d %s  %d \n", as == EARTH_COORD, ISONAMES[iso], isAnySpherical(iso));
-    if (as == EARTH_COORD) return isAnySpherical(iso); //isCartesian(iso) || 
-    else if (as == EARTH_ISOTROPIC) {
-      return iso == SPHERICAL_ISOTROPIC || iso == EARTH_ISOTROPIC ;
+     //    printf("YYY  %s  %d \n", ISONAMES[iso], isAnySpherical(iso));
+    if (isEarth(iso)) return less;
+    if (isSpherical(iso)) {
+      //printf("iso=%d   %d %d %d  %d %d\n", iso, as, EARTH_COORDS, SPHERICAL_COORDS, as - EARTH_COORDS + SPHERICAL_COORDS, iso <= as - EARTH_COORDS + SPHERICAL_COORDS);
+      return iso <= as - EARTH_COORDS + SPHERICAL_COORDS;
     }
-    else {BUG}
+    if (isCartesian(iso)) {
+      return (as == EARTH_COORDS && iso == CARTESIAN_COORD) ||
+	(as == EARTH_SYMMETRIC && iso == SYMMETRIC);
+    }
+    return false;
   }
   if (as == UNREDUCED) {
     return isCoordinateSystem(iso);
   }
   if (as == PREVMODELI) return true;
 
-  //  PRINTF("subsequent coordinate system / isotropy:  %s\n", ISONAMES[as]);
-  //  crash();
+  //  PRINTF("'%s' not at least specialised as %s\n", ISONAMES[iso], ISONAMES[as]);
+  // crash();
   BUG;
 }
 
@@ -825,9 +720,216 @@ bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2,
     || iso1==UNREDUCED;
 }
 
-isotropy_type UpgradeToCoordinateSystem( isotropy_type iso) {
-  return iso == SYMMETRIC
+isotropy_type UpgradeToCoordinateSystem(isotropy_type iso) {
+  return iso == ZEROSPACEISO || iso == VECTORISOTROPIC|| iso == SYMMETRIC
     ? CARTESIAN_COORD 
+    : iso == EARTH_SYMMETRIC ? EARTH_COORDS
+    : iso == SPHERICAL_SYMMETRIC ? SPHERICAL_COORDS
     : isCoordinateSystem(iso) ? iso
     : ISO_MISMATCH;
+}
+
+isotropy_type CoordinateSystemOf(isotropy_type iso) {
+  return isCartesian(iso) ? CARTESIAN_COORD 
+    : isEarth(iso) ? EARTH_COORDS
+    : isSpherical(iso) ? SPHERICAL_COORDS
+    : ISO_MISMATCH;
+}
+
+isotropy_type IsotropicOf(isotropy_type iso) {
+  return isCartesian(iso) ? ISOTROPIC
+    : isEarth(iso) ? EARTH_ISOTROPIC
+    : isSpherical(iso) ? SPHERICAL_ISOTROPIC
+    : ISO_MISMATCH;
+}
+
+
+isotropy_type SymmetricOf(isotropy_type iso) {
+  return isCartesian(iso) ? SYMMETRIC
+    : isEarth(iso) ? EARTH_SYMMETRIC
+    : isSpherical(iso) ? SPHERICAL_SYMMETRIC
+    : ISO_MISMATCH;
+}
+
+
+
+int change_coord_system(isotropy_type callingisoown,
+			     isotropy_type isoprev,
+			     int tsdimprev, int xdimprev,
+			     int *nr, isotropy_type  *newisoprev,
+			     int *newtsdim, int *newxdim, bool time) {
+  // isoprev is replaced by a coordinate transformation and a nwe 
+
+  switch(callingisoown) {
+  case EARTH_COORDS : case EARTH_SYMMETRIC:
+    if (isCartesian(isoprev)) {
+      if (xdimprev != tsdimprev) SERR("reduced coordinates not allowed");
+      if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
+	*nr = isoprev == GNOMONIC_PROJ ? EARTHKM2GNOMONIC  
+	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHKM2ORTHOGRAPHIC
+	  : EARTHKM2CART;
+      } else if (strcmp(GLOBAL.coords.newunits[0], 
+			UNITS_NAMES[units_miles]) == 0) {
+	*nr = isoprev == GNOMONIC_PROJ ? EARTHMILES2GNOMONIC  
+	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHMILES2ORTHOGRAPHIC
+	  :EARTHMILES2CART;
+      } else {
+	SERR4("only units '%s' and '%s' are allowed. Got '%s' (user's '%s').",
+	      UNITS_NAMES[units_km], UNITS_NAMES[units_miles], 
+	      GLOBAL.coords.newunits[0], GLOBAL.coords.curunits[0]);
+      }
+      if (isoprev == GNOMONIC_PROJ || isoprev == ORTHOGRAPHIC_PROJ) {
+	*newtsdim = tsdimprev;
+	*newxdim = xdimprev;
+	*newisoprev = isoprev;
+      } else if (isCartesian(isoprev)) {
+	*newisoprev = callingisoown == EARTH_COORDS ? CARTESIAN_COORD
+	  :  callingisoown == EARTH_SYMMETRIC ? SYMMETRIC : ISO_MISMATCH;
+	if (tsdimprev == 2) {
+	  //assert(xdimprev == 2);
+	  *newtsdim = *newxdim = 3;
+	} else if (tsdimprev == 3 && time) {
+	   *newtsdim = *newxdim = 4;
+	} else { 
+	  *newtsdim = *newxdim = xdimprev;	  
+	}	
+      } else {
+	BUG;
+      }
+    } else {
+      //if (!isSpherical(callingisoown) && callingisoown != EARTH_ISOTROPIC) {
+      //	printf("%s -->  %s\n", ISONAMES[callingisoown], ISONAMES[isoprev]);
+      //BUG;
+      //      }
+      return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
+    }      
+    break;
+  case EARTH_ISOTROPIC : case SPHERICAL_ISOTROPIC :
+    //    if (!isSpherical(callingisoown) && callingisoown != EARTH_ISOTROPIC) {
+    //	printf("\n\n%s -->  %s\n", ISONAMES[callingisoown], ISONAMES[isoprev]);
+    //	BUG;
+    //    }
+    return ERRORWRONGISO;
+  default:    
+    // printf("\n\n\n\n\n\n%s -->  %s\n", ISONAMES[callingisoown], ISONAMES[isoprev]);
+    return ERRORODDCOORDTRAFO; // NotProgrammedYet("");
+  }
+
+  //assert(*newtsdim == 4);
+  return NOERROR;
+}
+
+
+int SetGatter(domain_type domprev, domain_type domnext, 
+	      isotropy_type isoprev, isotropy_type isonext, 
+	      //	      bool first, 
+	      int *nr, int *delflag) {  
+  if (domprev < domnext) 
+    SERR2("Cannot call more complex models ('%s') from simpler ones ('%s')",
+	  DOMAIN_NAMES[(int) domnext], DOMAIN_NAMES[(int) domprev]);
+  if (isAnySpherical(isonext)) {
+    if(!isAnySpherical(isoprev)) BUG; //to do?: back from cartesian not possible
+    //                                   currently
+    if (isoprev == UNREDUCED) {
+      if (isoprev != isonext || domprev != domnext)
+	SERR("unclear transformation of earth/spherical coordinates");
+      *nr = isEarth(isoprev) ? E2E : Sph2Sph;
+    }
+    if (domnext == XONLY) {     
+      if (isAnySphericalIso(isonext)) {
+	if ( (isAnySphericalNotIso(isoprev) && domprev != KERNEL) || 
+	     (isAnySphericalIso(isoprev) && domprev != XONLY))
+	  SERR("impossible spherical trafo");
+	*nr = isEarth(isoprev) 
+	  ? (isSpherical(isonext) ? E2SphIso : E2EIso) 
+	  : (isSpherical(isonext) ? Sph2SphIso : ISO_MISMATCH); 	
+      } else { // next: xonly, not iso; e.g. for shape functions
+	assert(isAnySphericalNotIso(isonext));
+	if (domprev == KERNEL) SERR("earth trafo not possible"); // mathemati-
+	// cally likely not correct
+	assert(domprev == XONLY);
+	if (!isAnySphericalNotIso(isoprev))  
+	  SERR("mathematically not correct coordinate transformation"); // mathematically likely not correct. to do
+	*nr = isEarth(isoprev) 
+	  ? (isSpherical(isonext) ? E2Sph : E2E)
+	  : (isSpherical(isonext) ? Sph2Sph : ISO_MISMATCH);	
+      }
+    } else { // domnext == KERNEL
+      assert(isAnySphericalNotIso(isonext));
+      assert(domprev == KERNEL);
+      assert(isAnySphericalNotIso(isoprev));
+      
+      *nr = isEarth(isoprev) 
+	? (isSpherical(isonext) ? E2Sph : E2E)
+	: (isSpherical(isonext) ? Sph2Sph : ISO_MISMATCH);
+     }
+
+     return NOERROR;
+  }
+
+
+    
+  if (isoprev == CYLINDER_COORD || isonext ==  CYLINDER_COORD)
+    SERR("general spherical coordinates not programmed yet");
+
+  //////////////
+  // cartesian
+  //////////////
+
+  assert(isCartesian(isonext));
+  bool isoOK = isoprev == isonext || 
+    (isoprev > isonext && isonext <= CARTESIAN_COORD); // keine Trafo innerhalb
+  // der projektionen -- bislang zumindest. ? to do
+  if (!isoOK) 
+    SERR2("cannot call more complex models ('%s') from simpler ones ('%s')",
+	  ISONAMES[(int) domnext], ISONAMES[(int) domprev]);
+  // if (isoprec == GNOMONIC_PROJ &&
+     
+  if (domnext == XONLY && 
+      (domprev == KERNEL || 
+       isoprev ==  CARTESIAN_COORD || 
+       isoprev == SYMMETRIC ||
+       isoprev == VECTORISOTROPIC || 
+       isoprev == GNOMONIC_PROJ || 
+       isoprev == ORTHOGRAPHIC_PROJ ||
+       isoprev ==  ZEROSPACEISO)) {	
+    switch (isonext) {
+    case ISOTROPIC :
+      *nr = S2ISO;
+      break;
+    case SPACEISOTROPIC :
+      *nr = S2SP;
+      break;
+    case ZEROSPACEISO: case VECTORISOTROPIC: case SYMMETRIC: 
+    case CARTESIAN_COORD: case GNOMONIC_PROJ: case ORTHOGRAPHIC_PROJ:
+      *nr = S2S;
+      // *delflag = DEL_COV - 5; ///
+      break;
+    case UNREDUCED:
+      *nr = SId;
+      break;
+    default: BUG;
+    }
+  } else {    
+    if (domprev == XONLY) {
+      switch(isoprev) {
+      case ISOTROPIC :
+	*nr = ISO2ISO; 
+	break;
+      case SPACEISOTROPIC :
+	*nr = (isonext == ISOTROPIC) ? SP2ISO : SP2SP;
+	break;	 
+      default: 
+	PRINTF("SetGatter prev=%s; %s\n          next=%s %s\n",
+	       DOMAIN_NAMES[domprev], ISONAMES[isoprev], 
+	       DOMAIN_NAMES[domnext], ISONAMES[isonext]);
+	BUG;
+      }
+    } else { // KERNEL domprev und domnext
+      *nr = SId;
+      *delflag = DEL_COV - 4;//
+    }
+  }
+
+  return NOERROR;
 }

@@ -11,12 +11,16 @@
 }
 
 \usage{
-RPspecific(phi)
+RPspecific(phi, boxcox)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
- specifies the covariance model to be simulated.}
+   specifies the covariance model to be simulated.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
 % \item{loggauss}{optional arguments; same meaning as for 
 % \command{\link{RPgauss}}.}
 }
@@ -86,6 +90,7 @@ RPspecific(phi)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 ## example for implicite use
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.1)
 plot(model)
@@ -96,12 +101,12 @@ RFgetModelInfo(level=0, which="internal")
 
 ## example for explicite used
 model <- RPspecific(RMS(var=unif(min=0, max=10), RMgauss()))
-n <- if (interactive()) 6 else 1
-k <- if (interactive()) 10 else 1
 x <- seq(0,10,0.02)
-for (i in 1:k) {
+n <- 10
+\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'n'"); n<-1}}
+for (i in 1:n) {%ok
   readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x, n=n, seed=i), ylim=c(-5,5))
+  plot(RFsimulate(model, x=x, n=6, seed=i), ylim=c(-5,5))
 }
 
 \dontshow{FinalizeExample()}

@@ -8,8 +8,7 @@
 \description{
   Here, all the \command{RF_name_} commands are listed.
 }
-\section{Models that are treated internally as operators
-  on \code{\link{RMmodels}}}{
+\section{Functionals of \code{\link{RMmodels}}}{
     The user's \code{\link{RMmodel}} is supplemented internally by
     operators that are tacitely assumed, e.g. \command{\link{RPgauss}}.
 
@@ -19,8 +18,7 @@
     The following list gives those \code{RFfunctions} that have
     an internal represenation as completion to the user's model.
     \tabular{ll}{
-      \bold{User's function} \tab \bold{Internal task}
-      \cr
+  %    \bold{User's function} \tab \bold{Internal task}    \cr
      \command{\link{RFcalc}} \tab performs some simple calculations
     based on \command{\link{R.models}}
     \cr
@@ -41,7 +39,14 @@
     value of the function at given locations. In case of a covariance
     model \command{\link{RFfctn}} is identical to \command{\link{RFcov}}.
     \cr
-     \command{\link{RFpseudovariogram}} \tab assigns to a  model the
+   \command{\link{RFlikelihood}} \tab assigns to a model and a dataset the
+    (log)likelihood value.
+    \cr
+    \command{\link{RFlinearpart}} \tab assigns to a model and a set of
+    coordinates the linear part of the model, i.e. the deterministic
+    trend and the design matrix.
+    \cr
+    \command{\link{RFpseudovariogram}} \tab assigns to a  model the
     values of the pseudo variogram
     at given locations\cr
     \command{\link{RFsimulate}} \tab assigns to a model
@@ -55,8 +60,7 @@
 
 \section{Estimation and Inference}{
  \tabular{ll}{
-      \bold{User's function} \tab \bold{Description}
-      \cr
+ %     \bold{User's function} \tab \bold{Description}   \cr
      \command{\link{RFcrossvalidate}} \tab cross validation for Gaussian fields
     \cr
     \command{\link{RFempiricalvariogram}} \tab

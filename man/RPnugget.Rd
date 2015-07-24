@@ -10,14 +10,18 @@
 }
 
 \usage{
-RPnugget(phi, tol, vdim)
+RPnugget(phi, boxcox, tol, vdim)
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated. The only possible
  model for \code{phi} is \command{\link{RMnugget}}.}
- \item{tol}{
+ \item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
+\item{tol}{
    points at a distance less than or equal to \code{nugget.tol}
  are considered as being identical. This strategy applies to
  the simulation method and the covariance function itself.

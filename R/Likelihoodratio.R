@@ -1,4 +1,24 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
 
 print.RFratiotest <- function(x, ...) {  
   if (!is.null(x$simu.ratios)) {
@@ -70,7 +90,7 @@ approx_test <- function(modellist, alpha) {
   for (m in 1:n) {
     if (class(modellist[[m]]) == "RF_fit") {
       df[m] <- modellist[[m]]$number.of.parameters
-      loglik[m] <- modellist[[m]]$ml$ml.value
+      loglik[m] <- modellist[[m]]$ml$likelihood
     } else if (class(modellist[[m]]) == "RFfit") {
       df[m] <- modellist[[m]]@number.of.parameters
       loglik[m] <- modellist[[m]]["ml"]@likelihood
@@ -88,7 +108,7 @@ approx_test_single <- function(model, method, alpha, modelinfo) {
   if (class(model) == "RF_fit") {
     submodels <- model$submodels
     df <-  model$number.of.parameters
-    loglik <- model[[method]]$ml.value
+    loglik <- model[[method]]$likelihood
     report <- model$report
     p.proj <- model$p.proj
     v.proj <- model$v.proj
@@ -273,7 +293,6 @@ RFratiotest <-
            n = 5 / alpha, ## number of simulations to do
            seed = 0,
            lower=NULL, upper=NULL, 
-           bc_lambda, ## if missing then no BoxCox-Trafo
            methods, # "reml", "rml1"),
            sub.methods,
            ## "internal" : name should not be changed; should always be last
@@ -345,13 +364,13 @@ RFratiotest <-
     set.seed(RFopt$general$seed)
   }
 
-  nullmodel <- PrepareModel2(nullmodel)
-  alternative <- PrepareModel2(alternative)
+  nullmodel <- PrepareModel2(nullmodel, ...)
+  alternative <- PrepareModel2(alternative, ...)
 
   Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
-                       distances=distances, dimensions=dim, RFopt=RFopt)
+                       distances=distances, dim=dim, RFopt=RFopt)
   values <- try(GetValuesAtNA(NAmodel=nullmodel, valuemodel=alternative,
-                              spdim=Z$spdim, Time=Z$tsdim-Z$spdim,
+                              spatialdim=Z$spatialdim, Time=Z$Zeit,
                               shortnamelength=3, skipchecks=FALSE),
                 silent=TRUE)
   remove("Z")
@@ -367,7 +386,7 @@ RFratiotest <-
   for (m in 1:length(model.list)) {
     data.fit[[m]] <-
       RFfit(model.list[[m]], x=x, y=y, z=z, T=T, grid=grid, data=data,
-            lower=lower, upper=upper, bc_lambda=bc_lambda,
+            lower=lower, upper=upper,
              methods=methods,
             sub.methods=sub.methods, optim.control=optim.control,
             users.guess=guess,
@@ -389,19 +408,19 @@ RFratiotest <-
   }
   
   model <- data.fit[[1]]$ml$model
-  data.ratio <- -diff(sapply(data.fit, function(x) x$ml$ml.value))
+  data.ratio <- -diff(sapply(data.fit, function(x) x$ml$likelihood))
   stopifnot(!isSubmodel || data.ratio <= 0) # should never appear
 
   simu.n <- n - 1
   ratio <- numeric(simu.n)
   fit <- numeric(2)
   Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
-                       distances=distances, dimensions=dim, RFopt=RFopt)
-  dist.given <- !is.null(distances)
-  if (length(Z$neu) > 1) stop("multisets of data cannot be considered yet")
+                       distances=distances, dim=dim, RFopt=RFopt)
+  dist.given <- Z$dist.given
+  if (length(Z$coord) > 1) stop("multisets of data cannot be considered yet")
 
-  newx <- if (!dist.given) Z$neu[[1]]$x # lapply(Z$neu, function(x) x$x)
-  newT <- if (!dist.given) Z$neu[[1]]$T # lapply(Z$neu, function(x) x$T),
+  newx <- if (!dist.given) Z$coord[[1]]$x # lapply(Z$coord, function(x) x$x)
+  newT <- if (!dist.given) Z$coord[[1]]$T # lapply(Z$coord, function(x) x$T),
   
   pch <- if (RFopt$general$pch=="") "" else '@'
   for (i in 1:simu.n) {
@@ -409,17 +428,17 @@ RFratiotest <-
       cat("\n ", i, "th simulation out of", simu.n)
     else cat(pch)
     simu <- RFsimulate(model, x=newx, T=newT, grid=grid, 
-                       distances=Z$distances[[1]], dim=dim, spC=FALSE)
+                       distances=if (dist.given) Z$coord[[1]], dim=dim, spC=FALSE)
     guess <- users.guess   
     for (m in 1:length(model.list)) {
       simufit <-
         RFfit(model.list[[m]], x=newx, T=newT, grid=grid,
               data=simu,
-              lower=lower, upper=upper, bc_lambda=bc_lambda,
+              lower=lower, upper=upper, 
               methods=methods,
               sub.methods=sub.methods, optim.control=optim.control,
               users.guess=guess,
-              distances=Z$distances[[1]], dim=dim,
+              distances=if (dist.given) Z$coord[[1]], dim=dim,
               transform=transform,
               ..., spConform=FALSE)
       fit[m] <- simufit$ml$ml

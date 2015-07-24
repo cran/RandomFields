@@ -1,13 +1,35 @@
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+
+
 #ifndef RFsimu_public_H
 #define RFsimu_public_H 1
 #include "basic.h"
 
 // #include <f2c.h> /* otherwise false/true not define or conflicting... */
-
-// 
-typedef double res_type;
-// typedef float res_type; // should not be used anymore as feature is not
-//                            maintained.
 
 
 #define NATSCALE_EXACT 1 /* or approx or mle */
@@ -60,8 +82,8 @@ extern "C" {
   //		  int *timespacedim,int *grid,int *type,int *maxdim,int *vdim);
   
   SEXP GetExtModelInfo(SEXP keynr, SEXP level, SEXP spconform, SEXP whichSub);
-  SEXP GetModel(SEXP keynr, SEXP modus, SEXP spconform,
-		SEXP do_notreturnparam);
+  SEXP GetModel(SEXP keynr, SEXP modus, SEXP spconform, SEXP whichSub,
+		SEXP SolveRandom, SEXP do_notreturnparam);
   
   /* 
      check with InitSimulateRF in case of any changes !!
@@ -69,9 +91,7 @@ extern "C" {
   */
 
   // PROCESSESNAMES
-  SEXP Init(SEXP model_reg, SEXP model, SEXP x, SEXP y, SEXP T, 
-	    SEXP spatialdim, SEXP grid, SEXP distances, SEXP time,
-	    SEXP NA_OK);
+  SEXP Init(SEXP model_reg, SEXP model, SEXP x, SEXP NA_OK);
   
   SEXP EvaluateModel(SEXP X, SEXP Covnr);
   
@@ -142,36 +162,6 @@ extern "C" {
 		  SEXP segmentEmpVario,
 		  SEXP pseudo);
   
-  // kriging methods
-  SEXP simpleKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
-		     SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig);
-  SEXP simpleKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
-		      SEXP Invcov, SEXP Notna,
-		      SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
-		      SEXP Sigma2);
-  SEXP ordinaryKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
-		       SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig);
-  SEXP ordinaryKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
-			SEXP Invcov, SEXP Notna,
-			SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
-			SEXP Sigma2);
-  SEXP universalKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
-			SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
-			SEXP Nfct, SEXP trend_expr, SEXP trend_envir);
-  SEXP universalKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
-			 SEXP Invcov, SEXP Notna,
-			 SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
-			 SEXP Sigma2,  SEXP Nfct, SEXP trend_expr,
-			 SEXP trend_envir);
-  SEXP intrinsicKriging(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Invcov, SEXP Notna,
-			SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig,
-			SEXP Polydeg);
-  SEXP intrinsicKriging2(SEXP Reg, SEXP Tgiven, SEXP X, SEXP Data,
-			 SEXP Invcov, SEXP Notna,
-			 SEXP Nx, SEXP Ngiven, SEXP Dim, SEXP Rep, SEXP Krig, 
-			 SEXP Sigma2, SEXP Polydeg);
-
-  void poly_basis_extern(int *Dim, int *Deg, int *powmatrix);
   
   // fractal dimension, 
   SEXP boxcounting(double *z, int *lx, int * repet, double *factor, int *eps);
@@ -185,21 +175,21 @@ extern "C" {
   //  void CovMatrix(int *reg, double *result);
   // void Variogram(int *reg, double *value);
   // void Pseudovariogram(int* reg, double *result);
-  SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
-		       SEXP lx, SEXP result, SEXP nonzeros);
+  //  SEXP CovMatrixIntern(SEXP reg, SEXP x, SEXP dist, SEXP grid,
+  //		       SEXP lx, SEXP result, SEXP nonzeros);
 
-  SEXP VariogramIntern(SEXP reg, SEXP x, SEXP lx, SEXP result);
-  SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
-		    SEXP result, SEXP nonzeros);
+  SEXP VariogramIntern(SEXP reg);
+  //  SEXP CovMatrixLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
+  //		    SEXP result, SEXP nonzeros);
   SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdim, SEXP lx, SEXP result);
 	      
 
-  SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
-			    SEXP selected, SEXP nsel, SEXP result,
-			    SEXP nonzeros);
-
-  SEXP CovMatrixSelected(SEXP reg, SEXP selected, SEXP nsel, SEXP result,
-			 SEXP nonzeros);
+  //  SEXP CovMatrixSelectedLoc(SEXP reg, SEXP x, SEXP dist, SEXP xdim, SEXP lx,
+  //			    SEXP selected, SEXP nsel, SEXP result,
+  //			    SEXP nonzeros);
+  //
+  //  SEXP CovMatrixSelected(SEXP reg, SEXP selected, SEXP nsel, SEXP result,
+  //			 SEXP nonzeros);
 
   SEXP Delete_y(SEXP reg);
   void DeleteKey(int *reg);
@@ -208,16 +198,16 @@ extern "C" {
   SEXP GetNAPositions(SEXP model, SEXP tsdim, SEXP xdim, SEXP integerNA, 
 		      SEXP Print);
   
-  SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP spatialdim,
-			  SEXP distances, 
+  SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, 
+			  SEXP spatialdim, SEXP distances, 
 			  SEXP ygiven, // TRUE is the standard variant
 			  SEXP Time, SEXP xdim, SEXP shortlen,
 			  SEXP allowforintegerNA, SEXP excludetrend);
   
-  
+ SEXP SetAndGetModelLikeli(SEXP model_reg, SEXP model, SEXP x);
+    
   void PutValuesAtNA(int *reg, double *values);
   void PutValuesAtNAnoInit(int *reg, double *values);
-  void setListElements(int *reg, int *i, int *k, int *len_k);
   
   void expliciteDollarMLE(int * modelnr, double *values);
 
@@ -248,7 +238,7 @@ extern "C" {
   void MLEanymixed(int *anymixed);
   void GetModelRegister(char **name, int* nr);
   
-  void MultiDimRange(int *model_nr, double *natscale);
+  void MultiDimRange(int *model_nr, int *set, double *natscale);
   SEXP countelements(SEXP idx, SEXP N, SEXP Totparts);
   SEXP countneighbours(SEXP Xdim, SEXP parts, SEXP Squarelength, 
 		       SEXP cumgridlen, SEXP boxes);
@@ -279,6 +269,21 @@ extern "C" {
   void pid(int *i);
   SEXP getChar();
 
+  void start_debug();
+  void end_debug();
+
+  SEXP set_boxcox(SEXP boxcox);
+  SEXP get_boxcox();
+  SEXP BoxCox_inverse(SEXP boxcox, SEXP res);
+  SEXP BoxCox_trafo(SEXP boxcox, SEXP res);	
+
+
+  SEXP get_logli_residuals(SEXP Reg);
+  SEXP get_likeliinfo(SEXP model_reg);
+  SEXP simple_residuals(SEXP model_reg);
+  void PutGlblVar(int *reg, double *var);
+
+  SEXP get_linearpart(SEXP model_reg, SEXP Set);
 
 }
 

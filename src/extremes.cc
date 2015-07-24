@@ -4,7 +4,7 @@
 
  simulation of max-stable random fields
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -15,7 +15,6 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -78,12 +77,13 @@ int addStandard(cov_model **Cov) {
 
   addModel(Cov, STANDARD_SHAPE);
   cov_model *key = *Cov;
-  SetLoc2NewLoc(key, Loc(cov));
+  SetLoc2NewLoc(key, PLoc(cov));
   assert(key->calling == cov);
   assert(key->sub[PGS_LOC] == NULL && key->sub[PGS_FCT] != NULL);
 
 #define checkstandardnext\
-  if ((err = CHECK(key, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,\
+  if ((err = CHECK(key, dim, dim, PointShapeType, XONLY,	\
+		   CoordinateSystemOf(cov->isoown),		\
 		   vdim, role)) != NOERROR) return err
 
   checkstandardnext;
@@ -149,11 +149,6 @@ int init_mpp(cov_model *cov, gen_storage *S) {
       != NOERROR)  return err;
   pgs = sub->Spgs;
 
-  //assert(false);
-
-  //PMI(cov);
-
-
   assert(pgs != NULL);
    
   GetDiameter(loc, pgs->supportmin, pgs->supportmax, pgs->supportcentre); 
@@ -206,7 +201,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
   // printf("here\n");
 
-  assert(cov->simu.active);
+ assert(cov->simu.active);
   location_type *loc = Loc(cov);	
   if (loc->caniso != NULL) BUG;
 
@@ -237,7 +232,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     frechet = RF_NA,
     threshold = RF_NA,
     poisson=0.0;
-  res_type *res = cov->rf;
+  double *res = cov->rf;
   assert(res != NULL);
   ext_bool fieldreturn;
   bool
@@ -259,10 +254,12 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   ext_bool loggiven;
   double Minimum = RF_NEGINF; // -10 // TO DO
 
+  // printf("A\n");if (PL == 107) BUG;
   if (vdim != 1)
-    error("Poisson point process based methods only work in the univariate case");
+    ERR("Poisson point process based methods only work in the univariate case");
 
   SET_SUB;
+  //printf("B\n");if (PL == 108) BUG;
   if (!isPointShape(sub)) BUG;					       
   subrole = sub->role;
   compoundpoisson = subrole == ROLE_POISSON;
@@ -271,7 +268,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   assert(maxstable || Total_n > 0);
   loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
   if (!loggiven) Minimum = exp(Minimum);
-    
+   
   if (simugrid) {
     cumgridlen[0] = 1;
     for (d=0; d<dim; d++) {
@@ -279,13 +276,13 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       gridlen[d] = (int) loc->xgr[d][XLENGTH]; 
       cumgridlen[d+1] = gridlen[d] * cumgridlen[d];
 
-      // printf("set d=%d inc=%f gridlen=%d cum=%d\n", d, inc[d], gridlen[d],
-      //     (int) cumgridlen[d]);
+      // printf("set d=%d inc=%f gridlen=%d cum=%d\n", d, inc[d], gridlen[d], (int) cumgridlen[d]);
     }
   }
+  //  printf("maxstable=%d\n", maxstable);if (PL == 109) BUG;
 
   if (maxstable) {
-    if (loggiven) {
+   if (loggiven) {
       for (i=0; i<vdimtot; i++) res[i] = RF_NEGINF;
     }
     else for (i=0; i<vdimtot; i++) res[i] = 0.0;
@@ -312,12 +309,13 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
   //  APMI(sub);
  
- 
   for(n=0; ; n++) {    
-    //       if (n % 1000 == 0) printf("n=%d tot=%d mh=%f, contr=%d: %f < %f; res[0]=%f\n", (int) n, (int) Total_n,  sub->mpp.maxheight, (int) control, res[control], threshold, res[0]);// assert(n <= 10);
+    //       if (n % 1000 == 0)
+    // printf("n=%d tot=%d  contr=%d: %f < %f; res[0]=%f\n", (int) n, (int) Total_n,  (int) control, res[control], threshold, res[0]);
+// assert(n <= 10);
 
-    //    printf("n=%d\n", n);
-    
+    //   printf("n=%ld\n", n);;if (PL == 110) BUG;
+  
     //    assert(n < 1200);
 
     //    assert(res[0] < 1e-4);
@@ -334,7 +332,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	(err = REINIT(sub, sub->mpp.moments, s)) != NOERROR) BUG;
     DO(sub, s);   
 
-   //printf("PL =%d\n", PL);
+   //printf("PL =%d\n", PL);;if (PL == 111) BUG;
 
     // APMI(sub);
 
@@ -360,7 +358,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     //    get_shape = CovList[sub->gatternr].cov;
     //   get_logshape = CovList[sub->gatternr].log;
     }
-   
+ 
     if (compoundpoisson) {
       summand = 0.0;
     } else if (poissongauss) {
@@ -373,9 +371,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	PRINTF("'maxpoints' (= %d) exceeded. Simulation is likely to be a rough approximation only. Consider increasing 'maxpoints'.\n", 
 	       GLOBAL.extreme.maxpoints
 		);
-	//	printf("break1 %d %d\n",  n, ((int*) cov->p[MAXSTABLE_POINTS])[0]);
-	break;
-      }
+       	break;
+      } 
       poisson += rexp(1.0);
       frechet = pow(poisson, - 1.0 / pgs->alpha);
       gumbel = log(frechet);
@@ -388,7 +385,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       
       //   threshold = sub->loggiven ? GumbelThreshold : FrechetThreshold;
        threshold = logthreshold = 
-	 (res_type) (gumbel + log(sub->mpp.maxheights[0])); //Gumbel
+	 (double) (gumbel + log(sub->mpp.maxheights[0])); //Gumbel
     //   
        if (!loggiven) {
 	threshold = exp(threshold); // Frechet
@@ -397,7 +394,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       //  
        //  APMI(sub);
 
-       //      printf("Max = %f gumbel=%f %f %d logdens=%f\n", sub->mpp.maxheights[0], gumbel, threshold, loggiven, logdens);
+       //      printf("Max = %f gumbel=%f %f %d logdens=%f\n", sub->mpp.maxheights[0], gumbel, threshold, loggiven, logdens);;if (PL == 112) BUG;
 
 
       //printf("for thres=%e %d res=%e zhou=%f(%f) logden=%f  gumbel=%f loggiven=%d summand=%f\n", threshold, (int) control, res[control], pgs->zhou_c, sub->mpp.maxheights[0], logdens, gumbel, loggiven, summand);// assert(false);
@@ -406,17 +403,15 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
 // {   int i; for (i=0; i<total_pts; i++) printf("%e ", res[i]); }
 
-      //APMI(cov);
       while ((control<total_pts) && (res[control]>=threshold)) {
 	// 	print("control: %d %f %f\n", control, res[control], threshold); assert(false);
 	control++;
       }
      if (control >= total_pts) {
-	//printf("break2\n");
 	break;
       }
-    
-     //printf("n=%d every =%d %d %d\n", n, GLOBAL.extreme.check_every, PL, PL_STRUCTURE);
+   
+     //     printf("n=%d every =%d %d %d\n", (int) n, GLOBAL.extreme.check_every, PL, PL_STRUCTURE);
      
       if (n % GLOBAL.extreme.check_every == 0) {
 	pgs->globalmin = res[control];
@@ -425,8 +420,6 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	  if (res[i] < pgs->globalmin) pgs->globalmin = res[i];
 
 	if (pgs->globalmin < Minimum) pgs->globalmin = Minimum;	
-
-	//	APMI(cov);
 
 	if (PL >= PL_STRUCTURE) 
 	  PRINTF("control: %ld %f %f global=%f n=%ld every=%d %f log.max=%f\n", 
@@ -442,18 +435,14 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	: pgs->globalmin / frechet; 
      
 
-      //printf("loggiven =%d %e %f cur.thr=%e\n",
-      //     loggiven, pgs->globalmin, gumbel,  pgs->currentthreshold);
+      //printf("loggiven =%d %e %f cur.thr=%e\n", loggiven, pgs->globalmin, gumbel,  pgs->currentthreshold);;if (PL == 113) BUG;
 
     } // maxstable
     factor = exp(summand);
-    //    APMI(cov);
-
-  //
-  //printf("factor %4.4f sumd=%4.4f logdens=%4.4f logM2=%4.4f th=%4.4f %d<%d \n", factor, summand, logdens, logM2, threshold, control, total_pts);  //  assert(false);
+ 
+  // printf("factor %4.4f sumd=%4.4f logdens=%4.4f logM2=%4.4f th=%4.4f %d<%d \n", factor, summand, logdens, logM2, threshold, (int) control, (int) total_pts);  //  assert(false);
     
-  //   printf("dim=%d loggiven=%d maxstable=%d simugrid=%d randomcoin=%d\n",
-  //	 dim, loggiven, maxstable, simugrid, randomcoin);// assert(false);
+  //   printf("dim=%d loggiven=%d maxstable=%d simugrid=%d randomcoin=%d\n", dim, loggiven, maxstable, simugrid, randomcoin);// assert(false);
 
     //printf("A=%d\n", n);
     zaehler = 0;
@@ -462,10 +451,12 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       for (d=0; d<dim; d++) {	
 	double
 	  step = inc[d] == 0.0 ? 1.0 : inc[d], 
-	  dummy = ceil((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step);	
+	  dummy = ceil((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step
+		       - 1e-8);	
 	start[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int)dummy;
 	partialfield |= start[d] > 0;
-	dummy = 1.0 + ((pgs->supportmax[d] - loc->xgr[d][XSTART]) / step);
+	dummy = trunc(1.00000001 + 
+		      ((pgs->supportmax[d] - loc->xgr[d][XSTART]) / step ));
 	end[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int) dummy;
 	partialfield |= end[d] < gridlen[d];
 
@@ -473,11 +464,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
 
 	if (start[d] >= end[d]) { // 
-	  //PMI(cov);
-	  //  printf("broken %d %d %d supp=%f %f, loc.start=%f %f\n", d,
-	  //	 start[d], end[d],
-	  //	 pgs->supportmin[d], pgs->supportmax[d],
-	  //	 loc->xgr[d][XSTART], inc[d]); 
+	  //  printf("broken %d %d %d supp=%f %f, loc.start=%f %f\n", d, start[d], end[d], pgs->supportmin[d], pgs->supportmax[d], loc->xgr[d][XSTART], inc[d]); 
 	  break;
 	}
 	delta[d] = (end[d] - start[d]) * cumgridlen[d];
@@ -486,7 +473,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	x[d] = xstart[d] = loc->xgr[d][XSTART] + (double) start[d] * inc[d]; 
 
 	if (false || zaehler < 0) {
-	  PRINTF("d=%d start=%d, end=%d xstart=%f %f pgs=[%4.3f, %4.3f] xgr=%f %f %f inc=%3.2f\n", //
+	  PRINTF("d=%d start=%d, end=%d xstart=%f %f pgs=[%4.3f, %4.3f] xgr=%f %f %f inc=%3.2f\n", 
 	  	 d, start[d], end[d], xstart[d], pgs->xstart[d], pgs->supportmin[d], pgs->supportmax[d],
 	 	 loc->xgr[d][XSTART], loc->xgr[d][XSTEP], loc->xgr[d][XLENGTH],
 	  	 inc[d]);
@@ -494,7 +481,6 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	}
       }
 
-      //          APMI(cov);
       if (d < dim) {
 	//printf("cont: d=%d\n", d);
 	continue;
@@ -528,14 +514,14 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 #define GET SHAPE(x, sub, value); /*printf("%f : %f fctr=%f %ld \n", x[0], *value, factor, zaehler); // */
 #define LOGGET LOGSHAPE(x, sub, value, Sign);
 #define LOGGETPOS LOGGET if (Sign[0] > 0)
-#define GETRF *value = (res_type) (rf[zaehler]);
+#define GETRF *value = (double) (rf[zaehler]);
 
     //   printf("%d\n", total_pts); assert(false);
 
 #define RFMAX(OP) {				\
       rf = sub->rf;				\
       for (i=0; i<total_pts; i++) {		\
-	*value = (res_type) (OP);		\
+	*value = (double) (OP);		\
 	if (res[i] < *value) res[i]=*value;	\
       }						\
     }
@@ -543,7 +529,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 #define RFSUM(OP) {				\
       rf = sub->rf;				\
       for (i=0; i<total_pts; i++) {		\
-	*value = (res_type) (OP);		\
+	*value = (double) (OP);		\
 	if (res[i] < *value) res[i] += OP;	\
       }						\
     }
@@ -557,7 +543,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	OP;								\
 	/*  assert( {if (*value > sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)) {  printf("//r=%f %f delta=%e %d %e\n", *value / exp(gumbel), sub->mpp.maxheights[0], *value / exp(gumbel) - sub->mpp.maxheights[0], loggiven, factor); };true;}); */ \
 	/*assert(loggiven || *value <= sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)); */ \
-	if (res[zaehler] < *value) res[zaehler]=*value;			\
+	if (res[zaehler] < *value) res[zaehler] = *value;			\
       }								       
    
 #define SUMAPPLY(GET,OP) GET; res[zaehler] += OP;
@@ -637,7 +623,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	  ct = A * cos(segt);						\
 	  st = A * sin(segt);						\
 	  for (zt = zaehler; zt < total_pts; zt += spatial) {		\
-	    res[zt] += (res_type) ct;					\
+	    res[zt] += (double) ct;					\
 	    zw = ct * cit - st * sit;					\
 	    st = ct * sit + st * cit;					\
 	    ct = zw;							\
@@ -656,6 +642,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     }	
 
     //printf("%d %d %d\n", fieldreturn, loggiven, sub->loggiven);
+	    // todo : !simugrid! && Bereiche einengen!!  
 
     // *atomdependent rfbased/not; (( recurrent/dissipative: min/max gesteuert))
     if (poissongauss  && !randomcoin) { // AVERAGE
@@ -667,20 +654,20 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       assert(subrole == ROLE_SMITH || subrole == ROLE_SCHLATHER ||
 	     subrole ==ROLE_BROWNRESNICK || subrole==ROLE_POISSON || 
 	     subrole==ROLE_POISSON_GAUSS);
-
-      if (fieldreturn == HUETCHEN_OWN_GRIDSIZE) { // atomdependent rfbased/not;
+    if (fieldreturn == HUETCHEN_OWN_GRIDSIZE) { // atomdependent rfbased/not;
 	ALL_APPLY(OWNGRIDAPPLY, NULL, OG_MAXAPPLY, NULL, OG_SUMAPPLY, NULL);	
-      } else if (fieldreturn == true) { // extended boolean
+    } else if (fieldreturn == true) { // extended boolean
 	// todo : !simugrid! && Bereiche einengen!!     
 	// note ! no Sign may be given currently when fieldreturn and loggiven!!
 	if (partialfield) {
+	  //!! Windows
 	  if (!simugrid) BUG;
 	  ALL_APPLY(APPLY, GETRF, MAXAPPLY, GETRF, SUMAPPLY, GETRF);
 	} else { // !partialfield
 	  if (sub->loggiven) {
 	    if (maxstable) RFMAX(rf[i] + summand)
 	    else RFSUM(exp(rf[i] + summand));	  
-	  } else {
+	  } else { // Linux
 	    if (maxstable) RFMAX(rf[i] * factor)
 	    else RFSUM(rf[i] * factor);
 	  }
@@ -690,7 +677,6 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       } else BUG; // neither HUETCHEN_OWN_GRIDSIZE, nor true nor false
     }
   
-    // printf("B=%d\n", n);
     if (n >= nthreshold) {
       if (maxstable) {
 	LPRINT("%d-th pos.: value=%1.3f threshold=%1.3f gu=%1.3f %1.3f %d (%d %d)\n",
@@ -705,9 +691,9 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     R_CheckUserInterrupt();
     
-    //printf("n=%d %f %f %f 0:%f\n", n, res[0], res[1], res[2], res[3]);
+    //   printf("n=%d %f %f %f 0:%f\n", (int) n, res[0], res[1], res[2], res[3]);;if (PL == n) BUG;
 
-    //    assert(res[0] < 80);
+  //    assert(res[0] < 80);
 
   }// for(n,...    --     while control < total_pts
 
@@ -715,16 +701,14 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
   // Trafo to margins
 
-  // printf("%d frechet %d \n", sub->loggiven, ev_p->Frechet);
- 
+  // printf("%d frechet\n", sub->loggiven);if (PL == 10000) BUG;
+
  
   if (maxstable){
     double meansq, var, 
       mean = RF_NA, 
       n_min = RF_INF,      
       eps = GLOBAL.extreme.eps_zhou;
-
-    //    APMI(cov);
 
     if (pgs->alpha != 1.0) {
       if (loggiven) for (k=0; k<total_pts; k++) res[k] *= pgs->alpha; 
@@ -770,9 +754,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     
 
-    // printf("loggiven = %d %f %f\n", loggiven, mean, pgs->zhou_c);
-    //    APMI(cov);
-
+    //   printf("loggiven = %d %f %f\n", loggiven, mean, pgs->zhou_c);
+ 
     //     mean = 250; // 2 statt 11
 
     double xi = P0(GEV_XI);
@@ -795,7 +778,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     // muss das vorletzte sein !
     if (cov->kappasub[GEV_S] != NULL) {
-      error("'s' cannot be chosen as a function yet.");
+      ERR1("'%s' cannot be chosen as a function yet.", KNAME(GEV_S));
       // check whether s is positive !!
     } else {
       double ss = xi == 0 ? P0(GEV_S) : (P0(GEV_S) / xi);
@@ -807,7 +790,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     // muss das letzte sein !
     if (cov->kappasub[GEV_MU] != NULL) {
-      error("mu cannot be chosen as a function yet.");
+      ERR1("'%s' cannot be chosen as a function yet.", KNAME(GEV_MU));
     } else {
       double mu = P0(GEV_MU);
       //   printf("mu=%f xi=%f %f\n", mu, xi, s);
@@ -815,7 +798,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     if (mu != 0.0) for (k=0; k<total_pts; k++) res[k] += mu;
     }
   }
-  //printf("n=%d %f %f %f 0:%f\n", n, res[0], res[1], res[2], res[3]);
+  //printf("n=%d %f %f %f 0:%f\n", n, res[0], res[1], res[2], res[3]);;if (PL == 116) BUG;
+
   // for (k=0; k<total_pts; k++) printf("%f ", res[k]); printf("\n");
   if (PL >= PL_SUBIMPORTANT) {
     PRINTF("number of shape functions used: %ld\n", n);
@@ -859,7 +843,7 @@ int check_poisson(cov_model *cov) {
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
     return ERRORDIM;
   
-  if ((err = CHECK(sub, dim, dim, type, XONLY, CARTESIAN_COORD,
+  if ((err = CHECK(sub, dim, dim, type, XONLY, CoordinateSystemOf(cov->isoown),
 		     SUBMODEL_DEP, cov->role)) != NOERROR) return err;
   setbackward(cov, sub);
  
@@ -887,12 +871,12 @@ int struct_poisson(cov_model *cov, cov_model **newmodel){
   if (cov->key != NULL) COV_DELETE(&(cov->key));
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID);
+    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
   }
 
   if (!isPointShape(next)) {
     int err;
-    if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
+    if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
     if ((err = addStandard(&(cov->key))) != NOERROR) return err;
   }
  
@@ -910,7 +894,6 @@ int init_poisson(cov_model *cov, gen_storage *S) {
     return err;    
   }
 
-  //APMI(cov);
   if (!isPointShape(key)) SERR("no definition of a shape function found");
   
   key->Spgs->intensity = key->Spgs->totalmass * P0(POISSON_INTENSITY);
@@ -994,9 +977,10 @@ int check_schlather(cov_model *cov) {
     ASSERT_ROLE_DEFINED(sub);
 
     if ((err = isPosDef(next)
-	 ? CHECK(next, dim, dim, PosDefType, XONLY, ISOTROPIC, //err
-		   SCALAR, role)
-	 : CHECK(next, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, //err, 
+	 ? CHECK(next, dim, dim, PosDefType, XONLY,  //err
+		 IsotropicOf(cov->isoown), SCALAR, role)
+	 : CHECK(next, dim, dim, ProcessType, XONLY, //err, 
+		 CoordinateSystemOf(cov->isoown),
 		 SCALAR, role)) != NOERROR)  return err;
 
     if (sub->vdim[0] != 1) SERR("only univariate processes are allowed");
@@ -1013,7 +997,8 @@ int check_schlather(cov_model *cov) {
     
   } else { // key != NULL
     //printf("key!=NULL\n");
-   if ( (err = CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD,  
+   if ( (err = CHECK(key, dim,  dim, PointShapeType, XONLY, 
+		     CoordinateSystemOf(cov->isoown),  
 		      SUBMODEL_DEP, ROLE_SCHLATHER)) != NOERROR) {
      //APMI(cov);
       return err;
@@ -1039,7 +1024,7 @@ int struct_schlather(cov_model *cov, cov_model **newmodel){
     if ((err = STRUCT(sub, &(cov->key))) >  NOERROR) return err;
     cov->key->calling = cov;
   } else {
-    if ((err = covcpy(&(cov->key), sub)) != NOERROR) return err;
+    if ((err = covCpy(&(cov->key), sub)) != NOERROR) return err;
   }
   assert(cov->key->calling == cov);
  
@@ -1158,7 +1143,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
   assert(isPointShape(key));
 
   if (key->sub[PGS_LOC] != NULL) return NOERROR;
-  if ((err = covcpy(key->sub + PGS_FCT, shape)) != NOERROR) return err;
+  if ((err = covCpy(key->sub + PGS_FCT, shape)) != NOERROR) return err;
  
   if (nr == PTS_GIVEN_SHAPE) {   
     //printf("here %ld %d %d %d\n", key->sub[PGS_LOC], ScaleOnly(shape),
@@ -1168,7 +1153,7 @@ int PointShapeLocations(cov_model *key, cov_model *shape) {
     bool randomscale = ScaleOnly(shape) && !shape->deterministic &&
       shape->sub[0]->deterministic;
     
-    if ((err = covcpyWithoutRandomParam(key->sub + PGS_LOC, 
+    if ((err = covCpyWithoutRandomParam(key->sub + PGS_LOC, 
 					randomscale ? shape->sub[0] : shape))
 	  != NOERROR) return err;
     if (shape->role == ROLE_POISSON_GAUSS) {
@@ -1225,7 +1210,8 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
   int i,
     err = NOERROR,
     pgs[PGS_N] = {PTS_GIVEN_SHAPE, STANDARD_SHAPE};
-  char msg[PGS_N][200];
+  #define msgN 200
+  char msg[PGS_N][LENERRMSG];
   assert(shape != NULL);
   assert(*Key == NULL);
 
@@ -1233,7 +1219,7 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
   // praeferenzen programmieren?
   for (i=0; i<PGS_N; i++) { 
     if (i > 0) {
-      errorMSG(err, msg[i-1]);
+      FinalErrorMSG(err, msg[i-1]);
       XERR(err);
     }
     //    if (i > 0) XERR(err); assert(i ==0);
@@ -1246,8 +1232,8 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
     //   PMI(pts);
  
     if (pts != NULL) {
-      if ((err = covcpy((*Key)->sub + PGS_FCT, shape)) != NOERROR ||
-	  (err = covcpy((*Key)->sub + PGS_LOC, pts)) != NOERROR
+      if ((err = covCpy((*Key)->sub + PGS_FCT, shape)) != NOERROR ||
+	  (err = covCpy((*Key)->sub + PGS_LOC, pts)) != NOERROR
  	  ) return err;
       Ssetcpy((*Key)->sub[PGS_FCT], (*Key)->sub[PGS_LOC], shape, pts);
       Ssetcpy((*Key)->sub[PGS_LOC], (*Key)->sub[PGS_FCT], pts, shape);
@@ -1261,8 +1247,8 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
       if (local_pts != NULL) { // only in plusmalS.cc
 	if ((*Key)->nr != PTS_GIVEN_SHAPE) continue;
 	cov_model *local, *dummy;
-	if ((err = covcpy(&local, false, local_pts, shape->prevloc, NULL, 
-			  true)) != NOERROR) return err;
+	if ((err = covCpy(&local, false, local_pts, shape->prevloc, NULL, 
+			  true, true, false)) != NOERROR) return err;
 	local->calling = (*Key)->calling;
 	dummy = local;
 	while (dummy->sub[DOLLAR_SUB] != NULL) dummy = dummy->sub[DOLLAR_SUB];
@@ -1282,7 +1268,8 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
     //    APMI(*Key);
 
     //    printf(">>>>>>> KEY start %d %s \n", i, NICK((*Key)));
-    if ((err = CHECK(*Key, dim, dim, PointShapeType, XONLY, CARTESIAN_COORD,
+    if ((err = CHECK(*Key, dim, dim, PointShapeType, XONLY, 
+		     CoordinateSystemOf(shape->isoown),
 		     vdim, ROLE_MAXSTABLE)) != NOERROR) {
       //        printf(">>>>>>> KEY break %d %s %d\n", i, Nick(*Key), dim);  
       //PMI(*Key);
@@ -1394,7 +1381,8 @@ int check_smith(cov_model *cov) {
   if (cov->tsdim != cov->xdimprev || cov->tsdim !=cov->xdimown) return ERRORDIM;
 
   if (key != NULL) {
-    if ((err = CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD,
+    if ((err = CHECK(key, dim,  dim, PointShapeType, XONLY,
+		     CoordinateSystemOf(cov->isoown), 
 		       SUBMODEL_DEP, ROLE_SMITH)) != NOERROR) return err;
   } else { // key == NULL
     if (next == TCF) {
@@ -1421,7 +1409,8 @@ int check_smith(cov_model *cov) {
 	: ROLE_UNDEFINED; 
       ASSERT_ROLE_DEFINED(sub);
  
-      if ((err = CHECK(next, dim, dim, ShapeType, XONLY, CARTESIAN_COORD, 
+      if ((err = CHECK(next, dim, dim, ShapeType, XONLY, 
+		       CoordinateSystemOf(cov->isoown),
 		       SCALAR, role)) != NOERROR) {
 	return err;
       }
@@ -1450,15 +1439,15 @@ int struct_smith(cov_model *cov,  cov_model **newmodel){
 
   if (cov->role != ROLE_SMITH) BUG;  
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID);
-    SetLoc2NewLoc(sub, Loc(cov));
+    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    SetLoc2NewLoc(sub, PLoc(cov));
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key));
   ASSERT_NEWMODEL_NULL;
   
   if (tcf != NULL) {
     // to do: ausbauen 
-    if ((err = covcpy(&tcf_shape, sub)) != NOERROR) goto ErrorHandling;   
+    if ((err = covCpy(&tcf_shape, sub)) != NOERROR) goto ErrorHandling;   
     addModel(&tcf_shape, STROKORB_MONO);
 
     if ((err = CHECK(tcf_shape, tcf->tsdim, tcf->xdimprev, ShapeType, 
@@ -1509,7 +1498,7 @@ double schlatherlogD(double *data, double gamma) {
 #define LL_FULL 1
 #define LL_COMPOSITE 2
 #define LL_SELECTION 3
-#define LL_UNKNOWN error("unknown value for 'likelihood' -- please contact author");
+#define LL_UNKNOWN ERR("unknown value for 'likelihood' -- please contact author");
 
 
 void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
@@ -1523,7 +1512,7 @@ void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
     location_type *loc = Loc(cov);
     long len = loc->totalpoints;    
     QALLOC(len);
-    if (loc->grid || loc->Time) Transform2NoGrid(sub, false, true);   
+    if (loc->grid || loc->Time) Transform2NoGrid(sub, false, true, false);   
   }
 
   location_type *loc = Loc(cov);
@@ -1563,7 +1552,7 @@ void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
       }
     }
     break;
-  case LL_FULL: error("full MLE not available for Brown Resnick");
+  case LL_FULL: ERR("full MLE not available for Brown Resnick");
     break;
   case LL_SELECTION: NotProgrammedYet("LL_SELECTION");
   default : LL_UNKNOWN;
@@ -1607,7 +1596,7 @@ int check_randomcoin(cov_model *cov) {
   ROLE_ASSERT(ROLE_POISSON_GAUSS || (cov->role==ROLE_GAUSS && cov->key!=NULL));
   kdefault(cov, RANDOMCOIN_INTENSITY, gp->intensity[dim]);
   kdefault(cov, RANDOMCOIN_METHOD, 0);
-  if ((err = checkkappas(cov, true)) != NOERROR) return err;
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
   if (cov->tsdim != cov->xdimprev || cov->tsdim !=cov->xdimown) return ERRORDIM;
  
   if (key != NULL) {
@@ -1623,11 +1612,13 @@ int check_randomcoin(cov_model *cov) {
 
     if ((err = cov->role == ROLE_BASE || cov->role == ROLE_GAUSS
 	 // internal coin
-	 ? CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD, //err
+	 ? CHECK(key, dim, dim, ProcessType, XONLY,  //err
+		 CoordinateSystemOf(cov->isoown),
 		 SUBMODEL_DEP,
 		 ROLE_POISSON_GAUSS) // info wird von do_mpp verwendet
 	 : cov->role == ROLE_POISSON_GAUSS 
-	 ? CHECK(key, dim,  dim, PointShapeType, XONLY, CARTESIAN_COORD, //err
+	 ? CHECK(key, dim,  dim, PointShapeType, XONLY, //err
+		 CoordinateSystemOf(cov->isoown),
 		   SUBMODEL_DEP, ROLE_POISSON_GAUSS)
 	 : ERRORFAILED
 	 ) != NOERROR) {
@@ -1650,7 +1641,8 @@ int check_randomcoin(cov_model *cov) {
 	return ERRORPREFNONE;
       }
     } else { // shape != NULL
-      if ((err = CHECK(next, dim, dim, ShapeType, XONLY, CARTESIAN_COORD, 
+      if ((err = CHECK(next, dim, dim, ShapeType, XONLY, 
+		       CoordinateSystemOf(cov->isoown),
 		       SCALAR, ROLE_POISSON)) != NOERROR)  { //POISS_GAUSS ??
 	return err;
       }
@@ -1659,11 +1651,17 @@ int check_randomcoin(cov_model *cov) {
   }
  
   setbackward(cov, key != NULL ? key : next);
+  KAPPA_BOXCOX;
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
+
+
   return NOERROR;
 }
 
  
 void range_randomcoin(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
+
   range->min[RANDOMCOIN_INTENSITY] = RF_NEGINF;
   range->max[RANDOMCOIN_INTENSITY] = RF_INF;
   range->pmin[RANDOMCOIN_INTENSITY] = -10;
@@ -1690,8 +1688,8 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
 
   ROLE_ASSERT(ROLE_POISSON_GAUSS);
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, true, GRIDEXPAND_AVOID);
-    SetLoc2NewLoc(pdf == NULL ? shape : pdf, Loc(cov)); 
+    Transform2NoGrid(cov, true, GRIDEXPAND_AVOID, false);
+    SetLoc2NewLoc(pdf == NULL ? shape : pdf, PLoc(cov)); 
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key));
   ASSERT_NEWMODEL_NULL;
@@ -1714,13 +1712,14 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
 
     tmp_shape->calling = cov;
 
-    if ((err = CHECK(tmp_shape, dim, dim, ShapeType, XONLY, CARTESIAN_COORD, 
+    if ((err = CHECK(tmp_shape, dim, dim, ShapeType, XONLY,
+		     CoordinateSystemOf(cov->isoown),
 		     SCALAR, ROLE_POISSON_GAUSS)) != NOERROR) {
       goto ErrorHandling;
     }    
   } else {
     tmp_shape = shape;
-    //  if ((err = covcpy(&(cov->key), shape)) > NOERROR) {
+    //  if ((err = covCpy(&(cov->key), shape)) > NOERROR) {
     //      return err;
     //    }
   } 
@@ -1739,11 +1738,11 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
   }
   case 1: {
  
-    if ((err = covcpy(&(cov->key), shape)) != NOERROR) goto ErrorHandling;
+    if ((err = covCpy(&(cov->key), shape)) != NOERROR) goto ErrorHandling;
     addModel(&(cov->key), RANDOMSIGN, cov); 
     addModel(&(cov->key), MCMC_PGS, cov);
     cov_model *key = cov->key;
-    if ((err = covcpy(key->sub + PGS_LOC, shape)) != NOERROR)
+    if ((err = covCpy(key->sub + PGS_LOC, shape)) != NOERROR)
 	  goto ErrorHandling;
     addModel(key, PGS_LOC, POW);
     kdefault(key->sub[PGS_LOC], POW_ALPHA, GLOBAL.mpp.shape_power);
@@ -1758,7 +1757,8 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
   default: BUG;
   }
  
-  if ((err = CHECK(cov->key, dim, dim, PointShapeType, XONLY,CARTESIAN_COORD,
+  if ((err = CHECK(cov->key, dim, dim, PointShapeType, XONLY,
+		   CoordinateSystemOf(cov->isoown),
 		   cov->vdim[0], cov->role)) != NOERROR) goto ErrorHandling;
 
  ErrorHandling:
@@ -1818,16 +1818,9 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
 
 void do_randomcoin(cov_model *cov, gen_storage *s) {   
   assert(cov->simu.active);
-  bool loggauss = GLOBAL.gauss.loggauss;
-  GLOBAL.gauss.loggauss = false;
-   location_type *loc = Loc(cov);
+  SAVE_GAUSS_TRAFO;
   double *res = cov->rf;
-
   dompp(cov, cov->Sgen==NULL ? s : cov->Sgen);// letzteres falls shape gegeben
-  if (loggauss) {
-    long i, vdimtot = loc->totalpoints * cov->vdim[0];
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-  }
-  GLOBAL.gauss.loggauss = loggauss;
+  BOXCOX_INVERSE;
 }
 

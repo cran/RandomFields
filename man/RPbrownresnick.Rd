@@ -107,10 +107,10 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 \dontshow{\dontrun{
 model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
-x <- seq(0, 10, if (interactive()) 0.2 else 1)
+x <- seq(0, 10, 0.2)
 z <- RFsimulate(model=model, x, x, n=4, A=0.9) # about 1 min on a fast machine
 plot(z)
 
@@ -120,7 +120,7 @@ plot(z)
 
 ## basic model in Buishand, de Haan, Zhou (2008)
 model <- RMfbm(proj=1, alpha=1, var=0.5) + RMfbm(proj=2, alpha=1, var=0.5) 
-x <- seq(0, 5, if (interactive()) 0.05 else 1)
+x <- seq(0, 5, 0.05)
 z <- RFsimulate(RPbrownresnick(model, xi=0), x, x, every=1000)
 plot(z)
 

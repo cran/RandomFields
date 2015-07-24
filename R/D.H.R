@@ -1,3 +1,26 @@
+
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 regression <- function(x, y, main, scr,
                        value=function(regr) regr$coeff[2], variable="var",
                        mode=c("nographics", "plot", "interactive"),
@@ -12,6 +35,7 @@ regression <- function(x, y, main, scr,
                        col.abline.chosen = "darkblue",
                        col.smooth = "red",
                        ...) {
+  
   bg <- par()$bg
   par(bg="white")
   mode <- match.arg(mode)
@@ -30,6 +54,7 @@ regression <- function(x, y, main, scr,
   ## curmain must be set since within repeat loop curmain is not set if
   ## the user immediately breaks the loop
   curmain <- main <- paste(main,": ",variable,"=", format(val, dig=3), sep="")
+  
   sm <- ksmooth(x, y, n.points=100, kernel="box", bandwidth=0.5)[c("x", "y")]
   if (mode!="nographics") { 
     screen(scr)
@@ -82,8 +107,9 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    fft.m = c(1, min(1000, (fft.len - 1) / 10)),
                    fft.max.length = Inf, ## longer ts are cut down
                    method=c("dfa", "fft", "var"),
-                   mode=c("plot", "interactive"),
-                   pch=16, cex=0.2, cex.main=0.85,
+                    mode = if (interactive()) c("plot", "interactive")
+                    else "nographics",
+                  pch=16, cex=0.2, cex.main=0.85,
                    printlevel=RFoptions()$general$printlevel,
                    height=3.5,
                    ...
@@ -91,7 +117,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
-  T <- NULL # if (!is.null(T)) stop("time not programmed yet")
+  T <- NULL # if (length(T)!=0) stop("time not programmed yet")
   grid <- TRUE # if (!grid) stop("only grids are possible")
   
   method <- l.method[pmatch(method, l.method)]
@@ -278,8 +304,8 @@ RFfractaldim <-
            fft.max.length=Inf,
            fft.max.regr=150000,
            fft.shift = 50, # in %; 50:WOSA; 100: no overlapping
-           method=c("variogram", "fft"),# "box","range", not correctly implement.
-           mode=c("plot", "interactive"),
+           method=c("variogram", "fft"),#"box","range", not correctly implement.
+           mode = if (interactive()) c("plot", "interactive") else "nographics",
            pch=16, cex=0.2, cex.main=0.85,
            printlevel = RFoptions()$general$printlevel,
            height=3.5,
@@ -287,7 +313,7 @@ RFfractaldim <-
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
-  T <- NULL # if (!is.null(T)) stop("time not programmed yet")
+  T <- NULL # if (length(T)!=0) stop("time not programmed yet")
 
   method <- l.method[pmatch(method, l.method)]
   do.vario <- any(method=="variogram")
@@ -309,7 +335,7 @@ RFfractaldim <-
 
   if (isSpObj(data)) data <- sp2RF(data)
   if (is(data, "RFsp")) {
-    if (!(missing(x) && is.null(y) && is.null(z) && is.null(T)))
+    if (!(missing(x) && length(y)==0 && length(z)==0 && length(T)==0))
       stop("x, y, z, T may not be given if 'data' is of class 'RFsp'")
     gridtmp <- isGridded(data)
     compareGridBooleans(grid, gridtmp)
@@ -334,6 +360,8 @@ RFfractaldim <-
     l.midbins <- log((ev$centers[idx])[1:vario.n])
     l.binvario <- (l.binvario[idx])[1:vario.n]
   }
+
+  
 
   if (ct$grid) {
     dimen <- cbind(ct$x, ct$T)[3, ] 
@@ -439,7 +467,7 @@ RFfractaldim <-
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))
     on.exit(close.screen(screens))
   }
-  
+
   for (m in mode) {
     scr <- 0
     if (do.vario) {

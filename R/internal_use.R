@@ -1,3 +1,26 @@
+
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 ########################################################################
 ## Hier sind Funktionen, die vermutlich kaum ein Anwender interessiert
 ## und wohl eher zum internen Gebrauch, wenn auch im NAMESPACE stehend;
@@ -16,48 +39,11 @@ PrintModelList <-function (operators=FALSE, internal=FALSE,
 
 
 
-Print <- function(..., digits=6, empty.lines=2) { #
-  max.elements <- 99
-  l <- list(...)
-  n <- as.character(match.call())[-1]
-  cat(paste(rep("\n", empty.lines), collapse="")) #
-  for (i in 1:length(l)) {
-    cat(n[i]) #
-    if (!is.list(l[[i]]) && is.vector(l[[i]])) {
-      L <- length(l[[i]])
-      if (L==0) cat(" = <zero>")#
-      else {
-        cat(" [", L, "] = ", sep="")
-        cat(if (is.numeric(l[[i]]))
-            round(l[[i]][1:min(L , max.elements)], digits=digits)#
-            else l[[i]][1:min(L , max.elements)]) #
-        if (max.elements < L) cat(" ...")
-      }
-    } else {
-       if (is.list(l[[i]])) {
-        cat(" =  ") #
-        str(l[[i]], digits.d=digits) #
-      } else {
-        cat(" =")
-        if (length(l[[i]]) <= 100 && FALSE) {
-          print(if (is.numeric(l[[i]])) round(l[[i]], digits=digits)#
-                else l[[i]])
-        } else {
-          if (length(l[[i]]) > 1 && !is.vector(l[[i]]) && !is.matrix(l[[i]])
-              && !is.array(l[[i]])) cat("\n")
-          str(l[[i]]) #
-        }
-      }
-    }
-    cat("\n")
-  }
-}
-
-
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
                           path="RandomFields", package="RandomFields",
-                          read.rd.files=TRUE) {
+                          read.rd.files=TRUE,
+                          libpath = NULL, single.runs = FALSE) {
   .exclude <- exclude
   .ask <- ask
   .echo <- echo
@@ -130,6 +116,12 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   .included.fl <- .included.fl[.not.isna]
   Print(.included.fl, get("export", .env), get("p", .env)); #return(NA)
   .max.fct.list <- max(.included.fl)
+  if (single.runs) {
+    file.in <- "example..R"
+    file.out <- "example..Rout"
+    if (file.exists(file.out)) file.remove(file.out)
+  }
+  
   for (.idx in .include) {
     if (.idx %in% .exclude) next
     cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
@@ -138,21 +130,31 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     .C("ResetWarnings", as.integer(FALSE))
     if (.echo) cat(.idx, "")
     .tryok <- TRUE
-    if (.halt) {
-      do.call(utils::example, list(.fct.list[.idx], ask=.ask, echo=.echo))
+    if (single.runs) {
+      txt <- paste("library(RandomFields", libpath, "); example(",
+                .fct.list[.idx],
+                ", ask =", .ask,
+                ", echo =", .echo,
+                ")", sep="")
+      write(file=file.in,  txt)
+      command <- paste("R < ", file.in, ">>", file.out)
     } else {
-       if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
-                                         echo=.echo))), "try-error")) {
-        .not_working_no<- c(.not_working_no, .idx)
-        .not_working <- c(.not_working, .fct.list[.idx])
-        .tryok <- FALSE
+      if (.halt) {
+        do.call(utils::example, list(.fct.list[.idx], ask=.ask, echo=.echo))
+      } else {
+        if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
+                                                echo=.echo))), "try-error")) {
+          .not_working_no<- c(.not_working_no, .idx)
+          .not_working <- c(.not_working, .fct.list[.idx])
+          .tryok <- FALSE
+        }
       }
-    }
-    RFoptions(storing = FALSE);
-    cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
-    if (.tryok && !is.na(RFoptions()$general$seed)) {
-      Print(.not_working, paste(.not_working_no, collapse=", ")) #
-      stop("seed not NA: ", .fct.list[.idx])
+      RFoptions(storing = FALSE);
+      cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
+      if (.tryok && !is.na(RFoptions()$general$seed)) {
+        Print(.not_working, paste(.not_working_no, collapse=", ")) #
+        stop("seed not NA: ", .fct.list[.idx])
+      }
     }
   }
   Print(.not_working, paste(.not_working_no, collapse=", ")) #
@@ -161,6 +163,14 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   return(.ret)
 }
 
+StartExample <- function(reduced = TRUE) {
+  if (!interactive()) {
+### do not touch next lines
+    ## REDUCED <- reduced, reduced
+    REDUCED <- reduced
+    RFoptions(examples_reduced = REDUCED)
+  }
+}
 
 FinalizeExample <- function() {
   if (!interactive()) {
@@ -173,7 +183,12 @@ FinalizeExample <- function() {
       }
     }
   }
-  RFoptions(seed = NA)
+
+ # if (RFoptions()$general$print > 1) {Print(RFoptions()$general$print); print("not ok")}  Print(RFoptions()$gen)
+  
+  RFoptions(seed = NA, coord_system="auto", examples_reduced=FALSE)
+  
+  #Print(RFoptions()$gen)
 }
 
 
@@ -325,7 +340,8 @@ reverse_dependencies_with_maintainers <-
            recursive = FALSE) {
     ## function taken from CRAN developer website. 
     repos <- getOption("repos")["CRAN"]
-    if (substr(repos, 1, 1) == "@") repos <- "http://cran.r-project.org"
+    Print(repos) #
+    ## if (substr(repos, 1, 1) == "@") repos <- "http://cran.r-project.org"
     Print(repos) #
     contrib.url(repos, "source") # trigger chooseCRANmirror() if required
     description <- sprintf("%s/web/packages/packages.rds", repos)

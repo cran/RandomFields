@@ -67,14 +67,16 @@ RPbernoulli(phi, stationary_only, threshold)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
-x <- seq(0, 10, if (interactive()) 0.1 else 2)
+\dontshow{StartExample()}
+x <- seq(0, 10, 0.1)
 model <- RPbernoulli(RMexp(), threshold=0)
 z <- RFsimulate(model, x, x, n=4)
 plot(z)
 
+\dontshow{\dontrun{ % to do sobald br wieder laueft
 model <- RPbernoulli(RPbrownresnick(RMexp(), xi=1), threshold=1)
 z <- RFsimulate(model, x, x, n=4)
 plot(z)
+}}
 \dontshow{FinalizeExample()}
 }

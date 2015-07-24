@@ -8,6 +8,16 @@
 
 
 
+\section{Changes done in 3.1.0 (Summer 2015)}{
+  \itemize{
+    \item full (univariate) trend modelling
+    \item error in particular in \command{\link{RFfit}} corrected
+    \item \command{\link{RFfit}} runs much faster now
+    \item effects of \code{modus operandi} changed for estimating
+  }
+}
+
+
 \section{Corrections done in 3.0.56 (Jan 2015)}{
   \itemize{
     \item log Gauss field corrected (has been a log log Gauss field)
@@ -105,7 +115,7 @@
        may now define his own functions, to some extend.
      \item The \link[=RMtrend]{trend} allows for much more flexibility
      \item \link[=RR]{Distributions} may now included which will be
-     extended to \link{Baysian} modelling in future.
+     extended to \link{Bayesian} modelling in future.
    }
  }
 }
@@ -113,9 +123,9 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 ## S4 vs S3
-x <- seq(0, 10, if (interactive()) 0.1 else 2)
+x <- seq(0, 10, 0.1)
 model <- RMexp()
 plot(RFsimulate(model, x)) ## S4
 plot(RFsimulate(model, x, spConform=FALSE)) ## no class

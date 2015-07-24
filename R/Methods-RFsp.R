@@ -1,3 +1,23 @@
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
 
 ## Coerce Objects #########################################################
 
@@ -245,8 +265,10 @@ summary.RFpointsDataFrame <- function(object, digits = 6, ...) {
   class(df) <- "summary.RFpointsDataFrame"
   df
 }
-print.summary.RFpointsDataFrame <- function(x, ...)
-  print.data.frame(x, ...)#
+print.summary.RFpointsDataFrame <- function(x, ...) {
+  if (is.data.frame(x)) print.data.frame(x, ...)
+  else str(x, give.attr=FALSE, give.head=FALSE, no.list=TRUE, ...) #
+}
 
 print.RFpointsDataFrame <- function(x, ...) {
   sx <- summary.RFpointsDataFrame(x, ...)
@@ -423,7 +445,9 @@ setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE,  MARGIN.movie = NULL, ...)
+            legend=TRUE,  MARGIN.movie = NULL,
+              file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
+              ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -432,6 +456,7 @@ setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
+                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
                                  ...))
 
 setMethod(f="plot",
@@ -447,7 +472,8 @@ setMethod(f="plot",
             zlim,
             legend=TRUE,
             MARGIN.movie = NULL,
-            ...)
+               file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
+          ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -456,7 +482,8 @@ setMethod(f="plot",
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
-                                 ...))
+                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
+                                ...))
 
 setMethod(f="plot",
           signature(x="RFspatialDataFrame", y="RFspatialPointsDataFrame"),
@@ -471,7 +498,8 @@ setMethod(f="plot",
             zlim,
             legend=TRUE,
             MARGIN.movie = NULL,
-            ...)
+                  file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
+         ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -480,6 +508,7 @@ setMethod(f="plot",
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
+                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
                                  ...))
 setMethod(f="plot",
           signature(x="RFspatialDataFrame", y="matrix"),
@@ -494,6 +523,7 @@ setMethod(f="plot",
             zlim,
             legend=TRUE,
             MARGIN.movie = NULL,
+                 file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
             ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
@@ -503,7 +533,8 @@ setMethod(f="plot",
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
-                                 ...))
+                                     file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
+                             ...))
 
 setMethod(f="plot",
           signature(x="RFspatialDataFrame", y="data.frame"),
@@ -518,7 +549,8 @@ setMethod(f="plot",
             zlim,
             legend=TRUE,
             MARGIN.movie = NULL,
-            ...)
+                    file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
+         ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -527,7 +559,8 @@ setMethod(f="plot",
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
-                                 ...))
+                                       file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
+                              ...))
 
 setMethod(f="persp",
           signature(x="RFspatialGridDataFrame"),
@@ -540,7 +573,9 @@ setMethod(f="persp",
                              x@.RFparams$has.variance),
             select.variables, # = 1:vdim,
             zlim,
-            legend=TRUE, MARGIN.movie = NULL, ...)
+            legend=TRUE, MARGIN.movie = NULL,
+                    file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
+              ...)
           plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                                  MARGIN.slices=MARGIN.slices,
                                  n.slices=n.slices, nmax=nmax,
@@ -549,7 +584,8 @@ setMethod(f="persp",
                                  zlim=zlim,
                                  legend=legend,
                                  MARGIN.movie = MARGIN.movie,
-                                 ..., plotmethod="persp"))
+                                      file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
+                               ..., plotmethod="persp"))
 
 contour.RFspatialGridDataFrame <-
   function( x, y, zlim,
@@ -560,7 +596,9 @@ contour.RFspatialGridDataFrame <-
            plot.variance = (!is.null(x@.RFparams$has.variance) &&
                             x@.RFparams$has.variance),
            select.variables, # = 1:vdim,
-            legend=TRUE,  MARGIN.movie = NULL, ...)
+            legend=TRUE,  MARGIN.movie = NULL,
+           file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
+         ...)
   plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
                          MARGIN.slices=MARGIN.slices,
                          n.slices=n.slices, nmax=nmax,
@@ -568,7 +606,8 @@ contour.RFspatialGridDataFrame <-
                          select=select.variables,
                          zlim=zlim,
                          legend=legend,MARGIN.movie = MARGIN.movie,
-                         ..., plotmethod="contour")
+                         file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
+                      ..., plotmethod="contour")
 
 
 errMsgNoPlotAvailable <- function(x, y)

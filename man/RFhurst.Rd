@@ -13,7 +13,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  len = min(100, dimen[1]))))),
  fft.m = c(1, min(1000, (fft.len - 1)/10)),
  fft.max.length = Inf, method = c("dfa", "fft", "var"),
- mode = c("plot", "interactive"),
+ mode = if (interactive ()) c("plot", "interactive") else "nographics", %ok
  pch = 16, cex = 0.2, cex.main = 0.85,
  printlevel = RFoptions()$general$printlevel, height = 3.5,
  ...)
@@ -164,13 +164,10 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample(reduced=50)}
 \dontshow{.randomfields.options = options()$warn; options(warn=0)}
 x <- runif(1000)
-if (interactive()) {
- h <- RFhurst(1:length(x), data=x)
-} else {
- h <- RFhurst(1:length(x), data=x, mode = "nographics")
-}
+h <- RFhurst(1:length(x), data=x)
 \dontshow{options(warn = .randomfields.options)}
 
 \dontshow{FinalizeExample()}

@@ -70,9 +70,9 @@ RPschlather(phi, tcf, xi, mu, s)
 RFoptions(seed=0, xi=0)
 ## seed=0: *ANY* simulation will have the random seed 0; set
 ##         RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 ## xi=0: any simulated max-staable random field has extreme value index 0
-
-x <- seq(0, 2, if (interactive()) 0.01 else 1)
+x <- seq(0, 2,0.01)
 
 ## standard use of RPschlather (i.e. a standardized Gaussian field)
 model <- RMgauss()
@@ -95,8 +95,7 @@ try(RFsimulate(model=RPschlather(RMgauss(var=2)), x=x))
 
 ## check whether the marginal distribution (Gumbel) is indeed correct:
 model <- RMgauss()
-n <- if (interactive()) 100 else 1
-z <- RFsimulate(RPschlather(model, xi=0), x, n=n)
+z <- RFsimulate(RPschlather(model, xi=0), x, n=100)
 plot(z)
 hist(unlist(z@data), 50, freq=FALSE)
 curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE) 

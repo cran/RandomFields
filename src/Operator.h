@@ -1,3 +1,29 @@
+
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
 #ifndef Operators_H
 #define Operators_H 1
 
@@ -22,7 +48,7 @@ void dorandom2(cov_model *cov, double *v);
 
 void plusStat(double *x, cov_model *cov, double *v);
 void plusNonStat(double *x,  double *y, cov_model *cov, double *v);
-void covmatrix_plus(cov_model *cov, double *v, int*);
+void covmatrix_plus(cov_model *cov, double *v);
 char iscovmatrix_plus(cov_model *cov);
 int checkplus(cov_model *cov);
 bool Typeplus(Types required, cov_model *cov, int depth);
@@ -49,8 +75,8 @@ void kappaM(int i, cov_model *cov, int *nr, int *nc);
 void Mstat(double *x, cov_model *cov, double *v);
 void Mnonstat(double *x, double *y, cov_model *cov, double *v);
 int checkM(cov_model *cov);
-sortsofparam paramtype_M(int k, int row, int col);
 void rangeM(cov_model *cov, range_type* ra);
+sortsofparam sortof_M(int k, int row, int col);
 
 void kappaSchur(int i, cov_model *cov, int *nr, int *nc);
 void Schurstat(double *x, cov_model *cov, double *v);
@@ -72,11 +98,12 @@ void ieinitId(cov_model *cov, localinfotype *li);
 void rangeId(cov_model *cov, range_type* ra); 
 
 
+bool hasVarOnly(cov_model *cov);
 void kappaS(int i, cov_model *cov, int *nr, int *nc);
 void Siso(double *x, cov_model *cov, double *v);
 void logSiso(double *x, cov_model *cov, double *v, double * Sign);
 void Sstat(double *x, cov_model *cov, double *v);
-void covmatrixS(cov_model *cov, double *v, int*);
+void covmatrixS(cov_model *cov, double *v);
 char iscovmatrixS(cov_model *cov);
 void logSstat(double *x, cov_model *cov, double *v, double * Sign);
 void DS(double *x, cov_model *cov, double *v);
@@ -144,14 +171,12 @@ int check_binaryGauss(cov_model *cov);
 void extrgauss(double *x, cov_model *cov, double *v);
   int check_extrgauss(cov_model *cov);
 
-void kappaNonStWM(int i, cov_model *cov, int *nr, int *nc);
-void NonStWMQ(double *x, double *y,  double srqtQ, cov_model *cov, double *v);
+
 void NonStWM(double *x, double *y, cov_model *cov, double *v);
 int checkNonStWM(cov_model *cov); 
-sortsofparam paramtype_nonstWM(int k, int row, int col);
 void rangeNonStWM(cov_model *cov, range_type* ra); 
-void DrawMixNonStWM(cov_model *cov, double *random);
-double LogMixWeightNonStWM(double *x, double logV, cov_model *cov);
+//void DrawMixNonStWM(cov_model *cov, double *random);
+//double LogMixWeightNonStWM(double *x, double logV, cov_model *cov);
 
 
 void lp(double *x, cov_model *cov, double *v);
@@ -168,7 +193,6 @@ void nsst(double *x, cov_model *cov, double *v);
 void Dnsst(double *x, cov_model *cov, double *v);
 void TBM2nsst(double *x, cov_model *cov, double *v);
 int checknsst(cov_model *cov);
-sortsofparam paramtype_nsst(int k, int row, int col);
 void rangensst(cov_model *cov, range_type* ra);
 
 void nonstatgennsst(double *x, double *y, cov_model *cov, double *v);
@@ -300,7 +324,6 @@ void doPowS(cov_model *cov, gen_storage *s);
 void kappaqam(int i, cov_model *cov, int *nr, int *nc);
 void qam(double *x, cov_model *cov, double *v);
 int checkqam(cov_model *cov);
-sortsofparam paramtype_qam(int k, int row, int col);
 void rangeqam(cov_model *cov, range_type* ra);
 
 void kappamqam(int i, cov_model *cov, int *nr, int *nc);
@@ -310,7 +333,7 @@ void rangemqam(cov_model *cov, range_type* ra);
 
 
 void select(double *x, cov_model *cov, double *v);
-void covmatrix_select(cov_model *cov, double *v, int*);
+void covmatrix_select(cov_model *cov, double *v);
 char iscovmatrix_select(cov_model *cov);
 int checkselect(cov_model *cov);
 void rangeselect(cov_model *cov, range_type *range);
@@ -370,7 +393,7 @@ void addSetDistr(cov_model **newmodel, cov_model * remote,
 		 param_set_fct set,  bool performdo, int variant);
 void setparamStat(double *x, cov_model *cov, double *v);
 void setparamNonStat(double *x,  double *y, cov_model *cov, double *v);
-void covmatrix_setparam(cov_model *cov, double *v, int *nonzeros);
+void covmatrix_setparam(cov_model *cov, double *v);
 char iscovmatrix_setparam(cov_model *cov);
 int checksetparam(cov_model *cov);
 void range_setparam(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
@@ -413,12 +436,10 @@ void lognonstattrafo(double *x, double *y, cov_model *cov, double *v,
 int checktrafo(cov_model *cov);
 void rangetrafo(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 bool Typetrafo(Types required, cov_model *cov, int depth);
-
-
-void covariate(double *x, cov_model *cov, double *v);
-int checkcovariate(cov_model *cov);
-void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
-void kappa_covariate(int i, cov_model *cov, int *nr, int *nc);
+int checktrafoproc(cov_model *cov);
+int structtrafoproc(cov_model  *cov, cov_model **newmodel);
+int inittrafoproc(cov_model *cov, gen_storage *s);
+void dotrafoproc(cov_model *cov, gen_storage *s);
 
 
 void nonstatprod(double *x, double *y, cov_model *cov, double *v);

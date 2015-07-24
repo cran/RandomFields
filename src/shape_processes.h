@@ -1,3 +1,29 @@
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+
 #ifndef RandomShape_H
 #define RandomShape_H 1
 
@@ -57,7 +83,7 @@ int  checkmixed(cov_model *cov);
 void rangemixed(cov_model *cov, range_type* ra);
 int  initmixed(cov_model *cov, gen_storage *s);
 void domixed(cov_model *cov, gen_storage *s);
-void covmatrix_mixed(cov_model *cov, double *v, int*);
+void covmatrix_mixed(cov_model *cov, double *v);
 char iscovmatrix_mixed(cov_model *cov);
 
 void trend(double *x, cov_model *cov, double *v);
@@ -241,7 +267,7 @@ int check_specificGauss(cov_model *cov);
 int struct_specificGauss(cov_model *cov, cov_model **newmodel);
 int init_specificGauss(cov_model *cov, gen_storage *S);
 void do_specificGauss(cov_model *cov, gen_storage *S);
-
+void range_specificGauss(cov_model *cov, range_type *range);
 
 
 void tbm_kappasproc(int i, cov_model *cov, int *nr, int *nc);
@@ -307,14 +333,19 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel);
 int initBrownResnick(cov_model *cov, gen_storage *s);
 void doBrownResnick(cov_model *cov, gen_storage *s);
 void loglikelihoodBR(double *data, cov_model *cov, double *v);
-void range_likelihood(cov_model *cov, range_type* range);
 
+void kappaGProc(int i, cov_model *cov, int *nr, int *nc);
 int checkgaussprocess(cov_model *cov);
 void rangegaussprocess(cov_model *cov, range_type *range);
 int struct_gaussprocess(cov_model *cov, cov_model **newmodel);
 int init_gaussprocess(cov_model *cov, gen_storage *s);
 void do_gaussprocess(cov_model *cov, gen_storage *s);
 void gaussprocessDlog(double *x, cov_model *cov, double *v);
+int struct_gauss_logli(cov_model *cov);
+SEXP gauss_linearpart(SEXP model_reg, SEXP Set);
+void gauss_predict(cov_model *predict, cov_model *Cov, double *v);
+void gauss_trend(cov_model *predict, cov_model *cov, double *v, int set);
+
 
 int struct_extractdollar(cov_model *cov, cov_model **newmodel);
 
@@ -371,15 +402,32 @@ int init_density(cov_model *cov, gen_storage *S);
 // void do_density(cov_model *cov, gen_storage *S);
 void range_density(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
 
+
+void kappalikelihood(int i, cov_model VARIABLE_IS_NOT_USED *cov, 
+		     int *nr, int *nc);
 void likelihood(double *data, cov_model *cov, double *v);
 int check_likelihood(cov_model *cov);
 int struct_likelihood(cov_model *cov, cov_model **newmodel);
+void range_likelihood(cov_model *cov, range_type* range);
+
+void linearpart(double *data, cov_model *cov, double *v);
+int check_linearpart(cov_model *cov);
+int struct_linearpart(cov_model *cov, cov_model **newmodel);
+//void range_linearpart(cov_model *cov, range_type* range);
 
 
+void predict(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v);
+int check_predict(cov_model *predict);
+int struct_predict(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel);
+void range_predict(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
+
+
+int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel);
 void Cov(double *x, cov_model *cov, double *value) ;
 int check_cov(cov_model *cov) ;
 int struct_cov(cov_model *cov, cov_model **newmodel);
 
+void FctnIntern(cov_model *cov, cov_model *covVdim, cov_model *sub, double *value, bool ignore_y);
 void Fctn(double *x, cov_model *cov, double *value);
 int check_fctn(cov_model *cov);
 
@@ -412,7 +460,9 @@ int struct_dummy(cov_model *cov, cov_model **newmodel);
 
 
 int checkTrendEval(cov_model *cov);
+int init_TrendEval(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s);
 void do_TrendEval(cov_model *cov, gen_storage *s);
+void range_TrendEval(cov_model  *cov, range_type *range);
 
 //-----------------------------------------------------------------
 // unsorted

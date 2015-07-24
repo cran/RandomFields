@@ -11,7 +11,7 @@
 
 \usage{
 
-RPgauss(phi, stationary_only)
+RPgauss(phi, boxcox, stationary_only)
 
 
 }
@@ -21,6 +21,10 @@ RPgauss(phi, stationary_only)
 % \item{loggauss}{logical. If \code{TRUE} then a log-Gaussian random
 % field is returned. Default is \code{FALSE}.
 % }
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{stationary_only}{Logical or NA. Used for the automatic
  choice of methods. 
  \itemize{
@@ -103,8 +107,9 @@ By default, all Gaussian random fields have zero mean.
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMexp()
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x, seed=0))
 plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same

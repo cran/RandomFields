@@ -1,18 +1,34 @@
 
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 
 
-PrepareModel2 <- function(model, ...) {
+
+PrepareModel2 <- function(model, ..., x=NULL) {
   if (missing(model) || is.null(model)) stop("'model' must be given.")
-  m <- parseModel(model, ...)
-  
-  #if (!is.list(model))
-      
-#  if (class(try(all.equal(parseModel(list2RMmodel(m)), m, check.attr=FALSE)))=="try-error"){
-#    print("AlexWarning in PrepareModel2: ruecktrafo via list2RMmodel waere falsch oder nich dasselbe ... bitte model mir zuschicken")
-#    print("doppelt hin und zurueck:")
-#    print(try(all.equal(parseModel(list2RMmodel(parseModel(list2RMmodel(m)))), parseModel(list2RMmodel(m)), check.attr=FALSE)))
-#  }
+  method <- "ml"
+  if (class(model) == "RF_fit") model <- model[[method]]$model
+  else if (class(model) == "RFfit") model <- model[method]
 
+  m <- parseModel(model, ..., x=x)
+  
   if (notplus <- !(m[[1]] %in% ZF_PLUS)) m <- list(ZF_SYMBOLS_PLUS, m)
      
   for (i in 2:length(m)) {
@@ -121,7 +137,7 @@ PrepareModel <-  function(model, param, trend=NULL,
   missing.model <- missing(model)
   missing.param <- missing(param) || is.null(param)
 
-  if (full.model <- missing.param && is.null(model$param)) { ## full model
+  if (missing.param && is.null(model$param)) { ## full model
     if (RFoptions()$internal$warn_oldstyle)
       warning("the sequential list format is depreciated.")
     if (missing.model || (length(model)==0)) model <- list()
@@ -285,34 +301,69 @@ seq2grid <- function(x, name, grid, warn_ambiguous, gridtolerance) {
 }
 
 CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
-                    dim=NULL, # == spdim!
+                    dim=NULL, # == spatialdim!
                     length.data,
                     y.ok = FALSE, 
                     printlevel = RFoptions()$general$printlevel){
 
+  ## do not pass anything on "..." ! --- only used for internal calls
+  ## when lists are re-passed
+
   ## converts the given coordinates into standard formats
   ## (one for arbitrarily given locations and one for grid points)
+  #print("CheckXT in convert.R")#Berreth
+  
+  if (!missing(x)) {
+    if (is(x, "CheckXT")) return(x)  
+    if (is.list(x))  { 
+      if (!is.list(x[[1]])) return(do.call("CheckXT", x))
+      L <- list()
+      for (i in 1:length(x)) {
+        L[[i]] <-
+          if (is(x[[i]], "CheckXT")) x[[i]] else do.call("CheckXT", x[[i]])
+      }
+      if (length(x) > 1) {    
+        if (!all(diff(sapply(L, function(x) x$Zeit)) == 0) ||
+          !all(diff(sapply(L, function(x) x$spatialdim)) == 0))
+          stop("all sets must have the same dimension")
+        if (!all(diff(sapply(L, function(x) x$dist.given)) == 0))
+        stop("either all the sets must be based on distances or none")
+      }
+      class(L) <- "CheckXT"
+      return(L)
+    }
+  }
+
   
   RFopt <- RFoptions()
   curunits <- RFopt$coords$coordunits
   newunits <-  RFopt$coords$new_coordunits
   coord_system <-  RFopt$coords$coord_system
   new_coord_system <-  RFopt$coords$new_coord_system
+  ex.red <- RFopt$internal$examples_reduced
   
-  if (!missing(distances) && length(distances) > 0) {
+  if (!missing(distances) && !is.null(distances)) { ## length==0 OK!
     stopifnot(is.matrix(distances) || (!missing(dim) && !is.null(dim)),
               (missing(grid) || length(grid) == 0),
               missing(x) || is.null(x),
-              is.null(y),
-              is.null(z),
-              is.null(T))
+              length(y)==0,
+              length(z)==0,
+              length(T)==0)
     
-    if (coord_system != new_coord_system && new_coord_system != "keep")
+    if (coord_system != new_coord_system && new_coord_system != "keep")      
       stop("coordinate systems differ")
-
+    
+    if (is.list(distances)) {
+      L <- list()
+      for (i in 1:length(x))
+        L[[i]] <- do.call("CheckXT", list(distances=distances[[i]], dim=dim))
+       class(L) <- "CheckXT"
+      return(L)
+    }
+        
     if (class(distances) == "dist") {
       x <- as.vector(distances)
-      l <- length(x)
+      len <- length(distances)
     } else if (is.matrix(distances) || is.vector(distances)) {
       if (is.matrix(distances)) {        
         len <- nrow(distances)
@@ -325,24 +376,35 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
           stop("dim is not given although 'distances' are used")
       }
       x <- distances
-      l <- as.integer(1e-9 + 0.5 * (1 + sqrt(1 + 8 * len)))
-      if (l * (l-1) / 2 != len) l <- NaN
     } else {
       stop("'distances' not of required format.")
     }
 
-    return(list(x=as.matrix(x),
-                T=NULL, 
-                Zeit=FALSE,
-                restotal = l,
-                l = l,
-                spatialdim=dim,
-                grid = FALSE,
-                distances = TRUE,
-                coordunits = curunits,
-                new_coordunits = newunits
-                )
-           )
+    if (ex.red && len > ex.red^2 / 2) {
+      LEN <- as.integer(ex.red)
+      len <- as.integer(LEN * (LEN - 1) / 2)
+      x <- if (is.matrix(x)) x[1:len ,] else x[1:len]
+    } else {
+      LEN <- as.integer(1e-9 + 0.5 * (1 + sqrt(1 + 8 * len)))
+      if (LEN * (LEN-1) / 2 != len) LEN <- NaN
+    }
+
+    ## keep exactly the sequence up to 'distances'
+    if (storage.mode(x) != "double") storage.mode(x) <- "double"
+    L <- list(x = as.matrix(x), #0
+              y = double(0),   #1
+                T= double(0),  #2
+              grid = FALSE, #3
+              spatialdim=as.integer(dim),#4
+              Zeit=FALSE, #5
+              dist.given = TRUE, #6
+              restotal = LEN, ## number of points
+              l = LEN, ## ?? physical length??
+              coordunits = curunits,
+              new_coordunits = newunits
+              )
+    class(L) <- "CheckXT"
+    return(L)
   }
 
   stopifnot(!missing(x))
@@ -405,10 +467,10 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
      
   if (is.matrix(x)) {
     if (!is.numeric(x)) stop("x is not numeric.")
-    if (!is.null(z)) stop("If x is a matrix, then z may not be given")
-    if (!is.null(y)) {
+    if (length(z)!=0) stop("If x is a matrix, then z may not be given")
+    if (length(y)!=0) {
       if (!y.ok) stop("If x is a matrix, then y may not be given")
-      if (!is.null(T))
+      if (length(T)!=0)
         stop("If x is a matrix and y is given, then T may not be given")
       if (!is.matrix(y) || ncol(y) != ncol(x) ||
           nrow(x)==3 && nrow(y)!=3 && ((missing(grid) || length(grid) == 0) ||
@@ -424,7 +486,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
         cur <- curunits[1]
         newunits <- RFopt$coords$new_coordunits
         curunits <- RFopt$coords$coordunits
-        curunits[1:2] <- c("longitude", "latitude")
+        curunits[1:2] <- ZF_EARTHCOORD_NAMES[1:2]
         if (newunits[1] == "") newunits[1] <-  UNITS_NAMES[units_km + 1]
         newunits[2:3] <- newunits[1]                
         if (RFopt$internal$warn_coordinates)
@@ -485,10 +547,10 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
       ## list with columns as list elements -- easier way to
       ## do it??
       x <- lapply(apply(x, 2, list), function(r) r[[1]])
-      if (!is.null(y)) y <- lapply(apply(y, 2, list), function(r) r[[1]])
+      if (length(y) != 0) y <- lapply(apply(y, 2, list), function(r) r[[1]])
     }
   } else { ## x, y, z given separately
-    if (is.null(y) && !is.null(z)) stop("y is not given, but z")
+    if (length(y)==0 && length(z)!=0) stop("y is not given, but z")
     xyzT <- list(x=if (!missing(x)) x, y=y, z=z, T=T)
     for (i in 1:4) {
       if (!is.null(xyzT[[i]]) && !is.numeric(xyzT[[i]])) {
@@ -499,7 +561,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
       }
     }
     remove(xyzT)
-    spatialdim <- 1 + (!is.null(y)) + (!is.null(z))
+    spatialdim <- 1 + (length(y)!=0) + (length(z)!=0)
     if (spatialdim==1 && ((missing(grid) || length(grid) == 0) || !grid)) {
       ## ueberschreibt Einstellung des Nutzers im Falle d=1
       if (length(x) <= 2) newgrid <- TRUE
@@ -529,7 +591,9 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     y <- z <- NULL ## wichtig dass y = NULL ist, da unten die Abfrage
   }  ## end of x, y, z given separately 
   
-  if (!all(is.finite(unlist(x)))) stop("coordinates are not all finite")
+  if (!all(is.finite(unlist(x)))) {
+    stop("coordinates are not all finite")
+  }
 
 
   if ((missing(grid) || length(grid) == 0) || grid) {
@@ -542,12 +606,12 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
       ##                               I will certainly get the result of seq
       ##                               altough numerical errors may occurs
       restotal <- prod(x[3, ])
-      if (!is.null(y) && !all(y[3,] == x[3,]))
+      if (length(y)!=0 && !all(y[3,] == x[3,]))
         stop("the grids of x and y do not match ")        
     } else {     
       xx <- seq2grid(x, "x",  grid,
                      RFopt$internal$warn_ambiguous, RFopt$general$gridtolerance)
-     if (!is.null(y)) {
+     if (length(y)!=0) {
         yy <- seq2grid(y, "y", grid,
                        RFopt$internal$warn_ambiguous,
                        RFopt$general$gridtolerance)
@@ -558,12 +622,12 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
       if (missing(grid) || length(grid) == 0) grid <- !is.logical(xx)       
       if (grid) {
         x <- xx
-        if (!is.null(y)) y <- yy
+        if (length(y) != 0) y <- yy
         restotal <- prod(len)
         len <- 3
       } else {
         x <- sapply(x, function(z) z)
-        if (!is.null(y)) y <- sapply(y, function(z) z)
+        if (length(y) != 0) y <- sapply(y, function(z) z)
       }
     }
     if (grid && any(x[3, ] <= 0))
@@ -574,7 +638,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
  
   if (!grid) { ## not grid
     restotal <- nrow(x)
-    if (is.null(y)) {
+    if (length(y)==0) {
       if (restotal < 200 && any(as.double(dist(x)) == 0)) {## 2000
         d <- as.matrix(dist(x))
         diag(d) <- 1
@@ -590,13 +654,22 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
 
   if (coord_system == "earth") {
     # if (ncol(x) > 4) stop("earth coordinates have maximal 3 components")
-    global.units <- RFoptions()$coords$new_coordunits[1]
+    opt <- RFoptions()$coords ## muss nochmals neu sein
+    global.units <- opt$new_coordunits[1]
     if (global.units[1] == "") global.units <- "km"
    
     Raumdim <- ncol(x) #if (grid) ncol(x) else
     new_is_cartesian <- new_coord_system %in% CARTESIAN_SYSTEMS
     if (new_is_cartesian) {
-       code <- switch(new_coord_system,
+      if (sum(idx <- is.na(opt$zenit))) {
+         zenit <- (if (grid) x[1, 1:2] + x[2, 1:2] * (x[3, 1:2] - 1) else 
+                   if (opt$zenit[!idx] == 1) colMeans(x[, 1:2]) else
+                   if (opt$zenit[!idx] == Inf) colMeans(apply(x[, 1:2], 2, range)) else
+                   stop("unknown value of zenit"))
+         RFoptions(zenit = zenit)
+      }
+
+      code <- switch(new_coord_system,
                      "cartesian" = CARTESIAN_COORD,
                      "gnomonic" = GNOMONIC_PROJ,
                      "orthographic" = ORTHOGRAPHIC_PROJ,
@@ -606,7 +679,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
                    coords.new_coordunits=global.units,
                    coords.new_coord_system = "keep")
       
-       if (!is.null(y))         
+       if (length(y) != 0)         
          y <- RFfctn(RMtrafo(new=code), y, grid=grid, 
                    coords.new_coordunits=global.units,
                    coords.new_coord_system = "keep")
@@ -628,7 +701,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     }
   }
 
-  if (Zeit <- !is.null(T)) {
+  if (Zeit <- length(T)!=0) {
     Ttriple <- length(T) == 3;
     if (length(T) <= 2) Tgrid <- TRUE
       else {
@@ -658,23 +731,76 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
   if (!missing(dim) && !is.null(dim) && spatialdim != dim) {
     stop("'dim' should be given only when 'distances' are given. Here, 'dim' contradicts the given coordinates.")
   }
-  
-  storage.mode(x) <- "double"
 
-  if (is.null(y)) {
-   return(list(x=x, T=T, Zeit=Zeit, restotal=restotal, l=len,
-                spatialdim=spatialdim, grid=grid, distances=FALSE,
-                coordunits = curunits,  new_coordunits = newunits))
-  } else {
-    storage.mode(y) <- "double"
-    return(list(x=x, y=y, T=T, Zeit=Zeit, restotal=restotal, l=len,
-                spatialdim=spatialdim, grid=grid, distances=FALSE,
-                coordunits = curunits, new_coordunits = newunits))
+  if (ex.red) {
+    if (grid) {
+      x[3, ] <- pmin(x[3, ], ex.red)
+      if (length(y) > 0) y[3, ] <- pmin(y[3, ], ex.red)
+      restotal <- as.integer(prod(x[3, ]))
+    } else {
+      len <- restotal <- as.integer(min(nrow(x), ex.red^spatialdim))
+      x <- x[1:len, , drop=FALSE]
+      if (length(y) > 0) y <- y[1:len, , drop=FALSE]
+    }
+    
+    if (Zeit) {
+      T[3] <- min(T[3], 3)
+      restotal <- as.integer(restotal * T[3])
+    }
   }
-  
+ 
+   
+  ## keep exactly the sequence up to 'grid'
+  if (length(x) > 0) {
+    if (storage.mode(x) != "double") storage.mode(x) <- "double"
+  } else x <- double(0)
+  if (length(y) > 0) {
+    if (storage.mode(y) != "double") storage.mode(y) <- "double"
+  } else y <- double(0)
+
+  L <- list(x=x, #0
+            y=y, #1
+            T=as.double(T), #2
+            grid=as.logical(grid), #3
+            spatialdim=as.integer(spatialdim), #4
+            Zeit=Zeit, #5
+            dist.given=FALSE, #6
+            restotal=as.integer(restotal), ## 7, nr of locations
+            l=as.integer(len),             ## 8, physical "length/rows" of input
+            coordunits = curunits,  #9
+            new_coordunits = newunits) #10
+  class(L) <- "CheckXT"
+  return(L)  
 }
 
 
+trafo.to.C_CheckXT <- function(new) {
+  if (is.list(new[[1]])) {
+    for(i in 1:length(new)) {
+      if (length(new[[i]]$x)>0 && !new[[i]]$grid) new[[i]]$x = t(new[[i]]$x)
+      if (length(new[[i]]$y)>0 && !new[[i]]$grid) new[[i]]$y = t(new[[i]]$y)
+    }
+  } else {
+    if (length(new$x)>0 && !new$grid) new$x = t(new$x)
+    if (length(new$y)>0 && !new$grid) new$y = t(new$y)
+  }
+  new
+}
+
+
+C_CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
+                      dim=NULL, # == spatialdim!
+                      length.data,
+                      y.ok = FALSE, 
+                      printlevel = RFoptions()$general$printlevel){
+ 
+  neu <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, distances=distances,
+            dim=dim, length.data=length.data, y.ok=y.ok, 
+            printlevel = printlevel)
+  return(trafo.to.C_CheckXT(neu))
+}
+   
+    
 
 RFearth2cartesian <- function(coord, units=NULL, system = "cartesian",
                               grid=FALSE) {
@@ -712,116 +838,370 @@ RFearth2dist <- function(coord, units=NULL, system="cartesian",
 
 
 
-CheckData <- function(model, x, y, z, T, distances, grid, data,
-                      given=NULL, allowFirstCols=TRUE, vdim, repet,
-                      dim, ...) {
-  if (!missing(distances) && length(distances)>0)
-    stop("option distances not programmed yet.")
+
+## used by RFratiotest, fitgauss, Crossvalidation, likelihood-ratio,  RFempir
+StandardizeData <- function(model,
+                            x, y=NULL, z=NULL, T=NULL,
+                            grid, data, distances=NULL, 
+                            RFopt, mindist_pts=2,
+                            dim=NULL, allowFirstCols=TRUE, vdim = NULL, ...) {
+  #if (missing(x)) Print(data, T) else Print(data, T, x)
+  RFoptions(internal.examples_reduced=FALSE)
+
+  #Print(data); if (!missing(x)) print(x); Print(missing(x),  y, z, T, missing(dim), missing(grid), missing(distances))
+  
+  if (missing(dim)) dim <- NULL
+  if (missing(grid)) grid <- NULL
+  
+  dist.given <- !missing(distances) && length(distances)>0
+ 
+  matrix.indep.of.x.assumed <- FALSE  
+  rangex <- neu <- gridlist <- RFsp.coord <-  gridTopology <- data.RFparams <-
+    mindist <- data.col <- NULL
   if (missing(data)) stop("missing data")
-
-  if (missing(model)) model <- list("null")
-  else model <- PrepareModel2(model, ...)
- 
-  missing.given <- length(given) == 0
-  missing.x <- missing(x) && missing.given 
-
+  missing.x <- missing(x)  
+  
   if (isSpObj(data)) data <- sp2RF(data)
-  if (isRFsp <- is(data, "RFsp")) {
-    if (length(given) != 0) {
-      stop("the coordinates for the measured data are given ambigiously (by 'given' and within 'data')")
+  if (isRFsp <- is(data, "RFsp") || (is.list(data) && is(data[[1]], "RFsp"))){    
+    ## ||(is.list(data) && is(data[[1]], "RFsp")))
+    if ( (!missing.x && length(x)!=0) || length(y)!=0   || length(z) != 0 ||
+       length(T) !=  0 || dist.given || length(dim)!=0 || length(grid) != 0)
+      stop("data object already contains information about the locations. So, none of 'x' 'y', 'z', 'T', 'distance', 'dim', 'grid' should be given.")
+    if (!is.list(data)) data <- list(data)
+    sets <- length(data)
+    x <- RFsp.coord <- gridTopology <- data.RFparams <- vector("list", sets)
+    
+    if (!is.null(data[[1]]@.RFparams)) {
+      if (length(vdim) > 0) stopifnot( vdim == data[[1]]@.RFparams$vdim)
+      else vdim <- data[[1]]@.RFparams$vdim
     }
-    data <- selectDataAccordingFormula(data, model=model)
-    if (!is.null(data@.RFparams)) {
-      vdim <- data@.RFparams$vdim
-      repet <- data@.RFparams$n
-    } else {
-      vdim <- repet <- NULL
-    }
-    variab.names <- colnames(data@data)
+   
+    dimdata <- NULL
+    dimensions <- (if (isGridded(data[[1]])) data[[1]]@grid@cells.dim
+                   else nrow(data[[1]]@data))
 
-    if (grid.fulldata <- isGridded(data)) {
-      data <- rfspDataFrame2conventional(data) ## zeitkritisch ! to do
-      given <- list(x=data$x, T=data$T, grid=TRUE)
-      data <- as.matrix(data$data)
-    } else {
-      given <- list(x=coordinates(data), grid=FALSE) ## stehend; darf nicht gaendert werden
-      data <- as.matrix(data@data)
-    }
-  } else {
-    if (!hasArg("vdim")) vdim <- NULL
-    if (!hasArg("repet")) repet <- NULL
-
-   # Print(allowFirstCols)
-    if (missing.x) {
-      if (allowFirstCols)
-        data.col <- data.columns(data, dim, force=TRUE, halt=FALSE)
-      else data.col <- data.columns(data)
-      given <- list(x=data[, data.col$x, drop=FALSE], grid=FALSE)
-      data <- data[ , data.col$data, drop=FALSE]
-    }
-  }
-  
-  if (!missing.given) {
-    if (!missing(x))
-      stop("x coordinates of the data given in two different ways")
-    stopifnot(missing(y) || is.null(y), missing(z) || is.null(z),
-              missing(T) || is.null(T))
-    if (!is.list(given)) given <- list(x=given)
-  } 
-
-  if (length(given) == 0)
-    given <- CheckXT(x = x, y = y, z = z, T = T, grid = grid, 
-                   distances=distances, 
-                   if (!missing(distances) && length(distances) > 0)
-                     dim = if (hasArg("dim")) dim else 1
-                   ##, length.data=length(data)
-                   )
-  else
-    given <- do.call(CheckXT, given)
-  
-  if (missing(dim) || length(dim) == 0)
-    dim <- as.integer(given$spatialdim + given$Zeit)
-  else stopifnot(dim == given$spatialdim + given$Zeit)
+    dimensions <- c(dimensions, data[[1]]@.RFparams$vdim)
+    for (i in 1:length(data)) {
+      xi <- list()
+      xi$grid <- isGridded(data[[i]])
+      compareGridBooleans(grid, xi$grid)
       
-  if (is.vector(data)) {
-    dimdata <- c(length(data), 1)
-  } else {
-    if (!is.array(data)) {
-      data <- as.matrix(data)
+      data[[i]] <- selectDataAccordingFormula(data[[i]], model=model)
+      data.RFparams[[i]] <- data[[i]]@.RFparams
+      gridTopology[[i]] <- if (xi$grid) data[[i]]@grid else NULL
+      RFsp.coord[[i]] <- if (!xi$grid) data[[i]]@coords else NULL
+      
+      dimensions <- if (xi$grid) data[[i]]@grid@cells.dim else nrow(data[[i]]@data)
+      dimensions <- c(dimensions, data[[i]]@.RFparams$vdim)
+      if (RFopt$general$vdim_close_together) dimensions <- rev(dimensions)
+      dimdata <- rbind(dimdata, c(dimensions, data[[i]]@.RFparams$n))
+
+      
+      tmp <- rfspDataFrame2conventional(data[[i]])
+      xi$x <- tmp$x
+      if (!is.null(tmp$T)) xi$T <- tmp$T
+      data[[i]] <- as.matrix(tmp$data)   
+      x[[i]] <- xi
+   }
+
+    idx <- if (RFopt$general$vdim_close_together) 1 else length(dimensions)
+    if (all(dimdata[, idx] == 1))
+      dimdata <- dimdata[, -idx, drop=FALSE]
+    if (all(dimdata[, ncol(dimdata)] == 1)) # repet
+      dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
+
+    # Print(x); #pppp
+    
+  } else { # !isRFsp
+    ## dimdata wird spaeter bestimmt
+   
+    if (dist.given) {
+      stopifnot(missing(x) || length(x)==0, length(y)==0, length(z)==0)
+      if (!is.list(distances)) {
+        distances <- list(distances)
+        if (is.list(data))
+          stop("if list of data is given then also for distances ")
+        data <- list(as.matrix(data))
+      } else if (!is.list(data)) {
+        stop("if list of distances is given then also for data ")
+        if (length(data) != length(distances))
+          stop("length of distances does not match length of data")
+      }      
+      for (i in 1:length(distances)) {
+        if (any(is.na(data)))
+          stop("missing data are not allowed if distances are used.")
+      }
+
+      stopifnot(missing(T) || length(T)==0)
+      if (is.matrix(distances[[1]])) {
+
+        dimensions <- sapply(distances, nrow)
+        spatialdim <- tsdim <- xdimOZ <- dimensions[1]
+        if (length(dim) > 0 && dim != spatialdim)
+          stop("unclear specification of the distances: either the distances is given as a vector or distance vectors should given, where the number of rows matches the spatial dimension")
+        lcc <- sapply(distances, function(x) 0.5 * (1 + sqrt(1 + 8 * ncol(x))) )
+        if (!all(diff(dimensions) == 0))
+          stop("sets of distances show different dimensions")
+        range_distSq <- function(M) range(apply(M, 2, function(z) sum(z^2)))
+        rangex <- sqrt(range(sapply(distances, range_distSq)))
+      } else {        
+        xdimOZ <- 1
+        spatialdim <- tsdim <- as.integer(dim)      
+        lcc <- sapply(distances, function(x) if (is.matrix(x)) -1
+                                        else 0.5 * (1 + sqrt(1 + 8* length(x))))
+        rangex <- range(sapply(distances, range))
+      }
+#      Print(mindist, rangex, RFopt$nugget$tol)      
+      mindist <- min(rangex)
+      if (is.na(mindist)) mindist <- 1 ## nur 1 pkt gegeben, arbitraerer Wert
+      if (mindist <= RFopt$nugget$tol) {
+        if (!RFopt$general$allowdistanceZero)
+          stop("distance with value 0 identified -- use allowdistanceZero=T?")
+        mindist <- 1e-15 * (RFopt$nugget$tol == 0) + 2 * RFopt$nugget$tol
+
+        for (i in 1:length(distances))
+          if (is.vector(distances[[i]]))
+            distances[[i]][distances[[i]] == 0] <- mindist
+          else distances[[i]][1, apply(distances[[i]], 2,
+                                       function(z) sum(z^2))] <- mindist
+      }
+
+      len <- as.integer(lcc)
+      if (any(len != lcc)) stop("number of distances not of form k(k-1)/2")
+      neu <- distances
+      coordunits <- RFopt$coords$coordunits
+      Zeit <- FALSE      
+    } else { ## distances not given
+       if (is.data.frame(data) || !is.list(data)) {
+ #         Print(missing(x), x, data, is.data.frame(data), !is.list(data))
+        if (!missing(x) && is.list(x) && !is.data.frame(x) &&
+             (length(x$grid)==0 || length(x$restot)==0))
+           stop("either both coordinates and data must be lists or none")
+         data <- list(data)
+      }
+
+      sets <- length(data)
+      for (i in 1:sets) {
+        if (is.data.frame(data[[i]]) || is.vector(data[[i]]))
+          data[[i]] <- as.matrix(data[[i]])
+      }
+      sel <- try(selectAccordingFormula(data[[1]], model), silent=TRUE)
+      if (is(sel, "try-error")) sel <- NULL
+      
+       if (missing(x)) { ## dec 2012: matrix.indep.of.x.assumed        
+        if (!is.null(dnames <- colnames(data[[1]]))) {
+          if ((!any(is.na(xi <- RFopt$coord$coordnames))) ||
+              (length(xi <- earth_coordinate_names(dnames)) == 2) ||
+              (length(xi <- cartesian_coordinate_names(dnames)) > 0) ||
+              (length(xi <- general_coordinate_names(dnames)) > 0)  ) {
+            x <- list()
+            for (i in 1:sets) {
+              xx <- data[[i]][ , xi, drop=FALSE]
+              storage.mode(xx) <- "numeric"
+              x[[i]] <- list(x=xx, grid = FALSE)
+              if (length(sel) == 0) sel <- -xi 
+            }
+          }         
+        }
+
+        if (missing(x)) { ## if still missing
+          data.col <- try(data.columns(data[[1]], xdim=dim,
+                                       force=allowFirstCols,
+                                       halt=!allowFirstCols))
+         
+          x <- list()
+          if (is(data.col, "try-error")) {
+            if (length(sel) > 0){
+              for (i in 1:sets) {
+                x[[i]] <- data[[i]][ , !sel, drop=FALSE]
+                storage.mode(x[[i]]) <- "numeric"
+              }
+              if (length(dim) == 0) {
+                warning("better give 'dim' explicitely.")
+              }
+              if (length(dim) > 0 && ncol(x[[i]]) != dim)
+                stop("'dim' does not match the recognized coordindates")
+            } else {
+              sel <- TRUE
+              data.col <- NULL
+              matrix.indep.of.x.assumed <- TRUE
+              for (i in 1:sets) {
+                x[[i]] <- 1:nrow(as.matrix(data[[i]]))
+                storage.mode(x[[i]]) <- "numeric"
+              }
+            }
+### x[1] <- 0 ## so no grid !  ## why forbidding ?? 15.5.2015
+          } else {
+            for (i in 1:sets) {
+              xx <- data[[i]][, data.col$x, drop=FALSE]
+               storage.mode(xx) <- "numeric"
+              x[[i]] <- list(x=xx, grid=FALSE)
+              if (length(sel) == 0) sel <- data.col$data
+            }
+          }
+        }
+
+        for (i in 1:sets) {
+          data[[i]] <- data[[i]][ , sel, drop=FALSE]
+          storage.mode(data[[i]]) <- "numeric"
+        }
+        
+      } ## xgiven; KEIN ELSE, auch wenn nachfolgend z.T. gedoppelt wird
+
+    
+      if (is.data.frame(x)) x <- as.matrix(x)   
+      if (is.list(x)) {
+        if (length(y)!=0 || length(z)!=0 || length(T)!=0)
+          stop("if x is alist 'y', 'z', 'T' may not be given")       
+
+       if (!is.list(x[[1]])) {
+         if (length(data) == 1) x <- list(x)
+         else stop("number of sets of 'x' and 'data' differ")
+       }
+       
+        
+       } else {
+        x <- list(x=x)
+        if (length(y)!=0) {
+          stopifnot(!is.list(y))
+          x$y <- y
+        }
+        if (length(z)!=0) {
+          stopifnot(!is.list(z))
+          x$z <- z
+        }
+        if (length(T)!=0) {
+          stopifnot(!is.list(T))
+          x$T <- T
+        }
+        if (!is.null(grid))
+          x$grid <- grid
+        if (!is.list(data)) data <- list(as.matrix(data))
+        x <- list(x)          
+      }
+      ##}
+    } # ! distance
+    sets <- length(data)
+    dimdata <- matrix(nrow=sets, ncol=length(base::dim(data[[1]])))
+    for (i in 1:sets) dimdata[i, ] <- base::dim(data[[i]])
+    
+  } # !isRFsp
+
+ 
+  if (!dist.given) { ##   x coordinates, not distances
+
+     
+    neu <- CheckXT(x=x) #, y=y, z=z, T=T, grid=grid, distances=distances,
+# dim=dim, length) # , length.data=length(data[[i]]), printlevel = 0)
+
+    if (!is.list(neu[[1]])) neu <- list(neu)
+    
+    coordunits<- neu[[1]]$coordunits
+    spatialdim <- as.integer(neu[[1]]$spatialdim)
+    Zeit <- neu[[1]]$Zeit
+    tsdim <- as.integer(spatialdim + Zeit)
+
+    len <- sapply(neu, function(x)
+                  (if (x$grid) prod(x$x[3, ]) else nrow(x$x)) *
+                  (if (Zeit) x$T[3] else 1))
+
+    getrange <- function(x)
+      if (x$grid) rbind(x$x[1, ], x$x[1, ] + x$x[2, ] * (x$x[3, ] - 1))
+      else apply(x$x, 2, range)
+    rangex <- t(sapply(neu, getrange))
+    base::dim(rangex) <- c(length(rangex) / spatialdim, spatialdim)
+    rangex <- apply(rangex, 2, range)    
+
+    getmindistSq <- function(x) {
+      if (x$grid) sum(x$x[2,]^2)
+      else if (nrow(x$x) < 2) NA
+      else if (nrow(x$x) <= mindist_pts) min(dist(x$x))
+      else min(dist(x$x[sample(nrow(x$x), mindist_pts), ]))
     }
-    dimdata <-  base::dim(data) 
-  }
 
+    if (Zeit && any(sapply(neu, function(x) x$T[2]) <= RFopt$nugget$tol))
+      stop("step of time component smaller than nugget tolerance 'tol'")
+    
+    if (any(sapply(neu, function(x) x$grid && any(x$x[2, ]<=RFopt$nugget$tol))))
+      stop("step of some spatial component smaller than nugget tolerance 'tol'")
 
+    zaehler <- 0
+
+    repeat {
+      mindist <- sqrt(min(sapply(neu, getmindistSq)))      
+      if (is.na(mindist)) mindist <- 1 ## nur 1 pkt gegeben, arbitraerer Wert
+      if (mindist <= RFopt$nugget$tol) {
+        if (!RFopt$general$allowdistanceZero)
+          stop("Distance with value 0 identified -- use allowdistanceZero=T?")
+        if ((zaehler <- zaehler + 1) > 10)
+          stop("unable to scatter point pattern")
+        for (i in 1:length(neu)) if (!neu[[i]]$grid)
+          neu[[i]]$x <- neu[[i]]$x + rnorm(length(neu[[i]]$x), 0,
+                                           10 * RFopt$nugget$tol)
+      } else break;
+    }
   
-  if (length(dim(data)) != 2) {
-    ## Achtung! data verliert die Row-/col-Namen mit der
-    ## naechsten Anweisung!!
-    datanames <- dimnames(data)
-    base::dim(data) <- c(dimdata[1], prod(dimdata[-1]))
+    xdimOZ <- ncol(neu[[1]]$x)
   }
  
-  
-  vdimrepet <- as.integer(length(data) / given$restotal)
-  if (vdimrepet * given$restotal != length(data))
-    stop("dimension of data does not match coordinates")
-  
-  variab.names <- colnames(data)
-  names <- GetDataNames(model=model, coords=given$x, locinfo=given)#ohne data!
-  if (is.null(names$variab.names))
-    names$variab.names <-
-      if (class(variab.names) == "try-error") NULL else variab.names
+  if (length(dim) > 0) stopifnot(dim == tsdim)
+  varnames <- try(colnames(data[[1]]))
 
-  return(c(ts.xdim = dim,
-           vdim =vdim,
-           repet = repet,
-           list(## xgr = if (given$grid) cbind(given$x, given$T) else NULL,
-                fullgiven = given,
-                coord.names=names$coord.names,
-                variab.names=names$variab.names,            
-                model = model, #userdefined = userdefined,
-                data.col = if (missing.x && !isRFsp) data.col else NULL,
-                fulldata = data),
-           missing.x=missing.x
-           ))
+## geht x[[1]]$x immer gut ??
+  names <- GetDataNames(model=model, coords=x[[1]]$x, locinfo=neu[[1]]) #ohne data!
+
+  if (is.null(names$varnames))
+    names$varnames <-
+      if (class(varnames) == "try-error") NULL else varnames
+
+  restotal <- sapply(neu, function(x) x$restotal)
+  ldata <- sapply(data, length)
+
+
+  
+  if (length(vdim) == 0) {
+    if (all(sapply(data, function(x) is.vector(x) || ncol(x) == 1)))
+      vdim <- 1
+    else if (!missing(model)) {
+      vdim <- rfInit(list("Cov", PrepareModel2(model=model, ...,
+                                               x=trafo.to.C_CheckXT(neu))),
+                     x=x, y=y, z=z, T=T, grid=grid, distances=distances,
+                     dim=dim, reg=MODEL_AUX, dosimulate=FALSE)[1]
+    } else vdim <- NA
+  }
+    
+  repetitions <- as.integer(ldata / (restotal * vdim))
+  #  Print(data, ldata, repetitions, restotal, vdim, neu, dist.given)
+  if (!is.na(vdim) && any(ldata != repetitions * restotal * vdim))
+    stop("mismatch of data dimensions")
+  
+  RFoptions(internal.examples_reduced=RFopt$internal$examples_red)
+  return(list(
+      ## coord = expandiertes neu # #
+      model = if (missing(model)) NULL else
+              PrepareModel2(model, ..., x=trafo.to.C_CheckXT(neu)),
+      orig.model = if (missing(model)) NULL else model,
+      data=data, dimdata=dimdata, isRFsp = isRFsp,
+      RFsp.coord = RFsp.coord,
+      coord = neu,
+      dist.given=dist.given,
+      gridTopology = gridTopology,
+      data.RFparams = data.RFparams,
+      spatialdim=spatialdim,
+      tsdim=tsdim,
+      rangex = as.matrix(rangex),
+      coordunits=coordunits,
+      Zeit = Zeit,
+      matrix.indep.of.x.assumed = matrix.indep.of.x.assumed,
+      len = len,
+      mindist = mindist,
+      xdimOZ = xdimOZ,
+      vdim = vdim,
+      coordnames=names$coordnames,
+      varnames=if (length(names$varnames)==0) ""
+                   else names$varnames,   
+      data.col = data.col,
+      repetitions = repetitions
+      ))
 }
+

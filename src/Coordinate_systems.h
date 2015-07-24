@@ -1,3 +1,29 @@
+
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
 #ifndef Coordinates_H
 #define Coordinates_H 1
 
@@ -120,11 +146,16 @@ bool isCylinder(isotropy_type iso);
 bool isEarth(isotropy_type iso);
 bool isAnySpherical(isotropy_type iso);
 bool isAnySphericalIso(isotropy_type iso);
+bool isAnySphericalNotIso(isotropy_type iso);
 bool isPrevModelI(cov_fct *C);
 bool isUnreduced(cov_fct *C);
 bool isCoordinateSystem(isotropy_type iso);
 bool atleastSpecialised(isotropy_type iso, isotropy_type as);
 isotropy_type UpgradeToCoordinateSystem( isotropy_type iso);
+isotropy_type CoordinateSystemOf(isotropy_type iso);
+isotropy_type SymmetricOf(isotropy_type iso);
+isotropy_type IsotropicOf(isotropy_type iso);
+
 
 bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2);
 bool equal_coordinate_system(isotropy_type iso1, isotropy_type iso2, 
@@ -135,6 +166,15 @@ typedef bool (*isofct)(isotropy_type iso); /* h, cov, result */
 bool is_any(isofct iso, cov_fct *C);
 bool is_all(isofct iso, cov_fct *C);
 
-#define MAX_SYMMETRIC(iso) (iso) == CARTESIAN_COORD ? SYMMETRIC : (iso)
+
+#define ASSERT_CARTESIAN  if (!isCartesian(cov->isoown)) return ERRORCARTESIAN
+
+#define radiuskm_aequ 6378.1
+#define radiuskm_pol 6356.8
+#define radiusmiles_aequ 3963.17
+#define radiusmiles_pol 3949.93
+
+void Earth2Cart(double *x, cov_model *cov, double RAEQU, double RPOL, 
+		double *X);
 
 #endif

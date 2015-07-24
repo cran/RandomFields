@@ -4,7 +4,7 @@
 
  Definition of multivariate distribution families
 
- Copyright (C) 2013 -- 2014 Martin Schlather
+ Copyright (C) 2013 -- 2015 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -87,7 +87,7 @@ void arcsqrtDinverse(double VARIABLE_IS_NOT_USED *v, cov_model VARIABLE_IS_NOT_U
   if (v == NULL || *v <=0 ) {
     left[0] = 0;
     right[0] = RF_INF;
-  } else error("Dinverse of arcsqrt unknown");
+  } else ERR("Dinverse of arcsqrt unknown");
 }
 
 void arcsqrtQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) {
@@ -144,14 +144,16 @@ void range_arcsqrt(cov_model  VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 void addVariable(char *name, double *x, int nrow, int ncol, SEXP env) {  
   SEXP  Y;
-  int j, size;
+  int j,
+    size= nrow * ncol;
     if (ncol == 1) 
       PROTECT(Y = allocVector(REALSXP, nrow));
     else 
       PROTECT(Y = allocMatrix(REALSXP, nrow, ncol));
-    size = nrow * ncol;
     //printf("name = %s %f %d %d %d\n",name,x[0],nrow,ncol,isEnvironment(env));
-    for (j=0; j<size; j++) REAL(Y)[j] = x[j];
+    for (j=0; j<size; j++) {
+      REAL(Y)[j] = x[j];
+    }
   
     defineVar(install(name), Y, env);
     UNPROTECT(1);
@@ -180,7 +182,7 @@ void evaluateDistr(cov_model *cov, int which, double *Res) {
   //  print("which = %d\n", which);
   //  eval( ((sexp_type*) P(1])->sexp , env);
 
-  res = eval(PSEXP(which)->sexp, env);
+  res = eval(PLANG(which)->sexp, env);
   size = P0INT(DISTR_NROW) * P0INT(DISTR_NCOL);
   for (i=0; i<size; i++) {
     // printf("i=%d %d\n", i, size);
@@ -242,13 +244,13 @@ void distrQ(double *x, cov_model *cov, double *v) {
   evaluateDistr(cov, DISTR_QX, v);
 }
 void distrR(double *x, cov_model *cov, double *v) {
-  if (x != NULL) error("Conditional distribution not allowed yet");
+  if (x != NULL) ERR("Conditional distribution not allowed yet");
   addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
 void distrR2sided(double *x, double *y, cov_model *cov, double *v) {
   if (x != NULL || y != NULL) 
-    error("conditional distribution not allowed yet");
+    ERR("conditional distribution not allowed yet");
   addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
@@ -308,14 +310,14 @@ void range_distr(cov_model *cov, range_type *range){
 
 
 #define GAUSS_PARAMETER_BASICS					\
-  double VARIABLE_IS_NOT_USED *m = P(GAUSS_DISTR_MEAN),		\
+  double *m = P(GAUSS_DISTR_MEAN),		\
     *sd = P(GAUSS_DISTR_SD)					\
 
 #define GAUSS_PARAMETERS						\
   GAUSS_PARAMETER_BASICS;						\
-  int VARIABLE_IS_NOT_USED i, VARIABLE_IS_NOT_USED mi, VARIABLE_IS_NOT_USED  si, \
-    len_mean = cov->nrow[GAUSS_DISTR_MEAN],				\
-    len_sd = cov->nrow[GAUSS_DISTR_SD],					\
+  int  i,  mi,  si,\
+     len_mean = cov->nrow[GAUSS_DISTR_MEAN],	\
+     len_sd = cov->nrow[GAUSS_DISTR_SD],		\
     dim = cov->xdimown;							\
   assert(dim == cov->tsdim);	
 
@@ -443,7 +445,9 @@ void kappa_gauss_distr(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int 
 
 int check_gauss_distr(cov_model *cov) {
   ROLE_ASSERT(ROLE_DISTR);
-  GAUSS_PARAMETERS;
+  GAUSS_PARAMETER_BASICS;						
+  int dim = cov->xdimown;						
+  assert(dim == cov->tsdim);	
 
   if (cov->xdimprev != dim || dim != cov->tsdim) return ERRORDIM;
 
@@ -481,7 +485,14 @@ int init_gauss_distr(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 }
 
 void do_gauss_distr(cov_model *cov, double *v){
-  GAUSS_PARAMETERS;
+  double 
+    *sd = P(GAUSS_DISTR_SD);				
+  int  i,  mi,  si,
+    len_mean = cov->nrow[GAUSS_DISTR_MEAN],	
+    len_sd = cov->nrow[GAUSS_DISTR_SD],		
+    dim = cov->xdimown;							
+  assert(dim == cov->tsdim);	
+
   cov->mpp.maxheights[0] = intpow(SQRTTWOPI, -dim);
   FOR cov->mpp.maxheights[0] /= sd[si];
   gaussR(NULL, cov, v);
@@ -534,7 +545,7 @@ double random_spheric(int tsdim, int balldim) {
 }
 
 void sphericD(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED  *v) {
-  error("density of 'RRspheric' cannot be calculated yet");
+  ERR("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericDinverse(double *v, cov_model  *cov, double *left, double  *right) {
   if (v==NULL || *v <= 0.0) {
@@ -542,25 +553,25 @@ void sphericDinverse(double *v, cov_model  *cov, double *left, double  *right) {
     *right = (0.5 * P0(SPHERIC_RADIUS));
   } else {
     //v is here INPUT variable !!
-    error("density of 'RRspheric' cannot be calculated yet");
+    ERR("density of 'RRspheric' cannot be calculated yet");
   }
 }
 void sphericDlog(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
-  error("density of 'RRspheric' cannot be calculated yet");
+  ERR("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericP(double VARIABLE_IS_NOT_USED  *x, cov_model VARIABLE_IS_NOT_USED   *cov, double VARIABLE_IS_NOT_USED  *v) {
-  error("density of 'RRspheric' cannot be calculated yet");
+  ERR("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericQ(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
   if (*x < 0 || *x > 1) {*v = RF_NA; return;}
-  error("density of 'RRspheric' cannot be calculated yet");
+  ERR("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericR(double *x, cov_model *cov, double *v) {
   int 
     dim = P0INT(SPHERIC_SPACEDIM),
     balldim = P0INT(SPHERIC_BALLDIM);  
   if (x==NULL) *v = random_spheric(dim, balldim) * P0(SPHERIC_RADIUS); // q[>0] ist E
-  else error("conditional distribution cannot be calculated for sphericP.");
+  else ERR("conditional distribution cannot be calculated for sphericP.");
 }
 
 int check_RRspheric(cov_model *cov) {
@@ -664,9 +675,9 @@ void do_RRspheric(cov_model *cov, double *v) {
 #define DETERM_MEAN 0
 #define DETERM_PARAMETERS						\
   double *mean = P(DETERM_MEAN);					\
-  int VARIABLE_IS_NOT_USED i, VARIABLE_IS_NOT_USED mi,			\
-    dim = cov->xdimown,							\
-    len_mean = cov->nrow[DETERM_MEAN]				      
+  int i,  mi,			\
+     dim = cov->xdimown,				\
+    len_mean = cov->nrow[DETERM_MEAN]
 
 #define DETERMFOR for(mi=i=0; i<dim; i++, mi=(mi + 1) % len_mean)
 
@@ -724,8 +735,7 @@ void determP2sided(double *x, double *y, cov_model *cov, double *v) {
 
 void determQ(double *x, cov_model *cov, double *v) { 
   if (*x < 0 || *x > 1) {*v = RF_NA; return;}
-  DETERM_PARAMETERS;
-  v[0] = mean[0];
+  v[0] = P0(DETERM_MEAN);
 }
 
 void determR(double *x, cov_model *cov, double *v) { 
@@ -1122,21 +1132,20 @@ void range_loc(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 
 
-#define UNIF_PARAMETER_BASICS			\
-  double					\
-  VARIABLE_IS_NOT_USED *min,			\
-    VARIABLE_IS_NOT_USED *max;			\
-  min = (double*) P(UNIF_MIN);			\
-  max = (double*) P(UNIF_MAX)			
+#define UNIF_PARAMETER_BASICS				\
+  double						\
+   *min = (double*) P(UNIF_MIN),	\
+     *max= (double*) P(UNIF_MAX)		
+	
 
 #define UNIF_PARAMETERS							\
   UNIF_PARAMETER_BASICS;						\
-  int VARIABLE_IS_NOT_USED i,						\
-    VARIABLE_IS_NOT_USED mini,						\
-    VARIABLE_IS_NOT_USED maxi,						\
-    VARIABLE_IS_NOT_USED len_min = cov->nrow[UNIF_MIN],			\
-    VARIABLE_IS_NOT_USED len_max = cov->nrow[UNIF_MAX],		\
-    VARIABLE_IS_NOT_USED dim = cov->xdimown;				\
+  int  i,						\
+     mini,						\
+     maxi,						\
+     len_min = cov->nrow[UNIF_MIN],			\
+     len_max = cov->nrow[UNIF_MAX],		\
+     dim = cov->xdimown;				\
  assert(dim == cov->tsdim)				
 
 #define UNIFOR  for(mini=maxi=i=0; i<dim; i++, mini=(mini + 1) % len_min, \
@@ -1249,7 +1258,7 @@ void unifR2sided(double *x, double *y, cov_model *cov, double *v) {
     a = x != NULL ? (x[i] < min[mini] ? min[mini] : x[i])
       : (-y[i] < min[mini] ? min[mini] : -y[i]);
     b = y[i] > max[maxi] ? max[maxi] : y[i];
-    if (a > b) error("parameters of 2-sided unifR out of range");      
+    if (a > b) ERR("parameters of 2-sided unifR out of range");      
     v[i] = a + UNIFORM_RANDOM * (b-a);
   }  
 }
@@ -1334,7 +1343,6 @@ int init_unif(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void do_unif(cov_model *cov, double *v){
-  UNIF_PARAMETERS;
   unifR(NULL, cov, v);
   // printf("v=%f\n", *v);
   // cov->mpp.maxheights[0] = 1.0;
@@ -1579,12 +1587,12 @@ void RandomPointOnCubeSurface(double dist, int dim, double *x) {
 #define RECTANGULAR_PARAMETER_BASICS		\
   rect_storage *rect = cov->Srect;		\
   int VARIABLE_IS_NOT_USED  dim = cov->xdimown;	\
-  assert(dim == cov->tsdim)				
+  assert(dim == cov->tsdim);			\
+  if (rect == NULL) BUG
 
 #define RECTANGULAR_PARAMETERS				\
   RECTANGULAR_PARAMETER_BASICS;				\
   cov_model VARIABLE_IS_NOT_USED *next = cov->sub[0];	\
-  if (rect == NULL) BUG
  
 #define RECTFOR  for(i=0; i<dim; i++)
 
@@ -1868,7 +1876,7 @@ void rectangularD(double *x, cov_model *cov, double *v) {
     return;
   }
   if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
-  RECTANGULAR_PARAMETERS;
+  RECTANGULAR_PARAMETER_BASICS;			       
   int i;
    
   double max = RF_NEGINF;
@@ -1988,7 +1996,8 @@ void rectangularP2sided(double *x, double *y, cov_model *cov, double *v) {
   bool onesided = P0INT(RECT_ONESIDED); 
   int d;
   if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
-  RECTANGULAR_PARAMETERS;
+  RECTANGULAR_PARAMETER_BASICS;	
+
   if (x != NULL) BUG;
   if (onesided && *y <= 0) {
     *v = 0;
@@ -2097,7 +2106,7 @@ void rectangularR(double *x, cov_model *cov, double *v) {
 
   if (x != NULL) {
    //crash();
-    error("put 'flat = false'");
+    ERR("put 'flat = false'");
   }
   RECTANGULAR_PARAMETERS;
   bool final = true;
@@ -2412,6 +2421,7 @@ int check_rectangular(cov_model *cov) {
   int err,
     dim = cov->xdimown;
 
+  ASSERT_CARTESIAN;
   ROLE_ASSERT(ROLE_DISTR);
 
   kdefault(cov, RECT_SAFETY, GLOBAL.distr.safety);
@@ -2588,7 +2598,7 @@ int init_rectangular(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 
 void do_rectangular(cov_model *cov, double *v){
-  RECTANGULAR_PARAMETERS;
+  cov_model  *next = cov->sub[0];
   //int err;
   gen_storage s;
   gen_NULL(&s);  
@@ -2746,7 +2756,7 @@ void mcmcQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov,
 
 void mcmcR(double *x, cov_model *cov, double *v) { 
   if (x != NULL) {
-    error("put 'flat = false'");
+    ERR("put 'flat = false'");
   }
 
   cov_model *next = cov->sub[MCMC_FCTN];
@@ -2828,6 +2838,7 @@ int check_mcmc(cov_model *cov) {
   cov_model *next = cov->sub[MCMC_FCTN];
   int err, vdim; 
 
+  ASSERT_CARTESIAN;
   ROLE_ASSERT(ROLE_DISTR);
 
   kdefault(cov, MCMC_NORMED, false);

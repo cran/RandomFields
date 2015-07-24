@@ -4,7 +4,7 @@
 
  simulation of a random field by hyperplane tessellation
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USV.
 */
 
 #include <math.h>  
@@ -28,10 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <string.h>
 #include "RF.h"
 #include "shape_processes.h"
-
-
 #include "avltr_modified.h"
-
+#include "Coordinate_systems.h"
 
 
 //#include <unistd.h>
@@ -71,6 +69,7 @@ int check_hyperplane(cov_model *cov) {
     ; // taken[MAX DIM],
   hyper_param *gp  = &(GLOBAL.hyper);
 
+  ASSERT_CARTESIAN;
   ROLE_ASSERT(ROLE_GAUSS);
 
   kdefault(cov, HYPER_SUPERPOS, gp->superpos);
@@ -78,17 +77,17 @@ int check_hyperplane(cov_model *cov) {
   kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
   kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
   kdefault(cov, HYPER_ADDITIVE, true);
-  if ((err = checkkappas(cov)) != NOERROR) {
-    //AERR(err);
-    return err;
-  }
+  if ((err = checkkappas(cov, false)) != NOERROR) return err;
+ 
 
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
 
+  int iso = (cov->calling != NULL && cov->calling->nr == HYPERPLANE_INTERN) ? ISOTROPIC
+    : SYMMETRIC;
+
   if (key == NULL) {
-    if ((err = CHECK(sub, dim,  dim, PosDefType, XONLY, ISOTROPIC, 
-		       SCALAR, ROLE_COV)) != NOERROR) {
+    if ((err = CHECK(next, dim, dim, PosDefType, XONLY, iso, SCALAR, ROLE_COV)) != NOERROR) {
       return err;
     }
   } else { // wenn dies eintritt dann ruft HyperIntern Hyper auf
@@ -110,26 +109,32 @@ int check_hyperplane(cov_model *cov) {
 
 
   setbackward(cov, sub);
+  KAPPA_BOXCOX;
+ if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
 }
 
 
-int check_hyperplane_intern(cov_model *cov) {
- cov_model 
-   *next= cov->sub[0];
- assert(cov->key == NULL);
-
-  int err,
-   dim = cov->tsdim
-    ; // taken[MAX DIM],
-  
+int check_hyperplane_intern(cov_model *cov) {  
   ROLE_ASSERT(ROLE_GAUSS);
+  assert(cov->key == NULL);
 
+  cov_model *next= cov->sub[0];  
+  int err,
+    dim = cov->tsdim;    
+  hyper_param *gp  = &(GLOBAL.hyper);
+
+  kdefault(cov, HYPER_SUPERPOS, gp->superpos);
+  kdefault(cov, HYPER_MAXLINES, gp->maxlines);
+  kdefault(cov, HYPER_MAR_DISTR, gp->mar_distr);
+  kdefault(cov, HYPER_MAR_PARAM, gp->mar_param);
+  kdefault(cov, HYPER_ADDITIVE, true);
+ 
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
 
-  if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, ISOTROPIC, 
+  if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, UNREDUCED, //ISOTROPIC, UNREDUCED, 
 		   SCALAR, ROLE_COV)) != NOERROR) {
     return err;
   }
@@ -146,6 +151,8 @@ int check_hyperplane_intern(cov_model *cov) {
 
 
 void range_hyperplane(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+  GAUSS_COMMON_RANGE;
+
   range->min[HYPER_SUPERPOS] = 1;
   range->max[HYPER_SUPERPOS] = RF_INF;
   range->pmin[HYPER_SUPERPOS] = 100;
@@ -199,6 +206,8 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   location_type *loc = Loc(cov);
   hyper_storage *s = NULL;
   long int lines;
+
+  assert(!PisNULL(HYPER_MAXLINES));
   int d,
     maxlines = P0INT(HYPER_MAXLINES),
     dim = cov->tsdim,
@@ -257,10 +266,10 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     goto ErrorHandling;
   }
 
-  if (!loc->grid) GERR("Hyperplane currently only allows for grids");
+  if (!loc->grid) {
+    GERR("Hyperplane currently only allows for grids and anisotropies along the axes");
+  }
   
-  //  Transform2NoGrid(cov, false, true);
- 
   ERRORMODELNUMBER = -1;	
 
  
@@ -354,7 +363,7 @@ cell_type *determine_cell(double gx, double gy, double* hx, double* hy,
   }
   if (*tree==NULL) { /* is it the very first point ? */    
       *tree = avltr_create((avl_comparison_func) cmpcells, integers);
-      cell->colour = (res_type) randomvar(p);
+      cell->colour = (double) randomvar(p);
       avltr_insert(*tree, cell);
       lastcell = cell; 
   } else { /* search if the calculated code has already appeared (makes
@@ -367,7 +376,7 @@ cell_type *determine_cell(double gx, double gy, double* hx, double* hy,
 	  && ((lastcell = (cell_type*) *avltr_probe(*tree, cell)) == cell)) {
 //	  print("here %d %d \n", 
 //		 (int) cell->code[0], (int) lastcell->code[0]);
-	  lastcell->colour = (res_type) randomvar(p);
+	  lastcell->colour = (double) randomvar(p);
       } else {
 	  delcell(cell, NULL); 
       }
@@ -385,45 +394,42 @@ cell_type *determine_cell(double gx, double gy, double* hx, double* hy,
 void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type
     *loc = Loc(cov);
-  int 
+  int    integers, bits, q, endfor, err, len[MAXHYPERDIM],
     vdim = cov->vdim[0],
     dim = cov->tsdim,
     totvdim = loc->totalpoints * vdim,
+    superpos = P0INT(HYPER_SUPERPOS),
     mar_distr = P0INT(HYPER_MAR_DISTR);
-  double *res = cov->rf;
-  double gx, gy, *hx, *hy, *hr, variance,
+  double
+    gx, gy, 
+    variance = isDollar(cov) ? P0(DVAR) : 1.0, 
+    *hx = NULL,
+    *hy = NULL, 
+    *hr = NULL, 
+     *res = cov->rf,
     E=RF_NA,
     sd=RF_NA,
     mar_param = P0(HYPER_MAR_PARAM);
   long i, j, resindex;
-  int  integers, bits, q, endfor, err, 
-    superpos = P0INT(HYPER_SUPERPOS);
-    mar_distr = P0INT(HYPER_MAR_DISTR);
-   randomvar_type randomvar=NULL;
+  randomvar_type randomvar=NULL;
   hyper_storage *s = cov->Shyper;
-  avltr_tree *tree;
+  avltr_tree *tree = NULL;
   cell_type *cell;
   bool
-    additive = (bool) P0INT(HYPER_ADDITIVE),
-    loggauss = GLOBAL.gauss.loggauss;
-  GLOBAL.gauss.loggauss = false;
-  int len[MAXHYPERDIM];
+    additive = (bool) P0INT(HYPER_ADDITIVE);
+  SAVE_GAUSS_TRAFO;
 
-  hx = hy = hr = NULL;
-  s = (hyper_storage*) cov->Shyper;
-  variance = isDollar(cov) ? P0(DVAR) : 1.0;
-  tree = NULL;
   
   switch (mar_distr) {
       case HYPER_UNIFORM : randomvar=uniform; break;
       case HYPER_FRECHET : randomvar=frechet; break;
       case HYPER_BERNOULLI : randomvar=bernoulli; break;
-      default : error("random var of unknown type");
+      default : ERR("random var of unknown type");
   }
 
 
   if (additive) for (i=0; i < totvdim; res[i++]=0.0);
-  else for (i=0; i < totvdim; res[i++]= (res_type) RF_NEGINF);// max-stable 
+  else for (i=0; i < totvdim; res[i++]= (double) RF_NEGINF);// max-stable 
   /* how many Poisson Hyperplanes maximal (on circle x [0,rmax]) ?  --> p */
   
 
@@ -432,7 +438,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   switch (dim) {
       case 1 :
-      	error("wrong dimension (1) in hyperplane\n");
+      	ERR("wrong dimension (1) in hyperplane\n");
       case 2 :
 	int nn;
 	double deltax, deltay;
@@ -505,7 +511,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	}/* for nn */
 	break;
       default:	
-	error("wrong dimension (>2) in hyperplane\n"); 
+	ERR("wrong dimension (>2) in hyperplane\n"); 
   } // switch  (dim)
 
 
@@ -525,16 +531,13 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	E = mar_param;
 	sd = mar_param * (1.0 - mar_param);
 	break;
-      default : error("distribution unknown in hyperplane\n");
+      default : ERR("distribution unknown in hyperplane\n");
       }
       sd = sqrt(variance / (superpos * sd));
       for(i=0; i<loc->totalpoints; i++) 
-	res[i] = (res_type) (((double) res[i] - superpos * E) * sd);    
+	res[i] = (double) (((double) res[i] - superpos * E) * sd);    
     
-      if (loggauss) {
-	long vdimtot = loc->totalpoints * cov->vdim[0];
-	for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-      }
+      BOXCOX_INVERSE;
     } else {
       // no standardization up to now -- later alpha-stable ?? TODO
     }
@@ -542,18 +545,16 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     // no standardization up to now -- later max-stable ?? TODO
   }
 
-  GLOBAL.gauss.loggauss = loggauss;
   return;
 
  ErrorHandling: 
-  GLOBAL.gauss.loggauss = loggauss;
 //  if (PL>0)
   FREE(hx);
   FREE(hy);
   FREE(hr);
   if (tree!=NULL) avltr_destroy(tree, delcell);
   XERR(err); 
-  error("hyperplane failed\n");
+  ERR("hyperplane failed\n");
 }
                       
 		   

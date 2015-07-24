@@ -1,458 +1,26 @@
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2015 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 ## Methods for classes 'RFempVario' and 'RFfit'  #######################
-
-## accessing slots
-accessByNameOrNumber <- function(x, i, j, drop=FALSE) {
-  stopifnot(length(i)==1)
-  if (is.numeric(i))  i <- slotNames(x)[i]
-  return(accessSlotsByName(x=x, i=i, j=j, drop=drop))
-}
-
-setMethod("[", signature = "RFfit", def=accessByNameOrNumber)
-
-
-
-anova.RFfit <- function(object, ...)  RFratiotest(nullmodel=object, ...)
-anova.RF_fit <- function(object, ...) RFratiotest(nullmodel=object, ...)
-anova.RMmodelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
-anova.RM_modelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
-
-setMethod(f="anova", signature='RMmodelFit',
-          definition=function(object, ...) anova.RFfit(object, ...))#
-
-boundary_values <- function(variab) {
-  upper.bound <- variab[4, , drop=FALSE]
-  lower.bound <- variab[3, , drop=FALSE]
-  # sd <- variab[2, ]
-  variab <- variab[1, , drop=FALSE]
-  lidx <- variab < lower.bound + 1e-8
-  uidx <- variab > upper.bound - 1e-8
-  nl <- sum(lidx, na.rm=TRUE)
-  nu <- sum(uidx, na.rm=TRUE)
-  if (nl + nu > 0) {
-    lidx[is.na(lidx)] <- FALSE
-    uidx[is.na(uidx)] <- FALSE    
-    txt <-
-      paste(sep="", "Note that the (internal) fitted variable",
-            if (nl > 0)
-            paste(if (nl > 1) "s", " ",
-                  paste("'", colnames(variab)[lidx], "'",
-                        sep="", collapse=", "),
-                  " ", if (nl == 1)  "is" else "are",                  
-                  " close to or on the effective lower boundary", sep=""),
-            if (nl > 0 && nu > 0) " and the variable",
-            if (nu > 0)
-            paste(if (nu > 1) "s", " ",
-                  paste("'", colnames(variab)[uidx], "'",
-                        sep="", collapse=", "),
-                  " ", if (nu == 1) "is" else "are",
-                  " close to or on the effective upper boundary"),
-            ".\nHence the gradient of the likelihood function might not be zero and none of the\nreported 'sd' values might be reliable.")
-  } else txt <- NULL
-  return(txt)
-}
-
-
-summary.RMmodelFit <- function(object, ..., isna.param) {
-  model <- PrepareModel2(object, ...)
-  residuals <- object@residuals
-  l <- list(model=model,
-            loglikelihood=object@likelihood,
-            AIC = object@AIC,
-            AICc= object@AICc,
-            BIC = object@BIC,
-            residuals=if (length(residuals) == 1) residuals[[1]] else residuals)
-  if (missing(isna.param)) isna.param <- any(is.na(object@param)) 
-  l$boundary <- boundary_values(object@variab)
-  if (!any(is.na(object@param[1, ])) )
-    l$param <- cbind(object@param, object@covariab)
-  if (isna.param || !is.null(l$boundary)) {
-#   print(object@variab)
-#    print(object@covariab)
-#   str(object)
-    l$variab <- cbind(object@variab,
-                      if (length(object@covariab) > 0)
-                        rbind(object@covariab, NA, NA))
-  }
-  class(l) <- "summary.RMmodelFit"
-  l
-}
-
-setMethod(f="summary", signature='RMmodelFit',
-          definition=function(object) summary.RMmodelFit(object))#
-
-
-summary.RM_modelFit <- function(object, ..., isna.param) {
-  model <- object$model
-  residuals <- object$residuals
-  l <- list(model=model,
-            loglikelihood=object$ml.value,
-            AIC = object$AIC,
-            AICc= object$AICc,
-            BIC = object$BIC,
-            residuals=if (length(residuals) == 1) residuals[[1]] else residuals)
-  if (missing(isna.param)) isna.param <- any(is.na(object$param))
-  l$boundary <- boundary_values(object$variab)
-  if (!any(is.na(object$param[1,])))
-      l$param <- cbind(object$param, object$covariab)
-  if (isna.param || !is.null(l$boundary))
-    l$variab <-
-      cbind(object$variab,
-            if (length(object$covariab) > 0) rbind(object$covariab, NA, NA))
-  class(l) <- "summary.RMmodelFit"
-  l
-}
-
-
-
-print.summary.RMmodelFit <- function(x, ...) {
-
-  printVariab <- function(x) {
-    cat("Internal variables:\n")
-    if (is.null(x$boundary)) print(x$variab[1:2, , drop=FALSE], ..., na.print="-")#
-    else print(x$variab, ..., na.print="-")#
-    cat("\n")
-    return(ncol(x$variab))
-  }
-
-
-  printParam <- function(param) {
-    cat("User's variables:\n")
-    print(param, ..., na.print="-")#
-    return(ncol(param))
-  }
-  
-  printRest <- function(...) {
-    x <- unlist(list(...))
-    stopifnot(length(x) == 3)
-    names(x) <- c("#variab", "loglikelihood", "AIC")
-    cat("\n")
-    print(x) #
-    cat("\n")
-  }
-
-  if (RFoptions()$general$detailed_output) str(x$model, no.list=TRUE) #
-  cat("\n")
-  np <- AIC <- ll <- nm <- NA  
-  if (!is.null(x$submodels)) {
-    cur_name <- ""
-    len <- length(x$submodels)
-    
-    for (i in 1:len) {
-      sm <- x$submodels[[i]]
-      n <- sm$report
-      nnxt <- if (i==len) "" else x$submodels[[i+1]]      
-      if (n != cur_name) {
-        if (i > 1) {         
-          if (!is.null(sm$param)) printParam(cparam)
-          printRest(np, ll, AIC) #
-          if (!is.null(sm$boundary)) cat(sm$boundary, "\n\n")
-        }
-
-        if (nnxt != n && length(sm$fixed) > 0) {
-          
-          nX <- paste(sep="", n, " (",
-                      paste(c(if (length(sm$fixed$zero) > 0)
-                              paste(colnames(x$param)[sm$fixed$zero], "= 0"),
-                              if (length(sm$fixed$one) > 0)
-                              paste(colnames(x$param)[sm$fixed$one], "= 1")),
-                            sep=", "),
-                      ")")
-        } else nX <- n
-        cat(if (!is.na(nm)) cat("\n"), nX, "\n",
-            paste(rep("=", min(80, nchar(nX))), collapse=""),
-            "\n", sep="")
-        np <- 0
-        AIC <- 0
-        ll <- 0
-        cparam <- NULL
-        nm <- 1
-      }
-      if (!is.null(sm$variab)) {
-        if (nm > 1 || (i<len && n==nnxt)) cat("model", nm, ", ")
-        printVariab(sm)
-      }
-      if (!is.null(sm$param)) {
-        param <- x$param * NA
-#        Print(i, sm$p.proj, param, sm, sm$param)
-        
-        param[, sm$p.proj] <- sm$param
-        fixed <- sm$fixed
-        if (length(fixed) > 0) {
-          param[1, fixed$zero] <- 0
-          param[1, fixed$one] <- 1
-        }
-      
-      #  if (!is.null(cparam)) cparam <- rbind(cparam, NA)
-        cparam <- rbind(cparam, param)
-  
- #       Print(param, cparam)
-        
-      }
-      np <- np + length(sm$p.proj)
-      ll <- ll + sm$loglikelihood
-      AIC <- AIC + sm$AIC
-      nm <- nm + 1;
-      cur_name <- n
-   }
-
-    if (!is.null(sm$param)) printParam(param)
-    printRest(np, ll, AIC) #
-    if (!is.null(sm$boundary)) cat(sm$boundary, "\n\n")
-     
-    cat("\nuser's model\n", paste(rep("=", 12), collapse=""), "\n", sep="")
-  }
- 
-  if (!is.null(x$variab)) np <- printVariab(x)
-  if (!is.null(x$param)) np <- printParam(x$param)
-  
-  printRest(np, x[c("loglikelihood", "AIC")])#
-  if (!is.null(x$boundary)) cat(x$boundary, "\n\n")
-  
-  invisible(x)
-}
-
-print.RMmodelFit <- function(x, ...)
-  print.summary.RMmodelFit(summary.RMmodelFit(x, ...))#
-print.RM_modelFit <- function(x, ...)
-  print.summary.RMmodelFit(summary.RM_modelFit(x, ...))#
-
-setMethod(f="show", signature='RMmodelFit',
-          definition=function(object) print.RMmodelFit(object))#
-
-  
-summary.RFfit <- function(object, ...,  method="ml", full=FALSE) {
-  s <- summary.RMmodelFit(object[method])
-  len <-  length(object@submodels)
-#  str(object@submodels, 2)
-  if (full && length(object@submodels) > 0) {
-    submodels <- list()
-    for (i in 1:len) {
-      ## war summary.RM_modelFit
-#      Print(object@submodels[[i]][[method]])
-      
-      submodels[[i]] <- summary(object@submodels[[i]][[method]],# 'summary'
-                                isna.param=is.null(s$param))    # nicht
-      submodels[[i]]$report <- object@submodels[[i]]$report     # spezifizieren!
-      submodels[[i]]$p.proj <- object@submodels[[i]]$p.proj
-      submodels[[i]]$fixed  <- object@submodels[[i]]$fixed
-    }     
-    s$submodels <- submodels
-  }
-  s
-}
-
-summary.RF_fit <- function(object, ..., method="ml", full=FALSE) {
-  s <- summary.RM_modelFit(object[[method]])
-  len <-  length(object$submodels)
-  if (full && len > 0) {
-    submodels <- list()
-    for (i in 1:len) {      
-      submodels[[i]] <- summary.RM_modelFit(object$submodels[[i]][[method]],
-                                            isna.param=is.null(s$param))
-      submodels[[i]]$report <- object$submodels[[i]]$report
-      submodels[[i]]$p.proj <- object$submodels[[i]]$p.proj
-      submodels[[i]]$fixed  <- object$submodels[[i]]$fixed
-    }
-    s$submodels <- submodels
-   }
-  s
-}
-
-
-
-print.RFfit <- function(x, ...,  method="ml", full=FALSE) {
-  print.summary.RMmodelFit(summary.RFfit(x, ..., method=method, full=full))
-}
-
-setMethod(f="show", signature='RFfit',
-          definition=function(object) print.RFfit(object))#
-
-print.RF_fit <- function(x, ...,  method="ml", full=FALSE) {
-   print.summary.RMmodelFit(summary.RF_fit(x, ..., method=method, full=full))
-}
-
-
-
-logLik.RF_fit <- function(object, REML = FALSE, ..., method="ml") {
-  if (hasArg("REML")) stop("parameter 'REML' is not used. Use 'method' instead")
-  ## according to geoR
-  val <- object[[method]]$ml.value  
-  attr(val, "df") <- object$number.of.parameters
-  attr(val, "method") <- method
-  class(val) <- "logLik"
-  return(val)
-}
-
-logLik.RFfit <- function(object, REML = FALSE, ..., method="ml") {
-  if (hasArg("REML")) stop("parameter 'REML' is not used. Use 'method' instead")
- ## according to geoR
-  val <- object[method]@likelihood
-  attr(val, "df") <- object@number.of.parameters
-  attr(val, "method") <- method
-  class(val) <- "logLik"
-  return(val)
-}
-
-
-
-print.AICRFfit<- function(x, ..., digits=3) {
-  ## nur deshalb 
-  fstcol <- 3
-  sndcol <- 55
-  trdcol <- 4
-  forthcol<-9
-  leer <- formatC("", width=fstcol)
-  size <- max(abs(x[[2]]))
-  size <- if (size>0) ceiling(log(size) / log(10)) else 1
-  cat(leer, formatC("model", flag="-", width=sndcol), " ",
-      formatC(names(x)[1], width=trdcol),
-      formatC(names(x)[2], width=forthcol), "\n", sep="")
-  names <- attr(x, "row.names")
-  for (i in 1:length(names)) {
-    cat(formatC(i, width=fstcol, flag="-"))
-    if (nchar(xx <- names[i]) <= sndcol)
-      cat(formatC(xx, width=sndcol, flag="-"))
-    else {
-      yy <- strsplit(xx, " \\* ")[[1]]
-      for (j in 1:length(yy)) {
-        ncyy <- nchar(yy[j])
-        if (ncyy <= sndcol && j==length(yy))
-          cat(format(yy[j], width=sndcol, flag="-"))
-        else {
-          if (ncyy <= sndcol - 2) {
-            cat(yy[j])
-          } else {
-            zz <- strsplit(yy[j], ", ")[[1]]
-            ncyy <-  0
-            lenzz <- length(zz)
-            for (k in 1:lenzz) {
-              len <- nchar(zz[k])
-              if (k > 1 && len > sndcol - 1) {
-                cat("\n", leer, zz[k], sep="")
-                if (k < lenzz)
-                  cat(formatC(",", flag="-",  width=pmax(1, sndcol-len)))
-              } else {
-                if (ncyy + len > sndcol - 1) {
-                  cat("\n", leer, sep="")
-                  ncyy <- len
-                } else {
-                  ncyy <- ncyy + len
-                }
-                cat(zz[k])
-                if (k < lenzz) {
-                  cat(", ")
-                  ncyy <- ncyy + 2
-                }
-              }
-            } # for k 1:lenzz
-          } # split according to commata
-          if (j < length(yy)) cat(" *\n", leer, sep="")
-          else if (ncyy < sndcol) cat(formatC("", width=sndcol-ncyy))
-        }
-      } # for 1:products
-    } ## not be written in a single line
-    cat("",
-        formatC(x[[1]][i], width=trdcol),
-        formatC(x[[2]][i], format="f", width=size + digits + 1,
-                    digits=digits),"\n")
-  }
-}
-
-
-
-fullAIC <- function(x, method="ml", AIC="AIC") {
-  ats <- approx_test_single(x, method=method)$result
-  values <- c("name", "df", AIC)
-  model2 <- paste("model2.", values, sep="")
-  ats2 <- ats[ !is.na(ats[, model2[2]]), model2]
-  colnames(ats2) <- values
-  ats <- ats[, paste("model1.", values, sep="")]
-  colnames(ats) <- values
-  ats <- unique(rbind(ats, ats2))
-  dimnames(ats) <- list(1:nrow(ats), colnames(ats))
-
-  names  <- as.character(ats$name)
-  ats <- ats[-1]
-  attr(ats, "row.names") <- names  
-  class(ats) <- "AICRFfit"
-  ats
-}
-
-AIC.RFfit <- function(object, ..., k=2, method="ml", full=TRUE) {
-  if (full) {
-    fullAIC(object, method=method)
-  } else {
-    AIC <- object[method]@AIC
-    names(AIC) <- "AIC"
-    AIC
-  }
-}
-AIC.RF_fit <- function(object, ..., k=2, method="ml", full=TRUE) {
-  if (full) {
-    fullAIC(object, method=method)
-  } else {
-    AIC <- object[[method]]$AIC
-    names(AIC) <- "AIC"
-    AIC
-  }
-}
-
-AICc.RFfit <- function(object, ...,  method="ml", full=FALSE) {
-  if (full) {
-    stop("for 'AICc' the option 'full=TRUE' has not been programmed yet.")
-    fullAIC(object, method=method)
-  } else {
-    AIC <- object[method]@AIC
-    names(AIC) <- "AICc"
-    AIC
-  }
-}
-AICc.RF_fit <- function(object, ..., method="ml", full=TRUE) {
-  if (full) {
-    stop("for 'AICc' the option 'full=TRUE' has not been programmed yet.")
-    fullAIC(object, method=method)
-  } else {
-    AIC <- object[[method]]$AIC
-    names(AIC) <- "AICc"
-    AIC
-  }
-}
-
-BIC.RFfit <- function(object, ..., method="ml", full=TRUE) {
-  if (full) {
-    fullAIC(object, method=method, AIC="BIC")
-  } else {
-    BIC <- object[method]@BIC
-    names(BIC) <- "BIC"
-    BIC
-  }
-}
-
-BIC.RF_fit <- function(object, ..., method="ml", full=TRUE) {
-  if (full) {
-    fullAIC(object, method=method, AIC="BIC")
-  } else {
-    BIC <- object[[method]]$BIC
-    names(BIC) <- "BIC"
-    BIC
-  }
-}
-
-
-resid.RFfit <- function(object, ..., method="ml") {
-  resid <- object[method]@residuals
-  names(resid) <- "residuals"
-  resid
-}
-resid.RF_fit <- function(object, ..., method="ml") {
-  resid <- object[[method]]$residuals
-  names(resid) <- "residuals"
-  resid
-}
-residuals.RFfit <- function(object, ..., method="ml")
-  resid.RFfit(object=object, method=method)
-residuals.RF_fit <- function(object, ..., method="ml")
-  resid.RF_fit(object=object, method=method)
 
 
 summary.RFempVariog <- function(object, ...) {
@@ -541,8 +109,8 @@ list2RFempVariog <- function(li) {
              theta.centers=li$theta.centers,
              T=li$Tbins,
              vdim = li$vdim,
-             coord.units = RFopt.coords$coordunits,
-             variab.units = RFopt.coords$varunits,
+             coordunits = RFopt.coords$coordunits,
+             varunits = RFopt.coords$varunits,
              call=li$call ))
 }
 
@@ -561,19 +129,6 @@ setMethod(f="plot", signature(x="RFempVariog", y="missing"),
                           ...)
                    })
 
-setMethod(f="plot", signature(x="RFfit", y="missing"),
-	  definition=function(
-            x, model = NULL,
-            fit.method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-            plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-            boundaries = TRUE,...)
-          
-          plotRFempVariog(x, fit.method=fit.method,
-                          nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                          nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                          model = model, variogram=variogram,
-                          boundaries = boundaries,
-                          ...))
 
 setMethod(f="persp", signature(x="RFempVariog"),
 	  definition=function(
@@ -587,45 +142,18 @@ setMethod(f="persp", signature(x="RFempVariog"),
                           ..., plotmethod=graphics::persp)
                    })
 
-setMethod(f="persp", signature(x="RFfit"),
-	  definition=function(
-            x, model = NULL,
-            fit.method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-            plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-            boundaries = TRUE,...)          
-          plotRFempVariog(x, fit.method=fit.method,
-                          nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                          nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                          model = model, variogram=variogram,
-                          boundaries = boundaries,
-                          ..., plotmethod="persp"))
 
 
 
-
-contour.RFfit <- contour.RFempVariog <- 
-  function(x, model = NULL,
-           fit.method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-           plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-           boundaries = TRUE,...) {
-    stopifnot(!( (is(x, "RFfit") && is.list(x@ev[[1]]@centers))
-                || (is(x, "RFempVariog") && is.list(x@centers))
-                ))
-    plotRFempVariog(x, fit.method=fit.method,
-                    nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                    nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                    model = model, variogram=variogram,
-                    boundaries = boundaries,
-                    ..., plotmethod="contour")
-  }
-
-
-plotRFempVariogUnbinned <- function(x, coord.units, variab.units, variab.names,
+plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
                                     ..., plotmethod="image") {
   dots = mergeWithGlobal(list(...))
   dotnames <- names(dots)
   coords <- GridTopology2gridVectors(cbind(x@centers$x, x@centers$T))
-  if (length(coords)>1) {
+
+  #Print(coords, "plotRFempVariogUnbinned")
+  
+  if (length(coords)>1) {    
     coords[[1]] <- sort(unique((coords[[1]] - min(coords[[1]])) *
                                rep(c(-1, 1), each=length(coords[[1]]))))
     lab.names <- dimnames(x@centers$x)[[2]]
@@ -644,18 +172,18 @@ plotRFempVariogUnbinned <- function(x, coord.units, variab.units, variab.names,
   
   if (!("main" %in% dotnames)) {
     main <- "Variogram image plot"
-    if (length(variab.names)>0) main <- paste(main, "for", variab.names)
+    if (length(varnames)>0) main <- paste(main, "for", varnames)
     dots$main <- main
   }
   lab.names <- paste(lab.names, "-distance", sep="")
   
   idx <- lab.names != "T-distance"
-  if (any(idx) && all(coord.units[idx] != ""))
+  if (any(idx) && all(coordunits[idx] != ""))
       lab.names[idx] <-
-        paste(lab.names[idx], " [", coord.units[idx], "]", sep="")
-  if (!all(idx) && all(coord.units[!idx] != ""))
+        paste(lab.names[idx], " [", coordunits[idx], "]", sep="")
+  if (!all(idx) && all(coordunits[!idx] != ""))
     lab.names[!idx] <-
-      paste(lab.names[!idx], " [", coord.units[!idx], "]", sep="")
+      paste(lab.names[!idx], " [", coordunits[!idx], "]", sep="")
   
   if (!("xlab" %in% dotnames)) dots$xlab <- lab.names[1]
   if (!("ylab" %in% dotnames)) dots$ylab <- lab.names[2]
@@ -697,14 +225,13 @@ plotRFempVariogUnbinned <- function(x, coord.units, variab.units, variab.names,
 }
 
 plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
-                            plot.nbin, plot.sd, fit.method = NULL,
+                            plot.nbin, plot.sd, method = NULL,
                             variogram=variogram,
-                            coord.units=c(""),
-                            variab.units=c(""),
+                            coordunits=c(""),
+                            varunits=c(""),
                             boundaries = TRUE,
                             ...) {
-  
- if (!variogram)
+  if (!variogram)
     stop("plot of estimated covariance functions not programmed yet.")
   
 
@@ -721,31 +248,32 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
     newx$internal2 <- x@internal2
     newx$internal3 <- x@internal3
     newx$ml <- x@ml
-    x <- x@ev[[1]]
-    if( is.null(fit.method) )
-      fit.method <- if (length(newx$ml@name) > 0) "ml" else "plain"
 
-    methodidx <- fit.method %in% names(newx[unlist(lapply(newx, FUN = function(x) is(x, ZF_MODELEXT)))])
-    methodnames <- fit.method[methodidx]
-    nomethodnames <- fit.method[!methodidx]
+    
+    x <- x@ev
+    if( is.null(method) )
+      method <- if (length(newx$ml@name) > 0) "ml" else "plain"
+
+    methodidx <- method %in% names(newx[unlist(lapply(newx, FUN = function(x) is(x, ZF_MODELEXT)))])
+    methodnames <- method[methodidx]
+    nomethodnames <- method[!methodidx]
 
     if( !all(methodidx) )
       warning( paste("The following method does not exist: ", nomethodnames) )
   } else if (!is(x, "RFempVariog"))
     stop("method only for objects of class 'RFempVariog' or 'RFfit'")
 
-  variab.names <-
+
+  varnames <-
     if (is.matrix(x@emp.vario)) dimnames(x@emp.vario)[[2]][1]
     else names(x@emp.vario)[1]
  
   ## case without binning
   if (is.list(x@centers))
     return(plotRFempVariogUnbinned(x=x,                         
-                                   coord.units=coord.units,
-                                   variab.units=variab.units,
-                                   variab.names=variab.names, ...))
-
-             
+                                   coordunits=coordunits,
+                                   varunits=varunits,
+                                   varnames=varnames, ...))       
   dots = list(...)
   dotnames <- names(dots)
    if (!("type" %in% dotnames)) dots$type <- "b" 
@@ -802,8 +330,8 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
   } 
   
   TandV <- n.T > 1 && vdim > 1
-  if (vdim>1 && length(variab.names)==0)
-    variab.names <- paste("v", 1:vdim, sep="")
+  if (vdim>1 && length(varnames)==0)
+    varnames <- paste("v", 1:vdim, sep="")
 
   range.nbin <- range(c(0, x@n.bin), na.rm=TRUE)
   ylim.nbin <- range.nbin * c(1,1.2)
@@ -826,9 +354,10 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
     for (j in (1:4)) { ## orig 20
       vario.vals <- try(RFvariogram(x = cbind(x.space, x.time),
                                     model = method.model,
-                                    grid = FALSE),
+                                    grid = FALSE,
+                                    internal.examples_reduced=FALSE),
                         silent = FALSE)
-      if(!is(vario.vals, "try-error")) {
+       if(!is(vario.vals, "try-error")) {
         if (is.array(vario.vals)) {
           return(vario.vals[, v1, v2])
         } else {
@@ -837,12 +366,12 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
       }      
       x.space <- cbind(x.space, 0)    
     }
+
+     
     return(NULL)
   }
 
-  
   oma.left <- 6
-
   Screens <- if (!TandV) c(n.T * vdim * vdim, n.theta) else  c(n.T, n.theta)
   n.all <- prod(Screens)
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
@@ -852,12 +381,12 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
       if (TandV || (v1==1 && v2==1)) scr <- split.screen(Screens)
       if (vdim == 1) {
         main <-
-          if (!is.null(main0) && length(variab.names)>0)
-            paste(main0, "for", variab.names) else main0
+          if (!is.null(main0) && length(varnames)>0)
+            paste(main0, "for", varnames) else main0
       } else {
         main <-
           if (!TandV) main0
-          else paste(main0, "for", variab.names[v1], "vs.",  variab.names[v2])
+          else paste(main0, "for", varnames[v1], "vs.",  varnames[v2])
       }      
       if (ylim.not.in.dotnames)
         dots$ylim <- range(x@emp.vario[,,,, v1, v2], na.rm=TRUE)
@@ -873,7 +402,7 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
             for (iph in 1:n.phi) {
               if (n.phi > 1) col <- col.v[iph]
               if (iph==1) {
-                lab <- xylabs("bin centers", NULL, units=x@coord.units)
+                lab <- xylabs("bin centers", NULL, units=x@coordunits)
                 plot(x@centers, x@n.bin[ ,iph, ith, iT, v1, v2],
                      xlim=dots$xlim, ylim=ylim.nbin,
                      type=if (n.phi>1) "p" else "h",
@@ -920,7 +449,7 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
               if (!plot.nbin) axis(1)          
               if (l.theta > 1 || l.T > 1 || vdim > 1) {
                 L <- character(3)
-                if (!TandV && vdim > 1) L[1] <- paste(variab.names[c(v1,v2)],
+                if (!TandV && vdim > 1) L[1] <- paste(varnames[c(v1,v2)],
                                                       collapse=":")
                 if (l.T>1) L[2] <- paste("T=",signif(x@T[iT],3)," ",sep="")
                 if (l.theta>1) L[3] <- paste(sep="", "theta=",
@@ -943,6 +472,7 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
             if (n.methods > 0) {          
               for(i in 1:n.methods) {        
                 method.model <- newx[[methodnames[i]]]
+              
                 if(length(method.model@name) == 0){
                   warning("The method '", methodnames[i], "' was not fitted.")
                   next
@@ -967,22 +497,28 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
                 ## Winkel angeschaut werden und dann der mittlere
                 ## Wert der Variogramme angeschaut wird, da ja auch
                 ## das emp. Variogramm ueber ein Winkelintervall gemittelt wird
-                dummy.vals <- apply(x.radial, 1, FUN = dir2vario,
-                                    x.eval=x.eval, x.time=x.time,
-                                    method.model=method.model,
-                                    v1=v1, v2=v2)                
+                dummy.vals <- as.matrix(apply(x.radial, 1, FUN = dir2vario,
+                                              x.eval=x.eval, x.time=x.time,
+                                              method.model=method.model,
+                                              v1=v1, v2=v2))
+
+               
+               # Print(i, x.eval, dummy.vals);print.RMmodelFit(method.model)
+                
                 if(!is.null(dummy.vals)){
-                  if (n.phi>1 && boundaries)
+                 # Print(n.phi, boundaries)
+                  if (n.phi>1 && boundaries) {
                     do.call(graphics::matplot,
                             args=c(dotsRFfit, list(x=x.eval,
-                              y=t(apply(dummy.vals, 1, range)),
-                              add = TRUE, col=col, lty = 3)))
-                  else {
-                    do.call(graphics::points,
-                            args=c(dotsRFfit, list( x=x.eval,
-                              y = rowMeans(as.matrix(dummy.vals))  , 
-                              col=col, lty = ltyRFfit.v[k])))
-                  }                
+                                y= if (ncol(dummy.vals) == 1) dummy.vals
+                                else t(apply(dummy.vals, 1, range)),
+                                add = TRUE, col=col, lty = 3)))
+                  } else {
+                     do.call(graphics::points,
+                             args=c(dotsRFfit, list( x=x.eval,
+                                 y = rowMeans(dummy.vals)  , 
+                                 col=col, lty = ltyRFfit.v[k])))
+                  }             
                   k <- k+1
                   if(iph == 1) plotted.meth <- c(plotted.meth, methodnames[i])
                 }
@@ -994,9 +530,9 @@ plotRFempVariog <- function(x, model, nmax.phi, nmax.theta, nmax.T,
             if (has.sd && plot.sd) {
               sdnot0 <-  x@sd[ ,iph, ith, iT] != 0
               arrows(x@centers[sdnot0],
-                     x@emp.vario[sdnot0 ,iph, ith, iT] - x@sd[sdnot0 ,iph, ith, iT],
+                     x@emp.vario[sdnot0 ,iph, ith,iT] - x@sd[sdnot0,iph,ith,iT],
                      x@centers[sdnot0],
-                     x@emp.vario[sdnot0 ,iph, ith, iT] + x@sd[sdnot0 ,iph, ith, iT],
+                     x@emp.vario[sdnot0 ,iph, ith,iT] + x@sd[sdnot0,iph,ith,iT],
                      code=2, angle=90, length=0.05, col=col)
             }
             

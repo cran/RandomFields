@@ -28,6 +28,7 @@ among max-stable processes
 \dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 %  library(RandomFields, lib="~/TMP")
 
 H <- c(0:9, LETTERS[1:6])
@@ -37,8 +38,8 @@ col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) \%\% 16)],sep=""),
                H[1 + (numbers / 16)], H[1 + (numbers \%\% 16)], "FF", sep=""))
 
 RFoptions(every=1000, xi=0)
-x <- seq(0, 5, if (interactive()) 0.01 else 1)
-
+x <- seq(0, 5, 0.01)
+\dontshow{if(RFoptions()$internal$examples_red){warning("modified 'x'"); x <- seq(0, 5, 1)}}
 ## Figure 2
 model <- RMfbm(alpha=1, var=4) ## not 8 as in the paper, since semi-variogram
 bm <- RMbrownresnick(model)
@@ -161,7 +162,7 @@ x <- seq(0, 10, 0.02)
  
 
 z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
-                x, x, 0, n=1, print=10)
+                x, x, 0, n=1)
 H <- c(0:9, LETTERS[1:6])
 numbers <- rep(0:255, each=2)
 col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) %% 16)], sep=""),
@@ -178,8 +179,6 @@ Print(range(y))
 hist(y, 200, freq=FALSE)
 a <- seq(-4, 10, 0.1)
 lines(a, exp(-a) * exp(-exp(-a)))
-
-if (!interactive()) .C("sleepMicro", as.integer(3e6))
 
 ############# test
 

@@ -249,7 +249,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 % library(RandomFields, lib="~/TMP")
 #############################################################
 ## ##
@@ -281,9 +281,8 @@ model <- RMexp(var=5, scale=10) + # with variance 4 and scale 10
 ## define the locations:
 from <- 0
 to <- 20
-len <- if (interactive()) 200 else 2
-x.seq <- seq(from, to, length=len) 
-y.seq <- seq(from, to, length=len)
+x.seq <- seq(from, to, length=200) 
+y.seq <- seq(from, to, length=200)
 
 simu <- RFsimulate(model, x=x.seq, y=y.seq)
 plot(simu)
@@ -298,7 +297,7 @@ plot(simu)
 
 # first we simulate some random values at a
 # 100 random locations:
-n <- if (interactive()) 100 else 2
+n <- 100
 x <- runif(n=n, min=-1, max=1)
 y <- runif(n=n, min=-1, max=1)
 data <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)

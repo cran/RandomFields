@@ -14,7 +14,9 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 }
 \arguments{
  \item{phi}{submodel}
- \item{var}{is the optional variance parameter \eqn{v},}
+ \item{var}{is the optional variance parameter \eqn{v},
+   It can be also an arbitrary non-negative function.
+ }
  \item{scale}{scaling parameter \eqn{s} which is positive}
  \item{Aniso}{matrix or \code{\link{RMmodel}}.
    The optional anisotropy matrix \eqn{A}, multiplied from
@@ -46,7 +48,12 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
- \command{\link{RMmodel}},
+  \command{\link{RMmodel}},
+
+  \command{\link{RMprod}} for an alternative way to define
+  an arbitrary, location dependent variance. There the standard
+  deviation is given so that  \command{\link{RMprod}} might be used
+  even in the multivariate case.
 }
 
 \keyword{spatial}
@@ -58,9 +65,10 @@ RMS(phi, var, scale, Aniso, proj, anisoT)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model1 <- RMS(RMexp(), scale=2)
 model2 <- RMexp(scale=2)
-x <- seq(0, 10, if (interactive()) 0.02 else 1)
+x <- seq(0, 10, 0.02)
 print(all(RFcov(model1, x) == RFcov(model2, x))) # TRUE
 \dontshow{FinalizeExample()}
 }

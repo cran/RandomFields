@@ -14,7 +14,7 @@ Note:
 
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
- Copyright (C) 2005 -- 2014 Martin Schlather
+ Copyright (C) 2005 -- 2015 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 void kdefault(cov_model *cov, int i, double v) {
+  // printf("kdef %s %d %s\n", NAME(cov), i, KNAME(i));
 
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   if (PisNULL(i)) {
@@ -52,10 +53,10 @@ void kdefault(cov_model *cov, int i, double v) {
       P(i)[0] = v;
     } else if (C->kappatype[i]==INTSXP) {
       PALLOC(i, 1, 1); 
-      if (ISNAN(v)) { BUG }
-      else if (ISNA(v)) PINT(i)[0] = NA_INTEGER;
-      else if (v > MAXINT) {BUG}
-      else if (v < -MAXINT) {BUG}
+      if (v == NA_INTEGER) PINT(i)[0] = NA_INTEGER;
+      else if (!R_FINITE(v)) { BUG }
+      else if (v > MAXINT) { BUG}
+      else if (v < -MAXINT) { BUG}
       else PINT(i)[0] = (int) v;
     } else if (C->kappatype[i] == LISTOF + REALSXP) {
       //char msg[100];      
@@ -69,6 +70,9 @@ void kdefault(cov_model *cov, int i, double v) {
     cov->nrow[i] = cov->ncol[i] = 1;
   } else if (!GLOBAL.general.skipchecks) {    
     if (cov->nrow[i] != 1 || cov->ncol[i] != 1) { 
+
+      //  printf("%ld %ld\n", CovList[cov->nr].kappasize,
+
       LPRINT("%d %s %d nrow=%d, ncol=%d\n", 
 	     cov->nr, NAME(cov), i, cov->nrow[i], cov->ncol[i]);
       int j; for (j=0; j<cov->ncol[i] * cov->nrow[i]; j++) {
@@ -130,7 +134,7 @@ void setdefault(cov_model *cov) {
   //   cov->separatelast = isIsotropic(cov->isoown); // war false vor 27.9.14
 
   MEMCOPY(cov->pref, C->pref, sizeof(pref_shorttype)); 
-
+  
   for (i=Nothing+1; i<Forbidden; i++) cov->pref[i] = PREF_NONE;
 
   //cov->deterministic = !isRandom(cov); // nur die die zuf. Param haben
@@ -238,6 +242,7 @@ int checkkappas(cov_model *cov, bool errornull){
   char param_name[PARAMMAXCHAR]; // used in QERR
 
   for (i=0; i<kappas; i++) {
+    if (SortOf(cov, i, 0, 0) == DONOTVERIFYPARAM) continue;
     strcpy(param_name, 
 	   cov->ownkappanames != NULL && cov->ownkappanames[i]!=NULL 
 	   ? cov->ownkappanames[i]
@@ -246,6 +251,7 @@ int checkkappas(cov_model *cov, bool errornull){
   
     if (ks != NULL) {
       if (isRandom(ks)) {
+	if (!ParamAllowsRandomness(cov,i)) QERR("argument must be deterministic");
 	cov->deterministic = false;
 	int err, len;       
 	
@@ -279,8 +285,12 @@ int checkkappas(cov_model *cov, bool errornull){
 	  //if (nr==SIZE_NOT_DETERMINED || nc==SIZE_NOT_DETERMINED)
 	  // QERR("size of random parameter could not be determined -- please give the size explicitely");	
 	  len = nr * nc;	
-	  if ((err = CHECK_R(ks, len)) != NOERROR)
+
+	  //PMI(ks);
+
+	  if ((err = CHECK_R(ks, len)) != NOERROR) {
 	    QERRX(err, "random parameter not well defined");
+	  }
 	}
 	
 	if ( (ks->vdim[0] != nr || ks->vdim[1] != nc) &&
@@ -289,10 +299,11 @@ int checkkappas(cov_model *cov, bool errornull){
      
 	if (cov->Sgen == NULL) NEW_STORAGE(gen);
 	
-	if (PisNULL(i)) {
+
+	//printf(">> %s %s %d %d %d \n", NAME(cov), KNAME(i), i, C->kappas, PisNULL(i));
+  	if (PisNULL(i)) {
 	  PALLOC(i, nr, nc);
 	}
-
 
 	//PMI(cov->calling);
 
@@ -304,12 +315,14 @@ int checkkappas(cov_model *cov, bool errornull){
 	  QERRX(err, "random parameter cannot be initialized");	  
 	}	
       } else { // not random, e.g. Aniso
+	//printf("%s %s\n", NAME(cov), KNAME(i));
+	if (!ParamAllowsShape(cov, i)) 
+	  QERR("argument may not be an arbitrary function");
 	// no automatic check possible
 	// if (!ks->checked) BUG; // fails
 	// ks->checked = false; // fails as well
       }
     } // end ks != NULL (function given)
-
 
     if (PisNULL(i)) {
       if (errornull) { QERR("unset"); }
@@ -320,12 +333,16 @@ int checkkappas(cov_model *cov, bool errornull){
     C->kappasize(i, cov, &nr, &nc);   
     if ( (nc < 1 && nc != SIZE_NOT_DETERMINED) || 
 	 (nr < 1 && nr != SIZE_NOT_DETERMINED)) { 
+      //PMI(cov); printf("%s: %d %d %d\n", KNAME(i),nc,nr,SIZE_NOT_DETERMINED);
       BUG;
     }
     
     if (nc == 1 && ncol[i] != nc) {
       if (nr == 1 && nrow[i] != 1) QERR("must be a scalar");
-      QERR("must be a vector, not a matrix");
+
+      //printf("%d %d; %d %d", nc, nr, ncol[i], nrow[i]);
+
+      //      QERR("must be a vector, not a matrix");
     }
     if (nc > 1 && ncol[i] == 1) QERR("parameter must be a (larger) matrix");
     
@@ -333,7 +350,7 @@ int checkkappas(cov_model *cov, bool errornull){
       
       // nc==0, nr==0 is coded as SIZE_NOT_DETERMINED
       char msg[255], msg2[255];
-      sprintf(msg, "not of the given size: (%d, %d) instead of (",
+      sprintf(msg, "not of the required size: (%d, %d) instead of (",
 	      nrow[i], ncol[i]);
       if (nr!=SIZE_NOT_DETERMINED) sprintf(msg2, "%s%d, ", msg, nr);
       else sprintf(msg2, "%sundetermined, ", msg);
@@ -373,7 +390,9 @@ int alloc_mpp_M(cov_model *cov, int moments) {
     nm = cov->mpp.moments,
     nmvdim = (nm + 1) * vdim,
     bytes = sizeof(double) * nmvdim;
-  if (vdim <= 0 || vdim > MAXMPPVDIM) BUG;
+
+  if (vdim <= 0) BUG;
+  if (vdim > MAXMPPVDIM) SERR1("multivariate dimension (%d) too large", vdim);
  
   cov->mpp.mM = (double*) MALLOC(bytes);
   cov->mpp.mMplus = (double*) MALLOC(bytes);
@@ -428,7 +447,8 @@ int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
   if (cov->initialised) return NOERROR;
   assert(cov != NULL);
 
-  assert(cov->gatternr >= ISO2ISO && cov->gatternr <= LASTGATTER);
+  //  printf("%d %d %d\n", cov->gatternr, ISO2ISO, LASTGATTER);
+  assert(TrafoOK(cov)); 
 
   cov_fct *C = CovList + cov->nr;
   int err = NOERROR;
@@ -545,6 +565,165 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
 }
 
 
+void iso2iso(double *x, cov_model *cov, double *v) {
+  double y=fabs(*x);
+  CovList[cov->nr].cov(&y, cov, v); // nicht gatternr
+}
+void logiso2iso(double *x, cov_model *cov, double *v, double *Sign) {
+  double y=fabs(*x);
+  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
+}
+void spiso2spiso(double *x, cov_model *cov, double *v) {
+  double y[2];
+  y[0] = fabs(x[0]);
+  y[1] = fabs(x[1]);
+  CovList[cov->nr].cov(y, cov, v);// nicht gatternr
+}
+void logspiso2spiso(double *x, cov_model *cov, double *v, double *Sign) {
+  double y[2];
+  y[0] = fabs(x[0]);
+  y[1] = fabs(x[1]);
+  CovList[cov->nr].log(y, cov, v, Sign);// nicht gatternr
+}
+void spacetime2iso(double *x, cov_model *cov, double *v) {
+  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
+  CovList[cov->nr].cov(&y, cov, v);// nicht gatternr
+}
+void logspacetime2iso(double *x, cov_model *cov, double *v, double *Sign) {
+  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
+  CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
+}
+
+void Stat2iso(double *x, cov_model *cov, double *v) {
+  double b = 0.0;
+  int i,
+    dim=cov->xdimgatter;  
+  for (i=0; i<dim; i++) {
+    // 
+    //  assert(dim != NA_INTEGER && dim < 10 && dim > 0);
+    //      printf("%s %d %d \n", NAME(cov), i, dim);
+    // printf("%f\n", x[i]);
+
+    //
+    b += x[i] * x[i];
+    //  
+  }
+  b = sqrt(b);
+
+  //  PMI(cov); printf("b=%f\n", b);
+
+  CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
+}
+void logStat2iso(double *x, cov_model *cov, double *v, double *Sign) {
+  double b = 0.0;
+  int i,
+    dim=cov->xdimgatter;  
+  for (i=0; i<dim; i++) {
+    b += x[i] *x[i];
+  }
+  b = sqrt(b);
+  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
+}
+void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
+  double a, b;
+  int d,
+    dim=cov->xdimgatter;  
+  for (b=0.0, d=0; d<dim; d++) {
+    a = x[d] - y[d];
+    b += a * a;
+  }
+  b = sqrt(b);
+  CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
+ 
+  //  APMI(cov->calling->calling);
+  //  assert(false); printf("A");
+}
+void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
+		    double *Sign) {
+  double a, b;
+  int d, 
+    dim=cov->xdimgatter;  
+  for (b=0.0, d=0; d<dim; d++) {
+    a = x[d] - y[d];
+    b += a * a;
+  }
+  b = sqrt(b);
+  CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
+}
+void Stat2spacetime(double *x, cov_model *cov, double *v) {
+  double b, z[2];
+  int i,
+    dim=cov->xdimgatter - 1;  
+  for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
+  z[0] = sqrt(b);
+  z[1] = fabs(x[dim]);
+  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
+}
+void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign) {
+  double b, z[2];
+  int i,
+    dim=cov->xdimgatter - 1;  
+  for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
+  z[0] = sqrt(b);
+  z[1] = fabs(x[dim]);
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
+}
+void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
+  double a, b, z[2];
+  int d,
+    dim=cov->xdimgatter - 1;  
+  for (b=0.0, d=0; d<dim; d++) {
+    a = x[d] - y[d];
+    b += a * a;
+  }
+  z[0] = sqrt(b);
+  z[1] = fabs(x[dim] - y[dim]);
+  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
+}
+void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
+			  double *Sign) {
+  double a, b, z[2];
+  int d,
+    dim=cov->xdimgatter - 1;  
+  for (b=0.0, d=0; d<dim; d++) {
+    a = x[d] - y[d]; 
+    b += a * a;
+  }
+  z[0] = sqrt(b);
+  z[1] = fabs(x[dim] - y[dim]);
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
+}
+void Stat2Stat(double *x, cov_model *cov, double *v) {
+  CovList[cov->nr].cov(x, cov, v);// nicht gatternr
+}
+void logStat2Stat(double *x, cov_model *cov, double *v, double *Sign) {
+  CovList[cov->nr].log(x, cov, v, Sign);// nicht gatternr
+}
+
+#define nonstat2statInner						\
+  int d,								\
+    dim=cov->xdimgatter;						\
+  ALLOC_NEW(Sgatter, z, dim, z);					\
+  for (d=0; d<dim; d++) {z[d] = x[d] - y[d];}
+ 
+void Nonstat2Stat(double *x, double *y, cov_model *cov, double *v) {
+  nonstat2statInner;
+  CovList[cov->nr].cov(z, cov, v);// nicht gatternr
+}
+void logNonstat2Stat(double *x, double *y, cov_model *cov, double *v, 
+		     double *Sign) {
+  nonstat2statInner;
+  CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
+}
+
+void Nonstat2Nonstat(double *x, double *y, cov_model *cov, double *v) {
+  CovList[cov->nr].nonstat_cov(x, y, cov, v);// nicht gatternr
+}
+
+void logNonstat2Nonstat(double *x, double *y, cov_model *cov, double *v, 
+			double *Sign) {
+  CovList[cov->nr].nonstatlog(x, y, cov, v, Sign);// nicht gatternr
+}
 
 
 void D_2(double *x, cov_model *cov, double *v){
@@ -618,7 +797,7 @@ void DD_2(double *x, cov_model *cov, double *v) {
 }
 
 void DD_3(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
-  error("DD_3 to be programmed\n");
+  ERR("DD_3 to be programmed\n");
 }
 
 
@@ -650,7 +829,6 @@ int struct2(cov_model *cov, cov_model **newmodel) {
   }
   strcpy(errloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "In %s : ", NICK(cov));
-  
 
   err = CovList[cov->nr].Struct(cov, newmodel);
   if (newmodel != NULL && (*newmodel) != NULL) {
@@ -771,11 +949,10 @@ int CheckPD2ND(cov_model *cov, int tsdim, int tsxdim, isotropy_type isoprev,
   // statselect[nsel]={STATIONARY, VARIOGRAM, COVARIANCE, GEN_VARIOGRAM};
   Types typeselect[nsel] = {PosDefType, VariogramType};
   
-  for (i=0; i<nsel; i++) {
+  for (i=0; i<nsel; i++) {    
     for (j=0; j<nsel; j++) {
       if ((err = check2X(cov, tsdim, tsxdim, typeselect[j], statselect[i],
 			 isoprev, vdim, role)) == NOERROR) return err;
-      //      BUG;
     }
   }
   return err;
@@ -784,28 +961,46 @@ int CheckPD2ND(cov_model *cov, int tsdim, int tsxdim, isotropy_type isoprev,
 // to do: Trend komplett anders behandeln -- im moment laeuft er als Anhaengsel zur Kovarianzstruktur. Sollte der Trend seperat behandelt werden ??!!
 
 
+#define ShortList 5
+#define ShortN 8
+static char kurz_[ShortList][ShortN + 1] = {""};
+const char *Short(int i, const char * x) {
+  assert(i < ShortList);
+  strcopyN(kurz_[i], x, ShortN);
+  kurz_[i][ShortN] = '\0';
+  return kurz_[i];
+}
 
 
+int check2Xnotrafo(cov_model *cov, int tsdim, int tsxdim,
+	    Types type, domain_type domprev, isotropy_type isoprev,
+	    int vdim, int role) {
+  return check2X(cov, tsdim, tsxdim, type, domprev, isoprev, vdim, vdim, role,
+		 false);
+}
 
 
 int check2X(cov_model *cov, int tsdim, int tsxdim,
 	    Types type, domain_type domprev, isotropy_type isoprev,
 	    int vdim, int role) {
-  return check2X(cov, tsdim, tsxdim, type, domprev, isoprev, vdim, vdim, role);
+  return check2X(cov, tsdim, tsxdim, type, domprev, isoprev, vdim, vdim, role,
+		 true);
 }
 
 int check2X(cov_model *cov, int tsdim, int tsxdim,
 	    Types type, domain_type domprev, isotropy_type isoprev,
 	    int *vdim, int role) {
   return check2X(cov, tsdim, tsxdim, type, domprev, isoprev, vdim[0], vdim[1],
-		 role);
+		 role, true);
 }
 
 #define xdebug false
 int check2X(cov_model *cov, int tsdim, int tsxdim,
 	    Types type, domain_type domprev, isotropy_type isoprev,
-	    int vdim0, int vdim1, int role) {
+	    int vdim0, int vdim1, int role, bool coordinate_trafo) {
   //if (cov == NULL) crash();
+  
+  //  print("*************** %s %s\n", NAME(cov), DOMAIN_NAMES[domprev]);
 
   assert(cov != NULL);
   assert(vdim0 != 0 && vdim1 != 0);
@@ -817,7 +1012,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   domain_type dom, first_dom, last_dom; 
   bool checkerror = false,
     skipchecks = GLOBAL.general.skipchecks;
-  char msg[1000] = "";
+  char msg[LENERRMSG] = "";
 
   // erst bei check unten
   sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
@@ -826,18 +1021,38 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     LPRINT("%s\n", ERROR_LOC); 
   }
 
+  //  if (isSpherical(isoprev)) {printf("ni\n"); return ERRORFAILED;}
+  
   ///  printf("check2x %s\n", NAME(cov));
 
-
-
   //    assert(PL == 1);
-  if (type==VariogramType && isAnySpherical(isoprev))
+  if (type==VariogramType && isAnySpherical(isoprev)) {
+    //PMI(cov);
     SERR("variograms do not exist on spheres");
+  }
 
   if (isTrend(type) && domprev == KERNEL) return ERRORFAILED;
+
+  //if (isoprev == ISO_MISMATCH) PMI(cov->calling);
+  assert(isoprev != ISO_MISMATCH);
   
   cov->domprev = domprev;
-  cov->isoprev = isoprev;
+  //cov->isoprev = isoprev;
+  cov->isoprev = (isoprev == UNREDUCED && cov->calling != NULL) // neu, april 2015
+    ? cov->calling->isoown
+    : isoprev;
+
+  if (cov->calling != NULL && coordinate_trafo &&
+      !equal_coordinate_system(cov->calling->isoown, cov->isoprev)) {
+    if (cov->calling->isoown != EARTH_COORDS &&
+	cov->calling->isoown != EARTH_SYMMETRIC) {
+      // printf("cancelled %s :  %s -> %s \n", NAME(cov), ISONAMES[cov->calling->isoown],  ISONAMES[cov->isoprev]);
+       return ERRORWRONGISO;
+    }
+  }
+
+  //printf("tsxdim = %d\n", tsxdim);
+
   cov->tsdim = tsdim; // muss wegen checkkappas gesetzt werden
   cov->role = role;  
   cov->typus = type; 
@@ -862,13 +1077,16 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
 
   if (cov->calling != NULL) {
-    cov->prevloc = Loc(prev);
+    cov->prevloc = PLoc(prev);
   }
 
   if (PL >= PL_STRUCTURE) {
     //PMI(cov);
-    LPRINT("#[%s -> %s] (%d; %d (%d)): \n", cov->calling == NULL ? "NULL" : 
-	   Nick(prev), Nick(cov), domprev, isoprev, C->Isotropy[0]); 
+    LPRINT("#[%s -> %s] requ: %s, %s; has: %s, %s\n", 
+	   cov->calling == NULL ? "NULL" : Nick(prev), Nick(cov),
+	   Short(0, DOMAIN_NAMES[domprev]), Short(1, ISONAMES[isoprev]),
+	   domprev == C->domain ? "~" : Short(2, DOMAIN_NAMES[C->domain]),  
+	   isoprev == C->Isotropy[0] ? "~" : Short(3,ISONAMES[C->Isotropy[0]])); 
   }
  
   isotropy_type isolist[LAST_ISO + MAXVARIANTS];
@@ -877,60 +1095,46 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   
   if (isPrevModelI(C)) {    
     isotropy_type last_iso;
-    if (isCartesian(isoprev)) {
+    if (isCartesian(cov->isoprev)) {
       for (last_iso=ISOTROPIC; last_iso<=LAST_CARTESIAN; last_iso++) {
 	isolist[++idxiso] = last_iso;
       }
-    } else if (isSpherical(isoprev)) {
-      for (last_iso=SPHERICAL_ISOTROPIC; last_iso<=SPHERICAL_COORD; last_iso++){
+    } else if (isSpherical(cov->isoprev)) {
+     for (last_iso=SPHERICAL_ISOTROPIC; last_iso<=SPHERICAL_COORDS; last_iso++){
 	isolist[++idxiso] = last_iso;
       } 
-    } else if (isEarth(isoprev)) {
+    } else if (isEarth(cov->isoprev)) {
       // wichtig, dass so lange wie moeglich altes System beibehalten
       // wird, damit 'scale' des Benutzers in der richtigen Einheit
       // verarbeitet wird
-      for (last_iso=EARTH_ISOTROPIC; last_iso<=EARTH_COORD; last_iso++){
+     for (last_iso=EARTH_ISOTROPIC; last_iso<=EARTH_COORDS; last_iso++){
 	isolist[++idxiso] = last_iso;
       } 
-      for (last_iso=SPHERICAL_ISOTROPIC; last_iso<=SPHERICAL_COORD; last_iso++){
+      for (last_iso=SPHERICAL_ISOTROPIC; last_iso<=SPHERICAL_COORDS; last_iso++){
 	isolist[++idxiso] = last_iso;
       } 
- 
-
-      //assert(isoprev >= 0);
-      /*
-      if (C->domain != KERNEL && isAnySpherical(isoprev)) {
-	if (isEarth(isoprev)) isolist[++idxiso] = EARTH_ISOTROPIC;
-	isolist[++idxiso] = SPHERICAL_ISOTROPIC;
-	if (isEarth(isoprev)) isolist[++idxiso] = EARTH_COORD;
-	isolist[++idxiso] = SPHERICAL_COORD;
-      }
-      */
     } else {
       ///PMI(cov->calling);
       BUG;
     }
   } else if (isUnreduced(C)) {
-    if (isCartesian(isoprev)) {     
-      isolist[++idxiso] = CARTESIAN_COORD;      
-    } else if (isSpherical(isoprev)) {
-      isolist[++idxiso] = SPHERICAL_COORD;      
-    } else if (isEarth(isoprev)) {
-      isolist[++idxiso] = EARTH_COORD;      
-    } else {
-      isolist[++idxiso] = isoprev != UNREDUCED ? isoprev :
-      cov->calling == NULL ? MISMATCH : cov->calling->isoown;
+   isolist[++idxiso] = CoordinateSystemOf(cov->isoprev);
+    if (isolist[idxiso] == ISO_MISMATCH) {
+      isolist[idxiso] = isoprev != UNREDUCED ? isoprev
+	: cov->calling == NULL ? ISO_MISMATCH 
+	: cov->calling->isoown;
       assert(isolist[0] != UNREDUCED);
     }
   } else { // including C->isotropy == ISO_MISMATCH
-    int i;
+     int i;
     for(i=0; i<C->variants; i++) 
       if (idxiso<0 ||  C->Isotropy[i] != isolist[idxiso])
 	isolist[++idxiso] = C->Isotropy[i];  
     assert(idxiso<0 || 
 	   (isolist[idxiso] != ISO_MISMATCH && isolist[idxiso] != PREVMODELI));
   }
-
+  
+ 
   //origlastiso = idxiso; // only for messages
   //  while (idxiso >= 0 && !atleastSpecialised(isolist[idxiso], isoprev)) 
   //   idxiso--;
@@ -939,7 +1143,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   //	  ISONAMES[isoprev], NAME(cov));
   int ii = 0;
   //
-  if (xdebug) PRINTF("dd %d %d %s\n", ii, idxiso, NAME(cov));
+  if (xdebug) PRINTF("dd %d %s %s (%s)\n", ii, ISONAMES[idxiso], NAME(cov),
+		     TYPENAMES[C->Typi[0]]);
 
   while (ii <= idxiso) { // die Typen ausschliessen, die sicher nicht gehen
     // 
@@ -949,30 +1154,40 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       else sprintf(cvalue, "%s", NAME(cov));
       PRINTF("CC i=%d max=%d; %s - %s %d%d%d %s %s ", 
 	     ii, idxiso, ISONAMES[isoprev], ISONAMES[isolist[ii]], 
-	     TypeConsistency(type, cov, 0), 
-	     equal_coordinate_system(isoprev, isolist[ii]),
-	     atleastSpecialised(isolist[ii], isoprev),
+	     TypeConsistency(type, cov, 0),
+	     equal_coordinate_system(cov->isoprev, isolist[ii]),
+	     TypeConsistency(type, cov, 0) &&
+	     equal_coordinate_system(cov->isoprev, isolist[ii])
+	     ? atleastSpecialised(isolist[ii], cov->isoprev)
+	     : 2,
 	     TYPENAMES[type],
 	     cvalue);
     }
     cov->isoown = isolist[ii];
+    //     printf("do corect below %s; %s; %s %d %d %d\n",  TYPENAMES[type], TYPENAMES[cov->typus], NAME(cov),TypeConsistency(type, cov, 0),  equal_coordinate_system(cov->isoprev, isolist[ii]), atleastSpecialised(isolist[ii], cov->isoprev));
     if ( TypeConsistency(type, cov, 0) && 
-	equal_coordinate_system(isoprev, isolist[ii]) &&
-	atleastSpecialised(isolist[ii], isoprev)
+	 equal_coordinate_system(cov->isoprev, isolist[ii]) &&
+	 atleastSpecialised(isolist[ii], cov->isoprev)
 	 ) { 
+
+      // printf("name = %s %s %s\n", NAME(cov), ISONAMES[isolist[ii]], ISONAMES[cov->isoprev]);
+
       ii++;
       if (xdebug) PRINTF("OK\n");
     } else {
 
       //PMI(cov);BUG;
-
+      //    printf("%d %d %d\n", TypeConsistency(type, cov, 0) ,
+      // equal_coordinate_system(cov->isoprev, isolist[ii]),
+	       // atleastSpecialised(isolist[ii], cov->isoprev));
+  
       int j;
       for (j=ii; j<idxiso; j++) isolist[j] = isolist[j+1];
       idxiso--;
       if (xdebug) PRINTF("jumped\n");
    }
   }
-
+ 
   if (idxiso < 0) {
     if (PL >= PL_COV_STRUCTURE) 
       PRINTF("error as '%s' cannot be obtained from '%s')\n", ISONAMES[(int) cov->isoown], ISONAMES[(int) isoprev]);
@@ -987,6 +1202,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	    ISONAMES[(int) C->Isotropy[0]], ISONAMES[(int) isoprev]);
       }
     } else { 
+      //PMI(cov->calling);
       SERR("coordinate mismatch");
 ////      SERR6("model '%s' has properties '%s' and '%s'. It cannot be called by '%s' which requires the properties '%s' and '%s",
 //	    NICK(cov),
@@ -998,11 +1214,18 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   
    
   first_dom = last_dom = cov->domown = C->domain;
+
+  //printf("last_dom %d %s %d\n", last_dom, C->name, C->domain);
+
   if (first_dom == PREVMODELD) {
     first_dom = XONLY;
     last_dom = KERNEL; // 10.10.11: GENERALISEDCOVARIANCE;
   }  
+  //printf("last_dom %d domprev=%d\n", last_dom, domprev);
   if (last_dom > domprev) last_dom = domprev;
+  //  printf("----------------------- last_dom %d %s\n", last_dom, NAME(cov));
+
+ //assert(last_dom == 1 || cov->nr != TRAFO);
 
   if (last_dom < first_dom) {
     if (cov->calling == NULL) {
@@ -1017,19 +1240,22 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	     DOMAIN_NAMES[(int) C->domain],
 	     DOMAIN_NAMES[(int) first_dom],  DOMAIN_NAMES[(int) last_dom]);
     if (cov->calling->calling == NULL) {
-      SERR2("Model is a '%s', but '%s' is required.",  DOMAIN_NAMES[(int) C->domain], DOMAIN_NAMES[(int) domprev]);
+      SERR2("Model is a '%s', but '%s' is required.",  
+	    DOMAIN_NAMES[(int) C->domain], DOMAIN_NAMES[(int) domprev]);
     } else {
       SERR1("Model cannot be called from '%s'", Nick(prev));
     }
   }
-  if (PL >= PL_STRUCTURE) {
-    LPRINT("(dom.start=%d, end=%d, iso.start=%d, end=%d)\n",
-	   first_dom, last_dom, isolist[0], isolist[idxiso]);
+  if (PL >= PL_ERRORS) {
+    LPRINT("(dom.start=%d, end=%d, iso.start=%d, end=#%d:%d)\n",
+	   first_dom, last_dom, isolist[0], idxiso,isolist[idxiso]);
   }
   
   err = ERRORNOSTATMATCH;
   int *nr = NULL;
   isotropy_type  newisoprev = MISMATCH;
+
+ 
   for (dom = first_dom; dom <= last_dom; dom++) {
     char checkmsg[LENERRMSG];
     int t, err3;
@@ -1037,18 +1263,38 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
     for (ii=0; ii<=idxiso; ii++) {
       cov->isoown = iso0 = isolist[ii];
-     //     
-      if (xdebug) { if (ii>0) MERR(err); PRINTF("-->  dom=%d i=%d (%s) of %d %s\n", dom, ii, ISONAMES[iso0], idxiso, NAME(cov));  /* // */}
+      cov->secondarygatternr = MISMATCH;
+ 
+      if (dom == KERNEL && isAnySphericalIso(iso0)) {
+	continue;
+      }
+
+      //      if (isSpherical(iso0)|| // delete!!!
+      //	  (isDollar(cov) && iso0 != SYMMETRIC && iso0 != CARTESIAN_COORD) ||
+      //	  (cov->nr==MULT && dom ==XONLY)
+      //  ) {
+      //printf(""); 
+      //	continue;
+      //      }
+  
+      //   printf(">>>> loop %s: %s (%d, %d) %s\n", NAME(cov), DOMAIN_NAMES[dom], dom, last_dom, ISONAMES[iso0]);
+
+ 
+      //     
+      if (xdebug) { if (ii>0) MERR(err); PRINTF("-->  %s i=%d  dom=%s  (%s) of %d \n", NAME(cov), ii, DOMAIN_NAMES[dom],  ISONAMES[iso0], idxiso);  /* // */}
 
       cov->full_derivs = C->F_derivs;
       cov->rese_derivs = C->RS_derivs;
       cov->loggiven = C->log != ErrLogCov; 
 
       nr = &(cov->gatternr); 
-      newisoprev = isoprev;
+      newisoprev = cov->isoprev;
       cov->tsdim = tsdim;
       cov->vdim[0] = vdim0;
       cov->vdim[1] = vdim1;
+
+      //print("A\n");
+     
       
       if ((t = TypeConsistency(type, cov, 1))) {
 	//	printf(" ---------->  %s %d %s \n", NAME(cov), t, TYPENAMES[C->Typi[t-1]]);
@@ -1057,6 +1303,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	  cov->typus = C->Typi[t - 1];
 	}
       } else {
+	//printf("failes\n");
 	if (checkerror) continue;
   	else CERR3("required type '%s' does not match the type '%s' of '%s'",
 		   TYPENAMES[type], TYPENAMES[CovList[cov->nr].Typi[t]], 
@@ -1064,17 +1311,19 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       }
    
       setdefault(cov); // braucht cov->isoown && typus!
+      
+      //printf("%s %d \n", C->name, C->primitive);
 
       if ((err3 = checkkappas(cov, C->primitive)) != NOERROR)  {
 	if (!checkerror) err = err3;
 	continue;
       }
 
-      if (PL >= PL_STRUCTURE) {
+      if (PL >= PL_ERRORS) {
 	if ((dom>first_dom || ii>0)) {
 	  LPRINT("");
 	}
-	if (first_dom==last_dom) {
+	if (first_dom==last_dom && iso0==idxiso) {
 	  LPRINT("[%s]; [%s] prev=%s\n", DOMAIN_NAMES[(int) first_dom], 
 		 ISONAMES[iso0], ISONAMES[isoprev]); //, ISONAMES[cov->isoown] );
 	} else {
@@ -1086,23 +1335,29 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	}
       } 
 
-      assert(equal_coordinate_system(isoprev, cov->isoown));
+      assert(equal_coordinate_system(cov->isoprev, cov->isoown));
       int err2,
 	newtsdim = tsxdim;
 
       assert(tsxdim  > 0);
 
-      if (cov->calling != NULL && 
-	  !equal_coordinate_system(cov->calling->isoown, cov->isoown)) {
-	if ((err2 = change_coordinate_system(cov->calling->isoown, isoprev, 
-					     tsdim, cov->xdimprev,
-					     nr, &newisoprev, &newtsdim, 
-					     &(cov->xdimgatter)))
+      if (cov->calling != NULL && coordinate_trafo &&
+	  !equal_coordinate_system(cov->calling->isoown, cov->isoprev)) {
+
+	// PMI(cov->calling, 1);
+
+	if ((err2 = change_coord_system(cov->calling->isoown, cov->isoprev, tsdim, 
+					cov->xdimprev, nr, &newisoprev,
+					&newtsdim, &(cov->xdimgatter), 
+					Loc(cov)->Time))
 	    != NOERROR) {
-	  if (err == NOERROR || (err == ERRORNOSTATMATCH && !checkerror))
+	  //	  printf("A %d \n", newtsdim); MERR(err2);
+ 	  if (err == NOERROR || (err == ERRORNOSTATMATCH && !checkerror))
 	    err = err2;
 	  continue;
 	}
+	//  printf("B %d\n", newtsdim);
+ 
 	
 	if (isEarth(cov->calling->isoown) &&
 	    (err2 = checkEarth(cov)) != NOERROR){
@@ -1112,20 +1367,31 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	}
 	//
 	cov->tsdim = newtsdim;
-	nr = &(cov->secondarygatternr);     
+	nr = &(cov->secondarygatternr); // also "grosse" trafo nun auf gatternr
+	//                             und die trafo innerhalb des coordsystems
+	//                             nun auf secondarygatternr
       }
- 
+
+      // assert(Loc(cov)->Time);
+      //   printf("C %d\n", newtsdim);
+      // PMI(cov, 0); 
+
       // to do: ordentlich machen
       cov->xdimown = dom == KERNEL ? newtsdim
 	: iso0 == ISOTROPIC ? 1 : iso0 == SPACEISOTROPIC ? 2 	
-	: isAnySphericalIso(iso0) && !isAnySphericalIso(isoprev) 
+	: isAnySphericalIso(iso0) && !isAnySphericalIso(cov->isoprev) 
 	? cov->xdimprev - 1	
 	: newtsdim;
      
       if (xdebug) PRINTF("done %d %d - %d ii=%d\n", newtsdim, cov->xdimown, cov->calling != NULL && !equal_coordinate_system(cov->calling->isoown, cov->isoown), ii);
+
+      //          if (cov->xdimown <= 0){ PMI(cov->calling->calling ,1);}
      
       assert(newtsdim  > 0);
+      //      if (cov->xdimown <=0) PMI(cov->calling->calling);
       assert(cov->xdimown  > 0);
+
+    
 
       if (cov->xdimown > cov->xdimprev && newtsdim <= tsxdim) { // appear if spaceiso called by iso
 	if (!checkerror) {
@@ -1137,12 +1403,15 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       }
   
       //  STOPAFTER(C->cov == Fctn && err == NOERROR, )
-	
-     err = C->check(cov); // CHECK !
- 
+
+      //    printf("%s\n", ERROR_LOC);
+
+      err = C->check(cov); // CHECK !
+      sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+      
       if ((checkerror = err != NOERROR)) {
 
-	 errorMSG(err, checkmsg, LENERRMSG);
+	 errorMSG(err, checkmsg);
 	 //printf("----------- %s %s\n", NAME(cov), checkmsg);
 	 continue;
       } else { 
@@ -1150,8 +1419,9 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	  cov->maxdim = C->maxdim;
 	}
 	if (cov->vdim[0] <= 0 || cov->vdim[1] <= 0) {
+	  //pmi(cov, 0);
 	  err = ERRORBADVDIM;
-	   continue;
+	  continue;
 	} 
 	
 	if ((vdim0 > 0 && cov->vdim[0] != vdim0) || 
@@ -1172,10 +1442,10 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	 continue;
        }
       
-    if ( (err = check_within_range(cov, NAOK_RANGE)) != NOERROR && 
-	 !skipchecks) { 
-      continue;
-    }
+      if (!skipchecks && 
+	  (err = check_within_range(cov, NAOK_RANGE)) != NOERROR) { 
+	continue;
+      }
 
     if (isoprev == SPACEISOTROPIC) {
       cov_model *cv = cov;
@@ -1194,7 +1464,18 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     //
     if (xdebug)
       PRINTF("gattered %s %d %d %d %d\n", NAME(cov), domprev, cov->domown, newisoprev, cov->isoown);
+
+    assert(cov != NULL);
+    //   printf("%d %d %d\n", cov != NULL,  cov != NULL && cov->calling != NULL, 
+    //	   cov != NULL && cov->calling != NULL && cov->calling->calling != NULL);
+
+    //   if (cov!=NULL && cov->calling != NULL && cov->calling->calling != NULL && cov->calling->calling->calling != NULL) {
+    //     PMI(cov->calling->calling->calling);  }
+    //  PMI(cov, 0);
     
+    //    PMI(cov->calling);
+    //    printf("%s :: %s, %s;;  %s, %s %d\n", NAME(cov), DOMAIN_NAMES[domprev], 	   DOMAIN_NAMES[cov->domown], ISONAMES[newisoprev], ISONAMES[cov->isoown],	   nr);
+
     err = SetGatter(domprev, cov->domown, 
 		    newisoprev, cov->isoown, 
 		    //  cov->calling == NULL,
@@ -1208,7 +1489,6 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	     err, cov->full_derivs, cov->rese_derivs);
     }
     if (err == NOERROR) break;       
-      ASSERT_GATTERONLY(cov);
     } // for ii, iso
     if (err == NOERROR) break;
   } // dom
@@ -1229,12 +1509,16 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	  : Nick(prev));
   COND_NEW_STORAGE(gatter, z); 
   if (isAnySpherical(cov->isoown)) COND_NEW_STORAGE(earth, X); 
-  cov->checked = true;
+ 
+  //  xxxxx ;
+  //  PMI(cov);
 
-  if (isDollar(cov) && cov->finiterange && isAnySpherical(cov->isoown)) {
+
+   cov->checked = true;
+   if (isDollar(cov) && cov->finiterange && 
+    isAnySpherical(cov->sub[0]->isoprev)) {
     // erst abfragbar, nachdem checked=true gesetzt wurde !
-    cov->checked = true;
-    double range;
+     double range;
     INVERSE(ZERO, cov, &range);
 
 
@@ -1243,15 +1527,29 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     cov->checked = (isSpherical(cov->isoown) && range <= M_PI) ||
       (isEarth(cov->isoown) && range <= 180);
     if (!cov->checked) {
-      BUG;
       SERR2("model '%s' does not allow for required coordinate system '%s'",
 	    NICK(cov->sub[0]), COORD_SYS_NAMES[cov->isoown]);
     }
   }
 
 
-  //assert(C->cov != simulate);
-  return err;
+  //  if (C->Isotropy[0] == UNREDUCED && cov->calling != NULL &&
+  //      (cov->isoown != ccov->calling->isoown
+  
+  if (C->Isotropy[0] == UNREDUCED && 
+      (cov->isoown != cov->isoprev 
+       // || (cov->calling != NULL && cov->calling->isoown != cov->isoprev)
+       )) {
+    // 
+    //PMI(cov->calling);
+    BUG;
+  }
+
+  
+  ASSERT_GATTER(cov); // fehler hier
+ //assert(C->cov != simulate);
+  assert(err == NOERROR);
+  return NOERROR;
    
 }
 

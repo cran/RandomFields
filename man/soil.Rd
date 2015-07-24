@@ -43,6 +43,7 @@
 
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 
 %  library(RandomFields, lib="~/TMP");  source("RandomFields/private/source.R");
 
@@ -53,62 +54,56 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## ##
 ################################################################
 
-All <- if (interactive()) TRUE else 1:7 ## full data set takes about 20 sec
-##                                      to be analysed
 
 data(soil)
 str(soil)
 soil <- RFspatialPointsDataFrame(
- coords = soil[All, c("x.coord", "y.coord")],
- data = soil[All, c("moisture", "NO3.N", "Total.N",
- "NH4.N", "DOC", "N20N")],
+ coords = soil[ , c("x.coord", "y.coord")],
+ data = soil[ , c("moisture", "NO3.N", "Total.N", "NH4.N", "DOC", "N20N")],
  RFparams=list(vdim=6, n=1)
- )
+)
 data <- soil["moisture"]
-
-\dontshow{
-if (!interactive()) {
+\dontshow{if (RFoptions()$internal$examples_red) {
+  warning("data have been reduced !")
+  All <- 1:7 
   data(soil)
-  idx <- 1:10
-  data <- RFspatialPointsDataFrame(
-    coords = soil[idx, c("x.coord", "y.coord")],
-    data = data.frame(moisture=soil[["moisture"]][idx]),
-   RFparams=list(vdim=1, n=1)
-   )["moisture"]
+  soil <- RFspatialPointsDataFrame(
+     coords = soil[All, c("x.coord", "y.coord")],
+     data = soil[All, c("moisture", "NO3.N", "Total.N",
+      "NH4.N", "DOC", "N20N")],
+      RFparams=list(vdim=6, n=1)
+  )
+  data <- soil["moisture"]
 }}
 
 ## plot the data first
 colour <- rainbow(100)
-plot(soil["moisture"], col=colour)
+plot(data, col=colour)
 
 
 ## fit by eye
-RFgui.model <-  RFgui(soil["moisture"]) 
-\dontshow{if (!interactive()) RFgui.model <- RMexp()}
+gui.model <- RFgui(data) 
+\dontshow{if (!interactive()) RFgui.model <- RMexp()} %ok
 
 ## fit by ML
-model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
-fit <- RFfit(model, data=data)
-plot(fit, fit.method=c("ml", "plain", "sqrt.nr", "sd.inv"),
-     model = RFgui.model, col=1:8)
+model <- ~1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
+(fit <- RFfit(model, data=data))
+plot(fit, method=c("ml", "plain", "sqrt.nr", "sd.inv"),
+     model = gui.model, col=1:8)
 
 ## Kriging ...
-x <- seq(min(data@coords[, 1]), max(data@coords[, 1]),
-         l=if (interactive()) 121 else 2)
-k <- RFinterpolate(fit["ml"], x=x, y=x, data=data)
+x <- seq(min(data@coords[, 1]), max(data@coords[, 1]), l=121)
+k <- RFinterpolate(fit, x=x, y=x, data=data)
 plot(x=k, col=colour)
 plot(x=k, y=data, col=colour)
-
 
 ## what is the probability that at no point of the
 ## grid given by x and y the moisture is greater than 24 percent?
 % works well since fit$ml:nugget==0!!!!
-cs <- RFsimulate(model=fit["ml"], x=x, y=x, data=data,
-      n=if (interactive()) 50 else 2)
+cs <- RFsimulate(model=fit, x=x, y=x, data=data, n=50)
 plot(cs, col=colour)
 plot(cs, y=data, col=colour)
-Print(mean(apply(as.matrix(cs@data) <= 24, 2, all))) ## about 40 percent
-##...
+Print(mean(apply(as.array(cs) <= 24, 3, all))) ## about 40 percent ...
 
 \dontshow{FinalizeExample()}
 }

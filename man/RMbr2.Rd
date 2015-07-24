@@ -63,12 +63,12 @@ RMbr2eg(phi, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample(reduced=20)}
 model <- RMexp(var=1.62 / 2) 
 binary.model <- RPbernoulli(RMbr2bg(model))
-step <- if (interactive()) 0.05 else 2
-y <- seq(0, 10, step)
-z <- RFsimulate(RPschlather(binary.model), y, y)
+x <- seq(0, 10, 0.05)
+
+z <- RFsimulate(RPschlather(binary.model), x, x)
 plot(z)
 
 \dontshow{FinalizeExample()}

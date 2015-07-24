@@ -75,10 +75,10 @@ RRrectangular(phi, safety, minsteplen, maxsteps, parts, maxit,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
+\dontshow{StartExample()}
 # simulation of Gaussian variables (in a not very straight forward way):
 distr <- RRrectangular(RMgauss(), approx=FALSE)
-z <- RFrdistr(distr, n=if (interactive()) 1000000 else 10)
+z <- RFrdistr(distr, n=1000000)
 hist(z, 200, freq=!TRUE)
 x <- seq(-10, 10, 0.1)
 lines(x, dnorm(x, sd=sqrt(0.5)))
@@ -87,8 +87,9 @@ lines(x, dnorm(x, sd=sqrt(0.5)))
 #creation of random variables whose density is proportional
 # to the spherical model:
 distr <- RRrectangular(RMspheric(), approx=FALSE)
-z <- RFrdistr(distr, n=if (interactive()) 1000000 else 10)
+z <- RFrdistr(distr, n=1000000)
 hist(z, 200, freq=!TRUE)
+\dontshow{StartExample(reduced=FALSE)}
 x <- seq(-10, 10, 0.01)
 lines(x, 4/3 * RFcov(RMspheric(), x))
 \dontshow{FinalizeExample()}

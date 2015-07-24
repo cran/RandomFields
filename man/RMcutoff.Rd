@@ -77,9 +77,16 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
 
 
 \examples{
- ## For examples see the help page of 'RFsimulateAdvanced' ##
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
+
 model <- RMexp()
 plot(model, model.cutoff=RMcutoff(model, diameter=1), xlim=c(0, 4))
 
+model <- RMstable(alpha = 0.8)
+plot(model, model.cutoff=RMcutoff(model, diameter=2), xlim=c(0, 5))
+x <- y <- seq(0, 4, 0.05)
+plot(RFsimulate(RMcutoff(model), x=x, y = y))
 \dontshow{FinalizeExample()}
 }

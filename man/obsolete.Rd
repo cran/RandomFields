@@ -64,13 +64,13 @@ hurst(x, y = NULL, z = NULL, data, gridtriple = FALSE, sort=TRUE,
  log(dim[1]), len=min(100, dim[1]))))),
  fft.m = c(1, min(1000, (fft.len - 1) / 10)),
  fft.max.length = Inf, 
- method=c("dfa", "fft", "var"), mode=c("plot", "interactive"),
+ method=c("dfa", "fft", "var"), mode=c("plot", "interactive"),%ok
  pch=16, cex=0.2, cex.main=0.85,
  PrintLevel=RFoptions()$general$printlevel,height=3.5, ...)
 fractal.dim(x, y = NULL, z = NULL, data, grid=TRUE, gridtriple = FALSE,
  bin, vario.n=5, sort=TRUE, fft.m = c(65, 86), fft.max.length=Inf,
  fft.max.regr=150000, fft.shift = 50, method=c("variogram", "fft"),
- mode=c("plot", "interactive"), pch=16, cex=0.2, cex.main=0.85,
+ mode=c("plot", "interactive"), pch=16, cex=0.2, cex.main=0.85,%ok
  PrintLevel = RFoptions()$general$printlevel, height=3.5, ...)
 fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
  upper=NULL, sill=NA, grid=!missing(gridtriple), gridtriple=FALSE, ...)
@@ -124,7 +124,8 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 ## no examples given, as command is obsolete
 \dontshow{\dontrun{ # ok
-x <- seq(0, 5, if (interactive()) 0.05 else 2)
+\dontshow{StartExample()}
+x <- seq(0, 5, 0.05) 
 model <- "exp"
 param <- c(0, 1, 0, 1)
 

@@ -4,7 +4,7 @@
 
  a second library for calculating the empirical variogram
 
- Copyright (C) 2002 - 2014 Martin Schlather, 
+ Copyright (C) 2002 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -123,7 +123,7 @@ void empvarioXT(double *X, double *T,
 
   //////////////////////////////////// GRID ////////////////////////////////////
   if (*grid) {
-    error("use option 'fft' for space-time data on a grid");
+    ERR("use option 'fft' for space-time data on a grid");
 
     int segmentbase[6];
 

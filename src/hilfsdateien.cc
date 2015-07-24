@@ -38,9 +38,9 @@ main()
 
 
 SEXP getChar() {
-  error("does not work");
+  ERR("does not work");
 #ifdef WIN32
-  error("input limitations on windows");
+  ERR("input limitations on windows");
 #endif
 #define maxGetChar 255
   //typedef char intchar[sizeof(int) / sizeof(char)];

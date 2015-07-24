@@ -69,9 +69,9 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-%    source("RandomFields/tests/source.R")
+\dontshow{StartExample()}
 model <- RMvector(RMgauss(), scale=0.3)
-x <- seq(0, 10, if (interactive()) 0.4 else 3) 
+x <- seq(0, 10, 0.4)
 plot(RFsimulate(model, x=x, y=x, z=0), select.variables=list(1:2))
 \dontshow{FinalizeExample()}
 

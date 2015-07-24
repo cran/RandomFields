@@ -4,13 +4,29 @@ const char
 *dummyconstantnotused = "just to get the formatting in emacs right",
   *DOMAIN_NAMES[LAST_DOMAIN + 1] = { //RC
   "single variable", "kernel", "framework dependent", "mismatch"},
+
+  *OPTIMISER_NAMES[nOptimiser] = { // RC
+    "optim", "optimx", "soma", "nloptr", "GenSA", "minqa", "pso", "DEoptim"},
   
+  *NLOPTR_NAMES[nNLOPTR] = { // RC
+    "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L", 
+    "NLOPT_GN_DIRECT_L_RAND", "NLOPT_GN_DIRECT_NOSCAL", 
+    "NLOPT_GN_DIRECT_L_NOSCAL", "NLOPT_GN_DIRECT_L_RAND_NOSCAL", 
+    "NLOPT_GN_ORIG_DIRECT", "NLOPT_GN_ORIG_DIRECT_L",
+    "NLOPT_LN_PRAXIS", "NLOPT_GN_CRS2_LM",
+    "NLOPT_LN_COBYLA", "NLOPT_LN_NELDERMEAD", 
+    "NLOPT_LN_SBPLX", "NLOPT_LN_BOBYQA", 
+    "NLOPT_GN_ISRES"},
+
+  *LIKELIHOOD_NAMES[nLikelihood] = { // RC 
+    "auto", "full", "composite", "tesselation"},
+
   *ISONAMES[LAST_ISO + 1] =  { // RC
     "isotropic", "space-isotropic", "zero-space-isotropic", 
     "vector-isotropic", "symmetric", "cartesian system",
     "gnomonic projection", "orthographic projection",
-    "spherical isotropic", "spherical system", 
-    "earth isotropic", "earth system", 
+    "spherical isotropic", "spherical symmetric", "spherical system", 
+    "earth isotropic", "earth symmetric",  "earth system", 
     "cylinder system",
     "non-dimension-reducing", "parameter dependent", "<mismatch>"},
   
@@ -19,7 +35,7 @@ const char
     "negative definite", "process", 
     "method for Gauss process", "method for Brown-Resnick process",
     "point-shape function", "distribution family", "shape function",
-    "trend", "interface",  "undefined", 
+    "trend", "interface",  "distribution or shape", "undefined", 
     "<math definition>", "other type"},
   
   *MONOTONE_NAMES[BERNSTEIN + 1 - (int) MISMATCH] = { // RC
@@ -56,12 +72,19 @@ const char
     "diag", "aniso", "integer", "unspecfd", "trend",  
     "nugget", "mixed var", "regress", "any"},
 
+  *EQNAMES[6] = {"==", "!=", "<=", "<", ">=", ">"},
+  
+  
+  *NAMES_OF_NAMES[12] = {"EQNAMES", "ISONAMES",  // never change ordering   
+		       "DOMAIN_NAMES", // from here on changings are ok
+		       "TYPENAMES", "MONOTONE_NAMES",
+		       "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES",
+		       "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS",
+		       "TYPEOF_PARAM_NAMES"},
 
+  *PROJECTION_NAMES[PROJECTIONS] = {
+    "space", "time"};
 
-  *NAMES_OF_NAMES[11] = {"DOMAIN_NAMES", "ISONAMES",  // never change ordering
-		     "TYPENAMES", "MONOTONE_NAMES",
-		     "MODENAMES", "OUTPUTMODENAMES", "REPORTCOORDNAMES",
-		     "UNITS_NAMES", "COORD_SYS_NAMES", "CARTESIAN_SYSTEMS",
-		     "TYPEOF_PARAM_NAMES"};
+  
 
   

@@ -65,9 +65,9 @@ RRmcmc(phi, mcmc_n, sigma, normed, maxdensity, rand.loc, gibbs)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 ## here a model with random scale parameter
-
+\dontshow{StartExample()}
 ## not exponential, but the Laplace dstribution as symmetry is assumed
-z <- RFrdistr(RRmcmc(RMexp(), sigma=1), if (interactive()) 10000 else 2)
+z <- RFrdistr(RRmcmc(RMexp(), sigma=1), n=10000)
 hist(z, 100, freq=FALSE)
 curve(0.5 * exp(-abs(x)), add=TRUE, col="blue") ## Laplace distribution
 

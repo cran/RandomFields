@@ -16,7 +16,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  fft.max.regr=150000,
  fft.shift = 50, # in %; 50:WOSA; 100: no overlapping
  method=c("variogram", "fft"), % "box", "range", 
- mode=c("plot", "interactive"),
+ mode = if (interactive ()) c("plot", "interactive") else "nographics", %ok
  pch=16, cex=0.2, cex.main=0.85,
  printlevel = RFoptions()$general$printlevel,
  height=3.5,
@@ -166,8 +166,9 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-x <- seq(0, 10, if (interactive()) 0.001 else 1)
+\dontshow{StartExample(reduced=50)}
+x <- seq(0, 10, 0.001)
 z <- RFsimulate(RMexp(), x)
-if (interactive()) str(RFfractaldim(data=z))
+RFfractaldim(data=z)
 \dontshow{FinalizeExample()}
 }

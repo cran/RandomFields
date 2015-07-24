@@ -72,8 +72,9 @@ RMbcw(alpha, beta, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMbcw(alpha=1, beta=0.5)
-x <- seq(0, 10, if (interactive()) 0.02 else 1) 
+x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}

@@ -30,13 +30,9 @@ setReplaceMethod(f="[", signature = 'RMmodelgenerator',
                  def = accessReplaceSlotsByName)
 
 
-
-
-
-
 ## summing up RMmodels
 setMethod('c', signature=c('RMmodel'),
-          function(x, ..., recursive = FALSE)  R.bind(x, ...)
+          function(x, ..., recursive = FALSE)  R.c(x, ...)
           )
 
 resolve <- function(e1, e2, sign) {
@@ -65,7 +61,12 @@ resolveRight<- function(e1, e2, sign) {
     len.e1 <- 1
     d[[1]] <- e1
   }
-  d[[len.e1 + 1]] <- do.call("R.c", list( e2))
+  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(ZF_SYMBOLS_CONST, list(e2))
+  else {
+    e <- list(e2)
+    e[[COVARIATE_ADDNA_NAME]] <- TRUE
+    d[[len.e1 + 1]] <- do.call(ZF_COVARIATE, e)
+  }
   model <- do.call(sign, d)
   return(model)
 }
@@ -73,7 +74,13 @@ resolveRight<- function(e1, e2, sign) {
 resolveLeft<- function(e1, e2, sign) {
   d <- list()
   len.e1 <- 1
-  d[[1]] <- do.call("R.c", list(e1))
+  if (length(e1)==1)  d[[1]] <- do.call(ZF_SYMBOLS_CONST, list(e1))
+  else {
+    e <- list(e1)
+    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+    d[[1]] <- do.call(ZF_COVARIATE, e)
+  }
+  
   d[[len.e1 + 1]] <-  e2  
   model <- do.call(sign, d)
   return(model)
@@ -117,7 +124,12 @@ Xresolve <- function(e1, e2, model) {
 XresolveLeft <- function(e1, e2, model) {
   d <- list()
   len.e1 <- 1
-  d[[1]] <- do.call("R.c", list(e1))
+  if (length(e1)==1) d[[1]] <- do.call(ZF_SYMBOLS_CONST, list(e1))
+  else {
+    e <- list(e1)
+    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+    d[[1]] <-  do.call(ZF_COVARIATE, e)
+  }
   d[[len.e1 + 1]] <- e2            
   model <- do.call(model, d)
   return(model)
@@ -126,7 +138,12 @@ XresolveRight <- function(e1, e2, model) {
   d <- list()
   len.e1 <- 1
   d[[1]] <- e1
-  d[[len.e1 + 1]] <- do.call("R.c", list(e2))           
+  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(ZF_SYMBOLS_CONST, list(e2))
+  else {
+    e <- list(e2)
+    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+    d[[len.e1 + 1]] <- do.call(ZF_COVARIATE, e)
+  }
   model <- do.call(model, d)
   return(model)
 }
@@ -276,7 +293,7 @@ str.RMmodel <-
   }
 }
 
-summary.RMmodel <- function(object, max.level=3, ...)
+summary.RMmodel <- function(object, max.level=5, ...)
   summary(PrepareModel2(object, ...), max.level=max.level)
 
 setMethod(f="show", signature='RMmodel',
@@ -287,16 +304,16 @@ summary.RM_model <- function(object, ...) {
   object
 }
 
-print.summary.RMmodel <- function(x, max.level=3, ...) {
+print.summary.RMmodel <- function(x, max.level=5, ...) {
   str(x, no.list=TRUE, max.level = max.level, give.attr=FALSE) #
   invisible(x)
 }
 
-print.RM_model <- function(x, max.level=3,...) {
+print.RM_model <- function(x, max.level=5,...) {
   print.summary.RMmodel(summary.RM_model(x, max.level=max.level,...),
                         max.level=max.level)#
 }
-print.RMmodel <- function(x, max.level=3,...) {
+print.RMmodel <- function(x, max.level=5,...) {
   print.summary.RMmodel(summary.RMmodel(x, max.level=max.level, ...),
                         max.level=max.level)#
 }
@@ -512,7 +529,7 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
     local.dots$col <- NULL
     local.dots$lty <- NULL
     for (i in 1:ncol(cov)) {
-      if (!addgiven) local.dots$add <- i > 1      
+      if (!addgiven) local.dots$add <- i > 1
       do.call(graphics::contour,
               args=c(list(x=li$distance, y=li$distanceY, col=dots$col[i],
                 lty = dots$lty[i],
@@ -524,6 +541,10 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
 
 plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
                         maxchar=15, ...) {
+  RFopt <- RFoptions()
+  if (ex.red <- RFopt$internal$examples_reduced)
+    n.points <- as.integer(min(n.points, ex.red - 2))
+  
   stopifnot(length(dim)==1)
   if (!(dim %in% 1:10))
     stop("only 'dim==1', 'dim==2' and 'dim==3' are allowed")
@@ -561,7 +582,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   plotfctcall <- if ("plotfctcall" %in% dotnames)
     dots$plotfctcall else "matplot"
   dots$plotfctcall <- NULL
-
+  
 
   if (!("type" %in% dotnames)) dots$type <- "l"
   li <- preparePlotRMmodel(x=x, xlim=dots$xlim, ylim=dots$ylim,
@@ -619,7 +640,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   }
 
   dimcov <-  dim(cov[[1]])
-  graphics <- RFoptions()$graphics
+  graphics <- RFopt$graphics  
   if (plotfctcall != "plot.xy") { ### points and lines !!
      if (is.null(dimcov)) { ## i.e. vdim == 1
       ArrangeDevice(graphics, c(1,1))
@@ -709,8 +730,6 @@ lines.RMmodel <- function(x, y, n.points = 200, fct.type = NULL, ...) {
 
 
 list2RMmodel <- function(x, skip.prefix.check=FALSE) { 
-  #Print(x)
-
   if (!is.list(x))
     return(x)
 
@@ -734,14 +753,12 @@ list2RMmodel <- function(x, skip.prefix.check=FALSE) {
   if (name==ZF_SYMBOLS_MULT) name <- ZF_MULT[1] else
   if (name %in% ZF_MIXED) name <- ZF_INTERNALMIXED
 
-
   ## add prefix 'RM' if necessary
   if (!skip.prefix.check){
-    if (!(name %in% c(RFgetModelNames(group.by=NULL),
-                      ZF_INTERNALMIXED, ZF_TREND))) {
+    if (!(name %in% list2RMmodel_Names)) {
       name2 <- paste(ZF_MODEL_PREFIX, name, sep="")
-      if (!(name2 %in% c(RFgetModelNames(group.by=NULL),
-                         ZF_INTERNALMIXED, ZF_TREND)))
+      # Print( name2,      list2RMmodel_Names, name2 %in% list2RMmodel_Names)
+      if (!(name2 %in% list2RMmodel_Names))
         stop(paste("'", name, "' is not the name of a valid cov model", sep=""))
       else
         name <- name2

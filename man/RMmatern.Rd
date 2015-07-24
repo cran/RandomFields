@@ -3,6 +3,7 @@
 \alias{RMkbessel}
 \alias{RMmatern}
 \alias{Sobolev}
+\alias{whittle-matern}
 \title{Whittle-Matern Covariance Model}
 \description{
  \command{\link{RMmatern}} is a stationary isotropic covariance model
@@ -35,8 +36,10 @@ RMmatern(nu, notinvnu, var, scale, Aniso, proj)
  \item{nu}{a numerical value called \dQuote{smoothness parameter};
  should be greater than 0.} 
  \item{notinvnu}{logical, if not given the model is defined as above.
- (default). This argument should not be set
- by users. See the Notes.}
+   (default).
+   %This argument should not be set by users.
+   See the Notes.
+ }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
@@ -48,7 +51,7 @@ RMmatern(nu, notinvnu, var, scale, Aniso, proj)
  The Matern model should be preferred as this model seperates the
  effects of scaling parameter and the shape parameter. 
 
- This is the normal scale mixture model of choice if the smoothness of a
+ This Whittle-Matern model is the model of choice if the smoothness of a
 random field is to be parametrized: the sample paths of a Gaussian
 random field with this covariance structure are \eqn{m}{m} times
 differentiable if and only if \eqn{\nu > m}{\nu > m} (see Gelfand et
@@ -79,6 +82,8 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
  make sense for the Whittle model. Due to this fact, if the argument
  \code{invnu} is given, the Whittle model changes its definition and
  becomes identical to the Matern model.
+
+ The Whittle-Matern model is a normal scale mixture.
 }
 
 \value{
@@ -154,7 +159,8 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-x <- seq(0, 1, len=if (interactive()) 100 else 3)
+\dontshow{StartExample()}
+x <- seq(0, 1, len=100)
 model <- RMwhittle(nu=1, Aniso=matrix(nc=2, c(1.5, 3, -3, 4)))
 plot(model, dim=2, xlim=c(-1,1))
 z <- RFsimulate(model=model, x, x)

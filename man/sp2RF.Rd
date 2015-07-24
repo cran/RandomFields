@@ -55,6 +55,8 @@ emp.var2 <- RFempiricalvariogram(data=sp2RF(z2, param=list(n=n, vdim=1)))
 
 ## results are all equal, except for the calls:
 emp.var@call <- emp.var1@call <- emp.var2@call <- NULL
+dimnames(emp.var@emp.vario) <- dimnames(emp.var1@emp.vario) <-
+   dimnames(emp.var2@emp.vario) <- NULL
 stopifnot(all.equal(emp.var, emp.var1))
 stopifnot(all.equal(emp.var, emp.var2))
 \dontshow{FinalizeExample()}

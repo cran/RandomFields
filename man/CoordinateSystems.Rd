@@ -1,7 +1,8 @@
 \name{Coordinate systems}
-\alias{zenit}
+\alias{coordinates}
 \alias{coordinate system}
 \alias{coordinate systems}
+\alias{zenit}
 \title{Coordinate systems}
 \description{
   Implemened Coordinate Systems
@@ -53,6 +54,17 @@
       Default: \code{"auto"}
     }
   
+  
+  \item{\code{coordnames}}{integer vector of length 2 or an increasing
+    sequence of integers or character.
+    This parameter gives the coordinate columns in a data frame, either
+    by starting column and ending column or the sequence or by names.
+    In the first case, single code{NA}s might be included, meaning
+    \sQuote{from the beginning} or \sQuote{until the end}. If both
+    values are \code{NA}, then, depending on the context, either
+    an error message is returned or it is assumed that the first
+    columns give the coordinates.    
+  }
     
     \item{\code{coordunits}}{any string.     
       If \code{coordinate_system = "earth"} and longitude and latitude
@@ -65,12 +77,6 @@
       Default: \code{""}
     }
     
-    \item{\code{earth_proj}}{string. Type of projection on a plane for
-      earth coordinates.
-      Currently only \code{"gnonomic"} allowed.
-      
-      Default: \code{"gnomonic"}
-    }
   
     \item{\code{new_coord_system}}{
       One of the values \code{"keep"}, \code{"cartesian"}, \code{"earth"},
@@ -104,6 +110,17 @@
   \item{\code{new_coordunits}}{internal and should not be set by the user.
     
     Default: \code{""}
+  }
+  
+  \item{\code{polar_coord}}{logical.
+    If \code{FALSE} the spherical coordinates agree with
+    the earth coordinate parametrisation, except that
+    we radians are used for spherical coordinates instead
+    of degrees for the earth coordinates.
+
+    If \code{TRUE} the spherical coordinates signify polar coordinates.
+
+    Default : \code{FALSE}
   }
 
   \item{\code{varnames}}{integer vector of length 2 or an increasing
@@ -152,8 +169,8 @@
     then either the value of either of the components may not be \code{NA},
     whose value will be denoted by \eqn{p}.
 
-    If \eqn{p=1} then the mean is calculated;
-    if \eqn{p=Inf} then the range is calculated.
+    If \eqn{p=1} then the mean of the locations is calculated;
+    if \eqn{p=Inf} then the mean of the range is calculated.
 
     Default: \code{c(1, NA)}
   }
@@ -235,7 +252,6 @@ RFcov(RMS(model, s= 6350 / 180 * pi), x, y, grid=FALSE,
 RFcov(RMS(model, s= 3750 / 180 * pi), x, y, grid=FALSE,
       coord_sys="earth", new_coord_sys="orthographic",
       new_coordunits="miles")
-
 
 
 

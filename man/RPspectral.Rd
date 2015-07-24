@@ -26,13 +26,17 @@
  }
 
 \usage{
-RPspectral(phi, sp_lines, sp_grid, prop_factor, sigma) 
+RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma) 
 }
 
 \arguments{
  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
  specifies the covariance model to be simulated.}
 % \item{loggauss}{see \command{\link{RPgauss}}.}
+\item{boxcox}{the one or two parameters of the box cox transformation.
+  If not given, the globally defined parameters are used.
+  see \command{\link{RFboxcox}} for Details.
+ }
  \item{sp_lines}{
  Number of lines used (in total for all additive components of the
  covariance function).
@@ -105,8 +109,9 @@ RPspectral(phi, sp_lines, sp_grid, prop_factor, sigma)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RPspectral(RMmatern(nu=1))
-y <- x <- seq(0,10,len=if (interactive()) 400 else 3)
+y <- x <- seq(0,10, len=400)
 z <- RFsimulate(model, x, y, n=2)
 plot(z)
 \dontshow{FinalizeExample()}

@@ -74,9 +74,10 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 x.max <- 10
 model <- RMintrinsic(RMfbm(alpha=1), diameter=x.max)
-x <- seq(0, x.max, if (interactive()) 0.02 else 1) 
+x <- seq(0, x.max, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
 \dontshow{FinalizeExample()}

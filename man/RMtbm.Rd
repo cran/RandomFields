@@ -96,7 +96,8 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-x <- seq(0, 10, if (interactive()) 0.02 else 2)
+\dontshow{StartExample()}
+x <- seq(0, 10, 0.02)
 model <- RMspheric()
 plot(model, model.on.the.line=RMtbm(RMspheric()), xlim=c(-1.5, 1.5))
 

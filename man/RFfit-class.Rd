@@ -14,6 +14,7 @@
 \alias{[,RFfit,ANY,ANY,ANY-method}
 \alias{coerce,RFfit,RFempVariog-method}
 \alias{print.RFfit}
+\alias{plot,RFfit,missing-method}
 
 \alias{AICc.RFfit}
 \alias{logLik.RFfit}
@@ -27,6 +28,9 @@
 \alias{logLik.RF_fit}
 \alias{.RFfit}
 \alias{.RF_fit}
+\alias{residuals,RFfit-method}
+\alias{summary,RFfit-method}
+\alias{RFhessian}
 %\alias{plot,RFfit-method}
 
 \title{Class \code{RFfit}}
@@ -41,15 +45,69 @@
 %print.RF_fit(x, ...,  method="ml", full=FALSE)
 %logLik.RF_fit(object, REML = FALSE, ..., method="ml")
 
+\usage{
+\S4method{residuals}{RFfit}(object, ..., method="ml", full=FALSE)
+\S4method{summary}{RFfit}(object, ..., method="ml")
+\S4method{plot}{RFfit,missing}(x, model=NULL, method="ml",
+ nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
+ plot.nbin=TRUE, plot.sd=FALSE, variogram = TRUE, boundaries = TRUE,...)
+RFhessian(model)
+}
 
 \arguments{  
-  \item{object,  ...}{
-    see the respective generic function;
-    The argument
+   \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
+    \command{\link[=RFempVariog-class]{RFempVario}} or
+    \command{\link[=RFfit-class]{RFfit}} or
+    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
+    be any sophisticated model but it must be either stationary or a
+    variogram model} 
+  \item{model}{
+    \code{class(x)=="RF_fit"} or \code{class(x)=="RFfit"}, obtained
+    from \command{\link{RFfit}}
   }
-  \item{method}{ string.
-    selects that set of parameters which has been obtained through a specific
-    fitting method
+  \item{method}{character; only for \code{class(x)=="RFfit"}; a
+    vector of slot names for which the fitted covariance or variogram
+    model is to be plotted; should be a subset of 
+    \code{slotNames(x)} for which the corresponding slots are of class
+    \code{"RMmodelFit"}; by default, the maximum likelihood fit
+   (\code{"ml"}) will be
+    plotted} 
+  \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of bins of angle phi that are to be
+    plotted}
+  \item{nmax.theta}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of bins of angle theta that are to be
+    plotted} 
+  \item{nmax.T}{integer; only for \code{class(x)=="RFempVario"};
+    the maximal number of different time bins that are to be
+    plotted} 
+  \item{plot.nbin}{logical; only for \code{class(x)=="RFempVario"};
+    indicates whether the number of pairs per bin are to be plotted}
+  \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
+    indicates whether the calculated standard deviation (\code{x@sd}) is
+    to be plotted (in form of arrows of length +-1*sd)}
+  \item{variogram}{logical; This argument should currently not be set
+    by the user. If \code{TRUE} then the empirical variogram
+    is plotted, else an estimate for the covariance function} 
+  \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
+    the anisotropic case where \code{model} is given.
+    As the empirical variogram is calculated on a sector of angles,
+    no exact variogram curve corresponds to the mean values in this
+    sector.
+    If \code{boundaries=TRUE} the values of the variogram on the sector
+    boundaries are plotted. If \code{FALSE} some kind of mean
+    model values are plotted. Neither the boundaries may contain
+    the values of emprical variogram nor does the mean values
+    need to be close the emprical variogram.  
+  } 
+  \item{...}{
+    in case of \command{plot}: arguments to be passed to methods; mainly graphical
+    arguments, or further models in case of class \code{'RMmodel'},
+    see Details.
+
+    In case of \command{summary}:  see the  generic function
+  }
+ \item{object}{see the  generic function;
   }
 %  \item{k}{integer, see \command{\link[stats]{AIC}}. Unused here.  }
   \item{full}{logical.
@@ -71,7 +129,7 @@
  \item{\code{boxcox}:}{logical; whether the
    parameter of a Box Cox tranformation has been estimated
  }
- \item{\code{coord.units}:}{string giving the units of the coordinates,
+ \item{\code{coordunits}:}{string giving the units of the coordinates,
    see also option \code{coordunits} of \command{\link{RFoptions}}.
  }
  \item{\code{deleted}:}{integer vector.
@@ -152,7 +210,7 @@
  \item{\code{v.proj}:}{vector of integers.
    The components selected in one of the submodels
  }
- \item{\code{variab.units}:}{string giving the units of the variables,
+ \item{\code{varunits}:}{string giving the units of the variables,
    see also option \code{varunits} of \command{\link{RFoptions}}.
  }
  \item{\code{x.proj}:}{
@@ -168,6 +226,7 @@
  
 %\section{Extends}{
 %}
+
 
 \section{Methods}{
   \describe{
@@ -198,7 +257,12 @@
     \item{logLik}{provides an object of class \code{"logLik"}
     }
     \item{AIC,BIC}{provides the AIC and BIC information, respectively}
-  }
+    \item{\code{signature(x = "RFfit", y = "missing")}}{Combines the plot of
+      the empirical variogram with the estimated covariance or variogram
+      model (theoretical) curves; further models can be added via the
+      argument \code{model}.}
+    }
+
 }
 
 \section{Further 'methods'}{

@@ -4,7 +4,7 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2001 -- 2014 Martin Schlather, 
+ Copyright (C) 2001 -- 2015 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -51,7 +51,8 @@ int check_specificGauss(cov_model *cov) {
 #define SPEC_TYPES 4
     Types type[SPEC_TYPES] = {PosDefType, PosDefType, VariogramType, TrendType};
     int i,
-      iso[SPEC_TYPES] = {SYMMETRIC, SYMMETRIC, SYMMETRIC, CARTESIAN_COORD},
+      max = SymmetricOf(cov->isoown),
+      iso[SPEC_TYPES] = {max, max, max, CoordinateSystemOf(cov->isoown)},
       dom[SPEC_TYPES] = {XONLY, KERNEL, XONLY, XONLY};    
     
       // APMI(cov->calling);
@@ -77,6 +78,7 @@ int check_specificGauss(cov_model *cov) {
   setbackward(cov, sub);
   cov->vdim[0] = sub->vdim[0];
   cov->vdim[1] = sub->vdim[1];
+  KAPPA_BOXCOX;
 
   //PMI(cov);
 
@@ -87,7 +89,7 @@ int check_specificGauss(cov_model *cov) {
 int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
   cov_model 
     *next = cov->sub[0];
-  location_type *loc = cov->prevloc;
+  location_type *loc = PrevLoc(cov);
    int err;
   //   PMI(cov); //assert(false);
   
@@ -96,9 +98,12 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   }
 
   ROLE_ASSERT_GAUSS;
+  assert(CovList[next->nr].Specific >= 0);
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covcpy(&(cov->key), next)) != NOERROR) return err;
+  if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
+
+
   if ((err = CHECK(cov->key, next->tsdim, next->xdimprev, next->typus, 
 		   next->domprev, next->isoprev, next->vdim,
 		   next->role))!= NOERROR) {
@@ -108,12 +113,14 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
     return err;
   }
 
-  assert(CovList[next->nr].Specific >= 0);
-
-
   cov->key->nr = CovList[cov->key->nr].Specific ;
   cov->key->role = ROLE_GAUSS;
   cov->key->typus = ProcessType;
+
+
+  // APMI(cov);
+
+ 
 
   //PMI(cov->key);
   // APMI(cov->key);
@@ -124,7 +131,8 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   //   APMI(cov->key);
 
   if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		   XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) != NOERROR) {
+		   XONLY, CoordinateSystemOf(cov->isoown),
+		   cov->vdim, ROLE_GAUSS)) != NOERROR) {
     //PMI(cov->key); XERR(err);
     //printf("specific ok\n");
     // crash();
@@ -137,6 +145,9 @@ int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmod
   return err;
 }
 
+void range_specificGauss(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){  
+  GAUSS_COMMON_RANGE;
+}
 
 
 int init_specificGauss(cov_model *cov, gen_storage *S) {
@@ -165,17 +176,10 @@ int init_specificGauss(cov_model *cov, gen_storage *S) {
 
 void do_specificGauss(cov_model *cov, gen_storage *S) {  
   cov_model *key = cov->key;
-  location_type *loc = Loc(cov);
-  bool loggauss = GLOBAL.gauss.loggauss;
-  GLOBAL.gauss.loggauss = false;
   double *res = cov->rf;
-
+  SAVE_GAUSS_TRAFO;
   assert(key != NULL);
   DO(key, S);
-  if (loggauss) {
-    long i, vdimtot = loc->totalpoints * cov->vdim[0];
-    for (i=0; i<vdimtot; i++) res[i] = exp(res[i]);
-  }
-  GLOBAL.gauss.loggauss = loggauss;
+  BOXCOX_INVERSE;
 }
 

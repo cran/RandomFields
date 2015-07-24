@@ -8,7 +8,6 @@
 
 \examples{
 %% NOTE: THE BELOW EXAMPLE NEEDS seed = NA
-
  #############################################################
  ##                      EXAMPLE 1                          ##
  ## The following gives an example on the advantage of      ##
@@ -24,14 +23,17 @@
 # by about factor 16 at the price of an increased variance of
 # factor 1.5
 
-x <- seq(0, 1, len=10)
-y <- seq(0, 1, len=10)
+len <- 10
+\dontshow{if(!interactive()){warning("reduced 'len'");len<-2;}}%ok
+x <- seq(0, 1, len=len)
+y <- seq(0, 1, len=len)
 grid.size <- c(length(x), length(y))
 meth <- RPcirculant
 model <- RMexp(var=1.1, Aniso=matrix(nc=2, c(2,0.1,1.5,1)))
 
-m <- if (interactive()) 5 else 2
-n <- if (interactive()) 100 else 2
+m <- 5 
+n <- 100
+\dontshow{if(!interactive()){warning("reduced 'm'");m<-2;}}%ok
 
 # using local.dependent=FALSE (which is the default)
 c1 <- numeric(m)
@@ -39,8 +41,8 @@ time <- unix.time(
   for (i in 1:m) {
     cat("", i, "out of", m, "\n")
     z <- RFsimulate(meth(model), x, y, n=n, pch="", 
-                    dependent=FALSE, spConform=FALSE, trials=5)
-    c1[i] <- cov(z[1,length(y), ], z[length(x), 1, ])
+                    dependent=FALSE, spConform=FALSE, trials=5, force=TRUE)
+    c1[i] <- cov(z[1, dim(z)[2], ], z[dim(z)[1], 1, ])
 }) # many times slower than with local.dependent=TRUE below
 \dontshow{cat("\n")}
 true.cov <- RFcov(model, t(y[c(1, length(y))]), t(x[c(length(x), 1)]))
@@ -53,8 +55,8 @@ time <- unix.time(
   for (i in 1:m) {
     cat("", i)
     z <- RFsimulate(meth(model), x, y, n=2 * n, pch="", 
-                    dependent=TRUE, spConform=FALSE, trials=5)
-    c2[i] <- cov(z[1,length(y),], z[length(x), 1 , ])
+                    dependent=TRUE, spConform=FALSE, trials=5, force=TRUE)
+    c2[i] <- cov(z[1, dim(z)[2], ], z[dim(z)[1], 1, ])
 })
 \dontshow{cat("\n")}
 print(time)                                      ## 20 times faster
@@ -75,9 +77,11 @@ Print(true.cov, mean(c2), sd(c2), empty.lines=1) ## much better results
  ## configurations, i.e. grid, non-grid) using TBM          ##
  #############################################################
 
-x1 <- seq(-150,150,1)
-y1 <- seq(-15, 15, 1)
-x2 <- seq(-50, 50, 1)
+step <- 1
+\dontshow{if(!interactive()){warning("increased 'step'");step<-15;}}%ok
+x1 <- seq(-150,150,step)
+y1 <- seq(-15, 15, step)
+x2 <- seq(-50, 50, step)
 model <- RPtbm(RMexp(scale=10))
 
 RFoptions(storing=TRUE)

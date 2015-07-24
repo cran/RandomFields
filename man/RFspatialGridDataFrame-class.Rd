@@ -204,11 +204,13 @@ str(as(f, "RFspatialPointsDataFrame"))
 
 plot(f, nmax=2)
 
-steps <- if (interactive()) c(10, 1, 10, 10) else c(2, 1, 2, 2)
+steps <- c(10, 1, 10, 10)
+\dontshow{if(!interactive()){warning("modified 'steps'"); steps<-c(2,1,2,2)}}%ok
 x2 <- rbind(c(0, 0, 0, 0),
  c(1, 0.2, 2, 5),
  steps)
-scale <- if (interactive()) 10 else 1
+scale <- 10
+\dontshow{if(!interactive()){warning("modified 'scale'");scale<-0.1}}%ok
 f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, n=n,
                  grid = TRUE)
 plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)

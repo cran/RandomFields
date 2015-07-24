@@ -46,8 +46,9 @@
 
 \title{Internal models}
 \description{
-  Internal models that may appear in feedbacks from
-  'RandomFields'
+  Internal models or model names that may appear in feedbacks from
+  'RandomFields'. Those ending by \sQuote{Intern} should appear only
+  in very rare cases.
 }
 \details{
 The following and many more internal models exist
