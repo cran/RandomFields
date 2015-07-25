@@ -49,7 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   GR 8.357
 
 
-fctn = function(rho, t) exp(-t^2 / (1+rho)) / sqrt(1-rho^2)
+fctn = function(rho, t) exp(-t^2 / (1+rho)) / sqrt(1.0-rho^2)
 C = function(r, t) (2*pi)^(-1) * integrate(fctn, 0, r, t=t)$value
 fctn1 = function(rho, t) exp(-t^2 * rho / 2) / sqrt(rho) / (1 + rho)
 C1 = function(r, t)  exp(-t^2 / 2) / (2*pi) * integrate(fctn1, (1-r)/(1+r), 1, t=t)$value
@@ -147,7 +147,7 @@ void binary(double *x, cov_model *cov, double *v) {
     sum += summand;
     sumOne += summandOne;
 
-    // 0.25 = 2 atan(sqrt(1)) / 2pi
+    // 0.25 = 2 atan(sqrt(1.0)) / 2pi
     *v = 0.25 + INVPI * (sumOne - (atan(sqrt(V)) + sqrt(V) * sum));
   }
 
@@ -2820,7 +2820,7 @@ void TBM2NumIntegrFct(double *u,  int n, void *ex) {
   double *x = info->x;
     
   for (i=0; i<n; i++) {
-    z[0] = x[0] * sqrt(1 - u[i] * u[i]);
+    z[0] = x[0] * sqrt(1.0 - u[i] * u[i]);
     tbm3(z, cov, u + i, 1.0);
   }
 }
@@ -3837,7 +3837,7 @@ int check_strokorbBallInner(cov_model *cov) {
   switch(P0INT(STROKORBBALL_DIM)) {
   case 1 :
     if (tep != 0.0) {
-      cov->tail[0][TaylorPow] = tp + 2 * (tep - 1.0) + 1.0;// !! +1, da noch ein x drauf-multipliziert wird
+      cov->tail[0][TaylorPow] = tp + 2.0 * (tep - 1.0) + 1.0;// !! +1, da noch ein x drauf-multipliziert wird
       cov->tail[0][TaylorConst] = next->tail[0][TaylorExpConst] * tep;
       cov->tail[0][TaylorConst] *= cov->tail[0][TaylorConst];
      } else {

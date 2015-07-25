@@ -261,7 +261,7 @@ void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
 #define pi180 0.017453292519943295474
 #define EARTH_TRAFO(X, ZZ, raequ, rpol)			\
   Rcos = (raequ) * cos(ZZ[EARTH_LATITUDE] * pi180);	\
-  X[0] = Rcos * 1.0 * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
+  X[0] = Rcos * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
   X[1] = Rcos * sin(ZZ[EARTH_LONGITUDE] * pi180);	\
   X[2] = (rpol) * sin(ZZ[EARTH_LATITUDE] * pi180)		
 

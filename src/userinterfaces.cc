@@ -1306,7 +1306,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       if (len == 1) newval[1] = newval[2] = newval[0];
       else {
 	newval[2] = newval[1];
-	newval[1] = (int) sqrt(newval[1] * newval[0]);
+	newval[1] = (int) sqrt((double) newval[1] * newval[0]);
       }
 
       if (newval[0] > newval[1] || newval[1] > newval[2]) 

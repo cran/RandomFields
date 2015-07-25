@@ -116,7 +116,7 @@ SEXP periodogram(SEXP Dat, // data
     *lambda = NULL,
      n_inv = 1.0 / (double) ((int) (1.0 + lenMpart / (double) shift)),
     *dat = REAL(Dat),
-    factor = log(2 * PI * len)
+    factor = log(2.0 * PI * len)
     ; 
 
   FFT_storage FFT;

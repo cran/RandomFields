@@ -1196,7 +1196,8 @@ int struct_gauss_logli(cov_model *cov) {
 	    // in ownloc
 	  }
 	} else {
-	  if (Gettotalpoints(cov) < MAX_TOTALPTS / sqrt(Gettimespacedim(cov))) {
+	  if (Gettotalpoints(cov) <
+	      MAX_TOTALPTS / sqrt((double) Gettimespacedim(cov))) {
 	    // distance vectors abspeochen
 	  }
 	}

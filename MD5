@@ -1,4 +1,4 @@
-6dd496888a75c562f307d88346b9f261 *DESCRIPTION
+c456c7453ec36a39a48561e61c587ae2 *DESCRIPTION
 cee96e7551a3d3d327936837d3ef7414 *NAMESPACE
 dd916f5e1ccc948faafc99c4baa38eb3 *R/Class.R
 0e9f959603156f8cb9e24196f068043a *R/Crossvalidation.R
@@ -43,7 +43,7 @@ ddae359a413f9fb753760860a7802728 *R/zzz.R
 d41d8cd98f00b204e9800998ecf8427e *configure.win
 da07e8c72b199c2b45fbb5e46f8fcf2f *data/soil.txt.gz
 40f7d1b06c696fc3f01f6f07c139ae29 *data/weather.rda
-4df6a48a7aba4419984c31d9af978dcf *inst/CITATION
+9e691702de7d9ef80cd890a1ce9efb83 *inst/CITATION
 6410ae8b2e013b5e6e1a919a6e68a12e *inst/doc/multivariate_jss.pdf
 f7c1f34bbf8965da0dc8cb653c88dac6 *inst/doc/version2.pdf
 87154a39f773e7468ad63fd685a563a6 *man/BRspecific.Rd
@@ -245,11 +245,11 @@ b1f7e8741fb8cec223b116937f359679 *man/weather.Rd
 1a423eb01ef19b85ec9a708f3e555ef8 *src/AutoRandomFields.cc
 50fb05bcb94b290270e11c8eb3a4ab39 *src/AutoRandomFields.h
 1d667491f9935b5979d164c66f8d0d86 *src/Brown.cc
-b3ed6f5465e67ec998906c434387d986 *src/Coordinate_systems.cc
+8f9ad4ada218deab0d2ab8d878aca569 *src/Coordinate_systems.cc
 9af7dae64ebac009b59b4a6bac180ec1 *src/Coordinate_systems.h
-5d1da6802cd844dd1c3b1896a7a075af *src/D.H.cc
+265c0f1b15bfd0da622de109cb4a8828 *src/D.H.cc
 2c6ea076393a1b11e90aad7f96170e05 *src/Families.h
-0882c255f9e32146bff90a31a8341e64 *src/Gneiting.cc
+e2125f2588921c6a31539c930e010a65 *src/Gneiting.cc
 0939156138c014e1f8713fdbe17f2b45 *src/Huetchen.cc
 3fd0a4a37d3d16c9fc15e1858db90aea *src/InternalCov.cc
 f1696579e809a1518d3da537bb03e57c *src/KeyInfo.cc
@@ -257,9 +257,9 @@ a70323c7ae0a588670a37b1dd80a9938 *src/MLE.cc
 5ea1947600829faa9298f8ad255b1506 *src/Makevars.in
 6201ef9b11620bcf535f9f17e4a410ab *src/Makevars.win
 a94e093d166a8b66c9188fe706e4708e *src/Operator.h
-5129c0b169cf35cfeb330f8a65215b0a *src/PoissonPolygon.cc
+9a7cd3f8ce62191895c91e42e8f4bed3 *src/PoissonPolygon.cc
 013c8505975e7d034ecb62c13f752735 *src/PoissonPolygon.h
-c8e0b0517ce4300ae8a882bb104c6f50 *src/Primitive.cc
+6d173bbe4a626dd1a6bfff13f6c5158b *src/Primitive.cc
 dba0ffafb6ec3cefff2ac5c4c81c9b55 *src/QMath.cc
 9fede2fec21a2b4d1453f4a7ff659f95 *src/RF.h
 096686978824d63215a028dd3ca46cc1 *src/RandomFields.h
@@ -276,7 +276,7 @@ b899d37bc27edb90e43f21afa7d077f8 *src/avltr.h
 0bc78f55d3cbd68ecff4fc52209c07b7 *src/avltr_modified.cc
 020bde8ebb196d862325ee519c607fcc *src/avltr_modified.h
 745db3f5c038751141da58fb9597e846 *src/basic.h
-892eb83c12712a796199325e2f155a57 *src/circulant.cc
+3180bf10e071cb156e17b36931efe6c2 *src/circulant.cc
 2bc21c85907ec9a19f88af3dc0290db9 *src/convhull2D.cc
 42b6e2c97d935764ff4a4151b2e4ca14 *src/convhull2D.h
 0c83fd487521818b7e0d0a018ba920ea *src/cubicsolver.cc
@@ -285,11 +285,11 @@ c5d4377f9b021bdca90a69fadf04c30a *src/direct.cc
 3b3484c7c073525de3b065ae02c321e0 *src/empvario.cc
 403803bd77a39bdd5bf8801f76843861 *src/error.h
 633e25fd4ecf62893009a967d5b728e8 *src/extremes.cc
-270328e3469158e78f8bc206d50219bb *src/families.cc
+f4dfc997d92dffc5d67faaea32bd0c77 *src/families.cc
 91b447e71d4adc0dcfd31d753d6eac37 *src/fft.cc
 b3f08cf3c011dcb26648112d65a47e59 *src/fftVario.cc
 d9ee99b20711473dbf362ee54127661a *src/gauss.cc
-0bf0a4696d88326eeb20a7033ae2f857 *src/gausslikeli.cc
+81edd32ddb3b922dee3f19d91c958aef *src/gausslikeli.cc
 7b3035230ea1f0377ca41e92fc4b2dd8 *src/getNset.cc
 6022e590303ff58d79497fc829fa40f1 *src/hilfsdateien.cc
 d27bde95816ee0c9b8a9cdcfbece624d *src/hyperplan.cc
@@ -299,7 +299,7 @@ bfc3dc83c3a1c89cc229d965a6fffa6f *src/initNerrorSpherModels.h
 0021efbc9d0542b195a9a88e7eb3727e *src/matrix_mult.cc
 88730d981a7b9b23187900a7fc748538 *src/metropolis.cc
 6e059de09da4ee7579ac81f729640fab *src/nugget.cc
-93e8257f218bb7d4a9180c5ed87cab96 *src/operator.cc
+b6ae4e5dc5e9a5d5fb6f5c5052415cad *src/operator.cc
 623b83b5478267a5027d1257fcdadfe8 *src/plusmalS.cc
 12ce90fe43226ff3afad0995928ff6ca *src/primitive.h
 92c2c0bd6f733c6ff1f81913f297481f *src/rf_interfaces.cc
@@ -309,7 +309,7 @@ f04dc321902fc13d1d3bf75e2a5faefb *src/spectral.cc
 0110a29fec79c6af4d07131645c7dcb0 *src/startGetNset.cc
 5aa19aa9bbce24b765c3f221dc810577 *src/tbm.cc
 dff1232df85e149adf7ac9f2de653407 *src/trend.cc
-2190f1cca196d96d6e39f4538c8510fe *src/userinterfaces.cc
+e32be25ef9e34f42b0e6d7f069dde6ed *src/userinterfaces.cc
 a22b60d9bfadd5ac95e57a71557a49e8 *src/variogramAndCo.cc
 fdcec0fdca4128fbf60463f3fe2dcdcf *src/variogramAndCo.h
 ffc98160814c398890b4ba04a7c6e54a *src/win_linux_aux.cc

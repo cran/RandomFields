@@ -57,7 +57,7 @@ void rTriangle(double *phi)
 	int onceagain=1, ok=0;
 	double a, amax=1.2990381056766579701455847561294; 
 	// amax = maximum area of a triangle with vertices on the unit circle 
-	//      = 3*sqrt(3)/4
+	//      = 3*sqrt(3.0)/4
 	while(onceagain)
 	{
 		ok = 0;
@@ -84,7 +84,7 @@ void rTriangle(double *phi) {
   bool ok; // changed
   double a, amax=1.2990381056766579701455847561294; 
 	// amax = maximum area of a triangle with vertices on the unit circle 
-	//      = 3*sqrt(3)/4
+	//      = 3*sqrt(3.0)/4
   while(true) {
     ok = false;
     while(!ok) {

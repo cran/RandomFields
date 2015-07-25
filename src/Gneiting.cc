@@ -186,7 +186,7 @@ void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, dou
   }
   // x2 *= 0.25;
   b = 3.0 * q[AVESTP_V] * x2 / dim;
-  alphamin = (4.0 + 4.0 * b - 2.0 * sqrt(4 * b * b + 8.0 * b + 1.0)) / 3.0;
+  alphamin = (4.0 + 4.0 * b - 2.0 * sqrt(4.0 * b * b + 8.0 * b + 1.0)) / 3.0;
   InvSqrt2a = 1.0 / sqrt(2.0 * alphamin * 6.0 * q[AVESTP_V]);
   *sd = InvSqrt2a;
   EmA = 1.0 - alphamin;
@@ -568,7 +568,7 @@ void spectralcox(cov_model *cov, gen_storage *s, double *e) {
   SPECTRAL(next, s, e); // nicht gatternr
   
   v[0] = rnorm(0.0, INVSQRTTWO);
-  v[1] = rho * v[0] + sqrt(1 - rho * rho) * rnorm(0.0, INVSQRTTWO);
+  v[1] = rho * v[0] + sqrt(1.0 - rho * rho) * rnorm(0.0, INVSQRTTWO);
  
   for (t = 0.0, d=0; d<dim; d++) {
     t += (v[d] + V[d]) * e[d];

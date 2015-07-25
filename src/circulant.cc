@@ -1044,7 +1044,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   //bool *xx; xx = (bool*) MALLOC(sizeof(bool) * mtot);
   //for (i=0; i<mtot;i++) xx[i]=true;
   
-  invsqrtmtot = 1/sqrt((double) mtot);
+  invsqrtmtot = 1.0 / sqrt((double) mtot);
 
   if (PL>=PL_STRUCTURE) { LPRINT("Creating Gaussian variables... \n"); }
   /* now the Gaussian r.v. have to defined and multiplied with sqrt(FFT(c))*/

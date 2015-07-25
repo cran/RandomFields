@@ -2198,9 +2198,10 @@ void rectangularR2sided(double *x, double *y, cov_model *cov, double *v) {
     if (OUTER_POW > 0) {// sampling by inversion formula
       double op = pow(OUTER, OUTER_POW),
 	factor = 1.0 - exp(- OUTER_POW_CONST * (pow(end, OUTER_POW) - op));
-      w = pow(op - log(1 - UNIFORM_RANDOM * factor) / OUTER_POW_CONST,
+      w = pow(op - log(1.0 - UNIFORM_RANDOM * factor) / OUTER_POW_CONST,
 	      1 / OUTER_POW);
-    } else w =pow(1 - UNIFORM_RANDOM *(1 - pow(end/OUTER, OUTER_POW + red_dim)),
+    } else w =pow(1.0 - 
+		  UNIFORM_RANDOM *(1.0 - pow(end/OUTER, OUTER_POW + red_dim)),
 		  1.0 / (OUTER_POW + red_dim)) * OUTER; 
 		 // p+d < 0 ! 
     //printf("hXXere\n");

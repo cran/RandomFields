@@ -915,7 +915,7 @@ int checkfix(cov_model *cov){
       ndata = LNROW(FIXCOV_M) * LNCOL(FIXCOV_M),
       ntot = LocLoc(local)->totalpoints;
     if (GLOBAL.general.set == 0) {
-      vdim = sqrt(ndata / (ntot * ntot));
+      vdim = (int) sqrt((double) ndata / (double) (ntot * ntot));
       vdimSq = vdim * vdim;
     }
 
@@ -2660,7 +2660,7 @@ void loghyperbolic(double *x, cov_model *cov, double *v, double *Sign){
   } else if (xi==0) { //cauchy   => NU2 < 0 !
     y /= delta;
     /* note change in Sign as NU2<0 */
-    *v = log(1 + y * y) * 0.5 * nu; 
+    *v = log(1.0 + y * y) * 0.5 * nu; 
   } else {
     if ((nu!=nuOld) || (xi!=xiOld) || (delta!=deltaOld)) {
     nuOld = nu; 
@@ -2859,7 +2859,7 @@ void Inverselgd1(double *x, cov_model *cov, double *v) {
    // 19 next line?!
   // 1.0 / .... fehlt auch
   *v = (19 * alpha < beta)
-     ? exp(log(1 - *x * (alpha + beta) / beta) / alpha)
+     ? exp(log(1.0 - *x * (alpha + beta) / beta) / alpha)
      : exp(log(*x * (alpha + beta) / alpha) / beta);
 }
 void Dlgd1(double *x, cov_model *cov, double *v){
