@@ -27,9 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFerror_H
 #define RFerror_H 1
 
-extern char MSG[LENERRMSG], BUG_MSG[250], MSG2[LENERRMSG],
-  ERRORSTRING[MAXERRORSTRING], ERRORSTRING_OK[MAXERRORSTRING],
-  ERRORSTRING_WRONG[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
+extern char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[250], MSG2[LENERRMSG],
+  ERRORSTRING[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
 extern int ERRORMODELNUMBER;
 void errorMSG(int error, char* EM);
 void FinalErrorMSG(int err, char* m);
@@ -49,8 +48,6 @@ void ErrorStop(int err);
 
 #define ERRORMEND 11         /* a single error message -- und alles dazwischen */
 #define ERRORCARTESIAN 12
-#define ERRORWRONG 13           /* same as ERRORMSG, but showing only
-				   ERRORSTRING_WRONG */
 
 #define ERRORTYPECONSISTENCY 14
 #define ERRORWRONGVDIM 15
@@ -62,10 +59,6 @@ void ErrorStop(int err);
 #define ERRORNOTDEFINED 20       /* the specification for the  covariance and 
 				    method is not given/known, e.g. TBM2 for 
 				    many covariance functions  */
-#define ERRORCOVFAILED 21        /* covariance model not defined for specified 
-				    parameters and method 
-				    -- NOTE: ERRORSTRING_OK and 
-				    ERRORSTRING_WRONG must be set*/
 #define ERRORUNKOWNSXPTYPE 22   /* parameter value of unknown SXP type */
 #define ERRORSTATVARIO 23      /* only stat or variogram allowed as submodel */
 #define ERRORANISO_T 24         /* anisoT' may not be given at the same

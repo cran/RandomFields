@@ -124,10 +124,7 @@ list2RMmodelFit <- function(x, isRFsp=FALSE,
               !missing(data.RFparams))
 
     
-    ## convert residuals to RFsp class
-
-    # Print(x, isRFsp, coords, gridTopology, data.RFparams, T)
-    
+    ## convert residuals to RFsp class    
     err <-
       try({
         lres <- length(x$residuals)
@@ -177,7 +174,6 @@ list2RMmodelFit <- function(x, isRFsp=FALSE,
 ##  lower, upper, users.model must match 'model'. This is checked here.
 ######################################################################
 GetValuesAtNA <- function(NAmodel, valuemodel, x=NULL, skipchecks, ...) {
-  #Print(x, x[[1]])
   stopifnot(is.list(x), !is.list(x[[1]]))
   aux.reg <- MODEL_AUX
   
@@ -313,10 +309,9 @@ ModelSplitXT <- function(splitReg, info.cov, trafo, variab,
 
           .C("PutValuesAtNA", as.integer(splitReg), as.double(trafo(var)),
              PACKAGE="RandomFields")
-
-          #Print(RFgetModelInfo(lev=3), splitReg, x, y, xdimOZ, ncol(x), S, PACKAGE="RandomFields"); 
           
-          .Call("CovLoc", splitReg, x, y, xdimOZ, ncol(x), S, PACKAGE="RandomFields")
+          .Call("CovLoc", splitReg, x, y, xdimOZ, ncol(x), S,
+                PACKAGE="RandomFields")
 
           base::dim(S) <- c(ncol(x), vdim, vdim)
          
@@ -593,10 +588,7 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
 
   for (s in 1:length(split)) {
     
-    sp <- split[[s]]
-
-    #    Print(split, s, sp)
-    
+    sp <- split[[s]]    
     if (!is.null(p <- sp$use.new.bounds)) {
       if (printlevel >= PL_STRUCTURE) {
         cat("    calculating new lower and upper bounds for the parameters ",
@@ -661,8 +653,6 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
         cat(" ")
       }
 
-#      Print(upper, lower, guess, trafo(guess), sp$p.proj)
-
       guess <- pmax(lower, pmin(upper, guess, na.rm=TRUE), na.rm=TRUE)
           
       .C("PutValuesAtNAnoInit",
@@ -698,8 +688,11 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
         upper.model <- list("M", M=m, upper.model)
         old.model   <- list("M", M=m, old.model)
         new.data <- list()
+        vproj <- rep(FALSE, Z$vdim)
+        vproj[sp$v.proj] <- TRUE
+
         for (i in 1:sets) {
-          new.data[[i]] <- Z$data[[i]][ , sp$v.proj, , drop=FALSE]
+          new.data[[i]] <- Z$data[[i]][ , vproj, drop=FALSE]
         }
       } else {
         new.data <- Z$data
@@ -744,8 +737,6 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
           dummy <- new.data
           new.x <- new.data <- list()
 
-#          Print(Z)
-          
           xlen <- sapply(Z$coord, function(x) nrow(x$x))
 
 #          Print(dummy, xlen, ignored.x)
@@ -755,16 +746,21 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
             base::dim(dummy[[i]]) <-
               c(xlen[i], lenT[i], length(dummy[[i]]) / (xlen[i] * lenT[i])) 
             xyz <- Z$coord[[i]]$x
-            ## problem, das hier geloest wird: wenn coordinaten auf 0 gesetzt werden,
-            ## muessen die Punkte in diesesn Koordinaten uebereinstimmen.
+            ## problem, das hier geloest wird: wenn coordinaten auf 0 gesetzt
+            ## werden, muessen die Punkte in diesesn Koordinaten uebereinstimmen.
             ## deshalb werden untermengen gebildet, wo dies der Fall ist
             while(length(dummy[[i]]) > 0) {
-              slot <- xyz[1, ignored.x]
+              slot <- xyz[1, ignored.x]              
               xyz.ignored <- xyz[-1, ignored.x, drop=FALSE]
-              m <- colMeans(xyz.ignored)
-              m[m == 0] <- 1 ## arbitrary value -- components are all 0 anyway
-              idx <- colSums(abs(t(xyz.ignored) - slot) / m)
-              idx <- c(TRUE, idx < min(idx) * 5) ## take also the first one
+              if (length(xyz.ignored) > 0) {
+                m <- colMeans(xyz.ignored)
+                m[m == 0] <- 1 ## arbitrary value -- components are all 0 anyway
+
+                #Print(xyz.ignored, slot, m, ignored.x, xyz, dummy[[i]])
+              
+                idx <- colSums(abs(t(xyz.ignored) - slot) / m)
+                idx <- c(TRUE, idx < min(idx) * 5) ## take also the first one
+              } else idx <- TRUE
               last <- length(new.x) + 1
               new.x[[last]] <- Z$coord[[i]]
               new.x[[last]]$x <- xyz[idx, , drop=FALSE]
@@ -808,7 +804,8 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
  #     readline()
  #     stopifnot(s < 1)
 
-      Z <- StandardizeData(model=new.model, x=new.x, grid=grid, data=new.data)
+      Z <- StandardizeData(model=new.model, x=new.x, grid=grid, data=new.data,
+                           RFopt=RFoptions())
 
       res <-
         rffit.gauss(Z=Z,
@@ -1018,6 +1015,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       control <- control[-idx];
     
     oH <- try(optimHess(par=par, fn=fn, control=control), silent=TRUE)
+    
     if (class(oH) != "try-error") {
       zaehler <- 1
       while (zaehler <= 3) {
@@ -1221,7 +1219,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
   MLtarget <- function(variab) {
     ## new version based on C-Code starting wih 3.0.70
- 
    
     if (n.variab > 0) {
       variab <- variab + 0  ## unbedingt einfuegen, da bei R Fehler der Referenzierung !! 16.2.10
@@ -1264,14 +1261,18 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       cat("\n\nAufruf von MLtarget\n===================\n")
       Print(RFgetModelInfo(register=LiliReg, level=4, which.submodels="call+user"))#
     }
-    ##                                    
 
-    ans <- .Call("EvaluateModel", double(0), LiliReg, PACKAGE="RandomFields")
+
+   # Print(param, variab, GetModel(register=LiliReg, modus=GETMODEL_DEL_MLE,
+     #          which.submodels="user.but.once+jump"))
+ 
+    ans <- .Call("EvaluateModel", double(0), LiliReg, PACKAGE="RandomFields") 
     res <- ans[1]
+    if (is.na(res)) return(1e300)
 
     ##  Print(ans, MLEMAX, variab, param, MLELB, MLEUB); print(minmax)
   ##  stopifnot(all(is.finite(MLEUB)))
-
+ 
    
     if (res >= MLEMAX) {## >= und nicht > da -Inf, -Inf auftreten kann
                         ## z.B. bei autostart
@@ -1359,7 +1360,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
 
-#  Print(Z ,C_coord);
+# Print(Z ,C_coord);
   
   info.cov <- .Call("SetAndGetModelLikeli", LiliReg,
                     list("RFloglikelihood", data = Z$data, Z$model),
@@ -1399,12 +1400,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   ptype <- minmax[, MINMAX_TYPE]
   diag.idx <- which(ptype == DIAGPARAM)
   if (length(diag.idx)>0) minmax[diag.idx[1], MINMAX_PMIN] <- fit$min_diag
- 
- 
   effect <- info.cov$effect
 
-  # Print(RFgetModelInfo(), effect, RemainingError)
-  
   if (!any(effect == RemainingError))
     stop("there must be an error component in the model")
   if (Z$matrix.indep.of.x.assumed && !info.cov$matrix.indep.of.x)
@@ -1437,7 +1434,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
    
   N <- S <- Sq <- 0 
   for (i in 1:sets) {
-    N <- N + len[i] * repet[i]
+    N <- N + rowSums(matrix(colSums(!is.na(Z$data[[i]])), ncol=repet[i]))
     S  <- S  + rowSums(matrix(colSums(Z$data[[i]], na.rm=TRUE),
                               ncol=repet[i]), na.rm=TRUE)
     Sq <- Sq + rowSums(matrix(colSums(Z$data[[i]]^2, na.rm=TRUE),
@@ -1448,21 +1445,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     S <- sum(S)
     Sq <- sum(Sq)
   }
-  m <- S / N
-  s2 <- Sq / N - m^2
-  if (vdim ==1) {
-    varmin <- varmax <- rep(s2, n.param)
-  } else {
-    ## sdvar : matrix of indices
-    varmax <- apply(sdvar, 1, function(x) if (any(x)) max(s2[x]) else NA)
-    varmin <- apply(sdvar, 1, function(x) if (any(x)) min(s2[x]) else NA)
-    if (printlevel >= PL_IMPORTANT && !recall) {
-      if (mean(abs(m)) != 0 && any(log(sd(m) / mean(abs(m))) > 1.5))
-        message("Are the average values of the components rather different? If so, it might be\n worth thinking of standardising the values before calling RFfit.\n")
-      else if (any(abs(log(s2 / s2[1])) > 2.0))
-        message("The standard deviations of the components are rather different. It might be\n better to standardise the components of the data before calling RFfit.\n")
-    }
-  } # vdim > 1
+  mean.data <- S / N
+  var.data <- Sq / N - mean.data^2
  
 
 
@@ -1473,7 +1457,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
   trafoidx <- trafo <- NULL
   if (!is.null(transform)) {
-    if (!recall) message("Note: if 'transform' is used, 'anisoT' within 'RMS' should be used instead of 'Aniso', if elemens of an anisotropy matrix are estimated")
+    if (!recall) message("Note: if 'transform' is used, 'anisoT' within 'RMS' should be used instead of 'Aniso', if off-diagonal elements of an anisotropy matrix are estimated")
     if (trafo <- is.list(transform) && length(transform)>0) {
       trafoidx <- transform[[1]]
       if (length(transform)==2 && nrow(minmax) == length(trafoidx) &&
@@ -1490,7 +1474,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     model_with_NAs_replaced_by_ranks <-
       GetModel(register=LiliReg, modus=GETMODEL_DEL_MLE,
                which.submodels="user.but.once+jump")
-    cat("transform must be a list of two elements:\n* A vector V of logicals whose length equals the number of NAs in the model.\n* A function taking a vector whose length equals sum(V). The output\n  is the original model where the NAs are replaced by real numbers.\n\nThe currently identified NAs are:\n")
+    cat("transform must be a list of two elements:\n* A vector V of logicals whose length equals the number of identified NAs in the model (see below).\n* A function taking a vector whose length equals sum(V). The output\n  is the original model where the NAs are replaced by real numbers.\n\nThe currently identified NAs are:\n")
     print(minmax[, c(MINMAX_PMIN, MINMAX_PMAX)]) #
     cat("\nwithin the following model (NA positions are given by n.nn) :\n")
     str(model_with_NAs_replaced_by_ranks, vec.len=20) #
@@ -1583,7 +1567,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         stop("NaNs do not match logical vector of transform")
     }
 
-    try(z <- trafo(lower[!delete.idx]))
+    try(z <- trafo(lower[!delete.idx]))    
     if (!is.numeric(z) || !all(is.finite(z)) || !is.vector(z))
       stop("The transformation does not return a vector of finite numerical values.")
     if (length(z) != length(lower))
@@ -1601,6 +1585,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   SIGN.SD.IDX <- ptype == SIGNEDSDPARAM
   ALL.SDVAR <- SDVAR.IDX | SIGN.VAR.IDX | SIGN.SD.IDX
 
+  
+  MINMAX_COL <- 9
+  MINMAX_ROW <-  10
   if (is.null(sdvar)) {
     sdvar <- matrix(FALSE, nrow=n.param, ncol=vdim)
     for (i in 1:vdim) {
@@ -1615,7 +1602,22 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   MIXED.IDX <- which(ptype == MIXEDVAR)
   mixed.idx <-  which(ptype == MIXEDVAR)
 
-
+  if (vdim ==1) {
+    varmin <- varmax <- rep(var.data, n.param)
+  } else {
+    ## sdvar : matrix of indices
+  
+    varmax <- apply(sdvar, 1, function(x) if (any(x)) max(var.data[x]) else NA)
+    varmin <- apply(sdvar, 1, function(x) if (any(x)) min(var.data[x]) else NA)
+    if (printlevel >= PL_IMPORTANT && !recall) {
+      if (mean(abs(mean.data)) != 0 &&
+          any(log(sd(mean.data) / mean(abs(mean.data))) > 1.5))
+        message("Are the average values of the components rather different? If so, it might be\n worth thinking of standardising the values before calling RFfit.\n")
+      else if (any(abs(log(var.data / var.data[1])) > 2.0))
+        message("The standard deviations of the components are rather different. It might be\n better to standardise the components of the data before calling RFfit.\n")
+    }
+  } # vdim > 1
+ 
 
 #################################################################
 ##############     prepare constants in S, X,etc      ###########
@@ -1746,7 +1748,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
 ###########################        split       #######################
   if (printlevel>=PL_STRUCTURE) cat("\nsplit...")
-  if (length(autostart)>=fit$split) {
+  if (fit$split > 0 && length(autostart)>=fit$split) {
+    stopifnot(fit$split > 1)
     
     new.param <- if (is.null(users.guess)) autostart else users.guess
 
@@ -1777,60 +1780,64 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
           PACKAGE="RandomFields")
     rm("splitcoord")
 
-     
-   stopifnot(ncol(Z$rangex) == ts.xdim)
+    
+    stopifnot(ncol(Z$rangex) == ts.xdim)
     keep <- !delete.idx
-    split <- ModelSplit(splitReg=split.reg, info.cov=info.cov, trafo=trafo,
-                        variab=new.param[keep],
-                        lower=lower[keep], upper=upper[keep],
-                        rangex = Z$rangex,
-                        ## ts.xdim != tsdim falls distances (x Zeit)
-                        modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
-                          xdimOZ = xdimOZ, vdim=vdim,
-                          dist.given=dist.given,
-                          refined = fit$split_refined),
-                        model=Z$model)
+    split <- try(ModelSplit(splitReg=split.reg, info.cov=info.cov, trafo=trafo,
+                            variab=new.param[keep],
+                            lower=lower[keep], upper=upper[keep],
+                            rangex = Z$rangex,
+                            ## ts.xdim != tsdim falls distances (x Zeit)
+                            modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
+                                xdimOZ = xdimOZ, vdim=vdim,
+                                dist.given=dist.given,
+                                refined = fit$split_refined),
+                            model=Z$model))
 
-    if (printlevel>=PL_STRUCTURE) cat("\nsplitted...")  
+    if (is(split, "try-error")) {
+      message("Splitting failed (", split[[1]], "). \nSo, standard optimization is tried")
+    } else {
+      if (printlevel>=PL_STRUCTURE) cat("\nsplitted...")  
 
-    if (length(split) == 1)
-      stop("split does not work in this case. Use split=FALSE")
-    if (length(split) > 1) {
-       if (printlevel>=PL_STRUCTURE) {
-        cat("\n")
-      }
-
-       if (printlevel >= PL_RECURSIVE) Print(split) #
-
- 
-     return(recurs.estim(split=split, level=0,  splitReg=split.reg,
-                           Z = Z,
-                           lower= rep(NA, sum(keep)),
-                           upper= rep(NA, sum(keep)),
-                           users.lower = {
-                             if (is.null(users.lower)) rep(-Inf,sum(keep))
-                             else users.lower[keep]
-                           },
-                           users.upper = {
-                             if (is.null(users.upper)) rep(Inf, sum(keep))
-                             else users.upper[keep]
-                           },
-                           guess=new.param[keep], # setzt default werte
-                           lsq.methods = LSQMETHODS,
-                           mle.methods=mle.methods,
-                           optim.control=optim.control,
-                           transform=transform,
-                           trafo=trafo,
-                           spConform = general$spConform,
-                           practicalrange = general$practicalrange,
-                           printlevel=printlevel,
-                           minmax=minmax,
+      if (length(split) == 1)
+        stop("split does not work in this case. Use split=FALSE")
+      if (length(split) > 1) {
+        if (printlevel>=PL_STRUCTURE) {
+          cat("\n")
+        }
+        
+        if (printlevel >= PL_RECURSIVE) Print(split) #
+        
+        
+        return(recurs.estim(split=split, level=0,  splitReg=split.reg,
+                            Z = Z,
+                            lower= rep(NA, sum(keep)),
+                            upper= rep(NA, sum(keep)),
+                            users.lower = {
+                              if (is.null(users.lower)) rep(-Inf,sum(keep))
+                              else users.lower[keep]
+                            },
+                            users.upper = {
+                              if (is.null(users.upper)) rep(Inf, sum(keep))
+                              else users.upper[keep]
+                            },
+                            guess=new.param[keep], # setzt default werte
+                            lsq.methods = LSQMETHODS,
+                            mle.methods=mle.methods,
+                            optim.control=optim.control,
+                            transform=transform,
+                            trafo=trafo,
+                            spConform = general$spConform,
+                            practicalrange = general$practicalrange,
+                            printlevel=printlevel,
+                            minmax=minmax,
                            fit = RFopt$fit,
-                           sdvar = apply(split[[1]]$all.p, 2,
-                            function(x) {x[!ALL.SDVAR] <- FALSE; x})
-                          ## sdvar in spaltenrichtung vdim, in zeilenrichtung
-                           ## die parameter
-                           ))
+                            sdvar = apply(split[[1]]$all.p, 2,
+                                function(x) {x[!ALL.SDVAR] <- FALSE; x})
+                            ## sdvar in spaltenrichtung vdim, in zeilenrichtung
+                            ## die parameter
+                            ))
+      }
     }
   }
 
@@ -1890,7 +1897,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
   bounds <- apply(abs(bounds), 1, max)
   paramnames <- varnames
-  if (length(delete.idx)>0) {    
+  param.lower <- lower
+  param.upper <- upper
+  if (length(delete.idx)>0) {
     upper <- upper[-delete.idx]
     lower <- lower[-delete.idx]
     users.lower <- users.lower[-delete.idx]
@@ -2135,6 +2144,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   param.table[[M]][IDX("param")] <- trafo(autostart) 
   MLEVARIAB <- autostart
   param.table[[M]][IDX("glbl.var")] <- get.var.covariat(autostart)
+
 
 
   ## ****************    user's guess    *****************
@@ -2518,20 +2528,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   ## For MLE elimination we should include the true value of the scale;
   ## so the bounds must be larger. Here lower[SCALE] is corrected
   ## to be suitable for MLE elimination
-
-  if (FALSE) {
-    ## 12.11.13 ausgeblendet, da die Grenzen zu eng werden koennen,
-    ## so dass user's guess oder was in lsq gefunden wurde
-    ## ausserhalb der neuen MLE bounds liegt
-    if (any(SCALE.IDX)) {    
-      MLELB[SCALE.IDX] <- MLELB[SCALE.IDX] *
-        fit$lowerbound_scale_ls_factor / fit$lowerbound_scale_factor
-    } else if (any(idx <- ptype == DIAGPARAM | ptype == ANISOPARAM))
-      MLEUB[idx] <- MLEUB[idx] *
-        fit$lowerbound_scale_factor / fit$lowerbound_scale_ls_factor
-    MLELB[SCALE.IDX] <- pmin(users.lower[SCALE.IDX], MLELB[SCALE.IDX])
-    MLEUB[SCALE.IDX] <- pmax(users.upper[SCALE.IDX], MLEUB[SCALE.IDX])
-  }
   
   if (any(MLELB > MLEUB))
     stop("the users lower and upper bounds are too restricitve")
@@ -2549,7 +2545,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       param.table[[M]][tblidx[[M]][1]] <- param.table[[M]][tblidx[["ml"]][1]]
       next
     }
-    
+     
     MLEMAX <- -Inf ## must be before next "if (nMLEINDEX==0)"
     MLEVARIAB <- Inf ## nachfolgende for-schleife setzt MLEVARIAB
     MLEPARAM <- NA
@@ -2570,8 +2566,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         if (!any(is.na(variab <- param.table[IDX("variab"), i]))) {
 
           value <- MLtarget(variab) ## !
-
-          
           if (is.finite(value)) {
             param.table[tblidx[[M]][1], i] <- value
             if (value > max) {
@@ -2584,6 +2578,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
           }
         }
       }
+
    
       fnscale <-
         if (is.null(fit.fnscale) || is.na(fit.fnscale[M]))
@@ -2636,6 +2631,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     } else {
       param.table[[M]][tblidx[[M]][1]] <- MLEMAX
       param.table[[M]][IDX("variab")] <- MLEVARIAB
+
+      stopifnot(all(MLEVARIAB >= MLELB & MLEVARIAB <= MLEUB))
       
       param.table[[M]][IDX("param")] <- MLEPARAM
       param.table[[M]][IDX("glbl.var")] <- get.var.covariat(MLEVARIAB)     
@@ -2742,6 +2739,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
             if (is.finite(MLEMAX) && MLEMAX >=param.table[[M]][tblidx[[M]][1]]){
               param.table[[M]][tblidx[[M]][1]] <- MLEMAX
               param.table[[M]][IDX("variab")] <- MLEVARIAB
+              stopifnot(all(MLEVARIAB >= MLELB & MLEVARIAB <= MLEUB))
               param.table[[M]][IDX("param")] <- MLEPARAM
               param.table[[M]][IDX("glbl.var")] <- get.var.covariat(MLEVARIAB)
               ml.residuals <- ML.RESIDUALS
@@ -2948,7 +2946,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         }
       }
     } # is.finite(MLEMAX)     
-  } ## M
+  } ## 
 
 
 
@@ -3010,7 +3008,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   AICconst <-
     2 * nparam + 2 * nparam * (nparam + 1) / (sum.not.isna.data - nparam - 1) 
 
-
   allMethods <- c(primMethods, lsqMethods, mleMethods)
   for (i in OneTo(length(allmethods))) {
     if (!(allmethods[i] %in% allMethods)) next
@@ -3037,14 +3034,13 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         param.table[tblidx[[M]][1], i] <- MLtarget(p)
       }
 
-      #Print(M, param.table[tblidx[[M]][1], i], recall)
-        
-      if (allmethods[i] == M) {    
+      if (allmethods[i] == M) {
         param.table[[M]][IDX("sdvariab")] <-
           INVDIAGHESS(param.table[[M]][IDX("variab")], MLtarget,
                       control=mle.optim.control)$sd
       }
     }
+
 
     for (M in allcrossmeth) {
       cur <- param.table[tblidx[[M]][1], i]
@@ -3074,7 +3070,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
     #Print(fit$use_naturalscaling, any(SCALE.IDX), globalvariance,
      #     as.double(param.table[idxpar, i] )); 
- 
+
+
+    
 
     ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ##  models with NAs filled
@@ -3105,7 +3103,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ##   AIC etc for MLE
     ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    if (printlevel>= PL_STRUCTURE)cat("AIC...\n")
+    if (printlevel>= PL_STRUCTURE) cat("AIC...\n")
     M <- allmethods[i]
  #   if (M == "ml")  {
       ## jetzt muss RFlikelihood-initialisierung sein!
@@ -3115,7 +3113,10 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     residu <- get.residuals(LiliReg)
     likelihood <- param.table[tblidx[["ml"]][1], i]
     
-    stopifnot(all.equal(lilihood[1], likelihood))
+    if (abs(lilihood[1] - likelihood) > 1e-7 * (abs(likelihood) + 1)) {
+      #stop("The two ways of calculating the likelihood do not match: ",
+     #      lilihood[1], " != ", likelihood)
+    }
     AIC <- 2 * nparam  - 2 * likelihood
     AICc <- AICconst - 2 * likelihood
     BIC <- log(sum.not.isna.data) * nparam - 2 * likelihood      
@@ -3141,20 +3142,20 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                else matrix(ncol=0, nrow=2)
     dimnames(p.table) <- list(c("value", "sd"), paramnames)
     
-    res[[M]] <- list(model=modelres,
-                     formel = formel,
-                     variab = v.table,
-                     param = p.table,
-                     covariat = c.table,
-                     globalvariance = (if (globalvariance)
-                                       param.table[IDX("glbl.var"), i][1]),
-                     hessian = NULL,
-                     likelihood = if (TRUE || M == "ml") likelihood else as.integer(NA),
-                     AIC = if (TRUE || M == "ml")  AIC else as.integer(NA),
-                     AICc = if (TRUE || M == "ml")  AICc else as.integer(NA),
-                     BIC = if (TRUE || M == "ml")  BIC else as.integer(NA),
-                     residuals = if (TRUE || M == "ml") residu else as.integer(NA)
-                     )
+    res[[M]] <-
+      list(model=modelres,
+           formel = formel,
+           variab = v.table,
+           param = p.table,
+           covariat = c.table,
+           globalvariance=if (globalvariance) param.table[IDX("glbl.var"),i][1],
+           hessian = NULL,
+           likelihood = if (TRUE || M == "ml") likelihood else as.integer(NA),
+           AIC = if (TRUE || M == "ml")  AIC else as.integer(NA),
+           AICc = if (TRUE || M == "ml")  AICc else as.integer(NA),
+           BIC = if (TRUE || M == "ml")  BIC else as.integer(NA),
+           residuals = if (TRUE || M == "ml") residu else as.integer(NA)
+           )
     
     class(res[[M]]) <- "RM_modelFit"
   }
@@ -3171,14 +3172,19 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
   ## prepare MLtarget for getting 'par3am' directly
   trafo <- function(x) x
-  MLELB <- rep(-Inf, n.param)
-  MLEUB <- rep(Inf, n.param)
+  MLELB <- param.lower
+  MLEUB <- param.upper
 
   for (i in OneTo(length(mleMethods))) {
-   p <- param.table[IDX("param"), i]
-   if (!is.na(p[1])) {        
-     M <- mleMethods[i]     
-     cur <- param.table[tblidx[["ml"]][1], i]
+    p <- param.table[IDX("param"), i] ## variab ist oben!
+    if (any(p < MLELB | p > MLEUB)) 
+      stop(paste("estimated parameters outside bounds --",
+                 if (is.null(transform)) "please inform author"
+                 else "'transform' is likely not correct"))
+    
+    if (!is.na(p[1])) {        
+      M <- mleMethods[i]     
+      cur <- param.table[tblidx[["ml"]][1], i]
       if (!is.na(cur)) { ## kann bei autostart + Bayes auftreten
         if (abs(cur - MLtarget(p)) > 1e-10 && printlevel >= PL_IMPORTANT)
           message("likelihoods are calculated in two different ways leading",
@@ -3197,7 +3203,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     cat("\nNote: There are ",
         if (BEYOND > 1000)"very strong" else
         if (BEYOND > 250) "strong" else "some",
-        " indications that the model might be overparametrised\nor that the bounds for the variables are too wide. Try narrower lower and\nupper bounds for the variables in the latter case. One of the critical\nparameters is 'lowerbound_var_factor' whose value (", fit$lowerbound_var_factor, ") xmight be reduced.\n", sep="")
+        " indications that the model might be overparametrised\nor that the bounds for the variables are too wide. Try narrower lower and\nupper bounds for the variables in the latter case. One of the critical\nparameters is 'lowerbound_var_factor' whose value (", fit$lowerbound_var_factor, ") might be reduced.\n", sep="")
   
   if (printlevel>= PL_STRUCTURE) cat("S3 / S4 ...\n")
   

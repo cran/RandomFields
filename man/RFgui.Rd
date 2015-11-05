@@ -6,7 +6,7 @@
   teaching classes 
 }
 \usage{
-RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
+RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
       sim_only1dim=FALSE, wait = 0, ...)
 }
 \arguments{
@@ -23,7 +23,10 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, xcov, ycov,
  algorithm so that the pictures are always directly comparable. The
  disadvantage is that some models are simulated only (very) approximatively.}
  \item{ev}{instead of the data, the emprirical variogram itself might be
- passed}
+   passed}
+ \item{bin}{only considered if \code{data} is given. See
+   \command{\link{RFempiricalvariogram}} for details.
+ }
  \item{xcov}{ \code{\link[base]{seq}}uence of the
    locations where the covariance function is plotted}
  \item{ycov}{Only for anisotropic models. \code{\link[base]{seq}}uence of the

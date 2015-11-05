@@ -1818,7 +1818,12 @@ int initS(cov_model *cov, gen_storage *s){
    
     if ((err=INIT(sub, 0, s)) != NOERROR) return err;
     
-  } else SERR("initiation of scale and/or variance failed");
+  } else { 
+    if ((err=INIT(next, 0, s)) != NOERROR) return err; // e.g. from MLE
+    // PMI(cov->calling);
+    // printf("%s ", NAME(cov->calling));
+    // SERR("initiation of scale and/or variance failed");
+  }
 
  if ((err = TaylorS(cov)) != NOERROR) return err;
 
@@ -1923,7 +1928,8 @@ int checkplusmal(cov_model *cov) {
       // int tt; printf("%d %s\n", tt=TypeConsistency(type, sub, 0), NAME(sub));
  
       if (TypeConsistency(type, sub, 0) &&
-	  (err = CHECK(sub, dim, xdim, type, dom, iso, SUBMODEL_DEP, role))
+	  (err = CHECK(sub, dim, xdim, type, dom, iso, SUBMODEL_DEP, 
+		       type == TrendType ? ROLE_BASE : role))
 	  == NOERROR) break;
    
       if ((!isNegDef(type) && !isProcess(type)) || isTrend(type)) break;
@@ -3783,7 +3789,7 @@ int initPowS(cov_model *cov, gen_storage *s){
     
   }
 
-  else SERR("initiation of scale and/or variance failed");
+  else SERR("Initiation of scale and/or variance failed");
 
  
   if ((err = TaylorPowS(cov)) != NOERROR) return err;

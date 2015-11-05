@@ -894,10 +894,9 @@ StandardizeData <- function(model,
       dimensions <- if (xi$grid) data[[i]]@grid@cells.dim else nrow(data[[i]]@data)
       dimensions <- c(dimensions, data[[i]]@.RFparams$vdim)
       if (RFopt$general$vdim_close_together) dimensions <- rev(dimensions)
-      dimdata <- rbind(dimdata, c(dimensions, data[[i]]@.RFparams$n))
-
-      
+      dimdata <- rbind(dimdata, c(dimensions, data[[i]]@.RFparams$n))      
       tmp <- rfspDataFrame2conventional(data[[i]])
+      
       xi$x <- tmp$x
       if (!is.null(tmp$T)) xi$T <- tmp$T
       data[[i]] <- as.matrix(tmp$data)   
@@ -909,8 +908,6 @@ StandardizeData <- function(model,
       dimdata <- dimdata[, -idx, drop=FALSE]
     if (all(dimdata[, ncol(dimdata)] == 1)) # repet
       dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
-
-    # Print(x); #pppp
     
   } else { # !isRFsp
     ## dimdata wird spaeter bestimmt

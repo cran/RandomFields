@@ -165,13 +165,9 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       goto ErrorHandling;   
   }
   
-  if (totpnts > max) {
-    sprintf(ERRORSTRING_OK, "number of points less than '%s' (=%d)", 
-	    KNAME(SEQU_MAX), max);
-    sprintf(ERRORSTRING_WRONG,"%d * %ld = %ld", back, spatialpnts, totpnts);
-    err=ERRORCOVFAILED; goto ErrorHandling;
-  }
-
+  if (totpnts > max)
+    GERR6("'%s' valid only if the number of lcoations is less than '%s' (=%d) . Got %d * %ld = %ld.", NICK(cov), KNAME(SEQU_MAX), max, back, spatialpnts, totpnts);
+   
  if (timelength <= back) {
     GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",
 	  CovList[DIRECT].nick, CovList[SEQUENTIAL].nick);

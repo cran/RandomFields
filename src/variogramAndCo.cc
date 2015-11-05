@@ -568,17 +568,16 @@ void partial_loc_null(cov_model *cov) {
 void InverseCovMatrix(cov_model *cov, double *v, double *det) {
   location_type *loc = Loc(cov);
   long vdimtot = loc->totalpoints * cov->vdim[0];  
-  int err;
   assert(cov->vdim[0] == cov->vdim[1]);
   CovList[cov->nr].covariance(cov, v);
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
   Ext_setErrorLoc(ERROR_LOC);
   //  printf("inverse\n");
-  err = Ext_solvePosDef_(v, vdimtot, true, NULL, 0, det, cov->Ssolve, 
+  int Exterr = Ext_solvePosDef_(v, vdimtot, true, NULL, 0, det, cov->Ssolve, 
 			 &(GLOBAL.solve), PL);
-  if (err != NOERROR){
+  if (Exterr != NOERROR){
     Ext_getErrorString(ERRORSTRING);
-    ErrorStop(err);
+    ErrorStop(Exterr);
   }
 }
 

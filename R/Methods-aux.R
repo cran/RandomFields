@@ -75,6 +75,9 @@ convert2GridTopology <- function(grid){
 RFspatialGridDataFrame <- function(grid, data,
                                    proj4string = sp::CRS(as.character(NA)),
                                    RFparams=list(n=1, vdim=1)) {
+
+  Print(grid, data, sp::CRS(as.character(NA)), RFparams)
+  
   grid <- convert2GridTopology(grid)
   tmp <- sp::SpatialGridDataFrame(grid=grid,
                                   data = if (is.data.frame(data)) data else
@@ -300,8 +303,7 @@ spatialPointsObject2conventional <- function(obj) {
     !is.null(obj@.RFparams$has.variance) && obj@.RFparams$has.variance
   dim(data) <- NULL
   vdimn <- c(obj@.RFparams$vdim, obj@.RFparams$n + has.variance)
-  dim(data) <- c(nrow(obj@data), obj@.RFparams$vdim, vdimn)
-  
+  dim(data) <- c(nrow(obj@data), vdimn)  
   dim(Enames) <- vdimn
   Enames <- extract.names(Enames)
   vdim_close_together <- FALSE

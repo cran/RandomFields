@@ -134,9 +134,8 @@ double EIGENVALUE_EPS = 1e-15;
 
 int ERRORMODELNUMBER = -1;
 
-char MSG[LENERRMSG], BUG_MSG[250], MSG2[LENERRMSG],
-  ERRORSTRING[MAXERRORSTRING], ERRORSTRING_OK[MAXERRORSTRING],
-  ERRORSTRING_WRONG[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
+char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[LENMSG], MSG2[LENERRMSG],
+  ERRORSTRING[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
 
 
 
@@ -223,10 +222,6 @@ void errorMSG(int err, char* M, int len, bool final) {
     strcpy(m,"not initialized or storing=FALSE");break;
   case ERRORDECOMPOSITION:
     strcpy(m,"covariance function does not seem to be (strictly) positive definite");break;
-  case ERRORCOVFAILED: 
-    sprintf(m, "model and method only valid for %s. Got %s",
-	    ERRORSTRING_OK,ERRORSTRING_WRONG);
-    break;
   case ERRORNOMULTIVARIATE :
     strcpy(m, "multivariate models not allowed (yet)"); 
     break;
@@ -284,9 +279,6 @@ void errorMSG(int err, char* M, int len, bool final) {
     break;
   case ERRORM: 
     strcpy(m, ERRORSTRING);
-    break;
-  case ERRORWRONG:
-    sprintf(m, "%s", ERRORSTRING_WRONG);
     break;
   case ERRORWRONGVDIM: 
     strcpy(m, ERRORSTRING);

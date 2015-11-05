@@ -29,9 +29,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include "basic.h"
 
-
-// 1
-//// 1
+//#define SCHLATHERS_MACHINE 1
+//#define RANDOMFIELDS_DEBUGGING 1
 
 // 1
 #define showfree !true 
@@ -42,7 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <string.h>
-#include  <utils.h>
+#include <utils.h>
 #include "error.h"
 #include "auxiliary.h"
 #include "RandomFields.h"
@@ -1620,7 +1619,7 @@ typedef struct set_storage {
 #define model_undefined -1
 #define model_morethan1 -2
 typedef struct likelihood_info {
-  int varmodel, NAs, nas[MAXSUB],
+  int varmodel, NAs, nas[MAX_LIN_COMP],
     effect[MAX_LIN_COMP];
   cov_model *Var; // ja nicht free, da nur pointer
   double *Matrix, 

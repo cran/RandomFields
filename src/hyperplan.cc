@@ -253,13 +253,9 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 /****************************************************************/
   /*            Extraction of matching covariances                */
   /****************************************************************/
-  if (cov->tsdim == 1) {
-    strcpy(ERRORSTRING_OK,"dim=2");
-    sprintf(ERRORSTRING_WRONG,
-	    "genuine dim=1; this has not been programmed yet.");
-    err = ERRORCOVFAILED;
-    goto ErrorHandling;
-  }
+  if (cov->tsdim == 1)
+    GERR1("'%s' valid for dim=2. Got genuine dim=1; this has not been programmed yet.", NICK(cov));
+ 
 
   if (dim > optdim || dim < 1) { 
     err = ERRORWRONGDIM;

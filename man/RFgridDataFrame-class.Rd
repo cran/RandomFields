@@ -137,7 +137,7 @@ f <- RFsimulate(model=RMgauss(), x=x, n=3)
 
 str(f)
 str(RFspDataFrame2conventional(f))
-coordinates(f)[1:25,]
+head(coordinates(f))
 str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 

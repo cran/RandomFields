@@ -645,7 +645,7 @@ int checktrend(cov_model *cov){
       (prev->nr == PLUS && (prev->calling == NULL || isProcess(prev->calling) ||
 			    isInterface(prev->calling) || isTrend(prev->typus)))))
      ;
-  if (!ok) SERR("trend model may be used .");
+  if (!ok) SERR("trend model is misused.");
 
  
   ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_COV);

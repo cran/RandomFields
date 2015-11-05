@@ -1212,7 +1212,10 @@ void likelihood_info_NULL(likelihood_info *x) {
   x->Matrix = x->pt_variance = NULL; // DO NOT FREE
   x->globalvariance = x->trans_inv = x->isotropic = false;
   x->newxdim = x->neffect = 0;  
-  for (int i=0; i<MAX_LIN_COMP; i++) x->effect[i] = 0;
+  for (int i=0; i<MAX_LIN_COMP; i++) {
+    x->effect[i] = 0;
+    x->nas[i] = 0;
+  }
 }
 
 

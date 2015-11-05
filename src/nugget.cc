@@ -261,13 +261,8 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   s->pos = NULL;
   s->red_field = NULL;
 
-  if (next->nr != NUGGET) {
-     err=ERRORCOVFAILED;
-     strcpy(ERRORSTRING_OK, CovList[NUGGET].nick);
-     strcpy(ERRORSTRING_WRONG, NICK(cov));
-     goto ErrorHandling;
-  }
-  
+  if (next->nr != NUGGET)
+    GERR2("'%s' was called by '%s'", NICK(cov), NICK(next));
 
   if ((s->simple = origdim == dim)) {
     double value[MAXNUGGETDIM], ivalue[MAXNUGGETDIM], dummy[5 * MAXNUGGETDIM], *A;

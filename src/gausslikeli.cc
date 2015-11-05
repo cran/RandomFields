@@ -393,6 +393,7 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
   listoftype *datasets = L->datasets;
   int 
     err = NOERROR,
+    Exterr = NOERROR,
     store = GLOBAL.general.set,
     sets = GET_LOC_SETS(cov);
   if (sets != 1) ERR("only one data set allowed when predicting");
@@ -460,9 +461,9 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 	SqMatrixcopyNA(Ccur, L->C, resi, totptsvdim);
       }
   
-      err = Ext_solvePosDef_(Ccur, notnas, true, Resicur, atonce,
+      Exterr = Ext_solvePosDef_(Ccur, notnas, true, Resicur, atonce,
 			     NULL, cov->Ssolve, &(GLOBAL.solve), PL - 3);
-      if (err != NOERROR) goto ErrorHandling;    
+      if (Exterr != NOERROR) goto ErrorHandling;    
       
       double inc[MAXLILIGRIDDIM], x[MAXLILIGRIDDIM], xstart[MAXLILIGRIDDIM],
 	*pt_locx = loc->x,
@@ -531,7 +532,14 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 
  ErrorHandling :
   GLOBAL.general.set = store;
-  FREE(residuals)
+  FREE(residuals);
+    
+  if (Exterr != NOERROR) {
+    if (Exterr == ERRORM) {
+      Ext_getErrorString(ERRORSTRING);
+      ERR(ERRORSTRING);
+    } else err = Exterr;
+  }
 
   if (err != NOERROR) XERR(err);
   
@@ -548,12 +556,14 @@ SEXP simple_residuals(SEXP model_reg){
   if (L->ignore_trend) BUG;
   
   listoftype *datasets = L->datasets;
-  if (info->globalvariance && info->pt_variance != NULL) *(info->pt_variance) = 1.0;
+  if (info->globalvariance && info->pt_variance != NULL) 
+    *(info->pt_variance) = 1.0;
  
   int i, j, 
     fx_notnas = 0,
     sets = GET_LOC_SETS(prev),  
     err = NOERROR,
+    Exterr = NOERROR,
     vdim = cov->vdim[0],
     betatot = L->betas[L->fixedtrends],
     betaSq = betatot * betatot;
@@ -669,9 +679,10 @@ SEXP simple_residuals(SEXP model_reg){
 	}
       }
       assert(cov->Ssolve != NULL);
-      Ext_solvePosDef_(L->XtX, fx_notnas, true, beta, 1, NULL, 
-		       cov->Ssolve, &(GLOBAL.solve), PL - 3);
-      
+      Exterr = Ext_solvePosDef_(L->XtX, fx_notnas, true, beta, 1, NULL, 
+				cov->Ssolve, &(GLOBAL.solve), PL - 3);
+      if (Exterr != NOERROR) goto ErrorHandling;    
+     
       if (fx_notnas < betatot) {
 	int b = L->fixedtrends - 1;
 	i = betatot - 1; 
@@ -691,8 +702,16 @@ SEXP simple_residuals(SEXP model_reg){
     }    
   }
 
-  // ErrorHandling:
+  
+ErrorHandling:
   GLOBAL.general.set = store;
+  
+  if (Exterr != NOERROR) {
+    if (Exterr == ERRORM) {
+      Ext_getErrorString(ERRORSTRING);
+      ERR(ERRORSTRING);
+    } else err = Exterr;
+  }
   if (err != NOERROR) XERR(err);
 
   return get_logli_residuals(model_reg);
@@ -704,9 +723,13 @@ SEXP simple_residuals(SEXP model_reg){
 
 void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov, 
 		      double *v){  
+
+  //printf("entering gausprocDlog\n");
+
   assert(isProcess(cov));
   cov_model *prev = cov->calling,
     *sub = cov->key == NULL ? cov->sub[0] : cov->key;  
+
   if (prev == NULL || CovList[prev->nr].cov != likelihood) BUG;
   likelihood_storage *L = cov->Slikelihood;
   assert(L != NULL);
@@ -722,6 +745,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   int i, j, repet,
     sets = GET_LOC_SETS(prev),  
     err = NOERROR,
+    Exterr = NOERROR,
     variables = 0,
     vdim = cov->vdim[0],
     store = GLOBAL.general.set,
@@ -785,7 +809,10 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 
     if (L->random > 0) BUG; // to do
 
+    if (info->globalvariance && info->pt_variance != NULL)
+      *(info->pt_variance) = 1.0;
     CovarianceMatrix(sub, L->C);
+    // PMI(sub);
     // printf("\nC =  ");for (i=0; i<totptsvdim * totptsvdim; i++)printf("%f ", L->C[i]); printf("\n"); 
       //      BUG;   APMI(sub);
 
@@ -820,9 +847,40 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       variables += notnas * atonce;
       MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
       assert(cov->Ssolve != NULL);
-      err = Ext_solvePosDef_(Ccur, totptsvdim, true, L->CinvXY, XYcols,
+      
+      //        printf("file\n");
+      //       FILE *fp=fopen("/home/schlather/matrix.txt",  "w");
+      //     int kk=0; for (int ii=0; ii<totptsvdim; ii++) {for(int jj=0;jj<totptsvdim;jj++) {//if (ii<8 && jj<8) 
+      // 	      fprintf(fp,"%15.8f ",Ccur[kk]); kk++;} //if (ii<8)
+    //   	fprintf(fp,"\n");}
+    //      printf("AA %d %d\n", totptsvdim, XYcols);
+
+    //	int ncc = sizeof(double) * totptsvdim * totptsvdim;
+    //     double *CCC = (double*) malloc(ncc);
+    //    memcpy(CCC, Ccur, ncc);
+    //   printf("CC AA %d %d\n", totptsvdim, XYcols);     
+    //   Exterr = Ext_solvePosDef_(Ccur, totptsvdim, true, L->CinvXY, 0,
+    //			     &logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
+    //      printf("DDAA %d %d\n", totptsvdim, XYcols);   
+    //	 kk=0;for (int ii=0; ii<totptsvdim; ii++) {for(int jj=0;jj<totptsvdim;jj++) {//if (ii<8 && jj<8)  
+    //  	      fprintf(fp,"%15.8f ",Ccur[kk]); kk++;} //if (ii<8)
+    //   	fprintf(fp,"\n");}
+    //   fclose(fp);
+    //   printf("BB %d %d\n", totptsvdim, XYcols);
+    //   memcpy(Ccur, CCC, ncc);
+     
+      
+    //  for (int ii=0; ii<totptsvdim; ii++)  printf("%f ", L->CinvXY[ii]); 
+
+     Exterr = Ext_solvePosDef_(Ccur, totptsvdim, true, L->CinvXY, XYcols,
 			     &logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
-      if (err != NOERROR) goto ErrorHandling;  
+     // for (int ii=0; ii<totptsvdim; ii++) printf("%f ", L->CinvXY[ii]); 
+     // printf("CinvXY %f %d\n",  L->CinvXY[0], totptsvdim); 
+ 
+      if (Exterr != NOERROR) {
+	//	printf("exterr %d\n", Exterr);
+	goto ErrorHandling;  
+      }
       logdettot += logdet * atonce;
       double *CinvY = L->CinvXY + betatot * notnas;
       int end_i = totptsvdim * atonce;
@@ -836,11 +894,15 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	} else {
 	  matmulttransposed(Xcur, L->CinvXY, L->XitXi, notnas, betatot,betatot);
 	  for (i=0; i<betaSq; i++) L->XtX[i] += atonce * L->XitXi[i];
+
+
+	  // 	  printf("\nxtx %d  %f %f notnas=%d %d glob.var=%d\n", (int) atonce, Xcur[0], L->CinvXY[0], (int) notnas, betatot, info->globalvariance); for (i=0; i<betaSq; i++)printf("%f ", L->XtX[i]); printf("\n"); 
 	  
-	  // printf("\nxtx "); for (i=0; i<betaSq; i++)printf("%f ", L->XtX[i]); printf("\n");
-	  
-	  // printf("\nC^{-1}X "); for (i=0; i<betaSq; i++)printf("%f ", L->CinvXY[i]); printf("\n");
+	  //	  double Sum=0.0; printf("X C^{-1}XY "); for (i=0; i<notnas; i++) {Sum+=Xcur[i] * L->CinvXY[i]; printf("X=%f %f %f S=%f\n", Xcur[i], L->CinvXY[i], L->CinvXY[i+notnas], Sum);} printf("\n");
+
 	  MEMCOPY(L->sumY, datacur, sizeof(double) * notnas);
+	  // if ( L->XtX[0] < 0) e rror("<="); printf("ok\n");
+
 
 	  int kk = notnas;
 	  for (int rr=1; rr<atonce; rr++) {
@@ -874,10 +936,17 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     MEMCOPY(beta, L->XCY, sizeof(double) * all_betatot);
     assert(!L->betas_separate || sets == 1);
     assert(cov->Ssolve != NULL);
-    Ext_solvePosDef_(L->XtX, betatot, true, beta, 
+    Exterr = Ext_solvePosDef_(L->XtX, betatot, true, beta, 
 		     L->betas_separate ? repet : 1, NULL, 
 		     cov->Ssolve, &(GLOBAL.solve), PL);
-    //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
+    // printf("here end %d\n", Exterr);
+   if (Exterr != NOERROR) {
+      //          PMI(cov);
+      //printf("exterr2 %d %d %e\n", L->betas_separate, betatot, L->XtX[0]);
+      //printf("%f %f %f \n", L->XtX[1], L->XtX[2], L->XtX[3]);
+      goto ErrorHandling;  
+    }  
+      //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
     for (j=0; j<all_betatot; j++) {
       proj += L->XCY[j] * beta[j];
     }      
@@ -889,11 +958,13 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 
   *v = -0.5 * (logdettot + variables * log(TWOPI));
 
-  //  printf(">> v =%f %f %d pi=%f sq=%f %f %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * log(TWOPI), YCinvY, proj, info->globalvariance);
+  //  printf(">> v =%f %f #=%d pi=%f sq=%f %f %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * log(TWOPI), YCinvY, proj, info->globalvariance);
  
+
   double delta;
   delta = YCinvY - proj;
   if (info->globalvariance) {
+    //printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * log(delta));
     *v -= 0.5 * variables * log(delta);
     v[1] = delta / variables;
     if (info->pt_variance != NULL) *(info->pt_variance) = v[1];
@@ -935,10 +1006,22 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
  ErrorHandling:
   GLOBAL.general.set = store;
 
+  if (Exterr != NOERROR) {
+    //printf("exterr errorM=%d\n", ERRORM);
+    if (Exterr == ERRORM) {
+      Ext_getErrorString(ERRORSTRING);
+
+      //printf("error = %s\n", ERRORSTRING);
+
+      ERR(ERRORSTRING);
+    } else err = Exterr;
+  }
+
   if (err != NOERROR) {
+    //printf("error = %d\n", err);
     XERR(err);
   }
-  
+   
 }
 
 // v ok

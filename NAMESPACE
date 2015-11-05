@@ -1,11 +1,5 @@
-
-#
-##
-#
-#
-#
-#
 #exportPattern("^[^\\.]")
+
 exportPattern("^RM")
 exportPattern("^RP")
 exportPattern("^RF")

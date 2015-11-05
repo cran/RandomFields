@@ -64,6 +64,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     stopifnot(nchar(p)==2, substr(p,1,1)=="^")
     assign("p", c(get("p", .env), substring(p, 2)), .env)
   }
+
   export <- function(...) {
     ## code from 'rm'
     dots <- match.call(expand.dots = FALSE)$...

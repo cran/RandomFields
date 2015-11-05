@@ -64,8 +64,6 @@ my.arrows <- function(xy, z, r, thinning, col, nrow) {
     thinned <- as.vector(outer(rep(thinned, length = nrow),
                                rep(thinned, length = nrow(xy) / nrow), "&"))
   }
-
- # Print(thinned, z, xy, nrow, thinning); xxx
   
   arrows(x0=xy[thinned, 1] - r/2*z[thinned,1],
          y0=xy[thinned, 2] - r/2*z[thinned,2],
@@ -79,8 +77,6 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
                             n.slices, plot.legend, zlim,
                             ...) {
 
-#  Print(vdim, select)
-  
   if (vdim == 1 && !identical(select, vdim))
     stop("the given select.variables does not match the data")
    
@@ -277,10 +273,8 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
         screen(scr.leg[jx])
         par(oma=oma, mar=image.par[[i]]$mar.leg)
         if (!is.list(select) || length(select[[jx]]) != 2) {
-          #Print(i,j,image.par)
           lab <- xylabs("", "", units=coordunits)
-         #          Print(image.par)
-         im.col <- image.par[[i]]$col[[1+(jx-1) %% length(image.par[[i]]$col)]]
+          im.col <- image.par[[i]]$col[[1+(jx-1) %% length(image.par[[i]]$col)]]
 
           
           
@@ -467,10 +461,7 @@ plotRFspatialDataFrame <-
     
     all.i <- as.matrix(expand.grid(1:n.slices, 1:n)[2:1]) ## i, ii
     coords <- as.matrix(expand.grid(xx, xy))
-    m.range <- if (do.movie) 1:dimdata[MARGIN.movie] else 1
-
-#    Print(m.range, do.movie, dimdata, MARGIN.movie); kk
-    
+    m.range <- if (do.movie) 1:dimdata[MARGIN.movie] else 1    
   } else { ## not grid
     vdim <- x@.RFparams$vdim
     n <- min(x@.RFparams$n, nmax) + plot.variance
@@ -509,15 +500,11 @@ plotRFspatialDataFrame <-
                     range(if (missing.y)
                           x@data[z + vdim * 0:(n-plot.variance-1)] else {
                             idx <- z + vdim * 0:(n-plot.variance-1)
-                           # Print(idx, ncol(y.data), idx[idx <= ncol(y.data)])
                             c(#x@data[idx],
                               y.data[, idx[idx <= ncol(y.data)]])
                           },
                           na.rm=TRUE))
 
- # Print(data.range, vdim * 0:(n-plot.variance-1))
-  ##  Print("ok")
- 
   var.range <- if (plot.variance) sapply(x@data[-data.idx],
                                          range, na.rm=TRUE) else NULL
 
@@ -779,7 +766,6 @@ plotRFspatialDataFrame <-
                " -lavcopts vcodec=mpeg4:vbitrate=9800:aspect=4/3:vhq:keyint=15",
                " -vf scale=720:576 -o ", file, ".avi mf://",
                  file, "__*.png", sep="")
-    #print(txt)
     system(txt)
     file.remove(fn)
   }
@@ -806,7 +792,6 @@ plotRFspatialDataFrame <-
 plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
   ## grid   : sorted = TRUE
   ## points : sorted = FALSE
-#  Print(close.screen(), dev.cur()); print(dev.list())
 
   stopifnot(!missing(x))
   x <- trafo_pointsdata(x)
@@ -830,10 +815,7 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
 
   
   graphics <- RFoptions()$graphics
-#  Print(graphics, close.screen(), dev.cur()); print(dev.list())
   ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
-
-#  Print(close.screen(), dev.cur()); print(dev.list())
 
   always.close <- n > 1 || graphics$always_close_screen
   if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
@@ -852,8 +834,6 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
 
   ## variable names
 
-##  Print(x); lll
-  
   if (!is.null(x$labdata) && all(nchar(x$labdata)>0))
     names.vdim <- unlist(lapply(strsplit(x$labdata[1:vdim], ".n"),
                                 FUN=function(li) li[[1]]))
@@ -882,7 +862,8 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     dots$col <- NULL
   }
 
-  split.screen(c(n,1))
+  if (legend) split.screen(c(n,1))
+  else par(mfrow=c(n, 1), mar=c(1, 1, 0.1, 0.1))
   
 #  if (always.close) {
 #    close.screen(all.screens=TRUE)
@@ -891,11 +872,12 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
 #  }
                 
   for (i in 1:n){
-    screen(i)
-    if (make.small.mar)
-      par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
-    else
-      par(oma=c(4,0,1,1)+.1, mar=c(0,4,0,0))
+    if (legend) screen(i)
+    if (make.small.mar) {
+      if (legend) par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
+      else par(oma=rep(0,4), mar=c(3, 3, 1, 1), cex=0.6)
+    } else par(oma=c(4,0,1,1)+.1, mar=c(0,4,0,0))
+    
     ylab <- ylab.vec[i]
     
     if (tmp.idx <- (plot.variance && i==n)){
@@ -936,7 +918,7 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
       }
     }
   }
-  if (always.close) close.screen(all.screens=TRUE)
+  if (always.close && legend) close.screen(all.screens=TRUE)
 }
 
 

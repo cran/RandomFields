@@ -912,8 +912,15 @@ int GetEffect(cov_model *cov,  likelihood_info *info) {
       GetEffect(component, info);
       continue;
     }
+
+    // error("in fitgauss.R ist stop("the two ways")") auskommentiert, solange Utils noch nicht auf dem Netz ist
  
     info->effect[info->neffect] = CheckEffect(component);
+  
+    //      printf("i=%d %d %d %d\n", i,n, info->neffect, info->effect[0]);
+    //  pmi(component, 0);
+ 
+
     info->nas[info->neffect] = countnas(component, excludetrend, 0);
     if (info->effect[info->neffect] == effect_error) 
       SERR("scaling parameter appears with constant matrix in the mixed effect part");

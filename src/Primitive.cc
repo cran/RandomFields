@@ -779,7 +779,7 @@ int checkcovariate(cov_model *cov){
 
     if (ntot <= 0) GERR("no locations given");
     if (vdim * ntot != ndata)
-      GERR3("number of data (%d) not a multiple of the number of locations (%d x %d)", ndata, ntot, vdim);
+      GERR3("Number of data (%d) not a multiple of the number of locations (%d x %d)", ndata, ntot, vdim);
   }
   assert(vdim > 0);
 

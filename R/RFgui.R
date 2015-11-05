@@ -22,10 +22,10 @@
 
 RFgui <- function(data, x, y,
                   same.algorithm = TRUE,
-                  ev, 
+                  ev, bin = NULL,
                   xcov, ycov,
                   sim_only1dim=FALSE,
-                  wait = 0,
+                  wait = 0, 
                   ...) {
   if (!interactive()) {
     warning("'RFgui' can be used only in an interactive mode")
@@ -37,15 +37,15 @@ RFgui <- function(data, x, y,
   if (exists(".RFgui.exit", .GlobalEnv)) rm(".RFgui.exit", envir=.GlobalEnv)
  
   rfgui.intern(x=x, y=y, same.alg=same.algorithm,
-               ev=ev, xcov=xcov, ycov=ycov,
-               data=data, sim_only1dim=sim_only1dim, 
-               parent.ev = Env,
-              ...)
-
+                          ev=ev, bin=bin, xcov=xcov, ycov=ycov,
+                          data=data, sim_only1dim=sim_only1dim, 
+                          parent.ev = Env,
+                          ...)
+ 
   if (wait >= 0) {
     while (!exists(".RFgui.exit", envir=Env)) .C("sleepMicro", as.integer(wait))
     res <- get("RFgui.model", envir=Env)
-    if (is.null(res)) return(res) #; Print(res)
+    if (is.null(res)) return(res) 
     if (RFoptions()$general$spConform) {
       RFvariogram(model=res, 0, get(".RFgui.y", envir=Env))
       res <- list2RMmodel(GetModel(RFvariogram))
@@ -59,7 +59,8 @@ RFgui <- function(data, x, y,
 rfgui.intern <- function(data, x, y,
                          same.alg = FALSE,
                          fixed.rs=NULL,                         
-                         ev, 
+                         ev,
+                         bin,
                          xcov, ycov,
                          sim_only1dim=FALSE,                         
                          parent.ev=NULL,
@@ -86,7 +87,6 @@ rfgui.intern <- function(data, x, y,
                        graphics.height=-1
                        )
   else  internal.rfoptions(storing=FALSE, printlevel=printlevel - 10, ...)
-  #Print(same.alg, RFoptOld)
   assign("RFopt.old", RFoptOld[[1]], envir=ENVIR)
   RFopt <- RFoptOld[[2]]
   rm("RFoptOld")
@@ -125,7 +125,6 @@ rfgui.intern <- function(data, x, y,
                            PACKAGE="RandomFields")$k
     dim <- as.integer(2 - sim_only1dim)  
     newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
-    ##  Print(selModelCountPar, modelChoice, newmodel)
     modelParam <- try(.Call("SetAndGetModelInfo", guiReg,
                         list("Dummy", newmodel), dim,
                         FALSE, FALSE, FALSE, dim,
@@ -161,14 +160,16 @@ rfgui.intern <- function(data, x, y,
       entryParamValue <- tcltk::tclVar(tcltk::tclvalue(slParamValue))
       # name <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
       # slParamName <- tcltk::tklabel(tt,text=paste(toupper(substring(name, 1,1)), substring(name, 2), sep=""))
+
       txt <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
       slParamName <- tcltk::tklabel(tt, text=txt)
       slParam <- tcltk::tkscale(tt, command = plotDensity,
                          from= modelParam[i,1], 
                          to = modelParam[i,2],
                          showvalue=FALSE, variable=slParamValue,
-                         resolution=if (modelParam[i, 3] == INTEGERPARAM) 1 else
-                                (modelParam[i,2]-modelParam[i,1])/numberSteps, 
+                                ## neg value needed to get precise bounds:
+                         resolution=if (modelParam[i, 3]==INTEGERPARAM) -1 else
+                                    diff(modelParam[i,2:1])/numberSteps, 
                          orient="horizontal", length=length.slider, width=18)
       entryParam <- tcltk::tkentry(tt,width=size.entry,textvariable=entryParamValue)
       tcltk::tkbind(entryParam, "<Return>", OnAddParamEntryChanged)
@@ -184,8 +185,6 @@ rfgui.intern <- function(data, x, y,
     }
     baseModel <- list(modelChoice, k=baseParam)
 
-    #Print(modelChoice, baseParam, baseModel)
-
     assign("baseModel", baseModel, ENVIR)
     position()
   }
@@ -198,13 +197,10 @@ rfgui.intern <- function(data, x, y,
       ## tcltk::tkconfigure(cbPlotEV, disabled=FALSE)
       #Print("here end")
     } else {
-    #
-      #Print("XXX here end")
       tcltk::tclvalue(plotEV) <- "0"
     }
   #    tcltk::tkconfigure(cbPlotEV, disabled=TRUE)
     
-    #Print("OK")
     tkrplot::tkrreplot(imgVar)
   }
 
@@ -215,61 +211,58 @@ rfgui.intern <- function(data, x, y,
     tkrplot::tkrreplot(imgVar)
   }
 
-  OnScaleEntryChanged <- function(...)
-  { 
-    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleValue)))
-    tcltk::tkconfigure(slScale, to=newscale+abs(newscale),
-                from=min(scaleMin,newscale-2),
-                resolution=0.01 *
-                ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2)))
-    tcltk::tclvalue(slScaleValue) <- log(as.numeric(tcltk::tclvalue(entryScaleValue)))
-  }  
+  
+  EntryChanges <- function(var, value, strictpos=TRUE, factor=2) {
+    value <- as.numeric(tcltk::tclvalue(value))
+    if (is.na(strictpos)) {
+      to <- if (value > 0) value * factor else value / factor
+      from <- if (value < 0) value * factor else value / factor
+    } else {
+      if (value < 0) stop("negative values not allowed")
+      if (strictpos) {
+        value <- log(value)
+        to <- value + log(factor)
+        from <- value - log(factor)
+      } else {
+        to <- if (value == 0) 1 else value * factor
+        from <- if (value > 1) value / factor else 0
+      }
+    }
+    resolution <-  0.01 * (to - from)
+    tcltk::tkconfigure(var, to=to, from = from, resolution = -resolution)    
+    return(value)
+  }
+ 
+  
+  OnScaleEntryChanged <- function(...) { 
+    tcltk::tclvalue(slScaleValue) <- EntryChanges(slScale, entryScaleValue)
+    plotDensity()
+  }
 
-  OnVarEntryChanged <- function(...)
-  { 
-    newvariance <- log(as.numeric(tcltk::tclvalue(entryVarianceValue)))
-    tcltk::tkconfigure(slVariance,
-                to=newvariance+abs(newvariance),
-                from=min(varianceMin,newvariance-2),
-                resolution=0.01 *
-                (2 * newvariance - varianceMin) -
-                min(varianceMin, newvariance - 2))
-    tcltk::tclvalue(slVarianceValue) <- newvariance
+
+  OnVarEntryChanged <- function(...) {
+    tcltk::tclvalue(slVarianceValue) <- EntryChanges(slVariance,
+                                                     entryVarianceValue)
+    plotDensity()
   } 
 
-   OnNuggetEntryChanged <- function(...)
-  { 
-    newnugget <- max(0,as.numeric(tcltk::tclvalue(entryNuggetValue)))
-    tcltk::tkconfigure(slNugget, to=if(newnugget==0) 1 else 2*newnugget,
-                from=0, resolution=0.02*newnugget)
-    tcltk::tclvalue(slNuggetValue) <- newnugget
-  } 
-#  XX_OnNuggetEntryChanged <- function(...)
-#  { 
-##    newnugget <- max(0,as.numeric(tcltk::tclvalue(entryNuggetValue)))
-  ##   tcltk::tkconfigure(slNugget, to=2*newnugget, from=0, resolution=0.02*newnugget)
-#    tcltk::tclvalue(slNuggetValue) <- newnugget
-#  } 
+   OnNuggetEntryChanged <- function(...) {
+     tcltk::tclvalue(slNuggetValue) <-
+       EntryChanges(slNugget, entryNuggetValue, strict=FALSE)
+     plotDensity()
+   }  
 
   OnRotationEntryChanged <- function(...)
   { 
     tcltk::tclvalue(slRotationValue) <- as.numeric(tcltk::tclvalue(entryRotationValue))
+    plotDensity()
   }  
 
   OnRadiusEntryChanged <- function(...)
-  { 
-    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleAValue)))
-    tcltk::tkconfigure(slScaleA, to=newscale+abs(newscale),
-                from=min(scaleMin,newscale-2),
-                resolution=0.01*
-                ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2))) 
-    tcltk::tclvalue(slScaleAValue) <-newscale
-    newscale <- log(as.numeric(tcltk::tclvalue(entryScaleBValue)))
-    tcltk::tkconfigure(slScaleB, to=newscale+abs(newscale),
-                from=min(scaleMin,newscale-2),
-                resolution=0.01*
-                ((2 * newscale - scaleMin) - min(scaleMin, newscale - 2)))
-    tcltk::tclvalue(slScaleBValue) <- newscale
+  {
+    tcltk::tclvalue(slScaleAValue) <- EntryChanges(slScaleA, entryScaleAValue)
+    tcltk::tclvalue(slScaleBValue) <- EntryChanges(slScaleB, entryScaleBValue)
+    plotDensity()
   }  
 
   OnAddParamEntryChanged <- function(...)
@@ -279,7 +272,8 @@ rfgui.intern <- function(data, x, y,
       for (i in 1:length(baseModel$k)) {
         slParamValue <- get(paste("slParam", i, "Value", sep=""), envir=ENVIR)
         value <- get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tcltk::tclvalue(slParamValue) <- base::round(as.numeric(tcltk::tclvalue(value)), digits=2)
+        tcltk::tclvalue(slParamValue) <-
+          base::round(as.numeric(tcltk::tclvalue(value)), digits=2)
       }
     plotDensity()
   } 
@@ -287,9 +281,6 @@ rfgui.intern <- function(data, x, y,
   GetGuiModel <- function() {
     variance <- exp(as.numeric(tcltk::tclvalue(slVarianceValue)))
     nugget <- as.numeric(tcltk::tclvalue(slNuggetValue))
-
-    #Print(baseModel)
-    
     baseParam <- baseModel$k
     if(length(baseModel$k) > 0)
       for (i in 1:length(baseModel$k)) { 
@@ -317,9 +308,6 @@ rfgui.intern <- function(data, x, y,
                     list(DOLLAR[1], var=variance, aniso=aniso, baseModel),
                     list(DOLLAR[1], var=nugget, list(ZF_NUGGET[1])))
     }
-
-    #Print(newmodel)
-    
     return(newmodel)
   }
 
@@ -366,8 +354,6 @@ rfgui.intern <- function(data, x, y,
       x1 <- rep(xcov, each=length(ycov))
       x2 <- rep(ycov, times=length(xcov))
 
-     # Print(newmodel, "hier")
-      
       cv <- RFvariogram(x=as.matrix(expand.grid(xcov, ycov)),
                         model=newmodel, 
                         practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0")
@@ -387,14 +373,11 @@ rfgui.intern <- function(data, x, y,
       if (xcov[1] == 0 && ycov[1] == 0)
         points(trans3d(xcov[1], ycov[1], cv00, pmat = tranMatrix), pch =16)
 
-
-    #  Print(newmodel, "hier")
       assign("model", newmodel, envir = ENVIR)
       return(0)
     }
     
     cv <- xcov
-   # Print(newmodel, xcov, as.character(tcltk::tclvalue(plotVarCov)))
     if(as.character(tcltk::tclvalue(plotVarCov)) == "Covariance") {
      
       cv <- RFcov(x=xcov, model=newmodel,
@@ -403,8 +386,6 @@ rfgui.intern <- function(data, x, y,
     if(as.character(tcltk::tclvalue(plotVarCov)) == "Variogram") {      
       pr.dummy <- tcltk::tclvalue(cbPracRangeVal) != "0"
  
-    #  Print(newmodel, "xxx")
-      
       cv <- RFvariogram(x=xcov, model=newmodel,
                         practicalrange = pr.dummy)
      }
@@ -417,9 +398,6 @@ rfgui.intern <- function(data, x, y,
       ym <- range(cv, na.rm=TRUE) * c(1, 1.1)
     }
 
-#    Print(xm, xcov, min(xcov),max(xcov), ev@centers, ym,  c(min(xcov),max(xcov)), c(min(cv), max(cv)*1.1))
-
-    
     lab <- xylabs("", NULL)
     plot(xcov[2:length(xcov)], cv[2:length(xcov)], type="l",
          xlab=lab$x, ylab="", xlim=xm, ylim=ym)
@@ -430,13 +408,10 @@ rfgui.intern <- function(data, x, y,
       points(ev@centers[!is.nan(ev@emp.vario)],
              ev@emp.vario[!is.nan(ev@emp.vario)], pch=19)
 
-    #    Print(newmodel, "hierx")
      assign("model", newmodel, envir = ENVIR)
   } # function
 
-  plotSimulation <- function(...)
-  {
-
+  plotSimulation <- function(...) {
     par(cex=0.6, bg="lightgrey", mar=c(3,3,1,1))
     if(!exists("model", envir=ENVIR)) {
       plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
@@ -445,32 +420,24 @@ rfgui.intern <- function(data, x, y,
 
     simu.model <- get("model", envir=ENVIR)
     if (!is.null(simu.model)) {
-      
-      ##  assign("cx", x, envir=.GlobalEnv)
-      ##  assign("cmodel", model,  envir=.GlobalEnv)
-      
       par(cex=0.6, bg="lightgrey")
-      
       if (guiOpt$simu_method != "any method")
         simu.model <- list(guiOpt$simu_method, simu.model)
       
-      ## Print(newmodel)
       yy <- (if (get("simDim", envir = ENVIR) =="sim1Dim") NULL else
              if (length(y)==0) x else y)
       pr <-  tcltk::tclvalue(cbPracRangeVal) != "0"
-
-  #    Print("A")
       z <- try(RFsimulate(simu.model,x=x, grid=TRUE, 
                           y=if (get("simDim", envir = ENVIR)=="sim1Dim") NULL
                           else if (length(y)==0) x else y,
                           seed = fixed.rs,
                           register=guiReg, spConform=TRUE,
-                          practicalrange = tcltk::tclvalue(cbPracRangeVal) != "0"),
+                          practicalrange =
+                          tcltk::tclvalue(cbPracRangeVal) != "0"),
                silent=!TRUE)
-
  
-      if (class(z) == "try-error") {
-          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
+     if (class(z) == "try-error") {
+         plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
                ylab="",
              cex.main=2, col.main="brown",
               main=paste("\n\n\n\n\n\n\n\n",
@@ -484,20 +451,20 @@ rfgui.intern <- function(data, x, y,
                if (guiOpt$simu_method != "any method")
                paste("\nof '", guiOpt$simu_method, "'", sep=""),
                sep=""))
-      } else {
-        plot(z, cex=.5, legend=FALSE)
-      }
+     } else {
+        plot(z, cex=.5, legend=FALSE, xlab=NULL)
+     }
     }
   }
 
   
   plotDensity <- function(...) {    
-#    Print("Y")
-    #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Busy"))
+#
+    #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Busy"))    
     tkrplot::tkrreplot(imgVar)
     if(as.numeric(tcltk::tclvalue(simAlways)))
       tkrplot::tkrreplot(imgSim)
-    #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Free"))
+   #tcltk::tkconfigure(labelOccupancy,textvariable=tcltk::tclVar("Free"))
   }
 
   OnChangeIsotropie <- function(...)
@@ -568,7 +535,7 @@ rfgui.intern <- function(data, x, y,
     row.sl <- row.sl+1
 
     #--- PLOT  ---------------------------------------------------------
-   tcltk::tkgrid.configure(imgVar, rowspan=image.rowspan, columnspan=image.colspan,
+    tcltk::tkgrid.configure(imgVar, rowspan=image.rowspan, columnspan=image.colspan,
                      column=col.var, row=1,sticky="w") 
     tcltk::tkgrid.configure(imgSim, rowspan=image.rowspan, columnspan=image.colspan,
                      column=col.sim, row=1,sticky="w")
@@ -693,33 +660,37 @@ rfgui.intern <- function(data, x, y,
                      row=max(row.sl,image.rowspan+2), sticky="e")
     row.sl=row.sl+1
     #--- Beschaeftigungsindikator ---------------------------------------
-#    tcltk::tkgrid.configure(labelOccupancy, row=row.last, column=col.sl, sticky="e")
+#    tcltk::tkgrid.configure(labelOccupancy, row=row.last, column=col.sl, sticky="e")    
   } ## end fct position
 
+
+ 
   PRINT <- FALSE
 
-  if (missing(x)) {
-    stopifnot(length(y)==0)    
-    if (missing(data)) {
-      x <- seq(1, 5, len=guiOpt$size[if (sim_only1dim) 1 else 2] )
-    } else {      
-      if (isSpObj(data)) data <- sp2RF(data)
-       stopifnot(is(data, "RFsp"))
-      if (length(y)!=0) stop("'x' and 'y' may not be given if 'data' is given.")
-      r <- apply(data@coords, 2, range)
+  if (missing(data)) {
+    if (missing(x)) x <- seq(1, 5, len=guiOpt$size[if (sim_only1dim) 1 else 2] )
+  } else {
+    S <- # if (exists("UnifyData")) UnifyData(data=data, RFopt=RFopt) else
+         StandardizeData(data=data, RFopt=RFopt)
+    if (S$matrix.indep.of.x.assumed)
+      stop("data must contain the information about the locations of the data")
+    else {
+      if (!missing(x)) message("coordinates detected in the data")
+    }
+    if (missing(x)) {
+      r <- apply(S$coord[[1]]$x, 2, range)    
       len <- guiOpt$size[if (length(r) == 2) 1 else 2] 
       x <- seq(r[1], r[2], len=len)
       if (length(r) > 2) {
          y <- seq(r[3], r[4], len=len)
-      }
+      } else sim_only1dim <- TRUE
     }
   }
   assign(".RFgui.y", if (length(y)==0) NULL else 0, envir=parent.ev)
 
   if(!missing(data) && !is.null(data)) {
-    if (!is.null(ev)) stop("if 'data' is given, 'ev' may not be given.")
-    ev <- RFempiricalvariogram(data=data, phi=1)
-    ## RFfit(data) ???
+    if (!is.null(ev)) stop("if 'data' is given, 'ev' may not be given.")   
+    ev <- RFempiricalvariogram(data=data, phi=1, bin=bin)
   }
   
   if (any(diff(x) <= 0)) 
@@ -746,10 +717,6 @@ rfgui.intern <- function(data, x, y,
 
 
   if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)
-
-  ##  Print("removing model")
-  ##  if (exists("model", where=ENVIR)) remove("model", envir=ENVIR)
-
              
   if(is.null(fixed.rs)) {
     if (!exists(".Random.seed")) runif(1)
@@ -767,7 +734,6 @@ rfgui.intern <- function(data, x, y,
   simAlways <- tcltk::tclVar(as.integer(guiOpt$alwaysSimulate))
   plotVarCov <- tcltk::tclVar("Variogram")
 
-  ##Print("TTT")
   plotEV <- tcltk::tclVar(ifelse(is.null(ev) && tcltk::tclvalue(plotVarCov)=="Variogram",
                           "0", "1"))
   showAniso <- tcltk::tclVar("0")
@@ -831,6 +797,8 @@ rfgui.intern <- function(data, x, y,
   #------------------------------------------------------------------
   tt <- tcltk::tktoplevel()#title="RFgui")
   tcltk::tktitle(tt) <- "RFgui"
+  tcltk::tkwm.protocol(tt, "WM_DELETE_WINDOW", OnReturn)
+  
   # some position variables
   # assuming all sliders are in the same column and consecutive rows
   image.rowspan <- 15
@@ -864,8 +832,8 @@ rfgui.intern <- function(data, x, y,
   imgSim <- tkrplot::tkrplot(tt,fun=plotSimulation,hscale=plothscale,vscale=plotvscale)
     
   #--- Beschaeftigungsindikator -------------------------------------
-  labelOccText <- tcltk::tclVar("Free")
-  labelOccupancy <- tcltk::tklabel(tt,text=tcltk::tclvalue(labelOccText))
+ # labelOccText <- tcltk::tclVar("Free")
+ # labelOccupancy <- tcltk::tklabel(tt,text=tcltk::tclvalue(labelOccText))
 
   #--- anistropy -----------------------------------------------------
   cbAnisotropy <- tcltk::tkcheckbutton(tt, variable=showAniso,
@@ -895,7 +863,6 @@ rfgui.intern <- function(data, x, y,
   labelSim1Dim <- tcltk::tklabel(tt,text="1 dim")
   labelSim2Dim <- tcltk::tklabel(tt,text=if (sim_only1dim) "1 dim" else "2 dim")
   assign("simDim", as.character(tcltk::tclvalue(rb2DimValue)), envir=ENVIR)
-#  Print(get("simDim", envir=ENVIR)); 
 
   #--- Button - new simulation (new seed) ----------------------------
   buttonNewSimu <- tcltk::tkbutton(tt,text="New Simulation",command=OnNewSimu)
@@ -915,7 +882,7 @@ rfgui.intern <- function(data, x, y,
   #--- Slider turn covariance plot in anisotropic case ----------------
   slTurnplot <- tcltk::tkscale(tt, command = OnTurnPlot, from=0, to=360,
                         showvalue=TRUE, variable=slTurnPlotValue,
-                        resolution=360/numberSteps, orient="horizontal",
+                        resolution=-360/numberSteps, orient="horizontal",
                         length=2*length.slider, width=18)
  # labelRotation <- tcltk::tklabel(tt,text="Rotation")
 
@@ -923,7 +890,7 @@ rfgui.intern <- function(data, x, y,
   # Aniso Rotation
   slRotation <- tcltk::tkscale(tt, command = plotDensity, from=0, to=0.5*pi,
                         showvalue=FALSE, variable=slRotationValue,
-                        resolution=0.5*pi/numberSteps, orient="horizontal",
+                        resolution=-0.5*pi/numberSteps, orient="horizontal",
                         length=length.slider, width=18)
   labelRotation <- tcltk::tklabel(tt,text="Rotation")
   entryRotation <- tcltk::tkentry(tt,width=size.entry, textvariable=entryRotationValue)
@@ -932,7 +899,7 @@ rfgui.intern <- function(data, x, y,
   # Aniso Scales in first and second axis
   slScaleA <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
                       showvalue=FALSE, variable=slScaleAValue,
-                      resolution=radiusMax/numberSteps, orient="horizontal",
+                      resolution=-radiusMax/numberSteps, orient="horizontal",
                       length=length.slider, width=18)
   labelScaleA <- tcltk::tklabel(tt,text="first axis scale")
   entryScaleA <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleAValue)
@@ -940,7 +907,7 @@ rfgui.intern <- function(data, x, y,
 
   slScaleB <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
                       showvalue=FALSE, variable=slScaleBValue,
-                      resolution=radiusMax/numberSteps, orient="horizontal",
+                      resolution=-radiusMax/numberSteps, orient="horizontal",
                       length=length.slider, width=18)
   labelScaleB <- tcltk::tklabel(tt,text="second axis scale")
   entryScaleB <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleBValue)
@@ -949,7 +916,7 @@ rfgui.intern <- function(data, x, y,
   # Scale
   slScale <- tcltk::tkscale(tt, command = plotDensity, from=scaleMin, to=scaleMax,
                             showvalue=FALSE, variable=slScaleValue,
-                            resolution=(scaleMax-scaleMin)/numberSteps,
+                            resolution=-(scaleMax-scaleMin)/numberSteps,
                             orient="horizontal", length=length.slider, width=18)
   labelScale <- tcltk::tklabel(tt,text="Scale")
   entryScale <- tcltk::tkentry(tt,width=size.entry, textvariable=entryScaleValue)
@@ -959,7 +926,7 @@ rfgui.intern <- function(data, x, y,
   slVariance <- tcltk::tkscale(tt, command = plotDensity, from=varianceMin,
                                to=varianceMax,
                                showvalue=FALSE, variable=slVarianceValue,
-                               resolution=(varianceMax-varianceMin)/numberSteps,
+                               resolution=(varianceMin-varianceMax)/numberSteps,
                                orient="horizontal", length=length.slider, width=18)
   labelVariance <- tcltk::tklabel(tt,text="Variance")
   entryVariance <- tcltk::tkentry(tt,width=size.entry, textvariable=entryVarianceValue)
@@ -968,7 +935,7 @@ rfgui.intern <- function(data, x, y,
   #Slider nugget
   slNugget <- tcltk::tkscale(tt, command = plotDensity, from=nuggetMin, to=nuggetMax,
                              showvalue=FALSE, variable=slNuggetValue,
-                             resolution=(nuggetMax-nuggetMin)/numberSteps,
+                             resolution=-(nuggetMax-nuggetMin)/numberSteps,
                              orient="horizontal", length=length.slider, width=18)
   labelNugget <- tcltk::tklabel(tt,text="Nugget")
   entryNugget <- tcltk::tkentry(tt,width=size.entry, textvariable=entryNuggetValue)

@@ -285,13 +285,8 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
      method = SVD; // necessary if the value of method has been Cholesky.
      //               originally
 
-     if (vdimtot > maxvariab * 0.8) {
-       sprintf(ERRORSTRING_OK, 
-	       "number of points less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD",
-	       maxvariab);
-       sprintf(ERRORSTRING_WRONG,"%ld", vdimtot);
-       err=ERRORCOVFAILED; goto ErrorHandling;
-     }
+     if (vdimtot > maxvariab * 0.8)
+       GERR3("'%s' valid for number of locations less than 0.8 * RFparameters()$direct.maxvariables (%d) for SVD. Got %ld.", NICK(cov), maxvariab, vdimtot);
      if (PL>=PL_STRUCTURE) { LPRINT("method to the root=SVD\n"); }
      if ((VT =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL ||
 	 (D =(double *) MALLOC(sizeof(double) * vdimtot))==NULL ||
