@@ -259,7 +259,7 @@ void errorMSG(int err, char* M, int len, bool final) {
     char restrictive[100], info[150];
     sprintf(restrictive, "Are the %s() too restrictive?", RFOPTIONS);
     sprintf(info, "\n You get (more) internal information if you set %s(%s=%d) before running your code.",
-	    RFOPTIONS, general[GENERAL_CPRINT], PL_RECURSIVE);
+	    RFOPTIONS, general[GENERAL_CPRINT], PL_DETAILSUSER);
     
     sprintf(m, 
 	    "Running out of list of methods. %s%s",
@@ -1053,7 +1053,17 @@ void InitModelList() {
   addCov(dampedcosine, Ddampedcosine, Inversedampedcosine);
   // addlogCov(logdampedcosine);
 
-
+  /*
+  pref_type pderivative= {2, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
+  //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludeModel("derivative", PosDefType, 1, 1, 1, kappamixed, XONLY, PREVMODELD,
+	       checkderivative, rangeDerivative, pderivative, 
+	       true, //false, 
+	       SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
+  kappanames("partial",INTSXP);
+  addCov(derivative, NULL, NULL);
+  */
+   
   pref_type pdewijsian = {2, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
   //                     CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
 
@@ -1270,6 +1280,16 @@ void InitModelList() {
   nickname("gennsst");
   kappanames("A", REALSXP);
   addCov(nonstatgennsst_intern);
+
+  /*
+ pref_type phelmholtz= {2, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
+  //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+  IncludeModel("helmholtz",  PosDefType, 1, 1, 2, kappamixed, XONLY, SYMMETRIC,
+         checkhelmholtz,rangeHelmholtz, phelmholtz,
+           true, PARAM_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
+  kappanames("component",REALSXP,"Aniso",REALSXP);
+  addCov(helmholtz, NULL, NULL);
+  */
 
   pref_type phyper= {2, 0, 0, 3, 0, 4, 5, 0, 5, 0, 5, 0, 0, 5};
   //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
@@ -2373,12 +2393,10 @@ void InitModelList() {
 
   DIRECT = 
     IncludeModel(METHODNAMES[Direct], GaussMethodType, 
-		 1, 1, 4, kappaGProc, XONLY, UNREDUCED,
+		 1, 1, 2, kappaGProc, XONLY, UNREDUCED,
 		 check_directGauss, range_direct, PREF_NOTHING,
 		 false,  SUBMODEL_DEP, INFDIM-1, false, MISMATCH);
   kappanames("boxcox", REALSXP,
-	     direct[DIRECT_METHOD - COMMON_GAUSS - 1], INTSXP,
-	     direct[DIRECT_SVDTOL - COMMON_GAUSS - 1], REALSXP, 
 	     direct[DIRECT_MAXVAR - COMMON_GAUSS - 1], INTSXP);
   change_sortof(GAUSS_BOXCOX, ANYPARAM);
  RandomShape(2, init_directGauss, do_directGauss);

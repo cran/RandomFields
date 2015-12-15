@@ -85,11 +85,8 @@ RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
 }
 
 
-\seealso{
-  \link{RP},
- \command{\link{RPcoins}},
- \command{\link{RPspectral}},
- \command{\link{RPtbm}}.
+\seealso{ \link{Gaussian},
+  \link{RP}.
 }
 
 \keyword{methods}

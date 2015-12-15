@@ -629,8 +629,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	while (prev != NULL && prev->nr != RFGET) prev = prev->calling;
 	if (prev == NULL) ERR("not enough submodels");      
       }
-      if (PL >= PL_SUBIMPORTANT && !shape_process)  {
-	// da darf von 2 untermodellen nur 1 angegeben werden
+      if (PL >= PL_IMPORTANT && !shape_process)  {
+	// bei shape_process darf von 2 untermodellen nur 1 angegeben werden
 	warning("not all submodels are given");
       }
     }
@@ -753,7 +753,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     }
     assert(*Cov == NULL);
     CMbuild(model, 0, Cov);
-
+ 
     strcpy(ERROR_LOC, "Having built the model:");
     cov = *Cov;
     if (cov == NULL) ERR("no model is given");
@@ -783,10 +783,12 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 	   ) != NOERROR) goto ErrorHandling;
 
     } else { // xlist
+      // double AA=0; for (int ii=1; ii<10000000; ii++) for (int ii0=1; ii0<10000000; ii0++) AA+=exp(ii0) / log(ii);  printf("C\n");
       assert(x == NULL && Y==NULL && T==NULL && lx == 0 && ly == 0);
       cov->prevloc = loc_set(xlist, dist_ok);
       assert(cov->prevloc != NULL);
     }
+    assert(x == NULL && Y==NULL && T==NULL && lx == 0 && ly == 0);
 
     location_type *loc;
     int spatialdim;
@@ -1779,9 +1781,9 @@ int check_likelihood(cov_model *cov) {
     int
       repet = datatot / vdimtot;   
 
-    //    PMI(cov);
+    //    PMI(cov); BUG;
 
-    //    printf("%d %d %d\n", repet, vdimtot, datatot);
+    //      printf("i=%d: %d %d %d tot=%d %d\n", GLOBAL.general.set, repet, vdimtot, datatot, totpts, cov->vdim[0]);
  
     if (repet * vdimtot != datatot || repet == 0)  {
       GERR("data and coordinates do not match");

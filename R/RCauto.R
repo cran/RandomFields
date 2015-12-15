@@ -5,7 +5,7 @@
  METHODMAXCHAR 	<- as.integer(MAXCHAR)
 
 
- MAXCOVDIM 	<- as.integer(11000)
+ MAXCOVDIM 	<- as.integer(10)
  MAXMLEDIM 	<- as.integer(MAXCOVDIM)
  MAXSIMUDIM 	<- as.integer(MAXCOVDIM)
  MAXSUB 	<- as.integer(10)
@@ -135,24 +135,6 @@ RC_EARTH_COORDS <- EARTH_COORDS 	<- as.integer(13)
  MODEL_ERR 	<- as.integer((MAXFIELDS+11))
  MODEL_MAX 	<- as.integer(MODEL_ERR)
 
-
-
-
-
- PL_IMPORTANT 	<- as.integer(1)
- PL_SUBIMPORTANT 	<- as.integer(2)
- PL_RECURSIVE 	<- as.integer(3)
- PL_REC_DETAILS 	<- as.integer(4)
- PL_STRUCTURE 	<- as.integer(5)
- PL_ERRORS 	<- as.integer(6)
-
- PL_FCTN_DETAILS 	<- as.integer(7)
- PL_FCTN_SUBDETAILS 	<- as.integer(8)
-
- PL_COV_STRUCTURE 	<- as.integer(7)
- PL_DIRECT_SEQU 	<- as.integer(8)
- PL_DETAILS 	<- as.integer(9)
- PL_SUBDETAILS 	<- as.integer(10)
 
  TcfType 	<- as.integer(0)
  PosDefType 	<- as.integer(1)
@@ -327,7 +309,6 @@ c(       "NLOPT_GN_DIRECT", "NLOPT_GN_DIRECT_L",      "NLOPT_GN_DIRECT_L_RAND", 
 RC_LIKELIHOOD_NAMES <- LIKELIHOOD_NAMES <-
 c(       "auto", "full", "composite", "tesselation" )
 
-
 RC_ISONAMES <- ISONAMES <-
 c(       "isotropic", "space-isotropic", "zero-space-isotropic",      "vector-isotropic", "symmetric", "cartesian system",     "gnomonic projection", "orthographic projection",     "spherical isotropic", "spherical symmetric", "spherical system",      "earth isotropic", "earth symmetric",  "earth system",      "cylinder system",     "non-dimension-reducing", "parameter dependent", "<mismatch>" )
 
@@ -355,8 +336,9 @@ c(      "auto", "keep", "cartesian", "earth",     "sphere", "gnomonic", "orthogr
  CARTESIAN_SYSTEMS <-
 c(      "cartesian", "gnomonic", "orthographic" )
 
+
  TYPEOF_PARAM_NAMES <-
-c(      "var", "signed var", "sd", "signed sd", "scale",     "diag", "aniso", "integer", "unspecfd", "trend",       "nugget", "mixed var", "regress", "any" )
+c(      "variance", "covariance", "sd", "signed sd", "scale",      "diagonal", "aniso", "integer", "unspecified",  "trend",     "nugget", "mixed variance", "critical to estimate",      "internally ignored", "never varified",      "never returned", "forbidden" )
 
  EQNAMES <-
 c( "==", "!=", "<=", "<", ">=", ">" )
@@ -367,6 +349,7 @@ c( "EQNAMES", "ISONAMES",   		       "DOMAIN_NAMES",  		       "TYPENAMES", "MON
 
  PROJECTION_NAMES <-
 c(      "space", "time" )
+
 
 
 

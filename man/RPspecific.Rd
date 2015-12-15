@@ -112,12 +112,8 @@ for (i in 1:n) {%ok
 \dontshow{FinalizeExample()}
 }
 
-\seealso{
-  \link{RP},
- \command{\link{RPcoins}},
- \command{\link{RPhyperplane}},
- \command{\link{RPspectral}},
- \command{\link{RPtbm}}.
+\seealso{ \link{Gaussian},
+  \link{RP}.
 }
 
 \keyword{methods}

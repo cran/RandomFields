@@ -26,6 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 solve_DELETE_type Ext_solve_DELETE = NULL;
 solve_NULL_type Ext_solve_NULL = NULL;
 solvePosDef__type Ext_solvePosDef_ = NULL;
+
+sqrt__type Ext_sqrt_ = NULL;
+sqrt_RHS__type Ext_sqrt_RHS_ = NULL;
+
 getErrorString_type Ext_getErrorString = NULL;
 setErrorLoc_type Ext_setErrorLoc = NULL;
 I0mL0_type Ext_I0mL0 = NULL;
@@ -42,6 +46,9 @@ void includeXport() {
   CALL(solve_DELETE); 
   CALL(solve_NULL); 
   CALL(solvePosDef_); 
+  CALL(sqrt_); 
+  CALL(sqrt_RHS_); 
+
   CALL(getErrorString); 
   CALL(setErrorLoc);
   CALL(I0mL0);

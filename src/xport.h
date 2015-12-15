@@ -31,6 +31,10 @@ typedef void (*solve_DELETE_type)(solve_storage **S);
 typedef void (*solve_NULL_type)(solve_storage *x); 
 typedef int (*solvePosDef__type)(double *, int, bool, double *, int, double *, 
 		solve_storage *, solve_param *,  int);
+
+typedef int (*sqrt__type)(double*, int, solve_storage*, solve_param*, int);
+typedef int (*sqrt_RHS__type)(solve_storage*, double*, double*);
+
 typedef void (*getErrorString_type)(char errorstring[MAXERRORSTRING]);
 typedef void (*setErrorLoc_type)(char errorloc[nErrorLoc]);
 typedef double (*I0mL0_type)(double x);
@@ -40,6 +44,8 @@ typedef int (*invertMatrix_type)(double *M, int size);
 extern solve_DELETE_type Ext_solve_DELETE;
 extern solve_NULL_type Ext_solve_NULL;
 extern solvePosDef__type Ext_solvePosDef_;
+extern sqrt__type Ext_sqrt_;
+extern sqrt_RHS__type Ext_sqrt_RHS_;
 extern getErrorString_type Ext_getErrorString;
 extern setErrorLoc_type Ext_setErrorLoc;
 extern I0mL0_type Ext_I0mL0;

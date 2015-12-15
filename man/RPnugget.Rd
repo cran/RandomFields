@@ -71,7 +71,7 @@ RPnugget(phi, boxcox, tol, vdim)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\seealso{
+\seealso{ \link{Gaussian},
   \link{RP},
  \command{\link{RPcoins}},
  \command{\link{RPhyperplane}},

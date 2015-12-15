@@ -628,13 +628,15 @@ RFfit <-
     on.exit(detach(name, character.only = TRUE), add=TRUE)
   }
 
+
   Z <- StandardizeData(model=model, x=x, y=y, z=z, T=T, grid=grid,
                        data=data, distances=distances, dim=dim,
                        RFopt=RFopt,
                        mindist_pts = RFopt$fit$smalldataset / 2, ...)
-
   Z <- BigDataSplit(Z, RFopt)
 
+#  str(Z); warning("delete str(Z)")
+  
   if (!is.null(lower) && !is.numeric(lower)) lower <- PrepareModel2(lower, ...)
   if (!is.null(upper) && !is.numeric(upper)) upper <- PrepareModel2(upper, ...)
   if (!is.null(users.guess)) users.guess <- PrepareModel2(users.guess, ...)

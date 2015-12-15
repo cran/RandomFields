@@ -67,10 +67,13 @@ const char
   *CARTESIAN_SYSTEMS[3] = {
     "cartesian", "gnomonic", "orthographic"},
 
-  *TYPEOF_PARAM_NAMES[14] = {
-    "var", "signed var", "sd", "signed sd", "scale",
-    "diag", "aniso", "integer", "unspecfd", "trend",  
-    "nugget", "mixed var", "regress", "any"},
+  
+  *TYPEOF_PARAM_NAMES[FORBIDDENPARAM + 1] = {
+    "variance", "covariance", "sd", "signed sd", "scale", 
+    "diagonal", "aniso", "integer", "unspecified",  "trend",
+    "nugget", "mixed variance", "critical to estimate", 
+    "internally ignored", "never varified", 
+    "never returned", "forbidden"},
 
   *EQNAMES[6] = {"==", "!=", "<=", "<", ">=", ">"},
   
@@ -85,6 +88,7 @@ const char
   *PROJECTION_NAMES[PROJECTIONS] = {
     "space", "time"};
 
+ 
   
 
   

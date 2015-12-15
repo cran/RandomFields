@@ -648,8 +648,7 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
             paste(rep(". ", level), collapse=""), format(s, width=2),
             ") : x-coord=", paste(sp$x, collapse=","),
             "; compon.=", paste(sp$v, collapse=","), sep="")
-        if (printlevel>=PL_REC_DETAILS)
-          cat( "; parameters=", paste(sp$p, collapse=", "), sep="")
+        cat( "; parameters=", paste(sp$p, collapse=", "), sep="")
         cat(" ")
       }
 
@@ -1357,6 +1356,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 ##### user cannot know what the internal represenatation is
 
 
+
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
 
 
@@ -1366,6 +1366,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                     list("RFloglikelihood", data = Z$data, Z$model),
                     C_coord, PACKAGE="RandomFields")
  
+#  for (i in 1:100000) for (j in 1:100000) for(k in 1:100000) i+j+k; dddd
+
   ## hier zum ersten mal model verwendet wichtig,
   ## da interne Darstellung abweichen kann. Z.B. dass ein optionaler Parameter
   ## auf einen Standardwert gesetzt wird
@@ -2205,8 +2207,11 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     index.bv <- NULL
 
     
+   # str(coord); kkk
+
+    
     if (vdim == 1 && !dist.given) {
-      residuals <- .Call("simple_residuals", LiliReg) 
+       residuals <- .Call("simple_residuals", LiliReg) 
     } else {
       residuals <- list()
       for (i in 1:sets) {
@@ -2225,7 +2230,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     #Print(vdim, dist.given)
     
     for (j in 1:vdim) {
-      if (!dist.given) {
+      if (!dist.given) {        
         ev <-
           RFempiricalvariogram(coord,
                                data= if (vdim == 1) residuals else
@@ -2235,8 +2240,6 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                                theta=if ((spatialdim>=3) && !isotropic) ntheta,
                                deltaT=if (Z$Zeit) ntime,
                                spConform=FALSE, boxcox=c(Inf, Inf))
-
-
       } else {
         if (Z$xdimOZ != 1) stop("Distance vectors are not allowed.")
         n.bin <- vario2 <- vario <- rep(0, length(bin))
@@ -2862,7 +2865,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                 if (first.passage) {
                   old.likelihood <- likelihood
                 } else {
-                  if (printlevel > PL_REC_DETAILS) {
+                  if (printlevel > PL_RECURSIVE) {
                     if (likelihood > old.likelihood) {                      
                       cat("parscale: mle improved by", likelihood-old.likelihood,
                           "\n")

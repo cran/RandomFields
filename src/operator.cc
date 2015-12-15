@@ -4557,3 +4557,8 @@ int checksum(cov_model *cov) {
   
 }
 
+
+#define NUMBER_DERIV 10
+#define NUMBER_NORM 20
+#define DIM_MAX 10
+

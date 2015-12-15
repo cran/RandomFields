@@ -159,3 +159,20 @@ MLMETHODS <- c("ml") # "reml", "rml1"),
 
 par.storage <- ".RandomFields.par"
 par.storage.env <- .GlobalEnv
+
+
+
+ PL_IMPORTANT 	<- as.integer(1)
+ PL_SUBIMPORTANT 	<- as.integer(2)
+ PL_DETAILSUSER <- as.integer(3)## currently unused
+ PL_RECURSIVE 	<- as.integer(4)
+ PL_STRUCTURE 	<- as.integer(5)
+ PL_ERRORS 	<- as.integer(6)
+
+ PL_FCTN_DETAILS 	<- as.integer(7)
+ PL_FCTN_SUBDETAILS 	<- as.integer(8)
+
+ PL_COV_STRUCTURE 	<- as.integer(7)
+ PL_DIRECT_SEQU 	<- as.integer(8)
+ PL_DETAILS 	<- as.integer(9)
+ PL_SUBDETAILS 	<- as.integer(10)

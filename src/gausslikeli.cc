@@ -324,7 +324,7 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
   
   // for (int j=0; j<nrow; j++, data++, pres++) printf("%f %f\n", *pres, *data);
     
-  
+ 
   if (delete_work) FREE(work);
 }
 
@@ -358,7 +358,7 @@ SEXP get_logli_residuals(cov_model *cov) {
     int 
       ncol = NCOL_OUT_OF(datasets),
       nrow = NROW_OUT_OF(datasets);
- 			    
+
     if (matrix) {
       PROTECT(res = allocMatrix(REALSXP, nrow, ncol));
     } else {
@@ -367,9 +367,10 @@ SEXP get_logli_residuals(cov_model *cov) {
 
     get_logli_residuals(cov, L->work, REAL(res));
     SET_VECTOR_ELT(all_res, GLOBAL.general.set, res);
+    UNPROTECT(1);
   }
   
-  UNPROTECT(sets + 1);
+  UNPROTECT(1);
   return all_res;
 }
 
@@ -701,11 +702,9 @@ SEXP simple_residuals(SEXP model_reg){
       } else assert(fx_notnas == betatot);
     }    
   }
-
   
 ErrorHandling:
   GLOBAL.general.set = store;
-  
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
       Ext_getErrorString(ERRORSTRING);

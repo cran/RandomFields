@@ -452,5 +452,6 @@ void doprodproc(cov_model *cov, gen_storage *s);
 void nonstatsum(double *x, double *y, cov_model *cov, double *v);
 int checksum(cov_model *cov);
 
+
 #endif /* Operators_H */
  

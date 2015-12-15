@@ -32,14 +32,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define C_PRINTLEVEL 1
 #define NAT_SCALE 0
 #define MAX_CE_MEM 16777216
-#define generalN 25
+#define generalN 23
 // IMPORTANT: all names of general must be at least 3 letters long !!!
 extern const char *general[generalN];
 #define GENERAL_MODUS 0 
 #define GENERAL_STORING 2
 #define GENERAL_CPRINT 9
 #define GENERAL_EXACTNESS 10
-#define GENERAL_CLOSE 15
+#define GENERAL_CLOSE 13
 typedef struct general_param {
   char pch; /*  character shown after each simulation
     just for entertainment of the user
@@ -114,12 +114,11 @@ typedef struct general_param {
 		 simulation methods (tbm2 does not like dimension reduction),
 		 but it is slower
 	      */
-    matrix_inversion[MAXINVERSIONS], // 0:cholesky, 1:QR, 2:SVD; negativ
     seed,
     Ttriple, 
     set;
  
-  double gridtolerance, matrixtolerance, exactness;
+  double gridtolerance, exactness;
 
 } general_param;
 #define general_START \
@@ -128,14 +127,14 @@ typedef struct general_param {
       false, true, false,						\
       startmode/* mode */ , output_sp, reportcoord_warnings,		\
       R_PRINTLEVEL, C_PRINTLEVEL, NAT_SCALE, 1, 0,			\
-      {-1} /* auto! formerly chol, SVD */,				\
       NA_INTEGER, NA_INTEGER, 0,					\
-	1e-6, matrixtolerance[NM], exactness[NM],			\
+      1e-6, exactness[NM],						\
      }
 
 
 #define gaussN 6
 extern const char *gauss[gaussN];
+#define GAUSS_BEST_DIRECT 3
 #define GAUSS_BOXCOX_OPTION 5
 typedef struct gauss_param{
   double stationary_only, // logical + NA
@@ -216,15 +215,16 @@ typedef struct tbm_param {
 
 
 
-#define directN 3
+#define directN 1
+#define DIRECT_MAXVAR_PARAM 0
+#define DIRECT_ORIG_MAXVAR 8192
 extern const char *direct[directN];
 typedef struct direct_param {
-  InversionMethod inversionmethod;
-  double svdtolerance;
+  //  InversionMethod inversionmethod;
+  //  double svdtolerance;
   int maxvariables;
 } direct_param;
-#define direct_START  {Cholesky, direct_tol[NM], 8192 }
-
+#define direct_START { DIRECT_ORIG_MAXVAR } // {Cholesky, direct_tol[NM], 8192 }
 
 #define sequN 3
 extern const char * sequ[sequN];
@@ -458,7 +458,7 @@ typedef struct special_param {
 
 
 
-#define obsoleteN 8
+#define obsoleteN 10
 extern const char * obsolete[obsoleteN];
 
 

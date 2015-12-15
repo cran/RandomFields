@@ -97,10 +97,8 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\seealso{
- \command{\link{RPcoins}},
- \command{\link{RPhyperplane}},
- \command{\link{RPspectral}},
+\seealso{\link{Gaussian},
+ \link{RP},
  \command{\link{RPtbm}}.
 }
 

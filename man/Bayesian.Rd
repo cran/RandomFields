@@ -88,7 +88,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## model to be an expontential random variable with rate 5.
 model <- ~ 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5)) + RMnugget(var=NA)
 data(soil)
-fit <- RFfit(model, x=soil$x, y=soil$y, data=soil$moisture, modus="sloppy")
+fit <- RFfit(model, x=soil$x, y=soil$y, data=soil$moisture, modus="careless")
 print(fit)
 
 

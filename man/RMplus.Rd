@@ -17,7 +17,7 @@
 RMplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, var, scale, Aniso, proj)
 }
 \arguments{
- \item{C0}{an \command{\link{RMmodel}}.}
+ \item{C0}{a \command{\link{RMmodel}}.}
  \item{C1,C2,C3,C4,C5,C6,C7,C8,C9}{optional; each an \command{\link{RMmodel}}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above

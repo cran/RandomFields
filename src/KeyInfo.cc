@@ -363,9 +363,10 @@ SEXP GetLocationUserInfo(location_type **loc) {
 
     setAttrib(l, R_NamesSymbol, namevec);
     SET_VECTOR_ELT(ans, i, l);
+    UNPROTECT(2);
   }
   
-  UNPROTECT(1 + 2 * len); // l + namelvec
+  UNPROTECT(1); // l + namelvec
 
   return ans;
   
@@ -1067,11 +1068,14 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
       case LANGSXP: PRINTF("< language expression >"); break;
       case ENVSXP : PRINTF("< R environment >"); break;
       case LISTOF + REALSXP : {
-	int k, ende=0;
+	int k, ende=0,
+	  k_max = 20,
+	  k_end = cov->nrow[i];
 	listoftype *p= PLIST(i);	
 	PRINTF("list [%d]\n", cov->nrow[i]);
-	leer(level + 2); 
-	for (k=0; k<cov->nrow[i]; k++) {
+	if (k_end > k_max) k_end = k_max;
+	for (k=0; k<k_end; k++) {
+	  leer(level + 2); 
    	  if (p->ncol[k]==1) {
             if (p->nrow[k]==1) {
    	      PRINTF("%f", p->lpx[k][0]); 
@@ -1079,8 +1083,7 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
 	      PRINTF("[%d] ", p->nrow[k]);
 	      ende = endfor = p->nrow[k]; 
 	      if (endfor > MAX_PMI) endfor = MAX_PMI;
-	      for (j=0; j<endfor; j++)
-		PRINTF(" %f", p->lpx[k][j]); 
+	      for (j=0; j<endfor; j++) PRINTF(" %f", p->lpx[k][j]); 
             }
           } else {
             PRINTF("[%d, %d] ", p->nrow[k],  p->ncol[k]);
@@ -1091,6 +1094,7 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
 	  if (ende > MAX_PMI) PRINTF ("...");
 	  if (k<cov->nrow[i]-1)  PRINTF("\n"); 
         }
+	if (k_end < cov->nrow[i]) { leer(level + 2); PRINTF ("..."); }
       }
       break;
       default:  BUG;

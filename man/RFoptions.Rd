@@ -75,15 +75,16 @@
   
   \item{\code{cPrintlevel}}{
     \code{cPrintlevel} is automatically set to \code{printlevel}
-    when \code{printlevel}
-    is changed. %, namely as \code{min(printlevel, 5)}. 
+    when \code{printlevel} is changed.
+    Standard users will never use a value higher than 3.
     
-    0 : no message\cr
-    1 : important (error) messages and warnings\cr
-    2 : less important messages\cr
-    3 : recursive call tracing\cr
-    4 : details of recursive call tracing\cr
-    5 : function flow information of large functions\cr
+    0 : no messages\cr
+    1 : messages and warnings when the user's input looks odd\cr
+    2 : messages (and internal errors) documenting the choice of the
+    simulation method\cr
+    3 : further user relevant informations\cr
+    4 : information on recursive function calls\cr
+    5 : function flow information of central functions \cr
     6 : errors that are internally treated\cr
     7 : details on building up the covariance structure\cr
     8 : details on taking the square root of the covariance matrix\cr
@@ -158,32 +159,6 @@
     
     Default: \code{TRUE}
   }
-  
-  \item{\code{matrix_inversion}}{
-    vector of integers gives the methods (and their sequence)
-    to inverse a matrix: 
-
-    <0: auto (if not sparse: cholesky then LU)\cr
-    0 : Choleskey decomposition \cr
-    1 : QR decomposition (not programmed yet)\cr
-    2 : SVD\cr
-    3 : LU (default, except sparsity)
-%    4 : sparse
-    
-    This option is currently used only in  \command{\link{RFinterpolate}}.% to
-    % do  
-   
-    Default: \code{-1}.
-  }
-  
-  \item{\code{matrix_tolerance}}{
-    In case of SVD, it is checked whether the eigenvalue is less than
-    \code{matrix_tolerance}. Then the eigenvalue is not inverted, but
-    the inverse is set to zero.
-
-    Default: 1e-6.
-  }
-  
   
   \item{\code{modus_operandi}}{character. One of the values
     \code{"careless"}, \code{"sloppy"}, \code{"easygoing"},
@@ -278,12 +253,13 @@
   \item{\code{printlevel}}{If \code{printlevel}\eqn{\le0}{<=0}
     there is not any output on the screen. The
     higher the number the more tracing information is given. 
-    
-    0 : no message\cr
+    Standard users will never use a value higher than 3.
+
+    0 : no messages\cr
     1 : important (error) messages and warnings\cr
     2 : less important messages\cr
-    3 : recursive call tracing\cr
-    4 : details of recursive call tracing\cr
+    3 : details, but still for the user\cr
+    4 : recursive call tracing (only used within \command{\link{RFfit}})\cr
     5 : function flow information of large functions\cr
     6 : errors that are internally treated\cr
     7 : details on intermediate calculations\cr
@@ -581,8 +557,6 @@
 \bold{5. \code{direct}: Options for simulating by simple matrix decomposition}
 \describe{
   \item{\code{max_variab}}{See \command{\link{RPdirect}}}
-  \item{\code{root_method}}{See \command{\link{RPdirect}}}
-  \item{\code{svdtolerance}}{See \command{\link{RPdirect}}}
 }
 
 
@@ -1719,17 +1693,47 @@ The user can use the registers 0..9.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{19. \code{solve}: Options for solving linear systems}
 
-
 \describe{ % to do
+  \item{\code{max_chol}}{integer. Maximum number of rows of a matrix in
+    a Cholesky decomposition
+
+    Default: \eqn{8192}
+  }
+  \item{\code{max_svn}}{integer. Maximum number of rows of a matrix in
+    a svd decomposition
+
+    Default: \eqn{6555}
+  }
+
+   \item{\code{matrix_methods}}{
+    vector of at most 3 integers that gives the sequence of methods
+    in order to inverse a matrix or to calculate its square root: 
+
+    0 : Choleskey decomposition \cr
+    1 : SVD\cr
+    2 : spam (sparse matrix algorithm)\cr
+    3 : OR\cr
+    4 : LU\cr
+    5 : <none>
+
+    Note that if \code{use_spam} is not \code{false} the algorithm
+    checks whether a sparse matrix algorithm should be used and which is
+    then tried first.
+
+    Values larger than 4 are used internally:\cr
+    5 : no further method available\cr
+    6 : not initialised\cr
+    7 : diagonal matrix found\cr
+    
+    Default: \code{5}.
+  }
   \item{\code{spam_factor}}{
     integer. See argument \code{spam_sample_n}.
 
     Default: 4294967
   }
-  \item{\code{spam_methods}}{
 
-    Default: \code{c(-1, -1)}
-  }
+  
   \item{\code{spam_min_n}}{
     integer. Has the matrix 
     
@@ -1762,14 +1766,20 @@ The user can use the registers 0..9.
     largest absolute value being considered as zero.
     Default: \code{DBL_EPSILON}
   }
-  \item{\code{svd_tol}}{
-    positive number, determining what is considered as being numerically
-    zero. \code{svd_tol} gives the proportionality to the mean of the
-    diagonal.
+  
+ \item{\code{svdtol}}{
+    When the svd decomposition is used for calculating the square root of
+    a matrix then the absolute componentwise difference between
+    this matrix and the square of the square root must be less
+    than \code{svdtol}. No check is performed if
+    \code{svdtol} is negative.
+ 
+    When the svd decomposition is used for calculating the inverse of
+    a matrix then a diagonal value is set to zero if it is less than
+    \code{svdtol}.
     
     Default: \code{1e-8}
-  }
-  \item{\code{use_spam}}{
+  } \item{\code{use_spam}}{
     Should the package \code{spam} (sparse matrices)
     be used for matrix calculations?
     If \code{TRUE} \pkg{spam} is always used. If \code{FALSE},
@@ -2075,7 +2085,7 @@ without the user's notice.
 
 %\bold{General comments}\cr
 %Most of the above arguments determine the basic settings of a
-%simulation, e.g. \code{root_method} (which chooses the method to
+%simulation, e.g. \code{matrix_method} (which chooses the method to
 %calculate a square
 %root of a positive definite matrix). The values of
 %such arguments are read by

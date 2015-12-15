@@ -134,7 +134,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     *res0 = NULL;
   sequ_storage* S = NULL;
   long  i, 
-    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] :loc->T[XLENGTH],
+    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] : loc->T[XLENGTH],
     spatialpnts = loc->totalpoints / timelength,
     totpnts = back * spatialpnts, 
     totpntsSQ =  totpnts * totpnts,
@@ -319,8 +319,9 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 //  assert(false);
   // F77_NAME(dchdc)(U22, &row, &row, G, NULL, &choljob, &f77err);
   if (f77err!=NOERROR) {
-    if (PL>=PL_SUBIMPORTANT) 
-      {INDENT; PRINTF("Error code F77_CALL(dpotrf) = %d\n", f77err);}
+    if (PL>=PL_ERRORS) {
+      LPRINT("Error code F77_CALL(dpotrf) = %d\n", f77err);
+    }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   } 
@@ -335,7 +336,9 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   MEMCOPY(Inv22, U22, sizeof(double) * totpntsSQ);
   F77_CALL(dpotri)("Upper", &row, Inv22, &row, &f77err);
   if (f77err!=NOERROR) {
-    if (PL>=PL_SUBIMPORTANT) { INDENT; PRINTF("Error code F77_CALL(dpotri) = %d\n", f77err); }
+    if (PL>=PL_ERRORS) {
+      LPRINT("Error code F77_CALL(dpotri) = %d\n", f77err); 
+    }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   }

@@ -310,10 +310,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     }
     s->mtot = mtot = cumm[dim];
 
-    if (PL>=PL_SUBIMPORTANT) {
-      INDENT;
-      for (i=0;i<dim;i++) { PRINTF("mm[%ld]=%d, ", i, mm[i]); }
-      PRINTF("mtot=%ld\n", mtot  * vdimSQ);
+    if (PL>=PL_BRANCHING) {
+      LPRINT("Memory need for ");
+      for (i=0;i<dim;i++) { 
+	if (i > 0) PRINTF(" x "); 
+ 	PRINTF("%d", mm[i]); 
+     }
+      PRINTF(" %s is 2 x %ld complex numbers.\n", 
+	     dim == 1 ? "locations" : "grid", mtot  * vdimSQ);
     }
 
     if ( (maxmem != NA_INTEGER && realmtot * vdimSQ > maxmem))
@@ -604,14 +608,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 
 	if ( !s->positivedefinite) {
-	  if (PL>=PL_SUBIMPORTANT) {
-	    INDENT;
-	    if (Lambda[l][i] < 0.0) {PRINTF("There are complex eigenvalues\n");}
-	    else if (vdim==1) {	      
-	      PRINTF("non-positive eigenvalue: Lambda[%ld]=%e.\n",
+	  if (PL>=PL_BRANCHING) {
+	    if (Lambda[l][i] < 0.0) {
+	      LPRINT("There are complex eigenvalues\n");
+	    } else if (vdim==1) {
+	      LPRINT("non-positive eigenvalue: Lambda[%ld]=%e.\n",
 		     i, Lambda[l][i]);
 	    } else {
-	      PRINTF("non-pos. eigenvalue in dim %d: Lambda[%ld][%d]=%e.\n",
+	      LPRINT("non-pos. eigenvalue in dim %d: Lambda[%ld][%d]=%e.\n",
 		     l, i, l, Lambda[l][i]);
 	    }
 	  }
@@ -695,7 +699,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    ERR("unknown strategy for circulant embedding");
 	}
       }
-    } else {if (PL>=PL_SUBIMPORTANT) { INDENT; PRINTF("forced.\n");} }
+    } else {if (PL>=PL_BRANCHING) {LPRINT("forced.\n");} }
     R_CheckUserInterrupt();
   } // while (!s->positivedefinite && (s->trials<trials)) 354-719
 
@@ -730,10 +734,10 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       twoi+=2;
 
     }
-    if (PL>=PL_SUBIMPORTANT) {
+    if (PL>=PL_BRANCHING) {
       if (r < -GENERAL_PRECISION) {
-	INDENT; PRINTF("using approximating circulant embedding:\n");
-	INDENT; PRINTF("\tsmallest real part has been %e \n", r);
+	LPRINT("using approximating circulant embedding:\n");
+	LPRINT("\tsmallest real part has been %e \n", r);
       }
     }
     s->smallestRe = (r > 0.0) ? RF_NA : r;

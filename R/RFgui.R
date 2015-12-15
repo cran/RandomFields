@@ -131,7 +131,6 @@ rfgui.intern <- function(data, x, y,
                         as.integer(10), ## ehemals RFoptions(short=10)
                         TRUE, TRUE, PACKAGE="RandomFields")$minmax)
     if (class(modelParam) == "try-error") return(0)
-
     
     assign("selModelNum",selModelNum, envir=ENVIR)
     if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)

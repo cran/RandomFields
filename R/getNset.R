@@ -202,7 +202,23 @@ resolve.register <- function(register){
 
 print_RFgetModelInfo <- function(x, max.level=99,
                                  give.attr=FALSE, ...) {
-  str(object = x,  max.level=max.level, give.attr=give.attr, ...) #
+  if (is.null(attr(x, "level"))) {
+    y <- x
+    y$minmax <- NULL
+    str(y, give.attr=FALSE) #
+    types <- sort(unique(x$minmax$type))
+    if (length(types) > 0) {
+       cat(" $ minmax: \n")
+       print(x$minmax, justify="right") #
+      cat("",
+          paste("type =", formatC(types, width=2), ":",
+                TYPEOF_PARAM_NAMES[types + 1], "\n"))
+      cat("\n");
+    }
+  } else {
+    str(object = x,  max.level=max.level, give.attr=give.attr, ...) #
+  }
+  x
 }
 
 print.RFgetModelInfo <- function(x, ...) {
@@ -210,7 +226,63 @@ print.RFgetModelInfo <- function(x, ...) {
 }
 
 
-RFgetModelInfo <-
+RFgetModelInfo <- function(...) {
+  x <- list(...)
+  if (length(x) > 0 &&
+      (is(x[[1]], "RMmodel") || is(x[[1]], "list"))) RFgetModelInfo_model(...)
+  else RFgetModelInfo_register(...)
+}
+
+RFgetModelInfo_model <- function(model, dim = 1, Time = FALSE,
+                                 kernel = FALSE, exclude_trend = TRUE, ...) {
+  Reg <- MODEL_AUX
+  relax <- isFormulaModel(model)
+  RFoptOld <- internal.rfoptions(..., RELAX=relax)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  RFopt <- RFoptOld[[2]]
+
+  if (!exclude_trend) {
+    stop("'exclude_trend = FALSE' not programmed yet.")
+  }
+
+#  if (FALSE)    {
+#
+#    library(RandomFields, lib="~/TMP"); RFoptions(print = 1)
+#    for (f in dir(pattern="*.R")) {print(f); source(f)}
+#
+ #   model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
+#    z <- RFsimulate(model, 1:4, storing=TRUE)
+ #   RFgetModel(show.call=!FALSE)
+#
+#  #  (z <- RFgetModelInfo(RMwhittle(scale=NA, nu=NA) + NA))
+#   #  RFgetModelInfo()
+#    
+#  }
+
+  dim <- as.integer(dim)
+  intern <- try(.Call("SetAndGetModelInfo", Reg,
+                          list("Dummy", PrepareModel2(model)),
+                          dim, FALSE, as.logical(kernel), as.logical(Time), dim,
+                          as.integer(10), ## ehemals RFoptions(short=10)
+                          TRUE, as.logical(exclude_trend),
+                          PACKAGE="RandomFields"))
+  if (class(intern) == "try-error") return(0)
+  intern$effect <- intern$xdimOZ <- intern$matrix.indep.of.x <- NULL
+
+  intern$minmax <- as.data.frame(intern$minmax)
+  storage.mode(intern$minmax$omin) <- "logical"
+  storage.mode(intern$minmax$omax) <- "logical"
+  storage.mode(intern$minmax$bayes) <- "logical"
+  storage.mode(intern$minmax$NAN) <- "integer"
+  storage.mode(intern$minmax$col) <- "integer"
+  storage.mode(intern$minmax$row) <- "integer"
+ 
+  
+  class(intern) <- "RFgetModelInfo"
+  intern
+}
+
+RFgetModelInfo_register<-
   function(register, level=1, 
            spConform=RFoptions()$general$spConform,
            which.submodels = c("user", "internal",
@@ -226,14 +298,16 @@ RFgetModelInfo <-
   ##define MODEL_BOUNDS  4 : - /* MLE, lower, upper */
   ## level + 10: auch die call fctn !
   ## [ in RF.h we have the modulus minus 1 ]
+    
   register <- resolve.register(if (missing(register)) NULL else
                                if (is.numeric(register)) register else
                                deparse(substitute(register)))
-#  Print(which.submodels, as.list(RFgetModelInfo)$which.submodels[-1])
-  w<-pmatch(match.arg(which.submodels),
-            as.list(RFgetModelInfo)$which.submodels[-1]) - 1
+#  Print(which.submodels, as.list(RFgetModelInfo)$which.submodels[-1])  
+  w <- (if (!hasArg("which.submodels")) 0
+        else pmatch(match.arg(which.submodels),
+                    as.list(RFgetModelInfo_register)$which.submodels[-1]) - 1)
    if (is.na(w) || length(w) ==0)
-    stop("the value for 'which.submodels' does not match. Note that the definitoin has been changed in version 3.0.70")
+     stop("the value for 'which.submodels' does not match. Note that the definitoin has been changed in version 3.0.70")
 
   cov <- .Call("GetExtModelInfo", as.integer(register), as.integer(level),
                as.integer(spConform),
@@ -294,12 +368,12 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   ## spConform : only the names of the models
   ##              if > 1 than also "+" is forced to be "RMplus"
 
-   
+  
   register <- resolve.register(if (missing(register)) NULL else
                                if (is.numeric(register))  register else
                                deparse(substitute(register)))
    w<-pmatch(match.arg(which.submodels),
-            as.list(RFgetModelInfo)$which.submodels[-1]) - 1
+            as.list(GetModel)$which.submodels[-1]) - 1
   if (missing(register)) register <- 0
   
   model <- .Call("GetModel", as.integer(register), as.integer(modus),

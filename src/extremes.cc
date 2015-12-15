@@ -801,7 +801,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   //printf("n=%d %f %f %f 0:%f\n", n, res[0], res[1], res[2], res[3]);;if (PL == 116) BUG;
 
   // for (k=0; k<total_pts; k++) printf("%f ", res[k]); printf("\n");
-  if (PL >= PL_SUBIMPORTANT) {
+  if (PL >= PL_DETAILSUSER) {
     PRINTF("number of shape functions used: %ld\n", n);
   }
 

@@ -3652,17 +3652,13 @@ RPintrinsic <- new('RMmodelgenerator',
 
 
 
-RPdirect <- function(phi, boxcox, root_method, svdtolerance, max_variab) {
+RPdirect <- function(phi, boxcox, max_variab) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('boxcox') && !is.null(subst <- substitute(boxcox))) 
 	par.model[['boxcox']] <- CheckArg(boxcox, subst, FALSE)
-  if (hasArg('root_method') && !is.null(subst <- substitute(root_method))) 
-	par.model[['root_method']] <- CheckArg(root_method, subst, FALSE)
-  if (hasArg('svdtolerance') && !is.null(subst <- substitute(svdtolerance))) 
-	par.model[['svdtolerance']] <- CheckArg(svdtolerance, subst, FALSE)
   if (hasArg('max_variab') && !is.null(subst <- substitute(max_variab))) 
 	par.model[['max_variab']] <- CheckArg(max_variab, subst, FALSE)
   
@@ -4111,7 +4107,7 @@ RPbernoulli <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = -3
 	)
 
@@ -4176,7 +4172,7 @@ RPgauss <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = -3
 	)
 
@@ -4239,7 +4235,7 @@ RPschlather <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = 1
 	)
 
@@ -4274,7 +4270,7 @@ RPopitz <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = 1
 	)
 
@@ -4339,7 +4335,7 @@ RPchi2 <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = -3
 	)
 
@@ -4370,7 +4366,7 @@ RPt <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 11000,
+	maxdim = 10,
 	vdim = -3
 	)
 

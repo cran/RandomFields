@@ -6,7 +6,7 @@
 #define METHODMAXCHAR MAXCHAR // max number of character to describe a Method (including \0)
 
 
-#define MAXCOVDIM 11000
+#define MAXCOVDIM 10
 #define MAXMLEDIM MAXCOVDIM
 #define MAXSIMUDIM MAXCOVDIM
 #define MAXSUB 10
@@ -118,24 +118,6 @@ typedef enum output_modes {output_sp, output_rf, output_geor} output_modes;
 #define MODEL_ERR  (MAXFIELDS + 11)
 #define MODEL_MAX MODEL_ERR
 
-
-//////////////////////////////////////////////////////////////////////
-// the different levels of printing
-
-#define PL_IMPORTANT 1 
-#define PL_SUBIMPORTANT 2
-#define PL_RECURSIVE 3
-#define PL_REC_DETAILS 4 
-#define PL_STRUCTURE 5 // see also initNerror.ERROROUTOFMETHOD
-#define PL_ERRORS  6 // only those that are caught internally
-
-#define PL_FCTN_DETAILS 7  // R
-#define PL_FCTN_SUBDETAILS 8
-
-#define PL_COV_STRUCTURE 7 // C
-#define PL_DIRECT_SEQU 8
-#define PL_DETAILS 9
-#define PL_SUBDETAILS 10
 
 typedef enum Types {
   TcfType, PosDefType, VariogramType, NegDefType, 

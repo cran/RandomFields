@@ -61,6 +61,8 @@ void LOC_NULL(location_type **Loc, int len) {
 location_type **LOCLIST_CREATE(int n) {
   int i;
   location_type **loc = (location_type**) CALLOC(n, sizeof(location_type*));
+
+  //printf("sizeof = %d %d %d\n", sizeof(location_type), sizeof(coord_type), n); BUG;
   for (i=0; i<n; i++) loc[i] = (location_type*) MALLOC(sizeof(location_type));
   LOC_NULL(loc, n);
   assert(loc[0]->len >= 1 && loc[0]->len <= 1e6);
@@ -253,7 +255,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   
   for (i=0; i<last; i++) {
     int type = CovList[cov->nr].kappatype[i];
-     if (!PisNULL(i)) {     
+    if (!PisNULL(i)) {     
       if (isRObject(type)) {
 	sexp_type *S = PSEXP(i);
 	if (S->Delete) R_ReleaseObject(S->sexp);	
@@ -589,7 +591,6 @@ void approxCE_NULL(approxCE_storage* x){
 void direct_DELETE(direct_storage  ** S) {
   direct_storage *x = *S;
   if (x!=NULL) {
-    FREE(x->U); 
     FREE(x->G);
     UNCONDFREE(*S);
   }
@@ -597,7 +598,6 @@ void direct_DELETE(direct_storage  ** S) {
 
 void direct_NULL(direct_storage  *x) {
   if (x == NULL) return;
-  x->U = NULL;
   x->G = NULL;
 }
 
@@ -1701,7 +1701,7 @@ location_type ** loc_set(SEXP xlist, bool distances_ok){
 
   loc = LOCLIST_CREATE(sets);
   for (int i=0; i<sets; i++) {
-    SEXP
+     SEXP
       set = listoflists ? VECTOR_ELT(xlist, i) : xlist,
       xx = VECTOR_ELT(set, XLIST_X),
       yy = VECTOR_ELT(set, XLIST_Y),

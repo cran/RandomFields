@@ -13,7 +13,7 @@
 }
 
 \usage{
-RPdirect(phi, boxcox, root_method, svdtolerance, max_variab) 
+RPdirect(phi, boxcox, max_variab) 
 
 RPsequential(phi, boxcox, max_variables, back_steps, initial)
 }
@@ -28,29 +28,17 @@ RPsequential(phi, boxcox, max_variables, back_steps, initial)
 
 % \item{loggauss}{optional argument; same meaning as for 
 % \command{\link{RPgauss}}.}
+  
+\item{max_variab}{integer less than 30000.
+  If the number of variables to generate is
+ greater than \code{max_variab}, neither SVD nor Cholesky decomposition
+ are performed. If the given covariance structure has finite range and
+ \code{use_spam != false} then \pkg{\link[spam]{spam}} is tried.
 
-\item{root_method}{Decomposition of the covariance matrix:
-  \itemize{
-    \item  \code{root_method=0} Cholesky decomposition
-    \item  \code{root_method=2} SVD
-    }
-    If Cholesky decomposition failes then alway SVD is tried.
+ It is important that this option is set
+ conveniently to avoid great losses of time during the internal 
+ search of an appropriate method by \command{\link{RPgauss}}. 
 
-    Default: \code{0} .
-    }
-    \item{svdtolerance}{ If SVD decomposition is used for calculating the square root of
- the covariance matrix then the absolute componentwise difference between
- the covariance matrix and square of the square root must be less
- than \code{svdtolerance}. No check is performed if
- \code{svdtolerance} is negative.
- 
- Default: \code{1e-12} .
-}
- \item{max_variab}{If the number of variables to generate is
- greater than \code{maxvariables}, then any matrix decomposition
- method is rejected. It is important that this option is set
- conveniently to avoid great losses of time during the automatic
- search of a simulation method (\code{method="any method"}). 
 
  Default: \code{8192} 
 }
@@ -127,13 +115,9 @@ RPsequential(phi, boxcox, max_variables, back_steps, initial)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 
-\seealso{
+\seealso{ \link{Gaussian},
   \link{RP},
- \command{\link{RPcoins}},
- \command{\link{RPhyperplane}},
- \command{\link{RPspectral}},
- \command{\link{RPtbm}}.
-}
+ }
 
 \keyword{methods}
 

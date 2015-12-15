@@ -69,8 +69,7 @@ RPaverage(phi, shape, boxcox, intensity, method)
  }}
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
-\seealso{
-  \command{\link{RFgetMethodNames}}
+\seealso{ \link{Gaussian},
   \link{RP},
  \command{\link{RPhyperplane}},
  \command{\link{RPspectral}},

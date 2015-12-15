@@ -600,6 +600,17 @@ typedef char NAname_type[MAX_NA][255];
 // general for many R.fctns
 #define MATH_FACTOR 2
 
+/////////////////////////////////////
+// for model RMderivative
+#define PARTIAL 0
+#define ALGEBRA 1
+
+/////////////////////////////////////
+// for model RMhelmholtz
+#define COMPONENT  0
+#define ANISO_VAR 1
+
+
 ///////////////////////////////////////////////////////////////////////
 // constant
 #define CONST_C 0
@@ -676,9 +687,8 @@ typedef char NAname_type[MAX_NA][255];
 
 ///////////////////////////////////////////////////////////////////////
 // direct
-#define DIRECT_METHOD (COMMON_GAUSS + 1)
-#define DIRECT_SVDTOL (COMMON_GAUSS + 2)
-#define DIRECT_MAXVAR (COMMON_GAUSS + 3)
+#define DIRECT_MAXVAR (COMMON_GAUSS + 1)
+#define MAX_DIRECT_MAXVAR 30000
 
 
 
@@ -814,6 +824,27 @@ typedef char NAname_type[MAX_NA][255];
 ///////////////////////////////////////////////////////////////////////
 // Kappas
 #define SIZE_NOT_DETERMINED 0 // do not change the value !
+
+
+//////////////////////////////////////////////////////////////////////
+// the different levels of printing
+
+#ifndef PL_IMPORTANT
+#define PL_IMPORTANT 1 // crucial messages
+#define PL_BRANCHING 2 // user relevant RPgauss branching etc
+#define PL_DETAILSUSER 3
+#define PL_RECURSIVE 4 
+#define PL_STRUCTURE 5 // see also initNerror.ERROROUTOFMETHOD
+#define PL_ERRORS  6 // only those that are caught internally
+
+#define PL_FCTN_DETAILS 7  // R
+#define PL_FCTN_SUBDETAILS 8
+
+#define PL_COV_STRUCTURE 7 // C
+#define PL_DIRECT_SEQU 8
+#define PL_DETAILS 9
+#define PL_SUBDETAILS 10
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -1484,8 +1515,7 @@ int search_metropolis(cov_model *cov, gen_storage *S);
 
 
 typedef struct direct_storage {
-  InversionMethod method;
-  double *U, *G;
+  double *G;
 } direct_storage;
 
 
@@ -1804,12 +1834,10 @@ int Transform2NoGrid(cov_model *cov, double **xx, double **yy,
 
 extern char NEWMSG[LENERRMSG];
 
-#define INDENT if (PL >= PL_RECURSIVE) LPRINT("")
-
 #define WARNING1(X, Y) {sprintf(MSG, X, Y); warning(MSG); }
 #define AERR(X) {ERRLINE; PRINTF("AERR: "); errorMSG(X, MSG); 	\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG); assert(false);}
-#define MERR(X) {INDENT; PRINTF("error: ");				\
+#define MERR(X) {LPRINT("error: ");				\
     errorMSG(X, MSG);					\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG);}
 #define XERR(X) {/* UERR; */ errorMSG(X, MSG); ERR(MSG);}
@@ -2784,7 +2812,7 @@ int addressbits(void *addr);
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
     new##_NULL((cov)->S##new);					\
     if ((cov)->S##new == NULL) BUG;				\
-  }}								
+  }}							
 
 #define NEW_STORAGE(new)	\
   NEW_COV_STORAGE(cov, new)

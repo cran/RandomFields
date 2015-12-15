@@ -276,7 +276,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
 }
 
 \seealso{
-  \link{RP},  \command{\link{RPtbm}}
+  \link{Gaussian}, \link{RP}
 }
 
 \examples{

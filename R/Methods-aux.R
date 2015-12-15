@@ -75,8 +75,6 @@ convert2GridTopology <- function(grid){
 RFspatialGridDataFrame <- function(grid, data,
                                    proj4string = sp::CRS(as.character(NA)),
                                    RFparams=list(n=1, vdim=1)) {
-
-  Print(grid, data, sp::CRS(as.character(NA)), RFparams)
   
   grid <- convert2GridTopology(grid)
   tmp <- sp::SpatialGridDataFrame(grid=grid,

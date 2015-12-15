@@ -190,8 +190,7 @@ plot(z, MARGIN.slices=4, MARGIN.movie=3)
 \dontshow{FinalizeExample()}
 }
 
-\seealso{
-  \command{\link{RMtbm}},
+\seealso{\link{Gaussian},
   \link{RP},
  \command{\link{RPspectral}}
 }

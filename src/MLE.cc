@@ -397,7 +397,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   GLOBAL.general.skipchecks = skipchecks;
   NAs = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
-  int err = GetNAPosition(KEY[currentRegister], &NAs, mem, // &elmnts, mem_elmnts,
+  int err = GetNAPosition(KEY[currentRegister], &NAs, mem,//&elmnts, mem_elmnts,
 			  names, sorts, vdim1, vdim2, isnan, bayesian, 
 			  covModels,
 			  covzaehler,
@@ -912,8 +912,6 @@ int GetEffect(cov_model *cov,  likelihood_info *info) {
       GetEffect(component, info);
       continue;
     }
-
-    // error("in fitgauss.R ist stop("the two ways")") auskommentiert, solange Utils noch nicht auf dem Netz ist
  
     info->effect[info->neffect] = CheckEffect(component);
   
@@ -963,7 +961,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
     err = NOERROR;
   cov_model 
     *cov = !isInterface(key) ? key : key->key == NULL ? key->sub[0] : key->key,
-    *sub =   !isProcess(cov) ? cov : cov->key == NULL ? cov->sub[0] : cov->key,
+    *sub = !isProcess(cov) ? cov : cov->key == NULL ? cov->sub[0] : cov->key,
     *min=NULL,  *max=NULL, 
     *pmin=NULL,  *pmax=NULL, 
     *openmin=NULL,  *openmax=NULL;
@@ -984,13 +982,14 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
   }
   
   info->newxdim = newxdim;
-  if ((info->trans_inv = (sub->domprev == XONLY && isPosDef(sub->typus)))) {
-    if ((info->isotropic = isAnyIsotropic(sub->isoown))) {
+  info->trans_inv = sub->domprev == XONLY && isNegDef(sub->typus);
+  info->isotropic = isAnyIsotropic(sub->isoown);
+  if (info->trans_inv && info->isotropic) {
       info->newxdim = 1;
 //	removeOnly(KEY + modelnr); nicht wegnehmen
 // da derzeit negative distanczen in GLOBAL.CovMatrixMult auftreten -- obsolete ?!
-    }
   }
+
   
   // GLOBAL.general.skipchecks = skipchecks;
   check_recursive_range(key, true);
@@ -1149,7 +1148,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim,
      */
 //  bool skipchecks = GLOBAL.general.skipchecks;
   int i, // NAs,
-    unp = 0,
+    //   unp = 0,
     //  effect[MAXSUB], nas[MAXSUB],
     //*pnas = nas,
     // neffect = 0,
@@ -1222,7 +1221,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim,
 #define total 7
   PROTECT(ans = allocVector(VECSXP, total));
   PROTECT(nameAns = allocVector(STRSXP, total));
-  unp += 5;
+  //unp += 5;
 
   //printf("%d\n", info->Matrix != NULL);
 
@@ -1259,7 +1258,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim,
   assert(i==total);
 
  ErrorHandling:
-  UNPROTECT(unp);
+  UNPROTECT(5);
   if (info != NULL && !do_not_del_info) likelihood_info_DELETE(info);
 
   return ans;

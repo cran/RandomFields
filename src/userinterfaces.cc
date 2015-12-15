@@ -84,12 +84,11 @@ int locmaxn[nr_modes] =      {3000, 4000, 6000, 8000, 9000, 10000000, 10000000},
   sequ_back_initial[nr_modes]={3,   3,    5,  10,  20,  30,  40}
   ;
 double 
-  matrixtolerance[nr_modes] ={1e-6,  1e-6,  1e-6,  1e-12,   1e-14, 0, 0},
   exactness[nr_modes] = {false, false, false, RF_NA, true, true, true},
   ce_tolRe[nr_modes] =       {-1e2,  -1e1,  -1e-3, -1e-7,  -1e-14, 0, 0},
   ce_tolIm[nr_modes] =       {1e2,  1e1,  1e-1,  1e-3,   1e-7, 0, 0},
   ce_approx_step[nr_modes] = {1.0,  1.0,   RF_NA, RF_NA, RF_NA, 0.0, 0.0},
-  direct_tol[nr_modes] =     {1e-5, 1e-7, 1e-8, 1e-9, 1e-11, 1e-13, 0},
+  direct_tol[nr_modes] =     {1e-5, 1e-6, 1e-7, 1e-8, 1e-10, 1e-12, 0},
   nugget_tol[nr_modes] =     {1e-8, 1e-8, 1e-12, 0,     0,     0,     0},
   tbm_linefactor[nr_modes] = {1.5,  1.5,  1.7,   2.0,  3.0,  5.0,  6.0},
   mpp_intensity[nr_modes] =  {50, 50, 80, 100, 200, 500, 1000},
@@ -130,9 +129,9 @@ globalparam GLOBAL = {
   internal_START,
   coords_START, 
   special_START,
-  solve_param_default // solve
+  solve_param_default_RF // solve
 };
- 
+  
 
 void SetDefaultOutputModeValues(output_modes mode){
   general_param *gp = &(GLOBAL.general);
@@ -162,7 +161,6 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.general.skipchecks = skipchecks[m];
   GLOBAL.general.pch = pch[m];
   GLOBAL.general.exactness = exactness[m];
-  GLOBAL.general.matrixtolerance = matrixtolerance[m];
   GLOBAL.general.allowdist0 = allowdistance0[m];
   GLOBAL.krige.locmaxn = locmaxn[m];
   GLOBAL.krige.locsplitn[0]  = MINSPLITN(locmaxn[m]);
@@ -174,7 +172,7 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.ce.trials = ce_trials[m];
   GLOBAL.ce.dependent = ce_dependent[m];
   GLOBAL.ce.approx_grid_step = ce_approx_step[m];
-  GLOBAL.direct.svdtolerance = direct_tol[m];
+  GLOBAL.solve.svd_tol = direct_tol[m];
   GLOBAL.nugget.tol = nugget_tol[m];
   for(i=0; i<4; GLOBAL.spectral.lines[i++] = spectral_lines[m]);
   GLOBAL.spectral.grid = sp_grid[m];
@@ -187,7 +185,7 @@ void SetDefaultModeValues(int old, int m){
   GLOBAL.mpp.about_zero = mpp_zero[m];
   GLOBAL.hyper.superpos = hyper_superpos[m];
   GLOBAL.extreme.standardmax = max_max_gauss[m];
- GLOBAL.fit.locmaxn = maxclique[m];
+  GLOBAL.fit.locmaxn = maxclique[m];
   GLOBAL.fit.locsplitn[0] = MINCLIQUE(maxclique[m]);
   GLOBAL.fit.locsplitn[1] = MEDCLIQUE(maxclique[m]);
   GLOBAL.fit.locsplitn[2] = MAXCLIQUE(maxclique[m]);
@@ -658,8 +656,7 @@ const char *general[generalN] =
   { "modus_operandi", "printlevel", "storing", 
     "skipchecks", "every", "gridtolerance",
     "pch", "practicalrange", "spConform",
-    "cPrintlevel", "exactness", "matrix_inversion", 
-    "matrix_tolerance",  "allowdistanceZero", "na_rm_lines",
+    "cPrintlevel", "exactness", "allowdistanceZero", "na_rm_lines",
     "vdim_close_together", "expected_number_simu", "seed", 
     "detailed_output", "asList", "Ttriple",
     "returncall", "output", "reportcoord", "set"};
@@ -676,7 +673,8 @@ const char *CE[CEN] = {"force", "mmin", "strategy", "maxGB",
 		       "trials", "useprimes", "dependent", 
 		       "approx_step", "approx_maxgrid"};
 
-const char *direct[directN] = {"root_method", "svdtolerance", "max_variab"};
+const char *direct[directN] = {//"root_method", "svdtolerance", 
+			       "max_variab"};
 
 const char * pnugget[pnuggetN] ={"tol"};
 
@@ -772,15 +770,13 @@ const char *coords[coordsN] =
 
 const char * special[specialN] = {"multicopies"};
 
-const char * solve[solveN] = 
-  { "use_spam", "spam_tol", "spam_min_p", "svd_tol",
-    "spam_methods", "spam_min_n", "spam_sample_n", "spam_factor",
-    "spam_pivot"
-  };
+const char * solve[solveN] = SOLVE_NAMES;	
 
 const char * obsolete[obsoleteN] = 
   { "oldstyle", "newstyle",  "newAniso", 
-    "ambiguous", "normal_mode", "solvesigma","optim_var_elimination", "sill"
+    "ambiguous", "normal_mode", "solvesigma",
+    "optim_var_elimination", "sill",
+    "matrix_inversion", "matrix_tolerance"
 };
 
 
@@ -958,26 +954,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       break;
     case GENERAL_CPRINT: PL = gp->Cprintlevel = INT;        break;
     case GENERAL_EXACTNESS: gp->exactness = NUM;        break; 
-    case 11: {
-      int old[MAXINVERSIONS],
-	l = length(el);
-      if (l > MAXINVERSIONS) ERR("matrix_inversion: vector too long");
-      for (ii=0; ii<l; ii++) {
-	old[ii] = gp->matrix_inversion[ii];
-	gp->matrix_inversion[ii] = Integer(el, name, ii); 
-	if (gp->matrix_inversion[ii] > 3) break;
-      }
-      if (ii<l) {
-	for (; ii>=0; ii--) gp->matrix_inversion[ii] = old[ii];
-	ERR("values of matrix_inversion out of range");
-      } else {
-	for (; ii<MAXINVERSIONS; ii++) gp->matrix_inversion[ii] = -1;
-      }
-      break;
-    }
-    case 12: gp->matrixtolerance = NUM; break;
-    case 13: gp->allowdist0 = LOG; break;
-    case 14: gp->na_rm_lines = LOG; break;
+    case 11: gp->allowdist0 = LOG; break;
+    case 12: gp->na_rm_lines = LOG; break;
     case GENERAL_CLOSE: gp->vdim_close_together = LOG;    
       if (gp->vdim_close_together) {
 	gp->vdim_close_together = false;
@@ -985,22 +963,22 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
 	// Achtung! gausslikeli.cc waere stark betroffen!!
       }
       break;
-    case 16: gp->expected_number_simu = POS0INT; break;
-    case 17: gp->seed = Integer(el, name, 0, true); break;
-    case 18: gp->detailed_output = LOG; break;
-    case 19: gp->asList = LOG; break;
-    case 20: gp->Ttriple = INT; break;
-    case 21: gp->returncall = LOG; break;
-    case 22:
+    case 14: gp->expected_number_simu = POS0INT; break;
+    case 15: gp->seed = Integer(el, name, 0, true); break;
+    case 16: gp->detailed_output = LOG; break;
+    case 17: gp->asList = LOG; break;
+    case 18: gp->Ttriple = INT; break;
+    case 19: gp->returncall = LOG; break;
+    case 20:
       SetDefaultOutputModeValues((output_modes) 
 				 GetName(el, name, OUTPUTMODENAMES, 
 					 nr_output_modes, gp->output));
       break;
-    case 23:
+    case 21:
       gp->reportcoord = GetName(el, name, REPORTCOORDNAMES, 
 				nr_reportcoord_modes, gp->reportcoord);
       break;
-    case 24: gp->set = POSINT - 1; break;
+    case 22: gp->set = POSINT - 1; break;
     default: BUG;
     }}
     break;
@@ -1011,7 +989,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case 0: gp->paired = LOG; break;
     case 1: gp->stationary_only = NUM; break;
     case 2: gp->approx_zero = POS0NUM; break;
-    case 3: gp->direct_bestvariables = POS0INT;    break;
+    case GAUSS_BEST_DIRECT: gp->direct_bestvariables = POS0INT;    break;
     case 4: gp->loggauss = LOG;
       if (gp->loggauss) gp->boxcox[0] = RF_INF;
       break;
@@ -1078,14 +1056,22 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     direct_param *dp;
     dp = &(GLOBAL.direct);
     switch(j) {
-    case 0: int method;
-      method = INT; 
-      if (method<0 || method>=(int) NoFurtherInversionMethod){
-	warning("given inversion method out of range; ignored\n");
-      } else  dp->inversionmethod= (InversionMethod) method;
-      break;
-    case 1: dp->svdtolerance = NUM; break;
-    case 2: dp->maxvariables = POS0INT;    break;
+    case DIRECT_MAXVAR_PARAM : {
+      int mv = POS0INT;   
+ 
+      if (mv <= GLOBAL.gauss.direct_bestvariables) {
+	ERR3("'%s' must be greater than '%s' = %d.\n", 
+	     direct[DIRECT_MAXVAR_PARAM], gauss[GAUSS_BEST_DIRECT], 
+	     GLOBAL.gauss.direct_bestvariables);
+      }
+
+      if (mv > MAX_DIRECT_MAXVAR) {
+	ERR2("'%s' must be less than or equal to %d.\n", 
+	     direct[DIRECT_MAXVAR_PARAM], MAX_DIRECT_MAXVAR);
+      }
+      dp->maxvariables = mv;
+    }
+     break;
     default: BUG;
     }}
     break;
@@ -1093,15 +1079,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     nugget_param *np;
     np = &(GLOBAL.nugget) ;
     switch(j) {
-    case 0: np->tol = NUM; 
-      if (np->tol < 0) {
-	if (PL>=PL_IMPORTANT) {
-	  strcpy(msg, "negative tolerance for distance in nugget covariance not allowed; set to zero");
-	  warning(msg);
-	}
-	np->tol = 0.0;
-      }
-      break;
+    case 0: np->tol = POS0NUM; break;
     default: BUG;
     }}
     break;
@@ -1577,15 +1555,28 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case 0: so->sparse = NUM; break;
     case 1: so->spam_tol = POS0NUM; break;      
     case 2: so->spam_min_p = POS0NUM; break;      
-    case 3: so->svd_tol = POS0NUM; break;      
-    case 4: {
+    case SOLVE_SVD_TOL: so->svd_tol = NUM; break;        
+    case 4: {     
+      /*
+    case 0: int method;
+      method = INT; 
+      if (method<0 || method>=(int) NoFurtherInversionMethod){
+	warning("given inversion method out of range; ignored\n");
+      } else  dp->inversionmethod= (InversionMethod) method;
+      break;
+      */
+
       int 
 	len = length(el),
 	ende = len;
       if (len > 0) {
 	if (ende > SOLVE_METHODS) ende = SOLVE_METHODS;
-	for (ii=0; ii<ende; ii++) so->Methods[ii] = Integer(el, name, ii);
-	for ( ; ii<SOLVE_METHODS; ii++) so->Methods[ii] = so->Methods[ii-1];
+	for (ii=0; ii<ende; ii++) {
+	  int value = Integer(el, name, ii);
+	  if (value<0 || value >= (int) NoFurtherInversionMethod) break;
+	  so->Methods[ii] = (InversionMethod) value;
+	}
+	for ( ; ii<SOLVE_METHODS; ii++) so->Methods[ii] = NoInversionMethod;
       }
     }
       break;
@@ -1595,6 +1586,8 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
     case 8: so->pivot = POSINT; 
       if (so->pivot > 2) so->pivot = PIVOT_NONE;
       break;    
+    case 9: so->max_chol = POSINT; break;      
+    case 10: so->max_svd = POSINT; break;      
     default: BUG;
     }}
     break;
@@ -1602,14 +1595,18 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
   case 23: { // obsolete
     internal_param *wp = &(GLOBAL.internal);
     switch(j) {
-      case 0: wp->warn_oldstyle = LOG;       break;
-      case 1: wp->warn_newstyle = LOG;       break;
-      case 2: wp->warn_Aniso = LOG;       break;
-      case 3: wp->warn_ambiguous = LOG;       break;
-      case 4: wp->warn_normal_mode = LOG;       break;
+    case 0: wp->warn_oldstyle = LOG;       break;
+    case 1: wp->warn_newstyle = LOG;       break;
+    case 2: wp->warn_Aniso = LOG;       break;
+    case 3: wp->warn_ambiguous = LOG;       break;
+    case 4: wp->warn_normal_mode = LOG;       break;
+    case 8: ERR("'matrix_inversion' has been changed to 'matrix_methods'" );
+      break;
+    case 9: ERR("'matrix_tolerance' has been changed to 'svd_tol'" );
+      break;
+
     default:
-      sprintf(MSG, "RFoption '%s' has been removed.", obsolete[j]);
-      warning(MSG);
+      ERR1("RFoption '%s' has been removed.", obsolete[j]);
     }}
     break;
     
@@ -1674,11 +1671,6 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->sp_conform));
     ADD(ScalarInteger(p->Cprintlevel));
     ADD(ExtendedBoolean(p->exactness));    
-
-    int nn, n_inv=0;
-    for (nn=0; nn<MAXINVERSIONS; nn++) n_inv += p->matrix_inversion[nn] >= 0;
-    SET_VECTOR_ELT(sublist[i], k++, Int(p->matrix_inversion, n_inv, n_inv));
-    ADD(ScalarReal(p->matrixtolerance));    
     ADD(ScalarLogical(p->allowdist0));   
     ADD(ScalarLogical(p->na_rm_lines));   
     ADD(ScalarLogical(p->vdim_close_together));
@@ -1739,8 +1731,8 @@ SEXP getRFoptions() {
   i++; {
     k = 0;
     direct_param *p = &(GLOBAL.direct);
-    ADD(ScalarInteger(p->inversionmethod));    
-    ADD(ScalarReal(p->svdtolerance));     
+    //ADD(ScalarInteger(p->inversionmethod));    
+    //ADD(ScalarReal(p->svdtolerance));     
     ADD(ScalarInteger(p->maxvariables));    
   }
 
@@ -2022,12 +2014,19 @@ SEXP getRFoptions() {
     ADD(ScalarReal(p->spam_tol));    
     ADD(ScalarReal(p->spam_min_p));    
     ADD(ScalarReal(p->svd_tol));    
-    SET_VECTOR_ELT(sublist[i], k++, Int(p->Methods, SOLVE_METHODS, 
-					SOLVE_METHODS)); 
+    int Methods[SOLVE_METHODS],
+      nn=0;
+    Methods[nn] = (int) p->Methods[nn];
+    for (nn=1; nn<SOLVE_METHODS && p->Methods[nn] < NoFurtherInversionMethod &&
+	   p->Methods[nn] != p->Methods[nn-1]; nn++)  
+      Methods[nn] = (int) p->Methods[nn];
+    SET_VECTOR_ELT(sublist[i], k++, Int(Methods, nn, nn)); 
     ADD(ScalarInteger(p->spam_min_n));    
     ADD(ScalarInteger(p->spam_sample_n));    
     ADD(ScalarInteger(p->spam_factor));    
     ADD(ScalarInteger(p->pivot));    
+    ADD(ScalarInteger(p->max_chol));    
+    ADD(ScalarInteger(p->max_svd));    
   }
  
   //   print("%d %d\n", i, prefixN -1);

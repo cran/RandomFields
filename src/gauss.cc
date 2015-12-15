@@ -101,7 +101,7 @@ void mixed_rules(cov_model *cov, pref_type locpref,
     *covpref = sub->pref,
     totalpref[Nothing],
     best_dirct=GLOBAL.gauss.direct_bestvariables,
-    max_dirct= GLOBAL.direct.maxvariables,
+    max_variab= GLOBAL.direct.maxvariables,
     vdim = cov->vdim[0];
   
   for (i=0; i<Nothing; i++) {
@@ -116,26 +116,34 @@ void mixed_rules(cov_model *cov, pref_type locpref,
        : locpref[i] <= LOC_PREF_NONE ? locpref[i] :  LOC_PREF_NONE - 4;
    }
 
-   if (loc->totalpoints * vdim > max_dirct) {
-     pref[Direct] = LOC_PREF_NONE-0;
-   }
 
+  if (loc->totalpoints * vdim > max_variab &&
+      (sub->finiterange == false || GLOBAL.solve.sparse == false))
+      pref[Direct] = LOC_PREF_NONE - 0;
+
+  //  printf("spam %f %d %f %d %d\n", GLOBAL.solve.sparse, GLOBAL.solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
+  //  printf("spam %f %d %d %d %d\n", GLOBAL.solve.sparse, GLOBAL.solve.sparse == false, sub->finiterange == true, pref[Direct], PREF_FACTOR);
+  //PMI(sub);
 
   int vdimtot = loc->totalpoints * vdim;
-
   if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST)
     pref[Direct] = (PREF_BEST + 1) * PREF_FACTOR;
-  else if (pref[Direct] > PREF_NONE) {
+  else if (pref[Direct] >= PREF_NONE && GLOBAL.solve.sparse != true) {
 #define MONTRAFO(x) ((x) * (x))
     //#define MONTRAFO log   
-    double ratio = (MONTRAFO((double) vdimtot) - MONTRAFO((double)max_dirct)) /
-      (MONTRAFO((double) best_dirct) - MONTRAFO((double) max_dirct));
-        pref[Direct]= (int) pow((double) pref[Direct], ratio);
-  }
-  
+    //   bool orig_max = max_variab == DIRECT_ORIG_MAXVAR;
+    double ratio = max_variab <= DIRECT_ORIG_MAXVAR 
+      ? (double) (vdimtot - best_dirct) / (double) max_variab
+      : -0.1;
+      ratio *= fabs(ratio);
+    pref[Direct] = (int) pow((double) pref[Direct], 1.0 - ratio);
+    if (pref[Direct] < PREF_BEST) 
+      pref[Direct] = sub->finiterange ? PREF_BEST : PREF_BEST / 2;
+  } 
+
   if (P0INT(GAUSSPROC_STATONLY) < 0 && isPosDef(cov)) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 6;
-  }
+  } 
 
   if (!isCartesian(cov->isoown)) {
     pref[CircEmbedIntrinsic] = pref[CircEmbed] = pref[CircEmbedCutoff] =
@@ -475,7 +483,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   location_rules(cov, locpref); // hier cov 
   mixed_rules(cov, locpref, pref, order);
 
-  if (PL >= PL_REC_DETAILS) {
+  if (PL >= PL_RECURSIVE) {
     cov_fct *N = CovList + next->nr;
     LPRINT("\n%s:%s\n", NAME(cov), NAME(next));
     for (i=0; i < Nothing; i++) {
@@ -503,13 +511,17 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   err = ERROROUTOFMETHODLIST; // in case none of the methods are available 
   for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {
 
+    if (PL >= PL_BRANCHING && i < Nothing - 1) {
+      LPRINT("'%s%s' failed for '%s'\n", 
+	     CAT_TYPENAMES[GaussMethodType], METHODNAMES[unimeth], NICK(next)); 
+    }
 
     zaehler++;
     unimeth = (Methods) order[i];
 
-    if (PL >= PL_RECURSIVE) {
-      LPRINT("trying '%s%s'\n", 
-	     CAT_TYPENAMES[GaussMethodType], METHODNAMES[unimeth]);
+    if (PL >= PL_BRANCHING) {
+      LPRINT("trying '%s%s' for '%s'\n", 
+	     CAT_TYPENAMES[GaussMethodType], METHODNAMES[unimeth], NICK(next));
     }
     
     meth = gaussmethod[unimeth];      
@@ -537,25 +549,23 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
 	    
 	    err = INIT(key, role == ROLE_POISSON_GAUSS ? 2 : 0, cov->Sgen);
 	    if (err == NOERROR) {
-	      if (PL >= PL_REC_DETAILS) {
+	      if (PL >= PL_RECURSIVE) {
 		LPRINT("returning to higher level...\n");
 	      }
 	      goto Initialized;
-	    } else {
-	      if (PL >= PL_SUBIMPORTANT) MERR(err) //
 	    }
 	  }
 	}
       }
      
-      if (PL >= PL_REC_DETAILS) {  
+      if (PL >= PL_RECURSIVE) {  
 	LPRINT("back from %s: err =%d [%d, %s]\n",
 	       METHODNAMES[unimeth], err, unimeth, METHODNAMES[unimeth]);     
 	
 	if (PL > PL_ERRORS) {
 	  char msg[LENERRMSG]; FinalErrorMSG(err, msg); PRINTF("error in init: %s\n",msg);
 	}
-      } else if (PL >= PL_SUBIMPORTANT) MERR(err) //
+      } else if (PL >= PL_BRANCHING) MERR(err) //
     } else {
       if (PL > PL_ERRORS) {
 	char msg[LENERRMSG]; FinalErrorMSG(err,msg); PRINTF("error in check: %s\n",msg);
@@ -569,7 +579,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
     key->calling = cov;      
   }
   
-  if (PL >= PL_REC_DETAILS) {
+  if (PL >= PL_RECURSIVE) {
     strcpy(PREF_FAILURE, "");
     int p, lp;
 #define NMAX 14

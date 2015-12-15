@@ -3364,7 +3364,7 @@ void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     for(i=0; i<totalvdim; res[i++] = 1.0);
     for (m=0; m<cov->nsub; m++) {
 
-      if (PL > PL_REC_DETAILS) {
+      if (PL > PL_RECURSIVE) {
 	PRINTF("\rcopies=%d sub=%d\n", c, m);
       }
 
