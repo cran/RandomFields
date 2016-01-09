@@ -106,6 +106,8 @@ RFspatialPointsDataFrame <- function(coords, data, coords.nrs = numeric(0),
                                     proj4string=proj4string, 
                                     match.ID=match.ID, bbox=bbox)
 
+  RFparams$n <- as.integer(RFparams$n)
+  RFparams$vdim <- as.integer(RFparams$vdim)
   return(sp2RF(tmp, RFparams))
 
 }

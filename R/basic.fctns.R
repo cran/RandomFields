@@ -167,7 +167,8 @@ GetDataNames <- function(model, coords=NULL, locinfo) {#, data=NULL) {
 #      return(list(coordnames=cd$coordnames, varnames=cd$varnames))
 #  }
 
- # Print(model, coords, locinfo)
+ #  Print(missing(model), missing(coords), missing(locinfo))
+ # Print(model);  str(coords);  Print(coords);  Print(locinfo)
 
   varnames <- extractVarNames(model)
   coordnames <-

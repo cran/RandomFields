@@ -1268,8 +1268,8 @@ void likelihood_trend(double VARIABLE_IS_NOT_USED *x, double VARIABLE_IS_NOT_USE
 
 int checkTrendEval(cov_model *cov) { // auch fuer TrendEval
    cov_model *next = cov->sub[0];
-   int err,
-     dim =  Gettimespacedim(cov);
+   int err;
+   //dim =  Gettimespacedim(cov);
 
   if ((err = CHECK(next, cov->tsdim, cov->xdimown, TrendType,
 		     XONLY, cov->isoown,
@@ -1280,14 +1280,7 @@ int checkTrendEval(cov_model *cov) { // auch fuer TrendEval
   cov->vdim[0] = next->vdim[0]; 
   cov->vdim[1] = next->vdim[1];
   if (cov->vdim[0] != 1) NotProgrammedYet("");
-  KAPPA_BOXCOX;
-
-  // to do alloc_cov nicht optimal hinsichtlich speicher etc. ,-  vdim[1] waere 
-  // eigentlich das richtige
-  if ((err = alloc_cov(cov, dim, cov->vdim[0], cov->vdim[0])) != NOERROR) 
-    return err;
-  
-  // EXTRA_STORAGE;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
 
   return NOERROR;
 }

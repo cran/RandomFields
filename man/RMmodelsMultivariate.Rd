@@ -17,7 +17,7 @@
 field, (stationary and anisotropic)\cr
 \command{\link{RMexponential}} \tab functional returning \eqn{e^C}{exp(C)}\cr
  \command{\link{RMkolmogorov}} \tab Kolmogorov's model of turbulence\cr
-\command{\link{RMmatrix}} \tab trivial multivariate model\cr
+\command{\link{RMmatrix}} \tab linear model of corregionalisation\cr
 \command{\link{RMmqam}} \tab multivariate quasi-arithmetic mean (stationary)\cr
  \command{\link{RMparswm}} \tab multivariate Whittle-Matern model (stationary and isotropic)\cr
 \command{\link{RMschur}} \tab element-wise product with a positive definite
@@ -81,9 +81,29 @@ matrix\cr
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
+n <- 100
+x <- runif(n=n, min=1, max=50)
+y <- runif(n=n, min=1, max=50)
 
-# to do
+rho <- matrix(nc=2, c(1, -0.8, -0.8, 1))
+model <- RMparswmX(nudiag=c(0.5, 0.5), rho=rho)
 
+## generation of artifical data
+data <- RFsimulate(model = model, x=x, y=y, grid=FALSE)
+## introducing some NAs ...
+data@data$variable1[1:10] <- NA
+data@data$variable2[90:100] <- NA
+plot(data)
+% StartExample NICHT weiter vorne!
+\dontshow{StartExample()}
+## co-kriging
+x <- y <- seq(0, 50, 1)
+k <- RFinterpolate(model, x=x, y=y, data= data)
+plot(k, data)
+
+## conditional simulation
+z <- RFsimulate(model, x=x, y=y, data= data)
+plot(z, data)
 
 \dontshow{FinalizeExample()}
 }

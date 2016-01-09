@@ -73,7 +73,7 @@ int check_directGauss(cov_model *cov) {
   if (next->pref[Direct] == PREF_NONE) return ERRORPREFNONE;
 
   setbackward(cov, next);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
@@ -103,7 +103,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   int dim=cov->tsdim;
   direct_storage* s=NULL;
   location_type *loc = Loc(cov);
-  bool storing = GLOBAL.internal.stored_init; //
+  // bool storing = GLOBAL.internal.stored_init; //
   // nonstat_covfct cf;
   long 
     vdim = cov->vdim[0],
@@ -123,19 +123,19 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   if ((err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR) return err;
 
-   if (vdimtot > maxvariab) {
-     GERR4(" '%s' valid only for less than or equal to '%s'=%d data. Got %ld data.",
-	   NICK(cov), KNAME(DIRECT_MAXVAR), maxvariab, vdimtot);
-   }
-   
+  if (vdimtot > maxvariab) {
+    GERR4(" '%s' valid only for less than or equal to '%s'=%d data. Got %ld data.",
+	  NICK(cov), KNAME(DIRECT_MAXVAR), maxvariab, vdimtot);
+  }
+  
   //printf("vdim = %d %d %d %d\n", vdim, locpts, vdimtot, vdimSqtotSq); 
   //    PMI(cov);
-
-
-   if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL) {
+  
+  if ((Cov =(double *) MALLOC(sizeof(double) * vdimSqtotSq))==NULL) {
     err=ERRORMEMORYALLOCATION;  
     goto ErrorHandling;
-  }  
+  }
+
   NEW_STORAGE(direct);
   s = cov->Sdirect;
 
@@ -145,7 +145,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   
   CovarianceMatrix(next, Cov); 
   assert(R_FINITE(Cov[0]));
- 
+
   //PMI(cov->calling->calling->calling->calling);   
   if (false) {
     long i,j;
@@ -175,7 +175,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	}
       }
     } else {
-       err = ERRORNOVARIOGRAM; 
+      err = ERRORNOVARIOGRAM;
       goto ErrorHandling;
     }
   }
@@ -207,14 +207,14 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   }
 
   if ((err = FieldReturn(cov)) != NOERROR) goto ErrorHandling; 
- 
+
   if ( (s->G = (double *) CALLOC(vdimtot + 1, sizeof(double))) == NULL) {
       err=ERRORMEMORYALLOCATION;  
   }
 
  ErrorHandling: // and NOERROR...
   FREE(Cov);
-  
+ 
   //printf("init sqrt_ emthod %d err=%d\n", cov->Ssolve->method, err);
   return err;
 }
@@ -229,7 +229,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     vdimtot = locpts * vdim;
   double 
     *G = NULL,
-    *U = NULL,
+    //*U = NULL,
     *res = cov->rf;  
   // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 

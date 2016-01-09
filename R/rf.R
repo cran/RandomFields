@@ -570,7 +570,6 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   ### conditional simulation ###############################################
   if (cond.simu) {
     #Print(RFoptions()$general)
-    predict_register <- MODEL_PREDICT
     if (isSpObj(data)) data <- sp2RF(data)
     stopifnot(missing(distances) || is.null(distances))
     res <- switch(GetProcessType(model),
@@ -580,7 +579,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                               err.model=err.model,
                               ## next line to make sure that this part
                               ## matches with predictGauss
-                              predict_register = predict_register,
+                              predict_register = MODEL_PREDICT,
                               ...),
                   stop(GetProcessType(model),
                        ": conditional simulation of the process not programmed yet")
@@ -602,7 +601,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   ## output: RFsp   #################################
   if ((!cond.simu || (!missing(x) && length(x) != 0)) ## not imputing
       && RFopt$general$spConform) {
-    info <- RFgetModelInfo(if (cond.simu) predict_register else reg, level=3)
+    info <- RFgetModelInfo(if (cond.simu) MODEL_PREDICT else reg, level=3)
     if (length(res) > 1e7) {
       message("Too big data set (more than 1e7 entries) to allow for 'spConform=TRUE'. So the data are returned as if 'spConform=FALSE'")
       return(res)

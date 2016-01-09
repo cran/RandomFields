@@ -153,6 +153,7 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+\dontshow{StartExample()}
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
 z <- RFsimulate(model, 1:4, storing=TRUE)
 RFgetModelInfo()

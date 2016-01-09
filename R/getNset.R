@@ -137,8 +137,6 @@ add.units <- function(x,  units=NULL) {
 
 
 
-
-
 InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
   for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
     vdim <- try(.Call("Init",
@@ -208,12 +206,16 @@ print_RFgetModelInfo <- function(x, max.level=99,
     str(y, give.attr=FALSE) #
     types <- sort(unique(x$minmax$type))
     if (length(types) > 0) {
-       cat(" $ minmax: \n")
-       print(x$minmax, justify="right") #
-      cat("",
-          paste("type =", formatC(types, width=2), ":",
-                TYPEOF_PARAM_NAMES[types + 1], "\n"))
-      cat("\n");
+      cat(" $ minmax: \n")
+      print(x$minmax, justify="right") #
+      cat(" pmin/pmax : bound usually met in practice\n",
+          "type\n",
+          paste("   type =", formatC(types, width=2), ":",
+                TYPEOF_PARAM_NAMES[types + 1], "\n"),
+          "NAN/bayes : internal\n",
+          "min/max   : mathematically valid interval for the parameter\n",
+          "omin/omax : whether the interval is open to the left/right\n",
+          "col/row   : size of parameter\n")
     }
   } else {
     str(object = x,  max.level=max.level, give.attr=give.attr, ...) #

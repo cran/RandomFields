@@ -455,7 +455,8 @@ plotRFspatialDataFrame <-
     }  
     n.slices <- length(slices.ind)
            
-   ## ersten n.orig-1 sind wiederholungen, die letzte 'Spalte'
+
+    ## ersten n.orig-1 sind wiederholungen, die letzte 'Spalte'
     ## ist die Varianz falls existent
     data.idx <- 1 : (n.ohne.var*vdim)    
     
@@ -568,7 +569,7 @@ plotRFspatialDataFrame <-
         
         screen(image.par$scr.main[ix, jx])
         par(mar=image.par$mar, oma=image.par$oma)
-        
+
         col <-
           image.par[[dv]]$col[[1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
         breaks <- image.par[[dv]]$breaks[, j[1]]
@@ -647,9 +648,17 @@ plotRFspatialDataFrame <-
                                  type="p", pch=pch, lty=1, col=col, bg=NA,
                                  cex=cex, lwd=1)))
               }
-              if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
-              addpoints(dots$pch, col2, dots$cex)
+              ## Print("XCX")
+             if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
+              addpoints(dots$pch, col2, dots$cex) ## causes error in
+              ##42 RandomFields:RFinterpolate (total=197) 
+              ##==23710== Conditional jump or move depends on uninitialised value(s)
+              ##  load("xx.rda"); plot(z, data) ## if still exists!
+
+
               
+              ## Print("B")
+
               if (FALSE) {
                 zaehler <- 1
                 repeat {               
@@ -678,6 +687,7 @@ plotRFspatialDataFrame <-
               }
             } # not persp
           } # !do.plot.var
+
            
           if (ix==1 ||
               ((image.par$split.main[1] != nrow(all.i)) &&
@@ -714,7 +724,7 @@ plotRFspatialDataFrame <-
           }
           dev.set(filedev)
         }
-        dev.set(current)        
+        dev.set(current)
         
         if (do.plot.arrows && ix == 1) {
           ## do not merge with ix==1 above !!

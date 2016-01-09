@@ -20,7 +20,7 @@
 \examples{
 %RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 %##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample();if (!interactive()) RFoptions(modus="sloppy")} %ok
+\dontshow{StartExample();if (!interactive()) RFoptions(modus="careless")} %ok
 
 require(geoR)
 
@@ -32,6 +32,7 @@ RFoptions(coordnames=c("east", "north"), varnames="data")
 ## covariance model with variance, scale and nugget to be estimated;
 ## just to abbreviate later on
 M <- RMexp(var=NA, scale=NA) + RMnugget(var=NA)
+\dontshow{if (!interactive()) M <- RMexp(var=NA, scale=NA)} % ok
 
 ## short definition of a trend using the fact that ca20.df is a
 ## data.frame

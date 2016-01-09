@@ -392,7 +392,6 @@ X <- RFsimulate(x=cbind(x,x), model=model)
 ev2 <- RFempiricalvariogram(data=X, bin=bin, phi=3)
 plot(ev2, model=list(exp = model))
 
-\dontshow{StartExample()}
 #############################################################
 ## plot Fitting results
 x <- seq(0, 1, len=21)

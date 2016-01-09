@@ -50,7 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 int matrixcopyNA(double *dest, double *src, double *cond,
-		  int rows, int cols, bool append_cond) {
+		  int rows, int cols, int append_cond) {
   int k = 0;
   double *ptsrc = src;
   for (int j=0; j<cols; j++) {
@@ -58,12 +58,19 @@ int matrixcopyNA(double *dest, double *src, double *cond,
       if (!ISNA(cond[i]) && !ISNAN(cond[i])) dest[k++] = *ptsrc;
     }
   }
-  int notnas = k / cols;
-  assert(notnas * cols == k);
-  if (append_cond) {
-    for (int i=0; i<rows; i++) 
-      if (!ISNA(cond[i]) && !ISNAN(cond[i])) dest[k++] = cond[i];
+  
+  double *C = cond;
+  int m = 0;
+  for (int j=0; j<append_cond; j++) {
+    for (int i=0; i<rows; i++, m++) {
+      if (!ISNA(C[m]) && !ISNAN(C[m])) dest[k++] = C[m];
+    }
   }
+
+  if (k == 0) ERR("a data set seems to consist of NAs only");
+  int notnas = k == 0 ? 0 : k / (append_cond + cols); 
+  
+  assert(notnas * (append_cond + cols) == k);
   return notnas;
 }
 
@@ -74,7 +81,7 @@ void SqMatrixcopyNA(double *dest, double *src, double *cond, int rows) {
     if (!ISNA(cond[j]) && !ISNAN(cond[j])) {
       double *ptsrc = src + j * rows;     
       for (int i=0; i<rows; i++, ptsrc++) {
-	if (!ISNA(cond[i]) && !ISNAN(cond[i])) dest[k++] = *ptsrc;
+	if (!ISNA(cond[i]) && !ISNAN(cond[i]))  dest[k++] = *ptsrc;
       }
     }
   }
@@ -117,7 +124,8 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
       } else if (ISNA(lambda) || lambda != RF_INF)
 	for (int i=0; i<pts; i++) {
 	  double dummy = lambda * res[i] + 1.0;
-	  if (dummy < 0 || (dummy == 0 && invlambda <= 0) ) {
+	  if ((dummy < 0 && lambda != ceil(lambda)) || 
+	      (dummy == 0 && invlambda <= 0) ) {
 	    ERR("value(s) in the inverse Box-Cox transformation not positive");
 	  }
 	  res[i] = pow(dummy, invlambda) - mu;
@@ -145,7 +153,8 @@ void boxcox_trafo(double boxcox[], int vdim, double *res, long pts, int repet){
       } else if (ISNA(lambda) || lambda != RF_INF) {
 	for (long i=0; i<pts; i++) {
 	  double dummy = res[i] + mu;
-	  if (dummy < 0 || (dummy == 0 && lambda <= 0) ) {
+	  if ((dummy < 0 && lambda != ceil(lambda)) 
+	      || (dummy == 0 && lambda <= 0) ) {
 	    ERR("value(s) in the Box-Cox transformation not positive");
 	  }
 	  res[i] = (pow(dummy, lambda) - 1.0) * invlambda; 
@@ -384,12 +393,14 @@ SEXP get_logli_residuals(SEXP model_reg) {
 void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
   cov_model
     *cov = Cov->key != NULL ? Cov->key : Cov->sub[0],
-    *sub = cov->key == NULL ? cov->sub[0] : cov->key,
+    //    *sub = cov->key == NULL ? cov->sub[0] : cov->key,
     *pred_cov = predict->key != NULL ? predict->key : predict->sub[0];
   
   //PMI(predict);
-  assert(isProcess(cov));
-  likelihood_storage *L = cov->Slikelihood;	
+  assert(isProcess(cov) && 
+	 isVariogram(cov->key == NULL ? cov->sub[0] : cov->key) &&
+	 isInterface(predict));
+ likelihood_storage *L = cov->Slikelihood;	
   assert(L != NULL);
   listoftype *datasets = L->datasets;
   int 
@@ -406,6 +417,7 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
   location_type 
     *loc = Loc(cov),
     *pred_loc = Loc(predict);   
+  assert(pred_loc != NULL && loc != NULL);
   GLOBAL.general.set = 0;
   int 
     spatialdim = pred_loc->spatialdim,
@@ -429,8 +441,7 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
   get_logli_residuals(cov, NULL, residuals);
 
  
-  assert(isProcess(cov) && isVariogram(sub) && isInterface(predict));
-  CovarianceMatrix(sub, L->C);  // tot x tot x vdim x vdim
+  CovarianceMatrix(cov, L->C);  // tot x tot x vdim x vdim //sub -> cov 30.12.15
   if (GLOBAL.krige.ret_variance) {
      GERR("kriging variance cannot be returned, currently");
      ALLOCCOV_NEW(predict, Sextra, Cx0, vdim * vdim * pred_tot, a); // ??
@@ -440,29 +451,34 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
     gauss_trend(predict, cov, v, 0); // not sub
     assert(cov->Ssolve != NULL);
 
-    double *Resicur, *Ccur;
+    double *ResiWithoutNA, *Ccur;
     int atonce, endfor, 
       notnas = NA_INTEGER;
     if (L->data_nas[GLOBAL.general.set]) {
       atonce = 1;
       Ccur = L->Cwork;
-      Resicur = L->Xwork;
+      ResiWithoutNA = L->Xwork;
     } else {
       notnas = totptsvdim;
       atonce = repet;
       Ccur = L->C;
-      Resicur = residuals;
+      ResiWithoutNA = residuals;
      }
     endfor = repet / atonce;
  
     for (int r=0; r<endfor; r++) {
       if (L->data_nas[GLOBAL.general.set]) {
 	double *resi = residuals + r * totptsvdim;
-	notnas = matrixcopyNA(Resicur, resi, resi, totptsvdim, 1, false);
+	notnas = matrixcopyNA(ResiWithoutNA, resi, resi, totptsvdim, 1, 0);
 	SqMatrixcopyNA(Ccur, L->C, resi, totptsvdim);
       }
+
+      //printf("********************\n");
   
-      Exterr = Ext_solvePosDef_(Ccur, notnas, true, Resicur, atonce,
+      Exterr = Ext_solvePosDef_(Ccur, notnas, 
+				true, // except for intrinsic Kriging
+        	//       as if ordinary Kriging (p 167; 265 in Chiles
+				ResiWithoutNA, atonce,
 			     NULL, cov->Ssolve, &(GLOBAL.solve), PL - 3);
       if (Exterr != NOERROR) goto ErrorHandling;    
       
@@ -502,7 +518,6 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 	  if (pred_loc->Time) pred_loc->T[0] = pty[spatialdim];
 	}	 
 	assert(pred_cov -> calling != NULL);
-
 
 	CovList[pred_cov->nr].covariance(pred_cov, Cx0); // predtot x vdim^2;
 
@@ -606,7 +621,7 @@ SEXP simple_residuals(SEXP model_reg){
     if (L->random > 0) BUG; // to do
  
     double *Xcur,
-      *datacur = NULL;
+      *dataWithoutNA = NULL;
     int atonce, endfor,
       notnas = NA_INTEGER;
     if (L->data_nas[GLOBAL.general.set]) {
@@ -615,7 +630,7 @@ SEXP simple_residuals(SEXP model_reg){
     } else {
       atonce = repet;
       Xcur = L->X[GLOBAL.general.set];
-      datacur = Xdata;
+      dataWithoutNA = Xdata;
       notnas = totptsvdim;
     }
     endfor = repet / atonce;
@@ -623,9 +638,10 @@ SEXP simple_residuals(SEXP model_reg){
  
     for (int r=0; r<endfor; r++) {
       if (L->data_nas[GLOBAL.general.set]) {
-	datacur = Xdata + r * totptsvdim,
+	double *datacur = Xdata + r * totptsvdim;
 	notnas = matrixcopyNA(Xcur, L->X[GLOBAL.general.set], 
-			      datacur, totptsvdim, betatot, false);
+			      datacur, totptsvdim, betatot, atonce);
+	dataWithoutNA = Xcur + notnas * betatot;
       }
 
       if (L->fixedtrends) {
@@ -649,11 +665,11 @@ SEXP simple_residuals(SEXP model_reg){
 	  }
 	} // i1
 	
-	MEMCOPY(L->sumY, datacur, sizeof(double) * notnas);
+	MEMCOPY(L->sumY, dataWithoutNA, sizeof(double) * notnas);
 	k = notnas;
 	for (int rr=1; rr<atonce; rr++) {
 	  for(int d=0; d<notnas; d++) {
-	    L->sumY[d] += datacur[k++];
+	    L->sumY[d] += dataWithoutNA[k++];
 	  }
 	}
 	
@@ -703,7 +719,7 @@ SEXP simple_residuals(SEXP model_reg){
     }    
   }
   
-ErrorHandling:
+ ErrorHandling:
   GLOBAL.general.set = store;
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
@@ -722,12 +738,9 @@ ErrorHandling:
 
 void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov, 
 		      double *v){  
-
-  //printf("entering gausprocDlog\n");
-
   assert(isProcess(cov));
-  cov_model *prev = cov->calling,
-    *sub = cov->key == NULL ? cov->sub[0] : cov->key;  
+  cov_model *prev = cov->calling;
+  //*sub = cov->key == NULL ? cov->sub[0] : cov->key;  
 
   if (prev == NULL || CovList[prev->nr].cov != likelihood) BUG;
   likelihood_storage *L = cov->Slikelihood;
@@ -807,18 +820,16 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     }
 
     if (L->random > 0) BUG; // to do
-
     if (info->globalvariance && info->pt_variance != NULL)
       *(info->pt_variance) = 1.0;
-    CovarianceMatrix(sub, L->C);
-    // PMI(sub);
+    CovarianceMatrix(cov, L->C); //sub -> cov 30.12.15
     // printf("\nC =  ");for (i=0; i<totptsvdim * totptsvdim; i++)printf("%f ", L->C[i]); printf("\n"); 
       //      BUG;   APMI(sub);
 
     //  printf("%f %f %f %f %f\n", Xdata[0], Xdata[1], Xdata[2], Xdata[3], Xdata[4]); 		      
 
     double *Xcur, *Ccur, 
-      *datacur = NULL;
+      *dataWithoutNA = NULL;
     int atonce, endfor, XYcols, 
       notnas = NA_INTEGER;
     if (L->data_nas[GLOBAL.general.set]) {
@@ -830,83 +841,49 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       atonce = repet;
       Ccur = L->C;
       Xcur = L->X[GLOBAL.general.set];
-      datacur = Xdata;
+      dataWithoutNA = Xdata;
     }
     endfor = repet / atonce;
     XYcols = betatot + atonce;
 
     for (int r=0; r<endfor; r++) {
       if (L->data_nas[GLOBAL.general.set]) {
-	datacur = Xdata + r * totptsvdim,
+	double *datacur = Xdata + r * totptsvdim;
 	notnas = matrixcopyNA(Xcur, L->X[GLOBAL.general.set], 
-			      datacur, totptsvdim, betatot, true);
+			      datacur, totptsvdim, betatot, atonce);
 	SqMatrixcopyNA(Ccur, L->C, datacur, totptsvdim);
+	dataWithoutNA = Xcur + notnas * betatot;
       }
-      
+ 
       variables += notnas * atonce;
       MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
       assert(cov->Ssolve != NULL);
-      
-      //        printf("file\n");
-      //       FILE *fp=fopen("/home/schlather/matrix.txt",  "w");
-      //     int kk=0; for (int ii=0; ii<totptsvdim; ii++) {for(int jj=0;jj<totptsvdim;jj++) {//if (ii<8 && jj<8) 
-      // 	      fprintf(fp,"%15.8f ",Ccur[kk]); kk++;} //if (ii<8)
-    //   	fprintf(fp,"\n");}
-    //      printf("AA %d %d\n", totptsvdim, XYcols);
-
-    //	int ncc = sizeof(double) * totptsvdim * totptsvdim;
-    //     double *CCC = (double*) malloc(ncc);
-    //    memcpy(CCC, Ccur, ncc);
-    //   printf("CC AA %d %d\n", totptsvdim, XYcols);     
-    //   Exterr = Ext_solvePosDef_(Ccur, totptsvdim, true, L->CinvXY, 0,
-    //			     &logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
-    //      printf("DDAA %d %d\n", totptsvdim, XYcols);   
-    //	 kk=0;for (int ii=0; ii<totptsvdim; ii++) {for(int jj=0;jj<totptsvdim;jj++) {//if (ii<8 && jj<8)  
-    //  	      fprintf(fp,"%15.8f ",Ccur[kk]); kk++;} //if (ii<8)
-    //   	fprintf(fp,"\n");}
-    //   fclose(fp);
-    //   printf("BB %d %d\n", totptsvdim, XYcols);
-    //   memcpy(Ccur, CCC, ncc);
-     
-      
-    //  for (int ii=0; ii<totptsvdim; ii++)  printf("%f ", L->CinvXY[ii]); 
-
-     Exterr = Ext_solvePosDef_(Ccur, totptsvdim, true, L->CinvXY, XYcols,
-			     &logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
-     // for (int ii=0; ii<totptsvdim; ii++) printf("%f ", L->CinvXY[ii]); 
-     // printf("CinvXY %f %d\n",  L->CinvXY[0], totptsvdim); 
- 
-      if (Exterr != NOERROR) {
-	//	printf("exterr %d\n", Exterr);
-	goto ErrorHandling;  
-      }
+  
+      Exterr = Ext_solvePosDef_(Ccur, notnas, 
+				true,  // except for negative definite function
+				L->CinvXY, XYcols,
+				&logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
+      if (Exterr != NOERROR) goto ErrorHandling;  
       logdettot += logdet * atonce;
       double *CinvY = L->CinvXY + betatot * notnas;
-      int end_i = totptsvdim * atonce;
-      for (i=0; i<end_i; i++) YCinvY += CinvY[i] * datacur[i];
+      int end_i = notnas * atonce;
+      for (i=0; i<end_i; i++) YCinvY += CinvY[i] * dataWithoutNA[i];
 
       if (L->fixedtrends) {
 	if (L->betas_separate) {
 	  assert(sets == 1);
 	  matmulttransposed(Xcur, L->CinvXY, L->XtX, notnas, betatot, betatot);
-	  matmulttransposed(L->CinvXY, datacur, L->XCY, notnas, betatot,atonce);
+	  matmulttransposed(L->CinvXY, dataWithoutNA, L->XCY, notnas,
+			    betatot,atonce);
 	} else {
 	  matmulttransposed(Xcur, L->CinvXY, L->XitXi, notnas, betatot,betatot);
 	  for (i=0; i<betaSq; i++) L->XtX[i] += atonce * L->XitXi[i];
-
-
-	  // 	  printf("\nxtx %d  %f %f notnas=%d %d glob.var=%d\n", (int) atonce, Xcur[0], L->CinvXY[0], (int) notnas, betatot, info->globalvariance); for (i=0; i<betaSq; i++)printf("%f ", L->XtX[i]); printf("\n"); 
-	  
-	  //	  double Sum=0.0; printf("X C^{-1}XY "); for (i=0; i<notnas; i++) {Sum+=Xcur[i] * L->CinvXY[i]; printf("X=%f %f %f S=%f\n", Xcur[i], L->CinvXY[i], L->CinvXY[i+notnas], Sum);} printf("\n");
-
-	  MEMCOPY(L->sumY, datacur, sizeof(double) * notnas);
-	  // if ( L->XtX[0] < 0) e rror("<="); printf("ok\n");
-
+	  MEMCOPY(L->sumY, dataWithoutNA, sizeof(double) * notnas);
 
 	  int kk = notnas;
 	  for (int rr=1; rr<atonce; rr++) {
 	    for(int d=0; d<notnas; d++) {
-	      L->sumY[d] += datacur[kk++];
+	      L->sumY[d] += dataWithoutNA[kk++];
 	    }
 	  }
 	  
@@ -938,14 +915,8 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     Exterr = Ext_solvePosDef_(L->XtX, betatot, true, beta, 
 		     L->betas_separate ? repet : 1, NULL, 
 		     cov->Ssolve, &(GLOBAL.solve), PL);
-    // printf("here end %d\n", Exterr);
-   if (Exterr != NOERROR) {
-      //          PMI(cov);
-      //printf("exterr2 %d %d %e\n", L->betas_separate, betatot, L->XtX[0]);
-      //printf("%f %f %f \n", L->XtX[1], L->XtX[2], L->XtX[3]);
-      goto ErrorHandling;  
-    }  
-      //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
+    if (Exterr != NOERROR) goto ErrorHandling;  
+       //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
     for (j=0; j<all_betatot; j++) {
       proj += L->XCY[j] * beta[j];
     }      
@@ -963,7 +934,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   double delta;
   delta = YCinvY - proj;
   if (info->globalvariance) {
-    //printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * log(delta));
+    //  printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * log(delta));
     *v -= 0.5 * variables * log(delta);
     v[1] = delta / variables;
     if (info->pt_variance != NULL) *(info->pt_variance) = v[1];
@@ -990,7 +961,11 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	  double 
 	    *data = SET_OUT_OF(datasets) + nrow * j;
 	  for (int r=0; r < repet; r++, data += totptsvdim) {
-	    for (int ii=0; ii<nrow; sum += log(data[ii++] + mu));
+	    for (int ii=0; ii<nrow; ii++) {
+	      double dummy = data[ii];
+	      if (!ISNA(dummy) && !ISNAN(dummy))
+		sum += log(dummy + mu);
+	    }
 	  }
 	}
 	*v += lambdaM1 * sum;
@@ -1006,20 +981,13 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
   GLOBAL.general.set = store;
 
   if (Exterr != NOERROR) {
-    //printf("exterr errorM=%d\n", ERRORM);
     if (Exterr == ERRORM) {
       Ext_getErrorString(ERRORSTRING);
-
-      //printf("error = %s\n", ERRORSTRING);
-
       ERR(ERRORSTRING);
     } else err = Exterr;
   }
 
-  if (err != NOERROR) {
-    //printf("error = %d\n", err);
-    XERR(err);
-  }
+  if (err != NOERROR) XERR(err);
    
 }
 
@@ -1358,10 +1326,6 @@ int struct_gauss_logli(cov_model *cov) {
   GetBeta(cov, L, &ne);
   // printf("\n\n\n\n .>>>>>>>> get Beta fodnex\n");
 
- 
- 
-  
-
   if (L->fixedtrends + 1 < MAX_LIN_COMP)
     L->betas[L->fixedtrends + 1] = L->betas[L->fixedtrends]; 
   betatot = L->betas[L->fixedtrends];
@@ -1381,7 +1345,6 @@ int struct_gauss_logli(cov_model *cov) {
   //printf("maxbeta %d %d %d\n", L->maxbeta, vdim, n); 
 
   if ((err = alloc_cov(cov, dim, n, 1)) != NOERROR) goto ErrorHandling;
-
   
   //  printf("betas = %d/%d %d;  %d %d %d\n", L->betas[ne], betatot, info->neffect, info->effect[0], info->effect[1], info->effect[2]);
   //   printf("%d %d %d %d; %d %d %d %d - %d\n", dummy_det, L->dettrends, DataEffect, LastMixedEffect,	 dummy_fixed,L->fixedtrends, dummy_random, L->random, FixedTrendEffect);
@@ -1501,12 +1464,12 @@ int struct_gauss_logli(cov_model *cov) {
  
     // provide necessary space and account for deterministic information
     max_total_data_Sq = L->max_total_data * L->max_total_data;
-    L->C = (double *) MALLOC(max_total_data_Sq * sizeof(double));    
+    int totdata_bytes = max_total_data_Sq * sizeof(double);
+    L->C = (double *) MALLOC(totdata_bytes);    
     if (L->data_has_nas) {
-      L->Cwork = (double *) MALLOC(max_total_data_Sq * sizeof(double));
-      L->Xwork = (double*) MALLOC(L->max_total_data * betatot * sizeof(double));
-      L->CinvXYwork = (double*) MALLOC(sizeof(double) * 
-				   (betatot* maxtotpts* vdim + maxndata));
+      L->Cwork = (double *) MALLOC(totdata_bytes);
+      int tot = L->max_total_data + betatot * Gettotalpoints(cov);
+      L->Xwork = (double*) MALLOC(tot * sizeof(double));
     }
     if (L->fixedtrends) {
       L->XitXi =  (double*) MALLOC(sizeof(double) * betatot * 

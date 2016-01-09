@@ -1520,8 +1520,7 @@ void addSpecific(int cov) {
   int nr = currentNrCov - 1;
   assert((nr>=0) && (nr<currentNrCov));
   cov_fct *X = CovList + cov; // nicht gatternr
-  //  printf("%s %d %d %d %d\n", X->name, CovList[nr].Typi[0], ProcessType ,
-  //	 CovList[nr].kappas, X->kappas);
+  //  printf("%s %d %d %d %d\n", X->name, CovList[nr].Typi[0], ProcessType, CovList[nr].kappas, X->kappas);
   assert((CovList[nr].Typi[0] == ProcessType &&
 	  CovList[nr].kappas == X->kappas) ||
 	 ( X->check == checkmal && CovList[nr].check==checkmultproc));

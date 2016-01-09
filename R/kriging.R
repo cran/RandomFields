@@ -148,7 +148,7 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
   }
   
   #str(Z)
-
+ 
   if (length(Z$data) != 1) stop("exactly one data set must be given.")
   dimdata <- base::dim(Z$data[[1]])
   Z$data[[1]] <- as.double(Z$data[[1]])
@@ -240,7 +240,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                        data=data, given=given, RFopt=RFopt,
                        reg=reg, err.model = err.model,
                        ...)
-  # Print(all);
+  #Print(all);
   
   imputing <- all$imputing
   tsdim <- as.integer(all$Z$tsdim)
@@ -275,6 +275,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     warning("with imputing, currently the variance cannot be returned")
   }
 
+
   if (length(all$Z$data) > 1) {
     Res <- array(dim=c(nx, vdim, repet))
     for (i in 1:length(all$Z$data)) {
@@ -301,7 +302,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     } else {
       Res <- matrix(nrow=nx, ncol=repet * vdim)
     }
-   
+    
     if (split) {
       ## to do:
       all$X <- ExpandGrid(all$X) ## to  do
@@ -359,7 +360,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
         }
       } ## for p in totalparts
       if (pr) cat("\n")
-    } else {
+    } else { ## not split
       if (ignore.trend) 
         initRFlikelihood(all$krige, Reg=reg, x=all$Z$coord, data=data,
                          ignore.trend = ignore.trend)
@@ -367,20 +368,26 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                         likelihood_register = reg)
       Res <- predictGauss(Reg=reg, model=all$model, x=all$X,
                           kriging_variance=FALSE)
+
+    #  Print(Res)
+      
      }
   }## !is.list(Z)
   Z <- all$Z ## achtung! oben kann sich noch all$Z aendern!
   X <- all$X
 
-  #Print(newdim, Res, vdim, repet, dimension, X$grid, nx, X)
- # Print(Res)
- # Print(newdim)
+  #  Print(newdim, Res, vdim, repet, dimension, X$grid, nx, X)
+#  print(Res)
+ #  Print(newdim)
 
+  
+  
   if (length(newdim)>1)  base::dim(Res) <- newdim else Res <- as.vector(Res)
+
   if (return.variance && length(newdim <- c(dimension, if (vdim>1) vdim)) > 1)
     base::dim(sigma2) <- newdim  
   if (!is.null(Z$varnames)) attributes(Res)$varnames <- Z$varnames
-    
+
   spConform <- RFopt$general$spConform
 
   Res <- RFboxcox(data=Res, boxcox = boxcox, inverse=TRUE)
@@ -478,7 +485,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   simu.grid <- X$grid
   tsdim <- Z$tsdim
   vdim <- Z$vdim
-  if (vdim > 1) stop("multivariate version not programmed yet")
+
   data <- RFboxcox(Z$data[[1]])
   .Call("set_boxcox", c(Inf, 0))
 
@@ -535,7 +542,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
       new.index <- NULL
     } else {  
       ## data points are all lying on the grid
-      
+     
       simu <- do.call(RFsimulate, args=c(list(model=all$krige,
                                       x=X$x, # y=y, z=z,
                                       T=X$T,
@@ -546,7 +553,13 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                                       dots, list(spConform=FALSE)))
       ## for all the other cases of simulation see, below
       index <- t(index)
-    }
+      if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
+      else {
+        d <- dim(simu)
+        last <- d + 1 - (1 : ((vdim > 1) + (n > 1)))
+       if (!is.matrix(simu)) dim(simu) <- c(prod(d[-last]), prod(d[last]))
+      }
+   }
   } else { ## not simu.grid
     xx <- t(X$x)  ## dim x locations
    
@@ -582,41 +595,36 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                     args=c(list(model=all$krige, x=xx, grid=FALSE, n=n,
                         register = cond.reg, seed = NA), dots,
                         spConform=FALSE, examples_reduced = FALSE))
+    if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
+    #Print(simu, X$restotal, index)
+    #print(simu)
+#    Print(c(list(model=all$krige, x=xx, grid=FALSE, n=n,
+ #                       register = cond.reg, seed = NA), dots,
+  #          spConform=FALSE, examples_reduced = FALSE));
+   # print(tail(simu));
+    
     rm("xx")
   }
-  
+
   if (is.null(simu)) stop("random field simulation failed")
-
-   
-  if (n==1) {     
-    ## simu values at the `given' locations
   
-    simu.given <- simu[index]
-
-    simu <- as.vector(simu[1:X$restotal]) # as.vector is necessary !! Otherwise
-    ##                          is not recognized as a vector     
-  } else {
-    ## this is a bit more complicated since index is either a vector or
-    ## a matrix of dimension  base::dim(simu)-1
-    simu.given <-
-      matrix(ncol=n, apply(simu, length(base::dim(simu)), function(m) m[index]))
-    simu <- apply(simu, length(base::dim(simu)), function(m) m[1:X$restotal])
-    simu <- as.vector(simu)
-  }
+  simu.given <- simu[index, ]
+  simu <- as.vector(simu[1:X$restotal, ]) # as.vector is necessary !! Otherwis
+##                                       is not recognized as a vector
 
 
-#  Print(simu, simu.given, simu.grid, index, as.vector(Z$data[[1]]),  simu.given, X)
+#  Print(simu, simu.given, simu.grid, index, as.vector(data),  simu.given, X)
 
  
   ## to do: als Naeherung bei UK, OK:
   ## kriging(data, method="A") + simu - kriging(simu, method="O") !
   stopifnot(length(X$y)==0, length(X$z)==0)
   simu <- simu + RFinterpolate(x=X, model=model,
-                                        err.model = err.model,
-                                        register=MODEL_KRIGE,
-                                        given = coord,
-                                        data = as.vector(data) - simu.given,
-                                        spConform=FALSE, ignore.trend = TRUE)
+                               err.model = err.model,
+                               register=MODEL_KRIGE,
+                               given = coord,
+                               data = as.vector(data) - simu.given,
+                               spConform=FALSE, ignore.trend = TRUE)
   simu <- RFboxcox(data=simu, boxcox = boxcox, inverse=TRUE)
   
   if (all$imputing) {

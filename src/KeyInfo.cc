@@ -556,7 +556,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
       notnull += cov->nrow[i]>0 && cov->ncol[i]>0 && show_param;
       notnull += cov->kappasub[i] != NULL;
     } else {
-    notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_param) ||
+      notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_param) ||
       cov->kappasub[i] != NULL;
     }
   }
@@ -626,7 +626,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 	  FREE(Aniso);
 	  j++;
 	  continue;
-	} 
+	}
 	
 	SET_STRING_ELT(pnames, j, 
 		       mkChar(!strcmp(C->kappanames[i], FREEVARIABLE)

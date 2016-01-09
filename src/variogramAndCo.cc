@@ -43,19 +43,32 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
   *type = sub->typus;
 }
 
-#define STANDARDSTART							\
-  assert(cov != NULL);							\
-  cov_model *prev = cov->calling;					\
-  assert(prev != NULL);							\
+/*
   bool ok_ = prev->nr == COVFCTN || prev->nr == VARIOGRAM_CALL ||	\
     prev->nr == PREDICT_CALL ||						\
     CovList[prev->nr].check == check_cov || prev->nr == COVMATRIX ||	\
     CovList[prev->nr].check == check_fctn || prev->nr == DIRECT ||	\
-    (prev->nr == GAUSSPROC && prev->calling != NULL &&			\
-     CovList[prev->calling->nr].check == check_likelihood) ||		\
+    CovList[prev->nr].check == check_likelihood ||		\
     CovList[prev->nr].check == checkS;					\
   if (!ok_) BUG;							\
-  FINISH_START(prev, cov, false, 0);					\
+*/
+
+
+#define STANDARDSTART							\
+  cov_model *cov = Cov;							\
+  assert(cov != NULL);							\
+  if (isGaussProcess(cov)) cov = cov->sub[0];				\
+  cov_model *prev = cov;						\
+  if (prev->Spgs == NULL) {						\
+    assert(isVariogram(prev));						\
+    prev = cov->calling; /* either interface or process	*/		\
+    if (prev != NULL && prev->Spgs == NULL) {				\
+      assert(isProcess(prev));						\
+      prev = prev->calling;						\
+    }									\
+  }									\
+  assert(prev != NULL && (isInterface(prev) || isProcess(prev)));	\
+  FINISH_START(prev, cov, false, 0)
 
 
 /* assert(cov->vdim[0] == cov->vdim[1]); */	
@@ -63,9 +76,9 @@ void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
 //  PMI(prev); print("\n%d %d %d\n", 	prev->nr, PREDICT_CALL, ok_);  
 
 
-void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) { 
-   STANDARDSTART;
- domain_type domown;
+void CovVario(cov_model *Cov, bool is_cov, bool pseudo, double *value) { 
+  STANDARDSTART;
+  domain_type domown;
   Types type;
   long m, n;
   bool stat;
@@ -114,9 +127,9 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
   NONSTATCOV(x, y, cov, cross);	\
   for (v = 0; v<vdimSq; v++) Val[v][loc->i_row] = cross[v];	
  
-#define VARIO_UNIVAR 			\
-  COV(x, cov, cross);			\
-  *value = *C0y - *cross;	
+#define VARIO_UNIVAR	  \
+  COV(x, cov, cross);	  \
+  *value = *C0y - *cross;
 
 #define VARIO_UNIVAR_Y							\
     NONSTATCOV(x, y, cov, cross);					\
@@ -135,7 +148,6 @@ void CovVario(cov_model *cov, bool is_cov, bool pseudo, double *value) {
     }									\
   }									
 
-  //printf("\n\nygiven %d %d\n\n\n", ygiven, kernel);APMI(cov);
   
 #define VARIO_MULT_Y 							\
   NONSTATCOV(x, y, cov, cross);						\
@@ -227,7 +239,9 @@ if (grid) {
  
  
 
-void CovarianceMatrix(cov_model *cov, double *v) {
+void CovarianceMatrix(cov_model *Cov, double *v) {
+  STANDARDSTART;
+
   domain_type domown;
   Types type;
   genuineStatOwn(cov, &domown, &type);
@@ -240,7 +254,6 @@ void CovarianceMatrix(cov_model *cov, double *v) {
     ERR("covariance matrix: given model is not a covariance function");
   }
       
-  STANDARDSTART;
   bool dist = loc->distances,
     vdim_closetogether = GLOBAL.general.vdim_close_together;
   long l,n,m, VDIM, NEND, NINCR, MINCR, ENDFORINCR,
@@ -367,7 +380,6 @@ void CovarianceMatrix(cov_model *cov, double *v) {
 	  NONSTATCOV(x, y, cov, z);
 	  assert(R_FINITE(z[0]));
 	}
-	// printf("%s\n", NAME(cov));
 	MULTICOV;
       }
      }
@@ -549,6 +561,7 @@ void partial_loc_setXY(cov_model *cov, double *x, double *y, long lx) {
   int err;
 
   //  PMI(cov);
+  //printf("XY %ld %ld %d\n", y, NULL, y == NULL ? 0 : lx);
   
   if ((err = partial_loc_set(loc, x, y, lx, y == NULL ? 0 : lx, false,
 			     loc->xdimOZ, NULL, loc->grid, 
@@ -565,8 +578,10 @@ void partial_loc_null(cov_model *cov) {
 }
 
 
-void InverseCovMatrix(cov_model *cov, double *v, double *det) {
-  location_type *loc = Loc(cov);
+void InverseCovMatrix(cov_model *Cov, double *v, double *det) {
+  cov_model *cov = Cov;
+  if (isGaussProcess(cov)) cov = cov->sub[0];
+   location_type *loc = Loc(cov);
   long vdimtot = loc->totalpoints * cov->vdim[0];  
   assert(cov->vdim[0] == cov->vdim[1]);
   CovList[cov->nr].covariance(cov, v);
@@ -593,7 +608,7 @@ void InverseCovMatrix(cov_model *cov, double *v, double *det) {
   cov_model *truecov = !isInterface(cov) ?		\
     cov : cov->key == NULL ? cov->sub[0] : cov->key
  
-#define STANDARDINTERN_SEXP_BASIC						\
+#define STANDARDINTERN_SEXP_BASIC					\
   if (INTEGER(reg)[0] < 0 || INTEGER(reg)[0] > MODEL_MAX) XERR(ERRORREGISTER); \
   if (currentNrCov==-1) InitModelList();				\
   cov_model *cov = KEY[INTEGER(reg)[0]];				\
@@ -602,8 +617,9 @@ void InverseCovMatrix(cov_model *cov, double *v, double *det) {
 #define STANDARDINTERN_SEXP						\
   STANDARDINTERN_SEXP_BASIC;						\
   cov_model VARIABLE_IS_NOT_USED *truecov =  !isInterface(cov)	?	\
-    cov : cov->key == NULL ? cov->sub[0] : cov->key
-
+    cov : cov->key == NULL ? cov->sub[0] : cov->key;			\
+  if (isGaussProcess(truecov)) truecov = truecov->sub[0]
+  
 //  if (cov->pref[Nothing] == PREF_NONE) { PMI(cov); XERR(ERRORINVALIDMODEL) }
 
 SEXP Delete_y(SEXP reg) {
@@ -628,6 +644,8 @@ SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdimOZ, SEXP lx,
 
   //   PMI(cov);
   if (Loc(cov)->len > 1) BUG;  
+
+  //  printf("y = %d %d xdim %d new:%d \n", TYPEOF(y),  NILSXP, Loc(cov)->xdimOZ, INTEGER(xdimOZ)[0]);
 
   partial_loc_setXY(cov, REAL(x), TYPEOF(y) == NILSXP ? NULL : REAL(y),
 		    INTEGER(lx)[0]);
@@ -695,6 +713,17 @@ SEXP VariogramIntern(SEXP reg) {
     size = Gettotalpoints(cov) * vdim * vdim;
   PROTECT(ans = allocVector(REALSXP, size));
   CovList[truecov->nr].variogram(truecov, REAL(ans)); 
+ 
+   
+  //for (int j=0; j<size; j++) {
+  //if (!R_finite(REAL(ans)[j])) {
+  // for (int i=0; i<size; i++) printf("%f, ", REAL(ans)[i]); print("\n"); 
+  //  APMI(truecov);
+  //  BUG;
+  //  break;
+  //}
+  //}
+
   UNPROTECT(1);
   return(ans);
 }

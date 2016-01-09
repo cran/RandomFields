@@ -87,6 +87,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ## the following model defines the argument nu of the Whittle-Matern
 ## model to be an expontential random variable with rate 5.
 model <- ~ 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5)) + RMnugget(var=NA)
+\dontshow{if (!interactive()) model <- 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5))}%ok
 data(soil)
 fit <- RFfit(model, x=soil$x, y=soil$y, data=soil$moisture, modus="careless")
 print(fit)

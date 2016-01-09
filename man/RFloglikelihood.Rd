@@ -1,13 +1,11 @@
 \name{RFloglikelihood}
 \alias{RFloglikelihood}
 \alias{RFlikelihood}
-\title{HIERACHICAL MODELLING: Evaluate Covariance and Variogram
-  Functions in a BAYESIAN FRAMEWORK}
+\title{Likelihood and estimation of linear models}
 \description{
- \command{\link{RFloglikelihood}} returns the log likelihood of some
- random fields; note that coding is work in progress
-
- for Gaussian fields only
+ \command{\link{RFloglikelihood}} returns the log likelihood for Gaussian
+ random fields. In case NAs are given that refer to linear modeling, the
+ ML of the linear model is returned.
 }
 \usage{
 RFlikelihood(model, x, y = NULL, z = NULL, T = NULL, grid = NULL,

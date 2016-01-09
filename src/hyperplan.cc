@@ -109,8 +109,8 @@ int check_hyperplane(cov_model *cov) {
 
 
   setbackward(cov, sub);
-  KAPPA_BOXCOX;
- if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
+  if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
 }

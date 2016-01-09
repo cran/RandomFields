@@ -206,7 +206,7 @@ int check_nugget_proc(cov_model *cov) {
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
     return ERRORDIM;
   cov->role = ROLE_GAUSS;
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   
   // printf("OK nugget\n");
   EXTRA_STORAGE;

@@ -355,7 +355,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     
     if (is.list(distances)) {
       L <- list()
-      for (i in 1:length(x))
+      for (i in 1:length(distances))
         L[[i]] <- do.call("CheckXT", list(distances=distances[[i]], dim=dim))
        class(L) <- "CheckXT"
       return(L)
@@ -816,6 +816,7 @@ RFearth2cartesian <- function(coord, units=NULL, system = "cartesian",
                 coords.new_coord_system = "keep",
                 coords.new_coordunits=units,
                 coords.coord_system="earth")
+  dimnames(res) <- list(NULL, c("X", "Y", "Z", "T")[1:ncol(res)])
   return(res)
 }
 
@@ -942,7 +943,7 @@ StandardizeData <- function(model,
         range_distSq <- function(M) range(apply(M, 2, function(z) sum(z^2)))
         rangex <- sqrt(range(sapply(distances, range_distSq)))
       } else {        
-        xdimOZ <- 1
+        xdimOZ <- 1L
         spatialdim <- tsdim <- as.integer(dim)      
         lcc <- sapply(distances, function(x) if (is.matrix(x)) -1
                                         else 0.5 * (1 + sqrt(1 + 8* length(x))))
@@ -965,7 +966,7 @@ StandardizeData <- function(model,
 
       len <- as.integer(lcc)
       if (any(len != lcc)) stop("number of distances not of form k(k-1)/2")
-      neu <- distances
+      neu <- CheckXT(distances=distances, dim = spatialdim) 
       coordunits <- RFopt$coords$coordunits
       Zeit <- FALSE      
     } else { ## distances not given
@@ -1105,9 +1106,14 @@ StandardizeData <- function(model,
     getrange <- function(x)
       if (x$grid) rbind(x$x[1, ], x$x[1, ] + x$x[2, ] * (x$x[3, ] - 1))
       else apply(x$x, 2, range)
-    rangex <- t(sapply(neu, getrange))
-    base::dim(rangex) <- c(length(rangex) / spatialdim, spatialdim)
-    rangex <- apply(rangex, 2, range)    
+    rangex <- sapply(neu, getrange)
+
+    ## falls mehrere datasets:
+    if (ncol(x[[1]]$x) > 1 || is.null(x[[1]]$dist.given) || !x[[1]]$dist.given){
+      rangex <- t(rangex) 
+      base::dim(rangex) <- c(length(rangex) / spatialdim, spatialdim)
+    }
+    rangex <- apply(rangex, 2, range)
 
     getmindistSq <- function(x) {
       if (x$grid) sum(x$x[2,]^2)
@@ -1145,7 +1151,10 @@ StandardizeData <- function(model,
   varnames <- try(colnames(data[[1]]))
 
 ## geht x[[1]]$x immer gut ??
-  names <- GetDataNames(model=model, coords=x[[1]]$x, locinfo=neu[[1]]) #ohne data!
+#  Print(missing(x), neu)
+  names <- GetDataNames(model=model,
+                        coords=if (missing(x)) NULL else x[[1]]$x,
+                        locinfo=neu[[1]]) #ohne data!
 
   if (is.null(names$varnames))
     names$varnames <-

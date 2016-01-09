@@ -6,20 +6,7 @@
 \alias{RMmixed}
 \alias{ROmissing}
 \alias{RMnull}
-\alias{RMnatsc_intern}
-
-\alias{RPplusproc}
-\alias{RP$pow}
-\alias{RPaverageIntern}
-\alias{RPcutoffIntern}
-\alias{RPintrinsIntern}
-\alias{RPhyperIntern}
-\alias{RPnuggetIntern}
-\alias{RPspectralIntern}
-\alias{RPtbmIntern}
-\alias{RPbrorigIntern}
-\alias{RPbrmixedIntern}
-\alias{RPbrshiftIntern}
+\alias{RMSpower}
 
 \alias{RO#}
 \alias{RO>}
@@ -92,10 +79,11 @@ The following and many more internal models exist
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-## in the following 'try' the model 'RMtbmIntern' appears
-model <- RPtbm(RMexp())
+## in the following 'RPplus' appears as internal model
 x <- seq(0, 10, 1) 
-try(RFsimulate(model, x=x)) ## fails
+z <- RFsimulate(RPspecific(RMexp() + RMnugget()), x)
+RFgetModelInfo(which="internal", level=0)
+
 \dontshow{FinalizeExample()}
 
 }

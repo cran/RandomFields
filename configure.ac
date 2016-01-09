@@ -11,7 +11,8 @@ if test -z "${R_HOME}"; then
    echo "could not determine R_HOME"
    exit 1
 fi
-CC=`"${R_HOME}/bin/R" CMD config CC`
+#CC=`"${R_HOME}/bin/R" CMD config CC`
+CC = gcc-4.9 -std=gnu99 -fsanitize=address -fno-omit-frame-pointer
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
 

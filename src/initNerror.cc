@@ -96,9 +96,8 @@ cov_fct *CovList=NULL;
 int currentNrCov=-1;
 int currentRegister=-1;
  
-int True=1; // never change
-int False=0; // never change
 char *FREEVARIABLE= (char*) "...";
+
 
 
 //globalorig GLOBALORIG = {false, {}};
@@ -2078,6 +2077,18 @@ void InitModelList() {
   RandomShape(SUBMODEL_DEP, struct_standard_shape, init_standard_shape, 
 	      do_standard_shape, do_random_failed, true, true, false); 
 
+   pref_type pmppp =  {0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 5, 0, 10, 5};
+  //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
+   MPPPLUS =
+    IncludeModel("++",  PointShapeType, 1, MAXSUB, 1, kappamppplus, 
+		 PREVMODELD, PREVMODELI, // CARTESIAN_COORD,
+		 checkmppplus, rangempplus, pmppp, 
+		 false, SUBMODEL_DEP, SUBMODEL_DEP, (ext_bool) SUBMODEL_DEP, 
+		 MISMATCH);
+  nickname("mppplus");
+  kappanames("p", REALSXP);
+  addCov(mppplus, NULL, NULL);
+
 
   STATIONARY_SHAPE = 
     IncludeModel("statShape", PointShapeType, 1, 1, 0, NULL, 
@@ -2091,22 +2102,6 @@ void InitModelList() {
 	      do_stationary_shape, do_random_failed, true, true, false); 
 
 
-  pref_type pmppp =  {0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 5, 0, 10, 5};
-  //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  MPPPLUS =
-    IncludeModel("++",  PointShapeType, 1, MAXSUB, 1, kappamppplus, 
-		 PREVMODELD, PREVMODELI, // CARTESIAN_COORD,
-		 checkmppplus, rangempplus, pmppp, 
-		 false, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP, MISMATCH);
-  nickname("mppplus");
-  kappanames("p", REALSXP);
-  addCov(mppplus, NULL, NULL);
-
-
-  // -----------------------------
-  // Interfaces
-  // -----------------------------
-  
   COVFCTN =
     IncludeModel("Cov", InterfaceType, 1, 1, 0, NULL, XONLY, UNREDUCED, 
 		 check_cov, NULL, PREF_AUX, 
@@ -2251,14 +2246,17 @@ void InitModelList() {
 		  XONLY, UNREDUCED,
 		 checkplusproc, NULL, PREF_ALL, 
 		 true, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP);
+  nickname("plus");
   RandomShape(2, structplusproc, initplusproc, doplusproc, false, false, true);
   addSpecific(PLUS);
+ 
 
  
   IncludeModel("prodproc", ProcessType, 1, 1, 0, NULL, 
 	       XONLY, UNREDUCED,
 	       checkprodproc, NULL, PREF_ALL, 
 	       true, PARAM_DEP, INFDIM-1, false, NOT_MONOTONE);
+  nickname("prod");
   RandomShape(2, structprodproc, initprodproc, doprodproc, false, false, true);
   addSpecific(PROD);
 
@@ -2266,13 +2264,14 @@ void InitModelList() {
 	       XONLY, UNREDUCED,
 	       checktrafoproc, rangetrafo, PREF_ALL, 
 	       true, PARAM_DEP, INFDIM-1, false, NOT_MONOTONE);
+  nickname("trafo");
   kappanames("new", INTSXP);
   change_typeof(TRAFO_ISO, NN2); // ISONAMES
   RandomShape(2, structtrafoproc, inittrafoproc, dotrafoproc,
   	      false, false, true);
   addSpecific(TRAFO);
   
-
+  
   MPPPLUS_PROC =
   IncludeModel("mppplusproc", ProcessType, 1, MAXSUB, 1, kappamppplus, 
 		  XONLY, UNREDUCED,
@@ -2281,7 +2280,8 @@ void InitModelList() {
   nickname("mppplus");
   kappanames("p", REALSXP);
   RandomShape(2, struct_mppplus, init_mppplus, do_mppplus, true, true, true);
-  addSpecific(MPPPLUS);
+  // addSpecific(MPPPLUS);
+   
 
 
   MULT_PROC = 
@@ -2369,7 +2369,7 @@ void InitModelList() {
 		 XONLY, UNREDUCED,
 		 check_local_proc, range_intrinCE, PREF_NOTHING,
 		 false, SCALAR, MAXCEDIM, false, MISMATCH);
- nickname(METHODNAMES[CircEmbedIntrinsic]);
+  nickname(METHODNAMES[CircEmbedIntrinsic]);
   kappanames("boxcox", REALSXP,
 	     CE[CE_FORCE - COMMON_GAUSS - 1], INTSXP, 
 	     CE[CE_MMIN - COMMON_GAUSS - 1], REALSXP, 
@@ -2385,11 +2385,12 @@ void InitModelList() {
 	     CE[CE_APPROXMAXGRID - COMMON_GAUSS - 1], INTSXP,
 	     "diameter",REALSXP, "rawR", REALSXP);  
   change_sortof(GAUSS_BOXCOX, ANYPARAM);
-   RandomShape(2, struct_extractdollar, init_gaussprocess, do_gaussprocess); 
+  RandomShape(2, struct_extractdollar, init_gaussprocess, do_gaussprocess); 
  
   CE_INTRINPROC_INTERN = CopyModel("intrinsIntern", CE_INTRINPROC_USER);
   make_internal();
   RandomShape(2, struct_ce_approx, init_ce_approx, do_ce_approx);
+  nickname(METHODNAMES[CircEmbedIntrinsic]);
 
   DIRECT = 
     IncludeModel(METHODNAMES[Direct], GaussMethodType, 
@@ -2492,7 +2493,7 @@ void InitModelList() {
 		 false, SUBMODEL_DEP, MAXTBMSPDIM, false, MISMATCH);
   RandomShape(2, struct_specificGauss, init_specificGauss, do_specificGauss);
   kappanames("boxcox", REALSXP);
- change_sortof(GAUSS_BOXCOX, ANYPARAM);
+  change_sortof(GAUSS_BOXCOX, ANYPARAM);
  
   TBM_PROC_USER = 
     IncludeModel(METHODNAMES[TBM], GaussMethodType,  1, 1, 9, tbm_kappasproc, 
@@ -2620,7 +2621,7 @@ void InitModelList() {
   RandomShape(0, structBrownResnick, initBrownResnick, doBrownResnick); 
   addlogD(loglikelihoodBR);
 
-  GAUSSPROC = 
+  GAUSSPROC = // never change names. See fitgauss.R, for instance
     IncludeModel("gauss.process", ProcessType, 1, 1, 2, kappaGProc,
 		 XONLY, UNREDUCED,
 		 checkgaussprocess, rangegaussprocess, PREF_NOTHING,

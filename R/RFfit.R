@@ -590,6 +590,14 @@ contour.RFfit <- contour.RFempVariog <-
   }
 
 
+ExpliciteGauss <- function(model) {
+  if (model[[1]] != "RPgauss" && model[[1]] != "gauss.process") {
+    boxcox <- RFoptions()$gauss$boxcox
+    if (any(is.na(boxcox)) || any(boxcox[c(TRUE, FALSE)] != Inf))
+      return(list("RPgauss", boxcox=boxcox, model))
+  }
+  return(model)
+}
 
 RFfit <-
   function(model, x, y=NULL, z=NULL, T=NULL,  grid=NULL, data, 
@@ -634,8 +642,6 @@ RFfit <-
                        RFopt=RFopt,
                        mindist_pts = RFopt$fit$smalldataset / 2, ...)
   Z <- BigDataSplit(Z, RFopt)
-
-#  str(Z); warning("delete str(Z)")
   
   if (!is.null(lower) && !is.numeric(lower)) lower <- PrepareModel2(lower, ...)
   if (!is.null(upper) && !is.numeric(upper)) upper <- PrepareModel2(upper, ...)
@@ -657,6 +663,7 @@ RFfit <-
   } else if (new.model[[1]] %in% c("RPbernoulli", "binaryprocess")) {
     res <- fit.bernoulli()    
   } else {
+    Z$model <- ExpliciteGauss(Z$model)
     res <- do.call("rffit.gauss",
             c(list(Z, lower=lower, upper=upper, users.guess=users.guess,  
                    optim.control=optim.control,

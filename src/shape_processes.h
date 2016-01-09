@@ -422,7 +422,6 @@ int struct_predict(cov_model *cov, cov_model VARIABLE_IS_NOT_USED  **newmodel);
 void range_predict(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range);
 
 
-int check_cov_intern(cov_model *cov, Types type, bool close, bool kernel);
 void Cov(double *x, cov_model *cov, double *value) ;
 int check_cov(cov_model *cov) ;
 int struct_cov(cov_model *cov, cov_model **newmodel);

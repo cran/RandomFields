@@ -426,7 +426,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 		   // just compute FFT for upper right triangle
 	  first = (l==0);
 	  if (PL>=PL_STRUCTURE) { LPRINT("FFT..."); }
-	  if ((err=fastfourier(c[l], mm, dim, first, &(s->FFT)))!=0) 
+	  if ((err=fastfourier(c[l], mm, dim, first, &(s->FFT))) != NOERROR) 
 	    goto ErrorHandling;
 	}
 
@@ -658,6 +658,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  break; // break loop 'for(i=0 ...)'
 	}
       }
+
+      //print("%d %d %d %d\n", s->positivedefinite, s->trials, trials, force);
      
       if (!s->positivedefinite && (s->trials<trials)) { 
 	FFT_destruct(&(s->FFT));
@@ -701,12 +703,12 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
     } else {if (PL>=PL_BRANCHING) {LPRINT("forced.\n");} }
     R_CheckUserInterrupt();
-  } // while (!s->positivedefinite && (s->trials<trials)) 354-719
+  } // while (!s->positivedefinite && (s->trials<trials)) 354-706
 
 
   assert(mtot>0);
   if (s->positivedefinite || force) { 
-
+    
  
     // correct theoretically impossible values, that are still within 
     // tolerance CIRCEMBED.tol_re/CIRCEMBED.tol_im 
@@ -743,6 +745,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     s->smallestRe = (r > 0.0) ? RF_NA : r;
     s->largestAbsIm = 0.0; // REMOVE THIS
   } else {
+    //printf("FEHLER\n");
     GERR("embedded matrix has (repeatedly) negative eigenvalues and approximation is not allowed (force=FALSE)");
     }
   if (PL >= PL_SUBDETAILS) {
@@ -807,6 +810,8 @@ ErrorHandling:
   }
 
   cov->simu.active = err == NOERROR;
+
+  //  printf("error =%d\n", err);
   return err;
 }
 
@@ -897,7 +902,7 @@ int check_ce(cov_model *cov) {
     if (!isPosDef(next->typus)) SERR("only covariance functions allowed.");
   }
   setbackward(cov, next);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   return NOERROR;
 }
@@ -1062,6 +1067,9 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   // PM 12/12/2008
   // don't simulate newly in case this is an even call
   s->cur_call_odd = !(s->cur_call_odd);
+
+  //printf("%d \n", (int) s->new_simulation_next);
+  //  printf("%d\n", (int) s->cur_call_odd);
   s->new_simulation_next = (s->new_simulation_next && s->cur_call_odd);
 
   if (s->new_simulation_next) {
@@ -1262,7 +1270,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     while(k<dim && (++(s->cur_square[k]) >= s->max_squares[k])) {
       s->cur_square[k++]=0;
     }    
-    s->new_simulation_next = k==dim; 
+    s->new_simulation_next = k == dim; 
   }
   //
   //  print("dep=%d odd=%d squ=%d %d\n", s->dependent, s->cur_call_odd,
@@ -1436,7 +1444,7 @@ int check_local_proc(cov_model *cov) {
 
   // no setbackward ?!
   setbackward(cov, sub); 
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   
   return NOERROR;
 }
@@ -1537,6 +1545,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
   q = local->q;
   assert(err == NOERROR);
   for (instance = first_instance; instance < 2; instance++) {
+    //printf("lcoal start err =%d %d\n", err, instance);
     //printf("model =%s instance %d %d err=%d %f %d\n", CovList[model->nr].name,
     //	   instance, first_instance, err, q[LOCAL_MSG], MSGLOCAL_OK);
     if (instance == 1) {
@@ -1559,8 +1568,11 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
     }
     if ((err = init_circ_embed(key, S)) == NOERROR) break;
   }
+
+  //  printf("local err = %d\n", err);
   
   if (err != NOERROR) goto ErrorHandling;
+  //printf("A end local err %d\n", err);
   
   if (cov->nr == CE_INTRINPROC_INTERN) {
     sqrt2a2 = sqrt(2.0 * q[INTRINSIC_A2]); // see Stein (2002) timespacedim * cncol
@@ -1585,19 +1597,22 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
     assert(cov->nr == CE_CUTOFFPROC_INTERN);
   }
 
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) !=NOERROR) goto ErrorHandling;
+
   assert(err == NOERROR);
   
  ErrorHandling: 
+  // printf("X end local err %d\n", err);
   for (d=0; d<timespacedim; d++) {
     mmin[d] = old_mmin[d];
   }
 
-  KAPPA_BOXCOX;
   cov->fieldreturn = true;
   cov->origrf = false;
   cov->rf = cov->key->rf;
   cov->simu.active = err == NOERROR;
-  return err;
+
+   return err;
 }
 
 
@@ -1813,10 +1828,13 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 
 
 int init_ce_approx(cov_model *cov, gen_storage *S) {  
+  //  printf("\ninit_ce_approx : %d %d\n", Getgrid(cov), cov->nr==CIRCEMBED); 
 
   if (Getgrid(cov)) {
-    return cov->nr==CIRCEMBED ? init_circ_embed(cov, S)
+    int ans = cov->nr==CIRCEMBED ? init_circ_embed(cov, S)
       : init_circ_embed_local(cov, S); 
+    // printf("ans = %d\n", ans); BUG;
+    return ans;
   }
 
   ROLE_ASSERT_GAUSS;
@@ -1883,6 +1901,7 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
   //cov_model *cov = meth->cov;
   long i;
   int
+     vdim = cov->vdim[0],
     *idx = s->idx;
   double 
     *res = cov->rf,
@@ -1893,24 +1912,31 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
   DO(key, S);
   location_type *key_loc = Loc(key);
   if (key_loc->Time) { // time separately given   
-    long j, t,
+    long  t,
+      j = 0,
       instances = (long) loc->T[XLENGTH],
       totspatialpts = loc->spatialtotalpoints,
       gridpoints = Loc(key)->spatialtotalpoints;
     
-    for (j=t=0; t<instances; t++, internalres += gridpoints) {
-      for (i=0; i<totspatialpts; i++) {
-	res[j++] = internalres[idx[i]];
+    for (int v=0; v<vdim; v++){
+      for (t=0; t<instances; t++, internalres += gridpoints) {
+	for (i=0; i<totspatialpts; i++) {
+	  res[j++] = internalres[idx[i]];
+	}
       }
     }
   } else { // no time separately given
     long totpts = loc->totalpoints;
-    for (i=0; i<totpts; i++) {
+    int 
+      j = 0,
+      totalkey = Loc(key)->totalpoints;
+    for (int v=0; v<vdim; v++, internalres += totalkey){
+      for (i=0; i<totpts; i++) {
       //    printf("i=%d %f %d\n", i, loc->x[i], idx[i]);
       // print(" %d %d %f %f", i, idx[i], loc->x[i*2], loc->x[i*2 +1]);
       // print("    %f\n", internalres[idx[i]]);
-
-      res[i] = internalres[idx[i]];
+	res[j++] = internalres[idx[i]];
+      }
     }
   }
 

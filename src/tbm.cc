@@ -303,7 +303,7 @@ int checktbmproc(cov_model *cov) {
   setbackward(cov, sub);
   cov->vdim[0] = next->vdim[0];
   cov->vdim[1] = next->vdim[1];
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov)) != NOERROR)  return err;
 
   // PMI(cov);

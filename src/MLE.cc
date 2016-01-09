@@ -48,6 +48,9 @@ int GetNAPosition(cov_model *cov,
 		   int SHORTlen, int printing, int depth, bool no_variance,
 		   bool excludetrends
 		   ) {
+
+  // if (*NAs == 0) printf("\n\ngetnapos %s\n\n", NAME(cov));
+
   /*
     printing <= 0 nothing
     1 only NA, NaN
@@ -129,7 +132,6 @@ int GetNAPosition(cov_model *cov,
 	//printf("nas %d \n", *NAs);
       }
 
-       
       if (printing > 0) {
 	leer(depth); PRINTF("%s\n", C->kappanames[i]);
       }
@@ -302,6 +304,7 @@ int GetNAPosition(cov_model *cov,
 	      else PRINTF("!%d", *NAs + 1);
 	    }
 	    //	  print("added %d %ld\n", *NAs, mem[*NAs]);
+	    //printf("mem: %d %s %s\n", *NAs, NAME(cov), KNAME(i));
 	    (*NAs)++;
 	    nv++;
 	  } else { // not is.na(v)
@@ -445,6 +448,9 @@ int countnas(cov_model *cov, bool excludetrend, int level) {
     endfor = nrow[i] * ncol[i];
 
     if (type[i] == REALSXP) { 
+
+      //printf("%s %s %f\n", NAME(cov), KNAME(i), P0(i));
+
       double *p = P(i);
       for (r=0; r<endfor; r++) if (ISNAN(p[r])) count++;
     } else if (type[i] == INTSXP) {
@@ -887,8 +893,14 @@ int GetEffect(cov_model *cov,  likelihood_info *info) {
   if (isProcess(cov)) {
     assert(cov->key == NULL);
     assert(!PisNULL(GAUSS_BOXCOX));
-    int nas = ISNA(P(GAUSS_BOXCOX)[0]) + ISNA(P(GAUSS_BOXCOX)[1]);
+    int nas = 0,
+      total = cov->nrow[GAUSS_BOXCOX] * cov->ncol[GAUSS_BOXCOX];
+    for (int i=0; i<total; i++)
+      nas += (int) (ISNA(P(GAUSS_BOXCOX)[i]) || ISNAN(P(GAUSS_BOXCOX)[i]));
     if (nas > 0) {
+
+      //printf("GetEffect %d %d\n", nas, info->neffect); BUG;
+
       info->nas[info->neffect] = nas;
       info->effect[info->neffect] = DataEffect;
       (info->neffect)++;
@@ -920,6 +932,10 @@ int GetEffect(cov_model *cov,  likelihood_info *info) {
  
 
     info->nas[info->neffect] = countnas(component, excludetrend, 0);
+
+
+    // printf("info %d %d\n", info->neffect, info->nas[info->neffect]);
+
     if (info->effect[info->neffect] == effect_error) 
       SERR("scaling parameter appears with constant matrix in the mixed effect part");
     if (info->effect[info->neffect] > LastMixedEffect) {
@@ -1001,7 +1017,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
   MEM_NAS[currentRegister] = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
 
-  // !!
+  // !! ZWINGEND VOR  GetEffect DA BAYESSCHE VARIABLE AUF NA GESETZT WERDEN
   if ((err = GetNAPosition(cov, MEM_NAS + currentRegister, MEMORY[currentRegister], 
 		//MEM_ELMNTS + currentRegister, MEMORY_ELMNTS[currentRegister],
 		info->names, mem_sorts, mem_vdim1, mem_vdim2, mem_isnan,
@@ -1023,7 +1039,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
 			     false);
   //printf("A\n");
   //   PMI(cov);
-  // print("XXz modelnr=%d %d\n",info->NAs, MEM_NAS[currentRegister]);
+  //   print("XXz modelnr=%d %d\n",info->NAs, MEM_NAS[currentRegister]);
   if (info->NAs != MEM_NAS[currentRegister]) BUG;
   info->NAs = 0; GetNARanges(cov, pmin, pmax, mle_pmin, mle_pmax, &(info->NAs),
 			     true);
@@ -1136,9 +1152,9 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
 }
 
 
-SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim, 
-			bool distances, int lx, int ly, bool Time,
-		        int xdimOZ,
+SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, 
+			int spatialdim, 
+			bool distances, int lx, int ly, bool Time, int xdimOZ,
 			int shortlen, int allowforintegerNA, 
 			bool excludetrend) {
   // ex MLEGetNAPos
@@ -1166,16 +1182,19 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim,
     *info = NULL;
  //  isListofList_x = isList_x;
  
- if (isList_x) {
-   if (length(x) == 0) BUG;
+  if (isList_x) {
+    if (length(x) == 0) BUG;
    //  isListofList_x = TYPEOF(VECTOR_ELT(x, 0)) == VECSXP;
- }
+  }
+
+  //printf("init %d\n", xdimOZ);
 
   currentRegister = INTEGER(model_reg)[0];
   NAOK_RANGE = true;
   CheckModelInternal(model, 
-		     length(x) == 0 ? ZERO : 
-		     isList_x ? NULL : REAL(x),
+		     length(x) == 0 
+		     ? ZERO 
+		     : isList_x ? NULL : REAL(x),
 		     length(x) == 0 ? ZERO : NULL, 
 		     length(x) == 0 ? ZERO : NULL, 
 		     spatialdim, xdimOZ,
@@ -1221,7 +1240,6 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x, int spatialdim,
 #define total 7
   PROTECT(ans = allocVector(VECSXP, total));
   PROTECT(nameAns = allocVector(STRSXP, total));
-  //unp += 5;
 
   //printf("%d\n", info->Matrix != NULL);
 
@@ -1318,7 +1336,7 @@ void PutValuesAtNAintern(int *reg, double *values, bool init){
   gen_storage s;
   double *pt_variance = MEM_PT_VARIANCE[*reg];
   gen_NULL(&s);
-  s.check = false;
+  s.check = s.dosimulate = false;
   // set ordinary parameters for all (sub)models
 
   currentRegister = *reg;
@@ -1335,11 +1353,10 @@ void PutValuesAtNAintern(int *reg, double *values, bool init){
       C = CovList + cov->nr;       
       if (i==0 || cov != MEM_COVMODELS[*reg][i-1]) {
 	if (!isDummyInit(C->Init)) {
-	  //	print("i=%d %s initalising (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),   MEMORY[*reg][i][0]);
+	  //	  print("i=%d %s initalising (%f)\n", i, NAME(cov),   MEMORY[*reg][i][0]);
 	  
 	  C->Init(cov, &s);
-	  //print("i=%d %s initalised (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]),  
-	  //   MEMORY[*reg][i][0]);
+	  //  print("i=%d %s initalised (%f)\n", i, NICK(MEM_COVMODELS[*reg][i]), MEMORY[*reg][i][0]);
 	}
       }
       //  

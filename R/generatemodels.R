@@ -85,6 +85,7 @@ rfGenerateModels <- function(assigning,
   va <- A$va
   dim(A$paramtype) <- c(MAXPARAM, vn)
 
+ 
   i <- 1
   while (i <= va) {
     step <- 1
@@ -97,6 +98,9 @@ rfGenerateModels <- function(assigning,
       i <- i + 1
       next
     }
+
+    domains <-  A$domains[i]
+    if (domains == PREVMODELD) domains <- c(XONLY, KERNEL)
     
     # get model name
     ret <- .C("GetModelName",as.integer(A$nr[i]),
@@ -161,12 +165,14 @@ rfGenerateModels <- function(assigning,
       if (nick %in%  c("RMconstant")) "var"
       else c("var", "scale", "Aniso", "proj")
     
-  #
-    cat( std.variables, ex.std)
+  #    cat( std.variables, ex.std)
    #stopifnot(i < 50)
     
     
-    cat(i, "\t", nickname, ",\t\told name ", ret$name, "\t", ex.std, "\t",
+    cat(i, "\t", nickname, ",\t",
+        paste(std.variables, collapse=", "), "\t",
+        ex.std, "\t",
+        paste(DOMAIN_NAMES[domains+1], collapse="; "), "\t",
         paste(type, collapse="/"), "\n", sep="")
     
     if(nick == ZF_DOLLAR[1]){ 
@@ -247,7 +253,7 @@ rfGenerateModels <- function(assigning,
             "\n\t",
          "isotropy = ", "c('", paste(ISONAMES[iso+1], collapse="', '"), "'),",
             "\n\t",
-         "domain = ",       "'", DOMAIN_NAMES[A$domains[i]+1],    "',", "\n\t",
+         "domain = ", "c('", paste(DOMAIN_NAMES[domains+1], collapse="', '"),   "'),", "\n\t",
          "operator = ",     as.logical(A$operator[i]),             ",", "\n\t",
          "monotone = ",    "'", MONOTONE_NAMES[A$monotone[i] + 1 - MISMATCH],
                                                                   "',", "\n\t",
@@ -259,6 +265,11 @@ rfGenerateModels <- function(assigning,
          sep="")
  
     text <- paste(text.fct, "\n", text.assign.class, "\n\n\n", sep="")
+
+    if (nickname == "RMwhittle") {
+      cat(text.assign.class)
+     # stop("KKKK")
+    }
   
     if (assigning) {
       #sink(file = RMmodels.file, append = TRUE, type='output')
@@ -415,17 +426,23 @@ rfGenerateConstants <-
               c(RFgetModelNames(group.by=NULL), ZF_INTERNALMIXED, ZF_TREND))
  
   define_char("rfgui_Names1",
+
+  ###        library(RandomFields, lib="~/TMP")
+            
               RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
-                              domain=DOMAIN_NAMES[XONLY + 1],
                               isotropy=ISONAMES[ISOTROPIC + 1],
                               operator=FALSE,
                               group.by=NULL,
                               valid.in.dim = 1,#if (sim_only1dim) 1 else 2,
                               simpleArguments = TRUE,
-                              vdim=1))
+                              vdim=1)
+              
+
+              )
+
+  
   define_char("rfgui_Names2",
               RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
-                              domain=DOMAIN_NAMES[XONLY + 1],
                               isotropy=ISONAMES[ISOTROPIC + 1],
                               operator=FALSE,
                               group.by=NULL,

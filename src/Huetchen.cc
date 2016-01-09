@@ -1322,10 +1322,11 @@ int init_stationary_shape(cov_model *cov, gen_storage *S) {
   // selbst wenn zufaelliger Shape: 1x laufen lassen, ob 
   // Fehler auftauchen. Unter "Do" lassen sie sich nicht mehr
   // schoen abfangen.
-
-  
+   
   assert(cov->mpp.moments >= 1);
-  if ((err = INIT(shape, 1, S)) != NOERROR) return err; //gatter?
+  if ((err = INIT(shape, 1, S)) != NOERROR) {
+    return err; //gatter?
+  }
   assert(shape->mpp.moments >= 1);
   for (i=0; i<=cov->mpp.moments; i++) {
     cov->mpp.mM[i] = shape->mpp.mM[i];

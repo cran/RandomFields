@@ -157,13 +157,66 @@ void mixed_rules(cov_model *cov, pref_type locpref,
 
 }
 
+bool NAequal(double X, double Y) {
+  return ((ISNA(X) || ISNAN(X)) && (ISNA(Y) || ISNAN(Y))) || X == Y;
+}
+
+int kappaBoxCoxParam(cov_model *cov, int BC) {
+  int vdim_2 = cov->vdim[0] * 2;					
+  if (PisNULL(BC)) {						
+    PALLOC(BC, 2, cov->vdim[0]);				
+    if (GLOBAL.gauss.loggauss) {					
+      for (int i=0; i<vdim_2; i++) P(BC)[i] = 0.0;	
+      GLOBAL.gauss.loggauss = false;					
+    } else {								
+      for (int i=0; i<vdim_2; i++)					
+	P(BC)[i] = GLOBAL.gauss.boxcox[i];			
+    }									
+  } else {								
+    int total = cov->nrow[BC] * cov->ncol[BC];	
+    if (total == 1) {							
+      double _boxcox = P0(BC);				
+      PFREE(BC);						
+      PALLOC(BC, 2, 1);					
+      P(BC)[0] = _boxcox;					
+      P(BC)[1] =  GLOBAL.gauss.boxcox[1];			
+      total = 2;							
+    }									
+    if (total < vdim_2) SERR("too few parameters for boxcox given");	
+    if (total % 2 != 0) SERR("number of parameters of boxcox must even"); 
+    if (cov->nrow[BC]  > 2 && cov->ncol[BC]  > 1) SERR("parameters of boxcox must be given as a matrix with 2 rows"); 
+    cov->ncol[BC] = total / 2;				
+    cov->nrow[BC] = 2;					
+    bool notok = false;						
+    if (GLOBAL.gauss.loggauss) {					
+      for (int i=0; i<cov->vdim[0]; i++) {				
+	if ((notok = P(BC)[2*i] != RF_INF &&		
+	     (P(BC)[2*i] != 0.0 || P(BC)[2*i+1] != 0.0)))
+	  break;							
+      }									
+    } else {								
+      for (int i=0; i<cov->vdim[0]; i++) {
+	//printf("%d  %f %f   %f %f\n", i, GLOBAL.gauss.boxcox[2 * i], GLOBAL.gauss.boxcox[2 * i + 1], P(BC)[2 * i], P(BC)[2 * i +1]);
+ 	if ((notok = (GLOBAL.gauss.boxcox[2 * i] != RF_INF &&
+		      !NAequal(P(BC)[2 * i], GLOBAL.gauss.boxcox[2 * i])) ||   
+	     !NAequal(P(BC)[2 * i +1], GLOBAL.gauss.boxcox[2 * i + 1])))
+	  break;							
+      }									
+    }									
+    if (notok)								
+      SERR("Box Cox transformation is given twice, locally and through 'RFoptions'"); 
+  }									
+  for (int i=0; i<cov->vdim[0]; i++) {				
+    GLOBAL.gauss.boxcox[2 * i] = RF_INF;				
+    GLOBAL.gauss.boxcox[2 * i + 1] = 0.0;				
+  }									
+  return NOERROR;
+}
+
+
 void kappaGProc(int i, cov_model *cov, int *nr, int *nc){
-  bool vdimgiven = cov->vdim[0] != NA_INTEGER && cov->vdim[0] > 0;
-  *nc = i == GAUSS_BOXCOX
-    ?  (vdimgiven ? cov->vdim[0] : SIZE_NOT_DETERMINED)
-    : 1;
-  *nr = i == GAUSS_BOXCOX 
-    ? (vdimgiven ? 2 : SIZE_NOT_DETERMINED)
+  *nc = i == GAUSS_BOXCOX ? SIZE_NOT_DETERMINED : 1;
+  *nr = i == GAUSS_BOXCOX ? SIZE_NOT_DETERMINED 
     : i < CovList[cov->nr].kappas ? 1 : -1;
 }
 
@@ -226,7 +279,7 @@ int checkgaussprocess(cov_model *cov) {
   
   cov_model *sub = cov->key==NULL ? next : key;
   setbackward(cov, sub);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   return NOERROR;
 }
@@ -974,7 +1027,7 @@ int checkchisqprocess(cov_model *cov) {
     setbackward(cov, key);
   }
 
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
  
   return NOERROR;
 }

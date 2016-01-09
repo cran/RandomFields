@@ -546,7 +546,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
 
   //  switch (CovList[cov->nr].kappatype[param_nr]) {
   //  case REALSXP :   
-  DORANDOM(cov, p);
+  if (s->dosimulate) DORANDOM(cov, p);
     
 
     //    break;
@@ -842,6 +842,8 @@ int struct2(cov_model *cov, cov_model **newmodel) {
 
 int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
 
+  //printf("here\n");
+
   cov_fct *C = CovList + cov->nr; //  nicht gatternr
   cov_model
     *prev = cov->calling == NULL ? cov : cov->calling;
@@ -855,8 +857,10 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
 
   for (i=0; i<kappas; i++) {
     cov_model *param  = cov->kappasub[i];
-    if (param != NULL && isRandom(param)) {
-      if ((err = INIT_RANDOM(param, 0, s, P(i))) != NOERROR) return err;
+    if (param != NULL) {
+      if (isRandom(param)) {
+	if ((err = INIT_RANDOM(param, 0, s, P(i))) != NOERROR) return err;
+      } else if ((err = INIT(param, 0, s)) != NOERROR) return err;
     }
   }
 

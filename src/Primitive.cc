@@ -820,7 +820,7 @@ int checkcovariate(cov_model *cov){
       
 }
 
-void rangecovariate(cov_model *cov, range_type *range){
+void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   rangefix(cov, range);
 
   range->min[COVARIATE_ADDNA] = 0;
@@ -1010,7 +1010,7 @@ int checkfix(cov_model *cov){
 
 
 
-void rangefix(cov_model *cov, range_type *range){
+void rangefix(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[FIXCOV_M] = RF_NEGINF;
   range->max[FIXCOV_M] = RF_INF;
   range->pmin[FIXCOV_M] = -1e10;
@@ -5119,6 +5119,31 @@ void rangeUser(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->pmax[USER_VARIAB] = 4;
   range->openmin[USER_VARIAB] = false;
   range->openmax[USER_VARIAB] = false;
+  
+#define user_n 4
+  int idx[user_n] = {USER_FCTN, USER_FST, USER_SND, USER_ENV};
+  for (int i=0; i<user_n; i++) {
+    int j = idx[i];
+    range->min[j] = RF_NAN;
+    range->max[j] = RF_NAN;
+    range->pmin[j] = RF_NAN;
+    range->pmax[j] = RF_NAN;
+    range->openmin[j] = false;
+    range->openmax[j] = false; 
+  }
+
+  int kappas = CovList[cov->nr].kappas;
+  for (int i=USER_LAST + 1; i<kappas; i++) {
+    range->min[i] = RF_NEGINF;
+    range->max[i] = RF_INF;
+    range->pmin[i] = 1e10;
+    range->pmax[i] = -1e10;
+    range->openmin[i] = true;
+    range->openmax[i] = true; 
+  }
+
+
+  
 }
 
 
@@ -5379,7 +5404,7 @@ int checkMath(cov_model *cov){
 	CovList[sub->nr].cov == Mathminus
 	;
        if ((err = CHECK(sub, cov->tsdim, cov->xdimown, 
-			plus  ? cov->typus : ShapeType, 
+			plus ? cov->typus : ShapeType, 
 			// auch falls cov = TrendType ist
 			cov->domown, cov->isoown,
 			1, cov->role)) != NOERROR){

@@ -2630,6 +2630,8 @@ int checkmppplus(cov_model *cov) {
     size = 1;
   cov->maxdim = MAXMPPDIM;
   
+  SERR("the current version does not support RMmppplus\n");
+
   if ((err = checkplusmal(cov)) != NOERROR) {
     return err;
   }
@@ -3166,7 +3168,6 @@ int structplusmalproc(cov_model *cov, cov_model VARIABLE_IS_NOT_USED**newmodel){
       addModel(s->keys + m, isTrend(sub->typus) ? TRENDEVAL : GAUSSPROC);
       
       if (isTrend(sub->typus) && sub->Spgs == NULL) {
-	// printf("**************** alloc_cov %s\n", NAME(sub));
 	if ((err = alloc_cov(sub, dim, sub->vdim[0], sub->vdim[1])) != NOERROR)
 	  return err;
       }

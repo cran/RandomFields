@@ -127,6 +127,7 @@ PT <- weather[ , 1 : 2]  ## full data set takes more than
 ##                                     half an hour to be analysed
 ## transformation of earth coordinates to Euclidean coordinates
 Dist.mat <- as.vector(RFearth2dist(weather[ , 3 : 4]))
+All <- TRUE
 \dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced data set")
 All <- 1:10
 PT <- weather[All , 1 : 2] 

@@ -85,7 +85,7 @@ int check_spectral(cov_model *cov) {
   //printf("spectral role=%d %d\n", cov->role, ROLE_BASE);
 
   setbackward(cov, sub);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;

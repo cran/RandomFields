@@ -78,7 +78,7 @@ int check_specificGauss(cov_model *cov) {
   setbackward(cov, sub);
   cov->vdim[0] = sub->vdim[0];
   cov->vdim[1] = sub->vdim[1];
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
 
   //PMI(cov);
 

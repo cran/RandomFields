@@ -2026,12 +2026,12 @@ without the user's notice.
     Default: \code{TRUE}.
   }
   
-  \item{\code{warn_new_definitions}}{internally used logical argument.
-    If \code{warn_new_defintions=TRUE} then a warning is returned when 
-    models are used whose definition has changed recently.
-    
-    Default: \code{TRUE}.
-  }
+%  \item{\code{warn_new_definitions}}{internally used logical argument.
+%    If \code{warn_new_defintions=TRUE} then a warning is returned when 
+%    models are used whose definition has changed recently.
+%
+%Default: \code{TRUE}.
+%  }
 
   \item{\code{warn_newstyle}}{internally used logical argument.
     If \code{TRUE} a message is displayed the by the argument

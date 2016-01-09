@@ -43,11 +43,11 @@ RMmppplus(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, p)%, var,scale,Aniso,proj)
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-\dontshow{\dontrun{
-model <- RPcoins(RMmppplus(p=c(0.8, 0.2), RMgauss(), RMexp()), intensity=1)
-x <- seq(0, 10, 0.02)
-plot(RFsimulate(model, x=x))
-}}
+%\dontshow{StartExample()}
+%\dontshow{\dontrun{
+%model <- RPcoins(RMmppplus(p=c(0.8, 0.2), RMgauss(), RMexp()), intensity=1)
+%x <- seq(0, 10, 0.02)
+%plot(RFsimulate(model, x=x))
+%}}
 \dontshow{FinalizeExample()}
 }

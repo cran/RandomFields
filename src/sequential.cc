@@ -64,7 +64,7 @@ int check_sequential(cov_model *cov) {
 		   SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
   if (next->pref[Sequential] == PREF_NONE) return ERRORPREFNONE;
   setbackward(cov, next);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
   return NOERROR;
@@ -231,7 +231,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     for (d=0; d<totpnts; d++) {
       printf("%f ", U22[k++]); //
     }
-    printf("\n"); //
+//    printf("\n");
   }
   */
        

@@ -1,5 +1,7 @@
 \name{RMmatrix}
 \alias{RMmatrix}
+\alias{coregionalisation}
+\alias{coregionalization}
 \title{Matrix operator}
 \description{
  \command{\link{RMmatrix}} is a multivariate covariance model

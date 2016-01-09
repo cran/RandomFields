@@ -1590,6 +1590,8 @@ int check_randomcoin(cov_model *cov) {
   mpp_param *gp  = &(GLOBAL.mpp);
   //extremes_param *ep = &(GLOBAL.extreme);
 
+  SERR("'random coin' method does not work for the current version");
+
   INTERNAL;
 
   ASSERT_ONE_SUBMODEL(cov);
@@ -1651,7 +1653,7 @@ int check_randomcoin(cov_model *cov) {
   }
  
   setbackward(cov, key != NULL ? key : next);
-  KAPPA_BOXCOX;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
 
 
@@ -1726,7 +1728,9 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
  
   // if ((err = STRUCT(cov, NULL)) != NOERROR) return err; ?????
 
-  assert(false); // tofo
+  SERR("Sorry, 'random coin' does not work currently.");
+
+  assert(false); // todo
   switch(P0INT(RANDOMCOIN_METHOD)) {
   case 0: {
     // Alternativ?!

@@ -3,7 +3,7 @@
 \title{Linear part of \command{\link{RMmodel}}}
 \description{
   \command{\link{RFboxcox}} performs the Box-Cox transformation:
-  \eqn{\frac{(x-\mu)^\lambda-1}{\lambda}}
+  \eqn{\frac{(x+\mu)^\lambda-1}{\lambda}}
 }
 \usage{
 RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)

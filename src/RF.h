@@ -29,19 +29,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include "basic.h"
 
-//#define SCHLATHERS_MACHINE 1
-//#define RANDOMFIELDS_DEBUGGING 1
-
+//
 // 1
+//// 1
+
+
+
 #define showfree !true 
 #define DOPRINT true
+
 
 // in /home/schlather/TMP/RandomFieldsUtils/include/utils.h:
 // #define MEMCOPY(A,B,C) memory_copy(A, B, C)
 
-
 #include <string.h>
-#include <utils.h>
+#include  <utils.h>
 #include "error.h"
 #include "auxiliary.h"
 #include "RandomFields.h"
@@ -50,9 +52,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Userinterfaces.h"
 
 //   intptr_t and uintptr_t fuer: umwandlung pointer in int und umgekehrt
-
-
-
 
 #ifndef RFERROR
 #define RFERROR error
@@ -65,16 +64,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //////////////////////////////////////////////////////////////////////
 //#define ASSERT_GATTERONLY(Cov) assert(TrafoOK(Cov, false))
 #define ASSERT_GATTER(Cov) assert(TrafoOK(Cov))
-#define ASSERT_CHECKED(Cov) assert(Cov->checked)
+#define ASSERT_CHECKED(Cov) assert((Cov)->checked)
 #ifdef SCHLATHERS_MACHINE
 #define _no_loc_ SERR2("locations not initialised (%s line %d).", __FILE__, __LINE__)
+//#undef NULL
+//#define NULL nullptr
 #else
 #define _no_loc_ SERR("locations not initialised.")
 #endif
 
 #define ASSERT_LOC_GIVEN if (loc == NULL) {PMI(cov); _no_loc_;}
 
-
+#ifdef __GNUC__
+#define HIDE_UNUSED_VARIABLE 1
+#endif
 
 
 #ifndef SCHLATHERS_MACHINE
@@ -102,40 +105,48 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PCOPY(TO, FROM, IDX) 						\
   MEMCOPY((TO)->px[IDX], (FROM)->px[IDX],				\
 	  ((FROM)->nrow[IDX]) * ((FROM)->ncol[IDX]) *			\
-	  (CovList[FROM->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
-	    CovList[FROM->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
+	  (CovList[(FROM)->nr].kappatype[IDX]==REALSXP ? sizeof(double) : \
+	   CovList[(FROM)->nr].kappatype[IDX]==INTSXP ? sizeof(int) :	\
 	    -1))
 
 #define QcovALLOC(cov, nr) {\
-  cov->qlen = (int) (nr);						\
-  assert(cov->q == NULL);						\
-  if ((cov->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL)	\
+    (cov)->qlen = (int) (nr);						\
+  assert((cov)->q == NULL);						\
+  if (((cov)->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL) \
     ERR("memory allocation error for local memory");		\
 }
 
-#else // SCHLATHERS_MACHINE
-#define SET_IDX(P, IDX) ({assert((P) != NULL && (P)->nrow[IDX] >=0 && (P)->nrow[IDX] <= 1000000); (GLOBAL.general.set % (P)->nrow[IDX]);})
+#define B2D(X) (double) (X)
+#define B2I(X) (int) (X)
+#define E2D(X) (X)
+#define E2I(X) (int) (X)
+#define E2B(X) (bool) (X)
+#define I2D(X) (double) (X)
 
-#define CHECK(C,T,X,type,D,I,V,R) ({assert(type!=RandomType); check2X(C,T,X,type,D,I,V,R);})
-#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) ({assert(type!=RandomType); check2Xnotrafo(C,T,X,type,D,I,V,R);})
-#define STRUCT(C, NM)  ({ASSERT_GATTER(C);  CovList[(C)->gatternr].Struct(C, NM);})
+////////////////////////////////////////////////////////////////////////////
+#else // SCHLATHERS_MACHINE
+#define SET_IDX(P, IDX) __extension__({assert((P) != NULL && (P)->nrow[IDX] >=0 && (P)->nrow[IDX] <= 1000000); (GLOBAL.general.set % (P)->nrow[IDX]);})
+
+#define CHECK(C,T,X,type,D,I,V,R) __extension__({assert((type)!=RandomType); check2X(C,T,X,type,D,I,V,R);})
+#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) __extension__({assert((type)!=RandomType); check2Xnotrafo(C,T,X,type,D,I,V,R);})
+#define STRUCT(C, NM)  __extension__({ASSERT_GATTER(C);  CovList[(C)->gatternr].Struct(C, NM);})
 
 // #define NN
-#define PARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP);  (P)->px[IDX];})
-#define PARAMINT(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == INTSXP);  ((int *) (P)->px[IDX]);})
-//#define PARAMVEC(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == VECSXP);  ((SEXP) (P)->px[IDX]);})
-#define PARAMVEC(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == VECSXP);  ((sexp_type *) (P)->px[IDX])->sexp;})
-#define PARAMENV(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == ENVSXP);  ((sexp_type *) (P)->px[IDX]);})
-#define PARAMLANG(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP);  ((sexp_type *) (P)->px[IDX]);})
-#define PARAMLIST(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] >= LISTOF);  ((listoftype *) (P)->px[IDX]);})
-#define LPARAM(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LISTOF + REALSXP); assert(PARAMLIST(P, IDX) != NULL); ((double *) (PARAMLIST(P, IDX)->lpx[SET_IDX(P, IDX)]));})
-#define LPARAMINT(P, IDX) ({assert(CovList[(P)->nr].kappatype[IDX] == LISTOF + INTSXP); assert(PARAMLIST(P, IDX) != NULL); ((int *) (PARAMKLIST(P, IDX)->lpx[SET_IDX(P, IDX)]));})
-//#define LISTLIST(P, IDX) ({assert((P)->px != NULL); (freelistoftype *) (P)->px[IDX];})
+#define PARAM(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == REALSXP);  (P)->px[IDX];})
+#define PARAMINT(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == INTSXP);  ((int *) (P)->px[IDX]);})
+//#define PARAMVEC(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == VECSXP);  ((SEXP) (P)->px[IDX]);})
+#define PARAMVEC(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == VECSXP);  ((sexp_type *) (P)->px[IDX])->sexp;})
+#define PARAMENV(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == ENVSXP);  ((sexp_type *) (P)->px[IDX]);})
+#define PARAMLANG(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == LANGSXP);  ((sexp_type *) (P)->px[IDX]);})
+#define PARAMLIST(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] >= LISTOF);  ((listoftype *) (P)->px[IDX]);})
+#define LPARAM(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == LISTOF + REALSXP); assert(PARAMLIST(P, IDX) != NULL); ((double *) (PARAMLIST(P, IDX)->lpx[SET_IDX(P, IDX)]));})
+#define LPARAMINT(P, IDX) __extension__({assert(CovList[(P)->nr].kappatype[IDX] == LISTOF + INTSXP); assert(PARAMLIST(P, IDX) != NULL); ((int *) (PARAMKLIST(P, IDX)->lpx[SET_IDX(P, IDX)]));})
+//#define LISTLIST(P, IDX) __extension__({assert((P)->px != NULL); (freelistoftype *) (P)->px[IDX];})
 
-#define PARAM0(P, IDX) ({assert(PARAM(P, IDX) != NULL); PARAM(P, IDX)[0];})
-#define PARAM0INT(P, IDX)  ({assert(PARAMINT(P, IDX) != NULL); PARAMINT(P, IDX)[0];})
-#define LPARAM0(P, IDX) ({assert(LPARAM(P, IDX) != NULL); LPARAM(P, IDX)[0];})
-#define LPARAM0INT(P, IDX)  ({assert(LPARAMINT(P, IDX) != NULL); LPARAMINT(P, IDX)[0];})
+#define PARAM0(P, IDX) __extension__({assert(PARAM(P, IDX) != NULL); PARAM(P, IDX)[0];})
+#define PARAM0INT(P, IDX)  __extension__({assert(PARAMINT(P, IDX) != NULL); PARAMINT(P, IDX)[0];})
+#define LPARAM0(P, IDX) __extension__({assert(LPARAM(P, IDX) != NULL); LPARAM(P, IDX)[0];})
+#define LPARAM0INT(P, IDX)  __extension__({assert(LPARAMINT(P, IDX) != NULL); LPARAMINT(P, IDX)[0];})
 
 
 #define PCOPY(TO, FROM, IDX) 					\
@@ -154,12 +165,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   }
 
 #define QcovALLOC(cov, nr) {\
-  assert(cov->q == NULL);   \
-  cov->qlen = (int) (nr);						\
-  if ((cov->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL)	\
+    assert((cov)->q == NULL);						\
+    (cov)->qlen = (int) (nr);						\
+    if (((cov)->q = (double*) CALLOC((int) (nr), sizeof(double))) == NULL) \
     ERR("memory allocation error for local memory");		\
 }
 
+#define B2D(X) ((X) != true) && ((X) != false) ? ({BUG; 0.0;}) : (double) (X)
 
 #endif // SCHLATHERS_MACHINE
 
@@ -202,8 +214,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define NICK(COV) (CovList[(COV)->nr].nick)
 
 
-#define XX(C) assert((C)->simu.expected_number_simu >= 0|| ({DOPRINTF("Start.\n"); false;}))
-#define YY(C) assert((C)->simu.expected_number_simu >= 0 || ({DOPRINTF("End.\n"); false;}))
+#define XX(C) assert((C)->simu.expected_number_simu >= 0|| __extension__({DOPRINTF("Start.\n"); false;}))
+#define YY(C) assert((C)->simu.expected_number_simu >= 0 || __extension__({DOPRINTF("End.\n"); false;}))
 
 #define LLPRINT(SIGN, cov, Z) {			\
     cov_model *lprint_z=cov;				\
@@ -224,8 +236,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define STRUCTSIGN "_"
 #undef CHECK
 #undef CHECK_NO_TRAFO
-#define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert(type!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
-#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert(type!=RandomType); XX(C); int _x = check2Xnotrafo(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
+#define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
+#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2Xnotrafo(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
 #define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R,true);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
 #define CHECKPD2ND(C,D1,D2,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECKPD2ND"); XX(C); int _x = CheckPD2ND(C,D1,D2,I,V,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
 #define INIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = INIT_intern(C, Moments, S);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
@@ -266,7 +278,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef SCHLATHERS_MACHINE
 #define LNRC(I, rc) LNRC_(I, rc)
 #else
-#define LNRC(I,rc)({assert(PLIST(I) != NULL); PLIST(I)->rc[SET_IDX(cov, I)];})
+#define LNRC(I,rc) __extension__ ({assert(PLIST(I) != NULL); PLIST(I)->rc[SET_IDX(cov, I)];})
 #endif
 #define LNROW(IDX) LNRC(IDX, nrow)
 #define LNCOL(IDX) LNRC(IDX, ncol)
@@ -410,8 +422,6 @@ extern bool LOCAL_DEBUG;
 
 // #define MAXINTERNALPARAM 2
 extern double ZERO[MAXSIMUDIM], ONE;
-extern int True;
-extern int False;
 extern char *FREEVARIABLE;
 
 typedef char name_type[][MAXCHAR];
@@ -926,7 +936,7 @@ typedef struct location_type {
   // Einfachheit nicht nochmals einen strukt drumrumgemacht, da sowieso
   // meist == 1
  
-  long lx, ly, /*
+  int  lx, ly, /*
 	      the total number of locations of the user's x vector, i.e.
 	      * except for grids where lx=3
               * physical length = xdimOZ * lx * (lx - 1) /2 for distances
@@ -1088,19 +1098,6 @@ typedef struct spectral_storage {
   double phistep2d, phi2d, prop_factor;
   bool grid; 
 } spectral_storage;
-
-
-typedef enum tri {TriFalse, TriTrue, TriMaxFalse, TriBeyond} tri;
-/* Tri hat nichts mehr zu bedeuten;
-   Wird nur im Zusammenhang mit struct-Eintrag anyNAscaleup und 
-   anyNAdown verwendet
-   
-   
-   False:
-   True:
-   MaxFalse:
-   Beyond:
-*/
 
 typedef enum user_given_type {ug_explicit, ug_implicit, ug_internal}
   user_given_type;
@@ -1593,7 +1590,7 @@ typedef struct get_storage {
 
 typedef struct pgs_storage {
   // urpsprunglich nur fuer pts_given_shape; jedoch allgemein
-  // fuer shape functionen
+  // fuer shape functionen und zur Berechnung der Covariance/Variogram
   bool flat, estimated_zhou_c, logmean; 
   double old_zhou, // for mcmc only
   totalmass, // (inverser) Normierungsfaktor, um Raeumliche Funktion
@@ -1662,7 +1659,7 @@ typedef struct likelihood_info {
 typedef struct likelihood_storage {
   listoftype *datasets;  
   double **X, **YhatWithoutNA, *XCY, *XtX, *XitXi, *C, *CinvXY, *matrix,
-    *betavec, **where_fixed, *sumY, *work, *Cwork,  *Xwork, *CinvXYwork;
+    *betavec, **where_fixed, *sumY, *work, *Cwork,  *Xwork;
   int sets, fixedtrends, dettrends, random, max_total_data, *data_nas, maxbeta,
     betas[MAX_LIN_COMP + 1], nas[MAX_LIN_COMP], nas_det[MAX_LIN_COMP], 
     nas_fixed[MAX_LIN_COMP], nas_random[MAX_LIN_COMP], nas_boxcox,
@@ -1793,7 +1790,7 @@ typedef struct mpp_properties {
 typedef struct gen_storage { // cov_storage, do_storage, init_storage
   // wird in Struct initialisiert, sofern INIT aufgerufen wird;
   // abgespeichert wird es immer im aktuell aufrufenden (fuer next oder key)
-  bool check,
+  bool check, dosimulate,
     prodproc_random; // used in biWM, BiGneiting
   spec_properties spec;       // used in init
   spectral_storage Sspectral; // used in do
@@ -2522,7 +2519,7 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols);
 
 
 #define DO(Cov, S) {assert(!TypeConsistency(RandomType, Cov, 0)); \
-    assert(Cov->initialised);				       \
+    assert((Cov)->initialised);					  \
     ASSERT_GATTER(Cov);					       \
     PL--;						       \
     CovList[(Cov)->gatternr].Do(Cov, S);		       \
@@ -2958,30 +2955,15 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
 
 #define BOXCOX_INVERSE BOXCOX_INVERSE_PARAM(GAUSS_BOXCOX)
 
-#define KAPPA_BOXCOX_PARAM(GAUSS_BOXCOX)				\
-  if (PisNULL(GAUSS_BOXCOX)) {						\
-    int _vdim_2 = cov->vdim[0] * 2;					\
-    PALLOC(GAUSS_BOXCOX, 2, cov->vdim[0]);				\
-    if (GLOBAL.gauss.loggauss) {					\
-      for (int i_=0; i_<_vdim_2; i_++) P(GAUSS_BOXCOX)[i_] = 0.0;	\
-    } else {								\
-      for (int i_=0; i_<_vdim_2; i_++)					\
-	P(GAUSS_BOXCOX)[i_] = GLOBAL.gauss.boxcox[i_];			\
-    }									\
-    GLOBAL.gauss.loggauss = false;					\
-    GLOBAL.gauss.boxcox[0] = RF_INF;					\
-  } else {								\
-    if (GLOBAL.gauss.loggauss || GLOBAL.gauss.boxcox[0] != RF_INF) 	\
-      SERR("Box Cox transformation is given twice, locally and through 'RFoptions'"); \
-  }
-#define KAPPA_BOXCOX KAPPA_BOXCOX_PARAM(GAUSS_BOXCOX)
+
+int kappaBoxCoxParam(cov_model *cov, int BC);
 
 
 #define  GAUSS_COMMON_RANGE_PARAM(GAUSS_BOXCOX)	\
   range->min[GAUSS_BOXCOX] = RF_NEGINF;		\
   range->max[GAUSS_BOXCOX] = RF_INF;		\
   range->pmin[GAUSS_BOXCOX] = 0;		\
-  range->pmax[GAUSS_BOXCOX] = 1;		\
+  range->pmax[GAUSS_BOXCOX] = 2;		\
   range->openmin[GAUSS_BOXCOX] = false;		\
   range->openmax[GAUSS_BOXCOX] = false
 
@@ -2989,4 +2971,8 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
 
 #define MAX_LEN_EXAMPLES 4
 
+
+
+
 #endif
+

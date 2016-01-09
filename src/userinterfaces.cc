@@ -219,7 +219,7 @@ void SetDefaultModeValues(int old, int m){
     if (m > normal) w->warn_ambiguous = w->warn_negvar = true;
   }
   if (m != normal && w->warn_mode) {
-    PRINTF("Note that the option '%s' is still in an experimental stage, so that the behaviour may change (slightly) in future.", general[GENERAL_MODUS]);
+    PRINTF("Note that the option '%s' is still in an experimental stage, so that the behaviour may change (slightly) in future.\n", general[GENERAL_MODUS]);
     w->warn_mode = false;
   }
 }

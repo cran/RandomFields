@@ -551,6 +551,8 @@ void ce_NULL(ce_storage* x){
   x->smallestRe = x->largestAbsIm = RF_NA;
   x->aniso = NULL;
   x->stop = false;
+  //  cur_call_odd = false;
+  //  new_simulation_next = true;
   x->gauss1 = x->gauss2 = NULL;
 //  int i;
   //for (i=0; i<MAXCEDIM; i++) x->[i] = NULL;
@@ -1178,7 +1180,7 @@ void gen_NULL(gen_storage *x) {
 
   // for (d=0; d<MAXMPPDIM; d++) 
   //   x->window.min[d] = x->window.max[d] = x->window.centre[d] = RF_NA;
-  x->check = x->prodproc_random = true;
+  x->check = x->prodproc_random = x->dosimulate = true;
 
   x->Sspectral.phistep2d = x->Sspectral.phi2d = x->Sspectral.prop_factor
     = RF_NA;
@@ -1225,7 +1227,7 @@ void likelihood_NULL(likelihood_storage *x) {
   x->datasets = NULL;
   x->X = x->YhatWithoutNA = NULL;
   x->XtX = x->XCY = x->XitXi = x->C = x->CinvXY = x->matrix = x->betavec = 
-     x->sumY = x->work = x->Cwork = x->Xwork = x->CinvXYwork = NULL;
+     x->sumY = x->work = x->Cwork = x->Xwork = NULL;
    x->sets = x->fixedtrends = x->dettrends = x->random = x->max_total_data = 
      x->maxbeta = 0;
   for (int i=0; i<MAX_LIN_COMP; i++) {
@@ -1263,7 +1265,6 @@ void likelihood_DELETE(likelihood_storage **S) {
     FREE(x->CinvXY);
     FREE(x->Cwork);
     FREE(x->Xwork);
-    FREE(x->CinvXYwork);
     FREE(x->matrix);
     FREE(x->betavec);
     FREE(x->work);
@@ -1417,13 +1418,14 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   int d, err;
   unsigned long totalBytes;
 
+  if (lx >= MAXINT ||  ly >= MAXINT) SERR("too many points");
+  strcpy(ERROR_LOC, "setting the locations:");
+
   if (((loc->x != NULL) && ((loc->y == NULL) xor (ly==0))) ||
       ((loc->xgr[0] != NULL) && ((loc->ygr[0] == NULL) xor (ly==0)))) {
     // 28783440 51590192 0; 0 0 0 dist=0
 
-    //printf("%ld %ld %d; %ld %ld %d dist=%d\n",
-    //  (long int) loc->x, (long int)loc->y, ly,
-    //     (long int) loc->xgr[0], (long int) loc->ygr[0], ly, loc->distances);
+    //printf("%ld %ld %d; %ld %ld %d dist=%d\n", (long int) loc->x, (long int)loc->y, ly, (long int) loc->xgr[0], (long int) loc->ygr[0], ly, loc->distances);
 
     SERR("domain structure of the first and second call do not match");
   }
@@ -1474,10 +1476,11 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       }
     }
     
-    for (loc->spatialtotalpoints=1, d=0; d<loc->spatialdim; d++) {
-      loc->spatialtotalpoints *= (int) loc->xgr[d][XLENGTH];
-    }
-    loc->totalpoints = loc->spatialtotalpoints;
+    double len = 1.0;
+    for (d=0; d<loc->spatialdim; d++) len *= loc->xgr[d][XLENGTH];
+    assert(len == (int) len);
+    if (len < MAXINT) loc->totalpoints = loc->spatialtotalpoints = (int) len;
+    else SERR("too many locations");
   } 
 
   else if (dist) {
@@ -1571,6 +1574,8 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       }
     */
 
+    if ((double) loc->totalpoints * loc->T[XLENGTH] >= MAXINT) 
+      SERR("too many space-time locations");
     loc->totalpoints *= (int) loc->T[XLENGTH];
   } 
 
@@ -1701,29 +1706,33 @@ location_type ** loc_set(SEXP xlist, bool distances_ok){
 
   loc = LOCLIST_CREATE(sets);
   for (int i=0; i<sets; i++) {
-     SEXP
+    SEXP
       set = listoflists ? VECTOR_ELT(xlist, i) : xlist,
       xx = VECTOR_ELT(set, XLIST_X),
       yy = VECTOR_ELT(set, XLIST_Y),
       TT = VECTOR_ELT(set, XLIST_T);   
     //print("set_addr=%ld : len.xx=%d %d %d\n", set, length(xx), length(yy), length(TT));
-   bool
+    bool
+      dist = LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0],
       ggrid = LOGICAL(VECTOR_ELT(set, XLIST_GRID))[0]; 
-   int
+    int
       xxdimOZ = ggrid ? ncols(xx) : nrows(xx),
       llx = ggrid ? 3 : ncols(xx),
       lly = length(yy) == 0 ? 0 : ggrid ? 3 : ncols(yy);    
-  
+    
+
+    //printf("%d %d\n", ncols(xx), nrows(xx));
+
     if (i==0) {
       xdimOZ = xxdimOZ;
       spatialdim = INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0];
       Time =  LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0];
-      distances = LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0];      
+      distances = dist;      
     } else {
       if (xdimOZ != xxdimOZ ||
 	  spatialdim != INTEGER(VECTOR_ELT(set, XLIST_SPATIALDIM))[0] ||
 	  Time != LOGICAL(VECTOR_ELT(set, XLIST_TIME))[0] ||
-	  distances != LOGICAL(VECTOR_ELT(set, XLIST_DIST))[0]
+	  distances != dist
 	  ) BUG;
     }
     
@@ -1786,7 +1795,7 @@ void analyse_matrix(double *aniso, int row, int col,
         0 * 0
   */
   bool notquasidiag=true, *taken=NULL;
-  int j, k, startidx, i, last;
+  int j, k, startidx, i;
 
   if (aniso == NULL) {
     *diag = *quasidiag = *separatelast = *semiseparatelast = true;
@@ -1827,7 +1836,7 @@ void analyse_matrix(double *aniso, int row, int col,
      * * 0
      * * *
      */
-    last = col * row - 1;
+    int last = col * row - 1;
     for (k=last - row + 1; k<last; k++)
       if (!(*separatelast = aniso[k] == 0.0)) break;
   }
@@ -1837,7 +1846,8 @@ void analyse_matrix(double *aniso, int row, int col,
      * * 0
      0 0 *
      */  
-    for (k=row - 1; k<last; k+=row)
+    int last = col * row - 1;
+     for (k=row - 1; k<last; k+=row)
       if (!(*separatelast = aniso[k] == 0.0)) break;
   }
   UNCONDFREE(taken);
@@ -2478,9 +2488,12 @@ double *getAnisoMatrix(cov_model *cov, bool null_if_id, int *nrow, int *ncol) {
     *nrow = cov->nrow[DANISO];
     *ncol = cov->ncol[DANISO];
   } else if (proj != NULL) {
-    total = origdim * cov->nrow[DPROJ];
+    int projs = cov->nrow[DPROJ];
+    total = origdim * projs;
     ani = (double *) CALLOC(total, sizeof(double));
-    for (i=0; i<total; i+=dimP1) ani[i * origdim + proj[i] - 1] = a; 
+    for (i=0; i<projs; i++) {
+      ani[i * origdim + proj[i] - 1] = a; 
+    }
     *nrow = origdim;
     *ncol = cov->nrow[DPROJ];
   } else {
@@ -3322,7 +3335,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
   rangefct getrange = C->range;
   SEXPTYPE *type = C->kappatype;
   
-  //  print("entry\n");
+  //   print("entry %s \n", NAME(cov));
   //PMI(cov, "gir");
 
   if (kappas > 0) {
@@ -3333,6 +3346,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       
     err = NOERROR;
     for (i=0; i<kappas; i++) {
+      // printf("  i=%d %s\n", i, KNAME(i));
       int len=cov->ncol[i] * cov->nrow[i];
       double dmin, dmax, dpmin, dpmax, dopenmin, dopenmax,
 	value =  RF_NA;
@@ -3340,14 +3354,19 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       dpmax = range.pmax[i];
       dmin = range.min[i];
       dmax = range.max[i];
-      dopenmin = (double) range.openmin[i];
-      dopenmax = (double) range.openmax[i];
+      dopenmin = (double) range.openmin[i]; 
+      dopenmax = (double) range.openmax[i]; 
+
+
+      //    unsigned int xxx = pow(2, 32) - 1;
+      //    signed int yyy = (signed int) (double) xxx;
+      //    print("%u %d NA=%d %f NA_LOG=%d '%s'\n", xxx, yyy, NA_INTEGER, (double) NA_INTEGER, NA_LOGICAL, NA_STRING); BUG;
 
       if (type[i] == INTSXP) {
 	if (dmin < -MAXINT) {
 #ifdef RANDOMFIELDS_DEBUGGING
 	  PRINTF("%s <min %s\n", NICK(cov), KNAME(i));
-	  BUG;
+	  BUG; 
 #else 
 	  dmin = (double) -MAXINT;
 #endif

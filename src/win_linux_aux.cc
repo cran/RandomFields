@@ -40,7 +40,7 @@ void sleepMilli(int *milli) {
 #ifdef WIN32
   Sleep((long) *milli);
 #else 
-  usleep(1000 * (unsigned long) *milli);
+  usleep((useconds_t) (1000 * (unsigned long) *milli));
 #endif
 }
 
@@ -48,7 +48,7 @@ void sleepMicro(int *micro) {
 #ifdef WIN32
   Sleep((long) ((*micro + 500) / 1000));
 #else
-  usleep((unsigned long) *micro);
+  usleep((useconds_t) *micro);
 #endif
 }
 

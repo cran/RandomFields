@@ -57,21 +57,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   location_type *loc = Loc(cov);					\
   assert(loc != NULL);							\
   /*bool grid =loc->grid && !loc->Time && loc->caniso==NULL, why !time ?? 10.3.15*/		\
-  bool grid =loc->grid && loc->caniso==NULL,		\
+  bool grid =loc->grid && loc->caniso==NULL,				\
     trafo = (loc->Time || loc->caniso != NULL) && !loc->distances,	\
     ygiven = !(ignore_y) && (loc->y != NULL || loc->ygr[0] != NULL);/* might be changed !*/ \
   long cumgridlen[MAXMPPDIM +1],					\
     err = NOERROR,							\
     tot = loc->totalpoints;						\
   int d,								\
-    vdim0  = whereVdim->vdim[0],			\
-    vdimSq = vdim0 * whereVdim->vdim[vdim2], /*not nec. squ!!*/ \
+    vdim0  = whereVdim->vdim[0],					\
+    vdimSq = vdim0 * whereVdim->vdim[vdim2], /*not nec. squ!!*/		\
     *gridlen=pgs->gridlen,						\
     *start=pgs->start,							\
     *end=pgs->end,							\
-    *endy =pgs->endy,				\
-    *startny =pgs->startny,			\
-    *ny = pgs->delta,				\
+    *endy =pgs->endy,							\
+    *startny =pgs->startny,						\
+    *ny = pgs->delta,							\
     *nx=pgs->nx,							\
     tsxdim = cov->xdimprev; /* weicht u.U. von tsdim bei dist=true ab */ \
   long vdim0tot = vdim0 * tot,						\

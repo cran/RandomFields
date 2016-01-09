@@ -27,7 +27,7 @@
 }
 
 
-\section{Properties}{
+\section{Computing demand for simulations}{
   Assume at \eqn{n} locations in \eqn{d} dimensions a \eqn{v}-variate
   field has to be simulated.
   Let \deqn{f(n, d) = 2^d  n \log(n)}{f(n, d) = 2^d * n * log(n)}
@@ -36,61 +36,114 @@
 \tabular{lllllll}{
   \tab grid \tab \eqn{v} \tab \eqn{d} \tab time \tab memory \tab comments\cr
   \command{\link{RPcirculant}}
-  \tab yes \tab any \tab any  \tab\eqn{O(v^3f(n, d))} \tab
+  \tab yes \tab any \tab \eqn{\le 13}{<=13} \tab\eqn{O(v^3f(n, d))} \tab
   \eqn{O(v^2f(n, d))}\tab \cr
-  \tab no \tab any \tab any \tab \eqn{O(v^3 f(k, d))} \tab \eqn{O(v^2f(k, d))}
+  \tab no \tab any \tab \eqn{\le 13}{<=13} \tab \eqn{O(v^3 f(k, d))} \tab \eqn{O(v^2f(k, d))}
   \tab \eqn{k \sim }{k ~ }\command{\link[=RFoptions]{approx_step}}\eqn{{}^{-d}}{^{-d}}\cr
- \command{\link{RPcutoff}} \tab \tab \tab \tab \tab \tab see  RPcirculant
+ \command{\link{RPcutoff}} \tab \tab \tab \tab \tab \tab see
+  RPcirculant above
  \cr
- \command{\link{RPcoins}} \tab yes \tab 1 \tab \eqn{\le 4}{<=4} \tab \eqn{O(k
+ \command{\link{RPcoins}} \tab yes \tab \eqn{1} \tab \eqn{\le 4}{<=4} \tab \eqn{O(k
   n)}{O(k * n)} \tab\eqn{ O(n) }\tab
  \eqn{k \sim}{k ~ }\eqn{(lattice spacing)^{-d}} \cr
- \tab no \tab 1 \tab \eqn{\le 4}{<=4} \tab \eqn{O(k n)}{O(k * n)} \tab
+ \tab no \tab \eqn{1} \tab \eqn{\le 4}{<=4} \tab \eqn{O(k n)}{O(k * n)} \tab
   \eqn{O(n)} \tab \eqn{k} depends on the geometry
  \cr
  \command{\link{RPdirect}}
- \tab any\tab any\tab any \tab\eqn{ O(v n)}{ O(v * n)}\tab\eqn{ O(v^2
-  n^2)}{ O(v^2 * n^2)}\tab diagonal matrix \cr
- \tab any\tab any\tab any \tab see \pkg{\link[spam]{spam}} \tab \eqn{O(z + v
-  n)}{O(z + v * n)}\tab sparse
+ \tab any\tab any\tab any \tab\eqn{O(1)..O(v^2 n^2)}{ O(v^2 * n^2)}\tab\eqn{ O(v^2
+   n^2)}{ O(v^2 * n^2)}\tab effort to investigate the covariance matrix, if
+ \code{\link[=RFoptions]{matrix_methods}} is not specified (default)\cr
+ \tab \tab \tab  \tab\eqn{O(v n)}{ O(v * n)}\tab\eqn{ O(v
+  n)}{ O(v * n)}\tab covariance matrix is diagonal \cr
+ \tab \tab \tab  \tab see \pkg{\link[spam:SPAM]{spam}} \tab \eqn{O(z + v
+  n)}{O(z + v * n)}\tab covariance matrix is sparse
  matrix with \eqn{z} non-zeros\cr
- \tab any\tab any\tab any \tab \eqn{O(v^3 n^3)}{O(v^3 * n^3)}\tab
-  \eqn{O(v^2 n^2)}{O(v^2 * n^2)}\tab arbitrary matrix \cr
+ \tab\tab \tab  \tab \eqn{O(v^3 n^3)}{O(v^3 * n^3)}\tab
+  \eqn{O(v^2 n^2)}{O(v^2*n^2)}\tab arbitrary covariance matrix (preparation) \cr
+  \tab\tab \tab  \tab \eqn{O(v^2 n^2)}{O(v^2*n^2)}\tab
+  \eqn{O(v^2 n^2)}{O(v^2*n^2)}\tab arbitrary covariance matrix (simulation)\cr
  \command{\link{RPgauss}} \tab any \tab any \tab any \tab \eqn{O(1)
-  \ldots O(v^3n^3)}{O(1) ... O(v^3 * n^3)} \tab
- \eqn{O(1)\ldots O(n^2)}{O(1) ... O(n^2)}\tab \bold{only} the selection
+  \ldots O(v^3n^3)}{O(1)..O(v^3*n^3)} \tab
+ \eqn{O(1)\ldots O(n^2)}{O(1)..O(n^2)}\tab \bold{only} the selection
  process; \eqn{O(1)} if first method tried is successful
  \cr
  \command{\link{RPhyperplane}} \tab any \tab \eqn{1} \tab \eqn{2} \tab
  \eqn{O(n / s^d)} \tab \eqn{O(n / s^d)}\tab
  \eqn{s = }\code{\link[=RMmodels]{scale}}\cr
- \command{\link{RPintrinsic}} \tab  \tab \tab \tab \tab \tab see  RPcirculant\cr 
+ \command{\link{RPintrinsic}} \tab  \tab \tab \tab \tab \tab see
+  RPcirculant above\cr 
  \command{\link{RPnugget}} \tab any  \tab any\tab any\tab \eqn{O(v n)}
   \tab \eqn{O(v n)} \tab\cr
  \command{\link{RPsequential}} \tab any\tab \eqn{1} \tab any \tab
- \eqn{O(S^3 b^3) + O(n S b^2)}{O(S^3 * b^3) + O(n * S * b^2)}
+ \eqn{O(S^3 b^3)}{O(S^3 * b^3)}
  \tab
- \eqn{O(S^2 b^2) + O(n)}{O(S^2 * b^2) + O(n)}
+ \eqn{O(S^2 b^2)}{O(S^2*b^2)}
  \tab
  \eqn{n=ST}{n = S * T};
  \eqn{S} and \eqn{T} the number of spatial and temporal locations,
-  respectively; \eqn{b = }\code{\link[=RPsequential]{back_steps}} \cr
+  respectively; \eqn{b = }\code{\link[=RPsequential]{back_steps}} (preparation) \cr
+ \tab \tab  \tab  \tab
+ \eqn{O(n S b^2)}{O(n * S * b^2)}
+ \tab
+ \eqn{O(S^2 b^2) + O(n)}{O(n)} 
+ \tab (simulation) \cr
  \command{\link{RPspectral}} \tab any \tab \eqn{1} \tab \eqn{\le 2}{<=2}
   \tab\eqn{O(C(d) n)}{O(C(d) * n)}
  \tab \eqn{ O(n) }\tab  \eqn{C(d)} : large constant increasing in \eqn{d} \cr
- \command{\link{RPtbm}} \tab any \tab 1 \tab \eqn{\le 4}{<=4} \tab
-  \eqn{ O(C(d) (n + L) }{ O(C(d) * (n + L))} \tab\eqn{ O(n)}  \tab\eqn{C(d)} :
-  large constant increasing in \eqn{d}; \eqn{L} is the efford needed to
+ \command{\link{RPtbm}} \tab any \tab \eqn{1} \tab \eqn{\le 4}{<=4} \tab
+  \eqn{ O(C(d) (n + L) }{ O(C(d) * (n + L))} \tab\eqn{ O(n + L)}  \tab\eqn{C(d)} :
+  large constant increasing in \eqn{d}; \eqn{L} is the effort needed to
   simulate on a line (or plane)\cr
  \command{\link{RPspecific}}  \tab \tab \tab \tab \tab \tab \bold{only}
   the specific part \cr
  * * \command{\link{RMplus}}\tab any \tab any \tab any \tab O(v n) \tab
   O(v n) \tab\cr
  * * \command{\link{RMS}}\tab any \tab any \tab any  \tab O(1) \tab O(v n) \tab\cr
- * * \command{\link{RMprod}}\tab any \tab any \tab any  \tab O(v n) \tab
+ * * \command{\link{RMmult}}\tab any \tab any \tab any  \tab O(v n) \tab
   O(v n) \tab\cr
 }
 }
+
+
+
+\section{Computing demand for interpolation}{
+  Assume \eqn{v}-variate data are given at 
+  \eqn{n} locations in \eqn{d} dimensions.
+  To interpolate at \eqn{k} locations RandomFields needs
+\tabular{lllllll}{
+  grid \tab \eqn{v} \tab \eqn{d} \tab time \tab memory \tab comments\cr
+  any\tab any\tab any \tab \eqn{O(1)..O(v^2 n^2)}{ O(v^2 * n^2)}\tab\eqn{ O(v^2
+   n^2)}{ O(v^2 * n^2)}\tab effort to investigate the covariance matrix, if
+ \code{\link[=RFoptions]{matrix_methods}} is not specified (default)
+ \cr
+  \tab \tab  \tab\eqn{O(v ^2 n k)}{ O(v^2 * n k)}\tab\eqn{ O(v
+    (n + k))}{ O(v * (n + k))}\tab covariance matrix is diagonal
+  \cr
+  \tab \tab  \tab see \pkg{\link[spam:SPAM]{spam}}+ O(v^2nk) \tab \eqn{O(z + v
+  (n + k))}{O(z + v * (n + k))}\tab covariance matrix is sparse
+ matrix with \eqn{z} non-zeros\cr
+ \tab \tab  \tab \eqn{O(v^3 n^3 + v^2nk)}{O(v^3*n^3 + v^2*n*k)}\tab
+ \eqn{O(v^2 n^2 + v*k)}{O(v^2*n^2 + v*k)}\tab arbitrary covariance matrix
+}
+}
+
+
+
+\section{Computing demand for conditional simulation}{
+  Assume \eqn{v}-variate data are given at 
+  \eqn{n} locations \eqn{x_1,\ldots, x_n}{x_1,...,x_n} in \eqn{d} dimensions.
+  To conditionally simulated at \eqn{k} location
+  \eqn{y_1,\ldots, y_k}{y_1,...,y_k}, the
+  computing demand equals the
+  sum of the demand for interpolating and
+  the demand for simulating on the \eqn{k+n} location.
+  (Grid algorithms for simulating will apply if the \eqn{k} locations
+  \eqn{y_1,\ldots, y_k}{y_1,...,y_k}
+  are defined by a grid and the \eqn{n} locations
+  \eqn{x_1,\ldots, x_n}{x_1,...,x_n} are a subset of
+  \eqn{y_1,\ldots, y_k}{y_1,...,y_k}, a situation typical in image analysis.)
+}
+ 
 
 
 \references{
@@ -141,7 +194,7 @@ set.seed(1)
 x <- runif(9000, 0, 500)
 z <- RFsimulate(RMspheric(), x)
 z <- RFsimulate(RMspheric(), x, max_variab=10000)
-
+% max_variab = 10000 leads to a valgrind warning because of large memory need
 \dontshow{FinalizeExample()}
 
 }
