@@ -15,6 +15,8 @@
 \alias{coerce,RFfit,RFempVariog-method}
 \alias{print.RFfit}
 \alias{plot,RFfit,missing-method}
+\alias{contour.RFfit}
+\alias{contour.RFempVariog}
 
 \alias{AICc.RFfit}
 \alias{logLik.RFfit}
@@ -48,71 +50,53 @@
 \usage{
 \S4method{residuals}{RFfit}(object, ..., method="ml", full=FALSE)
 \S4method{summary}{RFfit}(object, ..., method="ml")
-\S4method{plot}{RFfit,missing}(x, model=NULL, method="ml",
- nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
- plot.nbin=TRUE, plot.sd=FALSE, variogram = TRUE, boundaries = TRUE,...)
+\S4method{plot}{RFfit,missing}(x, y, ...) 
+
+\S3method{contour}{RFfit}(x, ...) 
+\S3method{contour}{RFempVariog}(x, ...)
+
 RFhessian(model)
 }
 
 \arguments{  
-   \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
-    \command{\link[=RFempVariog-class]{RFempVario}} or
-    \command{\link[=RFfit-class]{RFfit}} or
-    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
-    be any sophisticated model but it must be either stationary or a
-    variogram model} 
-  \item{model}{
-    \code{class(x)=="RF_fit"} or \code{class(x)=="RFfit"}, obtained
-    from \command{\link{RFfit}}
-  }
-  \item{method}{character; only for \code{class(x)=="RFfit"}; a
+ \item{object}{see the  generic function;
+ }
+ \item{...}{
+   \itemize{
+     \item \command{plot}: arguments to be passed to methods; mainly graphical
+     arguments, or further models in case of class \code{'RMmodel'},
+     see Details.
+
+     \item \command{summary}:  see the generic function
+     
+     \item \command{contour} : see \command{\link{RFplotEmpVariogram}}
+   }
+ }
+ \item{method}{character; only for \code{class(x)=="RFfit"}; a
     vector of slot names for which the fitted covariance or variogram
     model is to be plotted; should be a subset of 
     \code{slotNames(x)} for which the corresponding slots are of class
     \code{"RMmodelFit"}; by default, the maximum likelihood fit
    (\code{"ml"}) will be
     plotted} 
-  \item{nmax.phi}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of bins of angle phi that are to be
-    plotted}
-  \item{nmax.theta}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of bins of angle theta that are to be
-    plotted} 
-  \item{nmax.T}{integer; only for \code{class(x)=="RFempVario"};
-    the maximal number of different time bins that are to be
-    plotted} 
-  \item{plot.nbin}{logical; only for \code{class(x)=="RFempVario"};
-    indicates whether the number of pairs per bin are to be plotted}
-  \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
-    indicates whether the calculated standard deviation (\code{x@sd}) is
-    to be plotted (in form of arrows of length +-1*sd)}
-  \item{variogram}{logical; This argument should currently not be set
-    by the user. If \code{TRUE} then the empirical variogram
-    is plotted, else an estimate for the covariance function} 
-  \item{boundaries}{logical; only for \code{class(x)=="RFempVario"} and
-    the anisotropic case where \code{model} is given.
-    As the empirical variogram is calculated on a sector of angles,
-    no exact variogram curve corresponds to the mean values in this
-    sector.
-    If \code{boundaries=TRUE} the values of the variogram on the sector
-    boundaries are plotted. If \code{FALSE} some kind of mean
-    model values are plotted. Neither the boundaries may contain
-    the values of emprical variogram nor does the mean values
-    need to be close the emprical variogram.  
-  } 
-  \item{...}{
-    in case of \command{plot}: arguments to be passed to methods; mainly graphical
-    arguments, or further models in case of class \code{'RMmodel'},
-    see Details.
-
-    In case of \command{summary}:  see the  generic function
-  }
- \item{object}{see the  generic function;
-  }
-%  \item{k}{integer, see \command{\link[stats]{AIC}}. Unused here.  }
   \item{full}{logical.
     if \code{TRUE} submodels are reported as well (if available).
   }
+  \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
+    \command{\link[=RFempVariog-class]{RFempVario}} or
+    \command{\link[=RFfit-class]{RFfit}} or
+    \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
+    be any sophisticated model but it must be either stationary or a
+    variogram model}
+  \item{y}{unused}
+  \item{model}{
+    \code{class(x)=="RF_fit"} or \code{class(x)=="RFfit"}, obtained
+    from \command{\link{RFfit}}
+  }
+}
+
+\details{
+  for the definition of \command{plot} see \command{\link{RFplotEmpVariogram}}.
 }
 
 \section{Creating Objects}{

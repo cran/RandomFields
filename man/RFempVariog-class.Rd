@@ -6,15 +6,10 @@
 \alias{persp,RFempVariog-method}
 \alias{print,RFempVariog-method}
 \alias{summary,RFempVariog-method}
-%\alias{[,RMmodel,ANY,ANY,ANY-method}
-%\alias{[<-,RMmodel,ANY,ANY,ANY-method}}
-%\alias{plot,RMmodel-method}
-%\alias{points.RMmodel}
-%\alias{lines.RMmodel}
 \alias{print.RF_empVariog}
 \alias{summary.RF_empVariog}
 \alias{plot,RFempVariog,missing-method}
-
+\alias{RFplotEmpVariogram}
 
 \title{Class \code{RFempVariog}}
 \description{Class for RandomField's representation of empirical variograms 
@@ -26,15 +21,21 @@
 %}
 
 \usage{
-\S4method{plot}{RFempVariog,missing}(x, model=NULL,
- nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
- plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE, boundaries = TRUE,...)
+RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
+                               nmax.T = NA,
+                               plot.nbin = TRUE, plot.sd=FALSE, method = "ml",
+                               variogram=TRUE,
+                               boundaries = TRUE,
+                               ...)
+\S4method{plot}{RFempVariog,missing}(x, y, ...)
+\S4method{persp}{RFempVariog}(x, ...)
 }
 
 \arguments{  
   \item{x}{object of class 
     \command{\link[=RFempVariog-class]{RFempVario}}
   }
+  \item{y}{unused}
   \item{model}{object of class
     \command{\link[=RMmodel-class]{RMmodel}} or
     \code{class(x)=="RFempVario"} or \code{class(x)=="RFfit"}; a list of
@@ -54,6 +55,9 @@
   \item{plot.sd}{logical; only for \code{class(x)=="RFempVario"};
     indicates whether the calculated standard deviation (\code{x@sd}) is
     to be plotted (in form of arrows of length +-1*sd)}
+  \item{method}{character. Currently restricted to \code{"ml"} for
+    maximum-likelihood method.
+    }
   \item{variogram}{logical; This argument should currently not be set
     by the user. If \code{TRUE} then the empirical variogram
     is plotted, else an estimate for the covariance function} 
@@ -67,11 +71,11 @@
     model values are plotted. Neither the boundaries may contain
     the values of emprical variogram nor does the mean values
     need to be close the emprical variogram.  
-  } 
+  }
   \item{...}{arguments to be passed to methods; mainly graphical
     arguments.
     %see Details.
-  }    
+  }
 }
 
 
@@ -121,7 +125,7 @@
       \code{\link[methods:list-class]{list}}.}
     \item{show}{\code{signature(x = "RFfit")}: returns the structure
       of \code{x}}
-    \item{persp}{code{signature(obj =
+    \item{persp}{\code{signature(obj =
 	"RFempVario")}: generates nice \command{\link[graphics]{persp}} plots
     }
     \item{print}{\code{signature(x = "RFfit")}: identical with

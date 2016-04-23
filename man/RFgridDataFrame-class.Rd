@@ -11,7 +11,11 @@
 \alias{[,RFgridDataFrame-method}
 \alias{[,RFgridDataFrame,ANY,ANY-method}
 \alias{[,RFgridDataFrame,ANY,ANY,ANY-method}
+\alias{[<-,RFgridDataFrame-method}
 \alias{[<-,RFgridDataFrame,ANY,ANY,ANY-method}
+\alias{dimensions,RFgridDataFrame-method}
+\alias{isGridded,RFgridDataFrame-method}
+\alias{variance,RFgridDataFrame-method}
 %% S3 methods
 \alias{print.RFgridDataFrame}
 \alias{cbind.RFgridDataFrame}
@@ -25,6 +29,18 @@
 
 \title{Class \code{RFgridDataFrame} }
 \description{ Class for attributes in one-dimensional space.}
+
+
+\usage{
+\S4method{RFspDataFrame2conventional}{RFgridDataFrame}(obj, data.frame=FALSE) 
+}
+
+\arguments{
+  \item{obj}{an \code{RFgridDataFrame} object}
+  \item{data.frame}{logical. If \code{TRUE} a \code{data.frame} is returned.
+  }
+}
+
 
 \section{Creating Objects}{
  Objects can be created by using the functions

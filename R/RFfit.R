@@ -24,11 +24,6 @@
 ### !!!!!!!!!!!! ACHTUNG !!!!!!!!!!!! TREND als cov-fct muss
 ### noch programmiert werden !!!
 
-# RFsimulate:  Not implemented yet: If \code{model} is a formula or of class
-#    \command{\dQuote{\link{RFformula}}},
-#    the corresponding linear mixed model of the type
- #   \deqn{response = W*b + Z*u + e} is simulated
-
 ##   source("~/R/RF/RandomFields/R/MLES.R")
 
 ## PrintLevels
@@ -60,9 +55,6 @@
 ## users.guess muss in eine List von meheren Vorschlaegen umgewandelt werden !!! Und dann muss RFfit recursiver call mit allen bisherigen Werden laufen !!
 
 
-## NAs in data mit mixed model grundsaetzlich nicht kombinierbar !
-## NAs in data mit trend (derzeit) nicht kombinierbar
-
 ## zentrale C -Schnittstellen
 ##    .C("PutValuesAtNA", RegNr, param, PACKAGE="RandomFields")
 
@@ -91,7 +83,6 @@ accessByNameOrNumber <- function(x, i, j, drop=FALSE) {
 
 setMethod("[", signature = "RFfit", def=accessByNameOrNumber)
 
-
 RFhessian <- function(model) {
   method <- "ml"
   if (class(model) == "RF_fit") return(model[[method]]@hessian)
@@ -104,8 +95,7 @@ anova.RF_fit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 anova.RMmodelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 anova.RM_modelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 
-setMethod(f="anova", signature='RMmodelFit',
-          definition=function(object, ...) anova.RFfit(object, ...))#
+setMethod(f="anova", signature='RMmodelFit', anova.RFfit)#
 
 boundary_values <- function(variab) {
   upper.bound <- variab[4, , drop=FALSE]
@@ -184,8 +174,7 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
   summary_RMmodelFit("@", object, ..., isna.param=isna.param)
 }
 
-setMethod(f="summary", signature='RMmodelFit',
-          definition=function(object) summary.RMmodelFit(object))#
+setMethod(f="summary", signature='RMmodelFit', summary.RMmodelFit)#
 
 summary.RM_modelFit <- function(object, ..., isna.param) {
   summary_RMmodelFit("$", object, ..., isna.param=isna.param)
@@ -542,51 +531,18 @@ residuals.RFfit <- function(object, ..., method="ml")
 residuals.RF_fit <- function(object, ..., method="ml")
   resid.RF_fit(object=object, method=method)
 
-
 setMethod(f="plot", signature(x="RFfit", y="missing"),
-	  definition=function(
-            x, model = NULL,
-            method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-            plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-            boundaries = TRUE,...)
-          
-          plotRFempVariog(x, method=method,
-                          nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                          nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                          model = model, variogram=variogram,
-                          boundaries = boundaries,
-                          ...))
-
-
-
+          function(x, y, ...) RFplotEmpVariogram(x, ...))
 setMethod(f="persp", signature(x="RFfit"),
-	  definition=function(
-            x, model = NULL,
-            method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-            plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-            boundaries = TRUE,...)          
-          plotRFempVariog(x, method=method,
-                          nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                          nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                          model = model, variogram=variogram,
-                          boundaries = boundaries,
-                          ..., plotmethod="persp"))
+	  function(x, ...) RFplotEmpVariogram(x, ..., plotmethod="persp"))
 
 
 contour.RFfit <- contour.RFempVariog <- 
-  function(x, model = NULL,
-           method="ml", nmax.phi=NA, nmax.theta=NA, nmax.T=NA,
-           plot.nbin=TRUE, plot.sd=FALSE, variogram=TRUE,
-           boundaries = TRUE,...) {
+  function(x,...) {
     stopifnot(!( (is(x, "RFfit") && is.list(x@ev@centers))
                 || (is(x, "RFempVariog") && is.list(x@centers))
                 ))
-    plotRFempVariog(x, method=method,
-                    nmax.phi=nmax.phi, nmax.theta=nmax.theta,
-                    nmax.T=nmax.T, plot.nbin=plot.nbin, plot.sd=plot.sd,
-                    model = model, variogram=variogram,
-                    boundaries = boundaries,
-                    ..., plotmethod="contour")
+    RFplotEmpVariogram(x, ..., plotmethod="contour")
   }
 
 

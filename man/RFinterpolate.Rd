@@ -213,7 +213,6 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 \dontshow{StartExample()}
 ## Preparation of graphics
 dev.new(height=7, width=16) 
-RFoptions(always_close_screen=FALSE)
 
 ## creating random variables first
 ## here, a grid is chosen, but does not matter
@@ -275,9 +274,7 @@ screen(scr <- scr+1); plot(z, data)
 % folgender Befehl muss unbedingt drin bleiben
 close.screen(all = TRUE)
 
-\dontshow{RFoptions(always_close_screen=TRUE);
-          close.screen(all.screens=TRUE);
-          while (length(dev.list()) >= 2) dev.off()}
+\dontshow{while (length(dev.list()) >= 2) dev.off()}
 \dontshow{FinalizeExample()}
 
 }

@@ -4,6 +4,10 @@
 \alias{show,RMmodel-method}
 \alias{print.RMmodel}
 \alias{plot,RMmodel,missing-method}
+\alias{persp,RMmodel-method}
+\alias{image,RMmodel-method}
+\alias{points,RMmodel-method}
+\alias{lines,RMmodel-method}
 \alias{points.RMmodel}
 \alias{lines.RMmodel}
 \alias{str.RMmodel}
@@ -37,9 +41,8 @@
 \alias{^,RMmodel,numeric-method}
 \alias{^,RMmodel,logical-method}
 \alias{c,RMmodel-method}
-%\alias{plot,RMmodel-method}
-%\alias{points.RMmodel}
-%\alias{lines.RMmodel}
+\alias{RFplotModel}
+
 
 \title{Class \code{RMmodel}}
 \description{ Class for \pkg{RandomField}'s representation of explicit
@@ -48,12 +51,16 @@
 
 
 \usage{
-\S4method{plot}{RMmodel,missing}(x, y, dim=1, n.points=200,
- fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...)
+RFplotModel(x, y, dim=1,
+           n.points=if (dim==1 || is.contour) 200 else 100,
+           fct.type=NULL, MARGIN, fixed.MARGIN, maxchar=15, ...,
+           plotmethod=if (dim==1) "matplot" else "contour")
 
-\S3method{points}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
-
-\S3method{lines}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
+\S4method{plot}{RMmodel,missing}(x, y, ...)
+\S4method{points}{RMmodel}(x, ..., type="p")
+\S4method{lines}{RMmodel}(x, ..., type="l")
+\S4method{image}{RMmodel}(x, ..., dim=2)
+\S4method{persp}{RMmodel}(x, ..., dim=2, zlab="")
 }
 
 
@@ -95,9 +102,19 @@
     whether the covariance (\code{fct.type="Cov"}) or the
     variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
     implies automatic choice, where \code{"Cov"} is chosen whenever the model is
-    stationary} 
+    stationary}
+  \item{plotmethod}{string or function. Internal.
+  }
+  \item{type}{character. See \command{\link[graphics]{points}}}
+  \item{zlab}{character. See \command{\link[graphics]{persp}}}
 }
 
+\value{
+  if \code{RFoptions()$split_screen=TRUE} and
+  \code{RFoptions()$close_screen=TRUE} then
+  the \code{plot} functions return
+  the \code{screen} numbers. Else \code{NULL}
+}
 
 \section{Creating Objects}{
  Objects are created by calling a function of class
@@ -164,10 +181,12 @@
  }
 }
 
-%\section{Details}{
-%}
+\section{Details}{
+  All the above arguments apply for all the  S3 and S4
+  functions given here as they call \command{RFplotModel} immediately.
+}
 
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
+\author{Alexander Malinowski, Martin Schlather \email{schlather@math.uni-mannheim.de}}
 
 \seealso{
   \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}

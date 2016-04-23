@@ -287,7 +287,7 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
   RFopt <- RFoptOld[[2]]
 
   if (!missing(n) && n>10 && RFopt$internal$examples_reduced) {
-    warning("number of simulations reduced")
+    message("number of simulations reduced")
     n <- 10
   }
     
@@ -532,7 +532,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   RFopt <- RFoptOld[[2]]
 
   if (n>2 && RFopt$internal$examples_reduced) {
-    warning("number of simulations reduced")
+    message("number of simulations reduced")
     n <- 2
   }
   

@@ -1042,7 +1042,7 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
   assert(isBRuserProcess(cov));  
   
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(sub, PLoc(cov));
   }
   
@@ -1371,7 +1371,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
   
   if (cov->role != ROLE_BROWNRESNICK) BUG;
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(next, PLoc(cov));
   }
   loc = Loc(cov);

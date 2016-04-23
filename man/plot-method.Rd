@@ -3,21 +3,34 @@
 \alias{plot-method}
 \alias{plot,RFgridDataFrame,missing-method}
 \alias{plot,RFpointsDataFrame,missing-method}
-\alias{plot,RFspatialDataFrame,missing-method}
-\alias{plot,RFdataFrame,missing-method}
-\alias{plot,RFdataFrame,matrix-method}
-\alias{plot,RFdataFrame,data.frame-method}
-\alias{plot,RFdataFrame,RFdataFrame-method}
-\alias{persp,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialGridDataFrame,missing-method}
-\alias{plot,RFspatialDataFrame,RFspatialPointsDataFrame-method}
-\alias{plot,RFspatialDataFrame,matrix-method}
-\alias{plot,RFspatialDataFrame,data.frame-method}
-\alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
-\alias{plot,RFspatialDataFrame,RFspatialGridDataFrame-method}
-\alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,missing-method}
+
+\alias{plot,RFgridDataFrame,matrix-method}
+\alias{plot,RFpointsDataFrame,matrix-method}
+\alias{plot,RFspatialGridDataFrame,matrix-method}
+\alias{plot,RFspatialPointsDataFrame,matrix-method}
+
+\alias{plot,RFgridDataFrame,data.frame-method}
+\alias{plot,RFpointsDataFrame,data.frame-method}
+\alias{plot,RFspatialGridDataFrame,data.frame-method}
+\alias{plot,RFspatialPointsDataFrame,data.frame-method}
+
+\alias{plot,RFgridDataFrame,RFgridDataFrame-method}
+\alias{plot,RFgridDataFrame,RFpointsDataFrame-method}
+\alias{plot,RFpointsDataFrame,RFgridDataFrame-method}
+\alias{plot,RFpointsDataFrame,RFpointsDataFrame-method}
+\alias{plot,RFspatialGridDataFrame,RFspatialGridDataFrame-method}
+\alias{plot,RFspatialGridDataFrame,RFspatialPointsDataFrame-method}
+\alias{plot,RFspatialPointsDataFrame,RFspatialGridDataFrame-method}
 \alias{plot,RFspatialPointsDataFrame,RFspatialPointsDataFrame-method}
+
+\alias{persp,RFspatialGridDataFrame-method}
+\alias{contour.RFspatialGridDataFrame}
+
+\alias{RFplotSimulation}
+\alias{RFplotSimulation1D}
+
 \title{Methods for function \code{plot} in package \pkg{RandomFields}}
 
 \description{
@@ -132,79 +145,45 @@
 }
 
 \usage{
-\S4method{plot}{RFspatialDataFrame,missing}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
- MARGIN.movie = NULL, file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
- ...)
+RFplotSimulation(x, y, MARGIN=c(1,2), MARGIN.slices=NULL,
+ n.slices = if (is.null(MARGIN.slices)) 1 else 10, nmax=6, 
+ plot.variance = !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance,
+ select.variables, zlim, legend=TRUE,
+ MARGIN.movie = NULL, file=NULL, speed = 0.3,
+ height.pixel=300, width.pixel=height.pixel,
+ ..., plotmethod="image")
 
-\S4method{plot}{RFspatialDataFrame,RFspatialGridDataFrame}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-...)
+RFplotSimulation1D(x, y, nmax=6,
+  plot.variance=!is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance,
+  legend=TRUE, ...)
 
-\S4method{plot}{RFspatialDataFrame,RFspatialPointsDataFrame}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-...)
+\S4method{plot}{RFgridDataFrame,missing}(x, y, ...)
+\S4method{plot}{RFpointsDataFrame,missing}(x, y, ...)
+\S4method{plot}{RFspatialGridDataFrame,missing}(x, y, ...)
+\S4method{plot}{RFspatialPointsDataFrame,missing}(x, y, ...)
 
-\S4method{plot}{RFspatialDataFrame,matrix}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-...)
-\S4method{plot}{RFspatialDataFrame,data.frame}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE,
-  MARGIN.movie = NULL,file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-...)
+\S4method{plot}{RFgridDataFrame,matrix}(x, y, ...)
+\S4method{plot}{RFpointsDataFrame,matrix}(x, y, ...)
+\S4method{plot}{RFspatialGridDataFrame,matrix}(x, y, ...)
+\S4method{plot}{RFspatialPointsDataFrame,matrix}(x, y, ...)
 
+\S4method{plot}{RFgridDataFrame,data.frame}(x, y, ...)
+\S4method{plot}{RFpointsDataFrame,data.frame}(x, y, ...)
+\S4method{plot}{RFspatialGridDataFrame,data.frame}(x, y, ...)
+\S4method{plot}{RFspatialPointsDataFrame,data.frame}(x, y, ...)
 
-\S4method{persp}{RFspatialGridDataFrame}(x, y,
- MARGIN=c(1,2), MARGIN.slices=NULL,
- n.slices = if (is.null(MARGIN.slices)) 1 else 10,
- nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), select.variables, zlim, legend=TRUE, 
- MARGIN.movie = NULL, file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-...)
+\S4method{plot}{RFgridDataFrame,RFgridDataFrame}(x, y, ...)
+\S4method{plot}{RFgridDataFrame,RFpointsDataFrame}(x, y, ...)
+\S4method{plot}{RFpointsDataFrame,RFgridDataFrame}(x, y, ...)
+\S4method{plot}{RFpointsDataFrame,RFpointsDataFrame}(x, y, ...)
+\S4method{plot}{RFspatialGridDataFrame,RFspatialGridDataFrame}(x, y, ...)
+\S4method{plot}{RFspatialGridDataFrame,RFspatialPointsDataFrame}(x, y, ...)
+\S4method{plot}{RFspatialPointsDataFrame,RFspatialGridDataFrame}(x, y, ...)
+\S4method{plot}{RFspatialPointsDataFrame,RFspatialPointsDataFrame}(x, y, ...)
 
+\S4method{persp}{RFspatialGridDataFrame}(x, ..., zlab="")
+\S3method{contour}{RFspatialGridDataFrame}(x, ...)
 
-\S4method{plot}{RFdataFrame,missing}(x, y, nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), legend=TRUE, ...)
-
-\S4method{plot}{RFdataFrame,RFdataFrame}(x, y, nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), legend=TRUE, ...)
-
-\S4method{plot}{RFdataFrame,matrix}(x, y, nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), legend=TRUE, ...)
-
-\S4method{plot}{RFdataFrame,data.frame}(x, y, nmax=6, 
- plot.variance = (!is.null(x@.RFparams$has.variance) &&
- x@.RFparams$has.variance), legend=TRUE, ...)
-
-
-%\S3method{contour}{RMmodel}(x, y, n.points=200, fct.type=NULL, ...)
 }
 
 
@@ -295,6 +274,9 @@
     \code{data} and \code{var} if a separate \code{zlim}
     for the Kriging variance is to
     be used.}
+  \item{plotmethod}{string or function. Internal.
+  }
+  \item{zlab}{character. See \command{\link[graphics]{persp}}}
 %  \item{maxchar}{maximum number of characters used in the legend
 %    (for multiplots only)  }
 }
@@ -347,6 +329,8 @@ plot(model)
 plot(model, xlim=c(0, 30))
 plot(model, xlim=c(0, 30), fct.type="Variogram")
 plot(model, xlim=c(-10, 20), fct.type="Variogram", dim=2)
+image(model, xlim=c(-10, 20), fct.type="Variogram")
+persp(model, xlim=c(-10, 20), fct.type="Variogram")
 
 #############################################################
 ## Plot of simulation results

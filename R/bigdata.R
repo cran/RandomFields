@@ -261,7 +261,7 @@ BigDataSplit <- function(Z, RFopt) {
   method <- fit$likelihood   
   if (is.na(method <- pmatch(method, RC_LIKELIHOOD_NAMES)))
     stop("unknown value for 'likelihood'.")
-  method <- RC_LIKELIHOOD_NAMES[method]
+  method <- RC_LIKELIHOOD_NAMES[method + 1] ## + 1  ok??
   
   if (method == "full" ||
       (method %in% c("auto", "tesselation") && all(Z$len <= fit$max_neighbours)

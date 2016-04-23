@@ -17,10 +17,13 @@
 \alias{[,RFspatialGridDataFrame-method}
 \alias{[,RFspatialGridDataFrame,ANY,ANY-method}
 \alias{[,RFspatialGridDataFrame,ANY,ANY,ANY-method}
+\alias{[<-,RFspatialGridDataFrame-method}
 \alias{[<-,RFspatialGridDataFrame,ANY,ANY,ANY-method}
+\alias{dimensions,RFspatialGridDataFrame-method}
+\alias{isGridded,RFspatialGridDataFrame-method}
+\alias{variance,RFspatialGridDataFrame-method}
 %% S3 methodsgr
 \alias{print.RFspatialGridDataFrame}
-\alias{contour.RFspatialGridDataFrame}
 \alias{cbind.RFspatialGridDataFrame}
 \alias{range.RFspatialGridDataFrame}
 \alias{hist.RFspatialGridDataFrame}
@@ -29,14 +32,25 @@
 \alias{as.vector.RFspatialGridDataFrame}
 \alias{as.data.frame.RFspatialGridDataFrame}
 
+
 \title{Class "RFspatialGridDataFrame" }
 \description{ Class for spatial attributes that have spatial or
- spatio-temporal locations (at least of dimension 2) 
- on a (full) regular grid. Direct extension of class
- \command{\link[sp:SpatialGridDataFrame-class]{SpatialGridDataFrame}
-   from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
- transformation.}
- }
+  spatio-temporal locations (at least of dimension 2) 
+  on a (full) regular grid. Direct extension of class
+  \command{\link[sp:SpatialGridDataFrame-class]{SpatialGridDataFrame}
+    from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
+    transformation.}
+}
+
+\usage{
+\S4method{RFspDataFrame2conventional}{RFspatialGridDataFrame}(obj, data.frame=FALSE) 
+}
+
+\arguments{
+  \item{obj}{an \code{RFspatialGridDataFrame} object}
+  \item{data.frame}{logical. If \code{TRUE} a \code{data.frame} is returned.
+  }
+}
 
 \section{Creating Objects}{
  Objects can be created by using the functions
@@ -152,7 +166,7 @@
  and for all BUT the second dimension, coordinate values are in
  ascending order. In the second dimension, coordinate values run from
  high to low. Hence, when converting to conventional formats using
- \command{\link{RFspDataFrame2conventional}} or \command{\link{RFspDataFrame2dataArray}},
+ \command{RFspDataFrame2conventional} or \command{RFspDataFrame2dataArray},
  the data array is re-ordered such that all dimensions are in ascending
  order. \code{as.matrix} does not perform re-ordering.
 
@@ -160,8 +174,7 @@
  \command{isGridded} are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski
-  \email{Alexander.Malinowski@web.de},
+\author{Alexander Malinowski,
   Martin Schlather, \email{schlather@math.uni-mannheim.de}
   \url{http://ms.math.uni-mannheim.de/de/publications/software}}
 
@@ -205,12 +218,12 @@ str(as(f, "RFspatialPointsDataFrame"))
 plot(f, nmax=2)
 
 steps <- c(10, 1, 10, 10)
-\dontshow{if(!interactive()){warning("modified 'steps'"); steps<-c(2,1,2,2)}}%ok
+\dontshow{if(!interactive()){warning("modified <steps>"); steps<-c(2,1,2,2)}}%ok
 x2 <- rbind(c(0, 0, 0, 0),
  c(1, 0.2, 2, 5),
  steps)
 scale <- 10
-\dontshow{if(!interactive()){warning("modified 'scale'");scale<-0.1}}%ok
+\dontshow{if(!interactive()){warning("modified <scale>");scale<-0.1}}%ok
 f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, n=n,
                  grid = TRUE)
 plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)

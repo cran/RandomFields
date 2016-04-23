@@ -126,8 +126,9 @@ void mixed_rules(cov_model *cov, pref_type locpref,
   //PMI(sub);
 
   int vdimtot = loc->totalpoints * vdim;
-  if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST)
+  if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
     pref[Direct] = (PREF_BEST + 1) * PREF_FACTOR;
+  }
   else if (pref[Direct] >= PREF_NONE && GLOBAL.solve.sparse != true) {
 #define MONTRAFO(x) ((x) * (x))
     //#define MONTRAFO log   

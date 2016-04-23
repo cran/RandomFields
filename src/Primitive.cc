@@ -548,9 +548,9 @@ int cutidx(double Idx, int len) {
 
 
 #define GET_LOC_COVARIATE \
-  location_type **local = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	\
-    ? PLoc(cov) : cov->Scovariate->loc;					\
   assert(cov->Scovariate != NULL);					\
+ location_type **local = P0INT(COVARIATE_RAW) || PisNULL(COVARIATE_X)	\
+    ? PLoc(cov) : cov->Scovariate->loc;					\
   assert(local != NULL);						\
   location_type *loc =  LocLoc(local);					\
   assert(loc != NULL)
@@ -709,7 +709,8 @@ int check_fix_covariate(cov_model *cov,  location_type ***local){
     if (!globalXT || (prev != NULL && isDollar(prev) && !hasVarOnly(prev)))
 	SERR("if 'raw' then none of {'x', 'T', 'Aniso', 'proj', 'scale'} may be given");
      assert(cov->ownloc == NULL);  
-     *local = PLoc(cov);
+     if (cov->Scovariate == NULL) NEW_STORAGE(covariate); 
+    *local = PLoc(cov);
   } else if (globalXT) {
     if (cov->Scovariate == NULL) NEW_STORAGE(covariate); 
     *local = PLoc(cov);

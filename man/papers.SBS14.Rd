@@ -39,7 +39,7 @@ col <- c(paste("#0000", H[1 + ((0:255) / 16)], H[1 + ((0:255) \%\% 16)],sep=""),
 
 RFoptions(every=1000, xi=0)
 x <- seq(0, 5, 0.01)
-\dontshow{if(RFoptions()$internal$examples_red){warning("modified 'x'"); x <- seq(0, 5, 1)}}
+\dontshow{if(RFoptions()$internal$examples_red){warning("modified <x>"); x <- seq(0, 5, 1)}}
 ## Figure 2
 model <- RMfbm(alpha=1, var=4) ## not 8 as in the paper, since semi-variogram
 bm <- RMbrownresnick(model)

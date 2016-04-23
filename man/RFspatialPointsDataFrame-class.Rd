@@ -13,7 +13,12 @@
 \alias{[,RFspatialPointsDataFrame-method}
 \alias{[,RFspatialPointsDataFrame,ANY,ANY-method}
 \alias{[,RFspatialPointsDataFrame,ANY,ANY,ANY-method}
+\alias{[<-,RFspatialPointsDataFrame-method}
 \alias{[<-,RFspatialPointsDataFrame,ANY,ANY,ANY-method}
+\alias{dimensions,RFspatialPointsDataFrame-method}
+\alias{isGridded,RFspatialPointsDataFrame-method}
+\alias{variance,RFspatialPointsDataFrame-method}
+
 %% S3 methods
 \alias{print.RFspatialPointsDataFrame}
 \alias{cbind.RFspatialPointsDataFrame}
@@ -31,6 +36,15 @@
  \code{\link[sp:SpatialPointsDataFrame-class]{SpatialPointsDataFrame}}
  from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
  transformation.}
+
+
+\usage{
+\S4method{RFspDataFrame2conventional}{RFspatialPointsDataFrame}(obj) 
+}
+
+\arguments{
+  \item{obj}{an \code{RFspatialPointsDataFrame} object}
+}
 
 \section{Creating Objects}{
  Objects can be created by using the functions
@@ -126,8 +140,8 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  and for all BUT the second dimension, coordinate values are in
  ascending order. In the second dimension, coordinate values run from
  high to low. Hence, when converting to conventional formats using
- \command{\link{RFspDataFrame2conventional}} or
- \command{\link{RFspDataFrame2dataArray}}, 
+ \command{RFspDataFrame2conventional} or
+ \command{RFspDataFrame2dataArray}, 
  the data array is re-ordered such that all dimensions are in ascending
  order. \code{as.matrix} does not perform re-ordering.
 

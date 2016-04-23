@@ -34,11 +34,11 @@
                ##  SECTION 4: UNCONDITIONAL SIMULATION  ##
                ###########################################
 
-RFoptions(seed = 0, height = 4, always_close_screen = TRUE)
+RFoptions(seed = 0, height = 4)
 ## seed=0:  *ANY* simulation will have the random seed 0; set
 ##          RFoptions(seed=NA) to make them all random again
 ## height : height of X11
-## always_close_screen=FALSE: the pictures are kept on the screen
+## always_close_device=FALSE: the pictures are kept on the screen
 
 
 ## Fig. 1: linear model of coregionalization

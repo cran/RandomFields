@@ -44,8 +44,7 @@
   \bold{20. \code{special}: Options for some special methods}\cr
   \bold{21. \code{spectral}: Options for the spectral (turning bands) method}\cr
   \bold{22. \code{tbm}: Options for the turning bands method}\cr
-  \bold{23. \code{internal}: Internal}\cr
-  \bold{General comments}\cr\cr\cr
+  \bold{23. \code{internal}: Internal}\cr\cr\cr
   
 
   
@@ -1239,77 +1238,112 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{10. \code{graphics}: Options for graphical output}
 \describe{
-  \item{\code{always_close_screen}}{logical.
-    If \code{FALSE} the current device is kept as it is.
-    Otherwise the action depends on the value of
-    \code{height}: if \code{height} is not positive
-    then \command{\link[graphics]{close.screen}}
-    is performed on the current device.
-    Else the current device is closed.
-    
-    Default: \code{FALSE}.
+  \item{\code{always_close_device}}{logical.
+    If \code{FALSE} the current device is kept as it is;
+    otherwise the current device is closed before the next
+    device is opened. If \code{NA} it closes the preceding device
+    if the opened device is pdf or jpeg.
+      
+    Default: \code{NA}.
   }
-  \item{\code{always_open_screen}}{logical.
-    if \code{TRUE} a new graphical window is opened for every
+  \item{\code{always_open_device}}{logical.
+    If \code{TRUE} a new graphical window is opened for every
     \command{\link[graphics]{plot}} if a standard graphical output is
-    used. If \code{NA} then the value is set
-    to \code{\link[base]{interactive}()}. %ok
+    used, trying to respect the aspect ratios for the plots.
+    The devices pdf and jpeg are always opened.
+
+    If \code{NA} then the value is set
+    to \code{\link[base]{interactive}()}. 
     
     Default: \code{TRUE}.
   }
+
+  \item{\code{close_screen}}{logical; only relevant if
+    \code{split_screen = TRUE} and \code{always_close_screen = FALSE}.
+    If \code{FALSE} the windows opened by
+    \command{\link[graphics]{split.screen}} are left open.
+    
+    Default: \code{TRUE}.
+  }
+
+  \code{file}{character; only relevant if
+    \code{split_screen = TRUE}.
+    argument \code{file} in \command{\link{pdf}}
+    If \code{""} then no internal naming is performed.
+
+    Default: \code{""}.
+  }
+
+  \item{\code{filenumber}}{integer; only relevant if
+    \code{split_screen = TRUE}. Starting number of the file if
+    \code{onefile=FALSE}. It is set to 0 whenever \code{file} is
+    changed and \code{onefile=FALSE}. 
+
+    Default 0.
+  }
+
   \item{\code{grPrintlevel}}{
-    integer values 0, 1, 2. The higher the more text is shown in the
+    integer values 0, 1, 2; only relevant when simulations are
+    plotted. The higher the more text is shown in the 
     plot.
     
     Default: \code{1}.
   }
   
-  \item{\code{height}}{real number.
-    if \code{height} is greater than zero then it gives the height
-    of a single figure in a plot create by \pkg{RandomFields};
-    always a new window is opened. See also \code{always_close_screen}.
-    
-    If plots with multiple figures are
-    shown, the height and width of the plot
-    will be increased by a factor up the
-    ones given by \code{increase_upto}.
-       
+  \item{\code{height}}{real number; only relevant if
+    a new device is opened, see \code{alwyas_open_screen}.
+    \itemize{
+      \item \code{height=NA} or \code{height} is not positive: no device
+      is opened.
+      \item \code{width = NA}
+      If \code{height} is greater than zero then it gives the height
+      of a single figure in a plot created by \pkg{RandomFields};
+      See also \code{close_screen}.
+      
+      If plots with multiple figures are
+      shown, the height and width of the plot
+      will be increased by a factor up the
+      ones given by \code{increase_upto}.
+
+      The width is calculated so that the aspect ratio is correct.
+     \item \code{width} not \code{NA}
+      \code{height} and \code{width} give the size of the
+      whole window.
+    }
     Default: \code{6}.
   }
-
-  \code{pdffile}{ argument \code{file} in \command{\link{pdf}}
-    If \code{""} then no internal naming is performed.
-
-    Default: \code{""}.
-  }
-
-  \item{\code{jpegfile}}{ argument \code{file} in \command{\link{jpeg}}
-    If \code{""} then no internal naming is performed.
-
-    Default: \code{""}.
-  }
-
-  \item{\code{filenumber}}{integer. Starting number of the file if
-    \code{onefile=FALSE}. It is set to 0 whenever \code{pdffile} is
-    changed and \code{onefile=FALSE}. 
-
-    Default 0.
-  }
   
-  \item{\code{onefile}}{about the behaviour of argument \code{onefile} in
-    \command{\link{pdf}}
-
-    Default: \code{FALSE}.
-  }
-
-  
+   
   \item{\code{increase_upto}}{
     See \code{height}.
     
     Default: \code{c(3,4)}.
   }
-}
 
+  \item{\code{split_screen}}{logical.
+     If \code{TRUE} \command{\link[graphics]{split.screen}}
+     is used to split the screen.
+     Otherwise \code{par(mfcol)}.
+     When using \code{split_screen} then the figures tend to be fancier.
+     
+    Default: \code{TRUE}.
+  }
+
+  \item{\code{onefile}}{logical; only relevant if
+    \code{split_screen = TRUE}.
+    About the behaviour of argument \code{onefile} in
+    \command{\link{pdf}}
+
+    Default: \code{FALSE}.
+  }
+  
+ \item{\code{width}}{real number or NA; only relevant if
+    \code{always_open_screen=TRUE}. See \code{height} for details.
+     
+       
+    Default: \code{NA}.
+  }
+}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1929,7 +1963,6 @@ The user can use the registers 0..9.
   }
   
 }
- 
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

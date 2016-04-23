@@ -10,7 +10,11 @@
 \alias{[,RFpointsDataFrame-method}
 \alias{[,RFpointsDataFrame,ANY,ANY-method}
 \alias{[,RFpointsDataFrame,ANY,ANY,ANY-method}
+\alias{[<-,RFpointsDataFrame-method}
 \alias{[<-,RFpointsDataFrame,ANY,ANY,ANY-method}
+\alias{dimensions,RFpointsDataFrame-method}
+\alias{isGridded,RFpointsDataFrame-method}
+\alias{variance,RFpointsDataFrame-method}
 %% S3 methods
 \alias{print.RFpointsDataFrame}
 \alias{cbind.RFpointsDataFrame}
@@ -24,6 +28,17 @@
 \title{Class \code{RFpointsDataFrame}}
 \description{ Class for attributes in one-dimensional space 
  that are not on a grid. }
+
+\usage{
+\S4method{RFspDataFrame2conventional}{RFpointsDataFrame}(obj) 
+}
+
+\arguments{
+  \item{obj}{an \code{RFspatialPointsDataFrame} object}
+}
+
+
+
 
 \section{Creating Objects}{
  Objects can be created by using the functions
@@ -100,7 +115,7 @@
  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
+\author{Alexander Malinowski, Martin Schlather \email{schlather@math.uni-mannheim.de}}
 
 
 \seealso{

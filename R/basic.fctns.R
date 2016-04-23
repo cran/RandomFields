@@ -191,7 +191,7 @@ GetDataNames <- function(model, coords=NULL, locinfo) {#, data=NULL) {
       else if (tsdim == 3) c(ZF_EARTHCOORD_NAMES[1:2], "HeightOrTime")
     } else if (system == "cartesian" && tsdim <= 4) {
       coords <- ZF_CARTCOORD_NAMES[1:tsdim]
-      if (Zeit) coordnames[tsdim] <- ZF_CARTCOORD_NAMES[4]
+      if (Zeit) coordnames[tsdim] <- ZF_CARTCOORD_NAMES[3 + 1]
     } else {
       coordnames <- paste(ZF_GENERAL_COORD_NAME[1], 1:tsdim, sep="")
       if (Zeit) coordnames[tsdim] <- ZF_GENERAL_COORD_NAME[2]

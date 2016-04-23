@@ -11,6 +11,10 @@
 \alias{dimensions,RFspatialDataFrame-method}
 \alias{isGridded}
 \alias{isGridded,RFsp-method}
+\alias{RFspDataFrame2conventional}
+\alias{RFspDataFrame2conventional,RFsp-method}
+\alias{RFspDataFrame2dataArray}
+\alias{RFspDataFrame2dataArray,RFsp-method}
 \alias{[,RFsp-method}
 \alias{[,RFsp,ANY,ANY-method}
 \alias{[,RFsp,ANY,ANY,ANY-method}
@@ -78,7 +82,13 @@
 \item{dimensions}{\code{signature(obj = "RFsp")}: retrieves the number
  of spatial or spatio-temporal dimensions spanned }
 \item{isGridded}{\code{signature(obj = "RFsp")}: logical, tells whether
- the data is on a regular spatial grid }
+  the data is on a regular spatial grid }
+\item{RFspDataFrame2dataArray}{\code{signature(obj = "RFsp")}:
+  transforms \code{RFsp} objects to array
+}
+\item{RFspDataFrame2conventional}{\code{signature(obj = "RFsp")}:
+  transforms \code{RFsp} objects to a list with additional information
+}
 \item{[}{\code{signature(obj = "RFsp")}: selects columns of the
  \code{data}-slot, while all other slots are kept unmodified}
 \item{[<-}{\code{signature(obj = "RFsp")}: replaces columns of the

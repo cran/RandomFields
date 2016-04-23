@@ -471,7 +471,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   location_type *loc = Loc(cov);
   assert(cov->ownloc == NULL);
   if ((loc->Time && !ce_dim2)) {
-    Transform2NoGrid(cov, ce_dim2, false, false); 
+    TransformLoc(cov, ce_dim2, false, false); 
     loc = Loc(cov);
   }
 

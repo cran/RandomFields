@@ -797,13 +797,14 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     int spatialdim;
     loc = Loc(cov);
     cov->tsdim = loc->spatialdim + (int) loc->Time;
-    cov->xdimprev = loc->xdimOZ;
+    cov->xdimprev = loc->xdimOZ + (int) loc->Time;
     spatialdim = loc->spatialdim;
     //  cov->domprev = ly == 0 ? XONLY : KERNEL;
     cov->domprev = XONLY; // formal sind alle Interface Modelle nur von 
     //                              einer (dummy) Variablen abhaengig
 
     //printf("co %d\n", GLOBAL.coords.coord_system);
+    //   printf("%d %d\n", loc->xdimOZ,  cov->xdimprev);
 
     switch (GLOBAL.coords.coord_system) {
     case coord_auto: 
@@ -830,7 +831,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
       //PMI(cov);//OK
     }
 
-    if ((err = CHECK(cov, cov->tsdim, cov->xdimprev +Time, InterfaceType,
+    if ((err = CHECK(cov, cov->tsdim, cov->xdimprev, InterfaceType,
 		       cov->domprev, cov->isoprev, 
 		       SUBMODEL_DEP, ROLE_BASE))
 	!= NOERROR) {

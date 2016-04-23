@@ -59,6 +59,48 @@ RFempiricalvariogram <- function(
                        RFopt = RFopt,
                        data=data,  allowFirstCols=FALSE,
                        vdim=if (missing(vdim)) NULL else vdim)
+  grid <- sapply(Z$coord, function(z) z$grid)
+  fft <- RFopt$empvario$fft && grid[1] && all(grid == grid[1])
+  time <- Z$Zeit
+
+#  Print(Z, deltaT)
+  if (time && !fft) {
+    stop("currently time components are not possible")
+    if (grid[1])
+      stop(if (all(grid == grid[1])) "Failed for 'fft=FALSE'. Try 'fft=TRUE'."
+           else "currently time components are not possible")
+    if (Z$spatialdim == 3) stop("currently time components are not possible for spatial dimensions greater than 2")
+    warning("time component treated as spatial component")
+    time <- Z$Zeit <- FALSE
+    Z$xdimOZ <- Z$xdimOZ + 1
+    Z$spatialdim <- Z$spatialdim + 1
+    rangeT <- NULL
+    for (i in 1:length(Z$coord)) {
+      T <- Z$coord[[i]]$T
+      Z$coord[[i]]$T <- NULL
+      T <- seq(T[1], step=T[2], length=T[3])
+      rangeT <- range(rangeT, T)
+      #Print(T, rep(T, each=nrow(Z$coord[[i]]$x)))
+      Z$coord[[i]]$x <- cbind(matrix(ncol=ncol(Z$coord[[i]]$x),
+                                     rep(Z$coord[[i]]$x, length(T))),
+                              rep(T, each=nrow(Z$coord[[i]]$x)))
+      if (length(Z$coord[[i]]$y) > 0)
+        Z$coord[[i]]$y <- cbind(matrix(ncol=ncol(Z$coord[[i]]$y),
+                                       rep(Z$coord[[i]]$y, length(T))),
+                                rep(T, each=nrow(Z$coord[[i]]$y)))
+      Z$coord[[i]]$spatialdim <- Z$coord[[i]]$spatialdim + 1
+      Z$coord[[i]]$Zeit <- FALSE
+    }
+    Z$rangex <- cbind(Z$rangex, rangeT)
+    ##  ## to do
+    ## to do multivariate;
+
+    if (Z$spatialdim == 1 || length(phi) == 0) phi <- 10
+    if (Z$spatialdim == 2 && length(theta)==0) theta <- 10
+    deltaT <- NULL
+    #Print(Z)
+    
+  }
 
   if (Z$dist.given) stop("option distances not programmed yet.")
   
@@ -71,7 +113,6 @@ RFempiricalvariogram <- function(
 
   data <- RFboxcox(Z$data)
    
-  grid <- sapply(Z$coord, function(z) z$grid)
   
   restotal <- sapply(Z$coord, function(z) z$restotal)
   spatialdim <- Z$spatialdim
@@ -116,21 +157,16 @@ RFempiricalvariogram <- function(
               paste(signif(bin, 2), collapse=" "))
   }
 
-  fft <- RFopt$empvario$fft && grid[1] && all(grid == grid[1])
   pseudo <- RFopt$empvario$pseudovariogram
   phi0 <- RFopt$empvario$phi0 # 0 if automatic
   theta0 <- RFopt$empvario$theta0 # 0 if automatic
-  time <- Z$Zeit
 
   thetagiven <- length(theta)>0 && spatialdim > 2 && theta > 1
   phigiven <-  length(phi)>0 && spatialdim > 1 && phi > 1 
-  deltagiven <- length(deltaT)>0 && all(deltaT > 0)
+  deltaTgiven <- length(deltaT)>0 && all(deltaT > 0)
   basic <- !(time || phigiven || thetagiven)
- 
-  if (time && !fft) stop("currently time components are not possible") ## to do
-  ## to do multivariate;
-    
- if(time && pseudo)
+     
+  if(time && pseudo)
     stop("Time component is not compatible with Pseudo variogram") # to do
   if(!fft && pseudo) ## to do
     stop("Pseudo variogram is only implemented for grids with the FFT method")
@@ -147,16 +183,17 @@ RFempiricalvariogram <- function(
   n.bins <- length(bin) - 1
 
 #Print(phi0, phigiven)
+#  Print(deltaT)
+
   
   phi <- if (!phigiven) c(0, 0) else c(phi0, phi)        
   theta <- if (!thetagiven) c(0, 0) else c(theta0, theta)
-  if (!deltagiven) deltaT <- c(0, 0)
+  if (!deltaTgiven) deltaT <- c(0, 0)
   stopifnot(0 <= phi[1], 2 * pi > phi[1], 
             0 <= theta[1], 2 * pi > theta[1], 
             phi[2] >= 0,  phi[2] == as.integer(phi[2]), 
             theta[2] >= 0, theta[2] == as.integer(theta[2]),
             all(is.finite(deltaT)), all(deltaT >= 0))
-  realdelta <- deltaT[2]
 
   if (time) {
     T.start  <- sapply(Z$coord, function(x) x$T[1])
@@ -170,14 +207,24 @@ RFempiricalvariogram <- function(
   } else {
     T <-  c(1, 1, 1)
   }
-  NotimeComponent <- !deltagiven || T[3]==1
+
+  if (length(deltaT) == 1) deltaT <- c(deltaT, 1)
+  realdelta <- deltaT[2] * T[2]
+  
+  NotimeComponent <- !deltaTgiven || T[3]==1
   stepT <-  deltaT[2] / T[2]
+
+  #Print(deltaT, T, stepT, T[2] * (T[3]-1), max(T[2], realdelta) )
+  
   if (stepT != as.integer(stepT)) {
     #Print(T, stepT, deltaT)
     stop("deltaT not multiple of distance of temporal grid")
   }
   stepT <- max(1, stepT)
-  nstepT <- as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], deltaT[2]))
+  nstepT <- as.integer(min(deltaT[1], T[2] * (T[3]-1)) / max(T[2], realdelta))
+
+  #Print(nstepT)
+  
   n.theta <- max(1, theta[2])
   n.delta <- 1 + nstepT
   n.phi <- max(1, phi[2])
@@ -194,6 +241,8 @@ RFempiricalvariogram <- function(
 
   phibins <- thetabins <- Tbins <- NULL
 
+ # Print(nstepT, realdelta)
+  
   if (!NotimeComponent) Tbins <- (0:nstepT) * realdelta
   if (phi[2] > 0) phibins <- phi[1] + 0 : (n.phibin - 1) * pi / n.phi
 
@@ -217,16 +266,22 @@ RFempiricalvariogram <- function(
     emp.vario <- n.bin <- 0
     for (i in 1:sets) {
       xx <- Z$coord[[i]]$x
-      if (ncol(xx)<maxspatialdim)  # not matrix(0, ...) here!
+      if (ncol(xx)<maxspatialdim) { # not matrix(0, ...) here!
         ##                              since x is a triple
         xx <- cbind(xx, matrix(1, nrow=nrow(xx), ncol=maxspatialdim-ncol(xx)))
+      }
       T3 <- if (length(Z$coord[[i]]$T) == 0) 1 else Z$coord[[i]]$T[3]
       neudim <- c(xx[3, ], if (time) T3)
       
       ## last: always repetitions
       ## last but: always vdim
       ## previous ones: coordinate dimensions
+
+     ## Print(data, xx, T3, neudim, c(neudim, vdim, length(data[[i]]) / vdim / prod(neudim)))
+      
       dim(data[[i]]) <- c(neudim, vdim, length(data[[i]]) / vdim / prod(neudim))
+
+      
     
       
       ## to achieve a reflection in x and z instead of y we transpose the
@@ -304,8 +359,7 @@ RFempiricalvariogram <- function(
       ## cases to treat in the c program. However, there is some lost
       ## of speed in the calculations...
 
-      for (i in 1:sets) {
-        
+      for (i in 1:sets) {        
         coord <-  Z$coord[[i]]
         xx <- coord$x
         stopifnot(is.matrix(xx))
@@ -314,6 +368,7 @@ RFempiricalvariogram <- function(
 
         ## x fuer grid und nicht-grid: spalte x, y, bzw z
         n.bin <- emp.vario.sd <- emp.vario <- 0
+
         back <-
           .C("empvarioXT", ## to do : write as .Call
              as.double(xx),
@@ -431,7 +486,9 @@ RFempiricalvariogram <- function(
            )
     class(l) <- "RF_empVariog"
   }
-  
+
+#  Print(l)
+ # print(emp.vario)
   return(l)
    
 } # function RFempiricalvariogram

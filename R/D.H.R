@@ -67,7 +67,9 @@ regression <- function(x, y, main, scr,
     lines(sm$x, sm$y, col=col.smooth)
     if (mode=="interactive") {
       repeat {
-        if (length(loc <- locator(2))==0) break;
+        loc <- try(locator(2), silent=TRUE)
+        if (is(loc, "try-error")) loc <- NULL
+        if (length(loc)==0) break;
         r <- range(loc$x)
         x.u <- x[idx <- x >= r[1] & x <= r[2]]
         y.u <- y[idx]
@@ -107,9 +109,9 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    fft.m = c(1, min(1000, (fft.len - 1) / 10)),
                    fft.max.length = Inf, ## longer ts are cut down
                    method=c("dfa", "fft", "var"),
-                    mode = if (interactive()) c("plot", "interactive")
-                    else "nographics",
-                  pch=16, cex=0.2, cex.main=0.85,
+                   mode = if (interactive()) c("plot", "interactive")
+                   else "nographics",
+                   pch=16, cex=0.2, cex.main=0.85,
                    printlevel=RFoptions()$general$printlevel,
                    height=3.5,
                    ...
@@ -290,9 +292,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
 
 RFfractaldim <-
   function(x, y = NULL, z = NULL, data, grid, 
-           bin= seq(min(ct$x[2, ]) / 2, 
-             min(ct$x[2,] * ct$x[3,] / 4, vario.n * min(ct$x[2,]) + 1),
-             min(ct$x[2,])),
+           bin=NULL,
            vario.n=5,
            sort=TRUE,
            #box.sequ=unique(round(exp(seq(log(1),
@@ -314,7 +314,7 @@ RFfractaldim <-
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
   T <- NULL # if (length(T)!=0) stop("time not programmed yet")
-
+  
   method <- l.method[pmatch(method, l.method)]
   do.vario <- any(method=="variogram")
   do.box <- any(method=="box")     # physicists box counting method
@@ -340,7 +340,7 @@ RFfractaldim <-
     gridtmp <- isGridded(data)
     compareGridBooleans(grid, gridtmp)
     grid <- gridtmp
-    tmp <- rfspDataFrame2conventional(data)
+    tmp <- RFspDataFrame2conventional(data)
     x <- tmp$x
     y <- NULL
     z <- NULL
@@ -348,20 +348,58 @@ RFfractaldim <-
     data <- tmp$data
     rm(tmp)
   }
-  
+
   ct <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, length.data=length(data))
 
   ## variogram method (grid or arbitray locations)
   if (do.vario) {
-    if (printlevel>PL_STRUCTURE) cat("variogram; ")    
+    stopifnot(vario.n > 0)
+    if (printlevel>PL_STRUCTURE) cat("variogram; ")
+    if (bin.not.given <- length(bin) == 0) {
+      if (ct$grid) {
+        step <- min(ct$x[2, ])
+        end <- ct$x[2, ] * ct$x[3, ] / 4
+        bin <- seq(step / 2, end, step)
+      } else {        
+        step <- apply(ct$x, 2, function(x) list(unique(diff(sort(unique(x))))))
+        edge.lengths <- apply(ct$x, 2, function(x) diff(range(x)))
+        end <- sqrt(sum(edge.lengths^2)) / 4
+        #Print(step)
+        if (max(sapply(step, length)) <= 20) {
+          if (printlevel>=PL_IMPORTANT) cat("locations on a grid.\n")
+          step <- min(unlist(step))
+        } else {          
+          if (printlevel>PL_IMPORTANT) cat("locations not on a grid.\n")
+          dim <- ct$Zeit + ct$spatialdim
+          inv.lambda <- prod(edge.lengths) / ct$restotal
+          step <- inv.lambda^(1 / dim) # Ann: glm Gitter
+          ## Ann: Poisson Punktprozess, Leerwk != p (heuristisch =0.5)
+          ##      nach radius R aufgeloest (heuristisch mit 2 multipliziert)
+          ## step <- 2 * (invlambda * log(2) * gamma(dim / 2 + 1))^(1 / dim) / sqrt(pi)
+        }
+      }
+      bin <- seq(step / 2, end, step)
+    }
+
+ #   Print(bin, step, end, edge.lengths)
+     
     ev <- RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=ct$grid,
                              bin=bin, spConform=FALSE)
-    idx <-  is.finite(l.binvario <- log(ev$emp))
-    l.midbins <- log((ev$centers[idx])[1:vario.n])
-    l.binvario <- (l.binvario[idx])[1:vario.n]
-  }
 
-  
+    idx <-  which(is.finite(l.binvario <- log(ev$emp)))
+    if (length(idx) < vario.n) {
+      note <- if (length(idx) <= 1) stop else warning
+      if (bin.not.given) 
+        note("A good choice for 'bin' was not found. Please try out the arguments manually. Current value is 'bin = ", paste(bin, collapse=", "), "' so that only the bin(s) with center value ", paste(l.binvario[idx], collapse=", "), " possess values of the variogram cloud.")
+      else
+        note("Current value of 'bin' leads to ", length(idx), " values for the empirical variogram. Consider trying out different arguments.")
+    }
+
+    idx <- idx[1:vario.n]
+    l.midbins <- log(ev$centers[idx])
+    l.binvario <- l.binvario[idx]
+
+  }
 
   if (ct$grid) {
     dimen <- cbind(ct$x, ct$T)[3, ] 

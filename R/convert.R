@@ -636,10 +636,10 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     ##if (len == 1) stop("Use grid=FALSE if only a single point is simulated")
   }
  
-  if (!grid) { ## not grid
+  if (!grid) {
     restotal <- nrow(x)
     if (length(y)==0) {
-      if (restotal < 200 && any(as.double(dist(x)) == 0)) {## 2000
+      if (restotal < 200 && any(as.double(dist(x)) == 0)) {
         d <- as.matrix(dist(x))
         diag(d) <- 1
         idx <-  which(as.matrix(d) ==0)
@@ -896,7 +896,7 @@ StandardizeData <- function(model,
       dimensions <- c(dimensions, data[[i]]@.RFparams$vdim)
       if (RFopt$general$vdim_close_together) dimensions <- rev(dimensions)
       dimdata <- rbind(dimdata, c(dimensions, data[[i]]@.RFparams$n))      
-      tmp <- rfspDataFrame2conventional(data[[i]])
+      tmp <- RFspDataFrame2conventional(data[[i]])
       
       xi$x <- tmp$x
       if (!is.null(tmp$T)) xi$T <- tmp$T

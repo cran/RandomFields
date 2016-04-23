@@ -168,6 +168,16 @@ brack <- function(x, i, j, ..., drop=FALSE) {
 }
 
 
+brack2 <- function(x, i, j, ..., value) {
+  dots = list(...)
+  if (length(dots)>0) warning("dots are ignored")
+  if (missing(j)) 
+    x@data[i] <- value
+  else
+    x@data[i,j] <- value
+  return(x)
+}
+
 
 
 cbind_RFsp <- function(...) {  ##copied from sp package
@@ -231,6 +241,7 @@ extract.names <- function(names) {
 
 
 
+## Coerce Objects #########################################################
 spatialGridObject2conventional <- function(obj, data.frame=FALSE) {
   timespacedim <- length(obj@grid@cells.dim)
   data <- as.matrix(obj@data)
@@ -295,10 +306,28 @@ spatialGridObject2conventional <- function(obj, data.frame=FALSE) {
   return(list(data=data, x=x, T=T, .RFparams=.RFparams, .names=names))
 }
 
+as.data.frame.RFpointsDataFrame <-
+  as.data.frame.RFspatialPointsDataFrame <- function(x, ...) {
+  #str(x); kkkk
+  cbind(x@data, x@coords)
+}
+as.data.frame.RFgridDataFrame <-
+  as.data.frame.RFspatialGridDataFrame <- function(x, ...) 
+  spatialGridObject2conventional(x, TRUE)
+
+setAs("RFspatialPointsDataFrame", "data.frame",
+      function(from, to) from@data
+)
+setAs("RFspatialGridDataFrame", "data.frame",
+      function(from, to) spatialGridObject2conventional(from, TRUE)$data
+)
+
+
+
 spatialPointsObject2conventional <- function(obj) {
   data <- as.matrix(obj@data)
   Enames <- names <- colnames(data)
-  
+
   has.variance <-
     !is.null(obj@.RFparams$has.variance) && obj@.RFparams$has.variance
   dim(data) <- NULL
@@ -315,8 +344,15 @@ spatialPointsObject2conventional <- function(obj) {
 
   x <- obj@coords
   dimnames(x) <- NULL
-  if (dimensions(obj)==1 ||
-      !(ZF_GENERAL_COORD_NAME[2] %in% colnames(obj@coords))) {
+  idxT1 <- which(ZF_GENERAL_COORD_NAME[2] == colnames(obj@coords))
+
+#  Print(obj,ZF_GENERAL_COORD_NAME, colnames(obj@coords), length(idxT1),
+ #       length(obj@.RFparams$T))
+#  print(dimensions(obj))
+#  print(!(ZF_GENERAL_COORD_NAME[2] %in% colnames(obj@coords)))
+#  oooooo
+  
+  if (dimensions(obj)==1 || length(idxT1) + length(obj@.RFparams$T) == 0) {
     T <- NULL
     is.dim <- dim(data) != 1
     if (sum(is.dim) > 1) {    
@@ -327,11 +363,22 @@ spatialPointsObject2conventional <- function(obj) {
       ##names(data) <- names
     }  
   } else {
-    idxT1 <- which(ZF_GENERAL_COORD_NAME[2] == colnames(obj@coords))
-    T <- sp::points2grid(RFpointsDataFrame(coords=unique(x[, idxT1]),
-                                           data=double(length(unique(x[,idxT1]))),
-                                           RFparams=obj@.RFparams))
+    if (length(idxT1) == 0) idxT1 <- dimensions(obj)
     dimdata <- dim(data)
+#    Print(dimdata)
+
+    stopifnot(length(idxT1) == 1 || length(dimdata) != dimensions(obj))
+    RFparams <- obj@.RFparams
+    RFparams$n <- 1
+    
+ #   str(x)
+    #Print(class(x), x, idxT1, x[, idxT1], coords=unique(x[, idxT1]),
+   #       data=double(length(unique(x[,idxT1]))), RFparams)
+    rpdf <- RFpointsDataFrame(coords=unique(x[, idxT1]),
+                              data=double(length(unique(x[,idxT1]))),
+                              RFparams=RFparams)
+    T <- sp::points2grid(rpdf)
+    
     if (obj@.RFparams$vdim==1) {
       dim(data) <- c(dimdata[1]/T@cells.dim, T@cells.dim, dimdata[-1:-2])
       dimnames(data) <- list(NULL,
@@ -348,17 +395,28 @@ spatialPointsObject2conventional <- function(obj) {
     x <- x[1:(nrow(x)/T@cells.dim), -idxT1, drop=FALSE]
     T <- c(T@cellcentre.offset, T@cellsize, T@cells.dim)
   }
+
+#  Print(data=data, x=x, T=T, .RFparams=obj@.RFparams)
+  
   return(list(data=data, x=x, T=T, .RFparams=obj@.RFparams))
 }
 
 
-rfspDataFrame2conventional <- function(obj) {
-  if (is(obj, "RFspatialPointsDataFrame") || is(obj, "RFpointsDataFrame"))
-    return(spatialPointsObject2conventional(obj))
-  else if (is(obj, "RFspatialGridDataFrame") || is(obj, "RFgridDataFrame"))
-    return(spatialGridObject2conventional(obj))
-  else stop("unknown class in 'RFspDataFrame2conventional'")
-}
+## convert 'RFsp' objects to conventional format of 'RFsimulate',
+## i.e. data is an array and x a matrix of coordinates or gridtriple defs.
+
+setGeneric(name = "RFspDataFrame2conventional", 
+           function(obj, ...) standardGeneric("RFspDataFrame2conventional"))
+setMethod("RFspDataFrame2conventional",
+          signature=c("RFspatialGridDataFrame"),
+          definition=spatialGridObject2conventional)
+setMethod("RFspDataFrame2conventional", signature=c("RFgridDataFrame"),
+          definition=spatialGridObject2conventional)
+setMethod("RFspDataFrame2conventional",
+          signature=c("RFspatialPointsDataFrame"),
+          definition=spatialPointsObject2conventional)
+setMethod("RFspDataFrame2conventional", signature=c("RFpointsDataFrame"),
+          definition=spatialPointsObject2conventional)
 
 
 

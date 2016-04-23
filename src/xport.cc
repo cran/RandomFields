@@ -4,7 +4,7 @@
 
  Simulation of a random field by Cholesky or SVD decomposition
 
- Copyright (C) 2015 -- Martin Schlather, 
+ Copyright (C) 2015 -- 2016 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

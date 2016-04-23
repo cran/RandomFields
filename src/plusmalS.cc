@@ -1221,8 +1221,10 @@ int checkS(cov_model *cov) {
 	if (idx <= 0) 
 	  SERR1("only positive values allowed for '%s'", KNAME(DPROJ));
 	if (idx > xdimown)
-	  SERR3("%d-th value of '%s' (%d) out of range", 
-		i, KNAME(DPROJ), PINT(DPROJ)[i]);
+	  SERR4("%d%s value of '%s' (%d) out of range", 
+		i + 1,
+		i == 0 ? "st" : i == 1 ? "nd" : i == 2 ? "rd" : "th",
+		KNAME(DPROJ), PINT(DPROJ)[i]);
 	for (j=i+1; j<nproj; j++) {
 	  if (PINT(DPROJ)[j] == idx) { BUG;
 	    SERR1("values of '%s' must be distinct.", KNAME(DPROJ));
@@ -2808,7 +2810,10 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     *next = cov->sub[DOLLAR_SUB],
     *Scale = cov->kappasub[DSCALE],
     *Aniso = cov->kappasub[DAUSER];
-  int dim, err; 
+  int
+    dim = Gettimespacedim(cov), 
+    newdim = dim,
+    err; 
   // cov_model *sub;
    assert(isDollarProc(cov));
 
@@ -2829,27 +2834,31 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     if (Aniso!= NULL) {
       //A
       // crash();
-      Transform2NoGrid(cov, false, true, true); 
-       
-      location_type *loc = Loc(cov); // do not move before Transform2NoGrid!!
-      dim = loc->timespacedim;
+      TransformLoc(cov, false, true, true); 
+      newdim = Aniso->vdim[0];
+      if (newdim != dim) 
+	ERR("change of dimension in struct S not programmed yet");
+      
+      location_type *loc = Loc(cov); // do not move before TransformLoc!!
       int 
-	bytes = dim * sizeof(double);
+	bytes = newdim * sizeof(double);
       long i,
 	total = loc->totalpoints;
       
       //      PMI(Aniso);
       //      printf("%d\n", dim);
       
-      if (dim != Aniso->vdim[0]) BUG;
-      double *v = NULL,
-	*x = loc->x;
+       double *v = NULL,
+	 *x = loc->x,
+	 *xnew = x; // not correct for newdim != dim;
+       //              instead partial_loc_set should be used to reset loc
       assert(x != NULL);
       assert(!loc->grid);
+      
       if ((v = (double*) MALLOC(bytes)) == NULL) return ERRORMEMORYALLOCATION;
-      for (i=0; i<total; i++, x+=dim) {
+      for (i=0; i<total; i++, x+=dim, xnew += newdim) {
 	FCTN(x, Aniso, v);
-	MEMCOPY(x, v, bytes);
+	MEMCOPY(xnew, v, bytes);
       }
       FREE(v);
     } else if (Scale != NULL && !isRandom(Scale)) {
@@ -2857,29 +2866,30 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     } else {
       //pmi(cov, 0);      printf("next==intern %d\n", next->nr == TBM_PROC_INTERN);
 
-    
-      Transform2NoGrid(cov, true, // timesep
-		       next->nr == TBM_PROC_INTERN ||
-		       next->nr == NUGGET || 
-		       next->nr == NUGGET_USER ||
-		       next->nr == NUGGET_INTERN 
-		       ? false : GRIDEXPAND_AVOID, 
-		       true); // involveddollar
-     }
+      int  gridexpand = next->nr == TBM_PROC_INTERN || next->nr == NUGGET || 
+	next->nr == NUGGET_USER || next->nr == NUGGET_INTERN 
+	? false : GRIDEXPAND_AVOID;
+
+      //print("here %d %d\n", (int) gridexpand, (int) GRIDEXPAND_AVOID);
+      TransformLocReduce(cov, true /* timesep*/, gridexpand, 
+			 true /* involveddollar */);
+      newdim = Gettimespacedim(cov);
+      //APMI(cov);
+    }
     //  APMI(cov);
  
     if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
 
   
-    if (!isGaussProcess(next)) addModel(&(cov->key), GAUSSPROC);
+    if (!isGaussProcess(cov->key)) addModel(&(cov->key), GAUSSPROC);
     SetLoc2NewLoc(cov->key, PLoc(cov));
     
     cov_model *key;
     key = cov->key;
     assert(key->calling == cov);    
     
-    dim = PrevLoc(key)->timespacedim;
-    if ((err = CHECK_NO_TRAFO(key, dim, dim, ProcessType, XONLY,
+    //dim = PrevLoc(key)->timespacedim;
+    if ((err = CHECK_NO_TRAFO(key, newdim, newdim, ProcessType, XONLY,
 			      CoordinateSystemOf(cov->Sdollar->isoown),
 			      cov->vdim[0], cov->role)) != NOERROR) {
       return err;
@@ -2887,7 +2897,7 @@ int structSproc(cov_model *cov, cov_model **newmodel) {
     err = STRUCT(key, NULL);
     //   MERR(err);
     //   APMI(key);
-   return err;
+    return err;
   default :
     SERR2("%s: changes in scale/variance not programmed yet for '%s'", 
 	  NICK(cov), ROLENAMES[cov->role]);      
@@ -2907,15 +2917,15 @@ int initSproc(cov_model *cov, gen_storage *s){
   //cov_model *next = cov->sub[DOLLAR_SUB];
   //mppinfotype *info = &(s->mppinfo);
   //  location_type *loc = cov->prevloc;
-  int 
-    err = NOERROR;
-
-  //  assert(false);
-  
   cov_model 
     *key = cov->key;
     //*sub = key == NULL ? next : key;
   location_type *prevloc = PrevLoc(cov);
+
+  int 
+    prevdim = prevloc->timespacedim,
+    dim = Gettimespacedim(cov),
+    err = NOERROR;
 
   assert(key != NULL);
   
@@ -2928,10 +2938,15 @@ int initSproc(cov_model *cov, gen_storage *s){
 
   cov->fieldreturn = true;
 
-  if ((cov->origrf = cov->ownloc != NULL &&
-       Loc(cov)->totalpoints != prevloc->totalpoints)) {
-    assert(prevloc->grid);
-    int dim = prevloc->timespacedim;
+  // APMI(cov->calling->calling->calling->calling->calling->calling);
+  //  printf("%d, %d %d\n",cov->ownloc != NULL, Loc(cov)->totalpoints, prevloc->totalpoints);
+
+
+
+  if ((cov->origrf = cov->ownloc != NULL && prevdim > dim)) {
+
+    // printf("hier\n");
+
     if (cov->vdim[0] != cov->vdim[1]) BUG;
     cov->rf = (double*) MALLOC(sizeof(double) *
 				 cov->vdim[0] * 
@@ -2940,48 +2955,76 @@ int initSproc(cov_model *cov, gen_storage *s){
  
     int d,
       *proj = PINT(DPROJ),
-      bytes = dim * sizeof(int),
+      bytes = prevdim * sizeof(int),
       *cumsum = cov->Sdollar->cumsum = (int*) MALLOC(bytes),
       *total = cov->Sdollar->total = (int*) MALLOC(bytes),
       *len = cov->Sdollar->len = (int*) MALLOC(bytes);     
     cov->Sdollar->nx = (int*) MALLOC(bytes); 
     
-    for (d=0; d<dim; d++) {
-      cumsum[d] = 0;
-      len[d] = prevloc->xgr[d][XLENGTH];
-    }
-    if (proj != NULL) {
-      int 
-	nproj = cov->nrow[DPROJ];
-      d = 0;
-      cumsum[proj[d] - 1] = 1;
-      for (d = 1; d < nproj; d++) {
-	cumsum[proj[d] - 1] =
-	  cumsum[proj[d - 1] - 1] * prevloc->xgr[d - 1][XLENGTH];
+    if (prevloc->grid) {
+      for (d=0; d<prevdim; d++) {
+	cumsum[d] = 0;
+	len[d] = prevloc->xgr[d][XLENGTH];
       }
-      for (d=0; d<dim;d++) 
-	total[d] = cumsum[d] * prevloc->xgr[d][XLENGTH];
-    } else {
-      int i,
-	iold = 0,
-	nrow = cov->nrow[DANISO],
-	ncol = cov->ncol[DANISO];
-      double *A = P(DANISO);
-      for (d=0; d<ncol; d++, A += nrow) {
-	for (i = 0; i < nrow && A[i] == 0.0; i++);
-	if (i == nrow) i = nrow - 1;
-	if (d > 0) {
-	  cumsum[i] = cumsum[iold] * prevloc->xgr[d - 1][XLENGTH];
-	} else { // d ==0
-	  cumsum[i] = 1;
+      if (proj != NULL) {
+	int 
+	  nproj = cov->nrow[DPROJ];
+	d = 0;
+	assert(proj[d] > 0);
+	cumsum[proj[d] - 1] = 1;
+	for (d = 1; d < nproj; d++) {
+	  cumsum[proj[d] - 1] = cumsum[proj[d - 1] - 1] * len[d-1];
 	}
-	iold = i;
-	for (i++; i < nrow; i++) if (A[i] != 0.0) BUG;  // just a check
+      } else {
+	int i,
+	  iold = 0,
+	  nrow = cov->nrow[DANISO],
+	  ncol = cov->ncol[DANISO];
+	double *A = P(DANISO);
+	for (d=0; d<ncol; d++, A += nrow) {
+	  for (i = 0; i < nrow && A[i] == 0.0; i++);
+	  if (i == nrow) i = nrow - 1;
+	  if (d > 0) {
+	    cumsum[i] = cumsum[iold] * len[d-1];
+	  } else { // d ==0
+	    cumsum[i] = 1;
+	  }
+	  iold = i;
+	  for (i++; i < nrow; i++) if (A[i] != 0.0) BUG;  // just a check
+	}
       }
+      
+    } else { // !prevloc->grid
+      if (!prevloc->Time) goto Standard;
+      len[0] = prevloc->spatialtotalpoints;
+      len[1] = prevloc->T[XLENGTH];
+      int nproj = cov->nrow[DPROJ];
+      if (proj[0] != prevdim) { // spatial
+	for (d=1; d<nproj; d++) if (proj[d] == prevdim) goto Standard;
+	cumsum[0] = 1;
+	cumsum[1] = 0;
+	//	pmi(cov->calling->calling->calling->calling->calling->calling, 0); APMI(cov);    
+ 
+      } else {
+	if (nproj != 1) goto Standard;
+	cumsum[0] = 0;
+	cumsum[1] = 1;   
+
+	//pmi(cov->calling->calling->calling->calling->calling->calling, 0);
+	//PMI(cov);    
+      }
+      prevdim = 2;
     }
-  } else {
-    cov->rf = cov->key->rf;
+    for (d=0; d<prevdim; d++) total[d] = cumsum[d] * len[d];
+    return NOERROR;
   }
+
+ Standard:
+  cov->origrf = false;
+  cov->rf = cov->key->rf;
+
+  //printf("cumsum %d\n", cov->Sdollar->cumsum[1]);
+  //PMI(cov);
   return NOERROR;
 }
 
@@ -3042,20 +3085,20 @@ void doSproc(cov_model *cov, gen_storage *s){
   
   else BUG;
  
-  if (cov->origrf) { // unklar was hier los ist; res bekommt nur einen kleineren  Teil
-    if (vdim != 1) BUG;
-    assert(PrevLoc(cov)->grid);
+  if (cov->origrf) { // es wird in cov->key->rf nur 
+    // der projezierte Teil simuliert. Dieser Teil
+    // muss auf das gesamte cov->rf hochgezogen werden
+    //if (vdim != 1) BUG;
     int zaehler, d,
-      dim = PrevLoc(cov)->timespacedim,
+      dim = PrevLoc(cov)->grid ? PrevLoc(cov)->timespacedim : 2,
+      prevtotalpts = PrevLoc(cov)->totalpoints,
+      owntotalpts =  Loc(cov)->totalpoints,
       *cumsum = cov->Sdollar->cumsum,
       *nx = cov->Sdollar->nx,
       *len = cov->Sdollar->len,
       *total = cov->Sdollar->total;
-    assert(cov->key != NULL);
-    double
-      *res = cov->rf,
-      *rf = cov->key->rf;
     
+    assert(cov->key != NULL);
     assert(nx != NULL && total != NULL && cumsum != NULL);
     for (d=0; d<dim; d++) {
       nx[d] = 0;
@@ -3063,19 +3106,23 @@ void doSproc(cov_model *cov, gen_storage *s){
     zaehler = 0;
     i = 0;      
     
-    while (true) {
-      res[i++] = rf[zaehler];
-      d = 0;			
-      nx[d]++;			
-      zaehler += cumsum[d];	
-      while (nx[d] >= len[d]) {	
-	nx[d] = 0;		
-	zaehler -= total[d];
-	if (++d >= dim) break;	
+    for (int v=0; v<vdim; v++) {
+      double *res = cov->rf + v * prevtotalpts,
+	*rf = cov->key->rf + v * owntotalpts;
+      while (true) {
+	res[i++] = rf[zaehler];
+	d = 0;			
 	nx[d]++;			
-	zaehler += cumsum[d];					
+	zaehler += cumsum[d];	
+	while (nx[d] >= len[d]) {	
+	  nx[d] = 0;		
+	  zaehler -= total[d];
+	  if (++d >= dim) break;	
+	  nx[d]++;			
+	  zaehler += cumsum[d];					
+	}
+	if (d >= dim) break;			
       }
-      if (d >= dim) break;			
     }
   }
 

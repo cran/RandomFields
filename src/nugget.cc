@@ -341,7 +341,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       if ((pos = (int*) MALLOC(sizeof(int) * loc->totalpoints)) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
-      Transform2NoGrid(cov, false, true, true);
+      TransformLoc(cov, false, true, true);
       loc = Loc(cov); 
       ordering(loc->x, loc->totalpoints, dim, pos);
 

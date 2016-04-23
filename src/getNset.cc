@@ -2505,8 +2505,7 @@ double *getAnisoMatrix(cov_model *cov, bool null_if_id, int *nrow, int *ncol) {
     ani = (double *) CALLOC(total, sizeof(double));
     for (i=0; i<total; i+=dimP1) ani[i] = a;
     *nrow = *ncol = origdim;
- }
-
+  }
   return ani;
 }
 
@@ -2806,8 +2805,10 @@ void grid2grid(coord_type xgr, double **grani, double *aniso, int origdim, int d
     for (d=0; d<dim; d++, pgr += 3) {
       //printf("%d %d\n", d, origdim);
       A = aniso + d * origdim;
-      //      printf("%f %f\n", aniso[0], A[0]);
-     for (i=0; i<origdimM1; i++, A++) if (*A != 0.0) break;    
+      //      printf("%f %f %d\n", aniso[0], A[0], origdimM1);
+      for (i=0; i<origdimM1; i++, A++) if (*A != 0.0) break;    
+      //printf("A=%f %d \n", A[0], i);
+      //printf("X=%f\n", xgr[i][XSTART]);
       pgr[XSTART] = xgr[i][XSTART] * *A;
       pgr[XSTEP] = xgr[i][XSTEP] * *A;
       pgr[XLENGTH] = xgr[i][XLENGTH];
@@ -2872,12 +2873,14 @@ void xtime2x(double *x, int nx, double *T,
 
 
 void x2x(double *x, int nx, double **newx, 
-	 double *aniso, int nrow, int ncol) {
+	 double *aniso, int physical_nrow, int nrow, int ncol) {
   double *y = x, // umhaengen zwingend notwendig, da u.U. **xx und *newx
     // der gleiche aufrufende Pointer ist, d.h. es wird "ueberschrieben"
     *z, dummy;
   int k, i, d, n, endfor, w,
       nxnrow = nx * nrow;
+
+  //    printf("x2x %d x %d  %d %d\n", nrow, ncol, nxnrow, nrow); BUG;
 
   z = *newx = (double*) MALLOC(sizeof(double) * ncol * nx);  
   if (aniso == NULL) {
@@ -2886,9 +2889,12 @@ void x2x(double *x, int nx, double **newx,
   } else {
     for (k=i=0; i<nxnrow; i+=nrow) {
       endfor = i + nrow;
-      for (n=d=0; d<ncol; d++) {
+      for (d=0; d<ncol; d++) {
+	n = physical_nrow * d;
         dummy = 0.0;
 	for(w=i; w<endfor; w++) {
+	  //  printf("   n=%d %f\n", n, aniso[n]);
+	  //  printf("   w=%d %f %d\n", w, y[w], endfor);
 	  dummy += aniso[n++] * y[w];
 	}
 	z[k++] = dummy; 
@@ -2985,7 +2991,8 @@ matrix_type Type(double *M, int nrow, int ncol) {
 	return (type == TypeMproj || k==0 || type == TypeMiso)
 		// (type == TypeMiso && M[0] == 1.0))
 	  && R_FINITE(m[i]) //&& m[i] == 1.0 
-	  ? TypeMproj : TypeMany;
+	  ?  TypeMproj
+	  : TypeMany;
       } else {
 	// korrekt ???
 	return type == TypeMproj 
@@ -3021,13 +3028,15 @@ matrix_type Type(double *M, int nrow, int ncol) {
 
 
  
-void Transform2NoGridExt(cov_model *cov, bool timesep, 
-			 int gridexpand, // false, true, GRIDEXPAND_AVOID
-			 double **grani, double **SpaceTime, 
-			 double **caniso, int *Nrow, int *Ncol,//caniso obsolete
-			 bool *Time, bool *grid, int *newdim, bool takeX,
-			 bool involvedollar) {
+void TransformLocExt(cov_model *cov, bool timesep, 
+		     int gridexpand, // false, true, GRIDEXPAND_AVOID
+		     bool same_nr_of_points,
+		     double **grani, double **SpaceTime, 
+		     double **caniso, int *Nrow, int *Ncol,//caniso obsolete
+		     bool *Time, bool *grid, int *newdim, bool takeX,
+		     bool involvedollar) {
   // this fctn transforms the coordinates according to the anisotropy matrix 
+  // tbm TransformLoc-Aufruf im prinzip kritisch
   
   location_type *loc = Loc(cov);
   bool isdollar = isAnyDollar(cov) && involvedollar;
@@ -3047,7 +3056,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
   if (x==NULL && (*xgr)[0] ==NULL) ERR("locations are all NULL");
  
   *newdim = dim;
-  //  printf("dim %d %d %d\n", dim , origdim, loc->spatialdim); 
+  //    printf("dim %d %d %d\n", dim , origdim, loc->spatialdim); 
 
   *caniso = NULL;
   *Nrow = *Ncol = -1;
@@ -3078,6 +3087,8 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
   }
 
   type = aniso == NULL ? TypeMiso : Type(aniso, origdim, dim);
+  //  printf("type = %d\n", type);
+
   *Time = loc->Time;
   *grid = false;
 
@@ -3088,7 +3099,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
     if (gridexpand==true || (gridexpand==GRIDEXPAND_AVOID && !isMproj(type))) { 
       if (timesep && isMtimesep(type) && *Time) {
 	// space
-	//print("%ld %d %d;\n", aniso, nrow, ncol); BUG;
+	//print("%ld %d %d;\n", aniso, nrow, ncol);
 	
 	//	printf("aniso=%f %f %f\n %f %f %f\n %f %f %f\n;  %d %d\n", aniso[0], aniso[1],aniso[2], aniso[3], aniso[4], aniso[5], aniso[6], aniso[7], aniso[8], nrow, ncol);
 	expandgrid(*xgr, SpaceTime, aniso, nrow - 1, nrow, ncol - 1);	  
@@ -3100,10 +3111,7 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
 	*Time = false;// time is also expanded, if given
 	expandgrid(*xgr, SpaceTime, aniso, nrow, nrow, ncol); 
       }
-    } else if (isMproj(type)) {
-
-      //	BUG;
-
+    } else if (isMproj(type) && (!same_nr_of_points || ncol==nrow)) {
       // grid wird multipliziert und/oder umsortiert
       grid2grid(*xgr, grani, aniso, nrow, ncol);
       *grid = true;	
@@ -3126,18 +3134,38 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
       return; // hier rausgehen!
     }
   } else { // nogrid
-    if (!loc->Time) { // no grid no time
-      x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, ncol); 
-    } else { // no grid but time
-      if (timesep && isMtimesep(type)) {
-	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, ncol-1);
-	grid2grid((*xgr) + loc->spatialdim, grani, 
-		  aniso + nrow * nrow - 1, 1, 1);
-      } else {
-	xtime2x(x, loc->spatialtotalpoints, T, SpaceTime,
-		aniso, nrow, ncol);
+
+    //APMI(cov->calling->calling->calling->calling->calling->calling);
+    // APMI(cov);
+    //   printf("Time = %d %d %d type=%d %d\n", *Time, timesep, isMtimesep(type), type,TypeMtimesepproj);
+    //    printf("aniso %f %f %f\n", aniso[0], aniso[1], aniso[2]);
+    //if (dim==1) BUG;
+
+    if (! *Time) { // no grid no time
+      x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow, ncol); 
+    } else if (timesep && isMtimesep(type)) {  // no grid, but timesep
+      //PMI(cov); 
+      //printf("%d %d %d\n", same_nr_of_points && ncol, nrow);
+      if (same_nr_of_points && ncol!=nrow) { // do not reduce
+	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow-1, ncol-1);
+	grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);	
+      } else  if (aniso != NULL && aniso[nrow * ncol - 1]==0.0) {//no time comp 
+	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, ncol);
 	*Time = false;
+      } else { // both time and space are left, and time is separated
+	x2x(x, loc->spatialtotalpoints, SpaceTime, aniso, nrow, nrow - 1, 
+	    ncol - 1);
+	grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);
       }
+    } else if (ncol == 1 && type == TypeMproj && aniso[nrow - 1] && 
+	       !same_nr_of_points) { //only time component left
+      assert(nrow != ncol);
+      *Time = false;
+      *grid = true;
+      grid2grid(&T, grani, aniso==NULL ? NULL : aniso + nrow*ncol - 1, 1, 1);
+    } else { // no grid, but time, no timesep || not isMtimesep(type)
+      xtime2x(x, loc->spatialtotalpoints, T, SpaceTime, aniso, nrow, ncol);
+      *Time = false;
     }
   }
 
@@ -3147,8 +3175,8 @@ void Transform2NoGridExt(cov_model *cov, bool timesep,
 }
 
 
-void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand, 
-		      bool involvedollar) {
+void TransformCovLoc(cov_model *cov, bool timesep, int gridexpand, 
+		     bool same_nr_of_points, bool involvedollar) {
   location_type *loc = PrevLoc(cov); // transform2nogrid
   assert(loc != NULL);
   bool Time, grid;
@@ -3160,15 +3188,17 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand,
     *x = NULL,
     *caniso = NULL;
 
+  //printf("%s %s %d\n", NAME(cov), NAME(cov->sub[0]), Loc(cov)->spatialdim);
+
   if ((loc->y != NULL && loc->y != loc->x) || 
       (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0])) {
     ERR("unexpected y coordinates");
   }
 
   assert(cov->prevloc != NULL);
-  Transform2NoGridExt(cov, timesep, gridexpand, &xgr, &x, 
-		      &caniso, &nrow, &ncol, &Time, &grid, &spacedim, true,
-		      involvedollar);
+  TransformLocExt(cov, timesep, gridexpand, same_nr_of_points, &xgr, &x, 
+		  &caniso, &nrow, &ncol, &Time, &grid, &spacedim, true,
+		  involvedollar);
   
   if (Time) spacedim--;
   assert(cov->ownloc == NULL);
@@ -3186,8 +3216,6 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand,
     assert(Time);
     err = loc_set(xgr, NULL, 1, 1, 3, false, true, false, cov);  
   }
-
-
  
   // falls not gridexpand und nicht diag bzw. proj
   location_type *ownloc = Loc(cov);
@@ -3203,13 +3231,24 @@ void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand,
 }
 
 
-int Transform2NoGrid(cov_model *cov, double **xx, 
-		      bool involvedollar) {
+void TransformLoc(cov_model *cov, bool timesep, int gridexpand, 
+		  bool involvedollar) {
+  TransformCovLoc(cov, timesep, gridexpand, true, involvedollar);
+}
+
+
+void TransformLocReduce(cov_model *cov, bool timesep, int gridexpand, 
+			bool involvedollar) {
+  TransformCovLoc(cov, timesep, gridexpand, false, involvedollar);
+}
+
+
+int TransformLoc(cov_model *cov, double **xx, bool involvedollar) {
   bool Time, grid;
   int newdim, nrow, ncol;
   double *caniso = NULL,
     *SpaceTime = NULL;
-  Transform2NoGridExt(cov, false, true, &SpaceTime, xx, 
+  TransformLocExt(cov, false, true, true, &SpaceTime, xx, 
 		      &caniso, &nrow, &ncol, &Time, &grid, &newdim, true,
 		      involvedollar); 
   assert(caniso == NULL && SpaceTime ==NULL);
@@ -3217,25 +3256,22 @@ int Transform2NoGrid(cov_model *cov, double **xx,
 }
 
 
-int Transform2NoGrid(cov_model *cov, double **xx, double **yy, 
+int TransformLoc(cov_model *cov, double **xx, double **yy, 
 		      bool involvedollar) {
   location_type *loc = Loc(cov);
   bool Time, grid;
   int newdim, nrow, ncol;
   double *caniso = NULL,
     *SpaceTime = NULL;
-  Transform2NoGridExt(cov, false, true,  &SpaceTime, xx,
-		      &caniso,&nrow, &ncol, &Time, &grid, &newdim, true,
-		      involvedollar); 
+  TransformLocExt(cov, false, true, true, &SpaceTime, xx, &caniso,&nrow, &ncol,
+		  &Time, &grid, &newdim, true, involvedollar); 
   assert(caniso == NULL && SpaceTime ==NULL);
   if (loc->y == NULL && loc->ygr[0] == NULL) *yy = NULL;
-  else Transform2NoGridExt(cov, false, true, &SpaceTime, yy, 
-			   &caniso, &nrow, &ncol, &Time, &grid, &newdim, false,
-			   involvedollar);
+  else TransformLocExt(cov, false, true, true, &SpaceTime, yy, &caniso, &nrow,
+			&ncol, &Time, &grid, &newdim, false, involvedollar);
   assert(caniso == NULL && SpaceTime ==NULL);
   return newdim;
 }
-
 
 
 double *selectlines(double *m, int *sel, int nsel, int nrow, int ncol) {

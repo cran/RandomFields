@@ -744,9 +744,10 @@ const char * gui[guiN] =
   {"alwaysSimulate", "simu_method", "size"};
 
 const char *graphics[graphicsN]= 
-  {"always_close_screen" ,"grPrintlevel", "height", 
-   "increase_upto", "always_open_screen", "file", 
-   "onefile", "filenumber", "resolution"};
+  {"close_screen" ,"grPrintlevel", "height", 
+   "increase_upto", "always_open_device", "file", 
+   "onefile", "filenumber", "resolution", "split_screen", "width",
+  "always_close_device"};
 
 const char *registers[registersN] = 
   {"register", "predict_register", "likelihood_register"};
@@ -1357,7 +1358,7 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
  case 17: { // graphics
     graphics_param *gp = &(GLOBAL.graphics);
     switch(j) {
-    case 0 : gp->always_close = LOG; break;
+    case 0 : gp->close_screen = LOG; break;
     case 1 : gp->PL = INT; break;
     case 2 : gp->height = NUM; break;
     case GRAPHICS_UPTO : {
@@ -1385,12 +1386,16 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
       gp->onefile = LOG;
       if (!gp->onefile && onefile) gp->number = 0;
     } break;
-    case 7 :  if (!isList) {
+    case 7 :  if (!isList) { 
 	gp->number = INT; 
       }
       break;
     case 8 : gp->resolution = POSNUM; break;
-    default: BUG;
+    case 9 : gp->split_screen = LOG; break;
+    case 10 : gp->width = NUM; break;
+    case 11 : gp->always_close = INT;       
+	break;
+ default: BUG;
     }}
    break;
        /*
@@ -1552,7 +1557,11 @@ void setparameter(SEXP el, char *prefix, char *mainname, bool isList) {
   case 22: {
     solve_param *so = &(GLOBAL.solve);
     switch(j) {
-    case 0: so->sparse = NUM; break;
+    case 0: {
+      double sparse = NUM;
+      so->sparse = !R_finite(sparse) ? Nan : sparse==0.0 ? False : True ; 
+      break;
+    }
     case 1: so->spam_tol = POS0NUM; break;      
     case 2: so->spam_min_p = POS0NUM; break;      
     case SOLVE_SVD_TOL: so->svd_tol = NUM; break;        
@@ -1622,6 +1631,10 @@ SEXP ExtendedInteger(double x) {
 
 SEXP ExtendedBoolean(double x) {
   return ScalarLogical(ISNAN(x) ? NA_LOGICAL : x != 0.0);
+}
+
+SEXP ExtendedBooleanUsr(usr_bool x) {
+  return ScalarLogical((int) x);
 }
 
 
@@ -1928,7 +1941,7 @@ SEXP getRFoptions() {
   i++; {
     k = 0;
     graphics_param *p = &(GLOBAL.graphics);   
-    ADD(ScalarLogical(p->always_close));
+    ADD(ScalarLogical(p->close_screen));
     ADD(ScalarInteger(p->PL));
     ADD(ScalarReal(p->height));
     SET_VECTOR_ELT(sublist[i], k++, Int(p->increase_upto, 2, 2));
@@ -1938,7 +1951,11 @@ SEXP getRFoptions() {
     ADD(ScalarLogical(p->onefile));
     ADD(ScalarInteger(p->number));
     ADD(ScalarReal(p->resolution));
-   }
+    ADD(ScalarLogical(p->split_screen));
+    ADD(ScalarReal(p->width));
+    ADD(ScalarLogical(p->always_close == NA_INTEGER ? NA_LOGICAL
+		      : p->always_close != 0));
+  }
 
   i++; {
     k = 0;
@@ -2010,7 +2027,8 @@ SEXP getRFoptions() {
   i++; {
     k = 0;
     solve_param *p = &(GLOBAL.solve);
-    ADD(ExtendedBoolean(p->sparse));
+    // printf("sparse user interface %d %d; %d %d\n", p->sparse, ExtendedBoolean(p->sparse), NA_LOGICAL, NA_INTEGER);
+    ADD(ExtendedBooleanUsr(p->sparse));
     ADD(ScalarReal(p->spam_tol));    
     ADD(ScalarReal(p->spam_min_p));    
     ADD(ScalarReal(p->svd_tol));    

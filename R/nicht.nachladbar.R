@@ -21,12 +21,7 @@
 
 
 
-setMethod("[", signature=c("RFsp"), def=brack)
-setMethod("[", signature=c("RFspatialGridDataFrame"), def=brack)
-setMethod("[", signature=c("RFspatialPointsDataFrame"), def=brack)
-
-setMethod("[<-", signature=c("RFsp"),
-          function(x, i, j, ..., value) {
+brack2<- function(x, i, j, ..., value) {
             dots = list(...)
             if (length(dots)>0) warning("dots are ignored")
             if (missing(j)) 
@@ -34,12 +29,30 @@ setMethod("[<-", signature=c("RFsp"),
             else
               x@data[i,j] <- value
             return(x)
-          })
+          }
+
+setMethod("[", signature=c("RFgridDataFrame"), def=brack)
+setMethod("[", signature=c("RFpointsDataFrame"), def=brack)
+setMethod("[", signature=c("RFspatialGridDataFrame"), def=brack)
+setMethod("[", signature=c("RFspatialPointsDataFrame"), def=brack)
+
+setMethod("[<-", signature=c("RFgridDataFrame", "ANY", "ANY"),
+          def=brack2)
+setMethod("[<-", signature=c("RFpointsDataFrame", "ANY", "ANY"),
+          def=brack2)
+setMethod("[<-", signature=c("RFspatialGridDataFrame", "ANY", "ANY"),
+          def=brack2)
+setMethod("[<-", signature=c("RFspatialPointsDataFrame", "ANY", "ANY"),
+          def=brack2)
+
+
+
+
 
 trafo_pointsdata <- function(x, dim) {
   if (isgrid <- is(x, "RFgridDataFrame")) {
  #   Print(x)
-    x <- as(x, "RFpointsDataFrame")  ## funktioniert nicht
+    x <- grid2pts1D(x) ## x <- as(x, "RFpointsDataFrame") # funktionierte nicht
     ##    Print(x)
   } else if ((is(x, "matrix") || is(x, "data.frame")) && !missing(dim)) {
     dc <- data.columns(x, xdim = dim, force=TRUE)

@@ -907,6 +907,8 @@ typedef enum TaylorCoeff {TaylorConst, TaylorPow, TaylorExpConst,
 
 
 
+
+
 #define XLIST_X 0
 #define XLIST_Y 1
 #define XLIST_T 2
@@ -1815,10 +1817,12 @@ typedef struct covariate_storage { // cov_storage, do_storage, init_storage
 #define XSTEP 1
 #define XLENGTH 2
 
-void Transform2NoGrid(cov_model *cov, bool timesep, int gridexpand, 
+void TransformLoc(cov_model *cov, bool timesep, int gridexpand, 
 		      bool involvedollar);
-int Transform2NoGrid(cov_model *cov, double **xx, bool involvedollar);
-int Transform2NoGrid(cov_model *cov, double **xx, double **yy,
+void TransformLocReduce(cov_model *cov, bool timesep, int gridexpand, 
+			bool involvedollar);
+int TransformLoc(cov_model *cov, double **xx, bool involvedollar);
+int TransformLoc(cov_model *cov, double **xx, double **yy,
 		     bool involvedollar);
 
 ///////////////////////////////////////////////////////////////////////
@@ -2027,6 +2031,7 @@ int loc_set(double *x, double *T,
 	    long lx, bool Time, bool grid,
 	    bool distances, int n,
 	    location_type ***Loc);
+void SetLoc2NewLoc(cov_model *cov, location_type **loc);
 
 //int loc_set(cov_model *cov, long totalpoints);
 //int add_y_zero(location_type *loc);
@@ -2459,7 +2464,6 @@ void gen_DELETE(gen_storage **S);
 void crash();
 
 int checktbm_basics(cov_model *cov, bool tbmop);
-void SetLoc2NewLoc(cov_model *cov, location_type **loc);
 
 extern int gaussmethod[Forbidden + 1];
 void FFT_destruct(FFT_storage *FFT);

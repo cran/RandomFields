@@ -80,7 +80,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
      *xstart= pgs->xstart,						\
      *inc=pgs->inc,							\
      *ystart =pgs->supportmax,						\
-     *yy = NULL,		/* set by Transform2NoGrid; freed */	\
+     *yy = NULL,		/* set by TransformLoc; freed */	\
      *xx = NULL,		/* dito			   */		\
      *incy =pgs->supportcentre;						\
    if (grid) {								\
@@ -213,7 +213,7 @@ if (grid) {					\
     }									\
   } else { /* not a grid */						\
     if (trafo) {							\
-      Transform2NoGrid(cov, &xx, &yy, false);				\
+      TransformLoc(cov, &xx, &yy, false);				\
       x = xx;								\
       if (ygiven) y = yy;						\
     } else {								\

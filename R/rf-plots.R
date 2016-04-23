@@ -71,6 +71,7 @@ my.arrows <- function(xy, z, r, thinning, col, nrow) {
          y1=xy[thinned, 2] + r/2*z[thinned,2], length=0.03, col=col)
 }
 
+
 prepareplotRFsp <- function(x, vdim, select, plot.var,
                             data.range, var.range,
                             MARGIN, n,
@@ -78,15 +79,13 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
                             ...) {
 
   if (vdim == 1 && !identical(select, vdim))
-    stop("the given select.variables does not match the data")
+    stop("the given 'select.variables' do not match the data")
    
   timespacedim <-
     if (is(x, "RFspatialGridDataFrame")) length(x@grid@cellsize)
     else ncol(x@coords)
-  if (!(length(MARGIN)==2))
-    stop("MARGIN must have length 2")
-  if (!all(MARGIN %in% 1:timespacedim))
-    stop("chosen MARGINS are out of bounds")
+  if (!(length(MARGIN)==2)) stop("MARGIN must have length 2")
+  if (!all(MARGIN %in% 1:timespacedim)) stop("chosen MARGINS are out of bounds")
 
   if (!missing(zlim)){
     if (is.character(zlim)) stopifnot(zlim=="joint")
@@ -99,7 +98,6 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
     }
   }
   
- 
   coordunits=x@.RFparams$coordunits
   varunits=x@.RFparams$varunits;
 
@@ -201,8 +199,9 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
 
 
   ### Splitting & Legend Plotting
+  len.sel <- length(select)
   if (vdim>1) # note: one of n and n.slices is always equal to 1
-    split.main <- c(n * n.slices, length(select))
+    split.main <- c(n * n.slices, len.sel)
   else {
     if (n * n.slices > 1)
       split.main <- c(ceiling(n * n.slices/2), 2) else {
@@ -213,17 +212,14 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   ArrangeDevice(graphics, figs=split.main) ## NIE par() o.ae. vor ArrangeDevice !!!!
 
    
-  if (length(dev.list()) > 0 &&
-      any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## first figure appears
   par(cex=dots$cex) ## NIE par() o.ae. vor ArrangeDevice !!!!
   if (bgInDots) par(bgdots)
 
-
+ 
   
   xlab.given <-  1 - as.integer("xlab" %in% dotnames && (is.null(dots$xlab) ||
                                                          dots$xlab==""))
-  #if (always.close <- any(split.main > 1) || graphics$always_close_screen){
-  mar <- c(1,1,0,0)
+   mar <- c(1,1,0,0)
   image.par$data$mar.leg <- mar #+ c(0,0,2,0)
   image.par$var$mar.leg <- mar + c(0,0,0,0)
   oma.top <- 2*plot.legend + if (is.null(dots$main)) 0 else 2# + xlab.given
@@ -235,73 +231,66 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
   #  image.par$mar.leg <- c(1, mar[2], 2, 0) 
   #  oma <- rep(0.2, 4) + (!is.null(dots$main)) * c(0,0,2,0)
   #}
-  figs <- c(length(select), prod(split.main) / length(select))
-  
-  
-#  scr <- split.screen(rbind(c(0,1,if (plot.var) 1-image.par$lower.leg else 0,
-#                              image.par$lower.leg),
-#                            if (plot.legend) c(0, 1, image.par$lower.leg, 1),
-#                            if (plot.var && plot.legend)
-#                            c(0,1,0, 1-image.par$lower.leg)
-#                            ))
+  figs <- c(len.sel, prod(split.main) / len.sel)
 
- scr <- split.screen(rbind(
-    c(0,1, 0,
-      if (plot.var) 1-2*(1-image.par$lower.leg) else image.par$lower.leg),
-    if (plot.legend) c(0, 1, image.par$lower.leg, 1),
-    if (plot.var && plot.legend) c(0,1,1-2*(1-image.par$lower.leg),
-                                   image.par$lower.leg)
-    ))
-
-  scr.main <- matrix(nrow = figs[2],
-                     split.screen(split.main, scr[1]),
-                     byrow=TRUE) # statt nr=split.main[1]
-  scr.legends <- integer(0)
-  
+  legends <- scr <- scr.main <- scr.legends <- scr.leg <- NULL
+  if (graphics$split_screen) {  
+    SCR <- scr <- split.screen(rbind(
+        c(0,1, 0,
+          if (plot.var) 1-2*(1-image.par$lower.leg) else image.par$lower.leg),
+        if (plot.legend) c(0, 1, image.par$lower.leg, 1),
+        if (plot.var && plot.legend) c(0,1,1-2*(1-image.par$lower.leg),
+                                       image.par$lower.leg)
+        ))
+    
+    scr.main <- matrix(nrow = figs[2],
+                       split.screen(split.main, scr[1]),
+                       byrow=TRUE) # statt nr=split.main[1]
+    scr.legends <- integer(0)
+  } else {
+    if (any(split.main != 1)) {
+      par(mfcol=split.main)
+    } 
+  }
+    
   if (plot.legend) {
-    SCR <- scr
-    for (i in c("data", "var")) {
-      if (i == "var" && !plot.var) next
-      SCR <- SCR[-1]
-      screen(SCR[1])
-
-      scr.leg <- split.screen(figs=c(1, length(select)))
-      scr.legends <- c(scr.legends, scr.leg)
-      
-     for (jx in 1:length(scr.leg)) {
-        j <- if (is.list(select)) select[[jx]] else select[jx]
-        screen(scr.leg[jx])
-        par(oma=oma, mar=image.par[[i]]$mar.leg)
-        if (!is.list(select) || length(select[[jx]]) != 2) {
-          lab <- xylabs("", "", units=coordunits)
-          im.col <- image.par[[i]]$col[[1+(jx-1) %% length(image.par[[i]]$col)]]
-
-          
-          
-          if (length(im.col) == 1)
-            stop("number of colours is one -- please choose an appropriate colour palette. Maybe 'RFpar(col=NULL)' will help.")
-          image(x=image.par[[i]]$z.legend[, j[1]], y=c(0,1),
-                z=matrix(ncol=2, rep(image.par[[i]]$z.legend[, j[1]], 2)),
-                axes=FALSE, xlab=lab$x, ylab=lab$y, col=im.col                
-              )
-          
-          axis(3, mgp=if (plot.var) c(3,0,0), hadj=if (plot.var) -0.5 else NA)#1 + 2 * (i =="data"))
-          box()
+    legends <- list(do = if (is.list(select)) sapply(select, length) != 2
+                         else rep(TRUE, len.sel),  units=coordunits)
+    for (i in c("data", if (plot.var) "var")) {
+      if (graphics$split_screen) {  
+        SCR <- SCR[-1]
+        screen(SCR[1])        
+        scr.leg <- split.screen(figs=c(1, len.sel))
+        scr.legends <- c(scr.legends, scr.leg)
+        for (jx in 1:length(scr.leg)) {
+          screen(scr.leg[jx])
+          par(oma=oma, mar=image.par[[i]]$mar.leg)
         }
       }
+      col <- image.par[[i]]$col
+      col <- sapply(1:len.sel, function(jx) col[[1+(jx-1) %% length(col)]],
+                    simplify=FALSE)
+      if (!is.list(select) || length(select[[jx]]) != 2) {
+        if (any(sapply(col, length) <= 1))
+          stop("number of colours is one -- please choose an appropriate colour palette. Maybe 'RFpar(col=NULL)' will help.")
+      }
+      
+      legends[[i]] <- list(scr=scr.leg,
+                           col = col,
+                           x = image.par[[i]]$z.legend[, if (is.list(select))
+                               select[[1]][1] else select[1]]
+                           )
     }
   }
-  
-  #close.screen(scr)
- 
+
   return(c(image.par,
            dots=list(dots),
-           list(names.coords = names.coords, names.rep = names.rep,
+           list(legends = legends,
+                names.coords = names.coords, names.rep = names.rep,
                 names.vdim = names.vdim, 
-                mar=mar, oma=oma, scr.main=scr.main, scr.legends=scr.legends,
-                scr = scr,
-               split.main=split.main,
-               #always.close=always.close, 
+                mar=mar, oma=oma,
+                scr.main=scr.main, scr.legends=scr.legends, scr = scr,
+                split.main=split.main, #figs=figs,
                 grPrintlevel = graphics$grPrintlevel)))
 }
 
@@ -318,24 +307,35 @@ PlotTitle <- function(x, main) {
 }
 
 
+RFplotSimulation <- function(x, y,
+                             MARGIN =c(1,2),# which dimensions are to be plotted
+                             MARGIN.slices =NULL,
+                             ## in which dimension a sequence of slices
+                             ## is to be plotted
+                             n.slices = if (is.null(MARGIN.slices)) 1 else 10,
+                             nmax=6,  # max number of repetitins plotted
+                             plot.variance = !is.null(x@.RFparams$has.variance)
+                             && x@.RFparams$has.variance,
+                             select.variables, #1:vdim,
+                             zlim, # default: missing,
+                             legend = TRUE,
+                             MARGIN.movie = NULL,
+                             file=NULL, speed=0.3,
+                             height.pixel=300, width.pixel=height.pixel,
+                             ..., plotmethod="image") {
 
 
-plotRFspatialDataFrame <-  
-  function(x, y,
-           MARGIN, #=c(1,2),      # which dimensions are to be plotted
-           MARGIN.slices, #=NULL,
-              # in which dimension a sequence of slices is to be plotted
-           n.slices, #=if (!is.null(MARGIN.slices)) 6 else 1,
-           nmax, #=6,             # max number of repetitins plotted
-           plot.variance, # = !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance,
-           select, #1:vdim,
-           zlim, # default: missing,
-           legend, #=TRUE,
-           MARGIN.movie,
-           file=NULL, speed=0.3,
-           height.pixel=height.pixel, width.pixel=width.pixel,
-          ..., plotmethod="image") {
 
+  if (is(x, "RFdataFrame"))
+    return(RFplotSimulation1D(x=x, y=y, nmax=nmax,
+                           plot.variance=plot.variance, legend=legend, ...))
+
+  if (legend && plotmethod == "contour")
+    stop("no legend available for 'contour'")
+
+  ## nmax, n.slices, plot.variance, select.variables, legend
+
+  graphics <- RFoptions()$graphics
   x.grid <- is(x, "RFspatialGridDataFrame")
   do.slices <- !is.null(MARGIN.slices)
   do.movie <- !is.null(MARGIN.movie)
@@ -356,7 +356,7 @@ plotRFspatialDataFrame <-
   if (!has.variance) plot.variance <- FALSE
   
   if (x.grid) {
-    conventional <- rfspDataFrame2conventional(x)
+    conventional <- RFspDataFrame2conventional(x)
     x.grid.vectors <-
       GridTopology2gridVectors(cbind(conventional$x,conventional$T))
     
@@ -383,18 +383,18 @@ plotRFspatialDataFrame <-
 
     ## want to have at least 3 space-time dims, if only 2,
     ## generate artificial dim
-    dimdata <- dim(data.arr)  # new dims
+    dim_data <- dim(data.arr)  # new dims
 
 
     if (timespacedim <= 3){
       if (timespacedim == 3)
-        dim(data.arr) <- c(dimdata[1:3], 1, dimdata[4:5])
+        dim(data.arr) <- c(dim_data[1:3], 1, dim_data[4:5])
       else if (timespacedim==2)
-        dim(data.arr) <- c(dimdata[1:2], 1, 1, dimdata[3:4])
+        dim(data.arr) <- c(dim_data[1:2], 1, 1, dim_data[3:4])
       else stop("dimension too small: dim=", timespacedim)
       timespacedim <- 4
     }
-   if (!all(MARGIN %in% 1:(length(dimdata) - 2))) stop("MARGIN out of range.")
+    if (!all(MARGIN %in% 1:(length(dim_data) - 2))) stop("MARGIN out of range.")
     
     if (any(MARGIN.slices %in% MARGIN.movie))
       stop("MARGIN.slices and MARGIN.movie are not disjoint.")
@@ -405,10 +405,10 @@ plotRFspatialDataFrame <-
       MARGIN.movie <-
         (1:(max(MARGIN, MARGIN.slices) + 1))[-c(MARGIN, MARGIN.slices)][1]
     
-    dimdata <- dim(data.arr)
-    vdimrep <- dimdata[(-1:0) + length(dimdata)]
+    dim_data <- dim(data.arr)
+    vdimrep <- dim_data[(-1:0) + length(dim_data)]
     if (!all(c(MARGIN.movie, MARGIN.slices) %in%
-             1:(length(dimdata) - 2))) stop("MARGINs out of range.")
+             1:(length(dim_data) - 2))) stop("MARGINs out of range.")
 
 
     xx <- x.grid.vectors[[MARGIN[1]]]
@@ -417,16 +417,16 @@ plotRFspatialDataFrame <-
     ## reduce the data array by taking a section with respect
     ## to the dimensions not covered by MARGIN*
     mar.vec <- c(MARGIN, MARGIN.slices, MARGIN.movie)
-    ind <- as.list(rep(1, length(dimdata) - 2))
+    ind <- as.list(rep(1, length(dim_data) - 2))
     ind[mar.vec] <- TRUE
     data.arr <- do.call("[", c(list(data.arr), ind, TRUE, TRUE, drop=FALSE))
-    dim(data.arr) <- c(dimdata[sort(mar.vec)], vdimrep)
+    dim(data.arr) <- c(dim_data[sort(mar.vec)], vdimrep)
 
     ## re-oredered dimensions such that MARGIN and MARGIN.slices
     ## and MARGIN.movie are the first 4 dimensions
-    perm.tmp <- c(mar.vec, (-1:0) + length(dimdata))
+    perm.tmp <- c(mar.vec, (-1:0) + length(dim_data))
     data.arr <- aperm(data.arr, perm.tmp)
-    dimdata <- dim(data.arr)
+    dim_data <- dim(data.arr)
     NEWMARGIN <- 1:2
     MARGIN.slices <- 3
     MARGIN.movie <- 4
@@ -440,7 +440,7 @@ plotRFspatialDataFrame <-
         plot.variance <- FALSE
         message("plot.variance was set to FALSE")
       }
-      mar.len <- dimdata[MARGIN.slices]
+      mar.len <- dim_data[MARGIN.slices]
       if (n.slices[length(n.slices)] > mar.len)
         n.slices[length(n.slices)] <- mar.len
       slices.ind <-
@@ -462,7 +462,7 @@ plotRFspatialDataFrame <-
     
     all.i <- as.matrix(expand.grid(1:n.slices, 1:n)[2:1]) ## i, ii
     coords <- as.matrix(expand.grid(xx, xy))
-    m.range <- if (do.movie) 1:dimdata[MARGIN.movie] else 1    
+    m.range <- if (do.movie) 1:dim_data[MARGIN.movie] else 1    
   } else { ## not grid
     vdim <- x@.RFparams$vdim
     n <- min(x@.RFparams$n, nmax) + plot.variance
@@ -509,8 +509,8 @@ plotRFspatialDataFrame <-
   var.range <- if (plot.variance) sapply(x@data[-data.idx],
                                          range, na.rm=TRUE) else NULL
 
-  if (missing(select)) select <- 1:vdim
-  image.par <- prepareplotRFsp(x=x, vdim=vdim, select=select,
+   if (missing(select.variables)) select.variables <- 1:vdim
+  image.par <- prepareplotRFsp(x=x, vdim=vdim, select=select.variables,
                                data.range = data.range, var.range=var.range,
                                plot.var=plot.variance, MARGIN=NEWMARGIN,
                                n=n, n.slices=n.slices, plot.legend=legend,
@@ -519,7 +519,8 @@ plotRFspatialDataFrame <-
 
  image.par$names.vdim <-
     add.units(image.par$names.vdim, x@.RFparams$varunits)
-  
+  legends <- image.par$legends
+
 
   if (x.grid) {
     nx.vectors <- min(length(xx), image.par$arrow$nx.vectors)
@@ -538,7 +539,15 @@ plotRFspatialDataFrame <-
     if (ans != 0 && ans != 1) stop("'mencoder' needs to be installed first.")
     digits <- 1 + ceiling(log(max(m.range)) / log(10))
     fn <- character(max(m.range))
-   }
+  }
+  
+  if (!graphics$split_screen) {
+    if (graphics$always_open_device) par(oma=image.par$oma)
+    else if (all(par()$oma == 0) &&
+             (any(par()$mfcol != 1) || any(par()$mfrow != 1)))
+      stop("par()$oma has not been set; 'oma=rep(2,4)' is a good choice.")
+  }
+
   for (m in m.range) {  
     if (do.avi) {
       fn[m] <- paste(file, "__", formatC(m, width=digits, flag="0",
@@ -549,9 +558,11 @@ plotRFspatialDataFrame <-
       par(mfcol=image.par$split.main, mar=c(.2, .2, .2, .2))
       dev.set(current)
     } else filedev <- dev.cur()
-    for (jx in 1:length(select)) {       
-      j <- if (is.list(select)) select[[jx]] else select[jx]
-      for (ix in 1:nrow(all.i)) {
+    for (jx in 1:length(select.variables)) {       
+      j <- if (is.list(select.variables)) select.variables[[jx]] else
+      select.variables[jx]
+      
+      for (ix in 1:nrow(all.i)) { 
         i <- all.i[ix, ]
         dots <- dots.with.main.lab <- image.par$dots
         main <- dots$main
@@ -567,24 +578,29 @@ plotRFspatialDataFrame <-
           dv <- "data"
         }
         
-        screen(image.par$scr.main[ix, jx])
-        par(mar=image.par$mar, oma=image.par$oma)
-
+        if (graphics$split_screen) {
+          screen(image.par$scr.main[ix, jx])
+          par(oma=image.par$oma)
+        }
+        par(mar=image.par$mar)
+        
         col <-
-          image.par[[dv]]$col[[1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
+          image.par[[dv]]$col[[ 1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
         breaks <- image.par[[dv]]$breaks[, j[1]]
-
+        
         genuine.image <- (length(j) == 1 || length(j)==3)
+        
         if (x.grid) {
           dots$type <- NULL
           dots$col <- if (genuine.image) col else par()$bg
           for (devices in 0:do.avi) {
+            
             plot.return <- do.call(plotmethod,
                                    args=c(dots, list(
-                                   x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
-                                   zlim = image.par[[dv]]$range[, j[1]],
-                                   axes=plotmethod == "persp"))
-                                 )
+                                       x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
+                                       zlim = image.par[[dv]]$range[, j[1]],
+                                       axes = plotmethod == "persp"))
+                                   )
             dev.set(filedev)
           }
           dev.set(current)
@@ -594,7 +610,7 @@ plotRFspatialDataFrame <-
           dots$col <- if (genuine.image)
             col[ cut(x@data[,idx[1]], breaks=breaks) ] else par()$bg
           
-           for (devices in 0:do.avi) {
+          for (devices in 0:do.avi) {
              do.call(graphics::plot,
                      args=c(dots, list(x=coords[, 1], y=coords[, 2],
                          axes=FALSE)))
@@ -603,6 +619,26 @@ plotRFspatialDataFrame <-
            }
           dev.set(current)
         }
+      
+        if (image.par$legend && ix == 1 && legends$do[jx]) {
+          if (graphics$split_screen) {
+            screen(legends[[dv]]$scr[jx])
+            lab <- xylabs("", "", units=legends$units)
+            image(x=legends[[dv]]$x, y=c(0,1),
+                  z=matrix(ncol=2, rep(legends[[dv]]$x, 2)),
+                  axes=FALSE, xlab=lab$x, ylab=lab$y,
+                  col=legends[[dv]]$col[[jx]]
+                  )            
+            axis(3, mgp=if (do.plot.var) c(3,0,0),
+                 hadj=if (do.plot.var) -0.5 else NA)#1 + 2 * (dv =="data"))
+            box()
+            screen(image.par$scr.main[ix, jx])
+            
+          } else { ## not split.screen
+            my.legend(min(xx), max(xy), range(legends[[dv]]$x),
+                      col=legends[[dv]]$col[[jx]], bg="white")
+          }
+        }        
         
         for (devices in 0:do.avi) {
           if (n.slices > 1)
@@ -648,43 +684,8 @@ plotRFspatialDataFrame <-
                                  type="p", pch=pch, lty=1, col=col, bg=NA,
                                  cex=cex, lwd=1)))
               }
-              ## Print("XCX")
-             if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
-              addpoints(dots$pch, col2, dots$cex) ## causes error in
-              ##42 RandomFields:RFinterpolate (total=197) 
-              ##==23710== Conditional jump or move depends on uninitialised value(s)
-              ##  load("xx.rda"); plot(z, data) ## if still exists!
-
-
-              
-              ## Print("B")
-
-              if (FALSE) {
-                zaehler <- 1
-                repeat {               
-                  filename <- paste("/home/schlather/TMP/gr.err", zaehler, ".rda", sep="")
-                  if (!file.exists(filename)) break
-                  zaehler <- zaehler + 1
-                }
-                # p rint(filename)
-                save(file=filename, addpoints, dots2, xy.coords, y.coords,
-                     MARGIN, plotmethod, dots, col2,
-                     plotmethod, xx, xy, data.arr, i, m, j, k, image.par, dv)
-                
-                
-                if (FALSE) {
-                  ##   R -d "valgrind --tool=memcheck --leak-check=full --num-callers=20 " --vanilla
-                  
-                  load("/home/schlather/TMP/gr.err1.rda")
-                  do.call(plotmethod,
-                          args=c(dots, list(
-                              x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
-                              zlim = image.par[[dv]]$range[, j[1]],
-                              axes=FALSE)
-                              ))
-                  addpoints(15, "darkgray", dots$cex*2)
-                }           
-              }
+              if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
+              addpoints(dots$pch, col2, dots$cex) ## causes error in              
             } # not persp
           } # !do.plot.var
 
@@ -695,80 +696,77 @@ plotRFspatialDataFrame <-
             axis(1, outer=TRUE)#image.par$always.close)
           }
           if (jx==1 &&
-              ((image.par$split.main[2] == length(select)) ||
+              ((image.par$split.main[2] == length(select.variables)) ||
                ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
             axis(2, outer=TRUE)#image.par$always.close)
-          ##if (!image.par$always.close){
-          ##  dots2 <- dots.with.main.lab
-          ##  dots2$xlab <- dots2$ylab <- ""
-          ##  do.call(graphics::title, args=c(dots2, list(outer=TRUE, line=NA)))
-          ##}
-          ## if (!image.par$always.close) {
-          ##   if (x.grid) do.call(graphics::title, args=c(dots, list(outer=FALSE, line=NA)))
-          ##   else do.call(graphics::title, args=c(dots, line=2))  # line=-1 (ersetzt (AM))
-          ##   ##if (i==1) axis(1, outer=image.par$always.close)
-          ##   ##if (j==1) axis(2, outer=image.par$always.close)
-          ## }
           
           if (all(i==1) && (image.par$grPrintlevel > 1 || vdim>1)) {
             mtext(text = image.par$names.vdim[jx],  # names(x)[j[1]]
                   side=3, line=-1,
                   col = image.par$text.col, cex=dots$cex)
-            ##legend("topleft", bty="n", legend=c("", image.par$names.vdim[jx]),
-            ##      text.col=image.par$text.col)
           }
           if (n>1 && jx==1){
             mtext(text = image.par$names.rep[ix], side=3, line=-2, cex=dots$cex)
-            ##legend.pos <- "topright" #if (vdim==1) "topright" else "left"
-            ##legend(legend.pos, bty="n", legend=c("", image.par$names.rep[ix]))
           }
           dev.set(filedev)
         }
         dev.set(current)
-        
-        if (do.plot.arrows && ix == 1) {
-          ## do not merge with ix==1 above !!
-          ## reason: screen is changed here and going back
-          ## is not a good idea
-          
-          if (image.par$legend) {
-            screen(image.par$scr.legends[jx])
-            do.call(graphics::plot, args=c(dots, list(x=Inf, y=Inf,
-                                      xlim=rx, ylim=c(0,1), axes=FALSE)))
+      
+        if (image.par$legend && ix == 1) {
+          if (do.plot.arrows) {
+            ## do not merge with ix==1 above !!
+            ## reason: screen is changed here and going back
+            ## is not a good idea
             len <- max(pretty(diff(rx) / image.par$arrows$nx.vectors/2 /factor))
-            x.arrow<- cbind(mean(rx), image.par$arrows$leg.pos[1+genuine.image])
+            if (graphics$split_screen) {
+               x.arrow <- cbind(mean(rx),
+                               image.par$arrows$leg.pos[1+genuine.image])
+              screen(image.par$scr.legends[jx])
+              do.call(graphics::plot, args=c(dots, list(x=Inf, y=Inf,
+                                          xlim=rx, ylim=c(0,1), axes=FALSE)))
+               colArrow <- col.arrow
+            } else {
+              dy <- diff(range(xy))
+              xl <- max(xx) - 0.05 * diff(range(xx))
+              yl <- max(xy) - 0.02 * dy
+              points(rep(xl, 2), rep(yl-0.01 * dy, 2), pch=c(16, 1), cex=7,
+                     col=c("white", "black"))
+              x.arrow <- cbind(xl, yl)
+              colArrow <- "red"
+            }
             my.arrows(x.arrow, cbind(len, 0), r = factor,
-                      thinning=0, col=col.arrow)
-            text(x.arrow, pos=1, labels = len)
+                      thinning=0, col=colArrow)
+            text(x.arrow, pos=1, labels = len, col=colArrow)
           }
-        }            
-      }
-    }
-  
+        }
+      } # ix (rows)
+    } # jx
+
+     dots.with.main.lab$type <- NULL # woher kommt dieses type??
+    dots.with.main.lab$zlab <- NULL
     
-                                        #if (image.par$always.close) {
-                                        #if (x.grid){
-    dots.with.main.lab$type <- NULL # woher kommt dieses type??
     ##      falls nicht auf NULL gesetzt gibt es einen Fehler. Warum?
     do.call(graphics::title,
             args=list(main=dots.with.main.lab$main,
               outer=TRUE, line=image.par$oma[3]-1.5))
     dots.with.main.lab$main <- NULL
-    do.call(graphics::title, args=c(dots.with.main.lab, list(outer=TRUE, line=NA)))
-    ##} else {
-    ##  do.call(graphics::title, args=c(dots, list(outer=TRUE)))      
-    ##}
-    
-
+    do.call(graphics::title,
+            args=c(dots.with.main.lab, list(outer=TRUE, line=NA)))
+  
     if (image.par$grPrintlevel > 0) {
-      screen(image.par$scr[1 + image.par$legend], new=FALSE)
-      PlotTitle(x, if (is.null(main)) "" else main)
+      if (graphics$split_screen) {
+        screen(image.par$scr[1 + image.par$legend], new=FALSE)
+        PlotTitle(x, if (is.null(main)) "" else main)
+      } #else if (!is.null(main)) title(main=main)
     }
+
+    
+    
     if (do.avi) {
       dev.off(filedev)
       dev.set(current)
-    }  
-  }
+    }
+  } # m in m.range
 
   if (do.avi) {
     txt <- paste("mencoder -mf fps=30 -ffourcc DX50 -ovc lavc ",
@@ -779,30 +777,26 @@ plotRFspatialDataFrame <-
     system(txt)
     file.remove(fn)
   }
-  
-  graphics <- RFoptions()$graphics
-  if (graphics$always_close_screen){
-    close.screen(all.screens=TRUE)
-  } else {
-    close.screen(c(image.par$scr.main, image.par$scr.legends, image.par$scr))
+ 
+  scr <- image.par[c("scr.main", "scr.legends", "scr", "split.main")]
+  if (graphics$split_screen && graphics$close_screen){
+    close.screen(unlist(scr))
+    scr <- NULL
   }
 
-  return(invisible())
+  return(invisible(scr))
 }
 
 
 
   
-  
-
-
-# plotRFgridDataFrame <- function(x, y, nmax, plot.variance, ...)
-# siehe nicht.nachladbar.R
-          
-plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
+RFplotSimulation1D <-  function(x, y, nmax=6,
+                             plot.variance=!is.null(x@.RFparams$has.variance) &&
+                             x@.RFparams$has.variance,
+                             legend=TRUE, ...) {
   ## grid   : sorted = TRUE
   ## points : sorted = FALSE
-
+ 
   stopifnot(!missing(x))
   x <- trafo_pointsdata(x)
   nc <- ncol(x$data)
@@ -823,12 +817,9 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     }
   }
 
-  
   graphics <- RFoptions()$graphics
   ArrangeDevice(graphics, c(1, n)) ## NIE par vor ArrangeDevice !!!!
-
-  always.close <- n > 1 || graphics$always_close_screen
-  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1))
+ 
   dots <- mergeWithGlobal(list(...))
   dotnames <- names(dots)
   if ("bg" %in% dotnames) {
@@ -872,19 +863,16 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     dots$col <- NULL
   }
 
-  if (legend) split.screen(c(n,1))
-  else par(mfrow=c(n, 1), mar=c(1, 1, 0.1, 0.1))
-  
-#  if (always.close) {
-#    close.screen(all.screens=TRUE)
-#    par(mfrow=c(1,1))
-#    split.screen(c(n,1))
-#  }
-                
+  if (graphics$split_screen) scr <- split.screen(c(n,1))
+  else {
+    scr <- NULL
+    par(mfrow=c(n, 1), mar=c(1, 1, 0.1, 0.1))
+  }
+                  
   for (i in 1:n){
-    if (legend) screen(i)
+    if (graphics$split_screen) screen(i)
     if (make.small.mar) {
-      if (legend) par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
+      if (graphics$split_screen) par(oma=c(3,0,1,1)+.1, mar=c(0,3,0,0))
       else par(oma=rep(0,4), mar=c(3, 3, 1, 1), cex=0.6)
     } else par(oma=c(4,0,1,1)+.1, mar=c(0,4,0,0))
     
@@ -906,11 +894,10 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
     axis(2)
     if (tmp.idx) i <- n
     
-    if(i==n){
-      axis(1, outer=always.close)
-      title(xlab=dots$xlab, outer=TRUE) # always.close) 
-    }
-    else axis(1, labels=FALSE)
+    if (i==n) {
+      axis(1, outer=n>1)
+      title(xlab=dots$xlab, outer=TRUE) 
+    } else axis(1, labels=FALSE)
     for (j in 1:vdim){
       if (j==1) next
       do.call(graphics::points, quote=TRUE,
@@ -928,10 +915,74 @@ plotRFdataFrame <-  function(x, y, nmax=6, plot.variance, legend, ...) {
       }
     }
   }
-  if (always.close && legend) close.screen(all.screens=TRUE)
+  if (graphics$close_screen) {
+    close.screen(scr)
+    scr <- NULL
+  }
+  return(invisible(scr))
 }
 
 
+errMsgNoPlotAvailable <- function(x, y)
+  warning(paste("no plot method available for signature c(",
+                class(x), ",", class(y), ")"))
 
 
 
+setMethod(f="plot", signature(x="RFgridDataFrame", y="missing"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, ...))
+setMethod(f="plot", signature(x="RFpointsDataFrame", y="missing"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, ...))
+setMethod(f="plot", signature(x="RFspatialGridDataFrame", y="missing"),
+	  definition=function(x, y, ...) RFplotSimulation(x, ...))
+setMethod(f="plot", signature(x="RFspatialPointsDataFrame", y="missing"),
+	  definition=function(x, y, ...) RFplotSimulation(x, ...))
+
+setMethod(f="plot", signature(x="RFgridDataFrame", y="matrix"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFpointsDataFrame", y="matrix"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFspatialGridDataFrame", y="matrix"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+setMethod(f="plot", signature(x="RFspatialPointsDataFrame", y="matrix"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+
+setMethod(f="plot", signature(x="RFgridDataFrame", y="data.frame"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFpointsDataFrame", y="data.frame"),
+          definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFspatialGridDataFrame", y="data.frame"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+setMethod(f="plot", signature(x="RFspatialPointsDataFrame", y="data.frame"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+
+setMethod(f="plot", signature(x="RFgridDataFrame", y="RFgridDataFrame"),
+           definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFgridDataFrame", y="RFpointsDataFrame"),
+           definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFpointsDataFrame", y="RFgridDataFrame"),
+           definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot", signature(x="RFpointsDataFrame", y="RFpointsDataFrame"),
+           definition=function(x, y, ...) RFplotSimulation1D(x, y, ...))
+setMethod(f="plot",
+          signature(x="RFspatialGridDataFrame", y="RFspatialGridDataFrame"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+setMethod(f="plot",
+          signature(x="RFspatialGridDataFrame", y="RFspatialPointsDataFrame"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+setMethod(f="plot", signature(x="RFspatialPointsDataFrame",
+            y="RFspatialGridDataFrame"),
+	  definition=function(x, y, ...) {
+            errMsgNoPlotAvailable(x, y)
+            return(invisible(NULL))
+          })
+setMethod(f="plot",
+          signature(x="RFspatialPointsDataFrame", y="RFspatialPointsDataFrame"),
+	  definition=function(x, y, ...) RFplotSimulation(x, y, ...))
+setMethod(f="persp",
+          signature(x="RFspatialGridDataFrame"),
+	  definition=function(x, ..., zlab="")
+          RFplotSimulation(x, ..., zlab=zlab, plotmethod="persp"))
+
+contour.RFspatialGridDataFrame <- function(x, ...)
+  RFplotSimulation(x, ..., plotmethod="contour")

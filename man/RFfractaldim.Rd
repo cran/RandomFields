@@ -6,9 +6,7 @@
 }
 \usage{
 RFfractaldim(x, y = NULL, z = NULL, data, grid, 
- bin= seq(min(ct$x[2, ]) / 2, 
-          min(ct$x[2,] * ct$x[3,] / 4, vario.n * min(ct$x[2,]) + 1),
-          min(ct$x[2,])),
+ bin=NULL,
  vario.n=5,
  sort=TRUE,
  fft.m = c(65, 86), ## in % of range of l.lambda
@@ -24,20 +22,20 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
 }
 \arguments{
  \item{x}{matrix of coordinates, or vector of x coordinates; if
- \code{x} is not given a grid with unit grid length is assumed}
+ \code{x} is not given and \code{data} is not an \pkg{sp} object, a grid with unit grid length is assumed}
  \item{y}{vector of y coordinates}
  \item{z}{vector of z coordinates}
 % \item{T}{vector of time coordinates. 
 % \code{T} must always be given in the \code{gridtriple} format,
 % independently how the spatial part is defined.
 % }
- \item{data}{the values measured.}
+ \item{data}{the values measured; it can also be an \pkg{sp} object}
  \item{grid}{determines whether the vectors \code{x},
  \code{y}, and \code{z} should be
  interpreted as a grid definition, see Details. \code{grid}
  does not apply for \code{T}.}
  \item{bin}{sequence of bin boundaries for the empirical variogram}
- \item{vario.n}{first \code{vario.n} value of the empirical variogram
+ \item{vario.n}{first \code{vario.n} values of the empirical variogram
  are used for the regression fit that are not \code{NA}.}
  \item{sort}{If \code{TRUE} then the coordinates are permuted
  such that the largest grid length is in \code{x}-direction; this is

@@ -24,6 +24,7 @@
     
    \item \bold{Changings in option names}
    \itemize{
+     \item several changes in \code{RFoptions()$graphics} in version 3.1.11
      \item\code{pdfnumber} became in version 3.0.42 \code{filenumber}      
      \item\code{pdfonefile} became in version 3.0.42 \code{onefile}      
      \item\code{pdffile} became in version 3.0.42 \code{file}      

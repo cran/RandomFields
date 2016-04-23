@@ -956,7 +956,7 @@ void PrintLoc(int level, location_type *loc, bool own) {
     leer(level); PrintPoints(loc, (char*) "y", loc->y, loc->ygr, loc->ly);
   } 
 #else
-  leer(level); PRINTF("x,y not shown\n");
+  leer(level); PRINTF("loc:x,y\t addresses not shown\n");
 #endif
 
   if (loc->Time) { 
@@ -1004,8 +1004,7 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
   while(strcmp(CC->name, InternalName) ==0) CC--;
   if (level == 0) 
     PRINTF("******   %s, %s   ****** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);
-  else PRINTF("    **** %s, %s **** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);
-  PRINTF("\n");
+  else PRINTF("    **** %s, %s **** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);  PRINTF("\n");
 
   leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
 

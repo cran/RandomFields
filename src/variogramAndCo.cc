@@ -195,7 +195,7 @@ if (grid) {
     }									
 } else { // not a grid 						
     if (trafo) {							
-      Transform2NoGrid(cov, &xx, &yy, false);				
+      TransformLoc(cov, &xx, &yy, false);				
       x = xx;								
       if (ygiven) y = yy;						
     } else {								
@@ -341,7 +341,7 @@ void CovarianceMatrix(cov_model *Cov, double *v) {
   } else { 
     int localdim = tsxdim; // just to control
     if (trafo) {
-      localdim = Transform2NoGrid(cov, &xx, false);    
+      localdim = TransformLoc(cov, &xx, false);    
       assert(localdim == tsxdim);
 
       x0 = xx;

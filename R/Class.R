@@ -76,7 +76,7 @@ setClassUnion("RFspatialDataFrame",
               c("RFspatialGridDataFrame", "RFspatialPointsDataFrame"))
 setClassUnion("RFdataFrame", c("RFgridDataFrame", "RFpointsDataFrame"))
 setClassUnion("RFsp", c("RFspatialGridDataFrame", "RFspatialPointsDataFrame",
-                        "RFgridDataFrame", "RFpointsDataFrame"))
+                       "RFgridDataFrame", "RFpointsDataFrame"))
 
 check.validity.n.vdim <- function(object) {
   if (!all(c("n", "vdim") %in% names(object@.RFparams)))
@@ -293,5 +293,4 @@ setClass("RFfit",
          )
 
 ## generic S4 method for 'plot'
-
-setGeneric("plot")
+# setGeneric("plot")

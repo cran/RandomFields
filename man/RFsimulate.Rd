@@ -31,27 +31,26 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 
 \arguments{
  \item{model}{object of class \code{\link[=RMmodel-class]{RMmodel}},
- \command{\link{RFformula}} or \command{\link[stats]{formula}};
- specifies the model to be simulated; the best is to consider the
- examples below, first.
-
- \itemize{
- \item if of class \code{\link[=RMmodel-class]{RMmodel}}, \code{model}
- specifies a 
- covariance or variogram model of a Gaussian random
- field;
- type \code{\link{RFgetModelNames}(type="variogram")} for a list of
- available models; see also \command{\link{RMmodel}}
- 
- \item if of class \code{\link{RFformula}} or
- \code{\link[methods:formula-class]{formula}} ,
- \code{submodel} specifies a linear mixed model where random
- effects can be modelled by Gaussian random fields;
- see \command{\link{RFformula}} for details on model
- specification.
-
- \item for (many) more options see \link{RFsimulateAdvanced}.
- }
+   \command{\link{RFformula}} or \command{\link[stats]{formula}};
+   specifies the model to be simulated; the best is to consider the
+   examples below, first.
+   \itemize{
+     \item if of class \code{\link[=RMmodel-class]{RMmodel}}, \code{model}
+     specifies a 
+     covariance or variogram model of a Gaussian random
+     field;
+     type \code{\link{RFgetModelNames}(type="variogram")} for a list of
+     available models; see also \command{\link{RMmodel}}
+     
+     \item if of class \code{\link{RFformula}} or
+     \code{\link[methods:formula-class]{formula}} ,
+     \code{submodel} specifies a linear mixed model where random
+     effects can be modelled by Gaussian random fields;
+     see \command{\link{RFformula}} for details on model
+     specification.
+     
+     \item for (many) more options see \link{RFsimulateAdvanced}.
+   }
  }
  \item{x}{vector of x coordinates, or object
    of class \code{\link[sp:GridTopology-class]{GridTopology}} or

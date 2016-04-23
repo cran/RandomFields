@@ -19,23 +19,6 @@
 ## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 
 
-## Coerce Objects #########################################################
-
-as.data.frame.RFpointsDataFrame <-
-  as.data.frame.RFspatialPointsDataFrame <- function(x, ...) {
-  #str(x); kkkk
-  cbind(x@data, x@coords)
-}
-as.data.frame.RFgridDataFrame <-
-  as.data.frame.RFspatialGridDataFrame <- function(x, ...) 
-  spatialGridObject2conventional(x, TRUE)
-
-setAs("RFspatialPointsDataFrame", "data.frame",
-      function(from, to) from@data
-)
-setAs("RFspatialGridDataFrame", "data.frame",
-      function(from, to) spatialGridObject2conventional(from, TRUE)$data
-)
 
 
 setAs("SpatialPointsDataFrame", "RFspatialPointsDataFrame",
@@ -59,12 +42,14 @@ setAs("RFpointsDataFrame", "RFgridDataFrame",
         grid <- convert2GridTopology(tmp.grid[,1, drop=FALSE])
         RFgridDataFrame(data=from@data, grid=grid, RFparams=from@.RFparams)
       })
-setAs("RFgridDataFrame", "RFpointsDataFrame", 
-      function(from, to) {
+
+grid2pts1D <- function(from) {
         coords <- GridTopology2gridVectors(from@grid)[[1]]
         RFpointsDataFrame(data=from@data, coords=coords,
                           RFparams=from@.RFparams)
-      })
+      }
+setAs("RFgridDataFrame", "RFpointsDataFrame",
+      function(from, to) grid2pts1D(from))
 
 
 
@@ -158,23 +143,6 @@ hist.RFpointsDataFrame <- function(x, ...)
   graphics::hist(as.vector(x), ...)
 
 
-## convert 'RFsp' objects to conventional format of 'RFsimulate',
-## i.e. data is an array and x a matrix of coordinates or gridtriple defs.
-
-setGeneric(name = "RFspDataFrame2conventional", 
-           def = function(obj) standardGeneric("RFspDataFrame2conventional"))
-setMethod("RFspDataFrame2conventional",
-          signature=c("RFspatialGridDataFrame"),
-          function(obj) spatialGridObject2conventional(obj))
-setMethod("RFspDataFrame2conventional", signature=c("RFgridDataFrame"),
-          function(obj) spatialGridObject2conventional(obj))
-setMethod("RFspDataFrame2conventional",
-          signature=c("RFspatialPointsDataFrame"),
-          function(obj) spatialPointsObject2conventional(obj))
-setMethod("RFspDataFrame2conventional", signature=c("RFpointsDataFrame"),
-          function(obj) spatialPointsObject2conventional(obj))
-
-
 rfspDataFrame2dataArray_generic <- function(obj) {
   has.variance <- !is.null(obj@.RFparams$has.variance) && obj@.RFparams$has.variance
   arr <- unlist(obj@data)
@@ -194,10 +162,10 @@ rfspDataFrame2dataArray_generic <- function(obj) {
 setGeneric(name = "RFspDataFrame2dataArray", 
            def = function(obj) standardGeneric("RFspDataFrame2dataArray"))
 setMethod("RFspDataFrame2dataArray", signature=c("RFspatialGridDataFrame"),
-          function(obj) rfspDataFrame2dataArray_generic(obj))
+          definition=rfspDataFrame2dataArray_generic)
           ## used in plot method
 setMethod("RFspDataFrame2dataArray", signature=c("RFgridDataFrame"),
-          function(obj) rfspDataFrame2dataArray_generic(obj))
+          definition=rfspDataFrame2dataArray_generic)
 
 
 
@@ -241,19 +209,25 @@ setMethod(f = "coordinates", signature="RFgridDataFrame",
           definition=function(obj) coordinates(as(obj, "RFpointsDataFrame")) )
 
 
-extract.kriging.variance <- function(x){
-  stopifnot(is(x, "RFsp"))
-  has.variance <- !is.null(x@.RFparams$has.variance) && x@.RFparams$has.variance
+extract.kriging.variance <- function(obj){
+  stopifnot(is(obj, "RFsp"))
+  has.variance <-
+    !is.null(obj@.RFparams$has.variance) && obj@.RFparams$has.variance
   if (!has.variance) return(NULL)
-  return(x[(x@.RFparams$n*x@.RFparams$vdim + 1):(ncol(x@data))])
+  return(obj[(obj@.RFparams$n*obj@.RFparams$vdim + 1):(ncol(obj@data))])
 }
 
   
 setGeneric(name = "variance", 
            def = function(obj) standardGeneric("variance"))
-setMethod(f = "variance", signature="RFsp",
-          definition=function(obj) extract.kriging.variance(obj))
-
+setMethod(f = "variance", signature="RFspatialGridDataFrame",
+          definition = extract.kriging.variance)
+setMethod(f = "variance", signature="RFspatialPointsDataFrame",
+          definition = extract.kriging.variance)
+setMethod(f = "variance", signature="RFgridDataFrame", 
+          definition = extract.kriging.variance)
+setMethod(f = "variance", signature="RFpointsDataFrame",
+          definition = extract.kriging.variance)
 
 
 
@@ -295,6 +269,7 @@ print.RFgridDataFrame <- function(x, ...) {
   summary.RFgridDataFrame(x, ...)
   invisible(x)
 }
+
 setMethod(f="show", signature="RFgridDataFrame", 
 	  definition=function(object) print.RFgridDataFrame(object))
 
@@ -325,326 +300,22 @@ setMethod(f="show", signature="RFspatialGridDataFrame",
 ## extend methods for 'Spatial' to class 'RFsp'
 if (!isGeneric("isGridded"))
   setGeneric(name = "isGridded", 
-             def = function(obj)
-             standardGeneric("isGridded") )
+             def = function(obj) standardGeneric("isGridded") )
 
-setMethod(f="isGridded", signature="RFsp", 
-	  definition=function(obj)
-          (is(obj, "RFgridDataFrame") || is(obj, "RFspatialGridDataFrame")))
-
-setMethod(f="dimensions", signature="RFsp", 
-	  definition=function(obj) {
-            (getMethod("dimensions", "Spatial")@.Data)(obj)
-          })
-          
-setMethod(f="dimensions", signature="RFspatialDataFrame", 
-	  definition=function(obj) {
-            if (is(obj, "RFdataFrame")) return(1)
-            else (getMethod("dimensions", "Spatial")@.Data)(obj)
-          })
-setMethod(f="dimensions", signature="RFdataFrame", 
+#setMethod(f="isGridded", signature="RFsp", 
+#	  definition=function(obj)
+#          (is(obj, "RFgridDataFrame") || is(obj, "RFspatialGridDataFrame")))
+setMethod(f="isGridded", "RFgridDataFrame", function(obj) TRUE)
+setMethod(f="isGridded", "RFpointsDataFrame", function(obj) FALSE)
+setMethod(f="isGridded", "RFspatialGridDataFrame", function(obj) TRUE)
+setMethod(f="isGridded", "RFspatialPointsDataFrame", function(obj) FALSE)
+       
+setMethod(f="dimensions", signature="RFspatialGridDataFrame", 
+	  function(obj) (getMethod("dimensions", "Spatial")@.Data)(obj) )
+setMethod(f="dimensions", signature="RFspatialPointsDataFrame", 
+	  function(obj) (getMethod("dimensions", "Spatial")@.Data)(obj) )
+setMethod(f="dimensions", signature="RFgridDataFrame", 
 	  definition=function(obj) return(1))
-
-
-summary.RFsp <- function(object, ...) {
-  if (is(object, "Spatial"))
-    return((getMethod("summary", "Spatial")@.Data)(object))
-  
-  obj = list()
-  obj[["class"]] = class(object)
-            #obj[["bbox"]] = bbox(object)
-            #obj[["is.projected"]] = is.projected(object)
-            #obj[["proj4string"]] = object@proj4string@projargs
-  if (is(object, "RFpointsDataFrame")) 
-    obj[["npoints"]] = nrow(object@coords)
-  if (is(object, "RFgridDataFrame")) {
-    gr <- object@grid
-    obj[["grid"]] =
-      data.frame(cellcentre.offset = gr@cellcentre.offset, 
-                 cellsize = gr@cellsize,
-                 cells.dim = gr@cells.dim)
-  }
-  if ("data" %in% slotNames(object))
-    if (nrow(object@data) > 0)
-      if (ncol(object@data) > 1) 
-        obj[["data"]] = summary(object@data)
-      else obj[["data"]] = summary(object@data[[1]])
-  class(obj) = "summary.RFsp"
-  return(obj)
-}
-
-print.summary.RFsp <- function(x, ...){
-  x <- summary.RFsp(x)
-  str(x, give.attr=FALSE) #
-  invisible(x)
-}
-
-print.RFsp <- function(x, ...) print.summary.RFsp(summary.RFsp(x, ...))#
-
-## plot methods
-## for 1-dim coordinates for grid and points
-## for 2-or more dimensional coordinates for grid only
-
-#for (.x in c("RFgridDataFrame", "RFpointsDataFrame"))
-#  for (.y in c("missing", "RFgridDataFrame", "RFpointsDataFrame"))
-#  setMethod(f="plot", signature(x=.x, y=.y),
-#            definition=function(x, y, nmax = 6,
-#              plot.variance = (!is.null(x@.RFparams$has.variance) &&
-#                               x@.RFparams$has.variance),
-#              ...)
-#            plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance, ...)
-#            )
-
-
-setMethod(f="plot", signature(x="RFdataFrame", y="missing"),
-          definition=function(x, y, nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),legend=TRUE, 
-            ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
-                          legend=legend, ...)
-          )
-
-setMethod(f="plot", signature(x="RFdataFrame", y="RFdataFrame"),
-          definition=function(x, y, nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),legend=TRUE, 
-            ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
-                          legend=legend, ...)
-          )
-
-setMethod(f="plot", signature(x="RFdataFrame", y="matrix"),
-          definition=function(x, y, nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),legend=TRUE, 
-            ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
-                          legend=legend, ...)
-          )
-
-
-setMethod(f="plot", signature(x="RFdataFrame", y="data.frame"),
-          definition=function(x, y, nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),legend=TRUE, 
-            ...)
-          plotRFdataFrame(x, y=y, nmax=nmax, plot.variance=plot.variance,
-                          legend=legend, ...)
-          )
-
-
-
-setMethod(f="plot", signature(x="RFspatialDataFrame", y="missing"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE,  MARGIN.movie = NULL,
-              file=NULL, speed = 0.3, height.pixel=300, width.pixel=300,
-              ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                                 ...))
-
-setMethod(f="plot",
-          signature(x="RFspatialDataFrame", y="RFspatialGridDataFrame"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE,
-            MARGIN.movie = NULL,
-               file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-          ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                                ...))
-
-setMethod(f="plot",
-          signature(x="RFspatialDataFrame", y="RFspatialPointsDataFrame"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE,
-            MARGIN.movie = NULL,
-                  file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-         ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                 file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                                 ...))
-setMethod(f="plot",
-          signature(x="RFspatialDataFrame", y="matrix"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE,
-            MARGIN.movie = NULL,
-                 file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-            ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                     file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                             ...))
-
-setMethod(f="plot",
-          signature(x="RFspatialDataFrame", y="data.frame"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE,
-            MARGIN.movie = NULL,
-                    file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-         ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                       file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                              ...))
-
-setMethod(f="persp",
-          signature(x="RFspatialGridDataFrame"),
-	  definition=function(
-            x, y, MARGIN = c(1, 2),
-            MARGIN.slices = NULL,
-            n.slices= if (is.null(MARGIN.slices)) 1 else 10,
-            nmax = 6,
-            plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                             x@.RFparams$has.variance),
-            select.variables, # = 1:vdim,
-            zlim,
-            legend=TRUE, MARGIN.movie = NULL,
-                    file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-              ...)
-          plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                                 MARGIN.slices=MARGIN.slices,
-                                 n.slices=n.slices, nmax=nmax,
-                                 plot.variance = plot.variance,
-                                 select=select.variables,
-                                 zlim=zlim,
-                                 legend=legend,
-                                 MARGIN.movie = MARGIN.movie,
-                                      file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                               ..., plotmethod="persp"))
-
-contour.RFspatialGridDataFrame <-
-  function( x, y, zlim,
-           MARGIN = c(1, 2),
-           MARGIN.slices = NULL,
-           n.slices = if (is.null(MARGIN.slices)) 1 else 10,
-           nmax = 6,
-           plot.variance = (!is.null(x@.RFparams$has.variance) &&
-                            x@.RFparams$has.variance),
-           select.variables, # = 1:vdim,
-            legend=TRUE,  MARGIN.movie = NULL,
-           file=NULL, speed = 0.3, height.pixel=300, width.pixel=300, 
-         ...)
-  plotRFspatialDataFrame(x=x, y=y, MARGIN=MARGIN,
-                         MARGIN.slices=MARGIN.slices,
-                         n.slices=n.slices, nmax=nmax,
-                         plot.variance = plot.variance,
-                         select=select.variables,
-                         zlim=zlim,
-                         legend=legend,MARGIN.movie = MARGIN.movie,
-                         file = file, speed=speed, height.pixel=height.pixel, width.pixel=width.pixel,
-                      ..., plotmethod="contour")
-
-
-errMsgNoPlotAvailable <- function(x, y)
-  warning(paste("no plot method available for signature c(",
-                class(x), ",", class(y), ")"))
-
-setMethod(f="plot", signature(x="RFspatialPointsDataFrame",
-            y="RFspatialGridDataFrame"),
-	  definition=function(x, y) {
-            errMsgNoPlotAvailable(x, y)
-            return(invisible(NULL))
-          })
- 
-
-
-
-#summary.RandomFieldsReturn <- function(object, ...) {
-#  class(object) <- "summary.RandomFieldsReturn"
-#  object
-#}
-#print.RandomFieldsReturn <- function(x, give.attr=FALSE, ...) {
-#  print.summary.RandomFieldsReturn(summary.RandomFieldsReturn(x, ...))#
-#}
-#
-#print.summary.RandomFieldsReturn <- function(x, give.attr=FALSE, ...) {
-#  #str(x)
-#  class(x) <- "double"
-#  str(x, no.list=TRUE, give.attr=FALSE) #
-#  if (!give.attr) {
-#    cs <- attr(x, "coord_system")
-#    if (!(cs[1] %in% c("auto", "cartesian")) ||
-#        (cs[2] != "keep" && cs[1] != cs[2])) {
-#      cat(' - attr(*, "coord_system")=')
-#      str(cs, no.list=TRUE, give.attr=FALSE) #
-#    }
-#  }
-#  # class(x) <- "RandomFieldsReturn"
-#  invisible(x)
-#}
+setMethod(f="dimensions", signature="RFpointsDataFrame", 
+	  definition=function(obj) return(1))
 

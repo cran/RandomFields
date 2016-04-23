@@ -4336,7 +4336,8 @@ int structtrafoproc(cov_model  VARIABLE_IS_NOT_USED *cov,
   // ownloc dennoch zum Schluss geloescht wird.
 
 
-  Transform2NoGrid(cov, true, true, false);
+  TransformLoc(cov, true, true, false);
+  SetLoc2NewLoc(sub, PLoc(cov)); // passt das?
   
   location_type *loc = Loc(cov);
   if (loc->len != 1) SERR("trafo currently only possible for a single data set");

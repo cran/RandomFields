@@ -871,8 +871,9 @@ int struct_poisson(cov_model *cov, cov_model **newmodel){
   if (cov->key != NULL) COV_DELETE(&(cov->key));
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
-  }
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
+    SetLoc2NewLoc(next, PLoc(cov)); // passt das?
+   }
 
   if (!isPointShape(next)) {
     int err;
@@ -1439,7 +1440,7 @@ int struct_smith(cov_model *cov,  cov_model **newmodel){
 
   if (cov->role != ROLE_SMITH) BUG;  
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, false, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(sub, PLoc(cov));
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key));
@@ -1512,7 +1513,7 @@ void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
     location_type *loc = Loc(cov);
     long len = loc->totalpoints;    
     QALLOC(len);
-    if (loc->grid || loc->Time) Transform2NoGrid(sub, false, true, false);   
+    if (loc->grid || loc->Time) TransformLoc(sub, false, true, false);   
   }
 
   location_type *loc = Loc(cov);
@@ -1690,7 +1691,7 @@ int struct_randomcoin(cov_model *cov, cov_model **newmodel){
 
   ROLE_ASSERT(ROLE_POISSON_GAUSS);
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
-    Transform2NoGrid(cov, true, GRIDEXPAND_AVOID, false);
+    TransformLoc(cov, true, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(pdf == NULL ? shape : pdf, PLoc(cov)); 
   }
   if (cov->key != NULL) COV_DELETE(&(cov->key));

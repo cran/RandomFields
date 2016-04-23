@@ -290,7 +290,7 @@
 
  Note: Conversion between the \pkg{sp}
  format and the conventional format can be
- done using the method \command{\link{RFspDataFrame2conventional}} and the
+ done using the method \command{RFspDataFrame2conventional} and the
  function \command{conventional2RFspDataFrame}. 
  
  \code{InitRFsimulate} returns 0 if no error has occurred and a positive value

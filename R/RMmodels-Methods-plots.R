@@ -22,12 +22,9 @@ setMethod(f="[", signature = 'RMmodel', def = accessSlotsByName)
 setMethod(f="[", signature = 'RMmodelFit', def = accessSlotsByName)
 setMethod(f="[", signature = 'RMmodelgenerator', def = accessSlotsByName)
 
-setReplaceMethod(f="[", signature = 'RMmodel',
-                 def = accessReplaceSlotsByName)
-setReplaceMethod(f="[", signature = 'RMmodelFit',
-                 def = accessReplaceSlotsByName)
-setReplaceMethod(f="[", signature = 'RMmodelgenerator',
-                 def = accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = 'RMmodel', accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = 'RMmodelFit', accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = 'RMmodelgenerator',accessReplaceSlotsByName)
 
 
 ## summing up RMmodels
@@ -296,9 +293,6 @@ str.RMmodel <-
 summary.RMmodel <- function(object, max.level=5, ...)
   summary(PrepareModel2(object, ...), max.level=max.level)
 
-setMethod(f="show", signature='RMmodel',
-          definition=function(object) print.RMmodel(object, max.level=8))#
-
 summary.RM_model <- function(object, ...) {
   class(object) <- "summary.RMmodel"
   object
@@ -318,9 +312,9 @@ print.RMmodel <- function(x, max.level=5,...) {
                         max.level=max.level)#
 }
 
+
 setMethod(f="show", signature='RMmodel',
           definition=function(object) print.RMmodel(object))#
-
 
 
 
@@ -331,18 +325,6 @@ print.RMmodelgenerator <- function(x, ...) {
   str(x, give.attr=FALSE)#
   cat("*** end of '", ZF_MODEL_FACTORY, "' ***\n", sep="")#
 }
-  
-setMethod(f="show", signature='RMmodelgenerator',
-          definition=function(object) print.RMmodelgenerator(object))#
-
-
-
-## ## buildCovList
-## setGeneric(name = "rfBuildCovList", 
-##            def = function(model) standardGeneric("rfBuildCovList"))
-## setMethod("rfBuildCovList", signature=c('RMmodel'),
-##           function(model) buildCovList(model))
-##           ## see convert_new.R for fct buildCovList
 
 
 
@@ -383,17 +365,6 @@ rfConvertRMmodel2string <- function(model){
 
 ## Plot
 
-setMethod(f="plot", signature(x='RMmodel', y="missing"),
-	  definition=function(x, y, dim=1, n.points=200, fct.type=NULL,
-            MARGIN, fixed.MARGIN, maxchar=15, ...)
-          plotRMmodel(x, dim=dim, n.points=n.points, fct.type=fct.type,
-                      MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN,
-                      maxchar=maxchar, ...))
-#setMethod(f="points", signature(x='RMmodel', y="missing"),
-#	  definition=function(x, y, ...) pointsRMmodel(x, ...))
-#setMethod(f="lines", signature(x='RMmodel', y="missing"),
-#	  definition=function(x, y, ...) linesRMmodel(x, ...))
-
 preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
                                MARGIN, fixed.MARGIN){
   types <- c("Cov", "Variogram", "Fctn")
@@ -423,6 +394,7 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
     all.vdim[i] <- vdim[1]
     all.fct.types[i] <- fct.type[1]
   }
+
   if (!all(all.vdim == all.vdim[1]))
     stop("models have different multivariability")
   
@@ -501,22 +473,22 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 }
 
 
-singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {    
+singleplot <- function(cov, dim, li, plotmethod, dots, dotnames) {    
   if (dim==1) {
     D <- li$distance             
     iszero <- D == 0
-    if (plotfctcall == "matplot")  {
+    if (plotmethod == "matplot")  {
         plotpoint <- any(iszero) && diff(range(dots$ylim)) * 1e-3 <
           diff(range(cov)) - diff(range(cov[!iszero]))
         if (plotpoint) D[iszero] <- NA
     } else plotpoint <- FALSE
     liXY <-
-      if (plotfctcall=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
+      if (plotmethod=="plot.xy") list(xy = xy.coords(x=D, y=cov)) ## auch D ?
       else list(x=D, y=cov)
     
-    ##       Print(plotfctcall, args=c(dots, liXY))
+    ##       Print(plotmethod, args=c(dots, liXY))
     
-    do.call(plotfctcall, args=c(dots, liXY))   
+    do.call(plotmethod, args=c(dots, liXY))   
     if (plotpoint) {
       for (i in 1:ncol(cov))
         points(0, cov[iszero, i], pch=19 + i, col = dots$col[i])
@@ -528,20 +500,34 @@ singleplot <- function(cov, dim, li, plotfctcall, dots, dotnames) {
     local.dots <- dots
     local.dots$col <- NULL
     local.dots$lty <- NULL
+    is.contour <- is.character(plotmethod) && plotmethod == "contour"
+    if (!is.contour) {
+      if (ncol(cov) > 1)
+        stop("several models can be plotted at once only with 'contour'")
+      col <- default.image.par(dots$zlim, NULL)$data$default.col
+    }
     for (i in 1:ncol(cov)) {
-      if (!addgiven) local.dots$add <- i > 1
-      do.call(graphics::contour,
-              args=c(list(x=li$distance, y=li$distanceY, col=dots$col[i],
-                lty = dots$lty[i],
-                z=matrix(cov[, i], nrow=length(li$distance))), local.dots))
+      if (!addgiven && is.contour) local.dots$add <- i > 1
+      do.call(plotmethod,
+              args=c(list(x=li$distance, y=li$distanceY,
+                  col=if (is.contour) dots$col[i] else col,
+                  lty = dots$lty[i],
+                  z=matrix(cov[, i], nrow=length(li$distance))), local.dots))
     }
   }
 }
 
 
-plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
-                        maxchar=15, ...) {
+RFplotModel <- function(x, y, dim=1,
+                        n.points=
+                        if (dim==1 || is.contour) 200 else 100,
+                        fct.type=NULL,
+                        MARGIN, fixed.MARGIN,
+                        maxchar=15, ...,
+                        plotmethod=if (dim==1) "matplot" else "contour") {
+  is.contour <- is.character(plotmethod) && plotmethod == "contour"
   RFopt <- RFoptions()
+ 
   if (ex.red <- RFopt$internal$examples_reduced)
     n.points <- as.integer(min(n.points, ex.red - 2))
   
@@ -577,12 +563,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
   mnames <- substr(mnames, 1, maxchar)
 
   dots <- mergeWithGlobal(dots[!models])
-  dotnames <- names(dots)
-  
-  plotfctcall <- if ("plotfctcall" %in% dotnames)
-    dots$plotfctcall else "matplot"
-  dots$plotfctcall <- NULL
-  
+  dotnames <- names(dots)  
 
   if (!("type" %in% dotnames)) dots$type <- "l"
   li <- preparePlotRMmodel(x=x, xlim=dots$xlim, ylim=dots$ylim,
@@ -641,7 +622,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
 
   dimcov <-  dim(cov[[1]])
   graphics <- RFopt$graphics  
-  if (plotfctcall != "plot.xy") { ### points and lines !!
+  if (plotmethod != "plot.xy") { ### points and lines !!
      if (is.null(dimcov)) { ## i.e. vdim == 1
       ArrangeDevice(graphics, c(1,1))
     } else {
@@ -650,12 +631,12 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     }
   }
     
-  if (any(par()$mfcol != c(1,1))) par(mfcol=c(1,1)) ## noch noetig??
   
+  scr <- NULL
   if (is.null(dimcov)) { ## i.e. vdim == 1
     cov <- sapply(cov, function(x) x)
     if (!("lty" %in% dotnames)) dots$lty <- 1:5
-    singleplot(cov=cov, dim=dim, li=li, plotfctcall, dots=dots,
+    singleplot(cov=cov, dim=dim, li=li, plotmethod, dots=dots,
                dotnames=dotnames)
  #   Print(mnames, dots$col, dots$lty)
     
@@ -678,7 +659,7 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
         par(mar=c(0,0,2,1))
 
         singleplot(cov = sapply(cov, function(x) x[, i,j]),
-                   dim = dim, li=li, plotfctcall=plotfctcall, dots=dots,
+                   dim = dim, li=li, plotmethod=plotmethod, dots=dots,
                    dotnames = dotnames)
 
         box()
@@ -690,35 +671,20 @@ plotRMmodel <- function(x, y, dim, n.points, fct.type, MARGIN, fixed.MARGIN,
     }
   }
 
-  if (graphics$always_close_screen || !is.null(dimcov))
-    close.screen(all.screens=TRUE)
+  if (graphics$split_screen && graphics$close_screen) {
+    close.screen(scr)
+    scr <- NULL
+  }
 
-  return(NULL)
+  return(scr)
 }
 
 
-points.RMmodel <- function(x, y, n.points = 200, fct.type = NULL, ...) {
-  dots <- list(...)
-  if (!("type" %in% names(dots))) dots$type <- "p"
-  do.call(plotRMmodel, args=c(dots, list(
-                         x=x, dim=1, n.points=n.points,
-                         fct.type=fct.type, plotfctcall="plot.xy"))
-          )
-  ##  li <- preparePlotRMmodel(x=x, xlim=xlim, n.points=n.points, dim=dim,
-  ##                           fct.type=fct.type)
-  ##  cov <- rfeval(x=li$distance, model=x, fctcall=li$fctcall)
-  ##  plot.xy(xy.coords(x=li$distance, y=cov), xlim=xlim, type="p",
-  ##          pch=pch, lty=lty, col=col, bg=bg, cex=cex, lwd=lwd, ...)
-}
+points.RMmodel <- function(x, ..., type="p")  
+  RFplotModel(x, ...,type=type,  plotmethod="plot.xy")
+lines.RMmodel <- function(x, ..., type="l")
+  RFplotModel(x, ...,type=type,  plotmethod="plot.xy")
 
-lines.RMmodel <- function(x, y, n.points = 200, fct.type = NULL, ...) {
-  dots <- list(...)
-  if (!("type" %in% names(dots))) dots$type <- "l"
-  do.call(plotRMmodel, args=c(dots, list(
-                         x=x, dim=1, n.points=n.points,
-                         fct.type=fct.type, plotfctcall="plot.xy"))
-          )
-}
 
 
 # @FUNCTION-STARP**********************************************************
@@ -789,3 +755,17 @@ list2RMmodel <- function(x, skip.prefix.check=FALSE) {
     #                        ")", sep=""))))
   }
 }
+
+setMethod(f="plot", signature(x='RMmodel', y="missing"),
+          function(x, y, ...) RFplotModel(x, ...))
+setMethod(f="lines", signature(x='RMmodel'),
+          function(x, ..., type="l")
+          RFplotModel(x, ..., type=type, plotmethod="plot.xy"))
+setMethod(f="points", signature(x='RMmodel'),
+          function(x, ..., type="p")
+          RFplotModel(x, ..., type=type, plotmethod="plot.xy"))
+setMethod(f="persp", signature(x='RMmodel'),
+          function(x, ..., dim=2, zlab="")
+          RFplotModel(x,...,dim=dim,zlab=zlab,plotmethod="persp"))
+setMethod(f="image", signature(x='RMmodel'),
+          function(x, ..., dim=2) RFplotModel(x,...,dim=dim,plotmethod="image"))

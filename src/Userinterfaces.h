@@ -382,16 +382,19 @@ typedef struct gui_param{
 } gui_param;
 #define gui_START {true, CircEmbed, {1024, 64}}
 
-#define graphicsN 9
+#define graphicsN 12
 extern const char *graphics[graphicsN];
 #define GRAPHICS_UPTO 3
-typedef struct graphics_param{
-  bool onefile;
-  double height, resolution;
+typedef struct graphics_param 
+{
+  bool split_screen, close_screen, onefile;
+  double height, width, resolution;
   int PL, increase_upto[2], always_open, always_close, number;
   char filename[100];
 } graphics_param;
-#define graphics_START  {false,  6.0, 72, 1, {3, 4}, true, false, 0, ""}
+#define graphics_START  { true, true, false, \
+      6.0, RF_NA, 72.0,			     \
+      1, {3, 4}, true, NA_INTEGER, 0, ""}
 
 
 #define registersN 3

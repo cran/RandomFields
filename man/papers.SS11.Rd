@@ -63,7 +63,7 @@ length.arrow <- 1.5 / thinning
 runif(1)
 seed <- .Random.seed
 eps <- FALSE # true falls eps/pdf drucken
-\dontshow{if(RFoptions()$internal$examples_red){warning("modified 'x'"); x <- c(-3, 3, 0.5)}}
+\dontshow{if(RFoptions()$internal$examples_red){warning("modified <x>"); x <- c(-3, 3, 0.5)}}
 for (modelname in c("divfree", "curlfree")) {
  cat(modelname, "\n")
  model <- list(modelname, list("matern", nu=nu))
