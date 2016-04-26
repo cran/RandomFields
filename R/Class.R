@@ -293,4 +293,4 @@ setClass("RFfit",
          )
 
 ## generic S4 method for 'plot'
-# setGeneric("plot")
+setGeneric("plot")
