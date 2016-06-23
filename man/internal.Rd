@@ -37,8 +37,8 @@ ScreenDevice(height, width)
 FinalizeExample()
 StartExample(reduced = TRUE)
 
-Dependencies(install = all(pkgs == all.pkgs),
-             check=TRUE, pkgs = all.pkgs, dir = "Dependencies")
+Dependencies(pkgs = all.pkgs, dir = "Dependencies",
+             install = FALSE, check=TRUE, reverse=FALSE)
 
 showManpages(path="/home/schlather/svn/RandomFields/RandomFields/man")
 
@@ -59,7 +59,7 @@ plotWithCircles(data, factor=1.0,
     then ignored. If \code{FALSE} only examples of functions (which are
     search in the environments) are run.
   }
-  \item{install, check, pkgs, dir}{internal}
+  \item{pkgs, dir,install, check, reverse}{internal}
   \item{height,width}{window sizes}
   \item{data, factor, xlim, ylim, col, fill, ...}{internal}
   \item{reduced}{internal}

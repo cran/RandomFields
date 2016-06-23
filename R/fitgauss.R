@@ -939,7 +939,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
   general <- RFopt$general
   pch <- general$pch
-  printlevel <- general$printlevel
+  basic <- RFopt$basic
+  printlevel <- basic$printlevel
   if (printlevel < PL_IMPORTANT) pch <- ""
    
   fit <- RFopt$fit

@@ -3,18 +3,19 @@
 \title{Setting control arguments}
 \description{
  \command{\link{RFoptions}} sets and returns control arguments for the analysis
- and the simulation of random fields
+ and the simulation of random fields. It expands the functionality of
+ \link[RandomFieldsUtils]{RFoptions}.
 }
 \usage{
- RFoptions(..., no.readonly = TRUE)
+ RFoptions(...)
 }
 \arguments{
  \item{...}{arguments in \code{tag = value} form, or a list of tagged
  values.}
- \item{no.readonly}{If \command{\link{RFoptions}} is called without
-   argument then all arguments are returned in a list. If
-   \code{no.readonly=TRUE} then only rewritable arguments are returned.
- }
+ %\item{no.readonly}{If \command{\link{RFoptions}} is called without
+%   argument then all arguments are returned in a list. If
+%   \code{no.readonly=TRUE} then only rewritable arguments are returned.
+% }
 }
 \details{
   The subsections below comment on\cr
@@ -2144,30 +2145,6 @@ without the user's notice.
 \value{
  \code{NULL} if any argument is given, and the full list of
  arguments, otherwise.
-
- if \code{no.readonly=FALSE} then additionally,
- a list called \code{readonly} is included containing
- \cr
- * \code{covmaxchar}: the maximum length of a model name
- * \code{covnr}: number of currently implemented
- variogram/covariance models (-1 means that none of the functions like
- \command{\link{RFsimulate}}, \command{\link{RFfit}}
- , etc., have been called yet.)
- \cr
- * \code{distrmaxchar}: max. name length for a distribution
- \cr
- * \code{distrnr}: number of currently implemented
- distributions
- \cr
- * \code{maxdim}: maximum number of dimensions for a
- random field
- \cr
- * \code{maxmodels}: maximum number of elementary models in
- definition of a complex covariance model
- \cr
- * \code{methodmaxchar}: max. name length for methods
- \cr
- * \code{methodnr}: number of currently implemented simulation methods
 }
 
 \references{

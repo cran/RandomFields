@@ -35,7 +35,7 @@ PrepareModel2 <- function(model, ..., x=NULL) {
     if ((m[[i]][[1]] %in% ZF_MIXED) && length(m[[i]]$X)==1 &&
         is.numeric(m[[i]]$X) && m[[i]]$X==1 && !is.null(m[[i]]$b)) {        
       m[[i]] <- list(ZF_TREND[2], mean=m[[i]]$b)
-      if (RFoptions()$general$printlevel > PL_IMPORTANT)
+      if (RFoptions()$basic$printlevel > PL_IMPORTANT)
         message(paste("The '1' in the mixed model definition has been replaced by '", ZF_TREND[1], "(mean=", m[[i]]$mean, ")'.", sep=""))
       }
   }
@@ -81,7 +81,7 @@ PrepareModel <-  function(model, param, trend=NULL,
      else return(list(ZF_SYMBOLS_PLUS, model, trend))
   }
     
-  printlevel <- RFoptions()$general$printlevel
+  printlevel <- RFoptions()$basic$printlevel
   STOP <- function(txt) {
     if (printlevel>=PL_ERRORS) {
       cat("model: ")
@@ -304,7 +304,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
                     dim=NULL, # == spatialdim!
                     length.data,
                     y.ok = FALSE, 
-                    printlevel = RFoptions()$general$printlevel){
+                    printlevel = RFoptions()$basic$printlevel){
 
   ## do not pass anything on "..." ! --- only used for internal calls
   ## when lists are re-passed
@@ -792,7 +792,7 @@ C_CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
                       dim=NULL, # == spatialdim!
                       length.data,
                       y.ok = FALSE, 
-                      printlevel = RFoptions()$general$printlevel){
+                      printlevel = RFoptions()$basic$printlevel){
  
   neu <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, distances=distances,
             dim=dim, length.data=length.data, y.ok=y.ok, 

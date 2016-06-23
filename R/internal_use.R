@@ -56,6 +56,16 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       importMethodsFrom <- exportMethods <- S3method <- function(...) NULL
   .env <- new.env()
 
+  
+  exportPattern <- function(p) { ## necessary to read NAMESPACE??!!
+    #Print(p, length(p))
+    all.pattern <- p %in% c("^[^\\.]", "^[^.]", ".") | get("all.pattern", .env)
+    if (!.ignore.all) assign("all.pattern", all.pattern, .env)
+    if (all.pattern) return(NULL)
+    stopifnot(nchar(p)==2, substr(p,1,1)=="^")
+    assign("p", c(get("p", .env), substring(p, 2)), .env)
+  }
+
   export <- function(...) {
     ## code from 'rm'
     dots <- match.call(expand.dots = FALSE)$...
@@ -87,8 +97,9 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     .files <- dir(.path, pattern="d$")
     .fct.list <- character(length(.files))
     for (i in 1:length(.files)) {
-      cat(i, .path, .files[i], "\n")
-      #if (i == 152) {cat("jumped\n"); next}
+      #cat(i, .path, .files[i], "\n")
+      #if (i == 152) {cat("jumped\n"); next}      
+      #Print(.path, .files[i])
       .content <- scan(paste(.path, .files[i], sep="/") , what=character(),
                        quiet=TRUE)
       .content <- strsplit(.content, "alias\\{")
@@ -97,7 +108,6 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
         strsplit(strsplit(.content,"\\}")[[1]][1], ",")[[1]][1]
     }
   }
-  Print(.fct.list, length(.fct.list)) #
   .include <- include
   RFoptions(graphics.close_screen = TRUE, graphics.split_screen = TRUE)
   .RFopt <- RFoptions()
@@ -106,7 +116,6 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
   .not.isna <- !is.na(.included.fl)
   .include <- .include[.not.isna]
   .included.fl <- .included.fl[.not.isna]
-  Print(.included.fl, get("export", .env), get("p", .env)); #return(NA)
   .max.fct.list <- max(.included.fl)
   if (single.runs) {
     file.in <- "example..R"
@@ -144,7 +153,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
       }
       RFoptions(storing = FALSE);
       cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
-      if (.tryok && !is.na(RFoptions()$general$seed)) {
+      if (.tryok && !is.na(RFoptions()$basic$seed)) {
         Print(.not_working, paste(.not_working_no, collapse=", ")) #
         stop("seed not NA: ", .fct.list[.idx])
       }
@@ -385,14 +394,30 @@ reverse_dependencies_with_maintainers <-
     db[pos, c("Package", "Version", "Maintainer")]
   }
 
-Dependencies <- function(install = all(pkgs == all.pkgs),
-                         check=TRUE, pkgs = all.pkgs, dir = "Dependencies") {
+Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
+                         install = FALSE, check=TRUE, reverse=FALSE) {
   all <- reverse_dependencies_with_maintainers("RandomFields", which="all")
   all.pkgs <- all[, 1]
   PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")    
   
   ## getOption("repos")["CRAN"]
   URL <- "http://cran.r-project.org/src/contrib/"
+ 
+  if (all(pkgs == all.pkgs)) {
+    if (check)
+      tools::check_packages_in_dir(dir=dir, check_args = c("--as-cran", ""),
+                                   reverse=if (reverse) list(repos =
+                                       getOption("repos")["CRAN"]) else NULL)
+    for (i in 1:length(pkgs)) {
+      print(pkgs[i])
+      system(paste("grep ERROR ",  pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep ERROR ",  pkgs[i], ".Rcheck/00check.log", sep=""))
+      system(paste("grep Error ",  pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep Error ",  pkgs[i], ".Rcheck/00check.log", sep=""))
+    }
+    return(NULL)
+  }
+
   if (install) {
     system(paste("mkdir ", dir))
     system(paste("rm ", dir, "/*tar.gz*", sep=""))
@@ -403,20 +428,22 @@ Dependencies <- function(install = all(pkgs == all.pkgs),
     ## extended version see RandomFields V 3.0.51 or earlier     
     }
   }
- 
+   ## old:
   if (check) {
-    tools::check_packages_in_dir(dir=dir)
-    return(NULL)
-
-    ## old:
-    for (i in 1:length(pkgs)) {
+    for (j in 1:length(pkgs)) {
+      i <- pmatch(pkgs[j], PKGS)
+      if (is.na(i)) next
       command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
       Print(command) #
       x <- system(command)
+      Print(x)
+      system(paste("grep ERROR ",  pkgs[j], ".Rcheck/00install.out", sep=""))
+      system(paste("grep Error ",  pkgs[j], ".Rcheck/00check.log", sep=""))
       if (x != 0) stop(PKGS[i], "failed")
     }
   }
 }
 # R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
+
 
 #Dependencies()

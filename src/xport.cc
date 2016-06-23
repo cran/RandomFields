@@ -25,16 +25,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 solve_DELETE_type Ext_solve_DELETE = NULL;
 solve_NULL_type Ext_solve_NULL = NULL;
-solvePosDef__type Ext_solvePosDef_ = NULL;
+solvePosDef_type Ext_solvePosDef = NULL;
 
-sqrt__type Ext_sqrt_ = NULL;
-sqrt_RHS__type Ext_sqrt_RHS_ = NULL;
+sqrtPosDef_type Ext_sqrtPosDef = NULL;
+sqrtRHS_type Ext_sqrtRHS = NULL;
 
 getErrorString_type Ext_getErrorString = NULL;
 setErrorLoc_type Ext_setErrorLoc = NULL;
 I0mL0_type Ext_I0mL0 = NULL;
 invertMatrix_type Ext_invertMatrix = NULL;
-
+getUtilsParam_type Ext_getUtilsParam = NULL;
+attachRFoptions_type Ext_attachRFoptions = NULL;
+detachRFoptions_type Ext_detachRFoptions = NULL;
+relaxUnknownRFoption_type Ext_relaxUnknownRFoption = NULL;
 
 #include <R_ext/Rdynload.h>
 
@@ -42,17 +45,22 @@ invertMatrix_type Ext_invertMatrix = NULL;
 #define CALL(what) Ext_##what = (what##_type) R_GetCCallable(pkg, #what)
 
 void includeXport() {
-
   CALL(solve_DELETE); 
   CALL(solve_NULL); 
-  CALL(solvePosDef_); 
-  CALL(sqrt_); 
-  CALL(sqrt_RHS_); 
+  CALL(solvePosDef); 
+  CALL(sqrtPosDef); 
+  CALL(sqrtRHS); 
 
   CALL(getErrorString); 
   CALL(setErrorLoc);
   CALL(I0mL0);
   CALL(invertMatrix);
+  CALL(getUtilsParam);
+  CALL(attachRFoptions);
+  CALL(detachRFoptions);
+  CALL(relaxUnknownRFoption);
+
+  
  /*
    CALL(= 
    (_type) R_GetCCallable("RandomFieldsUtils", "");

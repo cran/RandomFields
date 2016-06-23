@@ -28,17 +28,23 @@
 # sudo tar xvf ~/TMP/bwidget-1.9.5.tar 
 
 
-# readline <- function(...) return("")
+.onLoad <- function(lib, pkg) {
+  .C("attachRFoptions", package="RandomFields")  
+}
 
-#.onLoad <- function(lib, pkg) {
-#}
+.onAttach <- function (lib, pkg) {
+  packageStartupMessage("This is RandomFields Version: 3.1.16");
+}
 
-#.onAttach <- function (lib, pkg) {
-#  #packageStartupMessage("\n")
-#}
+.onDetach <- function(lib) {
+#   RFoptions(storing=FALSE) ## delete everything
+#  .C("detachRFoptions", package="RandomFields")
+}
 
-#.onUnload <- function(lib, pkg){
-#  }
+.onUnload <- function(lib, pkg){
+   RFoptions(storing=FALSE) ## delete everything
+  .C("detachRFoptions", package="RandomFields")
+}
 #Implementierung von Cox & Isham's non-separable model
 
 #individuelle Praeferenzliste:
@@ -48,7 +54,3 @@
 #  3) if C(maxh)/C(0) > 0.05  -> TBM else CE
 
 
-.onUnload <- function(lib, pkg){
-  RFoptions(storing=FALSE) ## delete everything
-}
- 

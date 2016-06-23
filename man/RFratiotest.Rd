@@ -30,7 +30,7 @@ distances = NULL, dim, transform = NULL, ...)
  \item{seed}{integer. If not \code{NULL} and not \code{NA}, the
    \link[base]{.Random.seed} is set to \code{seed}. Otherwise,
    \command{\link[base]{set.seed}} is set to the value of 
-   \code{RFoptions{}$general$seed}
+   \code{RFoptions{}$basic$seed}
    if the latter is not \code{NA}.
  }
  \item{x, y, z, T, grid, data, lower, upper, methods,

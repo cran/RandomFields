@@ -191,7 +191,6 @@ char
   STANDARDPARAM[MAXPARAM][MAXCHAR],
   STANDARDSUB[MAXSUB][MAXCHAR];
 
-bool RELAX_UNKNOWN_RFOPTION=false; // auf keinen Fall aendern!
 
 void errorMSG(int err, char* M, int len, bool final) {
   char m[LENERRMSG], m2[LENERRMSG];
@@ -258,11 +257,13 @@ void errorMSG(int err, char* M, int len, bool final) {
     char restrictive[100], info[150];
     sprintf(restrictive, "Are the %s() too restrictive?", RFOPTIONS);
     sprintf(info, "\n You get (more) internal information if you set %s(%s=%d) before running your code.",
-	    RFOPTIONS, general[GENERAL_CPRINT], PL_DETAILSUSER);
+	    RFOPTIONS, 
+	    "cPrintlevel",
+	    PL_DETAILSUSER);
     
     sprintf(m, 
 	    "Running out of list of methods. %s%s",
-	    GLOBAL.general.skipchecks
+	    GLOBAL_UTILS->basic.skipchecks
 	    ? "Did you try an invalid parameter combination?"
 	    : restrictive,
 	    PL <= 2 ? info : "" );
@@ -486,11 +487,8 @@ void InitModelList() {
   assert(LAST_ISO == 17); // otherwise change ISONAMES
   assert(MAXMPPDIM <= MAXSIMUDIM); // ZERO
   // assert(CUTOFF_THEOR == 4);/* do not change this value as used in RFmethods.Rd */
-
-  includeXport();
-
+ 
   int i;
-
   for (i=0; i<MAXSIMUDIM; i++) ZERO[i] = 0.0;
 
   for (i=0; i<MAXPARAM; i++) sprintf(STANDARDPARAM[i], "k%d", i+1);

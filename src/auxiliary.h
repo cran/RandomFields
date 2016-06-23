@@ -41,40 +41,7 @@ extern "C" {
 }
 bool is_diag(double *aniso, int dim);
 
-
-#define INT Integer(el, name, 0)
-#define LOG Logical(el, name, 0)
-#define NUM Real(el, name, 0)
-#define CHR Char(el, name)
-#define STR(X, N)  strcopyN(X, CHAR(STRING_ELT(el, 0)), N);
-#define POS0INT NonNegInteger(el, name) /* better: non-negative */
-#define POS0NUM NonNegReal(el, name)
-#define NEG0NUM NonPosReal(el, name)
-#define POSINT PositiveInteger(el, name) /* better: non-negative */
-#define POSNUM PositiveReal(el, name)
-
-
-
-double Real(SEXP p, char *name, int idx);
-void Real(SEXP el,  char *name, double *vec, int maxn) ;
-int Integer(SEXP p, char *name, int idx, bool nulltoNA) ;
-int Integer(SEXP p, char *name, int idx);
-void Integer(SEXP el, char *name, int *vec, int maxn) ;
-void Integer2(SEXP el, char *name, int *vec) ;
-bool Logical(SEXP p, char *name, int idx);
-char Char(SEXP el, char *name) ;
-void String(SEXP el, char *name, char names[MAXUNITS][MAXCHAR]) ;
-double NonNegInteger(SEXP el, char *name) ;
-double NonNegReal(SEXP el, char *name) ;
-double NonPosReal(SEXP el, char *name) ;
-double PositiveInteger(SEXP el, char *name) ;
-double PositiveReal(SEXP el, char *name) ;
-int GetName(SEXP el, char *name, const char * List[], int n) ;
- int GetName(SEXP el, char *name, const char * List[], int n,
-	    int defaultvalue) ;
-
 void Abbreviate(char *old, char *abbr);
-
 
 
 #endif /* AUXILIARY_H */

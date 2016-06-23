@@ -525,6 +525,7 @@ RFplotModel <- function(x, y, dim=1,
                         MARGIN, fixed.MARGIN,
                         maxchar=15, ...,
                         plotmethod=if (dim==1) "matplot" else "contour") {
+  
   is.contour <- is.character(plotmethod) && plotmethod == "contour"
   RFopt <- RFoptions()
  
@@ -566,10 +567,15 @@ RFplotModel <- function(x, y, dim=1,
   dotnames <- names(dots)  
 
   if (!("type" %in% dotnames)) dots$type <- "l"
+
+#  print("vor Prepare")
+  
   li <- preparePlotRMmodel(x=x, xlim=dots$xlim, ylim=dots$ylim,
                            n.points=n.points, dim=dim,
                            fct.type=fct.type,
                            MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN)
+
+ # print("nach Prepare"); oooooo
 
   dots$xlim <- li$xlim
   if (!is.null(li$ylim)) dots$ylim <- li$ylim

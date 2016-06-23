@@ -112,7 +112,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    mode = if (interactive()) c("plot", "interactive")
                    else "nographics",
                    pch=16, cex=0.2, cex.main=0.85,
-                   printlevel=RFoptions()$general$printlevel,
+                   printlevel=RFoptions()$basic$printlevel,
                    height=3.5,
                    ...
                    ) {
@@ -307,7 +307,7 @@ RFfractaldim <-
            method=c("variogram", "fft"),#"box","range", not correctly implement.
            mode = if (interactive()) c("plot", "interactive") else "nographics",
            pch=16, cex=0.2, cex.main=0.85,
-           printlevel = RFoptions()$general$printlevel,
+           printlevel = RFoptions()$basic$printlevel,
            height=3.5,
            ...) {
   l.method <- eval(formals()$method)

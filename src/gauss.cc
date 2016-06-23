@@ -118,18 +118,18 @@ void mixed_rules(cov_model *cov, pref_type locpref,
 
 
   if (loc->totalpoints * vdim > max_variab &&
-      (sub->finiterange == false || GLOBAL.solve.sparse == false))
+      (sub->finiterange == false || GLOBAL_UTILS->solve.sparse == false))
       pref[Direct] = LOC_PREF_NONE - 0;
 
-  //  printf("spam %f %d %f %d %d\n", GLOBAL.solve.sparse, GLOBAL.solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
-  //  printf("spam %f %d %d %d %d\n", GLOBAL.solve.sparse, GLOBAL.solve.sparse == false, sub->finiterange == true, pref[Direct], PREF_FACTOR);
+  //  printf("spam %f %d %f %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
+  //  printf("spam %f %d %d %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange == true, pref[Direct], PREF_FACTOR);
   //PMI(sub);
 
   int vdimtot = loc->totalpoints * vdim;
   if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
     pref[Direct] = (PREF_BEST + 1) * PREF_FACTOR;
   }
-  else if (pref[Direct] >= PREF_NONE && GLOBAL.solve.sparse != true) {
+  else if (pref[Direct] >= PREF_NONE && GLOBAL_UTILS->solve.sparse != true) {
 #define MONTRAFO(x) ((x) * (x))
     //#define MONTRAFO log   
     //   bool orig_max = max_variab == DIRECT_ORIG_MAXVAR;

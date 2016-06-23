@@ -74,8 +74,6 @@ extern "C" {
   //void GetNaturalScaling(int *covnr, double *q,  /* KAPPAS only  !! */
   //			      int *naturalscaling, double *natscale, int *error);
   
-  SEXP RFoptions(SEXP options);
-  void RelaxUnknownRFoption(int *relax);
   void ResetWarnings(int *all);
   
   //  void GetKeyInfo(int *keyNr, int *total, int *lengths, int *dim, 
@@ -284,6 +282,11 @@ extern "C" {
   void PutGlblVar(int *reg, double *var);
 
   SEXP get_linearpart(SEXP model_reg, SEXP Set);
+
+  void attachRFoptions();
+  void detachRFoptions();
+  void RelaxUnknownRFoption(int *);
+
 
 }
 

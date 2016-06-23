@@ -24,76 +24,34 @@
 ### get&set functions using the C interface
 ### and RFgetNset functions
 
-summary.RFopt <- function(object, ...) {
-  object <- lapply(object, function(z) z[order(names(z))])
-  object <- object[c(1, 1 + order(names(object[-1])))]
-  class(object) <- "summary.RFopt"
-  object
-}
-
-
-print.summary.RFopt <- function(x, ...) {
-  str(x, give.attr=FALSE, ...) #
-  invisible(x)
-}
-
-print.RFopt <- function(x, ...) {
-  print.summary.RFopt(summary.RFopt(x, ...)) #
-  invisible(x)
-}
-
-summary.RFoptElmnt <- function(object, ...) {
-  object <- object[order(names(object))]
-  class(object) <- "summary.RFoptElmt"
-  object
-}
-
-print.summary.RFoptElmnt <- function(x, ...) {
-  str(x, give.attr=FALSE, ...) #
-  invisible(x)
-}
-
-print.RFoptElmnt <- function(x, ...) {
-  print.summary.RFoptElmnt(summary.RFoptElmnt(x, ...)) #
-  invisible(x)
-}
-
-
-RFoptions <- function(..., no.readonly=TRUE) {
-##  on.exit(.C("RelaxUnknownRFoption", FALSE))
-##  .C("RelaxUnknownRFoption", TRUE)
-  opt <- lapply(.External("RFoptions", ...),
-                function(x) {
-                  class(x) <- "RFoptElmnt"
-                  x
-                })
-  if (length(opt)!=0) {      
-    class(opt) <-  "RFopt"
-    if (!no.readonly) {
-      opt$readonly <- list(covmaxchar=MAXCHAR,
-                           covnr=GetCurrentNrOfModels(FALSE),
-                           maxdim=c(cov=MAXCOVDIM, mle=MAXMLEDIM,
-                               simu=MAXSIMUDIM, ce=MAXCEDIM, tbm=MAXTBMSPDIM,
-                               mpp=MAXMPPDIM, hyper=MAXHYPERDIM,
-                               nug=MAXNUGGETDIM, vario=MAXVARIODIM),
-                           maxmodels=MAXFIELDS,
-                           methodmaxchar=METHODMAXCHAR,
-                           methodnr=Forbidden
-                           )
-    }
-  }
-  if (length(opt)==0) invisible(opt) else opt
-}
-
 GetCurrentNrOfModels <- function(init=TRUE) {
   res<- .C("GetCurrentNrOfModels", as.integer(init), nr=as.integer(1))$nr
 }
+
+RFoptions <- function(...) RandomFieldsUtils::RFoptions(...)
+
+#RFoptions <- function(..., no.readonly=TRUE) {
+##  on.exit(.C("RelaxUnknownRFoption", FALSE))
+##  .C("RelaxUnknownRFoption", TRUE)
+#  opt <- RandomFieldsUtils::RFoptions(...)
+#  if (length(opt)!=0 && !no.readonly) {
+#    opt$readonly <- list(covmaxchar=MAXCHAR_RF,
+#                         covnr=GetCurrentNrOfModels(FALSE),
+#                         maxdim=c(ce=MAXCEDIM, tbm=MAXTBMSPDIM,
+#                             mpp=MAXMPPDIM, hyper=MAXHYPERDIM),
+#                         maxmodels=MAXFIELDS,
+#                         methodmaxchar=METHODMAXCHAR,
+#                         methodnr=Forbidden
+#                         )
+#  }
+#  if (length(opt)==0) invisible(opt) else opt
+#}
 
 internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
                                RELAX=FALSE){
  # Print(list(...))
   RFopt <- list()
-  RFopt[[1]] <- .External("RFoptions")
+  RFopt[[1]] <- RandomFieldsUtils::RFoptions()
   if (is.logical(REGISTER)) {
     REGISTER <- if (REGISTER) RFopt[[1]]$registers$register else as.integer(NA)
   }
@@ -108,10 +66,11 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
     if (any(storing) && !l[[last]]) {
       for (p in which(storing)) l[[p]] <- c(FALSE, REGISTER, COVREGISTER)
     }
-    on.exit(.C("RelaxUnknownRFoption", FALSE))
-    .C("RelaxUnknownRFoption", RELAX)
-    .External("RFoptions", LIST=l)
-    RFopt[[2]] <- .External("RFoptions")    
+    on.exit(.C("RelaxUnknownRFoption", as.integer(FALSE),
+               package="RandomFields"))
+    .C("RelaxUnknownRFoption", as.integer(RELAX), package="RandomFields")
+    RandomFieldsUtils::RFoptions(LIST=l)
+    RFopt[[2]] <- RandomFieldsUtils::RFoptions()
   } else {
     RFopt[[2]] <- RFopt[[1]]
   }
@@ -154,7 +113,7 @@ InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
                       PACKAGE="RandomFields"), silent=TRUE)
     if (is.numeric(vdim)) return(vdim)
     msg <- strsplit(vdim[[1]], "\n")[[1]][2]
-    if (RFoptions()$general$printlevel >= PL_ERRORS) cat(msg, "\n")
+    if (RFoptions()$basic$printlevel >= PL_ERRORS) cat(msg, "\n")
   }
   stop(msg)
   ##  stop("model could not be initialized")

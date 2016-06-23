@@ -703,6 +703,9 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
     } else {if (PL>=PL_BRANCHING) {LPRINT("forced.\n");} }
     R_CheckUserInterrupt();
+
+    //   printf("trials=%d %d %d\n", s->trials, trials, s->positivedefinite);
+
   } // while (!s->positivedefinite && (s->trials<trials)) 354-706
 
 

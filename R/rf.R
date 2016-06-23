@@ -309,7 +309,7 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
   
   rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
          y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_USER,
-         dosimulate=FALSE, old.seed=RFoptOld[[1]]$general$seed)
+         dosimulate=FALSE, old.seed=RFoptOld[[1]]$basic$seed)
 
   res <-  .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
                 PACKAGE="RandomFields")
@@ -383,7 +383,7 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
  
   rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
          distances=distances, dim=dim, reg = MODEL_USER, dosimulate=FALSE,
-         old.seed=RFoptOld[[1]]$general$seed)
+         old.seed=RFoptOld[[1]]$basic$seed)
 
   res <- .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
                PACKAGE="RandomFields")
@@ -487,18 +487,18 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
                 missing(distances) || length(distances)==0))
 
   RFopt <- RFoptions() 
-  if (!is.na(RFopt$general$seed)) {
-    allequal <- all.equal(old.seed, RFopt$general$seed)
+  if (!is.na(RFopt$basic$seed)) {
+    allequal <- all.equal(old.seed, RFopt$basic$seed)
     allequal <- is.logical(allequal) && allequal
-    if (dosimulate && RFopt$general$printlevel >= PL_IMPORTANT &&
+    if (dosimulate && RFopt$basic$printlevel >= PL_IMPORTANT &&
         (is.null(old.seed) || (!is.na(old.seed) && allequal)
          )
         ) {
        message("NOTE: simulation is performed with fixed random seed ",
-               RFopt$general$seed,
+               RFopt$basic$seed,
                ".\nSet 'RFoptions(seed=NA)' to make the seed arbitrary.")
      }
-    set.seed(RFopt$general$seed)
+    set.seed(RFopt$basic$seed)
   }
   ##  if (missing(x) || length(x) == 0) stop("'x' not given")
 
@@ -592,7 +592,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                setseed=eval(parse(text="quote(set.seed(seed=seed))")),
                env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
            grid=grid, distances=distances, dim=dim, reg=reg,
-           old.seed=RFoptOld[[1]]$general$seed)
+           old.seed=RFoptOld[[1]]$basic$seed)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
    } # end of uncond simu

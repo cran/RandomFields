@@ -588,8 +588,7 @@ void InverseCovMatrix(cov_model *Cov, double *v, double *det) {
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
   Ext_setErrorLoc(ERROR_LOC);
   //  printf("inverse\n");
-  int Exterr = Ext_solvePosDef_(v, vdimtot, true, NULL, 0, det, cov->Ssolve, 
-			 &(GLOBAL.solve), PL);
+  int Exterr = Ext_solvePosDef(v, vdimtot, true, NULL, 0, det, cov->Ssolve);
   if (Exterr != NOERROR){
     Ext_getErrorString(ERRORSTRING);
     ErrorStop(Exterr);

@@ -463,7 +463,7 @@ prepare4RFspDataFrame <- function(model=NULL,
     if (is.matrix(coords)) colnames(coords) <- coordnames.incl.T
   }
 
-  if (RFopt$general$printlevel>=PL_IMPORTANT && RFopt$internal$warn_newstyle) {
+  if (RFopt$basic$printlevel>=PL_IMPORTANT && RFopt$internal$warn_newstyle) {
     RFoptions(internal.warn_newstyle = FALSE)
     message("New output format of RFsimulate: S4 object of class 'RFsp';\n",
             "for a bare, but faster array format use 'RFoptions(spConform=FALSE)'.")

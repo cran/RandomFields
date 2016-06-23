@@ -475,11 +475,11 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 
       //printf("********************\n");
   
-      Exterr = Ext_solvePosDef_(Ccur, notnas, 
+      Exterr = Ext_solvePosDef(Ccur, notnas, 
 				true, // except for intrinsic Kriging
         	//       as if ordinary Kriging (p 167; 265 in Chiles
 				ResiWithoutNA, atonce,
-			     NULL, cov->Ssolve, &(GLOBAL.solve), PL - 3);
+			     NULL, cov->Ssolve);
       if (Exterr != NOERROR) goto ErrorHandling;    
       
       double inc[MAXLILIGRIDDIM], x[MAXLILIGRIDDIM], xstart[MAXLILIGRIDDIM],
@@ -518,7 +518,6 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 	  if (pred_loc->Time) pred_loc->T[0] = pty[spatialdim];
 	}	 
 	assert(pred_cov -> calling != NULL);
-
 	CovList[pred_cov->nr].covariance(pred_cov, Cx0); // predtot x vdim^2;
 
 	double *ptCx0 = Cx0;
@@ -696,8 +695,8 @@ SEXP simple_residuals(SEXP model_reg){
 	}
       }
       assert(cov->Ssolve != NULL);
-      Exterr = Ext_solvePosDef_(L->XtX, fx_notnas, true, beta, 1, NULL, 
-				cov->Ssolve, &(GLOBAL.solve), PL - 3);
+      Exterr = Ext_solvePosDef(L->XtX, fx_notnas, true, beta, 1, NULL, 
+				cov->Ssolve);
       if (Exterr != NOERROR) goto ErrorHandling;    
      
       if (fx_notnas < betatot) {
@@ -858,11 +857,11 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       variables += notnas * atonce;
       MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
       assert(cov->Ssolve != NULL);
-  
-      Exterr = Ext_solvePosDef_(Ccur, notnas, 
-				true,  // except for negative definite function
-				L->CinvXY, XYcols,
-				&logdet, cov->Ssolve, &(GLOBAL.solve), PL - 3);
+
+      Exterr = Ext_solvePosDef(Ccur, notnas, 
+			       true,  // except for negative definite function
+			       L->CinvXY, XYcols,
+			       &logdet, cov->Ssolve);
       if (Exterr != NOERROR) goto ErrorHandling;  
       logdettot += logdet * atonce;
       double *CinvY = L->CinvXY + betatot * notnas;
@@ -912,9 +911,9 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     MEMCOPY(beta, L->XCY, sizeof(double) * all_betatot);
     assert(!L->betas_separate || sets == 1);
     assert(cov->Ssolve != NULL);
-    Exterr = Ext_solvePosDef_(L->XtX, betatot, true, beta, 
+    Exterr = Ext_solvePosDef(L->XtX, betatot, true, beta, 
 		     L->betas_separate ? repet : 1, NULL, 
-		     cov->Ssolve, &(GLOBAL.solve), PL);
+		     cov->Ssolve);
     if (Exterr != NOERROR) goto ErrorHandling;  
        //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
     for (j=0; j<all_betatot; j++) {

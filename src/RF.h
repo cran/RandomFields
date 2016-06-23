@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include "basic.h"
 
-//
+// 
 // 1
 //// 1
 
@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // #define MEMCOPY(A,B,C) memory_copy(A, B, C)
 
 #include <string.h>
-#include  <utils.h>
+#include <General_utils.h>
 #include "error.h"
 #include "auxiliary.h"
 #include "RandomFields.h"
@@ -424,7 +424,6 @@ extern bool LOCAL_DEBUG;
 extern double ZERO[MAXSIMUDIM], ONE;
 extern char *FREEVARIABLE;
 
-typedef char name_type[][MAXCHAR];
 typedef char longname_type[][MAXLONGCHAR];
 
 typedef char NAname_type[MAX_NA][255];
@@ -561,11 +560,6 @@ typedef char NAname_type[MAX_NA][255];
 #define NUGGET_VDIM 1
 #define NUGGET_PROC_TOL (COMMON_GAUSS + 1)
 #define NUGGET_PROC_VDIM (COMMON_GAUSS + 2)
-
-
-///////////////////////////////////////////////////////////////////////
-//
-#define RFOPTIONS "RFoptions"
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -2037,9 +2031,6 @@ void SetLoc2NewLoc(cov_model *cov, location_type **loc);
 //int add_y_zero(location_type *loc);
 
 
-int Match(char *name, const char * List[], int n);
-int Match(char *name, name_type List, int n);
-
 extern name_type STANDARDPARAM, STANDARDSUB;
 
 void CMbuild(SEXP model, int level, cov_model **Cov);
@@ -2078,9 +2069,6 @@ void addVariable(char *name, double *x, int nrow, int ncol, SEXP env);
 
 
 
-#define MULTIPLEMATCHING -2
-#define NOMATCHING -1
-#define MATCHESINTERNAL -3
 
 #define UNSET -1
 
@@ -2109,30 +2097,9 @@ int get_ranges(cov_model *cov, cov_model **min, cov_model **max,
 int check_recursive_range(cov_model *cov, bool NAOK);
 int internal_DoGauss(cov_model  *key, int nn, double *orig_res);
 
-void strcopyN(char *dest, const char *src, int n);
 //void expandgrid(coord_type xgr, double **xx, int nrow);
 void xtime2x(double *x, int nx, double *T, int len, double **newx, int nrow);
 void removeOnly(cov_model **Cov);
-
-SEXP Logi(bool* V, int n, int max) ;
-SEXP Num(double* V, int n, int max) ;
-SEXP Int(int *V, int n, int max) ;
-SEXP Char(const char **V, int n, int max) ;
-SEXP Mat(double* V, int row, int col, int max);
-SEXP MatInt(int* V, int row, int col, int max) ;
-SEXP Array3D(int** V, int depth, int row, int col, int max) ;
-SEXP String(char [MAXUNITS][MAXCHAR], int n, int max);
-
-
-SEXP Logi(bool* V, int n) ;
-SEXP Num(double* V, int n) ;
-SEXP Int(int *V, int n) ;
-SEXP Char(const char **V, int n) ;
-SEXP Mat(double* V, int row, int col);
-SEXP MatInt(int* V, int row, int col) ;
-SEXP Array3D(int** V, int depth, int row, int col) ;
-
-SEXP TooLarge(int *n, int l);
 
 //int Checking(cov_model **Cov);
 int check2Xnotrafo(cov_model *cov, int tsdim, int tsxdim,
@@ -2506,7 +2473,6 @@ int StructBR(cov_model *cov, gen_storage *s, cov_model **atom);
 sortsofparam uncritical_paramtype(int k, int row, int col);
 
 int check_within_range(cov_model *cov, bool NAOK);
-extern bool RELAX_UNKNOWN_RFOPTION;
 
 
 int INIT_RANDOM_intern(cov_model *M, int moments, gen_storage *s, double *p);
@@ -2976,7 +2942,7 @@ int kappaBoxCoxParam(cov_model *cov, int BC);
 #define MAX_LEN_EXAMPLES 4
 
 
-
+extern bool Xportincluded;
 
 #endif
 

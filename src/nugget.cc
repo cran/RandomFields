@@ -86,7 +86,9 @@ void covmatrix_nugget(cov_model *cov, double *v) {
 
 }
 
-char iscovmatrix_nugget(cov_model VARIABLE_IS_NOT_USED *cov) {  return true; }
+char iscovmatrix_nugget(cov_model VARIABLE_IS_NOT_USED *cov) {  
+  return true; 
+}
 
 void Inversenugget(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) { 
   *v = 0.0; ///(*x==1.0) ? 0.0 : RF_INF; //or better 0.0 => error?

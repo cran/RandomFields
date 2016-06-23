@@ -385,8 +385,8 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
   NAname_type names;
   currentRegister = INTEGER(model_reg)[0];
 
-  bool skipchecks = GLOBAL.general.skipchecks;
-  GLOBAL.general.skipchecks = true;
+  bool skipchecks = GLOBAL_UTILS->basic.skipchecks;
+  GLOBAL_UTILS->basic.skipchecks = true;
   
   CheckModelInternal(model, ZERO, ZERO, ZERO, INTEGER(spatialdim)[0], 
 		     INTEGER(xdimOZ)[0], 1, 1, false, false, 
@@ -397,7 +397,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
 
   // print("global=%d\n", GLOBAL.fit.lengthshortname);
   
-  GLOBAL.general.skipchecks = skipchecks;
+  GLOBAL_UTILS->basic.skipchecks = skipchecks;
   NAs = 0;
   for (i=0; i<MAXNRCOVFCTS;  covzaehler[i++]=0);
   int err = GetNAPosition(KEY[currentRegister], &NAs, mem,//&elmnts, mem_elmnts,
@@ -583,12 +583,12 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP model, SEXP model_bound,
     nr[2] = {INTEGER(model_reg)[0], MODEL_BOUNDS};
   SEXP bounds,
     models[2] = {model, model_bound};
-  bool oldskipchecks = GLOBAL.general.skipchecks;
+  bool oldskipchecks = GLOBAL_UTILS->basic.skipchecks;
 
   if (nr[0] == nr[1]) ERR("do not use register 'model bounds'");
   
   NAOK_RANGE = true;
-  if (LOGICAL(skipchecks)[0]) GLOBAL.general.skipchecks = true;
+  if (LOGICAL(skipchecks)[0]) GLOBAL_UTILS->basic.skipchecks = true;
   for (m=1; m>=0; m--) { // 2er Schleife !!
     // assert(m==1);
     CheckModelInternal(models[m], ZERO, ZERO, ZERO, INTEGER(spatialdim)[0], 
@@ -596,7 +596,7 @@ SEXP Take2ndAtNaOf1st(SEXP model_reg, SEXP model, SEXP model_bound,
 		       LOGICAL(Time)[0], 
 		       R_NilValue,
 		       KEY + nr[m]);  
-    GLOBAL.general.skipchecks = oldskipchecks;
+    GLOBAL_UTILS->basic.skipchecks = oldskipchecks;
   }
   NAOK_RANGE = false;
 
@@ -1007,7 +1007,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
   }
 
   
-  // GLOBAL.general.skipchecks = skipchecks;
+  // GLOBAL_UTILS->basic.skipchecks = skipchecks;
   check_recursive_range(key, true);
 
   if ((err = get_ranges(cov, &min, &max, &pmin, &pmax, &openmin, &openmax))
@@ -1162,7 +1162,7 @@ SEXP SetAndGetModelInfo(SEXP model_reg, SEXP model, SEXP x,
       basic set up of covariance model, determination of the NA's
       and the corresponding ranges.
      */
-//  bool skipchecks = GLOBAL.general.skipchecks;
+//  bool skipchecks = GLOBAL_UTILS->basic.skipchecks;
   int i, // NAs,
     //   unp = 0,
     //  effect[MAXSUB], nas[MAXSUB],

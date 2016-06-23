@@ -97,7 +97,8 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
   refit <- RFopt$fit$cross_refit
   return.variance <- RFopt$krige$return.variance
   general <- RFopt$general
-  printlevel <-general$printlevel
+  basic <- RFopt$basic
+  printlevel <- basic$printlevel
   details <- general$detailed_output
   if (general$modus_operandi == "neurotic") stop("crossvalidation is not a precise method")
   if (length(method) != 1) stop("exactly 1 method must be given")

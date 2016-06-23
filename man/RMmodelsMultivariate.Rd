@@ -90,10 +90,13 @@ model <- RMparswmX(nudiag=c(0.5, 0.5), rho=rho)
 
 ## generation of artifical data
 data <- RFsimulate(model = model, x=x, y=y, grid=FALSE)
+\dontshow{if (!interactive()) .dataorig <- data}
 ## introducing some NAs ...
 data@data$variable1[1:10] <- NA
 data@data$variable2[90:100] <- NA
+\dontshow{if (!interactive()) {print("no NAs introduced"); data <- .dataorig}}
 plot(data)
+
 % StartExample NICHT weiter vorne!
 \dontshow{StartExample()}
 ## co-kriging

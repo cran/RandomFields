@@ -16,7 +16,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  method=c("variogram", "fft"), % "box", "range", 
  mode = if (interactive ()) c("plot", "interactive") else "nographics", %ok
  pch=16, cex=0.2, cex.main=0.85,
- printlevel = RFoptions()$general$printlevel,
+ printlevel = RFoptions()$basic$printlevel,
  height=3.5,
  ...)
 }

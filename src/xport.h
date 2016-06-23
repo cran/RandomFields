@@ -26,31 +26,41 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFxport_H
 #define RFxport_H 1
 
+#include <Options_utils.h>
 
 typedef void (*solve_DELETE_type)(solve_storage **S); 
 typedef void (*solve_NULL_type)(solve_storage *x); 
-typedef int (*solvePosDef__type)(double *, int, bool, double *, int, double *, 
-		solve_storage *, solve_param *,  int);
+typedef int (*solvePosDef_type)(double *, int, bool, double *, int, double *, 
+		solve_storage *);
 
-typedef int (*sqrt__type)(double*, int, solve_storage*, solve_param*, int);
-typedef int (*sqrt_RHS__type)(solve_storage*, double*, double*);
+typedef int (*sqrtPosDef_type)(double*, int, solve_storage*);
+typedef int (*sqrtRHS_type)(solve_storage*, double*, double*);
 
 typedef void (*getErrorString_type)(char errorstring[MAXERRORSTRING]);
 typedef void (*setErrorLoc_type)(char errorloc[nErrorLoc]);
 typedef double (*I0mL0_type)(double x);
 typedef int (*invertMatrix_type)(double *M, int size);
-
+typedef void (*getUtilsParam_type)(utilsparam**); 
+typedef void (*attachRFoptions_type)(const char **, int,  const char ***, int *,
+			  setparameterfct, finalsetparameterfct, 
+			  getparameterfct);
+typedef void (*detachRFoptions_type)(const char **, int);
+typedef void (*relaxUnknownRFoption_type)(bool);
 
 extern solve_DELETE_type Ext_solve_DELETE;
 extern solve_NULL_type Ext_solve_NULL;
-extern solvePosDef__type Ext_solvePosDef_;
-extern sqrt__type Ext_sqrt_;
-extern sqrt_RHS__type Ext_sqrt_RHS_;
+extern solvePosDef_type Ext_solvePosDef;
+extern sqrtPosDef_type Ext_sqrtPosDef;
+extern sqrtRHS_type Ext_sqrtRHS;
 extern getErrorString_type Ext_getErrorString;
 extern setErrorLoc_type Ext_setErrorLoc;
 extern I0mL0_type Ext_I0mL0;
 extern invertMatrix_type Ext_invertMatrix;
+extern getUtilsParam_type Ext_getUtilsParam;
+extern attachRFoptions_type Ext_attachRFoptions;
+extern detachRFoptions_type Ext_detachRFoptions;
+extern relaxUnknownRFoption_type Ext_relaxUnknownRFoption;
 
 void includeXport();
-
+extern utilsparam* GLOBAL_UTILS;
 #endif

@@ -66,12 +66,12 @@ hurst(x, y = NULL, z = NULL, data, gridtriple = FALSE, sort=TRUE,
  fft.max.length = Inf, 
  method=c("dfa", "fft", "var"), mode=c("plot", "interactive"),%ok
  pch=16, cex=0.2, cex.main=0.85,
- PrintLevel=RFoptions()$general$printlevel,height=3.5, ...)
+ PrintLevel=RFoptions()$basic$printlevel,height=3.5, ...)
 fractal.dim(x, y = NULL, z = NULL, data, grid=TRUE, gridtriple = FALSE,
  bin, vario.n=5, sort=TRUE, fft.m = c(65, 86), fft.max.length=Inf,
  fft.max.regr=150000, fft.shift = 50, method=c("variogram", "fft"),
  mode=c("plot", "interactive"), pch=16, cex=0.2, cex.main=0.85,%ok
- PrintLevel = RFoptions()$general$printlevel, height=3.5, ...)
+ PrintLevel = RFoptions()$basic$printlevel, height=3.5, ...)
 fitvario(x, y=NULL, z=NULL, T=NULL, data, model, param, lower=NULL,
  upper=NULL, sill=NA, grid=!missing(gridtriple), gridtriple=FALSE, ...)
 }

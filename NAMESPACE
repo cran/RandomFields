@@ -1,5 +1,6 @@
 #
 #
+#
 #exportPattern("^[^\\.]")
 
 exportPattern("^RM")
@@ -35,7 +36,7 @@ importMethodsFrom("sp", "dimensions")  #"gridded"gibts nicht!
 importFrom('sp', coordinates, CRS, GridTopology, points2grid,
            SpatialPoints, SpatialGridDataFrame, SpatialPointsDataFrame
            )
-importFrom('RandomFieldsUtils', Print)
+importFrom('RandomFieldsUtils', Print, RFoptions)
 #import(sp)
 
 
@@ -135,15 +136,6 @@ S3method(summary, RF_fit)
 
 #S3method(print, AICRFfit)
 
-
-
-
-S3method(print, RFopt)
-S3method(summary, RFopt)
-S3method(print, summary.RFopt)
-S3method(print, RFoptElmnt)
-S3method(summary, RFoptElmnt)
-S3method(print, summary.RFoptElmnt)
 
 S3method(as.matrix, RFgridDataFrame)
 S3method(cbind, RFgridDataFrame)

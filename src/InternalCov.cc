@@ -68,7 +68,7 @@ void kdefault(cov_model *cov, int i, double v) {
       BUG;
     }
     cov->nrow[i] = cov->ncol[i] = 1;
-  } else if (!GLOBAL.general.skipchecks) {    
+  } else if (!GLOBAL_UTILS->basic.skipchecks) {    
     if (cov->nrow[i] != 1 || cov->ncol[i] != 1) { 
 
       //  printf("%ld %ld\n", CovList[cov->nr].kappasize,
@@ -1015,7 +1015,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   isotropy_type iso0; // iso
   domain_type dom, first_dom, last_dom; 
   bool checkerror = false,
-    skipchecks = GLOBAL.general.skipchecks;
+    skipchecks = GLOBAL_UTILS->basic.skipchecks;
   char msg[LENERRMSG] = "";
 
   // erst bei check unten

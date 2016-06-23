@@ -440,7 +440,7 @@ hurst <- function(x, y = NULL, z = NULL, data,
                   method=c("dfa", "fft", "var"),
                   mode=c("plot", "interactive"),
                    pch=16, cex=0.2, cex.main=0.85,
-                  PrintLevel=RFoptions()$general$printlevel,
+                  PrintLevel=RFoptions()$basic$printlevel,
                   height=3.5,
                   ...
                   ) {
@@ -494,7 +494,7 @@ fractal.dim <-
            method=c("variogram", "fft"),# "box","range", not correctly implement.
            mode=c("plot", "interactive"),
            pch=16, cex=0.2, cex.main=0.85,
-           PrintLevel = RFoptions()$general$printlevel,
+           PrintLevel = RFoptions()$basic$printlevel,
            height=3.5,
            ...) {
 
@@ -555,7 +555,7 @@ fitvario.default <-
            lower=NULL, upper=NULL, sill=NA,
            use.naturalscaling=FALSE,
            ## speed=FALSE, i.e. coordniates will be saved in GATTER
-           PrintLevel=RFoptions()$general$printlevel, optim.control=NULL,
+           PrintLevel=RFoptions()$basic$printlevel, optim.control=NULL,
            bins=20, nphi=1, ntheta=1, ntime=20,
            bin.dist.factor=0.5,
            upperbound.scale.factor=3, lowerbound.scale.factor=3, 

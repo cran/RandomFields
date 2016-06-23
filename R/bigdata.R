@@ -268,7 +268,7 @@ BigDataSplit <- function(Z, RFopt) {
        )) return(Z)
   if (method == "auto") {
     method <- "tesselation"
-    if (RFopt$general$printlevel>=PL_IMPORTANT)
+    if (RFopt$basic$printlevel>=PL_IMPORTANT)
       message("Too many locations to use standard estimation methods.\n",
               "Hence an approximative methods is used. However, it is *not* ",
               "ensured\n",

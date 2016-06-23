@@ -2904,24 +2904,6 @@ void x2x(double *x, int nx, double **newx,
 }
 
 
-double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
-    double dummy, 
-	*m0 = (double*) MALLOC(sizeof(double) * dim1 * dim3);
-  int i,j,k;
-  for (i=0; i<dim1; i++) {
-    for (k=0; k<dim3; k++) {
-      dummy = 0.0;
-      for (j=0; j<dim2; j++) {
-	dummy += m1[i + j * dim1] * m2[j + k * dim2];
-      }
-      m0[i + dim1 * k] = dummy;
-    }
-  }
-  return m0;
-}
-
-
-
 
 bool isMiso(matrix_type type) { 
   return type == TypeMiso;
@@ -3564,7 +3546,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
   double min, max,
     value= RF_NA;
 
-  if (GLOBAL.general.skipchecks) return NOERROR;
+  if (GLOBAL_UTILS->basic.skipchecks) return NOERROR;
 
   getrange(cov, &range); 
 

@@ -152,7 +152,7 @@ RFempiricalvariogram <- function(
       bin <- seq(0, sqrt(sum((apply(xx, 2, max)-apply(xx, 2, min))^2))/2,
                  len = bin)
     }
-    if (RFopt$general$printlevel >= PL_SUBIMPORTANT)
+    if (RFopt$basic$printlevel >= PL_SUBIMPORTANT)
       message("Bins in RFempiricalvariogram are chosen automatically:\n", 
               paste(signif(bin, 2), collapse=" "))
   }
@@ -662,7 +662,7 @@ prepareBin <- function(bin)
 {
   if(missing(bin)) return(NULL)
   if (bin[1] > 0) {
-      if (RFoptions()$general$printlevel>1)
+      if (RFoptions()$basic$printlevel>1)
 	message("empirical variogram: left bin border 0 added\n")
       bin <- c(0, bin)
     }

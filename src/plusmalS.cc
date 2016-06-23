@@ -361,27 +361,34 @@ void covmatrixS(cov_model *cov, double *v) {
   cov_model *next = cov->sub[DOLLAR_SUB];
   location_type *locnext = Loc(next);
   assert(locnext != NULL);
-  int i, err, tot, totSq,
+  int i, tot, totSq,
     dim = loc->timespacedim,
     vdim = cov->vdim[0];
   assert(dim == cov->tsdim);
-    
 
-  if (cov->Spgs == NULL && 
-      (err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR)
-    ERR("memory allocation error in 'covmatrixS'");
-  
+  //  printf("hier\n");
+    
   if ((!PisNULL(DSCALE) && P0(DSCALE) != 1.0) || 
       !PisNULL(DANISO) || !PisNULL(DPROJ) || 
       cov->kappasub[DSCALE] != NULL ||
       cov->kappasub[DAUSER] != NULL ||
       cov->kappasub[DPROJ] != NULL
       ) {
-    CovarianceMatrix(cov, v); 
-    return;
+    cov_model *prev  = cov->calling;
+    if (prev == NULL || (!isInterface(prev) && !isProcess(prev))) prev = cov;
+    if (prev->Spgs == NULL && alloc_cov(prev, dim, vdim, vdim) != NOERROR)
+      ERR("memory allocation error in 'covmatrixS'");
+    //  printf("hier B\n");
+     CovarianceMatrix(cov, v); 
+     //    printf("hierC\n");
+   return;
   }
-
-  if (next->xdimprev != next->xdimown) {
+  //  printf("hier A\n");
+ 
+  if (cov->Spgs == NULL && alloc_cov(cov, dim, vdim, vdim) != NOERROR)
+    ERR("memory allocation error in 'covmatrixS'");
+ 
+ if (next->xdimprev != next->xdimown) {
     BUG; // fuehrt zum richtigen Resultat, sollte aber nicht
     // vorkommen!
     CovarianceMatrix(cov, v); 

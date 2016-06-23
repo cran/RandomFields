@@ -15,7 +15,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  fft.max.length = Inf, method = c("dfa", "fft", "var"),
  mode = if (interactive ()) c("plot", "interactive") else "nographics", %ok
  pch = 16, cex = 0.2, cex.main = 0.85,
- printlevel = RFoptions()$general$printlevel, height = 3.5,
+ printlevel = RFoptions()$basic$printlevel, height = 3.5,
  ...)
 }
 \arguments{

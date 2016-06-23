@@ -1010,7 +1010,7 @@ void density(double VARIABLE_IS_NOT_USED *value, cov_model *cov, double *v) {
 
   PutRNGstate();
   ERR("stop : ni nae Zei falsch");
-  double simu_seed = GLOBAL.general.seed + (ni - 1);
+  double simu_seed = GLOBAL_UTILS->basic.seed + (ni - 1);
   addVariable((char*) "seed", &simu_seed, 1, 1, PENV(DENS_ENV)->sexp);
   eval(PLANG(DENS_SEED)->sexp, PENV(DENS_ENV)->sexp);
   GetRNGstate();
@@ -1277,12 +1277,12 @@ void simulate(double *N, cov_model *cov, double *v){
   sub->simu.pair = false;
   for (ni=1; ni<=nn; ni++, res += vdimtot) { 
     
-   if (GLOBAL.general.seed != NA_INTEGER && nn > 1) {
+   if (GLOBAL_UTILS->basic.seed != NA_INTEGER && nn > 1) {
       if (PisNULL(SIMU_SEED) || PisNULL(SIMU_ENV)) {
 	BUG;
       } else {
  	PutRNGstate();
-	double simu_seed = GLOBAL.general.seed + (ni - 1);
+	double simu_seed = GLOBAL_UTILS->basic.seed + (ni - 1);
 	addVariable((char*) "seed", &simu_seed, 1, 1, PENV(SIMU_ENV)->sexp);
 	eval(PLANG(SIMU_SEED)->sexp, PENV(SIMU_ENV)->sexp);
 	GetRNGstate(); 
@@ -2525,8 +2525,13 @@ int struct_cov(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel){
 void CovMatrix(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *value){
   if (value==NULL) return; // EvaluateModel needs information about size
   //                      of result array
+
+  //  APMI(cov);
+
   cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
-  CovList[sub->nr].covmatrix(sub, value);
+  //printf("CovMatrix %s=%d %s=%d \n\n\n\n\n\n", NAME(cov), cov->Spgs != NULL, NAME(cov->sub[0]), cov->sub[0]->Spgs != NULL); 
+
+   CovList[sub->nr].covmatrix(sub, value);
 }
 
 
@@ -2560,6 +2565,8 @@ int check_covmatrix(cov_model *cov) {
   int dim = loc->timespacedim;
   assert(dim == cov->tsdim);
   if ((err = alloc_cov(cov, dim, rows, cols)) != NOERROR) return err;
+
+  //  printf("%s=%d %s=%d \n\n\n\n\n\n", NAME(cov), cov->Spgs != NULL, NAME(cov->sub[0]), cov->sub[0]->Spgs != NULL); 
  
   return NOERROR;
 }

@@ -14,7 +14,7 @@ hostname<-function(){.C("hostname", h=paste(seq(0,0,l=100), collapse=""),
 pid <- function() {.C("pid", i=integer(1), PACKAGE="RandomFields")$i}
 
 
-FileExists <- function(file, printlevel=RFoptions()$general$printlevel) {
+FileExists <- function(file, printlevel=RFoptions()$basic$printlevel) {
     ## for parallel simulation studies: the same data output file should not
   ## be created twice. So:
   ## 1. if file exists then assume another process has done the work already

@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2016 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,25 +28,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RFuser_H 1
 
 
-#define R_PRINTLEVEL 1
-#define C_PRINTLEVEL 1
 #define NAT_SCALE 0
 #define MAX_CE_MEM 16777216
-#define generalN 23
+#define generalN 18
 // IMPORTANT: all names of general must be at least 3 letters long !!!
 extern const char *general[generalN];
 #define GENERAL_MODUS 0 
-#define GENERAL_STORING 2
-#define GENERAL_CPRINT 9
-#define GENERAL_EXACTNESS 10
-#define GENERAL_CLOSE 13
+#define GENERAL_STORING 1
+#define GENERAL_EXACTNESS 7
+#define GENERAL_CLOSE 10
 typedef struct general_param {
   char pch; /*  character shown after each simulation
     just for entertainment of the user
     except for "!", then the numbers are shown
 	   */
   bool 
-    allowdist0, na_rm_lines, skipchecks, vdim_close_together, storing,
+    allowdist0, na_rm_lines, vdim_close_together, storing,
   /* true: intermediate results are stored: might be rather memory consuming,
          but the simulation can (depending on the method chosen) be much faster
 	 when done the second time with exactly the same parameters
@@ -71,18 +68,15 @@ typedef struct general_param {
 		   as an sp class or in the old form ?
 		   --- getting obsolete in future --- todo
 		*/
-    detailed_output,
-    asList,
-    returncall;
+    detailed_output, returncall;
  
   int  mode, /* hightailing, fast, normal, save, pedantic */
     output, /* output mode, #alternative to mode that changes 
 	       several other parameters;
 	       vice versa, spConform sets 'output'
 	     */
-    reportcoord,
-    Rprintlevel,
-    Cprintlevel; /* 
+    reportcoord
+  ; /* 
 		   see convert.T PL_* and RF.h PL_*
 		  */
   int naturalscaling;
@@ -114,7 +108,6 @@ typedef struct general_param {
 		 simulation methods (tbm2 does not like dimension reduction),
 		 but it is slower
 	      */
-    seed,
     Ttriple, 
     set;
  
@@ -123,12 +116,14 @@ typedef struct general_param {
 } general_param;
 #define general_START \
   {pch[NM],								\
-      allowdistance0[NM], false, skipchecks[NM], false, false, true, /* 6 */ \
-      false, true, false,						\
+      allowdistance0[NM], false, false, false,				\
+      true, /* 6 */							\
+      false, false,							\
       startmode/* mode */ , output_sp, reportcoord_warnings,		\
-      R_PRINTLEVEL, C_PRINTLEVEL, NAT_SCALE, 1, 0,			\
-      NA_INTEGER, NA_INTEGER, 0,					\
-      1e-6, exactness[NM],						\
+      NAT_SCALE,							\
+      1, 0,								\
+      NA_INTEGER, 0,							\
+      1e-6, exactness[NM]						\
      }
 
 
@@ -489,9 +484,15 @@ typedef struct globalparam{
   internal_param internal;
   coords_param coords;
   special_param special;
-  solve_param solve;
 } globalparam;
 extern globalparam GLOBAL;
+
+#define prefixN 23
+extern const char * prefixlist[prefixN], **all[prefixN];
+extern int allN[prefixN];
+void setparameter(int i, int j, SEXP el, char name[200], bool isList);
+void getRFoptions(SEXP *sublist);
+void finalparameter();
 
 
 #endif

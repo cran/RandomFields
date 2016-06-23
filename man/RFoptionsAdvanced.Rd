@@ -78,11 +78,11 @@ Print(true.cov, mean(c2), sd(c2), empty.lines=1) ## much better results
  #############################################################
 
 step <- 1
-\dontshow{if(!interactive()){warning("increased 'step'");step<-15;}}%ok
 x1 <- seq(-150,150,step)
 y1 <- seq(-15, 15, step)
 x2 <- seq(-50, 50, step)
 model <- RPtbm(RMexp(scale=10))
+\dontshow{if(!interactive()){warning("values for x1, y1, x2 changed'");x1<-y1<-x2 <- -1:1}}%ok
 
 RFoptions(storing=TRUE)
 mar <- c(2.2, 2.2, 0.1, 0.1)

@@ -210,7 +210,7 @@ f <- RFsimulate(model=RMexp(), x=x, n=n)
 str(f)
 str(RFspDataFrame2conventional(f))
 str(RFspDataFrame2dataArray(f))
-coordinates(f)[1:25,]
+head(coordinates(f))
 str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 str(as(f, "RFspatialPointsDataFrame"))

@@ -312,7 +312,7 @@ RFratiotest <-
                                   ..., general.seed=NA)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
-  printlevel <- RFopt$general$printlevel
+  printlevel <- RFopt$basic$printlevel
   if (RFopt$general$modus_operandi == "neurotic")
     stop("crossvalidation is not a precise method")
   
@@ -356,12 +356,12 @@ RFratiotest <-
 
   
   if (!is.null(seed) && !is.na(seed)) set.seed(seed)
-  else if (!is.na(RFopt$general$seed)) {
+  else if (!is.na(RFopt$basic$seed)) {
     if (printlevel >= PL_IMPORTANT)
       message("NOTE: 'RFratiotest' is performed with fixed random seed ",
-              RFopt$general$seed,
+              RFopt$basic$seed,
               ".\nSet RFoptions(seed=NA) to make the seed arbitrary.")
-    set.seed(RFopt$general$seed)
+    set.seed(RFopt$basic$seed)
   }
 
   nullmodel <- PrepareModel2(nullmodel, ...)

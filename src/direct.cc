@@ -199,7 +199,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   /* ********************** */
   /*  square root of matrix */
   /* ********************** */
-  err = Ext_sqrt_(Cov, vdimtot, cov->Ssolve, &(GLOBAL.solve), PL);
+  err = Ext_sqrtPosDef(Cov, vdimtot, cov->Ssolve);
 
   if (err != NOERROR) {
     Ext_getErrorString(ERRORSTRING);
@@ -215,7 +215,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
  ErrorHandling: // and NOERROR...
   FREE(Cov);
  
-  //printf("init sqrt_ emthod %d err=%d\n", cov->Ssolve->method, err);
+  //printf("init sqrtPosDef emthod %d err=%d\n", cov->Ssolve->method, err);
   return err;
 }
 
@@ -233,13 +233,22 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *res = cov->rf;  
   // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
-  //printf("do sqrt_ emthod %d\n", cov->Ssolve->method);
+  //printf("do sqrtPosDef emthod %d\n", cov->Ssolve->method);
 
   SAVE_GAUSS_TRAFO;
   G = s->G;// only the memory space is of interest (stored to avoid 
   //          allocation errors here)
   for (int i=0; i<vdimtot; i++) G[i] = GAUSS_RANDOM(1.0);  
-  Ext_sqrt_RHS_(cov->Ssolve, G, res);
+
+  //  printf("vdimtot = %d\n", vdimtot);
+
+  Ext_sqrtRHS(cov->Ssolve, G, res);
+
+  //res[0]res[1]=res[2]=1;
+  //  printf("done vdimtot = %d\n", vdimtot);
+  
+
+  //for (int i=0; i<locpts; i++) res[i] = i; print("nonsense");
 
   BOXCOX_INVERSE;
 }

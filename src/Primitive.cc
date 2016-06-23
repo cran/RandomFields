@@ -3744,7 +3744,7 @@ int checkSteinST1(cov_model *cov) {
   for (absz=0.0, d=0;  d<spatialdim; d++)  absz += z[d] * z[d];
   if (ISNAN(absz))
     SERR("currently, components of z cannot be estimated by MLE, so NA's are not allowed");
-  if (absz > 1.0 + UNIT_EPSILON && !GLOBAL.general.skipchecks) {
+  if (absz > 1.0 + UNIT_EPSILON && !GLOBAL_UTILS->basic.skipchecks) {
     SERR("||z|| must be less than or equal to 1");
   }
   return NOERROR;

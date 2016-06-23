@@ -285,6 +285,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 
 model <- RMstable(s=1, alpha=1.8)
 x <- seq(-3,3,0.1)
+\dontshow{if (!interactive()){print("x values changed"); x <- -1:1}}
 z <- RFsimulate(model=RPcirculant(model), x=x, y=x, n=1)
 plot(z)
 

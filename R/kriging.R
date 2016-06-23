@@ -312,7 +312,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
       if (!is.na(exact) && exact)
         stop("number of conditioning locations too large for an exact result.")
       if (ngiven > maxn && is.na(exact) &&
-          RFopt$general$printlevel>=PL_IMPORTANT)
+          RFopt$basic$printlevel>=PL_IMPORTANT)
         message("performing neighbourhood kriging")
 
       stop("neighbourhood kriging currently not programmed")

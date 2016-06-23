@@ -29,8 +29,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "RF.h"
 #include <Rdefines.h>
-
 #include "Coordinate_systems.h"
+
 //#include "CovFcts.h"
 //#include <unistd.h>
 //#include <R_ext/Utils.h>     
@@ -79,234 +79,6 @@ name_type FT = {"false", "true"},
 	      "false", "true", 
 	      "normal mixture",
 	      "NaN"};  
-
-//#define MAX_INT 2147483647
-#define MAX_INT   2000000000
-
-SEXP TooLarge(int *n, int l){
-#define nTooLarge 2 // mit op
-  const char *tooLarge[nTooLarge] = {"size", "msg"};
-  int i;
-  SEXP namevec, info;
-  PROTECT(info=allocVector(VECSXP, nTooLarge));
-  PROTECT(namevec = allocVector(STRSXP, nTooLarge));
-  for (i=0; i<nTooLarge; i++) SET_STRING_ELT(namevec, i, mkChar(tooLarge[i]));
-  setAttrib(info, R_NamesSymbol, namevec);
-  i=0;
-  SET_VECTOR_ELT(info, i++, Int(n, l, l));
-  SET_VECTOR_ELT(info, i,
-		 mkString("too many elements - increase max.elements"));
-  UNPROTECT(2);
-  return info;
-}
-SEXP TooSmall(){
-  SEXP namevec;
-  const char *msg = "value has not been initialized";
-  PROTECT(namevec = allocVector(STRSXP, 1));
-  SET_STRING_ELT(namevec, 0, mkChar(msg));
-  UNPROTECT(1);
-  return namevec;
-}
-
-
-SEXP String(char *V) {
-  SEXP str;
-  PROTECT(str = allocVector(STRSXP, 1)); 
-  SET_STRING_ELT(str, 1, mkChar(V));
-  UNPROTECT(1);
-  return str;
-}
-
-SEXP String(char V[MAXUNITS][MAXCHAR], int n, int max) {
-  int i;
-  SEXP str;
-  if (V==NULL) return allocVector(VECSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-  if (n<0) return TooSmall();
-  PROTECT(str = allocVector(STRSXP, n)); 
-  for (i=0; i<n; i++) {
-    SET_STRING_ELT(str, i, mkChar(V[i]));
-  }
-  UNPROTECT(1);
-  return str;
-}
-
-
-SEXP Logi(bool* V, int n, int max) {
-  int i;
-  SEXP dummy;
-  if (V==NULL) return allocVector(VECSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-  if (n<0) return TooSmall();
-  PROTECT(dummy=allocVector(LGLSXP, n));
-  for (i=0; i<n; i++) LOGICAL(dummy)[i] = V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-SEXP Logi(bool* V, int n) {
-  return Logi(V, n, MAX_INT);
-}
-
-SEXP Num(double* V, int n, int max) {
-  int i;
-  SEXP dummy;
-  if (V==NULL) return allocVector(REALSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-   if (n<0) return TooSmall();
-  PROTECT(dummy=allocVector(REALSXP, n));
-  for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-SEXP Num(double* V, int n) {
-  return Num(V, n, MAX_INT);
-}
-
-SEXP Result(double* V, int n, int max) {
-  int i;
-  SEXP dummy;
-  if (V==NULL) return allocVector(REALSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-   if (n<0) return TooSmall();
- PROTECT(dummy=allocVector(REALSXP, n));
-  for (i=0; i<n; i++) REAL(dummy)[i] = (double) V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Result(double* V, int n) {
-  return Result(V, n, MAX_INT);
-}
-
-SEXP Int(int *V, int n, int max) {
-  int i;
-  SEXP dummy;
-  if (V==NULL) return allocVector(INTSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-   if (n<0) return TooSmall();
-   PROTECT(dummy=allocVector(INTSXP, n));
-  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Int(int* V, int n) {
-  return Int(V, n, MAX_INT);
-}
-
-SEXP Char(const char **V, int n, int max) {
-  int i;
-  SEXP dummy;
-  if (V==NULL) return allocVector(STRSXP, 0);
-  if (n>max) return TooLarge(&n, 1);
-   if (n<0) return TooSmall();
-   PROTECT(dummy=allocVector(STRSXP, n));
-   for (i=0; i<n; i++){
-     SET_STRING_ELT(dummy, i, mkChar(V[i]));  
-   }
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Char(const char **V, int n) {
-  return Char(V, n, MAX_INT);
-}
-
-SEXP Mat(double* V, int row, int col, int max) {
-  int i, n;
-  if (V==NULL) return allocMatrix(REALSXP, 0, 0);
-  n = row * col;
-  if (n>max) {
-    int nn[2];
-    nn[0] = row;
-    nn[1] = col;
-    return TooLarge(nn, 2);
-  }
-  SEXP dummy;
-  PROTECT(dummy=allocMatrix(REALSXP, row, col));
-  for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Mat(double* V, int row, int col) {
-  return Mat(V, row, col, MAX_INT);
-}
-
-
-SEXP Mat_t(double* V, int row, int col, int max) {
-  int i,j, k,n;
-  if (V==NULL) return allocMatrix(REALSXP, 0, 0);
-  n = row * col;
-  if (n>max) {
-    int nn[2];
-    nn[0] = row;
-    nn[1] = col;
-    return TooLarge(nn, 2);
-  }
-  SEXP dummy;
-  PROTECT(dummy=allocMatrix(REALSXP, row, col));
-  for (k=j=0; j<col; j++) {
-     for (i=0; i<row; i++) {
-      REAL(dummy)[k++] = V[j + col * i];
-    }
-  }
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Mat_t(double* V, int row, int col) {
-  return Mat_t(V, row, col, MAX_INT);
-}
-
-
-SEXP MatInt(int* V, int row, int col, int max) {
-  int i, n;
-  if (V==NULL) return allocMatrix(INTSXP, 0, 0);
-  n = row * col;
-  if (n>max) {
-    int nn[2];
-    nn[0] = row;
-    nn[1] = col;
-    return TooLarge(nn, 2);
-  }
-  SEXP dummy;
-  PROTECT(dummy=allocMatrix(INTSXP, row, col));
-  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP MatInt(int* V, int row, int col) {
-  return MatInt(V, row, col, MAX_INT);
-}
-
-SEXP Array3D(double** V, int depth, int row, int col, int max) {
-  int i, j, m, n;
-  if (V==NULL) return alloc3DArray(REALSXP, 0, 0, 0);
-  m = row * col;
-  n = row * col * depth;
-  if (n>max) {
-    int nn[3];
-    nn[0] = row;
-    nn[1] = col;
-    nn[2] = depth;
-    return TooLarge(nn, 3);
-  }
-  SEXP dummy;
-  PROTECT(dummy=alloc3DArray(REALSXP, depth, row, col));
-  for(j=0; j<depth; j++) {
-    for (i=0; i<m; i++) {
-      REAL(dummy)[j*m+i] = V[j][i];
-    }
-  }
-  UNPROTECT(1);
-  return dummy;
-}
-
-SEXP Array3D(double** V, int depth, int row, int col) {
-  return Array3D(V, depth, row, col, MAX_INT);
-}
 
 
 
@@ -359,7 +131,7 @@ SEXP GetLocationUserInfo(location_type **loc) {
       SET_STRING_ELT(namevec, k, mkChar("T"));
       SET_VECTOR_ELT(l, k++, Num(L->T, 3));       
     }
-    assert(k == elmts);
+    assert(k == elmts); 
 
     setAttrib(l, R_NamesSymbol, namevec);
     SET_VECTOR_ELT(ans, i, l);
@@ -759,15 +531,15 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
     //  SET_VECTOR_ELT(model, k++, ScalarReal(mpp->refradius));
  
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.maxheight"));  
-    SET_VECTOR_ELT(model, k++, Num(Mpp->maxheights, vdim, MAX_INT));
+    SET_VECTOR_ELT(model, k++, Num(Mpp->maxheights, vdim, MAXINT));
   
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.M"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(Mpp->mM, nmvdim, MAX_INT)); 
+		   Num(Mpp->mM, nmvdim, MAXINT)); 
 
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.Mplus"));
     SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(Mpp->mMplus, nmvdim, MAX_INT));
+		   Num(Mpp->mMplus, nmvdim, MAXINT));
   } 
    		 
   if (return_key) {
@@ -985,7 +757,7 @@ static bool PMI_print_dollar = !true,
   PMI_print_fields = !true;
 static int  PMI_print_rect = 1;  // 0, 1, 2
 
-void pmi(cov_model *cov, char all, int level, int maxlevel) {    
+void pmi(cov_model *cov, char alles, int level, int maxlevel) {    
   int i, j, endfor;
   cov_fct *C = CovList + cov->nr; // nicht gatternr
 #define MNlength 4
@@ -1101,7 +873,7 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
     }
     if (cov->kappasub[i] != NULL) {
       PRINTF("  <=");
-      pmi(cov->kappasub[i], all, level + 3, maxlevel);
+      pmi(cov->kappasub[i], alles, level + 3, maxlevel);
     } else  PRINTF("\n");
   } // for
   if (cov->Sset != NULL) {
@@ -1410,32 +1182,32 @@ void pmi(cov_model *cov, char all, int level, int maxlevel) {
     leer(level);
     givenkey = true;
     PRINTF("%-10s :", "key");  
-    if (all >= 0) pmi(cov->key, all, level + 1, maxlevel);
+    if (alles >= 0) pmi(cov->key, alles, level + 1, maxlevel);
   }
 
   if (cov->Splus != NULL) {
     givenkey = true;
     int ii;
-    if (all >= 0) {
+    if (alles >= 0) {
       for (ii=0; ii < cov->nsub; ii++) {
 	cov_model *key = cov->Splus->keys[ii];
 	leer(level);      
 	if (key != NULL) {
 	    PRINTF("%-10s ++ %d ++:", "plus.key", ii); 
-	    pmi(key, all, level + 1, maxlevel);
+	    pmi(key, alles, level + 1, maxlevel);
 	}  else PRINTF("%-10s ++ %d ++: %s\n","plus.key", ii, "empty");	
       }
     }
   }
 
-  if ((!givenkey && all==0) || all>0) {
+  if ((!givenkey && alles==0) || alles>0) {
     for (i=0; i<C->maxsub; i++) {
       if (cov->sub[i] == NULL) {
 	continue;
       }
       leer(level); 
       PRINTF("%s %d (%s) of '%s':", "submodel", i, C->subnames[i], C->nick);  
-      pmi(cov->sub[i], all, level + 1, maxlevel);
+      pmi(cov->sub[i], alles, level + 1, maxlevel);
     }
   }
 }
@@ -1468,11 +1240,11 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
   cov_model *dollar = cov->calling;
 
  
-  bool solve = (cov->nr == NATSC_INTERN ||
+  bool solving = (cov->nr == NATSC_INTERN ||
 		(cov->nr == NATSC_USER && !MLEnatsc_only))
     && dollar != NULL && isDollar(dollar);
 
-  if (solve) {
+  if (solving) {
     cov_model 
       *next = cov->sub[0];
     assert(dollar!=NULL && isDollar(dollar));
@@ -1662,11 +1434,11 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
       if ((err = covCpy(&dummy, cov)) != NOERROR) goto ErrorHandling;
     }
     NAOK_RANGE = true;
-    int skipchecks = GLOBAL.general.skipchecks;
-    GLOBAL.general.skipchecks = true;
+    int skipchecks = GLOBAL_UTILS->basic.skipchecks;
+    GLOBAL_UTILS->basic.skipchecks = true;
     err = CHECK(dummy, cov->tsdim, cov->xdimprev, cov->typus,
 		cov->domprev, cov->isoprev, cov->vdim, cov->role);
-    GLOBAL.general.skipchecks = skipchecks;
+    GLOBAL_UTILS->basic.skipchecks = skipchecks;
 
 
     //PMI(cov); MERR(err);
@@ -1792,13 +1564,14 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
     cov = KEY[knr];
     coord_sys_enum
       os = (coord_sys_enum) GetName(oldsystem, CS[0], 
-				    COORD_SYS_NAMES, nr_coord_sys, coord_auto),
+				    COORD_SYS_NAMES, nr_coord_sys, coord_auto);
+    coord_sys_enum
       n_s = (coord_sys_enum) GetName(newsystem, CS[1], 
 				    COORD_SYS_NAMES, nr_coord_sys, coord_keep);
    if (os == coord_auto) {
       os = GetCoordSystem(cov->isoprev);
-    }
-    if (n_s == coord_keep) {
+   }
+   if (n_s == coord_keep) {
       n_s = SearchCoordSystem(cov, os, n_s);
     }
 
