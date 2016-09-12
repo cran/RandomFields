@@ -345,7 +345,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       }
       TransformLoc(cov, false, true, true);
       loc = Loc(cov); 
-      ordering(loc->x, loc->totalpoints, dim, pos);
+      RU_ordering(loc->x, loc->totalpoints, dim, pos);
 
       //      for (i=0; i<loc->totalpoints; i++) {
       //	printf("old %f %f pos[i]=%d new=%f %f\n",

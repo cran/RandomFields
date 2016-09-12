@@ -1066,8 +1066,8 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
   assert(cov->nr == GAUSSPROC || 
 	 cov->role == ROLE_COV);
 
-  //printf(">>>>>>>>>> %s gloabvar=%d role=%d varmodel=%d\n",
-  //	 NAME(cov), 	 cov->role,  globvar,  info->varmodel);
+  //printf(">>>>>>>>>> %s  role=%d  gloabvar=%d  %d varmodel=%d\n",
+  //       NAME(cov), cov->role, (int) globvar==NA_INTEGER, info->globalvariance, info->varmodel);
 
   if ((cov->nr == GAUSSPROC || cov->role == ROLE_COV) && 
       (globvar == NA_INTEGER || globvar) &&
@@ -1077,6 +1077,10 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
     if (isDollar(info->Var) && !PARAMisNULL(info->Var, DVAR) &&
 	info->Var->ncol[DVAR]==1 && info->Var->nrow[DVAR]==1) {
       double var = PARAM0(info->Var, DVAR);
+
+      //      printf("%f var=%f\n", var);
+      //      PMI(info->Var);
+
        if ((info->globalvariance = ISNA(var) || ISNAN(var)) &&
 	  info->Var->kappasub[DVAR] == NULL) {	
 	info->pt_variance = PARAM(info->Var, DVAR);
@@ -1099,11 +1103,13 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
 	rows--;
       }
     }
+    //	printf("info %d %f\n", info->globalvariance, 1.0);
     info->globalvariance |= (globvar == true);    
   }
   if (info->NAs != MEM_NAS[currentRegister]) BUG;
   MEM_PT_VARIANCE[currentRegister] = info->pt_variance;
 
+  //  PMI(cov);
   //printf("globalvar = %d\n", info->globalvariance);
   // assert(info->globalvariance);
   //  assert(info->pt_variance != NULL);

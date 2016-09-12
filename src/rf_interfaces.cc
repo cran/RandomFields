@@ -373,7 +373,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
     elt=0,
     len = length(model);
 #define NLEER 80
-  char leer[NLEER], name[MAXCHAR], param_name[PARAMMAXCHAR], ERR_LOC[nErrorLoc];
+  char leer[NLEER], name[MAXCHAR], param_name[PARAMMAXCHAR];
+  errorloc_type ERR_LOC;
   //  methname[METHODMAXCHAR], 
   // msg[200];
   SEXP m, p,
@@ -995,7 +996,7 @@ void density(double VARIABLE_IS_NOT_USED *value, cov_model *cov, double *v) {
 
   assert(!P0INT(DENS_LOG));
   cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
-  char errorloc_save[nErrorLoc];
+  char errorloc_save[nErr orLoc];
   int ni = 0,
     err = NOERROR;
   double *res;
@@ -1223,7 +1224,8 @@ void range_density(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 void simulate(double *N, cov_model *cov, double *v){
   assert(!P0INT(SIMU_CHECKONLY));
   cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
-  char errorloc_save[nErrorLoc],
+  errorloc_type errorloc_save;
+  char
     format[20],
     back[]="\b\b\b\b\b\b\b\b\b\b\b", 
     prozent[]="%",
@@ -1845,7 +1847,7 @@ void kappa_EvalDistr(int i, cov_model VARIABLE_IS_NOT_USED *cov,
 }
 
 void EvalDistr(double VARIABLE_IS_NOT_USED *N, cov_model *cov, double *v){
-  char errorloc_save[nErrorLoc];
+  errorloc_type errorloc_save;
   cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key;
   double  *xqp;
   int i, j,
@@ -2630,7 +2632,8 @@ void Fctn(double VARIABLE_IS_NOT_USED *X, cov_model *cov, double *value) {
 }
 
 
-void FctnIntern(cov_model *cov, cov_model *covVdim, cov_model *sub, double *value, bool ignore_y){ 
+void FctnIntern(cov_model *cov, cov_model *covVdim, cov_model *sub,
+		double *value, bool ignore_y){ 
   if (value==NULL) return; // EvaluateModel needs information about size
   //                      of result array
 

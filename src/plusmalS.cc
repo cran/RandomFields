@@ -757,7 +757,7 @@ void nonstatinverseS(double *x, cov_model *cov, double *left, double*right,
       if (redo) {
 	MEMCOPY(save, P(DANISO), bytes);
 	MEMCOPY(inv, P(DANISO), bytes);
-	if (Ext_invertMatrix(inv, nrow) != NOERROR)
+	if (RU_invertMatrix(inv, nrow) != NOERROR)
 	  ERR("inversion of anisotropy matrix failed");
       }
       

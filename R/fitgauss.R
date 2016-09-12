@@ -1,9 +1,9 @@
-
+##n
 ## Authors 
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2016 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -899,6 +899,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                         ...) {
 
 
+#  str(Z)
+
 
   ## ACHTUNG: durch rffit.gauss werden neu gesetzt:
   ##    practicalrange
@@ -1015,7 +1017,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     if (length(idx <- which("algorithm" == names(control))) > 0)
       control <- control[-idx];
     
-    oH <- try(optimHess(par=par, fn=fn, control=control), silent=TRUE)
+    oH <- try(optimHess(par=par, fn=fn, control=control), silent=silent)
     
     if (class(oH) != "try-error") {
       zaehler <- 1
@@ -1214,14 +1216,14 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       assign("LSVARIAB", variab, envir=ENVIR)
     }
 
-     
     return(res)
   }
 
+
   
   MLtarget <- function(variab) {
-    ## new version based on C-Code starting wih 3.0.70
-   
+    ## new version based on C-Code starting wih 3.0.70    
+    
     if (n.variab > 0) {
       variab <- variab + 0  ## unbedingt einfuegen, da bei R Fehler der Referenzierung !! 16.2.10
       
@@ -1264,13 +1266,19 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       Print(RFgetModelInfo(register=LiliReg, level=4, which.submodels="call+user"))#
     }
 
-
     ##   print(minmax);    Print(param, variab, RFgetModelInfo(register=LiliReg, level=-1, which.submodels="user.but.once+jump"))
- 
-    ans <- .Call("EvaluateModel", double(0), LiliReg, PACKAGE="RandomFields") 
-    res <- ans[1]
-    if (is.na(res)) return(1e300)
 
+    ans <- try(.Call("EvaluateModel", double(0), LiliReg,
+                     PACKAGE="RandomFields"), silent=silent)
+    ## e.g. in case of illegal parameter values
+    
+    if (is(ans, "try-error") || is.na(ans[1])) {
+      assign("ML_failures", ML_failures + 1)
+      if (printlevel > PL_IMPORTANT) ("model evalation has failed")
+      return(1e300)
+    }
+    res <- ans[1]
+    
     ##  Print(ans, MLEMAX, variab, param, MLELB, MLEUB); print(minmax)
   ##  stopifnot(all(is.finite(MLEUB)))
  
@@ -1286,8 +1294,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     }
 
     #    Print(variab, ans)
-    if (printlevel>=PL_FCTN_DETAILS ) Print(ans, MLEMAX)
-
+    if (printlevel>=PL_FCTN_DETAILS ) Print(ans, MLEMAX)      
     return(res)
   } # mltarget
 
@@ -1306,13 +1313,15 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
     MLtarget(Variab)
     result <- MLECOVAR
-
  
     assign("MLEMAX", max, envir=ENVIR)
     assign("MLECOVAR", covar, envir=ENVIR)
     assign("MLEPARAM", param, envir=ENVIR)
     assign("MLEVARIAB", variab, envir=ENVIR)
-    return(result)
+    if (length(result) == 0) {
+      if (printlevel >= PL_IMPORTANT) message("Variance and/or covariates could not be calculated for some results. They are all set to 1e-8.")
+      return(1e-8)
+    } else return(result)
   }
 
   
@@ -1326,6 +1335,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
             CROSS.DIST <- CROSS.KRIGE <- CROSS.VAR <- CROSSMODEL <-
                 LOGDET <- NULL
   BEYOND <- 0
+  ML_failures <- 0
 
    
 ######################################################################
@@ -1393,7 +1403,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   
   if (printlevel >= PL_SUBIMPORTANT + recall) print(minmax) #
 
-# Print(info.cov); print(minmax); xxxx
+# Print(info.cov);  print(minmax);
+  #xxxx
   
   stopifnot(sum(NAs) == nrow(minmax))
   n.param <- nrow(minmax)
@@ -1424,14 +1435,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   ## anyFixedEffect <- any(effect == FixedEffect | effect == FixedTrendEffect)
   anyFixedEffect <- any(effect == FixedTrendEffect)
  
-  ts.xdim <- xdimOZ + time
+  ts.xdim <- as.integer(xdimOZ + time)
   sets <- length(Z$data)
-  repet <- as.integer(dummy <- sapply(Z$data, function(x) ncol(x) / vdim[1]))
-
-#  Print(repet, Z, vdim)
-  
-  stopifnot(all(repet == dummy))
-   
+  repet <- Z$repetitions   
   N <- S <- Sq <- 0 
   for (i in 1:sets) {
     N <- N + rowSums(matrix(colSums(!is.na(Z$data[[i]])), ncol=repet[i]))
@@ -1798,25 +1804,28 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
  #   Print(Z$model)
 #    Print(splitcoord); 
 
-    .Call("SetAndGetModelLikeli", split.reg, list("Cov", Z$model),
-          splitcoord,
-          PACKAGE="RandomFields")
-    rm("splitcoord")
-    
-    stopifnot(ncol(Z$rangex) == ts.xdim)
-    keep <- !delete.idx
-    split <- try(ModelSplit(splitReg=split.reg, info.cov=info.cov, trafo=trafo,
-                            variab=new.param[keep],
-                            lower=lower[keep], upper=upper[keep],
-                            rangex = Z$rangex,
-                            ## ts.xdim != tsdim falls distances (x Zeit)
-                            modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
-                                xdimOZ = xdimOZ, vdim=vdim,
-                                dist.given=dist.given,
-                                refined = fit$split_refined),
-                            model=Z$model))
-    #Print("BA", split)
-
+    if (!is(split <- try(.Call("SetAndGetModelLikeli", split.reg,
+                               list("Cov", Z$model), splitcoord,
+                               PACKAGE="RandomFields"), silent=silent),
+            "try-error")) {
+      ## error appears e.g. when RMfixcov is used with raw=TRUE.
+      
+      rm("splitcoord")      
+      stopifnot(ncol(Z$rangex) == ts.xdim)
+      keep <- !delete.idx
+      split <- try(ModelSplit(splitReg=split.reg, info.cov=info.cov,trafo=trafo,
+                              variab=new.param[keep],
+                              lower=lower[keep], upper=upper[keep],
+                              rangex = Z$rangex,
+                              ## ts.xdim != tsdim falls distances (x Zeit)
+                              modelinfo=list(ts.xdim=ts.xdim, tsdim=tsdim,
+                                  xdimOZ = xdimOZ, vdim=vdim,
+                                  dist.given=dist.given,
+                                  refined = fit$split_refined),
+                              model=Z$model))
+      ##Print("BA", split)
+    }
+      
     if (is(split, "try-error")) {
       message("Splitting failed (", split[[1]], "). \nSo, standard optimization is tried")
     } else {
@@ -2224,20 +2233,15 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     index.bv <- NULL
 
     
-   # str(coord); kkk
-
-    
+   # str(coord); kkk   
     if (vdim == 1 && !dist.given) {
        residuals <- .Call("simple_residuals", LiliReg) 
     } else {
       residuals <- list()
       for (i in 1:sets) {
         residuals[[i]] <- Z$data[[i]]
-
-      #  Print(Z, residuals[[i]], Z$coord[[i]]$restotal, vdim, Z$repetitions[i])
-        
         base::dim(residuals[[i]]) <-
-          c(Z$coord[[i]]$restotal, vdim, Z$repetitions[i])
+          c(Z$coord[[i]]$restotal, vdim, repet[i])
       }
     }
 
@@ -2264,9 +2268,11 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         if (Z$xdimOZ != 1) stop("Distance vectors are not allowed.")
         n.bin <- vario2 <- vario <- rep(0, length(bin))
         for (i in 1:sets) {
-          W <- residuals[[i]][, j, ]
+          dimW <- dim(residuals[[i]])
+          W <- residuals[[i]][, j, ] 
+          dim(W) <- dimW[c(1,3)] ## necesary! as W could have dropped dimension
           lc <- Z$len[i]
-          rep <- 2 * Z$repetitions[i]
+          rep <- 2 * repet[i]
           k <- 1
           for (g in 1:(lc-1)) {
             for (h in (g+1):lc) {
@@ -2287,10 +2293,15 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         n.bin[1] <- sum(Z$len)
         centers <- 0.5 * (bin[-1] + bin[-length(bin)])
         centers[1] <- 0
-        ev <- list(centers=centers,
-                   emp.vario=vario[-length(n.bin)],
-                   sd=sdvario[-length(n.bin)],
-                   n.bin=n.bin[-length(n.bin)])
+        emp.vario <- vario[-length(n.bin)]
+        sdv <- sdvario[-length(n.bin)]
+        nbin <- n.bin[-length(n.bin)]
+        dims <-  c(length(emp.vario), rep(1, 5))
+#        Print(emp.vario, sdv, nbin)
+        dim(emp.vario) <- dim(sdv) <- dim(nbin) <- dims
+#        Print(emp.vario, sdv, nbin)
+        ev <- list(centers=centers, emp.vario=emp.vario, sd=sdv, n.bin=nbin)
+#        Print(ev)
       }
       n.bin <- ev$n.bin
       sd[[j]] <- ev$sd # j:vdim; ev contains the sets
@@ -2385,19 +2396,23 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     if (printlevel>=PL_STRUCTURE) cat("\nelimination part...")
 
     # Print("CCC")
-    .Call("SetAndGetModelLikeli", COVreg, list("Cov", Z$model),
-           C_CheckXT(x = bin.centers, T = ev$T),        
-           PACKAGE="RandomFields")
-      
-    
-    LSMIN <- Inf
     lsqMethods <- LSQMETHODS[pmatch(lsq.methods, LSQMETHODS)]
+    if (is(try(.Call("SetAndGetModelLikeli", COVreg, list("Cov", Z$model),
+                     C_CheckXT(x = bin.centers, T = ev$T),        
+                     PACKAGE="RandomFields"), silent=silent),
+           "try-error")) { ## error appears e.g. when RMfixcov is used
+      ##                         with raw=TRUE.
+      message("Least square methods are not possible.")
+      lsqMethods <- NULL
+    }
+    
     if (!is.null(lsqMethods) &&
         any(is.na(lsqMethods))) stop("not all lsq.methods could be matched")
     if ("internal" %in% lsqMethods)
       lsqMethods <- c(lsqMethods, paste("internal", 1:nlsqinternal, sep=""))
     
     firstoptim <- TRUE
+    LSMIN <- Inf
     for (M in c(lsqMethods[1], alllsqmeth)) {
      
       if (!(M %in% lsqMethods)) next;
@@ -2570,7 +2585,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     }
      
     MLEMAX <- -Inf ## must be before next "if (nMLEINDEX==0)"
-    MLEVARIAB <- Inf ## nachfolgende for-schleife setzt MLEVARIAB
+    MLEVARIAB <- NULL ## nachfolgende for-schleife setzt MLEVARIAB
     MLEPARAM <- NA
     onborderline <- FALSE
     if (length(MLELB) == 0) { ## n.variab == 0
@@ -2580,7 +2595,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       param.table[[M]][IDX("upper")] <- MLEUB
       options(show.error.messages = show.error.message) ##
       max <- -Inf
-      
+
       for (i in methodprevto$mle) { ## ! -- the parts that change if
         ##                             this part is copied for other methods
         ## should mle be included when M=reml?
@@ -2611,14 +2626,20 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         c(opt.control, list(parscale=parscale, fnscale=fnscale))
 
 
-      
-      stopifnot(length(parscale)==0 || length(parscale) == length(MLEVARIAB))
+#      Print(MLELB, MLEUB)
+      if (length(parscale) > 0 && length(parscale) != length(MLEVARIAB))
+        stop("length of 'parscale' (", length(parscale), ") differs from the length of the variables (", length(MLEVARIAB), "). ", if (length(MLEVARIAB) == 0) "Likely, there is a problem with the model." else "Please contact author.")
+             
       
       MLEINF <- FALSE
 
+     
       if (fit$critical < 2) {
         OPTIM(MLEVARIAB, MLtarget, lower = MLELB, upper=MLEUB,
               control=mle.optim.control, optimiser=optimiser, silent=silent)
+
+        if (ML_failures > 20 && printlevel >= PL_IMPORTANT)
+          message("There are many failures when trying to evaluate the model. Is the model OK?")
         
         if (MLEINF) {
           if (printlevel>=PL_STRUCTURE )
@@ -3131,14 +3152,17 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
  #   if (M == "ml")  {
       ## jetzt muss RFlikelihood-initialisierung sein!
 
-    lilihood <- .Call("EvaluateModel", double(0), LiliReg,
-                      PACKAGE="RandomFields")
-    residu <- get.residuals(LiliReg)
     likelihood <- param.table[tblidx[["ml"]][1], i]
-    
-    if (abs(lilihood[1] - likelihood) > 1e-7 * (abs(likelihood) + 1)) {
-      #stop("The two ways of calculating the likelihood do not match: ",
-     #      lilihood[1], " != ", likelihood)
+    lilihood <- try(.Call("EvaluateModel", double(0), LiliReg,
+                          PACKAGE="RandomFields"), silent=silent)
+    if (is(lilihood, "try-error")) {
+      residu <- "not available"
+    } else {
+      residu <- get.residuals(LiliReg)
+      if (abs(lilihood[1] - likelihood) > 1e-7 * (abs(likelihood) + 1)) {
+        ##stop("The two ways of calculating the likelihood do not match: ",
+        ##      lilihood[1], " != ", likelihood)
+      }
     }
     AIC <- 2 * nparam  - 2 * likelihood
     AICc <- AICconst - 2 * likelihood
@@ -3297,4 +3321,3 @@ rffit.gauss2sp <- function(res2, L, Z) {
   z
 }
 
-  

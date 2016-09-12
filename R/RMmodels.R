@@ -672,8 +672,8 @@ iRMfixcov <- function(norm, M, x, raw, var, scale, Aniso, proj) {
 iRMfixcov <- new('RMmodelgenerator',
 	.Data = iRMfixcov,
 	type = c('positive definite'),
-	isotropy = c('symmetric'),
-	domain = c('kernel'),
+	isotropy = c('parameter dependent'),
+	domain = c('single variable', 'kernel'),
 	operator = TRUE,
 	monotone = 'not monotone',
 	finiterange = FALSE,
@@ -1211,6 +1211,43 @@ RMfbm <- new('RMmodelgenerator',
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'Bernstein',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 1
+	)
+
+
+
+RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
+	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
+  if (hasArg('const') && !is.null(subst <- substitute(const))) 
+	par.model[['const']] <- CheckArg(const, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckProj(proj, subst)
+  model <- new('RMmodel', call = cl, name = 'RMlsfbm', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlsfbm <- new('RMmodelgenerator',
+	.Data = RMlsfbm,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -4107,7 +4144,7 @@ RPbernoulli <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = -3
 	)
 
@@ -4172,7 +4209,7 @@ RPgauss <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = -3
 	)
 
@@ -4235,7 +4272,7 @@ RPschlather <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = 1
 	)
 
@@ -4270,7 +4307,7 @@ RPopitz <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = 1
 	)
 
@@ -4335,7 +4372,7 @@ RPchi2 <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = -3
 	)
 
@@ -4366,7 +4403,7 @@ RPt <- new('RMmodelgenerator',
 	monotone = 'mismatch in monotonicity',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
-	maxdim = 10,
+	maxdim = Inf,
 	vdim = -3
 	)
 

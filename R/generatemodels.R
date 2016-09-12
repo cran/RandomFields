@@ -252,7 +252,7 @@ rfGenerateModels <- function(assigning,
          "type = ", "c('", paste(TYPENAMES[type+1], collapse="', '"), "'),",
             "\n\t",
          "isotropy = ", "c('", paste(ISONAMES[iso+1], collapse="', '"), "'),",
-            "\n\t",
+            "\n\t",#
          "domain = ", "c('", paste(DOMAIN_NAMES[domains+1], collapse="', '"),   "'),", "\n\t",
          "operator = ",     as.logical(A$operator[i]),             ",", "\n\t",
          "monotone = ",    "'", MONOTONE_NAMES[A$monotone[i] + 1 - MISMATCH],
@@ -454,8 +454,7 @@ rfGenerateConstants <-
 }
 
 
-rfGenerateTest <- function(files = NULL,
-                           RFpath = "~/R/RF/svn/RandomFields/RandomFields") {
+rfGenerateTest <- function(files = NULL, RFpath = "~/R/RF/svn/RandomFields") {
    start.after <-  "\\dontrun"
    end.before <- c("\\", "}")
    initial.text <- "if (RFoptions()$internal$do_tests){"
@@ -467,7 +466,7 @@ rfGenerateTest <- function(files = NULL,
    nendbefore <- nchar(end.before)[1]
    for (f in 1:length(files)) {
     cat("creating ", f, ".R\n", sep="")
-    s <- scan(paste(RFpath, "/man/", files[f], ".Rd", sep=""),
+    s <- scan(paste(RFpath, "/RandomFields/man/", files[f], ".Rd", sep=""),
               what=character(), sep="\n", blank.lines.skip=FALSE, skip=2)
     i <- 1
     while (i <= length(s) && substr(s[i], 1,
@@ -482,7 +481,7 @@ rfGenerateTest <- function(files = NULL,
         }
       }
     if (j >= i) {
-      out <- paste(RFpath, "/tests/", files[f], ".R", sep="")
+      out <- paste(RFpath, "/RandomFields/tests/", files[f], ".R", sep="")
       write(file = out, append = FALSE, initial.text)
       write(file = out, append = TRUE, s[i:j])
       write(file = out, append = TRUE, final.text)
@@ -499,7 +498,7 @@ rfGenerateTest <- function(files = NULL,
 rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
                             ## copy also in ../private/lit
                             Cfile = "QMath",
-                            RFpath = "~/R/RF/svn/RandomFields/RandomFields") {
+                            RFpath = "~/R/RF/svn/RandomFields") {
   prefix <- "R."
   start.after <-  "/* Unary functions"
   end.before <- c("#define carg")
@@ -510,19 +509,19 @@ rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
   if (length(files) == 0) return()
   ncomment <- nchar(comment)[1]
   nendbefore <- nchar(end.before)[1]
-  cfile <-  paste(RFpath, "/src/", Cfile, ".cc", sep="")
+  cfile <-  paste(RFpath, "/RandomFields/src/", Cfile, ".cc", sep="")
   write(file = cfile,
         c("// This file has been created automatically by 'rfGenerateMaths'",
           "#include <math.h>",
           "#include \"RF.h\"",
           "#include \"primitive.h\""
           ))
-  manfile <- paste(RFpath, "/man/", Cfile, ".Rd", sep="")
+  manfile <- paste(RFpath, "/RandomFields/man/", Cfile, ".Rd", sep="")
   write(file = manfile, 
         scan(paste(manfile, 0, sep="."),
              what=character(), sep="\n", blank.lines.skip=FALSE, skip=0))  
 
-  Rfile <- paste(RFpath, "/R/", Cfile, ".R", sep="")
+  Rfile <- paste(RFpath, "/RandomFields/R/", Cfile, ".R", sep="")
   write(file = Rfile, 
           "# This file has been created automatically by 'rfGenerateMaths'")
   

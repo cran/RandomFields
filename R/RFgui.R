@@ -43,7 +43,8 @@ RFgui <- function(data, x, y,
                           ...)
  
   if (wait >= 0) {
-    while (!exists(".RFgui.exit", envir=Env)) .C("sleepMicro", as.integer(wait))
+    while (!exists(".RFgui.exit", envir=Env))
+      RandomFieldsUtils::sleep.micro(wait)
     res <- get("RFgui.model", envir=Env)
     if (is.null(res)) return(res) 
     if (RFoptions()$general$spConform) {

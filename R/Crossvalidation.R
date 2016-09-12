@@ -182,23 +182,42 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
           if (details) fitted[[nr]] <- fit
         }
       }
+
+
+      if (TRUE) { ## jonas
+        dummy <- 1:len
+        fitCoords <- DeleteCoord(Coords,dummy[-nr])
       
-      interpol <- RFinterpolate(fit, x = coords,
+        interpol <- RFinterpolate(fit, x = fitCoords$x,
                                 grid=FALSE,
-                                given = coords,
+                                given = coords$x,
                                 data =  Daten,
                                 spConform = FALSE,
-                                return_variance=TRUE, pch="")
+                                return_variance = TRUE,
+                                pch="")
+        predicted[nr, ] <- interpol$estim
+        if (printlevel <= PL_IMPORTANT && pch!="") cat("\n")
+        
+        error <- dta - predicted
+        std.error <- 2#error/sqrt(var)   
+      } else { ## old 
+        interpol <- RFinterpolate(fit, x = coords,
+                                  grid=FALSE,
+                                  given = coords,
+                                  data =  Daten,
+                                  spConform = FALSE,
+                                  return_variance=TRUE, pch="")
+      }
 
 
       var[nr, ] <- as.vector(interpol$var)
       predicted[nr, ] <- as.vector(interpol$estim)
+      if (printlevel <= PL_IMPORTANT && pch!="") cat("\n")
+
+      error <- dta - predicted
+      std.error <- error / sqrt(var)
     }
     
-    if (printlevel <= PL_IMPORTANT && pch!="") cat("\n")
-
-    error <- dta - predicted
-    std.error <- error / sqrt(var)
     
     res[[i]] <- list(data=Z$data, predicted=predicted, krige.var=var,
                 error=error, std.error=std.error,

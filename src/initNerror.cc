@@ -133,9 +133,9 @@ double EIGENVALUE_EPS = 1e-15;
 
 int ERRORMODELNUMBER = -1;
 
-char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[LENMSG], MSG2[LENERRMSG],
-  ERRORSTRING[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
-
+char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[LENMSG], MSG2[LENERRMSG];
+errorloc_type ERROR_LOC;
+errorstring_type ERRORSTRING;
 
 
 char PREF_FAILURE[100 * Nothing];
@@ -988,11 +988,13 @@ void InitModelList() {
   pref_type pfix={0, 0, 0,  0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
   //              CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
   IncludeModel("fixcov", PosDefType, 0, 1, 3, kappa_fix,
-	       KERNEL, SYMMETRIC, checkfix, rangefix, pfix, 
+	       // KERNEL, SYMMETRIC,
+	       PREVMODELD, PREVMODELI, checkfix, rangefix, pfix, 
 	       INTERN_SHOW, PARAM_DEP, INFDIM-1, false, NOT_MONOTONE);
   subnames("norm");
   kappanames("M", LISTOF + REALSXP, "x", VECSXP,  "raw", INTSXP);
   change_sortof(COVARIATE_X, DONOTVERIFYPARAM);
+  addCov(fixStat, NULL, NULL);
   addCov(fix);
   setptwise(pt_paramdep);
 
@@ -1178,6 +1180,16 @@ void InitModelList() {
   addlogCov(logfractalBrownian);
   addLocal(NULL, ieinitBrownian);
   RandomShape(0, initfractalBrownian, do_statiso);
+  Taylor(-1, RF_NA, 0, 0);
+  TailTaylor(-1, RF_NA, 0, 0);
+
+ 
+  IncludeModel("locstatfbm", PosDefType, 0, 0, 2, XONLY, ISOTROPIC, 
+	       checklsfbm, rangelsfbm, PREF_ALL, INFDIM, false,
+	        MONOTONE); 
+  nickname("lsfbm");
+  kappanames("alpha", REALSXP, "const", REALSXP);
+  addCov(lsfbm, Dlsfbm, DDlsfbm, D3lsfbm, D4lsfbm, Inverselsfbm);
   Taylor(-1, RF_NA, 0, 0);
   TailTaylor(-1, RF_NA, 0, 0);
  
@@ -1515,11 +1527,11 @@ void InitModelList() {
   addCov(Scatter, NULL, NULL);
  
   IncludeModel("schur",  PosDefType, 1, 1, 3, kappaSchur, 
-	      PREVMODELD, PREVMODELI, 
+	       PREVMODELD, PREVMODELI, 
 	       checkSchur, rangeSchur, PREF_ALL,
 	       false, SUBMODEL_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
   kappanames("M", REALSXP, "diag", REALSXP, "rhored", REALSXP);
-  addCov(Schurstat, NULL, NULL);
+  addCov(Schurstat, DSchur, D2Schur, D3Schur, D4Schur, NULL);
   addCov(Schurnonstat);
   add_sortof(sortof_M); 
 

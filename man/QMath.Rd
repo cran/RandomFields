@@ -215,19 +215,19 @@ R.fmin(a, b)
   \item{R.is}{evaluates equalities and inequalities;
 	note that \code{TRUE} is returned if the equality or
 	 inequality holds up to a tolerance given by 
-	\code{RFoptions()$nugget$tol}}
+	\code{\link{RFoptions}()$nugget$tol}}
   \item{R.p}{takes a component out of the vector giving the location}
   \item{R.lon, R.lat}{longitudinal and latitudinal coordinate, given
         in the \emph{spherical system}, i.e. in radians.
         (earth system is in degrees).}
   }
-  Sor the remaining models see the corresponding C functions for
+  For the remaining models see the corresponding C functions for
   their return value. 
   (For any \sQuote{R.model} type \sQuote{man model} under Linux.)
 }
 
 \value{
-Formally, the functions returns an object of class
+Formally, the functions return an object of class
 \code{\link[=RMmodel-class]{RMmodel}}, except for
 \command{RFcalc} that returns a scalar.
 Neither vectors nor parentheses are allowed.
@@ -244,7 +244,7 @@ positive definite (or negative definite), e.g. \command{cos} in
 \eqn{R^1}:
 \enumerate{
   \item please use the functions given in \command{\link{RMmodels}}
-        for definite functions.
+       for definite functions (for \code{cos} see \command{\link{RMbessel}})
   \item Using uncapsulated substraction to build up a covariance
 	function is ambiguous, see the example in \command{\link{RMtrend}}
   }

@@ -29,21 +29,21 @@
 
 
 .onLoad <- function(lib, pkg) {
-  .C("attachRFoptions", package="RandomFields")  
+  .C("attachRFoptionsRandomFields", package="RandomFields")  
 }
 
 .onAttach <- function (lib, pkg) {
-  packageStartupMessage("This is RandomFields Version: 3.1.16");
+  packageStartupMessage("This is RandomFields Version: 3.1.24");
 }
 
 .onDetach <- function(lib) {
-#   RFoptions(storing=FALSE) ## delete everything
-#  .C("detachRFoptions", package="RandomFields")
+  RFoptions(storing=FALSE) ## delete everything
+  .C("detachRFoptionsRandomFields", package="RandomFields")
 }
 
 .onUnload <- function(lib, pkg){
    RFoptions(storing=FALSE) ## delete everything
-  .C("detachRFoptions", package="RandomFields")
+  .C("detachRFoptionsRandomFields", package="RandomFields")
 }
 #Implementierung von Cox & Isham's non-separable model
 

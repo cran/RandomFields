@@ -2,6 +2,7 @@
 \alias{RMwhittle}
 \alias{RMkbessel}
 \alias{RMmatern}
+\alias{RMhandcock}
 \alias{Sobolev}
 \alias{whittle-matern}
 \title{Whittle-Matern Covariance Model}
@@ -19,26 +20,33 @@
  where \eqn{\nu > 0}{\nu > 0} and \eqn{K_\nu}{K_\nu} is the modified
  Bessel function of second kind.
 
- 
-
  The Matern model is given by
  \deqn{C(r) = \frac{2^{1-\nu}}{\Gamma(\nu)} (\sqrt{2\nu}r)^\nu
  K_\nu(\sqrt{2\nu}r)}{C(r) = 2^{1- \nu} \Gamma(\nu)^{-1} (\sqrt{2\nu}
- r)^\nu K_\nu(\sqrt{2\nu} r)} 
+ r)^\nu K_\nu(\sqrt{2\nu} r)}
+
+
+ The Handcock-Wallis parametrisation is given by
+ \deqn{C(r) = \frac{2^{1-\nu}}{\Gamma(\nu)} (2\sqrt{\nu}r)^\nu
+ K_\nu(2 \sqrt{\nu}r)}{C(r) = 2^{1- \nu} \Gamma(\nu)^{-1} (2\sqrt{\nu}
+ r)^\nu K_\nu(2\sqrt{\nu} r)}
 
  }
 \usage{
 RMwhittle(nu, notinvnu, var, scale, Aniso, proj)
 
 RMmatern(nu, notinvnu, var, scale, Aniso, proj)
+
+RMhandcock(nu, notinvnu, var, scale, Aniso, proj)
+
 }
 \arguments{
  \item{nu}{a numerical value called \dQuote{smoothness parameter};
  should be greater than 0.} 
- \item{notinvnu}{logical, if not given the model is defined as above.
-   (default).
-   %This argument should not be set by users.
-   See the Notes.
+ \item{notinvnu}{logical. If \code{FALSE} then in the definition
+   of the models \eqn{\nu} is replaced by \eqn{1/\nu}.
+   This parametrisation seems to be more natural.
+   Default is however \code{FALSE} according the definitions in literature.
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
@@ -46,9 +54,10 @@ RMmatern(nu, notinvnu, var, scale, Aniso, proj)
 }
 \details{
 
- \command{\link{RMwhittle}} and \command{\link{RMmatern}}
- are two alternative parametrizations of the same covariance function.
- The Matern model should be preferred as this model seperates the
+The three models 
+ are alternative parametrizations of the same covariance function.
+ The Matern model or the Handcock-Wallis parametrisation
+ should be preferred as they seperate the
  effects of scaling parameter and the shape parameter. 
 
  This Whittle-Matern model is the model of choice if the smoothness of a
@@ -73,22 +82,11 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 }
 
 \note{
- The Matern model called by \eqn{C(r \sqrt(2))}{C(r \sqrt(2))} equals
- the Handcock-Wallis (1994) parametrisation. 
-
- The model allows further to be reparameterized by substituting
- \eqn{\nu}{\nu} for \eqn{\nu^{-1}}{\nu^{-1}} setting the argument
- \code{invnu=TRUE}. Note that the inversion of \eqn{\nu} does not really
- make sense for the Whittle model. Due to this fact, if the argument
- \code{invnu} is given, the Whittle model changes its definition and
- becomes identical to the Matern model.
-
  The Whittle-Matern model is a normal scale mixture.
 }
 
 \value{
  The function return an object of class \code{\link[=RMmodel-class]{RMmodel}}
-
 }
 \references{
   Covariance function

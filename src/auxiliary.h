@@ -31,13 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //double I0mL0(double x);
 extern "C" {
   SEXP vectordist(SEXP V, SEXP diag); 
-  void sleepMilli(int *milli);
-  //  void I0ML0(double *x, int *n);
-  //double struve(double x, double nu,  double factor_Sign, bool expscaled);
-  // void StruveH(double *x, double *nu);
-  // void StruveL(double *x, double *nu, int * expScaled);
-  void ordering(double *d, int len, int dim, int *pos);
-  void Ordering(double *d, int *len, int *dim, int *pos);
 }
 bool is_diag(double *aniso, int dim);
 

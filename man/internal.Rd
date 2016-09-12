@@ -23,10 +23,9 @@ rfGenerateConstants(
            RFpath = "~/R/RF/svn/RandomFields",
            RCauto.file = paste(RFpath, "RandomFields/R/RCauto.R", sep="/")
            )
-rfGenerateTest(files = NULL,
-               RFpath = "~/R/RF/svn/RandomFields/RandomFields")
+rfGenerateTest(files = NULL, RFpath = "~/R/RF/svn/RandomFields")
 rfGenerateMaths(files = "/usr/include/tgmath.h", Cfile = "QMath",
-                        RFpath = "~/R/RF/svn/RandomFields/RandomFields")
+                        RFpath = "~/R/RF/svn/RandomFields")
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
                path="RandomFields", package = "RandomFields", 

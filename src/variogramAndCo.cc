@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <unistd.h>
 #include "Operator.h"
 #include "variogramAndCo.h"
-#include "xport.h"
 
 void genuineStatOwn(cov_model *cov, domain_type *stat, Types *type) {
   cov_model *sub = cov;
@@ -586,11 +585,11 @@ void InverseCovMatrix(cov_model *Cov, double *v, double *det) {
   assert(cov->vdim[0] == cov->vdim[1]);
   CovList[cov->nr].covariance(cov, v);
   if (cov->Ssolve == NULL) SOLVE_STORAGE;
-  Ext_setErrorLoc(ERROR_LOC);
+  RU_setErrorLoc(ERROR_LOC);
   //  printf("inverse\n");
-  int Exterr = Ext_solvePosDef(v, vdimtot, true, NULL, 0, det, cov->Ssolve);
+  int Exterr = RU_solvePosDef(v, vdimtot, true, NULL, 0, det, cov->Ssolve);
   if (Exterr != NOERROR){
-    Ext_getErrorString(ERRORSTRING);
+    RU_getErrorString(ERRORSTRING);
     ErrorStop(Exterr);
   }
 }

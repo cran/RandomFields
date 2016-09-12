@@ -385,7 +385,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   int store = GLOBAL.general.set;
   location_type *loc = Loc(cov);
   mixed_storage *s;
-  char errorloc_save[nErrorLoc];
+  errorloc_type errorloc_save;
   double 
     *b = P(MIXED_BETA),
     *coord = P(MIXED_COORD),
@@ -936,7 +936,7 @@ int init_trend(cov_model *cov, gen_storage *S) {
 
 void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   location_type *loc = Loc(cov);
-  char errorloc_save[nErrorLoc];
+  char errorloc_save[nErro rLoc];
   trend_storage *S = cov->Strend;
   //PMI(cov->calling->calling);
   assert(S != NULL);
@@ -1304,7 +1304,7 @@ void do_TrendEval(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   double
     *res = cov->rf;
   assert(res != NULL);
-  char errorloc_save[nErrorLoc];
+  errorloc_type errorloc_save;
   strcpy(errorloc_save, ERROR_LOC);
   sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
   Fctn(NULL, cov, res);

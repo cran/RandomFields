@@ -196,13 +196,13 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     //   assert(false); 
   }
    
-  /* ********************** */
+ /* ********************** */
   /*  square root of matrix */
   /* ********************** */
-  err = Ext_sqrtPosDef(Cov, vdimtot, cov->Ssolve);
+  err = RU_sqrtPosDef(Cov, vdimtot, cov->Ssolve);
 
   if (err != NOERROR) {
-    Ext_getErrorString(ERRORSTRING);
+    RU_getErrorString(ERRORSTRING);
     goto ErrorHandling;
   }
 
@@ -242,7 +242,7 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   //  printf("vdimtot = %d\n", vdimtot);
 
-  Ext_sqrtRHS(cov->Ssolve, G, res);
+  RU_sqrtRHS(cov->Ssolve, G, res);
 
   //res[0]res[1]=res[2]=1;
   //  printf("done vdimtot = %d\n", vdimtot);

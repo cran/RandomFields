@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // 
 // 1
-//// 1
+// // 1
 
 
 
@@ -44,11 +44,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <string.h>
 #include <General_utils.h>
+#include <init_RandomFieldsUtils.h>
 #include "error.h"
 #include "auxiliary.h"
 #include "RandomFields.h"
 #include "AutoRandomFields.h"
-#include "xport.h"
 #include "Userinterfaces.h"
 
 //   intptr_t and uintptr_t fuer: umwandlung pointer in int und umgekehrt
@@ -236,15 +236,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define STRUCTSIGN "_"
 #undef CHECK
 #undef CHECK_NO_TRAFO
-#define CHECK(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
-#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2Xnotrafo(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
-#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) ({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R,true);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
-#define CHECKPD2ND(C,D1,D2,I,V,R) ({LLPRINT(CHECKSIGN, C, "CHECKPD2ND"); XX(C); int _x = CheckPD2ND(C,D1,D2,I,V,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
-#define INIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = INIT_intern(C, Moments, S);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
-#define REINIT(C, Moments, S) ({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = REINIT_intern(C, Moments, S); YY(C); _x;})
-#define INIT_RANDOM(C, Moments, S, P) ({LLPRINT(INITSIGN, C, "INITRANDOM");  XX(C); int _x = INIT_RANDOM_intern(C, Moments, S, P);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
+#define CHECK(C,T,X,type,D,I,V,R) __extension__({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2X(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
+#define CHECK_NO_TRAFO(C,T,X,type,D,I,V,R) __extension__({LLPRINT(CHECKSIGN, C, "CHECK"); assert((type)!=RandomType); XX(C); int _x = check2Xnotrafo(C,T,X,type,D,I,V,R); YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED"); errorMSG(_x, MSG); PRINTF("%s%s\n", ERROR_LOC, MSG);} _x;})
+#define CHECK_VDIM(C,T,X,type,D,I,V0,V1,R) __extension__({LLPRINT(CHECKSIGN, C, "CHECKVDIM"); XX(C); int _x = check2X(C,T,X,type,D,I,V0,V1,R,true);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
+#define CHECKPD2ND(C,D1,D2,I,V,R) __extension__({LLPRINT(CHECKSIGN, C, "CHECKPD2ND"); XX(C); int _x = CheckPD2ND(C,D1,D2,I,V,R);YY(C); if (_x==NOERROR){LLPRINT(CHECKSIGN, C, "CHECK DONE");}else{LLPRINT(CHECKSIGN, C, "CHECK FAILED");} _x;})
+#define INIT(C, Moments, S) __extension__({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = INIT_intern(C, Moments, S);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
+#define REINIT(C, Moments, S) __extension__({LLPRINT(INITSIGN, C, "INIT");  XX(C); int _x = REINIT_intern(C, Moments, S); YY(C); _x;})
+#define INIT_RANDOM(C, Moments, S, P) __extension__({LLPRINT(INITSIGN, C, "INITRANDOM");  XX(C); int _x = INIT_RANDOM_intern(C, Moments, S, P);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "INIT DONE");}else{LLPRINT(STRUCTSIGN, C, "INIT FAILED");}_x;})
 #undef STRUCT
-#define STRUCT(C, NM)  ({LLPRINT(STRUCTSIGN, C, "STRUCT"); ASSERT_GATTER(C);  XX(C); int _x = CovList[(C)->gatternr].Struct(C, NM);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "STRUCT DONE");}else{LLPRINT(STRUCTSIGN, C, "STRUCT FAILED");}_x;})
+#define STRUCT(C, NM)  __extension__({LLPRINT(STRUCTSIGN, C, "STRUCT"); ASSERT_GATTER(C);  XX(C); int _x = CovList[(C)->gatternr].Struct(C, NM);YY(C); if (_x==NOERROR){LLPRINT(STRUCTSIGN, C, "STRUCT DONE");}else{LLPRINT(STRUCTSIGN, C, "STRUCT FAILED");}_x;})
 
    /*  printf("//%ld %ld %d %d %d idx=%d\n", (TO)->px[IDX], (FROM)->px[IDX], \
        (FROM)->nrow[IDX], (FROM)->ncol[IDX],				\
@@ -460,6 +460,9 @@ typedef char NAname_type[MAX_NA][255];
 #define BROWN_ALPHA 0
 #define BROWN_GEN_BETA 1
 
+#define LOCALLY_BROWN_ALPHA BROWN_ALPHA
+#define LOCALLY_BROWN_C (BROWN_ALPHA + 1)
+
 
 ///////////////////////////////////////////////////////////////////////
 // whittle + matern
@@ -578,6 +581,8 @@ typedef char NAname_type[MAX_NA][255];
 #define GNEITING_CDIAG 5
 #define GNEITING_RHORED 6
 #define GNEITING_C 7
+
+
 
 ///////////////////////////////////////////////////////////////////////
 // biwm
@@ -1987,7 +1992,6 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 
 void setAniso(cov_model *cov);
 
-void orderingInt(int *d, int len, int dim, int *pos);
 int setgrid(coord_type xgr, double *x, long lx, int spatialdim);
 int partial_loc_set(location_type *loc, double *x, double *y,
 		    long lx, long ly, bool dist, int xdim, double *T, 
@@ -2758,12 +2762,12 @@ int addressbits(void *addr);
 
 #define EXT_NEW_COV_STORAGE(cov, new) {				\
   if ((cov)->S##new != NULL) {					\
-    Ext_##new##_DELETE(&((cov)->S##new));		    	\
+    RU_##new##_DELETE(&((cov)->S##new));		    	\
       assert((cov)->S##new == NULL);			       	\
   }								\
   if ((cov)->S##new == NULL) {					\
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-    Ext_##new##_NULL((cov)->S##new);					\
+    RU_##new##_NULL((cov)->S##new);					\
     if ((cov)->S##new == NULL) BUG;				\
   }} 							
 
@@ -2942,7 +2946,11 @@ int kappaBoxCoxParam(cov_model *cov, int BC);
 #define MAX_LEN_EXAMPLES 4
 
 
-extern bool Xportincluded;
+extern utilsparam* GLOBAL_UTILS;
+
+coord_sys_enum GetCoordSystem(isotropy_type iso);
+
+
 
 #endif
 

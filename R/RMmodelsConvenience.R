@@ -148,3 +148,6 @@ RMpolynome <- function(degree, dim, value=NA, varnames = c("x", "y", "z", "T"),
 }
 
 
+RMhandcock <- function(nu, notinvnu, var, scale, Aniso, proj){
+  RMS(scale = 1/sqrt(2), RMmatern(nu, notinvnu, var, scale, Aniso, proj))
+}

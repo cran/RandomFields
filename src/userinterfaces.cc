@@ -22,18 +22,63 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <R.h>
+#include <Rinternals.h>
 #include <Rdefines.h>
 #include <R_ext/Linpack.h>
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
 #include <unistd.h>
- 
 #include <string.h>
+
 #include "RF.h"
 #include "primitive.h"
 #include "kleinkram.h"
 // #include "Operator.h"
+#include <init_RandomFieldsUtils.h>
+
+
+extern "C" {
+
+#include <R_ext/Rdynload.h> 
+  CALL1(void, solve_DELETE, solve_storage**, S)
+  CALL1(void, solve_NULL, solve_storage*, x)
+  CALL7(int, solvePosDef, double*, M, int, size, bool, posdef, 
+	   double *, rhs, int, rhs_cols, double *, logdet, solve_storage *, PT)
+  // CALL8(int, solvePosDefResult, double*, M, int, size, bool, posdef, 
+  //	   double *, rhs, int, rhs_cols, double *, result, double*, logdet, 
+  //	   solve_storage*, PT)
+  CALL3(int, sqrtPosDef, double *, M, int, size, solve_storage *, pt)
+  CALL3(int, sqrtRHS, solve_storage *, pt, double*, RHS, double *, res)
+  CALL2(int, invertMatrix, double *, M, int, size)
+  //  CALL2(double, StruveH, double, x, double, nu)
+  //  CALL3(double, StruveL, double, x, double, nu, bool, expScaled)
+  CALL1(double, I0mL0, double, x)
+  CALL3(double, WM, double, x, double, nu, double, factor)
+  CALL3(double, DWM, double, x, double, nu, double, factor)
+  CALL3(double, DDWM, double, x, double, nu, double, factor)
+  CALL3(double, D3WM, double, x, double, nu, double, factor)
+  CALL3(double, D4WM, double, x, double, nu, double, factor)
+  CALL4(double, logWM, double, x, double, nu1, double, nu2, double, factor)
+  CALL1(double, Gauss, double, x)
+  CALL1(double, DGauss, double, x)
+  CALL1(double, DDGauss, double, x)
+  CALL1(double, D3Gauss, double, x)
+  CALL1(double, D4Gauss, double, x)
+  CALL1(double, logGauss, double, x)
+  CALL1(void, getErrorString, errorstring_type, errorstring)
+  CALL1(void, setErrorLoc, errorloc_type, errorloc)
+  CALL1(void, getUtilsParam, utilsparam **, up)
+  CALL7(void, attachRFoptions, const char **, prefixlist_, int, N, 
+	   const char ***, all_, int *, allN_, setparameterfct, set, 
+	   finalsetparameterfct, final, getparameterfct, get)
+  CALL2(void, detachRFoptions, const char **, prefixlist_, int, N)
+  CALL1(void, relaxUnknownRFoption, bool, relax)
+  //  CALL3(void, sorting, double*, data, int, len, usr_bool, NAlast)
+  //  CALL3(void, sortingInt, int*, data, int, len, usr_bool, NAlast)
+  CALL4(void, ordering, double*, data, int, len, int, dim, int *, pos)
+  CALL4(void, orderingInt, int*, data, int, len, int, dim, int *, pos)
+}
 
 
 #define nOptimVar 4
@@ -92,9 +137,9 @@ double
   ce_tolIm[nr_modes] =       {1e2,  1e1,  1e-1,  1e-3,   1e-7, 0, 0},
   ce_approx_step[nr_modes] = {1.0,  1.0,   RF_NA, RF_NA, RF_NA, 0.0, 0.0},
 #ifdef SCHLATHERS_MACHINE
-  svd_tol[nr_modes] =     {1e-5, 1e-6, 1e-7, -1e-8, 1e-10, 1e-12, 0},
+  svd_tol[nr_modes] =     {1e-5, 1e-6, 1e-7, 1e-8, 1e-10, 1e-12, 0},
 #else
-  svd_tol[nr_modes] =     {-1, -1, -1, -1, -1, 1e-8, 0},
+  svd_tol[nr_modes] =     {0, 0, 0, 0, 0, 0, 0},
 #endif
   nugget_tol[nr_modes] =     {1e-8, 1e-8, 1e-12, 0,     0,     0,     0},
   tbm_linefactor[nr_modes] = {1.5,  1.5,  1.7,   2.0,  3.0,  5.0,  6.0},
@@ -143,7 +188,6 @@ utilsparam *GLOBAL_UTILS;
 
 void SetDefaultOutputModeValues(output_modes mode){
   general_param *gp = &(GLOBAL.general);
-  //printf("%d %d\n", mode, output_sp);
   gp->output = mode;
   gp->sp_conform = mode == output_sp;
   gp->returncall = mode == output_geor;
@@ -817,7 +861,6 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     }
     case GENERAL_STORING: {
       bool storing = LOG;
-      //  print("before setting storing %d %d\n", storing, KEY[0].simu.active);
       if  (length(el) > 1) {
 	if (!storing) {	  
 	  int nr = Integer(el, (char*) "storing (register)", 1);
@@ -838,7 +881,6 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
 	  }
 	}
 	//
-	// print("hereX %d %d %d\n", storing, length(el), KEY[0].simu.active);
       } else {
 	if (!storing) {	  
 	  // delete all keys
@@ -848,7 +890,6 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
 	  //
 	}
 	//
-	//	print("hereR %d %d\n", storing, KEY[0].simu.active);
      }
       //
       // print("here %d\n", storing);
@@ -945,7 +986,6 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       if (len < 3) ERR1("'%s' must have 3 components", krige[KRIGE_SPLITN]);
       for (int ii=0; ii<len; ii++) {
 	newval[ii] = Integer(el, name, ii); 
-	// printf("%d %d %d\n", ii, kp->locsplitn[ii],	newval[ii]);
       }
       if (newval[0] > newval[1] || newval[1] > newval[2]) {
 	ERR6("%s[1] <= %s[2] <= %s[3] not satisfied [ %d %d %d ]",
@@ -1413,7 +1453,6 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       break;
     case 5: {
       SEXPTYPE type = TYPEOF(el);
-      //printf("type=%d %d %d %d\n", type, INTSXP, REALSXP, LGLSXP);
       if (type == INTSXP || type == REALSXP || type == LGLSXP) {
 	Integer2(el, name, cp->data_idx);
 	cp->data_nr_names = 0;
@@ -1853,7 +1892,6 @@ void getRFoptions(SEXP *sublist) {
   */
  
   // -1 da OBSOLETE fehlt; -1 da start bei 0
-  // print("%d %d\n", i, prefixN -2);
   assert (i == prefixN - 2); 
     /*
 
@@ -1984,7 +2022,6 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength, SEXP Cumgridlen,
     loc[d] = -boundary; 
     nb[d] = 0;
     totcumlen += cumgridlen[d];
-    //print("%d %d %d\n", d, totcumlen, cumgridlen[d]);
   }
 
   relstart = totcumlen * boundary;
@@ -2017,12 +2054,7 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength, SEXP Cumgridlen,
 	loc[e]++;
 	y += cumgridlen[e];
       }
-      //print("e=%d\n", e);
     }
-    //     print("sum=%d maxn=%d (%d %d) %d %d parts=%d  %d; %d %dl nei=%d\n",
-    // 	    sum, maxn, nb[0], nb[1], totcumlen, relstart, parts[0], parts[1],
-	      // 	   cumgridlen[0], cumgridlen[1], neighbours[x]);
-     //     assert(false);
     if (sum > maxn) {
       UNPROTECT(1);
       return NILSXP;
@@ -2036,9 +2068,6 @@ SEXP countneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength, SEXP Cumgridlen,
       if (++d >= dim) break;
       nb[d]++;
     }
-    // print("d=%d (%d %d %d) [%d %d %d]\n", d, nb[0], nb[1], nb[2], 
-    //	   parts[0], parts[1], parts[2]);
-    //  assert(false);
   }
 
   UNPROTECT(1);
@@ -2066,7 +2095,6 @@ SEXP getelements(SEXP Idx, SEXP Xdim, SEXP N, SEXP Cumgridlen, SEXP Boxes) {
   for (i=0; i<total; i++) elm[i] = NULL;
  
   for (i=0; i<total; i++) {
-    //   print("%d %d l=%d \n", i, total, boxes[i]); 
     if ((elm[i] = (int *) MALLOC(sizeof(int) * boxes[i])) == NULL) {
       err = ERRORMEMORYALLOCATION;
       goto ErrorHandling;
@@ -2082,7 +2110,6 @@ SEXP getelements(SEXP Idx, SEXP Xdim, SEXP N, SEXP Cumgridlen, SEXP Boxes) {
   PROTECT(subel = allocVector(VECSXP, total));
   
   for (i=0; i<total; i++) {
-    //  print("%d %d %d\n", i, total, boxes[i]);
     SEXP el;
     int k,
       end = boxes[i];
@@ -2135,7 +2162,6 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
   for (i=0; i<total; i++) neighb[i] = NULL;
  
   for (i=0; i<total; i++) {
-    //    print("%d %d l=%d %d\n", i, total, neighbours[i]); 
     // R_CheckUserInterrupt();
     if ((neighb[i] = (int *) MALLOC(sizeof(int) * neighbours[i])) == NULL) {
       err =  ERRORMEMORYALLOCATION;
@@ -2196,7 +2222,6 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
   PROTECT(subnei = allocVector(VECSXP, total));
   
   for (i=0; i<total; i++) {
-    //    print("%d %d %d %d\n", i, total, neighbours[i]);
     R_CheckUserInterrupt();
     SEXP nei;
     PROTECT(nei = allocVector(INTSXP, neighbours[i]));
@@ -2223,22 +2248,25 @@ SEXP getneighbours(SEXP Xdim, SEXP Parts, SEXP Squarelength,
 }
 
 
-void attachRFoptions() {
-  includeXport();
-  Ext_getUtilsParam(&GLOBAL_UTILS);
+void attachRFoptionsRandomFields() {
+  RU_getUtilsParam(&GLOBAL_UTILS);
+  //  printf("GLO RU %ld\n", GLOBAL_UTILS);
+  //  GLOBAL_UTILS->basic.cores = 2;
+
   GLOBAL_UTILS->solve.max_chol = 8192;
-  GLOBAL_UTILS->solve.max_svd = 6555;
-  Ext_attachRFoptions(prefixlist, prefixN, all, allN,
-		   setparameter, finalparameter, getRFoptions);
+  GLOBAL_UTILS->solve.max_svd = 6555;  
+  RU_attachRFoptions(prefixlist, prefixN, all, allN,
+		     setparameter, finalparameter, getRFoptions);
   finalparameter();
+  // printf("end  ssss\n");
 }
 
-void detachRFoptions() {
-  Ext_detachRFoptions(prefixlist, prefixN);
+void detachRFoptionsRandomFields() {
+  RU_detachRFoptions(prefixlist, prefixN);
 }
 
 void RelaxUnknownRFoption(int *RELAX) { 
-  Ext_relaxUnknownRFoption((bool) *RELAX); 
+  RU_relaxUnknownRFoption((bool) *RELAX); 
 }
 
 
@@ -2246,20 +2274,6 @@ void DeleteKey(int *reg) {
   COV_DELETE(KEY + *reg);
 } 
 
-
-/*
-void isAuthor(int *is) {
-#ifdef WIN32
-  *is = false;
-#else
-  #define NCHAR 5
-  char host[5];
-  gethostname(host, NCHAR);
-  host[NCHAR-1] = '\0';
-  *is = strcmp("viti", host) == 0;
-#endif
-}
-*/
 
 
 SEXP allintparam() {
@@ -2287,5 +2301,3 @@ SEXP allintparam() {
   UNPROTECT(1);
   return x;
 }
-
-

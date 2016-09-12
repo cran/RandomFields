@@ -264,6 +264,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
     deltathresh = nthreshold;
   double inct, 
     *x = loc->x,
+    oldE[MAXTBMSPDIM] = { 0 },
     E[MAXTBMSPDIM], // must always be of full dimension, even 
     // if lower dimension is simulated -- simulation algorithm for e
     // might use higher dimensional components
@@ -278,7 +279,8 @@ void do_spectral(cov_model *cov, gen_storage *S)
   s->phi2d = s->phistep2d * UNIFORM_RANDOM;
 //  print("%d %f %f\n", s->grid, s->phistep2d, s->phi2d); assert(false);
   
-  for (d=0; d<MAXTBMSPDIM; d++) E[d] = inc[d] = 0.0;
+
+  for (d=0; d<MAXTBMSPDIM; d++) oldE[0] = E[d] = inc[d] = 0.0;
   for (n=0; n<total; n++) res[n]=0.0;
   //the very procedure:
   gridlenx = gridleny = gridlenz = gridlent = 1;
@@ -301,7 +303,6 @@ void do_spectral(cov_model *cov, gen_storage *S)
   }
 
 
-
   for (n=0; n<ntot; n++) {
     C->spectral(next, S, E);
     if (PL > 6)
@@ -315,20 +316,18 @@ void do_spectral(cov_model *cov, gen_storage *S)
     //   for (d=0; d<cov->tsdim; d++)  E[d] *= invscale;
     //}
     if (loc->caniso  != NULL) {
-      double oldE[MAXTBMSPDIM],
+      double 
 	*A = loc->caniso;
       int m, k, j,
-	nrow = origdim,
-	nrowdim = nrow * cov->tsdim;
+	nrow = origdim;
       
       for (d=0; d<cov->tsdim; d++) {
 	oldE[d] = E[d];
 	E[d] = 0.0;
-      }
-      
+      }      
       for (d=0, k=0; d<nrow; d++, k++) {
-	for (m=0, j=k; j<nrowdim; j+=nrow) {
-	  E[d] += oldE[m++] * A[j];
+	for (m=0, j=k; m<cov->tsdim; j+=nrow, m++) {
+	  E[d] += oldE[m] * A[j];
 	}
       }
     }

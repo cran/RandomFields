@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "Operator.h"
 //#include "Operator.h"
-#include "win_linux_aux.h"
+//#include "win_linux_aux.h"
 #include "Coordinate_systems.h"
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */
@@ -349,7 +349,6 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     ;
   
   bool ce_dim2=false; 
-  //  char errorloc_save[nErrorLoc];
 
 
   if (cov->role != ROLE_GAUSS && cov->role != ROLE_BASE){
@@ -703,7 +702,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 int init_tbmproc(cov_model *cov, gen_storage *S) {
   location_type *loc = Loc(cov);
   int err=NOERROR;
-  char errorloc_save[nErrorLoc];
+  errorloc_type errorloc_save;
   cov_model *key = cov->key; // == NULL ? cov->sub[0] : cov->key;
   assert(key != NULL);  
   tbm_storage *s = cov->Stbm;

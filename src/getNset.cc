@@ -32,7 +32,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "RF.h"
 #include "primitive.h"
 #include "Coordinate_systems.h"
-#include "xport.h"
 
 void LOC_SINGLE_NULL(location_type *loc, int len) {
   int d;
@@ -320,7 +319,7 @@ void COV_DELETE_WITHOUTSUB(cov_model **Cov) {
   gatter_DELETE(&(cov->Sgatter));
   earth_DELETE(&(cov->Searth));
   extra_DELETE(&(cov->Sextra));
-  Ext_solve_DELETE(&(cov->Ssolve));
+  RU_solve_DELETE(&(cov->Ssolve));
   biwm_DELETE(&(cov->Sbiwm));
   inv_DELETE(&(cov->Sinv));
   scatter_DELETE(&(cov->Sscatter));

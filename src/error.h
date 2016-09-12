@@ -27,8 +27,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RFerror_H
 #define RFerror_H 1
 
-extern char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[250], MSG2[LENERRMSG],
-  ERRORSTRING[MAXERRORSTRING], ERROR_LOC[nErrorLoc];
+extern char ERRMSG[LENERRMSG], MSG[LENERRMSG], BUG_MSG[250], MSG2[LENERRMSG];
+extern errorloc_type ERROR_LOC;
+extern errorstring_type ERRORSTRING;
+
 extern int ERRORMODELNUMBER;
 void errorMSG(int error, char* EM);
 void FinalErrorMSG(int err, char* m);

@@ -826,7 +826,8 @@ void kappashift(int i, cov_model *cov, int *nr, int *nc){
 }
 void shift(double *x, cov_model *cov, double *v) {
   cov_model *next = cov->sub[0];
-  double y[ShiftMaxDim], z[ShiftMaxDim],
+  double y[ShiftMaxDim],
+    z[ShiftMaxDim] = { RF_NAN },
     *jh, *ih, 
     *pv = v,
     *h = P(SHIFT_DELAY);
@@ -840,9 +841,10 @@ void shift(double *x, cov_model *cov, double *v) {
   COV(x, next, v);
   for (i=vdimP1; i<vdimSq; i+=vdimP1) v[i] = v[0];
   
+  //  for (d=0; d<tsdim; d++) z[d] = 0.0;
   for (jh=h-tsdim, j=-1; j<vdimM1; j++, jh+=tsdim) {
-    if (j < 0) for (d=0; d<tsdim; d++) z[d] = x[d];
-    else for (d=0; d<tsdim; d++) z[d] = x[d] + jh[d];
+    for (d=0; d<tsdim; d++) z[d] = x[d];
+    if (j >= 0) for (d=0; d<tsdim; d++) z[d] += jh[d];
     for (ih=h-tsdim, i=-1; i<vdimM1; i++, ih+=tsdim, pv++) {
       if (i==j) continue;
       if (i < 0) for (d=0; d<tsdim; d++) y[d] = z[d];
@@ -851,6 +853,9 @@ void shift(double *x, cov_model *cov, double *v) {
     }
   }
 }
+
+
+
 
 int checkshift(cov_model *cov) {
   cov_model *next = cov->sub[0];
@@ -1823,6 +1828,27 @@ void Schurstat(double *x, cov_model *cov, double *v){
   COV(x, next, v); 
   SchurMult(x, cov, v);
 }
+void DSchur(double *x, cov_model *cov, double *v){
+  cov_model *next = cov->sub[0];
+  Abl1(x, next, v); 
+  SchurMult(x, cov, v);
+}
+void D2Schur(double *x, cov_model *cov, double *v){
+  cov_model *next = cov->sub[0];
+  Abl2(x, next, v); 
+  SchurMult(x, cov, v);
+}
+void D3Schur(double *x, cov_model *cov, double *v){
+  cov_model *next = cov->sub[0];
+  Abl3(x, next, v); 
+  SchurMult(x, cov, v);
+}
+void D4Schur(double *x, cov_model *cov, double *v){
+  cov_model *next = cov->sub[0];
+  Abl4(x, next, v); 
+  SchurMult(x, cov, v);
+}
+
 void Schurnonstat(double *x, double *y, cov_model *cov, double *v){
   cov_model *next = cov->sub[0];
   NONSTATCOV(x, y, next, v);  

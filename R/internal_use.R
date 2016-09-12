@@ -396,6 +396,7 @@ reverse_dependencies_with_maintainers <-
 
 Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
                          install = FALSE, check=TRUE, reverse=FALSE) {
+  Print(packageDescription("RandomFields")) #
   all <- reverse_dependencies_with_maintainers("RandomFields", which="all")
   all.pkgs <- all[, 1]
   PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")    
@@ -409,11 +410,11 @@ Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
                                    reverse=if (reverse) list(repos =
                                        getOption("repos")["CRAN"]) else NULL)
     for (i in 1:length(pkgs)) {
-      print(pkgs[i])
-      system(paste("grep ERROR ",  pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep ERROR ",  pkgs[i], ".Rcheck/00check.log", sep=""))
-      system(paste("grep Error ",  pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep Error ",  pkgs[i], ".Rcheck/00check.log", sep=""))
+      cat(pkgs[i], "\n")
+      system(paste("grep ERROR ", dir, "/",  pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep ERROR ", dir, "/",  pkgs[i], ".Rcheck/00check.log", sep=""))
+      system(paste("grep Error ", dir, "/",  pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep Error ", dir, "/",  pkgs[i], ".Rcheck/00check.log", sep=""))
     }
     return(NULL)
   }
@@ -436,9 +437,10 @@ Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
       command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
       Print(command) #
       x <- system(command)
-      Print(x)
-      system(paste("grep ERROR ",  pkgs[j], ".Rcheck/00install.out", sep=""))
-      system(paste("grep Error ",  pkgs[j], ".Rcheck/00check.log", sep=""))
+      system(paste("grep ERROR ", dir, "/", pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep ERROR ", dir, "/", pkgs[i], ".Rcheck/00check.log", sep=""))
+      system(paste("grep Error ", dir, "/", pkgs[i], ".Rcheck/00install.out", sep=""))
+      system(paste("grep Error ", dir, "/", pkgs[i], ".Rcheck/00check.log", sep=""))
       if (x != 0) stop(PKGS[i], "failed")
     }
   }
@@ -446,4 +448,4 @@ Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
 # R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
 
 
-#Dependencies()
+#  Dependencies(check=FALSE)

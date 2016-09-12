@@ -112,254 +112,252 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
   dotnames <- names(dots)
   coords <- GridTopology2gridVectors(cbind(x@centers$x, x@centers$T))  
   if (length(coords)>1) {    
-    coords[[1]] <- sort(unique((coords[[1]] - min(coords[[1]])) *
-                               rep(c(-1, 1), each=length(coords[[1]]))))
-    lab.names <- dimnames(x@centers$x)[[2]]
-    
-    if (!(x@centers$spatialdim==1 && x@centers$Zeit) &&
-        !(x@centers$x[3,2]==dim(x@emp.vario)[2]))
-      coords[[2]] <- sort(unique((coords[[2]] - min(coords[[2]])) *
-                                 rep(c(-1, 1), each=length(coords[[2]]))))
-    else
-      lab.names[2] <- "T"
-  } else {
-    x@centers <- coords[[1]]-min(coords[[1]])
-    do.call(graphics::plot, args=c(dots, list(x=x, plot.nbin=FALSE)))
-    return()
-  }
-  
-  if (!("main" %in% dotnames)) {
-    main <- "Variogram image plot"
-    if (length(varnames)>0) main <- paste(main, "for", varnames)
-    dots$main <- main
-  }
-  lab.names <- paste(lab.names, "-distance", sep="")
-  
-  idx <- lab.names != "T-distance"
-  if (any(idx) && all(coordunits[idx] != ""))
-      lab.names[idx] <-
-        paste(lab.names[idx], " [", coordunits[idx], "]", sep="")
-  if (!all(idx) && all(coordunits[!idx] != ""))
-    lab.names[!idx] <-
-      paste(lab.names[!idx], " [", coordunits[!idx], "]", sep="")
-  
-  if (!("xlab" %in% dotnames)) dots$xlab <- lab.names[1]
-  if (!("ylab" %in% dotnames)) dots$ylab <- lab.names[2]
-  if (!("xlim" %in% dotnames)) dots$xlim <- range(coords[[1]])
-    if (!("ylim" %in% dotnames)) dots$ylim <- range(coords[[2]])
-  
-  idx1 <- coords[[1]] >= dots$xlim[1] & coords[[1]] <= dots$xlim[2]
-  idx2 <- coords[[2]] >= dots$ylim[1] & coords[[2]] <= dots$ylim[2]
-  coords[[1]] <- coords[[1]][idx1]
-  coords[[2]] <- coords[[2]][idx2]
-  
-  dims <- dim(x@emp.vario)
-  ev.plot <- matrix(x@emp.vario, nrow=dims[1], ncol=dims[2])
-  ev.plot <- ev.plot[idx1, idx2]
-  
-  range.ev <- range(ev.plot)#x@emp.vario)
-  col <- if ("col" %in% dotnames) dots$col else
-  default.image.par(NULL, NULL)$default.col
+     coords[[1]] <- sort(unique((coords[[1]] - min(coords[[1]])) *
+                                rep(c(-1, 1), each=length(coords[[1]]))))
+     lab.names <- dimnames(x@centers$x)[[2]]
 
-  if (graphics$split.screen && legend) {
-    scr <- split.screen( rbind(c(0,.85,0,1), c(.85,1,0,1)))
-    screen(scr[1])
-    par(mar=c(4,4,3,1))
-  } else {
-    scr <- NULL
-    par(mar=c(4,4,3,1))
-  }
+     if (!(x@centers$spatialdim==1 && x@centers$Zeit) &&
+         !(x@centers$x[3,2]==dim(x@emp.vario)[2]))
+       coords[[2]] <- sort(unique((coords[[2]] - min(coords[[2]])) *
+                                  rep(c(-1, 1), each=length(coords[[2]]))))
+     else
+       lab.names[2] <- "T"
+   } else {
+     x@centers <- coords[[1]]-min(coords[[1]])
+     do.call(graphics::plot, args=c(dots, list(x=x, plot.nbin=FALSE)))
+     return()
+   }
 
-  dots$type <- NULL
-  do.call(plotmethod,
-          args=c(dots, list(x=coords[[1]], y=coords[[2]], z=ev.plot)))
-                                        #      xlab=lab.names[1],
-                                        #      ylab=lab.names[2],
-                                        #      main="Variogram image plot")
-  if (legend) {
-    stop("das ist doch quark?!")
-   
-    
-    if (graphics$split.screen) {
-      screen(scr[2])
-      par(mar=c(4,0,3,3))
-      z.legend <- seq(range.ev[1], range.ev[2], length=length(col))
-      image(y=z.legend, x=c(0,1), z=rbind(z.legend, z.legend), axes=F, col=col,
-            xlab="")
-      axis(4)
-      box()
-    } else {
-      my.legend(min(coords[[1]]), max(coords[[2]]), range(ev.plot),
-                col=col, bg="white")
-    }
-  }
+   if (!("main" %in% dotnames)) {
+     main <- "Variogram image plot"
+     if (length(varnames)>0) main <- paste(main, "for", varnames)
+     dots$main <- main
+   }
+   lab.names <- paste(lab.names, "-distance", sep="")
 
-  if (graphics$close_screen) {
-    close.screen(scr)
-    scr <- NULL
-  }
-  return(invisible(scr))
-}
+   idx <- lab.names != "T-distance"
+   if (any(idx) && all(coordunits[idx] != ""))
+       lab.names[idx] <-
+         paste(lab.names[idx], " [", coordunits[idx], "]", sep="")
+   if (!all(idx) && all(coordunits[!idx] != ""))
+     lab.names[!idx] <-
+       paste(lab.names[!idx], " [", coordunits[!idx], "]", sep="")
+
+   if (!("xlab" %in% dotnames)) dots$xlab <- lab.names[1]
+   if (!("ylab" %in% dotnames)) dots$ylab <- lab.names[2]
+   if (!("xlim" %in% dotnames)) dots$xlim <- range(coords[[1]])
+     if (!("ylim" %in% dotnames)) dots$ylim <- range(coords[[2]])
+
+   idx1 <- coords[[1]] >= dots$xlim[1] & coords[[1]] <= dots$xlim[2]
+   idx2 <- coords[[2]] >= dots$ylim[1] & coords[[2]] <= dots$ylim[2]
+   coords[[1]] <- coords[[1]][idx1]
+   coords[[2]] <- coords[[2]][idx2]
+
+   dims <- dim(x@emp.vario)
+   ev.plot <- matrix(x@emp.vario, nrow=dims[1], ncol=dims[2])
+   ev.plot <- ev.plot[idx1, idx2]
+
+   range.ev <- range(ev.plot)#x@emp.vario)
+   col <- if ("col" %in% dotnames) dots$col else
+   default.image.par(NULL, NULL)$default.col
+
+   if (graphics$split.screen && legend) {
+     scr <- split.screen( rbind(c(0,.85,0,1), c(.85,1,0,1)))
+     screen(scr[1])
+     par(mar=c(4,4,3,1))
+   } else {
+     scr <- NULL
+     par(mar=c(4,4,3,1))
+   }
+
+   dots$type <- NULL
+   do.call(plotmethod,
+           args=c(dots, list(x=coords[[1]], y=coords[[2]], z=ev.plot)))
+                                         #      xlab=lab.names[1],
+                                         #      ylab=lab.names[2],
+                                         #      main="Variogram image plot")
+   if (legend) {
+     stop("das ist doch quark?!")
 
 
-RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
-                               nmax.T = NA,
-                               plot.nbin = TRUE, plot.sd=FALSE, method = "ml",
-                               variogram=TRUE,
-                               boundaries = TRUE,
-                               ...) {
-  if (!variogram)
-    stop("plot of estimated covariance functions not programmed yet.")
+     if (graphics$split.screen) {
+       screen(scr[2])
+       par(mar=c(4,0,3,3))
+       z.legend <- seq(range.ev[1], range.ev[2], length=length(col))
+       image(y=z.legend, x=c(0,1), z=rbind(z.legend, z.legend), axes=F, col=col,
+             xlab="")
+       axis(4)
+       box()
+     } else {
+       my.legend(min(coords[[1]]), max(coords[[2]]), range(ev.plot),
+                 col=col, bg="white")
+     }
+   }
 
-  graphics <- RFoptions()$graphics
-  newx <- list()
-  methodnames <- double()
-  if (is(x, "RFfit") || is(x, "RF_fit")) {
-    OP <- c("$", "@")[1 + is(x, "RFfit")]
-    if(length(do.call(OP, list(x, "ev")))==0) stop("The fit does not contain an empirical variogram.")
-    newx$autostart <- do.call(OP, list(x, "autostart"))
-    newx$self <- do.call(OP, list(x, "self"))
-    newx$plain <- do.call(OP, list(x, "plain"))
-    newx$sqrt.nr <- do.call(OP, list(x, "sqrt.nr"))
-    newx$sd.inv <- do.call(OP, list(x, "sd.inv"))
-    newx$internal1 <- do.call(OP, list(x, "internal1"))
-    newx$internal2 <- do.call(OP, list(x, "internal2"))
-    newx$internal3 <- do.call(OP, list(x, "internal3"))
-    newx$ml <- do.call(OP, list(x, "ml"))
-
-    x <- do.call(OP, list(x, "ev"))
-    if( is.null(method) )
-      method <- if (length(newx$ml@name) > 0) "ml" else "plain"
-
-    methodidx<-names(newx[unlist(lapply(newx, function(x) is(x, ZF_MODELEXT)))])
-    methodidx <- method %in% methodidx
-    methodnames <- method[methodidx]
-    nomethodnames <- method[!methodidx]
-
-    if( !all(methodidx) )
-      warning( paste("The following method does not exist: ", nomethodnames) )
-  } else {
-    if (!is(x, "RFempVariog") && !is(x, "RF_empVariog"))
-      stop("method only for objects of class 'RFempVariog' or 'RFfit'")
-    OP <- c("$", "@")[1 + is(x, "RFempVariog")]
-  }
- 
-  ev <- do.call(OP, list(x, "emp.vario"))
-  sd <- do.call(OP, list(x, "sd"))
-  centers <- do.call(OP, list(x, "centers"))
-  phi.centers <- do.call(OP, list(x, "phi.centers"))
-  theta.centers <- do.call(OP, list(x, "theta.centers"))
-  Time <- do.call(OP, list(x, "T"))
-  n.bin <- do.call(OP, list(x, "n.bin"))
-  coordunits <- do.call(OP, list(x, "coordunits"))
-
-  varnames <- if (is.matrix(ev)) dimnames(ev)[[2]][1] else names(ev)[1]
- 
-  dots = list(...)
-  dotnames <- names(dots)
-   if (!("type" %in% dotnames)) dots$type <- "b" 
-  cex <- if ("cex" %in% dotnames) dots$cex else .8
-  par(cex=cex, xaxs="i")
-  dots$cex <- NULL
-  if (!("pch" %in% dotnames)) dots$pch <- 19
-             
-  if(!("xlim" %in% dotnames)) dots$xlim <- range(centers)
-  ylim.not.in.dotnames <- !("ylim" %in% dotnames)
-  xlab <- if ("xlab" %in% dotnames) dots$xlab else "distance"
-  dots$xlab <- NULL
-  ylab.ev <- if ("ylab" %in% dotnames) dots$ylab else "semivariance"
-  dots$ylab <- NULL
-  
-  main0 <- if ("main" %in% dotnames) dots$main else "Variogram plot"  
-  dots$main <- NULL
-  if (!is.null(main0)) oma.top <- 2 else oma.top <- 0
-  
-
-  has.sd <- !is.null(sd)
-  
- if(!is.null(model)) {
-   if (!is.list(model)) model <- list(model)
-    if (!all(unlist(lapply(model, FUN=function(x) is(x, ZF_MODEL)))))
-      stop("model must be (a list of elements) of class 'ZF_MODEL'")
-    modelnames <-
-      if(length(names(model)) > 0) names(model)
-      else paste("model", 1:length(model))
-    methodnames <- c(methodnames, modelnames)
-    names(model) <- modelnames
-    newx <- c(newx, model)
+   if (graphics$close_screen) {
+     close.screen(scr)
+     scr <- NULL
+   }
+   return(invisible(scr))
  }
-  n.methods <- length(methodnames)
 
 
-  n.phi <- min(nmax.phi, l.phi <- max(1,length(phi.centers)), na.rm=TRUE)
-  n.theta <- min(nmax.theta, l.theta <- max(1,length(theta.centers)),
-                 na.rm=TRUE)
-  n.T <- min(nmax.T, l.T <- max(1,length(Time)), na.rm=TRUE)
-  vdim <- dim(ev)
-  vdim <- vdim[length(vdim)]
+ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
+                                nmax.T = NA,
+                                plot.nbin = TRUE, plot.sd=FALSE, method = "ml",
+                                variogram=TRUE,
+                                boundaries = TRUE,
+                                ...) {
+   if (!variogram)
+     stop("plot of estimated covariance functions not programmed yet.")
 
-  if (n.phi > 6 || n.theta > 3 || n.T > 3)
-    message("'If you feel the picture is overloaded, set the parameters 'nmax.phi', 'nmax.theta' and 'nmax.T'")
-  
-  halfphi.sector <- pi/(2*l.phi)
-  halftheta.sector <- pi/(2*l.theta)
-  phi.angles <- c(halfphi.sector, 0, -halfphi.sector) 
-  theta.angles <- seq(-halftheta.sector, halftheta.sector, len=5) # len=odd!
-  if (n.phi>1 && boundaries) {
-    phi.angles <- phi.angles * 0.96
-    theta.angles <- theta.angles * 0.96
-  } 
-  
-  TandV <- (n.T > 1 && vdim > 1) && graphics$split_screen
-  if (vdim>1 && length(varnames)==0)
-    varnames <- paste("v", 1:vdim, sep="")
+   graphics <- RFoptions()$graphics
+   newx <- list()
+   methodnames <- double()
+   if (is(x, "RFfit") || is(x, "RF_fit")) {
+     OP <- c("$", "@")[1 + is(x, "RFfit")]
+     if(length(do.call(OP, list(x, "ev")))==0) stop("The fit does not contain an empirical variogram.")
+     newx$autostart <- do.call(OP, list(x, "autostart"))
+     newx$self <- do.call(OP, list(x, "self"))
+     newx$plain <- do.call(OP, list(x, "plain"))
+     newx$sqrt.nr <- do.call(OP, list(x, "sqrt.nr"))
+     newx$sd.inv <- do.call(OP, list(x, "sd.inv"))
+     newx$internal1 <- do.call(OP, list(x, "internal1"))
+     newx$internal2 <- do.call(OP, list(x, "internal2"))
+     newx$internal3 <- do.call(OP, list(x, "internal3"))
+     newx$ml <- do.call(OP, list(x, "ml"))
 
-  range.nbin <- range(c(0, n.bin), na.rm=TRUE)
-  ylim.nbin <- range.nbin * c(1,1.2)
-  
-  col.v <- col <- 
-    if ("col" %in% dotnames) rep(dots$col, len=n.phi) else 1:max(n.phi)
-  dots$col <- NULL
+     x <- do.call(OP, list(x, "ev"))
+     if( is.null(method) )
+       method <- if (length(newx$ml@name) > 0) "ml" else "plain"
 
-  if (n.methods > 0){
-    dotsRFfit <- dots
-    dotsRFfit$type <- "l"
-    dotsRFfit$lwd <- 2
-    ltyRFfit.v <- 1:n.methods
-    dotsRFfit$lty <- NULL
+     methodidx<-names(newx[unlist(lapply(newx, function(x) is(x, ZF_MODELEXT)))])
+     methodidx <- method %in% methodidx
+     methodnames <- method[methodidx]
+     nomethodnames <- method[!methodidx]
+
+     if( !all(methodidx) )
+       warning( paste("The following method does not exist: ", nomethodnames) )
+   } else {
+     if (!is(x, "RFempVariog") && !is(x, "RF_empVariog"))
+       stop("method only for objects of class 'RFempVariog' or 'RFfit'")
+     OP <- c("$", "@")[1 + is(x, "RFempVariog")]
+   }
+
+
+   ev <- do.call(OP, list(x, "emp.vario"))
+   sd <- do.call(OP, list(x, "sd"))
+   centers <- do.call(OP, list(x, "centers"))
+   phi.centers <- do.call(OP, list(x, "phi.centers"))
+   theta.centers <- do.call(OP, list(x, "theta.centers"))
+   Time <- do.call(OP, list(x, "T"))
+   n.bin <- do.call(OP, list(x, "n.bin"))
+   coordunits <- do.call(OP, list(x, "coordunits"))
+
+   varnames <- if (is.matrix(ev)) dimnames(ev)[[2]][1] else names(ev)[1]
+
+   dots = list(...)
+   dotnames <- names(dots)
+    if (!("type" %in% dotnames)) dots$type <- "b" 
+   cex <- if ("cex" %in% dotnames) dots$cex else .8
+   par(cex=cex, xaxs="i")
+   dots$cex <- NULL
+   if (!("pch" %in% dotnames)) dots$pch <- 19
+
+   if(!("xlim" %in% dotnames)) dots$xlim <- range(centers)
+   ylim.not.in.dotnames <- !("ylim" %in% dotnames)
+   xlab <- if ("xlab" %in% dotnames) dots$xlab else "distance"
+   dots$xlab <- NULL
+   ylab.ev <- if ("ylab" %in% dotnames) dots$ylab else "semivariance"
+   dots$ylab <- NULL
+
+   main0 <- if ("main" %in% dotnames) dots$main else "Variogram plot"  
+   dots$main <- NULL
+   if (!is.null(main0)) oma.top <- 2 else oma.top <- 0
+
+
+   has.sd <- !is.null(sd)
+
+  if(!is.null(model)) {
+    if (!is.list(model)) model <- list(model)
+     if (!all(unlist(lapply(model, FUN=function(x) is(x, ZF_MODEL)))))
+       stop("model must be (a list of elements) of class 'ZF_MODEL'")
+     modelnames <-
+       if(length(names(model)) > 0) names(model)
+       else paste("model", 1:length(model))
+     methodnames <- c(methodnames, modelnames)
+     names(model) <- modelnames
+     newx <- c(newx, model)
   }
+   n.methods <- length(methodnames)
 
 
-  dir2vario <- function(dir.vec, x.eval, x.time, method.model, v1, v2){
-    x.space <- as.matrix(x.eval) %*% t(dir.vec)            
-    for (j in (1:4)) { ## orig 20
+   n.phi <- min(nmax.phi, l.phi <- max(1,length(phi.centers)), na.rm=TRUE)
+   n.theta <- min(nmax.theta, l.theta <- max(1,length(theta.centers)),
+                  na.rm=TRUE)
+   n.T <- min(nmax.T, l.T <- max(1,length(Time)), na.rm=TRUE)
+   vdim <- dim(ev)
+   vdim <- vdim[length(vdim)]
+
+   if (n.phi > 6 || n.theta > 3 || n.T > 3)
+     message("'If you feel the picture is overloaded, set the parameters 'nmax.phi', 'nmax.theta' and 'nmax.T'")
+
+   halfphi.sector <- pi/(2*l.phi)
+   halftheta.sector <- pi/(2*l.theta)
+   phi.angles <- c(halfphi.sector, 0, -halfphi.sector) 
+   theta.angles <- seq(-halftheta.sector, halftheta.sector, len=5) # len=odd!
+   if (n.phi>1 && boundaries) {
+     phi.angles <- phi.angles * 0.96
+     theta.angles <- theta.angles * 0.96
+   } 
+
+   TandV <- (n.T > 1 && vdim > 1) && graphics$split_screen
+
+   if (vdim>1 && length(varnames)==0)
+     varnames <- paste("v", 1:vdim, sep="")
+
+   range.nbin <- range(c(0, n.bin), na.rm=TRUE)
+   ylim.nbin <- range.nbin * c(1,1.2)
+
+   col.v <- col <- 
+     if ("col" %in% dotnames) rep(dots$col, len=n.phi) else 1:max(n.phi)
+   dots$col <- NULL
+
+   if (n.methods > 0){
+     dotsRFfit <- dots
+     dotsRFfit$type <- "l"
+     dotsRFfit$lwd <- 2
+     ltyRFfit.v <- 1:n.methods
+     dotsRFfit$lty <- NULL
+   }
+
+   dir2vario <- function(dir.vec, x.eval, x.time, method.model, v1, v2){
+     x.space <- as.matrix(x.eval) %*% t(dir.vec)            
+     for (j in (1:4)) { ## orig 20
       vario.vals <- try(RFvariogram(x = cbind(x.space, x.time),
-                                    model = method.model,
-                                    grid = FALSE,
-                                    internal.examples_reduced=FALSE),
-                        silent = FALSE)
-       if(!is(vario.vals, "try-error")) {
-        if (is.array(vario.vals)) {
-          return(vario.vals[, v1, v2])
-        } else {
-          return(vario.vals)
-        }
-      }      
-      x.space <- cbind(x.space, 0)    
-    }
+                                     model = method.model,
+                                     grid = FALSE,
+                                     internal.examples_reduced=FALSE),
+                         silent = TRUE)      
+        if(!is(vario.vals, "try-error")) {
+         if (is.array(vario.vals)) {
+           return(vario.vals[, v1, v2])
+         } else {
+           return(vario.vals)
+         }
+       }
+       x.space <- cbind(x.space, 0)    
+     }     
+     return(NA)
+   }
 
-     
-    return(NULL)
-  }
+   oma.left <- 6
+   Screens <- if (TandV) c(n.T, n.theta) else c(n.T * vdim * vdim, n.theta)
+   ArrangeDevice(graphics, Screens)
 
-  oma.left <- 6
-  Screens <- if (TandV) c(n.T, n.theta) else c(n.T * vdim * vdim, n.theta)
-  ArrangeDevice(graphics, Screens)
-
-  all.scr <- scr <- (if (!graphics$split_screen) NULL else
-              split.screen(if (TandV) c(vdim, vdim) else Screens))
-    
-  for (v1 in 1:vdim) {
+   all.scr <- scr <- (if (!graphics$split_screen) NULL else
+               split.screen(if (TandV) c(vdim, vdim) else Screens))
+   for (v1 in 1:vdim) {
     for (v2 in 1:vdim) {
       if (TandV) {
         scr <- split.screen(Screens, all.scr[v1 + (v2 - 1) * vdim])
@@ -497,7 +495,7 @@ RFplotEmpVariogram <- function(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
                
                # Print(i, x.eval, dummy.vals);print.RMmodelFit(method.model)
                 
-                if(!is.null(dummy.vals)){
+                if(length(dummy.vals) > 0 && !all(is.na(dummy.vals))){
                  # Print(n.phi, boundaries)
                   if (n.phi>1 && boundaries) {
                     do.call(graphics::matplot,

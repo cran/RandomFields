@@ -384,6 +384,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   
   if (length(newdim)>1)  base::dim(Res) <- newdim else Res <- as.vector(Res)
 
+  if (FALSE) ## jonas
   if (return.variance && length(newdim <- c(dimension, if (vdim>1) vdim)) > 1)
     base::dim(sigma2) <- newdim  
   if (!is.null(Z$varnames)) attributes(Res)$varnames <- Z$varnames
@@ -392,14 +393,17 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 
   Res <- RFboxcox(data=Res, boxcox = boxcox, inverse=TRUE)
 
+  ##  Print(spConform)
+  ## spConform <- FALSE
   if (!spConform && !imputing) {
     if (vdim > 1 && RFopt$general$vdim_close_together) {
       Resperm <- c(length(dimension)+1, 1:length(dimension),
                    if(repet>1) length(dimension)+2)      
       Res <- aperm(Res, perm=Resperm)
       
-      if (return.variance)
-        sigma2 <- aperm(sigma2, perm=Resperm[1:(length(dimension)+1)])
+      if (return.variance) {
+        ##sigma2 <- aperm(sigma2, perm=Resperm[1:(length(dimension)+1)])
+      }
     }
     if (return.variance) Res <- list(estim = Res, var = sigma2)
     #class(Res) <- "RandomFieldsReturn"    
@@ -422,8 +426,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     }
  #   print(Res)
     return(Res)
-  } else {
-  
+  } else {  
     Res <- conventional2RFspDataFrame(Res, coords=coords$x,
                                       gridTopology=gridTopology,
                                       n=repet, vdim=vdim, T = coords$T,

@@ -33,53 +33,72 @@ void strcopyN(char *dest, const char *src, int n) {
 }
 
 
+double scalar(double *A, double *B, int N) {
+  double ANS;
+  SCALAR_PROD(A, B, N, ANS);
+  return ANS;
+}
+
 void AtA(double *a, int nrow, int ncol, double *A) {
   // A =  a^T %*% a
-  int i, k, j, m,
+  int i, k, j,
     dimSq = ncol * ncol;
   
   for (k=i=0; i<dimSq; i+=ncol) {
     for (j=0; j<dimSq; j+=ncol, k++) {
-      double dummy = 0.0;
-      for (m=0; m<nrow; m++) {
-	dummy += a[i+m] * a[j+m];
-      }
-      A[k] = dummy;
+      A[k] = scalar(a + i, a + j, nrow);
     }
   }
 }
  
 
 void xA(double *x, double*A, int nrow, int ncol, double *y) {
-  int i,j,k;
+  int i;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
-    for (k=i=0; i<ncol; i++) {
-      y[i] = 0.0;
-      for (j=0; j<nrow; j++) {
-	y[i] += A[k++] * x[j];
-      }
-    }
-  }	
+    for (i=0; i<ncol; i++, A+=nrow) y[i] = scalar(x, A, nrow);
+  }
 }
+
+
+#define TWOSCALAR_PROD(A1, A2, B, N, ANS1, ANS2) {	\
+    int  k_ =0,						\
+      end_ = N - 5;					\
+    ANS1 = ANS2 = 0.0;						\
+    for (; k_<end_; k_+=5) {					\
+      ANS1 += A1[k_] * B[k_]					\
+	+ A1[k_ + 1] * B[k_ + 1]				\
+	+ A1[k_ + 2] * B[k_ + 2]				\
+	+ A1[k_ + 3] * B[k_ + 3]				\
+	+ A1[k_ + 4] * B[k_ + 4];				\
+      ANS2 += A2[k_] * B[k_]					\
+	+ A2[k_ + 1] * B[k_ + 1]				\
+	+ A2[k_ + 2] * B[k_ + 2]				\
+	+ A2[k_ + 3] * B[k_ + 3]				\
+	+ A2[k_ + 4] * B[k_ + 4];				\
+    }								\
+    for (; k_<N; k_++) {					\
+      ANS1 += A1[k_] * B[k_];					\
+      ANS2 += A2[k_] * B[k_];					\
+    }								\
+  }
 
 
 void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
 	double *y2) {
-  int i,j,k;
+  int i;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y1, x1, sizeof(double) * nrow);
     MEMCOPY(y2, x2, sizeof(double) * nrow);
   } else {
-    for (k=i=0; i<ncol; i++) {
-      y1[i] = y2[i] = 0.0;
-      for (j=0; j<nrow; j++) {
-	y1[i] += A[k] * x1[j];
-	y2[i] += A[k++] * x2[j];
-      }
+    for (i=0; i<ncol; i++, A+=nrow) {
+      double d1, d2;
+      TWOSCALAR_PROD(x1, x2, A, nrow, d1, d2);
+      y1[i] = d1;
+      y2[i] = d2;
     }
   }	
 }
@@ -174,6 +193,7 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
 
 
 double xUy(double *x, double *U, double *y, int dim) {
+  // U a symmetric matrix given by its upper triangular part
   double dummy,
     xVy = 0.0;
   int j, d, i,
@@ -192,6 +212,7 @@ double xUy(double *x, double *U, double *y, int dim) {
 }
 
 double xUxz(double *x, double *U, int dim, double *z) {
+  // U a symmetric matrix given by its upper triangular part
   double dummy,
     xVx = 0.0;
   int j, d, i,
@@ -236,26 +257,26 @@ double x_UxPz(double *x, double *U, double *z, int dim) {
 
 
 void matmult(double *A, double *B, double *C, int l, int m, int n) {
-// multiplying an lxm- and an mxn-matrix, saving krigult in C
+// multiplying an lxm- and an mxn-matrix, saving result in C
    int i, j, k;
-   for(i=0; i<l; i++)
+   for(i=0; i<l; i++, A++, C++) {
      for(j=0; j<n; j++) {
-       double dummy = 0.0;
-	for(k=0; k<m; k++) dummy += A[k*l+i]*B[j*m+k];
-	C[j*l+i] = dummy;
+       double dummy = 0.0,
+	 *Bjm = B + j * m;
+       for(k=0; k<m; k++) dummy += A[k*l]*Bjm[k];
+       C[j*l] = dummy;
      }
+   }
 }
 
 void matmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
 // multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
-   int i, j, k;
-   for(i=0; i<l; i++)
-     for(j=0; j<n; j++) {
-       double dummy = 0.0;
-	for(k=0; k<m; k++) dummy += A[i*m+k]*B[j*m+k];
-	C[j*l+i] = dummy;
-     }
+  int i, j;
+  for(i=0; i<l; i++, C++) {
+    double *Aim = A + i * m;
+    for(j=0; j<n; j++) C[j * l] = scalar(Aim, B + j * m, m);
+  }
 }
 
 
@@ -265,11 +286,12 @@ void matmult_2ndtransp(double *A, double *B, double *C, int m, int l, int n) {
 // saving result in C
   int i, j, k,
     msq = m  * m;
-   for(i=0; i<l; i++)
+  for(i=0; i<l; i++, C++, A++)
      for(j=0; j<n; j++) {
-       double dummy = 0.0;
-	for(k=0; k<msq; k+=m) dummy += A[i + k] * B[j + k];
-	C[j*l + i] = dummy;
+       double dummy = 0.0,
+	 *Bj = B + j;
+       for(k=0; k<msq; k+=m) dummy += A[k] * Bj[k];
+       C[j*l] = dummy;
      }
 }
 
@@ -279,18 +301,19 @@ void matmult_tt(double *A, double *B, double *C, int m, int l, int n) {
 // calculating t(A B) with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
    int i, j, k;
-   for(i=0; i<l; i++)
+   for(i=0; i<l; i++, A++, C += l)
      for(j=0; j<n; j++) {
-       double dummy = 0.0;
-	for(k=0; k<m; k++) dummy += A[i + k * l] * B[j * m + k];
-	C[i * l + j] = dummy;
+       double dummy = 0.0,
+	 *Bjm = B + j * m;
+	for(k=0; k<m; k++) dummy += A[k * l] * Bjm[k];
+	C[j] = dummy;
      }
 }
 
 
 
 void Xmatmult(double *A, double *B, double *C, int l, int m, int n) {
-// multiplying an lxm- and an mxn-matrix, saving krigult in C
+// multiplying an lxm- and an mxn-matrix, saving result in C
   int i, j, k, jl, jm, kl, endfor;
   double dummy;
   for(i=0; i<l; i++) {
@@ -321,18 +344,8 @@ void Xmatmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
 
 
 double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
-    double dummy, 
-	*m0 = (double*) MALLOC(sizeof(double) * dim1 * dim3);
-  int i,j,k;
-  for (i=0; i<dim1; i++) {
-    for (k=0; k<dim3; k++) {
-      dummy = 0.0;
-      for (j=0; j<dim2; j++) {
-	dummy += m1[i + j * dim1] * m2[j + k * dim2];
-      }
-      m0[i + dim1 * k] = dummy;
-    }
-  }
+  double *m0 = (double*) MALLOC(sizeof(double) * dim1 * dim3);
+  matmult(m1, m2, m0, dim1, dim2, dim3);
   return m0;
 }
 
@@ -964,3 +977,5 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 int GetName(SEXP el, char *name, const char * List[], int n) {
  return GetName(el, name, List, n, -1);
 }
+
+

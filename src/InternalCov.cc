@@ -823,7 +823,7 @@ void nonstat_loginverse2(double *v, cov_model *cov, double *x, double *y){
 
 int struct2(cov_model *cov, cov_model **newmodel) {
   int err;
-  char errloc_save[nErrorLoc];
+  errorloc_type errloc_save;
   if (!cov->checked) {
     BUG;
   }
@@ -850,7 +850,7 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
   int i,
     err = NOERROR,
     kappas = CovList[cov->nr].kappas;
-  char errloc_save[nErrorLoc];
+  errorloc_type errloc_save;
   strcpy(errloc_save, ERROR_LOC);
    
   PrInL++;
@@ -1532,7 +1532,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       (isEarth(cov->isoown) && range <= 180);
     if (!cov->checked) {
       SERR2("model '%s' does not allow for required coordinate system '%s'",
-	    NICK(cov->sub[0]), COORD_SYS_NAMES[cov->isoown]);
+	    NICK(cov->sub[0]), COORD_SYS_NAMES[GetCoordSystem(cov->isoown)]);
     }
   }
 

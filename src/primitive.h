@@ -87,6 +87,7 @@ int checkcovariate(cov_model *cov);
 void rangecovariate(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
 void kappa_covariate(int i, cov_model *cov, int *nr, int *nc);
 
+void fixStat(double *x, cov_model *cov, double *v);
 void fix(double *x, double *y, cov_model *cov, double *v);
 int checkfix(cov_model *cov);
 void rangefix(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
@@ -160,6 +161,17 @@ void DrawMixExp(cov_model *cov, double *random);
 double LogMixDensExp(double *x, double logV, cov_model *cov);
 int init_exp(cov_model *cov, gen_storage *s); 
 void do_exp(cov_model *cov, gen_storage *s);
+
+
+
+int checklsfbm(cov_model *cov);
+void rangelsfbm(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+void lsfbm(double *x, cov_model *cov, double *v);
+void Dlsfbm(double *x, cov_model *cov, double *v);
+void DDlsfbm(double *x, cov_model *cov, double *v);
+void D3lsfbm(double *x, cov_model *cov, double *v); 
+void D4lsfbm(double *x, cov_model *cov, double *v); 
+void Inverselsfbm(double *x, cov_model *cov, double *v);
 
 
 // Brownian motion 

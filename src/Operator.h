@@ -80,6 +80,10 @@ sortsofparam sortof_M(int k, int row, int col);
 
 void kappaSchur(int i, cov_model *cov, int *nr, int *nc);
 void Schurstat(double *x, cov_model *cov, double *v);
+void DSchur(double *x, cov_model *cov, double *v);
+void D2Schur(double *x, cov_model *cov, double *v);
+void D3Schur(double *x, cov_model *cov, double *v);
+void D4Schur(double *x, cov_model *cov, double *v);
 void Schurnonstat(double *x, double *y, cov_model *cov, double *v);
 int checkSchur(cov_model *cov);
 void rangeSchur(cov_model *cov, range_type* ra);

@@ -1636,7 +1636,7 @@ void CumSum(double *y, bool kurz, cov_model *cov, double *cumsum) {
   {
     int *i = rect->i;
     if (dim > 1) {
-      Ordering(ysort, &dimP1, &One, i);
+      RU_ordering(ysort, dimP1, One, i);
       assert(dim < 3 || 
 	     (ysort[i[0]] <= ysort[i[1]] && ysort[i[1]] <= ysort[i[2]]));
     } else {

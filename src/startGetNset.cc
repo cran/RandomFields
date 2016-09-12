@@ -1449,6 +1449,7 @@ void nablahess(covfct nabla, covfct hess) {
 
 }
 
+
 void addLocal(getlocalparam coinit, getlocalparam ieinit) {
   int nr = currentNrCov - 1;
   assert(nr>=0 && nr < currentNrCov) ;
@@ -1458,14 +1459,17 @@ void addLocal(getlocalparam coinit, getlocalparam ieinit) {
   if ((C->implemented[CircEmbedIntrinsic] = ieinit != NULL)) {
     assert(C->D2 != NULL);
     C->ieinit = ieinit;
-    if (pref[CircEmbedCutoff] == PREF_NONE) pref[CircEmbedCutoff] = PREF_BEST;
-  } 
-  if ((C->implemented[CircEmbedCutoff] = coinit != NULL)) {
-    C->coinit = coinit;
     if (pref[CircEmbedIntrinsic] == PREF_NONE)
       pref[CircEmbedIntrinsic] = PREF_BEST;
   }
+  if ((C->implemented[CircEmbedCutoff] = coinit != NULL)) {
+    C->coinit = coinit;
+    if (pref[CircEmbedCutoff] == PREF_NONE) pref[CircEmbedCutoff] = PREF_BEST;
+    if (pref[CircEmbedIntrinsic] > 2)
+      pref[CircEmbedIntrinsic] = 2;
+  }
 }
+
 void addCallLocal(altlocalparam alt) {
   int nr = currentNrCov - 1;
   assert(nr>=0 && nr < currentNrCov) ;

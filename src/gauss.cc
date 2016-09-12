@@ -154,7 +154,8 @@ void mixed_rules(cov_model *cov, pref_type locpref,
   }
 
    
-  orderingInt(pref, Nothing, 1, order);
+  RU_orderingInt(pref, Nothing, 1, order);
+  
 
 }
 
@@ -496,14 +497,17 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
     xdim = cov->xdimprev, // could differ from tsdgetim in case of distances!
     dim = cov->tsdim;
   assert((loc->distances && xdim==1) || xdim == dim);
-  static char FailureMsg[][80] = 
-    {"total number of points > maximum value",
+#define  MAXFAILMSG 9
+  static char FailureMsg[MAXFAILMSG][80] = 
+    {"unknown reason",
+     "total number of points > maximum value",
      "non-domain model not allowed",
      "not an exact method as required by user",
      "locations not on a grid",
      "denied by cov. model or by user's pref.",
-     "no analytic solutn of Abelian integral",
-     "intrinsic fields denied by user"
+     "no analytic solution of Abelian integral",
+     "intrinsic fields denied by user",
+     "Unknown reason"
     };
   bool all_PREF_NONE;
   Methods unimeth = Forbidden;
@@ -554,16 +558,17 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   for (i=0; i<Nothing; i++) all_PREF_NONE &= pref[i] == PREF_NONE;
   
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
+  if ((err = covCpy(&(cov->key), next)) != NOERROR) {
+    return err;
+  }
 
   if (all_PREF_NONE) {
     err = pref[Nothing] == PREF_NONE ? ERRORINVALIDMODEL : ERRORODDMODEL;
     goto ErrorHandling;
   } 
 
-   
   err = ERROROUTOFMETHODLIST; // in case none of the methods are available 
-  for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {
+  for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {  
 
     if (PL >= PL_BRANCHING && i < Nothing - 1) {
       LPRINT("'%s%s' failed for '%s'\n", 
@@ -645,13 +650,13 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       if (lp>0) {
 	strcpy(lpd, "");
       } else {
-	sprintf(lpd, "%s (locp) ", FailureMsg[-lp]);
+	sprintf(lpd, "%s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
       }
       if (p>0 || p == lp) {
 	if (lp>0) strcpy(pd, "(method specific failure)");
 	else strcpy(pd, ""); // strcpy(pd, "(method specific failure)");
       } else {
-	sprintf(pd, "%s (pref)", FailureMsg[-p]);
+	sprintf(pd, "%s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
       }
       strcopyN(names, METHODNAMES[i], NMAX-1);
       sprintf(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
@@ -739,7 +744,7 @@ int init_gaussprocess(cov_model *cov, gen_storage *s) {
 void do_gaussprocess(cov_model *cov, gen_storage *s) {
   assert(s != NULL);
   // reopened by internal_dogauss
-  char errorloc_save[nErrorLoc];
+  errorloc_type errorloc_save;
   double *res = cov->rf;
   int i,
     vdimtot = Gettotalpoints(cov) * cov->vdim[0] ;

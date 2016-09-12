@@ -261,12 +261,6 @@ extern "C" {
   void isAuthor(int *is);
   SEXP allintparam();
  
-  void sleepMicro(int *micro);
-  void sleepMilli(int *milli);
-  void hostname(char **h, int *i);
-  void pid(int *i);
-  SEXP getChar();
-
   void start_debug();
   void end_debug();
 
@@ -283,8 +277,8 @@ extern "C" {
 
   SEXP get_linearpart(SEXP model_reg, SEXP Set);
 
-  void attachRFoptions();
-  void detachRFoptions();
+  void attachRFoptionsRandomFields();
+  void detachRFoptionsRandomFields();
   void RelaxUnknownRFoption(int *);
 
 

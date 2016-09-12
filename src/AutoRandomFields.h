@@ -6,7 +6,7 @@
 #define METHODMAXCHAR MAXCHAR // max number of character to describe a Method (including \0)
 
 
-#define MAXCOVDIM 10
+#define MAXCOVDIM 1000000
 #define MAXMLEDIM MAXCOVDIM
 #define MAXSIMUDIM MAXCOVDIM
 #define MAXSUB 10
