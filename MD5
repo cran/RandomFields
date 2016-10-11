@@ -1,4 +1,4 @@
-356d30c2cfadb1742b0e5504a880efc2 *DESCRIPTION
+77c77f11c3333a69b3f8c878a473c83f *DESCRIPTION
 5f8229b8b7d4e3dd744cd9393ba4bcca *NAMESPACE
 15a130c4b8514ee77af8c21cc0167aba *R/Class.R
 30ecb86de91fc1db20edd45b703e115c *R/Crossvalidation.R
@@ -37,9 +37,9 @@ b69660849eea6fe62fb78ad94d602486 *R/kriging.R
 20903643ae66165ced6d8230f81d524a *R/obsolete.R
 775704356126a0619e010c7a02688994 *R/rf-plots.R
 9cb475a71cdff39fd85fef92edf20fdb *R/rf.R
-9ed9307ac080642c0ff3f6d6456288e3 *R/zzz.R
+80b20330e109dacecad3cca11063fbfb *R/zzz.R
 da07e8c72b199c2b45fbb5e46f8fcf2f *data/soil.txt.gz
-40f7d1b06c696fc3f01f6f07c139ae29 *data/weather.rda
+5a191182b016df7e2547939091436dca *data/weather.rda
 d2b5959c12908fc6bafd39eb91938043 *inst/CITATION
 12c3f72d9ed98fe84ddfb3576626f59a *inst/doc/multivariate_jss.pdf
 f7c1f34bbf8965da0dc8cb653c88dac6 *inst/doc/version2.pdf

@@ -37,8 +37,6 @@
 }
 
 .onDetach <- function(lib) {
-  RFoptions(storing=FALSE) ## delete everything
-  .C("detachRFoptionsRandomFields", package="RandomFields")
 }
 
 .onUnload <- function(lib, pkg){
