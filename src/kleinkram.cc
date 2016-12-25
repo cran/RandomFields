@@ -23,7 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <General_utils.h>
 #include "kleinkram.h"
 
-
 void strcopyN(char *dest, const char *src, int n) {
   if (n > 1) {
     n--; 
@@ -39,26 +38,33 @@ double scalar(double *A, double *B, int N) {
   return ANS;
 }
 
-void AtA(double *a, int nrow, int ncol, double *A) {
-  // A =  a^T %*% a
-  int i, k, j,
-    dimSq = ncol * ncol;
-  
-  for (k=i=0; i<dimSq; i+=ncol) {
-    for (j=0; j<dimSq; j+=ncol, k++) {
-      A[k] = scalar(a + i, a + j, nrow);
+
+void AtA(double *a, int nrow, int ncol, double *C) {
+  // C =  A^T %*% A
+#ifdef DO_PARALLEL
+  //#pragma omp parallel for num_threads(2) schedule(dynamic) if (MULTIMINSIZE(ncol))
+#pragma omp parallel for schedule(dynamic) if (MULTIMINSIZE(ncol))
+#endif  
+  for (int i=0; i<ncol; i++) {
+    double 
+      *A = a + i * nrow,
+      *B = A;
+    for (int j=i; j<ncol; j++, B+=nrow) {
+      C[i * ncol + j] = C[i + ncol * j] = scalar(A, B, nrow);
     }
   }
 }
  
 
 void xA(double *x, double*A, int nrow, int ncol, double *y) {
-  int i;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
-    for (i=0; i<ncol; i++, A+=nrow) y[i] = scalar(x, A, nrow);
+#ifdef DO_PARALLEL
+#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
+#endif  
+   for (int i=0; i<ncol; i++) y[i] = scalar(x, A + i * nrow, nrow);
   }
 }
 
@@ -88,15 +94,18 @@ void xA(double *x, double*A, int nrow, int ncol, double *y) {
 
 void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
 	double *y2) {
-  int i;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y1, x1, sizeof(double) * nrow);
     MEMCOPY(y2, x2, sizeof(double) * nrow);
   } else {
-    for (i=0; i<ncol; i++, A+=nrow) {
-      double d1, d2;
-      TWOSCALAR_PROD(x1, x2, A, nrow, d1, d2);
+#ifdef DO_PARALLEL
+#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
+#endif  
+    for (int i=0; i<ncol; i++) {
+      double d1, d2,
+	*a =  A + i*nrow;
+      TWOSCALAR_PROD(x1, x2, a, nrow, d1, d2);
       y1[i] = d1;
       y2[i] = d2;
     }
@@ -105,32 +114,42 @@ void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
 
 
 void Ax(double *A, double*x, int nrow, int ncol, double *y) {
-  int i,j,k;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
-    for (i=0; i<nrow; i++) y[i]=0.0;
-    for (k=i=0; i<ncol; i++) { 
-      for (j=0; j<nrow; j++) {
+#ifdef DO_PARALLEL
+#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
+    for (int j=0; j<nrow; j++) {
+      double dummy = 0.0;
+      int k = j;
+      for (int i=0; i<ncol; i++, k+=nrow) { 
+	dummy += A[k] * x[i];
+      }
+      y[j] = dummy;
+    }
+#else
+    for (int i=0; i<nrow; i++) y[i]=0.0;
+    for (int k=0, i=0; i<ncol; i++) { 
+      for (int j=0; j<nrow; j++) {
 	y[j] += A[k++] * x[i];
       }
     }
+#endif  
   }
 }
 
 
 void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
 	double *y2) {
-  int i,j,k;
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y1, x1, sizeof(double) * nrow);
     MEMCOPY(y2, x2, sizeof(double) * nrow);
   } else {
-    for (i=0; i<nrow; i++) y1[i]=y2[i]=0.0;
-    for (k=i=0; i<ncol; i++) { 
-      for (j=0; j<nrow; j++) {
+    for (int i=0; i<nrow; i++) y1[i]=y2[i]=0.0;
+    for (int k=0, i=0; i<ncol; i++) { 
+      for (int j=0; j<nrow; j++) {
 	y1[j] += A[k] * x1[i];
 	y2[j] += A[k++] * x2[i];
       }
@@ -140,38 +159,43 @@ void Ax(double *A, double*x1, double*x2, int nrow, int ncol, double *y1,
 
 
 double XkCXtl(double *X, double *C, int nrow, int dim, int k, int l) {
-  // (k-th row of X) * C * (l-th column of X)
-    double *pX, *pY, scalar, result;
-    int i,j,ci,
-	size = nrow * dim;
-   
-  pX = X + k;
-  pY = X + l;
-  result = 0.0;
-  for (ci=0, j=0; j<size; j+=nrow) {
-      for (i=0, scalar = 0.0; i<size; i+=nrow) {
-	 scalar += pX[i] * C[ci++];
-     }
-     result += scalar * pY[j];
-  }  
+  // (k-th row of X) * C * (l-th row of X)
+  // X is nrow x dim matrix
+  // C is dim x dim matrix
+  double
+    *pX = X + k, 
+    *pY = X + l, 
+    result = 0.0;
+  int size = nrow * dim;
+  
+#ifdef DO_PARALLEL
+#pragma omp parallel for reduction(+:result)
+#endif
+  for (int j=0; j<size; j+=nrow) {
+    double scalar = 0.0;
+    int ci = j * dim;
+    for (int i=0; i<size; i+=nrow) scalar += pX[i] * C[ci++];
+    result += scalar * pY[j];
+  }
   return result;
 }
 
 
 void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
-    double *pX, *endpX, *dummy, *pdummy, scalar;
-    int i, cd, rv, ci, cv,
-      size = nrow * dim;
-
-  dummy = (double*) MALLOC(sizeof(double) * nrow * dim);
+  int size = nrow * dim;
+  double  
+    *endpX = X + nrow,
+    *dummy = (double*) MALLOC(sizeof(double) * size); // dummy = XC
   if (dummy == NULL) ERR("XCXt: memory allocation error in XCXt");
-  
-
-  // dummy = XC
-  for (pX = X, pdummy=dummy, endpX = pX + nrow;
-       pX < endpX; pX++, pdummy++) {
-    for (ci=0, cd=0; cd<size; cd+=nrow) {
-      for (i=0, scalar = 0.0; i<size; i+=nrow) {
+ 
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (double *pX = X; pX < endpX; pX++) {
+    double *pdummy = dummy + (pX - X);
+    for (int ci=0, cd=0; cd<size; cd+=nrow) {
+      double scalar = 0.0;
+      for (int i=0; i<size; i+=nrow) {
         scalar += pX[i] * C[ci++];
       }
       pdummy[cd] = scalar;
@@ -179,14 +203,18 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
   }
 
   // V = dummy X^t
-  for (rv=0; rv<nrow; rv++) {
-    for (cv=rv; cv<nrow; cv++) {
-      for (scalar=0.0, i=0; i<size; i+=nrow) {
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int rv=0; rv<nrow; rv++) {
+    for (int cv=rv; cv<nrow; cv++) {
+      double scalar=0.0;
+      for (int i=0; i<size; i+=nrow) {
 	scalar += dummy[rv + i] * X[cv + i];
      }
       V[rv + cv * nrow] = V[cv + rv * nrow] = scalar;
     }
-  } 
+  }
 
   UNCONDFREE(dummy);
 }
@@ -194,37 +222,56 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
 
 double xUy(double *x, double *U, double *y, int dim) {
   // U a symmetric matrix given by its upper triangular part
-  double dummy,
-    xVy = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = 0.0, i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) {
-      dummy += x[i] * U[j];
-    }
+  double xVy = 0.0;
+  int    dimM1 = dim - 1;
+#ifdef DO_PARALLEL
+#pragma omp parallel for reduction(+:xVy) if (MULTIMINSIZE(dim))
+#endif  
+  for (int d=0; d<dim; d++) {
+    int i, 
+      j = dim * d;
+    double dummy = 0.0;
+    for (i=0; i<=d; i++) dummy += x[i] * U[j++];
+    for (j += dimM1; i<dim; i++, j+=dim) dummy += x[i] * U[j];
     xVy += dummy * y[d];
   }
   return xVy;
 }
 
-double xUxz(double *x, double *U, int dim, double *z) {
+/*
+
   // U a symmetric matrix given by its upper triangular part
-  double dummy,
-    xVx = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = 0.0, i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) { 
-      dummy += x[i] * U[j];
-    }
+  assert(z != NULL);
+  int   dimM1 = dim - 1;
+#ifdef DO_PARALLEL
+#pragma omp parallel for if (MULTIMINSIZE(dim))
+#endif  
+  for (int d=0; d<dim; d++) {
+    double dummy;
+    int i,
+      j = dim * d;
+    for (dummy = 0.0, i=0; i<=d; i++) dummy += x[i] * U[j++];
+    for (j += dimM1; i<dim; i++, j+=dim) dummy += x[i] * U[j];
+    if (z!=NULL) z[d] = dummy;
+  }
+  double xVx;
+  SCALAR_PROD(z, x, dim, xVx);
+  return xVx;
+
+ */
+
+double xUxz(double *x, double *U, int dim, double *z) {
+ double xVx = 0.0;
+  int dimM1 = dim - 1;
+#ifdef DO_PARALLEL
+#pragma omp parallel for reduction(+:xVx)
+#endif
+  for (int d=0; d<dim; d++) {
+    int i, 
+      j = dim * d;
+    double dummy = 0.0;
+    for (dummy = 0.0, i=0; i<=d; i++) dummy += x[i] * U[j++];
+    for (j += dimM1; i<dim; i++, j+=dim) dummy += x[i] * U[j];
     if (z != NULL) z[d] = dummy;
     xVx += dummy * x[d];
   }
@@ -237,18 +284,17 @@ double xUx(double *x, double *U, int dim) {
 
 double x_UxPz(double *x, double *U, double *z, int dim) {
 // x^t (Ux + z); U dreieckmatrix
-  double dummy,
-    xVx = 0.0;
-  int j, d, i,
-    dimM1 = dim - 1;
-  for (j=d=0; d<dim; d++) {
-    j = dim * d;
-    for (dummy = z[d], i=0; i<=d; i++) {
-      dummy += x[i] * U[j++];
-    }
-    for (j += dimM1; i<dim; i++, j+=dim) {
-      dummy += x[i] * U[j];
-    }
+  double xVx = 0.0;
+  int    dimM1 = dim - 1;
+#ifdef DO_PARALLEL
+#pragma omp parallel for reduction(+:xVx)
+#endif
+  for (int d=0; d<dim; d++) {
+    int i,
+      j = dim * d;
+    double dummy = z[d];
+    for (i=0; i<=d; i++) dummy += x[i] * U[j++];
+    for (j += dimM1; i<dim; i++, j+=dim) dummy += x[i] * U[j];
     xVx += dummy * x[d];
   }
   return xVx;
@@ -256,86 +302,107 @@ double x_UxPz(double *x, double *U, double *z, int dim) {
 
 
 
-void matmult(double *A, double *B, double *C, int l, int m, int n) {
+void matmult(double *a, double *b, double *c, int l, int m, int n) {
 // multiplying an lxm- and an mxn-matrix, saving result in C
-   int i, j, k;
-   for(i=0; i<l; i++, A++, C++) {
-     for(j=0; j<n; j++) {
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+   for (int i=0; i<l; i++) {
+     double *A = a + i,
+       *C = c + i;
+     for (int j=0; j<n; j++) {
        double dummy = 0.0,
-	 *Bjm = B + j * m;
-       for(k=0; k<m; k++) dummy += A[k*l]*Bjm[k];
-       C[j*l] = dummy;
+	 *B = b + j * m;
+       for (int k=0; k<m; k++) dummy += A[k*l] * B[k];
+       C[j * l] = dummy;
      }
    }
 }
 
-void matmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
+
+void matmulttransposed(double *A, double *B, double *c, int m, int l, int n) {
 // multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
-  int i, j;
-  for(i=0; i<l; i++, C++) {
-    double *Aim = A + i * m;
-    for(j=0; j<n; j++) C[j * l] = scalar(Aim, B + j * m, m);
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int i=0; i<l; i++) {    
+    double *C = c + i,
+      *Aim = A + i * m;
+    for (int j=0; j<n; j++) C[j * l] = scalar(Aim, B + j * m, m);
   }
 }
 
 
 
-void matmult_2ndtransp(double *A, double *B, double *C, int m, int l, int n) {
+void matmult_2ndtransp(double *a, double *B, double *c, int m, int l, int n) {
 // multiplying A and t(B) with dim(A)=(m,l) and dim(B)=(n, l),
 // saving result in C
-  int i, j, k,
-    msq = m  * m;
-  for(i=0; i<l; i++, C++, A++)
-     for(j=0; j<n; j++) {
+  int msq = m  * m;
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int i=0; i<l; i++) {
+    double *C = c + i,
+      *A = a + i;
+    for (int j=0; j<n; j++) {
        double dummy = 0.0,
 	 *Bj = B + j;
-       for(k=0; k<msq; k+=m) dummy += A[k] * Bj[k];
+       for (int k=0; k<msq; k+=m) dummy += A[k] * Bj[k];
        C[j*l] = dummy;
-     }
+    }
+  }
 }
 
 
 
-void matmult_tt(double *A, double *B, double *C, int m, int l, int n) {
+void matmult_tt(double *a, double *B, double *c, int m, int l, int n) {
 // calculating t(A B) with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
-   int i, j, k;
-   for(i=0; i<l; i++, A++, C += l)
-     for(j=0; j<n; j++) {
-       double dummy = 0.0,
-	 *Bjm = B + j * m;
-	for(k=0; k<m; k++) dummy += A[k * l] * Bjm[k];
-	C[j] = dummy;
-     }
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int i=0; i<l; i++) {
+    double *A = a + i,
+      *C = c + i * l;
+    for (int j=0; j<n; j++) {
+      double dummy = 0.0,
+	*Bjm = B + j * m;
+      for (int k=0; k<m; k++) dummy += A[k * l] * Bjm[k];
+      C[j] = dummy;
+    }
+  }
 }
 
 
 
 void Xmatmult(double *A, double *B, double *C, int l, int m, int n) {
 // multiplying an lxm- and an mxn-matrix, saving result in C
-  int i, j, k, jl, jm, kl, endfor;
-  double dummy;
-  for(i=0; i<l; i++) {
-    for(jl=i, jm=j=0; j<n; j++, jl+=l, jm+=m) {
-       dummy = 0.0;
-       endfor = jm + m;
-       for(kl=i, k=jm; k<endfor; k++, kl+=l) dummy += A[kl] * B[k]; 
-       C[jl] = dummy;
-     }
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int i=0; i<l; i++) {
+    for (int jl=i, jm=0, j=0; j<n; j++, jl+=l, jm+=m) {
+      double dummy = 0.0;
+      int endfor = jm + m;
+      for (int kl=i, k=jm; k<endfor; k++, kl+=l) dummy += A[kl] * B[k]; 
+      C[jl] = dummy;
+    }
   }
 }
 
 void Xmatmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
 // multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
-  int i, j, k, jl, im, jm, endfor, jmk;
-  double dummy;
-  for(im=i=0; i<l; i++, im+=m) {
-    for(jl=i, jm=j=0; j<n; j++, jl+=l, jm+=m) {
-      dummy = 0.0;
-      endfor = im + m;
-      for(jmk=jm, k=im; k<endfor; k++) dummy += A[k] * B[jmk++]; 
+#ifdef DO_PARALLEL
+#pragma omp parallel for 
+#endif
+  for (int i=0; i<l; i++) {
+    int im = i * m;
+    for (int jl=i, jm=0, j=0; j<n; j++, jl+=l, jm+=m) {
+      double dummy = 0.0;
+      int endfor = im + m;
+      for (int jmk=jm, k=im; k<endfor; k++) dummy += A[k] * B[jmk++]; 
       C[jl] = dummy;
     }
   }
@@ -353,13 +420,13 @@ double *matrixmult(double *m1, double *m2, int dim1, int dim2, int dim3) {
 SEXP TooLarge(int *n, int l){
 #define nTooLarge 2 // mit op
   const char *tooLarge[nTooLarge] = {"size", "msg"};
-  int i;
   SEXP namevec, info;
   PROTECT(info=allocVector(VECSXP, nTooLarge));
   PROTECT(namevec = allocVector(STRSXP, nTooLarge));
-  for (i=0; i<nTooLarge; i++) SET_STRING_ELT(namevec, i, mkChar(tooLarge[i]));
+  for (int i=0; i<nTooLarge; i++)
+    SET_STRING_ELT(namevec, i, mkChar(tooLarge[i]));
   setAttrib(info, R_NamesSymbol, namevec);
-  i=0;
+  int i=0;
   SET_VECTOR_ELT(info, i++, Int(n, l, l));
   SET_VECTOR_ELT(info, i,
 		 mkString("too many elements - increase max.elements"));
@@ -378,13 +445,12 @@ SEXP TooSmall(){
 
 
 SEXP Int(int *V, int n, int max) {
-  int i;
   SEXP dummy;
   if (V==NULL) return allocVector(INTSXP, 0);
   if (n>max) return TooLarge(&n, 1);
    if (n<0) return TooSmall();
    PROTECT(dummy=allocVector(INTSXP, n));
-  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
+  for (int i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -395,13 +461,12 @@ SEXP Int(int* V, int n) {
 
 
 SEXP Logic(bool* V, int n, int max) {
-  int i;
   SEXP dummy;
   if (V==NULL) return allocVector(VECSXP, 0);
   if (n>max) return TooLarge(&n, 1);
   if (n<0) return TooSmall();
   PROTECT(dummy=allocVector(LGLSXP, n));
-  for (i=0; i<n; i++) LOGICAL(dummy)[i] = V[i];
+  for (int i=0; i<n; i++) LOGICAL(dummy)[i] = V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -410,13 +475,12 @@ SEXP Logic(bool* V, int n) {
 }
 
 SEXP Num(double* V, int n, int max) {
-  int i;
   SEXP dummy;
   if (V==NULL) return allocVector(REALSXP, 0);
   if (n>max) return TooLarge(&n, 1);
    if (n<0) return TooSmall();
   PROTECT(dummy=allocVector(REALSXP, n));
-  for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
+  for (int i=0; i<n; i++) REAL(dummy)[i] = V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -425,13 +489,12 @@ SEXP Num(double* V, int n) {
 }
 
 SEXP Result(double* V, int n, int max) {
-  int i;
   SEXP dummy;
   if (V==NULL) return allocVector(REALSXP, 0);
   if (n>max) return TooLarge(&n, 1);
    if (n<0) return TooSmall();
  PROTECT(dummy=allocVector(REALSXP, n));
-  for (i=0; i<n; i++) REAL(dummy)[i] = (double) V[i];
+  for (int i=0; i<n; i++) REAL(dummy)[i] = (double) V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -441,13 +504,12 @@ SEXP Result(double* V, int n) {
 }
 
 SEXP Char(const char **V, int n, int max) {
-  int i;
   SEXP dummy;
   if (V==NULL) return allocVector(STRSXP, 0);
   if (n>max) return TooLarge(&n, 1);
    if (n<0) return TooSmall();
    PROTECT(dummy=allocVector(STRSXP, n));
-   for (i=0; i<n; i++){
+   for (int i=0; i<n; i++){
      SET_STRING_ELT(dummy, i, mkChar(V[i]));  
    }
   UNPROTECT(1);
@@ -459,9 +521,8 @@ SEXP Char(const char **V, int n) {
 }
 
 SEXP Mat(double* V, int row, int col, int max) {
-  int i, n;
   if (V==NULL) return allocMatrix(REALSXP, 0, 0);
-  n = row * col;
+  int n = row * col;
   if (n>max) {
     int nn[2];
     nn[0] = row;
@@ -470,7 +531,7 @@ SEXP Mat(double* V, int row, int col, int max) {
   }
   SEXP dummy;
   PROTECT(dummy=allocMatrix(REALSXP, row, col));
-  for (i=0; i<n; i++) REAL(dummy)[i] = V[i];
+  for (int i=0; i<n; i++) REAL(dummy)[i] = V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -481,9 +542,8 @@ SEXP Mat(double* V, int row, int col) {
 
 
 SEXP Mat_t(double* V, int row, int col, int max) {
-  int i,j, k,n;
   if (V==NULL) return allocMatrix(REALSXP, 0, 0);
-  n = row * col;
+  int n = row * col;
   if (n>max) {
     int nn[2];
     nn[0] = row;
@@ -492,8 +552,8 @@ SEXP Mat_t(double* V, int row, int col, int max) {
   }
   SEXP dummy;
   PROTECT(dummy=allocMatrix(REALSXP, row, col));
-  for (k=j=0; j<col; j++) {
-     for (i=0; i<row; i++) {
+  for (int k=0, j=0; j<col; j++) {
+     for (int i=0; i<row; i++) {
       REAL(dummy)[k++] = V[j + col * i];
     }
   }
@@ -507,9 +567,8 @@ SEXP Mat_t(double* V, int row, int col) {
 
 
 SEXP MatInt(int* V, int row, int col, int max) {
-  int i, n;
   if (V==NULL) return allocMatrix(INTSXP, 0, 0);
-  n = row * col;
+  int n = row * col;
   if (n>max) {
     int nn[2];
     nn[0] = row;
@@ -518,7 +577,7 @@ SEXP MatInt(int* V, int row, int col, int max) {
   }
   SEXP dummy;
   PROTECT(dummy=allocMatrix(INTSXP, row, col));
-  for (i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
+  for (int i=0; i<n; i++) INTEGER(dummy)[i] = V[i];
   UNPROTECT(1);
   return dummy;
 }
@@ -528,10 +587,10 @@ SEXP MatInt(int* V, int row, int col) {
 }
 
 SEXP Array3D(double** V, int depth, int row, int col, int max) {
-  int i, j, m, n;
   if (V==NULL) return alloc3DArray(REALSXP, 0, 0, 0);
-  m = row * col;
-  n = row * col * depth;
+  int
+    m = row * col,
+    n = row * col * depth;
   if (n>max) {
     int nn[3];
     nn[0] = row;
@@ -541,8 +600,8 @@ SEXP Array3D(double** V, int depth, int row, int col, int max) {
   }
   SEXP dummy;
   PROTECT(dummy=alloc3DArray(REALSXP, depth, row, col));
-  for(j=0; j<depth; j++) {
-    for (i=0; i<m; i++) {
+  for (int j=0; j<depth; j++) {
+    for (int i=0; i<m; i++) {
       REAL(dummy)[j*m+i] = V[j][i];
     }
   }
@@ -578,13 +637,12 @@ SEXP String(char *V) {
 }
 
 SEXP String(char V[][MAXCHAR], int n, int max) {
-  int i;
   SEXP str;
   if (V==NULL) return allocVector(VECSXP, 0);
   if (n>max) return TooLarge(&n, 1);
   if (n<0) return TooSmall();
   PROTECT(str = allocVector(STRSXP, n)); 
-  for (i=0; i<n; i++) {
+  for (int i=0; i<n; i++) {
     SET_STRING_ELT(str, i, mkChar(V[i]));
   }
   UNPROTECT(1);
@@ -593,14 +651,14 @@ SEXP String(char V[][MAXCHAR], int n, int max) {
 
 
 SEXP String(int *V, const char * List[], int n, int endvalue) {
-  int i,k;
   SEXP str;
   if (V==NULL || n <= 0) return allocVector(VECSXP, 0);
+  int k;
   for (k=0; k<n; k++) {
     if (V[k] == endvalue) break;
   }
   PROTECT(str = allocVector(STRSXP, k)); 
-  for (i=0; i<k; i++) {
+  for (int i=0; i<k; i++) {
     SET_STRING_ELT(str, i, mkChar(List[V[i]]));
   }
   UNPROTECT(1);
@@ -628,12 +686,11 @@ double Real(SEXP p, char *name, int idx) {
 
 
 void Real(SEXP el,  char *name, double *vec, int maxn) {
-   int i, j, n;
-   if (el == R_NilValue) {
-     ERR1("'%s' cannot be transformed to double.\n", name);
+  if (el == R_NilValue) {
+    ERR1("'%s' cannot be transformed to double.\n", name);
   }
-  n = length(el);
-  for (j=i=0; i<maxn; i++) {
+  int n = length(el);
+  for (int j=0, i=0; i<maxn; i++) {
     vec[i] = Real(el, name, j);
     if (++j >= n) j=0;
   }
@@ -672,12 +729,11 @@ int Integer(SEXP p, char *name, int idx) {
 
 
 void Integer(SEXP el, char *name, int *vec, int maxn) {
-  int i, j, n;
   if (el == R_NilValue) {
     ERR1("'%s' cannot be transformed to integer.\n",name);
   }
-  n = length(el);
-  for (j=i=0; i<maxn; i++) {
+  int n = length(el);
+  for (int j=0, i=0; i<maxn; i++) {
     vec[i] = Integer(el, name, j);
     if (++j >= n) j=0;
   }
@@ -697,9 +753,8 @@ void Integer2(SEXP el, char *name, int *vec) {
   else {
     vec[1] = Integer(el, name, n-1);
     if (n > 2) {
-      int i, 
-	v = vec[0] + 1;
-      for (i = 1; i<n; i++, v++)
+      int v = vec[0] + 1;
+      for (int i = 1; i<n; i++, v++)
 	if (Integer(el, name, i) != v) ERR("not a sequence of numbers"); 
     }
   }
@@ -745,8 +800,7 @@ char Char(SEXP el, char *name) {
 
 
 void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
-  int i,
-    l = length(el);
+  int l = length(el);
   char msg[200];
   SEXPTYPE type;  
   if (el == R_NilValue) goto ErrorHandling;
@@ -756,12 +810,12 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
   type = TYPEOF(el);
   //  printf("type=%d %d %d %d\n", TYPEOF(el), INTSXP, REALSXP, LGLSXP);
   if (type == CHARSXP) {
-    for (i=0; i<l; i++) {
+    for (int i=0; i<l; i++) {
       names[i][0] = CHAR(el)[i];
       names[i][1] = '\0';
     }
   } else if (type == STRSXP) {
-    for (i=0; i<l; i++) {
+    for (int i=0; i<l; i++) {
       //print("%d %d\n", i, l);
       strcopyN(names[i], CHAR(STRING_ELT(el, i)), MAXCHAR);
     }
@@ -923,7 +977,7 @@ int Match(char *name, const char * List[], int n) {
 void GetName(SEXP el, char *name, const char * List[], int n,
 	     int defaultvalue, int endvalue, int *ans, int maxlen_ans) {
   char dummy[1000];
-  int i,
+  int 
     k = 0,
     len_el = length(el);
 
@@ -949,6 +1003,7 @@ void GetName(SEXP el, char *name, const char * List[], int n,
 ErrorHandling0:
   sprintf(dummy, "'%s': unknown value '%s'. Possible values are:", 
 	  name, CHAR(STRING_ELT(el, k)));
+  int i;
   for (i=0; i<n-1; i++) {
     char msg[1000];
     sprintf(msg, "%s '%s',", dummy, List[i]);    
@@ -978,4 +1033,105 @@ int GetName(SEXP el, char *name, const char * List[], int n) {
  return GetName(el, name, List, n, -1);
 }
 
+
+
+/*
+
+
+
+
+double intpow(double x, int p) {
+  //int p0 = p;
+  // double x0 = x;
+
+  double res = 1.0;
+  if (p < 0) {
+    p = -p;
+    x = 1.0 / x;
+  } 
+  while (p != 0) {
+    //    printf("  ... %e %d : %e\n" , x, p, res);
+  if (p % 2 == 1) res *= x;
+    x *= x;
+    p /= 2;
+  }
+  return res;
+}
+
+
+
+void distInt(int *X, int*N, int *Genes, double *dist) {
+    int i,j, k, di, diff, *x, *y, ve, ho, endfor,
+	n = *N,
+	nP1 = n + 1,
+	genes = *Genes;
+ 
+  x = y = X;
+  for (j=0, i=0;  j<n;  i += nP1, j++, y += genes) {
+    dist[i] = 0.0;
+    endfor = i + (n - j);
+    for (ve = i + 1, ho = i + n, x = y + genes; 
+         ve < endfor; 
+	 ve++, ho += n) {
+      for (di=0.0, k=0; k<genes; k++, x++) {
+	diff = *x - y[k];
+	di += diff * diff;
+      }
+      dist[ve] = dist[ho] = sqrt((double) di);
+    }
+  }
+}
+
+
+void vectordist(double *v, int *Dim, double *Dist, int *diag){
+  int d, dim, dr;
+  double *v1, *v2, *end;
+  bool notdiag = (*diag==0);
+  dim = Dim[0];
+  end = v + Dim[1] * dim; 
+
+//  print("%d %d %f %f\n", dim , Dim[0], v, end);
+
+  for (dr=0, v1=v; v1<end; v1+=dim) { // loop is one to large??
+    v2 = v1;
+    if (notdiag) {
+       v2 += dim;
+    }
+    for (; v2<end; ) {
+      for (d=0; d<dim; v2++) {
+	Dist[dr++] = v1[d++] - *v2;
+      }
+    }
+  }
+} 
+
+
+int is_positive_definite(double *C, int dim) {
+    int err,
+	bytes = sizeof(double) * dim * dim;
+  double *test;
+  test = (double*) MALLOC(bytes);
+  MEMCOPY(test, C, bytes);
+  F77_CALL(dpofa)(test, &dim, &dim, &err); 
+  FREE(test);
+  return(err == 0);
+}
+
+
+int addressbits(void VARIABLE_IS_NOT_USED *addr) {
+#ifndef RANDOMFIELDS_DEBUGGING  
+  return 0;
+#else
+  double x = (long int) addr,
+    cut = 1e9;
+  x = x - trunc(x / cut) * cut;
+  return (int) x;
+#endif
+
+}
+
+
+
+
+ */
 

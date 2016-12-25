@@ -144,7 +144,6 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
 
 \examples{
-% library(RandomFields, lib="~/TMP")
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 

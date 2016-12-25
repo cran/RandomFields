@@ -13,6 +13,8 @@
 
 \tabular{ll}{
 \command{\link{RMaskey}} \tab Askey model (generalized test or triangle model) \cr
+\command{\link{RMbcw}} \tab bridging model between
+                       \command{\link{RMcauchy}} and \command{\link{RMgenfbm}} \cr
 \command{\link{RMbessel}} \tab Bessel family \cr
 \command{\link{RMcircular}} \tab circular model \cr
 \command{\link{RMconstant}} \tab spatially constant model \cr
@@ -26,7 +28,7 @@
 \command{\link{RMgneitingdiff}} \tab Gneiting model for tapering \cr
 \command{\link{RMhyperbolic}} \tab generalised hyperbolic model \cr
 \command{\link{RMlgd}} \tab Gneiting's local-global distinguisher\cr
-\command{\link{RMma}} \tab one of Ma's model \cr
+\command{\link{RMlsfbm}} locally stationary fractal Brownian motion \cr
 \command{\link{RMpenta}} \tab penta model (see Chiles \& Delfiner) \cr
 \command{\link{RMpower}} \tab Golubov's model \cr
 \command{\link{RMwave}} \tab cardinal sine \cr
@@ -35,6 +37,8 @@
 \bold{Variogram models (stationary increments/intrinsically stationary)}
 
 \tabular{ll}{
+\command{\link{RMbcw}} \tab bridging model between
+                       \command{\link{RMcauchy}} and \command{\link{RMgenfbm}} \cr
 \command{\link{RMdewijsian}} \tab generalised version of the DeWijsian model \cr
 \command{\link{RMgenfbm}} \tab generalized fractal Brownian motion \cr
 \command{\link{RMflatpower}} \tab similar to fractal Brownian motion but

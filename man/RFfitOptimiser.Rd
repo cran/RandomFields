@@ -81,21 +81,21 @@ data <- soil["moisture"]
 model <- ~1 + RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
 \dontshow{if (RFoptions()$internal$examples_red){model<-~1+RMwhittle(scale=NA,var=NA,nu=1/2)}}
 ## standard optimiser 'optim'
-print(unix.time(fit <- RFfit(model, data=data)))
+print(system.time(fit <- RFfit(model, data=data)))
 print(fit)
 
 opt <- "optimx" #  30 sec; better result
-print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 
 \dontshow{\dontrun{ %in 6 sep 2016, soma has leak problems
 opt <- "soma" #  450 sec % sehr schlecht
-print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 }}
 
 opt <- "minqa" # 330 sec %ok
-print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 
 
@@ -104,7 +104,7 @@ algorithm <- RC_NLOPTR_NAMES
 \dontshow{if(!interactive()) algorithm <- RC_NLOPTR_NAMES[1]}
 for (i in 1:length(algorithm)) { % all algorithms are fast
   print(algorithm[i])
-  print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt,
+  print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt,
                                     algorithm=algorithm[i]))))
   print(fit2)
 }
@@ -115,11 +115,11 @@ if (interactive()) {
 ## the following two optimisers are too slow to be run on CRAN.
 
 opt <- "pso" # 600 sec
-print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 
 opt <- "GenSA" #  10^4 sec
-print(unix.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
+print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 }
 

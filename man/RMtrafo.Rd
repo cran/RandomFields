@@ -102,7 +102,7 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
 }
 
 \examples{
-%    library(RandomFields, lib="~/TMP")
+
 data(weather)
 (coord <- weather[1:5, 3:4])
 
@@ -125,7 +125,7 @@ RFearth2cartesian(coord, system="orthographic")
 
 ## RFearth2dist is more precise !!!
 library("fields")
-(unix.time(z2 <- rdist.earth(coord, miles=FALSE)))
+(system.time(z2 <- rdist.earth(coord, miles=FALSE)))
 z2
 
 (z2 - as.matrix(d)) / z2 * 100 ## RFearth2dist is more precise
@@ -133,9 +133,9 @@ z2
 
 # 
 n <- 10000
-unix.time(for (i in 1:n) d <- RFearth2dist (coord))) ## the same as dist(t(z))
+system.time(for (i in 1:n) d <- RFearth2dist (coord))) ## the same as dist(t(z))
 
-unix.time(for (i in 1:n)z2 <- rdist.earth(xx)))
+system.time(for (i in 1:n)z2 <- rdist.earth(xx)))
 
 
 data(weather)

@@ -186,15 +186,11 @@
 \examples{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
-library(RandomFields, lib="~/TMP")
-RFoptions(print = 3)
+\dontshow{StartExample()}
 set.seed(1)
-
-x <- runif(9000, 0, 500)
+x <- runif(90, 0, 500)
 z <- RFsimulate(RMspheric(), x)
 z <- RFsimulate(RMspheric(), x, max_variab=10000)
-% max_variab = 10000 leads to a valgrind warning because of large memory need
 \dontshow{FinalizeExample()}
 
 }

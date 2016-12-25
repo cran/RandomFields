@@ -25,15 +25,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 //#include <sys/timeb.h>
- 
-#include <string.h>
-#include "RF.h"
-#include <Rdefines.h>
-#include "Coordinate_systems.h"
-
-//#include "CovFcts.h"
 //#include <unistd.h>
 //#include <R_ext/Utils.h>     
+#include <string.h>
+#include <Rdefines.h>
+#include "RF.h"
+#include "Coordinate_systems.h"
+
 
 
 #define WHICH_USER 0
@@ -1294,6 +1292,7 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   bool plus_mixed_models;
 
+
   if ((cov->nr == NATSC_INTERN && modus != GETMODEL_AS_SAVED) ||
       (cov->nr == NATSC_USER && modus == GETMODEL_DEL_NATSC)) { 
     return IGetModel(cov->sub[0], modus, spConform, solveRandom, 
@@ -1336,7 +1335,13 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
   }
 
   for(i=0; i<C->kappas; i++) {
-    if (!strcmp(C->kappanames[i], INTERNAL_PARAM)) continue;
+    //printf("donotreturnparam = %d\n", do_notreturnparam);
+
+    if ( (!strcmp(C->kappanames[i], INTERNAL_PARAM) ||
+	  PisNULL(i) ||
+	  (do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM))
+	 && cov->kappasub[i] == NULL
+      ) continue;
     if (cov->kappasub[i] != NULL && (!solveRandom || PisNULL(i))) {
       SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
       SET_VECTOR_ELT(model, k++,
@@ -1344,15 +1349,6 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
 			       do_notreturnparam));
       continue;
     }
-    // naechste Zeile geloescht 30.4.2013
-    if (PisNULL(i) ||
-	(do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM)) {	
-       // k++; // 9.1.09, needed for "$" (proj can be NULL) -- 19.1.09 k++ 
-	// deleted since otherwise outcome does not fit 
-	// model definition anymore (arbitrary NULL in the definition)
-	// instead: nmodelinfo--; above wihtin loop
-      continue;
-    }     
     SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
     SET_VECTOR_ELT(model, k++, 
 		   Param(cov, (void*) cov->px[i], cov->nrow[i],
@@ -1369,6 +1365,8 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
     }
   }
 
+  //  printf("%s %d %d %d\n", NAME(cov), k, nmodelinfo, C->kappas);
+  //   PMI(cov);
   assert(k == nmodelinfo);
 
   setAttrib(model, R_NamesSymbol, nameMvec);

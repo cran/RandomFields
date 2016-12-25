@@ -13,47 +13,26 @@
 }
 
 \usage{
-RPdirect(phi, boxcox, max_variab) 
+RPdirect(phi, boxcox) 
 
-RPsequential(phi, boxcox, max_variables, back_steps, initial)
+RPsequential(phi, boxcox, back_steps, initial)
 }
 
 \arguments{
- \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
- specifies the covariance model to be simulated.}
-\item{boxcox}{the one or two parameters of the box cox transformation.
-  If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
- }
-
-% \item{loggauss}{optional argument; same meaning as for 
-% \command{\link{RPgauss}}.}
-  
-\item{max_variab}{integer less than 30000.
-  If the number of variables to generate is
- greater than \code{max_variab}, neither SVD nor Cholesky decomposition
- are performed. If the given covariance structure has finite range and
- \code{use_spam != false} then \pkg{\link[spam]{spam}} is tried.
-
- It is important that this option is set
- conveniently to avoid great losses of time during the internal 
- search of an appropriate method by \command{\link{RPgauss}}. 
-
-
- Default: \code{8192} 
-}
-
- \item{max_variables}{The maximum size of the conditional covariance matrix
- (default to 5000)}
- \item{back_steps}{
-   Number of previous instances on which
-   the algorithm should condition.
-   If less than one then the number of previous instances
-   equals \code{max} / (number of spatial points).
-   
-   Default: \code{10} .
-   
- }
+  \item{phi}{object of class \code{\link[=RMmodel-class]{RMmodel}};
+    specifies the covariance model to be simulated.}
+  \item{boxcox}{the one or two parameters of the box cox transformation.
+    If not given, the globally defined parameters are used.
+    see \command{\link{RFboxcox}} for Details.
+  }
+  \item{back_steps}{
+    Number of previous instances on which
+    the algorithm should condition.
+    If less than one then the number of previous instances
+    equals \code{max} / (number of spatial points).
+    
+    Default: \code{10} .    
+  }
  \item{initial}{
    First, N=(number of spatial points) * \code{back_steps}
    number of points are simulated. Then, sequentially,

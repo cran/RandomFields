@@ -696,8 +696,6 @@ typedef char NAname_type[MAX_NA][255];
 
 ///////////////////////////////////////////////////////////////////////
 // direct
-#define DIRECT_MAXVAR (COMMON_GAUSS + 1)
-#define MAX_DIRECT_MAXVAR 30000
 
 
 
@@ -2949,6 +2947,13 @@ int kappaBoxCoxParam(cov_model *cov, int BC);
 extern utilsparam* GLOBAL_UTILS;
 
 coord_sys_enum GetCoordSystem(isotropy_type iso);
+
+
+// Formerly in <R_ext/Applic.h>LinkedTo: 
+void fft_factor_(int n, int *pmaxf, int *pmaxp);
+Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
+		  int isn, double *work, int *iwork);/* TRUE: success */
+
 
 
 

@@ -36,12 +36,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
- 
+#include <R_ext/Lapack.h>
+#include <R_ext/Linpack.h>
 #include "RF.h"
 #include "primitive.h"
 #include "Operator.h"
-#include <R_ext/Lapack.h>
-#include <R_ext/Linpack.h>
 #include "Coordinate_systems.h"
 
 
@@ -86,10 +85,11 @@ double interpolate(double y, double *stuetz, int nstuetz, int origin,
 /* BCW */
 #define BCW_ALPHA 0
 #define BCW_BETA 1
+#define BCW_C 2
 #define BCW_EPS 1e-7
 #define BCW_TAYLOR_ZETA \
   (- LOG2 * (1.0 + 0.5 * zetalog2 * (1.0 + ONETHIRD * zetalog2)))
-#define BCW_CAUCHY pow(1.0 + pow(*x, alpha), zeta)
+#define BCW_CAUCHY (pow(1.0 + pow(*x, alpha), zeta) - 1.0)
 void bcw(double *x, cov_model *cov, double *v){
   double alpha = P0(BCW_ALPHA), beta=P0(BCW_BETA),
     zeta = beta / alpha,
@@ -107,7 +107,8 @@ void bcw(double *x, cov_model *cov, double *v){
       *v = dewijs * (1.0 + 0.5 * zetadewijs * (1.0 + ONETHIRD *zetadewijs))
 	/ BCW_TAYLOR_ZETA;
     }
-  } 
+  }
+  if (!PisNULL(BCW_C)) *v += P0(BCW_C);
 }
 
 
@@ -161,17 +162,20 @@ void Inversebcw(double *x, cov_model *cov, double *v) {
   double 
     alpha = P0(BCW_ALPHA), 
     beta=P0(BCW_BETA),
-    zeta = beta / alpha;
-  if (*x == 0.0) {
+    zeta = beta / alpha,
+    y = *x;
+  if (y == 0.0) {
     *v = beta < 0.0 ? RF_INF : 0.0; 
     return;
   }
+  if (!PisNULL(BCW_C)) y = P0(BCW_C) - y;
   if (zeta != 0.0)
-    *v = pow(pow(*x * fabs(pow(2.0, zeta) - 1.0) + 1.0, 1.0/zeta) - 1.0,
+    *v = pow(pow(y * (pow(2.0, zeta) - 1.0) + 1.0, 1.0/zeta) - 1.0,
 	       1.0/alpha); 
   else 
-    *v =  pow(exp(*x * LOG2) - 1.0, 1.0 / alpha);   
+    *v =  pow(exp(y * LOG2) - 1.0, 1.0 / alpha);   
 }
+
 int checkbcw(cov_model *cov) {
   double
     alpha = P0(BCW_ALPHA), 
@@ -183,8 +187,8 @@ int checkbcw(cov_model *cov) {
 }
 
 void rangebcw(cov_model *cov, range_type *range) {
-  bool tcf = isTcf(cov->typus) || cov->isoown == SPHERICAL_ISOTROPIC;
-  bool posdef = isPosDef(cov->typus);
+  bool tcf = isTcf(cov->typus) || cov->isoown == SPHERICAL_ISOTROPIC,
+    posdef = isPosDef(cov->typus) && PisNULL(BCW_C); // tricky programming
   range->min[BCW_ALPHA] = 0.0;
   range->max[BCW_ALPHA] = tcf ? 1.0 : 2.0;
   range->pmin[BCW_ALPHA] = 0.05;
@@ -198,6 +202,13 @@ void rangebcw(cov_model *cov, range_type *range) {
   range->pmax[BCW_BETA] = 2.0;
   range->openmin[BCW_BETA] = true;
   range->openmax[BCW_BETA] = posdef;
+
+  range->min[BCW_C] = 0;
+  range->max[BCW_C] = RF_INF;
+  range->pmin[BCW_C] = 0;
+  range->pmax[BCW_C] = 1000;
+  range->openmin[BCW_C] = false;
+  range->openmax[BCW_C] = true;
 }
 
 
@@ -643,20 +654,22 @@ void covariate(double *x, cov_model *cov, double *v){
   //     design matrix reflektiert.
   // Fuer COVARIATE_ADDNA = FALSE haben wir ganz normals Verhalten
   GET_LOC_COVARIATE;
+
   double 
     *p = LP(COVARIATE_C);
-  bool addna = P0INT(COVARIATE_ADDNA);
+  bool addna = cov->q[1];
   assert(cov->vdim[!addna] == 1);
   int  nr, 
-     vdim = cov->vdim[addna],
-     ntot = loc->totalpoints;
-
+    vdim = cov->vdim[addna],
+    ntot = loc->totalpoints;
+  
   if (cov->role == ROLE_COV) {
-    for (int i=0; i<vdim; v[i++] = 0.0);
+    *v = 0.0;
+    //for (int i=0; i<vdim; v[i++] = 0.0);
     return;
   }
-
-   if (P0INT(COVARIATE_RAW)) {
+  
+  if (P0INT(COVARIATE_RAW)) {
     // should happen only in a matrix context!
     nr = loc->i_row;
     if (nr * vdim >= LNROW(COVARIATE_C) * LNCOL(COVARIATE_C))
@@ -665,19 +678,32 @@ void covariate(double *x, cov_model *cov, double *v){
     // interpolate: here nearest neighbour/voronoi
     nr = get_index(x, cov);
   }
-  
-  if (GLOBAL.general.vdim_close_together) {
-    p += nr * vdim;
-    for (int i=0; i<vdim; i++, p++) v[i] = *p;
+   
+  if (cov->q[0] == 0) {
+    if (GLOBAL.general.vdim_close_together) {
+      p += nr * vdim;
+      for (int i=0; i<vdim; i++, p++) v[i] = *p;
+    } else {
+      p += nr;
+      //   PMI(cov);
+      //    printf("%d %d %d\n", nr, vdim, ntot);
+      for (int i=0; i<vdim; i++, p+=ntot) v[i] = *p;
+    }  
   } else {
-    p += nr;
-    //   PMI(cov);
-    //    printf("%d %d %d\n", nr, vdim, ntot);
-    for (int i=0; i<vdim; i++, p+=ntot) v[i] = *p;
-  }  
+    if (GLOBAL.general.vdim_close_together) {
+      double dummy = 0.0;
+      p += nr * vdim;      
+      for (int i=0; i<vdim; i++, p++) dummy += *p * P(COVARIATE_FACTOR)[i];
+      *v = dummy;
+   } else {
+      p += nr;
+      //   PMI(cov);
+      //    printf("%d %d %d\n", nr, vdim, ntot);
+      for (int i=0; i<vdim; i++, p+=ntot) v[i] = *p * P(COVARIATE_FACTOR)[i];
+    }
+  }
   //printf("%d %d\n", (int) v[0], (int) v[1]);
 }
-
 
 
 int check_fix_covariate(cov_model *cov,  location_type ***local){
@@ -706,8 +732,10 @@ int check_fix_covariate(cov_model *cov,  location_type ***local){
   if (P0INT(COVARIATE_RAW)) {
      cov_model *prev = cov->calling;
     assert(prev != NULL);    
-    if (!globalXT || (prev != NULL && isDollar(prev) && !hasVarOnly(prev)))
+    if (!globalXT || (prev != NULL && isDollar(prev) && !hasVarOnly(prev))) {
+      //      PMI(cov->calling); printf("%d %d\n", !globalXT, PisNULL(COVARIATE_X));
 	SERR("if 'raw' then none of {'x', 'T', 'Aniso', 'proj', 'scale'} may be given");
+    }
      assert(cov->ownloc == NULL);  
      if (cov->Scovariate == NULL) NEW_STORAGE(covariate); 
     *local = PLoc(cov);
@@ -760,9 +788,22 @@ int checkcovariate(cov_model *cov){
     vdim = -1, 
     err = NOERROR;
   location_type **local = NULL;
-  double value = 1.0;
-  //  covariate_storage *S;
-  bool addna;
+  cov_model *prev = cov->calling;
+  bool addna; 
+  // kdefault(cov, COVARIATE_ADDNA, addna);
+ 
+  if (cov->q == NULL) {
+    addna = (!PisNULL(COVARIATE_ADDNA) && P0INT(COVARIATE_ADDNA)) || 
+      (!PisNULL(COVARIATE_FACTOR) &&
+       (ISNA(P0(COVARIATE_FACTOR)) || ISNAN(P0(COVARIATE_FACTOR))));
+    QALLOC(2);
+    // cov->q[0] == 0 iff vdim vectors are returned
+    cov->q[1] = addna;
+  } else addna = (bool) cov->q[1];
+
+
+  //  printf("%d %d ; %d %d\n", cov->q == NULL ? -1 : (bool) cov->q[1] ,
+  //	 addna, !PisNULL(COVARIATE_ADDNA), !PisNULL(COVARIATE_FACTOR));
 
   if ((err = check_fix_covariate(cov, &local)) != NOERROR) goto ErrorHandling;
   assert(local != NULL);
@@ -783,39 +824,48 @@ int checkcovariate(cov_model *cov){
       GERR3("Number of data (%d) not a multiple of the number of locations (%d x %d)", ndata, ntot, vdim);
   }
   assert(vdim > 0);
-
-  kdefault(cov, COVARIATE_ADDNA, false);
-  addna = P0INT(COVARIATE_ADDNA);
+ 
+  if (PisNULL(COVARIATE_FACTOR)) {
+    while (prev != NULL && prev->nr != LIKELIHOOD_CALL &&
+	   prev->nr != LINEARPART_CALL) {
+      prev = prev->nr == PLUS ? prev->calling : NULL;	
+    }
+  }
+    
   if (addna) {
     if (!isTrend(cov->typus))
-      SERR2("'%s' can be true only if '%s' is used as a trend",
+      GERR2("'%s' can be true only if '%s' is used as a trend",
 	    KNAME(COVARIATE_ADDNA), NAME(cov));
-    if (PisNULL(COVARIATE_FACTOR)) {
-      cov_model *dummy = cov->calling;
-      while (dummy != NULL && dummy->nr != LIKELIHOOD_CALL &&
-	     dummy->nr != LINEARPART_CALL) {
-	dummy = dummy->nr == PLUS ? dummy->calling : NULL;	
-      }
-      if (dummy != NULL) value = RF_NA;
-     }
+    if (prev == NULL)  {
+      GERR1("%s is used with NAs outside a trend definition.", NAME(cov));
+    }
+    if (PisNULL(COVARIATE_FACTOR)) PALLOC(COVARIATE_FACTOR, vdim, 1);
+    for (int i=0; i<vdim; i++) P(COVARIATE_FACTOR)[i] = RF_NAN;
   }
-  if (PisNULL(COVARIATE_FACTOR)) {
-    PALLOC(COVARIATE_FACTOR, vdim, 1);
-    for (int i=0; i<vdim; i++) P(COVARIATE_FACTOR)[i] = value;
-  } 
-    
-  cov->vdim[!addna] = 1; 
-  cov->vdim[addna] = vdim;
 
+  cov->q[0] = ((bool) cov->q[1]) || PisNULL(COVARIATE_FACTOR) ? 0 : vdim;
+ 
+  cov->vdim[!addna] = 1; 
+  cov->vdim[addna] = cov->q[0] == 0.0 ? vdim : 1;
   assert( cov->vdim[0] > 0 && cov->vdim[1] >0);
-  
-  if ((err = checkkappas(cov)) != NOERROR) goto ErrorHandling;
+       
+  if (cov->role == ROLE_COV && cov->vdim[0] != 1)
+    GERR1("'%s' used in a wrong context", NAME(cov));
+
+  if ((err = checkkappas(cov, false)) != NOERROR ||
+      PisNULL(COVARIATE_C) ||
+      PisNULL(COVARIATE_X) ||
+      PisNULL(COVARIATE_RAW)
+     ) goto ErrorHandling;
    
   cov->mpp.maxheights[0] = RF_NA;
   EXTRA_STORAGE;
   
- ErrorHandling: 
+ ErrorHandling:
   GLOBAL.general.set = store;
+
+  //  if (err == NOERROR) APMI(cov->calling->calling);
+  PFREE(COVARIATE_ADDNA);
 
   return err;
       
@@ -1323,7 +1373,6 @@ void rangeDeWijsian(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
 /* exponential model */
 void exponential(double *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v){
-  //  APMI(cov->calling->calling);
    *v = exp(- *x);
    // printf("x=%f %f\n", *x, *v);
 }
@@ -5346,7 +5395,6 @@ void Mathminus(double *x, cov_model *cov, double *v){
   if (ISNA(f) || ISNAN(f)) f = 1.0;
   *v = ( (PisNULL(1) && cov->kappasub[1]==NULL) ? -w[0] : w[0 ]- w[1]) * f;
   //printf("minus (%f - %f) * %f  = %f %d\n", w[0], w[1], f, *v, (PisNULL(1) && cov->kappasub[1]==NULL));
-  // APMI(cov);
 }
 
 void Mathplus(double *x, cov_model *cov, double *v){

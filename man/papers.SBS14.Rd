@@ -29,7 +29,6 @@ among max-stable processes
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 \dontshow{StartExample()}
-%  library(RandomFields, lib="~/TMP")
 
 H <- c(0:9, LETTERS[1:6])
 numbers <- rep(0:255, each=2)
@@ -182,7 +181,7 @@ lines(a, exp(-a) * exp(-exp(-a)))
 
 ############# test
 
-unix.time(
+system.time(
 z <- RFsimulate(RPsmith(RMm2r(RMbrownresnick(model)), xi=0),
                 seq(0, len=400, by=0.02), seq(0, len=400, by=0.02), 0, n=1,
                 spConform=FALSE, every=0)

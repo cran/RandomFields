@@ -10,9 +10,9 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "RF.h"
 #include "convhull2D.h"
 
-#include "RF.h"
 
 
 /*******************************************************************************

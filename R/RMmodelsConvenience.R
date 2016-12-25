@@ -55,17 +55,25 @@ RMwendland <- function(kappa, mu, var, scale, Aniso, proj) {
 
 
 RMcovariate <- function(c, x, y=NULL, z=NULL, T=NULL, grid,
-                        var, scale, Aniso, proj, raw, norm, addNA) {
+                        var, scale, Aniso, proj, raw, norm, addNA, factor) {
+  if (!missing(factor)) {
+    if (!missing(addNA) && addNA) {
+#      Print(factor, addNA)
+      stop("'addNA' and 'factor' may not be given at the same time.")
+    }
+    isna <- is.na(factor)
+    if (any(xor(isna[1], isna))) stop("If 'factor' has NAs then all of the values must be NAs")
+  }
   Call <- iRMcovariate
   if (missing(x) && length(T)==0) {
     if (length(y)!=0 || length(T)!=0 || !missing(grid))
-      stop("y, z, T, grid may only be given if 'x' is given")
+      stop("y, z, T, grid may only be given if 'x' is given")    
     Call(norm=norm, c=c, scale=scale, Aniso=Aniso, proj=proj, var=var, raw=raw,
-         addNA=addNA)
+         addNA=addNA, factor=factor)
   } else {
-    new <- C_CheckXT(x, y, z, T, grid, printlevel=0)
+    new <- C_CheckXT(x=x, y=y, z=z, T=T, grid=grid, printlevel=0)
     Call(norm=norm, c=c, x=new, scale=scale, Aniso=Aniso, proj=proj, var=var,
-         raw=raw, addNA=addNA)
+         raw=raw, addNA=addNA, factor=factor)
   }
 }
   

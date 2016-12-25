@@ -568,8 +568,7 @@ RFfit <-
            transform=NULL,
            ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
            ##             "Poisson"),
-           ... )
-{
+           ... ) {
 
   ##Print(RFoptions()$fit); xxx xxx###
   .C("NoCurrentRegister")

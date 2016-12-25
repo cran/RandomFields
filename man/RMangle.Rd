@@ -77,7 +77,7 @@ coords <- expand.grid(x, y)
 model <- RMexp(Aniso=RMangle(angle=pi/4, diag=c(1/4, 1/12)))
 d <- RFsimulate(model, x=coords[, 1], y=coords[, 2], n=10)
 estmodel <- RMexp(Aniso=RMangle(angle=NA, diag=c(NA, NA)))
-unix.time(RFfit(estmodel, data=d, modus_operandi='sloppy'))
+system.time(RFfit(estmodel, data=d, modus_operandi='sloppy'))
 
 \dontshow{FinalizeExample()}
 

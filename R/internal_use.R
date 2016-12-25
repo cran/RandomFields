@@ -167,7 +167,7 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
 
 StartExample <- function(reduced = TRUE) {
   if (!interactive()) {
-### do not touch next lines
+    ## do not touch next lines
     ## REDUCED <- reduced, reduced
     REDUCED <- reduced
     RFoptions(examples_reduced = REDUCED)
@@ -372,7 +372,6 @@ reverse_dependencies_with_maintainers <-
            recursive = FALSE) {
     ## function taken from CRAN developer website. 
     repos <- getOption("repos")["CRAN"]
-    Print(repos) #
     ## if (substr(repos, 1, 1) == "@") repos <- "http://cran.r-project.org"
     Print(repos) #
     contrib.url(repos, "source") # trigger chooseCRANmirror() if required
@@ -397,7 +396,7 @@ reverse_dependencies_with_maintainers <-
 Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
                          install = FALSE, check=TRUE, reverse=FALSE) {
   Print(packageDescription("RandomFields")) #
-  all <- reverse_dependencies_with_maintainers("RandomFields", which="all")
+  all <- reverse_dependencies_with_maintainers("RandomFields") #, which="all")
   all.pkgs <- all[, 1]
   PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")    
   

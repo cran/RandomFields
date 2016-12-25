@@ -504,19 +504,17 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   simu <- NULL
   if (simu.grid) {
     xgr <- cbind(X$x, X$T)
+    l <- ncol(xgr)
     ind <- 1 + (t(coord$x) - xgr[1, ]) / xgr[2, ] 
     index <- round(ind)
     outside.grid <-
       apply((abs(ind-index)>RFopt$general$gridtolerance) | (index<1) |
             (index > 1 + xgr[3, ]), 2, any)
-
     if (any(outside.grid)) {
       ## at least some data points are not on the grid:
       ## simulate as if there is no grid
       simu.grid <- FALSE
-      ll <- NULL ##  otherwise check will give a warning
-      l <- ncol(xgr)
-
+ 
       if (l>3) stop(txt)
       xx <- if (l==1) ## dim x locations
              matrix(seq(from=xgr[1], by=xgr[2], len=xgr[3]),
@@ -526,24 +524,8 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                                   "], by=xgr[2,", 1:l,
                                   "], len=xgr[3,", 1:l, "])", collapse=","),
                          "))")))  
-      ll <- eval(parse(text=paste("c(",
-                   paste("length(seq(from=xgr[1,", 1:l, 
-	                 "], by=xgr[2,", 1:l, 
-		         "], len=xgr[3,", 1:l, "]))",
-                         collapse=","),
-                   ")")))
 
-      new.index <- rep(0,ncol(index))
-      ## data points that are on the grid, must be registered,
-      ## so that they can be used as conditioning points of the grid
-      if (!all(outside.grid)) {
-        new.index[!outside.grid] <- 1 +
-          colSums((index[, !outside.grid, drop=FALSE]-1) *
-                  cumprod(c(1, ll[-length(ll)])))
-      }
-      index <- new.index
-      new.index <- NULL
-    } else {  
+    } else { ## !any outside.grid
       ## data points are all lying on the grid
      
       simu <- do.call(RFsimulate, args=c(list(model=all$krige,
@@ -555,14 +537,32 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                                       seed = NA),
                                       dots, list(spConform=FALSE)))
       ## for all the other cases of simulation see, below
-      index <- t(index)
       if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
-      else {
-        d <- dim(simu)
-        last <- d + 1 - (1 : ((vdim > 1) + (n > 1)))
-       if (!is.matrix(simu)) dim(simu) <- c(prod(d[-last]), prod(d[last]))
+      else if (!is.matrix(simu)) {
+          d <- dim(simu)
+          nvdim <- (vdim > 1) + (n > 1)
+          first <- 1:length(d[1:(length(d) - nvdim)])
+          dim(simu) <- c(prod(d[first]), prod(d[-first]))
       }
-   }
+    }
+    
+    new.index <- rep(0,ncol(index))
+    ## data points that are on the grid, must be registered,
+    ## so that they can be used as conditioning points of the grid
+    if (!all(outside.grid)) {
+      ll <- eval(parse(text=paste("c(",
+                   paste("length(seq(from=xgr[1,", 1:l, 
+	                 "], by=xgr[2,", 1:l, 
+		         "], len=xgr[3,", 1:l, "]))",
+                         collapse=","),
+                           ")")))
+      new.index[!outside.grid] <- 1 +
+        colSums((index[, !outside.grid, drop=FALSE]-1) *
+                cumprod(c(1, ll[-length(ll)])))
+    }
+    index <- new.index
+    new.index <- NULL
+    
   } else { ## not simu.grid
     xx <- t(X$x)  ## dim x locations
    
@@ -616,11 +616,14 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
 ##                                       is not recognized as a vector
 
 
-#  Print(simu, simu.given, simu.grid, index, as.vector(data),  simu.given, X)
+#
+#  print(index)
+#    Print(simu, simu.given, simu.grid, index, as.vector(data),  simu.given, X)
 
  
   ## to do: als Naeherung bei UK, OK:
   ## kriging(data, method="A") + simu - kriging(simu, method="O") !
+
   stopifnot(length(X$y)==0, length(X$z)==0)
   simu <- simu + RFinterpolate(x=X, model=model,
                                err.model = err.model,

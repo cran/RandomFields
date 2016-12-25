@@ -46,8 +46,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h> 
 #include <string.h>
-#include "RF.h"
 //#include <unistd.h>
+#include "RF.h"
 #include "Operator.h"
 #include "Coordinate_systems.h"
 #include "variogramAndCo.h"
@@ -429,6 +429,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
     strcopyN(param_name, names == R_NilValue ? "" 
 	     : CHAR(STRING_ELT(names, elt)), PARAMMAXCHAR);     
 
+    //printf("%s %s\n", NAME(cov), param_name);
+
     if  (strcmp(param_name, "") && nkappas != 0) {
       if ((i = Match(param_name, C->kappanames, nkappas)) < 0) {
 	i = Match(param_name, STANDARDPARAM, nkappas);
@@ -754,6 +756,8 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     }
     assert(*Cov == NULL);
     CMbuild(model, 0, Cov);
+
+    //    BUG;
  
     strcpy(ERROR_LOC, "Having built the model:");
     cov = *Cov;
@@ -1664,7 +1668,7 @@ int check_likelihood(cov_model *cov) {
     int
       repet = datatot / vdimtot;
 
-    //printf("%d %d %d %d\n", vdimtot, totpts, repet, datatot);
+    //    printf("%d %d %d %d\n", vdimtot, totpts, repet, datatot);
 
     if (repet * vdimtot != datatot || repet == 0)  {
       GERR("data and coordinates do not match");

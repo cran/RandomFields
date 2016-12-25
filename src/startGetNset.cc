@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <R_ext/Linpack.h>
-
 #include "RF.h"
 #include "primitive.h"
 #include "Operator.h"
@@ -1010,13 +1009,12 @@ void make_internal() {
 
 
 // extern ?!
-int IncludeModel(const char *name, Types type, 
-		 int minsub, int maxsub, int kappas,
+int IncludeModel(const char *name, Types type, int minsub, int maxsub, int kappas,
 		 size_fct kappasize,
 		 domain_type domain, isotropy_type isotropy,
 		 checkfct check, rangefct range, pref_type pref, 
-		 int internal, int vdim, int maxdim, ext_bool finiterange,
-		 int monotonicity) {  
+		 int internal, int vdim, 
+		 int maxdim, ext_bool finiterange, int monotonicity) {  
   createmodel(name, type, kappas, kappasize, domain, isotropy, check, range,
 	      vdim, pref, maxdim, finiterange, monotonicity);
   //    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
@@ -1075,8 +1073,7 @@ int IncludeModel(const char *name, Types type,
   return nr;
 }
 
-int IncludeModel(const char *name, Types type, 
-		 int minsub, int maxsub, int kappas, 
+int IncludeModel(const char *name, Types type, int minsub, int maxsub, int kappas, 
 		 domain_type domain, isotropy_type isotropy,
 		 checkfct check, rangefct range, pref_type pref, 
 		 int maxdim, ext_bool finiterange, int monotonicity) {

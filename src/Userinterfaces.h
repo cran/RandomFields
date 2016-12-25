@@ -221,12 +221,12 @@ typedef struct direct_param {
 } direct_param;
 #define direct_START { DIRECT_ORIG_MAXVAR } // {Cholesky, direct_tol[NM], 8192 }
 
-#define sequN 3
+#define sequN 2
 extern const char * sequ[sequN];
 typedef struct sequ_param{
-  int max, back, initial;
+  int back, initial;
 } sequ_param;
-#define sequ_START {5000, 10, -10}
+#define sequ_START {10, -10}
 
 
 

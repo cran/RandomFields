@@ -237,8 +237,8 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                 estimate_variance=estimate_variance,
                 betas_separate = FALSE, ignore_trend=ignore.trend)
 
-  return (rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                 distances=distances, dim=dim, reg = Reg, dosimulate=FALSE))
+  rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
+                 distances=distances, dim=dim, reg = Reg, dosimulate=FALSE)
 
 }
 
@@ -276,6 +276,40 @@ RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 }
 
 
+rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
+                   distances, dim, reg, dosimulate=TRUE, old.seed=NULL) {
+ 
+                                        ##print("rfInit in rf.R") #Berreth
+  stopifnot(xor(missing(x), #|| length(x)==0,
+                missing(distances) || length(distances)==0))
+
+  RFopt <- RFoptions() 
+  if (!is.na(RFopt$basic$seed)) {
+    allequal <- all.equal(old.seed, RFopt$basic$seed)
+    allequal <- is.logical(allequal) && allequal
+    if (dosimulate && RFopt$basic$printlevel >= PL_IMPORTANT &&
+        (is.null(old.seed) || (!is.na(old.seed) && allequal)
+         )
+        ) {
+       message("NOTE: simulation is performed with fixed random seed ",
+               RFopt$basic$seed,
+               ".\nSet 'RFoptions(seed=NA)' to make the seed arbitrary.")
+     }
+    set.seed(RFopt$basic$seed)
+  }
+  ##  if (missing(x) || length(x) == 0) stop("'x' not given")
+
+  new <- C_CheckXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
+                 y.ok=!dosimulate)
+ 
+  vdim <- .Call("Init", as.integer(reg), model, new, NAOK=TRUE, # ok
+                PACKAGE="RandomFields")
+  
+  if (is.null(old.seed)) return(vdim) else return(!is.na(RFopt$basic$seed))
+}
+
+
+
 rfdistr <- function(model, x, q, p, n, dim=1, ...) {
   ## note: * if x is a matrix, the points are expected to be given row-wise
   ##       * if not anisotropic Covariance expects distances as values of x
@@ -307,9 +341,13 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
 
 #  Print(model)
   
-  rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
+  old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
+  if (rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
          y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_USER,
-         dosimulate=FALSE, old.seed=RFoptOld[[1]]$basic$seed)
+         dosimulate=FALSE, old.seed=RFoptOld[[1]]$basic$seed) &&
+      !is.null(old.seed))
+    on.exit(.Random.seed <<- old.seed, add = TRUE)
+
 
   res <-  .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
                 PACKAGE="RandomFields")
@@ -381,9 +419,13 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 
   # Print(p, x, distances)
  
-  rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
+   old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
+  if (rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
          distances=distances, dim=dim, reg = MODEL_USER, dosimulate=FALSE,
-         old.seed=RFoptOld[[1]]$basic$seed)
+         old.seed=RFoptOld[[1]]$basic$seed) &&
+      !is.null(old.seed))
+      on.exit(.Random.seed <<- old.seed, add = TRUE)
+
 
   res <- .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
                PACKAGE="RandomFields")
@@ -465,6 +507,7 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   
   prep <- prepare4RFspDataFrame(model=NULL, info=info, RFopt=RFopt)
   attributes(result)$varnames <- prep$names$varnames
+
   
   res2 <- conventional2RFspDataFrame(result,
                                      coords=prep$coords,
@@ -476,40 +519,6 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
                                      =RFopt$general$vdim_close_together)
   return(res2)
 }
-
-
-
-rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
-                   distances, dim, reg, dosimulate=TRUE, old.seed=NULL) {
- 
-                                        ##print("rfInit in rf.R") #Berreth
-  stopifnot(xor(missing(x), #|| length(x)==0,
-                missing(distances) || length(distances)==0))
-
-  RFopt <- RFoptions() 
-  if (!is.na(RFopt$basic$seed)) {
-    allequal <- all.equal(old.seed, RFopt$basic$seed)
-    allequal <- is.logical(allequal) && allequal
-    if (dosimulate && RFopt$basic$printlevel >= PL_IMPORTANT &&
-        (is.null(old.seed) || (!is.na(old.seed) && allequal)
-         )
-        ) {
-       message("NOTE: simulation is performed with fixed random seed ",
-               RFopt$basic$seed,
-               ".\nSet 'RFoptions(seed=NA)' to make the seed arbitrary.")
-     }
-    set.seed(RFopt$basic$seed)
-  }
-  ##  if (missing(x) || length(x) == 0) stop("'x' not given")
-
-  new <- C_CheckXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
-                 y.ok=!dosimulate)
- 
-  return(.Call("Init", as.integer(reg), model, new, NAOK=TRUE, # ok
-               PACKAGE="RandomFields"))
-}
-
-
 
 
     
@@ -588,14 +597,17 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     if(!is.null(err.model))
       warning("error model is unused in unconditional simulation")
 
-    rfInit(model=list("Simulate",
-               setseed=eval(parse(text="quote(set.seed(seed=seed))")),
-               env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
-           grid=grid, distances=distances, dim=dim, reg=reg,
-           old.seed=RFoptOld[[1]]$basic$seed)
+    old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
+    if (rfInit(model=list("Simulate",
+                   setseed=eval(parse(text="quote(set.seed(seed=seed))")),
+                   env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
+               grid=grid, distances=distances, dim=dim, reg=reg,
+               old.seed=RFoptOld[[1]]$basic$seed) &&
+        !is.null(old.seed))
+      on.exit(.Random.seed <<- old.seed, add = TRUE)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
-   } # end of uncond simu
+  } # end of uncond simu
 
 
   ## output: RFsp   #################################
@@ -634,4 +646,4 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   return(res)
 }
 
-
+# RFreplace <- function(model, by) { }

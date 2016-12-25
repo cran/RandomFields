@@ -630,12 +630,13 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 
       if (Exterr != NOERROR) goto ErrorHandling;    
       
-      double inc[MAXLILIGRIDDIM], x[MAXLILIGRIDDIM], xstart[MAXLILIGRIDDIM],
+      double inc[MAXLILIGRIDDIM+1], x[MAXLILIGRIDDIM+1],
+	xstart[MAXLILIGRIDDIM+1],
 	*pt_locx = loc->x,
 	*pty = y0;
       assert(pred_loc != NULL && loc != NULL);
-      int d, gridlen[MAXLILIGRIDDIM], end[MAXLILIGRIDDIM],
-	start[MAXLILIGRIDDIM], nx[MAXLILIGRIDDIM],
+      int d, gridlen[MAXLILIGRIDDIM + 1], end[MAXLILIGRIDDIM + 1],
+	start[MAXLILIGRIDDIM + 1], nx[MAXLILIGRIDDIM + 1],
 	Tidx = 0,
 	Tlen = loc->Time ? loc->T[XLENGTH] : 0,
 	pred_tsdim = pred_loc->timespacedim,
@@ -1613,6 +1614,8 @@ int struct_gauss_logli(cov_model *cov) {
     // provide necessary space and account for deterministic information
     max_total_data_Sq = L->max_total_data * L->max_total_data;
     int totdata_bytes = max_total_data_Sq * sizeof(double);
+
+  
     L->C = (double *) MALLOC(totdata_bytes);    
     if (L->data_has_nas) {
       L->Cwork = (double *) MALLOC(totdata_bytes);

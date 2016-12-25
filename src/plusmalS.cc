@@ -35,13 +35,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <stdio.h> 
 #include <R_ext/Lapack.h>
-
 #include "RF.h"
 #include "Operator.h"
 #include "variogramAndCo.h"
-//#include <R_ext/Applic.h>
-//#include <R_ext/Utils.h>     
-//#include <R_ext/BLAS.h> 
 
 
 

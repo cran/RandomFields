@@ -164,6 +164,8 @@ bool NAequal(double X, double Y) {
 }
 
 int kappaBoxCoxParam(cov_model *cov, int BC) {
+  //  PMI(cov);
+  //printf("kapap bc %s %d\n", NAME(cov), BC);
   int vdim_2 = cov->vdim[0] * 2;					
   if (PisNULL(BC)) {						
     PALLOC(BC, 2, cov->vdim[0]);				

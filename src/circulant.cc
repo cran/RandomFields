@@ -347,14 +347,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
   
     for(i=0; i<dim; i++){index[i]=0;}
 
-
     for (i=0; i<mtot; i++) {
       cur_crit = false;
       for (k=0; k<dim; k++) {
+	int idxk = index[k];
 	hx[k] = -steps[k] *// with '-' consistent with x[d]-y[d] in nonstat2stat
-	  (double) ((index[k] <= halfm[k]) ? index[k] : index[k] - mm[k]);
-	cur_crit |= (index[k]==halfm[k]);
-      }	
+	  (double) ((idxk <= halfm[k]) ? idxk : idxk - mm[k]);
+	cur_crit |= (idxk==halfm[k]);
+      }
       dummy = i << 1;
 
       //      print("ci %d %d %e %e \n", k, dim, hx[0], hx[1]);

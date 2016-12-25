@@ -77,6 +77,7 @@ RFspatialGridDataFrame <- function(grid, data,
                                    RFparams=list(n=1, vdim=1)) {
   
   grid <- convert2GridTopology(grid)
+#  save(file="dataframe.rda", grid,  data, proj4string)
   tmp <- sp::SpatialGridDataFrame(grid=grid,
                                   data = if (is.data.frame(data)) data else
                                   data.frame(data),
@@ -486,7 +487,7 @@ conventional2RFspDataFrame <-
   ## may be NULL, if called from 'RFsimulate', the left hand side of model, if
   ## model is a formula, is passed to 'varnames'
   attributes(data)$varnames <- NULL
-  
+   
   ## grid case
   if (length(coords) == 0) {# war is.null(coords) -- erfasst coords=list() nicht
     grid <- convert2GridTopology(gridTopology) 
@@ -519,6 +520,8 @@ conventional2RFspDataFrame <-
       perm <- c( 1+(1:timespacedim), 1, if (n>1) timespacedim+2 else NULL)
       data <- aperm(data, perm=perm)
     }
+
+     
     if (timespacedim==1)
       call <- "RFgridDataFrame"
     else {
@@ -528,6 +531,7 @@ conventional2RFspDataFrame <-
     }
   }
   
+
   ## coords case
   if (is.null(gridTopology)){
     if (vdim>1 && vdim_close_together){
@@ -540,7 +544,6 @@ conventional2RFspDataFrame <-
     else call <- "RFspatialPointsDataFrame"
   }
 
-  
   
   ## in both cases:
   dim(data) <- NULL
@@ -557,9 +560,10 @@ conventional2RFspDataFrame <-
     else names(data) <- NULL
   
   ## Print(call, varnames, names(data), coords, is.null(coords))
-
+ 
   if (is.null(coords)){
-#   Print(call, data=data, grid, RFparams=list(n=n, vdim=vdim, T=T))
+#
+#    Print(call, data=data, grid, RFparams=list(n=n, vdim=vdim, T=T))
 
     do.call(call, args=list(data=data, grid=grid,
                       RFparams=list(n=n, vdim=vdim, T=T)))

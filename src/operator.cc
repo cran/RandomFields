@@ -24,12 +24,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
- 
-#include "RF.h"
-#include "Operator.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
+#include "RF.h"
+#include "Operator.h"
 #include "variogramAndCo.h"
 #include "cubicsolver.h"
 

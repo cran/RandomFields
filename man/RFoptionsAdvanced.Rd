@@ -37,7 +37,7 @@ n <- 100
 
 # using local.dependent=FALSE (which is the default)
 c1 <- numeric(m)
-time <- unix.time(
+time <- system.time(
   for (i in 1:m) {
     cat("", i, "out of", m, "\n")
     z <- RFsimulate(meth(model), x, y, n=n, pch="", 
@@ -51,7 +51,7 @@ Print(true.cov, mean(c1), sd(c1), empty.lines=1)## true mean is zero
 
 # using local.dependent=TRUE ...
 c2 <- numeric(m)
-time <- unix.time(
+time <- system.time(
   for (i in 1:m) {
     cat("", i)
     z <- RFsimulate(meth(model), x, y, n=2 * n, pch="", 

@@ -426,8 +426,6 @@ rfGenerateConstants <-
               c(RFgetModelNames(group.by=NULL), ZF_INTERNALMIXED, ZF_TREND))
  
   define_char("rfgui_Names1",
-
-  ###        library(RandomFields, lib="~/TMP")
             
               RFgetModelNames(type=TYPENAMES[c(TcfType, PosDefType) + 1],
                               isotropy=ISONAMES[ISOTROPIC + 1],

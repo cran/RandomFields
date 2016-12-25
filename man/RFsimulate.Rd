@@ -249,7 +249,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 \dontshow{StartExample()}
-% library(RandomFields, lib="~/TMP")
+
 #############################################################
 ## ##
 ## ONLY TWO VERY BASIC EXAMPLES ARE GIVEN HERE ##

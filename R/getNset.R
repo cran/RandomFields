@@ -208,7 +208,6 @@ RFgetModelInfo_model <- function(model, dim = 1, Time = FALSE,
 
 #  if (FALSE)    {
 #
-#    library(RandomFields, lib="~/TMP"); RFoptions(print = 1)
 #    for (f in dir(pattern="*.R")) {print(f); source(f)}
 #
  #   model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)

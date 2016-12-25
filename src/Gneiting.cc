@@ -23,11 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <math.h>
- 
+#include <R_ext/Lapack.h>
+#include <R_ext/Linpack.h> 
 #include "RF.h"
 #include "Operator.h"
-#include <R_ext/Lapack.h>
-#include <R_ext/Linpack.h>
 
 
 #define AVESTP_MINEIGEN 2
@@ -126,7 +125,7 @@ int checkave(cov_model *cov) {
   kdefault(cov, AVE_SPACETIME, TRUE);
   if ((err = checkkappas(cov)) != NOERROR) return err;
 
-  if (cov->xdimprev != cov->tsdim || cov->xdimprev != cov->tsdim)
+  if (cov->xdimprev != cov->tsdim) // || cov->xdimprev != cov->tsdim)
     return ERRORDIM;
   if ((err = CHECK(next, dim, 1, PosDefType, XONLY, ISOTROPIC,
 		   SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
@@ -721,7 +720,7 @@ int checkstp(cov_model *cov){
    PALLOC(STP_Z, dim, 1);
  }
 
- if (cov->xdimprev != cov->tsdim || cov->xdimprev != cov->tsdim)
+ if (cov->xdimprev != cov->tsdim) // || cov->xdimprev != cov->tsdim)
     return ERRORDIM;
    
   if ((err = CHECK(phi, dim,  1, PosDefType, XONLY, ISOTROPIC,

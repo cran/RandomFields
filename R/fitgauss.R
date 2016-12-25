@@ -197,6 +197,7 @@ GetValuesAtNA <- function(NAmodel, valuemodel, x=NULL, skipchecks, ...) {
 }
 
 
+#RFlsq <- function() {}
 
 
 ######################################################################
@@ -920,8 +921,10 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   if (!recall) {
     if (!exists(".Random.seed")) runif(1)
     old.seed <- .Random.seed
+#    print(old.seed)
     set.seed(0)
-    on.exit(set.seed(old.seed), add = TRUE)
+#    on.exit(set.seed(old.seed), add = TRUE)
+    on.exit(.Random.seed <<- old.seed, add = TRUE)
   }
   
 
@@ -958,7 +961,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
  
   if (printlevel>=PL_STRUCTURE) cat("\nfunction defintions...\n")
     ##all the following save.* are used for debugging only
-  silent <- printlevel <  PL_STRUCTURE   # optimize
+  silent <- printlevel <= PL_DETAILSUSER   # optimize
 
   detailpch <- if (pch=="") "" else '+'
 
@@ -1319,7 +1322,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     assign("MLEPARAM", param, envir=ENVIR)
     assign("MLEVARIAB", variab, envir=ENVIR)
     if (length(result) == 0) {
-      if (printlevel >= PL_IMPORTANT) message("Variance and/or covariates could not be calculated for some results. They are all set to 1e-8.")
+      if (printlevel >= PL_IMPORTANT) message(paste("Variance and/or covariates could not be calculated for some results. They are all set to 1e-8.", if (printlevel <= PL_DETAILSUSER) " Set 'printlevel' at least to 4 to get more information about the reasons."))
       return(1e-8)
     } else return(result)
   }
@@ -1371,6 +1374,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
 
   if (printlevel>=PL_STRUCTURE) cat("\nfirst analysis of model  ...\n")
+
+#  print(model)  print(Z$model); kkkk
   
   info.cov <- .Call("SetAndGetModelLikeli", LiliReg,
                     list("RFloglikelihood", data = Z$data, Z$model),
@@ -2214,6 +2219,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
  
 ##################################################
 ################### Empirical Variogram   ########################
+ if (printlevel>=PL_STRUCTURE) cat("\nempirical variogram...")
 
   ## see above for the trafo definitions
   ##
@@ -2222,8 +2228,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   ## T.o.D.o.: kann verbessert werden durch einschluss der Trendschaetzung
   ## Xges auf RFsimulate basieren
 
- 
- lsqMethods <- NULL
+  
+  lsqMethods <- NULL
   ev <- list()
   if (length(lsq.methods) == 0) {  # not trans.inv
     if (!is.null(lsq.methods)) warning("submethods are not allowed")
@@ -3279,7 +3285,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
             report = "",
             submodels = NULL)
 
-
+#Print(L)
 #  Print(res)
   
   if (!general$spConform) {
@@ -3291,7 +3297,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     return(Res)
   } else {
 
-    #str(res)
+    #    str(res)
     
      res2 <- lapply(res, FUN=list2RMmodelFit, isRFsp=Z$isRFsp,
                    coord=Z$RFsp.coord, gridTopology=Z$gridTopology,

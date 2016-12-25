@@ -6,7 +6,7 @@
 }
 \usage{
 RMcovariate(c, x, y=NULL, z=NULL, T=NULL, grid, var, scale,
-                        Aniso, proj,  raw, norm, addNA)
+                        Aniso, proj,  raw, norm, addNA, factor)
 }
 \arguments{
   \item{scale, Aniso, proj, var}{optional arguments; same meaning for any
@@ -44,6 +44,8 @@ RMcovariate(c, x, y=NULL, z=NULL, T=NULL, grid, var, scale,
     This parameter must be set in particular when \command{RMcovariate}
     passes several covariates.
   }
+  \item{factor}{real value. From users point of view very much the same
+  as setting the argument \code{var}}.
 }
 \note{
   \itemize{

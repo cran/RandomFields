@@ -1,6 +1,7 @@
 #include <math.h>
-#include "cubicsolver.h"
 #include "RF.h"
+#include "cubicsolver.h"
+
 #define ERRORNOTCUBIC 501
 
 //Constants for the cubic equation solver

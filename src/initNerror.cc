@@ -32,12 +32,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>  
 #include <stdio.h>  
 #include <stdlib.h>
-//#include <sys/timeb.h>
- 
 #include <string.h>
+#include <unistd.h>
+//#include <sys/timeb.h>
 #include "RF.h"
 #include "Operator.h"
-#include <unistd.h>
 #include "SpherModelsInitNerror.h"
 
 int gaussmethod[Forbidden+1];
@@ -820,16 +819,26 @@ void InitModelList() {
 
   pref_type pbcw = {2, 5, 5, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5};
   //                CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludePrim("bcw", VariogramType, 2, XONLY, ISOTROPIC,
-	      checkbcw, rangebcw, pbcw,
-	      SCALAR, INFDIM, false, NORMAL_MIXTURE); // todo part is even
+  IncludeModel("bcw", VariogramType, 0, 0, 3, XONLY, ISOTROPIC,
+	       checkbcw, rangebcw, pbcw,
+	       INFDIM, false, NORMAL_MIXTURE); // todo part is even
   // LAPLACE
-  kappanames("alpha", REALSXP, "beta", REALSXP);
+  kappanames("alpha", REALSXP, "beta", REALSXP, "c", REALSXP);
   addCov(bcw, Dbcw, DDbcw, Inversebcw);
   addLocal(coinitbcw, ieinitbcw);
   AddVariant(PosDefType, ISOTROPIC);
   AddVariant(TcfType, ISOTROPIC);
   AddVariant(PosDefType, SPHERICAL_ISOTROPIC);
+
+  IncludeModel("locstatfbm", PosDefType, 0, 0, 2, XONLY, ISOTROPIC, 
+	       checklsfbm, rangelsfbm, PREF_ALL, INFDIM, false,
+	        MONOTONE); 
+  nickname("lsfbm");
+  kappanames("alpha", REALSXP, "const", REALSXP);
+  addCov(lsfbm, Dlsfbm, DDlsfbm, D3lsfbm, D4lsfbm, Inverselsfbm);
+  Taylor(-1, RF_NA, 0, 0);
+  TailTaylor(-1, RF_NA, 0, 0);
+ 
 
 
   pref_type
@@ -953,7 +962,7 @@ void InitModelList() {
  
    // same as RMcovariate, ausser dass RMcovariate interpoliert
     // und CONSTANT mehrere Saetze von covariaten erlaubt??!!
-  IncludeModel("constant", NegDefType, 0, 0, 1, kappaconstant, XONLY,
+  IncludeModel("constant", PosDefType, 0, 0, 1, kappaconstant, XONLY,
 	       PREVMODELI,
 		 //  PREVMODELD, PREVMODELI, 
 		 //wegen Variogramm berechnung in stat. Fall
@@ -962,6 +971,7 @@ void InitModelList() {
   kappanames("M", REALSXP);  
   addCov(constant, NULL, NULL);
   addCov(nonstatconstant);
+  AddVariant(NegDefType, ISOTROPIC);
   //  AddVariant(TcfType, PREVMODELI);
   //  AddVariant(ShapeType, EARTH_ISOTROPIC);
   //  AddVariant(TcfType, EARTH_ISOTROPIC);
@@ -976,10 +986,13 @@ void InitModelList() {
 		 checkcovariate, rangecovariate, PREF_NOTHING, 
 		 INTERN_SHOW, PARAM_DEP, INFDIM-1, false, NOT_MONOTONE);
   subnames("norm");
-  kappanames(COVARIATE_C_NAME, LISTOF + REALSXP, COVARIATE_X_NAME, VECSXP, 
-	     "raw", INTSXP, COVARIATE_ADDNA_NAME, INTSXP,
-	     INTERNAL_PARAM, REALSXP);
+  kappanames(COVARIATE_C_NAME, LISTOF + REALSXP, 
+	     COVARIATE_X_NAME, VECSXP, 
+	     "raw", INTSXP, 
+	     COVARIATE_ADDNA_NAME, INTSXP,
+	     "factor", REALSXP);
   change_sortof(COVARIATE_X, DONOTVERIFYPARAM);
+  change_sortof(COVARIATE_ADDNA, DONOTRETURNPARAM);
   change_sortof(COVARIATE_FACTOR, TRENDPARAM);
   addCov(covariate, NULL, NULL);
   setptwise(pt_paramdep);
@@ -1184,14 +1197,6 @@ void InitModelList() {
   TailTaylor(-1, RF_NA, 0, 0);
 
  
-  IncludeModel("locstatfbm", PosDefType, 0, 0, 2, XONLY, ISOTROPIC, 
-	       checklsfbm, rangelsfbm, PREF_ALL, INFDIM, false,
-	        MONOTONE); 
-  nickname("lsfbm");
-  kappanames("alpha", REALSXP, "const", REALSXP);
-  addCov(lsfbm, Dlsfbm, DDlsfbm, D3lsfbm, D4lsfbm, Inverselsfbm);
-  Taylor(-1, RF_NA, 0, 0);
-  TailTaylor(-1, RF_NA, 0, 0);
  
 
   IncludePrim("fractgauss", PosDefType, 1, XONLY, ISOTROPIC,
@@ -2404,13 +2409,12 @@ void InitModelList() {
 
   DIRECT = 
     IncludeModel(METHODNAMES[Direct], GaussMethodType, 
-		 1, 1, 2, kappaGProc, XONLY, UNREDUCED,
+		 1, 1, 1, kappaGProc, XONLY, UNREDUCED,
 		 check_directGauss, range_direct, PREF_NOTHING,
 		 false,  SUBMODEL_DEP, INFDIM-1, false, MISMATCH);
-  kappanames("boxcox", REALSXP,
-	     direct[DIRECT_MAXVAR - COMMON_GAUSS - 1], INTSXP);
+  kappanames("boxcox", REALSXP);
   change_sortof(GAUSS_BOXCOX, ANYPARAM);
- RandomShape(2, init_directGauss, do_directGauss);
+  RandomShape(2, init_directGauss, do_directGauss);
 
 
   HYPERPLANE_USER  = 
@@ -2423,8 +2427,9 @@ void InitModelList() {
 	     "mar_param", REALSXP, "additive", INTSXP);
   //  addCov(IdStat, NULL, NULL, IdInverse);
   //  addCov(IdNonStat);
- change_sortof(GAUSS_BOXCOX, ANYPARAM);
+  change_sortof(GAUSS_BOXCOX, ANYPARAM);
   RandomShape(2, struct_extractdollar, init_gaussprocess, do_gaussprocess); 
+
 
   HYPERPLANE_INTERN =   
     CopyModel("hyperIntern", HYPERPLANE_USER, check_hyperplane_intern);
@@ -2470,11 +2475,11 @@ void InitModelList() {
 
  
   SEQUENTIAL = 
-    IncludeModel(METHODNAMES[Sequential], GaussMethodType, 1, 1, 4, kappaGProc, 
+    IncludeModel(METHODNAMES[Sequential], GaussMethodType, 1, 1, 3, kappaGProc, 
 		 XONLY, UNREDUCED,
 		 check_sequential, range_sequential, PREF_NOTHING,  
 		 false, SCALAR, INFDIM-1, false, MISMATCH);
-  kappanames("boxcox", REALSXP,"max_variables", INTSXP, "back_steps", INTSXP, "initial", INTSXP);
+  kappanames("boxcox", REALSXP, "back_steps", INTSXP, "initial", INTSXP);
   change_sortof(GAUSS_BOXCOX, ANYPARAM);
   RandomShape(2, init_sequential, do_sequential);
 

@@ -27,13 +27,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <math.h>
 #include <unistd.h>
  
-#include "auxiliary.h"
 //#include <curses.h>
-#include "RandomFields.h"
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
-#include "RF.h"
 #include <Rdefines.h>
+#include "RF.h"
 
 // important check !!
 #ifndef SCHLATHERS_MACHINE

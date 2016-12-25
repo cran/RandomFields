@@ -39,6 +39,8 @@ RMlsfbm(alpha, const, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
+ \command{\link{RMbcw}} generalizes \command{RMlsfbm} in case of \eqn{c}
+ is given,
  \command{\link{RMfbm}},
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},

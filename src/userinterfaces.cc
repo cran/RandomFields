@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "primitive.h"
 #include "kleinkram.h"
 // #include "Operator.h"
-#include <init_RandomFieldsUtils.h>
 
 
 extern "C" {
@@ -49,6 +48,7 @@ extern "C" {
   //	   double *, rhs, int, rhs_cols, double *, result, double*, logdet, 
   //	   solve_storage*, PT)
   CALL3(int, sqrtPosDef, double *, M, int, size, solve_storage *, pt)
+  CALL3(int, sqrtPosDefFree, double *, M, int, size, solve_storage *, pt)
   CALL3(int, sqrtRHS, solve_storage *, pt, double*, RHS, double *, res)
   CALL2(int, invertMatrix, double *, M, int, size)
   //  CALL2(double, StruveH, double, x, double, nu)
@@ -725,7 +725,7 @@ const char *direct[directN] = {//"root_method", "svdtolerance",
 
 const char * pnugget[pnuggetN] ={"tol"};
 
-const char * sequ[sequN] ={"max_variables", "back_steps", "initial"};
+const char * sequ[sequN] ={"back_steps", "initial"};
 
 const char * spectral[spectralN] = {"sp_lines", "sp_grid",  
 				    "prop_factor", "sigma"};
@@ -1016,9 +1016,9 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
 	     direct[DIRECT_MAXVAR_PARAM], gauss[GAUSS_BEST_DIRECT], 
 	     GLOBAL.gauss.direct_bestvariables);
       }
-
-      if (mv > MAX_DIRECT_MAXVAR) {
-	ERR2("'%s' must be less than or equal to %d.\n", 
+#define MAX_DIRECT_MAXVAR 30000
+      if (mv > MAX_DIRECT_MAXVAR && dp->maxvariables <= MAX_DIRECT_MAXVAR) {
+	WARN2("'%s' should better not exceed %d.\n", 
 	     direct[DIRECT_MAXVAR_PARAM], MAX_DIRECT_MAXVAR);
       }
       dp->maxvariables = mv;
@@ -1039,9 +1039,8 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     sequ_param *sp;
     sp = &(GLOBAL.sequ) ;
     switch(j) {
-    case 0: sp->max = POS0INT;   break;
-    case 1: sp->back = INT; if (sp->back < 1) sp->back=1;   break;
-    case 2: sp->initial = INT; break;
+    case 0: sp->back = INT; if (sp->back < 1) sp->back=1;   break;
+    case 1: sp->initial = INT; break;
     default: BUG;
     }}
     break;
@@ -1622,7 +1621,6 @@ void getRFoptions(SEXP *sublist) {
   i++; {
     k = 0;
     sequ_param *p = &(GLOBAL.sequ);
-    ADD(ScalarInteger(p->max)) /*  does not need Extended here */;
     ADD(ScalarInteger(p->back));    
     ADD(ScalarInteger(p->initial));    
   }

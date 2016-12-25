@@ -193,7 +193,7 @@ RMave <- new('RMmodelgenerator',
 
 
 
-RMbcw <- function(alpha, beta, var, scale, Aniso, proj) {
+RMbcw <- function(alpha, beta, c, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
@@ -201,6 +201,8 @@ RMbcw <- function(alpha, beta, var, scale, Aniso, proj) {
 	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
   if (hasArg('beta') && !is.null(subst <- substitute(beta))) 
 	par.model[['beta']] <- CheckArg(beta, subst, TRUE)
+  if (hasArg('c') && !is.null(subst <- substitute(c))) 
+	par.model[['c']] <- CheckArg(c, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
@@ -222,6 +224,43 @@ RMbcw <- new('RMmodelgenerator',
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'normal mixture',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = Inf,
+	vdim = 1
+	)
+
+
+
+RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
+	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
+  if (hasArg('const') && !is.null(subst <- substitute(const))) 
+	par.model[['const']] <- CheckArg(const, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckProj(proj, subst)
+  model <- new('RMmodel', call = cl, name = 'RMlsfbm', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMlsfbm <- new('RMmodelgenerator',
+	.Data = RMlsfbm,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -578,7 +617,7 @@ RMconstant <- function(M, var) {
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('M') && !is.null(subst <- substitute(M))) 
-	par.model[['M']] <- CheckArg(M, subst, FALSE)
+	par.model[['M']] <- CheckArg(M, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
   model <- new('RMmodel', call = cl, name = 'RMconstant', 
@@ -589,8 +628,8 @@ RMconstant <- function(M, var) {
 
 RMconstant <- new('RMmodelgenerator',
 	.Data = RMconstant,
-	type = c('negative definite'),
-	isotropy = c('parameter dependent'),
+	type = c('positive definite', 'negative definite'),
+	isotropy = c('parameter dependent', 'isotropic'),
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'submodel dependent monotonicity',
@@ -602,7 +641,7 @@ RMconstant <- new('RMmodelgenerator',
 
 
 
-iRMcovariate <- function(norm, c, x, raw, addNA, var, scale, Aniso, proj) {
+iRMcovariate <- function(norm, c, x, raw, addNA, factor, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(norm)) submodels[['norm']] <- norm
@@ -615,6 +654,8 @@ iRMcovariate <- function(norm, c, x, raw, addNA, var, scale, Aniso, proj) {
 	par.model[['raw']] <- CheckArg(raw, subst, TRUE)
   if (hasArg('addNA') && !is.null(subst <- substitute(addNA))) 
 	par.model[['addNA']] <- CheckArg(addNA, subst, TRUE)
+  if (hasArg('factor') && !is.null(subst <- substitute(factor))) 
+	par.model[['factor']] <- CheckArg(factor, subst, TRUE)
     if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
@@ -1211,43 +1252,6 @@ RMfbm <- new('RMmodelgenerator',
 	domain = c('single variable'),
 	operator = FALSE,
 	monotone = 'Bernstein',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = Inf,
-	vdim = 1
-	)
-
-
-
-RMlsfbm <- function(alpha, const, var, scale, Aniso, proj) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
-	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
-  if (hasArg('const') && !is.null(subst <- substitute(const))) 
-	par.model[['const']] <- CheckArg(const, subst, TRUE)
-    if (hasArg('var') && !is.null(subst <- substitute(var))) 
-	par.general[['var']] <- CheckArg(var, subst, TRUE)
-    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
-	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
-    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
-	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
-    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
-	par.general[['proj']] <- CheckProj(proj, subst)
-  model <- new('RMmodel', call = cl, name = 'RMlsfbm', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-RMlsfbm <- new('RMmodelgenerator',
-	.Data = RMlsfbm,
-	type = c('positive definite'),
-	isotropy = c('isotropic'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'monotone',
 	finiterange = FALSE,
 	simpleArguments = TRUE,
 	maxdim = Inf,
@@ -3689,15 +3693,13 @@ RPintrinsic <- new('RMmodelgenerator',
 
 
 
-RPdirect <- function(phi, boxcox, max_variab) {
+RPdirect <- function(phi, boxcox) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('boxcox') && !is.null(subst <- substitute(boxcox))) 
 	par.model[['boxcox']] <- CheckArg(boxcox, subst, FALSE)
-  if (hasArg('max_variab') && !is.null(subst <- substitute(max_variab))) 
-	par.model[['max_variab']] <- CheckArg(max_variab, subst, FALSE)
   
   model <- new('RMmodel', call = cl, name = 'RPdirect', 
   		submodels = submodels, 
@@ -3826,15 +3828,13 @@ RPcoins <- new('RMmodelgenerator',
 
 
 
-RPsequential <- function(phi, boxcox, max_variables, back_steps, initial) {
+RPsequential <- function(phi, boxcox, back_steps, initial) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
   if (hasArg('boxcox') && !is.null(subst <- substitute(boxcox))) 
 	par.model[['boxcox']] <- CheckArg(boxcox, subst, FALSE)
-  if (hasArg('max_variables') && !is.null(subst <- substitute(max_variables))) 
-	par.model[['max_variables']] <- CheckArg(max_variables, subst, FALSE)
   if (hasArg('back_steps') && !is.null(subst <- substitute(back_steps))) 
 	par.model[['back_steps']] <- CheckArg(back_steps, subst, FALSE)
   if (hasArg('initial') && !is.null(subst <- substitute(initial))) 

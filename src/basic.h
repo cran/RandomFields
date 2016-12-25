@@ -58,11 +58,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAXINVERSIONS 2
 
 
-// Formerly in <R_ext/Applic.h>LinkedTo: 
-void fft_factor_(int n, int *pmaxf, int *pmaxp);
-Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
-		  int isn, double *work, int *iwork);/* TRUE: success */
-
 
 
 
@@ -74,5 +69,3 @@ Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
 
 
 #endif /* GSL_VS_R_H */
-
-

@@ -98,13 +98,13 @@ x <- runif(n=pts, min=-1, max=1)
 y <- runif(n=pts, min=-1, max=1)
 data <- as.matrix(RFsimulate(model, x=x, y=y, n=repet, spC = FALSE))
 print(cbind(x, y, data))
-print(unix.time(likeli <- RFlikelihood(model, x, y, data=data)))
+print(system.time(likeli <- RFlikelihood(model, x, y, data=data)))
 str(likeli, digits=8)
 
 L <- 0
 C <- RFcovmatrix(model, x, y)
 for (i in 1:ncol(data)) {
-  print(unix.time(dn <- dmvnorm(data[,i], mean=rep(0, nrow(data)),
+  print(system.time(dn <- dmvnorm(data[,i], mean=rep(0, nrow(data)),
 sigma=C, log=TRUE)))
   L <- L + dn
 }
@@ -125,14 +125,14 @@ x <- seq(0, pi, len=10)
 data <- as.matrix(RFsimulate(model, x=x, n=repet, spC = FALSE))
 print(cbind(x, y, data))
 
-print(unix.time(likeli <- RFlikelihood(model, x, data=data)))
+print(system.time(likeli <- RFlikelihood(model, x, data=data)))
 str(likeli, digits=8)
 
 L <- 0
 tr <- RFfctn(trend, x=x, spC = FALSE)
 C <- RFcovmatrix(model, x)
 for (i in 1:ncol(data)) {
-  print(unix.time(dn <- dmvnorm(data[,i], mean=tr, sigma=C, log=TRUE)))
+  print(system.time(dn <- dmvnorm(data[,i], mean=tr, sigma=C, log=TRUE)))
   L <- L + dn
 }
 print(L)
@@ -157,7 +157,7 @@ for (i in 1:length(pts)) {
                                     n=repet[i], spC = FALSE))
 }
 
-print(unix.time(likeli <- RFlikelihood(model, x, data=data)))
+print(system.time(likeli <- RFlikelihood(model, x, data=data)))
 str(likeli, digits=8)
 
 L <- 0
@@ -165,7 +165,7 @@ for (p in 1:length(pts)) {
   tr <- RFfctn(trend, x=x[[p]]$x, y=x[[p]]$y,spC = FALSE)
   C <- RFcovmatrix(model, x=x[[p]]$x, y=x[[p]]$y)
   for (i in 1:ncol(data[[p]])) {
-    print(unix.time(dn <- dmvnorm(data[[p]][,i], mean=tr, sigma=C,
+    print(system.time(dn <- dmvnorm(data[[p]][,i], mean=tr, sigma=C,
 log=TRUE)))
     L <- L + dn
   }

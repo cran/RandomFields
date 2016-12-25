@@ -160,5 +160,9 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 double scalar(double *A, double *B, int N);
 
 
+/*
+extern "C" void vectordist(double *v, int *dim, double *dist, int *diag); 
+bool is_diag(double *aniso, int dim);
+*/
 
 #endif

@@ -521,7 +521,6 @@ RFplotSimulation <- function(x, y,
     add.units(image.par$names.vdim, x@.RFparams$varunits)
   legends <- image.par$legends
 
-
   if (x.grid) {
     nx.vectors <- min(length(xx), image.par$arrow$nx.vectors)
     thinning <- as.integer( (length(xx)-1) / nx.vectors)
@@ -548,7 +547,7 @@ RFplotSimulation <- function(x, y,
       stop("par()$oma has not been set; 'oma=rep(2,4)' is a good choice.")
   }
 
-  for (m in m.range) {  
+ for (m in m.range) {  
     if (do.avi) {
       fn[m] <- paste(file, "__", formatC(m, width=digits, flag="0",
                                          format="d"), ".png", sep="")
@@ -577,7 +576,7 @@ RFplotSimulation <- function(x, y,
           k <- i[1]
           dv <- "data"
         }
-        
+
         if (graphics$split_screen) {
           screen(image.par$scr.main[ix, jx])
           par(oma=image.par$oma)
@@ -594,7 +593,6 @@ RFplotSimulation <- function(x, y,
           dots$type <- NULL
           dots$col <- if (genuine.image) col else par()$bg
           for (devices in 0:do.avi) {
-            
             plot.return <- do.call(plotmethod,
                                    args=c(dots, list(
                                        x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
@@ -676,7 +674,7 @@ RFplotSimulation <- function(x, y,
               col2 <- col[ cut(y.data[ , idx], breaks=breaks) ]
               dots2 <- dots
               dots2[c("type", "pch", "lty", "col", "bg", "cex", "lwd")] <- NULL
-              addpoints <- function(pch, col, cex) {
+            addpoints <- function(pch, col, cex) {
                 do.call(graphics::plot.xy,
                         args=c(dots2,
                             list(xy=xy.coords(y.coords[, MARGIN[1]],
@@ -684,18 +682,22 @@ RFplotSimulation <- function(x, y,
                                  type="p", pch=pch, lty=1, col=col, bg=NA,
                                  cex=cex, lwd=1)))
               }
+            
+##            save(file="xxx.rda", dots, dots2, xy.coords, y.coords, MARGIN, plot.return,  xx, xy, data.arr, i, m, j, k, image.par,dv, plotmethod)
+
+                  
+            
               if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
-              addpoints(dots$pch, col2, dots$cex) ## causes error in              
+             addpoints(dots$pch, col2, dots$cex) ## causes error in              
             } # not persp
           } # !do.plot.var
-
-           
+    
           if (ix==1 ||
               ((image.par$split.main[1] != nrow(all.i)) &&
                (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
             axis(1, outer=TRUE)#image.par$always.close)
           }
-          if (jx==1 &&
+         if (jx==1 &&
               ((image.par$split.main[2] == length(select.variables)) ||
                ((ix-1) %% image.par$split.main[2] == 0))) # !image.par$always.close || 
             axis(2, outer=TRUE)#image.par$always.close)
@@ -711,7 +713,7 @@ RFplotSimulation <- function(x, y,
           dev.set(filedev)
         }
         dev.set(current)
-      
+    
         if (image.par$legend && ix == 1) {
           if (do.plot.arrows) {
             ## do not merge with ix==1 above !!
@@ -741,7 +743,7 @@ RFplotSimulation <- function(x, y,
         }
       } # ix (rows)
     } # jx
-
+  
      dots.with.main.lab$type <- NULL # woher kommt dieses type??
     dots.with.main.lab$zlab <- NULL
     
@@ -767,7 +769,7 @@ RFplotSimulation <- function(x, y,
       dev.set(current)
     }
   } # m in m.range
-
+  
   if (do.avi) {
     txt <- paste("mencoder -mf fps=30 -ffourcc DX50 -ovc lavc ",
                 " -speed ", speed,

@@ -107,25 +107,6 @@ RFgetMethodNames()
  method.
  }
  
-% \item \code{Markov} Gaussian Random Fields.\cr
-% The method is due to Havard Rue and uses the property that the
-% precision matrix (i.e. the inverse of the covariance matrix)
-% of a Markov Gaussian random field has a small band width.
-%
-% \bold{Note:} This method is only available on Intel Linux systems
-% when installed as follows:\cr
-% 
-% 1. install GMRFLib by Havard Rue from \url{www.math.ntnu.no/~hrue/GMRFsim}
-% 
-% 2. install all external libraries given in GMRFLib/EXTLIBS/
-% (it may happen that precompiled libraries included in your distribution
-% work better)
-%
-% 3. install RandomFields with option --enable-GMRF and 
-% --with-GMRF-lib=LIB_PATH and --with-GMRF-EXT-lib=LIB_PATH 
-% for the path ot GMRFLib and the EXTLIBS, respectively.
-% E.g., \sQuote{R CMD INSTALL RandomFields_* --configure-args="--enable-GMRF --with-GMRF-EXT-lib=/home/schlather/local/lib"}
-
  \item \code{nugget}.\cr
  The method allows for generating a random field of 
  independent Gaussian random variables. In the isotropic case

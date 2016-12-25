@@ -40,11 +40,8 @@ int check_directGauss(cov_model *cov) {
   cov_model *next=cov->sub[0];
   location_type *loc = Loc(cov);
   int j, err ; // taken[MAX DIM],
-  direct_param *gp  = &(GLOBAL.direct); //
-  
+   
   ROLE_ASSERT(ROLE_GAUSS); 
-
-  kdefault(cov, DIRECT_MAXVAR, gp->maxvariables);
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
   if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
       (!loc->distances || cov->xdimprev!=1)) {
@@ -80,16 +77,8 @@ int check_directGauss(cov_model *cov) {
 }
 
 
-
 void range_direct(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
-
-  range->min[DIRECT_MAXVAR] = 0;
-  range->max[DIRECT_MAXVAR] = MAX_DIRECT_MAXVAR; 
-  range->pmin[DIRECT_MAXVAR] = 500;
-  range->pmax[DIRECT_MAXVAR] = 5000;
-  range->openmin[DIRECT_MAXVAR] = false;
-  range->openmax[DIRECT_MAXVAR] = false; 
 }
 
 
@@ -99,7 +88,7 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *Cov=NULL;
   int 
     err = NOERROR,
-    maxvariab = P0INT(DIRECT_MAXVAR);
+    maxvariab = GLOBAL.direct.maxvariables;
   int dim=cov->tsdim;
   direct_storage* s=NULL;
   location_type *loc = Loc(cov);
@@ -123,9 +112,12 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   if ((err = alloc_cov(cov, dim, vdim, vdim)) != NOERROR) return err;
 
+  //  printf("vdimdot %d\n", vdimtot);
+  //   printf("%s \n", KNAME(DIRECT_MAXVAR));
+
   if (vdimtot > maxvariab) {
     GERR4(" '%s' valid only for less than or equal to '%s'=%d data. Got %ld data.",
-	  NICK(cov), KNAME(DIRECT_MAXVAR), maxvariab, vdimtot);
+	  NICK(cov), direct[DIRECT_MAXVAR_PARAM],maxvariab, vdimtot);
   }
   
   //printf("vdim = %d %d %d %d\n", vdim, locpts, vdimtot, vdimSqtotSq); 
@@ -196,24 +188,25 @@ int init_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     //   assert(false); 
   }
    
- /* ********************** */
+  /* ********************** */
   /*  square root of matrix */
   /* ********************** */
-  err = RU_sqrtPosDef(Cov, vdimtot, cov->Ssolve);
-
+  // err = RU_sqrtPosDef(Cov, vdimtot, cov->Ssolve);
+  //   
+  err = RU_sqrtPosDefFree(Cov, vdimtot, cov->Ssolve);
   if (err != NOERROR) {
-    RU_getErrorString(ERRORSTRING);
+     RU_getErrorString(ERRORSTRING);
     goto ErrorHandling;
   }
 
   if ((err = FieldReturn(cov)) != NOERROR) goto ErrorHandling; 
-
+ 
   if ( (s->G = (double *) CALLOC(vdimtot + 1, sizeof(double))) == NULL) {
       err=ERRORMEMORYALLOCATION;  
   }
 
  ErrorHandling: // and NOERROR...
-  FREE(Cov);
+  // Free(Cov);
  
   //printf("init sqrtPosDef emthod %d err=%d\n", cov->Ssolve->method, err);
   return err;
@@ -233,16 +226,18 @@ void do_directGauss(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
     *res = cov->rf;  
   // bool  vdim_close_together = GLOBAL.general.vdim_close_together;
 
-  //printf("do sqrtPosDef emthod %d\n", cov->Ssolve->method);
-
+  //  printf("do sqrtPosDef emthod %d\n", cov->Ssolve->method);
+  
+  
   SAVE_GAUSS_TRAFO;
   G = s->G;// only the memory space is of interest (stored to avoid 
   //          allocation errors here)
+
   for (int i=0; i<vdimtot; i++) G[i] = GAUSS_RANDOM(1.0);  
 
   //  printf("vdimtot = %d\n", vdimtot);
 
-  RU_sqrtRHS(cov->Ssolve, G, res);
+   RU_sqrtRHS(cov->Ssolve, G, res);
 
   //res[0]res[1]=res[2]=1;
   //  printf("done vdimtot = %d\n", vdimtot);

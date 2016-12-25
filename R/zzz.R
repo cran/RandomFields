@@ -33,10 +33,13 @@
 }
 
 .onAttach <- function (lib, pkg) {
-  packageStartupMessage("This is RandomFields Version: 3.1.24");
+  packageStartupMessage("This is RandomFields Version: 3.1.36");
 }
 
 .onDetach <- function(lib) {
+## do not use the following commmands in .onDetach!
+#  RFoptions(storing=FALSE) ## delete everything
+#  .C("detachRFoptionsRandomFields", package="RandomFields")
 }
 
 .onUnload <- function(lib, pkg){

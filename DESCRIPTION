@@ -1,10 +1,10 @@
 Package: RandomFields
-Version: 3.1.24.1
+Version: 3.1.36
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Christoph Berreth [ctr], Katharina Burmeister [ctb], Juliane Manitz [ctb], Paulo Ribeiro [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
 LinkingTo: RandomFieldsUtils
-Depends: R (>= 3.0.2), sp, RandomFieldsUtils (>= 0.3.3)
+Depends: R (>= 3.0.2), sp, RandomFieldsUtils (>= 0.3.15)
 Imports: graphics, methods, grDevices, stats, utils
 Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
         tkrplot, spam, tools, geoR, minqa, soma, optimx, nloptr, pso,
@@ -12,7 +12,7 @@ Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
 Description: Methods for the inference on and the simulation of Gaussian fields are provided, as well as methods for the simulation of extreme value random fields.
 License: GPL (>= 3)
 URL: http://ms.math.uni-mannheim.de/de/publications/software
-Packaged: 2016-10-11 13:27:49 UTC; hornik
+Packaged: 2016-12-25 17:26:15 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2016-10-11 18:32:27
+Date/Publication: 2016-12-25 23:37:21

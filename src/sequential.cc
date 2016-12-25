@@ -25,15 +25,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 #include <stdlib.h>
 #include <R_ext/Lapack.h>
-
 #include "RF.h"
 #include "shape_processes.h"
 #include "Coordinate_systems.h"
 //#include <R_ext/Linpack.h>
 
-#define SEQU_MAX (COMMON_GAUSS + 1)
-#define SEQU_BACK (COMMON_GAUSS + 2)
-#define SEQU_INIT (COMMON_GAUSS + 3)
+#define SEQU_BACK (COMMON_GAUSS + 1)
+#define SEQU_INIT (COMMON_GAUSS + 2)
 
 
 bool debugging = true;
@@ -51,8 +49,7 @@ int check_sequential(cov_model *cov) {
   if (!loc->grid && !loc->Time) 
     SERR1("'%s' only possible if at least one direction is a grid", NICK(cov));
 
-  kdefault(cov, SEQU_MAX, gp->max);
-  kdefault(cov, SEQU_BACK, gp->back);
+   kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
  
@@ -73,13 +70,6 @@ int check_sequential(cov_model *cov) {
 
 void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
-
-  range->min[SEQU_MAX] = 0;
-  range->max[SEQU_MAX] = RF_INF;
-  range->pmin[SEQU_MAX] = 100;
-  range->pmax[SEQU_MAX] = 8000;
-  range->openmin[SEQU_MAX] = false;
-  range->openmax[SEQU_MAX] = true; 
 
   range->min[SEQU_BACK] = 0;
   range->max[SEQU_BACK] = RF_INF;
@@ -113,7 +103,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     dim = cov->tsdim,
     spatialdim = dim - 1,
     vdim = next->vdim[0],
-    max = P0INT(SEQU_MAX),
+    max = GLOBAL.direct.maxvariables,
     back= P0INT(SEQU_BACK), 
     initial= P0INT(SEQU_INIT);
   assert(dim == loc->timespacedim);
@@ -165,8 +155,9 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
       goto ErrorHandling;   
   }
   
-  if (totpnts > max)
-    GERR6("'%s' valid only if the number of lcoations is less than '%s' (=%d) . Got %d * %ld = %ld.", NICK(cov), KNAME(SEQU_MAX), max, back, spatialpnts, totpnts);
+  if (totpnts > max) // (totpnts * vdim > max)
+    GERR6("'%s' valid only if the number of lcoations is less than '%s' (=%d) . Got %d * %ld = %ld.", NICK(cov), direct[DIRECT_MAXVAR_PARAM],
+	  max, back, spatialpnts, totpnts);
    
  if (timelength <= back) {
     GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",

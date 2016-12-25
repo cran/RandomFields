@@ -354,7 +354,11 @@ RFratiotest <-
   } else if (missing(alternative) || (class(alternative) %in% classes))
     stop("alternative model is not given or not of model type")
 
-  
+  if (exists(".Random.seed")) {
+    old.seed <- .Random.seed
+    on.exit(.Random.seed <<- old.seed, add = TRUE)
+  }
+
   if (!is.null(seed) && !is.na(seed)) set.seed(seed)
   else if (!is.na(RFopt$basic$seed)) {
     if (printlevel >= PL_IMPORTANT)

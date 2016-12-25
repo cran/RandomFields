@@ -538,7 +538,7 @@ CheckXT <- function(x, y=NULL, z=NULL, T=NULL, grid, distances=NULL,
     if (grid && !is.GridTopology) {
       if (gridtriple <- len==3) {
         if (printlevel >= PL_SUBIMPORTANT && RFopt$internal$warn_oldstyle) {
-          message("x was interpreted as a gridtriple; the new gridtriple notation is:\n  1st row of x is interpreted as starting values of sequences,\n  2nd row as step,\n 3rd row as number of points (i.e. length),\n  in each of the ", ncol(x), " directions.")
+          message("x was interpreted as a gridtriple; the new gridtriple notation is:\n  1st row of x is interpreted as starting values of sequences,\n  2nd row as step,\n  3rd row as number of points (i.e. length),\n  in each of the ", ncol(x), " directions.")
         } 
       } else len <- rep(len, times=spatialdim)   # Alex 8.10.2011
     }
@@ -1163,14 +1163,16 @@ StandardizeData <- function(model,
   restotal <- sapply(neu, function(x) x$restotal)
   ldata <- sapply(data, length)
 
+ 
+  if (!missing(model)) {
+    prepmodel <- PrepareModel2(model=model, ..., x=trafo.to.C_CheckXT(neu))
+  }
 
-  
   if (length(vdim) == 0) {
     if (all(sapply(data, function(x) is.vector(x) || ncol(x) == 1)))
       vdim <- 1
     else if (!missing(model)) {
-      vdim <- rfInit(list("Cov", PrepareModel2(model=model, ...,
-                                               x=trafo.to.C_CheckXT(neu))),
+      vdim <- rfInit(list("Cov", prepmodel),
                      x=x, y=y, z=z, T=T, grid=grid, distances=distances,
                      dim=dim, reg=MODEL_AUX, dosimulate=FALSE)[1]
     } else vdim <- NA
@@ -1184,8 +1186,7 @@ StandardizeData <- function(model,
   RFoptions(internal.examples_reduced=RFopt$internal$examples_red)
   return(list(
       ## coord = expandiertes neu # #
-      model = if (missing(model)) NULL else
-              PrepareModel2(model, ..., x=trafo.to.C_CheckXT(neu)),
+      model = if (missing(model)) NULL else prepmodel,
       orig.model = if (missing(model)) NULL else model,
       data=data, dimdata=dimdata, isRFsp = isRFsp,
       RFsp.coord = RFsp.coord,

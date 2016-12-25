@@ -139,6 +139,9 @@ buildCovList <- function(model, x=NULL) {
     stop('model must be of class ZF_MODEL') 
 
   if (model@name==ZF_COORD) model@name <- ZF_MIXED[1]
+
+
+#  Print(model@name, model@par.model[model@par.model != ZF_DEFAULT_STRING], model@submodels, lapply(model@par.model[model@par.model != ZF_DEFAULT_STRING], FUN=buildCovList, x=x))
   
   li <- c(list(model@name),
           lapply(model@par.model[model@par.model != ZF_DEFAULT_STRING],
@@ -146,14 +149,17 @@ buildCovList <- function(model, x=NULL) {
           lapply(model@submodels,
                  FUN=buildCovList, x=x)
           )
+
+  
   if (li[[1]] == ZF_PLUS[1]) li[[1]] <- ZF_SYMBOLS_PLUS
   if (li[[1]] == ZF_MULT[1]) li[[1]] <- ZF_SYMBOLS_MULT
-  if (li[[1]] == ZF_COVARIATE && length(x) > 0 &&
-      all(names(li) != "x")) {
-    li$x <- x
-  }
-  
-  
+#  if (li[[1]] == ZF_COVARIATE && length(x) > 0 &&
+#      all(names(li) != "x")) {
+#    li$x <- x
+#  }
+
+
+ 
   ##  par.general.is.default <-
   ##    unlist(lapply(model@par.general, FUN=function(x) x==ZF_DEFAULT_STRING))
   if (length(model@par.general)>0 &
@@ -300,7 +306,8 @@ buildFactorList <- function(summand, ..., x=x) { #, last)
   ##  Print(summand, factorsNr, isFormalCovModel(factorA), factorA)
 
   ## do we have a mixed model
-  X <- catch(factorA, ...)    
+  X <- catch(factorA, ...)
+
   if (!(factorsNr == 1 && isFormalCovModel(factorA))) {# && last))
     if (factorsNr == 1) {
       #str(X)

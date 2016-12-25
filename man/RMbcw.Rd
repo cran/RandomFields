@@ -6,7 +6,8 @@
   \command{\link{RMbcw}} is a variogram model
   that bridges between some intrinsically stationary isotropic processes
   and some stationary ones. It reunifies the
-  \link{RMgenfbm}, \link{RMdewijsian} and \link{RMgencauchy}.
+  \command{\link{RMgenfbm}} \sQuote{b}, \command{\link{RMgencauchy}} \sQuote{c}
+  and \command{\link{RMdewijsian}} \sQuote{w}.
 
  The corresponding centered semi-variogram only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between two points and is given by
@@ -16,11 +17,13 @@
  where \eqn{\alpha \in (0,2]}{0 < \alpha \le 2} and \eqn{beta \le 2}{\beta <= 2}.\cr
 }
 \usage{
-RMbcw(alpha, beta, var, scale, Aniso, proj)
+RMbcw(alpha, beta, c, var, scale, Aniso, proj)
 }
 \arguments{
  \item{alpha}{a numerical value; should be in the interval (0,2].}
  \item{beta}{a numerical value; should be in the interval (-infty,2].}
+ \item{c}{only for experts. If given, a not necessariy positive definite
+ function \eqn{c-\gamma(r)} is built.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  variogram remains unmodified.}
@@ -54,12 +57,14 @@ RMbcw(alpha, beta, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
- \command{\link{RMgenfbm}},
- \command{\link{RMgencauchy}},
- \command{\link{RMdewijsian}},
- \command{\link{RMmodel}},
- \command{\link{RFsimulate}},
- \command{\link{RFfit}}.
+  \command{\link{RMlsfbm}} is equipped with Matheron's constant \eqn{c} for
+  the fractional brownian motion,
+  \command{\link{RMgenfbm}},
+  \command{\link{RMgencauchy}},
+  \command{\link{RMdewijsian}},
+  \command{\link{RMmodel}},
+  \command{\link{RFsimulate}},
+  \command{\link{RFfit}}.
 }
 
 
