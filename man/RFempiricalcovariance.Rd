@@ -1,16 +1,25 @@
-\name{RFempiricalvariogram}
-\alias{RFempiricalvariogram}
-\title{Empirical (Cross-)Variogram}
+\name{RFempiricalcovariance}
+\alias{RFempiricalcovariance}
+\title{Empirical (Cross-)Covariance function}
 \description{
- Calculates the empirical (cross-)variogram. The empirical
- (cross-)variogram of two random fields \eqn{X}{X} and \eqn{Y}{Y} is given by 
- \deqn{\gamma(r):=\frac{1}{2N(r)} \sum_{(t_{i},t_{j})|t_{i,j}=r} (X(t_{i})-X(t_{j}))(Y(t_{i})-Y(t_{j}))}{\gamma(r):=1/2N(r) \sum_{(t_{i},t_{j})|t_{i,j}=r} (X(t_{i})-X(t_{j}))(Y(t_{i})-Y(t_{j}))}
-where \eqn{t_{i,j}:=t_{i}-t_{j}}{t_{i,j}:=t_{i}-t_{j}}, and where \eqn{N(r)}{N(r)} denotes the number of pairs of data points with distancevector 
+ Calculates the empirical (cross-)covariance function. The empirical
+ (cross-)covariance function of two random fields \eqn{X}{X} and \eqn{Y}{Y} is given by 
+ \deqn{\gamma(r):=\frac{1}{N(r)} \sum_{(t_{i},t_{j})|t_{i,j}=r}
+   (X(t_{i})Y(t_{j})) - m_{X} m_{Y}}{\gamma(r):=1/N(r)
+   \sum_{(t_{i},t_{j})|t_{i,j}=r} (X(t_{i})Y(t_{j})) - m_{X} m_{Y}}
+where \eqn{t_{i,j}:=t_{i}-t_{j}}{t_{i,j}:=t_{i}-t_{j}}, \eqn{N(r)}{N(r)}
+denotes the number of pairs of data points with distancevector
+\eqn{t_{i,j}=r}{t_{i,j}=r} and where
+\eqn{m_{X} := \frac{1}{N(r)} \sum_{(t_{i},t_{j})|t_{i,j}=r}
+  X_{t_{i}}}{m_{X} := \frac{1}{N(r)} \sum_{(t_{i},t_{j})|t_{i,j}=r}
+  X_{t_{i}}} and \eqn{m_{Y} := \frac{1}{N(r)} \sum_{(t_{i},t_{j})|t_{i,j}=r}
+  Y_{t_{i}}}{m_{Y} := 1/N(r) \sum_{(t_{i},t_{j})|t_{i,j}=r}
+  Y_{t_{i}}} denotes the mean of data points with distancevector
 \eqn{t_{i,j}=r}{t_{i,j}=r}. 
 
 }
 \usage{
-RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
+RFempiricalcovariance(x, y = NULL, z = NULL, T = NULL, data, grid,
  bin=NULL, phi=NULL, theta=NULL, deltaT=NULL, distances, vdim, ...)
 }
 \arguments{
@@ -52,7 +61,7 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
  
  } 
  \item{bin}{a vector giving the borders of the bins; If not specified
- an array describing the empirical (pseudo-)(cross-) variogram 
+ an array describing the empirical (pseudo-)(cross-) covariance function 
  in every direction is returned.}
  \item{phi}{an integer defining the number of sectors one half of the
  X/Y plane shall be devided into. If not specified, either an array is
@@ -79,8 +88,8 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
  \item{...}{further options and control arguments for the simulation
  that are passed to and processed by \command{\link{RFoptions}}.}
 }
-\details{ \command{\link{RFempiricalvariogram}} computes the empirical
- cross-variogram for given (multivariate) spatial data. 
+\details{ \command{\link{RFempiricalcovariance}} computes the empirical
+ cross-covariance function for given (multivariate) spatial data. 
 
  
  The spatial coordinates \code{x}, \code{y}, \code{z}
@@ -94,12 +103,12 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
  As advanced option the calculation method can also be changed for grid
  data (see \command{\link{RFoptions}}.)
  
- It is also possible to use \command{\link{RFempiricalvariogram}} to calulate
- the pseudovariogram (see \command{\link{RFoptions}}).
+ It is also possible to use \command{\link{RFempiricalcovariance}} to calulate
+ the pseudocovariance function (see \command{\link{RFoptions}}).
 
 }
 \value{
- \command{\link{RFempiricalvariogram}} returns objects of class
+ \command{\link{RFempiricalcovariance}} returns objects of class
  \command{\link[=RFempVariog-class]{RFempVariog}}. 
 }
 \references{
@@ -112,7 +121,8 @@ RFempiricalvariogram(x, y = NULL, z = NULL, T = NULL, data, grid,
  }
 
 
-\author{
+ \author{
+Jonas Auel, \email{jauel@mail.uni-mannheim.de}
 Sebastian Engelke, \email{sebastian.engelke@unil.ch}
 Johannes Martini, \email{jmartin2@uni-goettingen.de}
 Martin Schlather, \email{schlather@math.uni-mannheim.de}
@@ -120,12 +130,12 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
  
 \seealso{
+  \command{\link{RFempiricalvariogram}}
+  \command{\link{RFempiricalmadogram}}
  \command{\link{RMstable}},
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
- \command{\link{RFempiricalcovariance}}
- \command{\link{RFempiricalmadogram}}
 }
 
 \examples{
@@ -138,7 +148,7 @@ n <- 1 ## use n <- 2 for better results
 model <- RMexp()
 x <- seq(0, 10, 0.02)
 z <- RFsimulate(model, x=x, n=n)
-emp.vario <- RFempiricalvariogram(data=z)
+emp.vario <- RFempiricalcovariance(data=z)
 plot(emp.vario, model=model)
 
 
@@ -146,7 +156,7 @@ plot(emp.vario, model=model)
 model <- RMexp(Aniso=cbind(c(2,1), c(1,1)))
 x <- seq(0, 10, 0.05)
 z <- RFsimulate(model, x=x, y=x, n=n)
-emp.vario <- RFempiricalvariogram(data=z, phi=4)
+emp.vario <- RFempiricalcovariance(data=z, phi=4)
 plot(emp.vario, model=model)
 
 
@@ -155,7 +165,7 @@ model <- RMnsst(phi=RMexp(), psi=RMfbm(alpha=1), delta=2)
 x <- seq(0, 10, 0.05)
 T <- c(0, 0.1, 100)
 z <- RFsimulate(x=x, T=T, model=model, n=n)
-emp.vario <- RFempiricalvariogram(data=z, deltaT=c(10, 1))
+emp.vario <- RFempiricalcovariance(data=z, deltaT=c(10, 1))
 plot(emp.vario, model=model, nmax.T=3)
 
 
@@ -164,7 +174,7 @@ model <- RMbiwm(nudiag=c(1, 2), nured=1, rhored=1, cdiag=c(1, 5),
                 s=c(1, 1, 2))
 x <- seq(0, 20, 0.1)
 z <- RFsimulate(model, x=x, y=x, n=n)
-emp.vario <- RFempiricalvariogram(data=z)
+emp.vario <- RFempiricalcovariance(data=z)
 plot(emp.vario, model=model)
 
 
@@ -173,7 +183,7 @@ model <- RMbiwm(A=matrix(c(1,1,1,2), nc=2),
                 nudiag=c(0.5,2), s=c(3, 1, 2), c=c(1, 0, 1))
 x <- seq(0, 20, 0.1)
 data <- RFsimulate(model, x, x, n=n)
-ev <- RFempiricalvariogram(data=data, phi=4)
+ev <- RFempiricalcovariance(data=data, phi=4)
 plot(ev, model=model, boundaries=FALSE)
 
 

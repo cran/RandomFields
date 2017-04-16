@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017  Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -121,7 +121,7 @@ void logEarth2Gnomonic(double *x, double *y, cov_model *cov, double *v,
 		     double *Sign);
 
 
-#define Mod(ZZ, modulus) ((ZZ) - floor((ZZ) / (modulus)) * (modulus))
+#define Mod(ZZ, modulus) ((ZZ) - FLOOR((ZZ) / (modulus)) * (modulus))
 double mod(double x, double modulus);
 double lonmod(double x, double modulus); 
 double latmod(double x, double modulus);

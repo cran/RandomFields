@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2017  Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -326,7 +326,7 @@ EmpiricalVariogram <-
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
   
   RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=grid,
-                       bin=bin, phi=phi, theta=theta, deltaT=deltaT)
+                       bin=bin, phi=phi, theta=theta, deltaT=deltaT, vdim=1)
 }
 
 

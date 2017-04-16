@@ -78,6 +78,7 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
 \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
 }
 \seealso{
+  \command{\link{RMbistable}},
  \command{\link{RMexp}},
  \command{\link{RMgauss}},
  \command{\link{RMmodel}},

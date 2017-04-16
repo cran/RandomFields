@@ -26,11 +26,11 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
+  
 
-
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "RF.h"
 #include "shape_processes.h"
 #include "Coordinate_systems.h"
@@ -63,7 +63,7 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
 
    for (i = 0; i<dim; i++) {
      if (m[i] > 1) {
-       fft_factor_(m[i], &maxf, &maxp);
+       fft_factor(m[i], &maxf, &maxp);
        if (maxf == 0) {GERR("fft factorization failed")}	
        if (maxf > maxmaxf) maxmaxf = maxf;
        if (maxp > maxmaxp) maxmaxp = maxp;
@@ -89,8 +89,8 @@ int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
       nspn *= n;
       n = m[i];
       nseg /= n;
-      fft_factor_(n, &maxf, &maxp);
-      ok = (bool) fft_work_(&(data[0]), &(data[1]), nseg, n, nspn, inv, 
+      fft_factor(n, &maxf, &maxp);
+      ok = (bool) fft_work(&(data[0]), &(data[1]), nseg, n, nspn, inv, 
 		      FFT->work, FFT->iwork);
       if (!ok) GERR("error within Fourier transform");
     }
@@ -227,20 +227,20 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
 
   for (i=0;i<dim;i++) { // size of matrix at the beginning  
     double hilfsm_d;
-    if (fabs(mmin[i % lenmmin]) > 10000.0) {     
+    if (FABS(mmin[i % lenmmin]) > 10000.0) {     
       GERR1("maximimal modulus of mmin is 10000. Got %f", mmin[i % lenmmin]);
     }
     hilfsm_d = (double) s->nn[i];
     if (mmin[i % lenmmin]>0.0) {
-      if (hilfsm_d > (1 + (int) ceil(mmin[i % lenmmin])) / 2) { // plus 1 since 
+      if (hilfsm_d > (1 + (int) CEIL(mmin[i % lenmmin])) / 2) { // plus 1 since 
 	// mmin might be odd; so the next even number should be used
         GERR3("Minimum size in direction %d is %f. Got %f\n",
-	      (int) i, hilfsm_d, ceil(mmin[i % lenmmin]));
+	      (int) i, hilfsm_d, CEIL(mmin[i % lenmmin]));
       }
-      hilfsm_d = (double) ( (1 + (int) ceil(mmin[i % lenmmin])) / 2);
+      hilfsm_d = (double) ( (1 + (int) CEIL(mmin[i % lenmmin])) / 2);
     } else if (mmin[i % lenmmin] < 0.0) {
       assert(mmin[i % lenmmin] <= -1.0);
-      hilfsm_d = ceil((double) hilfsm_d * - mmin[i % lenmmin]);
+      hilfsm_d = CEIL((double) hilfsm_d * - mmin[i % lenmmin]);
     }
     if (hilfsm_d >=  MAXINT) return ERRORMEMORYALLOCATION;
     if (useprimes) {
@@ -249,9 +249,10 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
       //       guarantee that the result is even even if the input is even !
 	 hilfsm_d = 2.0 * NiceFFTNumber((int) hilfsm_d);
     } else {
-      hilfsm_d = multivariate
-	  ? round(pow(3.0, 1.0 + ceil(log(hilfsm_d) / LOG3 - EPSILON1000)))
-       : pow(2.0, 1.0 + ceil(log(hilfsm_d) * INVLOG2 -EPSILON1000));
+      hilfsm_d =ROUND(multivariate
+		      ? POW(3.0, 1.0 + CEIL(LOG(hilfsm_d) / LOG3 - EPSILON1000))
+		      : POW(2.0, 1.0 + CEIL(LOG(hilfsm_d) *INVLOG2-EPSILON1000))
+		      );
     }
     if (hilfsm_d >=  MAXINT) return ERRORMEMORYALLOCATION;
     hilfsm[i] = (int) hilfsm_d;
@@ -483,7 +484,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     if (vdim==1) { // in case vdim==1, the eigenvalues we need are already contained in c[0]
       for(i = 0; i<mtot; i++) {
 	Lambda[0][i] = c[0][2*i];
-	s->positivedefinite &= fabs(c[0][2*i+1]) <= tolIm;
+	s->positivedefinite &= FABS(c[0][2*i+1]) <= tolIm;
 	c[0][2*i] = 1.0;
 	c[0][2*i+1] = 0.0;
       }
@@ -500,7 +501,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    index1 = vdim * k + l;
 	    if(l>=k) { 
 	      index2=index1; Sign=1;
-	      s->positivedefinite &= k!=l || fabs(c[index2][twoi_plus1])<=tolIm;
+	      s->positivedefinite &= k!=l || FABS(c[index2][twoi_plus1])<=tolIm;
 	      //	      c[index2][twoi_plus1].r = 0.0; ?!!!
 	    }  // obtain lower triangular bit of c as well with
 	    else{ index2= vdim * l + k; Sign=-1;}  // (-1) times imaginary part of upper triangular bit
@@ -686,7 +687,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	      cc=0;
 	      COV(hx, next, tmp);
-	      for(l=0; l<vdimSQ; l++) cc += fabs(tmp[l]);
+	      for(l=0; l<vdimSQ; l++) cc += FABS(tmp[l]);
 	      //if (PL>2) { LPRINT("%d cc=%e (%e)",i,cc,hx[i]); }
 	      if (cc>maxcc) {
 		maxcc = cc;
@@ -721,7 +722,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     for(i=0,twoi=0;i<mtot;i++) {
       twoi_plus1 = twoi+1;
       for(l=0;l<vdim;l++) {
-	if(Lambda[l][i] > 0.0) Lambda[l][i] = sqrt(Lambda[l][i]);
+	if(Lambda[l][i] > 0.0) Lambda[l][i] = SQRT(Lambda[l][i]);
 	else {
 	  if(Lambda[l][i] < r) r = Lambda[l][i];
 	  Lambda[l][i] = 0;
@@ -1056,10 +1057,10 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   //bool *xx; xx = (bool*) MALLOC(sizeof(bool) * mtot);
   //for (i=0; i<mtot;i++) xx[i]=true;
   
-  invsqrtmtot = 1.0 / sqrt((double) mtot);
+  invsqrtmtot = 1.0 / SQRT((double) mtot);
 
   if (PL>=PL_STRUCTURE) { LPRINT("Creating Gaussian variables... \n"); }
-  /* now the Gaussian r.v. have to defined and multiplied with sqrt(FFT(c))*/
+  /* now the Gaussian r.v. have to defined and multiplied with SQRT(FFT(c))*/
 
   for (i=0; i<dim; i++) {
     index[i]=0; 
@@ -1219,7 +1220,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
 
   /* now we correct the result of the fastfourier transformation
-     by the factor 1/sqrt(mtot) and read the relevant matrix out of 
+     by the factor 1/SQRT(mtot) and read the relevant matrix out of 
      the large vector c */
   for(i=0; i<dim; i++) {
     index[i] = start[i] = s->cur_square[i] * s->square_seg[i];
@@ -1322,7 +1323,7 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
     if (err!=NOERROR) { err=-err;  goto ErrorHandling; }
     ev0 = -1;
     for (i=0; i<dim; i++) {
-      if (fabs(D[i]) <= EIGENVALUE_EPS) {
+      if (FABS(D[i]) <= EIGENVALUE_EPS) {
 	if (ev0==-1) ev0=i;
 	else {
 	  GERR("anisotropy matrix must have full rank")
@@ -1340,7 +1341,7 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
       //	       V[ev0 + i], aniso[k + i * dim], V[ev0 + i] / aniso[k + i * dim]);
       grid_ext[k] += V[ev0 + i] * aniso[k + i * dim];
     }
-    grid_ext[k] = fabs(grid_ext[k]);
+    grid_ext[k] = FABS(grid_ext[k]);
   }
   FREE(V);
   FREE(s);
@@ -1419,7 +1420,7 @@ int check_local_proc(cov_model *cov) {
     }
      
     if ((err = CHECK(sub, dim,  dim, ProcessType, KERNEL, CARTESIAN_COORD, 
-		     SCALAR, ROLE_GAUSS)) != NOERROR) {
+		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
       return err;
     }
     if (intern == cov) { // all the other parameters are not needed on the 
@@ -1429,12 +1430,12 @@ int check_local_proc(cov_model *cov) {
     }
   } else {
     if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : VariogramType,
-		     XONLY, ISOTROPIC, SCALAR, ROLE_COV))
+		     XONLY, ISOTROPIC, SUBMODEL_DEP, ROLE_COV))
 	!= NOERROR) {
       if (isDollar(next) && PARAM(next, DANISO) != NULL) {
 	// if aniso is given then xdimprev 1 does not make sense
 	err = CHECK(sub, dim, dim, cutoff ? PosDefType : VariogramType,
-		    XONLY, ISOTROPIC, SCALAR, ROLE_COV);
+		    XONLY, ISOTROPIC, SUBMODEL_DEP, ROLE_COV);
       }
       // 
       if (err != NOERROR) return err;
@@ -1447,6 +1448,7 @@ int check_local_proc(cov_model *cov) {
 
   // no setbackward ?!
   setbackward(cov, sub); 
+  cov->vdim[0] = cov->vdim[1] = sub->vdim[0];
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
   
   return NOERROR;
@@ -1526,7 +1528,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
   assert(cov->vdim[0] == cov->vdim[1]);
   err = CHECK(key, cov->tsdim, cov->xdimprev,
 	      GaussMethodType,
-	      cov->domown, cov->isoown, cov->vdim[0], ROLE_GAUSS);
+              cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS); 
   if ((err < MSGLOCAL_OK && err != NOERROR) 
       || err >=MSGLOCAL_ENDOFLIST // 30.5.13 : neu
       ) {
@@ -1578,7 +1580,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
   //printf("A end local err %d\n", err);
   
   if (cov->nr == CE_INTRINPROC_INTERN) {
-    sqrt2a2 = sqrt(2.0 * q[INTRINSIC_A2]); // see Stein (2002) timespacedim * cncol
+    sqrt2a2 = SQRT(2.0 * q[INTRINSIC_A2]); // see Stein (2002) timespacedim * cncol
     if (loc->caniso == NULL) {
       if ((s->correction = MALLOC(sizeof(double)))==NULL) {
 	err = ERRORMEMORYALLOCATION;
@@ -1645,9 +1647,64 @@ int struct_ce_local(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
 
 
 void do_circ_embed_cutoff(cov_model *cov, gen_storage *S) {  
-  // localCE_storage *s = (localCE_storage*) cov->SlocalCE;
-  // assert(s->correction == NULL);
-  do_circ_embed(cov->key, S);
+    double   *res = cov->rf;
+    cov_model *sub = cov;
+    for (int i=0; i<2; i++) sub =  sub->key != NULL ? sub->key : sub->sub[0];
+    //    long index[MAXCEDIM], r;
+    location_type *loc = Loc(cov);
+    int // k, row = loc->timespacedim,
+      vdim =cov->vdim[0];
+    long totpts = loc->totalpoints;
+
+
+    // printf("--- \n \n do_circ_embed_cutoff \n \n  ---");
+    //PMI(sub);
+    localCE_storage *s = sub->SlocalCE;
+
+
+    // PMI(sub);
+
+
+    /*
+    printf( "\n s->is_multivariate_cutoff = %d \n", s->is_multivariate_cutoff);//
+
+    printf("\n -------------  s->q[0][CUTOFF_CONSTANT]  = %f, C12 = %f, C22 =%f  \n ",  s->q[0][CUTOFF_CONSTANT] , c12, c22);//
+    printf("\n ------------- C11*C22 - C12*C12 = %f,   \n ", c11*c22 - c12*c12);//
+    printf("\n ------------- x[0] = %f, x[1] =%f  \n ", x[0], x[1]);//
+    printf("\n -------------  s->q[0][CUTOFF_R]  = %f  \n ",  s->q[0][CUTOFF_R] );//
+*/
+
+    do_circ_embed(cov->key, S);
+
+    if (s->is_bivariate_cutoff) {
+
+        double normal1 = GAUSS_RANDOM(1.0), normal2 = GAUSS_RANDOM(1.0),
+                c11 = s->q[0][CUTOFF_CONSTANT], c12 = s->q[1][CUTOFF_CONSTANT],
+                c22 = s->q[3][CUTOFF_CONSTANT],
+                x[2];
+
+        if (c22*c11 - c12*c12 < 0 ) ERR("\n Cannot simulate field with cutoff, matrix of constants is not pos def \n ");
+        x[0] = SQRT( -c11)*normal1 ;
+        x[1] = -c12/SQRT(-c11)*normal1 + SQRT(-c22 + c12*c12/c11 )*normal2;
+
+        if (GLOBAL.general.vdim_close_together) {
+            //one location two values
+            for (int i = 0; i < totpts; i++)  {
+                for (int j = 0; j < vdim; j++)  {
+                    res[i*vdim + j] += x[j];
+                }
+            }
+        } else {
+            // the first field, the second field
+            for (int j = 0; j < vdim; j++)  {
+                for (int i = 0; i < totpts; i++)  {
+                    res[i+j*totpts] += x[j];
+                }
+            }
+
+        }
+    }
+
 }
 
 void kappa_localproc(int i, cov_model *cov, int *nr, int *nc){
@@ -1796,7 +1853,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
       if (size > maxgridsize) size = maxgridsize;
       for (k=d=0; d<spatialdim; d++, k+=3) {
 	x[k+XSTART] = min[d];
-	x[k+XLENGTH] = (int) pow(size, 1.0 / (double) spatialdim);
+	x[k+XLENGTH] = (int) POW(size, 1.0 / (double) spatialdim);
 	x[k+XSTEP] = (max[d] - min[d]) / (x[k+XLENGTH] - 1.0);
       }
     } else {
@@ -1872,7 +1929,7 @@ int init_ce_approx(cov_model *cov, gen_storage *S) {
     int dummy;    
     for (dummy = d = 0; d<spatialdim; d++, xx++) {
       dummy += cumgridlen[d] *
-	(int) round((*xx - keyloc->xgr[d][XSTART]) / keyloc->xgr[d][XSTEP]);
+	(int) ROUND((*xx - keyloc->xgr[d][XSTART]) / keyloc->xgr[d][XSTEP]);
     }    
     idx[i] = dummy;
     assert(dummy >= 0);

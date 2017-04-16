@@ -5,7 +5,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017  Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -105,7 +105,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   }									\
   if (kernel && !ygiven && PL > 0) {					\
     char wrn[200]; 				\
-    sprintf(wrn, "'%s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov)); \
+    SPRINTF(wrn, "'%s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov)); \
     warning(wrn);							\
   }
  

@@ -6,7 +6,7 @@
  simulation of Brown-Resnick processes
 
  Copyright (C) 2009 -- 2010 Martin Schlather 
- Copyright (C) 2011 -- 2015 Marco Oesting & Martin Schlather 
+ Copyright (C) 2011 -- 2017 Marco Oesting & Martin Schlather 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>
 #include "RF.h"
 #include "Operator.h"
@@ -32,10 +32,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define BR_VERTNUMBER (LAST_MAXSTABLE + 2)
 #define BR_OPTIM (LAST_MAXSTABLE + 3)
 #define BR_OPTIMTOL (LAST_MAXSTABLE + 4)
-#define BR_OPTIMMAX (LAST_MAXSTABLE + 5)
-#define BR_LAMBDA (LAST_MAXSTABLE + 6)
-#define BR_OPTIMAREA (LAST_MAXSTABLE + 7)
-#define BR_VARIOBOUND (LAST_MAXSTABLE + 8)
+#define BR_LAMBDA (LAST_MAXSTABLE + 5)
+#define BR_OPTIMAREA (LAST_MAXSTABLE + 6)
+#define BR_VARIOBOUND (LAST_MAXSTABLE + 7)
 
 
 // **********************************************************************
@@ -43,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int checkBrownResnickProc(cov_model *cov) {
 
-  NotProgrammedYet("at the moment Brown-Resnick processes");
+  //NotProgrammedYet("at the moment Brown-Resnick processes");
 
   cov_model  
     *key = cov->key,
@@ -53,10 +52,11 @@ int checkBrownResnickProc(cov_model *cov) {
       dim = cov->tsdim;
   isotropy_type isoprev;
   Types type;
-
+  
   ASSERT_CARTESIAN;
 
   ASSERT_ONE_SUBMODEL(cov);
+  
   if ((err = SetGEVetc(cov, ROLE_BROWNRESNICK)) != NOERROR) return err;
   
   role = isVariogram(sub) ? ROLE_COV
@@ -79,8 +79,20 @@ int checkBrownResnickProc(cov_model *cov) {
   }
   
   setbackward(cov, sub);
-  if (cov->vdim[0] != 1) SERR("BR only works in the univariate case");
-
+  if (cov->vdim[0] != 1) SERR("BR only works in the univariate case");  
+  
+  return NOERROR;  
+  isoprev = role == ROLE_COV ? SYMMETRIC : CARTESIAN_COORD;
+  
+  if ((err = CHECK(sub, dim, dim, 
+		   type,//Martin: changed 27.11.13 CovList[cov->nr].Type,
+		   XONLY, isoprev, 1, role)) != NOERROR) {
+      return err;
+  }
+  
+  setbackward(cov, sub);
+  if (cov->vdim[0] != 1) SERR("BR only works in the univariate case");  
+  
   return NOERROR;  
 }
 
@@ -101,8 +113,9 @@ int init_BRorig(cov_model *cov, gen_storage *s){
   for (d=0; d<dim; d++) {
     pgs->supportmin[d] = RF_NEGINF; // 4 * for debugging...
     pgs->supportmax[d] = RF_INF;
-    pgs->supportcentre[d] = RF_NA;
+    pgs->supportcentre[d] = RF_NA;      
   }
+  
   pgs->log_density = 0.0;
   
   keyloc = Loc(key);
@@ -122,7 +135,7 @@ int init_BRorig(cov_model *cov, gen_storage *s){
   
   cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
   cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1.0;
-  cov->mpp.maxheights[0] = exp(GLOBAL.extreme.standardmax);
+  cov->mpp.maxheights[0] = EXP(GLOBAL.extreme.standardmax);
 
   pgs->zhou_c = 1.0;
   
@@ -160,7 +173,7 @@ void do_BRorig(cov_model *cov, gen_storage *s) {
   double *res = cov->rf;
 #define ORIG_IDX 0
   int i,
-    zeropos = sBR->zeropos[ORIG_IDX];
+    zeropos = sBR->zeropos;
   long
     totalpoints = Loc(cov)->totalpoints;
   assert(totalpoints > 0);
@@ -168,7 +181,6 @@ void do_BRorig(cov_model *cov, gen_storage *s) {
   double *trend = sBR->trend[ORIG_IDX];
   assert(cov->origrf);
 
-  
   DO(key, s); // nicht gatternr,
   double *lgres = key->rf;
   double lgreszeropos = (double) lgres[zeropos]; // wird durch DO veraendert!
@@ -214,7 +226,7 @@ int init_BRshifted(cov_model *cov, gen_storage *s) {
       assert(key->mpp.moments >= 1);
       cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
       cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1.0;
-      cov->mpp.maxheights[0] = exp(GLOBAL.extreme.standardmax);
+      cov->mpp.maxheights[0] = EXP(GLOBAL.extreme.standardmax);
       pgs->zhou_c = 1.0;
       
       sBR = cov->Sbr;
@@ -227,7 +239,7 @@ int init_BRshifted(cov_model *cov, gen_storage *s) {
         err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
       
-      trendlenmax = (int) ceil((double) GLOBAL.br.BRmaxmem / keytotal);
+      trendlenmax = (int) CEIL((double) GLOBAL.br.BRmaxmem / keytotal);
       trendlenneeded = MIN(keytotal, cov->simu.expected_number_simu);
       sBR->trendlen = MIN(trendlenmax, trendlenneeded);
    
@@ -307,7 +319,7 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
   double *lgres = cov->key->rf;
 
   DO(key, s);
-  zeropos = (long) floor(UNIFORM_RANDOM * keytotal);
+  zeropos = (long) FLOOR(UNIFORM_RANDOM * keytotal);
   
   if (loc2mem[zeropos] > -1) {
     trendindex = loc2mem[zeropos];
@@ -345,7 +357,7 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
     Variogram(NULL, sBR->vario, sBR->trend[trendindex]);
     
     mem2loc[trendindex] = zeropos; // todo ? long instead of int
-    loc2mem[zeropos] = trendindex;      
+    loc2mem[zeropos] = trendindex;
   }
   
   for (i=0; i<keytotal; i++) {
@@ -355,7 +367,7 @@ void do_BRshifted(cov_model *cov, gen_storage *s) {
 }
 
 int check_BRmixed(cov_model *cov) {
-  NotProgrammedYet("at the moment Brown-Resnick processes");
+  //NotProgrammedYet("at the moment Brown-Resnick processes");
   
   int err;
   br_param *bp = &(GLOBAL.br);
@@ -368,7 +380,6 @@ int check_BRmixed(cov_model *cov) {
   kdefault(cov, BR_VERTNUMBER, bp->BRvertnumber);
   kdefault(cov, BR_OPTIM, bp->BRoptim);
   kdefault(cov, BR_OPTIMTOL, bp->BRoptimtol);
-  kdefault(cov, BR_OPTIMMAX, bp->BRoptimmaxpoints);
   kdefault(cov, BR_VARIOBOUND, bp->variobound);
   if (cov->nr == BRMIXED_USER && cov->key == NULL && P0INT(BR_OPTIM) > 0) {
     if (!PisNULL(BR_LAMBDA)) {
@@ -378,49 +389,42 @@ int check_BRmixed(cov_model *cov) {
     } else if (P0INT(BR_OPTIM) == 2 && !PisNULL(BR_OPTIMAREA))
       if (PL > 0) PRINTF("'%s' set to '1'", KNAME(BR_OPTIM));
   }
+  
+  if (cov->key != NULL && P0INT(BR_OPTIM) == 2) {
+    if (!isIsotropic(cov->key->isoown)) {
+     // SERR("area optimisation implemented for the isotropic case only"); //@MARTIN: das scheint nicht zu funktionieren, wenn ich ein Variogramm eingebe
+    }  
+  }    
 
   kdefault(cov, BR_LAMBDA, RF_NA);
-  if (PisNULL(BR_OPTIMAREA)) //necessary as areamat might not be scalar
-    kdefault(cov, BR_OPTIMAREA, 1.0);
+  if (PisNULL(BR_OPTIMAREA))
+    kdefault(cov, BR_OPTIMAREA, 0.0);
   
   if ((err = checkBrownResnickProc(cov)) != NOERROR) return err;
   
   if ((err = checkkappas(cov, true)) != NOERROR) return err;
   if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
     return ERRORDIM;
- if (cov->vdim[0] != 1) SERR("BR only works in the univariate case");
+  if (cov->vdim[0] != 1) SERR("BR only works in the univariate case");
 
   return NOERROR; 
 }
 
-void kappaBRmixed(int i, cov_model *cov, int *nr, int *nc){
+void kappaBRmixed(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   // i nummer des parameters
-
-  int dim = cov->tsdim;
   
   switch(i) {
     
     case GEV_XI: case GEV_MU: case GEV_S: case BR_MESHSIZE:
     case BR_VERTNUMBER: case BR_OPTIM: case BR_OPTIMTOL: 
-    case BR_OPTIMMAX: case BR_LAMBDA: case BR_VARIOBOUND:
+    case BR_LAMBDA: case BR_VARIOBOUND:
       *nr = 1;
       *nc = 1;
     break;
     
     case BR_OPTIMAREA:
-      switch(dim) {
-	case 1:
-	  *nr = 1;
-          *nc = SIZE_NOT_DETERMINED;
-        break;
-	case 2:
-	  *nr = SIZE_NOT_DETERMINED;
-	  *nc = SIZE_NOT_DETERMINED;
-	break;
-	default:
-	  *nr = 1;
-	  *nc = 1;
-      }
+      *nr = 1;
+      *nc = SIZE_NOT_DETERMINED;
     break;
 
     default:
@@ -429,56 +433,70 @@ void kappaBRmixed(int i, cov_model *cov, int *nr, int *nc){
   }
 }
 
+double IdxDistance(int maxind, int zeropos, double **xgr, int dim) {
+  int d,
+    delta = 0,
+    x = maxind,
+    y = zeropos;
+  for (d=0; d<dim; d++) {
+    delta += ( (x % (int) xgr[d][XLENGTH]) - (y % (int) xgr[d][XLENGTH]))* ( (x % (int) xgr[d][XLENGTH]) - (y % (int) xgr[d][XLENGTH]));
+    x /= xgr[d][XLENGTH];
+    y /= xgr[d][XLENGTH];
+  }
+  return SQRT(delta);
+}
 
-
-void OptimArea(cov_model *cov, int idx) {
+void OptimArea(cov_model *cov) {
   // side effect auf P(BR_OPTIMAREA) !!
+    
   br_storage *sBR = cov->Sbr;
-  cov_model *key = sBR->sub[idx];
+  pgs_storage *pgs = cov->Spgs;
+  cov_model *key = sBR->sub[0];
   location_type *keyloc = Loc(key);
-  double **xgr = keyloc->xgr;
-  int
-    d, i, j, k, l, 
-    zeroxpos, zeroypos, cellcounter,
-    radius = (int) floor(xgr[0][XLENGTH] / 2.0), // ????? 1D ??
-    vertnumber = P0INT(BR_VERTNUMBER),
-    radiusP1 = radius+1,
-    dim = cov->tsdim,
-    optimmax = P0INT(BR_OPTIMMAX)
-    ;
-  double 
-    dummy, 
-    Error, 
+  double **xgr = keyloc->xgr,
+    *optimarea, dummy, Error, lambda,
     maxErrorbound, Errorbound, Errorboundtmp, 
     Errortol = P0(BR_OPTIMTOL),
     step = P0(BR_MESHSIZE),
-    stepdim= intpow(step, dim),
-    **am = sBR->areamatrix
-    ;
+    invstepdim, **am=NULL;
+  int d, j, k, cellnumber, 
+    *cellcounter, idxdist,
+    n_zhou_c = pgs->n_zhou_c,
+    vertnumber = P0INT(BR_VERTNUMBER),
+    minradius = (int) (sBR->minradius/step),
+    **countvector = sBR->countvector,
+    zeropos = sBR->zeropos,
+    dim = cov->tsdim,
+    keytotal = keyloc->totalpoints;
 
-  // MARCO: ok??
-  // zwingend eine Kopie erstellen, da Vertauschen durchgefuehrt werden
-  for (j=0; j<vertnumber; j++) { 
-    double *areamatrix = am[j];
-    int *countvector = sBR->countvector[j];
-    for (d=0; d<radiusP1; d++) {
-      areamatrix[d] = (double) countvector[d];
-    }
-  }
+  if (minradius==0) return;  
     
-  double factor = optimmax * stepdim;
-  for (d=0; d<radiusP1; d++) {
-    double addnumber = (d==0) ? 1 : ((dim==1) ? 2 : 4*d);
-    double invfactor = 1.0 / (factor * addnumber);
-    for (j=0; j<vertnumber; j++) am[j][d] *= invfactor;
+  if ((cellcounter = (int*) MALLOC((minradius+1) * sizeof(int))) == NULL)
+     goto ErrorHandling;
+  for (k=0; k<=minradius; k++) cellcounter[k]=0;
+  
+  if ((am = (double**) CALLOC(vertnumber, sizeof(double*)))==NULL)
+    goto ErrorHandling;
+  for (j=0; j<vertnumber; j++) {
+    if ((am[j] = (double*) MALLOC((minradius+1) * sizeof(double))) == NULL)
+      goto ErrorHandling;
+  }    
+  
+  
+  for (k=0; k<keytotal; k++) {
+     idxdist = (int) CEIL(IdxDistance(k, zeropos, xgr, dim));
+     if (idxdist<=minradius) (cellcounter[idxdist])++;
   }
   
-  double lambda=0.0;
-  for (j=0; j<vertnumber; lambda += am[j++][0]);
-  for (j=0; j<vertnumber; j++) am[j][0] = lambda / vertnumber;
+  assert(cellcounter[0]==1)  
   
-  for (d=0; d<radius; d++) { //monotonic in each column
-    for (j=0; j<vertnumber; j++) {
+  invstepdim = intpow(step, -dim);
+  lambda = 0.0;
+  for (j=0; j<vertnumber; j++) lambda += countvector[j][0]*invstepdim / n_zhou_c;
+  
+  for (d=0; d<=minradius; d++) { //monotonic in each column
+    for (j=vertnumber-1; j>=0; j--) {
+      am[j][d] = countvector[j][d] * invstepdim / (n_zhou_c * cellcounter[d]);  
       for (k=j+1; k<vertnumber; k++) {
 	if (am[j][d] < am[k][d]) {
 	  dummy = am[j][d];
@@ -491,8 +509,8 @@ void OptimArea(cov_model *cov, int idx) {
   }
   
   for (j=0; j<vertnumber; j++) { //monotonic in each row
-    for (d=0; d<radiusP1; d++) {
-      for (k=d+1; k<radiusP1; k++) {
+    for (d=0; d<=minradius; d++) {
+      for (k=d+1; k<=minradius; k++) {
 	if (am[j][d] < am[j][k]) {
 	  dummy = am[j][d];
 	  am[j][d] = am[j][k];
@@ -502,35 +520,21 @@ void OptimArea(cov_model *cov, int idx) {
     }
   }
   
-  double newlambda = 0.0; //correction for bias because of cutoff
-  for (d=0; d<radiusP1; d++) {
-    double addnumber = (d==0) ? 1 : ((dim==1) ? 2 : 4*d);  
-      for (j=0; j<vertnumber; j++) {
-	newlambda += am[j][d] * addnumber;      
-      }
-  }
-  double invstepdimlambda = 1.0 / (stepdim*newlambda);
-  for (d=0; d<radiusP1; d++) {
-    for (j=0; j<vertnumber; j++) {
-      am[j][d] *= invstepdimlambda;
-    }
-  }
-  lambda *= invstepdimlambda;
-  
   maxErrorbound = 0.0;
-  for (d=0; d<radiusP1; d++) { //areamatrix => Error matrix
+  for (d=0; d<=minradius; d++) { //areamatrix => Error matrix
     for (j=0; j<vertnumber; j++) {
       am[j][d] = lambda/vertnumber - am[j][d];
       maxErrorbound = fmax(maxErrorbound, am[j][d]);
     }
   }
   
+  cellnumber = 0;
   Error = 0.0;
   Errorboundtmp = Errorbound = 0.0;  
   while (Errorboundtmp < maxErrorbound && Error < Errortol) {
     Errorbound = Errorboundtmp; 
     Errorboundtmp = maxErrorbound;
-    for (d=0; d<radiusP1; d++) {
+    for (d=0; d<=minradius; d++) {
       for (j=0; j<vertnumber; j++) {
 	if (am[j][d] > Errorbound) {
 	  Errorboundtmp = fmin(Errorboundtmp, am[j][d]); 
@@ -538,94 +542,43 @@ void OptimArea(cov_model *cov, int idx) {
       }      
     }
     Error = 0.0;
-    cellcounter = 0;
-    for (d=0; d<radiusP1; d++) {
-      long addnumber = (d==0) ? 1 : ((dim==1) ? 2 : 4*d);
+    for (d=0; d<=minradius; d++) {
       for (j=0; j<vertnumber; j++) {
 	if (am[j][d] <= Errorboundtmp + 1e-6) {
-	  Error += (double) addnumber * am[j][d]; // geaendert
-	  cellcounter += addnumber;
+	  Error += (double) cellcounter[d] * am[j][d];
+	  cellnumber += cellcounter[d];
 	}
       }
     }
-    Error = Error / (cellcounter*lambda/vertnumber);
+    Error = Error / (cellnumber*lambda/vertnumber);
   }
-  
-  zeroxpos = (int) floor(xgr[0][XLENGTH] / 2.0);
-  zeroypos = (dim==1) ? 0 : (int) floor(xgr[1][XLENGTH] / 2.0);
-  newlambda = 0.0;
-  cellcounter = 0;
-  
-  double invvertnumber = 1.0 / vertnumber;
+
   PFREE(BR_OPTIMAREA);
-  PALLOC(BR_OPTIMAREA, (int) (dim==1) ? 1 : xgr[1][XLENGTH], xgr[0][XLENGTH]);
-  double 
-    *optimarea = P(BR_OPTIMAREA);
-  for (l=i=0; i<cov->nrow[BR_OPTIMAREA]; i++) {
-    for (k=0; k<cov->ncol[BR_OPTIMAREA]; k++, l++) {
-      d = abs(k-zeroxpos) + abs(i-zeroypos); // abs OK
-      optimarea[l] = 0.0;
-      for (j=0; j<vertnumber; j++) {
-	if (d<radiusP1 && (am[j][d] <= Errorbound + 1e-6)) {
-	  optimarea[l] += invvertnumber;
-	  newlambda += lambda - am[j][d]*vertnumber;
-	  cellcounter++;
-	}
+  PALLOC(BR_OPTIMAREA, 1, minradius+1);
+  optimarea = P(BR_OPTIMAREA);
+  for (d=0; d<=minradius; d++) {
+    optimarea[d] = 0.0;
+    for (j=0; j<vertnumber; j++) {
+      if (am[j][d] <= Errorbound + 1e-6) {
+        optimarea[d] += 1.0/vertnumber;
       }
     }
+    //printf("%f ", optimarea[d]);
   }
-}
-
-
-
-int prepareBRoptim(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
-  br_storage *sBR = cov->Sbr;
-  int idx = 0; // first is the largest
-  cov_model *key = sBR->sub[idx];
-  location_type *keyloc = Loc(key);
-  double **xgr = keyloc->xgr;
-  int i, j, d, sum_directions,
-    radius = (int) floor(xgr[0][XLENGTH] * 0.5), // ??
-    radiusP1 = radius+1,
-    vertnumber = P0INT(BR_VERTNUMBER),
-    dim = cov->tsdim;
- 
-  switch(P0INT(BR_OPTIM)) {
-  case 0:   
-    if (ISNAN(P0(BR_LAMBDA))) P(BR_LAMBDA)[0] = 1.0;
-    break;
-  case 1:
-    // nothing to do
-    break;
-  case 2:
-    if (dim > 2) BUG;
-    sBR->vertnumber = vertnumber; 
-    sum_directions  = 0;
-    for (d=0; d<dim; sum_directions += xgr[d++][XLENGTH]);
-
-    if (sBR->countvector != NULL || sBR->areamatrix != NULL) BUG;
-    if ((sBR->countvector = (int**) CALLOC(vertnumber, sizeof(int*))) == NULL || 
-	(sBR->areamatrix = (double**) CALLOC(vertnumber, sizeof(double*))) == NULL||
-	(sBR->logvertnumber = (double *) MALLOC(vertnumber * sizeof(double))) ==NULL
-	) return ERRORMEMORYALLOCATION;
-    for (i=0; i< vertnumber; i++) {
-      if ((sBR->countvector[i] = (int*) CALLOC(sum_directions, sizeof(int))) 
-	  == NULL ||
-	  (sBR->areamatrix[i] = (double*) CALLOC(radiusP1, sizeof(double)))
-	  == NULL)
-	return ERRORMEMORYALLOCATION;
-    }
-    for (j=0; j<vertnumber; j++)
-      sBR->logvertnumber[j] = - log((double) (j+1)/vertnumber);    
-    break;
-
-  default:
-      SERR("optimization might not be used here\n");
-  }
-
-  if (PL >= PL_STRUCTURE) PRINTF("BR optimisation finished...\n");
-
- return NOERROR;	
+  //printf("\n");
+  
+  
+  
+  ErrorHandling:
+  if (cellcounter != NULL) FREE(cellcounter);
+  if (am != NULL) {
+    for (j=0; j<vertnumber; j++) {
+      if (am[j] != 0) FREE(am[j]);   
+    }  
+    FREE(am);  
+  }    
+  
+  return;
 }
 
 
@@ -633,130 +586,199 @@ void set_lowerbounds(cov_model *cov) {
   br_storage *sBR = cov->Sbr;
   assert(sBR != NULL);
   assert(sBR->sub[0] != NULL);
-  double 
-    *optimarea = P(BR_OPTIMAREA);
-  int 
-    i, l, ii,
-    xbound = (int) floor(cov->ncol[BR_OPTIMAREA] * 0.5),
-    ybound = (int) floor(cov->nrow[BR_OPTIMAREA] * 0.5);
-
-  for (i=0; i<=sBR->maxidx; i++) {
-    cov_model *key = sBR->sub[i];
-    location_type *keyloc = Loc(key);
-    double **xgr = keyloc->xgr;
-    long j, k, keytotal = keyloc->totalpoints,  
-      len = xgr[0][XLENGTH];
+  double step = P0(BR_MESHSIZE),
+    *optimarea = P(BR_OPTIMAREA);    
+  int j, k, dim = cov->tsdim,
+    minradius = (int) (sBR->minradius / step);
+  cov_model *key = sBR->sub[0];
+  location_type *keyloc = Loc(key);
+  double **xgr = keyloc->xgr;
+  long keytotal = keyloc->totalpoints;
  
-    for (j=0; j<keytotal; j++) sBR->lowerbounds[i][j] = RF_INF;    
-    for (l=0, ii=-ybound; ii<=ybound; ii++) {
-      k = sBR->zeropos[i] + ii * len - xbound;
-      for (j=-xbound; j<=xbound; j++, l++, k++) {
-	if (optimarea[l]>1e-5) {
-	  sBR->lowerbounds[i][k] = -log(optimarea[l]); 
-	}
-      }
+  for (j=0; j<keytotal; j++) {
+    sBR->lowerbounds[j] = RF_INF;
+    k = (int) CEIL(IdxDistance(j, sBR->zeropos, xgr, dim));
+    if (k <= minradius && optimarea[k]>1e-5) {
+      sBR->lowerbounds[j] = -LOG(optimarea[k]);  
+    }  
+    //printf("%f ", sBR->lowerbounds[j]);
+  }
+  //printf("\n");
+}
+
+int prepareBRoptim(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
+  br_storage *sBR = cov->Sbr;
+  cov_model *key = sBR->sub[0];
+  location_type *keyloc = Loc(key);
+  double  step = P0(BR_MESHSIZE),
+        **xgr = keyloc->xgr;
+  int i, j, d,
+    vertnumber = P0INT(BR_VERTNUMBER),
+    dim = cov->tsdim,
+    maxradius = 1,
+    minradius = (int) (sBR->minradius/step);
+
+  for (d=0; d<dim; d++) {
+    maxradius *= (int) FLOOR(xgr[d][XLENGTH] / 2.0) + 1;
+  }
+ 
+  switch(P0INT(BR_OPTIM)) {
+  case 0:   
+    if (ISNAN(P0(BR_LAMBDA))) P(BR_LAMBDA)[0] = 1.0;
+    break;
+  case 1: // nothing to do
+    break;
+  case 2:
+    sBR->vertnumber = vertnumber; 
+    
+    if (sBR->countvector != NULL || sBR->areamatrix != NULL) BUG;
+    if ((sBR->countvector = (int**) CALLOC(vertnumber, sizeof(int*)))==NULL || 
+        (sBR->logvertnumber = (double *) MALLOC(vertnumber * sizeof(double)))
+         == NULL)
+      return ERRORMEMORYALLOCATION;
+    for (j=0; j<vertnumber; j++) {
+      if ((sBR->countvector[j] = (int*) CALLOC(minradius + 1, sizeof(int))) 
+          == NULL)
+        return ERRORMEMORYALLOCATION;
+      for (i=0; i<=minradius; i++) sBR->countvector[j][i] = 0;
+    }
+    for (j=0; j<vertnumber; j++)
+      sBR->logvertnumber[j] = - LOG((double) (j+1)/vertnumber);    
+    break;
+
+  default:
+    SERR("optimization might not be used here\n");
+  }
+  
+  if ((sBR->areamatrix  = (double *) MALLOC((minradius + 1)* sizeof(double))) 
+         == NULL) {
+    return ERRORMEMORYALLOCATION;
+  }
+  sBR->areamatrix[0] = 1.0;
+  if (minradius > 0) {
+    for (i=1; i<=minradius; i++) {
+      if (i <= cov->ncol[BR_OPTIMAREA]) {
+        sBR->areamatrix[i] = P(BR_OPTIMAREA)[i-1];  
+      }  
+      else sBR->areamatrix[i] = 0.0;
     }
   }
+  
+  PFREE(BR_OPTIMAREA);
+  PALLOC(BR_OPTIMAREA, 1, minradius + 1);
+  double *optimarea = P(BR_OPTIMAREA);
+  for (i=0; i<=minradius; i++) {
+    optimarea[i] = sBR->areamatrix[i];
+  }
+  set_lowerbounds(cov);
+  
+  if (PL >= PL_STRUCTURE) PRINTF("BR optimisation finished...\n");
+
+ return NOERROR;	
 }
- 
+
 
 
 int init_BRmixed(cov_model *cov, gen_storage *s) {
-  location_type 
-    *loc = Loc(cov);
-  int  i, d, 
-    err = NOERROR, 
-    dim = cov->tsdim,
-    bytes = sizeof(double) * dim;
+  location_type *loc = Loc(cov);
   br_storage *sBR = cov->Sbr;
   assert(sBR != NULL);
   assert(sBR->sub[0] != NULL);
+  cov_model *key = sBR->sub[0];
   pgs_storage *pgs = NULL;
-  
+  location_type *keyloc = Loc(key);
+  int  d, err = NOERROR, 
+    dim = cov->tsdim,
+    bytes = sizeof(double) * dim,
+    keytotal = keyloc->totalpoints;
+  double area = 1.0,
+    step = P0(BR_MESHSIZE);
+    
+  sBR->trendlen = 1;
   assert(isPointShape(cov));
   if (cov->role != ROLE_BROWNRESNICK) ILLEGAL_ROLE;
   assert(dim > 0);
-   
-  sBR->idx = -1;
-  sBR->trendlen = sBR->maxidx + 1;
-
+  
   if ((err = alloc_cov(cov, dim, 1, 1)) != NOERROR) goto ErrorHandling;; // nur pgs
   pgs = cov->Spgs; // nach alloc_cov !!
 
   if ((sBR->suppmin = (double*) MALLOC(bytes))==NULL ||
-     (sBR->suppmax = (double*) MALLOC(bytes))==NULL ||
-     (sBR->locmin = (double*) MALLOC(bytes))==NULL ||
-     (sBR->locmax = (double*) MALLOC(bytes))==NULL ||
-     (sBR->loccentre = (double*) MALLOC(bytes))==NULL ||
-     (sBR->locindex = (int*) MALLOC(sizeof(int) * dim))==NULL ||
-     (sBR->trend == NULL && 
+      (sBR->suppmax = (double*) MALLOC(bytes))==NULL ||
+      (sBR->locmin = (double*) MALLOC(bytes))==NULL ||
+      (sBR->locmax = (double*) MALLOC(bytes))==NULL ||
+      (sBR->loccentre = (double*) MALLOC(bytes))==NULL ||
+      (sBR->locindex = (int*) MALLOC(sizeof(int) * dim))==NULL ||
+      (sBR->trend == NULL && 
       (sBR->trend = (double**) CALLOC(sBR->trendlen, sizeof(double*)))==NULL) 
-      ) {
+     ) {
     err = ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
  
   GetDiameter(loc, sBR->locmin, sBR->locmax, sBR->loccentre);
   assert(pgs->supportmin != NULL);
   for (d=0; d<dim; d++) {
+    pgs->own_grid_cumsum[d] = d==0 ? 1 : pgs->own_grid_cumsum[d-1]*pgs->own_grid_len[d-1];      
+    sBR->suppmin[d] =  FLOOR((sBR->locmin[d] - sBR->radius - sBR->minradius)/step)*step - step/2;  
+    sBR->suppmax[d] =  CEIL((sBR->locmax[d] + sBR->radius + sBR->minradius)/step)*step + step/2;  
+    area *= sBR->suppmax[d] - sBR->suppmin[d];
     pgs->supportmin[d] = RF_NEGINF;
     pgs->supportmax[d] = RF_INF;
+    pgs->own_grid_start[d] = RF_NEGINF;
+    pgs->own_grid_step[d] = keyloc->xgr[d][XSTEP];
+    pgs->own_grid_len[d] = keyloc->xgr[d][XLENGTH];
   }
+  
+  pgs->log_density = 0.0; //@MARTIN: besser: +/-LOG(area)? Rolle von logdens nicht ganz klar (s. extremes.cc)
   for (d=0; d<=cov->mpp.moments; d++) {
     cov->mpp.mM[d] = cov->mpp.mMplus[d] = 1.0;
   }
+  cov->mpp.maxheights[0] = EXP(0.0);
+    
+  assert(keyloc->grid);
+  assert(key->nr == GAUSSPROC);
+
+  key->simu.expected_number_simu = cov->simu.expected_number_simu;     
+  assert(cov->mpp.moments >= 1);
+  if ((err = INIT(key, 1, s)) != NOERROR) goto ErrorHandling;
+  key->simu.active = true;
+  cov->loggiven = true;
+    
+  assert(key->mpp.moments >= 1);
+  key->mpp.mM[0] = key->mpp.mMplus[0] = 1.0;
+  key->mpp.mM[1] = key->mpp.mMplus[1] = 1.0;
+    
+  if (sBR->trend[0] == NULL && 
+     (sBR->trend[0] =(double*) MALLOC(keytotal*sizeof(double)))==NULL){
+    err = ERRORMEMORYALLOCATION; goto ErrorHandling;
+  }
+    
+  if ((err = loc_set(keyloc->xgr[0], NULL, NULL, dim, dim, 3, 0,
+       false, true, keyloc->distances, sBR->vario)) > NOERROR) 
+     goto ErrorHandling;
   
-
-
- if ((err = prepareBRoptim(cov, s)) != NOERROR) {
+  if (sBR->vario->sub[0] != NULL)
+    SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));
+  Variogram(NULL, sBR->vario, sBR->trend[0]);
+  
+  if ((sBR->lowerbounds = (double*) MALLOC(keytotal*sizeof(double))) == NULL) { 
+    err=ERRORMEMORYALLOCATION; 
+    goto ErrorHandling; 
+  }
+  
+  if ((err = prepareBRoptim(cov, s)) != NOERROR) {
      goto ErrorHandling;
   }
 
-  for (i=0; i<=sBR->maxidx; i++) {
-    cov_model *key = sBR->sub[i];
-    location_type *keyloc = Loc(key);
-    int keytotal = keyloc->totalpoints;
-    assert(keyloc->grid);
- 
-    assert(key->nr == GAUSSPROC);
-
-    key->simu.expected_number_simu = cov->simu.expected_number_simu;     
-    assert(cov->mpp.moments >= 1);
-    if ((err = INIT(key, 1, s)) != NOERROR) goto ErrorHandling;
-    key->simu.active = true;
-    cov->loggiven = true;
-    
-    assert(key->mpp.moments >= 1);
-    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0;
-    cov->mpp.mM[1] = cov->mpp.mMplus[1] = 1.0;
-    
-    
-    if (sBR->trend[i] == NULL && 
-	(sBR->trend[i] =(double*) MALLOC(keytotal*sizeof(double)))==NULL){
-      err = ERRORMEMORYALLOCATION; goto ErrorHandling;
-    }
-    
-    if ((err = loc_set(keyloc->xgr[0], NULL, NULL, dim, dim, 3, 0,
-		       false, true, keyloc->distances, 
-		       sBR->vario)) > NOERROR) goto ErrorHandling;
-
-    if (sBR->vario->sub[0] != NULL)
-      SetLoc2NewLoc(sBR->vario->sub[0], PLoc(sBR->vario));
-    Variogram(NULL, sBR->vario, sBR->trend[i]);
-
-   
-    if ((sBR->lowerbounds[i] = (double*) MALLOC(keytotal*sizeof(double))) 
-	== NULL) { err=ERRORMEMORYALLOCATION; goto ErrorHandling; }
-    assert(keyloc != NULL);
-    key->simu.active = true;
-  } // for i<=maxid2
+  assert(keyloc != NULL);
+  key->simu.active = true;
 
   set_lowerbounds(cov);   
   cov->rf = sBR->sub[0]->rf;
   cov->origrf = false;
   cov->fieldreturn = HUETCHEN_OWN_GRIDSIZE;
   pgs->estimated_zhou_c = ISNAN(P0(BR_LAMBDA));
-  pgs->zhou_c =  pgs->estimated_zhou_c ? 0.0 : P0(BR_LAMBDA);
-  pgs->logmean = true;
+  pgs->zhou_c =  pgs->estimated_zhou_c ? 0.0 : P0(BR_LAMBDA)*area; //@MARTIN: area kann weg, falls in logdens
+  pgs->logmean = false;
   pgs->sq_zhou_c = pgs->sum_zhou_c = 0.0;
   pgs->n_zhou_c = 0;
   sBR->next_am_check = GLOBAL.br.deltaAM;
@@ -769,124 +791,55 @@ int init_BRmixed(cov_model *cov, gen_storage *s) {
 
 }
 
-int IdxDistance(int maxind, int zeropos, double **xgr, int dim) {
-  int d,
-    delta = 0,
-    x = maxind,
-    y = zeropos;
-  for (d=0; d<dim; d++) {
-    delta += abs( (x % (int) xgr[d][XLENGTH]) - (y % (int) xgr[d][XLENGTH])); // abs OK
-    x /= xgr[d][XLENGTH];
-    y /= xgr[d][XLENGTH];
-  }
-  return delta;
-}
-
-
 void do_BRmixed(cov_model *cov, gen_storage *s) {
   // to do: improve simulation speed by dynamic sizes
   assert(cov->key!=NULL);
   br_storage *sBR = cov->Sbr;
-  int d,
-     dim = cov->tsdim;
-  pgs_storage *pgs = cov->Spgs;
-  assert(pgs != NULL);
-  bool changedIdx;
-  double area = 1.0,
-    step = P0(BR_MESHSIZE),
-    invstepdim = intpow(step, -dim);
-
-  if ((changedIdx = pgs->currentthreshold == RF_NEGINF && sBR->idx != 0)) {
-    sBR->idx = 0; // um zu gewaehrleisten,
-  // dass insbesondere bei mehreren Simulationen wieder von vorne angefangen
-  // wird
-  } else if ((changedIdx = sBR->idx < sBR->maxidx &&
-	      //pgs->currentthreshold < 0 !
-	      pgs->currentthreshold >= sBR->thresholds[sBR->idx + 1])) {
-    (sBR->idx)++;
-  }
-
-  assert(sBR->idx <= sBR->maxidx && sBR->maxidx < MAXSUB);
-  cov_model  *key = sBR->sub[sBR->idx]; // !
+  cov_model  *key = sBR->sub[0];
+  assert(cov->rf == key->rf);
   location_type *keyloc = Loc(key);
-  double *lowerbounds = sBR->lowerbounds[sBR->idx],
-    **xgr = keyloc->xgr,
-    delta = sBR->radii[sBR->idx] + step;
+  assert(keyloc->grid); 
+  pgs_storage *pgs = cov->Spgs;
+  assert(pgs != NULL); 
 
-  if (changedIdx) {    
-    if (PL > 5)
-      PRINTF("current level in BRmixed is %d", sBR->idx); 
-    cov_model *prev = cov;
-    while (prev->fieldreturn && !prev->origrf) {
-      prev->rf = key->rf;
-      prev = prev->calling;
-      if (prev == NULL) break;
-    }
- 
-    int *cumsum = pgs->own_grid_cumsum;
+  int d, dim = cov->tsdim, minradius,
+      i, j, maxind, idxdist, hatnumber=0,
+      lgtotalpoints = keyloc->totalpoints,
+      zeropos = sBR->zeropos,
+      vertnumber = P0INT(BR_VERTNUMBER);
 
-    cumsum[0] = 1;
-    for (d=0; d<dim; d++) {
-      pgs->own_grid_len[d] = xgr[d][XLENGTH];
-      pgs->own_grid_step[d] = keyloc->xgr[d][XSTEP];
-      cumsum[d + 1] = cumsum[d] * pgs->own_grid_len[d]; 
-    }
-
-    for (d=0; d<dim; d++) {
-      sBR->suppmin[d] = sBR->locmin[d] - delta;
-      sBR->suppmax[d] = sBR->locmax[d] + delta;
-      area *= sBR->suppmax[d] - sBR->suppmin[d];
-    }
-    pgs->log_density = - log(area);
-    cov->mpp.maxheights[0] = area;
-    assert(cov->vdim[0] == 1 && cov->vdim[1] == 1);
-
-    // MARCO lambda verstehe ich nicht -- wo/wie taucht lambda 
-    // in den einzelnen Huetchen auf? 
-    // @MARTIN: s. Zeile 957
-    
-  }
-
-  if (PL > 5)
-    PRINTF("idx=%d %d  %d zhou_n=%ld %d %d\n", 
-  	 sBR->idx, changedIdx, P0INT(BR_OPTIM), pgs->n_zhou_c, 
-	   sBR->next_am_check, GLOBAL.br.deltaAM);
-  
-  if (P0INT(BR_OPTIM) == 2 &&  pgs->n_zhou_c >= sBR->next_am_check) {
+  double step = P0(BR_MESHSIZE),
+    invstepdim = intpow(step, -dim),
+    uplusmaxval , maxval, u[MAXMPPDIM], 
+    ** xgr = keyloc->xgr,
+    *lowerbounds = sBR->lowerbounds,
+    area=1.0, *lgres = key->rf, //@MARTIN: area obsolet, falls in logdens
+    *trend = sBR->trend[0];
+      
+  if (P0INT(BR_OPTIM) == 2 &&  pgs->n_zhou_c >= sBR->next_am_check) {      
     sBR->next_am_check += GLOBAL.br.deltaAM; 
-    OptimArea(cov, sBR->idx); 
+    OptimArea(cov); 
     set_lowerbounds(cov);
   }
 
-  double  
-    *lgres = key->rf; // == cov->rf
-  assert(cov->rf == key->rf);
-  assert(keyloc->grid);
-
-  int i, j, maxind, hatnumber,
-    lgtotalpoints = keyloc->totalpoints,
-    zeropos = sBR->zeropos[sBR->idx],
-    vertnumber = P0INT(BR_VERTNUMBER);
-  double maxval,
-      u[MAXMPPDIM],
-      *trend = sBR->trend[sBR->idx],     
-    radius = sBR->radii[sBR->idx];
-
-
+  minradius = (int) (sBR->minradius/step); 
+  
   for (d=0; d<dim; d++) {
-    u[d] = sBR->suppmin[d] + UNIFORM_RANDOM*(sBR->suppmax[d] - sBR->suppmin[d]);
-    pgs->supportmin[d] = u[d] - radius;
-    pgs->supportmax[d] = u[d] + radius;    
+    u[d] = ROUND((UNIFORM_RANDOM*(sBR->suppmax[d] - sBR->suppmin[d]) +
+		  sBR->suppmin[d]) / step) * step;
+    area *= sBR->suppmax[d] - sBR->suppmin[d];
+    pgs->supportmin[d] = u[d] - sBR->minradius - sBR->radius; 
+    pgs->supportmax[d] = u[d] + sBR->minradius + sBR->radius; 
+    pgs->supportcentre[d] = u[d];
     pgs->own_grid_start[d] = keyloc->xgr[d][XSTART] + u[d];
-  }
-
-  hatnumber=0;
+  }  
+  
   while(true) {
     DO(key, s);
+    hatnumber++;
     maxval = RF_NEGINF;
     maxind = 0;
     for (i=0; i<lgtotalpoints; i++) {
-      // MARCO: hier wird trend abgezogen; 
       lgres[i] -= trend[i];
       if (lgres[i] > maxval) {
 	maxval = lgres[i];
@@ -894,54 +847,23 @@ void do_BRmixed(cov_model *cov, gen_storage *s) {
       }
     }
     if (maxind == zeropos) {
-      pgs->sq_zhou_c += invstepdim * invstepdim;
-      pgs->sum_zhou_c += invstepdim;
+      pgs->sq_zhou_c += area * invstepdim * area * invstepdim; // @MARTIN: s.o
+      pgs->sum_zhou_c += area * invstepdim;                    //
     }
+    
+    uplusmaxval = maxval - lgres[zeropos] - LOG(UNIFORM_RANDOM);
 
     if (P0INT(BR_OPTIM) == 2) {
-      int  idxdist;
-      double 
-	uplusmaxval = maxval - lgres[zeropos] - log(UNIFORM_RANDOM);
       for (j=0; j<vertnumber; j++) {
-	if (uplusmaxval > sBR->logvertnumber[j]) {
-
-	  // MARCO: ok? Warum wird die Schleife nach 1x abgebrochen?
-	  // ('first' braucht es somit eigentlich nicht.
-	  idxdist = IdxDistance(maxind, zeropos, xgr, dim);
-	  (sBR->countvector[j][idxdist])++;
-	  
-
-	  if (false && PL > 5) {
-	    int dd;
-	    for (dd=0; dd<75; dd++) {
-	      int value = sBR->countvector[j][dd];
-	      if (value < 0) BUG; // memory zugriffs-fehler ueber valgrind sichtbar
-	      if (value<=9) PRINTF("%d", value);
-	      else if (value<=50) {
-		PRINTF(value<=20 ? "A" : value<=30 ? "B" : value<=40 ? "C" : "D"
-		       );
-	      }
-	      else PRINTF("#");
-	    }
-	    PRINTF("j=%d\n", j);
-	  }
-	  break;
-	} // else assert(maxval <= lowerbounds[maxind]); // nicht korrekt.
+        if (uplusmaxval > sBR->logvertnumber[j]) {
+          idxdist = (int) CEIL(IdxDistance(maxind, zeropos, xgr, dim));
+          if (idxdist<=minradius) (sBR->countvector[j][idxdist])++;
+          break;
+        }
       }
-    } else {
-      assert(UNIFORM_RANDOM > -1.0); // nur umvergleichbarkeit von optim 1 und 
-      //                              optim 2 herzustellen 
     }
 
-    if (maxind == zeropos && PL > 5 && false) {
-      PRINTF("zeropos maxval=%f lower=%f hat=%d zhou_n=%ld optim=%d\n",
-	     maxval, lowerbounds[maxind], hatnumber, pgs->n_zhou_c, P0INT(BR_OPTIM));
-    }
-
-    // MARCO, dann es sein, dass die folgende Bedingung erfuellt ist,
-    // aber uplusmaxval > sBR->logvertnumber[j] nicht erfuellt ist?
-    if (maxval > lowerbounds[maxind]) break;    
-    hatnumber++;
+    if (uplusmaxval > lowerbounds[maxind]) break;    
   }
   
   pgs->n_zhou_c += hatnumber;
@@ -1008,13 +930,6 @@ void range_BRmixed(cov_model *cov, range_type *range) {
   range->pmax[BR_OPTIMAREA] = 1;
   range->openmin[BR_OPTIMAREA] = false;
   range->openmax[BR_OPTIMAREA] = false;
-  
-  range->min[BR_OPTIMMAX] = 1;
-  range->max[BR_OPTIMMAX] = RF_INF;
-  range->pmin[BR_OPTIMMAX] = 1000;
-  range->pmax[BR_OPTIMMAX] = 1000000000;
-  range->openmin[BR_OPTIMMAX] = false;
-  range->openmax[BR_OPTIMMAX] = true;
   
   range->min[BR_VARIOBOUND] = 0;
   range->max[BR_VARIOBOUND] = RF_INF;
@@ -1097,19 +1012,13 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
     kdefault(cov->key, BR_VERTNUMBER, P0INT(BR_VERTNUMBER));
     kdefault(cov->key, BR_OPTIM, P0INT(BR_OPTIM));
     kdefault(cov->key, BR_OPTIMTOL, P0(BR_OPTIMTOL));
-    kdefault(cov->key, BR_VARIOBOUND, P0(BR_VARIOBOUND));  
-    kdefault(cov->key, BR_OPTIMMAX, P0INT(BR_OPTIMMAX));
+    kdefault(cov->key, BR_VARIOBOUND, P0(BR_VARIOBOUND));
     kdefault(cov->key, BR_LAMBDA, P0(BR_LAMBDA));
     if (!PisNULL(BR_OPTIMAREA)) {
-      if ( cov->nrow[BR_OPTIMAREA] % 2 == 0 ||
-	   cov->ncol[BR_OPTIMAREA] % 2 == 0 ) {
-	SERR("number of rows and columns of areamat need to be odd")
-      }      
       PARAMALLOC(cov->key, BR_OPTIMAREA, cov->nrow[BR_OPTIMAREA],
                  cov->ncol[BR_OPTIMAREA]);
 
       PCOPY(cov->key, cov, BR_OPTIMAREA);
-    
     }
   }
   
@@ -1130,7 +1039,6 @@ int structBRuser(cov_model *cov, cov_model **newmodel) {
   return err;
   
 }
-
 
 
 // new
@@ -1212,109 +1120,72 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
       }
       for (i=0; i<maxtotal; i+=dim)
         for (j=i+dim; j<maxtotal; )
- 	  for (d=0; d<dim; d++, j++) {
-	    dist = fabs(loc->x[i+d] - loc->x[j]);
-	    if (dist > 1e-15 && dist < mindist) mindist = dist;
-	  }
+        for (d=0; d<dim; d++, j++) {
+          dist = FABS(loc->x[i+d] - loc->x[j]);
+          if (dist > 1e-15 && dist < mindist) mindist = dist;
+        }
     }
     if (mindist < step) {     
-      PRINTF("Warning! meshsize is larger than resolution of simulation! meshsize is automatically decreased to %f.\n", step);
+      PRINTF("Warning! meshsize is larger than resolution of simulation! meshsize is automatically decreased to %f.\n", mindist);
       P(BR_MESHSIZE)[0] = step = mindist;
     }
     
     if (!PisNULL(BR_OPTIMAREA)) {
-      sBR->minradius = 
-	floor(fmax(cov->nrow[BR_OPTIMAREA], cov->ncol[BR_OPTIMAREA])*0.5) * step;
-    }
-
-    double alpha = -1,  yy, C0, gammamin, min_radius,
-      xx=step * 1e-6;
+      sBR->minradius =  cov->ncol[BR_OPTIMAREA] * step;
+    } else {
+      sBR->minradius = 0;
+    }    
+    
+    double alpha = -1,  yy, C0, gammamin, xx=step * 1e-6;
     COV(ZERO, sBR->submodel, &C0);
     COV(&xx, sBR->submodel, &yy);
-    alpha = log(C0 - yy) / log(xx);
+    alpha = LOG(C0 - yy) / LOG(xx);
     if (alpha > 2.0) alpha = 2.0;
     gammamin = 4.0 - 1.5 * alpha;
-    INVERSE(&gammamin, sBR->submodel, &min_radius);
- 
-    xx = gammamin + P0(BR_VARIOBOUND);
-    INVERSE(&xx, sBR->submodel, sBR->radii);
-    sBR->radii[0] = ceil(sBR->radii[0] / step) * step;
-    if (sBR->minradius > sBR->radii[0]) sBR->radii[0] = sBR->minradius;
-    sBR->thresholds[0] = RF_INF;
- 
+    
+    INVERSE(&gammamin, sBR->submodel, &xx);
+    xx = CEIL(xx/step) * step;
+    sBR->minradius = fmax(sBR->minradius, xx); 
+
+    yy = P0(BR_VARIOBOUND);
+    INVERSE(&yy, sBR->submodel, &(sBR->radius));
+    
+    sBR->radius = CEIL(sBR->radius / step) * step;
+
     newxlen = 3;
     grid = true;
-    double smallest_grid_len = 3.0, //kleinestes Feld, dass simuliert werden 
-      //                       soll, in step Einheiten in 1 koordinaten richtung
-      min_radius_step = floor(min_radius / step),
-      onesided  = (double) (smallest_grid_len - 1) * 0.5;
 
-    if (onesided < min_radius_step) onesided = min_radius_step;  
-     double corrected_minradius = 
-       sBR->minradius + GLOBAL.br.corr_factor * (sBR->radii[0] - sBR->minradius);
-
-    if (onesided * step < corrected_minradius) 
-	onesided = floor(corrected_minradius / step);  
-
-    // MARCO: @MARTIN: um sicherzugehen, dass man den durch areamat abgedeckten
-     // Bereich komplett simuliert  
-
-    double
-      min_reduction_factor = 2.0,
-      max_reduction_factor = 3.0,
-      rel_steps = (sBR->radii[0] / step) / onesided,
-      reduction_factor = pow(rel_steps, (double) dim / ((double) MAXSUB -1.0));
-    if (reduction_factor < min_reduction_factor) 
-      reduction_factor = min_reduction_factor;
-    else if (reduction_factor > max_reduction_factor)
-      reduction_factor = max_reduction_factor;
-    sBR->maxidx = (int) ((double) dim * log(rel_steps) / log(reduction_factor));
-    if (sBR->maxidx < 0) sBR->maxidx = 0; // to do!!
-    else if (sBR->maxidx >= MAXSUB) sBR->maxidx = MAXSUB - 1;
-  
-    for (i=1; i<=sBR->maxidx; i++) {
-      // to do gleichmaessige reduktion ist vermutlich nicht optimal
-      // mitte vermutlich groessere Schritte und dafuer kleiner runter
-      // bis zum minimum.
-      // to do optimale groesse fuer reduction_factor z.Zt. in [2,3]?!
-
-       sBR->radii[i] = round(sBR->radii[i-1] * pow(2.0, -1.0/dim) / step) * step;
-       COV(sBR->radii + i, sBR->submodel, sBR->thresholds + i);
-    }
-        
-
-   if ((sBR->newx = (double*) MALLOC(newxlen*dim*sizeof(double))) == NULL) {
+    if ((sBR->newx = (double*) MALLOC(newxlen*dim*sizeof(double))) == NULL) {
       err = ERRORMEMORYALLOCATION; goto ErrorHandling;
-   }
-   for (i=0; i<=sBR->maxidx; i++) {
-      if ((err = covCpy(sBR->sub + i, cov->key)) != NOERROR) goto ErrorHandling;
-      for (d=0; d<dim; d++) {
-	sBR->newx[3*d+XSTART] = -sBR->radii[i];
-	sBR->newx[3*d+XLENGTH] = 2 * ((int) round(sBR->radii[i] / step)) + 1;
-	sBR->newx[3*d+XSTEP] = step;
-      }
-
-      err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, 
-		    false, sBR->sub[i]);
-      double **subxgr = Loc(sBR->sub[i])->xgr;
-      for (zeropos = 0, d = dim; d > 0; d--) {
-	double len =  subxgr[d-1][XLENGTH];
-	zeropos = zeropos * (int) len + (int) ceil(len * 0.5) - 1;
-      }
-      sBR->zeropos[i] = zeropos;
-
-      if ((err = CHECK(sBR->sub[i], dim, dim, ProcessType, cov->domown, 
-		       cov->isoown, 1, ROLE_GAUSS)) == NOERROR) {
-	if ((err = STRUCT(sBR->sub[i], NULL)) <= NOERROR) {
-	  err = CHECK(sBR->sub[i], dim, dim, ProcessType, cov->domown,
-		      cov->isoown, 1, ROLE_GAUSS); 
-	}
-      }
-      if (err > NOERROR) goto ErrorHandling;
-      assert(sBR->sub[i]->calling == cov);
     }
 
-   goto ErrorHandling; // ueberspringe immer den shifted & original teil !
+    if ((err = covCpy(sBR->sub, cov->key)) != NOERROR) goto ErrorHandling;
+    for (d=0; d<dim; d++) {
+      sBR->newx[3*d+XSTART] = -sBR->radius - sBR->minradius;
+      sBR->newx[3*d+XLENGTH] =
+	2 * ((int) ROUND((sBR->radius + sBR->minradius) / step)) + 1;
+      sBR->newx[3*d+XSTEP] = step;
+    }
+
+    err = loc_set(sBR->newx, NULL, dim, dim, newxlen, false, grid, 
+                  false, sBR->sub[0]);
+    double **subxgr = Loc(sBR->sub[0])->xgr;
+    zeropos = 0;
+    for (d = dim; d > 0; d--) {
+      double len =  subxgr[d-1][XLENGTH];
+      zeropos = zeropos * (int) len + (int) CEIL(len * 0.5) - 1;
+    }
+    sBR->zeropos = zeropos;
+
+    if ((err = CHECK(sBR->sub[0], dim, dim, ProcessType, cov->domown, 
+ 		       cov->isoown, 1, ROLE_GAUSS)) == NOERROR) {
+       if ((err = STRUCT(sBR->sub[0], NULL)) <= NOERROR) {
+         err = CHECK(sBR->sub[0], dim, dim, ProcessType, cov->domown,
+                     cov->isoown, 1, ROLE_GAUSS); 
+       }
+     }
+     if (err > NOERROR) goto ErrorHandling;
+     assert(sBR->sub[0]->calling == cov);
 
   } else { //  END BRMIXED;  START SHIFTED    
     assert(cov->nr == BRSHIFTED_INTERN);
@@ -1333,16 +1204,15 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
   xgr = loc->xgr;
 
  
-  // ONLY SHIFTED AND ORIGINAL
-  if (grid) {
+  if (cov->nr != BRMIXED_INTERN && grid) {
     double **subxgr = Loc(cov->key)->xgr;
     for (d=dim; d>0; d--) {
       double len =  subxgr[d-1][XLENGTH];
-      zeropos = zeropos * len + (int) ceil(len * 0.5) - 1;
+      zeropos = zeropos * len + (int) CEIL(len * 0.5) - 1;
     }
+    sBR->zeropos = zeropos;
   }
-  sBR->zeropos[0] = zeropos;
-   
+  
   if ((err = CHECK(cov->key, dim, dim, ProcessType, cov->domown, 
                    cov->isoown, 1, ROLE_GAUSS)) == NOERROR) {
     if ((err = STRUCT(cov->key, NULL)) <= NOERROR) {
@@ -1395,7 +1265,7 @@ int structBrownResnick(cov_model *cov, cov_model **newmodel) {
       addModel(&(cov->key), DOLLAR);
       newscale = 1.0;
       if (!PARAMisNULL(next, DSCALE) ) newscale *= PARAM0(next, DSCALE);
-      if (!PARAMisNULL(next, DVAR) )  newscale /= sqrt(PARAM0(next, DVAR));
+      if (!PARAMisNULL(next, DVAR) )  newscale /= SQRT(PARAM0(next, DVAR));
       if (factor != 1.0) {
 	newscale *= factor;
 	factor = 1.0;

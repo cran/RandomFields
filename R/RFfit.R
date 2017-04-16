@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -56,7 +56,7 @@
 
 
 ## zentrale C -Schnittstellen
-##    .C("PutValuesAtNA", RegNr, param, PACKAGE="RandomFields")
+##    .C(C_PutValuesAtNA, RegNr, param, PACKAGE="RandomFields")
 
 ## bins bei Distances automatisch
 
@@ -571,7 +571,7 @@ RFfit <-
            ... ) {
 
   ##Print(RFoptions()$fit); xxx xxx###
-  .C("NoCurrentRegister")
+  .C(C_NoCurrentRegister)
 
   RFoptOld <- internal.rfoptions(xyz=length(y)!=0,...,
                                  internal.examples_reduced = FALSE,
@@ -632,7 +632,7 @@ RFfit <-
   }
   if (RFopt$general$returncall)
     attr(res, "call") <- as.character(deparse(match.call()))
-  attr(res, "coord_system") <- .Call("GetCoordSystem",
+  attr(res, "coord_system") <- .Call(C_GetCoordSystem,
                                      as.integer(MODEL_MLE),
                                      RFopt$coords$coord_system,
                                      RFopt$coords$new_coord_system)

@@ -14,7 +14,7 @@
 
 \usage{
 RPbrmixed(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed,
-          optim_mixed_tol, optim_mixed_maxpo, lambda, areamat, variobound) 
+          optim_mixed_tol,lambda, areamat, variobound) 
 
 RPbrorig(phi, tcf, xi, mu, s)
 
@@ -49,7 +49,7 @@ RPbrshifted(phi, tcf, xi, mu, s)
   1.}
    
 \item{meshsize, vertnumber, optim_mixed,
-  optim_mixed_tol, optim_mixed_maxpo, variobound}{further arguments
+  optim_mixed_tol, variobound}{further arguments
   for simulation via the mixed moving maxima (M3) representation; see
   \code{\link{RFoptions}}}
 }

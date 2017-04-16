@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -153,6 +153,8 @@ void ErrorStop(int err);
 #define MSGLOCAL_INITINTRINSIC 407
 #define MSGLOCAL_FAILED 408
 #define MSGLOCAL_NOPOSITIVEROOT 409
+#define MSGLOCAL_NOTSYMMETRICMULTIVARIATE 410
+#define MSGLOCAL_WRONGRADII 411
 #define ERRORUNSPECIFIED 999  
 
 /* do not use numbers 800 -- 900 : reserved to MPP package */

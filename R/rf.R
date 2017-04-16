@@ -2,7 +2,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 
 
 RFboxcox <- function(data, boxcox, vdim=1, inverse=FALSE, ignore.na=FALSE) {
-  if (missing(boxcox)) boxcox <- .Call("get_boxcox")
+  if (missing(boxcox)) boxcox <- .Call(C_get_boxcox)
   if (any(is.na(boxcox)) && !ignore.na)
     stop("non-finte values in Box-Cox transformation")
   if (!all(is.finite(boxcox))) return(data)
@@ -35,7 +35,7 @@ RFboxcox <- function(data, boxcox, vdim=1, inverse=FALSE, ignore.na=FALSE) {
     return(data)
   }
   Data <- data + 0
-  .Call("BoxCox_trafo", as.double(boxcox), as.double(Data), as.integer(vdim),
+  .Call(C_BoxCox_trafo, as.double(boxcox), as.double(Data), as.integer(vdim),
         as.logical(inverse));
   return(Data)
 }
@@ -54,7 +54,7 @@ RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
          distances=distances, dim=dim, reg = Reg, dosimulate=FALSE)
 
-  .Call("get_linearpart", Reg, as.integer(set))
+  .Call(C_get_linearpart, Reg, as.integer(set))
 }
 
 
@@ -83,7 +83,7 @@ predictGauss <- function(Reg,
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
          distances=distances, dim=dim, reg = Reg.predict, dosimulate=FALSE)
 
-  .Call("EvaluateModel", double(0), as.integer(Reg.predict),
+  .Call(C_EvaluateModel, double(0), as.integer(Reg.predict),
         PACKAGE="RandomFields")
 }
 
@@ -261,8 +261,8 @@ RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                    estimate_variance = estimate_variance,
                    Reg = Reg, ...)  
 
-  likeli <- .Call("EvaluateModel", double(0),  Reg, PACKAGE="RandomFields")
-  info <- .Call("get_likeliinfo", Reg)
+  likeli <- .Call(C_EvaluateModel, double(0),  Reg, PACKAGE="RandomFields")
+  info <- .Call(C_get_likeliinfo, Reg)
   globalvariance <- info$estimate_variance
   where <- 1 + globalvariance
   param <- likeli[-1:-where]
@@ -302,7 +302,7 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
   new <- C_CheckXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
                  y.ok=!dosimulate)
  
-  vdim <- .Call("Init", as.integer(reg), model, new, NAOK=TRUE, # ok
+  vdim <- .Call(C_Init, as.integer(reg), model, new, NAOK=TRUE, # ok
                 PACKAGE="RandomFields")
   
   if (is.null(old.seed)) return(vdim) else return(!is.na(RFopt$basic$seed))
@@ -349,7 +349,7 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
     on.exit(.Random.seed <<- old.seed, add = TRUE)
 
 
-  res <-  .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
+  res <-  .Call(C_EvaluateModel, double(0), as.integer(MODEL_USER),
                 PACKAGE="RandomFields")
 
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
@@ -427,12 +427,12 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
       on.exit(.Random.seed <<- old.seed, add = TRUE)
 
 
-  res <- .Call("EvaluateModel", double(0), as.integer(MODEL_USER),
+  res <- .Call(C_EvaluateModel, double(0), as.integer(MODEL_USER),
                PACKAGE="RandomFields")
   
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
     as.character(deparse(match.call(call=sys.call(sys.parent()))))
-  attr(res, "coord_system") <- .Call("GetCoordSystem", as.integer(MODEL_USER),
+  attr(res, "coord_system") <- .Call(C_GetCoordSystem, as.integer(MODEL_USER),
               RFoptOld[[2]]$coords$coord_system,
               RFoptOld[[2]]$coords$new_coord_system)
    return(res)
@@ -500,7 +500,7 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
 
   error <- integer(1)
 
-  result <- .Call("EvaluateModel", as.double(n), as.integer(reg), #userdefined,
+  result <- .Call(C_EvaluateModel, as.double(n), as.integer(reg), #userdefined,
                   PACKAGE="RandomFields")
   
   if (!spConform) return(result)
@@ -561,7 +561,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                           #userdefined=userdefined
                           )
       if (RFopt$general$returncall) attr(res, "call") <- mc
-      attr(res, "coord_system") <- .Call("GetCoordSystem", reg,
+      attr(res, "coord_system") <- .Call(C_GetCoordSystem, reg,
                                      RFopt$coords$coord_system,
                                      RFopt$coords$new_coord_system)
       return(res)
@@ -639,7 +639,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   }
   
   if (RFopt$general$returncall) attr(res, "call") <- mc
-  attr(res, "coord_system") <- .Call("GetCoordSystem",
+  attr(res, "coord_system") <- .Call(C_GetCoordSystem,
                                      as.integer(reg),
                                      RFopt$coords$coord_system,
                                      RFopt$coords$new_coord_system)

@@ -61,12 +61,15 @@
     \command{\link{RMplus}}, \code{+} \tab sum of covariance models or variograms\cr
   }
 
-  \bold{Further Operators}
+  \bold{Operators related to process constructions}
     \tabular{ll}{
     \command{\link{RMbernoulli}} \tab correlation of binary fields\cr
     \command{\link{RMbrownresnick}}\tab tcf of a \link{Brown-Resnick} process\cr
-    \command{\link{RMschlather}}\tab  tcf of a
-    \link[=RMschlather]{Schlather} process \cr 
+    \command{\link{RMschlather}}\tab  tcf of an extremal Gaussian
+    process / \link[=RMschlather]{Schlather} process \cr 
+    \command{\link{RMm2r}}\tab M2 process with monotone shape function\cr
+    \command{\link{RMm3b}}\tab M3 process with balls of random radius\cr
+    \command{\link{RMmps}}\tab M3 process with hyperplane polygons\cr
 %    \command{\link{}}\tab  \cr
     }
 

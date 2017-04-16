@@ -106,8 +106,10 @@ data <- soil["moisture"]
 
 model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
 
+\dontrun{
 ## Assuming log-Gaussian Data
 print(fit <- RFfit(model, data=data, loggaus=TRUE))
+}
 
 ## main Parameter in the Box Cox transformation to be estimated
 print(fit <- RFfit(model, data=data, boxcox=NA))

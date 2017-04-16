@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -222,9 +222,11 @@ void vectorAniso(double *x, cov_model *cov, double *v);
 int checkvector(cov_model *cov);
 void rangevector(cov_model *cov, range_type* ra);
 
-void div(double *x, cov_model *cov, double *v);
+void kappadivcurl(int i, cov_model *cov, int *nr, int *nc);
+void diverge(double *x, cov_model *cov, double *v);
 void curl(double *x, cov_model *cov, double *v);
 int checkdivcurl(cov_model *cov);
+void rangedivcurl(cov_model *cov, range_type* ra);
 //void rangedivcurl(cov_model *cov, range_type* ra);
 
 

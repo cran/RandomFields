@@ -5,7 +5,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -51,6 +51,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "AutoRandomFields.h"
 #include "Userinterfaces.h"
 
+#include "Local.h"
+double ownround(double x);
+
+
 //   intptr_t and uintptr_t fuer: umwandlung pointer in int und umgekehrt
 
 #ifndef RFERROR
@@ -66,14 +70,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ASSERT_GATTER(Cov) assert(TrafoOK(Cov))
 #define ASSERT_CHECKED(Cov) assert((Cov)->checked)
 #ifdef SCHLATHERS_MACHINE
-#define _no_loc_ SERR2("locations not initialised (%s line %d).", __FILE__, __LINE__)
+#define NO_LOC SERR2("locations not initialised (%s line %d).", __FILE__, __LINE__)
 //#undef NULL
 //#define NULL nullptr
 #else
-#define _no_loc_ SERR("locations not initialised.")
+#define NO_LOC SERR("locations not initialised.")
 #endif
 
-#define ASSERT_LOC_GIVEN if (loc == NULL) {PMI(cov); _no_loc_;}
+#define ASSERT_LOC_GIVEN if (loc == NULL) {PMI(cov); NO_LOC;}
 
 #ifdef __GNUC__
 #define HIDE_UNUSED_VARIABLE 1
@@ -597,6 +601,23 @@ typedef char NAname_type[MAX_NA][255];
 
 
 ///////////////////////////////////////////////////////////////////////
+// bipoweredexponential or bistable
+#define BIStablealpha 0
+#define BIStablescale 1
+#define BIStablecdiag 2
+#define BIStablerho 3
+#define BIStablerhomax 4
+#define BIStablerhored 5
+
+///////////////////////////////////////////////////////////////////////
+// bicauchy
+#define BICauchyalpha 0
+#define BICauchybeta 1
+#define BICauchyscale 2
+#define BICauchyrho 3
+
+
+///////////////////////////////////////////////////////////////////////
 // Power, shapepow
 #define POW_ALPHA 0
 
@@ -725,12 +746,20 @@ typedef char NAname_type[MAX_NA][255];
 #define CUTOFF_ASQRTR (CUTOFF_B + 1)
 #define CUTOFF_THEOR (CUTOFF_ASQRTR + 1) // muss immer == 4 sein
 
-#define CUTOFF_CUBE_A (CUTOFF_THEOR + 1)
+#define CUTOFF_MAX (CUTOFF_THEOR + 1)   /* size of vector q */
+
+
+#define CUTOFF_R 0
+#define CUTOFF_CUBE_A (CUTOFF_R + 1)
 #define CUTOFF_CUBE_B (CUTOFF_CUBE_A + 1)
 #define CUTOFF_CUBE_C (CUTOFF_CUBE_B + 1)
 #define CUTOFF_CONSTANT (CUTOFF_CUBE_C + 1)
 
-#define CUTOFF_MAX (CUTOFF_CONSTANT + 1)   /* size of vector q */
+#define CUTOFF_CUBE_N (CUTOFF_CONSTANT + 1)
+#define CUTOFF_CUBE_M (CUTOFF_CUBE_N + 1)
+#define CUTOFF_CUBE_L (CUTOFF_CUBE_M + 1)
+
+#define CUTOFF_MULTIVARIATE_MAX (CUTOFF_CUBE_L + 1)
 
 
 #define CUTOFF_THIRD_CONDITION 3
@@ -1467,6 +1496,8 @@ typedef struct ce_storage {
 
 typedef struct localCE_storage {
     void *correction;
+    bool is_bivariate_cutoff;
+    double q[4][CUTOFF_MULTIVARIATE_MAX];
 } localCE_storage;
 
 typedef struct approxCE_storage {
@@ -1559,24 +1590,20 @@ typedef struct br_storage {
     *mem2loc,
     memcounter,
     vertnumber,
-    idx,
-    maxidx,
     next_am_check,
-    zeropos[MAXSUB],
-    **countvector
-   ;
+    zeropos,
+    **countvector;
   double **trend, *newx,
-    **areamatrix,
+    *areamatrix,
     *shiftedloc,
     minradius,
     *logvertnumber,
-    *lowerbounds[MAXSUB],
-    radii[MAXSUB], thresholds[MAXSUB],
+    *lowerbounds,
+    radius,
     *locmin, *locmax, *loccentre, // only dummy variable!  
     *suppmin, *suppmax; // only dummy variable!  
   cov_model *vario, *submodel, 
-    *sub[MAXSUB]
-    ;
+    *sub[MAXSUB];
 } br_storage;
 
 
@@ -1740,6 +1767,11 @@ typedef struct biwm_storage {
 } biwm_storage;
 
 
+typedef struct bistable_storage {
+  double alpha[3], scale[3], cdiag[2], rho, rhomax, rhored;
+} bistable_storage;
+
+
 typedef struct inv_storage {
   double *v, *wert;
 } inv_storage;
@@ -1832,28 +1864,28 @@ int TransformLoc(cov_model *cov, double **xx, double **yy,
 
 extern char NEWMSG[LENERRMSG];
 
-#define WARNING1(X, Y) {sprintf(MSG, X, Y); warning(MSG); }
+#define WARNING1(X, Y) {SPRINTF(MSG, X, Y); warning(MSG); }
 #define AERR(X) {ERRLINE; PRINTF("AERR: "); errorMSG(X, MSG); 	\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG); assert(false);}
 #define MERR(X) {LPRINT("error: ");				\
     errorMSG(X, MSG);					\
     if (PL<PL_ERRORS) PRINTF("%s%s\n", ERROR_LOC, MSG);}
 #define XERR(X) {/* UERR; */ errorMSG(X, MSG); ERR(MSG);}
-#define PERR(X) {sprintf(MSG, "'%s': %s", param_name, X); ERR(MSG);}
-#define PERR1(X,Y) {sprintf(MSG, "'%s': %s", param_name, X); sprintf(MSG2, MSG, Y); ERR(MSG2);}
-#define QERR(X) {sprintf(ERRORSTRING, "'%s' : %s", param_name, X); DEBUGINFOERR; return ERRORM;}
-#define QERRX(ERR, X) {errorMSG(ERR, MSG); sprintf(ERRORSTRING, "'%s' : %s (%s)", param_name, X, MSG); DEBUGINFOERR; return ERRORM;}
-#define QERRC(NR,X) {sprintf(ERRORSTRING, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); DEBUGINFOERR; return ERRORM;}
-#define QERRC1(NR,X,Y) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); sprintf(ERRORSTRING, MSG, KNAME(Y)); DEBUGINFOERR; return ERRORM;}
-#define QERRC2(NR,X,Y,Z) {sprintf(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); sprintf(ERRORSTRING, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; return ERRORM;}
+#define PERR(X) {SPRINTF(MSG, "'%s': %s", param_name, X); ERR(MSG);}
+#define PERR1(X,Y) {SPRINTF(MSG, "'%s': %s", param_name, X); SPRINTF(MSG2, MSG, Y); ERR(MSG2);}
+#define QERR(X) {SPRINTF(ERRORSTRING, "'%s' : %s", param_name, X); DEBUGINFOERR; return ERRORM;}
+#define QERRX(ERR, X) {errorMSG(ERR, MSG); SPRINTF(ERRORSTRING, "'%s' : %s (%s)", param_name, X, MSG); DEBUGINFOERR; return ERRORM;}
+#define QERRC(NR,X) {SPRINTF(ERRORSTRING, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); DEBUGINFOERR; return ERRORM;}
+#define QERRC1(NR,X,Y) {SPRINTF(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); SPRINTF(ERRORSTRING, MSG, KNAME(Y)); DEBUGINFOERR; return ERRORM;}
+#define QERRC2(NR,X,Y,Z) {SPRINTF(MSG, "%s '%s': %s", ERROR_LOC, CovList[cov->nr].kappanames[NR], X); SPRINTF(ERRORSTRING, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; return ERRORM;}
 
 #define NotProgrammedYet(X) {						\
-    { if (strcmp(X, "") == 0)						\
-      sprintf(BUG_MSG,							\
+    { if (STRCMP(X, "") == 0)						\
+      SPRINTF(BUG_MSG,							\
 	      "function '%s' (file '%s', line %d) not programmed yet.", \
 	      __FUNCTION__, __FILE__, __LINE__);			\
     else								\
-      sprintf(BUG_MSG, "'%s' in '%s' (file '%s', line %d) not programmed yet.",\
+      SPRINTF(BUG_MSG, "'%s' in '%s' (file '%s', line %d) not programmed yet.",\
 	      X, __FUNCTION__, __FILE__, __LINE__);			\
       RFERROR(BUG_MSG);							\
     }\
@@ -2131,8 +2163,9 @@ extern pref_type PREF_ALL, PREF_NOTHING, PREF_TREND;
 void zeronugget(int* zeronugget);
 				
 double *EinheitsMatrix(int dim);
-				
-extern "C" double *OutX, *OutY;
+
+
+//ext ern "C" double *OutX, *OutY;
 
 
 // extern int CumIdxMakeExplicite[MAXMAKEEXPLICITE];
@@ -2235,7 +2268,7 @@ typedef struct cov_model {
 			  */
   isotropy_type isoprev, isoown;     /* formal isotropic parameter */
   double logspeed; /* 
-		      logspeed = lim_{h->infty} \gamma(h)/log(h) 
+		      logspeed = lim_{h->infty} \gamma(h) / LOG(h) 
 		      in case of isotropic model and RF_NAN otherwise
 		   */
 
@@ -2327,6 +2360,7 @@ typedef struct cov_model {
   extra_storage *Sextra;
   solve_storage *Ssolve;
   biwm_storage *Sbiwm;
+  bistable_storage *Sbistable;
   inv_storage *Sinv;
   scatter_storage *Sscatter;
   mcmc_storage *Smcmc;
@@ -2390,6 +2424,8 @@ void extra_DELETE(extra_storage **S);
 void extra_NULL(extra_storage* x);
 void biwm_DELETE(biwm_storage **S); 
 void biwm_NULL(biwm_storage* x);
+void bistable_NULL(bistable_storage* x);
+void bistable_DELETE(bistable_storage **S);
 void inv_DELETE(inv_storage **S);
 void inv_NULL(inv_storage* x);
 void scatter_DELETE(scatter_storage **S);
@@ -2509,7 +2545,7 @@ int alloc_cov(cov_model *cov, int dim, int rows, int cols);
 #define LOGCOV(X, Cov, V, S) {ASSERT_GATTER(Cov);CovList[(Cov)->gatternr].log(X, Cov, V, S);}
 #define SHAPE COV
 #define FCTN COV
-#define ABSFCTN(X, Cov, V) { COV(X, Cov, V); *(V) = fabs(*(V)); }
+#define ABSFCTN(X, Cov, V) { COV(X, Cov, V); *(V) = FABS(*(V)); }
 #define LOGSHAPE LOGCOV
 #define VTLG_D(X, Cov, V) { ASSERT_CHECKED(Cov); CovList[(Cov)->nr].D(X, Cov, V);} // kein gatter notw.
 #define VTLG_DLOG(X, Cov, V) { ASSERT_CHECKED(Cov); CovList[(Cov)->nr].logD(X, Cov, V);}
@@ -2868,10 +2904,6 @@ int PointShapeLocations(cov_model *key, cov_model *shape);
 
 
 
-
-//extern void F77_NAME(zpotf)(int* info);
-extern "C" void F77_CALL(zpotf2)(char *name, int *row, complex *U, int *xxx,
-				 int *Err);
 				
 
 typedef int (*inituser)(double *x, double *T, int dim, int lx, bool grid, 
@@ -2949,11 +2981,16 @@ extern utilsparam* GLOBAL_UTILS;
 coord_sys_enum GetCoordSystem(isotropy_type iso);
 
 
-// Formerly in <R_ext/Applic.h>LinkedTo: 
-void fft_factor_(int n, int *pmaxf, int *pmaxp);
-Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn,
-		  int isn, double *work, int *iwork);/* TRUE: success */
-
+#ifdef __cplusplus
+extern "C" {
+#endif 
+void F77_CALL(zpotf2)(char *name, int *row, complex *U, int *xxx, int *Err);
+void fft_factor(int n, int *pmaxf, int *pmaxp);
+Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn,
+	 int isn, double *work, int *iwork);/* TRUE: success */
+#ifdef __cplusplus
+}
+#endif
 
 
 

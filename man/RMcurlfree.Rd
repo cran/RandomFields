@@ -9,16 +9,25 @@
  
  The corresponding matrix-valued covariance function C of the model
  only depends on the difference \eqn{h}{h} between two points and it is
- given by 
- \deqn{
- C(h)=( - \nabla_h (\nabla_h)^T ) C_0(h)
+ given by the following components,
+ \itemize{
+   \item the potential
+   \item the vector field given by
+   \deqn{
+     C(h)=( - \nabla_h (\nabla_h)^T ) C_0(h)
+   }
+   \item the field of sinks and sources
  }
 }
 \usage{
-RMcurlfree(phi, var, scale, Aniso, proj)
+RMcurlfree(phi, which, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{a univariate stationary covariance model (2 or 3 dimensional).}
+ \item{phi}{a univariate stationary covariance model (2 or 3
+   dimensional).}
+ \item{which}{vector of integers. If not given all components are
+   returned; otherwise the selected components are returned.
+ }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}

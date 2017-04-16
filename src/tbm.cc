@@ -5,7 +5,7 @@
  Simulation of a random field by turning bands;
  see RFspectral.cc for spectral turning bands
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,9 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 //#include <sys/timeb.h>
 #include <unistd.h>
  
@@ -61,15 +61,15 @@ void unitvector3D(int projectiondim, double *deltax, double *deltay,
   case 2 :
     *deltaz = 0.0;
     *deltax= 2.0 *UNIFORM_RANDOM - 1.0;// see Martin's tech rep for details
-    *deltay= sqrt(1.0 - *deltax * *deltax) * sin(UNIFORM_RANDOM*TWOPI);
+    *deltay= SQRT(1.0 - *deltax * *deltax) * SIN(UNIFORM_RANDOM*TWOPI);
     break;
   case 3 : 
     double dummy;
     *deltaz = 2.0 * UNIFORM_RANDOM - 1.0; // ir case of multivariate
-    dummy = sqrt(1.0 - *deltaz * *deltaz);
+    dummy = SQRT(1.0 - *deltaz * *deltaz);
     *deltay = UNIFORM_RANDOM * TWOPI;
-    *deltax = cos(*deltay) * dummy;
-    *deltay = sin(*deltay) * dummy;
+    *deltax = COS(*deltay) * dummy;
+    *deltay = SIN(*deltay) * dummy;
     break;
   default : BUG;
   }
@@ -261,7 +261,7 @@ int checktbmproc(cov_model *cov) {
       //       printf("%d %d %d\n", cov->role,  ROLE_BASE, nsel);
       //APMI(cov); 
       //
-       sprintf(ERROR_LOC, "%s: ", NICK(cov));
+       SPRINTF(ERROR_LOC, "%s: ", NICK(cov));
        SERR("Its submodel could not be identified as isotropic or space-isotropic and positive definite function.");
     }
   } else { // sub->nr > FIRSTGAUSSPROC || key != NULL
@@ -446,7 +446,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
       if (user_dim == spDim && loc_user->Time) {
 	mindelta += loc_user->T[XSTEP] * loc_user->T[XSTEP];
       }
-      mindelta = sqrt(mindelta);
+      mindelta = SQRT(mindelta);
     }
     linesimufactor = tbm_linesimufactor / mindelta;
   } else {
@@ -493,7 +493,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     dummy = Center[d] - max[d];
     max_center += dummy * dummy;    
   }
-  diameter = 2.0 * sqrt(min_center > max_center ? min_center : max_center);
+  diameter = 2.0 * SQRT(min_center > max_center ? min_center : max_center);
 
   //    print("diam %f pts=%d %f %f\n", diameter, *points, BUFFER, linesimufactor ); //assert(false);
   // 4.231878 0 3.000000 1054.407676
@@ -504,7 +504,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   }
   s->linesimufactor = linesimufactor;
 
-  diameter = trunc(BUFFER + diameter * linesimufactor); // in pts
+  diameter = TRUNC(BUFFER + diameter * linesimufactor); // in pts
 
   // print("diam %f %f\n", diameter, linesimufactor);
 
@@ -711,7 +711,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
   assert(s != NULL);
 
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s %s: ", errorloc_save, NAME(cov));
+  SPRINTF(ERROR_LOC, "%s %s: ", errorloc_save, NAME(cov));
   cov->method = TBM;
 
   ROLE_ASSERT_GAUSS;
@@ -758,8 +758,8 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
   if (fulldim == 2) {
     if (deltaphi!=0.0) (*phi) += deltaphi;
     else (*phi) = UNIFORM_RANDOM * M_2_PI; // not pi, when multivariate
-    sube[0] = sin(*phi); 
-    sube[1] = cos(*phi);
+    sube[0] = SIN(*phi); 
+    sube[1] = COS(*phi);
   }
   
   else if (fulldim == 3) {
@@ -1029,12 +1029,12 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   
 //  {double z; int i; for(i=0, z=0.0; i<ntot; i++) z+=simuline[i]*simuline[i];
 //      print("%f %f %f\n", 
-//	     simuline[0], z / ntot, res[10] / sqrt((double) tbm_lines));
+//	     simuline[0], z / ntot, res[10] / SQRT((double) tbm_lines));
 //  }
 
   long i;
   double InvSqrtNlines;   
-  InvSqrtNlines = 1.0 / sqrt((double) tbm_lines);
+  InvSqrtNlines = 1.0 / SQRT((double) tbm_lines);
 
  
   for(i=0; i<totvdim; res[i++] *= (double) InvSqrtNlines);

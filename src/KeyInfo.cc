@@ -4,7 +4,7 @@
 
  library for simulation of random fields -- get key strukture
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,9 +21,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//#include <math.h>  
+//#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 //#include <sys/timeb.h>
 //#include <unistd.h>
 //#include <R_ext/Utils.h>     
@@ -353,7 +353,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 
   if (spConform) {
     char name[MAXCHAR+2];
-    sprintf(name, "%s", CC->nick); 
+    SPRINTF(name, "%s", CC->nick); 
     SET_VECTOR_ELT(model, k++, mkString(name));
   } else {
     SET_VECTOR_ELT(model, k++, mkString(CC->name));
@@ -366,7 +366,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 
       if (cov->kappasub[i] != NULL) {	  
 	  SET_STRING_ELT(pnames, j, 
-			 mkChar(!strcmp(C->kappanames[i], FREEVARIABLE)
+			 mkChar(!STRCMP(C->kappanames[i], FREEVARIABLE)
 				&& cov->ownkappanames[i] != NULL
 				? cov->ownkappanames[i] 
 				: C->kappanames[i])); 
@@ -399,7 +399,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 	}
 	
 	SET_STRING_ELT(pnames, j, 
-		       mkChar(!strcmp(C->kappanames[i], FREEVARIABLE)
+		       mkChar(!STRCMP(C->kappanames[i], FREEVARIABLE)
 			      && cov->ownkappanames[i] != NULL
 			      ? cov->ownkappanames[i] 
 			      : C->kappanames[i]));
@@ -588,10 +588,10 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
   int knr = INTEGER(keynr)[0],
     which = INTEGER(whichSub)[0] == WHICH_ALL_USER 
     ? WHICH_ALL : INTEGER(whichSub)[0] % 2,
-    prlevel = abs(INTEGER(Prlevel)[0]) % 10;
+    prlevel = std::abs(INTEGER(Prlevel)[0]) % 10;
   bool 
     both = INTEGER(Prlevel)[0] < 0,
-    delete_call = abs(INTEGER(Prlevel)[0]) < 10;
+    delete_call = std::abs(INTEGER(Prlevel)[0]) < 10;
   cov_model *cov, *orig;
   SEXP res, names;
 
@@ -605,7 +605,7 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
       int i, len = length(names);
       for (i=0; i<len; i++) {
 	const char *name = CHAR(STRING_ELT(names, i));
-	if (strcmp("xdimprev", name) == 0) {
+	if (STRCMP("xdimprev", name) == 0) {
 	  INTEGER(VECTOR_ELT(res, i))[0] = orig->xdimprev;
 	  break;
 	}
@@ -661,7 +661,7 @@ void Path(cov_model *cov, cov_model *sub) {
 void leer(int level){
   char format[255];
   if (level == 0) return;
-  sprintf(format,"%%%ds", -level * 3);
+  SPRINTF(format,"%%%ds", -level * 3);
   PRINTF(format, "");
 }
 
@@ -771,7 +771,7 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
   }
 
   cov_fct *CC = C;
-  while(strcmp(CC->name, InternalName) ==0) CC--;
+  while(STRCMP(CC->name, InternalName) ==0) CC--;
   if (level == 0) 
     PRINTF("******   %s, %s   ****** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);
   else PRINTF("    **** %s, %s **** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);  PRINTF("\n");
@@ -780,7 +780,7 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
 
   for(i=0; i<C->kappas; i++) {
     strcpy(name, 
-	   !strcmp(C->kappanames[i], FREEVARIABLE) && 
+	   !STRCMP(C->kappanames[i], FREEVARIABLE) && 
 	           cov->ownkappanames != NULL && cov->ownkappanames[i] != NULL
 	   ? cov->ownkappanames[i]
 	   : C->kappanames[i]
@@ -1306,7 +1306,7 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
       nmodelinfo++;
   }
   for (i=0; i<C->kappas; i++) {
-    if ((PisNULL(i) || !strcmp(C->kappanames[i], INTERNAL_PARAM) ||
+    if ((PisNULL(i) || !STRCMP(C->kappanames[i], INTERNAL_PARAM) ||
 	 (do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM))
 	&& cov->kappasub[i] == NULL)
       nmodelinfo--;
@@ -1337,7 +1337,7 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
   for(i=0; i<C->kappas; i++) {
     //printf("donotreturnparam = %d\n", do_notreturnparam);
 
-    if ( (!strcmp(C->kappanames[i], INTERNAL_PARAM) ||
+    if ( (!STRCMP(C->kappanames[i], INTERNAL_PARAM) ||
 	  PisNULL(i) ||
 	  (do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM))
 	 && cov->kappasub[i] == NULL
@@ -1575,7 +1575,7 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
 
     if (n_s == coord_mix && GLOBAL.internal.warn_coord_change) {    
       char msg[300];
-      sprintf(msg, "the covariance model relies on at least two different coordinate systems. Check that this is not due to misspecification of the covariance model. To avoid this warning set 'RFoptions(%s=FALSE)'", 
+      SPRINTF(msg, "the covariance model relies on at least two different coordinate systems. Check that this is not due to misspecification of the covariance model. To avoid this warning set 'RFoptions(%s=FALSE)'", 
 	      internals[INTERNALS_COORD_CHANGE]);
       warning(msg);
       GLOBAL.internal.warn_coord_change = false;
@@ -1589,7 +1589,7 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
     case reportcoord_warnings_orally : 
       if (warn) {
 	char msg[200];
-	sprintf(msg, "internal change of coordinate system from '%s' to '%s'. To avoid this message change ",
+	SPRINTF(msg, "internal change of coordinate system from '%s' to '%s'. To avoid this message change ",
 		COORD_SYS_NAMES[os], COORD_SYS_NAMES[n_s]);
 	warning(msg);
       } 

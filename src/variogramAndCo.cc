@@ -6,7 +6,7 @@ main library for unconditional simulation of random fields
 
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
- Copyright (C) 2005 -- 2015 Martin Schlather
+ Copyright (C) 2005 -- 2017 Martin Schlather
 s
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,9 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */ 
   
  
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 //#include <sys/timeb.h> 
  
 #include <string.h> 

@@ -68,22 +68,22 @@
 \alias{R.floor}
 \alias{floor}
 \alias{R.fmod}
-\alias{R.nearbyint}
 \alias{R.round}
 \alias{round}
 \alias{R.trunc}
 \alias{trunc}
-\alias{R.lrint}
-\alias{R.llrint}
-\alias{R.lround}
-\alias{R.llround}
-\alias{R.copysign}
+%\alias{R.nearbyint}
+%\alias{R.lrint}
+%\alias{R.llrint}
+%\alias{R.lround}
+%\alias{R.llround}
+%\alias{R.copysign}
+\alias{R.lgamma}
+\alias{lgamma}
 \alias{R.erf}
 \alias{R.erfc}
 \alias{R.tgamma}
 \alias{gamma}
-\alias{R.lgamma}
-\alias{lgamma}
 \alias{R.rint}
 \alias{R.nextafter}
 \alias{R.nexttoward}
@@ -160,16 +160,10 @@ R.fabs(a)
 floor(x)
 R.floor(a)
 R.fmod(a, b)
-R.nearbyint(a)
 round(x, ...)
 R.round(a)
 trunc(x)
 R.trunc(a)
-R.lrint(a)
-R.llrint(a)
-R.lround(a)
-R.llround(a)
-R.copysign(a, b)
 R.erf(a)
 R.erfc(a)
 gamma(x)
@@ -186,6 +180,12 @@ R.fmax(a, b)
 min(...)
 R.fmin(a, b)
 }
+%R.nearbyint(a)
+%R.lrint(a)
+%R.llrint(a)
+%R.lround(a)
+%R.llround(a)
+%.copysign(a, b)
 
 \arguments{
   \item{model}{object of class \code{\link[=RMmodel-class]{RMmodel}}, 

@@ -28,7 +28,7 @@ rfGenerateMaths(files = "/usr/include/tgmath.h", Cfile = "QMath",
                         RFpath = "~/R/RF/svn/RandomFields")
 checkExamples(exclude = NULL, include=1:length(.fct.list),
                ask=FALSE, echo=TRUE, halt=FALSE, ignore.all = FALSE,
-               path="RandomFields", package = "RandomFields", 
+               path=package, package = "RandomFields", 
                read.rd.files=TRUE, libpath = NULL, single.runs = FALSE)
 
 ScreenDevice(height, width)
@@ -37,7 +37,8 @@ FinalizeExample()
 StartExample(reduced = TRUE)
 
 Dependencies(pkgs = all.pkgs, dir = "Dependencies",
-             install = FALSE, check=TRUE, reverse=FALSE)
+             install = FALSE, check=TRUE, reverse=FALSE, package =
+                 "RandomFields")
 
 showManpages(path="/home/schlather/svn/RandomFields/RandomFields/man")
 

@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2016 Martin Schlather
+ Copyright (C) 2017 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -286,15 +286,15 @@ typedef struct extremes_param {
       1.0, 0.0, 0.01}
 
 
-#define brN 9
+#define brN 7
 extern const char * br[brN];
 typedef struct br_param {
-  int BRmaxmem, BRvertnumber, BRoptimmaxpoints, BRoptim, deltaAM;
-  double BRmeshsize, BRoptimtol, variobound, corr_factor;
+  int BRmaxmem, BRvertnumber, BRoptim, deltaAM;
+  double BRmeshsize, BRoptimtol, variobound;
 } br_param;
 #define br_START	       \
-  {10000000, 7, 10000, 2, 300, \
-      0.1, 0.01, 8.0, 0.1}     \
+  {10000000, 7, 1, 300, \
+      0.1, 0.01, 8.0}     \
 
 
 #define distrN 9

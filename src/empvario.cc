@@ -1,29 +1,29 @@
 /*
- Authors  Martin Schlather, schlather@math.uni-mannheim.de 
+  Authors  Martin Schlather, schlather@math.uni-mannheim.de 
 
- calculation of the empirical variogram
+  calculation of the empirical variogram
 
- Copyright (C) 2002 - 2014 Martin Schlather, 
+  Copyright (C) 2002 - 2017 Martin Schlather, 
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 3
+  of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111 - 1307, USA.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111 - 1307, USA.
 */
 
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "RF.h"
  
 
@@ -34,42 +34,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111 - 1307, USA.
 #define TOOLS_XERROR 3
 #define TOOLS_BIN_ERROR 4
 #define TOOLS_UNKNOWN_CHAR 5
+#define TOOLS_METHOD 6
+#define METHOD_CROSS 0
+#define METHOD_PSEUDO 1
+#define METHOD_COVARIANCE 2
+#define METHOD_PSEUDOMADOGRAM 3
+#define METHOD_CROSSMADOGRAM 4
+
 
 
 double EV_TIMES_LESS = 2.0; // 0:always new method; inf:always usual method
 int EV_SYSTEM_LARGER = 100; // 0:always new method; inf:always usual method
 
-double variogram(double a, double b) {
-  double dummy = a - b; 
-  return dummy * dummy; 
-}
+int LOW = -1;
 
-double Efunction(double a, double b) {return a + b; } 
-/*   see Schlather (2001), Bernoulli, 7(1), 99 - 117
-    Schlather (????), Math. Nachr, conditionally accepted
-    Schlather, Ribeiro, Diggle (in prep.) 
- */
-
-double kmm(double a, double b) {return a * b; }  /*  
-					     Stoyan's k_mm function
-					     see Stoyan, Kendall, & Mecke, 
-					     or Stoyan & Stoyan (both Wiley) 
-					   */
-
-int LOW = -1; 
-
-void empiricalvariogram(double  * x, int  * dim, int  * lx, 
-			double  * values, int  * repet, int  * grid, 
-			double  * bin, int  * nbin, int  * charact, 
-			double  * vario, 
-			double  * sd, // 
+SEXP empiricalvariogram(SEXP  X, SEXP Dim, SEXP Lx, 
+			SEXP Values, SEXP Repet, SEXP Grid, 
+		        SEXP Bin, SEXP Nbin, 
 			// note that within the subsequent algorithm
 			// the sd of the Efct ist correctly calculated:
 			//   instead for summing up Efct^2 in sd one should
 			//   sum up a^2 + b^2 !
 			//   so finally only NAs are returned in this case
 			//   use emp
-			int  * n)
+			SEXP Vdim, SEXP Method)
 /*     x      : matrix of coordinates, ### rows define points
  *    dim    : dimension, 
  *    lx     : length of x, y, and z
@@ -80,455 +68,351 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
  *    bin    : specification of the bins 
  *             sequence is checked whether it is strictly isotone
  *    nbin   : number of bins. i.e. length(bin) - 1
- *    character: 1 : function E
- *               2 : Stoyan's kmm function
- *               default : semivariogram
- *    vario    : empirical variogram
- *    n      : number of pairs for each bin
-  */
-{ 
-  int i1, ii,  d, halfnbin, gridpoints[MAXVARIODIM], dimM1, EV_METHOD, err, 
-    low, cur, up;    
-  long totalpoints, totalpointsrepet, segment, 
-    factor =  -1; 
-  double ( * characteristic)(double, double) = NULL; 
-  double  * xx[MAXVARIODIM], maxdist[MAXVARIODIM], dd, 
-     * BinSq = NULL; 
+ *    vdim   : dimension of data
+ *    method : defined above
+ */
+{  
+  int dim = INTEGER(Dim)[0],
+    lx = INTEGER(Lx)[0],
+    repet = INTEGER(Repet)[0],
+    grid = INTEGER(Grid)[0],
+    nbin = INTEGER(Nbin)[0],
+    vdim = INTEGER(Vdim)[0],
+    method = INTEGER(Method)[0];
+  double *x = REAL(X), *values = REAL(Values),
+    *bin = REAL(Bin), *res = NULL, *sumhead = NULL
+    , *sumtail = NULL, n;
+  int totaln = nbin * vdim * vdim;
+  int d, halfnbin, gridpoints[MAXVARIODIM], dimM1, err, 
+    low, cur, up, curbin;
+  long segment, totalpointsrepetvdim, totalpointsvdim,
+    totalpoints = NA_INTEGER;  
+  double  * xx[MAXVARIODIM], // maxdist[MAXVARIODIM],// dd, 
+    * BinSq = NULL;
+  SEXP Res;
+  // res contains the variogram, sd and n.bin (res gets returned to function)
+  // first column is of res is the variogram
+  // second column is the sd and the third n.bin (number of data per bin)
 
-  if ( * dim > MAXVARIODIM) {err = TOOLS_DIM; goto ErrorHandling; }
+  PROTECT(Res = allocMatrix(REALSXP, totaln, 3));
+  res = REAL(Res);
+  for(int i=0; i < totaln * 3; res[i++] = 0);
+
+  if ( dim > MAXVARIODIM) {err = TOOLS_DIM; goto ErrorHandling; }
+  if( vdim == 1) {
+    // set cross to pseudo, if dimension is 1
+    if(method == METHOD_CROSS) method = METHOD_PSEUDO;
+    if(method == METHOD_CROSSMADOGRAM) method = METHOD_PSEUDOMADOGRAM;
+  }
   
-  for (int i = segment = 0; i< * dim; i++, segment += * lx) 
+  for (int i = segment = 0; i < dim; i++, segment += lx)
     xx[i] = &(x[segment]); 
   if (xx[0]==NULL) {err=TOOLS_XERROR; goto ErrorHandling; }
-  for (int i=0; i< * nbin; i++) {
+  for (int i=0; i< nbin; i++) {
     if (bin[i] >= bin[i + 1])  {err = TOOLS_BIN_ERROR; goto ErrorHandling; }
   }
-
-
-  dimM1 =  *dim - 1; 
-  halfnbin =  * nbin / 2; 
-
-  switch ( *charact) {
-  case 0 :
-    characteristic = variogram; 
-    factor = 2; 
-    break; 
-  case 1 : 
-    characteristic = Efunction; 
-    factor = 2; 
-    break; 
-  case 2  : 
-    characteristic = kmm; 
-    factor = 1; 
-    break; 
-  default : 
-    err = TOOLS_UNKNOWN_CHAR; goto ErrorHandling; 
-   }
+  
+  dimM1 =  dim - 1; 
+  halfnbin =  nbin / 2; 
    
-  if ((BinSq = (double  * ) MALLOC(sizeof(double) *  ( * nbin + 1)))==NULL) {
+  if ((BinSq = (double  * ) MALLOC(sizeof(double) * (nbin + 1)))==NULL) {
     err = TOOLS_MEMORYERROR; goto ErrorHandling; 
   }
-  for (int i = 0; i< * nbin; i++){
-    sd[i] = vario[i] = 0.0; 
-    n[i] = 0; 
-  }
-  for (int i = 0; i <=  * nbin; i++){ 
+  if(method == METHOD_COVARIANCE) {
+    if( (sumhead = (double *) CALLOC(totaln, sizeof(double))) == NULL) {
+      err = TOOLS_MEMORYERROR; goto ErrorHandling;
+    }
+    if( (sumtail = (double *) CALLOC(totaln, sizeof(double))) == NULL) {
+      err = TOOLS_MEMORYERROR; goto ErrorHandling;
+    }
+  } 
+  
+  for (int i = 0; i <= nbin; i++){ 
     BinSq[i] = bin[i] > 0 ?  bin[i] * bin[i] : bin[i]; 
   }
 
 
   //////////////////////////////////// GRID ////////////////////////////////////
-  if ( * grid) {
-    
-    ERR("use option 'fft' for data on a grid."); 
-
-    int d1, d2, head, tail, swapstart; 
+  if (grid) {    
+    int d1, d2, head, tail; 
     double p1[MAXVARIODIM], p2[MAXVARIODIM], distSq, dx[MAXVARIODIM]; 
-    int delta[MAXVARIODIM], deltaTwo[MAXVARIODIM], maxtail;    
     long indextail[MAXVARIODIM], indexhead[MAXVARIODIM],
-      valuePtail, valuePointhead, 
-      segmentbase[MAXVARIODIM], DeltaTwoSegmentbase[MAXVARIODIM], 
-      DeltaFourSegmentbase[MAXVARIODIM], 
-      SegmentbaseTwo[MAXVARIODIM], SegmentbaseFour[MAXVARIODIM]; 
-    double psq[MAXVARIODIM], p[MAXVARIODIM], maxbinsquare; 
-    bool forbid;    
+      segmentbase[MAXVARIODIM]; //SegmentbaseTwo[MAXVARIODIM],
+      //SegmentbaseFour[MAXVARIODIM];
 
     // does not work!! :
     //GetGridSize(x, y, z, dim, &(gridpoints[0]), &(gridpoints[1]), &(gridpoints[2])); 
     // totalpoints = gridpoints[0] * gridpoints[1] * gridpoints[2]; 
     //
     // instead :
-    dd = 0.0;
+      //    dd = 0.0;
     totalpoints = 1;
     for (int i = 0; i <= dimM1; i++) {
       gridpoints[i] = (int) (xx[i][XLENGTH]); 
       totalpoints  *= gridpoints[i]; 
-      maxdist[i] = (gridpoints[i] - 1) * xx[i][XSTEP]; 
-      dd += maxdist[i] * maxdist[i]; 
+      // maxdist[i] = (gridpoints[i] - 1) * xx[i][XSTEP]; 
+      //      dd += maxdist[i] * maxdist[i]; 
     }
-    EV_METHOD = (int) ( ((EV_TIMES_LESS * BinSq[ * nbin]) < dd) ||
-			  (EV_SYSTEM_LARGER<totalpoints)); // ? large system ?
+    totalpointsvdim = totalpoints * vdim;
+    
     for (int i = 0; i <= dimM1; i++) { dx[i] = xx[i][XSTEP] * 0.99999999; }
-    totalpointsrepet = totalpoints *  *repet; 
+    totalpointsrepetvdim = totalpointsvdim * repet; 
     segmentbase[0] = 1; // here x runs the fastest;  
-    SegmentbaseTwo[0] = segmentbase[0] << 1; 
-    SegmentbaseFour[0] = segmentbase[0] << 2; 
+    //    SegmentbaseTwo[0] = segmentbase[0] << 1; 
+    //SegmentbaseFour[0] = segmentbase[0] << 2
+      ; 
     for (int i = 1; i <= dimM1; i++) { 
       segmentbase[i] = segmentbase[i - 1] * gridpoints[i - 1]; 
-      SegmentbaseTwo[i] = segmentbase[i] << 1; 
-      SegmentbaseFour[i] = segmentbase[i] << 2; 
-    } 
-
-
-
-
-    EV_METHOD = 0; /// !!! since EV_METHOD = 1 has invalid read !!!!!!
-    
-    switch (EV_METHOD) {
-    case 0 :
-      for (int i = 0; i <= dimM1; i++) {indexhead[i] = 0; p1[i] = 0.0; }
-       
-      // loop through all pair of points, except (head, tail) for head=tail, 
-      // which is treated separately at the end, if necessary (not relevant for 
-      // variogram itself, but for function E and V)
-      for (head = 0; head<totalpoints; ) {
-	for (int i = 0; i <= dimM1; i++) {
-	  indextail[i] = 0; 
-	  p2[i] = 0.0; 
-	}
-	for (tail = 0; tail<head; ) {
-	  distSq = 0.0; 
-	  for (int i = 0; i <= dimM1; i++) {
-	    double dx2; 
-	    dx2 = p1[i] - p2[i]; 
-	    distSq  += dx2 * dx2; 
-	  }
-	  
-	  if ((distSq>BinSq[0]) && (distSq <= BinSq[ * nbin])) { 
-	    /*  search which bin distSq in  */
-	    low = 0; up =   * nbin; /*  21.2.01,  * nbin - 1  */  
-	    cur =  halfnbin; 
-	    while (low!=up) { 
-	      if (distSq> BinSq[cur]) {low = cur;} else {up = cur-1;} // (* ; *]
-	      cur = (up + low + 1) / 2; 
-	    }
-	    for (segment = 0; segment<totalpointsrepet; segment += totalpoints){
-	      double x2; 
-	      x2 = characteristic(values[head + segment],
-				  values[tail + segment]); 
-	      vario[low] += x2; 
-	      sd[low] += x2 * x2; 
-	    }
-	    assert(low < *nbin); 
-	    n[low]++; 
-	  }	
-	  tail++; 
-	  d2 = dimM1; 
-	  indextail[d2]++;
-	  p2[d2] +=dx[d2]; 
-	  while (indextail[d2] >= gridpoints[d2]) { 
-	    indextail[d2] = 0; p2[d2] = 0; 
-	    d2--; 
-	    assert(d2 >= 0); 	
-	    indextail[d2]++; 
-	    p2[d2] +=dx[d2]; 
-	  }
-	}   
-	head++; 
-	if (head<totalpoints) {
-	  d1 = dimM1;  
-	  indexhead[d1]++; p1[d1] +=dx[d1];      
-	  while (indexhead[d1] >= gridpoints[d1]) { 
-	    indexhead[d1] = 0; 
-	    p1[d1] = 0; 
-	    d1--;  
-	    assert(d1 >= 0); 
-	    indexhead[d1]++; 
-	    p1[d1] +=dx[d1]; 
-	  }
-	}
-      }
-      if(PL >= PL_SUBDETAILS) 
-	{
-	for(int i = 0; i< * nbin; i++){
-	  PRINTF(" %d:%f(%f, %d)",
-		 i, vario[i]/(double)(factor * n[i]), vario[i], n[i]); 
-	}
-	PRINTF("  XXXY\n"); 
-	}      
-	break; 
-
-	/* ******************************************************** */
-
-    case 1 :
-      /*  idea: 
-	 1) fix a vector 'delta' of positive components
-	 2) search for any pair of points whose distSqance vector dv equals
-	    |dv[i]|=delta
-	    and some the f(value1, value2) up.
-	 
-	realisation :
-	1) one preferred direction, namely dimM1 - direction (of 0..dimM1)
-	2) for the minor directions, swap the values of delta from positive 
-	   to negative (all 2^{dimM1} posibilities)   - - > indexhead
-	   EXCEPTION :  delta[dimM1]==0. Then only the minor directions up to 
-                        dimM1 - 2 are swapped!
-                        (otherwise values will be counted twice as indextail is 
-                         running through all the positions with
-                         coordinate[dimM1]==0)
-           if delta[dimM1 - 1] is also 0 then only minor direction up to dimM1 - 3 
-           are swapped, etc.
-        3) indextail running through all positions with coordinate[dimM1]==0. 
-	   This is not very effective if the grid is small in comparison to the
-	   right boundary of the bins!    
-       */
-          
-      maxbinsquare = BinSq[ * nbin]; 
-      for (int i = 0; i <= dimM1; i++) {
-	delta[i] = 0; 
-	psq[i] = p[i] = 0.0; 
-      }
-      for (; ; ) { // delta
-	do {
-	  d = 0;  
-	  delta[d]++;  // this excludes distSq==0 !	
-	  p[d] +=dx[d]; psq[d] = p[d] * p[d]; 
-	  distSq = 0.0;
-	  for (int i = 0; i<=dimM1; distSq += psq[i++]); 
-	  while ((distSq>maxbinsquare)  || (p[d]>maxdist[d])) {/*  ( * )  */ 
-	    delta[d] = 0; psq[d] = p[d] = 0.0; 
-	    d++;   
-	    if (d<=dimM1) { 
-	      delta[d]++; 
-	      p[d] +=dx[d];
-	      psq[d] = p[d] * p[d];
-	      distSq = 0.0;
-	      for (int i = 0; i<=dimM1; distSq += psq[i++]);
-	    } else break; 	
-	  }
-	} while ((distSq<=BinSq[0]) && (d<=dimM1)); 
-	if (d>dimM1) break; 
-	if (PL >= PL_SUBDETAILS) 
-	    PRINTF("\n {%d %d %d}", delta[0], delta[1], delta[2]); 
-	assert((distSq<=BinSq[ * nbin]) && (distSq>BinSq[0])); 
-	{
-	  low = 0; up = *nbin; /*   */ cur =  halfnbin; 
-	  while(low!=up){
-	    if (distSq> BinSq[cur]) low = cur; else up = cur-1;// ( * ; * ] 
-	    cur = (up + low + 1) / 2; 
-	  }
-	}	
-
-	
-	i1 = 0; 
-	while ((i1<dimM1) && (delta[i1]==0)) i1++; 
-	swapstart = i1 + 1; 
-	
-	for(int i = 0; i<=dimM1; i++) {
-	  deltaTwo[i]=delta[i] << 1; 
-	  DeltaTwoSegmentbase[i]  =  delta[i] * SegmentbaseTwo[i]; 
-	  DeltaFourSegmentbase[i] =  delta[i] * SegmentbaseFour[i]; 
-	}
-
-	for (int i = 0; i<=dimM1; i++) indextail[i] = 0;
-	valuePtail = valuePointhead = 0; 
-	
-	maxtail = gridpoints[0] - delta[0];  
-	for(; ; ) { // indextail
-	  valuePointhead = 0;
-	  for (int i = 0; i<=dimM1; i++) {
-	    indexhead[i] = indextail[i] + delta[i]; /*  Do not use  - delta[i], as last 
-						   dimension must always be 
-						    + delta[]  */
-	    valuePointhead  += indexhead[i] * segmentbase[i]; 
-	  }  // one point is given by indextail, the other by indexhead	
-	  for (; ; ) {// indexhead
-	    forbid = false; // in case dim=1 ! (???, 21.2.01)
-	    for (int i = 0; i<=dimM1; i++) { // for (i = 1; ... ) should be enough...
-	      if ((forbid = indexhead[i] < 0) || indexhead[i] >= gridpoints[i]) 
-		break; 
-	    }
-	    if (!forbid) { 	  
-	      for (tail = 0; tail<maxtail; tail++) {	
-		long segtail = valuePtail + tail,
-		  seghead = valuePointhead + tail; 
-		for (segment=0; segment<totalpointsrepet; segment+=totalpoints){
-		  double x2; 
-		  x2 = characteristic(values[segtail + segment], 
-				      values[seghead + segment]); 
-		  vario[low] += x2; 
-		  sd[low] += x2 * x2; 
-		} 	
-		assert(low< *nbin); 
-		n[low]++; 
-	      }	
-	    }
-	    
-	    d = swapstart;  
-	    if (d<=dimM1) {
-	      indexhead[d] -=deltaTwo[d];  
-	      valuePointhead -= DeltaTwoSegmentbase[d]; 
-	      while (indexhead[d] < indextail[d] - delta[d] || delta[d]==0) { 
-		if (delta[d] != 0) {
-		  // so, indexhead[d]<indextail[d] - delta[d]; 
-		  // i.e.indexhead[d] = indextail[d] - 3 * delta[d]
-		  valuePointhead += DeltaFourSegmentbase[d]; 
-		  indexhead[d] = indextail[d] + delta[d]; 
-		}
-		d++; 
-		if (d<=dimM1) {
-		  indexhead[d] -= deltaTwo[d]; 
-		  valuePointhead -= DeltaTwoSegmentbase[d]; 
-		} else break; 
-	      }
-	    } else break; 
-	    if (d>dimM1) break; 
-	  } //for(; ; ), indexhead
-	  
-	  d = 1;  
-	  if (d<=dimM1) {    // not satisfied for one dimensional data! ?
-	    indextail[d]++; 
-	    valuePtail += segmentbase[d]; 
-	    while (indextail[d] >= gridpoints[d]) { 
-	      valuePtail -= indextail[d] * segmentbase[d]; 
-	      indextail[d] = 0; 
-	      d++; 
-	      if (d<=dimM1) {
-		indextail[d]++; 
-		valuePtail += segmentbase[d]; 
-	      } else break; 
-	    }
-	  } else break; 
-	  if (d>dimM1) break; 
-	} // for(; ; ), indextail
-      }  //for(; ; ), delta
-      if(PL >= PL_SUBDETAILS) {
-	PRINTF("\n"); 
-	for(int i = 0; i< * nbin; i++){
-	  PRINTF(" %d:%f(%f, %d)  ", 
-		 i, vario[i]/(double)(factor * n[i]), vario[i], n[i]); 
-	}
-	PRINTF(" YYY\n"); 
-      }
-      break; 
-    default : BUG;
+      //      SegmentbaseTwo[i] = segmentbase[i] << 1; 
+      // SegmentbaseFour[i] = segmentbase[i] << 2; 
     }
+    
+    for (int i = 0; i <= dimM1; i++) {indexhead[i] = 0; p1[i] = 0.0; }
+       
+    // loop through all pair of points, except (head, tail) for head=tail, 
+    // which is treated separately at the end, if necessary (not relevant for 
+    // variogram itself, but for function E and V)
+#define FOR(DO)								\
+    for (head = 0; head<totalpoints; ) {				\
+      for (int i = 0; i <= dimM1; i++) {				\
+	indextail[i] = 0;						\
+	p2[i] = 0.0;							\
+      }									\
+      for (tail = 0; tail<head; ) {					\
+	distSq = 0.0;							\
+	for (int i = 0; i <= dimM1; i++) {				\
+	  double dx2;							\
+	  dx2 = p1[i] - p2[i];						\
+	  distSq  += dx2 * dx2;						\
+	}								\
+	if ((distSq>BinSq[0]) && (distSq <= BinSq[nbin])) {		\
+	  /*  search which bin distSq in  */				\
+	  low = 0; up = nbin; /*  21.2.01,  * nbin - 1  */		\
+	  cur =  halfnbin;						\
+	  while (low!=up) {						\
+	    if (distSq> BinSq[cur]) {low = cur;} else {up = cur-1;}	\
+	    cur = (up + low + 1) / 2;					\
+	  }								\
+	  for(int row = 0; row < vdim; row++) {				\
+	    for(int col = row; col < vdim; col++) {			\
+	      for (segment = 0; segment<totalpointsrepetvdim; segment += totalpointsvdim){ \
+		curbin = low + nbin * (vdim * row + col);		\
+		DO;							\
+		res[curbin] += x2;					\
+		res[curbin + totaln] += x2 * x2;			\
+		res[curbin + 2*totaln]++;				\
+	      }								\
+	    }								\
+	  }								\
+	  assert(low < nbin);						\
+	}								\
+	tail++;								\
+	d2 = dimM1;							\
+	indextail[d2]++;						\
+	p2[d2] +=dx[d2];						\
+	while (indextail[d2] >= gridpoints[d2]) {			\
+	  indextail[d2] = 0; p2[d2] = 0;				\
+	  d2--;								\
+	  assert(d2 >= 0);						\
+	  indextail[d2]++;						\
+	  p2[d2] +=dx[d2];						\
+	}								\
+      }									\
+      head++;								\
+      if (head<totalpoints) {						\
+	d1 = dimM1;							\
+	indexhead[d1]++; p1[d1] +=dx[d1];				\
+	while (indexhead[d1] >= gridpoints[d1]) {			\
+	  indexhead[d1] = 0;						\
+	  p1[d1] = 0;							\
+	  d1--;								\
+	  assert(d1 >= 0);						\
+	  indexhead[d1]++;						\
+	  p1[d1] +=dx[d1];						\
+	}								\
+      }									\
+    }
+
+    switch(method){
+    case(METHOD_PSEUDO):
+      // pseudo variogram
+      FOR(double x2 = values[head + totalpoints * row + segment]
+	  - values[tail + totalpoints * col + segment]; x2 *= x2);
+      break;
+    case(METHOD_CROSS):
+      // cross variogram
+      FOR(double x2 = (values[head + totalpoints * row + segment]
+		       -values[tail + totalpoints * row + segment]) *
+	  (values[head + totalpoints * col + segment]-values[tail + totalpoints * col + segment]));	  
+      break;
+    case(METHOD_COVARIANCE):
+      FOR(double x2 = (values[head + totalpoints * row + segment] *
+		       values[tail + totalpoints * col + segment]);
+	  sumhead[curbin] += values[head + totalpoints * row + segment];
+	  sumtail[curbin] += values[tail + totalpoints * col + segment]);
+      break;
+    case(METHOD_PSEUDOMADOGRAM):
+      // pseudo madogram
+      FOR(double x2 = FABS(values[head + totalpoints * row + segment]
+			   - values[tail + totalpoints * col + segment]));
+      break;
+    case(METHOD_CROSSMADOGRAM):
+      // cross madogram
+      FOR(double x2 = FABS(values[head + totalpoints * row + segment]
+			   -values[tail + totalpoints * row + segment]) *
+	  FABS(values[head + totalpoints * col + segment]
+	       -values[tail + totalpoints * col + segment]); x2 = SQRT(x2));	  
+      break;
+    default:
+      err = TOOLS_METHOD; goto ErrorHandling;
+    }   
+
   } else {
     ////////////////////////////////////  ARBITRARY /////////////////////////////
-    totalpoints =  * lx; 
-    totalpointsrepet = totalpoints *  * repet; 
-    for (int i = 0; i<totalpoints; i++){ // to have a better performance for large 
-      //                            data sets, group the data first into blocks
-      for (int j = 0; j<i; j++){
-        double distSq; 
-      	for (distSq = 0.0, d = 0; d<=dimM1; d++) {
-	  double dx; 
-	  dx = xx[d][i] - xx[d][j]; 
-	  distSq  += dx * dx; 
-	}		
-	// see also above
-	//distSq = sqrt(distSq); 26.2.
-	if (distSq>BinSq[0] && distSq<=BinSq[*nbin]) { 
-	  low = 0; 
-	  up = *nbin; 
-	  cur =  halfnbin; 
-	  while (low!=up) {  
-	    if (distSq> BinSq[cur]) low = cur; else up = cur - 1; // ( * ; * ]  
-	    cur = (up + low + 1) / 2; 
-	  } 	
-	  for (segment = 0; segment<totalpointsrepet; segment  += totalpoints) { 
-	    double x2; 
-	    x2 = characteristic(values[i + segment], values[j + segment]); 
-	    if (R_FINITE(x2)) {
-	      vario[low] += x2; 
-	      sd[low] += x2 * x2; 
-	      n[low]++; 
-	    }
-	  }	
-	  assert(low< * nbin); 
+    totalpoints =  lx;
+    totalpointsvdim = totalpoints * vdim;
+    totalpointsrepetvdim = totalpointsvdim * repet;
+#define FORARB(DO)							\
+    for (int i = 0; i<totalpoints; i++) { /* to have a better performance for large */ \
+      /*                                 data sets, group the data first into blocks*/ \
+      for (int j = 0; j<i; j++) {					\
+        double distSq;							\
+      	for (distSq = 0.0, d = 0; d<=dimM1; d++) {			\
+	  double dx;							\
+	  dx = xx[d][i] - xx[d][j];					\
+	  distSq  += dx * dx;						\
+	}								\
+	/* see also above */						\
+	/*distSq = SQRT(distSq); 26.2. */				\
+	if (distSq>BinSq[0] && distSq<=BinSq[nbin]) {			\
+	  low = 0;							\
+	  up = nbin;							\
+	  cur =  halfnbin;						\
+	  while (low!=up) {						\
+	    if (distSq> BinSq[cur]) low = cur; else up = cur - 1; /* ( * ; * ]*/ \
+	    cur = (up + low + 1) / 2;					\
+	  }								\
+	  for(int row = 0; row < vdim; row++) {				\
+	    for(int col = row; col < vdim; col++) {			\
+	      for (segment = 0; segment<totalpointsrepetvdim; segment  += totalpointsvdim) { \
+		curbin = low + nbin * (vdim * row + col);		\
+		DO;							\
+		res[curbin] += x2;					\
+		res[curbin + totaln] += x2 * x2;			\
+		res[curbin + 2*totaln]++;				\
+	      }								\
+	    }								\
+	  }								\
+	  assert(low < nbin);						\
+	}								\
+      }									\
+    }
+    
+    switch(method){
+    case(METHOD_PSEUDO):
+      // pseudo variogram
+      FORARB(double x2 = values[i + totalpoints * row + segment]
+	     -values[j + totalpoints * col + segment]; x2 *= x2);
+      break;
+    case(METHOD_CROSS):
+      // cross variogram
+      FORARB(double x2 = (values[i + totalpoints * row + segment]
+			  - values[j + totalpoints * row + segment])
+	     * (values[i + totalpoints * col + segment]
+		- values[j + totalpoints * col + segment]));	  
+      break;
+    case(METHOD_COVARIANCE):
+      FORARB(double x2 = (values[i + totalpoints * row + segment]
+			  * values[j + totalpoints * col + segment]);
+	  sumhead[curbin] += values[i + totalpoints * row + segment];
+	     sumtail[curbin] += values[j + totalpoints * col + segment]);
+      break;
+    case(METHOD_PSEUDOMADOGRAM):
+      // pseudo madogram
+      FORARB(double x2 = FABS(values[i + totalpoints * row + segment]
+			      - values[j + totalpoints * col + segment]));
+      break;
+    case(METHOD_CROSSMADOGRAM):
+      // cross madogram
+      FORARB(double x2 = FABS(values[i + totalpoints * row + segment]
+			      - values[j + totalpoints * row + segment]) *
+	     FABS(values[i + totalpoints * col + segment]
+		  - values[j + totalpoints * row + segment]); x2 = SQRT(x2));	  
+      break;
+    default:
+      err = TOOLS_METHOD; goto ErrorHandling;
+    }
+
+  } // end else
+
+
+  if(method == METHOD_COVARIANCE) {
+    for(int row = 0; row < vdim; row++) {
+      for(int col = row; col < vdim; col++) {
+	curbin = nbin * (vdim * row + col);
+	res[curbin] = RF_NAN;
+	for(int i = 1; i < nbin; i++) {
+	  n = res[i + curbin + 2*totaln];
+	  double m0 = sumhead[i + curbin]/n;
+	  double mh = sumtail[i + curbin]/n;
+	  res[i + curbin] = res[i + curbin]/ (n) - m0 * mh;
+	  res[i + curbin + totaln] = SQRT(res[i + curbin + totaln]
+					  / ((n - 1)) - (n) / (n - 1) * res[i + curbin] * res[i + curbin]);
 	}
-	/*   */
+      }
+    }
+  } else if(method == METHOD_CROSS || method == METHOD_PSEUDO) {
+    for(int row = 0; row < vdim; row++) {
+      for(int col = row; col < vdim; col++) {
+	curbin = nbin * (vdim * row + col);
+	for(int i = 1; i < nbin; i++) {
+	  n = res[i + curbin + 2*totaln];
+	  res[i + curbin] /= (2 * n);
+	  res[i + curbin + totaln] = SQRT(res[i + curbin + totaln] / (4 * (n - 1)) - (n) /  (n - 1) * res[i + curbin] * res[i + curbin]);
+	}
+      }
+    }
+  } else {
+    for(int row = 0; row < vdim; row++) {
+      for(int col = row; col < vdim; col++) {
+	curbin = nbin * (vdim * row + col);
+	for(int i = 1; i < nbin; i++) {
+	  n = res[i + curbin + 2*totaln];
+	  res[i + curbin] /= (n);
+	  res[i + curbin + totaln] = 0;
+	}
+      }
+    }
+  }
+
+  for(int row = 1; row < vdim; row++) {
+    for(int col = 0; col < row; col++) {
+      int noncalcpos = nbin * (vdim * row + col);
+      int calcpos = nbin * (row + vdim * col);
+      if (method == METHOD_COVARIANCE) res[noncalcpos] = RF_NAN;
+      for(int i = 1; i < nbin; i++) {
+	res[i + noncalcpos] = res[i + calcpos];
+	res[i + noncalcpos + totaln] = res[i + calcpos + totaln];
+	res[i + noncalcpos + 2*totaln] = res[i + calcpos + 2*totaln];
       }
     }
   }
   
-  // ii is used in switch by this value: !!!!
-  ii = 0; while(ii <= *nbin && bin[ii] < 0) ii++;
-  ii--; 
-
-  // 11.10.03: factor ohne  * repet to be clearer
-  // case ii : separat behandelt, neu geschrieben
-  //  if ( * repet>1) {
-  //   for (j=0; j< * nbin; j++) n[j]  *=  * repet; 
-  //}
-
-  for (i1 = 0; i1<ii; i1++) sd[i1] = vario[i1] = RF_NA;
-  for (i1++; i1< * nbin; i1++){
-    if (n[i1]>0) { 
-      vario[i1] /= (double) (factor * n[i1]); 
-      if (n[i1]>1) 
-	sd[i1] = sqrt(sd[i1] / (factor * factor * (double) (n[i1] - 1))
-		     - (double) (n[i1]) / (double) (n[i1] - 1) * 
-		     vario[i1] * vario[i1]); 
-      else sd[i1] = RF_INF; 
-    } else { 
-      vario[i1] =  RF_NA; 
-      sd[i1] = RF_INF; 
-    }
+  UNPROTECT(1);
+  FREE(BinSq);
+  if(method == METHOD_COVARIANCE) {
+    FREE(sumhead);
+    FREE(sumtail);
   }
-
-
-  long jj; 
-  switch ( * charact) {
-  case 0 :
-    if ((ii< * nbin)&&(ii >= 0)){
-      n[ii]  += totalpointsrepet; 
-      vario[ii] /=  (double) (factor * n[ii]); 
-      sd[ii] = sqrt(sd[ii] / (factor * factor * (double) (n[ii] - 1))
-		    - (double) (n[ii]) / (double) (n[ii] - 1) * vario[ii] * vario[ii]); 
-    }    
-    break; 
-  case 1 : // E, calculating E(0) correctly, taking into account that the
-    //        bin including 0 may include further points
-    if ((ii< * nbin)&&(ii >= 0)){
-      n[ii]  *= factor; // * 2
-      for (jj = 0; jj<totalpointsrepet; jj++) {
-	vario[ii]  += values[jj]; 
-      }
-      n[ii]  += totalpointsrepet; 
-      vario[ii] = vario[ii] / (double) n[ii]; 
-      for (int i = 0; i< * nbin; i++) sd[i] = RF_NA; // beste Loesung, da sonst
-      // nur Chaos gibt - -  da sd falsch berechnet ist.
-      // siehe MPP package fuer die richtige Berechnung.
-    }
-    break; 
-  case 2 : // kmm, calculating kmm(0} and dividing all the values by mean^2
-    double mean, square, qu, x2; 
-    for (jj = 0, mean = square = qu = 0.0; jj<totalpointsrepet; jj++) { 
-      mean  += values[jj]; 
-      square  += (x2 = values[jj] * values[jj]); 
-      qu  += x2 * x2; 
-    }
-    mean /= (double) totalpointsrepet; 
-    square /= (double) totalpointsrepet; 
-    if ((ii< * nbin)&&(ii >= 0)){
-      n[ii]  += totalpointsrepet;    
-      vario[ii] =  (vario[ii] + square) / (double) n[ii]; // factor is 1
-      sd[ii] = sqrt(((sd[ii] + qu) - (double) (n[ii]) * vario[ii] * vario[ii])
-		    / ((double) (n[ii] - 1))); 
-    }
-    mean *= mean; 
-    for (jj = 0; jj< * nbin; jj++) { vario[jj] /= mean; }
-    break; 
-  default : BUG;    
-  }
-
-  FREE(BinSq); 
-  return; 
+  return Res;
   
  ErrorHandling:
-  FREE(BinSq); 
-  for (int i = 0; i< * nbin; i++){sd[i] = vario[i] = RF_NA; } 
+  FREE(BinSq);
+  if(method == METHOD_COVARIANCE) {
+    FREE(sumhead);
+    FREE(sumtail);
+  }
+  UNPROTECT(1);
   switch (err) {
   case TOOLS_DIM :
     ERR("dimension exceed max dimension of empirical variogram estimation"); 
@@ -539,7 +423,9 @@ void empiricalvariogram(double  * x, int  * dim, int  * lx,
   case TOOLS_BIN_ERROR :
     ERR("Bin components not an increasing sequence.\n"); 
   case TOOLS_UNKNOWN_CHAR:
-    ERR("unknown type of second order characteristic"); 
+    ERR("unknown type of second order characteristic");
+  case TOOLS_METHOD:
+    BUG;
   default : BUG;
   }
 }

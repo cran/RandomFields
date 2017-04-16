@@ -1,13 +1,10 @@
 
-
-
 /*
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 -- 2017 Felix Ballani 
-
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,21 +22,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
+#ifndef AUXILIARY22_H
+#define AUXILIARY22_H 1
+
+#include "basic.h"
+#include "AutoRandomFields.h"
+
+//double I0mL0(double x);
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
+  SEXP vectordist(SEXP V, SEXP diag); 
+#ifdef __cplusplus
+}
+#endif
 
 
-#ifndef CONVEX_H
-#define CONVEX_H 1
+#endif /* AUXILIARY22_H */
 
 
-/*******************************************************************************
- * convhull2D.h
- ****/
- 
 
-int ccw(double **P, int i, int j, int k);
-int cmpl(const void *a, const void *b);
-int cmph(const void *a, const void *b);
-int make_chain(double** V, int n, int (*cmp)(const void*, const void*));
-int ch2d(double **P, int n);
 
-#endif /* CONVEX_H */

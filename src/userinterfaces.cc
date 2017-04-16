@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2016 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,15 +25,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Rinternals.h>
 #include <Rdefines.h>
 #include <R_ext/Linpack.h>
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
+#include "kleinkram.h"
 #include "RF.h"
 #include "primitive.h"
-#include "kleinkram.h"
 // #include "Operator.h"
 
 
@@ -466,7 +466,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 	    paramtype,
 	    &nr);
  
-    sprintf(firstcolumn,"%%%ds", -maxchar);
+    SPRINTF(firstcolumn,"%%%ds", -maxchar);
     PRINTF("\n\n");
     PRINTF("%20s      List of models\n", "");
     PRINTF("%20s      ==============\n", "");
@@ -639,7 +639,7 @@ SEXP UNITS(char units[MAXUNITS][MAXUNITSCHAR]) {
 
 void CE_set(SEXP el, int j, char *name, ce_param *cp, bool isList) {
   switch(j) {
-  case 0: cp->force = LOG; break;
+  case 0: cp->force = LOGI; break;
   case 1:
     Real(el, name, cp->mmin, MAXCEDIM) ;
     int d;
@@ -674,8 +674,8 @@ void CE_set(SEXP el, int j, char *name, ce_param *cp, bool isList) {
       WARN1("%s is set to 1\n", name);
     }
     break;
-  case 8: cp->useprimes = LOG; break;
-  case 9: cp->dependent = LOG; break;
+  case 8: cp->useprimes = LOGI; break;
+  case 9: cp->dependent = LOGI; break;
   case 10: cp->approx_grid_step = POS0NUM; break;
   case 11: cp->maxgridsize = POS0INT; break;
   default: ERR("unknown parameter for GLOBAL.general");
@@ -756,7 +756,7 @@ const char * extreme[extremeN] =
 const char * br[brN] = 
   {"maxtrendmem", "meshsize", 
    "vertnumber", "optim_mixed", "optim_mixed_tol", 
-   "optim_mixed_maxpoints", "variobound", "deltaAM", "corr_factor"};
+   "variobound", "deltaAM"};
 
 const char * distr[distrN] = 
   {"safety", "minsteplen", "maxsteps", 
@@ -860,7 +860,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       break;
     }
     case GENERAL_STORING: {
-      bool storing = LOG;
+      bool storing = LOGI;
       if  (length(el) > 1) {
 	if (!storing) {	  
 	  int nr = Integer(el, (char*) "storing (register)", 1);
@@ -906,12 +906,12 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       NS = gp->naturalscaling = n;
       break;
     case 6: 
-      SetDefaultOutputModeValues(LOG ? output_sp : output_rf);
+      SetDefaultOutputModeValues(LOGI ? output_sp : output_rf);
       break;
     case GENERAL_EXACTNESS: gp->exactness = NUM;        break; 
-    case 8: gp->allowdist0 = LOG; break;
-    case 9: gp->na_rm_lines = LOG; break;
-    case GENERAL_CLOSE: gp->vdim_close_together = LOG;    
+    case 8: gp->allowdist0 = LOGI; break;
+    case 9: gp->na_rm_lines = LOGI; break;
+    case GENERAL_CLOSE: gp->vdim_close_together = LOGI;    
       if (gp->vdim_close_together) {
 	gp->vdim_close_together = false;
  	ERR1("'%s' will likely not be programmed", general[GENERAL_CLOSE]);
@@ -919,9 +919,9 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       }
       break;
     case 11: gp->expected_number_simu = POS0INT; break;
-    case 12: gp->detailed_output = LOG; break;
+    case 12: gp->detailed_output = LOGI; break;
     case 13: gp->Ttriple = INT; break;
-    case 14: gp->returncall = LOG; break;
+    case 14: gp->returncall = LOGI; break;
     case 15:
       SetDefaultOutputModeValues((output_modes) 
 				 GetName(el, name, OUTPUTMODENAMES, 
@@ -939,11 +939,11 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     gauss_param *gp;
     gp = &(GLOBAL.gauss);
     switch(j) {
-    case 0: gp->paired = LOG; break;
+    case 0: gp->paired = LOGI; break;
     case 1: gp->stationary_only = NUM; break;
     case 2: gp->approx_zero = POS0NUM; break;
     case GAUSS_BEST_DIRECT: gp->direct_bestvariables = POS0INT;    break;
-    case 4: gp->loggauss = LOG;
+    case 4: gp->loggauss = LOGI;
       if (gp->loggauss) gp->boxcox[0] = RF_INF;
       break;
     case GAUSS_BOXCOX_OPTION: {
@@ -978,7 +978,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     krige_param *kp;
     kp = &(GLOBAL.krige);
     switch(j) { 
-    case 0: kp->ret_variance = LOG; break;
+    case 0: kp->ret_variance = LOGI; break;
     case 1: kp->locmaxn = POS0INT; break;
     case KRIGE_SPLITN: {
       int  newval[3],
@@ -997,7 +997,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       break;
     }
     case 3: kp->locsplitfactor = POS0INT; break;
-    case 4: kp->fillall = LOG; break;
+    case 4: kp->fillall = LOGI; break;
     default: BUG;
     }}
     break;
@@ -1049,7 +1049,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     sp = &(GLOBAL.spectral) ;
     switch(j) {
     case 0: Integer(el, name, sp->lines, MAXTBMSPDIM); break;
-    case 1: sp->grid = LOG; break;
+    case 1: sp->grid = LOGI; break;
     case SPECTRAL_PROPFACTOR: sp->prop_factor = POS0NUM;
       if (sp->prop_factor <= 0.1) {
 	sp->prop_factor=0.1;
@@ -1092,7 +1092,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       tp->layers = Real(el, name, 0);
       break;      
     case 8: 
-      tp->grid = LOG; break;
+      tp->grid = LOGI; break;
     default:  BUG;
     }}
     break;
@@ -1159,12 +1159,10 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     case 2: ep->BRvertnumber = POSINT; break;
     case 3: ep->BRoptim = POS0INT; break;
     case 4: ep->BRoptimtol = POS0NUM; break;
-    case 5: ep->BRoptimmaxpoints = POS0INT; break;
-    case 6: ep->variobound = NUM; break;
-    case 7: ep->deltaAM = POSINT; break;
-    case 8: ep->corr_factor = POSNUM; break; // in [0,1]
+    case 5: ep->variobound = NUM; break;
+    case 6: ep->deltaAM = POSINT; break;
     default:  BUG;
-    }}	  
+    }}
     break;
   case 13 : {// distr
     distr_param *ep;
@@ -1202,12 +1200,12 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       //    case 14: ef->solvesigma = NUM; break;
     case 12: Real(el, name, ef->BC_lambdaLB, 2 * MAXGAUSSVDIM); break;//
     case 13: Real(el, name, ef->BC_lambdaUB, 2 * MAXGAUSSVDIM); break;//
-    case 14: ef->use_naturalscaling = LOG; break;
+    case 14: ef->use_naturalscaling = LOGI; break;
     case 15: ef->bins = POS0INT; break;//
     case 16: ef->nphi = POS0INT; break;//
     case 17: ef->ntheta = POS0INT; break; //
     case 18: ef->ntime = POS0INT; break;//
-    case 19: ef->onlyuser = LOG; break;
+    case 19: ef->onlyuser = LOGI; break;
     case 20: { // mle
       int ii=POS0INT; 
       if (ii==0) { ii = 1; warning("shortnamelength set to 1"); }
@@ -1232,7 +1230,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       if (len == 1) newval[1] = newval[2] = newval[0];
       else {
 	newval[2] = newval[1];
-	newval[1] = (int) sqrt((double) newval[1] * newval[0]);
+	newval[1] = (int) SQRT((double) newval[1] * newval[0]);
       }
 
       if (newval[0] > newval[1] || newval[1] > newval[2]) 
@@ -1245,7 +1243,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     case 27: ef->locsplitfactor = POS0INT; break;//
     case 28: ef->smalldataset = POS0INT; break;//
     case 29: ef->min_diag = NUM; break;//
-    case 30: ef->reoptimise = LOG; break;
+    case 30: ef->reoptimise = LOGI; break;
     case 31: ef->optimiser = GetName(el, name, OPTIMISER_NAMES, nOptimiser, 0); //
       break;
     case 32: 
@@ -1257,9 +1255,9 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       break;
     case 33: ef->likelihood =
 	GetName(el, name, LIKELIHOOD_NAMES, nLikelihood); ; break; 
-    case 34: ef->ratiotest_approx = LOG; break;
-    case 35: ef->split_refined = LOG; break;
-    case 36: ef->cross_refit = LOG; break;
+    case 34: ef->ratiotest_approx = LOGI; break;
+    case 35: ef->split_refined = LOGI; break;
+    case 36: ef->cross_refit = LOGI; break;
     case 37: ef->estimate_variance = INT; break;
     case 38: ef->pgtol = POSNUM; break;//
     case 39: ef->pgtol_recall = POSNUM; break;//
@@ -1275,8 +1273,8 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     case 0: ep->phi0=NUM; break;
     case 1: ep->theta0=NUM; break;    
     case 2: ep->tol=NUM; break;    
-    case 3: ep->pseudovariogram = LOG; break;
-    case 4: ep->fft = LOG; break;
+    case 3: ep->pseudovariogram = LOGI; break;
+    case 4: ep->fft = LOGI; break;
    default: BUG;
     }}
     break;
@@ -1284,7 +1282,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     gui_param *gp;
     gp = &(GLOBAL.gui);
     switch(j) {
-    case 0: gp->alwaysSimulate = LOG; break;
+    case 0: gp->alwaysSimulate = LOGI; break;
     case 1: 
       gp->method = GetName(el, name, METHODNAMES, Forbidden, Nothing);
       break;
@@ -1305,7 +1303,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
  case 17: { // graphics
     graphics_param *gp = &(GLOBAL.graphics);
     switch(j) {
-    case 0 : gp->close_screen = LOG; break;
+    case 0 : gp->close_screen = LOGI; break;
     case 1 : gp->PL = INT; break;
     case 2 : gp->height = NUM; break;
     case GRAPHICS_UPTO : {
@@ -1325,12 +1323,12 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
 	char old[100];
 	strcopyN(old, gp->filename, 100);
 	STR(gp->filename, 100);
-	if (!gp->onefile && strcmp(gp->filename, old) !=0) gp->number = 0;
+	if (!gp->onefile && STRCMP(gp->filename, old) !=0) gp->number = 0;
       }
       break;
     case 6 :  if (!isList) {
       bool onefile = gp->onefile;
-      gp->onefile = LOG;
+      gp->onefile = LOGI;
       if (!gp->onefile && onefile) gp->number = 0;
     } break;
     case 7 :  if (!isList) { 
@@ -1338,7 +1336,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       }
       break;
     case 8 : gp->resolution = POSNUM; break;
-    case 9 : gp->split_screen = LOG; break;
+    case 9 : gp->split_screen = LOGI; break;
     case 10 : gp->width = NUM; break;
     case 11 : gp->always_close = INT;       
 	break;
@@ -1385,25 +1383,25 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     // ACHTUNG internal wird nicht pauschal zurueckgesetzt !
     if (!isList) {
       switch(j) {
-      case 0: wp->warn_oldstyle = LOG;       break;
-      case 1: wp->warn_newstyle = LOG;       break;
-      case INTERNALS_NEWANISO: wp->warn_Aniso = LOG;       break;
-      case 3: wp->warn_ambiguous = LOG;       break;
-      case 4: wp->warn_normal_mode = LOG;       break;
-      case 5: wp->warn_mode = LOG;       break;
-      case 6: wp->stored_init = LOG;       break;
-      case 7: wp->warn_scale = LOG;       break;
-      case 8: wp->warn_coordinates = LOG;       break;
-      case INTERNALS_ONGRID: wp->warn_on_grid = LOG;       break;
-      case 10: wp->warn_new_definitions = LOG;       break;
-      case 11: wp->warn_aspect_ratio = LOG;       break;
-      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOG;       break;
-      case 13: wp->warn_color_palette = LOG;       break;
-      case INTERNALS_ZENIT: wp->warn_zenit = LOG;       break;
-      case 15: wp->do_tests = LOG;       break;
-      case 16: wp->warn_constant = LOG;       break;
-      case 17: wp->warn_negvar = LOG;       break;
-      case 18: wp->warn_onlyvar = LOG;       break;
+      case 0: wp->warn_oldstyle = LOGI;       break;
+      case 1: wp->warn_newstyle = LOGI;       break;
+      case INTERNALS_NEWANISO: wp->warn_Aniso = LOGI;       break;
+      case 3: wp->warn_ambiguous = LOGI;       break;
+      case 4: wp->warn_normal_mode = LOGI;       break;
+      case 5: wp->warn_mode = LOGI;       break;
+      case 6: wp->stored_init = LOGI;       break;
+      case 7: wp->warn_scale = LOGI;       break;
+      case 8: wp->warn_coordinates = LOGI;       break;
+      case INTERNALS_ONGRID: wp->warn_on_grid = LOGI;       break;
+      case 10: wp->warn_new_definitions = LOGI;       break;
+      case 11: wp->warn_aspect_ratio = LOGI;       break;
+      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
+      case 13: wp->warn_color_palette = LOGI;       break;
+      case INTERNALS_ZENIT: wp->warn_zenit = LOGI;       break;
+      case 15: wp->do_tests = LOGI;       break;
+      case 16: wp->warn_constant = LOGI;       break;
+      case 17: wp->warn_negvar = LOGI;       break;
+      case 18: wp->warn_onlyvar = LOGI;       break;
       case 19: wp->examples_reduced= POS0INT;  
 	if (wp->examples_reduced > 0 && 
 	    wp->examples_reduced < MAX_LEN_EXAMPLES)
@@ -1413,11 +1411,11 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
       }
     } else {
       switch(j) {
-      case 6: wp->stored_init = LOG;       break;
-      case INTERNALS_ONGRID :  wp->warn_on_grid = LOG; break;
-      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOG;       break;
-      case INTERNALS_ZENIT: wp->warn_zenit = LOG;       break;
-      case 15: wp->do_tests = LOG;       break;
+      case 6: wp->stored_init = LOGI;       break;
+      case INTERNALS_ONGRID :  wp->warn_on_grid = LOGI; break;
+      case INTERNALS_COORD_CHANGE: wp->warn_coord_change = LOGI;       break;
+      case INTERNALS_ZENIT: wp->warn_zenit = LOGI;       break;
+      case 15: wp->do_tests = LOGI;       break;
       case 19: wp->examples_reduced= POS0INT;  
 	if (wp->examples_reduced > 0 && 
 	    wp->examples_reduced < MAX_LEN_EXAMPLES)
@@ -1484,7 +1482,7 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
     }
     break; 
  
-    case 9: cp->polar_coord = LOG; 
+    case 9: cp->polar_coord = LOGI; 
       break;
    
    default: BUG;
@@ -1504,11 +1502,11 @@ void setparameter(int i, int j, SEXP el, char name[200], bool isList) {
   case 22: { // obsolete
     internal_param *wp = &(GLOBAL.internal);
     switch(j) {
-    case 0: wp->warn_oldstyle = LOG;       break;
-    case 1: wp->warn_newstyle = LOG;       break;
-    case 2: wp->warn_Aniso = LOG;       break;
-    case 3: wp->warn_ambiguous = LOG;       break;
-    case 4: wp->warn_normal_mode = LOG;       break;
+    case 0: wp->warn_oldstyle = LOGI;       break;
+    case 1: wp->warn_newstyle = LOGI;       break;
+    case 2: wp->warn_Aniso = LOGI;       break;
+    case 3: wp->warn_ambiguous = LOGI;       break;
+    case 4: wp->warn_normal_mode = LOGI;       break;
     case 8: ERR("'matrix_inversion' has been changed to 'matrix_methods'" );
       break;
     case 9: ERR("'matrix_tolerance' has been changed to 'svd_tol'" );
@@ -1703,10 +1701,8 @@ void getRFoptions(SEXP *sublist) {
     ADD(ScalarInteger(p->BRvertnumber));
     ADD(ScalarInteger(p->BRoptim));
     ADD(ScalarReal(p->BRoptimtol));
-    ADD(ScalarInteger(p->BRoptimmaxpoints));
     ADD(ScalarReal(p->variobound));
     ADD(ScalarInteger(p->deltaAM));
-    ADD(ScalarReal(p->corr_factor));
   }
 
   i++; {
@@ -1890,7 +1886,7 @@ void getRFoptions(SEXP *sublist) {
   */
  
   // -1 da OBSOLETE fehlt; -1 da start bei 0
-  assert (i == prefixN - 2); 
+  assert (i == prefixN - 2);  // because of OBSOLETE
     /*
 
     ADD(ScalarReal(p->));

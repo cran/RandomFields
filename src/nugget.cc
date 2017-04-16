@@ -5,7 +5,7 @@
 
  all around the nugget effect -- needs special treatment 
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,9 +22,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <R_ext/Lapack.h>
 #include "RF.h"
 #include "primitive.h"
@@ -41,7 +41,7 @@ bool equal(cov_model *cov, int i, int j, double *X, int dim)
     dummy = x[d]-y[d];
     dist += dummy * dummy;
   }
-  dist = sqrt(dist);
+  dist = SQRT(dist);
   nugget(&dist, cov, &v);
   return v==1.0;
 }
@@ -276,7 +276,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     if (loc->caniso == NULL) {
       if (loc->grid) {
 	for (d=0; d<dim; d++) 
-	  if (fabs(loc->xgr[d][XSTEP]) <=  tol) {
+	  if (FABS(loc->xgr[d][XSTEP]) <=  tol) {
 	    s->simple = false;
 	    break;
 	  }
@@ -302,8 +302,8 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       for (d=0; d<origdim; d++) {
 	//	print("simple %d %e %e %e  %d\n",
 	//	       d, value[d], ivalue[d],EIGENVALUE_EPS,
-	//       fabs(value[d]) + fabs(ivalue[d]) > EIGENVALUE_EPS);
-	if (!(s->simple = fabs(value[d]) + fabs(ivalue[d]) > EIGENVALUE_EPS))
+	//       FABS(value[d]) + FABS(ivalue[d]) > EIGENVALUE_EPS);
+	if (!(s->simple = FABS(value[d]) + FABS(ivalue[d]) > EIGENVALUE_EPS))
 	   break;
       }
       FREE(A);
@@ -326,7 +326,7 @@ int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
       for (d=0; d<dim; d++) {
 	s->reduced_dim[d] = 
-	  fabs(loc->xgr[d][XSTEP]) <= tol ? 1 : loc->xgr[d][XLENGTH];
+	  FABS(loc->xgr[d][XSTEP]) <= tol ? 1 : loc->xgr[d][XLENGTH];
 	s->prod_dim[d + 1] = s->prod_dim[d] * s->reduced_dim[d];
 	
       //print("d=%d %d %d %d\n",d,s->prod_dim[0],s->prod_dim[1],s->prod_dim[2]);

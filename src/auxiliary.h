@@ -4,7 +4,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,13 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef AUXILIARY_H
 #define AUXILIARY_H 1
 
-#include "basic.h"
-#include "AutoRandomFields.h"
+#include "auxiliary2.h"
 
-//double I0mL0(double x);
-extern "C" {
-  SEXP vectordist(SEXP V, SEXP diag); 
-}
 bool is_diag(double *aniso, int dim);
 
 void Abbreviate(char *old, char *abbr);

@@ -4,7 +4,7 @@
 
  Metropolis-Hasting for drawing from the spectral density
 
- Copyright (C) 2000 -- 2015 Martin Schlather, 
+ Copyright (C) 2000 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,9 +21,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "RF.h"
  
 
@@ -104,7 +104,7 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
       }
       
       //Z[i] = zaehler;
-      D[i] = abs(zaehler - optzaehler); // integers
+      D[i] = std::abs(zaehler - optzaehler); // integers
       if (D[i] < min) min = D[i];
       
       if (PL >= PL_DETAILS)
@@ -130,11 +130,11 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
 	if (PL >= PL_DETAILS) 
 	  PRINTF("%d. sigma=%f D=%d %d\n", j, Sigma[j], D[j], mintol); 
 	n++;
-	log_s += log(Sigma[j]);
+	log_s += LOG(Sigma[j]);
       }
     }
       
-    s->sigma = exp(log_s / (double) n);
+    s->sigma = EXP(log_s / (double) n);
     if (PL >= PL_DETAILS) PRINTF("optimal sigma=%f \n", s->sigma); 
   }
     
@@ -152,7 +152,7 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
     if (ungleich) zaehler++;
   }
   p = (double) zaehler / (double) nBase2;
-  s->nmetro = 1 + (int) fabs(prop_factor / log(p));
+  s->nmetro = 1 + (int) FABS(prop_factor / LOG(p));
   if (PL >= PL_DETAILS) 
     for (d=0; d<dim; d++)  PRINTF("d=%d E=%f\n", d, s->E[d]);
   

@@ -7,6 +7,7 @@
 
  Copyright (C) 2011 -- 2013 Sebastian Engelke, Johannes Martini
  Copyright (C) 2014 Sebastian Engelke, Johannes Martini, Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,9 +24,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "RF.h"
  
 // z coordinate run the fastest in values, x the slowest   
@@ -37,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // naechste Zeile nur notwendig, weil atan2 in Windows nicht
 // ordentlich programmiert ist
-#define NEARBYINT(x)  (floor((x) * (NEARBY) + 0.5) / (NEARBY))
+#define NEARBYINT(x)  (FLOOR((x) * (NEARBY) + 0.5) / (NEARBY))
 // #define NEARBYINT(x)  x
 
 
@@ -293,7 +294,7 @@ SEXP fftVario3D(SEXP Coord,
 	    }	// low
 	    
 	    // angles
-	    thetadata = NEARBYINT(PIHALF - atan2(d2, sqrt(psq1)));
+	    thetadata = NEARBYINT(PIHALF - atan2(d2, SQRT(psq1)));
 	    ktheta = GetAngleBin(thetadata, starttheta, theta[1], PI);
 	    kthetaz = GetAngleBin(PI - thetadata, starttheta, theta[1], PI);
 	    
@@ -417,7 +418,7 @@ SEXP fftVario3D(SEXP Coord,
   
       tolerance = GLOBAL.empvario.tol * segmentbase[3];  // to do. Warum?
       for(i=0; i < totalbins ;i++){
-	if (fabs(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
+	if (FABS(emp_vario[i]) < tolerance) emp_vario[i] = 0.0; 
       }
     } // vdim1
   } // vdim

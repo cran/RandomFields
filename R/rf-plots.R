@@ -2,7 +2,8 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2014 Alexander Malinowski & Martin Schlather
+##               2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -35,7 +36,7 @@ default.image.par <- function(data.range, var.range, legend=TRUE) {
   } else {
     if (RFoptions()$internal$warn_colour_palette) {
       RFoptions(warn_colour_palette = FALSE)
-      message("Better install the package 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
+      message("Better install one of the packages 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
     }
     data.col <- heat.colors(36)
     var.col <- cm.colors(36)

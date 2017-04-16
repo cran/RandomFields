@@ -38,13 +38,13 @@
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if SELF_TEST 
-#include <limits.h>
-#include <time.h>
+#if SELF_TEST_XXXXX
+//#include <limits. h>
+//#include <time .h>
 #endif
 #include <stdio.h>
 #include <stddef.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "basic.h"
  
 //#include "avltr.h"
@@ -1145,7 +1145,7 @@ cell_type *(avltr_force_delete) (avltr_tree *tree, cell_type *item)
   return found;
 }
 
-#if SELF_TEST
+#if SELF_TEST_XXXXX
 
 /* Size of the tree used for testing. */
 #define TREE_SIZE 1024
@@ -1208,7 +1208,7 @@ print_structure (avltr_tree *tree, avltr_node *node, int level)
   fflush (stdout);
 }
 
-/* Compare two integers A and B and return a strcmp()-type result. */
+/* Compare two integers A and B and return a STRCMP()-type result. */
 int
 compare_ints (int *a, int *b, int *param unused)
 {

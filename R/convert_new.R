@@ -3,7 +3,8 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Alexander Malinowski, Martin Schlather
+## Copyright (C) 2015 -- 2016 Alexander Malinowski, Martin Schlather
+##               2017 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License

@@ -9,8 +9,10 @@
 \details{
 \bold{Covariance models}
 \tabular{ll}{
+ \command{\link{RMbicauchy}} \tab a bivariate Cauchy model\cr
  \command{\link{RMbiwm}} \tab full bivariate Whittle-Matern model (stationary and isotropic)\cr
  \command{\link{RMbigneiting}} \tab bivariate Gneiting model (stationary and isotropic)\cr
+ \command{\link{RMbistable}} \tab a bivariate stable model\cr
 \command{\link{RMcurlfree}} \tab curlfree (spatial) vector-valued field (stationary and anisotropic)\cr
 \command{\link{RMdelay}} \tab bivariate delay effect model (stationary)\cr
 \command{\link{RMdivfree}} \tab divergence free (spatial) vector valued

@@ -5,7 +5,7 @@
  calculation of the Hurst coefficient and the fractal dimension of
  the graph of a random field
 
- Copyright (C) 2002 - 2015 Martin Schlather, 
+ Copyright (C) 2002 - 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
 #include <Rdefines.h>
 #include "RF.h"
@@ -71,7 +71,7 @@ SEXP boxcounting(SEXP Z,  // data
 	if ((zz = 0.5 * (z[i-1] + z[i])) < min) min = zz; 
 	else if (zz > max) max = zz;
 	f = factor / (double) e;
-	sum[s] += floor(max * f) - floor(min * f) + 1.0;
+	sum[s] += FLOOR(max * f) - FLOOR(min * f) + 1.0;
       }
     }
   }
@@ -108,14 +108,14 @@ SEXP periodogram(SEXP Dat, // data
   assert(shift>=1);
  
   double 
-    taper_fact = sqrt( 2.0 / (3.0 * ((double) part + 1.0)) ),
+    taper_fact = SQRT( 2.0 / (3.0 * ((double) part + 1.0)) ),
     cos_factor = 2.0 * PI / ((double) part + 1.0),
     *compl_number = NULL, 
     *taper = NULL,
     *lambda = NULL,
      n_inv = 1.0 / (double) ((int) (1.0 + lenMpart / (double) shift)),
     *dat = REAL(Dat),
-    factor = log(2.0 * PI * len)
+    factor = LOG(2.0 * PI * len)
     ; 
 
   FFT_storage FFT;
@@ -156,7 +156,7 @@ SEXP periodogram(SEXP Dat, // data
 	goto ErrorHandling;
       }
       for (j=segm_l, k=start_k; k<end_k; j++, k+=2) {
-	lambda[j] += log(compl_number[k] * compl_number[k] + 
+	lambda[j] += LOG(compl_number[k] * compl_number[k] + 
 			 compl_number[k+1] * compl_number[k+1]) - factor;
       }
     }
@@ -218,7 +218,7 @@ SEXP detrendedfluc(SEXP Dat, // data
 	  VarMeth_var += delta * delta;
 	  VarMeth_old = dat[j];
 	}
-        lvar[idx] = log(VarMeth_var / ((realnbox - 1.0)));
+        lvar[idx] = LOG(VarMeth_var / ((realnbox - 1.0)));
       } else {
 	lvar[idx] = RF_NA;
       }
@@ -239,7 +239,7 @@ SEXP detrendedfluc(SEXP Dat, // data
 	  var += residual * residual;
 	}
       }
-      lvar[idx + 1] = log(var / ((realm - 1.0) * (double) nbox));
+      lvar[idx + 1] = LOG(var / ((realm - 1.0) * (double) nbox));
     }  
   }
   UNPROTECT(1);
@@ -285,7 +285,7 @@ SEXP minmax(SEXP Dat,  // data
 	}
 	count[cb] += max - min;
       }
-      count[cb] = log(count[cb] / (double) epsilon);
+      count[cb] = LOG(count[cb] / (double) epsilon);
     } // b
   } // r
 

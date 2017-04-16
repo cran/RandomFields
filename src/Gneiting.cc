@@ -4,7 +4,7 @@
 
  Gneiting's space-time covariance models and related models
 
- Copyright (C) 2006 -- 2015 Martin Schlather
+ Copyright (C) 2006 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,11 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <R_ext/Lapack.h>
-#include <R_ext/Linpack.h> 
+#include <R_ext/Linpack.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "Operator.h"
+#define LOG2 M_LN2
 
 
 #define AVESTP_MINEIGEN 2
@@ -83,9 +85,9 @@ void ave(double *h, cov_model *cov, double *v) {
 
   det_UpperInv(Eplus2B, &detEplus2B, dim); // Eplus2B is not its inverse !
 
-  double y = sqrt(0.5 * hh  + c * c * (1.0 - 2.0 * xUx(Ah, Eplus2B, dim)));
+  double y = SQRT(0.5 * hh  + c * c * (1.0 - 2.0 * xUx(Ah, Eplus2B, dim)));
   COV(&y, next, v);
-  *v /= sqrt(detEplus2B);
+  *v /= SQRT(detEplus2B);
 }
 
 
@@ -178,23 +180,23 @@ void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, dou
   BUG; 
 
   assert(cov->role == Average);
-  q[AVESTP_LOGV] = log(q[AVESTP_V]);
+  q[AVESTP_LOGV] = LOG(q[AVESTP_V]);
   for (x2=0.0, d=0; d<dim; d++) {
     double lensimu = RF_NA; ////  w->max[d] - w->min[d];
     x2 += lensimu * lensimu;
   }
   // x2 *= 0.25;
   b = 3.0 * q[AVESTP_V] * x2 / dim;
-  alphamin = (4.0 + 4.0 * b - 2.0 * sqrt(4.0 * b * b + 8.0 * b + 1.0)) / 3.0;
-  InvSqrt2a = 1.0 / sqrt(2.0 * alphamin * 6.0 * q[AVESTP_V]);
+  alphamin = (4.0 + 4.0 * b - 2.0 * SQRT(4.0 * b * b + 8.0 * b + 1.0)) / 3.0;
+  InvSqrt2a = 1.0 / SQRT(2.0 * alphamin * 6.0 * q[AVESTP_V]);
   *sd = InvSqrt2a;
   EmA = 1.0 - alphamin;
-  cov->mpp.maxheights[0] = exp(-0.5 * log(EmA) - 0.25 * log(alphamin) + b / EmA -
+  cov->mpp.maxheights[0] = EXP(-0.5 * LOG(EmA) - 0.25 * LOG(alphamin) + b / EmA -
 			   2 * x2); // proportional zum dritten Moment !
 
   /*
    double radius = 
-    sqrt((-9 // so e^{-9} as threshold
+    SQRT((-9 // so e^{-9} as threshold
 	  - 0.25 * dim * (q[AVESTP_LOGV] - 1.14473) // log pi
 	  - 0.25 * q[AVESTP_LOGDET]
 	  //+ 0.5 * cov_a->logdens
@@ -259,7 +261,7 @@ void  logshapeave(double *x, cov_model *cov, double *v, double *Sign) {
   Sign[0] = 1.0;
   double phase = q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * (f - t); // Y
   Sign[1] =  phase > 0.0 ? 1.0 : phase < 0.0 ? -1.0 : 0.0;
-  v[1] = log(fabs(phase));
+  v[1] = LOG(FABS(phase));
 }
 
 int check_shapeave(cov_model *cov) {
@@ -333,7 +335,7 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
 /* coxgauss, cmp with nsst1 !! */
 // C = 2 (C + 4 M H M), H = h h^t
 // a = t - h M h - zh
-// exp(- 0.5 * (h *h + 2 a^2 - mu C mu)) // stimmen die Vorzeichen??
+// EXP(- 0.5 * (h *h + 2 a^2 - mu C mu)) // stimmen die Vorzeichen??
 // mu = h - 2 a M h
 /* cox, cmp with nsst1 !! */
 // coxisham
@@ -350,7 +352,7 @@ void GetEu2Dinv(cov_model *cov, double *x, int dim,
       *D= P(COX_D),
       beta = P0(COX_BETA),
       t = x[dim],
-      t2 = pow(fabs(t), beta); // standard t^2
+      t2 = POW(FABS(t), beta); // standard t^2
     int d,
 	dimP1 = dim + 1,
 	dimsq = dim * dim;
@@ -364,7 +366,7 @@ void GetEu2Dinv(cov_model *cov, double *x, int dim,
   for (d=0; d<dimsq; d+=dimP1)  Eu2Dinv[d] += 1.0; // D + E
   det_UpperInv(Eu2Dinv, det, dim);
   *newxsq = xUxz(y, Eu2Dinv, dim, z);
-  *newx = sqrt(*newxsq);
+  *newx = SQRT(*newxsq);
 }
 
 void cpyUf(double *Eu2Dinv, double factor, int dim, int tsdim, double *v) {
@@ -424,7 +426,7 @@ void cox(double *x, cov_model *cov, double *v) {
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, NULL);
    
   COV(&newx, next, v);
-  *v /= sqrt(det);
+  *v /= SQRT(det);
 } 
 
 void coxhess(double *x, cov_model *cov, double *v) {
@@ -440,11 +442,11 @@ void coxhess(double *x, cov_model *cov, double *v) {
 
   Abl2(&newx, next, &phiD2);  
   if (newxsq == 0.0) {
-    cpyUf(Eu2Dinv, phiD2 / sqrt(det), dim, tsdim, v);
+    cpyUf(Eu2Dinv, phiD2 / SQRT(det), dim, tsdim, v);
   } else {
     Abl1(&newx, next, &phiD);
-    cpyUf(Eu2Dinv, phiD / (sqrt(det) * newx), dim, tsdim, v);
-    addzzT(v, (phiD2 - phiD/newx) / (sqrt(det) * newxsq), z, dim, tsdim);
+    cpyUf(Eu2Dinv, phiD / (SQRT(det) * newx), dim, tsdim, v);
+    addzzT(v, (phiD2 - phiD/newx) / (SQRT(det) * newxsq), z, dim, tsdim);
   }
 } 
  
@@ -463,7 +465,7 @@ void coxnabla(double *x, cov_model *cov, double *v) {
   if (newxsq == 0.0) {
       for (d=0; d<=dim; d++)  v[d] = 0.0;
   } else {    
-    newx = sqrt(newxsq);
+    newx = SQRT(newxsq);
     Abl1(&newx, next, &phiD);
     factor = phiD / (det * newx); 
     for (d=0; d<dim; d++) {
@@ -567,7 +569,7 @@ void spectralcox(cov_model *cov, gen_storage *s, double *e) {
   SPECTRAL(next, s, e); // nicht gatternr
   
   v[0] = rnorm(0.0, INVSQRTTWO);
-  v[1] = rho * v[0] + sqrt(1.0 - rho * rho) * rnorm(0.0, INVSQRTTWO);
+  v[1] = rho * v[0] + SQRT(1.0 - rho * rho) * rnorm(0.0, INVSQRTTWO);
  
   for (t = 0.0, d=0; d<dim; d++) {
     t += (v[d] + V[d]) * e[d];
@@ -674,7 +676,7 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     BUG;
   }
 
-  Q = sqrt(Q);
+  Q = SQRT(Q);
 
   aux_covfct auxcf;
   if ((auxcf = CovList[phi->gatternr].aux_cov) != NULL) 
@@ -686,7 +688,7 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     dx = detU(Sx, dim), 
     dy = detU(Sy, dim);
   
-  *v *=  pow(2.0, 0.5 * double(dim)) * pow(dx * dy / (detA * detA), 0.25);
+  *v *=  POW(2.0, 0.5 * double(dim)) * POW(dx * dy / (detA * detA), 0.25);
 }
 
 
@@ -809,7 +811,7 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
     CovList[Sf->nr].minmaxeigenvalue(Sf, minmax);
     if (minmax[0] <= 0.0) ERR("neg eigenvalue in shape function of 'stp'");
     q[AVESTP_MINEIGEN] = minmax[0];
-    q[AVESTP_LOGDET] = (double) cov->xdimprev * log(minmax[1]);
+    q[AVESTP_LOGDET] = (double) cov->xdimprev * LOG(minmax[1]);
   } else {
 #define dummyN (5 * StpMaxDim)
     double value[StpMaxDim], ivalue[StpMaxDim], dummy[dummyN], det,
@@ -824,12 +826,12 @@ int init_shapestp(cov_model *cov, gen_storage *s) {
     if (Ferr != 0) SERR("error in F77 function call");
     det =  1.0;
     for (i=0; i<dim; i++) {
-      double v = fabs(value[i]);
+      double v = FABS(value[i]);
       det *= v;
       if (min > v) min = v;
     }
     q[AVESTP_MINEIGEN] = min;
-    q[AVESTP_LOGDET] = log(det);
+    q[AVESTP_LOGDET] = LOG(det);
   }
 
 
@@ -863,7 +865,7 @@ void do_shapestp(cov_model *cov, gen_storage *s) {
   BUG;
 
   SPECTRAL(stpGAUSS, s, spec_ret);  // nicht gatternr
-  q[AVERAGE_YFREQ] = *spec_ret * sqrt(q[AVESTP_V]);  
+  q[AVERAGE_YFREQ] = *spec_ret * SQRT(q[AVESTP_V]);  
   q[AVERAGE_YPHASE] = TWOPI * UNIFORM_RANDOM;
 
 
@@ -927,30 +929,30 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
   double exponent =
     0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
 		  q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
-    + 0.25 *log(detU(Sx, dim))                          // Sx ^1/4 
-      - q[AVESTP_V] * hSxh             // exp(-V(U-x) S (U-x)) 
+    + 0.25 * LOG(detU(Sx, dim))                          // Sx ^1/4 
+      - q[AVESTP_V] * hSxh             // EXP(-V(U-x) S (U-x)) 
     // + CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi) // g //nicht gatternr
     //    - 0.5 * cov_a->logdens // f 
-    ;                // 1 / sqrt(f) 
+    ;                // 1 / SQRT(f) 
   
   if (!(exponent < 5.0) && PL >= PL_DETAILS) {
     if (!(exponent < 6.0)) // could be NA, too
      PRINTF("\n%f logDetU=%f %f expon=%f",
           0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
 			q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
-	    , 0.25 * log(detU(Sx, dim))                         /// Sx ^1/4 
-	    , -q[AVESTP_V]* hSxh             // exp(-V(U-x) S (U-x)) 
+	    , 0.25 * LOG(detU(Sx, dim))                         /// Sx ^1/4 
+	    , -q[AVESTP_V]* hSxh             // EXP(-V(U-x) S (U-x)) 
 	    // , CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV],  phi)// g
 	    //, - 0.5 * cov_a->logdens // f 
 	    , exponent);
     else PRINTF("!");
   };
   
-  assert(exp(exponent) < 10000000.0);
+  assert(EXP(exponent) < 10000000.0);
   
  
-  double cos_value = cos(q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * xi);
-  *v = exponent + log(fabs(cos_value)) ;  // Y 
+  double cos_value = COS(q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * xi);
+  *v = exponent + LOG(FABS(cos_value)) ;  // Y 
   *Sign = cos_value > 0.0 ? 1.0 : cos_value < 0.0 ? -1.0 : 0.0;
 }
 
@@ -1119,8 +1121,8 @@ void EtAxxA(double *x, cov_model *cov, double *v) {
     *E = P(EAXXA_E),
     *A = P(EAXXA_A),
     phi = P0(ETAXXA_ALPHA),
-    c =  cos(phi * x[time]),
-    s = sin(phi * x[time]); 
+    c =  COS(phi * x[time]),
+    s = SIN(phi * x[time]); 
      
   R[0] = R[4] = c;
   R[1] = s;
@@ -1216,9 +1218,9 @@ void rotat(double *x, cov_model *cov, double *v) {
   double
     speed = P0(ROTAT_SPEED),
     phi = P0(ROTAT_PHI),
-    absx = sqrt(x[0] * x[0] + x[1] * x[1]);
+    absx = SQRT(x[0] * x[0] + x[1] * x[1]);
   *v = (absx == 0.0) ? 0.0
-    : speed * (cos(phi * x[time]) * x[0] + sin(phi * x[time]) * x[1]) / absx;
+    : speed * (COS(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
 }
 
 void minmaxEigenrotat(cov_model VARIABLE_IS_NOT_USED *cov, double *mm) {
@@ -1259,8 +1261,8 @@ void Rotat(double *x, cov_model *cov, double *v) {
     time = dim - 1;
   double
     phi = P0(ROTAT_PHI),
-      c =  cos(phi * x[time]),
-      s = sin(phi * x[time]),
+      c =  COS(phi * x[time]),
+      s = SIN(phi * x[time]),
       R[9]; assert(dim ==3);
    
   R[0] = R[4] = c;
@@ -1305,10 +1307,10 @@ void nsst(double *x, cov_model *cov, double *v) {
   
   COV(ZERO, subpsi, &v1);
   COV(x + 1, subpsi, &v2);
-  psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
+  psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   COV(&y, subphi, v);
-  *v *= pow(psi, -P0(NSST_DELTA));
+  *v *= POW(psi, -P0(NSST_DELTA));
 }
 
 void Dnsst(double *x, cov_model *cov, double *v) {
@@ -1318,10 +1320,10 @@ void Dnsst(double *x, cov_model *cov, double *v) {
 
   COV(ZERO, subpsi, &v1);
   COV(x + 1, subpsi, &v2);
-  psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
+  psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   Abl1(&y, subphi, v);
-  *v *= pow(psi, -P0(NSST_DELTA) - 1.0);
+  *v *= POW(psi, -P0(NSST_DELTA) - 1.0);
 }
 
 void TBM2nsst(double *x, cov_model *cov, double *v) {
@@ -1333,10 +1335,10 @@ void TBM2nsst(double *x, cov_model *cov, double *v) {
 
   COV(ZERO, subpsi, &v1);
   COV(x + 1, subpsi, &v2);
-  psi = sqrt(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
+  psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
   TBM2CALL(&y, subphi, v);
-  *v *= pow(psi, -P0(NSST_DELTA));
+  *v *= POW(psi, -P0(NSST_DELTA));
 }
 
 int checknsst(cov_model *cov) {
@@ -1404,9 +1406,9 @@ void nonstatgennsst_intern(double *x,double *y, cov_model *cov, double *v) {
 
   det_UpperInv(A, &det, dim);
   for (d=0; d<dim; d++) ds[d] = x[d] - y[d];
-  z = sqrt(xUx(ds, A, dim));
+  z = SQRT(xUx(ds, A, dim));
   COV(&z, next, v);
-  *v /= sqrt(det);
+  *v /= SQRT(det);
 }
 
 int checkgennsst_intern(cov_model *cov) {

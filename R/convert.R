@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -865,25 +865,25 @@ StandardizeData <- function(model,
   if (isSpObj(data)) data <- sp2RF(data)
   if (isRFsp <- is(data, "RFsp") || (is.list(data) && is(data[[1]], "RFsp"))){    
     ## ||(is.list(data) && is(data[[1]], "RFsp")))
-    if ( (!missing.x && length(x)!=0) || length(y)!=0   || length(z) != 0 ||
-       length(T) !=  0 || dist.given || length(dim)!=0 || length(grid) != 0)
-      stop("data object already contains information about the locations. So, none of 'x' 'y', 'z', 'T', 'distance', 'dim', 'grid' should be given.")
+  if ( (!missing.x && length(x)!=0) || length(y)!=0   || length(z) != 0 ||
+      length(T) !=  0 || dist.given || length(dim)!=0 || length(grid) != 0)
+    stop("data object already contains information about the locations. So, none of 'x' 'y', 'z', 'T', 'distance', 'dim', 'grid' should be given.")
     if (!is.list(data)) data <- list(data)
-    sets <- length(data)
-    x <- RFsp.coord <- gridTopology <- data.RFparams <- vector("list", sets)
-    
-    if (!is.null(data[[1]]@.RFparams)) {
-      if (length(vdim) > 0) stopifnot( vdim == data[[1]]@.RFparams$vdim)
-      else vdim <- data[[1]]@.RFparams$vdim
-    }
+  sets <- length(data)
+  x <- RFsp.coord <- gridTopology <- data.RFparams <- vector("list", sets)
+  
+  if (!is.null(data[[1]]@.RFparams)) {
+    if (length(vdim) > 0) stopifnot( vdim == data[[1]]@.RFparams$vdim)
+    else vdim <- data[[1]]@.RFparams$vdim
+  }
    
-    dimdata <- NULL
-    dimensions <- (if (isGridded(data[[1]])) data[[1]]@grid@cells.dim
-                   else nrow(data[[1]]@data))
-
-    dimensions <- c(dimensions, data[[1]]@.RFparams$vdim)
-    for (i in 1:length(data)) {
-      xi <- list()
+  dimdata <- NULL
+  dimensions <- (if (isGridded(data[[1]])) data[[1]]@grid@cells.dim
+		 else nrow(data[[1]]@data))
+  
+  dimensions <- c(dimensions, data[[1]]@.RFparams$vdim)
+  for (i in 1:length(data)) {
+    xi <- list()
       xi$grid <- isGridded(data[[i]])
       compareGridBooleans(grid, xi$grid)
       
@@ -908,7 +908,7 @@ StandardizeData <- function(model,
     if (all(dimdata[, idx] == 1))
       dimdata <- dimdata[, -idx, drop=FALSE]
     if (all(dimdata[, ncol(dimdata)] == 1)) # repet
-      dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
+    dimdata <- dimdata[, -ncol(dimdata), drop=FALSE]
     
   } else { # !isRFsp
     ## dimdata wird spaeter bestimmt
@@ -1038,7 +1038,7 @@ StandardizeData <- function(model,
             }
           }
         }
-
+	
         for (i in 1:sets) {
           data[[i]] <- data[[i]][ , sel, drop=FALSE]
           storage.mode(data[[i]]) <- "numeric"
@@ -1088,12 +1088,12 @@ StandardizeData <- function(model,
  
   if (!dist.given) { ##   x coordinates, not distances
 
-     
+    
     neu <- CheckXT(x=x) #, y=y, z=z, T=T, grid=grid, distances=distances,
-# dim=dim, length) # , length.data=length(data[[i]]), printlevel = 0)
+    ## dim=dim, length # , length.data=length(data[[i]]), printlevel = 0
 
     if (!is.list(neu[[1]])) neu <- list(neu)
-    
+
     coordunits<- neu[[1]]$coordunits
     spatialdim <- as.integer(neu[[1]]$spatialdim)
     Zeit <- neu[[1]]$Zeit
@@ -1150,8 +1150,8 @@ StandardizeData <- function(model,
   if (length(dim) > 0) stopifnot(dim == tsdim)
   varnames <- try(colnames(data[[1]]))
 
-## geht x[[1]]$x immer gut ??
-#  Print(missing(x), neu)
+  ## geht x[[1]]$x immer gut ??
+  ##  Print(missing(x), neu)
   names <- GetDataNames(model=model,
                         coords=if (missing(x)) NULL else x[[1]]$x,
                         locinfo=neu[[1]]) #ohne data!
@@ -1168,6 +1168,8 @@ StandardizeData <- function(model,
     prepmodel <- PrepareModel2(model=model, ..., x=trafo.to.C_CheckXT(neu))
   }
 
+  ##  Print(vdim, all(sapply(data, function(x) is.vector(x) || ncol(x) == 1)), missing(model), data)
+
   if (length(vdim) == 0) {
     if (all(sapply(data, function(x) is.vector(x) || ncol(x) == 1)))
       vdim <- 1
@@ -1175,13 +1177,28 @@ StandardizeData <- function(model,
       vdim <- rfInit(list("Cov", prepmodel),
                      x=x, y=y, z=z, T=T, grid=grid, distances=distances,
                      dim=dim, reg=MODEL_AUX, dosimulate=FALSE)[1]
-    } else vdim <- NA
+    } else {
+      message("multivariable dimension could not be detected. Hence, the univariate case is assumed")
+      vdim <- 1
+    }
   }
-    
+  
   repetitions <- as.integer(ldata / (restotal * vdim))
-  #  Print(data, ldata, repetitions, restotal, vdim, neu, dist.given)
+  ##  Print(data, ldata, repetitions, restotal, vdim, neu, dist.given)
   if (!is.na(vdim) && any(ldata != repetitions * restotal * vdim))
     stop("mismatch of data dimensions")
+
+  vrep <- repetitions * vdim
+
+  ##Print(ldata, repetitions, restotal, vdim, vrep, data)
+
+  for (i in 1:length(data)) {
+    base::dim(data[[i]]) <- c(ldata[i] / vrep[i], vrep[i])
+  }
+ 
+  ## Print(data, length(data), repetitions, vdim)
+  ## data <- lapply(data, dim(data) <- c(length(data) / (repetitions * vdim) , repetitions * vdim)
+  
   
   RFoptions(internal.examples_reduced=RFopt$internal$examples_red)
   return(list(

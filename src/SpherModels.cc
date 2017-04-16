@@ -13,7 +13,7 @@ Note:
 
 
  Copyright (C) 2014 -- 2015 Christoph Berreth
-                            Martin Schlather (changing 2015)
+               2016 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /* header files */
 #include <stdio.h> /* Standard Ein-/Ausgabefunktionen */
-#include <math.h>  /* for fct acos(), floor() */
+#include <Rmath.h>  /* for fct ACOS(), FLOOR() */
 #include <R_ext/Constants.h>  /* PI, DOUBLE_EPS, etc */
 #include "RF.h"    /* for struct cov_model, macro P0,
 		    enthält u.A. basic.h für vordefinierte Konstanten*/
@@ -54,7 +54,7 @@ int i=1;
 void SinePower(double *x, cov_model *cov, double *v){
   double alpha = P0(SINEPOWER_ALPHA);  // Auslesen des Parameters aus cov  
   double y = *x;
-  *v = y >=  PI ? 0.0 : 1.0 - pow(sin(y * 0.5), alpha);
+  *v = y >=  PI ? 0.0 : 1.0 - POW(SIN(y * 0.5), alpha);
   return;
 }
 
@@ -90,8 +90,8 @@ void Multiquad(double *x, cov_model *cov, double *v){
          tau = P0(MULTIQUAD_TAU); 
   double y = *x;
   
-  y = y >= PI ? -1 : cos(y);
-  *v = pow(1.0-delta, 2*tau) / pow(1+ delta * delta - 2*delta*y, tau);
+  y = y >= PI ? -1 : COS(y);
+  *v = POW(1.0-delta, 2*tau) / POW(1+ delta * delta - 2*delta*y, tau);
   return;
 }
 
@@ -179,9 +179,9 @@ void Choquet(double *x, cov_model *cov, double *v){
   n = sizeof(*b)/ sizeof(double);
   
   *v = 0.0;
-  if(y>=PI) for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,cos(PI));
+  if(y>=PI) for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,COS(PI));
   // für y>=PI stetige Fortsetzung mit konstantem Wert psi(PI)!!
-  else for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,cos(y));
+  else for(int k=0; k<n;k++) *v += b[k]/(k+1)*Legendre(0,COS(y));
   return;
 }
 

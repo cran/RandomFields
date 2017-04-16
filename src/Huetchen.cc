@@ -4,7 +4,7 @@
 
  simulation of max-stable random fields
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>
 #include "RF.h"
 #include "Operator.h"
@@ -228,7 +228,7 @@ int calculate_mass_gauss(cov_model *cov) {
 
   
     // is the underlying point distribution uniform? Then
-    // no safety division by sqrt(dim) seems to be necessary // todo
+    // no safety division by SQRT(dim) seems to be necessary // todo
     // unif might be modified by $. So a check on the equality
     // of three values is done
     VTLG_D(ZERO, pts, v);
@@ -244,7 +244,7 @@ int calculate_mass_gauss(cov_model *cov) {
     }
     if (zx != v[0] || zy != v[0] ||  true) {
       for (d=0; d<dim; d++) {
-	y[d] /= sqrt((double) dim); // falls nicht runif
+	y[d] /= SQRT((double) dim); // falls nicht runif
       }
     }
     
@@ -256,7 +256,7 @@ int calculate_mass_gauss(cov_model *cov) {
     for (d=0; d<dim; d++) { // Berechnung der ausgeduennten Reihe
       if (loc->xgr[d][XLENGTH] > 1) {
 	double range = loc->xgr[d][XSTEP] * (loc->xgr[d][XLENGTH] - 1.0);
-	xgr[d][XLENGTH] = ceil(range / y[d] + 1.0);
+	xgr[d][XLENGTH] = CEIL(range / y[d] + 1.0);
 	if (xgr[d][XLENGTH] >= loc->xgr[d][XLENGTH]) {
 	  BUG;
 	  memcpy(xgr[d], loc->xgr[d], 3 * sizeof(double));
@@ -682,7 +682,7 @@ int DrawCathegory(int size, double *single,
     
     for (i = 0; mass > total[i]; i++);
     if (i > 0) mass -= total[i-1];
-    *elmts = floor(mass / single[i]);
+    *elmts = FLOOR(mass / single[i]);
     //printf("draw: i=%d tot=%f mass=%f sing=%f elm=%d\n", i, total[i], mass, single[i], *elmts);
     return i;
   } else {
@@ -751,7 +751,7 @@ void do_pgs_gauss(cov_model *cov, gen_storage *S) {
       cov->q[d] = xgr[d][XSTART] + xgr[d][XSTEP] * which + v[d];
       // to determine the points that contribute to the value of the 
       // density function at cov->q
-      min[d] = ceil((cov->q[d] - y[d] - xgr[d][XSTART]) / xgr[d][XSTEP]);
+      min[d] = CEIL((cov->q[d] - y[d] - xgr[d][XSTART]) / xgr[d][XSTEP]);
       max[d] = (cov->q[d] - x[d] - xgr[d][XSTART]) / xgr[d][XSTEP];
 
       // printf("%d %d delat=%f %f y=%f %f step=%f\n", min[d], max[d], 
@@ -809,7 +809,7 @@ void do_pgs_gauss(cov_model *cov, gen_storage *S) {
       total += value;
     }
   }
-  pgs->log_density = log(total / pgs->totalmass);
+  pgs->log_density = LOG(total / pgs->totalmass);
 
   //printf("total=%f %f grid=%d dim=%d\n", total, pgs->totalmass,loc->grid,dim);
 
@@ -927,7 +927,7 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
     //PMI(pts);
     // printf("%f %f\n", PARAM(pts, 1)[0] *PARAM(pts, 1)[1] * 4 , pts->mpp.mMplus[0]);
     
-    //assert(fabs(PARAM(pts, 1)[0] *PARAM(pts, 1)[1] * 4 - pts->mpp.mMplus[0]) < 1e-14 *  pts->mpp.mMplus[0]);
+    //assert(FABS(PARAM(pts, 1)[0] *PARAM(pts, 1)[1] * 4 - pts->mpp.mMplus[0]) < 1e-14 *  pts->mpp.mMplus[0]);
 
     //   PMI(save_pts);
     //APMI(pts);
@@ -1001,9 +1001,9 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
     // Bsp das nicht funktioniert fuer flat=FLAT_UNDETERMINED
     //    x _ seq(1, 10, 0.01)
     //      z _ RFsimulate(RPsmith(RMgauss(), xi=0), x, x, grid=T, print=20)
-    //      Print(exp(-exp(range(-z[[1]]))))
+    //      Print(EXP(-EXP(range(-z[[1]]))))
     //      plot(z); X11(); hist(z[[1]], freq=FALSE, 50)
-    //			curve(exp(-x-2) * exp(-exp(-x-2)), -5, 2, add=TRUE)
+    //			curve(EXP(-x-2) * EXP(-EXP(-x-2)), -5, 2, add=TRUE)
     if (i != PGS_VOXEL) VTLG_R(x, pts, v); 
     //  printf("v=%f x=%f %d %d %d \n", v[0],  x[0], i, PGS_VOXEL,  PGS_CORNER);
     for (d = 0; d<dim; d++)
@@ -1071,7 +1071,7 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
     //printf("log density v=%f, %f, %f %e\n", v[0],v[1],v[2], pgs->log_density);
 
     //printf("log_dens %f\n", pgs->log_density);
-    //  pgs->log_density -= log(pgs->totalmass); // ueberprueft: normierung
+    //  pgs->log_density -= LOG(pgs->totalmass); // ueberprueft: normierung
     // zu einer WK'Dichte.
   } else {
     double density;
@@ -1080,7 +1080,7 @@ void do_pgs_maxstable(cov_model *cov, gen_storage *S) {
     //  printf("dens %f\n", density);
       //  printf("density %e v=%f %f %f\n", density, v[0], v[1], v[2]);
 
-    pgs->log_density = log(density);
+    pgs->log_density = LOG(density);
   }
 
  
@@ -1126,7 +1126,7 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
     *y = pgs->y;
 
   if (cov->role == ROLE_POISSON_GAUSS) {
-    eps = GLOBAL.mpp.about_zero * exp(pgs->log_density);
+    eps = GLOBAL.mpp.about_zero * EXP(pgs->log_density);
   } else if (hasMaxStableRole(cov)) { // todo: sauber trennen, wann 
     // max-stable, smith etc
     eps = pgs->currentthreshold;
@@ -1138,7 +1138,7 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
       BUG;
     }
     if (cov->loggiven)  eps += pgs->log_density;
-    else eps *= exp(pgs->log_density);
+    else eps *= EXP(pgs->log_density);
   } else BUG;
 
   
@@ -1165,7 +1165,7 @@ void do_pts_given_shape(cov_model *cov, gen_storage *S) {
     if (ISNAN(x[0])  || x[0] > y[0]) BUG;
  
     //printf("eps=%f %f %f x=(%e %e %e) y=(%e %e %e) q=(%f %f %f)\n",
-    //     eps, pgs->currentthreshold,  exp(pgs->log_density),
+    //     eps, pgs->currentthreshold,  EXP(pgs->log_density),
     //     x[0], x[1], x[2], y[0], y[1], y[2],
     //     cov->q[0], cov->q[1], cov->q[2]);
   }
@@ -1496,6 +1496,9 @@ int init_standard_shape(cov_model *cov, gen_storage *S) {
   GetDiameter(loc, pgs->localmin, pgs->localmax, 
 	      pgs->supportcentre); // last is only a dummy
   pgs->totalmass = 1.0;
+
+  // PMI(cov); printf("d=%d", dim);
+  
   for (d=0; d<dim; d++) {
     min[d] = pgs->localmin[d] - y[d];
     max[d] = pgs->localmax[d] - x[d];

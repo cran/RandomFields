@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017  Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -172,7 +172,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     stopifnot(diff(fft.m)>0, all(fft.m>0), all(fft.m<=fft.len))
 #    Print("periodogramm")
     l.I.lambda <-
-      .Call("periodogram",
+      .Call(C_periodogram,
             data,
             as.integer(dimen[1]), 
             as.integer(repet),# Produkt der anderen Dimensionen
@@ -201,7 +201,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     ## log already returned!
 #Print("detrendedfluc")
     l.var <- ## rbind(l.varmeth.var, l.dfa.var)
-      .Call("detrendedfluc", as.double(data), as.integer(dimen[1]),
+      .Call(C_detrendedfluc, as.double(data), as.integer(dimen[1]),
             as.integer(repet),
             as.integer(block.sequ), as.integer(dfa.len),
             PACKAGE="RandomFields")
@@ -384,7 +384,7 @@ RFfractaldim <-
  #   Print(bin, step, end, edge.lengths)
      
     ev <- RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=ct$grid,
-                             bin=bin, spConform=FALSE)
+			       bin=bin, spConform=FALSE, vdim=1)
 
     idx <-  which(is.finite(l.binvario <- log(ev$emp)))
     if (length(idx) < vario.n) {
@@ -428,7 +428,7 @@ RFfractaldim <-
       ## logarithm is already taken within minmax
       storage.mode(data) <- "double"
       l.range.count <-
-        .Call("minmax", data, as.integer(dimen[1]),
+        .Call(C_minmax, data, as.integer(dimen[1]),
               as.integer(repet), as.integer(range.sequ), as.integer(lrs),
               PACKAGE="RandomFields")
       box.length.correction <- 0 ## might be set differently
@@ -445,7 +445,7 @@ RFfractaldim <-
       data <- matrix(data, nrow=dimen[1])
      # l.box.count <- double(length(box.sequ) * repet)
       l.box.count <-
-        .Call("boxcounting",
+        .Call(C_boxcounting,
               as.double(rbind(data[1,], data, data[nrow(data),])),
               as.integer(dimen[1]),
               as.integer(repet), as.double(factor),
@@ -474,7 +474,7 @@ RFfractaldim <-
      
       l.lambda <- log((2 * pi * (fft.m[1]:fft.m[2])) / fft.len)
       # l.I.lambda <- double(repet * (fft.m[2] - fft.m[1] + 1));
-      l.I.lambda <- .Call("periodogram",
+      l.I.lambda <- .Call(C_periodogram,
          data,
          as.integer(dimen[1]),
          as.integer(repet),## Produkt der anderen Dimensionen

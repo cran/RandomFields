@@ -19,7 +19,6 @@ import("stats")
 import("utils")
 
 
-
 #importFrom('raster', raster, projection)
 #importFrom('colorspace', heat_hcl, rainbow_hcl)
 #importFrom('spam', as.spam, solve.spam, chol.spam)
@@ -68,7 +67,7 @@ export(
        )
 
 ## useDynLib(RFutils)
-useDynLib(RandomFields)
+useDynLib(RandomFields, .registration = TRUE, .fixes = "C_")
 
 # Classes
 
@@ -103,7 +102,7 @@ S3method(as.vector, RFspatialGridDataFrame)
 S3method(as.vector, RFgridDataFrame)
 S3method(as.vector, RFspatialPointsDataFrame)
 S3method(as.vector, RFpointsDataFrame)
-#S3method(summary, RFspatialGridDataFrame)
+S3method(summary, RFspatialGridDataFrame)
 
 
 S3method(summary, RFcrossvalidate)
@@ -122,19 +121,19 @@ S3method(AIC, RF_fit)
 #S3method(AICc, RFmodelfit)
 S3method(anova, RFfit)
 S3method(anova, RF_fit)
-#S3method(BIC, RFfit)
-#S3method(BIC, RF_fit)
+S3method(BIC, RFfit)
+S3method(BIC, RF_fit)
 S3method(logLik, RFfit)
 S3method(logLik, RF_fit)
 S3method(contour, RFfit)
 S3method(print, RFfit)
 S3method(print, RF_fit)
-#S3method(residuals, RFfit)
-#S3method(residuals, RF_fit)
+S3method(residuals, RFfit)
+S3method(residuals, RF_fit)
 S3method(summary, RFfit)
 S3method(summary, RF_fit)
 
-#S3method(print, AICRFfit)
+S3method(print, AICRFfit)
 
 
 S3method(as.matrix, RFgridDataFrame)
@@ -172,7 +171,7 @@ S3method(lines, RMmodel)
 S3method(points,RMmodel)
 S3method(print, RMmodel)
 S3method(print, RM_model)
-#S3method(str, RMmodel)
+S3method(str, RMmodel)
 S3method(summary, RMmodel)
 S3method(summary, RM_model)
 S3method(print, summary.RMmodel)

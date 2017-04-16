@@ -1,4 +1,4 @@
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "cubicsolver.h"
 
@@ -28,15 +28,15 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     roots[0][1] = 0; //The first root is always real.
     term1 = (b/3.0);
     if (disc > 0) { // one root real, two are complex
-        s = r + sqrt(disc);
-        s = ((s < 0) ? -pow(-s, (1.0/3.0)) : pow(s, (1.0/3.0)));
-        t = r - sqrt(disc);
-        t = ((t < 0) ? -pow(-t, (1.0/3.0)) : pow(t, (1.0/3.0)));
+        s = r + SQRT(disc);
+        s = ((s < 0) ? -pow(-s, (1.0/3.0)) : POW(s, (1.0/3.0)));
+        t = r - SQRT(disc);
+        t = ((t < 0) ? -pow(-t, (1.0/3.0)) : POW(t, (1.0/3.0)));
         roots[0][0] = -term1 + s + t;
         term1 += (s + t)/2.0;
         roots[2][0] = -term1;
         roots[1][0] = -term1;
-        term1 = sqrt(3.0)*(-t + s)/2;
+        term1 = SQRT(3.0)*(-t + s)/2;
         roots[1][1] = term1;
         roots[2][1] = -term1;
         return NOERROR;
@@ -46,7 +46,7 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     roots[1][1] = 0;
     roots[2][1] = 0;
     if (disc == 0){ // All roots real, at least two are equal.
-        r13 = ((r < 0) ? -pow(-r,(1.0/3.0)) : pow(r,(1.0/3.0)));
+        r13 = ((r < 0) ? -pow(-r,(1.0/3.0)) : POW(r,(1.0/3.0)));
         roots[0][0] = -term1 + 2.0*r13;
         roots[1][0] = -(r13 + term1);
         roots[2][0] = -(r13 + term1);
@@ -55,10 +55,10 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     // Only option left is that all roots are real and unequal (to get here, q < 0)
     q = -q;
     dum1 = q*q*q;
-    dum1 = acos(r/sqrt(dum1));
-    r13 = 2.0*sqrt(q);
-    roots[0][0]= -term1 + r13*cos(dum1/3.0);
-    roots[1][0] = -term1 + r13*cos((dum1 + 2.0*M_PI)/3.0);
-    roots[2][0] = -term1 + r13*cos((dum1 + 4.0*M_PI)/3.0);
+    dum1 = ACOS(r/SQRT(dum1));
+    r13 = 2.0*SQRT(q);
+    roots[0][0]= -term1 + r13*COS(dum1/3.0);
+    roots[1][0] = -term1 + r13*COS((dum1 + 2.0*M_PI)/3.0);
+    roots[2][0] = -term1 + r13*COS((dum1 + 4.0*M_PI)/3.0);
     return NOERROR;
 }

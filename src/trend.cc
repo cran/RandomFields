@@ -3,6 +3,10 @@
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
 
+ Copyright (C) 2011 -- 2015 Marco Oesting & Martin Schlather
+               2015 -- 2017 Martin Schlather
+
+
  Handling of the different possibilities to pass the trend
 
 Note:
@@ -12,9 +16,6 @@ Note:
  * definitions for the random coin method can be found in MPPFcts.cc
  * definitions for genuinely anisotropic or nondomain models are in
    SophisticatedModel.cc; hyper models also in Hypermodel.cc
-
- Copyright (C) 2011 -- 2015 Marco Oesting & Martin Schlather
-
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 3
@@ -44,7 +45,7 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 #include <R.h>
 #include <Rdefines.h>
 #include <Rinternals.h>
-#include <math.h>
+#include <Rmath.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 
@@ -302,7 +303,7 @@ int checkmixed(cov_model *cov) {
 				  KNAME(MIXED_BETA), KNAME(MIXED_X));
     for (i=0; i<nrow[MIXED_X]; i++) {
       if (X->ncol[i] != nrow[MIXED_BETA]) {
-	sprintf(msg,
+	SPRINTF(msg,
 		"%dth set: (%d x %d) matrix '%s' and (%d x %d) vector '%s' do not match",
 		i, X->nrow[0], X->ncol[i], KNAME(MIXED_X),
 		nrow[MIXED_BETA], ncol[MIXED_BETA], KNAME(MIXED_BETA));
@@ -414,7 +415,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   // cholesky zerlegung + bereitstellung von b
 
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "init mixed model");
+  SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "init mixed model");
   
   assert(cov->nr == MIXEDEFFECT);
 
@@ -449,7 +450,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
       // Xu , u ~ geostatmodel, u i.a. viel laenger als X (tierzucht)
       // stehende Vektoren, aneinandergereiht
       Cn = cov->ncol[MIXED_DIST];
-      Cn = (int) (0.5 + 0.5 * (1.0 + sqrt(1 + 8.0 * Cn)));
+      Cn = (int) (0.5 + 0.5 * (1.0 + SQRT(1 + 8.0 * Cn)));
       Cdim = cov->nrow[MIXED_DIST];
       assert(Cdim==1);
       if ((err = covCpy(&(cov->key), next, dist, NULL, dim, dim, Cn, 
@@ -969,7 +970,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   assert(cov->vdim[0] == cov->vdim[1]);
 
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
+  SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
  
   // print("%s\n", ERROR_LOC);
 
@@ -1240,7 +1241,7 @@ double evalpoly(double *x, int *powmatrix, double *polycoeff, int basislen,
   double res = 0, tempres;
   for(j=i=0; i<basislen; i++) {
      tempres=1;
-     for(d=0; d<dim; d++) tempres *= pow(x[d], powmatrix[j++]);
+     for(d=0; d<dim; d++) tempres *= POW(x[d], powmatrix[j++]);
      res += polycoeff[i] * tempres;
   }
   return(res);
@@ -1306,7 +1307,7 @@ void do_TrendEval(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   assert(res != NULL);
   errorloc_type errorloc_save;
   strcpy(errorloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
+  SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
   Fctn(NULL, cov, res);
   strcpy(ERROR_LOC, errorloc_save);
 

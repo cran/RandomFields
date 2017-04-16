@@ -4,7 +4,7 @@
 
  Simulation of a random field by spectral turning bands
 
- Copyright (C) 2000 -- 2015 Martin Schlather, 
+ Copyright (C) 2000 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "RF.h"
 #include "Operator.h"
 
@@ -206,8 +206,8 @@ void E2(spectral_storage *s, double A, double *e) {
   // print("A=%f\n", A);
   // print("%f\n",phi);
   //print("%f\n", e[1]);
-  e[0] = A * cos(phi);
-  e[1] = A * sin(phi);
+  e[0] = A * COS(phi);
+  e[1] = A * SIN(phi);
   //  print("phi=%f A=%f grid=%d step=%f phi2d=%f %f %f\n", 
   //	 phi, A, (int) s->grid, 
   //	 s->phistep2d, s->phi2d,
@@ -227,10 +227,10 @@ void E3(spectral_storage *s, double A, double *e) {
   double phi, psi, Asinpsi;
   phi = TWOPI*UNIFORM_RANDOM;
   psi = PI*UNIFORM_RANDOM;
-  Asinpsi = A * sin(psi);
-  e[0] = A * cos(psi);
-  e[1] = Asinpsi * cos(phi);
-  e[2] = Asinpsi * sin(phi);
+  Asinpsi = A * SIN(psi);
+  e[0] = A * COS(psi);
+  e[1] = Asinpsi * COS(phi);
+  e[2] = Asinpsi * SIN(phi);
 }
 void E(int dim, spectral_storage *s, double A, double *e) {
   switch (dim) {
@@ -356,8 +356,8 @@ void do_spectral(cov_model *cov, gen_storage *S)
           for (segz = VV, nz = 0; nz < gridlenz; nz++) {	
 	    for (segy = segz, ny = 0; ny < gridleny; ny++) {	
 	      for (segx = segy, nx = 0; nx < gridlenx; nx++) {
-		// print("zaehler=%d %f res=%f %f\n", zaehler, segx, res[zaehler], cos(segx) );
-		  res[zaehler++] += (double) cos(segx);	  
+		// print("zaehler=%d %f res=%f %f\n", zaehler, segx, res[zaehler], COS(segx) );
+		  res[zaehler++] += (double) COS(segx);	  
 		segx += incx;
 	      }
 	      segy += incy;
@@ -372,12 +372,12 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	int ny, nz;
 	long zaehler;
 	
-	cix = cos(inc[0]);  six = sin(inc[0]);
-	ciy = cos(inc[1]);  siy = sin(inc[1]);
-	ciz = cos(inc[2]);  siz = sin(inc[2]);
-	cit = cos(inc[3]);  sit = sin(inc[3]);
-	ct = cos(VV);
-	st = sin(VV);
+	cix = COS(inc[0]);  six = SIN(inc[0]);
+	ciy = COS(inc[1]);  siy = SIN(inc[1]);
+	ciz = COS(inc[2]);  siz = SIN(inc[2]);
+	cit = COS(inc[3]);  sit = SIN(inc[3]);
+	ct = COS(VV);
+	st = SIN(VV);
 	
 	zaehler = 0; 
 	for (nt=0; nt < gridlent; nt++) {	
@@ -402,23 +402,23 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	  st = ct * sit + st * cit;  // 1.9.07: sz
 	  ct = dummy;                // 1.9.07: cz
 	}
-	// cos(a + b) = cos(a) cos(b) - sin(a) sin(b)
-        // sin(a + b) = cos(a) sin(b) + cos(b) sin(a)
+	// COS(a + b) = COS(a) COS(b) - SIN(a) SIN(b)
+        // SIN(a + b) = COS(a) SIN(b) + COS(b) SIN(a)
       }
     } else { // no grid
       double psi, cit, sit;
       if (loc->Time) {
 	int j;
 	inct = loc->T[XSTEP] * E[spatialdim];
-	cit = cos(inct); 
-	sit = sin(inct);
+	cit = COS(inct); 
+	sit = SIN(inct);
 	for (j=nx=0; nx<spatialpoints; nx++) { 
 	  psi = VV;
 	  for (d=0; d<spatialdim; d++) psi += E[d] * x[j++];
 	  if (!ISNA(exact) && !exact) {
 	    double sx, cx, dummy;
-	    cx = cos(psi);
-	    sx = sin(psi);
+	    cx = COS(psi);
+	    sx = SIN(psi);
 	    for (nt = nx; nt < total; nt += spatialpoints) {
 		res[nt] += (double) cx;
 	      dummy = cx * cit - sx * sit;
@@ -427,7 +427,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	    }
 	  } else {
 	    for (nt = nx; nt < total; nt += spatialpoints, psi += inct){
-	      res[nt] += (double) cos(psi);
+	      res[nt] += (double) COS(psi);
 	    }	  
 	  } // ! exact
 	}
@@ -436,14 +436,14 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	switch (origdim) {
 	    case 1 : 
 	      for (nx=0; nx<total; nx++) {	
-		res[nx] += (double) cos(cp * x[nx] + VV);
+		res[nx] += (double) COS(cp * x[nx] + VV);
 	      }
 	      break;
 	    case 2 :
 	      int twonx;
 	      for (nx=0; nx<total; nx++) {	
 		twonx = nx << 1;
-		res[nx] += (double) cos(cp * x[twonx] + sp * x[twonx+1] + VV);
+		res[nx] += (double) COS(cp * x[twonx] + sp * x[twonx+1] + VV);
 	      }
 	      break;
 	    default :
@@ -451,7 +451,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
 	      for (j=nx=0; nx<total; nx++) {	
 		psi = VV;
 		for (d=0; d<origdim; d++) psi += E[d] * x[j++];
-		res[nx] += (double) cos(psi);
+		res[nx] += (double) COS(psi);
 	      }
 	}
       }
@@ -468,7 +468,7 @@ void do_spectral(cov_model *cov, gen_storage *S)
   double sqrttwodivbyn;
   COV(ZERO, next, &sqrttwodivbyn);
   
-  sqrttwodivbyn = sqrt(sqrttwodivbyn * 2.0 // 2.0 from spectral simul.
+  sqrttwodivbyn = SQRT(sqrttwodivbyn * 2.0 // 2.0 from spectral simul.
 		       / (double) ntot);
   for (nx=0; nx<total; nx++) { 
     //printf("%f %f\n", res[nx], sqrttwodivbyn);

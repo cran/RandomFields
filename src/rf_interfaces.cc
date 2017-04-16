@@ -6,7 +6,7 @@ main library for unconditional simulation of random fields
 
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
- Copyright (C) 2005 -- 2015 Martin Schlather
+ Copyright (C) 2005 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,9 +42,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   methods may be called;  
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>
-#include <stdlib.h> 
+//#include <stdlib.h> 
 #include <string.h>
 //#include <unistd.h>
 #include "RF.h"
@@ -73,7 +73,7 @@ SEXP getListElement(SEXP list, char *str) {
     return R_NilValue;
   }
   for (i = 0; i < length(names); i++) {
-    if(strcmp(CHAR(STRING_ELT(names, i)), str) == 0) {
+    if(STRCMP(CHAR(STRING_ELT(names, i)), str) == 0) {
       elmt = VECTOR_ELT(list, i);
       break;
     }
@@ -133,7 +133,7 @@ void fetchParam(cov_model *cov, cov_model *next, int i, char *name) {
   if (!PARAMisNULL(next, i)) {
     if (next->ncol[i] != 1 || next->nrow[i] != 1) {
       char msg[255];
-      sprintf(msg, "%s is not a scalar", name);
+      SPRINTF(msg, "%s is not a scalar", name);
       ERR(msg);
     }
     if (PisNULL(i)) kdefault(cov, i, PARAM0(next, i));
@@ -183,7 +183,7 @@ void includeparam(void **qq,       // px
     /*
 
   case LANGSXP : case ENVSXP :   
-     if (strcmp("setseed", param_name) != 0 && strcmp("env", param_name)!=0){ 
+     if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
        if (GLOBAL.general.storing) {
 	 ERR1("If models with R commands in the parameters (such as '%s') are used then 'storing' must be FALSE.", CovList[USER].nick);
        }
@@ -209,7 +209,7 @@ void includeparam(void **qq,       // px
      break;
      */
   case LANGSXP : {
-   if (strcmp("setseed", param_name) != 0 && strcmp("env", param_name)!=0){ 
+   if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
        if (GLOBAL.general.storing) {
 	 ERR1("If models with R commands in the parameters (such as '%s') are used then 'storing' must be FALSE.", CovList[USER].nick);
        }
@@ -232,7 +232,7 @@ void includeparam(void **qq,       // px
     break;
 
   case ENVSXP :   {
-     if (strcmp("setseed", param_name) != 0 && strcmp("env", param_name)!=0){ 
+     if (STRCMP("setseed", param_name) != 0 && STRCMP("env", param_name)!=0){ 
        if (GLOBAL.general.storing) {
 	 ERR1("If models with R commands in the parameters (such as '%s') are used then 'storing' must be FALSE.", CovList[USER].nick);
        }
@@ -396,7 +396,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 
   strcopyN(leer, "                                                           ", 
 	   (2 * level < NLEER) ? 2 * level : NLEER);
-  sprintf(ERR_LOC, "%s\n%s%s... ", ERROR_LOC, leer, name);
+  SPRINTF(ERR_LOC, "%s\n%s%s... ", ERROR_LOC, leer, name);
   strcpy(ERROR_LOC, ERR_LOC);
   covnr = getmodelnr(name);
 
@@ -431,12 +431,12 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 
     //printf("%s %s\n", NAME(cov), param_name);
 
-    if  (strcmp(param_name, "") && nkappas != 0) {
+    if  (STRCMP(param_name, "") && nkappas != 0) {
       if ((i = Match(param_name, C->kappanames, nkappas)) < 0) {
 	i = Match(param_name, STANDARDPARAM, nkappas);
       }
 
-      if (i<0 && !strcmp(C->kappanames[nkappas - 1], FREEVARIABLE)) {
+      if (i<0 && !STRCMP(C->kappanames[nkappas - 1], FREEVARIABLE)) {
 	if ((j = Match(param_name, C->subnames, C->maxsub)) < 0) {
 	  j = Match(param_name, STANDARDSUB, MAXSUB);
 	}
@@ -448,7 +448,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  // ein FREEVARIABLE-Zeichen wird nie verwendet -- Puffer fuer einfachen Algorithmus; deshalb "i-1"
 	  i = nkappas - 1; 
 	  	 	  
-	  while(i>0 && !strcmp(C->kappanames[i - 1], FREEVARIABLE) && 
+	  while(i>0 && !STRCMP(C->kappanames[i - 1], FREEVARIABLE) && 
 		cov->ownkappanames[i] != NULL) {
 	    i--;
 	  }
@@ -467,7 +467,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	&& isVectorList(p) && isString(VECTOR_ELT(p, 0))) {
 
       // submodels
-      if (strcmp(param_name, "") != 0) { // named submodel
+      if (STRCMP(param_name, "") != 0) { // named submodel
 	if ((i = Match(param_name, C->subnames, C->maxsub)) < 0) {
 	  i = Match(param_name, STANDARDSUB, MAXSUB);
 	}
@@ -480,7 +480,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
               for (s=0; s<C->maxsub; s++) {
 		if (s>0)  PRINTF(", ");
 		PRINTF("%s", STANDARDSUB[s]);
-		if (strcmp(STANDARDSUB[s], C->subnames[s]) != 0) {
+		if (STRCMP(STANDARDSUB[s], C->subnames[s]) != 0) {
 		  PRINTF("%s", C->subnames[s]);
 		}
 	      }
@@ -508,7 +508,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	// internal 
 	if (C->subintern[i]) {
 	  char msg[200];
-	  sprintf(msg,
+	  SPRINTF(msg,
 		  "submodel could not be identified. Please give the names of the parameters and the submodels explicitely. Did you mean '%s' ?", 
 		  C->subnames[i]);
 	  MMERR(msg);
@@ -526,7 +526,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
       // parameter identification
       int len_p = length(p); // originally "l"
       //      if (param_name[0]==ONEARGUMENT_NAME && strlen(param_name) == 1) { 
-      //     if (strcmp(param_name, "k") == 0) {
+      //     if (STRCMP(param_name, "k") == 0) {
       if (param_name[0] == ONEARGUMENT_NAME && param_name[1] ==  '\0') {
 	if (TYPEOF(p) != REALSXP && TYPEOF(p) != INTSXP && TYPEOF(p) != LGLSXP) 
 	  PERR1("if '%c' is used as parameter name then only a numerical vector is allowed as value", ONEARGUMENT_NAME);
@@ -536,7 +536,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	// ERR("short form k of parameter name not allowed for sophistacted models");
 	for (j=0; j<len_p; j++) {
 	  if (!PisNULL(j)) PERR("parameter given twice"); // p[0] OK
-	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call("SetAndGetModelInfo",
+	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call(C_SetAndGetModelInfo",
 	      C->kappatype[j] != INTSXP ||
 	      Integer(p, param_name, j) != NA_INTEGER) {
 	    cov->ncol[j] = cov->nrow[j] = 1;	  
@@ -551,7 +551,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	continue;
       }
       
-      if (strcmp(param_name, "") == 0) {
+      if (STRCMP(param_name, "") == 0) {
 	if (nkappas == 1) i = 0; else ERR("parameters must be named");
       } else {
 	// i set before the submodels
@@ -561,7 +561,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
             PRINTF("allowed parameter names are: ");
 	    if (C->kappas == 0) PRINTF("<none>"); 
 	    else for (s=0; s<C->kappas; s++) {
-		if (strcmp("", C->kappanames[s]) != 0) 
+		if (STRCMP("", C->kappanames[s]) != 0) 
 		  PRINTF("'%s', ", C->kappanames[s]);
 		PRINTF("'%s', ", STANDARDPARAM[s]);
 	      }
@@ -696,7 +696,7 @@ bool CallingSet(cov_model *cov) {
     for (; i < MAXSUB; i++) {
       if (cov->sub[i] != NULL) {
 	char msg[200];
-	sprintf(msg, "%s: %dth submodel not NULL although nsub=%d",
+	SPRINTF(msg, "%s: %dth submodel not NULL although nsub=%d",
 		NAME(cov), i, cov->nsub);
 	warning(msg);
 	BUG;
@@ -775,7 +775,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
       if (distances) {
 	if (dist_ok) {
-	  lx = (int) (1e-9 + 0.5 * (1 + sqrt(1. + 8 * lx)));
+	  lx = (int) (1e-9 + 0.5 * (1 + SQRT(1. + 8 * lx)));
 	  if (Lx != lx * (lx - 1) / 2)
 	    ERR("distance length not of form 'n * (n - 1) / 2'");
 	} else {
@@ -788,7 +788,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 	   ) != NOERROR) goto ErrorHandling;
 
     } else { // xlist
-      // double AA=0; for (int ii=1; ii<10000000; ii++) for (int ii0=1; ii0<10000000; ii0++) AA+=exp(ii0) / log(ii);  printf("C\n");
+      // double AA=0; for (int ii=1; ii<10000000; ii++) for (int ii0=1; ii0<10000000; ii0++) AA += EXP(ii0) / LOG(ii);  printf("C\n");
       //PMI(cov); 
 
       // printf("%d %d %d %d %d\n", x==NULL, Y==NULL, T==NULL, lx==0, ly==0);
@@ -852,7 +852,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
       PMI(cov); // OK
     }
  
-    sprintf(ERROR_LOC, "%s process: ", ROLENAMES[cov->role]);
+    SPRINTF(ERROR_LOC, "%s process: ", ROLENAMES[cov->role]);
     strcpy(PREF_FAILURE, "");
     PrInL=-1;
     
@@ -872,7 +872,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
     char EM[LENERRMSG];   
     FinalErrorMSG(err, EM);
-    sprintf(EM2, "%s%s", PREF_FAILURE, EM);
+    SPRINTF(EM2, "%s%s", PREF_FAILURE, EM);
     if (lx == 0 || distances) break;
     y = x;
     ly = lx;
@@ -1020,7 +1020,7 @@ void density(double VARIABLE_IS_NOT_USED *value, cov_model *cov, double *v) {
   eval(PLANG(DENS_SEED)->sexp, PENV(DENS_ENV)->sexp);
   GetRNGstate();
 
-  sprintf(ERROR_LOC, "%s %d: ", errorloc_save, ni);
+  SPRINTF(ERROR_LOC, "%s %d: ", errorloc_save, ni);
  
   assert(cov->Sgen != NULL);
   
@@ -1266,15 +1266,15 @@ void simulate(double *N, cov_model *cov, double *v){
   if (nn>1 && pch != '\0') {
     if (pch == '!') {
       digits = (nn<900000000) 
-	? 1 + (int) trunc(log((double) nn) / log(10.0)) : 9;
+	? 1 + (int) TRUNC(LOG((double) nn) / LOG(10.0)) : 9;
       back[digits] = '\0';
       each = (nn < 100) ? 1 :  nn / 100;
-      sprintf(format, "%ss%s%dd", prozent, prozent, digits);
+      SPRINTF(format, "%ss%s%dd", prozent, prozent, digits);
     } else if (pch == '%') {
       back[4] = '\0';
       realeach = (double) nn / 100.0;
       each = (nn < 100) ? 1 : (int) realeach;
-      sprintf(format, "%ss%s%dd%ss", prozent, prozent, 3, prozent);
+      SPRINTF(format, "%ss%s%dd%ss", prozent, prozent, 3, prozent);
     } else each = 1;
   } else each = nn + 1;
   // size = cov->vdim * nn * loc->totalpoints;
@@ -1295,7 +1295,7 @@ void simulate(double *N, cov_model *cov, double *v){
       }
     }
 
-  sprintf(ERROR_LOC, "%s %d: ", errorloc_save, ni);
+  SPRINTF(ERROR_LOC, "%s %d: ", errorloc_save, ni);
  
   R_CheckUserInterrupt();
 
@@ -2670,7 +2670,7 @@ void FctnIntern(cov_model *cov, cov_model *covVdim, cov_model *sub,
   
   if (kernel && !ygiven && PL > 0) {					
     char wrn[200]; 				
-    sprintf(wrn, "'%s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.n", NICK(cov)); 
+    SPRINTF(wrn, "'%s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.n", NICK(cov)); 
     warning(wrn);							
   }
  

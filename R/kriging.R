@@ -2,7 +2,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -222,7 +222,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   RFoptOld <- do.call("internal.rfoptions", c(opt, RELAX=isFormulaModel(model)))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
-  boxcox <- .Call("get_boxcox")
+  boxcox <- .Call(C_get_boxcox)
 
 
   ## eingabe wird anstonsten auch als vdim_close erwartet --
@@ -295,7 +295,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     split <- ngiven > maxn || (!is.na(exact) && !exact && ngiven > split)
 
     data <- RFboxcox(all$Z$data[[1]])
-    .Call("set_boxcox", c(Inf, 0))
+    .Call(C_set_boxcox, c(Inf, 0))
  
     if (imputing) {
       Res <- data
@@ -477,7 +477,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   RFoptOld <- internal.rfoptions(..., RELAX=isFormulaModel(model)) 
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
-  boxcox <- .Call("get_boxcox")
+  boxcox <- .Call(C_get_boxcox)
   cond.reg <- RFopt$registers$register
  
   all <- rfPrepareData(model=model, x=x, y=y, z=z, T=T, grid=grid,
@@ -490,7 +490,7 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   vdim <- Z$vdim
 
   data <- RFboxcox(Z$data[[1]])
-  .Call("set_boxcox", c(Inf, 0))
+  .Call(C_set_boxcox, c(Inf, 0))
 
   if (all$Z$repetitions != 1)
      stop("conditional simulation allows only for a single data set")

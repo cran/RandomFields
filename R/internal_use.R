@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
 PrintModelList <-function (operators=FALSE, internal=FALSE,
                            newstyle=TRUE) {
    stopifnot(internal <=2, internal >=0, operators<=1, operators>=0)
-    .C("PrintModelList", as.integer(internal), as.integer(operators),
+    .C(C_PrintModelList, as.integer(internal), as.integer(operators),
        as.integer(newstyle),
        PACKAGE="RandomFields")
     invisible()
@@ -41,7 +41,7 @@ PrintModelList <-function (operators=FALSE, internal=FALSE,
 
 checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
                           ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
-                          path="RandomFields", package="RandomFields",
+                          path=package, package="RandomFields",
                           read.rd.files=TRUE,
                           libpath = NULL, single.runs = FALSE) {
   .exclude <- exclude
@@ -91,9 +91,9 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
             .orig.fct.list %in% get("export", .env))
     .fct.list <- .orig.fct.list[.ok]
   } else {
-    .path <- read.rd.files
-    if (is.logical(.path))
-      .path <- "/home/schlather/svn/RandomFields/RandomFields/man"
+    if (is.logical(read.rd.files))
+      .path <- paste("./", .path, "/man", sep="")
+    else .path <- read.rd.files
     .files <- dir(.path, pattern="d$")
     .fct.list <- character(length(.files))
     for (i in 1:length(.files)) {
@@ -129,11 +129,11 @@ checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
     cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
         " (total=", length(.fct.list), ") \n", sep="")
     RFoptions(LIST=.RFopt)
-    .C("ResetWarnings", as.integer(FALSE))
+    .C(C_ResetWarnings, as.integer(FALSE))
     if (.echo) cat(.idx, "")
     .tryok <- TRUE
     if (single.runs) {
-      txt <- paste("library(RandomFields", libpath, "); example(",
+      txt <- paste("library(", package,", ", libpath, "); example(",
                 .fct.list[.idx],
                 ", ask =", .ask,
                 ", echo =", .echo,
@@ -191,8 +191,6 @@ FinalizeExample <- function() {
   
   #Print(RFoptions()$gen)
 }
-
-
 
 showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
   files <- dir(path)
@@ -390,33 +388,31 @@ reverse_dependencies_with_maintainers <-
     rdepends <- sort(unique(unlist(rdepends)))
     pos <- match(rdepends, db[, "Package"], nomatch = 0L)
     
-    db[pos, c("Package", "Version", "Maintainer")]
+    db <- db[pos, c("Package", "Version", "Maintainer")]
+    if (is.vector(db)) dim(db) <- c(1, length(db))
+    db
   }
 
+
+ShowInstallErrors <- function(dir, pkgs)
+    for (i in 1:length(pkgs)) {
+      cat(pkgs[i], "\n")
+      for (f in c("00install.out", "00check.log"))
+	system(paste("grep [eE][rR][rR][oO][rR] ", dir, "/",  pkgs[i],
+		     ".Rcheck/", f, sep=""))
+    }
+  
+
 Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
-                         install = FALSE, check=TRUE, reverse=FALSE) {
-  Print(packageDescription("RandomFields")) #
-  all <- reverse_dependencies_with_maintainers("RandomFields") #, which="all")
+                         install = FALSE, check=TRUE, reverse=FALSE,
+			 package="RandomFields") {
+  Print(packageDescription(package)) #
+  all <- reverse_dependencies_with_maintainers(package) #( , which="all")
   all.pkgs <- all[, 1]
-  PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")    
+  PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")   
   
   ## getOption("repos")["CRAN"]
   URL <- "http://cran.r-project.org/src/contrib/"
- 
-  if (all(pkgs == all.pkgs)) {
-    if (check)
-      tools::check_packages_in_dir(dir=dir, check_args = c("--as-cran", ""),
-                                   reverse=if (reverse) list(repos =
-                                       getOption("repos")["CRAN"]) else NULL)
-    for (i in 1:length(pkgs)) {
-      cat(pkgs[i], "\n")
-      system(paste("grep ERROR ", dir, "/",  pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep ERROR ", dir, "/",  pkgs[i], ".Rcheck/00check.log", sep=""))
-      system(paste("grep Error ", dir, "/",  pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep Error ", dir, "/",  pkgs[i], ".Rcheck/00check.log", sep=""))
-    }
-    return(NULL)
-  }
 
   if (install) {
     system(paste("mkdir ", dir))
@@ -428,21 +424,27 @@ Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
     ## extended version see RandomFields V 3.0.51 or earlier     
     }
   }
-   ## old:
-  if (check) {
-    for (j in 1:length(pkgs)) {
-      i <- pmatch(pkgs[j], PKGS)
-      if (is.na(i)) next
-      command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
-      Print(command) #
-      x <- system(command)
-      system(paste("grep ERROR ", dir, "/", pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep ERROR ", dir, "/", pkgs[i], ".Rcheck/00check.log", sep=""))
-      system(paste("grep Error ", dir, "/", pkgs[i], ".Rcheck/00install.out", sep=""))
-      system(paste("grep Error ", dir, "/", pkgs[i], ".Rcheck/00check.log", sep=""))
-      if (x != 0) stop(PKGS[i], "failed")
+  if (!hasArg("pkgs")) {
+    if (check)
+      tools::check_packages_in_dir(dir=dir, check_args = c("--as-cran", ""),
+                                   reverse=if (reverse) list(repos =
+                                       getOption("repos")["CRAN"]) else NULL)
+    ShowInstallErrors(dir, pkgs)
+    return(NULL)
+  } else { ### old:
+    if (check) {
+      for (j in 1:length(pkgs)) {
+	i <- pmatch(pkgs[j], PKGS)
+	if (is.na(i)) next
+	command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
+	Print(command) #
+	x <- system(command)
+	ShowInstallErrors(dir, pkgs)
+	if (x != 0) stop(PKGS[i], "failed")
+      }
     }
   }
+
 }
 # R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
 

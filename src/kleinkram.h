@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define kleinkram_rfutils_h 1
 
 #include <Basic_utils.h>
+#include "Local.h"
 
 
 typedef char name_type[][MAXCHAR];
@@ -38,7 +39,7 @@ void strcopyN(char *dest, const char *src, int n);
 usr_bool UsrBool(SEXP p, char *name, int idx);
 
 #define INT Integer(el, name, 0)
-#define LOG Logical(el, name, 0)
+#define LOGI Logical(el, name, 0)
 #define NUM Real(el, name, 0)
 #define USRLOG UsrBool(el, name, 0)
 #define CHR Char(el, name)
@@ -138,14 +139,13 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 
 #define SCALAR_PROD(A, B, N, ANS) {			\
     int  k_ =0,				\
-    end_ = N - 5;				\
+    end_ = N - 4;				\
   ANS = 0.0;					\
-  for (; k_<end_; k_+=5) {				\
+  for (; k_<end_; k_+=4) {				\
     ANS += A[k_] * B[k_]				\
       + A[k_ + 1] * B[k_ + 1]				\
       + A[k_ + 2] * B[k_ + 2]				\
-      + A[k_ + 3] * B[k_ + 3]				\
-      + A[k_ + 4] * B[k_ + 4];				\
+      + A[k_ + 3] * B[k_ + 3];				\
   }							\
   for (; k_<N; k_++) ANS += A[k_] * B[k_];		\
   }
@@ -158,6 +158,7 @@ int GetName(SEXP el, char *name, const char * List[], int n,
 }
 
 double scalar(double *A, double *B, int N);
+double ownround(double x);
 
 
 /*

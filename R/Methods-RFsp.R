@@ -2,7 +2,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ setAs("RFgridDataFrame", "RFpointsDataFrame",
 
 
 
-## methods 'as.matrix' and 'cbind' as in the 'sp' package
+## methods 'as.matrix' and 'cbind' as in 'sp'
 
 as.matrix.RFgridDataFrame <- 
  as.matrix.RFspatialGridDataFrame <- function(x, ...) {

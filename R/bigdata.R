@@ -1,4 +1,26 @@
- 
+
+## Authors 
+## Martin Schlather, schlather@math.uni-mannheim.de
+##
+##
+## Copyright (C) 2017 -- 2017 Martin Schlather
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+
+
+
 #   stop("big data sets currently not allowed") 
 #    printlevel <- mle.methods <- lsq.methods <- recall <- sdvar <- general <- TRUE
 
@@ -66,7 +88,7 @@ GetNeighbourhoods <- function(model, Z, X,
     coord <- Z$coord[[set]]
     
     if (consider.correlations) {
-      natsc <- .C("MultiDimRange", as.integer(model.nr),
+      natsc <- .C(C_MultiDimRange, as.integer(model.nr),
                   as.integer(set),
                   natsc = double(xdimOZ),
                   PACKAGE="RandomFields")$natsc
@@ -150,10 +172,10 @@ GetNeighbourhoods <- function(model, Z, X,
         ## neighbours <- integer(totparts)
         cumidx <- as.integer(colSums(coord.idx * cumparts))
         
-        elms.in.boxes <- .Call("countelements", cumidx, n, totparts,
+        elms.in.boxes <- .Call(C_countelements, cumidx, n, totparts,
                                PACKAGE="RandomFields")
         
-        neighbours <- .Call("countneighbours", xdimOZ, parts, locfactor,
+        neighbours <- .Call(C_countneighbours, xdimOZ, parts, locfactor,
                             Ccumparts, elms.in.boxes, PACKAGE="RandomFields")
       
         ## if there too many points within all the neighbours, then split
@@ -165,7 +187,7 @@ GetNeighbourhoods <- function(model, Z, X,
       }
     
       l <- list()
-      l[[1]] <- .Call("getelements", cumidx, xdimOZ, n, Ccumparts,
+      l[[1]] <- .Call(C_getelements, cumidx, xdimOZ, n, Ccumparts,
                       elms.in.boxes, PACKAGE="RandomFields")
       l1len <- sapply(l[[1]], length)
     }
@@ -180,19 +202,19 @@ GetNeighbourhoods <- function(model, Z, X,
         dim(i) <- rev(dim(coord$x))
         i <- as.integer(colSums(i * cumparts))
       
-        res.in.boxes <- .C("countelements", i, nrow(coord$x), totparts,
+        res.in.boxes <- .Call(C_countelements, i, nrow(coord$x), totparts,
                          PACKAGE="RandomFields")
         
         notzeros <- res.in.boxes > 0
         l[[3]] <-
-          .Call("getelements", i, xdimOZ, as.integer(nrow(coord$x)),
+          .Call(C_getelements, i, xdimOZ, as.integer(nrow(coord$x)),
                 Ccumparts, res.in.boxes, PACKAGE="RandomFields")[notzeros]
         ## TO DO : idx[[3]] passt nicht, da sowohl fuer Daten
         ##          als auch coordinaten verwendet wird. Bei repet > 1
         ##         ist da ein Problem -- ueberpruefen ob repet=1
         
         
-        ll <- .Call("getneighbours", xdimOZ, parts, locfactor, Ccumparts,
+        ll <- .Call(C_getneighbours, xdimOZ, parts, locfactor, Ccumparts,
                     neighbours, PACKAGE="RandomFields")[notzeros]
         less <-
           sapply(ll, function(x) sum(elms.in.boxes[x]) < minimum) | !shared

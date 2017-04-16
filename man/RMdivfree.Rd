@@ -9,16 +9,24 @@
  
  The corresponding matrix-valued covariance function C of the model
  only depends on the difference \eqn{h}{h} between two points and it is
- given by 
- \deqn{
- C(h)=( - \Delta E + \nabla \nabla^T ) C_0(h)
+ given by the following components,
+ \itemize{
+   \item the potential
+   \item the vector field given by
+   \deqn{
+     C(h)=( - \Delta E + \nabla \nabla^T ) C_0(h)
+   }
+   \item the curl field
  }
-}
+ }
 \usage{
-RMdivfree(phi, var, scale, Aniso, proj)
+RMdivfree(phi, which, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{a univariate stationary covariance model (in 2 or 3 dimensions).}
+ \item{which}{vector of integers. If not given all components are
+   returned; otherwise the selected components are returned.
+ }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}

@@ -6,7 +6,7 @@
 
  Collection of auxiliary functions
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <unistd.h>
  
 //#include <curses.h>
@@ -97,7 +97,7 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
 		   &dim, work, &optim_work, iwork, &Err);
   if (Err != 0) GERR("SVD for anisotropy matrix failed.");
   for (dd = 0; dd < dim; dd++) {
-    dummy = fabs(D[dd]);
+    dummy = FABS(D[dd]);
     if (dummy < min) min = dummy;
   } 
 
@@ -243,7 +243,7 @@ SEXP distInt(SEXP XX, SEXP N, SEXP Genes) {
 	diff = *x - y[k];
 	di += diff * diff;
       }
-      dist[ve] = dist[ho] = sqrt((double) di);
+      dist[ve] = dist[ho] = SQRT((double) di);
     }
   }
   UNPROTECT(1);
@@ -445,10 +445,10 @@ double incomplete_gamma(double start, double end, double s) {
   }
   
   double 
-    e_start = exp(-start),
-    e_end = exp(-end),
-    power_start = pow(start, s),      
-    power_end = end < RF_INF ? pow(end, s) : 0,
+    e_start = EXP(-start),
+    e_end = EXP(-end),
+    power_start = POW(start, s),      
+    power_end = end < RF_INF ? POW(end, s) : 0,
     factor = 1.0; 
   
   
@@ -475,7 +475,7 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
 #else
   double x = (intptr_t) addr,
     cut = 1e9;
-  x = x - trunc(x / cut) * cut;
+  x = x - TRUNC(x / cut) * cut;
   return (int) x;
 #endif
 

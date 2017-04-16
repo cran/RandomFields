@@ -4,7 +4,7 @@
 
  (library for simulation of random fields)
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,9 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <R.h>
 #include <Rdefines.h>
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <string.h>
 #include <R_ext/Linpack.h>
 #include "RF.h"
@@ -46,11 +46,11 @@ void addkappa(int i, const char *n, SEXPTYPE t) {
 	 // reserved for standard submodel names
 	 );
   assert(i < C->kappas);
-  // assert(strcmp(n, ELEMENT) || C->check == checkfix || C->check == checkmixed);
+  // assert(STRCMP(n, ELEMENT) || C->check == checkfix || C->check == checkmixed);
   strcopyN(C->kappanames[i], n, PARAMMAXCHAR);
   C->kappatype[i] = t;
-  assert(strcmp(n, FREEVARIABLE) || C->internal);
-  // if (t >= LISTOF) assert(strcmp(C->kappanames[0], ELEMENT) == 0 
+  assert(STRCMP(n, FREEVARIABLE) || C->internal);
+  // if (t >= LISTOF) assert(STRCMP(C->kappanames[0], ELEMENT) == 0 
   //			  ||  C->check == checkselect
   //			  );
 }
@@ -308,7 +308,7 @@ void addsub(int i, const char *n) {
   for (j=0; j<C->kappas; j++) {
     if (C->kappanames[j] == NULL)
       ERR("give all names for the parameters first");
-    if ((C->subintern[i] = strcmp(C->kappanames[j], C->subnames[i]) == 0))
+    if ((C->subintern[i] = STRCMP(C->kappanames[j], C->subnames[i]) == 0))
       break;
   }
 }
@@ -350,7 +350,7 @@ void subnames(const char* n1, const char* n2, const char* n3, const char* n4,
 }
 
 
-int xxx(int x) {return (int) pow(10, (double) x);}
+int xxx(int x) {return (int) POW(10, (double) x);}
 
 
 void crash() {  
@@ -592,7 +592,7 @@ void nickname(const char *name, int nr, int type) {
   int sl = strlen(CAT_TYPENAMES[type]);  
   strcopyN(dummy, name, MAXCHAR-sl);
   //printf("%s %s\n",  CAT_TYPENAMES[type], dummy);
-  sprintf(C->nick, "%s%s", CAT_TYPENAMES[type], dummy);
+  SPRINTF(C->nick, "%s%s", CAT_TYPENAMES[type], dummy);
   strcpy(CovNickNames[nr], C->nick);
 
   if ((int) strlen(name) >= (int) MAXCHAR - sl) {
@@ -614,7 +614,7 @@ void insert_name(int curNrCov, const char *name, int type) {
   if (strlen(name)>=MAXCHAR) {
     PRINTF("Warning! Covariance name is truncated to '%s'.\n", C->name);
   }
-  assert(strcmp(InternalName, name));
+  assert(STRCMP(InternalName, name));
   nickname(name, curNrCov, type);
 }
 
@@ -656,7 +656,7 @@ void StandardLogInverseNonstat(double *v, cov_model *cov,
 			    double *left, double *right) {
   assert(CovList[cov->nr].inverse != NULL);
   double x, 
-    w = exp(*v);
+    w = EXP(*v);
   int d,
     dim = cov->tsdim;
   
@@ -671,7 +671,7 @@ void StandardLogInverseNonstat(double *v, cov_model *cov,
 
 void StandardNonLogDistrD(double *x, cov_model *cov, double *D) {
   VTLG_DLOG(x, cov, D);
-  *D = exp(*D);
+  *D = EXP(*D);
 }
 
 
@@ -713,7 +713,7 @@ void InverseIsotropic(double *U, cov_model *cov, double *inverse){
     x *= step;
   }
   if (i >= max_it) {
-    *inverse = fabs(*v - u) <= fabs(*wert - u) ? 0.0 : RF_INF;
+    *inverse = FABS(*v - u) <= FABS(*wert - u) ? 0.0 : RF_INF;
     return;
   }
   *inverse = *wert;
@@ -756,7 +756,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   assert(currentNrCov>=0);
   if (currentNrCov>=MAXNRCOVFCTS) {
     char msg[150];
-    sprintf(msg, "maximum number of covariance models reached. Last included  model is '%s'.", CovList[MAXNRCOVFCTS-1].name);
+    SPRINTF(msg, "maximum number of covariance models reached. Last included  model is '%s'.", CovList[MAXNRCOVFCTS-1].name);
     ERR(msg);
   }
 
@@ -803,7 +803,7 @@ void createmodel(const char *name, Types type, int kappas, size_fct kappasize,
   C->maxmoments = 0;
   assert(maxdim != MISMATCH);
   for (int i=0; i<kappas; i++) {
-    sprintf(C->kappanames[i], "%c%d", ONEARGUMENT_NAME, i); // default (repeated twice)
+    SPRINTF(C->kappanames[i], "%c%d", ONEARGUMENT_NAME, i); // default (repeated twice)
     C->kappatype[i] = REALSXP;
   }
   C->kappasize = (kappasize == NULL) ? kappasize1 : kappasize;
@@ -1020,12 +1020,12 @@ int IncludeModel(const char *name, Types type, int minsub, int maxsub, int kappa
   //    assert(maxsub > 0); // check deleted 25. nov 2008 due to nugget 
   // printf("name = %s\n", name);
   assert(isotropy != PREVMODELI || maxsub != 0 || type == MathDefinition
-	 || strcmp("trend", name) == 0
-	 || strcmp("U", name) == 0 
-	 || strcmp("whittle", name) == 0 
-	 || strcmp("matern", name) == 0 
-	 || strcmp("idcoord", name) == 0
-	 || strcmp("constant", name) == 0);
+	 || STRCMP("trend", name) == 0
+	 || STRCMP("U", name) == 0 
+	 || STRCMP("whittle", name) == 0 
+	 || STRCMP("matern", name) == 0 
+	 || STRCMP("idcoord", name) == 0
+	 || STRCMP("constant", name) == 0);
 
   assert(maxsub >= minsub && maxsub <= MAXSUB);
   assert(check != checkOK || maxsub==0);
@@ -1066,7 +1066,7 @@ int IncludeModel(const char *name, Types type, int minsub, int maxsub, int kappa
     }
   } else {
     for (i=0; i<maxsub; i++) {      
-      sprintf(C->subnames[i], "C%d", i); // default (repeated twice)
+      SPRINTF(C->subnames[i], "C%d", i); // default (repeated twice)
       C->subintern[i] = false;
     }
   }

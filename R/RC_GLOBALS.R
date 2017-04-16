@@ -3,7 +3,8 @@
 ## Sebastian Gross
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2014 Sebastian Gross & Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -24,7 +25,7 @@
 
 ## @FILE-STARP******************************************************************
 # @NAME		ZF_GLOBALS
-# @DESCRIPTION	Any value that is used throughout the randomfield package
+# @DESCRIPTION	Any value that is used throughout the RandomFields
 #               has to appear here
 # @AUTHOR	Sebastian Gross <sebastian.gross@stud.uni-goettingen.de>
 #               Martin Schlather
@@ -138,12 +139,12 @@ ZF_MODEL_PREFIX <- "RM"
 
 isPosDef <- function(type) {
   if (is.character(type)) type <- pmatch(type, TYPENAMES, duplicates.ok=TRUE)-1
-  ##  .C("isPosDef", as.integer(type))$type
+  ##  .C(C_isPosDef, as.integer(type))$type
   type==TcfType | type == PosDefType | type==UndefinedType
 }
 isVariogram <- function(type) { 
   if (is.character(type)) type <- pmatch(type, TYPENAMES, duplicates.ok=TRUE)-1
-  ##  .C("isNefDef", as.integer(type))$type
+  ##  .C(C_isNefDef, as.integer(type))$type
   isPosDef(type) | type == VariogramType
 }
 

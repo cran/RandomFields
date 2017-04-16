@@ -62,7 +62,7 @@
       the author(s)
     }
      
-    \item \bold{ Estimation of parameters (for second-order random fields)}
+    \item \bold{Estimation of parameters (for second-order random fields)}
     \itemize{ 
       \item \command{\link{RFfit}} : general function for estimating
       parameters; (for Gaussian random fields)

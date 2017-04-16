@@ -4,7 +4,7 @@
 
  simulation of max-stable random fields
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h>
 #include "RF.h"
 #include "Operator.h"
@@ -90,13 +90,15 @@ int addStandard(cov_model **Cov) {
   if (!CallingSet(*Cov)) BUG;
  if (hasPoissonRole(cov)) {
     addModel(key, PGS_LOC, UNIF);
-    assert(key->nsub == 2);
+    PARAMALLOC(key->sub[PGS_LOC], UNIF_MIN, dim, 1);
+    PARAMALLOC(key->sub[PGS_LOC], UNIF_MAX, dim, 1);
   } else {
     if ((err = STRUCT(key, key->sub + PGS_LOC)) != NOERROR) return err;
     key->sub[PGS_LOC]->calling = key;
   }
   if (!CallingSet(*Cov)) BUG;
   checkstandardnext;
+  
   return NOERROR;
 }
 
@@ -248,7 +250,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     vdim = cov->vdim[0],
     vdimtot = total_pts * vdim,
     control = 0;
- assert(cov->vdim[0] == cov->vdim[1]);
+   assert(cov->vdim[0] == cov->vdim[1]);
 
   cov_model *key = cov->key;
   ext_bool loggiven;
@@ -267,7 +269,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   Total_n = maxstable ? -1 : rpois(pgs->intensity);
   assert(maxstable || Total_n > 0);
   loggiven = key == NULL ? cov->sub[0]->loggiven : key->loggiven;
-  if (!loggiven) Minimum = exp(Minimum);
+  if (!loggiven) Minimum =EXP(Minimum);
    
   if (simugrid) {
     cumgridlen[0] = 1;
@@ -303,7 +305,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   } else {
     assert(simuxi == NULL);
     for (i=0; i<vdimtot; res[i++] = 0.0);
-    logM2 = log(sub->mpp.mM[2]);
+    logM2 =LOG(sub->mpp.mM[2]);
     pgs->currentthreshold = GLOBAL.mpp.about_zero;
   }
 
@@ -351,7 +353,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     
     //printf("log_den %f\n",  pgs->log_density);
     logdens = pgs->log_density;
-
+    
     if (!R_FINITE(logdens)) {
       // PMI(sub);
       BUG;
@@ -374,24 +376,20 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
        	break;
       } 
       poisson += rexp(1.0);
-      frechet = pow(poisson, - 1.0 / pgs->alpha);
-      gumbel = log(frechet);
-      // MARCO, habe ich am 17.11.13 geaendert
-
-      // pgs->log_zhou_c = 0.0; // wrong! to do
-
-      summand = gumbel - logdens;
-     
+      frechet =POW(poisson, - 1.0 / pgs->alpha);
       
-      //   threshold = sub->loggiven ? GumbelThreshold : FrechetThreshold;
-       threshold = logthreshold = 
-	 (double) (gumbel + log(sub->mpp.maxheights[0])); //Gumbel
-    //   
-       if (!loggiven) {
-	threshold = exp(threshold); // Frechet
-      }
+      gumbel = -LOG(poisson);
+    
+      summand = gumbel - logdens; //@MARTIN: Warum taucht logdens nicht in threshold auf? (s. unten)
 
-      //  
+       threshold = logthreshold = 
+	 (double) (gumbel +LOG(sub->mpp.maxheights[0])); //Gumbel //@MARTIN: logdens beruecksichtigen?
+         
+       if (!loggiven) {
+	threshold =EXP(threshold); // Frechet
+       }
+
+       //  
        //  APMI(sub);
 
        //      printf("Max = %f gumbel=%f %f %d logdens=%f\n", sub->mpp.maxheights[0], gumbel, threshold, loggiven, logdens);;if (PL == 112) BUG;
@@ -403,13 +401,15 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
 // {   int i; for (i=0; i<total_pts; i++) printf("%e ", res[i]); }
 
+
       while ((control<total_pts) && (res[control]>=threshold)) {
 	// 	print("control: %d %f %f\n", control, res[control], threshold); assert(false);
 	control++;
       }
      if (control >= total_pts) {
 	break;
-      }
+     }
+      
    
      //     printf("n=%d every =%d %d %d\n", (int) n, GLOBAL.extreme.check_every, PL, PL_STRUCTURE);
      
@@ -425,11 +425,9 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	  PRINTF("control: %ld %f %f global=%f n=%ld every=%d %f log.max=%f\n", 
 		 control, res[control], threshold, pgs->globalmin,
 		 n, GLOBAL.extreme.check_every, sub->mpp.maxheights[0],
-		 log(sub->mpp.maxheights[0]));    
+		LOG(sub->mpp.maxheights[0]));    
       }
- 
- 
-      // Marco:
+
       pgs->currentthreshold = loggiven
 	? pgs->globalmin - gumbel
 	: pgs->globalmin / frechet; 
@@ -438,12 +436,12 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       //printf("loggiven =%d %e %f cur.thr=%e\n", loggiven, pgs->globalmin, gumbel,  pgs->currentthreshold);;if (PL == 113) BUG;
 
     } // maxstable
-    factor = exp(summand);
+    factor =EXP(summand);
  
   // printf("factor %4.4f sumd=%4.4f logdens=%4.4f logM2=%4.4f th=%4.4f %d<%d \n", factor, summand, logdens, logM2, threshold, (int) control, (int) total_pts);  //  assert(false);
     
   //   printf("dim=%d loggiven=%d maxstable=%d simugrid=%d randomcoin=%d\n", dim, loggiven, maxstable, simugrid, randomcoin);// assert(false);
-
+    
     //printf("A=%d\n", n);
     zaehler = 0;
     if (simugrid) {
@@ -451,11 +449,11 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       for (d=0; d<dim; d++) {	
 	double
 	  step = inc[d] == 0.0 ? 1.0 : inc[d], 
-	  dummy = ceil((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step
+	  dummy = CEIL((pgs->supportmin[d] - loc->xgr[d][XSTART]) / step
 		       - 1e-8);	
 	start[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int)dummy;
 	partialfield |= start[d] > 0;
-	dummy = trunc(1.00000001 + 
+	dummy = TRUNC(1.00000001 + 
 		      ((pgs->supportmax[d] - loc->xgr[d][XSTART]) / step ));
 	end[d] = dummy < 0 ? 0 : dummy > gridlen[d] ? gridlen[d] : (int) dummy;
 	partialfield |= end[d] < gridlen[d];
@@ -541,8 +539,8 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       /* if (zaehler<0 || zaehler>=total_pts) { PMI(cov);  printf("//z=%d n=%d\n", zaehler, n); } */ \
       GET {								\
 	OP;								\
-	/*  assert( {if (*value > sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)) {  printf("//r=%f %f delta=%e %d %e\n", *value / exp(gumbel), sub->mpp.maxheights[0], *value / exp(gumbel) - sub->mpp.maxheights[0], loggiven, factor); };true;}); */ \
-	/*assert(loggiven || *value <= sub->mpp.maxheights[0] * exp(gumbel) * (1+1e-15)); */ \
+	/*  assert( {if (*value > sub->mpp.maxheights[0] *EXP(gumbel) * (1+1e-15)) {  printf("//r=%f %f delta=%e %d %e\n", *value /EXP(gumbel), sub->mpp.maxheights[0], *value /EXP(gumbel) - sub->mpp.maxheights[0], loggiven, factor); };true;}); */ \
+	/*assert(loggiven || *value <= sub->mpp.maxheights[0] *EXP(gumbel) * (1+1e-15)); */ \
 	if (res[zaehler] < *value) res[zaehler] = *value;			\
       }								       
    
@@ -566,7 +564,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     assert(zaehler >=0 && zaehler < total_pts);			\
     int jj, idx, index=0;					\
     for (jj=0; jj<dim; jj++) {					\
-      idx = round((x[jj] - ogstart[jj]) / ogstep[jj]);		\
+      idx = ROUND((x[jj] - ogstart[jj]) / ogstep[jj]);		\
       if (idx < 0 || idx >= pgs->own_grid_len[jj]) break;	\
       index += pgs->own_grid_cumsum[jj] * idx;			\
     }								\
@@ -594,12 +592,12 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 #define	ALL_APPLY(APPLY, MGET, MAPPLY, SGET, SAPPLY, NONLOGGET)		\
     if (loggiven == true) {						\
       if (maxstable) APPLY(MGET, (*value) += summand, MAPPLY)		\
-	else APPLY(SGET, Sign[0] * exp(*value + summand), SAPPLY);	\
+	else APPLY(SGET, Sign[0] *EXP(*value + summand), SAPPLY);	\
     } else { /* not loggiven */						\
       if (sub->loggiven){						\
 	if (maxstable)							\
-	  APPLY(MGET, *value=Sign[0] * exp(*value+summand), MAPPLY)	\
-	else APPLY(SGET, Sign[0] * exp(*value + summand), SAPPLY);	\
+	  APPLY(MGET, *value=Sign[0] *EXP(*value+summand), MAPPLY)	\
+	else APPLY(SGET, Sign[0] *EXP(*value + summand), SAPPLY);	\
       } else {								\
 	assert(R_FINITE(factor));					\
 	if (maxstable) APPLY(NONLOGGET, (*value) *= factor, MAPPLY)	\
@@ -615,13 +613,13 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	  long zt;							\
 	  double zw,inct, segt, ct, st, A, cit, sit;			\
 	  inct = sub->q[AVERAGE_YFREQ] * loc->xgr[dim][XSTEP];		\
-	  cit = cos(inct);						\
-	  sit = sin(inct);						\
+	  cit = COS(inct);						\
+	  sit = SIN(inct);						\
 	  G;								\
 	  segt = OP1;							\
 	  A = OP0;							\
-	  ct = A * cos(segt);						\
-	  st = A * sin(segt);						\
+	  ct = A * COS(segt);						\
+	  st = A * SIN(segt);						\
 	  for (zt = zaehler; zt < total_pts; zt += spatial) {		\
 	    res[zt] += (double) ct;					\
 	    zw = ct * cit - st * sit;					\
@@ -636,7 +634,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	/* the following algorithm can greatly be improved ! */		\
 	/* but for ease, just the stupid algorithm	        */	\
 	for (; zaehler<spatial; zaehler++, x += dim) {			\
-	  G; res[zaehler] += OP0 * cos(OP1);				\
+	  G; res[zaehler] += OP0 * COS(OP1);				\
 	}								\
       }									\
     }	
@@ -647,15 +645,15 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
     // *atomdependent rfbased/not; (( recurrent/dissipative: min/max gesteuert))
     if (poissongauss  && !randomcoin) { // AVERAGE
       if (sub->loggiven) {
-	AVEAPPLY(LOGGET, Sign[0] * exp(value[0] + summand), 
-		 Sign[1] * exp(value[1]));
+	AVEAPPLY(LOGGET, Sign[0] *EXP(value[0] + summand), 
+		 Sign[1] *EXP(value[1]));
       } else AVEAPPLY(GET, value[0] * factor, value[1]);
     } else {
       assert(subrole == ROLE_SMITH || subrole == ROLE_SCHLATHER ||
 	     subrole ==ROLE_BROWNRESNICK || subrole==ROLE_POISSON || 
 	     subrole==ROLE_POISSON_GAUSS);
-    if (fieldreturn == HUETCHEN_OWN_GRIDSIZE) { // atomdependent rfbased/not;
-	ALL_APPLY(OWNGRIDAPPLY, NULL, OG_MAXAPPLY, NULL, OG_SUMAPPLY, NULL);	
+    if (fieldreturn == HUETCHEN_OWN_GRIDSIZE) { // atomdependent rfbased/not;        
+	ALL_APPLY(OWNGRIDAPPLY, NULL, OG_MAXAPPLY, NULL, OG_SUMAPPLY, NULL);        
     } else if (fieldreturn == true) { // extended boolean
 	// todo : !simugrid! && Bereiche einengen!!     
 	// note ! no Sign may be given currently when fieldreturn and loggiven!!
@@ -664,9 +662,9 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 	  if (!simugrid) BUG;
 	  ALL_APPLY(APPLY, GETRF, MAXAPPLY, GETRF, SUMAPPLY, GETRF);
 	} else { // !partialfield
-	  if (sub->loggiven) {
+	  if (sub->loggiven) {       
 	    if (maxstable) RFMAX(rf[i] + summand)
-	    else RFSUM(exp(rf[i] + summand));	  
+	    else RFSUM(EXP(rf[i] + summand));	  
 	  } else { // Linux
 	    if (maxstable) RFMAX(rf[i] * factor)
 	    else RFSUM(rf[i] * factor);
@@ -691,7 +689,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     R_CheckUserInterrupt();
     
-    //   printf("n=%d %f %f %f 0:%f\n", (int) n, res[0], res[1], res[2], res[3]);;if (PL == n) BUG;
+  //   printf("n=%d %f %f %f 0:%f\n", (int) n, res[0], res[1], res[2], res[3]);;if (PL == n) BUG;
 
   //    assert(res[0] < 80);
 
@@ -702,8 +700,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
   // Trafo to margins
 
   // printf("%d frechet\n", sub->loggiven);if (PL == 10000) BUG;
-
- 
+    
   if (maxstable){
     double meansq, var, 
       mean = RF_NA, 
@@ -712,7 +709,7 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
 
     if (pgs->alpha != 1.0) {
       if (loggiven) for (k=0; k<total_pts; k++) res[k] *= pgs->alpha; 
-      else for (k=0; k<total_pts; k++) res[k] = pow(res[k], pgs->alpha);      
+      else for (k=0; k<total_pts; k++) res[k] =POW(res[k], pgs->alpha);      
     }
 
     if (pgs->estimated_zhou_c) {
@@ -747,31 +744,26 @@ void dompp(cov_model *cov, gen_storage *s, double *simuxi) {
       mean = pgs->zhou_c;
     }
 
-
     // mean /= M1;
 
-    //printf(" n=%ld, min=%f %f mean=%f zhou=%f eps=%f %f max=%f\n", pgs->n_zhou_c, n_min, (double) pgs->sum_zhou_c, mean, pgs->zhou_c, eps, M1, sub->mpp.maxheights[0]);
-
-    
+    // printf(" n=%ld, min=%f, mean=%f zhou=%f eps=%f %f max=%f\n", pgs->n_zhou_c, n_min, (double) pgs->sum_zhou_c, mean, pgs->zhou_c, eps, sub->mpp.maxheights[0]);
 
     //   printf("loggiven = %d %f %f\n", loggiven, mean, pgs->zhou_c);
- 
-    //     mean = 250; // 2 statt 11
 
     double xi = P0(GEV_XI);
 
     //    printf("xi=%f %d logmean=%d %f\n", xi, loggiven, pgs->logmean, mean);
 
     if (loggiven) { // 3.6.13 sub->loggiven geaendert zu loggiven
-      if (!pgs->logmean) mean = log(mean);
+      if (!pgs->logmean) mean =LOG(mean);    
       for (k=0; k<total_pts; k++) res[k] += mean;
       if (xi != 0.0) 
-	for (k=0; k<total_pts; k++) res[k] = exp(xi * res[k]) - 1.0;
+	for (k=0; k<total_pts; k++) res[k] =EXP(xi * res[k]) - 1.0; //@MARTIN: fehlt nicht ein /xi?!
     } else {
       for (k=0; k<total_pts; k++) res[k] *= mean;  
-      if (xi==0.0) for (k=0; k<total_pts; k++) res[k] = log(res[k]);
+      if (xi==0.0) for (k=0; k<total_pts; k++) res[k] =LOG(res[k]);
       else if (xi == 1.0) for (k=0; k<total_pts; k++) res[k] -= 1.0;
-      else for (k=0; k<total_pts; k++) res[k] = pow(res[k], xi) - 1.0;
+      else for (k=0; k<total_pts; k++) res[k] =POW(res[k], xi) - 1.0;
     }
     
     
@@ -914,7 +906,7 @@ void extremalgaussian(double *x, cov_model *cov, double *v) {
   if (cov->role == ROLE_SCHLATHER) COV(x, next, v)
   else {
     COV(x, next, v);
-    *v = 1.0 - sqrt(0.5 * (1.0 - *v));
+    *v = 1.0 - SQRT(0.5 * (1.0 - *v));
   }
 }
 
@@ -932,7 +924,7 @@ int SetGEVetc(cov_model *cov, int role) {
 	  SNAME(MPP_TCF), SNAME(MPP_SHAPE));
   if ((err = checkkappas(cov, false)) != NOERROR) return err;
   kdefault(cov, GEV_XI, ep->GEV_xi);
-  kdefault(cov, GEV_S, P0(GEV_XI) == 0.0 ? 1.0 : fabs(P0(GEV_XI)));
+  kdefault(cov, GEV_S, P0(GEV_XI) == 0.0 ? 1.0 : FABS(P0(GEV_XI)));
   kdefault(cov, GEV_MU, P0(GEV_XI) == 0.0 ? 0.0 : 1.0);
 
   // print("xi s mu %f %f %f\n",  P0(GEV_XI), P0(GEV_S), P0(GEV_MU)); assert(false);
@@ -1075,7 +1067,7 @@ int init_opitzprocess(cov_model *cov, gen_storage *S) {
   assert(key->mpp.moments == 1);
   pgs_storage *pgs = key->Spgs;
   assert(pgs != NULL);
-  key->mpp.mMplus[1] = INVSQRTTWOPI * pow(2, 0.5 * P0(OPITZ_ALPHA) - 0.5) * 
+  key->mpp.mMplus[1] = INVSQRTTWOPI *POW(2, 0.5 * P0(OPITZ_ALPHA) - 0.5) * 
     gammafn(0.5 * P0(OPITZ_ALPHA) + 0.5); 
   pgs->zhou_c = 1.0 / key->mpp.mMplus[1];
   pgs->alpha = P0(OPITZ_ALPHA);
@@ -1106,7 +1098,7 @@ void range_opitz(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
 void param_set_identical(cov_model *to, cov_model *from, int depth) {
   assert(depth >= 0);
   assert(to != NULL && from != NULL);
-  assert(strcmp(NICK(from), NICK(to)) == 0); // minimal check
+  assert(STRCMP(NICK(from), NICK(to)) == 0); // minimal check
 
   int i;
 
@@ -1284,7 +1276,7 @@ int addPointShape(cov_model **Key, cov_model *shape, cov_model *pts,
   } // for i_pgs
   if (err != NOERROR) {
     errorMSG(err, msg[i-1]);
-    sprintf(ERRORSTRING, 
+    SPRINTF(ERRORSTRING, 
 	    "no method found to simulate the given model:\n\tpgs: %s\n\tstandard: %s)",
 	   msg[0], msg[1]);
     return ERRORM;
@@ -1480,8 +1472,8 @@ typedef double (*logDfct)(double *data, double gamma);
 
 double HueslerReisslogD(double *data, double gamma) {  
   double 
-    g = sqrt(2.0 * gamma),
-    logy2y1 = log(data[1] / data[0]);
+    g = SQRT(2.0 * gamma),
+    logy2y1 =LOG(data[1] / data[0]);
   return -pnorm(0.5 * g + logy2y1 / g, 0.0, 1.0, true, false) / data[0] 
     -pnorm(0.5 * g - logy2y1 / g, 0.0, 1.0, true, false) / data[1];
 }
@@ -1492,7 +1484,7 @@ double schlatherlogD(double *data, double gamma) {
     sum = data[0] + data[1],
     prod = data[0] * data[1];
   return 0.5 * sum / prod * 
-    (1.0 + sqrt(1.0 - 2.0 * (2.0 - gamma) * prod / (sum * sum)));
+    (1.0 + SQRT(1.0 - 2.0 * (2.0 - gamma) * prod / (sum * sum)));
 }
 
 #define LL_AUTO 0
@@ -1529,12 +1521,12 @@ void loglikelihoodMaxstable(double *data, cov_model *cov, logDfct logD,
       mu = P0(GEV_MU),
       s = P0(GEV_S);    
     if (xi == 0) {
-      for (i=0; i<len; i++) cov->q[i] = exp((data[i] - mu) / s);
+      for (i=0; i<len; i++) cov->q[i] =EXP((data[i] - mu) / s);
     } else {
       double 
 	xiinv = 1.0 / xi,
 	xis = xi / s;      
-      for (i=0; i<len; i++) cov->q[i] = pow(1.0 + xis * (data[i] - mu), xiinv);
+      for (i=0; i<len; i++) cov->q[i] =POW(1.0 + xis * (data[i] - mu), xiinv);
     }
   }
 
@@ -1783,7 +1775,7 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
   int 
     err = NOERROR;
 
-  sprintf(ERROR_LOC, "%s process: ", name);
+  SPRINTF(ERROR_LOC, "%s process: ", name);
 
   if (cov->role != ROLE_POISSON_GAUSS)  {
     // PMI(cov->calling, "init_randomcoin");
@@ -1808,7 +1800,7 @@ int init_randomcoin(cov_model *cov, gen_storage *S) {
 
   sub->Spgs->intensity = 
     sub->Spgs->totalmass * P0(RANDOMCOIN_INTENSITY); 
-  sub->Spgs->log_density = log(P0(RANDOMCOIN_INTENSITY));
+  sub->Spgs->log_density =LOG(P0(RANDOMCOIN_INTENSITY));
 
   //  PMI(cov, "randmcoin");
   assert(sub->mpp.moments >= 2);

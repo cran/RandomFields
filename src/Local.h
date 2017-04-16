@@ -6,8 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 -- 2017 Felix Ballani 
-
+ Copyright (C) 2015 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,21 +24,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
+#ifdef ROUND
+#undef ROUND
+#endif
 
+#ifdef LOG
+#undef LOG
+#endif
 
-#ifndef CONVEX_H
-#define CONVEX_H 1
+#ifdef Log
+#undef Log
+#endif
 
+#ifdef SIGN
+#undef SIGN
+#endif
 
-/*******************************************************************************
- * convhull2D.h
- ****/
- 
-
-int ccw(double **P, int i, int j, int k);
-int cmpl(const void *a, const void *b);
-int cmph(const void *a, const void *b);
-int make_chain(double** V, int n, int (*cmp)(const void*, const void*));
-int ch2d(double **P, int n);
-
-#endif /* CONVEX_H */
+#define LOG(X) std::log(X)
+#define ROUND(X) ownround((double) X)

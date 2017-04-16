@@ -5,7 +5,7 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2015-- Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "Operator.h"
 #include "shape_processes.h"
@@ -117,18 +117,18 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
       double lambda = boxcox[2 * v],
 	invlambda = 1.0 / lambda,
 	mu = boxcox[2 * v + 1];
-      if ((!ISNA(lambda) && fabs(lambda) < 1e-20)) {	
+      if ((!ISNA(lambda) && FABS(lambda) < 1e-20)) {	
 	for (long i=0; i<pts; i++) {
-	  res[i] = exp(res[i]) - mu; 
+	  res[i] = EXP(res[i]) - mu; 
 	}
       } else if (ISNA(lambda) || lambda != RF_INF)
 	for (int i=0; i<pts; i++) {
 	  double dummy = lambda * res[i] + 1.0;
-	  if ((dummy < 0 && lambda != ceil(lambda)) || 
+	  if ((dummy < 0 && lambda != CEIL(lambda)) || 
 	      (dummy == 0 && invlambda <= 0) ) {
 	    ERR("value(s) in the inverse Box-Cox transformation not positive");
 	  }
-	  res[i] = pow(dummy, invlambda) - mu;
+	  res[i] = POW(dummy, invlambda) - mu;
 	}
     }
   }
@@ -141,23 +141,23 @@ void boxcox_trafo(double boxcox[], int vdim, double *res, long pts, int repet){
       double lambda = boxcox[2 * v],
 	invlambda = 1.0 / lambda,
 	mu = boxcox[2 * v + 1];
-      if ((!ISNA(lambda) && fabs(lambda) < 1e-20)) {	
+      if ((!ISNA(lambda) && FABS(lambda) < 1e-20)) {	
 	// to do taylor
 	for (long i=0; i<pts; i++) {
 	  double dummy = res[i] + mu;
 	  if (dummy < 0 || (dummy == 0 && lambda <= 0) ) {
 	    ERR("value(s) in the Box-Cox transformation not positive");
 	  }
-	  res[i] = log(dummy);			
+	  res[i] = LOG(dummy);			
 	}
       } else if (ISNA(lambda) || lambda != RF_INF) {
 	for (long i=0; i<pts; i++) {
 	  double dummy = res[i] + mu;
-	  if ((dummy < 0 && lambda != ceil(lambda)) 
+	  if ((dummy < 0 && lambda != CEIL(lambda)) 
 	      || (dummy == 0 && lambda <= 0) ) {
 	    ERR("value(s) in the Box-Cox transformation not positive");
 	  }
-	  res[i] = (pow(dummy, lambda) - 1.0) * invlambda; 
+	  res[i] = (POW(dummy, lambda) - 1.0) * invlambda; 
 	}
       }
     }
@@ -1075,17 +1075,17 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     else for (i=0; i<betatot; i++) *(L->where_fixed[i]) = beta[i];
   }
 
-  *v = -0.5 * (logdettot + variables * log(TWOPI));
+  *v = -0.5 * (logdettot + variables * LOG(TWOPI));
 
-  //  printf(">> v =%f %f #=%d pi=%f sq=%f %f %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * log(TWOPI), YCinvY, proj, info->globalvariance);
+  //  printf(">> v =%f %f #=%d pi=%f sq=%f %f %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * LOG(TWOPI), YCinvY, proj, info->globalvariance);
  
 
   double delta;
   delta = YCinvY - proj;
   if (info->globalvariance) {
-    //      printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * log(delta));
+    //      printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * LOG(delta));
     v[1] = delta / variables;
-    *v -= 0.5 * variables * (1 + log(v[1]));
+    *v -= 0.5 * variables * (1 + LOG(v[1]));
      if (info->pt_variance != NULL) *(info->pt_variance) = v[1];
   } else {
     *v -= 0.5 * delta;
@@ -1113,7 +1113,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	    for (int ii=0; ii<nrow; ii++) {
 	      double dummy = data[ii];
 	      if (!ISNA(dummy) && !ISNAN(dummy))
-		sum += log(dummy + mu);
+		sum += LOG(dummy + mu);
 	    }
 	  }
 	}
@@ -1321,11 +1321,11 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect)  {
       assert(L->betanames[base] == NULL);
       if (b == 1) {
 	L->betanames[base] = (char*) MALLOC(bytes);
-	sprintf(L->betanames[base], "%s", abbr);
+	SPRINTF(L->betanames[base], "%s", abbr);
       } else {
 	for (int ii=0; ii<b; ii++) {
 	  L->betanames[base + ii] = (char*) MALLOC(bytes);
-	  sprintf(L->betanames[base + ii], "%s.%d", abbr, ii);
+	  SPRINTF(L->betanames[base + ii], "%s.%d", abbr, ii);
 	}
       }
 
@@ -1396,7 +1396,7 @@ int struct_gauss_logli(cov_model *cov) {
 	  }
 	} else {
 	  if (Gettotalpoints(cov) <
-	      MAX_TOTALPTS / sqrt((double) Gettimespacedim(cov))) {
+	      MAX_TOTALPTS / SQRT((double) Gettimespacedim(cov))) {
 	    // distance vectors abspeochen
 	  }
 	}

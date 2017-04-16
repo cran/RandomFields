@@ -4,7 +4,7 @@
 
  simulation of a random field by hyperplane tessellation
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USV.
 */
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
 //#include <stdlib.h>
  
@@ -52,7 +52,7 @@ typedef double (*randomvar_type)(double p);
 
 double uniform(double VARIABLE_IS_NOT_USED p) {return UNIFORM_RANDOM;}
 double frechet(double p) { 
-  return exp(log(-1.0/log(UNIFORM_RANDOM)) / p);
+  return EXP(LOG(-1.0/LOG(UNIFORM_RANDOM)) / p);
 }
 double bernoulli(double p) {
   return (double) (UNIFORM_RANDOM <= p);
@@ -236,7 +236,7 @@ int init_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
      lambda== intensity for the Poisson hyperplanes
      res == result (matrix of simulated values)
      normalize==1 then mean=0, var=1 of the random field
-     ==0, n>1 then field is devided by sqrt(n)
+     ==0, n>1 then field is devided by SQRT(n)
   */
   
   
@@ -529,7 +529,7 @@ void do_hyperplane(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	break;
       default : ERR("distribution unknown in hyperplane\n");
       }
-      sd = sqrt(variance / (superpos * sd));
+      sd = SQRT(variance / (superpos * sd));
       for(i=0; i<loc->totalpoints; i++) 
 	res[i] = (double) (((double) res[i] - superpos * E) * sd);    
     

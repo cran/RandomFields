@@ -14,7 +14,7 @@ Note:
 
  Copyright (C) 2001 -- 2003 Martin Schlather
  Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
- Copyright (C) 2005 -- 2015 Martin Schlather
+ Copyright (C) 2005 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <stdio.h> 
 #include <R_ext/Lapack.h>
 #include "RF.h"
@@ -94,7 +94,7 @@ void Siso(double *x, cov_model *cov, double *v){
   assert(cov->Sdollar->simplevar);
   
   y = *x;
-  if (aniso != NULL) y = fabs(y * aniso[0]);
+  if (aniso != NULL) y = FABS(y * aniso[0]);
 
   //  printf("scale = %d %d\n", scale == NULL, aniso == NULL);
   //  printf("scale = %f %f \n", scale[0], *x);
@@ -119,11 +119,11 @@ void logSiso(double *x, cov_model *cov, double *v, double *Sign){
   double y, 
     *aniso=P(DANISO),
     *scale =P(DSCALE),
-    logvar = log(P0(DVAR));
+    logvar = LOG(P0(DVAR));
    assert(cov->Sdollar->simplevar);
 
   y = *x;
-  if (aniso != NULL) y = fabs(y * aniso[0]);
+  if (aniso != NULL) y = FABS(y * aniso[0]);
 
   if (scale != NULL) 
     y = scale[0]>0.0 ? y / scale[0] 
@@ -217,7 +217,7 @@ void logSstat(double *x, cov_model *cov, double *v, double *Sign){
     for (i=0; i<vdimSq; i++) v[i] *= var; 
   } else {
     LOGCOV(z1, next, v, Sign);
-    var = log(var);
+    var = LOG(var);
     for (i=0; i<vdimSq; i++) v[i] += var; 
   }
 
@@ -277,7 +277,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *Sign){
     if (s1 <= 0.0 || s2  <= 0.0)
       ERR1("'%s' must be a positive function", KNAME(DSCALE));
     smeanSq = 0.5 * (s1 * s1 + s2 * s2);
-    s = sqrt(smeanSq);
+    s = SQRT(smeanSq);
     for (i=0; i<xdimown; i++) {
       z1[i] = x[i] / s;
       z2[i] = y[i] / s;
@@ -319,7 +319,7 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *Sign){
   double var;
   if (cov->Sdollar->simplevar) {
     var = P0(DVAR);
-    if (Sign != NULL) var = log(var);
+    if (Sign != NULL) var = LOG(var);
   } else {
     double w;
     location_type *loc = Loc(cov);
@@ -329,12 +329,12 @@ void logSnonstat(double *x, double *y, cov_model *cov, double *v, double *Sign){
     loc->i_row = dummy;
     FCTN(x, cov->kappasub[DVAR], &var);
     var *= w;
-    var = Sign == NULL ?  sqrt(var)  : 0.5 * log(var);    
+    var = Sign == NULL ?  SQRT(var)  : 0.5 * LOG(var);    
   }
 
   if (Scale != NULL) {
-    if (Sign != NULL) var += 0.5 * log(s1 * s2 / smeanSq);
-    else var *= sqrt(s1 * s2 / smeanSq);
+    if (Sign != NULL) var += 0.5 * LOG(s1 * s2 / smeanSq);
+    else var *= SQRT(s1 * s2 / smeanSq);
   }
  
   if (Sign == NULL) {
@@ -490,7 +490,7 @@ void DDS(double *x, cov_model *cov, double *v){
     for (i=0; i<nproj; i++) {
       y[0] += x[proj[i] - 1] * x[proj[i] - 1];
     }
-    y[0] = sqrt(y[0]) * spinvscale;
+    y[0] = SQRT(y[0]) * spinvscale;
   }
   Abl2(y, next, v);
   for (i=0; i<vdimSq; i++) v[i] *= varScSq; 
@@ -528,7 +528,7 @@ void D3S(double *x, cov_model *cov, double *v){
     for (i=0; i<nproj; i++) {
       y[0] += x[proj[i] - 1] * x[proj[i] - 1];
     }
-    y[0] = sqrt(y[0]) * spinvscale;
+    y[0] = SQRT(y[0]) * spinvscale;
   }
   Abl3(y, next, v);
   for (i=0; i<vdimSq; i++) v[i] *= varScS3; 
@@ -564,9 +564,9 @@ void D4S(double *x, cov_model *cov, double *v){
     for (i=0; i<nproj; i++) {
       y[0] += x[proj[i] - 1] * x[proj[i] - 1];
     }
-    y[0] = sqrt(y[0]) * spinvscale;
+    y[0] = SQRT(y[0]) * spinvscale;
   }
-  Abl3(y, next, v);
+  Abl4(y, next, v);
   for (i=0; i<vdimSq; i++) v[i] *= varScS4; 
 }
 
@@ -652,7 +652,7 @@ void inverseS(double *x, cov_model *cov, double *v) {
   for (i=0; i<2; i++) {
     if (cov->kappasub[idx[i]] != NULL) {
       char Msg[100];
-      sprintf(Msg, "inverse can only be calculated if '%s' is not an arbitrary function",
+      SPRINTF(Msg, "inverse can only be calculated if '%s' is not an arbitrary function",
   	      KNAME(idx[i])); 
       ERR(Msg);
     }
@@ -899,7 +899,7 @@ int TaylorS(cov_model *cov) {
     for (i=0; i<cov->taylorN; i++) {
       cov->taylor[i][TaylorPow] = sub->taylor[i][TaylorPow];
       cov->taylor[i][TaylorConst] = sub->taylor[i][TaylorConst] *
-	P0(DVAR) * pow(scale, -sub->taylor[i][TaylorPow]);   
+	P0(DVAR) * POW(scale, -sub->taylor[i][TaylorPow]);   
     }
 
     cov->tailN = sub->tailN;  
@@ -907,9 +907,9 @@ int TaylorS(cov_model *cov) {
       cov->tail[i][TaylorPow] = sub->tail[i][TaylorPow];
       cov->tail[i][TaylorExpPow] = sub->tail[i][TaylorExpPow];
       cov->tail[i][TaylorConst] = sub->tail[i][TaylorConst] *
-	P0(DVAR) * pow(scale, -sub->tail[i][TaylorPow]);   
+	P0(DVAR) * POW(scale, -sub->tail[i][TaylorPow]);   
       cov->tail[i][TaylorExpConst] = sub->tail[i][TaylorExpConst] *
-	pow(scale, -sub->tail[i][TaylorExpPow]);
+	POW(scale, -sub->tail[i][TaylorExpPow]);
     }
   } else {
     cov->taylorN = cov->tailN = 0;
@@ -1351,10 +1351,10 @@ int checkS(cov_model *cov) {
       is_all(isCartesian, CovList + next->nr) &&
       GLOBAL.internal.warn_scale &&
       (PisNULL(DSCALE) || 
-       P0(DSCALE) < (strcmp(GLOBAL.coords.newunits[0], "km")== 0 ? 10 : 6.3))) {
+       P0(DSCALE) < (STRCMP(GLOBAL.coords.newunits[0], "km")== 0 ? 10 : 6.3))) {
     char msg[300];
 
-    sprintf(msg, "value of scale parameter equals '%4.2f',\nwhich is less than 100, although models defined on R^3 are used in the\ncontext of earth coordinates where larger scales are expected.\n(This warning appears only ones per session.)\n", PisNULL(DSCALE) ? 1.0 : P0(DSCALE)); 
+    SPRINTF(msg, "value of scale parameter equals '%4.2f',\nwhich is less than 100, although models defined on R^3 are used in the\ncontext of earth coordinates where larger scales are expected.\n(This warning appears only ones per session.)\n", PisNULL(DSCALE) ? 1.0 : P0(DSCALE)); 
     GLOBAL.internal.warn_scale = false;
     warning(msg);
   }
@@ -1736,7 +1736,7 @@ int initS(cov_model *cov, gen_storage *s){
 	}
       }
     } else {
-      double pow_scale = pow(scale, dim);
+      double pow_scale = POW(scale, dim);
       for (i=0; i < nmvdim; i++) {
 	cov->mpp.mM[i] *= pow_scale;
 	cov->mpp.mMplus[i] *= pow_scale;
@@ -1746,7 +1746,7 @@ int initS(cov_model *cov, gen_storage *s){
     if (!PisNULL(DANISO)) {      
       if (cov->nrow[DANISO] != cov->ncol[DANISO])
 	SERR("only square anisotropic matrices allowed");
-      double invdet = fabs(1.0 / getDet(P(DANISO), cov->nrow[DANISO]));
+      double invdet = FABS(1.0 / getDet(P(DANISO), cov->nrow[DANISO]));
       if (!R_FINITE(invdet))
 	SERR("determinant of the anisotropy matrix could not be calculated.");
       
@@ -1776,7 +1776,7 @@ int initS(cov_model *cov, gen_storage *s){
 	SERR("general anisotropy matrices not allowed yet");
       }
       
-      invdet = fabs(invdet);      
+      invdet = FABS(invdet);      
       if (!R_FINITE(invdet))
 	SERR("determinant of the anisotropy matrix could not be calculated.");
       
@@ -1866,7 +1866,7 @@ void doS(cov_model *cov, gen_storage *s){
   else if (cov->role == ROLE_GAUSS) {    
     double 
       *res = cov->rf,
-      sd = sqrt(P0(DVAR));
+      sd = SQRT(P0(DVAR));
     int 
       totalpoints = Gettotalpoints(cov);
     assert(res != NULL);
@@ -3066,7 +3066,7 @@ void doSproc(cov_model *cov, gen_storage *s){
     assert(cov->key != NULL);
     double 
       *res = cov->key->rf,
-      sd = sqrt(P0(DVAR));
+      sd = SQRT(P0(DVAR));
     int 
       totalpoints = Gettotalpoints(cov),
       totptsvdim = totalpoints * vdim;
@@ -3079,7 +3079,7 @@ void doSproc(cov_model *cov, gen_storage *s){
       ALLOC_NEW(Sdollar, var, totptsvdim, var);
       Fctn(NULL, cov, var);
       for (i=0; i<totptsvdim; i++) {	
-	res[i] *= sqrt(var[i]);
+	res[i] *= SQRT(var[i]);
       }
     } else if (sd != 1.0) {
       for (i=0; i<totptsvdim; i++) res[i] *= sd;
@@ -3425,7 +3425,7 @@ void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
       if (sub->nr == CONST) {
 	double 
 	  cc = isTrend(sub->typus) ? PARAM0(sub, CONST_C) 
-	  : sqrt(PARAM0(sub, CONST_C));
+	  : SQRT(PARAM0(sub, CONST_C));
 	for(i=0; i<totalvdim; i++) res[i] *= cc;
       }
       /* else {
@@ -3444,7 +3444,7 @@ void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 	      }
 	    }
 	    if (var != 1.0) {
-	      double sd = sqrt(var);
+	      double sd = SQRT(var);
 	      for(i=0; i<totalvdim; i++) res[i] *= sd;
 	    }
 	  } else {
@@ -3469,7 +3469,7 @@ void domultproc(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   }
 
   double f;
-  f = 1 / sqrt((double) copies);
+  f = 1 / SQRT((double) copies);
   for(i=0; i<totalvdim; i++) cov->rf[i] *= f;
 
 }
@@ -3510,11 +3510,11 @@ void logPowSstat(double *x, cov_model *cov, double *v, double *Sign){
   for (i=0; i < xdimown; i++) z[i] = invscale * x[i];
   if (Sign==NULL) {
     COV(z, next, v);
-    factor = var * pow(scale, p);
+    factor = var * POW(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
     LOGCOV(z, next, v, Sign);
-    factor = log(var) + p * log(scale);
+    factor = LOG(var) + p * LOG(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
 }
@@ -3546,11 +3546,11 @@ void logPowSnonstat(double *x, double *y, cov_model *cov, double *v,
 
   if (Sign==NULL) {
     NONSTATCOV(z1, z2, next, v);
-    factor = var * pow(scale, p);
+    factor = var * POW(scale, p);
     for (i=0; i<vdimSq; i++) v[i] *= factor; 
   } else {
     LOGNONSTATCOV(z1, z2, next, v, Sign);
-    factor = log(var) + p * log(scale);
+    factor = LOG(var) + p * LOG(scale);
     for (i=0; i<vdimSq; i++) v[i] += factor; 
   }
 }
@@ -3567,7 +3567,7 @@ void inversePowS(double *x, cov_model *cov, double *v) {
     var = P0(POWVAR);
  assert(cov->vdim[0] == cov->vdim[1]);
 
-  y= *x / (var * pow(scale, p)); // inversion, so variance becomes scale
+  y= *x / (var * POW(scale, p)); // inversion, so variance becomes scale
   if (CovList[next->nr].inverse == ErrCov) BUG;
   INVERSE(&y, next, v);
  
@@ -3585,7 +3585,7 @@ int TaylorPowS(cov_model *cov) {
   for (i=0; i<cov->taylorN; i++) {
     cov->taylor[i][TaylorPow] = next->taylor[i][TaylorPow];
     cov->taylor[i][TaylorConst] = next->taylor[i][TaylorConst] *
-      P0(POWVAR) * pow(scale, P0(POWPOWER) - next->taylor[i][TaylorPow]);   
+      P0(POWVAR) * POW(scale, P0(POWPOWER) - next->taylor[i][TaylorPow]);   
   }
   
   cov->tailN = next->tailN;  
@@ -3593,9 +3593,9 @@ int TaylorPowS(cov_model *cov) {
     cov->tail[i][TaylorPow] = next->tail[i][TaylorPow];
     cov->tail[i][TaylorExpPow] = next->tail[i][TaylorExpPow];
     cov->tail[i][TaylorConst] = next->tail[i][TaylorConst] *
-      P0(POWVAR) * pow(scale, P0(POWPOWER) - next->tail[i][TaylorPow]);   
+      P0(POWVAR) * POW(scale, P0(POWPOWER) - next->tail[i][TaylorPow]);   
     cov->tail[i][TaylorExpConst] = next->tail[i][TaylorExpConst] *
-      pow(scale, -next->tail[i][TaylorExpPow]);
+      POW(scale, -next->tail[i][TaylorExpPow]);
   }
   return NOERROR;
 }
@@ -3808,8 +3808,8 @@ int initPowS(cov_model *cov, gen_storage *s){
       int j,k;
       double 
 	pow_scale,
-	pow_s = pow(scale, dim),
-	pow_p = pow(scale, p);
+	pow_s = POW(scale, dim),
+	pow_p = POW(scale, p);
       for (k=j=0; j<vdim; j++) { 
 	pow_scale = pow_s;
 	for (i=0; i <= nm; i++, pow_scale *= pow_p, k++) {
@@ -3821,9 +3821,9 @@ int initPowS(cov_model *cov, gen_storage *s){
  
     if (R_FINITE(cov->mpp.unnormedmass)) {
       if (vdim > 1) BUG;
-      cov->mpp.unnormedmass = next->mpp.unnormedmass * var[0] / pow(scale, p);
+      cov->mpp.unnormedmass = next->mpp.unnormedmass * var[0] / POW(scale, p);
     } else {
-      double pp = pow(scale, -p);
+      double pp = POW(scale, -p);
       for (i=0; i<vdim; i++)   
 	cov->mpp.maxheights[i] = next->mpp.maxheights[i] * var[i] * pp;
     }
@@ -3855,7 +3855,7 @@ void doPowS(cov_model *cov, gen_storage *s){
     cov_model *next = cov->sub[POW_SUB];
          
     DO(next, s);// nicht gatternr
-    double factor = P0(POWVAR) / pow(P0(POWSCALE), P0(POWPOWER));
+    double factor = P0(POWVAR) / POW(P0(POWSCALE), P0(POWPOWER));
     int i,
       vdim = cov->vdim[0];
     assert(cov->vdim[0] == cov->vdim[1]);

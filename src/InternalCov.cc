@@ -4,6 +4,10 @@
 
  Definition of auxiliary correlation functions 
 
+ Copyright (C) 2001 -- 2003 Martin Schlather
+ Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
+ Copyright (C) 2005 -- 2017 Martin Schlather
+
 Note:
  * Never use the below functions directly, but only by the functions indicated 
    in RFsimu.h, since there is gno error check (e.g. initialization of RANDOM)
@@ -12,9 +16,6 @@ Note:
  * definitions for genuinely anisotropic or nonsta     tionary models are in
    SophisticatedModel.cc; hyper models also in Hypermodel.cc
 
- Copyright (C) 2001 -- 2003 Martin Schlather
- Copyright (C) 2004 -- 2004 Yindeng Jiang & Martin Schlather
- Copyright (C) 2005 -- 2015 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "Operator.h"
 
@@ -345,12 +346,12 @@ int checkkappas(cov_model *cov, bool errornull){
       
       // nc==0, nr==0 is coded as SIZE_NOT_DETERMINED
       char msg[255], msg2[255];
-      sprintf(msg, "not of the required size: (%d, %d) instead of (",
+      SPRINTF(msg, "not of the required size: (%d, %d) instead of (",
 	      nrow[i], ncol[i]);
-      if (nr!=SIZE_NOT_DETERMINED) sprintf(msg2, "%s%d, ", msg, nr);
-      else sprintf(msg2, "%sundetermined, ", msg);
-      if (nc!=SIZE_NOT_DETERMINED) sprintf(msg, "%s%d)", msg2, nc);
-      else sprintf(msg, "%sundetermined)", msg2);
+      if (nr!=SIZE_NOT_DETERMINED) SPRINTF(msg2, "%s%d, ", msg, nr);
+      else SPRINTF(msg2, "%sundetermined, ", msg);
+      if (nc!=SIZE_NOT_DETERMINED) SPRINTF(msg, "%s%d)", msg2, nc);
+      else SPRINTF(msg, "%sundetermined)", msg2);
       QERR(msg);
     }
     // if nc==0 (nr==0) then this is undetermined.
@@ -447,7 +448,7 @@ int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
 
   cov_fct *C = CovList + cov->nr;
   int err = NOERROR;
-  sprintf(ERROR_LOC, "in %s: ", NICK(cov));
+  SPRINTF(ERROR_LOC, "in %s: ", NICK(cov));
   
   if (cov->mpp.moments != SUBMODEL_DEP && cov->mpp.moments != PARAM_DEP) {
     if ((err = alloc_mpp_M(cov, moments)) != NOERROR) return err;
@@ -461,7 +462,7 @@ int INIT_intern(cov_model *cov, int moments, gen_storage *s) { // kein err
 	    C->maxmoments, NICK(cov), moments);
   }
   
-  sprintf(ERROR_LOC, "%s : ", cov->calling == NULL ? "initiating the model"
+  SPRINTF(ERROR_LOC, "%s : ", cov->calling == NULL ? "initiating the model"
 	  : NICK(cov->calling));
   ASSERT_GATTER(cov);
   if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) {
@@ -512,7 +513,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
   if (!cov->initialised) {
     int err = NOERROR;
     
-    sprintf(ERROR_LOC, "in %s : ", NICK(cov));
+    SPRINTF(ERROR_LOC, "in %s : ", NICK(cov));
      
     assert(cov != NULL);
     if (moments < 0) SERR("moments expected to be positive");
@@ -526,7 +527,7 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
       if (cov->mpp.moments == PARAM_DEP) cov->mpp.moments = moments;
     }
     
-    sprintf(ERROR_LOC, "%s:", cov->calling == NULL ? "initiating the model"
+    SPRINTF(ERROR_LOC, "%s:", cov->calling == NULL ? "initiating the model"
 	    : NICK(cov->calling));
     ASSERT_GATTER(cov);
     if ((err = CovList[cov->gatternr].Init(cov, s)) != NOERROR) return err;   
@@ -561,31 +562,31 @@ int INIT_RANDOM_intern(cov_model *cov, int moments, gen_storage *s, // kein err
 
 
 void iso2iso(double *x, cov_model *cov, double *v) {
-  double y=fabs(*x);
+  double y = FABS(*x);
   CovList[cov->nr].cov(&y, cov, v); // nicht gatternr
 }
 void logiso2iso(double *x, cov_model *cov, double *v, double *Sign) {
-  double y=fabs(*x);
+  double y = FABS(*x);
   CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
 }
 void spiso2spiso(double *x, cov_model *cov, double *v) {
   double y[2];
-  y[0] = fabs(x[0]);
-  y[1] = fabs(x[1]);
+  y[0] = FABS(x[0]);
+  y[1] = FABS(x[1]);
   CovList[cov->nr].cov(y, cov, v);// nicht gatternr
 }
 void logspiso2spiso(double *x, cov_model *cov, double *v, double *Sign) {
   double y[2];
-  y[0] = fabs(x[0]);
-  y[1] = fabs(x[1]);
+  y[0] = FABS(x[0]);
+  y[1] = FABS(x[1]);
   CovList[cov->nr].log(y, cov, v, Sign);// nicht gatternr
 }
 void spacetime2iso(double *x, cov_model *cov, double *v) {
-  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
+  double y=SQRT(x[0] * x[0] + x[1] * x[1]);
   CovList[cov->nr].cov(&y, cov, v);// nicht gatternr
 }
 void logspacetime2iso(double *x, cov_model *cov, double *v, double *Sign) {
-  double y=sqrt(x[0] * x[0] + x[1] * x[1]);
+  double y=SQRT(x[0] * x[0] + x[1] * x[1]);
   CovList[cov->nr].log(&y, cov, v, Sign);// nicht gatternr
 }
 
@@ -603,7 +604,7 @@ void Stat2iso(double *x, cov_model *cov, double *v) {
     b += x[i] * x[i];
     //  
   }
-  b = sqrt(b);
+  b = SQRT(b);
 
   //  PMI(cov); printf("b=%f\n", b);
 
@@ -616,7 +617,7 @@ void logStat2iso(double *x, cov_model *cov, double *v, double *Sign) {
   for (i=0; i<dim; i++) {
     b += x[i] *x[i];
   }
-  b = sqrt(b);
+  b = SQRT(b);
   CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
 }
 void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
@@ -627,7 +628,7 @@ void Nonstat2iso(double *x, double *y, cov_model *cov, double *v) {
     a = x[d] - y[d];
     b += a * a;
   }
-  b = sqrt(b);
+  b = SQRT(b);
   CovList[cov->nr].cov(&b, cov, v);// nicht gatternr
  
   //  APMI(cov->calling->calling);
@@ -642,7 +643,7 @@ void logNonstat2iso(double *x, double *y, cov_model *cov, double *v,
     a = x[d] - y[d];
     b += a * a;
   }
-  b = sqrt(b);
+  b = SQRT(b);
   CovList[cov->nr].log(&b, cov, v, Sign);// nicht gatternr
 }
 void Stat2spacetime(double *x, cov_model *cov, double *v) {
@@ -650,8 +651,8 @@ void Stat2spacetime(double *x, cov_model *cov, double *v) {
   int i,
     dim=cov->xdimgatter - 1;  
   for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim]);
+  z[0] = SQRT(b);
+  z[1] = FABS(x[dim]);
   CovList[cov->nr].cov(z, cov, v);// nicht gatternr
 }
 void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign) {
@@ -659,8 +660,8 @@ void logStat2spacetime(double *x, cov_model *cov, double *v, double *Sign) {
   int i,
     dim=cov->xdimgatter - 1;  
   for (b=0.0, i=0; i<dim; i++)  b += x[i] * x[i];
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim]);
+  z[0] = SQRT(b);
+  z[1] = FABS(x[dim]);
   CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
 }
 void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
@@ -671,8 +672,8 @@ void Nonstat2spacetime(double *x, double *y, cov_model *cov, double *v) {
     a = x[d] - y[d];
     b += a * a;
   }
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim] - y[dim]);
+  z[0] = SQRT(b);
+  z[1] = FABS(x[dim] - y[dim]);
   CovList[cov->nr].cov(z, cov, v);// nicht gatternr
 }
 void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
@@ -684,8 +685,8 @@ void logNonstat2spacetime(double *x, double *y, cov_model *cov, double *v,
     a = x[d] - y[d]; 
     b += a * a;
   }
-  z[0] = sqrt(b);
-  z[1] = fabs(x[dim] - y[dim]);
+  z[0] = SQRT(b);
+  z[1] = FABS(x[dim] - y[dim]);
   CovList[cov->nr].log(z, cov, v, Sign);// nicht gatternr
 }
 void Stat2Stat(double *x, cov_model *cov, double *v) {
@@ -726,7 +727,7 @@ void D_2(double *x, cov_model *cov, double *v){
 
   if (cov->xdimprev == 1) {
     assert(cov->isoown == ISOTROPIC);
-    double y = fabs(*x);
+    double y = FABS(*x);
 
     //   cov_model *prev = cov;
     //while (prev->calling != NULL) prev = prev->calling;
@@ -740,14 +741,14 @@ void D_2(double *x, cov_model *cov, double *v){
     assert(cov->xdimprev == 2);
     if (cov->xdimown == 1) {
       assert(cov->isoown==ISOTROPIC);
-      double y=sqrt(x[0] * x[0] + x[1] * x[1]);    
+      double y=SQRT(x[0] * x[0] + x[1] * x[1]);    
       C->D(&y, cov, v);
       if (y!=0.0) *v *= x[0] / y;
     } else {
       assert(cov->xdimown == 2);
       double y[2];
-      y[0] = fabs(x[0]);
-      y[1] = fabs(x[1]);
+      y[0] = FABS(x[0]);
+      y[1] = FABS(x[1]);
       C->D(y, cov, v); 
     }
   }
@@ -755,7 +756,7 @@ void D_2(double *x, cov_model *cov, double *v){
 void DD_2(double *x, cov_model *cov, double *v) {
   cov_fct *C = CovList + cov->nr;// nicht gatternr
   if (cov->isoown == ISOTROPIC) {
-    double y = fabs(*x);
+    double y = FABS(*x);
 
     // iso2iso ueberpruefen !!!
     // dollar + scale // aniso > 0 und dim = 1
@@ -770,7 +771,7 @@ void DD_2(double *x, cov_model *cov, double *v) {
 	xSq = x[0] * x[0],
 	tSq = x[1] * x[1],
 	ySq = xSq + tSq,
-	y   = sqrt(ySq); 
+	y   = SQRT(ySq); 
       
       // (c'(r) * x/r)' = c''(r) * x^2/r^2 + c'(r) [ 1/r - x^2 / r^3]
       C->D2(&y, cov, v);// nicht gatternr
@@ -784,8 +785,8 @@ void DD_2(double *x, cov_model *cov, double *v) {
       }
     } else if (is_all(SPACEISOTROPIC, C)) {
       double y[2];
-      y[0] = fabs(x[0]);
-      y[1] = fabs(x[1]);
+      y[0] = FABS(x[0]);
+      y[1] = FABS(x[1]);
       C->D2(y, cov, v); // nicht gatternr
     } else BUG;
   }
@@ -823,7 +824,7 @@ int struct2(cov_model *cov, cov_model **newmodel) {
     BUG;
   }
   strcpy(errloc_save, ERROR_LOC);
-  sprintf(ERROR_LOC, "In %s : ", NICK(cov));
+  SPRINTF(ERROR_LOC, "In %s : ", NICK(cov));
 
   err = CovList[cov->nr].Struct(cov, newmodel);
   if (newmodel != NULL && (*newmodel) != NULL) {
@@ -888,12 +889,12 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
       //alloc_mpp_M(cov);
     //    }
     
-    sprintf(ERROR_LOC, "In %s: ", NICK(cov));
+    SPRINTF(ERROR_LOC, "In %s: ", NICK(cov));
     if (!cov->initialised && (err = C->Init(cov, s)) != NOERROR) {
  	goto ErrorHandling;
     }
  
-    sprintf(ERROR_LOC, "'%s': ", NICK(prev));//  nicht gatternr   
+    SPRINTF(ERROR_LOC, "'%s': ", NICK(prev));//  nicht gatternr   
     err = NOERROR;  
   }
 
@@ -1014,7 +1015,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
   char msg[LENERRMSG] = "";
 
   // erst bei check unten
-  sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+  SPRINTF(ERROR_LOC, "'%s' : ", NICK(cov));
   if (PL >= PL_COV_STRUCTURE) { 
     if (cov->calling == NULL) PRINTF("\n");
     LPRINT("%s\n", ERROR_LOC); 
@@ -1149,8 +1150,8 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     // 
     if (xdebug) {
       char cvalue[40];
-      if (C->check == check_c) sprintf(cvalue, "%1.1f", P0(0));
-      else sprintf(cvalue, "%s", NAME(cov));
+      if (C->check == check_c) SPRINTF(cvalue, "%1.1f", P0(0));
+      else SPRINTF(cvalue, "%s", NAME(cov));
       PRINTF("CC i=%d max=%d; %s - %s %d%d%d %s %s ", 
 	     ii, idxiso, ISONAMES[isoprev], ISONAMES[isolist[ii]], 
 	     TypeConsistency(type, cov, 0),
@@ -1394,7 +1395,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 
       if (cov->xdimown > cov->xdimprev && newtsdim <= tsxdim) { // appear if spaceiso called by iso
 	if (!checkerror) {
-	  sprintf(checkmsg, "dimension at least %d needed. Got %d dimension.", 
+	  SPRINTF(checkmsg, "dimension at least %d needed. Got %d dimension.", 
 		  cov->xdimown, cov->xdimprev);
 	  checkerror = true;
 	  continue;
@@ -1406,7 +1407,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
       //    printf("%s\n", ERROR_LOC);
 
       err = C->check(cov); // CHECK !
-      sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+      SPRINTF(ERROR_LOC, "'%s' : ", NICK(cov));
       
       if ((checkerror = err != NOERROR)) {
 
@@ -1425,7 +1426,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
 	
 	if ((vdim0 > 0 && cov->vdim[0] != vdim0) || 
 	    (vdim1 > 0 && cov->vdim[1] != vdim1)) {
-	  sprintf(ERRORSTRING,
+	  SPRINTF(ERRORSTRING,
 		  "multivariate dimension (of submodel '%s'), which is %d x %d, does not match the specification of '%s', which is %d x %d and is required by '%s'",
 		NICK(cov), cov->vdim[0], cov->vdim[1], C->name, vdim0, vdim1, 
 		cov->calling == NULL ? "-- none --" :  P->name); 
@@ -1504,7 +1505,7 @@ int check2X(cov_model *cov, int tsdim, int tsxdim,
     LPRINT("Continuing '%s' (no error):\n", Nick(cov)); 
   }
 
-  sprintf(ERROR_LOC, "\"%s\": ", cov->calling == NULL ? "parsing the model"
+  SPRINTF(ERROR_LOC, "\"%s\": ", cov->calling == NULL ? "parsing the model"
 	  : Nick(prev));
   COND_NEW_STORAGE(gatter, z); 
   if (isAnySpherical(cov->isoown)) COND_NEW_STORAGE(earth, X); 

@@ -4,7 +4,7 @@
 
  library for simulation of random fields 
 
- Copyright (C) 2001 -- 2015 Martin Schlather, 
+ Copyright (C) 2001 -- 2017 Martin Schlather, 
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,9 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R.h>
 #include <Rdefines.h>
 #include <R_ext/Linpack.h>
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <string.h>
 
 #include "RF.h"
@@ -66,7 +66,7 @@ int GetNAPosition(cov_model *cov,
 
   // if (SHORTlen < 2) BUG;
  
-  sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+  SPRINTF(ERROR_LOC, "'%s' : ", NICK(cov));
 
   cov_model *sub;
   int i, c, r, 
@@ -95,7 +95,7 @@ int GetNAPosition(cov_model *cov,
   if (covzaehler[cov->nr] >= 2) {
     char dummy[255];
     strcopyN(dummy, shortname, SHORTlen-1);
-    sprintf(shortname, "%s%d", dummy, covzaehler[cov->nr]);
+    SPRINTF(shortname, "%s%d", dummy, covzaehler[cov->nr]);
   }
   if (printing>0) PRINTF("%s\n", CC->name); 
   // CC needed below for the kappa.names which are given
@@ -106,7 +106,7 @@ int GetNAPosition(cov_model *cov,
   depth++;
   for (i=0; i<C->kappas; i++) {
     /*
-    if (i==0 && type[i] == INTSXP && strcmp(C->kappanames[i], ELEMENT) == 0){
+    if (i==0 && type[i] == INTSXP && STRCMP(C->kappanames[i], ELEMENT) == 0){
       if (*elmnts >= MAX_MLE_ELMNTS ) 
 	ERR("maximum number of models with variable elements reached");
       if (P0INT(i) == NA_INTEGER) ERR1("'%s' may not be NA", ELEMENT);
@@ -191,7 +191,7 @@ int GetNAPosition(cov_model *cov,
 	      } else {
 		char dummy[255];
 		strcopyN(dummy, NICK(next) + 2, SHORTlen-1);
-		sprintf(shortD, "%s%d", dummy, covzaehler[next->nr]+1);
+		SPRINTF(shortD, "%s%d", dummy, covzaehler[next->nr]+1);
 		//	      print("$$ > %d:%s %d %s\n", next->nr, NICK(to), 
 		//		     covzaehler[next->nr], shortD);
 	      }
@@ -221,7 +221,7 @@ int GetNAPosition(cov_model *cov,
 		if (no_variance && sorts[*NAs] <= SIGNEDSDPARAM)
 		  sorts[*NAs] = ANYPARAM;
 		//printf("sorts %s %d %d\n", NAME(cov),sorts[*NAs],no_variance);
-		sprintf(names[*NAs], 
+		SPRINTF(names[*NAs], 
 			sorts[*NAs] <= SIGNEDSDPARAM || sorts[*NAs] ==NUGGETVAR 
 			|| sorts[*NAs]==MIXEDVAR ? "%s.var" : "%s.vx",
 			shortD); // for R level only
@@ -230,7 +230,7 @@ int GetNAPosition(cov_model *cov,
 		  //   lastmem = mem[*NAs]; // used for all diagonal elements of
 		  //                          aniso
 		  sorts[*NAs] = SCALEPARAM;	
-		  sprintf(names[*NAs], "%s.s", shortD);// for R level only
+		  SPRINTF(names[*NAs], "%s.s", shortD);// for R level only
 		} else {
 		  assert(i == DANISO);
 		  // no lastmem here !
@@ -241,10 +241,10 @@ int GetNAPosition(cov_model *cov,
 		  }
 		  if (r==c) { 
 		    sorts[*NAs] = DIAGPARAM; 
-		    sprintf(names[*NAs], "%s.d.%d", shortD, r);// R level only
+		    SPRINTF(names[*NAs], "%s.d.%d", shortD, r);// R level only
 		  } else {
 		    sorts[*NAs] = ANISOPARAM;
-		    sprintf(names[*NAs], "%s.d.%d.%d", shortD, r, c);// R level	
+		    SPRINTF(names[*NAs], "%s.d.%d.%d", shortD, r, c);// R level	
 		  }	
 		}
 	      }
@@ -284,18 +284,18 @@ int GetNAPosition(cov_model *cov,
 	      }
 	      char kappashort[255];
 	      strcopyN(kappashort, CC->kappanames[i], SHORTlen);
-	      sprintf(names[*NAs], "%s.%s", shortname,  kappashort);
+	      SPRINTF(names[*NAs], "%s.%s", shortname,  kappashort);
 	      
 	      // printf("NAs %d %s\n", *NAs, names[*NAs]);
 	      
 	      if (*NAs > 0 && 0==
 		  strncmp(names[*NAs], names[*NAs-1], strlen(names[*NAs]))){
 		if (namenr == 1) {
-		  sprintf(names[*NAs-1], "%s.%s.%d",
+		  SPRINTF(names[*NAs-1], "%s.%s.%d",
 			  shortname, kappashort, namenr);
 		} 
 		namenr++; 
-		sprintf(names[*NAs], "%s.%s.%d", shortname, kappashort,namenr); 
+		SPRINTF(names[*NAs], "%s.%s.%d", shortname, kappashort,namenr); 
 	      } else namenr=1;			
 	    }
 	  
@@ -393,7 +393,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
 		     LOGICAL(Time)[0], 
 		     R_NilValue,
 		     KEY + currentRegister);  
-  sprintf(ERROR_LOC, "getting positions with NA: ");
+  SPRINTF(ERROR_LOC, "getting positions with NA: ");
 
   // print("global=%d\n", GLOBAL.fit.lengthshortname);
   
@@ -409,7 +409,7 @@ SEXP GetNAPositions(SEXP model_reg, SEXP model, SEXP spatialdim, SEXP Time,
 			  INTEGER(Print)[0], 
 			  0, false, true);  
   if (err != NOERROR) XERR(err);
-  sprintf(ERROR_LOC, "'%s' : ", NICK(KEY[currentRegister]));
+  SPRINTF(ERROR_LOC, "'%s' : ", NICK(KEY[currentRegister]));
   SEXP ans;
   PROTECT (ans =  allocVector(INTSXP, 1));
   INTEGER(ans)[0] = NAs;
@@ -490,7 +490,7 @@ void Take21internal(cov_model *cov, cov_model *cov_bound,
   cov_fct *C = CovList + cov->nr; // nicht gatternr
   SEXPTYPE *type = C->kappatype;
   
-  if (strcmp(Nick(cov), Nick(cov_bound)) != 0) {
+  if (STRCMP(Nick(cov), Nick(cov_bound)) != 0) {
     // print("%s %s\n", CovList[cov->nr].nick, CovList[cov_bound->nr].nick);  
     ERR("models do not match.");
   }
@@ -742,7 +742,7 @@ int check_recursive_range(cov_model *cov, bool NAOK) {
      */
   int i, err,
     kappa = CovList[cov->nr].kappas;
-  sprintf(ERROR_LOC, "'%s' : ", NICK(cov));
+  SPRINTF(ERROR_LOC, "'%s' : ", NICK(cov));
   if ((err = check_within_range(cov, NAOK)) != NOERROR) return err;
    for (i=0; i<kappa; i++) 
     if (cov->kappasub[i] != NULL &&
@@ -988,7 +988,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
     mle_openmin[MAX_NA], mle_openmax[MAX_NA],
     *matrix = NULL;
 
-  sprintf(ERROR_LOC, "checking model : ");
+  SPRINTF(ERROR_LOC, "checking model : ");
   if (PrevLoc(key)->timespacedim > MAXMLEDIM) 
     ERR("dimension too high in MLE");
 
@@ -1031,7 +1031,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
 			   0, false, excludetrend))
        != NOERROR) goto ErrorHandling;
 
-  sprintf(ERROR_LOC, "'%s' : ", NICK(key));
+  SPRINTF(ERROR_LOC, "'%s' : ", NICK(key));
 
   //  PMI(sub);
   

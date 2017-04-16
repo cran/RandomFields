@@ -2,7 +2,8 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2014 Alexander Malinowski & Martin Schlather
+##               2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -97,7 +98,8 @@ list2RFempVariog <- function(li) {
              vdim = li$vdim,
              coordunits = RFopt.coords$coordunits,
              varunits = RFopt.coords$varunits,
-             call=li$call ))
+             call=li$call,
+	     method=li$method))
 }
 
 
@@ -208,6 +210,7 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
                                 variogram=TRUE,
                                 boundaries = TRUE,
                                 ...) {
+   
    if (!variogram)
      stop("plot of estimated covariance functions not programmed yet.")
 
@@ -244,6 +247,7 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
      OP <- c("$", "@")[1 + is(x, "RFempVariog")]
    }
 
+#   Print(x)
 
    ev <- do.call(OP, list(x, "emp.vario"))
    sd <- do.call(OP, list(x, "sd"))
@@ -253,8 +257,11 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
    Time <- do.call(OP, list(x, "T"))
    n.bin <- do.call(OP, list(x, "n.bin"))
    coordunits <- do.call(OP, list(x, "coordunits"))
+   empmethod <- do.call(OP, list(x, "method"))
 
    varnames <- if (is.matrix(ev)) dimnames(ev)[[2]][1] else names(ev)[1]
+   if(empmethod > 2 && !is.null(model)) 
+       warning("theoretical madogram model is not available at the moment")
 
    dots = list(...)
    dotnames <- names(dots)
@@ -268,10 +275,26 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
    ylim.not.in.dotnames <- !("ylim" %in% dotnames)
    xlab <- if ("xlab" %in% dotnames) dots$xlab else "distance"
    dots$xlab <- NULL
-   ylab.ev <- if ("ylab" %in% dotnames) dots$ylab else "semivariance"
+   ylab.ev <- if ("ylab" %in% dotnames) {
+                  dots$ylab
+              } else if(empmethod == 2) {
+                  "covariance"
+              } else if(empmethod < 2) {
+                  "semivariance"
+              } else {
+                  "madogram"
+              }
    dots$ylab <- NULL
 
-   main0 <- if ("main" %in% dotnames) dots$main else "Variogram plot"  
+   main0 <- if ("main" %in% dotnames) {
+                dots$main
+            } else if(empmethod == 2) {
+                "Covariance plot"
+            } else if(empmethod < 2) {
+                "Variogram plot"
+            } else {
+                "Madogram plot"
+            }
    dots$main <- NULL
    if (!is.null(main0)) oma.top <- 2 else oma.top <- 0
 
@@ -334,13 +357,23 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
    dir2vario <- function(dir.vec, x.eval, x.time, method.model, v1, v2){
      x.space <- as.matrix(x.eval) %*% t(dir.vec)            
      for (j in (1:4)) { ## orig 20
-      vario.vals <- try(RFvariogram(x = cbind(x.space, x.time),
-                                     model = method.model,
-                                     grid = FALSE,
-                                     internal.examples_reduced=FALSE),
-                         silent = TRUE)      
-        if(!is(vario.vals, "try-error")) {
-         if (is.array(vario.vals)) {
+         if(empmethod == 2) { # covariance plot
+             vario.vals <- try(RFcov(x = cbind(x.space, x.time),
+                                           model = method.model,
+                                           grid = FALSE,
+                                           internal.examples_reduced=FALSE),
+                               silent = TRUE)
+         } else if(empmethod < 2) {
+             vario.vals <- try(RFvariogram(x = cbind(x.space, x.time),
+                                           model = method.model,
+                                           grid = FALSE,
+                                           internal.examples_reduced=FALSE),
+                               silent = TRUE)
+         } else {
+             break;
+         }
+         if(!is(vario.vals, "try-error")) {
+             if (is.array(vario.vals)) {
            return(vario.vals[, v1, v2])
          } else {
            return(vario.vals)
@@ -360,8 +393,8 @@ plotRFempVariogUnbinned <- function(x, coordunits, varunits, varnames,
    for (v1 in 1:vdim) {
     for (v2 in 1:vdim) {
       if (TandV) {
-        scr <- split.screen(Screens, all.scr[v1 + (v2 - 1) * vdim])
-        all.scr <- c(all.scr, scr)
+          scr <- split.screen(Screens, all.scr[v1 + (v2 - 1) * vdim])
+          all.scr <- c(all.scr, scr)          
       }
       if (vdim == 1) {
         main <-

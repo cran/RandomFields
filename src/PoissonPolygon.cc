@@ -1,14 +1,34 @@
-/*******************************************************************************
- * PoissonPolygon.c
- *
- * written by Felix Ballani, 2012
- *
- * slightly modified by Martin Schlather, 2014
- ****/
+
+/* 
+ Authors
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+ library for simulation of random fields -- init part and error messages
+
+ Copyright (C) 2012 -- 2016 Felix Ballani
+               2017 Martin Schlather (slightly modified)
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+
+
 
 #include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
+#include <Rmath.h>
+//#include <stdlib.h>
 
 #include "RF.h"
 #include "convhull2D.h"
@@ -57,7 +77,7 @@ void rTriangle(double *phi)
 	int onceagain=1, ok=0;
 	double a, amax=1.2990381056766579701455847561294; 
 	// amax = maximum area of a triangle with vertices on the unit circle 
-	//      = 3*sqrt(3.0)/4
+	//      = 3*SQRT(3.0)/4
 	while(onceagain)
 	{
 		ok = 0;
@@ -67,12 +87,12 @@ void rTriangle(double *phi)
 			phi[0] = 2*PI*UNIFORM_RANDOM;
 			phi[1] = 2*PI*UNIFORM_RANDOM;
 			phi[2] = 2*PI*UNIFORM_RANDOM;
-			qsort(phi, 3, sizeof(double), compareAngles);
+			q sort(phi, 3, sizeof(double), compareAngles);
 			if(phi[2]-phi[0]<PI) ok=0;
 			else if(phi[1]<phi[2]-PI || phi[1]>phi[0]+PI) ok=0;
 
 		}
-		a = 0.5*(fabs(sin(phi[2]-phi[1]))+fabs(sin(phi[0]-phi[2]))+fabs(sin(phi[1]-phi[0])));
+		a = 0.5*(FABS(SIN(phi[2]-phi[1]))+fabs(SIN(phi[0]-phi[2]))+fabs(SIN(phi[1]-phi[0])));
 		if(amax*UNIFORM_RANDOM<a) onceagain=0;
 	}
 }
@@ -84,18 +104,18 @@ void rTriangle(double *phi) {
   bool ok; // changed
   double a, amax=1.2990381056766579701455847561294; 
 	// amax = maximum area of a triangle with vertices on the unit circle 
-	//      = 3*sqrt(3.0)/4
+	//      = 3*SQRT(3.0)/4
   while(true) {
     ok = false;
     while(!ok) {
       phi[0] = TWOPI * UNIFORM_RANDOM;
       phi[1] = TWOPI * UNIFORM_RANDOM;
       phi[2] = TWOPI * UNIFORM_RANDOM;
-      qsort(phi, 3, sizeof(double), compareAngles);
+      QSORT(phi, 3, sizeof(double), compareAngles);
       ok = !(phi[2]-phi[0]<PI || phi[1]<phi[2]-PI || phi[1]>phi[0]+PI);
     }
-    a = 0.5 * (fabs(sin(phi[2]-phi[1])) + fabs(sin(phi[0]-phi[2])) +
-	       fabs(sin(phi[1]-phi[0])));
+    a = 0.5 * (FABS(SIN(phi[2]-phi[1])) + FABS(SIN(phi[0]-phi[2])) +
+	       FABS(SIN(phi[1]-phi[0])));
     if(amax * UNIFORM_RANDOM < a) break;
   }
 }
@@ -145,8 +165,8 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 	vdual = (double **) CALLOC(n, sizeof(double *));
 	vsave = (double **) CALLOC(n, sizeof(double *));
 	for(i=0;i<n;i++){
-		uprim[0] = cos(phi[i]);
-		uprim[1] = sin(phi[i]);
+		uprim[0] = COS(phi[i]);
+		uprim[1] = SIN(phi[i]);
 		vdual[i] = (double *) CALLOC(2, sizeof(double));
 		for(j=0;j<2;j++) vdual[i][j] = uprim[j]/T;
 		vsave[i] = vdual[i];
@@ -159,17 +179,17 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 		j = (i+1) % nV;
 		udual[0] = vdual[j][1]-vdual[i][1];
 		udual[1] = vdual[i][0]-vdual[j][0];
-		ulen = sqrt(scProd(udual,udual));
+		ulen = SQRT(scProd(udual,udual));
 		for(j=0;j<2;j++) udual[j] /= ulen;
 		pdual = scProd(udual,vdual[i]);
 		for(j=0;j<2;j++) vprim[i].x[j] = udual[j]/pdual;
 	}
 
 	// determine distance of the farthest vertex
-	RMax = T/cos(0.5*(phi[1]-phi[0]));
-	R = T/cos(0.5*(phi[2]-phi[1]));
+	RMax = T/COS(0.5*(phi[1]-phi[0]));
+	R = T/COS(0.5*(phi[2]-phi[1]));
 	if(R>RMax) RMax = R;
-	R = T/cos(PI+0.5*(phi[0]-phi[2]));
+	R = T/COS(PI+0.5*(phi[0]-phi[2]));
 	if(R>RMax) RMax = R;
 
 	// rest of the line process
@@ -201,8 +221,8 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 
 			for(i=nold;i<n;i++){
 				psi = TWOPI*UNIFORM_RANDOM;
-				uprim[0] = cos(psi);
-				uprim[1] = sin(psi);
+				uprim[0] = COS(psi);
+				uprim[1] = SIN(psi);
 				pprim = RLeft+R*UNIFORM_RANDOM;
 				vdual[i] = (double *) CALLOC(2, sizeof(double));
 				for(j=0;j<2;j++) vdual[i][j] = uprim[j]/pprim;
@@ -216,7 +236,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 				j = (i+1) % nV;
 				udual[0] = vdual[j][1]-vdual[i][1];
 				udual[1] = vdual[i][0]-vdual[j][0];
-				ulen = sqrt(scProd(udual,udual));
+				ulen = SQRT(scProd(udual,udual));
 				for(j=0;j<2;j++) udual[j] /= ulen;
 				pdual = scProd(udual,vdual[i]);
 				for(j=0;j<2;j++) vprim[i].x[j] = udual[j]/pdual;
@@ -265,7 +285,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 	  j = (i+1) % nV;
 	  P->e[i].u[0] = P->v[j].x[1]-P->v[i].x[1];
 	  P->e[i].u[1] = P->v[i].x[0]-P->v[j].x[0];
-	  ulen = sqrt(scProd(P->e[i].u,P->e[i].u));
+	  ulen = SQRT(scProd(P->e[i].u,P->e[i].u));
 	  P->e[i].u[0] /= ulen;
 	  P->e[i].u[1] /= ulen;
 	  P->e[i].p = scProd(P->e[i].u,P->v[i].x);
@@ -314,7 +334,7 @@ double getArea(struct polygon *P)
 		j = (i+1) % P->n;
 		dx = P->v[i].x[0]-P->v[j].x[0];
 		dy = P->v[i].x[1]-P->v[j].x[1];
-		a += 0.5*P->e[i].p*sqrt(dx*dx+dy*dy);
+		a += 0.5*P->e[i].p*SQRT(dx*dx+dy*dy);
 	}
 	return a;
 }

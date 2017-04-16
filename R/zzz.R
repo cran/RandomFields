@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -29,22 +29,22 @@
 
 
 .onLoad <- function(lib, pkg) {
-  .C("attachRFoptionsRandomFields", package="RandomFields")  
+  .C("attachRFoptionsRandomFields")  
 }
 
 .onAttach <- function (lib, pkg) {
-  packageStartupMessage("This is RandomFields Version: 3.1.36");
+#  packageStartupMessage("This is RandomFields Version: 3.1.48");
 }
 
 .onDetach <- function(lib) {
 ## do not use the following commmands in .onDetach!
 #  RFoptions(storing=FALSE) ## delete everything
-#  .C("detachRFoptionsRandomFields", package="RandomFields")
+#  .C("detachRFoptionsRandomFields")
 }
 
 .onUnload <- function(lib, pkg){
    RFoptions(storing=FALSE) ## delete everything
-  .C("detachRFoptionsRandomFields", package="RandomFields")
+  .C("detachRFoptionsRandomFields")
 }
 #Implementierung von Cox & Isham's non-separable model
 
@@ -53,5 +53,4 @@
 #  2) if # pkte < 10 / 50 -> Gauss??
 #  4) if nugget/variance > 0.01 -> CE (and not spectral, e.g.)
 #  3) if C(maxh)/C(0) > 0.05  -> TBM else CE
-
 

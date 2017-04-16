@@ -103,6 +103,7 @@ RFplotEmpVariogram(x, model = NULL, nmax.phi = NA, nmax.theta = NA,
  }
  \item{\code{call}:}{language object; the function call by which the
    object was generated}
+ \item{\code{method}:}{integer; variogram (0), covariance (2), madogram (4) }
 }
 }
 

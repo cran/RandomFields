@@ -2,7 +2,8 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2014 Alexander Malinowski & Martin Schlather
+##               2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -181,7 +182,7 @@ brack2 <- function(x, i, j, ..., value) {
 
 
 
-cbind_RFsp <- function(...) {  ##copied from sp package
+cbind_RFsp <- function(...) {  ##copied from 'sp' 
   stop.ifnot.equal = function(a, b) {
     res = all.equal(a@grid, b@grid)
     if (!is.logical(res) || !res)
@@ -204,7 +205,7 @@ cbind_RFsp <- function(...) {  ##copied from sp package
   gr
 }
 
-cbind_RFspPoints <- function(...) {  ##copied from sp package
+cbind_RFspPoints <- function(...) {  ##copied from 'sp'
   stop.ifnot.equal = function(a, b) {
     res = all.equal(a@coords, b@coords)
     if (!is.logical(res) || !res)

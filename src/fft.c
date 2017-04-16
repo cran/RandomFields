@@ -123,8 +123,6 @@
  * factor any positive int n, up to 2^31 - 1.
  */
 
-/* here: nfac[26], hence n <= 10^12 ?*/
-
 static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn,
 		  int m, int kt, double *at, double *ck, double *bt, double *sk,
 		  int *np, int *nfac)
@@ -147,7 +145,7 @@ static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn,
 
     a--; b--; at--; ck--; bt--; sk--;
     np--;
-    nfac--;/* the global one!*/
+    nfac--;/*the global one!*/
 
     inc = abs(isn);
     nt = inc*ntot;
@@ -729,8 +727,7 @@ L570:
 
 static int old_n = 0;
 
-#define FFTMAXFACTORS 26
-static int nfac[FFTMAXFACTORS];
+static int nfac[20];
 static int m_fac;
 static int kt;
 static int maxf;
@@ -742,7 +739,7 @@ static int maxp;
  *	kt	contains the number of square factors  */
 
 /* non-API, but used by package RandomFields */
-void fft_factor_(int n, int *pmaxf, int *pmaxp)
+void fft_factor(int n, int *pmaxf, int *pmaxp)
 {
 /* fft_factor - factorization check and determination of memory
  *		requirements for the fft.
@@ -795,7 +792,6 @@ void fft_factor_(int n, int *pmaxf, int *pmaxp)
 	    kchanged = 0;
 	    sqrtk = (int)sqrt(k);
 	}
-	
     }
 
     if(k <= 4) {
@@ -828,7 +824,7 @@ void fft_factor_(int n, int *pmaxf, int *pmaxp)
 
     if (m_fac <= kt+1)
 	maxp = m_fac+kt+1;
-    if (m_fac+kt > FFTMAXFACTORS) {		/* error - too many factors */
+    if (m_fac+kt > 20) {		/* error - too many factors */
 	old_n = 0; *pmaxf = 0; *pmaxp = 0;
 	return;
     }
@@ -849,7 +845,7 @@ void fft_factor_(int n, int *pmaxf, int *pmaxp)
 }
 
 
-Rboolean fft_work_(double *a, double *b, int nseg, int n, int nspn, int isn,
+Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn, int isn,
 		  double *work, int *iwork)
 {
     int nf, nspan, ntot;

@@ -61,6 +61,17 @@ void xA(double *x, double*A, int nrow, int ncol, double *y) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
+    for (int i=0; i<ncol; i++) {
+      y[i] = scalar(x, A + i * nrow, nrow);
+    }
+  }
+}
+
+void xA_omp(double *x, double*A, int nrow, int ncol, double *y) {
+  if (A == NULL) {
+    if (nrow != ncol || nrow <= 0) BUG;
+    MEMCOPY(y, x, sizeof(double) * nrow);
+  } else {
 #ifdef DO_PARALLEL
 #pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
 #endif  
@@ -71,19 +82,17 @@ void xA(double *x, double*A, int nrow, int ncol, double *y) {
 
 #define TWOSCALAR_PROD(A1, A2, B, N, ANS1, ANS2) {	\
     int  k_ =0,						\
-      end_ = N - 5;					\
+      end_ = N - 4;					\
     ANS1 = ANS2 = 0.0;						\
     for (; k_<end_; k_+=5) {					\
       ANS1 += A1[k_] * B[k_]					\
 	+ A1[k_ + 1] * B[k_ + 1]				\
 	+ A1[k_ + 2] * B[k_ + 2]				\
-	+ A1[k_ + 3] * B[k_ + 3]				\
-	+ A1[k_ + 4] * B[k_ + 4];				\
+	+ A1[k_ + 3] * B[k_ + 3];				\
       ANS2 += A2[k_] * B[k_]					\
 	+ A2[k_ + 1] * B[k_ + 1]				\
 	+ A2[k_ + 2] * B[k_ + 2]				\
-	+ A2[k_ + 3] * B[k_ + 3]				\
-	+ A2[k_ + 4] * B[k_ + 4];				\
+	+ A2[k_ + 3] * B[k_ + 3];				\
     }								\
     for (; k_<N; k_++) {					\
       ANS1 += A1[k_] * B[k_];					\
@@ -710,7 +719,7 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
       if (ISNAN(value)) {
 	return NA_INTEGER;
       }
-      if (value == trunc(value)) return (int) value; 
+      if (value == TRUNC(value)) return (int) value; 
       else {
 	ERR2("%s: integer value expected. Got %e.", name, value);
       }
@@ -823,7 +832,7 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
   return;
  
  ErrorHandling:
-  sprintf(msg, "'%s' cannot be transformed to character.\n",  name);  
+  SPRINTF(msg, "'%s' cannot be transformed to character.\n",  name);  
   ERR(msg);
 }
 
@@ -989,8 +998,8 @@ void GetName(SEXP el, char *name, const char * List[], int n,
     for (k=0; k<len_el; k++) {
       ans[k] = Match((char*) CHAR(STRING_ELT(el, k)), List, n);
       if (ans[k] < 0) {
-	if (strcmp((char*) CHAR(STRING_ELT(el, k)), " ") == 0 ||
-	    strcmp((char*) CHAR(STRING_ELT(el, k)), "") == 0) {
+	if (STRCMP((char*) CHAR(STRING_ELT(el, k)), " ") == 0 ||
+	    STRCMP((char*) CHAR(STRING_ELT(el, k)), "") == 0) {
 	  goto ErrorHandling;
 	}
 	goto ErrorHandling0;
@@ -1001,12 +1010,12 @@ void GetName(SEXP el, char *name, const char * List[], int n,
   }
 
 ErrorHandling0:
-  sprintf(dummy, "'%s': unknown value '%s'. Possible values are:", 
+  SPRINTF(dummy, "'%s': unknown value '%s'. Possible values are:", 
 	  name, CHAR(STRING_ELT(el, k)));
   int i;
   for (i=0; i<n-1; i++) {
     char msg[1000];
-    sprintf(msg, "%s '%s',", dummy, List[i]);    
+    SPRINTF(msg, "%s '%s',", dummy, List[i]);    
     strcpy(dummy, msg);
   }
   ERR2("%s and '%s'.", dummy, List[i]);  
@@ -1033,6 +1042,8 @@ int GetName(SEXP el, char *name, const char * List[], int n) {
  return GetName(el, name, List, n, -1);
 }
 
+
+double ownround(double x) { return TRUNC((x + sign(x) * 0.5)); }
 
 
 /*
@@ -1077,7 +1088,7 @@ void distInt(int *X, int*N, int *Genes, double *dist) {
 	diff = *x - y[k];
 	di += diff * diff;
       }
-      dist[ve] = dist[ho] = sqrt((double) di);
+      dist[ve] = dist[ho] = SQRT((double) di);
     }
   }
 }
@@ -1124,7 +1135,7 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
 #else
   double x = (long int) addr,
     cut = 1e9;
-  x = x - trunc(x / cut) * cut;
+  x = x - TRUNC(x / cut) * cut;
   return (int) x;
 #endif
 

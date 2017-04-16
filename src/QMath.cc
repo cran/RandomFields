@@ -1,22 +1,22 @@
 // This file has been created automatically by 'rfGenerateMaths'
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "primitive.h"
 void Mathacos(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = acos(w[0]); 
+*v = ACOS(w[0]); 
 }
 
 
 void Mathasin(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = asin(w[0]); 
+*v = ASIN(w[0]); 
 }
 
 
 void Mathatan(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = atan(w[0]); 
+*v = ATAN(w[0]); 
 }
 
 
@@ -28,19 +28,19 @@ MATH_DEFAULT
 
 void Mathcos(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = cos(w[0]); 
+*v = COS(w[0]); 
 }
 
 
 void Mathsin(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = sin(w[0]); 
+*v = SIN(w[0]); 
 }
 
 
 void Mathtan(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = tan(w[0]); 
+*v = TAN(w[0]); 
 }
 
 
@@ -82,13 +82,13 @@ MATH_DEFAULT
 
 void Mathexp(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = exp(w[0]); 
+*v = EXP(w[0]); 
 }
 
 
 void Mathlog(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = log(w[0]); 
+*v = LOG(w[0]); 
 }
 
 
@@ -124,13 +124,13 @@ MATH_DEFAULT
 
 void Mathpow(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = pow(w[0], w[1]); 
+*v = POW(w[0], w[1]); 
 }
 
 
 void Mathsqrt(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = sqrt(w[0]); 
+*v = SQRT(w[0]); 
 }
 
 
@@ -148,49 +148,51 @@ MATH_DEFAULT
 
 void Mathceil(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = ceil(w[0]); 
+*v = CEIL(w[0]); 
 }
 
 
 void Mathfabs(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = fabs(w[0]); 
+*v = FABS(w[0]); 
 }
 
 
 void Mathfloor(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = floor(w[0]); 
+*v = FLOOR(w[0]); 
 }
 
 
 void Mathfmod(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = fmod(w[0], w[1]); 
+  *v = std::fmod(w[0], w[1]); 
 }
 
-
-void Mathnearbyint(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-*v = nearbyint(w[0]); 
-}
 
 
 void Mathround(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = round(w[0]); 
+*v = ROUND(w[0]); 
 }
 
 
 void Mathtrunc(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = trunc(w[0]); 
+*v = TRUNC(w[0]); 
 }
 
 
+/*
+
+void Mathnearbyint(double *x, cov_model *cov, double *v){
+MATH_DEFAULT
+  *v = std::nearbyint(w[0]); 
+}
+
 void Mathlrint(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = lrint(w[0]); 
+  *v = std::lrint(w[0]); 
 }
 
 
@@ -199,24 +201,22 @@ MATH_DEFAULT
 *v = llrint(w[0]); 
 }
 
-
 void Mathlround(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-*v = lround(w[0]); 
+  MATH_DEFAULT
+  *v = l ROUND(w[0]); 
 }
 
 
 void Mathllround(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = llround(w[0]); 
+*v = ll ROUND(w[0]); 
 }
-
 
 void Mathcopysign(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = copysign(w[0], w[1]); 
 }
-
+*/
 
 void Matherf(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
@@ -238,7 +238,7 @@ MATH_DEFAULT
 
 void Mathlgamma(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = lgamma(w[0]); 
+  *v = lgammafn(w[0]);
 }
 
 
@@ -509,13 +509,6 @@ kappanames("a", REALSXP, "b", REALSXP);
 addCov(Mathfmod, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
-IncludeModel(".nearbyint", MathDefinition, 0, 0, 1, NULL, XONLY,
-	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
-	false, SCALAR, PREVMODEL_DEP, false, false); 
-nickname("nearbyint");
-kappanames("a", REALSXP);
-addCov(Mathnearbyint, NULL, NULL);
-AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".round", MathDefinition, 0, 0, 1, NULL, XONLY,
 	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
@@ -531,6 +524,16 @@ IncludeModel(".trunc", MathDefinition, 0, 0, 1, NULL, XONLY,
 nickname("trunc");
 kappanames("a", REALSXP);
 addCov(Mathtrunc, NULL, NULL);
+AddVariant(TrendType, PREVMODELI);
+
+
+/*
+IncludeModel(".nearbyint", MathDefinition, 0, 0, 1, NULL, XONLY,
+	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
+	false, SCALAR, PREVMODEL_DEP, false, false); 
+nickname("nearbyint");
+kappanames("a", REALSXP);
+addCov(Mathnearbyint, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".lrint", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -557,6 +560,7 @@ kappanames("a", REALSXP);
 addCov(Mathlround, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
+
 IncludeModel(".llround", MathDefinition, 0, 0, 1, NULL, XONLY,
 	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
@@ -572,6 +576,7 @@ nickname("copysign");
 kappanames("a", REALSXP, "b", REALSXP);
 addCov(Mathcopysign, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
+*/
 
 IncludeModel(".erf", MathDefinition, 0, 0, 1, NULL, XONLY,
 	 PREVMODELI,checkMath,rangeMath, PREF_TREND,

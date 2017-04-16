@@ -23,9 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <R.h>
 #include <Rdefines.h>
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
  #include <string.h>
 #include <R_ext/Linpack.h>
 
@@ -436,6 +436,8 @@ void COV_ALWAYS_NULL(cov_model *cov) {
   cov->Sgen = NULL;
   cov->Slikelihood = NULL;
   cov->Scovariate = NULL;
+  cov->Sbistable = NULL;
+
 
   cov->fieldreturn = cov->origrf = false;
   cov->initialised = false;
@@ -757,17 +759,13 @@ void br_DELETE(br_storage **S) {
     }
     FREE(brS->shiftedloc);     
     FREE(brS->loc2mem);
-
     
     if (brS->countvector != NULL) {
       for (i=0; i<brS->vertnumber; i++) FREE(brS->countvector[i]);
       UNCONDFREE(brS->countvector);
     }
  
-    if (brS->areamatrix != NULL) {
-      for (i=0; i<brS->vertnumber; i++) FREE(brS->areamatrix[i]);
-      UNCONDFREE(brS->areamatrix);
-    }
+    FREE(brS->areamatrix);
     FREE(brS->logvertnumber);
     FREE(brS->locindex);
     FREE(brS->suppmin);
@@ -779,10 +777,7 @@ void br_DELETE(br_storage **S) {
     FREE(brS->mem2loc);
     FREE(brS->newx);
     if (brS->vario != NULL) COV_DELETE(&(brS->vario));
-    for(i=0; i<MAXSUB; i++) {
-      FREE(brS->lowerbounds[i]);
-      if (brS->sub[i] != NULL) COV_DELETE(brS->sub + i);
-    }
+    FREE(brS->lowerbounds);
     if (brS->submodel != NULL) COV_DELETE(&(brS->submodel));
     UNCONDFREE(*S);
   }
@@ -799,14 +794,10 @@ void br_NULL(br_storage *brS) {
     brS->locmin = brS->locmax = brS->loccentre = NULL;
   int i;
   for (i=0; i<MAXSUB; i++) {
-    brS->lowerbounds[i] = NULL;
-    brS->radii[i] = RF_NA;
-    brS->thresholds[i] = RF_INF;
     brS->sub[i] = NULL;
-    brS->zeropos[i] = NA_INTEGER;
   }
-  brS->vario = brS->submodel = NULL;  
-  brS->idx = 0;
+  brS->lowerbounds = NULL;
+  brS->vario = brS->submodel = NULL;
   brS->countvector = NULL;
   brS->areamatrix = NULL;
   brS->logvertnumber = NULL;
@@ -1099,6 +1090,18 @@ void biwm_DELETE(biwm_storage **S)
 void biwm_NULL(biwm_storage* x) {
   if (x == NULL) return;  
 }
+void bistable_DELETE(bistable_storage **S)
+{
+  bistable_storage *x = *S;
+  if (x!=NULL) {
+    UNCONDFREE(*S);
+  }
+}
+
+void bistable_NULL(bistable_storage* x) {
+  if (x == NULL) return;
+}
+
 
 
 void inv_DELETE(inv_storage **S) {
@@ -1497,7 +1500,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
       }
     }
     loc->totalpoints = loc->spatialtotalpoints = lx;
-    //     (int) (1e-9 + 0.5 * (1.0 + sqrt(1.0 + 8.0 * lx)));
+    //     (int) (1e-9 + 0.5 * (1.0 + SQRT(1.0 + 8.0 * lx)));
     //   if (0.5 * (loc->totalpoints * (loc->totalpoints - 1.0)) != lx) {   
     //printf("tot=%d %d %d\n", loc->totalpoints, (int) ( 0.5 * (loc->totalpoints * (loc->totalpoints - 1.0))), (int) lx); assert(false);
     //   SERR("distances do not have expected size");
@@ -1737,7 +1740,7 @@ location_type ** loc_set(SEXP xlist, bool distances_ok){
     
     if (distances) {
       if (distances_ok){
-	lx = (int) (1e-9 + 0.5 * (1 + sqrt(1. + 8 * llx)));
+	lx = (int) (1e-9 + 0.5 * (1 + SQRT(1. + 8 * llx)));
 	if (llx != lx * (lx - 1) / 2)
 	  ERR("distance length not of form 'n * (n - 1) / 2'");
 	
@@ -1861,7 +1864,7 @@ int getmodelnr(char *name) {
   int match;
 
   if (currentNrCov==-1) { InitModelList(); }
-  if (!strcmp(name, InternalName)) return MATCHESINTERNAL;
+  if (!STRCMP(name, InternalName)) return MATCHESINTERNAL;
   if ((match = Match(name, CovNickNames, currentNrCov)) >= 0) return match;
   return Match(name, CovNames, currentNrCov);
 }
@@ -2109,7 +2112,7 @@ void paramcpy(cov_model *to, cov_model *from,
      *from_col = from->ncol,
      *from_row = from->nrow;
 
-  bool same_model = abs(to->nr - from->nr) <= 1 ||
+  bool same_model = std::abs(to->nr - from->nr) <= 1 ||
     (isDollar(to) && isDollar(from));
 
   if (!same_model) {
@@ -2646,7 +2649,7 @@ double GetDiameter(location_type *loc, double *min, double *max,
     }
   } // !simugrid
     
-  return 2.0 * sqrt(diameter);
+  return 2.0 * SQRT(diameter);
 }
 
 double GetDiameter(location_type *loc, double *min, double *max,
@@ -3375,7 +3378,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
       dopenmax = (double) range.openmax[i]; 
 
 
-      //    unsigned int xxx = pow(2, 32) - 1;
+      //    unsigned int xxx = POW(2, 32) - 1;
       //    signed int yyy = (signed int) (double) xxx;
       //    print("%u %d NA=%d %f NA_LOG=%d '%s'\n", xxx, yyy, NA_INTEGER, (double) NA_INTEGER, NA_LOGICAL, NA_STRING); BUG;
 
@@ -3460,7 +3463,7 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 	    || (range.openmin[i] && value == dmin)
 	    || (range.openmax[i] && value == dmax)
 	    ) {
-	  sprintf(ERRORSTRING,
+	  SPRINTF(ERRORSTRING,
 		  "value (%f) of '%s' in '%s' not within interval %s%f,%f%s",
 		  value, C->kappanames[i], NICK(cov), 
 		  range.openmin[i] ? "(" : "[", dmin, dmax,
@@ -3495,10 +3498,10 @@ int get_internal_ranges(cov_model *cov, cov_model *min, cov_model *max,
 
 
 void strround(double x, char *s){
-  if (x==RF_INF)  sprintf(s, "Inf"); else
-    if (x==RF_NEGINF)  sprintf(s, "-Inf"); else
-      if (x == floor(x + 0.5)) sprintf(s, "%d", (int) x);
-      else sprintf(s, "%f", x);
+  if (x==RF_INF)  SPRINTF(s, "Inf"); else
+    if (x==RF_NEGINF)  SPRINTF(s, "-Inf"); else
+      if (x == FLOOR(x + 0.5)) SPRINTF(s, "%d", (int) x);
+      else SPRINTF(s, "%f", x);
 }
 
 
@@ -3506,12 +3509,12 @@ void strround(double x, char *s){
 
 void addmsg(double value, const char *Sign, double y, char *msg) {
   char str1[30], str2[30];
-  if ( fabs(value - y) <= 1e-8 *  y) {
-    sprintf(msg, "%12.12e %s %12.12e", value, Sign, y);
+  if ( FABS(value - y) <= 1e-8 *  y) {
+    SPRINTF(msg, "%12.12e %s %12.12e", value, Sign, y);
   } else {
     strround(value, str1);
     strround(y, str2);
-    sprintf(msg, "%s %s %s", str1, Sign, str2);
+    SPRINTF(msg, "%s %s %s", str1, Sign, str2);
   }
 }
 
@@ -3519,13 +3522,13 @@ void addmsg(double value, const char *Sign, double y, char *msg) {
 void addone(char *str, double x) {
   char str2[30];
   strround(x, str2);
-  sprintf(str, "%s, %s", str, str2);
+  SPRINTF(str, "%s, %s", str, str2);
 }
 void addpair(char *str, double x, double y) {
-    if (x == floor(x + 0.5) && y==floor(y + 0.5))
-	sprintf(str, "%s, (%d,%d)", str, (int) x, int(y));
+    if (x == FLOOR(x + 0.5) && y==floor(y + 0.5))
+	SPRINTF(str, "%s, (%d,%d)", str, (int) x, int(y));
     else 
-	sprintf(str, "%s, (%f,%f)", str, x, y);
+	SPRINTF(str, "%s, (%f,%f)", str, x, y);
 }
 
 
@@ -3559,7 +3562,7 @@ int check_within_range(cov_model *cov, bool NAOK) {
 
      if (cov->kappasub[i] != NULL) continue;
 
-     if (!strcmp(C->kappanames[i], FREEVARIABLE)) {
+     if (!STRCMP(C->kappanames[i], FREEVARIABLE)) {
        // i.e. equal
        if (PisNULL(i)) continue;
      }

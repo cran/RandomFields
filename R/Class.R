@@ -3,7 +3,8 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2012 -- 2015 Alexander Malinowski & Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -23,7 +24,7 @@
 
 ##########################################################################
 ## classes for 2- and higher-dimensional data objects, based on ##########
-## Spatial classes from 'sp'-package                            ##########
+## Spatial classes from 'sp'                           ##########
 
 
 setClass("RFspatialGridDataFrame", contains ="SpatialGridDataFrame",
@@ -237,7 +238,8 @@ setClass("RFempVariog",
                         vdim = "ANY",
                         coordunits = "character",
                         varunits = "character",
-                        call = "ANY"
+                        call = "ANY",
+                        method = "ANY"
                         )
          )
 

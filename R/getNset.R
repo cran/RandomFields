@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017  Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -25,14 +25,14 @@
 ### and RFgetNset functions
 
 GetCurrentNrOfModels <- function(init=TRUE) {
-  res<- .C("GetCurrentNrOfModels", as.integer(init), nr=as.integer(1))$nr
+  res<- .C(C_GetCurrentNrOfModels, as.integer(init), nr=as.integer(1))$nr
 }
 
 RFoptions <- function(...) RandomFieldsUtils::RFoptions(...)
 
 #RFoptions <- function(..., no.readonly=TRUE) {
-##  on.exit(.C("RelaxUnknownRFoption", FALSE))
-##  .C("RelaxUnknownRFoption", TRUE)
+##  on.exit(.C(C_RelaxUnknownRFoption, FALSE))
+##  .C(C_RelaxUnknownRFoption, TRUE)
 #  opt <- RandomFieldsUtils::RFoptions(...)
 #  if (length(opt)!=0 && !no.readonly) {
 #    opt$readonly <- list(covmaxchar=MAXCHAR_RF,
@@ -66,9 +66,9 @@ internal.rfoptions <- function(..., REGISTER=FALSE, COVREGISTER=as.integer(NA),
     if (any(storing) && !l[[last]]) {
       for (p in which(storing)) l[[p]] <- c(FALSE, REGISTER, COVREGISTER)
     }
-    on.exit(.C("RelaxUnknownRFoption", as.integer(FALSE),
-               package="RandomFields"))
-    .C("RelaxUnknownRFoption", as.integer(RELAX), package="RandomFields")
+    on.exit(.C(C_RelaxUnknownRFoption, as.integer(FALSE),
+               PACKAGE="RandomFields"))
+    .C(C_RelaxUnknownRFoption, as.integer(RELAX), PACKAGE="RandomFields")
     RandomFieldsUtils::RFoptions(LIST=l)
     RFopt[[2]] <- RandomFieldsUtils::RFoptions()
   } else {
@@ -98,7 +98,7 @@ add.units <- function(x,  units=NULL) {
 
 InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
   for (y in list(double(0), matrix(nrow=dim, ncol=3, as.double(1:3)))) {
-    vdim <- try(.Call("Init",
+    vdim <- try(.Call(C_Init,
                       MODEL_USER,
                       model,
                       list(x=matrix(nrow=dim, ncol=3, as.double(1:3)), #0 nur dummies
@@ -122,7 +122,7 @@ InitModel <- function(reg, model, dim, NAOK=FALSE){ # ok
 
 resolve.register <- function(register){
   if (missing(register) || length(register) == 0) {
-    register <- .C("GetCurrentRegister", reg=integer(1))$reg
+    register <- .C(C_GetCurrentRegister, reg=integer(1))$reg
     if (register < 0) stop("model that has been used right now cannot be determined or no model has been used up to now")
   }
   if (!is.numeric(register)) {
@@ -220,7 +220,7 @@ RFgetModelInfo_model <- function(model, dim = 1, Time = FALSE,
 #  }
 
   dim <- as.integer(dim)
-  intern <- try(.Call("SetAndGetModelInfo", Reg,
+  intern <- try(.Call(C_SetAndGetModelInfo, Reg,
                           list("Dummy", PrepareModel2(model)),
                           dim, FALSE, as.logical(kernel), as.logical(Time), dim,
                           as.integer(10), ## ehemals RFoptions(short=10)
@@ -269,7 +269,7 @@ RFgetModelInfo_register<-
    if (is.na(w) || length(w) ==0)
      stop("the value for 'which.submodels' does not match. Note that the definitoin has been changed in version 3.0.70")
 
-  cov <- .Call("GetExtModelInfo", as.integer(register), as.integer(level),
+  cov <- .Call(C_GetExtModelInfo, as.integer(register), as.integer(level),
                as.integer(spConform),
                as.integer(w),
                PACKAGE="RandomFields")
@@ -336,7 +336,7 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
             as.list(GetModel)$which.submodels[-1]) - 1
   if (missing(register)) register <- 0
   
-  model <- .Call("GetModel", as.integer(register), as.integer(modus),
+  model <- .Call(C_GetModel, as.integer(register), as.integer(modus),
                  as.integer(spConform),
                  as.integer(w),
                  as.logical(solve_random),
@@ -347,7 +347,7 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
 
 GetModelRegister <- function(name) { ## obsolete
   stopifnot(is.character(name))
-  return(as.integer(.C("GetModelRegister", name, integer(1),
+  return(as.integer(.C(C_GetModelRegister, name, integer(1),
                        PACKAGE="RandomFields")[[2]]))
 }
 
@@ -377,7 +377,7 @@ RFgetModelNames <- function(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
         || hasArg(monotone) || hasArg(finiterange) || hasArg(valid.in.dim)
         || hasArg(vdim) || hasArg(group.by))
       stop("use 'newnames=FALSE' without further parameters or in combination with 'internal'")
-    return (.Call("GetAllModelNames", PACKAGE="RandomFields"))
+    return (.Call(C_GetAllModelNames, PACKAGE="RandomFields"))
   }
   
 
@@ -500,7 +500,7 @@ RFformula <- function(f)
 
 GetProcessType <- function(model) {
   stopifnot(is.list(model))
-  return(.Call("GetProcessType", MODEL_INTERN, model))
+  return(.Call(C_GetProcessType, MODEL_INTERN, model))
 }
 
 
@@ -512,12 +512,12 @@ parameter.range <- function(model, param, dim=1){
 #parampositions < - function(model, param, trend=NULL, dim, print=1) {
 #  stopifnot(!missing(dim))
 #  model <- PrepareModel(model, param, trend=trend, nugget.remove=FALSE)
-#  .Call("Get NA Positions", reg, model, as.integer(dim), as.integer(dim),
+#  .Call(C_Get NA Positions, reg, model, as.integer(dim), as.integer(dim),
 #        FALSE, FALSE, as.integer(print), PACKAGE="RandomFields")
 #}
 #  pm <- PrepareModel(model=model, param=param, nugget.remove=FALSE)        
 #  storage.mode(dim) <- "integer"
-#  ResGet <- .Call("SetAnd  ?? GetModelInfo",
+#  ResGet <- . Call(C_SetAnd  ?? GetModelInfo,
 #                  reg,
 #                  pm, dim, Zeit, dim, FALSE, MaxNameCharacter=254,
 #                  TRUE, TRUE,

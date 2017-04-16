@@ -88,6 +88,7 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
+ \link{Multivariate RMmodels},
 }
 
 

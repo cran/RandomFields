@@ -6,7 +6,7 @@
  Martin Schlather, schlather@math.uni-mannheim.de
 
 
- Copyright (C) 2015 Martin Schlather
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -269,6 +269,19 @@ void coinitgenCauchy(cov_model *cov, localinfotype *li);
 void ieinitgenCauchy(cov_model *cov, localinfotype *li);
 void InversegeneralisedCauchy(double *x, cov_model *cov, double *v);
 
+
+/* bivariate Cauchy bivariate genCauchy bivariate generalized Cauchy */
+
+void biCauchy (double *x, cov_model *cov, double *v);
+void DbiCauchy(double *x, cov_model *cov, double *v);
+void DDbiCauchy(double *x, cov_model *cov, double *v);
+void D3biCauchy(double *x, cov_model *cov, double *v);
+void D4biCauchy(double *x, cov_model *cov, double *v);
+void kappa_biCauchy(int i, cov_model *cov, int *nr, int *nc);
+int checkbiCauchy(cov_model *cov);
+void rangebiCauchy(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range);
+void coinitbiCauchy(cov_model *cov, localinfotype *li);
+
 /* gengneiting */
 void genGneiting(double *x, cov_model *cov, double *v);
 void DgenGneiting(double *x, cov_model *cov, double *v);
@@ -403,6 +416,19 @@ void nonstatLogInversestable(double *x, cov_model *cov, double *L, double *R);
 void stableX(double *x, cov_model *cov, double *v);
 void DstableX(double *x, cov_model *cov, double *v);
 
+
+// bivariate exponential or bivariate stable model
+void kappa_biStable(int i, cov_model *cov, int *nr, int *nc);
+void biStable (double *x, cov_model *cov, double *v);
+void DbiStable (double *x, cov_model *cov, double *v);
+void DDbiStable (double *x, cov_model *cov, double *v);
+void D3biStable (double *x, cov_model *cov, double *v);
+void D4biStable (double *x, cov_model *cov, double *v);
+int checkbiStable(cov_model *cov);
+void rangebiStable(cov_model *cov, range_type *range);
+int initbiStable(cov_model *cov, gen_storage *stor);
+void coinitbiStable(cov_model *cov, localinfotype *li);
+
 /* Stein */
 // see Hypermodel.cc
 
@@ -478,9 +504,13 @@ void kappa_userMatrix(int i, cov_model *cov, int *nr, int *nc);
 void kappa_biWM(int i, cov_model *cov, int *nr, int *nc);
 void biWM2(double *x, cov_model *cov, double *v);
 void biWM2D(double *x, cov_model *cov, double *v);
+void biWM2DD(double *x, cov_model *cov, double *v);
+void biWM2D3(double *x, cov_model *cov, double *v);
+void biWM2D4(double *x, cov_model *cov, double *v);
 int checkbiWM2(cov_model *cov);
 void rangebiWM2(cov_model *cov, range_type* ra);
 int initbiWM2(cov_model *cov, gen_storage *s);
+void coinitbiWM2(cov_model *cov, localinfotype *li);
 
 
 void rangebiWM2(cov_model *cov, range_type* ra);

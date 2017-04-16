@@ -2,7 +2,7 @@
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
 
- Copyright (C) 2014-2015 Martin Schlather
+ Copyright (C) 2014 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "Operator.h"
 
@@ -40,11 +40,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Earth coordinate systems : stay within the system
 //////////////////////////////////////////////////////////////////////
 
-double mod(double x, double modulus) { return (x - floor(x / modulus) * modulus); }
+double mod(double x, double modulus) { return (x - FLOOR(x / modulus) * modulus); }
 double isomod(double x, double modulus) {  
   double 
     twomodulus = 2.0 * modulus;
-  return modulus - fabs(Mod(x, twomodulus) - modulus);
+  return modulus - FABS(Mod(x, twomodulus) - modulus);
 }
 double lonmod(double x, double modulus) {  
   double 
@@ -58,7 +58,7 @@ double latmod(double x, double modulus) {
     halfmodulus = 0.5 * modulus,
     twomodulus = 2.0 * modulus,
     y = x - halfmodulus;
-  return fabs(Mod(y, twomodulus) - modulus) - halfmodulus;
+  return FABS(Mod(y, twomodulus) - modulus) - halfmodulus;
 }
 
 
@@ -79,11 +79,11 @@ void statmod2(double *x, double lon, double lat, double *y) {
   ALLOC_NEW(Searth, X, dim+1, X);					\
   double xx[2] = {x[0], x[1]},						\
     yy[2] = {y[0], y[1]},						\
-    cosine = sin(xx[1]) * sin(yy[1]) +					\
-             (cos(xx[0]) * cos(yy[0]) + sin(xx[0]) * sin(yy[0])) *      \
-             cos(xx[1]) * cos(yy[1]);				       	\
+    cosine = SIN(xx[1]) * SIN(yy[1]) +					\
+             (COS(xx[0]) * COS(yy[0]) + SIN(xx[0]) * SIN(yy[0])) *      \
+             COS(xx[1]) * COS(yy[1]);				       	\
     cosine = cosine <= 1.0 ? (cosine < -1.0 ? -1.0 : cosine) : 1.0;	\
-    X[0] = acos(cosine);						\
+    X[0] = ACOS(cosine);						\
     for (d = 2; d < dim; d++) X[d-1] = x[d] - y[d];	
 			
 
@@ -259,10 +259,10 @@ void logNonstatSphere2Sphere(double *x, double *y, cov_model *cov,
 #define EARTH_HEIGHT 2
 #define pi180 0.017453292519943295474
 #define EARTH_TRAFO(X, ZZ, raequ, rpol)			\
-  Rcos = (raequ) * cos(ZZ[EARTH_LATITUDE] * pi180);	\
-  X[0] = Rcos * cos(ZZ[EARTH_LONGITUDE] * pi180);	\
-  X[1] = Rcos * sin(ZZ[EARTH_LONGITUDE] * pi180);	\
-  X[2] = (rpol) * sin(ZZ[EARTH_LATITUDE] * pi180)		
+  Rcos = (raequ) * COS(ZZ[EARTH_LATITUDE] * pi180);	\
+  X[0] = Rcos * COS(ZZ[EARTH_LONGITUDE] * pi180);	\
+  X[1] = Rcos * SIN(ZZ[EARTH_LONGITUDE] * pi180);	\
+  X[2] = (rpol) * SIN(ZZ[EARTH_LATITUDE] * pi180)		
 
 #define earth2cartInner(RAEQU, RPOL)					\
   assert(cov->xdimprev >= 2 && cov->xdimgatter >=2);/*not necessarily equal*/ \
@@ -357,7 +357,7 @@ int checkEarth(cov_model *cov){
       if (GLOBAL.internal.warn_zenit) {
 	GLOBAL.internal.warn_zenit = false;
 	char msg[255];
-	sprintf(msg, "tried to use non-finite values of '%s' in a coordinate transformation\n", coords[ZENIT]);
+	SPRINTF(msg, "tried to use non-finite values of '%s' in a coordinate transformation\n", coords[ZENIT]);
 	warning(msg);
       } 
       SERR1("'%s' not finite!", coords[ZENIT]);
@@ -382,10 +382,10 @@ int checkEarth(cov_model *cov){
      }
     double Zenit[2] = { GLOBAL.coords.zenit[0] * pi180, 
 			GLOBAL.coords.zenit[1] * pi180},
-      sin0 = sin(Zenit[0]),
-	sin1 = sin(Zenit[1]),
-	cos0 = cos(Zenit[0]),
-	cos1 = cos(Zenit[1]),
+      sin0 = SIN(Zenit[0]),
+	sin1 = SIN(Zenit[1]),
+	cos0 = COS(Zenit[0]),
+	cos1 = COS(Zenit[1]),
 	*P = cov->Searth->P;
     
 
@@ -763,11 +763,11 @@ int change_coord_system(isotropy_type callingisoown,
   case EARTH_COORDS : case EARTH_SYMMETRIC:
     if (isCartesian(isoprev)) {
       if (xdimprev != tsdimprev) SERR("reduced coordinates not allowed");
-      if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
+      if (STRCMP(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0){
 	*nr = isoprev == GNOMONIC_PROJ ? EARTHKM2GNOMONIC  
 	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHKM2ORTHOGRAPHIC
 	  : EARTHKM2CART;
-      } else if (strcmp(GLOBAL.coords.newunits[0], 
+      } else if (STRCMP(GLOBAL.coords.newunits[0], 
 			UNITS_NAMES[units_miles]) == 0) {
 	*nr = isoprev == GNOMONIC_PROJ ? EARTHMILES2GNOMONIC  
 	  : isoprev == ORTHOGRAPHIC_PROJ ?  EARTHMILES2ORTHOGRAPHIC

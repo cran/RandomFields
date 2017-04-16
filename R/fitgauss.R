@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 -- 2016 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -179,7 +179,7 @@ GetValuesAtNA <- function(NAmodel, valuemodel, x=NULL, skipchecks, ...) {
   models <- list(NAmodel, PrepareModel2(valuemodel, ...))
    
   for (m in 1:2) {    
-    info[[m]] <- .Call("SetAndGetModelLikeli", aux.reg,
+    info[[m]] <- .Call(C_SetAndGetModelLikeli, aux.reg,
                        list("Cov",ExpliciteGauss(models[[m]])),
                             x, PACKAGE="RandomFields")
     neu[[m]] <- GetModel(register=aux.reg, modus=GETMODEL_DEL_MLE,
@@ -187,7 +187,7 @@ GetValuesAtNA <- function(NAmodel, valuemodel, x=NULL, skipchecks, ...) {
   }
 
   NAs <- sum(info[[1]]$NAs)
-  ret <- .Call("Take2ndAtNaOf1st", aux.reg, list("Cov", neu[[1]]),
+  ret <- .Call(C_Take2ndAtNaOf1st, aux.reg, list("Cov", neu[[1]]),
                list("Cov", neu[[2]]), x$spatialdim, x$Zeit, x$spatialdim, 
                NAs, as.logical(skipchecks), PACKAGE="RandomFields")
 
@@ -307,9 +307,9 @@ ModelSplitXT <- function(splitReg, info.cov, trafo, variab,
         for (m1 in 1:ncol(modivar)) {
           var[p.proj[i]] <- modivar[i, m1]
 
-          .C("PutValuesAtNA", as.integer(splitReg), as.double(trafo(var)),
+          .C(C_PutValuesAtNA, as.integer(splitReg), as.double(trafo(var)),
              PACKAGE="RandomFields")          
-          .Call("CovLoc", splitReg, x, y, xdimOZ, ncol(x), S,
+          .Call(C_CovLoc, splitReg, x, y, xdimOZ, ncol(x), S,
                 PACKAGE="RandomFields")
           base::dim(S) <- c(ncol(x), vdim, vdim)
          
@@ -474,8 +474,8 @@ ModelSplit <- function(splitReg, info.cov, trafo, variab,
       
       for (m1 in 1:ncol(modivar)) {
         var[i] <- modivar[i, m1]
-       .C("PutValuesAtNA", splitReg, trafo(var), PACKAGE="RandomFields")
-       .Call("CovLoc", splitReg, x, if (dist.given) NULL else y,
+       .C(C_PutValuesAtNA, splitReg, trafo(var), PACKAGE="RandomFields")
+       .Call(C_CovLoc, splitReg, x, if (dist.given) NULL else y,
               xdimOZ, ncol(x), S, PACKAGE="RandomFields")
         base::dim(S) <- c(ncol(x), vdim, vdim)
         if (any(is.na(S)))
@@ -651,26 +651,26 @@ recurs.estim <- function(split, level, splitReg, Z = Z,
       }
       guess <- pmax(lower, pmin(upper, guess, na.rm=TRUE), na.rm=TRUE)
 
-      .C("PutValuesAtNAnoInit",
+      .C(C_PutValuesAtNAnoInit,
          splitReg, trafo(guess), PACKAGE="RandomFields", NAOK=TRUE) # ok
       old.model <- GetModel(register=splitReg, modus=GETMODEL_DEL_MLE ,
                             do.notreturnparam=TRUE)
       
       guess[sp$p.proj] <- NA
-      .C("PutValuesAtNAnoInit",
+      .C(C_PutValuesAtNAnoInit,
          splitReg, trafo(guess), PACKAGE="RandomFields", NAOK=TRUE) # ok
       new.model <- GetModel(register=splitReg, modus=GETMODEL_DEL_MLE,
                             spConform=FALSE, do.notreturnparam=TRUE)
 
       if (!all(is.na(lower))) {
-        .C("PutValuesAtNAnoInit",
+        .C(C_PutValuesAtNAnoInit,
            splitReg, trafo(lower),PACKAGE="RandomFields", NAOK=TRUE) # ok
         lower.model <- GetModel(register=splitReg, modus=GETMODEL_DEL_MLE,
                                 spConform=FALSE, do.notreturnparam=TRUE)
       } else lower.model <- NULL
       
      if (!all(is.na(upper))) {
-       .C("PutValuesAtNAnoInit",
+       .C(C_PutValuesAtNAnoInit,
           splitReg,  trafo(upper), PACKAGE="RandomFields", NAOK=TRUE) # ok
        upper.model <- GetModel(register=splitReg, modus=GETMODEL_DEL_MLE,
                                spConform=FALSE, do.notreturnparam=TRUE)
@@ -1157,9 +1157,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       return(res)
     }
 
-   .C("PutValuesAtNA", COVreg, param, PACKAGE="RandomFields")
+   .C(C_PutValuesAtNA, COVreg, param, PACKAGE="RandomFields")
 
-    model.values <- .Call("VariogramIntern", COVreg, PACKAGE="RandomFields")
+    model.values <- .Call(C_VariogramIntern, COVreg, PACKAGE="RandomFields")
     
     if (any(!is.finite(model.values))) {
       if (printlevel>=PL_IMPORTANT) {
@@ -1260,7 +1260,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       }
  
       param <- as.double(trafo(variab))
-      .C("PutValuesAtNA", LiliReg, param, PACKAGE="RandomFields")
+      .C(C_PutValuesAtNA, LiliReg, param, PACKAGE="RandomFields")
       options(show.error.messages = show.error.message)
     } else param <- NULL
 
@@ -1271,7 +1271,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
     ##   print(minmax);    Print(param, variab, RFgetModelInfo(register=LiliReg, level=-1, which.submodels="user.but.once+jump"))
 
-    ans <- try(.Call("EvaluateModel", double(0), LiliReg,
+    ans <- try(.Call(C_EvaluateModel, double(0), LiliReg,
                      PACKAGE="RandomFields"), silent=silent)
     ## e.g. in case of illegal parameter values
     
@@ -1303,7 +1303,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
 
   get.residuals <- function(LiliReg) {
-    return( .Call("get_logli_residuals", as.integer(LiliReg)))
+    return( .Call(C_get_logli_residuals, as.integer(LiliReg)))
   }
   
   get.var.covariat <- function(Variab) {
@@ -1377,7 +1377,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
 #  print(model)  print(Z$model); kkkk
   
-  info.cov <- .Call("SetAndGetModelLikeli", LiliReg,
+  info.cov <- .Call(C_SetAndGetModelLikeli, LiliReg,
                     list("RFloglikelihood", data = Z$data, Z$model),
                     C_coord, PACKAGE="RandomFields")
  
@@ -1480,7 +1480,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
   if (!is.null(trafo) && !is.function(trafo)) {
     #if (length(trafoidx) != nrow(minmax) || !is.numeric(trafoidx))   
-    .C("PutValuesAtNA", LiliReg, as.double((1:nrow(minmax)) * 1.11),
+    .C(C_PutValuesAtNA, LiliReg, as.double((1:nrow(minmax)) * 1.11),
        PACKAGE="RandomFields", NAOK=TRUE) # ok
     model_with_NAs_replaced_by_ranks <-
       GetModel(register=LiliReg, modus=GETMODEL_DEL_MLE,
@@ -1809,7 +1809,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
  #   Print(Z$model)
 #    Print(splitcoord); 
 
-    if (!is(split <- try(.Call("SetAndGetModelLikeli", split.reg,
+    if (!is(split <- try(.Call(C_SetAndGetModelLikeli, split.reg,
                                list("Cov", Z$model), splitcoord,
                                PACKAGE="RandomFields"), silent=silent),
             "try-error")) {
@@ -1953,7 +1953,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   }
 
   
-  if (is.null(likeli.info <- .Call("get_likeliinfo", LiliReg)))
+  if (is.null(likeli.info <- .Call(C_get_likeliinfo, LiliReg)))
     stop("bug in likelihood. Please inform author.")
   n.covariat <- likeli.info$betas
   betanames <- likeli.info$betanames
@@ -1981,7 +1981,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     ## somit muessen die NA's (jedoch nur) in mixed.var gesetzt sein
     autostart[MIXED.IDX] <- 1.0
   }
-#  .C("PutValuesAtNA", R e g, trafo(autostart), PACKAGE="RandomFields")   
+#  .C(C_PutValuesAtNA, R e g, trafo(autostart), PACKAGE="RandomFields")   
 
   if (n.variab == 0) {
     if (globalvariance) {
@@ -2241,7 +2241,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     
    # str(coord); kkk   
     if (vdim == 1 && !dist.given) {
-       residuals <- .Call("simple_residuals", LiliReg) 
+       residuals <- .Call(C_simple_residuals, LiliReg) 
     } else {
       residuals <- list()
       for (i in 1:sets) {
@@ -2257,7 +2257,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     
     binned.variogram <- NULL
 
-    #Print(vdim, dist.given)
+    ##    Print(vdim, dist.given, bin)
     
     for (j in 1:vdim) {
       if (!dist.given) {        
@@ -2269,7 +2269,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                                phi=if ((spatialdim>=2) && !isotropic) nphi,
                                theta=if ((spatialdim>=3) && !isotropic) ntheta,
                                deltaT=if (Z$Zeit) ntime,
-                               spConform=FALSE, boxcox=c(Inf, Inf))
+                               spConform=FALSE,
+			       boxcox=c(Inf, Inf),
+			       vdim=vdim)
       } else {
         if (Z$xdimOZ != 1) stop("Distance vectors are not allowed.")
         n.bin <- vario2 <- vario <- rep(0, length(bin))
@@ -2303,7 +2305,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
         sdv <- sdvario[-length(n.bin)]
         nbin <- n.bin[-length(n.bin)]
         dims <-  c(length(emp.vario), rep(1, 5))
-#        Print(emp.vario, sdv, nbin)
+	##
+#	Print(emp.vario, sdv, nbin)
         dim(emp.vario) <- dim(sdv) <- dim(nbin) <- dims
 #        Print(emp.vario, sdv, nbin)
         ev <- list(centers=centers, emp.vario=emp.vario, sd=sdv, n.bin=nbin)
@@ -2316,7 +2319,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       binned.variogram[, j, j] <- ev$emp.vario
     } # j in 1:vdim
 
-#Print("OK", binned.variogram, bin)
+#Print("OK", binned.variogram, bin, ev)
     
     if (!(sum(binned.variogram, na.rm=TRUE) > 0) )
       stop("not more than 1 value in empirical variogram that is not NA; check values of bins and bin_dist_factor")
@@ -2359,7 +2362,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     ## hintereinander kommen (siehe auch variable coord, Xdistance). Deshalb t()
     ## aus den vdim sd's muss ein Gewicht gemacht werden
     
-    if (length(sd) > 0)  { 
+    if (length(sd) > 0 &&
+	length(sd[[1]])>0 ## not satisfied if variogram is estimated by fft
+	)  { 
       evsd <- sapply(sd, function(x) x)^2    
       evsd <-
         if (is.matrix(evsd)) rowSums(evsd/rowSums(is.finite(evsd)), na.rm=TRUE)
@@ -2403,7 +2408,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
 
     # Print("CCC")
     lsqMethods <- LSQMETHODS[pmatch(lsq.methods, LSQMETHODS)]
-    if (is(try(.Call("SetAndGetModelLikeli", COVreg, list("Cov", Z$model),
+    if (is(try(.Call(C_SetAndGetModelLikeli, COVreg, list("Cov", Z$model),
                      C_CheckXT(x = bin.centers, T = ev$T),        
                      PACKAGE="RandomFields"), silent=silent),
            "try-error")) { ## error appears e.g. when RMfixcov is used
@@ -2419,6 +2424,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     
     firstoptim <- TRUE
     LSMIN <- Inf
+
+    #Print(lsqMethods[1], alllsqmeth)
+    
     for (M in c(lsqMethods[1], alllsqmeth)) {
      
       if (!(M %in% lsqMethods)) next;
@@ -2841,13 +2849,13 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
               while (TRUE) {
                 if (new.bounds) {
                   new.bounds <- FALSE
-                  .C("PutValuesAtNA", LiliReg, as.double(new.lower.vector),
+                  .C(C_PutValuesAtNA, LiliReg, as.double(new.lower.vector),
                      PACKAGE="RandomFields")
                   new.lower <- GetModel(register=LiliReg,modus=GETMODEL_DEL_MLE,
                                         which.submodels = "user.but.once+jump",
                                         spConform=FALSE, do.notreturnparam=TRUE)
 
-                  .C("PutValuesAtNA", LiliReg, as.double(new.upper.vector),
+                  .C(C_PutValuesAtNA, LiliReg, as.double(new.upper.vector),
                      PACKAGE="RandomFields")
                   new.upper <- GetModel(register=LiliReg,modus=GETMODEL_DEL_MLE,
                                         which.submodels="user.but.once+jump",
@@ -2954,7 +2962,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
                     fnscale[j] <- -max(0.1, fnscale[j])
                 }
 
-                .C("PutValuesAtNA", LiliReg, guess,PACKAGE="RandomFields",
+                .C(C_PutValuesAtNA, LiliReg, guess,PACKAGE="RandomFields",
                    NAOK=TRUE) # ok
                 guess <- GetModel(register=LiliReg, modus=GETMODEL_DEL_MLE,
                                   which.submodels = "user.but.once+jump",
@@ -3034,11 +3042,11 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
   upper <- trafo(upper)
   idx <- lower == upper
   lower[idx] = upper[idx] = NA
-  .C("PutValuesAtNA", LiliReg, as.double(lower), PACKAGE="RandomFields",
+  .C(C_PutValuesAtNA, LiliReg, as.double(lower), PACKAGE="RandomFields",
      NAOK=TRUE) # ok
   lower <- GetModel(register=LiliReg, modus=GETMODEL_SOLVE_MLE,
                     which.submodels = "user.but.once+jump")
-  .C("PutValuesAtNA", LiliReg, as.double(upper), PACKAGE="RandomFields",
+  .C(C_PutValuesAtNA, LiliReg, as.double(upper), PACKAGE="RandomFields",
      NAOK=TRUE) # ok
   upper <- GetModel(register=LiliReg, modus=GETMODEL_SOLVE_MLE,
                     which.submodels = "user.but.once+jump")
@@ -3113,8 +3121,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       param <- as.double(param.table[idxpar, i]  + 0.0) ## + 0.0 MUSS STEHEN
       ## register muss mit cov initialisiert sein, sonst
       ## wird laueft er in cov->key rein!
-      .C("PutValuesAtNA", LiliReg, param, PACKAGE="RandomFields")
-      .C("expliciteDollarMLE", LiliReg, param, PACKAGE="RandomFields")
+      .C(C_PutValuesAtNA, LiliReg, param, PACKAGE="RandomFields")
+      .C(C_expliciteDollarMLE, LiliReg, param, PACKAGE="RandomFields")
       param.table[idxpar, i]  <- param
     }
 
@@ -3129,9 +3137,9 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
     ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (printlevel>= PL_STRUCTURE)cat("with nas filled ...\n")
 
-    .C("PutValuesAtNA", LiliReg, as.double(param.table[idxpar, i] ),
+    .C(C_PutValuesAtNA, LiliReg, as.double(param.table[idxpar, i] ),
        PACKAGE="RandomFields")
-    if (globalvariance) .C("PutGlblVar", as.integer(LiliReg),
+    if (globalvariance) .C(C_PutGlblVar, as.integer(LiliReg),
                            as.double(param.table[glblvar.idx, i]))
     modelres <- GetModel(register = LiliReg, modus = GETMODEL_SOLVE_MLE,
                         spConform = if (is(Z$orig.model, "formula")) 2
@@ -3159,7 +3167,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       ## jetzt muss RFlikelihood-initialisierung sein!
 
     likelihood <- param.table[tblidx[["ml"]][1], i]
-    lilihood <- try(.Call("EvaluateModel", double(0), LiliReg,
+    lilihood <- try(.Call(C_EvaluateModel, double(0), LiliReg,
                           PACKAGE="RandomFields"), silent=silent)
     if (is(lilihood, "try-error")) {
       residu <- "not available"

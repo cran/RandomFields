@@ -52,7 +52,7 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 \dontshow{StartExample()}
 
-
+\dontrun{
 ## Here some alternative optimisers to 'optim' are considered.
 ## All but the \pkg{nloptr} algorithms are largely slower than 'optim'.
 ## Only a few of them return results as good as 'optim'.
@@ -88,7 +88,7 @@ opt <- "optimx" #  30 sec; better result
 print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
 
-\dontshow{\dontrun{ %in 6 sep 2016, soma has leak problems
+\dontshow{\dontrun{ %in 6 sep 2017, soma has leak problems
 opt <- "soma" #  450 sec % sehr schlecht
 print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
@@ -121,6 +121,7 @@ print(fit2)
 opt <- "GenSA" #  10^4 sec
 print(system.time(fit2 <- try(RFfit(model, data=data, optimiser=opt))))
 print(fit2)
+}
 }
 
 

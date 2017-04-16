@@ -4,7 +4,7 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2005 -- 2015 Martin Schlather
+ Copyright (C) 2005 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
-#include <math.h>
+#include <Rmath.h>
 #include "RF.h"
 #include "Operator.h"
 #include "shape_processes.h"
@@ -136,8 +136,8 @@ void mixed_rules(cov_model *cov, pref_type locpref,
     double ratio = max_variab <= DIRECT_ORIG_MAXVAR 
       ? (double) (vdimtot - best_dirct) / (double) max_variab
       : -0.1;
-      ratio *= fabs(ratio);
-    pref[Direct] = (int) pow((double) pref[Direct], 1.0 - ratio);
+      ratio *= FABS(ratio);
+    pref[Direct] = (int) POW((double) pref[Direct], 1.0 - ratio);
     if (pref[Direct] < PREF_BEST) 
       pref[Direct] = sub->finiterange ? PREF_BEST : PREF_BEST / 2;
   } 
@@ -341,11 +341,11 @@ int gauss_init_settings(cov_model *cov) {
  
   nmP1 = cov->mpp.moments + 1;
    for (v=w=0; w<vdimSq; w+=vdimP1, v++) { 
-    sigma = sqrt(variance[w]);
+    sigma = SQRT(variance[w]);
     meanDsigma = sigma == 0 ? RF_INF : mean[v] / sigma;
     
-    //the following line is sqrt(2 pi s^2) int_0^infty x exp(-0.5 (x-mu)^2/s^2)
-    var = sigma * INVSQRTTWOPI * exp(-0.5 * meanDsigma * meanDsigma) +
+    //the following line is SQRT(2 pi s^2) int_0^infty x EXP(-0.5 (x-mu)^2/s^2)
+    var = sigma * INVSQRTTWOPI * EXP(-0.5 * meanDsigma * meanDsigma) +
       mean[v] * /* correct next lines the 2nd factor is given */
       pnorm(0.0, mean[v], sigma, false, false);
     var = 1.0 / (var * var);
@@ -362,9 +362,9 @@ int gauss_init_settings(cov_model *cov) {
     int idx = v * nmP1;
     cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0;       
     cov->mpp.mMplus[idx + 1] = 
-      sigma * INVSQRTTWOPI * exp(-0.5 * mean[v] * mean[v]) 
+      sigma * INVSQRTTWOPI * EXP(-0.5 * mean[v] * mean[v]) 
       + mean[v] * pnorm(-mean[v], 0.0, 1.0, false, false);
-    //(2pi)^-0.5 int x exp(-(x-m)/2s^2)
+    //(2pi)^-0.5 int x EXP(-(x-m)/2s^2)
     cov->mpp.mM[idx + 1] = 0.0;
     cov->mpp.mM[idx + 2] = variance[w];
     // todo: cov->mpp.mMplus[2] berechnen
@@ -536,7 +536,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   { // only for error reporting !
     cov_model *sub = cov; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    sprintf(ERROR_LOC, "Searching a simulation method for '%s': ",
+    SPRINTF(ERROR_LOC, "Searching a simulation method for '%s': ",
 	    NICK(sub));
   }
 
@@ -652,16 +652,16 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       if (lp>0) {
 	strcpy(lpd, "");
       } else {
-	sprintf(lpd, "%s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
+	SPRINTF(lpd, "%s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
       }
       if (p>0 || p == lp) {
 	if (lp>0) strcpy(pd, "(method specific failure)");
 	else strcpy(pd, ""); // strcpy(pd, "(method specific failure)");
       } else {
-	sprintf(pd, "%s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
+	SPRINTF(pd, "%s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
       }
       strcopyN(names, METHODNAMES[i], NMAX-1);
-      sprintf(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
+      SPRINTF(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
       strcpy(PREF_FAILURE, dummy);
     }
   }
@@ -684,7 +684,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
     GLOBAL.general.exactness = RF_NA;
     if (newerr == NOERROR) {
       char msg[LENERRMSG];
-      sprintf(msg, "A somehow rougher approximation has been used. Set '%s=FALSE' to avoid this warning. See 'RFoptions' for more details.", general[GENERAL_EXACTNESS]);
+      SPRINTF(msg, "A somehow rougher approximation has been used. Set '%s=FALSE' to avoid this warning. See 'RFoptions' for more details.", general[GENERAL_EXACTNESS]);
       warning(msg);
       return NOERROR;
     } else return err;
@@ -700,14 +700,14 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   }
 
   if (zaehler==1) {
-    sprintf(ERROR_LOC, "Only 1 method found for '%s', namely '%s', that comes into question.\nHowever", NICK(next), METHODNAMES[unimeth]);
+    SPRINTF(ERROR_LOC, "Only 1 method found for '%s', namely '%s', that comes into question.\nHowever", NICK(next), METHODNAMES[unimeth]);
     return err;
   }
   
   { // only for error reporting !
     cov_model *sub = next; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    sprintf(ERROR_LOC, "searching a simulation method for '%s': ",
+    SPRINTF(ERROR_LOC, "searching a simulation method for '%s': ",
 	    NICK(sub));
   }
 
@@ -897,7 +897,7 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
 	if (cov->mpp.moments >= 1) {
 	  if (variance[w]==0.0)
 	    GERR1("Vanishing sill not allowed in '%s'", NICK(next));
-	  sigma = sqrt(variance[w]);
+	  sigma = SQRT(variance[w]);
 	  cov->mpp.mM[idx + 1] = cov->mpp.mMplus[idx + 1] = 
 	    pnorm(p[pi], mean[v], sigma, false, false);
 	  int i;
@@ -1184,7 +1184,7 @@ void do_tprocess(cov_model *cov, gen_storage *s){
     *sub = key == NULL ? next : key;
   double 
     nu = P0(T_NU),
-    factor = sqrt(nu / rgamma(0.5 * nu, 0.5)), // note inverse!! see def rgamma
+    factor = SQRT(nu / rgamma(0.5 * nu, 0.5)), // note inverse!! see def rgamma
     *res = cov->rf;
 
   DO(sub, s);  

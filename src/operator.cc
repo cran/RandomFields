@@ -4,8 +4,8 @@
 
  Definition of correlation functions and derivatives of hypermodels
 
- Copyright (C) 2005 -- 2015 Martin Schlather
-               2015 -- 2015 Olga Moreva (cutoff, modified)
+ Copyright (C) 2005 -- 2017 Martin Schlather
+               2015-2017 Olga Moreva (cutoff, modified)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-#include <math.h>
+#include <Rmath.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
@@ -48,10 +48,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   GR 8.357
 
 
-fctn = function(rho, t) exp(-t^2 / (1+rho)) / sqrt(1.0-rho^2)
+fctn = function(rho, t) EXP(-t^2 / (1+rho)) / SQRT(1.0-rho^2)
 C = function(r, t) (2*pi)^(-1) * integrate(fctn, 0, r, t=t)$value
-fctn1 = function(rho, t) exp(-t^2 * rho / 2) / sqrt(rho) / (1 + rho)
-C1 = function(r, t)  exp(-t^2 / 2) / (2*pi) * integrate(fctn1, (1-r)/(1+r), 1, t=t)$value
+fctn1 = function(rho, t) EXP(-t^2 * rho / 2) / SQRT(rho) / (1 + rho)
+C1 = function(r, t)  EXP(-t^2 / 2) / (2*pi) * integrate(fctn1, (1-r)/(1+r), 1, t=t)$value
 deltaC = function(r, t) C(r,t) - C1(r,t)
 deltaC(0.5, 0.5)
 
@@ -70,27 +70,27 @@ for (r in seq(0.1, 1, len=10)) for (t in seq(0.1, 2, len=10)) {
   s = cumsum(a^d / fak)
   
   v = (1-r) / (1+r)
-  (U = 2 * sqrt(v) * sum((-v)^d / (2 * d + 1) * s))
+  (U = 2 * SQRT(v) * sum((-v)^d / (2 * d + 1) * s))
   v =  1
-  (O = 2 * sqrt(v) * sum((-v)^d / (2 * d + 1) * s))
+  (O = 2 * SQRT(v) * sum((-v)^d / (2 * d + 1) * s))
   (O - U) / (2 * pi)
   C(r, t)
   
   v = (1-r) / (1+r)
-  (U = 2 * atan(sqrt(v)) + 2 * sqrt(v) * sum((-v)^d / (2 * d + 1) * (exp(-a) * s - 1)) )
+  (U = 2 * ATAN(SQRT(v)) + 2 * SQRT(v) * sum((-v)^d / (2 * d + 1) * (EXP(-a) * s - 1)) )
   v =  1
-  (O = 2 * atan(sqrt(v)) + 2 * sqrt(v) * sum((-v)^d / (2 * d + 1) * (exp(-a) * s - 1)) )
+  (O = 2 * ATAN(SQRT(v)) + 2 * SQRT(v) * sum((-v)^d / (2 * d + 1) * (EXP(-a) * s - 1)) )
   (O - U) / (2 * pi) 
   C(r, t)
   print( (O - U) / (2 * pi)  - C1(r,t))#  //
 
 
-model = RMexp()
+model = RM e x p()
 x = seq(0.1, 1, len=10)
 t = 1.67
 for (r in x) print(C1(r,t=t))#  //
-RFcov(model, log(x))
-RFcov(RMbernoulli(model, t=t), log(x))
+RFcov(model, LOG(x))
+RFcov(RMbernoulli(model, t=t), LOG(x))
 for (r in x) print(C1(r,t=t))  #  //
 
  */
@@ -110,10 +110,10 @@ void binary(double *x, cov_model *cov, double *v) {
   COV(x, next, &r);
   
   if (t == 0.0) {
-    *v = ((M_1_PI * asin(r / var) + 0.5) - p) * p;
+    *v = ((M_1_PI * ASIN(r / var) + 0.5) - p) * p;
   } else {      
     a = 0.5 * t * t / var;
-    expMa = exp(-a);
+    expMa = EXP(-a);
     r /= var;
     
     // als BA-Arbeit
@@ -131,7 +131,7 @@ void binary(double *x, cov_model *cov, double *v) {
     factor = (s - 1.0) / (2.0 * d + 1.0);
     summand = Vd * factor;
     summandOne = Oned * factor;
-    while (fabs(summand) > Binary_Eps || fabs(summandOne) > Binary_Eps) {
+    while (FABS(summand) > Binary_Eps || FABS(summandOne) > Binary_Eps) {
       sum += summand;
       sumOne += summandOne;
       d += 1.0;
@@ -146,8 +146,8 @@ void binary(double *x, cov_model *cov, double *v) {
     sum += summand;
     sumOne += summandOne;
 
-    // 0.25 = 2 atan(sqrt(1.0)) / 2pi
-    *v = 0.25 + INVPI * (sumOne - (atan(sqrt(V)) + sqrt(V) * sum));
+    // 0.25 = 2 ATAN(SQRT(1.0)) / 2pi
+    *v = 0.25 + INVPI * (sumOne - (ATAN(SQRT(V)) + SQRT(V) * sum));
   }
 
   if (!P0INT(BINARY_CENTRED)) {
@@ -221,7 +221,7 @@ void extrgauss(double *x, cov_model *cov, double *v) {
   
   COV(ZERO, next, &var);
   COV(x, next, &z);
-  *v = 1.0 - sqrt(0.5 * (1.0 - z / var));
+  *v = 1.0 - SQRT(0.5 * (1.0 - z / var));
 }
 
 
@@ -259,13 +259,13 @@ void brownresnick(double *x, cov_model *cov, double *v) {
 
   COV(ZERO, next, &z);
   COV(x, next, v);
-  *v = 2.0 * pnorm(sqrt((z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, false, false);
+  *v = 2.0 * pnorm(SQRT((z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, false, false);
 }
 
 void Dbrownresnick(double *x, cov_model *cov, double *v) {
   // b = BR_SEMI_FACTOR
   // gamma(h) = C(0) - C(h) 
-  // varphi(sqrt(gamma * b)) * (b C') / sqrt(gamma * b)
+  // varphi(SQRT(gamma * b)) * (b C') / SQRT(gamma * b)
   // varphi density standard normal
 
   // BrownResnick to binary Gaussian
@@ -293,7 +293,7 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
 
 
     abl *= BR_SEMI_FACTOR;
-    s = sqrt((z - *v) * BR_SEMI_FACTOR); // sqrt(c * gamma)
+    s = SQRT((z - *v) * BR_SEMI_FACTOR); // SQRT(c * gamma)
     *v = dnorm(s, 0.0, 1.0, false) * abl / s; // -\varphi * \gamma' / sqrt\gamma
     //                                      =-2 \varphi * (-C') / (2 sqrt\gamma)
     //                              mit C= c_0 -\gamma
@@ -304,7 +304,7 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
     if (cov->taylor[1][TaylorPow] < 1.0) {     
       *v = RF_NEGINF;
     } else if (cov->taylor[1][TaylorPow] == 1.0) {
-      *v = fabs(cov->taylor[1][TaylorConst]);
+      *v = FABS(cov->taylor[1][TaylorConst]);
       assert(*v > 0.0);
     } else BUG;
   }
@@ -313,11 +313,11 @@ void Dbrownresnick(double *x, cov_model *cov, double *v) {
 
 
 void DDbrownresnick(double *x, cov_model *cov, double *v) {
-  // D = \varphi * b C' / sqrt(\gamma b)
+  // D = \varphi * b C' / SQRT(\gamma b)
 
   // b = BR_SEMI_FACTOR
   // gamma(h) = C(0) - C(h) 
-  // varphi(sqrt(gamma * b)) [(b C')^2 / [2 sqrt (gamma * b)]
+  // varphi(SQRT(gamma * b)) [(b C')^2 / [2 sqrt (gamma * b)]
   //                          +(b C'') / sqrt (gamma * b)
   //                          +1/2 * (b C')^2 / sqrt (gamma * b)^3 ]
  // varphi density standard normal
@@ -337,7 +337,7 @@ void DDbrownresnick(double *x, cov_model *cov, double *v) {
     Abl1(x, next, &abl);
     Abl2(x, next, &abl2);
     s0 = (z - *v) * BR_SEMI_FACTOR;
-    s = sqrt(s0); // sqrt(c * gamma)
+    s = SQRT(s0); // SQRT(c * gamma)
     abl  *= BR_SEMI_FACTOR;
     abl2 *= BR_SEMI_FACTOR;
     *v = dnorm(s, 0.0, 1.0, false) / s * (abl2 + abl * abl * 0.5 * (1/s0 + 1));
@@ -351,11 +351,11 @@ void DDbrownresnick(double *x, cov_model *cov, double *v) {
 
 
 void D3brownresnick(double *x, cov_model *cov, double *v) {
-  // D = \varphi * b C' / sqrt(\gamma b)
+  // D = \varphi * b C' / SQRT(\gamma b)
 
   // b = BR_SEMI_FACTOR
   // gamma(h) = C(0) - C(h) 
-  // varphi(sqrt(gamma * b)) [(b C')^3 / [4 sqrt (gamma * b)]
+  // varphi(SQRT(gamma * b)) [(b C')^3 / [4 sqrt (gamma * b)]
   //                         +3 (b C') (b C'')/ [2 sqrt (gamma * b)]
   //                         + (b C''') / [sqrt (gamma * b)]
   //                         + (b C')^2 / [2 sqrt (gamma * b)]
@@ -378,7 +378,7 @@ void D3brownresnick(double *x, cov_model *cov, double *v) {
     Abl2(x, next, &abl2);
     Abl3(x, next, &abl3);
     s0 = (z - *v) * BR_SEMI_FACTOR;
-    s = sqrt(s0); // sqrt(c * gamma)
+    s = SQRT(s0); // SQRT(c * gamma)
     abl  *= BR_SEMI_FACTOR;
     abl2 *= BR_SEMI_FACTOR;
     abl3 *= BR_SEMI_FACTOR;
@@ -415,12 +415,12 @@ int TaylorBrownresnick(cov_model *cov) {
   //  }
    
   if (next->taylorN >= 1 + idx &&  next->taylor[idx][TaylorConst] < 0.0) {
-    // 2 \Phi(sqrt(gamma * br_f)) =
-    //1+ 2 * phi(0) * sqrt(gamma * br_f) - 2 phi(0) / 6 *sqrt(gamma*br_f)^3
+    // 2 \Phi(SQRT(gamma * br_f)) =
+    //1+ 2 * phi(0) * SQRT(gamma * br_f) - 2 phi(0) / 6 *SQRT(gamma*br_f)^3
     //sei gamma(x) = c x^alpha + d x^beta, beta > alpha. Dann gilt
-    // also  2 \Phi(sqrt(gamma * br_f)) ~
-    // 1 + 2 * phi(0) * sqrt((c x^alpha + d x^beta)* br_f)
-    //   - 2 * phi(0) / 6 * sqrt((c x^alpha + d x^beta) *br_f)^3
+    // also  2 \Phi(SQRT(gamma * br_f)) ~
+    // 1 + 2 * phi(0) * SQRT((c x^alpha + d x^beta)* br_f)
+    //   - 2 * phi(0) / 6 * SQRT((c x^alpha + d x^beta) *br_f)^3
     // = 1 + 2 * phi(0)[ (c f x^a)^{1/2} (1 + 0.5 d / c * x^{b-a})
     //                   (c f x^a)^{3/2} (1 + 1.5 d / c * x^{b-a}) ]
     // ~ 1 + 2 * phi(0) (c f x^a)^{1/2}
@@ -448,7 +448,7 @@ int TaylorBrownresnick(cov_model *cov) {
     cov->taylor[0][TaylorPow] = 0.0;    
     double
       next_taylor_const =  - next->taylor[idx][TaylorConst],
-      g = sqrt(next_taylor_const  * BR_SEMI_FACTOR * 0.5 / M_PI);
+      g = SQRT(next_taylor_const  * BR_SEMI_FACTOR * 0.5 / M_PI);
     cov->taylor[1][TaylorConst] = - 2 * g;
     cov->taylor[1][TaylorPow] = 0.5 * next->taylor[idx][TaylorPow];
     if (next->taylor[idx][TaylorPow] == 2) {
@@ -478,13 +478,13 @@ int TaylorBrownresnick(cov_model *cov) {
       assert( next->tail[0][TaylorConst] < 0.0);
       double next_tail_const = - next->tail[0][TaylorConst];
       cov->tail[0][TaylorConst] = 
-	2.0 / sqrt(2.0 * M_PI * BR_SEMI_FACTOR * next_tail_const);
+	2.0 / SQRT(2.0 * M_PI * BR_SEMI_FACTOR * next_tail_const);
       cov->tail[0][TaylorExpConst] = 0.5 * BR_SEMI_FACTOR * next_tail_const;
       cov->tail[0][TaylorExpPow] = next->tail[0][TaylorPow];
     } else {
       cov->tail[0][TaylorConst] = 
-	2.0 / sqrt(2.0 * M_PI * BR_SEMI_FACTOR * next->tail[0][TaylorConst])
-	* exp(-0.5 * BR_SEMI_FACTOR * next->tail[0][TaylorConst]);
+	2.0 / SQRT(2.0 * M_PI * BR_SEMI_FACTOR * next->tail[0][TaylorConst])
+	* EXP(-0.5 * BR_SEMI_FACTOR * next->tail[0][TaylorConst]);
       cov->tail[0][TaylorPow] = cov->tail[0][TaylorExpConst] = 
 	cov->tail[0][TaylorExpPow] = 0.0;
     }     
@@ -567,7 +567,7 @@ void BR2EG(double *x, cov_model *cov, double *v) {
   double z;
   COV(ZERO, next, &z);
   COV(x, next, v);
-  z = 2.0 * pnorm(sqrt( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1.0;
+  z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1.0;
   *v = 1.0 - 2.0 * z * z;
 }
 
@@ -587,15 +587,15 @@ int check_BR2EG(cov_model *cov) {
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
-  // erfc(x) = 2(1 - Phi(x * sqrt(2)))
-  // erf(x) = 2 Phi(x * sqrt(2)) - 1
-  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / sqrt(2) 
+  // erfc(x) = 2(1 - Phi(x * SQRT(2)))
+  // erf(x) = 2 Phi(x * SQRT(2)) - 1
+  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
 
-  // Sei c = 1-2 * erf(sqrt(semivario / 4))^2 .
-  // Also c = 1 - 2 [ 2 Phi(sqrt(semivario / 2)) - 1]^2
+  // Sei c = 1-2 * erf(SQRT(semivario / 4))^2 .
+  // Also c = 1 - 2 [ 2 Phi(SQRT(semivario / 2)) - 1]^2
   // Umgekehrt semivario = 4 * { erf^{-1} (sqrt[0.5 (1 - c)]) } ^2
-  // mit c = 0 folgt sqrt(0.5 (1-c)) = 1 / sqrt(2)
-  // semivario = 2 * {Phi^{-1}( (1 / sqrt(2) + 1) / 2 ) } ^2
+  // mit c = 0 folgt SQRT(0.5 (1-c)) = 1 / SQRT(2)
+  // semivario = 2 * {Phi^{-1}( (1 / SQRT(2) + 1) / 2 ) } ^2
 
   alpha = 0.0;
   COV(ZERO, next, &v);
@@ -615,8 +615,8 @@ void BR2BG(double *x, cov_model *cov, double *v) {
   double z;
   COV(ZERO, next, &z);
   COV(x, next, v); 
-  z = 2.0 * pnorm(sqrt( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1;
-  *v = cos(M_PI * z);
+  z = 2.0 * pnorm(SQRT( (z - *v) * BR_SEMI_FACTOR), 0.0, 1.0, true, false) -1;
+  *v = COS(M_PI * z);
 }
 
 int check_BR2BG(cov_model *cov) {
@@ -633,15 +633,15 @@ int check_BR2BG(cov_model *cov) {
    for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
-  // erfc(x) = 2(1 - Phi(x * sqrt(2)))
-  // erf(x) = 2 Phi(x * sqrt(2)) - 1
-  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / sqrt(2) 
+  // erfc(x) = 2(1 - Phi(x * SQRT(2)))
+  // erf(x) = 2 Phi(x * SQRT(2)) - 1
+  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
 
 
-  // Sei c = cos(pi * erf(sqrt(semivario / 4))) .
-  // Also c = cos(pi * [2 * Phi(sqrt(semivario / 2)) - 1] )
-  // Umgekehrt semivario = 2 * { Phi^{-1}(0.5 * [arccos( c ) / pi + 1]) }^2
-  // mit c = 0 folgt arccos(c)/ pi + 1 = 3/2
+  // Sei c = COS(pi * erf(SQRT(semivario / 4))) .
+  // Also c = COS(pi * [2 * Phi(SQRT(semivario / 2)) - 1] )
+  // Umgekehrt semivario = 2 * { Phi^{-1}(0.5 * [arcCOS( c ) / pi + 1]) }^2
+  // mit c = 0 folgt arcCOS(c)/ pi + 1 = 3/2
   // semivario = 2 * { Phi^{-1}( 3 / 4) }^2
   
   COV(ZERO, next, &v);
@@ -776,8 +776,8 @@ void MaStein(double *x, cov_model *cov, double *v) {
   }
   gammas = lgammafn(nu + delta) - lgammafn(nu) -lgammafn(nuG + delta);
   double s = *x;
-  *v = (s==0.0) ? exp(lgammafn(nuG) + gammas)
-    : 2.0 * exp(nuG * log(0.5 * s) + gammas + log(bessel_k(s, nuG, 2.0)) - s);
+  *v = (s==0.0) ? EXP(lgammafn(nuG) + gammas)
+    : 2.0 * EXP(nuG * LOG(0.5 * s) + gammas + LOG(bessel_k(s, nuG, 2.0)) - s);
 }
 
 int check_MaStein(cov_model *cov) {
@@ -924,9 +924,9 @@ void vector(double *x, cov_model *cov, double *v) {
     normSq0 = normL2 + normT2;
   } else {
     normSq0 = normL2;
-    norm[1] = sqrt(normT2); 
+    norm[1] = SQRT(normT2); 
   }
-  norm[0] = sqrt(normSq0);
+  norm[0] = SQRT(normSq0);
   Abl1(norm, next, &D);
   Abl2(norm, next, &D2);
 
@@ -1095,6 +1095,12 @@ void rangevector(cov_model *cov, range_type *range){
 
 
 int zzz=0;
+void kappadivcurl(int i, cov_model VARIABLE_IS_NOT_USED *cov,
+		  int *nr, int *nc){
+  *nc = 1;
+  *nr = i == 0  ? SIZE_NOT_DETERMINED : -1;
+} 
+
 
 /* Rot - Delta Delta^T */
 void curl(double *x, cov_model *cov, double *v) {
@@ -1130,7 +1136,7 @@ void curl(double *x, cov_model *cov, double *v) {
       dimP3 = dim + 3,
       dimP2sqM1 =  dimP2 * dimP2 -1; // for three dimensions much
   // more complicated
-  
+ 
   normL2 = normT2 = 0.0;
   for (i=0; i<dim; i++) normL2 += x[i] * x[i];
   for (; i<td; i++) normT2 += x[i] * x[i];
@@ -1138,9 +1144,9 @@ void curl(double *x, cov_model *cov, double *v) {
     normSq0 = normL2 + normT2;
   } else {
     normSq0 = normL2;
-    norm[1] = sqrt(normT2); 
+    norm[1] = SQRT(normT2); 
   }
-  norm[0] = sqrt(normSq0);
+  norm[0] = SQRT(normSq0);
   N->D(norm, next, &D);
   N->D2(norm, next, &D2);
 
@@ -1164,7 +1170,7 @@ void curl(double *x, cov_model *cov, double *v) {
     v[dimP2sqM1] *= (8.0 / 3.0); 
   } else {
     double 
-      z[2],
+      zz[2],
       D2nsq = D2 / normSq0,
       D1n = D / norm[0],
       D3n = D3 / norm[0],
@@ -1175,10 +1181,10 @@ void curl(double *x, cov_model *cov, double *v) {
     
     N->cov(norm, next, v); // v[0]
     
-    z[0] = x[0];
-    z[1] = x[1];
+    zz[0] = x[0];
+    zz[1] = x[1];
     for (i=1; i<=dim; i++) { // kante links und oben
-	v[i] = -(v[i * dimP2] = z[i-1] * D1n);
+	v[i] = -(v[i * dimP2] = zz[i-1] * D1n);
     }
  
     diag = div + a * D1n;    
@@ -1193,7 +1199,7 @@ void curl(double *x, cov_model *cov, double *v) {
 
     for (i=1; i<=dim; i++) { // kanten unten und hinten
 	v[dimP2 * dimP1 + i] =
-	    - (v[dimP2 * (i+1) - 1] = z[i-1] * (D3n + D2nsq - D1n3));
+	    - (v[dimP2 * (i+1) - 1] = zz[i-1] * (D3n + D2nsq - D1n3));
     }
 
     N->D4(norm, next, v + dimP2sqM1); // rechts unten 
@@ -1207,9 +1213,9 @@ void curl(double *x, cov_model *cov, double *v) {
 
 }
 
-
+#define DIVCURL_WHICH 0
 /* Div - Delta Delta^T */
-void div(double *x, cov_model *cov, double *v) { // div -free !!
+void diverge(double *x, cov_model *cov, double *w) { // div -free !!
   /*
     r = \| x\|
     d/d x_i f(r) = f'(r) x_i / r
@@ -1228,8 +1234,10 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
     operator:  -0.5 * (a + 1) div + a * hessian,  a in [-1,1]; a=1
   */
   cov_model *next = cov->sub[0];
+  
   cov_fct *N = CovList + next->nr; // gatter oder keine gatter??
-  double norm[2], normSq0, normL2, normT2, D, D2, D3, diag,
+  double
+    norm[2], normSq0, normL2, normT2, D, D2, D3, diag,
       a = 1.0, // divergenz free
       b = - 0.5 * (1.0 + a);
   int i,
@@ -1241,6 +1249,7 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
       dimP3 = dim + 3,
       dimP2sqM1 =  dimP2 * dimP2 -1; // for three dimensions much
   // more complicated
+  double *v = PisNULL(DIVCURL_WHICH) ? w : cov->Sextra->a;
   
   normL2 = normT2 = 0.0;
   for (i=0; i<dim; i++) normL2 += x[i] * x[i];
@@ -1249,9 +1258,9 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
     normSq0 = normL2 + normT2;
   } else {
     normSq0 = normL2;
-    norm[1] = sqrt(normT2); 
+    norm[1] = SQRT(normT2); 
   }
-  norm[0] = sqrt(normSq0);
+  norm[0] = SQRT(normSq0);
   N->D(norm, next, &D);
   N->D2(norm, next, &D2);
   N->D3(norm, next, &D3);
@@ -1269,10 +1278,13 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
     v[dimP1] *= 2.0;
     v[dimP2 * dimP1] = v[dimP1];
     N->D4(norm, next, v + dimP2sqM1);
+
+    //  printf("%s %f\n", N->name,v[dimP2sqM1]); 
+    
     v[dimP2sqM1] *= (8.0 / 3.0);    
   } else {
     double 
-      z[2],
+      zz[2],
       D2nsq = D2 / normSq0,
       D1n = D / norm[0],
       D3n = D3 / norm[0],
@@ -1283,10 +1295,10 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
     
     N->cov(norm, next, v); // v[0]
     
-    z[0] = -x[1];
-    z[1] = x[0];
+    zz[0] = -x[1];
+    zz[1] = x[0];
     for (i=1; i<=dim; i++) { // kante links und oben
-	v[i] = -(v[i * dimP2] = z[i-1] * D1n);
+	v[i] = -(v[i * dimP2] = zz[i-1] * D1n);
     }
      
     diag = div + a * D1n;    
@@ -1301,13 +1313,31 @@ void div(double *x, cov_model *cov, double *v) { // div -free !!
 
     for (i=1; i<=dim; i++) { // kanten unten und hinten
 	v[dimP2 * dimP1 + i] =
-	    -(v[dimP2 * (i+1) - 1] =  z[i-1] * (D3n + D2nsq - D1n3));
+	    -(v[dimP2 * (i+1) - 1] =  zz[i-1] * (D3n + D2nsq - D1n3));
     }
 
     N->D4(norm, next, v + dimP2sqM1); // rechts unten 
     v[dimP2sqM1] += 2.0 * D3n - D2nsq + D1n3;
- 
   }
+
+  if (!PisNULL(DIVCURL_WHICH)) {
+    int len = NROW(DIVCURL_WHICH),
+      size = (int) cov->q[0];
+    for (i=0; i<len; i++) {
+      int ii = PINT(DIVCURL_WHICH)[i] - 1;
+      for (int j=0; j<len; j++) {
+	w[i + j * len] = v[ii + (PINT(DIVCURL_WHICH)[j] - 1) * size];
+      }
+    }
+  }
+ 
+  /*
+  printf("\n\n%f %f \n", x[0], x[1]);//
+  for (i=0; i<=15; i++) {
+    printf("%f ", v[i]);//
+  }
+  */
+
 
 //  for (i=0; i<=15; i++) {
 //      if (i!=15) v[i] = 0.0;
@@ -1348,14 +1378,47 @@ int checkdivcurl(cov_model *cov) {
   int diffpref = MIN(2, PREF_BEST - cov->pref[CircEmbed]);
   if (diffpref > 0) cov->pref[CircEmbed] += diffpref;
 
+  int components =  spacedim + 2; // only correct for spacedim == 2!!!
+  int nwhich = NROW(DIVCURL_WHICH);
+  if (nwhich > 0) {
+    for (i=0; i<nwhich; i++) {
+      if (PINT(DIVCURL_WHICH)[i] <= 0 || PINT(DIVCURL_WHICH)[i] > components) 
+	SERR4("value %s[%d]=%d outside range 1,...,%d.",
+	      KNAME(i), i, PINT(DIVCURL_WHICH)[i], components);
+    }
+    EXTRA_STORAGE;
+    ALLOC_EXTRA(a, components * components);
+  } else {
+    nwhich = components;
+  }
   for (i=0; i<dim; i++) cov->mpp.maxheights[i] = RF_NA;
-  cov->vdim[0] = cov->vdim[1] = spacedim + 2; // only correct for spacedim == 2!!!
+  cov->vdim[0] = cov->vdim[1] = nwhich;
   assert(spacedim == 2);
   next->delflag = DEL_COV;
+  if (cov->q == NULL) {
+    QALLOC(1);
+    cov->q[0] = components;
+  }
+  
   return NOERROR;
 }
 
-// void rangedivcurl(cov_model *cov, range_type *range){ }
+
+void rangedivcurl(cov_model *cov, range_type *range){
+  cov_model  *next = cov->sub[0];
+  int  dim = cov->tsdim,
+    spacedim = dim - (next->isoown == SPACEISOTROPIC),
+    max = spacedim + 2;
+  if (spacedim != 2)
+    ERR("div and curl currently programmed only for spatial dimension 2.");
+  range->min[DIVCURL_WHICH] = 1;
+  range->max[DIVCURL_WHICH] = max;
+  range->pmin[DIVCURL_WHICH] = 1;
+  range->pmax[DIVCURL_WHICH] = max;
+  range->openmin[DIVCURL_WHICH] = false;
+  range->openmax[DIVCURL_WHICH] = false;
+}
+
 
 /*
 
@@ -1367,9 +1430,9 @@ void lp(double *x, cov_model *cov, double *v){
   int d,
     dim = cov->tsdim;
   for (z=0.0, d=0; d<dim; d++) {
-    z += pow(fabs(x[d]), p);
+    z += POW(FABS(x[d]), p);
   }
-  z = pow(z, 1 / p);
+  z = POW(z, 1 / p);
   
   COV(&z, next, v);
 }
@@ -1421,7 +1484,7 @@ void ma1(double *x, cov_model *cov, double *v){
     alpha = P0(MA1_ALPHA),
     theta = P0(MA1_BETA);
   COV(x, next, &z);
-  *v = pow(theta / (1 - (1-theta) * z), alpha);  
+  *v = POW(theta / (1 - (1-theta) * z), alpha);  
 }
 int checkma1(cov_model *cov) {
 //  bool skipchecks = GLOBAL.general.skipchecks;
@@ -1467,7 +1530,7 @@ void ma2(double *x, cov_model *cov, double *v){
   COV(ZERO, next, &z0);
   COV(x, next, &z);
   z = z0 - z;
-  *v = (z == 0) ? 1.0 : (1.0 - exp(-z)) / z;  
+  *v = (z == 0) ? 1.0 : (1.0 - EXP(-z)) / z;  
 }
 int checkma2(cov_model *cov) {
 //  bool skipchecks = GLOBAL.general.skipchecks;
@@ -1807,7 +1870,7 @@ void SchurMult(double VARIABLE_IS_NOT_USED *x, cov_model *cov, double *v){
       *q = cov->q,
       *diag=P(SCHUR_DIAG),
       *red=P(SCHUR_RED);
-    for (i=0; i<vdim; i++) q[i] = sqrt(diag[i]);
+    for (i=0; i<vdim; i++) q[i] = SQRT(diag[i]);
     for (k=i=0; i<vdim; i++) {
       for (j=0; j<vdim; j++, k++) {
 	v[k] *= q[i] * q[j];
@@ -2052,7 +2115,7 @@ void Exp(double *x, cov_model *cov, double *v, int n, bool standardize){
       s += w;
       w *= *v / (double) (k+1);
     }    
-    *v = exp(*v) - s;
+    *v = EXP(*v) - s;
     if (standardize) {
       Exp(ZERO, cov, &v0, n, false);
       *v /= v0;
@@ -2061,7 +2124,7 @@ void Exp(double *x, cov_model *cov, double *v, int n, bool standardize){
     int i;
     BUG;
     // fehlt die multiplication von links und rechts mit C(0)^{-1/2}
-    for (i=0; i<vdimq; i++) v[i] = exp(v[i]); 
+    for (i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
   }
 }
 
@@ -2086,7 +2149,7 @@ void nonstatExp(double *x, double *y, cov_model *cov, double *v, int n,
       s += w;
       w *= *v / (double) (k+1);
     }    
-    *v = exp(*v) - s;
+    *v = EXP(*v) - s;
     if (standardised) {
       nonstatExp(ZERO, ZERO, cov, &v0, n, false);
       *v /= v0;
@@ -2095,7 +2158,7 @@ void nonstatExp(double *x, double *y, cov_model *cov, double *v, int n,
     int i;
     BUG;
     // fehlt die multiplication von links und rechts mit C(0)^{-1/2}
-    for (i=0; i<vdimq; i++) v[i] = exp(v[i]); 
+    for (i=0; i<vdimq; i++) v[i] = EXP(v[i]); 
   }
 }
 
@@ -2213,7 +2276,7 @@ void Pow(double *x, cov_model *cov, double *v){
  
   COV(ZERO, next, &v0);
   COV(x, next, &v1);
-  *v = pow(v0, alpha) - pow(v0 - v1, alpha); 
+  *v = POW(v0, alpha) - POW(v0 - v1, alpha); 
   //  print("Pow %f %f %f v=%f\n", v0, v1, alpha, *v);
 }
 
@@ -2227,7 +2290,7 @@ void DPow(double *x, cov_model *cov, double *v){
   COV(ZERO, next, &v0);
   COV(x, next, &v1);
   gamma =  v0 - v1;
-  *v *= - alpha * pow(gamma, alpha -1.0);
+  *v *= - alpha * POW(gamma, alpha -1.0);
   // Achtung  "-" , da covarianzfunktion angenommen
 }
 
@@ -2242,7 +2305,7 @@ void DDPow(double *x, cov_model *cov, double *v){
   COV(ZERO, next, &v0);
   COV(x, next, &v1);
   gamma =  v0 - v1;
-  *v *= - alpha *  pow(gamma, alpha - 2.0) * ((alpha - 1.0) * D + gamma * (*v));
+  *v *= - alpha *  POW(gamma, alpha - 2.0) * ((alpha - 1.0) * D + gamma * (*v));
   // Achtung  "-" , da covarianzfunktion angenommen
 }
 
@@ -2253,7 +2316,7 @@ void InversePow(double *x, cov_model *cov, double *v) {
     alpha = P0(POW_ALPHA);
     
   COV(ZERO, next, &v0);
-  v0 = v0 - pow(pow(v0, alpha) - *x, 1 / alpha);
+  v0 = v0 - POW(POW(v0, alpha) - *x, 1 / alpha);
   INVERSE(&v0, next, v);
 
   /*
@@ -2268,7 +2331,7 @@ void InversePow(double *x, cov_model *cov, double *v) {
     }
   }
   
-  *v = 1.0 - pow(y, 1.0 / alpha);
+  *v = 1.0 - POW(y, 1.0 / alpha);
   //  print("%f %f %f\n", y, *v, P0(POW_ALPHA));
   //  print("Inv %f %f %f v=%f\n", *x,  P0(POW_ALPHA),y, *v);
   */
@@ -2327,7 +2390,7 @@ void shapePow(double *x, cov_model *cov, double *v){
     alpha = P0(POW_ALPHA);
   cov_model *next = cov->sub[0];
   COV(x, next, v);
-  *v = pow(*v, alpha);
+  *v = POW(*v, alpha);
   //  print("Pow %f %f %f v=%f\n", v0, v1, alpha, *v);
 }
 
@@ -2339,7 +2402,7 @@ void DshapePow(double *x, cov_model *cov, double *v){
   Abl1(x, next, v);
   if (alpha == 1.0) return;
   COV(ZERO, next, &v0);
-  *v *= - alpha * pow(v0, alpha -1.0);
+  *v *= - alpha * POW(v0, alpha -1.0);
   // Achtung  "-" , da covarianzfunktion angenommen
 }
 
@@ -2352,7 +2415,7 @@ void DDshapePow(double *x, cov_model *cov, double *v){
   if (alpha == 1.0) return;
   Abl1(x, next, &D);
   COV(x, next, &v0);
-  *v *= alpha *  pow(v0, alpha - 2.0) * ((alpha - 1.0) * D + v0 * (*v));
+  *v *= alpha *  POW(v0, alpha - 2.0) * ((alpha - 1.0) * D + v0 * (*v));
   // Achtung  "-" , da covarianzfunktion angenommen
 }
 
@@ -2362,7 +2425,7 @@ void InverseShapePow(double *x, cov_model *cov, double *v) {
   double alpha = P0(POW_ALPHA);
      
   INVERSE(x, next, v);
-  *v = pow(*v, 1.0 / alpha);
+  *v = POW(*v, 1.0 / alpha);
   //  print("%f %f %f\n", y, *v, P0(POW_ALPHA));
   //  print("Inv %f %f %f v=%f\n", *x,  P0(POW_ALPHA),y, *v);
 }
@@ -2399,7 +2462,7 @@ void qam(double *x, cov_model *cov, double *v) {
     sum += theta[i - 1] * w * w;
   }
 
-  sum = sqrt(sum);
+  sum = SQRT(sum);
   COV(&sum, next, v); 
 }
 
@@ -2418,7 +2481,7 @@ int checkqam(cov_model *cov) {
   for (i=0; i<nsubM1; i++) {
     sum += P(QAM_THETA)[i];
   }
-  if (fabs(sum - 1.0) > 1e-14) SERR("theta must sum up to 1");    
+  if (FABS(sum - 1.0) > 1e-14) SERR("theta must sum up to 1");    
 
   if ((err = CHECK(next, 1,  1, PosDefType, cov->domown, cov->isoown, 
 		     SCALAR, ROLE_COV)) != NOERROR)
@@ -2485,7 +2548,7 @@ void mqam(double *x, cov_model *cov, double *v) {
   for (j=0; j<vdim; j++) {
     l = k = j * vdimP1; // nicht vdim
     for (i=j; i<vdim; i++, k++, l+=vdim) {
-      s0 = sqrt(s[i] + s[j]);
+      s0 = SQRT(s[i] + s[j]);
       COV(&s0, next, v + k);
       v[l] = v[k]; 
       // if (k != l) v[k] *= rho[k];
@@ -2587,7 +2650,7 @@ int checknatsc(cov_model *cov) {
   }
 
   if (CovList[next->nr].inverse == NULL) {
-    sprintf(ERRORSTRING, "natural scaling is not defined for %s", 
+    SPRINTF(ERRORSTRING, "natural scaling is not defined for %s", 
 	    NICK(next));
     return ERRORFAILED;
   }
@@ -2685,8 +2748,8 @@ void truncsupport(double *x, cov_model *cov, double *v){
     int i;
     dist = 0.0;
     for (i=0; i<xdimown; i++) dist += x[i] * x[i];
-    dist = sqrt(dist);
-  } else dist = fabs(*x);
+    dist = SQRT(dist);
+  } else dist = FABS(*x);
 
   if (radius>=0 && dist > radius) { *v=0.0; return; }
   FCTN(x, next, v);
@@ -2845,7 +2908,7 @@ void TBM2NumIntegrFct(double *u,  int n, void *ex) {
   double *x = info->x;
     
   for (i=0; i<n; i++) {
-    z[0] = x[0] * sqrt(1.0 - u[i] * u[i]);
+    z[0] = x[0] * SQRT(1.0 - u[i] * u[i]);
     tbm3(z, cov, u + i, 1.0);
   }
 }
@@ -3059,18 +3122,115 @@ int set_stein_q(cov_model *next, double r, double d, double *q) {
 
 
 
+int set_cutoff_q2variate(cov_model *cov, double VARIABLE_IS_NOT_USED a,
+			 double d, double  VARIABLE_IS_NOT_USED *q) {
+    // auf modell ebene, d.h. co->sub[0] oder stein->sub[0]
+  double aa, bb, cc,  //coefficients for cubic polynomial
+    phi0[4], phi1[4], phi2[4], phi3[4], phi4[4],
+    radius = MAXINT;
+  double roots[3][2];
+ int n, m, l;
+ //printf("\n ------------ set_cutoff_q2variate ---------------- \n ");
+ assert(cov->calling->SlocalCE != NULL);
+ localCE_storage *s = cov->calling->SlocalCE;
+
+    COV(&d, cov, phi0);
+   // COV(&d,  cov->sub[0], &phi01);
+    Abl1(&d, cov, phi1);
+    Abl2(&d, cov, phi2);
+    Abl3(&d, cov, phi3);
+    Abl4(&d, cov, phi4);
+
+
+/*
+    printf("\n\n ---------------- \n\n");//
+    printf("d = %f\n", d);//
+    printf("phi0[0] = %f\n", phi0[0]);//
+    printf("phi1[0] = %f\n", phi1[0]);//
+    printf("phi2[0] = %f\n", phi2[0]);//
+    printf("phi3[0] = %f\n", phi3[0]);//
+    printf("phi4[0] = %f\n", phi4[0]);//
+    printf("\n\n ---------------- \n\n");//
+*/
+    //bivariate Whittle  Cauchy Stable
+    n = 5; m = 6; l = 7;
+
+    //assert(false);
+    s->is_bivariate_cutoff = true;
+
+    if (cov->vdim[0] > 2 || cov->vdim[1] > 2) BUG;
+    if (phi1[1] != phi1[2] || phi2[1] != phi2[2] || phi3[1] != phi3[2] || phi4[1] != phi4[2])
+        return MSGLOCAL_NOTSYMMETRICMULTIVARIATE;
+
+    for (int j = 0; j < 4; j++) {
+         radius = MAXINT;
+        s->q[j][CUTOFF_CUBE_N] = n;
+        s->q[j][CUTOFF_CUBE_M] = m;
+        s->q[j][CUTOFF_CUBE_L] = l;
+
+        cubicsolver( phi4[j], (n+m+l-6)*phi3[j], (n*m + n*l + m*l - 3*(n+m+l) + 7)*phi2[j], (n-1)*(m-1)*(l-1)*phi1[j] ,
+        roots);
+
+        //find a positive root of the cubic polynomial
+        for (int i = 0; i < 3; i++) {
+            if (roots[i][1] == 0 && roots[i][0] < radius  && roots[i][0] >= 0) {
+                radius= roots[i][0];
+            }
+        }
+
+        //if no positive root, cannot do anything
+        //printf("\n ::::::::::: set_cutoff_q2variate ::::::::::::: radius[%d] = %f, d = %f\n", j, radius + d, d);
+        if ( radius  == MAXINT) return MSGLOCAL_NOPOSITIVEROOT;
+
+        aa = -(phi3[j]*radius*radius + phi2[j]*(m + l - 3)*radius + phi1[j]*(m-1)*(l-1))/(n*(m - n)*(l - n) * POW(radius, n - 1));
+        bb = -(phi3[j]*radius*radius + phi2[j]*(n + l - 3)*radius + phi1[j]*(n-1)*(l-1))/(m*(n - m)*(l - m) * POW(radius, m - 1));
+        cc = -(phi3[j]*radius*radius + phi2[j]*(m + n - 3)*radius + phi1[j]*(m-1)*(n-1))/(l*(m - l)*(n - l) * POW(radius, l - 1));
+
+
+        s->q[j][CUTOFF_CONSTANT] = - phi0[j] + aa * POW(radius, n) + bb * POW(radius, m) + cc * POW(radius, l);
+        // printf("\n ::::::::::: set_cutoff_q2variate ::::::::::::: C[%d] = %f, \n", j,  s->q[j][CUTOFF_CONSTANT]);
+
+   //     printf("\n ::::::::::::::: set_cutoff_q2variate::::::::::::::, cov->calling->SlocalCE->q[%d][CUTOFF_CONSTANT] = %f \n ",
+     //          j, cov->calling->SlocalCE->q[j][CUTOFF_CONSTANT]);
+        if (s->q[j][CUTOFF_CONSTANT] < -1) return MSGLOCAL_SIGNPHI;
+
+        radius = radius + d;
+
+        //j*5 is very bad
+        s->q[j][CUTOFF_R] = radius;
+        s->q[j][CUTOFF_CUBE_A] = aa;
+        s->q[j][CUTOFF_CUBE_B] = bb;
+        s->q[j][CUTOFF_CUBE_C] = cc;
+    }
+
+    if (s->q[1][CUTOFF_R] > s->q[0][CUTOFF_R] ||
+            s->q[1][CUTOFF_R] > s->q[3][CUTOFF_R] ) return MSGLOCAL_WRONGRADII;
+//PMI(cov);
+    //printf("\n ::::::::::: set_cutoff_q2variate ::::::::::::: end \n");
+
+      return NOERROR;
+}
+
+
+
 //TO DO: choose epsilon properly
 #define EPSILON_C 0.1
 int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
+    assert(cov->vdim[0] > 0 && cov->vdim[0] < 3);
+    if (cov->vdim[0] > 1) return set_cutoff_q2variate(cov, a, d, q);
+
     // auf modell ebene, d.h. co->sub[0] oder stein->sub[0]
   double aa, bb, cc,  //coefficients for cubic polynomial
-    phi0, phi1, 
-    phi2 = RF_NA, 
-    phi3 = RF_NA, 
+    phi0, phi1,
+    phi2 = RF_NA,
+    phi3 = RF_NA,
+    phi4 = RF_NA,
     a2 = a * a,
-    d2 = d*d,
+    //   d2 = d*d,
     radius = -1;
- 
+  int n, m, l;
+
+
     //  if ((err = covcpy(&neu, cov)) != NOERROR) return err;
     // CovList[cov->gatternr].cov(&d, neu, &phi0);
     // CovList[cov->gatternr].D(&d, neu, &phi1);
@@ -3078,9 +3238,9 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
 
     COV(&d, cov, &phi0);
     Abl1(&d, cov, &phi1);
- 
-    if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
-    if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
+
+
+    cov->calling->SlocalCE->is_bivariate_cutoff = FALSE;
 
     //If it is a variogram, then we must determine a constant such that Const - Variogram is a valied covariance
     // The constant depends on a and d
@@ -3089,13 +3249,15 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
     if (cov->typus == VariogramType) {
 
         if (a == 0.5) {
-            COV(&d2, cov, &q[CUTOFF_CONSTANT]);
-            q[CUTOFF_CONSTANT] = -q[CUTOFF_CONSTANT] + EPSILON_C;
-            q[CUTOFF_B] = -2*phi1*sqrt(d);
+            COV(&d, cov, &q[CUTOFF_CONSTANT]);
+            q[CUTOFF_CONSTANT] = -q[CUTOFF_CONSTANT];
+
+
+            q[CUTOFF_B] = -2*phi1*SQRT(d);
             q[CUTOFF_THEOR] =
-	      pow(1.0 - 0.5* (q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
+	      POW(1.0 - 0.5* (q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
             q[LOCAL_R] = d * q[CUTOFF_THEOR];
-            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+            q[CUTOFF_ASQRTR] = POW(q[LOCAL_R], a);
 
 	} else if (a == 1 ) {
             //second derivative
@@ -3106,23 +3268,24 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             //if second derivative is positive at d, then
             q[CUTOFF_CONSTANT] = -phi0+phi1*phi1/(2*phi2) + EPSILON_C;
             q[CUTOFF_B] = 0.25*phi1*phi1/(q[CUTOFF_CONSTANT] + phi0);
-            q[CUTOFF_THEOR] = pow(1.0 - 2 * ( q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
+            q[CUTOFF_THEOR] = POW(1.0 - 2 * ( q[CUTOFF_CONSTANT] + phi0) / phi1 /d, 1/a);
             q[LOCAL_R] = d * q[CUTOFF_THEOR];
-            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+            q[CUTOFF_ASQRTR] = POW(q[LOCAL_R], a);
 
          } else if (a == CUTOFF_THIRD_CONDITION) {
 
             Abl2(&d, cov, &phi2);
             Abl3(&d, cov, &phi3);
-
-            q[CUTOFF_CONSTANT] = -phi0 + EPSILON_C;
-
-            if (q[CUTOFF_CONSTANT] + phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
+            Abl4(&d, cov, &phi4);
 
             double roots[3][2];
 
-            cubicsolver(phi3, 3*phi2, 6*phi1, 6*(q[CUTOFF_CONSTANT] + phi0),
-			roots);
+            //de Wijsian model
+            n = 4; m = 6; l = 7;
+
+            cubicsolver( phi4, (n+m+l-6)*phi3, (n*m + n*l + m*l - 3*(n+m+l) + 7)*phi2, (n-1)*(m-1)*(l-1)*phi1 ,
+            roots);
+
 
             //find a positive root of the cubic polynomial
             for (int i = 0; i < 3; i++) {
@@ -3133,9 +3296,18 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             //if no positive root, cannot do anything
             if (radius <= 0.0) return MSGLOCAL_NOPOSITIVEROOT;
 
-            cc = -phi3/6;
-            bb = -3*cc*radius + phi2/2;
-            aa = -2*bb*radius -3*cc*radius*radius - phi1;
+
+            aa = -(phi3*radius*radius + phi2*(m + l - 3)*radius + phi1*(m-1)*(l-1))/(n*(m - n)*(l - n) * POW(radius, n - 1));
+            bb = -(phi3*radius*radius + phi2*(n + l - 3)*radius + phi1*(n-1)*(l-1))/(m*(n - m)*(l - m) * POW(radius, m - 1));
+            cc = -(phi3*radius*radius + phi2*(m + n - 3)*radius + phi1*(m-1)*(n-1))/(l*(m - l)*(n - l) * POW(radius, l - 1));
+
+
+
+
+            q[CUTOFF_CONSTANT] = -phi0 + aa * POW(radius, n) + bb * POW(radius, m) + cc * POW(radius, l);
+
+            if (q[CUTOFF_CONSTANT] <= 0.0) return MSGLOCAL_SIGNPHI;
+
             radius = radius + d;
 
             q[LOCAL_R] = radius;
@@ -3143,6 +3315,9 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             q[CUTOFF_CUBE_A] = aa;
             q[CUTOFF_CUBE_B] = bb;
             q[CUTOFF_CUBE_C] = cc;
+            q[CUTOFF_CUBE_N] = n;
+            q[CUTOFF_CUBE_M] = m;
+            q[CUTOFF_CUBE_L] = l;
 
         } else BUG; // olga
 
@@ -3150,6 +3325,8 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
 
         //now we are in a positive definite function case
         if (phi0 <= 0.0) return MSGLOCAL_SIGNPHI;
+        if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
+
 
 
         //find  parameters of the method
@@ -3159,19 +3336,28 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             if (phi1 >= 0.0) return MSGLOCAL_SIGNPHIFST;
 
             q[CUTOFF_B] =//sound qconstant even if variance of submodel is not 1
-	      pow(-phi1 / (2.0 * a2 * phi0), 2.0 * a) * phi0 / pow(d, 2.0 * a2);
+	      POW(-phi1 / (2.0 * a2 * phi0), 2.0 * a) * phi0 / POW(d, 2.0 * a2);
             //  assert(false);
-            q[CUTOFF_THEOR] = pow(1.0 - 2.0 * a2 * phi0 / phi1, 1.0 / a);
+            q[CUTOFF_THEOR] = POW(1.0 - 2.0 * a2 * phi0 / phi1, 1.0 / a);
             q[LOCAL_R] = d * q[CUTOFF_THEOR];
-            q[CUTOFF_ASQRTR] = pow(q[LOCAL_R], a);
+            q[CUTOFF_ASQRTR] = POW(q[LOCAL_R], a);
 
         } else if (a == CUTOFF_THIRD_CONDITION){
 
             //a = CUTOFF_THIRD_CONDITION
 
+            Abl2(&d, cov, &phi2);
+            Abl3(&d, cov, &phi3);
+            Abl4(&d, cov, &phi4);
+
+
             double roots[3][2];
 
-            cubicsolver(phi3, 3*phi2, 6*phi1, 6*phi0, roots);
+            //Whittle  model
+            n = 5; m = 6; l = 7;
+
+            cubicsolver( phi4, (n+m+l-6)*phi3, (n*m + n*l + m*l - 3*(n+m-l) + 7)*phi2, (n-1)*(m-1)*(l-1)*phi1 ,
+            roots);
 
             //find a positive root of the cubic polynomial
             for (int i = 0; i < 3; i++) {
@@ -3183,9 +3369,15 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             //if no positive root, cannot do anything
             if (radius <= 0.0) return MSGLOCAL_NOPOSITIVEROOT;
 
-            cc = -phi3/6;
-            bb = -3*cc*radius + phi2/2;
-            aa = -2*bb*radius -3*cc*radius*radius - phi1;
+
+            aa = -(phi3*radius*radius + phi2*(m + l - 3)*radius + phi1*(m-1)*(l-1))/(n*(m - n)*(l - n) * POW(radius, n - 1));
+            bb = -(phi3*radius*radius + phi2*(n + l - 3)*radius + phi1*(n-1)*(l-1))/(m*(n - m)*(l - m) * POW(radius, m - 1));
+            cc = -(phi3*radius*radius + phi2*(m + n - 3)*radius + phi1*(m-1)*(n-1))/(l*(m - l)*(n - l) * POW(radius, l - 1));
+
+            q[CUTOFF_CONSTANT] = 1 - phi0 + aa * POW(radius, n) + bb * POW(radius, m) + cc * POW(radius, l);
+
+            if (q[CUTOFF_CONSTANT] <= 0.0) return MSGLOCAL_SIGNPHI;
+
             radius = radius + d;
 
             q[LOCAL_R] = radius;
@@ -3193,7 +3385,11 @@ int set_cutoff_q(cov_model *cov, double a, double d, double *q) {
             q[CUTOFF_CUBE_B] = bb;
             q[CUTOFF_CUBE_C] = cc;
 
- 
+            q[CUTOFF_CUBE_N] = n;
+            q[CUTOFF_CUBE_M] = m;
+            q[CUTOFF_CUBE_L] = l;
+
+
         } else
             BUG;
     }
@@ -3216,20 +3412,23 @@ int check_local(cov_model *cov,
   localinfotype li;
   //ce_param *gp  = &(GLOBAL.localce); // ok
 
-  //  print("entering check local from %d:%s\n", cov->calling->nr,
-  //	 CovList[cov->calling->nr].name);
+  //print("\n \n entering check local from %d:%s\n", cov->calling->nr,
+  //CovList[cov->calling->nr].name);
 
- 
-  if ((err = CHECK(next, dim,  1,
+  int vdim = SUBMODEL_DEP;
+
+    if ((err = CHECK(next, dim,  1,
              method == CircEmbedCutoff ? PosDefType : VariogramType,
-             cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR) {
+             cov->domown, cov->isoown, vdim, ROLE_COV)) != NOERROR) {
+      //  print("\n \n \n ::: checl_local :: if :::  dim = %d --- next->vdim[0] = %d::: \n \n \n", dim, next->vdim[0]);
       if ( method != CircEmbedCutoff ||
-      (err = CHECK(next, dim,  1,
+     (err = CHECK(next, dim,  1,
                     VariogramType,
-                   cov->domown, cov->isoown, SCALAR, ROLE_COV)) != NOERROR)
+                   cov->domown, cov->isoown, vdim, ROLE_COV)) != NOERROR)
               return err;
   }
  
+    if (vdim > 2) SERR("vdim of submodel must be less than 3")
 
 
   // no setbackward ?!
@@ -3318,45 +3517,88 @@ void co(double *x, cov_model *cov, double *v) {
  
   assert(cov->role == ROLE_COV);
 
-  /*
-  if (y <= diameter) COV(x, next, v)
-  else {
-    *v = (y >= q[LOCAL_R]) ? 0.0
-      : q[CUTOFF_B] * pow(q[CUTOFF_ASQRTR] - pow(y, a), 2.0 * a);
-  }
-*/
-  if (y <= diameter) {
-        //If it is a variogram (actually -variogram), add a constant. If it is positive definite, go below
-        if (cov->sub[0]->typus == VariogramType ) {
-            COV(x, next, v);
-            *v = *v+q[CUTOFF_CONSTANT];
-        } else
-        {
-            COV(x, next, v)
+  //cov->vdim[0] or next->vdim[0]?
+  //if ( cov->SlocalCE->is_multivariate_cutoff == true ) {
+
+  if ( cov->SlocalCE->is_bivariate_cutoff  ) {
+
+      if (y <= diameter) {
+                COV(x, next, v);
+                for (int i = 0; i <4; i++) {
+                    v[i] += cov->SlocalCE->q[i][CUTOFF_CONSTANT];
+                }
+        }
+      else {
+          for (int i = 0; i < 4; i++) {
+               v[i] = (y >= cov->SlocalCE->q[i][CUTOFF_R]) ? 0.0
+                                       :  cov->SlocalCE->q[i][CUTOFF_CUBE_A]*
+                                                            POW((cov->SlocalCE->q[i][CUTOFF_R] - y), cov->SlocalCE->q[i][CUTOFF_CUBE_N]) +
+                                          cov->SlocalCE->q[i][CUTOFF_CUBE_B]*
+                                                            POW((cov->SlocalCE->q[i][CUTOFF_R] - y), cov->SlocalCE->q[i][CUTOFF_CUBE_M]) +
+                                             cov->SlocalCE->q[i][CUTOFF_CUBE_C]*
+                                                            POW((cov->SlocalCE->q[i][CUTOFF_R] - y), cov->SlocalCE->q[i][CUTOFF_CUBE_L]);
+
+
+          }
+      }
+
+  } else {
+      if (y <= diameter) {
+            //If it is a variogram (actually -variogram), add a constant. If it is positive definite, go below
+            if (cov->sub[0]->typus == VariogramType ) {
+                COV(x, next, v);
+                *v = *v+q[CUTOFF_CONSTANT];
+            } else
+            {
+                COV(x, next, v)
+            }
+
         }
 
-    }
-
-    else {
-        if (a != CUTOFF_THIRD_CONDITION) {
-            *v = (y >= q[LOCAL_R]) ? 0.0
-                                   : q[CUTOFF_B] * pow(q[CUTOFF_ASQRTR] - pow(y, a), 2.0 * a);
-        }
         else {
-       //     *v = (y >= q[LOCAL_R]) ? 0.0
-         //                          : q[CUTOFF_CUBE_A]*(q[LOCAL_R] - y) + q[CUTOFF_CUBE_B]*pow((q[CUTOFF_ASQRTR] - y), 2)
-           //                          + q[CUTOFF_CUBE_C]*pow((q[LOCAL_R] - y), 3);
-            BUG;
+            if (a != CUTOFF_THIRD_CONDITION) {
+                *v = (y >= q[LOCAL_R]) ? 0.0
+                                       : q[CUTOFF_B] * POW(q[CUTOFF_ASQRTR] - POW(y, a), 2.0 * a);
+            }
+            else {
+                *v = (y >= q[LOCAL_R]) ? 0.0
+                                       :  q[CUTOFF_CUBE_A] * POW((q[LOCAL_R] - y), q[CUTOFF_CUBE_N]) +
+                                          q[CUTOFF_CUBE_B] * POW((q[LOCAL_R] - y), q[CUTOFF_CUBE_M]) +
+                                             q[CUTOFF_CUBE_C] * POW((q[LOCAL_R] - y), q[CUTOFF_CUBE_L]);
+                //BUG;
+            }
         }
-    }
+
+  }
+
 
 }
 int check_co(cov_model *cov) {
   cov_model *next = cov->sub[0];
-  return check_local(cov, CircEmbedCutoff, CUTOFF_MAX, 
+  int err;
+
+  NEW_STORAGE(localCE);
+  assert(cov->SlocalCE != NULL);
+  // 1 ? 2? More than 2? or inside set_cutoff_q2variate
+
+  //PMI(cov);assert(next->vdim[0]>0);
+
+  //  printf("\n ----------- check_co ----------- \n ");
+  // printf("\n ----------- next->vdim[0] = %d ----------- \n ", next->vdim[0]);
+  err = check_local(cov, CircEmbedCutoff, CUTOFF_MAX,
+                                         CovList[next->nr].coinit, set_cutoff_q);
+  //printf("\n\n ------ check_co = %d ------ \n\n", next->SlocalCE->is_bivariate_cutoff);
+  // printf("\n\n ------ check_co err = %d ------ \n\n", err);
+  if (err != NOERROR ) return err;
+
+
+  return NOERROR;
+/*  return check_local(cov, CircEmbedCutoff, CUTOFF_MAX,
 		     CovList[next->nr].coinit,
 		     set_cutoff_q);
+                         */
 }
+
 
 bool alternativeparam_co(cov_model VARIABLE_IS_NOT_USED *cov){
   return false;
@@ -3456,7 +3698,7 @@ void strokorb(double *x, cov_model *cov, double *v) {
       // > 3 ist mathematisch vermutlich nicht moeglich, da bei strokorb
       // das submodel die entwicklung 1 - c x (oder rauher) hat
       *v = p < 3.0 ? RF_INF 
-	: next->taylor[idx][TaylorConst] * p * (p - 1) * pow(2, p-2)/ M_PI;//3.0
+	: next->taylor[idx][TaylorConst] * p * (p - 1) * POW(2, p-2)/ M_PI;//3.0
     } else {
       Abl2(&u, next, v);
       *v /= (M_PI * *x);
@@ -3550,7 +3792,7 @@ int checkstrokorb(cov_model *cov) {
     cov->taylor[0][TaylorPow] = (next->taylor[idx][TaylorPow] - 2.0) - 1.0;
     cov->taylor[0][TaylorConst] = next->taylor[idx][TaylorConst] / M_PI * 
       next->taylor[idx][TaylorPow] * (next->taylor[idx][TaylorPow] - 1) *
-      pow(2.0,  cov->taylor[0][TaylorPow]); // 
+      POW(2.0,  cov->taylor[0][TaylorPow]); // 
     
 
     if (next->tail[0][TaylorExpPow] != 0.0) {
@@ -3560,16 +3802,16 @@ int checkstrokorb(cov_model *cov) {
       cov->tail[0][TaylorPow] = next->tail[0][TaylorPow] + 
 	 2.0 * (next->tail[0][TaylorExpPow] - 1.0);
       cov->tail[0][TaylorConst]= next->tail[0][TaylorConst] * f * f *
-	pow(2.0, cov->tail[0][TaylorPow]);
+	POW(2.0, cov->tail[0][TaylorPow]);
       cov->tail[0][TaylorPow] -= 1.0;
-      cov->tail[0][TaylorExpConst] *= pow(2.0, cov->tail[0][TaylorExpPow]);
+      cov->tail[0][TaylorExpConst] *= POW(2.0, cov->tail[0][TaylorExpPow]);
     } else {
       // Achtung ! Reihenfolge der Berechnung!
       if (next->tail[0][TaylorExpConst] != 0.0) BUG;
       cov->tail[0][TaylorPow] = next->tail[0][TaylorPow] - 2.0;      
       cov->tail[0][TaylorConst] = next->tail[0][TaylorConst] / M_PI
 	* next->tail[0][TaylorPow] * (next->tail[0][TaylorPow] - 1.0) 
-	* pow(2.0, next->tail[0][TaylorPow] - 2.0);
+	* POW(2.0, next->tail[0][TaylorPow] - 2.0);
       cov->tail[0][TaylorPow] -= 1.0;
     }
     break;
@@ -3846,7 +4088,7 @@ int check_strokorbBallInner(cov_model *cov) {
     tp = next->tail[0][TaylorPow];
  
   cov->taylorN = cov->tailN = 1;
-  cov->tail[0][TaylorExpConst] = pow(2.0, tep) * next->tail[0][TaylorExpConst];
+  cov->tail[0][TaylorExpConst] = POW(2.0, tep) * next->tail[0][TaylorExpConst];
   cov->tail[0][TaylorExpPow] = tep;
   
   int idx = 1;
@@ -3890,9 +4132,9 @@ int check_strokorbBallInner(cov_model *cov) {
   }
 
   cov->tail[0][TaylorConst] *= 2.0 * next->tail[0][TaylorConst] * 
-    pow(2.0, cov->tail[0][TaylorPow]);
+    POW(2.0, cov->tail[0][TaylorPow]);
   cov->taylor[0][TaylorConst] *= 2.0 * next->taylor[idx][TaylorConst] * 
-    pow(2.0, cov->taylor[0][TaylorPow]);
+    POW(2.0, cov->taylor[0][TaylorPow]);
 
   return NOERROR;
 }
@@ -4380,7 +4622,7 @@ int structtrafoproc(cov_model  VARIABLE_IS_NOT_USED *cov,
   
 
   if (Time) MEMCOPY(T, loc->T, sizeof(double) * 3);
-  if (strcmp(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0) {
+  if (STRCMP(GLOBAL.coords.newunits[0], UNITS_NAMES[units_km]) == 0) {
     aequ = 6378.1;
     pol =  6356.8;
   } else {

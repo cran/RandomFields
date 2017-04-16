@@ -29,8 +29,10 @@
  */
 
 
-#include <stdlib.h>
-#include <stdio.h>
+//#include <stdlib.h>
+#include <Basic_utils.h>
+#include "Local.h"
+#include "basic.h"
 #include "convhull2D.h"
 
 
@@ -59,7 +61,7 @@ int make_chain(double** V, int n, int (*cmp)(const void*, const void*)) {
 	int i, j, s = 1;
 	double* t;
 
-	qsort(V, n, sizeof(double*), cmp);
+	QSORT(V, n, sizeof(double*), cmp);
 	for (i=2; i<n; i++) {
 		for (j=s; j>=1 && ccw(V, i, j, j-1); j--){}
 		s = j+1;

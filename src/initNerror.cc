@@ -5,7 +5,7 @@
 
  library for simulation of random fields -- init part and error messages
 
- Copyright (C) 2001 -- 2015 Martin Schlather
+ Copyright (C) 2001 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,9 +29,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //        falls nicht initialisiert oder random submodels??
 // to do: MLE: random parameters einsammeln
 
-#include <math.h>  
+#include <Rmath.h>  
 #include <stdio.h>  
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 //#include <sys/timeb.h>
@@ -43,10 +43,11 @@ int gaussmethod[Forbidden+1];
 
 cov_model *KEY[MODEL_MAX+1];
 double  ZERO[MAXSIMUDIM], 
-  ONE = 1,
+  ONE = 1
 //    *userdefinedCovMatrix[MAXDEFMATRIX][MAXMAKEEXPLICITE],
-    *OutX=NULL, 
-    *OutY=NULL;
+//  *OutX=NULL, 
+//    *OutY=NULL
+  ;
 int NATSC_INTERN,NATSC_USER,
   GENERALISEDCAUCHY, STABLE,  BROWNIAN, CAUCHY, 
   GAUSS, NUGGET, PLUS, TBM2NR, BALL, ECF, MULT, GENNSST_INTERN, PROD,
@@ -232,7 +233,7 @@ void errorMSG(int err, char* M, int len, bool final) {
   case ERRORDIM: 
     //
     //    { printf("error dimension\n"); cov_model *cov; crash(cov); }
-    sprintf(m,"dimension specification not in [1,%d] or dimension of coordinates larger than that the supposed spatio-temporal process",
+    SPRINTF(m,"dimension specification not in [1,%d] or dimension of coordinates larger than that the supposed spatio-temporal process",
 	    MAXSIMUDIM);break;
   case ERRORWAVING :
     strcpy(m,"Rescaling not possible (waving or large nugget effect?)");break;
@@ -254,13 +255,13 @@ void errorMSG(int err, char* M, int len, bool final) {
     break;
   case ERROROUTOFMETHODLIST:
     char restrictive[100], info[150];
-    sprintf(restrictive, "Are the %s() too restrictive?", RFOPTIONS);
-    sprintf(info, "\n You get (more) internal information if you set %s(%s=%d) before running your code.",
+    SPRINTF(restrictive, "Are the %s() too restrictive?", RFOPTIONS);
+    SPRINTF(info, "\n You get (more) internal information if you set %s(%s=%d) before running your code.",
 	    RFOPTIONS, 
 	    "cPrintlevel",
 	    PL_DETAILSUSER);
     
-    sprintf(m, 
+    SPRINTF(m, 
 	    "Running out of list of methods. %s%s",
 	    GLOBAL_UTILS->basic.skipchecks
 	    ? "Did you try an invalid parameter combination?"
@@ -294,7 +295,7 @@ void errorMSG(int err, char* M, int len, bool final) {
     break;
     // extremes:
   case ERRORSUBMETHODFAILED:
-    sprintf(m, "no good submethods exist");
+    SPRINTF(m, "no good submethods exist");
   case  ERRORSTATVARIO:
     strcpy(m, 
 	   "negative definite function expected depending on 1 variable only");
@@ -325,7 +326,7 @@ void errorMSG(int err, char* M, int len, bool final) {
     strcpy(m, "Odd covariance model: the use of auxiliary functions and/or your choice of the parameters lead to a covariance model for which no simulation methods exist.");
     break;    
   case ERRORANISO_T :
-    sprintf(m, "'%s' may not be given at the same time with '%s' or '%s'", 
+    SPRINTF(m, "'%s' may not be given at the same time with '%s' or '%s'", 
 	    CovList[DOLLAR].kappanames[DANISO], 
 	    CovList[DOLLAR].kappanames[DAUSER], 
 	    CovList[DOLLAR].kappanames[DPROJ]);
@@ -390,7 +391,7 @@ void errorMSG(int err, char* M, int len, bool final) {
      BUG;
   }
 
-  if (final) sprintf(m2, "%s %s", ERROR_LOC, m);
+  if (final) SPRINTF(m2, "%s %s", ERROR_LOC, m);
   else strcpy(m2, m);
   
   if (strlen(m) > (unsigned int) len && len > 6) {    
@@ -430,7 +431,7 @@ int checkMissing(cov_model *cov){
   if (cov->calling == NULL) ERR("missing may not be called by the user");
   char S[100];
   cov_model *prev=cov->calling;
-  sprintf(S, "'%s' does have not enough submodels", NICK(prev));
+  SPRINTF(S, "'%s' does have not enough submodels", NICK(prev));
   ERR(S);
   return ERRORFAILED; // damit compiler keine Warnung bringt
 }
@@ -490,8 +491,8 @@ void InitModelList() {
   int i;
   for (i=0; i<MAXSIMUDIM; i++) ZERO[i] = 0.0;
 
-  for (i=0; i<MAXPARAM; i++) sprintf(STANDARDPARAM[i], "k%d", i+1);
-  for (i=0; i<MAXSUB; i++) sprintf(STANDARDSUB[i], "u%d", i+1);
+  for (i=0; i<MAXPARAM; i++) SPRINTF(STANDARDPARAM[i], "k%d", i+1);
+  for (i=0; i<MAXSUB; i++) SPRINTF(STANDARDSUB[i], "u%d", i+1);
   /* ja nicht setzen !! macht riesen aerger, da RF opt ions InitModel
     nicht aufruft:
     for (i=0; i<MAXUNITS; i++) {
@@ -882,7 +883,8 @@ void InitModelList() {
 	       checkbiWM2, rangebiWM2, PREF_ALL,
 	       false, 2, INFDIM, false, NOT_MONOTONE);
   nickname("biwm");
-  addCov(biWM2, biWM2D,  ErrInverse);
+  addCov(biWM2, biWM2D, biWM2DD, biWM2D3, biWM2D4,  ErrInverse);
+  addLocal(coinitbiWM2, NULL);
   kappanames("nudiag", REALSXP, "nured12", REALSXP, 
 	     "nu", REALSXP, // or lower triangle
 	     "s", REALSXP,  // lower triangle definition
@@ -897,6 +899,18 @@ void InitModelList() {
   change_sortof(BIcdiag, VARPARAM);
   RandomShape(0, struct_failed, initbiWM2, do_failed, false, true, false);
  
+  // bivariate stable or bivariate exponetial model
+  IncludePrim("bistable",  PosDefType, 4, kappa_biStable, XONLY, ISOTROPIC,
+           checkbiStable, rangebiStable, PREF_ALL,
+           2, 3, false, MONOTONE);
+  kappanames("alpha", REALSXP,
+             "s", REALSXP,  // lower triangle definition
+         "cdiag", REALSXP,
+             "rho", REALSXP
+             );
+  addCov(biStable, DbiStable, DDbiStable, D3biStable, D4biStable, NULL);
+  addLocal(coinitbiStable, NULL);
+
 
   pref_type
     pbrownresnick = {5, 0, 0,  5, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
@@ -1028,9 +1042,10 @@ void InitModelList() {
 	       
   pref_type pcurl= {2, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //           CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludeModel("curlfree",  PosDefType, 1, 1, 0, NULL, XONLY, SYMMETRIC,
-	       checkdivcurl, NULL, pcurl,
+  IncludeModel("curlfree",  PosDefType, 1, 1, 1, kappadivcurl, XONLY, SYMMETRIC,
+	       checkdivcurl, rangedivcurl, pcurl,
 	       false, PARAM_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
+  kappanames("which", INTSXP);  
   addCov(curl, NULL, NULL);
  
   pref_type plocal={5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
@@ -1038,7 +1053,7 @@ void InitModelList() {
   CUTOFF =  
     IncludeModel("cutoff",  PosDefType, 1, 1,2, NULL, XONLY, ISOTROPIC,
 		 check_co, range_co, plocal,
-		 false, SCALAR, MAXCEDIM,  true, MONOTONE);
+		 false, SUBMODEL_DEP, MAXCEDIM,  true, MONOTONE);
   kappanames("diameter", REALSXP, "a", REALSXP);  
   addCov(co, NULL, NULL);
   addCallLocal(alternativeparam_co);
@@ -1105,10 +1120,11 @@ void InitModelList() {
 
   pref_type pdiv= {2, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5};
   //               CE CO CI TBM Sp di sq Ma av n mpp Hy spf any
-  IncludeModel("divfree", PosDefType, 1, 1, 0, NULL, XONLY, SYMMETRIC, 
-	       checkdivcurl, NULL, pdiv, 
+  IncludeModel("divfree", PosDefType, 1, 1, 1, kappadivcurl, XONLY, SYMMETRIC, 
+	       checkdivcurl, rangedivcurl, pdiv, 
 	       false, PARAM_DEP, SUBMODEL_DEP, SUBMODEL_DEP, NOT_MONOTONE);
-  addCov(div, NULL, NULL);
+  kappanames("which", INTSXP);  
+  addCov(diverge, NULL, NULL);
 
 
  
@@ -1142,7 +1158,7 @@ void InitModelList() {
   Taylor(-1, 1.0, 0.5, 2.0);
   TailTaylor(1, 0, 1, 1);
   
-  // operator, replacing any covariance fct C by exp(C) (componentwise)
+  // operator, replacing any covariance fct C by EXP(C) (componentwise)
   IncludeModel("Exp", 
 	       PosDefType, 1, 1, 2, PREVMODELD, PREVMODELI, checkExp,
 	       rangeExp, PREF_ALL, SUBMODEL_DEP, false, NOT_MONOTONE);
@@ -1242,6 +1258,19 @@ void InitModelList() {
   AddVariant(TcfType, ISOTROPIC);
   AddVariant(PosDefType, SPHERICAL_ISOTROPIC);
   setptwise(pt_posdef);
+
+
+  // bivariate stable or bivariate exponnetial model
+  IncludePrim("bicauchy",  PosDefType, 4, kappa_biCauchy, XONLY, ISOTROPIC,
+           checkbiCauchy, rangebiCauchy, PREF_ALL,
+           2, 3, false, MONOTONE);
+   kappanames("alpha", REALSXP,
+             "beta", REALSXP,
+             "s", REALSXP,  // lower triangle definition
+         "rho", REALSXP  // lower triangl
+             );
+ addCov(biCauchy, DbiCauchy, DDbiCauchy, D3biCauchy, D4biCauchy, NULL);
+  addLocal(coinitbiCauchy, NULL);
 
 
   IncludePrim("gengneiting",  PosDefType, 2, XONLY, ISOTROPIC, 
@@ -2568,15 +2597,14 @@ void InitModelList() {
   addlogD(loglikelihoodBR);
 
   BRMIXED_USER =
-    IncludeModel("brmixed", BrMethodType, 1, 2, 11, kappaBRmixed, 
+    IncludeModel("brmixed", BrMethodType, 1, 2, 10, kappaBRmixed, 
 		 XONLY, UNREDUCED, 
 		 check_BRmixed, range_BRmixed, PREF_NOTHING,
 		 false, SUBMODEL_DEP, MAXMPPDIM, false, MISMATCH);
   kappanames("xi", REALSXP, "mu", REALSXP, "s",  REALSXP, 
 	     "meshsize", REALSXP, "vertnumber", INTSXP,
              "optim_mixed", INTSXP, "optim_mixed_tol", REALSXP, 
-	     "optim_mixed_maxpoints", INTSXP, "lambda", REALSXP,
-	     "areamat", REALSXP, "variobound", REALSXP);
+             "lambda", REALSXP, "areamat", REALSXP, "variobound", REALSXP);
   subnames("phi", "tcf");
     RandomShape(0, structBRuser, initBRuser, dompp);
   addlogD(loglikelihoodBR);

@@ -6,7 +6,7 @@
  -- init part and error messages
  
  Copyright (C) 2014 -- 2014 Christoph Berreth
-                       2015 Martin Schlather
+               2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

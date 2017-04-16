@@ -3,7 +3,7 @@
 ## Martin Schlather, schlather@math.uni-mannheim.de
 ##
 ##
-## Copyright (C) 2015 Martin Schlather
+## Copyright (C) 2015 -- 2017 Martin Schlather
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License
@@ -73,7 +73,7 @@ rfGenerateModels <- function(assigning,
   vn <- nr * MAXVARIANTS
 
   # get attribute parameter
-  A <- .C("GetAttr", nr=integer(vn), type=integer(vn), operator=integer(vn),
+  A <- .C(C_GetAttr, nr=integer(vn), type=integer(vn), operator=integer(vn),
           monotone=integer(vn), finiterange=integer(vn),
           simpleArguments=integer(vn), internal=integer(vn),
           domains=integer(vn), isos=integer(vn),
@@ -92,7 +92,7 @@ rfGenerateModels <- function(assigning,
     ## sequential steps for each model
 
     if (A$internal[i] && A$internal[i] != INTERN_SHOW) {
-      cat(i, "internal", .C("GetModelName",as.integer(A$nr[i]),
+      cat(i, "internal", .C(C_GetModelName,as.integer(A$nr[i]),
                             name=empty, nick=empty2,
                             PACKAGE="RandomFields")$name,"\n")      
       i <- i + 1
@@ -103,7 +103,7 @@ rfGenerateModels <- function(assigning,
     if (domains == PREVMODELD) domains <- c(XONLY, KERNEL)
     
     # get model name
-    ret <- .C("GetModelName",as.integer(A$nr[i]),
+    ret <- .C(C_GetModelName,as.integer(A$nr[i]),
               name=empty, nick=empty2, PACKAGE="RandomFields")
     nickname <- nick <- ret$nick
     if (A$internal[i]) nickname <- paste("i", nickname, sep="")
@@ -114,7 +114,7 @@ rfGenerateModels <- function(assigning,
     type <- A$type[i]
     iso <- A$isos[i]
     while (i + step <= va  &&
-           nick ==  .C("GetModelName",as.integer(A$nr[i + step]),
+           nick ==  .C(C_GetModelName,as.integer(A$nr[i + step]),
                name=empty, nick=empty2, PACKAGE="RandomFields")$nick) {
       cat("...variant added\n")
       type <- c(type, A$type[i + step])
@@ -127,13 +127,13 @@ rfGenerateModels <- function(assigning,
     finiterange[A$finiterange < 0] <- NA
  
     ## get names of submodels
-    subname.info<- .Call("GetSubNames", as.integer(A$nr[i]), PACKAGE="RandomFields")
+    subname.info<- .Call(C_GetSubNames, as.integer(A$nr[i]), PACKAGE="RandomFields")
     subnames <- subname.info[[1]]
     subintern <- subname.info[[2]]
     subnames.notintern <- subnames[!subintern]
      
     # get names of  parameters
-    paramnames <- .Call("GetParameterNames", as.integer(A$nr[i]),
+    paramnames <- .Call(C_GetParameterNames, as.integer(A$nr[i]),
                         PACKAGE="RandomFields")
     internal <- which(paramnames == INTERNAL_PARAM)
     if (length(internal) > 0) paramnames <- paramnames[-internal]
@@ -337,7 +337,8 @@ CC <- function(x) {
     y <- x
   } else {
     stopifnot(is.character(x))
-    if (substr(x, 1, 1) =='"') return(x)
+    if (substr(x, 1, 1) =='"')  #'"'
+	return(x)
     warn <- options()$warn
     options(warn = -1)
     y <- try(as.numeric(x), silent=TRUE)
@@ -497,6 +498,9 @@ rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
                             ## copy also in ../private/lit
                             Cfile = "QMath",
                             RFpath = "~/R/RF/svn/RandomFields") {
+  message("'rfGenerateMaths' is not used anymore as some standard linux commands are not allowed anymore")
+  return() ## should not be used currently
+  
   prefix <- "R."
   start.after <-  "/* Unary functions"
   end.before <- c("#define carg")

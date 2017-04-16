@@ -442,6 +442,47 @@ RMbiwm <- new('RMmodelgenerator',
 
 
 
+RMbistable <- function(alpha, s, cdiag, rho, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
+	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
+  if (hasArg('s') && !is.null(subst <- substitute(s))) 
+	par.model[['s']] <- CheckArg(s, subst, TRUE)
+  if (hasArg('cdiag') && !is.null(subst <- substitute(cdiag))) 
+	par.model[['cdiag']] <- CheckArg(cdiag, subst, TRUE)
+  if (hasArg('rho') && !is.null(subst <- substitute(rho))) 
+	par.model[['rho']] <- CheckArg(rho, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckProj(proj, subst)
+  model <- new('RMmodel', call = cl, name = 'RMbistable', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMbistable <- new('RMmodelgenerator',
+	.Data = RMbistable,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = 3,
+	vdim = 2
+	)
+
+
+
 RMbrownresnick <- function(phi, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
@@ -798,12 +839,14 @@ RMcubic <- new('RMmodelgenerator',
 
 
 
-RMcurlfree <- function(phi, var, scale, Aniso, proj) {
+RMcurlfree <- function(phi, which, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg('var') && !is.null(subst <- substitute(var))) 
+  if (hasArg('which') && !is.null(subst <- substitute(which))) 
+	par.model[['which']] <- CheckArg(which, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
 	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
@@ -857,15 +900,15 @@ RMcutoff <- function(phi, diameter, a, var, scale, Aniso, proj) {
 
 RMcutoff <- new('RMmodelgenerator',
 	.Data = RMcutoff,
-	type = c('positive definite', 'positive definite'),
-	isotropy = c('isotropic', 'spherical isotropic'),
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
 	domain = c('single variable'),
 	operator = TRUE,
 	monotone = 'monotone',
 	finiterange = TRUE,
 	simpleArguments = TRUE,
 	maxdim = 13,
-	vdim = 1
+	vdim = -3
 	)
 
 
@@ -977,12 +1020,14 @@ RMdewijsian <- new('RMmodelgenerator',
 
 
 
-RMdivfree <- function(phi, var, scale, Aniso, proj) {
+RMdivfree <- function(phi, which, var, scale, Aniso, proj) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
   
-  if (hasArg('var') && !is.null(subst <- substitute(var))) 
+  if (hasArg('which') && !is.null(subst <- substitute(which))) 
+	par.model[['which']] <- CheckArg(which, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
 	par.general[['var']] <- CheckArg(var, subst, TRUE)
     if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
 	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
@@ -1398,6 +1443,47 @@ RMgencauchy <- new('RMmodelgenerator',
 	simpleArguments = TRUE,
 	maxdim = Inf,
 	vdim = 1
+	)
+
+
+
+RMbicauchy <- function(alpha, beta, s, rho, var, scale, Aniso, proj) {
+  cl <- match.call()
+  submodels <- par.general <- par.model <- list() 
+  
+  if (hasArg('alpha') && !is.null(subst <- substitute(alpha))) 
+	par.model[['alpha']] <- CheckArg(alpha, subst, TRUE)
+  if (hasArg('beta') && !is.null(subst <- substitute(beta))) 
+	par.model[['beta']] <- CheckArg(beta, subst, TRUE)
+  if (hasArg('s') && !is.null(subst <- substitute(s))) 
+	par.model[['s']] <- CheckArg(s, subst, TRUE)
+  if (hasArg('rho') && !is.null(subst <- substitute(rho))) 
+	par.model[['rho']] <- CheckArg(rho, subst, TRUE)
+    if (hasArg('var') && !is.null(subst <- substitute(var))) 
+	par.general[['var']] <- CheckArg(var, subst, TRUE)
+    if (hasArg('scale') && !is.null(subst <- substitute(scale))) 
+	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
+    if (hasArg('Aniso') && !is.null(subst <- substitute(Aniso))) 
+	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
+    if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
+	par.general[['proj']] <- CheckProj(proj, subst)
+  model <- new('RMmodel', call = cl, name = 'RMbicauchy', 
+  		submodels = submodels, 
+  		par.model = par.model, par.general = par.general)
+  return(model)
+}
+
+RMbicauchy <- new('RMmodelgenerator',
+	.Data = RMbicauchy,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = 3,
+	vdim = 2
 	)
 
 
@@ -4035,7 +4121,7 @@ RPbrorig <- new('RMmodelgenerator',
 
 
 
-RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, optim_mixed_maxpo, lambda, areamat, variobound) {
+RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, optim_mixed_tol, lambda, areamat, variobound) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   if (hasArg(phi)) submodels[['phi']] <- phi
@@ -4055,8 +4141,6 @@ RPbrmixed <- function(phi, tcf, xi, mu, s, meshsize, vertnumber, optim_mixed, op
 	par.model[['optim_mixed']] <- CheckArg(optim_mixed, subst, FALSE)
   if (hasArg('optim_mixed_tol') && !is.null(subst <- substitute(optim_mixed_tol))) 
 	par.model[['optim_mixed_tol']] <- CheckArg(optim_mixed_tol, subst, FALSE)
-  if (hasArg('optim_mixed_maxpo') && !is.null(subst <- substitute(optim_mixed_maxpo))) 
-	par.model[['optim_mixed_maxpo']] <- CheckArg(optim_mixed_maxpo, subst, FALSE)
   if (hasArg('lambda') && !is.null(subst <- substitute(lambda))) 
 	par.model[['lambda']] <- CheckArg(lambda, subst, FALSE)
   if (hasArg('areamat') && !is.null(subst <- substitute(areamat))) 
@@ -5469,34 +5553,6 @@ R.fmod <- new('RMmodelgenerator',
 
 
 
-R.nearbyint <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.nearbyint', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.nearbyint <- new('RMmodelgenerator',
-	.Data = R.nearbyint,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
 R.round <- function(a) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
@@ -5540,148 +5596,6 @@ R.trunc <- function(a) {
 
 R.trunc <- new('RMmodelgenerator',
 	.Data = R.trunc,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.lrint <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.lrint', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.lrint <- new('RMmodelgenerator',
-	.Data = R.lrint,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.llrint <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.llrint', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.llrint <- new('RMmodelgenerator',
-	.Data = R.llrint,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.lround <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.lround', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.lround <- new('RMmodelgenerator',
-	.Data = R.lround,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.llround <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.llround', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.llround <- new('RMmodelgenerator',
-	.Data = R.llround,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.copysign <- function(a, b) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  if (hasArg('b') && !is.null(subst <- substitute(b))) 
-	par.model[['b']] <- CheckArg(b, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.copysign', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.copysign <- new('RMmodelgenerator',
-	.Data = R.copysign,
 	type = c('shape function', 'trend'),
 	isotropy = c('parameter dependent', 'parameter dependent'),
 	domain = c('single variable'),

@@ -98,6 +98,7 @@ RPsmith(shape, tcf, xi, mu, s)
 
  
 \examples{
+
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 \dontshow{StartExample(reduced=10)}
@@ -119,9 +120,18 @@ model <- RMgauss(scale = sqrt(2)) # !! cf. definition of RMgauss
 z <- RFsimulate(RPsmith(model, xi=0), x, x)
 plot(z)
 
+\dontshow{\dontrun{
+## original Smith model at arbitrary locations
+n <- 200
+model <- RMgauss(scale = sqrt(2)) # !! cf. definition of RMgauss
+z <- RFsimulate(RPsmith(model, xi=0), runif(n, 0, 10), runif(0, 0, 10))
+plot(z)
+}}
+
 
 ## for some more sophisticated models see 'maxstableAdvanced'
 
 \dontshow{FinalizeExample()}
+
 }
 
