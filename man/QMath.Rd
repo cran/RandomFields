@@ -82,11 +82,11 @@
 \alias{lgamma}
 \alias{R.erf}
 \alias{R.erfc}
-\alias{R.tgamma}
+\alias{R.gamma}
 \alias{gamma}
-\alias{R.rint}
-\alias{R.nextafter}
-\alias{R.nexttoward}
+%\alias{R.rint}
+%\alias{R.nextafter}
+%\alias{R.nexttoward}
 \alias{R.remainder}
 \alias{R.fdim}
 \alias{R.fmax}
@@ -167,12 +167,9 @@ R.trunc(a)
 R.erf(a)
 R.erfc(a)
 gamma(x)
-R.tgamma(a)
+R.gamma(a)
 lgamma(x)
 R.lgamma(a)
-R.rint(a)
-R.nextafter(a, b)
-R.nexttoward(a, b)
 R.remainder(a, b)
 R.fdim(a, b)
 max(...)
@@ -186,6 +183,9 @@ R.fmin(a, b)
 %R.lround(a)
 %R.llround(a)
 %.copysign(a, b)
+%R.rint(a)
+%R.nextafter(a, b)
+%R.nexttoward(a, b)
 
 \arguments{
   \item{model}{object of class \code{\link[=RMmodel-class]{RMmodel}}, 

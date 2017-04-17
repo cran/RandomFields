@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include "basic.h"
 
+//  define SCHLATHERS_MACHINE right after this line
 // 
 // 1
 // // 1
@@ -2993,6 +2994,49 @@ Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn,
 #endif
 
 
+#define ACOSH acosh
+#define ASINH asinh
+#define ATANH atanh
+#define ATAN2 std::atan2
+#define COSH std::cosh
+#define SINH std::sinh
+#define TANH std::tanh
+#define LOG1P log1p //  LOG(1.0 + (X)) 
+#define EXPM1 expm1 //  EXP(X) - 1.0
+#define FMIN fmin2
+#define FMAX fmax2
+#define HYPOT hypot // SQRT((X) * (X) + (Y) * (Y))
+
+#ifdef EVEN_NOT_USED_ON_SCHLATHERS_MACHINE
+#define EXP2 exp2
+#define LOGB logb
+#define LOG_BASE2 log2
+#define CBRT cbrt
+#define FMOD fmod
+#define REMAINDER remainder
+#define FDIM fdim
+
+#else
+//#define EXPM1(X) (EXP(X) - 1.0)
+#define LOGB(X) FLOOR(LOG(X) *  INVLOG2) //  EXP(X) - 1.0
+#define EXP2(X) POW(2.0, X)
+#define LOG_BASE2(X) (LOG(X) * INVLOG2)
+#define CBRT(X) POW(X, ONETHIRD)
+#define FMOD(X, Y) ((double) ((X) - (Y) * (int) ((X) / (Y))))
+#define REMAINDER(X, Y) ((double) ((X) - (Y) * fround((X) / (Y), 0))) // ROUND(
+#define FDIM(X, Y) FMAX((double) (X) - (Y), 0.0)
+#endif
+
+
+
+
+#define ERRSYS(N) ERR1("Function '%s' is available only if 'SCHLATHERS_MACHINE' is defined .", N)
+#ifdef RF_ADVANCED_FCNTS
+#undefine RF_ADVANCED_FCNTS
+#endif
+#ifdef SCHLATHERS_MACHINE
+//#define RF_ADVANCED_FCNTS 1
+#endif
 
 #endif
 

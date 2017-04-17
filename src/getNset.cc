@@ -1421,7 +1421,7 @@ int partial_loc_set(location_type *loc, double *x, double *y,
   unsigned long totalBytes;
 
   if (lx >= MAXINT ||  ly >= MAXINT) SERR("too many points");
-  strcpy(ERROR_LOC, "setting the locations:");
+  STRCPY(ERROR_LOC, "setting the locations:");
 
   if (((loc->x != NULL) && ((loc->y == NULL) xor (ly==0))) ||
       ((loc->xgr[0] != NULL) && ((loc->ygr[0] == NULL) xor (ly==0)))) {
@@ -2230,8 +2230,8 @@ int covCpy(cov_model **localcov, bool sub, cov_model *cov, // err
     for (i=0; i<nkappas; i++) {
       if (cov->ownkappanames[i] != NULL) {
 	current->ownkappanames[i] =
-	  (char*) MALLOC(sizeof(char) * (1 + strlen(cov->ownkappanames[i])));
-	strcpy(current->ownkappanames[i], cov->ownkappanames[i]);
+	  (char*) MALLOC(sizeof(char) * (1 + STRLEN(cov->ownkappanames[i])));
+	STRCPY(current->ownkappanames[i], cov->ownkappanames[i]);
       }
     }
   }

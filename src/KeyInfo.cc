@@ -349,7 +349,7 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 
   SET_STRING_ELT(nameMvec, k, mkChar("name"));
   cov_fct *CC = CovList + cov->nr; // nicht gatternr579
-  while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
+  while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
 
   if (spConform) {
     char name[MAXCHAR+2];
@@ -779,7 +779,7 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
   leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
 
   for(i=0; i<C->kappas; i++) {
-    strcpy(name, 
+    STRCPY(name, 
 	   !STRCMP(C->kappanames[i], FREEVARIABLE) && 
 	           cov->ownkappanames != NULL && cov->ownkappanames[i] != NULL
 	   ? cov->ownkappanames[i]
@@ -1317,7 +1317,7 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
 
   SET_STRING_ELT(nameMvec, k, mkChar("")); // name
   cov_fct *CC = CovList + cov->nr; // nicht gatternr
-  while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
+  while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
   if ((plus_mixed_models = (cov->nr == PLUS))) {
     plus_mixed_models = cov->calling == NULL; // to do: stimmt nicht mehr
     if (plus_mixed_models) {

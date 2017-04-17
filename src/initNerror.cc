@@ -197,61 +197,61 @@ void errorMSG(int err, char* M, int len, bool final) {
   if (err >= ERRORM && err <= ERRORMEND) err = ERRORM;
 
   switch (err) {
-  case NOERROR : strcpy(m,"none"); break;
-  case NOERROR_REPEAT : strcpy(m,"none; looking for further covariances applicable to the same method");break;
-  case NOERROR_ENDOFLIST : strcpy(m,"none; end of list");break;
-  case ERRORDUMMY : strcpy(m,"none (dummy)"); break;
+  case NOERROR : STRCPY(m,"none"); break;
+  case NOERROR_REPEAT : STRCPY(m,"none; looking for further covariances applicable to the same method");break;
+  case NOERROR_ENDOFLIST : STRCPY(m,"none; end of list");break;
+  case ERRORDUMMY : STRCPY(m,"none (dummy)"); break;
   case ERRORNOTDEFINED :       
-    strcpy(m,"specified method undefined for the given model or no simulation method found for the given model");break;
+    STRCPY(m,"specified method undefined for the given model or no simulation method found for the given model");break;
   case ERRORCARTESIAN :
-    strcpy(m,"only cartesian system allowed (currently)"); break;
+    STRCPY(m,"only cartesian system allowed (currently)"); break;
   case ERRORNOTPROGRAMMEDYET :    
-    strcpy(m,"Not programmed yet in RandomFields Version 3. Sorry."); break;
+    STRCPY(m,"Not programmed yet in RandomFields Version 3. Sorry."); break;
   case ERRORVDIMNOTPROGRAMMEDYET :    
-    strcpy(m,"multivariate version not programmed yet. Sorry."); break;
+    STRCPY(m,"multivariate version not programmed yet. Sorry."); break;
   case ERRORTYPECONSISTENCY :
-     strcpy(m,"incorrect choice of submodel (type inconsistency)"); break;
+     STRCPY(m,"incorrect choice of submodel (type inconsistency)"); break;
   case ERRORFAILED: 
-   strcpy(m,"algorithm failed (partially)");break;
+   STRCPY(m,"algorithm failed (partially)");break;
   case ERRORMEMORYALLOCATION: 
-    strcpy(m, "memory allocation error -- too much space demanded or non-positive number of bytes requested"); 
+    STRCPY(m, "memory allocation error -- too much space demanded or non-positive number of bytes requested"); 
     break;
   case ERRORNOTINITIALIZED: 
-    strcpy(m,"not initialized or storing=FALSE");break;
+    STRCPY(m,"not initialized or storing=FALSE");break;
   case ERRORDECOMPOSITION:
-    strcpy(m,"covariance function does not seem to be (strictly) positive definite");break;
+    STRCPY(m,"covariance function does not seem to be (strictly) positive definite");break;
   case ERRORNOMULTIVARIATE :
-    strcpy(m, "multivariate models not allowed (yet)"); 
+    STRCPY(m, "multivariate models not allowed (yet)"); 
     break;
   case ERROR_MATRIX_SQUARE :
-    strcpy(m, "square matrix expected"); break;
+    STRCPY(m, "square matrix expected"); break;
   case ERROR_MATRIX_VDIM :
-    strcpy(m, "size of matrix is not a multiple of the multivariate dimension"); break;
+    STRCPY(m, "size of matrix is not a multiple of the multivariate dimension"); break;
   case ERROR_MATRIX_POSDEF :
-    strcpy(m, "matrix does not seem to be strictly positive definite"); break;
-    //  case ERROR_MATRIX_ :   strcpy(m, ""); break;
+    STRCPY(m, "matrix does not seem to be strictly positive definite"); break;
+    //  case ERROR_MATRIX_ :   STRCPY(m, ""); break;
   case ERRORDIM: 
     //
     //    { printf("error dimension\n"); cov_model *cov; crash(cov); }
     SPRINTF(m,"dimension specification not in [1,%d] or dimension of coordinates larger than that the supposed spatio-temporal process",
 	    MAXSIMUDIM);break;
   case ERRORWAVING :
-    strcpy(m,"Rescaling not possible (waving or large nugget effect?)");break;
+    STRCPY(m,"Rescaling not possible (waving or large nugget effect?)");break;
   case ERRORRESCALING:
-    strcpy(m,"practical range not defined");
+    STRCPY(m,"practical range not defined");
     break;
   case ERRORNOSTATMATCH : 
-    strcpy(m,"no matching assumption found for the domains");
+    STRCPY(m,"no matching assumption found for the domains");
     break;
   case ERRORANISO:
-    strcpy(m,"anisotropic call not allowed"); break; 
+    STRCPY(m,"anisotropic call not allowed"); break; 
   case ERRORUNKNOWNMETHOD:
-    strcpy(m,"Unknown method in this context or unallowed mixture of methods"); 
+    STRCPY(m,"Unknown method in this context or unallowed mixture of methods"); 
     break;
   case ERRORWRONGDIM:
-    strcpy(m,"wrong dimension"); break;
+    STRCPY(m,"wrong dimension"); break;
    case ERRORUNKOWNSXPTYPE:
-    strcpy(m, "parameter value of unknown SXP type");
+    STRCPY(m, "parameter value of unknown SXP type");
     break;
   case ERROROUTOFMETHODLIST:
     char restrictive[100], info[150];
@@ -269,61 +269,61 @@ void errorMSG(int err, char* M, int len, bool final) {
 	    PL <= 2 ? info : "" );
     break;
   case ERRORREGISTER: 
-    strcpy(m, "register number out of range");
+    STRCPY(m, "register number out of range");
     break;
   case ERRORWRONGISO: 
-    strcpy(m, "impossible sequence of isotropies or coordinate systems");
+    STRCPY(m, "impossible sequence of isotropies or coordinate systems");
     break;
   case ERRORKERNEL:
-    strcpy(m, "the mapping 'earth -> cartesian' keeps definiteness only if it is used as a kernel.");
+    STRCPY(m, "the mapping 'earth -> cartesian' keeps definiteness only if it is used as a kernel.");
     break;
   case ERRORM: 
-    strcpy(m, ERRORSTRING);
+    STRCPY(m, ERRORSTRING);
     break;
   case ERRORWRONGVDIM: 
-    strcpy(m, ERRORSTRING);
+    STRCPY(m, ERRORSTRING);
     break;
   case ERRORBADVDIM: 
-    strcpy(m, "m-dimensionality could not be detected");
+    STRCPY(m, "m-dimensionality could not be detected");
     break;
 
   case ERRORNOTCARTESIAN:
-       strcpy(m, "Currently only cartesian coordinate systems are allowed");
+       STRCPY(m, "Currently only cartesian coordinate systems are allowed");
     break;
   case ERRORODDCOORDTRAFO:
-    strcpy(m, "coordinate transformation not possible or not programmed yet");
+    STRCPY(m, "coordinate transformation not possible or not programmed yet");
     break;
     // extremes:
   case ERRORSUBMETHODFAILED:
     SPRINTF(m, "no good submethods exist");
   case  ERRORSTATVARIO:
-    strcpy(m, 
+    STRCPY(m, 
 	   "negative definite function expected depending on 1 variable only");
     break;
    case ERRORNOVARIOGRAM:
-    strcpy(m, "Variogram model not allowed in this context");
+    STRCPY(m, "Variogram model not allowed in this context");
     break;
   case ERRORNORMALMIXTURE:
-    strcpy(m, "only normal mixtures as first submodel allowed (Gneiting, 2002)");
+    STRCPY(m, "only normal mixtures as first submodel allowed (Gneiting, 2002)");
     break;
   case ERRORMAXDIMMETH:
-    strcpy(m, "maximal dimension of variables for the method exceeded");
+    STRCPY(m, "maximal dimension of variables for the method exceeded");
     break;
   case ERRORPREVDOLLAR:
-    strcpy(m, "method may not be initialised by preceding initS");
+    STRCPY(m, "method may not be initialised by preceding initS");
     break;
   case ERRORSPECTRAL: 
-    strcpy(m, "submodel does not have spectral representation");
+    STRCPY(m, "submodel does not have spectral representation");
     break;    
   case ERRORTBMCOMBI: 
-    strcpy(m, "the given combination of 'fulldim' and 'reduceddim' is not possible yet.");
+    STRCPY(m, "the given combination of 'fulldim' and 'reduceddim' is not possible yet.");
     break;    
 
   case ERRORINVALIDMODEL : // gauss distribution, no method
-    strcpy(m, "Invalid covariance model: did you wrongly use an auxiliary function to construct the model?");
+    STRCPY(m, "Invalid covariance model: did you wrongly use an auxiliary function to construct the model?");
     break;    
   case ERRORODDMODEL : // gauss distribution, no method
-    strcpy(m, "Odd covariance model: the use of auxiliary functions and/or your choice of the parameters lead to a covariance model for which no simulation methods exist.");
+    STRCPY(m, "Odd covariance model: the use of auxiliary functions and/or your choice of the parameters lead to a covariance model for which no simulation methods exist.");
     break;    
   case ERRORANISO_T :
     SPRINTF(m, "'%s' may not be given at the same time with '%s' or '%s'", 
@@ -332,58 +332,58 @@ void errorMSG(int err, char* M, int len, bool final) {
 	    CovList[DOLLAR].kappanames[DPROJ]);
     break;
   case ERRORDIAMETERNOTGIVEN:
-    strcpy(m, "Diameter must always be given");
+    STRCPY(m, "Diameter must always be given");
     break;
   case ERRORPREFNONE:
-    strcpy(m, "the simulaton method does not allow for the given model.");
+    STRCPY(m, "the simulaton method does not allow for the given model.");
     break;
   case ERRORPREFNONECOV:
-    strcpy(m, "the given model does not allow for calculation the covariance values.");
+    STRCPY(m, "the given model does not allow for calculation the covariance values.");
     break;
    
-    //    case : strcpy(m,"");break;
+    //    case : STRCPY(m,"");break;
     //
     // Poisson:
   case ERRORUNKNOWNMAXTYPE :
-    strcpy(m, "unknown type of max-stable process");
+    STRCPY(m, "unknown type of max-stable process");
     break;
  
   case ERRORATOMP :
-    strcpy(m, "p must be given everywhere or nowhere");
+    STRCPY(m, "p must be given everywhere or nowhere");
     break;
    
   case ERRORKRIGETOL :
-    strcpy(m,"sigma must be at most KRIGE_TOLERANCE");
+    STRCPY(m,"sigma must be at most KRIGE_TOLERANCE");
     break;
 
 
   case MSGLOCAL_OK :
-    strcpy(m,"fine");
+    STRCPY(m,"fine");
     break;
   case MSGLOCAL_JUSTTRY :
-    strcpy(m,
+    STRCPY(m,
 	   "unclear whether algorithm will work for specified parameters");
     break;
   case MSGLOCAL_NUMOK :
-    strcpy(m,"fine. Algorithm should work for specified parameters");
+    STRCPY(m,"fine. Algorithm should work for specified parameters");
     break;
   case MSGLOCAL_ENDOFLIST :
-    strcpy(m,"end of list for variants of the algorithm");
+    STRCPY(m,"end of list for variants of the algorithm");
     break;
   case MSGLOCAL_SIGNPHI :
-    strcpy(m,"wrong sign of covariance function at break point");
+    STRCPY(m,"wrong sign of covariance function at break point");
     break;
   case MSGLOCAL_SIGNPHIFST :
-    strcpy(m, "wrong sign of 1st derivative of the covariance function at the break point");
+    STRCPY(m, "wrong sign of 1st derivative of the covariance function at the break point");
     break;
   case MSGLOCAL_SIGNPHISND :
-    strcpy(m, "wrong sign of 2nd derivative of the covariance function at the break point");
+    STRCPY(m, "wrong sign of 2nd derivative of the covariance function at the break point");
     break;
   case MSGLOCAL_INITINTRINSIC :
-    strcpy(m,"one of a2, b or a0+phi(0) has wrong sign");
+    STRCPY(m,"one of a2, b or a0+phi(0) has wrong sign");
     break;
   case ERRORUNSPECIFIED :
-    strcpy(m,"(unspecified)");
+    STRCPY(m,"(unspecified)");
     break;
    default : 
      PRINTF(" error=%d\n", err); 
@@ -392,14 +392,14 @@ void errorMSG(int err, char* M, int len, bool final) {
   }
 
   if (final) SPRINTF(m2, "%s %s", ERROR_LOC, m);
-  else strcpy(m2, m);
+  else STRCPY(m2, m);
   
-  if (strlen(m) > (unsigned int) len && len > 6) {    
-    //  printf("%s %d %d\n", m, strlen(m), len);
+  if (STRLEN(m) > (unsigned int) len && len > 6) {    
+    //  printf("%s %d %d\n", m, STRLEN(m), len);
     m2[len-2] = m2[len-3] = m2[len-4] = '.';
     m2[len-5] = ' ';
     m2[len-1] ='\0';
-    // printf("out %s %d %d\n", m, strlen(m), len);
+    // printf("out %s %d %d\n", m, STRLEN(m), len);
   }
   strcopyN(M, m2, len);
   if (PL >= PL_ERRORS) { 
@@ -496,9 +496,9 @@ void InitModelList() {
   /* ja nicht setzen !! macht riesen aerger, da RF opt ions InitModel
     nicht aufruft:
     for (i=0; i<MAXUNITS; i++) {
-    strcpy(GLOBAL.general.newunits[i], "");
-    strcpy(GLOBAL.general.curunits[i], "");
-    strcpy(GLOBAL.general.varunits[i], "");
+    STRCPY(GLOBAL.general.newunits[i], "");
+    STRCPY(GLOBAL.general.curunits[i], "");
+    STRCPY(GLOBAL.general.varunits[i], "");
   }
   */
 

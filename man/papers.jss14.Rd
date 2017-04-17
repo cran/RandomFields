@@ -196,17 +196,6 @@ z <- RFinterpolate(pars, data = data, dim = 2,
 plot(z)
 }
 
-\dontshow{\dontrun{ # OK
-dip <- dimnames(installed.packages())
-version <- installed.packages()[which(dip[[1]] == "RandomFields")[1],
-                                dip[[2]] == "Version"]
-information <- list(date=date(), version=version) # version auf /usr/local !
-
-save(file="/home/schlather/svn/RandomFields/RandomFields/data/weather.rda",# OK
-     pars.model, pars, whole.model, whole,
-     weather, information=information)
-}}
-
 
 \dontshow{RFoptions(modus_operandi="normal")}
 \dontshow{FinalizeExample()}

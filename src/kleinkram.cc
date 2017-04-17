@@ -795,9 +795,9 @@ char Char(SEXP el, char *name) {
   if (type == CHARSXP) return CHAR(el)[0];
   if (type == STRSXP) {
     if (length(el)==1) {
-      if (strlen(CHAR(STRING_ELT(el,0))) == 1)
+      if (STRLEN(CHAR(STRING_ELT(el,0))) == 1)
 	return (CHAR(STRING_ELT(el,0)))[0];
-      else if (strlen(CHAR(STRING_ELT(el,0))) == 0)
+      else if (STRLEN(CHAR(STRING_ELT(el,0))) == 0)
 	return '\0';
     }
   }
@@ -909,14 +909,14 @@ int Match(char *name, name_type List, int n) {
   unsigned int ln;
   int Nr;
   Nr=0;
-  ln=strlen(name);
+  ln=STRLEN(name);
   //  print("Match %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
 
-  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
+  while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
     Nr++;
   }
   if (Nr < n) { 
-    if (ln==strlen(List[Nr])) // exactmatching -- take first -- changed 1/7/07
+    if (ln==STRLEN(List[Nr])) // exactmatching -- take first -- changed 1/7/07
       return Nr;
     // a matching function is found. Are there other functions that match?
     int j; 
@@ -924,9 +924,9 @@ int Match(char *name, name_type List, int n) {
     j=Nr+1; // if two or more covariance functions have the same name 
     //            the last one is taken 
     while (j<n) {
-      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
+      while ( (j<n) && STRNCMP(name, List[j], ln)) {j++;}
       if (j<n) {
-	if (ln==strlen(List[j])) { // exactmatching -- take first 
+	if (ln==STRLEN(List[j])) { // exactmatching -- take first 
 	  return j;
 	}
 	else {multiplematching=true;}
@@ -945,16 +945,16 @@ int Match(char *name, const char * List[], int n) {
   unsigned int ln;
   int Nr;
   Nr=0;
-  ln=strlen(name);
+  ln=STRLEN(name);
   //    print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
 
-  while ( Nr < n  && strncmp(name, List[Nr], ln)) {
+  while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
     //     print("       %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
     //   printf("%s\n", List[Nr]);
     Nr++;
   }
   if (Nr < n) { 
-    if (ln==strlen(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
+    if (ln==STRLEN(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
       //      print(" found  X    %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
       return Nr;
     }
@@ -964,9 +964,9 @@ int Match(char *name, const char * List[], int n) {
     j=Nr+1; // if two or more covariance functions have the same name 
     //            the last one is taken 
     while (j<n) {
-      while ( (j<n) && strncmp(name, List[j], ln)) {j++;}
+      while ( (j<n) && STRNCMP(name, List[j], ln)) {j++;}
       if (j<n) {
-	if (ln==strlen(List[j])) { // exactmatching -- take first 
+	if (ln==STRLEN(List[j])) { // exactmatching -- take first 
 	  return j;
 	}
 	else {multiplematching=true;}
@@ -1016,7 +1016,7 @@ ErrorHandling0:
   for (i=0; i<n-1; i++) {
     char msg[1000];
     SPRINTF(msg, "%s '%s',", dummy, List[i]);    
-    strcpy(dummy, msg);
+    STRCPY(dummy, msg);
   }
   ERR2("%s and '%s'.", dummy, List[i]);  
  

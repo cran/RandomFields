@@ -710,7 +710,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
   //  crash();
   assert(s != NULL);
 
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
   SPRINTF(ERROR_LOC, "%s %s: ", errorloc_save, NAME(cov));
   cov->method = TBM;
 
@@ -722,7 +722,7 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
     assert(s->err < NOERROR);
   }
 
-  strcpy(ERROR_LOC, errorloc_save);
+  STRCPY(ERROR_LOC, errorloc_save);
   if (err != NOERROR) return err; 
 
   if (loc->distances) return ERRORFAILED;

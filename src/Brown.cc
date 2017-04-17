@@ -504,7 +504,7 @@ void OptimArea(cov_model *cov) {
 	  am[k][d] = dummy;
 	}
       }
-      am[j][d] = fmin(am[j][d], lambda/vertnumber); //cutoff
+      am[j][d] = FMIN(am[j][d], lambda/vertnumber); //cutoff
     }
   }
   
@@ -524,7 +524,7 @@ void OptimArea(cov_model *cov) {
   for (d=0; d<=minradius; d++) { //areamatrix => Error matrix
     for (j=0; j<vertnumber; j++) {
       am[j][d] = lambda/vertnumber - am[j][d];
-      maxErrorbound = fmax(maxErrorbound, am[j][d]);
+      maxErrorbound = FMAX(maxErrorbound, am[j][d]);
     }
   }
   
@@ -537,7 +537,7 @@ void OptimArea(cov_model *cov) {
     for (d=0; d<=minradius; d++) {
       for (j=0; j<vertnumber; j++) {
 	if (am[j][d] > Errorbound) {
-	  Errorboundtmp = fmin(Errorboundtmp, am[j][d]); 
+	  Errorboundtmp = FMIN(Errorboundtmp, am[j][d]); 
 	}
       }      
     }
@@ -1145,7 +1145,7 @@ int structBRintern(cov_model *cov, cov_model **newmodel) {
     
     INVERSE(&gammamin, sBR->submodel, &xx);
     xx = CEIL(xx/step) * step;
-    sBR->minradius = fmax(sBR->minradius, xx); 
+    sBR->minradius = FMAX(sBR->minradius, xx); 
 
     yy = P0(BR_VARIOBOUND);
     INVERSE(&yy, sBR->submodel, &(sBR->radius));

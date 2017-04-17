@@ -5665,21 +5665,21 @@ R.erfc <- new('RMmodelgenerator',
 
 
 
-R.tgamma <- function(a) {
+R.gamma <- function(a) {
   cl <- match.call()
   submodels <- par.general <- par.model <- list() 
   
   if (hasArg('a') && !is.null(subst <- substitute(a))) 
 	par.model[['a']] <- CheckArg(a, subst, TRUE)
   
-  model <- new('RMmodel', call = cl, name = 'R.tgamma', 
+  model <- new('RMmodel', call = cl, name = 'R.gamma', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-R.tgamma <- new('RMmodelgenerator',
-	.Data = R.tgamma,
+R.gamma <- new('RMmodelgenerator',
+	.Data = R.gamma,
 	type = c('shape function', 'trend'),
 	isotropy = c('parameter dependent', 'parameter dependent'),
 	domain = c('single variable'),
@@ -5708,94 +5708,6 @@ R.lgamma <- function(a) {
 
 R.lgamma <- new('RMmodelgenerator',
 	.Data = R.lgamma,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.rint <- function(a) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.rint', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.rint <- new('RMmodelgenerator',
-	.Data = R.rint,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.nextafter <- function(a, b) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  if (hasArg('b') && !is.null(subst <- substitute(b))) 
-	par.model[['b']] <- CheckArg(b, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.nextafter', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.nextafter <- new('RMmodelgenerator',
-	.Data = R.nextafter,
-	type = c('shape function', 'trend'),
-	isotropy = c('parameter dependent', 'parameter dependent'),
-	domain = c('single variable'),
-	operator = FALSE,
-	monotone = 'not monotone',
-	finiterange = FALSE,
-	simpleArguments = TRUE,
-	maxdim = -2,
-	vdim = 1
-	)
-
-
-
-R.nexttoward <- function(a, b) {
-  cl <- match.call()
-  submodels <- par.general <- par.model <- list() 
-  
-  if (hasArg('a') && !is.null(subst <- substitute(a))) 
-	par.model[['a']] <- CheckArg(a, subst, TRUE)
-  if (hasArg('b') && !is.null(subst <- substitute(b))) 
-	par.model[['b']] <- CheckArg(b, subst, TRUE)
-  
-  model <- new('RMmodel', call = cl, name = 'R.nexttoward', 
-  		submodels = submodels, 
-  		par.model = par.model, par.general = par.general)
-  return(model)
-}
-
-R.nexttoward <- new('RMmodelgenerator',
-	.Data = R.nexttoward,
 	type = c('shape function', 'trend'),
 	isotropy = c('parameter dependent', 'parameter dependent'),
 	domain = c('single variable'),

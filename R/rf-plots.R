@@ -25,26 +25,24 @@
 ## 'plotRFspatialPointsDataFrame'
 
 default.image.par <- function(data.range, var.range, legend=TRUE) {
-  ip <- installed.packages()
-  if ("colorspace" %in% ip) {
-    data.col <- colorspace::heat_hcl(12, c. = c(80, 30), l = c(30, 90),
-                             power = c(1/5, 1.5))
-    var.col <- colorspace::rainbow_hcl(12, c = 50, l = 70)  
-  } else if ("RColorBrewer" %in% ip) {
-    data.col <- RColorBrewer::brewer.pal(9, "Reds")
-    var.col <- RColorBrewer::brewer.pal(9, "Blues")
+  var.col <- try(colorspace::rainbow_hcl(12, c = 50, l = 70), silent=TRUE)
+  if (is(var.col, "try-error")) {
+    var.col <- try(RColorBrewer::brewer.pal(9, "Blues"), silent=TRUE)
+    if (is(var.col, "try-error")) {
+      if (RFoptions()$internal$warn_colour_palette) {
+	RFoptions(warn_colour_palette = FALSE)
+	message("Better install one of the packages 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
+      }
+      data.col <- heat.colors(36)
+      var.col <- cm.colors(36)       
+    } else {
+      data.col <- RColorBrewer::brewer.pal(9, "Reds")
+    }    
   } else {
-    if (RFoptions()$internal$warn_colour_palette) {
-      RFoptions(warn_colour_palette = FALSE)
-      message("Better install one of the packages 'colorspace' or 'RColorBrewer'. (This message appears only once per session.)")
-    }
-    data.col <- heat.colors(36)
-    var.col <- cm.colors(36)
+    data.col <- colorspace::heat_hcl(12, c. = c(80, 30), l = c(30, 90),
+                             power = c(1/5, 1.5))     
   }
-
-  #data.col <- colorspace::heat_hcl(12, c. =c(80, 30), l = c(30, 90), power = c(1/5, 1.5))
- # var.col <- colorspace::rainbow_hcl(12, c = 50, l = 70)
-
+ 
   list(data=list(dot.name="col", default.col=data.col,
          pch=16, cex=1, range=data.range),
        var=list(dot.name="var.col", default.col=var.col,

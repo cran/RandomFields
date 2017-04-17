@@ -612,7 +612,7 @@ rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
 #"copysign",
 #"erf",
 #"erfc",
-"tgamma", # gamma
+"gamma", # gamma
 "lgamma",
 #"rint",
 #"nextafter",
@@ -622,7 +622,7 @@ rfGenerateMaths <- function(files = "/usr/include/tgmath.h",
 "fmax",
 "fmin")) {
            Rname <- if (name == "fabs") "abs" else
-           if (name == "tgamma") "gamma" else
+##           if (name == "tgamma") "gamma" else
            if (name == "fmin") "min" else
            if (name == "fmax") "max" else name
            

@@ -589,13 +589,13 @@ void nickname(const char *name, int nr, int type) {
   char dummy[MAXCHAR];
   cov_fct *C = CovList + nr; // nicht gatternr 
   
-  int sl = strlen(CAT_TYPENAMES[type]);  
+  int sl = STRLEN(CAT_TYPENAMES[type]);  
   strcopyN(dummy, name, MAXCHAR-sl);
   //printf("%s %s\n",  CAT_TYPENAMES[type], dummy);
   SPRINTF(C->nick, "%s%s", CAT_TYPENAMES[type], dummy);
-  strcpy(CovNickNames[nr], C->nick);
+  STRCPY(CovNickNames[nr], C->nick);
 
-  if ((int) strlen(name) >= (int) MAXCHAR - sl) {
+  if ((int) STRLEN(name) >= (int) MAXCHAR - sl) {
     badname = nr;
   } else {
     if (badname >= 0 && badname != nr) 
@@ -609,9 +609,9 @@ void insert_name(int curNrCov, const char *name, int type) {
   cov_fct *C = CovList + curNrCov;
   char dummy[MAXCHAR];
   strcopyN(dummy, name, MAXCHAR);
-  strcpy(CovNames[curNrCov], dummy);
-  strcpy(C->name, dummy);
-  if (strlen(name)>=MAXCHAR) {
+  STRCPY(CovNames[curNrCov], dummy);
+  STRCPY(C->name, dummy);
+  if (STRLEN(name)>=MAXCHAR) {
     PRINTF("Warning! Covariance name is truncated to '%s'.\n", C->name);
   }
   assert(STRCMP(InternalName, name));
@@ -906,7 +906,7 @@ bool isDummyInit(initfct Init) {
 
 
 int CopyModel(const char *name, int which) {
-  memcpy(CovList + currentNrCov, CovList + which, sizeof(cov_fct)); 
+  MEMCOPYX(CovList + currentNrCov, CovList + which, sizeof(cov_fct)); 
   int type = CovList[which].Typi[0];
   assert(type <= OtherType);
   insert_name(currentNrCov, name, type);

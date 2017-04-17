@@ -641,7 +641,7 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   }
   
   if (PL >= PL_RECURSIVE) {
-    strcpy(PREF_FAILURE, "");
+    STRCPY(PREF_FAILURE, "");
     int p, lp;
 #define NMAX 14
     char lpd[255], pd[255], names[NMAX];
@@ -650,19 +650,19 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       lp = locpref[i] - LOC_PREF_NONE;
       p = pref[i] - LOC_PREF_NONE;
       if (lp>0) {
-	strcpy(lpd, "");
+	STRCPY(lpd, "");
       } else {
 	SPRINTF(lpd, "%s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
       }
       if (p>0 || p == lp) {
-	if (lp>0) strcpy(pd, "(method specific failure)");
-	else strcpy(pd, ""); // strcpy(pd, "(method specific failure)");
+	if (lp>0) STRCPY(pd, "(method specific failure)");
+	else STRCPY(pd, ""); // STRCPY(pd, "(method specific failure)");
       } else {
 	SPRINTF(pd, "%s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
       }
       strcopyN(names, METHODNAMES[i], NMAX-1);
       SPRINTF(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
-      strcpy(PREF_FAILURE, dummy);
+      STRCPY(PREF_FAILURE, dummy);
     }
   }
    
@@ -753,7 +753,7 @@ void do_gaussprocess(cov_model *cov, gen_storage *s) {
   cov_model *key = cov->key ;
   SAVE_GAUSS_TRAFO;
  
-  strcpy( errorloc_save,  ERROR_LOC);
+  STRCPY( errorloc_save,  ERROR_LOC);
 
   if (cov->simu.pair) {
     for (i=0; i<vdimtot; i++) res[i] = -res[i];
@@ -772,7 +772,7 @@ void do_gaussprocess(cov_model *cov, gen_storage *s) {
   // (x^\lambda_1-1)/\lambda_1+\lambda_2
 
   BOXCOX_INVERSE;
-  strcpy( ERROR_LOC, errorloc_save);
+  STRCPY( ERROR_LOC, errorloc_save);
 }
 
 

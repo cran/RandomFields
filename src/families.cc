@@ -2081,15 +2081,15 @@ void rectangularQ(double *x, cov_model VARIABLE_IS_NOT_USED *cov,
       if (R_FINITE(cov->q[ni])) {					\
 	cov->q[ni] -= - 1.0;						\
 	if (UNIFORM_RANDOM * cov->q[quot] >= newquot) { /* keep old one */ \
-	  memcpy(v, cov->q, bytes);					\
+	  MEMCOPYX(v, cov->q, bytes);					\
 	} else { /* accept new one*/					\
 	  cov->q[quot] = newquot; /* pi / Q */				\
-	  memcpy(cov->q, v, bytes);					\
+	  MEMCOPYX(cov->q, v, bytes);					\
 	}								\
       } else { /* !R_FINITE(cov->q[ni]), i.e. starting value */		\
 	cov->q[ni] = P0INT(RECT_MCMC_N) - 1.0;				\
 	cov->q[quot] = newquot; /* pi / Q */				\
-	memcpy(cov->q, v, bytes);					\
+	MEMCOPYX(cov->q, v, bytes);					\
       }									\
     }									\
     if (cov->q[ni] > 0) {						\

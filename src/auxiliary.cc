@@ -303,19 +303,19 @@ int xMatch(char *name, char **list, unsigned int llen)  {
   // see also GetModelNr !
 
   nr=0;
-  ln=(unsigned int) strlen(name);
-  while ((nr < llen) && strncmp(name, list[nr], ln)) {
+  ln=(unsigned int) STRLEN(name);
+  while ((nr < llen) && STRNCMP(name, list[nr], ln)) {
     nr++;
   }
   if (nr < llen) { 
     // a matching method is found. Are there other methods that match?
     unsigned int j; 
-    if (ln == (unsigned int) strlen(list[nr])) return nr; // exact matching
+    if (ln == (unsigned int) STRLEN(list[nr])) return nr; // exact matching
     j = nr + 1; // if two or more methods have the same name the last one is
     //          taken; stupid here, but nice in GetCovNr
-    while (j < llen && strncmp(name, list[j], ln)) j++;
+    while (j < llen && STRNCMP(name, list[j], ln)) j++;
     if (j < llen) {
-      if (ln == (unsigned int) strlen(list[j])) return j; //exact matching 
+      if (ln == (unsigned int) STRLEN(list[j])) return j; //exact matching 
       else return MULTIPLEMATCHING; // multiple matching
     }
     return nr;
@@ -493,12 +493,12 @@ void Abbreviate(char *Old, char *abbr) {
   if (old[0] == '.') old++;
   int 
     len = GLOBAL.fit.lengthshortname / 3,
-    nold = strlen(old),
+    nold = STRLEN(old),
     nabbr = len - 1;
 
   if (nold <= len) {
     abbr[len] = '\0';
-    strcpy(abbr, old);
+    STRCPY(abbr, old);
     //  printf(">%s**%s<\n", Old, abbr);
     return;
   }

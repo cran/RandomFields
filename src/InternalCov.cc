@@ -75,7 +75,7 @@ void kdefault(cov_model *cov, int i, double v) {
 	LPRINT("%f\n", P(i)[j]);
       }
       char param_name[100]; 
-      strcpy(param_name, KNAME(i)); 
+      STRCPY(param_name, KNAME(i)); 
       PERR("parameter not scalar -- contact author.");
     }
   }
@@ -239,7 +239,7 @@ int checkkappas(cov_model *cov, bool errornull){
 
   for (i=0; i<kappas; i++) {
     if (SortOf(cov, i, 0, 0) == DONOTVERIFYPARAM) continue;
-    strcpy(param_name, 
+    STRCPY(param_name, 
 	   cov->ownkappanames != NULL && cov->ownkappanames[i]!=NULL 
 	   ? cov->ownkappanames[i]
 	   : C->kappanames[i]);
@@ -823,7 +823,7 @@ int struct2(cov_model *cov, cov_model **newmodel) {
   if (!cov->checked) {
     BUG;
   }
-  strcpy(errloc_save, ERROR_LOC);
+  STRCPY(errloc_save, ERROR_LOC);
   SPRINTF(ERROR_LOC, "In %s : ", NICK(cov));
 
   err = CovList[cov->nr].Struct(cov, newmodel);
@@ -831,7 +831,7 @@ int struct2(cov_model *cov, cov_model **newmodel) {
     (*newmodel)->calling = cov->calling != NULL ? cov->calling : cov;
   }
 
-  if (err == NOERROR) strcpy(ERROR_LOC, errloc_save);
+  if (err == NOERROR) STRCPY(ERROR_LOC, errloc_save);
 
   return err;
 }
@@ -847,7 +847,7 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
     err = NOERROR,
     kappas = CovList[cov->nr].kappas;
   errorloc_type errloc_save;
-  strcpy(errloc_save, ERROR_LOC);
+  STRCPY(errloc_save, ERROR_LOC);
    
   PrInL++;
 
@@ -912,7 +912,7 @@ int init2(cov_model *cov, gen_storage *s){ // s wird durchgereicht!
   
  ErrorHandling :
   PrInL--;
-  if (err == NOERROR) strcpy(ERROR_LOC, errloc_save);
+  if (err == NOERROR) STRCPY(ERROR_LOC, errloc_save);
   cov->initialised = err == NOERROR;
   return err;
 }

@@ -414,7 +414,7 @@ int initmixed(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
   
   // cholesky zerlegung + bereitstellung von b
 
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
   SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "init mixed model");
   
   assert(cov->nr == MIXEDEFFECT);
@@ -969,7 +969,7 @@ void do_trend(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
   
   assert(cov->vdim[0] == cov->vdim[1]);
 
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
   SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
  
   // print("%s\n", ERROR_LOC);
@@ -1306,10 +1306,10 @@ void do_TrendEval(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *s){
     *res = cov->rf;
   assert(res != NULL);
   errorloc_type errorloc_save;
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
   SPRINTF(ERROR_LOC, "%s%s: ", errorloc_save, "add trend model");
   Fctn(NULL, cov, res);
-  strcpy(ERROR_LOC, errorloc_save);
+  STRCPY(ERROR_LOC, errorloc_save);
 
   BOXCOX_INVERSE;
   return; 

@@ -90,12 +90,12 @@ int getListEltNr(SEXP list,const char *str) {
   int Nr=0, i,
     n=length(names);
   
-  ln=strlen(str);
-  while ( Nr < n  && strncmp(str, CHAR(STRING_ELT(names, Nr)), ln)) Nr++;
+  ln=STRLEN(str);
+  while ( Nr < n  && STRNCMP(str, CHAR(STRING_ELT(names, Nr)), ln)) Nr++;
   if (Nr < n) { 
-    if (ln==strlen(CHAR(STRING_ELT(names, Nr)))) {
+    if (ln==STRLEN(CHAR(STRING_ELT(names, Nr)))) {
       for (i=Nr+1; i < n; i++) {
-	if (strncmp(str, CHAR(STRING_ELT(names, i)), ln) == 0) {
+	if (STRNCMP(str, CHAR(STRING_ELT(names, i)), ln) == 0) {
 	  return MULTIPLEMATCHING;
 	}
       }
@@ -107,11 +107,11 @@ int getListEltNr(SEXP list,const char *str) {
     j=Nr+1; // if two or more covariance functions have the same name 
     //            the last one is taken 
     while (j<n) {
-      while ( (j<n) && strncmp(str, CHAR(STRING_ELT(names, j)), ln)) {j++;}
+      while ( (j<n) && STRNCMP(str, CHAR(STRING_ELT(names, j)), ln)) {j++;}
       if (j<n) {
-	if (ln==strlen(CHAR(STRING_ELT(names, j)))) { 
+	if (ln==STRLEN(CHAR(STRING_ELT(names, j)))) { 
 	  for (; j < n; j++)
-	    if (strncmp(str, CHAR(STRING_ELT(names, j)), ln) == 0) {
+	    if (STRNCMP(str, CHAR(STRING_ELT(names, j)), ln) == 0) {
 	      return MULTIPLEMATCHING;
 	    }
 	  return j;
@@ -148,6 +148,9 @@ void includeparam(void **qq,       // px
 		  int base,     
 		  char *param_name // name used in error messages
 		  ) {
+
+  //  printf("%ld %d\n", __cplusplus, __unix);
+  
   int j;
   switch(type) {
   case REALSXP : 
@@ -173,9 +176,9 @@ void includeparam(void **qq,       // px
       *qq = MALLOC(sizeof(char*) * len);
       char** q = (char **) *qq;
       for (j=0; j<len; j++) {
-	nch = strlen((char*) CHAR(STRING_ELT(p, j)));
+	nch = STRLEN((char*) CHAR(STRING_ELT(p, j)));
 	q[j] = (char *) MALLOC(sizeof(char) * (nch+1));
-	strcpy(q[j], (char*) CHAR(STRING_ELT(p, j)));
+	STRCPY(q[j], (char*) CHAR(STRING_ELT(p, j)));
       }
     }
     break;
@@ -397,7 +400,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
   strcopyN(leer, "                                                           ", 
 	   (2 * level < NLEER) ? 2 * level : NLEER);
   SPRINTF(ERR_LOC, "%s\n%s%s... ", ERROR_LOC, leer, name);
-  strcpy(ERROR_LOC, ERR_LOC);
+  STRCPY(ERROR_LOC, ERR_LOC);
   covnr = getmodelnr(name);
 
   //  if (covnr == NATSC && NS) ERR("natsc model and RFparameters(PracticalRange=TRUE) may not be given at the same time");
@@ -455,8 +458,8 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
 	  if (i <= 0 || cov->ownkappanames[i-1] != NULL) 
 	    ERR("too many free parameters");
 	  cov->ownkappanames[i] = 
-	    (char*) MALLOC(sizeof(char) * (1 + strlen(param_name)));
-	strcpy(cov->ownkappanames[i], param_name);
+	    (char*) MALLOC(sizeof(char) * (1 + STRLEN(param_name)));
+	STRCPY(cov->ownkappanames[i], param_name);
 	}
       }
     } else {
@@ -519,13 +522,13 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
       
       subleft[i] = false;
       CMbuild(p, level + 1, cov->sub + i);
-      strcpy(ERROR_LOC, ERR_LOC);
+      STRCPY(ERROR_LOC, ERR_LOC);
       cov->sub[i]->calling = cov;
       (cov->nsub)++;
     } else { // parameter (not list)
       // parameter identification
       int len_p = length(p); // originally "l"
-      //      if (param_name[0]==ONEARGUMENT_NAME && strlen(param_name) == 1) { 
+      //      if (param_name[0]==ONEARGUMENT_NAME && STRLEN(param_name) == 1) { 
       //     if (STRCMP(param_name, "k") == 0) {
       if (param_name[0] == ONEARGUMENT_NAME && param_name[1] ==  '\0') {
 	if (TYPEOF(p) != REALSXP && TYPEOF(p) != INTSXP && TYPEOF(p) != LGLSXP) 
@@ -586,7 +589,7 @@ void CMbuild(SEXP model, int level, cov_model **Cov) {
       if (isVectorList(p) && isString(VECTOR_ELT(p, 0))) {
 	PFREE(i);
 	CMbuild(p, level + 1, cov->kappasub + i);
-	strcpy(ERROR_LOC, ERR_LOC);
+	STRCPY(ERROR_LOC, ERR_LOC);
 	cov->kappasub[i]->calling = cov;
       } else {
 	// first the fixed one for the dimensions !!
@@ -747,7 +750,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
   if (currentNrCov==-1) InitModelList();  
 
    while (true) {
-    strcpy(ERROR_LOC, "Building the model:");
+    STRCPY(ERROR_LOC, "Building the model:");
     cov = NULL;
    
     if (*Cov != NULL) {
@@ -759,7 +762,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
 
     //    BUG;
  
-    strcpy(ERROR_LOC, "Having built the model:");
+    STRCPY(ERROR_LOC, "Having built the model:");
     cov = *Cov;
     if (cov == NULL) ERR("no model is given");
     assert(cov->calling == NULL);
@@ -831,7 +834,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     cov->calling=NULL;
 
  
-   strcpy(ERROR_LOC, "Checking the model:");
+   STRCPY(ERROR_LOC, "Checking the model:");
     if (PL >= PL_DETAILS) {
       //PMI(cov);//OK
     }
@@ -853,7 +856,7 @@ void CheckModelInternal(SEXP model, double *x, double *Y, double *T,
     }
  
     SPRINTF(ERROR_LOC, "%s process: ", ROLENAMES[cov->role]);
-    strcpy(PREF_FAILURE, "");
+    STRCPY(PREF_FAILURE, "");
     PrInL=-1;
     
     if (PL >= PL_DETAILS) PRINTF("CheckModel Internal A\n");
@@ -948,7 +951,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
   
   //   PMI(cov);
 
-  strcpy(ERROR_LOC, "");
+  STRCPY(ERROR_LOC, "");
   if (cov == NULL) GERR("register not initialised");
   if ( (len = cov->qlen) == 0) {
     BUG;
@@ -1011,7 +1014,7 @@ void density(double VARIABLE_IS_NOT_USED *value, cov_model *cov, double *v) {
   if (v==NULL) return; // EvaluateModel needs information about size
   //                      of result array
 
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
 
   PutRNGstate();
   ERR("stop : ni nae Zei falsch");
@@ -1257,7 +1260,7 @@ void simulate(double *N, cov_model *cov, double *v){
   } 
   nn = (int) cov->q[cov->qlen - 1];
 
- strcpy(errorloc_save, ERROR_LOC);
+ STRCPY(errorloc_save, ERROR_LOC);
   simu = &(cov->simu);
   if (!simu->active) {
     err=ERRORNOTINITIALIZED; goto ErrorHandling;
@@ -1859,7 +1862,7 @@ void EvalDistr(double VARIABLE_IS_NOT_USED *N, cov_model *cov, double *v){
     n = (int) (cov->q[cov->qlen - 1]);
 
   if (v==NULL) return; // EvaluateModel needs information about size
-  strcpy(errorloc_save, ERROR_LOC);
+  STRCPY(errorloc_save, ERROR_LOC);
 
   if (!PisNULL(EVALDISTR_X)) { // d
     xqp = P(EVALDISTR_X);

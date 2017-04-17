@@ -259,7 +259,7 @@ int calculate_mass_gauss(cov_model *cov) {
 	xgr[d][XLENGTH] = CEIL(range / y[d] + 1.0);
 	if (xgr[d][XLENGTH] >= loc->xgr[d][XLENGTH]) {
 	  BUG;
-	  memcpy(xgr[d], loc->xgr[d], 3 * sizeof(double));
+	  MEMCOPYX(xgr[d], loc->xgr[d], 3 * sizeof(double));
 	} else {
 	  xgr[d][XSTART] =
 	    loc->xgr[d][XSTART] - 0.5 *((xgr[d][XLENGTH] - 1.0) * y[d] - range);

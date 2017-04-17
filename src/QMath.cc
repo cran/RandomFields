@@ -2,182 +2,188 @@
 #include <Rmath.h>
 #include "RF.h"
 #include "primitive.h"
-void Mathacos(double *x, cov_model *cov, double *v){
+void MathACos(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = ACOS(w[0]); 
 }
 
 
-void Mathasin(double *x, cov_model *cov, double *v){
+void MathASin(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = ASIN(w[0]); 
 }
 
 
-void Mathatan(double *x, cov_model *cov, double *v){
+void MathATan(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = ATAN(w[0]); 
 }
 
 
-void Mathatan2(double *x, cov_model *cov, double *v){
+void MathAtan2(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = atan2(w[0], w[1]); 
+*v = ATAN2(w[0], w[1]); 
 }
 
 
-void Mathcos(double *x, cov_model *cov, double *v){
+void MathCos(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = COS(w[0]); 
 }
 
 
-void Mathsin(double *x, cov_model *cov, double *v){
+void MathSin(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = SIN(w[0]); 
 }
 
 
-void Mathtan(double *x, cov_model *cov, double *v){
+void MathTan(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = TAN(w[0]); 
 }
 
 
-void Mathacosh(double *x, cov_model *cov, double *v){
+void MathAcosh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = acosh(w[0]); 
+*v = ACOSH(w[0]); 
 }
 
 
-void Mathasinh(double *x, cov_model *cov, double *v){
+void MathAsinh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = asinh(w[0]); 
+  *v = ASINH(w[0]); 
 }
 
 
-void Mathatanh(double *x, cov_model *cov, double *v){
+void MathAtanh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = atanh(w[0]); 
+*v = ATANH(w[0]); 
 }
 
 
-void Mathcosh(double *x, cov_model *cov, double *v){
+void MathCosh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = cosh(w[0]); 
+*v = COSH(w[0]); 
 }
 
 
-void Mathsinh(double *x, cov_model *cov, double *v){
+void MathSinh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = sinh(w[0]); 
+*v = SINH(w[0]); 
 }
 
 
-void Mathtanh(double *x, cov_model *cov, double *v){
+void MathTanh(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = tanh(w[0]); 
+*v = TANH(w[0]); 
 }
 
 
-void Mathexp(double *x, cov_model *cov, double *v){
+void MathExp(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = EXP(w[0]); 
 }
 
 
-void Mathlog(double *x, cov_model *cov, double *v){
+void MathLog(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = LOG(w[0]); 
 }
 
 
-void Mathexpm1(double *x, cov_model *cov, double *v){
+void MathExpm1(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = expm1(w[0]); 
+  *v = EXPM1(w[0]);
 }
 
 
-void Mathlog1p(double *x, cov_model *cov, double *v){
+void MathLog1p(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = log1p(w[0]); 
+*v = LOG1P(w[0]); 
 }
 
 
-void Mathlogb(double *x, cov_model *cov, double *v){
+void MathLogb(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = logb(w[0]); 
+  *v = LOGB(w[0]);
+//  printf("logb %f\t%f\n", *v, logb(w[0]));
 }
 
 
-void Mathexp2(double *x, cov_model *cov, double *v){
+void MathExp2(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = exp2(w[0]); 
+*v = EXP(w[0]);
+// printf("e %f\t%f\n", *v, EXP2(w[0])); 
 }
 
 
-void Mathlog2(double *x, cov_model *cov, double *v){
+void MathLog2(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = log2(w[0]); 
+*v = LOG_BASE2(w[0]);
+// printf("e %f\t%f\n", *v, LOG_BASE2(w[0]));  
 }
 
 
-void Mathpow(double *x, cov_model *cov, double *v){
+void MathPow(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = POW(w[0], w[1]); 
 }
 
 
-void Mathsqrt(double *x, cov_model *cov, double *v){
+void MathSqrt(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = SQRT(w[0]); 
 }
 
 
-void Mathhypot(double *x, cov_model *cov, double *v){
+void MathHypot(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = hypot(w[0], w[1]); 
+*v = HYPOT(w[0], w[1]); 
+// printf("e %f\t%f\n", *v, HYPOT(w[0], w[1]));
 }
 
 
-void Mathcbrt(double *x, cov_model *cov, double *v){
+void MathCbrt(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = cbrt(w[0]); 
+*v = CBRT(w[0]);
+// printf("e %f\t%f\n", *v, CBRT(w[0])); 
 }
 
 
-void Mathceil(double *x, cov_model *cov, double *v){
+void MathCeil(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = CEIL(w[0]); 
 }
 
 
-void Mathfabs(double *x, cov_model *cov, double *v){
+void MathFABS(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = FABS(w[0]); 
 }
 
 
-void Mathfloor(double *x, cov_model *cov, double *v){
+void MathFloor(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = FLOOR(w[0]); 
 }
 
 
-void Mathfmod(double *x, cov_model *cov, double *v){
+void MathFmod(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-  *v = std::fmod(w[0], w[1]); 
+  *v = FMOD(w[0], w[1]); 
+//printf("e %f\t%f\n", *v, FMOD(w[0], w[1]));
 }
 
 
 
-void Mathround(double *x, cov_model *cov, double *v){
+void MathRound(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = ROUND(w[0]); 
 }
 
 
-void Mathtrunc(double *x, cov_model *cov, double *v){
+void MathTrunc(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = TRUNC(w[0]); 
 }
@@ -190,97 +196,99 @@ MATH_DEFAULT
   *v = std::nearbyint(w[0]); 
 }
 
-void Mathlrint(double *x, cov_model *cov, double *v){
+void MathLrint(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
   *v = std::lrint(w[0]); 
 }
 
 
-void Mathllrint(double *x, cov_model *cov, double *v){
+void MathLlrint(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = llrint(w[0]); 
 }
 
-void Mathlround(double *x, cov_model *cov, double *v){
+void MathLRound(double *x, cov_model *cov, double *v){
   MATH_DEFAULT
   *v = l ROUND(w[0]); 
 }
 
 
-void Mathllround(double *x, cov_model *cov, double *v){
+void MathLLRound(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = ll ROUND(w[0]); 
 }
 
-void Mathcopysign(double *x, cov_model *cov, double *v){
+void MathCopysign(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = copysign(w[0], w[1]); 
 }
-*/
 
-void Matherf(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-*v = erf(w[0]); 
-}
-
-
-void Matherfc(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-*v = erfc(w[0]); 
-}
-
-
-void Mathtgamma(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-*v = tgamma(w[0]); 
-}
-
-
-void Mathlgamma(double *x, cov_model *cov, double *v){
-MATH_DEFAULT
-  *v = lgammafn(w[0]);
-}
-
-
-void Mathrint(double *x, cov_model *cov, double *v){
+void MathRint(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = rint(w[0]); 
 }
 
-
-void Mathnextafter(double *x, cov_model *cov, double *v){
+void MathNextafter(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = nextafter(w[0], w[1]); 
 }
 
 
-void Mathnexttoward(double *x, cov_model *cov, double *v){
+void MathNexttoward(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
 *v = nexttoward(w[0], w[1]); 
 }
+*/
 
-
-void Mathremainder(double *x, cov_model *cov, double *v){
+void MathErf(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = remainder(w[0], w[1]); 
+ *v = 1.0 - 2.0 * pnorm(w[0], 0.0, INVSQRTTWO, 0, 0);
 }
 
 
-void Mathfdim(double *x, cov_model *cov, double *v){
+void MathErfc(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = fdim(w[0], w[1]); 
+  *v = 2.0 * pnorm(w[0], 0.0, INVSQRTTWO, 0, 0);
 }
 
 
-void Mathfmax(double *x, cov_model *cov, double *v){
+void MathGamma(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = fmax(w[0], w[1]); 
+  *v = gammafn(w[0]); 
 }
 
 
-void Mathfmin(double *x, cov_model *cov, double *v){
+void MathLgamma(double *x, cov_model *cov, double *v){
 MATH_DEFAULT
-*v = fmin(w[0], w[1]); 
+  *v = lgammafn(w[0]);
+}
+
+
+void MathRemainder(double *x, cov_model *cov, double *v){
+MATH_DEFAULT
+*v = REMAINDER(w[0], w[1]);
+// printf("e %f\t%f\t%f\n", *v, REMAINDER(w[0], w[1]), fr ound(w[1], 0));
+}
+
+
+void MathFdim(double *x, cov_model *cov, double *v){
+MATH_DEFAULT
+*v = FDIM(w[0], w[1]);
+// printf("e %f\t%f\n", *v, FDIM(w[0], w[1]));
+
+}
+
+
+void MathFmax(double *x, cov_model *cov, double *v){
+MATH_DEFAULT
+*v = FMAX(w[0], w[1]);
+ 
+}
+
+
+void MathFmin(double *x, cov_model *cov, double *v){
+MATH_DEFAULT
+*v = FMIN(w[0], w[1]); 
 }
 
 
@@ -290,7 +298,7 @@ IncludeModel(".acos", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("acos");
 kappanames("a", REALSXP);
-addCov(Mathacos, NULL, NULL);
+addCov(MathACos, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".asin", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -298,7 +306,7 @@ IncludeModel(".asin", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("asin");
 kappanames("a", REALSXP);
-addCov(Mathasin, NULL, NULL);
+addCov(MathASin, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".atan", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -306,7 +314,7 @@ IncludeModel(".atan", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("atan");
 kappanames("a", REALSXP);
-addCov(Mathatan, NULL, NULL);
+addCov(MathATan, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".atan2", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -314,7 +322,7 @@ IncludeModel(".atan2", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("atan2");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathatan2, NULL, NULL);
+addCov(MathAtan2, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".cos", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -322,7 +330,7 @@ IncludeModel(".cos", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("cos");
 kappanames("a", REALSXP);
-addCov(Mathcos, NULL, NULL);
+addCov(MathCos, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".sin", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -330,7 +338,7 @@ IncludeModel(".sin", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("sin");
 kappanames("a", REALSXP);
-addCov(Mathsin, NULL, NULL);
+addCov(MathSin, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".tan", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -338,7 +346,7 @@ IncludeModel(".tan", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("tan");
 kappanames("a", REALSXP);
-addCov(Mathtan, NULL, NULL);
+addCov(MathTan, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".acosh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -346,7 +354,7 @@ IncludeModel(".acosh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("acosh");
 kappanames("a", REALSXP);
-addCov(Mathacosh, NULL, NULL);
+addCov(MathAcosh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".asinh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -354,7 +362,7 @@ IncludeModel(".asinh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("asinh");
 kappanames("a", REALSXP);
-addCov(Mathasinh, NULL, NULL);
+addCov(MathAsinh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".atanh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -362,7 +370,7 @@ IncludeModel(".atanh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("atanh");
 kappanames("a", REALSXP);
-addCov(Mathatanh, NULL, NULL);
+addCov(MathAtanh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".cosh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -370,7 +378,7 @@ IncludeModel(".cosh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("cosh");
 kappanames("a", REALSXP);
-addCov(Mathcosh, NULL, NULL);
+addCov(MathCosh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".sinh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -378,7 +386,7 @@ IncludeModel(".sinh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("sinh");
 kappanames("a", REALSXP);
-addCov(Mathsinh, NULL, NULL);
+addCov(MathSinh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".tanh", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -386,7 +394,7 @@ IncludeModel(".tanh", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("tanh");
 kappanames("a", REALSXP);
-addCov(Mathtanh, NULL, NULL);
+addCov(MathTanh, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".exp", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -394,7 +402,7 @@ IncludeModel(".exp", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("exp");
 kappanames("a", REALSXP);
-addCov(Mathexp, NULL, NULL);
+addCov(MathExp, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".log", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -402,7 +410,7 @@ IncludeModel(".log", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("log");
 kappanames("a", REALSXP);
-addCov(Mathlog, NULL, NULL);
+addCov(MathLog, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".expm1", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -410,7 +418,7 @@ IncludeModel(".expm1", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("expm1");
 kappanames("a", REALSXP);
-addCov(Mathexpm1, NULL, NULL);
+addCov(MathExpm1, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".log1p", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -418,7 +426,7 @@ IncludeModel(".log1p", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("log1p");
 kappanames("a", REALSXP);
-addCov(Mathlog1p, NULL, NULL);
+addCov(MathLog1p, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".logb", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -426,7 +434,7 @@ IncludeModel(".logb", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("logb");
 kappanames("a", REALSXP);
-addCov(Mathlogb, NULL, NULL);
+addCov(MathLogb, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".exp2", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -434,7 +442,7 @@ IncludeModel(".exp2", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("exp2");
 kappanames("a", REALSXP);
-addCov(Mathexp2, NULL, NULL);
+addCov(MathExp2, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".log2", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -442,7 +450,7 @@ IncludeModel(".log2", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("log2");
 kappanames("a", REALSXP);
-addCov(Mathlog2, NULL, NULL);
+addCov(MathLog2, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".pow", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -450,7 +458,7 @@ IncludeModel(".pow", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("pow");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathpow, NULL, NULL);
+addCov(MathPow, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".sqrt", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -458,7 +466,7 @@ IncludeModel(".sqrt", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("sqrt");
 kappanames("a", REALSXP);
-addCov(Mathsqrt, NULL, NULL);
+addCov(MathSqrt, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".hypot", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -466,7 +474,7 @@ IncludeModel(".hypot", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("hypot");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathhypot, NULL, NULL);
+addCov(MathHypot, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".cbrt", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -474,7 +482,7 @@ IncludeModel(".cbrt", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("cbrt");
 kappanames("a", REALSXP);
-addCov(Mathcbrt, NULL, NULL);
+addCov(MathCbrt, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".ceil", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -482,7 +490,7 @@ IncludeModel(".ceil", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("ceil");
 kappanames("a", REALSXP);
-addCov(Mathceil, NULL, NULL);
+addCov(MathCeil, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".fabs", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -490,7 +498,7 @@ IncludeModel(".fabs", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("fabs");
 kappanames("a", REALSXP);
-addCov(Mathfabs, NULL, NULL);
+addCov(MathFABS, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".floor", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -498,7 +506,7 @@ IncludeModel(".floor", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("floor");
 kappanames("a", REALSXP);
-addCov(Mathfloor, NULL, NULL);
+addCov(MathFloor, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".fmod", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -506,7 +514,7 @@ IncludeModel(".fmod", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("fmod");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathfmod, NULL, NULL);
+addCov(MathFmod, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 
@@ -515,7 +523,7 @@ IncludeModel(".round", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("round");
 kappanames("a", REALSXP);
-addCov(Mathround, NULL, NULL);
+addCov(MathRound, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".trunc", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -523,7 +531,7 @@ IncludeModel(".trunc", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("trunc");
 kappanames("a", REALSXP);
-addCov(Mathtrunc, NULL, NULL);
+addCov(MathTrunc, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 
@@ -533,7 +541,7 @@ IncludeModel(".nearbyint", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("nearbyint");
 kappanames("a", REALSXP);
-addCov(Mathnearbyint, NULL, NULL);
+addCov(MathNearbyint, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".lrint", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -541,7 +549,7 @@ IncludeModel(".lrint", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("lrint");
 kappanames("a", REALSXP);
-addCov(Mathlrint, NULL, NULL);
+addCov(MathLrint, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".llrint", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -549,7 +557,7 @@ IncludeModel(".llrint", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("llrint");
 kappanames("a", REALSXP);
-addCov(Mathllrint, NULL, NULL);
+addCov(MathLlrint, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".lround", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -557,7 +565,7 @@ IncludeModel(".lround", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("lround");
 kappanames("a", REALSXP);
-addCov(Mathlround, NULL, NULL);
+addCov(MathLRound, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 
@@ -566,7 +574,7 @@ IncludeModel(".llround", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("llround");
 kappanames("a", REALSXP);
-addCov(Mathllround, NULL, NULL);
+addCov(MathLLRound, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".copysign", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -574,7 +582,31 @@ IncludeModel(".copysign", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("copysign");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathcopysign, NULL, NULL);
+addCov(MathCopysign, NULL, NULL);
+AddVariant(TrendType, PREVMODELI);
+
+IncludeModel(".rint", MathDefinition, 0, 0, 1, NULL, XONLY,
+	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
+	false, SCALAR, PREVMODEL_DEP, false, false); 
+nickname("rint");
+kappanames("a", REALSXP);
+addCov(MathRint, NULL, NULL);
+AddVariant(TrendType, PREVMODELI);
+
+IncludeModel(".nextafter", MathDefinition, 0, 0, 2, NULL, XONLY,
+	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
+	false, SCALAR, PREVMODEL_DEP, false, false); 
+nickname("nextafter");
+kappanames("a", REALSXP, "b", REALSXP);
+addCov(MathNextafter, NULL, NULL);
+AddVariant(TrendType, PREVMODELI);
+
+IncludeModel(".nexttoward", MathDefinition, 0, 0, 2, NULL, XONLY,
+	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
+	false, SCALAR, PREVMODEL_DEP, false, false); 
+nickname("nexttoward");
+kappanames("a", REALSXP, "b", REALSXP);
+addCov(MathNexttoward, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 */
 
@@ -583,7 +615,7 @@ IncludeModel(".erf", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("erf");
 kappanames("a", REALSXP);
-addCov(Matherf, NULL, NULL);
+addCov(MathErf, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".erfc", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -591,15 +623,15 @@ IncludeModel(".erfc", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("erfc");
 kappanames("a", REALSXP);
-addCov(Matherfc, NULL, NULL);
+addCov(MathErfc, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
-IncludeModel(".tgamma", MathDefinition, 0, 0, 1, NULL, XONLY,
+IncludeModel(".gamma", MathDefinition, 0, 0, 1, NULL, XONLY,
 	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
-nickname("tgamma");
+nickname("gamma");
 kappanames("a", REALSXP);
-addCov(Mathtgamma, NULL, NULL);
+addCov(MathGamma, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".lgamma", MathDefinition, 0, 0, 1, NULL, XONLY,
@@ -607,39 +639,16 @@ IncludeModel(".lgamma", MathDefinition, 0, 0, 1, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("lgamma");
 kappanames("a", REALSXP);
-addCov(Mathlgamma, NULL, NULL);
+addCov(MathLgamma, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
-IncludeModel(".rint", MathDefinition, 0, 0, 1, NULL, XONLY,
-	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
-	false, SCALAR, PREVMODEL_DEP, false, false); 
-nickname("rint");
-kappanames("a", REALSXP);
-addCov(Mathrint, NULL, NULL);
-AddVariant(TrendType, PREVMODELI);
-
-IncludeModel(".nextafter", MathDefinition, 0, 0, 2, NULL, XONLY,
-	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
-	false, SCALAR, PREVMODEL_DEP, false, false); 
-nickname("nextafter");
-kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathnextafter, NULL, NULL);
-AddVariant(TrendType, PREVMODELI);
-
-IncludeModel(".nexttoward", MathDefinition, 0, 0, 2, NULL, XONLY,
-	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
-	false, SCALAR, PREVMODEL_DEP, false, false); 
-nickname("nexttoward");
-kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathnexttoward, NULL, NULL);
-AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".remainder", MathDefinition, 0, 0, 2, NULL, XONLY,
 	 PREVMODELI,checkMath,rangeMath, PREF_TREND,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("remainder");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathremainder, NULL, NULL);
+addCov(MathRemainder, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".fdim", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -647,7 +656,7 @@ IncludeModel(".fdim", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("fdim");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathfdim, NULL, NULL);
+addCov(MathFdim, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".fmax", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -655,7 +664,7 @@ IncludeModel(".fmax", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("fmax");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathfmax, NULL, NULL);
+addCov(MathFmax, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 IncludeModel(".fmin", MathDefinition, 0, 0, 2, NULL, XONLY,
@@ -663,7 +672,7 @@ IncludeModel(".fmin", MathDefinition, 0, 0, 2, NULL, XONLY,
 	false, SCALAR, PREVMODEL_DEP, false, false); 
 nickname("fmin");
 kappanames("a", REALSXP, "b", REALSXP);
-addCov(Mathfmin, NULL, NULL);
+addCov(MathFmin, NULL, NULL);
 AddVariant(TrendType, PREVMODELI);
 
 }

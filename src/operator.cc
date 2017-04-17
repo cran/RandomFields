@@ -587,22 +587,22 @@ int check_BR2EG(cov_model *cov) {
   for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
-  // erfc(x) = 2(1 - Phi(x * SQRT(2)))
-  // erf(x) = 2 Phi(x * SQRT(2)) - 1
-  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
+  // Erfc(x) = 2(1 - Phi(x * SQRT(2)))
+  // Erf(x) = 2 Phi(x * SQRT(2)) - 1
+  // Erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
 
-  // Sei c = 1-2 * erf(SQRT(semivario / 4))^2 .
+  // Sei c = 1-2 * Erf(SQRT(semivario / 4))^2 .
   // Also c = 1 - 2 [ 2 Phi(SQRT(semivario / 2)) - 1]^2
-  // Umgekehrt semivario = 4 * { erf^{-1} (sqrt[0.5 (1 - c)]) } ^2
+  // Umgekehrt semivario = 4 * { Erf^{-1} (sqrt[0.5 (1 - c)]) } ^2
   // mit c = 0 folgt SQRT(0.5 (1-c)) = 1 / SQRT(2)
   // semivario = 2 * {Phi^{-1}( (1 / SQRT(2) + 1) / 2 ) } ^2
 
   alpha = 0.0;
   COV(ZERO, next, &v);
   t = qnorm(0.5 * (1.0 + INVSQRTTWO), 0.0, 1.0, true, false);
-  t *=  t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen erf->qnorm
+  t *=  t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
   if (v > t)
-    SERR2("variance equals %f, but must be at most 4(erf^{-1}(1/2))^2 = %f",
+    SERR2("variance equals %f, but must be at most 4(Erf^{-1}(1/2))^2 = %f",
 	  v, t);
   return NOERROR;  
 }
@@ -633,12 +633,12 @@ int check_BR2BG(cov_model *cov) {
    for (i=0; i<vdim; i++) cov->mpp.maxheights[i] = 1.0;
   if (next->pref[Nothing] == PREF_NONE) return ERRORPREFNONECOV;
 
-  // erfc(x) = 2(1 - Phi(x * SQRT(2)))
-  // erf(x) = 2 Phi(x * SQRT(2)) - 1
-  // erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
+  // Erfc(x) = 2(1 - Phi(x * SQRT(2)))
+  // Erf(x) = 2 Phi(x * SQRT(2)) - 1
+  // Erf^{-1}(x) = Phi^{-1}( (y + 1) / 2 ) / SQRT(2) 
 
 
-  // Sei c = COS(pi * erf(SQRT(semivario / 4))) .
+  // Sei c = COS(pi * Erf(SQRT(semivario / 4))) .
   // Also c = COS(pi * [2 * Phi(SQRT(semivario / 2)) - 1] )
   // Umgekehrt semivario = 2 * { Phi^{-1}(0.5 * [arcCOS( c ) / pi + 1]) }^2
   // mit c = 0 folgt arcCOS(c)/ pi + 1 = 3/2
@@ -647,10 +647,10 @@ int check_BR2BG(cov_model *cov) {
   COV(ZERO, next, &v);
   alpha = 0.0; // to do
   t = qnorm(0.75, 0.0, 1.0, false, false);
-  t *= t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen erf->qnorm
+  t *= t / (BR_SEMI_FACTOR * (1.0 - alpha)); // 1/2 wegen Erf->qnorm
  
   if (v > t) { 
-     SERR2("variance equals %f, but must be at most 4(erf^{-1}(1 / 2))^2 = %f", 
+     SERR2("variance equals %f, but must be at most 4(Erf^{-1}(1 / 2))^2 = %f", 
 	 v, t);
     }
   return NOERROR;   

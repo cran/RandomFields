@@ -254,7 +254,7 @@ void SetDefaultModeValues(int old, int m){
   f->factr_recall = fit_factr_recall[m];
   //  f->optim_var_estim = fit_optim_var[m];
    char dummy[10];
-  strcpy(dummy, f_opt[m]);
+  STRCPY(dummy, f_opt[m]);
   f->optimiser = Match(dummy, OPTIMISER_NAMES, nOptimiser);
   GLOBAL.sequ.initial = -(GLOBAL.sequ.back = sequ_back_initial[m]);
 
@@ -493,7 +493,7 @@ void PrintModelList(int *intern, int *operat, int* Nick)
 	     (!*intern && internal[i]) )
 	  continue;
 	strcopyN(name, C->name, maxchar);
-	if (strncmp(C->name, InternalName, strlen(InternalName)) ==0) {
+	if (STRNCMP(C->name, InternalName, STRLEN(InternalName)) ==0) {
 	  //	  printf("%s %d\n", C->name, *intern);
 	  if (*intern < 2)  continue;
 	}

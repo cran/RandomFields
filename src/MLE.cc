@@ -84,7 +84,7 @@ int GetNAPosition(cov_model *cov,
 
   // C is pointer to true model; CC points to the first model passed
   // in initNerror.cc by IncludeModel or IncludePrim
-  while(strncmp(CC->name, InternalName, strlen(InternalName)) ==0) CC--;
+  while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
   covzaehler[cov->nr]++;
   //  
   
@@ -289,7 +289,7 @@ int GetNAPosition(cov_model *cov,
 	      // printf("NAs %d %s\n", *NAs, names[*NAs]);
 	      
 	      if (*NAs > 0 && 0==
-		  strncmp(names[*NAs], names[*NAs-1], strlen(names[*NAs]))){
+		  STRNCMP(names[*NAs], names[*NAs-1], STRLEN(names[*NAs]))){
 		if (namenr == 1) {
 		  SPRINTF(names[*NAs-1], "%s.%s.%d",
 			  shortname, kappashort, namenr);
@@ -1093,7 +1093,7 @@ int SetAndGetModelInfo(cov_model *key, int shortlen,
 	    jump = i;
 	    for (int j=i+1; j<rows; j++) {
 	      MEMORY[currentRegister][j-1] = MEMORY[currentRegister][j];
-	      strcpy(info->names[j-1],info->names[j]);
+	      STRCPY(info->names[j-1],info->names[j]);
 	    }
 	    break;
 	  }
