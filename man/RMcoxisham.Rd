@@ -45,11 +45,11 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
  V.S. (1988)) and equals the following expectation
  \deqn{C(h,t)=\bold{E}_V C_0(h-Vt)}
  where the random wind speed vector \eqn{V} follows a \eqn{d}-variate
- normal distribution with expectation \eqn{mu} and covariance matrix \eqn{D/2}.
- (cf. See Schlather, M. (2010), Example 9).
+ normal distribution with expectation \eqn{mu} and covariance matrix \eqn{D/2}
+ (cf. Schlather, M. (2010), Example 9).
 }
 \value{
- \command{\link{RMcoxisham}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMcoxisham}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -63,28 +63,23 @@ RMcoxisham(phi,mu,D,beta,var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMcoxisham(RMgauss(), mu=1, D=1)
 x <- seq(0, 10, 0.3)
 plot(model, dim=2)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

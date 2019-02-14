@@ -3,8 +3,6 @@
 \alias{RPspectral}
 \title{Spectral turning bands method}
 
-
-
 \description{The spectral turning bands method is
  a simulation method for stationary
  Gaussian random fields (Mantoglou and Wilson, 1982). 
@@ -15,11 +13,10 @@
  {\bf R}^d}{x in R^d},
  the field \deqn{Y(x)= \sqrt{2} cos(<V,x> + 2 \pi U)}{Y(x)=\sqrt{2}
  cos(<V,x> + 2 pi U)}
- with \eqn{V ~ \Xi } and \eqn{U ~ Ufo((O,1))} is a random field with
+ with \eqn{V ~ \Xi } and \eqn{U ~ Ufo((0,1))} is a random field with
  covariance function \eqn{C(h)}.
  A scaled superposition of many independent realizations of \eqn{Y}{Y}
- gives a Gaussian field,
- acoording to the central limit theorem. For details 
+ gives a Gaussian field according to the central limit theorem. For details 
  see Lantuejoul (2002). The standard method
  allows for the simulation of 2-dimensional random
  fields defined on arbitrary points or arbitrary grids. 
@@ -35,7 +32,7 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
 % \item{loggauss}{see \command{\link{RPgauss}}.}
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{sp_lines}{
  Number of lines used (in total for all additive components of the
@@ -55,10 +52,10 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
  }
  \item{prop_factor}{ % to do: use RRrectangular
    positive real value.
-   Sometimes, the spectral density must be samples by MCMC.
-   Let \eqn{p} the average rejection rate. Then
+   Sometimes, the spectral density must be sampled by MCMC.
+   Let \eqn{p} be the average rejection rate. Then
    the chain is sampled every \eqn{n}th point where
-   \eqn{n = |log(p)| *}\code{prop_factor}
+   \eqn{n = |log(p)| *}\code{prop_factor}.
 
    Default: \code{50}.
  }
@@ -67,7 +64,7 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
  multivariate normal distribution of the proposing
  distribution.
  If \code{sigma}
- is not positive then\code{RandomFields} tries to find a good
+ is not positive then \code{RandomFields} tries to find a good
  choice for 
  \code{sigma} itself.
  
@@ -79,7 +76,7 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
 
 \value{
  \code{RPspectral} returns an object of class
- \code{\link[=RMmodel-class]{RMmodel}} 
+ \code{\link[=RMmodel-class]{RMmodel}}. 
 
 }
 
@@ -94,8 +91,7 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
  line generation by a spectral method.}
  Water Resour. Res., 18(5), 1379-1394. 
  }}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
 \seealso{\link{Gaussian},
  \link{RP},
@@ -104,13 +100,12 @@ RPspectral(phi, boxcox, sp_lines, sp_grid, prop_factor, sigma)
 
 \keyword{methods}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RPspectral(RMmatern(nu=1))
 y <- x <- seq(0,10, len=400)
 z <- RFsimulate(model, x, y, n=2)
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

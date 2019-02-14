@@ -56,7 +56,7 @@
 
 
 ## zentrale C -Schnittstellen
-##    .C(C_PutValuesAtNA, RegNr, param, PACKAGE="RandomFields")
+##    .C(C_PutValuesAtNA, RegNr, param)
 
 ## bins bei Distances automatisch
 
@@ -83,10 +83,167 @@ accessByNameOrNumber <- function(x, i, j, drop=FALSE) {
 
 setMethod("[", signature = "RFfit", def=accessByNameOrNumber)
 
+
+### to do : ask Paulo
+#effects_RFfit <- function(OP, object, method) {
+#  eff <- RFrandef(object=object, method=method, OP=OP)
+#  linpart <- fitted_RFfit(OP=OP, object=object, method=method)
+#  stop("unclear how these two results should be combined in the output")
+#}
+#effects_RMmodelFit <- function(...) stop("'effects' can only be used with the original and sp_conform output of 'RFfit'.")
+#setMethod(f="effects", signature='RFfit',
+#          definition=function(object, method="ml")
+#          effects_RFfit("@", object=object, method=method))#
+#setMethod(f="effects", signature='RMmodelFit',
+#          definition=function(object, newdata=NULL) effects_RMmodelFit())#
+#effects.RM_modelFit <- function(object, ...) effects_RMmodelFit()
+#effects.RF_fit <- function(object, method="ml") effects_RMmodelFit()
+
+
+simulate_RFfit <- function(OP, object, newdata, conditional, method) {
+  Z <- do.call(OP, list(object, "Z"))
+  L <- length(Z$data)
+  ans <- rep(list(NULL), L)
+  m <- ModelParts(object[method], effects=Z$effect, complete=FALSE) ## no params
+  if (conditional) {
+    for (i in 1:L) {
+      ans[[i]] <- RFsimulate(model=m$model,
+                             data = Z$data[[i]],
+                             given = Z$coord[[i]],
+                             x = if (!is.null(newdata)) newdata,
+                             err.model = m$err.model)
+        if (is.list(ans[[i]])) stop("the case with NAs not completely programmed yet. Please let the maintainer now that it is needed ")
+    }
+    return (if (L == 1) ans[[1]] else ans)
+  } else {
+    for (i in 1:L) {
+       ans[[i]] <- RFsimulate(model=,
+                              x = if (length(newdata)==0) Z$coord[[i]]
+                              else newdata)
+      if (is.list(ans[[i]])) stop("the case with NAs not completely programmed yet. Please let the maintainer now that it is needed ")
+    }
+  }
+}
+simulate_RMmodelFit <- function(...) stop("'simulate' can only be used with the original and sp_conform output of 'RFfit'.")
+setMethod(f="simulate", signature='RFfit',
+          definition=function(object, newdata=NULL,
+              conditional=!is.null(newdata),  method="ml")
+          simulate_RFfit("@", object=object, conditional=conditional,
+                         method=method))#
+setMethod(f="simulate", signature='RMmodelFit',
+          definition=function(object, newdata=NULL) simulate_RMmodelFit())#
+simulate.RM_modelFit <- function(object, ...) simulate_RMmodelFit()
+simulate.RF_fit <- function(object, method="ml") simulate_RMmodelFit()
+
+
+predict_RFfit <- function(OP, object, newdata, impute, method) {
+  Z <- do.call(OP, list(object, "Z"))
+  L <- length(Z$data)
+  ans <- rep(list(NULL), L)
+  if (impute) {
+    if (length(newdata) > 0) stop("for imputing, 'newdata' may not be given")
+    for (i in 1:L) {
+      ans[[i]] <- RFinterpolate(model=object[method],
+                                data = Z$data[[i]],
+                                given = Z$coord[[i]],
+                                err.model = NA)
+      if (is.list(ans[[i]])) stop("the case with NAs not completely programmed yet. Please let the maintainer now that it is needed ")
+    }
+  } else {
+    for (i in 1:L) {
+      ans[[i]] <- RFinterpolate(model=object[method],
+                                data = Z$data[[i]],
+                                given = Z$coord[[i]],
+                                x = if (!is.null(newdata)) newdata else
+                                     Z$coord,
+                                err.model = NA)
+      if (is.list(ans[[i]])) stop("the case with NAs not completely programmed yet. Please let the maintainer now that it is needed ")
+    }
+  }
+  return (if (L == 1) ans[[1]] else ans)
+}
+predict_RMmodelFit <- function(...) stop("'predict' can only be used with the original and sp_conform output of 'RFfit.")
+setMethod(f="predict", signature='RFfit',
+          definition=function(object, newdata=NULL, impute=FALSE, method="ml")
+          predict_RFfit("@", object=object, newdata=newdata,
+                        impute=impute, method=method))#
+setMethod(f="predict", signature='RMmodelFit',
+          definition=function(object, newdata=NULL) predict_RMmodelFit())#
+predict.RM_modelFit <- function(object, ...)
+  predict_RMmodelFit(object=object, ...)
+predict.RF_fit <- function(object, method="ml")
+  predict_RMmodelFit(object, method=method)
+
+
+
+coef_RMmodelFit <- function(OP, object) {
+  covariat <- do.call(OP, list(object, "covariat"))
+  glbl.var <- do.call(OP, list(object, "globalvariance"))
+  p <- do.call(OP, list(object, "param"))
+  if (length(covariat) > 0)  covariat <- as.matrix(covariat)
+  nr_p <- nrow(p)
+  if (length(glbl.var) > 0)
+    glbl.var <- c(glbl.var, rep(NA, nr_p - length(glbl.var)))
+  p <- cbind(p, glbl.var,
+             if (length(covariat) > 0)
+             rbind(covariat, matrix(NA, ncol=ncol(covariat),
+                                    nrow= nr_p - nrow(covariat))))
+  #class(p) <- "coef.RMmodelFit"
+  p[1, ]
+}
+setMethod(f="coef", signature='RMmodelFit',
+          definition=function(object) coef_RMmodelFit("@", object))#
+setMethod(f="coef", signature='RFfit',
+          definition=function(object, method="ml")
+          coef_RMmodelFit("@", object[method]))#
+coef.RM_modelFit <- function(object, ...)
+  coef_RMmodelFit("$", object)
+coef.RF_fit <- function(object, method="ml")
+  coef_RMmodelFit("$", object[method])
+
+
+
+residuals_RMmodelFit <- function(OP, object) {
+  resid <- do.call(OP, list(object, "residuals"))
+  message("Note that 'residuals' equals the difference between the data and the linear part (fixed effects).")
+  if (length(resid) == 1) resid[[1]] else resid
+}
+setMethod(f="residuals", signature='RMmodelFit',
+          definition=function(object) residuals_RMmodelFit("@", object))#
+setMethod(f="residuals", signature='RFfit',
+          definition=function(object, method="ml")
+          residuals_RMmodelFit("@", object[method]))#
+residuals.RM_modelFit <- function(object, ...)
+  residuals_RMmodelFit("$", object)
+residuals.RF_fit <- function(object, method="ml")
+  residuals_RMmodelFit("$", object[method])
+
+
+
+fitted_RFfit <- function(OP, object, method) {
+  data <- do.call(OP, list(object, "Z"))$data
+  resid <- do.call(OP, list(object[method], "residuals"))
+  for (i in 1:length(data)) data[[i]] <- data[[i]] - resid[[i]]
+  message("Note that 'fitted' equals the linear part (fixed effects).")
+  if (length(data) > 1) data else
+  if (ncol(data[[1]]) > 1)  data[[1]] else as.vector(data[[1]])
+}
+fitted_RMmodelFit <- function(...) stop("'fitted' can only be used with the original output of 'RFfit', not with some of its extraction.")
+setMethod(f="fitted", signature='RMmodelFit',
+          definition=function(object) fitted_RMmodelFit())#
+setMethod(f="fitted", signature='RFfit',
+          definition=function(object, method="ml")
+          fitted_RFfit("@", object=object, method=method))#
+fitted.RM_modelFit <- function(object, ...) fitted_RMmodelFit()
+fitted.RF_fit <- function(object, method="ml")
+  fitted_RFfit("$", object=object, method=method)
+
+
+
 RFhessian <- function(model) {
   method <- "ml"
-  if (class(model) == "RF_fit") return(model[[method]]@hessian)
-  else if (class(model) == "RFfit") return(model[method]$hessian)
+  if (is(model, "RF_fit")) return(model[[method]]@hessian)
+  else if (is(model, "RFfit")) return(model[method]$hessian)
   else stop("'model' is not an output of 'RFfit'")
 }
 
@@ -95,7 +252,8 @@ anova.RF_fit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 anova.RMmodelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 anova.RM_modelFit <- function(object, ...) RFratiotest(nullmodel=object, ...)
 
-setMethod(f="anova", signature='RMmodelFit', anova.RFfit)#
+setMethod(f="anova", signature=CLASS_FIT, anova.RFfit)#
+setMethod(f="anova", signature='RFfit', anova.RFfit)#
 
 boundary_values <- function(variab) {
   upper.bound <- variab[4, , drop=FALSE]
@@ -110,20 +268,19 @@ boundary_values <- function(variab) {
     lidx[is.na(lidx)] <- FALSE
     uidx[is.na(uidx)] <- FALSE    
     txt <-
-      paste(sep="", "Note that the (internal) fitted variable",
+      paste(sep="", "Note that the (possibly internal) fitted variable",
             if (nl > 0)
-            paste(if (nl > 1) "s", " ",
-                  paste("'", colnames(variab)[lidx], "'",
-                        sep="", collapse=", "),
-                  " ", if (nl == 1)  "is" else "are",                  
-                  " close to or on the effective lower boundary", sep=""),
+            paste(if (nl > 1) "s " else " ",
+                  paste("'", colnames(variab)[lidx], "'", sep="", collapse=", "),
+                  if (nl == 1)  " is " else " are ",                  
+                  "close to or on the effective lower boundary", sep=""),
             if (nl > 0 && nu > 0) " and the variable",
             if (nu > 0)
-            paste(if (nu > 1) "s", " ",
+            paste(if (nu > 1) "s " else " ", 
                   paste("'", colnames(variab)[uidx], "'",
                         sep="", collapse=", "),
-                  " ", if (nu == 1) "is" else "are",
-                  " close to or on the effective upper boundary"),
+                  if (nu == 1) "is" else "are",
+                  "close to or on the effective upper boundary"),
             ".\nHence the gradient of the likelihood function might not be zero and none of the\nreported 'sd' values might be reliable.")
   } else txt <- NULL
   return(txt)
@@ -174,7 +331,7 @@ summary.RMmodelFit <- function(object, ..., isna.param) {
   summary_RMmodelFit("@", object, ..., isna.param=isna.param)
 }
 
-setMethod(f="summary", signature='RMmodelFit', summary.RMmodelFit)#
+setMethod(f="summary", signature=CLASS_FIT, summary.RMmodelFit)#
 
 summary.RM_modelFit <- function(object, ..., isna.param) {
   summary_RMmodelFit("$", object, ..., isna.param=isna.param)
@@ -249,8 +406,6 @@ print.summary.RMmodelFit <- function(x, ...) {
       }
       if (!is.null(sm$param)) {
         param <- x$param * NA
-#        Print(i, sm$p.proj, param, sm, sm$param)
-        
         param[, sm$p.proj] <- sm$param
         fixed <- sm$fixed
         if (length(fixed) > 0) {
@@ -261,8 +416,6 @@ print.summary.RMmodelFit <- function(x, ...) {
       #  if (!is.null(cparam)) cparam <- rbind(cparam, NA)
         cparam <- rbind(cparam, param)
   
- #       Print(param, cparam)
-        
       }
       np <- np + length(sm$p.proj)
       ll <- ll + sm$loglikelihood
@@ -293,20 +446,17 @@ print.RMmodelFit <- function(x, ...)
 print.RM_modelFit <- function(x, ...)
   print.summary.RMmodelFit(summary.RM_modelFit(x, ...))#
 
-setMethod(f="show", signature='RMmodelFit',
+setMethod(f="show", signature=CLASS_FIT,
           definition=function(object) print.RMmodelFit(object))#
 
   
 summary.RFfit <- function(object, ...,  method="ml", full=FALSE) {
   s <- summary.RMmodelFit(object[method])
   len <-  length(object@submodels)
-#  str(object@submodels, 2)
   if (full && length(object@submodels) > 0) {
     submodels <- list()
     for (i in 1:len) {
       ## war summary.RM_modelFit
-#      Print(object@submodels[[i]][[method]])
-      
       submodels[[i]] <- summary(object@submodels[[i]][[method]],# 'summary'
                                 isna.param=is.null(s$param))    # nicht
       submodels[[i]]$report <- object@submodels[[i]]$report     # spezifizieren!
@@ -443,8 +593,10 @@ fullAIC <- function(x, method="ml", AIC="AIC") {
   model2 <- paste("model2.", values, sep="")
   ats2 <- ats[ !is.na(ats[, model2[2]]), model2]
   colnames(ats2) <- values
+  if (ats2$df < 0) ats2 <- NULL
   ats <- ats[, paste("model1.", values, sep="")]
   colnames(ats) <- values
+  if (ats$df < 0) ats <- NULL
   ats <- unique(rbind(ats, ats2))
   dimnames(ats) <- list(1:nrow(ats), colnames(ats))
 
@@ -531,6 +683,35 @@ residuals.RFfit <- function(object, ..., method="ml")
 residuals.RF_fit <- function(object, ..., method="ml")
   resid.RF_fit(object=object, method=method)
 
+
+
+coef_RMmodelFit <- function(OP, object, ...) {
+  covariat <- do.call(OP, list(object, "covariat"))
+  glbl.var <- do.call(OP, list(object, "globalvariance"))
+  p <- do.call(OP, list(object, "param"))
+  if (length(covariat) > 0)  covariat <- as.matrix(covariat)
+  nr_p <- nrow(p)
+  if (length(glbl.var) > 0)
+    glbl.var <- c(glbl.var, rep(NA, nr_p - length(glbl.var)))
+  p <- cbind(p, glbl.var,
+             if (length(covariat) > 0)
+             rbind(covariat, matrix(NA, ncol=ncol(covariat),
+                                    nrow= nr_p - nrow(covariat))))
+  #class(p) <- "coef.RMmodelFit"
+  p[1, ]
+}
+
+setMethod(f="coef", signature='RMmodelFit',
+          definition=function(object) coef_RMmodelFit("@", object))#
+
+setMethod(f="coef", signature='RFfit',
+          definition=function(object) coef_RMmodelFit("@", object["ml"]))#
+
+coef.RM_modelFit <- function(object, ...) coef_RMmodelFit("$", object, ...)
+coef.RF_fit <- function(object, ...) coef_RMmodelFit("$", object["ml"], ...)
+
+
+
 setMethod(f="plot", signature(x="RFfit", y="missing"),
           function(x, y, ...) RFplotEmpVariogram(x, ...))
 setMethod(f="persp", signature(x="RFfit"),
@@ -566,43 +747,82 @@ RFfit <-
            users.guess=NULL,  
            distances=NULL, dim,
            transform=NULL,
-           ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
+           params=NULL,
+            ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
            ##             "Poisson"),
-           ... ) {
+           ...)
+{
 
-  ##Print(RFoptions()$fit); xxx xxx###
   .C(C_NoCurrentRegister)
-
+  
   RFoptOld <- internal.rfoptions(xyz=length(y)!=0,...,
                                  internal.examples_reduced = FALSE,
-                                 RELAX=isFormulaModel(model))
+                                 RELAX=is(model, "formula"))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
+  if (length(params) > 0) {
+    if ((!is.na(RFopt$fit$estimate_variance_globally) &&
+         RFopt$fit$estimate_variance_globally) &&
+        RFopt$basic$printlevel > 0)
+      message("Value of option 'hestimate_variance_globally' is ignored.")
+    RFopt$fit$estimate_variance_globally <- FALSE
+    RFoptions(fit.estimate_variance_globally = FALSE)
+  }
   fit <- RFopt$fit
-
+  
   if (RFopt$general$vdim_close_together)
     stop("'vdim_close_together' must be FALSE")
 
- # Print(RFoptions()$fit, RFoptOld, RFopt$fit); xxxxxx###
-
   if (is.data.frame(data)) {
     name <- "RFfit.user.dataset"
-    attach(data, name=name)
+    do.call("attach", list(what=data, name=name))
     on.exit(detach(name, character.only = TRUE), add=TRUE)
   }
 
+  ## in UnifyData the further.models that contain only the parameter data
+  ## are turned into genuine models 
+  further.models <- list()
+  models <- c("lower", "upper", "users.guess", "parscale")
+  if (paramlist <- length(params) > 0) {
+    parscale <- optim.control$parscale
+    for (m in models) {
+      fm <- get(m)
+      if (!is.null(fm) && !is.numeric(fm))
+        further.models[[m]] <- PrepareModel2(fm, ...)
+    }
+  }  
 
-  Z <- StandardizeData(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                       data=data, distances=distances, dim=dim,
-                       RFopt=RFopt,
-                       mindist_pts = RFopt$fit$smalldataset / 2, ...)
+
+##  Print(further.models, model)
+  
+  Z <- UnifyData(model=model, x=x, y=y, z=z, T=T, grid=grid,
+                 data=data, distances=distances, dim=dim,
+                 RFopt=RFopt,
+                 mindist_pts = RFopt$fit$smalldataset / 2,
+		 further.models = further.models, params=params, ...)
+
+  ## Print(Z); kkk
+
   Z <- BigDataSplit(Z, RFopt)
   
-  if (!is.null(lower) && !is.numeric(lower)) lower <- PrepareModel2(lower, ...)
-  if (!is.null(upper) && !is.numeric(upper)) upper <- PrepareModel2(upper, ...)
-  if (!is.null(users.guess)) users.guess <- PrepareModel2(users.guess, ...)
-  if (!is.null(optim.control$parscale) && !is.numeric(optim.control$parscale))
-    optim.control$parscale <- PrepareModel2(optim.control$parscale, ...)
+ if (!hasArg("transform")) transform <- NULL
+  if (paramlist) {
+    for (m in models) 
+      if (!is.null(get(m)) && !is.numeric(get(m)))
+        assign(m, Z$further.models[[m]])
+    optim.control$parscale <- parscale
+    if (!is.null(Z$transform)) {
+      if (!is.null(transform))
+        stop("argument 'transform' may not be given if 'params' is given")
+      transform <- Z$transform
+    }
+  } else {    
+    parscale <- optim.control$parscale
+    for (m in models)
+      if (!is.null(get(m)) && !is.numeric(get(m)))
+       assign(m, ReplaceC(PrepareModel2(get(m), ...)))
+    optim.control$parscale <- parscale
+  }
 
 
   new.model <- Z$model
@@ -617,8 +837,8 @@ RFfit <-
     res <- fit.smith()
   } else if (new.model[[1]] %in% c("RPbernoulli", "binaryprocess")) {
     res <- fit.bernoulli()    
-  } else {
-    Z$model <- ExpliciteGauss(Z$model)
+  } else {   
+    Z$model <- ExpliciteGauss(ReplaceC(Z$model))
     res <- do.call("rffit.gauss",
             c(list(Z, lower=lower, upper=upper, users.guess=users.guess,  
                    optim.control=optim.control,

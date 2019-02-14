@@ -20,7 +20,7 @@ RMprod(phi, var, scale, Aniso, proj)
  \command{\link{RMprod}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \details{
-  This model defines 
+  In general, this model defines a positive definite kernel and hence a covariance model for all functions \eqn{\phi} with values in an arbitrary Hilbert space. However, as already mentioned above, \eqn{\phi} should stem from a covariance or variogram model, here. 
 }
 
 \note{
@@ -34,12 +34,13 @@ RMprod(phi, var, scale, Aniso, proj)
   University Press.  
  }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{
+  \command{\link{RMid}},
+  \command{\link{RMid}},
   \command{\link{RMsum}},
   \command{\link{RMmodel}},
-  \command{\link{RMmult}}
+  \command{\link{RMmult}}.
 }
 
 
@@ -47,11 +48,21 @@ RMprod(phi, var, scale, Aniso, proj)
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
+
+RFcov(RMprod(RMid()), as.matrix(1:10), as.matrix(1:10), grid=FALSE)
+
+
+## C(x,y) =  exp(-||x|| + ||y||)
 RFcov(RMprod(RMexp()), as.matrix(1:10), as.matrix(1:10), grid=FALSE)
 
-\dontshow{FinalizeExample()}
-}
+## C(x,y) =  exp(-||x / 10|| + ||y / 10 ||)
+model <- RMprod(RMexp(scale=10))
+x <- seq(0,10,len=100)
+z <- RFsimulate(model=model, x=x, y=x)
+plot(z)
+
+\dontshow{FinalizeExample()}}

@@ -10,7 +10,7 @@
 \description{
   The function estimates arbitrary parameters of
   a random field specification with various methods.
-  Currenty, the model to be fitted can be
+  Currently, the models to be fitted can be
   \itemize{
     \item{\link[=RPgauss]{Gaussian random fields}}
     \item{\link[=RFformula]{linear models}}
@@ -19,27 +19,35 @@
   has not been implemented yet.
 }
 \usage{
-RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
- lower = NULL, upper = NULL, method="ml",
- users.guess = NULL,
- distances = NULL, dim, optim.control = NULL,transform = NULL,
- full = FALSE, ...)
+RFcrossvalidate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
+                params, lower=NULL, upper=NULL, method="ml",
+                users.guess=NULL, distances=NULL, dim, optim.control=NULL,
+                transform=NULL, full = FALSE, ...)
 }
-
 \arguments{
- \item{model, x, y, z, T, grid, data,lower, upper, users.guess,
- distances, dim, optim.control, transform, ...}{see \command{\link{RFfit}}
- }
+  \item{model,params}{\argModel }
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
+ \item{T}{\argT}
+ \item{grid}{\argGrid}
+ \item{data}{\argData}
+ \item{lower}{\argLower}
+ \item{upper}{\argUpper}
  \item{method}{
    Single method to be used for estimating, either
    one of the \code{methods} or one of the \code{sub.methods}
    see \command{\link{RFfit}}
  }
- \item{full}{logical.
-   if \code{TRUE} then crossvalidatiaon is also performed
+ \item{users.guess}{\argUsersguess}
+ \item{distances,dim}{\argDistances}
+ \item{optim.control}{\argOptimcontrol}
+ \item{transform}{\argTransform}
+  \item{full}{logical.
+   If \code{TRUE} then cross-validation is also performed
    for intermediate models used in
    \code{RFfit} (if any).
-   }
+ }
+ \item{...}{\argDots}
 }
  
 \section{Methods}{
@@ -77,7 +85,7 @@ RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
     and standard errors similar to \pkg{geoR}.
   
     If \code{cross_refit = TRUE} and \code{detailed_output = TRUE}
-    the returned object also constains a \code{fitted} which is
+    the returned object also contains a \code{fitted} which is
     a list of fitted models.
   }
 }
@@ -93,8 +101,7 @@ RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\me
 
 \note{This function does not depend on the value of
  \command{\link{RFoptions}}\code{()$PracticalRange}. 
@@ -108,10 +115,10 @@ RFcrossvalidate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
   \code{\link[=RandomFields-package]{RandomFields}},
   \command{\link{weather}}.
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 
@@ -141,10 +148,8 @@ RFcrossvalidate(estmodel, data=d)
 
 }}
 
-
 \dontshow{RFoptions(modus_operandi="normal")}
-\dontshow{FinalizeExample()}
+\dontshow{FinalizeExample()}}
 
-}
 \keyword{spatial}
 

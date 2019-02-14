@@ -9,8 +9,8 @@
 \alias{dimensions,RFsp-method}
 \alias{dimensions,RFdataFrame-method}
 \alias{dimensions,RFspatialDataFrame-method}
-\alias{isGridded}
-\alias{isGridded,RFsp-method}
+%\alias{isGridded}
+%\alias{isGridded,RFsp-method}
 \alias{RFspDataFrame2conventional}
 \alias{RFspDataFrame2conventional,RFsp-method}
 \alias{RFspDataFrame2dataArray}
@@ -38,10 +38,10 @@
  \command{\link[=RFgridDataFrame-class]{RFgridDataFrame}}
  (data on a full grid and \eqn{space-time-dimension = 1}), 
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}}
- (data not on a grid spaced and \eqn{space-time-dimension = 1})
+ (data not on a grid and \eqn{space-time-dimension = 1})
 
 
- The first two class subclasses are summarized in
+ The first two subclasses are summarized in
  \code{"RFspatialDataFrame"} whilst the latter two are
  summarized in \code{"RFdataFrame"}.
  
@@ -52,7 +52,7 @@
 }
 
 \section{Objects from the Class}{
- are never to be generated; only derived classes can be meaningful }
+ are never to be generated; only derived classes can be meaningful. }
 
 %\section{Slots}{
 % \describe{
@@ -81,8 +81,8 @@
  \code{\link[sp:Spatial-class]{Spatial}} from the \pkg{sp}-package}
 \item{dimensions}{\code{signature(obj = "RFsp")}: retrieves the number
  of spatial or spatio-temporal dimensions spanned }
-\item{isGridded}{\code{signature(obj = "RFsp")}: logical, tells whether
-  the data is on a regular spatial grid }
+%\item{isGridded}{\code{signature(obj = "RFsp")}: logical, tells whether
+%  the data is on a regular spatial grid }
 \item{RFspDataFrame2dataArray}{\code{signature(obj = "RFsp")}:
   transforms \code{RFsp} objects to array
 }
@@ -110,14 +110,11 @@
 %\item{proj4string}{a CRS object}
 %}
 
-\author{Alexander Malinowski
-  \email{Alexander.Malinowski@web.de},
-  Martin Schlather \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\author{Alexander Malinowski; \martin}
 
 
-\section{Warning }{this class is not useful in itself, but the above
- mentioned classes in this package derive from it }
+\section{Warning }{This class is not useful itself, but the above
+ mentioned classes in this package derived from it. }
 
 \seealso{
  \command{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}},
@@ -126,11 +123,45 @@
  \command{\link[=RFpointsDataFrame-class]{RFpointsDataFrame}},
  \command{\link{sp2RF}}
 }
-\examples{
+
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-## to do
-\dontshow{FinalizeExample()}
-}
+
+## Generating an object of class "RFspatialGridDataFrame"
+## and one of class "RFspatialPointsDataFrame".
+
+model <- RMcauchy(gamma=4, var=0.1, scale=2)
+x <- seq(0,10,len=100)
+r <- cbind(runif(100, min=1, max=9),runif(100, min=1, max=9))
+
+z1 <- RFsimulate(model=model, x=x, y=x, n=4)
+z2 <- RFsimulate(model=model, x=r, n=2)
+
+## Applying available functions.
+
+class(z1)
+class(z2)
+summary(z1)
+summary(z2)
+plot(z1)
+plot(z2)
+%isGridded(z1) ## TRUE
+%isGridded(z2) ## FALSE
+
+z4 <- RFspDataFrame2conventional(z2)
+str(z2)
+str(z4)
+
+dta <- data.frame(coords=z4$x,data=z2@data[,1])
+z3<-RFinterpolate(model=model, x=x, y=x, data=dta) 
+plot(z3,z2)
+
+## Illustrating the warning.
+
+a1 <- new("RFpointsDataFrame")
+str(a1)
+try(a2 <- new("RFsp")) ## ERROR
+\dontshow{FinalizeExample()}}
 
 \keyword{classes}

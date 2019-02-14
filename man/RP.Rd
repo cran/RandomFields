@@ -6,12 +6,12 @@
 \alias{RPprocesses}
 \title{Models for classes of random fields (RP commands)}
 \description{
- Here, all the classes of random fields are described that can be
- simulated
+ Here, all classes of random fields are described that can be
+ simulated.
 }
 \section{Implemented processes}{
  \tabular{ll}{
-    Gaussian Random fields \tab see \link{Gaussian}\cr
+    Gaussian Random Fields \tab see \link{Gaussian}\cr
     Max-stable Random Fields \tab see \link{Maxstable}\cr
     Other Random Fields 
     \tab \link[=RPbernoulli]{Binary field} \cr
@@ -24,19 +24,17 @@
   \link{RC}, \link{RR}, \link{RM}, \link{RF}, \link{R.}
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 x <- seq(0, 10, 0.1)
 model <- RMexp()
 
-## a Gaussian field with exponential covaraince function
+## a Gaussian field with exponential covariance function
 z <- RFsimulate(model, x)
 plot(z)
 
@@ -47,6 +45,5 @@ plot(b)
 sum( abs((z@data$variabl1 >=0 ) - b@data$variable1)) == 0 ## TRUE,
 ## i.e. RPbernoulli is indeed a thresholded Gaussian process
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 

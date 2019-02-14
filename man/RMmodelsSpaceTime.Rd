@@ -9,12 +9,10 @@
 }
 
 \details{
-
 \bold{Stationary space-time models}
 
 Here, most of the models are composed models (operators).
-Note that in space-time modelling the argument \code{proj} may
-take also the values \code{"space"} for the projection on the space
+Note that in space-time modelling the argument \code{proj} may also take the values \code{"space"} for the projection on the space
 and \code{"time"} for the projection onto the time axis.
 
 \tabular{ll}{
@@ -29,20 +27,20 @@ and \code{"time"} for the projection onto the time axis.
   \command{\link{RMcurlfree}} \tab curlfree (spatial) field (stationary
   and anisotropic)
   \cr
-  \command{\link{RMdivfree}} \tab divergence free (spatial) vector valued
-  field, (stationary and anisotropic)
+  \command{\link{RMdivfree}} \tab divergence free (spatial) vector-valued
+  field (stationary and anisotropic)
   \cr
   \command{\link{RMgennsst}} \tab generalization of Gneiting's
   non-separable space-time model
   \cr 
-  \command{\link{RMiaco}} \tab non-separabel space-time model
+  \command{\link{RMiaco}} \tab non-separable space-time model
   \cr
   % obsolete -- included by Cauchy --- should be given by an example
   \command{\link{RMmastein}} \tab Ma-Stein model
   \cr
   \command{\link{RMnsst}} \tab Gneiting's non-separable space-time model
   \cr 
-  \command{\link{RMstein}} \tab Stein's non-separabel space-time model
+  \command{\link{RMstein}} \tab Stein's non-separable space-time model
   \cr
   \command{\link{RMstp}} \tab Single temporal process
   \cr
@@ -63,25 +61,30 @@ and \code{"time"} for the projection onto the time axis.
 \seealso{\command{\link{RFformula}},
   \link{RM},
   \command{\link{RMmodels}},
-  \command{\link{RMmodelsAdvanced}}
+  \command{\link{RMmodelsAdvanced}}.
 }
 
-\author{
- Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
- 
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\author{Alexander Malinowski; \martin}
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-## separable model with expontential model in space and gaussian in time
+
+## multiplicative separable model with exponential model in space
+## and Gaussian in time
 model <- RMexp(proj = "space") * RMgauss(proj = "time")
-xT <- seq(0, 10, 0.1)
-z <- RFsimulate(model, x=xT, T=xT)
+x <- T <- seq(0, 10, 0.1)
+z <- RFsimulate(model, x=x, T=T)
 plot(z)
 
+## additive separable model with exponential model in space
+## and Gaussian in time. The structure is getting rather simple,
+## see the function stopifnot below
+model <- RMexp(proj = "space") + RMgauss(proj = "time")
+x <- T <- seq(0, 10, 0.1)
+z <- RFsimulate(model, x=x, T=T)
+stopifnot(sum(abs(apply(apply(z, 1, diff), 1, diff))) < 1e-14)
+plot(z)
 \dontshow{FinalizeExample()}
 }

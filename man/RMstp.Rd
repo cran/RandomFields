@@ -48,7 +48,7 @@ RMstp(xi, phi, S, z, M, var, scale, Aniso, proj)
  The model allows for mimicking cyclonic behaviour.
 }
 \value{
- \command{\link{RMstp}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMstp}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   \itemize{
@@ -62,8 +62,7 @@ RMstp(xi, phi, S, z, M, var, scale, Aniso, proj)
     \emph{Bernoulli}, \bold{16}, 780-797.
   }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -72,10 +71,10 @@ RMstp(xi, phi, S, z, M, var, scale, Aniso, proj)
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMstp(xi = RMrotat(phi= -2 * pi, speed=1),
                phi = RMwhittle(nu = 1),
                M=matrix(nc=3, rep(0, 9)),
@@ -84,5 +83,4 @@ model <- RMstp(xi = RMrotat(phi= -2 * pi, speed=1),
               )
 x <- seq(0, 10, 0.7)
 plot(RFsimulate(model, x=x, y=x, z=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

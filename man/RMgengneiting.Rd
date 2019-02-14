@@ -4,7 +4,7 @@
 \title{Gneiting-Wendland Covariance Models}
 \description{
  \command{\link{RMgengneiting}} is a stationary isotropic covariance model family whose elements 
- are specified by the two parameters \eqn{\kappa}{\kappa} and \eqn{\mu}{\mu} with \eqn{n}{n} a non-negative integer and 
+ are specified by the two parameters \eqn{\kappa}{\kappa} and \eqn{\mu}{\mu} with \eqn{n}{n} being a non-negative integer and 
  \eqn{\mu \ge \frac{d}{2}}{\mu \ge d/2} with \eqn{d}{d} denoting the dimension of the random field
  (the models can be used for any dimension). 
  A corresponding covariance function only depends on the distance \eqn{r \ge 0}{r \ge 0} between
@@ -30,14 +30,13 @@
  )r^2 / 5 + (\beta^2 - 4) \beta
  r^3 / 15)(1-r)^\beta 1_{[0,1]}(r), \beta = \mu + 2\kappa + 1/2.}
  A special case of this model is \command{\link{RMgneiting}}.
- \eqn{\ell}
 }
 \usage{
 RMgengneiting(kappa, mu, var, scale, Aniso, proj)
 }
 \arguments{
  \item{kappa}{\eqn{0,\ldots,3}{0,...,3}}; it chooses between the three
- different covariance models above
+ different covariance models above.
  \item{mu}{\code{mu} has to be greater than or equal to
  \eqn{\frac{d}{2}}{d / 2} where \eqn{d} is the dimension of the
  random field.} 
@@ -52,7 +51,7 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
 
 }
 \value{
- \command{\link{RMgengneiting}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMgengneiting}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -65,8 +64,7 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMaskey}},
  \command{\link{RMbigneiting}},
@@ -79,10 +77,10 @@ A special case of this family is \command{\link{RMgneiting}} (with \eqn{s = 1}{s
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMgengneiting(kappa=1, mu=1.5)
 x <- seq(0, 10, 0.02)
 plot(model)
@@ -93,7 +91,4 @@ plot(RFsimulate(model, x=x))
 model2 <- RMgengneiting(kappa=3, mu=1.5, scale= 1 / 0.301187465825)
 plot(RMgneiting(), model2=model2, type=c("p", "l"), pch=20)
 
-
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

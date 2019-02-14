@@ -23,26 +23,29 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <Rmath.h>
-#include "RF.h"
-#include "Operator.h"
-#include "shape_processes.h"
+#include "questions.h"
+#include "primitive.h"
+#include "primitive.others.h"
+#include "operator.h"
+#include "Processes.h"
 #include "variogramAndCo.h"
-#include "Coordinate_systems.h"
+#include "rf_interfaces.h"
 
-// *sub = cov->key == NULL ? cov->sub[0] : cov->key;   
-
+// *sub = cov->key == NULL ? cov->sub[0] : cov->key;
+#define SCALAR_P(A,B,C) Ext_scalarX(A,B,C, SCALAR_AVX)
 #define START_GAUSS_INTERFACE					\
-  currentRegister = INTEGER(model_reg)[0];			\
-   if (currentRegister < 0 || currentRegister > MODEL_MAX) BUG;	\
-  cov_model *cov = KEY[currentRegister];			\
-  if (cov == NULL || !isInterface(cov)) BUG;			\
+  int cR = INTEGER(model_reg)[0];				\
+  if (cR < 0 || cR > MODEL_MAX) BUG;				\
+  set_currentRegister(cR);			\
+  model *cov = KEY()[cR];			\
+  assert (cov != NULL && equalsnowInterface(cov)) 			\
   cov = cov->key != NULL ? cov->key : cov->sub[0];		\
-  if (!isProcess(cov)) BUG;					\
-  if (cov->nr != GAUSSPROC)					\
+  assert(isnowProcess(cov)) 					\
+  if (COVNR != GAUSSPROC)					\
     ERR("register not initialised as Gaussian likelihood");	\
-  cov_model *prev = cov->calling;				\
-  if (prev == NULL ||						\
-      (prev->nr != LIKELIHOOD_CALL && prev->nr != LINEARPART_CALL)	\
+  model *calling = cov->calling;					\
+  if (calling == NULL ||						\
+      (CALLINGNR != LIKELIHOOD_CALL && CALLINGNR != LINEARPART_CALL)	\
       ) BUG;								\
   likelihood_storage *L = cov->Slikelihood;			\
   if (L == NULL) ERR("register not initialised as likelihood method");\
@@ -55,7 +58,7 @@ int matrixcopyNA(double *dest, double *src, double *cond,
   double *ptsrc = src;
   for (int j=0; j<cols; j++) {
     for (int i=0; i<rows; i++, ptsrc++) {
-      if (!ISNA(cond[i]) && !ISNAN(cond[i])) dest[k++] = *ptsrc;
+      if (!ISNAN(cond[i])) dest[k++] = *ptsrc;
     }
   }
   
@@ -63,11 +66,11 @@ int matrixcopyNA(double *dest, double *src, double *cond,
   int m = 0;
   for (int j=0; j<append_cond; j++) {
     for (int i=0; i<rows; i++, m++) {
-      if (!ISNA(C[m]) && !ISNAN(C[m])) dest[k++] = C[m];
+      if (!ISNAN(C[m])) dest[k++] = C[m];
     }
   }
 
-  if (k == 0) ERR("a data set seems to consist of NAs only");
+  if (k == 0) RFERROR("one of the data set seems to consist of NAs only");
   int notnas = k == 0 ? 0 : k / (append_cond + cols); 
   
   assert(notnas * (append_cond + cols) == k);
@@ -78,10 +81,10 @@ int matrixcopyNA(double *dest, double *src, double *cond,
 void SqMatrixcopyNA(double *dest, double *src, double *cond, int rows) {
   int k = 0;
   for (int j=0; j<rows; j++) {
-    if (!ISNA(cond[j]) && !ISNAN(cond[j])) {
+    if (!ISNAN(cond[j])) {
       double *ptsrc = src + j * rows;     
       for (int i=0; i<rows; i++, ptsrc++) {
-	if (!ISNA(cond[i]) && !ISNAN(cond[i]))  dest[k++] = *ptsrc;
+	if (!ISNAN(cond[i]))  dest[k++] = *ptsrc;
       }
     }
   }
@@ -126,7 +129,7 @@ void boxcox_inverse(double boxcox[], int vdim, double *res, int pts,
 	  double dummy = lambda * res[i] + 1.0;
 	  if ((dummy < 0 && lambda != CEIL(lambda)) || 
 	      (dummy == 0 && invlambda <= 0) ) {
-	    ERR("value(s) in the inverse Box-Cox transformation not positive");
+	    RFERROR("value(s) in the inverse Box-Cox transformation not positive");
 	  }
 	  res[i] = POW(dummy, invlambda) - mu;
 	}
@@ -146,7 +149,7 @@ void boxcox_trafo(double boxcox[], int vdim, double *res, long pts, int repet){
 	for (long i=0; i<pts; i++) {
 	  double dummy = res[i] + mu;
 	  if (dummy < 0 || (dummy == 0 && lambda <= 0) ) {
-	    ERR("value(s) in the Box-Cox transformation not positive");
+	    RFERROR("value(s) in the Box-Cox transformation not positive");
 	  }
 	  res[i] = LOG(dummy);			
 	}
@@ -155,7 +158,7 @@ void boxcox_trafo(double boxcox[], int vdim, double *res, long pts, int repet){
 	  double dummy = res[i] + mu;
 	  if ((dummy < 0 && lambda != CEIL(lambda)) 
 	      || (dummy == 0 && lambda <= 0) ) {
-	    ERR("value(s) in the Box-Cox transformation not positive");
+	    RFERROR("value(s) in the Box-Cox transformation not positive");
 	  }
 	  res[i] = (POW(dummy, lambda) - 1.0) * invlambda; 
 	}
@@ -169,10 +172,12 @@ SEXP BoxCox_trafo(SEXP boxcox, SEXP res, SEXP Vdim, SEXP inverse){
   int vdim = INTEGER(Vdim)[0],
     repet = isVector(res) ? 1 : ncols(res),
     pts = isVector(res) ? length(res) / vdim : nrows(res);
-  if (vdim > MAXGAUSSVDIM) ERR2("multi-dimensionality, %d, exceeds maximum, %d",
-				vdim, MAXGAUSSVDIM);
-  if (length(res) != pts * vdim * repet) ERR("multi-dimensionality incorrect");
-  if (length(boxcox) < 2 * vdim) ERR("too few entries in 'boxcox'");
+  if (vdim > MAXGAUSSVDIM)
+    RFERROR2("multi-dimensionality, %d, exceeds maximum, %d, in Box-Cox transformation", 
+	     vdim, MAXGAUSSVDIM);
+  if (length(res) != pts * vdim * repet)
+    RFERROR("multi-dimensionality incorrect in Box-Cox transformation");
+  if (length(boxcox) < 2 * vdim) RFERROR("too few entries in 'boxcox'");
   if (LOGICAL(inverse)[0])
     boxcox_inverse(REAL(boxcox), vdim, REAL(res), pts, repet);
   else 
@@ -191,7 +196,7 @@ SEXP gauss_linearpart(SEXP model_reg, SEXP Set){
     unp = 4, // ans, namevec, X, Y
     sets = L->sets, 
     element  = INTEGER(Set)[0],
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     betatot = L->betas[L->fixedtrends];
 
   if (element > 0  && element > sets) ERR("set number out of range");
@@ -257,8 +262,11 @@ SEXP gauss_linearpart(SEXP model_reg, SEXP Set){
 
  
 
-void get_logli_residuals(cov_model *cov, double *work, double *ans) {
-  assert(isProcess(cov));
+#define LOGLI_RESIDUALS 0
+#define LOGLI_WHOLETREND 1
+void get_logli_residuals(model *cov, double *work, double *ans,
+			 int modus) {
+  assert(isnowProcess(cov));
   likelihood_storage *L = cov->Slikelihood;
   assert(L != NULL);
   listoftype *datasets = L->datasets;
@@ -266,7 +274,7 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
   assert(ans != NULL);
 
   int
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     betas = L->betas[L->fixedtrends],
     ncol = NCOL_OUT_OF(datasets),
     repet = ncol / vdim,
@@ -277,11 +285,16 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
     *pres = ans,
     *data = SET_OUT_OF(datasets);
 
-  MEMCOPY(pres, data, ndata * sizeof(double));
-  if (R_FINITE(P(GAUSS_BOXCOX)[0]) && R_FINITE(P(GAUSS_BOXCOX)[1]))
-    boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
+  if (modus == LOGLI_RESIDUALS) {
+    MEMCOPY(pres, data, ndata * sizeof(double));
+    if (R_FINITE(P(GAUSS_BOXCOX)[0]) && R_FINITE(P(GAUSS_BOXCOX)[1]))
+      boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
+  } else {
+    // BUG; printf("what's that good for?");
+    for (int i=0; i<ndata; pres[i++] = 0.0);
+  }
 
-  //   for (int i=0; i<ndata; i++) printf("%f ", pres[i]);  BUG;
+  //   for (int i=0; i<ndata; i++) printf("%10g ", pres[i]);  BUG;
   //  printf("\n%d %d %d vdim=%d\n", L->ignore_trend, L->dettrends, L->fixedtrends, vdim);
 
   if (L->ignore_trend) {
@@ -298,7 +311,7 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
   
   if (L->dettrends) {
     for (int i=0; i<L->dettrends; i++) {      
-      if (L->nas_det[i]) {
+      if (L->nas_det[i]) {// non-linear parts without linear part
 	FctnIntern(cov, L->cov_det[i], L->cov_det[i], work, true);
 	for (z=r=0; r<repet; r++)
 	  for (int k=0; k<totptsvdim; k++) pres[z++] -= work[k];
@@ -313,12 +326,12 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
     for (r=0; r<repet; r++, betavec += betas) {
       if (r==0 || L->betas_separate) {
 	for (int i=0; i<totptsvdim; work[i++] = 0.0);
-	//  for (int j=0; j<totptsvdim;j ++) printf("j=%d p %f d %f w %f\n ", j, pres[j], data[j], work[j]);
+	//  for (int j=0; j<totptsvdim;j ++) printf("j=%d p %10g d %10g w %10g\n ", j, pres[j], data[j], work[j]);
 	for (int i=0; i<betas; i++) {
 	  double beta = betavec[i];
-	  //	    printf("i=%d beta = %f %d\n", i, beta, nrow);
+	  //	    printf("i=%d beta = %10g %d\n", i, beta, nrow);
 	  for (int j=0; j<nrow; j++, X++) {	
-	    //	      printf("i=%d %d %f %f\n", i, betas, beta, *X);
+	    //	      printf("i=%d %d %10g %10g\n", i, betas, beta, *X);
 	    work[j] += *X * beta;
 	  }
 	}
@@ -326,23 +339,27 @@ void get_logli_residuals(cov_model *cov, double *work, double *ans) {
       
       for (int j=0; j<nrow; j++, data++, pres++) {
 	  *pres -= work[j];
-	  //    printf("j=%d p %f d %f w %f\n ", j, *pres, *data, work[j]);
+	  //    printf("j=%d p %10g d %10g w %10g\n ", j, *pres, *data, work[j]);
       }
     }
   }
   
-  // for (int j=0; j<nrow; j++, data++, pres++) printf("%f %f\n", *pres, *data);
-    
+  // for (int j=0; j<nrow; j++, data++, pres++) printf("%10g %10g\n", *pres, *data);
+  if (modus != LOGLI_RESIDUALS) {
+    //BUG; printf("whats that good for?");
+    for (int i=0; i<ndata; i++) pres[i] = -pres[i];
+  }
+  
  
   if (delete_work) FREE(work);
 }
 
 
-SEXP get_logli_residuals(cov_model *cov) {
+SEXP get_logli_residuals(model *cov, int modus) {
   likelihood_storage *L = cov->Slikelihood;		       
   listoftype *datasets = L->datasets;
   int 
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     sets = GET_LOC_SETS(cov);
   bool matrix = false;
   SEXP all_res, res;
@@ -374,7 +391,7 @@ SEXP get_logli_residuals(cov_model *cov) {
       PROTECT(res =allocVector(REALSXP, nrow));
     }
 
-    get_logli_residuals(cov, L->work, REAL(res));
+    get_logli_residuals(cov, L->work, REAL(res), modus);
     SET_VECTOR_ELT(all_res, GLOBAL.general.set, res);
     UNPROTECT(1);
   }
@@ -385,7 +402,15 @@ SEXP get_logli_residuals(cov_model *cov) {
 
 SEXP get_logli_residuals(SEXP model_reg) {
   START_GAUSS_INTERFACE;
-  SEXP ans = get_logli_residuals(cov);
+  SEXP ans = get_logli_residuals(cov, LOGLI_RESIDUALS);
+  GLOBAL.general.set = store;
+  return ans;
+}
+
+SEXP get_logli_wholetrend(SEXP model_reg) {
+  //BUG;  printf("whats that good for?");
+  START_GAUSS_INTERFACE;
+  SEXP ans = get_logli_residuals(cov, LOGLI_WHOLETREND);
   GLOBAL.general.set = store;
   return ans;
 }
@@ -393,18 +418,17 @@ SEXP get_logli_residuals(SEXP model_reg) {
 
 
 
-void get_fx(cov_model *predict, cov_model *cov, double *v, int set) {
+void get_fx(model *predict, model *cov, double *v, int set) {
   // muss angenommen werden, dass alles gesetzt ist.
   likelihood_storage *L = cov->Slikelihood;			
-  int store = GLOBAL.general.set,
-    sets = GET_LOC_SETS(predict);
-  if (set < 0 || set >= sets) BUG;
+  int store = GLOBAL.general.set;
+  assert (set >= 0 && set < GET_LOC_SETS(predict));
   GLOBAL.general.set = set;
   listoftype *datasets = L->datasets;
   int 
     err = NOERROR,
     betatot = L->betas[L->fixedtrends],    
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     ncol = NCOL_OUT_OF(datasets),
     repet = L->betas_separate ? ncol / vdim : 1,
     pred_tot = Gettotalpoints(predict),
@@ -440,7 +464,7 @@ void get_fx(cov_model *predict, cov_model *cov, double *v, int set) {
     double *betavec = L->betavec + L->betas[i];
     for (r = m = 0; r < repet; r++) {
       double beta = *betavec;
-      	//printf("beta = %f %f\n", beta, X[0]); BUG;
+      	//printf("beta = %10g %10g\n", beta, X[0]); BUG;
       for (int k=0; k<predtotvdim; k++) v[m++] += X[k] * beta;
       if (L->betas_separate) betavec += betatot;
     }
@@ -449,13 +473,12 @@ void get_fx(cov_model *predict, cov_model *cov, double *v, int set) {
   ErrorHandling :
     GLOBAL.general.set = store;
   FREE(X);
-  if (err != NOERROR) XERR(err);
-  
+  OnErrorStop(err, predict);
 }
 
 
-void get_F(cov_model *cov, double *work, double *ans) {
-  assert(isProcess(cov));
+void get_F(model *cov, double *work, double *ans) {
+  assert(isnowProcess(cov));
   likelihood_storage *L = cov->Slikelihood;
   assert(L != NULL);
   listoftype *datasets = L->datasets;
@@ -463,7 +486,7 @@ void get_F(cov_model *cov, double *work, double *ans) {
   assert(ans != NULL);
   
   int
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     betas = L->betas[L->fixedtrends],
     ncol = NCOL_OUT_OF(datasets),
     repet = ncol / vdim,
@@ -478,7 +501,7 @@ void get_F(cov_model *cov, double *work, double *ans) {
   if (R_FINITE(P(GAUSS_BOXCOX)[0]) && R_FINITE(P(GAUSS_BOXCOX)[1]))
     boxcox_trafo(P(GAUSS_BOXCOX), vdim, pres, nrow, repet);
   
-  //   for (int i=0; i<ndata; i++) printf("%f ", pres[i]);  BUG;
+  //   for (int i=0; i<ndata; i++) printf("%10g ", pres[i]);  BUG;
   //  printf("\n%d %d %d vdim=%d\n", L->ignore_trend, L->dettrends, L->fixedtrends, vdim);
                   
   if (L->ignore_trend) {
@@ -512,12 +535,12 @@ void get_F(cov_model *cov, double *work, double *ans) {
     for (r=0; r<repet; r++, betavec += betas) {
       if (r==0 || L->betas_separate) {
 	for (int i=0; i<totptsvdim; work[i++] = 0.0);
-	//  for (int j=0; j<totptsvdim;j ++) printf("j=%d p %f d %f w %f\n ", j, pres[j], data[j], work[j]);
+	//  for (int j=0; j<totptsvdim;j ++) printf("j=%d p %10g d %10g w %10g\n ", j, pres[j], data[j], work[j]);
 	for (int i=0; i<betas; i++) {
 	  double beta = betavec[i];
-	  //	    printf("i=%d beta = %f %d\n", i, beta, nrow);
+	  //	    printf("i=%d beta = %10g %d\n", i, beta, nrow);
 	  for (int j=0; j<nrow; j++, X++) {	
-	    //	      printf("i=%d %d %f %f\n", i, betas, beta, *X);
+	    //	      printf("i=%d %d %10g %10g\n", i, betas, beta, *X);
 	    work[j] += *X * beta;
 	  }
 	}
@@ -525,27 +548,27 @@ void get_F(cov_model *cov, double *work, double *ans) {
       
       for (int j=0; j<nrow; j++, data++, pres++) {
 	*pres += work[j];
-	//    printf("j=%d p %f d %f w %f\n ", j, *pres, *data, work[j]);
+	//    printf("j=%d p %10g d %10g w %10g\n ", j, *pres, *data, work[j]);
       }
     }
   }
   
-  // for (int j=0; j<nrow; j++, data++, pres++) printf("%f %f\n", *pres, *data);
+  // for (int j=0; j<nrow; j++, data++, pres++) printf("%10g %10g\n", *pres, *data);
   if (delete_work) FREE(work);
 }
 
 
-void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
+void gauss_predict(model *predict, model *Cov, double *v) {
 
-  cov_model
+  model
     *cov = Cov->key != NULL ? Cov->key : Cov->sub[0],
     //    *sub = cov->key == NULL ? cov->sub[0] : cov->key,
     *pred_cov = predict->key != NULL ? predict->key : predict->sub[0];
   
   //PMI(predict);
-  assert(isProcess(cov) && 
-	 isVariogram(cov->key == NULL ? cov->sub[0] : cov->key) &&
-	 isInterface(predict));
+  assert(isnowProcess(cov) && 
+	 isnowVariogram(cov->key == NULL ? cov->sub[0] : cov->key) &&
+	 equalsnowInterface(predict));
  likelihood_storage *L = cov->Slikelihood;	
   assert(L != NULL);
   listoftype *datasets = L->datasets;
@@ -567,8 +590,8 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
   GLOBAL.general.set = 0;
   int 
     spatialdim = pred_loc->spatialdim,
-    tsdim = pred_loc->timespacedim,
-    vdim = cov->vdim[0],
+    timespacedim = GetLoctsdim(predict),
+    vdim = VDIM0,
     ncol =  NCOL_OUT_OF(datasets),    
     repet = ncol / vdim,
     totpts = Gettotalpoints(Cov),
@@ -584,17 +607,19 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
     GLOBAL.general.set = store;
     XERR(ERRORMEMORYALLOCATION);
   }
-  get_logli_residuals(cov, NULL, residuals);
+  get_logli_residuals(cov, NULL, residuals, LOGLI_RESIDUALS);
 
  
   CovarianceMatrix(cov, L->C);  // tot x tot x vdim x vdim //sub -> cov 30.12.15
+  
   if (GLOBAL.krige.ret_variance) {
     //
     GERR("kriging variance cannot be returned, currently");
      // end !data_nas
   } else {  
-    ALLOCCOV_NEW(predict, Sextra, Cx0, vdim * vdim * pred_tot, a);
-    ALLOCCOV_NEW(predict, Sextra, y0, tsdim, b);
+    ONCE_NEW_COV_STORAGE(predict, extra); // sicherheitshalber
+    TALLOCCOV_NEW(predict, Sextra, Cx0, vdim*vdim*pred_tot, a1, 1);//da eh egal
+    TALLOCCOV_NEW(predict, Sextra, y0, timespacedim, a2, XSIZE);
     gauss_trend(predict, cov, v, 0); // not sub
     assert(cov->Ssolve != NULL);
 
@@ -622,7 +647,7 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 
       //printf("********************\n");
   
-      Exterr = RU_solvePosDef(Ccur, notnas, 
+      Exterr = Ext_solvePosDef(Ccur, notnas, 
 				true, // except for intrinsic Kriging
         	//       as if ordinary Kriging (p 167; 265 in Chiles
 				ResiWithoutNA, atonce,
@@ -638,11 +663,12 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
       int d, gridlen[MAXLILIGRIDDIM + 1], end[MAXLILIGRIDDIM + 1],
 	start[MAXLILIGRIDDIM + 1], nx[MAXLILIGRIDDIM + 1],
 	Tidx = 0,
+	i_row = 0,
 	Tlen = loc->Time ? loc->T[XLENGTH] : 0,
-	pred_tsdim = pred_loc->timespacedim,
-	tsxdim = tsdim,
+	pred_timespacedim = GetLoctsdim(predict),
+	tsxdim = timespacedim,
 	cumgridlen[MAXLILIGRIDDIM + 1];
-      if (tsdim > MAXLILIGRIDDIM) GERR("dimension too large");
+      if (timespacedim > MAXLILIGRIDDIM) GERR("dimension too large");
       if (loc->grid) {
 	STANDARDSTART_X;
 	pty = x;
@@ -660,21 +686,20 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 	}
 	
 	if (pred_loc->grid) {
-	  for(d=0; d<pred_tsdim; d++) 
+	  for(d=0; d<pred_timespacedim; d++) 
 	    pred_loc->ygr[d][XSTART] = pty[d];
 	} else {
-	  MEMCOPY(pred_loc->y, pty, pred_tsdim * sizeof(double));
+	  MEMCOPY(pred_loc->y, pty, pred_timespacedim * sizeof(double));
 	  if (pred_loc->Time) pred_loc->T[0] = pty[spatialdim];
 	}	 
 	assert(pred_cov -> calling != NULL);
-	CovList[pred_cov->nr].covariance(pred_cov, Cx0); // predtot x vdim^2;
-
+	DefList[MODELNR(pred_cov)].covariance(pred_cov, Cx0);//predtot x vdim^2
 	double *ptCx0 = Cx0;
 	for (int j=0; j<vdim; j++, ptCx0 += pred_totvdim) { // influence of the different variates of position i
 	  int m=0;
 	  for (int s=0; s<atonce; s++) {	
 	    double factor = residuals[totptsvdim * s + totpts * j + i];
-	    if (ISNA(factor) || ISNAN(factor)) {
+	    if (ISNAN(factor)) {
 	      m += pred_totvdim;
 	      continue;
 	    }
@@ -684,13 +709,15 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
 	  }
 	}
 	if (loc->grid) { // !! geklammert!!!
-	  STANDARDINKREMENT;
+	  STANDARDINKREMENT_X;
 	}
       }
     } // end !data_nas
-  }
+    END_TALLOC_NEW(a1);
+    END_TALLOC_NEW(a2);
+  } // ! krige var
  
-  //  for (int i=0; i<10; i++) printf("%f\n", v[i]);
+  //  for (int i=0; i<10; i++) printf("%10g\n", v[i]);
     
 
 
@@ -700,8 +727,8 @@ void gauss_predict(cov_model *predict, cov_model *Cov, double *v) {
     
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
-      RU_getErrorString(ERRORSTRING);
-      ERR(ERRORSTRING);
+      Ext_getErrorString(predict->err_msg);
+      ERR(predict->err_msg);
     } else err = Exterr;
   }
 
@@ -717,7 +744,7 @@ SEXP simple_residuals(SEXP model_reg){
   START_GAUSS_INTERFACE;
   likelihood_info *info = &(L->info);
 
-  if (L->ignore_trend) BUG;
+  assert(!L->ignore_trend);
   
   listoftype *datasets = L->datasets;
   if (info->globalvariance && info->pt_variance != NULL) 
@@ -725,13 +752,13 @@ SEXP simple_residuals(SEXP model_reg){
  
   int i, j, 
     fx_notnas = 0,
-    sets = GET_LOC_SETS(prev),  
+    sets = GET_LOC_SETS(calling),  
     err = NOERROR,
     Exterr = NOERROR,
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     betatot = L->betas[L->fixedtrends],
     betaSq = betatot * betatot;
-  //if (cov->vdim[1] != 1) BUG;
+  //if (VDIM1 != 1) BUG;
 
   for (i=0; i<L->fixedtrends; i++) 
     fx_notnas += (!L->nas_fixed[i]) * (L->betas[i+1] - L->betas[i]);
@@ -746,7 +773,7 @@ SEXP simple_residuals(SEXP model_reg){
       repet = ncol / vdim,
       nrow = NROW_OUT_OF(datasets),
       ndata = nrow * ncol,
-      totpts = Gettotalpoints(prev),
+      totpts = Gettotalpoints(calling),
       totptsvdim = totpts * vdim;
     assert(nrow == totpts); 
     double 
@@ -835,7 +862,7 @@ SEXP simple_residuals(SEXP model_reg){
 
     if (fx_notnas > 0) {
       int k=0;
-      for (int j1=0; j1<L->fixedtrends; j1++) { 
+      for (int j1=0; j1 < L->fixedtrends; j1++) { 
 	if (L->nas_fixed[j1] == 0) {
 	  int end=L->betas[j1 + 1];
 	  for (int j2=L->betas[j1]; j2<end ; j2++) {
@@ -844,7 +871,7 @@ SEXP simple_residuals(SEXP model_reg){
 	}
       }
       assert(cov->Ssolve != NULL);
-      Exterr = RU_solvePosDef(L->XtX, fx_notnas, true, beta, 1, NULL, 
+      Exterr = Ext_solvePosDef(L->XtX, fx_notnas, true, beta, 1, NULL, 
 				cov->Ssolve);
       if (Exterr != NOERROR) goto ErrorHandling;    
      
@@ -862,7 +889,7 @@ SEXP simple_residuals(SEXP model_reg){
 	    }
 	  assert(i>=j);
 	}
-	if (i != 0 || j != 0 || b != 0) BUG;
+        assert (i == 0 && j == 0 && b == 0);
       } else assert(fx_notnas == betatot);
     }    
   }
@@ -871,8 +898,8 @@ SEXP simple_residuals(SEXP model_reg){
   GLOBAL.general.set = store;
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
-      RU_getErrorString(ERRORSTRING);
-      ERR(ERRORSTRING);
+      Ext_getErrorString(cov->err_msg);
+      ERR(cov->err_msg);
     } else err = Exterr;
   }
   if (err != NOERROR) XERR(err);
@@ -885,17 +912,16 @@ SEXP simple_residuals(SEXP model_reg){
 // Gauss process
 
 // likelihood / density
-void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov, 
+void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, model *cov, 
 		      double *v){  
-  assert(isProcess(cov));
-  cov_model *prev = cov->calling;
+  assert(isnowProcess(cov));
+  model *calling = cov->calling;
   //*sub = cov->key == NULL ? cov->sub[0] : cov->key;  
-  
-  if (prev == NULL || CovList[prev->nr].cov != likelihood) BUG;
+  assert(calling != NULL && DefList[CALLINGNR].cov == likelihood);
   likelihood_storage *L = cov->Slikelihood;
   assert(L != NULL);
   listoftype *datasets = L->datasets;
-  if (L->ignore_trend) BUG;
+  assert(!L->ignore_trend);
   likelihood_info *info = &(L->info);
   if (info->globalvariance && info->pt_variance != NULL) 
     *(info->pt_variance) = 1.0;
@@ -904,16 +930,16 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     YCinvY = 0.0,
     logdettot = 0.0;  
   int i, j, repet,
-    sets = GET_LOC_SETS(prev),  
+    sets = GET_LOC_SETS(calling),  
     err = NOERROR,
     Exterr = NOERROR,
     variables = 0,
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     store = GLOBAL.general.set,
     betatot = L->betas[L->fixedtrends],    
     betaSq = betatot * betatot;
   // PMI(cov);
-  //  if (cov->vdim[1] != 1) BUG;
+  //  if (VDIM1 != 1) BUG;
 
   *v = 0.0;
   for (i=0; i<betaSq; L->XtX[i++] = 0.0);
@@ -927,7 +953,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     repet = ncol / vdim;
     int nrow = NROW_OUT_OF(datasets), 
       ndata = nrow * ncol,
-      totpts = Gettotalpoints(prev),
+      totpts = Gettotalpoints(calling),
       totptsvdim = totpts * vdim;
     double 
       logdet,
@@ -961,6 +987,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     } // (L->dettrend_has_nas || L->nas_boxcox)
 
     for (i=0; i<L->fixedtrends; i++) {
+      //      printf("i=%d %d\n", i, L->nas_fixed[i]);
       if (L->nas_fixed[i]) {
 	FctnIntern(cov, L->cov_fixed[i], L->cov_fixed[i],
 		   L->X[GLOBAL.general.set] + L->betas[i] * totptsvdim,
@@ -972,17 +999,20 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     if (info->globalvariance && info->pt_variance != NULL)
       *(info->pt_variance) = 1.0;
     CovarianceMatrix(cov, L->C); //sub -> cov 30.12.15
-    // printf("\nC =  ");for (i=0; i<totptsvdim * totptsvdim; i++)printf("%f ", L->C[i]); printf("\n"); 
+    // printf("\nC =  ");for (i=0; i<totptsvdim * totptsvdim; i++)printf("%10g ", L->C[i]); printf("\n"); 
       //      BUG;   APMI(sub);
 
-    //  printf("%f %f %f %f %f\n", Xdata[0], Xdata[1], Xdata[2], Xdata[3], Xdata[4]); 		      
+    //for (int i=0; i<9; i++) printf("%10g ", L->C[i]); printf("\n");
+   //   APMI0(cov);
+   // BUG;
+   //    printf("%10g %10g %10g %10g %10g\n", Xdata[0], Xdata[1], Xdata[2], Xdata[3], Xdata[4]); 		      
 
     double *Xcur, *Ccur, 
       *dataWithoutNA = NULL;
     int atonce, endfor, XYcols, 
       notnas = NA_INTEGER;
     if (L->data_nas[GLOBAL.general.set]) {
-      atonce = 1;
+       atonce = 1;
       Ccur = L->Cwork;
       Xcur = L->Xwork;
     } else {
@@ -994,6 +1024,8 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
     }
     endfor = repet / atonce;
     XYcols = betatot + atonce;
+
+    // printf("%10g\n", L->X[GLOBAL.general.set][0]); BUG; 
 
     for (int r=0; r<endfor; r++) {
       if (L->data_nas[GLOBAL.general.set]) {
@@ -1008,7 +1040,10 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       MEMCOPY(L->CinvXY, Xcur, notnas * XYcols * sizeof(double));
       assert(cov->Ssolve != NULL);
 
-      Exterr = RU_solvePosDef(Ccur, notnas, 
+      //BUG;
+      //printf("XXX= %d\n", 4);
+
+      Exterr = Ext_solvePosDef(Ccur, notnas, 
 			      true,  // except for negative definite function
 			      L->CinvXY, XYcols,
 			      &logdet, cov->Ssolve);
@@ -1016,7 +1051,9 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       logdettot += logdet * atonce;
       double *CinvY = L->CinvXY + betatot * notnas;
       int end_i = notnas * atonce;
-      for (i=0; i<end_i; i++) YCinvY += CinvY[i] * dataWithoutNA[i];
+      
+      // for (i=0; i<end_i; i++) YCinvY += CinvY[i] * dataWithoutNA[i];
+      YCinvY += SCALAR_P(CinvY, dataWithoutNA, end_i);
 
       if (L->fixedtrends) {
 	if (L->betas_separate) {
@@ -1025,8 +1062,12 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	  matmulttransposed(L->CinvXY, dataWithoutNA, L->XCY, notnas,
 			    betatot,atonce);
 	} else {
+	  //BUG;
 	  matmulttransposed(Xcur, L->CinvXY, L->XitXi, notnas, betatot,betatot);
 	  for (i=0; i<betaSq; i++) L->XtX[i] += atonce * L->XitXi[i];
+
+	  // printf("atonce=%d %10g xcur=%10g %10g\n", atonce, L->XitXi[0], Xcur[0], L->CinvXY[0]);
+	  
 	  MEMCOPY(L->sumY, dataWithoutNA, sizeof(double) * notnas);
 
 	  int kk = notnas;
@@ -1037,7 +1078,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	  }
 	  
 	  double *dummy = L->betavec;
-	  matmult(L->sumY, L->CinvXY, dummy, 1, notnas, betatot);
+	  matmult(L->sumY, L->CinvXY, dummy, 1, notnas, betatot);	  
 	  for (i=0; i<betatot; i++) L->XCY[i] += dummy[i];
 	}
       } // fixedtrends	
@@ -1058,14 +1099,20 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       all_betatot *= repet;
     }
   
+   
     MEMCOPY(beta, L->XCY, sizeof(double) * all_betatot);
     assert(!L->betas_separate || sets == 1);
     assert(cov->Ssolve != NULL);
-    Exterr = RU_solvePosDef(L->XtX, betatot, true, beta, 
+
+    //  for (int h=0; h<betatot * betatot; h++)
+      //printf("%10g ", L->XtX[h]);
+      //    printf("\n>> %d %d %10g\n",  betatot, L->betas_separate, beta[0]);
+
+    Exterr = Ext_solvePosDef(L->XtX, betatot, true, beta, 
 		     L->betas_separate ? repet : 1, NULL, 
 		     cov->Ssolve);
     if (Exterr != NOERROR) goto ErrorHandling;  
-       //   printf("%s AC %f %f %f %fdone\n", NAME(cov), beta[0], beta[1], beta[2], beta[3]); BUG;
+       //   printf("%.50s AC %10g %10g %10g %10g %d done\n", NAME(cov), beta[0], beta[1], beta[2], beta[3], all_betatot); BUG;
     for (j=0; j<all_betatot; j++) {
       proj += L->XCY[j] * beta[j];
     }      
@@ -1077,22 +1124,26 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 
   *v = -0.5 * (logdettot + variables * LOG(TWOPI));
 
-  //  printf(">> v =%f %f #=%d pi=%f sq=%f %f %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * LOG(TWOPI), YCinvY, proj, info->globalvariance);
+  //  printf(">> v =%10g %10g #=%d 2pi^=%10g sq=%10g %10g %d\n", *v, 0.5 *logdettot, variables , -0.5 * variables * LOG(TWOPI), YCinvY, proj, info->globalvariance); 
  
 
   double delta;
   delta = YCinvY - proj;
   if (info->globalvariance) {
-    //      printf("%f delta=%f %f %f \n", *v, delta, variables, 0.5 * variables * LOG(delta));
+    //   printf("%10g delta=%10g %d %10g \n", *v, delta, variables, 0.5 * variables * LOG(delta)); BUG;
+    
     v[1] = delta / variables;
     *v -= 0.5 * variables * (1 + LOG(v[1]));
      if (info->pt_variance != NULL) *(info->pt_variance) = v[1];
   } else {
+    //    printf("delta = %10g, %10g YCY=%10g proj=%10g\n", delta, -0.5 * delta, YCinvY,proj);
     *v -= 0.5 * delta;
   }
-  //    printf("*v=%f %f %d\n", *v, P(GAUSS_BOXCOX)[0], info->globalvariance);
+  //  printf("*v=%10g %10g %d\n", *v, P(GAUSS_BOXCOX)[0], info->globalvariance);
   
   if (R_FINITE(P(GAUSS_BOXCOX)[0])) {
+    //printf("*v=%10g %10g %d\n", *v, P(GAUSS_BOXCOX)[0], info->globalvariance);BUG;
+
     for (j=0; j<vdim; j++) {
       double lambda  = P(GAUSS_BOXCOX)[2 * j];
       if (lambda != 1.0) {
@@ -1112,7 +1163,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 	  for (int r=0; r < repet; r++, data += totptsvdim) {
 	    for (int ii=0; ii<nrow; ii++) {
 	      double dummy = data[ii];
-	      if (!ISNA(dummy) && !ISNAN(dummy))
+	      if (!ISNAN(dummy))
 		sum += LOG(dummy + mu);
 	    }
 	  }
@@ -1121,7 +1172,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
       }
     }
   }
-  //printf("      *v=%f %f\n", *v, P(GAUSS_BOXCOX)[0]);
+  //  printf("      *v=%10g %10g\n", *v, P(GAUSS_BOXCOX)[0]);
 
   
   //  APMI(cov);  BUG;
@@ -1131,8 +1182,8 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
-      RU_getErrorString(ERRORSTRING);
-      ERR(ERRORSTRING);
+      Ext_getErrorString(cov->err_msg);
+      ERR(cov->err_msg);
     } else err = Exterr;
   }
 
@@ -1142,12 +1193,12 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, cov_model *cov,
 
 // v ok
 void PutGlblVar(int *reg, double *var) {
-  if (*reg < 0 || *reg > MODEL_MAX) BUG;
-  cov_model *cov = KEY[*reg];
-  if (cov == NULL || !isInterface(cov)) BUG;
-  cov_model *sub = cov->key == NULL ? cov->sub[0] : cov->key; 
+  assert (*reg >= 0 && *reg <= MODEL_MAX);
+  model *cov = KEY()[*reg];
+  assert(cov != NULL && equalsnowInterface(cov));
+  model *sub = cov->key == NULL ? cov->sub[0] : cov->key; 
   likelihood_storage *L;
-  if (sub == NULL || !isProcess(sub) || (L = sub->Slikelihood) == NULL) BUG;
+  if (sub == NULL || !isnowProcess(sub) || (L = sub->Slikelihood) == NULL) BUG;
   likelihood_info *info = &(L->info);
   if (info->pt_variance != NULL) {
     // == NULL may happen if globalvariance is true by user, but not
@@ -1186,7 +1237,7 @@ SEXP get_likeliinfo(SEXP model_reg) {
   //  printf("betas %d\n", betas);
   PROTECT(betanames = allocVector(STRSXP, betas));
   for (k=0; k<betas; k++) {
-    //printf("%d %s<\n", k, L->betanames[k]);
+    //printf("%d %.50s<\n", k, L->betanames[k]);
     SET_STRING_ELT(betanames, k, mkChar(L->betanames[k]));
   }
 
@@ -1207,24 +1258,23 @@ SEXP get_likeliinfo(SEXP model_reg) {
 }
 
 
-int countbetas(cov_model *cov, double ***where) {
-  cov_fct *C = CovList + cov->nr;
+int countbetas(model *cov, double ***where) {
+  defn *C = DefList + COVNR;
   int i,
     sum = 0,
     kappas = C->kappas;
 
   for(i=0; i<kappas; i++) {
     if (cov->kappasub[i] != NULL) continue;
-    if (ParamIsTrend(cov, i)) {
+    if (isnowTrendParam(cov, i)) {
       assert(C->kappatype[i] == REALSXP);
       if (!PisNULL(i)) {
 	int total = cov->ncol[i] * cov->nrow[i];
 	double *p = P(i);
-	if (ISNA(p[0]) || ISNAN(p[0])) {
+	if (ISNAN(p[0])) {
 	  sum += total;
 	  for (int j=0; j<total; j++) { // 0 for 'where'
-	    if (!ISNA(p[j]) && !ISNAN(p[j])) 
-	      ERR("trend parameters must be all NA or none");
+	    if (!ISNAN(p[j])) ERR("trend parameters must be all NA or none");
 	    if (where != NULL) {
 	      **where = p + j;
 	      (*where)++;	     
@@ -1232,10 +1282,9 @@ int countbetas(cov_model *cov, double ***where) {
 	  }
 	} else {
 	  for (int j=1; j<total; j++) {
-	    if (ISNA(p[j]) || ISNAN(p[j])) 
-	      ERR("trend parameters must be all NA or none");
+	    if (ISNAN(p[j])) ERR("trend parameters must be all NA or none");
 	  } // j
-	} // not (ISNA(p[0]) || ISNAN(p[0])) 
+	} // not (ISNAN(p[0])) 
       } // (!PisNULL(i)) 
     } // is Trend
   } // for kappa
@@ -1244,9 +1293,10 @@ int countbetas(cov_model *cov, double ***where) {
 }
 
 
-void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect)  {
-  if (isProcess(cov)) {
-    int nas = ISNA((P(GAUSS_BOXCOX)[0])) + ISNA((P(GAUSS_BOXCOX)[1]));
+void GetBeta(model *cov, likelihood_storage *L, int *neffect)  {
+  if (isnowProcess(cov)) {
+    int nas = ((bool) ISNA((P(GAUSS_BOXCOX)[0]))) +
+      ((bool) ISNA((P(GAUSS_BOXCOX)[1])));
     assert(cov->key == NULL);
     assert(!PisNULL(GAUSS_BOXCOX));
     if (nas > 0) (*neffect)++;
@@ -1255,36 +1305,36 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect)  {
   }
 
   int i,
-    n = cov->nr == PLUS ? cov->nsub : 1;
+    n = COVNR == PLUS ? cov->nsub : 1;
   if (*neffect >= MAX_LIN_COMP) ERR("too many linear components");
   bool 
-    plus = cov->nr == PLUS;
+    plus = COVNR == PLUS;
   likelihood_info *info = &(L->info);
 
   //  printf("entering getbeta\n");  pmi(cov, 0);
 
   for (i=0; i<n; i++) {
-    cov_model *component = plus ? cov->sub[i] : cov;
+    model *component = plus ? cov->sub[i] : cov;
     //   pmi(component, 0);
-    if (component->nr == PLUS) {
+    if (MODELNR(component) == PLUS) {
       //   printf("recursive\n");
       GetBeta(component, L, neffect);
       //  printf("end recursive\n");
        continue;
     }
 
-    // printf("%s %d %ld\n", NAME(cov), info->effect[*neffect], (long int) L);
+    // printf("%.50s %d %ld\n", NAME(cov), info->effect[*neffect], (long int) L);
     
     //  if (L->effect[*neffect] > LastMixedEffect) { } else 
 
     //printf("neffect %d %d\n", *neffect, info->effect[*neffect]);
     if (info->effect[*neffect]  == DetTrendEffect) { 
       L->cov_det[L->dettrends++] = component;
-    } else if (info->effect[*neffect]  == FixedTrendEffect) {
-      int b = -1;
+    } else if (info->effect[*neffect] == FixedTrendEffect) {
+      int b = UNSET;
       L->betas[L->fixedtrends + 1] = L->betas[L->fixedtrends];
       L->cov_fixed[L->fixedtrends++] = component;
-      if (component->nr == MULT) {
+      if (MODELNR(component) == MULT) {
 	for (int j=0; j<component->nsub; j++) {
 	  if ((b = countbetas(component->sub[j], NULL))  > 0) {
 	    break;
@@ -1301,40 +1351,37 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect)  {
       L->betas[L->fixedtrends] += b;  
       if (L->maxbeta < b) L->maxbeta = b;
 
-      cov_model *model = component;
-      if (model->nr == MULT) {
-	for (int ii=0; ii<model->nsub; ii++)
-	  if (model->sub[0]->nr == CONST && 
-	      ISNA(PARAM0(model->sub[0], CONST_C))){
-	    model = model->sub[ii==0 && model->nsub >= 2];
+      model *comp = component;
+      if (MODELNR(comp) == MULT) {
+	for (int ii=0; ii<comp->nsub; ii++)
+	  if (MODELNR(comp->sub[0]) == CONST && 
+	      ISNA(PARAM0(comp->sub[0], CONST_C))){
+	    comp = comp->sub[ii==0 && comp->nsub >= 2];
 	    break;
 	  }
       }
-      if (isDollar(model)) model = model->sub[0];
+      if (isDollar(comp)) comp = comp->sub[0];
       char abbr[LENMSG];
       int bytes = (1 + GLOBAL.fit.lengthshortname) * sizeof(char);
-      //      printf("%d %s %s\n", *neffect, NAME(component), NAME(model));
-      Abbreviate(NAME(model), abbr);
-      //      printf("%s<\n", abbr);
-      //  if (L->betanames[*neffect] != NULL) {printf("%s %d %s\n", NAME(cov),  *neffect, L->betanames[*neffect]); crash();} else  printf("%s %d NULL\n", NAME(cov),  *neffect); 
+      //      printf("%d %.50s %.50s\n", *neffect, NAME(component), NAME(comp));
+      Abbreviate(NAME(comp), abbr);
+      //      printf("%.50s<\n", abbr);
+      //  if (L->betanames[*neffect] != NULL) {printf("%.50s %d %.50s\n", NAME(cov),  *neffect, L->betanames[*neffect]); crash();} else  printf("%.50s %d NULL\n", NAME(cov),  *neffect); 
       
       assert(L->betanames[base] == NULL);
       if (b == 1) {
 	L->betanames[base] = (char*) MALLOC(bytes);
-	SPRINTF(L->betanames[base], "%s", abbr);
+	SPRINTF(L->betanames[base], "%.50s", abbr);
       } else {
 	for (int ii=0; ii<b; ii++) {
 	  L->betanames[base + ii] = (char*) MALLOC(bytes);
-	  SPRINTF(L->betanames[base + ii], "%s.%d", abbr, ii);
+	  SPRINTF(L->betanames[base + ii], "%.50s.%d", abbr, ii);
 	}
       }
 
-      //printf("----> %d %s\n", base, L->betanames[base]);
+      //printf("----> %d %.50s\n", base, L->betanames[base]);
 
-    } else if (info->effect[*neffect] <= LastMixedEffect) {
-      L->cov_random[L->random++] = component;
-      ERR("mixed effects currently not programmed yet");
-    }
+    } 
     (*neffect)++;
   }
 }
@@ -1342,9 +1389,9 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect)  {
 
 
 
-void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect,
+void GetBeta(model *cov, likelihood_storage *L, int *neffect,
 		 double ***where)  {
-  if (isProcess(cov)) {
+  if (isnowProcess(cov)) {
     int nas = ISNA((P(GAUSS_BOXCOX)[0])) + ISNA((P(GAUSS_BOXCOX)[1]));
     assert(cov->key == NULL);
     assert(!PisNULL(GAUSS_BOXCOX));
@@ -1353,18 +1400,18 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect,
     return;
   }
   int i,
-    n = cov->nr == PLUS ? cov->nsub : 1;
+    n = COVNR == PLUS ? cov->nsub : 1;
   bool 
-    plus = cov->nr == PLUS;
+    plus = COVNR == PLUS;
   likelihood_info *info = &(L->info);
   for (i=0; i<n; i++) {
-    cov_model *component = plus ? cov->sub[i] : cov;
-    if (component->nr == PLUS) {
+    model *component = plus ? cov->sub[i] : cov;
+    if (MODELNR(component) == PLUS) {
       GetBeta(component, L, neffect, where);
       continue;
     }
     if (info->effect[*neffect] == FixedTrendEffect) {
-      if (component->nr == MULT) {
+      if (MODELNR(component) == MULT) {
 	for (int j=0; j<component->nsub; j++) {
 	  if ((countbetas(component->sub[j], where)) > 0) {
 	    break;
@@ -1378,25 +1425,27 @@ void GetBeta(cov_model *cov, likelihood_storage *L, int *neffect,
 
 
 #define MAX_TOTALPTS 10000
-int struct_gauss_logli(cov_model *cov) {
-  assert(isProcess(cov));
-  cov_model 
-    *prev = cov->calling,
+int struct_gauss_logli(model *cov) {
+  assert(isnowProcess(cov));
+  model 
+    *calling = cov->calling,
     *sub = cov->key != NULL ? cov->key : cov->sub[0];
   location_type *loc = Loc(cov);
+  int dim = ANYDIM;
+  // int dim = ANYDIM;
 
   if (false) { // Beschleunigung, insb. im Genetik-Bereich
     // gleich ganz allgemein implementieren??
-    if (isCartesian(sub->isoown)) {
-      if (sub->domown==XONLY) {
-	if (isIsotropic(sub->isoown)) {
+    if (isCartesian(SUB)) {
+      if (isXonly(SUB)) {
+	if (isIsotropic(SUB)) {
 	  if (Gettotalpoints(cov) < MAX_TOTALPTS) {
 	    // nur distances abspeichern
 	    // in ownloc
 	  }
 	} else {
 	  if (Gettotalpoints(cov) <
-	      MAX_TOTALPTS / SQRT((double) Gettimespacedim(cov))) {
+	      MAX_TOTALPTS / SQRT((double) dim)) {
 	    // distance vectors abspeochen
 	  }
 	}
@@ -1411,38 +1460,37 @@ int struct_gauss_logli(cov_model *cov) {
     max_total_data_Sq, betatot,
     err = NOERROR,
     ne = 0,
-    //n = sub->nr == PLUS ? sub->nsub : 1,
+    //n = SUBNR == PLUS ? sub->nsub : 1,
     store = GLOBAL.general.set,
     sets = GET_LOC_SETS(cov),  
     maxrepet = 0,
     maxndata = 0,
     maxtotpts = 0,
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     two_vdim = 2 * vdim,  
     n = vdim * vdim,
-    dim = Gettimespacedim(cov),
     dummy_fixed=0, 
-    dummy_det = 0,
-    dummy_random = 0,
-    global_var = prev->nr==LIKELIHOOD_CALL // ja nicht boolean !
-    ? PARAM0INT(prev, LIKELIHOOD_NA_VAR)
-    : false;
+    dummy_det = 0;
+  usr_bool 
+    global_var = CALLINGNR == LIKELIHOOD_CALL 
+    ? (usr_bool) PARAM0INT(calling, LIKELIHOOD_NA_VAR)
+    : False;
   
   
-  assert(prev != NULL);
-  if (prev->nr != LIKELIHOOD_CALL && prev->nr != LINEARPART_CALL) BUG;
+  assert(calling != NULL);
+  if (CALLINGNR != LIKELIHOOD_CALL && CALLINGNR != LINEARPART_CALL) BUG;
   NEW_STORAGE(likelihood);
   likelihood_storage *L = cov->Slikelihood;
   likelihood_NULL(L);
   likelihood_info *info = &(L->info);
   likelihood_info_NULL(info);
   L->ignore_trend = 
-    prev->nr == LIKELIHOOD_CALL && PARAM0INT(prev, LIKELIHOOD_IGNORETREND); 
+    CALLINGNR == LIKELIHOOD_CALL && PARAM0INT(calling, LIKELIHOOD_IGNORETREND); 
   // to do : betas_separate bereinigen && ignore_trend nicht alles
   // allocieren!
 
   L->betas_separate = 
-    prev->nr == LIKELIHOOD_CALL && PARAM0INT(prev, LIKELIHOOD_BETASSEPARATE);
+    CALLINGNR == LIKELIHOOD_CALL && PARAM0INT(calling, LIKELIHOOD_BETASSEPARATE);
   if (L->betas_separate && sets > 1) SERR("separate estimation of the betas only for one data set possible.");
 
   L->nas_boxcox =  L->nas_boxcox_mu = 0;
@@ -1452,7 +1500,7 @@ int struct_gauss_logli(cov_model *cov) {
   }
 
  
-  // printf("%f %f\n ",  P(GAUSS_BOXCOX)[0], P(GAUSS_BOXCOX)[1]); BUG;
+  // printf("%10g %10g\n ",  P(GAUSS_BOXCOX)[0], P(GAUSS_BOXCOX)[1]); BUG;
 
  
   //PMI(cov);
@@ -1460,16 +1508,17 @@ int struct_gauss_logli(cov_model *cov) {
   // information about free variables: 
   // first: get effect and NAs   
   
-  //  printf("globar %d %d\n", global_var, PARAM0INT(prev, LIKELIHOOD_NA_VAR));
+  //  printf("globar %d %d\n", global_var, PARAM0INT(calling, LIKELIHOOD_NA_VAR));
   // assert(false);
 
+  assert(cov->calling != NULL && cov->calling->calling == NULL);
+  ONCE_NEW_COV_STORAGE(cov->calling, mle);
   err = SetAndGetModelInfo(cov, GLOBAL.fit.lengthshortname, // 3
 			   LIKELI_NA_INTEGER, LIKELI_EXCLUDE_TREND, loc->xdimOZ,
-			   global_var, 
-			   info);
+			   global_var, info, original);
   if (err != NOERROR) goto ErrorHandling;
 
-  // second: existence and "size" of deterministic and fixed trend
+  // second: existence and "size" of known trend and fixed trend
 
   //  printf("\n\n\n\n .>>>>>>>> get Beta:\n");
   GetBeta(cov, L, &ne);
@@ -1496,23 +1545,17 @@ int struct_gauss_logli(cov_model *cov) {
   if ((err = alloc_cov(cov, dim, n, 1)) != NOERROR) goto ErrorHandling;
   
   //  printf("betas = %d/%d %d;  %d %d %d\n", L->betas[ne], betatot, info->neffect, info->effect[0], info->effect[1], info->effect[2]);
-  //   printf("%d %d %d %d; %d %d %d %d - %d\n", dummy_det, L->dettrends, DataEffect, LastMixedEffect,	 dummy_fixed,L->fixedtrends, dummy_random, L->random, FixedTrendEffect);
   for(k=0; k<info->neffect; k++) {
     //    printf("k=%d %d \n", k, info->effect[k]);
     if (info->effect[k] == DetTrendEffect) {
       L->nas_det[dummy_det++] = info->nas[k];
     } else if (info->effect[k] == FixedTrendEffect) {
       L->nas_fixed[dummy_fixed++] = info->nas[k];
-    } else if (info->effect[k] >= FirstMixedEffect &&
-	       info->effect[k] <= LastMixedEffect) {
-      L->nas_fixed[dummy_random++] = info->nas[k];
-      
-    }
+    } 
   }
-  //  printf("%d %d %d %d; %d %d %d %d\n", dummy_det, L->dettrends, DataEffect, LastMixedEffect,	 dummy_fixed,L->fixedtrends,	 dummy_random, L->random);
 
   assert(dummy_det == L->dettrends && dummy_fixed == L->fixedtrends && 
-	 dummy_random == L->random);
+	 0 == L->random);
 
   for (GLOBAL.general.set = 0; GLOBAL.general.set < sets; GLOBAL.general.set++){
     int totptsvdim = Gettotalpoints(cov) * vdim;
@@ -1540,11 +1583,14 @@ int struct_gauss_logli(cov_model *cov) {
 	for (k = 0; k < totptsvdim; k++) Yhat[k] += val[k];
       } else L->dettrend_has_nas = true; 
     }
+
+    //    for (k = 0; k < totptsvdim; k++) printf("%10g ", Yhat[k]); printf("\n"); BUG;
+    
     if (L->random) 
       GERR("Currently the linear part of random effects cannot be determined");
   }
  
-  if (prev->nr == LINEARPART_CALL) {
+  if (CALLINGNR == LINEARPART_CALL) {
     if (L->fixedtrends) {
       for (GLOBAL.general.set = 0; GLOBAL.general.set < sets;
 	   GLOBAL.general.set++){
@@ -1553,7 +1599,7 @@ int struct_gauss_logli(cov_model *cov) {
       }  
     }
   } else {
-    listcpy(&(L->datasets),  PARAMLIST(prev, LIKELIHOOD_DATA), false);
+    listcpy(&(L->datasets),  PARAMLIST(calling, LIKELIHOOD_DATA), false);
     L->data_nas = (int *) MALLOC(sets * sizeof(int));
     listoftype *datasets = L->datasets;
        
@@ -1611,9 +1657,9 @@ int struct_gauss_logli(cov_model *cov) {
       }
     }
  
-    // provide necessary space and account for deterministic information
+    // provide necessary space and account for known information
     max_total_data_Sq = L->max_total_data * L->max_total_data;
-    int totdata_bytes = max_total_data_Sq * sizeof(double);
+    long totdata_bytes = max_total_data_Sq * sizeof(double);
 
   
     L->C = (double *) MALLOC(totdata_bytes);    
@@ -1654,10 +1700,13 @@ int struct_gauss_logli(cov_model *cov) {
       if (!L->dettrend_has_nas && L->nas_boxcox == 0) {
 	double *Xdata = L->X[GLOBAL.general.set] + betatot * totptsvdim;
 	MEMCOPY(Xdata, data, ndata * sizeof(double));
+
+	//  printf("data=%10g %d %d %d\n", data[0], ndata, betatot, totptsvdim);	
+	//  BUG;
  
 	for (p = m = 0; m < repet; m++) {
 	  for (k = 0; k < totptsvdim; k++) {
-	    Xdata[p++] -= YhatWithoutNA[k];
+	    Xdata[p++] -= YhatWithoutNA[k]; // XX lesefehler
 	  }
 	}
       
@@ -1681,8 +1730,13 @@ int struct_gauss_logli(cov_model *cov) {
 	FctnIntern(cov, L->cov_fixed[i], L->cov_fixed[i], 
 		   L->X[GLOBAL.general.set] + L->betas[i] * Gettotalpoints(cov),
 		   false);// "Lueckentext"!!
+	//	printf("hier %d %d incr=%d %10g\n", L->fixedtrends, L->nas_fixed[i],
+	//	       L->betas[i] * Gettotalpoints(cov),
+	//	       L->X[GLOBAL.general.set] [L->betas[i] * Gettotalpoints(cov)]);
+	//	APMI(cov);
+	
       }
-	else L->fixedtrend_has_nas = true;
+      else L->fixedtrend_has_nas = true;
     }
 
     //    int kk = 0;
@@ -1702,22 +1756,21 @@ int struct_gauss_logli(cov_model *cov) {
  ErrorHandling:
   GLOBAL.general.set = store;
 
-  return err;
+  RETURN_ERR(err);
 }
   
     
-void gauss_trend(cov_model *predict, cov_model *cov, double *v, int set) {
+void gauss_trend(model *predict, model *cov, double *v, int set) {
   // muss angenommen werden, dass alles gesetzt ist.
    likelihood_storage *L = cov->Slikelihood;			
-  int store = GLOBAL.general.set,
-    sets = GET_LOC_SETS(predict);
-  if (set < 0 || set >= sets) BUG;
+  int store = GLOBAL.general.set;
+  assert (set >= 0 && set <GET_LOC_SETS(predict));
   GLOBAL.general.set = set;
   listoftype *datasets = L->datasets;
   int 
     err = NOERROR,
     betatot = L->betas[L->fixedtrends],    
-    vdim = cov->vdim[0],
+    vdim = VDIM0,
     ncol = NCOL_OUT_OF(datasets),
     repet = L->betas_separate ? ncol / vdim : 1,
     pred_tot = Gettotalpoints(predict),
@@ -1749,7 +1802,7 @@ void gauss_trend(cov_model *predict, cov_model *cov, double *v, int set) {
     double *betavec = L->betavec + L->betas[i];
     for (r = m = 0; r < repet; r++) {
       double beta = *betavec;
-      //	printf("beta = %f %f\n", beta, X[0]); BUG;
+      //	printf("beta = %10g %10g\n", beta, X[0]); BUG;
       for (int k=0; k<predtotvdim; k++) v[m++] += X[k] * beta;
       if (L->betas_separate) betavec += betatot;
     }

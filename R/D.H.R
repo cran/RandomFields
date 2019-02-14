@@ -114,8 +114,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
                    pch=16, cex=0.2, cex.main=0.85,
                    printlevel=RFoptions()$basic$printlevel,
                    height=3.5,
-                   ...
-                   ) {
+                   ... ) {
   l.method <- eval(formals()$method)
   pch <- rep(pch, len=length(l.method))
   cex <- rep(cex, len=length(l.method))
@@ -136,7 +135,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     stop("unknown values of `mode'")
   
 
-  ct <- CheckXT(x=x, y=y, z=z, T=T, grid=TRUE)
+  ct <- UnifyXT(x=x, y=y, z=z, T=T, grid=TRUE)
   stopifnot(ct$grid)
   dimen <- cbind(ct$x, ct$T)[3, ] 
 
@@ -179,8 +178,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
             as.integer(fft.m),# Ausschnitt aus Fourier-Trafo aus Stueck
             ##                  nachf. Laenge
             as.integer(fft.len),# Reihe zerhackt in Stuecke dieser Laenge 
-            as.integer(fft.len / 2), ## WOSO(?)-Sch\"aetzer
-            PACKAGE="RandomFields")
+            as.integer(fft.len / 2)) ## WOSO(?)-Sch\"aetzer
     l.lambda <-  log((2 * pi * (fft.m[1]:fft.m[2])) / fft.len)
   } 
 
@@ -203,8 +201,7 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
     l.var <- ## rbind(l.varmeth.var, l.dfa.var)
       .Call(C_detrendedfluc, as.double(data), as.integer(dimen[1]),
             as.integer(repet),
-            as.integer(block.sequ), as.integer(dfa.len),
-            PACKAGE="RandomFields")
+            as.integer(block.sequ), as.integer(dfa.len) )
     ## 1:dfa.len since data could be a matrix; l.block.sequ has length dfa.len
     ## and is then shorter than l.varmeth.var!
     l.dfa.var <- l.var[2, ]
@@ -220,7 +217,8 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
   {
     cat("\nuse left mouse for locator and right mouse to exit\n")
     plots <- do.dfa + do.fft + do.var
-    ScreenDevice(height=height, width=height * plots)
+    if (!RFoptions()$graphics$grDefault)
+      ScreenDevice(height=height, width=height * plots)
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))
@@ -284,7 +282,8 @@ RFhurst <- function(x, y = NULL, z = NULL, data, sort=TRUE,
               fft=list(x=l.lambda, y=l.I.lambda, regr=fft$regr,
                 sm=fft$sm,
                 x.u=fft$x.u, y.u=fft$y.u, regr.u=fft$regr.u,
-                H = fft$val, H.u = fft$val.u)
+                H = fft$val,
+		H.u = fft$val.u)
               )
          )
 }
@@ -349,7 +348,7 @@ RFfractaldim <-
     rm(tmp)
   }
 
-  ct <- CheckXT(x=x, y=y, z=z, T=T, grid=grid, length.data=length(data))
+  ct <- UnifyXT(x=x, y=y, z=z, T=T, grid=grid, length.data=length(data))
 
   ## variogram method (grid or arbitray locations)
   if (do.vario) {
@@ -370,7 +369,7 @@ RFfractaldim <-
           step <- min(unlist(step))
         } else {          
           if (printlevel>PL_IMPORTANT) cat("locations not on a grid.\n")
-          dim <- ct$Zeit + ct$spatialdim
+          dim <- ct$has.time.comp + ct$spatialdim
           inv.lambda <- prod(edge.lengths) / ct$restotal
           step <- inv.lambda^(1 / dim) # Ann: glm Gitter
           ## Ann: Poisson Punktprozess, Leerwk != p (heuristisch =0.5)
@@ -383,8 +382,8 @@ RFfractaldim <-
 
  #   Print(bin, step, end, edge.lengths)
      
-    ev <- RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=ct$grid,
-			       bin=bin, spConform=FALSE, vdim=1)
+    ev <- rfempirical(x=x, y=y, z=z, T=T, data=data, grid=ct$grid, bin=bin,
+		      spConform=FALSE, vdim=1, method=METHOD_VARIOGRAM)
 
     idx <-  which(is.finite(l.binvario <- log(ev$emp)))
     if (length(idx) < vario.n) {
@@ -429,8 +428,7 @@ RFfractaldim <-
       storage.mode(data) <- "double"
       l.range.count <-
         .Call(C_minmax, data, as.integer(dimen[1]),
-              as.integer(repet), as.integer(range.sequ), as.integer(lrs),
-              PACKAGE="RandomFields")
+              as.integer(repet), as.integer(range.sequ), as.integer(lrs))
       box.length.correction <- 0 ## might be set differently
       ##                            for testing or development
       Ml.range.sequ <- -log(range.sequ + box.length.correction)
@@ -449,8 +447,8 @@ RFfractaldim <-
               as.double(rbind(data[1,], data, data[nrow(data),])),
               as.integer(dimen[1]),
               as.integer(repet), as.double(factor),
-              as.integer(box.sequ),
-              PACKAGE="RandomFields")
+              as.integer(box.sequ)
+              )
       gc()
       
       box.length.correction <- 0 ## might be set differently
@@ -480,8 +478,8 @@ RFfractaldim <-
          as.integer(repet),## Produkt der anderen Dimensionen
          as.integer(fft.m),## Ausschnitt aus Fourier-Tr aus Stueck nachf. Laenge
          as.integer(fft.len),## Reihe zerhackt in Stuecke dieser Laenge 
-         as.integer(fft.len / 100 * fft.shift), ## shift (WOSA-Sch\"aetzer)
-         PACKAGE="RandomFields")
+         as.integer(fft.len / 100 * fft.shift) ## shift (WOSA-Sch\"aetzer)
+         )
     }
   } else { # not grid
     if (do.box || do.range || do.fft) {
@@ -499,7 +497,8 @@ RFfractaldim <-
 
   if (any(mode=="plot" | mode=="interactive")) {
     plots <- do.vario + do.box + do.range + do.fft
-    ScreenDevice(height=height, width = height * min(3.4, plots))
+    if (!RFoptions()$graphics$grDefault)
+      ScreenDevice(height=height, width = height * min(3.4, plots))
     par(bg="white")
     screens <- seq(0, 1, len=plots+1)
     screens <- split.screen(figs=cbind(screens[-plots-1], screens[-1], 0, 1))
@@ -578,7 +577,8 @@ RFfractaldim <-
               fft=list(x=l.lambda, y=l.I.lambda, regr=fft$regr,
                 sm=fft$sm,
                 x.u=fft$x.u, y.u=fft$y.u, regr.u=fft$regr.u,
-                D = fft$val, D.u = fft$val.u)
+                D = fft$val,
+		D.u = fft$val.u)
               )
          )
 }

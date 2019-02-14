@@ -79,8 +79,7 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
     *SICH = NULL, 
     *D = NULL, 
     *work = NULL;
-  int dd, Err,
-    err = NOERROR,
+  int dd, Err = NOERROR,
     *iwork = NULL,
      dimSq = dim * dim,
     optim_work = 12 * dim;
@@ -89,13 +88,13 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
       (work = (double *) MALLOC(sizeof(double) * optim_work))==NULL ||
       (iwork = (int *) MALLOC(sizeof(int) * 8 * dim))==NULL ||
       (SICH =(double *) MALLOC(sizeof(double) * dimSq))==NULL) {
-    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+    Err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
   
   MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
-  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim, D, NULL, &dim, NULL,
-		   &dim, work, &optim_work, iwork, &Err);
-  if (Err != 0) GERR("SVD for anisotropy matrix failed.");
+  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim,// Eigen
+		   D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err);
+  if (Err != 0) { Err=XERRORSVD; goto ErrorHandling; }
   for (dd = 0; dd < dim; dd++) {
     dummy = FABS(D[dd]);
     if (dummy < min) min = dummy;
@@ -106,20 +105,19 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
   FREE(SICH);
   FREE(work);
   FREE(iwork);
-  if (err != NOERROR) XERR(err);
+  if (Err != NOERROR) return -Err;
 
   return min;
 }
 
 
-double getDet(double *Aniso, int dim) {
+double getDet(double *Aniso, int dim) { // arbitrary squared matrix !
   double  
     det = 1.0, 
     *SICH = NULL, 
     *D = NULL, 
     *work = NULL;
-  int dd, Err,
-    err = NOERROR,
+  int dd, Err = NOERROR,
     *iwork = NULL,
      dimSq = dim * dim,
     optim_work = 12 * dim;
@@ -128,13 +126,13 @@ double getDet(double *Aniso, int dim) {
       (work = (double *) MALLOC(sizeof(double) * optim_work))==NULL ||
       (iwork = (int *) MALLOC(sizeof(int) * 8 * dim))==NULL ||
       (SICH =(double *) MALLOC(sizeof(double) * dimSq))==NULL) {
-    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+    Err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
   
   MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
-  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim, D, NULL, &dim, NULL,
-		   &dim, work, &optim_work, iwork, &Err);
-  if (Err != 0) GERR("SVD for anisotropy matrix failed.");
+  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim,// Eigen
+		   D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err);
+  if (Err != 0) { Err=XERRORSVD; goto ErrorHandling; }
   for (dd = 0; dd < dim; det *= D[dd++]);
 
  ErrorHandling:
@@ -142,43 +140,11 @@ double getDet(double *Aniso, int dim) {
   FREE(SICH);
   FREE(work);
   FREE(iwork);
-  if (err != NOERROR) XERR(err);
+  if (Err != NOERROR) return RF_NAN;
 
   return det;
 }
 
-double detU(double *C, int dim) {
-  /* ACHTUNG!! detU zerstoert !!! */
-  int i, info, 
-//    job = 10,
-    dimP1 = dim + 1,
-    dimsq = dim * dim;
-  double det = 1.0;
-
-  F77_CALL(dpofa)(C, &dim, &dim, &info); // C i s now cholesky
-  if (info != 0) {
-    ERR("detU: matrix does not seem to be strictly positive definite");
-  }
-  for (i=0; i<dimsq; i+=dimP1) det *= C[i];
-  return det * det;
-}
-
-void det_UpperInv(double *C, double *det, int dim) {
-  int i, info, 
-    job = 01,
-    dimP1 = dim + 1,
-    dimsq = dim * dim;
-  F77_CALL(dpofa)(C, &dim, &dim, &info); // C i s now cholesky
-  if (info != 0) {
-    ERR("det_UpperInv: dpofa failed -- is matrix positive definite?");
-  }
-
-  double Det = 1.0;
-  for (i=0; i<dimsq; i+=dimP1) Det *= C[i];
-  *det = Det * Det;
-
-  F77_CALL(dpodi)(C, &dim, &dim, det, &job); // C is now Cinv
-}
 
 
 
@@ -190,11 +156,11 @@ void InvChol(double *C, int dim) {
     dimsq = dim * dim;
   long ve, ho;
   double Det = 1.0;
-  F77_CALL(dpofa)(C, &dim, &dim, &info); // C is now cholesky
-  if (info != 0) ERR("InvChol: Inversion failed, bad functions\n");
+  F 77_ CALL(dpofa)(C, &dim, &dim, &info); // C is now cholesky
+  if (info != 0) E RR("InvChol: Inversion failed, bad functions\n");
   for (i=0; i<dimsq; i+=dimP1) Det *= C[i];
   Det = Det * Det;
-  F77_CALL(dpodi)(C, &dim, &dim, &Det, &job); // C is now Cinv
+  F 77_ CALL(dpodi)(C, &dim, &dim, &Det, &job); // C is now Cinv
   for (ii=dim, i=0; ii>0; i+=dimP1, ii--) {  // filling lower half
       endfor = i + ii;
       for (ve = i + 1, ho = i + dim; ve < endfor;
@@ -206,20 +172,6 @@ void InvChol(double *C, int dim) {
 */
  
  
-
-
-
-void memory_copy(void *dest, void *src, int bytes) {
-  int i, 
-    len = bytes / sizeof(int),
-    *d = (int*) dest,
-    *s = (int *) src;
-  if ((len * (int) sizeof(int)) != bytes) {
-    ERR("size not a multiple of int");
-  }
-  for (i=0; i<len; i++) d[i] = s[i];
-}
-
 
 SEXP distInt(SEXP XX, SEXP N, SEXP Genes) {
   int i,j, k, di, diff, *x, *y, ve, ho, endfor,
@@ -282,22 +234,12 @@ SEXP vectordist(SEXP V, SEXP DIAG){
   return DIST;
 }
 
-int is_positive_definite(double *C, int dim) {
-    int err,
-	bytes = sizeof(double) * dim * dim;
-  double *test;
-  test = (double*) MALLOC(bytes);
-  MEMCOPY(test, C, bytes);
-  F77_CALL(dpofa)(test, &dim, &dim, &err); 
-  UNCONDFREE(test);
-  return(err == 0);
-}
-
 
 int xMatch(char *name, char **list, unsigned int llen)  {
   unsigned int ln, nr;
-  // == -1 if no matching function is found
-  // == -2 if multiple matching fctns are found, without one matching exactly
+  // == NOMATCHING, -1, if no matching function is found
+  // == MULTIPLEMATCHING,-2, if multiple matching fctns are found,
+  //    without one matching exactly
   // if more than one match exactly, the last one is taken (enables overwriting 
   // standard functions)
   // see also GetModelNr !
@@ -335,8 +277,9 @@ int CeilIndex(double x, double *cum, int size) {
     if (cum[mitte] >= x) max = mitte;
     else min = mitte + 1;
   }
-  //  printf("%f < %f <= %f\n", cum[min-1], x, cum[min]);
+  //
   assert((min==0) || x > cum[min-1]);
+  //printf("%10g < %10g <= %10g; %d size=%d\n", min == 0 ? RF_NEGINF : cum[min-1], x, cum[min], min, size);
   assert(x <= cum[min] && (min==0 || x > cum[min-1]));
 
 
@@ -370,7 +313,7 @@ int searchFirstGreater(double *v, int len, double z) {
   assert((i==0) || z > v[i-1]);
   assert(z <= v[i]);
 
-  //  printf("%f < %f <= %f\n", v[i-1], z, v[i]);//
+  //  printf("%10g < %10g <= %10g\n", v[i-1], z, v[i]);//
 }
 */
 
@@ -391,7 +334,7 @@ double searchInverse(isofct fct, double start, double *value,
 }
 */
 
-double searchInverse(covfct fct, cov_model *cov, 
+double searchInverse(covfct fct, model *cov, 
 		     double start, double value, double releps) {
   double v;
   fct(&start, cov, &v);
@@ -409,7 +352,7 @@ double searchInverse(covfct fct, cov_model *cov,
   return x;
 }
 
-double searchInverse(covfct fct, cov_model *cov, 
+double searchInverse(covfct fct, model *cov, 
 		     double start, double min, double value, double releps) {
   double v;
   assert(start > min);
@@ -434,7 +377,7 @@ double searchInverse(covfct fct, cov_model *cov,
 double incomplete_gamma(double start, double end, double s) {
   // int_start^end t^{s-1} e^{-t} \D t
 
-  // print("incomplete IN s=%f e=%f s=%f\n", start, end, s);
+  // print("incomplete IN s=%10g e=%10g s=%10g\n", start, end, s);
 
   double
     v = 0.0, 
@@ -448,8 +391,9 @@ double incomplete_gamma(double start, double end, double s) {
     e_start = EXP(-start),
     e_end = EXP(-end),
     power_start = POW(start, s),      
-    power_end = end < RF_INF ? POW(end, s) : 0,
-    factor = 1.0; 
+    power_end = 0;
+  if (end < RF_INF) power_end = POW(end, s);
+  double factor = 1.0; 
   
   
   while (s < 0.0) {
@@ -463,7 +407,7 @@ double incomplete_gamma(double start, double end, double s) {
   w = pgamma(start, s, 1.0, false, false);  // q, shape, scale, lower, log
   if (R_FINITE(end)) w -= pgamma(end, s, 1.0, false, false);
 
-  //  print("incomplete s=%f e=%f s=%f v=%f g=%f w=%f\n", start, end, s, v, gammafn(s), w);
+  //  print("incomplete s=%10g e=%10g s=%10g v=%10g g=%10g w=%10g\n", start, end, s, v, gammafn(s), w);
 
   return v + gammafn(s) * w * factor;
 }
@@ -483,10 +427,6 @@ int addressbits(void VARIABLE_IS_NOT_USED *addr) {
 
 
 
-bool LOCAL_DEBUG = false;
-void start_debug() { LOCAL_DEBUG = true; }
-void end_debug() { LOCAL_DEBUG = false; }
-
 
 void Abbreviate(char *Old, char *abbr) {
   char *old = Old;
@@ -499,7 +439,6 @@ void Abbreviate(char *Old, char *abbr) {
   if (nold <= len) {
     abbr[len] = '\0';
     STRCPY(abbr, old);
-    //  printf(">%s**%s<\n", Old, abbr);
     return;
   }
   abbr[0] = old[0];
@@ -514,9 +453,165 @@ void Abbreviate(char *Old, char *abbr) {
     assert(nabbr==0 || nold == nabbr);
     for (int i=2; i<=nold; i++) abbr[i] = old[i];
   }
-  
-  //printf(">%s--%s<\n", Old, abbr);
-
 }
   
   
+
+//bool LOCAL_DEBUG = false;
+//void start_debug() { LOCAL_DEBUG = true; }
+//void end_debug() { LOCAL_DEBUG = false; }
+
+
+
+double SurfaceSphere(int d, double r) { 
+    // d = Hausdorff-Dimension der Oberflaeche der Sphaere
+   //  NOT   2 \frac{\pi^{d/2}}{\Gamma(d/2)} r^{d-1}, 
+   //  BUT  2 \frac{\pi^{(d+1)/2}}{\Gamma((d+1)/2)} r^{d}, 
+   double D = (double) d;
+  // printf("r=%10g, %10g %10g %10g\n", r, D, POW(SQRTPI * r, D - 1.0), gammafn(0.5 * D));
+
+   return 2.0 * SQRTPI * POW(SQRTPI * r, D) / gammafn(0.5 * (D + 1.0));
+
+}
+
+double VolumeBall(int d, double r) {
+  //  V_n(R) = \frac{\pi^{d/2}}{\Gamma(\frac{d}{2} + 1)}R^n, 
+ double D = (double) d;
+ return POW(SQRTPI * r, D) / gammafn(0.5 * D + 1.0);  
+}
+
+
+
+
+void analyse_matrix(double *aniso, int row, int col,
+		    bool *diag, bool *quasidiag, int *idx,
+		    bool *semiseparatelast,
+		    bool *separatelast) {
+  // diag, falls durch einfuegen von spalten diag-Matrix erhalten
+  // werden kann
+  
+  // see also Type -- can it be unified ????
+
+  /* 
+     -> i
+     |  * 0 0
+     j  0 0 *
+        0 * 0
+  */
+  bool notquasidiag=true, *taken=NULL;
+  int j, k, startidx, i;
+
+  if (aniso == NULL) {
+    *diag = *quasidiag = *separatelast = *semiseparatelast = true;
+    for (i=0; i<col; i++) idx[i] = i;
+    return;
+  }
+
+  taken = (bool *) MALLOC(row * sizeof(bool));
+
+  for (j=0; j<row; j++) {
+    taken[j]=false;
+    idx[j] = UNSET;
+  }
+  for (k=startidx=i=0; i<col; i++) {
+    for (j=0; j<row; j++, k++) if (aniso[k] != 0.0) break;
+    if (j < row) {
+      if ((notquasidiag = taken[j])) break;
+      taken[j] = true;
+      idx[j] = i;
+      for (j++, k++ ; j<row; j++) {
+	if ((notquasidiag = aniso[k++] != 0.0)) break;
+      }
+    }
+    if (notquasidiag)  break;
+  }
+  if ((*diag = *quasidiag = !notquasidiag)) {
+    if (idx[0] == UNSET) idx[0] = 0;
+    for (j=1; j<row; j++) {
+      if (idx[j] <= idx[j-1]) {
+	if (idx[j] == UNSET) idx[j] = idx[j-1] + 1; else break; 
+      }
+    }
+    *diag = j >= row;
+  }
+  if (!(*semiseparatelast = *diag)) {
+    /*
+     * * 0
+     * * 0
+     * * *
+     */
+    int last = col * row - 1;
+    for (k=last - row + 1; k<last; k++)
+      if (!(*separatelast = aniso[k] == 0.0)) break;
+  }
+  if (!(*separatelast = *semiseparatelast)) {
+    /*
+     * * 0
+     * * 0
+     0 0 *
+     */  
+    int last = col * row - 1;
+    for (k=row - 1; k<last; k+=row)
+      if (!(*separatelast = aniso[k] == 0.0)) break;
+  }
+  UNCONDFREE(taken);
+}
+
+double *EinheitsMatrix(int dim) {
+  // Einheitsmatrizen
+  double *mem;
+  if ((mem = (double*) CALLOC(dim * dim, sizeof(double))) != NULL) {
+    int d;
+    for (d=0; d<dim; d+=dim+1) mem[d] = 1.0;
+  }
+  return mem;
+}
+
+
+bool leading_spaces(model *lprint_z, const char *character) {
+  int lprint_i=0;
+  if (lprint_z == NULL) return DOPRINT;
+  while (lprint_z->calling != NULL && lprint_i<10) {	
+    lprint_z=lprint_z->calling;
+    if (DOPRINT) {
+      PRINTF("%.50s ", character);
+    }
+    lprint_i++;
+  }
+  if (lprint_i==100) { // endless loop
+      PRINTF("LPRINT i=%d\n", lprint_i);
+      PMI(lprint_z); //
+      assert(false);
+  }
+  return DOPRINT;
+}
+
+SEXP maintainers_machine() {
+  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
+  LOGICAL(ans)[0] =
+#ifdef SCHLATHERS_MACHINE  
+    TRUE; // ok
+#else
+  FALSE; // ok
+#endif
+  UNPROTECT(1);
+  return ans;
+}
+
+
+/*
+
+double LegendrePolynome(int n, double x) {     
+  double
+    P_kM1 = 1.0,
+    P_kM2 = 0.0,
+    P_k = 1.0; 
+  for (int k=1; k<=n; k++) {
+    P_k = ((2.0 * k-1.0) x * P_kM1 - (k - 1.0) * P_kM2 ) / k; 
+    P_kM2 = P_kM1;
+    P_kM1 = P_k;
+  } 
+  return P_k;
+}
+
+ */

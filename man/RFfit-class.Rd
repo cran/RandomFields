@@ -36,7 +36,7 @@
 %\alias{plot,RFfit-method}
 
 \title{Class \code{RFfit}}
-\description{ Class for RandomField's representation of model estimation
+\description{ Class for RandomFields' representation of model estimation
  results 
 }
 
@@ -64,7 +64,7 @@ RFhessian(model)
  \item{...}{
    \itemize{
      \item \command{plot}: arguments to be passed to methods; mainly graphical
-     arguments, or further models in case of class \code{'RMmodel'},
+     arguments, or further models in case of class \code{CLASS_CLIST},
      see Details.
 
      \item \command{summary}:  see the generic function
@@ -76,14 +76,14 @@ RFhessian(model)
     vector of slot names for which the fitted covariance or variogram
     model is to be plotted; should be a subset of 
     \code{slotNames(x)} for which the corresponding slots are of class
-    \code{"RMmodelFit"}; by default, the maximum likelihood fit
+    \code{CLASS_FIT}; by default, the maximum likelihood fit
    (\code{"ml"}) will be
     plotted} 
   \item{full}{logical.
     if \code{TRUE} submodels are reported as well (if available).
   }
   \item{x}{object of class \code{\link[=RFsp-class]{RFsp}} or
-    \command{\link[=RFempVariog-class]{RFempVario}} or
+    \command{\link[=RFempVariog-class]{RFempVariog}} or
     \command{\link[=RFfit-class]{RFfit}} or
     \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
     be any sophisticated model but it must be either stationary or a
@@ -117,8 +117,8 @@ RFhessian(model)
    see also option \code{coordunits} of \command{\link{RFoptions}}.
  }
  \item{\code{deleted}:}{integer vector.
-   positions of the parameters that has been deleted to get the set of
-   variables, used in the optimazation
+   Positions of the parameters that have been deleted to get the set of
+   variables, used in the optimization.
  }
  \item{\code{ev}:}{list; list of objects of class
    \code{\link[=RFempVariog-class]{RFempVariog}}, 
@@ -135,7 +135,7 @@ RFhessian(model)
    parameter value gives the lower bound for the respective parameter} 
  \item{\code{ml}:}{RMmodelFit; analog to slot 'autostart'
  }
- \item{\code{modelinfo}:}{ Table with information on the parameters:
+ \item{\code{modelinfo}:}{ table with information on the parameters:
    name, boundaries, type of   parameter 
  }
  \item{\code{n.covariates}:}{   number of covariates
@@ -160,10 +160,10 @@ RFhessian(model)
  }
  \item{\code{plain}:}{RMmodelFit; analog to slot 'autostart'} 
  \item{\code{report}:}{
-   if not empty, it indicates that this model should be reported
+   If not empty, it indicates that this model should be reported
    and gives a standard name of the model.
    
-   Various function, e.g. \command{print.RMmodelFit} uses
+   Various functions, e.g. \command{print.RMmodelFit}, use
    this information if their argument \code{full} equals \code{TRUE}.
   
  }
@@ -198,9 +198,9 @@ RFhessian(model)
    see also option \code{varunits} of \command{\link{RFoptions}}.
  }
  \item{\code{x.proj}:}{
-   logical or integer. If logial, it means that no
+   logical or integer. If logical, it means that no
    separable model is considered there. If integer, then
-   it gives the considered directions of a separable model
+   it gives the considered directions of a separable model.
  }
  \item{\code{Z}:}{
    standardized list of information on the data
@@ -222,7 +222,7 @@ RFhessian(model)
       of \code{x}
     }
 
-    \item{persp}{code{signature(obj =
+    \item{persp}{\code{signature(obj =
 	"RFfit")}: generates \command{\link[graphics]{persp}} plots
     }
     \item{print}{\code{signature(x = "RFfit")}: identical with
@@ -251,7 +251,7 @@ RFhessian(model)
 
 \section{Further 'methods'}{
   
-  \code{AICc.RFfit(object, ..., method="ml", full=FALSE)}]
+  \code{AICc.RFfit(object, ..., method="ml", full=FALSE)}
   
   \code{AICc.RF_fit(object, ..., method="ml", full=TRUE)}
 }
@@ -259,18 +259,14 @@ RFhessian(model)
 %\section{Details}{
 %}
 
-\author{Alexander Malinowski
-  \email{Alexander.Malinowski@web.de},
-  Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\author{Alexander Malinowski; \martin}
 
 \seealso{
  \code{\link{RFfit}},
- \code{\link{RFempiricalvariogram}},
+ \code{\link{RFvariogram}},
  \code{\link{RMmodel-class}},
- \code{\link{RMmodelFit-class}}
- \code{\link{plot-method}}
+ \code{\link{RMmodelFit-class}},
+ \code{\link{plot-method}}.
 }
  
 
@@ -283,7 +279,7 @@ RFhessian(model)
   }
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 # see RFfit
 \dontshow{FinalizeExample()}
 }

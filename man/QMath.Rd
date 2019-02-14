@@ -1,7 +1,7 @@
 % This file has been created automatically by 'rfGenerateMaths'
 \name{Mathematial C functions}
-\alias{RFcalc}
 \alias{R.models}
+\alias{RFcalc}
 \alias{math.c}
 \alias{R.}
 \alias{R.plus}
@@ -19,6 +19,8 @@
 \alias{R.p}
 \alias{R.lon}
 \alias{R.lat}
+\alias{R.gamma}
+\alias{gamma}
 \alias{R.acos}
 \alias{R.asin}
 \alias{asin}
@@ -52,158 +54,227 @@
 \alias{expm1}
 \alias{R.log1p}
 \alias{log1p}
-\alias{R.logb}
-\alias{logb}
 \alias{R.exp2}
+\alias{exp2}
 \alias{R.log2}
 \alias{log2}
 \alias{R.pow}
+\alias{^}
 \alias{R.sqrt}
 \alias{sqrt}
 \alias{R.hypot}
+\alias{hypot}
 \alias{R.cbrt}
+\alias{cbrt}
 \alias{R.ceil}
+\alias{ceiling}
 \alias{R.fabs}
 \alias{abs}
 \alias{R.floor}
 \alias{floor}
 \alias{R.fmod}
+\alias{\%\%}
 \alias{R.round}
 \alias{round}
 \alias{R.trunc}
 \alias{trunc}
-%\alias{R.nearbyint}
-%\alias{R.lrint}
-%\alias{R.llrint}
-%\alias{R.lround}
-%\alias{R.llround}
-%\alias{R.copysign}
+\alias{R.erf}
+\alias{erf}
+\alias{R.erfc}
+\alias{erfc}
 \alias{R.lgamma}
 \alias{lgamma}
-\alias{R.erf}
-\alias{R.erfc}
-\alias{R.gamma}
-\alias{gamma}
-%\alias{R.rint}
-%\alias{R.nextafter}
-%\alias{R.nexttoward}
+\alias{R.nextafter}
+\alias{R.nexttoward}
 \alias{R.remainder}
+\alias{R.ilogb}
 \alias{R.fdim}
 \alias{R.fmax}
 \alias{max}
 \alias{R.fmin}
 \alias{min}
+%\alias{R.nearbyint}
+%\alias{R.logb}
+%\alias{R.lrint}
+%\alias{R.llrint}
+%\alias{R.lround}
+%\alias{R.llround}
+%\alias{R.copysign}
+%\alias{R.tgamma}
+%\alias{R.rint}
+\alias{\%\%,ANY,RMmodel-method}
+\alias{\%\%,RMmodel,ANY-method}
+\alias{*,RMmodel,character-method}
+\alias{*,character,RMmodel-method}
+\alias{+,RMmodel,character-method}
+\alias{+,RMmodel,factor-method}
+\alias{+,RMmodel,list-method}
+\alias{+,character,RMmodel-method}
+\alias{+,data.frame,RMmodel-method}
+\alias{+,factor,RMmodel-method}
+\alias{-,RMmodel,character-method}
+\alias{-,character,RMmodel-method}
+\alias{/,RMmodel,character-method}
+\alias{/,character,RMmodel-method}
+\alias{^,ANY,RMmodel-method}
+\alias{^,RMmodel,ANY-method}
+\alias{^,RMmodel,character-method}
+\alias{^,character,RMmodel-method}
+\alias{abs,RMmodel-method}
+\alias{acosh,RMmodel-method}
+\alias{asin,RMmodel-method}
+\alias{asinh,RMmodel-method}
+\alias{atan2,ANY,RMmodel-method}
+\alias{atan2,RMmodel,ANY-method}
+\alias{atan,RMmodel-method}
+\alias{atanh,RMmodel-method}
+\alias{ceiling,RMmodel-method}
+\alias{cos,RMmodel-method}
+\alias{cosh,RMmodel-method}
+\alias{exp,RMmodel-method}
+\alias{expm1,RMmodel-method}
+\alias{floor,RMmodel-method}
+\alias{lgamma,RMmodel-method}
+\alias{log1p,RMmodel-method}
+\alias{log2,RMmodel-method}
+\alias{log,RMmodel-method}
+\alias{round,RMmodel,missing-method}
+\alias{sin,RMmodel-method}
+\alias{sinh,RMmodel-method}
+\alias{sqrt,RMmodel-method}
+\alias{tan,RMmodel-method}
+\alias{tanh,RMmodel-method}
+\alias{trunc,RMmodel-method}
 \title{Transformation of coordinate systems}
 \description{
   The functions provide mathematical c functions as \link{RMmodels}
 }
  
 \usage{
-RFcalc(model)
-R.minus(a, b, factor)
-R.plus(a, b, factor)
-R.div(a, b, factor)
-R.mult(a, b, factor)
-R.const(a)
-R.c(a, b, c, d, e, f, g, h, i, j, factor)
+RFcalc(model, params, ...)
+R.minus(x, y, factor)
+R.plus(x, y, factor)
+R.div(x, y, factor)
+R.mult(x, y, factor)
+R.const(x)
+R.c(a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, ncol, factor)
 R.p(proj, new, factor)
-R.is(a, is, b)
+R.is(x, is, y)
 R.lon()
 R.lat()
 %c(...)
-R.acos(a)
-asin(x)
-R.asin(a)
-atan(x)
-R.atan(a)
-atan2(y, x)
-R.atan2(a, b)
-cos(x)
-R.cos(a)
-sin(x)
-R.sin(a)
-tan(x)
-R.tan(a)
-acosh(x)
-R.acosh(a)
-asinh(x)
-R.asinh(a)
-atanh(x)
-R.atanh(a)
-cosh(x)
-R.cosh(a)
-sinh(x)
-R.sinh(a)
-tanh(x)
-R.tanh(a)
-exp(x)
-R.exp(a)
-log(x)
-R.log(a)
-expm1(x)
-R.expm1(a)
-log1p(x)
-R.log1p(a)
-logb(x)
-R.logb(a)
-R.exp2(a)
-log2(x)
-R.log2(a)
-R.pow(a, b)
-sqrt(x)
-R.sqrt(a)
-R.hypot(a, b)
-R.cbrt(a)
-R.ceil(a)
-abs(x)
-R.fabs(a)
-floor(x)
-R.floor(a)
-R.fmod(a, b)
-round(x, ...)
-R.round(a)
-trunc(x)
-R.trunc(a)
-R.erf(a)
-R.erfc(a)
-gamma(x)
-R.gamma(a)
-lgamma(x)
-R.lgamma(a)
-R.remainder(a, b)
-R.fdim(a, b)
-max(...)
-R.fmax(a, b)
-min(...)
-R.fmin(a, b)
+R.gamma(x)
+R.acos(x)
+R.asin(x)
+R.atan(x)
+R.atan2(y, x)
+R.cos(x)
+R.sin(x)
+R.tan(x)
+R.acosh(x)
+R.asinh(x)
+R.atanh(x)
+R.cosh(x)
+R.sinh(x)
+R.tanh(x)
+R.exp(x)
+R.log(x)
+R.expm1(x)
+R.log1p(x)
+R.exp2(x)
+R.log2(x)
+R.pow(x, y)
+R.sqrt(x)
+R.hypot(x, y)
+R.cbrt(x)
+R.ceil(x)
+R.fabs(x)
+R.floor(x)
+R.fmod(x, y)
+R.round(x)
+R.trunc(x)
+R.erf(x)
+R.erfc(x)
+R.lgamma(x)
+R.remainder(x, y)
+R.fdim(x, y)
+R.fmax(x, y)
+R.fmin(x, y)
+
+\S4method{\%\%}{ANY,RMmodel}(e1,e2)
+\S4method{\%\%}{RMmodel,ANY}(e1,e2)
+\S4method{*}{RMmodel,character}(e1,e2)
+\S4method{*}{character,RMmodel}(e1,e2)
+\S4method{+}{RMmodel,character}(e1,e2)
+\S4method{+}{RMmodel,factor}(e1,e2)
+\S4method{+}{RMmodel,list}(e1,e2)
+\S4method{+}{character,RMmodel}(e1,e2)
+\S4method{+}{data.frame,RMmodel}(e1,e2)
+\S4method{+}{factor,RMmodel}(e1,e2)
+\S4method{-}{RMmodel,character}(e1,e2)
+\S4method{-}{character,RMmodel}(e1,e2)
+\S4method{/}{RMmodel,character}(e1,e2)
+\S4method{/}{character,RMmodel}(e1,e2)
+\S4method{^}{ANY,RMmodel}(e1,e2)
+\S4method{^}{RMmodel,ANY}(e1, e2)
+\S4method{^}{RMmodel,character}(e1,e2)
+\S4method{^}{character,RMmodel}(e1,e2)
+\S4method{abs}{RMmodel}(x)
+\S4method{acosh}{RMmodel}(x)
+\S4method{asin}{RMmodel}(x)
+\S4method{asinh}{RMmodel}(x)
+\S4method{atan2}{ANY,RMmodel}(y,x)
+\S4method{atan2}{RMmodel,ANY}(y,x)
+\S4method{atan}{RMmodel}(x)
+\S4method{atanh}{RMmodel}(x)
+\S4method{ceiling}{RMmodel}(x)
+\S4method{cos}{RMmodel}(x)
+\S4method{cosh}{RMmodel}(x)
+\S4method{exp}{RMmodel}(x)
+\S4method{expm1}{RMmodel}(x)
+\S4method{floor}{RMmodel}(x)
+\S4method{lgamma}{RMmodel}(x)
+\S4method{log1p}{RMmodel}(x)
+\S4method{log2}{RMmodel}(x)
+\S4method{log}{RMmodel}(x)
+\S4method{round}{RMmodel,missing}(x,digits)
+\S4method{sin}{RMmodel}(x)
+\S4method{sinh}{RMmodel}(x)
+\S4method{sqrt}{RMmodel}(x)
+\S4method{tan}{RMmodel}(x)
+\S4method{tanh}{RMmodel}(x)
+\S4method{trunc}{RMmodel}(x)
 }
-%R.nearbyint(a)
-%R.lrint(a)
-%R.llrint(a)
-%R.lround(a)
-%R.llround(a)
-%.copysign(a, b)
-%R.rint(a)
-%R.nextafter(a, b)
-%R.nexttoward(a, b)
+
 
 \arguments{
-  \item{model}{object of class \code{\link[=RMmodel-class]{RMmodel}}, 
-	in particular \command{R.model}}
- \item{x,y,a, b, c, d, e, f, g, h, i, j, ...}{constant or object of class \code{\link[=RMmodel-class]{RMmodel}}, 
-	in particular \command{R.model}}
-  \item{is}{one of \code{"=="}, \code{"!="}, \code{"<="}, \code{"<"}, \code{">="}, \code{">"}}
+  \item{model,params}{\argModel
+    \code{model} is usually a \command{R.model} given here.}
+  \item{e1,e2,x,y,a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q}{
+    constant or object of class
+    \code{\link[=RMmodel-class]{RMmodel}}, in particular
+    \command{R.model}}
+  \item{ncol}{in contrast to \link[base]{c}, \command{R.c} also allows for
+   defining matrices; \code{ncol} gives the number of columns}
   \item{factor}{constant factor multiplied with the function. This is
-  useful when linear models are built}
-  \item{proj}{selection of a component of the vector giving the
-  location. Default value is 1.}
+    useful when linear models are built}
+  \item{is}{one of \code{"=="}, \code{"!="}, \code{"<="}, \code{"<"},
+    \code{">="}, \code{">"}} 
+   \item{proj}{selection of a component of the vector giving the
+    location. Default value is 1.}
   \item{new}{\link{coordinate system} or other 
-	\code{\link[=RC_ISONAMES]{kind of isotropy}}
-	 which is supposed to be present at this model.
-	It shold always be given if the coordinates are not cartesian.
-	}
- }
-
+    \code{\link[=RC_ISO_NAMES]{kind of isotropy}}
+    which is supposed to be present at this model.
+    It shold always be given if the coordinates are not cartesian.
+  }
+  \item{digits}{number of digits. Does not work with a \link{RMmodel}}
+  \item{...}{\argDots}
+%  \item{\code{signature(x = "RMmodel")}}{an \link{RMmodel}, especially a
+%  function from this man page. }
+%  \item{\code{signature(x = "ANY")}}{numeric or  RMmodel }
+% \item{\code{signature(x = "character")}}{no characters allowed. }
+}
+    
 \details{
   \describe{ 
   \item{R.plus}{adds two values}
@@ -220,6 +291,8 @@ R.fmin(a, b)
   \item{R.lon, R.lat}{longitudinal and latitudinal coordinate, given
         in the \emph{spherical system}, i.e. in radians.
         (earth system is in degrees).}
+  \item{R.round}{Note that \command{R.round} rounds away from zero.
+  }
   }
   For the remaining models see the corresponding C functions for
   their return value. 
@@ -234,7 +307,20 @@ Neither vectors nor parentheses are allowed.
 }
 %\references{}
   
-\note{ 
+\note{
+  Instead of \code{R.model} the standard function can be used in case
+  there is no ambiguity, i.e.,
+\code{c(...)},\code{asin(x)}, \code{atan(x)}, \code{atan2(y, x)}, \code{cos(x)},
+  \code{sin(x)}, \code{tan(x)}, \code{acosh(x)}, \code{asinh(x)},
+  \code{atanh(x)}, \code{cosh(x)}, \code{sinh(x)}, \code{tanh(x)},
+  \code{exp(x)}, \code{log(x)}, \code{expm1(x)}, \code{log2(x)},
+  \code{log1p(x)}, \code{exp2(x)}, \code{^}, \code{sqrt(x)},
+  \code{hypot(a,b)}, \code{cbrt(x)}, \code{ceiling(x)}, \code{abs(x)},
+  \code{floor(x)}, \code{round(x)}, \code{trunc(x)},
+  \code{erf(x)}, \code{ erfc(x)}, \code{lgamma(x)}. See the examples
+  below. 
+
+  
 The function \command{RFcalc} is intended for simple calculations only
 and it is not excessively tested. Especially, binary
 operators should be used with caution.
@@ -247,20 +333,21 @@ positive definite (or negative definite), e.g. \command{cos} in
        for definite functions (for \code{cos} see \command{\link{RMbessel}})
   \item Using uncapsulated substraction to build up a covariance
 	function is ambiguous, see the example in \command{\link{RMtrend}}
-  }
+      }      
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}}
+\me
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFfctn}},
 	 \command{\link{RMtrend}}	
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
+
 ## simple calculation
 RFcalc(3 + R.sin(pi/4))
 
@@ -287,8 +374,7 @@ plot(z1)
 
 
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

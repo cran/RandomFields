@@ -20,17 +20,16 @@
 RMvector(phi, a, Dspace, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{an \command{\link{RMmodel}}; has two components \eqn{h}{h} (2 or 3
- dimensional and stationary) and \eqn{t}{t} (arbitrary dimension)}
+ \item{phi}{an \command{\link{RMmodel}}; has two components \eqn{h}{h} (2- or 3-dimensional and stationary) and \eqn{t}{t} (arbitrary dimension).}
  \item{a}{a numerical value; should be in the interval \eqn{[-1,1]}.}
  \item{Dspace}{an integer; either 2 or 3; the first \eqn{Dspace}
- coordinates give the first component \eqn{h}{h}}
+ coordinates give the first component \eqn{h}{h}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{
- \eqn{C_0} is either a spatiotemporal model (then \eqn{t} is the
+ \eqn{C_0} is either a spatio-temporal model (then \eqn{t} is the
  time component) or it is an isotropic model. Then, the first \eqn{Dspace}
  coordinates are considered as \eqn{h} coordinates and the remaining
  ones as \eqn{t} coordinates. By default, \eqn{Dspace} equals the
@@ -39,7 +38,7 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
  divergence free.
 }
 \value{
- \command{\link{RMvector}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMvector}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -49,8 +48,7 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcurlfree}},
  \command{\link{RMdivfree}},
@@ -64,15 +62,11 @@ RMvector(phi, a, Dspace, var, scale, Aniso, proj)
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMvector(RMgauss(), scale=0.3)
 x <- seq(0, 10, 0.4)
 plot(RFsimulate(model, x=x, y=x, z=0), select.variables=list(1:2))
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

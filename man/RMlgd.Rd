@@ -15,7 +15,7 @@ RMlgd(alpha, beta, var, scale, Aniso, proj)
 }
 \arguments{
  \item{alpha}{argument whose range depends on the dimension of the random field: \eqn{0< \alpha \le (3-d)/2}{0< \alpha \le (3-d)/2}.}
- \item{beta}{beta > 0.}
+ \item{beta}{positive number}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
@@ -25,14 +25,14 @@ The model is only valid for dimension \eqn{d=1,2}{d=1,2}.
 
 This model admits simulating random fields where fractal dimension
 \emph{D} of the Gaussian sample and Hurst coefficient \emph{H}
-can be chosen independently (compare also \command{\link{RMgencauchy}}.):
+can be chosen independently (compare also \command{\link{RMgencauchy}}):
 
 Here, the random field has fractal dimension \deqn{D = d+1 - \alpha/2}{D = d+1
  - \alpha/2} and Hurst coefficient \deqn{H = 1-\beta/2}{H = 1-\beta/2} for \eqn{0< \beta \le 1}{0< \beta \le 1}.
 }
 \value{
  \command{\link{RMlgd}} returns an object of class
- \command{\link{RMmodel}}
+ \command{\link{RMmodel}}.
 
 }
 \references{
@@ -43,28 +43,24 @@ Here, the random field has fractal dimension \deqn{D = d+1 - \alpha/2}{D = d+1
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMlgd(alpha=0.7, beta=4, scale=0.5)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

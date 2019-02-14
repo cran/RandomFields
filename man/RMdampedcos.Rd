@@ -12,14 +12,13 @@ RMdampedcos(lambda, var, scale, Aniso, proj)
 }
 \arguments{
  \item{lambda}{numeric. The range depends on the dimension of the random
-   field (see details)} 
+   field (see details).} 
  \item{var, scale, Aniso, proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \details{The model is valid for any dimension \eqn{d}{d}. However, depending on the dimension of
-  the random field the following bound for the arguments
-  \eqn{\lambda}{\lambda} has to be respected: 
+  the random field the following bound for the argument \eqn{\lambda}{\lambda} has to be respected: 
 
 \deqn{\lambda \ge 1/{\tan(\pi/(2d))}.}{\lambda \ge 1/{tan(\pi/(2d))}.}
 
@@ -33,7 +32,7 @@ and corresponds to \command{\link{RMbessel}} for
 
 }
 \value{
- \command{\link{RMdampedcos}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMdampedcos}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -49,8 +48,7 @@ and corresponds to \command{\link{RMbessel}} for
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMbessel}},
  \command{\link{RMmodel}},
@@ -61,13 +59,12 @@ and corresponds to \command{\link{RMbessel}} for
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMdampedcos(lambda=0.3, scale=0.1)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

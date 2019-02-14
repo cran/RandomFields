@@ -9,7 +9,7 @@
  \deqn{C_{ij}(r)=c_{ij} W_{\nu_{ij}}(r/s_{ij}).}{C_{ij}(r)=c_{ij} W_{\nu_{ij}}(r/s_{ij}).}
  Here \eqn{W_\nu} is the covariance of the
  \command{\link{RMwhittle}} model.
- For constraints on the constants see details.
+ For constraints on the constants see Details.
 }
 
 \usage{
@@ -27,9 +27,9 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  Either
  \code{nured} and \code{nudiag}, or \code{nu} must be given.}
  \item{s}{a vector of length 3 of numerical values; each entry
- positive; the vector \eqn{(s_{11},s_{21},s_{22})}}
+ positive; the vector \eqn{(s_{11},s_{21},s_{22})}.}
  \item{cdiag}{a vector of length 2 of numerical values; each entry
- positive; the vector \eqn{(c_{11},c_{22})}}
+ positive; the vector \eqn{(c_{11},c_{22})}.}
  \item{rhored}{a numerical value; in the interval \eqn{[-1,1]}. See
  also the Details for the corresponding value of \eqn{c_{12}=c_{21}}.
  }
@@ -53,7 +53,7 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  \deqn{\nu_{ii}, s_{ii}, c_{ii} > 0.}
  For the offdiagonal elements we have 
  \deqn{s_{12}=s_{21} > 0,}
- \deqn{\nu_{12} =\nu_{21} = 0.5 (\nu_{11} + \nu{22}) * \nu_{red}}
+ \deqn{\nu_{12} =\nu_{21} = 0.5 (\nu_{11} + \nu_{22}) * \nu_{red}}
  for some constant \eqn{\nu_{red} \in [1,\infty)} and
  \deqn{c_{12} =c_{21} = \rho_{red} \sqrt{f m c_{11} c_{22}}}
  for some constant \eqn{\rho_{red}} in \eqn{[-1,1]}.
@@ -66,7 +66,7 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  the infimum of the function \eqn{g} on \eqn{[0,\infty)} where
  \deqn{g(t) = (1/s_{12}^2 +t^2)^{2\nu_{12} + d} (1/s_{11}^2 + t^2)^{-\nu_{11}-d/2} (1/s_{22}^2 + t^2)^{-\nu_{22}-d/2}} 
  (cf. Gneiting, T., Kleiber, W., Schlather, M. (2010), Full 
- Bivariate Matern Model (Section 2.2))
+ Bivariate Matern Model (Section 2.2)).
  % For an alternative model see also \command{\link{RMbiwm}}. 
 }
 \value{
@@ -80,33 +80,27 @@ RMbiwm(nudiag, nured12, nu, s, cdiag, rhored, c, notinvnu, var,
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMparswm}},
  \command{\link{RMwhittle}},
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
- \command{\link{RFfit}}.
- \link{Multivariate RMmodels},
+ \command{\link{RFfit}},
+ \link{Multivariate RMmodels}.
 }
-
 
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 x <- y <- seq(-10, 10, 0.2)
 model <- RMbiwm(nudiag=c(0.3, 2), nured=1, rhored=1, cdiag=c(1, 1.5), 
                 s=c(1, 1, 2))
 plot(model)
 plot(RFsimulate(model, x, y))
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

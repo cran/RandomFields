@@ -58,4 +58,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAXINVERSIONS 2
 
 
+#ifdef __GNUC__
+#define HIDE_UNUSED_VARIABLE 1
+#endif
+
+#if __GNUC__ >= 7
+#define FALLTHROUGH_OK __attribute__ ((fallthrough));
+#else
+#define FALLTHROUGH_OK   
+#endif      
+
+
 #endif /* GSL_VS_R_H */

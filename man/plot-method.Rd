@@ -192,16 +192,17 @@ RFplotSimulation1D(x, y, nmax=6,
      \command{\link[=RMmodel-class]{RMmodel}}; in the latter case, \code{x} can
     be any sophisticated model but it must be either stationary or a
     variogram model} 
-  \item{y}{ignored in most methods}
+  \item{y}{ignored in most methods; in case of
+  \command{RFplotSimulation} data might be given}
   \item{MARGIN}{vector of two; two integer values giving the coordinate
     dimensions 
-    w.r.t. which the field or the covariance model
+    w.r.t. whether the field or the covariance model
     is to be plotted; in all other directions,
     the first index is taken}
   \item{MARGIN.slices}{integer value; if \eqn{[space-time-dimension>2]},
     \code{MARGIN.slices} can specify a third dimension w.r.t. which a
     sequence of slices is plotted. Currently only works for grids.} 
- % \item{fixed.MARGIN}{only for \code{class(x)=="RMmodel"} and if
+ % \item{fixed.MARGIN}{only for \code{class(x)==CLASS_CLIST} and if
  %   \code{dim > 2}; a vector of length \code{dim}-2 with distance values
  %   for the coordinates that are not displayed} 
   \item{n.slices}{integer value. 
@@ -221,22 +222,22 @@ RFplotSimulation1D(x, y, nmax=6,
     of size \code{width.pixel} x \code{height.pixel} are created.
   }
   \item{...}{arguments to be passed to methods; mainly graphical
-    arguments, or further models in case of class \code{'RMmodel'},
+    arguments, or further models in case of class \code{CLASS_CLIST},
     see Details.
   }
 %  \item{f i tmethod}{character; only for \code{class(x)=="RFfit"}; a
 %    vector of slot names for which the fitted covariance or variogram
 %    model is to be plotted; should be a subset of 
 %    \code{slotNames(x)} for which the corresponding slots are of class
-%    \code{"RMmodelFit"}; by default, the maximum likelihood fit will be
+%    \code{CLASS_FIT}; by default, the maximum likelihood fit will be
 %    plotted} 
- %  \item{dim}{must equal 1 or 2; only for \code{class(x)=="RMmodel"}; the
+ %  \item{dim}{must equal 1 or 2; only for \code{class(x)==CLASS_CLIST}; the
 %    covariance function and the variogram are plotted as a function of
 %    \eqn{\R^\code{dim}}{R^\code{dim}}.}
-%  \item{n.points}{integer; only for \code{class(x)=="RMmodel"}; the
+%  \item{n.points}{integer; only for \code{class(x)==CLASS_CLIST}; the
  %   number of points at which the model 
  %   evaluated (in each dimension); defaults to 200} 
-%  \item{fct.type}{character; only for \code{class(x)=="RMmodel"}; must
+%  \item{fct.type}{character; only for \code{class(x)==CLASS_CLIST}; must
 %    equal \code{NULL}, \code{"Cov"} or \code{"Variogram"}; controls
 %    whether the covariance (\code{fct.type="Cov"}) or the
 %    variogram (\code{fct.type="Variogram"}) is plotted; \code{NULL}
@@ -252,7 +253,7 @@ RFplotSimulation1D(x, y, nmax=6,
   \item{select.variables}{vector of integers or list of vectors.
     The argument is only of interest for multivariate models.
     Here, \code{length(select.variables)} gives the number of pictures shown
-    (excuding the plot for the variances, if applicable).
+    (excluding the plot for the variances, if applicable).
     If \code{select.variables} is a vector of integers then exactly these
     components are shown. If \code{select.variables} is a list, each element
     should be a vector up to length \eqn{l\le 3}{l <= 3}:
@@ -268,7 +269,7 @@ RFplotSimulation1D(x, y, nmax=6,
   \item{legend}{logical, whether a legend should be plotted}
   \item{zlim}{vector of length 2 with the usual meaning.
     In case of multivariate random fields, \code{zlim} can also be a character
-    wih the value \sQuote{joint} indicating that all plotted compoments shall
+    with the value \sQuote{joint} indicating that all plotted components shall
     have the same zlim OR a matrix with two rows, where the i-th column
     gives the zlim of the i-th variable OR a list with entries named
     \code{data} and \code{var} if a separate \code{zlim}
@@ -288,7 +289,7 @@ RFplotSimulation1D(x, y, nmax=6,
   passed as \code{col}, \code{xlab} and \code{ylab}, respectively.
 
   One exception is the use of \code{...} in \command{plot} for class
-  \code{'RMmodel'}.
+  \code{CLASS_CLIST}.
   Here, further models might be passed. All models must have names
   starting with \code{model}. If \code{'.'} is following in the name,
   the part of the name after the dot is shown in the legend. Otherwise
@@ -297,9 +298,7 @@ RFplotSimulation1D(x, y, nmax=6,
   a name cannot be specified.
 }
 
-\author{Alexander Malinowski,
-  Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\author{Alexander Malinowski, \martin}
 
 
 \seealso{
@@ -309,11 +308,9 @@ RFplotSimulation1D(x, y, nmax=6,
 \keyword{methods}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-
 
 ## define the model:
 model <- RMtrend(mean=0.5) + # mean
@@ -324,6 +321,7 @@ model <- RMtrend(mean=0.5) + # mean
 
 #############################################################
 ## Plot of covariance structure
+
 
 plot(model)
 plot(model, xlim=c(0, 30))
@@ -367,24 +365,26 @@ x <- seq(0, 10, 0.05)
 bin <- seq(from=0, by=.2, to=3)
 
 model <- RMexp()
-X <- RFsimulate(x=cbind(x), model=model)
-ev1 <- RFempiricalvariogram(data=X, bin=bin)
+X <- RFsimulate(model, x=cbind(x))
+ev1 <- RFvariogram(data=X, bin=bin)
 plot(ev1)
 
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
-X <- RFsimulate(x=cbind(x,x), model=model)
-ev2 <- RFempiricalvariogram(data=X, bin=bin, phi=3)
+X <- RFsimulate(model, x=cbind(x,x))
+ev2 <- RFvariogram(data=X, bin=bin, phi=3)
 plot(ev2, model=list(exp = model))
 
+\dontshow{\dontrun{
 #############################################################
 ## plot Fitting results
 x <- seq(0, 1, len=21)
  
 model <- RMexp(Aniso = cbind(c(10,0), c(0,1)))
-X <- RFsimulate(x=cbind(x,x), model=model)
-fit <- RFfit(~RMexp(Aniso=diag(c(NA, NA))), data=X, fit.nphi = 2,
+X <- RFsimulate(model, x=cbind(x,x))
+fit <- RFfit(~RMexp(Aniso=cbind(c(NA, 0), c( 0, NA))), data=X, fit.nphi = 2,
              modus="easygoing")
-plot(fit) 
+plot(fit)
+}}
 
 
 #############################################################
@@ -393,9 +393,9 @@ model <- RMwhittle(nu=1.2, scale=2)
 n <- 200
 x <- runif(n, max=step*len/2) 
 y <- runif(n, max=step*len/2) # 200 points in 2 dimensional space
-sim <- RFsimulate(model = model, x=x, y=y)
+sim <- RFsimulate(model, x=x, y=y)
 
-interpolate <- RFinterpolate(model=model, x=x2D, data=sim)
+interpolate <- RFinterpolate(model, x=x2D, data=sim)
 plot(interpolate)
 plot(interpolate, sim)
 
@@ -404,7 +404,7 @@ plot(interpolate, sim)
 ## plotting vector-valued results
 model <- RMdivfree(RMgauss(), scale=4)
 x <- y <- seq(-10,10, 0.5)
-simulated <- RFsimulate(model = model, x=x, y=y, n=1)
+simulated <- RFsimulate(model, x=x, y=y, n=1)
 plot(simulated)
 plot(simulated, select.variables=list(1, 1:3, 4))
 
@@ -421,7 +421,5 @@ plot(simu, zlim=cbind(c(-6,2), c(-2,1)))
 plot(simu, zlim=c(-6,2))
 plot(simu, zlim="joint")
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 

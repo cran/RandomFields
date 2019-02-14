@@ -1,6 +1,6 @@
 \name{RRdeterm}
 \alias{RRdeterm}
-\title{Random scaling used with balls}
+\title{Degenerate Distributions}
 \description{
  \command{RRdeterm} refers to the distribution of a deterministic variable.
  }
@@ -13,28 +13,27 @@ RRdeterm(mean)
 }
 
 \value{
- \command{\link{RRdeterm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RRdeterm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RRdistr}},
-\command{\link{RRgauss}},
+\command{\link{RRgauss}}.
  }
 
  
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 x <- seq(-2, 2, 0.001)
 p <- RFpdistr(RRdeterm(mean=1), q=x)
 plot(x, p, type="l")
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
  
 \keyword{spatial}

@@ -34,11 +34,11 @@
 \title{Internal models}
 \description{
   Internal models or model names that may appear in feedbacks from
-  'RandomFields'. Those ending by \sQuote{Intern} should appear only
+  'RandomFields'. Those endings by \sQuote{Intern} should appear only
   in very rare cases.
 }
 \details{
-The following and many more internal models exist
+The following and many more internal models exist:
 \itemize{
   \item RF__Name__ : internal representation of certain functions
   \link[=RF]{RF__name__}
@@ -71,11 +71,9 @@ The following and many more internal models exist
  }
  }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \keyword{spatial}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -84,6 +82,4 @@ x <- seq(0, 10, 1)
 z <- RFsimulate(RPspecific(RMexp() + RMnugget()), x)
 RFgetModelInfo(which="internal", level=0)
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

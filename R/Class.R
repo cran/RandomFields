@@ -24,7 +24,7 @@
 
 ##########################################################################
 ## classes for 2- and higher-dimensional data objects, based on ##########
-## Spatial classes from 'sp'                           ##########
+## Spatial classes from 'sp'-package                            ##########
 
 
 setClass("RFspatialGridDataFrame", contains ="SpatialGridDataFrame",
@@ -84,8 +84,8 @@ check.validity.n.vdim <- function(object) {
     return("slot '.RFparams' must contain 'n' and 'vdim'")
   var.given <- !is.null(object@.RFparams$has.variance) &&
     object@.RFparams$has.variance
-  nc <- (object@.RFparams$n + var.given) *
-                                 object@.RFparams$vdim
+  nc <- (object@.RFparams$n + var.given) * object@.RFparams$vdim
+
   if (nc != ncol(object@data)) {
     stop("number of data at each location (=", ncol(object@data),
          ") does not match the expected ones (=", nc,
@@ -102,8 +102,8 @@ check.validity.n.vdim <- function(object) {
 
 
 
-## definition of class ZF_MODEL
-setClass('RMmodel', 
+## definition of class CLASS_CLIST
+setClass(CLASS_CLIST, 
          representation(
                         # call='RMexp(var=1, sclae=1, Aniso=id, proj=id)
                         call = "language",
@@ -118,17 +118,17 @@ setClass('RMmodel',
                         )
          )
 
-## rules for validity checking of ZF_MODEL objects
-setValidity('RMmodel', 
+## rules for validity checking of CLASS_CLIST objects
+isModel <- function(model) return(is.list(model) && is.character(model[[1]]) )
+isRMmodel <- function(x) is(x, class2=CLASS_CLIST)
+setValidity(CLASS_CLIST, 
             function(object){
-              isRMmodel <- function(x) is(x, class='RMmodel')
               
               isNUMorDEFAULT <- function(x) {
-                # Print("class.R", x, ZF_DEFAULT_STRING)
-                (is.numeric(x) ||
-                 class(x) == "function" || class(x) == "call" ||
-                 is.environment(x) ||
-                 x==ZF_DEFAULT_STRING || is.logical(x) ||
+                # Print("class.R", x, RM_DEFAULT)
+                (is.numeric(x) || is(x, "function") || is(x, "call") ||
+		  is.environment(x) || is.character(x) ||
+                 (length(x) ==1 && x==RM_DEFAULT) || is.logical(x) ||
                  is.matrix(x) || is.list(x))
               }
               isRMmodelorNUMorDEFAULT <- function(x)
@@ -136,13 +136,11 @@ setValidity('RMmodel',
               
               if (length(object@submodels) > 0)
                 if (!all(unlist(lapply(object@submodels, FUN = isRMmodel))))
-                  return("submodels must be of class 'RMmodel'")
+                  return(paste("submodels must be of class '", CLASS_CLIST, "'",
+			       sep=""))
 
               passed.params <- c(object@par.model, object@par.general)
-              
               if (length(passed.params) > 0) {
-                #if (any(unlist(lapply(passed.params, FUN = isRMmodel))))
-                #  return("parameters must NOT be of class 'RMmodel'; probably the model has less submodels than you have passed or you might have mixed up e.g., RPgauss with RMgauss")
                 if (!all(unlist(lapply(passed.params,
                                        FUN = isRMmodelorNUMorDEFAULT)) ))
                   return("all parameters must be of class numeric or logical or RMmodel") 
@@ -150,36 +148,36 @@ setValidity('RMmodel',
                                     
               if(!is.null(object@par.general$var) &&
                  !isRMmodel(object@par.general$var)) {
-                if (length(object@par.general$var) > 1)
-                  return("not scalar")
+                if (length(object@par.general$var) > 1) return("not scalar")
                 if (!is.na(object@par.general$var) &&
-                    (object@par.general$var!=ZF_DEFAULT_STRING))
-                if (object@par.general$var < 0)
-                  return("negative variance")
+                    (object@par.general$var!=RM_DEFAULT)){
+                  if (object@par.general$var < 0)
+                    return("negative variance")
+                  }
               }
               
               if(!is.null(object@par.general$scale) &&
                  !isRMmodel(object@par.general$scale)) {
-                if (length(object@par.general$scale) > 1)
-                 return("not scalar")
+                if (length(object@par.general$scale) > 1) return("not scalar")
                 if (!is.na(object@par.general$scale) &&
-                    object@par.general$scale!=ZF_DEFAULT_STRING)
-                if(object@par.general$scale < 0)
-                  return("negative scale")
+                    object@par.general$scale!=RM_DEFAULT)
+                if(object@par.general$scale <= 0)
+                  return("non-positive scale")
               }
               
               if(!is.null(object@par.general$Aniso) &&
                  !isRMmodel(object@par.general$Aniso) &&
-                 !is.na(object@par.general$Aniso) &&
-                 !all(object@par.general$Aniso==ZF_DEFAULT_STRING))
+                 !all(object@par.general$Aniso==RM_DEFAULT) &&
+                 length(object@par.general$Aniso) > 1)
                 if(!is.matrix(object@par.general$Aniso))
                   return("'Aniso' must be a matrix")
               
               if(!is.null(object@par.general$proj) &&
-                 !isRMmodel(object@par.general$proj) &&
-                 !is.na(object@par.general$proj) &&
-                 !all(object@par.general$proj==ZF_DEFAULT_STRING)){
+              #   !isRMmodel(object@par.general$proj) &&
+              #   !is.na(object@par.general$proj) &&
+                 !all(object@par.general$proj==RM_DEFAULT)){
                 if(!is.vector(object@par.general$proj) ||
+                   any(is.na(object@par.general$proj)) ||
                    any(object@par.general$proj == 0) ||
                    any(object@par.general$proj < -2) ||
                    any(object@par.general$proj !=
@@ -191,8 +189,8 @@ setValidity('RMmodel',
             })
 
 
-## definition of class 'RMmodelgenerator' ################################
-setClass('RMmodelgenerator', contains ="function",
+## definition of class CLASS_RM ################################
+setClass(CLASS_RM, contains ="function",
          representation(
                         type = "character",
                         domain = "character",
@@ -208,7 +206,7 @@ setClass('RMmodelgenerator', contains ="function",
 
 
 ## definition of class 'RMmodelFit'
-setClass('RMmodelFit',  contains='RMmodel',
+setClass(CLASS_FIT,  contains=CLASS_CLIST,
          representation(
              formel = "ANY",
              likelihood = "numeric",
@@ -228,7 +226,7 @@ setClass('RMmodelFit',  contains='RMmodel',
 ## definition of class 'RFempVariog'
 setClass("RFempVariog", 
          representation(centers = "ANY",
-                        emp.vario = "ANY",
+                        empirical = "ANY",
                         var = "ANY",
                         sd = "ANY",
                         n.bin = "ANY",
@@ -262,9 +260,8 @@ setClass("RFfit",
                         n.variab = "integer",
                         n.param = "integer",
                         n.covariates = "integer",
-                        deleted = "integer",
-                        lowerbounds ='RMmodel',
-                        upperbounds ='RMmodel',
+                        lowerbounds = CLASS_CLIST,
+                        upperbounds = CLASS_CLIST,
                         transform = "list",
                         #vario = "character",
                         coordunits = "character",
@@ -280,16 +277,16 @@ setClass("RFfit",
                         true.vdim = "integer",
                         report = "character",
                         submodels = "ANY",
-                        autostart = 'RMmodelFit',
-                        users.guess = 'RMmodelFit', # Martin: 2.4.: eingefuegt
-                        self = 'RMmodelFit',
-                        plain = 'RMmodelFit',
-                        sqrt.nr = 'RMmodelFit',
-                        sd.inv = 'RMmodelFit',
-                        internal1 = 'RMmodelFit',
-                        internal2 = 'RMmodelFit',
-                        internal3 = 'RMmodelFit',
-                        ml = 'RMmodelFit'
+                        autostart = CLASS_FIT,
+                        users.guess = CLASS_FIT, # Martin: 2.4.: eingefuegt
+                        self = CLASS_FIT,
+                        plain = CLASS_FIT,
+                        sqrt.nr = CLASS_FIT,
+                        sd.inv = CLASS_FIT,
+                        internal1 = CLASS_FIT,
+                        internal2 = CLASS_FIT,
+                        internal3 = CLASS_FIT,
+                        ml = CLASS_FIT
                         #ml.residuals = "ANY" # matrix or RFsp
                         )
          )

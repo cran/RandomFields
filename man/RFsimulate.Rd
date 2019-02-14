@@ -5,7 +5,7 @@
 \description{
   This function simulates \bold{unconditional} random fields:
   \itemize{
-    \item univariate and multivariat,
+    \item univariate and multivariate,
     spatial and spatio-temporal \link[=Gaussian]{Gaussian random fields}
     \item fields based on Gaussian fields such as \link[=RPchi2]{Chi2 fields}
     or \link[=RPbernoulli]{Binary fields}, see \link{RP}.
@@ -15,110 +15,64 @@
 
   It also simulates \bold{conditional} random fields for
   \itemize{
-    \item univariate and multivariat,
+    \item univariate and multivariate,
     spatial and spatio-temporal Gaussian random fields
   }
   
   Here, only the simulation of Gaussian random fields is described.
-  For other kind of random fields (binary, max-stable, etc.) or
-  more sophisticated approches see \link{RFsimulateAdvanced}.
+  For other kinds of random fields (binary, max-stable, etc.) or
+  more sophisticated approaches see \link{RFsimulateAdvanced}.
 }
 
 \usage{
 RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
-  distances, dim, data, given=NULL, err.model, n=1, ...)
+           distances, dim, data, given=NULL, err.model, params,
+           err.params, n=1, ...)
 }
 
 \arguments{
- \item{model}{object of class \code{\link[=RMmodel-class]{RMmodel}},
-   \command{\link{RFformula}} or \command{\link[stats]{formula}};
-   specifies the model to be simulated; the best is to consider the
-   examples below, first.
-   \itemize{
-     \item if of class \code{\link[=RMmodel-class]{RMmodel}}, \code{model}
-     specifies a 
-     covariance or variogram model of a Gaussian random
-     field;
-     type \code{\link{RFgetModelNames}(type="variogram")} for a list of
-     available models; see also \command{\link{RMmodel}}
-     
-     \item if of class \code{\link{RFformula}} or
-     \code{\link[methods:formula-class]{formula}} ,
-     \code{submodel} specifies a linear mixed model where random
-     effects can be modelled by Gaussian random fields;
-     see \command{\link{RFformula}} for details on model
-     specification.
-     
-     \item for (many) more options see \link{RFsimulateAdvanced}.
-   }
+ \item{model,params}{\argModel
+%   \itemize{
+%     \item if of class \code{\link[=RMmodel-class]{RMmodel}}, \code{model}
+%     specifies a  covariance or variogram model of a Gaussian random     field;
+%     type \code{\link{RFgetModelNames}(type="variogram")} for a list of
+%     available models; see also \command{\link{RMmodel}}.
+%     
+%     \item if of class \code{\link{RFformula}} or
+%     \code{\link[methods:formula-class]{formula}} ,
+%     \code{submodel} specifies a linear mixed model where random
+%     effects can be modelled by Gaussian random fields;
+%     see \command{\link{RFformula}} for details on model
+%     specification.
+%     
+%     \item for (many) more options see \link{RFsimulateAdvanced}.
+%   }
  }
- \item{x}{vector of x coordinates, or object
-   of class \code{\link[sp:GridTopology-class]{GridTopology}} or
-   \code{\link[raster]{raster}};
- For more options see \link{RFsimulateAdvanced}.
- }
- \item{y}{optional vector of y coordinates}
- \item{z}{optional vector of z coordinates}
- \item{T}{optional vector of time coordinates, 
- \code{T} must always be an equidistant vector.
- Instead of \code{T=seq(from=From, by=By, len=Len)} one may also write
- \code{T=c(From, By, Len)}.
- }
- \item{grid}{logical; \code{RandomFields} can
-   find itself the correct value in nearly all cases, so that
-   usually \code{grid} need not be given.
-   See also \link{RFsimulateAdvanced}.
- }
-  \item{distances}{another alternative to pass the (relative)
- coordinates,
- see \link{RFsimulateAdvanced}.
- }
- \item{dim}{
- Only used if \code{distances} are given.
- }
-\item{data}{For conditional simulation and random imputing only.
- If \code{data} is missing, unconditional
- simulation is performed.\cr
- 
- Matrix, data.frame or object of class
- \command{\link[=RFsp-class]{RFsp}};
- coordinates and response values of
- measurements in case that conditional simulation is to
- be performed;
- If \code{given} is not given
- and \code{data} is a matrix or \code{data} is
- a data.frame, then the first columns are
- interpreted as coordinate vectors, and the last column(s) as
- (multiple) measurement(s) of the field; if the argument
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
+ \item{T}{\argT}
+ \item{grid}{\argGrid}
+ \item{distances,dim}{\argDistances}
+ \item{data}{For conditional simulation and random imputing only. If
+   \code{data} is missing, unconditional 
+   simulation is performed.\cr
+   
+   \argData \argDataGiven
+
+   If the argument
  \code{x} is missing,
  \code{data} may contain \code{NA}s, which are then replaced by
- conditionally simulated values (random imputing); 
- for details on matching of variable names see Details; if of class
- \command{\link[=RFsp-class]{RFsp}}
+ conditionally simulated values (random imputing);
  }
-\item{given}{optional, matrix or list.
-   If \code{given} matrix then the coordinates
-   can be given separately, namely by \code{given} where, in each row,
-   a single location is given.
+ \item{given}{\argGiven }
  
-   If \code{given} is a
-   list, it may consist of \code{x}, \code{y}, \code{z}, \code{T},
-   \code{grid}.
-   
-   If \code{given} is provided,
-   \code{data} must be a matrix or an array containing the data only.
- }
- \item{err.model}{For conditional simulation and random imputing only.\cr
- Usually \code{err.model=RMnugget(var=var)}, or not given at all
- (error-free measurements).
- }
+ \item{err.model,err.params}{For conditional simulation and random
+ imputing only.\cr\argErrmodel.}
+
  \item{n}{number of realizations to generate.
    For a very advanced feature, see the notes in \link{RFsimulateAdvanced}.
  }
- \item{...}{for advanced use:
- further options and control arguments for the simulation
- that are passed to and processed by \command{\link{RFoptions}}
- }
+  \item{...}{\argDots}
 }
 
 
@@ -133,7 +87,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
  \itemize{
  
  \item
- if of class \code{\link[=RFsp-class]{RFsp}},
+ If of class \code{\link[=RFsp-class]{RFsp}},
  \code{ncol(data@coords)} must equal the dimension of the index
  space. If \code{data@data} contains only a single variable,
  variable names are optional. If \code{data@data} contains
@@ -158,7 +112,7 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
  interpreted as the given data and those before the corresponding
  column are interpreted as the coordinates.
  \item
- if \code{x} is missing, \command{\link{RFsimulate}} searches for
+ If \code{x} is missing, \command{\link{RFsimulate}} searches for
  \code{NA}s in the data and performs a conditional simulation
  for them.
  }
@@ -206,17 +160,9 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 }
 
 \references{
- Gneiting, T. and Schlather, M. (2013)
- Statistical modeling with covariance functions.
- \emph{In preparation.}
-
- Lantuejoul, Ch. (2002) \emph{Geostatistical simulation.}
- \bold{New York:} Springer.
+ \litLantue
  
- Schlather, M. (1999) \emph{An introduction to positive definite
- functions and to unconditional simulation of random fields.}
- Technical report ST 99-10, Dept. of Maths and Statistics,
- Lancaster University. 
+ \litIntro
 
  See \link{RFsimulateAdvanced} for more specific literature.
 }
@@ -227,12 +173,10 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   (and faster!) output, see  \command{\link{RFoptions}} for details.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \seealso{
- \command{\link{RFempiricalvariogram}},
+ \command{\link{RFvariogram}},
  \command{\link{RFfit}},
  \command{\link{RFgetModelInfo}},
  \command{\link{RFgui}},
@@ -245,10 +189,9 @@ RFsimulate(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 #############################################################
 ## ##
@@ -294,18 +237,18 @@ plot(simu)
 ## ##
 #############################################################
 
-# first we simulate some random values at a
+# first we simulate some random values at 
 # 100 random locations:
 n <- 100
 x <- runif(n=n, min=-1, max=1)
 y <- runif(n=n, min=-1, max=1)
-data <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
-plot(data)
+dta <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
+plot(dta)
 
 # let simulate a field conditional on the above data
-x.seq.cond <- y.seq.cond <- seq(-1.5, 1.5, length=n)
+L <- if (interactive()) 100 else 5
+x.seq.cond <- y.seq.cond <- seq(-1.5, 1.5, length=L)
 model <- RMexp()
-cond <- RFsimulate(model, x=x.seq.cond, y=y.seq.cond, data=data)
-plot(cond, data)
-\dontshow{FinalizeExample()}
-}
+cond <- RFsimulate(model, x=x.seq.cond, y=y.seq.cond, data=dta)
+plot(cond, dta)
+\dontshow{FinalizeExample()}}

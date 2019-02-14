@@ -29,11 +29,11 @@
 
 
 .onLoad <- function(lib, pkg) {
-  .C("attachRFoptionsRandomFields")  
+  .C("attachRFoptionsRandomFields", as.integer(interactive()))
 }
 
 .onAttach <- function (lib, pkg) {
-#  packageStartupMessage("This is RandomFields Version: 3.1.50");
+#  packageStartupMessage("This is RandomFields Version: 3.3""This is RandomFields Version: 3.2.0.32");
 }
 
 .onDetach <- function(lib) {

@@ -3,9 +3,9 @@
 \alias{Poisson spline}
 \alias{Inverse multiquadric}
 \alias{multiquadric family}
-\title{The Multiquadric Family Covariance Model on th Sphere}
+\title{The Multiquadric Family Covariance Model on the Sphere}
 \description{
-  \command{\link{RMmultiquad}} is a isotropic covariance model. The
+  \command{\link{RMmultiquad}} is an isotropic covariance model. The
   corresponding covariance function, the multiquadric family, only
   depends on the angle \eqn{\theta \in [0,\pi]}{0 \le \theta \le \pi}
   between two points on the sphere and is given by 
@@ -34,7 +34,7 @@ RMmultiquad(delta, tau, var, scale, Aniso, proj)
  For a more general form, see \command{\link{RMchoquet}}.
 }
 \value{
- \command{\link{RMmultiquad}} returns an object of class \command{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMmultiquad}} returns an object of class \command{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   Gneiting, T. (2013)
@@ -42,9 +42,7 @@ RMmultiquad(delta, tau, var, scale, Aniso, proj)
     spheres} \emph{Bernoulli}, \bold{19}(4), 1327-1349.  
 }
 
-\author{Christoph Berreth, \email{cberreth@mail.uni-mannheim.de},
-  Martin Schlather
-}
+\author{Christoph Berreth, \martin}
 
 \seealso{
  \command{\link{RMmodel}},
@@ -60,12 +58,10 @@ RMmultiquad(delta, tau, var, scale, Aniso, proj)
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 RFoptions(coord_system="sphere")
 model <- RMmultiquad(delta=0.5, tau=1)
 plot(model, dim=2)
@@ -83,7 +79,4 @@ plot(z2)
 stopifnot(all.equal(as.array(z1), as.array(z2)))
 
 RFoptions(coord_system="auto")
-\dontshow{FinalizeExample()}
-
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

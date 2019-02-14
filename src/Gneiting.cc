@@ -25,9 +25,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Rmath.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
-#include <Rmath.h>
-#include "RF.h"
-#include "Operator.h"
+#include "questions.h"
+#include "operator.h"
+#include "shape.h"
+#include "Processes.h"
+#include "startGetNset.h"
+
 #define LOG2 M_LN2
 
 
@@ -45,28 +48,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define AVE_GAUSS 1
 
 
-void kappa_ave(int i, cov_model *cov, int *nr, int *nc){
+void kappa_ave(int i, model *cov, int *nr, int *nc){
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
-  int dim = spacetime ? cov->tsdim-1 : cov->tsdim;
+ int dim = OWNLOGDIM(0);
+  if (spacetime) dim--;
   *nr = (i==AVE_A || i==AVE_Z) ? dim : 1;
-  *nc = (i==AVE_A) ? dim : i < CovList[cov->nr].kappas ? 1 : -1;
+  *nc = (i==AVE_A) ? dim : i < DefList[COVNR].kappas ? 1 : -1;
 }
 
 
-void ave(double *h, cov_model *cov, double *v) {
+void ave(double *h, model *cov, double *v) {
   // f = uAu +zu; 
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
-  cov_model *next = cov->sub[0];
+  model *next = cov->sub[0];
   int i,j,k,d,
-    dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
-  double  detEplus2B, Ah[AveMaxDim], Eplus2B[AveMaxDim], 
+    dim = OWNLOGDIM(0);
+  if (spacetime) dim--;
+
+  double Ah[AveMaxDim], Eplus2B[AveMaxDim], 
     dummy, 
     hh,
     *A = P(AVE_A),
     *z = P(AVE_Z),
-    c = spacetime ? h[cov->tsdim-1] : 0.0; // Sockelwert fuer c
+    c = spacetime ? h[dim] : 0.0; // Sockelwert fuer c
 
   hh = 0.0;
   for (k=d=0; d<dim; d++) {
@@ -83,38 +89,38 @@ void ave(double *h, cov_model *cov, double *v) {
     Eplus2B[j - dim + d] += 1.0;
   }
 
-  det_UpperInv(Eplus2B, &detEplus2B, dim); // Eplus2B is not its inverse !
-
-  double y = SQRT(0.5 * hh  + c * c * (1.0 - 2.0 * xUx(Ah, Eplus2B, dim)));
+  double det, AhEinvAh;
+  Ext_XCinvXdet(Eplus2B, dim, Ah, 1, &AhEinvAh, &det, false, NULL);
+  double y = SQRT(0.5 * hh  + c * c * (1.0 - 2.0 * AhEinvAh));
   COV(&y, next, v);
-  *v /= SQRT(detEplus2B);
+  *v /= SQRT(det);
 }
 
 
-int checkave(cov_model *cov) {
-  cov_model *next = cov->sub[0];
+int checkave(model *cov) {
+   ASSERT_UNREDUCED;
+ model *next = cov->sub[0];
   bool
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int i, j, err,
-    dim =  cov->tsdim,
+   dim =  OWNLOGDIM(0),
     spdim = spacetime ? dim - 1 : dim;
   double 
     *A = P(AVE_A);
-  char msg[2][4] = {"d", "d-1"};
+  char dim_info[2][4] = {"d", "d-1"};
 
-   if (cov->xdimown < 2) SERR("The spatial dimension must be at least 2.");
- 
+  if (OWNTOTALXDIM < 2) SERR("The spatial dimension must be at least 2.");
  
   if (dim > AveMaxDim)
     SERR2("For technical reasons max. dimension for ave is %d. Got %d.", 
 	  AveMaxDim, dim);
 
   if (cov->ncol[AVE_A] != spdim || cov->nrow[AVE_A] != spdim) 
-    SERR5("A not %sx%s matrix, but %dx%d (dim=%d)", msg[spacetime], 
-	  msg[spacetime], cov->ncol[AVE_A], cov->nrow[AVE_A], spdim);
+    SERR5("A not %.50sx%.50s matrix, but %dx%d (dim=%d)", dim_info[spacetime], 
+	  dim_info[spacetime], cov->ncol[AVE_A], cov->nrow[AVE_A], spdim);
 
   if (cov->ncol[AVE_Z] != 1 || cov->nrow[AVE_Z] != spdim) 
-    SERR1("z not (%s)-dim vector", msg[spacetime]);
+    SERR1("z not (%.50s)-dim vector", dim_info[spacetime]);
 
   for (i=0; i<spdim; i++)
     for (j=i+1; j<spdim; j++)
@@ -124,17 +130,14 @@ int checkave(cov_model *cov) {
       }
   // naechste Zeile stimmt nicht mit Bernoulli ueberein
 
-  kdefault(cov, AVE_SPACETIME, TRUE);
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  kdefault(cov, AVE_SPACETIME, true);
+  if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
 
-  if (cov->xdimprev != cov->tsdim) // || cov->xdimprev != cov->tsdim)
-    return ERRORDIM;
   if ((err = CHECK(next, dim, 1, PosDefType, XONLY, ISOTROPIC,
-		   SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
-		   )) != NOERROR) return err;
-  next->delflag = DEL_COV; // set gatternr=nr, since non-negativity ensured
-  if (!isNormalMixture(next->monotone)) return ERRORNORMALMIXTURE;
-  if (CovList[next->nr].spectral == NULL) return ERRORSPECTRAL; // nicht gatter
+		   SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
+		   )) != NOERROR) RETURN_ERR(err);
+  if (!isNormalMixture(next->monotone)) RETURN_ERR(ERRORNORMALMIXTURE);
+  if (DefList[NEXTNR].spectral == NULL) RETURN_ERR(ERRORSPECTRAL); // nicht gatter
 
   //  updatepref(cov, next); ## gute idee?
   if (next->pref[SpectralTBM] == PREF_NONE) 
@@ -143,18 +146,18 @@ int checkave(cov_model *cov) {
   // kein setbackward??
   
   // no setbackard
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
 
-void rangeave(cov_model VARIABLE_IS_NOT_USED *cov, range_type* ra){
+void rangeave(model VARIABLE_IS_NOT_USED *cov, range_type* ra){
   int i;
   
   for (i=0; i<=1; i++) {
     ra->min[i] = RF_NEGINF;
     ra->max[i] = RF_INF;
-    ra->pmin[i] = -10.0;
+    ra->pmin[i] = - 10.0;
     ra->pmax[i] = 10.0;
     ra->openmin[i] = true;
     ra->openmax[i] = true;
@@ -169,7 +172,7 @@ void rangeave(cov_model VARIABLE_IS_NOT_USED *cov, range_type* ra){
 
 
 
-void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, double *sd){
+void sd_avestp(model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, double *sd){
   /////  window_info *w = &(S->window);
   int d;
   double b, alphamin, x2, InvSqrt2a, EmA,
@@ -177,9 +180,8 @@ void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, dou
   // see article/GEOSTATS/simuspacetime/simuspacetime2008/simuspacetime.tex 
   // for the reasoning of these calculations
 
-  BUG; 
+  BUG; // auf keinen fall parallel tauglich
 
-  assert(cov->role == Average);
   q[AVESTP_LOGV] = LOG(q[AVESTP_V]);
   for (x2=0.0, d=0; d<dim; d++) {
     double lensimu = RF_NA; ////  w->max[d] - w->min[d];
@@ -208,38 +210,44 @@ void sd_avestp(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S, int dim, dou
 }
 
 
-int structAve(cov_model *cov, cov_model **newmodel) { 
-  cov_model *shape, *gaussmix;
+int structAve(model *cov, model **newmodel) { 
+  model *shape; //, *gaussmix=NULL;
   int err;
  
   ASSERT_NEWMODEL_NOT_NULL;
-  
-  if (cov->role != Average) ILLEGAL_ROLE;
+   ERR("'ave' currently does not work"); // what to do with the next lines??
+ 
 
-  if ((err = covCpy(newmodel, cov)) != NOERROR) return err;
+  if ((err = covcpy(newmodel, cov)) != NOERROR) RETURN_ERR(err);
   shape = *newmodel;
-  shape->nr = SHAPEAVE;
+  SET_NR(shape, SHAPEAVE);
   addModel(shape, AVE_GAUSS, GAUSS);
+  
+  ERR("'ave' currently does not work");
+// what to do  ERR1("'ave' currently does not work (% ld)", (long int) gaussmix); // what to do with the next lines??
+  /*
   gaussmix = shape->sub[AVE_GAUSS];
-  gaussmix->tsdim = 1;
-  gaussmix->role = ROLE_GAUSS;
+  gaussmix->ts dim = 1;
+  gaussmix->frame = GaussMethodType;
   gaussmix->method = SpectralTBM;
-  return NOERROR;
+  */
+   RETURN_NOERROR;
 }
 
 
 
 
-void  logshapeave(double *x, cov_model *cov, double *v, double *Sign) {
+void  logshapeave(double *x, model *cov, double *v, double *Sign) {
     // nur stationaer
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int d, j, k,
-    dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
+    dim = OWNLOGDIM(0);
+  if (spacetime) dim--;
   double f, dummy, r2,
     *A = P(AVE_A),
     *z = P(AVE_Z),
-    t = spacetime ? x[cov->tsdim-1] : 0.0,
+    t = spacetime ? x[dim] : 0.0,
     *q = cov->q;
  
   f = r2 = 0.0;
@@ -249,14 +257,15 @@ void  logshapeave(double *x, cov_model *cov, double *v, double *Sign) {
     f += dummy * x[d];
   }
 
-  static bool avewarning=true;
-  if (avewarning) warning("is exponent of V correct?"); avewarning=false;
+#ifdef SCHLATHERS_MACHINE
+  warning("is exponent of V correct?"); 
+#endif  
    
   v[0] = 0.25 * dim * q[AVESTP_LOGV] // V^{d/4 oder d/2} !!!!!!!!!!!
     - 0.5 * (LOG2 - dim * M_LN_SQRT_PId2) - r2
     // LOG2 : wegen spectral  simulation; 
     // zweiter Term fuer logg 
-    //+ CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi); /* g */// nicht gatternr
+    //+ DefList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi); /* g */// nicht gatternr
     ;
   Sign[0] = 1.0;
   double phase = q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * (f - t); // Y
@@ -264,23 +273,24 @@ void  logshapeave(double *x, cov_model *cov, double *v, double *Sign) {
   v[1] = LOG(FABS(phase));
 }
 
-int check_shapeave(cov_model *cov) {
+int check_shapeave(model *cov) {
   if (cov->sub[AVE_GAUSS] == NULL)
-    SERR1("both submodels must be set to '%s'", CovList[GAUSS].nick);
+    SERR1("both submodels must be set to '%.50s'", DefList[GAUSS].nick);
   cov->mpp.maxheights[0] = RF_NA;
   return checkave(cov); // !! not next
 }
 
-int init_shapeave(cov_model *cov, gen_storage *s) { 
+int init_shapeave(model *cov, gen_storage *s) { 
   ASSERT_GAUSS_METHOD(Average);
-  cov_model
+  model
     *gaussmix = cov->sub[AVE_GAUSS];
   double sd,
     *q = cov->q;
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int err = NOERROR,
-    dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
+   dim = OWNLOGDIM(0);
+  if (spacetime) dim--;
   
 
   q[AVESTP_V] = 0.0;
@@ -288,24 +298,24 @@ int init_shapeave(cov_model *cov, gen_storage *s) {
   q[AVESTP_LOGDET] = 0.0;
   sd_avestp(cov, s, dim, &sd); // sd->gauss
 
-  assert(cov->vdim[0] == 1);  assert(cov->vdim[0] == cov->vdim[1]);
+  assert(VDIM0 == 1);  assert(VDIM0 == VDIM1);
 
   if (cov->mpp.moments >= 0) {
     cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; 
     if (cov->mpp.moments >= 1) {
-      if ((err = INIT(gaussmix, cov->mpp.moments, s)) != NOERROR) return err;
+      if ((err = INIT(gaussmix, cov->mpp.moments, s)) != NOERROR) RETURN_ERR(err);
       if (cov->mpp.moments >= 2) {
 	cov->mpp.mM[2] = 1.0;
       }
     }
   }
-  return err;
+  RETURN_ERR(err);
 }
 
 
-void do_shapeave(cov_model *cov, gen_storage *S) { 
+void do_shapeave(model *cov, gen_storage *S) { 
   // Simulation of V; sopee Bernoulli Sec. 4.2
-   cov_model    
+   model    
     *aveGAUSS = cov->sub[AVE_GAUSS],
     *phi = cov->sub[AVE_PHI];
   double spec_ret[StpMaxDim], sd,
@@ -313,9 +323,10 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
   bool 
     spacetime = (bool) (PisNULL(AVE_SPACETIME) || P0INT(AVE_SPACETIME));
   int 
-    dim = spacetime ? cov->tsdim - 1 : cov->tsdim;
-  
-  CovList[phi->nr].drawmix(phi, q + AVESTP_V); // nicht gatternr
+    dim = OWNLOGDIM(0);
+  if (spacetime) dim--;
+   
+  DefList[MODELNR(phi)].drawmix(phi, q + AVESTP_V); // nicht gatternr
   sd_avestp(cov, S, dim, &sd); // sd->gauss
   
   BUG;
@@ -343,7 +354,7 @@ void do_shapeave(cov_model *cov, gen_storage *S) {
 #define COX_D 1
 #define COX_BETA 2
 
-void GetEu2Dinv(cov_model *cov, double *x, int dim, 
+void GetEu2Dinv(model *cov, double *x, int dim, 
 		double *det, double *Eu2Dinv,
 		double *newxsq, double *newx, double *z) {
     double 
@@ -364,21 +375,25 @@ void GetEu2Dinv(cov_model *cov, double *x, int dim,
       Eu2Dinv[d] = t2 * D[d];
   }
   for (d=0; d<dimsq; d+=dimP1)  Eu2Dinv[d] += 1.0; // D + E
-  det_UpperInv(Eu2Dinv, det, dim);
-  *newxsq = xUxz(y, Eu2Dinv, dim, z);
+
+  solve_storage *PT =  NULL;
+  if (z !=NULL) PT->result = z;
+  int err = Ext_XCinvXdet(Eu2Dinv, dim, y, 1, newxsq, det, false, PT);
+  if (z != NULL) PT->result = NULL;
+  if (err != NOERROR) ERR("error occuredin 'GetEu2Dinv'");
   *newx = SQRT(*newxsq);
 }
 
-void cpyUf(double *Eu2Dinv, double factor, int dim, int tsdim, double *v) {
-    // Eu2Dinv has dimension dim^2; v dimension tsdim^2
+void cpyUf(double *Eu2Dinv, double factor, int dim, int logicaldim, double *v) {
+    // Eu2Dinv has dimension dim^2; v dimension logicaldim^2
     // Eu2Dinv is copied into the upper left part of v and 
     // multiplied by factor
   int d, i, k, j,
-	tsdimsq = tsdim * tsdim;
+	logicaldimsq = logicaldim * logicaldim;
   
-  for (i=0; i<tsdimsq; v[i++] = 0.0);
+  for (i=0; i<logicaldimsq; v[i++] = 0.0);
   for (i=0; i<dim; i++) {
-      for (d=i * tsdim, k=i * dim, j=0; j<=i; j++)
+      for (d=i * logicaldim, k=i * dim, j=0; j<=i; j++)
 	  v[d++] = Eu2Dinv[k++] * factor; 
       for (k += dim - 1; j<dim; j++, k+=dim) { 
 	  v[d++] = Eu2Dinv[k] * factor;
@@ -386,14 +401,14 @@ void cpyUf(double *Eu2Dinv, double factor, int dim, int tsdim, double *v) {
   }
 }
 
-void addzzT(double *v, double factor, double *z, int dim, int tsdim) {
-    // z has dimension dim; v dimension tsdim^2
+void addzzT(double *v, double factor, double *z, int dim, int logicaldim) {
+    // z has dimension dim; v dimension logicaldim^2
     // zzT is copied into the upper left part of v after being 
     // multiplied by factor
    
     int i,j,k;
     for (i=0; i<dim; i++) {
-	k = i * tsdim;
+	k = i * logicaldim;
 	for (j=0; j<dim; j++) {
 	    v[k++] += z[i] * z[j] * factor;
 	}
@@ -401,66 +416,70 @@ void addzzT(double *v, double factor, double *z, int dim, int tsdim) {
 }
 
 
-void kappa_cox(int i, cov_model *cov, int *nr, int *nc){
+void kappa_cox(int i, model *cov, int *nr, int *nc){
     switch (i) {
 	case COX_MU :
 	    *nc = 1;
-	    *nr = cov->tsdim - 1;
+	    *nr = OWNLOGDIM(0)  - 1;
 	    break;
 	case COX_D  :
-	    *nc = *nr = cov->tsdim - 1;
+	    *nc = *nr = OWNLOGDIM(0)  - 1;
 	    break;
 	case COX_BETA :
 	    *nc = *nr = 1;
 	    break;
-	default:  *nc = *nr = -1;
+	default:  *nc = *nr = OUT_OF_RANGE;
     }
 }
 
-void cox(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  int dim = cov->tsdim - 1,
+void cox(double *x, model *cov, double *v) {
+  model *next = cov->sub[0];
+ int dim = OWNLOGDIM(0) - 1,
       dimsq = dim * dim;
   double det, newx,  newxsq;
-  ALLOC_EXTRA(Eu2Dinv, dimsq);
+  TALLOC_XX1(Eu2Dinv, dimsq);
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, NULL);
-   
+  END_TALLOC_XX1;
+  // printf("cox det=%10g %10g\n", det, newx);
+  
   COV(&newx, next, v);
   *v /= SQRT(det);
-} 
+ } 
 
-void coxhess(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
-  int tsdim = cov->tsdim,
-      dim = tsdim - 1,
+void coxhess(double *x, model *cov, double *v) {
+  model *next = cov->sub[0];
+  int logicaldim = OWNLOGDIM(0),
+      dim = logicaldim - 1,
       dimsq = dim * dim;
   double z[CoxMaxDim], det, newx, newxsq, phiD, phiD2;
 
-  ALLOC_EXTRA(Eu2Dinv, dimsq);
+  TALLOC_XX1(Eu2Dinv, dimsq);
 
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z);
 
   Abl2(&newx, next, &phiD2);  
   if (newxsq == 0.0) {
-    cpyUf(Eu2Dinv, phiD2 / SQRT(det), dim, tsdim, v);
+    cpyUf(Eu2Dinv, phiD2 / SQRT(det), dim, logicaldim, v);
   } else {
     Abl1(&newx, next, &phiD);
-    cpyUf(Eu2Dinv, phiD / (SQRT(det) * newx), dim, tsdim, v);
-    addzzT(v, (phiD2 - phiD/newx) / (SQRT(det) * newxsq), z, dim, tsdim);
+    cpyUf(Eu2Dinv, phiD / (SQRT(det) * newx), dim, logicaldim, v);
+    addzzT(v, (phiD2 - phiD/newx) / (SQRT(det) * newxsq), z, dim, logicaldim);
   }
+  END_TALLOC_XX1;
 } 
  
 
-void coxnabla(double *x, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
+void coxnabla(double *x, model *cov, double *v) {
+  model *next = cov->sub[0];
   int d,
-      tsdim = cov->tsdim,
-      dim = tsdim - 1,
-      dimsq=dim * dim;
+    logicaldim = OWNLOGDIM(0),
+    dim = logicaldim - 1,
+    dimsq=dim * dim;
   double z[CoxMaxDim], det, newx, newxsq, phiD, factor;
   
-  ALLOC_EXTRA(Eu2Dinv, dimsq);
+  TALLOC_XX1(Eu2Dinv, dimsq);
   GetEu2Dinv(cov, x, dim, &det, Eu2Dinv, &newxsq, &newx, z); 
+  END_TALLOC_XX1;
 
   if (newxsq == 0.0) {
       for (d=0; d<=dim; d++)  v[d] = 0.0;
@@ -471,21 +490,20 @@ void coxnabla(double *x, cov_model *cov, double *v) {
     for (d=0; d<dim; d++) {
 	v[d] = factor * z[d];
     }
-    for (d=0; d<tsdim; v[d++]=0.0);
+    for (d=0; d<logicaldim; v[d++]=0.0);
   }
-
  }
 
 
 
-int checkcox(cov_model *cov) {
-  cov_model *next = cov->sub[0];
+int checkcox(model *cov) {
+  model *next = cov->sub[0];
   int err, i, 
-    dim = cov->tsdim - 1,
+    logicaldim = OWNLOGDIM(0),
+    dim = logicaldim - 1,
     dimsq = dim * dim; 
 
-  if (cov->xdimown < 2) SERR("The space-time dimension must be at least 2.");
-   
+  if (OWNTOTALXDIM < 2) SERR("The space-time dimension must be at least 2.");  
   if (cov->ncol[COX_MU] != 1 || cov->nrow[COX_MU] != dim) {
     if (cov->ncol[COX_MU] == dim && cov->nrow[COX_MU] == 1) {
       cov->nrow[COX_MU] = dim;
@@ -501,46 +519,46 @@ int checkcox(cov_model *cov) {
     PALLOC(COX_D, dim, dim);
     for (i=0; i<dimsq; i++) P(COX_D)[i] = 1.0;
   } else {
-    if (!is_positive_definite(P(COX_D), dim))
+    if (!Ext_is_positive_definite(P(COX_D), dim))
       SERR("D is not (strictly) positive definite");
   }
 
   kdefault(cov, COX_BETA, 2.0);
 
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
   if ((err = CHECK(next, dim,  1, PosDefType, XONLY, ISOTROPIC,
-		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		     SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
 		   )) != NOERROR)
-    return err;
+    RETURN_ERR(err);
 
-  if (cov->tsdim != 3)  cov->pref[SpectralTBM] = PREF_NONE;;
+  if (logicaldim != 3)  cov->pref[SpectralTBM] = PREF_NONE;
 
-  next->delflag = DEL_COV; // set gatternr=nr, since non-negativity ensured
-  if (!isNormalMixture(next->monotone)) return ERRORNORMALMIXTURE;
-  if (CovList[next->nr].spectral == NULL) return ERRORSPECTRAL; // nicht gatternr
+  if (!isNormalMixture(next->monotone)) RETURN_ERR(ERRORNORMALMIXTURE);
+  if (DefList[NEXTNR].spectral == NULL) RETURN_ERR(ERRORSPECTRAL); // nicht gatternr
   
   // no setbackard
   updatepref(cov, next);
   if (P0(COX_BETA) != 2.0) cov->pref[SpectralTBM] = 0;
 
   cov->hess = true;
-
+  if (cov->Ssolve == NULL) {EXT_NEW_STORAGE(solve);}
+  
   EXTRA_STORAGE;	 
-  return NOERROR;
+  RETURN_NOERROR;
 } 
 
-void rangecox(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
+void rangecox(model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
   range->min[COX_MU] = RF_NEGINF;
   range->max[COX_MU] = RF_INF;
-  range->pmin[COX_MU] = -100.0;
+  range->pmin[COX_MU] = - 100.0;
   range->pmax[COX_MU] = +100.0;
   range->openmin[COX_MU] = true;
   range->openmax[COX_MU] = true;
 
   range->min[COX_D] = RF_NEGINF;
   range->max[COX_D] = RF_INF;
-  range->pmin[COX_D] = -100.0;
+  range->pmin[COX_D] = - 100.0;
   range->pmax[COX_D] = +100.0;
   range->openmin[COX_D] = false;
   range->openmax[COX_D] = false;  
@@ -553,16 +571,17 @@ void rangecox(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
   range->openmax[COX_BETA] = false;  
 }
 
-int initcox(cov_model *cov, gen_storage *s) {
+int initcox(model *cov, gen_storage *s) {
   ASSERT_GAUSS_METHOD(SpectralTBM);
-  cov_model *next = cov->sub[0];
+  model *next = cov->sub[0];
   return INIT(next, 0, s);
 }
 
-void spectralcox(cov_model *cov, gen_storage *s, double *e) { 
-  cov_model *next = cov->sub[0];
+void spectralcox(model *cov, gen_storage *s, double *e) { 
+  model *next = cov->sub[0];
   int d,
-    dim = cov->tsdim - 1;
+    logicaldim = OWNLOGDIM(0),
+    dim = logicaldim - 1;
   double t, v[CoxMaxDim],
     *V = P(COX_MU),
     rho= P0(COX_D);
@@ -587,15 +606,15 @@ void spectralcox(cov_model *cov, gen_storage *s, double *e) {
 #define STP_XI2 0
 #define STP_PHI 1
 #define STP_GAUSS 3
-void kappa_stp(int i, cov_model *cov, int *nr, int *nc){
-  *nc = (i == STP_S || i == STP_M) ? cov->tsdim : 1;
-  *nr = i < CovList[cov->nr].kappas ? cov->tsdim : -1;
+void kappa_stp(int i, model *cov, int *nr, int *nc){
+  *nc = (i == STP_S || i == STP_M) ? OWNLOGDIM(0) : 1;
+  *nr = i < DefList[COVNR].kappas ? OWNLOGDIM(0) : -1;
 }
 
-void stp(double *x,  double *y, cov_model *cov, double *v) {
-  int d, j, k,
-      dim =cov->tsdim,
-      dimsq = dim * dim;
+void stp(double *x,  double *y, model *cov, double *v) {
+  int d, j, k, err,
+    dim =  OWNLOGDIM(0),
+    dimsq = dim * dim;
   double h[StpMaxDim], 
     Mh[StpMaxDim], hSx[StpMaxDim],
     Syh[StpMaxDim], xi2x, xi2y, 
@@ -603,13 +622,13 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     *Sc = P(STP_S),
     *M = P(STP_M),
     *z = P(STP_Z);
-  cov_model *phi = cov->sub[STP_PHI],
+  model *phi = cov->sub[STP_PHI],
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
 
-  ALLOC_EXTRA(Sx, dimsq);
-  ALLOC_EXTRA2(Sy, dimsq);
-  ALLOC_EXTRA3(A, dimsq);
+  TALLOC_X1(Sx, dimsq);
+  TALLOC_X2(Sy, dimsq);
+  TALLOC_X3(A, dimsq);
     
   if (Sf != NULL) {
     FCTN(x, Sf, Sx); // symmetric, pos definite !!
@@ -617,10 +636,10 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     //
     //    if (false) {
     //      int ii;
-    //      printf("x=%f %f y=%f %f\n", x[0], x[1], y[0], y[1]);
-    //for (ii=0; ii<4; ii++) printf("%f ", Sx[ii]);
+    //      printf("x=%10g %10g y=%10g %10g\n", x[0], x[1], y[0], y[1]);
+    //for (ii=0; ii<4; ii++) printf("%10g ", Sx[ii]);
     //      printf("\n");
-    //      for (ii=0; ii<4; ii++) printf("%f ", Sy[ii]);
+    //      for (ii=0; ii<4; ii++) printf("%10g ", Sy[ii]);
     //      printf("\n");
     //    }
 
@@ -662,90 +681,96 @@ void stp(double *x,  double *y, cov_model *cov, double *v) {
     Amux[d] = hSx[d] + 2.0 * (hMh + cxy) * Mh[d]; // uses that M is symmetric
     Amuy[d] = Syh[d] + 2.0 * (hMh - cxy) * Mh[d];
   }
+  double 
+    dx = Ext_detPosDef(Sx, dim), 
+    dy = Ext_detPosDef(Sy, dim);
+  END_TALLOC_X1;
+  END_TALLOC_X2;
 
-
-  det_UpperInv(A, &detA, dim); // here
-
-  Q = cxy * cxy - hMh * hMh + xUy(Amux, A, Amuy, dim);
+  
+  // det_UpperInv(A, &detA, dim); // here
+  double muxAmuy; // changed 5.4.2018, 3.2.0.28
+  err = Ext_XCinvYdet(A, dim, true, Amux, Amuy, 1, &muxAmuy, &detA, false,NULL);
+  END_TALLOC_X3;
+  if (err != NOERROR) ERR("error occuredin 'GetEu2Dinv'");
+ 
+  Q = cxy * cxy - hMh * hMh + muxAmuy;
   if (Q < 0.0) {
-    PRINTF("x=%f,%f y=%f,%f detA=%f\n", 
+    PRINTF("x=%10g,%10g y=%10g,%10g detA=%10g\n", 
 	   x[0], x[1], y[0], y[1], detA);
-    PRINTF("cxy=%4f hMh=%f Amux=%f A[0]=%f Amuy=%f\ndim=%d h=%f,%f hSx=%f,%f, xUy=%f Q=%f\n", 
-	   cxy, hMh, Amux[0], A[0], Amuy[0], 
-	   dim, h[0], h[1], hSx[0], hSx[1], xUy(Amux, A, Amuy, dim), Q);
+    PRINTF("cxy=%4f hMh=%10g Amux=%10g Amuy=%10g\ndim=%d h=%10g,%10g hSx=%10g,%10g, Q=%10g\n", 
+	   cxy, hMh, Amux[0], Amuy[0], 
+	   dim, h[0], h[1], hSx[0], hSx[1], Q);
     BUG;
   }
 
   Q = SQRT(Q);
 
   aux_covfct auxcf;
-  if ((auxcf = CovList[phi->gatternr].aux_cov) != NULL) 
+  if ((auxcf = DefList[MODELNR(phi)].aux_cov) != NULL) {
+    BUG;
     auxcf(x, y, Q, phi, v);
-  else 
+  } else 
     FCTN(&Q, phi, v);
 
-  double 
-    dx = detU(Sx, dim), 
-    dy = detU(Sy, dim);
   
   *v *=  POW(2.0, 0.5 * double(dim)) * POW(dx * dy / (detA * detA), 0.25);
+
 }
 
 
 
-int checkstp(cov_model *cov){
-  cov_model 
+int checkstp(model *cov){
+  ASSERT_UNREDUCED;
+  model 
     *phi = cov->sub[STP_PHI],
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
   int err,
-    dim = cov->tsdim;
+    dim = OWNLOGDIM(0);
+
 
 
   ASSERT_CARTESIAN;
-
- if (dim > StpMaxDim)
-    SERR2("For technical reasons max. dimension for ave is %d. Got %d.", 
-	  StpMaxDim, cov->xdimprev);
+  if (dim > StpMaxDim)
+    SERR2("For technical reasons max. dimension for ave is %d. Requested is %d",
+	  StpMaxDim, GATTERXDIM(0));
 
  if (PisNULL(STP_S) && Sf==NULL) {  // Sc
    if ((cov->px[STP_S] = EinheitsMatrix(dim)) == NULL) 
-      return ERRORMEMORYALLOCATION;
+     RETURN_ERR(ERRORMEMORYALLOCATION);
     cov->ncol[STP_S] = cov->nrow[STP_S] = dim;
   }
  if (PisNULL(STP_M)) { // M
    if ((cov->px[STP_M] = EinheitsMatrix(dim)) == NULL)
-      return ERRORMEMORYALLOCATION;
+     RETURN_ERR(ERRORMEMORYALLOCATION);
     cov->ncol[STP_M] = cov->nrow[STP_M] = dim;
   }
  if (PisNULL(STP_Z)) { // z
    PALLOC(STP_Z, dim, 1);
  }
-
- if (cov->xdimprev != cov->tsdim) // || cov->xdimprev != cov->tsdim)
-    return ERRORDIM;
    
   if ((err = CHECK(phi, dim,  1, PosDefType, XONLY, ISOTROPIC,
-		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		     SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
 		   )) != NOERROR)
-    return err;
-  if (!isNormalMixture(phi->monotone)) return ERRORNORMALMIXTURE;
+    RETURN_ERR(err);
+  if (!isNormalMixture(phi->monotone)) RETURN_ERR(ERRORNORMALMIXTURE);
 
   cov->pref[Average] = 5;
 
   if (Sf != NULL) {
     if ((err = CHECK(Sf, dim,  dim, ShapeType, XONLY, CARTESIAN_COORD,
-		       dim, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		       dim, cov->frame // VariogramType changed 20.7.14 wg spectral
 )) != NOERROR) 
-      return err;
+      RETURN_ERR(err);
   }
   
 
   if (xi2 != NULL) {
    if ((err = CHECK(xi2, dim, dim,  ShapeType, XONLY, CARTESIAN_COORD,
-		    SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		    SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
 		    )) != NOERROR)
-     return err;
+     RETURN_ERR(err);
   }
 
   // kein setbackward??
@@ -753,15 +778,15 @@ int checkstp(cov_model *cov){
   EXTRA_STORAGE;
 
   cov->mpp.maxheights[0] = RF_NA;
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
-void rangestp(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
+void rangestp(model VARIABLE_IS_NOT_USED *cov, range_type* range){
   int i;
   for (i=0; i<=2; i++) { /* S, M, z */
     range->min[i] = RF_NEGINF;
     range->max[i]= RF_INF;
-    range->pmin[i] = -1e10;
+    range->pmin[i] = - 1e10;
     range->pmax[i] = 1e10;
     range->openmin[i] = true;
     range->openmax[i] = true;
@@ -770,124 +795,34 @@ void rangestp(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
 
 
 
-int structStp(cov_model *cov, cov_model **newmodel) { 
-  cov_model *shape;
+int structStp(model *cov, model **newmodel) { 
+  model *shape;
   int err;
   
   ASSERT_NEWMODEL_NOT_NULL;
-  
-  if (cov->role != Average) ILLEGAL_ROLE;
-  
-  if ((err = covCpy(newmodel, cov)) != NOERROR) return err;
+  if ((err = covcpy(newmodel, cov)) != NOERROR) RETURN_ERR(err);
   shape = *newmodel;
-  shape->nr = SHAPESTP;
+  SET_NR(shape, SHAPESTP);
   addModel(shape, STP_GAUSS, GAUSS);
-  shape->sub[STP_GAUSS]->tsdim = 1;
-  return NOERROR;
+   ERR("'stp' currently does not work"); // what to do with the next line??
+  /* 
+     shape->sub[STP_GAUSS]->ts dim = 1;
+  */
+   RETURN_NOERROR;
 }
 
 
-int check_shapestp(cov_model *cov) {  
-  if (cov->sub[AVE_GAUSS] == NULL)
-    SERR1("both submodels must be set to '%s'", CovList[GAUSS].nick);
-  EXTRA_STORAGE;
-  return checkstp(cov); // !! not next
-}
-
-
-int init_shapestp(cov_model *cov, gen_storage *s) {
-  ASSERT_GAUSS_METHOD(Average);
-
-  cov_model
-    *Sf = cov->kappasub[STP_S],
-    *gaussmix = cov->sub[STP_GAUSS];
-  double sd,
-    *q = cov->q;
-  int err = NOERROR;
-
-  if (Sf != NULL) {
-    double minmax[2];
-    assert(CovList[Sf->nr].minmaxeigenvalue != NULL);
-    CovList[Sf->nr].minmaxeigenvalue(Sf, minmax);
-    if (minmax[0] <= 0.0) ERR("neg eigenvalue in shape function of 'stp'");
-    q[AVESTP_MINEIGEN] = minmax[0];
-    q[AVESTP_LOGDET] = (double) cov->xdimprev * LOG(minmax[1]);
-  } else {
-#define dummyN (5 * StpMaxDim)
-    double value[StpMaxDim], ivalue[StpMaxDim], dummy[dummyN], det,
-      min = RF_INF;
-    int i, Ferr,       
-      dim = cov->tsdim,
-      ndummy = dummyN;
- 
-    F77_NAME(dgeev)("No", "No", &dim, P(STP_S), &dim, 
-		    value, ivalue, NULL, &dim, NULL, &dim,
-		    dummy, &ndummy, &Ferr);
-    if (Ferr != 0) SERR("error in F77 function call");
-    det =  1.0;
-    for (i=0; i<dim; i++) {
-      double v = FABS(value[i]);
-      det *= v;
-      if (min > v) min = v;
-    }
-    q[AVESTP_MINEIGEN] = min;
-    q[AVESTP_LOGDET] = LOG(det);
-  }
-
-
-  q[AVESTP_LOGV] = 0.0; 
-  q[AVESTP_LOGMIXDENS] = 0.0;
-  sd_avestp(cov, s, cov->tsdim, &sd); // sd->gauss
-
-  assert(cov->vdim[0] == 1);  assert(cov->vdim[0] == cov->vdim[1]);
-
-  if (cov->mpp.moments >= 0) {
-    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; //// ??? notwendig 
-    if (cov->mpp.moments >= 1) {
-      if ((err = INIT(gaussmix, 2, s)) != NOERROR) return err;
-      if (cov->mpp.moments >= 2) cov->mpp.mM[2] = 1.0; 
-    }
-  }
-  return err;
-}
-
-void do_shapestp(cov_model *cov, gen_storage *s) {
-  // Simulation of V; see Bernoulli Sec. 4.2
-  cov_model 
-    *stpGAUSS = cov->sub[STP_GAUSS],
-    *phi = cov->sub[STP_PHI];
-  double  spec_ret[StpMaxDim], sd,
-    *q = cov->q;
-
-  CovList[phi->nr].drawmix(phi, &(q[AVESTP_V]));
-  sd_avestp(cov, s, cov->tsdim, &sd); // sd->gauss
-  
-  BUG;
-
-  SPECTRAL(stpGAUSS, s, spec_ret);  // nicht gatternr
-  q[AVERAGE_YFREQ] = *spec_ret * SQRT(q[AVESTP_V]);  
-  q[AVERAGE_YPHASE] = TWOPI * UNIFORM_RANDOM;
-
-
-  BUG; /// what to do with the next line?
-  // info->logdens = CovList[phi->nr].logmixdens(ZERO, q[AVESTP_LOGV], phi);
-
-
-  //info->radius = RF_INF;
-  // info-sd s.o.
-}
-
-
-void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
+void logshapestp(double *x, double *u, model *cov, double *v, double *Sign){
   // kann um ca. Faktor 2 beschleunigt werden, wenn
-  // Sx , logdetU, Hx fuer alle x abgespeichert werden
+  // Sx , log det U, Hx fuer alle x abgespeichert werden
   // und die Werte dann aus dem Speicher gelesen werden
   // jedoch sehr Speicherintensiv. MEMCOPY braucht man auch nicht
-  cov_model 
+  model 
     *Sf = cov->kappasub[STP_S],
     *xi2 =cov->sub[STP_XI2];
   int j, k, d, 
-    dim= cov->xdimprev,
+    //    dim= cov->xdimprev,
+    dim= OWNXDIM(0),
     dimsq = dim * dim,
     bytes = sizeof(double) * dimsq;
   double h[StpMaxDim], hSxh, hSx, xi, Mhd, 
@@ -895,8 +830,9 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
     *M = P(STP_M),
     *z = P(STP_Z),
     *q = cov->q;
+  assert(q != NULL);
   
-  ALLOC_EXTRA(Sx, dimsq); 
+  TALLOC_X1(Sx, dimsq); 
 
   if (Sf == NULL) {
     MEMCOPY(Sx, Sc, bytes);
@@ -929,20 +865,20 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
   double exponent =
     0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
 		  q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
-    + 0.25 * LOG(detU(Sx, dim))                          // Sx ^1/4 
+    + 0.25 * LOG(Ext_detPosDef(Sx, dim))                          // Sx ^1/4 
       - q[AVESTP_V] * hSxh             // EXP(-V(U-x) S (U-x)) 
-    // + CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi) // g //nicht gatternr
+    // + DefList[phi->nr].logmixdens(x, q[AVESTP_LOGV], phi) // g //nicht gatternr
     //    - 0.5 * cov_a->logdens // f 
     ;                // 1 / SQRT(f) 
   
   if (!(exponent < 5.0) && PL >= PL_DETAILS) {
     if (!(exponent < 6.0)) // could be NA, too
-     PRINTF("\n%f logDetU=%f %f expon=%f",
+     PRINTF("\n%10g log Det U=%10g %10g expon=%10g",
           0.25 * dim * (// M_LN2 +  ??? !!! Rechnung!!! 
 			q[AVESTP_LOGV] - 2.0 * M_LN_SQRT_PI) // (2V/pi)^{d/4}
-	    , 0.25 * LOG(detU(Sx, dim))                         /// Sx ^1/4 
+	    , 0.25 * LOG(Ext_detPosDef(Sx, dim))                /// Sx ^1/4 
 	    , -q[AVESTP_V]* hSxh             // EXP(-V(U-x) S (U-x)) 
-	    // , CovList[phi->nr].logmixdens(x, q[AVESTP_LOGV],  phi)// g
+	    // , DefList[phi->nr].logmixdens(x, q[AVESTP_LOGV],  phi)// g
 	    //, - 0.5 * cov_a->logdens // f 
 	    , exponent);
     else PRINTF("!");
@@ -954,358 +890,113 @@ void logshapestp(double *x, double *u, cov_model *cov, double *v, double *Sign){
   double cos_value = COS(q[AVERAGE_YPHASE] + q[AVERAGE_YFREQ] * xi);
   *v = exponent + LOG(FABS(cos_value)) ;  // Y 
   *Sign = cos_value > 0.0 ? 1.0 : cos_value < 0.0 ? -1.0 : 0.0;
+  END_TALLOC_X1;
 }
 
 
-
-/* Whittle-Matern or Whittle or Besset */ 
-#define RATIONAL_A 0
-#define RATIONAL_a 1
-void kappa_rational(int i, cov_model *cov, int *nr, int *nc){
-  *nc = (i == RATIONAL_A) ? cov->tsdim : 1;
-  *nr = (i == RATIONAL_A) ? cov->tsdim : (i==RATIONAL_a) ? 2 : -1;
+int check_shapestp(model *cov) {  
+  if (cov->sub[AVE_GAUSS] == NULL)
+    SERR1("both submodels must be set to '%.50s'", DefList[GAUSS].nick);
+  EXTRA_STORAGE;
+  return checkstp(cov); // !! not next
 }
-void minmaxEigenrational(cov_model *cov, double *mm) {
-  double *a = P(RATIONAL_a);
-  if (a[0] < a[1]) {
-    mm[0] = a[0];
-    mm[1] = a[1];
+
+
+int init_shapestp(model *cov, gen_storage *s) {
+  ASSERT_GAUSS_METHOD(Average);
+
+  model
+    *Sf = cov->kappasub[STP_S],
+    *gaussmix = cov->sub[STP_GAUSS];
+  double sd,
+    *q = cov->q;
+  int err = NOERROR;
+
+  if (Sf != NULL) {
+    double minmax[2];
+    assert(DefList[MODELNR(Sf)].minmaxeigenvalue != NULL);
+    DefList[MODELNR(Sf)].minmaxeigenvalue(Sf, minmax);
+    if (minmax[0] <= 0.0) ERR("neg eigenvalue in shape function of 'stp'");
+    q[AVESTP_MINEIGEN] = minmax[0];
+    q[AVESTP_LOGDET] = (double) //cov->xdimprev
+      OWNXDIM(0) * LOG(minmax[1]);
   } else {
-    mm[0] = a[1];
-    mm[1] = a[0];
-  }
-}
-double maxEigenrational(cov_model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *mm) {
-  double *a = P(RATIONAL_a);
-  return (a[0] > a[1]) ? a[0] : a[1];
-}
-void rational(double *x, cov_model *cov, double *v) {
-  int i, k, j, 
-    dim = cov->tsdim;
-  double nu,
-    *A = P(RATIONAL_A),
-    *a = P(RATIONAL_a);
-  nu = 0.0;
-  for (k=0, i=0; i<dim; i++) {
-    double xTC;
-    xTC =  0.0;
-    for (j=0; j<dim; j++) {
-      xTC += x[j] * A[k++];
-    }
-    nu += xTC * xTC;
-  }
-  *v = (a[0] + a[1] * nu) / (1 + nu);
-}
+#define dummyN (5 * StpMaxDim)
+    double value[StpMaxDim], ivalue[StpMaxDim], dummy[dummyN], det,
+      min = RF_INF;
+    int i, Ferr,       
+      dim = OWNLOGDIM(0),
+      ndummy = dummyN;
  
-int checkrational(cov_model *cov){
-  int err;
-  if (cov->nrow[RATIONAL_a] == 1) {
-    double dummy = P0(RATIONAL_a);
-    PFREE(RATIONAL_a);
-    PALLOC(RATIONAL_a, 2, 1);
-    P(RATIONAL_a)[0] = dummy;
-    P(RATIONAL_a)[1] = 0.0;
+    F77_NAME(dgeev)("No", "No", &dim, P(STP_S), // SVD
+		    &dim, value, ivalue, NULL, &dim, NULL, &dim,
+		    dummy, &ndummy, &Ferr);
+    if (Ferr != 0) RETURN_ERR(ERRORSVD);
+    det =  1.0;
+    for (i=0; i<dim; i++) {
+      double v = FABS(value[i]);
+      det *= v;
+      if (min > v) min = v;
+    }
+    q[AVESTP_MINEIGEN] = min;
+    q[AVESTP_LOGDET] = LOG(det);
   }
-  if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->mpp.maxheights[0] =  P(RATIONAL_a)[0] > P(RATIONAL_a)[1] 
-    ? P(RATIONAL_a)[0] : P(RATIONAL_a)[1];
-  return NOERROR;
-}
-
-void rangerational(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
-
-  range->min[RATIONAL_A] = RF_NEGINF;
-  range->max[RATIONAL_A] = RF_INF;
-  range->pmin[RATIONAL_A] = -1e10;
-  range->pmax[RATIONAL_A] = 1e10;
-  range->openmin[RATIONAL_A] = true;
-  range->openmax[RATIONAL_A] = true;
-
-  range->min[RATIONAL_a] = 0.0;
-  range->max[RATIONAL_a] = RF_INF;
-  range->pmin[RATIONAL_a] = 0.0;
-  range->pmax[RATIONAL_a] = 10;
-  range->openmin[RATIONAL_a] = false;
-  range->openmax[RATIONAL_a] = true;
-}
 
 
-// Sigma(x) = diag>0 + A'xx'A
-#define EAXXA_E 0
-#define EAXXA_A 1
-#define ETAXXA_ALPHA 2
-void kappa_EAxxA(int i, cov_model *cov, int *nr, int *nc){
-  *nc = (EAXXA_A == i) ? cov->tsdim : 1;
-  *nr = i < CovList[cov->nr].kappas ? cov->tsdim : -1;
-}
-void EAxxA(double *x, cov_model *cov, double *v) {
-  int d, k, j, 
-    dim = cov->tsdim;
-  double xA[EaxxaMaxDim],
-    *E = P(EAXXA_E),
-    *A = P(EAXXA_A);
-  for (k=0, d=0; d<dim; d++) {
-    xA[d] =  0.0;
-    for (j=0; j<dim; j++) {
-      xA[d] += x[j] * A[k++];
+  q[AVESTP_LOGV] = 0.0; 
+  q[AVESTP_LOGMIXDENS] = 0.0;
+  sd_avestp(cov, s, OWNLOGDIM(0), &sd); // sd->gauss
+
+  assert(VDIM0 == 1);  assert(VDIM0 == VDIM1);
+
+  if (cov->mpp.moments >= 0) {
+    cov->mpp.mM[0] = cov->mpp.mMplus[0] = 1.0; //// ??? notwendig 
+    if (cov->mpp.moments >= 1) {
+      if ((err = INIT(gaussmix, 2, s)) != NOERROR) RETURN_ERR(err);
+      if (cov->mpp.moments >= 2) cov->mpp.mM[2] = 1.0; 
     }
   }
-  for (k=d=0; d<dim; d++) {
-    double xAd = xA[d];
-    for (j=0; j<=d; j++) {
-      v[k++] = xAd * xA[j];
-    }
-    v[k-1] += E[d];
-    for ( ; j<dim; j++) {
-      v[k++] = xAd * xA[j];
-    }
-  }
+  RETURN_ERR(err);
 }
 
-void minmaxEigenEAxxA(cov_model *cov, double *mm) {
-  double 
-    *E = P(EAXXA_E);
-  int i,
-    dim = cov->tsdim;
-  for (mm[0] = RF_INF, mm[1]=RF_NEGINF, i=0; i<dim; i++) {
-    if (E[i] < mm[0]) mm[0] = E[i];
-    if (E[i] > mm[1]) mm[1] = E[i];
-  }
-}
- 
-int checkEAxxA(cov_model *cov){
-  int err;
-    if (cov->xdimown > EaxxaMaxDim)
-      SERR2("For technical reasons max. dimension for ave is %d. Got %d.", 
-	    EaxxaMaxDim, cov->xdimown);
+void do_shapestp(model *cov, gen_storage *s) {
+  // Simulation of V; see Bernoulli Sec. 4.2
+  model 
+    *stpGAUSS = cov->sub[STP_GAUSS],
+    *phi = cov->sub[STP_PHI];
+  double  spec_ret[StpMaxDim], sd,
+    *q = cov->q;
+
+
+  DefList[MODELNR(phi)].drawmix(phi, &(q[AVESTP_V]));
+  sd_avestp(cov, s, OWNLOGDIM(0), &sd); // sd->gauss
     
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  BUG;
 
-  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
-  cov->mpp.maxheights[0] = RF_NA;
- return NOERROR;
-}
- 
-void rangeEAxxA(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
+  SPECTRAL(stpGAUSS, s, spec_ret);  // nicht gatternr
+  q[AVERAGE_YFREQ] = *spec_ret * SQRT(q[AVESTP_V]);  
+  q[AVERAGE_YPHASE] = TWOPI * UNIFORM_RANDOM;
 
-  range->min[EAXXA_E] = 0.0;
-  range->max[EAXXA_E] = RF_INF;
-  range->pmin[EAXXA_E] = 0.0001;
-  range->pmax[EAXXA_E] = 10;
-  range->openmin[EAXXA_E] = true;
-  range->openmax[EAXXA_E] = true;
 
-  range->min[EAXXA_A] = RF_NEGINF;
-  range->max[EAXXA_A] = RF_INF;
-  range->pmin[EAXXA_A] = -1e10;
-  range->pmax[EAXXA_A] = 1e10;
-  range->openmin[EAXXA_A] = true;
-  range->openmax[EAXXA_A] = true;
+  BUG; /// what to do with the next line?
+  // info->logdens = DefList[phi->nr].logmixdens(ZERO, q[AVESTP_LOGV], phi);
+
+
+  //info->radius = RF_INF;
+  // info-sd s.o.
 }
 
 
-
-
-
-// Sigma(x) = diag>0 + A'xx'A
-void kappa_EtAxxA(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
-  int tsdim = 3; 
-  *nc = (i == EAXXA_A) ? tsdim : 1;
-  *nr = (i == EAXXA_E || i==EAXXA_A) ? tsdim : (i==ETAXXA_ALPHA) ? 1 : -1;
-}
-void EtAxxA(double *x, cov_model *cov, double *v) {
-  int d, k, j, 
-    dim = cov->tsdim,
-    time = dim - 1;
-  double xAR[EaxxaMaxDim], R[9],
-    *E = P(EAXXA_E),
-    *A = P(EAXXA_A),
-    phi = P0(ETAXXA_ALPHA),
-    c =  COS(phi * x[time]),
-    s = SIN(phi * x[time]); 
-     
-  R[0] = R[4] = c;
-  R[1] = s;
-  R[3] = -s;
-  R[2] = R[5] = R[6] = R[7] = 0.0;
-  R[8] = 1.0;
- 
-  {
-    double xA[EaxxaMaxDim];
-    for (k=0, d=0; d<dim; d++) {
-      xA[d] =  0.0;
-      for (j=0; j<dim; j++) {
-	xA[d] += x[j] * A[k++];
-      }
-    }
-    for (k=0, d=0; d<dim; d++) {
-      xAR[d] =  0.0;
-      for (j=0; j<dim; j++) {
-	xAR[d] += xA[j] * R[k++];
-      }
-    }
-  }
-
-
-  for (k=d=0; d<dim; d++) {
-    double xAd = xAR[d];
-    for (j=0; j<=d; j++) {
-      v[k++] = xAd * xAR[j];
-    }
-    v[k-1] += E[d]; // nur korrekt falls E Vielfaches der EH-Matrix
-    for ( ; j<dim; j++) {
-      v[k++] = xAd * xAR[j];
-    }
-  }
-
-
-}
-
-void minmaxEigenEtAxxA(cov_model *cov, double *mm) {
-  double 
-    *E = P(EAXXA_E);
-  int i,
-    dim = cov->tsdim;
-  for (mm[0] = RF_INF, mm[1]=RF_NEGINF, i=0; i<dim; i++) {
-    if (E[i] < mm[0]) mm[0] = E[i];
-    if (E[i] > mm[1]) mm[1] = E[i];
-  }
-}
- 
-int checkEtAxxA(cov_model *cov){
-  int err;
-  if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
-  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
-  if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->mpp.maxheights[0] = RF_NA;
- return NOERROR;
-}
- 
-void rangeEtAxxA(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
-  int i;
-
-  for (i=0; i<=2; i++) {
-    range->min[i] = RF_NEGINF;
-    range->max[i] = RF_INF;
-    range->pmin[i] = -1e10;
-    range->pmax[i] = 1e10;
-    range->openmin[i] = true;
-    range->openmax[i] = true;
-  }
-
-  range->min[EAXXA_E] = 0.0;
-  range->max[EAXXA_E] = RF_INF;
-  range->pmin[EAXXA_E] = 0.0001;
-  range->pmax[EAXXA_E] = 10;
-  range->openmin[EAXXA_E] = true;
-  range->openmax[EAXXA_E] = true;
-}
-
-
-
-
-// Sigma(x) = diag>0 + A'xx'A
-#define ROTAT_PHI 0 // both rotat and Rotat
-#define ROTAT_SPEED 1
-void kappa_rotat(int i, cov_model *cov, int *nr, int *nc){
-  *nc = 1;
-  *nr = i < CovList[cov->nr].kappas ? 1 : -1;
-}
-void rotat(double *x, cov_model *cov, double *v) {
-  int
-    dim = cov->tsdim,
-    time = dim - 1;
-  double
-    speed = P0(ROTAT_SPEED),
-    phi = P0(ROTAT_PHI),
-    absx = SQRT(x[0] * x[0] + x[1] * x[1]);
-  *v = (absx == 0.0) ? 0.0
-    : speed * (COS(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
-}
-
-void minmaxEigenrotat(cov_model VARIABLE_IS_NOT_USED *cov, double *mm) {
-  mm[0] = -1;
-  mm[1] = 1;
-}
- 
-int checkrotat(cov_model *cov){
-  int err;
-  if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
-   if ((err = checkkappas(cov)) != NOERROR) return err;
- cov->mpp.maxheights[0] = RF_NA;
-  return NOERROR;
-}
- 
-void rangerotat(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
-  int i;
-
-  for (i=0; i<2; i++) {
-    range->min[i] = RF_NEGINF;
-    range->max[i] = RF_INF;
-    range->pmin[i] = -1e10;
-    range->pmax[i] = 1e10;
-    range->openmin[i] = true;
-    range->openmax[i] = true;
-  }
-}
-
-
-// Sigma(x) = diag>0 + A'xx'A
-void kappa_Rotat(int i, cov_model *cov, int *nr, int *nc){
-  *nc = 1;
-  *nr = i < CovList[cov->nr].kappas ?  1 : -1;
-}
-void Rotat(double *x, cov_model *cov, double *v) {
-  int d, k, j, 
-    dim = cov->tsdim,
-    time = dim - 1;
-  double
-    phi = P0(ROTAT_PHI),
-      c =  COS(phi * x[time]),
-      s = SIN(phi * x[time]),
-      R[9]; assert(dim ==3);
-   
-  R[0] = R[4] = c;
-  R[1] = s;
-  R[3] = -s;
-  R[2] = R[5] = R[6] = R[7] = 0.0;
-  R[8] = 1.0;
- 
-  for (k=0, d=0; d<dim; d++) {
-    v[d] =  0.0;
-    for (j=0; j<dim; j++) {
-      v[d] += x[j] * R[k++];
-    }
-  }
-} 
-int checkRotat(cov_model *cov){
-  int err;
-  if (cov->xdimown != 3) SERR("The space-time dimension must be 3.");
-  if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->vdim[0] = cov->vdim[1] = cov->tsdim;
-  cov->mpp.maxheights[0] = RF_NA;
-  return NOERROR;
-}
-
-void rangeRotat(cov_model VARIABLE_IS_NOT_USED *cov, range_type* range){
- 
-  range->min[ROTAT_PHI] = RF_NEGINF;
-  range->max[ROTAT_PHI] = RF_INF;
-  range->pmin[ROTAT_PHI] = -1e10;
-  range->pmax[ROTAT_PHI] = 1e10;
-  range->openmin[ROTAT_PHI] = true;
-  range->openmax[ROTAT_PHI] = true;
-}
 
 
 /* nsst */
 /* Tilmann Gneiting's space time models, part I */
-void nsst(double *x, cov_model *cov, double *v) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
+void nsst(double *x, model *cov, double *v) {
+  model *subphi = cov->sub[0];
+  model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
   
-  COV(ZERO, subpsi, &v1);
+  COV(ZERO(subpsi), subpsi, &v1);
   COV(x + 1, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1313,12 +1004,12 @@ void nsst(double *x, cov_model *cov, double *v) {
   *v *= POW(psi, -P0(NSST_DELTA));
 }
 
-void Dnsst(double *x, cov_model *cov, double *v) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
+void Dnsst(double *x, model *cov, double *v) {
+  model *subphi = cov->sub[0];
+  model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
 
-  COV(ZERO, subpsi, &v1);
+  COV(ZERO(subpsi), subpsi, &v1);
   COV(x + 1, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1326,14 +1017,14 @@ void Dnsst(double *x, cov_model *cov, double *v) {
   *v *= POW(psi, -P0(NSST_DELTA) - 1.0);
 }
 
-void TBM2nsst(double *x, cov_model *cov, double *v) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
+void TBM2nsst(double *x, model *cov, double *v) {
+  model *subphi = cov->sub[0];
+  model *subpsi = cov->sub[1];
   double v1, v2, psi, y;
 
   assert(false);
 
-  COV(ZERO, subpsi, &v1);
+  COV(ZERO(subpsi), subpsi, &v1);
   COV(x + 1, subpsi, &v2);
   psi = SQRT(1.0 + v1 - v2);  // C0 : C(0) oder 0 // Cx : C(x) oder -gamma(x)
   y = x[0] / psi;
@@ -1341,40 +1032,38 @@ void TBM2nsst(double *x, cov_model *cov, double *v) {
   *v *= POW(psi, -P0(NSST_DELTA));
 }
 
-int checknsst(cov_model *cov) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
+int checknsst(model *cov) {
+  model *subphi = cov->sub[0];
+  model *subpsi = cov->sub[1];
   int err;
       
-  if (cov->xdimown != 2) SERR("reduced dimension must be 2");
+  if (OWNXDIM(0) != 2) SERR("reduced dimension must be 2");
 
-  if ((err = checkkappas(cov)) != NOERROR) return err;
-  cov->finiterange = false;
-  if ((err = CHECK(subphi, cov->tsdim, 1, PosDefType, XONLY, ISOTROPIC, 
-		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+  if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
+  cov->finiterange = falsch;
+  if ((err = CHECK(subphi, OWNLOGDIM(0), 1, PosDefType, XONLY, ISOTROPIC, 
+		     SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
 		   )) != NOERROR) 
-    return err;
+    RETURN_ERR(err);
   
   if (!isNormalMixture(subphi->monotone)) return(ERRORNORMALMIXTURE);
   setbackward(cov, subphi);
-  assert(cov->finiterange != true); //
+  assert(cov->finiterange != wahr); //
 
   if ((err = CHECK(subpsi, 1, 1, VariogramType, XONLY, ISOTROPIC, 
-		     SCALAR, cov->role // ROLE_COV changed 20.7.14 wg spectral
+		     SCALAR, cov->frame // VariogramType changed 20.7.14 wg spectral
 		   )) != NOERROR) 
-    return err;
-
-  subphi->delflag = subpsi->delflag = DEL_COV-20;
+    RETURN_ERR(err);
 
   // kein setbackward(cov, subpsi);
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void rangensst(cov_model *cov, range_type* range){ 
-  range->min[NSST_DELTA] = cov->tsdim - 1;
+void rangensst(model *cov, range_type* range){ 
+  range->min[NSST_DELTA] = OWNLOGDIM(0) - 1;
   range->max[NSST_DELTA] = RF_INF;
-  range->pmin[NSST_DELTA] = cov->tsdim - 1;
+  range->pmin[NSST_DELTA] = range->min[NSST_DELTA];
   range->pmax[NSST_DELTA] = 10.0;
   range->openmin[NSST_DELTA] = false;
   range->openmax[NSST_DELTA] = true;
@@ -1388,46 +1077,44 @@ void rangensst(cov_model *cov, range_type* range){
 
 #define GENNSST_INTERN_A 0
 
-void kappa_gennsst_intern(int i, cov_model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
+void kappa_gennsst_intern(int i, model VARIABLE_IS_NOT_USED *cov, int *nr, int *nc){
   *nc = *nr = i == 0 ? 0 : -1;
 }
 
-void nonstatgennsst_intern(double *x,double *y, cov_model *cov, double *v) {
-  cov_model *next = cov->sub[0];
+void gennsst_intern(double *x, model *cov, double *v) {
+  model *next = cov->sub[0];
   double  det, z,
     *A = P(GENNSST_INTERN_A);
-  int d, 
-    dim = cov->tsdim;
-  ALLOC_EXTRA(ds, dim);
+  int dim = OWNLOGDIM(0);
  
-  //  printf("\nx=%f %f %f \ny=%f %f %f\nz=%f %f %f\n %f %f %f\n %f %f %f\n",  	 x[0], x[1], x[2], y[0],y[1],y[2],	 A[0],  A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8]);
+  //  printf("\nx=%10g %10g %10g \ny=%10g %10g %10g\nz=%10g %10g %10g\n %10g %10g %10g\n %10g %10g %10g\n",  	 x[0], x[1], x[2], y[0],y[1],y[2],	 A[0],  A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8]);
 
   //  PMI(cov->calling->sub[1]);
 
-  det_UpperInv(A, &det, dim);
-  for (d=0; d<dim; d++) ds[d] = x[d] - y[d];
-  z = SQRT(xUx(ds, A, dim));
+  //  det_UpperInv(A, &det, dim);
+  if (Ext_XCinvXdet(A, dim, x, 1, &z, &det, false, NULL) != NOERROR) {
+    *v = RF_NAN;
+    return;
+  }
+  
+  z = SQRT(z);
   COV(&z, next, v);
   *v /= SQRT(det);
 }
 
-int checkgennsst_intern(cov_model *cov) {
+int checkgennsst_intern(model *cov) {
   // internes modell muss zwischengeschaltet werden
   // um Earth->Cartesian->isotropic hinzubekommen
   // und         ^- hier noch mit A zu multiplizieren
-  cov_model *next = cov->sub[0];
+  model *next = cov->sub[0];
   int err,
-    dim = cov->xdimown;
+    dim = OWNXDIM(0);
 
-  
-
-  assert(cov->tsdim == cov->xdimown);
-  if ((err = CHECK(next, cov->tsdim, 1, PosDefType, 
-		   XONLY, ISOTROPIC, SCALAR, cov->role )) != NOERROR) 
-    return err;
-  if (!isNormalMixture(next->monotone)) return ERRORNORMALMIXTURE;
-
-  //APMI(cov->calling);
+  assert(OWNLOGDIM(0) == OWNXDIM(0));
+  if ((err = CHECK(next, OWNLOGDIM(0), 1, PosDefType, 
+		   XONLY, ISOTROPIC, SCALAR, cov->frame)) != NOERROR) 
+    RETURN_ERR(err);
+  if (!isNormalMixture(next->monotone)) RETURN_ERR(ERRORNORMALMIXTURE);
 
   if (PisNULL(GENNSST_INTERN_A)) {  
     PALLOC(GENNSST_INTERN_A, dim, dim);
@@ -1436,17 +1123,17 @@ int checkgennsst_intern(cov_model *cov) {
     PALLOC(GENNSST_INTERN_A, dim, dim);
   }
 
-  cov->finiterange = false;
+  cov->finiterange = falsch;
   setbackward(cov, next);
-  assert(!cov->finiterange); 
-  cov->vdim[0] = cov->vdim[1] = 1;
+  assert(cov->finiterange != wahr); 
+  VDIM0 = VDIM1 = 1;
 
   EXTRA_STORAGE;
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void range_gennsst_intern(cov_model VARIABLE_IS_NOT_USED *cov,
+void range_gennsst_intern(model VARIABLE_IS_NOT_USED *cov,
 			  range_type* range){
   range->min[GENNSST_INTERN_A] = RF_NEGINF;
   range->max[GENNSST_INTERN_A] = RF_INF;
@@ -1457,95 +1144,146 @@ void range_gennsst_intern(cov_model VARIABLE_IS_NOT_USED *cov,
 }
 
 
-#define GENNSST_DELTA 0
-void nonstatgennsst(double *x,double *y, cov_model *cov, double *v) {
-  cov_model *subphi = cov->key;
-  cov_model *subpsi = cov->sub[1];
-  int i, 
-    dim = cov->tsdim,
-    dimSq = dim * dim;
+#define GENNSST_DIM_U 0
+void gennsst(double *x,  model *cov, double *v) {
+  model *subphi = cov->key;
+  model *subpsi = cov->sub[1];
+  int 
+    totaldim = ANYDIM, 
+    udim = P0INT(GENNSST_DIM_U),
+    hdim = totaldim - udim,
+    hdimSq = hdim * hdim;
     
-  //  print("A %s\n", TYPENAMES[subpsi->typus]);
-  NONSTATCOV(x, y, subpsi, PARAM(subphi, GENNSST_INTERN_A));
-  if (isVariogram(subpsi)) {
-    ALLOC_EXTRA(z, dimSq);
-    NONSTATCOV(ZERO, ZERO, subpsi, z);
-    for (i=0; i<dimSq; i++) 
-      PARAM(subphi, GENNSST_INTERN_A)[i] = 
-	z[i] - PARAM(subphi, GENNSST_INTERN_A)[i]; 
-  } else if (subpsi->typus != NegDefType) BUG;
+  COV(x + hdim, subpsi, PARAM(subphi, GENNSST_INTERN_A));
+  if (isnowVariogram(subpsi)) {
+    TALLOC_X1(z, hdimSq);
+    double *zero = ZERO(subpsi),
+      *p = PARAM(subphi, GENNSST_INTERN_A);
+    COV(zero, subpsi, z);
+    for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
+    END_TALLOC_X1;
+  } else if (!equalsnowNegDef(subpsi)) BUG;
 
-
-  //    print("%f %f %f %f  dim = %d %f %f %f %f %s\n", x[0], x[1], y[0], y[1], dim, v1[0], v1[1], v1[2], v1[3],NAME(subpsi));
-
-  NONSTATCOV(x, y, subphi, v);
+  COV(x, subphi, v);
+  if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
 }
+
+void nonstatgennsst(double *x,double *y, model *cov, double *v) {
+  model *subphi = cov->key;
+  model *subpsi = cov->sub[1];
+  int 
+    totaldim = ANYDIM, 
+    udim = P0INT(GENNSST_DIM_U),
+    hdim = totaldim - udim,
+    hdimSq = hdim * hdim;
+    
+  NONSTATCOV(x + hdim, y + hdim, subpsi, PARAM(subphi, GENNSST_INTERN_A));
+  TALLOC_X1(z, hdimSq);
+  if (isnowVariogram(subpsi)) {
+    double *zero = ZERO(subpsi),
+      *p = PARAM(subphi, GENNSST_INTERN_A);
+    NONSTATCOV(zero, zero, subpsi, z);
+    for (int i=0; i<hdimSq; i++) p[i] = z[i] - p[i];
+  } else if (!equalsnowNegDef(subpsi)) BUG;
+  
+  for (int d=0; d<hdim; d++) z[d] = x[d] - y[d];
+  COV(z, subphi, v);
+  END_TALLOC_X1;
+  if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
+ }
   
 
-int checkgennsst(cov_model *cov) {
-  cov_model *subphi = cov->sub[0];
-  cov_model *subpsi = cov->sub[1];
+#define GENNSST_DIM_U 0
+int checkgennsst(model *cov) {
+  model *subphi = cov->sub[0];
+  model *subpsi = cov->sub[1];
 #define ncs 3
-  int err,
-    UCS = UpgradeToCoordinateSystem(cov->isoown);
-   assert(cov->tsdim == cov->xdimown);
+  int err;
 
-   if (cov->q == NULL) {
-     QALLOC(1);
-     cov->q[0]=NOERROR;
-   }
+  kdefault(cov, GENNSST_DIM_U, 1);  
+  if (OWNLOGDIM(0)!=OWNXDIM(0)) SERR("logical and physical dimension differ");
+  int udim = P0INT(GENNSST_DIM_U),
+    hdim = OWNLOGDIM(0) - udim;
 
-   if (isSpherical(cov->isoown)) 
-     return cov->q[0]!=NOERROR ? (int) cov->q[0] : ERRORFAILED;
-   if (UCS == ISO_MISMATCH) 
-     return cov->q[0]!=NOERROR ? (int) cov->q[0] : ERRORODDCOORDTRAFO;
-   if (cov->xdimown != cov->tsdim) SERR("logical and physical dimension differ");
- 
-   //STOPAFTER(cov->isoown==EARTH_COORD || true, PMI(cov));
-   //   assert(cov->isoown ==EARTH_ISOTROPIC || __stopafter__ ==1);
- 
-   if (cov->key == NULL) {
-     if ((err = covCpy(&(cov->key), subphi)) != NOERROR) return err;
-     addModel(&(cov->key), GENNSST_INTERN);
-   }
-
-  if ((cov->q[0] =err = CHECK(cov->key, cov->tsdim, cov->tsdim, PosDefType, 
-			      KERNEL, SYMMETRIC,  // viel zu schwach, geht aber 
-			      //                     z.Zt. nicht anders
-			      // hinsichtlich der Koordinatentransformation
-			      // -- wird das interne modell abgefangen
-			      SCALAR, cov->role )) != NOERROR) {
-    return err;
+  if (cov->q == NULL) {
+    QALLOC(1);
+    cov->q[0]=NOERROR;
   }
-
-  //  PL = GLOBAL.general.Cprintlevel = 7;
-
+  
+  if (isSpherical(OWNISO(0))) 
+    return cov->q[0] != NOERROR ? (int) cov->q[0] : ERRORFAILED;
+  if (cov->key == NULL) {
+    if ((err = covcpy(&(cov->key), subphi)) != NOERROR) RETURN_ERR(err);
+    addModel(&(cov->key), GENNSST_INTERN);
+  }
+  
+  if ((cov->q[0] = err = CHECK(cov->key, hdim, hdim, PosDefType, 
+			       XONLY, SYMMETRIC, // viel zu schwach, geht aber
+			       //                     z.Zt. nicht anders
+			       // hinsichtlich der Koordinatentransformation
+			       // -- wird das interne modell abgefangen
+			       SCALAR, cov->frame)) != NOERROR) {
+    RETURN_ERR(err);
+  }
+  if (!isNormalMixture(cov->key->sub[0])) SERR("'phi' not a normal mixture.");
+  if (TOTALXDIM(SYSOF(cov->key)) != hdim)
+    SERR("given dim does not match dimension required for 'phi'");
   
   // MUSSS ZWINGEND ALS ZWEITES KOMMEN
-  if ((err = CHECK(subpsi, cov->tsdim, cov->tsdim, NegDefType,
-		   KERNEL, UCS, 
-		   cov->key->xdimown, cov->role)) != NOERROR) {
-     return err;
+  domain_type type = XONLY;
+  while (true) {
+    if ((err = CHECK(subpsi, udim, udim, NegDefType, type,
+		     OWNISO(0), hdim, cov->frame)) == NOERROR) break;
+    if (type == XONLY) type = KERNEL; else RETURN_ERR(err);
   }
- 
-
-  cov->finiterange = false;
-  setbackward(cov, cov->key);
-  assert(!cov->finiterange); //
-
-  cov->vdim[0] = cov->vdim[1] = 1;
   
-  EXTRA_STORAGE;
+  if ((!equalsSpaceIsotropic(OWNISO(0)) ||
+       MODELNR(subpsi) != MATRIX || PisNULL(M_M) ||
+       subpsi->kappasub[M_M] != NULL || subpsi->nsub > 1 ||
+       subpsi->sub[0]->vdim[0] != 1)
+      && !equalsSymmetric(OWNISO(0))) RETURN_ERR(ERRORWRONGISO);
+      
+  cov->finiterange = falsch;
+  setbackward(cov, cov->key);
+  assert(cov->finiterange != wahr); //
 
+  VDIM0 = VDIM1 = 1;
+  
+  
   COV_DELETE(cov->sub + 0);
-  if ((err = covCpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
-  cov->sub[0]->calling = cov;
-
-  // PMI(cov->calling);   assert(err == NOERROR);BUG;
-  // ERR(err); BUG;
-
+  if ((err = covcpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
+  SET_CALLING(cov->sub[0], cov);
  
   // kein setbackward(cov, subpsi);
-  return NOERROR;
+  EXTRA_STORAGE;
+  RETURN_NOERROR;
+}
+
+
+
+bool allowedDgennsst(model *cov) {
+  allowedD(cov->sub[1]);
+  MEMCOPY(cov->allowedD, cov->sub[1]->allowedD, sizeof(allowedD_type));
+  return false;
+}
+
+bool allowedIgennsst(model *cov) {
+  bool *I = cov->allowedI;
+  model *subpsi = cov->sub[1];
+  
+  for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
+  I[(int) SYMMETRIC] = true;
+  I[(int) DOUBLEISOTROPIC] = MODELNR(subpsi) == MATRIX && PisNULL(M_M) &&
+    subpsi->kappasub[M_M] == NULL && subpsi->nsub > 1;
+  return false;
+}
+
+void rangegennsst(model VARIABLE_IS_NOT_USED *cov, range_type* ra){
+  ra->min[GENNSST_DIM_U] = 1;
+  ra->max[GENNSST_DIM_U] = OWNLOGDIM(0) - 1;
+  ra->pmin[GENNSST_DIM_U] = 1;
+  ra->pmax[GENNSST_DIM_U] = ra->max[GENNSST_DIM_U];
+  ra->openmin[GENNSST_DIM_U] = false;
+  ra->openmax[GENNSST_DIM_U] = false;
 }
 

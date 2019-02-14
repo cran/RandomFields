@@ -18,16 +18,14 @@
   \command{\link{RPmaxstable}}
 }
 
-\author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}%\dontshow{StartExample(reduced=50)}
+\dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-%\dontshow{StartExample(reduced=50)}
 
 n <- 100
 
@@ -120,7 +118,7 @@ repeat {
 }
 }}
 
-
+}}
 
 \dontshow{FinalizeExample()}
 

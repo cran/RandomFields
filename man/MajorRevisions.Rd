@@ -3,7 +3,7 @@
 \title{Documentation of major changings} 
 
 \description{
-  This man pages documents some major changings in RandomFields.
+  This man page documents some major changings in RandomFields.
 }
 
 
@@ -32,7 +32,7 @@
   }
 }
 
-\section{Major Revision: changings from  Version 2 to Version 3 (Jan 2014)}{
+\section{Major Revision: changings from Version 2 to Version 3 (Jan 2014)}{
   \itemize{
     \item \bold{S4 objects}
     \itemize{
@@ -60,7 +60,7 @@
     \item\bold{Interfaces}
     \itemize{
       \item The interfaces become simpler, at the same time more powerful
-      then the functions in version 2. E.g., \code{RFsimulate} can perform
+      than the functions in version 2. E.g., \code{RFsimulate} can perform
       unconditional simulation, conditional simulation and random
       imputing.
       
@@ -77,13 +77,13 @@
     \itemize{
       \item \command{\link{RFfit}} has undergone a major revision. E.g.:
     
-      (i) estimation random effects model with spatial covariance
+      (i) estimation of random effect models with spatial covariance
       structure
 
       (ii) automatic estimation of 10 and more arguments in
       multivariate and/or space-time models
 
-      \item \command{\link{RFempiricalvariogram}} is now based on an fft algorithm
+      \item \command{\link{RFvariogram}} is now based on an fft algorithm
       if the data are on a grid, even allowing for missing values.
 
       \item \command{\link{RFratiotest}} has been added.
@@ -92,7 +92,7 @@
     
     \item \bold{Processes}
    \itemize{
-     \item{Maxstable processes} modelling of \link[=maxstable]{maxstable
+     \item Modelling of \link[=maxstable]{maxstable
        processes} has been enhanced, including
      
      (i) the simulation of Brown-Resnick processes
@@ -109,27 +109,27 @@
      \item the \link[=RFformula]{formula notation} for
      linear models may now be defined
      \item{Novel, user friendly definition of the covariance models}
-     \item \link[=RMmodelsAdvanced]{Multivariate and vector valued random
+     \item \link[=RMmodelsAdvanced]{Multivariate and vector-valued random
        fields} are now fully included 
      \item The \link[=RMuser]{user}
        may now define his own functions, to some extend.
      \item The \link[=RMtrend]{trend} allows for much more flexibility
-     \item \link[=RR]{Distributions} may now included which will be
+     \item \link[=RR]{Distributions} may now be included which will be
      extended to \link{Bayesian} modelling in future.
    }
  }
 }
 
-\examples{
+\me
+
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## S4 vs S3
 x <- seq(0, 10, 0.1)
 model <- RMexp()
 plot(RFsimulate(model, x)) ## S4
 plot(RFsimulate(model, x, spConform=FALSE)) ## no class
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

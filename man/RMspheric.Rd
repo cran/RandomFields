@@ -24,7 +24,7 @@ RMspheric(var, scale, Aniso, proj)
  The covariance function has a finite range.
 }
 \value{
- \command{\link{RMspheric}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMspheric}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  Gelfand, A. E., Diggle, P., Fuentes, M. and Guttorp,
@@ -32,32 +32,27 @@ RMspheric(var, scale, Aniso, proj)
  Boca Raton: Chapman & Hall/CRL.
  }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
- \note{Although this temodel is valid on a sphere, do not mix up this model
- with valid models on a sphere, see \link{spherical models}
+\me
+ \note{Although this model is valid on a sphere, do not mix up this model
+ with valid models on a sphere; see \link{spherical models}
  for a list of the latter.}
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}},
- link{spherical models}
+ \link{spherical models}.
 }
 
 
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMspheric()
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

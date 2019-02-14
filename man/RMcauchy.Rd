@@ -23,7 +23,7 @@ RMcauchy(gamma, var, scale, Aniso, proj)
 \details{
  The paramater \eqn{\gamma}{\gamma} determines the asymptotic power law. The smaller \eqn{\gamma}{\gamma}, the longer the long-range dependence. The covariance function is very regular near the origin, because its Taylor expansion only contains even terms and reaches its sill slowly.
  
- Each covariance function of the Cauchy family is a normal scale mixture.
+ Each covariance function of the Cauchy Family is a normal scale mixture.
 
  The generalized Cauchy Family (see \command{\link{RMgencauchy}})
  includes this family for the choice \eqn{\alpha = 2}{\alpha = 2} and
@@ -35,7 +35,7 @@ RMcauchy(gamma, var, scale, Aniso, proj)
  
 }
 \value{
- \command{\link{RMcauchy}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMcauchy}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -50,8 +50,8 @@ RMcauchy(gamma, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMcauchytbm}},
  \command{\link{RMgencauchy}},
@@ -65,15 +65,12 @@ RMcauchy(gamma, var, scale, Aniso, proj)
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMcauchy(gamma=1)
 x <- seq(0, 10, 0.02)
 plot(model, xlim=c(-3, 3))
 plot(RFsimulate(model, x=x, n=4))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

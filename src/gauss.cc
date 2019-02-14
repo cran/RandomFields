@@ -22,42 +22,39 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <Rmath.h>
-#include "RF.h"
-#include "Operator.h"
-#include "shape_processes.h"
+#include "questions.h"
+#include "Processes.h"
 #include "Coordinate_systems.h"
 #include "variogramAndCo.h"
+#include "shape.h"
 
-
-
-void location_rules(cov_model *cov, pref_type pref) {
+void location_rules(model *cov, pref_type pref) {
 
   // 1. rules that depend on the the locations and the user's preferences only,
   // but not on the covariance model#
-  //PMI(cov);
-  if (cov->nr != GAUSSPROC &&  cov->nr != BINARYPROC) BUG;
+  if (COVNR != GAUSSPROC &&  COVNR != BINARYPROC) BUG;
 
   location_type *loc = Loc(cov);
-  double exactness = GLOBAL.general.exactness; //
+  usr_bool exactness = GLOBAL.general.exactness; //
 
   unsigned int maxmem=500000000;
   int i;
 
   Methods Standard[Nothing] = {
      CircEmbed, CircEmbedIntrinsic, CircEmbedCutoff, SpectralTBM, TBM,
-     Direct, Specific, Sequential, TrendEval, Average, Nugget, RandomCoin,
+     Direct, Specific, Sequential, Trendproc, Average, Nugget, RandomCoin,
      Hyperplane
   };
   for (i=0; i<Nothing; i++) {
     pref[Standard[i]] = Nothing - i; 
   }
   
-  if (P0INT(GAUSSPROC_STATONLY) > 0) {
+  if (P0INT(GAUSSPROC_STATONLY) == (int) True) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 1;
   }
 
-  if (!ISNA(exactness) && exactness) {
-    pref[TBM] = pref[SpectralTBM] = pref[Average] = pref[RandomCoin] = 
+  if (exactness == True) {
+   pref[TBM] = pref[SpectralTBM] = pref[Average] = pref[RandomCoin] = 
       pref[Sequential] = pref[Hyperplane] 
       = LOC_PREF_NONE - 2;
   }
@@ -66,109 +63,103 @@ void location_rules(cov_model *cov, pref_type pref) {
 
   if (loc->distances) {
     if (loc->grid) BUG;
-     for (i=CircEmbed; i<Nothing; i++) 
-       if (i!=Direct // && i!=Nugget
-	  ) pref[i] = LOC_PREF_NONE;
+     for (i=CircEmbed; i<Nothing; i++) pref[i] = (i==Direct) * LOC_PREF_NONE;
   } else if (loc->grid) {
-    if ((!ISNA(exactness) || !exactness) && 
+    if (exactness != True && 
 	loc->totalpoints * (1 << loc->timespacedim) * sizeof(double) > maxmem){
       pref[CircEmbed] -= PREF_PENALTY;
       pref[CircEmbedIntrinsic] -= PREF_PENALTY;
       pref[CircEmbedCutoff] -= PREF_PENALTY;
     }
   } else {
-    if (ISNA(exactness) || !exactness){
+   if (exactness == True){
+       pref[CircEmbed] = pref[CircEmbedIntrinsic] = pref[CircEmbedCutoff] = -3;
+    } else {
       pref[CircEmbed] -= PREF_PENALTY;
       pref[CircEmbedIntrinsic] = -3; 
       pref[CircEmbedCutoff] -= PREF_PENALTY;
-    } else {
-      pref[CircEmbed] = pref[CircEmbedIntrinsic] = pref[CircEmbedCutoff] = -3;
-    }
+    } 
     if (!loc->Time) pref[Sequential] = LOC_PREF_NONE;
   }
 }
 
-void mixed_rules(cov_model *cov, pref_type locpref, 
+void mixed_rules(model *cov, pref_type locpref, 
 		 pref_type pref, int *order) {
   
-  assert(cov->nr == GAUSSPROC);
+  assert(COVNR == GAUSSPROC);
  
  
-  cov_model *sub = cov->sub[0];
+  model *sub = cov->sub[0];
   location_type *loc = Loc(cov);
   
   int i,
     *covpref = sub->pref,
     totalpref[Nothing],
     best_dirct=GLOBAL.gauss.direct_bestvariables,
-    max_variab= GLOBAL.direct.maxvariables,
-    vdim = cov->vdim[0];
+    max_variab= MAX(GLOBAL.direct.maxvariables, GLOBAL_UTILS->solve.max_chol),
+    vdim = VDIM0;
   
   for (i=0; i<Nothing; i++) {
-     totalpref[i] =  i == Nugget ? PREF_NUGGET * (PREF_FACTOR + 1): PREF_BEST;
-
-    if (totalpref[i] > covpref[i]) {
-       totalpref[i] = covpref[i];
-     }
-
-     pref[i] = (totalpref[i] > PREF_NONE && locpref[i] > LOC_PREF_NONE)
-       ? totalpref[i] * PREF_FACTOR + locpref[i]
-       : locpref[i] <= LOC_PREF_NONE ? locpref[i] :  LOC_PREF_NONE - 4;
-   }
-
-
-  if (loc->totalpoints * vdim > max_variab &&
-      (sub->finiterange == false || GLOBAL_UTILS->solve.sparse == false))
+    totalpref[i] =  i == Nugget ? PREF_NUGGET * (PREF_FACTOR + 1): PREF_BEST;
+    
+    //     printf("%d %d", totalpref[i], covpref[i]);
+    
+    if (totalpref[i] > covpref[i]) totalpref[i] = covpref[i];
+    
+    if (totalpref[i] > PREF_NONE && locpref[i] > LOC_PREF_NONE)
+      pref[i] = totalpref[i] * PREF_FACTOR + locpref[i];
+    else 
+      pref[i] = locpref[i] <= LOC_PREF_NONE ? locpref[i] : LOC_PREF_NONE - 4;
+    
+    //     printf("i=%d %d [%d, %d]\n", i, pref[i], locpref[i], totalpref[i]);
+  }
+  
+  int vdimtot = loc->totalpoints * vdim;
+  if (vdimtot > max_variab &&
+      (sub->finiterange == falsch || GLOBAL_UTILS->solve.sparse == False))
       pref[Direct] = LOC_PREF_NONE - 0;
 
-  //  printf("spam %f %d %f %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
-  //  printf("spam %f %d %d %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange == true, pref[Direct], PREF_FACTOR);
-  //PMI(sub);
+  //  printf("spam %10g %d %10g %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
 
-  int vdimtot = loc->totalpoints * vdim;
-  if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
-    pref[Direct] = (PREF_BEST + 1) * PREF_FACTOR;
-  }
+   if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
+     pref[Direct] = (PREF_BEST + 1 + (int) (best_dirct>=256 && vdimtot<256)) * 
+       PREF_FACTOR;
+   }
   else if (pref[Direct] >= PREF_NONE && GLOBAL_UTILS->solve.sparse != true) {
 #define MONTRAFO(x) ((x) * (x))
     //#define MONTRAFO log   
     //   bool orig_max = max_variab == DIRECT_ORIG_MAXVAR;
-    double ratio = max_variab <= DIRECT_ORIG_MAXVAR 
-      ? (double) (vdimtot - best_dirct) / (double) max_variab
-      : -0.1;
-      ratio *= FABS(ratio);
+    double ratio = -0.1;
+    if (max_variab <= DIRECT_ORIG_MAXVAR)
+      ratio = (double) (vdimtot - best_dirct) / (double) max_variab;
+    ratio *= FABS(ratio);
     pref[Direct] = (int) POW((double) pref[Direct], 1.0 - ratio);
     if (pref[Direct] < PREF_BEST) 
-      pref[Direct] = sub->finiterange ? PREF_BEST : PREF_BEST / 2;
+      pref[Direct] = sub->finiterange == wahr ? PREF_BEST : PREF_BEST / 2;
   } 
 
-  if (P0INT(GAUSSPROC_STATONLY) < 0 && isPosDef(cov)) {
+  if (P0INT(GAUSSPROC_STATONLY) == NA_LOGICAL && isnowPosDef(cov)) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 6;
   } 
 
-  if (!isCartesian(cov->isoown)) {
+  if (!isCartesian(OWNISO(0))) {
     pref[CircEmbedIntrinsic] = pref[CircEmbed] = pref[CircEmbedCutoff] =
 				    LOC_PREF_NONE - 7;
-    if (isAnySpherical(cov->isoown) && cov->xdimown < 3)
-      pref[Sequential] = LOC_PREF_NONE - 8;
+    if (isAnySpherical(OWNISO(0)) && OWNTOTALXDIM < 3)
+     pref[Sequential] = LOC_PREF_NONE - 8;
   }
 
-   
-  RU_orderingInt(pref, Nothing, 1, order);
-  
-
+  Ext_orderingInt(pref, Nothing, 1, order);
 }
 
 bool NAequal(double X, double Y) {
-  return ((ISNA(X) || ISNAN(X)) && (ISNA(Y) || ISNAN(Y))) || X == Y;
+  return (ISNAN(X) && ISNAN(Y)) || X == Y;
 }
 
-int kappaBoxCoxParam(cov_model *cov, int BC) {
-  //  PMI(cov);
-  //printf("kapap bc %s %d\n", NAME(cov), BC);
-  int vdim_2 = cov->vdim[0] * 2;					
+int kappaBoxCoxParam(model *cov, int BC) {
+  int vdim_2 = VDIM0 * 2;					
   if (PisNULL(BC)) {						
-    PALLOC(BC, 2, cov->vdim[0]);				
+    PALLOC(BC, 2, VDIM0);				
     if (GLOBAL.gauss.loggauss) {					
       for (int i=0; i<vdim_2; i++) P(BC)[i] = 0.0;	
       GLOBAL.gauss.loggauss = false;					
@@ -193,14 +184,14 @@ int kappaBoxCoxParam(cov_model *cov, int BC) {
     cov->nrow[BC] = 2;					
     bool notok = false;						
     if (GLOBAL.gauss.loggauss) {					
-      for (int i=0; i<cov->vdim[0]; i++) {				
+      for (int i=0; i<VDIM0; i++) {				
 	if ((notok = P(BC)[2*i] != RF_INF &&		
 	     (P(BC)[2*i] != 0.0 || P(BC)[2*i+1] != 0.0)))
 	  break;							
       }									
     } else {								
-      for (int i=0; i<cov->vdim[0]; i++) {
-	//printf("%d  %f %f   %f %f\n", i, GLOBAL.gauss.boxcox[2 * i], GLOBAL.gauss.boxcox[2 * i + 1], P(BC)[2 * i], P(BC)[2 * i +1]);
+      for (int i=0; i<VDIM0; i++) {
+	//printf("%d  %10g %10g   %10g %10g\n", i, GLOBAL.gauss.boxcox[2 * i], GLOBAL.gauss.boxcox[2 * i + 1], P(BC)[2 * i], P(BC)[2 * i +1]);:
  	if ((notok = (GLOBAL.gauss.boxcox[2 * i] != RF_INF &&
 		      !NAequal(P(BC)[2 * i], GLOBAL.gauss.boxcox[2 * i])) ||   
 	     !NAequal(P(BC)[2 * i +1], GLOBAL.gauss.boxcox[2 * i + 1])))
@@ -210,100 +201,111 @@ int kappaBoxCoxParam(cov_model *cov, int BC) {
     if (notok)								
       SERR("Box Cox transformation is given twice, locally and through 'RFoptions'"); 
   }									
-  for (int i=0; i<cov->vdim[0]; i++) {				
+  for (int i=0; i<VDIM0; i++) {				
     GLOBAL.gauss.boxcox[2 * i] = RF_INF;				
     GLOBAL.gauss.boxcox[2 * i + 1] = 0.0;				
   }									
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void kappaGProc(int i, cov_model *cov, int *nr, int *nc){
+void kappaGProc(int i, model *cov, int *nr, int *nc){
   *nc = i == GAUSS_BOXCOX ? SIZE_NOT_DETERMINED : 1;
   *nr = i == GAUSS_BOXCOX ? SIZE_NOT_DETERMINED 
-    : i < CovList[cov->nr].kappas ? 1 : -1;
+    : i < DefList[COVNR].kappas ? 1 : -1;
 }
 
-int checkgaussprocess(cov_model *cov) {
-  cov_model 
+int checkgaussprocess(model *cov) {
+  //  printf("\nGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n");
+  
+  ASSERT_ONESYSTEM;
+  model 
     *next=cov->sub[cov->sub[0] == NULL],
     *key = cov->key;
   //location_type *loc=Loc(cov);
-  int err, role,
-    xdim = cov->xdimown, // could differ from tsdim in case of distances!
-    dim = cov->tsdim;
+  int err,
+    xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
+    dim = OWNLOGDIM(0);
   gauss_param *gp  = &(GLOBAL.gauss);  
-  
+
+  //PMI(cov);
   assert((Loc(cov)->distances && xdim==1) || xdim == dim);
-    
-  ROLE_ASSERT(ROLE_GAUSS || cov->role == ROLE_BERNOULLI || 
-	      cov->role == ROLE_MAXSTABLE || cov->role == ROLE_LIKELIHOOD);
+
+  if (!hasAnyProcessFrame(cov) &&
+      !(hasInterfaceFrame(cov) && cov->calling != NULL &&
+	cov->calling->calling == NULL) &&
+      !hasAnyEvaluationFrame(cov)) {
+    ILLEGAL_FRAME;
+  }
  						      
-   kdefault(cov, GAUSSPROC_STATONLY,
-	   gp->stationary_only >= 0 ? gp->stationary_only : -1);
+  kdefault(cov, GAUSSPROC_STATONLY, (int) gp->stationary_only);
 
-  if (GLOBAL.direct.maxvariables < gp->direct_bestvariables) 
+  if (MAX(GLOBAL.direct.maxvariables, GLOBAL_UTILS->solve.max_chol) <
+      gp->direct_bestvariables)
     SERR("maximum variables less than bestvariables for direct method");
-  if ((err = checkkappas(cov, false)) != NOERROR) return err;
+  if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
 
-  cov->maxdim=INFDIM;
-  role = isVariogram(next) ?  ROLE_COV 
-    : isTrend(next) ? ROLE_GAUSS
-    : isGaussMethod(next) ? ROLE_GAUSS 
-    : ROLE_UNDEFINED;
-  ASSERT_ROLE_DEFINED(next);
-  
+  set_maxdim(OWN, 0, INFDIM);
+
+  Types frame = hasAnyEvaluationFrame(cov) ? cov->frame : GaussMethodType;
   if (key == NULL) {
-    if (isGaussMethod(next)) {
+    if (isGaussMethod(next)) {// waere GaussMethodType 
       // wird verboten
-      SERR1("%s may not call a method", NICK(cov));
+      SERR1("%.50s may not call a method", NICK(cov));
     } else {
-          
-      if ((err = CHECKPD2ND(next, dim, xdim, 
-			    SymmetricOf(cov->isoown),// Jan 2015 SYMMETRIC,
-			    SUBMODEL_DEP, role))
-	  != NOERROR) {
 
-	if (CHECK(next, dim, dim, TrendType, XONLY, cov->isoown,  // err mocjt verwemdet
-		  SUBMODEL_DEP, role)) return err; // previous error
-      }
+      //      printf("@@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) );
       
+      if ((err = CHECKPOS2VAR(next, SUBMODEL_DEP, frame, KERNEL)) != NOERROR){
+
+	//	if (NEXTTYPE(0)!=TrendType) {APMI(cov);BUG} else printf("jetzt C HECK_GEN\n");
+	set_type(PREVSYSOF(next), 0, TrendType);
+	set_iso(PREVSYSOF(next), 0, OWNISO(0));
+	set_dom(PREVSYSOF(next), 0, XONLY);
+
+	if ((err = CHECK_GEN(next,  SUBMODEL_DEP, // err mocht verwemdet
+			     SUBMODEL_DEP, TrendType, false)) != NOERROR) {
+	  RETURN_ERR(err); // previous error
+	}
+	//   	printf("jff etzt C HECK_GEN\n");
+      }
+
+      /*
+      if ((err = CHECKPD2ND(next, dim, xdim, 
+			    Sy mmetricOf(OWNISO(0)),// Jan 2015 S YMMETRIC,
+			    SUBMODEL_DEP, frame))
+	  != NOERROR) {
+	if (CHECK(next, dim, dim, TrendType, XONLY, OWNISO(0),  // err mocjt verwemdet
+		  SUBMODEL_DEP, frame)) RETURN_ERR(err); // previous error
+      */
     }
-    // next->delflag = DEL_COV - 21;
   } else {
     if (PL >= PL_COV_STRUCTURE) {
       PRINTF("checking key in gauss process  ...\n");
     }
 
-    if ((err = CHECK(key, dim, xdim, ProcessType, XONLY, cov->isoown, 
-		     SUBMODEL_DEP, 
-		     cov->role == ROLE_BASE ? ROLE_BASE : ROLE_GAUSS))
-	!= NOERROR) return err;
+    if ((err = CHECK(key, dim, xdim, ProcessType, XONLY, OWNISO(0), 
+		     SUBMODEL_DEP, frame)) != NOERROR) RETURN_ERR(err);
   }
   
-  cov_model *sub = cov->key==NULL ? next : key;
+  model *sub = cov->key==NULL ? next : key;  
   setbackward(cov, sub);
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-  if ((err = checkkappas(cov, true)) != NOERROR) return err;
-  return NOERROR;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  if ((err = checkkappas(cov, true)) != NOERROR) RETURN_ERR(err);
+
+  RETURN_NOERROR;
 }
 
 
 
 
-void rangegaussprocess(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void rangegaussprocess(model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
-  range->min[GAUSSPROC_STATONLY] = -1;
-  range->max[GAUSSPROC_STATONLY] = 1;
-  range->pmin[GAUSSPROC_STATONLY] = -1;
-  range->pmax[GAUSSPROC_STATONLY] = 1;
-  range->openmin[GAUSSPROC_STATONLY] = false;
-  range->openmax[GAUSSPROC_STATONLY] = false; 
+  booleanRange(GAUSSPROC_STATONLY);
+ }
 
-}
-
-int gauss_init_settings(cov_model *cov) {
-  cov_model 
+int gauss_init_settings(model *cov) {
+  model 
     *next = cov->sub[cov->sub[0] == NULL],
     *sub = cov->key == NULL ? next : cov->key;
   double sigma, var,  meanDsigma, 
@@ -314,7 +316,7 @@ int gauss_init_settings(cov_model *cov) {
     vdim = next->vdim[0],
     vdimSq = vdim * vdim,
     vdimP1 = vdim + 1;
- 
+
   if ((variance = (double*) MALLOC(sizeof(double) * vdimSq)) == NULL ||
       (mean = (double*) CALLOC(vdim, sizeof(double))) == NULL
       ) goto ErrorHandling;
@@ -323,24 +325,30 @@ int gauss_init_settings(cov_model *cov) {
   if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
     GERR("Mean equals NA. Did you try a multivariate model or an incomplete (mixed) model?");
   
-  if (false && cov->key != NULL) { // sind diese Zeilen notwendig?
-     err = CHECK(next, cov->tsdim, cov->xdimown, PosDefType, KERNEL, SYMMETRIC,
-		cov->vdim, ROLE_COV);
-    if (err != NOERROR) goto ErrorHandling;
-  }
+  //  if (false && cov->key != NULL) { // sind diese Zeilen notwendig?
+  //    err = CHECK(next, OWNLOGDIM(0), OWNXDIM(0),  PosDefType, KERNEL,
+  //		 , cov->vdim, EvaluationType);
+  // if (err != NOERROR) goto ErrorHandling;
+  // }
+
+  // if (!next->checked) crash();
   
-  if (next->domprev == XONLY) {
-    COV(ZERO, next, variance);
+  assert(next->checked);
+ 
+  if (isXonly(PREVSYSOF(next))) {
+    COV(ZERO(next), next, variance);
   } else {
-    assert(next->domprev == KERNEL);
-    NONSTATCOV(ZERO, ZERO, next, variance);
+    assert(isKernel(PREVSYSOF(next)));
+    //double *zero = ZERO(next);
+    //  NONSTATCOV(zero, zero, next, variance);
+    for (v=0; v<vdimSq; variance[v++] = 0.0); // just a dummy
   }
-  
-   if (cov->q == NULL) QALLOC(vdim);
+
+  if (cov->q == NULL) QALLOC(vdim);
   if ((err = alloc_mpp_M(cov, 2)) != NOERROR) goto ErrorHandling;
  
   nmP1 = cov->mpp.moments + 1;
-   for (v=w=0; w<vdimSq; w+=vdimP1, v++) { 
+  for (v=w=0; w<vdimSq; w+=vdimP1, v++) { 
     sigma = SQRT(variance[w]);
     meanDsigma = sigma == 0 ? RF_INF : mean[v] / sigma;
     
@@ -370,138 +378,143 @@ int gauss_init_settings(cov_model *cov) {
     // todo: cov->mpp.mMplus[2] berechnen
   }
  
-  cov->fieldreturn = true;
-  cov->origrf = false;
-  cov->rf = sub->rf;
+   ReturnOtherField(cov, sub);
 
  ErrorHandling:
   FREE(variance);
   FREE(mean);
 
-
-  return err;
+  RETURN_ERR(err);
 }
 
 
-int struct_extractdollar(cov_model *cov, cov_model **newmodel) {
+int struct_gaussmethod(model *cov, model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
-  cov_model *next = cov->sub[0]; // nicht cov->sub[cov->sub != NULL]
+  model *next = cov->sub[0]; // nicht cov->sub[cov->sub != NULL]
+  SPRINTF(cov->base->error_loc, "simulation procedure for %.50s", NAME(next));
+  ASSERT_ONESYSTEM;
   location_type *loc=Loc(cov);
-  int role,
-    nr = cov->nr,
+  int
+    nr = COVNR,
     err = ERROROUTOFMETHODLIST,
-    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
-    dim = cov->tsdim;
-  assert((loc->distances && xdim==1) || xdim == dim);
+    xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
+    logicaldim = OWNLOGDIM(0);
+  assert((loc->distances && xdim==1) || xdim == logicaldim);
 
-  cov->fieldreturn = true;
+  cov->fieldreturn = wahr;
   ASSERT_NEWMODEL_NULL;
   assert(cov!=NULL);
-  ROLE_ASSERT_GAUSS;
 
-  if ((cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
-      (!loc->distances || cov->xdimprev!=1)) {
-    return ERRORDIM;
+  if ((logicaldim != PREVXDIM(0) || logicaldim != xdim) &&
+      (!loc->distances || PREVXDIM(0)!=1)) {
+    BUG; // RETURN_ERR(ERRORDIM);
   }
 
-  if (next!= NULL && !isVariogram(next)) {
+  if (next!= NULL && !isnowVariogram(next)) {
     SERR("submodel not a covariance function");
   }
   
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), cov)) != NOERROR) return err; //!!cov
-  
-  cov->key->nr =
-    nr == AVERAGE_USER       ? AVERAGE_INTERN :
-    nr == CE_CUTOFFPROC_USER ? CE_CUTOFFPROC_INTERN : 
-    nr == CE_INTRINPROC_USER ? CE_INTRINPROC_INTERN :
-    nr == HYPERPLANE_USER    ? HYPERPLANE_INTERN :
-    nr == NUGGET_USER        ? NUGGET_INTERN :
-    nr == RANDOMCOIN_USER    ? AVERAGE_INTERN :
-    nr == SPECTRAL_PROC_USER ? SPECTRAL_PROC_INTERN :
-    nr == TBM_PROC_USER      ? TBM_PROC_INTERN : MISSING_COV;
+  if ((err = covcpy(&(cov->key), cov)) != NOERROR) RETURN_ERR(err); //!!cov
 
-  role = nr == AVERAGE_USER || nr == RANDOMCOIN_USER ?  ROLE_POISSON_GAUSS
-    : nr == HYPERPLANE_USER ? ROLE_GAUSS : ROLE_GAUSS;
- 
+
+  defn *C = DefList + nr; 
+  set_nr(SYSOF(cov->key), C->Specific);
+
+
   // cov!! nicht cov->key!!  ??? Nein, sonst ist Coin u.ae. nicht gesetzt.
-  if ((err = CHECK(cov, dim, xdim, GaussMethodType, cov->domown,
-		   cov->isoown, cov->vdim, 
-		   // role // 19.5.2013 auskommentiert und ersetzt durch
-		   ROLE_BASE  // wegen spectral.cc
-		   )) != NOERROR) {
-     return err;
-  }
-   
-  err = STRUCT(cov->key, NULL);
-  cov->role = ROLE_GAUSS; // wichtig !! -> check_nugget_proc
-
-  cov_model *dollar,
+  model 
     *firstmethod = cov->key; // z.B. coins_intern
   int idx = firstmethod->sub[0] == NULL;
-  cov_model
+  model
     *sub = firstmethod->sub[idx]; // z.B. oberste fkt shape von coins
-  cov_model *lastmethod= isGaussMethod(sub->typus) ? sub : firstmethod;
-  if (err != NOERROR && (err != ERRORPREFNONE || !isAnyDollar(sub))){
-    
-    return err;
+
+  if ((err = CHECK_PASSTF(cov->key, // 11.1.19 cov WARUM ??
+			  GaussMethodType, VDIM0, 
+			// frame // 19.5.2013 auskommentiert und ersetzt durch
+			  // WARUM ??
+			  GaussMethodType)) != NOERROR && !isAnyDollar(sub)) {
+     RETURN_ERR(err);
   }
+  //  if ((err = CHECK( c o v, dim, xdim, GaussMethodType, OWNDOM(0),
+  //		   OWNISO(0), cov->vdim, 
+  //		   // frame // 19.5.2013 auskommentiert und ersetzt durch
+  //		   AnyType  // wegen spectral.cc
+  //		   )) != NOERROR) {
+  //     RETURN_ERR(err);
+  //  }
+
+
+  if (err == NOERROR) err = STRUCT(cov->key, NULL);
+  if (err != NOERROR && !isAnyDollar(sub)) RETURN_ERR(err);
   
-  if (err != NOERROR) {   
+  model *dollar,
+    *lastmethod= equalsnowGaussMethod(sub) ? sub : firstmethod;
+  
+  if (err != NOERROR) {
+    assert(isAnyDollar(sub));
     dollar = cov->key = lastmethod->sub[idx]; // $ jetzt im cov->key
     lastmethod->sub[idx] = dollar->sub[0]; // eigentl. Modell jetzt anhaengen
-    lastmethod->sub[idx]->calling = lastmethod;     
+    SET_CALLING(lastmethod->sub[idx], lastmethod);   
     dollar->sub[0] = firstmethod;       // auf $ setzen
-    firstmethod->calling = dollar; 
-    dollar->calling = cov;              // $ mit cov verbinden
+    SET_CALLING(firstmethod, dollar); 
+    SET_CALLING(dollar, cov);              // $ mit cov verbinden
     dollar->prevloc = cov->prevloc;
+    set_nr(SYSOF(dollar), DOLLAR_PROC);
 
-
-    /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
-    if ((err = CHECK(cov, dim, xdim, ProcessType, cov->domown, cov->isoown, 
-		     cov->vdim, role)) != NOERROR) {
-      return err;
+    Types frame =
+      nr == AVERAGE_USER || nr == RANDOMCOIN_USER
+      ? PoissonGaussType
+      : GaussMethodType;
+  /// cov nicht cov->key !!! ???? OK. Da sonst cov u.U. nicht gesetzt
+    if ((err = CHECK_PASSTF(cov->key, // 11.1.19 cov WARUM ??
+			    GaussMethodType, //?! 8.12.17
+			    VDIM0, frame)) != NOERROR) {
+      RETURN_ERR(err);
     }
-
-    if ((err = STRUCT(cov->key, NULL)) != NOERROR) { return err; }
+    if ((err = STRUCT(cov->key, NULL)) != NOERROR) { RETURN_ERR(err); }
   }
 
   Methods m;
   for (m=CircEmbed; m <= Hyperplane; m = (Methods) ((int) (m + 1))) {
-    if (gaussmethod[(Methods) m] == cov->nr) break;
+    if (gaussmethod[(Methods) m] == COVNR) break;
   }
   cov->key->method = m;
   
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
   
-int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
+int struct_gaussprocess(model *cov, model **newmodel) {
   // uebernimmt struct- und init-Aufgaben !!
+  KEY_type *KT = cov->base;  
+  model *next = cov->sub[cov->sub[0] == NULL];
+  SPRINTF(KT->error_loc, "simulation method for %.50s", NAME(next));
   ASSERT_NEWMODEL_NULL;
   assert(cov!=NULL);
-  if (cov->role == ROLE_LIKELIHOOD) {
-    if (cov->vdim[0] > MAXGAUSSVDIM)
-      SERR2("The number of variables, %d, exceeds the maximum number %d",
-	    cov->vdim[0],  MAXGAUSSVDIM);
-    return struct_gauss_logli(cov);
-  } else if (cov->role!= ROLE_GAUSS) return ERRORFAILED;
 
-  cov->fieldreturn = true;
+  if (hasAnyEvaluationFrame(cov)) {
+    if (VDIM0 > MAXGAUSSVDIM)
+      SERR2("The number of variables, %d, exceeds the maximum number %d",
+	    VDIM0,  MAXGAUSSVDIM);
+    return struct_gauss_logli(cov); //loglihood
+  } else if (!hasAnyProcessFrame(cov) &&
+	     !(hasInterfaceFrame(cov) && cov->calling != NULL &&
+	       cov->calling->calling == NULL)
+	     ) RETURN_ERR(ERRORFAILED);
+
+ cov->fieldreturn = wahr;
   location_type *loc = Loc(cov);
-  cov_model *next = cov->sub[cov->sub[0] == NULL];
   pref_type locpref, pref;
-  int order[Nothing], i,
-    err = ERROROUTOFMETHODLIST;
-  char dummy[100 * Nothing];
+  int order[Nothing], i;
+  char dummy[100 * (int) Nothing];
   int 
-    xdim = cov->xdimprev, // could differ from tsdgetim in case of distances!
-    dim = cov->tsdim;
-  assert((loc->distances && xdim==1) || xdim == dim);
+    xdim = OWNXDIM(0), // could differ from tsdgetim in case of distances!
+    logicaldim = OWNLOGDIM(0);
+  assert((loc->distances && xdim==1) || xdim == logicaldim);
 #define  MAXFAILMSG 9
-  static char FailureMsg[MAXFAILMSG][80] = 
-    {"unknown reason",
+  char FailureMsg[MAXFAILMSG][80] = {"unknown reason",
      "total number of points > maximum value",
      "non-domain model not allowed",
      "not an exact method as required by user",
@@ -516,131 +529,140 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
   int 
     meth, 
     zaehler = 0,
-    nr = next->nr;
+    nr = NEXTNR;
 #define nsel 4
 
-  if( (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) &&
-    (!loc->distances || cov->xdimprev!=1)) {
-    return ERRORDIM;
+  ASSERT_ONESYSTEM;
+  if( (logicaldim != PREVXDIM(0) || logicaldim != xdim) &&
+      (!loc->distances || PREVXDIM(0) !=1)) {
+    BUG; //RETURN_ERR(ERRORDIM);
   }
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if (!isVariogram(next) && !isTrend(next)) {
+  if (!isnowVariogram(next) && !equalsnowTrend(next)) {
     SERR("submodel must be a covariance function");
   }
  
 
   //////////////////////////////////////////////////////////////////////
-  // ROLE_GAUSS; cov->key not given
+  // GaussMethodType; cov->key not given
 
   { // only for error reporting !
-    cov_model *sub = cov; 
+    model *sub = cov; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    SPRINTF(ERROR_LOC, "Searching a simulation method for '%s': ",
+    SPRINTF(KT->error_loc, "Searching a simulation method for '%.50s'",
 	    NICK(sub));
   }
 
-  location_rules(cov, locpref); // hier cov 
+  location_rules(cov, locpref); // hier cov
   mixed_rules(cov, locpref, pref, order);
 
   if (PL >= PL_RECURSIVE) {
-    cov_fct *N = CovList + next->nr;
-    LPRINT("\n%s:%s\n", NAME(cov), NAME(next));
+    defn *N = DefList + nr;
+    LPRINT("\n%.50s:%.50s\n", NAME(cov), NAME(next));
     for (i=0; i < Nothing; i++) {
-      LPRINT("%-15s: base=%1d  covprev=%1d   locpref=%4d   totpref=%6d\n", 
-	     METHODNAMES[i], N->pref[i], next->pref[i], 
-	     (locpref[i] < -9000) ? -999 : locpref[i], pref[i]);
-     }  
-    LPRINT("initstandard %s (%d) [pref value %d]\n", 
-	   CovList[nr].name, nr, pref[order[Nothing -1]]);
+      LPRINT("%-10s: base=%1d/%1d  locpref=%3d  totpref=%5d\n", 
+	     METHOD_NAMES[i], N->pref[i], next->pref[i], 
+	     (2 * locpref[i] < LOC_PREF_NONE) ? LOC_PREF_NONE + 1 : locpref[i],
+	     pref[i]);
+    }
+    LPRINT("initstandard %.50s (%d) [pref value %d]\n", 
+	   DefList[nr].name, nr, pref[order[Nothing -1]]);
   }
-
-
   all_PREF_NONE = true;
   for (i=0; i<Nothing; i++) all_PREF_NONE &= pref[i] == PREF_NONE;
   
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), next)) != NOERROR) {
-    return err;
-  }
+  int err;
+  if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
 
   if (all_PREF_NONE) {
     err = pref[Nothing] == PREF_NONE ? ERRORINVALIDMODEL : ERRORODDMODEL;
     goto ErrorHandling;
   } 
 
-  err = ERROROUTOFMETHODLIST; // in case none of the methods are available 
+  err = CERROROUTOFMETHODLIST; // in case none of the methods are available 
   for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {  
 
     if (PL >= PL_BRANCHING && i < Nothing - 1) {
-      LPRINT("'%s%s' failed for '%s'\n", 
-	     CAT_TYPENAMES[GaussMethodType], METHODNAMES[unimeth], NICK(next)); 
+      LPRINT("'%.50s%.50s' failed for '%.50s'\n", 
+	     CAT_TYPE_NAMES[GaussMethodType], METHOD_NAMES[unimeth],NICK(next));
     }
 
     zaehler++;
     unimeth = (Methods) order[i];
 
     if (PL >= PL_BRANCHING) {
-      LPRINT("trying '%s%s' for '%s'\n", 
-	     CAT_TYPENAMES[GaussMethodType], METHODNAMES[unimeth], NICK(next));
+      LPRINT("trying '%.50s%.50s' for '%.50s'\n", 
+	     CAT_TYPE_NAMES[GaussMethodType], METHOD_NAMES[unimeth],NICK(next));
     }
     
     meth = gaussmethod[unimeth];      
   
     addModel(&(cov->key), meth);
- 
-    cov->key->calling = cov;
+    SET_CALLING(cov->key, cov);
     
-    cov_model *key = cov->key;
+    model *key = cov->key;
     key->prevloc = PLoc(cov);
-    int role = cov->role != ROLE_GAUSS || key->nr != AVERAGE_INTERN 
-      ? cov->role
-      : ROLE_POISSON_GAUSS;
+    Types frame =
+      MODELNR(key) == AVERAGE_INTERN ? PoissonGaussType :      
+      hasAnyEvaluationFrame(cov) ? cov->frame : GaussMethodType;
 
-    if ((err = CHECK(key, dim, xdim, GaussMethodType, cov->domown,
-		     cov->isoown, cov->vdim, role)) == NOERROR) {
-    
+    if ((err = CHECK(key, logicaldim, xdim, GaussMethodType, OWNDOM(0),
+		     OWNISO(0), cov->vdim, frame)) == NOERROR) {
+
+      //PMI(key);
+      
       if ((err = STRUCT(key, NULL)) <= NOERROR) {
+
+        //PMI(cov);
+       //  assert(SYSMODEL(SYSOF(key)) != DIRECT); printf("xx\n");
+      
 	if (!key->initialised) {
-	  if ((err = CHECK(key, dim, xdim, GaussMethodType, cov->domown,
-			   cov->isoown, cov->vdim, role)) == NOERROR){
+	  if ((err = CHECK(key, logicaldim, xdim, GaussMethodType, OWNDOM(0),
+			   OWNISO(0), cov->vdim, frame)) == NOERROR){
+	    CHECKED;
 	    key->method = unimeth;
 	    
 	    NEW_STORAGE(gen);
-	    
-	    err = INIT(key, role == ROLE_POISSON_GAUSS ? 2 : 0, cov->Sgen);
+	    err = INIT(key, isPoissonGauss(frame) ? 2 : 0, cov->Sgen);
+
 	    if (err == NOERROR) {
 	      if (PL >= PL_RECURSIVE) {
 		LPRINT("returning to higher level...\n");
 	      }
-	      goto Initialized;
+	      goto Initialised;
 	    }
 	  }
-	}
+	}     
       }
-     
+   
       if (PL >= PL_RECURSIVE) {  
-	LPRINT("back from %s: err =%d [%d, %s]\n",
-	       METHODNAMES[unimeth], err, unimeth, METHODNAMES[unimeth]);     
+	LPRINT("back from %.50s: err =%d [%d, %.50s]\n",
+	       METHOD_NAMES[unimeth], err, unimeth, METHOD_NAMES[unimeth]);     
 	
 	if (PL > PL_ERRORS) {
-	  char msg[LENERRMSG]; FinalErrorMSG(err, msg); PRINTF("error in init: %s\n",msg);
+	  char info[LENERRMSG]; errorMSG(err, info);
+	  PRINTF("error in gauss (init): %.50s\n",info);
+	  // BUG;//
 	}
-      } else if (PL >= PL_BRANCHING) MERR(err) //
+      } // else if (PL >= PL_BRANCHING) M ERR(err);
     } else {
       if (PL > PL_ERRORS) {
-	char msg[LENERRMSG]; FinalErrorMSG(err,msg); PRINTF("error in check: %s\n",msg);
+	char info[LENERRMSG]; errorMSG(err,info);
+	PRINTF("error in check: %.50s\n", info);
       }
     }
     key = key->sub[0];
-  
+
     COV_DELETE_WITHOUTSUB(&(cov->key));
   
     cov->key=key;
-    key->calling = cov;      
+    SET_CALLING(key, cov);
   }
   
   if (PL >= PL_RECURSIVE) {
+    char *PREF_FAILURE = KEYtypeOf(cov)->PREF_FAILURE;
     STRCPY(PREF_FAILURE, "");
     int p, lp;
 #define NMAX 14
@@ -652,108 +674,98 @@ int struct_gaussprocess(cov_model *cov, cov_model **newmodel) {
       if (lp>0) {
 	STRCPY(lpd, "");
       } else {
-	SPRINTF(lpd, "%s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
+	SPRINTF(lpd, "%.50s (locp) ", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-lp))]);
       }
       if (p>0 || p == lp) {
 	if (lp>0) STRCPY(pd, "(method specific failure)");
 	else STRCPY(pd, ""); // STRCPY(pd, "(method specific failure)");
       } else {
-	SPRINTF(pd, "%s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
+	SPRINTF(pd, "%.50s (pref)", FailureMsg[MAX(0, MIN(MAXFAILMSG-1, 1-p))]);
       }
-      strcopyN(names, METHODNAMES[i], NMAX-1);
-      SPRINTF(dummy, "%s %-13s: %s%s\n", PREF_FAILURE, names, lpd, pd);
+      strcopyN(names, METHOD_NAMES[i], NMAX-1);
+      SPRINTF(dummy, "%.*s %-13.13s: %.5s%.70s\n", 100 * (int) Nothing -100,
+	      PREF_FAILURE, names, lpd, pd);
       STRCPY(PREF_FAILURE, dummy);
     }
   }
    
   if (err != NOERROR) goto ErrorHandling;
   
- Initialized:
+ Initialised:
   // nachfolgende Zeile muss stehen, da Init in struct aufgerufen!
   err = gauss_init_settings(cov);
 
-  cov->initialised = err == NOERROR;	  
+  cov->simu.active = cov->initialised = err == NOERROR;	  
 
  ErrorHandling:
-  /*
-  if (false)
-  if (err > 0 && ISNA(GLOBAL.general.exactness)) {
-    if (*newmodel != NULL) COV_DELETE(newmodel);
-    GLOBAL.general.exactness = FALSE;
-    int newerr = struct_gaussprocess(cov, newmodel);
-    GLOBAL.general.exactness = RF_NA;
-    if (newerr == NOERROR) {
-      char msg[LENERRMSG];
-      SPRINTF(msg, "A somehow rougher approximation has been used. Set '%s=FALSE' to avoid this warning. See 'RFoptions' for more details.", general[GENERAL_EXACTNESS]);
-      warning(msg);
-      return NOERROR;
-    } else return err;
-  }
-  */
-
   if (err <= NOERROR || zaehler==0){
     if (err <= NOERROR) {
       if (cov->key == NULL) next->simu.active = true;
       else cov->key->simu.active = true;
     }
-    return err;
+    RETURN_ERR(err);
   }
 
   if (zaehler==1) {
-    SPRINTF(ERROR_LOC, "Only 1 method found for '%s', namely '%s', that comes into question.\nHowever", NICK(next), METHODNAMES[unimeth]);
-    return err;
+    SPRINTF(KT->error_loc, "Only 1 method found for '%.50s', namely '%.50s', that comes into question.\nHowever, ", NICK(next), METHOD_NAMES[unimeth]);
+    RETURN_ERR(err);
   }
   
   { // only for error reporting !
-    cov_model *sub = next; 
+    model *sub = next; 
     while(isAnyDollar(sub)) sub = sub->sub[0];
-    SPRINTF(ERROR_LOC, "searching a simulation method for '%s': ",
+    SPRINTF(KT->error_loc, "searching a simulation method for '%.50s'",
 	    NICK(sub));
   }
 
-  return ERROROUTOFMETHODLIST;
+  RETURN_ERR(ERROROUTOFMETHODLIST);
 }
 
 
-int init_gaussprocess(cov_model *cov, gen_storage *s) {
+int init_gaussprocess(model *cov, gen_storage *s) {
   /// ACHTUNG struct_gaussprocess hat bereits init aufgerufen!
 
   // direkter Aufruf, u.a. durch RPtbm, average, cutoff, intrinsic, hyperplane,
   //                    nugget, spectral !!!
+  if (hasAnyEvaluationFrame(cov)) {
+    assert(cov->key == NULL);
+    if (isnowVariogram(cov->sub[0])) return NOERROR;
+    return INIT(cov->sub[0], 0, s);
+  }
 
-  cov_model 
+  model 
     *key = cov->key;
   int err;
 
-  ROLE_ASSERT_GAUSS;
+  //  PMI(cov);
   assert(key != NULL);
 
-
-  if ((err = INIT(key, 0, s)) != NOERROR) return err;
+  if ((err = INIT(key, 0, s)) != NOERROR) RETURN_ERR(err);
  	    
  if ((err = gauss_init_settings(cov)) != NOERROR) {
-   return err;
+   RETURN_ERR(err);
   }
   
-  key->simu.active = true;
+  cov->simu.active = key->simu.active = true;
 
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
    
 
-void do_gaussprocess(cov_model *cov, gen_storage *s) {
+void do_gaussprocess(model *cov, gen_storage *s) {
   assert(s != NULL);
   // reopened by internal_dogauss
   errorloc_type errorloc_save;
   double *res = cov->rf;
   int i,
-    vdimtot = Gettotalpoints(cov) * cov->vdim[0] ;
-  cov_model *key = cov->key ;
+    vdimtot = Gettotalpoints(cov) * VDIM0 ;
+  model *key = cov->key ;
+  KEY_type *KT = cov->base;
   SAVE_GAUSS_TRAFO;
  
-  STRCPY( errorloc_save,  ERROR_LOC);
+  STRCPY( errorloc_save,  KT->error_loc);
 
   if (cov->simu.pair) {
     for (i=0; i<vdimtot; i++) res[i] = -res[i];
@@ -767,12 +779,12 @@ void do_gaussprocess(cov_model *cov, gen_storage *s) {
 
   // falls gaussprocess als solcher aufgerufen, dann cov->Sgen != NULL
   // falls ueber *_USER, dann i.a.(?!) nicht gesetzt, sondern s:
-   DO(key, cov->Sgen == NULL ? s : cov->Sgen); 
+  DO(key, cov->Sgen == NULL ? s : cov->Sgen); 
  
   // (x^\lambda_1-1)/\lambda_1+\lambda_2
 
   BOXCOX_INVERSE;
-  STRCPY( ERROR_LOC, errorloc_save);
+  STRCPY( KT->error_loc, errorloc_save);
 }
 
 
@@ -782,85 +794,84 @@ void do_gaussprocess(cov_model *cov, gen_storage *s) {
 // Binary Gauss
 #define BINARY_THRESHOLD (GAUSSPROC_LAST + 1)
 
-void kappa_binaryprocess(int i, cov_model VARIABLE_IS_NOT_USED *cov, 
+void kappa_binaryprocess(int i, model VARIABLE_IS_NOT_USED *cov, 
 			 int *nr, int *nc){
   kappaGProc(i, cov, nr, nc);
   if (i == BINARY_THRESHOLD) *nr = SIZE_NOT_DETERMINED;
 }
 
-int checkbinaryprocess(cov_model *cov) {
+int checkbinaryprocess(model *cov) {
   // Achtung! binary hat Doppelbedeutung: binary-Gaussian als default
   // und binary angewandt auf x-bel. process.
-  cov_model
+  model
     *key = cov->key,
     *next = cov->sub[0],
     *sub = key != NULL ? key : next;
   double v;
-  int role,
-    err = NOERROR;
+  int err = NOERROR;
   if (PisNULL(BINARY_THRESHOLD)) kdefault(cov, BINARY_THRESHOLD, 0);
 
-  // PMI(cov); printf("%d %d\n", key==NULL, isVariogram(next));
-    
-  if (key == NULL && isVariogram(next)) {
+  if (key == NULL && !isProcess(next)) {
     if ((err = checkgaussprocess(cov)) != NOERROR) {
-      return err;
+      RETURN_ERR(err);
     }
     
-    COV(ZERO, sub, &v);
+    COV(ZERO(sub), sub, &v);
     if (v != 1.0) 
       SERR("binaryian requires a correlation function as submodel.");
-
-  } else if (isProcess(sub)) {
-     role = cov->role == ROLE_BASE ? cov->role : role_of_process(sub->nr);
-    
-    if ((err = CHECK(sub, cov->tsdim, cov->xdimprev, ProcessType, 
-		     cov->domown, cov->isoown,
-		     SUBMODEL_DEP, 
-		     role)) != NOERROR) return err;
+  } else {
+    if ((err = CHECK_PASSTF(sub, ProcessType, SUBMODEL_DEP,
+			    hasAnyEvaluationFrame(cov) ? cov->frame :
+			    NormedProcessType
+			    )) != NOERROR) 
+      RETURN_ERR(err);
+    //    if ((err = CHECK(sub, cov->tsdim, cov->xdimprev, ProcessType, 
+    //		     OWNDOM(0), OWNISO(0),
+    //		     SUBMODEL_DEP, 
+    //		     frame)) != NOERROR) RETURN_ERR(err);
     setbackward(cov, sub);
-  } else SERR1("process type model required, but '%s' obtained", NICK(sub));
+  }
 
-  cov->vdim[0] = sub->vdim[0];
-  cov->vdim[1] = sub->vdim[1];
-  return NOERROR;
+  VDIM0 = sub->vdim[0];
+  VDIM1 = sub->vdim[1];
+  RETURN_NOERROR;
 }
 
-int struct_binaryprocess(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
-  cov_model
+int struct_binaryprocess(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
+  model
     *next = cov->sub[0];
   int err;
-
-  ROLE_ASSERT(ROLE_BERNOULLI);
-  if (isVariogram(next)) {
+  
+  if (isnowVariogram(next)) {
     assert(cov->key == NULL);
-    err = covCpy(&(cov->key), cov);
+    err = covcpy(&(cov->key), cov);
 
     // darauffolgende Zeile absichern:
-    if (CovList[cov->nr].kappas != 3 || CovList[GAUSSPROC].kappas != 2) BUG;
+    if (DefList[COVNR].kappas != 3 || DefList[GAUSSPROC].kappas != 2) BUG;
     if (cov->key != NULL && !PARAMisNULL(cov->key, BINARY_THRESHOLD)) {
       PARAMFREE(cov->key, BINARY_THRESHOLD);
       PARAMtoNULL(cov->key, BINARY_THRESHOLD);
     }
 
-    if (err != NOERROR)  return err; //!!cov
+    if (err != NOERROR)  RETURN_ERR(err); //!!cov
 
-    cov->key->nr = GAUSSPROC;
-    err = CHECK(cov->key, cov->tsdim, cov->xdimprev, ProcessType, 
-		cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS);
-    if (err != NOERROR)  return err;
+    SET_NR(cov->key, GAUSSPROC);
+    err = CHECK_PASSTF(cov->key, ProcessType, SUBMODEL_DEP, GaussMethodType);
+    //    err = CHECK(cov->key, cov->tsdim, cov->xdimprev, ProcessType, 
+    //		OWNDOM(0), OWNISO(0), SUBMODEL_DEP, GaussMethodType);
+    if (err != NOERROR)  RETURN_ERR(err);
     err = STRUCT(cov->key, NULL);
-    return err;
+    RETURN_ERR(err);
   }
   else return STRUCT(next, NULL);
 }
 
-int init_binaryprocess( cov_model *cov, gen_storage *s) {
+int init_binaryprocess( model *cov, gen_storage *s) {
   double sigma, 
     *mean = NULL, 
     *variance = NULL,
     *p = P(BINARY_THRESHOLD);
-  cov_model 
+  model 
     *key = cov->key,
     *next=cov->sub[0],
     *sub = key != NULL ? key : next;
@@ -880,13 +891,15 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
   cov->rf = sub->rf;
   cov->origrf = false;
  
-  if (isVariogram(next) || next->nr == GAUSSPROC) {
+  if (isnowVariogram(next) || NEXTNR == GAUSSPROC) {
     GetInternalMean(next, vdim, mean);
     if (ISNAN(mean[0])) // GetInternalMean currently only allows ...
-      GERR1("'%s' currently only allows scalar fields - NA returned",
+      GERR1("'%.50s' currently only allows scalar fields - NA returned",
 	    NICK(cov));
-     if (cov->mpp.moments >= 1) 
-      COV(ZERO, next->nr==GAUSSPROC ? next->sub[0]: next, variance);
+     if (cov->mpp.moments >= 1)  {
+      model *sub0 = NEXTNR==GAUSSPROC ? next->sub[0]: next;
+      COV(ZERO(sub0), sub0, variance);
+    }
     nmP1 = cov->mpp.moments + 1;
     for (pi=v=w=0; w<vdimSq; w+=vdimP1, v++, pi = (pi + 1) % npi ) { 
       int idx = v * nmP1;
@@ -896,7 +909,7 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
 	cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0; 
 	if (cov->mpp.moments >= 1) {
 	  if (variance[w]==0.0)
-	    GERR1("Vanishing sill not allowed in '%s'", NICK(next));
+	    GERR1("Vanishing sill not allowed in '%.50s'", NICK(next));
 	  sigma = SQRT(variance[w]);
 	  cov->mpp.mM[idx + 1] = cov->mpp.mMplus[idx + 1] = 
 	    pnorm(p[pi], mean[v], sigma, false, false);
@@ -908,19 +921,19 @@ int init_binaryprocess( cov_model *cov, gen_storage *s) {
     }
   }
 
-  cov->fieldreturn = true;
+  cov->fieldreturn = wahr;
   cov->simu.active = err == NOERROR;
 
  ErrorHandling:
   FREE(variance);
   FREE(mean);
  
-  return err;
+  RETURN_ERR(err);
 }
 
 
 
-void do_binaryprocess(cov_model *cov, gen_storage *s){
+void do_binaryprocess(model *cov, gen_storage *s){
   // reopened by internal_dogauss
   long j,
     tot = Loc(cov)->totalpoints,
@@ -929,21 +942,21 @@ void do_binaryprocess(cov_model *cov, gen_storage *s){
   int  i,
     pi, 
     npi = cov->nrow[BINARY_THRESHOLD],
-    vdim = cov->vdim[0];
+    vdim = VDIM0;
   double 
     threshold,
     *p = P(BINARY_THRESHOLD),
     *rf = cov->rf;
-  cov_model 
+  model 
     *next=cov->sub[0];
-  assert(cov->vdim[0] == cov->vdim[1]);
-  if (isVariogram(next)) {
+  assert(VDIM0 == VDIM1);
+  if (isnowVariogram(next)) {
     do_gaussprocess(cov, s);
   } else DO(next, s);
 
   for (j=pi=i=0; i<vdim; i++, pi = (pi + 1) % npi, endfor += tot) {
     threshold = p[pi];
-    // printf("endfor %d %f\n", endfor, threshold);
+    // printf("endfor %d %10g\n", endfor, threshold);
     if (threshold > RF_NEGINF && threshold < RF_INF)
       for ( ; j<endfor; j++) rf[j] = (double) (rf[j] >= threshold);
   }
@@ -951,7 +964,7 @@ void do_binaryprocess(cov_model *cov, gen_storage *s){
 
 
 
-void rangebinaryprocess(cov_model *cov, range_type *range) { 
+void rangebinaryprocess(model *cov, range_type *range) { 
   rangegaussprocess(cov, range);
 
   range->min[BINARY_THRESHOLD] = RF_NEGINF;
@@ -972,28 +985,29 @@ void rangebinaryprocess(cov_model *cov, range_type *range) {
 #define T_NU CHISQ_DEGREE
 
 
-int checkchisqprocess(cov_model *cov) {
-  cov_model
+int checkchisqprocess(model *cov) {
+  ASSERT_ONESYSTEM;
+  model
     *key = cov->key,
     *next = cov->sub[0];
   double *v = NULL;
   int err = NOERROR,
-    xdim = cov->xdimprev, // could differ from tsdim in case of distances!
-    dim = cov->tsdim;
-  assert((Loc(cov)->distances && xdim==1) || xdim == dim);
+   xdim = OWNXDIM(0), // could differ from logicaldim in case of distances!
+    logicaldim = OWNLOGDIM(0);
+  assert((Loc(cov)->distances && xdim==1) || xdim == logicaldim);
 
   if (PisNULL(CHISQ_DEGREE)) SERR("degree of freedom must be given");
   if (key == NULL) {
-    if (!isGaussProcess(next) && !isVariogram(next))
-      SERR1("Gaussian process required, but '%s' obtained", NICK(cov));
-    if ((err = CHECK(next, dim, xdim, ProcessType, XONLY, cov->isoown, 
-		     SUBMODEL_DEP, cov->role)) != NOERROR) {
-      if ((err = CHECK(next, dim, xdim, 
-		       isCartesian(cov->isoown) ? VariogramType : PosDefType, 
+    //    if (!isGaussMethod(next) && !isVariogram(next))
+    //      SERR1("Gaussian process required, but '%.50s' obtained", NICK(cov));
+    if ((err = CHECK(next, logicaldim, xdim, ProcessType, XONLY, OWNISO(0), 
+		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
+      if ((err = CHECK(next, logicaldim, xdim, 
+		       isCartesian(OWNISO(0)) ? VariogramType : PosDefType, 
 		       KERNEL, 
-		       SymmetricOf(cov->isoown),
-		       SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
-      return err;
+		       CoordinateSystemOf(OWNISO(0)),
+		       SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+      RETURN_ERR(err);
       }
     }
     
@@ -1003,16 +1017,17 @@ int checkchisqprocess(cov_model *cov) {
     assert(vdim > 0);
 
     if ((v = (double*) MALLOC(sizeof(double) * vdimSq)) == NULL)
-      return ERRORMEMORYALLOCATION;
+      RETURN_ERR(ERRORMEMORYALLOCATION);
 
-    cov_model *sub = next;
-    while (sub != NULL && isProcess(sub)) sub=sub->sub[0];
+    model *sub = next;
+    while (sub != NULL && isnowProcess(sub)) sub=sub->sub[0];
     if (sub == NULL) BUG;
-    if (sub->domprev == XONLY) {
-      COV(ZERO, next, v);
+    if (isXonly(PREVSYSOF(sub))) {
+      COV(ZERO(next), next, v);
     } else {
-      assert(sub->domprev == KERNEL);
-      NONSTATCOV(ZERO, ZERO, next, v);
+      assert(isKernel(PREVSYSOF(sub)));
+      double *zero = ZERO(next);
+      NONSTATCOV(zero, zero, next, v);
     }
     
     int w,
@@ -1025,60 +1040,61 @@ int checkchisqprocess(cov_model *cov) {
     }
     FREE(v);
     
-    cov->vdim[0] = sub->vdim[0];
-    cov->vdim[1] = sub->vdim[1];
+    VDIM0 = sub->vdim[0];
+    VDIM1 = sub->vdim[1];
      //no need to setbackward
   } else {
-    if ((err = CHECK(key, cov->tsdim,  cov->xdimprev, ProcessType,
-		       cov->domown, cov->isoown,
-		       SUBMODEL_DEP, cov->role)) != NOERROR) return err;
+    if ((err = CHECK_PASSTF(key, ProcessType, SUBMODEL_DEP, GaussMethodType))
+	!= NOERROR) RETURN_ERR(err);
+    //   if ((err = CHECK(key, cov->tsdim,  cov->xdimprev, ProcessType,
+    //		       OWNDOM(0), OWNISO(0),
+    //		       SUBMODEL_DEP, cov->frame)) != NOERROR) RETURN_ERR(err);
     setbackward(cov, key);
   }
 
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
  
-  return NOERROR;
+  RETURN_NOERROR;
 }
  
-int struct_chisqprocess(cov_model *cov, 
-			cov_model VARIABLE_IS_NOT_USED **newmodel) {
-  cov_model
+int struct_chisqprocess(model *cov, 
+			model VARIABLE_IS_NOT_USED **newmodel) {
+  model
     *next = cov->sub[0];
   int err;
 
-  ROLE_ASSERT_GAUSS;
-
-  if (isVariogram(next)) {
+  if (isnowVariogram(next)) {
     assert(cov->key == NULL);
-    if ((err = covCpy(&(cov->key), next)) > NOERROR) return err;
+    if ((err = covcpy(&(cov->key), next)) > NOERROR) RETURN_ERR(err);
     addModel(&(cov->key), GAUSSPROC);
-    cov->key->calling = cov;
-    if ((err = CHECK(cov->key, cov->tsdim,  cov->tsdim, ProcessType,
-		     cov->domprev, cov->isoprev,
-		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) return err;
+    SET_CALLING(cov->key, cov);
+    if ((err = CHECK_PASSFRAME(cov->key, GaussMethodType)) != NOERROR) RETURN_ERR(err);
+    //    if ((err = CHECK(cov->key, cov->tsdim,  cov->tsdim, ProcessType,
+    //		     cov->domprev, cov->isoprev,
+    //		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) RETURN_ERR(err);
    return STRUCT(cov->key, NULL);
   } else {
     return STRUCT(next, NULL);
   }
 }
 
-int init_chisqprocess(cov_model *cov, gen_storage *s) {
+int init_chisqprocess(model *cov, gen_storage *s) {
   double // sigma,
     mean, m2, 
     variance;
-  cov_model 
+  model 
     *key = cov->key,
     *next = cov->sub[0],
     *sub = key == NULL ? next : key;
   int i, err, nmP1,
     nmP1sub = sub->mpp.moments + 1,
-    vdim = cov->vdim[0];
+    vdim = VDIM0;
 
   cov->simu.active = false;
   if ((err = INIT(sub, 
-		  CovList[cov->nr].range == rangechisqprocess ? 2 :
-		  CovList[cov->nr].range == rangetprocess ? 1 : 9999
-		  , s)) != NOERROR) return err;		  
+		  DefList[COVNR].range == rangechisqprocess ? 2 :
+		  DefList[COVNR].range == rangetprocess ? 1 : 9999
+		  , s)) != NOERROR) RETURN_ERR(err);		  
  
   nmP1 = cov->mpp.moments + 1;
   for (i=0; i<vdim; i++) { 
@@ -1089,9 +1105,9 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
     m2 = sub->mpp.mM[idxsub + 2];
     variance =  m2 - mean * mean; 
     if (variance==0.0) 
-      SERR1("Vanishing sill not allowed in '%s'", NICK(sub));
+      SERR1("Vanishing sill not allowed in '%.50s'", NICK(sub));
     if (ISNAN(mean)) // GetInternalMean currently only allows ...
-      SERR1("'%s' currently only allows scalar fields -- NA returned", 
+      SERR1("'%.50s' currently only allows scalar fields -- NA returned", 
 	   NICK(cov));
     cov->mpp.maxheights[i] = GLOBAL.extreme.standardmax * 
       GLOBAL.extreme.standardmax * m2;
@@ -1101,8 +1117,8 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
       cov->mpp.mM[idx + 0] = cov->mpp.mMplus[idx + 0] = 1.0; 
       if (cov->mpp.moments >= 1) {
 	cov->mpp.mMplus[idx + 1] = 		  
-	  CovList[cov->nr].range == rangechisqprocess ? m2 
-	  : CovList[cov->nr].range == rangetprocess ? RF_NAN
+	  DefList[COVNR].range == rangechisqprocess ? m2 
+	  : DefList[COVNR].range == rangetprocess ? RF_NAN
 	  : RF_NAN;
 	cov->mpp.mM[idx + 1] = RF_NA; // to do: richtiger Wert
 	if (cov->mpp.moments >= 2)
@@ -1112,26 +1128,23 @@ int init_chisqprocess(cov_model *cov, gen_storage *s) {
   }
 
 
-  if (CovList[cov->nr].range == rangechisqprocess) FieldReturn(cov);
-  else if (CovList[cov->nr].range == rangetprocess){
-    cov->fieldreturn = true;
-    cov->origrf = false;
-    cov->rf = sub->rf;
-  } else BUG;
+  if (DefList[COVNR].range == rangechisqprocess) ReturnOwnField(cov);
+  else if (DefList[COVNR].range == rangetprocess) ReturnOtherField(cov, sub);
+  else BUG;
   cov->simu.active = true;
  
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
 
-void do_chisqprocess(cov_model *cov, gen_storage *s){
+void do_chisqprocess(model *cov, gen_storage *s){
   // reopened by internal_dogauss
   int  i, f,
     degree = P0INT(CHISQ_DEGREE),
-    totvdim = Loc(cov)->totalpoints * cov->vdim[0];
+    totvdim = Loc(cov)->totalpoints * VDIM0;
  assert(cov->ownloc == NULL);
-  cov_model 
+  model 
     *next=cov->sub[0],
     *key = cov->key,
     *sub = key == NULL ? next : key;
@@ -1140,11 +1153,7 @@ void do_chisqprocess(cov_model *cov, gen_storage *s){
     *res = cov->rf;
 
   for (i=0; i<totvdim; i++) res[i] = 0.0;
-
-  //  APMI(cov);
-
   for (f=0; f<degree; f++) {
-    //  printf("f=%d %d\n", f, degree);
     DO(sub, s);   
     for (i=0; i<totvdim; i++) {
       double dummy = subrf[i];
@@ -1154,7 +1163,7 @@ void do_chisqprocess(cov_model *cov, gen_storage *s){
   BOXCOX_INVERSE;
 }
 
-void rangechisqprocess(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void rangechisqprocess(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
   
   range->min[CHISQ_DEGREE] = 1;
@@ -1174,11 +1183,11 @@ void rangechisqprocess(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
 
 
-void do_tprocess(cov_model *cov, gen_storage *s){
+void do_tprocess(model *cov, gen_storage *s){
   // reopened by internal_dogauss
   int  i,
-    n = Loc(cov)->totalpoints * cov->vdim[0];
-  cov_model 
+    n = Loc(cov)->totalpoints * VDIM0;
+  model 
     *next=cov->sub[0],
     *key = cov->key,
     *sub = key == NULL ? next : key;
@@ -1193,7 +1202,7 @@ void do_tprocess(cov_model *cov, gen_storage *s){
   BOXCOX_INVERSE;
 }
 
-void rangetprocess(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void rangetprocess(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
  
   range->min[T_NU] = 0;

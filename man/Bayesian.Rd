@@ -1,6 +1,6 @@
 \name{Hierarchical Modelling}
-\alias{bayesian}
 \alias{Bayesian}
+\alias{bayesian}
 \alias{Bayesian Modelling}
 \alias{Hierarchical}
 \alias{Hierarchical Modelling}
@@ -8,7 +8,7 @@
 \description{
   \pkg{RandomFields} provides Bayesian modelling to some extend:
   (i) simulation of hierarchical models at arbitrary depth;
-  (ii) estimation of the parameteres of a hierarchical model of depth 1
+  (ii) estimation of the parameters of a hierarchical model of depth 1
   by means of maximizing the likelihood.
 }
 
@@ -36,10 +36,10 @@
     
   The family can be passed in three ways:
   \itemize{
-    \item implicitelty, e.g. \code{RMwhittle(nu=exp())} or    
-    \item explicitely through \command{\link{RRdistr}}, e.g.
+    \item implicitly, e.g. \code{RMwhittle(nu=exp())} or    
+    \item explicitly through \command{\link{RRdistr}}, e.g.
     \code{RMwhittle(nu=RRdistr(exp()))}.
-    \item by use of \code{\link[=RR]{RRmodels}} of the package
+    \item by use of \code{\link[=RR]{RRmodels}} of the package.
   }
   The first is more convenient, the second more flexible and slightly safer.
   
@@ -55,14 +55,14 @@
   The effect of the distribution family varies between the different processes:
 
   \itemize{
-    \item in Max-stable fields and
-    \command{\link{RPpoisson}}, a new realisation of the prior
+    \item in max-stable fields and
+    \command{\link{RPpoisson}}, a new realization of the prior
     distribution(s) is drawn for each shape function
-    \item in all the other cases: a realisation of the prior(s)
+    \item in all other cases: a realization of the prior(s)
     is only drawn once.
     This effects, in particular, Gaussian fields with argument
-    \code{n>1}, where all the realisations are based on the same
-    realisation out of the prior distribution(s).
+    \code{n>1}, where all realizations are based on the same
+    realization out of the prior distribution(s).
   }
   
   Note that checking the validity of the
@@ -74,28 +74,25 @@
 
 %\references{Ribeiro}
 \seealso{
-  \link{RMmodelsAdvanced}
-  For hierarchical modelling see \link{RR}
+  \link{RMmodelsAdvanced}.
+  For hierarchical modelling see \link{RR}.
 }
-
-\examples{
+\me
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-
-## See 'RRmodels'for hierarchical models
+## See 'RRmodels' for hierarchical models
 
 ## the following model defines the argument nu of the Whittle-Matern
-## model to be an expontential random variable with rate 5.
+## model to be an exponential random variable with rate 5.
 model <- ~ 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5)) + RMnugget(var=NA)
 \dontshow{if (!interactive()) model <- 1 + RMwhittle(scale=NA, var=NA, nu=exp(rate=5))}%ok
 data(soil)
 fit <- RFfit(model, x=soil$x, y=soil$y, data=soil$moisture, modus="careless")
 print(fit)
-
-
-\dontshow{FinalizeExample()}
-
-}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\dontshow{FinalizeExample()}}
 \keyword{spatial}
+
+% library(RandomFields); help.start(); help("bayesian", help_type = "html")
+
+

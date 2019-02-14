@@ -1,6 +1,6 @@
 \name{RMnonstwm}
 \alias{RMnonstwm}
-\title{RMnonstwm}
+\title{Non-stationary Whittle-Matern Covariance Model}
 \description{
   The non-stationary Whittle-Matern model
   \eqn{C} is given by 
@@ -11,11 +11,11 @@
  W_{\mu} (|x-y|)}
  
  where \eqn{\mu = [\nu(x) + \nu(y)]/2}, and
- \eqn{\nu} must a positive function.
+ \eqn{\nu} must be a positive function.
 
  \eqn{W_{\mu}} is the
  covariance of the \command{\link{RMwhittle}} model or the
- \command{\link{RMmatern}} model and
+ \command{\link{RMmatern}} model.
 }
 
 \details{
@@ -25,7 +25,7 @@
 }
 
 \note{
-  It cannot be checked whether \code{nu} only takes positive number. So
+  It cannot be checked whether \code{nu} only takes positive values. So
   the responsibility is completely left to the user.
 }
 
@@ -37,8 +37,7 @@
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMwhittle}},
  \command{\link{RMmodel}},
@@ -46,17 +45,15 @@
  \command{\link{RFfit}}.
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 x <- seq(-1.2, 1.2, len=50)
 model <- RMwhittle(nu=RMgauss())
 %plot(model, dim=2, xlim=c(-1,1))
 z <- RFsimulate(model=model, x, x, n=4)
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

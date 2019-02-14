@@ -1,24 +1,28 @@
 \name{RFoptions}
 \alias{RFoptions}
+\alias{RFOPTIONS}
 \title{Setting control arguments}
 \description{
  \command{\link{RFoptions}} sets and returns control arguments for the analysis
  and the simulation of random fields. It expands the functionality of
  \link[RandomFieldsUtils]{RFoptions}.
 }
-\usage{
+\section{Usage}{
  RFoptions(...)
 }
-\arguments{
- \item{...}{arguments in \code{tag = value} form, or a list of tagged
- values.}
+\section{Arguments}{
+  \describe{  
+    \item{...}{arguments in \code{tag = value} form, or a list of tagged
+      values.}
+  }
  %\item{no.readonly}{If \command{\link{RFoptions}} is called without
 %   argument then all arguments are returned in a list. If
 %   \code{no.readonly=TRUE} then only rewritable arguments are returned.
 % }
 }
-\details{
+\section{Details}{
   The subsections below comment on\cr
+  \bold{0. \code{basic}: \RFU}\cr
   \bold{1. \code{general}: General options}\cr
   \bold{2. \code{br}: Options for Brown-Resnick
     Fields}\cr
@@ -180,7 +184,8 @@
   \item{\code{na_rm_lines}}{
     logical. If \code{TRUE} then a line of the data that contains a
     \code{NA} value is deleted. Otherwise it is tried to deal with the
-    \code{NA} value at higher costs of computing time.
+    \code{NA} value at higher costs of computing time. (Only used for
+    kriging -- estimation can fully deal with \code{NA}s.)
     
     Default: \code{FALSE}.
   }
@@ -323,6 +328,25 @@
     \code{seed} with a slightly different meaning.
   }
 
+   
+  \item{seed_incr}{ (does not work yet)
+    This argument is important iff \command{RFsimulate} is used within
+    a function from package \pkg{parallel}.
+    The value of \code{seed_incr} should be set only locally, i.e. not
+    by \code{RFoptions()}.
+ 
+    If \code{seed_incr != 0} (or the number of simulations \code{n} is
+    greater than 1) and \code{!is.na(seed)}
+    then the seed for each simulation is calculated as
+    
+    \code{seed} \eqn{+ (k-1) * 101101 +} \code{seed_incr} \eqn{* n}
+    
+    where \eqn{k} runs from 1 to \code{n}.
+
+    
+    Default: 0
+  }
+
   \item{\code{set}}{integer.
     Certain models (e.g. \command{\link{RMfixcov}} and
     \command{\link{RMcovariate}}) 
@@ -330,7 +354,6 @@
     \code{set} selects a certain list element.
     If necessary the list is recycled.
   }
-  
 
   \item{\code{spConform}}{logical.
     \code{spConform=TRUE} might be used by
@@ -401,7 +424,7 @@
     (\code{vdim_close_together=FALSE}).
     Note that several simulation methods rely on the value \code{FALSE},
     so that these methods will not work anymore if
-    \code{vdim_close_together=TRUE}. 
+    \code{vdim_close_together=FALSE}. 
     
     Default: \code{FALSE}.
   }
@@ -411,18 +434,32 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{2. Options for Brown-Resnick Fields}
 \describe{
-  \item{\code{corr_factorr}}{ to do
-  }
-  \item{\code{deltaAM}}{ to do
+
+  \item{\code{deltaAM}}{ 
+    integer; only used for simulation of BR processes via \code{RPbrmixed}
+    with \code{optim_mixed=2}. In this case, \code{deltaAM} is the number 
+    of additionally simulated Gaussian processes used for an update of
+     \code{\link[=RPbrmixed]{areamat}} in the optimization pricedure.
+     
+     Default: \code{300}
   }
   
   \item{\code{maxtrendmem}}{
-    integer; the maximal number of trends for shifted locations that may
-    be stored at the same time when simulating BR processes via
-    \code{RPbrshifted}; if \code{maxtrendmem} is large, multiple trend
-    evaluation may be avoided. 
+    integer; the maximal number of real valued variables used for
+    intermediate storage:
+    \itemize{
+      \item
+      RPbrshifted: trends for shifted locations that may
+      be stored at the same time when simulating BR processes.
+      \item
+      RPbrnormed: Let \eqn{n} be the number of locations.
+      Then a \eqn{n\times n} (covariance) matrix has to be evaluated
+      at random columns. 
+    }
+    if \code{maxtrendmem} is large (and \eqn{n} small, \eqn{n\le 10^4}),
+    multiple evaluations can be avoided. 
     
-    Default: \code{1e8} .
+    Default: \code{1e7} .
   }
   \item{\code{meshsize}}{
     positive; width of the grid on which the shape functions in the M3
@@ -436,7 +473,7 @@
     processes via \code{RPbrmixed}.\cr
     If \code{optim_mixed=0}, the arguments
     \code{\link[=RPbrmixed]{lambda}} and 
-    \code{\link[=RPbrmixed]{areamat}} of \command{\link{RPbrshifted}}
+    \code{\link[=RPbrmixed]{areamat}} of \command{\link{RPbrmixed}}
     are used for the simulation.\cr
     If \code{optim_mixed=1}, \code{\link[=RPbrmixed]{lambda}} is estimated for
     \code{\link[=RPbrmixed]{areamat=1}}.\cr
@@ -444,15 +481,6 @@
     \code{\link[=RPbrmixed]{lambda}} is estimated.
     
     Default: \code{1} .
-  }
-  \item{\code{optim_mixed_maxpoints}}{
-    positive integer; only used for simulation of BR processes via
-    \code{RPbrmixed} with \code{optim_mixed>0}. Maximal number of Poisson
-    points used for the optimization of
-    \code{\link[=RPbrmixed]{areamat}} and the estimation 
-    of \code{\link[=RPbrmixed]{lambda}}.
-    
-    Default: \code{10000} .
   }
   \item{\code{optim_mixed_tol}}{
     value in \eqn{[0,1]}; only used for simulation of BR processes via
@@ -556,7 +584,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{5. \code{direct}: Options for simulating by simple matrix decomposition}
 \describe{
-  \item{\code{max_variab}}{See \command{\link{RPdirect}}}
+  \item{\code{max_variab}}{Maximal size of the covariance matrix.
+
+  Default: 12000
+  }
 }
 
 
@@ -668,9 +699,6 @@
    
     Default: \code{0.08} .
   }
-  
- 
-  
 }
 
 
@@ -711,7 +739,7 @@
     
     Default: \code{1e-13}.
   }
- }
+}
  
  
  
@@ -855,7 +883,7 @@
     Default: \code{10000}.
   }
 
-  \item{\code{maxmixedvar}}{
+  \item{\code{maxmixedvar}}{OBSOLETE.
     upper bound for variance in a mixed model;
     so, the covariance model for mixed model part might
     be calibrated appropriately
@@ -1172,9 +1200,12 @@
       \item For some covariance models with additional parameters, the
       rescaling factor has to be determined numerically.
       Then, more time is needed to perform \command{\link{RFfit}}.
+      \item note the \code{use_naturalscaling} only affects simple
+      models, no operators. Also functions that define a parameter of
+      the model are not changed.      
     }
     
-    Default: \code{TRUE}.
+    Default: \code{FALSE}.
   }
 
 }
@@ -1281,6 +1312,14 @@
     changed and \code{onefile=FALSE}. 
 
     Default 0.
+  }
+
+  \item{\code{grDefault}}{
+    logical. If \code{FALSE} the graphic style up to Version 3.2
+    is used. Otherwise, the changes of th graphical style are reduced to
+    a minimum.
+    
+    Default: \code{TRUE};
   }
 
   \item{\code{grPrintlevel}}{
@@ -1397,9 +1436,9 @@
     simulation:
     
     0 : uniform distribution\cr
-    1 : Frechet distribution with form argument \code{mar.param}\cr
+    1 : Frechet distribution with form argument \code{mar_param}\cr
     2 : Bernoulli distribution (Binomial with \eqn{n=1}) with
-    argument \code{mar.param}
+    argument \code{mar_param}
     
     
     Default: \code{0} .
@@ -1461,7 +1500,7 @@
 %    points, but never less than \code{locsplitn[2]}. If
 %    a box had originally less than \code{locsplitn[2]} points,
 %    then the box is increased until at least \code{locsplitn[3]}
-%    points are in the box.    
+%    points are in the box.    }
    \item{\code{locsplitn}}{vector of 3 components.
     A box should contain no more than \code{locsplitn[3]}
     points, but never less than \code{locsplitn[1]}. If
@@ -1489,14 +1528,14 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{14. \code{maxstable}: Options for simulating max-stable random fields}
-\describe{
+\describe{ % extreme
   \item{\code{check_every}}{
     integer. In order to get a precise simulation result, by definition,
     the maximum must be taken, for each shape function, over alle
     locations of interest. Clearly, small values will not play a role.
     To this end, the global minimum has to be determined.
     The calculation of the global minimum is expensive and therefor
-    should not be  done too frequently. On the other hand,
+    should not be done too frequently. On the other hand,
     rare updates increases the computing times for taking the maximum
     over a single shape functions. Here, after every \code{check_every}
     considered shape function, the global minimum is calculated.
@@ -1522,25 +1561,33 @@
   }
   
   \item{\code{eps_zhou}}{positive real number, which 
-    gives the aimed relative precision.
+    gives the aimed relative precision when the constant \eqn{c}
+    in the paper of Oesting, Schlather, Zhou (2018) has to be estimated.
     E.g. if \code{eps_zhou=0.01} then the first 2 digits should be
     correct.
    
     Default: 0.01
   }
 
-  \item{\code{flat}}{\code{-1, FALSE, TRUE}.
+
+  \item{\code{flathull}}{\code{NA, FALSE, TRUE}. Only used in M3
+    modelling in the algorithm by Oesting, Schlather, Zhou (2018).
     The argument is considered only if the simulation is performed on a
     grid. 
-    If \code{flat} is logical, then the density
-    is considered to \code{flat} in the convex hull of the grid.
-    If \code{flat=-1} the choice is done automatically.
+    If \code{flat=TRUE} , then the density
+    is considered to be \code{flat} in the convex hull of the grid,
+    i.e. the simulation method of Schlather (2002) is used.
+    If \code{flat=NA} the choice is done automatically.
     
-    Default: -1 .
+    Default: FALSE .
   }
+  
 
   \item{\code{max_gauss}}{
-    The simulation of the max-stable process based on random fields uses
+    The simulation of the max-stable process by the old-fashioned
+    method of Schlather (2002) and by older methods for Brown-Resnick
+    processes 
+    uses
     a stopping rule that necessarily needs a finite upper endpoint
     of the marginal distribution of the random field.
     In the case of
@@ -1555,7 +1602,7 @@
   
   \item{\code{max_n_zhou}}{positive integer.
     The overall constant \eqn{c} in the paper of
-    Oesting, Schlather, Zhou (2014) has to be determined
+    Oesting, Schlather, Zhou (2018) has to be determined
     by MCMC, if the shape functions are random.
     
     The two arguments, \code{min_n_zhou} and \code{max_n_zhou},
@@ -1566,6 +1613,8 @@
     of shape functions is larger than the number of simulations
     given by \code{eps_zhou} then
     no further simulation is performed to determine \eqn{c}.
+    So, it is advantageous to simulate all fields at once by 
+    \code{RFsimulate(..., n = )}. 
    
     Default:  1000 and 10000000, respectively.
   }
@@ -1573,9 +1622,11 @@
   \item{\code{maxpoints}}{
     positive integer; the maximal number of Poisson points to be simulated
     for one realization of the max-stable random field. This option will
-    not be considered for most of the users.
+    not be considered for most of the users. This option allows 
+    the simulation to interrupt after \code{maxpoints} shape function
+    have been placed.
      
-    Default: \code{2e9} .
+    Default: \code{2e9} (never).
   }
 
   \item{\code{mcmc_zhou}}{positive integer.
@@ -1588,10 +1639,7 @@
   
   \item{\code{min_n_zhou}}{see \code{max_n_zhou}}
 
-  \item{\code{xi}}{
-    Extreme value index.    Default: \code{2e9} .
-  }
-
+ 
   \item{\code{mcmc_zhou}}{positive integer.
     In case of random shape functions, an MCMC step is required.
     \code{mcmc_zhou}-1 equals the number of members of the MCMC chain
@@ -1602,11 +1650,35 @@
   
   \item{\code{min_n_zhou}}{see \code{max_n_zhou}}
 
-  \item{\code{xi}}{
-    Extreme value index.
-    
-    Default: \code{1.0} .
+  \item{\code{min_shape_gumbel}}{To increase speed,
+    the minimum field value is assumed to be \code{min_shape_gumbel}
+    for calculation of threshold values for simulation short cuts.
+    During a simulation, its value becomes void as soon as the real
+    (current) minimum of the field being simulated exceeds
+    \code{min_shape_gumbel}
+%    values of shape
+%    functions smaller than \code{min_shape_gumbel} are considered as
+%    being zero. Necessarily, the shape function must be essentially
+%    isotropic and decreasing with known inverse function.
+
+    Default: \code{-1e15}.
   }
+
+  \item{\code{scatter_method}}{logical. 
+    If 
+    
+    Default: NA;
+  }
+  
+  \item{\code{xi}}{
+    Extreme value index. Default: \code{2e9} .
+    While \eqn{\xi} can be set globally, the shift \eqn{\mu} and the
+    scale \eqn{s} can be given only locally within the process
+    definitions, e.g., \command{\link{RPsmith}}.
+
+   Default: \code{1.0}.
+  }
+
 }
  
  
@@ -1626,16 +1698,18 @@
     is not explicitely given.
     Default: \code{50000} .
   }
+
+  \item{\code{scatter_method}}{
+  }
   
-    
- 
   \item{\code{scatter_size}, \code{scatter_max}}{
-    Used in function \code{RMscatter} that calculates
+    Real valued and integer valued, respectively, or \code{NA}.
+
+    Used in the internal function \code{RMscatter} that calculates
     \eqn{\sum_{i=1}^n f(x + h_i)} for some function \eqn{f} and
     for some distances \eqn{h_i}.
       
     %    see \code{size} and \code{max} in \code{\link{RMscatter}}.
-    Real valued and integer valued, respectively, or \code{NA}.
     Let \eqn{\varepsilon=}\code{about_zero}, \eqn{s=}\code{scatter_size} and \eqn{m=}\code{scatter_max}.
     We distinguish 4 cases:
     \itemize{
@@ -1668,7 +1742,6 @@
     Default: \code{2.0}.
   }
 }
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1728,102 +1801,75 @@ The user can use the registers 0..9.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{19. \code{solve}: Options for solving linear systems}
 
-\describe{ % to do
+\describe{
+  \item{\code{det_as_log}}{\RFU }
+  \item{\code{eigen2zero}}{\RFU }
   \item{\code{max_chol}}{integer. Maximum number of rows of a matrix in
     a Cholesky decomposition
-
+    
     Default: \eqn{8192}
   }
-  \item{\code{max_svn}}{integer. Maximum number of rows of a matrix in
+  \item{\code{max_svd}}{integer. Maximum number of rows of a matrix in
     a svd decomposition
-
+    
     Default: \eqn{6555}
   }
-
-   \item{\code{matrix_methods}}{
-    vector of at most 3 integers that gives the sequence of methods
-    in order to inverse a matrix or to calculate its square root: 
-
-    0 : Choleskey decomposition \cr
-    1 : SVD\cr
-    2 : spam (sparse matrix algorithm)\cr
-    3 : OR\cr
-    4 : LU\cr
-    5 : <none>
-
-    Note that if \code{use_spam} is not \code{false} the algorithm
-    checks whether a sparse matrix algorithm should be used and which is
-    then tried first.
-
-    Values larger than 4 are used internally:\cr
-    5 : no further method available\cr
-    6 : not initialised\cr
-    7 : diagonal matrix found\cr
     
-    Default: \code{5}.
-  }
-  \item{\code{spam_factor}}{
-    integer. See argument \code{spam_sample_n}.
+  \item{\code{pivot}}{Type of pivoting for the Cholesky
+      decomposition. Possible values are 
+      \describe{
+	\item{PIVOT_NONE}{No pivoting.}
+	\item{PIVOT_AUTO}{If the  matrix has a size greater than
+	  3x3 and Choleskey fails without pivoting, privoting
+	  is done. For matrices of size less than 4x4, no pivoting and
+	  no checks are performed.}
+ 	\item{PIVOT_DO}{Do alwaoys pivoting.
+	  NOTE: privoted Cholesky decomposition yields only very approximately
+	  an upper triangular matrix L, but still L^t L = M holds true.}
+ 	\item{PIVOT_IDX}{uses the same pivoting as in the previous
+	  pivoted decomposition. This option becomes relevant only when
+	  simulations with different parameters or different models shall be
+	  performed with the same seed so that also the pivoting must be
+	  coupled.
+	}
+% 	\item{PIVOT_IDXBACK}{ same as \code{PIVOT_IDX}, but
+%	the sequence of indices of the pivoting is returned via
+%	\code{RFoptions()$solve$pivot_idx}.}
+      }
 
-    Default: 4294967
-  }
-
-  
-  \item{\code{spam_min_n}}{
-    integer. Has the matrix 
+      Default: \code{PIVOT_auto}}  
+  \item{\code{pivot_actual_size}}{\RFU }     
+  \item{\code{pivot_check}}{logical. Only used in pivoted Cholesky
+    decomposition. 
+    If \code{TRUE} and a numerically zero diagonal element is detected,
+    it is checked whether the offdiagonal elements are numerically zero 
+    as well.
+    (See also \code{pivot_max_deviation} and
+    \code{pivot_max_reldeviation}.)
+    if \code{NA} then, in  \link{RPdirect}, the value is equivent to
+    \describe{
+      \item{\code{FALSE}}{if the model is positive (semi-)definite.}
+      \item{\code{TRUE}}{if the model is genuinely negative definite.}
+    }
     
-    Default: 400
+    Default: \code{NA}
   }
-  \item{\code{spam_min_p}}{
-    number in \eqn{(0,1)} giving the proportion of
-    zero about which an sparse matrix algorithm is used.
 
-    Default: \code{0.8}
-  }
-  \item{\code{spam_pivot}}{
-    integer. Pivoting algorithm for sparse matrices:
-    0:none; 1:MMD, 2:RCM
-
-    See package \code{spam} for details.
-
-    Default: 1
-  }
-  \item{\code{spam_sample_n}}{
-    Whether a matrix is sparse or not is tested by a
-    \sQuote{random} sample of size \code{spam_sample_n};
-    The selection of the sample is iteratively
-    obtained by multiplying the index by \code{spam_factor}
-    modulo the size of the matrix.
-
-    Default: 500. 
-  }
-  \item{\code{spam_tol}}{
-    largest absolute value being considered as zero.
-    Default: \code{DBL_EPSILON}
-  }
-  
- \item{\code{svdtol}}{
-    When the svd decomposition is used for calculating the square root of
-    a matrix then the absolute componentwise difference between
-    this matrix and the square of the square root must be less
-    than \code{svdtol}. No check is performed if
-    \code{svdtol} is negative.
- 
-    When the svd decomposition is used for calculating the inverse of
-    a matrix then a diagonal value is set to zero if it is less than
-    \code{svdtol}.
-    
-    Default: \code{1e-8}
-  } \item{\code{use_spam}}{
-    Should the package \code{spam} (sparse matrices)
-    be used for matrix calculations?
-    If \code{TRUE} \pkg{spam} is always used. If \code{FALSE},
-    it is never used. If \code{NA} its use is determined by
-    the size and the sparsity of the matrix.
-    
-    Default: \code{NA}. 
-  }
+  \item{\code{pivot_idx}}{\RFU}
+  \item{\code{pivot_relerror}}{\RFU  }    
+  \item{\code{pivot_max_deviation}}{\RFU }    
+  \item{\code{pivot_max_reldeviation}}{\RFU  }   
+  \item{\code{solve_method}}{\RFU }
+  \item{\code{spam_factor}}{\RFU  }    
+  \item{\code{spam_min_n}}{\RFU  }
+  \item{\code{spam_min_p}}{\RFU  }
+  \item{\code{spam_pivot}}{\RFU}
+  \item{\code{spam_sample_n}}{\RFU}  
+  \item{\code{spam_tol}}{\RFU}
+  \item{\code{svdtol}}{\RFU}
+  \item{\code{use_spam}}{\RFU}
 }
+  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bold{20. \code{special}: Options for specific methods}
@@ -2040,7 +2086,19 @@ without the user's notice.
     
     Default: \code{TRUE}.
   }
- 
+  
+  \item{\code{allow_duplicated_locations}}{logical.
+    If \code{FALSE} duplicated locations are not allowed.
+    If \code{TRUE} then the (standard) nugget effect becomes a non-stationary
+    model in an abstract space that cannot be extended outside the given
+    locations. See also \link{RMnugget} for the distinction between
+    measurement error and spatial nugget.
+    
+    Default: \code{FALSE}.
+  }
+
+  
+  
   \item{\code{warn_missing_zenit}}{ % to do
     Only for Earth systems: a missing zenit is frequently a cause
     for errors that are difficult to understand. Therefore, in such
@@ -2142,12 +2200,13 @@ without the user's notice.
 
  
  
-\value{
+\section{Value}{
  \code{NULL} if any argument is given, and the full list of
  arguments, otherwise.
 }
 
 \references{
+  \itemize{Basic}
   \itemize{
     \item General
     \itemize{
@@ -2179,18 +2238,18 @@ without the user's notice.
     }
   }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
+\me
 
 \seealso{\command{\link{RFsimulate}},
   \link{RFoptionsAdvanced},
- \code{\link[=RandomFields-package]{RandomFields}},
+ \code{\link[RandomFieldsUtils]{RFoptions}},
  and \command{\link{RFgetMethodNames}}.}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 RFoptions()
 
 
@@ -2209,9 +2268,7 @@ for (exactness in c(NA, FALSE, TRUE)) {
   print(RFgetModelInfo(which="internal")$internal$name)
 }
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 

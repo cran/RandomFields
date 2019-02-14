@@ -15,7 +15,7 @@ RPopitz(phi, xi, mu, s, alpha)
 \arguments{
   \item{phi}{an \command{\link{RMmodel}};
     covariance model for a standardized
-    Gaussian random fields, or the field itself.
+    Gaussian random field, or the field itself.
   }
   \item{xi,mu,s}{the extreme value index, the location parameter and the
     scale parameter, respectively, of the generalized extreme value
@@ -26,16 +26,9 @@ RPopitz(phi, xi, mu, s, alpha)
   }
 }
 
-\details{
-  The argument \code{xi} is always a number, i.e. \eqn{\xi} is constant in
-  space. In contrast, \eqn{\mu} and \eqn{s} might be constant
- numerical value or given a \code{\link{RMmodel}}, in particular by a
- \code{\link{RMtrend}} model.  The default values of \eqn{mu} and \eqn{s}
- are \eqn{1} and \eqn{z\xi}, respectively.
+\details{\GEV
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \references{
   \itemize{
@@ -53,23 +46,27 @@ RPopitz(phi, xi, mu, s, alpha)
  \command{\link{RMmodel}},
  \command{\link{RPgauss}},
  \command{\link{maxstable}},
- \command{\link{maxstableAdvanced}}
+ \command{\link{maxstableAdvanced}}.
 }
 
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
+
+## sorry, does not work savely yet
+
+\dontshow{\dontrun{
 RFoptions(seed=0, xi=0)
-## seed=0: *ANY* simulation will have the random seed 0; set
+## seed=0: *ANY* simulation will have the random xseed 0; set
 ##         RFoptions(seed=NA) to make them all random again
-## xi=0: any simulated max-staable random field has extreme value index 0
-\dontshow{StartExample()}
+## xi=0: any simulated max-stable random field has extreme value index 0
 x <- seq(0, 2, 0.01)
 model <- RPopitz(RMgauss(), alpha=2)
 z1 <- RFsimulate(model, x)
 plot(z1, type="l")
 
-\dontshow{FinalizeExample()}
-}
+}}
+
+\dontshow{FinalizeExample()}}
 

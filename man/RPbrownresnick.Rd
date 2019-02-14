@@ -26,12 +26,7 @@
 }
 
 \details{
-  The extreme value index \code{xi} is always a number, i.e. \eqn{\xi}
-  is constant 
-  in space. In contrast, \eqn{\mu} and \eqn{s} might be constant
-  numerical value or given a \code{\link{RMmodel}}, in particular by a
-  \code{\link{RMtrend}} model. The default values of \eqn{mu} and \eqn{s}
-  are \eqn{1} and \eqn{z\xi}, respectively.
+ \GEV
 
  The functions \code{RPbrorig}, \code{RPbrshifted} and \code{RPbrmixed}
   perform the simulation of a Brown-Resnick process, which is defined by
@@ -41,7 +36,7 @@
   positive real half-axis with intensity \eqn{x^{-2} dx}{1/x^2 dx},
   \eqn{W_i \sim W}{W_i ~ Y} are iid centered Gaussian processes with
   stationary increments and variogram \eqn{\gamma}{gamma} given by
-  \code{model}.
+  \code{phi}.
    
  For simulation, internally, one of the methods
  \command{\link{RPbrorig}}, \command{\link{RPbrshifted}} and
@@ -49,9 +44,7 @@
  }
 
  
-\author{Marco Oesting, \email{oesting@math.uni-mannheim.de},
-        Martin Schlather, \email{schlather@math.uni-mannheim.de}
-        \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\author{\marco; \martin}
 
 \references{
   \itemize{
@@ -60,12 +53,10 @@
     Extreme values of independent stochastic
     processes. \emph{J. Appl. Probab.} \bold{14}, 732-739.
 
-
     \item
     Buishand, T., de Haan , L. and Zhou, C. (2008).
     On spatial extremes: With application to
     a rainfall problem. \emph{Ann. Appl. Stat.} \bold{2}, 624-642.
-
 
     \item Kabluchko, Z., Schlather, M. and de Haan, L (2009)
     Stationary max-stable random fields associated to negative
@@ -96,18 +87,15 @@
  \command{\link{RMmodel}},
  \command{\link{RPgauss}},
  \command{\link{maxstable}},
- \command{\link{maxstableAdvanced}}
+ \command{\link{maxstableAdvanced}}.
 }
 
 \keyword{spatial}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 \dontshow{\dontrun{
 model <- ~ RPbrownresnick(RMfbm(alpha=A), xi=0)
 x <- seq(0, 10, 0.2)
@@ -126,7 +114,6 @@ plot(z)
 
 
 }}
-## for some more sophisticated models see 'maxstamableAdvanced'
+## for some more sophisticated models see 'maxstableAdvanced'
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

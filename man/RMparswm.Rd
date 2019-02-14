@@ -22,13 +22,12 @@ RMparswm(nudiag, var, scale, Aniso, proj)
 RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 }
 \arguments{
- \item{nudiag}{a vector of arbitrary length of positive values; each entry
- positive; the vector \eqn{(\nu_{11},\nu_{22},...)}.
+ \item{nudiag}{a vector of arbitrary length of positive values; the vector \eqn{(\nu_{11},\nu_{22},...)}.
  The offdiagonal elements \eqn{\nu_{ij}} are calculated as
  \eqn{0.5 (\nu_{ii} + \nu_{jj})}.}
  \item{rho}{any positive definite \eqn{m \times m}{m x m}
  matrix; 
- here \eqn{m} equals \code{length(nudiag)}
+ here, \eqn{m} equals \code{length(nudiag)}.
  For the calculation of \eqn{c_{ij}} see Details.
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
@@ -52,12 +51,12 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
  of the space.
 
  Note that the definition of \command{RMparswmX} is
- \code{RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj))} .
+ \code{RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj))}. 
 }
 
 
 \value{
- \command{\link{RMparswm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMparswm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -67,8 +66,7 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMbiwm}},
  \command{\link{RMwhittle}},
@@ -78,20 +76,18 @@ RMparswmX(nudiag, rho, var, scale, Aniso, proj)
 }
 
 
-\examples{
-
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 rho <- matrix(nc=3, c(1, 0.5, 0.2, 0.5, 1, 0.6, 0.2, 0.6, 1))
 model <- RMparswmX(nudiag=c(1.3, 0.7, 2), rho=rho)
+plot(model)
 x.seq <- y.seq <- seq(-10, 10, 0.1)
 z <- RFsimulate(model = model, x=x.seq, y=y.seq)
 plot(z)
 
-\dontshow{FinalizeExample()}
-} % examples
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 \keyword{models}

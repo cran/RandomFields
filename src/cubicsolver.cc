@@ -1,3 +1,25 @@
+/*
+ Authors 
+ Felix Ballani
+
+ Copyright (C) 2014 -- 2017 Felix Ballani
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
 #include <Rmath.h>
 #include "RF.h"
 #include "cubicsolver.h"
@@ -10,11 +32,7 @@
 int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
 
     //the equation is quadratic, but not cubic. The first coefficient must be non 0.
-    if (a == 0)
-    {
-        SERR1("a=%e NOT OK", a);
-    }
-
+    if (a == 0) FAILED1("a=%10e NOT OK", a);
 
     b /= a;
     c /= a;
@@ -29,9 +47,9 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     term1 = (b/3.0);
     if (disc > 0) { // one root real, two are complex
         s = r + SQRT(disc);
-        s = ((s < 0) ? -pow(-s, (1.0/3.0)) : POW(s, (1.0/3.0)));
-        t = r - SQRT(disc);
-        t = ((t < 0) ? -pow(-t, (1.0/3.0)) : POW(t, (1.0/3.0)));
+        if (s < 0) s = -POW(-s, (1.0/3.0)); else s = POW(s, (1.0/3.0));
+	t = r - SQRT(disc);
+        if (t < 0) t = -POW(-t, (1.0/3.0)); else t = POW(t, (1.0/3.0));
         roots[0][0] = -term1 + s + t;
         term1 += (s + t)/2.0;
         roots[2][0] = -term1;
@@ -45,12 +63,13 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     // The remaining options are all real
     roots[1][1] = 0;
     roots[2][1] = 0;
-    if (disc == 0){ // All roots real, at least two are equal.
-        r13 = ((r < 0) ? -pow(-r,(1.0/3.0)) : POW(r,(1.0/3.0)));
-        roots[0][0] = -term1 + 2.0*r13;
-        roots[1][0] = -(r13 + term1);
-        roots[2][0] = -(r13 + term1);
-        return 0;
+    if (disc == 0){ // All roots real, at least two are equal.      
+      if (r < 0) r13 = -POW(-r,(1.0/3.0));
+	else r13 = POW(r,(1.0/3.0));
+      roots[0][0] = -term1 + 2.0*r13;
+      roots[1][0] = -(r13 + term1);
+      roots[2][0] = -(r13 + term1);
+      return 0;
     } // End if (disc == 0)
     // Only option left is that all roots are real and unequal (to get here, q < 0)
     q = -q;

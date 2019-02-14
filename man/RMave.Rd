@@ -31,12 +31,12 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
  \item{z}{a \eqn{d-1} dimensional vector if the corresponding random
    field is on \eqn{d}-dimensional space}
  \item{spacetime}{logical. If FALSE then the model is interpreted as
-   if \eqn{h=0}, i.e. the spatial dimension is \eqn{d}. Default is \code{TRUE}}
+   if \eqn{h=0}, i.e. the spatial dimension is \eqn{d}. Default is \code{TRUE}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
    \command{\link{RMmodel}}. If not passed, the above
    covariance function remains unmodified.}
 }
-\details{See Schlather, M. (2010), Example 13 with l=1)
+\details{See Schlather, M. (2010), Example 13 with l=1.
 }
 \value{
  \command{\link{RMave}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
@@ -49,24 +49,19 @@ RMave(phi, A, z, spacetime, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
- \command{\link{RFfit}}.
+ \command{\link{RFfit}},
  \command{\link{RFsimulate}},
  \code{\link{RMmodel}},
- \code{\link{RMstp}}
+ \code{\link{RMstp}}.
 }
-
 
 \keyword{spatial}
 \keyword{models}
 
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -91,10 +86,9 @@ z3 <- ( (det(E+2*B))^(-1/2) ) *
  phi( sqrt( sum(h*h)/2 + (t(z) \%*\% h)^2 *
  ( 1-2*t(h) \%*\% A \%*\% solve(E+2*B) \%*\% A \%*\% h) ) )
 ##
-stopifnot(abs(z1-z2)<1e-12, abs(z2-z3)<1e-12)
+\dontshow{if(maintainers.machine())stopifnot(abs(z1-z2)<1e-12,abs(z2-z3)<1e-12)}
+\dontrun{ stopifnot(abs(z1-z2)<1e-12, abs(z2-z3)<1e-12) }
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 

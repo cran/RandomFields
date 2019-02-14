@@ -18,7 +18,7 @@ RMexp(var, scale, Aniso, proj)
 }
 \details{
  This model is a special case of the Whittle covariance model (see \command{\link{RMwhittle}}) if \eqn{\nu=\frac{1}{2}}{\nu=0.5} and of the symmetric stable family (see \command{\link{RMstable}}) if \eqn{\nu = 1}{\nu=1}. Moreover,
- it is the continuous-time analog of the first order autoregressive time
+ it is the continuous-time analogue of the first order autoregressive time
  series covariance structure.
 
  The exponential covariance function is a normal scale mixture.
@@ -46,8 +46,7 @@ RMexp(var, scale, Aniso, proj)
   
  }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{
  \command{\link{RMwhittle}},
  \command{\link{RMstable}},
@@ -60,16 +59,12 @@ RMexp(var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMexp()
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

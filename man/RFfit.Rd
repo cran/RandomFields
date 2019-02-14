@@ -7,7 +7,7 @@
 \description{
   The function estimates arbitrary parameters of
   a random field specification with various methods.
-  Currenty, the model to be fitted can be
+  Currently, the models to be fitted can be
   \itemize{
     \item{\link[=RPgauss]{Gaussian random fields}}
     \item{\link[=RFformula]{linear models}}
@@ -17,87 +17,34 @@
 }
 \usage{
 RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
- lower = NULL, upper = NULL, methods,
- sub.methods, optim.control = NULL, users.guess = NULL,
- distances = NULL, dim, transform = NULL, ...)
+      lower = NULL, upper = NULL, methods,
+      sub.methods, optim.control = NULL, users.guess = NULL,
+      distances = NULL, dim, transform = NULL, params=NULL, ...)
 }
 
 \arguments{
- \item{model}{
- covariance model, see \command{\link{RMmodel}} or
- type \code{\link{RFgetModelNames}(type="variogram")} to get all options.
-% See also t
- 
+  \item{model,params}{\argModel
+  
  All parameters that are set to \code{NA} will be estimated;
  see the examples below.
- }
- \item{x}{vector of x coordinates, or object
-   of class \code{\link[sp:GridTopology-class]{GridTopology}} or
-   \code{\link[raster]{raster}};
- For more options see \link{RFsimulateAdvanced}.
- }
- \item{y}{vector of y coordinates}
- \item{z}{vector of z coordinates}
- \item{T}{vector of T coordinates; these coordinates are given in
- triple notation, see \command{\link{RFsimulate}}.}
- \item{data}{vector or matrix of values measured at \code{coord};
- If a matrix is given then the columns are interpreted as independent
- realisations.\cr
- If also a time component is given, then in the data the indices for
- the spatial components run the fastest.
- 
- If an \code{m}-variate model is used, then each realisation is given as
- \code{m} consecutive columns of \code{data}.
- }
- \item{lower}{list or vector. Lower bounds for the parameters.
- If \code{param} is a vector, \code{lower} has to be a vector as well and
- its length must equal the number of parameters to be estimated. The order
- of \code{param} has to be maintained. A component being \code{NA} means
- that no manual lower bound for the corresponding parameter is set.
- 
- If \code{param} is a list, \code{lower} has to be of (exactly) the same
- structure.
- }
- \item{upper}{list or vector. Upper bounds for the parameters.
- See also lower.
- }
- \item{grid}{boolean. Whether coordinates build a grid. In nearly all cases
-   the value of \code{grid}
-   is self-detected, so that \code{grid} need not be given,
-   in general}
- 
 
- \item{methods}{
-  Main methods to be used for estimating. If several methods,
-   estimation will be performed with each method and the results reported.
+ Type \code{\link{RFgetModelNames}(type="variogram")} to get all options
+ for \code{model}. 
  }
- \item{sub.methods}{
- variants of the least squares fit of the variogram. See Details.
- variants of the maximum likelihood fit of the covariance function.
- See Details.
- }
- \item{users.guess}{
- User's guess of the parameters. All the parameters must be given
- using the same rules as for either \code{param} (except that no NA's should
- be contained) or \code{model}.
- }
- \item{distances,dim}{Instead of \code{x}-coordinates,  distances might
- be given. The the dimension of the space \code{dim} must be given explicitely.}
- \item{optim.control}{control list for \command{\link[stats]{optim}},
- which uses \sQuote{L-BFGS-B}. However \code{parscale} may not be given.}
- \item{transform}{
-   this is an attempt to allow binding between
-   parameters,
-   e.g. one parameter value is supposed to equal another one,
-   See examples below.
-
-   \code{transform=list()} is not valid for estimating, but returns
-   structural information to set up the correct function.
-  See examples below.
-
- }
- \item{...}{further options and control arguments for the simulation
- that are passed to and processed by \command{\link{RFoptions}}.}
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
+ \item{T}{\argT}
+ \item{grid}{\argGrid}
+ \item{data}{\argData}
+ \item{lower}{\argLower}
+ \item{upper}{\argUpper}
+ \item{methods}{\argFitmethods} 
+ \item{sub.methods}{\argFitsubmethods. See Details.}
+ \item{users.guess}{\argUsersguess}
+ \item{distances,dim}{\argDistances}
+ \item{optim.control}{\argOptimcontrol}
+ \item{transform}{\argTransform}
+ \item{...}{\argDots}
 }
  
 \details{
@@ -115,8 +62,7 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
 
   If the model defines a Gaussian random field, the options
   for \code{methods} and \code{submethods} are currently
-  \code{"ml"} and \code{c("self", "plain", "sqrt.nr", "sd.inv",
-    "internal")},
+  \code{"ml"} and \code{c("self", "plain", "sqrt.nr", "sd.inv", "internal")},
   respectively.
 }
 
@@ -125,10 +71,10 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
   \itemize{
     \item
     An important optional argument is \code{boxcox} which indicates
-    A Box-Cox transformation see \code{boxcox} in \command{\link{RFoptions}}
+    a Box-Cox transformation; see \code{boxcox} in \command{\link{RFoptions}}
     and \code{RFboxcox} for details.
     \item
-    Instead of \command{\link[stats]{optim}}, other optimiser can be used,
+    Instead of \command{\link[stats]{optim}}, other optimisers can be used,
     see \link{RFfitOptimiser}.
     \item
     Several advanced options can be found in sections \sQuote{General
@@ -140,14 +86,14 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
     This function does not depend on the value of
     \command{\link{RFoptions}}\code{()$PracticalRange}. 
     The function \code{RFfit} always uses the standard specification
-    of the covariance model as given in \command{\link{RMmodel}}
+    of the covariance model as given in \command{\link{RMmodel}}.
   }
   }
 
 \value{
   The result depends on the logical value of
   \code{\link[=RFoptions]{spConform}}.
-  If \code{TRUE}, an  S4 object is greated. In case the model indicates
+  If \code{TRUE}, an  S4 object is created. In case the model indicates
     a Gaussian random field, an
   \link[=RFfit-class]{RFfit} object is created.
 
@@ -166,28 +112,24 @@ RFfit(model, x, y = NULL, z = NULL, T = NULL, grid=NULL, data,
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
-
+\me
 
 \seealso{
- \link{RFfitOptimiser}
+ \command{\link{RFfitOptimiser}},
   \command{\link{RFlikelihood}},
  \command{\link{RFratiotest}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 % options(error=recover)
 % source("RandomFields/tests/source.R")
 % to do bsp mit box cox
 
 RFoptions(modus_operandi="sloppy")
-
 
 
 #########################################################
@@ -218,9 +160,6 @@ print(fit)
 print(fit, full=TRUE)
 
 
-
-
-
 \dontshow{\dontrun{
 #########################################################
 ## Estimation with fixed sill (variance + nugget       ##
@@ -228,7 +167,6 @@ print(fit, full=TRUE)
 estmodel <- RMgencauchy(var=NA, scale=NA, alpha=NA, beta=NA) +
             RMnugget(var=NA) + RMtrend(mean=NA)
 RFfit(estmodel, data=d, fit.sill=1, fit.optim_var_elimination="try")
-
 
 
 #########################################################
@@ -239,7 +177,6 @@ d <- RFsimulate(model, x=x, y=y, n=n)
 estmodel <- RMexp(Aniso=matrix(nc=2, c(NA,NA,-2,1)), var=NA) +
             RMtrend(mean=NA)
 RFfit(estmodel, data=d, fit.nphi=20)
-
 
 
 #########################################################
@@ -254,11 +191,9 @@ RFfit(estmodel, data=d, transform=list(c(TRUE, TRUE, FALSE), f))
 
 }}
 
-
 \dontshow{RFoptions(modus_operandi="normal")}
-\dontshow{FinalizeExample()}
+\dontshow{FinalizeExample()}}
 
-}
 \keyword{spatial}
 \keyword{optimize}
 

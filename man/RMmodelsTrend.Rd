@@ -3,8 +3,8 @@
 \alias{trend modelling}
 \title{Trend Modelling}
 \description{
-  The coding of trend, in particular multivariate trends,
-  will be described here
+  The coding of trends, in particular multivariate trends,
+  will be described here.
 }
 
 \details{
@@ -14,14 +14,12 @@
 
 %\references{Ribeiro}
 \seealso{
-  \link{RFcalc}, \link{RM}, \link{RMmodels}, \link{RMtrend}, \link{RMmodelsMultivariate}
+  \link{RFcalc}, \link{RM}, \link{RMmodels}, \link{RMtrend}, \link{RMmodelsMultivariate}.
 }
 
-\examples{
+\examples{\dontshow{StartExample();if (!interactive()) RFoptions(modus="careless")} %ok
 %RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 %##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample();if (!interactive()) RFoptions(modus="careless")} %ok
-
 require(geoR)
 
 data(ca20) ## data set from geoR
@@ -37,10 +35,9 @@ M <- RMexp(var=NA, scale=NA) + RMnugget(var=NA)
 ## short definition of a trend using the fact that ca20.df is a
 ## data.frame
 ca20.RFmod02 <- ~ 1 + altitude + M
-(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
+(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df, M=M))
 
-
-## long definition, which allows also for more general constructions
+## long definition which also allows for more general constructions
 ca20.RFmod02 <- NA + NA*RMcovariate(ca20.df$altitude) + M 
 (ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
@@ -51,17 +48,17 @@ ca20.RFmod02 <- M + NA + ca20.df$altitude
 print(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
 ### The following does NOT work, as R assumes (NA + ca20.df$altitude) + M
+### In particular, the model definition gives a warning, and the
+### RFfit call gives an error: 
 (ca20.RFmod02 <- NA + ca20.df$altitude + M) 
 try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...
 
-
 ## factors:
 ca20.RFmod03 <- ~ 1 + area + M ### 
-(ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df))
+(ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df, M=M))
 
-\dontshow{FinalizeExample(); RFoptions(coordnames=NA, varnames=NA, modus="normal")}
+\dontshow{FinalizeExample(); RFoptions(coordnames=NULL, varnames=NULL)}
+}
 
-}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \keyword{spatial}

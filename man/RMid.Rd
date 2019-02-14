@@ -2,47 +2,42 @@
 \alias{RMid}
 \title{Identical Model}
 \description{
-  \command{RMid} is the identical operator
-  for objects of class \code{\link[=RMmodel-class]{RMmodel}}
+  \command{RMid} is the identical function \eqn{f(x) = x}
+  where \eqn{x} is a vector of coordinates and \eqn{f(x)} is a model value.
  }
  \usage{
-RMid(phi, vdim, var, scale, Aniso, proj)
+RMid()%var, scale, Aniso, proj)
 }
 
-\arguments{
- \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
- \item{vdim}{for internal purposes}
- \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
- \command{\link{RMmodel}}. If not passed, the above
- covariance function remains unmodified.}
-}
+%\arguments{
+% \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
+%   \command{\link{RMmodel}}. If not passed, the above
+%   covariance function remains unmodified.}
+%}
 
  
 \value{
- \command{\link{RMid}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMid}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
- \command{\link{RMmodel}},
+  \command{\link{RMmodel}}.
+  \command{RMid},
+  \command{RMtrafo},
+  \command{RMprod}
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-model <- RMexp()
-x <- 0:10
-z <- RFsimulate(model, x)
 
-model2 <- RMid(model)
-z2 <- RFsimulate(model, x)
-sum(abs(as.vector(z)- as.vector(z2))) == 0 # TRUE
-\dontshow{FinalizeExample()}
-
-}
+## C(x,y) = < x, y >
+RFcov(RMprod(RMid()), as.matrix(1:10), as.matrix(1:10), grid=FALSE)
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

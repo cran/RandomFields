@@ -2,7 +2,7 @@
 \alias{RMkolmogorov}
 \title{Identical Model}
 \description{
- \command{RMkolmogorov} corresponds to a vector-valued random fields with
+ \command{RMkolmogorov} corresponds to a vector-valued random field with
  covariance function
  \deqn{
  \gamma_{ij}(h) = \|h\|^{2/3}\left(\frac43 \delta_{ij} -
@@ -35,30 +35,29 @@
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RMcurlfree}},
  \command{\link{RMdivfree}},
- \command{\link{RMvector}},
+ \command{\link{RMvector}}.
 }
 
 \keyword{spatial}
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 x <- y <- seq(-2, 2, len=20)
 model <- RMkolmogorov()
 plot(model, dim=3, MARGIN=1:2, fixed.MARGIN=1)
 
 simu <- RFsimulate(model, x, y, z=0)
 plot(simu, select.variables=list(c(1,2)), col=c("red"))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 

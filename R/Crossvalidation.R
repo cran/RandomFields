@@ -81,6 +81,7 @@ print.summary.RFcrossvalidate <- function(x, ...) {
 }
 
 RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
+                            params,
                             lower=NULL, upper=NULL,
                             method="ml", # "reml", "rml1"),
                             users.guess=NULL,  
@@ -119,10 +120,10 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
     result <- ats$result
     models <- ats$fitted.model
   } else {
-    if (class(model) == "RF_fit") {
+    if (is(model, "RF_fit")) {
       models <- list(model[[method]])
-    } else if (class(model) == "RFfit") {
-      models <- list(PrepareModel2(model[method], ...))
+    } else if (is(model, "RFfit")) {
+      models <- list(PrepareModel2(model[method], params=params, ...))
     } else {
       models <- list(model)
     }
@@ -131,7 +132,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
   
   for (i in 1:length(models)) {
 
-    if (class(model) == "RFfit" || class(model) == "RF_fit") {
+    if (is(model, "RFfit") || is(model, "RF_fit")) {
       fit <- models[[i]]
       if (details) fitted <- list(fit)
       refit <- FALSE
@@ -145,23 +146,23 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       if (details) fitted <- list(fit)
     }
     
-    if (class(model) == "RFfit" && missing(data)) Z <- model@Z
-    else Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
-                              distances=distances, dim=dim, RFopt=RFopt)
+    if (is(model, "RFfit") && missing(data)) Z <- model@Z
+    else Z <- UnifyData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+                        distances=distances, dim=dim, RFopt=RFopt)
  
     if (length(Z$data) > 1)
       stop("cross-valdation currently only works for single sets")
     dta <- Z$data[[1]]
+    len <- nrow(dta)
     
 
     predicted <- var <- error <- std.error <-
       matrix(NA, ncol=ncol(dta), nrow=nrow(dta)) ## just the size
     fitted <- list()
-    len <- Z$dimdata[1, 1]
     
     Coords <- Z$coord[[1]]
     if (Coords$grid) Coords <- ExpandGrid(Coords)
-     for (nr in 1:len) {
+    for (nr in 1:len) {
       if (length(base::dim(dta)) == 2)
         Daten <- dta[-nr,   , drop=FALSE] ## nicht data -- inferiert!!
       else # dim == 3 assumed
@@ -169,7 +170,7 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       coords <- DeleteCoord(Coords, nr)
       if (printlevel >= PL_IMPORTANT && pch!="") cat(pch)
       if (refit) {
-        if (Z$dist.given) {
+        if (Coords$dist.given) {
           stop("not programmed yet. Please contact author") # to do
         } else {
           fit <- RFfit(model=model,
@@ -213,11 +214,10 @@ RFcrossvalidate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL, data,
       var[nr, ] <- as.vector(interpol$var)
       predicted[nr, ] <- as.vector(interpol$estim)
       if (printlevel <= PL_IMPORTANT && pch!="") cat("\n")
-
-      error <- dta - predicted
-      std.error <- error / sqrt(var)
     }
-    
+
+    error <- dta - predicted
+    std.error <- error / sqrt(var)
     
     res[[i]] <- list(data=Z$data, predicted=predicted, krige.var=var,
                 error=error, std.error=std.error,

@@ -8,22 +8,20 @@
   Evaluating distribution families
 }
 \description{
-  Through \command{\link{RRdistr}} distribution families can the
-  passed to \pkg{RandomFields} to create distributions available
-  in the \command{\link{RMmodel}} defintions
+  Through \command{\link{RRdistr}} distribution families can be passed to \pkg{RandomFields} to create distributions available
+  in the \command{\link{RMmodel}} definitions.
 }
 \usage{
-RFddistr(model, x, dim=1, ...)
-RFpdistr(model, q, dim=1, ...)
-RFqdistr(model, p, dim=1, ...)
-RFrdistr(model, n, dim=1, ...)
-RFdistr(model, x, q, p, n, dim=1, ...)
+RFddistr(model, x, params, dim=1, ...)
+RFpdistr(model, q, params, dim=1, ...)
+RFqdistr(model, p, params, dim=1, ...)
+RFrdistr(model, n, params, dim=1, ...)
+RFdistr(model, x, q, p, n, params, dim=1, ...)
 }
 \arguments{
-  \item{model}{
-    an \code{RRmodel}}
+  \item{model,params}{an \code{\link{RRmodel}}.}
   \item{x}{the location where the density is evaluated}
-  \item{q}{the location there the probability function is evaluated}
+  \item{q}{the location where the probability function is evaluated}
   \item{p}{the value where the quantile function is evaluated}
   \item{n}{the number of random values to be drawn}
   \item{dim}{the dimension of the vector to be drawn}
@@ -38,15 +36,12 @@ RFdistr(model, x, q, p, n, dim=1, ...)
 \value{
   as described in the arguments
 }
-\author{
-Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software
-}
-}
+\me
 
 \seealso{
   \command{\link{RRgauss}}, \link{RR}
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -72,6 +67,5 @@ for (i in 1:3) {
   readline(paste("Simulation no.", i, ": press return", sep=""))  
   plot(RFsimulate(model, x=seq(0,10,0.1)))
 }
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 \keyword{spatial}

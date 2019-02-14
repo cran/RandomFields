@@ -5,13 +5,11 @@
 %\alias{Schlather}
 \title{Covariance Models for Random Vector Fields}
 \description{
- Here the code of the paper on \sQuote{Covariance Models for Random
+ Here, the code of the paper on \sQuote{Covariance Models for Random
  Vector Fields} is given. 
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
-}
+\me
 \references{
  \itemize{ 
  \item
@@ -22,14 +20,11 @@
  
  % Schlather, M. (2001) Simulation of stationary and isotropic random
 % fields. \emph{R-News} \bold{1} (2), 18-20.
-
-
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 \dontshow{\dontrun{
 my.legend <- function(lu.x, lu.y, zlim, col, cex=1) {
@@ -120,8 +115,7 @@ par(mfcol=c(1,1))
 
 }}
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

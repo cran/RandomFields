@@ -10,11 +10,11 @@
 RMnsst(phi, psi, delta, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{is normal mixture \command{\link{RMmodel}},  cf.\cr
+ \item{phi}{is a normal mixture \command{\link{RMmodel}},  cf.\cr
     \code{RFgetModelNames(monotone="normal mixture")}
   }
  \item{psi}{is a variogram \command{\link{RMmodel}}.}
- \item{delta}{a numerical value; must be greater than or equal to the spatial dimension of the field}
+ \item{delta}{a numerical value; must be greater than or equal to the spatial dimension of the field.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
@@ -50,8 +50,7 @@ RMnsst(phi, psi, delta, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
   \command{\link{RMgennsst}},
 \command{\link{RMmodel}},
@@ -63,16 +62,12 @@ RMnsst(phi, psi, delta, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMnsst(phi=RMgauss(), psi=RMfbm(alpha=1), delta=2)
 x <- seq(0, 10, 0.25)
 plot(model, dim=2)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

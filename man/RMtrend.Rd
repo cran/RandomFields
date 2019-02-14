@@ -1,6 +1,7 @@
 \name{RMtrend}
 \alias{RMtrend}
 \alias{trend}
+\alias{RM_TREND}
 \title{Trend Model}
 \description{
  \command{\link{RMtrend}} is a pure trend model with covariance 0.
@@ -27,7 +28,7 @@ RMtrend(mean) %, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
  implemented, see \command{\link{RFformula}}.
 }
 \note{
- Using uncapsulated substraction to build up a covariance
+ Using uncapsulated subtraction to build up a covariance
  function is ambiguous, see the examples below.
  Best to define the trend separately, or to use
  \command{\link{R.minus}}.
@@ -39,12 +40,7 @@ RMtrend(mean) %, plane, polydeg, polycoeff, arbitraryfct, fctcoeff)
 \references{Chiles, J. P., Delfiner, P. (1999) \emph{Geostatistics:
  Modelling Spatial Uncertainty.} New York: John Wiley & Sons.
 }
-\author{
-Marco Oesting, \email{oesting@math.uni-mannheim.de}
-
-Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\author{\marco; \martin}
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFformula}},
@@ -52,31 +48,33 @@ Martin Schlather, \email{schlather@math.uni-mannheim.de}
  \command{\link{RMplus}}
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## first simulate some data with a sine and a mean as trend
 repet <- 100
 \dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); repet <- 3}} 
 x <- seq(0, pi, len=10)
 trend <- 2 * sin(R.p(new="isotropic")) + 3
-model <- RMexp(var=2, scale=1) + trend
-data <- RFsimulate(model, x=x, n=repet)
+model1 <- RMexp(var=2, scale=1) + trend
+dta <- RFsimulate(model1, x=x, n=repet)
+
+
 
 ## now, let us estimate variance, scale, and two parameters of the trend
 model2 <- RMexp(var=NA, scale=NA) + NA * sin(R.p(new="isotropic")) + NA
 \dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'repet'"); model2 <- RMexp(var=NA) + NA * sin(R.p(new="isotropic")) + NA}}
-print(RFfit(model2, data=data))
+print(RFfit(model2, data=dta))
 
-## model2 can be made explicite by enclosing the trend parts by
+## model2 can be made explicit by enclosing the trend parts by
 ## 'RMtrend'
 model3 <- RMexp(var=NA, scale=NA) + NA *
           RMtrend(sin(R.p(new="isotropic"))) + RMtrend(NA)
-print(RFfit(model2, data=data))
+print(RFfit(model2, data=dta))
 
 
-## IMPORTANT:  substraction is not a way to combine definite models
+## IMPORTANT:  subtraction is not a way to combine definite models
 ##             with trends
 trend <- -1
 (model0 <- RMexp(var=0.4) + trend) ## exponential covariance with mean -1
@@ -205,9 +203,7 @@ model.est <- ~ RMtrend(polydeg=2) + RMwhittle(nu=NA, scale=0.5)
 estimated <- RFfit(model=model.est, x=x, y=x,
  data=simulated@data, mle.methods="ml")
 }}
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 		 
 \keyword{spatial}
 \keyword{models}

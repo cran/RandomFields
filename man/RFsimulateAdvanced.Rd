@@ -1,4 +1,3 @@
-
 \name{RFsimulateAdvanced}
 \alias{RFsimulateAdvanced}
 \title{Simulation of Random Fields -- Advanced}
@@ -7,7 +6,7 @@
 \description{
  This function simulates \bold{unconditional} random fields:
   \itemize{
-    \item univariate and multivariat,
+    \item univariate and multivariate,
     spatial and spatio-temporal Gaussian random fields
     \item \link[=RPpoisson]{stationary Poisson fields}
     \item \link[=RPchi2]{Chi2 fields}
@@ -18,8 +17,8 @@
 
   It also simulates \bold{conditional} random fields for
   \itemize{
-    \item univariate and multivariat,
-    spatial and spatio-temporal Gaussian random fields
+    \item univariate and multivariate,
+    spatial and spatio-temporal Gaussian random fields.
   }
 
   For basic simulation of Gaussian random fields, see \link{RFsimulate}.
@@ -43,7 +42,7 @@
    e.g.,
    \itemize{ 
      \item \command{\link{RPgauss}}: Gaussian random field (default
-     if none of the function in the list are given)
+     if none of the functions in the list is given)
      %	 \item \command{\link{RPbernoulli}}:
      %	 indicator field, based on a Gaussian field
      %	 \item \command{\link{RPpoisson}}: shot noise model
@@ -55,15 +54,15 @@
      See\code{ \link{RP}} for an overview.
    }
    
-   \item the covariance or variogram model inm case of a Gaussian random
+   \item the covariance or variogram model in case of a Gaussian random
    field (\command{\link{RPgauss}}) and for fields based on Gaussian fields
    (e.g. \command{\link{RPbernoulli}});
    type \code{\link{RFgetModelNames}(type="variogram")}
-   for a list of available models; see also \command{\link{RMmodel}}
+   for a list of available models; see also \command{\link{RMmodel}}.
    
    \item the shape function in case of a shot noise process; type
    \code{\link{RFgetModelNames}(type='shape')} for a list of
-   available models
+   available models.
    
 %   \item the main structural element of a max-stable field
 %   (\command{\link{RPbrownresnick}}, \command{\link{RPopitz}},
@@ -87,7 +86,7 @@
  \code{grid=TRUE}, the columns of \code{x} are interpreted as
  gridtriples (see \code{grid}); if of class \code{\link[sp:GridTopology-class]{GridTopology}},
  \code{x} is interpreted as grid definition and \code{grid}
- is automatically set to \code{TRUE} 
+ is automatically set to \code{TRUE}. 
  }
  \item{y}{optional vector of y coordinates, ignored if \code{x}
  is a matrix}
@@ -96,7 +95,7 @@
  \item{T}{optional vector of time coordinates, 
  \code{T} must always be an equidistant vector or given in a
  gridtriple format (see argument \code{grid}); for each component
- of \code{T}, the random field is simulated at all location points
+ of \code{T}, the random field is simulated at all location points.
  }
  \item{grid}{logical; determines whether the vectors \code{x},
  \code{y}, and \code{z} or the columns of \code{x} should be
@@ -107,7 +106,7 @@
  \code{c(from, stepsize, len)}.
 
 
- Note: if \code{grid} is not given, \command{\link{RFsimulate}} tries to
+ Note: If \code{grid} is not given, \command{\link{RFsimulate}} tries to
  guess what is meant.
  
  \code{c(from, stepsize, len)} (see Details)
@@ -127,14 +126,14 @@
  }
  \item{err.model}{same as \code{model}; gives the model of the
  measurement errors for the measured \code{data} (which must be given
- in this case!), see Details,
+ in this case!), see Details.
  \code{err.model=NULL} (default) corresponds to error-free
  measurements, the most common alternative is
  \code{err.model=\link{RMnugget}()};
- ignored if \code{data} is missing
+ ignored if \code{data} is missing.
  }
  \item{distances}{object of class \code{\link{dist}} representing
- the upper trianguar part of the matrix of Euclidean distances
+ the upper triangular part of the matrix of Euclidean distances
  between the points at which the field is to be simulated; only
  applicable for stationary and isotropic models; if not \code{NULL},
  \code{dim} must be given and \code{x}, \code{y}, \code{z} and
@@ -160,7 +159,7 @@
  controlled by the wrapping model.
 
  If the wrapping function of the \code{model} argument is a covariance
- or variogram model (i.e., one of list obtained by
+ or variogram model, i.e., one of the list obtained by
  \code{\link{RFgetModelNames}(type="variogram",
  group.by="type")}, by default, a Gaussian field 
  with the corresponding covariance structure is simulated.
@@ -192,7 +191,7 @@
  Here, \dQuote{grid} means \dQuote{equidistant in each direction}, i.e. all
  vectors must be equidistant and in ascending order.
  In case of more than 3 space dimensions, the coordinates must be
- given in matrix notations. To enable different grid lengths for each
+ given in matrix notation. To enable different grid lengths for each
  direction in combination with the matrix notation, the
  \dQuote{gridtriple} notation \code{c(from, stepsize, len)} is used:
  If \code{x}, \code{y},
@@ -209,7 +208,7 @@
  If \code{data} is passed, conditional simulation is performed. 
  \itemize{
  \item
- if of class \code{\link[=RFsp-class]{RFsp}},
+ If of class \code{\link[=RFsp-class]{RFsp}},
  \code{ncol(data@coords)} must equal the dimension of the index
  space. If \code{data@data} contains only a single variable,
  variable names are optional. If \code{data@data} contains
@@ -234,7 +233,7 @@
  interpreted as the given data and those before the corresponding
  column are interpreted as the coordinates.
  \item
- if \code{x} is missing, \command{\link{RFsimulate}} searches for
+ If \code{x} is missing, \command{\link{RFsimulate}} searches for
  \code{NA}s in the data and performs a conditional simulation
  for them.
  }
@@ -275,9 +274,9 @@
  Then the object returned by \command{\link{RFsimulate}}
  depends on the arguments \code{n} and \code{grid} in the following way:\cr
 
- if \code{vdim > 1} the \code{vdim}-variate vector makes the first dimension
+ If \code{vdim > 1} the \code{vdim}-variate vector makes the first dimension.
 
- if \code{grid=TRUE} an array of the dimension of the
+ If \code{grid=TRUE} an array of the dimension of the
  random field makes the next dimensions. Here, the dimensions
  are ordered in the sequence \code{x}, \code{y}, \code{z}, \code{T}
  (if given).
@@ -286,7 +285,7 @@
  single vector. Else if the time component is given the next 2
  dimensions give the space and the time, respectively.
  
- if \code{n > 1} the repetitions make the last dimension
+ If \code{n > 1} the repetitions make the last dimension.
 
  Note: Conversion between the \pkg{sp}
  format and the conventional format can be
@@ -401,27 +400,24 @@ General
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
+
 \seealso{
  \command{\link{RFoptions}},
  \command{\link{RMmodel}},
  \command{\link{RFgui}},
  \command{\link[=Gaussian]{methods for simulating Gaussian random fields}},
  \command{\link{RFfit}},
- \command{\link{RFempiricalvariogram}},
+ \command{\link{RFvariogram}},
  \link{RFsimulate.more.examples},
  \link{RFsimulate.sophisticated.examples},
- \command{\link{RPgauss}},
+ \command{\link{RPgauss}}.
 }
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 \dontshow{\dontrun{
 
 #############################################################
@@ -523,15 +519,9 @@ x <- seq(0.1, 6, 0.12)
 Aniso <- R.c(R.p(1)^2, R.p(2)^1.5)
 z <- RFsimulate(RMexp(Aniso = Aniso) + 10, x, x)
 plot(z) 
-
-
-
-
 }}
-\dontshow{FinalizeExample()}
 
-
-}
+\dontshow{FinalizeExample()}}
 
 
 

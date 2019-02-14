@@ -22,14 +22,14 @@ RMgenfbm(alpha, beta, var, scale, Aniso, proj)
  variogram remains unmodified.}
 }
 \details{
- Here the variogram of \command{\link{RMfbm}} is modified by
+ Here, the variogram of \command{\link{RMfbm}} is modified by
  the transformation \eqn{(\gamma+1)^{\delta/-1}} on variograms
  \eqn{\gamma}
- for \eqn{delta \in (0,1]}. This original modification allows for
+ for \eqn{\delta \in (0,1]}. This original modification allows for
  further generalization, cf. \command{\link{RMbcw}}.
 }
 \value{
- \command{\link{RMgenfbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMgenfbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -48,11 +48,9 @@ RMgenfbm(alpha, beta, var, scale, Aniso, proj)
  }
 }
 
-
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
-  \command{\link{RMbcw}}
+  \command{\link{RMbcw}},
  \command{\link{RMfbm}},
  \command{\link{RMmodel}},
  \command{\link{RMflatpower}},
@@ -60,20 +58,15 @@ RMgenfbm(alpha, beta, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMgenfbm(alpha=1, beta=0.5)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

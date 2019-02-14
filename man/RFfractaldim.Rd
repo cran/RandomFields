@@ -21,19 +21,11 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  ...)
 }
 \arguments{
- \item{x}{matrix of coordinates, or vector of x coordinates; if
+ \item{x}{\argX If
  \code{x} is not given and \code{data} is not an \pkg{sp} object, a grid with unit grid length is assumed}
- \item{y}{vector of y coordinates}
- \item{z}{vector of z coordinates}
-% \item{T}{vector of time coordinates. 
-% \code{T} must always be given in the \code{gridtriple} format,
-% independently how the spatial part is defined.
-% }
+ \item{y,z}{\argYz}
  \item{data}{the values measured; it can also be an \pkg{sp} object}
- \item{grid}{determines whether the vectors \code{x},
- \code{y}, and \code{z} should be
- interpreted as a grid definition, see Details. \code{grid}
- does not apply for \code{T}.}
+ \item{grid}{\argGrid}
  \item{bin}{sequence of bin boundaries for the empirical variogram}
  \item{vario.n}{first \code{vario.n} values of the empirical variogram
  are used for the regression fit that are not \code{NA}.}
@@ -64,20 +56,19 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  \item{fft.shift}{This argument is given in percent [of
  \code{fft.max.length}] and defines the overlap of the pieces defined
  by \code{fft.max.length}. If \code{fft.shift=50} the WOSA estimator is
- given; if \code{fft.shift=100} no overlap exist.}
+ given; if \code{fft.shift=100} no overlap exists.}
  \item{method}{
  list of implemented methods to calculate the fractal dimension; see Details
  }
  \item{mode}{character. A vector with components
- \code{'nographics'}, \code{'plot'}, or \code{'interactive'}: 
+ \code{'nographics'}, \code{'plot'} or \code{'interactive'}: 
  \describe{
  \item{\code{'nographics'}}{no graphical output}
  \item{\code{'plot'}}{the regression line is plotted}
  \item{\code{'interactive'}}{the regression domain can be chosen interactively}
  }
  Usually only one mode is given. Two modes may make sense
- in the combination \code{c("plot", "interactive")} in which case all the
- results are plotted first, and then the interactive mode is called. 
+ in the combination \code{c("plot", "interactive")}. In this case, all the results are plotted first, and then the interactive mode is called. 
  In the interactive mode, the regression domain is chosen by
  two mouse clicks with the left
  mouse; a right mouse click leaves the plot.
@@ -90,7 +81,7 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
  If \code{printlevel=2} warnings and the regression results
  are given. If \code{printlevel>2} tracing information is given.
  }
- \item{height}{height of the grahics window}
+ \item{height}{height of the graphics window}
  \item{...}{graphical arguments}
 }
 \details{ 
@@ -153,20 +144,20 @@ RFfractaldim(x, y = NULL, z = NULL, data, grid,
 
 
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
+\me
+
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFhurst}}
 }
 
 \keyword{ spatial }%-- one or more ...
 
-\examples{
+\examples{\dontshow{StartExample(reduced=50)}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample(reduced=50)}
+
 x <- seq(0, 10, 0.001)
 z <- RFsimulate(RMexp(), x)
 RFfractaldim(data=z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

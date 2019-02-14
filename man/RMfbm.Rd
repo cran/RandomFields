@@ -42,12 +42,11 @@ where \eqn{d}{d} is the dimension of the random field (see Chiles and
  Spatial Uncertainty.} New York, Chichester: John Wiley & Sons.
 
  \item Stein, M.L. (2002) Fast and exact simulation of fractional
- Brownian surfaces. \emph{J. Comput. Graph. Statist.} \bold{11}, 587--599
+ Brownian surfaces. \emph{J. Comput. Graph. Statist.} \bold{11}, 587--599.
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMgenfbm}},
  \command{\link{RMmodel}},
@@ -59,16 +58,12 @@ where \eqn{d}{d} is the dimension of the random field (see Chiles and
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMfbm(alpha=1)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

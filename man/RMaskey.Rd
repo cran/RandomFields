@@ -21,10 +21,10 @@ RMtent(var, scale, Aniso, proj)
  This covariance function is valid for dimension \eqn{d}{d} if
  \eqn{\alpha \ge (d+1)/2}. 
  For \eqn{\alpha=1} we get the well-known triangle (or tent)
- model, which is valid on the real line, only.
+ model, which is only valid on the real line.
  }
 \value{
- \command{\link{RMaskey}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMaskey}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   Covariance function
@@ -69,8 +69,7 @@ RMtent(var, scale, Aniso, proj)
 
   
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RMbigneiting}},
@@ -83,13 +82,12 @@ RMtent(var, scale, Aniso, proj)
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMtent()
 x <- seq(0, 10, 0.02) 
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

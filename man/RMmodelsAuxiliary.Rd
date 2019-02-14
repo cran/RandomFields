@@ -30,10 +30,10 @@
   used as shape functions.
  \tabular{ll}{
     \command{\link{RMangle}} \tab defines an anisotropy matrix by angle
-    and a diagonal matrix.
+    and a diagonal matrix
     \cr
     \command{\link{RMball}} \tab Indicator of a ball of radius
-    \eqn{1/2}.
+    \eqn{1/2}
     \cr
     \command{\link{RMm2r}} \tab spectral function belonging to a
     tail correlation function of the Gneiting class \eqn{H_n}
@@ -48,7 +48,7 @@
     correlation function of the Gneiting class \eqn{H_n}
     \cr 
     \command{\link{RMpolygon}} \tab Indicator of a typical Poisson
-    polygon. 
+    polygon 
     \cr
     \command{\link{RMrational}} \tab shape function used in the Bernoulli
     paper given in the references
@@ -71,17 +71,18 @@
     \command{\link{RMetaxxa}} \tab shape function used in the Bernoulli
     paper given in the references
     \cr
-    \command{\link{RMid}} \tab identity \cr
-  \command{\link{RMrotation}} \tab shape function used in the Bernoulli
+    \command{\link{RMidmodel}} \tab model identity\cr
+    \command{\link{RMid}} \tab identity but interpretation turns from a
+  coordinate to a model value\cr
+  \command{\link{RMtrafo}} \tab allows to model the identity within the
+  set of coordinates \cr
+   \command{\link{RMrotation}} \tab shape function used in the Bernoulli
    paper given in the references
    \cr
 }
  
   \bold{Other models}
   \tabular{ll}{
-    \command{\link{RMcoord}} \tab passing new coordinates in a mixed
-    model 
-    \cr
     \command{\link{RMuser}} \tab User defined covariance model
     \cr
   }
@@ -109,16 +110,11 @@
 \seealso{
   \link{RM}}
 
-\examples{
+\author{Alexander Malinowski; \martin}
+\keyword{spatial}
+
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames()
-\dontshow{FinalizeExample()}
-}
-
-\author{
- Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
- 
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
-\keyword{spatial}
+\dontshow{FinalizeExample()}}

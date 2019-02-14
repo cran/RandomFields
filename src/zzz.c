@@ -21,11 +21,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <R_ext/Rdynload.h>
+#include "def.h"
 #include "RandomFields.h"
 #include "auxiliary2.h"
+#include <Basic_utils.h>
 
-
-static R_NativePrimitiveArgType one_int[] = { INTSXP },
+#define none 0
+static R_NativePrimitiveArgType
+  one_int[] = { INTSXP },
   intdouble[] = {INTSXP, REALSXP }, 
   intintdouble[] = {INTSXP, INTSXP, REALSXP }, 
   charint[] = { STRSXP, INTSXP}, 
@@ -37,29 +40,30 @@ static R_NativePrimitiveArgType one_int[] = { INTSXP },
   //  static R_NativeArgStyle argin[] = {R_ARG_IN},
   //    argout[] = {R_ARG_OUT},
   //   hostarg[] = {R_ARG_OUT, R_ARG_OUT};
-static const R_CMethodDef cMethods[]  = {
-  {"GetAttr", (DL_FUNC) &GetAttr, 14, attr_arg},
-  {"GetModelName", (DL_FUNC) &GetModelName, 3, inttwochar},
-  {"GetModelNr", (DL_FUNC) &GetModelNr, 2, charint},
-  {"GetCurrentNrOfModels", (DL_FUNC) &GetCurrentNrOfModels, 2, two_int},
-  {"GetNrParameters", (DL_FUNC) &GetNrParameters, 2, two_int},
-  {"PrintModelList", (DL_FUNC) &PrintModelList, 3, three_int},
-  {"PutValuesAtNA", (DL_FUNC) &PutValuesAtNAnoInit, 2, intdouble},
-  {"PutValuesAtNAnoInit", (DL_FUNC) &PutValuesAtNAnoInit, 2, intdouble},
-  {"expliciteDollarMLE", (DL_FUNC) &expliciteDollarMLE, 2, intdouble},
-  {"MultiDimRange", (DL_FUNC) &MultiDimRange, 3, intintdouble},
-  {"GetModelRegister", (DL_FUNC) &GetModelRegister, 2, charint},
-   {"ResetWarnings", (DL_FUNC) &ResetWarnings, 1, one_int},
-  {"NoCurrentRegister", (DL_FUNC) &NoCurrentRegister, 0},
-  {"GetCurrentRegister", (DL_FUNC) &GetCurrentRegister, 1, one_int},
-  {"PutGlblVar", (DL_FUNC) &PutGlblVar, 2, intdouble},
-  {"DeleteKey", (DL_FUNC) &DeleteKey, 1, one_int},
-  {"detachRFoptionsRandomFields", (DL_FUNC) &detachRFoptionsRandomFields, 0},
-  {"attachRFoptionsRandomFields", (DL_FUNC) &attachRFoptionsRandomFields, 0},
-  {"RelaxUnknownRFoption", (DL_FUNC) &RelaxUnknownRFoption, 1, one_int},
-  // {"attachRFoptionsUtils", (DL_FUNC) &attachRFoptionsUtils, 0, NULL, NULL},
-  // {"detachRFoptionsUtils", (DL_FUNC) &detachRFoptionsUtils, 0, NULL, NULL},
-  {NULL, NULL, 0, NULL}
+
+#define CDEF(name, n, type) {#name, (DL_FUNC) &name, n, type}
+static const R_CMethodDef cMethods[]  = {  
+  CDEF(GetAttr, 14, attr_arg),
+  CDEF(GetModelName, 3, inttwochar),
+  CDEF(GetModelNr, 2, charint),
+  CDEF(GetCurrentNrOfModels, 1, one_int),
+  CDEF(GetNrParameters, 2, two_int),
+  CDEF(PrintModelList, 3, three_int),
+  CDEF(PutValuesAtNA, 2, intdouble),
+  CDEF(PutValuesAtNAnoInit, 2, intdouble),
+  CDEF(expliciteDollarMLE, 2, intdouble),
+  CDEF(MultiDimRange, 3, intintdouble),
+  CDEF(GetModelRegister, 2, charint),
+  CDEF(ResetWarnings, 1, one_int),
+  CDEF(NoCurrentRegister, 0, none),
+  CDEF(GetCurrentRegister, 1, one_int),
+  CDEF(PutGlblVar, 2, intdouble),
+  CDEF(attachRFoptionsRandomFields, 1, one_int),
+  CDEF(detachRFoptionsRandomFields, 0, none),
+  CDEF(RelaxUnknownRFoptions, 1, one_int),
+  // CDEF(attachRFoptionsUtils, 0, NULL, NULL},
+  // CDEF(detachRFoptionsUtils, 0, NULL, NULL},
+  {NULL, NULL, 0, none}
 };
 
 
@@ -69,14 +73,14 @@ static R_CallMethodDef callMethods[]  = {
   // in die respectiven C-Dateien muss RandomFieldsUtils.h eingebunden sein
   CALLDEF_DO(GetParameterNames, 1),
   CALLDEF_DO(GetSubNames, 1),
-  CALLDEF_DO(GetAllModelNames, 0),
+  CALLDEF_DO(GetAllModelNames, 1),
   CALLDEF_DO(GetCoordSystem, 3),
-  CALLDEF_DO(GetExtModelInfo, 4),
-  CALLDEF_DO(GetModel, 6),
+  CALLDEF_DO(GetModelInfo, 5),
+  CALLDEF_DO(GetModel, 7),
   CALLDEF_DO(Init, 4),
   CALLDEF_DO(EvaluateModel, 2),
   CALLDEF_DO(GetProcessType, 2),
-  CALLDEF_DO(empiricalvariogram, 10),
+  CALLDEF_DO(empirical, 10),
   CALLDEF_DO(empvarioXT, 13),
   CALLDEF_DO(fftVario3D, 14),
   CALLDEF_DO(boxcounting, 5),
@@ -85,12 +89,12 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF_DO(minmax, 5), 
   CALLDEF_DO(VariogramIntern, 1),
   CALLDEF_DO(CovLoc, 6),
-  //CALLDEF_DO(GetNAPositions, 5),   
+  CALLDEF_DO(GetNAPositions, 7),   
   CALLDEF_DO(SetAndGetModelInfo, 10),   
-  CALLDEF_DO(SetAndGetModelLikeli, 3), 
+  CALLDEF_DO(SetAndGetModelLikelihood, 4), 
   CALLDEF_DO(Take2ndAtNaOf1st, 8),
   CALLDEF_DO(countelements, 3), 
-  CALLDEF_DO(countneighbours, 5), 
+  CALLDEF_DO(countneighbours, 6), 
   CALLDEF_DO(getelements, 5), 
   CALLDEF_DO(getneighbours, 5), 
   CALLDEF_DO(set_boxcox, 1), 
@@ -102,20 +106,34 @@ static R_CallMethodDef callMethods[]  = {
   CALLDEF_DO(simple_residuals, 1), 
   CALLDEF_DO(get_linearpart, 2),
   CALLDEF_DO(vectordist, 2),
+  CALLDEF_DO(maintainers_machine, 0),
 //  CALLDEF_DO(),
   {NULL, NULL, 0}
 };
 
 
+// otherwise clang does not recognize it
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 void R_init_RandomFields(DllInfo  *dll) {
   R_registerRoutines(dll, cMethods, callMethods, NULL, // .Fortran
 		     NULL // extended
 		     );
-  R_useDynamicSymbols(dll, FALSE);
+  R_useDynamicSymbols(dll, FALSE); // OK
 }
 
 
 void R_unload_RandomFields(DllInfo *info) {
+  // just to avoid warning from compiler
+  //int *x = (int*) info; x = x + 0;
+  // if (0) { PRINTF("%ld\n", (long int) info);}
   /* Release resources. */
 }
+
+ 
+#ifdef __cplusplus
+}
+#endif
 

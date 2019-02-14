@@ -1,8 +1,5 @@
 \name{Strokorb's Functions}
 \alias{RMstrokorb}
-\alias{RMstrokorbMono}
-\alias{RMstrokorbBall}
-\alias{RMstrokorbPoly}
 \alias{RMm2r}
 \alias{RMm3b}
 \alias{RMmps}
@@ -10,7 +7,7 @@
 \description{
   The models define various
   shape functions for max-stable processes for a given
-  tail correlation function
+  tail correlation function.
 }
 \usage{
 RMm2r(phi)
@@ -39,9 +36,9 @@ RMmps(phi)
   Called as such it returns the corresponding density function for the
   radius of the balls.
 
-  \command{RMmps}  used with \command{\link{RPsmith}} defines
+  \command{RMmps} used with \command{\link{RPsmith}} defines
    random hyperplane polygons
-   that corresponds a tail correlaton
+   that correspond to a tail correlaton
    function belonging to Gneiting's class \eqn{H_d}.
    It currently only allows for
    \code{\link{RMbrownresnick}(\link{RMfbm}(alpha=1))} and dimension 2.
@@ -68,16 +65,14 @@ RMmps(phi)
  \command{\link{RMmodel}}.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMbrownresnick(RMfbm(alpha=1.5, s=0.2))
 plot(RMm2r(model))
 
@@ -85,5 +80,4 @@ x <- seq(0, 10, 0.005)
 z <- RFsimulate(RPsmith(RMm2r(model), xi=0), x)
 plot(z, type="p", pch=20)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

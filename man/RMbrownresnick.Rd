@@ -11,7 +11,7 @@
   and \eqn{\gamma} is the \bold{semi-}variogram.
 }
 \usage{
-RMbrownresnick(phi, var, scale, Aniso, proj);
+RMbrownresnick(phi, var, scale, Aniso, proj)
 }
 \arguments{
  \item{phi}{variogram of class \code{\link[=RMmodel-class]{RMmodel}}.}
@@ -23,13 +23,13 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
  object of class \code{\link[=RMmodel-class]{RMmodel}}
 }
 \note{
-  \bold{In the paper Kabluchko et al (2009)
+  \bold{In the paper Kabluchko et al. (2009)
     the variogram instead of the semi-variogram is considered, so the
     formulae differ slightly.}
 
   \bold{In Version 3.0.33 a typo has been corrected.}
 
-  Here, a definition is used that is consistend with the rest of the package.
+  Here, a definition is used that is consistent with the rest of the package.
 }
 
 \details{
@@ -57,15 +57,12 @@ RMbrownresnick(phi, var, scale, Aniso, proj);
  \command{\link{RMmodel}}.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 #plot covariance model of type RMbrownresnick
 RMmodel <- RMfbm(alpha=1.5, scale=0.2)
@@ -75,5 +72,4 @@ plot(RMbrownresnick(RMmodel))
 x <- seq(-5, 5, 0.05)
 z <- RFsimulate(RMbrownresnick(RMmodel), x=x, y=x)
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

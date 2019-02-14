@@ -35,8 +35,8 @@ RMpower(phi, alpha, var, scale, Aniso, proj)
  \emph{Advances and Challenges in Space-time Modelling of Natural Events},
  Springer, New York.
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -47,13 +47,12 @@ RMpower(phi, alpha, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMpower(RMgauss(), alpha=0.5)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

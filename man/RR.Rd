@@ -12,13 +12,13 @@
 
 \note{
   The allowance of random parameters is a very recent, developing
-  feature of \pkg{RandomField}.
+  feature of \pkg{RandomFields}.
   
   Future changings of the behaviour are not unlikely.
 }
 
 \details{
-  See \link{Bayesian Modelling} for some less technical introduction to
+  See \link{Bayesian Modelling} for a less technical introduction to
   hierarchical modelling. 
 
   
@@ -26,14 +26,14 @@
   are drawn only once at the very beginning.
   So, if the argument \code{n} in \command{\link{RFsimulate}}
   is greater than \code{1} then \code{n} simulations conditional
-  on a single realisation of the random parameters are
+  on a single realization of the random parameters are
   performed. See the examples below.
 
-  There are (simple) multivariate version and additional version to the
+  There are (simple) multivariate versions and additional versions to the
   distributions families implemented. Further, \bold{any} distribution
-  family defined in R can be used, see the examples below
+  family defined in R can be used, see the examples below.
   
-  These function will allow for Bayesian modelling. (Future project).
+  These functions will allow for Bayesian modelling. (Future project).
 }
 
 \section{Implemented models}{
@@ -64,24 +64,19 @@
   \code{RM} and not with \code{RR}.
 }
 
-\author{
-  Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software
-}
-}
+\me
 
 \seealso{
-  \link{RC}, \link{RF}, \link{RM}, \link{RP}, \link{R.}
-  \command{\link{Other models}},
+  \link{RC}, \link{RF}, \link{RM}, \link{RP}, \command{\link{Other models}},
   \command{\link{RFdistr}},
- \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
+ \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}, \link{R.}
  }
 
 \keyword{spatial}
 \keyword{distribution}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -95,7 +90,7 @@ for (i in 1:4) {
   readline("press return")
 }
 
-# but here, all 4 simulations have same (but random) scale:
+# but here, all 4 simulations have the same (but random) scale:
 plot(RFsimulate(model, x=seq(0,10,0.1), n=4)) 
 
 
@@ -107,11 +102,9 @@ plot(model)
 plot(RFsimulate(model, x=seq(0,10,0.1)))
 
 
-## HOWEVER, the next model is deterministic with scale \eqn{e=2.718282}.
+## HOWEVER, the next model is deterministic with scale \code{e=2.718282}.
 model <- RMgauss(scale=exp(1))
 plot(model)
 plot(RFsimulate(model, x=seq(0,10,0.1)))
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

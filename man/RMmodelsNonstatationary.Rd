@@ -3,16 +3,16 @@
 \alias{Nonstationary RMmodels}
 \alias{non-stationary RMmodels}
 \alias{non-stationary}
-\title{Nonstationary features of the mdoels}
+\title{Non-stationary features of the models}
 \description{
- Here, nonstationary covariance models are presented.
+ Here, non-stationary covariance models are presented.
 }
 
 \details{
 \bold{Covariance models}
 \tabular{ll}{
  \command{\link{RMnonstwm}} \tab one of Stein's non-stationary
- Wittle-Matern models
+ Whittle-Matern models
  \cr
  \command{\link{RMprod}} \tab scalar product
  \cr
@@ -27,7 +27,7 @@
 }
 
 \bold{Trend models}
-see \link{RMmodelsTrend}
+See \link{RMmodelsTrend}.
  
 }
 
@@ -37,21 +37,17 @@ see \link{RMmodelsTrend}
  \command{\link{RMmodelsAdvanced}}
 
  \sQuote{\href{../doc/nonstationary_jss.pdf}{nonstationary}}, a vignette
- for nonstationary geostatistics
+ for non-stationary geostatistics
 }
 
-\author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 %RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 %##                   RFoptions(seed=NA) to make them all random again
 
 
 # to do
 
-
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

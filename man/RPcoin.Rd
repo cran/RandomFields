@@ -5,7 +5,7 @@
 \alias{RPaverage}
 \title{Random coin method}
 \description{
- The random coin method (or dilution method) is simulation method for
+ The random coin method (or dilution method) is a simulation method for
  stationary Gaussian random fields. It is based on the following procedure:
  For a stationary Poisson point process on \eqn{{\bf R}^d}{R^d}
  consider the random field
@@ -14,7 +14,7 @@
  proportional to the convolution
  \deqn{C(h) = \int f(x)f(x+h) dx }{C(h) = \int f(x)f(x+h) dx}
  If the intensity of the Poisson point process increases, the
- random field \eqn{Y}{Y} is approaches a Gaussian random field
+ random field \eqn{Y}{Y} approaches a Gaussian random field
  with covariance function \eqn{C}{C}.
 }
 
@@ -36,7 +36,7 @@ RPaverage(phi, shape, boxcox, intensity, method)
     random field.}
  \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{intensity}{positive number, intensity of the underlying Poisson
     point process.
@@ -56,7 +56,7 @@ RPaverage(phi, shape, boxcox, intensity, method)
 
 
 \value{
- \command{\link{RPcoins}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RPcoins}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -67,8 +67,7 @@ RPaverage(phi, shape, boxcox, intensity, method)
  \emph{Geostatistical Simulation: Models and Algorithms.}
  Springer.
  }}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{ \link{Gaussian},
   \link{RP},
  \command{\link{RPhyperplane}},
@@ -76,10 +75,9 @@ RPaverage(phi, shape, boxcox, intensity, method)
  \command{\link{RPtbm}}.
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 \dontshow{\dontrun{
 x <- seq(0,25, 0.02)
 model <- RPcoins(RMspheric())
@@ -88,7 +86,7 @@ Print(sd(as.vector(z)), mean(z))
 image(z)
 
 
-### Gaussian field approximates by Poisson fields
+### Gaussian field approximated by Poisson fields
 x <- seq(0,10, 0.02)
 for (intensity in c(1, 10, 100)) {
  z <- RFsimulate(x=x, model=RPcoins(RMspheric(), intensity = intensity))
@@ -96,8 +94,7 @@ for (intensity in c(1, 10, 100)) {
 }
 }}
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{methods}

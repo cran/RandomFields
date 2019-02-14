@@ -7,7 +7,7 @@
  \eqn{r \ge 0}{r \ge 0} between two points and is given for integers
  \eqn{r \in {\bf N}}{r} by
  \deqn{C(r) = (-1)^r \frac{ \Gamma(1-a/2)^2 }{ \Gamma(1-a/2+r) \Gamma(1-a/2-r) } r \in {\bf N}}{C(r) = (-1)^r \Gamma(1-a/2)^2 / (\Gamma(1-a/2+r) \Gamma(1-a/2-r))}
- and otherwise linearly interpolated. Here \eqn{a \in [-1,1)}{-1 \le a < 1},
+ and otherwise linearly interpolated. Here, \eqn{a \in [-1,1)}{-1 \le a < 1},
  \eqn{\Gamma}{\Gamma} denotes the gamma function.
  It can only be used for one-dimensional random fields.
 }
@@ -35,8 +35,7 @@ RMfractdiff(a, var, scale, Aniso, proj)
  %}
 %}
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -46,13 +45,12 @@ RMfractdiff(a, var, scale, Aniso, proj)
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMfractdiff(0.5, scale=0.2)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -1,4 +1,3 @@
-
 \name{RPgauss}
 \alias{RPgauss}
 
@@ -23,23 +22,23 @@ RPgauss(phi, boxcox, stationary_only)
 % }
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{stationary_only}{Logical or NA. Used for the automatic
  choice of methods. 
  \itemize{
- \item \code{TRUE}: the simulation of non-stationary random
+ \item \code{TRUE}: The simulation of non-stationary random
  fields is refused. In particular, the intrinsic
  embedding method is excluded and
  the simulation of Brownian motion is rejected.
- \item \code{FALSE}: intrinsic embedding is always allowed,
- actually it's the first one considered in the automatic
+ \item \code{FALSE}: Intrinsic embedding is always allowed;
+ actually, it's the first one considered in the automatic
  selection algorithm.
- \item \code{NA}: the simulation of the Brownian motion allowed,
+ \item \code{NA}: The simulation of the Brownian motion is allowed,
  but intrinsic embedding is not used for translation invariant
  (\dQuote{stationary}) covariance models.
  }
- Default: \code{NA}
+ Default: \code{NA}.
  }
 
 }
@@ -48,16 +47,16 @@ RPgauss(phi, boxcox, stationary_only)
  The function returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \note{
-  In most cases, \code{RPgauss} need not be given explicitely as
+  In most cases, \code{RPgauss} need not be given explicitly as
   Gaussian random fields are assumed as default.
 
   \command{\link{RPgauss}} may not find the fastest
  method neither the most precise one. It just finds any method
- among the available methods. (However it guesses what is a good
+ among the available methods. (However, it guesses what is a good
  choice.)
  See \command{\link{RFgetMethodNames}} for further information.
  Note that some of the methods do not work for all covariance 
- or variogram models, see \code{\link{RFgetModelNames}(intern=FALSE)}
+ or variogram models, see \code{\link{RFgetModelNames}(intern=FALSE)}.
 
 By default, all Gaussian random fields have zero mean. 
  Simulating with trend can be done by including \command{\link{RMtrend}}
@@ -71,7 +70,7 @@ By default, all Gaussian random fields have zero mean.
  corresponding centered Gaussian field is simulated.
  Not only stationary fields but also non-stationary and anisotropic
  models can be used, e.g. zonal anisotropy, geometrical
- anisotropy, separable models, non-separable space-time smodels,
+ anisotropy, separable models, non-separable space-time models,
  multiplicative or nested models;
  see \command{\link{RMmodel}} for a list of all available models. 
 
@@ -79,11 +78,7 @@ By default, all Gaussian random fields have zero mean.
 }
 
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-
-
+\me
 
 \seealso{
   \link{RP},
@@ -92,7 +87,7 @@ By default, all Gaussian random fields have zero mean.
  \command{\link{RFoptions}},
  \command{\link{RPbrownresnick}},
  \command{\link{RPchi2}},
- \command{\link{RPopitz}}.
+ \command{\link{RPopitz}},
  \command{\link{RPt}},
  \command{\link{RPschlather}}.
 
@@ -100,18 +95,15 @@ By default, all Gaussian random fields have zero mean.
 
 }
 
-
 \keyword{spatial}
 
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMexp()
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x, seed=0))
 plot(RFsimulate(RPgauss(model), x=x, seed=0), col=2) ## the same
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -13,7 +13,6 @@
 \usage{
 RMrational(A, a) 
 }
-
 \arguments{
  \item{A}{a \eqn{d \times d} matrix}
  \item{a}{a vector of one or two components; the second component has
@@ -21,21 +20,20 @@ RMrational(A, a)
 }
 
 \value{
- \command{\link{RMrational}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}} 
+ \command{\link{RMrational}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}. 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
-  \link{S10}
+  \link{S10}.
  }
 
 
 \keyword{spatial}
 \keyword{models}
 
-\examples{
+\examples{\dontshow{StartExample()}
 # see S10
 \dontshow{FinalizeExample()}
 }

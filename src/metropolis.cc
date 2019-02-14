@@ -23,14 +23,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <Rmath.h>  
 #include <stdio.h>  
-//#include <stdlib.h>
 #include "RF.h"
  
 
-void metropolis(cov_model *cov, gen_storage *S, double *x) {
+void metropolis(model *cov, gen_storage *S, double *x) {
   spec_properties *s = &(S->spec);
   spectral_density density = s->density;
-  int i,d, dim = cov->tsdim,
+  int i,d,
+    dim = total_logicaldim(OWN),
     n = s->nmetro;
   double p, proposal[MAXTBMSPDIM], dx,
     *E = s->E,
@@ -66,7 +66,7 @@ void metropolis(cov_model *cov, gen_storage *S, double *x) {
 
 // to do ?! in rectangle umschreiben ?!
 
-int search_metropolis(cov_model *cov, gen_storage *S) {
+int search_metropolis(model *cov, gen_storage *S) {
   spec_properties *s = &(S->spec);
   double Sigma[maxSearch], x[MAXTBMSPDIM], oldx[MAXTBMSPDIM], log_s, p,
     prop_factor = S->Sspectral.prop_factor,
@@ -75,8 +75,7 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
     D[maxSearch], min, mintol,
     minzaehler, optzaehler, maxzaehler,
     err=NOERROR, 
-    dim = cov->tsdim;
-
+    dim = total_logicaldim(OWN);
  
   s->nmetro = 1;
   if (s->sigma <= 0.0) {
@@ -107,10 +106,11 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
       D[i] = std::abs(zaehler - optzaehler); // integers
       if (D[i] < min) min = D[i];
       
-      if (PL >= PL_DETAILS)
-	PRINTF("s=%f: z=%d < %d [%d, %d] fact=%f D=%d %d\n",
+      if (PL >= PL_DETAILS) {
+	PRINTF("s=%10g: z=%d < %d [%d, %d] fact=%10g D=%d %d\n",
 	     Sigma[i], zaehler, minzaehler, maxzaehler, optzaehler, factor,
 		   D[i], min);
+      }
 	
       if (zaehler < minzaehler || zaehler > maxzaehler) {
 	if (factor > 1.0) factor = 1.0 / factor; else break;
@@ -127,15 +127,16 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
     mintol = (int) (bestfactor * min);
     for (j =0; j<i; j++) {
       if (D[j] <= mintol) {
-	if (PL >= PL_DETAILS) 
-	  PRINTF("%d. sigma=%f D=%d %d\n", j, Sigma[j], D[j], mintol); 
+	if (PL >= PL_DETAILS) {	  
+	  PRINTF("%d. sigma=%10g D=%d %d\n", j, Sigma[j], D[j], mintol);
+	}
 	n++;
 	log_s += LOG(Sigma[j]);
       }
     }
       
     s->sigma = EXP(log_s / (double) n);
-    if (PL >= PL_DETAILS) PRINTF("optimal sigma=%f \n", s->sigma); 
+    if (PL >= PL_DETAILS) { PRINTF("optimal sigma=%10g \n", s->sigma); }
   }
     
   // ****** searching for optimal n
@@ -153,14 +154,16 @@ int search_metropolis(cov_model *cov, gen_storage *S) {
   }
   p = (double) zaehler / (double) nBase2;
   s->nmetro = 1 + (int) FABS(prop_factor / LOG(p));
-  if (PL >= PL_DETAILS) 
-    for (d=0; d<dim; d++)  PRINTF("d=%d E=%f\n", d, s->E[d]);
+  if (PL >= PL_DETAILS) {
+    for (d=0; d<dim; d++)  PRINTF("d=%d E=%10g\n", d, s->E[d]);
+  }
   
-  if (PL >= PL_DETAILS)
-    PRINTF("opt.sigma=%f opt.n=%d (p=%f, id=%e, zaehler=%d, dim=%d)\n", 
-	   s->sigma, s->nmetro, p, prop_factor, zaehler, cov->tsdim); 
+  if (PL >= PL_DETAILS) {
+    PRINTF("opt.sigma=%10g opt.n=%d (p=%10g, id=%10e, zaehler=%d, dim=%d)\n", 
+	   s->sigma, s->nmetro, p, prop_factor, zaehler, OWNLOGDIM(0));
+  }
  
  ErrorHandling:
    
-    return err;
+    RETURN_ERR(err);
 }

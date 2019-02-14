@@ -3,7 +3,7 @@
 \title{Transformation from Brown-Resnick to Bernoulli}
 \description{
   This function can be used to model a max-stable process
-  based on the a binary field,  with the same extremal correlation
+  based on a binary field,  with the same extremal correlation
   function as a Brown-Resnick process
   \deqn{
     C_{bg}(h) = \cos(\pi (2\Phi(\sqrt{\gamma(h) / 2}) -1) )
@@ -60,20 +60,17 @@ RMbr2bg(phi, var, scale, Aniso, proj)
   \command{\link{RMm2r}},
   \command{\link{RPbernoulli}},
   \command{\link{RPbrownresnick}},
-  \command{\link{RPschlather}},
+  \command{\link{RPschlather}}.
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \keyword{spatial}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMexp(var=1.62 / 2) 
 x <- seq(0, 10, 0.05)
 z <- RFsimulate(RPschlather(RMbr2eg(model)), x, x)
 plot(z)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

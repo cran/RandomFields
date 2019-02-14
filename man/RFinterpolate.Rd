@@ -4,116 +4,40 @@
 \title{Interpolation methods}
 \description{
   The function allows for different methods of interpolation.
-  Currently only various kinds of kriging are installed.
+  Currently, only various kinds of kriging are installed.
 }
 \usage{
 RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
-              distances, dim, data, given=NULL, err.model,
-                 ignore.trend = FALSE, ...) 
+              distances, dim, data, given=NULL, params, err.model, err.params,
+              ignore.trend = FALSE, ...)
 }
 \arguments{
- \item{model}{string; covariance model, see \command{\link{RMmodel}}, or
- type \code{\link{RFgetModelNames}(type="variogram")} to get all options.}
- 
- \item{x}{\eqn{(n \times d)}{(n x d)} matrix or vector of x
- coordinates, or object of class
- \code{\link[sp:GridTopology-class]{GridTopology}} or
-   \code{\link[raster]{raster}};
- coordinates of \eqn{n} points to be kriged.
- For more options see \link{RFsimulateAdvanced}.
- }
- \item{y}{optional vector of y coordinates}
- \item{z}{optional vector of z coordinates}
- \item{T}{optional vector of time coordinates, 
- \code{T} must always be an equidistant vector.
- Instead of \code{T=seq(from=From, by=By, len=Len)} one may also write
- \code{T=c(From, By, Len)}.
- }
- \item{grid}{logical; determines whether the vectors \code{x},
- \code{y}, and \code{z} should be
- interpreted as a grid definition; \code{RandomFields} can
- find itself the correct value in nearly all cases.
- See also \link{RFsimulateAdvanced}.
- }
- \item{distances}{another alternative to pass the (relative)
- coordinates,
- see \link{RFsimulateAdvanced}.
- }
- \item{dim}{
- Only used if \code{distances} are given.
- }
- \item{data}{
- Matrix, data.frame or object of class \command{\link[=RFsp-class]{RFsp}};
- coordinates and response values of measurements;
-  \code{given} is not given
-  and \code{data} is a matrix or \code{data} is
-  a data.frame, the first columns are
- interpreted as coordinate vectors, and the last column(s) as
- (multiple) measurement(s) of the field which are kriged 
- \emph{separately}; if the argument \code{x} is missing,
- \code{data} may contain \code{NA}s, which are then replaced by
- the kriged values (imputing); 
- for details on matching of variable names see 
- \link{RFsimulateAdvanced}; if of class \command{\link[=RFsp-class]{RFsp}}
- }
- \item{given}{optional, matrix or list.
-   If \code{given} matrix then the coordinates
-   can be given separately, namely by \code{given} where, in each row,
-   a single location is given.
- 
-   If \code{given} is a
-   list, it may consist of \code{x}, \code{y}, \code{z}, \code{T},
-   \code{grid}.
+ \item{model,params}{\argModel}
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
+ \item{T}{\argT}
+ \item{grid}{\argGrid}
+ \item{distances,dim}{\argDistances}
+
+ \item{data}{\argData \argDataGiven
    
-   If \code{given} is provided,
-   \code{data} must be a matrix or an array containing the data only.
+  If the argument
+ \code{x} is missing,
+ \code{data} may contain \code{NA}s, which are then replaced through imputing.
+ 
  }
- \item{err.model}{For conditional simulation and random imputing only.\cr
- Usually \code{err.model=RMnugget(var=var)}, or not given at all
- (error-free measurements).
- }
+ \item{given}{\argGiven}
+
+ \item{err.model,err.params}{For conditional simulation and random imputing
+ only. \cr\argErrmodel} 
 
  \item{ignore.trend}{logical. If \code{TRUE} only the
    covariance model of the given model is considered, without the trend
    part.
  }
+
+ \item{...}{\argDots}
  
- \item{...}{
-   for options, etc.
-
-%   An intrinsic arguements can be given:
-%   \describe{
-%     \item{MARGIN}{character or integer.
-%       This argument is only given when the mean is kriged, i.e.
-%       \code{method='M'} (see \command{\link{RFoptions}}).
-%       Then it has a similar meaning as in \command{\link{apply}}:
-%       e.g. if \code{MARGIN="T"} in a space-time model, then spatial
-%	means are calculated for each temporal instance.
-%      }
-%    }
-%    For further optional arguments, see \command{\link{RFoptions}}.
- }
-
- % \item{trend}{only used for universal and intrinsic kriging. In case of
- % universal kriging \code{trend} is a non-negative integer (monomials
- % up to order k as trend functions), a list of functions or a formula (the
- % summands are the trend functions); you have the choice of using either
- % x, y, z or X1, X2, X3,... as spatial variables;
- % in case of intrinsic kriging trend should be a nonnegative integer which
- % is the order of the underlying model.
- % }
- % \item{pch}{Kriging procedures are quite time consuming in general. 
- % The character \code{pch} is printed after roughly
- % each 80th part of calculation.}
- % \item{return.variance}{logical. If \code{FALSE} the kriged field is
- % returned. If \code{TRUE} a list of two elements, \code{estim} and
- % \code{var}, i.e. the kriged field and the kriging variances,
- % is returned.}
- % \item{allowdistanceZero}{if \code{TRUE} then
- % identical locations are slightly scattered}
- % \item{cholesky}{
- % if \code{TRUE} cholesky decomposition is used instead of LU.
- %}
 }
 
 \note{Important options are
@@ -130,7 +54,14 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 }}
 
 \details{
- In case of intrinsic cokriging (intrinsic kriging for a multivariate
+  
+ In case of repeated data, they are kriged 
+ \emph{separately}; if the argument \code{x} is missing,
+ \code{data} may contain \code{NA}s, which are then replaced by
+ the kriged values (imputing); 
+
+  
+ In case of intrinsic cokriging (intrinsic kriging for multivariate
  random fields) the pseudo-cross-variogram is used (cf. Ver Hoef and
  Cressie, 1991).
 
@@ -186,31 +117,20 @@ RFinterpolate(model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
 }
 
 \author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
- 
- Marco Oesting, \email{oesting@math.uni-mannheim.de}
-
- \subsection{Author(s) of the code:}{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-
- Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
- 
- Marco Oesting, \email{oesting@math.uni-mannheim.de}
- }
+  \martin; \marco
+  \subsection{Author(s) of the code:}{ \martin; Alexander Malinowski; \marco}
 }
 
 \seealso{
  \command{\link{RMmodel}},
- \command{\link{RFempiricalvariogram}},
+ \command{\link{RFvariogram}},
  \code{\link[=RandomFields-package]{RandomFields}},
 }
 
-\examples{
+\examples{\dontshow{StartExample()} %  library(RandomFields)
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## Preparation of graphics
 dev.new(height=7, width=16) 
 
@@ -219,25 +139,58 @@ dev.new(height=7, width=16)
 p <- 3:8
 points <- as.matrix(expand.grid(p,p))
 model <- RMexp() + RMtrend(mean=1)
-data <- RFsimulate(model, x=points)
-plot(data)
+dta <- RFsimulate(model, x=points)
+plot(dta)
 x <- seq(0, 9, 0.25)
+\dontshow{if (!interactive()) x <- seq(0, 5, 1.2)}
 
 ## Simple kriging with the exponential covariance model
 model <- RMexp()
-z <- RFinterpolate(model, x=x, y=x, data=data)
-plot(z, data)
+z <- RFinterpolate(model, x=x, y=x, data=dta)
+plot(z, dta)
 
 ## Simple kriging with mean=4 and scaled covariance
 model <- RMexp(scale=2) + RMtrend(mean=4)
-z <- RFinterpolate(model, x=x, y=x, data=data)
-plot(z, data)
-
+z <- RFinterpolate(model, x=x, y=x, data=dta)
+plot(z, dta)
 
 ## Ordinary kriging
 model <- RMexp() + RMtrend(mean=NA)
-z <- RFinterpolate(model, x=x, y=x, data=data)
+z <- RFinterpolate(model, x=x, y=x, data=dta)
+plot(z, dta)
+
+
+
+## Co-Kriging
+n <- 100
+x <- runif(n=n, min=1, max=50)
+y <- runif(n=n, min=1, max=50)
+\dontshow{if (!interactive()) n <- 2}
+
+
+rho <- matrix(nc=2, c(1, -0.8, -0.8, 1))
+model <- RMparswmX(nudiag=c(0.5, 0.5), rho=rho)
+
+## generation of artifical data
+data <- RFsimulate(model = model, x=x, y=y, grid=FALSE)
+## introducing some NAs ...
+print(data)
+len <- length(data)
+data@data$variable1[1:(len / 10)] <- NA
+data@data$variable2[len - (0:len / 100)] <- NA
+print(data)
+plot(data)
+
+## co-kriging
+x <- y <- seq(0, 50, 1)
+\dontshow{if (!interactive()) x <- y <- seq(0, 5, 1)}
+k <- RFinterpolate(model, x=x, y=y, data= data)
+plot(k, data)
+
+## conditional simulation
+z <- RFsimulate(model, x=x, y=y, data= data) ## takes some time
 plot(z, data)
+
 
 
 \dontshow{\dontrun{
@@ -246,38 +199,36 @@ plot(z, data)
 
 ## Intrinsic kriging
 model <- RMfbm(a=1)
-z <- RFinterpolate(krige.meth="U", model, x, x, data=data)
-screen(scr <- scr+1); plot(z, data)
+z <- RFinterpolate(krige.meth="U", model, x, x, data=dta)
+screen(scr <- scr+1); plot(z, dta)
 
 
 ## Interpolation nicht korrekt
 ## Intrinsic kriging with Polynomial Trend
 model <- RMfbm(a=1) + RMtrend(polydeg=2)
-z <- RFinterpolate(model, x, x, data=data)
-screen(scr <- scr+1); plot(z, data)
+z <- RFinterpolate(model, x, x, data=dta)
+screen(scr <- scr+1); plot(z, dta)
 }}
 
 \dontshow{\dontrun{
 ## Universal kriging with trend as formula
 model <- RMexp() + RMtrend(arbit=function(X1,X2) sin(X1+X2)) +
  RMtrend(mean=1)
-z <- RFinterpolate(model, x=x, y=x, data=data)
-screen(scr <- scr+1); plot(z, data)
+z <- RFinterpolate(model, x=x, y=x, data=dta)
+screen(scr <- scr+1); plot(z, dta)
 
 ## Universal kriging with several arbitrary functions
 model <- RMexp() + RMtrend(arbit=function(x,y) x^2 + y^2) +
  RMtrend(arbit=function(x,y) (x^2 + y^2)^0.5) + RMtrend(mean=1)
-z <- RFinterpolate(model, x=x, y=x, data=data)
-screen(scr <- scr+1); plot(z, data)
+z <- RFinterpolate(model, x=x, y=x, data=dta)
+screen(scr <- scr+1); plot(z, dta)
 }}
 
 % folgender Befehl muss unbedingt drin bleiben
 close.screen(all = TRUE)
 
 \dontshow{while (length(dev.list()) >= 2) dev.off()}
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}%-- one or more ...

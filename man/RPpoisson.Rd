@@ -1,7 +1,7 @@
 \name{RPpoisson}
 \alias{RPpoisson}
 
-\title{Simulation of Random Fields}
+\title{Simulation of Poisson Random Fields}
 \description{
 Shot noise model, which is also called moving
  average model, trigger process, dilution random field, and by several
@@ -19,19 +19,13 @@ RPpoisson(phi, intensity)
  point process
  }
  }
-
-%\details{ }
-
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 # example 1: Posson field based on disks with radius 1
 x <- seq(0,25, 0.02)
 model <- RMball()
@@ -51,13 +45,12 @@ model <- RMtruncsupport(radius=5, RMgauss())
 z <- RFsimulate(RPpoisson(model), x, intensity = 100)
 plot(z)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \seealso{
-  \command{\link{RMmodel}}
+  \command{\link{RMmodel}},
   \link{RP},
- \command{\link{RPcoins}}
+ \command{\link{RPcoins}}.
 }
 
 

@@ -10,7 +10,7 @@
  K_\nu(\xi(\delta^2+r^2)^{1/2})}{\delta^\nu K_\nu(\xi
  \delta)}}{C(r) = \delta^(-\nu) (K_\nu(\nu \delta))^{-1}
  (\delta^2+r^2)^{\nu/2} K_\nu(\xi(\delta^2+r^2)^{1/2})}
- where \eqn{K_{\nu}}{K_\nu} denotes the modifies Bessel function of
+ where \eqn{K_{\nu}}{K_\nu} denotes the modified Bessel function of
  second kind. 
 }
 \usage{
@@ -38,7 +38,7 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
  mixture.
 
  The model contains some other classes as special cases;
- for \eqn{\lambda = 0}{\lambda = 0} we get Cauchy covariance function
+ for \eqn{\lambda = 0}{\lambda = 0} we get the Cauchy covariance function
  (see \command{\link{RMcauchy}}) with \eqn{\gamma =
  -\frac{\nu}2}{\gamma = -\nu/2} and scale=\eqn{\delta}{\delta};
  the choice \eqn{\delta = 0}{\delta = 0} yields a covariance model of type
@@ -46,7 +46,7 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
  and scale parameter \eqn{\lambda^{-1}}{1/\lambda}. 
 }
 \value{
- \command{\link{RMhyperbolic}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMhyperbolic}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -63,8 +63,7 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcauchy}},
  \command{\link{RMwhittle}},
@@ -79,13 +78,12 @@ RMhyperbolic(nu, lambda, delta, var, scale, Aniso, proj)
 
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMhyperbolic(nu=1, lambda=2, delta=0.2)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

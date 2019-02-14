@@ -13,19 +13,19 @@ RMbernoulli(phi, threshold, correlation, centred, var, scale, Aniso, proj)
  \item{phi}{covariance function of class \code{\link[=RMmodel-class]{RMmodel}}.}
  \item{threshold}{real valued threshold, see
    \command{\link{RPbernoulli}}.
-   Currently only \command{threshold=0.0} is possible. %to do
+   Currently, only \command{threshold=0.0} is possible. %to do
 
    Default: 0.
  }
  \item{correlation}{logical. If \code{FALSE} the corresponding
-   covariance function is returned
+   covariance function is returned.
 
-   Default: TRUE.
- }.
+   Default: \code{TRUE}.
+ }
  \item{centred}{logical. If \code{FALSE} the uncentred covariance is
    returned.
 
-   Default: TRUE.
+   Default: \code{TRUE}.
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
@@ -33,11 +33,11 @@ RMbernoulli(phi, threshold, correlation, centred, var, scale, Aniso, proj)
 }
 \details{
  This model yields the covariance function of the field
- that is returned by \command{\link{RPbernoulli}}
+ that is returned by \command{\link{RPbernoulli}}.
 }
 \note{
 \bold{Previous to version 3.0.33 the covariance function was returned,
-  not the correlation function}
+  not the correlation function.}
 }
 \value{
  \command{\link{RMbernoulli}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
@@ -46,24 +46,20 @@ RMbernoulli(phi, threshold, correlation, centred, var, scale, Aniso, proj)
  Ballani, Schlather
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\me
 \seealso{
- \command{\link{RPbernoulli}}
+ \command{\link{RPbernoulli}},
  \command{\link{RMmodel}},
- \command{\link{RFsimulate}},
+ \command{\link{RFsimulate}}.
 }
 
 
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 threshold <- 0
 x <- seq(0, 5, 0.02)
@@ -79,7 +75,4 @@ z1 <- as.matrix(z)
 estim.cov <- apply(z1, 1, function(x) cov(x, z1[1,]))
 points(coordinates(z), estim.cov, col="red")
 
-
-
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

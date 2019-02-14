@@ -1,8 +1,8 @@
 \name{RMtruncsupport}
 \alias{RMtruncsupport}
-\title{Random sign}
+\title{Truncating the Support of a Shape Function}
 \description{
-  It may be used to truncate the support of a shape function when
+  \command{\link{RMtruncsupport}} may be used to truncate the support of a shape function when
  Poisson fields or M3 processes are created.
  }
 \usage{
@@ -10,7 +10,7 @@ RMtruncsupport(phi, radius)
 }
 
 \arguments{
- \item{phi}{function of class \code{\link[=RMmodel-class]{RMmodel}}.}
+ \item{phi}{function of class \code{\link[=RMmodel-class]{RMmodel}}}
  \item{radius}{truncation at \code{radius}}
 }
 
@@ -20,19 +20,15 @@ RMtruncsupport(phi, radius)
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RMmatrix}},
- \command{\link{RPpoisson}}
+ \command{\link{RPpoisson}}.
  }
-
 
 \keyword{spatial}
 \keyword{models}
-
-
 
 \references{
   \itemize{
@@ -41,15 +37,20 @@ RMtruncsupport(phi, radius)
     }
 }
  
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again 
-\dontshow{StartExample()}
+
+model <- RMgauss()
+model1 <- RMtruncsupport(model, radius=1)
+plot(model)
+lines(model1, col="red")
+
+## For a real application of 'RMtruncsupport' see example 2 of 'RPpoisson'.
+
 \dontshow{\dontrun{
 model <- RPcoins(shape = RMtruncsupport(RMgauss(), radius=1.5), intensity=1)
 x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
 }}
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

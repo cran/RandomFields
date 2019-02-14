@@ -1,3 +1,5 @@
+# accessing 'RMmodel' and RMmodelgenerator via '['-operator
+# e.g. RMwhittle["domain"]
 
 ## Authors 
 ## Martin Schlather, schlather@math.uni-mannheim.de
@@ -22,140 +24,79 @@
 
 
 
+
 RMcauchytbm <- function(alpha, beta, gamma, var, scale, Aniso, proj) {
   return(RMtbm(fulldim=gamma,
                RMgencauchy(alpha, beta, var, scale, Aniso, proj)))
 }
+RMcauchytbm <- new(CLASS_RM, 
+	.Data = RMcauchytbm,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'not monotone',
+	finiterange = FALSE,
+	simpleArguments = TRUE,
+	maxdim = 1,
+	vdim = 1
+	)
   
-RMcardinalsine <- function(var, scale, Aniso, proj) {
-  return(RMwave(var, scale, Aniso, proj))
-}
-  
+
 RMgneitingdiff <- function(nu, taper.scale, scale, var, Aniso, proj){
   return(RMmult(RMgengneiting(kappa=3, mu=1.5, scale=taper.scale) *
                 RMwhittle(nu=nu, scale=scale),
                 var=var, Aniso=Aniso, proj=proj))
 }
+RMgneitingdiff <- new(CLASS_RM, 
+	.Data = RMgneitingdiff,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
+	finiterange = TRUE,
+	simpleArguments = TRUE,
+	maxdim = 3,
+	vdim = 1
+	)
 
 RMparswmX <- function(nudiag, rho, var, scale, Aniso, proj) {
   return(RMschur(M=rho, RMparswm(nudiag, var, scale, Aniso, proj)))
 }
+RMparswmX <- copyProp(RMparswmX, RMparswm)
 
 RMpoweredexp <- function(alpha, var, scale, Aniso, proj) {
   return(RMstable(alpha, var, scale, Aniso, proj))
 }
+RMpoweredexp <- copyProp(RMpoweredexp, RMstable)
 
 RMtent <- function(var, scale, Aniso, proj) {
   return(RMaskey(alpha=1.0, var, scale, Aniso, proj))
 }
+RMgneitingdiff <- new(CLASS_RM, 
+	.Data = RMgneitingdiff,
+	type = c('positive definite'),
+	isotropy = c('isotropic'),
+	domain = c('single variable'),
+	operator = FALSE,
+	monotone = 'monotone',
+	finiterange = TRUE,
+	simpleArguments = TRUE,
+	maxdim = 1,
+	vdim = 1
+	)
 
-RMwendland <- function(kappa, mu, var, scale, Aniso, proj) {
-  return(RMgengneiting(kappa, mu, var, scale, Aniso, proj))
-}
-
-
-RMcovariate <- function(c, x, y=NULL, z=NULL, T=NULL, grid,
-                        var, scale, Aniso, proj, raw, norm, addNA, factor) {
-  if (!missing(factor)) {
-    if (!missing(addNA) && addNA) {
-#      Print(factor, addNA)
-      stop("'addNA' and 'factor' may not be given at the same time.")
-    }
-    isna <- is.na(factor)
-    if (any(xor(isna[1], isna))) stop("If 'factor' has NAs then all of the values must be NAs")
-  }
-  Call <- iRMcovariate
-  if (missing(x) && length(T)==0) {
-    if (length(y)!=0 || length(T)!=0 || !missing(grid))
-      stop("y, z, T, grid may only be given if 'x' is given")    
-    Call(norm=norm, c=c, scale=scale, Aniso=Aniso, proj=proj, var=var, raw=raw,
-         addNA=addNA, factor=factor)
-  } else {
-    new <- C_CheckXT(x=x, y=y, z=z, T=T, grid=grid, printlevel=0)
-    Call(norm=norm, c=c, x=new, scale=scale, Aniso=Aniso, proj=proj, var=var,
-         raw=raw, addNA=addNA, factor=factor)
-  }
-}
-  
- 
-RMfixcov <- function(M, x, y=NULL, z=NULL, T=NULL, grid,
-                     var, scale, Aniso, proj, raw, norm) {
-  Call <- iRMfixcov
-  if (missing(x) && length(T)==0) {
-    if (length(y)!=0 || length(T)!=0 || !missing(grid))
-      stop("y, z, T, grid may only be given if 'x' is given")
-    Call(norm=norm, M=M, scale=scale, Aniso=Aniso, proj=proj, var=var, raw=raw)
-  } else {
-    new <- C_CheckXT(x, y, z, T, grid, printlevel=0)
-    Call(norm=norm, M=M, x=new, scale=scale, Aniso=Aniso, proj=proj, var=var,
-         raw=raw)
-  }
-}
- 
-
-R.lon <- function() R.p(1, "spherical system")
-R.lat <- function() R.p(2, "spherical system")
-
-
-RMchoquet <- function(b) stop("not implemented yet")
-
-RMpolynome <- function(degree, dim, value=NA, varnames = c("x", "y", "z", "T"),
-                       proj=1:4) {
-  if (degree < 0 || degree > 5) stop("the degree is out of range")
-  if (dim < 0  || dim > 4) stop("the dimension is out of range")
-  x <- as.matrix(do.call("expand.grid", rep(list(0:degree), dim)))
-  sums <- rowSums(x)
-  y <- NULL
-  for (i in 0:degree) {
-    idx <- sums == i
-    y <- rbind(y, x[idx, ])
-  }
-  n <- nrow(y)
-#  y <- as.vector(y)
-  z <- paste(rep(paste(" ", varnames[1:dim], sep=""), each=n),
-             ifelse(y>1, "^", ""),
-             ifelse(y>1, y, ""), sep="")
-  z[ y == 0] <- ""
-  dim(z) <- dim(y)
-  z <- apply(z, 1, paste, collapse="", sep="")
-  m <- length(z) - length(value)
-  if (m > 0) value <- c(value, rep(NA, m)) else
-  if (m < 0) value <- value[1:length(z)]
-  cat( paste( value, z, collapse = " + ", sep=""), "\n" )
-  
-  z <- paste(rep(paste("R.p(", proj[1:dim], ")", sep=""), each=n),
-             ifelse(y>1, "^", ""),
-             ifelse(y>1, y, ""), sep="")
-  z[ y == 0 ] <- ""
-  if (length(z) > 100) stop("maximum is ", MAXSUB, "^2 terms")
-  dim(z) <- dim(y)
-  z <- apply(z, 1, function(x)  paste(x[x!=""] , collapse="*", sep=""))
-  value <- paste(ZF_SYMBOLS_CONST, "(", value, ")", sep="")
-  z <- paste(value , z, sep="*")
-  z[1] <- value[1]
-  idx <- as.integer(length(z) / MAXSUB) * MAXSUB  
-  if (idx > 0) {
-    zz <- z[ 1:idx ]
-    dim(zz) <- c(MAXSUB, length(zz) / MAXSUB)
-    zz <- apply(zz, 2, function(x) paste("RMplus(", paste(x, collapse=", "), ")" ))
-  } else zz <- NULL
-  if (idx < length(z)) {
-#    Print(zz, idx, idx + 1 == length(z))
-    zz[length(zz) + 1] <-  if (idx + 1 == length(z)) z[length(z)] else 
-       paste("RMplus(", paste(z[(idx+1) : length(z)], collapse=", "), ")" )
-      
-#    Print("A", idx, zz, (idx + 1) : length(z))
-  }
-
-  if (length(zz) > 1)
-    zz <- paste("RMplus(", paste(zz, collapse=", "), ")")
-
- #  Print( zz)
-  ##invisible
-  return(eval(parse(text = zz)))
-}
-
+R.lon <- copyProp(function() R.p(proj=1, new="spherical system"), R.p)
+R.lat <- copyProp(function() R.p(proj=2, new="spherical system"), R.p)
 
 RMhandcock <- function(nu, notinvnu, var, scale, Aniso, proj){
   RMS(scale = 1/sqrt(2), RMmatern(nu, notinvnu, var, scale, Aniso, proj))
 }
+RMhandcock <- copyProp(RMhandcock, RMmatern)
+
+
+RMcardinalsine <- RMwave
+RMwendland <- RMgengneiting
+
+RMchoquet <- function(b) stop("not implemented yet")

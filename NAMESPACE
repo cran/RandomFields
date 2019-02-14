@@ -1,7 +1,4 @@
-#
-#
-#
-#exportPattern("^[^\\.]")
+####exportPattern("^[^\\.]")
 
 exportPattern("^RM")
 exportPattern("^RP")
@@ -46,7 +43,7 @@ importFrom('RandomFieldsUtils', Print, RFoptions)
 export(
 ### internal fcts used for maintainance 
     rfGenerateModels, rfGenerateConstants, rfGenerateTest, rfGenerateMaths,
-    checkExamples, StartExample, FinalizeExample, Dependencies,
+    checkExamples, StartExample, FinalizeExample, maintainers.machine,
 ### some functions used in the examples       
     ScreenDevice,
 ### obsolete       
@@ -57,13 +54,11 @@ export(
     Kriging, MaxStableRF, RFparameters, Variogram,
     plotWithCircles,
 ### maths
-    asin, atan, atan2, cos, sin, tan, acosh, asinh, atanh, cosh, sinh,
-    tanh, exp, log, expm1, log1p, logb, log2, sqrt, abs, floor, round, trunc,
-    gamma, lgamma, max, min, 
+     max, min, 
 ### others:
     ## never delete PrintModelList as it is used in Roger's book!
     PrintModelList,
-    conventional2RFspDataFrame, sp2RF    
+    conventional2RFspDataFrame, sp2RF   
        )
 
 ## useDynLib(RFutils)
@@ -74,15 +69,23 @@ useDynLib(RandomFields, .registration = TRUE, .fixes = "C_")
 
 exportClasses()
 
-exportMethods("[", "[<-", "+", "*", "/", "-", "^", "c", show, plot, persp, anova, summary, points, lines, image)
-#, logLik, AIC, BIC)
+exportMethods("[", "[<-", "+", "*", "/", "-", "^", c, 
+	      show, plot, persp, anova, summary, points, lines,
+	      image, asin, atan, atan2, cos, sin, tan, acosh, asinh,
+	      atanh, cosh, sinh,
+	      tanh, exp, log, expm1, log1p, # logb,
+	      log2, sqrt, abs, floor, round, trunc,
+##              diag,
+              lgamma)
+					#, logLik, AIC, BIC)
+export(exp2, hypot, cbrt, erf, erfc)
 
 exportMethods(RFspDataFrame2conventional,
               RFspDataFrame2dataArray,
 #              GridTopology2gridVectors,
               coerce,
 #              coordinates,
-              isGridded,
+#              isGridded,
               dimensions)
 
 ## S3 Methods

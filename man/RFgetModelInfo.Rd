@@ -7,7 +7,7 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Information on RMmodels}
 \description{
-  The function returns information about a \link{RMmodel},
+  The function returns information about an \link{RMmodel},
   either internal information when used in simulations, for instance,
   or general information
 }
@@ -18,21 +18,23 @@ RFgetModelInfo_register(register, level = 1, spConform =
                  RFoptions()$general$spConform, which.submodels =
                  c("user", "internal", "call+user", "call+internal",
                  "user.but.once", "internal.but.once",
-                 "user.but.once+jump", "internal.but.once+jump",
-                 "all"), modelname = NULL)
+                 "user.but.once+jump", "internal.but.once+jump", "all"),
+                 modelname = NULL, origin = "original")
 
-RFgetModelInfo_model(model, dim = 1, Time = FALSE,
+RFgetModelInfo_model(model, params, dim = 1, Time = FALSE,
                      kernel = FALSE, exclude_trend = TRUE, ...)
 }
 
 \arguments{
-  \item{...}{any of the arguments below}
+  \item{...}{See the argument of \command{RFgetModelInfo_register} and
+  \command{RFgetModelInfo_model}; \command{RFgetModelInfo} is an
+  abbreviation for the other two functions.}
   \item{register}{\eqn{0,...,21} or an evaluating function,
     e.g. \command{\link{RFsimulate}}.
     Place where intermediate calculations are stored.
     See also section \code{Registers} in \command{\link{RFoptions}}.
   }
-  \item{level}{integer [0..5]; level of details, i.e. the higher the
+  \item{level}{integer [0...5]; level of details, i.e. the higher the
     number the more details are given. 
   }
 
@@ -47,13 +49,12 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
 \item{spConform}{see \command{\link{RFoptions}}
 }
 \item{which.submodels}{
-  Internally, the sub-models are represented in two different ways
+  Internally, the sub-models are represented in two different ways:
   \sQuote{internal} and \sQuote{user}. The latter is very close to
   the model defined by the user.
    
   Most models have a leading internal model.
-  The values \code{"call+user"}, \code{"call+internal"} return also
-  this leading model if existent.
+  The values \code{"call+user"} and \code{"call+internal"} also return this leading model if existent.
   
   The values \code{"user.but.once"}, \code{"internal.but.once"}
   \code{"user.but.once"} returns the user path of the internal model
@@ -74,17 +75,19 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
   covariance model with name \code{modelname}.
   If \code{meth} is given then the model within the method is returned.
 }
-\item{model}{an \command{\link{RMmodel} with \code{NA}s where
-    information on the parameters is requested}.
+\item{model,params}{\argModel
+  Here, \code{NA}s should be placed where
+  information on the parameters is desired..
 }
 \item{dim}{positive integer. Spatial dimension.
 }
-\item{Time}{logical. Should time be considered too?
+\item{Time}{logical. Should time be considered, too?
 }
 \item{kernel}{logical. Should the model be considered as a kernel?
 }
 \item{exclude_trend}{logical. Currently, only \code{TRUE} is available.
 }
+\item{origin}{\argOrigin}
 }
 \details{
   \command{RFgetModelInfo} branches either into
@@ -115,14 +118,14 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
  a random field simulation.
 }
 \value{
-  If \code{RFgetModelInfo(model)} is called a list returned with the
+  If \code{RFgetModelInfo(model)} is called a list is returned with the
   following elements:
   \itemize{
     \item \code{trans.inv} : logical. Whether the model is translation
     invariant (stationary)
     \item \code{isotropic} : logical. Whether the model is rotation
     invariant (stationary)
-    \item \code{NAs} : is case of an additive model it gives the number
+    \item \code{NAs} : in case of an additive model it gives the number
     of NAs in each submodel
     \item \code{minmax} : a data frame containing information on all
     arguments set to \code{NA}s
@@ -132,7 +135,7 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
       \item \code{type} : integer; recognized particularities of a parameter;
       an explanation of the values is given after the table, if printed.
       \item \code{NAN} : the number of \code{NAN}s found
-      \item \code{min}, \code{max} : mathetically valid lower and upper
+      \item \code{min}, \code{max} : mathematically valid lower and upper
       endpoints of the parameter values
       \item \code{omin}, \code{omax} : logical. If \code{FALSE} the
       respective mathematical endpoint is included
@@ -145,22 +148,19 @@ RFgetModelInfo_model(model, dim = 1, Time = FALSE,
   
   Else a list of internal structure is returned.
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\me
 
 \seealso{command{\link{RFgetModel}}, \command{\link{RFsimulate}}
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMexp(scale=4, var=2) + RMnugget(var=3) + RMtrend(mean=1)
 z <- RFsimulate(model, 1:4, storing=TRUE)
 RFgetModelInfo()
 
 model <-  RMwhittle(scale=NA, var=NA, nu=NA) + RMnugget(var=NA)
 RFgetModelInfo(model)
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 \keyword{spatial}

@@ -1,4 +1,5 @@
 \name{Spherical models}
+\alias{RMmodelsSphere}
 \alias{sphere}
 \alias{spherical models}
 \alias{Spherical models}
@@ -7,17 +8,17 @@
 \title{Covariance models valid on a sphere}
 \description{
   This page summarizes the covariance models that can be used
-  for spherical coordinates (and earth coordinates)
+  for spherical coordinates (and earth coordinates).
 }
 
 \details{
-  The following models are available
+  The following models are available:
   
-  \bold{Completely monotone function allowing for arbitray scale}
+  \bold{Completely monotone functions allowing for arbitrary scale}
   \tabular{ll}{
      \command{\link{RMbcw}} \tab Model bridging stationary and
-    intrinsically stationary processes for \code{alpha <= 1}
-    and \code{beta < 0}\cr
+    intrinsically stationary processes for \eqn{\alpha \le 1}
+    and \eqn{\beta < 0}\cr
        \command{\link{RMcubic}} \tab cubic model\cr
    \command{\link{RMdagum}} \tab Dagum model with \eqn{\beta < \gamma}
     and \eqn{\gamma \le 1}\cr
@@ -34,14 +35,14 @@
     parametrization with \eqn{\nu \le 1/2}\cr 
   }
   
-  \bold{Other isotropic models with arbitray scale}
+  \bold{Other isotropic models with arbitrary scale}
   \tabular{ll}{
    \command{\link{RMconstant}} \tab spatially constant model \cr
    \command{\link{RMnugget}} \tab nugget effect model \cr
   }
   
-  \bold{Compactly supported covariance functions allowing for scales up
-    \eqn{\pi} (or \eqn{180} degree)}
+  \bold{Compactly supported covariance functions allowing for scales up to
+    \eqn{\pi} (or \eqn{180} degrees)}
     \tabular{ll}{
       \command{\link{RMaskey}} \tab Askey's model\cr
       \command{\link{RMcircular}} \tab circular model\cr
@@ -54,37 +55,35 @@
   
   \bold{Anisotropic models}
   \tabular{ll}{
-    none up to now.
+    None up to now.
   }
   
   \bold{Basic Operators}
   \tabular{ll}{
     \command{\link{RMmult}}, \code{*} \tab product of covariance models \cr
-    \command{\link{RMplus}}, \code{+} \tab sum of covariance models or variograms\cr
+    \command{\link{RMplus}}, \code{+} \tab sum of covariance models
+    or variograms\cr
   }
 
  \bold{See \link{RMmodels} for cartesian models.}
 }
 
-\author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \seealso{
   \link{coordinate systems},
   \command{\link{RMmodels}},
-  \command{\link{RMtrafo}}
+  \command{\link{RMtrafo}}.
 }
 
 \keyword{spatial}
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 RFgetModelNames(isotropy=c("spherical isotropic"))
 
 ## an example of a simple model valid on a sphere
@@ -115,10 +114,9 @@ plot(z)
 sigma <- 5 * sqrt((R.lat()-30)^2 + (R.lon()-20)^2)
 model <- RMprod(sigma) * RMtrafo(RMexp(s=500, proj="space"), "cartesian") *
   RMspheric(proj="time") 
-
 z <- RFsimulate(model, 0:10, 10:20, T=seq(0, 1, 0.1),
                 coord_system="earth", new_coordunits="km")
 plot(z, MARGIN.slices=3)
 
-\dontshow{FinalizeExample(); }
-}
+
+\dontshow{FinalizeExample(); }}

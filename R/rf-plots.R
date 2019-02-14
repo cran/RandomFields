@@ -102,7 +102,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
 
   graphics <- RFoptions()$graphics
  
-  image.par <- default.image.par(data.range, var.range, legend=plot.legend) 
+  image.par <- default.image.par(data.range, var.range, legend=plot.legend)
   names.rep <- c(paste("realization", 1:(n-plot.var), sep=" "),
                  "kriging variance")
   names.vdim <- 
@@ -168,15 +168,14 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
         r <- range(outer(x, 1 + 0.05 * c(-1,1), "*"))
         if (identical(r[1], r[2])) r[2] <- r[2]+1
         return(r)
-      } )
+      })
 
     if (!missing(zlim)) {
       idx <- unlist(lapply(as.list(select), 
-                           FUN=function(x) if (length(x) != 2) x[1] else NA))
+                           FUN=function(x) if (length(x) == 2) NA else x[1]))
       idx <- idx[!is.na(idx)]
       if (is.character(zlim) && zlim=="joint") {
-        image.par[[i]]$range[,idx] <- c(min(image.par[[i]]$range[,idx]),
-                                        max(image.par[[i]]$range[,idx]))
+        image.par[[i]]$range[,idx] <- range(image.par[[i]]$range[,idx])
       } else {
         zz <- if (is.list(zlim)) zlim[[i]] else zlim
         if (!is.null(zz))
@@ -187,8 +186,9 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
     image.par[[i]]$z.legend <-
       as.matrix(apply(image.par[[i]]$range, 2,
                       function(x) seq(x[1], x[2], length=lencol)))
-  #  if (ncol(image.par[[i]]$z.legend) == 1)
-  #    image.par[[i]]$z.legend <- t(image.par[[i]]$z.legend)
+
+   #  if (ncol(image.par[[i]]$z.legend) == 1)
+    ##    image.par[[i]]$z.legend <- t(image.par[[i]]$z.legend)
     image.par[[i]]$breaks <- 
       as.matrix(apply(image.par[[i]]$range, 2,
                       function(x) seq(x[1]-abs((x[2] - x[1])*1e-3),
@@ -273,12 +273,9 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
         if (any(sapply(col, length) <= 1))
           stop("number of colours is one -- please choose an appropriate colour palette. Maybe 'RFpar(col=NULL)' will help.")
       }
-      
-      legends[[i]] <- list(scr=scr.leg,
-                           col = col,
-                           x = image.par[[i]]$z.legend[, if (is.list(select))
-                               select[[1]][1] else select[1]]
-                           )
+
+      legends[[i]] <- list(scr=scr.leg, col = col,
+                           z.legend = image.par[[i]]$z.legend)
     }
   }
 
@@ -480,35 +477,46 @@ RFplotSimulation <- function(x, y,
   if (!(missing.y <- missing(y))) {
     if (do.slices)
       stop("'y' and 'MARGIN.slices' may not be given at the same time")
-    #
+					#
+##    eigentlich hier UnifyData
+    
     if (is(y,  'RFspatialGridDataFrame')) {
       y.coords <- as(y, "RFspatialPointsDataFrame")@coords
       y.data <- y@data
     } else if (is(y, "matrix") || is(y, "data.frame")) {
-      dc <- data.columns(y, xdim = dimensions(x), force=TRUE)
-      y.coords <- y[, dc$x, drop=FALSE]
-      y.data <- y[, dc$data, drop=FALSE]
+      dc <- data.columns(data=y, xdim = dimensions(x), force=TRUE)
+      y.coords <- y[, dc$is.x, drop=FALSE]
+      y.data <- y[, dc$is.data, drop=FALSE]
+#      Print(dc, y, x, dimensions(x), dc, y.coords, y.data)
     } else  {
       y.coords <- y@coords
       y.data <- y@data
     }     
   }
 
+
   data.range <-
     apply(as.matrix(1:vdim), 1,  # statt data.idx  # pro vdim eine legend
-                    function(z) 
-                    range(if (missing.y)
-                          x@data[z + vdim * 0:(n-plot.variance-1)] else {
-                            idx <- z + vdim * 0:(n-plot.variance-1)
-                            c(#x@data[idx],
-                              y.data[, idx[idx <= ncol(y.data)]])
-                          },
-                          na.rm=TRUE))
+	  function(z) {
+            ##           Print(z, missing.y)
+	    d <- if (missing.y) x@data[z + vdim * 0:(n-plot.variance-1)]
+		 else {
+		   idx <- z + vdim * 0:(n-plot.variance-1)
+##		   Print(idx,z,vdim,n,plot.variance,idx[idx <= ncol(y.data)],y.data)
+		   c(#x@data[idx],
+		     y.data[, idx[idx <= ncol(y.data)]])
+		 }
+        ##    Print(d, range(d, na.rm=TRUE))
+	    range(d,na.rm=TRUE)
+	  })
 
+ ## Print(data.range)
+	  
   var.range <- if (plot.variance) sapply(x@data[-data.idx],
                                          range, na.rm=TRUE) else NULL
 
-   if (missing(select.variables)) select.variables <- 1:vdim
+  if (missing(select.variables)) select.variables <- 1:vdim
+
   image.par <- prepareplotRFsp(x=x, vdim=vdim, select=select.variables,
                                data.range = data.range, var.range=var.range,
                                plot.var=plot.variance, MARGIN=NEWMARGIN,
@@ -546,7 +554,7 @@ RFplotSimulation <- function(x, y,
       stop("par()$oma has not been set; 'oma=rep(2,4)' is a good choice.")
   }
 
- for (m in m.range) {  
+  for (m in m.range) {  
     if (do.avi) {
       fn[m] <- paste(file, "__", formatC(m, width=digits, flag="0",
                                          format="d"), ".png", sep="")
@@ -557,8 +565,8 @@ RFplotSimulation <- function(x, y,
       dev.set(current)
     } else filedev <- dev.cur()
     for (jx in 1:length(select.variables)) {       
-      j <- if (is.list(select.variables)) select.variables[[jx]] else
-      select.variables[jx]
+      j <- if (is.list(select.variables)) select.variables[[jx]]
+           else select.variables[jx]
       
       for (ix in 1:nrow(all.i)) { 
         i <- all.i[ix, ]
@@ -581,9 +589,8 @@ RFplotSimulation <- function(x, y,
           par(oma=image.par$oma)
         }
         par(mar=image.par$mar)
-        
-        col <-
-          image.par[[dv]]$col[[ 1 + (j[1]-1) %% length(image.par[[dv]]$col) ]]
+        len.col <- length(image.par[[dv]]$col)
+        col <-  image.par[[dv]]$col[[ 1 + (j[1]-1) %% len.col]]
         breaks <- image.par[[dv]]$breaks[, j[1]]
         
         genuine.image <- (length(j) == 1 || length(j)==3)
@@ -592,12 +599,10 @@ RFplotSimulation <- function(x, y,
           dots$type <- NULL
           dots$col <- if (genuine.image) col else par()$bg
           for (devices in 0:do.avi) {
-            plot.return <- do.call(plotmethod,
-                                   args=c(dots, list(
-                                       x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
-                                       zlim = image.par[[dv]]$range[, j[1]],
-                                       axes = plotmethod == "persp"))
-                                   )
+            args <- c(dots, list(x=xx, y=xy, z=data.arr[,,i[2], m, j[1], k],
+                                 zlim = image.par[[dv]]$range[, j[1]],
+                                 axes = plotmethod == "persp"))
+            plot.return <- do.call(plotmethod, args=args)
             dev.set(filedev)
           }
           dev.set(current)
@@ -618,11 +623,12 @@ RFplotSimulation <- function(x, y,
         }
       
         if (image.par$legend && ix == 1 && legends$do[jx]) {
+          leg <- legends[[dv]]$z.legend[, j[1]]
           if (graphics$split_screen) {
             screen(legends[[dv]]$scr[jx])
             lab <- xylabs("", "", units=legends$units)
-            image(x=legends[[dv]]$x, y=c(0,1),
-                  z=matrix(ncol=2, rep(legends[[dv]]$x, 2)),
+             image(x=leg, y=c(0,1),
+                  z=matrix(ncol=2, rep(leg, 2)),
                   axes=FALSE, xlab=lab$x, ylab=lab$y,
                   col=legends[[dv]]$col[[jx]]
                   )            
@@ -632,7 +638,7 @@ RFplotSimulation <- function(x, y,
             screen(image.par$scr.main[ix, jx])
             
           } else { ## not split.screen
-            my.legend(min(xx), max(xy), range(legends[[dv]]$x),
+            my.legend(min(xx), max(xy), image.par[[dv]]$range[, j[1]],
                       col=legends[[dv]]$col[[jx]], bg="white")
           }
         }        
@@ -681,11 +687,6 @@ RFplotSimulation <- function(x, y,
                                  type="p", pch=pch, lty=1, col=col, bg=NA,
                                  cex=cex, lwd=1)))
               }
-            
-##            save(file="xxx.rda", dots, dots2, xy.coords, y.coords, MARGIN, plot.return,  xx, xy, data.arr, i, m, j, k, image.par,dv, plotmethod)
-
-                  
-            
               if (plotmethod=="image") addpoints(15, "darkgray", dots$cex*2)
              addpoints(dots$pch, col2, dots$cex) ## causes error in              
             } # not persp
@@ -693,8 +694,9 @@ RFplotSimulation <- function(x, y,
     
           if (ix==1 ||
               ((image.par$split.main[1] != nrow(all.i)) &&
-               (ix <= image.par$split.main[2]))) { # nrow(all.i) || ) #!image.par$always.close ||
-            axis(1, outer=TRUE)#image.par$always.close)
+               (ix <= image.par$split.main[2]))) {
+	    ## nrow(all.i) || #!image.par$always.close ||
+            axis(1, outer=TRUE)#image.par$always.close
           }
          if (jx==1 &&
               ((image.par$split.main[2] == length(select.variables)) ||
@@ -790,6 +792,38 @@ RFplotSimulation <- function(x, y,
 
 
 
+
+trafo_pointsdata <- function(x, dim) {
+  if (isgrid <- is(x, "RFgridDataFrame")) {
+    x <- grid2pts1D(x) ## x <- as(x, "RFpointsDataFrame") # funktionierte nicht
+  } else if ((is(x, "matrix") || is(x, "data.frame")) && !missing(dim)) {
+    dc <- data.columns(data=x, xdim = dim, force=TRUE)
+    x <- list(coords=x[, dc$is.x, drop=FALSE], data=x[, dc$is.data, drop=FALSE])
+  } else {
+    if (!is(x, "RFpointsDataFrame"))
+      stop("method only for objects of class 'RFpointsDataFrame' and 'RFgridDataFrame'")
+  }
+             
+  dummy <- dimnames(x@coords)[[2]][1]
+  lab <- xylabs(if (is.null(dummy)) "" else dummy, "",
+                units=x@.RFparams$coordunits)
+  labdata <- names(x@data)
+  colname <- colnames(x@data)
+  if (isgrid) {
+    return(list(coords=as.vector(x@coords),
+                data=as.matrix(x@data),
+                RFparams=x@.RFparams,
+                lab=lab, labdata=labdata, colnames=colname))
+  } else {
+    ord <- order(x@coords)
+    return(list(coords=x@coords[ord, ],
+                data=as.matrix(x@data)[ord, , drop=FALSE],
+                RFparams=x@.RFparams,
+                lab=lab, labdata=labdata, colnames=colname))
+  } 
+}
+
+
   
 RFplotSimulation1D <-  function(x, y, nmax=6,
                              plot.variance=!is.null(x@.RFparams$has.variance) &&
@@ -869,7 +903,7 @@ RFplotSimulation1D <-  function(x, y, nmax=6,
     scr <- NULL
     par(mfrow=c(n, 1), mar=c(1, 1, 0.1, 0.1))
   }
-                  
+
   for (i in 1:n){
     if (graphics$split_screen) screen(i)
     if (make.small.mar) {
@@ -883,39 +917,29 @@ RFplotSimulation1D <-  function(x, y, nmax=6,
       i <- x$RFparams$n + plot.variance
     }
 
-    do.call(graphics::plot,
-            args=c(dots, list(
-              x=x$coords, y=x$data[ , vdim*(i-1)+1],
-              xaxt="n", yaxt="n", ylab=ylab, col=col[1]))
+    do.call(graphics::matplot,
+            args=c(dots,
+                   list(
+                       x=x$coords, y=x$data[ , vdim*(i-1)+(1:vdim)],
+                       xaxt="n", yaxt="n", ylab=ylab, col=col))
             )
 
     if (!missing(y)) {
-      points(x=y$coords, y=y$data[ , vdim*(i-1)+1], pch=22, col="red")
+      points(x=y$coords, y=y$data[ , vdim*(i-1)+(1:vdim)], pch=22, col="red")
     }
     axis(2)
     if (tmp.idx) i <- n
     
-    if (i==n) {
+   if (i==1) {
+      if ( (vdim > 1) && legend) {
+        legend("topright", col=col, lty=1, legend = c(names.vdim))
+      }
+    } else if (i==n) {
       axis(1, outer=n>1)
       title(xlab=dots$xlab, outer=TRUE) 
-    } else axis(1, labels=FALSE)
-    for (j in 1:vdim){
-      if (j==1) next
-      do.call(graphics::points, quote=TRUE,
-              args=c(dots, list(
-                x=x$coords, y=x$data[ , vdim*(i-1)+j], col=col[j]))
-              )
-      if (!missing(y)) {
-        points(x=y$coords, y=y$data[ , vdim*(i-1)+j], pch=22, col="red")
-      }
-      
-      if (i==1) {
-        if ( (!TRUE || vdim > 1) && legend) {
-          legend("topright", col=col, lty=1, legend = c(names.vdim))
-        }
-      }
-    }
+    } else axis(1, labels=FALSE)    
   }
+  
   if (graphics$close_screen) {
     close.screen(scr)
     scr <- NULL

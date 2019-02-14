@@ -7,9 +7,8 @@
  that involve \pkg{RandomFields}.
  }
  
- \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
- }
+ \me
+ 
  \references{
  \itemize{
  \item
@@ -76,15 +75,13 @@
 }
 
 \seealso{
- \link{weather}, \link{GSPSJ06}, \link{SS12}, \link{S02}, \link{S10}, \link{jss14}
+ \link{weather}, \link{GSPSJ06}, \link{SS12}, \link{S02}, \link{S10}, \link{jss14}.
  }
 
 
-\examples{
-# for examples, see the specific papers.
-\dontshow{FinalizeExample()}
-
-}
+\examples{\dontshow{StartExample()}
+# For examples, see the specific papers.
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 

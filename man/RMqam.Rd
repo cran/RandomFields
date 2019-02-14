@@ -20,10 +20,10 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
  \item{phi}{a valid covariance \command{\link{RMmodel}} that is a normal
    scale mixture. See, for instance,
    \cr
-   \code{\link{RFgetModelNames}(monotone="normal mixture")}
+   \code{\link{RFgetModelNames}(monotone="normal mixture")}.
    }
  \item{C1, C2, C3, C4, C5, C6, C7, C8, C9}{optional further univariate
- stationary \command{\link{RMmodel}}.}
+ stationary \command{\link{RMmodel}}s}
  \item{theta}{a vector with positive entries}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
 }
@@ -46,8 +46,7 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
  space-time data. Submitted to Journal of Multivariate Analysis.
  }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmqam}},
  \command{\link{RMmodel}},
@@ -60,14 +59,13 @@ RMqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMqam(phi=RMgauss(), RMexp(), RMgauss(),
                theta=c(0.3, 0.7), scale=0.5)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

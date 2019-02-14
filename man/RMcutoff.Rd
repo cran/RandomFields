@@ -48,7 +48,7 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
  are known (cf. Gneiting et al. (2006)).
 }
 \value{
- \command{\link{RMcutoff}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMcutoff}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -61,25 +61,19 @@ RMcutoff(phi, diameter, a, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 model <- RMexp()
 plot(model, model.cutoff=RMcutoff(model, diameter=1), xlim=c(0, 4))
@@ -88,5 +82,4 @@ model <- RMstable(alpha = 0.8)
 plot(model, model.cutoff=RMcutoff(model, diameter=2), xlim=c(0, 5))
 x <- y <- seq(0, 4, 0.05)
 plot(RFsimulate(RMcutoff(model), x=x, y = y))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -4,6 +4,7 @@
 \title{Turning Bands method}
 \description{
  The Turning Bands method is a simulation method for stationary, isotropic
+ (univariate or multivariate)
  random fields in any dimension and defined on arbitrary points or
  arbitrary grids. It performs a multidimensional simulation
  by superposing lower-dimensional fields. In fact, the Turning Bands
@@ -28,18 +29,18 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
   }
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
   % \item{loggauss}{see \command{\link{RPgauss}}.}
   \item{fulldim}{a positive integer. The dimension of the space of the
-    random field to be simulated}
+    random field to be simulated.}
   
   \item{reduceddim}{a positive integer; less than \code{fulldim}. 
     The dimension of the auxiliary hyperplane (most frequently a line,
-    i.e. \code{reduceddim=1} used in the simulation.
+    i.e. \code{reduceddim=1}) used in the simulation.
   }
   
-  \item{layers}{a boolean value; for space time model. If \code{TRUE}
+  \item{layers}{a boolean value; for space-time model. If \code{TRUE}
     then the turning layers are 
     used whenever a time component is given.
     If \code{NA} the turning layers are used only when the
@@ -57,11 +58,11 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
   \item{linessimufactor}{ \code{linessimufactor} or
     \code{linesimustep} must be non-negative; if
     \code{linesimustep}
-    is positive then \code{linesimufactor} is ignored.
+    is positive then \code{linessimufactor} is ignored.
     If both
     arguments are naught then \code{points} is used (and must be
     positive).
-    The grid on the line is \code{linesimufactor}-times
+    The grid on the line is \code{linessimufactor}-times
     finer than the smallest distance. 
     See also \code{linesimustep}.
     
@@ -71,7 +72,7 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
   \item{linesimustep}{
     If \code{linesimustep} is positive the grid on the line has lag
     \code{linesimustep}. 
-    See also \code{linesimufactor}.
+    See also \code{linessimufactor}.
     
     Default: \code{0.0}.
   }
@@ -90,8 +91,8 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
     \code{points} gives the number of points simulated on the TBM
     line, hence 
     must be greater than the minimal number of points given by
-    the size of the simulated field and the two paramters
-    \code{linesimufactor} and \code{linesimustep}.
+    the size of the simulated field and the two parameters
+    \code{linessimufactor} and \code{linesimustep}.
     If \code{points} is not positive the number of points is
     determined automatically.
     The use of \code{center} and \code{points} is highlighted
@@ -104,9 +105,9 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
  
 \note{Both the precision and the simulation time
   depend heavily on \code{linesimustep} and
-  \code{linesimufactor}.
+  \code{linessimufactor}.
   For covariance models with larger values of the scale parameter,
-  \code{linesimufactor=2} is too small.
+  \code{linessimufactor=2} is too small.
 }
 
  
@@ -125,13 +126,13 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
     The turning layers can be used for the simulations with a (formal)
     time component. It works for all isotropic models, 
     some special models such as \command{\link{RMnsst}}, and
-    multiplicate models with that separate the time component. 
+    multiplicative models that separate the time component. 
   }
 }
 
 
 \value{
- \code{RPtbm} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \code{RPtbm} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -162,13 +163,12 @@ RPtbm(phi, boxcox, fulldim, reduceddim, layers, lines,
   }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## isotropic example that forces the use of the turning bands method
 model <- RPtbm(RMstable(s=1, alpha=1.8))
 x <- seq(-3, 3, 0.1)
@@ -186,13 +186,11 @@ x <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x=x, y=x, z=x, T=c(1,1,5))
 plot(z, MARGIN.slices=4, MARGIN.movie=3)
 
-
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \seealso{\link{Gaussian},
   \link{RP},
- \command{\link{RPspectral}}
+ \command{\link{RPspectral}}.
 }
 
 \keyword{methods}

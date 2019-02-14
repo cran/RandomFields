@@ -10,8 +10,8 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
       sim_only1dim=FALSE, wait = 0, ...)
 }
 \arguments{
- \item{data}{see \command{\link{RFempiricalvariogram}}. If \code{data}
-   is given, the empirical variogram is shown}
+ \item{data}{See \command{\link{RFvariogram}}. If \code{data}
+   is given, the empirical variogram is shown.}
  \item{x}{a \code{\link[base]{seq}}uence of  the
    locations of the
    simulated process; if not given,
@@ -22,10 +22,10 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
  \item{same.algorithm}{Force the picture being simulated with the same
  algorithm so that the pictures are always directly comparable. The
  disadvantage is that some models are simulated only (very) approximatively.}
- \item{ev}{instead of the data, the emprirical variogram itself might be
+ \item{ev}{instead of the data, the empirical variogram itself might be
    passed}
  \item{bin}{only considered if \code{data} is given. See
-   \command{\link{RFempiricalvariogram}} for details.
+   \command{\link{RFvariogram}} for details.
  }
  \item{xcov}{ \code{\link[base]{seq}}uence of the
    locations where the covariance function is plotted}
@@ -42,7 +42,7 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
  If \code{wait} is negative the xterm does not wait for the
  tkltk-window to be finished. Further the variable \code{RFgui.model}
  is created in the environment \code{.GlobalEnv} and contains the
- currently chosen variable in the gui. \command{\link{RFgui}} always return
+ currently chosen variable in the gui. \command{\link{RFgui}} always returns
  \code{NULL}. 
 
  If \code{wait} is non-negative the xterm waits for the
@@ -50,7 +50,7 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
  the last chosen model (or \code{NULL} if no model has been chosen).
  \command{\link{RFgui}} idles a lot when \code{wait=0}. It idles less for
  higher values by sleeping about \code{wait} microseconds. Of course
- the handling in the tkltk window get slower also. Reasonable values
+ the handling in the tkltk window gets slower as well. Reasonable values
  for \code{wait} are within \code{[0,1000]}.
 
  \cite{same.alg = TRUE} is equivalent to setting
@@ -62,25 +62,17 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
 }
  
 \value{
- If \code{wait < 0} the the function returns \code{NULL}
+ If \code{wait < 0} the function returns \code{NULL}
  else it returns the last chosen \command{\link{RMmodel}}.
 
  If \code{wait < 0},
- a side effect effect of \command{\link{RFgui}}
+ a side effect of \command{\link{RFgui}}
  is the creation of the variable \code{RFgui.model}
  on \code{.GlobalEnv}.
 }
 
-\author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-
- \subsection{Author(s) of the code}{
- Daphne Boecker \email{d.boecker@gmx.de}
-
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
- }
+\author{\martin
+  \subsection{Author(s) of the code}{Daphne Boecker; \martin}
 }
 
 \seealso{
@@ -90,7 +82,7 @@ RFgui(data, x, y, same.algorithm = TRUE, ev, bin = NULL, xcov, ycov,
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgui()

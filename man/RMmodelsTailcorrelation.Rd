@@ -1,18 +1,18 @@
-\name{Tail Correlation Funtioncs}
+\name{Tail Correlation Functions}
 \alias{tcf}
 \alias{tail correlation functions}
 \alias{Tail correlation functions}
 \alias{RMmodelsTailCorrelation}
 \title{Covariance models valid for max-stable random fields}
 \description{
-  This page summarizes the models that can be use
-  for tail correlation functions
+  This page summarizes the models that can be used
+  for tail correlation functions.
 }
 
 \details{
-  The following models are available
+  The following models are available:
   
-  \bold{Completely monotone function allowing for arbitray scale}
+  \bold{Completely monotone functions allowing for arbitrary scale}
   \tabular{ll}{
     \command{\link{RMbcw}} \tab Model bridging stationary and
     intrinsically stationary processes for \code{alpha <= 1}
@@ -32,7 +32,7 @@
     parametrization with \eqn{\nu \le 1/2}\cr 
   }
   
-  \bold{Other isotropic models with arbitray scale}
+  \bold{Other isotropic models with arbitrary scale}
   \tabular{ll}{
     \command{\link{RMnugget}} \tab nugget effect model \cr
   }
@@ -52,7 +52,7 @@
   
   \bold{Anisotropic models}
   \tabular{ll}{
-    none up to now.
+    None up to now.
   }
   
   \bold{Basic Operators}
@@ -86,23 +86,20 @@
   }
 }
 
-\author{
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \seealso{
   \link{coordinate systems},
   \link{RM},
   \command{\link{RMmodels}},
-  \command{\link{RMtrafo}}
+  \command{\link{RMtrafo}}.
 }
 
 \keyword{spatial}
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames(type="tail")
@@ -111,5 +108,4 @@ RFgetModelNames(type="tail")
 model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget
 plot(model)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

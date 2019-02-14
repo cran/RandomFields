@@ -33,7 +33,7 @@ RMbessel(nu, var, scale, Aniso, proj)
  and which is only valid for \eqn{d=1}{d=1}. This equals \command{\link{RMdampedcos}} for \eqn{\lambda = 0}, there.
 
  A second important case is \eqn{\nu=0.5}{\nu=0.5} with covariance function
- \deqn{C(r)=\sin(r)/r}{C(r)=sin(r)/r} and which is valid for \eqn{d \le 3}{d \le 3}. 
+ \deqn{C(r)=\sin(r)/r}{C(r)=sin(r)/r} which is valid for \eqn{d \le 3}{d \le 3}. 
  This coincides with \command{\link{RMwave}}. 
  
  Note that all valid continuous stationary isotropic covariance
@@ -43,7 +43,7 @@ RMbessel(nu, var, scale, Aniso, proj)
  (cf. Gelfand et al., 2010, pp. 21--22).
 }
 \value{
- \command{\link{RMbessel}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMbessel}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -61,8 +61,8 @@ RMbessel(nu, var, scale, Aniso, proj)
   }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMdampedcos}},
  \command{\link{RMwave}},
@@ -71,20 +71,15 @@ RMbessel(nu, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMbessel(nu=1, scale=0.1)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

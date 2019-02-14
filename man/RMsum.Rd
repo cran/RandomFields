@@ -28,12 +28,11 @@ RMsum(phi, var, scale, Aniso, proj)
 %  University Press.  
 %}
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
- \command{\link{RMplus}}
- \command{\link{RMprod}}
+ \command{\link{RMplus}},
+ \command{\link{RMprod}}.
 }
 
 
@@ -41,7 +40,7 @@ RMsum(phi, var, scale, Aniso, proj)
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 

@@ -31,9 +31,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Rmath.h>  
 #include <stdio.h>  
 //#include <stdlib.h>
-#include "RF.h"
-#include "shape_processes.h"
+#include "questions.h"
+#include "operator.h"
+#include "Processes.h"
 #include "Coordinate_systems.h"
+
+#ifdef DO_PARALLEL
+#include <omp.h>
+#endif
 
   
 #include <R_ext/Linpack.h>
@@ -48,61 +53,75 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /*********************************************************************/
 
 
-int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
-		FFT_storage *FFT)
+int fastfourierInit(int *m, int dim, FFT_storage *FFT)
   /* this function is taken from the fft function by Robert Gentleman 
      and Ross Ihaka, in R */
 {
-  long int inv, nseg, n,nspn,i;
-  int maxf, maxp, err;
-  bool ok;
-  if (first) {
-   int maxmaxf,maxmaxp;
-   nseg = maxmaxf =  maxmaxp = 1;
-   /* do whole loop just for err checking and maxmax[fp] .. */
-
-   for (i = 0; i<dim; i++) {
-     if (m[i] > 1) {
-       fft_factor(m[i], &maxf, &maxp);
-       if (maxf == 0) {GERR("fft factorization failed")}	
-       if (maxf > maxmaxf) maxmaxf = maxf;
-       if (maxp > maxmaxp) maxmaxp = maxp;
-       nseg *= m[i];
-     }
-   }
+  int Err, maxp, maxmaxf,maxmaxp,
+    nseg = maxmaxf =  maxmaxp = 1;
+  /* do whole loop just for err checking and maxmax[fp] .. */
   
-   FREE(FFT->work);
-   FREE(FFT->iwork);
-   if ((FFT->work = (double*) MALLOC(4 * maxmaxf * sizeof(double)))==NULL || 
-       (FFT->iwork = (int*) MALLOC(maxmaxp  * sizeof(int)))==NULL) { 
-     err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-   }
-   FFT->nseg = nseg;
-   //  nseg = leng th(z); see loop above
-  }
-  inv = (inverse) ? 2 : -2;
-  n = 1;
-  nspn = 1;  
-  nseg = FFT->nseg;
-  for (i = 0; i < dim; i++) {
+ 
+  for (int i = 0; i<dim; i++) {
     if (m[i] > 1) {
-      nspn *= n;
-      n = m[i];
-      nseg /= n;
-      fft_factor(n, &maxf, &maxp);
-      ok = (bool) fft_work(&(data[0]), &(data[1]), nseg, n, nspn, inv, 
-		      FFT->work, FFT->iwork);
-      if (!ok) GERR("error within Fourier transform");
+      if (fft_factor(m[i], FFT->maxf + i, &maxp, FFT->kt + i, FFT->m_fac + i,
+		     FFT->NFAC[i]))
+	FAILED("fft factorization failed");
+      
+      if (FFT->maxf[i] > maxmaxf) maxmaxf = FFT->maxf[i];
+      if (maxp > maxmaxp) maxmaxp = maxp;
+      nseg *= m[i];
     }
   }
+  
+  FREE(FFT->work);
+  FREE(FFT->iwork);
+  //
+  if ((FFT->work = (double*) MALLOC(4 * maxmaxf * sizeof(double)))==NULL || 
+	(FFT->iwork = (int*) MALLOC(maxmaxp  * sizeof(int)))==NULL) { 
+    Err=ERRORMEMORYALLOCATION; goto ErrorHandling;
+  }
+  FFT->nseg = nseg;
+
+  //  nseg = leng th(z); see loop above
   return NOERROR;
- ErrorHandling:
-  FFT_destruct(FFT);
-  return err;
+
+ErrorHandling:
+  return Err;
 }
 
-int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
-  return fastfourier(data, m, dim, first, !first, FFT);
+
+int fastfourier(double *data, int *m, int dim, bool first, bool inverse,
+		FFT_storage *FFT) {
+  int Err;
+  if (first && (Err = fastfourierInit(m, dim, FFT)) != NOERROR) return Err;
+  return fastfourier(data, m, dim, inverse, FFT);
+}
+
+
+int fastfourier(double *data, int *m, int dim,  bool inverse,
+		FFT_storage *FFT) {
+ /* this function is taken from the fft function by Robert Gentleman 
+     and Ross Ihaka, in R */
+  int nfac[21];
+  long int
+    inv = (inverse) ? 2 : -2,
+    n = 1,
+    nspn = 1,
+    nseg = FFT->nseg;
+  for (long int i = 0; i < dim; i++) {
+    if (m[i] > 1) {
+      nspn *= n; 
+      n = m[i]; 
+      nseg /= n;
+      MEMCOPY(nfac, FFT->NFAC[i], sizeof(int) * 21);
+      //     printf("%d: %d %d %d; fnax=%d %d %d %d %d %d %d %d \n", L, FFT->maxf[i], FFT->kt[i], FFT->m_fac[i], nfac[0], nfac[1], nfac[2], nfac[3], nfac[4], nfac[5], nfac[6], nfac[7]);
+      if (!fft_work(data, data + 1, nseg, n, nspn, inv, FFT->work, FFT->iwork,
+		    FFT->maxf[i], FFT->kt[i], FFT->m_fac[i], nfac))
+	return XERRORFOURIER;
+    }
+  }
+  return NOERROR;  
 }
 
 
@@ -111,34 +130,16 @@ int fastfourier(double *data, int *m, int dim, bool first, FFT_storage *FFT){
 #define LOCPROC_R LOCPROC_A // always last of LOCPROC_*
 
 
-int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
+int init_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   int err=NOERROR;
   if (!Getgrid(cov)) SERR("circ embed requires a grid");
 
-  //  cov_model *prev = cov;
-  //  while (prev->calling != NULL) prev = prev->calling; PMI(prev);
-
-  int d,
-	*sum = NULL,
-	index[MAXCEDIM], dummy, j, l, 
-	*mm=NULL,
-	*cumm=NULL, 
-	*halfm=NULL; // MULT added vars j,l;
-    double hx[MAXCEDIM], realmtot, steps[MAXCEDIM], 
+  double  steps[MAXCEDIM], 
       **c = NULL, // For multivariate *c->**c
-      **Lambda = NULL,
-      *tmp = NULL,
-      *rwork=NULL, 
-      *tmpLambda=NULL,
-      *smallest=NULL;
-    complex optim_lwork, 
-      *R = NULL,
-      *work=NULL;
-  long int i,k,twoi,twoi_plus1, mtot, hilfsm[MAXCEDIM],
-      *idx = NULL;
-  bool cur_crit;
-  ce_storage *s = NULL;
-  cov_model *next = cov->sub[0];
+      **Lambda = NULL;
+  long int  hilfsm[MAXCEDIM],
+    mtot=0;
+  model *next = cov->sub[0];
   location_type *loc = Loc(cov);
   double
     maxGB = P0(CE_MAXGB),
@@ -146,12 +147,13 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
     tolIm = P0(CE_TOLIM),
     *caniso = loc->caniso,
     *mmin = P(CE_MMIN);
-  int dim = cov->tsdim,
-    vdim   = cov->vdim[0],
+  int dim = OWNLOGDIM(0),
+    dimM1 = dim - 1,
+    vdim   = VDIM0,
     cani_ncol = loc->cani_ncol,
     cani_nrow = loc->cani_nrow,
     lenmmin = cov->nrow[CE_MMIN],
-    vdimSQ = vdim * vdim, // PM 12/12/2008
+    vdimSq = vdim * vdim, // PM 12/12/2008
     maxmem = P0INT(CE_MAXMEM),
     trials = GLOBAL.internal.examples_reduced ? 1 : P0INT(CE_TRIALS),
     strategy = P0INT(CE_STRATEGY);
@@ -161,20 +163,33 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
     useprimes = (bool) P0INT(CE_USEPRIMES),
     dependent = (bool) P0INT(CE_DEPENDENT);
  
-  ROLE_ASSERT_GAUSS;
-  assert(cov->vdim[0] == cov->vdim[1]);
+assert(VDIM0 == VDIM1);
+  if (loc->distances) RETURN_ERR(ERRORFAILED);
+  if (dim > MAXCEDIM) RETURN_ERR(ERRORMAXDIMMETH);
+  if (vdim > MAXVDIM) RETURN_ERR(ERRORMAXVDIM); 
 
   cov->method = CircEmbed;
   
-  if (loc->distances) return ERRORFAILED;
-
   NEW_STORAGE(ce);
-  s = cov->Sce;
+  ce_storage *s = cov->Sce;
+  int *mm = s->m,
+    *halfm= s->halfm,
+    *cumm = s->cumm;
+  // since 20 Aug 17:  in NEW_STORAGE
+  //  s->trials=0;
+  //  s->cur_call_odd = 0;  // first one is set to be odd at beginning of
+  //                        // do_circ_embed
+  //  s->positivedefinite = false;     
+  /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
+     so only the first two rows of (3.9) (without the taking the
+     modulus of h in the first row)
+     The following variable 'index' corresponds to h(l) in the following
+way: index[l]=h[l]        if 0<=h[l]<=mm[l]/2
+index[l]=h[l]-mm[l]   if mm[l]/2+1<=h[l]<=mm[l]-1     
+Then h[l]=(index[l]+mm[l]) % mm[l] !!
+   */
 
-  if (dim > MAXCEDIM) {
-    err=ERRORMAXDIMMETH ; goto ErrorHandling;
-  } 
-  for (d=0; d<dim; d++) {
+  for (int d=0; d<dim; d++) {
     s->nn[d]=(int) loc->xgr[d][XLENGTH]; 
     steps[d]=loc->xgr[d][XSTEP];
   }
@@ -195,18 +210,7 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
   //  i.e. read off imag fields in even calls. Generate new ones in
   //  odd calls resp. read off real squares if s->dependent==1
 
-  s->cur_call_odd = 0;  // first one is set to be odd at beginning of
-                        // do_circ_embed
 
-  if( (tmp = (double *) MALLOC(vdimSQ * sizeof(double))) == NULL) {
-      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-  }
-
-  mtot=0;
-  mm = s->m;
-  halfm= s->halfm;
-  cumm = s->cumm;
-  if (PL>=PL_STRUCTURE) { LPRINT("calculating the Fourier transform\n"); }
 
   /* cumm[i+1]=\prod_{j=0}^i m[j] 
      cumm is used for fast transforming the matrix indices into an  
@@ -216,60 +220,58 @@ int init_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED  *S){
 
   //  ("CE missing strategy for matrix entension in case of anisotropic fields %d\n)
   //  for (i=0;i<dim;i++) { // size of matrix at the beginning  
-  //	print("%d %f\n", i, mmin[i]);
+  //	print("%d %10g\n", i, mmin[i]);
   //  }
 
   bool multivariate;
-  multivariate = cov->vdim[0] > 1;
-  assert(cov->vdim[0] == cov->vdim[1]);
+  multivariate = VDIM0 > 1;
+  assert(VDIM0 == VDIM1);
 
   // multivariate = !true; // checken !!
 
-  for (i=0;i<dim;i++) { // size of matrix at the beginning  
+  for (int i=0;i<dim;i++) { // size of matrix at the beginning  
     double hilfsm_d;
     if (FABS(mmin[i % lenmmin]) > 10000.0) {     
-      GERR1("maximimal modulus of mmin is 10000. Got %f", mmin[i % lenmmin]);
+      GERR1("maximimal modulus of mmin is 10000. Got %10g", mmin[i % lenmmin]);
     }
     hilfsm_d = (double) s->nn[i];
     if (mmin[i % lenmmin]>0.0) {
       if (hilfsm_d > (1 + (int) CEIL(mmin[i % lenmmin])) / 2) { // plus 1 since 
 	// mmin might be odd; so the next even number should be used
-        GERR3("Minimum size in direction %d is %f. Got %f\n",
+        GERR3("Minimum size in direction %d is %10g. Got %10g\n",
 	      (int) i, hilfsm_d, CEIL(mmin[i % lenmmin]));
       }
       hilfsm_d = (double) ( (1 + (int) CEIL(mmin[i % lenmmin])) / 2);
     } else if (mmin[i % lenmmin] < 0.0) {
-      assert(mmin[i % lenmmin] <= -1.0);
+      assert(mmin[i % lenmmin] <= - 1.0);
       hilfsm_d = CEIL((double) hilfsm_d * - mmin[i % lenmmin]);
     }
-    if (hilfsm_d >=  MAXINT) return ERRORMEMORYALLOCATION;
+    if (hilfsm_d >=  MAXINT) {err=ERRORMEMORYALLOCATION; goto ErrorHandling;}
     if (useprimes) {
       // Note! algorithm fails if hilfsm_d is not a multiple of 2
       //       2 may not be put into NiceFFTNumber since it does not
       //       guarantee that the result is even even if the input is even !
 	 hilfsm_d = 2.0 * NiceFFTNumber((int) hilfsm_d);
     } else {
-      hilfsm_d =ROUND(multivariate
-		      ? POW(3.0, 1.0 + CEIL(LOG(hilfsm_d) / LOG3 - EPSILON1000))
-		      : POW(2.0, 1.0 + CEIL(LOG(hilfsm_d) *INVLOG2-EPSILON1000))
-		      );
+      double dummy;
+      if (multivariate)
+	dummy = POW(3.0, 1.0 + CEIL(LOG(hilfsm_d) / LOG3 - EPSILON1000));
+      else
+	dummy = POW(2.0, 1.0 + CEIL(LOG(hilfsm_d) * INVLOG2-EPSILON1000));
+      hilfsm_d =ROUND(dummy);
     }
-    if (hilfsm_d >=  MAXINT) return ERRORMEMORYALLOCATION;
+    if (hilfsm_d >=  MAXINT) {err=ERRORMEMORYALLOCATION; goto ErrorHandling;}
     hilfsm[i] = (int) hilfsm_d;
   }
    
 
+  
+  // print("trials %d strat=%d force=%d prim=%d dep=%d  max=%10g re=%10g im=%10g\n", 
+  //	 trials, strategy, force, useprimes, dependent, 
+  //	 maxmem, tol_re, tol_im);
 
-  s->positivedefinite = false;     
-  /* Eq. (3.12) shows that only j\in I(m) [cf. (3.2)] is needed,
-     so only the first two rows of (3.9) (without the taking the
-     modulus of h in the first row)
-     The following variable 'index' corresponds to h(l) in the following
-way: index[l]=h[l]        if 0<=h[l]<=mm[l]/2
-index[l]=h[l]-mm[l]   if mm[l]/2+1<=h[l]<=mm[l]-1     
-Then h[l]=(index[l]+mm[l]) % mm[l] !!
-   */
 
+ 
 
   /* The algorithm below is as follows:
      while (!s->positivedefinite && (s->trials<trials)){
@@ -286,26 +288,20 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
      }
    */
 
-  s->trials=0;
-  
-  // print("trials %d strat=%d force=%d prim=%d dep=%d  max=%f re=%f im=%f\n", 
-  //	 trials, strategy, force, useprimes, dependent, 
-  //	 maxmem, tol_re, tol_im);
-
+  if (PL>=PL_STRUCTURE) { LPRINT("calculating the Fourier transform\n"); }
   while (!s->positivedefinite && (s->trials < trials)) {
     // print("trials %d %d\n", trials, s->trials);
 
     (s->trials)++;
     cumm[0]=1; 
-    realmtot = 1.0;
-    for(i=0; i<dim; i++) {
+    double realmtot = 1.0;
+    for (int i=0; i<dim; i++) {
       if (hilfsm[i] < MAXINT) {
 	mm[i] = hilfsm[i];
       } else {
-	GERR3("Each direction allows for at most %d points. Got %ld in the %ld-th direction", MAXINT, hilfsm[i], i);
+	GERR3("Each direction allows for at most %d points. Got %ld in the %d-th direction", MAXINT, hilfsm[i], i);
       }
       halfm[i]=mm[i] / 2; 
-      index[i]=1-halfm[i]; 
       cumm[i+1]=cumm[i] * mm[i]; // only relevant up to i<dim-1 !!
       realmtot *= (double) mm[i];
     }
@@ -313,136 +309,175 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
     if (PL>=PL_BRANCHING) {
       LPRINT("Memory need for ");
-      for (i=0;i<dim;i++) { 
-	if (i > 0) PRINTF(" x "); 
+      for (int i=0; i<dim; i++) { 
+	if (i > 0) { PRINTF(" x "); }
  	PRINTF("%d", mm[i]); 
-     }
-      PRINTF(" %s is 2 x %ld complex numbers.\n", 
-	     dim == 1 ? "locations" : "grid", mtot  * vdimSQ);
+      }
+      PRINTF(" %.50s is 2 x %ld complex numbers.\n", dim == 1 ? "locations" : "grid", mtot  * vdimSq);
     }
 
-    if ( (maxmem != NA_INTEGER && realmtot * vdimSQ > maxmem))
-      GERR4("total real numbers needed=%.0f > '%s'=%d -- increase '%s'",
-	    realmtot * vdimSQ, CE[CE_MAXMEM - COMMON_GAUSS - 1], 
+    if ( (maxmem != NA_INTEGER && realmtot * vdimSq > maxmem))
+      GERR4("total real numbers needed=%.0f > '%.50s'=%d -- increase '%.50s'",
+	    realmtot * vdimSq, CE[CE_MAXMEM - COMMON_GAUSS - 1], 
 	    maxmem, CE[CE_MAXMEM - COMMON_GAUSS - 1])
-    else if (R_FINITE(maxGB) && realmtot * vdimSQ * 32e-9 > maxGB)
-      GERR4("total memory needed=%4.4f GB > '%s'=%4.4f GB -- increase '%s'",
-	    realmtot* vdimSQ * 32e-9, CE[CE_MAXGB - COMMON_GAUSS - 1], 
+    else if (R_FINITE(maxGB) && realmtot * vdimSq * 32e-9 > maxGB)
+      GERR4("total memory needed=%4.4f GB > '%.50s'=%4.4f GB -- increase '%.50s'",
+	    realmtot* vdimSq * 32e-9, CE[CE_MAXGB - COMMON_GAUSS - 1], 
 	    maxGB, CE[CE_MAXGB - COMMON_GAUSS - 1]);
 
     if (c != NULL) {
-      for(l=0; l<vdimSQ; l++) FREE(c[l]);
+      for (int l=0; l<vdimSq; l++) FREE(c[l]);
       UNCONDFREE(c);
     }
     // for the following, see the paper by Wood and Chan!
     // meaning of following variable c, see eq. (3.8)
-    if ((c = (double **) MALLOC(vdimSQ * sizeof(double *))) == NULL) {
+    if ((c = (double **) MALLOC(vdimSq * sizeof(double *))) == NULL) {
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
-    for(l=0; l<vdimSQ; l++) {
-      //     printf("%d maxmem=%d %d %f\n", 2 * mtot * sizeof(double), maxmem, mtot, realmtot);
+    for (int l=0; l<vdimSq; l++) {
+      //     printf("%d maxmem=%d %d %10g\n", 2 * mtot * sizeof(double), maxmem, mtot, realmtot);
       if( (c[l] = (double *) MALLOC(2 * mtot * sizeof(double))) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
+      //printf("delte");      
+      for (int k=0; k<2 * mtot; k++) c[l][k] = RF_NA;
     }
-  
-    for(i=0; i<dim; i++){index[i]=0;}
+    
+    long err_occurred = NOERROR;
+ #ifdef DO_PARALLEL
+    //#pragma omp parallel for num_threads(CORES) reduction (+:err_occurred) if (vdim > 1L)
+#endif
+    for (int i=0; i<mtot; i++) {
+      //     if (i==0) printf("A %d\n", omp_get_num_threads());
+     int index[MAXCEDIM],
+       dummy = i << 1;
+     double hx[MAXCEDIM],
+	tmp[MAXVDIM * MAXVDIM];
+      bool cur_crit = false;
+      SPLIT(i, mm, dim, index);
 
-    for (i=0; i<mtot; i++) {
-      cur_crit = false;
-      for (k=0; k<dim; k++) {
+      for (int k=0; k<dim; k++) {
 	int idxk = index[k];
 	hx[k] = -steps[k] *// with '-' consistent with x[d]-y[d] in nonstat2stat
 	  (double) ((idxk <= halfm[k]) ? idxk : idxk - mm[k]);
 	cur_crit |= (idxk==halfm[k]);
       }
-      dummy = i << 1;
+ 
+      //      printf("ci %d %10e %10e \n", dim, hx[0], hx[1]);
 
-      //      print("ci %d %d %e %e \n", k, dim, hx[0], hx[1]);
-
-      //COV(hx, next, c + dummy);
-      if (isaniso) {
+     if (isaniso) {
 	double z[MAXCEDIM];
-	xA(hx, caniso, cani_nrow, cani_ncol, z);
+	xA_noomp(hx, caniso, cani_nrow, cani_ncol, z);
 	COV(z, next, tmp);
-      } else COV(hx, next, tmp);
+     } else COV(hx, next, tmp);
 
-      //     PMI(next);
-      //print("hx %f %f tmp %f\n", hx[0], hx[1], *tmp);
-
-  
-      for(l=0; l<vdimSQ; l++) {
-	  c[l][dummy] = tmp[l];
-	  c[l][dummy+1] = 0.0;
-
-	  if (ISNAN(c[l][dummy]) || ISNAN(c[l][dummy + 1])) {
-	    //
-	    //PMI(cov);
-	    // PRINTF("i=%d %d tri=%d %d vdim=$d ani=%d %f %f c=%f %f \n",
-	    //	   i, l, trials, dummy, vdimSQ, isaniso,
-	    //	   hx[0], hx[1], c[l][dummy], c[l][dummy]);
-	    ERR("fourier transform returns NAs");
-	  }
-	  //	  print("%d %d %f\n", i, mtot,  c[l][dummy]);
+     // printf("-- %d %10e %10e \n", dim, hx[0], hx[1]);
+ 
+      for(int l=0; l<vdimSq; l++) {
+	c[l][dummy] = tmp[l];
+	c[l][dummy+1] = 0.0;
+	
+	if (ISNAN(c[l][dummy])) {
+	  //
+	  //PMI(cov);
+	  // PRINTF("i=%d %d tri=%d %d vdim=$d ani=%d %10g %10g c=%10g %10g \n",
+	  //	   i, l, trials, dummy, vdimSq, isaniso,
+	  //	   hx[0], hx[1], c[l][dummy], c[l][dummy]);
+#ifdef DO_PARALLEL 
+	  err_occurred++; break;
+#else	     
+	  GERR("covariance models returns NAs. Please contact author");
+#endif
+	}
+	//	  print("%d %d %10g\n", i, mtot,  c[l][dummy]);
       }
 
-      //    print("%f %f %f\n", hx[0], hx[1], c[dummy]);
-
       if (cur_crit) {
-	for (k=0; k<dim; k++) {
+	//	printf("crit:%d ", i);
+	for (int k=0; k<dim; k++) {
 	  if (index[k]==halfm[k]) hx[k] -= steps[k] * (double) mm[k];
 	}
 	COV(hx, next, tmp);
-	for(l=0; l<vdimSQ; l++) {
+	//	printf("c%10g %10g %10g %10g\n", tmp[0], tmp[1], tmp[2], tmp[3]);
+	for (int l=0; l<vdimSq; l++) {
 	  c[l][dummy] = 0.5 *(c[l][dummy] + tmp[l]);
 	}
       }
-      //        print("%10f,%10f:%10f \n", hx[0], hx[1], c[dummy]);
 
-      k=0; while( (k<dim) && (++(index[k]) >= mm[k])) {
-	index[k]=0;
-	k++;
-      }
-      assert( (k<dim) || (i==mtot-1));
-
+      
     }
+   
+    // printf("A end\n");
+#ifdef DO_PARALLEL
+    if (err_occurred)
+      GERR("covariance model returns NAs. Pls contact maintainer");
+#endif
 
+    //   int zz=0; printf("\n");for (int i=0; i<2*mtot; i++) for (int j=0; j<4; j++) if (c[j][i]!=0 && ((++zz) < 100000)) printf("%d%d%10g ", i,j,c[j][i]); printf("\n");
 
-  
-    bool first;
-    for(j=0; j<vdim; j++) {
-      for(k=0; k<vdim; k++) {
-	l= j*vdim + k;
-        assert({				\
-	    int ii;				\
-	    for (ii =0; ii<mtot * 2; ii++) {		\
-	      if (ISNAN(c[l][ii])) {	\
-		PRINTF("%d %d %f\n", l, ii, c[l][ii]);	\
-		ERR("fourier transform returns NAs");	\
-	      }						\
-	    }; true;					\
-	  });
+    // printf("dim=%d\n", dim);
 
-	if(k>=j) { //// martin 29.12.
-		   // just compute FFT for upper right triangle
-	  first = (l==0);
-	  if (PL>=PL_STRUCTURE) { LPRINT("FFT..."); }
-	  if ((err=fastfourier(c[l], mm, dim, first, &(s->FFT))) != NOERROR) 
+#ifdef DO_PARALLEL
+#define S_FFT(l) s->FFT + l
+#define END vdim
+#else
+#define S_FFT(l) &(s->FFT)
+#define END 1    
+#endif     
+    for (int j=0; j<END; j++) {
+      for (int k=0; k<END; k++) {
+	//
+ 	if (k >= j) { // nicht aendern; bei do_ce brauche ich die erste Spalte von s->FFT[] gefuellt 
+	  int VARIABLE_IS_NOT_USED l= j*vdim + k; // unused in some cases!!
+	  if ((err = fastfourierInit(mm, dim, S_FFT(l))) != NOERROR)
 	    goto ErrorHandling;
 	}
-
-	if (false) {
-	  int ii;
-	  for (ii =0; ii<mtot * 2; ii++) {
-	    if (ISNAN(c[l][ii])) {
-	      ERR("fourier transform returns NAs");
-	    }
-	  }
-	}
- 
-
       }
     }
+
+    
+    err_occurred = NOERROR;
+
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) if (vdim > 1) collapse(2) schedule(dynamic, 1) reduction(+:err_occurred)
+#endif
+    for (int j=0; j<vdim; j++) {
+      for (int k=0; k<vdim; k++) {
+	//
+ 	if (k >= j) { // nicht aendern; bei do_ce brauche ich die erste Spalte von s->FFT[] gefuellt 
+	  int l= j*vdim + k;
+	  /*
+	  assert({bool ok__ = true;			\
+	      for (int ii =0; ii<mtot * 2; ii++) {		\
+		if (ISNAN(c[l][ii])) {				\
+		  PRINTF("%d %d %10g\n", l, ii, c[l][ii]);	\
+		  ok__ = false;					\
+		}						\
+	      }; ok__;						\
+	    });
+	  */
+#ifdef DO_PARALLEL 
+#else	  
+	  if (PL>=PL_STRUCTURE) { LPRINT("FFT.0.."); }
+#endif
+	  err_occurred += fastfourier(c[l], mm, dim, false, S_FFT(l));
+#ifdef DO_PARALLEL
+#else	  
+   	  if (err_occurred != NOERROR) goto ErrorHandling;
+	  if (PL>=PL_STRUCTURE) { LPRINT("done %d.\n", l); }
+#endif
+	  //	if (false) {
+	  //	  for (int ii =0; ii<mtot * 2; ii++) 
+	  //	    if (ISNAN(c[l][ii])) GERR("fourier transform returns NAs");
+	  //	}
+        } 
+      }
+    }
+    
+#ifdef DO_PARALLEL
+    if (err_occurred != NOERROR) { GERR("error within fft"); }
+#endif			       
+  //printf("AA end\n");
   
     if (PL>=PL_STRUCTURE) { LPRINT("finished\n"); }
 
@@ -459,72 +494,69 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 
     if(Lambda!=NULL) {
-      for(l = 0; l<vdim; l++) FREE(Lambda[l]);
+      for(int l = 0; l<vdim; l++) FREE(Lambda[l]);
       UNCONDFREE(Lambda);
     }
-    FREE(rwork);
-    FREE(tmpLambda);
-    FREE(R);
-
-    if( (Lambda = (double **) MALLOC(vdim * sizeof(double *))) == NULL ||
-	(rwork = (double *) MALLOC(sizeof(double) * (3*vdim - 2) )) == NULL ||
-	(tmpLambda = (double *) MALLOC(sizeof(double) * vdim )) == NULL ||
-	(R = (complex *) MALLOC(vdimSQ * sizeof(complex))) == NULL) {
+    if( (Lambda = (double **) MALLOC(vdim * sizeof(double *))) == NULL) {
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
     }
-
-    for(l=0;l<vdim;l++) {
+    for(int l=0; l<vdim; l++) {
       if( (Lambda[l] = (double *) MALLOC(mtot * sizeof(double))) == NULL) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
     }
   
-    int lwork, info;
-    s->positivedefinite = true;
+#define WORKSIZE MAXVDIM * 33
+    long notposdef = 0;
     if (vdim==1) { // in case vdim==1, the eigenvalues we need are already contained in c[0]
-      for(i = 0; i<mtot; i++) {
+      // parallelisierung lohnt hier nicht!
+      for(int i = 0; i<mtot; i++) {
 	Lambda[0][i] = c[0][2*i];
-	s->positivedefinite &= FABS(c[0][2*i+1]) <= tolIm;
+	notposdef += FABS(c[0][2*i+1]) > tolIm || Lambda[0][i] <= tolRe;
+	// if (!s->positivedefinite) printf("%10e %10e\n", c[0][2*i+1], tolIm);
 	c[0][2*i] = 1.0;
 	c[0][2*i+1] = 0.0;
       }
     } else {
-      int index1, index2, Sign;
-      for(i = 0; i<mtot; i++) {
-	twoi=2*i;
-	twoi_plus1=twoi+1;
+      int index1, index2, Sign;      
+      //  printf("ABC\n");
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) if (vdim > 1L) reduction(+:notposdef)
+#endif      
+      for(int i = 0; i<mtot; i++) {
+      // printf("%d %d ", i, mtot);
+	int info,
+	  lwork = WORKSIZE,
+	  twoi=2*i,
+	  twoi_plus1=twoi+1;
+	double tmpLambda[MAXVDIM],
+	  rwork[MAXVDIM * 3 -2];
+	complex optim_lwork, R[MAXVDIM], work[WORKSIZE];
 
 	// construct R (vdim x vdim matrix) (which is idential to A[i] (cf W&C))
-	for(k=0; k<vdim; k++) {
-	  for(l=0; l<vdim; l++) {
-	      
+	for (int k=0; k<vdim; k++) {
+	  for (int l=0; l<vdim; l++) {   
 	    index1 = vdim * k + l;
 	    if(l>=k) { 
-	      index2=index1; Sign=1;
-	      s->positivedefinite &= k!=l || FABS(c[index2][twoi_plus1])<=tolIm;
+	      index2=index1;
+	      Sign=1;
+	      notposdef += k==l && FABS(c[index2][twoi_plus1]) > tolIm;
 	      //	      c[index2][twoi_plus1].r = 0.0; ?!!!
 	    }  // obtain lower triangular bit of c as well with
 	    else{ index2= vdim * l + k; Sign=-1;}  // (-1) times imaginary part of upper triangular bit
 
 	    R[index1].r = c[index2][twoi];
 	    R[index1].i = Sign*c[index2][twoi_plus1];
-
-///	if (i < 5) 
-	    //print("%d %f %f; vdim=%d\n", index1, R[index1].r, R[index1].i, vdim);
 	  }
 	}
 
-//	if (i < 5) 
-//	      print("2 : i=%d mtot=%d k=%d l=%d vdim=%d \n   ", i, mtot, k, l, vdim);
-
-	//for(k=1; k<2; k++)  R[k].r = R[k].i = 7.0;
-
 	// diagonalize R via Fortran call zheev
 	// initialization
-	if(i==0) {
-	  lwork = -1; // for initialization call to get optimal size of array 'work'
+	if(false && i==0) {
+#define INI_LWORK -1	  
+	  lwork = INI_LWORK; // for initialization call to get optimal size of array 'work'
 
-	  F77_CALL(zheev)("V", "U", &vdim, R,  // complex
+	  F77_CALL(zheev)("V", "U", &vdim, R, // Eigen,cmplx
 			  &vdim, // integer
 			  tmpLambda,  // double
 			  &optim_lwork, // complex
@@ -537,24 +569,28 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  //// optim_lwork.r  von den Werten der Matrix ab ??
 
 	  lwork = (int) optim_lwork.r;
+	  //	  printf("lwork = %d %d\n", lwork, WORKSIZE); 
+	  if (lwork > WORKSIZE) BUG;
 
-	  FREE(work);
-	  if( (work = (complex *) CALLOC(lwork, sizeof(complex))) == NULL ) {
-	    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-	  }
+	  //  INTEGER FUNCTION ILAENV( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
+	  //      NB = ILAENV(          1, 'ZHETRD', UPLO, N, -1, -1, -1 )
+	  // IC = Z, IZ = z, 
+  //     C2 = SUBNAM( 2: 3 )
+  //    C3 = SUBNAM( 4: 6 )
+	  //      C4 = C3( 2: 3 )
+			      
 	}
 
-	F77_CALL(zheev)("V", "U", &vdim, R, &vdim, tmpLambda, work, &lwork,
-			rwork, &info);
+	// optim vdim * 
+
+	F77_CALL(zheev)("V", "U", &vdim, R, &vdim, // Eigen
+			tmpLambda, work, &lwork, rwork, &info);
 
 
-	for(l=0;l<vdim;l++) Lambda[l][i] = tmpLambda[l];
-
-
-	// martin.1.1.09 --- it only works technically!
-//	F77_CALL(zpotf2)("Upper", &vdim, R, &vdim, &info);
- 
-
+	for (int l=0;l<vdim;l++) {
+	  Lambda[l][i] = tmpLambda[l];
+	  notposdef += Lambda[l][i] < tolRe;
+	}
 
 	// now R contains the eigenvectors of A[i]
 	// and Lambda[l][i], l=0,...,vdim-1, contains the eigenvalues of A[i]
@@ -562,9 +598,9 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	// the following step writes the vdim vdim-dimensional eigenvectors just computed into c
 
 
-	for(j=k=0; k<vdim; k++) {
-	  int endfor = vdimSQ + k;
-	  for(l=k; l<endfor; l+=vdim, j++) {
+	for(int j=0, k=0; k<vdim; k++) {
+	  int endfor = vdimSq + k;
+	  for(int l=k; l<endfor; l+=vdim, j++) {
 	    c[j][twoi] = R[l].r;
 	    c[j][twoi_plus1] = R[l].i;
 	  }
@@ -572,7 +608,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	// peter 28.12. doch wieder
 	if(false)
-	  for(l=0; l<vdimSQ; l++) {
+	  for(int l=0; l<vdimSq; l++) {
 	    c[l][twoi] = R[l].r;
 	    c[l][twoi_plus1] = R[l].i;
 	  }
@@ -583,41 +619,43 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	// on diagonalizing if there are free trial... or not? Hmm.
       }
     }
-  
-    FREE(R);
-    FREE(rwork);
-    FREE(work);
-    FREE(tmpLambda);
+    s->positivedefinite = !notposdef;
 
+    // if (s->positivedefinite) {
+    //  for (int i=0; i<mtot;i++) for(int l=0;l<vdim;l++)  printf("l=%d i=%d %f\n", l, i, Lambda[l][i]); } else printf("NOT POS DEF !!!\n");
+
+    // printf("EEE\n");
     // check if positive definite. If not: enlarge and restart 
     if (!force || (s->trials<trials)) {
 
-      if (isVariogram(next)) {
-	for (l=0; l<vdim; l++) {
+      if (equalsnowVariogram(next)) { // 2.2.19 war isnowVariogram. Warum??
+	for (int l=0; l<vdim; l++) {
 	  if (Lambda[l][0] < 0.0) Lambda[l][0]=0.0;
 	}
       } 
 
-      for(i=0; i<mtot; i++) { // MULT
+      for (int i=0; i<mtot; i++) { // MULT
 
 	// Check if all eigenvalues of A(i) are > 0:
-	l=0;
-	while( (l<vdim) &&
-	    ( s->positivedefinite &= Lambda[l][i]>=tolRe) )           
+	int ll=0;
+	while( (ll<vdim) && (s->positivedefinite &= Lambda[ll][i] >= tolRe) )  
 	  // eigenvalues ARE real: drop former line
-	{l++;}                                                      // s->positivedefinite = (lambda.real>=cepar->tol_re) && (lambda.imag<=cepar->tol_im)
+	{ll++;}                                                      // s->positivedefinite = (lambda.real>=cepar->tol_re) && (lambda.imag<=cepar->tol_im)
 
 
 	if ( !s->positivedefinite) {
+	  int *sum = NULL;
+	  double *smallest=NULL;
+	  long int *idx = NULL;
 	  if (PL>=PL_BRANCHING) {
-	    if (Lambda[l][i] < 0.0) {
+	    if (Lambda[ll][i] < 0.0) {
 	      LPRINT("There are complex eigenvalues\n");
 	    } else if (vdim==1) {
-	      LPRINT("non-positive eigenvalue: Lambda[%ld]=%e.\n",
-		     i, Lambda[l][i]);
+	      LPRINT("non-positive eigenvalue: Lambda[%d]=%10e (< %10e).\n",
+		     i, Lambda[ll][i], tolRe);
 	    } else {
-	      LPRINT("non-pos. eigenvalue in dim %d: Lambda[%ld][%d]=%e.\n",
-		     l, i, l, Lambda[l][i]);
+	      LPRINT("non-pos. eigenvalue in dim %d: Lambda[%d][%d]=%10e.\n",
+		     ll, i, ll, Lambda[ll][i]);
 	    }
 	  }
 	  if (PL>=PL_ERRORS) { // just for printing the smallest 
@@ -625,11 +663,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
  	    if( (sum = (int *) CALLOC(vdim, sizeof(int))) == NULL ||
 		(smallest = (double *)CALLOC(vdim, sizeof(double))) == NULL || 
 		(idx = (long int *) CALLOC(vdim, sizeof(long int))) == NULL) {
+	      FREE(sum);
+	      FREE(smallest);
+	      FREE(idx);
 	      err=ERRORMEMORYALLOCATION; goto ErrorHandling;
 	    }
 	    char percent[]="%";
-	    for(j=i; j<mtot; j++) {
-	      for(k=0; k<vdim; k++) {
+	    for (int j=i; j<mtot; j++) {
+	      for (int k=0; k<vdim; k++) {
 		if(Lambda[k][j] < 0) {
 		  sum[k]++;
 		  if(Lambda[k][j] < smallest[k]) {
@@ -639,17 +680,15 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	      }
 	    }
 	    if(vdim==1) {
-	      LPRINT("   There are %d negative eigenvalues (%5.3f%s).\n",
+	      LPRINT("   There are %d negative eigenvalues (%5.3f%.50s).\n",
 		  sum[0], 100.0 * (double) sum[0] / (double) mtot, percent);
-	      LPRINT("   The smallest eigenvalue is Lambda[%d] =  %e\n",
-		  idx[0], smallest[0]);
+	      LPRINT("   The smallest eigenvalue is Lambda[%ld] =  %10e\n", idx[0], smallest[0]);
 	    }
 	    else {
-	      for(l=0; l<vdim; l++) {
-		LPRINT("   There are %d negative eigenvalues in dimension %d (%5.3f%s).\n",
+	      for (int l=0; l<vdim; l++) {
+		LPRINT("   There are %d negative eigenvalues in dimension %d (%5.3f%.50s).\n",
 		    sum[l], l, 100.0 * (double) sum[l] / (double) mtot, percent);
-		LPRINT("   The smallest eigenvalue in dimension %d is Lambda[%d][%d] =  %e\n",
-		    l, idx[l], l, smallest[l]);
+		LPRINT("   The smallest eigenvalue in dimension %d is Lambda[%ld][%d] =  %10e\n", l, idx[l], l, smallest[l]);
 	      }
 	    }
 	    FREE(sum);
@@ -657,29 +696,33 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    FREE(idx);
 	  }
 	  break; // break loop 'for(i=0 ...)'
-	}
+	}	
       }
 
       //print("%d %d %d %d\n", s->positivedefinite, s->trials, trials, force);
      
       if (!s->positivedefinite && (s->trials<trials)) { 
+#ifdef DO_PARALLEL
+	for (int i=0; i<MAXVDIM * MAXVDIM; i++) FFT_destruct(s->FFT + i);
+#else
 	FFT_destruct(&(s->FFT));
+#endif	        
 	switch (strategy) {
 	  case 0 :
-	    for (i=0; i<dim; i++) { /* enlarge uniformly in each direction, maybe 
+	    for (int i=0; i<dim; i++) { /* enlarge uniformly in each direction, maybe 
 				       this should be modified if the grid has 
 				       different sizes in different directions */
 		hilfsm[i] *= multivariate ? 3 : 2;
 	    }
 	    break;
 	  case 1 :  
-	    double cc, maxcc;
+	    double cc, maxcc, hx[MAXCEDIM], tmp[MAXVDIM * MAXVDIM];
 
 	    int maxi;
-	    maxi = -1;
+	    maxi = UNSET;
 	    maxcc = RF_NEGINF;
-	    for (i=0; i<dim; i++) hx[i] = 0.0;
-	    for (i=0; i<dim; i++) {
+	    for (int i=0; i<dim; i++) hx[i] = 0.0;
+	    for (int i=0; i<dim; i++) {
 
 	      // MUSS HIER ETWAS GEAENDERT WERDEN FUER MULTIVARIAT?
 
@@ -687,8 +730,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	      cc=0;
 	      COV(hx, next, tmp);
-	      for(l=0; l<vdimSQ; l++) cc += FABS(tmp[l]);
-	      //if (PL>2) { LPRINT("%d cc=%e (%e)",i,cc,hx[i]); }
+	      for (int l=0; l<vdimSq; l++) cc += FABS(tmp[l]);
+	      //if (PL>2) { LPRINT("%d cc=%10e (%10e)",i,cc,hx[i]); }
 	      if (cc>maxcc) {
 		maxcc = cc;
 		maxi = i; 
@@ -699,7 +742,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	    hilfsm[maxi] *= multivariate ? 3 : 2;
 	    break;
 	  default:
-	    ERR("unknown strategy for circulant embedding");
+	    GERR("unknown strategy for circulant embedding");
 	}
       }
     } else {if (PL>=PL_BRANCHING) {LPRINT("forced.\n");} }
@@ -712,17 +755,20 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
   assert(mtot>0);
   if (s->positivedefinite || force) { 
-    
- 
     // correct theoretically impossible values, that are still within 
     // tolerance CIRCEMBED.tol_re/CIRCEMBED.tol_im 
+
     double r;
     r = Lambda[0][0]; // MULT
 
-    for(i=0,twoi=0;i<mtot;i++) {
-      twoi_plus1 = twoi+1;
-      for(l=0;l<vdim;l++) {
-	if(Lambda[l][i] > 0.0) Lambda[l][i] = SQRT(Lambda[l][i]);
+    // keine Parallelisierung!
+
+    for (int i=0; i<mtot;i++) {
+      int
+	twoi= 2 * i,
+	twoi_plus1 = twoi+1;
+      for(int l=0;l<vdim;l++) {
+	if(Lambda[l][i] > 0.0) Lambda[l][i] = SQRT(Lambda[l][i]); 
 	else {
 	  if(Lambda[l][i] < r) r = Lambda[l][i];
 	  Lambda[l][i] = 0;
@@ -730,39 +776,35 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
 
       // now compute R[i]*Lambda^(1/2)[i]
-      for(j=0;j<vdim;j++) {
-	for(l=0; l<vdim; l++) {
+      for(int j=0;j<vdim;j++) {
+	for(int l=0; l<vdim; l++) {
 	  c[j*vdim+l][twoi] *= Lambda[l][i];
 	  c[j*vdim+l][twoi_plus1] *= Lambda[l][i];
 	}
       }
-
-      twoi+=2;
-
     }
     if (PL>=PL_BRANCHING) {
       if (r < -GENERAL_PRECISION) {
 	LPRINT("using approximating circulant embedding:\n");
-	LPRINT("\tsmallest real part has been %e \n", r);
+	LPRINT("\tsmallest real part has been %10e \n", r);
       }
     }
-    s->smallestRe = (r > 0.0) ? RF_NA : r;
-    s->largestAbsIm = 0.0; // REMOVE THIS
+
   } else {
     //printf("FEHLER\n");
     GERR("embedded matrix has (repeatedly) negative eigenvalues and approximation is not allowed (force=FALSE)");
-    }
+  }
   if (PL >= PL_SUBDETAILS) {
-    for (i=0; i < 2 * mtot; i++)
-      for (l=0; l<vdimSQ; l++)
-	{LPRINT("%f ",c[l][i]);} 
+    for (int i=0; i < 2 * mtot; i++)
+      for (int l=0; l<vdimSq; l++)
+	{LPRINT("%10g ",c[l][i]);} 
     LPRINT("\n");
   }
 
 
   s->dependent = dependent;
   s->new_simulation_next = true;
-  for(i=0; i<dim; i++) { // set anyway -- does not cost too much
+  for(int i=0; i<dim; i++) { // set anyway -- does not cost too much
     s->cur_square[i] = 0;
     s->max_squares[i] = hilfsm[i] / s->nn[i];
     s->square_seg[i] = cumm[i] * 
@@ -773,7 +815,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
   if ( (s->d=(double **) CALLOC(vdim, sizeof(double *))) == NULL ) {
       err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
-  for(l=0; l<vdim;l++) {
+  for(int l=0; l<vdim;l++) {
       if( (s->d[l] = (double *) CALLOC(2 * mtot, sizeof(double))) == NULL) {
 	  err=ERRORMEMORYALLOCATION;goto ErrorHandling;
       }
@@ -786,63 +828,40 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
     err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
 
-  s->c = c;
-
-  err = FieldReturn(cov);
+  err = ReturnOwnField(cov);
 
 ErrorHandling:
+  s->c = c;
   if (Lambda != NULL) {
-    for(l = 0; l<vdim; l++) FREE(Lambda[l]);
+    for(int l = 0; l<vdim; l++) FREE(Lambda[l]);
     UNCONDFREE(Lambda);
   }
 
-  FREE(R);
-  FREE(rwork);
-  FREE(work);
-  FREE(tmpLambda);
-  FREE(sum);
-  FREE(smallest);
-  FREE(idx);
-  FREE(tmp);
-  
-  if (err != NOERROR) {
-      if (s != NULL) s->c = c;
-      else if (c!=NULL) {
-	  for(l=0;l<vdimSQ;l++) FREE(c[l]);
-	  UNCONDFREE(c);
-      }
-  }
 
+// printf("end init\n");
   cov->simu.active = err == NOERROR;
-
-  //  printf("error =%d\n", err);
-  return err;
+  RETURN_ERR(err);
 }
 
 
-void kappa_ce(int i, cov_model *cov, int *nr, int *nc){
-  //  printf("kappa_ce %d %d %d\n", i , CE_MMIN, cov->tsdim);
+void kappa_ce(int i, model *cov, int *nr, int *nc){
   kappaGProc(i, cov, nr, nc);
   if (i == CE_MMIN) *nr = 0;
 }
 
 
-int check_ce_basic(cov_model *cov) { 
+int check_ce_basic(model *cov) { 
   // auf co/stein ebene !
-  //  cov_model *next=cov->sub[0];
+  //  model *next=cov->sub[0];
   //  location_type *loc = Loc(cov);
   int i, //err,
-    dim = cov->tsdim
-    ; // taken[MAX DIM],
+    dim = ANYDIM; // taken[MAX DIM],
   ce_param *gp  = &(GLOBAL.ce); // ok
   
-  ROLE_ASSERT(ROLE_GAUSS);
+  FRAME_ASSERT_GAUSS_INTERFACE;
   ASSERT_CARTESIAN;
+  ASSERT_UNREDUCED;
 
-  if(cov->tsdim != cov->xdimprev) {
-    SERR2("time-space dimension (%d) differs from dimension of locations (%d)", 
-	  cov->tsdim, cov->xdimown);
-  }
   kdefault(cov, CE_FORCE, (int) gp->force);
   if (PisNULL(CE_MMIN)) {
     PALLOC(CE_MMIN, dim, 1);
@@ -861,66 +880,60 @@ int check_ce_basic(cov_model *cov) {
   kdefault(cov, CE_APPROXSTEP, gp->approx_grid_step);
   kdefault(cov, CE_APPROXMAXGRID, gp->maxgridsize);
 
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
-int check_ce(cov_model *cov) { 
-  cov_model *next=cov->sub[0];
-  location_type *loc = Loc(cov);
+int check_ce(model *cov) { 
+  model *next=cov->sub[0];
+  //  location_type *loc = Loc(cov);
   int err,
-    dim = cov->tsdim;
-   // taken[MAX DIM],
+    dim = ANYDIM;
 
-  if ((err = check_ce_basic(cov)) != NOERROR) return err;
-  if ((err = checkkappas(cov, false)) != NOERROR) return err;
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
-    return ERRORDIM;
-  if ((loc->timespacedim > MAXCEDIM) | (cov->xdimown > MAXCEDIM))
-    return ERRORDIM;
-  //  printf("here X\n");
+  FRAME_ASSERT_GAUSS_INTERFACE;
+  ASSERT_UNREDUCED;
+  ASSERT_ONESYSTEM;
+
+  if (dim > MAXCEDIM) RETURN_ERR(ERRORCEDIM);
+  if ((err = check_ce_basic(cov)) != NOERROR) RETURN_ERR(err);
+  if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+  if (GetLoctsdim(cov) > MAXCEDIM || OWNTOTALXDIM > MAXCEDIM)
+    RETURN_ERR(ERRORCEDIM);
    
   if (cov->key != NULL) {
-    if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		     XONLY, CARTESIAN_COORD, cov->vdim, ROLE_GAUSS)) 
-	 != NOERROR) {
+    if ((err = CHECK_PASSFRAME(cov->key, GaussMethodType)) != NOERROR) {
        //PMI(cov->key); XERR(err);
        //printf("specific ok\n");
        // crash();
-       return err;
+       RETURN_ERR(err);
      }
   } else {
-    if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, SYMMETRIC,
-		     SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
+    if ((err = CHECK(next, dim, dim, PosDefType, XONLY, CARTESIAN_COORD,
+		     SUBMODEL_DEP, EvaluationType)) != NOERROR) {
       //      APMI(cov);
       //    XERR(err); APMI(cov);
-      if ((err = CHECK(next, dim,  dim, VariogramType, XONLY, SYMMETRIC, 
-		       SUBMODEL_DEP, ROLE_COV)) != NOERROR) {
-	return err;
+      if ((err = CHECK(next, dim, dim, VariogramType, XONLY, SYMMETRIC, 
+		       SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+	RETURN_ERR(err);
       }
     }
     if (next->pref[CircEmbed] == PREF_NONE) {
       //PMI(cov);
       //    assert(false);
-      return ERRORPREFNONE;
+      RETURN_ERR(ERRORPREFNONE);
     }
-    if (!isPosDef(next->typus)) SERR("only covariance functions allowed.");
+    if (!isPosDef(SYSTYPE(NEXT, 0))) SERR("only covariance functions allowed.");
   }
   setbackward(cov, next);
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-  if ((err = checkkappas(cov, true)) != NOERROR) return err;
-  return NOERROR;
+  if (VDIM0 > MAXVDIM) RETURN_ERR(ERRORMAXVDIM);
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  if ((err = checkkappas(cov, true)) != NOERROR) RETURN_ERR(err);
+  RETURN_NOERROR;
 }
 
 
-void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){  
+void range_ce(model VARIABLE_IS_NOT_USED *cov, range_type *range){  
   GAUSS_COMMON_RANGE;
-
-  range->min[CE_FORCE] = 0; 
-  range->max[CE_FORCE] = 1;
-  range->pmin[CE_FORCE] = 0;
-  range->pmax[CE_FORCE] = 1;
-  range->openmin[CE_FORCE] = false;
-  range->openmax[CE_FORCE] = false;
+  booleanRange(CE_FORCE);
   
   range->min[CE_MMIN] = RF_NEGINF; 
   range->max[CE_MMIN] = RF_INF;
@@ -971,20 +984,8 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->openmin[CE_TRIALS] = false;
   range->openmax[CE_TRIALS] = true;
   
-  range->min[CE_USEPRIMES] = 0; 
-  range->max[CE_USEPRIMES] = 1;
-  range->pmin[CE_USEPRIMES] = 0;
-  range->pmax[CE_USEPRIMES] = 1;
-  range->openmin[CE_USEPRIMES] = false;
-  range->openmax[CE_USEPRIMES] = false;
-  
-  range->min[CE_DEPENDENT] = 0; 
-  range->max[CE_DEPENDENT] = 1;
-  range->pmin[CE_DEPENDENT] = 0;
-  range->pmax[CE_DEPENDENT] = 1;
-  range->openmin[CE_DEPENDENT] = false;
-  range->openmax[CE_DEPENDENT] = false;
-
+  booleanRange(CE_USEPRIMES);
+  booleanRange(CE_DEPENDENT);
  
   range->min[CE_APPROXSTEP] = 0.0; 
   range->max[CE_APPROXSTEP] = RF_INF;
@@ -1004,12 +1005,13 @@ void range_ce(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){
 
  
 
-void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
+void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
+  //printf("start do\n");
   assert(cov != NULL);
   assert(Getgrid(cov));
   SAVE_GAUSS_TRAFO;
       
-  int  i, j, k, l, pos,HalfMp1[MAXCEDIM], HalfMaM[2][MAXCEDIM], index[MAXCEDIM], 
+  int  HalfMp1[MAXCEDIM], HalfMaM[2][MAXCEDIM], index[MAXCEDIM], 
     dim, *mm, *cumm, *halfm, // MULT added vars l, pos
     vdim;
   double invsqrtmtot,
@@ -1035,7 +1037,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
      
   */  
   
-  dim = cov->tsdim;
+  dim = OWNLOGDIM(0);
   mm = s->m;
   cumm = s->cumm;
   halfm = s->halfm;
@@ -1043,8 +1045,12 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   d = s->d;
   mtot= s->mtot;
   vdim = s->vdim; // so p=vdim
-
-  for (i=0; i<dim; i++) {
+  
+#ifdef DO_PARALLEL
+  omp_set_num_threads(GLOBAL_UTILS->basic.cores);
+#endif
+  
+  for (int i=0; i<dim; i++) {
     HalfMp1[i] =  ((mm[i] % 2)==1) ? -1 : halfm[i];
     HalfMaM[0][i] = halfm[i];
     HalfMaM[1][i] = mm[i] - 1;
@@ -1062,7 +1068,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   if (PL>=PL_STRUCTURE) { LPRINT("Creating Gaussian variables... \n"); }
   /* now the Gaussian r.v. have to defined and multiplied with SQRT(FFT(c))*/
 
-  for (i=0; i<dim; i++) {
+  for (int i=0; i<dim; i++) {
     index[i]=0; 
     vfree[i] = false;
   }
@@ -1071,9 +1077,6 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   // PM 12/12/2008
   // don't simulate newly in case this is an even call
   s->cur_call_odd = !(s->cur_call_odd);
-
-  //printf("%d \n", (int) s->new_simulation_next);
-  //  printf("%d\n", (int) s->cur_call_odd);
   s->new_simulation_next = (s->new_simulation_next && s->cur_call_odd);
 
   if (s->new_simulation_next) {
@@ -1087,11 +1090,11 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     //  for (j=0; j<mtot; j++) dd[j] = RF_NA;
     //    }
 
-    
+    int i, j;
     for(;;) {      
       i = j = 0;
       noexception = false;
-      for (k=0; k<dim; k++) {
+      for (int k=0; k<dim; k++) {
 	i += cumm[k] * index[k];
 	if ((index[k]==0) || (index[k]==HalfMp1[k])) {
 	  j += cumm[k] * index[k];
@@ -1104,7 +1107,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       //A 0 0 0 0 0 0.000000 0.000000
       //B 0 0 0 0 0 -26.340334 0.000000
 
-      //    if (index[1] ==0) print("A %d %d %d %d %d %f %f\n", 
+      //    if (index[1] ==0) print("A %d %d %d %d %d %10g %10g\n", 
       //	   index[0], index[1], i, j, noexception, d[i], d[i+1]);
       //      if (PL>=10) { LPRINT("cumm..."); }
       i <<= 1; // since we have to index imaginary numbers
@@ -1114,19 +1117,19 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
       if (noexception) { // case 3 in prop 3 of W&C
 
-        for(k=0; k<vdim; k++) {
+        for(int k=0; k<vdim; k++) {
 	  gauss1[k].r = GAUSS_RANDOM(1.0);
 	  gauss1[k].i = GAUSS_RANDOM(1.0);
 	  gauss2[k].r = GAUSS_RANDOM(1.0);
 	  gauss2[k].i = GAUSS_RANDOM(1.0);
-        }
+       }
 
 	
-        for(k=0; k<vdim; k++) {
+        for(int k=0; k<vdim; k++) {
 	  dd = d[k];
 	  dd[j] = dd[i] = dd[j+1] = dd[i+1] = 0.0;// martin:13.12. neu eingefuegt
-	  for(l=0; l<vdim; l++) {
-	    pos = k * vdim + l;
+	  for(int l=0; l<vdim; l++) {
+	    int pos = k * vdim + l;
 	    dd[i] += c[pos][i] * gauss1[l].r - c[pos][i+1] * gauss1[l].i;   
 	    // real part
 	    dd[i+1] += c[pos][i+1] * gauss1[l].r + c[pos][i] * gauss1[l].i; 
@@ -1141,16 +1144,16 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
       } else { // case 2 in prop 3 of W&C
 
-        for(k=0; k<vdim; k++) {
+        for(int k=0; k<vdim; k++) {
 	  gauss1[k].r = GAUSS_RANDOM(1.0);
 	  gauss1[k].i = GAUSS_RANDOM(1.0);
-        }
+	}
 
-        for(k=0; k<vdim; k++) {
+        for(int k=0; k<vdim; k++) {
 	  dd = d[k];
 	  dd[i+1] = dd[i] = 0.0; //  martin: 13.12. neu eingefuegt
-	  for(l=0; l<vdim; l++) {
-	    pos = k * vdim + l;
+	  for(int l=0; l<vdim; l++) {
+	    int pos = k * vdim + l;
 	    dd[i] += c[pos][i] * gauss1[l].r - c[pos][i+1] * gauss1[l].i;   
 	    // real part
 	    dd[i+1] += c[pos][i+1] * gauss1[l].r + c[pos][i] * gauss1[l].i;  
@@ -1184,7 +1187,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 	 
 	 vfree==true   <=>   endfor==mm[]	 
       */
-      k=0; 
+      int k=0; 
       if (++index[k]>HalfMaM[vfree[k]][k]) {
 	// in case k increases the number of indices that run over 0..m increases
 	vfree[k] = true;
@@ -1212,17 +1215,27 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     }
       
     // MULT
-    for(k=0; k<vdim; k++) {
-      fastfourier(d[k], mm, dim, false, &(s->FFT));
+    //
+    //    printf("xx ABCD %d %d %d\n", vdim, omp_get_num_threads(),GLOBAL_UTILS->basic.cores); 
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) schedule(static,1)
+#endif	    
+    for(int k=0; k<vdim; k++) {
+      //      printf("ABCD %d %d\n", vdim, omp_get_num_threads()); 
+     //
+      //printf("k=%d %10g\n", k);
+      fastfourier(d[k], mm, dim, true, S_FFT(k));
+      //printf("end do");
     }
   } // if ** simulate **
+  // printf("ABCD end\n"); 
 
 
 
   /* now we correct the result of the fastfourier transformation
      by the factor 1/SQRT(mtot) and read the relevant matrix out of 
      the large vector c */
-  for(i=0; i<dim; i++) {
+  for(int i=0; i<dim; i++) {
     index[i] = start[i] = s->cur_square[i] * s->square_seg[i];
     end[i] = start[i] + cumm[i] * s->nn[i];
     //    print("%d start=%d end=%d cur=%d max=%d seq=%d cumm=%d, nn=%d\n",
@@ -1230,7 +1243,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
     //	   s->cur_square[i], s->max_squares[i],
     //	   (int) s->square_seg[i], cumm[i], s->nn[i]);
   }
-  long L, totpts = loc->totalpoints; // MULT
+  long totpts = loc->totalpoints; // MULT
 
   /*
     for(l=0; l<vdim; l++) { // MULT
@@ -1249,18 +1262,26 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   // 
 
 
-  for(k=0; k<dim; k++) index[k] = start[k];
+  for(int k=0; k<dim; k++) index[k] = start[k];
 
   bool vdim_close_together = GLOBAL.general.vdim_close_together;
-  for (L=0; L<totpts; L++) {
-    j=0; for (k=0; k<dim; k++) {j+=index[k];}
-    for (l=0; l<vdim; l++) { // MULT
-      res[vdim_close_together ? vdim * L + l : L + l * totpts] = 
-	(double) (d[l][2 * j + !(s->cur_call_odd)] * invsqrtmtot);      
+  for (int L=0; L<totpts; L++) {
+    int j=0;
+    for (int k=0; k<dim; k++) {j+=index[k];}
+    int xvdim, xtotpts;
+    if (vdim_close_together) {
+      xvdim = vdim;
+      xtotpts = 1;
+    } else {
+      xvdim = 1;
+      xtotpts = totpts;
     }
-    for(k=0; (k<dim) && ((index[k] += cumm[k]) >= end[k]); k++) {
-      index[k]=start[k];
       
+    for (int l=0; l<vdim; l++) { // MULT
+      res[xvdim * L + l * xtotpts] =(double)(d[l][2 * j + !(s->cur_call_odd)] * invsqrtmtot);
+    }
+    for(int k=0; (k<dim) && ((index[k] += cumm[k]) >= end[k]); k++) {
+      index[k]=start[k];      
     }
   }
 
@@ -1268,9 +1289,7 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
 
   s->new_simulation_next = true;
   if (s->dependent && !(s->cur_call_odd)) {
-    //if (s->dependent) {
-    //  if MaxStableRF calls Cutoff, c and look uninitialised
-    k=0; 
+    int k=0; 
     while(k<dim && (++(s->cur_square[k]) >= s->max_squares[k])) {
       s->cur_square[k++]=0;
     }    
@@ -1282,13 +1301,13 @@ void do_circ_embed(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   s->stop |= s->new_simulation_next && s->d == NULL;
 
   BOXCOX_INVERSE;
-
+  
 }
 
 
 
 int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
-  int k,i,j,l,m, job=01, err, dimsq, ev0, jump, endfor;
+  int k,i,j,l,m, job=01, Err, dimsq, ev0, jump, endfor;
   double *s=NULL, G[MAXCEDIM+1], e[MAXCEDIM], D[MAXCEDIM], *V=NULL;
   dimsq = dim * dim;
 
@@ -1313,31 +1332,29 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
       }
     }
     //    for (print("\n\n s\n"), j=0; j<dim; j++, print("\n")) 
-    //	for (i=0; i<dimsq; i+=dim) print("%f ", s[i+j]);
+    //	for (i=0; i<dimsq; i+=dim) print("%10g ", s[i+j]);
     //    for (print("\n\n aniso\n"), j=0; j<dim; j++, print("\n")) 
-    //	for (i=0; i<dimsq; i+=dim) print("%f ", aniso[i+j]);	
+    //	for (i=0; i<dimsq; i+=dim) print("%10g ", aniso[i+j]);	
     
     // note! s will be distroyed by dsvdc!
-    F77_NAME(dsvdc)(s, &dim, &dim, &dim, D, e, NULL /* U */,
-		    &dim, V, &dim, G, &job, &err);
-    if (err!=NOERROR) { err=-err;  goto ErrorHandling; }
-    ev0 = -1;
+    F77_NAME(dsvdc)(s, &dim, &dim, &dim, D, // SVD
+		     e, NULL /* U */, &dim, V, &dim, G, &job, &Err);
+    if (Err != NOERROR) { Err = XERRORSVD; goto ErrorHandling;}
+    ev0 = UNSET;
     for (i=0; i<dim; i++) {
       if (FABS(D[i]) <= EIGENVALUE_EPS) {
-	if (ev0==-1) ev0=i;
-	else {
-	  GERR("anisotropy matrix must have full rank")
-	    } 
+	if (ev0 == UNSET) ev0=i;
+	else {Err=XERRORANISO_INV; goto ErrorHandling;}
       }
     }
     
     //    for (print("\n\n V\n"), j=0; j<dim; j++, print("\n")) 
-    //	for (i=0; i<dimsq; i+=dim) print("%f ", V[i+j]);
+    //	for (i=0; i<dimsq; i+=dim) print("%10g ", V[i+j]);
 
     grid_ext[k] = 0.0;
     ev0 *= dim;
     for (i=0; i<dim; i++) {
-      //	print("%d : %f %f %f\n", k,
+      //	print("%d : %10g %10g %10g\n", k,
       //	       V[ev0 + i], aniso[k + i * dim], V[ev0 + i] / aniso[k + i * dim]);
       grid_ext[k] += V[ev0 + i] * aniso[k + i * dim];
     }
@@ -1348,13 +1365,9 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
   return NOERROR;
 
  ErrorHandling:
-  if (err<0) {
-    KPRINT("F77 error in GetOrthogonalExtensions: %d\n", -err);
-    err = ERRORFAILED;
-  }
   FREE(V);
   FREE(s);
-  return err;
+  return Err;
 }
 
 
@@ -1362,39 +1375,34 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
 
 
 
-int check_local_proc(cov_model *cov) {
+int check_local_proc(model *cov) {
   int 
-    dim = cov->tsdim,
+    dim = ANYDIM,
     err=NOERROR;
-  cov_model 
+  model 
     *key = cov->key,
     *next = cov->sub[0],
     *sub = key != NULL ? key : next;
-  location_type *loc = Loc(cov);
-  bool cutoff = cov->nr == CE_CUTOFFPROC_USER || cov->nr==CE_CUTOFFPROC_INTERN;
-  if (!cutoff && cov->nr!=CE_INTRINPROC_USER && cov->nr!=CE_INTRINPROC_INTERN)
+  //  location_type *loc = Loc(cov);
+  bool cutoff = COVNR == CE_CUTOFFPROC_USER || COVNR==CE_CUTOFFPROC_INTERN;
+  if (!cutoff && COVNR!=CE_INTRINPROC_USER && COVNR!=CE_INTRINPROC_INTERN)
     BUG;
 
-  //  print("entering check local from %d:%s\n", cov->calling->nr,
-  //	 CovList[cov->calling->nr].name);
-
-  //  PMI(cov);
-   
-  if ((err = check_ce_basic(cov)) != NOERROR) return err;
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
-    return ERRORDIM;
-  if ((loc->timespacedim > MAXCEDIM) | (cov->xdimown > MAXCEDIM))
-    return ERRORDIM;
+  FRAME_ASSERT_GAUSS_INTERFACE;
+  ASSERT_UNREDUCED;
+  ASSERT_ONESYSTEM;
+   if ((err = check_ce_basic(cov)) != NOERROR) RETURN_ERR(err);
+   if (dim > MAXCEDIM) RETURN_ERR(ERRORCEDIM);
 
   if (key != NULL) {
     // falls nicht intern muessen die parameter runter und rauf kopiert
     // werden, ansonsten sind die kdefaults leer.
     // falls hier gelandet, wird RP*INTERN von RP* aufgerufen.
     // oder RP*INTERN wird Circulant aufrufen
-    cov_model *intern = cov,
+    model *intern = cov,
       *RMintrinsic = key->sub[0];
-    while (intern != NULL && intern->nr != CE_INTRINPROC_INTERN &&
-	   intern->nr != CE_CUTOFFPROC_INTERN) {
+    while (intern != NULL && MODELNR(intern) != CE_INTRINPROC_INTERN &&
+	   MODELNR(intern) != CE_CUTOFFPROC_INTERN) {
       // normalerweise ->key, aber bei $ ist es ->sub[0]
       intern = intern->key == NULL ? intern->sub[0] : intern->key;
     }
@@ -1403,13 +1411,13 @@ int check_local_proc(cov_model *cov) {
     }
     else if (intern != cov) // cov not intern, ie user
       paramcpy(intern, cov, true, true, false, false, false);  // i.e. INTERN
-    else if (key->nr == CE_INTRINPROC_INTERN || 
-	     key->nr == CE_CUTOFFPROC_INTERN) { 
+    else if (MODELNR(key) == CE_INTRINPROC_INTERN || 
+	     MODELNR(key) == CE_CUTOFFPROC_INTERN) { 
       // 2x intern hintereinander, d.h. es wird eine approximation durchgefuehrt
       paramcpy(key, cov, true, true, false, false, false);        
     } else {
       //if (RMintrinsic->nr == GAUSSPROC) RMintrinsic = RMintrinsic->sub[0];
-      if (RMintrinsic->nr != CUTOFF && RMintrinsic->nr != STEIN) {
+      if (MODELNR(RMintrinsic) != CUTOFF && MODELNR(RMintrinsic) != STEIN) {
 	BUG;
       }
 
@@ -1420,8 +1428,8 @@ int check_local_proc(cov_model *cov) {
     }
      
     if ((err = CHECK(sub, dim,  dim, ProcessType, KERNEL, CARTESIAN_COORD, 
-		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
-      return err;
+		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
+      RETURN_ERR(err);
     }
     if (intern == cov) { // all the other parameters are not needed on the 
       //                    upper levels
@@ -1429,45 +1437,46 @@ int check_local_proc(cov_model *cov) {
 	kdefault(cov, LOCPROC_DIAM, PARAM0(RMintrinsic, pLOC_DIAM));  
     }
   } else {
-    if ((err = CHECK(sub, dim,  1, cutoff ? PosDefType : VariogramType,
-		     XONLY, ISOTROPIC, SUBMODEL_DEP, ROLE_COV))
-	!= NOERROR) {
-      if (isDollar(next) && PARAM(next, DANISO) != NULL) {
-	// if aniso is given then xdimprev 1 does not make sense
-	err = CHECK(sub, dim, dim, cutoff ? PosDefType : VariogramType,
-		    XONLY, ISOTROPIC, SUBMODEL_DEP, ROLE_COV);
-      }
-      // 
-      if (err != NOERROR) return err;
-      // PMI(cov, "out"); 
-      //assert(false);
-    }
-  }
+    if ((err = CHECK(sub, dim,  1, VariogramType,
+             //cutoff ? PosDefType : VariogramType,
+              XONLY, ISOTROPIC, SUBMODEL_DEP, EvaluationType))
+     != NOERROR) {
+       if (isDollar(next) && !PARAMisNULL(next, DANISO)) {
+     // if aniso is given then xdimprev 1 does not make sense
+     err = CHECK(sub, dim, dim, VariogramType,
+             //cutoff ? PosDefType : VariogramType,
+             XONLY, ISOTROPIC, SUBMODEL_DEP, EvaluationType);
+       }
+       //
+       if (err != NOERROR) RETURN_ERR(err);
+       // PMI(cov, "out");
+       //assert(false);
+     }
+   }
 
   //printf("check intern end\n");
 
   // no setbackward ?!
   setbackward(cov, sub); 
-  cov->vdim[0] = cov->vdim[1] = sub->vdim[0];
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
+  VDIM0 = VDIM1 = sub->vdim[0];
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
   
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
-int init_circ_embed_local(cov_model *cov, gen_storage *S){
-  // being here, leadin $ have already been put away
+int init_circ_embed_local(model *cov, gen_storage *S){
+ // being here, leadin $ have already been put away
   // so a new $ is included below
 
-  cov_model //*dummy = NULL,
+  model //*dummy = NULL,
     *key = cov->key;
   location_type *loc = Loc(cov);
-  //  simu_type *simu = &(cov->simu);
+  //  simu_storage *simu = &(cov->simu);
   int instance, i, d, 
-    timespacedim = loc->timespacedim,   
-    cncol = cov->tsdim,
-    rowcol = timespacedim * cncol,
+    timespacedim = GetLoctsdim(cov),
+    cncol = ANYDIM,
     err = NOERROR;
-  localCE_storage *s=NULL;
+  //  localCE_storage *s=NULL;
   double grid_ext[MAXCEDIM], old_mmin[MAXCEDIM];
  
   int first_instance;
@@ -1475,30 +1484,20 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
     *mmin = P(CE_MMIN);
 
   double sqrt2a2;
-  bool is_cutoff = cov->nr == CE_CUTOFFPROC_INTERN;
+  bool is_cutoff = COVNR == CE_CUTOFFPROC_INTERN;
 
-
-  // APMI(cov);
-  // printf("init_circ_embed_local\n");assert(false);
-
-  //  static pref_type pref =
-  //    {5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  // CE CO CI TBM Sp di sq Ma av n mpp Hy - any
-
-  ROLE_ASSERT_GAUSS;
+  ASSERT_ONESYSTEM;
 
   cov->method = is_cutoff ? CircEmbedCutoff : CircEmbedIntrinsic;
 
-  if (loc->distances) return ERRORFAILED;
+  if (loc->distances) RETURN_ERR(ERRORFAILED);
 
-  NEW_STORAGE(localCE);
-  s = cov->SlocalCE;
-  
+
   if (loc->caniso != NULL) {
     if (loc->cani_ncol != loc->cani_nrow || 
-	loc->cani_ncol != timespacedim) return ERRORDIM;
+	loc->cani_ncol != timespacedim) RETURN_ERR(ERRORCEDIM);
     err = GetOrthogonalUnitExtensions(loc->caniso, timespacedim, grid_ext);
-    if (err != NOERROR) goto ErrorHandling;
+    if (err != NOERROR) RETURN_ERR(err);
   } else {
     for (i=0; i<timespacedim; i++) grid_ext[i] = 1.0;
   }
@@ -1511,7 +1510,7 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
   kdefault(key, CE_FORCE, P0INT(CE_FORCE));
 
   PARAMFREE(key, CE_MMIN);
-  PARAMALLOC(key, CE_MMIN, cov->tsdim, 1);
+  PARAMALLOC(key, CE_MMIN, ANYDIM, 1);
   PCOPY(key, cov, CE_MMIN);
   
   kdefault(key, CE_STRATEGY, P0INT(CE_STRATEGY));
@@ -1525,37 +1524,29 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
 
   //  APMI(key);
  
-  assert(cov->vdim[0] == cov->vdim[1]);
-  err = CHECK(key, cov->tsdim, cov->xdimprev,
-	      GaussMethodType,
-              cov->domown, cov->isoown, SUBMODEL_DEP, ROLE_GAUSS); 
+  assert(VDIM0 == VDIM1);
+  err = CHECK_PASSTF(key, GaussMethodType, VDIM0, GaussMethodType);
+  //  err = CHECK(key, cov->tsdim, cov->xdimprev,
+  //	      GaussMethodType,
+  //            OWNDOM(0), OWNISO(0), SUBMODEL_DEP, GaussMethodType); 
   if ((err < MSGLOCAL_OK && err != NOERROR) 
       || err >=MSGLOCAL_ENDOFLIST // 30.5.13 : neu
-      ) {
-    // PMI(cov);AERR(err);
-    goto ErrorHandling;
-  }
- 
+      ) RETURN_ERR(err);
 
   first_instance = err != NOERROR;
-  for (d=0; d<timespacedim; d++) {
-    old_mmin[d] = mmin[d];
-  }
+  for (d=0; d<timespacedim; d++) old_mmin[d] = mmin[d];
+  
 
-  double *q;
-  cov_model 
-    //model = local->sub[0],
-    *local;
-  local = key->sub[0];
-  q = local->q;
+  model *local = key->sub[0];
+  localCE_storage *ss = local->SlocalCE;
+  assert(ss != NULL);
+  localvariab *q = ss->q;
+  assert(q != NULL);
   assert(err == NOERROR);
   for (instance = first_instance; instance < 2; instance++) {
-    //printf("lcoal start err =%d %d\n", err, instance);
-    //printf("model =%s instance %d %d err=%d %f %d\n", CovList[model->nr].name,
-    //	   instance, first_instance, err, q[LOCAL_MSG], MSGLOCAL_OK);
-    if (instance == 1) {
-      if (q[LOCAL_MSG] != MSGLOCAL_OK) {
-	if (!CovList[local->nr].alternative(local)) break;
+     if (instance == 1) {
+      if (q->msg != MSGLOCAL_OK) {
+	if (!DefList[MODELNR(local)].alternative(local)) break;
       } else {
 	if (first_instance == 0 && err != NOERROR) goto ErrorHandling;
 	else BUG;
@@ -1565,75 +1556,61 @@ int init_circ_embed_local(cov_model *cov, gen_storage *S){
     for (d=0; d<timespacedim; d++) {
       if (old_mmin[d]==0.0) {
 	
-	mmin[d] = - q[LOCAL_R] / 
+	mmin[d] = - q->R / 
 	  (grid_ext[d] * (loc->xgr[d][XLENGTH] - 1.0) * loc->xgr[d][XSTEP]);
-	if (mmin[d] > -1.0) mmin[d] = -1.0;
+	if (mmin[d] > -1.0) mmin[d] = - 1.0;
 	
       }
     }
     if ((err = init_circ_embed(key, S)) == NOERROR) break;
   }
-
-  //  printf("local err = %d\n", err);
   
   if (err != NOERROR) goto ErrorHandling;
-  //printf("A end local err %d\n", err);
   
-  if (cov->nr == CE_INTRINPROC_INTERN) {
-    sqrt2a2 = SQRT(2.0 * q[INTRINSIC_A2]); // see Stein (2002) timespacedim * cncol
+  if (COVNR == CE_INTRINPROC_INTERN) {
+    sqrt2a2 = SQRT(2.0 * q->intrinsic.A2); // see Stein (2002) timespacedim * cncol
     if (loc->caniso == NULL) {
-      if ((s->correction = MALLOC(sizeof(double)))==NULL) {
-	err = ERRORMEMORYALLOCATION;
-	goto ErrorHandling;
-      }
-      ((double *) s->correction)[0] = sqrt2a2;
-    } else {       
-      if ((s->correction = MALLOC(sizeof(double) * rowcol))==NULL){
-	err = ERRORMEMORYALLOCATION;
-	goto ErrorHandling;
-      }
-      double *stein_aniso = (double*) s->correction;
+      ALLCCOV_NEW(local, SlocalCE, correction, 1, correction);
+      correction[0] = sqrt2a2;
+    } else {
+      int rowcol = timespacedim * cncol;   
+      ALLCCOV_NEW(local, SlocalCE, correction, rowcol, correction);
       for (i=0; i<rowcol; i++) {
-	// print("ii=%d\n", i); print("%f\n", loc->caniso[i]);
-	stein_aniso[i] = sqrt2a2 * loc->caniso[i];
+	correction[i] = sqrt2a2 * loc->caniso[i];
       }
     }
   } else {
-    assert(cov->nr == CE_CUTOFFPROC_INTERN);
+    assert(COVNR == CE_CUTOFFPROC_INTERN);
   }
 
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) !=NOERROR) goto ErrorHandling;
 
   assert(err == NOERROR);
   
- ErrorHandling: 
-  // printf("X end local err %d\n", err);
-  for (d=0; d<timespacedim; d++) {
-    mmin[d] = old_mmin[d];
-  }
-
-  cov->fieldreturn = true;
-  cov->origrf = false;
-  cov->rf = cov->key->rf;
+  ReturnOtherField(cov, cov->key);
+ 
+ ErrorHandling :
+  for (d=0; d<timespacedim; d++) mmin[d] = old_mmin[d];
   cov->simu.active = err == NOERROR;
 
-   return err;
+  //  printf("%d\n", local->SlocalCE != NULL);
+  // APMI(cov);
+ 
+  RETURN_ERR(err);
 }
 
 
-int struct_ce_local(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
-  cov_model 
+int struct_ce_local(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
+  model 
     *next = cov->sub[0];
   int err;
-  bool cutoff = cov->nr ==  CE_CUTOFFPROC_INTERN;
+  bool cutoff = COVNR ==  CE_CUTOFFPROC_INTERN;
   
-  if (cov->role != ROLE_GAUSS) BUG;
-  if (next->pref[cutoff ? CircEmbedCutoff : CircEmbedIntrinsic] == PREF_NONE) {
-    return ERRORPREFNONE;
-  }
+  if (next->pref[cutoff ? CircEmbedCutoff : CircEmbedIntrinsic] == PREF_NONE)
+    RETURN_ERR(ERRORPREFNONE);
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
+  if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
   addModel(&(cov->key), cutoff ? CUTOFF : STEIN);
   addModel(&(cov->key), CIRCEMBED);
   
@@ -1642,50 +1619,48 @@ int struct_ce_local(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
   // da durch init die relevanten dinge gesetzt werden, sollte
   // erst danach bzw. innerhalb von init der check zum ersten Mal
   //APMI(cov);
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void do_circ_embed_cutoff(cov_model *cov, gen_storage *S) {  
-    double   *res = cov->rf;
-    cov_model *sub = cov;
-    for (int i=0; i<2; i++) sub =  sub->key != NULL ? sub->key : sub->sub[0];
-    //    long index[MAXCEDIM], r;
-    location_type *loc = Loc(cov);
-    int // k, row = loc->timespacedim,
-      vdim =cov->vdim[0];
-    long totpts = loc->totalpoints;
+void do_circ_embed_cutoff(model *cov, gen_storage *S) {  
+  double   *res = cov->rf;
+  model *key = cov->key,
+     *sub = key;
+   assert(key != NULL);
+   sub = sub->key != NULL ? sub->key : sub->sub[0];
+   assert(sub != NULL);
+   
+   int // k, row = loc->timespacedim,
+     vdim = VDIM0;
+   long totpts = Gettotalpoints(cov);
 
 
     // printf("--- \n \n do_circ_embed_cutoff \n \n  ---");
     //PMI(sub);
     localCE_storage *s = sub->SlocalCE;
+    assert(s != NULL);
+    localvariab *q = s->q;
+    assert(q != NULL);
 
 
     // PMI(sub);
 
+    do_circ_embed(key, S);
 
-    /*
-    printf( "\n s->is_multivariate_cutoff = %d \n", s->is_multivariate_cutoff);//
+    if ( VDIM0 > 1) {
 
-    printf("\n -------------  s->q[0][CUTOFF_CONSTANT]  = %f, C12 = %f, C22 =%f  \n ",  s->q[0][CUTOFF_CONSTANT] , c12, c22);//
-    printf("\n ------------- C11*C22 - C12*C12 = %f,   \n ", c11*c22 - c12*c12);//
-    printf("\n ------------- x[0] = %f, x[1] =%f  \n ", x[0], x[1]);//
-    printf("\n -------------  s->q[0][CUTOFF_R]  = %f  \n ",  s->q[0][CUTOFF_R] );//
-*/
-
-    do_circ_embed(cov->key, S);
-
-    if (s->is_bivariate_cutoff) {
-
-        double normal1 = GAUSS_RANDOM(1.0), normal2 = GAUSS_RANDOM(1.0),
-                c11 = s->q[0][CUTOFF_CONSTANT], c12 = s->q[1][CUTOFF_CONSTANT],
-                c22 = s->q[3][CUTOFF_CONSTANT],
-                x[2];
-
-        if (c22*c11 - c12*c12 < 0 ) ERR("\n Cannot simulate field with cutoff, matrix of constants is not pos def \n ");
-        x[0] = SQRT( -c11)*normal1 ;
-        x[1] = -c12/SQRT(-c11)*normal1 + SQRT(-c22 + c12*c12/c11 )*normal2;
+        double normal1 = GAUSS_RANDOM(1.0),
+	  normal2 = GAUSS_RANDOM(1.0),
+	  c11 = q[0].cutoff.constant,
+	  c12 = q[1].cutoff.constant,
+	  c22 = q[3].cutoff.constant,
+	  x[2];
+	
+        if (c11 < 0.0 || c22*c11 - c12*c12 < 0.0 )
+	  RFERROR("Cannot simulate field with cutoff, matrix of constants is not positive definite.");
+        x[0] = SQRT(c11)*normal1 ;
+        x[1] = c12/SQRT(c11)*normal1 + SQRT(c22 - c12*c12/c11 )*normal2;
 
         if (GLOBAL.general.vdim_close_together) {
             //one location two values
@@ -1707,16 +1682,16 @@ void do_circ_embed_cutoff(cov_model *cov, gen_storage *S) {
 
 }
 
-void kappa_localproc(int i, cov_model *cov, int *nr, int *nc){
+void kappa_localproc(int i, model *cov, int *nr, int *nc){
   kappaGProc(i, cov, nr, nc);
   if (i == CE_MMIN) *nr = 0;
 
   // $(proj=1) ->intrinsicinternal as $ copies the parameters
   // to intrinsicinternal and at the same time proj=1 reduces
-  // the tsdim
+  // the logicaldim
 }
 
-void range_co_proc(cov_model *cov, range_type *range){  
+void range_co_proc(model *cov, range_type *range){  
   range_ce(cov, range);
 
   range->min[LOCPROC_DIAM] = 0.0; //  CUTOFF_DIAM
@@ -1736,7 +1711,7 @@ void range_co_proc(cov_model *cov, range_type *range){
 
 
 
-void range_intrinCE(cov_model *cov, range_type *range) {
+void range_intrinCE(model *cov, range_type *range) {
   range_ce(cov, range);
 
   range->min[LOCPROC_DIAM] = 0.0; //  CUTOFF_DIAM
@@ -1755,45 +1730,54 @@ void range_intrinCE(cov_model *cov, range_type *range) {
 }
 
 
-void do_circ_embed_intr(cov_model *cov, gen_storage *S) {  
-  cov_model *key = cov->key;
+void do_circ_embed_intr(model *cov, gen_storage *S) {  
+  model *key = cov->key,
+    *sub = key;
   assert(key != NULL);
+  sub = sub->key != NULL ? sub->key : sub->sub[0];
+     
   location_type *loc = Loc(cov);
   double x[MAXCEDIM], dx[MAXCEDIM],  
     *res = cov->rf;
-  long index[MAXCEDIM], r;
-  int i, l, k,
-    row = loc->timespacedim,
-    col = cov->tsdim,
+  long index[MAXCEDIM];
+  int 
+    dim = ANYDIM,
+    row = dim, 
+    col = dim,
     rowcol =  row * col;
-  localCE_storage *s = cov->SlocalCE;
+  localCE_storage *s = sub->SlocalCE;
+  assert(s != NULL);
+  assert(s->correction != NULL);
   SAVE_GAUSS_TRAFO;
 
   do_circ_embed(key, S);
 
-  for (k=0; k<row; k++) {
+  for (int k=0; k<row; k++) {
     index[k] = 0;
     dx[k] = x[k] = 0.0;
   }
 
-  double *stein_aniso = (double*) s->correction;
+  //  PMI(cov->calling);
+  //printf("%d\n", cov->key->SlocalCE != NULL);
   if (loc->caniso == NULL) {
-    for (l=0; l<row; l++) {
+    for (int k=0; k<row; k++) {
       double normal = GAUSS_RANDOM(1.0);
-      dx[l] += *stein_aniso * normal;
+      //    printf("k=%d %d %f %f\n", k, row, dx[k], s->correction[0]);
+      dx[k] += s->correction[0] * normal; //
     }
   } else {
-    for (i=0; i<rowcol; ) {
+    for (int i=0; i<rowcol; ) {
       double normal = GAUSS_RANDOM(1.0);
-      for (l=0; l<row; l++)
-	dx[l] += stein_aniso[i++] * normal;
+      for (int k=0; k<row; k++)
+	dx[k] += s->correction[i++] * normal;
     }
   }
-  for (k=0; k<row; k++) dx[k] *= loc->xgr[k][XSTEP];
-  for(r=0; ; ) { 
-    for (k=0; k<row; k++) res[r] += (double) x[k]; 
+  for (int k=0; k<row; k++) dx[k] *= loc->xgr[k][XSTEP];
+  int r;
+  for(r=0; ; ) {
+    for (int k=0; k<row; k++) res[r] += (double) x[k]; 
     r++;
-    k=0;
+    int k=0;
     while( (k<row) && (++index[k]>=loc->xgr[k][XLENGTH])) {
       index[k]=0;
       x[k] = 0.0;
@@ -1808,18 +1792,16 @@ void do_circ_embed_intr(cov_model *cov, gen_storage *S) {
 
 
 
-int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
-  assert(cov->nr==CE_CUTOFFPROC_INTERN || cov->nr==CE_INTRINPROC_INTERN 
-	 || cov->nr==CIRCEMBED);
-  cov_model *next = cov->sub[0];
-  bool cutoff = cov->nr ==  CE_CUTOFFPROC_INTERN;
-  if (next->pref[cov->nr==CIRCEMBED ? CircEmbed : 
-		 cutoff ? CircEmbedCutoff : CircEmbedIntrinsic] == PREF_NONE) {
-    return ERRORPREFNONE;
-  }
+int struct_ce_approx(model *cov, model **newmodel) {
+  assert(COVNR==CE_CUTOFFPROC_INTERN || COVNR==CE_INTRINPROC_INTERN 
+	 || COVNR==CIRCEMBED);
+  model *next = cov->sub[0];
+  bool cutoff = COVNR ==  CE_CUTOFFPROC_INTERN;
+  if (next->pref[COVNR==CIRCEMBED ? CircEmbed : 
+		 cutoff ? CircEmbedCutoff : CircEmbedIntrinsic] == PREF_NONE)
+    RETURN_ERR(ERRORPREFNONE);
  
   //PMI(cov);
-  if (cov->role != ROLE_GAUSS) BUG;
 
 
   // assert(!Getgrid(cov));
@@ -1837,7 +1819,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     if (approx_gridstep < 0)
       SERR("approx_step < 0 forbids approximative circulant embedding");
     
-    if (cov->xdimown != loc->timespacedim)
+    if (OWNTOTALXDIM  != GetLoctsdim(cov))
       SERR("the dimensions of the coordinates and those of the process differ");
     
     GetDiameter(loc, min, max, centre);
@@ -1847,7 +1829,7 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
       maxgridsize /= loc->T[XLENGTH];
     }
 
-    if (ISNA(approx_gridstep)) {
+    if (ISNAN(approx_gridstep)) {
       // hier assert(false);
       double size = loc->spatialtotalpoints * 3;
       if (size > maxgridsize) size = maxgridsize;
@@ -1868,18 +1850,19 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
     }
   
     if (cov->key!=NULL) COV_DELETE(&(cov->key));
-    err = covCpy(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
+    err = covcpy(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
 		 3, loc->Time, true, false);
-    if (err != NOERROR) return err;    
-    cov->key->calling = cov;
+    if (err != NOERROR) RETURN_ERR(err);
+    SET_CALLING(cov->key, cov);
 
-    if ((err = CHECK(cov, cov->tsdim, cov->xdimprev, cov->typus,
-		     cov->domprev, cov->isoprev, cov->vdim[0], cov->role)  
-	 ) != NOERROR) return err;
- 
+    if ((err = CHECK_GEN(cov->key,// cov  11.1.19			 
+			 VDIM0, VDIM1, GaussMethodType, false))
+	//C H E C K(cov, cov->tsdim, cov->xdimprev, cov->typus,
+	//	     cov->domprev, cov->isoprev, VDIM0, cov->fr  ame)  
+	!= NOERROR) RETURN_ERR(err);
   }
 
-  if (cov->nr == CIRCEMBED) return NOERROR;
+  if (COVNR == CIRCEMBED) { RETURN_NOERROR; }
   else return struct_ce_local(Getgrid(cov) ? cov : cov->key, newmodel);
 
 }
@@ -1887,17 +1870,13 @@ int struct_ce_approx(cov_model *cov, cov_model **newmodel) {
 
 
 
-int init_ce_approx(cov_model *cov, gen_storage *S) {  
-  //  printf("\ninit_ce_approx : %d %d\n", Getgrid(cov), cov->nr==CIRCEMBED); 
-
+int init_ce_approx(model *cov, gen_storage *S) {  
   if (Getgrid(cov)) {
-    int ans = cov->nr==CIRCEMBED ? init_circ_embed(cov, S)
-      : init_circ_embed_local(cov, S); 
-    // printf("ans = %d\n", ans); BUG;
-    return ans;
+    if (COVNR==CIRCEMBED) return init_circ_embed(cov, S);
+    else return init_circ_embed_local(cov, S); 
   }
 
-  ROLE_ASSERT_GAUSS;
+  ASSERT_UNREDUCED;
 
   location_type *loc = Loc(cov),
     *keyloc = Loc(cov->key);  
@@ -1907,19 +1886,19 @@ int init_ce_approx(cov_model *cov, gen_storage *S) {
   int d, err,
     // maxgridsize = P0INT(CE_APPROXMAXGRID),
     spatialdim = loc->spatialdim,
-    tsdim = loc->timespacedim;
+   dim = ANYDIM;
 
-  if (cov->xdimown != tsdim)
-    SERR("dimensions of the coordinates and those of the process differ");
-  cov->method = cov->nr==CIRCEMBED ? CircEmbed 
-    : cov->nr== CE_CUTOFFPROC_INTERN ? CircEmbedCutoff : CircEmbedIntrinsic;
+  ASSERT_ONESYSTEM;
+ 
+  cov->method = COVNR==CIRCEMBED ? CircEmbed 
+    : COVNR== CE_CUTOFFPROC_INTERN ? CircEmbedCutoff : CircEmbedIntrinsic;
 
-  if (loc->distances) return ERRORFAILED;
+  if (loc->distances) RETURN_ERR(ERRORFAILED);
   NEW_STORAGE(approxCE);
-  ALLOC_NEWINT(SapproxCE, idx, totspatialpts, idx);
+  ALLC_NEWINT(SapproxCE, idx, totspatialpts, idx);
   
   cumgridlen[0] = 1;
-  for (d=1; d<tsdim; d++) {
+  for (d=1; d<dim; d++) {
     cumgridlen[d] =  cumgridlen[d-1] * (int) keyloc->xgr[d-1][XLENGTH];    
   }
 
@@ -1934,20 +1913,21 @@ int init_ce_approx(cov_model *cov, gen_storage *S) {
     idx[i] = dummy;
     assert(dummy >= 0);
   }
- 
-  if ((err = cov->nr==CIRCEMBED ? init_circ_embed(cov->key, S)
-       : init_circ_embed_local(cov->key, S)) != NOERROR) return err;
+
+  if (COVNR==CIRCEMBED) err = init_circ_embed(cov->key, S);
+  else err = init_circ_embed_local(cov->key, S);
+  if (err != NOERROR) RETURN_ERR(err);
   
-  if ((err = FieldReturn(cov)) != NOERROR) return err;
+  if ((err = ReturnOwnField(cov)) != NOERROR) RETURN_ERR(err);
  
   cov->key->initialised = cov->simu.active = err == NOERROR;
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
-void do_ce_approx(cov_model *cov, gen_storage *S){
+void do_ce_approx(model *cov, gen_storage *S){
   if (Getgrid(cov)) {
-    if (cov->nr==CIRCEMBED) do_circ_embed(cov, S);
-    else if (cov->nr== CE_CUTOFFPROC_INTERN) do_circ_embed_cutoff(cov, S);
+    if (COVNR==CIRCEMBED) do_circ_embed(cov, S);
+    else if (COVNR== CE_CUTOFFPROC_INTERN) do_circ_embed_cutoff(cov, S);
     else do_circ_embed_intr(cov, S);
     return;
   }
@@ -1955,13 +1935,13 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
   
   //  PMI(cov);
 
-  cov_model *key=cov->key;
+  model *key=cov->key;
   location_type *loc = Loc(cov);
   approxCE_storage *s = cov->SapproxCE;
-  //cov_model *cov = meth->cov;
+  //model *cov = meth->cov;
   long i;
   int
-     vdim = cov->vdim[0],
+     vdim = VDIM0,
     *idx = s->idx;
   double 
     *res = cov->rf,
@@ -1992,9 +1972,9 @@ void do_ce_approx(cov_model *cov, gen_storage *S){
       totalkey = Loc(key)->totalpoints;
     for (int v=0; v<vdim; v++, internalres += totalkey){
       for (i=0; i<totpts; i++) {
-      //    printf("i=%d %f %d\n", i, loc->x[i], idx[i]);
-      // print(" %d %d %f %f", i, idx[i], loc->x[i*2], loc->x[i*2 +1]);
-      // print("    %f\n", internalres[idx[i]]);
+      //    printf("i=%d %10g %d\n", i, loc->x[i], idx[i]);
+      // print(" %d %d %10g %10g", i, idx[i], loc->x[i*2], loc->x[i*2 +1]);
+      // print("    %10g\n", internalres[idx[i]]);
 	res[j++] = internalres[idx[i]];
       }
     }

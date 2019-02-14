@@ -2,7 +2,7 @@
 \alias{RMpenta}
 \title{Penta Covariance Model}
 \description{
- \command{\link{RMpenta}} is a stationary isotropic covariance model, which is valid only for dimensions 
+ \command{\link{RMpenta}} is a stationary isotropic covariance model, which is only valid for dimensions 
  \eqn{d \le 3}{d \le 3}.
  The corresponding covariance function only depends on the distance \eqn{r \ge 0}{r \ge 0} between
  two points and is given by
@@ -18,14 +18,14 @@ RMpenta(var, scale, Aniso, proj)
  covariance function remains unmodified.}
 }
 \details{
-The model is only valid for dimension \eqn{d \le 3}{d \le 3}.
+The model is only valid for dimensions \eqn{d \le 3}{d \le 3}.
 
 It has a 4 times differentiable covariance function with compact
 support (cf. Chiles, J.-P. and Delfiner, P. (1999), p. 84).
 
 }
 \value{
- \command{\link{RMpenta}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMpenta}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -36,8 +36,7 @@ support (cf. Chiles, J.-P. and Delfiner, P. (1999), p. 84).
  } 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -49,15 +48,12 @@ support (cf. Chiles, J.-P. and Delfiner, P. (1999), p. 84).
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMpenta()
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

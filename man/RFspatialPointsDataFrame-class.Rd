@@ -16,7 +16,7 @@
 \alias{[<-,RFspatialPointsDataFrame-method}
 \alias{[<-,RFspatialPointsDataFrame,ANY,ANY,ANY-method}
 \alias{dimensions,RFspatialPointsDataFrame-method}
-\alias{isGridded,RFspatialPointsDataFrame-method}
+%\alias{isGridded,RFspatialPointsDataFrame-method}
 \alias{variance,RFspatialPointsDataFrame-method}
 
 %% S3 methods
@@ -34,7 +34,7 @@
  spatio-temporal locations (at least of dimension 2) 
  that are not on a grid. Direct extension of class
  \code{\link[sp:SpatialPointsDataFrame-class]{SpatialPointsDataFrame}}
- from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
+ from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicit
  transformation.}
 
 
@@ -64,12 +64,12 @@
     \item{\code{data}:}{object of class
       \code{\link[methods:data.frame-class]{data.frame}}, 
       containing attribute data } 
-    \item{\code{coords.nrs}:}{See \code{\link{SpatialPointsDataFrame}}
+    \item{\code{coords.nrs}:}{See \code{\link{SpatialPointsDataFrame}}.
     }    
     \item{\code{coords}:}{matrix of coordinates (each row is a 
       point); in case of SpatialPointsDataFrame an object of class
-      \code{\link[=SpatialPoints-class]{SpatialPoints}} is also allowed
-      see \link{SpatialPoints}}
+      \code{\link[=SpatialPoints-class]{SpatialPoints}} is also allowed,
+      see \link{SpatialPoints}.}
     \item{\code{bbox}:}{matrix specifying the bounding box }
     \item{\code{proj4string}:}{object of class \code{\link[sp:CRS-class]{CRS};
 	projection }} 
@@ -98,7 +98,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{method?plot("RFspatialPointsDataFrame")}}
  \item{show}{\code{signature(x = "RFspatialPointsDataFrame")}:
  uses the \command{show}-method for class
- \command{\link[sp]{SpatialPointsDataFrame}}.}
+ \command{\link[sp]{SpatialPointsDataFrame}}}
  \item{print}{\code{signature(x = "RFspatialPointsDataFrame")}:
  identical to \command{show}-method}
  \item{RFspDataFrame2conventional}{\code{signature(obj =
@@ -110,10 +110,10 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  returns the coordinates} 
  \item{[}{\code{signature(x = "RFspatialPointsDataFrame")}: selects
  columns of \code{data}-slot; returns an 
- object of class \code{\link{RFspatialPointsDataFrame}}.}
+ object of class \code{\link{RFspatialPointsDataFrame}}}
  \item{[<-}{\code{signature(x = "RFspatialPointsDataFrame")}: replaces
  columns of \code{data}-slot; returns an 
- object of class \code{\link{RFspatialPointsDataFrame}}.}
+ object of class \code{\link{RFspatialPointsDataFrame}}}
  \item{as}{\code{signature(x = "RFspatialPointsDataFrame")}:
  converts into other formats, only implemented for target class
  \code{\link[=RFspatialGridDataFrame-class]{RFspatialGridDataFrame}} } 
@@ -135,7 +135,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
 }
 
 \section{Details}{
- Note that in the \code{data}-slot, each colums is ordered according to the
+ Note that in the \code{data}-slot, each column is ordered according to the
  ordering of \code{coordinates(grid)}, the first dimension runs fastest
  and for all BUT the second dimension, coordinate values are in
  ascending order. In the second dimension, coordinate values run from
@@ -149,7 +149,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
+\author{Alexander Malinowski, \martin}
 
 
 \seealso{
@@ -160,7 +160,7 @@ Class \code{\link[=SpatialPoints-class]{SpatialPoints}}, by class
  \code{\link[=RFsp-class]{RFsp}},
  \command{\link{sp2RF}}
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -179,12 +179,11 @@ plot(f, nmax=2)
 f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=10), x=cbind(x,x), n=4)
 plot(f2, MARGIN=c(3,4), nmax=2)
 
-f.sp <- RFsimulate(model=RMexp(), x=x, n=3, seed=0)
-f.old <- RFsimulate(model=RMexp(), x=x, n=3, spConform=FALSE, seed=0)
-all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
+f.sp <- RFsimulate(model=RMexp(), x=x, n=3)
+f.old <- RFsimulate(model=RMexp(), x=x, n=3, spConform=FALSE)
+all.equal(RFspDataFrame2conventional(f.sp)$data, f.old, check.attributes=FALSE) ## TRUE
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{classes}
 \keyword{print}

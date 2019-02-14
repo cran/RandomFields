@@ -20,7 +20,7 @@
 \alias{[<-,RFspatialGridDataFrame-method}
 \alias{[<-,RFspatialGridDataFrame,ANY,ANY,ANY-method}
 \alias{dimensions,RFspatialGridDataFrame-method}
-\alias{isGridded,RFspatialGridDataFrame-method}
+%\alias{isGridded,RFspatialGridDataFrame-method}
 \alias{variance,RFspatialGridDataFrame-method}
 %% S3 methodsgr
 \alias{print.RFspatialGridDataFrame}
@@ -38,7 +38,7 @@
   spatio-temporal locations (at least of dimension 2) 
   on a (full) regular grid. Direct extension of class
   \command{\link[sp:SpatialGridDataFrame-class]{SpatialGridDataFrame}
-    from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicite
+    from the \pkg{sp}-package. See \command{\link{sp2RF}} for an explicit
     transformation.}
 }
 
@@ -64,10 +64,10 @@
 \section{Slots}{
   \describe{
     \item{\code{.RFparams}:}{list of 2; \code{.RFparams$n} is the number
-      of repetitions of the random field contained in the \code{data} slot,
+      of repetitions of the random field contained in the \code{data} slot;
       \code{.RFparams$vdim} gives the dimension of the values of the random
       field, equals 1 in most cases}
-    \item{\code{data}:}{object of class \code{\link{data.frame}},
+    \item{\code{data}:}{object of class \code{\link{data.frame}};
       containing attribute data } 
     \item{\code{grid}:}{object of class
       \command{\link[=GridTopology-class]{GridTopology}}; grid
@@ -97,7 +97,7 @@
 
 \section{Methods}{
  \describe{
-\item{contour}{code{signature(obj =
+\item{contour}{\code{signature(obj =
     "RFspatialGridDataFrame")}:
   generates \command{\link[graphics]{contour}} plots
   }
@@ -110,7 +110,7 @@
  for more details see \code{\link{plot-method}} or type
  \code{method?plot("RFspatialGridDataFrame")}}
 
-\item{persp}{code{signature(obj =
+\item{persp}{\code{signature(obj =
 	"RFspatialGridDataFrame")}: generates \command{\link[graphics]{persp}} plots
 }
 
@@ -126,7 +126,7 @@
  is converted to an array of dimension \eqn{[1*(vdim>1) +
 	space-time-dimension + 1*(n>1)]}; the \code{grid}-slot is
  converted to a 3-row matrix; the grid definition of a possible
- time-dimension becomes a seperate list element}
+ time-dimension becomes a separate list element}
  \item{RFspDataFrame2dataArray}{\code{signature(obj =
 	"RFspatialGridDataFrame")}: conversion of the \code{data}-slot
  to an array of dimension \eqn{[space-time-dimension + 2]}, where the
@@ -161,7 +161,7 @@
 }
 
 \section{Details}{
- Note that in the \code{data}-slot, each colums is ordered according to the
+ Note that in the \code{data}-slot, each column is ordered according to the
  ordering of \code{coordinates(grid)}, the first dimension runs fastest
  and for all BUT the second dimension, coordinate values are in
  ascending order. In the second dimension, coordinate values run from
@@ -170,14 +170,13 @@
  the data array is re-ordered such that all dimensions are in ascending
  order. \code{as.matrix} does not perform re-ordering.
 
- Methods \command{summary}, \command{dimensions} and
- \command{isGridded} are defined for the \dQuote{parent}-class
+ Methods \command{summary},
+% \command{isGridded},
+and \command{dimensions} 
+  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski,
-  Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
-
+\author{Alexander Malinowski, \martin}
 
 
 \seealso{
@@ -195,7 +194,7 @@
 \keyword{hplot}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -227,9 +226,7 @@ f2 <- RFsimulate(model=RMwhittle(nu=1.2, scale=scale), x=x2, n=n,
                  grid = TRUE)
 plot(f2, MARGIN=c(3,4), MARGIN.slices=1, n.slices=6, nmax=2)
 
-f.sp <- RFsimulate(model=RMexp(), x=x, n=n, seed=0)
-f.old <- RFsimulate(model=RMexp(), x=x, n=n, spConform=FALSE, seed=0)
-all.equal(RFspDataFrame2conventional(f.sp)$data, f.old) ## TRUE
-\dontshow{FinalizeExample()}
-
-}
+f.sp <- RFsimulate(model=RMexp(), x=x, n=n)
+f.old <- RFsimulate(model=RMexp(), x=x, n=n, spConform=FALSE)
+all.equal(RFspDataFrame2conventional(f.sp)$data, f.old, check.attributes=FALSE) ## TRUE
+\dontshow{FinalizeExample()}}

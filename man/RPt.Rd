@@ -1,9 +1,9 @@
 \name{RPt}
 \alias{RPt}
 
-\title{Simulation of a T Random Fields}
+\title{Simulation of T Random Fields}
 \description{
-  \command{RPt} defines a t fields.
+  \command{RPt} defines a t field.
 }
 
 \usage{
@@ -18,25 +18,21 @@ RPt(phi, boxcox, nu)
  default and a covariance model is expected.}
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{nu}{non-negative number. Degree of freedom.}
 }
 
 \value{
- The function returns an object of class \code{\link[=RMmodel]{RMmodel}}
+ The function returns an object of class \code{\link[=RMmodel]{RMmodel}}.
 }
 
- 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-
+\me
 
 \seealso{
   \command{\link{Auxiliary RMmodels}},
   \command{\link{RP}},
-  \command{\link{RPgauss}}
+  \command{\link{RPgauss}}.
 }
 
 \references{
@@ -52,14 +48,13 @@ RPt(phi, boxcox, nu)
 \keyword{spatial}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RPt(RMexp(), nu=2)
 x <- seq(0, 10, 0.1)
 z <- RFsimulate(model, x, x, n=4)
 plot(z)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

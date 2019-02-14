@@ -31,7 +31,7 @@ RPsmith(shape, tcf, xi, mu, s)
 }
 
 \note{
-  IMPORTANT: for consistency reasons with the geostatistical definitions
+  IMPORTANT: For consistency reasons with the geostatistical definitions
   in this package the scale argument differs froms the original
   definition of the Smith model! See the example below.
   
@@ -44,15 +44,8 @@ RPsmith(shape, tcf, xi, mu, s)
 }
 
 \details{
-  The argument \code{xi}
-  is always a number, i.e. \eqn{\xi} is constant in
- space. In contrast, \eqn{\mu} and \eqn{s} might be constant
- numerical value or given a \code{\link{RMmodel}}, in particular by a
- \code{\link{RMtrend}} model. The default values of \eqn{mu} and \eqn{s}
- are \eqn{1} and \eqn{\xi}, respectively.
+  \GEV
  
- 
-
  It simulates max-stable processes \eqn{Z} that are referred to as
  \dQuote{Smith model}.
  \deqn{Z(x) = \max_{i=1}^\infty X_i Y_i(x-W_i),
@@ -65,12 +58,8 @@ RPsmith(shape, tcf, xi, mu, s)
  The constant \eqn{c} is chosen such that \eqn{Z} has standard Frechet
  margins.
  }
-
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-
+\me
 
 \references{
   \itemize{
@@ -90,18 +79,17 @@ RPsmith(shape, tcf, xi, mu, s)
   \command{\link{RMmodel}},
   \command{\link{RPbernoulli}},
   \command{\link{RPgauss}},
-  \link{maxstable}
-  \command{\link{maxstableAdvanced}}
+  \link{maxstable},
+  \command{\link{maxstableAdvanced}}.
 }
 
 \keyword{spatial}
 
  
-\examples{
-
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample(reduced=10)}
+
 model <- RMball()
 x <- seq(0, 1000, 0.2)
 z <- RFsimulate(RPsmith(model, xi=0), x)
@@ -131,7 +119,5 @@ plot(z)
 
 ## for some more sophisticated models see 'maxstableAdvanced'
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 

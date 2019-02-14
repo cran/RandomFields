@@ -12,7 +12,7 @@ RMsign(phi, p)
 }
 
 \arguments{
- \item{phi}{shape function of class \code{\link[=RMmodel-class]{RMmodel}}.}
+ \item{phi}{shape function of class \code{\link[=RMmodel-class]{RMmodel}}}
  \item{p}{probability of keeping the sign}
 }
 
@@ -22,37 +22,30 @@ RMsign(phi, p)
 }
  
 \value{
- \command{\link{RMsign}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMsign}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
 \note{
-  Random univariate or multivariate objects are
-  usually start with \code{RR} not with \code{RM}.
+  Random univariate or multivariate objects usually start with \code{RR}, not with \code{RM}.
   This is an exception here, as it operates on shape functions.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
-  \command{\link{RMmodel}}
+  \command{\link{RMmodel}},
   \link{RR}.
 
  }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RPpoisson(RMsign(RMtent(), p=0.8))
 x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

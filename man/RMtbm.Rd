@@ -2,8 +2,9 @@
 \alias{RMtbm}
 \title{Turning Bands Method}
 \description{
- \command{\link{RMtbm}} is a univariate stationary isotropic covariance
- model in dimension \code{reduceddim} which depends on a univariate stationary
+ \command{\link{RMtbm}} is a univariate or multivaraiate stationary isotropic covariance
+ model in dimension \code{reduceddim} which depends on a univariate or
+ multivariate stationary
  isotropic covariance \eqn{\phi}{phi} in a bigger dimension \code{fulldim}.
  For formulas for the covariance function see details.
 }
@@ -11,21 +12,21 @@
 RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
 }
 \arguments{ 
- \item{phi, fulldim, reduceddim, layers}{see \command{\link{RPtbm}}.}
+  \item{phi, fulldim, reduceddim, layers}{See \command{\link{RPtbm}}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
 }
 \value{
- \command{\link{RMtbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMtbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \details{
   The turning bands method stems from the 1:1 correspondence between the
   isotropic covariance functions of different dimensions. See Gneiting
   (1999) and Strokorb and Schlather (2014).
   
-  The standard case \code{reduceddim=1} and \code{fulldim=3}.
-  If only one of the arguments are given, then the difference of the two
+  The standard case is \code{reduceddim=1} and \code{fulldim=3}.
+  If only one of the arguments is given, then the difference of the two
   arguments equals 2.
   
   For \code{d == n + 2}, where \code{n=reduceddim} and 
@@ -36,7 +37,7 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
   }{
     C(r) = phi(r) + r phi'(r) / n
   }
-  which, for \code{n=1} reduced to the standard TBM operator
+  which for \code{n=1} reduces to the standard TBM operator
   \deqn{
     C(r) =\frac {d}{d r} r \phi(r)
   }{
@@ -88,20 +89,20 @@ RMtbm(phi, fulldim, reduceddim, layers, var, scale, Aniso, proj)
  \command{\link{RPtbm}},
  \command{\link{RFsimulate}}.
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+
+\me
+
 \keyword{spatial}
 \keyword{models}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 x <- seq(0, 10, 0.02)
 model <- RMspheric()
 plot(model, model.on.the.line=RMtbm(RMspheric()), xlim=c(-1.5, 1.5))
 
 z <- RFsimulate(RPtbm(model), x, x)
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -5,7 +5,7 @@
 \title{Information about the implemented covariance models}
 \description{
   \code{PrintModelList} prints the list of currently implemented models
-  including the corresponding simulation methods
+  including the corresponding simulation methods.
 }
 \usage{
 
@@ -13,11 +13,9 @@ PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
 
 }
 \arguments{
-  \item{operators}{logical. Flag whether operators should be
-    also considered.
+  \item{operators}{logical. Flag whether operators should also be considered.
   }
-  \item{internal}{logical. Flag whether internal models should be
-    also considered. In case of \command{PrintModelList} and
+  \item{internal}{logical. Flag whether internal models should also be considered. In case of \command{PrintModelList} and
     \code{internal=2}, variants of internal models are also printed.
   }
   \item{newstyle}{
@@ -38,24 +36,21 @@ PrintModelList(operators=FALSE, internal=FALSE, newstyle=TRUE)
 \note{
   From version 3.0 on, the command \code{PrintModelList()}
   is replaced by the call
-  \code{\link{RFgetModelNames}(internal=FALSE)}
+  \code{\link{RFgetModelNames}(internal=FALSE)}.
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
+
 \seealso{
   \command{\link{RFgetModelNames}}
 }
 \keyword{spatial}
 
-
- \examples{
+ \examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 %  library(RandomFields)
 PrintModelList()
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 %getOption("device")

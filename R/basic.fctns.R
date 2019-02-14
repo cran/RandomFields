@@ -22,14 +22,43 @@
 
 
 
+## FUNCTION-STARP***********************************************************************************
+## NAME		extract VarNames
+## REQUIRE	$model is a formula or a RMmodel
+## ENSURE		the return value is a vector with the names of the response variables of the formula 
+#			or NULL if no left side given
+## SEE		
+## AUTHOR		Sebastian Gross 
+## DATE		26.08.2011; 2014 Martin Schlather modified
+## FUNCTION-END*************************************************************************************
+extractVarNames <- function(model) {
+  if (missing(model) || length(model) <=2 || !is(model, "formula")) return(NULL)
+  tmp <- as.character(model)[2]
+  tmp <- strsplit(tmp, "c\\(")[[1]]
+  tmp <- paste(tmp, sep="", collapse="")
+  tmp <- strsplit(tmp, "\\)")[[1]]
+  tmp <- paste(tmp, sep="", collapse="")
+  varnames <- strsplit(tmp, ", ")[[1]]
+
+  ## ignore numeric formated varnames
+  i<- 1
+  while (i <= length(varnames)) {
+    if (regexpr("^[[:digit:]]", varnames[i]) > 0) varnames <- varnames[-i]
+    else i <- i+ 1
+  }
+  if (length(varnames) == 0) return (NULL)
+  return (varnames)
+}
+
+
 earth_coordinate_names<- function(names) {
   ## Earth coordinates + possibly radius
   n <- substr(tolower(names), 1, 6)
   nc <- nchar(n)
   lon <- lat <- logical(length(n))
   for (i in 1:length(n)) {
-    lon[i] <- substr("longit", 1, nc[i]) == n[i]
-    lat[i] <- substr("latitu", 1, nc[i]) == n[i]
+    lon[i] <- substr(COORD_NAMES_EARTH[1], 1, nc[i]) == n[i]
+    lat[i] <- substr(COORD_NAMES_EARTH[2], 1, nc[i]) == n[i]
   }
   lonORlat <- lon | lat  
   earth <- all(nc[lonORlat] >= 2) && sum(lon==1) && sum(lat == 1)
@@ -41,7 +70,7 @@ earth_coordinate_names<- function(names) {
 
 cartesian_coordinate_names <- function(names) {
   n <- substr(tolower(names), 1, 1)
-  coords <- c("T", "x", "y", "z")
+  coords <- COORD_NAMES_CART[c(4, 1:3)] # c("T", "x", "y", "z")
   Txyz <- outer(n, coords, "==")
   cs <- colSums(Txyz)
   if (any(cs > 1) || sum(cs[1:2]) == 0 || any(diff(cs[-1]) > 0))
@@ -61,144 +90,202 @@ general_coordinate_names <- function(names) {
 }
 
 
+extractFromNames <- function(varidx, varnames, RFopt, cn) {
+  ## this function partially interprets RFoptions$coord$varnames/varidx,
+  ## namely when varnames is not NA
+  if (length(varnames) == 0) {
+    is.data <- varidx
+    if (is.na(is.data[2])) is.data[2] <- ncol(data)
+    return(is.data[1] : is.data[2])
+  } 
+  
+  if (RFopt$general$vdim_close_together)
+    stop("'vdim_close_together' must be FALSE")
+  l <- list()
+  vdim <- length(varnames)
+  for (v in 1:vdim)
+    l[[v]] <- substring(cn, 1, nchar(varnames[v])) == varnames[v]
+  repet <- sapply(l, sum)
+  if (repet[1] == 0) return(NULL)
+  if (any(repet != repet[1]))
+    stop("detected repetitions are not equal for all components")
+  m <- matrix(unlist(l), ncol=vdim)
+  if (any(rowSums(m) > 1))
+    stop("names of multivariate components not unique")
+  return(as.vector(t(apply(m, 2, which))))
+}
 
-data.columns <- function(data, xdim=0, force=FALSE, halt=TRUE) {
-  #  Print("data.col", data)
-   if (length(xdim) == 0) xdim <- 0
-  if (xdim>0 && xdim >= ncol(data)) stop("not enough columns in 'data'.")
-  RFopt <- RFoptions()
-  info <- RFoptions()$coords
-  cn <- colnames(data)
 
-  if (all(is.na(info$varnames))) {
-    if (all(is.na(info$coordnames))) {
-      if (is.null(cn)) {
-        if (force) return(list(data=(xdim+1):ncol(data), x=1:xdim))
-        if (halt)
-          stop('colnames of data argument must contain "data" or "variable"')
-        else return(NULL);
+data.columns <- function(data, model=NULL, xdim=0, force=FALSE, halt=TRUE,
+			 RFopt=RFoptions(), vdim=0) {
+  ## this function interprets RFoptions$coord$varnames/varidx or model
+  ## also if varnames is NA
+  ## gives the columns in the original data
+
+  PL <-  as.integer(RFopt$basic$printlevel)
+  info <- RFopt$coords
+
+  is.data <- is.x <- NULL
+  DATA <- if (is(data, "RFsp")) data@data else data    
+  if (!missing(model) && !is.null(model )) {
+    ## ehemals selectDataAccordingFormula & selectAccordingFormula
+    ##
+    ## a vector of column indices  or N ULL indicating 'all' in case
+    ## of model is given
+    
+    varnames <- extractVarNames(model) 
+    ## are there any variablenames given
+    if (length(varnames) > 0) { ## if == 0 continue as if model is N ULL
+      if (is(data, "RFsp")) 
+	cleanNames <- (if (data@.RFparams$n == 1) colnames(DATA)
+		       else sapply(colnames(DATA),
+                                   ## AUTHOR: Sebastian Gross, 26.08.2011
+                                   FUN= function(x) strsplit(x, "\\.n[[:digit:]]+$")[[1]][1]
+                                   ))
+      else {
+	cleanNames <- try(colnames(data))
+	if (is(cleanNames, "try-error"))
+	  stop("could not detect colnames of data")
       }
-      is.data <- (tolower(substr(cn, 1, 4)) == "data" |
-                  tolower(substr(cn, 1, 4)) == "value" |
-                  tolower(substr(cn, 1, 8)) == "variable")
-      if (!any(is.data)) {
-        if (force) return(list(data=(xdim+1):ncol(data), x=1:xdim))
-        if (halt) stop('no colname starts with "data" or "variable"')
-        else return(NULL);
-      }
-      is.data <- which(is.data)
-      if (is.data[1] > 1) is.data <- is.data[1] : ncol(data)# coord am Anfang
-      ##     dann wird Rest alles als data angenommen, egal welcher Name
-    }
-  } else {
-    if (is.numeric(info$varnames)) {
-      is.data <- rep(info$varnames, length.out=2)
-      if (is.na(is.data[1])) is.data[1] <- 1
-      if (is.na(is.data[2])) is.data[2] <- ncol(data)
-      is.data <- is.data[1] : is.data[2]
-    } else {
-      if (RFopt$general$vdim_close_together)
-        stop("'vdim_close_together' must be FALSE")
-      l <- list()
-      vdim <- length(info$varnames)
-      for (v in 1:vdim)
-        l[[v]] <-
-          substring(cn, 1, nchar(info$varnames[v])) == info$varnames[v]
-      repet <- sapply(l, sum)
-      if (repet[1] == 0) stop("data names could not be detected") 
-      if (any(repet != repet[1]))
-        stop("detected repetitions are not equal for all components")
-      m <- matrix(unlist(l), ncol=vdim)
-      if (any(rowSums(m) > 1))
-        stop("names of multivariate components not unique")
-      is.data <- as.vector(t(apply(m, 2, which)))
+      is.data <- match(varnames, cleanNames)
+      if (any(is.na(is.data)))
+	stop("response variable names could not be found in colnames ",
+	     "of the data")
+      
+      if (PL > 0)
+	message("formula yields the following variables for the data: ",
+		paste(cleanNames[is.data], sep=", "), "\n")
+      names(is.data) <- varnames
     }
   }
 
-  if (all(is.na(info$coordnames))) {
-    is.x <- (1:ncol(data))[-is.data]
+  if (is.null(is.data)) 
+    is.data <-
+	 if (ncol(DATA) == 1) 1L
+	 else if (length(vdim) == 1 && vdim > 0 && ncol(DATA) == vdim)
+	   1:vdim
+
+  cn <- colnames(DATA)  
+  if (isRFsp <- is(data, "RFsp")) {
+    xdim <- if (is(data, "SpatialPointsDataFrame") ||
+		is(data, "RFpointsDataFrame")) ncol(data@coords)
+            else if (is(data, "SpatialGridDataFrame") ||
+		     is(data, "RFgridDataFrame")) length(data@grid@cells.dim)
+	    else stop("unknown class for 'data'")  
+  } else {
+    if (length(xdim) == 0) xdim <- 0
+    if (xdim>0 && xdim >= ncol(DATA)) stop("not enough columns in 'data'.")
+
+    if (length(info$coordnames) > 0 || !is.na(info$coordidx[2])) {
+      is.x <- extractFromNames(info$coordidx, info$coordnames, RFopt, cn)
+      if (xdim > 0 && xdim != length(is.x))
+	stop("expected dimension of coordinates does not match the found coordinates")
+    }
+
+    ## ehemals StandardizeData:    
+    if (is.null(is.x) && !is.null(cn)) {
+      if (length(is.x <- earth_coordinate_names(cn)) == 2) {
+	txt <- paste("keywords for earth coordinates (", sep="",
+		     paste(cn[is.x], collapse=","), ")")
+      } else if (length(is.x <- cartesian_coordinate_names(cn)) > 0) {
+	txt <- paste("keywords for cartesian coordinates (", sep="",
+		     paste(cn[is.x], collapse=","), ")")
+      } else if  (length(is.x <- general_coordinate_names(cn)) > 0) {
+	txt <- paste("standard keywords for cartesian coordinates (",
+		     paste(cn[is.x], collapse=","), ")", sep="")
+      }
+      if (length(is.x) > 0 && PL > 0)
+	message("columns ", paste(is.x, collapse=","),
+		" are assumed to define the coordinates as ", txt,
+		" are recognized.\n")
+    }
+  }
+
+  ## ehemals data.columns
+  if (length(is.data) == 0 &&
+      (length(info$coordnames) > 0 || !is.na(info$coordidx[2]))) {
+    is.data <- extractFromNames(info$varidx, info$varnames, RFopt, cn)
+  }
+
+  if (length(is.data) == 0  && !is.null(cn)) {
+    is.data <- which(tolower(substr(cn, 1, 4)) == "data" |
+		     tolower(substr(cn, 1, 4)) == "value" |
+		     tolower(substr(cn, 1, 8)) == "variable")
+    if (length(is.data) > 0 && is.data[1] > 1)
+      is.data <- is.data[1] : ncol(DATA)  #coord am Anfang
+    ##     dann wird Rest alles als data angenommen, egal welcher Name
+  }
+
+  if (length(is.data)==0 && length(is.x)==0) {
+    if (is.null(cn)) {
+      if (!force) {
+	if (halt)
+	  stop(if (is.null(cn)) "colnames of data argument must contain"
+	       else 'no colname starts with', ' "data" or "variable"')
+	else return(list(is.data=TRUE, is.x=NULL));
+      }
+      is.data <- (xdim+1):ncol(DATA)
+    } else stop("data name(s) could not be found in the column names")
+  }
+
+  if (length(is.x) == 0 && !isRFsp) {
+    is.x <- (1:ncol(DATA))[-is.data]
     if (xdim > 0) {
       if (length(is.x) < xdim)
         stop("not enough columns for coordinates found ")
-      if (xdim < length(is.x) &&
-          RFopt$general$printLevel >= PL_SUBIMPORTANT)
-        message("column(s) '", paste(is.x[-1:-xdim], collapse=","),
-                "' not used.\n")
+      if (xdim < length(is.x) && PL >= PL_SUBIMPORTANT)
+        message("column(s) ",
+                paste("'", is.x[-1:-xdim], "'", , sep="", collapse=", "),
+		" unused.\n")
       is.x <- is.x[1:xdim]
     }
+  }
+  
+  if (length(is.data) == 0) {  #  (all(is.na(info$varnames))) 
+    is.data <- (1:ncol(DATA))[-is.x]
+    if (length(is.data) == 0) stop("no columns for data found")
   } else {
-    if (is.numeric(info$coordnames)) {
-      is.x <- rep(info$coordnames, length.out=2)
-      if (is.na(is.x[1])) is.x[1] <- 1
-      if (is.na(is.x[2])) is.x[2] <- ncol(data)
-      is.x <- is.x[1] : is.x[2]
-    } else {
-      l <- list()
-      len <- length(info$coordnames)
-      for (i in 1:len)
-        l[[v]] <-
-          substring(cn, 1, nchar(info$coordnames[v])) == info$coordnames[v]
-      is.x <- unlist(l)
-      if (xdim > 0 && xdim != length(l))
-        stop("expected dimension of coordinates does not match the found coordinates")
-    }
-     
-    if (all(is.na(info$varnames))) {
-      is.data <-  (1:ncol(data))[-is.x]
-      if (length(is.data) == 0) stop("no columns for data found")
-    } else {
-     if (any(is.x %in% is.data))
-       stop("column names and data names overlap.")
-     if (length(is.x) + length(is.data) < ncol(data) &&
-         RFopt$general$printLevel >= PL_SUBIMPORTANT)
-       message("column(s) '",
-               paste(1:ncol[c(-is.x, -is.data)], collapse=","),
-               "' not used.\n")
+    if (any(is.x %in% is.data)) stop("column names and data names overlap.")
+    if ( (isRFsp && length(is.data) < ncol(DATA)) ||
+	 (!isRFsp && length(is.x) + length(is.data) < ncol(DATA)) ) {
+      if (PL >= PL_SUBIMPORTANT)
+	message("column(s) ",
+                paste((1:ncol(DATA))[-c(is.x, is.data)], collapse=", "),
+		" unused.\n")
     }
   }
-  return(list(data=is.data, x=is.x) )
+
+  if (length(cn) > 0) {
+    names(is.data) <- cn[is.data]
+    if (length(is.x) > 0) names(is.x) <- cn[is.x]
+  } 
+ 
+  return(list(is.data=is.data, is.x=is.x))
 }
 
+
     
-GetDataNames <- function(model, coords=NULL, locinfo) {#, data=NULL) {
-#  if (length(data) > 0) {
-#    cd <- try(Check Data(model=model, given=coords, data=data))      
-#    if (class(cd) != "try-error")
-#      return(list(coordnames=cd$coordnames, varnames=cd$varnames))
-#  }
-
- #  Print(missing(model), missing(coords), missing(locinfo))
- # Print(model);  str(coords);  Print(coords);  Print(locinfo)
-
-  varnames <- extractVarNames(model)
-  coordnames <-
-    if (!is.null(coords) && is.matrix(coords)) colnames(coords) else NULL
-                       # gets response part of model, if model is a formula
-
-  Zeit <- locinfo$Zeit
-
-#  Print(locinfo)
+SystemCoordNames <- function(locinfo, RFopt = RFopt) {
+  ## this function tries to combine all information available on
+  ## coordinate names and variable names und returns the names if
+  ## ensured that the names are the correct one.
+  has.time.comp <- locinfo$has.time.comp
+  tsdim <- locinfo$spatialdim + locinfo$has.time.comp
   
-  tsdim <- locinfo$spatialdim + locinfo$Zeit
-
-#  Print(tsdim)
+  system <- RFopt$coords$coord_system
+  if (system == "earth") {
+    coordnames <- if (tsdim == 4) COORD_NAMES_EARTH
+		  else if (tsdim == 2) COORD_NAMES_EARTH[1:2]
+		  else if (tsdim == 3) c(COORD_NAMES_EARTH[1:2], "HeightOrTime")
+  } else if (system == "cartesian" && tsdim <= 4) {
+    ##coords <- COORD_NAMES_CART[1:tsdim]
+    if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_CART[3 + 1]
+  } else {
+    coordnames <- paste(COORD_NAMES_GENERAL[1], 1:tsdim, sep="")
+    if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_GENERAL[2]
+  } 
   
-  if (is.null(coordnames)) {
-    system <- RFoptions()$coords$coord_system
-    if (system == "earth") {
-      coordnames <- if (tsdim == 4) ZF_EARTHCOORD_NAMES
-      else if (tsdim == 2) ZF_EARTHCOORD_NAMES[1:2]
-      else if (tsdim == 3) c(ZF_EARTHCOORD_NAMES[1:2], "HeightOrTime")
-    } else if (system == "cartesian" && tsdim <= 4) {
-      coords <- ZF_CARTCOORD_NAMES[1:tsdim]
-      if (Zeit) coordnames[tsdim] <- ZF_CARTCOORD_NAMES[3 + 1]
-    } else {
-      coordnames <- paste(ZF_GENERAL_COORD_NAME[1], 1:tsdim, sep="")
-      if (Zeit) coordnames[tsdim] <- ZF_GENERAL_COORD_NAME[2]
-    }
-  }
-
-  return(list(coordnames=coordnames, varnames=varnames))
+  return(coordnames)
 }
 
 
@@ -218,4 +305,31 @@ search.model.name <- function(cov, name, level) {
 }
 
 
+
+
+
+
+vectordist <- function(x, diag=FALSE) {
+  storage.mode(x) <- "double"
+  res <- .Call(C_vectordist, t(x), diag)
+  dimnames(res) <- list(dimnames(x)[[2]], NULL)
+  return(t(res));
+}
+
+
+
+my.legend <- function(lu.x, lu.y, zlim, col, cex=1, ...) {
+  ## uses already the legend code of R-1.3.0
+  cn <- length(col)
+  if (cn < 43) {
+    col <- rep(col, each=ceiling(43 / cn))
+    cn <- length(col)
+  }
+  filler <- vector("character", length=(cn-3)/2)
+  legend(lu.x, lu.y, y.intersp=0.03, x.intersp=0.1, 
+         legend=c(format(zlim[2], dig=2), filler,
+             format(mean(zlim), dig=2), filler,
+             format(zlim[1], dig=2)),
+         lty=1, col=rev(col),cex=cex, ...)
+}
 

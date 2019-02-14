@@ -4,7 +4,7 @@
 \alias{RFearth2dist}
 \title{Transformation of coordinate systems}
 \description{
-  The functions transform a coordinate system into another.
+  The functions transform a coordinate system into another coordinate system.
   Currently, essentially only from the earth system to cartesian.
   
   \command{RMtrafo} is the internal basic function that also allows
@@ -28,31 +28,31 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
     %    SYMMETRIC,
     \code{\link[=constants]{RC_CARTESIAN_COORD}},
     \code{\link[=constants]{RC_GNOMONIC_PROJ}},
-    \code{\link[=constants]{RC_ORTHOGRAPHIC_PROJ}},
+    \code{\link[=constants]{RC_ORTHOGRAPHIC_PROJ}}
     %   EARTH_COORD,
     %    SPHERICAL_COORD,
     %    CYLINDER_COORD
     
-    Or the corresponding \code{\link[=constants]{RC_ISONAMES}}.
+    or the corresponding \code{\link[=constants]{RC_ISONAMES}}.
 
     Note that \command{RMtrafo} only allows for integer values.
 
-    Default: \code{RC_CARTESIAN_COORD}
+    Default: \code{RC_CARTESIAN_COORD}.
     
   }
   \item{phi}{optional submodel}
   \item{coord}{matrix or vector of earth coordinates}
   \item{units}{"km" or "miles"; if not given and 
-    \code{RFoptions()$general$units != ""} the latter is used.
+    \code{RFoptions()$general$units != ""}, the latter is used.
     Otherwise \code{"km"}.
   }
   \item{system}{integer or character. The coordinate system, e.g.
-    \code{"cartesian"}, \code{"gnomonic"}, or \code{"orthographic"}.
+    \code{"cartesian"}, \code{"gnomonic"} or \code{"orthographic"}.
     }
   \item{grid}{logical. Whether the given coordinates are considered to
     be on a grid given by \code{c(start, step, length)}.
 
-    Default: FALSE
+    Default: \code{FALSE}.
   }
   \item{...}{the optional arguments of \command{\link[stats]{dist}}    
   }
@@ -68,7 +68,7 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
   the results, applied to each row of the matrix, are returned.
 
   The function \command{RFearth2cartesian} returns a matrix in
-  one-to-one correspondance with \code{coord} assuming that the
+  one-to-one correspondence with \code{coord} assuming that the
   earth is an ellipsoid.
 
   The function \command{RFearth2dist} calculates distances, cf.
@@ -89,20 +89,20 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
   Important options are \code{units} and \code{coordinate_system}, see
   \command{\link{RFoptions}}.
 
-  Note also that the zenit must be given explicitely for projection onto
+  Note also that the zenit must be given explicitly for projection onto
   a plane. See the examples below.
 }
 
 
- \author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
- link{constants},
- \command{\link{RMangle}}
+ \link{constants},
+ \command{\link{RMangle}},
+ \command{\link{RMid}},
+ \command{\link{RMidmodel}}.
 }
 
-\examples{
-
+\examples{\dontshow{StartExample()}
 data(weather)
 (coord <- weather[1:5, 3:4])
 
@@ -116,7 +116,7 @@ dist(z)
 d - dist(z) ## 0, i.e., d and dist(z) are the same
 
 
-## projecction onto planes
+## projection onto planes
 RFoptions(zenit=c(-122,   47))
 RFearth2cartesian(coord, system="gnomonic")
 RFearth2cartesian(coord, system="orthographic")
@@ -155,8 +155,7 @@ z1
 }}
 
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

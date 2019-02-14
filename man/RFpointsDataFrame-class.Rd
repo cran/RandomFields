@@ -13,7 +13,7 @@
 \alias{[<-,RFpointsDataFrame-method}
 \alias{[<-,RFpointsDataFrame,ANY,ANY,ANY-method}
 \alias{dimensions,RFpointsDataFrame-method}
-\alias{isGridded,RFpointsDataFrame-method}
+%\alias{isGridded,RFpointsDataFrame-method}
 \alias{variance,RFpointsDataFrame-method}
 %% S3 methods
 \alias{print.RFpointsDataFrame}
@@ -72,7 +72,7 @@
  \code{MARGIN}; to get different slices in a third direction, the
  argument \code{MARGIN.slices} can be used;
  for more details see \code{\link{plot-method}} or type
- \code{method?plot("RFpointsDataFrame")}}
+ \code{method?plot("RFpointsDataFrame")}.}
  \item{show}{\code{signature(x = "RFpointsDataFrame")}:
  uses the \command{show}-method for class  \code{\link[=SpatialPointsDataFrame-class]{SpatialPointsDataFrame}}.}
  \item{print}{\code{signature(x = "RFpointsDataFrame")}:
@@ -115,7 +115,7 @@
  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski, Martin Schlather \email{schlather@math.uni-mannheim.de}}
+\author{Alexander Malinowski, \martin}
 
 
 \seealso{
@@ -125,7 +125,7 @@
  locations on a grid,
  \code{\link[=RFsp-class]{RFsp}} 
 }
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -139,9 +139,7 @@ str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 
 plot(f, nmax=2)
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{classes}
 \keyword{print}

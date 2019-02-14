@@ -14,7 +14,7 @@
 \alias{[<-,RFgridDataFrame-method}
 \alias{[<-,RFgridDataFrame,ANY,ANY,ANY-method}
 \alias{dimensions,RFgridDataFrame-method}
-\alias{isGridded,RFgridDataFrame-method}
+%\alias{isGridded,RFgridDataFrame-method}
 \alias{variance,RFgridDataFrame-method}
 %% S3 methods
 \alias{print.RFgridDataFrame}
@@ -126,7 +126,7 @@
  are defined for the \dQuote{parent}-class
  \command{\link[=RFsp-class]{RFsp}}.
 }
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de}}
+\author{Alexander Malinowski, \martin}
 
 
 \seealso{
@@ -134,7 +134,7 @@
  which is for point 
  locations in higher dimensional spaces,
  \code{\link{RFpointsDataFrame-class}} which is for one-dimensional
- arbitray locations,
+ arbitrary locations,
  \code{\link[=RFsp-class]{RFsp}} 
 }
 
@@ -144,7 +144,7 @@
 \keyword{hplot}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -158,6 +158,4 @@ str(f[2]) ## selects second column of data-slot
 all.equal(f, cbind(f,f)[1:3]) ## TRUE
 
 plot(f, nmax=2)
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

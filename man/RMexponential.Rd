@@ -21,7 +21,7 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
 \arguments{
  \item{phi}{a valid \command{\link{RMmodel}}; either a variogram model or a
  covariance model}
- \item{n}{integer, see formula above. Default is -1.; if the
+ \item{n}{integer, see formula above. Default is -1; if the
  multivariate dimension of the submodel is greater than 1 then only the
  default value is valid.}
 \item{standardised}{logical. If \code{TRUE} then the above formula
@@ -35,7 +35,7 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
  covariance. 
 }
 \value{
- \command{\link{RMexponential}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMexponential}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  See, for instance,
@@ -60,8 +60,7 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
    Springer, New York.
  }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -71,11 +70,10 @@ RMexponential(phi, n, standardised, var, scale, Aniso, proj)
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMexponential(RMfbm(alpha=1))  ## identical to RMexp()
 plot(RMexp(), model=model, type=c("p", "l"), pch=20) 
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

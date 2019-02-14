@@ -12,11 +12,11 @@
 }
 
 
-\section{Implemeted models and methods}{
+\section{Implemented models and methods}{
   Models
 \tabular{ll}{
  \command{\link{RPbrownresnick}} \tab Brown-Resnick process
- using an automatic choice of the below 3 \code{RPbr*} methods\cr
+ using an automatic choice of the 3 \code{RPbr*} methods below \cr
  \command{\link{RPopitz}} \tab  extremal t
  process \cr 
  \command{\link{RPschlather}} \tab extremal Gaussian
@@ -50,15 +50,12 @@ Methods
   }
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 ### currently not programmed
 
@@ -68,12 +65,6 @@ x <-  seq(0, 8, 0.02)
 z <- RFsimulate(RPbrownresnick(model), x=x, n=4)
 plot(z)
 }}
-
-
-
-
-
-
 
 \dontrun{\dontshow{
 ## to do : seq(0, 10, 0.02) oben ist furchtbar langsam. Warum?
@@ -97,16 +88,14 @@ curve(exp(-x) * exp(-exp(-x)), from=-3, to=8, add=TRUE)
 
 
 ## for some more sophisticated models see maxstableAdvanced
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 \seealso{
  \link{RP},
  \command{\link{RMmodel}},
  \command{\link{RPgauss}},
- \command{\link{RPbernoulli}}
- \command{\link{maxstableAdvanced}}
+ \command{\link{RPbernoulli}},
+ \command{\link{maxstableAdvanced}}.
 }
 
 

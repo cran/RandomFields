@@ -28,7 +28,7 @@ RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
 % \item{loggauss}{see  \command{\link{RPgauss}}.}
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{superpos}{integer. number of superposed hyperplane tessellations.
  Default: \code{300}.}
@@ -60,7 +60,7 @@ RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
  }
 
  \item{additive}{logical.
-   If \code{TRUE} independent realisations are added, else
+   If \code{TRUE} independent realizations are added, else
    the maximum is taken.
 
    Default: \code{TRUE}.
@@ -70,20 +70,19 @@ RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
 
 \value{
  \code{RPhyperplane} returns an object of class
- \code{\link[=RMmodel-class]{RMmodel}} 
+ \code{\link[=RMmodel-class]{RMmodel}}. 
 
 }
 
 \references{
  \itemize{
-
  \item Lantuejoul, C. (2002)
  \emph{Geostatistical Simulation: Models and Algorithms.}
  Springer.
- }}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
+ }
 }
 
+\me
 
 \seealso{ \link{Gaussian},
   \link{RP}.
@@ -92,14 +91,12 @@ RPhyperplane(phi, boxcox, superpos, maxlines, mar_distr, mar_param ,additive)
 \keyword{methods}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 model <- RPhyperplane(RMexp(s=2), superpos=1)
 x <- seq(0, 3, 0.04)
 z <- RFsimulate(x=x, x, model=model, n=1)
 plot(z)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

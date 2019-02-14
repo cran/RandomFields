@@ -2,7 +2,7 @@
 \alias{RMpolygon}
 \title{RMpolygon}
 \description{
-  \command{RMpolygon} referes to the indicator function of
+  \command{RMpolygon} refers to the indicator function of
   a typical Poisson polygon, used for instance in the
   (mixed) Storm process.
 }
@@ -11,7 +11,7 @@ RMpolygon(lambda)
 }
 \arguments{
   \item{lambda}{
-    intensity of the hyperplan process creating the random shape function
+    intensity of the hyperplane process creating the random shape function.
 
     The default value is \code{1}.
   }
@@ -20,7 +20,7 @@ RMpolygon(lambda)
 
 
 \seealso{
-  \command{\link{RMball}}
+  \command{\link{RMball}},
   \command{\link{RMspheric}},
   \command{\link{RFsimulate}},
   \command{\link{RMmodel}}.
@@ -30,12 +30,11 @@ RMpolygon(lambda)
   Felix Ballani,
   \url{http://www.mathe.tu-freiberg.de/sto/mitarbeiter/felix-ballani}
   
-  Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
+  \martin
 }
 
 \references{
-  Poission polygons / Poisson hyperplane tesselation
+  Poisson polygons / Poisson hyperplane tessellation
   \itemize{
     \item Lantuejoul, C. (2002)
     \emph{Geostatistical Simulation: Models and Algorithms.}
@@ -44,7 +43,7 @@ RMpolygon(lambda)
 
   Poisson storm process
   \itemize{
-    \item Lantu\'ejoul, C., Bacro, J.N., Bel L. (2011)
+    \item Lantuejoul, C., Bacro, J.N., Bel L. (2011)
     Storm processes and stochastic geometry. \emph{Extremes},
     \bold{14}(4), 413-428.
   }
@@ -61,14 +60,13 @@ RMpolygon(lambda)
 
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 \dontshow{\dontrun{
 model <- RPcoins(shape=RMpolygon())
 x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
 }}
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

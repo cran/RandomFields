@@ -26,13 +26,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 //#include <stdlib.h>
 #include <R_ext/Lapack.h>
-#include "RF.h"
+#include "questions.h"
 #include "primitive.h"
-#include "shape_processes.h"
+#include "Processes.h"
+#include "operator.h"
 
 
-bool equal(cov_model *cov, int i, int j, double *X, int dim)
-{
+bool equal(model *cov, int i, int j, double *X, int dim) {
   double *x, *y, v, dummy, dist;
   int d;
   x = X + i * dim;
@@ -46,81 +46,138 @@ bool equal(cov_model *cov, int i, int j, double *X, int dim)
   return v==1.0;
 }
 
+bool SpatialNugget(model *cov) {
+  /* NOTE THAT ONLY THE PRECEDING DOLLAR IS CHECKED, not 
+     other ones -- so the latter do not influence the behaviour 
+     of the nugget effect 
+  */
+  
+  if (!GLOBAL.internal.allow_duplicated_loc) return true; // all interpreted as
+  //                                 spatial nugget, not as measurement error
+  assert(cov != NULL);
+  // PMI0(cov);
+  // printf("isany = %d %d\n", isAnyDollar(cov), PisNULL(DANISO));
+  assert(isAnyNugget(cov));
+  model *calling = cov->calling;
+  if (calling == NULL) return false;
+  if (equalsNuggetProc(calling)) calling = calling->calling;
+  //printf("calling %.50s %d,%d %d %d\n", NAME(calling), CALLINGNR, MODELNR(calling), GAUSSPROC, CALLINGNR== GAUSSPROC);
+ if (calling == NULL) return false;
+  if (MODELNR(calling) == GAUSSPROC) calling = calling->calling;
+  if (calling == NULL || !isAnyDollar(calling)) return false;
+
+  model *Scale = calling->kappasub[DSCALE],
+    *Aniso = calling->kappasub[DANISO],
+    *User = calling->kappasub[DAUSER];
+  if (!PARAMisNULL(calling, DSCALE) || Scale != NULL)
+    ERR("'scale' does not make sense within a nugget effect. However 'Aniso' does.\nSee the manual.");
+
+  return !(PARAMisNULL(calling, DANISO) && Aniso==NULL &&
+	   PARAMisNULL(calling, DAUSER) && User == NULL &&
+	   PARAMisNULL(calling, DPROJ));
+}
 
 /* nugget effect model */
-void nugget(double *x, cov_model *cov, double *v) {
-  double diag = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
+void nugget(double *x, model *cov, double *v) {
+double same = (*x <= P0(NUGGET_TOL)) ? 1.0 : 0.0;
   int i, endfor,
-    vdim   = cov->vdim[0],
+    vdim   = VDIM0,
     vdimsq = vdim * vdim;
-  assert(cov->vdim[0] == cov->vdim[1]);
+  assert(VDIM0 == VDIM1);
+  assert(cov->Snugget->spatialnugget);
+  //  printf("spatial nugget effect\n");
 
-
-  v[0] = diag;
-  for (i = 1; i<vdimsq; v[i++] = diag) {
+  v[0] = same;
+  for (i = 1; i<vdimsq; v[i++] = same) {
     endfor = i + vdim;
     for (; i<endfor; v[i++] = 0.0);
   }
-  //  printf("%f %f %d\n", *x, *v, PisNULL(NUGGET_TOL));
+  //  printf("%10g %10g %d\n", *x, *v, PisNULL(NUGGET_TOL));
+}
+
+void nuggetnonstat(double *x, double VARIABLE_IS_NOT_USED *y, model *cov,
+		   double *v) {
+  // printf("nonstat nugget\n"); 
+  int i, endfor,
+    dim = ANYDIM, //  OWNXDIM(0)
+    vdim   = VDIM0,
+    vdimsq = vdim * vdim;
+  double same = (*x == 0.0 && y == NULL) || x[dim] == y[dim] ? 1.0 : 0.0;
+  assert(VDIM0 == VDIM1);
+  assert(!cov->Snugget->spatialnugget);
+
+  v[0] = same;
+  for (i = 1; i<vdimsq; v[i++] = same) {
+    endfor = i + vdim;
+    for (; i<endfor; v[i++] = 0.0);
+  }
+  //  printf("%10g %10g %d\n", *x, *v, PisNULL(NUGGET_TOL));
 }
 
 
-void covmatrix_nugget(cov_model *cov, double *v) {
+void covmatrix_nugget(model *cov, double *v) {
   location_type *loc = Loc(cov);
   int 
-    vdim   = cov->vdim[0];
+    vdim   = VDIM0;
   long i,
     n = loc->totalpoints * vdim,
     nP1 = n + 1,
     n2 = n * n;
-  for (i=0; i<n2; v[i++]=0.0);
+  
+  if (cov->Snugget->spatialnugget) BUG;
+  for (i=0; i<n2; v[i++] = 0.0);
   for (i=0; i<n2; i += nP1) v[i]=1.0;
-
-  //  {  int i,j,k, tot=Loc(cov)->totalpoints; printf("\nnugget %d %d %d\n", n, n2, nP1);
-  //   for (k=i=0; i<tot*tot; i+=tot) {
-  //     for (j=0; j<tot; j++) printf("%f ", v[k++]);
-  //    printf("\n");  }}
-
-  ///APMI(cov);
-
 }
 
-char iscovmatrix_nugget(cov_model VARIABLE_IS_NOT_USED *cov) {  
-  return true; 
+char iscovmatrix_nugget(model VARIABLE_IS_NOT_USED *cov) {
+  return !cov->Snugget->spatialnugget;
 }
 
-void Inversenugget(double VARIABLE_IS_NOT_USED *x, cov_model VARIABLE_IS_NOT_USED *cov, double *v) { 
+void Inversenugget(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double *v) { 
   *v = 0.0; ///(*x==1.0) ? 0.0 : RF_INF; //or better 0.0 => error?
 }
 
 
-int check_nugget(cov_model *cov) {
+int check_nugget(model *cov) {
 #define nsel 4
   int  err ; // taken[MAX DIM],
   nugget_param *gp  = &(GLOBAL.nugget);
-
-  
-  assert(cov->nr == NUGGET);
-  ROLE_ASSERT(ROLE_COV || cov->role == ROLE_GAUSS);
+ 
+ 
+  assert(equalsNugget(COVNR));
+  if (!hasAnyEvaluationFrame(cov) && !hasAnyProcessFrame(cov)) ILLEGAL_FRAME;
 
   kdefault(cov, NUGGET_TOL, gp->tol);
   if (PisNULL(NUGGET_VDIM)) {
-
-    if (cov->vdim[0] <= 0) cov->vdim[0] = cov->vdim[1] = 1;
-    kdefault(cov, NUGGET_VDIM, cov->vdim[0]);
+    if (VDIM0 <= 0) VDIM0 = VDIM1 = 1;
+    kdefault(cov, NUGGET_VDIM, VDIM0);
   } else {
-    cov->vdim[0] = cov->vdim[1] = P0INT(NUGGET_VDIM);
+    VDIM0 = VDIM1 = P0INT(NUGGET_VDIM);
+  }
+  cov->matrix_indep_of_x = true;
+  if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
+ 
+  if (cov->Snugget == NULL) {
+    NEW_STORAGE(nugget);
+    cov->Snugget->spatialnugget = SpatialNugget(cov);
   }
 
-  cov->matrix_indep_of_x = true;
-  
-  if ((err = checkkappas(cov)) != NOERROR) return err;
-  
-  return NOERROR;
+  if (!GLOBAL.internal.allow_duplicated_loc) {
+    for (int i=CircEmbed; i<Nothing; i++)
+      cov->pref[i] = (cov->pref[i] > 0) * PREF_BEST;
+  } else if (cov->Snugget->spatialnugget) {
+    assert(CircEmbed == 0);
+    for (int i=CircEmbed; i<Nothing; i++) cov->pref[i] = PREF_NONE;
+    cov->pref[Nugget]= cov->pref[Nothing] = PREF_BEST;
+  } // else standard, see init.cov.cc
+
+  //  printf("%d\n", cov->Snugget->spatialnugget);  APMI(cov);
+
+  RETURN_NOERROR;
 }
 
 
-void range_nugget(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void range_nugget(model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->min[NUGGET_TOL] = 0;
   range->max[NUGGET_TOL] = RF_INF;
   range->pmin[NUGGET_TOL] = 0;
@@ -136,51 +193,114 @@ void range_nugget(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range) {
   range->openmax[NUGGET_VDIM] = true;
 }
 
+Types Typenugget(Types required, model *cov, isotropy_type requ_iso){
+  if (cov->Snugget == NULL) {
+    NEW_STORAGE(nugget);
+    cov->Snugget->spatialnugget = SpatialNugget(cov);
+  }
+  if (cov->Snugget->spatialnugget || equalsCoordinateSystem(requ_iso) ||
+      ( (PisNULL(NUGGET_VDIM) || P0INT(NUGGET_VDIM) == 1) &&
+	isSymmetric(requ_iso)))
+    return TypeConsistency(required, TcfType); 
+    
+  return BadType;
+}
 
-int check_nugget_proc(cov_model *cov) {
+
+bool setnugget(model *cov) {
+  isotropy_type iso = CONDPREVISO(0);
+  if (!isFixed(iso)) return false;
+
+  if (cov->Snugget == NULL) {
+    NEW_STORAGE(nugget);
+    cov->Snugget->spatialnugget = SpatialNugget(cov);
+  }
+
+  if (cov->Snugget->spatialnugget) {
+    set_dom(OWN, 0, XONLY);
+    set_iso(OWN, 0, IsotropicOf(iso));
+  } else {
+    set_dom(OWN, 0, KERNEL);
+    if (PisNULL(NUGGET_VDIM) || P0INT(NUGGET_VDIM) == 1)
+      set_iso(OWN, 0, SymmetricOf(iso));
+    else set_iso(OWN, 0, CoordinateSystemOf(iso));
+  }
+  return true;
+}
+
+bool allowedDnugget(model *cov) {
+  if (cov->Snugget == NULL) {
+    NEW_STORAGE(nugget);
+    cov->Snugget->spatialnugget = SpatialNugget(cov);
+  }
+  bool *D = cov->allowedD;
+  for (int i=FIRST_DOMAIN; i<LAST_DOMAINUSER; D[i++]=false);
+  D[cov->Snugget->spatialnugget ? XONLY : KERNEL] = true;
+  return false;
+}
+  
+bool allowedInugget(model *cov) {
+  if (cov->Snugget == NULL) {
+    NEW_STORAGE(nugget);
+    cov->Snugget->spatialnugget = SpatialNugget(cov);
+  }
+  bool *I = cov->allowedI;
+  for (int i=(int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; I[i++] = false);
+  if (cov->Snugget->spatialnugget) {
+    I[ISOTROPIC] = I[EARTH_ISOTROPIC] = I[SPHERICAL_ISOTROPIC] = true;
+  } else {
+     if (PisNULL(NUGGET_VDIM) ||  P0INT(NUGGET_VDIM) == 1)
+      I[SYMMETRIC] = I[EARTH_SYMMETRIC] = I[SPHERICAL_SYMMETRIC] = true;
+    else
+      I[CARTESIAN_COORD] = I[EARTH_COORD] = I[SPHERICAL_COORD] = true;
+  }
+  return false;
+}
+
+int check_nugget_proc(model *cov) {
 #define nsel 4
-  cov_model *next = cov->sub[0],
+  model *next = cov->sub[0],
     *key = cov->key,
     *sub = (key==NULL) ? next : key,
     *intern;
-  int  err, // taken[MAX DIM],
-    dim = cov->tsdim;
-  //  nugget_param *gp  = &(GLOBAL.nugget);
-  //PMI(cov);
-
-  // print("NUGGET PROC !!!! \n");
+  int err;
 
   ASSERT_CARTESIAN;
-  ROLE_ASSERT(ROLE_GAUSS);
  
-   if (key == NULL) { 
+  nugget_storage *s = cov->Snugget;
+  if (s == NULL) {
+    NEW_STORAGE(nugget);
+    s = cov->Snugget;
+    s->spatialnugget = SpatialNugget(cov);
+  }
+
+  if (key == NULL) { 
     intern = sub;
     while (intern != NULL && isDollar(intern)) {
       intern = intern->key != NULL ? intern->key : intern->sub[0];
     }
-    if (intern->nr != NUGGET) {
-      //printf("cov=%s\n", CovList[intern->nr].name);
-      //APMI(cov);
-      SERR2("'%s' only allows for '%s'", NICK(cov),
-	    CovList[NUGGET].nick);
+    if (!equalsNugget(MODELNR(intern))) {
+      SERR2("'%.50s' only allows for '%.50s'", NICK(cov), DefList[NUGGET].nick);
     }
     if (!PisNULL(NUGGET_PROC_TOL)) 
       kdefault(intern, NUGGET_TOL, P0(NUGGET_PROC_TOL));
     if (!PisNULL(NUGGET_PROC_VDIM)) 
       kdefault(intern, NUGGET_VDIM, P0INT(NUGGET_PROC_VDIM));
-    if ((err = CHECK(next, dim, dim, PosDefType, KERNEL, SYMMETRIC,
-		       SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
-    if (!PARAMisNULL(intern, NUGGET_TOL))
+    assert(equalsCoordinateSystem(OWNISO(0)));
+    if ((err = CHECK_THROUGHOUT(next, cov, PosDefType, KERNEL, OWNISO(0),
+				SUBMODEL_DEP, EvaluationType))
+ 	!= NOERROR) RETURN_ERR(err);
+   if (!PARAMisNULL(intern, NUGGET_TOL))
       kdefault(cov, NUGGET_PROC_TOL, PARAM0(intern, NUGGET_TOL));  
     if (!PARAMisNULL(intern,NUGGET_VDIM))
       kdefault(cov, NUGGET_PROC_VDIM, PARAM0INT(intern, NUGGET_VDIM));
   } else {    // key != NULL  && next != nugget   
     // dann ruft NuggetIntern Nugget auf 
-    intern = cov->nr == NUGGET_USER ? sub : cov;
+    intern = COVNR == NUGGET_USER ? sub : cov;
     while (intern != NULL && isAnyDollar(intern)) {
       intern = intern->key != NULL ? intern->key : intern->sub[0];
     }
-    if (intern == NULL || intern->nr != NUGGET_INTERN) {
+    if (intern == NULL || MODELNR(intern) != NUGGET_INTERN) {
       //PMI(cov);  APMI(intern);
       BUG;
     } else if (intern != cov) {
@@ -193,30 +313,24 @@ int check_nugget_proc(cov_model *cov) {
     if (!PisNULL(NUGGET_PROC_VDIM)) 
       kdefault(intern, NUGGET_PROC_VDIM, P0INT(NUGGET_PROC_VDIM));
     
+    int dim = ANYDIM;
     if ((err = CHECK(key, dim, dim, ProcessType, XONLY, CARTESIAN_COORD,
-		       SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
+		       SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
       // printf("error nug prox %d\n", err);
-      return err;
+      RETURN_ERR(err);
     }
   } 
-   
 
+  VDIM0 = next->vdim[0];  
+  VDIM1 = next->vdim[1];  
+  cov->frame = GaussMethodType;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
 
-  cov->vdim[0] = next->vdim[0];  
-  cov->vdim[1] = next->vdim[1];  
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown)
-    return ERRORDIM;
-  cov->role = ROLE_GAUSS;
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-  
-  // printf("OK nugget\n");
-  EXTRA_STORAGE;
-
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void range_nugget_proc(model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
 
   range->min[NUGGET_PROC_TOL] = 0;
@@ -235,226 +349,236 @@ void range_nugget_proc(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) 
 }
 
 // uses global RANDOM !!!
-int init_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
-  location_type *loc=PrevLoc(cov); 
+int init_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
+#define INTERNAL_ERR -99999
+  location_type *loc=PrevLoc(cov);
+   int dim = ANYDIM;
+ 
   if (cov->ownloc!=NULL) {
     LOC_DELETE(&(cov->ownloc));
     //PMI(cov);
     // ERR("unexpected call of nugget");
   }
-  cov_model *next = cov->sub[0];
-  nugget_storage *s;
+  model *next = cov->sub[0];
+  nugget_storage *s = cov->Snugget;
   int d, //
-    vdim = cov->vdim[0],
+    tot = loc->totalpoints,
+    *refpos = NULL,
     err = NOERROR,
-    origdim = loc->timespacedim,
-    dim = cov->tsdim,
-    dimSq = origdim * origdim;
+    //    origdim = loc->timespacedim,
+    vdim = VDIM0;
   double
-    tol = P0(NUGGET_PROC_TOL);
-  matrix_type anisotype = TypeMdiag;
+    *A = NULL, 
+    *value=NULL, 
+    *ivalue=NULL,
+    *dummy = NULL,
+   tol = P0(NUGGET_PROC_TOL);
+  //  matrix_type anisotype = TypeMdiag;
   
-  ROLE_ASSERT_GAUSS;
-
   cov->method = Nugget;
-  NEW_STORAGE(nugget);
-  s = cov->Snugget;
-  s->pos = NULL;
-  s->red_field = NULL;
 
-  if (next->nr != NUGGET)
-    GERR2("'%s' was called by '%s'", NICK(cov), NICK(next));
+  assert(s!=NULL);
 
-  if ((s->simple = origdim == dim)) {
-    double value[MAXNUGGETDIM], ivalue[MAXNUGGETDIM], dummy[5 * MAXNUGGETDIM], *A;
-    int 
-      ndummy = 5 * origdim;
-    char No = 'N';
-//	Upper = 'U';
-    //      APMI(cov->calling->calling);
-    
-    if (loc->caniso == NULL) {
-      if (loc->grid) {
-	for (d=0; d<dim; d++) 
-	  if (FABS(loc->xgr[d][XSTEP]) <=  tol) {
-	    s->simple = false;
-	    break;
-	  }
-      }
-    } else {    
-      if (dim > MAXNUGGETDIM) {
-       GERR2("dim=%d larger than MAXNUGGETDIM=%d", dim, MAXNUGGETDIM);
-      } 
-      anisotype = Type(loc->caniso, loc->cani_nrow, loc->cani_ncol);
-      A = (double*) MALLOC(dimSq * sizeof(double));
-      AtA(loc->caniso, origdim, origdim, A);
-       
-      //   print("A %e %e %e %e\n", A[0], A[1], A[2], A[3]);
-      //   A[0] = A[1] = A[2] = A[3] = 1.0;
-      
-      F77_NAME(dgeev)(&No, &No, &origdim, A, &origdim, 
-		      value, ivalue, NULL, &origdim, NULL, &origdim,
-		      dummy, &ndummy, &err);
-      if (err != 0) {
-	FREE(A);
-	GERR1("dgeev failed for '%s'", NICK(cov));
-      }
-      for (d=0; d<origdim; d++) {
-	//	print("simple %d %e %e %e  %d\n",
-	//	       d, value[d], ivalue[d],EIGENVALUE_EPS,
-	//       FABS(value[d]) + FABS(ivalue[d]) > EIGENVALUE_EPS);
-	if (!(s->simple = FABS(value[d]) + FABS(ivalue[d]) > EIGENVALUE_EPS))
-	   break;
-      }
-      FREE(A);
-    }
+ 
+  if (!equalsNugget(NEXTNR))
+    GERR2("'%.50s' was called by '%.50s'", NICK(cov), NICK(next));
+  if ((s->datapos = (int*) MALLOC(loc->totalpoints * sizeof(int))) ==NULL) {
+    err=ERRORMEMORYALLOCATION; goto ErrorHandling;
   }
-
-  s->simugrid = loc->grid && isMdiag(anisotype);
-  assert(!s->simugrid || loc->caniso == NULL);
-
-//    print("simple %d %d; %d %d %f\n", s->simple, s->simugrid, PL, PL_IMPORTANT, tol); 
-
-  if (!s->simple) {
-    int *pos, oldpos;
+  
+  if (s->spatialnugget) {//spatial nugget; otherwise measurement error
+    int *pos;
+    //    char No = 'N';
+//	Upper = 'U';
+    
     if (tol==0.0 && PL>=PL_IMPORTANT) {
-      PRINTF("\nThe anisotropy matrix does not have full rank and the parameter 'tol' equals 0. From a theoretical point of view that's fine, but the simulations will probably be odd. Is this really what you want?\n");
+      PRINTF("\nThe anisotropy matrix is given and the parameter 'tol' equals 0. From a theoretical point of view that's fine, but the simulations will probably be odd particularly if 'Aniso' does not have full rank. Is this really what you want?\n");
     }
-    if (s->simugrid) {
+ 
+    matrix_type anisotype = Type(loc->caniso, loc->cani_nrow, loc->cani_ncol);
+    if ( (s->simugrid = loc->grid && isMdiag(anisotype))) { // =  not ==
+      // if (loc->caniso != NULL) BUG;
       // TypeIso und nicht simple genau dann wenn identisch 0
-      s->prod_dim[0] = 1; 
+      ALLC_NEWINT(Snugget, reduced_dim, dim, reduced_dim);     
+      ALLC_NEWINT(Snugget, prod_dim, dim + 1, prod_dim);
+      
+       prod_dim[0] = 1; 
 
       for (d=0; d<dim; d++) {
-	s->reduced_dim[d] = 
-	  FABS(loc->xgr[d][XSTEP]) <= tol ? 1 : loc->xgr[d][XLENGTH];
-	s->prod_dim[d + 1] = s->prod_dim[d] * s->reduced_dim[d];
-	
-      //print("d=%d %d %d %d\n",d,s->prod_dim[0],s->prod_dim[1],s->prod_dim[2]);
+	if (FABS(loc->xgr[d][XSTEP]) > tol) 
+	  reduced_dim[d] = loc->xgr[d][XLENGTH];
+	else if (FABS(loc->xgr[d][XSTEP]) * loc->xgr[d][XLENGTH] <= tol)
+	  reduced_dim[d] = 1;
+	else {
+	  err = INTERNAL_ERR;
+	  warning("'%.50s' is larger than the grid step, but smaller than the whole grid in direction %d. This looks odd.", KNAME(NUGGET_PROC_TOL), d);	
+	}
+	prod_dim[d + 1] = prod_dim[d] * reduced_dim[d];	
       }
+      if (err == NOERROR) {
+	if ((s->red_field=(double *) MALLOC(sizeof(double) * vdim *
+					    prod_dim[dim])) == NULL ||
+	    (s->index = (int*) MALLOC(dim * sizeof(int))) == NULL
+	    ){ err=ERRORMEMORYALLOCATION; goto ErrorHandling; }	
+      }
+    }
 
-      if ((s->red_field=(double *) MALLOC(sizeof(double) * vdim *
-					    s->prod_dim[dim]))
-	  == NULL){
-	  err=ERRORMEMORYALLOCATION; goto ErrorHandling;
-      }
-    } else {
+    if (!s->simugrid || err != NOERROR) {
+      assert(!s->simugrid || err == INTERNAL_ERR);
       int i;
-      if ((pos = (int*) MALLOC(sizeof(int) * loc->totalpoints)) == NULL) {
+      if ((s->pos = pos = 
+	   (int*) MALLOC(sizeof(int) * tot)) == NULL ||
+	  (s->index = (int*) MALLOC(sizeof(int) * tot)) == NULL ||
+	  (refpos = (int*) MALLOC(sizeof(int) * tot)) == NULL
+	  ) {
 	err=ERRORMEMORYALLOCATION; goto ErrorHandling;
       }
-      TransformLoc(cov, false, true, true);
-      loc = Loc(cov); 
-      RU_ordering(loc->x, loc->totalpoints, dim, pos);
 
+      TransformLoc(cov, false, True, true);
+
+      //      PMI(cov);
+
+      loc = Loc(cov);
+      assert(!loc->grid && !loc->Time);
+      Ext_ordering(loc->x, loc->totalpoints, dim, pos);
+      
       //      for (i=0; i<loc->totalpoints; i++) {
-      //	printf("old %f %f pos[i]=%d new=%f %f\n",
+      //	printf("old %10g %10g pos[i]=%d new=%10g %10g\n",
       //	       loc->x[0 + 2 * i], loc->x[1 + 2 * i], pos[i],
       //	       loc->x[0 + 2 * pos[i]], loc->x[1 + 2 * pos[i]]);
       //      }
-
-      oldpos = pos[0];
+      
+      int oldrefpos,
+	last = 0;
+      i = 0;
+      s->datapos[i] = last; // i in 0...totalpoints-1
+      oldrefpos = refpos[last] = i; // last in 0..,[# different locations]
       for (i=1 /* ! */; i<loc->totalpoints; i++) {
-	if (equal(next, oldpos, pos[i], loc->x, cov->tsdim)) {
-	  pos[i]= -1 - pos[i];
-	  // printf("oldpos %d\n", i);
-	} else oldpos=pos[i];
+	if (equal(next, pos[oldrefpos], pos[i], loc->x, dim)) {
+	  s->datapos[i] = s->datapos[oldrefpos];
+	} else {
+	  bool ok = false;
+	  int cur = last; // not last - 1
+	  double x1value = loc->x[pos[i] * dim];
+	  while(cur >= 0 && 
+		(ok = FABS(loc->x[pos[refpos[cur]] * dim] - x1value) < tol) &&
+		//                                        "== tol " not possible
+		!equal(next, pos[ refpos[cur]], pos[i], loc->x, dim)) cur--;
+	  if (cur<0 || !ok) {
+	    // first x-coordinate is ordered, so if the distance is too big,
+	    // i.e. if the refpos first x-coordinate is too small, there is
+	    // no chance to find a close point
+	    // so, in any case, a new location has been found
+	    last++;
+	    s->datapos[i] = last;
+	    oldrefpos = refpos[last] = i;
+	  } else { // a former reference point found:
+	    oldrefpos = refpos[cur];
+	    s->datapos[i] = s->datapos[oldrefpos];
+	  }
+	}
       }
-    s->pos = pos;
+      s->total = last + 1;
+      if ((s->red_field=(double *) MALLOC(sizeof(double) * vdim *
+					  s->total)) == NULL){
+	err=ERRORMEMORYALLOCATION; goto ErrorHandling; 
+      }	
     }
-  }
+  } // ANISO given
   
-  if ((err = FieldReturn(cov)) != NOERROR) goto ErrorHandling;
+  if ((err = ReturnOwnField(cov)) != NOERROR) goto ErrorHandling;
 
  ErrorHandling:
+  FREE(A);
+  FREE(value);
+  FREE(ivalue);
+  FREE(dummy);
+  FREE(refpos);
   cov->simu.active = err == NOERROR;
 
-  return err;
+  RETURN_ERR(err);
 }
-
-void do_nugget(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
+ 
+void do_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   location_type *loc = Loc(cov);
 ///  double sqrtnugget;
-  nugget_storage* s;
+  nugget_storage* s = (nugget_storage*) cov->Snugget;
   long nx, endfor;
-  int v, 
-    vdim = cov->vdim[0];
-  double 
+  int 
+    vdim = VDIM0;
+  double
+    *field = s->red_field,
     *res = cov->rf;
   SAVE_GAUSS_TRAFO;
  
-  s = (nugget_storage*) cov->Snugget;
+ 
 //  sqrtnugget = s->sqrtnugget;
 
-  if (s->simple) {
-    for (nx=0, endfor=loc->totalpoints * vdim; nx<endfor; nx++) {
+  //PMI(cov->calling->calling);
+
+  model *intern = cov->key != NULL ? cov->key : cov->sub[0];
+  assert(intern != NULL);
+  while (intern != NULL && isDollar(intern)) intern = intern->sub[0];
+  assert(intern->Snugget != NULL);
+  
+  if (!intern->Snugget->spatialnugget) {
+   for (nx=0, endfor=loc->totalpoints * vdim; nx<endfor; nx++) {
       res[nx] = (double) GAUSS_RANDOM(1.0);
     }
   } else {
     if (s->simugrid) {
-      int d, i, dim, dimM1, index[MAXNUGGETDIM], *red_dim, *prod_dim;
+      int d, dim, dimM1, *red_dim, *prod_dim;
       long totpnts, idx;
-      double *field;
       totpnts = loc->totalpoints;
-      dim = cov->tsdim;
-      dimM1 = dim -1;
-      field = s->red_field;
+      dim = OWNTOTALXDIM;
+      dimM1 = dim - 1;
       red_dim = s->reduced_dim;
       prod_dim = s->prod_dim;
       endfor = vdim * s->prod_dim[dim]; // not dim-1
 
-      //PrintMethodInfo(meth);
-      
-      //print("reddim %d %d dim=%d %d %d %d endfor=%d\n", red_dim[0], red_dim[1], dim, s->prod_dim[0], s->prod_dim[1], s->prod_dim[2], endfor);
-
-      for (i=0; i<endfor; i++) {
+      for (int i=0; i<endfor; i++) {
 	field[i] = (double) GAUSS_RANDOM(1.0);
       }
-      for (d=0; d<dim; index[d++] = 0);
-      for (i=0; i<totpnts; i++) {
-	for(idx=d=0; d<dim; d++) idx += (index[d] % red_dim[d]) * prod_dim[d];
-	for (v=0; v<vdim; v++) {
+      for (d=0; d<dim; s->index[d++] = 0);
+      for (int i=0; i<totpnts; i++) {
+	for(idx=d=0; d<dim; d++)
+	  idx += (s->index[d] % red_dim[d]) * prod_dim[d];
+	for (int v=0; v<vdim; v++) {
 	  res[i + v] = field[idx + v];
 	}
 	d = 0; 
-	(index[d])++; 
-	while (d < dimM1 && index[d] >= loc->xgr[d][XLENGTH]) { 
+	(s->index[d])++; 
+	while (d < dimM1 && s->index[d] >= loc->xgr[d][XLENGTH]) { 
 	  assert(d<dim); // assert(d>=0);
-	  index[d] = 0; 
+	  s->index[d] = 0; 
 	  d++;   
-	  (index[d])++; 
+	  (s->index[d])++; 
 	}
       }
     } else {
-      int p;
-      ALLOC_EXTRA(dummy, vdim);
-      assert(s->pos[0]>=0);
-      for (v=0; v<vdim; v++) dummy[v] = RF_NA; // just to avoid warnings 
-      //                                           from the compiler
-      for (nx=0; nx<loc->totalpoints; nx++) {
-	if ((p = s->pos[nx]) < 0) p = -1 - p; // if p<0 then take old variable
-	// and -p-1 is the true index 
-	else {
-	  for (v=0; v<vdim; v++)
-	    dummy[v] = GAUSS_RANDOM(1.0);
-	}
-	for (v=0; v<vdim; v++)
-	  res[p + v] = dummy[v];
+      int
+	pts = Gettotalpoints(cov),
+	vdimtotal = s->total * vdim;
+      for (int i=0; i<vdimtotal; field[i++] = GAUSS_RANDOM(1.0));
+      for (nx=0; nx<pts; nx++) {
+	double 
+	  *data = field + s->datapos[nx] * vdim,
+	  *rp = res + s->pos[nx] * vdim;
+	for (int v=0; v<vdim; v++) rp[v] = data[v];
       }
     }
   }
-
   BOXCOX_INVERSE;
-
 }
 
 
-int struct_nugget(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
+int struct_nugget(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   //  PMI(cov, "structhyper");
   if (cov->sub[0]->pref[Nugget] == PREF_NONE) {
-    return ERRORPREFNONE;
+    RETURN_ERR(ERRORPREFNONE);
   }
-  if (cov->role != ROLE_GAUSS) {
+  if (!hasGaussMethodFrame(cov)) {
     SERR("type is not Gaussian.");
   }
-  return NOERROR;
+  RETURN_NOERROR;
 }

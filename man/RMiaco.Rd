@@ -22,7 +22,7 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
 
 
 \value{
- \command{\link{RMiaco}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMiaco}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -37,27 +37,22 @@ RMiaco(nu, lambda, delta, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
- \command{\link{RMmodel}},
+ \command{\link{RMmodel}}.
  }
 
 
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMiaco(nu=1, lambda=1.5, delta=0.5)
 plot(model, dim=2)
 
 x <- seq(0, 10, 0.1)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

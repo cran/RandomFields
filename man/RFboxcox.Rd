@@ -11,15 +11,17 @@ RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)
 \arguments{
  \item{data}{matrix or list of matrices.
  }
- \item{boxcox}{the one or two parameters of the box cox transformation,
-   in the univariate case.
+ \item{boxcox}{the one or two parameters \eqn{(\lambda, \mu)}
+   of the box cox transformation,
+   in the univariate case; if \eqn{\mu} is not given, then \eqn{\mu} is
+   set to \eqn{0}.
    If not given, the globally defined parameters are used, see Details.
    In the \eqn{m}-variate case \code{boxcox} should be a \eqn{2 \times
-   m} matrix.
+   m} matrix. If \eqn{\lambda =\infty} then no transformation is performed.
  }
  \item{vdim}{the multivariate dimensionality of the field;
  }
- \item{inverse}{logical. Wether the inverse transformation should be performed.
+ \item{inverse}{logical. Whether the inverse transformation should be performed.
  }
  \item{ignore.na}{logical. If \code{FALSE} an error message is returned
    if any value of \code{boxcox} is \code{NA}. Otherwise the data are
@@ -34,16 +36,15 @@ RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)
   \command{\link{RFfit}},
   \command{\link{RFsimulate}},
   \command{\link{RFinterpolate}},
-  \command{\link{RFempiricalvariogram}}.
+  \command{\link{RFvariogram}}.
   Always first, the Box-Cox transformation is applied to the data.
   Then the command is performed. The result is back-transformed before
   returned. 
   
 
   If the first value of the transformation is \code{Inf} no
-  transformation is performed (and is identical to \code{boxcox = c(1,
-    0)}).
-  If \code{boxcox} has length 1, then the transformation parameters
+  transformation is performed (and is identical to \code{boxcox = c(1,0)}).
+  If \code{boxcox} has length 1, then the transformation parameter
   \eqn{\mu} is set to  \eqn{0}, which is the standard case.
 }
 
@@ -58,9 +59,7 @@ RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)
   the values for all the sets.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{	
 \link{Bayesian},
  \command{\link{RMmodel}},
@@ -69,7 +68,7 @@ RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)
 }
 
 \references{
-  For the likeilhood correction see 
+  For the likelihood correction see 
   \itemize{
     \item Konishi, S.,  and Kitagawa, G. (2008)
     \emph{Information criteria and statistical modeling.}
@@ -78,10 +77,9 @@ RFboxcox(data, boxcox, vdim = 1, inverse=FALSE, ignore.na=FALSE)
   
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 data(soil)
 str(soil)
@@ -90,10 +88,11 @@ soil <- RFspatialPointsDataFrame(
  data = soil[ , c("moisture", "NO3.N", "Total.N", "NH4.N", "DOC", "N20N")],
  RFparams=list(vdim=6, n=1)
 )
-data <- soil["moisture"]
+dta <- soil["moisture"]
 \dontshow{if (RFoptions()$internal$examples_red) {
   warning("data have been reduced !")
-  All <- 1:7 
+  All <- 1:7
+  rm(soil)
   data(soil)
   soil <- RFspatialPointsDataFrame(
      coords = soil[All, c("x.coord", "y.coord")],
@@ -101,23 +100,21 @@ data <- soil["moisture"]
       "NH4.N", "DOC", "N20N")],
       RFparams=list(vdim=6, n=1)
   )
-  data <- soil["moisture"]
+  dta <- soil["moisture"]
 }}
 
 model <- ~1 + RMplus(RMwhittle(scale=NA, var=NA, nu=NA), RMnugget(var=NA))
 
-\dontrun{
+\dontshow{\dontrun{
 ## Assuming log-Gaussian Data
-print(fit <- RFfit(model, data=data, loggaus=TRUE))
-}
+print(fit <- RFfit(model, data=dta, loggaus=TRUE))
+}}
 
 ## main Parameter in the Box Cox transformation to be estimated
-print(fit <- RFfit(model, data=data, boxcox=NA))
+print(fit <- RFfit(model, data=dta, boxcox=NA))
 
+\dontshow{FinalizeExample()}}
 
-\dontshow{FinalizeExample()}
-
-}
 \keyword{spatial}
 
 

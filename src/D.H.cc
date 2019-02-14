@@ -138,6 +138,10 @@ SEXP periodogram(SEXP Dat, // data
     taper[j] = taper_fact * ( 1.0 - cos (cos_factor * (double) (j + 1)));
   }
 
+
+  if ((err = fastfourierInit(&part, 1, &FFT)) != NOERROR) goto ErrorHandling;
+
+
   for (segment_r=segm_l=r=0; r<repet; r++, segment_r+=len, segm_l+=delta_l) {
     // repet
     for (seg_dat=0; seg_dat<=lenMpart; seg_dat+=shift) {
@@ -150,9 +154,8 @@ SEXP periodogram(SEXP Dat, // data
       if ((err=fastfourier(compl_number,
 			   &part,   // length
 			      1,      // dim 
-			      (total_seg==0), // start? 
 			      false,  // inverse?  
-			   &FFT))!=0) {    // aux 
+			   &FFT)) != NOERROR) {  
 	goto ErrorHandling;
       }
       for (j=segm_l, k=start_k; k<end_k; j++, k+=2) {
@@ -168,7 +171,7 @@ SEXP periodogram(SEXP Dat, // data
   FREE(taper);
   FFT_destruct(&FFT);
   UNPROTECT(1);
-  if (err != NOERROR) ERR("error occured when calculating the periodogram");
+  if (err != NOERROR) RFERROR("error occured when calculating the periodogram");
   for (j=0; j<end_l; j++) lambda[j] *= n_inv;
   return Lambda;
 }
@@ -245,7 +248,7 @@ SEXP detrendedfluc(SEXP Dat, // data
   UNPROTECT(1);
   return Lvar;
 }
-
+ 
 
 // range method
 #define FRACT_MAXDIM 10

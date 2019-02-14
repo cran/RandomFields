@@ -14,7 +14,7 @@
 \description{ Class for all functions of this package with prefix \code{RM},
   i.e. all functions that generate objects of class
   \code{\link[=RMmodel-class]{RMmodel}}; direct extension of
-  class \code{\link[methods:function-class]{function}}
+  class \code{\link[methods:function-class]{function}}.
 }
 
  
@@ -24,10 +24,10 @@
 
 \section{Slots}{
  \describe{
- \item{\code{.Data}:}{function; the genuine funtion that generates an
- objects of class
+ \item{\code{.Data}:}{function; the genuine function that generates an
+ object of class
  \command{\link[=RMmodel-class]{RMmodel}} }
- \item{\code{type}:}{character string; specifies the cathegory of
+ \item{\code{type}:}{character string; specifies the category of
  RMmodel-function, see Details} 
  \item{\code{domain}:}{character string; specifies whether the 
    corresponding function(s) depend on 1 or 2 variables, see Details} 
@@ -47,7 +47,7 @@
  \item{\code{maxdim}:}{numeric; the maximal dimension, in which the
  corresponding model is a valid covariance model, see Details} 
  \item{\code{vdim}:}{numeric; dimension of the value of the random
- fiels at a single fixed location, equals 1 in most cases, see
+ field at a single fixed location, equals 1 in most cases, see
  Details} 
  }
 }
@@ -58,13 +58,13 @@
 
 \section{Methods}{
  \describe{
- \item{show}{\code{signature(x = "RMmodel")}: returns the structure
+ \item{show}{\code{signature(x = CLASS_CLIST)}: returns the structure
  of \code{x}}
- \item{print}{\code{signature(x = "RMmodel")}: identical with
+ \item{print}{\code{signature(x = CLASS_CLIST)}: identical with
  \command{show}-method}
- \item{[}{\code{signature(x = "RMmodelgenerator")}: enables accessing
+ \item{[}{\code{signature(x = CLASS_RM)}: enables accessing
  the slots via the "["-operator, e.g. x["maxdim"]}
- \item{[<-}{\code{signature(x = "RMmodelgenerator")}: enables replacing
+ \item{[<-}{\code{signature(x = CLASS_RM)}: enables replacing
  the slots via the "["-operator}
  }
 }
@@ -93,7 +93,7 @@
      \item{\code{'point-shape function'}:}{functions of that type
        determine the distribution of points in space}
      \item{\code{'distribution family'}:}{
-       e.g. (multivariate) uniform distribtion, normal distribution,
+       e.g. (multivariate) uniform distribution, normal distribution,
        etc.,
        defined in \pkg{RandomFields}.
        See \link{RR} for a complete list.
@@ -103,7 +103,7 @@
      \item{\code{'interface'}:}{indicates internal models which are usually
        not visible for the users. These functions are the internal
        representations of \command{\link{RFsimulate}},
-       \command{\link{RFcov}}, etc.. See \link{RF} for a complete list.
+       \command{\link{RFcov}}, etc. See \link{RF} for a complete list.
      }%\item{\code{'undefinded'}:}{}
      \item{\code{'undefined'}:}{some models can take different types,
  depending on the parameter values and/or the submodels }
@@ -115,10 +115,9 @@
  \item{\code{domain}:}{can be one of the following strings:
    \describe{
      \item{\code{'single variable'}:}{Function depending on a single variable}
-     \item{\code{'kernel'}:}{model refers to a kernel, e.g., an
-       non-stationary convariance function} 
+     \item{\code{'kernel'}:}{model refers to a kernel, e.g. a non-stationary covariance function} 
      \item{\code{'framework dependent'}:}{domain depends on the calling model}
-     \item{\code{'mismatch'}:}{this option is used only internaly and should never appear}
+     \item{\code{'mismatch'}:}{this option is used only internally and should never appear}
    }
  }
  \item{\code{isotropy}:}{can be one of the following strings:
@@ -144,7 +143,7 @@
        isotropy of the model depends on the parameters passed to the
        model; in particular parameters may be submodels if an operator model
        is considered}
-    \item{\code{'<mismatch>'}:}{this option is used only internaly and should never appear}
+    \item{\code{'<mismatch>'}:}{this option is used only internally and should never appear}
    }
  }
  \item{\code{operator}:}{if \code{TRUE}, the model requires at least
@@ -161,8 +160,8 @@
        should not be used}
      \item{\code{'parameter dependent monotonicity'}:}{some models change
  their properties according to the parameters}
-     \item{\code{'not monotone'}:}{none of the above cathegories; either
- the function is not monotone or properties are not known}
+     \item{\code{'not monotone'}:}{none of the above categories; either
+ the function is not monotone or properties are unknown}
      \item{\code{'monotone'}:}{isotone or antitone}
      \item{\code{'Gneiting-Schaback class'}:}{function belonging to
  Euclid's hat in Gneiting's 1999 paper} 
@@ -184,8 +183,8 @@
  \item{\code{maxdim}:}{if a positive integer, \code{maxdim} gives the
  maximum dimension in which the model is a valid covariance model,
  can be \code{Inf};
- \code{vdim=-1} means that the actual maxdim depends on the
- parameters; \code{vdim=-2} means that the actual maxdim depends on
+ \code{maxdim=-1} means that the actual maxdim depends on the
+ parameters; \code{maxdim=-2} means that the actual maxdim depends on
  the submodel(s)} 
  \item{\code{vdim}:}{if a positive integer, \code{vdim} gives the
  dimension of the random field, i.e. univariate, bi-variate, ...;
@@ -195,9 +194,7 @@
  }
 }
 
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de};
-  Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\author{Alexander Malinowski, \martin}
 
 
 \references{
@@ -216,9 +213,8 @@
 \keyword{classes}
 \keyword{hplot}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 RFgetModelNames()
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

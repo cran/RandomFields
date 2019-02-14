@@ -5,12 +5,10 @@
 %\alias{Schlather}
 \title{On some covariance models based on normal scale mixtures}
 \description{
- Here the code of the paper on \sQuote{On some covariance models based on normal scale mixtures} is given.
+ Here, the code of the paper on \sQuote{On some covariance models based on normal scale mixtures} is given.
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
-}
+\me
 \references{
  \itemize{ 
  \item
@@ -21,22 +19,21 @@
 
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 ### Example 10 in Schlather (2010).
 ## The field below has more than 80 million points. So the simulation
 ## takes a while
-y <- x <- seq(0, 10, len=256)
+y <- x <- seq(0, 10, len=256) ## currently does not work
 T <- c(0, 0.02, 1275)
 col <- c(topo.colors(300)[1:100], cm.colors(300)[c((1:50) * 2,
          101:150)])
-\dontshow{if(RFoptions()$internal$examples_red){warning("reduced x,y,T")
+%\dontshow{if(RFoptions()$internal$examples_red){warning("reduced x,y,T")
 y <- x <- seq(0, 10, len=5)
 T <- c(0, 0.02, 4)
-}}
+%}}
 model <- RMcoxisham(mu=c(1, 1), D=matrix(nr=2, c(1, 0.5, 0.5, 1)),
                     RMwhittle(nu=1))
 z <- RFsimulate(model, x, y, T=T, sp_lines=1500, every=10)
@@ -98,11 +95,7 @@ Plot(basicname, x, y, z, col=col, T=T, pixels=256, zi=0.5 + dim(z)[2]/2,
 save(file=paste(basicname, "/", basicname, ".dat", sep=""), z) # OK
 }}
 
-
-\dontshow{FinalizeExample()}
-
-
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

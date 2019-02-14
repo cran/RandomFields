@@ -5,11 +5,11 @@
  \command{\link{RMbicauchy}} is a bivariate stationary isotropic covariance model
  whose corresponding covariance function only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between
- two points
+ two points.
 % and is given for \eqn{i,j \in \{1,2\}}{i,j = 1,2} by
 % \deqn{C_{ij}(r)=[to be done].}
 
- For constraints on the constants see details.
+ For constraints on the constants see Details.
 }
 
 \usage{
@@ -39,23 +39,19 @@ RMbicauchy(alpha, beta, s, rho, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcauchy}},
- \link{Multivariate RMmodels},
+ \link{Multivariate RMmodels}.
 }
-
 
 \keyword{spatial}
 \keyword{models}
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## todo
 
 \dontshow{FinalizeExample()}

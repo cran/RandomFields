@@ -1,33 +1,39 @@
 \name{RFformula}
 \alias{RFformula}
+\alias{RMformula}
 
 \title{RFformula - syntax to design random field models with trend
  or linear mixed models}
 
-\description{It is described how to create a formula, which can
- e.g. be used as an argument of \command{\link{RFsimulate}} and
- \command{\link{RFfit}} to simulate and to fit data accordingly to the
+\description{It is described how to create a formula, which, for example, can be used as an argument of \command{\link{RFsimulate}} and
+ \command{\link{RFfit}} to simulate and to fit data according to the
  model described by the formula.
 
  In general, the created formula serves two purposes:
  \itemize{
  \item to describe models in the \dQuote{Linear Mixed
- Models}-framework including fixed and random effects
+ Models}-framework %including fixed and random effects
  \item to define models for random fields including trend surfaces from
  a geostatistical point of view.
  }
 
- Thereby, fixed effects and trend surfaces are adressed via
+ Thereby, fixed effects and trend surfaces can be adressed via
  the expression \command{\link{RMfixed}} and the function
- \command{\link{RMtrend}}; the covariance structures of the zero-mean
- multivariate normally distributed random effects and random field
+ \command{\link{RMtrend}}. In simple cases, the trend can also
+ be given in a very simple, see the examples below.
+ The covariance structures of the zero-mean
+ multivariate normally distributed %random effects and
+ random field
  components are adressed by objects of class \code{\link[=RMmodel-class]{RMmodel}}, which
  allow for a very flexible covariance specification.
+
+ See \link{RFformulaAdvanced} for rather complicated model definitions.
 }
 
 \details{ 
  The formula should be of the type
- \deqn{response ~ fixed effects + random effects + error term}
+ \deqn{response ~ fixed effects %+ random effects
+   + error term}
  or 
  \deqn{response ~ trend + zero-mean random field + nugget effect,}
  respectively.
@@ -48,41 +54,40 @@
  \code{X@RMfixed(beta=NA)} by default (and \eqn{\beta} is estimated
  provided that the formula is used in \command{\link{RFfit}}).
  
- \item random effects/zero-mean random field:\cr
- optional, should be a sum (using \command{\link[=RMplus]{+}})%%check link
- of components of the form \code{Z@model}
- where \eqn{Z} is a design matrix and \code{model} is an object of
- class \code{\link[=RMmodel-class]{RMmodel}}.\cr
- \code{Z@model} describes a vector of random effects which is
- normally distributed with zero mean and covariance matrix \eqn{Z
- \Sigma Z^T} where \eqn{Z^T} is the transpose of \eqn{Z} and
- \eqn{\Sigma} is the covariance matrix according to \code{model}.\cr
- Note that a random effect/random fluctuation of the form
- \code{model} is viewed as \code{I@model} where \eqn{I} is the
- identity matrix of corresponding dimension.
+% \item random effects/zero-mean random field:\cr
+% optional, should be a sum (using \command{\link[=RMplus]{+}})%%check link
+% of components of the form \code{Z@model}
+%  where \eqn{Z} is a design matrix and \code{model} is an object of
+%class \code{\link[=RMmodel-class]{RMmodel}}.\cr
+%\code{Z@model} describes a vector of random effects which is
+% normally distributed with zero mean and covariance matrix \eqn{Z
+% \Sigma Z^T} where \eqn{Z^T} is the transpose of \eqn{Z} and
+% \eqn{\Sigma} is the covariance matrix according to \code{model}.\cr
+% Note that a random effect/random fluctuation of the form
+% \code{model} is viewed as \code{I@model} where \eqn{I} is the
+% identity matrix of corresponding dimension.
  
  \item error term/nugget effect\cr
  optional, should be of the form \code{\link{RMnugget}(...)}.
  \command{\link{RMnugget}} describes a vector
  of iid Gaussian random variables.
 
- Please note that the character \dQuote{@} in the RFformula-context can only
- be used to multiply design-matrices with corresponding vectors of
- fixed or random effects, whereas in the context of S4-classes \dQuote{@} is
- used to access slots of corresponding objects.
+% Please note that the character \dQuote{@} in the RFformula-context can only
+% be used to multiply design-matrices with corresponding vectors of
+% fixed or random effects, whereas in the context of S4-classes \dQuote{@} is
+% used to access slots of corresponding objects.
  }
  
 }
 
 \section{IMPORTANT}{
-  Note that in formula constants are interpreted as part of a mixed
+  Note that in formula constants are interpreted as part of a linear
   model, i.e. the corresponding parameter has to be estimated
-  (e.g. \code{~ 1 + ...}) whereas models not given as formula the
-  parameters to be estimated must be given explicitely.
+  (e.g. \code{~ 1 + ...}) whereas in models not given as formula the
+  parameters to be estimated must be given explicitly.
 }
 
-\note{ %to do: make the following point cleares
-  
+\note{ %to do: make the following point cleares  
   (additional) argument names should always start with a capital
   letter. Small initial letters are reserved  for \command{\link{RFoptions}}.
 }
@@ -102,23 +107,20 @@
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}},
  \code{\link[=RandomFields-package]{RandomFields}}.}
 
-
-
 \keyword{spatial}
 
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 RFoptions(modus_operandi="sloppy")
 
 ##############################################################
@@ -139,16 +141,25 @@ plot(simulated)
 
 
 # an alternative code to the above code:
-simulated2 <- RFsimulate(model = ~ 1@RMfixed(beta=M) +
-               RMexp(var=V, scale=S),x=x, y=y, V=V, S=S, M=M)
+model <- ~ Mean + RMexp(var=Var, scale=Sc)
+simulated2 <- RFsimulate(model = model,x=x, y=y, Var=V, Sc=S, Mean=M)
 plot(simulated2)
+
+
+# a third way of specifying the model using the argument 'param'
+# the initials of the variables do not be captical letters
+model <- ~ M + RMexp(var=var, scale=sc)
+simulated3 <- RFsimulate(model = model,x=x, y=y,
+                         param=list(var=V, sc=S, M=M))
+plot(simulated3)
+
 
 # Estimate parameters of underlying covariance function via
 # maximum likelihood
-model.na <- ~ 1@RMfixed(beta=NA) + RMexp(var=NA, scale=NA)
+model.na <- ~ NA + RMexp(var=NA, scale=NA)
 fitted <- RFfit(model=model.na, data=simulated)
 
-# compare sample mean of data with ML estimate:
+# compare sample mean of data with ML estimate, which is very similar:
 mean(simulated@data[,1]) 
 fitted
 
@@ -243,9 +254,6 @@ model.na <- ~ RMtrend(plane=matrix(c(NA,NA,NA,NA), ncol=2)) +
 fit <- RFfit(model=model.na, data=multi.simulated)
 }}
 
-
-
 \dontshow{RFoptions(modus_operandi="normal")}
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

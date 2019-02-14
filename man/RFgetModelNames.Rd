@@ -26,21 +26,22 @@
 
 \usage{
 
-RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
-                isotropy = RC_ISONAMES, operator = c(TRUE, FALSE),
+RFgetModelNames(type = RC_TYPE_NAMES, domain = RC_DOMAIN_NAMES,
+                isotropy = RC_ISO_NAMES, operator = c(TRUE, FALSE),
                 monotone = RC_MONOTONE_NAMES,
                 implied_monotonicities = length(monotone) == 1,
                 finiterange = c(TRUE, FALSE, NA),
                 valid.in.dim = c(1, Inf), 
                 vdim = c(1, 5),
                 group.by,
+                exact.match = !missing(group.by),
                 simpleArguments = FALSE,
                 internal, newnames)
 }
 
 \arguments{
   \item{type, domain, isotropy, operator, monotone, finiterange, vdim}{
-    see \link{constants} for the definition of \code{RC_TYPENAMES},
+    see \link{constants} for the definition of \code{RC_TYPE_NAMES},
     \code{RC_DOMAIN_NAMES}, etc.
     See also \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
   }
@@ -58,7 +59,11 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
     If \code{group.by} is not given, the result is grouped by
     \code{'type'} if more than one type is given.    
   }
-  \item{simpleArguments}{logical. if \code{TRUE}, only models
+  \item{exact.match}{logical. If not \code{TRUE}, then
+    all categories that are subclasses or might match are
+    show as well.
+  }
+  \item{simpleArguments}{logical. If \code{TRUE}, only models
     are considered whose arguments are all integer or real valued.
     }
   \item{internal, newnames}{both logical;
@@ -84,7 +89,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
     The model names of version 2 of \pkg{RandomFields} and earlier
     can still be used in the model definitions. Namely when the
     list notation is chosen; see  \link{Advanced RMmodels} for the
-    latter. If the \code{internal} or \code{newnames} is given, then
+    latter. If \code{internal} or \code{newnames} is given, then
     these old names are shown; if \code{newnames=TRUE} then also the
     usual names are shown.
     Default: \code{FALSE}.
@@ -92,7 +97,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
     In fact, both internal and public
     models can have different variants implemented.
     These variants are also shown if
-    \code{internal} has a value greater than or equal to\code{2},
+    \code{internal} has a value greater than or equal to \code{2},
     \item \code{operator}:\cr
     see above.
   }
@@ -113,7 +118,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
  given, then  types included in \code{type} are also returned.
  E.g. if \code{type="variogram"}  and  \code{group.by} is not given
  then only models are returned that are negative definite.
- Howeveralso positive definite functions and tail correlaton
+ However, also positive definite functions and tail correlaton
  functions are returned if \code{"type"} is included in \code{group.by}.
  
  \describe{
@@ -150,12 +155,12 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
      model has finite range, e.g. \command{\link{RMcircular}} or
      \command{\link{RMnugget}} have covariances with finite range; see
      \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
-     \code{NA} is used if the finiteness depends on the submodel, 
+     \code{NA} is used if the finiteness depends on the submodel. 
    }
    
    \item{\code{valid.in.dim}}{If \code{valid.in.dim=n} is
      passed, all models which are valid in dimension \eqn{n} are
-     displayed. Otherwise \code{valid.in.dim} should be bivariate vector
+     displayed. Otherwise \code{valid.in.dim} should be a bivariate vector
      giving the range of requested dimensions.
    }
    
@@ -165,7 +170,7 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
      \eqn{n} is also valid in dimension \eqn{n-1};
      \code{maxdim=-1} means that the maximal possible dimension depends
      on the parameters of the \command{\link{RMmodel}} object;
-     \code{vdim=-2} means that the maximal possible dimension is
+     \code{maxdim=-2} means that the maximal possible dimension is
      adopted from the called submodels;
      see also
      \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
@@ -219,19 +224,17 @@ RFgetModelNames(type = RC_TYPENAMES, domain = RC_DOMAIN_NAMES,
 %\references{
 %}
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \seealso{
   \link{constants},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
  \code{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
- \link{RC_DOMAIN_NAMES}, \link{RC_ISONAMES}
+ \link{RC_DOMAIN_NAMES}, \link{RC_ISO_NAMES}
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -239,10 +242,13 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 RFgetModelNames()
 
 # any kind of positive definite functions
-RFgetModelNames(type="positive definite")
+RFgetModelNames(type="positive definite", exact.match=TRUE)
+\dontrun{RFgetModelNames(type="positive definite")}
 
 # get a list of names of all stationary models
-RFgetModelNames(type="positive definite", domain="single variable")
+RFgetModelNames(type="positive definite", domain="single variable",
+                 exact.match=TRUE)
+\dontrun{RFgetModelNames(type="positive definite", domain="single variable")}
 
 # get a vector of all model names
 RFgetModelNames(group.by=NULL)
@@ -266,13 +272,11 @@ RFgetModelNames(type=c("tail correlation function",
 
 # processes and covariance function grouped by the stationarity
 # argument and subsequently grouped by the isotropy argument
+
 str(RFgetModelNames(type=c("positive definite", "variogram", "process"),
                     group.by=c("type", "domain", "isotropy")))
 }}
 
+\dontshow{FinalizeExample()}}
 
-
-\dontshow{FinalizeExample()}
-
-}
 \keyword{spatial}

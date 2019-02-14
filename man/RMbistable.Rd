@@ -1,26 +1,28 @@
 \name{RMbistable}
 \alias{RMbistable}
-\title{Bivariate stableModel}
+\title{Bivariate stable Model}
 \description{
  \command{\link{RMbistable}} is a bivariate stationary isotropic covariance model
  whose corresponding covariance function only depends on the distance
  \eqn{r \ge 0}{r \ge 0} between
- two points
+ two points.
 % and is given for \eqn{i,j \in \{1,2\}}{i,j = 1,2} by
 % \deqn{C_{ij}(r)=[to be done].}
 
- For constraints on the constants see details.
+ For constraints on the constants see Details.
 }
 
 \usage{
-RMbistable(alpha, s, cdiag, rho, var, scale, Aniso, proj)
+RMbistable(alpha, s, cdiag, rho, rhored, betared, alphadiag, var, scale, Aniso, proj)
 }
 \arguments{
- \item{alpha}{[to be done]}
+ \item{alpha,alphadiag}{[to be done]}
  \item{s}{a vector of length 3 of numerical values; each entry
  positive; the vector \eqn{(s_{11},s_{21},s_{22})}}
  \item{cdiag}{[to be done]}
- \item{rho}{[to be done]
+ \item{rho,rhored}{[to be done]
+ }
+ \item{betared}{to do
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
@@ -39,11 +41,11 @@ RMbistable(alpha, s, cdiag, rho, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \command{\link{RMstable}},
- \link{Multivariate RMmodels},
+ \link{Multivariate RMmodels}.
 }
 
 
@@ -52,10 +54,10 @@ RMbistable(alpha, s, cdiag, rho, var, scale, Aniso, proj)
 
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## todo
 
 \dontshow{FinalizeExample()}

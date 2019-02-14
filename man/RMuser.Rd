@@ -1,8 +1,9 @@
 \name{RMuser}
 \alias{RMuser}
-\title{User Defined Function}
+\alias{RM_USER}
+\title{User-Defined Function}
 \description{
-  \command{RMuser} allows for a user defined covariance function, variogram
+  \command{RMuser} allows for a user-defined covariance function, variogram
   model, or arbitrary function.
 
   \bold{RMuser is very slow -- users should avoid this model whenever possible.}
@@ -10,7 +11,7 @@
 }
 \usage{
 RMuser(type, domain, isotropy, vdim, beta,
-       varnames = c("x", "y", "z", "T"), fctn, fst, snd, envir,  
+       coordnames = c("x", "y", "z", "T"), fctn, fst, snd, envir,  
        var, scale, Aniso, proj)
 }
 \arguments{
@@ -49,17 +50,17 @@ RMuser(type, domain, isotropy, vdim, beta,
     given function; the dimension must match.
     Defining a vector valued function and \code{beta} as a vector,
     an arbitrary linear model can be defined. Estimation of \code{beta}
-    is, however,  not established yet.
+    is, however, not established yet.
   }
-  \item{varnames}{
+  \item{coordnames}{
     Just the names of the variables. More variable names might
     be given here than used in the function.
-    See Detail for the interpretation of variables.
+    See Details for the interpretation of variables.
   }
-  \item{fctn, fst, snd}{a user defined function and its first,
+  \item{fctn, fst, snd}{a user-defined function and its first,
     second and third derivative, given as
     \code{quote(myfunction(x))} or as 
-    \code{quote(myfunction(x, y))}, see Details an Examples below.
+    \code{quote(myfunction(x, y))}, see Details and Examples below.
   }
   \item{envir}{the environment where the given function shall be evaluated}
   \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
@@ -73,10 +74,10 @@ RMuser(type, domain, isotropy, vdim, beta,
   scalar quantities.
  
   Alternatively, the function might depend only on the first argument
-  given by \code{varnames}.
+  given by \code{coordnames}.
 
   A kernel should depend on the first two arguments
-  given by \code{varnames}.
+  given by \code{coordnames}.
 }  
 
 \value{
@@ -99,8 +100,8 @@ RMuser(type, domain, isotropy, vdim, beta,
     Hence, none of these names might be used for
     other arguments within these functions.
     \item
-    In the user-defined functions the models of
-    \pkg{RandomFields} are not recognised, so they cannot be included
+    In user-defined functions, the models of
+    \pkg{RandomFields} are not recognized, so they cannot be included
     in the function definitions.
     
     \item
@@ -109,26 +110,24 @@ RMuser(type, domain, isotropy, vdim, beta,
   }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{
   \command{\link{RMcovariate}},
   \command{\link{RMfixcov}},
   \command{\link{RFfit}},
-  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
+  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}},
   \command{\link{RMmodel}},
   \command{\link{RFsimulate}},
-  \link{RC_ISONAMES}, \link{RC_DOMAIN_NAMES}
+  \link{RC_ISO_NAMES}, \link{RC_DOMAIN_NAMES}.
 }
 
 \keyword{spatial}
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 ## Alternatively to 'model <- RMexp()' one may define the following
 ## (which is, however, much slower and cannot use all features of
@@ -145,13 +144,11 @@ plot(model)
 z <- RFsimulate(model, x=x, y=y)
 plot(z)
 
-## the kernel, which is the scalar product (not programmed (yet) in
-## RandomFields) %to do
+## the kernel, which is the scalar product (see RMprod)
 model <- RMnugget(var=1e-5) +
          RMuser(type="positive definite", domain="kernel",
                 iso="symmetric", fctn=sum(x * y))
 x <- y <- seq(1, 10, len=35)
 z <- RFsimulate(model, x=x, y=y, n=6, svdtol=1e-9) 
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

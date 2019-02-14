@@ -5,15 +5,13 @@
 %\alias{pars.model}
 %\alias{whole}
 %\alias{whole.model}
-\title{Covariance models for multivariate and vector valued fields}
+\title{Covariance models for multivariate and vector-valued fields}
 \description{
- Here the code of the paper on \sQuote{Analysis, simulation and prediction of
- multivariate random fields with package RandomFields}
+ Here, the code of the paper on \sQuote{Analysis, simulation and prediction of
+ multivariate random fields with package RandomFields} is given.
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
-}
+\me
 \references{
   Schlather, M., Malinowski, A., Menck, P.J., Oesting, M. and
     Strokorb, K. (2015) 
@@ -26,8 +24,7 @@
 
   
 
-\examples{
-\dontshow{StartExample()}
+\examples{\dontshow{StartExample()}
 \dontshow{if (RFoptions()$internal$examples_reduced) RFoptions(modus_operandi="sloppy")}
 \dontrun{
                ###########################################
@@ -68,7 +65,7 @@ plot(model, dim = 2, xlim = c(-5, 5), main = "Covariance function",
 
 ## Fig. 4: latent dimension model
 ## MARGIN.slices has the effect of choosing the third dimension
-##               as latend dimension
+##               as latent dimension
 ## n.slices has the effect of choosing a bivariate model
 model <- RMgencauchy(alpha = 1.5, beta = 3)
 simu <- RFsimulate(model, x, y, z = c(0,1))
@@ -82,7 +79,7 @@ simu <- RFsimulate(model, x, y)
 plot(simu)
 
 
-## Fig. 6: anisotropic linear model of coregionalisaton
+## Fig. 6: anisotropic linear model of coregionalization
 M1 <- c(0.9, 0.6)
 M2 <- c(sqrt(0.19), 0.8)
 A1 <- RMangle(angle = pi/4, diag = c(0.1, 0.5))
@@ -93,7 +90,7 @@ simu <- RFsimulate(model, x, y)
 plot(simu)
 
 
-## Fig. 7: random vector field whose path are curl free
+## Fig. 7: random vector field whose paths are curl free
 ## A 4-variate field is simulated, where the first component
 ## refers to the potential field, the second and third component
 ## to the curl free vector field and the forth component to the
@@ -153,7 +150,7 @@ whole.model <- nug + RMbiwm(nudiag = c(NA, NA), nured = NA, s = rep(NA, 3),
 #################################
 ## model fitting and testing   ## 
 #################################
-## 'parsimoneous model'
+## 'parsimonious model'
 ## fitting takes a while ( > 10 min)
 pars <- RFfit(pars.model, distances = Dist.mat, dim = 3, data = PT)
 print(pars)
@@ -175,7 +172,7 @@ RFratiotest(nullmodel = pars, alternative = whole)
 #################################
 ## kriging                     ##
 #################################
-## First the coordindates are projected on a plane
+## First, the coordinates are projected on a plane
 a <- colMeans(weather[All , 3 : 4]) * pi / 180
 P <- cbind(c(-sin(a[1]), cos(a[1]), 0),
            c(-cos(a[1]) * sin(a[2]), -sin(a[1]) * sin(a[2]), cos(a[2])),
@@ -183,13 +180,13 @@ P <- cbind(c(-sin(a[1]), cos(a[1]), 0),
 x <- RFearth2cartesian(weather[All , 3 : 4])
 plane <- (t(x) \%*\%P)[ , 1 : 2]
 
-## here, kriging is performed on a rectangular that covers the 
+## here, kriging is performed on a rectangular that covers
 ## the projected points above. The rectangular is approximated
 ## by a grid of length 200 in each direction.
 n <- 200 
 r <- apply(plane, 2, range)
-data <- cbind(plane, weather[All , 1 : 2])
-z <- RFinterpolate(pars, data = data, dim = 2,
+dta <- cbind(plane, weather[All , 1 : 2])
+z <- RFinterpolate(pars, data = dta, dim = 2,
                    x = seq(r[1, 1], r[2, 1], length = n),
                    y = seq(r[1, 2], r[2, 2], length = n),
                    varunits = c("Pa", "K"), spConform = TRUE)
@@ -198,11 +195,10 @@ plot(z)
 
 
 \dontshow{RFoptions(modus_operandi="normal")}
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \seealso{
- \link{weather}, \link{SS12}, \link{S10}
+ \link{weather}, \link{SS12}, \link{S10}.
 }
 
 \keyword{spatial}

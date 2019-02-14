@@ -2,7 +2,7 @@
  Authors 
  Martin Schlather, schlather@math.uni-mannheim.de
 
- Copyright (C) 2015 -- 2016 Martin Schlather, Reinhard Furrer
+ Copyright (C) 2015 -- 2017 Martin Schlather
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,8 +20,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <R_ext/Lapack.h>
-#include <General_utils.h>
-#include "kleinkram.h"
+#include "def.h" // never change this line
+#include <General_utils.h> //#include <General_utils.h>
+#include "xport_import.h"
+
+
+#define SCALAR(A,B,C) Ext_scalarX(A,B,C, SCALAR_AVX)
+#define LINEAR(A,B,C,D) Ext_linearX(A,B,C,D,6)
+
 
 void strcopyN(char *dest, const char *src, int n) {
   if (n > 1) {
@@ -31,76 +37,45 @@ void strcopyN(char *dest, const char *src, int n) {
   dest[n] = '\0';
 }
 
-
-double scalar(double *A, double *B, int N) {
-  double ANS;
-  SCALAR_PROD(A, B, N, ANS);
-  return ANS;
-}
-
-
 void AtA(double *a, int nrow, int ncol, double *C) {
   // C =  A^T %*% A
 #ifdef DO_PARALLEL
-  //#pragma omp parallel for num_threads(2) schedule(dynamic) if (MULTIMINSIZE(ncol))
-#pragma omp parallel for schedule(dynamic) if (MULTIMINSIZE(ncol))
+#pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(ncol)) schedule(dynamic, 20)
 #endif  
   for (int i=0; i<ncol; i++) {
     double 
       *A = a + i * nrow,
       *B = A;
     for (int j=i; j<ncol; j++, B+=nrow) {
-      C[i * ncol + j] = C[i + ncol * j] = scalar(A, B, nrow);
+      C[i * ncol + j] = C[i + ncol * j] = SCALAR(A, B, nrow);
     }
   }
 }
  
+
+void xA_noomp(double *x, double*A, int nrow, int ncol, double *y) {
+  if (A == NULL) {
+    if (nrow != ncol || nrow <= 0) BUG;
+    MEMCOPY(y, x, sizeof(double) * nrow);
+  } else {
+    for (int i=0; i<ncol; i++) {
+      y[i] = SCALAR(x, A + i * nrow, nrow);
+    }
+  }
+}
 
 void xA(double *x, double*A, int nrow, int ncol, double *y) {
   if (A == NULL) {
     if (nrow != ncol || nrow <= 0) BUG;
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
-    for (int i=0; i<ncol; i++) {
-      y[i] = scalar(x, A + i * nrow, nrow);
-    }
-  }
-}
-
-void xA_omp(double *x, double*A, int nrow, int ncol, double *y) {
-  if (A == NULL) {
-    if (nrow != ncol || nrow <= 0) BUG;
-    MEMCOPY(y, x, sizeof(double) * nrow);
-  } else {
 #ifdef DO_PARALLEL
-#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
+#pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
 #endif  
-   for (int i=0; i<ncol; i++) y[i] = scalar(x, A + i * nrow, nrow);
-  }
-}
-
-
-#define TWOSCALAR_PROD(A1, A2, B, N, ANS1, ANS2) {	\
-    int  k_ =0,						\
-      end_ = N - 4;					\
-    ANS1 = ANS2 = 0.0;						\
-    for (; k_<end_; k_+=5) {					\
-      ANS1 += A1[k_] * B[k_]					\
-	+ A1[k_ + 1] * B[k_ + 1]				\
-	+ A1[k_ + 2] * B[k_ + 2]				\
-	+ A1[k_ + 3] * B[k_ + 3];				\
-      ANS2 += A2[k_] * B[k_]					\
-	+ A2[k_ + 1] * B[k_ + 1]				\
-	+ A2[k_ + 2] * B[k_ + 2]				\
-	+ A2[k_ + 3] * B[k_ + 3];				\
-    }								\
-    for (; k_<N; k_++) {					\
-      ANS1 += A1[k_] * B[k_];					\
-      ANS2 += A2[k_] * B[k_];					\
-    }								\
-  }
-
-
+   for (int i=0; i<ncol; i++) y[i] = SCALAR(x, A + i * nrow, nrow);
+  } 
+} 
+  
 void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
 	double *y2) {
   if (A == NULL) {
@@ -108,19 +83,22 @@ void xA(double *x1, double *x2,  double*A, int nrow, int ncol, double *y1,
     MEMCOPY(y1, x1, sizeof(double) * nrow);
     MEMCOPY(y2, x2, sizeof(double) * nrow);
   } else {
-#ifdef DO_PARALLEL
-#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
-#endif  
-    for (int i=0; i<ncol; i++) {
-      double d1, d2,
-	*a =  A + i*nrow;
-      TWOSCALAR_PROD(x1, x2, a, nrow, d1, d2);
-      y1[i] = d1;
-      y2[i] = d2;
+    double *a = A;
+    for (int i=0; i<ncol; i++, a += nrow) {
+      y1[i] = SCALAR(x1, a, nrow);
+      y2[i] = SCALAR(x2, a, nrow);
     }
   }	
 }
 
+void xAx(double *x, double*A, int nrow,  double *y) {
+  double sum = 0.0;
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) reduction(+:sum) if (MULTIMINSIZE(nrow) && MULTIMINSIZE(nrow))
+#endif  
+  for (int i=0; i<nrow; i++) sum += x[i] * SCALAR(x, A + i * nrow, nrow);
+  *y = sum;
+}
 
 void Ax(double *A, double*x, int nrow, int ncol, double *y) {
   if (A == NULL) {
@@ -128,7 +106,7 @@ void Ax(double *A, double*x, int nrow, int ncol, double *y) {
     MEMCOPY(y, x, sizeof(double) * nrow);
   } else {
 #ifdef DO_PARALLEL
-#pragma omp parallel for if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
+#pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(ncol) && MULTIMINSIZE(nrow))
     for (int j=0; j<nrow; j++) {
       double dummy = 0.0;
       int k = j;
@@ -178,7 +156,7 @@ double XkCXtl(double *X, double *C, int nrow, int dim, int k, int l) {
   int size = nrow * dim;
   
 #ifdef DO_PARALLEL
-#pragma omp parallel for reduction(+:result)
+#pragma omp parallel for num_threads(CORES) reduction(+:result)
 #endif
   for (int j=0; j<size; j+=nrow) {
     double scalar = 0.0;
@@ -195,10 +173,10 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
   double  
     *endpX = X + nrow,
     *dummy = (double*) MALLOC(sizeof(double) * size); // dummy = XC
-  if (dummy == NULL) ERR("XCXt: memory allocation error in XCXt");
+  if (dummy == NULL) RFERROR("XCXt: memory allocation error in XCXt");
  
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (double *pX = X; pX < endpX; pX++) {
     double *pdummy = dummy + (pX - X);
@@ -213,7 +191,7 @@ void XCXt(double *X, double *C, double *V, int nrow, int dim /* dim of C */) {
 
   // V = dummy X^t
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (int rv=0; rv<nrow; rv++) {
     for (int cv=rv; cv<nrow; cv++) {
@@ -234,7 +212,7 @@ double xUy(double *x, double *U, double *y, int dim) {
   double xVy = 0.0;
   int    dimM1 = dim - 1;
 #ifdef DO_PARALLEL
-#pragma omp parallel for reduction(+:xVy) if (MULTIMINSIZE(dim))
+#pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(dim)) reduction(+:xVy) 
 #endif  
   for (int d=0; d<dim; d++) {
     int i, 
@@ -253,7 +231,7 @@ double xUy(double *x, double *U, double *y, int dim) {
   assert(z != NULL);
   int   dimM1 = dim - 1;
 #ifdef DO_PARALLEL
-#pragma omp parallel for if (MULTIMINSIZE(dim))
+#pragma omp parallel for num_threads(CORES) if (MULTIMINSIZE(dim))
 #endif  
   for (int d=0; d<dim; d++) {
     double dummy;
@@ -273,7 +251,7 @@ double xUxz(double *x, double *U, int dim, double *z) {
  double xVx = 0.0;
   int dimM1 = dim - 1;
 #ifdef DO_PARALLEL
-#pragma omp parallel for reduction(+:xVx)
+#pragma omp parallel for num_threads(CORES) reduction(+:xVx)
 #endif
   for (int d=0; d<dim; d++) {
     int i, 
@@ -296,7 +274,7 @@ double x_UxPz(double *x, double *U, double *z, int dim) {
   double xVx = 0.0;
   int    dimM1 = dim - 1;
 #ifdef DO_PARALLEL
-#pragma omp parallel for reduction(+:xVx)
+#pragma omp parallel for num_threads(CORES) reduction(+:xVx)
 #endif
   for (int d=0; d<dim; d++) {
     int i,
@@ -314,7 +292,7 @@ double x_UxPz(double *x, double *U, double *z, int dim) {
 void matmult(double *a, double *b, double *c, int l, int m, int n) {
 // multiplying an lxm- and an mxn-matrix, saving result in C
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
    for (int i=0; i<l; i++) {
      double *A = a + i,
@@ -333,23 +311,23 @@ void matmulttransposed(double *A, double *B, double *c, int m, int l, int n) {
 // multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (int i=0; i<l; i++) {    
     double *C = c + i,
       *Aim = A + i * m;
-    for (int j=0; j<n; j++) C[j * l] = scalar(Aim, B + j * m, m);
+    for (int j=0; j<n; j++) C[j * l] = SCALAR(Aim, B + j * m, m);
   }
 }
 
 
 
-void matmult_2ndtransp(double *a, double *B, double *c, int m, int l, int n) {
-// multiplying A and t(B) with dim(A)=(m,l) and dim(B)=(n, l),
+void matmult_2ndtransp(double *a, double *B, double *c, int l, int m, int n) {
+// multiplying A and t(B) with dim(A)=(l, m) and dim(B)=(n, m),
 // saving result in C
   int msq = m  * m;
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) if (l * m * n > 1000)
 #endif
   for (int i=0; i<l; i++) {
     double *C = c + i,
@@ -369,7 +347,7 @@ void matmult_tt(double *a, double *B, double *c, int m, int l, int n) {
 // calculating t(A B) with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (int i=0; i<l; i++) {
     double *A = a + i,
@@ -388,7 +366,7 @@ void matmult_tt(double *a, double *B, double *c, int m, int l, int n) {
 void Xmatmult(double *A, double *B, double *C, int l, int m, int n) {
 // multiplying an lxm- and an mxn-matrix, saving result in C
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (int i=0; i<l; i++) {
     for (int jl=i, jm=0, j=0; j<n; j++, jl+=l, jm+=m) {
@@ -404,7 +382,7 @@ void Xmatmulttransposed(double *A, double *B, double *C, int m, int l, int n) {
 // multiplying t(A) and B with dim(A)=(m,l) and dim(B)=(m,n),
 // saving result in C
 #ifdef DO_PARALLEL
-#pragma omp parallel for 
+#pragma omp parallel for num_threads(CORES) 
 #endif
   for (int i=0; i<l; i++) {
     int im = i * m;
@@ -575,6 +553,27 @@ SEXP Mat_t(double* V, int row, int col) {
 }
 
 
+SEXP MatString(char **V, int row, int col, int max) {
+  if (V==NULL) return allocMatrix(STRSXP, 0, 0);
+  int n = row * col;
+  if (n>max) {
+    int nn[2];
+    nn[0] = row;
+    nn[1] = col;
+    return TooLarge(nn, 2);
+  }
+  SEXP dummy;
+  PROTECT(dummy=allocMatrix(STRSXP, row, col));
+  for (int k=0; k<n; k++)
+    SET_STRING_ELT(dummy, k, mkChar(V[k]));
+  UNPROTECT(1);
+  return dummy;
+}
+
+SEXP MatString(char** V, int row, int col) {
+  return MatString(V, row, col, MAXINT);
+}
+
 SEXP MatInt(int* V, int row, int col, int max) {
   if (V==NULL) return allocMatrix(INTSXP, 0, 0);
   int n = row * col;
@@ -625,13 +624,19 @@ SEXP Array3D(double** V, int depth, int row, int col) {
 
 
 
-//static int ZZ = 0;
+usr_bool UsrBoolRelaxed(SEXP p, char *name, int idx) {
+  double dummy = Real(p, name, idx);
+  if (!R_finite(dummy)) return Nan;
+  return dummy==0.0 ? False : True ;
+}
+
+
 usr_bool UsrBool(SEXP p, char *name, int idx) {
   double dummy = Real(p, name, idx);
   if (dummy == 0.0) return False;
   else if (dummy == 1.0) return True;
-  else if (ISNA(dummy) || ISNAN(dummy)) return Nan;
-  ERR("invalid value for boolean variable");
+  else if (ISNAN(dummy)) return Nan;
+  RFERROR2("invalid value (%d) for boolean variable '%.50s'.", (int) dummy, name);
 }
 
 
@@ -647,7 +652,7 @@ SEXP String(char *V) {
 
 SEXP String(char V[][MAXCHAR], int n, int max) {
   SEXP str;
-  if (V==NULL) return allocVector(VECSXP, 0);
+  if (V==NULL) return allocVector(STRSXP, 0);
   if (n>max) return TooLarge(&n, 1);
   if (n<0) return TooSmall();
   PROTECT(str = allocVector(STRSXP, n)); 
@@ -661,34 +666,39 @@ SEXP String(char V[][MAXCHAR], int n, int max) {
 
 SEXP String(int *V, const char * List[], int n, int endvalue) {
   SEXP str;
-  if (V==NULL || n <= 0) return allocVector(VECSXP, 0);
+  if (V==NULL || n <= 0) return allocVector(STRSXP, 0);
   int k;
   for (k=0; k<n; k++) {
     if (V[k] == endvalue) break;
   }
+  //  printf("k=%d, n=%d\n", k, n);
   PROTECT(str = allocVector(STRSXP, k)); 
   for (int i=0; i<k; i++) {
+    //  printf("V[%d]=%d\n", i, V[i]);
+    //    printf("%.50s\n", List[V[i]]);
     SET_STRING_ELT(str, i, mkChar(List[V[i]]));
   }
   UNPROTECT(1);
   return str;
 }
 
-//static int ZZ = 0;
 double Real(SEXP p, char *name, int idx) {
-  // if(++ZZ==65724){printf("type=%d %d '%s'\n",ZZ,TYPEOF(p), CHAR(STRING_ELT(p,0)));cov_model *cov;crash(cov);}
+  //  {printf("%.50s type=%d \n", name,TYPEOF(p));}
   if (p != R_NilValue) {
     assert(idx < length(p));
     switch (TYPEOF(p)) {
     case REALSXP :  return REAL(p)[idx];
-    case INTSXP : return INTEGER(p)[idx]==NA_INTEGER  
-	? RF_NA : (double) INTEGER(p)[idx];
-    case LGLSXP : return LOGICAL(p)[idx]==NA_LOGICAL ? RF_NA 
-	: (double) LOGICAL(p)[idx];
+    case INTSXP :
+      if (INTEGER(p)[idx]==NA_INTEGER) return RF_NA;
+      else return((double) INTEGER(p)[idx]);
+    case LGLSXP :
+      if (LOGICAL(p)[idx]==NA_LOGICAL) return(RF_NA);
+      else return((double) LOGICAL(p)[idx]);
     default : {}
     }
   }
-  ERR2("'%s' cannot be transformed to double! (type=%d)\n", name, TYPEOF(p));  
+
+ RFERROR2("'%.50s' can not be transformed to double! (type=%d)\n", name, TYPEOF(p));  
   return RF_NA;  // to avoid warning from compiler
 }
 
@@ -696,7 +706,7 @@ double Real(SEXP p, char *name, int idx) {
 
 void Real(SEXP el,  char *name, double *vec, int maxn) {
   if (el == R_NilValue) {
-    ERR1("'%s' cannot be transformed to double.\n", name);
+    RFERROR1("'%.50s' cannot be transformed to double.\n", name);
   }
   int n = length(el);
   for (int j=0, i=0; i<maxn; i++) {
@@ -719,16 +729,20 @@ int Integer(SEXP p, char *name, int idx, bool nulltoNA) {
       if (ISNAN(value)) {
 	return NA_INTEGER;
       }
-      if (value == TRUNC(value)) return (int) value; 
+      int intvalue;
+      intvalue = (int) value;
+      //      print("%10g %d %10e\n ", value, intvalue, value-intvalue);
+      if (value == intvalue) return intvalue; 
       else {
-	ERR2("%s: integer value expected. Got %e.", name, value);
+	RFERROR2("%.50s: integer value expected. Got %10e.", name, value);
       }
     case LGLSXP :
-      return  LOGICAL(p)[idx]==NA_LOGICAL ? NA_INTEGER : (int) LOGICAL(p)[idx];
+      if (LOGICAL(p)[idx]==NA_LOGICAL) return(NA_INTEGER);
+      else return((int) LOGICAL(p)[idx]);
     default : {}
     }
   } else if (nulltoNA) return NA_INTEGER;
-  ERR2("%s: unmatched type of parameter [type=%d]", name, TYPEOF(p));
+  RFERROR2("%.50s: unmatched type of parameter [type=%d]", name, TYPEOF(p));
   return NA_INTEGER; // compiler warning vermeiden
 }
 
@@ -739,7 +753,7 @@ int Integer(SEXP p, char *name, int idx) {
 
 void Integer(SEXP el, char *name, int *vec, int maxn) {
   if (el == R_NilValue) {
-    ERR1("'%s' cannot be transformed to integer.\n",name);
+    RFERROR1("'%.50s' cannot be transformed to integer.\n",name);
   }
   int n = length(el);
   for (int j=0, i=0; i<maxn; i++) {
@@ -754,17 +768,23 @@ void Integer(SEXP el, char *name, int *vec, int maxn) {
 void Integer2(SEXP el, char *name, int *vec) {
   int n;
   if (el == R_NilValue || (n = length(el))==0) {
-      ERR1("'%s' cannot be transformed to integer.\n",name);
+      RFERROR1("'%.50s' cannot be transformed to integer.\n",name);
   }
  
   vec[0] = Integer(el, name, 0);
+  if (vec[0] == NA_INTEGER || vec[0] < 1)
+    RFERROR1("first component of '%.50s' must be at least 1", name);
   if (n==1) vec[1] = vec[0];
   else {
-    vec[1] = Integer(el, name, n-1);
+    vec[1] = Integer(el, name, n-1);    
+    if ( vec[1] != NA_INTEGER && vec[1] < vec[0])
+      RFERROR1("'%.50s' must be increasing", name);
     if (n > 2) {
       int v = vec[0] + 1;
       for (int i = 1; i<n; i++, v++)
-	if (Integer(el, name, i) != v) ERR("not a sequence of numbers"); 
+	if (Integer(el, name, i) != v)
+	  RFERROR1("'%.50s' is not a sequence of numbers",name); 
+
     }
   }
 }
@@ -777,13 +797,16 @@ bool Logical(SEXP p, char *name, int idx) {
    if (p != R_NilValue)
     assert(idx < length(p));
     switch (TYPEOF(p)) {
-    case REALSXP: return ISNAN(REAL(p)[idx]) ? NA_LOGICAL : (bool) REAL(p)[idx];
+    case REALSXP:
+      if (ISNAN(REAL(p)[idx])) return NA_LOGICAL ;
+      else return (bool) REAL(p)[idx];
     case INTSXP :
-      return INTEGER(p)[idx]==NA_INTEGER ? NA_LOGICAL : (bool) INTEGER(p)[idx];
+      if (INTEGER(p)[idx]==NA_INTEGER) return NA_LOGICAL;
+      else return (bool) INTEGER(p)[idx];
     case LGLSXP : return LOGICAL(p)[idx];
     default : {}
     }
-  ERR1("'%s' cannot be transformed to logical.\n", name);  
+  RFERROR1("'%.50s' cannot be transformed to logical.\n", name);  
   return NA_LOGICAL;  // to avoid warning from compiler
 }
 
@@ -803,18 +826,17 @@ char Char(SEXP el, char *name) {
   }
  
  ErrorHandling:
-  ERR1("'%s' cannot be transformed to character.\n",  name);  
+  RFERROR1("'%.50s' cannot be transformed to character.\n",  name);  
   return 0; // to avoid warning from compiler
 }
 
 
 void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
   int l = length(el);
-  char msg[200];
   SEXPTYPE type;  
   if (el == R_NilValue) goto ErrorHandling;
   if (l > maxlen)  {
-    ERR1("number of variable names exceeds %d. Take abbreviations?", maxlen);
+    RFERROR1("number of variable names exceeds %d. Take abbreviations?", maxlen);
   }
   type = TYPEOF(el);
   //  printf("type=%d %d %d %d\n", TYPEOF(el), INTSXP, REALSXP, LGLSXP);
@@ -832,8 +854,7 @@ void String(SEXP el, char *name, char names[][MAXCHAR], int maxlen) {
   return;
  
  ErrorHandling:
-  SPRINTF(msg, "'%s' cannot be transformed to character.\n",  name);  
-  ERR(msg);
+  RFERROR1("'%.50s' cannot be transformed to character.\n",  name);  
 }
 
 
@@ -843,7 +864,7 @@ double NonNegInteger(SEXP el, char *name) {
   num = INT;
   if (num<0) {
     num=0; 
-    WARN1("'%s' which has been negative is set 0.\n",name);
+    WARN1("'%.50s', which has been negative, is set 0.\n",name);
   }
   return num;
 }
@@ -853,7 +874,7 @@ double NonNegReal(SEXP el, char *name) {
   num = NUM;
   if (num<0.0) {
     num=0.0; 
-    WARN1("%s which has been negative is set 0.\n",name);
+    WARN1("%.50s, which has been negative, is set 0.\n",name);
    }
   return num;
 }
@@ -863,7 +884,7 @@ double NonPosReal(SEXP el, char *name) {
   num = NUM;
   if (num>0.0) {
     num=0.0; 
-    WARN1("%s which has been positive is set 0.\n",name);
+    WARN1("%.50s, which has been positive, is set 0.\n",name);
   }
   return num;
 }
@@ -872,8 +893,9 @@ double PositiveInteger(SEXP el, char *name) {
   int num;
   num = INT;
   if (num<=0) {
-    num=0; 
-    WARN1("'%s' which has been negative is set 0.\n",name);
+    WARN2("'%.50s', which has been %.50s, is set 1.\n",
+	  name, num==0L ? "0" : "negative");
+    num=1L;
   }
   return num;
 }
@@ -882,8 +904,9 @@ double PositiveReal(SEXP el, char *name) {
   double num;
   num = NUM;
   if (num<=0.0) {
-    num=0.0; 
-    WARN1("%s which has been negative is set 0.\n",name);
+     WARN2("'%.50s', which has been %.50s, is set 1.\n",
+	   name, num==0.0 ? "0" : "negative");
+     num=1.0; 
    }
   return num;
 }
@@ -892,10 +915,6 @@ double PositiveReal(SEXP el, char *name) {
 
 SEXP ExtendedInteger(double x) {
   return ScalarInteger(R_FINITE(x) ? x : NA_INTEGER);
-}
-
-SEXP ExtendedBoolean(double x) {
-  return ScalarLogical(ISNAN(x) ? NA_LOGICAL : x != 0.0);
 }
 
 SEXP ExtendedBooleanUsr(usr_bool x) {
@@ -910,7 +929,7 @@ int Match(char *name, name_type List, int n) {
   int Nr;
   Nr=0;
   ln=STRLEN(name);
-  //  print("Match %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+  //  print("Match %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
 
   while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
     Nr++;
@@ -946,16 +965,16 @@ int Match(char *name, const char * List[], int n) {
   int Nr;
   Nr=0;
   ln=STRLEN(name);
-  //    print("Matchx %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+  //    print("Matchx %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
 
   while ( Nr < n  && STRNCMP(name, List[Nr], ln)) {
-    //     print("       %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
-    //   printf("%s\n", List[Nr]);
+    //     print("       %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
+    //   printf("%.50s\n", List[Nr]);
     Nr++;
   }
   if (Nr < n) { 
     if (ln==STRLEN(List[Nr])) {// exactmatching -- take first -- changed 1/7/07
-      //      print(" found  X    %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+      //      print(" found  X    %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
       return Nr;
     }
     // a matching function is found. Are there other functions that match?
@@ -976,7 +995,7 @@ int Match(char *name, const char * List[], int n) {
     if (multiplematching) {return MULTIPLEMATCHING;}
   } else return NOMATCHING;
 
-  //    print(" found      %d %d %s %s %d\n", Nr, n, name, List[Nr], ln);
+  //    print(" found      %d %d %.50s %.50s %d\n", Nr, n, name, List[Nr], ln);
  
   return Nr;
 }
@@ -992,7 +1011,7 @@ void GetName(SEXP el, char *name, const char * List[], int n,
 
   if (TYPEOF(el) == NILSXP) goto ErrorHandling;
   if (len_el > maxlen_ans) 
-    ERR2("option '%s' is too long. Maximum length is %d.", name, maxlen_ans);
+    RFERROR2("option '%.50s' is too long. Maximum length is %d.", name, maxlen_ans);
 
   if (TYPEOF(el) == STRSXP) {    
     for (k=0; k<len_el; k++) {
@@ -1010,15 +1029,15 @@ void GetName(SEXP el, char *name, const char * List[], int n,
   }
 
 ErrorHandling0:
-  SPRINTF(dummy, "'%s': unknown value '%s'. Possible values are:", 
+  SPRINTF(dummy, "'%.50s': unknown value '%.50s'. Possible values are:", 
 	  name, CHAR(STRING_ELT(el, k)));
   int i;
   for (i=0; i<n-1; i++) {
-    char msg[1000];
-    SPRINTF(msg, "%s '%s',", dummy, List[i]);    
-    STRCPY(dummy, msg);
+    char info[1000];
+    SPRINTF(info, "%.50s '%.50s',", dummy, List[i]);    
+    STRCPY(dummy, info);
   }
-  ERR2("%s and '%s'.", dummy, List[i]);  
+  RFERROR2("%.50s and '%.50s'.", dummy, List[i]);  
  
  ErrorHandling:
   if (defaultvalue >= 0) {
@@ -1027,7 +1046,7 @@ ErrorHandling0:
     return;
   }
   
-  ERR1("'%s': no value given.", name);
+  RFERROR1("'%.50s': no value given.", name);
 }
 
 int GetName(SEXP el, char *name, const char * List[], int n,
@@ -1043,8 +1062,15 @@ int GetName(SEXP el, char *name, const char * List[], int n) {
 }
 
 
-double ownround(double x) { return TRUNC((x + sign(x) * 0.5)); }
+double ownround(double x) { return TRUNC((x + SIGN(x) * 0.5)); }
 
+
+double lonmod(double x, double modulus) {  
+  double 
+    halfmodulus = 0.5 * modulus,
+    y = x + modulus + halfmodulus;
+  return Mod(y, modulus) - halfmodulus;
+}
 
 /*
 
@@ -1061,7 +1087,7 @@ double intpow(double x, int p) {
     x = 1.0 / x;
   } 
   while (p != 0) {
-    //    printf("  ... %e %d : %e\n" , x, p, res);
+    //    printf("  ... %10e %d : %10e\n" , x, p, res);
   if (p % 2 == 1) res *= x;
     x *= x;
     p /= 2;
@@ -1101,7 +1127,7 @@ void vectordist(double *v, int *Dim, double *Dist, int *diag){
   dim = Dim[0];
   end = v + Dim[1] * dim; 
 
-//  print("%d %d %f %f\n", dim , Dim[0], v, end);
+//  print("%d %d %10g %10g\n", dim , Dim[0], v, end);
 
   for (dr=0, v1=v; v1<end; v1+=dim) { // loop is one to large??
     v2 = v1;
@@ -1115,18 +1141,6 @@ void vectordist(double *v, int *Dim, double *Dist, int *diag){
     }
   }
 } 
-
-
-int is_positive_definite(double *C, int dim) {
-    int err,
-	bytes = sizeof(double) * dim * dim;
-  double *test;
-  test = (double*) MALLOC(bytes);
-  MEMCOPY(test, C, bytes);
-  F77_CALL(dpofa)(test, &dim, &dim, &err); 
-  FREE(test);
-  return(err == 0);
-}
 
 
 int addressbits(void VARIABLE_IS_NOT_USED *addr) {

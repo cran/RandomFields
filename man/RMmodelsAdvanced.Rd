@@ -1,7 +1,7 @@
 \name{RMmodelsAdvanced}
 \alias{RMmodelsAdvanced}
 \alias{Advanced RMmodels}
-\title{Advanced features of the mdoels}
+\title{Advanced features of the models}
 \description{
  Here, further models and advanced comments for \command{\link{RMmodel}}
  are given. See also \command{\link{RFgetModelNames}}.
@@ -18,18 +18,18 @@
 \command{\link{RMbessel}} \tab Bessel family \cr
 \command{\link{RMcircular}} \tab circular model \cr
 \command{\link{RMconstant}} \tab spatially constant model \cr
-\command{\link{RMcubic}} \tab cubic model (see Chiles \& Delfiner) \cr
+\command{\link{RMcubic}} \tab cubic model (see Chiles and Delfiner) \cr
 \command{\link{RMdagum}} \tab Dagum model \cr
 \command{\link{RMdampedcos}} \tab exponentially damped cosine \cr
-\command{\link{RMqexp}} \tab Variant of the exponential model \cr
+\command{\link{RMqexp}} \tab variant of the exponential model \cr
 \command{\link{RMfractdiff}} \tab fractionally differenced process \cr
 \command{\link{RMfractgauss}} \tab fractional Gaussian noise \cr
 \command{\link{RMgengneiting}} \tab generalized Gneiting model \cr
 \command{\link{RMgneitingdiff}} \tab Gneiting model for tapering \cr
-\command{\link{RMhyperbolic}} \tab generalised hyperbolic model \cr
+\command{\link{RMhyperbolic}} \tab generalized hyperbolic model \cr
 \command{\link{RMlgd}} \tab Gneiting's local-global distinguisher\cr
-\command{\link{RMlsfbm}} locally stationary fractal Brownian motion \cr
-\command{\link{RMpenta}} \tab penta model (see Chiles \& Delfiner) \cr
+\command{\link{RMlsfbm}} \tab locally stationary fractal Brownian motion \cr
+\command{\link{RMpenta}} \tab penta model (see Chiles and Delfiner) \cr
 \command{\link{RMpower}} \tab Golubov's model \cr
 \command{\link{RMwave}} \tab cardinal sine \cr
 }
@@ -39,7 +39,7 @@
 \tabular{ll}{
 \command{\link{RMbcw}} \tab bridging model between
                        \command{\link{RMcauchy}} and \command{\link{RMgenfbm}} \cr
-\command{\link{RMdewijsian}} \tab generalised version of the DeWijsian model \cr
+\command{\link{RMdewijsian}} \tab generalized version of the DeWijsian model \cr
 \command{\link{RMgenfbm}} \tab generalized fractal Brownian motion \cr
 \command{\link{RMflatpower}} \tab similar to fractal Brownian motion but
 always smooth at the origin\cr
@@ -56,9 +56,9 @@ based on a Gaussian field \cr
  \command{\link{RMexponential}} \tab exponential of a covariance model \cr
  \command{\link{RMintexp}} \tab integrated exponential of a covariance model (INCLUDES \code{ma2})\cr
  \command{\link{RMpower}} \tab powered variograms\cr
- \command{\link{RMqam}} \tab Porcu's quasi-arithmetric-mean model\cr
+ \command{\link{RMqam}} \tab Porcu's quasi-arithmetic-mean model\cr
  \command{\link{RMS}} \tab details on the optional transformation
- arguments (\code{var}, \code{scale}, \code{Aniso}, \code{proj}).
+ arguments (\code{var}, \code{scale}, \code{Aniso}, \code{proj})
 }
 
 \bold{Stationary and isotropic composed models (operators)}
@@ -75,11 +75,11 @@ based on a Gaussian field \cr
 
 \bold{Stationary space-time models}
 \cr
-See \link{RMmodelsSpaceTime}
+See \link{RMmodelsSpaceTime}.
 
 \bold{Non-stationary models}
 \cr
-See \link{RMmodelsNonstationary}
+See \link{RMmodelsNonstationary}.
 
 \bold{Negative definite models that are not variograms}
 \tabular{ll}{
@@ -95,19 +95,20 @@ See \link{RMmodelsTailCorrelation}.
 
 \bold{Other covariance models}
 \tabular{ll}{
-  \command{\link{RMuser}} \tab User defined model \cr
+  \command{\link{RMcov}} \tab covariance structure given by a variogram\cr 
   \command{\link{RMfixcov}} \tab User defined covariance structure\cr 
+ \command{\link{RMuser}} \tab User defined model \cr
 }
 
 \bold{Trend models}
 \tabular{ll}{
   \code{\link[=RMS]{Aniso}} \tab for space transformation (not really
-  trend, but similiar)\cr
+  trend, but similar)\cr
   \command{\link{RMcovariate}} \tab spatial covariates\cr
   \command{\link{RMprod}} \tab to model variability of the variance\cr
   \command{\link{RMpolynome}} \tab easy modelling of polynomial trends \cr
-  \command{\link{RMtrend}} \tab for explicite trend modelling\cr
-  \command{\link{R.models}} \tab for implicite trend modelling\cr
+  \command{\link{RMtrend}} \tab for explicit trend modelling\cr
+  \command{\link{R.models}} \tab for implicit trend modelling\cr
   \command{\link{R.c}} \tab for multivariate trend modelling \cr
 }
  
@@ -128,7 +129,7 @@ See \link{RMmodelsTailCorrelation}.
     argument is not set (but must have a valid name).
     \item
     \code{Aniso} can be given also by \command{\link{RMangle}}
-    or any other \command{\link{RMmodel}} instead by a matrix
+    or any other \command{\link{RMmodel}} instead of a matrix
     \item
     Note also that a completely different possibility exists to define a
     model, namely by a list. This format allows for easy flexible models
@@ -224,28 +225,21 @@ See \link{RMmodelsTailCorrelation}.
 \seealso{\command{\link{RFformula}},
   \link{RM},
   \command{\link{RMmodels}},
-  \command{\link{RMmodelsAuxiliary}}
+  \command{\link{RMmodelsAuxiliary}}.
 
 }
 
-\author{
- Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
- 
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\author{Alexander Malinowski; \martin}
 \keyword{spatial}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-## a non-stationary field with a sharp boundary of
+
+## a non-stationary field with a sharp boundary
 ## of the differentiabilities
 x <- seq(-0.6, 0.6, len=50)
 model <- RMwhittle(nu=0.8 + 1.5 * R.is(R.p(new="isotropic"), "<=", 0.5))
 z <- RFsimulate(model=model, x, x, n=4)
 plot(z)
-
-
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

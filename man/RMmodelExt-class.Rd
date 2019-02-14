@@ -18,11 +18,11 @@
 \alias{anova.RM_modelFit}
 \alias{summary.RM_modelFit}
 
-\title{Class "RMmodelFit" }
-\description{ Extension of Class \code{\link[=RMmodel-class]{RMmodel}}
+\title{Class CLASS_FIT }
+\description{ Extension of class \code{\link[=RMmodel-class]{RMmodel}}
     which additionally contains
  the likelihood of the data w.r.t. the covariance model represented by
- the "RMmodel" part, the estimated trend of the data if it is a
+ the CLASS_CLIST part, the estimated trend of the data if it is a
  constant trend, and the residuals of the data w.r.t. the model. Objects
  of this class only occur as slots in the output of "RFfit".
 }
@@ -44,47 +44,57 @@
 %
 %}
 \section{Creating Objects}{
- Objects are only ment to be created by the function
- \code{\link{RFfit}}
+ Objects are only meant to be created by the function
+ \code{\link{RFfit}}.
 }
 
 \section{Slots}{
   \describe{
-    \item{\code{AIC}:}{the AIC value for the ml estimation}
-    \item{\code{AICc}:}{the corrected AIC value for the ml estimation}
-    \item{\code{BIC}:}{the BIC value for the ml estimation}
-    \item{\code{call}:}{see \code{\link[=RMmodel-class]{RMmodel}}.} 
-    \item{\code{likelihood}:}{numeric; the likelihood of the data
-      w.r.t. the covariance model} 
-    \item{\code{name}:}{see \code{\link[=RMmodel]{RMmodel}}.}
-    \item{\code{par.model}:}{see \code{\link[=RMmodel]{RMmodel}}.}
-    \item{\code{par.general}:}{see \code{\link[=RMmodel]{RMmodel}}.}
-    \item{\code{param}:}{
-      vector of estimated parameters
-    }
-    \item{\code{residuals}:}{array or of class \code{\link[=RFsp-class]{RFsp}};
-      residuals of the data w.r.t. the trend model} 
-    \item{\code{submodels}:}{see \code{\link[=RMmodel]{RMmodel}}.}
-    \item{\code{trend}:}{numeric; the estimated mean of the data (if a
-      constant mean was specified in the model)} 
-    \item{\code{variab}:}{
+    \item{\code{model,formel}:}{See \code{\link[=RMmodel]{RMmodel}}.}
+   \item{\code{variab}:}{
       vector of estimated variables. Variables
       are used in the internal representation and
       can be a subset of the parameters.
     }
- }
+  \item{\code{param}:}{
+      vector of estimated parameters
+    }
+    \item{\code{covariate}:}{
+      to do
+    }
+   \item{\code{globalvariance}:}{
+      to do
+    }
+   \item{\code{hessian}:}{
+      to do
+    }
+   \item{\code{likelihood}:}{numeric; the likelihood of the data
+      w.r.t. the covariance model} 
+    \item{\code{AIC}:}{the AIC value for the ml estimation}
+    \item{\code{AICc}:}{the corrected AIC value for the ml estimation}
+    \item{\code{BIC}:}{the BIC value for the ml estimation}
+     \item{\code{residuals}:}{array or of class \code{\link[=RFsp-class]{RFsp}};
+      residuals of the data w.r.t. the trend model} 
+
+%    \item{\code{call}:}{See \code{\link[=RMmodel-class]{RMmodel}}.} 
+ %    \item{\code{name}:}{See \code{\link[=RMmodel]{RMmodel}}.}
+ %   \item{\code{par.model}:}{See \code{\link[=RMmodel]{RMmodel}}.}
+ %   \item{\code{par.general}:}{See \code{\link[=RMmodel]{RMmodel}}.}
+ %    \item{\code{trend}:}{numeric; the estimated mean of the data (if a
+ %     constant mean was specified in the model)} 
+  }
 }
 
  
 \section{Extends}{
- Class \code{"RMmodel"}, directly.
+ Class \code{CLASS_CLIST}, directly.
 }
 
 \section{Methods}{
  \describe{
- \item{[}{\code{signature(x = "RMmodelFit")}: enables accessing
+ \item{[}{\code{signature(x = CLASS_FIT)}: enables accessing
    the slots via the \code{"["}-operator, e.g. \code{x["likelihood"]}}
- \item{[<-}{\code{signature(x = "RMmodelFit")}: enables replacing
+ \item{[<-}{\code{signature(x = CLASS_FIT)}: enables replacing
    the slots via the \code{"["}-operator}
   \item{show}{\code{signature(x = "RFfit")}: returns the structure
     of \code{x}}
@@ -102,19 +112,17 @@
 %}
 
 
-\author{Alexander Malinowski \email{Alexander.Malinowski@web.de},
-  Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\author{Alexander Malinowski; \martin}
 
 \seealso{
-  \code{\link[=RMmodel-class]{RMmodel}}
-  \command{\link{RFfit}}
+  \code{\link[=RMmodel-class]{RMmodel}},
+  \command{\link{RFfit}}.
 }
  
 \keyword{classes}
 \keyword{print}
 \keyword{hplot}
 
-\examples{
+\examples{\dontshow{StartExample()}
 # see RFfit
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -36,7 +36,7 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
  Each covariance function of the stable family is a normal scale mixture.
  
  The stable family includes the exponential model (see
- \command{\link{RMexp}}) \eqn{\alpha = 1}{\alpha = 1} and the Gaussian
+ \command{\link{RMexp}}) for \eqn{\alpha = 1}{\alpha = 1} and the Gaussian
  model (see \command{\link{RMgauss}}) for \eqn{\alpha = 2}{\alpha = 2}.
 
  The model is called stable, because in the 1-dimensional case the
@@ -44,7 +44,7 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
  (cf. Chiles, J.-P. and Delfiner, P. (1999), p. 90).
 }
 \value{
- \command{\link{RMstable}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMstable}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -75,8 +75,7 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
 }
 
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
   \command{\link{RMbistable}},
  \command{\link{RMexp}},
@@ -90,16 +89,12 @@ RMpoweredexp(alpha, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMstable(alpha=1.9, scale=0.4)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

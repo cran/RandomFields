@@ -2,7 +2,7 @@
 \alias{RMball}
 \title{RMball}
 \description{
-  \command{RMball} referes to the indicator function of a ball
+  \command{RMball} refers to the indicator function of a ball
  with radius 1.
 }
 \usage{
@@ -16,24 +16,28 @@ RMball(var, scale, Aniso, proj)
 }
 
 \seealso{
-  \command{\link{RMpolygon}}
+  \command{\link{RMpolygon}},
   \command{\link{RMspheric}},
  \command{\link{RFsimulate}},
  \command{\link{RMmodel}}.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
+
 \keyword{spatial}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
+x <- seq(0,10,len=100)
+model <- RMball(var=2,scale=1.5)
+plot(model)
+z <- RFsimulate(RPpoisson(model),x=x,y=x,intensity=0.1)
+plot(z)
+
 \dontshow{\dontrun{
 model <- RPcoins(shape=RMball())
 x <- seq(0, 10, 0.02)
 plot(RFsimulate(model, x=x))
 }}
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -42,7 +42,7 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
  model \code{fractalB} some sufficient conditions are known.
 }
 \value{
- \command{\link{RMintrinsic}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMintrinsic}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -55,8 +55,7 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RPintrinsic}},
  \command{\link{RMmodel}},
@@ -64,21 +63,16 @@ RMintrinsic(phi, diameter, rawR, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 x.max <- 10
 model <- RMintrinsic(RMfbm(alpha=1), diameter=x.max)
 x <- seq(0, x.max, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

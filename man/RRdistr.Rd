@@ -1,23 +1,38 @@
 \name{RRdistr}
 \alias{RRdistr}
-\title{RRdistr}
+\alias{RM_DISTR}
+\title{Definition of Distribution Families}
 \description{
- \command{RRdistr} defines of distribution family given by \code{fct}.
- It is used to introduce \link[=RR]{Random parameters} based on
+ \command{RRdistr} defines a distribution family given by \code{fct}.
+ It is used to introduce \link[=RR]{random parameters} based on
  distributions defined on R.
 }
 \usage{
-RRdistr(fct, nrow, ncol, envir)
+RRdistr(name, nrow, ncol, %ddistr, pdistr, qdistr, rdistr,
+        envir, ...)
 }
 \arguments{
-  \item{fct}{an arbitrary family of distribution. E.g.
+  \item{name}{an arbitrary family of distributions. E.g.
     \code{norm()} for the family \command{dnorm}, \command{pnorm},
-    \command{qnorm}, \command{rnorm}.
+    \command{qnorm}, \command{rnorm}. See examples below.
   }
   \item{nrow, ncol}{The matrix size (or vector if \code{ncol=1})
     the family returns. Except for very advanced modelling we always have
     \code{nrow=ncol=1}, which is the default.}
-  \item{envir}{an environment; defaults to \code{\link[base]{new.env}()}.
+%  \item{ddistr, pdistr, qdistr, rdistr}{
+%    only for very advanced users. Instead of passing the family name of
+%    the distribution, an own family name can be given and all four
+%    functions \code{ddistr}, \code{pdistr}, \code{qdistr}, \code{rdistr}
+%    are given explicitely.
+%    If any of these arguments is passed,
+%    all arguments of the function \command{RRdistr} must be passed. 
+%  }
+  \item{envir}{an environment; defaults to
+    \code{\link[base]{new.env}()}.
+  }
+  \item{...}{Second possibility to pass the distribution family is to
+    pass a character string as \code{name} and to give the argument
+    within \code{...}. See examples below.
   }
 }
 
@@ -31,30 +46,29 @@ RRdistr(fct, nrow, ncol, envir)
  \command{\link{RRdistr}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \note{
-  See \link{Bayesian Modelling} for some less technical introduction to
+  See \link{Bayesian Modelling} for a less technical introduction to
   hierarchical modelling. 
 
  The use of \command{RRdistr} is completely on the risk of the user. There is no
  way to check whether the expressions of the user are mathematically
  correct.
 
- Further, \command{\link{RRdistr}} may not be used in connection of obsolete
+ Further, \command{\link{RRdistr}} may not be used in connection with obsolete
  commands of RandomFields.
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de} \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 \seealso{
   \command{\link{RMmodel}},
   \link{RR},
   \command{\link{RFsimulate}},
-  \command{\link{RFdistr}}
+  \command{\link{RFdistr}}.
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 ## here a model with random scale parameter
 model <- RMgauss(scale=exp(rate=1))
 x <- seq(0,10,0.02)
@@ -82,14 +96,20 @@ for (i in 1:n) {
   plot(RFsimulate(model, x=x, seed=i))
 }
 
-## snd
+## snd, part 1
 ## note that the fist 'exp' refers to the exponential function,
 ## the second to the exponential distribution.
-(model <- RMgauss(var=exp(3), scale=exp(rate=1)))
-plot(z <- RFsimulate(model=model, x=1:100/10))
+(model1 <- RMgauss(var=exp(3), scale=exp(rate=1)))
+x <- 1:100/10
+plot(z1 <- RFsimulate(model=model, x=x))
 
-\dontshow{FinalizeExample()}
-}
+## snd, part 2
+## exactly the same result as in the previous example
+(model2 <- RMgauss(var=exp(3), scale=RRdistr("exp", rate=1)))
+plot(z2 <- RFsimulate(model=model, x=x))
+all.equal(model1, model2)
+
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 \keyword{models}

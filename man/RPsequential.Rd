@@ -1,20 +1,13 @@
-
-\name{Square roots}
-\alias{Direct}
-\alias{RPdirect}
+\name{Sequential}
 \alias{Sequential}
 \alias{RPsequential}
 \title{Methods relying on square roots of the covariance matrix}
 
-
-
 \description{
- Methods relying on square roots of the covariance matrix
+ Sequential method relying on square roots of the covariance matrix
 }
 
 \usage{
-RPdirect(phi, boxcox) 
-
 RPsequential(phi, boxcox, back_steps, initial)
 }
 
@@ -23,7 +16,7 @@ RPsequential(phi, boxcox, back_steps, initial)
     specifies the covariance model to be simulated.}
   \item{boxcox}{the one or two parameters of the box cox transformation.
     If not given, the globally defined parameters are used.
-    see \command{\link{RFboxcox}} for Details.
+    See \command{\link{RFboxcox}} for details.
   }
   \item{back_steps}{
     Number of previous instances on which
@@ -31,7 +24,7 @@ RPsequential(phi, boxcox, back_steps, initial)
     If less than one then the number of previous instances
     equals \code{max} / (number of spatial points).
     
-    Default: \code{10} .    
+    Default: \code{10}.    
   }
  \item{initial}{
    First, N=(number of spatial points) * \code{back_steps}
@@ -51,22 +44,13 @@ RPsequential(phi, boxcox, back_steps, initial)
  initial steps are performed. The latter ensures that
  none of the very first N variables are returned.
  
- Default: \code{-10} .
+ Default: \code{-10}.
  }
 }
 
 
 \details{
- \command{RPdirect}
- is based on the well-known method for simulating
- any multivariate Gaussian distribution, using the square root of the
- covariance matrix. The method is pretty slow and limited to
- about 8000 points, i.e. a 20x20x20 grid in three dimensions. 
- This implementation can use the Cholesky decomposition and
- the singular value decomposition. 
- It allows for arbitrary points and arbitrary grids.
- 
- \command{RPsequential}
+\command{RPsequential}
  is programmed for spatio-temporal models
  where the field is modelled sequentially in the time direction
  conditioned on the previous \eqn{k} instances.
@@ -78,7 +62,7 @@ RPsequential(phi, boxcox, back_steps, initial)
 }
 
 \value{
- \command{\link{RPsequential}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RPsequential}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -91,23 +75,21 @@ RPsequential(phi, boxcox, back_steps, initial)
  Lancaster University. 
 
  }}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
 \seealso{ \link{Gaussian},
-  \link{RP},
+  \link{RP}, \link{RPdirect}.
  }
 
 \keyword{methods}
 
-\examples{
+\examples{\dontshow{StartExample(reduced=FALSE)}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.01)
 plot(model, xlim=c(-25, 25))
 
-z <- RFsimulate(model=RPdirect(model), 0:10, 0:10, n=4)
+z <- RFsimulate(model=RPsequential(model), 0:10, 0:10, n=4)
 plot(z)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

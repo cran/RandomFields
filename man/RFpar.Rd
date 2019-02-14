@@ -2,8 +2,8 @@
 \alias{RFpar}
 \title{Graphical parameters for plots}
 \description{
-  This functions sets globally graphical parameters for plots
-  of \code{RMmodels}, simulations and estimations
+  This function sets globally graphical parameters for plots
+  of \code{RMmodels}, simulations and estimations.
 }
 \usage{
 RFpar(...)
@@ -23,23 +23,20 @@ RFpar(...)
  
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\me
 
 \seealso{
   \link{plot-method}
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
 RFpar(col="red")
 plot(RMexp())
 
-\dontshow{FinalizeExample(); RFpar(col=NULL)}
-}
+\dontshow{FinalizeExample(); RFpar(col=NULL)}}
 
 \keyword{spatial}
 \keyword{models}

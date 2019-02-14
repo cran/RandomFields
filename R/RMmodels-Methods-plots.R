@@ -21,7 +21,7 @@
 ## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 
 
-## accessing 'RMmodel' and RMmodelgenerator via '['-operator
+## accessing CLASS_CLIST and RMmodelgenerator via '['-operator
 # e.g. RMwhittle["domain"]
 
 accessSlotsByName <- function(x,i,j,drop=FALSE) {
@@ -34,135 +34,223 @@ accessSlotsByName <- function(x,i,j,drop=FALSE) {
 accessReplaceSlotsByName <- function(x,i,j,value) {
   names <- slotNames(x)
   if (!(i %in% names))
-    stop(paste(i, "is not a valid slot specification"))
+    stop(paste(i, "dis not a valid slot specification"))
   else
     slot(x, i) <- value
   validObject(x)
   return(x)
 }
 
-setMethod(f="[", signature = 'RMmodel', def = accessSlotsByName)
-setMethod(f="[", signature = 'RMmodelFit', def = accessSlotsByName)
-setMethod(f="[", signature = 'RMmodelgenerator', def = accessSlotsByName)
+setMethod(f="[", signature = CLASS_CLIST, def = accessSlotsByName)
+setMethod(f="[", signature = CLASS_FIT, def = accessSlotsByName)
+setMethod(f="[", signature = CLASS_RM, def = accessSlotsByName)
 
-setReplaceMethod(f="[", signature = 'RMmodel', accessReplaceSlotsByName)
-setReplaceMethod(f="[", signature = 'RMmodelFit', accessReplaceSlotsByName)
-setReplaceMethod(f="[", signature = 'RMmodelgenerator',accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = CLASS_CLIST, accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = CLASS_FIT, accessReplaceSlotsByName)
+setReplaceMethod(f="[", signature = CLASS_RM,accessReplaceSlotsByName)
 
 
 ## summing up RMmodels
-setMethod('c', signature=c('RMmodel'),
-          function(x, ..., recursive = FALSE)  R.c(x, ...)
-          )
+setMethod('c', signature=c(CLASS_CLIST),
+          function(x, ..., recursive = FALSE) R.c(x, ...) )
+
+
+## funktioniert im speziellen Modus nicht, allgemein schon
+## warum ist unklar
+#setMethod('diag', signature=c(CLASS_CLIST, 'missing', 'missing', 'missing'),
+#	  function(x=1, nrow, ncol, names=TRUE) {
+#            ## Print("hier");  str(x)
+#            RMmatrix(x)
+#          })
+          
+
 
 resolve <- function(e1, e2, sign) {
+  ## RMmodels only
   d <- list()
-  if (e1@name==sign){
-    len.e1 <- length(e1@submodels)              
+  if (e1@name==sign && (len.e1 <- length(e1@submodels)) < MAXSUB) {             
     for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
   } else {
     len.e1 <- 1
-    d[[1]] <- e1
+    d[[1]] <- if (is.character(e1))
+      stop("characters cannot be combined with 'RMmodels'")
+                                        #  do.call(SYMBOL_P, list(e1))
+    else e1
   }
-  d[[len.e1 + 1]] <- e2            
-  if (sign == ZF_MULT[1]) {
+  d[[len.e1 + 1]] <-
+     (if (is.character(e2))
+       stop("characters cannot be combined with 'RMmodels'")
+                                        #  do.call(SYMBOL_P, list(e2))
+     else e2)
+  if (sign == RM_MULT[1]) {
 #    print(d)
     model <- do.call(sign, d)
   } else model <- do.call(sign, d)
   return(model)
 }
 
+warn.resolve.txt <- "A large vector consists fully of NAs -- the model is probably not correct.\nNote that it is always better to define the covariance model in the first\nsummands and then the trend. Also better use explicitely 'R.c', 'RMcovariate'\nand 'R.const' if the model is more complicated"
+
 resolveRight<- function(e1, e2, sign) {
+  ## left constant
   d <- list()
-  if (e1@name==sign){
-    len.e1 <- length(e1@submodels)              
+  if (e1@name==sign && (len.e1 <- length(e1@submodels)) < MAXSUB) {
     for (i in 1:len.e1)  d[[i]] <- e1@submodels[[i]]
   } else {
     len.e1 <- 1
-    d[[1]] <- e1
+    d[[1]] <- (if (is.character(e1)) 
+       stop("characters cannot be combined with 'RMmodels'")
+                                        #do.call(SYMBOL_P, list(e1))
+      else e1)
   }
-  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(ZF_SYMBOLS_CONST, list(e2))
-  else {
-    e <- list(e2)
-    e[[COVARIATE_ADDNA_NAME]] <- TRUE
-    d[[len.e1 + 1]] <- do.call(ZF_COVARIATE, e)
-  }
+  d[[len.e1 + 1]] <-
+    if (is.list(e2)) do.call(R_C, e2) 
+    else if (length(e2)==1) do.call(R_CONST, list(e2))
+    else if (!all(is.finite(e2))) {
+      if (all(is.na(e2)) && length(e2)>5) warning(warn.resolve.txt)
+      do.call(R_C, list(e2))
+    } else if (sign == RM_PLUS[1]) {
+      tmpList <- list(RM_COVARIATE)
+      tmpList[[COVARIATE_C_NAME]] <- e2
+      tmpList[[COVARIATE_X_NAME]] <- NULL
+      tmpList[[COVARIATE_ADDNA_NAME]] <- TRUE
+      do.call(RM_COVARIATE, tmpList)
+    } else do.call(R_C, list(e2))
+  ## Version brasilienc
+ ##  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(R_CONST, list(e2))
+##  else {
+##    e <- list(e2)
+##    e[[COVARIATE_ADDNA_NAME]] <- TRUE
+##    d[[len.e1 + 1]] <- do.call(RM_COVARIATE, e)
+##  }
+
   model <- do.call(sign, d)
   return(model)
 }
 
 resolveLeft<- function(e1, e2, sign) {
+  ## right constant
   d <- list()
   len.e1 <- 1
-  if (length(e1)==1)  d[[1]] <- do.call(ZF_SYMBOLS_CONST, list(e1))
-  else {
-    e <- list(e1)
-    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
-    d[[1]] <- do.call(ZF_COVARIATE, e)
-  }
+## Version Brasilien  
+# if (length(e1)==1)  d[[1]] <- do.call(R_CONST, list(e1))
+#  else {
+#    e <- list(e1)
+#    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+#    d[[1]] <- do.call(RM_COVARIATE, e)
+#  }
+
+  d[[1]] <- if (is.list(e1)) do.call(R_C, e1)  
+    else if (length(e1)==1) do.call(R_CONST, list(e1))
+    else if (!all(is.finite(e1))) {
+      if (all(is.na(e1)) && length(e1)>5) warning(warn.resolve.txt)
+      do.call(R_C, list(e1))
+    } else if (sign == RM_PLUS[1]) {
+      tmpList <- list(RM_COVARIATE)
+      tmpList[[COVARIATE_C_NAME]] <- e1
+      tmpList[[COVARIATE_X_NAME]] <- NULL
+      tmpList[[COVARIATE_ADDNA_NAME]] <- TRUE
+      do.call(RM_COVARIATE, tmpList)
+    } else do.call(R_C, list(e1))
   
-  d[[len.e1 + 1]] <-  e2  
+  d[[len.e1 + 1]] <-  (if (is.character(e2)) 
+			 stop("characters cannot be combined with 'RMmodels'")
+		       ##do.call(SYMBOL_P, list(e2))
+		       else e2)
   model <- do.call(sign, d)
   return(model)
 }
 
 ## summing up RMmodels
-setMethod('+', signature=c('RMmodel', 'RMmodel'),
-          function(e1, e2) resolve(e1, e2, ZF_PLUS[1]))
-setMethod('+', signature=c('RMmodel', 'numeric'), 
-          function(e1, e2) resolveRight(e1, e2, ZF_PLUS[1]))
-setMethod('+', signature=c('RMmodel', 'logical'),
-          function(e1, e2) resolveRight(e1, e2, ZF_PLUS[1]))
-setMethod('+', signature=c('numeric', 'RMmodel'),
-          function(e1, e2) resolveLeft(e1, e2, ZF_PLUS[1]))
-setMethod('+', signature=c('logical', 'RMmodel'),
-          function(e1, e2) resolveLeft(e1, e2, ZF_PLUS[1]))
-
+setMethod('+', signature=c(CLASS_CLIST, CLASS_CLIST),
+          function(e1, e2) resolve(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c(CLASS_CLIST, 'numeric'), 
+          function(e1, e2) resolveRight(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c(CLASS_CLIST, 'logical'),
+          function(e1, e2) resolveRight(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c(CLASS_CLIST, 'factor'),
+          function(e1, e2) resolveRight(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c(CLASS_CLIST, 'list'),
+          function(e1, e2) resolveRight(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c('numeric', CLASS_CLIST),
+          function(e1, e2) resolveLeft(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c('logical', CLASS_CLIST),
+          function(e1, e2) resolveLeft(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c('data.frame', CLASS_CLIST),
+          function(e1, e2) resolveLeft(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c('factor', CLASS_CLIST),
+          function(e1, e2) resolveLeft(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c(CLASS_CLIST, 'character'),
+          function(e1, e2) resolve(e1, e2, RM_PLUS[1]))
+setMethod('+', signature=c('character', CLASS_CLIST),
+          function(e1, e2) resolve(e1, e2, RM_PLUS[1]))
 
 
 ## multiplying RMmodels
-setMethod('*', signature=c('RMmodel', 'RMmodel'),
-         function(e1, e2) resolve(e1, e2, ZF_MULT[1]))
-setMethod('*', signature=c('numeric', 'RMmodel'),
-         function(e1, e2) resolveLeft(e1, e2, ZF_MULT[1]))
-setMethod('*', signature=c('logical', 'RMmodel'),
-         function(e1, e2) resolveLeft(e1, e2, ZF_MULT[1]))
-setMethod('*', signature=c('RMmodel', 'logical'),
-          function(e1, e2) resolveRight(e1, e2, ZF_MULT[1]))
-setMethod('*', signature=c('RMmodel', 'numeric'),
-          function(e1, e2) resolveRight(e1, e2, ZF_MULT[1]))
+setMethod('*', signature=c(CLASS_CLIST, CLASS_CLIST),
+         function(e1, e2) resolve(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c('numeric', CLASS_CLIST),
+         function(e1, e2) resolveLeft(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c('logical', CLASS_CLIST),
+         function(e1, e2) resolveLeft(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c(CLASS_CLIST, 'logical'),
+          function(e1, e2) resolveRight(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c(CLASS_CLIST, 'numeric'),
+          function(e1, e2) resolveRight(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c(CLASS_CLIST, 'character'),
+         function(e1, e2) resolve(e1, e2, RM_MULT[1]))
+setMethod('*', signature=c('character', CLASS_CLIST),
+         function(e1, e2) resolve(e1, e2, RM_MULT[1]))
 
 
 Xresolve <- function(e1, e2, model) {
   d <- list()
   len.e1 <- 1
-  d[[1]] <- e1
-  d[[len.e1 + 1]] <- e2            
+  d[[1]] <-
+    (if (is.character(e1)) 
+     stop("characters cannot be combined with 'RMmodels'")
+                                        #do.call(SYMBOL_P, list(e1))
+    else e1)
+  d[[len.e1 + 1]] <-
+    ( if (is.character(e2)) 
+      stop("characters cannot be combined with 'RMmodels'")
+                                        #do.call(SYMBOL_P, list(e2))
+    else e2)
   model <- do.call(model, d)
   return(model)
 }
 XresolveLeft <- function(e1, e2, model) {
   d <- list()
   len.e1 <- 1
-  if (length(e1)==1) d[[1]] <- do.call(ZF_SYMBOLS_CONST, list(e1))
+  if (length(e1)==1) d[[1]] <- do.call(R_CONST, list(e1))
   else {
     e <- list(e1)
-    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
-    d[[1]] <-  do.call(ZF_COVARIATE, e)
-  }
-  d[[len.e1 + 1]] <- e2            
+    d[[1]] <-  do.call(R_CONST, e)
+## version brasilien    
+##    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+##    d[[1]] <-  do.call(RM_COVARIATE, e)
+ }
+  d[[len.e1 + 1]] <- (if (is.character(e2)) 
+			stop("characters cannot be combined with 'RMmodels'")
+                                        #do.call(SYMBOL_P, list(e2))
+		      else e2)       
   model <- do.call(model, d)
   return(model)
 }
 XresolveRight <- function(e1, e2, model) {
   d <- list()
   len.e1 <- 1
-  d[[1]] <- e1
-  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(ZF_SYMBOLS_CONST, list(e2))
+  d[[1]] <- (if (is.character(e1)) 
+     stop("characters cannot be combined with 'RMmodels'")
+                                        #do.call(SYMBOL_P, list(e1))
+    else e1)
+  if (length(e2)==1) d[[len.e1 + 1]] <- do.call(R_CONST, list(e2))
   else {
     e <- list(e2)
-    e[[COVARIATE_ADDNA_NAME]] <- TRUE   
-    d[[len.e1 + 1]] <- do.call(ZF_COVARIATE, e)
+    d[[len.e1 + 1]] <- do.call(R_CONST, e)
+  ## version brasilien
+  ## e[[COVARIATE_ADDNA_NAME]] <- TRUE   
+  ## d[[len.e1 + 1]] <- do.call(RM_COVARIATE, e)
   }
   model <- do.call(model, d)
   return(model)
@@ -170,45 +258,53 @@ XresolveRight <- function(e1, e2, model) {
   
 
 ## substracting RMmodels
-setMethod('-', signature=c('RMmodel', 'RMmodel'),
+setMethod('-', signature=c(CLASS_CLIST, CLASS_CLIST),
           function(e1, e2) Xresolve(e1, e2, "R.minus"))
-setMethod('-', signature=c('numeric', 'RMmodel'),
+setMethod('-', signature=c('numeric', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.minus"))
-setMethod('-', signature=c('logical', 'RMmodel'),
+setMethod('-', signature=c('logical', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.minus"))
-setMethod('-', signature=c('RMmodel', 'numeric'),
-          function(e1, e2) XresolveRight(e1, e2, "R.minus") )
-setMethod('-', signature=c('RMmodel', 'logical'),
-          function(e1, e2) XresolveRight(e1, e2, "R.minus") )
-
-
+setMethod('-', signature=c(CLASS_CLIST, 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.minus"))
+setMethod('-', signature=c(CLASS_CLIST, 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.minus"))
+setMethod('-', signature=c(CLASS_CLIST, 'character'),
+          function(e1, e2) Xresolve(e1, e2, "R.minus"))
+setMethod('-', signature=c('character', CLASS_CLIST),
+          function(e1, e2) Xresolve(e1, e2, "R.minus"))
 
 ## dividing up RMmodels
-setMethod('/', signature=c('RMmodel', 'RMmodel'),
+setMethod('/', signature=c(CLASS_CLIST, CLASS_CLIST),
           function(e1, e2) Xresolve(e1, e2, "R.div"))
-setMethod('/', signature=c('numeric', 'RMmodel'),
+setMethod('/', signature=c('numeric', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.div"))
-setMethod('/', signature=c('logical', 'RMmodel'),
+setMethod('/', signature=c('logical', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.div"))
-setMethod('/', signature=c('RMmodel', 'numeric'),
-          function(e1, e2) XresolveRight(e1, e2, "R.div") )
-setMethod('/', signature=c('RMmodel', 'logical'),
-          function(e1, e2) XresolveRight(e1, e2, "R.div") )
-
+setMethod('/', signature=c(CLASS_CLIST, 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.div"))
+setMethod('/', signature=c(CLASS_CLIST, 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.div"))
+setMethod('/', signature=c('RMmodel', 'character'),
+          function(e1, e2) Xresolve(e1, e2, "R.div"))
+setMethod('/', signature=c('character', 'RMmodel'),
+          function(e1, e2) Xresolve(e1, e2, "R.div"))
 
 
 ## powering up RMmodels
-setMethod('^', signature=c('RMmodel', 'RMmodel'),
+setMethod('^', signature=c(CLASS_CLIST, CLASS_CLIST),
           function(e1, e2) Xresolve(e1, e2, "R.pow")) 
-setMethod('^', signature=c('numeric', 'RMmodel'),
+setMethod('^', signature=c('numeric', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.pow"))
-setMethod('^', signature=c('logical', 'RMmodel'),
+setMethod('^', signature=c('logical', CLASS_CLIST),
           function(e1, e2) XresolveLeft(e1, e2, "R.pow"))
-setMethod('^', signature=c('RMmodel', 'numeric'),
-          function(e1, e2) XresolveRight(e1, e2, "R.pow") )
-setMethod('^', signature=c('RMmodel', 'logical'),
-          function(e1, e2) XresolveRight(e1, e2, "R.pow") )
-
+setMethod('^', signature=c(CLASS_CLIST, 'numeric'),
+          function(e1, e2) XresolveRight(e1, e2, "R.pow"))
+setMethod('^', signature=c(CLASS_CLIST, 'logical'),
+          function(e1, e2) XresolveRight(e1, e2, "R.pow"))
+setMethod('^', signature=c('RMmodel', 'character'),
+          function(e1, e2) Xresolve(e1, e2, "R.pow")) 
+setMethod('^', signature=c('character', 'RMmodel'),
+          function(e1, e2) Xresolve(e1, e2, "R.pow")) 
 
 
 
@@ -279,7 +375,7 @@ str.RMmodel <-
       is.RFdefault <-
         unlist(lapply(obj$par.general,
                       FUN=function(x){
-                        !is(x, ZF_MODEL) && !is.na(x) && x==ZF_DEFAULT_STRING
+                        !is(x, CLASS_CLIST) && !is.na(x) && x==RM_DEFAULT
                       }))
       obj$par.general[is.RFdefault] <- NULL
       if (all(is.RFdefault)) obj$par.general <- list()
@@ -336,31 +432,49 @@ print.RMmodel <- function(x, max.level=5,...) {
 }
 
 
-setMethod(f="show", signature='RMmodel',
+setMethod(f="show", signature=CLASS_CLIST,
           definition=function(object) print.RMmodel(object))#
 
-
-
-
+	  
 print.RMmodelgenerator <- function(x, ...) {
-  cat("*** object of Class '", ZF_MODEL_FACTORY,
-      "' ***\n  ** str(object):\n  ", sep="") #
-  str(x, give.attr=FALSE)#
-  cat("*** end of '", ZF_MODEL_FACTORY, "' ***\n", sep="")#
+  cat("*** object of Class '", CLASS_RM, "' ***\n", sep="")
+  str(args(x@.Data)) ## ok
+  cat("  type : \t", paste(x@type, collapse=", "), "\n")
+  cat("  domain : \t", paste(x@domain, collapse=", "), "\n")
+  cat("  isotropy : \t", paste(x@isotropy, collapse=", "), "\n")
+  cat("  monotoniciy :\t", paste(x@monotone, collapse=", "), "\n")
+  cat("  multivariate:\t",
+      if (x@vdim >= 0) x@vdim
+      else if (x@vdim == PARAM_DEP) "parameter dependent"
+      else if (x@vdim == PREVMODEL_DEP) "depends on calling model"
+      else if (x@vdim == SUBMODEL_DEP) "submodel dependent"
+      else "specification unclear -- please contact maintainer",
+      "\n")
+  cat("  max. dimen. :\t",
+      if (x@maxdim >= 0) x@maxdim
+      else if (x@maxdim == PARAM_DEP) "parameter dependent"
+      else if (x@maxdim == PREVMODEL_DEP) "depends on calling model"
+      else if (x@maxdim == SUBMODEL_DEP) "submodel dependent"
+      else "specification unclear -- please contact maintainer",
+      "\n")
+  cat("  finite range:\t", x@finiterange, "\n")
+  cat("  operator : \t", x@operator, "\n")
+  cat("  simple fctn :\t", x@simpleArguments, "\n")
 }
 
-
+setMethod("show", signature=CLASS_RM,
+	  definition=function(object) print.RMmodelgenerator(object))
 
 rfConvertRMmodel2string <- function(model){
-  if (!is(model, class2=ZF_MODEL))
-    stop("model must be of class 'RMmodel'")
+  if (!is(model, class2=CLASS_CLIST))
+    stop("model must be of class '", CLASS_CLIST, "'")
   par <- c(model@par.model, model@par.general)
-  idx.random <- unlist(lapply(par, FUN=isModel))
+  idx.random <- unlist(lapply(par, FUN=isRMmodel))
   if (is.null(idx.random)){
     param.string <- ""
     param.random.string <- ""
   } else {
-    idx.default <- par[!idx.random] == ZF_DEFAULT_STRING
+    idx.default <- par[!idx.random] == RM_DEFAULT
     param.string <- paste(names(par[!idx.random][!idx.default]),
                           par[!idx.random][!idx.default],
                           sep="=", collapse=", ")
@@ -387,10 +501,12 @@ rfConvertRMmodel2string <- function(model){
 
 
 ## Plot
-
 preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
-                               MARGIN, fixed.MARGIN){
+                               MARGIN, fixed.MARGIN, ...){
   types <- c("Cov", "Variogram", "Fctn")
+
+##  types <- "Fctn"; print("remove")
+  
   verballist <- paste("'", types, "'", sep="", collapse="")
   if (!missing(fct.type) && length(fct.type) > 0) {
     if (!(fct.type %in% types))
@@ -400,13 +516,16 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 
   all.fct.types <- character(length(x))
   all.vdim <- numeric(length(x))
+
   for (i in 1:length(x)) {
     fct.type <- types
-    m <- list("", PrepareModel2(x[[i]]))
+    m <- list("", PrepareModel2(x[[i]]), ...)
     while (length(fct.type) > 0 &&
            { m[[1]] <- fct.type[1];
-             !is.numeric(vdim <- try( InitModel(MODEL_USER, m, dim),
-                                     silent=TRUE))})
+           !is.numeric(vdim <- try( InitModel(MODEL_AUX, m, dim),
+				   silent=TRUE))
+##	   Print(CCC)
+	   })
       fct.type <- fct.type[-1]
     if (!is.numeric(vdim)) {
       ##    Print(vdim, model)
@@ -420,10 +539,10 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
 
   if (!all(all.vdim == all.vdim[1]))
     stop("models have different multivariability")
-  
+   
 
 #  fctcall.vec <- c("Cov", "Variogram")
-  #covinfo <- RFgetModelInfo(register=MODEL_USER, level=3, spConform=TRUE)
+  #covinfo <- RFgetModelInfo(register=MODEL_AUX, level=3, spConform=TRUE)
   ### Print((covinfo))
 #  Print(covinfo$domown, TRANS_INV , covinfo$type, isPosDef(covinfo$type),
  #       is.null(fct.type), fct.type,"Variogram") ; xxx
@@ -487,9 +606,6 @@ preparePlotRMmodel <- function(x, xlim, ylim, n.points, dim, fct.type,
                   paste((1:dim)[-MARGIN], collapse=", "), 
                   " fixed to the value", if (dim>3) "s", " ",
                   paste(format(fixed.MARGIN, digits=4), collapse=", "))
-
-  .C(C_DeleteKey, MODEL_USER)
-
   
   return(list(main=main, fctcall=all.fct.types, ylab=ylab, distance=distance,
               distanceY = if (dim > 1) distanceY, xlim=xlim, ylim=ylim))
@@ -590,15 +706,10 @@ RFplotModel <- function(x, y, dim=1,
   dotnames <- names(dots)  
 
   if (!("type" %in% dotnames)) dots$type <- "l"
-
-#  print("vor Prepare")
-  
   li <- preparePlotRMmodel(x=x, xlim=dots$xlim, ylim=dots$ylim,
                            n.points=n.points, dim=dim,
                            fct.type=fct.type,
                            MARGIN=MARGIN, fixed.MARGIN=fixed.MARGIN)
-
- # print("nach Prepare"); oooooo
 
   dots$xlim <- li$xlim
   if (!is.null(li$ylim)) dots$ylim <- li$ylim
@@ -724,77 +835,53 @@ lines.RMmodel <- function(x, ..., type="l")
 # @FUNCTION-END************************************************************
 
 
-list2RMmodel <- function(x, skip.prefix.check=FALSE) { 
-  if (!is.list(x))
-    return(x)
+list2RMmodel <- function(x) { 
+  if (!is.list(x)) return(x)
 
   name <- x[[1]]
-  if (!is.character(name))
-    return(x)
+  if (!is.character(name)) return(x)
+  if (name == RM_DECLARE) return(NULL)
   
   len <- length(x)
   
-  if (name %in% DOLLAR)
-    return(list2RMmodel(c(x[[len]], x[-c(1, len)])))
-
-  if (name == ZF_DISTR[1]){
-    x <- x[-1]
-    m <- do.call(ZF_DISTR[1], args=list())
-    m@par.model <- x
-    return(m)
-  }
+  if (name %in% DOLLAR) return(list2RMmodel(c(x[[len]], x[-c(1, len)])))
+#  if (name == RM_DISTR[1]){
+#    x <- x[-1]
+#    m <- do.call(RM_DISTR[1], args=list())
+#    m@par.model <- x
+#    return(m)
+#  }
   
-  if (name==ZF_SYMBOLS_PLUS) name <- ZF_PLUS[1] else
-  if (name==ZF_SYMBOLS_MULT) name <- ZF_MULT[1] else
-  if (name %in% ZF_MIXED) name <- ZF_INTERNALMIXED
-
-  ## add prefix 'RM' if necessary
-  if (!skip.prefix.check){
-    if (!(name %in% list2RMmodel_Names)) {
-      name2 <- paste(ZF_MODEL_PREFIX, name, sep="")
-      # Print( name2,      list2RMmodel_Names, name2 %in% list2RMmodel_Names)
-      if (!(name2 %in% list2RMmodel_Names))
-        stop(paste("'", name, "' is not the name of a valid cov model", sep=""))
-      else
-        name <- name2
-    }
+  if (name==SYMBOL_PLUS) name <- RM_PLUS[1] else
+  if (name==SYMBOL_MULT) name <- RM_MULT[1] else
+  if (!(name %in% list2RMmodel_Names)) {
+    if (!(name %in% list2RMmodel_oldNames))
+      stop(paste("'", name, "' is not the name of a valid model", sep=""))
   }
+  ## hier noch mehr Ausnahmen?
 
-  
-  if (len==1)
-    return(eval(parse(text=paste(name, "()", sep=""))))
+
+  if (len==1) return(eval(parse(text=paste(name, "()", sep=""))))
   else {
-    x <- lapply(x, FUN=list2RMmodel, skip.prefix.check=skip.prefix.check)
-    #argnames <- names(x[-1])
+    x <- lapply(x, FUN=list2RMmodel)
     if (length(idx <- which("anisoT" == names(x))) == 1){
-      #argnames[idx] <- "Aniso"
       names(x)[idx] <- "Aniso"
       x[[idx]] <- t(x[[idx]])
     }
-    #if (!is.null(argnames)) {
-    #  isEmpty <- argnames=="" 
-    #  argnames[!isEmpty] <- paste(argnames[!isEmpty], "=")
-    #}
     return(do.call(name, args=x[-1]))
-    
-    #return(eval(parse(text =
-    #                  paste(name, "(",
-    #                        paste(argnames, " x[[", 2:len, "]]", 
-    #                              collapse=","),
-    #                        ")", sep=""))))
   }
 }
 
-setMethod(f="plot", signature(x='RMmodel', y="missing"),
+setMethod(f="plot", signature(x=CLASS_CLIST, y="missing"),
           function(x, y, ...) RFplotModel(x, ...))
-setMethod(f="lines", signature(x='RMmodel'),
+setMethod(f="lines", signature(x=CLASS_CLIST),
           function(x, ..., type="l")
           RFplotModel(x, ..., type=type, plotmethod="plot.xy"))
-setMethod(f="points", signature(x='RMmodel'),
+setMethod(f="points", signature(x=CLASS_CLIST),
           function(x, ..., type="p")
           RFplotModel(x, ..., type=type, plotmethod="plot.xy"))
-setMethod(f="persp", signature(x='RMmodel'),
+setMethod(f="persp", signature(x=CLASS_CLIST),
           function(x, ..., dim=2, zlab="")
           RFplotModel(x,...,dim=dim,zlab=zlab,plotmethod="persp"))
-setMethod(f="image", signature(x='RMmodel'),
+setMethod(f="image", signature(x=CLASS_CLIST),
           function(x, ..., dim=2) RFplotModel(x,...,dim=dim,plotmethod="image"))

@@ -7,7 +7,7 @@
  \deqn{f(h) = h^\top A A^\top h + diag(E)}{C(h) = h^T A A^T h + diag(E)}
  and
  \deqn{f(h) = h^\top A R R A^\top h + diag(E)}{C(h) = h^T A R R^R A^T h
-   + diag(E)},
+   + diag(E),}
  respectively.
  }
  \usage{
@@ -43,8 +43,7 @@ RMetaxxa(E, A, alpha)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
   \link{S10}
@@ -54,8 +53,7 @@ RMetaxxa(E, A, alpha)
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 # see S10
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 

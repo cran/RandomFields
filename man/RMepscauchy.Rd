@@ -1,4 +1,3 @@
-
 \name{RMepscauchy}
 \alias{RMepscauchy}
 \title{Generalized Cauchy Family Covariance Model}
@@ -28,10 +27,10 @@ RMepscauchy(alpha, beta, eps, var, scale, Aniso, proj)
 }
 \details{
  This model has a smoothness parameter \eqn{\alpha}{\alpha} and a
- paramater \eqn{\beta}{\beta} which determines the asymptotic power law.
+ parameter \eqn{\beta}{\beta} which determines the asymptotic power law.
  More precisely, this model admits simulating random fields where fractal dimension
  \emph{D} of the Gaussian sample and Hurst coefficient \emph{H}
- can be chosen independently (compare also \command{\link{RMlgd}}.): Here, we have
+ can be chosen independently (compare also \command{\link{RMlgd}}): Here, we have
  \deqn{ D = d + 1 - \alpha/2, \alpha \in (0,2]}{ D = d + 1 - \alpha/2, 0
  < \alpha \le 2}
  and
@@ -50,7 +49,7 @@ RMepscauchy(alpha, beta, eps, var, scale, Aniso, proj)
  \eqn{\beta = 2 \gamma}{\beta = 2 \gamma}. 
 }
 \value{
- \command{\link{RMepscauchy}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMepscauchy}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -63,8 +62,7 @@ RMepscauchy(alpha, beta, eps, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcauchy}},
  \command{\link{RMcauchytbm}},
@@ -78,15 +76,12 @@ RMepscauchy(alpha, beta, eps, var, scale, Aniso, proj)
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMepscauchy(alpha=1.5, beta=1.5, scale=0.3, eps=0.5)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

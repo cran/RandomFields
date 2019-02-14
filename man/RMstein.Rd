@@ -1,6 +1,6 @@
 \name{RMstein}
 \alias{RMstein}
-\title{Stein nonseparable space-time model}
+\title{Stein's non-separable space-time model}
 \description{
  \command{\link{RMstein}} is a univariate stationary covariance model
  whose corresponding covariance function only depends on the difference
@@ -9,7 +9,7 @@
  * W_{\nu-1}(y)}{ C(h, t) = W_\nu(y) - < h, z > t W_{\nu-1}(y) / [
  (\nu-1) (2\nu + d + 1) ]}
 
- Here \eqn{W_\nu} is the covariance of the
+ Here, \eqn{W_\nu} is the covariance of the
  \command{\link{RMwhittle}} model with
  smoothness parameter \eqn{\nu};
  \eqn{y=\|(h,t)\|}{y = ||(h,t)||} is the norm of the vector
@@ -31,7 +31,7 @@ RMstein(nu, z, var, scale, Aniso, proj)
 \details{See Stein (2005).
 }
 \value{
- \command{\link{RMstein}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMstein}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -40,27 +40,21 @@ RMstein(nu, z, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMstein(nu=1.5, z=0.9)
 x <- seq(0, 10, 0.05)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -1,4 +1,3 @@
-
 \name{RFsimulate.sophisticated.examples}
 \alias{RFsimulate.sophisticated.examples}
 \title{Sophisticated Examples for the Simulation of Random Fields}
@@ -7,24 +6,23 @@
  This man page will give a collection of basic examples for the use of
  \code{\link{RFsimulate}}.
 
- For other kind of random fields (binary, max-stable, etc.) or
- more sophisticated approches see \link{RFsimulateAdvanced}.
+ For other kinds of random fields (binary, max-stable, etc.) or
+ more sophisticated approaches see \link{RFsimulateAdvanced}.
 }
 
 
 \seealso{
  \command{\link{RFsimulate}},
- \command{\link{RFsimulateAdvanced}}
+ \command{\link{RFsimulateAdvanced}}.
 }
 
+\me
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 \dontshow{\dontrun{
-
 
 #############################################################
 ##                                                         ##
@@ -255,6 +253,4 @@ close.screen(all = TRUE)
 
 }}
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

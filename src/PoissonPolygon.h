@@ -60,10 +60,10 @@ typedef struct polygon
 double scProd(const double *x, const double *y);
 int compareAngles(const void * a, const void * b);
 void rTriangle(double *phi);
-int rPoissonPolygon(struct polygon *P, double lambda);
-int rPoissonPolygon2(struct polygon *P, double lambda, bool);
+int rPoissonPolygon(struct polygon *P, double lambda, bool);
+//int rPoissonPolygon2(struct polygon *P, double lambda, bool);
 void freePolygon(struct polygon *P);
-int isInside(struct polygon *P, double *x);
+bool isInside(struct polygon *P, double *x);
 double getArea(struct polygon *P);
 
 

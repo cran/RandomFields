@@ -6,7 +6,9 @@
   are given.
 }
 
-\examples{
+\me
+
+\examples{\dontshow{StartExample()}
 %% NOTE: THE BELOW EXAMPLE NEEDS seed = NA
  #############################################################
  ##                      EXAMPLE 1                          ##
@@ -14,8 +16,8 @@
  ## dependent=TRUE for simulating with RPcirculant if, in a ##
  ## study, most of the time is spent with simulating the    ##
  ## Gaussian random fields. Here, the covariance at a pair  ##
- ## of points is estimated for n independentent repetitions ##
- ## and 2*n locally dependent dependent repetitions .       ##
+ ## of points is estimated for n independent repetitions    ##
+ ## and 2*n locally dependent repetitions.                  ##
  ## To get the precision, the procedure is repeated m times.##
  #############################################################
 
@@ -23,6 +25,7 @@
 # by about factor 16 at the price of an increased variance of
 # factor 1.5
 
+RFoptions(seed=NA)
 len <- 10
 \dontshow{if(!interactive()){warning("reduced 'len'");len<-2;}}%ok
 x <- seq(0, 1, len=len)
@@ -62,7 +65,7 @@ time <- system.time(
 print(time)                                      ## 20 times faster
 Print(true.cov, mean(c2), sd(c2), empty.lines=1) ## much better results
 
-## the sd is samller (using more locally dependent realisations)
+## the sd is smaller (using more locally dependent realisations)
 ## but it is (much) faster! Note that for n=n2 instead of n=2 * n, 
 ## the value of sd(c2) would be larger due to the local dependencies 
 ## in the realisations.
@@ -77,6 +80,7 @@ Print(true.cov, mean(c2), sd(c2), empty.lines=1) ## much better results
  ## configurations, i.e. grid, non-grid) using TBM          ##
  #############################################################
 
+RFoptions(seed=0)
 step <- 1
 x1 <- seq(-150,150,step)
 y1 <- seq(-15, 15, step)
@@ -110,9 +114,4 @@ tbm.points <- RFgetModelInfo(level=3)$loc$totpts
 Print(tbm.points, empty.lines=0) # number of points on the line
 
 
-
-
-\dontshow{FinalizeExample()}
-
-
-}
+\dontshow{FinalizeExample()}}

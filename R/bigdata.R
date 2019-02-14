@@ -34,8 +34,9 @@ GetNeighbourhoods <- function(model, Z, X,
 
   model.nr <- MODEL_AUX
   rfInit(model, Z$coord, dosimulate=FALSE, reg=model.nr)
+
   
-  lc <- Z$len
+  lc <- nrow(Z$data[[1]]) ## length(Z$coords)
   maxn <- as.integer(maxn)        ## max number of points, including neighbours
   minimum <- as.integer(split_vec[1])## min. number of points in a neighbourhood
   splitn <- as.integer(split_vec[2]) ## number of location when split up
@@ -51,7 +52,6 @@ GetNeighbourhoods <- function(model, Z, X,
   if (Z$dist.given) { ## to do
    stop("space splitting for 'distances' not programmed yet")
    if (is.vector(dist)) {
-      ### nur reinkopiert
       j <- 1:lc
       composite <- list()
       li <- 0
@@ -83,15 +83,19 @@ GetNeighbourhoods <- function(model, Z, X,
   }
 
   newZ <- list()
+  restotal <- sapply(Z$coord, function(x) x$restotal) ## passt das ? 2.2.19
   for (set in 1:lc) {
-    n <- as.integer(dim(Z$coord[[set]])[2])
+    ## n <- as.integer(dim(Z$coord[[set]])[2])
+    oldlen <- length(newZ)
+    nOT <- nT <- restotal
+    if (Z$has.time.comp) nOT <- nOT / coord$T[3]
     coord <- Z$coord[[set]]
     
     if (consider.correlations) {
       natsc <- .C(C_MultiDimRange, as.integer(model.nr),
                   as.integer(set),
-                  natsc = double(xdimOZ),
-                  PACKAGE="RandomFields")$natsc
+                  natsc = double(xdimOZ)
+                  )$natsc
     } else natsc <- rep(1, xdimOZ)  
 
     data <- Z$data[[i]]    
@@ -119,103 +123,150 @@ GetNeighbourhoods <- function(model, Z, X,
       for (i in 1:tsdim) {
         combi[[i]] <- c(-1, 1)
         listseq[[i]] <- 1:blocknpts[i]
-      }
-      combi <- do.call(expand.grid, combi)
+      }      
+      combi <- if (tsdim > 1) do.call(expand.grid, combi)
+               else list(as.matrix(combi))
       for (j in 1:nrow(combi)) {
         L <- list(data)
-        idx <- combi[j, ] 
-        for (i in 1:tsdim) L[[i+1]] <- idx[i] * listseq[[i]]
-        
-        if (all(remaining[idx < 0] > 0)) {
+        idx.combi <- combi[j, ] 
+        for (i in 1:tsdim) L[[i+1]] <- idx.combi[i] * listseq[[i]]
+        L[[length(L) + 1]] <- TRUE ## vdim + repet
+     
+        if (all(idx.combi > 0 | remaining[idx.combi < 0] > 0)) {
           newZ[[length(newZ) + 1]] <- Z[[i]]
-          newZ[[length(newZ)]]$coords[3, ] <- minpts + (idx < 0)
-          newZ[[length(newZ)]]$data <- matrix(ncol=ncol(data), do.call("[", L))
+          pts <- minpts + (idx.combi < 0)
+          newZ[[length(newZ)]]$coords$x[3, ] <- pts
+          newZ[[length(newZ)]]$data <- matrix(nrow=prod(pts), do.call("[", L))
         }
       }
-    } else {    
-      u <- numeric(xdimOZ)
+    } else { # !coord$grid
+      maxnOT <- maxn
+      nDsplitn <- nT / splitn
+      x <- t(coord$x)
+
+      u <- numeric(tsdim)
       for (i in 1:xdimOZ) {
         u[i] <- length(unique(coord$x[i,]))
       }
-      
       Range <- apply(coord, 1, range)
+      if (Z$has.time.comp) {
+        T <- coord$T
+        u <- c(u, T[3])
+        Range <- cbind(Range, (1:T[3]) * T[2])
+        x <- cbind(x, rep(T[2], prod(T[2:3])))
+      }
+      
       rd <- apply(Range, 2, diff) 
       len <- pmax(1e-10 * max(rd), rd * (1 + 1e-10))
       units <- pmax(1, len * natsc)
-      nDsplitn <- n / splitn
-      
+            
       ## * "gerechte" Aufteilung in alle Richtungen waere nDsplitn
       ## * die Richtung in die viele units sind, soll eher aufgespalten werden
       ## * ebenso : wo viele Werte sind eher aufspalten
-      idx <- (nDsplitn / prod(units * u))^{1/xdimOZ} * units * u > 0.5 
-      reddim <- sum(idx)
-      units <- units[idx]
+      blockidx <- (nDsplitn / prod(units * u))^{1/tsdim} * units * u > 0.5
+      reddim <- sum(blockidx)
+      units <- units[blockidx]
       zaehler <- 1
-      parts <- rep(1, xdimOZ)
+      blocks <- rep(1, tsdim)
       OK <- integer(1)
       
       repeat {
-        parts[idx] <- (nDsplitn / prod(units))^{1/reddim} *
+        blocks[blockidx] <- (nDsplitn / prod(units))^{1/reddim} *
           locfactor * zaehler * units * Z$vdim
-        parts <- as.integer(ceiling(parts))
+        blocks <- as.integer(ceiling(blocks))
+        cumblocks <- cumprod(blocks)
+        Ccumblocks <- as.integer(c(1, cumblocks))
+        cumblocks <- Ccumblocks[-length(Ccumblocks)]
+        totblocksOT <- as.integer(cumblocks[xdimOZ])
+
+        if (Z$has.time.comp && blocks[tsdim] > 1) {
+          maxnOT <- as.integer(maxn / ceiling(T[3] / blocks[tsdim]))
+        }
         
-        ## zuordnung der coordinaten_Werte zu den jeweiligen "parts"
+        ## zuordnung der coordinaten_Werte zu den jeweiligen "blocks"
         ## given ist liegend
-        coord.idx <- floor((coord$x - Range[1,]) / (len / parts))
-        
-        cumparts <- cumprod(parts)
-        totparts <- as.integer(cumparts[length(cumparts)])
-        Ccumparts <- as.integer(c(1, cumparts))
-        cumparts <- Ccumparts[-length(Ccumparts)]
-        
-        ## elms.in.boxes <- integer(totparts)  
-        ## neighbours <- integer(totparts)
-        cumidx <- as.integer(colSums(coord.idx * cumparts))
-        
-        elms.in.boxes <- .Call(C_countelements, cumidx, n, totparts,
-                               PACKAGE="RandomFields")
-        
-        neighbours <- .Call(C_countneighbours, xdimOZ, parts, locfactor,
-                            Ccumparts, elms.in.boxes, PACKAGE="RandomFields")
+        coord.idx <- floor((x - Range[1,]) / (len / blocks))
+        cumidx <- as.integer(colSums(coord.idx * cumblocks))
+      
+        elms.in.boxes <- .Call(C_countelements, cumidx, nOT, totblocksOT)
+        neighbours <- .Call(C_countneighbours, xdimOZ, blocks, locfactor,
+                            Ccumblocks, elms.in.boxes, maxnOT)
       
         ## if there too many points within all the neighbours, then split
         ## into smaller boxes
         zaehler <- zaehler * 2
       
-        ## image(neighbours, zlim=c(0:(prod(parts)-1)))
+        ## image(neighbours, zlim=c(0:(prod(blocks)-1)))
         if (!is.null(neighbours)) break;
-      }
+      } # repeat
     
       l <- list()
-      l[[1]] <- .Call(C_getelements, cumidx, xdimOZ, n, Ccumparts,
-                      elms.in.boxes, PACKAGE="RandomFields")
+      l[[1]] <- .Call(C_getelements, cumidx, xdimOZ, nOT, Ccumblocks,
+                      elms.in.boxes)
       l1len <- sapply(l[[1]], length)
-    }
+
+      if (FALSE) {
+
+	l <- .Call(C_getelements, cumidx, xdimOZ, nOT, Ccumblocks,
+		   elms.in.boxes)
+      for (idx in l) {
+        new.x <- Z[[i]]$coords[idx, ]
+         
+        if (Z$has.time.comp && blocks[tsdim] > 1) {
+          minpts <- trunc(T[3] / blocks[tsdim])
+          remaining <- T[3] - minpts * blocks
+          blocknpts <- (blocks - remaining) * minpts
+          combi <- c(-1, 1)
+          listseq <- 1:blocknpts
+          new.data <- Z[[i]]$data
+          dim(new.data) <- c(nrow(Z[[i]]$data) / T[3], T[3], nrow(new.data))
+          for (j in 1:length(combi)) {
+            if (combi[j] >0 || remaining[combi[j] < 0] > 0) {
+              newZ[[length(newZ) + 1]] <- Z[[i]]
+              newZ[[length(newZ)]]$coords <- new.x
+              pts <- minpts + (idx.combi < 0)
+              newZ[[length(newZ)]]$coords$T[3] <- pts
+              newZ[[length(newZ)]]$data <-
+                as.matrix(new.data[ ,combi[j] * listseq, ],
+                          nrow=length(idx) * pts)
+            }
+          }
+        } else {
+          newZ[[length(newZ) + 1]] <- Z[[i]]
+          newZ[[length(newZ)]]$coords$x <- new.x
+          newZ[[length(newZ)]]$data <- Z[[i]]$data[idx, ]
+        }
+      } # for idx
+
+      }
+      
+    }# !coord$grid
     
     if (length(X$x) > 0) {
+ ##      l1len <- sapply(l[[1]], length)
       if (X$grid) {
         stop("not programmed yet")
       } else { 
         ## now calculate the boxes for the locations where we will interpolate
-        i <- pmax(0, pmin(parts-1,
-                          floor((t(coord$x) - Range[1,]) / (len / parts))))
+        i <- pmax(0, pmin(blocks-1,
+                          floor((t(coord$x) - Range[1,]) / (len / blocks))))
+	#### lenXXXXX
         dim(i) <- rev(dim(coord$x))
-        i <- as.integer(colSums(i * cumparts))
+        i <- as.integer(colSums(i * cumblocks))
       
-        res.in.boxes <- .Call(C_countelements, i, nrow(coord$x), totparts,
-                         PACKAGE="RandomFields")
+        res.in.boxes <- .Call(C_countelements, i, nrow(coord$x), totblocksOT)
         
         notzeros <- res.in.boxes > 0
         l[[3]] <-
           .Call(C_getelements, i, xdimOZ, as.integer(nrow(coord$x)),
-                Ccumparts, res.in.boxes, PACKAGE="RandomFields")[notzeros]
+                Ccumblocks, res.in.boxes)[notzeros]
         ## TO DO : idx[[3]] passt nicht, da sowohl fuer Daten
         ##          als auch coordinaten verwendet wird. Bei repet > 1
         ##         ist da ein Problem -- ueberpruefen ob repet=1
         
         
-        ll <- .Call(C_getneighbours, xdimOZ, parts, locfactor, Ccumparts,
-                    neighbours, PACKAGE="RandomFields")[notzeros]
+        ll <- .Call(C_getneighbours, xdimOZ, blocks, locfactor, Ccumblocks,
+                    neighbours)[notzeros]
         less <-
           sapply(ll, function(x) sum(elms.in.boxes[x]) < minimum) | !shared
         ##                  if !shared then all(less)==TRUE
@@ -283,10 +334,12 @@ BigDataSplit <- function(Z, RFopt) {
   method <- fit$likelihood   
   if (is.na(method <- pmatch(method, RC_LIKELIHOOD_NAMES)))
     stop("unknown value for 'likelihood'.")
-  method <- RC_LIKELIHOOD_NAMES[method + 1] ## + 1  ok??
+  method <- RC_LIKELIHOOD_NAMES[method] # kein + 1 notwendig
+
+  restotal <- sapply(Z$coord, function(x) x$restotal)
   
   if (method == "full" ||
-      (method %in% c("auto", "tesselation") && all(Z$len <= fit$max_neighbours)
+      (method %in% c("auto", "tesselation") && all(restotal<=fit$max_neighbours)
        )) return(Z)
   if (method == "auto") {
     method <- "tesselation"

@@ -53,7 +53,7 @@ setAs("RFgridDataFrame", "RFpointsDataFrame",
 
 
 
-## methods 'as.matrix' and 'cbind' as in 'sp'
+## methods 'as.matrix' and 'cbind' as in the 'sp' package
 
 as.matrix.RFgridDataFrame <- 
  as.matrix.RFspatialGridDataFrame <- function(x, ...) {
@@ -297,19 +297,24 @@ setMethod(f="show", signature="RFspatialGridDataFrame",
 	  definition=function(object) print.RFspatialGridDataFrame(object))
 
 
-## extend methods for 'Spatial' to class 'RFsp'
-if (!isGeneric("isGridded"))
-  setGeneric(name = "isGridded", 
-             def = function(obj) standardGeneric("isGridded") )
+isGridded <- function(obj)
+  return(is(obj, "RFgridDataFrame") || is(obj, "RFspatialGridDataFrame"))
 
-#setMethod(f="isGridded", signature="RFsp", 
-#	  definition=function(obj)
-#          (is(obj, "RFgridDataFrame") || is(obj, "RFspatialGridDataFrame")))
-setMethod(f="isGridded", "RFgridDataFrame", function(obj) TRUE)
-setMethod(f="isGridded", "RFpointsDataFrame", function(obj) FALSE)
-setMethod(f="isGridded", "RFspatialGridDataFrame", function(obj) TRUE)
-setMethod(f="isGridded", "RFspatialPointsDataFrame", function(obj) FALSE)
+##if (!isGeneric("isGridded"))
+#setGeneric(name = "isGridded", 
+#             def = function(obj) standardGeneric("isGridded") )
+#
+##setMethod(f="isGridded", signature="RFsp", 
+##	  definition=function(obj)
+##          (is(obj, "RFgridDataFrame") || is(obj, "RFspatialGridDataFrame")))
+#setMethod(f="isGridded", "RFgridDataFrame", function(obj) TRUE)
+#setMethod(f="isGridded", "RFpointsDataFrame", function(obj) FALSE)
+#setMethod(f="isGridded", "RFspatialGridDataFrame", function(obj) TRUE)
+#setMethod(f="isGridded", "RFspatialPointsDataFrame", function(obj) FALSE)
+
+
        
+## extend methods for 'Spatial' to class 'RFsp'
 setMethod(f="dimensions", signature="RFspatialGridDataFrame", 
 	  function(obj) (getMethod("dimensions", "Spatial")@.Data)(obj) )
 setMethod(f="dimensions", signature="RFspatialPointsDataFrame", 
@@ -319,3 +324,24 @@ setMethod(f="dimensions", signature="RFgridDataFrame",
 setMethod(f="dimensions", signature="RFpointsDataFrame", 
 	  definition=function(obj) return(1))
 
+
+
+setMethod("[", signature=c("RFgridDataFrame"), def=brack)
+setMethod("[", signature=c("RFpointsDataFrame"), def=brack)
+setMethod("[", signature=c("RFspatialGridDataFrame"), def=brack)
+setMethod("[", signature=c("RFspatialPointsDataFrame"), def=brack)
+
+
+setMethod("[<-", signature=c("RFgridDataFrame", "ANY", "ANY"),
+          def=brackpfeil)
+setMethod("[<-", signature=c("RFpointsDataFrame", "ANY", "ANY"),
+          def=brackpfeil)
+setMethod("[<-", signature=c("RFspatialGridDataFrame", "ANY", "ANY"),
+          def=brackpfeil)
+setMethod("[<-", signature=c("RFspatialPointsDataFrame", "ANY", "ANY"),
+          def=brackpfeil)
+
+#setMethod("[<-", signature=c("RFgridDataFrame"), brackpfeil)
+#setMethod("[<-", signature=c("RFpointsDataFrame"), brackpfeil)
+#setMethod("[<-", signature=c("RFspatialGridDataFrame"), brackpfeil)
+#setMethod("[<-", signature=c("RFspatialPointsDataFrame"), brackpfeil)

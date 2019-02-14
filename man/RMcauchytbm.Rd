@@ -4,14 +4,14 @@
 \description{
  \code{\link{RMcauchytbm}()} is a shortcut of
  \command{\link{RMtbm}(\link{RMgencauchy}())} and is 
- given here for downwards compatibility
+ given here for downwards compatibility.
 }
 \usage{
 RMcauchytbm(alpha, beta, gamma, var, scale, Aniso, proj)
 }
 
 \arguments{
- \item{alpha,beta}{see \command{\link{RMgencauchy}}.}
+ \item{alpha,beta}{See \command{\link{RMgencauchy}}.}
  \item{gamma}{is the same as \code{fulldim} in \command{\link{RMtbm}}.}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
@@ -20,7 +20,7 @@ RMcauchytbm(alpha, beta, gamma, var, scale, Aniso, proj)
 
  
 \value{
- \command{\link{RMcauchytbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMcauchytbm}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 \references{
@@ -31,8 +31,7 @@ RMcauchytbm(alpha, beta, gamma, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcauchy}},
  \command{\link{RMgencauchy}},
@@ -41,20 +40,15 @@ RMcauchytbm(alpha, beta, gamma, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMcauchytbm(alpha=1, beta=1, gamma=3)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

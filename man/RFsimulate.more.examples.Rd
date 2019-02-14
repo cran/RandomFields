@@ -1,4 +1,3 @@
-
 \name{RFsimulate.more.examples}
 \alias{RFsimulate.more.examples}
 \title{Further Examples for the Simulation of Random Fields}
@@ -7,8 +6,8 @@
  This man page will give a collection of basic examples for the use of
  \code{\link{RFsimulate}}.
 
- For other kind of random fields (binary, max-stable, etc.) or
- more sophisticated approches see \link{RFsimulateAdvanced}.
+ For other kinds of random fields (binary, max-stable, etc.) or
+ more sophisticated approaches see \link{RFsimulateAdvanced}.
 
  See  \link{RFsimulate.sophisticated.examples} for further examples.
 }
@@ -16,12 +15,13 @@
 
 \seealso{
  \command{\link{RFsimulate}},
- \command{\link{RFsimulateAdvanced}}
- \link{RFsimulate.sophisticated.examples}
+ \command{\link{RFsimulateAdvanced}},
+ \command{\link{RFsimulate.sophisticated.examples}}.
 }
 
+\me
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -212,7 +212,7 @@ plot(simulated)
 # (simulate measurements)
 x <- runif(n=100, min=-1, max=1)
 y <- runif(n=100, min=-1, max=1)
-data <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
+dta <- RFsimulate(model = RMexp(), x=x, y=y, grid=FALSE)
 # locations for conditional simulation
 x.seq.cond <- y.seq.cond <- seq(-1.5,1.5,length=100)
 
@@ -220,25 +220,26 @@ x.seq.cond <- y.seq.cond <- seq(-1.5,1.5,length=100)
 ## pass given data and locations as SP4-object
 ## given.data is an SP4-object
 
-cond.simulated <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond, data=data)
+cond.simulated <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond, data=dta)
 
 #############################################################
 ## or equivalently: pass given data and locations as a matrix
 
-cond.simulated.2 <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond, data = cbind(x, y, data@data))
+cond.simulated.2 <- RFsimulate(RMexp(), x=x.seq.cond, y=y.seq.cond,
+                               data = cbind(x, y, dta@data))
 
 all.equal(cond.simulated, cond.simulated.2) ## TRUE
-plot(cond.simulated, data)
+plot(cond.simulated, dta)
  
 
 #############################################################
 ## multiple realizations
 
 # simulate corresponding data twice (2 measurements)
-given.data.2realize <- RFsimulate(model = RMwhittle(nu=1.1),
-x=x.seq.cond, y=y.seq.cond,
-data=data, n=2)
-plot(given.data.2realize, data)
+given.data.2realize <-
+   RFsimulate(model = RMwhittle(nu=1.1), x=x.seq.cond, y=y.seq.cond,
+                                data=dta, n=2) 
+plot(given.data.2realize, dta)
  
 #############################################################
 ## simulation not on a grid
@@ -246,8 +247,8 @@ plot(given.data.2realize, data)
 x.cond <- runif(1000, -2, 2)
 y.cond <- runif(1000, -2, 2)
 cond.simulated <- RFsimulate(model=RMwhittle(nu=1.4),
-x=x.cond, y=y.cond, grid=FALSE, data=data)
-plot(cond.simulated, data)
+x=x.cond, y=y.cond, grid=FALSE, data=dta)
+plot(cond.simulated, dta)
 
 
 #############################################################
@@ -255,13 +256,10 @@ plot(cond.simulated, data)
 #############################################################
 
 # err.model specifies the error model, typically RMnugget
-cond.simulated <- RFsimulate(model=RMexp(),
-x=x.seq.cond, y=y.seq.cond,
-data=data,
-err.model=RMnugget(var=1))
-plot(cond.simulated, data)
+cond.simulated <-
+  RFsimulate(model=RMexp(), x=x.seq.cond, y=y.seq.cond,
+             data=dta, err.model=RMnugget(var=1))
+plot(cond.simulated, dta)
 
 }}
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}

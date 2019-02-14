@@ -42,14 +42,13 @@ RFboxcox <- function(data, boxcox, vdim=1, inverse=FALSE, ignore.na=FALSE) {
 
 
 RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                         data, distances, dim, set=0, ...) {
+                         data, params,  distances, dim, set=0, ...) {
   Reg <- MODEL_USER  
-  relax <- isFormulaModel(model)
-  RFoptOld <- internal.rfoptions(..., RELAX=relax)
+  RFoptOld <- internal.rfoptions(..., RELAX=is(model, "formula"))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
 
-  model <- list("linearpart", PrepareModel2(model))
+  model <- list("linearpart", PrepareModel2(model, params=params, ...))
 
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
          distances=distances, dim=dim, reg = Reg, dosimulate=FALSE)
@@ -59,114 +58,86 @@ RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 
 
 
-
-predictGauss <- function(Reg,
-                         Reg.predict= if (missing(model)) Reg else
-                         RFopt$register$predict_register,
-                         model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                         data, distances, dim, kriging_variance, ...) {
-  relax <- isFormulaModel(model)
-  RFoptOld <- internal.rfoptions(..., RELAX=relax)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  RFopt <- RFoptOld[[2]]
-
-  if (missing(model) || is.null(model)) {
-    if (Reg != Reg.predict) stop("'Reg.predict' should not be given")
-    model <- list("predict", register=Reg)
-  } else {
-    if (Reg == Reg.predict) stop("'Reg.predict' must be different from 'Reg'")
-     model <- list("predict", PrepareModel2(model), register=Reg)
-  }
-
- # str(model); xxxx
-  
-  rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, dim=dim, reg = Reg.predict, dosimulate=FALSE)
-
-  .Call(C_EvaluateModel, double(0), as.integer(Reg.predict),
-        PACKAGE="RandomFields")
-}
-
 setvector <- function(model, preceding, len, factor) {
-  if (model[[1]] == ZF_SYMBOLS_PLUS) {
-    return(c(ZF_SYMBOLS_PLUS,
+  if (model[[1]] == SYMBOL_PLUS) {
+    return(c(SYMBOL_PLUS,
              lapply(model[-1], setvector, preceding=preceding, len=len,
                     factor=factor)))
   }
-  if (found <- model[[1]] == ZF_SYMBOLS_C) {
+  if (found <- model[[1]] == R_C) {
     if (length(model) != len + 1) stop("bug")
     model <- c(model[1], rep(0, preceding), model[-1])
-    if (!missing(factor)) model <- list(ZF_SYMBOLS_MULT, model, factor)
-  } else if (model[[1]] == ZF_SYMBOLS_MULT) {
+    if (!missing(factor)) model <- list(SYMBOL_MULT, model, factor)
+  } else if (found <- model[[1]] == R_CONST) {
+    if (length(model[[1]]) != len) stop("bug")
+    model[[2]] <- c(rep(0, preceding), model[[2]])
+    if (!missing(factor)) model <- list(SYMBOL_MULT, model, factor)
+  } else if (model[[1]] == SYMBOL_MULT) {
     for (i in 2:length(model)) {
-      if (found <- model[[i]][[1]]==ZF_SYMBOLS_C) {
+      if (found <- model[[i]][[1]]==R_C) {
         if (length(model[[i]]) != len + 1) stop("bug")
-        model[[i]] <- c(ZF_SYMBOLS_C, rep(0, preceding), model[[i]][-1])
+        model[[i]] <- c(R_C, rep(0, preceding), model[[i]][-1])
         if (!missing(factor)) model[[length(model) + 1]] <- factor
         break
-      }
+      }      
     }
   }
   if (!found) {
-    bind <- c(list(ZF_SYMBOLS_C), rep(0, preceding), rep(1, len))
-    if (model[[1]] == ZF_SYMBOLS_MULT)
-      model <- c(ZF_SYMBOLS_MULT, list(bind), model[-1])
-    else model <- list(ZF_SYMBOLS_MULT, bind, model)
+    bind <- c(list(R_C), rep(0, preceding), rep(1, len))
+    splittingC <- function(model, preceding, factor) {
+      const <- sapply(model[-1],
+                      function(m) (is.numeric(m) && !is.na(m)) ||
+                                  (m[[1]] == R_CONST && !is.na(m[[2]]))
+                      )
+      if (all(const)) {
+        model <- c(model[1], if (preceding > 0) rep(0, preceding), model[-1])
+        return(list(SYMBOL_MULT, model, if (!missing(factor)) list(factor)))
+      }
+      for (i in 2:length(model)) {
+        vdim <- preceding + (if (i==2) 0 else GetDimension(model[[i-1]]))
+        m  <- ReplaceC(model[[i]])
+        L <- GetDimension(m)
+        model[[i]] <- setvector(m, preceding = vdim, len = L, factor=factor)
+      }
+      model[[1]] <- SYMBOL_PLUS
+      names(model) <- NULL
+      L <- GetDimension(model[[length(model)]])
+      model <- SetDimension(model, L)
+    }
+
+
+    if (model[[1]] == SYMBOL_MULT)
+      model <- c(SYMBOL_MULT, list(bind), model[-1])
+    else model <- list(SYMBOL_MULT, bind, model)
     if (!missing(factor)) model[[length(model) + 1]] <- factor
   }
   return(model)
 }
 
-splittingC <- function(model, preceding, factor) {
-  const <- sapply(model[-1],
-                  function(m) (is.numeric(m) && !is.na(m)) ||
-                  (m[[1]] == ZF_SYMBOLS_CONST && !is.na(m[[2]]))
-                  )
-  if (all(const)) {
-    model <- c(model[1], if (preceding > 0) rep(0, preceding), model[-1])
-    return(list(ZF_SYMBOLS_MULT, model, if (!missing(factor)) list(factor)))
-  }
-  for (i in 2:length(model)) {
-    vdim <- preceding + (if (i==2) 0 else GetDimension(model[[i-1]]))
-  #  Print(i, length(model), vdim)
-    m  <- ReplaceC(model[[i]])
-    L <- GetDimension(m)
-  #  Print(m, L, preceding, vdim)
-    model[[i]] <- setvector(m, preceding = vdim, len = L, factor=factor)
-   # Print(model[[i]])
-  }
-  model[[1]] <- ZF_SYMBOLS_PLUS
-  names(model) <- NULL
-  L <- GetDimension(model[[length(model)]])
- # Print(L)
-  model <- SetDimension(model, L)
-}
-
 
 GetDimension <- function(model){
-  if (model[[1]] == ZF_SYMBOLS_PLUS) {
-    return(max(sapply(model[-1], GetDimension)))
-  }
-  if (model[[1]] == ZF_SYMBOLS_C) return(length(model) - 1)
-  else if (model[[1]] == ZF_SYMBOLS_MULT) {
-    L <- sapply(model, function(m) if (m[[1]]==ZF_SYMBOLS_C) length(m)-1 else 1)
-    return(max(L))
-  }
+  if (model[[1]] == SYMBOL_PLUS) return(max(sapply(model[-1], GetDimension)))
+  if (model[[1]] == R_C) return(length(model) - 1)
+  if (model[[1]] == R_CONST) return(length(model[[2]]))
+  if (model[[1]] == SYMBOL_MULT) 
+    return(max(sapply(model, function(m) if (m[[1]]==R_C) length(m)-1 else 1)))
   return(1)
 }
 
 
 SetDimension <- function(model, L){
-  if (model[[1]] == ZF_SYMBOLS_PLUS) {
-    return(c(ZF_SYMBOLS_PLUS, lapply(model[-1], SetDimension, L=L)))
+  if (model[[1]] == SYMBOL_PLUS) {
+    return(c(SYMBOL_PLUS, lapply(model[-1], SetDimension, L=L)))
   }
-  if (model[[1]] == ZF_SYMBOLS_C) {
+  if (model[[1]] == R_C) {
     if (length(model) <= L) for (i in length(model) : L) model[[i+1]] <- 0
     names(model) <- c("", letters[1:L])
-  } else if (model[[1]] == ZF_SYMBOLS_MULT) {
+  } else if (model[[1]] == R_CONST) {
+    if (length(model[[2]]) < L)
+      model[[2]] <- c(model[[2]], rep(0, L - length(model[[2]])))
+  } else if (model[[1]] == SYMBOL_MULT) {
     for (i in 2:length(model)) {
-#      Print(model[[i]], L, model[[i]][[1]]==ZF_SYMBOLS_C)
-      if (model[[i]][[1]]==ZF_SYMBOLS_C) {
+      if (model[[i]][[1]]==R_C) {
         if (length(model[[i]]) <= L)
           for (j in length(model[[i]]) : L) model[[i]][[j+1]] <- 0
         names(model[[i]]) <- c("", letters[1:L])
@@ -177,17 +148,48 @@ SetDimension <- function(model, L){
 }
 
 
+splittingC <- function(model, preceding, factor) {
+  const <- sapply(model[-1],
+                  function(m) {
+		    ((is.numeric(m) || is.logical(m)) && !is.na(m)) ||
+                      (is.list(m) && m[[1]] == R_CONST && !is.na(m[[2]]))
+		  })
+  if (all(const)) {
+    model <- c(model[1], if (preceding > 0) rep(0, preceding), model[-1])
+    return(list(SYMBOL_MULT, model, if (!missing(factor)) list(factor)))
+  }
+  for (i in 2:length(model)) {
+    vdim <- preceding + (if (i==2) 0 else GetDimension(model[[i-1]]))
+    m <- model[[i]]
+    if (is.list(m)) {
+      m  <- ReplaceC(m)
+      L <- GetDimension(m)
+    } else if (is.numeric(m) || is.logical(m)) {
+      L <- length(m)
+      if (L ==1 && is.na(m)) {
+	m <- list(SYMBOL_MULT, list(R_CONST, a=m)) 
+      } else {
+	m <- list(R_CONST, m)
+      }
+    } else stop(m, "not allowed")
+    model[[i]] <- setvector(m, preceding = vdim, len = L, factor=factor)
+  }
+  model[[1]] <- SYMBOL_PLUS
+  names(model) <- NULL
+  L <- GetDimension(model[[length(model)]])
+  model <- SetDimension(model, L)
+}
+
 
 SplitC <- function(model, factor) {
-#  Print("SplitC", model)
   model <- splittingC(model, 0, factor)
   L <- GetDimension(model)
   return(SetDimension(model, L))
 }
 
 
+
 AnyIsNA <- function(model) {
-#  Print(model)
   if (is.list(model)) {
     for (i in 1:length(model)) if (AnyIsNA(model[[i]])) return(TRUE)
     return(FALSE)
@@ -195,34 +197,34 @@ AnyIsNA <- function(model) {
 }
 
 
+##RReplaceC <-
 ReplaceC <- function(model) {
- # Print("Replace", model)
-  if (model[[1]] == ZF_SYMBOLS_PLUS) {
+  if (model[[1]] == SYMBOL_PLUS) {
     for (i in 2:length(model)) model[[i]] <- ReplaceC(model[[i]])
-  } else if (model[[1]] == ZF_SYMBOLS_MULT) {
+  } else if (model[[1]] == SYMBOL_MULT) {
     if (length(model) <= 2) {
       stop("here, products must have at least 2 factors")
     }
-    cs <- sapply(model, function(m) m[[1]] == ZF_SYMBOLS_C)
+    cs <- sapply(model, function(m) m[[1]] == R_C)
     s <- sum(cs)
     if (s > 0) {
       if (s > 1)
-        stop("multiplication with '", ZF_SYMBOLS_C, "' may happen only once")
+        stop("multiplication with '", R_C, "' may happen only once")
       cs <- which(cs)
       C <- model[[cs]]      
       if (!AnyIsNA(model[-cs])) {
-#        Print(model[-cs], model[-cs])
         return(SplitC(C, factor=model[-cs]))
       }
     }      
-  } else if (model[[1]] == ZF_SYMBOLS_C) {
+  } else if (model[[1]] == R_C) {
     return(SplitC(model))
   }
   return(model)
 }
 
+
 initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                             data, distances, dim, likelihood,
+                             data, params, distances, dim, likelihood,
                              estimate_variance = NA,
                               Reg, ignore.trend=FALSE, ...) {
 
@@ -230,7 +232,7 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
     stop("argument 'likelihood' is a future feature, not programmed yet")
 
 
-  model <- PrepareModel2(model, ...)
+  model <- PrepareModel2(model, params=params, ...)
   model <- ReplaceC(model); ## multivariates c() aufdroeseln
   
   model <- list("loglikelihood", model, data = data,
@@ -244,30 +246,30 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 
 
 RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                         data, distances, dim, likelihood,
+                         data, params, distances, dim, likelihood,
                          estimate_variance = NA,
                          ...) {
-  relax <- isFormulaModel(model)
+  relax <- is(model, "formula")
   RFoptOld <-
     if (missing(likelihood)) internal.rfoptions(..., RELAX=relax)
     else internal.rfoptions(likelihood=likelihood, ..., RELAX=relax)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
   Reg <- RFopt$register$likelihood_register
-    
+
   initRFlikelihood(model=model, x=x, y = y, z = z, T=T, grid=grid,
-                   data=data,
+                   data=data, params=params,
                    distances=distances, dim=dim, likelihood=likelihood,
                    estimate_variance = estimate_variance,
                    Reg = Reg, ...)  
 
-  likeli <- .Call(C_EvaluateModel, double(0),  Reg, PACKAGE="RandomFields")
+  likeli <- .Call(C_EvaluateModel, double(0),  Reg)
   info <- .Call(C_get_likeliinfo, Reg)
   globalvariance <- info$estimate_variance
   where <- 1 + globalvariance
   param <- likeli[-1:-where]
   if (length(param) > 0) names(param) <- info$betanames
-  
+
   return(list(loglikelihood = likeli[1], likelihood = exp(likeli[1]),
               global.variance = if (globalvariance) likeli[where] else NULL,
               parameters = param
@@ -279,7 +281,6 @@ RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
                    distances, dim, reg, dosimulate=TRUE, old.seed=NULL) {
  
-                                        ##print("rfInit in rf.R") #Berreth
   stopifnot(xor(missing(x), #|| length(x)==0,
                 missing(distances) || length(distances)==0))
 
@@ -291,32 +292,36 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
         (is.null(old.seed) || (!is.na(old.seed) && allequal)
          )
         ) {
-       message("NOTE: simulation is performed with fixed random seed ",
-               RFopt$basic$seed,
-               ".\nSet 'RFoptions(seed=NA)' to make the seed arbitrary.")
-     }
+      if (RFopt$internal$warn_seed) {
+         RFoptions(internal.warn_seed = FALSE)
+         txt <- "\nSet 'RFoptions(seed=NA)' to make the seed arbitrary."
+      } else txt <- ""
+      message("NOTE: simulation is performed with fixed random seed ",
+               RFopt$basic$seed, ".", txt)
+    }
     set.seed(RFopt$basic$seed)
   }
   ##  if (missing(x) || length(x) == 0) stop("'x' not given")
 
-  new <- C_CheckXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
+  new <- C_UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
                  y.ok=!dosimulate)
- 
-  vdim <- .Call(C_Init, as.integer(reg), model, new, NAOK=TRUE, # ok
-                PACKAGE="RandomFields")
+
+##  Print(C_Init, as.integer(reg), model, new, NAOK=TRUE) 
+  
+  vdim <- .Call(C_Init, as.integer(reg), model, new, NAOK=TRUE) # ok
   
   if (is.null(old.seed)) return(vdim) else return(!is.na(RFopt$basic$seed))
 }
 
 
 
-rfdistr <- function(model, x, q, p, n, dim=1, ...) {
+rfdistr <- function(model, x, q, p, n, params, dim=1, ...) {
   ## note: * if x is a matrix, the points are expected to be given row-wise
   ##       * if not anisotropic Covariance expects distances as values of x
   ##
   ## here, in contrast to Covariance, nonstatCovMatrix needs only x
 
-  RFoptOld <- internal.rfoptions(..., RELAX=isFormulaModel(model))
+  RFoptOld <- internal.rfoptions(..., RELAX=is(model, "formula"))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
 
@@ -325,7 +330,8 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
     n <- 10
   }
     
-  model<- list("Distr", PrepareModel2(model), dim=as.integer(dim));
+  model<- list("Distr", PrepareModel2(model, params=params, ...),
+               dim=as.integer(dim));
   if (!missing(x)) {
     model$x <- if (is.matrix(x)) t(x) else x
   }
@@ -338,19 +344,16 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
   if (!missing(n)) {
     model$n <- n
   }
-
-#  Print(model)
   
   old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
   if (rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
-         y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_USER,
+         y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_DISTR,
          dosimulate=FALSE, old.seed=RFoptOld[[1]]$basic$seed) &&
       !is.null(old.seed))
     on.exit(.Random.seed <<- old.seed, add = TRUE)
 
 
-  res <-  .Call(C_EvaluateModel, double(0), as.integer(MODEL_USER),
-                PACKAGE="RandomFields")
+  res <-  .Call(C_EvaluateModel, double(0), as.integer(MODEL_DISTR))
 
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
     as.character(deparse(match.call(call=sys.call(sys.parent()))))
@@ -359,43 +362,44 @@ rfdistr <- function(model, x, q, p, n, dim=1, ...) {
   return(res)
 }
 
-RFdistr <- function(model, x, q, p, n, dim=1, ...) {
-   rfdistr(model=model, x=x, q=q, p=p, n=n, dim=dim, ...)
+RFdistr <- function(model, x, q, p, n, params, dim=1, ...) {
+   rfdistr(model=model, x=x, q=q, p=p, n=n, params=params, dim=dim, ...)
 }
-RFddistr <- function(model, x, dim=1,...) {
+RFddistr <- function(model, x, params, dim=1, ...) {
   if (hasArg("q") || hasArg("p") || hasArg("n")) stop("unknown argument(s)");
-  rfdistr(model=model, x=x, dim=dim,...)
+  rfdistr(model=model, x=x, params=params, dim=dim, ...)
 }
-RFpdistr <- function(model, q, dim=1,...) {
+RFpdistr <- function(model, q, params, dim=1, ...) {
   if (hasArg("x") || hasArg("p") || hasArg("n")) stop("unknown argument(s)");
-  rfdistr(model=model, q=q, dim=dim,...)
+  rfdistr(model=model, q=q, params=params, dim=dim, ...)
 }
-RFqdistr <- function(model, p, dim=1,...){
+RFqdistr <- function(model, p, params, dim=1, ...){
   if (hasArg("x") || hasArg("q") || hasArg("n")) stop("unknown argument(s)");
-  rfdistr(model=model, p=p, dim=dim,...)
+  rfdistr(model=model, p=p, params=params, dim=dim, ...)
 }
-RFrdistr <- function(model, n, dim=1,...) {
+RFrdistr <- function(model, n, params, dim=1, ...) {
   if (hasArg("x") || hasArg("q") || hasArg("p")) stop("unknown argument(s)");
-  rfdistr(model=model, n=n, dim=dim,...)
+  rfdistr(model=model, n=n, params=params, dim=dim, ...)
 }
+
 
 
 
 rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
-                  distances, dim, ..., 
+                  params, distances, dim, ..., 
                   ##                  dim = ifelse(is.matrix(x), ncol(x), 1),
                   fctcall=c("Cov", "CovMatrix", "Variogram",
-                    "Pseudovariogram", "Fctn")) {
+                    "Pseudovariogram", "Fctn"), reg=MODEL_USER) {
 
   ## note: * if x is a matrix, the points are expected to be given row-wise
   ##       * if not anisotropic Covariance expects distances as values of x
   ##
   ## here, in contrast to Covariance, nonstatCovMatrix needs only x
 
-   # print("rfeval in rf.R")  #Berreth
-    
-  RFoptOld <- internal.rfoptions(xyz_notation=2*(length(y)!=0 && !is.matrix(y)),
-                                 ..., RELAX=isFormulaModel(model))
+
+
+  RFoptOld <-internal.rfoptions(#xyz_notation=2*(length(y)!=0 && !is.matrix(y)),
+				..., RELAX=is(model, "formula"))
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   
   fctcall <- match.arg(fctcall)
@@ -415,24 +419,20 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
     grid <- FALSE
   }
   
-  p <- list(fctcall, PrepareModel2(model));
-
-  # Print(p, x, distances)
- 
-   old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
-  if (rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, dim=dim, reg = MODEL_USER, dosimulate=FALSE,
-         old.seed=RFoptOld[[1]]$basic$seed) &&
-      !is.null(old.seed))
-      on.exit(.Random.seed <<- old.seed, add = TRUE)
-
-
-  res <- .Call(C_EvaluateModel, double(0), as.integer(MODEL_USER),
-               PACKAGE="RandomFields")
+  p <- list(fctcall, PrepareModel2(model, params=params, ...))
+  if (exists(".Random.seed")) {
+    old.seed <- .Random.seed 
+    on.exit(.Random.seed <<- old.seed, add = TRUE)
+  }
+  
+  rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
+         distances=distances, dim=dim, reg = reg, dosimulate=FALSE,
+         old.seed=RFoptOld[[1]]$basic$seed)
+  res <- .Call(C_EvaluateModel, double(0), as.integer(reg))
   
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
     as.character(deparse(match.call(call=sys.call(sys.parent()))))
-  attr(res, "coord_system") <- .Call(C_GetCoordSystem, as.integer(MODEL_USER),
+  attr(res, "coord_system") <- .Call(C_GetCoordSystem, reg,
               RFoptOld[[2]]$coords$coord_system,
               RFoptOld[[2]]$coords$new_coord_system)
    return(res)
@@ -440,41 +440,124 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 
 
 RFcov <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
-                        distances, dim, ...) {
-  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                distances=distances, dim=dim, ..., fctcall="Cov")
+		  params, distances, dim, ...,
+		  data, bin=NULL, phi=NULL, theta = NULL,
+		  deltaT = NULL, vdim=NULL) {
+  if (hasArg("data")) {
+    if (hasArg("model")) {
+      stop("If both model and data are given, a least square fit will be performed soon")
+    } else {
+      rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, bin=bin,
+			   phi=phi, theta=theta, deltaT=deltaT, vdim=vdim,
+			   method=METHOD_COVARIANCE, ...)
+    }
+  } else rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, params=params,
+                distances=distances, dim=dim, ..., fctcall="Cov",
+                reg=MODEL_COV)
 }
 
 
 RFcovmatrix <- function(model, x, y = NULL, z = NULL, T=NULL, grid,
-                        distances, dim, ...) {
-  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                distances=distances, dim=dim, ..., fctcall="CovMatrix")
+                        params, distances, dim,  ...) {  
+  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, 
+         distances=distances, dim=dim, params=params, ..., fctcall="CovMatrix",
+         reg=MODEL_COVMATRIX)
 }
 
-RFvariogram <- function (model, x, y=NULL,  z = NULL, T=NULL, grid,
-                        distances, dim,...){
-  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                distances=distances, dim=dim, ..., fctcall="Variogram")
+
+extractVal <- function(L, val) {
+  ans <- NULL
+  for (i in 1:length(L)) {
+    p <- L[[i]]
+    if (is.list(p)) ans <- c(ans, extractVal(L, val))
+    else if (is.numeric(p)) {
+      for (j in 1:length(p)) {
+        q <- pmatch(p[j], val)
+        if (!is.na(q)) ans <- c(ans, q)
+      }
+    } ## else string -- does not matter 
+  }
+  return (ans)
+}
+
+
+RFvariogram <- function (model, x, y=NULL, z = NULL, T=NULL, grid,
+			 params, distances, dim, ...,
+			 data, bin=NULL, phi=NULL, theta = NULL,
+			 deltaT = NULL, vdim=NULL){
+  if (hasArg("data")) {
+    if (hasArg("model")) {
+      stop("If both model and data are given, a least square fit will be performed soon")
+    } else {
+      rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, bin=bin,
+			   phi=phi, theta=theta, deltaT=deltaT, vdim=vdim,
+			   method=METHOD_VARIOGRAM, ...)
+    }
+  } else rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, params=params,
+                distances=distances, dim=dim, ..., fctcall="Variogram",
+                reg=MODEL_VARIOGRAM)
 }
 
 RFpseudovariogram <- function(model, x, y=NULL,  z = NULL, T=NULL, grid,
-                        distances, dim,...){
-   rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                distances=distances, dim=dim, ..., fctcall="Pseudovariogram")
+			      params, distances, dim, ...,
+			      data, bin=NULL, phi=NULL, theta = NULL,
+			      deltaT = NULL, vdim=NULL){
+   if (hasArg("data")) {
+    if (hasArg("model")) {
+      stop("If model and data are given, a least square fit will be performed soon")
+    } else {
+      rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, bin=bin,
+			   phi=phi, theta=theta, deltaT=deltaT, vdim=vdim,
+			   method=METHOD_PSEUDO, ...)
+    }
+   } else rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, params=params,
+                distances=distances, dim=dim, ..., fctcall="Pseudovariogram",
+                reg=MODEL_PSEUDO)
 }
+
+RFmadogram <- function(model, x, y=NULL,  z = NULL, T=NULL, grid, params,
+			      distances, dim, ...,
+			      data, bin=NULL, phi=NULL, theta = NULL,
+			      deltaT = NULL, vdim=NULL){
+   if (hasArg("data")) {
+    if (hasArg("model")) {
+      stop("If model and data are given, a least square fit will be performed soon")
+    } else {
+      rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, bin=bin,
+			   phi=phi, theta=theta, deltaT=deltaT, vdim=vdim,
+			   method=METHOD_MADOGRAM, ...)
+    }
+  }  else stop("theoretical values for madograms cannot be calculated yet")
+}
+
+RFpseudomadogram <- function(model, x, y=NULL,  z = NULL, T=NULL, grid,
+			      params, distances, dim, ...,
+			      data, bin=NULL, phi=NULL, theta = NULL,
+			      deltaT = NULL, vdim=NULL){
+   if (hasArg("data")) {
+    if (hasArg("model")) {
+      stop("If model and data are given, a least square fit will be performed soon")
+    } else {
+      rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid, bin=bin,
+		  phi=phi, theta=theta, deltaT=deltaT, vdim=vdim,
+		  method=METHOD_PSEUDOMADOGRAM, ...)
+    }
+  }  else stop("theoretical values for madograms cannot be calculated yet")
+}
+
 
 RFfctn <- function(model, x, y=NULL,  z = NULL, T=NULL, grid,
-                   distances, dim,...) {
-   # print("RFfctn in rf.R") #Berreth
-  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                distances=distances, dim=dim, ..., fctcall="Fctn")
+                   params, distances, dim, ...) {
+  rfeval(model=model, x=x, y=y, z=z, T=T, grid=grid, params=params,
+                distances=distances, dim=dim, ..., fctcall="Fctn",
+                reg=MODEL_FCTN )
 }
 
-RFcalc <- function(model) {
+RFcalc <- function(model, params, ...) {
   if (is.numeric(model)) return(model)
-  RFfctn(model, 0,
-         coord_system="cartesian", new_coord_system="keep", spConform = FALSE)
+  rfeval(model=model, x=0, params=params, ...,
+         coord_system="cartesian", new_coord_system="keep", spConform = FALSE,
+         fctcall="Fctn",reg=MODEL_CALC)
 }
 
 
@@ -492,28 +575,22 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
 
   info <- RFgetModelInfo(RFopt$registers$register, level=3)
 
-  len <- info$loc$len
   vdim <- info$vdim
   total <- info$loc$totpts
   if (is.null(total) || total <= 0)
     stop("register ", RFopt$registers$register, " does not look initialized")
 
-  error <- integer(1)
-
-  result <- .Call(C_EvaluateModel, as.double(n), as.integer(reg), #userdefined,
-                  PACKAGE="RandomFields")
-  
+  result <- .Call(C_EvaluateModel, as.double(n), as.integer(reg)) #userdefined,
   if (!spConform) return(result)
   
-  prep <- prepare4RFspDataFrame(model=NULL, info=info, RFopt=RFopt)
-  attributes(result)$varnames <- prep$names$varnames
-
+  prep <- prepare4RFspDataFrame(info=info, RFopt=RFopt) 
+  ## attributes(result)$varnames <- extractVarNames(model)  #prep$names$varnames
   
   res2 <- conventional2RFspDataFrame(result,
                                      coords=prep$coords,
                                      gridTopology=prep$gridTopology,
                                      n=n,
-                                     vdim=prep$vdim,
+                                     vdim=info$vdim,
                                      T=info$loc$T,
                                      vdim_close_together
                                      =RFopt$general$vdim_close_together)
@@ -524,7 +601,13 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
     
 RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                         distances, dim, data, given = NULL, err.model,
-                        n = 1,  ...) {  
+                        params, err.params, n = 1, ...) {
+
+#  print("test"); 
+ # Print(model, x, y,z,T, grid, given)
+  
+  if (!missing(model) && is(model, "RFfit"))
+    stop("To continue with the output of 'RFfit' use 'predict' or give the components separately")
   mc <- as.character(deparse(match.call()))
 
 ### preparations #########################################################  
@@ -532,11 +615,12 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     RFoptOld <- internal.rfoptions(xyz_notation=length(y)!=0,
                                    expected_number_simu=n, ..., 
                                    general.spConform = FALSE,
-                                   RELAX=isFormulaModel(model))
+                                   RELAX=!missing(model) && is(model,"formula"))
   else 
     RFoptOld <- internal.rfoptions(xyz_notation=length(y)!=0,
                                    expected_number_simu=n, ...,
-                                   RELAX=isFormulaModel(model))
+                                   RELAX=!missing(model) && is(model,"formula"))
+  
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
   RFopt <- RFoptOld[[2]]
 
@@ -556,7 +640,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     if (cond.simu) {
       stop("repeated performance of conditional simulation not programmed yet")
     } else {
-      # userdefined <- GetParameterModelUser(PrepareModel2(model, ...))
+      ## userdefined <- GetParameterModelUser(PrepareModel2(model, params=params, ...))
       res <- rfDoSimulate(n=n, reg=reg, spConform=RFopt$general$spConform
                           #userdefined=userdefined
                           )
@@ -572,13 +656,15 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   stopifnot(!missing(model) && !is.null(model))
 
   model.orig <- model
-  model <- PrepareModel2(model, ...)
-  err.model <-  if (missing(err.model)) NULL else PrepareModel2(err.model, ...)
+
+  model <- PrepareModel2(model, params=params, ...)
+  err.model <-
+    if (missing(err.model)) NULL
+    else PrepareModel2(err.model, params=err.params, ...)
 
 
   ### conditional simulation ###############################################
   if (cond.simu) {
-    #Print(RFoptions()$general)
     if (isSpObj(data)) data <- sp2RF(data)
     stopifnot(missing(distances) || is.null(distances))
     res <- switch(GetProcessType(model),
@@ -597,14 +683,16 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     if(!is.null(err.model))
       warning("error model is unused in unconditional simulation")
 
-    old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
-    if (rfInit(model=list("Simulate",
-                   setseed=eval(parse(text="quote(set.seed(seed=seed))")),
-                   env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
-               grid=grid, distances=distances, dim=dim, reg=reg,
-               old.seed=RFoptOld[[1]]$basic$seed) &&
-        !is.null(old.seed))
+    if (exists(".Random.seed")) {
+      old.seed <- .Random.seed 
       on.exit(.Random.seed <<- old.seed, add = TRUE)
+    }
+    rfInit(model=list("Simulate",
+                         ##setseed=eval(parse(text="quote({set.seed(seed=seed); print(.Random.seed)})")),
+                     setseed=eval(parse(text="quote(set.seed(seed=seed))")),
+                  env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
+               grid=grid, distances=distances, dim=dim, reg=reg,
+               old.seed=RFoptOld[[1]]$basic$seed)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
   } # end of uncond simu
@@ -619,16 +707,15 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
       return(res)
     }
     
-    prep <- prepare4RFspDataFrame(model.orig, info, x, y, z, T,
-                                  grid, data, RFopt)
-    attributes(res)$varnames <- prep$names$varnames
-
-#    Print(res, prep, n, info)
+    prep <- prepare4RFspDataFrame(info, RFopt, x, y, z, T, grid,
+				  coordnames = attributes(res)$coordnames)
+    attributes(res)$varnames <- attributes(res)$varnames
+    
     
     res <- conventional2RFspDataFrame(data=res, coords=prep$coords,
                                       gridTopology=prep$gridTopology,
                                       n=n,
-                                      vdim=prep$vdim,
+                                      vdim=info$vdim,
                                       T=info$loc$T,
                                       vdim_close_together=
                                       RFopt$general$vdim_close_together)
@@ -646,4 +733,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   return(res)
 }
 
-# RFreplace <- function(model, by) { }
+					# RFreplace <- function(model, by) { }
+
+
+RFoptions <- function(...) RandomFieldsUtils::RFoptions(...)

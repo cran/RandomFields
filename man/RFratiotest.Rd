@@ -3,18 +3,17 @@
 \alias{print.RFratiotest}
 \title{Likelihood ratio test}
 \description{
-  The function performs an approximate $\eqn{chi^2} test or
+  The function performs an approximate chi2 test or
   a Monte Carlo likelihood ratio test
-  based on \command{\link{fitgauss}}. Currently it only works for
+  based on \command{\link{fitgauss}}. Currently, it only works for
   Gaussian random fields.
 }    
 \usage{
 RFratiotest(nullmodel, alternative, x, y = NULL, z = NULL, T = NULL,
-grid=NULL, data,
-alpha, n = 5 / alpha, seed = 0, 
-lower = NULL, upper = NULL, methods,
-sub.methods, optim.control = NULL, users.guess = NULL,
-distances = NULL, dim, transform = NULL, ...)
+            grid=NULL, data, alpha, n = 5 / alpha, seed = 0, 
+            lower = NULL, upper = NULL, methods,
+            sub.methods, optim.control = NULL, users.guess = NULL,
+            distances = NULL, dim, transform = NULL, ...)
 }
 \arguments{  
   \item{nullmodel, alternative}{See Details.
@@ -26,16 +25,27 @@ distances = NULL, dim, transform = NULL, ...)
   }
   \item{alpha}{value in [0,1] or missing. Significance level.
   }
- \item{n}{integer. The test is based on \code{n-1} simulations.}
+  \item{n}{integer. The test is based on \code{n-1} simulations.}
  \item{seed}{integer. If not \code{NULL} and not \code{NA}, the
    \link[base]{.Random.seed} is set to \code{seed}. Otherwise,
    \command{\link[base]{set.seed}} is set to the value of 
    \code{RFoptions{}$basic$seed}
    if the latter is not \code{NA}.
  }
- \item{x, y, z, T, grid, data, lower, upper, methods,
-   sub.methods, optim.control, users.guess, distances, dim, transform,
-   ...}{see \command{\link{RFfit}}}
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
+ \item{T}{\argT}
+ \item{grid}{\argGrid}
+ \item{data}{\argData}
+ \item{lower}{\argLower}
+ \item{upper}{\argUpper}
+ \item{methods}{\argFitmethods} 
+ \item{sub.methods}{\argFitsubmethods See \link{RFfit} for details.}
+ \item{users.guess}{\argUsersguess}
+ \item{distances,dim}{\argDistances}
+ \item{optim.control}{\argOptimcontrol}
+ \item{transform}{\argTransform}
+ \item{...}{\argDots}
 }
 
 \note{
@@ -49,9 +59,8 @@ distances = NULL, dim, transform = NULL, ...)
     a covariance model, see \command{\link{RMmodel}} or
     type \code{\link{RFgetModelNames}(type="variogram")} to get all options.
 
-    Depending weather the \command{\link{RFoptions}}
-    \code{ratiotest_approx} is TRUE the
-    the chisq approximation is performed. Otherwise 
+    If \command{\link{RFoptions}}
+    \code{ratiotest_approx} is \code{TRUE} the chisq approximation is performed. Otherwise 
     a Monte Carlo ratio test is performed.
     \item
     \code{\link[=RFfit-class]{RFfit}} or
@@ -103,22 +112,21 @@ distances = NULL, dim, transform = NULL, ...)
   }
   It has S3 class \code{"RFratiotest"}.
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
+\me
 
 \note{This function does not depend on the value of
- \command{\link{RFoptions}}\code{()$PracticalRange}. 
- The function \command{RFratiotest} always uses the standard specification
+ \command{\link{RFoptions}}\code{()$PracticalRange}. The function \command{RFratiotest} always uses the standard specification
  of the covariance model as given in \command{\link{RMmodel}}.
 }
 \seealso{
-  \command{\link{RFfit}}
+  \command{\link{RFfit}},
  \command{\link{RMmodel}},
  \code{\link[=RandomFields-package]{RandomFields}},
  \command{\link{weather}}.
 }
-\examples{
 
+\examples{\dontshow{StartExample()}
 \dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
@@ -138,9 +146,8 @@ RFratiotest(submodel, model, data=soil["moisture"],
             modus_operandi="sloppy")
 }}
 
-\dontshow{FinalizeExample()}
+\dontshow{FinalizeExample()}}
 
-}
 \keyword{spatial}
 \keyword{htest}
 

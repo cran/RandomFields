@@ -75,7 +75,7 @@ rfgui.intern <- function(data, x, y,
   if (missing(xcov)) xcov <- NULL
   if (missing(ycov)) ycov <- NULL
     
-#  tcltk::tclRequire("BWidget", warn=!FALSE)
+  ##  tcltk::tclRequire("BWidget", warn=!FALSE)
 
   ENVIR <- environment()
   assign("model", NULL, envir = ENVIR) # orignal: model als parameter uebergeben
@@ -142,19 +142,18 @@ rfgui.intern <- function(data, x, y,
 
     # nun zum neuen Model
     modelChoice <- models[modelChoiceNum+1]
-    selModelNum <- .C(C_GetModelNr, as.character(modelChoice), nr=integer(1),
-		      PACKAGE="RandomFields")$nr
+    selModelNum <- .C(C_GetModelNr, as.character(modelChoice), nr=integer(1))$nr
 
-    selModelCountPar <- .C(C_GetNrParameters, selModelNum, k=integer(1),
-                           PACKAGE="RandomFields")$k
+    selModelCountPar <- .C(C_GetNrParameters, selModelNum, k=integer(1) )$k
     dim <- as.integer(2 - sim_only1dim)  
     newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
-    modelParam <- try(.Call(C_SetAndGetModelInfo, guiReg,
+    minmax <- try(.Call(C_SetAndGetModelInfo, guiReg,
                         list("Dummy", newmodel), dim,
                         FALSE, FALSE, FALSE, dim,
                         as.integer(10), ## ehemals RFoptions(short=10)
-                        TRUE, TRUE, PACKAGE="RandomFields")$minmax)
-    if (class(modelParam) == "try-error") return(0)
+                        TRUE, TRUE)$minmax)
+    if (is(minmax, "try-error")) return(0)
+
     
     assign("selModelNum",selModelNum, envir=ENVIR)
     if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)
@@ -173,26 +172,27 @@ rfgui.intern <- function(data, x, y,
 ##    openeps <- 1e-10
     for (i in 1:selModelCountPar) {
       baseParam[i] <- 
-        if (!is.na(baseParam[i])) baseParam[i] else
-        if (modelParam[i,3] == INTEGERPARAM) modelParam[i,2] else
-        if (modelParam[i,1] >=0) 0.25 * sum(sqrt(modelParam[i,1:2]))^2 + 0.1
-        else 0.5 * (modelParam[i,1] + modelParam[i,2])
+      if (!is.na(baseParam[i])) baseParam[i]
+      else if (minmax[i, MINMAX_TYPE] == INTEGERPARAM) minmax[i, MINMAX_PMAX]
+      else if (minmax[i, MINMAX_PMIN] >=0)
+	0.25 * sum(sqrt(minmax[i, c(MINMAX_PMIN, MINMAX_PMAX)]))^2 + 0.1
+      else 0.5 * (minmax[i, MINMAX_PMIN] + minmax[i, MINMAX_PMAX])
  
       #Slider fuer den neuen Parameter 
       slParamValue <- tkVar(baseParam[i])
       entryParamValue <- tkVar(tkValue(slParamValue))
-      # name <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
-      # slParamName <- tkLabel(tt,text=paste(toupper(substring(name, 1,1)), substring(name, 2), sep=""))
 
-      txt <- unlist(strsplit(attr(modelParam, "dimnames")[[1]][i],"\\."))[2]
+      txt <- unlist(strsplit(attr(minmax, "dimnames")[[1]][i],"\\."))[2]
       slParamName <- tkLabel(tt, text=txt)
+      resolution <- (if (minmax[i, MINMAX_TYPE]==INTEGERPARAM) -1
+		     else (minmax[i, MINMAX_PMAX] - minmax[i, MINMAX_PMIN]) /
+		     numberSteps)
       slParam <- tkScale(tt, command = Plot,
-                         from= modelParam[i,1], 
-                         to = modelParam[i,2],
+                         from= minmax[i, MINMAX_PMIN], 
+                         to = minmax[i, MINMAX_PMAX],
                          showvalue=FALSE, variable=slParamValue,
                                 ## neg value needed to get precise bounds:
-                         resolution=if (modelParam[i, 3]==INTEGERPARAM) -1 else
-                                    diff(modelParam[i,2:1])/numberSteps, 
+                         resolution=resolution, 
                          orient="horizontal", length=length.slider, width=18)
       entryParam <- tkEntry(tt,width=size.entry,textvariable=entryParamValue)
       tkBind(entryParam, "<Return>", OnAddParamEntryChanged)
@@ -295,8 +295,7 @@ rfgui.intern <- function(data, x, y,
       for (i in 1:length(baseModel$k)) {
         slParamValue <- get(paste("slParam", i, "Value", sep=""), envir=ENVIR)
         value <- get(paste("entryParam", i, "Value", sep=""), envir=ENVIR)
-        tkValue(slParamValue) <-
-          Round(as.numeric(tkValue(value)))
+        tkValue(slParamValue) <- Round(as.numeric(tkValue(value)))
       }
     Plot()
   } 
@@ -318,18 +317,18 @@ rfgui.intern <- function(data, x, y,
    
     if(!as.numeric(tkValue(showAniso))) {
       scale <- exp(as.numeric(tkValue(slScaleValue)))
-      newmodel <- list(ZF_SYMBOLS_PLUS,
+      newmodel <- list(SYMBOL_PLUS,
                     list(DOLLAR[1], var=variance, scale=scale, baseModel),
-                    list(DOLLAR[1], var=nugget, list(ZF_NUGGET[1])))
+                    list(DOLLAR[1], var=nugget, list(RM_NUGGET[1])))
     } else {
       a <-  as.numeric(tkValue(slRotationValue))
       r <- c(exp(as.numeric(tkValue(slScaleAValue))),
              exp(as.numeric(tkValue(slScaleBValue))))
       u <- matrix(c(cos(a), sin(a), -sin(a), cos(a)), ncol=2 )
       aniso <- u %*% (1/r * t(u))
-      newmodel <- list(ZF_SYMBOLS_PLUS,
+      newmodel <- list(SYMBOL_PLUS,
                     list(DOLLAR[1], var=variance, aniso=aniso, baseModel),
-                    list(DOLLAR[1], var=nugget, list(ZF_NUGGET[1])))
+                    list(DOLLAR[1], var=nugget, list(RM_NUGGET[1])))
     }
     return(newmodel)
   }
@@ -343,12 +342,12 @@ rfgui.intern <- function(data, x, y,
     par(cex=0.6, bg="lightgrey", mar=c(3,3,1,1))
     if(!exists("baseModel",envir=ENVIR)) {
       if(!is.null(ev) && plotev) {
-        notNA <- !is.nan(ev@emp.vario)
+        notNA <- !is.nan(ev@empirical)
         xm <- c(min(ev@centers[notNA]), max(ev@centers[notNA]))
-        ym <- c(min(ev@emp.vario[notNA]), max(ev@emp.vario[notNA])*1.1)
+        ym <- c(min(ev@empirical[notNA]), max(ev@empirical[notNA])*1.1)
         lab <- xylabs("", NULL)
-        plot(ev@centers[!is.nan(ev@emp.vario)],
-             ev@emp.vario[!is.nan(ev@emp.vario)], pch=19, xlab=lab$x) 
+        plot(ev@centers[!is.nan(ev@empirical)],
+             ev@empirical[!is.nan(ev@empirical)], pch=19, xlab=lab$x) 
         return(0)
       } 
       plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=FALSE, xlab="", ylab="")
@@ -356,18 +355,13 @@ rfgui.intern <- function(data, x, y,
     }
 
     #baseModel <- get("baseModel",envir=ENVIR)
-    tkValue(entryScaleValue) <-
-      Round(exp(as.numeric(tkValue(slScaleValue))))
+    tkValue(entryScaleValue) <- Round(exp(as.numeric(tkValue(slScaleValue))))
     tkValue(entryVarianceValue) <-
       Round(exp(as.numeric(tkValue(slVarianceValue))))
-    tkValue(entryNuggetValue) <-
-      Round(as.numeric(tkValue(slNuggetValue)))
-    tkValue(entryScaleAValue) <-
-      Round(exp(as.numeric(tkValue(slScaleAValue))))
-    tkValue(entryScaleBValue) <-
-      Round(exp(as.numeric(tkValue(slScaleBValue))))
-    tkValue(entryRotationValue) <-
-      Round(as.numeric(tkValue(slRotationValue)))
+    tkValue(entryNuggetValue) <- Round(as.numeric(tkValue(slNuggetValue)))
+    tkValue(entryScaleAValue) <- Round(exp(as.numeric(tkValue(slScaleAValue))))
+    tkValue(entryScaleBValue) <- Round(exp(as.numeric(tkValue(slScaleBValue))))
+    tkValue(entryRotationValue) <- Round(as.numeric(tkValue(slRotationValue)))
 
 
     newmodel <- GetGuiModel()
@@ -415,7 +409,7 @@ rfgui.intern <- function(data, x, y,
 
     if(!is.null(ev) && plotev) {
       xm <- range(ev@centers, na.rm=TRUE)
-      ym <- range(ev@emp.vario, na.rm=TRUE) * c(1, 1.1)
+      ym <- range(ev@empirical, na.rm=TRUE) * c(1, 1.1)
     } else {
       xm <- range(xcov, na.rm=TRUE)
       ym <- range(cv, na.rm=TRUE) * c(1, 1.1)
@@ -426,10 +420,10 @@ rfgui.intern <- function(data, x, y,
          xlab=lab$x, ylab="", xlim=xm, ylim=ym)
     points(xcov[1], cv[1])
 
-    # plot emp.vario
+    # plot empirical
     if(!is.null(ev) && plotev)    
-      points(ev@centers[!is.nan(ev@emp.vario)],
-             ev@emp.vario[!is.nan(ev@emp.vario)], pch=19)
+      points(ev@centers[!is.nan(ev@empirical)],
+             ev@empirical[!is.nan(ev@empirical)], pch=19)
 
      assign("model", newmodel, envir = ENVIR)
   } # function
@@ -459,7 +453,7 @@ rfgui.intern <- function(data, x, y,
                           tkValue(cbPracRangeVal) != "0"),
                silent=!TRUE)
  
-     if (class(z) == "try-error") {
+     if (is(z, "try-error")) {
          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
                ylab="",
              cex.main=2, col.main="brown",
@@ -692,7 +686,7 @@ rfgui.intern <- function(data, x, y,
     if (missing(x)) x <- seq(1, 5, len=guiOpt$size[if (sim_only1dim) 1 else 2] )
   } else {
     S <- # if (exists("UnifyData")) UnifyData(data=data, RFopt=RFopt) else
-         StandardizeData(data=data, RFopt=RFopt)
+         UnifyData(data=data, RFopt=RFopt)
     if (S$matrix.indep.of.x.assumed)
       stop("data must contain the information about the locations of the data")
     else {
@@ -711,7 +705,7 @@ rfgui.intern <- function(data, x, y,
 
   if(!missing(data) && !is.null(data)) {
     if (!is.null(ev)) stop("if 'data' is given, 'ev' may not be given.")   
-    ev <- RFempiricalvariogram(data=data, phi=1, bin=bin, vdim=1)
+    ev <- rfempirical(data=data, phi=1, bin=bin, vdim=1)
   }
   
   if (any(diff(x) <= 0)) 
@@ -772,14 +766,14 @@ rfgui.intern <- function(data, x, y,
     scale <- 1
   } else {
     ## Nugget  
-    idx1 <- !is.nan(ev@emp.vario)
-    idx2 <- 2:min(6,length(is.nan(ev@emp.vario)))
-    nugget <- max(0, lm(ev@emp.vario[idx1][idx2]
+    idx1 <- !is.nan(ev@empirical)
+    idx2 <- 2:min(6,length(is.nan(ev@empirical)))
+    nugget <- max(0, lm(ev@empirical[idx1][idx2]
                         ~ ev@centers[idx1][idx2])$coefficients[1])
     nuggetMin <- 0 ## nugget/10
-    nuggetMax <- max(ev@emp.vario[idx1])
+    nuggetMax <- max(ev@empirical[idx1])
     ## Variance
-    variance <- quantile(ev@emp.vario[idx1], probs=0.7)
+    variance <- quantile(ev@empirical[idx1], probs=0.7)
      ## Scale
     scale <-  0.3*max(ev@centers)
   }
@@ -816,8 +810,8 @@ rfgui.intern <- function(data, x, y,
   #------------------------------------------------------------------
   # GUI
   #------------------------------------------------------------------
-  tt <- tcltk::tktoplevel()
-  tcltk::tktitle(tt) <- "U Diffusion Gui"
+  tt <- tcltk::tktoplevel()#title="RFgui")
+  tcltk::tktitle(tt) <- "RFgui"
   tcltk::tkwm.protocol(tt, "WM_DELETE_WINDOW", OnReturn)
   
   # some position variables

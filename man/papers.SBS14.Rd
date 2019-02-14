@@ -7,12 +7,11 @@
 among max-stable processes
 }
 \description{
- Here the code of the paper on \sQuote{On some covariance models based on normal scale mixtures} is given.
+ Here, the code of the paper on \sQuote{On some covariance models based on normal scale mixtures} is given.
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
-}
+\me
+
 \references{
  \itemize{ 
  \item
@@ -23,12 +22,10 @@ among max-stable processes
 
 }
 
-\examples{
-
+\examples{\dontshow{StartExample()}
 \dontshow{\dontrun{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 H <- c(0:9, LETTERS[1:6])
 numbers <- rep(0:255, each=2)
@@ -207,10 +204,7 @@ image(z[,,1], col=col)
 
 }}
 
-
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

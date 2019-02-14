@@ -3,7 +3,7 @@
 \alias{sine power function}
 \title{The Sinepower Covariance Model on the Sphere}
 \description{
-  \command{\link{RMsinepower}} is a isotropic covariance model. The
+  \command{\link{RMsinepower}} is an isotropic covariance model. The
   corresponding covariance function, the sine power function of
   Soubeyrand, Enjalbert and Sache, only depends on the angle \eqn{\theta \in [0,\pi]}{0 \le \theta \le \pi} between two points on the sphere and is given by
  \deqn{\psi(\theta) = 1 - ( sin\frac{\theta}{2} )^{\alpha}}{\psi(\theta) = 1 - ( sin(\theta/2) )^{\alpha},}
@@ -21,10 +21,10 @@ RMsinepower(alpha, var, scale, Aniso, proj)
 }
 \details{
  For the sine power function of Soubeyrand, Enjalbert and Sache, see
- Gneiting, T. (2013) equation (17). For a more general form see \command{\link{RMchoquet}}.
+ Gneiting, T. (2013), equation (17). For a more general form see \command{\link{RMchoquet}}.
 }
 \value{
- \command{\link{RMsinepower}} returns an object of class \command{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMsinepower}} returns an object of class \command{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   Gneiting, T. (2013)
@@ -32,9 +32,7 @@ RMsinepower(alpha, var, scale, Aniso, proj)
  spheres} \emph{Bernoulli}, \bold{19}(4), 1327-1349.
 }
 
-\author{Christoph Berreth, \email{cberreth@mail.uni-mannheim.de},
-  Martin Schlather
-}
+\author{Christoph Berreth; \martin}
 
 \seealso{
  \command{\link{RMmodel}},
@@ -49,12 +47,9 @@ RMsinepower(alpha, var, scale, Aniso, proj)
 \keyword{models}
 
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 RFoptions(coord_system="sphere")
 model <- RMsinepower(alpha=1.7)
@@ -72,5 +67,4 @@ plot(z2)
 stopifnot(all.equal(as.array(z1), as.array(z2)))
 
 RFoptions(coord_system="auto")
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

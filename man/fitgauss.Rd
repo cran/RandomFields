@@ -5,8 +5,8 @@
 %\alias{logLik}
 \title{Details on fitting Gaussian random fields, including Box-Cox transformation}
 \description{
- Here some details of \command{\link{RFfit}} are given
- concerning the fitting of models for Gaussian random fields
+ Here, some details of \command{\link{RFfit}} are given
+ concerning the fitting of models for Gaussian random fields.
 
 \bold{  This documentation is far from being complete. }
 }
@@ -30,17 +30,17 @@
 
 \section{Least squares}{
  
- The weighted least squares methods minimise
+ The weighted least squares methods minimize
  \deqn{
  \sum_{i} w_i (\hat \gamma(h_i) - \gamma(h_i))^2
  }
- over all parametrised models of \eqn{\gamma}.
+ over all parametrized models of \eqn{\gamma}.
  Here, \eqn{i} runs over all \eqn{N} bins of the binned variogram
  \eqn{\hat \gamma} 
  and \eqn{h_i} is the centre of bin \eqn{i}.
 
  The following variants of the least squares methods,
- passed as \code{sub.methods} in \command{\link{RFfit}} are implemented.
+ passed as \code{sub.methods} in \command{\link{RFfit}} are implemented:
  \describe{
  \item{\code{'self'}}{
  \eqn{w_i = (\gamma(h_i))^{-2}}
@@ -72,16 +72,17 @@
 
 
 \seealso{
- \code{\link{RFfit}}, \code{RFfit-class}
+ \code{\link{RFfit}}, \code{RFfit-class}.
 }
-\examples{
-RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
-##                   RFoptions(seed=NA) to make them all random again
-## see 'RFfit'
-\dontshow{FinalizeExample()}
-}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-  \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+
+\me
 
 \keyword{spatial}
 \keyword{optimize}
+
+
+\examples{\dontshow{StartExample()}
+RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
+##                   RFoptions(seed=NA) to make them all random again
+## See 'RFfit'.
+\dontshow{FinalizeExample()}}

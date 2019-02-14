@@ -10,10 +10,10 @@
  \deqn{response ~ fixed effects + random effects + error term}
  that specifies the Linear Mixed Model.
 
- Important Remark: \code{RMfixed} is NOT a function although
- the parantheses notation is used to specify the vector of coefficients.
+ Important remark: \code{RMfixed} is NOT a function although
+ the parentheses notation is used to specify the vector of coefficients.
 
- The matrix \eqn{X} is the design matrix  and \eqn{\beta} is a vector of coefficients
+ The matrix \eqn{X} is the design matrix  and \eqn{\beta} is a vector of coefficients.
 
  Note that a fixed effect of the form \eqn{X} is interpreted as
  \code{X@RMfixed(beta=NA)} by default (and \eqn{\beta} is estimated
@@ -32,19 +32,17 @@
 % Modelling Spatial Uncertainty.} New York: John Wiley & Sons.
 %}
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFformula}},
- \command{\link{RFsimulate}},
+ \command{\link{RFsimulate}}.
 }
 
-\examples{
- ## For examples see the help page of 'RFformula' ##
-\dontshow{FinalizeExample()}
-}
+\examples{\dontshow{StartExample()}
+ ## For examples see the help page of 'RFformula'. ##
+\dontshow{FinalizeExample()}}
 		 
 \keyword{models}
 

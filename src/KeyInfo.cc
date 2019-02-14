@@ -23,14 +23,41 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //#include <Rmath.h>  
 #include <stdio.h>  
-//#include <stdlib.h>
-//#include <sys/timeb.h>
-//#include <unistd.h>
-//#include <R_ext/Utils.h>     
 #include <string.h>
+#include "questions.h"
 #include <Rdefines.h>
-#include "RF.h"
+#include <stdint.h>
+
 #include "Coordinate_systems.h"
+#include "operator.h"
+#include "Processes.h"
+#include "startGetNset.h"
+
+
+
+// PMI/PMI0
+bool PMI_print_dollar = !true,
+  PMI_print_mpp = !true,
+  PMI_print_pgs = !true, 
+  PMI_print_details = !true,
+  PMI_print_structure = !true,
+  PMI_print_loc = true,
+  PMI_print_fields = !true;
+int  PMI_print_rect = 1;  // 0, 1, 2
+int MAX_PMI = 5;
+
+#define isInternalKappa(i) (!STRCMP(C->kappanames[i], INTERNAL_PARAM))
+
+const char *FTshort[4] = {"-", "-", "F", "T"};
+name_type FT = {"false", "true"},
+  TriNames = {"mismatch", 
+	      "dep. next model",
+	      "dep. prev. model",
+	      "param. dependent",
+	      "false", "true", 
+	      "normal mixture",
+	      "NaN"};  
+
 
 
 
@@ -45,17 +72,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WHICH_ALL_USER 8
 #define WHICH_ALL 3
 
-cov_model *WhichSub(cov_model *cov, int which){    
-  // printf("%s %d %d\n", NAME(cov), which, isInterface(cov));
-  if (!isInterface(cov)) return cov;
-  cov_model *ans = cov;
+model *WhichSub(model *cov, int which){    
+  if (!equalsnowInterface(cov)) return cov;
+  model *ans = cov;
 
   bool internfst = which == WHICH_INTERNAL || which == WHICH_USER_BUT_ONCE || 
     which == WHICH_USER_BUT_ONCE_JUMP,
     userfst = which == WHICH_USER || which == WHICH_INTERNAL_BUT_ONCE || 
     which==WHICH_INTERNAL_BUT_ONCE_JUMP;
   if (userfst || internfst){
-    if (cov->Splus != NULL) warning("for '+', it is unclear which path to take");
+    if (cov->Splus != NULL && cov->Splus->keys_given)
+      warning("for '+', it is unclear which path to take");
     ans = internfst && ans->key != NULL ? ans->key : ans->sub[0];
     if (ans == NULL) BUG;
     if (which == WHICH_USER_BUT_ONCE_JUMP) ans = ans->sub[0];
@@ -68,17 +95,28 @@ cov_model *WhichSub(cov_model *cov, int which){
 }
 
 
+SEXP ScalarExtendedLogical(ext_bool x) {
+  if (x == 0 || x == 1) return ScalarLogical(x);
+  return ScalarInteger(x);
+}
+ 
+#define ExtBoolNames(x)					\
+  ((x) == wahr ? "true" :				\
+   (x) == falsch ? "false" :				\
+   (x) == Paramdep ? "parameter dependent" :		\
+   (x) == Submodeldep ? "depdending on submodel(s)" : 	\
+   (x) == Huetchenownsize ? "own gridsize" :		\
+   "<error: unknown value>")
 
-name_type FT = {"false", "true"},
-  TriNames = {"mismatch", 
-	      "dep. next model",
-	      "dep. prev. model",
-	      "param. dependent",
-	      "false", "true", 
-	      "normal mixture",
-	      "NaN"};  
+SEXP RedMat(double* V, int row, int col, bool drop) {
+  if (drop) return Num(V, row * col);
+  return Mat(V, row, col);
+}
 
-
+SEXP RedMatInt(int* V, int row, int col, bool drop) {
+  if (drop) return Int(V, row * col);
+  return MatInt(V, row, col);
+}
 
 SEXP GetLocationUserInfo(location_type **loc) {  
   int len;
@@ -98,8 +136,8 @@ SEXP GetLocationUserInfo(location_type **loc) {
       PROTECT(l = allocVector(VECSXP, elmts));
 
       SET_STRING_ELT(namevec, k, mkChar("distances"));
-      SET_VECTOR_ELT(l, k++, L->xdimOZ == 1 ? Num(L->x, laenge) 
-		     : Mat(L->x, L->xdimOZ, laenge));
+     
+      SET_VECTOR_ELT(l, k++, RedMat(L->x, L->xdimOZ, laenge, L->xdimOZ == 1));
 
       SET_STRING_ELT(namevec, k, mkChar("dim"));
       SET_VECTOR_ELT(l, k++, ScalarInteger(L->timespacedim));  
@@ -110,15 +148,13 @@ SEXP GetLocationUserInfo(location_type **loc) {
       PROTECT(l = allocVector(VECSXP, elmts));
       
       SET_STRING_ELT(namevec, k, mkChar("x"));
-      SET_VECTOR_ELT(l, k++, L->grid 
-		     ? Mat(L->xgr[0], 3, L->spatialdim)
-		     : Mat_t(L->x, L->lx, L->xdimOZ));
+      if (L->grid) SET_VECTOR_ELT(l, k++, Mat(L->xgr[0], 3, L->spatialdim));
+      else SET_VECTOR_ELT(l, k++, Mat_t(L->x, L->lx, L->xdimOZ));
 
       if (L->ly > 0) {
 	SET_STRING_ELT(namevec, k, mkChar("y"));
-	SET_VECTOR_ELT(l, k++, L->grid 
-		     ? Mat(L->ygr[0], 3, L->spatialdim)
-		     : Mat_t(L->y, L->ly, L->xdimOZ));
+	if (L->grid) SET_VECTOR_ELT(l, k++, Mat(L->ygr[0], 3, L->spatialdim));
+ 	else SET_VECTOR_ELT(l, k++, Mat_t(L->y, L->ly, L->xdimOZ));
       }
   
       SET_STRING_ELT(namevec, k, mkChar("grid"));
@@ -152,13 +188,13 @@ SEXP GetLocationInfo(location_type *loc) {
   if (loc == NULL) return allocVector(VECSXP, 0);
   const char *info[nlocinfo] = 
     {"timespacedim", "xdimOZ", "spatialdim", "spatialtotpts", 
-     "totpts", "distances", "grid", "Zeit", // Time geht nicht, da 
-     //                                Abkuerzungskollision mit "T"
+     "totpts", "distances", "grid", "has.time.comp", // Time geht nicht, da 
+      //                                Abkuerzungskollision mit "T"
      "xgr", "x", "T", "ygr", "y"};
   SEXP namevec, l;
   int k,
     nloc = nlocinfo,
-    tsdim = loc->timespacedim,
+    timespacedim = loc->timespacedim,
     spdim = loc->spatialdim;
 
   if (loc->ly <= 0) nloc -= 2;
@@ -168,7 +204,7 @@ SEXP GetLocationInfo(location_type *loc) {
     SET_STRING_ELT(namevec, k, mkChar(info[k]));
 
   k = 0;
-  SET_VECTOR_ELT(l, k++, ScalarInteger(tsdim));
+  SET_VECTOR_ELT(l, k++, ScalarInteger(timespacedim));
   SET_VECTOR_ELT(l, k++, ScalarInteger(loc->xdimOZ));
   SET_VECTOR_ELT(l, k++, ScalarInteger(loc->spatialdim));
   SET_VECTOR_ELT(l, k++, ScalarInteger((int) loc->spatialtotalpoints));
@@ -198,7 +234,7 @@ SEXP GetLocationInfo(location_type *loc) {
 }
 
 
-SEXP Param(cov_model *cov, void* p, int nrow, int ncol, SEXPTYPE type,
+SEXP Param(model *cov, void* p, int nrow, int ncol, SEXPTYPE type,
 	     bool drop) {
   int i;
   if (p == NULL) {
@@ -206,33 +242,32 @@ SEXP Param(cov_model *cov, void* p, int nrow, int ncol, SEXPTYPE type,
   } else {
     switch(type) {
     case REALSXP :
-      return (ncol==1 && drop) ? Num((double*) p, nrow) 
-	: Mat((double*) p, nrow, ncol);
+      return RedMat((double*) p, nrow, ncol, ncol==1 && drop);
     case INTSXP :
-      return (ncol==1 && drop) ? Int((int*) p, nrow)
-	: MatInt((int*) p, nrow, ncol);
+      return RedMatInt((int*) p, nrow, ncol, ncol==1 && drop);
     case STRSXP :
-      return String((char*) p);
+      return MatString((char**) p, nrow, ncol);
     case CLOSXP :
       BUG;
     case VECSXP : 
-      if (cov->nr == COVARIATE) {      
+      if (COVNR == COVARIATE) {      
        return(GetLocationUserInfo(cov->Scovariate->loc));
       } else {
-	const char *msg[1] = {"R list"};
-	return Char(msg, 1);
+	const char *info[1] = {"R list"};
+	return Char(info, 1);
       }
       break;       
     case LANGSXP : 
       {
-	const char *msg[1] = {"R object"};
-	return Char(msg, 1);
+	return Rf_duplicate(((sexp_type*) p)->sexp);
+	//	const char *info[1] = {"R object"}; return Char(info, 1);
       }
       break; 
     case ENVSXP : 
       {
-	const char *msg[1] = {"R environment"};
-	return Char(msg, 1);
+	return Rf_duplicate(((sexp_type*) p)->sexp);
+	//	const char *info[1] = {"R environment"};
+	//	return Char(info, 1);
       }
       break; 
     default:
@@ -256,9 +291,12 @@ SEXP Param(cov_model *cov, void* p, int nrow, int ncol, SEXPTYPE type,
   return NULL;
 }
 
-  
+SEXP Param(model *cov, int i, SEXPTYPE type,  bool drop) {
+  return Param(cov, (void*) cov->px[i], cov->nrow[i], cov->ncol[i], type, drop);
+}
+
 #define nsimuinfo 3
-SEXP GetSimuInfo(simu_type *simu) {
+SEXP GetSimuInfo(simu_storage *simu) {
   if (simu == NULL) return allocVector(VECSXP, 0);
   const char *info[nsimuinfo] = 
     {"active", "pair", "expect.simu"};
@@ -284,95 +322,111 @@ SEXP GetSimuInfo(simu_type *simu) {
 }
 
 
-SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform, 
-		  int whichSub, int Level) {
+
+SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform, 
+		  int whichSub, int Level, sort_origin origin) {
+  // level 6 : only isoown
+
+  
   assert(whichSub >=WHICH_USER && whichSub <= WHICH_ALL);
   // whichSub:  0=submodels, 1=keys, 2=both
-
+  
   #include "primitive.h"
  
 #define ninfobase 3
 #define ninfo0 0
 #define ninfo1 6
-#define ninfo2 8
-#define ninfo3 7
+#define ninfo2 9
+#define ninfo3 6
 #define ninfo4 4
 
   /*   !!!!!     ACHTUNG     !!!!!
        Wenn diese Funktion geaendert wird,
-       muss auch GetExtModelInfo geaendert werden
+       muss auch GetModelInfo geaendert werden
        !!!!!                 !!!!!
   */
 
   if (cov == NULL) return allocVector(VECSXP, 0);
-  SEXP model, submodels, nameMvec, param, pnames;
-  int i, j, nmodelinfo, 
+  SEXP Model, submodels, nameMvec, param, pnames;
+  int i, j, nmodelinfo,
+    prL = prlevel > 5 ? 0 : prlevel,
     notnull = 0,
     k = 0;
-  cov_fct *C = CovList + cov->nr; // nicht gatternr
+  defn *C = DefList + COVNR; // nicht gatternr
   location_type
     *loc = cov->calling == NULL ? PrevLoc(cov) : Loc(cov);
-  bool return_param,    
-    given_key = cov->Splus != NULL || cov->key != NULL,
+  bool return_param,
+    param_ok[MAXPARAM + 1],
+    given_key = cov->Splus != NULL && cov->Splus->keys_given,
     return_key = given_key && whichSub != WHICH_USER,
     return_sub = cov->nsub > 0 && (whichSub != WHICH_INTERNAL || !given_key),
-    show_param = prlevel >= 1;
+    show_param = prL >= 1;
  
-  //  printf("%s %d %d\n", NAME(cov), return_key, return_sub);
-
-
   for (i=0; i<C->kappas; i++) {
-    if (both) {
-      notnull += cov->nrow[i]>0 && cov->ncol[i]>0 && show_param;
-      notnull += cov->kappasub[i] != NULL;
-    } else {
-      notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_param) ||
-      cov->kappasub[i] != NULL;
+    int old_nn = notnull;
+    sortsofparam sort = SortOf(cov, i, 1, 1, origin);
+    if ((param_ok[i] = sort <= LASTRETURNED)) {    
+      if (both) {
+	notnull += cov->nrow[i]>0 && cov->ncol[i]>0 && show_param;
+	notnull += cov->kappasub[i] != NULL;
+      } else {
+	notnull += (cov->nrow[i]>0 && cov->ncol[i]>0 && show_param) ||
+	  cov->kappasub[i] != NULL;
+      }
+      param_ok[i] = notnull > old_nn;
     }
   }
   return_param = notnull > 0;
 
   nmodelinfo = ninfobase + (int) return_param;
-  switch(prlevel > 5 ? 5 : prlevel) {
-  case 5 : nmodelinfo += ninfo4;
-  case 4 : nmodelinfo += ninfo3;
-  case 3 : nmodelinfo += ninfo2;
-  case 2 : nmodelinfo += ninfo1;
-  case 1 : nmodelinfo += ninfo0;
-  default: {}
+  switch(prL) {
+  case 5 : nmodelinfo += ninfo4; FALLTHROUGH_OK; 
+  case 4 : nmodelinfo += ninfo3; FALLTHROUGH_OK; 
+  case 3 : nmodelinfo += ninfo2; FALLTHROUGH_OK; 
+  case 2 : nmodelinfo += ninfo1; FALLTHROUGH_OK; 
+  case 1 : nmodelinfo += ninfo0; break;
+  default: {
+    switch(prlevel) {
+    case 0 : break;
+    case 6 : nmodelinfo += 1; break;
+    default : ERR("Possible 'level' values range from 0 to 6.");
+    }
+  }
   }
   if (!return_sub) nmodelinfo--;
   if (!return_key) nmodelinfo--; 
 
-  PROTECT(model = allocVector(VECSXP, nmodelinfo));
+  PROTECT(Model = allocVector(VECSXP, nmodelinfo));
   PROTECT(nameMvec = allocVector(STRSXP, nmodelinfo));
 
   SET_STRING_ELT(nameMvec, k, mkChar("name"));
-  cov_fct *CC = CovList + cov->nr; // nicht gatternr579
+  defn *CC = DefList + COVNR; // nicht gatternr579
   while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
 
-  if (spConform) {
-    char name[MAXCHAR+2];
-    SPRINTF(name, "%s", CC->nick); 
-    SET_VECTOR_ELT(model, k++, mkString(name));
+
+  if (true || spConform) {
+    SET_VECTOR_ELT(Model, k++, mkString(CC->nick));
   } else {
-    SET_VECTOR_ELT(model, k++, mkString(CC->name));
+    SET_VECTOR_ELT(Model, k++, mkString(CC->name));
   }
 
+  if (prlevel == 6) {
+    SET_STRING_ELT(nameMvec, k, mkChar("coordinates")); 
+    SET_VECTOR_ELT(Model, k++,
+		   mkString(ISO_NAMES[CoordinateSystemOf(OWNISO(0))]));
+  }
+
+ 
   if (return_param) {
     PROTECT(param = allocVector(VECSXP, notnull));
     PROTECT(pnames = allocVector(STRSXP, notnull));
     for (j=i=0; i<C->kappas; i++) {
-
+      if (!param_ok[i]) continue;
       if (cov->kappasub[i] != NULL) {	  
-	  SET_STRING_ELT(pnames, j, 
-			 mkChar(!STRCMP(C->kappanames[i], FREEVARIABLE)
-				&& cov->ownkappanames[i] != NULL
-				? cov->ownkappanames[i] 
-				: C->kappanames[i])); 
+	  SET_STRING_ELT(pnames, j, mkChar(OWNKAPPA(C, i)));
 	  SET_VECTOR_ELT(param, j,
-			 GetModelInfo(cov->kappasub[i], prlevel, both, 
-				      spConform, whichSub, Level + 1)); 
+			 IGetModelInfo(cov->kappasub[i], prlevel, both, 
+				      spConform, whichSub, Level + 1, origin)); 
 	  j++;
 	  if (!both) continue;
       }
@@ -397,155 +451,223 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
 	  j++;
 	  continue;
 	}
-	
-	SET_STRING_ELT(pnames, j, 
-		       mkChar(!STRCMP(C->kappanames[i], FREEVARIABLE)
-			      && cov->ownkappanames[i] != NULL
-			      ? cov->ownkappanames[i] 
-			      : C->kappanames[i]));
-	SET_VECTOR_ELT(param, j,
-		       Param(cov, (void*) cov->px[i], cov->nrow[i], 
-			     cov->ncol[i], C->kappatype[i], true));    
+		
+	SET_STRING_ELT(pnames, j, mkChar(OWNKAPPA(C, i)));
+	SET_VECTOR_ELT(param, j, Param(cov, i, C->kappatype[i], true));    
 	j++;
       }
     }
     setAttrib(param, R_NamesSymbol, pnames);
     
-    SET_STRING_ELT(nameMvec, k, mkChar("param"));  
-    SET_VECTOR_ELT(model, k++, param);
+    SET_STRING_ELT(nameMvec, k, mkChar(prlevel > 5 ? "submodels" : "param"));  
+    SET_VECTOR_ELT(Model, k++, param);
     UNPROTECT(2);
 
   }
   
-  if (prlevel>=2) {      
+  if (prL>=2) {      
     SET_STRING_ELT(nameMvec, k, mkChar("covnr"));
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->nr));
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(COVNR));
 
     SET_STRING_ELT(nameMvec, k, mkChar("vdim"));
-    SET_VECTOR_ELT(model, k++,  ScalarInteger(cov->vdim[0])
-		   // cov->vdim[0] == cov->vdim[1] 
-		   // ? ScalarInteger(cov->vdim[0]) 
+    SET_VECTOR_ELT(Model, k++,  ScalarInteger(VDIM0)
+		   // VDIM0 == VDIM1 
+		   // ? ScalarInteger(VDIM0) 
 		   // : Int(cov->vdim, 2)
 		   );
  
     //  SET_STRING_ELT(nameMvec, k, mkChar("naturalscaling"));  
-    //  SET_VECTOR_ELT(model, k++, ScalarInteger(cov->naturalscaling));
+    //  SET_VECTOR_ELT(Model, k++, ScalarInteger(cov->naturalscaling));
 
-    SET_STRING_ELT(nameMvec, k, mkChar("tsdim"));  
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->tsdim));
+    SET_STRING_ELT(nameMvec, k, mkChar("logicaldim"));  
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(OWNLOGDIM(0)));
       
-    SET_STRING_ELT(nameMvec, k, mkChar("xdimprev"));  
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->xdimprev));
+    SET_STRING_ELT(nameMvec, k, mkChar("prev.xdim"));  
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(PREVXDIM(0)));
 
-    SET_STRING_ELT(nameMvec, k, mkChar("xdimown"));  
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->xdimown));
+    SET_STRING_ELT(nameMvec, k, mkChar("own.xdim"));  
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(OWNXDIM(0)));
 
     SET_STRING_ELT(nameMvec, k, mkChar("indep.of.x"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->matrix_indep_of_x));
-  } 
-   
-  if (prlevel>=3) {
-    SET_STRING_ELT(nameMvec, k, mkChar("type"));  
-    SET_VECTOR_ELT(model, k++, Char(TYPENAMES + cov->typus, 1));
+    SET_VECTOR_ELT(Model, k++, ScalarLogical(cov->matrix_indep_of_x));
+  }
 
-    SET_STRING_ELT(nameMvec, k, mkChar("role"));  
-    SET_VECTOR_ELT(model, k++, Char(ROLENAMES + cov->role, 1));
+  if (prL>=3) {
+    SET_STRING_ELT(nameMvec, k, mkChar("type"));  
+    SET_VECTOR_ELT(Model, k++, Char(TYPE_NAMES + OWNTYPE(0), 1));
+
+    SET_STRING_ELT(nameMvec, k, mkChar("frame"));  
+    SET_VECTOR_ELT(Model, k++, Char(TYPE_NAMES + cov->frame, 1));
  
     SET_STRING_ELT(nameMvec, k, mkChar("domown"));  
-    SET_VECTOR_ELT(model, k++, mkString(DOMAIN_NAMES[cov->domown]));
-  
+    SET_VECTOR_ELT(Model, k++, mkString(DOMAIN_NAMES[OWNDOM(0)]));
+
     SET_STRING_ELT(nameMvec, k, mkChar("isoown"));
-    SET_VECTOR_ELT(model, k++, mkString(ISONAMES[cov->isoown]));
-  
-    if (prlevel >= 5) {
-    SET_STRING_ELT(nameMvec, k, mkChar("isoprev"));
-      SET_VECTOR_ELT(model, k++, mkString(ISONAMES[cov->isoprev]));
-    }
-   
+    SET_VECTOR_ELT(Model, k++, mkString(ISO_NAMES[OWNISO(0)]));
  
+     if (prL >= 5) {
+      SET_STRING_ELT(nameMvec, k, mkChar("isoprev"));
+      SET_VECTOR_ELT(Model, k++, mkString(ISO_NAMES[PREVISO(0)]));
+    }
+
     SET_STRING_ELT(nameMvec, k, mkChar("internalq"));  
-    SET_VECTOR_ELT(model, k++, Num(cov->q, cov->qlen));
+    SET_VECTOR_ELT(Model, k++, Num(cov->q, cov->qlen));
+
+    SET_STRING_ELT(nameMvec, k, mkChar("storage"));
+    if (cov->SlocalCE != NULL) {
+      int which = (VDIM0 > 1) * 2 + (CC->check != check_co);
+      // 0:co; 1:intr; 2:multvariate co
+      SEXP storage, namestorage;
+      int L = 0,
+	storage_size = 2 + (which <= 1 ? 4 : 8);
+      localCE_storage *S0 = cov->SlocalCE;
+      localvariab *S = S0->q + 0;
+      PROTECT(storage = allocVector(VECSXP, storage_size));
+      PROTECT(namestorage = allocVector(STRSXP, storage_size));
+
+      SET_STRING_ELT(namestorage, L, mkChar("R"));  
+      SET_VECTOR_ELT(storage, L++, ScalarReal(S->R));
+
+      SET_STRING_ELT(namestorage, L, mkChar("a"));  
+      SET_VECTOR_ELT(storage, L++, ScalarInteger(S->a));
+      
+      switch(which) {
+      case 0 :
+	SET_STRING_ELT(namestorage, L, mkChar("constant"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cutoff.constant));
+
+	SET_STRING_ELT(namestorage, L, mkChar("b"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cutoff.b));
+	
+	SET_STRING_ELT(namestorage, L, mkChar("asqrtr"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cutoff.asqrtr));
+
+	SET_STRING_ELT(namestorage, L, mkChar("R_theor"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cutoff.theor));
+	break;
+      case 1:
+	SET_STRING_ELT(namestorage, L, mkChar("A0"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->intrinsic.A0));
+
+	SET_STRING_ELT(namestorage, L, mkChar("A2"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->intrinsic.A2));
+
+	SET_STRING_ELT(namestorage, L, mkChar("B"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->intrinsic.B));
+
+	SET_STRING_ELT(namestorage, L, mkChar("MAX"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->intrinsic.MAX));
+	break;
+      case 2:
+	SET_STRING_ELT(namestorage, L, mkChar("constant"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.constant));
+
+	SET_STRING_ELT(namestorage, L, mkChar("R"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.R));
+
+	SET_STRING_ELT(namestorage, L, mkChar("A"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.A));
+
+	SET_STRING_ELT(namestorage, L, mkChar("B"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.B));
+
+	SET_STRING_ELT(namestorage, L, mkChar("C"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.C));
+
+	SET_STRING_ELT(namestorage, L, mkChar("N"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.N));
+
+	SET_STRING_ELT(namestorage, L, mkChar("M"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.M));
+
+	SET_STRING_ELT(namestorage, L, mkChar("L"));  
+	SET_VECTOR_ELT(storage, L++, ScalarReal(S->cube.L));
+	break;
+      default : BUG;
+      }
+      
+      assert(L == storage_size);
+      setAttrib(storage, R_NamesSymbol, namestorage);
+      SET_VECTOR_ELT(Model, k++, storage);
+      UNPROTECT(2);
+    } else SET_VECTOR_ELT(Model, k++, allocVector(VECSXP, 0));
+   
   
     SET_STRING_ELT(nameMvec, k, mkChar("pref"));  
-    SET_VECTOR_ELT(model, k++, Int(cov->pref, Nothing + 1));
+    SET_VECTOR_ELT(Model, k++, Int(cov->pref, Nothing + 1));
    
     SET_STRING_ELT(nameMvec, k, mkChar("simu"));  
-    SET_VECTOR_ELT(model, k++, GetSimuInfo(&(cov->simu)));
+    SET_VECTOR_ELT(Model, k++, GetSimuInfo(&(cov->simu)));
   	
-    SET_STRING_ELT(nameMvec, k, mkChar("loc"));  
-    SET_VECTOR_ELT(model, k++, 
-		   Level == 0 || cov->calling == NULL ||
-		   Loc(cov->calling) != Loc(cov) 
-		   ? GetLocationInfo(loc) 
-		   : Loc(cov) == NULL 
-		   ? mkString("no locations given")
-		   : mkString("same as calling model"));
+    SET_STRING_ELT(nameMvec, k, mkChar("loc"));
+    if (Level == 0 || cov->calling == NULL || Loc(cov->calling) != Loc(cov))
+      SET_VECTOR_ELT(Model, k++, GetLocationInfo(loc));
+    else
+      SET_VECTOR_ELT(Model, k++,
+		     mkString(Loc(cov) == NULL ? "no locations given"
+			      : "same as calling model"));
   }
 
-  if (prlevel>=4) {
+  if (prL >= 4) {
+   //  printf("k=%d\n", k);
     SET_STRING_ELT(nameMvec, k, mkChar("logspeed"));
-    SET_VECTOR_ELT(model, k++, ScalarReal(cov->logspeed));
+    SET_VECTOR_ELT(Model, k++, ScalarReal(cov->logspeed));
 
     SET_STRING_ELT(nameMvec, k, mkChar("maxdim"));  
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->maxdim));
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(MAXDIM(OWN, 0)));
       
     SET_STRING_ELT(nameMvec, k, mkChar("full_derivs"));  
-    SET_VECTOR_ELT(model, k++, ScalarInteger(cov->full_derivs));
+    SET_VECTOR_ELT(Model, k++, ScalarInteger(cov->full_derivs));
       
     SET_STRING_ELT(nameMvec, k, mkChar("loggiven"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->loggiven));
+    SET_VECTOR_ELT(Model, k++, ScalarLogical(cov->loggiven));
 
     SET_STRING_ELT(nameMvec, k, mkChar("monotone"));  
-
-    int idx = cov->monotone - (int) MISMATCH;
-    if (idx < 0 || idx > BERNSTEIN - (int) MISMATCH) {
-      PRINTF("monotone %d %d %d\n",  cov->monotone,  MISMATCH,
-	     cov->monotone - (int) MISMATCH);
+    int idx = cov->monotone - (int) MON_UNSET;
+    if (idx < 0 || idx > BERNSTEIN - (int) MON_UNSET) {
+      PRINTF("monotone %d %d %d\n",  cov->monotone,  MON_UNSET,
+	     cov->monotone - (int) MON_UNSET);
       BUG;
     }
-    SET_VECTOR_ELT(model, k++, Char(MONOTONE_NAMES + idx, 1));
-            
-    SET_STRING_ELT(nameMvec, k, mkChar("MLE"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->MLE != NULL));
-
+    SET_VECTOR_ELT(Model, k++, Char(MONOTONE_NAMES + idx, 1));
+             
     SET_STRING_ELT(nameMvec, k, mkChar("finiterange"));  
-    SET_VECTOR_ELT(model, k++, ScalarLogical(cov->finiterange));
+    SET_VECTOR_ELT(Model, k++, ScalarExtendedLogical(cov->finiterange));
       
-    //  SET_STRING_ELT(nameMvec, k, mkChar("idx"));  
-    //  SET_VECTOR_ELT(model, k++, Int(cov->idx, cov->tsdim));
-    //      SET_STRING_ELT(nameMvec, k, mkChar("user"));  
-    // SET_VECTOR_ELT(model, k++, Int(cov->user, Nothing + 1));
+    //  printf("ek=%d\n", k);
   }
-
-  if (prlevel>=5) {
-
+  
+  if (prL>=5) {
     mpp_properties *Mpp = &(cov->mpp);
     int
-      vdim = cov->vdim[0],
+      vdim = VDIM0,
       nm = cov->mpp.moments,
       nmvdim = (nm + 1) * vdim;
  
     //   SET_STRING_ELT(nameMvec, k, mkChar("mpp.refradius"));  
-    //  SET_VECTOR_ELT(model, k++, ScalarReal(mpp->refradius));
+    //  SET_VECTOR_ELT(Model, k++, ScalarReal(mpp->refradius));
  
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.maxheight"));  
-    SET_VECTOR_ELT(model, k++, Num(Mpp->maxheights, vdim, MAXINT));
+    SET_VECTOR_ELT(Model, k++, Num(Mpp->maxheights, vdim, MAXINT));
   
     SET_STRING_ELT(nameMvec, k, mkChar("mpp.M"));
-    SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(Mpp->mM, nmvdim, MAXINT)); 
-
-    SET_STRING_ELT(nameMvec, k, mkChar("mpp.Mplus"));
-    SET_VECTOR_ELT(model, k++, cov->mpp.moments == 0 ? R_NilValue :
-		   Num(Mpp->mMplus, nmvdim, MAXINT));
+    SET_STRING_ELT(nameMvec, k+1, mkChar("mpp.Mplus"));
+    if (nm == 0) {
+      SET_VECTOR_ELT(Model, k++, R_NilValue); 
+      SET_VECTOR_ELT(Model, k++, R_NilValue);
+    } else {
+      SET_VECTOR_ELT(Model, k++, Num(Mpp->mM, nmvdim, MAXINT)); 
+      SET_VECTOR_ELT(Model, k++, Num(Mpp->mMplus, nmvdim, MAXINT));
+    }
   } 
    		 
   if (return_key) {
     if (cov->key != NULL) {
       SET_STRING_ELT(nameMvec, k, mkChar("internal"));  
-      SET_VECTOR_ELT(model, k++, GetModelInfo(cov->key, prlevel, both, 
-					      spConform, whichSub, Level + 1));
-    } else {  /// cov->nr == PLUS && cov->Splus != NULL
+      SET_VECTOR_ELT(Model, k++,
+		     IGetModelInfo(cov->key, prlevel, both, spConform,
+				  whichSub, Level + 1, origin));
+    } else {  /// COVNR == PLUS/M && cov->Splus != NULL
       int ii, n,
 	subs = C->maxsub;
       SEXP keys;
@@ -555,9 +677,9 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
       for (ii=n=0; ii<subs; ii++) 
 	if (cov->Splus->keys[ii] != NULL)
 	  SET_VECTOR_ELT(keys, n++, 
-			 GetModelInfo(cov->Splus->keys[ii], prlevel, both,
-				      spConform, whichSub, Level + 1));
-      SET_VECTOR_ELT(model, k++, keys);
+			 IGetModelInfo(cov->Splus->keys[ii], prlevel, both,
+				      spConform, whichSub, Level + 1, origin));
+      SET_VECTOR_ELT(Model, k++, keys);
       UNPROTECT(1);
     }
   }
@@ -569,47 +691,55 @@ SEXP GetModelInfo(cov_model *cov, int prlevel, bool both, int spConform,
     for (i=0; i<MAXSUB; i++) {
       if (cov->sub[i] != NULL) {
 	SET_VECTOR_ELT(submodels, zaehler, 
-		       GetModelInfo(cov->sub[i], prlevel, both, spConform, 
-				    whichSub, Level + 1));
+		       IGetModelInfo(cov->sub[i], prlevel, both, spConform, 
+				    whichSub, Level + 1, origin));
 	if (++zaehler >= cov->nsub) break;
       }
     }
-    SET_VECTOR_ELT(model, k++, submodels);
+    SET_VECTOR_ELT(Model, k++, submodels);
     UNPROTECT(1);
   }
   
-  setAttrib(model, R_NamesSymbol, nameMvec);
+  setAttrib(Model, R_NamesSymbol, nameMvec);
+
   assert(k==nmodelinfo); 
-  UNPROTECT(2); // model + namemodelvec
-  return model;
+  UNPROTECT(2); // model + nameModelvec
+  return Model;
 }
 
-SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
-  int knr = INTEGER(keynr)[0],
+SEXP GetModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub,
+		     SEXP origin) {
+  int 
+    knr = INTEGER(keynr)[0],
     which = INTEGER(whichSub)[0] == WHICH_ALL_USER 
     ? WHICH_ALL : INTEGER(whichSub)[0] % 2,
     prlevel = std::abs(INTEGER(Prlevel)[0]) % 10;
   bool 
     both = INTEGER(Prlevel)[0] < 0,
     delete_call = std::abs(INTEGER(Prlevel)[0]) < 10;
-  cov_model *cov, *orig;
+  model *cov, *orig;
   SEXP res, names;
+  model **key = KEY();
 
-  if (knr>=0 && knr <= MODEL_MAX && KEY[knr] != NULL) {
-    orig = KEY[knr];
+  if (knr>=0 && knr <= MODEL_MAX && key[knr] != NULL) {
+    orig = key[knr];
     cov = WhichSub(orig, INTEGER(whichSub)[0]);
-    res = GetModelInfo(cov, prlevel, both, 
-		       (bool) INTEGER(spConform)[0], which, 0);
+
+    res = IGetModelInfo(cov, prlevel, both,
+		       (bool) INTEGER(spConform)[0], which, 0,
+		       (sort_origin) INTEGER(origin)[0]);
+
     if (prlevel>=1 && delete_call) {
-      names = getAttrib(res, R_NamesSymbol);
+      PROTECT(names = getAttrib(res, R_NamesSymbol));
       int i, len = length(names);
       for (i=0; i<len; i++) {
 	const char *name = CHAR(STRING_ELT(names, i));
-	if (STRCMP("xdimprev", name) == 0) {
-	  INTEGER(VECTOR_ELT(res, i))[0] = orig->xdimprev;
+	if (STRCMP("prev.xdim", name) == 0) {
+	  INTEGER(VECTOR_ELT(res, i))[0] = XDIM(PREVSYSOF(orig), 0);
 	  break;
 	}
       }
+      UNPROTECT(1);
     }
     return res;
   }
@@ -617,12 +747,17 @@ SEXP GetExtModelInfo(SEXP keynr, SEXP Prlevel, SEXP spConform, SEXP whichSub) {
 }
 
 
-void Path(cov_model *cov, cov_model *sub) {
-  cov_fct *C = CovList + cov->nr;
+void Path(model *cov, model *sub) {
+  defn *C = DefList + COVNR;
   const char *sep="-> ";
+  
+  //printf("%d %ld %ld\n", cov->calling == NULL, cov, cov->calling);
+
   if (cov->calling == NULL) {
     PRINTF(" *** "); 
   } else {
+    // if (cov->calling == cov) crash();
+    assert(cov->calling != cov);
     Path(cov->calling, cov);
   }
  
@@ -636,8 +771,11 @@ void Path(cov_model *cov, cov_model *sub) {
       return;
     }
   }
+
+  //assert(cov->Splus == NULL || cov->Splus->keys_given);
+	 
   
-  if (cov->Splus != NULL) {
+  if (cov->Splus != NULL) { //&& cov->Splus->keys_given) {
     for (i=0; i<C->maxsub; i++) {
       if (cov->Splus->keys[i] == sub) {
 	PRINTF("%s.S[%d].%d%s", C->nick, i, cov->zaehler, sep);
@@ -648,8 +786,8 @@ void Path(cov_model *cov, cov_model *sub) {
 
   for (i=0; i<C->kappas; i++) {
     if (cov->kappasub[i] == sub) {
-      PRINTF("%s.%s.%d%s", C->nick, C->kappanames[i], cov->zaehler, sep);
-       return;
+      PRINTF("%s.%s.%d%s", C->nick, OWNKAPPA(C, i), cov->zaehler, sep);
+      return;
     }
   }
 
@@ -665,12 +803,10 @@ void leer(int level){
   PRINTF(format, "");
 }
 
-int MAX_PMI = 5;
-
 void PrintPoints(location_type *loc, char *name, 
 		 double *x, coord_type xgr, long lx) {
 #ifndef SHOW_ADDRESSES  
-  return; // unclear error below on CRAN
+  return; // unclear Error below on CRAN
 #endif 
 
 #define maxpts 100
@@ -682,20 +818,21 @@ void PrintPoints(location_type *loc, char *name,
 	     xgr[i][XLENGTH]);
     }
   } else {
-    PRINTF("loc:%s      ", name);
-    if (loc->lx <= 0) {
+    PRINTF("loc:%s [%d] ", name, lx);
+    if (lx <= 0) {
       PRINTF("not given! (%d)", addressbits(loc->x));
     } else {
       long total = loc->distances ? lx * (lx-1) / 2 : lx * loc->xdimOZ,
 	endfor = total;
-      if (endfor > maxpts) endfor = maxpts;
+       if (endfor > maxpts) endfor = maxpts;
       for (i=0; i<endfor; i++) {
 	PRINTF("%4.3f", x[i]);
-	if ((i+1) % loc->xdimOZ == 0) PRINTF(";");
+	if ((i+1) % loc->xdimOZ == 0) { PRINTF(";"); }
 	PRINTF(" ");
       }
-      if (endfor < total) 
+      if (endfor < total) {
 	PRINTF("... [%ld not shown]", total - endfor);
+      }
     }
   }
   PRINTF("\n");
@@ -712,10 +849,10 @@ void PrintLoc(int level, location_type *loc, bool own) {
   }
   leer(level); PRINTF("%-10s %d %d %d\n","loc:ts,sp,xdimOZ", 
   		      loc->timespacedim, loc->spatialdim, loc->xdimOZ);
-  leer(level); PRINTF("%-10s %ld\n", "loc:lx", loc->lx);
-  leer(level); PRINTF("%-10s %ld %ld\n","loc:totpts",
+  leer(level); PRINTF("%-10s %d\n", "loc:lx", loc->lx);
+  leer(level); PRINTF("%-10s %d %d\n","loc:totpts",
 		      loc->spatialtotalpoints, loc->totalpoints);
-  leer(level); PRINTF("%-10s %ld\n","loc:len", loc->len);
+  leer(level); PRINTF("%-10s %d\n","loc:len", loc->len);
   leer(level); PRINTF("%-10s %s\n","loc:grid", FT[loc->grid]);
   leer(level); PRINTF("%-10s %s\n","loc:dist", FT[loc->distances]);
   leer(level); PRINTF("%-10s %s\n","loc:Time", FT[loc->Time]);
@@ -730,7 +867,7 @@ void PrintLoc(int level, location_type *loc, bool own) {
 #endif
 
   if (loc->Time) { 
-    leer(level); PRINTF("%-10s (%f %f %f)\n", "loc:T", 
+    leer(level); PRINTF("%-10s (%g %g %g)\n", "loc:T", 
 			loc->T[0], loc->T[1], loc->T[2]);
   }
 
@@ -741,209 +878,335 @@ void PrintLoc(int level, location_type *loc, bool own) {
     int endfor = loc->cani_nrow * loc->cani_ncol;
     PRINTF(" [%d, %d] ",  loc->cani_nrow, loc->cani_ncol);
     if (endfor > MAX_PMI) endfor = MAX_PMI;
-    for (i=0; i<endfor; i++) PRINTF(" %f", loc->caniso[i]); 
+    for (i=0; i<endfor; i++) PRINTF(" %g", loc->caniso[i]); 
     PRINTF("\n");
   }
 }
-  
 
-static bool PMI_print_dollar = !true,
-  PMI_print_mpp = !true,
-  PMI_print_pgs = !true, 
-  PMI_print_details = !true,
-  PMI_print_loc = true,
-  PMI_print_fields = !true;
-static int  PMI_print_rect = 1;  // 0, 1, 2
+void PRINTMAX(double *a, int n, int max) {
+  if (n <= max + 2) for (int i=0; i<n; i++) { PRINTF("%g ", a[i]); }
+  else {
+    for (int i=0; i<max; i++) PRINTF("%g ", a[i]);
+    PRINTF("(%d not printed)", max - n);
+  }
+}
+void PRINTMAX(int *a, int n, int max) {
+  if (n <= max + 2) for (int i=0; i<n; i++) { PRINTF("%d ", a[i]); }
+  else {
+    for (int i=0; i<max; i++) PRINTF("%d ", a[i]);
+    PRINTF("(%d not printed)", max - n);
+  }
+}
 
-void pmi(cov_model *cov, char alles, int level, int maxlevel) {    
-  int i, j, endfor;
-  cov_fct *C = CovList + cov->nr; // nicht gatternr
+#define PRINTREAL(X) \
+  if (R_FINITE(X)) PRINTF(" %g", X);					\
+  else PRINTF(ISNAN(X) ? " NaN" : ISNA(X) ? " NA" : (X) == RF_INF ? " Inf" : \
+	      (X) == RF_NEGINF ? " -Inf" : " <unknown>")
+
+#define PRINTINT(X)  \
+  if ((X) == NA_INTEGER) { PRINTF(" NA(int)");} else PRINTF(" %d", X)
+
+
+
+#define TREE_MAXSTORAGE 20
+int getroot(model *root, model *storage[TREE_MAXSTORAGE]) {
+  if (root->calling != NULL) {
+    int n = getroot(root->calling, storage);
+    if (n >= TREE_MAXSTORAGE) BUG;
+    storage[n] = root;
+    return n+1;
+  } 
+  storage[0] = root;
+  return 1;
+}
+
+#define P10(X,Y) PRINTF(FABS(Y) < 1e-6 || FABS(Y) > 1e8 ? "%-10s %10e\n" : "%-10s %g\n", X, Y);
+
+void pmi(model *cov, char all_subs, int level, int maxlevel,
+	 int stor_level, model *storage[TREE_MAXSTORAGE]) {    
+  int  endfor;
+  defn *C = DefList + COVNR; // nicht gatternr
 #define MNlength 4
   char MN[Forbidden + 1][MNlength], name[100];
+
+  //if (storage != NULL)
+  //printf("storage=%d %s %s \n", stor_level,NAME(storage[stor_level]),NAME(cov));
+  if (storage != NULL && storage[stor_level] != cov) return;
  
   //int n = 2;
   if (level > maxlevel) {
-    leer(level); PRINTF("'%s' left out\n", NAME(cov)); return;
+    leer(level); PRINTF("'%s' [%d] left out\n", NAME(cov), cov->zaehler);
+    // printI(cov);
+    return;
   }
 
-  for (i=0; i<=Forbidden; i++) {
-    strcopyN(MN[i], METHODNAMES[i], MNlength);
+  for (int i=0; i<=Forbidden; i++) {
+    strcopyN(MN[i], METHOD_NAMES[i], MNlength);
   }
 
-  cov_fct *CC = C;
+  defn *CC = C;
   while(STRCMP(CC->name, InternalName) ==0) CC--;
-  if (level == 0) 
-    PRINTF("******   %s, %s   ****** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);
-  else PRINTF("    **** %s, %s **** [%d,%d]", CC->nick, CC->name, cov->nr, cov->zaehler);  PRINTF("\n");
+  if (level == 0) {
+     PRINTF("******   %s (%d; V=%d of %d)   ****** [%d]", CC->nick, COVNR,
+	   cov->variant, CC->variants, cov->zaehler);
+  } else PRINTF("    **** %s (%d; %d of %d) **** [%d]", CC->nick, COVNR, 
+	      cov->variant, CC->variants, cov->zaehler);
+  PRINTF("\n");
 
-  leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
+  //  printI(cov);printD(cov);
+   leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
 
-  for(i=0; i<C->kappas; i++) {
-    STRCPY(name, 
-	   !STRCMP(C->kappanames[i], FREEVARIABLE) && 
-	           cov->ownkappanames != NULL && cov->ownkappanames[i] != NULL
-	   ? cov->ownkappanames[i]
-	   : C->kappanames[i]
-	   );
+  for(int i=0; i<C->kappas; i++) {
+    //    printf("[[ %s %s ]]  ", C->kappanames[i],
+    //	   cov->ownkappanames != NULL ? cov->ownkappanames[i] : "---");
+    
+    
+    STRCPY(name, OWNKAPPA(C, i));
     name[9] = '\0';
-    leer(level + 1); PRINTF("%-10s", 
-			    name); 
     if (PisNULL(i)) {
-      PRINTF(" NULL");
+      if (i>0 && C->kappas > 6 && cov->kappasub[i] == NULL) {
+	if (!PisNULL(i-1) || cov->kappasub[i-1] != NULL) leer(level + 1);
+	else PRINTF(", ");
+	PRINTF("%s", name);
+	if (i+1 == C->kappas ||
+	    (i+1 < C->kappas && (!PisNULL(i+1) || cov->kappasub[i+1] != NULL))){
+	  PRINTF(": NULL");
+	} else continue;
+      } else {
+	leer(level + 1); PRINTF("%-10s", name); 
+	PRINTF(" NULL");
+      }
     } else { // ! PisNULL
+      leer(level + 1); PRINTF("%-10s", name); 
+      int size = endfor = NROW(i) * NCOL(i);
+      if (C->kappatype[i] < LISTOF) {
+	if (endfor > MAX_PMI) endfor = MAX_PMI;
+	if (NCOL(i)==1 && NROW(i) > 1) { PRINTF("[%d] ", NROW(i)); }
+	else PRINTF("[%d, %d] ", NROW(i), NCOL(i));
+      } 
       switch(C->kappatype[i]) {
-      case REALSXP : {
-	if (cov->ncol[i]==1) {
-	  if (cov->nrow[i]==1) {
-	    PRINTF("%f", P0(i)); 
-	  } else {
-	    PRINTF("[%d] ", cov->nrow[i]);
-	    endfor = cov->nrow[i]; if (endfor > MAX_PMI) endfor = MAX_PMI;
-	    for (j=0; j<endfor; j++)
-	      PRINTF(" %f", P(i)[j]); 
-	  }
-	} else {
-	  PRINTF("[%d, %d] ", cov->nrow[i],  cov->ncol[i]);
-	  endfor = cov->nrow[i] * cov->ncol[i]; 
-	  if (endfor > MAX_PMI) endfor = MAX_PMI;
-	  for (j=0; j<endfor; j++)
-	    PRINTF(" %f", P(i)[j]); 
-	}
-      }
-	break;
-      case INTSXP : {
-	if (cov->ncol[i]==1) {
-	  if (cov->nrow[i]==1) {
-	    PRINTF("%d", P0INT(i)); 
-	  } else {
-	  PRINTF("[%d] ", cov->nrow[i]);
-	  endfor = cov->nrow[i]; 
-	  if (endfor > MAX_PMI) endfor = MAX_PMI;
-	  for (j=0; j<endfor; j++)
-	    PRINTF(" %d", PINT(i)[j]); 
-	  }
-	} else {
-	  PRINTF("[%d, %d] ", cov->nrow[i],  cov->ncol[i]);
-	  endfor = cov->nrow[i] * cov->ncol[i];
-	  if (endfor > MAX_PMI) endfor = MAX_PMI;
-	  for (j=0; j<endfor; j++)
-	    PRINTF(" %d", PINT(i)[j]); 
-	}
-      }
-	break;
-      
+      case REALSXP : for (int j=0; j<endfor; j++) PRINTREAL(P(i)[j]); break;
+      case INTSXP : for (int j=0; j<endfor; j++) PRINTINT(PINT(i)[j]); break;
+      case STRSXP : for (int j=0; j<endfor; j++) PRINTF(" %s", PCHAR(i)[j]); break;
       case CLOSXP : PRINTF("< arbitrary function >"); break;
       case VECSXP : PRINTF("< some R list >"); break;
       case LANGSXP: PRINTF("< language expression >"); break;
       case ENVSXP : PRINTF("< R environment >"); break;
       case LISTOF + REALSXP : {
-	int k, ende=0,
-	  k_max = 20,
-	  k_end = cov->nrow[i];
+	int ende=0,
+	  k_max = 100,
+	  k_end = NROW(i);
 	listoftype *p= PLIST(i);	
 	PRINTF("list [%d]\n", cov->nrow[i]);
 	if (k_end > k_max) k_end = k_max;
-	for (k=0; k<k_end; k++) {
+	for (int k=0; k<k_end; k++) {
 	  leer(level + 2); 
    	  if (p->ncol[k]==1) {
             if (p->nrow[k]==1) {
-   	      PRINTF("%f", p->lpx[k][0]); 
+   	      PRINTREAL(p->lpx[k][0]); 
 	    } else {
 	      PRINTF("[%d] ", p->nrow[k]);
 	      ende = endfor = p->nrow[k]; 
 	      if (endfor > MAX_PMI) endfor = MAX_PMI;
-	      for (j=0; j<endfor; j++) PRINTF(" %f", p->lpx[k][j]); 
+	      for (int j=0; j<endfor; j++) PRINTREAL(p->lpx[k][j]); 
             }
           } else {
             PRINTF("[%d, %d] ", p->nrow[k],  p->ncol[k]);
             ende = endfor = p->nrow[k] * p->ncol[k]; 
 	    if (endfor > MAX_PMI) endfor = MAX_PMI;
-	    for (j=0; j<endfor; j++) PRINTF(" %f", p->lpx[k][j]); 
+	    for (int j=0; j<endfor; j++) PRINTREAL(p->lpx[k][j]); 
           }
-	  if (ende > MAX_PMI) PRINTF ("...");
-	  if (k<cov->nrow[i]-1)  PRINTF("\n"); 
+	  if (ende > MAX_PMI) { PRINTF("..."); }
+	  if (k<cov->nrow[i]-1) { PRINTF("\n"); }
         }
-	if (k_end < cov->nrow[i]) { leer(level + 2); PRINTF ("..."); }
+	if (k_end < cov->nrow[i]) { leer(level + 2); PRINTF("...\n"); }
       }
       break;
-      default:  BUG;
+      default:
+	PRINTF("%s (%d)'s kappatype(%d) = %d\n", NAME(cov), COVNR, i,
+	       C->kappatype[i]);
+	BUG;
       } // switch
+      if (C->kappatype[i] < LISTOF && size > MAX_PMI) { PRINTF(" ..."); }
     }
     if (cov->kappasub[i] != NULL) {
       PRINTF("  <=");
-      pmi(cov->kappasub[i], alles, level + 3, maxlevel);
-    } else  PRINTF("\n");
+      pmi(cov->kappasub[i], all_subs, level + 3, maxlevel, stor_level, storage);
+    } 
+    PRINTF("\n");
   } // for
   if (cov->Sset != NULL) {
-    cov_model *from = cov->Sset->remote;
+    model *from = cov->Sset->remote;
     leer(level + 1); 
-    PRINTF("%-10s%s [%d]\n", "<remote>", Nick(from), from->zaehler);     
+    PRINTF("%-10s%s [s%d]\n", "<remote>", Nick(from), from->zaehler);     
   }
 
-  leer(level); PRINTF("%-10s [%d]","internal-q", cov->qlen);  
-
-  endfor = cov->qlen; if (endfor > MAX_PMI) endfor = MAX_PMI;
-  for (i=0; i<endfor; i++) PRINTF(" %f", cov->q[i]); 
-  PRINTF("\n");
+  if (cov->SlocalCE != NULL) {
+    int which = (VDIM0 > 1) * 2 + (CC->check != check_co);
+    localCE_storage *S0 = cov->SlocalCE;
+    localvariab *q = S0->q2;
+    leer(level); PRINTF("%-10s\n", "SlocalCE->q2");
+    switch(which) {
+    case 0 :
+      leer(level + 1);PRINTF("%-10s %3.3f %3.3f %3.3f %g\n", "constant",
+			     q[0].cutoff.constant, q[1].cutoff.constant,
+			     q[2].cutoff.constant, q[3].cutoff.constant);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "b",
+			     q[0].cutoff.b, q[1].cutoff.b, q[2].cutoff.b, q[3].cutoff.b);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "asqrtr",
+			     q[0].cutoff.asqrtr, q[1].cutoff.asqrtr,
+			     q[2].cutoff.asqrtr, q[3].cutoff.asqrtr);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "R_theor",
+			     q[0].cutoff.theor, q[1].cutoff.theor,
+			     q[2].cutoff.theor, q[3].cutoff.theor);
+      break;
+    case 1:
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "A0",
+			     q[0].intrinsic.A0, q[1].intrinsic.A0,
+			     q[2].intrinsic.A0, q[3].intrinsic.A0);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "A2",
+			     q[0].intrinsic.A2, q[1].intrinsic.A2,
+			     q[2].intrinsic.A2, q[3].intrinsic.A2);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "B",
+			     q[0].intrinsic.B, q[1].intrinsic.B,
+			     q[2].intrinsic.B, q[3].intrinsic.B);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "MAX",
+			     q[0].intrinsic.MAX, q[1].intrinsic.MAX,
+			     q[2].intrinsic.MAX, q[3].intrinsic.MAX);
+      break;
+    case 2:
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "constant",
+			     q[0].cube.constant, q[1].cube.constant,
+			     q[2].cube.constant, q[3].cube.constant);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "R",
+			     q[0].cube.R, q[1].cube.R,
+			     q[2].cube.R, q[3].cube.R);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "A",
+			     q[0].cube.A, q[1].cube.A, q[2].cube.A,q[3].cube.A);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "B",
+			     q[0].cube.B, q[1].cube.B, q[2].cube.B,q[3].cube.B);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "C",
+			     q[0].cube.C, q[1].cube.C, q[2].cube.C,q[3].cube.C);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "N",
+			     q[0].cube.N, q[1].cube.N, q[2].cube.N,q[3].cube.N);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "M",
+			     q[0].cube.M, q[1].cube.M, q[2].cube.M,q[3].cube.M);
+      leer(level + 1);PRINTF("%-10s %g %g %g %g\n", "L",
+			     q[0].cube.L, q[1].cube.L, q[2].cube.L,q[3].cube.L);
+      break;
+    default : BUG;
+    }
+  } else if (cov->qlen > 0) {
+    leer(level); PRINTF("%-10s", "internal-q");  
+    endfor = cov->qlen; if (endfor > MAX_PMI) endfor = MAX_PMI;
+    for (int i=0; i<endfor; i++) PRINTF(" %g", cov->q[i]); 
+    PRINTF("\n");
+  }
 
   if (cov->calling == NULL && level != 0) {
     PRINTF("current model is %s\n", NICK(cov)); 
     BUG;
   }
   leer(level); 
-  if (cov->calling==NULL)  PRINTF("%-10s %s\n","calling", "NULL");
+  if (cov->calling==NULL) { PRINTF("%-10s %s\n","calling", "NULL");}
   else PRINTF("%-10s %s [%d]\n","calling", 
-	      Nick(cov->calling), cov->calling->zaehler);  
-  leer(level); PRINTF("%-10s %s (%d)\n","gatter",
-		      cov->gatternr >=0 ? CovList[cov->gatternr].name : "none",
-		      cov->gatternr);  
-  if (cov->secondarygatternr >= 0) {
-    leer(level);
-    PRINTF("%-10s %s (%d)\n","secondary",
-	   CovList[cov->secondarygatternr].name, cov->secondarygatternr);  
+	      Nick(cov->calling), cov->calling->zaehler);
+  //if (cov->root == NULL) crash();
+  assert(cov->root != NULL);
+  assert(cov->base != NULL);
+  if (level == 0 || PMI_print_structure) {
+     leer(level);
+     PRINTF("%-10s %s [%d]; KEY=%lu (%d)\n", "root",
+	    NAME(cov->root), cov->root->zaehler,
+	    (uintptr_t) KEYtypeOf(cov), KEYtypeOf(cov)->currentRegister);
   }
-  leer(level); PRINTF("%-10s %d/%d (%s/%s)\n","domprev/own", 
-		      cov->domprev, cov->domown,
-		      DOMAIN_NAMES[(int) cov->domprev],
-		      DOMAIN_NAMES[(int) cov->domown]);
-  leer(level); PRINTF("%-10s %d/%d (%s/%s)\n","isoprev/own", 
-		      cov->isoprev, cov->isoown,
-		      ISONAMES[(int) cov->isoprev],
-		      ISONAMES[(int) cov->isoown]);
-  leer(level); PRINTF("%-10s %d, %d:%d:%d, %d/%d\n","ts-x-v-dim",
-		      cov->tsdim, cov->xdimprev, cov->xdimgatter, cov->xdimown,
-		      cov->vdim[0], cov->vdim[1]);  
-   leer(level); PRINTF("%-10s %d\n","maxdim", cov->maxdim);  
-  leer(level); PRINTF("%-10s %s (%d)\n", "type", TYPENAMES[cov->typus],
-		      (int) cov->typus);
-  leer(level); PRINTF("%-10s %s (%d)\n","role", ROLENAMES[cov->role],
-		      (int) cov->role);
-  leer(level); PRINTF("%-10s %s\n","determinst", FT[cov->deterministic]);  
-  if (PMI_print_fields) {
-    leer(level); PRINTF("%-10s %s\n","method", METHODNAMES[cov->method]);
-    leer(level); PRINTF("%-10s %s\n","initialised", FT[cov->initialised]);
-    leer(level); PRINTF("%-10s %s\n","fieldret", FT[cov->fieldreturn]);
-    leer(level); PRINTF("%-10s %s\n","origrf", FT[cov->origrf]);
-    leer(level); PRINTF("%-10s %d\n","rf", addressbits(cov->rf));
-    leer(level); PRINTF("%-10s %s\n","checked", FT[cov->checked]);
-    leer(level); PRINTF("%-10s ", "pref");  
-    for (i=0; i<=Sequential; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
-    PRINTF("\n"); leer(level); PRINTF("%-10s ", "");  
-    for (; i<=Nothing; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
+   
+  int  o,
+    g = NRi(GATTER[0]), // OK
+    p = NRi(PREV[0]); // OK
+  if (PMI_print_structure){
+    leer(level); PRINTF("%-10s %s (%d) / %s (%d)\n","prev/#",
+		      p==UNSET ? "unset" : p >=0 ? DefList[p].name : "none", p,
+		      g==UNSET ? "unset" : g >=0 ? DefList[g].name : "none", g);
+  }
+  // ACHTUNG: NICHT DIE ABKUERZUNGEN PREVDOM ETC VERWENDEN, DA HIER
+  // KEIN PLAUSIBILITAETS C H E C K   GEMACHT WERDEN SOLL
+  p = (int) DOMi(PREV[0]); // OK
+  g = (int) DOMi(GATTER[0]); // OK
+  o = (int) DOMi(OWN[0]); // OK
+  leer(level); PRINTF("%-10s %d/%d/%d (%s/%s/%s)\n","dom", p, g, o,
+		      DOMAIN_NAMES[(int) p], DOMAIN_NAMES[(int) g], 
+		      DOMAIN_NAMES[(int) o]);
+  p = (int) ISOi(PREV[0]); // OK
+  g = (int) ISOi(GATTER[0]); // OK
+  o = (int) ISOi(OWN[0]); // OK
+  leer(level); PRINTF("%-10s %d/%d/%d (%s/%s/%s)\n","iso", p, g, o,
+		      ISO_NAMES[p], ISO_NAMES[g], ISO_NAMES[o]);
+  
+  p = (int) XDIMi(PREV[0]); // OK
+  g = (int) XDIMi(GATTER[0]); // OK
+  o = (int) XDIMi(OWN[0]); // OK
+  int lp = (int) LOGDIMi(PREV[0]), // OK
+    lg = (int) LOGDIMi(GATTER[0]), // OK
+    lo = (int) LOGDIMi(OWN[0]); // OK
+  leer(level); PRINTF("%-10s %d:%d:%d, %d:%d:%d, %d,%d\n","l-x-v-dim",
+		      lp, lg, lo, p, g, o, VDIM0, VDIM1);  // OK
+
+  if (PMI_print_structure) {
+    leer(level); PRINTF("%-10s %s\n","rand.kappa", FT[cov->randomkappa]);
+    
+    leer(level); PRINTF("%-10s %d\n","variant", (int) cov->variant);
+    o = (int) MAXDIMi(OWN[0]); // OK
+    leer(level); PRINTF("%-10s %d\n","maxdim", o);
+    leer(level); PRINTF("%-10s %d %d %d likeli==%d locCE=%d \n","stor/2/extra",
+			addressbits(cov->Sgen),
+			addressbits(cov->Sgatter),
+			addressbits(cov->Sextra),
+			addressbits(cov->Slikelihood),
+			addressbits(cov->SlocalCE)
+			);
+    leer(level); PRINTF("%-10s ","S");
+#define S(X) if (cov->S##X == NULL) {} else{ PRINTF("%s, ", #X); }
+    S(ce); S(localCE); S(approxCE); S(direct); S(hyper); S(nugget);
+    S(plus); S(sequ); S(tbm); S(trend); S(br); S(get); S(pgs); S(set);
+    S(polygon); S(rect); S(dollar); S(earth); S(extra); S(solve);
+    S(biwm); S(bistable); S(scatter); S(mcmc); S(gen); S(likelihood);
+    S(covariate); S(mle);     
+    if (cov->Sgatter == NULL) { PRINTF("gatter=NULL!, "); }
     PRINTF("\n");
+    if (cov->Splus != NULL) {
+      leer(level); PRINTF("%-10s ","conform");
+      bool *conform = cov->Splus->conform;
+      for (int i=0; i<cov->nsub; i++) PRINTF("%s", conform[i] ? "T" : "F");
+      PRINTF("\n");
+    }
+    leer(level); PRINTF("%-10s %s\n","simu:activ", FT[cov->simu.active]);
+    leer(level); PRINTF("%-10s %s\n","     pair", FT[cov->simu.pair]);
+    leer(level); PRINTF("%-10s %d\n","     expect", cov->simu.expected_number_simu);    
   }
+  p = (int) TYPEi(PREV[0]); // OK
+  g = (int) TYPEi(GATTER[0]); // OK
+  o = (int) TYPEi(OWN[0]); // OK
+  leer(level); PRINTF("%-10s %d/%d/%d %s/%s/%s\n", "type", p, g, o,
+		      TYPE_NAMES[p], TYPE_NAMES[g], TYPE_NAMES[o]);
+  leer(level); PRINTF("%-10s %s\n","frame", TYPE_NAMES[cov->frame]);
+  if (cov->err != NOERROR) {
+    leer(level); PRINTF(" ! %-s ! level=%d err=%d (%s)\n","error", cov->err_level, cov->err, cov->err_msg);
+  }
+
+
   if (PMI_print_details) {
     leer(level); PRINTF("%-10s %s\n","user_given", 
 		      cov->user_given == ug_internal ? "internal" :
 		      cov->user_given == ug_explicit ? "explicit" : "implicit");
-    leer(level); PRINTF("%-10s %f\n","logspeed", cov->logspeed);  
+    leer(level); P10("logspeed", cov->logspeed);  
     leer(level); PRINTF("%-10s %d, %d\n","full/rese deriv's", 
 			cov->full_derivs, cov->rese_derivs);  
     leer(level); PRINTF("%-10s %s\n","loggiven", FT[cov->loggiven]);  
-    int idx = cov->monotone - (int) MISMATCH;
-    if (idx < 0 || idx > BERNSTEIN - (int) MISMATCH) {
-      PRINTF("monotone %d %d %d\n",  cov->monotone,  MISMATCH,
-	     cov->monotone - (int) MISMATCH);
+    int idx = cov->monotone - (int) MON_UNSET;
+    if (idx < 0 || idx > BERNSTEIN - (int) MON_UNSET) {
+      PRINTF("monotone %d %d %d\n",  cov->monotone,  MON_UNSET,
+	     cov->monotone - (int) MON_UNSET);
       BUG;
     }
     leer(level); PRINTF("%-10s %s (%d)\n","monotone", 
@@ -952,26 +1215,18 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
 			POSITIVITY_NAMES[cov->ptwise_definite],
 			cov->ptwise_definite);  
     leer(level); PRINTF("%-10s %s\n","finiterng", 
-			TriNames[cov->finiterange - MISMATCH]);  
-    leer(level); PRINTF("%-10s %d %d %d %d\n","stor/2/extra/like", 
-			addressbits(cov->Sgen),
-			addressbits(cov->Sgatter),
-			addressbits(cov->Sextra),
-			addressbits(cov->Slikelihood));
-    leer(level); PRINTF("%-10s %s\n","simu:activ", FT[cov->simu.active]);
-    leer(level); PRINTF("%-10s %s\n","simu:pair", FT[cov->simu.pair]);
-    leer(level); PRINTF("%-10s %d\n","simu:expect", cov->simu.expected_number_simu);    
-    leer(level); PRINTF("%-10s %s\n", "MLE", FT[cov->MLE==NULL]); 
-    int d;
+			TriNames[cov->finiterange - MISMATCH]);
+   
+
     if (cov->taylorN > 0) {
-      for (d=0; d<cov->taylorN; d++) {
+      for (int d=0; d<cov->taylorN; d++) {
 	leer(level); 
-	PRINTF("%-10s c%d=%f p%d=%f\n", d==0 ? "taylor" : "", 
+	PRINTF("%-10s c%d=%g p%d=%g\n", d==0 ? "taylor" : "", 
 	       d, cov->taylor[d][TaylorConst], d, cov->taylor[d][TaylorPow]);
       }
     } else {leer(level); PRINTF("%-10s %s\n", "taylor", "undetermined");}
     if (cov->tailN > 0) {
-	for (d=0; d<cov->tailN; d++) {
+	for (int d=0; d<cov->tailN; d++) {
 	  leer(level);
 	  PRINTF("%-10s c%d=%4.3f p%d=%4.3f ce%d=%4.3f pe%d=%4.3f\n", 
 		 d==0 ? "tailtlr" : "",
@@ -982,50 +1237,78 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
 	}
     } else {leer(level); PRINTF("%-10s %s\n", "tailtlr", "undetermined");}
   }
-  //leer(level); PRINTF("%-10s %d\n","naturalscaling", cov->naturalscaling);  
-  //leer(level); PRINTF("%-10s %d\n","init",CovList[cov->nr].init!=init_failed);
-   //leer(level); PRINTF("%-10s %d\n","tbm2num", (int) cov->tbm2num);  
-  //leer(level); PRINTF("%-10s %d\n","spec:nmetro", cov->spec.nmetro);
-  //leer(level); PRINTF("%-10s %f\n","spec:sigma", cov->spec.sigma);
-  if (PMI_print_dollar && cov->Sdollar != NULL) {
-    leer(level); PRINTF("%-10s %d\n","$:z", addressbits(cov->Sdollar->z));
-    leer(level); PRINTF("%-10s %d\n","$:z2", addressbits(cov->Sdollar->z2));
-    leer(level); PRINTF("%-10s %d\n","$:y", addressbits(cov->Sdollar->y));
+  if (PMI_print_fields) {
+    leer(level); PRINTF("%-10s %s\n","method", METHOD_NAMES[cov->method]);
+    leer(level); PRINTF("%-10s %s\n","initialised", FT[cov->initialised]);
+    leer(level); PRINTF("%-10s %s\n","fieldret",ExtBoolNames(cov->fieldreturn));
+    leer(level); PRINTF("%-10s %s\n","origrf", FT[cov->origrf]);
+    leer(level); PRINTF("%-10s %d\n","rf", addressbits(cov->rf));
+    leer(level); PRINTF("%-10s %s\n","checked", FT[cov->checked]);
+    leer(level); PRINTF("%-10s ", "pref");
+    int i;
+    for (i=0; i<=Sequential; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
+    PRINTF("\n"); leer(level); PRINTF("%-10s ", "");  
+    for (; i<=Nothing; i++) PRINTF("%s:%d ", MN[i], (int) cov->pref[i]);
+    PRINTF("\n");
   }
+  
+  //leer(level); PRINTF("%-10s %d\n","naturalscaling", cov->naturalscaling);  
+  //leer(level); PRINTF("%-10s %d\n","init",DefList[COVNR].init!=init_failed);
+  //leer(level); PRINTF("%-10s %d\n","spec:nmetro", cov->spec.nmetro);
+  //leer(level); P10("spec:sigma", cov->spec.sigma);
+  if (PMI_print_dollar && cov->Sdollar != NULL) {
+    leer(level); PRINTF("%-10s ", "separabel", cov->Sdollar->separable);
+    // currently none
+  } 
+  if (PMI_print_details) {
+    if (cov->Sextra != NULL) {
+      extra_storage *s = cov->Sextra;
+#define PE(a1)								\
+      if (s->a1 == NULL) {\
+	if (s->n_##a1!=0) { ERR1("%.50s=NULL; n<>0 !! ERROR !!\n", #a1); } \
+      } else if (s->n_##a1 == 0) { ERR1("%.50s<>NULL; n=0 !! ERROR !!\n", #a1); } \
+      else PRINTMAX(s->a1, s->n_##a1, 10)
+      PE(a1);PE(a2);PE(a3);PE(b1);PE(b2);PE(c1);PE(c2);
+      PE(i1);//PE(i2);
+      PE(j1);//PE(j2);
+      PE(k1);PE(k2);
+    }
+  }
+
 
   if (PMI_print_mpp) {
     int 
       nm = cov->mpp.moments,
-      vdim = cov->vdim[0],
+      vdim = VDIM0,
       nmvdim = (nm + 1) * vdim;
     if (R_FINITE(cov->mpp.maxheights[0])) {
       leer(level); PRINTF("%-10s ","mpp:maxhgt"); 
-      for (i=0; i<=vdim; i++) PRINTF("%f, ",cov->mpp.maxheights[i]);
+      for (int i=0; i<=vdim; i++) PRINTF("%g, ",cov->mpp.maxheights[i]);
       PRINTF("\n");    
     }
     if (R_FINITE(cov->mpp.unnormedmass)) {
-      leer(level); PRINTF("%-10s %f\n","mpp:u-mass", cov->mpp.unnormedmass);    
+      leer(level); P10("mpp:u-mass", cov->mpp.unnormedmass);    
     }
     leer(level); PRINTF("%-10s ","mpp:M+");
     if (cov->mpp.mMplus == NULL) 
-      PRINTF("not initialized yet (size=%d)\n", cov->mpp.moments);
+      PRINTF("not initialized yet (size=%d)\n", nm);
     else {
-      for (i=0; i<nmvdim; i++) PRINTF("%f, ", cov->mpp.mMplus[i]);
+      for (int i=0; i<nmvdim; i++) PRINTF("%g, ", cov->mpp.mMplus[i]);
       PRINTF("\n");    
     }
     leer(level); PRINTF("%-10s ","mpp:M");
-    if (cov->mpp.mM == NULL)
-      PRINTF("not initialized yet (size=%d)\n", cov->mpp.moments);
-    else {
-      for (i=0; i<nmvdim; i++)  PRINTF("%f, ", cov->mpp.mM[i]);
+    if (cov->mpp.mM == NULL) {
+      PRINTF("not initialized yet (size=%d)\n", nm);
+    } else {
+      for (int i=0; i<nmvdim; i++)  PRINTF("%g, ", cov->mpp.mM[i]);
       PRINTF("\n");    
     }
     leer(level); PRINTF("%-10s %s\n","mpp:log",
-			FT[CovList[cov->nr].log != ErrLogCov]);
+			FT[DefList[COVNR].log != ErrLogCov]);
     leer(level); PRINTF("%-10s %s\n","mpplgnonst", 
-			FT[CovList[cov->nr].nonstatlog != ErrLogCovNonstat]);
+			FT[DefList[COVNR].nonstatlog != ErrLogCovNonstat]);
     leer(level); PRINTF("%-10s %s\n","mpp:do",
-			FT[CovList[cov->nr].Do != do_failed]);
+			FT[DefList[COVNR].Do != do_failed]);
   }
 
   
@@ -1033,25 +1316,26 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
     if (cov->Spgs == NULL) {
     } else {
       pgs_storage *pgs = cov->Spgs;
-      int d,
+      int 
 	size = pgs->size,
-	dim = cov->xdimown;
+	dim = OWNTOTALXDIM;
       
-      leer(level); PRINTF("%-10s %f\n","pgs:mass", pgs->totalmass);
-      leer(level); PRINTF("%-10s %f\n","pgs:logdens", pgs->log_density);
+      leer(level); P10("pgs:mass", pgs->totalmass);
+      leer(level); P10("pgs:logdens", pgs->log_density);
       
       leer(level); PRINTF("%-10s %d\n","pgs:size", size);
       leer(level); PRINTF("%-10s %d\n","pgs:dim", dim);
+      leer(level); P10("pgs:threshold", pgs->currentthreshold);
       
 #define SHOWDEFAULT(Z, X, Y) if (pgs->X != NULL) {			\
 	leer(level);  PRINTF("%-10s ",Z);				\
-	for (d=0; d<dim; d++) PRINTF(Y, pgs->X[d]); PRINTF("\n");}
-#define SHOW(Z, X) SHOWDEFAULT(Z, X, "%f ")
+	for (int d=0; d<dim; d++) PRINTF(Y, pgs->X[d]); PRINTF("\n");}
+#define SHOW(Z, X) SHOWDEFAULT(Z, X, "%g ")
 #define SHOWINT(Z, X) SHOWDEFAULT(Z, X, "%d ")
       
       if (R_FINITE(pgs->zhou_c)) {
-	leer(level); PRINTF("%-10s %f\n","mpp:zhou_c", pgs->zhou_c);
-      } 
+	leer(level); P10("mpp:zhou_c", pgs->zhou_c);
+      }
       
       SHOW("pgs:v", v);    
       SHOW("pgs:x", x);
@@ -1076,20 +1360,20 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
 	SHOWINT("pgs:max", max);
       }
       if (pgs->halfstepvector != NULL) { // max-stable 
-	leer(level); PRINTF("%-10s %s\n","pgs:flat", FT[pgs->flat]);
-	leer(level); PRINTF("%-10s %f\n","pgs:globmin", pgs->globalmin);
-	leer(level); PRINTF("%-10s %f\n","pgs:cur.thres",pgs->currentthreshold);
+	leer(level); PRINTF("%-10s %s\n","pgs:flathull", FT[pgs->flathull]);
+	leer(level); P10("pgs:globmin", pgs->globalmin);
+	leer(level); P10("pgs:cur.thres",pgs->currentthreshold);
 	SHOW("pgs:half", halfstepvector);
 	if (pgs->single != NULL) {
 	  leer(level); { PRINTF("%-10s ","pgs:single"); 
-	    for (d=0; d<size; d++) PRINTF("%f ", pgs->single[d]);PRINTF("\n"); }
+	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->single[d]);PRINTF("\n"); }
 	}
 	if (pgs->total != NULL) {
 	  leer(level); { PRINTF("%-10s ","pgs:total"); 
-	    for (d=0; d<size; d++) PRINTF("%f ", pgs->total[d]); PRINTF("\n"); }
+	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->total[d]); PRINTF("\n"); }
 	}
       } else { // gauss oder poisson
-	leer(level); PRINTF("%-10s %f\n","pgs:intens", pgs->intensity);
+	leer(level); P10("pgs:intens", pgs->intensity);
       }
       if (pgs->cov != NULL) {
 	leer(level); 
@@ -1099,52 +1383,31 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
   }
   
   if (PMI_print_rect) {
-    int d;
     if (cov->Srect != NULL) {
-      rect_storage *p = cov->Srect;
+      rect_storage *r = cov->Srect;
       int
-	nstepP2 = p->nstep + 2,
-	dim = cov->xdimown,
-	dimP1 = dim + 1;
+	nstepP2 = r->nstep + 2;
       
-      leer(level); PRINTF("%-10s %f\n","rct:inner", p->inner);
-      leer(level); PRINTF("%-10s %f\n","rct:in.cnst", p->inner_const);
-      leer(level); PRINTF("%-10s %f\n","rct:in.pow", p->inner_pow);
-      leer(level); PRINTF("%-10s %f\n","rct:outer", p->outer);
-      leer(level); PRINTF("%-10s %f\n","rct:o.cnst", p->outer_const);
-      leer(level); PRINTF("%-10s %f\n","rct:o.pow", p->outer_pow);
-      leer(level); PRINTF("%-10s %f\n","rct:o,pow.c", p->outer_pow_const);
-      leer(level); PRINTF("%-10s %f\n","rct:step", p->step);
-      leer(level); PRINTF("%-10s %d\n","rct:nstep", p->nstep);
-      leer(level); PRINTF("%-10s %d\n","rct:ntmp", p->tmp_n);
-      leer(level); PRINTF("%-10s %f\n","rct:total", p->weight[1 + p->nstep]);
+      leer(level); PRINTF("%-10s %g c=%g p=%g\n","rct:inner",
+			  r->inner, r->inner_const, r->inner_pow);
+      leer(level); PRINTF("%-10s %g c=%g p=%g pc=%g\n","rct:outer",
+			  r->outer, r->outer_const, r->outer_pow,
+			  r->outer_pow_const);
+      leer(level); P10("rct:step", r->step);
+      leer(level); PRINTF("%-10s %d\n","rct:nstep", r->nstep);
+      leer(level); PRINTF("%-10s %d\n","rct:ntmp", r->tmp_n);
+      // leer(level); P10("rct:total", r->weight[1 + r->nstep]);
       
-      if (PMI_print_rect > 1 && p->value != NULL) {
+      if (PMI_print_rect > 1 && r->value != NULL) {
 	leer(level); { PRINTF("%-10s ","rct:val"); 
-	  for (d=0; d<nstepP2; d++) PRINTF("%4.3f ", p->value[d]); PRINTF("\n"); }
+	  for (int d=0; d<nstepP2; d++) PRINTF("%4.3f ", r->value[d]);
+	  PRINTF("\n"); }
 	leer(level); { PRINTF("%-10s ","rct:wght"); 
-	  for (d=0; d<nstepP2; d++) PRINTF("%4.4f ", p->weight[d]);
+	  for (int d=0; d<nstepP2; d++) PRINTF("%4.4f ", r->weight[d]);
 	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:tmp"); 
-	  for (d=0; d<p->tmp_n; d++) PRINTF("%4.3f ", p->tmp_weight[d]);
-	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:right"); 
-	  for (d=0; d<p->tmp_n; d++) PRINTF("%4.4f ", p->right_endpoint[d]); 
-	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:z"); 
-	  assert(p->z != NULL);
-	  for (d=0; d<dimP1; d++) PRINTF("%4.3f ", p->z[d]); PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:squeezd"); 
-	  for (d=0; d<p->tmp_n; d++) PRINTF("%d ", p->squeezed_dim[d]);
-	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:asSign"); 
-	  for (d=0; d<p->tmp_n; d++) PRINTF("%d ", p->asSign[d]);
-	  PRINTF("\n"); }
-	leer(level); { PRINTF("%-10s ","rct:idx"); 
-	  for (d=0; d<dimP1; d++) PRINTF("%d ", p->i[d]); PRINTF("\n"); }
       }
     }
-   }
+  }
     
   if (PMI_print_loc) {
     leer(level);  
@@ -1152,8 +1415,9 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
    if (PLoc(cov) == NULL) {
       PRINTF("%-10s %s\n", "loc:", "<null>");
     } else {
-     //printf(" **** %ld %ld %ld %d \n", PLoc(cov), cov->ownloc, cov->prevloc,  cov->prevloc[0]->len);
-      PRINTF("%-10s %d\n", "loc:sets", Loc(cov)->len);
+     //     printf(" **** %ld %ld %ld %d \n", PLoc(cov), cov->ownloc, cov->prevloc,  cov->prevloc[0]->len);
+     assert(PLoc(cov)[0] != NULL);
+     PRINTF("%-10s %d\n", "loc:sets", (PLoc(cov)[0])->len);
       if (cov->ownloc != NULL) {
 	PrintLoc(level, OwnLoc(cov), true);
       } else {
@@ -1171,85 +1435,85 @@ void pmi(cov_model *cov, char alles, int level, int maxlevel) {
 	} else {
 	  PRINTF("%-10s (%d)\n", "loc:MISMATCH", addressbits(prevloc));
 	}
+	if (level == 0) PrintLoc(4, prevloc, false);
       }
     }
   }
 
-  bool givenkey = false;
-  if (cov->key != NULL) {
+  bool givenkey;
+  if ((givenkey = cov->key != NULL)) {
     leer(level);
-    givenkey = true;
     PRINTF("%-10s :", "key");  
-    if (alles >= 0) pmi(cov->key, alles, level + 1, maxlevel);
+    if (all_subs >= 0) pmi(cov->key, all_subs, level + 1, maxlevel,
+			   stor_level, storage);
   }
 
-  if (cov->Splus != NULL) {
+  bool Splus_given = cov->Splus != NULL && cov->Splus->keys_given;
+  if (Splus_given) {
     givenkey = true;
-    int ii;
-    if (alles >= 0) {
-      for (ii=0; ii < cov->nsub; ii++) {
-	cov_model *key = cov->Splus->keys[ii];
+    if (all_subs >= 0) {
+      for (int i=0; i < cov->nsub; i++) {
+	model *key = cov->Splus->keys[i];
 	leer(level);      
 	if (key != NULL) {
-	    PRINTF("%-10s ++ %d ++:", "plus.key", ii); 
-	    pmi(key, alles, level + 1, maxlevel);
-	}  else PRINTF("%-10s ++ %d ++: %s\n","plus.key", ii, "empty");	
+	    PRINTF("%-10s ++ %d ++:", "plus.keys", i); 
+	    pmi(key, all_subs, level + 1, maxlevel, stor_level, storage);
+	}  else PRINTF("%-10s ++ %d ++: %s\n","plus.key", i, "empty");	
       }
     }
   }
 
-  if ((!givenkey && alles==0) || alles>0) {
-    for (i=0; i<C->maxsub; i++) {
+  if ((!givenkey && all_subs==0) || all_subs>0) {
+    for (int i=0; i<C->maxsub; i++) {
       if (cov->sub[i] == NULL) {
 	continue;
       }
       leer(level); 
       PRINTF("%s %d (%s) of '%s':", "submodel", i, C->subnames[i], C->nick);  
-      pmi(cov->sub[i], alles, level + 1, maxlevel);
+      pmi(cov->sub[i], all_subs, level + 1, maxlevel, stor_level, storage);
     }
   }
 }
 
 
-
-void pmi(cov_model *cov, int maxlevel) { // OK
+void pmi(model *cov, int maxlevel) { // OK
   PRINTF("\n");
 
   if (cov == NULL) {
     PRINTF("\nCovariance model is empty.\n\n");
   } else {
     Path(cov, NULL);
-    pmi(cov, false, 0, maxlevel);
+    pmi(cov, !false, 0, maxlevel, 0, NULL);
   }
 }
 
 
-void pmi(cov_model *cov) { // OK
-  pmi(cov, 999999);
+
+void pmiroot(model *cov, int maxlevel) { // OK
+  model *storage[TREE_MAXSTORAGE];
+  getroot(cov, storage);
+  pmi(storage[0], false, 0, maxlevel, 0, NULL); //storage);
 }
 
-
-void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
+void iexplDollar(model *cov, bool MLEnatsc_only) {
   /*    
 	get the naturalscaling values and devide the preceeding scale model     
 	by this value
   */
   double *p, invscale;
-  cov_model *dollar = cov->calling;
-
- 
-  bool solving = (cov->nr == NATSC_INTERN ||
-		(cov->nr == NATSC_USER && !MLEnatsc_only))
-    && dollar != NULL && isDollar(dollar);
-
+  model *dollar = cov->calling;
+  bool solving = dollar != NULL && isDollar(dollar) &&
+    (COVNR == NATSC_INTERN || (COVNR == NATSC_USER && !MLEnatsc_only));
+  
   if (solving) {
-    cov_model 
+    model 
       *next = cov->sub[0];
     assert(dollar!=NULL && isDollar(dollar));
 
     INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
     //invscale = 1.0;
-    if (ISNAN(invscale)) ERR("inverse function of in 'iexplDollar' unknown");
+    if (ISNAN(invscale))
+      ERR("inverse function unknown when calculating explicite scale");
     
     p = PARAM(dollar, DSCALE);
     if (p != NULL) {
@@ -1257,16 +1521,14 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
     } else {
        p = PARAM(dollar, DANISO);      
       if (p != NULL) { 	
-	int i,
-	  n = dollar->nrow[DANISO] * dollar->ncol[DANISO];
-	for (i=0; i<n; i++) p[i] *= invscale;
+	int n = dollar->nrow[DANISO] * dollar->ncol[DANISO];
+	for (int i=0; i<n; i++) p[i] *= invscale;
       } else {
-	assert(cov->nr == NATSC_USER);
+	assert(COVNR == NATSC_USER);
       }
     }
   } else {
-     int i;
-    for (i=0; i<MAXSUB; i++) { // cov->sub[i]: luecken erlaubt bei PSgen !
+    for (int i=0; i<MAXSUB; i++) { // cov->sub[i]: luecken erlaubt bei PSgen !
       if (cov->sub[i] != NULL) iexplDollar(cov->sub[i], MLEnatsc_only);
     }
   }
@@ -1275,8 +1537,8 @@ void iexplDollar(cov_model *cov, bool MLEnatsc_only) {
 
 
   
-SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
-	      bool do_notreturnparam) {
+SEXP IGetModel(model *cov, int modus, int spConform, bool solveRandom,
+	       sortsofparam whichparam, sort_origin origin) {
   // modus:
   //  AS_SAVED : Modell wie gespeichert
   //  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
@@ -1286,98 +1548,114 @@ SEXP IGetModel(cov_model *cov, int modus, int spConform, bool solveRandom,
   //  SOLVE_MLE : nur natscale_MLE  zusammengezogen (natsc werden
   //               drauf multipliziert; Rest wie gespeichert)
   //
-  SEXP model, nameMvec;
+  SEXP Model, nameMvec;
   int i, nmodelinfo,
     k = 0; 
-  cov_fct *C = CovList + cov->nr; // nicht gatternr
-  bool plus_mixed_models;
+  defn *C = DefList + COVNR; // nicht gatternr
+  bool ok[MAXPARAM];
 
-
-  if ((cov->nr == NATSC_INTERN && modus != GETMODEL_AS_SAVED) ||
-      (cov->nr == NATSC_USER && modus == GETMODEL_DEL_NATSC)) { 
-    return IGetModel(cov->sub[0], modus, spConform, solveRandom, 
-		     do_notreturnparam);
+  if ((COVNR == NATSC_INTERN && modus != GETMODEL_AS_SAVED) ||
+      (COVNR == NATSC_USER && modus == GETMODEL_DEL_NATSC)) { 
+    return IGetModel(cov->sub[0], modus, spConform, solveRandom, whichparam,
+		     origin);
   }
   
   nmodelinfo = C->kappas + 1;
    
    for (i=0; i<MAXSUB; i++) {
-    if (cov->sub[i] != NULL && cov->sub[i]->nr != IDCOORD) // insb. !IDCOORD
+     if (cov->sub[i] != NULL //&& MODELNR(cov->sub[i]) != IDCOORD
+	) // insb. !IDCOORD
       nmodelinfo++;
   }
   for (i=0; i<C->kappas; i++) {
-    if ((PisNULL(i) || !STRCMP(C->kappanames[i], INTERNAL_PARAM) ||
-	 (do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM))
-	&& cov->kappasub[i] == NULL)
-      nmodelinfo--;
+    if (cov->kappasub[i] != NULL && (!solveRandom || PisNULL(i))) continue;
+    ok[i] = !PisNULL(i) && whichparam != NOPARAMETERS;
+    if (!ok[i]) { nmodelinfo--; continue; }
+    sortsofparam sort = SortOf(cov, i, 0, 0, origin);
+    ok[i] = whichparam == ALLPARAMETERS ||
+      (whichparam == STANDARD && sort <= LASTUSERSORTOF) ||
+      (whichparam == INCLUDENOTRETURN &&
+       (sort <= LASTUSERSORTOF || sort == IGNOREPARAM)) ||
+      (whichparam == INTERNALPARAMETERS && isInternalKappa(i));
+    if (ok[i]) continue;
+    ok[i] = SortOf(cov, i, 0, 0, origin) == whichparam;
+    if (!ok[i]) nmodelinfo--;
   }
 
-  PROTECT(model = allocVector(VECSXP, nmodelinfo));
+  PROTECT(Model = allocVector(VECSXP, nmodelinfo));
   PROTECT(nameMvec = allocVector(STRSXP, nmodelinfo));
 
   SET_STRING_ELT(nameMvec, k, mkChar("")); // name
-  cov_fct *CC = CovList + cov->nr; // nicht gatternr
-  while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
-  if ((plus_mixed_models = (cov->nr == PLUS))) {
-    plus_mixed_models = cov->calling == NULL; // to do: stimmt nicht mehr
-    if (plus_mixed_models) {
-      for (i=0; i<MAXSUB; i++) {
-	if ((plus_mixed_models = 
-	     (cov->sub[i] != NULL && cov->sub[i]->nr == MIXEDEFFECT))) break;
-      }
-    }
-  }
+  defn *CC = DefList + COVNR; // nicht gatternr
+   while(STRNCMP(CC->name, InternalName, STRLEN(InternalName)) ==0) CC--;
 
-  if (spConform > 1 || (spConform && !plus_mixed_models)) {
-    SET_VECTOR_ELT(model, k++, mkString(CC->nick));
-  } else {
-    SET_VECTOR_ELT(model, k++, mkString(CC->name));
-  }
+   SET_VECTOR_ELT(Model, k++, mkString(CC->nick));
+
+   //   if (spConform >= 1) { SET_VECTOR_ELT(Model, k++, mkString(CC->nick));
+   // } else {  SET_VECTOR_ELT(Model, k++, mkString(CC->name)); }
 
   for(i=0; i<C->kappas; i++) {
-    //printf("donotreturnparam = %d\n", do_notreturnparam);
-
-    if ( (!STRCMP(C->kappanames[i], INTERNAL_PARAM) ||
-	  PisNULL(i) ||
-	  (do_notreturnparam && SortOf(cov, i, 0, 0) == DONOTRETURNPARAM))
-	 && cov->kappasub[i] == NULL
-      ) continue;
     if (cov->kappasub[i] != NULL && (!solveRandom || PisNULL(i))) {
-      SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
-      SET_VECTOR_ELT(model, k++,
+      SET_STRING_ELT(nameMvec, k, mkChar(OWNKAPPA(C, i)));
+      SET_VECTOR_ELT(Model, k++,
 		     IGetModel(cov->kappasub[i], modus, spConform, solveRandom,
-			       do_notreturnparam));
+			       whichparam, origin));
       continue;
     }
-    SET_STRING_ELT(nameMvec, k, mkChar(C->kappanames[i]));
-    SET_VECTOR_ELT(model, k++, 
-		   Param(cov, (void*) cov->px[i], cov->nrow[i],
-			 cov->ncol[i], C->kappatype[i], true));
+    if (!ok[i]) continue;
+    
+    SET_STRING_ELT(nameMvec, k, mkChar(OWNKAPPA(C, i)));    
+    if (C->kappaParamType[i] == CharInputType ) {
+      int value = MISMATCH;
+      if (C->kappatype[i] == INTSXP) value = P0INT(i); else
+	if (C->kappatype[i] == REALSXP) value = P0(i); else BUG;
+      assert(NROW(i) == 1 && NCOL(i) == 1);
+      SET_VECTOR_ELT(Model, k++, 
+		     Param(cov, C->kappaParamTypeNames[i] + value,
+			   NROW(i), NCOL(i), STRSXP, true));
+    } else if (C->kappaParamType[i] == MixedInputType &&
+	       ( (C->kappatype[i] == INTSXP && P0INT(i) < 0) ||
+		 (C->kappatype[i] == REALSXP && P0(i) < 0.0) )) {// pos numbers and string
+      int value = MISMATCH;
+      if (C->kappatype[i] == INTSXP) value -= P0INT(i); else
+	if (C->kappatype[i] == REALSXP) value -= P0(i); else BUG;
+      assert(NROW(i) == 1 && NCOL(i) == 1);
+      SET_VECTOR_ELT(Model, k++, 
+		     Param(cov, C->kappaParamTypeNames[i] + value,
+			   NROW(i), NCOL(i), STRSXP, true));
+    } else if (C->kappaParamType[i] >= NN1) {
+      assert(NROW(i) == 1);
+      SET_VECTOR_ELT(Model, k++, 
+		     Param(cov,
+			   LIST_OF_NAMES[C->kappaParamType[i] - NN1] + P0INT(i),
+			   NROW(i), NCOL(i), STRSXP, true));
+    } else {
+      SET_VECTOR_ELT(Model, k++, Param(cov, i, C->kappatype[i], true));
+    }
   }
 
   int zaehler = 0;
   for (i=0; i<MAXSUB; i++) {
-    if (cov->sub[i] != NULL && cov->sub[i]->nr != IDCOORD) {
+    if (cov->sub[i] != NULL // && MODELNR(cov->sub[i]) != IDCOORD
+	) {
       SET_STRING_ELT(nameMvec, k, mkChar(C->subnames[i]));
-      SET_VECTOR_ELT(model, k++, IGetModel(cov->sub[i], modus, spConform, 
-					   solveRandom, do_notreturnparam));
+      SET_VECTOR_ELT(Model, k++, IGetModel(cov->sub[i], modus, spConform, 
+					   solveRandom, whichparam, original));
       if (++zaehler >= cov->nsub) break;
     }
   }
 
-  //  printf("%s %d %d %d\n", NAME(cov), k, nmodelinfo, C->kappas);
-  //   PMI(cov);
   assert(k == nmodelinfo);
 
-  setAttrib(model, R_NamesSymbol, nameMvec);
+  setAttrib(Model, R_NamesSymbol, nameMvec);
   UNPROTECT(2); // model + namemodelvec
 
-  return model;
+  return Model;
 }
 
+
 SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub, 
-	      SEXP SolveRandom,
-	      SEXP Do_notreturnparam) {
+	      SEXP SolveRandom, SEXP Whichparam, SEXP origin) {
   // modus:
   //  AS_SAVED : Modell wie gespeichert
   //  DEL_NATSC : Modell unter Annahme PracticalRange>0 (natsc werden geloescht)
@@ -1394,103 +1672,96 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
 //      * extern practical range definieren
 //      * intern practical range verwenden lassen (use.naturalscaling)
 
-  int err = NOERROR,
+  int
     knr = INTEGER(keynr)[0],  
     spConform = INTEGER(SpConform)[0],
-    modus = INTEGER(Modus)[0];
+    modus = INTEGER(Modus)[0],
+    whichparam = INTEGER(Whichparam)[0];
   bool
-    solveRandom = LOGICAL(SolveRandom)[0],
-    do_notreturnparam = (bool) INTEGER(Do_notreturnparam)[0],
-    na_ok = NAOK_RANGE;
-
-   SEXP value = R_NilValue;
-
-   cov_model *cov,
-     *dummy = NULL; //ACHTUNG: "=NULL" hinzugefuegt
-
-  if (knr < 0 || knr  > MODEL_MAX || KEY[knr] == NULL) {
-    err = ERRORREGISTER;
-    goto ErrorHandling;
-  }
-
-  //printf("her\n");
-
-  if ((cov = KEY[knr]) == NULL) goto ErrorHandling; // return noerror, nil
+    solveRandom = LOGICAL(SolveRandom)[0];
+ 
+  model *cov = NULL,
+    **key = KEY();
+ 
+  if (whichparam < 0 || whichparam > LASTSORTOF) XERR(ERRORSORTOF);
+  if (knr < 0 || knr  > MODEL_MAX || key[knr] == NULL) XERR(ERRORREGISTER);
+  if ((cov = key[knr]) == NULL) return R_NilValue; // return noError, nil
+  
   cov = WhichSub(cov, INTEGER(whichSub)[0]);
   if (cov == NULL) BUG;
-  //printf("herff\n");
-  // printf("cwhich ov = %s %d\n", NAME(cov), INTEGER(whichSub)[0]);
+  bool na_ok =NAOK_RANGE;//erst nach cov definierbar; KEYtypeOf(cov)->naok_range
 
-  if (modus == GETMODEL_DEL_NATSC || modus == GETMODEL_DEL_MLE) {
-    value = IGetModel(cov, modus, spConform, solveRandom, do_notreturnparam);
-  } else {
-    if (isInterface(cov)) { 
-      if ((err = covCpy(&dummy, true, cov, cov->prevloc, NULL, false, true,
-			true)) != NOERROR) goto ErrorHandling;
-      dummy->calling = NULL;
-    } else {
-      if ((err = covCpy(&dummy, cov)) != NOERROR) goto ErrorHandling;
-    }
-    NAOK_RANGE = true;
-    int skipchecks = GLOBAL_UTILS->basic.skipchecks;
-    GLOBAL_UTILS->basic.skipchecks = true;
-    err = CHECK(dummy, cov->tsdim, cov->xdimprev, cov->typus,
-		cov->domprev, cov->isoprev, cov->vdim, cov->role);
-    GLOBAL_UTILS->basic.skipchecks = skipchecks;
+  // dummy erst abjetzt 
+  if (modus == GETMODEL_DEL_NATSC || modus == GETMODEL_DEL_MLE)
+    return IGetModel(cov, modus, spConform, solveRandom,
+		     (sortsofparam) whichparam,
+		     (sort_origin) INTEGER(origin)[0]);
 
-
-    //PMI(cov); MERR(err);
-
-    if (err != NOERROR) goto ErrorHandling;    
-    iexplDollar(dummy, modus == GETMODEL_SOLVE_MLE);
-    if (modus == GETMODEL_SOLVE_NATSC) {
-      modus = GETMODEL_DEL_NATSC;
-    } else if (modus == GETMODEL_SOLVE_MLE) {
-      modus = GETMODEL_DEL_MLE;
-    }
-    value = IGetModel(dummy, modus, spConform, solveRandom, do_notreturnparam);
-   }
-
- ErrorHandling:
-  NAOK_RANGE = na_ok;
+  //    TREE(cov);
+  SEXP value = R_NilValue;
+  int  err = NOERROR,
+    skipchecks = GLOBAL_UTILS->basic.skipchecks;
+  model *dummy = NULL;
+  if (equalsnowInterface(cov))
+    err = covcpy(&dummy, true, cov, cov->prevloc, NULL, false, true, true);
+  else err = covcpy(&dummy, cov);
+  if (err != NOERROR) goto ErrorHandling;
+  set_NAOK_RANGE(true);
+  GLOBAL_UTILS->basic.skipchecks = true;
+  SET_CALLING_NULL(dummy, cov);
+  err = CHECK_ONLY(dummy);
+  GLOBAL_UTILS->basic.skipchecks = skipchecks;
+  // TREE(dummy);
+  if (err != NOERROR) goto ErrorHandling;
+  iexplDollar(dummy, modus == GETMODEL_SOLVE_MLE);
+  if (modus == GETMODEL_SOLVE_NATSC) {
+    modus = GETMODEL_DEL_NATSC;
+  } else if (modus == GETMODEL_SOLVE_MLE) {
+    modus = GETMODEL_DEL_MLE;
+  }
+  PROTECT(value = IGetModel(dummy, modus, spConform, solveRandom,
+			    (sortsofparam) whichparam,
+			    (sort_origin) INTEGER(origin)[0]));
   if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy);
-  if (err != NOERROR) XERR(err);
-
+  UNPROTECT(1);
+  set_NAOK_RANGE(na_ok);
   return(value);
 
+ ErrorHandling:
+  set_NAOK_RANGE(na_ok);
+  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy);
+  XERR(err);
 }
 
 
-
-void ple_intern(cov_fct *C){
+void ple_intern(defn *C){
   int i;
   PRINTF("pref: ");
   for (i=0; i<Nothing; i++) PRINTF("%d ", C->pref[i]);
   PRINTF("\n");
 }
 
-void ple_(cov_model *cov) {
+
+void ple_(model *cov) {
   PRINTF("  %s\n", NAME(cov));
-  ple_intern(CovList + cov->nr);
+  ple_intern(DefList + COVNR);
 }
+
  
 void ple_(char *name) {
   PRINTF("PLE %s\n", name);
-  ple_intern(CovList + getmodelnr(name));
+  ple_intern(DefList + getmodelnr(name));
 }
  
 
-void PSTOR(cov_model *cov, gen_storage *x) {  
-  
+void PSTOR(model *cov, gen_storage *x) {   
+  if (x==NULL) { PRINTF("no storage information\n"); return; }
   assert(cov != NULL);
   
-  int d,
-    dim = cov->tsdim;
-
-  if (x==NULL) { PRINTF("no storage information\n"); return; }
+  int dim = OWNLOGDIM(0);
 
  
-  for (d=0; d<dim; d++) {
+  for (int d=0; d<dim; d++) {
    PRINTF("%d. info:[%3.3f, %3.3f] E=%3.3f cum=%3.3f\n",
 	   d, //x->window.min[d], x->window.max[d], x->window.centre[d],
 	   RF_NA, RF_NA, // pgs->mppinfo.min[d], x->mppinfo.max[d],
@@ -1503,124 +1774,195 @@ void PSTOR(cov_model *cov, gen_storage *x) {
 }
 
 
-void NoCurrentRegister() { currentRegister=-1; }
-void GetCurrentRegister(int *reg) {  *reg = currentRegister; }
+void NoCurrentRegister() { set_currentRegister(UNSET); }
+void GetCurrentRegister(int *reg) {  *reg = currentRegister(); }
 
 
-bool isSameCoordSystem(isotropy_type iso, coord_sys_enum os) {
-  switch(os) {
-  case cartesian : case gnomonic: case orthographic : return isCartesian(iso);
-  case earth : return isEarth(iso);
-  case sphere : return isSpherical(iso);
-  case coord_mix : return true;
-  default: ERR("unknown coordinate system");
+void psys(system_type *sys, bool earlybreak) {
+  int last = LASTi(sys[0]);
+  const char *nl1[2] = {" ", "\n"};
+  const char *nl2[2] = {"\n       ", " "};
+  if (last < 0) last = 0;
+  for (int s=0; s<=last; s++) {
+    PRINTF(" s=%d(%d): nr=%d log=%d x=%d%smax=%d cum=%d%s %d:'%s' %d:'%s' %d:'%s'\n",
+	   s, LASTi(sys[s]), NRi(sys[s]), LOGDIMi(sys[s]), XDIMi(sys[s]), // OK
+	   nl1[earlybreak], MAXDIMi(sys[s]),  // OK
+	   CUMXMITi(sys[s]), nl2[earlybreak], // OK
+	   TYPEi(sys[s]), TYPE_NAMES[TYPEi(sys[s])],  // OK
+	   DOMi(sys[s]), DOMAIN_NAMES[DOMi(sys[s])],  // OK
+	   ISOi(sys[s]), ISO_NAMES[ISOi(sys[s])]); // OK
   }
 }
 
-coord_sys_enum GetCoordSystem(isotropy_type iso) {
-  if (isCartesian(iso)) return cartesian;
-  if (isEarth(iso)) return earth;
-  if (isSpherical(iso)) return sphere;
-  return coord_mix;
-}
+void psys(system_type *sys) { psys(sys, true); }
 
-coord_sys_enum SearchCoordSystem(cov_model *cov, coord_sys_enum os, 
-				 coord_sys_enum n_s) {
-  if (n_s == coord_keep) {
-    if (!isSameCoordSystem(cov->isoown, os)) {
-      n_s = GetCoordSystem(cov->isoown);
-    }
-  } else {
-    if (n_s == coord_mix || !isSameCoordSystem(cov->isoown, n_s)) {
-      return coord_mix;
-    }
-  }
-  int i;
-  coord_sys_enum nn_s;
-  for (i=0; i<MAXSUB; i++) {
-    if (cov->sub[i] != NULL) {
-      nn_s = SearchCoordSystem(cov->sub[i], os, n_s);
-      if (nn_s != n_s) {
-	if (n_s == coord_keep) n_s = nn_s;
-	else {
-	  return coord_mix;
-	}
-      }
-    }
-  }
-  return n_s;
+void psys(model *cov) {
+  PRINTF("\nprev:  "); psys(PREV, false);
+  PRINTF("gatter:"); psys(GATTER, false); 
+  PRINTF("own:   "); psys(OWN, false);
 }
 
 
-SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
-  int knr = INTEGER(keynr)[0];
-  cov_model *cov;
-  SEXP res;
-  char CS[2][30] = {"coordinate system", "new coordinate system"};
-
-  if (knr>=0 && knr <= MODEL_MAX && KEY[knr] != NULL) {
-    cov = KEY[knr];
-    coord_sys_enum
-      os = (coord_sys_enum) GetName(oldsystem, CS[0], 
-				    COORD_SYS_NAMES, nr_coord_sys, coord_auto);
-    coord_sys_enum
-      n_s = (coord_sys_enum) GetName(newsystem, CS[1], 
-				    COORD_SYS_NAMES, nr_coord_sys, coord_keep);
-   if (os == coord_auto) {
-      os = GetCoordSystem(cov->isoprev);
-   }
-   if (n_s == coord_keep) {
-      n_s = SearchCoordSystem(cov, os, n_s);
-    }
-
-    if (n_s == coord_mix && GLOBAL.internal.warn_coord_change) {    
-      char msg[300];
-      SPRINTF(msg, "the covariance model relies on at least two different coordinate systems. Check that this is not due to misspecification of the covariance model. To avoid this warning set 'RFoptions(%s=FALSE)'", 
-	      internals[INTERNALS_COORD_CHANGE]);
-      warning(msg);
-      GLOBAL.internal.warn_coord_change = false;
-    }
-
-    bool warn = ((os != coord_auto && os != cartesian) ||
-		 (n_s != coord_keep && n_s != os));
-
-    switch (GLOBAL.general.reportcoord) {
-    case reportcoord_none :  return R_NilValue;
-    case reportcoord_warnings_orally : 
-      if (warn) {
-	char msg[200];
-	SPRINTF(msg, "internal change of coordinate system from '%s' to '%s'. To avoid this message change ",
-		COORD_SYS_NAMES[os], COORD_SYS_NAMES[n_s]);
-	warning(msg);
-      } 
-      return R_NilValue;
-    case reportcoord_warnings : if (!warn) return R_NilValue; // no break!
-    case reportcoord_always :     
-      PROTECT(res = allocVector(STRSXP, 2));
-      SET_STRING_ELT(res, 0, mkChar(COORD_SYS_NAMES[os]));    
-      SET_STRING_ELT(res, 1, mkChar(COORD_SYS_NAMES[n_s]));    
-      UNPROTECT(1);
-      break;
-    default : BUG;
-    }
-    return res;
-  }
-  return R_NilValue;
-}
 
 
-void pci(int nr) {
-  cov_fct *C = CovList + nr;
+
+void pcl(int nr) {
+  defn *C = DefList + nr;
   int i;
   PRINTF("%s (%s)\n", C->name, C->nick); 
 
   PRINTF("  pref:");
-  for (i=0; i<=Nothing; i++) PRINTF("%s:%d ", METHODNAMES[i], C->pref[i]);
-  PRINTF("\n");    
+  for (i=0; i<=Nothing; i++) {
+    PRINTF("%s:%d ", METHOD_NAMES[i], C->pref[i]);
+    if (i == Sequential) { PRINTF("\n\t"); }
+  }
+  PRINTF("\n");
+  int v = C->variants;
+  PRINTF("derivs full=%d rese=%d var=%d\n", C->F_derivs, C->RS_derivs, v);
+  for (i=0; i<v; i++) {
+    system_type *s = C->systems[v];
+    PRINTF("type=%d (%s) ", s->type, TYPE_NAMES[s->type]);
+    PRINTF("dom=%d (%s) ", s->dom, DOMAIN_NAMES[s->dom]);
+    PRINTF("\n");
+  }
 }
 
-void pci() {
+void pcl(model *cov) { pcl(COVNR); }
+
+void pcl() {
   int nr;
-  for (nr = 0; nr<currentNrCov; nr++) PCI(nr);
+  for (nr = 0; nr<currentNrCov; nr++) pcl(nr);
 }
 
+
+
+bool tree(model *cov, int current, char all_subs, int level,    // TREE
+	  model *storage[TREE_MAXSTORAGE], int n, bool alle) {
+  defn *C = DefList + COVNR, // nicht gatternr
+    *CC = C;
+  bool found,
+    Splus_given = cov->Splus != NULL; // && cov->Splus->keys_given;
+  while(STRCMP(CC->name, InternalName) ==0) CC--;
+  PRINTF("%s (V%d of %d) [%d", CC->name, //COVNR, 
+	 cov->variant, CC->variants, cov->zaehler);
+  if (true) {
+    PRINTF(";%s%s", FTshort[cov->DallowedDone + 2 * (C->Dallowed != NULL)],
+	   FTshort[cov->IallowedDone + 2 * (C->Iallowed != NULL)]);
+  }
+  if (true) {
+    PRINTF(";%d%d,%d%d", CONDPREVDOM(0), CONDPREVISO(0),
+	   CONDOWNDOM(0), CONDOWNISO(0));
+  }
+  PRINTF("] %d %d", cov->zaehler, current);
+  if ((found = cov->zaehler == current)) { PRINTF("\t***"); }
+  else if (level < n && storage[level] == cov) {
+    if (!false) { 
+      for (int j=level; j<=n; j++) PRINTF("   ");
+      PRINTF("\t::");
+    }
+  } else if (!alle) {
+    bool further = cov->nsub > 0;
+    if (!further)
+      for (int i=0; i<C->kappas; i++)
+	if ((further = cov->kappasub[i] != NULL)) break;
+    if (!further && Splus_given)
+      for (int i=0; i < cov->nsub; i++)
+  	if ((further = cov->Splus->keys[i] != NULL)) break;
+    if (further) { PRINTF(" ..."); }
+    PRINTF("\n");
+    return false;
+  }
+  PRINTF("\n");
+
+  for (int i=0; i<C->kappas; i++) {
+    if (cov->kappasub[i] != NULL) {
+      leer(level); PRINTF("%s (%d): ", C->kappanames[i], i);
+      assert(cov->kappasub[i]->calling == cov);
+      found |= tree(cov->kappasub[i], current, all_subs, level + 1,// TREE
+		    storage, n, alle);
+    } 
+  }
+ 
+  bool givenkey;
+  if ((givenkey = cov->key != NULL) && all_subs >= 0) {
+    leer(level); PRINTF("key: ");
+    assert(cov->key->calling == cov);
+    found |= tree(cov->key, current, all_subs, level+1, storage, n, alle);//TREE
+  }
+
+  //printf("%s %d %d\n", NAME(cov), Splus_given, all_subs);
+  if (Splus_given && all_subs >= 0) 
+    for (int i=0; i < cov->nsub; i++) {
+      model *key = cov->Splus->keys[i];
+      if (key != NULL) {
+	givenkey = true;
+	leer(level); PRINTF("array (%d): ", i); 
+	assert(key->calling == cov);
+	found |= tree(key, current, all_subs, level+1, storage, n, alle);//TREE
+      }
+    }
+
+  if ((!givenkey && all_subs==0) || all_subs>0 || !found) 
+    for (int i=0; i<C->maxsub; i++) {
+      if (cov->sub[i] != NULL) {
+	leer(level);  PRINTF("%s (%d): ", C->subnames[i], i);
+	if (cov->sub[i]->calling != cov) {
+	  PRINTF("%s(%d) -> %s(%d)\n", NAME(cov), cov->zaehler,
+		 NAME(cov->sub[i]), (cov->sub[i]->zaehler)); // crash();
+	}
+	assert(cov->sub[i]->calling == cov);
+	found |= tree(cov->sub[i], current, all_subs, level + 1,// TREE
+		      storage, n, alle);
+      }
+    }
+  return found;
+}
+
+void tree(model *cov, bool alle) {// TREE
+  int current = cov->zaehler,
+    all_subs = 0;
+  // all_subs = 1; printf("all_subs=%d\n", all_subs);
+  model *storage[TREE_MAXSTORAGE];
+  int n = getroot(cov, storage);
+  if (!tree(storage[0], current, all_subs, 0, storage, n, alle) || // TREE
+      all_subs < 0) {
+    //  printf("found = %d all_subs=%d\n",
+    // 	   tree(storage[0], current, all_subs, 0, storage, n, alle), all_subs);
+    // PMI(cov); crash();
+    BUG;
+  } //
+}
+
+
+void printD(allowedD_type allowedD) {//
+  bool ok = false;
+  for (int i = (int) FIRST_DOMAIN; i<=(int) LAST_DOMAINUSER; i++) {
+    if (allowedD[i]) {
+      ok = true;
+      PRINTF("%s, ", DOMAIN_NAMES[i]);
+    }
+  }
+  if (!ok) { PRINTF("no domains or all!"); }
+  PRINTF("\n");
+}
+
+void printD(model *cov) {//
+  PRINTF("'%s' allows ", NAME(cov));
+  printD(cov->allowedD); //
+}
+
+void printI(allowedI_type allowedI) { //
+  bool ok = false;
+  for (int i = (int) FIRST_ISOUSER; i<=(int) LAST_ISOUSER; i++)
+    if (allowedI[i]){
+      ok = true;
+      PRINTF("%s, ", ISO_NAMES[i]);
+    }
+  if (!ok) { PRINTF("no isotropies or all!"); }
+  PRINTF("\n");
+}
+
+void printI(model *cov) { //
+  PRINTF("'%s' allows ", NAME(cov));
+  printI(cov->allowedI); //
+}

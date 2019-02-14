@@ -19,9 +19,8 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  ...)
 }
 \arguments{
- \item{x}{matrix of coordinates, or vector of x coordinates}
- \item{y}{vector of y coordinates}
- \item{z}{vector of z coordinates}
+ \item{x}{\argX}
+ \item{y,z}{\argYz}
  \item{data}{the data}
 % \item{grid}{logical; determines whether the vectors \code{x},
 % \code{y}, and \code{z} should be
@@ -33,7 +32,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  into one-dimensional sections.
  }
  \item{block.sequ}{ascending sequences of block lengths for which the
- detrended fluctuation analysis and the variance method is
+ detrended fluctuation analysis and the variance method are
  performed.}
  \item{fft.m}{vector of 2 integers; lower and upper endpoint of
  indices for the frequency which are used in the calculation of the
@@ -44,7 +43,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
  \code{fft.max.length/2} (WOSA-estimator).}
  \item{method}{list of implemented methods to calculate the Hurst parameter; see Details}
  \item{mode}{character. A vector with components
- \code{'nographics'}, \code{'plot'}, or \code{'interactive'}: %; see the Details.
+ \code{'nographics'}, \code{'plot'} or \code{'interactive'}: %; see the Details.
  \describe{
  \item{\code{'nographics'}}{no graphical output}
  \item{\code{'plot'}}{the regression line is plotted}
@@ -152,8 +151,7 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
 	Electroacoustics} \bold{15}, 70-73. 
  }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}}
+\me
 \seealso{
  \command{\link{RMmodel}}, \command{\link{RFfractaldim}}
 }
@@ -161,17 +159,16 @@ RFhurst(x, y = NULL, z = NULL, data, sort = TRUE,
 \keyword{ spatial }%-- one or more ...
 
 
-\examples{
+\examples{\dontshow{StartExample(reduced=50)}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample(reduced=50)}
+
 \dontshow{.randomfields.options = options()$warn; options(warn=0)}
 x <- runif(1000)
 h <- RFhurst(1:length(x), data=x)
 \dontshow{options(warn = .randomfields.options)}
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 

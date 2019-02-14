@@ -1,6 +1,6 @@
 \name{RMdewijsian}
 \alias{RMdewijsian}
-\title{Modified DeWijsian Variogram Model}
+\title{Modified De Wijsian Variogram Model}
 \description{
   The modified \command{RMdewijsian} model
   is an intrinsically stationary isotropic variogram model.
@@ -25,7 +25,7 @@ RMdewijsian(alpha, var, scale, Aniso, proj)
  J.-P. and Delfiner, P. (1999), p. 90).
  But note that \eqn{\gamma(r) = \log(r)} is not a valid variogram
  (\eqn{\gamma(0)} does not vanish) and can only be understood as a
- characteristic of a generalised random field.
+ characteristic of a generalized random field.
 
  The modified \code{RMdewijsian} model
  \eqn{\gamma(r) = \log(r^{\alpha}+1)} is a valid variogram model
@@ -33,7 +33,7 @@ RMdewijsian(alpha, var, scale, Aniso, proj)
 }
 
 \value{
- \command{\link{RMdewijsian}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMdewijsian}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 
 \note{Note that the (non-modified) de Wijsian model equals
@@ -52,8 +52,7 @@ RMdewijsian(alpha, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -67,13 +66,11 @@ RMdewijsian(alpha, var, scale, Aniso, proj)
 
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 model <- RMdewijsian(alpha=1)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

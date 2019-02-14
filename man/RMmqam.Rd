@@ -3,7 +3,7 @@
 \alias{RMmqam}
 \title{multivariate quasi-arithmetic mean}
 \description{
- \command{\link{RMqam}} is a multivariate stationary covariance model depending
+ \command{\link{RMmqam}} is a multivariate stationary covariance model depending
  on a submodel \eqn{\phi}{phi} such that
  \eqn{\psi(\cdot) := \phi(\sqrt(\cdot))}{psi( . ) := phi(sqrt( . ))}
  is completely monotone, and depending on further stationary
@@ -24,7 +24,7 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
     \cr
     \code{\link{RFgetModelNames}(monotone="normal mixture")}
   }
- \item{C1, C2, C3, C4, C5, C6, C7, C8, C9}{optional further stationary \command{\link{RMmodel}}}
+ \item{C1, C2, C3, C4, C5, C6, C7, C8, C9}{optional further stationary \command{\link{RMmodel}}s}
  \item{theta}{is a vector of values in \eqn{[0,1]}, summing up to \eqn{1}.}
 % \item{rho}{a matrix with positive entries}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any \command{\link{RMmodel}}. If not passed, the above covariance function remains unmodified.}
@@ -39,7 +39,7 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
  of \eqn{\phi}{phi} and \eqn{C_i} is valid.
 }
 \value{
- \command{\link{RMmqam}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMmqam}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -49,8 +49,7 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
  1830--1844.
  }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMqam}},
  \command{\link{RMmodel}},
@@ -58,18 +57,18 @@ RMmqam(phi, C1, C2, C3, C4, C5, C6, C7, C8, C9, theta, var, scale, Aniso, proj)
  \command{\link{RFfit}}.
 }
 
-
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-\dontshow{\dontrun{ ## irgendo ein Fehler
-model <- RMmqam(phi=RMgauss(), RMexp(), RMgauss(), theta=c(0.7, 0.3))
-x <- seq(0, 4, 0.3)
+
+RFoptions(modus_operandi="sloppy")
+model <- RMmqam(phi=RMgauss(),RMgauss(),RMexp(),theta=c(0.4, 0.6), scale=0.5)
+x <- seq(0, 10, 0.02)
 plot(model)
-plot(RFsimulate(model, x=x))
-}}
-\dontshow{FinalizeExample()}
-}
+z <- RFsimulate(model=model, x=x)
+plot(z)
+
+RFoptions(modus_operandi="normal")
+\dontshow{FinalizeExample()}}

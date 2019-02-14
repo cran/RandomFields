@@ -9,7 +9,7 @@
  
  The corresponding matrix-valued covariance function C of the model
  only depends on the difference \eqn{h}{h} between two points and it is
- given by the following components,
+ given by the following components:
  \itemize{
    \item the potential
    \item the vector field given by
@@ -38,7 +38,7 @@ RMdivfree(phi, which, var, scale, Aniso, proj)
  See also the models \command{\link{RMcurlfree}} and \command{\link{RMvector}}.
 }
 \value{
- \command{\link{RMdivfree}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMdivfree}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -48,27 +48,23 @@ RMdivfree(phi, which, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMcurlfree}},
+ \command{\link{RMderiv}},
  \command{\link{RMvector}},
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-
-
 \keyword{spatial}
 \keyword{models}
 
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMdivfree(RMgauss(), scale=4)
 plot(model, dim=2)
 
@@ -82,5 +78,4 @@ plot(simulated, select.variables=list(2:3))
 plot(simulated, select.variables=list(1, 2:3, 4))
 plot(simulated, select.variables=list(1, c(1, 2:3), 4))
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

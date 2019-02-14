@@ -5,8 +5,8 @@
 \title{Pressure and temperature forecast errors over the Pacific Northwest}
 \usage{data(weather)}
 \description{
- Meteorological dataset, which consists of difference between forecasts
- and observations (forcasts minus observations) of temperature and
+ Meteorological dataset, which consists of differences between forecasts
+ and observations (forecasts minus observations) of temperature and
  pressure at 157 locations in the North American Pacific Northwest. 
 }
 \format{
@@ -23,7 +23,7 @@
   \code{pars.model}, \code{pars}, \code{whole.model}, \code{whole}.
   
   Finally, the variable \code{information} contains packing information
-  (the date and the version of \pkg{RandomFields})
+  (the date and the version of \pkg{RandomFields}).
 }
 \details{
  The forecasts are from the GFS member of the University of Washington
@@ -32,7 +32,7 @@ regional numerical weather prediction ensemble (UWME; Grimit and Mass
 local time, at a forecast horizon of 48 hours.
 }
 \source{
-The data were obtained from Cliff Mass and Jeff Baars in the University
+The data were obtained from Cliff Mass and Jeff Baars from the University
 of Washington Department of Atmospheric Sciences.
 }
 \references{
@@ -56,13 +56,13 @@ of Washington Department of Atmospheric Sciences.
 
 \seealso{
   A reanalysis has been performed in Section 5 of the
-  \link{jss14} paper
+  \link{jss14} paper.
 }
 
-\examples{
-## see 'jss14'
-\dontshow{FinalizeExample()}
-}
+\me
+\examples{\dontshow{StartExample()}
+## See 'jss14'.
+\dontshow{FinalizeExample()}}
 
 \keyword{datasets}
 

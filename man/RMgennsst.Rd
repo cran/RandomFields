@@ -2,18 +2,21 @@
 \alias{RMgennsst}
 \title{Non-Separable Space-Time model}
 \description{
- \command{\link{RMgennsst}} is a univariate stationary spaceisotropic covariance model
+ \command{\link{RMgennsst}} is a univariate stationary spaceisotropic
+ covariance model on \eqn{R^d}
  whose corresponding covariance is given by
- \deqn{C(h,u)= (\psi(u)+1)^{-\delta/2} \phi(h /\sqrt(\psi(u) +1))}
+ \deqn{C(h,u)= \phi( sqrt(h^\top \psi^{-1}(u) h)) / \sqrt(det(psi))}
 }
 \usage{
-RMgennsst(phi, psi, var, scale, Aniso, proj)
+RMgennsst(phi, psi, dim_u, var, scale, Aniso, proj)
 }
 \arguments{
- \item{phi}{is normal mixture \command{\link{RMmodel}},  cf.\cr
-    \code{RFgetModelNames(monotone="normal mixture")}
+ \item{phi}{is a normal mixture \command{\link{RMmodel}}, cf.\cr
+    \code{RFgetModelNames(monotone="normal mixture")}.
   }
- \item{psi}{is a variogram \command{\link{RMmodel}}.}
+ \item{psi}{is a \eqn{d}-variate variogram model
+   \command{\link{RMmodel}}.}
+ \item{dim_u}{the dimension of the component \code{u}}
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
  covariance function remains unmodified.}
@@ -39,8 +42,7 @@ RMgennsst(phi, psi, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMnsst}},
  \command{\link{RMmodel}},
@@ -53,13 +55,13 @@ RMgennsst(phi, psi, var, scale, Aniso, proj)
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 % to do
+\dontshow{
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
-% RMgennsst( RMwhittle(nu=4, s=3), RMconstant(diag(3))
-
-
-\dontshow{FinalizeExample()}
+% RMgennsst( RMwhittle(nu=4, s=3), RMconstant(diag(3)))
 }
+
+\dontshow{FinalizeExample()}}

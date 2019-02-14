@@ -32,10 +32,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Applic.h>
 #include <R_ext/Utils.h>     
 
-#include "RF.h"
-#include "Operator.h"
-//#include "Operator.h"
-#include "Coordinate_systems.h"
+#include "questions.h"
+#include "Processes.h"
+#include "operator.h"
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */
 
@@ -76,50 +75,48 @@ void unitvector3D(int projectiondim, double *deltax, double *deltay,
 }
 
 
-cov_model* get_user_input(cov_model *cov) {
+model* get_user_input(model *cov) {
   // loc_user sind nicht die prevloc data, sondern, die die der Nutzer
   // eingegeben hatte !! Zumindest in erster Naehrung  
   // Problem hier falls intern aufgerufen wurde -- Abhilfe: layer muss
   // zwingend gesetzt sein
-  cov_model *user=cov;
+  model *user=cov;
   while (user->calling != NULL) user = user->calling;
   return user;
 }
 
 
-int get_subdim(cov_model *cov, bool Time, bool *ce_dim2, int *ce_dim,
+int get_subdim(model *cov, bool Time, bool *ce_dim2, int *ce_dim,
 	       int *effectivedim) {
-  cov_model *next = cov->sub[TBM_COV];
-  int fulldim = P0INT(TBM_FULLDIM);
-  double
-    layers = P0(TBM_LAYERS);
-  *effectivedim = cov->tsdim;
+  model *next = cov->sub[TBM_COV];
+  int fulldim = P0INT(TBM_FULLDIM),
+    layers = P0INT(TBM_LAYERS);
+  *effectivedim = ANYDIM; 
   if (Time) {
-    *ce_dim2 = (!ISNA(layers) && layers) ||
-      next->isoown==SPACEISOTROPIC ||
+    *ce_dim2 = (layers == (int) True) || equalsSpaceIsotropic(NEXT) ||
       *effectivedim == 1 + fulldim;
     *effectivedim -= *ce_dim2;  
-    if (*ce_dim2 && !ISNA(layers) && !layers) {
-      SERR1("value of '%s' does not match the situation", KNAME(TBM_LAYERS))
+    if (*ce_dim2 && layers == (int) False) {
+      SERR1("value of '%.50s' does not match the situation", KNAME(TBM_LAYERS))
     }
   } else {
     *ce_dim2 = false;
   }
-  if (*effectivedim > fulldim) return ERRORWRONGDIM;
+  if (*effectivedim > fulldim) RETURN_ERR(ERRORWRONGDIM);
   *ce_dim = 1 + (int) *ce_dim2;
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void tbm_kappasproc(int i, cov_model *cov, int *nr, int *nc){
+void tbm_kappasproc(int i, model *cov, int *nr, int *nc){
   kappaGProc(i, cov, nr, nc);
-  int dim = cov->tsdim;
+  int dim = ANYDIM; 
   //  printf("tbm kappas %d %d %d\n", i, TBM_CENTER, dim);
   if (i==TBM_CENTER) *nr = dim;
 }
 
 
-void rangetbmproc(cov_model *cov, range_type *range){ 
+void rangetbmproc(model *cov, range_type *range){ 
   GAUSS_COMMON_RANGE;
   rangetbm_common(cov, range, false);
 
@@ -153,7 +150,7 @@ void rangetbmproc(cov_model *cov, range_type *range){
 
   range->min[TBM_CENTER] = RF_NEGINF;
   range->max[TBM_CENTER] = RF_INF;
-  range->pmin[TBM_CENTER] = -1000000;
+  range->pmin[TBM_CENTER] = - 1000000;
   range->pmax[TBM_CENTER] = 1000000;
   range->openmin[TBM_CENTER] = false;
   range->openmax[TBM_CENTER] = true;
@@ -168,44 +165,48 @@ void rangetbmproc(cov_model *cov, range_type *range){
 }
 
 
-int checktbmproc(cov_model *cov) {
+int checktbmproc(model *cov) {
+
+  FRAME_ASSERT_GAUSS_INTERFACE;
+
+  // TO DO : split TBM in a RPmodel that expects
+  // a process as submodel and performs there just 
+  // the required lines numbers and resolution
+  // And in a RPmodel that sets up from a covariance function C
+  // a gaussian process for tbm operator(C)
+
 #define NSEL 2
-  cov_model 
+  model 
     *next=cov->sub[TBM_COV],
     *key =cov->key,
     *sub = key==NULL ? next : key;
-  int i, err = NOERROR,
-    isoselect[NSEL+1]={ISOTROPIC, SPACEISOTROPIC, SYMMETRIC},
-    nsel = NSEL,
-    dim = cov->tsdim; // taken[MAX DIM],
+  int  err = NOERROR;  // taken[MAX DIM],
+  isotropy_type
+    isoselect[NSEL]={ISOTROPIC, DOUBLEISOTROPIC};
   tbm_param *gp  = &(GLOBAL.tbm);
+  KEY_type *KT = cov->base;
 
   ASSERT_CARTESIAN;
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
-    return ERRORDIM;
+  ASSERT_ONESYSTEM;
   
-  if (GLOBAL.general.vdim_close_together && cov->vdim[0] > 1)
-    SERR1("TBM only allowed if '%s=FALSE'", general[GENERAL_CLOSE]);
+  if (GLOBAL.general.vdim_close_together && VDIM0 > 1)
+    SERR1("TBM only allowed if '%.50s=FALSE'", general[GENERAL_CLOSE]);
 
-  ROLE_ASSERT(ROLE_GAUSS);
-  
-   
-  // printf("%s fulldim %d %d\n", NICK(cov), fulldim, 0);
-  //   printf("%s fulldim %d %d\n", NICK(cov),
+  // printf("%.50s fulldim %d %d\n", NICK(cov), fulldim, 0);
+  //   printf("%.50s fulldim %d %d\n", NICK(cov),
   // 	 fulldim, gp->lines[fulldim-1]);assert(false);
 
-  //PMI(cov);
   kdefault(cov, TBM_FULLDIM, gp->fulldim);
   kdefault(cov, TBM_FULLDIM, PisNULL(TBM_TBMDIM) || gp->tbmdim >= 0
 	   ? gp->fulldim : P0INT(TBM_TBMDIM) - gp->tbmdim);
     kdefault(cov, TBM_TBMDIM, gp->tbmdim > 0 
 	   ? gp->tbmdim : P0INT(TBM_FULLDIM) + gp->tbmdim);
-  kdefault(cov, TBM_LAYERS, gp->layers);
+    kdefault(cov, TBM_LAYERS, (int) gp->layers);
  int 
     tbmdim = P0INT(TBM_TBMDIM),
     fulldim = P0INT(TBM_FULLDIM);
   if (tbmdim >= fulldim) {
-     SERR4("'%s' (=%d) must be less than '%s' (=%d)", 
+     SERR4("'%.50s' (=%d) must be less than '%.50s' (=%d)", 
 	   KNAME(TBMOP_TBMDIM), tbmdim, KNAME(TBM_FULLDIM), fulldim);
   }
   kdefault(cov, TBM_LINES, gp->lines[fulldim-1]);
@@ -215,118 +216,101 @@ int checktbmproc(cov_model *cov) {
   // if ( P0INT(TBM_GRID))
   //  warning("grid parameter for tbm not programmed yet");
   if (PisNULL(TBM_CENTER)) {    
-    PALLOC(TBM_CENTER, dim, 1);
-    for (i=0; i<dim; i++) {
-      P(TBM_CENTER)[i] = gp->center[i];
+    int Dim = OWNTOTALXDIM;
+      PALLOC(TBM_CENTER, Dim, 1);
+      for (int d=0; d<Dim; d++) {
+      P(TBM_CENTER)[d] = gp->center[d];
     }
   } else {
-    if (cov->nrow[TBM_CENTER] < dim) 
-      SERR1("vector for '%s' too short", KNAME(TBM_CENTER));
+    if (cov->nrow[TBM_CENTER] < OWNTOTALXDIM) 
+      SERR1("vector for '%.50s' too short", KNAME(TBM_CENTER));
   }
 
-  // 
-
   kdefault(cov, TBM_POINTS, gp->points);
-
-  //  printf("%d\n", gp->points);
-  // PMI(cov);
-
-  if ((err = checkkappas(cov, false)) != NOERROR)  return err;
+  if ((err = checkkappas(cov, false)) != NOERROR)  RETURN_ERR(err);
  
-
-  //   PMI(cov);
-  //printf("key/next/sub %ld %ld %ld\n", key, next, sub);//  assert(false);
-
-  if (key == NULL && isVariogram(sub)) {
+  if (key == NULL && !isProcess(sub)) { // thus isVariogram(sub)
     // Abfolge Tbm $(Aniso) iso-model braucht Moeglichkeit des 
     // anisotropen Modells
-    if (cov->role == ROLE_BASE) nsel++;
- 
-    for (i=0; i<nsel; i++) {	
-      //printf("dim =%d %d\n", dim, cov->role == ROLE_BASE ? KERNEL : XONLY);
+    if (hasInterfaceFrame(cov)) { // || COVNR == TBM_PROC_USER) nsel++;
 
-      //    PMI(sub);
-
-      if ((err = CHECK(sub, dim,  dim, VariogramType, 
-		       cov->role == ROLE_BASE ? KERNEL : XONLY, // wegen
-		       // nutzer eingabe aniso und dem allerersten check
-		       isoselect[i],
-		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
+      // PMI(cov);
+      //      if (COVNR != TBM_PROC_USER) crash();
+      
+      assert(COVNR == TBM_PROC_USER);
+      err = CHECK(sub, OWNLOGDIM(0), OWNXDIM(0), VariogramType, 
+		       KERNEL, // wegen nutzer eingabe aniso und dem
+		       // allerersten check
+		       SYMMETRIC, SUBMODEL_DEP, EvaluationType);
+    } else {
+      assert(COVNR != TBM_PROC_USER);
+      for (int i=0; i<NSEL; i++) {	
+	if ((err = CHECK(sub, OWNLOGDIM(0), OWNXDIM(0), VariogramType, XONLY, 
+			 isoselect[i], SUBMODEL_DEP, EvaluationType))
+	    == NOERROR) break;
+      }
     }
 
-    //  assert(false);
-
-    if (i==nsel) {
-      //
-      //       printf("%d %d %d\n", cov->role,  ROLE_BASE, nsel);
-      //APMI(cov); 
-      //
-       SPRINTF(ERROR_LOC, "%s: ", NICK(cov));
-       SERR("Its submodel could not be identified as isotropic or space-isotropic and positive definite function.");
+    if (err != NOERROR) {
+       SPRINTF(KT->error_loc, "%.50s", NICK(cov));
+      SERR("Its submodel could not be identified as isotropic or space-isotropic and positive definite function.");
     }
-  } else { // sub->nr > FIRSTGAUSSPROC || key != NULL
+    
+    
+  } else { // SUBNR > FIRSTGAUSSPROC || key != NULL
 
     bool dummy;
     int dummydim, newdim;
 
     if (key != NULL) {
       // falls hier gelandet, so ruft TBMINTERN TBM auf!!
-      if (cov->nr == TBM_PROC_USER) { 
-	cov_model *intern = sub;
-	while (intern != NULL && //intern->nr != TBM_PROC_INTERN &&
-	       (isAnyDollar(intern) || intern->nr == TBM_PROC_USER  // 
+      if (COVNR == TBM_PROC_USER) { 
+	model *intern = sub;
+	while (intern != NULL && //MODELNR(intern) != TBM_PROC_INTERN &&
+	       (isAnyDollar(intern) || MODELNR(intern) == TBM_PROC_USER  // 
 		))
 	  intern = intern->key != NULL ? intern->key : intern->sub[0];
 	if (intern == NULL) {
-	  //	APMI(key);
 	  BUG;
 	} else if (intern != cov) 
 	  paramcpy(intern, cov, true, true, false, false, false);
       }
     }
 
-    if (cov->nr == TBM_PROC_USER) newdim = dim; 
+    if (COVNR == TBM_PROC_USER) newdim = OWNXDIM(0); 
     else if ((err = get_subdim(cov, PrevLoc(get_user_input(cov))->Time, &dummy,
-			       &newdim, &dummydim)) != NOERROR) return err;
-
-    //PMI(sub); printf("nd %d\n", newdim); assert(newdim == 1);
-    //PMI(sub);
+			       &newdim, &dummydim)) != NOERROR) RETURN_ERR(err);
 
     if ((err = CHECK(sub, newdim, newdim, ProcessType, XONLY, CARTESIAN_COORD,
 		     SUBMODEL_DEP, 
-		     cov->role == ROLE_BASE ? cov->role : ROLE_GAUSS))
+		     GaussMethodType))
 	!= NOERROR) {
-      return err;
+      RETURN_ERR(err);
     }
   }
   setbackward(cov, sub);
-  cov->vdim[0] = next->vdim[0];
-  cov->vdim[1] = next->vdim[1];
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-  if ((err = checkkappas(cov)) != NOERROR)  return err;
+  VDIM0 = next->vdim[0];
+  VDIM1 = next->vdim[1];
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  if ((err = checkkappas(cov)) != NOERROR)  RETURN_ERR(err);
 
-  // PMI(cov);
-  // 
-  //printf("OK\n"); 
-   
-   
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-int struct_tbmproc(cov_model *cov, cov_model **newmodel) { 
-  cov_model
+
+
+int struct_tbmproc(model *cov, model **newmodel) { 
+  model
     *next = cov->sub[TBM_COV];
   ASSERT_NEWMODEL_NULL;
   if (next->pref[TBM] == PREF_NONE) {
-    return ERRORPREFNONE;
+    RETURN_ERR(ERRORPREFNONE);
   }
 
-  //   PMI(cov, "start struct tbmproc"); assert(false);
+  assert(COVNR == TBM_PROC_INTERN);
 
-  assert(cov->nr == TBM_PROC_INTERN);
-
-  cov_model *user = get_user_input(cov);
+  model *user = get_user_input(cov);
   location_type *loc_user = PrevLoc(user);
 
   double linesimufactor, 
@@ -350,8 +334,8 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   bool ce_dim2=false; 
 
 
-  if (cov->role != ROLE_GAUSS && cov->role != ROLE_BASE){
-    return ERRORFAILED;
+  if (!hasGaussMethodFrame(cov) && !hasInterfaceFrame(cov)) {
+    RETURN_ERR(ERRORFAILED);
   }
  
 
@@ -378,26 +362,25 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   */
  
   if (tbmdim != 1 || (fulldim != 2 && fulldim != 3))
-    SERR5("'%s' only works for %s =1 and %s=2 or 3. Got %d %d",
+    SERR5("'%.50s' only works for %.50s =1 and %.50s=2 or 3. Got %d %d",
 	  NICK(cov), KNAME(TBM_TBMDIM), KNAME(TBM_FULLDIM), tbmdim, fulldim);
-  if (cov->tsdim > MAXTBMSPDIM) return ERRORMAXDIMMETH;
+  if (ANYDIM > MAXTBMSPDIM) RETURN_ERR(ERRORMAXDIMMETH);
 
 
   // in theory it works also for variograms!
  
-  if (!isVariogram(next->typus) || next->domown != XONLY) 
-    return ERRORNOVARIOGRAM; 
+  if(!isVariogram(NEXTTYPE(0)) || !isXonly(NEXT)) RETURN_ERR(ERRORNOVARIOGRAM);
 
   if (user_dim == 1) 
     SERR("dimension must currently be at least 2 and at most 4 for TBM");
 
-  NEW_STORAGE(tbm);
+  ONCE_NEW_STORAGE(tbm);
   tbm_storage *s = cov->Stbm;
 
 
   if ((err=get_subdim(cov, loc_user->Time, &ce_dim2, &(s->ce_dim),
 		      &(s->simuspatialdim)))
-      != NOERROR) return err;
+      != NOERROR) RETURN_ERR(err);
 
 
    /****************************************************************/
@@ -406,12 +389,12 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
  // sort out which finer grid should be used in the spatial domain for
   // low dimensional simulation
-  if (PL>=PL_STRUCTURE) PRINTF("\ndetermining the length of line segment...");
+  if (PL>=PL_STRUCTURE) {PRINTF("\ndetermining the length of line segment...");}
 
   // PrintMethodInfo(meth);
 
   // minimum distance between the points   
-  linesimufactor = -1.0;
+  linesimufactor = - 1.0;
   if (tbm_linesimustep  > 0.0) linesimufactor = 1.0 / tbm_linesimustep;
   else if (tbm_linesimufactor > 0) {
     double mindelta = RF_INF;
@@ -428,7 +411,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     } else {
       long j, i, k0, k1, k2;	
       if (user_spatialpoints > 10000) {
-	SERR1("too many points to determine smallest distance between the points in a reasonable time; try '%s' with a positive value", KNAME(TBM_LINESIMUSTEP));
+	SERR1("too many points to determine smallest distance between the points in a reasonable time; try '%.50s' with a positive value", KNAME(TBM_LINESIMUSTEP));
 	  /* algorithmus kann verbessert werden, so dass diese Fehlermeldung 
 	     nicht mehr notwendig ist! */ 
       }
@@ -469,12 +452,13 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   location_type *loc = Loc(cov);
   assert(cov->ownloc == NULL);
   if ((loc->Time && !ce_dim2)) {
-    TransformLoc(cov, ce_dim2, false, false); 
+    TransformLoc(cov, ce_dim2, False, false); 
     loc = Loc(cov);
   }
 
-  int spdim = loc->timespacedim - ce_dim2,
-    dim = loc->timespacedim,
+  int 
+    dim = GetLoctsdim(cov),
+    spdim = dim - ce_dim2,
     ens = GLOBAL.general.expected_number_simu;
 
 
@@ -483,11 +467,11 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     min_center = 0.0,
     max_center = 0.0;
   
-  GetDiameter(loc, min, max, Center, true);
+  GetDiameter(loc, min, max, Center, true, false, NULL);
   for (d=0; d<spdim; d++) { 
     // necessary to calculate for min and max in case of tbm_center is given
     double dummy;
-    // printf("%d %f %f\n", d, Center[d], min[d]); 
+    // printf("%d %10g %10g\n", d, Center[d], min[d]); 
     dummy = Center[d] - min[d];
     min_center += dummy * dummy;
     dummy = Center[d] - max[d];
@@ -495,7 +479,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   }
   diameter = 2.0 * SQRT(min_center > max_center ? min_center : max_center);
 
-  //    print("diam %f pts=%d %f %f\n", diameter, *points, BUFFER, linesimufactor ); //assert(false);
+  //    print("diam %10g pts=%d %10g %10g\n", diameter, *points, BUFFER, linesimufactor ); //assert(false);
   // 4.231878 0 3.000000 1054.407676
 
 
@@ -506,26 +490,22 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
   diameter = TRUNC(BUFFER + diameter * linesimufactor); // in pts
 
-  // print("diam %f %f\n", diameter, linesimufactor);
+  // print("diam %10g %10g\n", diameter, linesimufactor);
 
   if ( *points > 0) { 
     if (diameter > *points) { // never happens if linesimufactor has been < 0
-      PRINTF("tbm points minimum=%f, but tbm_points is %d.\n", 
+      PRINTF("tbm points minimum=%10g, but tbm_points is %d.\n", 
 	     diameter,  *points);
       SERR( "given number of points to simulate on the TBM line is too small");
     } else diameter = (double) *points;
   } 
 
-// print("diam %f %f %d %d\n", diameter, linesimufactor, *points, GLOBAL.tbm.points);
+// print("diam %10g %10g %d %d\n", diameter, linesimufactor, *points, GLOBAL.tbm.points);
 
   if (diameter > MAXNN) {
-
-    //    printf("diamter = %f %d\n", diameter, MAXNN);
-    //    PMI(cov);
-
     SERR("The number of points on the line is too large. Check your parameters and make sure that none of the locations are given twice");
   } else if (diameter < 10) {
-    SERR2("too few points on the line -- modify '%s' or '%s'",
+    SERR2("too few points on the line -- modify '%.50s' or '%.50s'",
 	  KNAME(TBM_LINESIMUFACTOR), KNAME(TBM_LINESIMUSTEP));
   }
  
@@ -544,15 +524,15 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 
   double 
      *tbm_center = P(TBM_CENTER);
-  bool setable = !isDollar(cov->calling) && user_dim == loc->timespacedim
-    && user_spatialdim == loc->spatialdim;
+  bool setable = !isDollar(cov->calling) && user_dim == dim
+    && user_spatialdim == GetLoctsdim(cov);
 
-  GetDiameter(loc, min, max, Center, false);
+  GetDiameter(loc, min, max, Center, false, false, NULL);
 
   if (!ISNAN(tbm_center[0])) {
     assert(cov->calling != NULL);
     if (!setable) 
-      SERR1("'%s' can be set only for isotropic fields", KNAME(TBM_CENTER));
+      SERR1("'%.50s' can be set only for isotropic fields", KNAME(TBM_CENTER));
     for (d=0; d < user_dim; d++) {
       if (!R_FINITE(tbm_center[d])) SERR("center contains non finite values");
     }
@@ -568,7 +548,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   for (d=0; d<dim; d++) {
     s->center[d] = Center[d];
     if (loc->grid) s->center[d] -= loc->xgr[d][XSTART]; 
-    else if (loc->Time && d==loc->timespacedim-1 && ce_dim2) {
+    else if (loc->Time && d==dim-1 && ce_dim2) {
       s->center[d] -= loc->T[XSTART];
     }
   }
@@ -584,12 +564,12 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     PRINTF(ce_dim2 ? "plane...\n" : "line...\n");
   }
 
-  cov_model  *modelB1;
+  model  *modelB1;
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
+  if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
   modelB1 = cov->key;
-  while (isGaussProcess(modelB1)) modelB1 = modelB1->sub[0];
+  while (isGaussMethod(modelB1)) modelB1 = modelB1->sub[0];
   if (modelB1 == cov->key) {
     addModel(&(cov->key), GAUSSPROC);
     modelB1 = cov->key;
@@ -598,12 +578,11 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   }
  
   addModel(modelB1, 0, DOLLAR);
-  if (modelB1->nr==BROWNIAN){
-    // &(cov->key))->calling = key;
+  if (MODELNR(modelB1)==BROWNIAN){
     kdefault(cov, DVAR, 1.0 + PARAM0(next, BROWN_ALPHA) / tbmdim);
   } else {
-    cov_model *dollar = modelB1->sub[0];
-    dollar->tsdim = dollar->xdimprev = s->ce_dim;
+    model *dollar = modelB1->sub[0];
+    set_both_systems(dollar, s->ce_dim, PosDefType );
     kdefault(dollar, DVAR, 1.0);
     PARAMALLOC(dollar, DANISO, s->ce_dim, s->ce_dim);
     PARAM(dollar, DANISO)[0] = 1.0 / linesimufactor;
@@ -618,7 +597,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
     if (!PisNULL(TBMOP_FULLDIM))
       kdefault(modelB1->sub[0], TBMOP_FULLDIM, P0INT(TBM_FULLDIM));
     if (!PisNULL(TBMOP_LAYERS))
-      kdefault(modelB1->sub[0], TBMOP_LAYERS, P0(TBM_LAYERS));
+      kdefault(modelB1->sub[0], TBMOP_LAYERS, P0INT(TBM_LAYERS));
   }
  
 
@@ -627,6 +606,7 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   /****************************************************************/
 
   if (PL>=PL_STRUCTURE) {
+    //   printf("PL=%d %d\n", PL, PL_STRUCTURE);
     PRINTF("\nsetting up the process on the ");
     PRINTF(ce_dim2 ? "plane..." : "line...");
   }
@@ -638,58 +618,52 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
   s->xline_length  = xline[XLENGTH] = (double) diameter;// diameter > MAXNN must be first since
   //                                risk of overflow !
 
-  // printf("length %f %f\n", diameter, 1.0 / linesimufactor); assert(false);
+  // printf("length %10g %10g\n", diameter, 1.0 / linesimufactor); assert(false);
   // 4465  0.000948
 
 
-  //printf("xline %f %f %f\n", xline[XSTART], xline[XSTEP], xline[XLENGTH]);
+  //printf("xline %10g %10g %10g\n", xline[XSTART], xline[XSTEP], xline[XLENGTH]);
   
   err = loc_set(xline, timecomp, 1, 1, 3, ce_dim2 /* time */, 
 	  true /* grid */, false, cov->key);
-  cov_model *key = cov->key;
+  model *key = cov->key;
   if (err != NOERROR) goto ErrorHandling;
  
-  //APMI(cov);
-
-  
-  // APMI(cov->key);
-
   GLOBAL.general.expected_number_simu = 100;
   if ((err = CHECK(key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
-		     ProcessType, XONLY, CARTESIAN_COORD,
-		     cov->vdim, ROLE_GAUSS)) != NOERROR) {
+		   ProcessType, XONLY, CARTESIAN_COORD,
+		   cov->vdim, GaussMethodType)) != NOERROR) {
     goto ErrorHandling;  
   }
 
-
-  //printf("dims %d %d\n", cov->key->xdimown, s->ce_dim);
-  assert(key->xdimown == s->ce_dim);
+  
+  assert(XDIM(SYSOF(key), 0) == s->ce_dim);
 
   if ((err = STRUCT(key, NULL)) != NOERROR) goto ErrorHandling;  
   if (!key->initialised) {
     if (key->key != NULL &&
 	(err = CHECK(key, 1 + (int) ce_dim2, 1 + (int) ce_dim2, 
-		       PosDefType, XONLY, SYMMETRIC,
-		       SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
-      // PMI(key);
+		     PosDefType, XONLY, SYMMETRIC,
+		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
       goto ErrorHandling;  
     }
     if (PL >= PL_DETAILS) {
-      PRINTF("\n\nCheckModel Internal (%s, #=%d), after 2nd check:", 
-	     NICK(key), key->gatternr); // ok
+      PRINTF("\n\nCheckModel Internal (%.50s, #=%d), after 2nd check:", 
+	     NICK(key), MODELNR(key)); // ok
     }
   }
-  
+
   NEW_STORAGE(gen);
 
-  if ((err = INIT(key, 0, cov->Sgen)) != NOERROR) goto ErrorHandling;  
+  
+  if ((err = INIT(key, 0, cov->Sgen)) != NOERROR) goto ErrorHandling;
 
   s->err = err;
 
  ErrorHandling :
   //cov->initialised = err==NOERROR && key->initialised;
   GLOBAL.general.expected_number_simu = ens;
-  return err;
+  RETURN_ERR(err);
 }
 
 
@@ -698,23 +672,22 @@ int struct_tbmproc(cov_model *cov, cov_model **newmodel) {
 //               ( 0 0 1 )
 
 
-int init_tbmproc(cov_model *cov, gen_storage *S) {
+int init_tbmproc(model *cov, gen_storage *S) {
   location_type *loc = Loc(cov);
   int err=NOERROR;
   errorloc_type errorloc_save;
-  cov_model *key = cov->key; // == NULL ? cov->sub[0] : cov->key;
+  model *key = cov->key; // == NULL ? cov->sub[0] : cov->key;
   assert(key != NULL);  
   tbm_storage *s = cov->Stbm;
+  KEY_type *KT = cov->base;
    
-  //  PMI(cov);
-  //  crash();
   assert(s != NULL);
 
-  STRCPY(errorloc_save, ERROR_LOC);
-  SPRINTF(ERROR_LOC, "%s %s: ", errorloc_save, NAME(cov));
+  STRCPY(errorloc_save, KT->error_loc);
+  SPRINTF(KT->error_loc, "%.50s %.50s", errorloc_save, NAME(cov));
   cov->method = TBM;
 
-  ROLE_ASSERT_GAUSS;
+  FRAME_ASSERT_GAUSS;
 
   if (s->err==NOERROR) {
     err = INIT(key, 0, S); 
@@ -722,18 +695,17 @@ int init_tbmproc(cov_model *cov, gen_storage *S) {
     assert(s->err < NOERROR);
   }
 
-  STRCPY(ERROR_LOC, errorloc_save);
-  if (err != NOERROR) return err; 
+  STRCPY(KT->error_loc, errorloc_save);
+  if (err != NOERROR) RETURN_ERR(err); 
 
-  if (loc->distances) return ERRORFAILED;
+  if (loc->distances) RETURN_ERR(ERRORFAILED);
    
-  err = FieldReturn(cov);
-  //  APMI(cov);
+  err = ReturnOwnField(cov);
   cov->simu.active = err == NOERROR;
  
-  if (PL>= PL_STRUCTURE) PRINTF("\n'%s' is now initialized.\n", NAME(cov));
+  if (PL>= PL_STRUCTURE) {PRINTF("\n'%.50s' is now initialized.\n", NAME(cov));}
 
-  return err;
+  RETURN_ERR(err);
   
 }
 
@@ -764,15 +736,15 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
   
   else if (fulldim == 3) {
     unitvector3D(spatialdim, sube, sube +1, sube + 2);
-//    print("spatdim=%d %d  sube=%f  %f %f\n", 
+//    print("spatdim=%d %d  sube=%10g  %10g %10g\n", 
 //	   spatialdim, s->simuspatialdim, sube[0], sube[1], sube[2]);
   }
 
-  else ERR("wrong full dimension");
+  else RFERROR("wrong full dimension in 'GetE'");
 
   *offset = 0.5 * s->xline_length;
 
-  //  print("\noffset %f %f aniso=%d %f %f fact=%f\n", *offset,  s->xline_length, aniso==NULL, s->center[0], s->center[1], s->linesimufactor);
+  //  print("\noffset %10g %10g aniso=%d %10g %10g fact=%10g\n", *offset,  s->xline_length, aniso==NULL, s->center[0], s->center[1], s->linesimufactor);
   
 
   if (aniso == NULL) {
@@ -782,7 +754,7 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
     for (k=j=0; j<spatialdim; j++) {
       for (d=0; d<origdim; d++) {
 	e[d] += sube[j] * aniso[k++];
-	//      print("e,s,a, (%d, %d) %f     %f     %f\n",
+	//      print("e,s,a, (%d, %d) %10g     %10g     %10g\n",
 	//	     d, j, e[d], sube[j], aniso[j + d]);
       }
     }
@@ -790,12 +762,12 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
   for (d=0; d<spatialdim; d++) {
     e[d] *= s->linesimufactor;
     *offset -= s->center[d] * e[d];    
-    //       printf("d=%d %f sube=%f %f %f %f\n", d, e[d], sube[d],s->linesimufactor, s->center[d], *offset);
+    //       printf("d=%d %10g sube=%10g %10g %10g %10g\n", d, e[d], sube[d],s->linesimufactor, s->center[d], *offset);
     //  
   }
 
   //   for (d=0; d<dim; d++) {
-  //     print("e, lines %d offset=%f e=%f center=%f %f %d\n", 
+  //     print("e, lines %d offset=%10g e=%10g center=%10g %10g %d\n", 
   // 	     d, *offset, e[d], 
   // 	     s->center[d],  s->linesimufactor, s->ce_dim);
   //  }
@@ -806,8 +778,8 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
   }
   switch (idx) {
   case 4 : BUG;
-  case 3 : *ez = e[--idx];
-  case 2 : *ey = e[--idx];
+  case 3 : *ez = e[--idx]; FALLTHROUGH_OK; 
+  case 2 : *ey = e[--idx]; FALLTHROUGH_OK; 
   case 1 : *ex = e[--idx];
     break;
   default: BUG;
@@ -816,8 +788,8 @@ void GetE(int fulldim, tbm_storage *s, int origdim, bool Time,
 
 
 
-void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) { 
-  cov_model 
+void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
+  model 
     *key = cov->key; 
   assert(key != NULL); // == NULL ? cov->sub[0] : cov->key;
   location_type 
@@ -825,21 +797,15 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     *keyloc = Loc(key);
   tbm_storage *s =  cov->Stbm;
 
- int vdim = cov->vdim[0];
+ int vdim = VDIM0;
  double
    nn = keyloc->spatialtotalpoints;
  long
    ntot = keyloc->totalpoints * vdim,
    totvdim = loc->totalpoints * vdim;
 
-
-
-  //printf("%d\n", ntot);// assert(false);
-  //  assert(ntot > 4000);
-  // APMI(cov->key);
-
   int
-    origdim = loc->caniso == NULL ? cov->tsdim : loc->cani_nrow,
+    origdim = loc->caniso == NULL ? ANYDIM : loc->cani_nrow,
     simuspatialdim = s->simuspatialdim, // for non-grids only
     every = GLOBAL.general.every,
     tbm_lines = P0INT(TBM_LINES);
@@ -865,13 +831,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 
   assert(cov->Sgen != NULL);
      
-
-  // printf("%d %d\n", P0INT(TBM_FULLDIM), s->ce_dim);
-
-  //  APMI(cov);
-
   for (n=0; n<totvdim; n++) {
-    //printf("n=%d %ld\n", (int) n, totvdim);
     res[n]=0.0; 
   }
   deltaphi = PI / (double) tbm_lines;// only used for tbm2
@@ -880,9 +840,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 
   if (loc->grid) {
     int nx, ny, nz, gridlenx, gridleny, gridlenz;
-    long zaehler;
-    double xoffset, yoffset, zoffset,  toffset;
-
+ 
     stepx = stepy = stepz = stept =  0.0;
     gridlenx = gridleny = gridlenz = gridlent = 1;
   
@@ -903,11 +861,11 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 	case 3 : 
 	  gridlenz = (int) loc->xgr[--idx][XLENGTH];
 	  stepz = loc->xgr[idx][XSTEP];	  
-	  // no break;
+	  FALLTHROUGH_OK; 
 	case 2 : 
 	  gridleny = (int) loc->xgr[--idx][XLENGTH];
 	  stepy = loc->xgr[idx][XSTEP];	 
-	  // no break;
+	  FALLTHROUGH_OK; 
 	case 1 : 
 	  gridlenx = (int) loc->xgr[--idx][XLENGTH];
 	  stepx = loc->xgr[idx][XSTEP];	  
@@ -918,7 +876,7 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     for (n=0; n<tbm_lines; n++) {
       double inittoffset;
       R_CheckUserInterrupt();
-      if (every>0  && n > 0 && (n % every == 0)) PRINTF("%ld \n", n);
+      if (every>0  && n > 0 && (n % every == 0)) { PRINTF("%ld \n", n); }
 
       GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,
 	   loc->caniso, &inittoffset, &incx, &incy, &incz, &inct);
@@ -930,38 +888,34 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
 
       DO(key, cov->Sgen);
 
-      zaehler = 0;
-      for (v=0; v<vdim; v++) {
-	toffset = inittoffset;
+      // for (int i=0; i<10; i++) printf("%10e ", simuline[i]); printf("\n");  BUG;
+      
+    
+ 
+#ifdef DO_PARALLEL
+#pragma omp parallel for num_threads(CORES) collapse(4)
+#endif
+     for (v=0; v<vdim; v++) {
 	for (nt=0; nt<gridlent; nt++) {
-	  zoffset = toffset;
 	  for (nz=0; nz<gridlenz; nz++) {	  
-	    yoffset = zoffset;
 	    for (ny=0; ny<gridleny; ny++) {	  
-	      xoffset = yoffset;
+	      double xoffset = inittoffset + s->xline_length * v +
+		inct * nt + incz * nz + incy * ny,
+		endxoffset = xoffset + (gridlenx - 1) * incx;
+	      long zaehler = gridlenx *
+		(ny + gridleny * (nz + gridlenz * (nt + v * gridlent)));
+	      if (xoffset >= ntot+1 || xoffset < 0 ||
+		  endxoffset >= ntot+1 || endxoffset < 0 )  BUG;
 	      for (nx=0; nx<gridlenx; nx++) {
-		long longxoffset = (long) xoffset;
-		if (longxoffset >= ntot || longxoffset < 0) {
-		  PRINTF("xx ntot %ld %ld %ld -- offsets %f %f %f %f\n x:%d %d y:%d %d z:%d %d t:%d %d n:%d\n", 
-			 ntot, longxoffset, zaehler,
-			 xoffset, yoffset, zoffset, toffset,
-			 nx, gridlenx, ny, gridleny, nz, gridlenz, nt, gridlent,
-			 n
-			 );
-		  //		continue;#
-		  //APMI(key);
-		  BUG;
-		}				
-		res[zaehler++] += simuline[longxoffset];
+		// long longxoffset = (long) xoffset;
+		// if (longxoffset >= ntot || longxoffset < 0)  BUG;
+		res[zaehler++] += simuline[(long) xoffset];
 		xoffset += incx;
 	      }
-	      yoffset += incy;
+	      
 	    }
-	    zoffset += incz;
 	  }
-	  toffset += inct;
 	}
-	inittoffset += s->xline_length;
       } // vdim
     } // n
 
@@ -969,66 +923,121 @@ void do_tbmproc(cov_model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     //     assert(false);
     // not grid, could be time-model!
     // both old and new form included
-    double offset, offsetinit;
-    int i, 
-      spatialdim = loc->spatialdim;
-    long xi, 
-      totpoints = s->spatialtotalpts,
+    int spatialdim = loc->spatialdim;
+    long totpoints = s->spatialtotalpts,
       end = spatialdim * totpoints;
 
-#define TBMST(INDEX) {							\
+#define TBMSTART {							\
       for (n=0; n<tbm_lines; n++){/*printf("n=%ld tbm.lines%d\n",n,tbm_lines);//*/ \
 	R_CheckUserInterrupt();						\
-        if (every>0  && (n % every == 0)) PRINTF("%ld \n",n);		\
+        if (every>0  && (n % every == 0)) { PRINTF("%ld \n",n); }	\
+	double offsetinit;						\
 	GetE(fulldim, s, origdim, loc->Time, &phi, deltaphi,		\
 	     loc->caniso, &offsetinit, &incx, &incy, &incz, &inct);	\
-        offset += UNIFORM_RANDOM - 0.5; 				\
-	DO(key, cov->Sgen);						\
-    	for (i=v=0; v<vdim; v++) {					\
-	  offset = offsetinit;						\
+        offsetinit += UNIFORM_RANDOM - 0.5;				\
+	DO(key, cov->Sgen)
+
+#define TBMEND }} break
+    
+#define TBMFOR								\
+   	for (v=0; v<vdim; v++) {					\
 	  for (nt=0; nt<gridlent; nt++) {				\
-	    for (xi = 0; xi < end; xi+=spatialdim) {			\
+	    double offset = offsetinit + s->xline_length * v + inct * nt; \
+	    long zaehler = spatialdim * (nt + gridlent * v);		\
+	    for (int xi = 0; xi < end; xi+=spatialdim) {
+
+#define TBMFOREND }}  
+
+#define TBMFOR0							\
+    for (int zaehler = 0; zaehler < totpoints; zaehler++) {	\
+      int xi = zaehler * spatialdim;
+   
+
+#define TBMST(INDEX,ZAEHLER)						\
 	      long index;						\
 	      index = (long) (offset + INDEX);				\
-	      if (index >= ntot || index < 0) {			\
-		PRINTF("\n %f %f %f (%f %f %f))\n",			\
+	      if (index >= ntot || index < 0) {				\
+		PRINTF("\n %10g %10g %10g (%10g %10g %10g))\n",			\
 		       loc->x[xi], loc->x[xi+1] , loc->x[xi+2],		\
 		       incx, incy, incz);				\
-		PRINTF("n=%ld index=%ld nn=%f ntot=%ld xi=%ld nt=%d\n", \
-		       n, index, nn, ntot, xi, (int) nt);		\
-		PRINTF("OFF=%f IDX=%f inct=%flenT=%d spatialdim=%d\n",	\
+		PRINTF("n=%ld index=%ld nn=%10g ntot=%ld xi=%d \n", \
+		       n, index, nn, ntot, xi);				\
+		PRINTF("OFF=%10g IDX=%10g inct=%10glenT=%d spatialdim=%d\n",	\
 		       offset, INDEX, inct, gridlent, spatialdim);	\
 	       	BUG; /* to do: kann irgendwann mal rausgenommen werden, wenn's stabil laeuft */	\
 	      }								\
- 	      res[i++] += simuline[index];				\
-	    }								\
-	    offset += inct;						\
-	  }								\
-	  offsetinit += s->xline_length;				\
-        }								\
-      }									\
-    }
-  
+ 	      res[ZAEHLER] += simuline[index];				\
+          }
+
     inct = nn; // number of spatial points
     gridlent = loc->Time ? loc->T[XLENGTH] : 1; 
     assert(gridlent * nn * vdim == ntot);
 
     switch (simuspatialdim) {
     case 1 : //see Martin's techrep f. details
-      TBMST(loc->x[xi] * incx);
-      break;
+      TBMSTART;
+#ifdef DO_PARALLEL
+      if (vdim * gridlent == 1) {
+	double offset = offsetinit;
+#pragma omp parallel for num_threads(CORES) 
+	TBMFOR0;
+ 	TBMST(loc->x[xi] * incx, zaehler);
+      } else {
+#pragma omp parallel for num_threads(CORES) collapse(2)
+#endif
+	TBMFOR;
+	TBMST(loc->x[xi] * incx, zaehler++);
+        TBMFOREND
+#ifdef DO_PARALLEL
+	} 
+#endif
+      TBMEND;
+     
     case 2: 
-      TBMST(loc->x[xi] * incx + loc->x[xi+1] * incy); //
-      break;
+      TBMSTART;
+#ifdef DO_PARALLEL
+      if (vdim * gridlent == 1) {
+	double offset = offsetinit;
+#pragma omp parallel for num_threads(CORES) 
+	TBMFOR0;
+ 	TBMST(loc->x[xi] * incx + loc->x[xi+1] * incy, zaehler);
+      } else {
+#pragma omp parallel for num_threads(CORES) collapse(2)
+#endif
+	TBMFOR;
+	TBMST(loc->x[xi] * incx + loc->x[xi+1] * incy, zaehler++);
+	TBMFOREND
+#ifdef DO_PARALLEL
+      }
+#endif
+      TBMEND;
+      
     case 3:
-      TBMST(loc->x[xi] * incx + loc->x[xi+1] * incy + loc->x[xi+2] * incz);
-      break;
+#define INC3 loc->x[xi] * incx + loc->x[xi+1] * incy + loc->x[xi+2] * incz
+      TBMSTART;
+#ifdef DO_PARALLEL
+      if (vdim * gridlent == 1) {
+	double offset = offsetinit;
+#pragma omp parallel for num_threads(CORES) 
+	TBMFOR0;
+ 	TBMST(INC3, zaehler);	
+      } else {
+#pragma omp parallel for num_threads(CORES) collapse(2)
+#endif
+	TBMFOR;
+	TBMST(INC3, zaehler++);
+	TBMFOREND
+#ifdef DO_PARALLEL
+      }
+#endif
+      TBMEND;
+     
     default : BUG;
     }
   } // end not grid
   
 //  {double z; int i; for(i=0, z=0.0; i<ntot; i++) z+=simuline[i]*simuline[i];
-//      print("%f %f %f\n", 
+//      print("%10g %10g %10g\n", 
 //	     simuline[0], z / ntot, res[10] / SQRT((double) tbm_lines));
 //  }
 

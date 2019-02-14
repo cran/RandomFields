@@ -88,10 +88,10 @@ approx_test <- function(modellist, alpha) {
   loglik <- df <- numeric()
   
   for (m in 1:n) {
-    if (class(modellist[[m]]) == "RF_fit") {
+    if (is(modellist[[m]], "RF_fit")) {
       df[m] <- modellist[[m]]$number.of.parameters
       loglik[m] <- modellist[[m]]$ml$likelihood
-    } else if (class(modellist[[m]]) == "RFfit") {
+    } else if (is(modellist[[m]], "RFfit")) {
       df[m] <- modellist[[m]]@number.of.parameters
       loglik[m] <- modellist[[m]]["ml"]@likelihood
     } else stop("wrong class ('", class(modellist), "') in approx_test.")
@@ -105,7 +105,7 @@ approx_test <- function(modellist, alpha) {
 
 
 approx_test_single <- function(model, method, alpha, modelinfo) {
-  if (class(model) == "RF_fit") {
+  if (is(model) == "RF_fit") {
     submodels <- model$submodels
     df <-  model$number.of.parameters
     loglik <- model[[method]]$likelihood
@@ -136,7 +136,7 @@ approx_test_single <- function(model, method, alpha, modelinfo) {
     number.of.data <- model@number.of.data
     if (missing(modelinfo)) modelinfo <- model@modelinfo
     fixed <- NULL
-    fitted.model <- PrepareModel2(model[method])
+    fitted.model <- PrepareModel2(model[method])## ok no params
   }
   
   if (!is.logical(x.proj) && length(x.proj)  != true.tsdim) ## todo x.proj!=NULL streichen
@@ -287,24 +287,25 @@ approx_test_single <- function(model, method, alpha, modelinfo) {
 
 
 RFratiotest <-
-  function(nullmodel, alternative,
+  function(nullmodel, alternative, ## no params as output of RFfit
            x, y=NULL, z=NULL, T=NULL,  grid=NULL, data,
            alpha,
            n = 5 / alpha, ## number of simulations to do
            seed = 0,
            lower=NULL, upper=NULL, 
-           methods, # "reml", "rml1"),
-           sub.methods,
-           ## "internal" : name should not be changed; should always be last
+           methods, # "reml", "rml1",
+	   sub.methods,
+	   ## "internal" : name should not be changed; should always be last
            ##              method!
-           optim.control=NULL,
+			   optim.control=NULL,
            users.guess=NULL,  
            distances=NULL, dim,
            transform=NULL,
            ##type = c("Gauss", "BrownResnick", "Smith", "Schlather",
-           ##             "Poisson"),
-           ... ) {
-       
+		      ##             "Poisson"),
+	   ...
+	   ) {
+    
   classes <- c("RF_fit", "RFfit")
     
 
@@ -318,8 +319,7 @@ RFratiotest <-
   
 
   if ((!RFopt$fit$ratiotest_approx && (missing(alpha) || n < 1 / alpha)) ||
-      (!missing(alpha) && (alpha < 0 && alpha > 1))
-      )
+      (!missing(alpha) && (alpha < 0 && alpha > 1)) )
     stop("alpha is not given or outside [0,1] or to small")
  
   if (class(nullmodel) %in% classes) {
@@ -368,14 +368,15 @@ RFratiotest <-
     set.seed(RFopt$basic$seed)
   }
 
-  nullmodel <- PrepareModel2(nullmodel, ...)
-  alternative <- PrepareModel2(alternative, ...)
+  nullmodel <- PrepareModel2(nullmodel, ...) ## ok no params
+  alternative <- PrepareModel2(alternative, ...)## ok no params
 
-  Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+  Z <- UnifyData(x=x, y=y, z=z, T=T, grid=grid, data=data,
                        distances=distances, dim=dim, RFopt=RFopt)
   values <- try(GetValuesAtNA(NAmodel=nullmodel, valuemodel=alternative,
-                              spatialdim=Z$spatialdim, Time=Z$Zeit,
-                              shortnamelength=3, skipchecks=FALSE),
+                            #  spatialdim=Z$spatialdim, Time=Z$has.time.comp,
+                           #   shortnamelength=3,
+                              skipchecks=FALSE),
                 silent=TRUE)
   remove("Z")
 
@@ -418,13 +419,16 @@ RFratiotest <-
   simu.n <- n - 1
   ratio <- numeric(simu.n)
   fit <- numeric(2)
-  Z <- StandardizeData(x=x, y=y, z=z, T=T, grid=grid, data=data,
+  Z <- UnifyData(x=x, y=y, z=z, T=T, grid=grid, data=data,
                        distances=distances, dim=dim, RFopt=RFopt)
-  dist.given <- Z$dist.given
-  if (length(Z$coord) > 1) stop("multisets of data cannot be considered yet")
+  if (length(Z$coord) > 1)
+    stop("multisets of data cannot be considered yet")
 
-  newx <- if (!dist.given) Z$coord[[1]]$x # lapply(Z$coord, function(x) x$x)
-  newT <- if (!dist.given) Z$coord[[1]]$T # lapply(Z$coord, function(x) x$T),
+  Coord <- Z$coord[[1]]
+  dist.given <- Coord$dist.given
+  newx <- if (!dist.given) Coord$x # lapply(Z$coord, function(x) x$x)
+  newT <- if (!dist.given) Coord$T # lapply(Z$coord, function(x) x$T)
+	     
   
   pch <- if (RFopt$general$pch=="") "" else '@'
   for (i in 1:simu.n) {
@@ -432,7 +436,7 @@ RFratiotest <-
       cat("\n ", i, "th simulation out of", simu.n)
     else cat(pch)
     simu <- RFsimulate(model, x=newx, T=newT, grid=grid, 
-                       distances=if (dist.given) Z$coord[[1]], dim=dim, spC=FALSE)
+                       distances=if (dist.given) Coord, dim=dim, spC=FALSE)
     guess <- users.guess   
     for (m in 1:length(model.list)) {
       simufit <-
@@ -442,7 +446,7 @@ RFratiotest <-
               methods=methods,
               sub.methods=sub.methods, optim.control=optim.control,
               users.guess=guess,
-              distances=if (dist.given) Z$coord[[1]], dim=dim,
+              distances=if (dist.given) Coord, dim=dim,
               transform=transform,
               ..., spConform=FALSE)
       fit[m] <- simufit$ml$ml

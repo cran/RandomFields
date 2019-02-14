@@ -23,158 +23,152 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <Rmath.h>
 #include <stdio.h>  
-//#include <stdlib.h>
 #include <R_ext/Lapack.h>
-//#include <R_ext/Linpack.h>
-#include "RF.h"
-#include "Operator.h"
+#include "questions.h"
+#include "operator.h"
+#include "Processes.h"
 
 
-int check_specificGauss(cov_model *cov) {
+int check_specificGauss(model *cov) {
 #define nsel 4
-  cov_model
+  model
     *key = cov->key,
-    *next=cov->sub[0];
-  int err ; // taken[MAX DIM],
+    *next= cov->sub[0];
+  int err ,
+    dim = ANYDIM; // taken[MAX DIM],
   //  direct_param *gp  = &(GLOBAL.direct); //
-  
-  ROLE_ASSERT(ROLE_GAUSS);
-   
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
-    return ERRORDIM;
-  if (CovList[next->nr].Specific == MISMATCH)
-    SERR1("specific method for '%s' not known", NAME(next));
 
-  //    APMI(cov); //assert(false);
+  FRAME_ASSERT_GAUSS_INTERFACE;
+   
+  if (DefList[NEXTNR].Specific == MISMATCH || DefList[NEXTNR].Specific ==UNSET)
+    SERR1("specific method for '%.50s' not known", NAME(next));
+
   if (key == NULL) {
 #define SPEC_TYPES 4
-    Types type[SPEC_TYPES] = {PosDefType, PosDefType, VariogramType, TrendType};
-    int i,
-      max = SymmetricOf(cov->isoown),
-      iso[SPEC_TYPES] = {max, max, max, CoordinateSystemOf(cov->isoown)},
-      dom[SPEC_TYPES] = {XONLY, KERNEL, XONLY, XONLY};    
+    Types type[SPEC_TYPES] ={PosDefType, PosDefType, VariogramType, TrendType};
+
+    assert(OWNISO(0) == CoordinateSystemOf(OWNISO(0)));
+    isotropy_type
+      max = OWNISO(0), // CoordinateSystemOf(OWNISO(0)),
+      iso[SPEC_TYPES] = {max, max, SymmetricOf(OWNISO(0)), max};
+    domain_type
+      dom[SPEC_TYPES] = {XONLY, KERNEL, XONLY, XONLY};
+    int n = isAnySpherical(PREVISO(0)) ? 2 : SPEC_TYPES;
+      
+    ASSERT_ONESYSTEM;
+
+    // printf("\n\n\n\n\n\n\n\n\n\nC HECK %d:::\n", cov->zaehler);
     
-      // APMI(cov->calling);
-
-    for (i=0; i<SPEC_TYPES; i++) {
-      if ((err = CHECK(next, cov->tsdim,  cov->tsdim,
-		       type[i], dom[i], iso[i],
-		       SUBMODEL_DEP, ROLE_COV)) == NOERROR) break;
+    for (int i=0; i<n; i++) {
+      if ((err = CHECK(next, dim, dim, type[i], dom[i], iso[i],
+		       SUBMODEL_DEP, EvaluationType)) == NOERROR) break;
+      // printf("specific i=%d", i);      TREE0(cov);
     }
-    if (err != NOERROR) return err;
-    if (next->pref[Specific] == PREF_NONE) return ERRORPREFNONE;
+    if (err != NOERROR) RETURN_ERR(err);
+    //PMI0(next);
+    if (next->pref[Specific] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
   } else {
-    if ((err = CHECK(key, cov->tsdim,  cov->tsdim, ProcessType,
-		     XONLY, cov->isoown,
-		     SUBMODEL_DEP, ROLE_GAUSS)) != NOERROR) {
-      return err;
+    if ((err = CHECK_PASSTF(key, GaussMethodType, VDIM0, GaussMethodType))
+	!= NOERROR) {
+      RETURN_ERR(err);
     }
-
-    //APMI(key);
-
   }
-  cov_model *sub = cov->key == NULL ? next : key;
+  model *sub = cov->key == NULL ? next : key;
   setbackward(cov, sub);
-  cov->vdim[0] = sub->vdim[0];
-  cov->vdim[1] = sub->vdim[1];
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-
-  //PMI(cov);
-
-  return NOERROR;
+  VDIM0 = sub->vdim[0];
+  VDIM1 = sub->vdim[1];
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  RETURN_NOERROR;
 }
 
 
-int struct_specificGauss(cov_model *cov, cov_model VARIABLE_IS_NOT_USED **newmodel) {
-  cov_model 
+int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
+  model 
     *next = cov->sub[0];
-  location_type *loc = PrevLoc(cov);
-   int err;
-  //   PMI(cov); //assert(false);
-  
+  // location_type *loc = PrevLoc(cov);
+  int err;
   if (next->pref[Specific] == PREF_NONE) {
-    return ERRORPREFNONE;
+    RETURN_ERR(ERRORPREFNONE);
   }
 
-  ROLE_ASSERT_GAUSS;
-  assert(CovList[next->nr].Specific >= 0);
+  FRAME_ASSERT_GAUSS_INTERFACE;
+  assert(DefList[NEXTNR].Specific >= 0);
 
   if (cov->key != NULL) COV_DELETE(&(cov->key));
-  if ((err = covCpy(&(cov->key), next)) != NOERROR) return err;
+  //  printf("copy\n"); PMI(cov);
+  if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
+  //  printf("copied\n"); PMI(cov);
 
+  COPYALLSYSTEMS(PREVSYSOF(cov->key), PREVSYSOF(next), false);
+  cov->key->variant = UNSET; // ???
 
-  if ((err = CHECK(cov->key, next->tsdim, next->xdimprev, next->typus, 
-		   next->domprev, next->isoprev, next->vdim,
-		   next->role))!= NOERROR) {
-    //PMI(cov->key); XERR(err);
-    //printf("specific ok\n");
-    // crash();
-    return err;
+  // printf("\n\n\n\n\n\n\n\n\nS TRUCT::::\n");
+  
+  if ((err = CHECK_ONLY(cov->key))!= NOERROR) {
+    RETURN_ERR(err);
   }
-
-  cov->key->nr = CovList[cov->key->nr].Specific ;
-  cov->key->role = ROLE_GAUSS;
-  cov->key->typus = ProcessType;
-
-
-  // APMI(cov);
+  //  PMI0(cov->key); 
 
  
+  SET_NR(cov->key, DefList[MODELNR(cov->key)].Specific);
+  cov->key->checked = true;
+  
+  cov->key->frame = GaussMethodType;
+  set_type(PREVSYSOF(cov->key), 0, GaussMethodType);
+  set_type(SYSOF(cov->key), 0, GaussMethodType);
 
-  //PMI(cov->key);
-  // APMI(cov->key);
-  if ((err = STRUCT(cov->key, NULL)) != NOERROR) {
-    return err;
+  
+  if ((err = STRUCT(cov->key, NULL)) != NOERROR) RETURN_ERR(err);
+
+  //  printf("ok\n");
+
+  if ((err = CHECK_PASSTF(cov->key, GaussMethodType, VDIM0, GaussMethodType))
+      != NOERROR) {
+   //if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
+   //		   XONLY, CoordinateSystemOf(OWNISO(0)),
+   //		   cov->vdim, GaussMethodType)) != NOERROR) {
+    //
+    // PMI(cov->key); XERR(err);
+
+    //    printf("err = %d\n", err);
+    
+    RETURN_ERR(err);
   }
 
-  //   APMI(cov->key);
-
-  if ((err = CHECK(cov->key, loc->timespacedim, cov->xdimown, ProcessType,
-		   XONLY, CoordinateSystemOf(cov->isoown),
-		   cov->vdim, ROLE_GAUSS)) != NOERROR) {
-    //PMI(cov->key); XERR(err);
-    //printf("specific ok\n");
-    // crash();
-    return err;
-  }
-
-  //APMI(cov->key);
-  //  if (next->nr == PLUS) AERR(err);
- 
-  return err;
+  //  printf("n o err\n");
+   RETURN_ERR(NOERROR);
 }
 
-void range_specificGauss(cov_model VARIABLE_IS_NOT_USED *cov, range_type *range){  
+void range_specificGauss(model VARIABLE_IS_NOT_USED *cov, range_type *range){  
   GAUSS_COMMON_RANGE;
 }
 
 
-int init_specificGauss(cov_model *cov, gen_storage *S) {
-  cov_model *key = cov->key;
+int init_specificGauss(model *cov, gen_storage *S) {
+  model *key = cov->key;
   int err;
 
   assert(key != NULL);
 
-  if (cov->role == ROLE_COV) {
-    return NOERROR;
+  if (hasEvaluationFrame(cov)) {
+    RETURN_NOERROR;
   }
 
-  ROLE_ASSERT_GAUSS;
+  FRAME_ASSERT_GAUSS_INTERFACE;
 
   cov->method = Specific;
-  if ((err = INIT(key, 0, S)) != NOERROR) return err;
+  //printf("specific : %.50s\n", NAME(key));
+  if ((err = INIT(key, 0, S)) != NOERROR) RETURN_ERR(err);
 
-  key->simu.active = true;
-  cov->fieldreturn = true;
-  cov->origrf = false;
-  cov->rf = key->rf;
+  cov->simu.active = true;
+  ReturnOtherField(cov, key);
 
-  return err;
+  RETURN_ERR(err);
 }
 
 
-void do_specificGauss(cov_model *cov, gen_storage *S) {  
-  cov_model *key = cov->key;
+void do_specificGauss(model *cov, gen_storage *S) {  
+  model *key = cov->key;
   double *res = cov->rf;
   SAVE_GAUSS_TRAFO;
   assert(key != NULL);

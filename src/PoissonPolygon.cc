@@ -30,8 +30,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Rmath.h>
 //#include <stdlib.h>
 
-#include "RF.h"
 #include "convhull2D.h"
+#include "PoissonPolygon.h"
+#include "RF.h"
 
 
 
@@ -92,7 +93,7 @@ void rTriangle(double *phi)
 			else if(phi[1]<phi[2]-PI || phi[1]>phi[0]+PI) ok=0;
 
 		}
-		a = 0.5*(FABS(SIN(phi[2]-phi[1]))+fabs(SIN(phi[0]-phi[2]))+fabs(SIN(phi[1]-phi[0])));
+		a = 0.5*(FABS(SIN(phi[2]-phi[1]))+FABS(SIN(phi[0]-phi[2]))+FABS(SIN(phi[1]-phi[0])));
 		if(amax*UNIFORM_RANDOM<a) onceagain=0;
 	}
 }
@@ -131,7 +132,7 @@ void rTriangle(double *phi) {
  *   Stochastic Geometry. Edited by W. Kendall and I. Molchanov. Oxford 
  *   University Press
  *
- * returns an error code err
+ * returns an Error code Err
  * 
  * needs 
  * - a function 
@@ -152,7 +153,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 	double R,T,RRight,RLeft,RMax,uprim[2],pprim,udual[2],pdual;
 	double sqrlen,ulen,maxlen;
 	int n=0,nold=0,nneu,ok=0,i,j,nV=0;
-	int err=NOERROR;
+	int Err=NOERROR;
 	// arrays
 	double phi[3], psi, **vdual, **vdtemp, **vsave;
 	struct vertex *vprim;
@@ -210,12 +211,12 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 			n += nneu;
 			vdtemp = (double **) realloc(vdual, (n+1)*sizeof(double *));
 			if(vdtemp != NULL) vdual = vdtemp; else {
-			  err = ERRORMEMORYALLOCATION;
+			  Err = ERRORMEMORYALLOCATION;
 			  goto ErrorHandling;
 			}
 			vdtemp = (double **) realloc(vsave, n*sizeof(double *));
 			if(vdtemp != NULL) vsave = vdtemp; else {
-			  err = ERRORMEMORYALLOCATION;
+			  Err = ERRORMEMORYALLOCATION;
 			  goto ErrorHandling;
 			}
 
@@ -261,7 +262,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 	for(i=0;i<P->n;i++){
 	  for(j=0;j<2;j++){
 	    P->v[i].x[j] = vprim[i].x[j]/lambda;
-	    //	    printf("i,j = %d %d %f \n", i, j, P->v[i].x[j]);
+	    //	    printf("i,j = %d %d %10g \n", i, j, P->v[i].x[j]);
 	    if(P->v[i].x[j]<P->box0[j]) P->box0[j] = P->v[i].x[j];
 	    if(P->v[i].x[j]>P->box1[j]) P->box1[j] = P->v[i].x[j];
 	  }
@@ -297,7 +298,7 @@ int rPoissonPolygon(struct polygon *P, double lambda, bool do_centering)
 	FREE(vdual);
 	FREE(vsave);
 	FREE(vprim);
-	return err;
+	return Err;
 }
 
 /*******************************************************************************

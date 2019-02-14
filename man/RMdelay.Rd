@@ -27,11 +27,11 @@ RMdelay(phi,s,var, scale, Aniso, proj)
  covariance function remains unmodified.}
 }
 \details{%See Wackernagel, H. (2003), p.?)
- Here, a multivariate random field is obtained from single univariate
- random field, by shifting it by fixed value.
+ Here, a multivariate random field is obtained from a single univariate
+ random field by shifting it by a fixed value.
 }
 \value{
- \command{\link{RMdelay}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMdelay}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -46,15 +46,14 @@ RMdelay(phi,s,var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
  \command{\link{RFfit}}.
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -65,8 +64,7 @@ plot(model, dim=2, xlim=c(-6, 6), ylim=c(-6,6))
 simu <- RFsimulate(model, x, y)
 plot(simu, zlim="joint")
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 
 \keyword{spatial}

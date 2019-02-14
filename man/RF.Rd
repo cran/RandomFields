@@ -16,7 +16,7 @@
     done with the model, e.g. calculation of the covariance
     (\command{\link{RFcov}}).
     The following list gives those \code{RFfunctions} that have
-    an internal represenation as completion to the user's model.
+    an internal representation as completion to the user's model.
     \tabular{ll}{
   %    \bold{User's function} \tab \bold{Internal task}    \cr
      \command{\link{RFcalc}} \tab performs some simple calculations
@@ -32,8 +32,7 @@
     %   \command{\link{RFget}} \tab not implemented yet\cr
    \command{\link{RFdistr}} \tab generic function
     assigning to a distribution family various values of the
-    distribution % (density function, distribution function, quantile,
-    random sample)
+    distribution % (density function, distribution function, quantile, random sample)
     \cr
     \command{\link{RFfctn}} \tab assigns to a model the
     value of the function at given locations. In case of a covariance
@@ -63,7 +62,7 @@
  %     \bold{User's function} \tab \bold{Description}   \cr
      \command{\link{RFcrossvalidate}} \tab cross validation for Gaussian fields
     \cr
-    \command{\link{RFempiricalvariogram}} \tab
+    \command{\link{RFvariogram}} \tab
     empirical variogram
     \cr
     \command{\link{RFfit}} \tab
@@ -132,7 +131,12 @@
  \link{RR}, \link{R.},
  \code{\link[=RMmodelgenerator-class]{RMmodelgenerator}}
 }
-\examples{
+
+\me
+\keyword{spatial}
+
+
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -140,12 +144,4 @@ z <- RFsimulate(model=RMexp(), 1:10)
 RFgetModel(RFsimulate, show.call = TRUE)  # user's definition
 RFgetModel(RFsimulate, show.call = FALSE) # main internal part
 
-\dontshow{FinalizeExample()}
-}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-
-
-\keyword{spatial}
-
+\dontshow{FinalizeExample()}}

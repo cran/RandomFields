@@ -40,16 +40,16 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
  covariance function remains unmodified.}
 }
 \details{
- See Stein (2005) formula (12).
+ See Stein (2005), formula (12).
  
  Instead of the velocity parameter \eqn{V} in the original model
- description, a preceeding anisotropy matrix is chosen appropriately:
+ description, a preceding anisotropy matrix is chosen appropriately:
  
  \deqn{\left( \begin{array}{cc} A & -V \\ 0 &
  1\end{array}\right)}{matrix(c(A, -V, 0, 1), nr=2, by=TRUE)}
  A is a spatial transformation matrix.
- (I.e. (x,t) is multiplied from left on the above matrix and
- the first elements of the obtained vector are intepreted as
+ (I.e. (x,t) is multiplied from the left on the above matrix and
+ the first elements of the obtained vector are interpreted as
  new spatial components and only these components are used to form
  the argument in the Whittle-Matern function.)
  The last component in the new coordinates is the time which is
@@ -60,7 +60,7 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
  the value 80.0. If exceeded the algorithm fails. 
 }
 \value{
- \command{\link{RMmastein}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMmastein}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
  \itemize{
@@ -72,8 +72,7 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
  }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMwhittle}},
  \command{\link{RMmodel}},
@@ -87,14 +86,12 @@ RMmastein(phi, nu, delta, var, scale, Aniso, proj)
 
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make plotthem all random again
-\dontshow{StartExample()}
 model <- RMmastein(RMgauss(), nu=1, delta=10)
 plot(RMexp(), model.mastein=model, dim=2)
 
 x <- seq(0, 10, 0.1)
 plot(RFsimulate(model, x=x, y=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

@@ -28,40 +28,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 //#include <stdlib.h>
 #include "RF.h"
- 
+#include "RandomFields.h"
+
 // z coordinate run the fastest in values, x the slowest   
 
-#define TOOLS_MEMORYERROR 501
-#define TOOLS_XERROR 502
-#define TOOLS_BIN_ERROR 503
-#define NEARBY 1e15
 
-// naechste Zeile nur notwendig, weil atan2 in Windows nicht
-// ordentlich programmiert ist
-#define NEARBYINT(x)  (FLOOR((x) * (NEARBY) + 0.5) / (NEARBY))
-// #define NEARBYINT(x)  x
-
-
-
-int GetAngleBin(double angle, double startangle, double SegPerPI, double maxAngle){
+inline int GetAngleBin(double angle, double startangle, double SegPerPI, double maxAngle){
   double phi;  
   int kphi;
   phi = angle - startangle;
-  while (phi < 0) phi += maxAngle;
-  while (phi >= maxAngle) phi -= maxAngle;
+  phi = Mod(phi, maxAngle);
   kphi = (int) (phi * SegPerPI / PI);
   return(kphi);
 }
-
-static int maxjj = 0;
-double get(double *sumvals, int jj) {
-  if (jj > maxjj) {
-    maxjj = jj;
-    //printf("jj=%d\n", jj);
-  }
-  return sumvals[jj];
-}
-
 
 SEXP fftVario3D(SEXP Coord,
 		SEXP Sumvals,
@@ -134,14 +113,11 @@ SEXP fftVario3D(SEXP Coord,
   SEXP back;
   back = PROTECT(allocMatrix(REALSXP, totalbins, 2) );
   
-  double *emp_vario = REAL(back),
-    *n = emp_vario + totalbins
+  double *emp_vario = REAL(back) + totalbins * EV_FFT_EV,
+    *n = REAL(back) + totalbins * EV_FFT_N
     ;
 
 #define SUMVALS_JJ sumvals[jj]
-  //#define SUMVALS_JJ get(sumvals, jj)
-
-  
   kphix = 0;
   kphixy = 0;
   kphiy = 0;
@@ -160,9 +136,8 @@ SEXP fftVario3D(SEXP Coord,
   Ntheta = theta[1]==0 ? 1 : (int) theta[1];
   //print("1,..");  
   NphiNbin = Nphi * nbin;
-  startphi = ((!pseudo) && (timecomp==1)) ? (phi[0] - PI / (double) (2*Nphi))
-    : (phi[0] - PI / (double) (Nphi) ); // [0, 2 pi]    
-  //invsegphi = phi[1] / PI; // note that phi[1] can be zero!
+  startphi = (phi[0] - PI / (double) ((1 + ((!pseudo) && (timecomp==1)))*Nphi));
+   //invsegphi = phi[1] / PI; // note that phi[1] can be zero!
   //starttheta = theta[0] - PI / (double) (2*theta[1]);  // [0, pi]
   starttheta = 0;
   // invsegtheta = theta[1] / PI; // note that theta[1] can be zero
@@ -177,7 +152,7 @@ SEXP fftVario3D(SEXP Coord,
   halfnbin = nbin / 2;
   
   if ((BinSq = (double *) MALLOC(sizeof(double)* (nbin + 1))) ==NULL) {
-    err=TOOLS_MEMORYERROR; goto ErrorHandling; 
+    err=ERRORMEMORYALLOCATION; goto ErrorHandling; 
   }
   //print("3,..");
   totalbins = nbinNphiNtheta * (nstepT + 1);
@@ -195,7 +170,7 @@ SEXP fftVario3D(SEXP Coord,
     BinSq[i] = bin[i]>0 ? bin[i] * bin[i] + binshift : bin[i];
   }
   
-  assert(NEARBYINT(atan2(-1.0, 0.0) + PIHALF) == 0.0);
+  assert(NEARBY(atan2(-1.0, 0.0) + PIHALF) == 0.0);
   assert(atan2(0.0, 0.0) == 0.0);
   maxbinsquare = BinSq[nbin];
   
@@ -252,20 +227,19 @@ SEXP fftVario3D(SEXP Coord,
 	  
 	  // angles
 	  if(!pseudo){
-	    phidata = NEARBYINT(atan2(d1, d0) - startphi);
+	    phidata = NEARBY(atan2(d1, d0) - startphi);
 	    kphi = GetAngleBin(phidata, 0, phi[1], PI);
-	    phixdata = NEARBYINT(atan2(d1, -d0) - startphi);
+	    phixdata = NEARBY(atan2(d1, -d0) - startphi);
 	    kphix = GetAngleBin(phixdata, 0, phi[1], PI);
-	    if((d0 == 0) && (d1 == 0)) kphi = 0;// points on the z-axes 
-	  }
-	  else{
-	    phidata = NEARBYINT(atan2(d1, d0) - startphi);
+	  } else{
+	    phidata = NEARBY(atan2(d1, d0) - startphi);
 	    kphi = GetAngleBin(phidata,0, phi[1], TWOPI);
-	    phixdata = NEARBYINT(atan2(d1, -d0) - startphi);
+	    phixdata = NEARBY(atan2(d1, -d0) - startphi);
 	    kphix = GetAngleBin(phixdata, 0, phi[1], TWOPI);
-	    phiydata = NEARBYINT(atan2(-d1, d0) - startphi);
+	    
+	    phiydata = NEARBY(atan2(-d1, d0) - startphi);
 	    kphiy = GetAngleBin(phiydata, 0, phi[1], TWOPI);
-	    phixydata = NEARBYINT(atan2(-d1, -d0) - startphi);
+	    phixydata = NEARBY(atan2(-d1, -d0) - startphi);
 	    kphixy = GetAngleBin(phixydata, 0, phi[1], TWOPI);
 	  }
 	  
@@ -294,7 +268,7 @@ SEXP fftVario3D(SEXP Coord,
 	    }	// low
 	    
 	    // angles
-	    thetadata = NEARBYINT(PIHALF - atan2(d2, SQRT(psq1)));
+	    thetadata = NEARBY(PIHALF - atan2(d2, SQRT(psq1)));
 	    ktheta = GetAngleBin(thetadata, starttheta, theta[1], PI);
 	    kthetaz = GetAngleBin(PI - thetadata, starttheta, theta[1], PI);
 	    
@@ -427,20 +401,10 @@ SEXP fftVario3D(SEXP Coord,
   // print("C SCRIPT END !!!!!!!!! \n");
   
  ErrorHandling:
-  if (err != NOERROR) {
-    switch (err) {
-    case TOOLS_MEMORYERROR :  
-      ERR("Memory alloc failed in empiricalvariogram.\n");
-    case TOOLS_XERROR :  
-      ERR("The x coordinate may not be NULL.\n"); break;
-    case TOOLS_BIN_ERROR :
-      ERR("Bin components not an increasing sequence.\n"); break;
-    default : BUG;
-    }
-  }
-
   FREE(BinSq);
   UNPROTECT(1);
+  if (err != NOERROR) XERR(err);
+
   return back;
 }
 
@@ -566,7 +530,7 @@ SEXP fftVario3D(SEXP Coord,
 // 		spaceBin= getSpaceBin(sqrBoundCache, nSpaceBounds, sqrNorm);
 
 // 		// wenn der abstand > maxbin ist, koennen wir mit dem naechsten punkt weitermachen		
-// 		if (spaceBin == -1)
+// 		if (spaceBin == - 1)
 // 		{		
 // 			for (time= 0; time < *nTimeSteps; time++)
 // 			{
@@ -575,7 +539,7 @@ SEXP fftVario3D(SEXP Coord,
 // 				timeBin= getTimeBin(timeBounds, nTimeBounds, time);
 				
 // 				// selbes argument wie oben, wir koennen hier auch mit dem naechsten raumpunkt weitermachen
-// 				if (timeBin == -1)
+// 				if (timeBin == - 1)
 // 					break;
 				
 // 				for (rep= 0, int repOffset= 0; rep < repeat; rep++; repOffset+= nSpaceTimePoints)
@@ -593,7 +557,7 @@ SEXP fftVario3D(SEXP Coord,
 
 // int getSpaceBin(double *sqrBoundCache, int* nSpaceBounds, double sqrNorm)
 // {
-// 	int bin= -1;
+// 	int bin= - 1;
 
 // 	if (sqrNorm > sqrBoundCache[*nSpaceBounds- 1])
 // 		return bin;
@@ -607,7 +571,7 @@ SEXP fftVario3D(SEXP Coord,
 
 // int getTimeBin(*timeBounds, *nTimeBounds, time)
 // {
-// 	int bin= -1;
+// 	int bin= - 1;
 	
 // 	if (*timeBounds * *nTimeBounds < time)
 // 		return bin;

@@ -10,10 +10,10 @@
 
  Circulant embedding is a fast simulation method for stationary
  (possibly anisotropic) Gaussian random
- fields on regular grids based on Fourier transformations. It is garantueed to be an exact method
+ fields on regular grids based on Fourier transformations. It is guaranteed to be an exact method
  for covariance functions with finite support, e.g. the spherical
  model. The method is admissible for any dimension apart from memory
- restictions. \cr
+ restrictions. \cr
  The simulation is performed on a torus which represents the bended
  grid. To remove wrong dependencies occuring at different borders of the
  grid which would be close on the torus, the simulation area is
@@ -32,7 +32,7 @@
  elements models used to define the covariance function of interest
  (from 10 to 5).
 
- Here multiplicative models are not allowed (yet).
+ Here, multiplicative models are not allowed (yet).
  \cr
  For details see \command{\link{RMcutoff}}.
 
@@ -46,7 +46,7 @@
  In fact, the circulant embedding is called with the Intrinsic
  hypermodel, see \command{\link{RMintrinsic}}.
 
- Here multiplicative models are not allowed (yet).
+ Here, multiplicative models are not allowed (yet).
  \cr
  For details see \command{\link{RMintrinsic}}.
 
@@ -69,11 +69,11 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
 }
 
 \arguments{
- \item{phi}{See \command{\link{RPgauss}}}
+ \item{phi}{See \command{\link{RPgauss}}.}
 % \item{loggauss}{See \command{\link{RPgauss}}}
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
  \item{force}{
    Logical. Circulant embedding does not work
@@ -81,7 +81,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    matrix has negative eigenvalues. Sometimes it is convenient
    to replace all the negative eigenvalues by zero
    (\code{force=TRUE}) after \code{trials} number of trials. 
-   Default: \code{FALSE}
+   Default: \code{FALSE}.
  }
  \item{mmin}{Scalar or vector, integer if positive.
    \code{CE.mmin} determines the initial size of the circulant
@@ -91,16 +91,16 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    If \code{CE.mmin>0} then the absolute starting size is given.
    If \code{CE.mmin<0} then the automatically determined
    matrix size is multiplied
-   by \eqn{|\code{CE.mmin}|}; here \code{CE.mmin} must be smaller
+   by \eqn{|\code{CE.mmin}|}; here, \code{CE.mmin} must be smaller
    than -1; the 
    value -1 takes over the minimal starting size.\cr
    Note: in any cases, the initial size might be increased according
    to \code{CE.useprimes}.\cr
-   Default: \code{0}
+   Default: \code{0}.
  } 
- \item{strategy}{Logical. \code{0}, if the circulant
+ \item{strategy}{Logical. \code{0}: If the circulant
  matrix has negative eigenvalues then the
- size in each direction is doubled; \cr \code{1}: the size is
+ size in each direction is doubled; \cr \code{1}: The size is
  enhanced only in 
  one direction, namely that one where the covariance function has the
  largest value at the end point of the grid --- note that
@@ -112,7 +112,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
  isotropic and a square grid should be simulated, then
  \code{strategy=0} is the better choice.
  
- Default: \code{0}
+ Default: \code{0}.
  }
 
  \item{maxGB}{Maximal memory used for the circulant matrix in units of
@@ -128,14 +128,13 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    is %about 16 (=2 * sizeof(double))
    %   times as large as \code{maxmem}
    %   if \code{\link{RFoptions}}\code{()$Storing=FALSE}, and
-   is
-   32 (=4 * sizeof(double)) time as large (factor 2 is needed as complex numbers
+   32 (= 4 * sizeof(double)) time as large (factor 2 is needed as complex numbers
    must be considered for calculating the fft of the covariance matrix;
    another factor 2 is needed for storing the simulated result).
    %if \code{Storing=TRUE}.
    
    The value of \code{maxmem} must be at least \eqn{2^d} times as large as
-   the number of points to be simulated. Here \eqn{d} is the
+   the number of points to be simulated. Here, \eqn{d} is the
    space dimension. In some cases even much larger.
    
    Note that \code{maxmem} can be used to control the automatic
@@ -145,7 +144,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
 
   If this argument is set then \code{maxGB} is set to \code{Inf}.
    
-   Default: \code{MAXINT}
+   Default: \code{MAXINT}.
  }
  
  \item{tolIm}{
@@ -153,14 +152,14 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    \code{tolIm} then the eigenvalue is always considered as
    real (independently of the value of \code{force}).
    
-   Default: \code{1E-3}
+   Default: \code{1E-3}.
  }
  
  \item{tolRe}{
    Eigenvalues between \code{tolRe} and 0 are always considered as
    0 and set 0 (independently of the value of \code{force}).
 
-   Default: \code{-1E-7}
+   Default: \code{-1E-7}.
  }
 
  \item{trials}{Integer.
@@ -172,7 +171,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    up to \code{trials - 1} times. If there are still negative
    eigenvalues, the simulation method fails if \code{force=FALSE}. 
    
-   Default: \code{3}
+   Default: \code{3}.
  }
  
  \item{useprimes}{Logical. If \code{FALSE}
@@ -181,7 +180,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
    tries to find a nicely factorizable number close to the size of the
    given matrix.
    
-   Default: \code{TRUE}
+   Default: \code{TRUE}.
  }
  \item{dependent}{Logical. If \code{FALSE}
  then independent random fields are created. If \code{TRUE}
@@ -192,24 +191,24 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
  See \code{trials} for some
  more information on the circulant matrix.
 
- Default: \code{FALSE}
+ Default: \code{FALSE}.
  }
  \item{approx_step}{Real value.
    It gives the grid size of the approximating grid in case
-   circulant embedding is used although the points do not ly on a grid.
+   circulant embedding is used although the points do not lie on a grid.
    
    If \code{NA} then \code{approx_step} is chosen such that
    \code{approx_maxgrid} is nearly reached.
 
-   Default: \code{NA}
+   Default: \code{NA}.
  }
  \item{approx_maxgrid}{
    It defaults to \code{maxmem}.
  }
 
- \item{diameter}{See \command{\link{RMcutoff}} or \command{\link{RMintrinsic}}}
- \item{a}{See \command{\link{RMcutoff}}}
- \item{rawR}{See \command{\link{RMintrinsic}}}
+ \item{diameter}{See \command{\link{RMcutoff}} or \command{\link{RMintrinsic}}.}
+ \item{a}{See \command{\link{RMcutoff}}.}
+ \item{rawR}{See \command{\link{RMintrinsic}}.}
  }
  
 
@@ -222,7 +221,7 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
 
 
 \value{
- an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ An object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -272,14 +271,13 @@ RPintrinsic(phi, boxcox, force, mmin, strategy,
 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
 \seealso{
   \link{Gaussian}, \link{RP}
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -289,7 +287,7 @@ x <- seq(-3,3,0.1)
 z <- RFsimulate(model=RPcirculant(model), x=x, y=x, n=1)
 plot(z)
 
-model <- RMexp(var=10, s=10)
+model <- RMexp(var=10, s=2)
 z <- RFsimulate(model=RPcirculant(model), 1:10)
 plot(z)
 
@@ -297,8 +295,6 @@ model <- RMfbm(Aniso=diag(c(1,2)), alpha=1.5)
 z <- RFsimulate(model, x=1:10, y=1:10)
 plot(z)
 
-\dontshow{FinalizeExample()}
-
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{methods}

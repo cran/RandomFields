@@ -3,7 +3,7 @@
 \title{Methods for Gaussian Random Fields}
 \description{
   Here, all the methods (models) for simulating
-  Gaussian random fields are listed
+  Gaussian random fields are listed.
 }
 \section{Implemented models}{
   \tabular{ll}{
@@ -132,11 +132,11 @@
 \section{Computing demand for conditional simulation}{
   Assume \eqn{v}-variate data are given at 
   \eqn{n} locations \eqn{x_1,\ldots, x_n}{x_1,...,x_n} in \eqn{d} dimensions.
-  To conditionally simulated at \eqn{k} location
+  To conditionally simulate at \eqn{k} locations
   \eqn{y_1,\ldots, y_k}{y_1,...,y_k}, the
   computing demand equals the
   sum of the demand for interpolating and
-  the demand for simulating on the \eqn{k+n} location.
+  the demand for simulating on the \eqn{k+n} locations.
   (Grid algorithms for simulating will apply if the \eqn{k} locations
   \eqn{y_1,\ldots, y_k}{y_1,...,y_k}
   are defined by a grid and the \eqn{n} locations
@@ -180,23 +180,22 @@
    \link{RP},
   \command{\link{Other models}},
   \command{\link{RMmodel}},
-  \command{\link{RFgetMethodNames}}
-  \command{\link{RFsimulateAdvanced}}
+  \command{\link{RFgetMethodNames}},
+  \command{\link{RFsimulateAdvanced}}.
 }
-\examples{
+
+
+\me
+
+\keyword{spatial}
+
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 set.seed(1)
 x <- runif(90, 0, 500)
 z <- RFsimulate(RMspheric(), x)
 z <- RFsimulate(RMspheric(), x, max_variab=10000)
-\dontshow{FinalizeExample()}
-
-}
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
-
-\keyword{spatial}
+\dontshow{FinalizeExample()}}
 

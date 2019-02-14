@@ -13,7 +13,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \pkg{RandomFields}, calls of the form
  \deqn{RM_name_(..., var, scale, Aniso, proj)}
  can be used,
- where _name_ has to be replaced by a valid model name,
+ where _name_ has to be replaced by a valid model name.
  \itemize{
  \item
  \code{...} can take model specific arguments. %Argument
@@ -25,13 +25,12 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \item
  \code{Aniso} an optional anisotropy matrix \eqn{A} or given by \command{\link{RMangle}}, and
  \item
- \code{proj} is the optional projection vector which defines a
- diagonal matrix of zeros and ones and \code{proj} gives the
- positions of the ones (integer values). In a space-time framework, also
- \code{"space"} and  \code{"time"} are valid values.
- }
+ \code{proj} is the optional projection.
+ } 
  With \eqn{\phi} denoting the original model, the transformed model is
  \eqn{C(h) = v * \phi(A*h/s)}.
+ See \command{\link{RMS}} for more details.
+ 
 
  \command{RM_name_} must be a function of class
  \command{\link[=RMmodelgenerator-class]{RMmodelgenerator}}.
@@ -39,7 +38,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  \command{\link[=RMmodel-class]{RMmodel}}.\cr
  
  The following models are available
- (cf. \command{\link{RFgetModelNames}}).
+ (cf. \command{\link{RFgetModelNames}}):
  %Choose from the following covariance models
 
  \bold{Basic stationary and isotropic models}
@@ -73,15 +72,15 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 
 
 
- \bold{Basic models for mixed effect modelling}
- \tabular{ll}{
- \command{\link{RMfixcov}} \tab constant pre-defined covariance \cr
- \command{\link{RMfixed}} \tab fixed or trend effects;
- Caution: \link{RMfixed} is not
- a function and can be used only in \link[=RFformula]{formula notation}\cr
- %\command{\link{RMmixed}} \tab Mixture of fixed, mixed, and random effect
- %model\cr % gibts nur noch intern
- }
+% \bold{Basic models for mixed effect modelling}
+% \tabular{ll}{
+% \command{\link{RMfixcov}} \tab constant pre-defined covariance \cr
+% \command{\link{RMfixed}} \tab fixed or trend effects;
+% caution: \link{RMfixed} is not
+% a function and can be used only in \link[=RFformula]{formula notation}.\cr
+% %\command{\link{RMmixed}} \tab Mixture of fixed, mixed, and random effect
+% %model\cr % gibts nur noch intern
+% }
 
  \bold{Others}
  \tabular{ll}{
@@ -121,12 +120,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
  }
 }
 
-\author{
- Alexander Malinowski, \email{malinowski@math.uni-mannheim.de}
- 
- Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
+\author{Alexander Malinowski; \martin}
 
 
 \seealso{
@@ -143,7 +137,7 @@ Summary of implemented covariance and variogram models% in \link{RFformula}
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
 
@@ -151,5 +145,4 @@ RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 model <- RMexp(var=1.6, scale=0.5) + RMnugget(var=0) #exponential + nugget
 plot(model)
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

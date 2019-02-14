@@ -32,165 +32,11 @@ PrintModelList <-function (operators=FALSE, internal=FALSE,
                            newstyle=TRUE) {
    stopifnot(internal <=2, internal >=0, operators<=1, operators>=0)
     .C(C_PrintModelList, as.integer(internal), as.integer(operators),
-       as.integer(newstyle),
-       PACKAGE="RandomFields")
+       as.integer(newstyle))
     invisible()
 }
 
 
-
-checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
-                          ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
-                          path=package, package="RandomFields",
-                          read.rd.files=TRUE,
-                          libpath = NULL, single.runs = FALSE) {
-  .exclude <- exclude
-  .ask <- ask
-  .echo <- echo
-  .halt <- halt
-  .ignore.all <- ignore.all
-  .path <- path
-  .package <- package
-  useDynLib <- importClassesFrom <- import <-
-    importFrom <- exportClasses <-
-      importMethodsFrom <- exportMethods <- S3method <- function(...) NULL
-  .env <- new.env()
-
-  
-  exportPattern <- function(p) { ## necessary to read NAMESPACE??!!
-    #Print(p, length(p))
-    all.pattern <- p %in% c("^[^\\.]", "^[^.]", ".") | get("all.pattern", .env)
-    if (!.ignore.all) assign("all.pattern", all.pattern, .env)
-    if (all.pattern) return(NULL)
-    stopifnot(nchar(p)==2, substr(p,1,1)=="^")
-    assign("p", c(get("p", .env), substring(p, 2)), .env)
-  }
-
-  export <- function(...) {
-    ## code from 'rm'
-    dots <- match.call(expand.dots = FALSE)$...
-    z <-deparse(substitute(...))
-    if (length(dots) && !all(sapply(dots, function(x) is.symbol(x) || 
-                                    is.character(x)))) 
-      stop("... must contain names or character strings")
-    z <- sapply(dots, as.character)
-    assign("export", c(get("export", .env), z), .env)
-  }
-  assign("export", NULL, .env)
-  assign("all.pattern", FALSE, .env)
-  assign("p", NULL, .env)
-  source(paste(.path, "NAMESPACE", sep="/"), local=TRUE)
-  if (is.logical(read.rd.files) && !read.rd.files) {
-    .package.env <- parent.env(.GlobalEnv)
-    while (attr(.package.env, "name") != paste("package:", .package, sep="")) {
-      .package.env <- parent.env(.package.env)
-    }
-    .orig.fct.list <- ls(envir=.package.env)
-    .ok <- (get("all.pattern", .env) |
-            substr(.orig.fct.list, 1, 1) %in% get("p", .env) | 
-            .orig.fct.list %in% get("export", .env))
-    .fct.list <- .orig.fct.list[.ok]
-  } else {
-    if (is.logical(read.rd.files))
-      .path <- paste("./", .path, "/man", sep="")
-    else .path <- read.rd.files
-    .files <- dir(.path, pattern="d$")
-    .fct.list <- character(length(.files))
-    for (i in 1:length(.files)) {
-      #cat(i, .path, .files[i], "\n")
-      #if (i == 152) {cat("jumped\n"); next}      
-      #Print(.path, .files[i])
-      .content <- scan(paste(.path, .files[i], sep="/") , what=character(),
-                       quiet=TRUE)
-      .content <- strsplit(.content, "alias\\{")
-      .content <- .content[which(lapply(.content, length) > 1)][[1]][2]
-      .fct.list[i] <-
-        strsplit(strsplit(.content,"\\}")[[1]][1], ",")[[1]][1]
-    }
-  }
-  .include <- include
-  RFoptions(graphics.close_screen = TRUE, graphics.split_screen = TRUE)
-  .RFopt <- RFoptions()
-  .not_working_no <- .not_working <- NULL
-  .included.fl <- .fct.list[.include]
-  .not.isna <- !is.na(.included.fl)
-  .include <- .include[.not.isna]
-  .included.fl <- .included.fl[.not.isna]
-  .max.fct.list <- max(.included.fl)
-  if (single.runs) {
-    file.in <- "example..R"
-    file.out <- "example..Rout"
-    if (file.exists(file.out)) file.remove(file.out)
-  }
-  
-  for (.idx in .include) {
-    try(repeat dev.off(), silent=TRUE)
-    if (.idx %in% .exclude) next
-    cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
-        " (total=", length(.fct.list), ") \n", sep="")
-    RFoptions(LIST=.RFopt)
-    .C(C_ResetWarnings, as.integer(FALSE))
-    if (.echo) cat(.idx, "")
-    .tryok <- TRUE
-    if (single.runs) {
-      txt <- paste("library(", package,", ", libpath, "); example(",
-                .fct.list[.idx],
-                ", ask =", .ask,
-                ", echo =", .echo,
-                ")", sep="")
-      write(file=file.in,  txt)
-      command <- paste("R < ", file.in, ">>", file.out)
-    } else {
-      if (.halt) {
-         do.call(utils::example, list(.fct.list[.idx], ask=.ask, echo=.echo))
-      } else {
-        if (is(try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
-                                                echo=.echo))), "try-error")) {
-          .not_working_no<- c(.not_working_no, .idx)
-          .not_working <- c(.not_working, .fct.list[.idx])
-          .tryok <- FALSE
-        }
-      }
-      RFoptions(storing = FALSE);
-      cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
-      if (.tryok && !is.na(RFoptions()$basic$seed)) {
-        Print(.not_working, paste(.not_working_no, collapse=", ")) #
-        stop("seed not NA: ", .fct.list[.idx])
-      }
-    }
-  }
-  Print(.not_working, paste(.not_working_no, collapse=", ")) #
-  .ret <- list(.not_working, .not_working_no)
-  names(.ret) <- c(.package, "")
-  return(.ret)
-}
-
-StartExample <- function(reduced = TRUE) {
-  if (!interactive()) {
-    ## do not touch next lines
-    ## REDUCED <- reduced, reduced
-    REDUCED <- reduced
-    RFoptions(examples_reduced = REDUCED)
-  }
-}
-
-FinalizeExample <- function() {
-  if (!interactive()) {
-    close.screen(all.screens = TRUE)  
-    n <- length(dev.list()) - 2 ## otherwise R CMD check complains
-    ##                             for missing graphic device
-    if (n > 0) {
-      for (i in 1:n) {      
-        dev.off() ## OK
-      }
-    }
-  }
-
-  
-  RFoptions(seed = NA, coord_system="auto", examples_reduced=FALSE)
-  
-  #Print(RFoptions()$gen)
-}
 
 showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man") {
   files <- dir(path)
@@ -208,10 +54,15 @@ showManpages <- function(path="/home/schlather/svn/RandomFields/RandomFields/man
 }
 # showManpages()
 
-compareVersions <- function(path = "~/svn/RandomFields/cran") {
-  l <- list(list(subpath="RandomFields/R", pattern="*R"),
-            list(subpath="RandomFields/src", pattern="*\\.h"),
-            list(subpath = "RandomFields/src", pattern = "*\\.cc"))
+compareVersions <- function(path = "~/svn", package="RandomFields",
+			    subpaths=c("cran", package)) {  
+  path <- paste(path, package, subpaths[1], sep="/")
+  l <- list(list(subpath=paste(path, package, subpaths[2], "R", sep="/"),
+		 pattern="*R"),
+            list(subpath=paste0(path, package, subpaths[2], "/src", sep="/"),
+		 pattern="*\\.h"),
+            list(subpath = paste0(path, package, subpaths[2], "/src", sep="/"),
+		 pattern = "*\\.cc"))
   
   for (i in 1:length(l)) {
     subpath <- l[[i]]$subpath
@@ -220,7 +71,7 @@ compareVersions <- function(path = "~/svn/RandomFields/cran") {
     
     for (f in files) {
       cmd <- paste("diff ",  path, "/", subpath, "/", f, " ",
-                   subpath,"/", f, sep="")
+		   subpath,"/", f, sep="")
       Print(cmd)  #
       system(cmd)
     }
@@ -350,7 +201,7 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
       if (close) dev.off()
     }
     
-    if (open) {
+    if (open && graphics$grDefault) {
       ScreenDevice(height=curH, width=curW)
     }
     
@@ -365,33 +216,12 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
 }
 
 
-reverse_dependencies_with_maintainers <-
-  function(packages, which = c("Depends", "Imports", "LinkingTo"),
-           recursive = FALSE) {
-    ## function taken from CRAN developer website. 
-    repos <- getOption("repos")["CRAN"]
-    ## if (substr(repos, 1, 1) == "@") repos <- "http://cran.r-project.org"
-    Print(repos) #
-    contrib.url(repos, "source") # trigger chooseCRANmirror() if required
-    description <- sprintf("%s/web/packages/packages.rds", repos)
-    con <- if(substring(description, 1L, 7L) == "file://")
-      file(description, "rb")
-    else
-      url(description, "rb")
-    on.exit(close(con))
-    db <- readRDS(gzcon(con))
-    rownames(db) <- NULL
-    
-    rdepends <- tools::package_dependencies(packages, db, which,
-                                            recursive = recursive,
-                                            reverse = TRUE)
-    rdepends <- sort(unique(unlist(rdepends)))
-    pos <- match(rdepends, db[, "Package"], nomatch = 0L)
-    
-    db <- db[pos, c("Package", "Version", "Maintainer")]
-    if (is.vector(db)) dim(db) <- c(1, length(db))
-    db
-  }
+#     p <- c("DSpat", "GeoGenetix", "LS2Wstat", "ProbForecastGOP", "scpm", "UncerIn2", "	AHMbook", "CompRandFld", "constrainedKriging", "geoR", "georob", "geozoning", "lgcp", "NLMR", "raptr", "spagmix", "spatsurv", "windfarmGA", "fractaldim", "geostatsp", "IsoriX", "prioritizr", "rpanel", "SAMCpack", "SpaDES", "SpaDES.core", "SpaDES.tools", "spatstat")
+
+# for (i in p) if (!do.call("require", list(i))) install.packages(i)
+
+#  find -maxdepth 1 -type d -exec cat {}/00install.out \; > xxxx
+
 
 
 ShowInstallErrors <- function(dir, pkgs)
@@ -403,50 +233,207 @@ ShowInstallErrors <- function(dir, pkgs)
     }
   
 
-Dependencies <- function(pkgs = all.pkgs, dir = "Dependencies",
-                         install = FALSE, check=TRUE, reverse=FALSE,
-			 package="RandomFields") {
-  Print(packageDescription(package)) #
-  all <- reverse_dependencies_with_maintainers(package) #( , which="all")
-  all.pkgs <- all[, 1]
-  PKGS <- paste(all[,1], "_", all[,2], ".tar.gz", sep="")   
-  
-  ## getOption("repos")["CRAN"]
-  URL <- "http://cran.r-project.org/src/contrib/"
-
-  if (install) {
-    system(paste("mkdir ", dir))
-    system(paste("rm ", dir, "/*tar.gz*", sep=""))
-    for (i in 1:length(pkgs)) {
-      cat("PACKAGE:", PKGS[i], ":", i, "out of ", length(pkgs),"\n")
-      x <- system(paste("(cd ", dir, "; wget ", URL, PKGS[i], ")", sep=""))
-      if (x != 0) stop(PKGS[i], "not downloadable")
-    ## extended version see RandomFields V 3.0.51 or earlier     
-    }
+StartExample <- function(reduced = TRUE, save.seed=TRUE) {
+  if (save.seed) {
+    RFopt <- RFoptions()    
+#    L <- list(seed=RFopt$basic$seed)
+ #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
+ #   assign("RandomFields_options", envir=.RandomFields.env, L)
+   assign("RandomFields_options", envir=.RandomFields.env, RFopt)
   }
-  if (!hasArg("pkgs")) {
-    if (check)
-      tools::check_packages_in_dir(dir=dir, check_args = c("--as-cran", ""),
-                                   reverse=if (reverse) list(repos =
-                                       getOption("repos")["CRAN"]) else NULL)
-    ShowInstallErrors(dir, pkgs)
-    return(NULL)
-  } else { ### old:
-    if (check) {
-      for (j in 1:length(pkgs)) {
-	i <- pmatch(pkgs[j], PKGS)
-	if (is.na(i)) next
-	command <- paste("(cd ", dir, "; R CMD check --as-cran", PKGS[i],")")
-	Print(command) #
-	x <- system(command)
-	ShowInstallErrors(dir, pkgs)
-	if (x != 0) stop(PKGS[i], "failed")
+# Print(ls( envir=.RandomFields.env), .RandomFields.env)
+  if (!interactive()) {
+    ## do not touch next lines
+    ## REDUCED <- reduced, reduced
+    REDUCED <- reduced
+    RFoptions(examples_reduced = REDUCED)
+  }
+}
+
+FinalizeExample <- function() {
+  ## print("finalize")
+  if (!interactive()) {
+    close.screen(all.screens = TRUE)  
+    n <- length(dev.list()) - 2 ## otherwise R CMD check complains
+    ##                             for missing graphic device
+    if (n > 0) {
+      for (i in 1:n) {      
+        dev.off() ## OK
       }
     }
   }
-
+#  Print(ls( envir=.RandomFields.env), .RandomFields.env)
+  options <- get("RandomFields_options", envir=.RandomFields.env)
+                                        #
+#  Print(options)
+  options$examples_reduced <- FALSE
+  RFoptions(LIST = options)
+  #do.call("RFoptions", options)
+  #print("done finalize")
 }
-# R Under development (unstable) (2014-12-09 r67142) -- "Unsuffered Consequences"
+
+checkExamples <- function(exclude=NULL, include=1:length(.fct.list),
+                          ask=FALSE, echo=TRUE, halt=FALSE, ignore.all=FALSE,
+                          path=package, package="RandomFields",
+                          read.rd.files=TRUE, local = TRUE,
+                          libpath = NULL, single.runs = FALSE) {
+  .exclude <- exclude
+  .ask <- ask
+  .echo <- echo
+  .halt <- halt
+  .ignore.all <- ignore.all
+  .package <- package
+  .path <- path
+  .local <- local
+  useDynLib <- importClassesFrom <- import <-
+  importFrom <- exportClasses <-
+  importMethodsFrom <- exportMethods <- S3method <- function(...) NULL
+  .env <- new.env()
+  stopifnot(is.na(RFoptions()$basic$seed))
+
+  exportPattern <- function(p) { ## necessary to read NAMESPACE??!!
+    if (p == "^R\\.") p <- "^R."
+    all.pattern <- p %in% c("^[^\\.]", "^[^.]", ".") | get("all.pattern", .env)
+    if (!.ignore.all) assign("all.pattern", all.pattern, .env)
+    if (all.pattern) return(NULL)
+    stopifnot(nchar(p)==3, substr(p,1,1)=="^")
+    assign("p", c(get("p", .env), substring(p, 2)), .env)
+  }
+
+  export <- function(...) {
+    ## code from 'rm'
+    dots <- match.call(expand.dots = FALSE)$...
+    z <-deparse(substitute(...))
+    if (length(dots) && !all(sapply(dots, function(x) is.symbol(x) || 
+                                    is.character(x)))) 
+      stop("... must contain names or character strings")
+    z <- sapply(dots, as.character)
+    cat("export", z, "\n")
+    assign("export", c(get("export", .env), z), .env)
+  }
+  import <- importClassesFrom <- importMethodsFrom <- importFrom <- useDynLib <-
+    exportClasses <- S3method <- exportMethods <-
+      function(...) {
+        dots <- match.call(expand.dots = FALSE)$...
+       # cat("other:", sapply(dots, as.character), "\n")
+      }
+  assign("export", NULL, .env)
+  assign("all.pattern", FALSE, .env)
+  assign("p", NULL, .env)
+  
+  cat("'source' causes problems in valgrind")
+  .content <- readLines(paste(.path, "NAMESPACE", sep="/"), -1)
+  eval(parse(text = .content))      
+  cat("\tend source\n")
+  if (is.logical(read.rd.files) && !read.rd.files) {
+    .package.env <- parent.env(.GlobalEnv)
+    while (attr(.package.env, "name") != paste("package:", .package, sep="")) {
+      .package.env <- parent.env(.package.env)
+    }
+    .orig.fct.list <- ls(envir=.package.env)
+
+    .ok <- (get("all.pattern", .env) |
+            substr(.orig.fct.list, 1, 1) %in% get("p", .env) | 
+            .orig.fct.list %in% get("export", .env))
+    .fct.list <- .orig.fct.list[.ok]
+  } else {
+    if (is.logical(read.rd.files))
+      .path <- paste("./", .path, "/man", sep="")
+    else .path <- read.rd.files
+    .files <- dir(.path, pattern="d$")
+    .fct.list <- character(length(.files))
+    for (i in 1:length(.files)) {
+                                        #cat(i, .path, .files[i], "\n")
+                                        #if (i == 152) {cat("jumped\n"); next} 
+                                        #Print(.path, .files[i])
+      .fn <- paste(.path, .files[i], sep="/") 
+      .content <- readLines(.fn, n = 2)
+      if (substr(.content[1], 1, 5) != "\\name" &&
+          (substr(.content[1], 1, 1) != "%" || substr(.content[2], 1, 5) != "\\name"))
+        stop(.files[i], " does not start with '\\name' -- what at least in 2018 has caused problems in valgrind")
+      
+      .content <- scan(.fn, what=character(), quiet=TRUE)
+      .content <- strsplit(.content, "alias\\{")
+      .content <- .content[which(lapply(.content, length) > 1)][[1]][2]
+      .fct.list[i] <-
+        strsplit(strsplit(.content,"\\}")[[1]][1], ",")[[1]][1]
+    }
+  }
+
+  .include <- if (is.numeric(include)) include else 1:99999
+  .include.name <- include
+   RFoptions(graphics.close_screen = TRUE, graphics.split_screen = TRUE)
+  .RFopt <- RFoptions()
+  .not_working_no <- .not_working <- NULL
+  .included.fl <- .fct.list[.include]
+  .not.isna <- !is.na(.included.fl)
+  .include <- .include[.not.isna]
+  .included.fl <- .included.fl[.not.isna]
+  .max.fct.list <- max(.included.fl)
+  if (single.runs) {
+    file.in <- "example..R"
+    file.out <- "example..Rout"
+    if (file.exists(file.out)) file.remove(file.out)
+  }
+
+  if (is.character(.include.name)) {
+    .include.name <- sapply(strsplit(.include.name, ".Rd"), function(x) x[1])
+  }
+
+ 
+  ENVIR <- new.env()
+  .allwarnings <- list()
+  for (.idx in .include) {
+    if (is.character(.include.name) && !(.fct.list[.idx] %in% .include.name))
+      next
+    try(repeat dev.off(), silent=TRUE)
+    if (.idx %in% .exclude) next
+    cat("\n\n\n\n\n", .idx, " ", .package, ":", .fct.list[.idx],
+        " (total=", length(.fct.list), ") \n", sep="")
+     RFoptions(LIST=.RFopt)
+    .C(C_ResetWarnings, as.integer(FALSE))
+    if (.echo) cat(.idx, "")
+    .tryok <- TRUE
+    if (single.runs) {
+      txt <- paste("library(", package,", ", libpath, "); example(",
+		   .fct.list[.idx],
+		   ", ask =", .ask,
+		   ", echo =", .echo,
+		   ")", sep="")
+      write(file=file.in,  txt)
+      command <- paste("R < ", file.in, ">>", file.out)
+    } else {
+      ##stopifnot(RFoptions()$basic$print <=2 )
+      ##
+      .res <- try(do.call(utils::example, list(.fct.list[.idx], ask=.ask,
+					       echo=.echo, local=.local)))
+      w <- warnings()
+      .allwarnings <- c(.allwarnings, list(c("Help page ", .idx)), w)
+      print(w) ## ok
+      if (is(.res, "try-error")) {
+	if (.halt) {
+	  stop("\n\n\t***** ",.fct.list[.idx], " (", .idx,
+	       " out of ", max(.include), "). has failed. *****\n\n")
+	} else {
+	  .not_working_no <- c(.not_working_no, .idx)
+	  .not_working <- c(.not_working, .fct.list[.idx])
+	  .tryok <- FALSE
+	}
+      }
+      RFoptions(storing = FALSE)
+      cat("****** '", .fct.list[.idx], "' (", .idx, ") done. ******\n")
+      if (.tryok && !is.na(RFoptions()$basic$seed)) {
+	Print(.not_working, paste(.not_working_no, collapse=", "), #
+	      RFoptions()$basic$seed)
+	stop("seed not NA: ", .fct.list[.idx])
+      }
+    }
+  }
+  Print(.not_working, paste(.not_working_no, collapse=", ")) #
+  .ret <- list(.not_working, .not_working_no)
+  names(.ret) <- c(.package, "")
+  return(.ret)
+}
 
 
-#  Dependencies(check=FALSE)
+maintainers.machine <- function() .Call(C_maintainers_machine)

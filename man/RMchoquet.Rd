@@ -4,7 +4,7 @@
 \alias{Schoenberg's representation}
 \title{Schoenberg's representation for the classes psi_d and \eqn{psi_{\infty}} in d=2}
 \description{
-  \command{\link{RMchoquet}} is a isotropic covariance model. The
+  \command{\link{RMchoquet}} is an isotropic covariance model. The
   corresponding covariance function only depends on the angle
   \eqn{0 \le \theta \le \pi}{0 \le \theta \le \pi}
   between two points on the sphere and is given for d=2 by 
@@ -24,16 +24,16 @@ RMchoquet(b)
 \details{
   By the results (cf. Gneiting, T. (2013), p.1333) of Schoenberg and
   others like Menegatto, Chen, Sun,  Oliveira and Peron, the class
-  \eqn{psi_d} of all realvalued funcions on \eqn{[0,\pi]}, with
+  \eqn{psi_d} of all real valued funcions on \eqn{[0,\pi]}, with
   \eqn{\psi(0)=1} and such that the associated isotropic function
   \deqn{h(x,y)=\psi(theta)     with     cos(\theta)=<x,y>}
   \deqn{for x,y in  {x in R^d: ||x|| = 1}}
-  is (strict) positive definit is represented by this
+  is (strictly) positive definite is represented by this
   covariance model. The model can be interpreted as Choquet
   representation in terms of extremal members, which are non-strictly
   positive definite.
 
-  Special cases are the multiquadric famiy (see
+  Special cases are the multiquadric family (see
   \command{\link{RMmultiquad}}) and the model of the sine power function (see
   \command{\link{RMsinepower}}).
 
@@ -41,7 +41,7 @@ RMchoquet(b)
 
 
 \value{
- \command{\link{RMchoquet}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMchoquet}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   \itemize{
@@ -67,8 +67,7 @@ RMchoquet(b)
   }
 }
 
-\author{Christoph Berreth, \email{cberreth@mail.uni-mannheim.de}
-}
+\author{Christoph Berreth; \martin}
 
 \seealso{
  \command{\link{RMmodel}},
@@ -84,16 +83,18 @@ RMchoquet(b)
 \keyword{models}
 
 
+\examples{\dontshow{StartExample()}
 
-
-\examples{## todo
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
+## to do
+
+\dontshow{\dontrun{
 #b = 
 #model <- RMchoquet(b=b)
 #x <- seq(0, 10, 0.02)
 #plot(model)
 #plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+}}
+\dontshow{FinalizeExample()}}

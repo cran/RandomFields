@@ -45,8 +45,9 @@ RMhandcock(nu, notinvnu, var, scale, Aniso, proj)
  should be greater than 0.} 
  \item{notinvnu}{logical. If \code{FALSE} then in the definition
    of the models \eqn{\nu} is replaced by \eqn{1/\nu}.
-   This parametrisation seems to be more natural.
-   Default is however \code{FALSE} according the definitions in literature.
+   This parametrization seems to be more natural.
+   Default is, however, \code{TRUE} according with the definitions in
+   literature. 
  }
  \item{var,scale,Aniso,proj}{optional arguments; same meaning for any
  \command{\link{RMmodel}}. If not passed, the above
@@ -58,9 +59,9 @@ The three models
  are alternative parametrizations of the same covariance function.
  The Matern model or the Handcock-Wallis parametrisation
  should be preferred as they seperate the
- effects of scaling parameter and the shape parameter. 
+ effects of the scaling parameter and the shape parameter. 
 
- This Whittle-Matern model is the model of choice if the smoothness of a
+ The Whittle-Matern model is the model of choice if the smoothness of a
 random field is to be parametrized: the sample paths of a Gaussian
 random field with this covariance structure are \eqn{m}{m} times
 differentiable if and only if \eqn{\nu > m}{\nu > m} (see Gelfand et
@@ -68,7 +69,7 @@ al., 2010, p. 24).
 
 Furthermore, the fractal dimension (see also \command{\link{RFfractaldim}})
 \emph{D} of the Gaussian sample paths
-is determined by \eqn{\nu}{\nu}: we have
+is determined by \eqn{\nu}{\nu}: We have
 \deqn{D = d + 1 - \nu, \nu \in (0,1)}{D = d + 1 - \nu, 0 < \nu < 1}
 and \eqn{D = d}{D = d} for \eqn{\nu > 1}{\nu > 1} where \eqn{d}{d} is
 the dimension of the random field (see Stein, 1999, p. 32).
@@ -76,9 +77,10 @@ the dimension of the random field (see Stein, 1999, p. 32).
 If \eqn{\nu=0.5}{\nu=0.5} the Matern model equals \command{\link{RMexp}}.
 
 For \eqn{\nu}{\nu} tending to \eqn{\infty}{\infty} a rescaled Gaussian
-model \command{\link{RMgauss}} appears as limit of the Matern model. 
+model \command{\link{RMgauss}} \eqn{C(r) = -r^2}
+appears as limit of the above Handcock-Wallis parametrisation. 
 
- For generalisations see section \sQuote{seealso}.
+ For generalizations see section \sQuote{See Also}.
 }
 
 \note{
@@ -86,7 +88,7 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 }
 
 \value{
- The function return an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ The functions return an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   Covariance function
@@ -125,8 +127,8 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
  \itemize{
  \item \command{\link{RMexp}}, \command{\link{RMgauss}} for special
@@ -154,14 +156,13 @@ model \command{\link{RMgauss}} appears as limit of the Matern model.
 \keyword{models}
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 x <- seq(0, 1, len=100)
 model <- RMwhittle(nu=1, Aniso=matrix(nc=2, c(1.5, 3, -3, 4)))
 plot(model, dim=2, xlim=c(-1,1))
 z <- RFsimulate(model=model, x, x)
 plot(z)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

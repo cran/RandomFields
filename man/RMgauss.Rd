@@ -32,12 +32,12 @@ RMgauss(var, scale, Aniso, proj)
 }
 \value{
  \command{\link{RMgauss}} returns an object of class
- \code{\link[=RMmodel-class]{RMmodel}}
+ \code{\link[=RMmodel-class]{RMmodel}}.
 }
 
 \note{
   The use of \command{RMgauss} is questionable from both a theoretical
-  (analytical paths) and a practical point of view (e.g., speed of
+  (analytical paths) and a practical point of view (e.g. speed of
   algorithms).
   Instead, \command{\link{RMgneiting}} should be used.
 }
@@ -50,10 +50,9 @@ RMgauss(var, scale, Aniso, proj)
  Stein, M. L. (1999) \emph{Interpolation of Spatial Data.} New York: Springer-Verlag 
  }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
- \command{\link{RMstable}} and \command{\link{RMmatern}} for generalisations;
+ \command{\link{RMstable}} and \command{\link{RMmatern}} for generalizations;
  \cr
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -66,14 +65,12 @@ RMgauss(var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 model <- RMgauss(scale=0.4)
 x <- seq(0, 10, 0.02)
 plot(model)
 lines(RMgauss(), col="red")
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

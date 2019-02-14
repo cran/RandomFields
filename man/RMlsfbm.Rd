@@ -2,17 +2,17 @@
 \alias{RMlsfbm}
 \title{Locally Positive Definite Function Given by the Fractal Brownian Motion}
 \description{
-  \command{\link{RMlsfbm}} is positive definite function on the
+  \command{\link{RMlsfbm}} is a positive definite function on the
   unit ball in \eqn{R^d} centred at the origin,
   \deqn{C(r) = c - r^\alpha}{C(r) = c - r^\alpha}
-  with \eqn{r = \|x- y\|\in [0,1]}{0 <= r = || x - y || <= 1}
+  with \eqn{r = \|x- y\|\in [0,1]}{0 <= r = || x - y || <= 1}.
 }
 \usage{
 RMlsfbm(alpha, const, var, scale, Aniso, proj)
 }
 \arguments{
  \item{alpha}{numeric in \eqn{(0,2)}; refers to the fractal dimension of the
-   process}
+   process.}
  \item{const}{the \code{const}ant \eqn{c} is given by the
    formula
    \deqn{
@@ -36,10 +36,10 @@ RMlsfbm(alpha, const, var, scale, Aniso, proj)
   }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
+
 \seealso{
- \command{\link{RMbcw}} generalizes \command{RMlsfbm} in case of \eqn{c}
+ \command{\link{RMbcw}} generalizes \command{RMlsfbm} in case that \eqn{c}
  is given,
  \command{\link{RMfbm}},
  \command{\link{RMmodel}},
@@ -51,16 +51,12 @@ RMlsfbm(alpha, const, var, scale, Aniso, proj)
 \keyword{spatial}
 \keyword{models}
 
-
-
-
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 model <- RMlsfbm(alpha=1, scale=10)
 x <- seq(0, 10, 0.02)
 plot(model, xlim=c(0,10))
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

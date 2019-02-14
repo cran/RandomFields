@@ -25,10 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>  
 //#include <stdlib.h>
 #include <R_ext/Lapack.h>
-#include "RF.h"
-#include "shape_processes.h"
+#include "questions.h"
+#include "Processes.h"
 #include "Coordinate_systems.h"
-//#include <R_ext/Linpack.h>
+
 
 #define SEQU_BACK (COMMON_GAUSS + 1)
 #define SEQU_INIT (COMMON_GAUSS + 2)
@@ -37,38 +37,37 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 bool debugging = true;
 
 
-int check_sequential(cov_model *cov) {
+int check_sequential(model *cov) {
 #define nsel 4
-  cov_model *next=cov->sub[0];
+  model *next=cov->sub[0];
   int err,
-    dim = cov->tsdim; // taken[MAX DIM],
+    dim = ANYDIM; // taken[MAX DIM],
   sequ_param *gp  = &(GLOBAL.sequ);
   location_type *loc = Loc(cov);
 
-  ROLE_ASSERT(ROLE_GAUSS);
   if (!loc->grid && !loc->Time) 
-    SERR1("'%s' only possible if at least one direction is a grid", NICK(cov));
+    SERR1("'%.50s' only possible if at least one direction is a grid", NICK(cov));
 
-   kdefault(cov, SEQU_BACK, gp->back);
+  kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
-  if ((err = checkkappas(cov, false)) != NOERROR) return err;
- 
-  if (cov->tsdim != cov->xdimprev || cov->tsdim != cov->xdimown) 
-    return ERRORDIM;
-
+  if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+  
   if ((err = CHECK(next, dim, dim, PosDefType, XONLY, 
-		   SymmetricOf(cov->isoown),
-		   SUBMODEL_DEP, ROLE_COV)) != NOERROR) return err;
-  if (next->pref[Sequential] == PREF_NONE) return ERRORPREFNONE;
+		   SymmetricOf(OWNISO(0)),
+		   SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+     RETURN_ERR(err);
+  }
+  
+  if (next->pref[Sequential] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
   setbackward(cov, next);
-  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) return err;
-  if ((err = checkkappas(cov)) != NOERROR) return err;
+  if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
+  if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
 
-  return NOERROR;
+  RETURN_NOERROR;
 }
 
 
-void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
+void range_sequential(model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
   GAUSS_COMMON_RANGE;
 
   range->min[SEQU_BACK] = 0;
@@ -80,7 +79,7 @@ void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
   range->min[SEQU_INIT] = RF_NEGINF;
   range->max[SEQU_INIT] = RF_INF;
-  range->pmin[SEQU_INIT] = -10;
+  range->pmin[SEQU_INIT] = - 10;
   range->pmax[SEQU_INIT] = 10;
   range->openmin[SEQU_INIT] = false;
   range->openmax[SEQU_INIT] = true; 
@@ -91,16 +90,14 @@ void range_sequential(cov_model  VARIABLE_IS_NOT_USED *cov, range_type *range) {
 
 // start mit S_22; dann nur zeilenweise + Einschwingen
 
-int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
-  cov_model *next = cov->sub[0];
-  // cov_fct *C=CovList + next->gatternr;
-  // covfct cf = C->cov;
+int init_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
+  model *next = cov->sub[0];
   location_type *loc = Loc(cov);
-  if (loc->distances) return ERRORFAILED;
+  if (loc->distances) RETURN_ERR(ERRORFAILED);
 
   int withoutlast, d, endfor, l, 
     err = NOERROR,
-    dim = cov->tsdim,
+    dim = ANYDIM,
     spatialdim = dim - 1,
     vdim = next->vdim[0],
     max = GLOBAL.direct.maxvariables,
@@ -123,8 +120,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   double
     *res0 = NULL;
   sequ_storage* S = NULL;
-  long  i, 
-    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] : loc->T[XLENGTH],
+  long  
+    timelength = loc->grid ? loc->xgr[spatialdim][XLENGTH] :loc->T[XLENGTH],
     spatialpnts = loc->totalpoints / timelength,
     totpnts = back * spatialpnts, 
     totpntsSQ =  totpnts * totpnts,
@@ -135,33 +132,32 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
     storing = GLOBAL.internal.stored_init,
     Time = loc->Time;
  
-  if (cov->role == ROLE_COV) {
-    return NOERROR;
+  if (hasEvaluationFrame(cov)) {
+    RETURN_NOERROR;
   }
   
-  ROLE_ASSERT_GAUSS;
   cov->method = Sequential;
      
   if (!loc->grid && !Time) 
     GERR("last component must be truely given by a non-trivial grid");
 
-  if (CovList[next->nr].implemented[Sequential] != IMPLEMENTED) {
+  if (DefList[NEXTNR].implemented[Sequential] != IMPLEMENTED) {
     err=ERRORNOTDEFINED; 
     goto ErrorHandling;
   }
   
-  if (cov->vdim[0] > 1) {
+  if (VDIM0 > 1) {
       err=ERRORNOMULTIVARIATE; 
       goto ErrorHandling;   
   }
   
   if (totpnts > max) // (totpnts * vdim > max)
-    GERR6("'%s' valid only if the number of lcoations is less than '%s' (=%d) . Got %d * %ld = %ld.", NICK(cov), direct[DIRECT_MAXVAR_PARAM],
+    GERR6("'%.50s' valid only if the number of locations is less than '%.50s' (=%d) . Got %d * %ld = %ld.", NICK(cov), direct[DIRECT_MAXVAR_PARAM],
 	  max, back, spatialpnts, totpnts);
    
- if (timelength <= back) {
-    GERR2("the grid in the last direction is too small; use method '%s' instead of '%s'",
-	  CovList[DIRECT].nick, CovList[SEQUENTIAL].nick);
+  if (timelength <= back) {
+    GERR2("the grid in the last direction is too small; use method '%.50s' instead of '%.50s'",
+	  DefList[DIRECT].nick, DefList[SEQUENTIAL].nick);
   } 
   if (back < 1) back = max / spatialpnts;
 
@@ -197,17 +193,21 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   /* ********************* */
   /* matrix creation part  */
   /* ********************* */
-  long j, k, k0, k1, k2, segment;
-  int  row, f77err;
+  long k, k0, k1, k2, segment;
+  int  row, sub_err,
+    icol, irow;
   double *y;
   y = (double*) MALLOC(dim * sizeof(double));
 
   // *** S22
-  if (PL==PL_SUBDETAILS) { LPRINT("covariance matrix...\n"); }
+  // loc->i sollte beim sub eigentlich nie gebraucht werden!!!
+  // somit nur zur erinnerung die laufvariablen icol und irow verwendet
+  if (PL >= PL_SUBDETAILS) { LPRINT("covariance matrix...\n"); }
   k = 0;
-  for (k0 =i=0; i<totpnts; i++, k0+=dim) {
-    k += i;
-    for (segment=i* totpnts+i, j=i, k2=k0; j<totpnts; j++) {
+  for (k0 = icol = 0; icol<totpnts; icol++, k0+=dim) {
+    k += icol;
+    for (segment = icol * (totpnts + 1), irow=icol, k2=k0; 
+	 irow < totpnts; irow++) {
       k1 = k0;
       for (d=0; d<dim; d++) {
 	y[d] = xx[k1++] - xx[k2++];
@@ -221,7 +221,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   /*
   for (k=i=0; i<totpnts; i++) {
     for (d=0; d<totpnts; d++) {
-      printf("%f ", U22[k++]); //
+      printf("%10g ", U22[k++]); //
     }
 //    printf("\n");
   }
@@ -241,13 +241,15 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   */
 
   // *** S11 und S21
-  j = k = 0;
+  int jj;
+  jj = 0;
+  k = 0;
   withoutlast = totpnts - spatialpnts;
-  for (i=withoutlast * totpnts; i<totpntsSQ; ) {
-    j += spatialpnts;
-    endfor = j + withoutlast;
-    for (; j<endfor; ) {
-	COV21[j++] = U22[i++];
+  for (int i=withoutlast * totpnts; i<totpntsSQ; ) {
+    jj += spatialpnts;
+    endfor = jj + withoutlast;
+    for (; jj<endfor; ) {
+	COV21[jj++] = U22[i++];
     }
     endfor = k + spatialpnts;
     for (; k<endfor; ) U11[k++] = U22[i++];
@@ -258,8 +260,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // *** S21 rest
   k = 0;
   y[spatialdim] = timecomp[XSTEP] * back;
-  for (k0 =i=0; i<spatialpnts; i++, k0+=dim) { // t_{n+1}
-      for (k2=j=0; j<spatialpnts; j++) { // t_1
+  for (k0 = icol = 0; icol<spatialpnts; icol++, k0+=dim) { // t_{n+1}
+      for (k2=irow=0; irow<spatialpnts; irow++) { // t_1
 	k1 = k0;
 	for (d=0; d<spatialdim; d++) {
 	    y[d] = xx[k1++] - xx[k2++];
@@ -280,7 +282,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 /*
   LPRINT("U11\n");
   for (i=0; i<spatialpnts; i++) {
-    for (j=0; j<spatialpnts; j++) {
+    for (int j=0; j<spatialpnts; j++) {
       LPRINT("%3.2f ", U11[i + j * spatialpnts]);
     }
     LPRINT("\n");
@@ -289,7 +291,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   LPRINT("S22 %d %d\n", totpnts,spatialpnts );
   for (i=0; i<totpnts; i++) {
     LPRINT("%2d: ", i);
-    for (j=0; j<totpnts; j++) {
+    for (int j=0; j<totpnts; j++) {
       LPRINT("%3.2f ", U22[i + j * totpnts]);
    }
     LPRINT("\n");
@@ -303,42 +305,26 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
   // *** sqrt S 22 
   if (PL>=PL_STRUCTURE) { LPRINT("Cholesky decomposition of Cov22...\n"); }
-  row=totpnts;
-  // dchdc destroys the input matrix; upper half of U22 contains result!
-  // dpotrf	F77_CALL(dpotrf)("Upper", &m, REAL(ans), &m, &i);
-  //  assert(false);
-  F77_CALL(dpotrf)("Upper", &row, U22, &row, &f77err);
-//  assert(false);
-  // F77_NAME(dchdc)(U22, &row, &row, G, NULL, &choljob, &f77err);
-  if (f77err!=NOERROR) {
+  row=totpnts; 
+  if ((sub_err = Ext_chol(U22, row)) != NOERROR) {
     if (PL>=PL_ERRORS) {
-      LPRINT("Error code F77_CALL(dpotrf) = %d\n", f77err);
+      LPRINT("Error code in cholesky = %d\n", sub_err);
     }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   } 
 
-  // for (i=0; i<withoutlast * spatialpnts; i++) {
-//    LPRINT("%3.4f ", COV21[i]);
-//  }
-//  assert(false);
-  
+   
   // *** inverse of S 22 
   if (PL>=PL_STRUCTURE) { LPRINT("inverse of Cov22...\n"); }
   MEMCOPY(Inv22, U22, sizeof(double) * totpntsSQ);
-  F77_CALL(dpotri)("Upper", &row, Inv22, &row, &f77err);
-  if (f77err!=NOERROR) {
-    if (PL>=PL_ERRORS) {
-      LPRINT("Error code F77_CALL(dpotri) = %d\n", f77err); 
-    }
-    err=ERRORDECOMPOSITION;
-    goto ErrorHandling;
-  }
-  for (k=i=0; i<totpnts; i++) {
+  Ext_chol2inv(Inv22, row);
+  k = 0;
+  for (int i=0; i<totpnts; i++) {
     k += i;
     for (segment=i* totpnts+i; segment<totpntsSQ; segment += totpnts) {
 	Inv22[k++] = Inv22[segment]; 
-//	LPRINT("sg %d %f %d \n", k, Inv22[segment] , segment);
+//	LPRINT("sg %d %10g %d \n", k, Inv22[segment] , segment);
     }
   }
 
@@ -346,7 +332,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 /*
   LPRINT("C21\n");
   for (i=0; i<totpnts; i++) {
-    for (j=0; j<spatialpnts; j++) {
+    for (int j=0; j<spatialpnts; j++) {
       LPRINT("%3.2f ", COV21[i + j * totpnts]);
    }
     LPRINT("\n");
@@ -358,8 +344,8 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
   if (PL>=PL_STRUCTURE) { LPRINT("calculating matrix for the mean...\n"); }
   l = 0;
-  for (i=0; i<spatialpntsSQback; i+=totpnts) {
-    for (j=0; j<totpntsSQ; j+=totpnts) {
+  for (int i=0; i<spatialpntsSQback; i+=totpnts) {
+    for (int j=0; j<totpntsSQ; j+=totpnts) {
 	double dummy;
 	dummy = 0.0;
 	for (k=0; k<totpnts; k++) dummy += COV21[i + k] * Inv22[j + k];
@@ -370,7 +356,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 /*
   LPRINT("MuT\n");
   for (i=0; i<totpnts; i++) {
-    for (j=0; j<spatialpnts; j++) {
+    for (int j=0; j<spatialpnts; j++) {
       LPRINT("%3.2f ", MuT[i + j * totpnts]);
    }
     LPRINT("\n");
@@ -381,11 +367,11 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // *** C11
   if (PL>=PL_STRUCTURE) { LPRINT("calculating cov matrix...\n"); }
   l = 0;
-  for (i=0; i<spatialpntsSQback; i+=totpnts) {
-    for (j=0; j<spatialpntsSQback; j+=totpnts) {
+  for (int i=0; i<spatialpntsSQback; i+=totpnts) {
+    for (int j=0; j<spatialpntsSQback; j+=totpnts) {
 	double dummy;
 	dummy = 0.0;
-	for (k=0; k<totpnts; k++) dummy += MuT[i + k] * COV21[j + k];
+	for (int kk=0; kk<totpnts; kk++) dummy += MuT[i + kk] * COV21[j + kk];
 	U11[l++] -= dummy;
     }
   }
@@ -393,7 +379,7 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 /*
   LPRINT("U11\n");
   for (i=0; i<spatialpnts; i++) {
-    for (j=0; j<spatialpnts; j++) {
+    for (int j=0; j<spatialpnts; j++) {
       LPRINT("%3.2f ", U11[i + j * spatialpnts]);
    }
    LPRINT("\n");
@@ -404,26 +390,14 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
   // *** sqrt C11
   if (PL>=PL_STRUCTURE) { LPRINT("Cholesky decomposition of Cov11...\n"); }
   row=spatialpnts;
-  // dchdc destroys the input matrix; upper half of U22 contains result!
-  // dpotrf	F77_CALL(dpotrf)("Upper", &m, REAL(ans), &m, &i);
-  F77_CALL(dpotrf)("Upper", &row, U11, &row, &f77err);
-
-/*
-  for (i=0; i<spatialpnts; i++) {
-    for (j=0; j<spatialpnts; j++) {
-      LPRINT("%3.2f ", U11[i + j * spatialpnts]);
-   }
-    LPRINT("\n");
-  }
-*/
-
-  if (f77err!=NOERROR) {
-    if (PL>=PL_ERRORS) { LPRINT("U11: Error code F77_CALL(dpotrf) = %d\n", f77err); }
+  sub_err = Ext_chol(U11, row);
+  if (sub_err!=NOERROR) {
+    if (PL>=PL_ERRORS) { LPRINT("U11: Error code in chol = %d\n", sub_err); }
     err=ERRORDECOMPOSITION;
     goto ErrorHandling;
   }
 
-  err = FieldReturn(cov);
+  err = ReturnOwnField(cov);
 
  ErrorHandling: // and NOERROR...
   FREE(xx);
@@ -461,29 +435,26 @@ int init_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
   cov->simu.active = err == NOERROR;
 
-  //printf("active=%d\n", cov->simu.active); assert(false);
-
-  return err;
+  RETURN_ERR(err);
 }
 
 
 void sequentialpart(double *res, long totpnts, int spatialpnts, int ntime,
 		    double *U11, double *MuT, double *G) {
   double *rp, *oldrp;
-  int n, i, k, j, mutj;
   rp = res + totpnts;
   oldrp = res;
-  for (n=0; n<ntime; n++, rp += spatialpnts, oldrp += spatialpnts) {
-    for (i=0; i<spatialpnts; i++) G[i] = GAUSS_RANDOM(1.0);
-    for (mutj=k=0, i=0; i<spatialpnts; i++, k+=spatialpnts) {
+  for (int n=0; n<ntime; n++, rp += spatialpnts, oldrp += spatialpnts) {
+    for (int i=0; i<spatialpnts; i++) G[i] = GAUSS_RANDOM(1.0);
+    for (int mutj=0, k=0, i=0; i<spatialpnts; i++, k+=spatialpnts) {
       double dummy;
       double *Uk;
       Uk = &U11[k]; 
       dummy =0.0;
-      for (j=0; j<=i; j++) {
+      for (int j=0; j<=i; j++) {
 	dummy += G[j] * Uk[j];
       }
-      for (j=0; j<totpnts; j++) {
+      for (int j=0; j<totpnts; j++) {
 	  dummy += MuT[mutj++] * (double) oldrp[j];
       }
       rp[i] = (double) dummy; 
@@ -492,15 +463,15 @@ void sequentialpart(double *res, long totpnts, int spatialpnts, int ntime,
 }
 
 
-void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s) 
+void do_sequential(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) 
 {  
-  cov_model *next = cov->sub[0];
+  model *next = cov->sub[0];
   sequ_storage
     *S = cov->Ssequ;
   assert(S != NULL); 
   
   int vdim = next->vdim[0];
-  long  i, j, k,
+  long 
     totpnts = S->totpnts;
   double *G,*U22, *U11, *MuT;
   double *res0,
@@ -522,12 +493,12 @@ void do_sequential(cov_model *cov, gen_storage VARIABLE_IS_NOT_USED *s)
   //          allocation errors here)
 
   // Start
-  for (i=0; i<totpnts; i++) G[i] = GAUSS_RANDOM(1.0);
-  for (k=0, i=0; i<totpnts; i++, k+=totpnts){
+  for (int i=0; i<totpnts; i++) G[i] = GAUSS_RANDOM(1.0);
+  for (int k=0, i=0; i<totpnts; i++, k+=totpnts){
     double dummy, *Uk;
     Uk = &U22[k]; 
     dummy =0.0;
-    for (j=0; j<=i; j++){
+    for (int j=0; j<=i; j++){
       dummy += G[j] * Uk[j];
     }
     res0[i] = (double) dummy; 

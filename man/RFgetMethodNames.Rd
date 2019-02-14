@@ -41,7 +41,7 @@ RFgetMethodNames()
  
  
  \item \code{cutoff embedding}. \cr
- Modified circulant embedding method so that exact simulation is garantueed
+ Modified circulant embedding method so that exact simulation is guaranteed
  for further covariance models, e.g. the whittle matern model.
  In fact, the circulant embedding is called with the cutoff
  hypermodel, see \command{\link{RMmodel}}, and \eqn{A=B} there.
@@ -49,7 +49,7 @@ RFgetMethodNames()
  elements models used to define the covariance function of interest
  (from 10 to 5).
 
- Here multiplicative models are not allowed (yet).
+ Here, multiplicative models are not allowed (yet).
  
  
  \item \code{direct matrix decomposition}.\cr
@@ -68,13 +68,13 @@ RFgetMethodNames()
  such random fields yields approximatively a Gaussian random field.
  
  \item \code{intrinsic embedding}. \cr
- Modified circulant embedding so that exact simulation is garantueed
+ Modified circulant embedding so that exact simulation is guaranteed
  for further \emph{variogram} models, e.g. the fractal brownian one.
  Note that the simulated random field is always \emph{non-stationary}.
  In fact, the circulant embedding is called with the Stein
  hypermodel, see \command{\link{RMmodel}}, and \eqn{A=B} there.
 
- Here multiplicative models are not allowed (yet).
+ Here, multiplicative models are not allowed (yet).
 
  \item Marked point processes.\cr
  Some methods are based on marked point process
@@ -93,7 +93,7 @@ RFgetMethodNames()
  are allowed
  as underlying unmarked point processes.
  Thus, if the marks \eqn{m_i}{m_i}
- are all indicator functions, we obtain
+ are all indicator functions, we obtain 
  a Poisson random field. If the intensity of the Poisson
  process is high we obtain an approximative Gaussian random
  field by the central limit theorem - this is the
@@ -109,12 +109,10 @@ RFgetMethodNames()
  
  \item \code{nugget}.\cr
  The method allows for generating a random field of 
- independent Gaussian random variables. In the isotropic case
- and if the simple notation of a model (with \code{model} and
- \code{param})
- is used, this method is called automatically if the nugget
+ independent Gaussian random variables.
+ This method is called automatically if the nugget
  effect is positive except the method \code{"circulant embedding"}
- or \code{"direct"} have been explicitely.
+ or \code{"direct"} has been explicitly chosen.
 
  The method has been extended to zonal anisotropies, see
  also argument \code{nugget.tol} in \command{\link{RFoptions}}.
@@ -143,8 +141,7 @@ RFgetMethodNames()
 
  The standard method
  allows for the simulation of 2-dimensional random
- fields defined on arbitrary points or arbitrary grids. Here
- realisation is given as the cosine with random
+ fields defined on arbitrary points or arbitrary grids. Here, a realisation is given as the cosine with random
  amplitude and random phase. 
 
  
@@ -187,7 +184,7 @@ RFgetMethodNames()
  that control the precision of the result. The default arguments 
  are chosen such that the simulations are fine for many models
  and their parameters. 
- The example in \code{\link{RFempiricalvariogram}()}
+ The example in \code{\link{RFvariogram}()}
  shows a way of checking the precision.
 }
 \references{
@@ -280,10 +277,9 @@ RFgetMethodNames()
  \section{Automatic selection algorithm}{
  --- details coming soon ---
  }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software}
-}
 
+ \me
+  
 \seealso{
  \command{\link{RMmodel}},
  \command{\link{RFsimulate}},
@@ -296,7 +292,7 @@ RFgetMethodNames()
 % to do: max-stable beschreiben??
 
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFgetMethodNames()
 \dontshow{FinalizeExample()}
 }

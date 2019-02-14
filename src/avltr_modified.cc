@@ -38,13 +38,11 @@
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if SELF_TEST_XXXXX
-//#include <limits. h>
-//#include <time .h>
+#if SELF_TEST 
+#include <limits.h>
 #endif
 #include <stdio.h>
 #include <stddef.h>
-//#include <stdlib.h>
 #include "basic.h"
  
 //#include "avltr.h"
@@ -53,6 +51,9 @@
 /* Tag types. */
 #define PLUS +1
 #define MINUS -1
+#define LEFT -1
+#define RIGHT +1
+#define CENTER 0
 
 #if !__GCC__ && !defined (inline)
 #define inline
@@ -80,7 +81,7 @@ void *xmalloc (size_t size) {
   assert (vp != NULL);
   if (vp == NULL)
     {
-      error("virtual memory exhausted\n");
+      RFERROR("virtual memory exhausted\n");
       // exit (EXIT_FAILURE);
     }
   return vp;
@@ -154,7 +155,7 @@ avltr_destroy (avltr_tree *tree, avl_node_func free_func)
 	      p = an[--ap];
 	      if (ab[ap] == 0)
 		{
-		  ab[ap++] = 1;
+		  ab[ap++] = RIGHT;
 		  if (p->rtag == MINUS)
 		    continue;
 		  p = p->link[1];
@@ -163,13 +164,13 @@ avltr_destroy (avltr_tree *tree, avl_node_func free_func)
       
 	      if (free_func)
 	      	free_func (p->data, tree->param);
-	      free (p);
+	      FREE(p);
 	    }
 	}
     }
 
  done:
-  free (tree);
+  FREE(tree);
 }
 
 /* avltr_destroy() with FREE_FUNC hardcoded as FREE(). */
@@ -385,7 +386,7 @@ avltr_unthread (avltr_tree *tree)
 	    p = an[--ap];
 	    if (ab[ap] == 0)
 	      {
-		ab[ap++] = 1;
+		ab[ap++] = RIGHT;
 		if (p->rtag == MINUS)
 		  continue;
 		p = p->link[1];
@@ -446,7 +447,7 @@ avltr_traverse (avltr_tree *tree, avltr_traverser *trav)
   if (trav->init == 0)
     {
       p = &tree->root;
-      trav->init = 1;
+      trav->init = RIGHT;
     }
   else
     p = trav->p;
@@ -604,20 +605,20 @@ cell_type **avltr_probe (avltr_tree *tree, cell_type *item)
   /* A7. */
   if (s->cache == 0)
     {
-      /* a = -1. */
+      /* a = LEFT. */
       if (s->bal == 0)
 	{
-	  s->bal = -1;
+	  s->bal = LEFT;
 	  return &q->data;
 	}
-      else if (s->bal == +1)
+      else if (s->bal == RIGHT)
 	{
 	  s->bal = 0;
 	  return &q->data;
 	}
 
-      assert (s->bal == -1);
-      if (r->bal == -1)
+      assert (s->bal == LEFT);
+      if (r->bal == LEFT)
 	{
 	  /* A8. */
 	  p = r;
@@ -637,20 +638,20 @@ cell_type **avltr_probe (avltr_tree *tree, cell_type *item)
       else
 	{
 	  /* A9. */
-	  assert (r->bal == +1);
+	  assert (r->bal == RIGHT);
 	  p = r->link[1];
 	  r->link[1] = p->link[0];
 	  p->link[0] = r;
 	  s->link[0] = p->link[1];
 	  p->link[1] = s;
-	  if (p->bal == -1)
-	    s->bal = 1, r->bal = 0;
+	  if (p->bal == LEFT)
+	    s->bal = RIGHT, r->bal = 0;
 	  else if (p->bal == 0)
 	    s->bal = r->bal = 0;
 	  else 
 	    {
-	      assert (p->bal == +1);
-	      s->bal = 0, r->bal = -1;
+	      assert (p->bal == RIGHT);
+	      s->bal = 0, r->bal = LEFT;
 	    }
 	  p->bal = 0;
 	  p->rtag = PLUS;
@@ -665,20 +666,20 @@ cell_type **avltr_probe (avltr_tree *tree, cell_type *item)
     }
   else
     {
-      /* a == +1. */
+      /* a == RIGHT. */
       if (s->bal == 0)
 	{
-	  s->bal = 1;
+	  s->bal = RIGHT;
 	  return &q->data;
 	}
-      else if (s->bal == -1)
+      else if (s->bal == LEFT)
 	{
 	  s->bal = 0;
 	  return &q->data;
 	}
 
-      assert (s->bal == +1);
-      if (r->bal == +1)
+      assert (s->bal == RIGHT);
+      if (r->bal == RIGHT)
 	{
 	  /* A8. */
 	  p = r;
@@ -698,19 +699,19 @@ cell_type **avltr_probe (avltr_tree *tree, cell_type *item)
       else
 	{
 	  /* A9. */
-	  assert (r->bal == -1);
+	  assert (r->bal == LEFT);
 	  p = r->link[0];
 	  r->link[0] = p->link[1];
 	  p->link[1] = r;
 	  s->link[1] = p->link[0];
 	  p->link[0] = s;
-	  if (p->bal == +1)
-	    s->bal = -1, r->bal = 0;
+	  if (p->bal == RIGHT)
+	    s->bal = LEFT, r->bal = 0;
 	  else if (p->bal == 0)
 	    s->bal = r->bal = 0;
 	  else 
 	    {
-	      assert (p->bal == -1);
+	      assert (p->bal == LEFT);
 	      s->bal = 0, r->bal = 1;
 	    }
 	  p->rtag = PLUS;
@@ -943,7 +944,7 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
       }
   }
 
-  free (p);
+  FREE(p);
 
   assert (k > 0);
   /* D10. */
@@ -956,28 +957,28 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 	  avltr_node * r = s->link[1];
 	  
 	  /* D10. */
-	  if (s->bal == -1)
+	  if (s->bal == LEFT)
 	    {
 	      s->bal = 0;
 	      continue;
 	    }
 	  else if (s->bal == 0)
 	    {
-	      s->bal = +1;
+	      s->bal = RIGHT;
 	      break;
 	    }
 
-	  assert (s->bal == +1);
+	  assert (s->bal == RIGHT);
 	  if (s->rtag == MINUS || r->bal == 0)
 	    {
 	      /* D11. */
 	      s->link[1] = r->link[0];
 	      r->link[0] = s;
-	      r->bal = -1;
+	      r->bal = LEFT;
 	      pa[k - 1]->link[(int) a[k - 1]] = r;
 	      break;
 	    }
-	  else if (r->bal == +1)
+	  else if (r->bal == RIGHT)
 	    {
 	      /* D12. */
 	      if (r->link[0] != NULL)
@@ -994,7 +995,7 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 	  else 
 	    {
 	      /* D13. */
-	      assert (r->bal == -1);
+	      assert (r->bal == LEFT);
 	      p = r->link[0];
 	      if (p->rtag == PLUS)
 		r->link[0] = p->link[1];
@@ -1013,14 +1014,14 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 		  s->rtag = PLUS;
 		}
 	      p->link[0] = s;
-	      if (p->bal == +1)
-		s->bal = -1, r->bal = 0;
+	      if (p->bal == RIGHT)
+		s->bal = LEFT, r->bal = 0;
 	      else if (p->bal == 0)
 		s->bal = r->bal = 0;
 	      else
 		{
-		  assert (p->bal == -1);
-		  s->bal = 0, r->bal = +1;
+		  assert (p->bal == LEFT);
+		  s->bal = 0, r->bal = RIGHT;
 		}
 	      p->bal = 0;
 	      pa[k - 1]->link[(int) a[k - 1]] = p;
@@ -1033,28 +1034,28 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 	  avltr_node * r = s->link[0];
 	  
 	  /* D10. */
-	  if (s->bal == +1)
+	  if (s->bal == RIGHT)
 	    {
 	      s->bal = 0;
 	      continue;
 	    }
 	  else if (s->bal == 0)
 	    {
-	      s->bal = -1;
+	      s->bal = LEFT;
 	      break;
 	    }
 
-	  assert (s->bal == -1);
+	  assert (s->bal == LEFT);
 	  if (s->link[0] == NULL || r->bal == 0)
 	    {
 	      /* D11. */
 	      s->link[0] = r->link[1];
 	      r->link[1] = s;
-	      r->bal = +1;
+	      r->bal = RIGHT;
 	      pa[k - 1]->link[(int) a[k - 1]] = r;
 	      break;
 	    }
-	  else if (r->bal == -1)
+	  else if (r->bal == LEFT)
 	    {
 	      /* D12. */
 	      if (r->rtag == PLUS)
@@ -1069,7 +1070,7 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 	  else 
 	    {
 	      /* D13. */
-	      assert (r->bal == +1);
+	      assert (r->bal == RIGHT);
 	      p = r->link[1];
 	      if (p->link[0] != NULL)
 		{
@@ -1085,14 +1086,14 @@ cell_type *avltr_delete (avltr_tree *tree, cell_type *item)
 		s->link[0] = p->link[1];
 	      p->link[1] = s;
 	      p->rtag = PLUS;
-	      if (p->bal == -1)
-		s->bal = +1, r->bal = 0;
+	      if (p->bal == LEFT)
+		s->bal = RIGHT, r->bal = 0;
 	      else if (p->bal == 0)
 		s->bal = r->bal = 0;
 	      else
 		{
-		  assert (p->bal == +1);
-		  s->bal = 0, r->bal = -1;
+		  assert (p->bal == RIGHT);
+		  s->bal = 0, r->bal = LEFT;
 		}
 	      p->bal = 0;
 	      if (a[k - 1] == 1)
@@ -1145,13 +1146,13 @@ cell_type *(avltr_force_delete) (avltr_tree *tree, cell_type *item)
   return found;
 }
 
-#if SELF_TEST_XXXXX
+#if SELF_TEST
 
 /* Size of the tree used for testing. */
 #define TREE_SIZE 1024
 
 /* Used to flag delayed aborting. */
-int done = 0;
+bool done = false;
 
 /* Count the number of nodes in TREE below and including NODE. */
 int
@@ -1182,7 +1183,7 @@ print_structure (avltr_tree *tree, avltr_node *node, int level)
   else if (level >= 10)
     {
       Rprint ("Too deep, giving up.\n");
-      done = 1;
+      done = true;
       return;
     }
   else if (node == &tree->root)
@@ -1234,7 +1235,7 @@ print_contents (avltr_tree *tree)
    nodes in the tree, including the current one.  If the node is the
    root of the tree, PARENT should be INT_MIN, otherwise it should be
    the parent node value.  DIR is the direction that the current node
-   is linked from the parent: -1 for left child, +1 for right child;
+   is linked from the parent: LEFT for left child, RIGHT for right child;
    it is not used if PARENT is INT_MIN.  Returns the height of the
    tree rooted at NODE. */
 int
@@ -1253,20 +1254,20 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
       if (nodes[d / 8] & (1 << (d % 8)))
 	{
 	  Rprint (" Arrived at node %d by two different paths.\n", d);
-	  done = 1;
+	  done = true;
 	}
       else
 	nodes[d / 8] |= 1 << (d % 8);
 
       if (node->link[0] != NULL)
-	nl = recurse_tree (tree, node->link[0], count, d, -1, nodes, threads);
+	nl = recurse_tree (tree, node->link[0], count, d, LEFT, nodes, threads);
 
       if (node->rtag == PLUS)
 	{
 	  if (node->link[1] == NULL)
 	    {
 	      Rprint (" Null thread link.\n");
-	      done = 1;
+	      done = true;
 	    }
 	  nr = recurse_tree (tree, node->link[1], count, d, 1, nodes, threads);
 	}
@@ -1277,7 +1278,7 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 	  if (threads[dr / 8] & (1 << dr % 8))
 	    {
 	      Rprint (" Multiple threads to node %d.\n", d);
-	      done = 1;
+	      done = true;
 	    }
 	  threads[dr / 8] |= 1 << (dr % 8);
 	}
@@ -1287,32 +1288,32 @@ recurse_tree (avltr_tree *tree, avltr_node *node, int *count, int parent,
 	  Rprint (" Node %d has incorrect balance: right height=%d, "
 		  "left height=%d, difference=%d, but balance factor=%d.\n",
 		  d, nr, nl, nr - nl, node->bal);
-	  done = 1;
+	  done = true;
 	}
       
-      if (node->bal < -1 || node->bal > 1)
+      if (node->bal < LEFT || node->bal > 1)
 	{
 	  Rprint (" Node %d has invalid balance factor %d.\n", d, node->bal);
-	  done = 1;
+	  done = true;
 	}
       
       if (parent != INT_MIN)
 	{
-	  assert (dir == -1 || dir == +1);
-	  if (dir == -1 && d > parent)
+	  assert (dir == LEFT || dir == RIGHT);
+	  if (dir == LEFT && d > parent)
 	    {
 	      Rprint (" Node %d is smaller than its left child %d.\n",
 		      parent, d);
-	      done = 1;
+	      done = true;
 	    }
-	  else if (dir == +1 && d < parent)
+	  else if (dir == RIGHT && d < parent)
 	    {
 	      Rprint (" Node %d is larger than its right child %d.\n",
 		      parent, d);
-	      done = 1;
+	      done = true;
 	    }
 	}
-      assert (node->bal >= -1 && node->bal <= 1);
+      assert (node->bal >= LEFT && node->bal <= 1);
       return 1 + (nl > nr ? nl : nr);
     }
   else return 0;
@@ -1339,7 +1340,7 @@ verify_tree (avltr_tree *tree)
       {
 	Rprint (" Tree should have %d nodes, but tree count by recursive "
 		"descent is %d.\n", tree->count, count);
-	done = 1;
+	done = true;
       }
 
     for (i = 0; i < TREE_SIZE; i++)
@@ -1351,7 +1352,7 @@ verify_tree (avltr_tree *tree)
 	  {
 	    Rprint (" A thread leads to 'node' %d, "
 		    "which is not in the tree.", i);
-	    done = 1;
+	    done = true;
 	  }
       }
   }
@@ -1382,7 +1383,7 @@ verify_tree (avltr_tree *tree)
       {
 	Rprint (" Tree should have %d nodes, but tree count by right threads "
 		"is %d.\n", tree->count, count);
-	done = 1;
+	done = true;
       }
   }
 

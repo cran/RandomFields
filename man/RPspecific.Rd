@@ -1,4 +1,3 @@
-
 \name{Specific}
 \alias{Specific}
 \alias{RPspecific}
@@ -19,7 +18,7 @@ RPspecific(phi, boxcox)
    specifies the covariance model to be simulated.}
 \item{boxcox}{the one or two parameters of the box cox transformation.
   If not given, the globally defined parameters are used.
-  see \command{\link{RFboxcox}} for Details.
+  See \command{\link{RFboxcox}} for details.
  }
 % \item{loggauss}{optional arguments; same meaning as for 
 % \command{\link{RPgauss}}.}
@@ -27,13 +26,13 @@ RPspecific(phi, boxcox)
 
 \details{
   \code{RPspecific} is used for specific algorithms or specific features
-  for simulating certain covariance functions
+  for simulating certain covariance functions.
   
   \itemize{ % i.W. alle Modele mit struct und do Funktion
     \item{\command{\link{RMplus}}}{
       is able to simulate separately
       the fields given by its summands. This is necessary, e.g., when
-      a \command{\link{RMtrend}} is involved.
+      a trend model \command{\link{RMtrend}} is involved.
     }
 
     \item{\command{\link{RMmult}}} {
@@ -46,13 +45,13 @@ RPspecific(phi, boxcox)
     \item{\command{\link{RMS}}}{
       Then, for instance,
       \code{sqrt(var)} is multiplied onto the (Gaussian) random
-      fields after the field has been simulated.
-      Hence, when \code{var} is random, then, for each realisation
+      field after the field has been simulated.
+      Hence, when \code{var} is random, then for each realization
       of the Gaussian field (for \code{n>1} in \command{\link{RFsimulate}})
-      a new realisation of \code{var} is used.
+      a new realization of \code{var} is used.
       
       Further, new coordinates are created where the old coordinates
-      have been devided by the \code{scale} and/or multiplied with the
+      have been divided by the \code{scale} and/or multiplied with the
       \code{Aniso} matrix or a \code{proj}ection has been performed.
 
       \code{\link{RPspecific}(\link{RMS}())} is called internally when
@@ -67,11 +66,11 @@ RPspecific(phi, boxcox)
   }
 
   Note that \code{RPspecific} applies only to the first model or
-  operator in argument \code{phi}.
+  operator in the argument \code{phi}.
 }
 
 \value{
- \command{RPspecific} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{RPspecific} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
@@ -84,14 +83,13 @@ RPspecific(phi, boxcox)
  Lancaster University. 
  }
 }
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
-## example for implicite use
+
+## example for implicit use
 model <- RMgauss(var=10, s=10) + RMnugget(var=0.1)
 plot(model)
 plot(RFsimulate(model=model, 0:10, 0:10, n=4))
@@ -99,18 +97,12 @@ plot(RFsimulate(model=model, 0:10, 0:10, n=4))
 ## In particular, it can be seen that RPspecific is applied to RMplus.
 RFgetModelInfo(level=0, which="internal")
 
-## example for explicite used
-model <- RPspecific(RMS(var=unif(min=0, max=10), RMgauss()))
-x <- seq(0,10,0.02)
-n <- 10
-\dontshow{if(RFoptions()$internal$examples_reduced){warning("reduced 'n'"); n<-1}}
-for (i in 1:n) {%ok
-  readline(paste("Simulation no.", i, ": press return", sep=""))
-  plot(RFsimulate(model, x=x, n=6, seed=i), ylim=c(-5,5))
-}
+## example for explicit use: every simulation has a different variance
+model <- RPspecific(RMS(var=unif(min=0, max=100), RMgauss()))
+x <- seq(0,50,0.02)
+plot(RFsimulate(model, x=x, n=4), ylim=c(-15,15))
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \seealso{ \link{Gaussian},
   \link{RP}.

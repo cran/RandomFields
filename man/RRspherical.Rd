@@ -17,27 +17,26 @@ RRspheric(spacedim, balldim, R)
 \arguments{
   \item{spacedim}{dimension of the hyperplane; defaults to 1.}
   \item{balldim}{the dimension of the ball}
-  \item{R}{radius. Default: 1}
+  \item{R}{radius. Default: 1.}
 }
 
 \value{
- \command{\link{RRspheric}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RRspheric}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
   \command{\link{RMmodel}},
-  \command{\link{RMball}},
+  \command{\link{RMball}}.
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
+
 hist(RFrdistr(RRspheric(balldim=2), n=1000), 50)
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 \keyword{models}

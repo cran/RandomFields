@@ -17,9 +17,44 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
-## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
+## Version3
+#RMstrokorbMono <- function(phi) stop("Please use 'RMm2r' instead")
+#RMstrokorbBall <- function(phi) stop("Please use 'RMm3b' instead")
+#RMstrokorbPoly <- function(phi) stop("Please use 'RMmps' instead")
+
+
+RFempiricalvariogram <- function(...) {
+  obsolete <- as.character(list(match.call())[[1]])[1]
+  new <- "RFvariogram"
+  warning("'", obsolete, "' is an obsolete function.\n  Use '", new,
+          "' which calculates both empirical and theoretical values.\n  (later versions might also be able to fit)")
+  do.call(new, list(...))
+}
+
+RFempiricalmadogram <- function(...) {
+  obsolete <- as.character(list(match.call())[[1]])[1]
+  new <- "RFmadogram"
+  warning("'", obsolete, "' is an obsolete function.\n  Use '", new,
+          "' which calculates both empirical and theoretical values.\n  (later versions might also be able to fit)")
+  do.call(new, list(...))
+}
+
+
+RFempiricalcovariance <- function(...) {
+  obsolete <- as.character(list(match.call())[[1]])[1]
+  new <- "RFcov"
+  warning("'", obsolete, "' is an obsolete function.\n  Use '", new,
+          "' which calculates both empirical and theoretical values.\n  (later versions might also be able to fit)")
+  do.call(new, list(...))
+}
+
+
+
+
+  #### Version 2
 
 RFoldstyle <- function(old=TRUE) {
   RFoptions(general.spConform = !old,
@@ -71,11 +106,13 @@ OldMethod <- function(method) {
 
 Variogram <- function(x,
                       model, param=NULL,
-              dim=if (!missing(Distances)) {if (is.matrix(x)) ncol(x) else 1},
+                      dim=NULL,
                       ## y=NULL,
                       Distances) {
   if (RFoptions()$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFvariogram' instead.")
+  if (is.null(dim) &&!missing(Distances))
+    dim <- if (is.matrix(x)) ncol(x) else 1
   if (!missing(param) && is.na(param[1])) param[1] <- 0
 
 ##  Print(model, param)
@@ -87,10 +124,12 @@ Variogram <- function(x,
 Covariance <- CovarianceFct <-
   function(x, y=NULL,
            model, param=NULL,
-           dim=if (!missing(Distances)) {if (is.matrix(x)) ncol(x) else 1},
+           dim=NULL,
            Distances, fctcall=c("Cov", "Variogram", "CovMatrix")) {
     if (RFoptions()$internal$warn_oldstyle)
       warning("The function is obsolete. Use 'RFcov' instead")
+    if (is.null(dim) && !missing(Distances))
+      dim <- if (is.matrix(x)) ncol(x) else 1
     if (!missing(param) && is.na(param[1])) param[1] <- 0
     model <- PrepareModel(model, param)
     fctcall <- match.arg(fctcall)
@@ -99,24 +138,26 @@ Covariance <- CovarianceFct <-
 
 CovMatrix <- function(x, y=NULL,
            model, param=NULL,
-           dim=if (!missing(Distances)) {if (is.matrix(x)) ncol(x) else 1},
+           dim=NULL,
            Distances) {
-  if (!missing(param) && is.na(param[1])) param[1] <- 0
-  model <- PrepareModel(model, param)
   if (RFoptions()$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFcovmatrix' instead")
-  RFcovmatrix(x=x, y=y, model=model, dim=dim, distances=Distances)
+   if (is.null(dim) && !missing(Distances))
+      dim <- if (is.matrix(x)) ncol(x) else 1
+ if (!missing(param) && is.na(param[1])) param[1] <- 0
+  model <- PrepareModel(model, param)
+   RFcovmatrix(x=x, y=y, model=model, dim=dim, distances=Distances)
 }
 
 DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
-  if (!is.null(trend))
+  if (RFoptOld[[1]]$internal$warn_oldstyle)
+    warning("The function is obsolete.\nSee documentation of 'RFSimulate' (advanced part) instead.")
+ if (!is.null(trend))
     stop("parameter trend in DoSimulateRF cannot be used anymore")
   RFoptOld <-
     internal.rfoptions(register=register, gauss.paired=paired, spConform=FALSE)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
 
- if (RFoptOld[[1]]$internal$warn_oldstyle)
-    warning("The function is obsolete.\nSee documentation of 'RFSimulate' (advanced part) instead.")
 
    RFsimulate(n=n)
 }
@@ -126,14 +167,14 @@ InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
                             grid=!missing(gridtriple), model, param,
                             trend,  method = NULL,
                             register = 0, gridtriple, distribution=NA) {
-  RFoptOld <-
+  if (RFoptOld[[2]]$internal$warn_oldstyle)
+    warning("This function is obsolete. Use 'RFsimulate' instead.")
+ RFoptOld <-
     internal.rfoptions(register=register, #gauss.method=method,
                        spConform=FALSE)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
 
-  if (RFoptOld[[2]]$internal$warn_oldstyle)
-    warning("This function is obsolete. Use 'RFsimulate' instead.")
-
+ 
   OldDistribution(distribution) ## only check whether input is oK
   
   model <- c(list(OldMethod(method)),
@@ -230,6 +271,8 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid=NULL, model, param,
                             maxstable,
                             method = NULL,
                             register = 0, gridtriple = FALSE) {
+  if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFsimulate' instead.")
   meth <- if (!is.null(method)) method else maxstable
   if (is.null(meth)) stop("method not given")
   model <- c(list(OldMethod(meth)),
@@ -267,6 +310,8 @@ MaxStableRF <- function (x, y = NULL, z = NULL, grid=NULL,
                          n = 1, register = 0,
                          gridtriple = FALSE,
                          ...) {
+  if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFsimulate' instead.")
   meth <- if (!is.null(method)) method else maxstable
   if (is.null(meth)) stop("method not given")
   model <- c(list(OldMethod(meth)),
@@ -303,11 +348,9 @@ EmpiricalVariogram <-
   function (x, y = NULL, z = NULL, T=NULL, data, grid=NULL, bin, gridtriple = FALSE,
             phi,  ## phi[1] erste richtung, phi[2] : anzahl der richtungen
             theta, ## aehnlich
-            deltaT ##  deltaT[1] max abstand, deltaT[2] : gitterabstand
-            )
-{
-  if (RFoptions()$internal$warn_oldstyle)
-    warning("This function is obsolete. Use RFempiricalvariogram instead.")
+            deltaT) {
+    if (RFoptions()$internal$warn_oldstyle)
+    warning("This function is obsolete. Use RFvariogram instead.")
   
   if (!missing(gridtriple)) {
     if (gridtriple) {
@@ -325,8 +368,9 @@ EmpiricalVariogram <-
   }
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
   
-  RFempiricalvariogram(x=x, y=y, z=z, T=T, data=data, grid=grid,
-                       bin=bin, phi=phi, theta=theta, deltaT=deltaT, vdim=1)
+  rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid,
+                       bin=bin, phi=phi, theta=theta, deltaT=deltaT, vdim=1,
+		       method=METHOD_VARIOGRAM)
 }
 
 
@@ -337,6 +381,8 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                     pch=".", return.variance=FALSE,
                     allowdistanceZero = FALSE, cholesky=FALSE) {
                     
+  if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFinterpolate' instead.")
   if (!is.null(trend)) 
     stop("in the obsolete setting, Kriging may not be used with trend!\n")                  
                     
@@ -378,9 +424,10 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      err.register=1, 
                      tol=1E-5, pch=".", #
                      paired=FALSE,
-                     na.rm=FALSE #
-                     ) {
-  RFoptOld <- internal.rfoptions(register=register, gauss.paired=paired,
+                     na.rm=FALSE) {
+   if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFsimulate' instead.")
+ RFoptOld <- internal.rfoptions(register=register, gauss.paired=paired,
                                         # gauss.method=method,
                                  general.errregister=err.register,
                                  spConform=FALSE)
@@ -442,8 +489,7 @@ hurst <- function(x, y = NULL, z = NULL, data,
                    pch=16, cex=0.2, cex.main=0.85,
                   PrintLevel=RFoptions()$basic$printlevel,
                   height=3.5,
-                  ...
-                  ) {
+                  ...) {
   if (RFoptions()$internal$warn_oldstyle)
     warning("'hurst' is obsolete. Use RFhurst instead.")
   fft.len <- min(dim[1], fft.max.length)
@@ -536,7 +582,9 @@ fitvario <-
   function(x, y=NULL, z=NULL, T=NULL, data, model, param,
            lower=NULL, upper=NULL, sill=NA, grid=!missing(gridtriple),
            gridtriple=FALSE,
-           ...) {
+            ...) {
+ if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFfit' instead.")
     fitvario.default(x=x, y=y, z=z, T=T, data=data, model=model, param=param,
                      lower=lower, upper=upper, sill=sill,
                      grid=grid, gridtriple,     
@@ -564,7 +612,6 @@ fitvario.default <-
            lowerbound.sill=1E-10, scale.max.relative.factor=1000,
            minbounddistance=0.001, minboundreldist=0.02,
            approximate.functioncalls=50, 
-           minmixedvar=1/1000, maxmixedvar=1000,
            pch=RFoptions()$general$pch, 
            transform=NULL,  standard.style=NA,
      ##      var.name="X", time.name="T",
@@ -579,6 +626,9 @@ fitvario.default <-
            solvesigma = NA, 
            allowdistanceZero = FALSE,
            na.rm = TRUE) { ## do not use FALSE for mixed models !
+
+    if (RFoptOld[[2]]$internal$warn_oldstyle)
+      warning("fitvario is obsolete. Use RFfit instead.")
 
      
   RFoptOld <-
@@ -602,7 +652,6 @@ fitvario.default <-
             fit.minbounddistance=minbounddistance,
             fit.minboundreldist=minboundreldist,
             fit.approximate_functioncalls=approximate.functioncalls,
-            fit.minmixedvar=minmixedvar, fit.maxmixedvar=maxmixedvar,
             pch=pch, 
     #        fit.optim_var_elimination=
     #                   if(is.na(standard.style)) 'try' else if (standard.style)
@@ -615,9 +664,7 @@ fitvario.default <-
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
 
 
-  if (RFoptOld[[2]]$internal$warn_oldstyle)
-      warning("fitvario is obsolete. Use RFfit instead.")
-  model <- PrepareModel(model, param, trend)
+   model <- PrepareModel(model, param, trend)
     
   if (gridtriple) {
     if (!is.null(x)) {
@@ -659,6 +706,8 @@ DeleteRegister <- function(nr=0){
 
 
 RFparameters <- function(...) {
+  if (RFoptions()$internal$warn_oldstyle)
+    warning("The function is obsolete. Use 'RFoptions' instead.")
   l <- list(...)
   nl <- names(l)
   names <- c("Storing", "PrintLevel") #

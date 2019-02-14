@@ -1,0 +1,367 @@
+
+
+
+/*
+ Authors 
+ Martin Schlather, schlather@math.uni-mannheim.de
+
+
+ Copyright (C) 2015 -- 2017 Martin Schlather
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
+*/
+
+
+#ifndef RFerror_H
+#define RFerror_H 1
+
+#include "RF.h"
+
+#ifdef DO_PARALLEL
+#define LOCAL_MSG char MSG[LENERRMSG]
+#else  // not DO_PARALLEL
+#define LOCAL_MSG
+extern char ERRMSG[LENERRMSG],MSG[LENERRMSG], MSG2[LENERRMSG];
+#endif
+
+// used only in function where model *cov does not exists
+#define FAILED(M) {PRINTF(M); return ERRORFAILED;}
+#define FAILED1(M,A) {PRINTF(M,A); return ERRORFAILED;}
+#define FAILED2(M,A,B) {PRINTF(M,A,B); return ERRORFAILED;}
+#define FAILED3(M,A,B,C) {PRINTF(M,A,B,C); return ERRORFAILED;}
+
+
+void errorMSG(int err, KEY_type *KT, char* m);
+void errorMSG(int err, errorstring_type err_msg, KEY_type *KT, char* m);
+void errorMSG(int err, char* m);
+void errorMSG(int err,  errorstring_type err_msg, char* m);
+void OnErrorStop(int err, errorstring_type err_msg);
+void OnErrorStop(int err, errorstring_type err_msg, KEY_type *KT);
+void OnErrorStop(int err, model *cov);
+
+
+#define MERR(X) {LOCAL_ERRLOC_MSG; LPRINT("error msg: ");	\
+    errorMSG(X, cov->err_msg, cov->base, ERRMSG); if (PL<PL_ERRORS) {PRINTF("%.50s\n", ERRMSG);}}
+#define XERR(X) {LOCAL_MSG; /* UERR; */ errorMSG(X, MSG);  RFERROR(MSG);}
+#define QERR(X) {LOCAL_ERRORSTRING; SPRINTF(cov->err_msg, "'%.50s' : %.500s", param_name, X); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+#define QERRX(ERR, X) {LOCAL_ERRORSTRING; LOCAL_MSG; errorMSG(ERR, MSG); SPRINTF(cov->err_msg, "'%.50s' : %.300s (%.500s)", param_name, X, MSG); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+#define QERRC(NR,X) {LOCAL_ERRORSTRING; SPRINTF(cov->err_msg, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+#define QERRC1(NR,X,Y) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s",NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y)); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+#define QERRC2(NR,X,Y,Z) {LOCAL_ERRORSTRING; LOCAL_MSG; SPRINTF(MSG, "%.50s '%.50s': %.800s", NAME(cov), DefList[COVNR].kappanames[NR], X); SPRINTF(cov->err_msg, MSG, KNAME(Y), KNAME(Z)); DEBUGINFOERR; RETURN_ERR(ERRORM);}
+
+#define NotProgrammedYet(X) {						\
+    if (STRCMP(X, "") == 0)	{					\
+      RFERROR3("function '%.50s' (file '%.200s', line %d) not programmed yet.", \
+	       __FUNCTION__, __FILE__, __LINE__);			\
+    } else {								\
+      RFERROR4("'%.50s' in '%.50s' (file '%.200s', line %d) not programmed yet.", \
+	       X, __FUNCTION__, __FILE__, __LINE__);			\
+    }}
+
+
+// Error codes & messages
+// positive values are error codes
+// negative values are messages
+
+
+// !!! LESS THAN 10 IS RESERVED TO BE JOINTLY USED BY RFUTILS
+// !!! anything from ERRORM=4 to ERRORMEND=12 will give free error messages
+#define XERRORM ERRORM
+#define XERRORCHANGESYSTEM 5
+
+#define XERRORTYPECONSISTENCY 14 
+#define XERRORBADVDIM 16
+//#define XERRORTRAFOSYSTEM 15
+#define XERRORNOTCARTESIAN 17
+#define XERRORODDCOORDTRAFO 18
+#define XERRORVDIMNOTPROGRAMMEDYET 19
+#define XERRORFULLCOORDNEEDED 20
+
+#define XERRORNOTDEFINED 21     /* the specification for the  covariance and 
+				    method is not given/known, e.g. TBM2 for 
+				    many covariance functions  */
+#define XERRORUNKOWNSXPTYPE 22   /* parameter value of unknown SXP type */
+#define XERRORSTATVARIO 23      /* only stat or variogram allowed as submodel */
+#define XERRORREDUCED 24      /* only stat or variogram allowed as submodel */
+
+
+#define XERRORSVD 25
+#define XERRORDECOMPOSITION 26   /* direct.cc */
+#define XERRORPREFNONE 27
+#define XERRORPREFNONECOV 28
+#define XERRORRANDOMKAPPA 29
+#define XERRORSUBMETHODFAILED 30 /* aufsplitten der Modelle bringt nichts */
+#define XERRORMAXDIMMETH 31     /* max dimension of method exceeded */
+#define XERRORPREVDOLLAR 32      /* one of the prev method was dollar,
+				   but cannot be taken into account */
+#define XERRORINVALIDMODEL 33 /* no gauss method available, including 'Nothing'*/
+#define XERRORODDMODEL 34     /* no gauss method available */
+#define XERROROUTOFMETHODLIST 35 /* no further method we can try is available */
+#define ERRORREGISTER 36
+#define XERRORWRONGISO 37
+#define XERRORWRONGDOM 38
+#define XERRORSORTOF 39
+
+#define XERRORWRONGDIM 40        /* (tbm) dimension couldn't be reduced to be 
+                                   appropriate for the respective method */
+#define XERRORTOOMANYLINES 41    /* Hyperplane tesselation: estimated simulated
+				   lines passes given threshold*/
+#define XERRORCARTESIAN 42
+#define XERRORNOVARIOGRAM 43     /* variogram models not allowed in 
+				   ci and direct */
+#define XERRORSPECTRAL 44
+#define XERRORTBMCOMBI 45
+#define XERRORMAXVDIM 46
+#define XERRORKERNEL 47
+// for getnaturalscaling !!
+#define XERRORWAVING 48           /* numerical determination of practical range
+				    fails */
+#define XERRORRESCALING 49        /* attempt to rescale where not possible */
+
+
+#define XERRORANISO_T 50         /* anisoT' may not be given at the same
+				time with 'Aniso' or 'proj' */
+#define XERRORANISO 51            /* anisotropic call not allowed */
+#define XERRORANISO_DET 52
+#define XERRORANISO_SQUARE 53        
+#define XERRORANISO_INV 54
+#define XERRORFOURIER 55
+#define XERRORTOOMANYLOC 56
+#define XERRORNONSTATSCALE 57
+
+#define NOERROR_REPEAT 97
+#define NOERROR_ENDOFLIST 98
+//#define ERRORDUMMY 99            /* no error, only for tracing purposes */
+
+
+// *** severe errors
+#define XERRORNORMALMIXTURE 101    /* normal mixture required */
+#define XERRORNOMULTIVARIATE 102   /* vdim > 1 not allowed */
+#define XERROR_MATRIX_SQUARE 103
+#define XERROR_MATRIX_VDIM 104
+#define XERROR_MATRIX_POSDEF 105
+
+#define XERRORNOTINITIALIZED 118   /* key.active==false in DoSimulateRF; 
+				      is only checked there !!! */
+#define ERRORDIM 119              /* dim<1 or dim>MAXDIM */
+#define XERRORCEDIM 120              /* dim<1 or dim>MAXDIM */
+#define XERRORDIAMETERNOTGIVEN 128
+#define XERRORUNKNOWNMETHOD 131  
+
+#define XERRORNOSTATMATCH 134     /* no matching ISO/STAT found in check2 */
+
+
+// **** extremes
+#define XERRORTREND 203           /* extremes: no trend allowed */
+#define XERRORUNKNOWNMAXTYPE 204 
+
+#define XERRORATOMP 253
+
+
+// *** kriging
+#define XERRORKRIGETOL 350
+
+// messages and strategies for local methods
+// ENDOFLIST also used for any kind of error appearing in getparam
+// never change order of the message numbers up to ENDOFLIST
+#define MSGLOCAL_OK 400 /* do not change ordering! (the less the better) */
+#define XMSGLOCAL_NUMOK 401
+#define XMSGLOCAL_JUSTTRY 402
+#define XMSGLOCAL_ENDOFLIST 403
+#define XMSGLOCAL_SIGNPHI 404
+#define XMSGLOCAL_SIGNPHIFST 405
+#define XMSGLOCAL_SIGNPHISND 406
+#define XMSGLOCAL_INITINTRINSIC 407
+#define XMSGLOCAL_FAILED 408
+#define XMSGLOCAL_NOPOSITIVEROOT 409
+#define XMSGLOCAL_NOTSYMMETRICMULTIVARIATE 410
+#define XMSGLOCAL_WRONGRADII 411
+#define XERRORUNSPECIFIED 999  
+
+/* do not use numbers 800 -- 900 : reserved to MPP package */
+
+#ifdef RANDOMFIELDS_DEBUGGING
+#define M1ERR(X,M) __extension__({ LPRINT("%s [%d] ", M, X); \
+      errorstring_type msg_0;				    \
+      errorMSG(X, cov->err_msg, cov->base, msg_0); \
+      if (true || PL<PL_ERRORS) {PRINTF("*%s*", msg_0);}		\
+      PRINTF("\t\tfile=%s line=%d\n",__FILE__,__LINE__); assert(X!=5); X;})
+
+#define ERRX(E)  M1ERR(X##E, "error: ")
+//#ifdef DEBUGINFOERR
+//#undef DEBUGINFOERR
+//#endif
+//#define DEBUGINFOERR __extension__({PRINTF("f=%s l=%d\n",__FILE__,__LINE__);MERR(X##E);})
+#define ERRC(E) M1ERR(X##E, "default or obvious error : ")
+// _extension__({M2ERR(X##E);PRINTF("\t\tfile=%s line=%d\n",__FILE__,__LINE__); X##E;})
+#else
+#define ERRX(E) X##E
+#define ERRC(E) X##E
+#endif
+
+
+#define ERRORCHANGESYSTEM ERRX(ERRORCHANGESYSTEM)
+//#define ERRORTRAFOSYSTEM ERRX(ERRORTRAFOSYSTEM)
+#define ERRORCARTESIAN ERRX(ERRORCARTESIAN)
+#define ERRORTYPECONSISTENCY ERRX(ERRORTYPECONSISTENCY)
+#define ERRORBADVDIM ERRX(ERRORBADVDIM)
+#define ERRORNOTCARTESIAN ERRX(ERRORNOTCARTESIAN)
+#define ERRORODDCOORDTRAFO ERRX(ERRORODDCOORDTRAFO)
+#define ERRORFULLCOORDNEEDED ERRX(ERRORFULLCOORDNEEDED)
+#define ERRORVDIMNOTPROGRAMMEDYET ERRX(ERRORVDIMNOTPROGRAMMEDYET)
+#define ERRORNOTDEFINED ERRX(ERRORNOTDEFINED)
+#define ERRORUNKOWNSXPTYPE ERRX(ERRORUNKOWNSXPTYPE)
+#define ERRORSTATVARIO ERRX(ERRORSTATVARIO)
+#define ERRORREDUCED ERRX(ERRORREDUCED)
+#define ERRORSVD ERRX(ERRORSVD)
+#define ERRORDECOMPOSITION ERRX(ERRORDECOMPOSITION)
+#define ERRORPREFNONE ERRX(ERRORPREFNONE)
+#define ERRORPREFNONECOV ERRX(ERRORPREFNONECOV)
+#define ERRORRANDOMKAPPA ERRX(ERRORRANDOMKAPPA)
+#define ERRORSUBMETHODFAILED ERRX(ERRORSUBMETHODFAILED)
+#define ERRORMAXDIMMETH ERRX(ERRORMAXDIMMETH)
+#define ERRORPREVDOLLAR ERRX(ERRORPREVDOLLAR)
+#define ERRORINVALIDMODEL ERRX(ERRORINVALIDMODEL)
+#define ERRORODDMODEL ERRX(ERRORODDMODEL)
+#define ERROROUTOFMETHODLIST ERRX(ERROROUTOFMETHODLIST)
+#define ERRORWRONGISO ERRX(ERRORWRONGISO)
+#define ERRORWRONGDOM ERRX(ERRORWRONGDOM)
+#define ERRORKERNEL ERRX(ERRORKERNEL)
+#define ERRORSORTOF ERRX(ERRORSORTOF)
+#define ERRORWRONGDIM ERRX(ERRORWRONGDIM)
+#define ERRORTOOMANYLINES ERRX(ERRORTOOMANYLINES)
+#define ERRORNOVARIOGRAM ERRX(ERRORNOVARIOGRAM)
+#define ERRORSPECTRAL ERRX(ERRORSPECTRAL)
+#define ERRORTBMCOMBI ERRX(ERRORTBMCOMBI)
+#define ERRORMAXVDIM ERRX(ERRORMAXVDIM)
+#define ERRORWAVING ERRX(ERRORWAVING)
+#define ERRORRESCALING ERRX(ERRORRESCALING)
+#define ERRORANISO_T ERRX(ERRORANISO_T)
+#define ERRORANISO ERRX(ERRORANISO)
+#define ERRORANISO_DET ERRX(ERRORANISO_DET)
+#define ERRORANISO_SQUARE ERRX(ERRORANISO_SQUARE)
+#define ERRORANISO_INV ERRX(ERRORANISO_INV)
+#define ERRORFOURIER ERRX(ERRORFOURIER)
+#define ERRORTOOMANYLOC ERRX(ERRORTOOMANYLOC)
+#define ERRORNONSTATSCALE ERRX(ERRORNONSTATSCALE)
+  
+#define ERRORNORMALMIXTURE ERRX(ERRORNORMALMIXTURE)
+#define ERRORNOMULTIVARIATE ERRX(ERRORNOMULTIVARIATE)
+#define ERROR_MATRIX_SQUARE ERRX(ERROR_MATRIX_SQUARE) 
+#define ERROR_MATRIX_VDIM ERRX(ERROR_MATRIX_VDIM)
+#define ERROR_MATRIX_POSDEF ERRX(ERROR_MATRIX_POSDEF)
+#define ERRORNOTINITIALIZED ERRX(ERRORNOTINITIALIZED)
+#define ERRORCEDIM ERRX(ERRORCEDIM)
+#define ERRORDIAMETERNOTGIVEN ERRX(ERRORDIAMETERNOTGIVEN) 
+#define ERRORUNKNOWNMETHOD ERRX(ERRORUNKNOWNMETHOD)
+#define ERRORNOSTATMATCH ERRX(ERRORNOSTATMATCH)
+#define ERRORTREND ERRX(ERRORTREND)
+#define ERRORUNKNOWNMAXTYPE ERRX(ERRORUNKNOWNMAXTYPE)
+#define ERRORATOMP ERRX(ERRORATOMP)
+#define ERRORKRIGETOL ERRX(ERRORKRIGETOL)
+#define MSGLOCAL_NUMOK ERRX(MSGLOCAL_NUMOK)
+#define MSGLOCAL_JUSTTRY ERRX(MSGLOCAL_JUSTTRY)
+#define MSGLOCAL_ENDOFLIST ERRX(MSGLOCAL_ENDOFLIST)
+#define MSGLOCAL_SIGNPHI ERRX(MSGLOCAL_SIGNPHI)
+#define MSGLOCAL_SIGNPHIFST ERRX(MSGLOCAL_SIGNPHIFST)
+#define MSGLOCAL_SIGNPHISND ERRX(MSGLOCAL_SIGNPHISND)
+#define MSGLOCAL_INITINTRINSIC ERRX(MSGLOCAL_INITINTRINSIC)
+#define MSGLOCAL_FAILED ERRX(MSGLOCAL_FAILED)
+#define MSGLOCAL_NOPOSITIVEROOT ERRX(MSGLOCAL_NOPOSITIVEROOT)
+#define MSGLOCAL_NOTSYMMETRICMULTIVARIATE ERRX(MSGLOCAL_NOTSYMMETRICMULTIVARIATE)
+#define MSGLOCAL_WRONGRADII ERRX(MSGLOCAL_WRONGRADII)
+#define ERRORUNSPECIFIED ERRX(ERRORUNSPECIFIED)
+
+#define CERRORCHANGESYSTEM ERRC(ERRORCHANGESYSTEM)
+//#define CERRORTRAFOSYSTEM ERRC(ERRORTRAFOSYSTEM)
+#define CERRORCARTESIAN ERRC(ERRORCARTESIAN)
+#define CERRORTYPECONSISTENCY ERRC(ERRORTYPECONSISTENCY)
+#define CERRORBADVDIM ERRC(ERRORBADVDIM)
+#define CERRORNOTCARTESIAN ERRC(ERRORNOTCARTESIAN)
+#define CERRORODDCOORDTRAFO ERRC(ERRORODDCOORDTRAFO)
+#define CERRORFULLCOORDNEEDED ERRC(ERRORFULLCOORDNEEDED)
+#define CERRORVDIMNOTPROGRAMMEDYET ERRC(ERRORVDIMNOTPROGRAMMEDYET)
+#define CERRORNOTDEFINED ERRC(ERRORNOTDEFINED)
+#define CERRORUNKOWNSXPTYPE ERRC(ERRORUNKOWNSXPTYPE)
+#define CERRORSTATVARIO ERRC(ERRORSTATVARIO)
+#define CERRORREDUCED ERRC(ERRORREDUCED)
+#define CERRORSVD ERRC(ERRORSVD)
+#define CERRORDECOMPOSITION ERRC(ERRORDECOMPOSITION)
+#define CERRORPREFNONE ERRC(ERRORPREFNONE)
+#define CERRORPREFNONECOV ERRC(ERRORPREFNONECOV)
+#define CERRORRANDOMKAPPA ERRC(ERRORRANDOMKAPPA)
+#define CERRORSUBMETHODFAILED ERRC(ERRORSUBMETHODFAILED)
+#define CERRORMAXDIMMETH ERRC(ERRORMAXDIMMETH)
+#define CERRORPREVDOLLAR ERRC(ERRORPREVDOLLAR)
+#define CERRORINVALIDMODEL ERRC(ERRORINVALIDMODEL)
+#define CERRORODDMODEL ERRC(ERRORODDMODEL)
+#define CERROROUTOFMETHODLIST ERRC(ERROROUTOFMETHODLIST)
+#define CERRORWRONGISO ERRC(ERRORWRONGISO)
+#define CERRORWRONGDOM ERRC(ERRORWRONGDOM)
+#define CERRORKERNEL ERRC(ERRORKERNEL)
+#define CERRORSORTOF ERRC(ERRORSORTOF)
+#define CERRORWRONGDIM ERRC(ERRORWRONGDIM)
+#define CERRORTOOMANYLINES ERRC(ERRORTOOMANYLINES)
+#define CERRORNOVARIOGRAM ERRC(ERRORNOVARIOGRAM)
+#define CERRORSPECTRAL ERRC(ERRORSPECTRAL)
+#define CERRORTBMCOMBI ERRC(ERRORTBMCOMBI)
+#define CERRORMAXVDIM ERRC(ERRORMAXVDIM)
+#define CERRORWAVING ERRC(ERRORWAVING)
+#define CERRORRESCALING ERRC(ERRORRESCALING)
+#define CERRORANISO_T ERRC(ERRORANISO_T)
+#define CERRORANISO ERRC(ERRORANISO)
+#define CERRORANISO_DET ERRC(ERRORANISO_DET)
+#define CERRORANISO_SQUARE ERRC(ERRORANISO_SQUARE)
+#define CERRORANISO_INV ERRC(ERRORANISO_INV)
+#define CERRORFOURIER ERRC(ERRORFOURIER)
+#define CERRORTOOMANYLOC ERRC(ERRORTOOMANYLOC)
+#define CERRORNONSTATSCALE ERRC(ERRORNONSTATSCALE)
+
+  
+#define CERRORNORMALMIXTURE ERRC(ERRORNORMALMIXTURE)
+#define CERRORNOMULTIVARIATE ERRC(ERRORNOMULTIVARIATE)
+#define CERROR_MATRIX_SQUARE ERRC(ERROR_MATRIX_SQUARE) 
+#define CERROR_MATRIX_VDIM ERRC(ERROR_MATRIX_VDIM)
+#define CERROR_MATRIX_POSDEF ERRC(ERROR_MATRIX_POSDEF)
+#define CERRORNOTINITIALIZED ERRC(ERRORNOTINITIALIZED)
+#define CERRORCEDIM ERRC(ERRORCEDIM)
+#define CERRORDIAMETERNOTGIVEN ERRC(ERRORDIAMETERNOTGIVEN) 
+#define CERRORUNKNOWNMETHOD ERRC(ERRORUNKNOWNMETHOD)
+#define CERRORNOSTATMATCH ERRC(ERRORNOSTATMATCH)
+#define CERRORTREND ERRC(ERRORTREND)
+#define CERRORUNKNOWNMAXTYPE ERRC(ERRORUNKNOWNMAXTYPE)
+#define CERRORATOMP ERRC(ERRORATOMP)
+#define CERRORKRIGETOL ERRC(ERRORKRIGETOL)
+#define CMSGLOCAL_NUMOK ERRC(MSGLOCAL_NUMOK)
+#define CMSGLOCAL_JUSTTRY ERRC(MSGLOCAL_JUSTTRY)
+#define CMSGLOCAL_ENDOFLIST ERRC(MSGLOCAL_ENDOFLIST)
+#define CMSGLOCAL_SIGNPHI ERRC(MSGLOCAL_SIGNPHI)
+#define CMSGLOCAL_SIGNPHIFST ERRC(MSGLOCAL_SIGNPHIFST)
+#define CMSGLOCAL_SIGNPHISND ERRC(MSGLOCAL_SIGNPHISND)
+#define CMSGLOCAL_INITINTRINSIC ERRC(MSGLOCAL_INITINTRINSIC)
+#define CMSGLOCAL_FAILED ERRC(MSGLOCAL_FAILED)
+#define CMSGLOCAL_NOPOSITIVEROOT ERRC(MSGLOCAL_NOPOSITIVEROOT)
+#define CMSGLOCAL_NOTSYMMETRICMULTIVARIATE ERRC(MSGLOCAL_NOTSYMMETRICMULTIVARIATE)
+#define CMSGLOCAL_WRONGRADII ERRC(MSGLOCAL_WRONGRADII)
+#define CERRORM ERRC(ERRORM)
+#endif
+
+
+#define TOOLS_XERROR 370
+#define TOOLS_BIN_ERROR 371
+#define TOOLS_METHOD 372
+#define TOOLS_DIM 373
+#define TOOLS_UNKNOWN_CHAR 374
+#define MATRIX_NOT_CHECK_YET -999  /* must be a negative value not used somewhere else ! */

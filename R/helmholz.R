@@ -15,13 +15,13 @@ xRMderivative <- function(phi, partial, var, scale, Aniso, proj) {
 	par.general[['Aniso']] <- CheckArg(Aniso, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckProj(proj, subst)
-  model <- new('RMmodel', call = cl, name = 'RMderivative', 
+  model <- new(CLASS_CLIST, call = cl, name = 'RMderivative', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-xRMderivative <- new('RMmodelgenerator',
+xRMderivative <- new(CLASS_RM,
 	.Data = xRMderivative,
 	type = c('positive definite'),
 	isotropy = c('zero-space-isotropic'),
@@ -51,13 +51,13 @@ xRMhelmholtz <- function(phi, component, var, scale, Aniso, proj) {
 	par.general[['scale']] <- CheckArg(scale, subst, TRUE)
     if (hasArg('proj') && !is.null(subst <- substitute(proj))) 
 	par.general[['proj']] <- CheckProj(proj, subst)
-  model <- new('RMmodel', call = cl, name = 'RMhelmholtz', 
+  model <- new(CLASS_CLIST, call = cl, name = 'RMhelmholtz', 
   		submodels = submodels, 
   		par.model = par.model, par.general = par.general)
   return(model)
 }
 
-xRMhelmholtz <- new('RMmodelgenerator',
+xRMhelmholtz <- new(CLASS_RM,
 	.Data = xRMhelmholtz,
 	type = c('positive definite'),
 	isotropy = c('symmetric'),

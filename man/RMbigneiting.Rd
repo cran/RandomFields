@@ -13,7 +13,7 @@
  C_{n}(h) = c_{ij} (C_{n, \delta} (h / s_{ij}))_{i,j=1,2}
  }
  and \eqn{ C_{n, \delta} }
- is the generalised Gneiting model
+ is the generalized Gneiting model
  with parameters \eqn{n} and \eqn{\delta}, see
  \code{\link{RMgengneiting}}, i.e.,
  \deqn{C_{\kappa=0, \delta}(r) = (1-r)^\beta 1_{[0,1]}(r), \qquad \beta=\delta
@@ -44,9 +44,9 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
  differentiable.}
  \item{mu}{\code{mu} has to be greater than or equal to
  \eqn{\frac{d}{2}}{d/2} where \eqn{d}{d} is the (arbitrary)
- dimension of the randomfield.}
+ dimension of the random field.}
  \item{s}{vector of two elements giving the scale of the models on the
- diagonal, i.e., the vector \eqn{(s_{11}, s_{22})}.
+ diagonal, i.e. the vector \eqn{(s_{11}, s_{22})}.
  }
  \item{sred12}{value in \eqn{[-1,1]}. The scale on the offdiagonals is
  given by \eqn{s_{12} = s_{21} =}
@@ -60,7 +60,7 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
  Note that \eqn{\gamma_{12} =\gamma_{21}}.
  }
  \item{cdiag}{a vector of length 2 of numerical values; each entry
- positive; the vector \eqn{(c_{11},c_{22})}}
+ positive; the vector \eqn{(c_{11},c_{22})}.}
  \item{c}{a vector of length 3 of numerical values;
  the vector \eqn{(c_{11}, c_{21}, c_{22})}.
  Note that \eqn{c_{12}= c_{21}}.
@@ -112,12 +112,12 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
  }
 
  In the function \command{\link{RMbigneiting}}, either \code{c} is
- passed, then the above condition is checked, or \code{rhored} is passed
+ passed, then the above condition is checked, or \code{rhored} is passed;
  then \eqn{c_{12}} is calculated by the above formula.
  
 }
 \value{
- \command{\link{RMgengneiting}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}
+ \command{\link{RMbigneiting}} returns an object of class \code{\link[=RMmodel-class]{RMmodel}}.
 }
 \references{
   \itemize{
@@ -143,8 +143,7 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
   }
 }
 
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
-}
+\me
 \seealso{
  \command{\link{RMaskey}},
  \command{\link{RMbiwm}},
@@ -158,14 +157,13 @@ RMbigneiting(kappa, mu, s, sred12, gamma, cdiag, rhored, c, var, scale, Aniso, p
 
 \keyword{spatial}
 \keyword{models}
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
+
 %# gamma is mainly a scale effect
 model <- RMbigneiting(kappa=2, mu=0.5, gamma=c(0, 3, 6), rhored=1)
 x <- seq(0, 10, 0.02)
 plot(model)
 plot(RFsimulate(model, x=x))
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}

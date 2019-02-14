@@ -6,13 +6,11 @@
 \title{Fast and Exact Simulation of Large Gaussian Lattice Systems
  in R2}
 \description{
- Here the code of the paper on \sQuote{Fast and Exact Simulation of Large Gaussian Lattice Systems
+ Here, the code of the paper on \sQuote{Fast and Exact Simulation of Large Gaussian Lattice Systems
  in R2} is given.
 }
  
-\author{Martin Schlather, \email{schlather@math.uni-mannheim.de}
- \url{http://ms.math.uni-mannheim.de/de/publications/software};
-}
+\me
 \references{
  \itemize{ 
  \item
@@ -29,10 +27,9 @@
 
 }
 
-\examples{
+\examples{\dontshow{StartExample()}
 RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 ##                   RFoptions(seed=NA) to make them all random again
-\dontshow{StartExample()}
 
 ## Figure 1 (pretty time consuming)
 stabletest <- function(alpha, theta, size=512) {
@@ -41,7 +38,7 @@ stabletest <- function(alpha, theta, size=512) {
              storing=TRUE)
   model <- RMcutoff(diameter=theta, a=1, RMstable(alpha=alpha))
   RFcov(dist=0, model=model, dim=2, seed=0)
-  r <- RFgetModelInfo(modelname="RMcutoff", level=3)$internalq[5] # theor R
+  r <- RFgetModelInfo(modelname="RMcutoff", level=3)$storage$R_theor
   x <- seq(0, r, by= r / (size - 1)) * theta
   err <- try(RFsimulate(x, x, model=RPcirculant(model), n=0))
   return(if (class(err) == "try-error") NA else r)
@@ -67,8 +64,7 @@ for (it in 1:length(thetas)) {
   if (any(is.finite(m))) image(thetas, alphas, m, col=rainbow(100))
 }
 
-\dontshow{FinalizeExample()}
-}
+\dontshow{FinalizeExample()}}
 
 \keyword{spatial}
 
