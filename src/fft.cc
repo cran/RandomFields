@@ -791,7 +791,7 @@ int fft_factor(int n, int *pmaxf, int *pmaxp, int *pkt, int *pm_fac, int *NFAC)
 
     /* extract 3^2, 5^2, ... */
     kchanged = 0;
-    sqrtk = (int)sqrt(k);
+    sqrtk = (int)sqrt((double)k);
     for(j = 3; j <= sqrtk; j += 2) {
 	jj = j * j;
 	while(k % jj == 0) {
@@ -801,7 +801,7 @@ int fft_factor(int n, int *pmaxf, int *pmaxp, int *pkt, int *pm_fac, int *NFAC)
 	}
 	if (kchanged) {
 	    kchanged = 0;
-	    sqrtk = (int)sqrt(k);
+	    sqrtk = (int)sqrt((double)k);
 	}
     }
 

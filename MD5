@@ -1,4 +1,4 @@
-d0463788829d05084223448a6b43ad9e *DESCRIPTION
+3dd47eb5ad59e3e96ac140d455400392 *DESCRIPTION
 7fdfece67ab78a62d2da8d83092cccba *NAMESPACE
 ba8bb0017e2e5b5b87f345f1b1b6d197 *R/Class.R
 b64fa2012a1de0ede893dff5381cedb3 *R/Crossvalidation.R
@@ -310,7 +310,7 @@ a0656e6add973bcd3d87f47264416e3c *src/direct.cc
 1bc821e27cbefa054395ea4beca5dff8 *src/extremes.cc
 c4193ab2465f757174b3456245360bb0 *src/families.cc
 3e0d981293183a85d8df6dc7dde1abfa *src/families.h
-48a319b76f94594218fb1a5dd235f0ca *src/fft.cc
+f5fa24d3ae92e3211ce3762cd9c10319 *src/fft.cc
 3649a159ddd3e30411ea1a6e272dfa7e *src/fftVario.cc
 702597fd6934c993f97a3ee9877587e0 *src/gauss.cc
 a17143643dde81f9a1950da9bc0d182e *src/gausslikeli.cc
