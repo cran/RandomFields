@@ -41,8 +41,7 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
 	      char* M, int len) {
   char m[LENERRMSG];
   //if (err >= ERRORM && err <= ERRORMEND) err = ERRORM;
- 
-  
+
   switch (err) {
   case NOERROR : SCPY(m,"none"); break;
   case NOERROR_REPEAT : SCPY(m,"none; looking for further covariances applicable to the same method");break;
@@ -299,7 +298,7 @@ void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,
   case XMSGLOCAL_WRONGRADII :
      SCPY(m,"Creation the cut-off model failed.");
      break;   
-  default : 
+  default :
      PRINTF(" error=%d\n", err); 
      // crash();
      BUG;

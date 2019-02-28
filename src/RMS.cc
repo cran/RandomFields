@@ -172,17 +172,19 @@ void logSstat(double *x, model *cov, double *v, double *Sign){
   model *next = cov->sub[DOLLAR_SUB];
     //  *Aniso = cov->kappasub[DAUSER],
     // *Scale = cov->kappasub[DSCALE];
-  double *z1 = NULL,
+  double 
     *scale =P(DSCALE), 
     *aniso=P(DANISO);
   int i,
     nproj = Nproj,
     vdim = VDIM0,
     vdimSq = vdim * vdim;
+  bool notdelete = false;
+  TALLOC_DOUBLE(z);
 
   if (nproj > 0) {
     int *proj = PPROJ; 
-    TALLOC_X1(z, nproj);
+    TALLOC_GLOBAL_X1(z, nproj);
     if (scale == NULL || scale[0] > 0.0) {
       if (scale == NULL)  for (i=0; i<nproj; i++) z[i] = x[proj[i] - 1];
       else {
@@ -196,7 +198,6 @@ void logSstat(double *x, model *cov, double *v, double *Sign){
       for (i=0; i<nproj; i++)
 	z[i] = (x[proj[i] - 1] == 0 && scale[0] == 0) ? 0.0 : RF_INF;
     } 
-    z1 = z;
     //  } else if (Aniso != NULL) {
     //    int dim = Aniso->vdim[0];
     //    A LLOC_DOLLAR(z, dim);
@@ -207,30 +208,27 @@ void logSstat(double *x, model *cov, double *v, double *Sign){
     //    A LLOC_DOLLAR(z, dim);
     //    FCTN(x, Aniso, z);
     //    z1 = z;
-    END_TALLOC_X1;
-  } else if (aniso==NULL && (scale == NULL || scale[0] == 1.0)) {
-    z1 = x;
+  } else if ((notdelete = aniso==NULL && (scale == NULL || scale[0] == 1.0))) {
+    z = x;
   } else {
     int xdimown = OWNTOTALXDIM;
     double *xz;
-    TALLOC_X1(z, xdimown);
+    TALLOC_GLOBAL_X1(z, xdimown);
     if (aniso!=NULL) {
       xA(x, aniso, cov->nrow[DANISO], cov->ncol[DANISO], z);
       xz = z;
     } else xz = x;    
     if (scale != NULL) {
-      if (scale[0] > 0.0) {
-	double invscale = 1.0 / scale[0];
+      double s = scale[0];
+      if (s > 0.0) {
+	double invscale = 1.0 / s;
 	for (i=0; i < xdimown; i++) z[i] = invscale * xz[i];
       } else {
 	for (i=0; i < xdimown; i++)
-	  z[i] = (xz[i] == 0.0 && scale[0] == 0.0) ? 0.0 : RF_INF;
+	  z[i] = (xz[i] == 0.0 && s == 0.0) ? 0.0 : RF_INF;
       }
     }
-    z1 = z;
-    END_TALLOC_X1
   }
-
 
   double var;
   if (cov->Sdollar->simplevar) {
@@ -239,13 +237,18 @@ void logSstat(double *x, model *cov, double *v, double *Sign){
     FCTN(x, cov->kappasub[DVAR], &var);
   }
 
+
   if (Sign==NULL) {
-    COV(z1, next, v);
+    COV(z, next, v);
     for (i=0; i<vdimSq; i++) v[i] *= var; 
   } else {
-    LOGCOV(z1, next, v, Sign);
+    LOGCOV(z, next, v, Sign);
     var = LOG(var);
     for (i=0; i<vdimSq; i++) v[i] += var; 
+  }
+
+  if (!notdelete) {
+    FREE_TALLOC(z);
   }
 
 }
@@ -360,7 +363,7 @@ void logSnonstat(double *x, double *y, model *cov, double *v, double *Sign){
    
   double var;
   if (cov->Sdollar->simplevar) {
-     var = P0(DVAR);
+    var = P0(DVAR);
     if (Sign != NULL) var = LOG(var);
   } else {
     assert(equalsCoordinateSystem(OWNISO(0)))
@@ -368,7 +371,7 @@ void logSnonstat(double *x, double *y, model *cov, double *v, double *Sign){
     FCTN(y, cov->kappasub[DVAR], &w);
     FCTN(x, cov->kappasub[DVAR], &var);
     var *= w;
-    var = Sign == NULL ?  SQRT(var)  : 0.5 * LOG(var);    
+    if (Sign == NULL) var = SQRT(var); else var = 0.5 * LOG(var);    
   }
 
   if (Scale != NULL) {
@@ -1017,8 +1020,8 @@ int checkS(model *cov) {
   // bool skipchecks = GLOBAL.general.skipchecks;
   matrix_type mtype = TypeMany;
 
-  if (Aniso == NULL && Scale == NULL && Var == NULL &&
-      PisNULL(DANISO) &&  PisNULL(DAUSER) &&  PisNULL(DSCALE) &&  PisNULL(DVAR))
+  // if (Aniso == NULL && Scale == NULL && Var == NULL &&
+  //  PisNULL(DANISO) &&  PisNULL(DAUSER) &&  PisNULL(DSCALE) &&  PisNULL(DVAR))
   //  SERR("no parameter is set.");
  
   assert(isAnyDollar(cov));
@@ -1047,7 +1050,7 @@ int checkS(model *cov) {
       if (isverysimple(Aniso)) {     
  	 PALLOC(DAUSER, dim, dim);
  	 AngleMatrix(Aniso, P(DAUSER));
-	 COV_DELETE(cov->kappasub + DAUSER);
+	 COV_DELETE(cov->kappasub + DAUSER, cov);
 	 Aniso = cov->kappasub[DAUSER] = NULL;
 	 angle = false;
       }
@@ -1193,7 +1196,8 @@ int checkS(model *cov) {
     if (!PisNULL(DPROJ)) RETURN_ERR(ERRORANISO_T);
 
     int xdimown = OWNTOTALXDIM;
-    if (xdimown < nrow) {
+
+    if (xdimown != nrow) {
       if (PL >= PL_ERRORS) {LPRINT("xdim=%d != nrow=%d\n", xdimown, nrow);}
       SERR("#rows of anisotropy matrix does not match dim. of coordinates");
     }
@@ -1603,6 +1607,8 @@ bool allowedIS(model *cov) {
     }
   }
 
+  // aniso matrix
+
   if (ScaleAniso || var) {
      allowed = false;
    int i = (int) FIRST_ISOUSER,
@@ -1805,7 +1811,7 @@ int addPGSLocal(model **Key, // struct of shape
       //     XERR(err);  // eigentlich muss das hier weg
     }
     //    if (i > 0) XERR(err); assert(i ==0);
-    if (*Key != NULL) COV_DELETE(Key);
+     if (*Key != NULL) COV_DELETE(Key, shape);
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
  
@@ -1914,7 +1920,7 @@ int structS(model *cov, model **newmodel) {
       xdim = OWNXDIM(0);
     // in same cases $ must be set in front of a pointshape function
     // and becomes a pointshape function too, see addpointshapelocal here
-     if (isPointShape(*newmodel)) type = PointShapeType;
+    if (isPointShape(*newmodel)) type = PointShapeType;
     else if ((err = CHECK_R(*newmodel, logdim)) == NOERROR) {
       type = RandomType;
       if ((err=addScales(newmodel, *newmodel, Scale, scale * anisoScale))
@@ -1982,7 +1988,7 @@ int structS(model *cov, model **newmodel) {
     break;
     
   case GaussMethodType :
-    if (cov->key != NULL) COV_DELETE(&(cov->key));
+    if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
 
     if (PrevLoc(cov)->distances) 
       GERR("distances do not allow for more sophisticated simulation methods");
@@ -2005,9 +2011,8 @@ int structS(model *cov, model **newmodel) {
   
  ErrorHandling:
   
-  if (dummy != NULL) COV_DELETE(&dummy);
-  if (local != NULL) COV_DELETE(&local);
-
+  if (dummy != NULL) COV_DELETE(&dummy, cov);
+  if (local != NULL) COV_DELETE(&local, cov);
    
   RETURN_ERR(err);
 }
@@ -2165,7 +2170,7 @@ int initS(model *cov, gen_storage *s){
     }
   } // hasSmithFrame
 
-  else if (hasGaussMethodFrame(cov)) {
+  else if (hasGaussMethodFrame(cov) || hasAnyEvaluationFrame(cov)) {
     model 
       *key = cov->key,
       *sub = key == NULL ? next : key;
@@ -2173,18 +2178,7 @@ int initS(model *cov, gen_storage *s){
     assert(key == NULL || ({PMI(cov);false;}));//
    
     if ((err=INIT(sub, 0, s)) != NOERROR) RETURN_ERR(err);
-   
-  }
-
-  else if (hasAnyEvaluationFrame(cov)) {
-    model 
-      *key = cov->key,
-      *sub = key == NULL ? next : key;
-    assert(sub != NULL);
-    assert(key == NULL || ({PMI(cov);false;}));//
-   
-    if ((err=INIT(sub, 0, s)) != NOERROR) RETURN_ERR(err);
-    
+       
   } else { 
     if ((err=INIT(next, 0, s)) != NOERROR) RETURN_ERR(err); // e.g. from MLE
   }
@@ -2282,7 +2276,7 @@ int structSproc(model *cov, model **newmodel) {
   case GaussMethodType : {
     location_type *loc = Loc(cov); // do not move before TransformLoc!!
     ASSERT_NEWMODEL_NULL;
-    if (cov->key != NULL) COV_DELETE(&(cov->key));
+    if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
 
     if (PrevLoc(cov)->distances) 
       SERR("distances do not allow for more sophisticated simulation methods");
@@ -2556,9 +2550,6 @@ void doSproc(model *cov, gen_storage *s){
     
     model *Var = cov->kappasub[DVAR];
 
-    // printf("her %d\n", zz);
-    // if (zz++ == 1) crash();
-    
     if (Var != NULL) {
       if (isnowRandom(Var) || Var->randomkappa) {
 	if (isProcess(Var)) {

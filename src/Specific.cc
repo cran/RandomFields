@@ -61,7 +61,9 @@ int check_specificGauss(model *cov) {
     
     for (int i=0; i<n; i++) {
       if ((err = CHECK(next, dim, dim, type[i], dom[i], iso[i],
-		       SUBMODEL_DEP, EvaluationType)) == NOERROR) break;
+		       SUBMODEL_DEP, EvaluationType)) // schwach, damit es
+	  // bei plus durchkommt
+	  == NOERROR) break;
       // printf("specific i=%d", i);      TREE0(cov);
     }
     if (err != NOERROR) RETURN_ERR(err);
@@ -94,7 +96,7 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   FRAME_ASSERT_GAUSS_INTERFACE;
   assert(DefList[NEXTNR].Specific >= 0);
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   //  printf("copy\n"); PMI(cov);
   if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
   //  printf("copied\n"); PMI(cov);
@@ -111,6 +113,12 @@ int struct_specificGauss(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
 
  
   SET_NR(cov->key, DefList[MODELNR(cov->key)].Specific);
+  //  printf("reset modelnr\n");
+  // check_passtf hier funktioniert nicht wegen plus, was zuerst
+  // struct haben will
+  //if ((err = CHECK_PASSTF(cov->key, GaussMethodType, VDIM0, GaussMethodType))
+ 
+  
   cov->key->checked = true;
   
   cov->key->frame = GaussMethodType;

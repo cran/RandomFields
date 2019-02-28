@@ -74,4 +74,5 @@ plot(model, dim=2)
 x.seq <- y.seq <- seq(-10, 10, 0.2)
 simulated <- RFsimulate(model=model, x=x.seq, y=y.seq)
 plot(simulated, select.variables=list(1, c(1, 2:3), 4))
+
 \dontshow{FinalizeExample()}}

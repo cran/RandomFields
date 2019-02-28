@@ -249,9 +249,8 @@ RMdeclare <- function(...) {
 
   par.values <- numeric(len)
   for (i in 1:len) {    
-    x <- try(...elt(i), silent=TRUE)
+    x <- try(base::...elt(i), silent=TRUE)
     if (is(x, "try-error") || !is.numeric(x) || length(x) != 1) {
-#      Print(x); #stop("pppppp")
       x <- NA
       if (PL > PL_IMPORTANT) 
         message("   '", par.names[i], "' set to ", x, ". Consider setting '", par.names[i],

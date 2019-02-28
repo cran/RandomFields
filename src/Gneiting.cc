@@ -1250,7 +1250,7 @@ int checkgennsst(model *cov) {
   VDIM0 = VDIM1 = 1;
   
   
-  COV_DELETE(cov->sub + 0);
+  COV_DELETE(cov->sub + 0, cov);
   if ((err = covcpy(cov->sub + 0, cov->key->sub[0])) != NOERROR) BUG;
   SET_CALLING(cov->sub[0], cov);
  

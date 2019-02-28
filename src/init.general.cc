@@ -284,7 +284,13 @@ bool CheckListmodel(){
   assert(LAST_ISO == 19); // otherwise change ISO_NAMES
   //  assert(MAXMPPDIM <= MAXSIMUDIM); // ZERO
   // assert(CUTOFF_THEOR == 4);/* do not change this value as used in RFmethods.Rd */
-  
+
+#define ntypefcts 18
+  const char *typefcts[ntypefcts] =
+    {"+", "*", "$", "$power", "fixcov",
+     "identity", "M", "matern", "tbm", "U",
+     "whittle", "nugget", "null", "trend", "trafo",
+     "setparam", "p", "c"};
 
   int nr, err=NOERROR;
   defn *C;
@@ -341,6 +347,20 @@ bool CheckListmodel(){
 	    equalsEarthIsotropic(ISO(C->systems[2], 0)) &&
 	    (C->variants == 3 || equalsUnreduced(ISO(C->systems[3], 0))))
 	   )) goto ErrorHandling;
+
+    err = 8;
+    if (C->TypeFct != NULL && C->name[0] != '-') {
+      int i;
+      for (i=0; i<ntypefcts; i++) if (!STRCMP(typefcts[i], C->name)) break;
+      if (i >=ntypefcts) {
+	PRINTF("read instructions for typefcts: '%s'\n", C->name);
+	/* 
+	   instructions: note that is** in questions.h has a different
+	   behavious if typefct is given. Check and enter in the list if ok.
+	 */
+	//	goto ErrorHandling;
+      }
+    }
 
   }
   return true;

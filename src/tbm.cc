@@ -241,12 +241,12 @@ int checktbmproc(model *cov) {
       err = CHECK(sub, OWNLOGDIM(0), OWNXDIM(0), VariogramType, 
 		       KERNEL, // wegen nutzer eingabe aniso und dem
 		       // allerersten check
-		       SYMMETRIC, SUBMODEL_DEP, EvaluationType);
+		       SYMMETRIC, SUBMODEL_DEP, GaussMethodType);
     } else {
       assert(COVNR != TBM_PROC_USER);
       for (int i=0; i<NSEL; i++) {	
 	if ((err = CHECK(sub, OWNLOGDIM(0), OWNXDIM(0), VariogramType, XONLY, 
-			 isoselect[i], SUBMODEL_DEP, EvaluationType))
+			 isoselect[i], SUBMODEL_DEP, GaussMethodType))
 	    == NOERROR) break;
       }
     }
@@ -566,7 +566,7 @@ int struct_tbmproc(model *cov, model **newmodel) {
 
   model  *modelB1;
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
   modelB1 = cov->key;
   while (isGaussMethod(modelB1)) modelB1 = modelB1->sub[0];
@@ -682,9 +682,9 @@ int init_tbmproc(model *cov, gen_storage *S) {
   KEY_type *KT = cov->base;
    
   assert(s != NULL);
-
+  assert(KT != NULL);
   STRCPY(errorloc_save, KT->error_loc);
-  SPRINTF(KT->error_loc, "%.50s %.50s", errorloc_save, NAME(cov));
+  SPRINTF(KT->error_loc, "%.500s %.50s", errorloc_save, NAME(cov));
   cov->method = TBM;
 
   FRAME_ASSERT_GAUSS;

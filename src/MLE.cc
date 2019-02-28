@@ -1032,12 +1032,12 @@ int SetAndGetModelInfo(model *key, int shortlen,
 
  ErrorHandling:
   
-  if (min != NULL) COV_DELETE(&min);
-  if (max != NULL) COV_DELETE(&max);
-  if (pmin != NULL) COV_DELETE(&pmin);
-  if (pmax != NULL) COV_DELETE(&pmax);
-  if (openmin != NULL) COV_DELETE(&openmin);
-  if (openmax != NULL) COV_DELETE(&openmax);
+  if (min != NULL) COV_DELETE(&min, cov);
+  if (max != NULL) COV_DELETE(&max, cov);
+  if (pmin != NULL) COV_DELETE(&pmin, cov);
+  if (pmax != NULL) COV_DELETE(&pmax, cov);
+  if (openmin != NULL) COV_DELETE(&openmin, cov);
+  if (openmax != NULL) COV_DELETE(&openmax, cov);
   
   RETURN_ERR(err);
 }

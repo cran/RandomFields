@@ -66,11 +66,6 @@ RMparswmX <- function(nudiag, rho, var, scale, Aniso, proj) {
 }
 RMparswmX <- copyProp(RMparswmX, RMparswm)
 
-RMpoweredexp <- function(alpha, var, scale, Aniso, proj) {
-  return(RMstable(alpha, var, scale, Aniso, proj))
-}
-RMpoweredexp <- copyProp(RMpoweredexp, RMstable)
-
 RMtent <- function(var, scale, Aniso, proj) {
   return(RMaskey(alpha=1.0, var, scale, Aniso, proj))
 }
@@ -96,6 +91,7 @@ RMhandcock <- function(nu, notinvnu, var, scale, Aniso, proj){
 RMhandcock <- copyProp(RMhandcock, RMmatern)
 
 
+RMpoweredexp <- RMstable
 RMcardinalsine <- RMwave
 RMwendland <- RMgengneiting
 

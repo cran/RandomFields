@@ -1403,10 +1403,10 @@ void LOC_SINGLE_DELETE(location_type **Loc);
 location_type **LOCLIST_CREATE(int n, int dim);
 void COV_ALWAYS_NULL(model *cov);
 void SYSTEM_NULL(system_type *sys, int len);
-void COV_DELETE_(model **cov);
+void COV_DELETE_(model **cov, model *save);
 void COV_NULL(model *cov, KEY_type *base);
-void COV_DELETE_WITHOUTSUB(model **Cov);
-void COV_DELETE_WITHOUT_LOC(model **Cov);
+void COV_DELETE_WITHOUTSUB(model **Cov, model *save);
+void COV_DELETE_WITHOUT_LOC(model **Cov, model *save);
 void ce_NULL(ce_storage* x);
 void ce_DELETE(ce_storage **S);
 void localCE_NULL(localCE_storage* x);
@@ -1420,18 +1420,18 @@ void hyper_DELETE(hyper_storage  **S);
 void nugget_NULL(nugget_storage *x);
 void nugget_DELETE(nugget_storage ** S);
 void plus_NULL(plus_storage *x);
-void plus_DELETE(plus_storage ** S);
+void plus_DELETE(plus_storage ** S, model *save);
 void sequ_NULL(sequ_storage *x);
 void sequ_DELETE(sequ_storage **S);
 void spectral_NULL(sequ_storage *x);
 void spectral_DELETE(sequ_storage **S);
 void tbm_DELETE(tbm_storage **S); 
 void tbm_NULL(tbm_storage* x);
-void br_DELETE(br_storage **S); 
+void br_DELETE(br_storage **S, model *save); 
 void br_NULL(br_storage* x);
 void get_NULL(get_storage *S);
 void get_DELETE(get_storage **S);
-void pgs_DELETE(pgs_storage **S); 
+void pgs_DELETE(pgs_storage **S, model *save); 
 void pgs_NULL(pgs_storage* x);
 void set_DELETE(set_storage **S); 
 void set_NULL(set_storage* x);
@@ -1638,6 +1638,7 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
     if ((cov)->S##new == NULL) BUG;					\
   }					
 
+
 #define EXT_NEW_STORAGE(new)	\
   EXT_NEW_COV_STORAGE(cov, new)
 
@@ -1650,10 +1651,24 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
     new##_NULL((cov)->S##new);					\
     if ((cov)->S##new == NULL) BUG;				\
-  }}								
-
+  }}   	
 #define NEW_STORAGE(new)	\
   NEW_COV_STORAGE(cov, new)
+
+
+#define NEW_COV_STORAGE_WITH_SAVE(cov, new) {				\
+  if ((cov)->S##new != NULL) {					\
+    new##_DELETE(&((cov)->S##new), cov);				\
+    assert((cov)->S##new == NULL);					\
+  }								\
+  if ((cov)->S##new == NULL) {					\
+    (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
+    new##_NULL((cov)->S##new);					\
+    if ((cov)->S##new == NULL) BUG;				\
+  }}								
+#define NEW_STORAGE_WITH_SAVE(new)	\
+  NEW_COV_STORAGE_WITH_SAVE(cov, new)
+
 
 #define ONCE_NEW_COV_STORAGE(cov, new)		\
    if ((cov)->S##new == NULL) {					\

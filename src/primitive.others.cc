@@ -700,6 +700,12 @@ void declarefct(double  VARIABLE_IS_NOT_USED *x, model *cov, double *v){
   for (int i=0; i<vdimSq; v[i++] = 0.0);
 }
 
+void declarefctnonstat(double  VARIABLE_IS_NOT_USED *x,
+		       double  VARIABLE_IS_NOT_USED *y, model *cov, double *v){
+  int vdimSq = VDIM0 * VDIM1;
+  for (int i=0; i<vdimSq; v[i++] = 0.0);
+}
+
 
 void rangedeclare(model *cov, range_type *range){
   int k = DefList[COVNR].kappas;

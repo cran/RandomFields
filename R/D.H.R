@@ -383,7 +383,7 @@ RFfractaldim <-
  #   Print(bin, step, end, edge.lengths)
      
     ev <- rfempirical(x=x, y=y, z=z, T=T, data=data, grid=ct$grid, bin=bin,
-		      spConform=FALSE, vdim=1, method=METHOD_VARIOGRAM)
+		      spConform=FALSE, vdim=1)
 
     idx <-  which(is.finite(l.binvario <- log(ev$emp)))
     if (length(idx) < vario.n) {

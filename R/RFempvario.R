@@ -24,7 +24,8 @@ rfempirical <- function(x, y = NULL, z = NULL, T = NULL, data, grid,
 			theta = NULL, ## aehnlich
 			deltaT = NULL, ##  deltaT[1] max abstand, deltaT[2]
 			##                  gitterabstand
-			distances, vdim, method, ...
+			distances, vdim,
+                        method=METHOD_VARIOGRAM, ...
 			) {
   
   ## repetition is last dimension

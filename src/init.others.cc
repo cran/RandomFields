@@ -177,7 +177,9 @@ void includeOtherModels() {
   // is replaced by epsilon
 
   IncludeModel("declare", // never change name without checking all .cc, .R
-	       TrendType, 0, 0, 16, NULL,  XONLY, PREVMODEL_I,
+	       // TrendType, // warum trend??
+	       TcfType,
+	       0, 0, 16, NULL, PREVMODEL_D, PREVMODEL_I,
 	       checkdeclare, rangedeclare,  PREF_ALL, true,
 	       PARAM_DEP, INFDIM, falsch, NOT_MONOTONE);
   //  kappanames("mean", REALSXP, "plane", REALSXP, "polydeg",		
@@ -191,7 +193,9 @@ void includeOtherModels() {
 	     FREEVARIABLE, REALSXP, FREEVARIABLE, REALSXP,
 	     FREEVARIABLE, REALSXP, FREEVARIABLE, REALSXP,
 	     FREEVARIABLE, REALSXP, FREEVARIABLE, REALSXP);  
- addCov(declarefct, NULL, NULL);
+  addCov(0, declarefct, declarefct, declarefct, NULL, NULL);
+  addCov(declarefctnonstat);
+  AddVariant(TrendType, PREVMODEL_I);
 
  
   IncludePrim("EAxxA", ShapeType,  2, kappa_EAxxA, XONLY, CARTESIAN_COORD,
@@ -204,7 +208,8 @@ void includeOtherModels() {
 
 
   IncludePrim("EtAxxA",  ShapeType, 3, kappa_EtAxxA, XONLY, CARTESIAN_COORD,
-	      checkEtAxxA, rangeEtAxxA, 3, EaxxaMaxDim, (ext_bool) false, NOT_MONOTONE);
+	      checkEtAxxA, rangeEtAxxA, 3, EaxxaMaxDim, (ext_bool) false,
+	      NOT_MONOTONE);
   nickname("etaxxa");
   addCov(EtAxxA, NULL, NULL);
   kappanames("E", REALSXP, "A", REALSXP, "alpha", REALSXP);

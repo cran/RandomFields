@@ -372,17 +372,14 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
      } else COV(hx, next, tmp);
 
      // printf("-- %d %10e %10e \n", dim, hx[0], hx[1]);
+     //     printf("\n");
  
       for(int l=0; l<vdimSq; l++) {
 	c[l][dummy] = tmp[l];
 	c[l][dummy+1] = 0.0;
 	
 	if (ISNAN(c[l][dummy])) {
-	  //
-	  //PMI(cov);
-	  // PRINTF("i=%d %d tri=%d %d vdim=$d ani=%d %10g %10g c=%10g %10g \n",
-	  //	   i, l, trials, dummy, vdimSq, isaniso,
-	  //	   hx[0], hx[1], c[l][dummy], c[l][dummy]);
+
 #ifdef DO_PARALLEL 
 	  err_occurred++; break;
 #else	     
@@ -393,7 +390,6 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
       }
 
       if (cur_crit) {
-	//	printf("crit:%d ", i);
 	for (int k=0; k<dim; k++) {
 	  if (index[k]==halfm[k]) hx[k] -= steps[k] * (double) mm[k];
 	}
@@ -460,7 +456,11 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 #else	  
 	  if (PL>=PL_STRUCTURE) { LPRINT("FFT.0.."); }
 #endif
-	  err_occurred += fastfourier(c[l], mm, dim, false, S_FFT(l));
+	  err_occurred += fastfourier(c[l], mm, dim, !false, S_FFT(l));
+
+	  //	  for (int t=0; t<mtot; t++) printf("%f ", c[l][t]);printf("\n");
+
+	  
 #ifdef DO_PARALLEL
 #else	  
    	  if (err_occurred != NOERROR) goto ErrorHandling;
@@ -531,7 +531,7 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 	  twoi_plus1=twoi+1;
 	double tmpLambda[MAXVDIM],
 	  rwork[MAXVDIM * 3 -2];
-	complex optim_lwork, R[MAXVDIM], work[WORKSIZE];
+	complex optim_lwork, R[MAXVDIM * MAXVDIM], work[WORKSIZE];
 
 	// construct R (vdim x vdim matrix) (which is idential to A[i] (cf W&C))
 	for (int k=0; k<vdim; k++) {
@@ -547,6 +547,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	    R[index1].r = c[index2][twoi];
 	    R[index1].i = Sign*c[index2][twoi_plus1];
+
+	    //  printf("%d:%f+%fi ", i,  R[index1].r, R[index1].i);
 	  }
 	}
 
@@ -587,8 +589,10 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 			tmpLambda, work, &lwork, rwork, &info);
 
 
+
 	for (int l=0;l<vdim;l++) {
 	  Lambda[l][i] = tmpLambda[l];
+	  // printf("%f ", Lambda[l][i]);
 	  notposdef += Lambda[l][i] < tolRe;
 	}
 
@@ -838,7 +842,9 @@ ErrorHandling:
   }
 
 
-// printf("end init\n");
+  
+
+//  printf("end init\n"); BUG;
   cov->simu.active = err == NOERROR;
   RETURN_ERR(err);
 }
@@ -908,11 +914,11 @@ int check_ce(model *cov) {
      }
   } else {
     if ((err = CHECK(next, dim, dim, PosDefType, XONLY, CARTESIAN_COORD,
-		     SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+		     SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
       //      APMI(cov);
       //    XERR(err); APMI(cov);
       if ((err = CHECK(next, dim, dim, VariogramType, XONLY, SYMMETRIC, 
-		       SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+		       SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
 	RETURN_ERR(err);
       }
     }
@@ -1224,7 +1230,7 @@ void do_circ_embed(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
       //      printf("ABCD %d %d\n", vdim, omp_get_num_threads()); 
      //
       //printf("k=%d %10g\n", k);
-      fastfourier(d[k], mm, dim, true, S_FFT(k));
+      fastfourier(d[k], mm, dim, !true, S_FFT(k));
       //printf("end do");
     }
   } // if ** simulate **
@@ -1368,6 +1374,7 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
   FREE(V);
   FREE(s);
   return Err;
+  
 }
 
 
@@ -1439,13 +1446,13 @@ int check_local_proc(model *cov) {
   } else {
     if ((err = CHECK(sub, dim,  1, VariogramType,
              //cutoff ? PosDefType : VariogramType,
-              XONLY, ISOTROPIC, SUBMODEL_DEP, EvaluationType))
+              XONLY, ISOTROPIC, SUBMODEL_DEP, GaussMethodType))
      != NOERROR) {
        if (isDollar(next) && !PARAMisNULL(next, DANISO)) {
      // if aniso is given then xdimprev 1 does not make sense
      err = CHECK(sub, dim, dim, VariogramType,
              //cutoff ? PosDefType : VariogramType,
-             XONLY, ISOTROPIC, SUBMODEL_DEP, EvaluationType);
+             XONLY, ISOTROPIC, SUBMODEL_DEP, GaussMethodType);
        }
        //
        if (err != NOERROR) RETURN_ERR(err);
@@ -1609,7 +1616,7 @@ int struct_ce_local(model *cov, model VARIABLE_IS_NOT_USED **newmodel) {
   if (next->pref[cutoff ? CircEmbedCutoff : CircEmbedIntrinsic] == PREF_NONE)
     RETURN_ERR(ERRORPREFNONE);
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
   addModel(&(cov->key), cutoff ? CUTOFF : STEIN);
   addModel(&(cov->key), CIRCEMBED);
@@ -1849,7 +1856,7 @@ int struct_ce_approx(model *cov, model **newmodel) {
       if (len > maxgridsize) SERR("userdefined, approximate grid is too large");
     }
   
-    if (cov->key!=NULL) COV_DELETE(&(cov->key));
+    if (cov->key!=NULL) COV_DELETE(&(cov->key), cov);
     err = covcpy(&(cov->key), cov, x, loc->T, spatialdim, spatialdim,
 		 3, loc->Time, true, false);
     if (err != NOERROR) RETURN_ERR(err);

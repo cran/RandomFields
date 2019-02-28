@@ -21,6 +21,7 @@ bibentry(bibtype="Manual",
              person("Sebastian", "Gross", role="ctb"),
              person("Ulrike", "Ober", role="ctb"),
              person("Paulo", "Ribeiro", role="ctb"),
+             person(given=c("Brian", "D"), "Ripley", role="ctb"),
              person("Richard", "Singleton", role="ctb"),
              person("Ben", "Pfaff", role="ctb"),
              person("R Core Team", role="ctb")

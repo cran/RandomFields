@@ -329,7 +329,7 @@
   }
 
    
-  \item{seed_incr}{ (does not work yet)
+  \item{seed_incr, seed_sub_incr}{ (does not work yet)
     This argument is important iff \command{RFsimulate} is used within
     a function from package \pkg{parallel}.
     The value of \code{seed_incr} should be set only locally, i.e. not
@@ -339,7 +339,7 @@
     greater than 1) and \code{!is.na(seed)}
     then the seed for each simulation is calculated as
     
-    \code{seed} \eqn{+ (k-1) * 101101 +} \code{seed_incr} \eqn{* n}
+    \code{seed} \eqn{+ (k-1) *} \code{seed_sub_incr}  \eqn{+} \code{seed_incr} \eqn{* n}
     
     where \eqn{k} runs from 1 to \code{n}.
 
@@ -1319,7 +1319,7 @@
     is used. Otherwise, the changes of th graphical style are reduced to
     a minimum.
     
-    Default: \code{TRUE};
+    Default: \code{FALSE} 
   }
 
   \item{\code{grPrintlevel}}{

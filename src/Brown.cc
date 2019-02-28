@@ -241,7 +241,7 @@ int init_BRorig(model *cov, gen_storage *s){
    goto ErrorHandling;  
 
  ErrorHandling:
-  if (err != NOERROR) br_DELETE(&(cov->Sbr));
+  if (err != NOERROR) br_DELETE(&(cov->Sbr), cov);
   cov->simu.active = cov->initialised = err == NOERROR;
  RETURN_ERR(err);
 }
@@ -324,7 +324,7 @@ int init_BRshifted(model *cov, gen_storage *s) {
   err = ReturnOwnField(cov);
   
  ErrorHandling:
-  if (err != NOERROR) br_DELETE(&(cov->Sbr));
+  if (err != NOERROR) br_DELETE(&(cov->Sbr), cov);
   cov->simu.active = cov->initialised = err == NOERROR;
  RETURN_ERR(err);
   
@@ -804,7 +804,7 @@ int init_BRmixed(model *cov, gen_storage *s) {
 
  
  ErrorHandling:
-  if (err != NOERROR) br_DELETE(&(cov->Sbr));
+  if (err != NOERROR) br_DELETE(&(cov->Sbr), cov);
   cov->simu.active = cov->initialised = err == NOERROR;
 
   RETURN_ERR(err);
@@ -991,7 +991,7 @@ int structBRuser(model *cov, model **newmodel) {
                : (COVNR == BRSHIFTED_USER) ? BRSHIFTED_INTERN
                : BRORIGINAL_USER;
 	       
-  if (cov->key != NULL) COV_DELETE(&(cov->key));// should be ok
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);// should be ok
   ONCE_NEW_STORAGE(gen);
   
   assert(Getcaniso(cov) == NULL);
@@ -1083,9 +1083,9 @@ int structBRintern(model *cov, model **newmodel) {
  
   assert(isPointShape(cov));
     
-  if (cov->key != NULL) COV_DELETE(&(cov->key));// should be ok
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);// should be ok
   ONCE_NEW_STORAGE(gen);
-  NEW_STORAGE(br);
+  NEW_STORAGE_WITH_SAVE(br);
   sBR = cov->Sbr;
   sBR->nr = COVNR;
 
@@ -1260,7 +1260,8 @@ int structBRintern(model *cov, model **newmodel) {
   
   ErrorHandling:
 
-  if (submodel != NULL) COV_DELETE(&submodel);  // ok  
+  if (submodel != NULL) COV_DELETE(&submodel, cov);  // ok
+  
   FREE(newx);
 
   RETURN_ERR(err);
@@ -1282,7 +1283,7 @@ int structBrownResnick(model *cov, model **newmodel) {
   }
   loc = Loc(cov);
   
-  if (cov->key != NULL) COV_DELETE(&(cov->key));// should be ok
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);// should be ok
     
   if (hasSmithFrame(cov)) {
     if (!cov->logspeed) 
@@ -1351,7 +1352,7 @@ int structBrownResnick(model *cov, model **newmodel) {
       if (K->sub[0] != NULL) SetLoc2NewLoc(K->sub[0], PLoc(K));
       Variogram(NULL, K, &maxcov);
 
-      COV_DELETE(&K);
+      COV_DELETE(&K, cov);
       if (isnowPosDef(next) || maxcov <= 4.0) {
 	meth = BRORIGINAL_USER;  
       } else if (!next->logspeed || next->logspeed <= 4.0 || maxcov <= 10.0) {
@@ -1566,8 +1567,8 @@ int struct_brnormed(model *cov, model **newmodel) {
     *newx= NULL, 
     **xgr = Getxgr(cov);
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key)); // should be ok
-  NEW_STORAGE(br);
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov); // should be ok
+  NEW_STORAGE_WITH_SAVE(br);
   br_storage *sBR = cov->Sbr;
 
   assert(Getcaniso(cov) == NULL);

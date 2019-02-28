@@ -121,23 +121,22 @@ void mixed_rules(model *cov, pref_type locpref,
 
   //  printf("spam %10g %d %10g %d %d\n", GLOBAL_UTILS->solve.sparse, GLOBAL_UTILS->solve.sparse == false, sub->finiterange,sub->finiterange==false,  pref[Direct]);
 
-   if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
-     pref[Direct] = (PREF_BEST + 1 + (int) (best_dirct>=256 && vdimtot<256)) * 
-       PREF_FACTOR;
-   }
-  else if (pref[Direct] >= PREF_NONE && GLOBAL_UTILS->solve.sparse != true) {
-#define MONTRAFO(x) ((x) * (x))
-    //#define MONTRAFO log   
-    //   bool orig_max = max_variab == DIRECT_ORIG_MAXVAR;
+  if (vdimtot <= best_dirct && totalpref[Direct] == PREF_BEST) {
+    pref[Direct] = (PREF_BEST + 1 + (int) (best_dirct>=256 && vdimtot<256)) * 
+      PREF_FACTOR;
+  }
+  else if (pref[Direct] >= PREF_NONE && GLOBAL_UTILS->solve.sparse != True) {
     double ratio = -0.1;
     if (max_variab <= DIRECT_ORIG_MAXVAR)
       ratio = (double) (vdimtot - best_dirct) / (double) max_variab;
     ratio *= FABS(ratio);
+    //printf("pref[direct] = %d %d %d\n", pref[Direct],max_variab, DIRECT_ORIG_MAXVAR );
     pref[Direct] = (int) POW((double) pref[Direct], 1.0 - ratio);
     if (pref[Direct] < PREF_BEST) 
       pref[Direct] = sub->finiterange == wahr ? PREF_BEST : PREF_BEST / 2;
-  } 
-
+    //printf("ratio =%f\n", ratio);
+  }
+  
   if (P0INT(GAUSSPROC_STATONLY) == NA_LOGICAL && isnowPosDef(cov)) {
     pref[CircEmbedIntrinsic] = LOC_PREF_NONE - 6;
   } 
@@ -228,7 +227,6 @@ int checkgaussprocess(model *cov) {
     dim = OWNLOGDIM(0);
   gauss_param *gp  = &(GLOBAL.gauss);  
 
-  //PMI(cov);
   assert((Loc(cov)->distances && xdim==1) || xdim == dim);
 
   if (!hasAnyProcessFrame(cov) &&
@@ -247,12 +245,14 @@ int checkgaussprocess(model *cov) {
 
   set_maxdim(OWN, 0, INFDIM);
 
-  Types frame = hasAnyEvaluationFrame(cov) ? cov->frame : GaussMethodType;
-  if (key == NULL) {
+   if (key == NULL) {
     if (isGaussMethod(next)) {// waere GaussMethodType 
       // wird verboten
       SERR1("%.50s may not call a method", NICK(cov));
     } else {
+      Types frame = hasAnyEvaluationFrame(cov) ? cov->frame :
+	EvaluationType; // sehr schwach, sonst kommst aber trend nicht durch
+	//GaussMethodType;
 
       //      printf("@@@@@@@@@@@@ %d\n", hasEvaluationFrame(cov) );
       
@@ -283,7 +283,7 @@ int checkgaussprocess(model *cov) {
     if (PL >= PL_COV_STRUCTURE) {
       PRINTF("checking key in gauss process  ...\n");
     }
-
+    Types frame = hasAnyEvaluationFrame(cov) ? cov->frame : GaussMethodType;
     if ((err = CHECK(key, dim, xdim, ProcessType, XONLY, OWNISO(0), 
 		     SUBMODEL_DEP, frame)) != NOERROR) RETURN_ERR(err);
   }
@@ -414,7 +414,7 @@ int struct_gaussmethod(model *cov, model **newmodel) {
     SERR("submodel not a covariance function");
   }
   
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if ((err = covcpy(&(cov->key), cov)) != NOERROR) RETURN_ERR(err); //!!cov
 
 
@@ -538,7 +538,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
     BUG; //RETURN_ERR(ERRORDIM);
   }
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if (!isnowVariogram(next) && !equalsnowTrend(next)) {
     SERR("submodel must be a covariance function");
   }
@@ -572,7 +572,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
   all_PREF_NONE = true;
   for (i=0; i<Nothing; i++) all_PREF_NONE &= pref[i] == PREF_NONE;
   
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   int err;
   if ((err = covcpy(&(cov->key), next)) != NOERROR) RETURN_ERR(err);
 
@@ -582,8 +582,10 @@ int struct_gaussprocess(model *cov, model **newmodel) {
   } 
 
   err = CERROROUTOFMETHODLIST; // in case none of the methods are available 
-  for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {  
+  for (i = Nothing - 1; i>=0 && pref[order[i]] > PREF_NONE; i--) {
 
+    //  assert(i ==Nothing-1);
+ 
     if (PL >= PL_BRANCHING && i < Nothing - 1) {
       LPRINT("'%.50s%.50s' failed for '%.50s'\n", 
 	     CAT_TYPE_NAMES[GaussMethodType], METHOD_NAMES[unimeth],NICK(next));
@@ -653,10 +655,10 @@ int struct_gaussprocess(model *cov, model **newmodel) {
 	PRINTF("error in check: %.50s\n", info);
       }
     }
-    key = key->sub[0];
 
-    COV_DELETE_WITHOUTSUB(&(cov->key));
-  
+    key = key->sub[0];
+    COV_DELETE_WITHOUTSUB(&(cov->key), cov);  
+    
     cov->key=key;
     SET_CALLING(key, cov);
   }
@@ -707,7 +709,7 @@ int struct_gaussprocess(model *cov, model **newmodel) {
   }
 
   if (zaehler==1) {
-    SPRINTF(KT->error_loc, "Only 1 method found for '%.50s', namely '%.50s', that comes into question.\nHowever, ", NICK(next), METHOD_NAMES[unimeth]);
+    SPRINTF(KT->error_loc, "Only 1 method found for '%.50s', namely '%.50s', that comes into question.\nHowever, this method failed (err=%d)", NICK(next), METHOD_NAMES[unimeth], err);
     RETURN_ERR(err);
   }
   
@@ -737,7 +739,6 @@ int init_gaussprocess(model *cov, gen_storage *s) {
     *key = cov->key;
   int err;
 
-  //  PMI(cov);
   assert(key != NULL);
 
   if ((err = INIT(key, 0, s)) != NOERROR) RETURN_ERR(err);
@@ -1006,7 +1007,7 @@ int checkchisqprocess(model *cov) {
 		       isCartesian(OWNISO(0)) ? VariogramType : PosDefType, 
 		       KERNEL, 
 		       CoordinateSystemOf(OWNISO(0)),
-		       SUBMODEL_DEP, EvaluationType)) != NOERROR) {
+		       SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
       RETURN_ERR(err);
       }
     }

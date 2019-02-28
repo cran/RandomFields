@@ -339,7 +339,7 @@ const char *general[generalN] =
     "vdim_close_together", "expected_number_simu", // 11
     "detailed_output", "Ttriple",
     "returncall", "output", "reportcoord", "set", // 17
-    "seed_incr"
+    "seed_incr", "seed_sub_incr"
 };
 
 
@@ -523,7 +523,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	    int nr = Integer(el, (char*) "storing (register)", elnr);
 	    if (nr != NA_INTEGER && nr>=0 && nr<=MODEL_MAX) {
 	      model **key = KEY() + nr;
-	      if (*key != NULL) COV_DELETE(key);
+	      if (*key != NULL) COV_DELETE(key, NULL);
 	    }
 	  }
 	} else {	  
@@ -579,6 +579,7 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
       break;      
     case 17: gp->set = POSINT - 1; break;
     case 18: gp->seed_incr = INT; break;
+    case 19: gp->seed_sub_incr = INT; break;
     default: BUG;
     }}
     break;
@@ -663,12 +664,15 @@ PRINTF("what was called 'sloppy' is now called 'easygoing';\nwhat was called 'ea
 	     direct[DIRECT_MAXVAR_PARAM], gauss[GAUSS_BEST_DIRECT], 
 	     options->gauss.direct_bestvariables);
       }
-#define MAX_DIRECT_MAXVAR 30000
-      if (mv > MAX_DIRECT_MAXVAR && dp->maxvariables <= MAX_DIRECT_MAXVAR) {
-	WARN2("'%.50s' should better not exceed %d.\n", 
-	     direct[DIRECT_MAXVAR_PARAM], MAX_DIRECT_MAXVAR);
+      //#define MAX_DIRECT_MAXVAR 30000
+      if (mv > MAX_DIRECT_MAXVAR) {
+	if (dp->maxvariables <= MAX_DIRECT_MAXVAR) {
+	  WARN3("'%.50s' should better not exceed %d. The option 'max_chol' of package RandomFieldsUtils has also been set to %d.\n", 
+		direct[DIRECT_MAXVAR_PARAM], MAX_DIRECT_MAXVAR, mv);
+	}	
       }
       dp->maxvariables = mv;
+      GLOBAL_UTILS->solve.max_chol = MAX(mv, DIRECT_ORIG_MAXVAR);
     }
      break;
     default: BUG;
@@ -1238,6 +1242,7 @@ void getRFoptions(SEXP sublist, int i, int local) {
     ADD(ScalarString(mkChar(REPORTCOORD_NAMES[p->reportcoord])));
     ADD(ScalarInteger(p->set + 1));   
     ADD(ScalarInteger(p->seed_incr));   
+    ADD(ScalarInteger(p->seed_sub_incr));   
   }
   break;
   
@@ -1592,7 +1597,7 @@ void attachRFoptionsRandomFields(int *show) { // no print commands!!!
   // printf("GLO RU %ld\n", (long int) GLOBAL_UTILS);
   //  GLOBAL_UTILS->basic.cores = 2;
   //  PRINTF("Some default options in pkg 'RandomFieldsUtils' for matrix decomposition have been changed by 'RandomFields'. Only if you use 'RandomFieldsUtils' directly, you might notice these changes."); 
-  GLOBAL_UTILS->solve.max_chol = 16384;
+  GLOBAL_UTILS->solve.max_chol = DIRECT_ORIG_MAXVAR;
   GLOBAL_UTILS->solve.max_svd = 6555;
   GLOBAL_UTILS->solve.pivot = PIVOT_AUTO;
   GLOBAL_UTILS->solve.pivot_check = Nan;
@@ -1602,7 +1607,7 @@ void attachRFoptionsRandomFields(int *show) { // no print commands!!!
    finalparameter(isGLOBAL);
    InitModelList();
    if (*show) {
-     PRINTF("You get the old former graphic style by 'RFoption(grDefault=FALSE)'"); // OK
+     // PRINTF("You get the old former graphic style by 'RFoption(grDefault=FALSE)'"); // OK
 #ifdef DO_PARALLEL
    PRINTF("'RandomFields' will use OMP\n");
 #else

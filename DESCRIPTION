@@ -1,10 +1,10 @@
 Package: RandomFields
-Version: 3.3.1
+Version: 3.3.4
 Title: Simulation and Analysis of Random Fields
-Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Paulo Ribeiro [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
+Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Paulo Ribeiro [ctb], Brian D. Ripley [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
 LinkingTo: RandomFieldsUtils
-Depends: R (>= 3.0), sp, RandomFieldsUtils (>= 0.5)
+Depends: R (>= 3.0), sp, RandomFieldsUtils (>= 0.5.1)
 Imports: graphics, methods, grDevices, stats, utils
 Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
         tkrplot, spam, tools, geoR, minqa, soma, optimx, nloptr, pso,
@@ -20,10 +20,9 @@ Collate: aaa_auto.R aaa_globals.R basic.fctns.R bigdata.R Class.R
         RMmodels.R RMmodelsConvenience.R RMmodelsSpecial.R RQmodels.R
         generatemodels.R zzz.R
 License: GPL (>= 3)
-URL: http://ms.math.uni-mannheim.de/de/publications/software
-SystemRequirements: GNU make, compiler which supports -mavx (e.g. g++
-        or clang++ on ix86)
+URL:
+        http://ms.math.uni-mannheim.de/de/publications/software/randomfields
+Packaged: 2019-02-28 20:40:27 UTC; schlather
 NeedsCompilation: yes
-Packaged: 2019-02-16 07:30:14 UTC; ripley
 Repository: CRAN
-Date/Publication: 2019-02-18 13:44:05 UTC
+Date/Publication: 2019-02-28 22:42:20 UTC

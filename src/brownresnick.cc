@@ -34,13 +34,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "xport_import.h"
 //#include "Error.h"
 
+
+#if defined SSE2 
 int inline DoubleAlign(int X) {
   return (2L + (X * sizeof(double)) / BytesPerBlock) *
     (BytesPerBlock / sizeof(double));
 }
+#endif
 
 
 SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
+#if defined SSE2
+#else
+  RFERROR("code only runs under SSE2"); // rest nicht getestet
+#endif
+
+  
 #define atonce 6
   int
     c = ncols(M),
@@ -56,18 +65,30 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
   double *ans0 = REAL(Ans);
   for (int i=0; i<c2; ans0[i++] = 0.0);
 
+#if defined SSE2 
   int aligned_c = DoubleAlign(c);
   assert( (aligned_c * sizeof(double)) % BytesPerBlock == 0);
+#else
+  int aligned_c = c;
+#endif
+  
   double *chol = REAL(Chol),
     *x = (double*) CALLOC(atonce * aligned_c, sizeof(double)),
-    *X = algn(x),
-    *xneu = (double *) CALLOC(atonce * aligned_c, sizeof(double)),
+    *xneu = (double *) CALLOC(atonce * aligned_c, sizeof(double));
+  
+#if defined SSE2 
+    double *X = algn(x),
     *Xneu = algn(xneu);
+#else
+  double *X = x,
+    *Xneu = xneu;
+#endif
 
   if (GLOBAL_UTILS->solve.actual_pivot != PIVOT_NONE &&
      GLOBAL_UTILS->solve.actual_pivot != PIVOT_UNDEFINED)
    RFERROR("pivoting not programmed yet in EstimBRsimuKoeff");
-   GetRNGstate();
+
+  GetRNGstate();
    
   for (int k=0; k < n; k++) {
     for (int j=0; j<atonce; j++) {
@@ -148,8 +169,7 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
 	  ans[j] += m[j] * (Mult(0) +Mult(1) +Mult(2) +Mult(3) +Mult(4)+Mult(5));
       }
 #else
-      RFERROR("code only runs under SSE2"); // rest nicht getestet
-      double
+       double
 	max = RF_NEGINF,
 	*v = X,
 	*m = REAL(M) + c * i;
@@ -171,19 +191,7 @@ SEXP EstimBRsimuKoeff(SEXP M, SEXP Chol, SEXP N) {
   
   FREE(x); FREE(xneu);
   
-  PutRNGstate();
+  PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!! 
   UNPROTECT(1);
   return Ans;
 }
-
-// atonce = 2
-// 22.876   0.124  23.018
-// 30.876   0.104  15.504 
-
-// atonce = 4
-// 17.564   0.040  17.615 
-// 22.180   0.068  11.139 
-
-// atonce = 6
-// 15.788   0.024  15.811
-// 20.628   0.064  10.362

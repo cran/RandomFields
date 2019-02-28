@@ -204,7 +204,7 @@ void LIST_DELETE(listoftype **x) {
 
  
 
-void COV_DELETE_WITHOUTSUB(model **Cov) {
+void COV_DELETE_WITHOUTSUB(model **Cov, model *save) {
   model *cov = *Cov;
   assert(cov != NULL);
   //  printf("deleting %.50s\n", NAME(cov));
@@ -249,7 +249,7 @@ void COV_DELETE_WITHOUTSUB(model **Cov) {
 
   if (cov->key != NULL) {
     //    TREE0(cov); /* ja nicht PMI, da dies auf geloeschtes zugreift */
-    COV_DELETE(&(cov->key));
+    COV_DELETE(&(cov->key), save);
   }
   if (cov->rf != NULL && cov->origrf) UNCONDFREE(cov->rf);
 
@@ -260,14 +260,14 @@ void COV_DELETE_WITHOUTSUB(model **Cov) {
   hyper_DELETE(&(cov->Shyper));  
   nugget_DELETE(&(cov->Snugget));
 
-  plus_DELETE(&(cov->Splus));
+  plus_DELETE(&(cov->Splus), save);
   sequ_DELETE(&(cov->Ssequ));
   //  SPECTRAL_DELETE(&(cov->Sspectral));
   trend_DELETE(&(cov->Strend));
   tbm_DELETE(&(cov->Stbm));
-  br_DELETE(&(cov->Sbr));
+  br_DELETE(&(cov->Sbr), save);
   get_DELETE(&(cov->Sget));
-  pgs_DELETE(&(cov->Spgs));
+  pgs_DELETE(&(cov->Spgs), save);
   set_DELETE(&(cov->Sset));
   polygon_DELETE(&(cov->Spolygon));
   rect_DELETE(&(cov->Srect));
@@ -291,12 +291,16 @@ void COV_DELETE_WITHOUTSUB(model **Cov) {
   simu_storage *simu = &(cov->simu);
   simu->active = simu->pair = false;
   simu->expected_number_simu = 0;
+  if (cov->base!=NULL && cov->base->error_causing_cov == cov) {
+    cov->base->error_causing_cov = save;
+    if (save != NULL) STRCPY(save->err_msg, cov->err_msg);
+  }
 
   UNCONDFREE(*Cov);
   *Cov = NULL;
 }
 
-void COV_DELETE_WITHOUT_LOC(model **Cov) { 
+void COV_DELETE_WITHOUT_LOC(model **Cov, model *save) { 
   model *cov = *Cov;
   int i,
     nsub = DefList[COVNR].maxsub;
@@ -312,7 +316,7 @@ void COV_DELETE_WITHOUT_LOC(model **Cov) {
     //                         bei PSgen !
     if (cov->kappasub[i] != NULL) {
       //printf("del kappa %d ", i);
-      COV_DELETE_WITHOUT_LOC(cov->kappasub + i);
+      COV_DELETE_WITHOUT_LOC(cov->kappasub + i, save);
     }
   }
 
@@ -322,26 +326,26 @@ void COV_DELETE_WITHOUT_LOC(model **Cov) {
     // nicht geloescht werden duerfen!!
     if (cov->sub[i] != NULL) {
       //printf("del sub %d ", i);
-       COV_DELETE_WITHOUT_LOC(cov->sub + i);
+      COV_DELETE_WITHOUT_LOC(cov->sub + i, save);
     }
   }
-  COV_DELETE_WITHOUTSUB(Cov);
+  COV_DELETE_WITHOUTSUB(Cov, save);
 }
 
 // COV_DELETE(
-void COV_DELETE_(model **Cov) { 
+void COV_DELETE_(model **Cov, model *save) { 
  model *cov = *Cov;
   assert(*Cov != NULL);
   // printf("COV_DELETE %.50s top=%d\n", NAME(cov), cov->calling == NULL);
   if (cov->calling == NULL) LOC_DELETE(&(cov->prevloc));
-  COV_DELETE_WITHOUT_LOC(Cov);
+  COV_DELETE_WITHOUT_LOC(Cov, save);
 }
 
 
 void COV_ALWAYS_NULL(model *cov) {
   if (cov->base != NULL) cov->zaehler = cov->base->zaehler++;
   else cov->zaehler=-1;
-  //  printf("base = %ld\n", cov->base);
+  //  printf("base = %ld %s\n", cov->base, NAME(cov));
 
   cov->calling = NULL;
   cov->prevloc = cov->ownloc = NULL;
@@ -416,6 +420,7 @@ ALL_NULL(simu)
 void COV_NULL(model *cov, KEY_type *base) {
   MEMSET(cov, 0, sizeof(model));
   if (base != NULL) cov->zaehler = base->zaehler++; else cov->zaehler=-1;
+  //printf("base = %ld %s\n", cov->base, NAME(cov));
 	 
   cov->mpp.moments = UNSET;
 
@@ -545,12 +550,12 @@ void nugget_DELETE(nugget_storage ** S)
 }
 
 ALL_NULL(plus)
-void plus_DELETE(plus_storage ** S){
+void plus_DELETE(plus_storage ** S, model *save){
   plus_storage *x = *S;
   if (x != NULL) {
     int i;
     for (i=0; i<MAXSUB; i++)
-      if (x->keys[i] != NULL) COV_DELETE(x->keys + i);
+      if (x->keys[i] != NULL) COV_DELETE(x->keys + i, save);
     UNCONDFREE(*S);
   }
 }
@@ -617,7 +622,7 @@ void BRTREND_DELETE(double **BRtrend, int trendlen) {
    for (j=0; j<trendlen; j++) FREE(BRtrend[j]);
  }
 
-void br_DELETE(br_storage **S) {
+void br_DELETE(br_storage **S, model *save) {
   br_storage *sBR = *S;  
   if (sBR != NULL) {
     assert(sBR->nr);
@@ -627,7 +632,7 @@ void br_DELETE(br_storage **S) {
       BRTREND_DELETE(sBR->trend, sBR->trendlen); 
       UNCONDFREE(sBR->trend);
     }
-    if (sBR->vario != NULL) COV_DELETE(&(sBR->vario));
+    if (sBR->vario != NULL) COV_DELETE(&(sBR->vario), save);
 
 
     if (sBR->nr == BRSHIFTED_INTERN || sBR->nr == BRSHIFTED_USER) {
@@ -665,7 +670,7 @@ void br_DELETE(br_storage **S) {
 
 
 ALL_NULL_BUT(pgs, x->alpha = 1.0) // alpha!=1.0 only for optiz
-void pgs_DELETE(pgs_storage **S) 
+void pgs_DELETE(pgs_storage **S, model *save) 
 {
   pgs_storage *x = *S;
   if (x!=NULL) {
@@ -727,7 +732,7 @@ void pgs_DELETE(pgs_storage **S)
 	       x->cov->Spgs->cov->Spgs == x);
       }
       x->cov = NULL; // Sicherheitshalber
-      COV_DELETE(&(dummy));
+      COV_DELETE(&(dummy), save);
     }
 
     UNCONDFREE(*S);
@@ -1076,7 +1081,8 @@ void KEY_type_DELETE(KEY_type **S) {
   KEY_type *KT = *S;
   model **key = KT->KEY;
   FREE(KT->zerox);
-  for (int nr=0; nr<=MODEL_MAX; nr++) if (key[nr]!=NULL) COV_DELETE(key + nr);
+  for (int nr=0; nr<=MODEL_MAX; nr++)
+    if (key[nr]!=NULL) COV_DELETE(key + nr, NULL);
   UNCONDFREE(*S);
 }
 

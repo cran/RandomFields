@@ -33,7 +33,7 @@ GetNeighbourhoods <- function(model, Z, X,
                               consider.correlations = TRUE) {
 
   model.nr <- MODEL_AUX
-  rfInit(model, Z$coord, dosimulate=FALSE, reg=model.nr)
+  rfInit(model, Z$coord, reg=model.nr, RFopt=RFoptions(SAVEOPTIONS=NULL))
 
   
   lc <- nrow(Z$data[[1]]) ## length(Z$coords)

@@ -169,7 +169,7 @@ int struct_Zhou(model *cov, model **newmodel){
   int err = NOERROR;
 
   ASSERT_NEWMODEL_NULL;
-  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs));
+  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs), cov);
 
   if (!hasSmithFrame(shape)) ILLEGAL_FRAME;
   if (cov->sub[PGS_LOC] == NULL) {
@@ -338,7 +338,7 @@ model *prunecov(model *newmodel, model *cov) {
   else BUG;
   next = *sub;
   *sub = NULL;
-  COV_DELETE(&newmodel);
+  COV_DELETE(&newmodel, cov);
   return next;
 }
 
@@ -1623,7 +1623,7 @@ int struct_Ballani(model *cov, model **newmodel){
   int err = NOERROR;
 
   ASSERT_NEWMODEL_NULL;
-  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs));
+  if (cov->Spgs != NULL)  pgs_DELETE(&(cov->Spgs), cov);
 
   if (!hasPoissonGaussFrame(shape)) ILLEGAL_FRAME;
   if (cov->sub[PGS_LOC] == NULL) {

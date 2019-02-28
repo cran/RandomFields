@@ -91,7 +91,7 @@ void removeOnly(model **Cov) {
     SET_CALLING(next, calling);
   }
   *Cov = next;
-  COV_DELETE_WITHOUTSUB(&cov);
+  COV_DELETE_WITHOUTSUB(&cov, next);
 }
 
 
@@ -2068,7 +2068,7 @@ int get_internal_ranges(model *cov, model *min, model *max,
   for (i=0; i<MAXPARAM; i++) {
     if (cov->kappasub[i] != NULL) {
       err = get_internal_ranges(cov->kappasub[i], 
-				min->kappasub[i], max->kappasub[i],  
+	 			min->kappasub[i], max->kappasub[i],  
 				pmin->kappasub[i], pmax->kappasub[i],
 				openmin->kappasub[i], openmax->kappasub[i]);
       if (err != NOERROR) RETURN_ERR(err);

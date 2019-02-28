@@ -309,9 +309,10 @@ bool isDefCL(typefct isTypus, model *cov, bool OneSystem) {
   int n = SYSTEMS(sys);
   if (OneSystem && n != 1) return false;
   if (C->TypeFct != NULL) {
-    //    printf("call of TypeFct in isDefCL by is%.50s(%.50s)\n", TYPE_NAMES[type], NAME(cov));
+    //   printf("call of TypeFct in isDefCL by is(%.50s)\n", NAME(cov));
     return false;
   }
+  //  printf("name = %s %d\n", NAME(cov), isTypus(SYSTYPE(sys, 0)));
   if (!isTypus(SYSTYPE(sys, 0))) return false;
   for (int s=1; s<n; s++) if (!isSameAsPrev(SYSTYPE(sys, s))) return false;
   return true;
@@ -394,10 +395,7 @@ Question(NormedProcess, true)
 Question(BrMethod, true)//
 Question(PointShape, true)
 QuestionIsNow(Random, RandomType || isProcess(type), true) 
-QuestionGen(Shape,
-	    ShapeType || isNegDef(type) || isMathDef(type),
-	    RandomType || isMaxStable(type) || type == PoissonType,
-	    true)
+QuestionIsNow(Shape, ShapeType || isNegDef(type) || isMathDef(type), true)
 QuestionNow(Trend, TrendType || isMathDef(type) ||  type == ShapeType , false)
 Question(Interface, true)
 Question(RandomOrShape, true) // vermutlich obsolete !!

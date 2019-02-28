@@ -201,11 +201,12 @@ ArrangeDevice <- function(graphics, figs, dh=2.8, h.outer=1.2,
       if (close) dev.off()
     }
     
-    if (open && graphics$grDefault) {
+    if (open) { # && raphics$grDefault) {      
       ScreenDevice(height=curH, width=curW)
     }
     
-  } else warning("device could not be opened as 'height' is not positive.")
+  } else warning("device could not be opened as 'height' (=", H,
+                 ") is not positive.")
  
   if (graphics$split_screen) {
     if (length(dev.list()) > 0 && any(par()$mfcol != 1)) par(mfcol=c(1,1))
@@ -239,7 +240,7 @@ StartExample <- function(reduced = TRUE, save.seed=TRUE) {
 #    L <- list(seed=RFopt$basic$seed)
  #   if (length(RFopt$coords) != 0) L$coord_system= RFopt$coords$coord_system
  #   assign("RandomFields_options", envir=.RandomFields.env, L)
-   assign("RandomFields_options", envir=.RandomFields.env, RFopt)
+    assign("RandomFields_options", envir=.RandomFields.env, RFopt)
   }
 # Print(ls( envir=.RandomFields.env), .RandomFields.env)
   if (!interactive()) {

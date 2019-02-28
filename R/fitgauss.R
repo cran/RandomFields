@@ -2324,7 +2324,7 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
      
       ev <- rfempirical(x=coord, data= residuals, bin=bin, phi=nphi,
 			deltaT=ntime, spConform=FALSE, boxcox=c(Inf, Inf),
-			vdim=vdim, method=METHOD_VARIOGRAM)
+			vdim=vdim)
 
       n.bin <- ev$n.bin
       sd <- ev$sd

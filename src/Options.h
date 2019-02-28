@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NAT_SCALE 1
 #define MAX_CE_MEM 16777216
-#define generalN 19
+#define generalN 20
 // IMPORTANT: all names of general must be at least 3 letters long !!!
 extern const char *general[generalN];
 #define GENERAL_MODUS 0 
@@ -107,7 +107,7 @@ typedef struct general_param {
 		 but it is slower
 	      */
     Ttriple, 
-    set, seed_incr;
+    set, seed_incr, seed_sub_incr;
  
   double gridtolerance;
   usr_bool exactness;
@@ -120,7 +120,7 @@ typedef struct general_param {
       startmode/* mode */ , output_sp, reportcoord_warnings,		\
       false,							\
       1, 0,								\
-      NA_INTEGER, 0, 0,							\
+      NA_INTEGER, 0, 0,	101101,						\
       1e-6, exactness[NM]						\
      }
 
@@ -401,7 +401,7 @@ typedef struct graphics_param{
 } graphics_param;
 
 #define graphics_START  { True, Nan,		\
-      true, true, false, true,			\
+      true, true, false, false,			\
       6.0, RF_NA, 72, 1, {3, 4}, 0, ""}
 
 

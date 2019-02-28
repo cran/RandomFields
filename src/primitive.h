@@ -130,6 +130,7 @@ void InverseDeWijsian(double *x, model *cov, double *v);
 
 
 void declarefct(double *x, model *cov, double *v);
+void declarefctnonstat(double *x, double *y, model *cov, double *v);
 void rangedeclare(model *cov, range_type *range);
 int checkdeclare(model *cov);
 

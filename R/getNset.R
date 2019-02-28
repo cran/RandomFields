@@ -331,9 +331,13 @@ GetModel <- function(register, modus=GETMODEL_DEL_NATSC,
   ##              if > 1 than also "+" is forced to be "RMplus"
 
   
-  register <- resolve.register(if (missing(register)) NULL else
-                               if (is.numeric(register))  register else
-                               deparse(substitute(register)))
+  register <- resolve.register(if (missing(register)) NULL
+                               else if (is.numeric(register)) register
+                               else deparse(substitute(register)))
+
+  ##Print(register)
+
+  
    w<-pmatch(match.arg(which.submodels),
             as.list(GetModel)$which.submodels[-1]) - 1
   if (missing(register)) register <- 0

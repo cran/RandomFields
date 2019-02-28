@@ -63,7 +63,13 @@ int checkplusmal(model *cov) {
   bool *conform = cov->Splus == NULL ? NULL : cov->Splus->conform;
  
   int possibilities = 1 +
-    (int) (!trend && top && (isNegDef(covtype) || isProcess(covtype)));
+    (int) (!trend && top && (isNegDef(covtype) || isProcess(covtype))
+	   && hasAnyEvaluationFrame(cov)
+	   );
+
+  //PMI(cov);  printf("hasEval = %d\n", hasAnyEvaluationFrame(cov));
+
+  //  printf("top = %d %d %d shape=%d %s\n", top, cov->calling == NULL, cov->calling != NULL && !isnowShape(cov->calling), cov->calling != NULL && isnowShape(cov->calling), cov->calling == NULL ? "Niente" : NAME(cov->calling));
 
   cov->matrix_indep_of_x = true;
   //  printf("checking plus A\n");
@@ -80,6 +86,10 @@ int checkplusmal(model *cov) {
     }
   
     err = CERRORTYPECONSISTENCY;
+
+
+    //printf("+ %s %d\n", NAME(sub), possibilities);
+    
     for (int j=0; j<possibilities; j++) {// nur trend als abweichender typus erlaubt
       //
       if (false && COVNR != PLUS) {
@@ -111,11 +121,13 @@ int checkplusmal(model *cov) {
       //    printf("!!plus %d %.50s,%d=%d %d\n", plus, NAME(sub), SUBNR,  PLUS, fullXdim);
       
       if ((err = CHECK_GEN(sub, SUBMODEL_DEP, SUBMODEL_DEP,
-			   plus && (SUBNR == PLUS) && fullXdim ? LikelihoodType
-			   : type == TrendType ? TrendType : frame, true))
+	        	   plus && (SUBNR == PLUS) && fullXdim ? LikelihoodType
+	          : type == TrendType ? TrendType : frame, true))
 	  == NOERROR) break;
 
-
+      // 26.2.19
+      if ((!isNegDef(type) && !isProcess(type)) || isTrend(type)) break;
+ 
       //APMI(cov);
       //BUG;
       
@@ -532,9 +544,10 @@ int initplus(model *cov, gen_storage *s){
  
     if (VDIM0 == 1) {
       for (i=0; i<cov->nsub; i++) {
-	model *sub = cov->Splus == NULL && cov->Splus->keys_given
+	model *sub = cov->Splus == NULL || !cov->Splus->keys_given
 	  ? cov->sub[i] : cov->Splus->keys[i];
-      
+	
+	assert(sub != NULL);
 	if (sub->pref[Nothing] > PREF_NONE) { // to do ??
 	  // for spectral plus only
 	  COV(ZERO(sub), sub, sd_cum + i);
@@ -968,12 +981,12 @@ int struct_mppplus(model *cov, model **newmodel){
   // if (nr == MPPPLUS) return S TRUCT(shape, NULL);
  
   ASSERT_NEWMODEL_NOT_NULL;
-  NEW_STORAGE(plus);
+  NEW_STORAGE_WITH_SAVE(plus);
   plus_storage *s = cov->Splus;
 
   for (m=0; m<cov->nsub; m++) {
     model *sub = cov->sub[m];          
-    if (s->keys[m] != NULL) COV_DELETE(s->keys + m);    
+    if (s->keys[m] != NULL) COV_DELETE(s->keys + m, cov);    
     if ((err = covcpy(s->keys + m, sub)) != NOERROR) RETURN_ERR(err);
     if ((err = addShapeFct(s->keys + m)) != NOERROR) RETURN_ERR(err);
     SET_CALLING(s->keys[m], cov);
@@ -996,7 +1009,7 @@ int init_mppplus(model *cov, gen_storage *S) {
     M2[i] = M2plus[i] = Eplus[i] = 0.0;
   }
     
-  NEW_STORAGE(pgs);
+  NEW_STORAGE_WITH_SAVE(pgs);
   pgs = cov->Spgs;
   pgs->totalmass = 0.0;
   
@@ -1111,7 +1124,9 @@ int checkplusmalproc(model *cov) {
     if (sub == NULL) 
       SERR("named submodels are not given in a sequence.");
 
-    Types type = isTrend(sub) ? ProcessType : OWNTYPE(0);
+    Types type = isTrend(sub) ? ProcessType : OWNTYPE(0); // sollte ok sein.
+
+    
     assert(equalsCoordinateSystem(OWNISO(0)));
     
     if ((err = CHECK_THROUGHOUT(sub, cov, type, KEEPCOPY_DOM, KEEPCOPY_ISO,
@@ -1130,7 +1145,8 @@ int checkplusmalproc(model *cov) {
       if (err != NOERROR) RETURN_ERR(err);
     }
    
-    if (!isnowProcess(sub) && !equalsnowTrend(sub)) RETURN_ERR(ERRORTYPECONSISTENCY);
+    if (!isnowProcess(sub) && !equalsnowTrend(sub))
+      RETURN_ERR(ERRORTYPECONSISTENCY);
     if (i==0) {
       VDIM0=sub->vdim[0];  // to do: inkonsistent mit vorigen Zeilen !!
       VDIM1=sub->vdim[1];  // to do: inkonsistent mit vorigen Zeilen !!
@@ -1162,7 +1178,9 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
   int err,
     dim =  PREVXDIM(0);
   //  bool plus = COVNR == PLUS_PROC ;
-
+ 
+  //printf("struct plusmalproc\n"); PMI(cov->calling);
+  
   switch(cov->frame) {
   case GaussMethodType : {
     location_type *loc = Loc(cov);
@@ -1171,7 +1189,8 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
     s->keys_given = true;
     for (int m=0; m<cov->nsub; m++) {
       model *sub = cov->sub[m];
-      if (s->keys[m] != NULL) COV_DELETE(s->keys + m);
+      bool trend = isnowTrend(sub);
+      if (s->keys[m] != NULL) COV_DELETE(s->keys + m, cov);
       if ((err =  covcpy(s->keys + m, sub)) != NOERROR) {
 	RETURN_ERR(err);
       }
@@ -1182,10 +1201,12 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
 	LPRINT("plus: trying initialisation of submodel #%d (%.50s).\n", m+1, 
 	       NICK(sub));
       }
-          
-      addModel(s->keys + m, isTrend(sub) ? TREND_PROC : GAUSSPROC);
+
+      addModel(s->keys + m, trend ? TREND_PROC : GAUSSPROC);
      
-      if (isTrend(sub) && sub->Spgs == NULL) {
+      //printf("isTrend = %d %s\n", isTrend(sub), NAME(sub));
+
+     if (trend && sub->Spgs == NULL) {
 	if ((err = alloc_cov(sub, dim, sub->vdim[0], sub->vdim[1])) != NOERROR)
 	  RETURN_ERR(err);
       }
@@ -1200,9 +1221,9 @@ int structplusmalproc(model *cov, model VARIABLE_IS_NOT_USED**newmodel){
       	BUG;
       }
 #endif
-
+ 
       if ((err = CHECK(s->keys[m], loc->timespacedim, loc->timespacedim,
-		       isTrend(sub) ? ProcessType: OWNTYPE(0), XONLY,
+		       trend ? ProcessType: OWNTYPE(0), XONLY,
 		       PREVISO(0), 
 		       cov->vdim,
 		       GaussMethodType)) != NOERROR) {
@@ -1403,7 +1424,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
       double *keyrf = key->rf;
       if (SUBNR == CONST) {
 	double 
-	  cc = isTrend(sub) ? PARAM0(sub, CONST_C) 
+	  cc = isnowTrend(sub) ? PARAM0(sub, CONST_C) 
 	  : SQRT(PARAM0(sub, CONST_C));
 	for(i=0; i<totalvdim; i++) res[i] *= cc;
 	//printf("cc=%10g\n", cc);

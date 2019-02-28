@@ -255,7 +255,8 @@ RFcov(RMS(model, s= 1 / 180 * pi), x, y, grid=FALSE,
 
 
 ## projection onto a plane first. Then the scale is interpreted
-## in the usual, i.e. cartesian, sense:
+## in the usual, i.e. cartesian, sense, i.e. the model does not
+## really make sense
 RFoptions(zenit = c(2.5, 2.5))
 RFcov(model, x, y, grid=FALSE,
       coord_sys="earth", new_coord_sys="orthographic")
@@ -263,14 +264,31 @@ RFcov(model, x, y, grid=FALSE,
 
 ## again, here the scale is chosen to be comparable to the cartesian case
 ## here the (standard) units are [km]
-RFcov(RMS(model, s= 6350 / 180 * pi), x, y, grid=FALSE,
-      coord_sys="earth", new_coord_sys="orthographic")
+(z1 <- RFcov(RMS(model, s= 6350 / 180 * pi), x, y, grid=FALSE,
+             coord_sys="earth", new_coord_sys="orthographic"))
 
 
 ## as above, but in miles
-RFcov(RMS(model, s= 3750 / 180 * pi), x, y, grid=FALSE,
-      coord_sys="earth", new_coord_sys="orthographic",
-      new_coordunits="miles")
+(z2 <- RFcov(RMS(model, s= 6350 / 1.609344 / 180 * pi), x, y, grid=FALSE,
+             coord_sys="earth", new_coord_sys="orthographic",
+             new_coordunits="miles"))
+stopifnot(all.equal(z1, z2))
+
+
+## again, projection onto a plane first, but now using the
+## gnomonic projection
+## here the (standard) units are [km]
+(z1 <- RFcov(RMS(model, s= 6350 / 180 * pi), x, y, grid=FALSE,
+             coord_sys="earth", new_coord_sys="gnomonic"))
+
+## as above, but in miles
+(z2 <- RFcov(RMS(model, s= 6350 / 1.609344 / 180 * pi), x, y, grid=FALSE,
+             coord_sys="earth", new_coord_sys="gnomonic",
+             new_coordunits="miles"))
+stopifnot(all.equal(z1, z2, tol=1e-5))
+
+
+
 
 \dontshow{FinalizeExample()}}
 

@@ -502,9 +502,11 @@ conventional2RFspDataFrame <- function(data, coords=NULL, gridTopology=NULL,
       ## stopifnot(1 == timespacedim + (n > 1) + (vdim > 1))               
       
     } else {
+      #Print(data, timespacedim, n, vdim)
       
       if (length(dim(data)) != timespacedim + (n>1) + (vdim > 1)){
- #       str(data)
+                                        ##
+       # str(data)
         stop(paste(length(dim(data)),
                    "= length(dim(data)) != timespacedim + (n>1) + (vdim>1) =",
                    timespacedim, '+', (n>1), '+', (vdim > 1)))

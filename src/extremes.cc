@@ -863,7 +863,7 @@ int struct_poisson(model *cov, model **newmodel){
   ASSERT_NEWMODEL_NULL;
   assert(isnowProcess(cov));
 
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
 
   if (loc->Time || (loc->grid && loc->caniso != NULL)) {
     TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
@@ -1015,7 +1015,7 @@ int struct_schlather(model *cov, model **newmodel){
   bool schlather = DefList[COVNR].Init == init_mpp; // else opitz
   //  assert(isnowSchlather(cov));
   ASSERT_NEWMODEL_NULL;
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if (cov->sub[MPP_TCF] != NULL) {
     if ((err = STRUCT(sub, &(cov->key))) >  NOERROR) RETURN_ERR(err);
     SET_CALLING(cov->key, cov);
@@ -1247,7 +1247,7 @@ int addPGS(model **Key, // struct of shape
       //     XERR(err);  // eigentlich muss das hier weg
     }
     //    if (i > 0) XERR(err); assert(i ==0);
-    if (*Key != NULL) COV_DELETE(Key);
+    if (*Key != NULL) COV_DELETE(Key, shape);
     assert(shape->calling != NULL);
     addModel(Key, pgs[i], shape->calling);
     
@@ -1370,7 +1370,7 @@ int struct_ppp_pts(model **Key, // = *cov->key
     // XERR(err);
     if (*Key != NULL) {
       SET_CALLING(*Key, calling);// make sure that the locations are not deleted
-      COV_DELETE(Key);
+      COV_DELETE(Key, shape);
     }
   
     if ((err2 = addPGS(Key, shape, NULL, timespacedim, vdim, frame))!=NOERROR){
@@ -1380,8 +1380,8 @@ int struct_ppp_pts(model **Key, // = *cov->key
     err = NOERROR;
   }
  ErrorHandling:
-  if (dummy != NULL) COV_DELETE(&dummy);
   model *cov = *Key;
+  if (dummy != NULL) COV_DELETE(&dummy, shape);
   RETURN_ERR(err);
 }
 
@@ -1458,7 +1458,7 @@ int struct_smith(model *cov,  model **newmodel){
     TransformLoc(cov, false, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(sub, PLoc(cov));
   }
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   ASSERT_NEWMODEL_NULL;
   
   if (tcf != NULL) {
@@ -1483,7 +1483,7 @@ int struct_smith(model *cov,  model **newmodel){
   err = NOERROR;
 
  ErrorHandling:
-  if (tcf_shape != NULL && tmp_shape != NULL) COV_DELETE(&tmp_shape);
+  if (tcf_shape != NULL && tmp_shape != NULL) COV_DELETE(&tmp_shape, cov);
   RETURN_ERR(err);
 }
 
@@ -1707,7 +1707,7 @@ int struct_randomcoin(model *cov, model **newmodel){
     TransformLoc(cov, true, GRIDEXPAND_AVOID, false);
     SetLoc2NewLoc(pdf == NULL ? shape : pdf, PLoc(cov)); 
   }
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   ASSERT_NEWMODEL_NULL;
 
  
@@ -1780,7 +1780,7 @@ int struct_randomcoin(model *cov, model **newmodel){
 		   VDIM0, PoissonGaussType)) != NOERROR) goto ErrorHandling;
 
  ErrorHandling:
-  if (pdf != NULL && tmp_shape != NULL) COV_DELETE(&tmp_shape);
+  if (pdf != NULL && tmp_shape != NULL) COV_DELETE(&tmp_shape, cov);
   RETURN_ERR(err);
 }
 

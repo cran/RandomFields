@@ -51,7 +51,7 @@ RFlinearpart <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
   model <- list("linearpart", PrepareModel2(model, params=params, ...))
 
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, dim=dim, reg = Reg, dosimulate=FALSE)
+         distances=distances, dim=dim, reg = Reg, RFopt=RFopt)
 
   .Call(C_get_linearpart, Reg, as.integer(set))
 }
@@ -240,7 +240,8 @@ initRFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
                 betas_separate = FALSE, ignore_trend=ignore.trend)
 
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
-                 distances=distances, dim=dim, reg = Reg, dosimulate=FALSE)
+         distances=distances, dim=dim, reg = Reg,
+         RFopt=RFoptions(SAVEOPTIONS=NULL))
 
 }
 
@@ -278,18 +279,15 @@ RFlikelihood <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
 }
 
 
-rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
-                   distances, dim, reg, dosimulate=TRUE, old.seed=NULL) {
- 
-  stopifnot(xor(missing(x), #|| length(x)==0,
-                missing(distances) || length(distances)==0))
-
-  RFopt <- RFoptions() 
-  if (!is.na(RFopt$basic$seed)) {
-    allequal <- all.equal(old.seed, RFopt$basic$seed)
+warn.seed.not.na <- function(RFoptOld, oldstyle=FALSE) {
+  RFopt <- RFoptOld[[2]]
+  basic <- RFopt$basic
+  if (!is.na(basic$seed)){  
+    o.seed <- RFoptOld[[1]]$basic$seed
+    allequal <- all.equal(o.seed, basic$seed)
     allequal <- is.logical(allequal) && allequal
-    if (dosimulate && RFopt$basic$printlevel >= PL_IMPORTANT &&
-        (is.null(old.seed) || (!is.na(old.seed) && allequal)
+    if (basic$printlevel >= PL_IMPORTANT &&
+        (is.null(o.seed) || (!is.na(o.seed) && allequal)
          )
         ) {
       if (RFopt$internal$warn_seed) {
@@ -297,22 +295,24 @@ rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
          txt <- "\nSet 'RFoptions(seed=NA)' to make the seed arbitrary."
       } else txt <- ""
       message("NOTE: simulation is performed with fixed random seed ",
-               RFopt$basic$seed, ".", txt)
+               basic$seed, ".", txt)
     }
-    set.seed(RFopt$basic$seed)
+    if (oldstyle) {
+      warning("Fixed seeds in the old style result in a different behaviour of R itself! While in the old style, the state of .Random.seed is influenced for fixed seed, it is not in the new style. The user is urged to switch to the new style.")
+    }
   }
-  ##  if (missing(x) || length(x) == 0) stop("'x' not given")
-
-  new <- C_UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
-                 y.ok=!dosimulate)
-
-##  Print(C_Init, as.integer(reg), model, new, NAOK=TRUE) 
-  
-  vdim <- .Call(C_Init, as.integer(reg), model, new, NAOK=TRUE) # ok
-  
-  if (is.null(old.seed)) return(vdim) else return(!is.na(RFopt$basic$seed))
 }
 
+
+rfInit <- function(model, x, y = NULL, z = NULL, T=NULL, grid=FALSE,
+                   distances, dim, reg, RFopt, y.ok=TRUE) { 
+  stopifnot(xor(missing(x), #|| length(x)==0,
+                missing(distances) || length(distances)==0))  
+  if (!is.na(RFopt$basic$seed)) set.seed(RFopt$basic$seed)    
+  new <- C_UnifyXT(x, y, z, T, grid=grid, distances=distances, dim=dim,
+                   y.ok=y.ok)
+  .Call(C_Init, as.integer(reg), model, new, NAOK=TRUE) # return vdim
+}
 
 
 rfdistr <- function(model, x, q, p, n, params, dim=1, ...) {
@@ -342,17 +342,13 @@ rfdistr <- function(model, x, q, p, n, params, dim=1, ...) {
     model$p <- if (is.matrix(p)) t(p) else p
   }
   if (!missing(n)) {
+    if (exists(".Random.seed") && !is.na(RFopt$basic$seed)) {
+      .old.seed <- .Random.seed; on.exit(set.seed(.old.seed), add = TRUE) }
     model$n <- n
   }
-  
-  old.seed <- if (exists(".Random.seed")) .Random.seed else NULL
-  if (rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
-         y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_DISTR,
-         dosimulate=FALSE, old.seed=RFoptOld[[1]]$basic$seed) &&
-      !is.null(old.seed))
-    on.exit(.Random.seed <<- old.seed, add = TRUE)
 
-
+  rfInit(model=model, x=matrix(0, ncol=dim, nrow=1),
+         y=NULL, z=NULL, T=NULL, grid=FALSE, reg = MODEL_DISTR, RFopt=RFopt)
   res <-  .Call(C_EvaluateModel, double(0), as.integer(MODEL_DISTR))
 
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
@@ -420,14 +416,8 @@ rfeval <- function(model, x, y = NULL, z = NULL, T=NULL, grid=NULL,
   }
   
   p <- list(fctcall, PrepareModel2(model, params=params, ...))
-  if (exists(".Random.seed")) {
-    old.seed <- .Random.seed 
-    on.exit(.Random.seed <<- old.seed, add = TRUE)
-  }
-  
   rfInit(model=p, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, dim=dim, reg = reg, dosimulate=FALSE,
-         old.seed=RFoptOld[[1]]$basic$seed)
+         distances=distances, dim=dim, reg = reg, RFopt=RFoptOld[[2]])
   res <- .Call(C_EvaluateModel, double(0), as.integer(reg))
   
   if (RFoptOld[[2]]$general$returncall) attr(res, "call") <-
@@ -597,15 +587,14 @@ rfDoSimulate <- function(n = 1, reg, spConform) {
   return(res2)
 }
 
+    
+#RFsimulateXX <- function() return(.Call(C_EvaluateModelXX))
+    
 
     
 RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
                         distances, dim, data, given = NULL, err.model,
                         params, err.params, n = 1, ...) {
-
-#  print("test"); 
- # Print(model, x, y,z,T, grid, given)
-  
   if (!missing(model) && is(model, "RFfit"))
     stop("To continue with the output of 'RFfit' use 'predict' or give the components separately")
   mc <- as.character(deparse(match.call()))
@@ -628,6 +617,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     message("number of simulations reduced")
     n <- 2
   }
+
   
   cond.simu <- !missing(data) && !is.null(data) 
   reg <- RFopt$registers$register
@@ -651,7 +641,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
       return(res)
     }
   }
-  
+
   ### preparations #########################################################
   stopifnot(!missing(model) && !is.null(model))
 
@@ -662,8 +652,7 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
     if (missing(err.model)) NULL
     else PrepareModel2(err.model, params=err.params, ...)
 
-
-  ### conditional simulation ###############################################
+   ### conditional simulation ###############################################
   if (cond.simu) {
     if (isSpObj(data)) data <- sp2RF(data)
     stopifnot(missing(distances) || is.null(distances))
@@ -682,21 +671,18 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
   } else { ## unconditional simulation ####
     if(!is.null(err.model))
       warning("error model is unused in unconditional simulation")
+    warn.seed.not.na(RFoptOld)
+    if (exists(".Random.seed") && !is.na(RFopt$basic$seed)) {
+      .old.seed <- .Random.seed; on.exit(set.seed(.old.seed), add = TRUE) }
 
-    if (exists(".Random.seed")) {
-      old.seed <- .Random.seed 
-      on.exit(.Random.seed <<- old.seed, add = TRUE)
-    }
     rfInit(model=list("Simulate",
-                         ##setseed=eval(parse(text="quote({set.seed(seed=seed); print(.Random.seed)})")),
-                     setseed=eval(parse(text="quote(set.seed(seed=seed))")),
-                  env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
-               grid=grid, distances=distances, dim=dim, reg=reg,
-               old.seed=RFoptOld[[1]]$basic$seed)
+                      setseed=eval(parse(text="quote(set.seed(seed=seed))")),
+                      env=.GlobalEnv, model), x=x, y=y, z=z, T=T,
+           grid=grid, distances=distances, dim=dim, reg=reg, RFopt=RFopt,
+           y.ok = FALSE)
     if (n < 1) return(NULL)
     res <- rfDoSimulate(n=n, reg=reg, spConform=FALSE)
   } # end of uncond simu
-
 
   ## output: RFsp   #################################
   if ((!cond.simu || (!missing(x) && length(x) != 0)) ## not imputing
@@ -724,7 +710,8 @@ RFsimulate <- function (model, x, y = NULL, z = NULL, T = NULL, grid=NULL,
       raster::projection(res) <- raster::projection(x)
     }
   }
-  
+
+   
   if (RFopt$general$returncall) attr(res, "call") <- mc
   attr(res, "coord_system") <- .Call(C_GetCoordSystem,
                                      as.integer(reg),

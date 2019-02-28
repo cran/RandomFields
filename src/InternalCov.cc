@@ -408,7 +408,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 
   if (equalsLikelihood(frame) && cov->calling != NULL) {
     if (TOTALXDIM(PREVSYSOF(cov->calling)) != TOTALXDIM(SYSOF(cov->calling)))
-      cov->frame = EvaluationType;
+      cov->frame = EvaluationType; // wann passiert das?? frage am 26.2.19
   }
   
 
@@ -681,7 +681,7 @@ int check2Xintern(model *cov, int vdim0, int vdim1, Types frame,
 	if (ct == wahr) continue;
         bool def_Unreduced = isPrevModelI(C) || equalsUnreduced(C);
 
-	//printf("def_unred %d %d; def_unred=%d %d %d %.50s\n",  isPrevModelI(C) , equalsUnreduced(C), def_Unreduced, !def_Unreduced ,  hasFullXdim(owniso), NAME(cov));  
+	//	printf("def_unred %d %d; def_unred=%d %d %.50s\n",  isPrevModelI(C) , equalsUnreduced(C), def_Unreduced, hasFullXdim(owniso), NAME(cov));
 	
 	if (!def_Unreduced && hasFullXdim(owniso)) { // isUnred not eqUnred!
 	  // E.g. Def = owniso = "Cart system"

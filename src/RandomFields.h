@@ -86,6 +86,7 @@ extern "C" {
   SEXP Init(SEXP Model_reg, SEXP Model, SEXP x, SEXP NA_OK);
   
   SEXP EvaluateModel(SEXP X, SEXP Covnr);
+  // SEXP EvaluateModelXX();
   
   SEXP GetProcessType(SEXP Model_reg, SEXP Model);
   // storing : current value

@@ -271,19 +271,22 @@ SystemCoordNames <- function(locinfo, RFopt = RFopt) {
   ## ensured that the names are the correct one.
   has.time.comp <- locinfo$has.time.comp
   tsdim <- locinfo$spatialdim + locinfo$has.time.comp
-  
+
+ 
   system <- RFopt$coords$coord_system
   if (system == "earth") {
     coordnames <- if (tsdim == 4) COORD_NAMES_EARTH
 		  else if (tsdim == 2) COORD_NAMES_EARTH[1:2]
 		  else if (tsdim == 3) c(COORD_NAMES_EARTH[1:2], "HeightOrTime")
   } else if (system == "cartesian" && tsdim <= 4) {
-    ##coords <- COORD_NAMES_CART[1:tsdim]
+    coordnames <- COORD_NAMES_CART[1:tsdim]
     if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_CART[3 + 1]
   } else {
     coordnames <- paste(COORD_NAMES_GENERAL[1], 1:tsdim, sep="")
     if (has.time.comp) coordnames[tsdim] <- COORD_NAMES_GENERAL[2]
-  } 
+  }
+
+##  Print("S", coordnames, system, tsdim)
   
   return(coordnames)
 }

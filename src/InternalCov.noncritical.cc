@@ -895,7 +895,7 @@ void assert_sys(system_type VARIABLE_IS_NOT_USED * sys){assert(sys != NULL);}
 //void assert_cov(model VARIABLE_IS_NOT_USED *cov) {assert(cov != NULL || __extension__({crash(); false;}));}
 //
 void assert_cov(model VARIABLE_IS_NOT_USED *cov) {
-  // if (cov==NULL) crash();
+  //if (cov==NULL) crash();
   assert(cov != NULL);
 }
 

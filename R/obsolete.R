@@ -163,6 +163,7 @@ DoSimulateRF <- function (n = 1, register = 0, paired=FALSE, trend=NULL) {
 }
 
 
+
 InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
                             grid=!missing(gridtriple), model, param,
                             trend,  method = NULL,
@@ -197,7 +198,8 @@ InitSimulateRF <- function (x, y = NULL, z = NULL, T=NULL,
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
   p <- list("Simulate", PrepareModel2(model))
-  rfInit(model=p, x=x, y =y, z = z, T=T, grid=grid) 
+  warn.seed.not.na(RFoptOld, TRUE)
+  rfInit(model=p, x=x, y =y, z = z, T=T, grid=grid, RFopt=RFoptOld[[2]])
 }
 
 
@@ -250,13 +252,14 @@ GaussRF <- function (x, y = NULL, z = NULL, T=NULL,
                       # gauss.method=method,
                        spConform=FALSE)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
- 
+
+  
   RFsimulate(model=model, x=x, y=y, z=z, T=T, grid=grid, n=n,
              #gauss.method=method,
              register=register, gauss.paired=paired,
              printlevel = PrintLevel, storing=Storing,
              ...)
-
+  
  ##   str(RFoptions())
  
 }
@@ -271,7 +274,11 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid=NULL, model, param,
                             maxstable,
                             method = NULL,
                             register = 0, gridtriple = FALSE) {
-  if (RFoptions()$internal$warn_oldstyle)
+  RFoptOld <-
+    internal.rfoptions(register=register, #gauss.method=method,
+                       spConform=FALSE)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  if (RFoptOld[[2]]$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFsimulate' instead.")
   meth <- if (!is.null(method)) method else maxstable
   if (is.null(meth)) stop("method not given")
@@ -293,14 +300,10 @@ InitMaxStableRF <- function(x, y = NULL, z = NULL, grid=NULL, model, param,
     }
   }
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
-
-  RFoptOld <-
-    internal.rfoptions(register=register, #gauss.method=method,
-                       spConform=FALSE)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
   
   p <- list("Simulate", PrepareModel2(model))
-  rfInit(model=p, x=x, y=y, z=z, grid=grid)
+  warn.seed.not.na(RFoptOld, TRUE)
+  rfInit(model=p, x=x, y=y, z=z, grid=grid, RFopt=RFoptOld[[2]])
 }
 
   
@@ -310,7 +313,14 @@ MaxStableRF <- function (x, y = NULL, z = NULL, grid=NULL,
                          n = 1, register = 0,
                          gridtriple = FALSE,
                          ...) {
-  if (RFoptions()$internal$warn_oldstyle)
+  RFoptOld <-
+   if (n>1) internal.rfoptions(..., register=register, #gauss.method=method,
+                               spConform=FALSE, storing=TRUE)
+   else internal.rfoptions(..., register=register, #gauss.method=method,
+                           spConform=FALSE)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+
+  if (RFoptOld[[2]]$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFsimulate' instead.")
   meth <- if (!is.null(method)) method else maxstable
   if (is.null(meth)) stop("method not given")
@@ -331,16 +341,8 @@ MaxStableRF <- function (x, y = NULL, z = NULL, grid=NULL,
       }
     }
   }
-  
-  RFoptOld <-
-   if (n>1) internal.rfoptions(..., register=register, #gauss.method=method,
-                               spConform=FALSE, storing=TRUE)
-   else internal.rfoptions(..., register=register, #gauss.method=method,
-                           spConform=FALSE)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-   
+ 
   return(RFsimulate(model=model, x=x, y=y, z=z, grid=grid, n=n))
-  
 }
 
 
@@ -369,8 +371,7 @@ EmpiricalVariogram <-
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
   
   rfempirical(x=x, y=y, z=z, T=T, data=data, grid=grid,
-                       bin=bin, phi=phi, theta=theta, deltaT=deltaT, vdim=1,
-		       method=METHOD_VARIOGRAM)
+                       bin=bin, phi=phi, theta=theta, deltaT=deltaT, vdim=1)
 }
 
 
@@ -381,7 +382,12 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                     pch=".", return.variance=FALSE,
                     allowdistanceZero = FALSE, cholesky=FALSE) {
                     
-  if (RFoptions()$internal$warn_oldstyle)
+  RFoptOld <- internal.rfoptions(general.pch=pch, spConform=FALSE,
+                                 return_variance=return.variance,
+                                 allowdistanceZero=allowdistanceZero)
+  on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  
+   if (RFoptOld[[2]]$internal$warn_oldstyle)
     warning("The function is obsolete. Use 'RFinterpolate' instead.")
   if (!is.null(trend)) 
     stop("in the obsolete setting, Kriging may not be used with trend!\n")                  
@@ -403,11 +409,6 @@ Kriging <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
   }
   if (length(T)!=0)  T <- c(T[1], T[3], length(seq(T[1], T[2], T[3])))
 
-  RFoptOld <- internal.rfoptions(general.pch=pch, spConform=FALSE,
-                                 return_variance=return.variance,
-                                 allowdistanceZero=allowdistanceZero)
-  on.exit(RFoptions(LIST=RFoptOld[[1]]))
-  
   data <- cbind(given, data)
   colnames(data) <- c(rep("", ncol(given)), "data")
   
@@ -425,13 +426,13 @@ CondSimu <- function(krige.method, x, y=NULL, z=NULL, T=NULL,
                      tol=1E-5, pch=".", #
                      paired=FALSE,
                      na.rm=FALSE) {
-   if (RFoptions()$internal$warn_oldstyle)
-    warning("The function is obsolete. Use 'RFsimulate' instead.")
- RFoptOld <- internal.rfoptions(register=register, gauss.paired=paired,
+  RFoptOld <- internal.rfoptions(register=register, gauss.paired=paired,
                                         # gauss.method=method,
                                  general.errregister=err.register,
                                  spConform=FALSE)
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
+  if (RFoptOld[[2]]$internal$warn_oldstyle)
+     warning("The function is obsolete. Use 'RFsimulate' instead.")
   
   if (RFoptOld[[2]]$internal$warn_oldstyle)
     warning("The function is obsolete.\nUse 'RFsimulate' instead.")
@@ -489,7 +490,7 @@ hurst <- function(x, y = NULL, z = NULL, data,
                    pch=16, cex=0.2, cex.main=0.85,
                   PrintLevel=RFoptions()$basic$printlevel,
                   height=3.5,
-                  ...) {
+                  ...) {  
   if (RFoptions()$internal$warn_oldstyle)
     warning("'hurst' is obsolete. Use RFhurst instead.")
   fft.len <- min(dim[1], fft.max.length)

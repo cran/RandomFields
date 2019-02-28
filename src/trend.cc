@@ -165,7 +165,7 @@ int checktrend(model *cov){
 
   //PMI(cov);
   if (!ok) {
-    SERR("trend model may not be used within the given frame.");
+     SERR("trend model may not be used within the given frame.");
   }
   if (!hasTrendFrame(cov) && !hasAnyEvaluationFrame(cov)) {
     //TREE0(cov); PMI(cov);
@@ -259,10 +259,8 @@ int checkTrendproc(model *cov) { // auch fuer Trendproc
   if (next != NULL) {
      if ((err = CHECK_PASSTF(next, ShapeType, SUBMODEL_DEP, TrendType)) !=
 	NOERROR) RETURN_ERR(err);
-
-     //PMI(cov);
-     
-     assert(isnowShape(next)); // inlcuding trend
+    
+     assert(isnowShape(next) || isnowTrend(next)); // inlcuding trend
     setbackward(cov, next);
     VDIM0 = next->vdim[0]; 
     VDIM1 = next->vdim[1];

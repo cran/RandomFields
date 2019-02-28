@@ -1084,7 +1084,7 @@ int checkM(model *cov) {
 	j++;
        }
     }
-    COV_DELETE_WITHOUT_LOC(&sub);
+    COV_DELETE_WITHOUT_LOC(&sub, cov);
     cov->nsub = j;
   }
 
@@ -1237,13 +1237,14 @@ Types TypeM(Types required, model *cov, isotropy_type required_iso){
 int structMproc(model *cov, model **newmodel) {
   int err;
   ASSERT_NEWMODEL_NULL;
-  if (cov->key != NULL) COV_DELETE(&(cov->key));
+  if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
   if (PrevLoc(cov)->distances) 
     SERR("distances do not allow for more sophisticated simulation methods");
      
-  NEW_STORAGE(plus);
+  NEW_STORAGE_WITH_SAVE(plus);
   plus_storage *s =cov->Splus;
-  int newdim = ANYDIM;
+
+  int newdim = PREVLOGDIM(0);
   for (int i=0; i<cov->nsub; i++) {
     if ((err = covcpy(s->keys + i, cov->sub[i])) != NOERROR) RETURN_ERR(err);
     assert(!isGaussMethod(s->keys[i]));
@@ -3014,7 +3015,7 @@ int structtrafoproc(model *cov, model VARIABLE_IS_NOT_USED **newmodel){
   SetLoc2NewLoc(sub, PLoc(cov));  
 
   if ((err = covcpy(&(cov->key), sub)) != NOERROR) {
-    if (cov->key != NULL) COV_DELETE(&(cov->key));
+    if (cov->key != NULL) COV_DELETE(&(cov->key), cov);
     goto ErrorHandling;
   }
 

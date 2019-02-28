@@ -51,17 +51,20 @@ int check_sequential(model *cov) {
   kdefault(cov, SEQU_BACK, gp->back);
   kdefault(cov, SEQU_INIT, gp->initial);
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
+
   
   if ((err = CHECK(next, dim, dim, PosDefType, XONLY, 
-		   SymmetricOf(OWNISO(0)),
-		   SUBMODEL_DEP, EvaluationType)) != NOERROR) {
-     RETURN_ERR(err);
+		   SymmetricOf(OWNISO(0)), // todo : eigentlich sollte coordinate of reichen; aber unten alg durchschauen.
+		   SUBMODEL_DEP, GaussMethodType)) != NOERROR) {
+    RETURN_ERR(err);
   }
   
   if (next->pref[Sequential] == PREF_NONE) RETURN_ERR(ERRORPREFNONE);
   setbackward(cov, next);
+
   if ((err = kappaBoxCoxParam(cov, GAUSS_BOXCOX)) != NOERROR) RETURN_ERR(err);
   if ((err = checkkappas(cov)) != NOERROR) RETURN_ERR(err);
+
 
   RETURN_NOERROR;
 }

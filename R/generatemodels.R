@@ -571,7 +571,15 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
 		  "')")
 	    )
     }
-   
+    define_num <- function(name, value) {
+      if (is(value, "try-error")) value <- NULL
+      write(file = RCauto.file, append = TRUE,
+	    paste("\n", name, " <- c(", sep="",
+		  paste(value, collapse=", "),
+		  ")")
+	    )
+    }
+    
     envir <- as.environment("package:RandomFields")
     all <- ls(envir=envir)
     genuine <- all[substr(all, 1, 2) %in% c("iR", "RM", "R.", "RP" ,"RF", "RR")]
@@ -581,16 +589,29 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
 		try(RFgetModelNames(newnames=FALSE))) # , RM_INTERNALMIXED
 
  
-   define_char("rfgui_Names1",            
-               RFgetModelNames(type=TYPE_NAMES[c(TcfType, PosDefType) + 1],
-                               isotropy=ISO_NAMES[ISOTROPIC + 1],
-                               operator=FALSE,
-                               group.by=NULL,
-                               valid.in.dim = 1,#if (sim_only1dim)1 else 2,
-                               simpleArguments = TRUE,
-                               vdim=1))
+    names1 <- c("RMwhittle",
+                RFgetModelNames(type=TYPE_NAMES[c(TcfType, PosDefType) + 1],
+                                isotropy=ISO_NAMES[ISOTROPIC + 1],
+                                operator=FALSE,
+                                group.by=NULL,
+                                valid.in.dim = 1,#if (sim_only1dim)1 else 2,
+                                simpleArguments = TRUE,
+                                vdim=1))
+
+    do.not.include <-
+      c("RMnugget", # macht kaum sinn
+        "RMwendland","RMcardinalsine","RMpoweredexp", # aliase
+        "RMparswmX", "RMtent", # convenience models
+        "RMconstant", ## macht aerger
+        "RMlsfbm", ## nur fuer |x| < 1 definiert
+        "RMdagum", ## internal parameter
+        "RMgneiting" ## integer parameter
+        )
+    names1 <- sort(names1[!(names1  %in% do.not.include)])
+    define_char("rfgui1_Names", names1)
     
-    define_char("rfgui_Names2",
+
+    names2 <- c("RMwhittle",
                 RFgetModelNames(type=TYPE_NAMES[c(TcfType, PosDefType) + 1],
                                 isotropy=ISO_NAMES[ISOTROPIC + 1],
                                 operator=FALSE,
@@ -598,6 +619,8 @@ rfGenerateConstantsC <- function(RFpath, RCauto.file, c.source, package="none") 
                                 valid.in.dim = 2,#if (sim_only1dim)1 else 2,
                                 simpleArguments = TRUE,
                                 vdim=1))
+    names2 <- sort(names2[!(names2  %in% do.not.include)])
+     define_char("rfgui2_Names", names2)              
     }
  
   return(NULL)

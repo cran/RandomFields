@@ -1722,14 +1722,14 @@ SEXP GetModel(SEXP keynr, SEXP Modus, SEXP SpConform, SEXP whichSub,
   PROTECT(value = IGetModel(dummy, modus, spConform, solveRandom,
 			    (sortsofparam) whichparam,
 			    (sort_origin) INTEGER(origin)[0]));
-  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy);
+  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy, cov);
   UNPROTECT(1);
   set_NAOK_RANGE(na_ok);
   return(value);
 
  ErrorHandling:
   set_NAOK_RANGE(na_ok);
-  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy);
+  if (dummy != NULL) COV_DELETE_WITHOUT_LOC(&dummy, cov);
   XERR(err);
 }
 

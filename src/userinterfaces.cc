@@ -573,21 +573,26 @@ void CheckModel(SEXP Model, double *x, double *Y, double *T,
     } 
 
     char EM[LENERRMSG];
-    errorMSG(err, KT->error_causing_cov->err_msg, KT, EM);
+    model *causing = KT->error_causing_cov;
+    // 94848191771984 94848191771984
+    //    printf("err=%d %s %ld z=%d\n", err, NAME(causing), causing, causing->zaehler);
+    ///printf("msg=%s\n", causing==NULL ?  (char*) "<strange failure>" : causing->err_msg);
+    
+    errorMSG(err, causing==NULL ?  (char*) "<strange failure>" : causing->err_msg,
+	     KT, EM);
     SPRINTF(EM2, "%.50s: %.50s%.500s", KT->error_loc, PREF_FAILURE, EM);
-    //    printf("location:%.50s  %.50s  %.50s\n", KT->error_loc,  cov->err_msg, EM);
+    //    printf("location:%.50s  %.50s  %.50rs\n", KT->error_loc,  cov->err_msg, EM);
     if (lx == 0 || distances) break;
     y = x;
     ly = lx;
     zaehler++;
 
   }// Ende while
-  
-  PutRNGstate();
 
-  //  PMI(cov);
-  // printf("err = %d '%s' \n", err, EM2);
-
+  // !!!! ACHTUG !!!!
+  // DO NOT WRITE BACK SINCE, IF EVER, ONLY USED FOR TECHNICAL REASONS
+  //
+  PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!! -- hier irrelevant
 
   if (err != NOERROR) { 
     RFERROR(EM2); 
@@ -628,12 +633,17 @@ model *InitIntern(int cR, SEXP Model, SEXP x, bool NA_OK) {
 }
 
 SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
+
+  // printf("initialising RndomFields model\n");
+  
   model *cov = InitIntern(INTEGER(model_reg)[0], Model, x,
 			  (bool) LOGICAL(NA_OK)[0]);
 
   if (PL >= PL_COV_STRUCTURE) {
     PMI(cov);// OK
   }
+
+  //  PMI(cov);
 
   SEXP ans;
   PROTECT (ans = allocVector(INTSXP, 2));
@@ -646,17 +656,32 @@ SEXP Init(SEXP model_reg, SEXP Model, SEXP x, SEXP NA_OK) {
 }
 
 
+/*
+// for testing only
+SEXP EvaluateModelXX(){
+  PRINTF("dummy simulation\n");
+  SEXP result;
+  GetRNGstate();
+  PROTECT(result = allocVector(REALSXP, 10));
+  for (int i=0; i<10; i++) REAL(result)[i]=UNIFORM_RANDOM;
+  PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!!
+  UNPROTECT(1);
+  return result;
+}
+*/
 
+  
 SEXP EvaluateModel(SEXP X, SEXP Covnr){
-   assert(currentNrCov != UNSET);  
+  SEXP result=R_NilValue, 
+    dummy=R_NilValue;
+  assert(currentNrCov != UNSET);  
   int d, mem, len;
   model *cov = KEY()[INTEGER(Covnr)[0]];
   KEY_type *KT = cov->base;
-  SEXP result=R_NilValue, 
-    dummy=R_NilValue;
-  
+   
   //   PMI(cov);
-
+  // printf("evaluating RndomFields model: %f x %s\n", REAL(X)[0], NAME(cov));
+ 
   STRCPY(KT->error_loc, "");
   if (cov == NULL) RFERROR("register not initialised");
   if ( (len = cov->qlen) == 0) {
@@ -677,9 +702,10 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
   if (len <= 2) {
     if (len == 1) PROTECT(result = allocVector(REALSXP, mem)); 
     else PROTECT(result = allocMatrix(REALSXP, cov->q[0], cov->q[1]));
+
     GetRNGstate();
     DefList[COVNR].cov(REAL(X), cov, REAL(result));
-    PutRNGstate();
+    PutRNGstate(); // PutRNGstate muss vor UNPROTECT stehen!!
     UNPROTECT(1);
   } else {
     PROTECT(dummy=allocVector(INTSXP, len));
@@ -687,7 +713,7 @@ SEXP EvaluateModel(SEXP X, SEXP Covnr){
     PROTECT(result=allocArray(REALSXP, dummy));
     GetRNGstate();
     DefList[COVNR].cov(REAL(X), cov, REAL(result));
-    PutRNGstate();
+    PutRNGstate();// PutRNGstate muss vor UNPROTECT stehen!!
     UNPROTECT(2);
   }
 
@@ -746,8 +772,20 @@ void GetNrParameters(int *covnr, int* kappas) {
    assert(currentNrCov != UNSET);
   if (*covnr<0 || *covnr>=currentNrCov) {*kappas=-999;}
   else *kappas = DefList[*covnr].kappas;
+  /*  else {
+    defn *C = DefList + *covnr;
+    int k = C->kappas,
+      kk =0;
+    for (int i=0; i<k; i++) {
+      p rintf("%50s %50s\n", C->kappanames[i], INTERNAL_PARAM);
+      kk += (str cmp(C->kappanames[i], INTERNAL_PARAM) != 0);
+    }
+    *kappas = kk;
+    p rintf("%d \n", kk);
 }
+  */
 
+}
 
 void GetModelNr(char **name, int *nr) {
   *nr = getmodelnr(*name);
@@ -1467,7 +1505,7 @@ model *CMbuild(SEXP Model, KEY_type *KT, int cR) {
   if (cR < 0 || cR >= MODEL_MAX) BUG;
   model **Cov = KT->KEY + cR;
   if (*Cov != NULL) {
-    COV_DELETE(Cov);
+    COV_DELETE(Cov, NULL);
   }
   assert(*Cov == NULL);
  

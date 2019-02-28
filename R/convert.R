@@ -1192,6 +1192,8 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid, data,
     varnames <- names(columns$is.data)    
     coordnames <- names(columns$is.x)
 
+  #  Print("A", coordnames)
+
  #   idx <- if (RFopt$general$vdim_close_together) 1 else length(dimensions)
 #    if (all(dimdata[, idx] == 1))
  #     dimdata <- dimdata[, -idx, drop=FALSE]
@@ -1214,8 +1216,9 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid, data,
     columns <- data.columns(data[[1]], model=model, RFopt = RFopt, xdim=dim,
 			    force=allowFirstCols, halt=!allowFirstCols,
 			    vdim=vdim)
-    varnames <- names(columns$is.data)    
+    varnames <- names(columns$is.data)
     coordnames <- names(columns$is.x)
+#    Print("B", coordnames)
   
     if (dist.given) {
       stopifnot(missing(x) || length(x)==0, length(y)==0, length(z)==0)
@@ -1399,15 +1402,20 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid, data,
   ## geht x[[1]]$x immer gut ??
   ##  Print(missing(x), neu)
 
+#  Print("CD", coordnames, neu[[1]])
   if (is.null(coordnames))
     coordnames <- SystemCoordNames(locinfo=neu[[1]], RFopt=RFopt) 
 
-     
+#     Print("C", coordnames)
  
   restotal <- sapply(neu, function(x) x$restotal)
   ldata <- sapply(data, length)
 
-  onedim.x <- all(sapply(data, function(x) is.vector(x) || ncol(x) == 1))
+  ## unklar wo dies gebraucht wird. Macht schwierigkeiten 27.2.19. Warum
+  ## wird onedim.x gebraucht? mit false mal ausgeschaltet
+  onedim.x <- FALSE && all(sapply(data, function(x) is.vector(x) || ncol(x) == 1))
+
+  
   if (missing(model)) {
     if (length(further.models) > 0)
       stop("'model' is not given, but 'further.models'")
@@ -1433,9 +1441,9 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid, data,
                  ## spatialdim, has.time.comp,  xdimOZ = xdimOZ,
                  FALSE, model.vdim,  ##           set by side effect !
                  PL - 5L
-                 )
+                 )    
 
-    ##Print(pos, newmodel, values, pos,further.models);# kkk
+    ##    Print(pos, newmodel, values, pos,further.models, model.vdim);# kkk
    
     if (prepRecall <- length(values) > 0 || length(further.models) > 0) {
       ans <- PrepareModel2(model=model, ..., params=params,
@@ -1453,6 +1461,8 @@ UnifyData <- function(model, x, y=NULL, z=NULL, T=NULL,  grid, data,
                         x=neu_C)
       }
     }
+
+##    Print(vdim, onedim.x, model.vdim)
     
     if (length(vdim) == 0) vdim <- if (onedim.x) 1 else model.vdim
     else if (vdim != model.vdim)

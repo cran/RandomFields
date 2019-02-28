@@ -1206,54 +1206,40 @@ int IncludeScalar(const char *name, Types type, int minsub, int maxsub,
 bool addvariantOK(Types type, isotropy_type iso) {
   int nr = currentNrCov - 1;
   defn *C = DefList + nr; // nicht gatternr
-  //  printf("A0 %s\n", C->name);
-  if (isManifold(SYSTYPE(C->systems[0], 0))) return false;
+   if (isManifold(SYSTYPE(C->systems[0], 0))) return false;
   if (C->variants >= MAXVARIANTS) return false;
   if (!(nr == BIND)
       && equalsSubModelD(DOM(C->systems[0], 0))) return false;
   if (LASTSYSTEM(C->systems[0]) > 0) BUG;
-  //  printf("A %s\n", C->name);
-  if (isPrevModelI(C) || equalsPrevModelI(iso)) {
+   if (isPrevModelI(C) || equalsPrevModelI(iso)) {
     if (C->check != checkconstant && 
 	SYSTYPE(C->systems[0], 0) != MathDefType &&
 	C->check != checkcovariate &&
 	C->check != checkMatern &&
-	C->check != checkWM
+	C->check != checkWM &&
+	C->check != checkdeclare
 	) return false; 
   }
-  // printf("B\n");
   int n = SYSTEMS(C->systems[C->variants - 1]);
   for (int s=0; s<n; s++) {
     isotropy_type sysiso = ISO(C->systems[C->variants - 1], s);
-
-    //  printf("B %d %d %s %s\n", ISO(C->systems[C->variants - 1], 0), iso,
-    //	   ISO_NAMES[ISO(C->systems[C->variants - 1], 0)], ISO_NAMES[iso]);
-    //  if (nr > 95) BUG;
-
-  if (equal_coordinate_system(sysiso, iso, true)) {
-    //  printf("Baa %d, %d %d\n", s, sysiso, iso);
-      if (sysiso > iso && C->check != checkpower) return false;  // see check2x
-      //
-      //  printf("Ba %s %d %d : %d %d Consist=%d\n", C->name, s, n, sysiso, iso, Type Consistency(type, SYSTYPE(C->systems[C->variants - 1], s)));
-     if (sysiso != iso ||  // see check2x
+ if (equal_coordinate_system(sysiso, iso, true)) {
+       if (sysiso > iso && C->check != checkpower) return false;  // see check2x
+       if (sysiso != iso ||  // see check2x
 	 !isBad(TypeConsistency(type, SYSTYPE(C->systems[C->variants - 1],
 						  s))))
 	return false;
     }
-  //  printf("ok %s\n", C->name);
-  }
+   }
   Types systype = SYSTYPE(C->systems[0], 0);
-  //  printf("C\n");
-  if (!isNegDef(systype) &&
+   if (!isNegDef(systype) &&
      systype != type &&  
      !equalsShape(systype) &&
      !isProcess(systype) &&
      !isMathDef(C) &&
      C->check != checktrend) 
     return false;// see also 
-  //                                     e.g.  newmodel _cov cpy in getNset.cc
-  // printf("D\n");
-  if (isAnySphericalIso(iso) &&
+   if (isAnySphericalIso(iso) &&
       ((C->finiterange == wahr && isPosDef(type) && C->vdim == SCALAR)
        || C->Monotone == COMPLETELY_MON)) return false;
      return true;
@@ -1584,6 +1570,7 @@ void addTypeFct(type_fct TypeFct) {
   int nr = currentNrCov - 1;
   defn *C = DefList + nr; // nicht gatternr
   C->TypeFct = TypeFct;
+  //  printf("Typefct: %s\n", C->name);
 }
 
 

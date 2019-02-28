@@ -362,7 +362,7 @@ int checkEarth(model *cov){
 	*zenit = cov->Searth->cart_zenit;
       for (int d=0; d<=2; d++) Rsq += X[d] * X[d];
       for (int d=0; d<=2; d++) {
-	zenit[d] = X[d] / Rsq;
+	zenit[d] = X[d] / Rsq; // achtung! nicht s q r t(Rsq) !
       }
     }
     double Zenit[2] = { GLOBAL.coords.zenit[0] * pi180, 
@@ -404,29 +404,27 @@ int checkEarth(model *cov){
   double *P = cov->Searth->P; assert(P!=NULL);
  
 
-#define orthTrafoStat					\
-  for (int m=0, d=0; d<3; d++) {			\
-    U[d] = 0.0;						\
-    for(int k=0; k<3; k++, m++) { /* p rintf("d=%d k=%d U[d]=%g\n", d,k,U[d]);	*/ \
-      U[d] += P[m] * X[k];				\
-    }							\
-  }									\
-  if (U[2] < 0.0) ERR("location(s) not in direction of the zenit");	\
+#define orthTrafoStat							\
+  int m = 0;								\
+  U[0] = 0.0;    for(int k=0; k<3; k++, m++) U[0] += P[m] * X[k];	\
+  U[1] = 0.0;    for(int k=0; k<3; k++, m++) U[1] += P[m] * X[k];	\
+  double U2 = 0; for(int k=0; k<3; k++, m++) U2   += P[m] * X[k];	\
+  assert(m==9 && dim <= 2);						\
+  if (U2 < 0.0) ERR("location(s) not in direction of the zenit");	\
   for (int d = 2; d<dim; d++) U[d] = x[d]
 
 #define orthDef orthDefStat;			\
-   double Y[MAXEARTHXDIM + 1];
+  double Y[MAXEARTHXDIM + 1];
 
-#define orthTrafo					\
-  for (int m=0, d=0; d<3; d++) {				\
-    U[d] = V[d] = 0.0;					\
-    for(int k=0; k<3; k++, m++) { 				\
-      U[d] += P[m] * X[k];				\
-      V[d] += P[m] * Y[k];				\
-    }							\
-  }							\
-  if (U[2] < 0.0 || V[2] < 0.0)					\
-    ERR("location(s) not in direction of the zenit");		\
+#define orthTrafo							\
+  int m=0;								\
+  U[0] = V[0] = 0.0;							\
+  for(int k=0; k<3; k++, m++) { U[0] += P[m] * X[k]; V[0] += P[m] * Y[k]; } \
+  U[1] = V[1] = 0.0;							\
+  for(int k=0; k<3; k++, m++) { U[1] += P[m] * X[k]; V[1] += P[m] * Y[k]; } \
+  double U2 = 0.0, V2 = 0.0;						\
+  for(int k=0; k<3; k++, m++) { U2   += P[m] * X[k]; V2   += P[m] * Y[k]; } \
+  if (U2 < 0.0 || V2 < 0.0) ERR("location(s) not in direction of the zenit"); \
   for (int d = 2; d<dim; d++) {U[d] = x[d]; V[d] = y[d];}
 
 
@@ -434,17 +432,8 @@ void EarthKM2OrthogStat(double *x, model *cov, double *U) {
   assert(TRAFONR == EARTHKM2ORTHOGRAPHIC);
   orthDefStat;
   earth2cartInnerStat(radiuskm_aequ, radiuskm_pol); // results in X[0], X[1]
-
-  // orthTrafoStat	
-  for (int m=0, d=0; d<3; d++) {			
-    U[d] = 0.0;						
-    for(int k=0; k<3; k++, m++) { //printf("d=%d k=%d U[d]=%f\n", d,k,U[d]);	
-      U[d] += P[m] * X[k];				
-    }							
-  }									
-  if (U[2] < 0.0) ERR("location(s) not in direction of the zenit");	
-  for (int d = 2; d<dim; d++) U[d] = x[d];
-}
+  orthTrafoStat;
+ }
 
   void EarthKM2Orthog(double *x, double *y, model *cov, double *U, 
 		      double *V) {
@@ -458,7 +447,7 @@ void EarthKM2OrthogStat(double *x, model *cov, double *U) {
 void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
   assert(TRAFONR == EARTHMILES2ORTHOGRAPHIC);
   orthDefStat;
-  earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol); // results in X[0], X[1]
+  earth2cartInnerStat(radiusmiles_aequ, radiusmiles_pol);//results in X[0], X[1]
   orthTrafoStat;
 }
 
@@ -480,7 +469,8 @@ void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
     *cart_zenit = cov->Searth->cart_zenit;				\
   for (int d=0; d<3; d++) factor += cart_zenit[d] * X[d];		\
   if (factor <= 0.0)						\
-    ERR1("locations not on the half-sphere given by the '%.50s'.", coords[ZENIT]);\
+    ERR1("locations not on the half-sphere given by the '%.50s'.", \
+	 coords[ZENIT]);					   \
   for (int d=0; d<3; d++) X[d] /= factor
 
 #define Gnomonic							\
@@ -492,7 +482,8 @@ void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
     factorY += cart_zenit[d] * Y[d];					\
   }									\
   if (factor <= 0.0 || factorY <= 0.0) 					\
-    ERR1("locations not on the half-sphere given by the '%.50s'.", coords[ZENIT]);\
+    ERR1("locations not on the half-sphere given by the '%.50s'.",\
+	 coords[ZENIT]);						\
   for (int d=0; d<3; d++) {						\
     X[d] /= factor;							\
     Y[d] /= factorY;							\
@@ -502,16 +493,16 @@ void EarthMiles2OrthogStat(double *x, model *cov, double *U) {
 
 void Earth2GnomonicStat(double *x, model *cov, double *U) {
   assert(TRAFONR == EARTHKM2GNOMONIC || TRAFONR == EARTHMILES2GNOMONIC);
-  orthDefStat;
-  earth2cartInnerStat(radiuskm_aequ, radiuskm_pol); // results in X[0], X[1]
-  GnomonicStat;
-  orthTrafoStat;
+  orthDefStat; 
+  earth2cartInnerStat(1.0, radiuskm_pol / radiuskm_aequ);//Umwandlung in CartSys
+  GnomonicStat; // Projektion des Punktes auf die Ebene, die im R^3 liegt
+  orthTrafoStat; // Projektion dieser Ebene auf R^2
 }
 
  void Earth2Gnomonic(double *x, double *y, model *cov, double *U, double*V){
   assert(TRAFONR == EARTHKM2GNOMONIC || TRAFONR == EARTHMILES2GNOMONIC);
   orthDef;
-  earth2cartInner(radiuskm_aequ, radiuskm_pol);
+  earth2cartInner(1.0, radiuskm_pol / radiuskm_aequ);
   Gnomonic;
   orthTrafo;
 }

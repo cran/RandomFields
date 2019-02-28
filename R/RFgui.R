@@ -84,8 +84,8 @@ rfgui.intern <- function(data, x, y,
     internal.rfoptions(storing=FALSE, printlevel=printlevel - 10,
                        circulant.trials=circ.trials,
                        circulant.force=circ.force,
-                       circulant.mmin=circ.min, ...,
-                       graphics.height=-1
+                       circulant.mmin=circ.min, ...
+                      # , graphics.height=-1
                        )
   else  internal.rfoptions(storing=FALSE, printlevel=printlevel - 10, ...)
   assign("RFopt.old", RFoptOld[[1]], envir=ENVIR)
@@ -143,17 +143,17 @@ rfgui.intern <- function(data, x, y,
     # nun zum neuen Model
     modelChoice <- models[modelChoiceNum+1]
     selModelNum <- .C(C_GetModelNr, as.character(modelChoice), nr=integer(1))$nr
-
     selModelCountPar <- .C(C_GetNrParameters, selModelNum, k=integer(1) )$k
-    dim <- as.integer(2 - sim_only1dim)  
+    
     newmodel <- list(modelChoice, k=rep(NA, times=selModelCountPar))
+    dim <- as.integer(2 - sim_only1dim)
     minmax <- try(.Call(C_SetAndGetModelInfo, guiReg,
                         list("Dummy", newmodel), dim,
                         FALSE, FALSE, FALSE, dim,
                         as.integer(10), ## ehemals RFoptions(short=10)
                         TRUE, TRUE)$minmax)
     if (is(minmax, "try-error")) return(0)
-
+    selModelCountPar <- nrow(minmax)
     
     assign("selModelNum",selModelNum, envir=ENVIR)
     if (exists("baseModel", where=ENVIR)) remove("baseModel", envir=ENVIR)
@@ -169,8 +169,11 @@ rfgui.intern <- function(data, x, y,
       baseParam <- get(paste("remember", selModelNum, sep=""), envir=ENVIR)
 
     ## selModelCountPar > 0 hier !!
-##    openeps <- 1e-10
-    for (i in 1:selModelCountPar) {
+    ##    openeps <- 1e-10
+
+    for (i in 1:selModelCountPar) { ## nrow(minmax) ist kleinr als
+      ## selModelCountPar, wenn internal parameter dabei sind
+      ## damit faellt dagum raus, aehnlich gneiting das integer parameter hat
       baseParam[i] <- 
       if (!is.na(baseParam[i])) baseParam[i]
       else if (minmax[i, MINMAX_TYPE] == INTEGERPARAM) minmax[i, MINMAX_PMAX]
@@ -335,7 +338,6 @@ rfgui.intern <- function(data, x, y,
 
   plotFunction <- function(...)
   {
-
     #Print(tkValue(plotEV), cbPlotEV)
 
     plotev = as.numeric(tkValue(plotEV))
@@ -456,7 +458,7 @@ rfgui.intern <- function(data, x, y,
      if (is(z, "try-error")) {
          plot(Inf, Inf, xlim=c(0,1), ylim=c(0,1), axes=!FALSE, xlab="",
                ylab="",
-             cex.main=2, col.main="brown",
+             cex.main=1.5, col.main="brown",
               main=paste("\n\n\n\n\n\n\n\n",
                if (guiOpt$simu_method == "any method")
                "No suitable simulation algorithm found"
@@ -739,8 +741,7 @@ rfgui.intern <- function(data, x, y,
   }
 
   # get all model names
-  models <- if (sim_only1dim) rfgui_Names1 else rfgui_Names2
-  models <- models[models != "RMnugget"]
+  models <- if (sim_only1dim) rfgui1_Names else rfgui2_Names
   
   #-------------------------------------------------------------------
   # Start Values and ranges

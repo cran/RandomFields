@@ -150,9 +150,18 @@ bool isManifold(Types type);
 
 bool isManifold(defn *C);
 bool isMathDef(defn *C);
-bool isTrend(model *cov);
-bool isBrMethod(model *cov);
+
+// dangerous to add others!!
+// see init.others.cc: CheckListmodel & questions.cc:isDefCL
+bool isProcess(model *cov);
+bool isNormedProcess(model *cov);
 bool isGaussMethod(model *cov);
+bool isBrMethod(model *cov);
+bool isInterface(model *cov);
+bool isPointShape(model *cov);
+//bool isShape(model *cov);
+bool isRandom(model *cov);
+bool isTrend(model *cov);
 
 bool isnowTcf(model *cov);
 bool isnowPosDef(model *cov);
@@ -268,14 +277,6 @@ bool isDollarProc(model *cov);
 bool isAnyDollar(model *cov);
 bool isNatsc(model *cov);
 
-// dangerous to add others!!
-// see init.others.cc: CheckListmodel & questions.cc:isDefCL
-bool isProcess(model *cov);
-bool isNormedProcess(model *cov);
-bool isPointShape(model *cov);
-bool isShape(model *cov);
-bool isRandom(model *cov);
-bool isInterface(model *cov);
 
 
 //bool isCov(model *cov);

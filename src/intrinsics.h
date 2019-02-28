@@ -1,25 +1,44 @@
 
-#ifndef miraculix_initrinsics_H
-#define miraculix_initrinsics_H 1
+#ifndef randomfields_initrinsics_H
+#define randomfields_initrinsics_H 1
 
 #include <inttypes.h> // uintptr_t
 
 // PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS) -mavx -msse -msse2 -msse3 -msse4 -msse4a -march=core-avx2
 
+#ifdef XXXXX_XXXX
 
+#ifdef __MMX__
 #define MMX __MMX__
+#endif
+#ifdef __SSE__
 #define SSE __SSE__
+#endif
+#ifdef  __SSE2__
 #define SSE2 __SSE2__
+#endif
+#ifdef  __SSE3__
 #define SSE3 __SSE3__
+#endif
+#ifdef  __SSSE3__
 #define SSSE3 __SSSE3__
+#endif
+#ifdef  __SSE4A__
 #define SSE4A __SSE4A__
+#endif
 #if defined __SSE41__ || defined __SS42__
 #define SSE412 1
 #endif
 //
-#define AVX __AVX__
-//#define AVX2 __AVX2_
-//#define AVX512 __AVX512__
+#ifdef __AVX__
+#define AVX 1
+#endif
+#ifdef __AVX2__
+#define AVX2 1
+#endif
+
+#endif
+
 
 #if defined (AVX512)
 #define SSEBITS 512

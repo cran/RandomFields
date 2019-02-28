@@ -83,12 +83,12 @@ void density(double VARIABLE_IS_NOT_USED *value, model *cov, double *v) {
 
   STRCPY(errorloc_save, KT->error_loc);
 
-  PutRNGstate();
+  PutRN Gstate();
   ERR("stop : ni nae Zei falsch");
   double simu_seed = GLOBAL_UTILS->basic.seed + (ni - 1);
   addVariable((char*) "seed", &simu_seed, 1, 1, PENV(DENS_ENV)->sexp);
   eval(PLANG(DENS_SEED)->sexp, PENV(DENS_ENV)->sexp);
-  GetRNGstate();
+  GetRN Gstate();
 
   SPRINTF(KT->error_loc, "%.50s %d", errorloc_save, ni);
  
@@ -113,7 +113,7 @@ void density(double VARIABLE_IS_NOT_USED *value, model *cov, double *v) {
 
  ErrorHandling: 
  
-  PutRNGstate();
+  PutRN Gstate();
   
   if (err > NOERROR) {
     XERR(err);
@@ -349,24 +349,24 @@ void simulate(double *N, model *cov, double *v){
 #ifdef DO_PARALLEL
     //omp_set_num_threads(1);
 #endif
-  
+
     if (GLOBAL_UTILS->basic.seed != NA_INTEGER &&
 	(nn > 1 || GLOBAL.general.seed_incr != 0)) {
       assert(!PisNULL(SIMU_SEED) && !PisNULL(SIMU_ENV));
-      PutRNGstate(); 
+      PutRNGstate(); // PutRNGstate muss vor UNPROTECT stehen!! -- hier irrelevant
       // if seed is increased by (ni -1) only, a row of simulations
       // of max-stable fields will look very much the same !!
-      int simu_seed =
-	GLOBAL_UTILS->basic.seed + (ni - 1) * 101101  + nn * GLOBAL.general.seed_incr;
-      //  printf("%d\n", simu_seed);
+      int simu_seed = GLOBAL_UTILS->basic.seed + (ni - 1) *
+	GLOBAL.general.seed_sub_incr
+	+ nn * GLOBAL.general.seed_incr;
+
+      // printf("seed=%d %d %d\n",simu_seed, GLOBAL_UTILS->basic.seed,GLOBAL.general.seed_incr);
+      
       addIntVariable((char*) "seed", &simu_seed, 1, 1, PENV(SIMU_ENV)->sexp);
       eval(PLANG(SIMU_SEED)->sexp, PENV(SIMU_ENV)->sexp);
       GetRNGstate(); // start interner modus
     }
 
-
-    // printf("%f\n", UNIFORM_RANDOM);
-    
     
     SPRINTF(KT->error_loc, "%.50s %d", errorloc_save, ni); 
     
@@ -423,9 +423,7 @@ void simulate(double *N, model *cov, double *v){
  ErrorHandling:
 
   //  PMI(cov);
- 
-  // PutRNGstate();
-  
+   
   if (err > NOERROR) {
     if (simu != NULL) sub->simu.active = simu->active = false;
     XERR(err);
@@ -753,6 +751,9 @@ int check_likelihood(model *cov) {
       vdimtot = totpts * VDIM0;
     int
       repet = datatot / vdimtot;
+
+    //  printf("repet = %d %d %d %d\n", repet,  vdimtot , VDIM0,datatot);
+    
     if (repet * vdimtot != datatot || repet == 0)  {
       GERR("data and coordinates do not match");
     }
@@ -1158,7 +1159,7 @@ int alloc_pgs(model *cov, int dim) { // all what is necessary for dompp
   int dimP1 = dim + 1;
 
   assert(cov->Spgs == NULL); // NIE pgs_DELETE(&(cov->Spgs)) in Huetchen, da sonst dompp durcheinander kommt;
-  NEW_STORAGE(pgs);
+  NEW_STORAGE_WITH_SAVE(pgs);
   pgs_storage *pgs = cov->Spgs;
   assert(pgs->z == NULL);
 
@@ -1185,14 +1186,14 @@ int alloc_pgs(model *cov, int dim) { // all what is necessary for dompp
   RETURN_NOERROR;
 }
 
-
+//93948675616576 z=
 int alloc_cov(model *cov, int dim, int rows, int cols) { 
   // all what is necessary for dompp
   // but also for cov evaluation and fctn evaluation!
 
   int err;
 
-   if (cov->Spgs != NULL) pgs_DELETE(&(cov->Spgs));
+  if (cov->Spgs != NULL) pgs_DELETE(&(cov->Spgs), cov);
   if ((err = alloc_pgs(cov, dim)) != NOERROR) RETURN_ERR(err);
 
   // erst danach!!!
@@ -1825,7 +1826,7 @@ void FctnExtern(model *cov, model *covVdim, model *sub,
   cov->frame = LikelihoodType; // dummy, just to please next function
   FctnIntern(cov, covVdim, sub, value, ignore_y);
   cov->frame = frame;
-  pgs_DELETE(&(cov->Spgs));
+  pgs_DELETE(&(cov->Spgs), cov);
 }
 
  

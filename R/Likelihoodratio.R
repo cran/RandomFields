@@ -358,7 +358,7 @@ RFratiotest <-
     old.seed <- .Random.seed
     on.exit(.Random.seed <<- old.seed, add = TRUE)
   }
-
+    
   if (!is.null(seed) && !is.na(seed)) set.seed(seed)
   else if (!is.na(RFopt$basic$seed)) {
     if (printlevel >= PL_IMPORTANT)

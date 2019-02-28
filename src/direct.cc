@@ -57,7 +57,7 @@ int check_directGauss(model *cov) {
   isotropy_type iso = CoordinateSystemOf(OWNISO(0));
   for (j=0; j<=1; j++) {
     if ((err = CHECK(next, OWNLOGDIM(0), OWNXDIM(0), type, dom, iso,
-		     SUBMODEL_DEP, EvaluationType)) == NOERROR) break;
+		     SUBMODEL_DEP, GaussMethodType)) == NOERROR) break;
     type = VariogramType;
     iso = SymmetricOf(OWNISO(0));
   }

@@ -65,9 +65,8 @@ predictGauss <- function(Reg,
       model <- SetDimension(model, L)
     }
   }
-
   rfInit(model=model, x=x, y=y, z=z, T=T, grid=grid,
-         distances=distances, dim=dim, reg = Reg.predict, dosimulate=FALSE)
+         distances=distances, dim=dim, reg = Reg.predict, RFopt=RFopt)
 
   .Call(C_EvaluateModel, double(0), as.integer(Reg.predict))
 }
@@ -243,12 +242,14 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
 #  Print(model=model, data=data, given=given, T, ...)
   missing.x <- missing(x) || length(x) == 0
   imputing <- missing.x && length(distances) == 0
+
+
+#  Print(model=model, data=data,...)
   
   if (length(given) == 0) {
     ## so either within the data or the same the x-values
     Z <- UnifyData(model=model, data=data, RFopt=RFopt, params=params, ...)
     if (Z$matrix.indep.of.x.assumed) {
-      
       if (missing.x) stop("coordinates cannot be detected")
       Z <- UnifyData(model=model, x=x, y=y, z=z, T=T, RFopt=RFopt,
                      distances=distances, dim=dim, grid=grid,
@@ -303,6 +304,7 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
   }
 
   na_rm_lines <- FALSE
+  
   if (any.data.na) {
     na_rm_lines <- RFopt$general$na_rm_lines
     if (na_rm_lines && (!imputing || repet==1)) {
@@ -311,11 +313,9 @@ rfPrepareData <- function(model, x, y=NULL, z=NULL, T=NULL,
       Z$coord[[1]]$x <- Z$coord[[1]]$x[!data.na.loc,  , drop=FALSE]
     } else if (split) {
       data <- list()
-      for (i in 1:repet) {
-        dim(Z$data[[1]]) <-
-	  c(length(Z$data)[[1]] / (Z$vdim*repet), Z$vdim, repet)
-        data[[i]] <- Z$data[[1]][ , , i, drop=FALSE]
-      }
+      dim(Z$data[[1]]) <-
+        c(length(Z$data[[1]]) / (Z$vdim*repet), Z$vdim, repet)
+      for (i in 1:repet) data[[i]] <- Z$data[[1]][ , , i, drop=FALSE]
       Z$data <- data
     }
   }
@@ -388,12 +388,13 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   reg <- MODEL_KRIGE
   return.variance <- RFopt$krige$return_variance
 
+  
   all <- rfPrepareData(model=model, x=x, y=y, z=z, T=T,
                        distances=distances, dim=dim, grid=grid,
                        data=data, given=given, params=params, RFopt=RFopt,
                        reg=reg, err.model = err.model, err.params=err.params,
                        ...)
-  #Print(all);
+  ##  Print("start", all$Z);
   
   imputing <- all$imputing
   tsdim <- as.integer(all$Z$tsdim)
@@ -407,6 +408,9 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     if (all$X$grid) {
       coords <- list(x=NULL, T=NULL)
       xgr <- cbind(all$X$x, all$X$T)
+
+#      Print(xgr, coordnames.incl.T)
+      
       colnames(xgr) <- coordnames.incl.T
       gridTopology <- sp::GridTopology(xgr[1, ], xgr[2, ], xgr[3, ])
       ## bis 3.0.70 hier eine alternative
@@ -429,6 +433,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
   }
 
   L <- length(all$model)
+  #Print(length(all$Z$data), all$Z$data)
   if (length(all$Z$data) > 1) {
     Res <- array(dim=c(nx, vdim, repet))
     for (i in 1:length(all$Z$data)) {
@@ -437,7 +442,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
                       distances=distances, dim=dim,
                       data = all$Z$data[[i]], given = all$Z$coord,
                       err.model=err.model, ...,
-                      spConform = FALSE, return.variance=FALSE)      
+                      spConform = FALSE, return_variance=FALSE)      
     }
     dim(Res) <- c(nx * vdim, repet)
   } else { ## length(all$Z$data) == 1   
@@ -447,7 +452,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
     split <- RFopt$krige$locsplitn[1]
     split <- ngiven > maxn || (!is.na(exact) && !exact && ngiven > split)
 
-    data <- RFboxcox(all$Z$data[[1]], vdim=vdim)
+     data <- RFboxcox(all$Z$data[[1]], vdim=vdim)
     .Call(C_set_boxcox, c(Inf, 0))
  
     if (imputing) {
@@ -488,6 +493,7 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
         stopifnot((Nx <- as.integer(length(idx[[3]][[p]]))) > 0)
         if (pr && p %% 5==0) cat(RFopt$general$pch)
         givenidx <- unlist(idx[[1]][idx[[2]][[p]]])
+
         if (ignore.trend) 
           initRFlikelihood(all$krige,# including error structure
                            Reg=reg, grid=FALSE,
@@ -521,6 +527,10 @@ RFinterpolate <- function(model, x, y=NULL, z=NULL, T=NULL, grid=NULL,
         if (pr) cat("\n")
       }
     } else { ## no splits
+##      Print(all$krige, Reg=reg, x=all$Z$coord, data=data,
+  ##          ignore.trend = ignore.trend)
+    ##  ccccc
+      
       if (ignore.trend) 
         initRFlikelihood(all$krige, Reg=reg, x=all$Z$coord, data=data,
                          ignore.trend = ignore.trend)
@@ -632,9 +642,12 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                         data,   # first coordinates, then data
                         given=NULL, ## alternative for coordinates of data
                         params,
-                        err.model=NULL, err.params, ...) { # ... wegen der Variablen  
-  dots <- list(...)
-  if ("spConform" %in% names(dots)) dots$spConform <- NULL
+                        err.model=NULL, err.params, ...) { # ... wegen der Variablen
+
+  ##  Print("cnd ", n)
+  
+   dots <- list(...)
+   if ("spConform" %in% names(dots)) dots$spConform <- NULL
 
   RFoptOld <- internal.rfoptions(..., RELAX=is(model, "formula")) 
   on.exit(RFoptions(LIST=RFoptOld[[1]]))
@@ -651,7 +664,9 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   simu.grid <- X$grid
   tsdim <- Z$tsdim
   vdim <- Z$vdim
-
+  allowZero <- RFopt$general$allowdistanceZero 
+  if (allowZero && !hasArg(err.model))
+    stop("in case of 'allowdistanceZero=TRUE' an error model must be given.")
 
   data <- RFboxcox(Z$data[[1]], vdim=vdim)
   .Call(C_set_boxcox, c(Inf, 0))
@@ -666,15 +681,26 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
   ## points where conditional simulation takes place
   coord <- ExpandGrid(Z$coord[[1]])
   simu <- NULL
-  if (simu.grid) {
+  if (simu.grid) {     
     xgr <- cbind(X$x, X$T)
     l <- ncol(xgr)
+
+#    print(coord$x)
+ #   print(xgr)
+    
     ind <- 1 + (t(coord$x) - xgr[1, ]) / xgr[2, ] 
     index <- round(ind)
-    outside.grid <-
+    outside.grid <- allowZero |
       apply((abs(ind-index)>RFopt$general$gridtolerance) | (index<1) |
             (index > 1 + xgr[3, ]), 2, any)
-    if (any(outside.grid)) {
+
+#    print(ind-index)
+#    print(t(coord$x) - xgr[1, ])
+#    print((t(coord$x) - xgr[1, ]) / xgr[2, ] )
+    
+#    Print(allowZero, ind, index, outside.grid, (abs(ind-index)>RFopt$general$gridtolerance), index<1, (index > 1 + xgr[3, ]))
+    
+    if (any(outside.grid)) {     
       ## at least some data points are not on the grid:
       ## simulate as if there is no grid
       simu.grid <- FALSE
@@ -705,9 +731,9 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
       }
       index <- new.index
       new.index <- NULL
-    } else {  
+    } else {
+##      Print("GRID")
       ## data points are all lying on the grid
-     
       simu <- do.call(RFsimulate, args=c(list(model=all$krige,
                                       x=X$x, # y=y, z=z,
                                       T=X$T,
@@ -716,9 +742,9 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
                                       register=cond.reg,
                                       seed = NA),
                                       dots, list(spConform=FALSE)))
+ 
+##    Print(simu, all$krige, n, mean(simu), mean(simu[,,1])); kkk
       ## for all the other cases of simulation see, below
-  ##    index <- t(index)
-      index <- 1 + t(index - 1) %*% c(1, xgr[3, -ncol(xgr)])
       if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
       else if (!is.matrix(simu)) { ## 3.1.26 is programmed differently
         nvdim <- (vdim > 1) + (n > 1)
@@ -728,7 +754,15 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
           dim(simu) <- c(prod(d[-last]), prod(d[last]))
         } else dim(simu) <- c(length(simu), 1)
       }
-    }
+      
+      cum <- cumprod(c(1, xgr[3, -ncol(xgr)]))
+      index <- as.vector(1 + cum %*% (index - 1))
+
+      if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
+      total <- dim(simu)[1]
+      simu.given <-  do.call("[", c(list(simu, index, drop=FALSE),
+                                    as.list(rep(TRUE,length(dim(simu))-1))))
+     }
   } else { ## not simu.grid
     xx <- t(X$x)  ## dim x locations
    
@@ -741,14 +775,14 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
     ## the user will be surprised not to get the value of the data at
     ## that point
     one2ncol.xx <- 1:ncol(xx)
-    index <- apply(coord$x, 1, function(u){
-      i <- one2ncol.xx[colSums(abs(xx - u)) < RFopt$general$gridtolerance]
-      if (length(i)==0) return(0)
-      if (length(i)==1) return(i)
-      return(NA)
-    })
+    index <- if (allowZero) rep(0, nrow(coord$x))
+             else apply(coord$x, 1, function(u){
+               i <- one2ncol.xx[colSums(abs(xx-u)) <RFopt$general$gridtolerance]
+               if (length(i)==0) return(0)
+               if (length(i)==1) return(i)
+               return(NA)
+             })
   }
-
   
   if (!simu.grid) {
     ## otherwise the simulation has already been performed (see above)
@@ -758,37 +792,53 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
     if (any(notfound <- (index==0))) {
       index[notfound] <- (ncol(xx) + 1) : (ncol(xx) + sum(notfound))
     }
-    
+
     xx <- rbind(t(xx), coord$x[notfound, , drop=FALSE])
+
+##    Print(model=all$krige, x=xx, grid=FALSE, n=n,
+  ##                      register = cond.reg, seed = NA, dots)
 
     simu <- do.call(RFsimulate,
                     args=c(list(model=all$krige, x=xx, grid=FALSE, n=n,
                         register = cond.reg, seed = NA), dots,
                         spConform=FALSE, examples_reduced = FALSE))
-   
-    if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
     rm("xx")
+    if (is.vector(simu)) dim(simu) <- c(length(simu), 1)
+    simu.given <-  do.call("[", c(list(simu, index, drop=FALSE),
+                                      as.list(rep(TRUE, length(dim(simu))-1))))
+
+    simu <- do.call("[", c(list(simu, 1:X$restotal, drop=FALSE),
+                           as.list(rep(TRUE, length(dim(simu))-1))))
+    
   }
 
-  if (is.null(simu)) stop("random field simulation failed")
-  simu.given <- simu[index, ]
-  simu <- as.vector(simu[1:X$restotal, ]) # as.vector is necessary !! Otherwis
-##                                       is not recognized as a vector
 
 
-#  Print(simu, simu.given, simu.grid, index, as.vector(Z$data[[1]]),  simu.given, X)
-
+##  Print("xx", simu, all$krige, mean(simu))
  
   ## to do: als Naeherung bei UK, OK:
   ## kriging(data, method="A") + simu - kriging(simu, method="O") !
 
+  d <- dim(data)
+  data <- as.vector(data) - simu.given
+#  Print(d, data, simu.given, length(simu.given) / prod(d))
+  dim(data) <- c(d, length(simu.given) / prod(d))
+ # Print(data)
+  
   stopifnot(length(X$y)==0, length(X$z)==0)
-  simu <- simu + RFinterpolate(x=X, model=model,
-                               err.model = err.model,
-                               register=MODEL_KRIGE,
-                               given = coord,
-                               data = as.vector(data) - simu.given,
-                               spConform=FALSE, ignore.trend = TRUE)
+  interpol <- RFinterpolate(x=X, model=model,
+                            err.model = err.model,
+                            register=MODEL_KRIGE,
+                            given = coord,
+                            data = data,
+                            spConform=FALSE, ignore.trend = TRUE)
+  
+ # Print(X, given, data, simu, interpol, index)
+  
+  simu <- as.vector(simu) + as.vector(interpol)
+  dim(simu) <- c(if (X$grid) X$x[3,] else X$restotal,
+                 if (vdim>1) vdim, if (n > 1) n)
+  
   simu <- RFboxcox(data=simu, boxcox = boxcox, inverse=TRUE, vdim=vdim)
   
   if (all$imputing) {
@@ -799,6 +849,10 @@ rfCondGauss <- function(model, x, y=NULL, z=NULL, T=NULL, grid, n=1,
 
   attributes(simu)$varnames <- Z$varnames
   attributes(simu)$coordnames <- Z$coordnames
+
+
+ ## Print(simu)
+  ##  Print("endw")
   return(simu)
   
 }

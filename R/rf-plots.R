@@ -207,7 +207,7 @@ prepareplotRFsp <- function(x, vdim, select, plot.var,
         split.main <- c(1,1)
       }
   }
-  
+
   ArrangeDevice(graphics, figs=split.main) ## NIE par() o.ae. vor ArrangeDevice !!!!
 
    

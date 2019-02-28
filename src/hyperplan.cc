@@ -83,7 +83,7 @@ int check_hyperplane(model *cov) {
 
   if (key == NULL) {
     if ((err = CHECK(next, dim, dim, PosDefType, XONLY, iso, SCALAR,
-		     EvaluationType)) != NOERROR) RETURN_ERR(err);
+		     GaussMethodType)) != NOERROR) RETURN_ERR(err);
   } else { // wenn dies eintritt dann ruft HyperIntern Hyper auf
     model *intern = sub;
     while (intern != NULL && //intern->nr != HYPERPLANE_INTERN && 
@@ -125,7 +125,7 @@ int check_hyperplane_intern(model *cov) {
  ASSERT_UNREDUCED;
 
   if ((err = CHECK(next, dim,  dim, PosDefType, XONLY, SYMMETRIC, 
-		   SCALAR, EvaluationType)) != NOERROR) {
+		   SCALAR, GaussMethodType)) != NOERROR) {
      RETURN_ERR(err);
   }
 
