@@ -1,4 +1,4 @@
-3a8cbc9a570c15ec32a81966102174bd *DESCRIPTION
+921d8f8aa0a1c95d1276c9d571792255 *DESCRIPTION
 7fdfece67ab78a62d2da8d83092cccba *NAMESPACE
 ba8bb0017e2e5b5b87f345f1b1b6d197 *R/Class.R
 b64fa2012a1de0ede893dff5381cedb3 *R/Crossvalidation.R
@@ -36,9 +36,10 @@ ca2e7118ee101b6b2f023109f827a0e6 *R/kriging.R
 b930132828d1dc55fd8377088b0c3298 *R/obsolete.R
 d918134d17c4662566d52b55ad50fd51 *R/rf-plots.R
 67fea6fe52c42d00d0dd18ac321dcee2 *R/rf.R
-d56066e0f3cf1134e3ba908125d0b473 *R/zzz.R
+c4fd6c698bc28026e91c4f12961bf9dd *R/zzz.R
 a3bbd1315a46b54e462ad7eae3811073 *cleanup
 60f64f8734fc8117708780056bd80036 *configure
+0437f24c134005cd953ab5fa2ea67df1 *configure.ac
 da07e8c72b199c2b45fbb5e46f8fcf2f *data/soil.txt.gz
 40f7d1b06c696fc3f01f6f07c139ae29 *data/weather.rda
 6ad2f34dca238ab785f334422aafcb2e *inst/CITATION
