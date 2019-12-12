@@ -1298,7 +1298,7 @@ int setgatter_but_nr(model *cov, int minp, int maxp, int mino, int maxo,
       if (GATTERXDIM(i) != PREVXDIM(i)) BUG;
     }
     set_cumxmit(GATTER, i, GATTERXDIM(i));
-    if (i>0) set_cumxmit(GATTER, i, CUMXMIT(GATTER, i) + CUMXMIT(GATTER, i-1)); 
+    //if (i>0) set_cumxmit(GATTER, i, CUMXMIT(GATTER, i) + CUMXMIT(GATTER, i-1)); 
   }
   //  PSYS(cov); 
   set_trafo(UNSET);

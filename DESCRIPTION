@@ -1,5 +1,5 @@
 Package: RandomFields
-Version: 3.3.6
+Version: 3.3.7
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Paulo Ribeiro [ctb], Brian D. Ripley [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
@@ -9,7 +9,7 @@ Imports: graphics, methods, grDevices, stats, utils
 Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
         tkrplot, spam, tools, geoR, minqa, soma, optimx, nloptr, pso,
         GenSA
-Description: Methods for the inference on and the simulation of Gaussian fields are provided, as well as methods for the simulation of extreme value random fields.
+Description: Methods for the inference on and the simulation of Gaussian fields are provided, as well as methods for the simulation of extreme value random fields. Main geostatistical parts are based on the books by Christian Lantuejoul <doi:10.1007/978-3-662-04808-5>,  Jean-Paul Chiles and Pierre Delfiner <doi:10.1002/9781118136188> and Noel A. Cressie <doi:10.1002/9781119115151>. For the extreme value random fields see Oesting, Schlather, Schillings (2019) <doi.org/10.1002/sta4.228> and Schlather (2002) <doi.org/10.1023/A:1020977924878>.
 Collate: aaa_auto.R aaa_globals.R basic.fctns.R bigdata.R Class.R
         convert_new.R convert.R Crossvalidation.R datasets.R D.H.R
         fitbernoulli.R fitbr.R fitgauss.R fitmaxstable.R fitpoisson.R
@@ -22,7 +22,7 @@ Collate: aaa_auto.R aaa_globals.R basic.fctns.R bigdata.R Class.R
 License: GPL (>= 3)
 URL:
         http://ms.math.uni-mannheim.de/de/publications/software/randomfields
-Packaged: 2019-03-04 19:59:02 UTC; schlather
+Packaged: 2019-12-10 23:23:11 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2019-03-06 11:40:06 UTC
+Date/Publication: 2019-12-12 14:40:13 UTC

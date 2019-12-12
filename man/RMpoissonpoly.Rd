@@ -28,7 +28,7 @@ RMpolygon(lambda)
 
 \author{
   Felix Ballani,
-  \url{http://www.mathe.tu-freiberg.de/sto/mitarbeiter/felix-ballani}
+  \url{https://tu-freiberg.de/fakult1/sto/ballani}
   
   \martin
 }

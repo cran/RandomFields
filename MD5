@@ -1,4 +1,4 @@
-921d8f8aa0a1c95d1276c9d571792255 *DESCRIPTION
+b98fcb787c4b6f55916292e80391ff43 *DESCRIPTION
 7fdfece67ab78a62d2da8d83092cccba *NAMESPACE
 ba8bb0017e2e5b5b87f345f1b1b6d197 *R/Class.R
 b64fa2012a1de0ede893dff5381cedb3 *R/Crossvalidation.R
@@ -10,7 +10,7 @@ c8ec2736348a90846722f8a77d7324e2 *R/Methods-RFsp.R
 2db0a89ce1b2fdce121900f29d63e753 *R/RFempvario.R
 aee17ba7f13c23f4dee191e911c3a237 *R/RFfit.R
 29c7c844347b5c7b7afc8fceee3d4dfa *R/RFgui.R
-21b7f2f042336f13290e0e469026acb2 *R/RMmodels-Methods-plots.R
+92ca3cc533384feef5bea524ae010def *R/RMmodels-Methods-plots.R
 e9615774d88d8610cdea3cf472b15f30 *R/RMmodels.R
 0873e20c9672e3ab437987371300cee7 *R/RMmodelsBasics.R
 f1c948a2fa447787adb8b30bab21813f *R/RMmodelsConvenience.R
@@ -25,7 +25,7 @@ de831f23ce21876ae3b921129799e4c0 *R/convert.R
 f3442293fb758b5af8895f4eaee22d06 *R/datasets.R
 a80a6d08e277d2051c31d27e5141ae44 *R/fitbernoulli.R
 419e385b4ad9d6f9eb922b38a649e035 *R/fitbr.R
-7518c74039dcff75e8e07bed3976b66c *R/fitgauss.R
+ab62364d8009aaf48804a8c80475d55e *R/fitgauss.R
 ecafea9681fdbb9634c0738e460ce9cd *R/fitmaxstable.R
 3f02bd1c945dee9f39a713f59387d531 *R/fitpoisson.R
 5ea43dad6ad7709268dc2c5cfdef81f9 *R/generatemodels.R
@@ -184,7 +184,7 @@ ab3ac2dc52e057576f425a16a7681aec *man/RMnugget.Rd
 e462e013500a66c486af9394918a33fa *man/RMparswm.Rd
 5ec42d0f052805cc0de0bbf055900574 *man/RMpenta.Rd
 097a07b64ed3f921c9ff2d5df5c63e75 *man/RMplus.Rd
-1ea0335f9bdaa34ebda750e34afb9932 *man/RMpoissonpoly.Rd
+00b9c6f4d18571a398b4d72138ea04cf *man/RMpoissonpoly.Rd
 4ff6491bb395fa99cfb6138b29896291 *man/RMpolynome.Rd
 0fbaf1678b6952aec64e7b6d5a380c76 *man/RMpower.Rd
 6cf74489155beca61ad4559ca19f869d *man/RMprod.Rd
@@ -204,7 +204,7 @@ aea1ec4a951e366b717db44869150ea6 *man/RMsinepower.Rd
 1a3341d3e7cfa876408a898e12fccb66 *man/RMstrokorb.Rd
 54313c4209006876456e62292f79930b *man/RMsum.Rd
 e56eb9ea661a132d68575377cea7e379 *man/RMtbm.Rd
-2ce2792615bf65afb58e882c5bc59096 *man/RMtrafo.Rd
+8f10c9fba7bae9490b0894d726c1c761 *man/RMtrafo.Rd
 52a9ffdc1f5658dc571f0188b2eb0fbe *man/RMtrend.Rd
 8e888c45581d05d83b6888ca2ced692a *man/RMtruncsupport.Rd
 f38bb576f7a59e3822b343009d4e6d1c *man/RMuser.Rd
@@ -271,11 +271,11 @@ aef9e1d8ca3c07fc3a0737ebf8b903e0 *src/Error.cc
 08aefa3094b52a2701beac8dc6e1339b *src/Error.h
 f55720596e5db69200b9d5bd9cd6ed6e *src/Gneiting.cc
 4dce01c6050c9737b7b198d017766f22 *src/Huetchen.cc
-97384eee715ac05db50be7ece7802d81 *src/InternalCov.cc
+784a8bbe63f5d70c0e20984cb0fe338c *src/InternalCov.cc
 67e8d1f13af20113ab71476d4afbb2f9 *src/InternalCov.noncritical.cc
 24261b0b70d640a2da9d91118b8b890f *src/KeyInfo.cc
 753cb0b6bc8b5af206a8eb639ca1edf7 *src/MLE.cc
-6cd2d4d8230028b1b0e9cf9fba37239f *src/Machine.h
+e25831b83586cecdfc4103ab388cfbf4 *src/Machine.h
 c0898501bf0d97c00d41dc3553676b67 *src/MachineDebugging.h
 a602df4e7aaedb6c4c714ca6a50d45b7 *src/MachineOthers.h
 44292f56abbaa92f0b23bbacb3b7f926 *src/MachineSchlather.cc
@@ -290,7 +290,7 @@ d55ec4aea10d755a1dc696af01c805c7 *src/PoissonPolygon.h
 e2f1673ff1a41e61a6153ff344712dfd *src/Processes.h
 b7fad86c8a4af24c7c47138c49a2a287 *src/QMath.cc
 5b322150113df0c98b34c74d6dd470df *src/QMath.h
-c090753ee378bbdcaaf2c0a0dd5b3577 *src/RF.h
+bcc80863ccf4094592896715904b3824 *src/RF.h
 5a9854f64239e8191163efb51922e9e7 *src/RMS.cc
 8028328f60cf49c75de5e70af939234f *src/RandomFields.h
 d7225383ccef1d613c44f4a32772a9c2 *src/Specific.cc
@@ -306,7 +306,7 @@ ddf4502c94ea1de12af9b9e7ff8a9eda *src/brownresnick.cc
 83415e0211864689149cd970046a47e0 *src/circulant.cc
 abe7c58f303f95b23f9659dde55ce9eb *src/convhull2D.cc
 b18f571f83c4b5eb666270c72d0bc472 *src/convhull2D.h
-d3fe6117fa535043bc15e27e8ca0070a *src/cubicsolver.cc
+e55307b0ea2c1c6022430d15852b1800 *src/cubicsolver.cc
 5c8245047408ee5d6870a9b979d4657f *src/cubicsolver.h
 6300596414f3d9cca3d7fda990861070 *src/def.h
 1957699d10cdbf1506273b03298ec7a9 *src/direct.cc
@@ -340,7 +340,7 @@ f845a232f950b1c3c3decab4a70604c2 *src/primitive.cov.cc
 3ad87e00fd5834abca9f08444ebb769f *src/primitive.matern.cc
 d59ebfd704df4c54fcf74b2b1e669dec *src/primitive.others.cc
 324b7962d5b633eb208296efb97c831f *src/primitive.others.h
-a635d907558b52f02e66a6b78fd6b0a6 *src/questions.cc
+400e8ff60a5f9a476bafcdaa06e58116 *src/questions.cc
 76a4b5734da0795a4a02502297ad7bff *src/questions.h
 14646b1c6d631acf1466d6658015b874 *src/rf_interfaces.cc
 e70f734837ae1ec8facd94b8c5c5ccc6 *src/rf_interfaces.h
@@ -351,10 +351,10 @@ ae5ab218b38f3e6ab234fc4245dd7547 *src/spectral.cc
 3bd303d52e350ef2ea906b8cf7766819 *src/startGetNset.cc
 5db574e4dbe96677b43bae8ee571c5ee *src/startGetNset.h
 ea309e4364023a40ad166b052dbca99d *src/tbm.cc
-7bd889fad411b4f07749af9563dfcfa0 *src/trend.cc
+df84f70454191a714cafbb6f7e09846f *src/trend.cc
 e54d43792b048e6c2ce340fccc95bd48 *src/userinterfaces.cc
-c0d96dedaddfe22bf12760360b461a06 *src/variogramAndCo.cc
-cd7d2823d8e4afea417b8a452df397ab *src/variogramAndCo.h
+2df338fbdb3d8617328e38cd2605d112 *src/variogramAndCo.cc
+99c2c7ecf8a16fbca9468adb9bf942bd *src/variogramAndCo.h
 021b87daf7eb65b551fcf37ec428adc2 *src/xport_import.cc
 79872f11c386397f998c0412730ff428 *src/xport_import.h
 d46d47e2ca2b9b74a72bfd574e71a5d1 *src/y.cc

@@ -211,7 +211,7 @@ void rangetrend(model  VARIABLE_IS_NOT_USED *cov, range_type *range){
   range->min[TREND_MEAN] = RF_NEGINF;
   range->max[TREND_MEAN] = RF_INF;
   range->pmin[TREND_MEAN] = - 10^10;
-  range->pmax[TREND_MEAN] = 10^10;
+  range->pmax[TREND_MEAN] = 1e10;
   range->openmin[TREND_MEAN] = true;
   range->openmax[TREND_MEAN] = true;
 }

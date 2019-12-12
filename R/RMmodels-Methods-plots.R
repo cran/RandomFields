@@ -324,9 +324,11 @@ str.RMmodel <-
              max(0, nest.lev + 1)), collapse = ".."),
            comp.str = "$ ", no.list = FALSE, envir = baseenv(),
            strict.width = strO$strict.width, 
+            drop.deparse.attr = strO$drop.deparse.attr,
            formatNum = strO$formatNum, list.len = 99, ...) 
 {
-  oDefs <- c("vec.len", "digits.d", "strict.width", "formatNum")
+  oDefs <- c("strict.width", "vec.len", "digits.d", "drop.deparse.attr", 
+             "formatNum")
   strO <- getOption("str")
   if (!is.list(strO)) {
     warning("invalid options('str') -- using defaults instead")
@@ -342,6 +344,7 @@ str.RMmodel <-
   if (strict.width != "no") {
     ss <- capture.output(str(object, max.level = max.level, #
                              vec.len = vec.len, digits.d = digits.d,
+                             drop.deparse.attr = drop.deparse.attr,
                              nchar.max = nchar.max, 
                              give.attr = give.attr,
                              give.head = give.head,

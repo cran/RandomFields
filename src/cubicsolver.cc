@@ -65,7 +65,7 @@ int cubicsolver(double a, double b, double c, double d, double roots[][2]) {
     roots[2][1] = 0;
     if (disc == 0){ // All roots real, at least two are equal.      
       if (r < 0) r13 = -POW(-r,(1.0/3.0));
-	else r13 = POW(r,(1.0/3.0));
+      else {r13 = POW(r,(1.0/3.0));}
       roots[0][0] = -term1 + 2.0*r13;
       roots[1][0] = -(r13 + term1);
       roots[2][0] = -(r13 + term1);

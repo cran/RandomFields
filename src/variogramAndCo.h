@@ -103,7 +103,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     }									\
   }									\
   if (!(kernel && !ygiven && PL > 0)) { } else {			\
-    WARN1("'%.50s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.n", NICK(cov)); \
+    WARN1("'%.50s' is called with a single variable only, although it is used as a kernel. So, the second variable is set to zero, here.\n", NICK(cov)); \
   } 
 
 

@@ -79,9 +79,9 @@ RFearth2dist(coord, units=NULL, system="cartesian", grid=FALSE, ...)
 \references{
   For calculating the earth coordinates as ellipsoid:
   \itemize{
-    \item \url{en.wikipedia.org/wiki/Geographic_coordinate_system}
+    \item \url{https://en.wikipedia.org/wiki/Geographic_coordinate_system}
   
-    \item \url{nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html}
+    \item \url{https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html}
   }
 }
   

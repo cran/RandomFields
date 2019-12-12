@@ -759,7 +759,7 @@ typedef struct likelihood_storage {
   bool dettrend_has_nas, fixedtrend_has_nas, random_has_nas, 
     data_has_nas,
     betas_separate, ignore_trend;
-  char *(betanames[MAX_LIN_COMP]);
+  char *betanames[MAX_LIN_COMP];
   model *cov_fixed[MAX_LIN_COMP], *cov_det[MAX_LIN_COMP], 
     *cov_random[MAX_LIN_COMP];
   likelihood_info info;

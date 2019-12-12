@@ -283,8 +283,8 @@ void set_xdim_intern(system_type *sys, int i, int value);
 #define ASSERT_QUASIONESYSTEM if (QuasiOneSystem(cov)) { } else BUG;
 #define ASSERT_ONESYSTEM {						\
     if (OWNLASTSYSTEM != 0 && (OWNLASTSYSTEM != 1 ||			\
-			       !equalsIsotropic(OWNISO(0)) ||		\
-			       !equalsIsotropic(OWNISO(1)))) BUG;}
+			       !equalsIsotropic(OWNISO(0))		\
+			       /*  ||  !equalsIsotropic(OWNISO(1)) */ )) BUG;}
 #define ASSERT_UNREDUCED {assert(OWNXDIM(0) == OWNLOGDIM(0) && PREVXDIM(0) == OWNLOGDIM(0));}
 #define ASSERT_GAUSS_METHOD(METHOD) DEBUGINFO;				\
   if(!hasGaussMethodFrame(cov) || cov->method != (METHOD))	{ \

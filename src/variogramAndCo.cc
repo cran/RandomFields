@@ -788,7 +788,7 @@ SEXP CovLoc(SEXP reg, SEXP x, SEXP y, SEXP xdimOZ, SEXP lx,
   //   pmi(cov,0); printf("%d xdimOZ %d \n", Loc(cov)->xdimOZ, INTEGER(xdimOZ)[0]);
   partial_loc_null(cov);
   if (Loc(cov)->xdimOZ != INTEGER(xdimOZ)[0]) BUG;
-  return NULL;
+  return R_NilValue;
 }
 
 void CovIntern(int reg, double *x, double *y, long lx, long ly, double *value) {

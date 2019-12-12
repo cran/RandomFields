@@ -1064,9 +1064,8 @@ rffit.gauss <- function(Z, lower=NULL, upper=NULL,
       control <- control[-idx];
     
     oH <- try(optimHess(par=par, fn=fn, control=control), silent=silent)
- ##   Print(oH, class(oH) != "try-error")
     
-    if (class(oH) != "try-error") {
+    if (!is(oH, "try-error")) {
       zaehler <- 1
       while (zaehler <= 3) {
         e <- eigen(oH)

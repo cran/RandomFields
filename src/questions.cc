@@ -322,7 +322,8 @@ bool isNow(typefct isTypus, model *cov, bool OneSystem) {
   // Now ^= cov
   int n = OWNSYSTEMS;
   if ((OneSystem && n != 1) || !isTypus(OWNTYPE(0))) return false;
-  for (int s=1; s<n; s++) if (!isSameAsPrev(OWNTYPE(s))) return false;
+  assert(n == 1);
+  //for (int s=1; s<n; s++) if (!isSameAsPrev(OWNTYPE(s))) return false;
  return true;
 }
 
@@ -510,12 +511,15 @@ int maxdim_notok(model *cov) {
 bool QuasiOneSystem(model *cov) {
   int n = OWNSYSTEMS;
   if (n == 1) return true;
+  BUG;
+  /*
   //  isotropy_type iso = OWNISO(0);
   domain_type dom = OWNDOM(0);
   if (!equalsnowSameAsPrev(cov)) return false;
   for (int s=1; s<n; s++) {
     if (dom != OWNDOM(s)) return false;
   }
+  */
   return true;
 }
 
