@@ -1,4 +1,4 @@
-b98fcb787c4b6f55916292e80391ff43 *DESCRIPTION
+51f24f1c42252cd01f7327726d3790e8 *DESCRIPTION
 7fdfece67ab78a62d2da8d83092cccba *NAMESPACE
 ba8bb0017e2e5b5b87f345f1b1b6d197 *R/Class.R
 b64fa2012a1de0ede893dff5381cedb3 *R/Crossvalidation.R
@@ -40,6 +40,7 @@ c4fd6c698bc28026e91c4f12961bf9dd *R/zzz.R
 a3bbd1315a46b54e462ad7eae3811073 *cleanup
 60f64f8734fc8117708780056bd80036 *configure
 0437f24c134005cd953ab5fa2ea67df1 *configure.ac
+176db0356557ed16d2baadd4f7951cda *data/ca20.rda
 da07e8c72b199c2b45fbb5e46f8fcf2f *data/soil.txt.gz
 40f7d1b06c696fc3f01f6f07c139ae29 *data/weather.rda
 6ad2f34dca238ab785f334422aafcb2e *inst/CITATION
@@ -171,7 +172,7 @@ b8ecb1888d73e9f9b1f94a34a7f7c337 *man/RMmodelgenerator-class.Rd
 912e548aac730d82acc5b46ebdbfedfa *man/RMmodelsSpaceTime.Rd
 3f77b0b140567c8dc0deaf844d558206 *man/RMmodelsSphere.Rd
 c85f55f071c1d15e126ba146500724ad *man/RMmodelsTailcorrelation.Rd
-bf792694acea79c3a4ec697db5f8d451 *man/RMmodelsTrend.Rd
+d77a39294606d0b2bba1b658bfe7c7b0 *man/RMmodelsTrend.Rd
 176ec2c30b57518341de123d1190aab5 *man/RMmppplus.Rd
 5f6d6d81b603be985e2ae55af421a156 *man/RMmqam.Rd
 f4b8dbc5bcfc23d9d895a8f077443c69 *man/RMmult.Rd
@@ -241,6 +242,7 @@ b91ef151fd1e4b35da27efa66895f778 *man/RRloc.Rd
 3ab3b5e53a5f3236102789b0a1309bed *man/RRspherical.Rd
 b4fd51a811f624b638435ec05cbd5f14 *man/RRunif.Rd
 f06976fc9d9f989a11c835414e6cd779 *man/RandomFields.Rd
+da82bd15edfbd22f65010fadaef4a898 *man/ca20.Rd
 c53c9ef968d2b7fb2d9e8f5efb7a8dae *man/conventional2RFspDataFrame.Rd
 858f59464a0b659df4d6d967152b1d05 *man/fitgauss.Rd
 71e463c56202e828e53aceddfd55e706 *man/internal.Rd
@@ -280,7 +282,7 @@ c0898501bf0d97c00d41dc3553676b67 *src/MachineDebugging.h
 a602df4e7aaedb6c4c714ca6a50d45b7 *src/MachineOthers.h
 44292f56abbaa92f0b23bbacb3b7f926 *src/MachineSchlather.cc
 63b1dcd58c3d44cc93e1ade19fc44eb7 *src/MachineSchlather.h
-2b2833ffde252d15e10ad1aba66e6f76 *src/Makevars.in
+00addf6e53aca0120b7b6e12855c0aaa *src/Makevars.in
 59718571f5ccc5fa8b7e6fef9cacd6bd *src/Makevars.win
 7575da6cff5df80c2eb8386772957c00 *src/NULL.cc
 5421cfe8d0cc392b123a4fc06876d2f9 *src/Options.cc
@@ -329,7 +331,7 @@ f7d799dad212826a28bb972ac59e4591 *src/kleinkram.cc
 8fd547f4d294d7bb8085ad1fe9b0ff51 *src/kleinkram.h
 fda2f64c36505dc3aef0a8ac71bec48a *src/metropolis.cc
 1581c6ed91bf985b6238617492fb8a75 *src/nugget.cc
-99237bae5bece2d21335b2efea48c79d *src/operator.cc
+352171633a67dcefd397db3d50c915ab *src/operator.cc
 276e2af7eb06ddadb02de04cd816f91c *src/operator.extremes.cc
 13ef18cdc5d386d893465d013bc63a58 *src/operator.gaussmethod.cc
 b07c0f31ca00afd30e291e1fa916c3aa *src/operator.h
@@ -342,7 +344,7 @@ d59ebfd704df4c54fcf74b2b1e669dec *src/primitive.others.cc
 324b7962d5b633eb208296efb97c831f *src/primitive.others.h
 400e8ff60a5f9a476bafcdaa06e58116 *src/questions.cc
 76a4b5734da0795a4a02502297ad7bff *src/questions.h
-14646b1c6d631acf1466d6658015b874 *src/rf_interfaces.cc
+0cacebdf4ac5862782081e0bbb218107 *src/rf_interfaces.cc
 e70f734837ae1ec8facd94b8c5c5ccc6 *src/rf_interfaces.h
 6498070a044f0b4f6cb3fff95736b9a3 *src/sequential.cc
 d7cec1e68ec90348f4b318c19b3ed57d *src/shape.cc
@@ -352,7 +354,7 @@ ae5ab218b38f3e6ab234fc4245dd7547 *src/spectral.cc
 5db574e4dbe96677b43bae8ee571c5ee *src/startGetNset.h
 ea309e4364023a40ad166b052dbca99d *src/tbm.cc
 df84f70454191a714cafbb6f7e09846f *src/trend.cc
-e54d43792b048e6c2ce340fccc95bd48 *src/userinterfaces.cc
+bf68c6c008ae8b3c41a4598b29ba8b8e *src/userinterfaces.cc
 2df338fbdb3d8617328e38cd2605d112 *src/variogramAndCo.cc
 99c2c7ecf8a16fbca9468adb9bf942bd *src/variogramAndCo.h
 021b87daf7eb65b551fcf37ec428adc2 *src/xport_import.cc

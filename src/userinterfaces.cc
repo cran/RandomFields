@@ -314,7 +314,7 @@ void includeparam(void **qq,       // px
 	  (freelistoftype*) (q->px[k]=(double*) MALLOC(sizeof(freelistoftype)));
 	int 
 	  lpk = length(pk); // kinds of selection sets
-	ll->fpx = (int **) CALLOC(sizeof(int*), lpk);
+	ll->fpx = (int **) CAL LOC(sizeof(int*), lpk);
 	ll->ncol = (int *) MALLOC( sizeof(int*) * lpk); // sel sets of 
 	ll->nrow = (int *) MALLOC( sizeof(int*) * lpk); // same kind
 	q->nrow[k] = lpk; // 
@@ -875,7 +875,7 @@ SEXP GetRange(){
   if (*index < 0) {
     getrange->n = 1;
     for (i=0; i<lparam; i++) {
-      cov.p[i] = (double *) CALLOC(sizeof(double), 1);
+      cov.p[i] = (double *) CALL OC(sizeof(double), 1);
       cov.p[i][0] = param[i];
     }
     getrange->n = 1;

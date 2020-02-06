@@ -1343,10 +1343,8 @@ void doMproc(model *cov, gen_storage *S){
     *sub = subrf[0];
   assert(sub != NULL);
   double
-    *w = close && cov->nsub == 1 ? sub - keyvdim : z;  
-  FINISH_START(cov, cov, true, VDIM0);
-
-
+    *w = close && cov->nsub == 1 ? sub - keyvdim : z; 
+  FINISH_START(cov, cov, true, 0);
   
 #define todo								\
   if (cov->nsub > 1) for (int j=0; j<keyvdim; j++) w[j] = *(++subrf[j]); \

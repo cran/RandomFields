@@ -20,10 +20,9 @@
 \examples{\dontshow{StartExample();if (!interactive()) RFoptions(modus="careless")} %ok
 %RFoptions(seed=0) ## *ANY* simulation will have the random seed 0; set
 %##                   RFoptions(seed=NA) to make them all random again
-require(geoR)
-
-data(ca20) ## data set from geoR
-ca20.df <- as.data.frame(ca20)
+% require(geoR) # library(RandomFields)
+data(ca20) ## data set originally from geoR
+%ca20.df <- as.data.frame(ca20)
 head(ca20.df)
 RFoptions(coordnames=c("east", "north"), varnames="data") 
 

@@ -1163,6 +1163,8 @@ int alloc_pgs(model *cov, int dim) { // all what is necessary for dompp
   pgs_storage *pgs = cov->Spgs;
   assert(pgs->z == NULL);
 
+  // printf("alloc dim=%d %d\n", dim , dimP1);
+
   // to be save: everywhere +1 for loc->i_row although most not needed
   if ((pgs->supportmin = (double*) CALLOC(dimP1, sizeof(double))) == NULL ||
       (pgs->supportmax = (double*) CALLOC(dimP1, sizeof(double))) == NULL ||
