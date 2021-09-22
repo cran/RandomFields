@@ -20,14 +20,14 @@ You should have received a copy of the GNU General Public License along with thi
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <R.h>
+#include "def.h"
+#include <stdio.h>  
+#include <string.h>
+#include <Basic_utils.h>
 #include <Rdefines.h>
 #include <R_ext/Linpack.h>
-#include <Rmath.h>  
-#include <stdio.h>  
-//#include <stdlib.h>
-#include <string.h>
-
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "primitive.h"
 #include "operator.h"

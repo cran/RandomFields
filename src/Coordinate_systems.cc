@@ -21,7 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#include <Rmath.h>
+#include "def.h"
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "RF.h"
 #include "Coordinate_systems.h"
 #include "questions.h"
@@ -127,8 +130,8 @@ void statmod2(double *x, double lon, double lat, double *y) {
   double xx[2] = {x[0], x[1]},						\
     yy[2] = {y[0], y[1]},						\
     cosine = SIN(xx[1]) * SIN(yy[1]) +					\
-             (cos(xx[0]) * cos(yy[0]) + SIN(xx[0]) * SIN(yy[0])) *      \
-             cos(xx[1]) * cos(yy[1]);				       	\
+             (COS(xx[0]) * COS(yy[0]) + SIN(xx[0]) * SIN(yy[0])) *      \
+             COS(xx[1]) * COS(yy[1]);				       	\
     cosine = cosine <= 1.0 ? (cosine < -1.0 ? -1.0 : cosine) : 1.0;	\
     X[0] = ACOS(cosine);						\
     for (int s=1; s<last; s++) {					\

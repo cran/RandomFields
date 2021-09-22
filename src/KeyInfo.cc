@@ -21,13 +21,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//#include <Rmath.h>  
 #include <stdio.h>  
 #include <string.h>
-#include "questions.h"
-#include <Rdefines.h>
 #include <stdint.h>
 
+#include <Basic_utils.h>
+#include <Rdefines.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
+#include "questions.h"
 #include "Coordinate_systems.h"
 #include "operator.h"
 #include "Processes.h"

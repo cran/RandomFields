@@ -1,6 +1,5 @@
 #ifndef AutoRandomFields_H
 #define AutoRandomFields_H 1
-#include <R.h>
 
 #define MAXCHAR_RF MAXCHAR // max number of characters for (covariance) names  
 #define METHODMAXCHAR MAXCHAR // max number of character to describe a Method (including \0)

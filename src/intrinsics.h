@@ -150,7 +150,7 @@ until version 0.1.x there was a distinction between 32 Bit machines and 64 bit m
 #define BytesPerBlock 8
 #endif
 #define algn_general(X)  ((1L + (uintptr_t) (((uintptr_t) X - 1L) / BytesPerBlock)) * BytesPerBlock)
-double inline *algn(double *X) {assert(algn_general(X)>=(uintptr_t)X); return (double *) algn_general(X); }
+double inline *algn(double *X) { return (double *) algn_general(X); }
 #define ALIGNED __attribute__ ((aligned (BytesPerBlock)))
 #define doubles (BytesPerBlock / 8)
 

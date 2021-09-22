@@ -42,12 +42,13 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 */
 
 
-#include <R.h>
+#include "def.h"
+#include <Basic_utils.h>
 #include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rmath.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 
 #include "questions.h"
 #include "primitive.others.h"

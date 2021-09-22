@@ -22,17 +22,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//#include <R.h>
-//#include <Rdefines.h>
-//#include <R_ext/Linpack.h>
-//#include <Rmath.h>  
-//#include <stdio.h>  
-//#include <unistd.h>
-//#include <string.h>
-//#include "RF.h"
-//#include "primitive.h"
-//#include "kleinkram.h"
-// #include "Operator.h"
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "RF.h"
 #include "xport_import.h"
 #include "init.h"

@@ -24,9 +24,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <Rmath.h>
 #include <stdio.h>
-//#include <stdlib.h>
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "RF.h"
 #include "RandomFields.h"
 

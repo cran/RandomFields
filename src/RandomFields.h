@@ -29,9 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RFsimu_public_H 1
 #include "basic.h"
 
-// #include <f2c.h> /* otherwise false/true not define or conflicting... */
-
-
 #define NATSCALE_EXACT 1 /* or approx or mle */
 #define NATSCALE_ORNUMERIC 2
 //#define NATSCALE_APPROX 2

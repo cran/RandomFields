@@ -24,9 +24,9 @@
 
 /* Martin Schlather: 21 October, 2011,
    This file has been file avltr.cc in libavl. 
-   The #include "avltr.h" has been changed to "avltr_modified.h".
+   The # in.clude "avltr.h" has been changed to "avltr_modified.h".
    Further
-       #include "basic.h" is added,
+       #in.clude "basic.h" is added,
        fprint  has been replaced by error,
        exit has been outcommented
        print has been replaced by Rprint.
@@ -43,9 +43,12 @@
 #endif
 #include <stdio.h>
 #include <stddef.h>
+
+
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "basic.h"
- 
-//#include "avltr.h"
 #include "avltr_modified.h"
 
 /* Tag types. */

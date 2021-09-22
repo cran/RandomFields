@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /// sysconf (_SC_NPROCESSORS_ONLN) // number of cores available
 // int get_nprocs (void) // dito
 
+
 #ifndef RFdef_H
 #define RFdef_H 1
 

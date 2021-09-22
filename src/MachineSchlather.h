@@ -28,10 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef RF_MACHINE_SCHLATHERS
 #define RF_MACHINE_SCHLATHERS 1
 
-#ifdef DO_PARALLEL
-#include <omp.h>
-#undef PRINTF
-//#define PRINTF Rprintf
 #define PRINTF if (omp_get_num_threads() > 1) { error("\n\nnever use Rprintf/PRINTF within parallel constructions!!\n\n"); } else Rprintf // OK
 #endif
 

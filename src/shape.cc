@@ -32,7 +32,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
+#include "def.h"
+#include <Basic_utils.h>
 #include <R_ext/Linpack.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 
 #include "questions.h"
 #include "shape.h"
@@ -1095,7 +1099,7 @@ void EtAxxA(double *x, model *cov, double *v) {
     *E = P(EAXXA_E),
     *A = P(EAXXA_A),
     phi = P0(ETAXXA_ALPHA),
-    c =  cos(phi * x[time]),
+    c =  COS(phi * x[time]),
     s = SIN(phi * x[time]); 
      
   R[0] = R[4] = c;
@@ -1197,7 +1201,7 @@ void rotat(double *x, model *cov, double *v) {
     phi = P0(ROTAT_PHI),
     absx = SQRT(x[0] * x[0] + x[1] * x[1]);
   *v = (absx == 0.0) ? 0.0
-    : speed * (cos(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
+    : speed * (COS(phi * x[time]) * x[0] + SIN(phi * x[time]) * x[1]) / absx;
 }
 
 void minmaxEigenrotat(model VARIABLE_IS_NOT_USED *cov, double *mm) {
@@ -1240,7 +1244,7 @@ void Rotat(double *x, model *cov, double *v) {
     time = dim - 1;
   double
     phi = P0(ROTAT_PHI),
-      c =  cos(phi * x[time]),
+      c =  COS(phi * x[time]),
       s = SIN(phi * x[time]),
       R[9]; assert(dim ==3);
    

@@ -26,8 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RFsimu_H 1
 
 // ACHTUNG : REIHENFOLGE WICHTIG
-#include <Basic_utils.h>
-#include "def.h"
 #include "basic.h"
 #include "init.h"
 
@@ -48,8 +46,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // #define MEMCOPY(A,B,C) memory_copy(A, B, C)
 
 
-#include <string.h>
-#include <General_utils.h>
 #include "AutoRandomFields.h"
 #include "auxiliary.h"
 #include "RandomFields.h"

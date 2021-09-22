@@ -19,9 +19,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
-#include <R_ext/Lapack.h>
 #include "def.h" // never change this line
-#include <General_utils.h> //#include <General_utils.h>
+#include <Basic_utils.h>
+#include <R_ext/Lapack.h>
+#include <General_utils.h> 
+#include <zzz_RandomFieldsUtils.h>
 #include "xport_import.h"
 
 

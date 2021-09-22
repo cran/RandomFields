@@ -21,18 +21,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//#include <Rmath.h>
-//#include <unistd.h>
-// #include "RandomFieldsUtils.h"
-//#include <zzz_RandomFieldsUtils.h>
-//#include "win_linux_aux.h"
-//
+
 #include "def.h"
+#include "intrinsics.h"
+#include <Basic_utils.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
-#include "intrinsics.h"
 #include "xport_import.h"
-//#include "Error.h"
 
 
 #if defined SSE2 

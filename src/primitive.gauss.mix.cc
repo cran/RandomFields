@@ -23,10 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 
-#include <Rmath.h>
+#include "def.h"
+#include <Basic_utils.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
+#include <General_utils.h>
 
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "primitive.h"
 #include "operator.h"

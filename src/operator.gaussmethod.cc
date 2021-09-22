@@ -23,18 +23,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-//#include <Rmath.h>
-//#include <R_ext/Lapack.h>
-//#include <R_ext/Linpack.h>
-//
+#include "def.h"
+#include <Basic_utils.h>
 #include <R_ext/Applic.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
-//#include "variogramAndCo.h"
 #include "cubicsolver.h"
-//#include "shape.h"
-//#include "rf_interfaces.h"
 
 
 typedef int (*set_local_q_type) (model *next, double a, double d);

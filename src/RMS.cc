@@ -32,9 +32,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
-//#include <Rmath.h>
-//#include <stdio.h> 
-//#include <R_ext/Lapack.h>
+#include "def.h"
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
@@ -1296,7 +1297,7 @@ int checkS(model *cov) {
   } else if (!PisNULL(DPROJ)) { // geaendert werden: xdim, logdim, iso
     COPYALLSYSTEMS(PREVSYSOF(sub), OWN, false);
     int xdim = OWNTOTALXDIM,
-      p = PINT(DPROJ)[0];  // #define PPROJ
+      p = PINT(DPROJ)[0];  // OK
 
     FREE(PPROJ);
     if (p > 0) {
@@ -1305,7 +1306,7 @@ int checkS(model *cov) {
       PPROJ = (int*) MALLOC(bytes);
       MEMCOPY(PPROJ, PINT(DPROJ), bytes); // #define PPROJ
     } else {
-      int nproj = cov->nrow[DPROJ]; // #define Nproj
+      int nproj = cov->nrow[DPROJ];  // OK // #define Nproj
       if (nproj != 1)
 	SERR1("values 'space' and 'time' in argument '%.50s' do not allow additional values", KNAME(DPROJ));
       if (!(Loc(cov)->Time && xdim >= 2 &&
@@ -1580,7 +1581,7 @@ bool allowedIS(model *cov) {
   //  printf("%d %d %d\n", Scale != NULL && !isRandom(Scale), Aniso != NULL || Daniso != NULL, !angle);
   //  APMI(cov);
 
-  int nproj = cov->nrow[DPROJ], // #define Nproj
+  int nproj = cov->nrow[DPROJ],  // OK // #define Nproj
     *proj = PINT(DPROJ);// #define PPROJ
   if (nproj>0) {
     allowed = false;

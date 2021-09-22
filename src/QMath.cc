@@ -1,6 +1,7 @@
 // This file has been created automatically by 'rfGenerateMaths'
-#include <R.h>
-#include <Rmath.h>
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "primitive.others.h"
 #include "startGetNset.h"

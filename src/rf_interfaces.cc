@@ -42,14 +42,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   methods may be called;  
 */
 
+#include "def.h"
+#ifdef DO_PARALLEL
+#include <omp.h>
+#endif
+#include <Basic_utils.h>
+
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "Coordinate_systems.h"
 #include "variogramAndCo.h"
 #include "Processes.h"
 #include "rf_interfaces.h"
-#ifdef DO_PARALLEL
-#include <omp.h>
-#endif
 
 /* 
  in CheckCovariance and other the following dimensions are used:

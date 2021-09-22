@@ -21,18 +21,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//#include <R.h>
-//#include <Rdefines.h>
-//#include <R_ext/Linpack.h>
-//#include <Rmath.h>  
-//#include <stdio.h>  
-//#include <unistd.h>
-//#include <string.h>
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "questions.h"
 #include "primitive.h"
 #include "operator.h"
 #include "rf_interfaces.h"
 #include "startGetNset.h"
+
 
 #define PERR(X) {LOCAL_MSG; SPRINTF(MSG, "'%.100s': %.800s", param_name, X); RFERROR(MSG);}
 #define PERR1(X,Y) {LOCAL_MSG; LOCAL_ERRMSG2; SPRINTF(MSG, "'%.100s': %.800s", param_name, X); SPRINTF(MSG2, MSG, Y); RFERROR(MSG2);}

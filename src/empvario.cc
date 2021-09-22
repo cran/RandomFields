@@ -21,9 +21,10 @@
 */
 
 
-#include <Rmath.h>  
 #include <stdio.h>  
-//#include <stdlib.h>
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "RF.h"
  
 

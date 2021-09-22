@@ -21,18 +21,16 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USV.
 */
 
-#include <Rmath.h>  
 #include <stdio.h>  
-//#include <stdlib.h>
- 
-//#include <string.h>
+#include "def.h"
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
+
 #include "questions.h"
 #include "Processes.h"
 #include "avltr_modified.h"
 #include "operator.h"
-//#include "userinterfaces.h"
-//#include "Coordinate_systems.h"
-
 
 #define BLOCKSIZE 1000
 #define BLOCKS 1000

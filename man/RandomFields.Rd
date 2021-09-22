@@ -26,7 +26,7 @@
    % \item{\bold{model estimation}} for (geostatistical) linear (mixed) models
   }
 
-  See \url{http://ms.math.uni-mannheim.de/de/publications/software/}
+  See \mysoftware
   for \bold{intermediate updates}.
   
 }
@@ -217,7 +217,7 @@
 }
 
 \section{Update}{
-  Current updates are available through \url{http://ms.math.uni-mannheim.de/de/publications/software}.
+  Current updates are available through \mysoftware.
 }
 
 \me

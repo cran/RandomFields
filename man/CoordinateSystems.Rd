@@ -174,11 +174,11 @@
 
  \item{\code{zenit}}{two angles of the central
    projection direction for the gnomonic projection
-   (\url{http://en.wikipedia.org/wiki/Gnomonic_projection},
-    \url{http://de.wikipedia.org/wiki/Gnomonische_Projektion})
+   (\url{https://en.wikipedia.org/wiki/Gnomonic_projection},
+    \url{https://de.wikipedia.org/wiki/Gnomonische_Projektion})
     and the orthographic projection,
-  (\url{http://en.wikipedia.org/wiki/Orthographic_projection_in_cartography},
-   \url{http://de.wikipedia.org/wiki/Orthografische_Azimutalprojektion}).
+  (\url{https://en.wikipedia.org/wiki/Orthographic_projection_in_cartography},
+   \url{https://de.wikipedia.org/wiki/Orthografische_Azimutalprojektion}).
 
     If \code{any(is.na(zenit))}
     then either the value of either of the components may not be \code{NA},

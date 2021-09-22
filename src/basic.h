@@ -29,12 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef GSL_VS_R_H
 #define GSL_VS_R_H 1
 
-#include <R.h>
-#include <Rinternals.h>
-#include <Rmath.h>
-#include <errno.h>
-#include <R_ext/Complex.h>
-
 #ifdef SCHLATHERS_MACHINE
 #undef SCHLATHERS_MACHINE
 #endif

@@ -45,12 +45,12 @@ citEntry(entry = "Article",
   volume       = "63",
   number       = "8",
   pages        = "1--25",
-  url          = "http://www.jstatsoft.org/v63/i08/",
+  url          = "https://www.jstatsoft.org/v63/i08/",
 
   textVersion  =
   paste("Martin Schlather, Alexander Malinowski, Peter J. Menck, Marco Oesting, Kirstin Strokorb (2015).",
         "Analysis, Simulation and Prediction of Multivariate Random Fields with Package RandomFields.",
         "Journal of Statistical Software, 63(8), 1-25.",
-        "URL http://www.jstatsoft.org/v63/i08/.")
+        "URL https://www.jstatsoft.org/v63/i08/.")
 )
 

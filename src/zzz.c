@@ -20,11 +20,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  
 */
 
+#include <Basic_utils.h>
 #include <R_ext/Rdynload.h>
 #include "def.h"
 #include "RandomFields.h"
 #include "auxiliary2.h"
-#include <Basic_utils.h>
 
 #define none 0
 static R_NativePrimitiveArgType

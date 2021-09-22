@@ -27,9 +27,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <stdio.h>
-#include <Rmath.h>
-//#include <stdlib.h>
 
+#include <Basic_utils.h>
+#include <General_utils.h>
+#include <zzz_RandomFieldsUtils.h>
 #include "convhull2D.h"
 #include "PoissonPolygon.h"
 #include "RF.h"
