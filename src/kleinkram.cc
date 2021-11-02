@@ -20,11 +20,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "def.h" // never change this line
+#include "intrinsics.h"
 #include <Basic_utils.h>
 #include <R_ext/Lapack.h>
 #include <General_utils.h> 
 #include <zzz_RandomFieldsUtils.h>
 #include "xport_import.h"
+#include "extern.h"
 
 
 #define SCALAR(A,B,C) Ext_scalarX(A,B,C, SCALAR_AVX)

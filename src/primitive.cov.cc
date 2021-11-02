@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <R_ext/Linpack.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
+#include "extern.h"
 
 #include "questions.h"
 #include "primitive.h"
@@ -40,7 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "AutoRandomFields.h"
 #include "shape.h"
 #include "Processes.h"
-
+extern const char *coords[coordsN];
 
 //#define LOG2 M_LN2
 

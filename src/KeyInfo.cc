@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Rdefines.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
+#include "extern.h"
 #include "questions.h"
 #include "Coordinate_systems.h"
 #include "operator.h"
@@ -958,7 +959,7 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
   //  printI(cov);printD(cov);
    leer(level); PRINTF("%-10s %s\n", "param", C->kappas == 0 ? "none" : ""); 
 
-  for(int i=0; i<C->kappas; i++) {
+  for (int i=0; i<C->kappas; i++) {
     //    printf("[[ %s %s ]]  ", C->kappanames[i],
     //	   cov->ownkappanames != NULL ? cov->ownkappanames[i] : "---");
     
@@ -987,9 +988,12 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
 	else PRINTF("[%d, %d] ", NROW(i), NCOL(i));
       } 
       switch(C->kappatype[i]) {
-      case REALSXP : for (int j=0; j<endfor; j++) PRINTREAL(P(i)[j]); break;
-      case INTSXP : for (int j=0; j<endfor; j++) PRINTINT(PINT(i)[j]); break;
-      case STRSXP : for (int j=0; j<endfor; j++) PRINTF(" %s", PCHAR(i)[j]); break;
+      case REALSXP : for (int j=0; j<endfor; j++) PRINTREAL(P(i)[j]);
+	break;
+      case INTSXP : for (int j=0; j<endfor; j++) PRINTINT(PINT(i)[j]);
+	break;
+      case STRSXP : for (int j=0; j<endfor; j++) PRINTF(" %s", PCHAR(i)[j]);
+	break;
       case CLOSXP : PRINTF("< arbitrary function >"); break;
       case VECSXP : PRINTF("< some R list >"); break;
       case LANGSXP: PRINTF("< language expression >"); break;
@@ -1331,7 +1335,8 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
       
 #define SHOWDEFAULT(Z, X, Y) if (pgs->X != NULL) {			\
 	leer(level);  PRINTF("%-10s ",Z);				\
-	for (int d=0; d<dim; d++) PRINTF(Y, pgs->X[d]); PRINTF("\n");}
+	for (int d=0; d<dim; d++) { PRINTF(Y, pgs->X[d]); }		\
+	PRINTF("\n");}
 #define SHOW(Z, X) SHOWDEFAULT(Z, X, "%g ")
 #define SHOWINT(Z, X) SHOWDEFAULT(Z, X, "%d ")
       
@@ -1368,11 +1373,14 @@ void pmi(model *cov, char all_subs, int level, int maxlevel,
 	SHOW("pgs:half", halfstepvector);
 	if (pgs->single != NULL) {
 	  leer(level); { PRINTF("%-10s ","pgs:single"); 
-	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->single[d]);PRINTF("\n"); }
+	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->single[d]);
+	    PRINTF("\n");
+	  }
 	}
 	if (pgs->total != NULL) {
 	  leer(level); { PRINTF("%-10s ","pgs:total"); 
-	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->total[d]); PRINTF("\n"); }
+	    for (int d=0; d<size; d++) PRINTF("%g ", pgs->total[d]);
+	    PRINTF("\n"); }
 	}
       } else { // gauss oder poisson
 	leer(level); P10("pgs:intens", pgs->intensity);
@@ -1596,7 +1604,7 @@ SEXP IGetModel(model *cov, int modus, int spConform, bool solveRandom,
    //   if (spConform >= 1) { SET_VECTOR_ELT(Model, k++, mkString(CC->nick));
    // } else {  SET_VECTOR_ELT(Model, k++, mkString(CC->name)); }
 
-  for(i=0; i<C->kappas; i++) {
+  for (i=0; i<C->kappas; i++) {
     if (cov->kappasub[i] != NULL && (!solveRandom || PisNULL(i))) {
       SET_STRING_ELT(nameMvec, k, mkChar(OWNKAPPA(C, i)));
       SET_VECTOR_ELT(Model, k++,

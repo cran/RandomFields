@@ -931,9 +931,9 @@ int init_shapestp(model *cov, gen_storage *s) {
       dim = OWNLOGDIM(0),
       ndummy = dummyN;
  
-    F77_NAME(dgeev)("No", "No", &dim, P(STP_S), // SVD
+    F77dgeev("No", "No", &dim, P(STP_S), // SVD
 		    &dim, value, ivalue, NULL, &dim, NULL, &dim,
-		    dummy, &ndummy, &Ferr);
+		    dummy, &ndummy, &Ferr FCONE FCONE);
     if (Ferr != 0) RETURN_ERR(ERRORSVD);
     det =  1.0;
     for (i=0; i<dim; i++) {

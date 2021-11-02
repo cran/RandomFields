@@ -50,6 +50,7 @@ z, x z, x^2 z, ...., x^(k-1) z, y z, x y z, x^2 y z, ..., z^k
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
 
+#include "extern.h"
 #include "questions.h"
 #include "primitive.others.h"
 #include "Processes.h"

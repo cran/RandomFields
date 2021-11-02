@@ -25,13 +25,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <unistd.h>
+#include "def.h"
 #include <Basic_utils.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Linpack.h>
+#include <Rdefines.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
-#include <Rdefines.h>
-
+#include "extern.h"
 #include "RF.h"
 
 // important check !!
@@ -93,8 +94,8 @@ double getMinimalAbsEigenValue(double *Aniso, int dim) {
   }
   
   MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
-  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim,// Eigen
-		   D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err);
+  F77dgesdd("N", &dim, &dim, SICH, &dim,// Eigen
+	    D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err FCONE);
   if (Err != 0) { Err=XERRORSVD; goto ErrorHandling; }
   for (dd = 0; dd < dim; dd++) {
     dummy = FABS(D[dd]);
@@ -131,8 +132,8 @@ double getDet(double *Aniso, int dim) { // arbitrary squared matrix !
   }
   
   MEMCOPY(SICH, Aniso, sizeof(double) * dimSq);
-  F77_CALL(dgesdd)("N", &dim, &dim, SICH, &dim,// Eigen
-		   D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err);
+  F77dgesdd("N", &dim, &dim, SICH, &dim,// Eigen
+	    D, NULL, &dim, NULL, &dim, work, &optim_work, iwork, &Err FCONE);
   if (Err != 0) { Err=XERRORSVD; goto ErrorHandling; }
   for (dd = 0; dd < dim; det *= D[dd++]);
 

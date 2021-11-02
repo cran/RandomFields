@@ -30,14 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "operator.h"
 
 
-// todo: Folgendes kann nur mit extremen Aufwand fuer \pkg{parallel}
-// sicher gemacht werden
-#ifdef DO_PARALLEL
-// hier
-#else  // not DO_PARALLEL
-char ERRMSG[LENERRMSG], MSG[LENERRMSG], MSG2[LENERRMSG];
-#endif
-
 #define SCPY(A,B) STRNCPY(A,B,LENERRMSG);
 
 void errorMSG(int err, errorstring_type errorstring, KEY_type *KT,

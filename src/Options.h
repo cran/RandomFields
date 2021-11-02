@@ -25,16 +25,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define RFuser_H 1
 
 
+#include "AutoRandomFields.h"
+
+
+#define startmode normal
+#define NM ((int) startmode)   /* normal mode */
+//       {careless, sloppy, easygoing, normal, precise, pedantic, neurotic}
+
+
+
 #define NAT_SCALE 1
 #define MAX_CE_MEM 16777216
 #define generalN 20
 // IMPORTANT: all names of general must be at least 3 letters long !!!
-extern const char *general[generalN];
 #define GENERAL_MODUS 0 
 #define GENERAL_STORING 1
 #define GENERAL_EXACTNESS 7
 #define GENERAL_CLOSE 10
 #define GENERAL_REPORTCOORD 16
+// extern const char *general[generalN];
 typedef struct general_param {
   char pch; /*  character shown after each simulation
     just for entertainment of the user
@@ -126,7 +135,7 @@ typedef struct general_param {
 
 
 #define gaussN 6
-extern const char *gauss[gaussN];
+// extern const char *gauss[gaussN];
 #define GAUSS_BEST_DIRECT 3
 #define GAUSS_BOXCOX_OPTION 5
 typedef struct gauss_param{
@@ -148,7 +157,7 @@ typedef struct gauss_param{
 
 #define krigeN 5
 #define KRIGE_SPLITN 2
-extern const char *krige[krigeN];
+// extern const char *krige[krigeN];
 typedef struct krige_param {
   bool ret_variance,  fillall;
   int locmaxn,
@@ -166,7 +175,7 @@ typedef struct krige_param {
 
 
 #define CEN 12
-extern const char *CE[CEN];
+// extern const char *CE[CEN];
 typedef struct ce_param {
   bool force, useprimes, dependent;
   char strategy;
@@ -184,7 +193,7 @@ typedef struct ce_param {
 
 #define spectralN 4
 #define SPECTRAL_PROPFACTOR 2
-extern const char * spectral[spectralN];
+// extern const char * spectral[spectralN];
 typedef struct spectral_param {
   bool grid;
   double prop_factor, sigma;
@@ -195,7 +204,7 @@ typedef struct spectral_param {
 
 
 #define pTBMN 9
-extern const char * pTBM[pTBMN];
+// extern const char * pTBM[pTBMN];
 typedef struct tbm_param {
   bool grid;
   int tbmdim, fulldim, points,
@@ -216,7 +225,7 @@ typedef struct tbm_param {
 
 #define directN 1
 #define DIRECT_MAXVAR_PARAM 0
-extern const char *direct[directN];
+// extern const char *direct[directN];
 typedef struct direct_param {
   int maxvariables;
 } direct_param;
@@ -224,7 +233,7 @@ typedef struct direct_param {
 
 
 #define sequN 2
-extern const char * sequ[sequN];
+// extern const char * sequ[sequN];
 typedef struct sequ_param{
   int back, initial;
 } sequ_param;
@@ -238,7 +247,7 @@ typedef struct ave_param {
 
 
 #define pnuggetN 1
-extern const char * pnugget[pnuggetN];
+// extern const char * pnugget[pnuggetN];
 typedef struct nugget_param {
   double tol;
 } nugget_param;
@@ -246,7 +255,7 @@ typedef struct nugget_param {
 
 
 #define mppN 6
-extern const char * mpp[mppN];
+// extern const char * mpp[mppN];
 typedef struct mpp_param {
   int  n_estim_E,
     scatter_max[MAXMPPDIM];
@@ -271,7 +280,7 @@ typedef struct mpp_param {
 #define HYPER_BERNOULLI 2
 
 #define hyperN 4
-extern const char * hyper[hyperN];
+// extern const char * hyper[hyperN];
 typedef struct hyper_param {
   int superpos, maxlines, mar_distr;
   double mar_param;
@@ -280,7 +289,7 @@ typedef struct hyper_param {
 
 
 #define extremeN 12
-extern const char * extreme[extremeN];
+// extern const char * extreme[extremeN];
 #define EXTREME_FLAT 5
 typedef struct extremes_param {
   usr_bool flathull;
@@ -297,7 +306,7 @@ typedef struct extremes_param {
 
 
 #define brN 7
-extern const char * br[brN];
+// extern const char * br[brN];
 typedef struct br_param {
   int BRmaxmem, BRvertnumber, BRoptim, deltaAM;
   double BRmeshsize, BRoptimtol, variobound;
@@ -308,7 +317,7 @@ typedef struct br_param {
 
 
 #define distrN 9
-extern const char * distr[distrN];
+// extern const char * distr[distrN];
 typedef struct distr_param{
   double safety, minsteplen, innermin, outermax;
   int maxsteps, parts, maxit, mcmc_n, repetitions;
@@ -328,7 +337,7 @@ typedef struct distr_param{
 #define FIT_BC_UB 11
 #define FIT_MAXNEIGHBOUR 23
 #define FIT_CLIQUE 24
-extern const char * fit[fitN];
+// extern const char * fit[fitN];
 typedef struct fit_param{
   double bin_dist_factor, upperbound_scale_factor, lowerbound_scale_factor, 
     lowerbound_scale_LS_factor, upperbound_var_factor, lowerbound_var_factor, 
@@ -373,7 +382,7 @@ typedef struct fit_param{
 
 
 #define empvarioN 6
-extern const char * empvario[empvarioN];
+// extern const char * empvario[empvarioN];
 typedef struct empvario_param{
   double phi0, theta0, tol;
   bool pseudovariogram, fft, halveangles;
@@ -381,7 +390,7 @@ typedef struct empvario_param{
 #define empvario_START {0.0, 0.0, 1e-13, false, true, true}
 
 #define guiN 3
-extern const char * gui[guiN];
+// extern const char * gui[guiN];
 #define GUI_SIZE 2
 typedef struct gui_param{
   bool alwaysSimulate;
@@ -390,7 +399,7 @@ typedef struct gui_param{
 #define gui_START {true, CircEmbed, {1024, 64}}
 
 #define graphicsN 13
-extern const char *graphics[graphicsN];
+// extern const char *graphics[graphicsN];
 #define GRAPHICS_UPTO 3
 typedef struct graphics_param{
   usr_bool always_open, always_close;
@@ -406,7 +415,7 @@ typedef struct graphics_param{
 
 
 #define registersN 3
-extern const char *registers[registersN];
+// extern const char *registers[registersN];
 typedef struct registers_param {
   int keynr, predict, likelihood;
 } registers_param;
@@ -414,7 +423,7 @@ typedef struct registers_param {
 
 
 #define internalN 26
-extern const char * internals[internalN];
+// extern const char * internals[internalN];
 #define INTERNALS_NEWANISO 2
 #define INTERNALS_STORED_INIT 6
 #define INTERNALS_ONGRID 9
@@ -423,6 +432,7 @@ extern const char * internals[internalN];
 #define INTERNALS_DO_TESTS 15
 #define INTERNALS_EX_RED 20
 #define INTERNALS_PARALLEL 21
+// extern const char *internals[internalsN];
 typedef struct internal_param{ 
   // if changed, CHANGE ALSO RestWarnings in 'userinterfaces.cc';
   bool
@@ -455,7 +465,7 @@ typedef struct internal_param{
 #define COORDS_XIDX 7
 #define COORDS_XNAMES 8
 #define ZENIT 10
-extern const char *coords[coordsN];
+// extern const char *coords[coordsN];
 typedef struct coords_param {
   usr_bool xyz_notation; // 0; + Exception for RFcov
   double zenit[2]; // 8
@@ -485,7 +495,7 @@ typedef struct coords_param {
 
 
 #define specialN 1
-extern const char * special[specialN];
+// extern const char * special[specialN];
 typedef struct special_param {
    int multcopies;
 } special_param;
@@ -493,7 +503,7 @@ typedef struct special_param {
 
 
 #define obsoleteN 10
-extern const char * obsolete[obsoleteN];
+// extern const char * obsolete[obsoleteN];
 
 
 typedef struct globalparam{
@@ -525,15 +535,13 @@ typedef struct globalparam{
   special_param special;
   
 } globalparam;
-extern globalparam GLOBAL;
 
 #define prefixN 23
-extern const char * prefixlist[prefixN], **all[prefixN];
-extern int allN[prefixN];
+//extern const char * prefixlist[prefixN], **all[prefixN];
+//extern int allN[prefixN];
 void setparameter(int i, int j, SEXP el, char name[200], bool isList,
 		  int local);
 void getRFoptions(SEXP *sublist);
 void finalparameter(int local);
 
-extern int CORES;
 #endif

@@ -6,14 +6,18 @@
 
 // PKG_CXXFLAGS =  $(SHLIB_OPENMP_CXXFLAGS) -mavx -msse -msse2 -msse3 -msse4 -msse4a -march=core-avx2
 
-#ifdef XXXXX_XXXX
+#ifdef asdfsdaf
 
 #ifdef __MMX__
 #define MMX __MMX__
 #endif
+
 #ifdef __SSE__
 #define SSE __SSE__
+#else
 #endif
+
+
 #ifdef  __SSE2__
 #define SSE2 __SSE2__
 #endif
@@ -29,12 +33,14 @@
 #if defined __SSE41__ || defined __SS42__
 #define SSE412 1
 #endif
+
 //
 #ifdef __AVX__
 #define AVX 1
 #endif
 #ifdef __AVX2__
 #define AVX2 1
+#else
 #endif
 
 #endif
@@ -87,9 +93,7 @@ until version 0.1.x there was a distinction between 32 Bit machines and 64 bit m
 
 #if defined AVX || defined AVX2
 #include <x86intrin.h>
-#endif
-
-
+#else 
 
 #ifdef MMX
 //#include <mmintrin.h>
@@ -100,7 +104,7 @@ until version 0.1.x there was a distinction between 32 Bit machines and 64 bit m
 #endif
 
 #ifdef SSE2
-//#include <emmintrin.h>
+  #include <emmintrin.h>
 #endif
 
 #ifdef SSE3
@@ -117,6 +121,8 @@ until version 0.1.x there was a distinction between 32 Bit machines and 64 bit m
 
 #ifdef SSE412
 //#include <smmintrin.h>
+#endif
+
 #endif
 
 

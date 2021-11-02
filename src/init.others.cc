@@ -35,8 +35,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rf_interfaces.h"
 #include "primitive.others.h"
 #include "operator.h"
-
-
+extern const char * distr[distrN];
+extern const char *CE[CEN];
 
 
 

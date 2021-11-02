@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
+#include "extern.h"
 #include "questions.h"
 #include "Processes.h"
 #include "shape.h"
@@ -1614,8 +1615,6 @@ int check_randomcoin(model *cov) {
   //extremes_param *ep = &(GLOBAL.extreme);
 
   SERR("'random coin' method does not work for the current version");
-
-  INTERNAL;
 
   ASSERT_ONE_SUBMODEL(cov);
   if ((!hasPoissonGaussFrame(next) && !hasGaussMethodFrame(next) &&

@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
 
+#include "extern.h"
 #include "questions.h"
 #include "shape.h"
 #include "operator.h"

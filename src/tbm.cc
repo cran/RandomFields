@@ -33,9 +33,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
 
+#include "extern.h"
 #include "questions.h"
 #include "Processes.h"
 #include "operator.h"
+extern const char *general[generalN];
+
 
 #define MAXNN 100000000.0 /* max number of points simulated on a line */
 
@@ -894,7 +897,8 @@ void do_tbmproc(model *cov, gen_storage  VARIABLE_IS_NOT_USED *S) {
     
  
 #ifdef DO_PARALLEL
-#pragma omp parallel for num_threads(CORES) collapse(4)
+ #pragma omp parallel for num_threads(CORES) collapse(4)
+#else
 #endif
      for (v=0; v<vdim; v++) {
 	for (nt=0; nt<gridlent; nt++) {

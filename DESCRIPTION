@@ -1,10 +1,10 @@
 Package: RandomFields
-Version: 3.3.10
+Version: 3.3.13
 Title: Simulation and Analysis of Random Fields
 Author: Martin Schlather [aut, cre], Alexander Malinowski [aut], Marco Oesting [aut], Daphne Boecker [aut], Kirstin Strokorb [aut], Sebastian Engelke [aut], Johannes Martini [aut], Felix Ballani [aut], Olga Moreva [aut], Jonas Auel[ctr], Peter Menck [ctr], Sebastian Gross [ctr], Ulrike Ober [ctb], Paulo Ribeiro [ctb], Brian D. Ripley [ctb], Richard Singleton [ctb], Ben Pfaff [ctb], R Core Team [ctb]
 Maintainer: Martin Schlather <schlather@math.uni-mannheim.de>
 LinkingTo: RandomFieldsUtils
-Depends: R (>= 3.5.0), sp, RandomFieldsUtils (>= 0.5.4)
+Depends: R (>= 3.5.0), sp, RandomFieldsUtils (>= 0.5.5)
 Imports: graphics, methods, grDevices, stats, utils
 Suggests: colorspace, RColorBrewer, mvtnorm, raster, tcltk2, tcltk,
         tkrplot, spam, tools, minqa, soma, optimx, nloptr, pso, GenSA
@@ -20,7 +20,7 @@ Collate: aaa_auto.R aaa_globals.R basic.fctns.R bigdata.R Class.R
         generatemodels.R zzz.R
 License: GPL (>= 3)
 URL: https://www.wim.uni-mannheim.de/schlather/publications/software
-Packaged: 2021-09-20 20:27:39 UTC; schlather
+Packaged: 2021-10-30 14:47:11 UTC; schlather
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2021-09-22 10:40:09 UTC
+Date/Publication: 2021-11-02 13:30:02 UTC

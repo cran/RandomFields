@@ -71,4 +71,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 #define LOCAL_ERRORSTRING
 
+
+#define F77dgeev F77call(dgeev)
+#define F77dsvdc F77call(dsvdc)
+#define F77zheev F77call(zheev)
+#define F77dgesdd F77call(dgesdd)
+
+
 #endif

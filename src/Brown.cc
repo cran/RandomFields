@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "operator.h"
 #include "rf_interfaces.h"
 #include "variogramAndCo.h"
+#include "extern.h"
 
 #define BR_MESHSIZE (LAST_MAXSTABLE + 1)
 #define BR_VERTNUMBER (LAST_MAXSTABLE + 2)

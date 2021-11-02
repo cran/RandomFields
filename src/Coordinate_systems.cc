@@ -24,11 +24,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "def.h"
 #include <Basic_utils.h>
 #include <General_utils.h>
+#include "extern.h"
+
 #include <zzz_RandomFieldsUtils.h>
 #include "RF.h"
 #include "Coordinate_systems.h"
 #include "questions.h"
 #include "kleinkram.h"
+extern const char *internals[internalN];
+extern const char *general[generalN];
+extern const char *coords[coordsN];
 
 /* simplifying functions
    turn vector of x into length ||x|| and similar
@@ -545,7 +550,7 @@ SEXP GetCoordSystem(SEXP keynr, SEXP oldsystem, SEXP newsystem) {
 
     if (n_s == coord_mix && GLOBAL.internal.warn_coord_change) {    
       WARN1("the covariance model relies on at least two different coordinate systems. Use RFgetModelInfo(level=6) and check that this is not due to misspecification of the covariance model. To avoid this warning set 'RFoptions(%.50s=FALSE)'", // OK
-	      internals[INTERNALS_COORD_CHANGE]);
+	    internals[INTERNALS_COORD_CHANGE]);
       GLOBAL.internal.warn_coord_change = false;
     }
 

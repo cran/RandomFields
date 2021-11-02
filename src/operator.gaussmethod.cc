@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "operator.h"
 #include "Processes.h"
 #include "cubicsolver.h"
+#include "extern.h"
 
 
 typedef int (*set_local_q_type) (model *next, double a, double d);

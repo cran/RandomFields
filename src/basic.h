@@ -50,6 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAXNRCOVFCTS 300
 #define MAXUNITSCHAR 10
 #define MAXINVERSIONS 2
+#define DISTMAXSTEPS 1000
 
 
 #ifdef __GNUC__

@@ -39,11 +39,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
 
+#include "extern.h"
 #include "questions.h"
 #include "operator.h"
 #include "Processes.h"
 #include "Coordinate_systems.h"
-
+extern const char *CE[CEN];
  
 
 
@@ -559,11 +560,11 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 #define INI_LWORK -1	  
 	  lwork = INI_LWORK; // for initialization call to get optimal size of array 'work'
 
-	  F77_CALL(zheev)("V", "U", &vdim, R, // Eigen,cmplx
-			  &vdim, // integer
-			  tmpLambda,  // double
-			  &optim_lwork, // complex
-			  &lwork, rwork, &info); 
+	  F77zheev("V", "U", &vdim, R, // Eigen,cmplx
+		   &vdim, // integer
+		   tmpLambda,  // double
+		   &optim_lwork, // complex
+		   &lwork, rwork, &info FCONE FCONE); 
 
 
 
@@ -586,8 +587,8 @@ Then h[l]=(index[l]+mm[l]) % mm[l] !!
 
 	// optim vdim * 
 
-	F77_CALL(zheev)("V", "U", &vdim, R, &vdim, // Eigen
-			tmpLambda, work, &lwork, rwork, &info);
+	F77zheev("V", "U", &vdim, R, &vdim, // Eigen
+		 tmpLambda, work, &lwork, rwork, &info FCONE FCONE);
 
 
 
@@ -1344,7 +1345,7 @@ int GetOrthogonalUnitExtensions(double * aniso, int dim, double *grid_ext) {
     //	for (i=0; i<dimsq; i+=dim) print("%10g ", aniso[i+j]);	
     
     // note! s will be distroyed by dsvdc!
-    F77_NAME(dsvdc)(s, &dim, &dim, &dim, D, // SVD
+    F77dsvdc(s, &dim, &dim, &dim, D, // SVD
 		     e, NULL /* U */, &dim, V, &dim, G, &job, &Err);
     if (Err != NOERROR) { Err = XERRORSVD; goto ErrorHandling;}
     ev0 = UNSET;

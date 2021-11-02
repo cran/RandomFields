@@ -533,8 +533,18 @@ typedef struct ce_storage {
     // da sonst bei internal_dosimulate die parameter alle RFparameter alle
     // nochmals gesetzt werden muessen
 #ifdef DO_PARALLEL
+#ifdef _OPENMP
+  // later only on SCHLATHERS_MACHINE
+  //  #pragma message "using OMP"
+  //#endif
+#else
+#error parallel although OMP not available
+#endif  
   FFT_storage FFT[MAXMPPVDIM * MAXMPPVDIM];
 #else
+#ifdef _OPENMP
+#warning not using OMP although OMP available
+#endif  
   FFT_storage FFT;
 #endif
   FFT_storage XFFT; // to be deleted
@@ -1630,8 +1640,8 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
 	assert((cov)->S##new == NULL);			       	\
     }								\
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-      Ext_##new##_NULL((cov)->S##new);					\
-    if ((cov)->S##new == NULL) BUG;					\
+     if ((cov)->S##new == NULL) BUG;					\
+     Ext_##new##_NULL((cov)->S##new);					\
   }					
 
 
@@ -1645,8 +1655,8 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
   }								\
   if ((cov)->S##new == NULL) {					\
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-    new##_NULL((cov)->S##new);					\
     if ((cov)->S##new == NULL) BUG;				\
+    new##_NULL((cov)->S##new);					\
   }}   	
 #define NEW_STORAGE(new)	\
   NEW_COV_STORAGE(cov, new)
@@ -1659,8 +1669,8 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
   }								\
   if ((cov)->S##new == NULL) {					\
     (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-    new##_NULL((cov)->S##new);					\
     if ((cov)->S##new == NULL) BUG;				\
+    new##_NULL((cov)->S##new);					\
   }}								
 #define NEW_STORAGE_WITH_SAVE(new)	\
   NEW_COV_STORAGE_WITH_SAVE(cov, new)
@@ -1669,8 +1679,8 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
 #define ONCE_NEW_COV_STORAGE(cov, new)		\
    if ((cov)->S##new == NULL) {					\
    (cov)->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-   new##_NULL((cov)->S##new);						\
    if ((cov)->S##new == NULL) BUG;					\
+   new##_NULL((cov)->S##new);						\
    }								
 
 #define ONCE_NEW_STORAGE(new)	\
@@ -1684,8 +1694,8 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
   }								\
   if (cov->S##new == NULL) {					\
    cov->S##new = (new##_storage *) MALLOC(sizeof(new##_storage));	\
-    new##_NULL(cov->S##new);					\
     if (cov->S##new == NULL) BUG;					\
+    new##_NULL(cov->S##new);					\
   }								\
   assert(cov->S##new->WHAT == NULL);				\
   }
@@ -1708,7 +1718,6 @@ int rPoissonPolygon2(polygon_storage *S, double lambda, bool do_centering);
     Z = cov->Snew->WHAT = (int*) MALLOC(sizeof(int) * (SIZE))
 
 
-#define DISTMAXSTEPS 1000
 #define XSIZE 16
 #define XXSIZE 116
 #define XXXSIZE 1116 // >= DISTAMAXSTEPS + 2 *dim

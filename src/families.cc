@@ -28,10 +28,11 @@ Foundation, Inc., 59 Temple Place - Suix2te 330, Boston, MA  02111-1307, USA.
 #include <Basic_utils.h>
 #include <General_utils.h>
 #include <zzz_RandomFieldsUtils.h>
+#include "extern.h"
 #include "questions.h"
 #include "families.h"
 #include "operator.h"
-
+extern const char * distr[distrN];
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
