@@ -703,7 +703,7 @@ void GetNaturalScaling(model *cov, double *natscale)
       !equalsXonly(OWNDOM(0)) || 
       !isPosDef(OWNTYPE(0)) || 
       C->vdim != SCALAR)
-    ERR("anisotropic function not allowed");
+    ERR0("anisotropic function not allowed");
 	 
   if (C->finiterange == wahr) {
     *natscale = 1.0;
@@ -723,7 +723,7 @@ void GetNaturalScaling(model *cov, double *natscale)
 
   if ((C->cov)==nugget)  XERR(ERRORRESCALING); 
   if ( ! HaveSameSystems(PREV, OWN))
-    ERR("coordinate system changes not allowed");
+    ERR0("coordinate system changes not allowed");
      
   // already calculated ?
   //      parami=KAPPA; // do not compare mean,variance, etc.
@@ -1650,7 +1650,7 @@ void TransformLocExt(model *cov,  location_type *loc, bool timesep,
     *xgr= takeX ? &(loc->xgr) : &(loc->ygr);
 
   
-  if (x==NULL && (*xgr)[0] ==NULL) ERR("locations are all NULL");
+  if (x==NULL && (*xgr)[0] ==NULL) ERR0("locations are all NULL");
  
   *newdim = dim;
   *caniso = NULL;
@@ -1775,7 +1775,7 @@ void TransformCovLoc(model *cov, bool timesep, usr_bool gridexpand,
     *caniso = NULL;
   if ((loc->y != NULL && loc->y != loc->x) || 
       (loc->ygr[0] != NULL && loc->ygr[0] != loc->xgr[0])) {
-    ERR("unexpected y coordinates");
+    ERR0("unexpected y coordinates");
   }
 
   assert(cov->prevloc != NULL);
@@ -1810,7 +1810,7 @@ void TransformCovLoc(model *cov, bool timesep, usr_bool gridexpand,
 
   FREE(x);
   FREE(xgr);
-  if (err != NOERROR) ERR("error when transforming to no grid");
+  if (err != NOERROR) ERR0("error when transforming to no grid");
 }
 
 

@@ -151,7 +151,7 @@ int init_mpp(model *cov, gen_storage *S) { // cov ist process
 #define SET_SUB	{							\
     sub = cov->key;  /* if changed, change do_max_pgs! */		\
     if (sub == NULL) sub = cov->sub[cov->sub[0] == NULL];		\
-    if (sub == NULL) ERR("substructure could not be detected");		\
+    if (sub == NULL) ERR0("substructure could not be detected");		\
     pgs = sub->Spgs;							\
     assert(pgs != NULL);						\
     gridlen = pgs->gridlen;						\
@@ -218,7 +218,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
 
  
   if (vdim != 1)
-    ERR("Poisson point process based methods only work in the univariate case");
+    ERR0("Poisson point process based methods only work in the univariate case");
 
   SET_SUB;
   if (!equalsnowPointShape(sub)) BUG;					       
@@ -252,7 +252,7 @@ void dompp(model *cov, gen_storage *s, double *simuxi) { // cov ist process
     else for (int i=0; i<vdimtot; i++) res[i] = 0.0;
     if (sub->mpp.moments < 1 || !R_FINITE(sub->mpp.mMplus[1]) || 
       sub->mpp.mMplus[1] == 0.0)
-      ERR("integral of positive part of the submodel is unknown or not finite");
+      ERR0("integral of positive part of the submodel is unknown or not finite");
     //    M1 = sub->mpp.mMplus[1];
     threshold = logthreshold = 1e15; //RF_INF;
     pgs->globalmin = Minimum;
@@ -662,7 +662,7 @@ void finalmaxstable(model *cov, double *Res, int n, gen_storage *s) {
   model *key = cov->key,
     *sub = cov->key;/* if changed, change do_max_pgs! */
   if (sub == NULL) sub = cov->sub[cov->sub[0] == NULL];			
-  if (sub == NULL) ERR("substructure could be detected");		
+  if (sub == NULL) ERR0("substructure could be detected");		
   long
     total = Gettotalpoints(cov), 
     vdim = VDIM0,
@@ -1517,7 +1517,7 @@ double schlatherlogD(double *data, double gamma) {
 #define LL_FULL 1
 #define LL_COMPOSITE 2
 #define LL_SELECTION 3
-#define LL_UNKNOWN ERR("unknown value for 'likelihood' -- please contact author");
+#define LL_UNKNOWN ERR0("unknown value for 'likelihood' -- please contact author");
 
 
 void loglikelihoodMaxstable(double *data,
@@ -1576,7 +1576,7 @@ void loglikelihoodMaxstable(double *data,
     }
   }
     break;
-  case LL_FULL: ERR("full MLE not available for Brown Resnick");
+  case LL_FULL: ERR0("full MLE not available for Brown Resnick");
     break;
   case LL_SELECTION: NotProgrammedYet("LL_SELECTION");
   default : LL_UNKNOWN;

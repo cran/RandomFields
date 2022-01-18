@@ -396,7 +396,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
       case HYPER_UNIFORM : randomvar=uniform; break;
       case HYPER_FRECHET : randomvar=frechet; break;
       case HYPER_BERNOULLI : randomvar=bernoulli; break;
-      default : ERR("random var of unknown type");
+      default : ERR0("random var of unknown type");
   }
 
 
@@ -410,7 +410,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 
   switch (dim) {
       case 1 :
-      	ERR("wrong dimension (1) in hyperplane\n");
+      	ERR0("wrong dimension (1) in hyperplane\n");
       case 2 :
 	int nn;
 	double deltax, deltay;
@@ -493,7 +493,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	}/* for nn */
 	break;
       default:	
-	ERR("wrong dimension (>2) in hyperplane\n"); 
+	ERR0("wrong dimension (>2) in hyperplane\n"); 
   } // switch  (dim)
 
 
@@ -513,7 +513,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
 	E = mar_param;
 	sd = mar_param * (1.0 - mar_param);
 	break;
-      default : ERR("distribution unknown in hyperplane\n");
+      default : ERR0("distribution unknown in hyperplane\n");
       }
       sd = SQRT(variance / (superpos * sd));
       for(i=0; i<loc->totalpoints; i++) 
@@ -536,7 +536,7 @@ void do_hyperplane(model *cov, gen_storage VARIABLE_IS_NOT_USED *S) {
   FREE(hr);
   if (tree!=NULL) avltr_destroy(tree, delcell);
   XERR(err); 
-  ERR("hyperplane failed\n");
+  ERR0("hyperplane failed\n");
 }
                       
 		   

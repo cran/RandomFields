@@ -184,7 +184,7 @@ void covariate(double *x, model *cov, double *v){
     // should happen only in a matrix context!
     nr = (int) x[dim];
     if (nr * vdim >= LNROW(COVARIATE_C) * LNCOL(COVARIATE_C))
-      ERR("illegal access -- 'raw' should be FALSE");
+      ERR0("illegal access -- 'raw' should be FALSE");
   } else { 
     // interpolate: here nearest neighbour/voronoi
     nr = get_index(x, cov);
@@ -456,7 +456,7 @@ void fix(double *x, double *y, model *cov, double *v){
     nry = y == NULL ? x[dim+1] : (int) y[dim];
     if (nrx * vdim >= LNROW(FIXCOV_M) ||
 	nry * vdim >= LNCOL(FIXCOV_M))
-      ERR("illegal access -- 'raw' should be FALSE");
+      ERR0("illegal access -- 'raw' should be FALSE");
   } else {    
     nrx = get_index(x, cov);
     nry = get_index(y, cov);

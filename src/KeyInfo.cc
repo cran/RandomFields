@@ -392,7 +392,7 @@ SEXP IGetModelInfo(model *cov, int prlevel, bool both, int spConform,
     switch(prlevel) {
     case 0 : break;
     case 6 : nmodelinfo += 1; break;
-    default : ERR("Possible 'level' values range from 0 to 6.");
+    default : ERR0("Possible 'level' values range from 0 to 6.");
     }
   }
   }
@@ -1523,7 +1523,7 @@ void iexplDollar(model *cov, bool MLEnatsc_only) {
     INVERSE(&GLOBAL.gauss.approx_zero, next, &invscale);
     //invscale = 1.0;
     if (ISNAN(invscale))
-      ERR("inverse function unknown when calculating explicite scale");
+      ERR0("inverse function unknown when calculating explicite scale");
     
     p = PARAM(dollar, DSCALE);
     if (p != NULL) {

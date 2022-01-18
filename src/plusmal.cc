@@ -203,7 +203,7 @@ void select(double *x, model *cov, double *v) {
     *element = PINT(SELECT_SUBNR);
   model *sub = cov->sub[*element];
   assert(VDIM0 == VDIM1);
-  if (*element >= cov->nsub) ERR("select: element out of range");
+  if (*element >= cov->nsub) ERR0("select: element out of range");
   COV(x, sub, v);
   if ( (len = cov->nrow[SELECT_SUBNR]) > 1) {
     int i, m,
@@ -226,7 +226,7 @@ void covmatrix_select(model *cov, double *v) {
   if (len == 1) {
     int element = P0INT(SELECT_SUBNR);
     model *next = cov->sub[element];
-    if (element >= cov->nsub) ERR("select: element out of range");
+    if (element >= cov->nsub) ERR0("select: element out of range");
     DefList[NEXTNR].covmatrix(next, v);
   }  else StandardCovMatrix(cov, v);
 }
@@ -581,7 +581,7 @@ void doplus(model *cov, gen_storage *s) {
   int i;
   
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
-    ERR("error in doplus with spectral");
+    ERR0("error in doplus with spectral");
   }
   
   for (i=0; i<cov->nsub; i++) {
@@ -1326,7 +1326,7 @@ void doplusproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   assert(VDIM0 == VDIM1);
 
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
-    ERR("error in doplus with spectral");
+    ERR0("error in doplus with spectral");
   }
   assert(cov->Splus != NULL && cov->Splus->keys_given);
 
@@ -1390,7 +1390,7 @@ void domultproc(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
    factors = 0;
 
   if (hasGaussMethodFrame(cov) && cov->method==SpectralTBM) {
-    ERR("error in do_mult with spectral");
+    ERR0("error in do_mult with spectral");
   }
   
   if (cov->nsub==2) {

@@ -91,7 +91,7 @@ void arcsqrtDinverse(double VARIABLE_IS_NOT_USED *v, model VARIABLE_IS_NOT_USED 
   if (v == NULL || *v <=0 ) {
     left[0] = 0;
     right[0] = RF_INF;
-  } else ERR("Dinverse of arcsqrt unknown");
+  } else ERR0("Dinverse of arcsqrt unknown");
 }
 
 void arcsqrtQ(double *x, model VARIABLE_IS_NOT_USED *cov, double *v) {
@@ -266,13 +266,13 @@ void distrQ(double *x, model *cov, double *v) {
   evaluateDistr(cov, DISTR_QX, v);
 }
 void distrR(double *x, model *cov, double *v) {
-  if (x != NULL) ERR("Conditional distribution not allowed yet");
+  if (x != NULL) ERR0("Conditional distribution not allowed yet");
   addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
 void distrR2sided(double *x, double *y, model *cov, double *v) {
   if (x != NULL || y != NULL) 
-    ERR("conditional distribution not allowed yet");
+    ERR0("conditional distribution not allowed yet");
   addVariable((char*) "n", &ONE, 1, 1, PENV(DISTR_ENV)->sexp);
   evaluateDistr(cov, DISTR_RX, v);
 }
@@ -579,7 +579,7 @@ double random_spheric(int logicaldim, int balldim) {
 
 
 void sphericD(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED  *v) {
-  ERR("density of 'RRspheric' cannot be calculated yet");
+  ERR0("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericDinverse(double *v, model  *cov, double *left, double  *right) {
   if (v==NULL || *v <= 0.0) {
@@ -587,25 +587,25 @@ void sphericDinverse(double *v, model  *cov, double *left, double  *right) {
     *right = (0.5 * P0(SPHERIC_RADIUS));
   } else {
     //v is here INPUT variable !!
-    ERR("density of 'RRspheric' cannot be calculated yet");
+    ERR0("density of 'RRspheric' cannot be calculated yet");
   }
 }
 void sphericDlog(double VARIABLE_IS_NOT_USED  *x, model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
-  ERR("density of 'RRspheric' cannot be calculated yet");
+  ERR0("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericP(double VARIABLE_IS_NOT_USED  *x, model VARIABLE_IS_NOT_USED   *cov, double VARIABLE_IS_NOT_USED  *v) {
-  ERR("density of 'RRspheric' cannot be calculated yet");
+  ERR0("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericQ(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED  *cov, double VARIABLE_IS_NOT_USED  *v) {
   if (*x < 0 || *x > 1) {*v = RF_NA; return;}
-  ERR("density of 'RRspheric' cannot be calculated yet");
+  ERR0("density of 'RRspheric' cannot be calculated yet");
 }
 void sphericR(double *x, model *cov, double *v) {
   int 
     dim = P0INT(SPHERIC_SPACEDIM),
     balldim = P0INT(SPHERIC_BALLDIM);  
   if (x==NULL) *v = random_spheric(dim, balldim) * P0(SPHERIC_RADIUS); // q[>0] ist E
-  else ERR("conditional distribution cannot be calculated for sphericP.");
+  else ERR0("conditional distribution cannot be calculated for sphericP.");
 }
 
 int check_RRspheric(model *cov) {
@@ -1310,7 +1310,7 @@ void unifR2sided(double *x, double *y, model *cov, double *v) {
     if (x != NULL) a =  x[i] < min[mini] ? min[mini] : x[i];
     else a = -y[i] < min[mini] ? min[mini] : -y[i];
     b = y[i] > max[maxi] ? max[maxi] : y[i];
-    if (a > b) ERR("parameters of 2-sided unifR out of range");      
+    if (a > b) ERR0("parameters of 2-sided unifR out of range");      
     v[i] = a + UNIFORM_RANDOM * (b-a);
   }  
 }
@@ -1917,7 +1917,7 @@ void rectangularD(double *x, model *cov, double *v) {
     *v = 0;
     return;
   }
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETER_BASICS;			       
   int i;
    
@@ -1944,7 +1944,7 @@ void rectangularDlog(double *x, model *cov, double *v) {
 
 void rectangularDinverse(double *V, model *cov, double *left,
 			 double *right) {
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETERS;
   double  er, outer,
     x = RF_NA,
@@ -2028,7 +2028,7 @@ void rectangularDinverse(double *V, model *cov, double *left,
 void rectangularP(double VARIABLE_IS_NOT_USED *x, 
 		  model VARIABLE_IS_NOT_USED *cov, 
 		  double VARIABLE_IS_NOT_USED *v) {
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
  // RECTANGULAR_PARAMETERS;
 
   NotProgrammedYet("");
@@ -2039,7 +2039,7 @@ void rectangularP(double VARIABLE_IS_NOT_USED *x,
 void rectangularP2sided(double *x, double *y, model *cov, double *v) {
   // distribution functions
   bool onesided = P0INT(RECT_ONESIDED); 
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
   RECTANGULAR_PARAMETER_BASICS;	
 
   if (x != NULL) BUG;
@@ -2057,7 +2057,7 @@ void rectangularP2sided(double *x, double *y, model *cov, double *v) {
   //  }
 
   
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
      
   //  CumSum(y, false, cov, TMP_WEIGHT);
   //  double tw = TMP_WEIGHT[TMP-1];
@@ -2073,7 +2073,7 @@ void rectangularP2sided(double *x, double *y, model *cov, double *v) {
 void rectangularQ(double *x, model VARIABLE_IS_NOT_USED *cov, 
 		  double  VARIABLE_IS_NOT_USED *v) {
   if (*x < 0 || *x > 1) {*v = RF_NA; return;}
-  if (!P0INT(RECT_APPROX)) ERR("approx=FALSE only for simulation");
+  if (!P0INT(RECT_APPROX)) ERR0("approx=FALSE only for simulation");
   NotProgrammedYet("rectangularQ");
 }
 
@@ -2141,7 +2141,7 @@ void rectangularR(double *x, model *cov, double *v) {
   
   if (x != NULL) {
    //crash();
-    ERR("put 'flat = false'");
+    ERR0("put 'flat = false'");
   }
 
   RECTANGULAR_PARAMETERS;
@@ -2797,7 +2797,7 @@ void mcmcQ(double *x, model VARIABLE_IS_NOT_USED *cov,
 
 void mcmcR(double *x, model *cov, double *v) { 
   if (x != NULL) {
-    ERR("put 'flat = false'");
+    ERR0("put 'flat = false'");
   }
 
   model *next = cov->sub[MCMC_FCTN];
@@ -3084,7 +3084,7 @@ void do_randomSign(model *cov, gen_storage *s) {
   cov->q[0] = 2.0 * (UNIFORM_RANDOM <= P0(SIGN_P)) - 1.0;
   if (cov->q[0] != 1.0 && next->fieldreturn == wahr) { 
     assert(cov->q[0] == - 1.0);
-    if (next->loggiven) ERR("log return is incompatible with random Sign");
+    if (next->loggiven) ERR0("log return is incompatible with random Sign");
     int i,
       endfor = Loc(next)->totalpoints;
     double *rf = cov->rf;

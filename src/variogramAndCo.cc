@@ -46,7 +46,7 @@ model* wheregenuineStatOwn(model *cov) {
     // Konstanten, das Zeug zu einer Kovarianzmatrix gemacht werden kann
     // siehe direct.cc
     //assert(({PMI(cov, "cov matrix"); true;})); //
-    ERR("covariance matrix: given model is not a covariance function");
+    ERR0("covariance matrix: given model is not a covariance function");
   }
   
   return sub;
@@ -167,14 +167,14 @@ void CovVario(model *Cov, bool is_cov, bool pseudo, double *value) {
   } else {
     if (cov->pref[Nothing] == PREF_NONE || !isvario) {
       assert(({PMI(cov); true;})); //
-      ERR("given model is not a variogram");
+      ERR0("given model is not a variogram");
     }
     if (stat && isCartesian(PREV)) {   
       if (!isCartesian(OWN)) BUG;
       COV(zero, genuine, C0y);      
     } else {
       if (vdim0 > 1 && !stat) 
-	ERR("multivariate variogram only calculable for stationary models");
+	ERR0("multivariate variogram only calculable for stationary models");
       NONSTATCOV(zero, zero, genuine, C0y);
     } 
   }
@@ -760,7 +760,7 @@ void InverseCovMatrix(model *Cov, double *v, double *det) {
   if (reg < 0 || reg > MODEL_MAX) XERR(ERRORREGISTER);	\
    assert(currentNrCov != UNSET);		\
    model *cov = KEY()[reg];				\
-  if (cov == NULL) { ERR("register not initialised") }	\
+  if (cov == NULL) { ERR0("register not initialised") }	\
   model *truecov = !equalsnowInterface(cov) ?		\
     cov : cov->key == NULL ? cov->sub[0] : cov->key
  
@@ -768,7 +768,7 @@ void InverseCovMatrix(model *Cov, double *v, double *det) {
   if (INTEGER(reg)[0] < 0 || INTEGER(reg)[0] > MODEL_MAX) XERR(ERRORREGISTER); \
    assert(currentNrCov != UNSET);				\
    model *cov = KEY()[INTEGER(reg)[0]];				\
-  if (cov == NULL) { ERR("register not initialised") }			
+  if (cov == NULL) { ERR0("register not initialised") }			
 
 #define STANDARDINTERN_SEXP						\
   STANDARDINTERN_SEXP_BASIC;						\

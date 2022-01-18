@@ -724,7 +724,7 @@ void inverseS(double *x, model *cov, double *v) {
     double left;
     model *sub = cov->kappasub[DSCALE];
     NONSTATINVERSE(ZERO(sub), sub, &left, &scale);
-     if (left < 0.0) ERR("scale not defined to be non-negative.");
+     if (left < 0.0) ERR0("scale not defined to be non-negative.");
   } else scale = PisNULL(DSCALE) ? 1.0 : P0(DSCALE);
  
   int
@@ -823,9 +823,9 @@ void nonstatinverseS(double *x, model *cov, double *left, double*right,
 	  if (S->pid == pid) { // two processes writing on the same place
 	    S->busy = true; // one process doing the job
 	  } else if (GLOBAL_UTILS->basic.cores == 1 || !S->busy)
-	    ERR("Multiprocessor conflict. Plse inform maintainer & try again");
+	    ERR0("Multiprocessor conflict. Plse inform maintainer & try again");
 	} else if (GLOBAL_UTILS->basic.cores == 1 || !S->busy) 
-	  ERR("Multiprocessor conflict. Plse inform maintainer & try again");
+	  ERR0("Multiprocessor conflict. Plse inform maintainer & try again");
       }
       if (redo && S->pid == pid) {
 	MEMCOPY(save_aniso, P(DANISO), bytes);
@@ -858,7 +858,7 @@ void nonstatinverseS(double *x, model *cov, double *left, double*right,
       ncol = Aniso->vdim[1],
       size = nrow * sizeof(double);
     if (dim != ncol || ncol != 1)
-      ERR("anisotropy function not of appropriate form");
+      ERR0("anisotropy function not of appropriate form");
     TALLOC_X1(LR, nrow);
     
     MEMCOPY(LR, right, size);
@@ -894,7 +894,7 @@ void coinitS(model *cov, localinfotype *li) {
   assert(cov->Sdollar->simplevar);
   model *next = cov->sub[DOLLAR_SUB];
   if ( DefList[NEXTNR].coinit == NULL)
-    ERR("# cannot find coinit -- please inform author");
+    ERR0("# cannot find coinit -- please inform author");
   DefList[NEXTNR].coinit(next, li);
 }
 void ieinitS(model *cov, localinfotype *li) {
@@ -902,7 +902,7 @@ void ieinitS(model *cov, localinfotype *li) {
  model *next = cov->sub[DOLLAR_SUB];
   
   if ( DefList[NEXTNR].ieinit == NULL)
-    ERR("# cannot find ieinit -- please inform author");
+    ERR0("# cannot find ieinit -- please inform author");
   DefList[NEXTNR].ieinit(next, li);
 }
 
@@ -2289,7 +2289,7 @@ int structSproc(model *cov, model **newmodel) {
       assert(!loc->grid && !loc->Time);
       newdim = Aniso->vdim[0];
       if (newdim != dim) 
-	ERR("change of dimension in struct S not programmed yet");
+	ERR0("change of dimension in struct S not programmed yet");
       
       int bytes = newdim * sizeof(double);
       long total = loc->totalpoints;

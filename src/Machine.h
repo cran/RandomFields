@@ -182,7 +182,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
     case INTSXP : _PARAMsize = sizeof(int); break;			\
     default : 						\
       if ((Cov)->kappasub[IDX]!=NULL && MODELNR((Cov)->kappasub[IDX])==DISTRIBUTION) { \
-	  ERR("argument value recognized as distribution family although it should not. Maybe the error is caused by a non-existing variable."); \
+	  ERR0("argument value recognized as distribution family although it should not. Maybe the error is caused by a non-existing variable."); \
       } else BUG;							\
     }									\
     assert((Cov)->px[IDX]==NULL);					\

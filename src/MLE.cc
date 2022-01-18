@@ -492,7 +492,7 @@ void Take21internal(model *cov, model *cov_bound,
   
   if (STRCMP(Nick(cov), Nick(cov_bound)) != 0) {
     // print("%.50s %.50s\n", DefList[COVNR].nick, DefList[cov_bound->nr].nick);  
-    ERR("models do not match.");
+    ERR0("models do not match.");
   }  
 
   for (i=0; i<C->kappas; i++) {
@@ -512,7 +512,7 @@ void Take21internal(model *cov, model *cov_bound,
     if (nrow[i] != nrow2[i] || ncol[i] != ncol2[i]) {
         PRINTF("%.50s i: %d, nrow1=%d, nrow2=%d, ncol1=%d, ncol2=%d\n", 
 	       C->name, i, nrow[i], nrow2[i], ncol[i], ncol2[i]);
-  	ERR("lower/upper/user does not fit the model (size of matrix)");
+  	ERR0("lower/upper/user does not fit the model (size of matrix)");
     }
     
     for (r=0; r<nrow[i]; r++) {
@@ -545,7 +545,7 @@ void Take21internal(model *cov, model *cov_bound,
 	     if (nv >= *NBOUNDS) {
 	       PRINTF("%.50s %.50s, r=%d, c=%d: %d >= %d\n",
 	       		C->name, C->kappanames[i], r, c, nv, *NBOUNDS);
-  	       ERR("lower/upper/user does not fit the model (number parameters)");
+  	       ERR0("lower/upper/user does not fit the model (number parameters)");
 	     }
 	     (*bounds_pointer)[nv] = w;
 	     nv++;
@@ -791,10 +791,10 @@ int CheckEffect(model *cov) {
       for (int i=1; i<cov->nsub; i++) {
 	sortsofeffect dummy = getTrendEffect(cov->sub[i]);
 	if (current != DetTrendEffect && dummy != DetTrendEffect)
-	  ERR("trend parameter to be estimated given twice");
+	  ERR0("trend parameter to be estimated given twice");
 	if (current == DetTrendEffect) current = dummy;
       }
-      if (current == effect_error) ERR("trend mismatch");
+      if (current == effect_error) ERR0("trend mismatch");
       return current;
     } else return getTrendEffect(cov);
   }
@@ -823,7 +823,7 @@ int GetEffect(model *cov,  likelihood_info *info, sort_origin origin) {
     plus = COVNR == PLUS; // || COVNR == SELECT;
   int i,
     n = plus ? cov->nsub : 1;
-  if (info->neffect >= MAX_LIN_COMP) ERR("too many linear components");
+  if (info->neffect >= MAX_LIN_COMP) ERR0("too many linear components");
   for (i=0; i<n; i++) {
     model *component = plus ? cov->sub[i] : cov;
 

@@ -40,7 +40,7 @@ ca20.RFmod02 <- ~ 1 + altitude + M
 ca20.RFmod02 <- NA + NA*RMcovariate(ca20.df$altitude) + M 
 (ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df))
 
-
+\dontrun{
 ## Note that the following also works.
 ## Here, the covariance model must be the first summand
 ca20.RFmod02 <- M + NA + ca20.df$altitude 
@@ -55,6 +55,7 @@ try(ca20.fit02.RF <- RFfit(ca20.RFmod02, data=ca20.df)) ### error ...
 ## factors:
 ca20.RFmod03 <- ~ 1 + area + M ### 
 (ca20.fit03.RF <- RFfit(ca20.RFmod03, data=ca20.df, M=M))
+}
 
 \dontshow{FinalizeExample(); RFoptions(coordnames=NULL, varnames=NULL)}
 }

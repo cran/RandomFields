@@ -730,7 +730,7 @@ void DD_2(double *x, model *cov, double *v) {
 
 void DD_3(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
   assert(everyCoord(isSpaceIsotropic, cov));
-  ERR("DD_3 to be programmed\n");
+  ERR0("DD_3 to be programmed\n");
 }
 
 

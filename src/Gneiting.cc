@@ -218,7 +218,7 @@ int structAve(model *cov, model **newmodel) {
   int err;
  
   ASSERT_NEWMODEL_NOT_NULL;
-   ERR("'ave' currently does not work"); // what to do with the next lines??
+   ERR0("'ave' currently does not work"); // what to do with the next lines??
  
 
   if ((err = covcpy(newmodel, cov)) != NOERROR) RETURN_ERR(err);
@@ -226,7 +226,7 @@ int structAve(model *cov, model **newmodel) {
   SET_NR(shape, SHAPEAVE);
   addModel(shape, AVE_GAUSS, GAUSS);
   
-  ERR("'ave' currently does not work");
+  ERR0("'ave' currently does not work");
 // what to do  ERR1("'ave' currently does not work (% ld)", (long int) gaussmix); // what to do with the next lines??
   /*
   gaussmix = shape->sub[AVE_GAUSS];
@@ -383,7 +383,7 @@ void GetEu2Dinv(model *cov, double *x, int dim,
   if (z !=NULL) PT->result = z;
   int err = Ext_XCinvXdet(Eu2Dinv, dim, y, 1, newxsq, det, false, PT);
   if (z != NULL) PT->result = NULL;
-  if (err != NOERROR) ERR("error occuredin 'GetEu2Dinv'");
+  if (err != NOERROR) ERR0("error occuredin 'GetEu2Dinv'");
   *newx = SQRT(*newxsq);
 }
 
@@ -695,7 +695,7 @@ void stp(double *x,  double *y, model *cov, double *v) {
   double muxAmuy; // changed 5.4.2018, 3.2.0.28
   err = Ext_XCinvYdet(A, dim, true, Amux, Amuy, 1, &muxAmuy, &detA, false,NULL);
   END_TALLOC_X3;
-  if (err != NOERROR) ERR("error occuredin 'GetEu2Dinv'");
+  if (err != NOERROR) ERR0("error occuredin 'GetEu2Dinv'");
  
   Q = cxy * cxy - hMh * hMh + muxAmuy;
   if (Q < 0.0) {
@@ -807,7 +807,7 @@ int structStp(model *cov, model **newmodel) {
   shape = *newmodel;
   SET_NR(shape, SHAPESTP);
   addModel(shape, STP_GAUSS, GAUSS);
-   ERR("'stp' currently does not work"); // what to do with the next line??
+   ERR0("'stp' currently does not work"); // what to do with the next line??
   /* 
      shape->sub[STP_GAUSS]->ts dim = 1;
   */
@@ -919,7 +919,7 @@ int init_shapestp(model *cov, gen_storage *s) {
     double minmax[2];
     assert(DefList[MODELNR(Sf)].minmaxeigenvalue != NULL);
     DefList[MODELNR(Sf)].minmaxeigenvalue(Sf, minmax);
-    if (minmax[0] <= 0.0) ERR("neg eigenvalue in shape function of 'stp'");
+    if (minmax[0] <= 0.0) ERR0("neg eigenvalue in shape function of 'stp'");
     q[AVESTP_MINEIGEN] = minmax[0];
     q[AVESTP_LOGDET] = (double) //cov->xdimprev
       OWNXDIM(0) * LOG(minmax[1]);
@@ -1168,7 +1168,7 @@ void gennsst(double *x,  model *cov, double *v) {
   } else if (!equalsnowNegDef(subpsi)) BUG;
 
   COV(x, subphi, v);
-  if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
+  if (ISNAN(*v)) ERR0("error occuredin 'GetEu2Dinv'");
 }
 
 void nonstatgennsst(double *x,double *y, model *cov, double *v) {
@@ -1192,7 +1192,7 @@ void nonstatgennsst(double *x,double *y, model *cov, double *v) {
   for (int d=0; d<hdim; d++) z[d] = x[d] - y[d];
   COV(z, subphi, v);
   END_TALLOC_X1;
-  if (ISNAN(*v)) ERR("error occuredin 'GetEu2Dinv'");
+  if (ISNAN(*v)) ERR0("error occuredin 'GetEu2Dinv'");
  }
   
 

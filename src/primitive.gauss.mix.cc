@@ -72,7 +72,7 @@ void TBM2Cauchy(double *x, model *cov, double *v){
     *v = (1.0- y2*(3.0+y2*(1.0+0.2*y2)))/(lpy2 * lpy2);
     break;
   default :
-    ERR("TBM2 for cauchy only possible for alpha=0.5 + k; k=0, 1, 2, 3 ");
+    ERR0("TBM2 for cauchy only possible for alpha=0.5 + k; k=0, 1, 2, 3 ");
   }
 }
 void DCauchy(double *x, model *cov, double *v){
@@ -1910,7 +1910,7 @@ int initbiStable(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   }
 
  // if rho is given, then it is set by user. Check if it is correct or not
-  // ERR("Olga, there must be a call of type \"if (rhored_given)...\"");
+  // ERR0("Olga, there must be a call of type \"if (rhored_given)...\"");
   // if (!PisNULL(BIStablerhored) ){
     if ( S->rhored_given ){
          

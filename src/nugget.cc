@@ -73,7 +73,7 @@ bool SpatialNugget(model *cov) {
     *Aniso = calling->kappasub[DANISO],
     *User = calling->kappasub[DAUSER];
   if (!PARAMisNULL(calling, DSCALE) || Scale != NULL)
-    ERR("'scale' does not make sense within a nugget effect. However 'Aniso' does.\nSee the manual.");
+    ERR0("'scale' does not make sense within a nugget effect. However 'Aniso' does.\nSee the manual.");
 
   return !(PARAMisNULL(calling, DANISO) && Aniso==NULL &&
 	   PARAMisNULL(calling, DAUSER) && User == NULL &&
@@ -360,7 +360,7 @@ int init_nugget(model *cov, gen_storage VARIABLE_IS_NOT_USED *S){
   if (cov->ownloc!=NULL) {
     LOC_DELETE(&(cov->ownloc));
     //PMI(cov);
-    // ERR("unexpected call of nugget");
+    // ERR0("unexpected call of nugget");
   }
   model *next = cov->sub[0];
   nugget_storage *s = cov->Snugget;

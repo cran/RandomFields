@@ -92,7 +92,7 @@ void density(double VARIABLE_IS_NOT_USED *value, model *cov, double *v) {
   STRCPY(errorloc_save, KT->error_loc);
 
   PutRN Gstate();
-  ERR("stop : ni nae Zei falsch");
+  ERR0("stop : ni nae Zei falsch");
   double simu_seed = GLOBAL_UTILS->basic.seed + (ni - 1);
   addVariable((char*) "seed", &simu_seed, 1, 1, PENV(DENS_ENV)->sexp);
   eval(PLANG(DENS_SEED)->sexp, PENV(DENS_ENV)->sexp);
@@ -1428,7 +1428,7 @@ model *get_around_gauss(model *cov) {
 
   if (isGaussMethod(next) || equalsBernoulliProcess(next)) {
     if (NEXTNR == AVERAGE_USER){
-      if (next->sub[0] == NULL) ERR("covariance cannot be calculated (yet) for arbitrary shape functions.");
+      if (next->sub[0] == NULL) ERR0("covariance cannot be calculated (yet) for arbitrary shape functions.");
       next = next->sub[next->sub[0] == NULL];
       if (NEXTNR == AVERAGE_INTERN) next = next->sub[next->sub[0] == NULL];
     } 
@@ -1449,7 +1449,7 @@ model *get_around_gauss(model *cov) {
       if (NEXTNR == HYPERPLANE_INTERN) next = next->sub[0];   
     }
     else if (NEXTNR == RANDOMCOIN_USER) {
-      if (next->sub[0] == NULL) ERR("covariance cannot be calculated (yet) for arbitrary shape functions.");
+      if (next->sub[0] == NULL) ERR0("covariance cannot be calculated (yet) for arbitrary shape functions.");
       next = next->sub[next->sub[0] == NULL];   
       if (NEXTNR == AVERAGE_INTERN) next = next->sub[next->sub[0] == NULL];
     } else {

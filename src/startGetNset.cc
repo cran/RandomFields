@@ -49,7 +49,7 @@ int checkOK(model VARIABLE_IS_NOT_USED *cov){
 }
 
 int checkMissing(model *cov){
-  if (cov->calling == NULL) ERR("missing may not be called by the user");
+  if (cov->calling == NULL) ERR0("missing may not be called by the user");
   model *calling=cov->calling;
   ERR1("'%.50s' does have not enough submodels", NICK(calling));
   RETURN_ERR(ERRORFAILED); // damit compiler keine Warnung bringt
@@ -402,7 +402,7 @@ void ErrCovX(double VARIABLE_IS_NOT_USED *x, model *cov,
     PMI(cov);//
     crash();
   }
-  ERR("unallowed or undefined call of function");
+  ERR0("unallowed or undefined call of function");
 }
 void ErrCov(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "Cov");}
 void ErrD(double *x, model *cov, double *v) { ErrCovX(x, cov, v, "D");}
@@ -418,7 +418,7 @@ void ErrLogCov(double VARIABLE_IS_NOT_USED *x, model *cov,
     PMI(cov);//
     crash(); 
   }
-  ERR("unallowed or undefined call of function (log)");
+  ERR0("unallowed or undefined call of function (log)");
 }
 void ErrCovNonstatX(double VARIABLE_IS_NOT_USED *x, 
 		   double VARIABLE_IS_NOT_USED *y, model *cov, 
@@ -458,7 +458,7 @@ void Errspectral(model *cov,
     PMI(cov->calling);//
     crash();
   }
-  ERR("unallowed or undefined call of spectral function");
+  ERR0("unallowed or undefined call of spectral function");
 } 
 
 void ErrInverseNonstat(double VARIABLE_IS_NOT_USED *v, model *cov,
@@ -471,7 +471,7 @@ void ErrInverseNonstat(double VARIABLE_IS_NOT_USED *v, model *cov,
     PMI(cov->calling); //
     crash();
   }
-  ERR("unallowed or undefined call of non-domain function (inverse)");
+  ERR0("unallowed or undefined call of non-domain function (inverse)");
 }
 
 char InternalName[]="-";
@@ -594,12 +594,12 @@ void doOK(model *cov, gen_storage VARIABLE_IS_NOT_USED *s){
 
 void do_failed(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
   if (PL >= PL_ERRORS) {PRINTF("do failed for %s:\n", NICK(cov));}
-  ERR("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
+  ERR0("call of do: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
 }
 
 void do_random_failed(model *cov, double VARIABLE_IS_NOT_USED *v) {
   if (PL >= PL_ERRORS) {PRINTF("do_random failed for %s:\n", NICK(cov));}
-  ERR("Call of do: Compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
+  ERR0("Call of do: Compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
 }
 void do_random_ok(model VARIABLE_IS_NOT_USED *cov, double VARIABLE_IS_NOT_USED *v) {
 }
@@ -612,7 +612,7 @@ void do_statiso(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
     // PMI(cov);
     PRINTF("do_statosp failed for '%s' and frame='%s':\n", 
 				NICK(cov), TYPE_NAMES[cov->frame]);
-    if (PL >= PL_ERRORS) ERR("Call of do_statiso: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
+    if (PL >= PL_ERRORS) ERR0("Call of do_statiso: compound Poisson fields are essentially only programmed for isotropic shape functions (not kernels)");
   }
 }
 
@@ -718,7 +718,7 @@ void StandardNonLogDistrD(double *x, model *cov, double *D) {
 }
 
 
-char isTrue(model VARIABLE_IS_NOT_USED *cov) {ERR("isTrue may not be used anymore"); return true;}
+char isTrue(model VARIABLE_IS_NOT_USED *cov) {ERR0("isTrue may not be used anymore"); return true;}
 char isFalse(model VARIABLE_IS_NOT_USED *cov) {return false;}
 
 void InverseFiniteRange(double VARIABLE_IS_NOT_USED *x, model VARIABLE_IS_NOT_USED *cov, double *v){ *v = 1.0; }

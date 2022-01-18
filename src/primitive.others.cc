@@ -561,16 +561,16 @@ bool allowedIp(model *cov) {
       break;
     case DOUBLEISOTROPIC : 
     case VECTORISOTROPIC :
-      ERR("'VECTORISOTROPY' not programmed yet");      
+      ERR0("'VECTORISOTROPY' not programmed yet");      
     case SYMMETRIC : case EARTH_SYMMETRIC: case SPHERICAL_SYMMETRIC :
       ERR2("Use '%.50s' within arbitrarty mathematical definitions (i.e. in '%.50s') or use the argument 'proj' within definite functions)",
-	   CoordinateSystemOf(iso), NICK(cov));
+	   ISO_NAMES[CoordinateSystemOf(iso)], NICK(cov));
       break;
     case CARTESIAN_COORD: case SPHERICAL_COORD:  case EARTH_COORD:
       I[iso] =  true;
       break;
     case GNOMONIC_PROJ  : case ORTHOGRAPHIC_PROJ : 
-      ERR("Do not use projection in 'R,p', but use 'RMtrafo' instead.");
+      ERR0("Do not use projection in 'R,p', but use 'RMtrafo' instead.");
       break;
     case UNREDUCED : 
       I[CARTESIAN_COORD] = I[SPHERICAL_COORD] = I[EARTH_COORD] = true;

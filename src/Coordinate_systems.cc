@@ -418,7 +418,7 @@ int checkEarth(model *cov){
   U[1] = 0.0;    for(int k=0; k<3; k++, m++) U[1] += P[m] * X[k];	\
   double U2 = 0; for(int k=0; k<3; k++, m++) U2   += P[m] * X[k];	\
   assert(m==9 && dim <= 2);						\
-  if (U2 < 0.0) ERR("location(s) not in direction of the zenit");	\
+  if (U2 < 0.0) ERR0("location(s) not in direction of the zenit");	\
   for (int d = 2; d<dim; d++) U[d] = x[d]
 
 #define orthDef orthDefStat;			\
@@ -432,7 +432,7 @@ int checkEarth(model *cov){
   for(int k=0; k<3; k++, m++) { U[1] += P[m] * X[k]; V[1] += P[m] * Y[k]; } \
   double U2 = 0.0, V2 = 0.0;						\
   for(int k=0; k<3; k++, m++) { U2   += P[m] * X[k]; V2   += P[m] * Y[k]; } \
-  if (U2 < 0.0 || V2 < 0.0) ERR("location(s) not in direction of the zenit"); \
+  if (U2 < 0.0 || V2 < 0.0) ERR0("location(s) not in direction of the zenit"); \
   for (int d = 2; d<dim; d++) {U[d] = x[d]; V[d] = y[d];}
 
 

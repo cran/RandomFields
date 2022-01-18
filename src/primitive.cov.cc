@@ -808,7 +808,7 @@ int initlsfbm(model *cov, gen_storage VARIABLE_IS_NOT_USED *s) {
 
 int checklsfbm(model *cov){
   int err;
-  if (P(BROWN_ALPHA) == NULL) ERR("alpha must be given");
+  if (P(BROWN_ALPHA) == NULL) ERR0("alpha must be given");
   if ((err = checkkappas(cov, false)) != NOERROR) RETURN_ERR(err);
   double alpha = P0(BROWN_ALPHA);
   cov->logspeed = RF_INF;
@@ -1266,7 +1266,7 @@ void biGneitingbasic(model *cov,
   sum = 0.0;
   if (scale[0] == scale[1]) sum += gamma[0];
   if (scale[0] == scale[3]) sum += gamma[3];
-  if (sum > 2.0 * gamma[1]) ERR("values of gamma not valid.");
+  if (sum > 2.0 * gamma[1]) ERR0("values of gamma not valid.");
 
   min = 1.0;
   a = 2 * gamma[1] - gamma[0] - gamma[3];
@@ -1741,7 +1741,7 @@ void lgd1(double *x, model *cov, double *v) {
 }
 void Inverselgd1(double *x, model *cov, double *v) {
   double alpha = P0(LGD_ALPHA), beta=P0(LGD_BETA);
-  ERR("scle of lgd1 not programmed yet"); 
+  ERR0("scle of lgd1 not programmed yet"); 
    // 19 next line?!
   // 1.0 / .... fehlt auch
   if (19*alpha < beta) *v = EXP(LOG(1.0 - *x * (alpha + beta) / beta) / alpha);
@@ -1907,7 +1907,7 @@ void TBM2power(double *x, model *cov, double *v){
   // only alpha=2 up to now !
   double y = *x;
   if (P0(POW_ALPHA) != 2.0) 
-    ERR("TBM2 of power only allowed for alpha=2");
+    ERR0("TBM2 of power only allowed for alpha=2");
   if (y > 1.0) *v = (1.0 - 2.0 * y *(ASIN(1.0 / y) - y + SQRT(y * y - 1.0) ));
   else *v = 1.0 - y * (PI - 2.0 * y);
 }

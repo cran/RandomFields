@@ -1185,7 +1185,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
   strcopyN(name, (char*) CHAR(STRING_ELT(m, 0)), MAXCHAR);
 
   covnr = getmodelnr(name);
-  //  if (covnr == NATSC && NS) ERR("natsc model and RFparameters(PracticalRange=T RUE) may not be given at the same time");
+  //  if (covnr == NATSC && NS) ERR0("natsc model and RFparameters(PracticalRange=T RUE) may not be given at the same time");
   if (covnr == MULTIPLEMATCHING)
     RFERROR1("multiple matching of (covariance) model name '%.50s'", name)
   else if (covnr == NOMATCHING) 
@@ -1245,12 +1245,12 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	  //	  while(i>0 && !STRCMP(C->kappanames[i - 1], FREEVARIABLE) && 
 	  //		cov->ownkappanames[i] != NULL) i--;
 	  //	  if (i <= 0 || cov->ownkappanames[i-1] != NULL) 
-	  //  ERR("too many free parameters");
+	  //  ERR0("too many free parameters");
 	  i = 0; 
 	  while(STRCMP(C->kappanames[i], FREEVARIABLE) && i<nkappas) i++;
 	  while(i<nkappas && (!PisNULL(i) || cov->kappasub[i] != NULL)) i++;
 	  if (i >= nkappas || !PisNULL(i) || cov->kappasub[i] != NULL) 
-	    ERR("too many free parameters");
+	    ERR0("too many free parameters");
 
 	  cov->ownkappanames[i] = 
 	    (char*) MALLOC(sizeof(char) * (1 + STRLEN(param_name)));
@@ -1312,7 +1312,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	  }
 	}
 	if (j == C->maxsub) {
-	  ERR("too many submodels");
+	  ERR0("too many submodels");
 	}
 	// internal 
 	if (C->subintern[i]) {
@@ -1329,7 +1329,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
       subleft[i] = false;
       CMbuild(p, level + 1, cov->sub + i, cov, KT, root);
       if (isInterface(cov->sub[i]))
-	ERR("models of interface type allowed only as mail model");
+	ERR0("models of interface type allowed only as mail model");
       //cov->sub[i]->calling = cov; // ja nicht SET_CALLING
       assert(cov->calling == NULL || cov->calling->root == cov->root);
 
@@ -1346,7 +1346,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	if (len_p != C->kappas) 
 	  PERR1("length of vector does not match number of parameters. Do not use short name '%c' in complex situtations either.", ONEARGUMENT_NAME);
 	// if (C->maxsub!=0)
-	// ERR("short form k of parameter name not allowed for sophistacted models");
+	// ERR0("short form k of parameter name not allowed for sophistacted models");
 	for (j=0; j<len_p; j++) {
 	  if (!PisNULL(j)) PERR("parameter given twice"); // p[0] OK
 	  if (true ||  // neu seit 6.8.14, wegen RFgui, modelParam = .Call(C_SetAndGetModelInfo",
@@ -1365,7 +1365,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
       }
 
       if (STRCMP(param_name, "") == 0 && i < 0) {
-	if (nkappas == 1) i = 0; else ERR("Parameters must be named");
+	if (nkappas == 1) i = 0; else ERR0("Parameters must be named");
       } else {
 	// i set before the submodels
 	if (i < 0) {
@@ -1404,14 +1404,14 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	PFREE(i);
 	CMbuild(p, level + 1, cov->kappasub + i, cov, KT, root);
 	if (isInterface(cov->kappasub[i]))
-	  ERR("models of interface type allowed only as mail model");
+	  ERR0("models of interface type allowed only as mail model");
 	// cov->kappasub[i]->calling =  cov; // ja nicht SET_CALLING
  	assert(cov->calling == NULL || cov->calling->root == cov->root);
 	STRCPY(KT->error_loc, ERR_LOC);
       } else {
 	// first the fixed one for the dimensions !!
 	if (!PisNULL(i) || cov->kappasub[i] != NULL)
-	  ERR("parameter given twice");
+	  ERR0("parameter given twice");
 
 	includeparam((void**) (cov->px + i), C->kappatype[i], len_p, 
 		     p, 0, param_name);
@@ -1451,7 +1451,7 @@ void CMbuild(SEXP Model, int level, model **Cov,
 	model *call = cov->calling;
 	while (call != NULL && MODELNR(call) != RFGET) //not CALLNR
 	  call = call->calling;
-	if (call == NULL) ERR("not enough submodels");      
+	if (call == NULL) ERR0("not enough submodels");      
       }
       if (PL >= PL_IMPORTANT && !shape_process)  {
 	// bei shape_process darf von 2 untermodellen nur 1 angegeben werden

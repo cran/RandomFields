@@ -121,7 +121,7 @@ void binary(double *x, model *cov, double *v) {
     
     // als BA-Arbeit
     if (r < -0.9)
-      ERR("correlation of submodel must be >= -0.9 for numerical reasons");
+      ERR0("correlation of submodel must be >= -0.9 for numerical reasons");
     
     V = (1 - r) / (1 + r);
     
@@ -215,7 +215,7 @@ void MaStein(double *x, model *cov, double *v) {
   COV(x + 1, next, &v2);
   nuG = nu + v1 - v2;
   if (nuG >= (double) MASTEIN_MAXNU) {
-    ERR("Whittle Matern function cannot be evaluated with parameter value b+g(t) greater than 80.");
+    ERR0("Whittle Matern function cannot be evaluated with parameter value b+g(t) greater than 80.");
   }
   loggammas = lgammafn(nu + delta) - lgammafn(nu) -lgammafn(nuG + delta);
   double s = *x,
@@ -813,7 +813,7 @@ void rangedivcurl(model *cov, range_type *range){
     spacedim = dim - equalsSpaceIsotropic(NEXT),
     max = spacedim + 2;
   if (spacedim != 2)
-    ERR("div and curl currently programmed only for spatial dimension 2.");
+    ERR0("div and curl currently programmed only for spatial dimension 2.");
   range->min[DIVCURL_WHICH] = 1;
   range->max[DIVCURL_WHICH] = max;
   range->pmin[DIVCURL_WHICH] = 1;
@@ -2141,7 +2141,7 @@ void InversePow(double *x, model *cov, double *v) {
       else if (y < 1.0 + 1e-14)  y=1.0;
       else {
       //PRINTF("covariance value %10e (1 - %10e = %10e) at %10e\n", *v, *v, 1.0-*v, *x);
-      ERR("invPow valid only for non-negative covariance models with variance 1");
+      ERR0("invPow valid only for non-negative covariance models with variance 1");
       }
       }
       
@@ -2560,7 +2560,7 @@ void coinitnatsc(model *cov, localinfotype *li) {
   model *next = cov->sub[0];
   defn *C = DefList + NEXTNR; // not gatternr
   if ( C->coinit == NULL) 
-    ERR("# cannot find coinit -- please inform author");
+    ERR0("# cannot find coinit -- please inform author");
   C->coinit(next, li); // not gatternr
 }
 
@@ -2568,7 +2568,7 @@ void ieinitnatsc(model *cov, localinfotype *li) {
   model *next = cov->sub[0];
   defn *C = DefList + NEXTNR; // not gatternr
   if ( C->ieinit == NULL) // not gatternr
-    ERR("# cannot find ieinit -- please inform author");
+    ERR0("# cannot find ieinit -- please inform author");
   C->ieinit(next, li); // not gatternr
 }
 
@@ -3343,7 +3343,7 @@ int checkvariogram2cov(model *cov) {
       GLOBAL.general.set = store;
       if (loc->timespacedim != GetLoctsdim(cov)) {
 	covariate_DELETE(&(cov->Scovariate));
-	ERR("dimension of the conditioning coordinates does not match dimension of the field");
+	ERR0("dimension of the conditioning coordinates does not match dimension of the field");
       }
       GLOBAL.general.set = 0;
       TransformLoc(cov, loc, &(s->x));
@@ -3933,7 +3933,7 @@ int checkbubble(model *cov){
 	  i++;
 	  while(i <= cur_rk && s->start[i] == s->start[i-1]) {
 	    if (s->end[i] != s->end[i-1])
-	      ERR("Identical starting position must have identical end position");
+	      ERR0("Identical starting position must have identical end position");
 	    i++;
 	  } // while i <= cur_rk
 	} // weight not NULL
@@ -3952,11 +3952,11 @@ int checkbubble(model *cov){
 	  
 	  // printf("delta %10e\n", sum - 1.0	  );
 	  if (FABS(sum - 1.0) > 1e-14)
-	    ERR("weights do not partially sum up to 1.");
+	    ERR0("weights do not partially sum up to 1.");
 	  i++;
 	  while(i <= cur_rk && s->start[i] == s->start[i-1]) {
 	    if (s->end[i] != s->end[i-1])
-	      ERR("identical starting position must have identical end position");
+	      ERR0("identical starting position must have identical end position");
 	    i++;
 	  }
 	} // while i <= cur_rk

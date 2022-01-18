@@ -591,7 +591,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
       if ((err = REINIT(cov, cov->mpp.moments, S)) != NOERROR) BUG;
       DO(shape, S);     
       if (calculate_mass_maxstable(cov) != NOERROR) 
-	ERR("unexpected error in 'do_Zhou' (maxstable)");
+	ERR0("unexpected error in 'do_Zhou' (maxstable)");
 
       cmaxDmu = pgs->totalmass / shape->mpp.mMplus[1];
       if (pgs->n_zhou_c < GLOBAL.extreme.max_n_zhou) {
@@ -639,7 +639,7 @@ void do_pgs_maxstable(model *cov, gen_storage *S) {// = pointshapetype
     if (calling->key != NULL) calling->key = cov;		
     else if (calling->sub[0] != NULL) calling->sub[0] = cov;	
     else if (calling->sub[1] != NULL) calling->sub[1] = cov;	
-    else ERR("structure mismatch");			
+    else ERR0("structure mismatch");			
 
     // printf("\n");
     //PMI(pts);
@@ -799,7 +799,7 @@ void do_Zhou(model *cov, gen_storage *S) {// = pointshapetype
   if (calling->key != NULL) cov = calling->key;		
   else if (calling->sub[0] != NULL) cov = calling->sub[0];	
   else if (calling->sub[1] != NULL) cov = calling->sub[1];	
-  else ERR("structure mismatch");			
+  else ERR0("structure mismatch");			
   
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];
@@ -1456,7 +1456,7 @@ void do_pgs_gauss(model *cov, gen_storage *S) {// = pointshapetype
     DORANDOM(pts, cov->q);  // cov->q nur dummy. Wird ueberschrieben
     if (hasPoissonGaussFrame(cov) || !grid) { 
       if (calculate_mass_gauss(cov) != NOERROR) 
-	ERR("unexpected error in 'do_Zhou' (maxstable)");
+	ERR0("unexpected error in 'do_Zhou' (maxstable)");
     } else BUG;
   }
 
@@ -1734,7 +1734,7 @@ void do_Ballani(model *cov, gen_storage *S) {// = pointshapetype
   if (calling->key != NULL) cov = calling->key;		
   else if (calling->sub[0] != NULL) cov = calling->sub[0];	
   else if (calling->sub[1] != NULL) cov = calling->sub[1];	
-  else ERR("structure mismatch");			
+  else ERR0("structure mismatch");			
   
   model *shape = cov->sub[PGS_FCT],
     *pts = cov->sub[PGS_LOC];

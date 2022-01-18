@@ -46,13 +46,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   cov = cov->key != NULL ? cov->key : cov->sub[0];		\
   assert(isnowProcess(cov)) 					\
   if (COVNR != GAUSSPROC)					\
-    ERR("register not initialised as Gaussian likelihood");	\
+    ERR0("register not initialised as Gaussian likelihood");	\
   model *calling = cov->calling;					\
   if (calling == NULL ||						\
       (CALLINGNR != LIKELIHOOD_CALL && CALLINGNR != LINEARPART_CALL)	\
       ) BUG;								\
   likelihood_storage *L = cov->Slikelihood;			\
-  if (L == NULL) ERR("register not initialised as likelihood method");\
+  if (L == NULL) ERR0("register not initialised as likelihood method");\
   int store = GLOBAL.general.set;			       
 
 
@@ -203,7 +203,7 @@ SEXP gauss_linearpart(SEXP model_reg, SEXP Set){
     vdim = VDIM0,
     betatot = L->betas[L->fixedtrends];
 
-  if (element > 0  && element > sets) ERR("set number out of range");
+  if (element > 0  && element > sets) ERR0("set number out of range");
 
   PROTECT(ans = allocVector(VECSXP, ll));
   PROTECT(namevec = allocVector(STRSXP, ll));
@@ -581,7 +581,7 @@ void gauss_predict(model *predict, model *Cov, double *v) {
     Exterr = NOERROR,
     store = GLOBAL.general.set,
     sets = GET_LOC_SETS(cov);
-  if (sets != 1) ERR("only one data set allowed when predicting");
+  if (sets != 1) ERR0("only one data set allowed when predicting");
   assert(cov->Ssolve != NULL);
 
   //  APMI(predict);
@@ -732,7 +732,7 @@ void gauss_predict(model *predict, model *Cov, double *v) {
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
       Ext_getErrorString(predict->err_msg);
-      ERR(predict->err_msg);
+      ERR0(predict->err_msg);
     } else err = Exterr;
   }
 
@@ -903,7 +903,7 @@ SEXP simple_residuals(SEXP model_reg){
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
       Ext_getErrorString(cov->err_msg);
-      ERR(cov->err_msg);
+      ERR0(cov->err_msg);
     } else err = Exterr;
   }
   if (err != NOERROR) XERR(err);
@@ -1187,7 +1187,7 @@ void gaussprocessDlog(double VARIABLE_IS_NOT_USED *x, model *cov,
   if (Exterr != NOERROR) {
     if (Exterr == ERRORM) {
       Ext_getErrorString(cov->err_msg);
-      ERR(cov->err_msg);
+      ERR0(cov->err_msg);
     } else err = Exterr;
   }
 
@@ -1278,7 +1278,7 @@ int countbetas(model *cov, double ***where) {
 	if (ISNAN(p[0])) {
 	  sum += total;
 	  for (int j=0; j<total; j++) { // 0 for 'where'
-	    if (!ISNAN(p[j])) ERR("trend parameters must be all NA or none");
+	    if (!ISNAN(p[j])) ERR0("trend parameters must be all NA or none");
 	    if (where != NULL) {
 	      **where = p + j;
 	      (*where)++;	     
@@ -1286,7 +1286,7 @@ int countbetas(model *cov, double ***where) {
 	  }
 	} else {
 	  for (int j=1; j<total; j++) {
-	    if (ISNAN(p[j])) ERR("trend parameters must be all NA or none");
+	    if (ISNAN(p[j])) ERR0("trend parameters must be all NA or none");
 	  } // j
 	} // not (ISNAN(p[0])) 
       } // (!PisNULL(i)) 
@@ -1310,7 +1310,7 @@ void GetBeta(model *cov, likelihood_storage *L, int *neffect)  {
 
   int i,
     n = COVNR == PLUS ? cov->nsub : 1;
-  if (*neffect >= MAX_LIN_COMP) ERR("too many linear components");
+  if (*neffect >= MAX_LIN_COMP) ERR0("too many linear components");
   bool 
     plus = COVNR == PLUS;
   likelihood_info *info = &(L->info);
